@@ -292,3 +292,18 @@ export function findStudioOnnxModelDescriptor(
     ) ?? null
   );
 }
+
+/** 마스크·텐서 치수 검증이 공유하는 정수 가드 (provider에서 이관). */
+export function positiveSafeInteger(value: number, path: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new RangeError(`${path} must be a positive safe integer.`);
+  }
+  return value;
+}
+
+export function nonNegativeSafeInteger(value: number, path: string): number {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError(`${path} must be a non-negative safe integer.`);
+  }
+  return value;
+}

@@ -1,6 +1,8 @@
 import {
   STUDIO_ONNX_HARD_LIMITS,
   findStudioOnnxModelDescriptor,
+  nonNegativeSafeInteger,
+  positiveSafeInteger,
   studioOnnxElementByteLength,
   studioOnnxModelKey,
   studioOnnxTensorElementCount,
@@ -11,6 +13,10 @@ import {
   type StudioOnnxTensorElementType,
   type StudioOnnxTensorSchema,
 } from "./studio-onnx-model-registry";
+import {
+  probeStudioOnnxWebGpuAdapter,
+  studioOnnxWebGpuApiAvailable,
+} from "./studio-onnx-webgpu-probe";
 import { sha256HexPortable } from "./studio-sha256";
 
 import type { InferenceSession, Tensor } from "onnxruntime-web";
@@ -182,6 +188,8 @@ export interface CreateStudioOnnxInferenceProviderOptions {
   readonly loadRuntime?: StudioOnnxRuntimeLoader;
   readonly loadModelBytes?: StudioOnnxModelByteLoader;
   readonly webGpuApiAvailable?: () => boolean;
+  /** 어댑터 실재 프로브. 기본값은 페이지 전역 공유 프로브다. */
+  readonly webGpuAdapterProbe?: () => Promise<boolean>;
   readonly initialEpoch?: StudioOnnxEpoch;
 }
 
@@ -375,10 +383,6 @@ function validateBudgets(
     }
   }
   return Object.freeze(budgets);
-}
-
-function defaultWebGpuApiAvailable(): boolean {
-  return typeof navigator !== "undefined" && "gpu" in navigator;
 }
 
 async function loadStudioOnnxRuntime(): Promise<StudioOnnxRuntime> {
@@ -763,6 +767,7 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
   private readonly loadModelBytes: StudioOnnxModelByteLoader;
   private readonly executionProvider: StudioOnnxExecutionProvider;
   private readonly webGpuApiAvailable: () => boolean;
+  private readonly webGpuAdapterProbe: () => Promise<boolean>;
   private readonly sessions = new Map<string, CachedStudioOnnxSession>();
   private currentEpoch: StudioOnnxEpoch;
   private isDestroyed = false;
@@ -778,7 +783,9 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
     this.loadModelBytes = options.loadModelBytes ?? fetchStudioOnnxModelBytes;
     this.executionProvider = options.executionProvider ?? "webgpu";
     this.webGpuApiAvailable =
-      options.webGpuApiAvailable ?? defaultWebGpuApiAvailable;
+      options.webGpuApiAvailable ?? studioOnnxWebGpuApiAvailable;
+    this.webGpuAdapterProbe =
+      options.webGpuAdapterProbe ?? probeStudioOnnxWebGpuAdapter;
     const initialEpoch = options.initialEpoch ?? {
       request: 0,
       stroke: 0,
@@ -940,14 +947,21 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
     signal?: AbortSignal,
   ): Promise<CachedStudioOnnxSession> {
     throwIfAborted(signal);
-    if (
-      this.executionProvider === "webgpu"
-      && !this.webGpuApiAvailable()
-    ) {
-      throw inferenceError(
-        "session-create-failed",
-        "The selected ONNX WebGPU execution provider is unavailable.",
-      );
+    if (this.executionProvider === "webgpu") {
+      if (!this.webGpuApiAvailable()) {
+        throw inferenceError(
+          "session-create-failed",
+          "The selected ONNX WebGPU execution provider is unavailable.",
+        );
+      }
+      // 공유 어댑터 프로브가 없음을 확정하면 ORT 세션 생성을 시도하지 않는다.
+      if (!(await this.webGpuAdapterProbe())) {
+        throw inferenceError(
+          "session-create-failed",
+          "The selected ONNX WebGPU execution provider has no adapter.",
+        );
+      }
+      throwIfAborted(signal);
     }
 
     let session: InferenceSession;
@@ -1460,20 +1474,6 @@ export interface StudioOnnxSoftmaxMaskOptions {
 export type StudioOnnxMaskOptions =
   | StudioOnnxThresholdMaskOptions
   | StudioOnnxSoftmaxMaskOptions;
-
-function positiveSafeInteger(value: number, path: string): number {
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new RangeError(`${path} must be a positive safe integer.`);
-  }
-  return value;
-}
-
-function nonNegativeSafeInteger(value: number, path: string): number {
-  if (!Number.isSafeInteger(value) || value < 0) {
-    throw new RangeError(`${path} must be a non-negative safe integer.`);
-  }
-  return value;
-}
 
 function validateMaskDimensions(
   width: number,

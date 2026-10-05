@@ -190,6 +190,7 @@ describe("Studio ONNX inference provider", () => {
       registry: createStudioOnnxModelRegistry([descriptor()]),
       loadRuntime: async () => fixture.runtime,
       webGpuApiAvailable: () => true,
+      webGpuAdapterProbe: async () => true,
       initialEpoch: EPOCH,
     });
 
@@ -257,6 +258,7 @@ describe("Studio ONNX inference provider", () => {
       registry: createStudioOnnxModelRegistry([descriptor()]),
       loadRuntime: async () => fixture.runtime,
       webGpuApiAvailable: () => true,
+      webGpuAdapterProbe: async () => true,
     });
     await expect(provider.loadModel({
       modelId: "selection-mask",
@@ -277,6 +279,25 @@ describe("Studio ONNX inference provider", () => {
       source: { kind: "bytes", bytes: MODEL_BYTES },
     })).rejects.toMatchObject({ code: "session-create-failed" });
     expect(noGpuFixture.createSpy).not.toHaveBeenCalled();
+  });
+
+  it("fails before ORT session creation when the adapter probe finds no adapter", async () => {
+    const fixture = fakeRuntime(async () => new FakeSession());
+    const probe = vi.fn(async () => false);
+    const provider = createStudioOnnxInferenceProvider({
+      registry: createStudioOnnxModelRegistry([descriptor()]),
+      loadRuntime: async () => fixture.runtime,
+      webGpuApiAvailable: () => true,
+      webGpuAdapterProbe: probe,
+    });
+    await expect(provider.loadModel({
+      modelId: "selection-mask",
+      version: "1.0.0",
+      source: { kind: "bytes", bytes: MODEL_BYTES },
+    })).rejects.toMatchObject({ code: "session-create-failed" });
+    // 어댑터가 없다는 판정이면 ORT의 WebGPU 세션 생성을 시도조차 하지 않는다.
+    expect(fixture.createSpy).not.toHaveBeenCalled();
+    expect(probe).toHaveBeenCalledTimes(1);
   });
 
   it("uses WASM only when it was selected before model loading", async () => {
@@ -315,6 +336,7 @@ describe("Studio ONNX inference provider", () => {
       registry: createStudioOnnxModelRegistry([descriptor()]),
       loadRuntime: async () => fixture.runtime,
       webGpuApiAvailable: () => true,
+      webGpuAdapterProbe: async () => true,
       initialEpoch: EPOCH,
     });
 
@@ -371,6 +393,7 @@ describe("Studio ONNX inference provider", () => {
       registry: createStudioOnnxModelRegistry([descriptor()]),
       loadRuntime: async () => sessionFixture.runtime,
       webGpuApiAvailable: () => true,
+      webGpuAdapterProbe: async () => true,
     });
     const sessionController = new AbortController();
     const pendingSession = sessionProvider.loadModel({
