@@ -180,7 +180,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
           </section>
         ) : (
           <>
-            <p role="status" className="rounded-xl border border-line bg-raised p-4 text-sm leading-6 text-fg-2">
+            <p className="rounded-xl border border-line bg-raised p-4 text-sm leading-6 text-fg-2">
               {bt("현재 단계에서 조직 프로필·연결·공지는 이 기기에만 저장됩니다. 조직 초대, 조직 역할의 서버 강제, 조직 포인트 풀, 조직 공용 라이브러리는 조직 서버 계약이 생긴 뒤에 열립니다. 조직에 소속돼도 원고 접근 권한은 생기지 않습니다 — 작품 권한은 지금처럼 작품별로 부여합니다.",
                 "At this stage the organization profile, links, and notices are stored only on this device. Organization invites, server-enforced org roles, a shared point pool, and a shared library open once an organization server contract exists. Belonging to an organization never grants manuscript access — project permissions are still granted per project, as today.")}
             </p>
@@ -216,7 +216,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
               </Card>
             )}
 
-            {profile && local && (
+            {local && (
               <Card title={bt("팀 연결", "Link teams")}>
                 {workspaces.length === 0 && !loading && (
                   <p className="text-sm leading-6 text-fg-2">{bt("아직 참여한 팀이 없습니다. 팀을 만들거나 초대를 수락하면 여기서 조직에 연결할 수 있습니다.", "No teams yet. Create a team or accept an invite, then link it to this organization here.")} <Link className="underline" to="/team/people">{bt("팀 관리로 이동", "Go to team management")}</Link></p>
