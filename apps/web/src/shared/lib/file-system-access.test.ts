@@ -54,6 +54,8 @@ function createHandleMock(options: {
   const writableState = createWritableMock(options.failWrite);
   let requestCalls = 0;
   const handle: FileSystemFileHandleLike = {
+    kind: "file",
+    name: "memory.toonstudio",
     createWritable: async () => writableState.writable,
   };
   if (options.withPermissionApi !== false) {
@@ -66,7 +68,7 @@ function createHandleMock(options: {
   return { handle, writableState, requestCalls: () => requestCalls };
 }
 
-function createMemoryStore(initial?: FileSystemFileHandleLike): {
+function createMemoryStore(initial?: FileSystemFileHandleLike | null): {
   store: FileHandleStoreLike;
   forgotten: string[];
   storedKeys: string[];

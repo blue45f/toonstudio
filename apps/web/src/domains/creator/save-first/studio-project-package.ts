@@ -36,6 +36,8 @@ interface ZipEntry {
 }
 
 export interface StudioProjectPackageWritableFileHandle {
+  readonly kind: "file";
+  readonly name: string;
   createWritable(): Promise<{
     write(data: Blob): Promise<void>;
     close(): Promise<void>;

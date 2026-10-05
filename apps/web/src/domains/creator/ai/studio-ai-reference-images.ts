@@ -90,12 +90,12 @@ const STUDIO_AI_REFERENCE_IMAGE_MIME_TYPES = Object.freeze([
 type StudioAiReferenceImageMimeType =
   (typeof STUDIO_AI_REFERENCE_IMAGE_MIME_TYPES)[number];
 
-interface PreparedStudioAiRoleReference {
+export interface PreparedStudioAiRoleReference {
   readonly reference: StudioAiImageReference;
   readonly dataUrl: string;
 }
 
-interface StudioAiReferenceImageDataUrlMetadata {
+export interface StudioAiReferenceImageDataUrlMetadata {
   readonly mimeType: StudioAiReferenceImageMimeType;
   readonly decodedBytes: number;
   readonly extension: "png" | "jpg" | "webp";

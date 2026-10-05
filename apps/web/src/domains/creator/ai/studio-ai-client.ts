@@ -68,6 +68,8 @@ import {
   matchesStudioAiReferenceImageSignature,
   prepareStudioAiRoleReferences,
   STUDIO_AI_ROLE_REFERENCE_REQUEST_LIMITS,
+  type PreparedStudioAiRoleReference,
+  type StudioAiReferenceImageDataUrlMetadata,
   type StudioAiResolvedImageReference,
 } from "./studio-ai-reference-images";
 import { isStudioAiConfigured, type StudioAiSettings } from "./studio-ai-settings";

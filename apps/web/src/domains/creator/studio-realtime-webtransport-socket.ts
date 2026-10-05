@@ -72,7 +72,7 @@ function defaultCreateTransport(
   // 티켓은 WebSocket과 동일하게 두 번째 프로토콜 토큰으로 실린다. WebTransport의
   // protocols 옵션(CONNECT의 프로토콜 협상)이 그 자리를 그대로 제공한다.
   const transport = new WebTransport(url, { protocols: [...protocols] });
-  return transport as StudioWebTransportLike;
+  return transport as unknown as StudioWebTransportLike;
 }
 
 /**

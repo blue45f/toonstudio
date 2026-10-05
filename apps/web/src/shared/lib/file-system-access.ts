@@ -32,6 +32,8 @@ export interface FileSystemHandlePermissionDescriptorLike {
 }
 
 export interface FileSystemFileHandleLike {
+  readonly kind: "file";
+  readonly name: string;
   createWritable(): Promise<FileSystemWritableStreamLike>;
   queryPermission?(
     descriptor: FileSystemHandlePermissionDescriptorLike,
