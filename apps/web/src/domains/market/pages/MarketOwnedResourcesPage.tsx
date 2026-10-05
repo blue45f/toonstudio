@@ -278,6 +278,13 @@ export function MarketOwnedResourcesPage() {
         </Link>
       </header>
 
+      <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-line bg-panel px-4 py-3 text-sm text-fg-2">
+        {t("브라우저에서 직접 등록하는 포인트 판매·공동구매는 별도 판매대에서 다룹니다.", "Point sales and group buys registered directly in the browser live on a separate counter.")}
+        <Link href="/market/seller" className={buttonClass({ variant: "outline", size: "sm" })}>
+          {t("포인트 판매 · 공동구매 열기", "Open point sales & group buys")}
+        </Link>
+      </p>
+
       {!ready ? (
         <div role="status" className="mt-8 rounded-2xl border border-line bg-card p-8 text-center">
           <LoaderCircle className="mx-auto size-8 animate-spin text-accent" aria-hidden="true" />
