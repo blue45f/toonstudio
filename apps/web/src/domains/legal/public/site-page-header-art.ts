@@ -20,6 +20,7 @@
 export const SITE_PAGE_HEADER_ART: Readonly<Record<string, string>> = {
   "/status": "background-city",
   "/sitemap": "storyboard",
+  "/features": "hero",
   "/discover": "hero",
   "/library": "project-romance",
   "/news": "canvas-noir",
