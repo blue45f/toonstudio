@@ -19,6 +19,8 @@ const MS_PER_DAY = 86_400_000;
 
 /**
  * 이벤트 기간 표기용 날짜 포맷 — 연·월·일만, 로케일은 앱 언어 설정을 따른다.
+ * 카탈로그 날짜는 한국 시간(+09:00) 기준의 달력 날짜라, 보는 사람의 현지
+ * 시간대로 환산하면 하루 어긋나 보인다. 표시는 항상 Asia/Seoul 날짜로 고정한다.
  * 파싱할 수 없는 값이면 빈 문자열을 돌려준다 (호출부가 기간 행 자체를 생략한다).
  */
 export function formatEventDate(iso: string, lang: string): string {
@@ -28,6 +30,7 @@ export function formatEventDate(iso: string, lang: string): string {
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone: "Asia/Seoul",
   }).format(date);
 }
 
