@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
+import { MotionWebtoonAnimeToonWizard } from "./MotionWebtoonAnimeToonWizard";
 import { MotionWebtoonEditor } from "./MotionWebtoonEditor";
 import { MOTION_WEBTOON_UI_LABELS } from "./motion-webtoon-labels";
 import {
@@ -84,6 +85,8 @@ export function MotionWebtoonPage(): JSX.Element {
   useDocumentTitle(t("모션 웹툰", "Motion webtoon"));
   const [initial] = useState<InitialState>(resolveInitialState);
   const [notice, setNotice] = useState<PageNotice>(initial.notice);
+  // 애니툰 위저드가 만든 초안 — 에디터는 초기값으로만 회차를 읽으므로 key로 다시 마운트해 교체한다.
+  const [openedDraft, setOpenedDraft] = useState<MotionEpisode | null>(null);
   // 자동 저장이 실패하면(저장 공간 부족·비공개 모드) 사라지지 않는 안내로 알린다.
   const [saveFailed, setSaveFailed] = useState(initial.saveFailed);
   const noticeTimerRef = useRef<number | null>(null);
@@ -147,7 +150,17 @@ export function MotionWebtoonPage(): JSX.Element {
           )}
         </p>
       )}
-      <MotionWebtoonEditor initialEpisode={initial.episode} onChange={handleChange} />
+      <MotionWebtoonAnimeToonWizard
+        onOpenDraft={(draft) => {
+          setOpenedDraft(draft);
+          setNotice(null);
+        }}
+      />
+      <MotionWebtoonEditor
+        key={openedDraft?.id ?? initial.episode.id}
+        initialEpisode={openedDraft ?? initial.episode}
+        onChange={handleChange}
+      />
     </div>
   );
 }
