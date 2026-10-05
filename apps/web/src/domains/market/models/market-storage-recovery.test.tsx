@@ -16,7 +16,8 @@ import {
 import { CREATOR_MARKETPLACE_STARTER_RECORDS } from "@/shared/lib/creator-marketplace-starter-catalog";
 
 const REGISTRY_KEY = "toonspectrum:market:custom-published";
-const WISHLIST_KEY = "toonspectrum:market:wishlist";
+// 비로그인(게스트) 상태에서는 찜이 게스트 파티션 키에 저장된다(소유자 스코프).
+const WISHLIST_KEY = "toonspectrum:market:wishlist:guest";
 const record = CREATOR_MARKETPLACE_STARTER_RECORDS[0];
 
 beforeEach(() => localStorage.clear());

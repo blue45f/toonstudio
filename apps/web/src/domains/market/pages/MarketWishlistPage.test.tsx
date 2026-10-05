@@ -10,7 +10,8 @@ import { CREATOR_MARKETPLACE_STARTER_RECORDS } from "@/shared/lib/creator-market
 vi.mock("../hooks/use-market-resource-detail", () => ({ useMarketResourceDetail: vi.fn() }));
 vi.mock("../components/MarketResourceCard", () => ({ MarketResourceCard: ({ record }: { record: { name: string } }) => <h2>{record.name}</h2> }));
 const detail = vi.mocked(useMarketResourceDetail);
-const key = "toonspectrum:market:wishlist";
+// 비로그인(게스트) 상태에서는 찜이 게스트 파티션 키에 저장된다(소유자 스코프).
+const key = "toonspectrum:market:wishlist:guest";
 const reload = vi.fn();
 const absent = { record: null, loading: false, notFound: true, error: null, staleSavedAt: null, reload };
 beforeEach(() => { localStorage.clear(); vi.clearAllMocks(); detail.mockReturnValue(absent); });
