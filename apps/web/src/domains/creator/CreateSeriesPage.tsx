@@ -51,6 +51,12 @@ import {
   usePageSocialMeta,
 } from "@/shared/seo/use-document-title";
 import { deleteSeries, getSeries, type SeriesDetail, type WorkSummary } from "@/platform/creator-client";
+import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
+import {
+  AuthorNoticeManager,
+  AuthorNoticeSection,
+  createStatusTransitionNoticeDraft,
+} from "@/domains/author-notices/public/author-notices";
 
 
 const SharePageButton = lazy(async () => {
@@ -114,6 +120,7 @@ function EpisodeRow({ episode }: { episode: WorkSummary }) {
 export function CreateSeriesPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const actorId = useAuthActorId();
 
   const [series, setSeries] = useState<SeriesDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,6 +130,8 @@ export function CreateSeriesPage() {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** 연재 상태 전환으로 공지 초안이 자동 생성됐을 때만 보이는 안내. */
+  const [transitionNoticeCreated, setTransitionNoticeCreated] = useState(false);
   const publishedEpisodes = series?.episodeList.filter((episode) => episode.status === "published") ?? [];
   const shareable = canShareCreatorSeries(publishedEpisodes);
   const sharePath = series ? creatorSeriesHref(series.id) : SERIES_LIST_HREF;
@@ -376,14 +385,44 @@ export function CreateSeriesPage() {
             <SeriesForm
               initial={series}
               onSaved={(saved) => {
+                const previousStatus = series.status;
                 setEditing(false);
                 setSeries((current) => (current ? { ...current, ...saved } : current));
+                // 휴재 진입·연재 재개로 상태가 바뀌면 공지 초안을 제안한다(자동 게시 아님).
+                if (saved.status !== previousStatus) {
+                  const draft = createStatusTransitionNoticeDraft({
+                    actorId,
+                    authorName: series.author.name,
+                    workId: series.id,
+                    workTitle: series.title,
+                    from: previousStatus,
+                    to: saved.status,
+                  });
+                  if (draft) setTransitionNoticeCreated(true);
+                }
               }}
               onCancel={() => setEditing(false)}
             />
           </div>
         )}
       </header>
+
+      {transitionNoticeCreated && (
+        <p
+          role="status"
+          className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-accent/40 bg-accent-soft/40 px-4 py-3 text-sm text-fg"
+        >
+          {translateCurrentStaticSourceText("domains.creator.CreateSeriesPage", "ko", "연재 상태가 바뀌어 공지 초안을 만들었어요. 내용을 확인하고 게시해 주세요.")}
+          <a href="#author-notices" className="font-semibold text-accent hover:underline">
+            {translateCurrentStaticSourceText("domains.creator.CreateSeriesPage", "ko", "공지 보러 가기")}</a>
+          <button
+            type="button"
+            onClick={() => setTransitionNoticeCreated(false)}
+            className="ml-auto text-xs font-medium text-fg-3 hover:text-fg"
+          >
+            {translateCurrentStaticSourceText("domains.creator.CreateSeriesPage", "ko", "닫기")}</button>
+        </p>
+      )}
 
       <section className="mt-7">
         <h2 className="flex items-center gap-1.5 text-sm font-bold text-fg">
@@ -418,6 +457,22 @@ export function CreateSeriesPage() {
           </ol>
         )}
       </section>
+
+      <div id="author-notices" className="scroll-mt-24">
+        <AuthorNoticeSection
+          authorName={series.author.name}
+          workTitle={series.title}
+          className="mt-7"
+        />
+        {series.isOwner && actorId && (
+          <AuthorNoticeManager
+            authorName={series.author.name}
+            actorId={actorId}
+            works={[{ id: series.id, title: series.title }]}
+            className="mt-7"
+          />
+        )}
+      </div>
     </Container>
   );
 }

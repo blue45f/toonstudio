@@ -13,6 +13,7 @@ import { TitleEpisodeSection } from "./TitleEpisodeSection";
 import { TitleNotFound } from "./TitleNotFound";
 import { resolveTitleEpisodes } from "./title-episodes";
 import { TitleEarlyAccessNotice } from "@/domains/monetization/public/title-early-access";
+import { AuthorNoticeSection } from "@/domains/author-notices/public/author-notices";
 
 
 import type { SeedReview, Title } from "@/shared/lib/types";
@@ -322,6 +323,8 @@ export function TitleDetailPage() {
           </section>
         </div>
       </div>
+
+      <AuthorNoticeSection authorName={title.author} workTitle={title.title} className="mt-10 sm:mt-14" />
 
       <section id="metrics" className="mt-10 scroll-mt-24 sm:mt-14">
         <h2 className="eyebrow mb-1 text-accent">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "METRICS · 지표")}</h2>
