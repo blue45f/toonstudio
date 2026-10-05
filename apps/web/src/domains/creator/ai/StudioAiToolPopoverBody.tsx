@@ -5,6 +5,7 @@ import {
   Clapperboard,
   Images,
   Languages,
+  ListChecks,
   ScanText,
   Settings2,
   Sparkles,
@@ -175,13 +176,15 @@ export function StudioAiToolPopoverBody({
     || (textAiTransport.mode !== "server" && textAiConfigured);
   const imageAiConfigured = isStudioAiConfigured(aiSettings);
 
-  const openTranslationSurface = (surface: "translate" | "qa") => {
+  const openTranslationSurface = (surface: "translate" | "qa" | "review") => {
     setDialogueTranslateOpen(surface);
     setMenu(null);
     announceDrawingShortcut(
       surface === "translate"
         ? "대사 번역 검토 화면을 열었어요."
-        : "현지화 QA와 말풍선 넘침 검사를 열었어요.",
+        : surface === "qa"
+          ? "현지화 QA와 말풍선 넘침 검사를 열었어요."
+          : "번역 대조 검수 화면을 열었어요.",
     );
   };
 
@@ -428,6 +431,20 @@ export function StudioAiToolPopoverBody({
                         <span className="min-w-0">
                           <strong className="block truncate text-[0.66rem] font-black text-fg">현지화 QA</strong>
                           <span className="block truncate text-[0.55rem] text-fg-3">넘침·문체 검사</span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openTranslationSurface("review")}
+                        data-studio-ai-translation-review-launcher="true"
+                        className="col-span-2 flex min-h-12 min-w-0 items-center gap-2 rounded-lg border border-line bg-panel px-2.5 py-2 text-left transition-colors hover:border-accent/45 hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      >
+                        <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
+                          <ListChecks size={14} aria-hidden />
+                        </span>
+                        <span className="min-w-0">
+                          <strong className="block truncate text-[0.66rem] font-black text-fg">번역 대조 검수</strong>
+                          <span className="block truncate text-[0.55rem] text-fg-3">원문·번역 나란히 승인/수정 필요</span>
                         </span>
                       </button>
                     </div>

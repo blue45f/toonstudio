@@ -315,3 +315,184 @@ describe("StudioDialogueTranslatePanel 생성 화면 대상 언어 검증", () =
     expect(onGenerate).toHaveBeenCalledTimes(1);
   });
 });
+
+// ── 번역 대조 검수 화면 ──────────────────────────────────────────────────
+
+const reviewPages = [
+  {
+    id: "page-1",
+    elements: [
+      { id: "bubble-1", type: "bubble", text: "다시 만나서 반가워.", x: 20, y: 40 },
+      { id: "bubble-2", type: "bubble", text: "민수야, 안녕?", x: 20, y: 120 },
+      { id: "bubble-3", type: "bubble", text: "아직 번역 없는 대사", x: 20, y: 200 },
+    ],
+    dialogueI18n: {
+      "bubble-1": { source: "다시 만나서 반가워.", "en-US": "Good to see you again." },
+      "bubble-2": { source: "민수야, 안녕?", "en-US": "Hi, Minsu?" },
+    },
+    dialogueReview: { "bubble-1": { "en-US": "approved" as const } },
+  },
+];
+
+function renderReview(
+  overrides: Partial<React.ComponentProps<typeof StudioDialogueTranslatePanel>> = {}
+) {
+  const onReviewTextChange = vi.fn();
+  const onReviewStatusChange = vi.fn();
+  render(
+    <StudioDialogueTranslatePanel
+      pages={reviewPages}
+      configured
+      activeLocale="source"
+      availableLocales={["en-US"]}
+      coverageFor={() => ({ total: 3, translated: 2 })}
+      targetLocale="en-US"
+      onTargetLocaleChange={vi.fn()}
+      glossary=""
+      onGlossaryChange={vi.fn()}
+      busy={false}
+      progress={null}
+      error={null}
+      draft={null}
+      onGenerate={vi.fn()}
+      onDraftChange={vi.fn()}
+      onApplyDraft={vi.fn()}
+      onDiscardDraft={vi.fn()}
+      onSwitchLocale={vi.fn()}
+      onClose={vi.fn()}
+      workScope="work-review-1"
+      reviewOpen
+      onReviewOpenChange={vi.fn()}
+      onReviewTextChange={onReviewTextChange}
+      onReviewStatusChange={onReviewStatusChange}
+      {...overrides}
+    />
+  );
+  return { onReviewTextChange, onReviewStatusChange };
+}
+
+describe("StudioDialogueTranslatePanel 번역 대조 검수 화면", () => {
+  it("적용된 번역을 원문과 나란히 보여 주고 상태와 진척을 표시한다", () => {
+    renderReview();
+
+    expect(screen.getByText("원문: 다시 만나서 반가워.")).toBeTruthy();
+    expect(screen.getByText("원문: 민수야, 안녕?")).toBeTruthy();
+    const textareas = screen.getAllByLabelText("1페이지 대사 번역") as HTMLTextAreaElement[];
+    expect(textareas.map((t) => t.value)).toEqual([
+      "Good to see you again.",
+      "Hi, Minsu?",
+      "",
+    ]);
+    expect(screen.getByText("승인됨")).toBeTruthy();
+    expect(screen.getByText("미번역")).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain("번역 2/3");
+    expect(screen.getByRole("status").textContent).toContain("미번역 1");
+    // 미번역 행은 승인할 수 없다.
+    const approveButtons = screen.getAllByRole("button", { name: "승인" }) as HTMLButtonElement[];
+    expect(approveButtons[2].disabled).toBe(true);
+  });
+
+  it("승인·수정 필요 버튼이 상태 변경 콜백을 부르고, 승인된 행은 다시 누르면 해제된다", () => {
+    const { onReviewStatusChange } = renderReview();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "승인" })[1]);
+    expect(onReviewStatusChange).toHaveBeenCalledWith("page-1", "bubble-2", "en-US", "approved");
+
+    fireEvent.click(screen.getAllByRole("button", { name: "수정 필요" })[1]);
+    expect(onReviewStatusChange).toHaveBeenCalledWith("page-1", "bubble-2", "en-US", "needs-edit");
+
+    fireEvent.click(screen.getAllByRole("button", { name: "승인" })[0]);
+    expect(onReviewStatusChange).toHaveBeenCalledWith("page-1", "bubble-1", "en-US", null);
+  });
+
+  it("번역문을 고쳐 저장하면 콜백으로 나가고, 용어집 위반이 행에 표시된다", () => {
+    const { onReviewTextChange } = renderReview({ glossary: "민수: Min-su" });
+
+    // 원문에 "민수"가 있는데 번역에 정본 "Min-su"가 없다 — 행 단위 위반 표시.
+    expect(screen.getByText(/규칙과 일치하지 않습니다/)).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain("용어집 위반 1행");
+
+    const textareas = screen.getAllByLabelText("1페이지 대사 번역") as HTMLTextAreaElement[];
+    fireEvent.change(textareas[0], { target: { value: "Great to see you again." } });
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    expect(onReviewTextChange).toHaveBeenCalledWith(
+      "page-1",
+      "bubble-1",
+      "en-US",
+      "Great to see you again."
+    );
+  });
+
+  it("번역된 언어가 없으면 빈 상태를 안내한다", () => {
+    renderReview({ availableLocales: [] });
+    expect(screen.getByText(/아직 적용된 번역이 없어요/)).toBeTruthy();
+  });
+});
+
+// ── 용어집 작품별 저장·규칙 행 편집 ─────────────────────────────────────
+
+describe("StudioDialogueTranslatePanel 용어집", () => {
+  it("작품에 저장된 용어집을 열 때 빈 용어집에 채워 넣는다", () => {
+    localStorage.setItem(
+      "toonstudio-studio-dialogue-glossary:v1:work-glossary-1",
+      "민수: Minsu"
+    );
+    const onGlossaryChange = vi.fn();
+    generatePanel({ workScope: "work-glossary-1", onGlossaryChange });
+
+    expect(onGlossaryChange).toHaveBeenCalledWith("민수: Minsu");
+  });
+
+  it("사용자가 입력한 용어집은 작품 키로 저장돼 다음에 다시 열린다", () => {
+    generatePanel({ workScope: "work-glossary-2", glossary: "지연: Jiyeon" });
+
+    expect(
+      localStorage.getItem("toonstudio-studio-dialogue-glossary:v1:work-glossary-2")
+    ).toBe("지연: Jiyeon");
+  });
+
+  it("규칙 행 모드에서 정본을 고치면 같은 용어집 텍스트로 되돌려 준다", () => {
+    const onGlossaryChange = vi.fn();
+    generatePanel({ glossary: "민수: Minsu\n# 주인공 메모", onGlossaryChange });
+
+    fireEvent.click(screen.getByRole("button", { name: "규칙 행" }));
+    const targetInput = screen.getByLabelText("1번째 규칙 정본 표기") as HTMLInputElement;
+    expect(targetInput.value).toBe("Minsu");
+    expect(screen.getByText(/메모 줄 1개/)).toBeTruthy();
+
+    fireEvent.change(targetInput, { target: { value: "Min-su" } });
+    expect(onGlossaryChange).toHaveBeenLastCalledWith("민수: Min-su\n# 주인공 메모");
+  });
+});
+
+// ── 현지화 QA 용어집 검사 주입 ───────────────────────────────────────────
+
+describe("StudioDialogueTranslatePanel 현지화 QA 용어집 검사", () => {
+  it("용어집 규칙을 어긴 초안은 QA 보고서에 용어집 위반으로 나타난다", () => {
+    render(
+      qaPanel({
+        qaOpen: true,
+        pages: [{ id: "page-1", elements: [qaPages[0].elements[0]] }],
+        draft: new Map([["bubble-1", "Long time no see."]]),
+        glossary: "오랜만: It's been a while",
+      })
+    );
+
+    expect(screen.queryByText("지적할 곳이 없어요")).toBeNull();
+    expect(screen.getByText(/규칙과 일치하지 않습니다/)).toBeTruthy();
+  });
+
+  it("용어집 규칙을 지킨 초안은 위반 없이 통과한다", () => {
+    render(
+      qaPanel({
+        qaOpen: true,
+        pages: [{ id: "page-1", elements: [qaPages[0].elements[0]] }],
+        draft: new Map([["bubble-1", "LONG TIME NO SEE."]]),
+        glossary: "오랜만: LONG TIME",
+      })
+    );
+
+    expect(screen.getByText("지적할 곳이 없어요")).toBeTruthy();
+    expect(screen.queryByText(/규칙과 일치하지 않습니다/)).toBeNull();
+  });
+});
