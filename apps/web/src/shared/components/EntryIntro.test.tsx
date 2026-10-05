@@ -13,6 +13,7 @@ import {
   ENTRY_INTRO_HOLD_MS,
   ENTRY_INTRO_REDUCED_HOLD_MS,
   ENTRY_INTRO_SKIP_FADE_MS,
+  ENTRY_INTRO_SKIP_GUARD_MS,
   EntryIntro,
 } from "./EntryIntro";
 import { ENTRY_INTRO_SESSION_KEY } from "./entry-intro-session";
@@ -84,8 +85,13 @@ describe("EntryIntro", () => {
     expect(renderToStaticMarkup(createElement(EntryIntro))).toBe("");
   });
 
-  it("전체 길이가 1.8초를 넘지 않고 끝나면 완전히 사라진다", () => {
-    expect(ENTRY_INTRO_HOLD_MS + ENTRY_INTRO_FADE_MS).toBeLessThanOrEqual(1800);
+  it("전체 길이가 2.6~3.2초 구간 안에 있고 끝나면 완전히 사라진다", () => {
+    // 계약 교체(2026-10-06): 구 계약 "총 1.8초 이하"는 브랜드 인지에는 너무 짧다는
+    // 사용자 피드백으로 폐기하고, 총 길이가 2600~3200ms 구간 안에 있다는
+    // 하한+상한 계약으로 대체했다. 단언을 지우거나 완화한 것이 아니다.
+    const totalMs = ENTRY_INTRO_HOLD_MS + ENTRY_INTRO_FADE_MS;
+    expect(totalMs).toBeGreaterThanOrEqual(2600);
+    expect(totalMs).toBeLessThanOrEqual(3200);
     vi.useFakeTimers();
 
     const { container } = render(<EntryIntro />);
@@ -104,10 +110,14 @@ describe("EntryIntro", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("키 입력 즉시 건너뛰고, 원래 유지 시간이 지나도 다시 나타나지 않는다", () => {
+  it("키 입력으로 건너뛰고, 원래 유지 시간이 지나도 다시 나타나지 않는다", () => {
     vi.useFakeTimers();
     const { container } = render(<EntryIntro />);
 
+    // 스킵 보호 구간이 지난 뒤의 입력부터 스킵으로 인정된다.
+    act(() => {
+      vi.advanceTimersByTime(ENTRY_INTRO_SKIP_GUARD_MS);
+    });
     fireEvent.keyDown(window, { key: "Enter" });
     expect(container.querySelector("[data-phase='fade']")).not.toBeNull();
 
@@ -126,6 +136,9 @@ describe("EntryIntro", () => {
     vi.useFakeTimers();
     const { container } = render(<EntryIntro />);
 
+    act(() => {
+      vi.advanceTimersByTime(ENTRY_INTRO_SKIP_GUARD_MS);
+    });
     fireEvent.pointerDown(window);
     expect(container.querySelector("[data-phase='fade']")).not.toBeNull();
 
@@ -133,6 +146,23 @@ describe("EntryIntro", () => {
       vi.advanceTimersByTime(ENTRY_INTRO_SKIP_FADE_MS);
     });
     expect(container.firstChild).toBeNull();
+  });
+
+  it("마운트 직후 보호 구간 안의 입력은 우발 입력으로 보고 건너뛰지 않는다", () => {
+    vi.useFakeTimers();
+    const { container } = render(<EntryIntro />);
+
+    fireEvent.keyDown(window, { key: "Enter" });
+    fireEvent.pointerDown(window);
+    // 보호 구간 안에서는 페이드로 넘어가지 않고 표시 단계를 유지한다.
+    expect(container.querySelector("[data-phase='show']")).not.toBeNull();
+    expect(container.querySelector("[data-phase='fade']")).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(ENTRY_INTRO_SKIP_GUARD_MS);
+    });
+    fireEvent.keyDown(window, { key: "Enter" });
+    expect(container.querySelector("[data-phase='fade']")).not.toBeNull();
   });
 
   it("prefers-reduced-motion에서는 정적 카드를 짧게만 보여주고 세션을 기록한다", () => {
@@ -180,5 +210,10 @@ describe("EntryIntro 소스 계약", () => {
     expect(tsx).not.toContain("SplashScreen");
     expect(tsx).not.toContain("IntroSplash");
     expect(css).toContain("pointer-events: none");
+    // 브랜드 마크는 저해상도 PNG가 아니라 벡터 원본을, 아트는 인트로 전용
+    // 고품질 인코딩을 쓴다(공유 hero-main.webp는 홈이 그대로 쓴다).
+    expect(tsx).toContain("/brand/spectrum-ribbon-v2/favicon.svg");
+    expect(tsx).not.toContain("icon-192.png");
+    expect(tsx).toContain("/images/hero-main-intro.webp");
   });
 });
