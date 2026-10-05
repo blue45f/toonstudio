@@ -2,6 +2,11 @@ import { CheckCircle2, Download, Play, Save, Workflow } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { getApiErrorMessage } from "@/platform/api";
+import {
+  getAuthUserId,
+  listeners as authListeners,
+  type Session,
+} from "@/domains/auth/public/session/auth-session-state";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { LoadingState } from "@/shared/components/LoadingState";
@@ -33,6 +38,20 @@ export function AutomationHubPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadNonce, setLoadNonce] = useState(0);
+  // 소유자 스코프: 생성 시점의 계정으로 시작하고, 세션 전환(로그인·로그아웃·
+  // 계정 교체)마다 레시피 저장 키를 갈아끼운다 — 학습 실습 훅의 세션 바인딩과
+  // 같은 계약. 게스트는 "guest" 파티션을 쓴다.
+  const [ownerKey, setOwnerKey] = useState(() => getAuthUserId() ?? "guest");
+
+  useEffect(() => {
+    const syncOwner = (session: Session) => {
+      setOwnerKey(session?.user.id ?? "guest");
+    };
+    authListeners.add(syncOwner);
+    return () => {
+      authListeners.delete(syncOwner);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +63,6 @@ export function AutomationHubPage() {
       if (cancelled) return;
       setCatalog(catalogResponse);
       setDefinition(recipeResponse);
-      setRecipes(loadIntegrationRecipes(recipeResponse.templates));
     }).catch(async (error: unknown) => {
       if (!cancelled) setLoadError(await getApiErrorMessage(error, "자동화 구성을 불러오지 못했습니다."));
     });
@@ -52,6 +70,16 @@ export function AutomationHubPage() {
       cancelled = true;
     };
   }, [loadNonce]);
+
+  // 템플릿이 준비되거나 소유자가 바뀌면 그 파티션의 레시피를 다시 읽는다.
+  // 저장하지 않은 편집은 소유자 전환을 따라가지 않고 버려진다 — 다른 계정의
+  // 화면에 남의 구성이 남으면 안 된다(학습 실습 bind와 같은 처리).
+  useEffect(() => {
+    if (!definition) return;
+    setRecipes(loadIntegrationRecipes(definition.templates, undefined, ownerKey));
+    setValidations({});
+    setMessage(null);
+  }, [definition, ownerKey]);
 
   const retryLoad = () => {
     setCatalog(null);
@@ -84,7 +112,7 @@ export function AutomationHubPage() {
   };
 
   const save = () => {
-    saveIntegrationRecipes(recipes);
+    saveIntegrationRecipes(recipes, undefined, ownerKey);
     setMessage(ko ? "이 브라우저에 자동화 구성을 저장했습니다." : "Automation recipes saved in this browser.");
   };
 
