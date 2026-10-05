@@ -4,7 +4,7 @@
  * 창작자용 얼리 액세스 정책 관리 (`/creator/early-access`).
  * 작품별 서포터 선공개 기간을 설정한다.
  */
-import { CalendarClock, Plus, Trash2, Zap } from "lucide-react";
+import { CalendarClock, Eye, Plus, Trash2, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -28,11 +28,13 @@ import {
   subscribePaywallStore,
   upsertEarlyAccessPolicy,
 } from "../models/paywall-store";
+import { EarlyAccessReaderPreview } from "../components/EarlyAccessReaderPreview";
 
 export function CreatorEarlyAccessPage() {
   const t = useT();
   const { data: session, ready, status } = useSession();
   const [policies, setPolicies] = useState<readonly EarlyAccessPolicy[]>([]);
+  const [previewTitleId, setPreviewTitleId] = useState<string | null>(null);
   const [titleId, setTitleId] = useState("");
   const [titleName, setTitleName] = useState("");
   const [days, setDays] = useState("14");
@@ -112,6 +114,9 @@ export function CreatorEarlyAccessPage() {
     );
   }
 
+  const previewPolicy =
+    policies.find((policy) => policy.titleId === previewTitleId) ?? policies[0] ?? null;
+
   return (
     <Container className="py-8">
       <header>
@@ -122,7 +127,9 @@ export function CreatorEarlyAccessPage() {
         <p className="mt-1 max-w-2xl text-sm text-muted">{t("paywall.creatorPage.subtitle")}</p>
       </header>
 
-      <section aria-label={t("paywall.creatorPage.formTitle")} className="mt-6 rounded-2xl border border-line p-4 sm:p-6">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+      <section aria-label={t("paywall.creatorPage.formTitle")} className="rounded-2xl border border-line p-4 sm:p-6">
         <h2 className="text-base font-bold text-fg">{t("paywall.creatorPage.formTitle")}</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -185,7 +192,7 @@ export function CreatorEarlyAccessPage() {
         </button>
       </section>
 
-      <section aria-label={t("paywall.creatorPage.listTitle")} className="mt-6 space-y-3">
+      <section aria-label={t("paywall.creatorPage.listTitle")} className="space-y-3">
         {policies.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-line p-10 text-center">
             <Zap className="mx-auto h-8 w-8 text-muted/50" aria-hidden />
@@ -204,6 +211,15 @@ export function CreatorEarlyAccessPage() {
                 </p>
               </div>
               <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPreviewTitleId(policy.titleId)}
+                  className={cn(buttonClass({ variant: "outline", size: "sm" }), "gap-1")}
+                  aria-pressed={previewPolicy?.titleId === policy.titleId}
+                >
+                  <Eye className="h-3.5 w-3.5" aria-hidden />
+                  {t("paywall.creatorPage.preview")}
+                </button>
                 <button
                   type="button"
                   onClick={() => toggleEnabled(policy)}
@@ -225,6 +241,12 @@ export function CreatorEarlyAccessPage() {
           ))
         )}
       </section>
+        </div>
+
+        {previewPolicy ? (
+          <EarlyAccessReaderPreview policy={previewPolicy} className="lg:sticky lg:top-6" />
+        ) : null}
+      </div>
     </Container>
   );
 }
