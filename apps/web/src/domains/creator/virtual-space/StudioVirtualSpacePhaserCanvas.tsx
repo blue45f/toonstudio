@@ -63,7 +63,6 @@ import {
   turnLeanAngle,
   type StudioLocomotionMode,
 } from "./studio-virtual-space-locomotion-transitions";
-import { buildMovePathDisplay } from "./studio-virtual-space-move-path-display";
 import {
   studioDayNightTimeOfDay,
 } from "./studio-virtual-space-day-night-cycle";
@@ -250,7 +249,8 @@ import {
   STUDIO_WORLD_PLAYER_RADIUS,
 } from "./studio-virtual-space-world-pathfinding";
 import {
-  createStudioInteractionMarkers, createStudioPortalGateways, drawStudioPrivateZoneOverlay, drawStudioWorldDebugOverlay,
+  createStudioInteractionMarkers, createStudioPortalGateways, drawStudioLocateOverlay, drawStudioPrivateZoneOverlay,
+  drawStudioRouteOverlay, drawStudioWorldDebugOverlay,
 } from "./studio-virtual-space-world-overlays";
 
 import {
@@ -1914,89 +1914,27 @@ export function StudioVirtualSpacePhaserCanvas({
         }
 
         if (routeOverlay) {
-          routeOverlay.clear();
-          // 클릭 이동 경로 표시: 목적지 마커(펄스) + 간소화된 경로 폴리라인
-          const pathDisplay = buildMovePathDisplay({
-            current: currentPoint,
-            path,
-            destination: path.at(-1) ?? null,
-            moving: feelSpeed > 5,
-            now: Date.now(),
-            markerStartedAt,
-            reducedMotion: reducedMotion.matches,
+          // 클릭 이동 경로 표시(목적지 마커·폴리라인)와 가장 가까운 포털의 바닥 펄스 링.
+          drawStudioRouteOverlay(routeOverlay, {
+            current: currentPoint, path, moving: feelSpeed > 5, now: time, wallNow: Date.now(),
+            markerStartedAt, reducedMotion: reducedMotion.matches, portals,
+            projectPoint: (point) => studioProjectTownPoint(manifest, point),
           });
-          if (pathDisplay.visible) {
-            routeOverlay.lineStyle(1.5, 0xc8b8ff, 0.42);
-            routeOverlay.beginPath();
-            const [firstPoint, ...restPoints] = pathDisplay.polyline;
-            if (firstPoint) {
-              routeOverlay.moveTo(firstPoint.x, firstPoint.y);
-              for (const waypoint of restPoints) routeOverlay.lineTo(waypoint.x, waypoint.y);
-            }
-            routeOverlay.strokePath();
-            const marker = pathDisplay.marker;
-            if (marker) {
-              const pulseScale = reducedMotion.matches ? 1 : 1 + marker.pulse * 0.35;
-              routeOverlay.lineStyle(2, 0xe8ddff, 0.8);
-              routeOverlay.strokeEllipse(marker.point.x, marker.point.y, 20 * pulseScale, 10 * pulseScale);
-            }
-          }
-          // 가장 가까운 포털에는 바닥 펄스 링을 그려 "여기로 가면 이동한다"를 알린다.
-          // 모션 줄이기에서는 맥동 없이 정적 링만 그린다.
-          {
-            let nearestPortal: StudioWorldPortalDefinition | null = null;
-            let nearestPortalDistance = Number.POSITIVE_INFINITY;
-            for (const candidate of portals) {
-              const distance = Math.hypot(candidate.point.x - currentPoint.x, candidate.point.y - currentPoint.y);
-              if (distance < nearestPortalDistance) {
-                nearestPortalDistance = distance;
-                nearestPortal = candidate;
-              }
-            }
-            if (nearestPortal && nearestPortalDistance <= 84) {
-              const pulse = reducedMotion.matches ? 0.5 : 0.5 + 0.5 * Math.sin(time * 0.006);
-              const ground = studioProjectTownPoint(manifest, nearestPortal.point);
-              const radius = nearestPortal.radius ?? 26;
-              routeOverlay.lineStyle(2, 0xe8ddff, 0.3 + pulse * 0.45);
-              routeOverlay.strokeEllipse(ground.x, ground.y, radius * 2 * (1 + pulse * 0.14), radius * (1 + pulse * 0.14));
-            }
-          }
         }
         if (locateOverlay) {
           // 참가자 locate 안내선: 선택한 참가자 방향으로 안내선 + 가장자리 화살표 마커
-          locateOverlay.clear();
           const locateId = bridge.getLocateTarget();
           const locateVisual = locateId ? peers.get(locateId) : undefined;
           // 참가자 안내가 없으면 W-2 지점 안내(게이트·포털·목적지)를 같은 안내선으로 그린다.
           const locatePoint = locateVisual ? { x: locateVisual.targetX, y: locateVisual.targetY } : bridge.getLocatePoint();
           const camera = this.cameras.main;
-          const guide = buildStudioLocateGuide({
+          drawStudioLocateOverlay(locateOverlay, buildStudioLocateGuide({
             self: currentPoint,
             target: locatePoint,
             cameraCenter: { x: camera.scrollX + camera.width / 2, y: camera.scrollY + camera.height / 2 },
             viewWidth: camera.width / camera.zoom,
             viewHeight: camera.height / camera.zoom,
-          });
-          if (guide.visible) {
-            const markerPulse = reducedMotion.matches ? 1 : 1 + 0.22 * Math.sin(time * 0.008);
-            if (!guide.onScreen) {
-              locateOverlay.lineStyle(2, 0xffd166, 0.85);
-              locateOverlay.lineBetween(currentPoint.x, currentPoint.y, guide.markerPoint.x, guide.markerPoint.y);
-              const arrowAngle = guide.angle;
-              const tipX = guide.markerPoint.x + Math.cos(arrowAngle) * 22;
-              const tipY = guide.markerPoint.y + Math.sin(arrowAngle) * 22;
-              locateOverlay.fillStyle(0xffd166, 0.9);
-              locateOverlay.fillTriangle(
-                tipX, tipY,
-                guide.markerPoint.x + Math.cos(arrowAngle + 2.5) * 14,
-                guide.markerPoint.y + Math.sin(arrowAngle + 2.5) * 14,
-                guide.markerPoint.x + Math.cos(arrowAngle - 2.5) * 14,
-                guide.markerPoint.y + Math.sin(arrowAngle - 2.5) * 14,
-              );
-            }
-            locateOverlay.lineStyle(2.5, 0xffd166, 0.95);
-            locateOverlay.strokeCircle(guide.markerPoint.x, guide.markerPoint.y, 14 * markerPulse);
-          }
+          }), currentPoint, time, reducedMotion.matches);
         }
         // 전환 베일과 도착 링: 전환 순간에만 그리고, 끝나면 완전히 사라진다.
         drawStudioZoneTransitionOverlay({
