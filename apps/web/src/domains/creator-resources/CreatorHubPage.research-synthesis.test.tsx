@@ -8,12 +8,12 @@ import { CreatorHubPage } from "./CreatorHubPage";
 import { RESEARCH_DESK_SESSION_KEY } from "./research-desk-session";
 import { researchNotebookStorageKey } from "./research-notebook";
 
-// 이 테스트는 비로그인 상태라 판단 노트가 게스트 파티션 키에 저장된다(소유자 스코프).
-const GUEST_NOTEBOOK_KEY = researchNotebookStorageKey("guest");
 
 import type { CreatorResource, CreatorWorkspace } from "@/shared/lib/creator-resources";
 
 import { creatorWorkspaceStorageKey } from "@/shared/lib/creator-workspace-persistence";
+// 이 테스트는 비로그인 상태라 판단 노트가 게스트 파티션 키에 저장된다(소유자 스코프).
+const GUEST_NOTEBOOK_KEY = researchNotebookStorageKey("guest");
 
 // 이 테스트들은 비로그인 상태라 워크스페이스가 게스트 파티션 키에 저장된다(소유자 스코프).
 const GUEST_WORKSPACE_KEY = creatorWorkspaceStorageKey("guest");

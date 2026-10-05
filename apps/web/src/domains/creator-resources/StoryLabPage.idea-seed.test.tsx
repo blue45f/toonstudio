@@ -5,9 +5,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { creatorStoryDraftStorageKey } from "@/shared/lib/creator-workspace-persistence";
 
+import { StoryLabPage } from "./StoryLabPage";
 // 훅 모의가 소유자를 게스트로 고정하므로 초안도 게스트 파티션 키에 보관된다(소유자 스코프).
 const GUEST_DRAFT_KEY = creatorStoryDraftStorageKey("guest");
-import { StoryLabPage } from "./StoryLabPage";
 
 vi.mock("./workspace", () => ({
   downloadText: vi.fn(),

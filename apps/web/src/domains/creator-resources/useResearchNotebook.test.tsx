@@ -8,9 +8,9 @@ import {
   researchNotebookStorageKey,
 } from "./research-notebook";
 
+import { useResearchNotebook } from "./useResearchNotebook";
 // 이 테스트는 비로그인 상태라 노트가 게스트 파티션 키에 저장된다(소유자 스코프).
 const GUEST_NOTEBOOK_KEY = researchNotebookStorageKey("guest");
-import { useResearchNotebook } from "./useResearchNotebook";
 
 function NotebookHarness() {
   const { notebook, update, error } = useResearchNotebook();

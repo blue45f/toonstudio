@@ -85,7 +85,7 @@ export function StoryLabPage() {
     try { window.sessionStorage.setItem(draftKey, JSON.stringify(seeded)); }
     catch { /* 임시 보관 실패 안내는 기존 편집 경로가 담당한다. */ }
     setNotice(tx("홈에서 입력한 아이디어를 작품 가제로 가져왔습니다. 다듬은 뒤 기획서를 저장하세요."));
-  }, [draftReady, corruptDraft, location.search, location.pathname, location.hash, navigate, workspace.story]);
+  }, [draftReady, corruptDraft, location.search, location.pathname, location.hash, navigate, workspace.story, draftKey]);
   const remember = (next: StoryDraft) => {
     clearError();
     latestDraft.current = next; setDraft(next); setDraftError("");
