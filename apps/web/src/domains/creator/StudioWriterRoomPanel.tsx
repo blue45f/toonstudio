@@ -1,11 +1,8 @@
 import {
   ArrowDown,
-  ArrowLeft,
-  ArrowRight,
   ArrowUp,
   BookOpenText,
   Check,
-  FileText,
   LoaderCircle,
   Plus,
   Sparkles,
@@ -20,7 +17,6 @@ import { confirmStudioDestructiveAction } from "./studio-destructive-action-prev
 import { studioDeleteWriterRoomItemRequest } from "./studio-destructive-command-catalog";
 import { SFX_CATEGORIES, SFX_LIBRARY } from "./studio-sfx-presets";
 import {
-  admitStudioWriterRoomDocument,
   admitStudioWriterRoomStage,
   setStudioWriterRoomStageCompleted,
   STUDIO_WRITER_ROOM_LIMITS,
@@ -40,7 +36,11 @@ import {
   type StudioWriterRoomSynopsis,
 } from "./studio-writer-room";
 import { STUDIO_WRITER_ROOM_STAGE_META } from "./studio-writer-room-ui";
-import { StudioNovelConvertPanel } from "./StudioNovelConvertPanel";
+import {
+  StudioWriterRoomNovelImportButton,
+  StudioWriterRoomNovelImportScreen,
+} from "./StudioWriterRoomNovelImport";
+import { StudioWriterRoomPanelFooter } from "./StudioWriterRoomPanelFooter";
 import {
   StudioWriterRoomAiReviewPanel,
   StudioWriterRoomCanvasPlanHandoff,
@@ -1406,29 +1406,6 @@ export function StudioWriterRoomPanel({
     setActionError(null);
   };
 
-  /** 소설 변환 초안을 작가실 문서로 반영한다. 전체 문서 수용 검증을 거친 것만 onChange로 나간다. */
-  const applyNovelConvert = (nextDocument: StudioWriterRoomDocument) => {
-    try {
-      const receipt = admitStudioWriterRoomDocument(nextDocument, document);
-      if (receipt.kind === "rejected") {
-        setActionError(
-          receipt.reason === "byte-budget-exceeded"
-            ? "Writer Room 문서가 2,000,000바이트 저장 예산을 초과해 소설 변환 결과를 반영하지 않았어요."
-            : "소설 변환 결과를 안전하게 읽을 수 없어 기존 문서를 유지했어요."
-        );
-        return;
-      }
-      onChange(receipt.document);
-      setActionError(null);
-      setNovelConvertOpen(false);
-      setActiveStage("scenes");
-    } catch (cause) {
-      setActionError(
-        cause instanceof Error ? cause.message : "소설 변환 결과를 반영하지 못했어요."
-      );
-    }
-  };
-
   const onStageKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     let nextIndex: number;
     if (event.key === "ArrowRight") nextIndex = (activeIndex + 1) % STUDIO_WRITER_ROOM_STAGES.length;
@@ -1671,15 +1648,10 @@ export function StudioWriterRoomPanel({
               {STUDIO_WRITER_ROOM_STAGE_META[activeStage].description}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setNovelConvertOpen((current) => !current)}
-            aria-pressed={novelConvertOpen}
-            className={`${BUTTON_CLASS} ${novelConvertOpen ? "border-accent bg-accent-soft text-accent hover:text-accent" : ""}`}
-          >
-            <FileText size={14} aria-hidden />
-            소설에서 가져오기
-          </button>
+          <StudioWriterRoomNovelImportButton
+            open={novelConvertOpen}
+            onToggle={() => setNovelConvertOpen((current) => !current)}
+          />
           <label
             className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 text-xs font-semibold transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent ${
               document.completion[activeStage]
@@ -1771,14 +1743,18 @@ export function StudioWriterRoomPanel({
         ) : null}
 
         {novelConvertOpen ? (
-          <div className="min-h-0 flex-1 overflow-y-auto bg-canvas">
-            <StudioNovelConvertPanel
-              baseDocument={document}
-              characters={characters}
-              onApply={applyNovelConvert}
-              onCancel={() => setNovelConvertOpen(false)}
-            />
-          </div>
+          <StudioWriterRoomNovelImportScreen
+            document={document}
+            characters={characters}
+            onChange={onChange}
+            onError={setActionError}
+            onApplied={() => {
+              setActionError(null);
+              setNovelConvertOpen(false);
+              setActiveStage("scenes");
+            }}
+            onCancel={() => setNovelConvertOpen(false)}
+          />
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto xl:grid xl:grid-cols-[minmax(0,1fr)_23rem] xl:overflow-hidden">
             <div
@@ -1800,45 +1776,11 @@ export function StudioWriterRoomPanel({
           </div>
         )}
 
-        <footer
-          className="flex shrink-0 items-center gap-2 border-t border-line bg-panel px-3 pt-2 sm:px-5"
-          style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
-        >
-          <span className="hidden min-w-0 flex-1 truncate text-[0.68rem] text-fg-3 sm:block">
-            변경 내용은 현재 작품 문서와 함께 저장됩니다. · Esc로 닫기
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              const previous = STUDIO_WRITER_ROOM_STAGES[activeIndex - 1];
-              if (previous) selectStage(previous);
-            }}
-            disabled={activeIndex <= 0}
-            className={`${BUTTON_CLASS} flex-1 sm:flex-none`}
-          >
-            <ArrowLeft size={14} aria-hidden /> 이전
-          </button>
-          {activeIndex < STUDIO_WRITER_ROOM_STAGES.length - 1 ? (
-            <button
-              type="button"
-              onClick={() => {
-                const next = STUDIO_WRITER_ROOM_STAGES[activeIndex + 1];
-                if (next) selectStage(next);
-              }}
-              className={`${BUTTON_CLASS} flex-1 bg-accent text-on-accent hover:border-accent hover:bg-accent-hover hover:text-on-accent sm:flex-none`}
-            >
-              다음 <ArrowRight size={14} aria-hidden />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onClose}
-              className={`${BUTTON_CLASS} flex-1 bg-accent text-on-accent hover:border-accent hover:bg-accent-hover hover:text-on-accent sm:flex-none`}
-            >
-              Writer Room 닫기
-            </button>
-          )}
-        </footer>
+        <StudioWriterRoomPanelFooter
+          activeStage={activeStage}
+          onSelectStage={selectStage}
+          onClose={onClose}
+        />
       </div>
     </div>
   );
