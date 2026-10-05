@@ -24,6 +24,10 @@ export interface StoryworldBoardCharacterCard {
   readonly id: string;
   readonly name: string;
   readonly goal: string | null;
+  readonly description: string | null;
+  readonly tags: readonly string[];
+  /** 무빙툰 확장 설정의 등장 리빌 프리셋 id. 미지정이면 null. */
+  readonly motionReveal: string | null;
   /** 이 인물이 참여자로 선언된 장면 수 (비활성 장면 포함, 선언 기준). */
   readonly sceneCount: number;
   readonly initialFactCount: number;
@@ -54,6 +58,8 @@ export interface StoryworldBoardFactCard {
   readonly id: string;
   readonly label: string;
   readonly key: string;
+  readonly description: string | null;
+  readonly tags: readonly string[];
   readonly subjectId: string;
   /** 주체가 캐릭터면 캐릭터 이름, 아니면 세계 주체 식별자 그대로. */
   readonly subjectLabel: string;
@@ -133,6 +139,9 @@ export function buildStoryworldBoard(project: StoryworldProject): StoryworldBoar
     id: character.id,
     name: character.name,
     goal: character.goal ?? null,
+    description: character.description ?? null,
+    tags: character.tags ?? [],
+    motionReveal: character.motion?.reveal ?? null,
     sceneCount: scenes.filter((scene) => scene.participantIds?.includes(character.id)).length,
     initialFactCount: character.initialFactIds?.length ?? 0,
     secretFactCount: character.secretFactIds?.length ?? 0,
@@ -171,6 +180,8 @@ export function buildStoryworldBoard(project: StoryworldProject): StoryworldBoar
     id: fact.id,
     label: fact.label,
     key: fact.key,
+    description: fact.description ?? null,
+    tags: fact.tags ?? [],
     subjectId: fact.subjectId,
     subjectLabel: characterById.get(fact.subjectId)?.name ?? fact.subjectId,
     canonical: fact.canonical === true,

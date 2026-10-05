@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -56,7 +56,7 @@ describe("Storyworld actual page integration", () => {
   });
   it("opens every user-facing analysis surface", async () => {
     await open("work-tabs");
-    for (const label of ["모순·위험", "멀티버스", "인물 지식", "서사 계약", "창의 기능 지도", "원본 데이터", "대시보드"]) {
+    for (const label of ["설정 관리", "모순·위험", "멀티버스", "인물 지식", "서사 계약", "창의 기능 지도", "원본 데이터", "대시보드"]) {
       fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${label}`) }));
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(label);
     }
@@ -133,6 +133,152 @@ describe("Storyworld actual page integration", () => {
     db.rows.delete(rowKey("work-corrupt"));
     fireEvent.click(screen.getByRole("button", { name: "저장소 다시 열기" }));
     await ready();
+  });
+});
+
+describe("Storyworld settings management layer", () => {
+  beforeEach(() => {
+    db.rows.clear();
+    db.kvGet.mockReset().mockImplementation(async (namespace: string, id: string) => db.rows.get(`${namespace}:${id}`) ?? null);
+    db.kvSet.mockReset().mockImplementation(async (namespace: string, id: string, value: string) => { db.rows.set(`${namespace}:${id}`, value); });
+  });
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+  it("edits a character in the settings form and persists through the draft store", async () => {
+    await open("work-settings-edit");
+    fireEvent.click(screen.getByRole("button", { name: /^설정 관리/ }));
+    fireEvent.click(screen.getByRole("option", { name: /하은/ }));
+    fireEvent.change(screen.getByLabelText("이름"), { target: { value: "하은(본명)" } });
+    fireEvent.change(screen.getByLabelText("설명"), { target: { value: "기억 상인 길드의 견습생" } });
+    fireEvent.change(screen.getByLabelText("태그 (쉼표로 구분)"), { target: { value: "주인공, 견습생" } });
+    fireEvent.click(screen.getByRole("button", { name: /설정 저장/ }));
+    await waitFor(() => {
+      const project = saved("work-settings-edit")?.project;
+      const haeun = project?.characters.find((character: { id: string }) => character.id === "haeun");
+      expect(haeun?.name).toBe("하은(본명)");
+      expect(haeun?.description).toBe("기억 상인 길드의 견습생");
+      expect(haeun?.tags).toEqual(["주인공", "견습생"]);
+    });
+  });
+
+  it("stores the moving-toon extension profile as data on the character", async () => {
+    await open("work-settings-motion");
+    fireEvent.click(screen.getByRole("button", { name: /^설정 관리/ }));
+    fireEvent.click(screen.getByRole("option", { name: /도진/ }));
+    fireEvent.change(screen.getByLabelText("등장 리빌 (무빙툰 프리셋)"), { target: { value: "fade-up" } });
+    fireEvent.change(screen.getByLabelText("음성 연기 메모"), { target: { value: "낮고 느린 톤" } });
+    fireEvent.click(screen.getByRole("button", { name: /설정 저장/ }));
+    await waitFor(() => {
+      const project = saved("work-settings-motion")?.project;
+      const dojin = project?.characters.find((character: { id: string }) => character.id === "dojin");
+      expect(dojin?.motion).toMatchObject({ reveal: "fade-up", voiceNote: "낮고 느린 톤" });
+    });
+    // 렌더 연결이 없다는 경계 고지가 화면에 있다.
+    expect(screen.getByText(/렌더에 연결되지 않고 설정 관리용으로만 저장됩니다/)).toBeTruthy();
+  });
+
+  it("board card edit button jumps to the settings tab with that character selected", async () => {
+    await open("work-settings-jump");
+    const editButtons = screen.getAllByRole("button", { name: /편집/ });
+    fireEvent.click(editButtons[0]!);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("설정 관리");
+    expect((screen.getByLabelText("이름") as HTMLInputElement).value).toBe("하은");
+  });
+
+  it("adds a new scene from the settings tab and selects it", async () => {
+    await open("work-settings-add");
+    fireEvent.click(screen.getByRole("button", { name: /^설정 관리/ }));
+    fireEvent.click(screen.getByRole("button", { name: /장면 4/ }));
+    fireEvent.change(screen.getByPlaceholderText("새 장면 이름"), { target: { value: "새벽의 금고" } });
+    fireEvent.click(screen.getByRole("button", { name: "장면 추가" }));
+    await waitFor(() => {
+      const project = saved("work-settings-add")?.project;
+      expect(project?.scenes.some((scene: { title: string }) => scene.title === "새벽의 금고")).toBe(true);
+    });
+    expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("새벽의 금고");
+  });
+
+  it("universe tab creates a shared world, joins the work and designates a local element", async () => {
+    await open("work-universe");
+    fireEvent.click(screen.getByRole("button", { name: /^공유 세계관/ }));
+
+    fireEvent.change(await screen.findByLabelText("새 공유 세계관 이름"), { target: { value: "아르카나 유니버스" } });
+    fireEvent.click(screen.getByRole("button", { name: "공유 세계관 만들기" }));
+    expect(await screen.findByText(/아직 멤버가 아닙니다/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /이 작품을 멤버로 추가/ }));
+    expect(await screen.findByText(/멤버입니다\./)).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("새 공유 요소 이름"), { target: { value: "공유 주인공" } });
+    fireEvent.click(screen.getByRole("button", { name: "공유 요소 추가" }));
+    expect(await screen.findByText("공유 주인공")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("이 작품의 캐릭터 요소"), { target: { value: "haeun" } });
+    fireEvent.click(screen.getByRole("button", { name: "공유 요소로 지정" }));
+    expect(await screen.findByText(/사용 중/)).toBeTruthy();
+
+    const row = db.rows.get(`${STORYWORLD_DRAFT_NAMESPACE}:toonspectrum:storyworld-universes:v1`);
+    expect(row).toBeDefined();
+    const envelope = JSON.parse(row!) as { payload: string };
+    const registry = JSON.parse(envelope.payload) as {
+      universes: { members: unknown[]; sharedElements: { usages: unknown[] }[] }[];
+    };
+    expect(registry.universes[0]?.members).toHaveLength(1);
+    expect(registry.universes[0]?.sharedElements[0]?.usages).toHaveLength(1);
+  });
+
+  it("continuity tab shows rule-based conflicts, jumps to settings, and records an ignore reason", async () => {
+    await open("work-continuity");
+    fireEvent.click(screen.getByRole("button", { name: "원본 데이터" }));
+    const conflicting = {
+      ...STORYWORLD_DEMO_PROJECT,
+      id: "authored-continuity",
+      facts: [
+        ...STORYWORLD_DEMO_PROJECT.facts,
+        { id: "vault-open-dup", label: "금고 상태 중복 정의", subjectId: "vault", key: "open", initialValue: true },
+      ],
+      scenes: [
+        ...STORYWORLD_DEMO_PROJECT.scenes,
+        {
+          id: "scene-ghost",
+          title: "유령 지식 장면",
+          order: 999,
+          participantIds: ["haeun"],
+          knowledgeUses: [{ characterId: "dojin", factId: "vault-open" }],
+        },
+      ],
+    };
+    fireEvent.change(screen.getByRole("textbox", { name: "스토리월드 JSON" }), {
+      target: { value: JSON.stringify(conflicting) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "적용 후 분석" }));
+
+    fireEvent.click(screen.getByRole("button", { name: /모순·위험/ }));
+    const conflictText = await screen.findByText(/서로 다른 초기값을 선언했습니다/);
+    expect(screen.getByText(/지식을 사용하지만 장면 참여자에 없습니다/)).toBeTruthy();
+    const conflictCard = conflictText.closest("article");
+    expect(conflictCard).not.toBeNull();
+    expect(within(conflictCard!).getByText(/vault-open 초기값/)).toBeTruthy();
+
+    // 정정 동선: 충돌한 사실의 설정 폼으로 바로 이동한다.
+    fireEvent.click(within(conflictCard!).getByRole("button", { name: "설정에서 고치기" }));
+    expect((await screen.findByLabelText("라벨") as HTMLInputElement).value).toBe("기억 금고가 열린다");
+
+    fireEvent.click(screen.getByRole("button", { name: /모순·위험/ }));
+    const conflictAgain = (await screen.findByText(/서로 다른 초기값을 선언했습니다/)).closest("article")!;
+    fireEvent.click(within(conflictAgain).getByRole("button", { name: "무시" }));
+    fireEvent.change(await within(conflictAgain).findByPlaceholderText(/무시 사유/), { target: { value: "초안 단계라 보류" } });
+    fireEvent.click(within(conflictAgain).getByRole("button", { name: "무시 확정" }));
+    expect(await screen.findByText(/해결·무시됨 1개/)).toBeTruthy();
+
+    const dispositionRow = db.rows.get(
+      `${STORYWORLD_DRAFT_NAMESPACE}:toonspectrum:storyworld-issue-dispositions:v1:toonspectrum:storyworld-lab:v1:work:work-continuity`,
+    );
+    expect(dispositionRow).toBeDefined();
+    const envelope = JSON.parse(dispositionRow!) as { payload: string };
+    const document = JSON.parse(envelope.payload) as { dispositions: { status: string; note?: string }[] };
+    expect(document.dispositions[0]?.status).toBe("ignored");
+    expect(document.dispositions[0]?.note).toBe("초안 단계라 보류");
   });
 });
 

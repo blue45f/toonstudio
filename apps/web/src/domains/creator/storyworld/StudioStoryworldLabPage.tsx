@@ -11,16 +11,16 @@ import {
   FileJson,
   FlaskConical,
   GitBranch,
+  Globe2,
   Import,
-  Info,
   Network,
   RefreshCcw,
   Save,
+  Settings2,
   ShieldCheck,
   Sparkles,
   TimerReset,
   Users,
-  WandSparkles,
   XCircle,
 } from "lucide-react";
 import {
@@ -29,11 +29,26 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type ReactNode,
 } from "react";
 
+import { loadStoryworldIssueDispositions, saveStoryworldIssueDispositions } from "./disposition-store";
 import { storyworldDraftStore } from "./draft-store";
 import { StudioStoryworldBoard } from "./StudioStoryworldBoard";
+import { IssueList, IssuesTab } from "./StudioStoryworldIssues";
+import { AxisCards, EmptyState, Panel } from "./StudioStoryworldLabShared";
+import { scoreTone } from "./studio-storyworld-lab-display";
+import {
+  StudioStoryworldSettings,
+  type StoryworldSettingsFocus,
+} from "./StudioStoryworldSettings";
+import { StudioStoryworldUniverse } from "./StudioStoryworldUniverse";
+import { analyzeStoryworldContinuity } from "./studio-storyworld-continuity";
+import {
+  clearStoryworldIssueDisposition,
+  upsertStoryworldIssueDisposition,
+  type StoryworldIssueDispositionDocument,
+  type StoryworldIssueDispositionStatus,
+} from "./studio-storyworld-issue-dispositions";
 import { projectStoryworldToStudioProjectStory } from "./studio-storyworld-project-projection";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
 import {
@@ -51,11 +66,8 @@ import {
   rankStoryworldParetoFrontier,
   simulateStoryworldCounterfactual,
   type StoryworldAnalysisResult,
-  type StoryworldAxisId,
   type StoryworldBranchMutation,
-  type StoryworldIssue,
   type StoryworldProject,
-  type StoryworldSeverity,
 } from "./studio-storyworld-causality";
 import "./studio-storyworld-lab.css";
 import "../studio-shell/creator-workflow-surfaces.css";
@@ -70,6 +82,8 @@ export interface StudioStoryworldLabPageProps {
 
 type StoryworldTab =
   | "overview"
+  | "settings"
+  | "universe"
   | "issues"
   | "multiverse"
   | "knowledge"
@@ -86,6 +100,8 @@ const TAB_ITEMS: readonly {
   readonly icon: typeof Network;
 }[] = [
   { id: "overview", label: "대시보드", icon: Network },
+  { id: "settings", label: "설정 관리", icon: Settings2 },
+  { id: "universe", label: "공유 세계관", icon: Globe2 },
   { id: "issues", label: "모순·위험", icon: AlertTriangle },
   { id: "multiverse", label: "멀티버스", icon: GitBranch },
   { id: "knowledge", label: "인물 지식", icon: Users },
@@ -93,24 +109,6 @@ const TAB_ITEMS: readonly {
   { id: "capabilities", label: "창의 기능 지도", icon: Sparkles },
   { id: "json", label: "원본 데이터", icon: FileJson },
 ];
-
-const AXIS_LABELS: Readonly<Record<StoryworldAxisId, string>> = {
-  canon: "캐논",
-  "character-knowledge": "인물 지식",
-  "setup-payoff": "복선·회수",
-  "spoiler-safety": "스포일러",
-  "emotional-continuity": "감정 연속성",
-  production: "제작",
-  localization: "현지화",
-  accessibility: "접근성",
-  "rights-provenance": "권리·출처",
-};
-
-const SEVERITY_LABELS: Readonly<Record<StoryworldSeverity, string>> = {
-  error: "오류",
-  warning: "경고",
-  info: "확인",
-};
 
 const MATURITY_LABELS: Readonly<Record<StoryworldCapabilityMaturity, string>> = {
   engine: "엔진 포함",
@@ -177,12 +175,28 @@ function assertOptionalFiniteNumber(record: Record<string, unknown>, key: string
   if (record[key] !== undefined) assertFiniteNumber(record[key], `${path}.${key}`);
 }
 
+function assertOptionalString(record: Record<string, unknown>, key: string, path: string): void {
+  if (record[key] !== undefined && typeof record[key] !== "string") {
+    throw new Error(`${path}.${key}는 문자열이어야 합니다.`);
+  }
+}
+
 function assertStoryworldCharacter(value: unknown, path: string): void {
   if (!isRecord(value)) throw new Error(`${path}는 객체여야 합니다.`);
   assertString(value.id, `${path}.id`);
   assertString(value.name, `${path}.name`);
+  assertOptionalString(value, "goal", path);
+  assertOptionalString(value, "description", path);
+  assertOptionalStringArray(value, "aliases", path);
+  assertOptionalStringArray(value, "tags", path);
   assertOptionalStringArray(value, "initialFactIds", path);
   assertOptionalStringArray(value, "secretFactIds", path);
+  if (value.motion !== undefined) {
+    if (!isRecord(value.motion)) throw new Error(`${path}.motion은 객체여야 합니다.`);
+    for (const key of ["reveal", "emphasis", "expressionNotes", "voiceNote"]) {
+      assertOptionalString(value.motion, key, `${path}.motion`);
+    }
+  }
 }
 
 function assertStoryworldFact(value: unknown, path: string): void {
@@ -191,6 +205,7 @@ function assertStoryworldFact(value: unknown, path: string): void {
   assertString(value.label, `${path}.label`);
   assertString(value.subjectId, `${path}.subjectId`);
   assertString(value.key, `${path}.key`);
+  assertOptionalString(value, "description", path);
   assertOptionalFiniteNumber(value, "intendedReaderRevealOrder", path);
   assertOptionalStringArray(value, "tags", path);
 }
@@ -199,6 +214,8 @@ function assertStoryworldScene(value: unknown, path: string): void {
   if (!isRecord(value)) throw new Error(`${path}는 객체여야 합니다.`);
   assertString(value.id, `${path}.id`);
   assertString(value.title, `${path}.title`);
+  assertOptionalString(value, "description", path);
+  assertOptionalString(value, "locationId", path);
   assertFiniteNumber(value.order, `${path}.order`);
   assertOptionalFiniteNumber(value, "timeIndex", path);
   assertOptionalStringArray(value, "participantIds", path);
@@ -335,18 +352,6 @@ function formatMinutes(value: number): string {
   return minutes === 0 ? `${hours}시간` : `${hours}시간 ${minutes}분`;
 }
 
-function scoreTone(score: number): "good" | "warn" | "bad" {
-  if (score >= 85) return "good";
-  if (score >= 65) return "warn";
-  return "bad";
-}
-
-function severityIcon(severity: StoryworldSeverity): typeof XCircle {
-  if (severity === "error") return XCircle;
-  if (severity === "warning") return AlertTriangle;
-  return Info;
-}
-
 function downloadJson(filename: string, value: unknown): void {
   const blob = new Blob([`${JSON.stringify(value, null, 2)}\n`], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -357,100 +362,17 @@ function downloadJson(filename: string, value: unknown): void {
   URL.revokeObjectURL(url);
 }
 
-function Panel({ title, description, children, action }: {
-  readonly title: string;
-  readonly description?: string;
-  readonly children: ReactNode;
-  readonly action?: ReactNode;
-}) {
-  return (
-    <section className="storyworld-panel">
-      <div className="storyworld-panel__heading">
-        <div>
-          <h2>{title}</h2>
-          {description ? <p>{description}</p> : null}
-        </div>
-        {action ? <div className="storyworld-panel__action">{action}</div> : null}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function EmptyState({ children }: { readonly children: ReactNode }) {
-  return (
-    <div className="storyworld-empty">
-      <BadgeCheck aria-hidden size={28} />
-      <p>{children}</p>
-    </div>
-  );
-}
-
-function AxisCards({ result }: { readonly result: StoryworldAnalysisResult }) {
-  return (
-    <div className="storyworld-axis-grid">
-      {result.axisScores.map((axis) => (
-        <article className={`storyworld-axis-card storyworld-tone--${scoreTone(axis.score)}`} key={axis.axis}>
-          <div className="storyworld-axis-card__topline">
-            <span>{AXIS_LABELS[axis.axis]}</span>
-            <strong>{axis.score}</strong>
-          </div>
-          <div
-            aria-label={`${AXIS_LABELS[axis.axis]} 점수 ${axis.score}점`}
-            aria-valuemax={100}
-            aria-valuemin={0}
-            aria-valuenow={axis.score}
-            className="storyworld-meter"
-            role="meter"
-          >
-            <span style={{ width: `${axis.score}%` }} />
-          </div>
-          <p>오류 {axis.errorCount} · 경고 {axis.warningCount} · 확인 {axis.infoCount}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function IssueList({ issues, limit }: {
-  readonly issues: readonly StoryworldIssue[];
-  readonly limit?: number;
-}) {
-  const visible = limit === undefined ? issues : issues.slice(0, limit);
-  if (visible.length === 0) return <EmptyState>현재 필터에서 발견된 문제가 없습니다.</EmptyState>;
-  return (
-    <div className="storyworld-issue-list">
-      {visible.map((issue) => {
-        const Icon = severityIcon(issue.severity);
-        return (
-          <article className={`storyworld-issue storyworld-issue--${issue.severity}`} key={issue.id}>
-            <Icon aria-hidden size={18} />
-            <div>
-              <div className="storyworld-issue__meta">
-                <span>{SEVERITY_LABELS[issue.severity]}</span>
-                <span>{AXIS_LABELS[issue.axis]}</span>
-                {issue.sceneId ? <code>{issue.sceneId}</code> : null}
-              </div>
-              <p>{issue.message}</p>
-              <small>{issue.code}</small>
-            </div>
-          </article>
-        );
-      })}
-    </div>
-  );
-}
-
-function OverviewTab({ project, result, onOpenIssues, onOpenData }: {
+function OverviewTab({ project, result, onOpenIssues, onOpenData, onEditElement }: {
   readonly project: StoryworldProject;
   readonly result: StoryworldAnalysisResult;
   readonly onOpenIssues: () => void;
   readonly onOpenData: () => void;
+  readonly onEditElement: (kind: "character" | "fact", id: string) => void;
 }) {
   const blockingIssues = result.issues.filter((issue) => issue.severity === "error").length;
   return (
     <div className="storyworld-tab-stack">
-      <StudioStoryworldBoard onOpenData={onOpenData} project={project} />
+      <StudioStoryworldBoard onEditElement={onEditElement} onOpenData={onOpenData} project={project} />
       <section aria-labelledby="storyworld-checkup-title" className="storyworld-checkup">
         <div className="storyworld-checkup__heading">
           <h2 id="storyworld-checkup-title">점검 결과</h2>
@@ -514,56 +436,6 @@ function OverviewTab({ project, result, onOpenIssues, onOpenData }: {
       </Panel>
         </div>
       </section>
-    </div>
-  );
-}
-
-function IssuesTab({ result }: { readonly result: StoryworldAnalysisResult }) {
-  const [severity, setSeverity] = useState<StoryworldSeverity | "all">("all");
-  const [axis, setAxis] = useState<StoryworldAxisId | "all">("all");
-  const filtered = result.issues.filter((issue) =>
-    (severity === "all" || issue.severity === severity)
-      && (axis === "all" || issue.axis === axis),
-  );
-  return (
-    <div className="storyworld-tab-stack">
-      <Panel title="모순·위험 탐색기" description="필터는 표시만 바꾸며 분석 결과와 영수증을 변경하지 않습니다.">
-        <div className="storyworld-filter-row">
-          <label>
-            심각도
-            <select onChange={(event) => setSeverity(event.target.value as StoryworldSeverity | "all")} value={severity}>
-              <option value="all">전체</option>
-              <option value="error">오류</option>
-              <option value="warning">경고</option>
-              <option value="info">확인</option>
-            </select>
-          </label>
-          <label>
-            품질 축
-            <select onChange={(event) => setAxis(event.target.value as StoryworldAxisId | "all")} value={axis}>
-              <option value="all">전체</option>
-              {Object.entries(AXIS_LABELS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-            </select>
-          </label>
-          <span aria-live="polite">{filtered.length}개 표시</span>
-        </div>
-        <IssueList issues={filtered} />
-      </Panel>
-      <Panel title="비파괴 수선 의도" description="각 제안은 설명 가능한 중립 명령이며 명시적 승인 전에는 원고를 바꾸지 않습니다.">
-        <div className="storyworld-proposal-grid">
-          {result.repairProposals.map((proposal) => (
-            <article className="storyworld-proposal" key={proposal.id}>
-              <div className="storyworld-proposal__topline">
-                <WandSparkles aria-hidden size={17} />
-                <strong>{proposal.title}</strong>
-                <span data-risk={proposal.risk}>위험 {proposal.risk}</span>
-              </div>
-              <p>{proposal.rationale}</p>
-              <code>{proposal.intent.kind}</code>
-            </article>
-          ))}
-        </div>
-      </Panel>
     </div>
   );
 }
@@ -885,10 +757,13 @@ function StudioStoryworldLabEditor({
   const storageKey = useMemo(() => projectStorageKey(workId, remixSourceWorkId), [workId, remixSourceWorkId]);
   const [project, setProject] = useState<StoryworldProject>(initialProject);
   const [activeTab, setActiveTab] = useState<StoryworldTab>("overview");
+  const [settingsFocus, setSettingsFocus] = useState<StoryworldSettingsFocus | null>(null);
+  const [issueDispositions, setIssueDispositions] = useState<StoryworldIssueDispositionDocument | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [statusText, setStatusText] = useState("결정적 로컬 분석 준비됨");
   const importRef = useRef<HTMLInputElement>(null);
   const result = useMemo(() => analyzeStoryworldProject(project), [project]);
+  const continuityIssues = useMemo(() => analyzeStoryworldContinuity(project), [project]);
   const backHref = editorHref(workId, remixSourceWorkId);
   const documentScope = workId !== null ? `작품 ${workId}` : remixSourceWorkId !== null ? `리믹스 ${remixSourceWorkId}` : "로컬 초안";
 
@@ -932,6 +807,44 @@ function StudioStoryworldLabEditor({
     });
     return () => { active = false; };
   }, [project, storageKey, workId]);
+
+  useEffect(() => {
+    let active = true;
+    void loadStoryworldIssueDispositions(storageKey).then((loaded) => {
+      if (active) setIssueDispositions(loaded);
+    }).catch(() => {
+      // 처리 기록을 열 수 없어도 진단 자체는 계속 보여 준다. 기록만 비어 있는 것으로 취급한다.
+      if (active) setIssueDispositions({ version: 1, scopeKey: storageKey, dispositions: [] });
+    });
+    return () => { active = false; };
+  }, [storageKey]);
+
+  const persistDispositions = (next: StoryworldIssueDispositionDocument) => {
+    setIssueDispositions(next);
+    void saveStoryworldIssueDispositions(next).catch(() => {
+      setStatusText("이슈 처리 상태를 저장하지 못했습니다. 현재 표시는 이 탭에만 남아 있습니다.");
+    });
+  };
+
+  const setDisposition = (issueKey: string, status: StoryworldIssueDispositionStatus, note?: string) => {
+    const base = issueDispositions ?? { version: 1 as const, scopeKey: storageKey, dispositions: [] };
+    persistDispositions(upsertStoryworldIssueDisposition(base, {
+      issueKey,
+      status,
+      ...(note ? { note } : {}),
+      updatedAtIso: new Date().toISOString(),
+    }));
+  };
+
+  const clearDisposition = (issueKey: string) => {
+    if (!issueDispositions) return;
+    persistDispositions(clearStoryworldIssueDisposition(issueDispositions, issueKey));
+  };
+
+  const openInSettings = (kind: "character" | "fact" | "scene", id: string) => {
+    setSettingsFocus({ kind, id, nonce: Date.now() });
+    setActiveTab("settings");
+  };
 
   const reset = () => {
     setProject(cloneDemoProject());
@@ -1022,8 +935,25 @@ function StudioStoryworldLabEditor({
             </div>
           </div>
 
-          {activeTab === "overview" ? <OverviewTab onOpenData={() => setActiveTab("json")} onOpenIssues={() => setActiveTab("issues")} project={project} result={result} /> : null}
-          {activeTab === "issues" ? <IssuesTab result={result} /> : null}
+          {activeTab === "overview" ? <OverviewTab onEditElement={openInSettings} onOpenData={() => setActiveTab("json")} onOpenIssues={() => setActiveTab("issues")} project={project} result={result} /> : null}
+          {activeTab === "settings" ? (
+            <StudioStoryworldSettings
+              focusRequest={settingsFocus}
+              onChange={(next) => { setProject(authoredStoryworldProject(next)); setStatusText("설정을 저장했습니다."); }}
+              project={project}
+            />
+          ) : null}
+          {activeTab === "universe" ? <StudioStoryworldUniverse project={project} scopeKey={storageKey} /> : null}
+          {activeTab === "issues" ? (
+            <IssuesTab
+              continuityIssues={continuityIssues}
+              dispositions={issueDispositions}
+              onClearDisposition={clearDisposition}
+              onFixContinuity={(issue) => openInSettings(issue.target.kind, issue.target.id)}
+              onSetDisposition={setDisposition}
+              result={result}
+            />
+          ) : null}
           {activeTab === "multiverse" ? <MultiverseTab project={project} result={result} /> : null}
           {activeTab === "knowledge" ? <KnowledgeTab project={project} result={result} /> : null}
           {activeTab === "contracts" ? <ContractsTab result={result} /> : null}

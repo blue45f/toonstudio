@@ -41,6 +41,8 @@ export interface StoryworldFactDefinition {
   readonly label: string;
   readonly subjectId: string;
   readonly key: string;
+  /** 작가가 적는 자유 서술. 분석은 이 값을 사실로 해석하지 않는다. */
+  readonly description?: string;
   readonly initialValue?: StoryworldPrimitive;
   /** Reader-facing reveal target. Omit when no fixed reveal order exists. */
   readonly intendedReaderRevealOrder?: number;
@@ -130,6 +132,8 @@ export interface StoryworldProductionEstimate {
 export interface StoryworldScene {
   readonly id: string;
   readonly title: string;
+  /** 작가가 적는 자유 서술. 분석은 이 값을 사실로 해석하지 않는다. */
+  readonly description?: string;
   /** Stable narrative order. Ties are resolved by id for deterministic analysis. */
   readonly order: number;
   readonly timeIndex?: number;
@@ -151,13 +155,39 @@ export interface StoryworldScene {
   readonly disabled?: boolean;
 }
 
+/**
+ * 무빙툰(효과툰) 확장 설정 — 캐릭터 단위 연출 메모 데이터.
+ *
+ * `reveal`·`emphasis`는 `studio-motion-fx`의 REVEAL_PRESETS·EMPHASIS_PRESETS id 어휘를
+ * 그대로 쓴다. 단, 모션 엔진은 작품·컷 단위 WorkFxSettings만 소비하므로 이 프로필은
+ * 아직 렌더에 연결되지 않은 "설정 데이터"다 — 렌더 연결은 별도 계약이 필요하다.
+ * 표정·음성은 프리셋이 실재하지 않아 자유 서술 메모로만 관리한다.
+ */
+export interface StoryworldCharacterMotionProfile {
+  /** 등장 리빌 프리셋 id (REVEAL_PRESETS). 미지정이면 작품 기본을 따른다는 메모 수준. */
+  readonly reveal?: string;
+  /** 등장 강조 프리셋 id (EMPHASIS_PRESETS). */
+  readonly emphasis?: string;
+  /** 표정 세트 메모 (예: 기본 표정 6종, 눈물 표정 필수). */
+  readonly expressionNotes?: string;
+  /** 음성 연기 방향 메모 (톤·말투·캐스팅 기준). 실제 음성 합성 계약은 없다. */
+  readonly voiceNote?: string;
+}
+
 export interface StoryworldCharacter {
   readonly id: string;
   readonly name: string;
+  /** 별칭·이명. 이름 표기 흔들림을 한곳에서 관리한다. */
+  readonly aliases?: readonly string[];
+  /** 작가가 적는 자유 서술. 분석은 이 값을 사실로 해석하지 않는다. */
+  readonly description?: string;
+  readonly tags?: readonly string[];
   /** Facts known before scene one. */
   readonly initialFactIds?: readonly string[];
   readonly goal?: string;
   readonly secretFactIds?: readonly string[];
+  /** 무빙툰 확장 설정. 없으면 확장 설정을 아직 정하지 않은 상태다. */
+  readonly motion?: StoryworldCharacterMotionProfile;
 }
 
 export interface StoryworldSetupContract {
@@ -371,7 +401,7 @@ interface MutableSimulationState {
   readonly issues: StoryworldIssue[];
 }
 
-const AXIS_ORDER: readonly StoryworldAxisId[] = [
+export const AXIS_ORDER: readonly StoryworldAxisId[] = [
   "canon",
   "character-knowledge",
   "setup-payoff",
@@ -1511,150 +1541,8 @@ export function analyzeStoryworldProject(project: StoryworldProject): Storyworld
   };
 }
 
-function applyBranchMutation(
-  project: StoryworldProject,
-  mutation: StoryworldBranchMutation,
-): StoryworldProject {
-  switch (mutation.kind) {
-    case "disable-scene":
-    case "enable-scene":
-      return {
-        ...project,
-        scenes: project.scenes.map((scene) => scene.id === mutation.sceneId
-          ? { ...scene, disabled: mutation.kind === "disable-scene" }
-          : scene),
-      };
-    case "move-scene":
-      return {
-        ...project,
-        scenes: project.scenes.map((scene) => scene.id === mutation.sceneId
-          ? { ...scene, order: mutation.order }
-          : scene),
-      };
-    case "set-fact":
-      return {
-        ...project,
-        facts: project.facts.map((fact) => fact.id === mutation.factId
-          ? { ...fact, initialValue: mutation.value }
-          : fact),
-      };
-    case "remove-reveal":
-      return {
-        ...project,
-        scenes: project.scenes.map((scene) => {
-          if (scene.id !== mutation.sceneId) return scene;
-          return {
-            ...scene,
-            reveals: (scene.reveals ?? [])
-              .map((reveal) => reveal.factId === mutation.factId
-                ? { ...reveal, audiences: reveal.audiences.filter((audience) => audience !== mutation.audience) }
-                : reveal)
-              .filter((reveal) => reveal.audiences.length > 0),
-          };
-        }),
-      };
-  }
-}
+export { rankStoryworldParetoFrontier, simulateStoryworldCounterfactual } from "./studio-storyworld-counterfactual";
 
-function collectImpactedSceneIds(
-  project: StoryworldProject,
-  mutation: StoryworldBranchMutation,
-): readonly string[] {
-  const seedIds = new Set<string>();
-  if ("sceneId" in mutation) seedIds.add(mutation.sceneId);
-  if (mutation.kind === "set-fact") {
-    for (const scene of project.scenes) {
-      const touchesFact = (scene.preconditions ?? []).some((predicate) => predicate.factId === mutation.factId)
-        || (scene.effects ?? []).some((effect) => effect.factId === mutation.factId)
-        || (scene.knowledgeUses ?? []).some((use) => use.factId === mutation.factId)
-        || (scene.reveals ?? []).some((reveal) => reveal.factId === mutation.factId);
-      if (touchesFact) seedIds.add(scene.id);
-    }
-  }
-  const reverseDependencies = new Map<string, string[]>();
-  for (const scene of project.scenes) {
-    for (const dependency of scene.dependsOnSceneIds ?? []) {
-      const dependentIds = reverseDependencies.get(dependency) ?? [];
-      dependentIds.push(scene.id);
-      reverseDependencies.set(dependency, dependentIds);
-    }
-  }
-  const queue = [...seedIds];
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const dependent of reverseDependencies.get(current) ?? []) {
-      if (seedIds.has(dependent)) continue;
-      seedIds.add(dependent);
-      queue.push(dependent);
-    }
-  }
-  const sceneById = new Map(project.scenes.map((scene) => [scene.id, scene]));
-  return [...seedIds].sort((a, b) =>
-    (sceneById.get(a)?.order ?? 0) - (sceneById.get(b)?.order ?? 0)
-      || a.localeCompare(b),
-  );
-}
-
-export function simulateStoryworldCounterfactual(
-  project: StoryworldProject,
-  mutation: StoryworldBranchMutation,
-): StoryworldCounterfactualResult {
-  const baseline = analyzeStoryworldProject(project);
-  const branchProject = applyBranchMutation(project, mutation);
-  const branch = analyzeStoryworldProject(branchProject);
-  const baselineIssueIds = new Set(baseline.issues.map((issue) => issue.id));
-  const branchIssueIds = new Set(branch.issues.map((issue) => issue.id));
-  return {
-    mutation,
-    baseline,
-    branch,
-    scoreDelta: branch.overallScore - baseline.overallScore,
-    addedIssueIds: [...branchIssueIds].filter((id) => !baselineIssueIds.has(id)).sort(),
-    resolvedIssueIds: [...baselineIssueIds].filter((id) => !branchIssueIds.has(id)).sort(),
-    impactedSceneIds: collectImpactedSceneIds(project, mutation),
-  };
-}
-
-function dominates(
-  left: StoryworldAnalysisResult,
-  right: StoryworldAnalysisResult,
-): boolean {
-  const leftScores = new Map(left.axisScores.map((row) => [row.axis, row.score]));
-  const rightScores = new Map(right.axisScores.map((row) => [row.axis, row.score]));
-  let strictlyBetter = false;
-  for (const axis of AXIS_ORDER) {
-    const leftScore = leftScores.get(axis) ?? 0;
-    const rightScore = rightScores.get(axis) ?? 0;
-    if (leftScore < rightScore) return false;
-    if (leftScore > rightScore) strictlyBetter = true;
-  }
-  return strictlyBetter;
-}
-
-/** Non-dominated branch ranking. No hidden aggregate weights decide the creative trade-off. */
-export function rankStoryworldParetoFrontier(
-  candidates: readonly StoryworldBranchCandidate[],
-): readonly StoryworldParetoCandidate[] {
-  return candidates.map((candidate) => {
-    const dominatedByIds: string[] = [];
-    const dominatesIds: string[] = [];
-    for (const other of candidates) {
-      if (other.id === candidate.id) continue;
-      if (dominates(other.result, candidate.result)) dominatedByIds.push(other.id);
-      if (dominates(candidate.result, other.result)) dominatesIds.push(other.id);
-    }
-    return {
-      id: candidate.id,
-      label: candidate.label,
-      dominatedByIds: dominatedByIds.sort(),
-      dominatesIds: dominatesIds.sort(),
-      frontier: dominatedByIds.length === 0,
-      overallScore: candidate.result.overallScore,
-    };
-  }).sort((a, b) => Number(b.frontier) - Number(a.frontier)
-    || b.overallScore - a.overallScore
-    || a.id.localeCompare(b.id));
-}
 
 export const STORYWORLD_DEMO_PROJECT: StoryworldProject = {
   schemaVersion: STUDIO_STORYWORLD_SCHEMA_VERSION,
