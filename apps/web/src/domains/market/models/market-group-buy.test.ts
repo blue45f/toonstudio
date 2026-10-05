@@ -224,7 +224,10 @@ describe("joinGroupBuyCampaign — 달성 확정", () => {
       }),
     ).toEqual({ ok: false, reason: "insufficient" });
 
-    fund(300);
+    // 적립은 캠페인 시간축(at(1) 전후)보다 과거에 끝나 있어야 한다 — 원장은
+    // 평가 시각보다 미래의 이벤트를 잔액에 넣지 않으므로, at(0)부터 쌓으면
+    // at(1, 14) 직접 구매 시점에 아직 닿지 않은 적립이 빠져 잔액이 모자란다.
+    fund(300, -5);
     expect(
       joinGroupBuyCampaign({
         campaignId: campaign.id,
