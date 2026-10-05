@@ -4,6 +4,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { installStaticCatalog } from "../shared/catalog/catalog-static";
+import { getNextgenLabSettingsSnapshot } from "../shared/lib/nextgen-lab-settings";
+import { installSpeculationRules } from "../shared/lib/speculation-rules";
 import { initializeCreatorContinuity } from "../shared/lib/creator-continuity";
 import { initializePwaInstallCapture } from "../shared/lib/pwa-install-store";
 import "../shared/lib/programmatic-reload-hmr";
@@ -46,6 +48,19 @@ loadStudioBg3dMagicProductionProofFromExplicitDiagnosticQuery();
 // continuity store hydrates only the allow-listed route and launch-preference envelope.
 initializePwaInstallCapture();
 initializeCreatorContinuity();
+// 실험 기능(Speculation Rules): 공개 페이지에서는 스튜디오 문서(문서 이동 대상)를 미리
+// 렌더링할 수 있게 규칙만 심어 둔다. 이미 스튜디오 문서 안이면 심지 않는다.
+// 미지원 브라우저는 태그를 무시하므로 폴백이 필요 없다.
+{
+  const pathname = globalThis.location.pathname;
+  const onStudioDocument = pathname === "/studio" || pathname.startsWith("/studio/");
+  if (!onStudioDocument) {
+    installSpeculationRules({
+      urls: ["/studio"],
+      isEnabled: () => getNextgenLabSettingsSnapshot().studioPrerender,
+    });
+  }
+}
 // --font-serif(Nanum Myeongjo)는 index.html 렌더 차단 경로에서 뺐다. 첫 진입 경로가 웹 크롬이면
 // 여기서 — 렌더가 시작되기 전에 — 요청을 출발시켜 랜딩의 폰트 스왑 창이 넓어지지 않게 한다.
 // 이후 SPA 라우팅은 App.tsx 의 SerifWebFontBridge 가 이어받는다(멱등).

@@ -10,6 +10,7 @@ import { useSiteTabAnchors, useSiteTabs } from "@/domains/legal/public/site-tabs
 import { AccountMergeSettings } from "./AccountMergeSettings";
 import { ConnectedAccountsSettings } from "./ConnectedAccountsSettings";
 import { DeleteAccountSection } from "./DeleteAccountSection";
+import { NextgenLabSettingsSection } from "./NextgenLabSettingsSection";
 import { LibraryBackupImport } from "./LibraryBackupImport";
 import { detectBrowserRegionSettings, planRegionSettingsSync, readLocalRegionSettings, writeLocalRegionSettings } from "./region-settings-client";
 
@@ -646,6 +647,10 @@ export function SettingsPage() {
 
       <div id="settings-ambient" className="mt-6 scroll-mt-28">
         <AmbientSettingsSection />
+      </div>
+
+      <div id="settings-nextgen" className="mt-6 scroll-mt-28">
+        <NextgenLabSettingsSection />
       </div>
 
       </SiteTabPanel>

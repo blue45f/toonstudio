@@ -24,6 +24,8 @@ type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
   replace?: boolean;
   scroll?: boolean;
   prefetch?: boolean;
+  /** 실험: 지원 브라우저에서 이 이동을 View Transition으로 감싼다 (미지원이면 일반 이동). */
+  viewTransition?: boolean;
 };
 
 export type PreservedLinkQueryParams = Readonly<Record<string, string>>;
@@ -100,14 +102,22 @@ const Link = forwardRef<HTMLAnchorElement, LinkProps>(function LinkCompat(
 ) {
   const preserved = useContext(PreservedLinkQueryContext);
   const to = appendPreservedQueryParams(hrefToString(href), preserved);
-  const { prefetch, scroll, ...linkProps } = props;
+  const { prefetch, scroll, viewTransition, ...linkProps } = props;
   const replaceFlag = replace || ((prefetch !== undefined || scroll !== undefined) && false);
   if (isExternalHref(to) || linkProps.target) {
     // 제네릭 Link 래퍼 — 콘텐츠(children)는 호출부가 linkProps에 담아 전달한다.
     // eslint-disable-next-line jsx-a11y/anchor-has-content
     return <a ref={ref} href={to} {...linkProps} />;
   }
-  return <InternalRouterLink ref={ref} to={to} replace={replaceFlag} {...linkProps} />;
+  return (
+    <InternalRouterLink
+      ref={ref}
+      to={to}
+      replace={replaceFlag}
+      viewTransition={viewTransition}
+      {...linkProps}
+    />
+  );
 });
 
 export default Link;

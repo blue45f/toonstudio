@@ -17,6 +17,8 @@ import { resolveTitleEpisodes, resolveTotalEpisodes } from "./title-episodes";
 import { TitleNotFound } from "./TitleNotFound";
 
 import { CoverImage } from "@/shared/components/cover-image";
+import { useNextgenLabSettings } from "@/shared/hooks/use-nextgen-lab-settings";
+import { useScreenWakeLock } from "@/shared/hooks/use-screen-wake-lock";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import {
   formatI18nTemplate,
@@ -57,6 +59,9 @@ function ReaderShell({
 }) {
   useBilingualI18nRevision();
   const navigate = useNavigate();
+  // 실험 기능: 읽는 동안 화면 꺼짐 방지 — 지원 환경에서, 설정이 켜져 있을 때만 붙잡는다.
+  const labSettings = useNextgenLabSettings();
+  useScreenWakeLock(labSettings.readerWakeLock);
   const rootRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<number | null>(null);
   const saveTimerRef = useRef<number | null>(null);
