@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Գրանցվելիս տեղի ունեցավ սխալ:",
   "auth.callback.message.done": "Մուտքագրումը ավարտված է, շուտով վերանայվում է:",
   "auth.callback.message.doneDemo": "Դեմո գրանցումը ավարտված է, շուտով վերանայվում է:",
-  "auth.callback.demo.message": "Դուք մուտք եք գործել դեմո հաշիվով: Որոշ հնարավորություններ կարող են սահմանափակ լինել:"
+  "auth.callback.demo.message": "Դուք մուտք եք գործել դեմո հաշիվով: Որոշ հնարավորություններ կարող են սահմանափակ լինել:",
+  "auth.callback.backToLogin": "Back to sign in"
 }

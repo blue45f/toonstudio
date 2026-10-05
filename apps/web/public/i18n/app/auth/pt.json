@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Houve um erro durante a sessão.",
   "auth.callback.message.done": "A inscrição está concluída, vamos redirecionar em breve.",
   "auth.callback.message.doneDemo": "A sessão de demonstração está concluída.",
-  "auth.callback.demo.message": "Você está conectado com uma conta demo."
+  "auth.callback.demo.message": "Você está conectado com uma conta demo.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

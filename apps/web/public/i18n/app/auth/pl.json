@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Wystąpił błąd podczas zalogowania się.",
   "auth.callback.message.done": "Wystarczy rejestracja.",
   "auth.callback.message.doneDemo": "Demo zakończyło się, wkrótce przekierowujemy.",
-  "auth.callback.demo.message": "Wpisujesz się na konto demo."
+  "auth.callback.demo.message": "Wpisujesz się na konto demo.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

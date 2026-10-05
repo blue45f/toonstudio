@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "️️️️️️️️️️️️️️️️️️️️",
   "auth.callback.message.done": "Нэвтэрч дууссан.Удахгүй дахин чиглүүлж байна.",
   "auth.callback.message.doneDemo": "Demo sign-in completed. Redirecting soon.",
-  "auth.callback.demo.message": "You are logged in with a demo account.Some features may be limited.You are signed in with a demo account."
+  "auth.callback.demo.message": "You are logged in with a demo account.Some features may be limited.You are signed in with a demo account.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

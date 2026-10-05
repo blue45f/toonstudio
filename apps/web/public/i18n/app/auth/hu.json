@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Hibás volt a bejelentkezés során.",
   "auth.callback.message.done": "A bejelentkezés befejeződött, hamarosan átirányítjuk.",
   "auth.callback.message.doneDemo": "A demo bejelentkezés befejeződött, hamarosan átirányítom.",
-  "auth.callback.demo.message": "Demó fiókja van, néhány funkció korlátozott lehet."
+  "auth.callback.demo.message": "Demó fiókja van, néhány funkció korlátozott lehet.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

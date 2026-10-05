@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "ਲਾਗਇਨ ਕਰਨ ਵੇਲੇ ਇੱਕ ਗਲਤੀ ਆਈ ਹੈ।",
   "auth.callback.message.done": "ਰਜਿਸਟਰੇਸ਼ਨ ਪੂਰੀ ਹੋਈ ਹੈ. ਛੇਤੀ ਹੀ ਰੀਡਾਇਰੈਕਟਿੰਗ.",
   "auth.callback.message.doneDemo": "ਡੈਮੋ ਲਾਈਨ-ਇਨ ਪੂਰਾ ਹੋ ਗਿਆ ਹੈ. ਛੇਤੀ ਹੀ ਮੁੜ ਨਿਰਦੇਸ਼ਤ.",
-  "auth.callback.demo.message": "ਤੁਸੀਂ ਡੈਮੋ ਖਾਤੇ ਨਾਲ ਲੌਗਇਨ ਹੋ। ਕੁਝ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ ਸੀਮਤ ਹੋ ਸਕਦੀਆਂ ਹਨ।"
+  "auth.callback.demo.message": "ਤੁਸੀਂ ਡੈਮੋ ਖਾਤੇ ਨਾਲ ਲੌਗਇਨ ਹੋ। ਕੁਝ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ ਸੀਮਤ ਹੋ ਸਕਦੀਆਂ ਹਨ।",
+  "auth.callback.backToLogin": "Back to sign in"
 }

@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "'n Fout het plaasgevind tydens aanmelding.",
   "auth.callback.message.done": "Aanmelding voltooi.",
   "auth.callback.message.doneDemo": "Demo-aanmelding voltooi.",
-  "auth.callback.demo.message": "Jy is aangemeld met 'n demo-rekening."
+  "auth.callback.demo.message": "Jy is aangemeld met 'n demo-rekening.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

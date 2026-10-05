@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "లాగిన్ అవుతున్నప్పుడు ఒక లోపం సంభవించింది.",
   "auth.callback.message.done": "లాగిన్ పూర్తి. త్వరలో దారిమార్పు.",
   "auth.callback.message.doneDemo": "డెమో సైన్ ఇన్ పూర్తయింది. త్వరలో రీడైరెక్ట్.",
-  "auth.callback.demo.message": "మీరు డెమో ఖాతాతో సైన్ ఇన్ చేసారు. కొన్ని ఫీచర్లు పరిమితం కావచ్చు."
+  "auth.callback.demo.message": "మీరు డెమో ఖాతాతో సైన్ ఇన్ చేసారు. కొన్ని ఫీచర్లు పరిమితం కావచ్చు.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

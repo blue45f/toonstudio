@@ -17,5 +17,6 @@
   "auth.callback.message.doneDemo": "デモサインインが完了しました。まもなくリダイレ​​クトします。",
   "auth.callback.demo.message": "デモアカウントでサインインしています。一部の機能が制限される場合があります。",
   "auth.callback.error.failed": "サインイン中にエラーが発生しました。",
-  "auth.callback.error.noUser": "ユーザー情報を確認できません。"
+  "auth.callback.error.noUser": "ユーザー情報を確認できません。",
+  "auth.callback.backToLogin": "Back to sign in"
 }

@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Памылка здарылася падчас падпіскі.",
   "auth.callback.message.done": "Падпісанне завершана.",
   "auth.callback.message.doneDemo": "Завяршылася дэма-запіс, хутка перанакіруем.",
-  "auth.callback.demo.message": "Вы ўвайшлі з дэма-аккаунтам. Некаторыя функцыі могуць быць абмежаваныя."
+  "auth.callback.demo.message": "Вы ўвайшлі з дэма-аккаунтам. Некаторыя функцыі могуць быць абмежаваныя.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

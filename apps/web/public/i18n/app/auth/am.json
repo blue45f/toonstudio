@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "በመግቢያ ላይ ሳሉ አንድ ስህተት ተከስቷል።",
   "auth.callback.message.done": "ምዝገባው ተጠናቅቋል በቅርቡ አቅጣጫውን ይቀይራል።",
   "auth.callback.message.doneDemo": "የዲሞ ምዝገባ ተጠናቅቋል በቅርቡ አቅጣጫውን ይቀይራል።",
-  "auth.callback.demo.message": "በዴሞ መለያ ገብተሃል፤ አንዳንድ ባህሪያት ውስን ሊሆኑ ይችላሉ።"
+  "auth.callback.demo.message": "በዴሞ መለያ ገብተሃል፤ አንዳንድ ባህሪያት ውስን ሊሆኑ ይችላሉ።",
+  "auth.callback.backToLogin": "Back to sign in"
 }

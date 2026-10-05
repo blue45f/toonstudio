@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "உள்நுழைந்தபோது ஒரு பிழை ஏற்பட்டது.",
   "auth.callback.message.done": "பதிவு முடிந்தது. விரைவில் திருப்பி அனுப்பப்படுகிறது.",
   "auth.callback.message.doneDemo": "டெமோ பதிவு முடிந்தது. விரைவில் திருப்பி அனுப்பப்படுகிறது.",
-  "auth.callback.demo.message": "நீங்கள் ஒரு டெமோ கணக்கில் பதிவுபெற்றிருக்கிறீர்கள். சில அம்சங்கள் வரையறுக்கப்படலாம்."
+  "auth.callback.demo.message": "நீங்கள் ஒரு டெமோ கணக்கில் பதிவுபெற்றிருக்கிறீர்கள். சில அம்சங்கள் வரையறுக்கப்படலாம்.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

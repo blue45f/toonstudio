@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "সাইন ইন করার সময় একটি ত্রুটি ঘটেছে।",
   "auth.callback.message.done": "সাইন-ইন সম্পন্ন, শিগগিরই পুনর্নির্দেশ।",
   "auth.callback.message.doneDemo": "ডেমো সাইন ইন সম্পন্ন। শীঘ্রই পুনর্নির্দেশ।",
-  "auth.callback.demo.message": "আপনি একটি ডেমো অ্যাকাউন্ট দিয়ে সাইন ইন করেছেন। কিছু বৈশিষ্ট্য সীমিত হতে পারে।"
+  "auth.callback.demo.message": "আপনি একটি ডেমো অ্যাকাউন্ট দিয়ে সাইন ইন করেছেন। কিছু বৈশিষ্ট্য সীমিত হতে পারে।",
+  "auth.callback.backToLogin": "Back to sign in"
 }

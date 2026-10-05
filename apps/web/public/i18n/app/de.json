@@ -868,5 +868,6 @@
   "route.characterChat": "Character Talk",
   "route.characterChatManage": "Manage Character Chats",
   "route.newsletter": "Newsletter",
-  "route.newsletterCompose": "Send a newsletter"
+  "route.newsletterCompose": "Send a newsletter",
+  "auth.callback.backToLogin": "Back to sign in"
 }

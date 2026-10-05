@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "در هنگام ورود به سایت اشتباه افتاد",
   "auth.callback.message.done": "ثبت نام تمام شده، به زودی به سمت دیگر می رسیم",
   "auth.callback.message.doneDemo": "ثبت نام دمو تمام شده، به زودی تغییر مسیر می کنم",
-  "auth.callback.demo.message": "شما با یک حساب دمو وارد شده اید. برخی از ویژگی ها ممکن است محدود باشند."
+  "auth.callback.demo.message": "شما با یک حساب دمو وارد شده اید. برخی از ویژگی ها ممکن است محدود باشند.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

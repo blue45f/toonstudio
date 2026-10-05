@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "ସାଇନ୍ ଇନ୍ କରିବା ସମୟରେ ଏକ ତ୍ରୁଟି ଘଟିଛି ।",
   "auth.callback.message.done": "ସାଇନ୍ ଇନ୍ ସରିଛି, ଖୁବ୍ ଶୀଘ୍ର ପୁନଃନିର୍ଦ୍ଦେଶ କରାଯାଉଛି ।",
   "auth.callback.message.doneDemo": "ଡେମୋ ସାଇନ୍ ଇନ୍ ସମାପ୍ତ ହୋଇଛି, ଶୀଘ୍ର ପୁନଃନିର୍ଦ୍ଦେଶିତ ହେବ ।",
-  "auth.callback.demo.message": "ଆପଣ ଏକ ଡେମୋ ଆକାଉଣ୍ଟ ସହିତ ସାଇନ୍ ଇନ୍ ହୋଇଛନ୍ତି। କିଛି ବୈଶିଷ୍ଟ୍ୟ ସୀମିତ ହୋଇପାରେ।"
+  "auth.callback.demo.message": "ଆପଣ ଏକ ଡେମୋ ଆକାଉଣ୍ଟ ସହିତ ସାଇନ୍ ଇନ୍ ହୋଇଛନ୍ତି। କିଛି ବୈଶିଷ୍ଟ୍ୟ ସୀମିତ ହୋଇପାରେ।",
+  "auth.callback.backToLogin": "Back to sign in"
 }

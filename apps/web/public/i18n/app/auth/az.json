@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Giriş zamanı bir səhv baş verib.",
   "auth.callback.message.done": "İmzalanma bitdi, qısa müddətdə yönləndiriləcək.",
   "auth.callback.message.doneDemo": "Demo qeydiyyatı tamamlandı.",
-  "auth.callback.demo.message": "Siz demo hesabı ilə daxil olmusunuz."
+  "auth.callback.demo.message": "Siz demo hesabı ilə daxil olmusunuz.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

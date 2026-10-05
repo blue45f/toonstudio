@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "התרחשה שגיאה בעת הכניסה.",
   "auth.callback.message.done": "ההשגחה הסתיימה, אני מחזירה בקרוב.",
   "auth.callback.message.doneDemo": "סיום הדמו שלם, מחזור בקרוב.",
-  "auth.callback.demo.message": "אתה נכנס עם חשבון דמו. כמה תכונות עשויות להיות מוגבלות."
+  "auth.callback.demo.message": "אתה נכנס עם חשבון דמו. כמה תכונות עשויות להיות מוגבלות.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

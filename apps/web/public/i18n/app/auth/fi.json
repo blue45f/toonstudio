@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Sisäänlaskelu sai virheen.",
   "auth.callback.message.done": "- Kirjoittelu on valmis.",
   "auth.callback.message.doneDemo": "Demo- kirjautuminen valmis.",
-  "auth.callback.demo.message": "Olet kirjautunut sisään demo-tilin avulla."
+  "auth.callback.demo.message": "Olet kirjautunut sisään demo-tilin avulla.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Der er sket en fejl under loggen.",
   "auth.callback.message.done": "Indmelding er afsluttet, omdirigerer snart.",
   "auth.callback.message.doneDemo": "Demo-registrering er afsluttet.",
-  "auth.callback.demo.message": "Du er logget ind med en demo-konto."
+  "auth.callback.demo.message": "Du er logget ind med en demo-konto.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

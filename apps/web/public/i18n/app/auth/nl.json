@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Er is een fout opgetreden tijdens het inloggen.",
   "auth.callback.message.done": "Ingelogd, overgeleid.",
   "auth.callback.message.doneDemo": "Demo-aanmelding voltooid.",
-  "auth.callback.demo.message": "U bent aangemeld met een demo-account."
+  "auth.callback.demo.message": "U bent aangemeld met een demo-account.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

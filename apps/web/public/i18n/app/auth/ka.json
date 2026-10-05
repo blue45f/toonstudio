@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "ოჲჟლვეა ჟაჟრაგვრა ჟაჟრაგვ.",
   "auth.callback.message.done": "ოჲეჲბჲგნწნა. მალე გყპნამ.",
   "auth.callback.message.doneDemo": "ოჲეჲბჲგნწნა, ოპვჟრთნწნა.",
-  "auth.callback.demo.message": "თქვენ ხართ ჩართული დემო ანგარიშით. ზოგიერთი ფუნქცია შეიძლება იყოს შეზღუდული."
+  "auth.callback.demo.message": "თქვენ ხართ ჩართული დემო ანგარიშით. ზოგიერთი ფუნქცია შეიძლება იყოს შეზღუდული.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

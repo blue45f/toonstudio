@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Kesalahan berlaku semasa mendaftar masuk.",
   "auth.callback.message.done": "Penandatanganan selesai.",
   "auth.callback.message.doneDemo": "Demo sign-in selesai.",
-  "auth.callback.demo.message": "Anda masuk dengan akaun demo. Beberapa ciri mungkin terhad."
+  "auth.callback.demo.message": "Anda masuk dengan akaun demo. Beberapa ciri mungkin terhad.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

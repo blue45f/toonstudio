@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "حدث خطأ أثناء تسجيل الدخول",
   "auth.callback.message.done": "الإلتحاق مكتمل، إعادة التوجيه قريباً",
   "auth.callback.message.doneDemo": "التسجيل التجريبي قد اكتمل، إعادة التوجيه قريباً",
-  "auth.callback.demo.message": "أنت متسجل مع حساب تجريبي. قد تكون بعض الميزات محدودة."
+  "auth.callback.demo.message": "أنت متسجل مع حساب تجريبي. قد تكون بعض الميزات محدودة.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

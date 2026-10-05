@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Une erreur s'est produite lors de la connexion.",
   "auth.callback.message.done": "L'enregistrement est terminé.",
   "auth.callback.message.doneDemo": "La démo est terminée.",
-  "auth.callback.demo.message": "Vous êtes connecté avec un compte démo, certaines fonctionnalités peuvent être limitées."
+  "auth.callback.demo.message": "Vous êtes connecté avec un compte démo, certaines fonctionnalités peuvent être limitées.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "ലോഗിൻ ചെയ്യുമ്പോൾ ഒരു പിശക് സംഭവിച്ചു.",
   "auth.callback.message.done": "സൈൻ ഇൻ പൂർത്തിയായി. ഉടനെ റീഡയറക്ട് ചെയ്യും.",
   "auth.callback.message.doneDemo": "ഡെമോ സൈൻ ഇൻ പൂർത്തിയായി. ഉടനെ റീഡയറക്ട് ചെയ്യും.",
-  "auth.callback.demo.message": "നിങ്ങൾ ഒരു ഡെമോ അക്കൌണ്ട് ഉപയോഗിച്ച് സൈൻ ഇൻ ചെയ്തിരിക്കുന്നു. ചില സവിശേഷതകൾ പരിമിതമായിരിക്കും."
+  "auth.callback.demo.message": "നിങ്ങൾ ഒരു ഡെമോ അക്കൌണ്ട് ഉപയോഗിച്ച് സൈൻ ഇൻ ചെയ്തിരിക്കുന്നു. ചില സവിശേഷതകൾ പരിമിതമായിരിക്കും.",
+  "auth.callback.backToLogin": "Back to sign in"
 }
