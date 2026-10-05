@@ -3,42 +3,18 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { PROMOTION_GENRES, PROMOTION_KINDS, PROMOTION_STAGES } from "../../../../../packages/core/src/promotion";
+import { PromotionCard } from "./PromotionCard";
+import { GENRE_EN, KIND_EN, STAGE_EN } from "./promotion-labels";
 import { usePromotionFeed } from "./use-promotion-feed";
 import "./promotion-community.css";
 
 import { CampusObjectSource } from "@/shared/components/spatial-campus/CampusObjectSource";
 import { LoadingState } from "@/shared/components/LoadingState";
-import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
-import { TypographicCover } from "@/shared/components/typographic-cover";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 const SCOPE = "domains.promotion.PromotionBoardPage";
-
-const KIND_EN: Record<keyof typeof PROMOTION_KINDS, string> = {
-  series: "Series · new work",
-  trailer: "Promo video",
-  process: "Work in progress",
-  feedback: "Feedback request",
-};
-const STAGE_EN: Record<keyof typeof PROMOTION_STAGES, string> = {
-  amateur: "Amateur",
-  debut: "Debut · new work",
-  serializing: "Serializing creator",
-};
-const GENRE_EN: Record<string, string> = {
-  "판타지": "Fantasy",
-  "로맨스": "Romance",
-  "드라마": "Drama",
-  "액션": "Action",
-  "일상": "Slice of life",
-  "코미디": "Comedy",
-  "스릴러": "Thriller",
-  "SF": "Sci-fi",
-  "무협": "Martial arts",
-  "기타": "Other",
-};
 
 export function PromotionBoardPage() {
   const bt = useBilingual(SCOPE);
@@ -148,39 +124,7 @@ export function PromotionBoardPage() {
         )}
         <div className="pc-grid">
           {feed.page?.items.map((post, index) => (
-            <article className="pc-card" key={post.id} {...introItemProps(index)}>
-              <Link
-                className="pc-card-cover"
-                to={`/community/promote/${encodeURIComponent(post.id)}`}
-                aria-label={bt(`${post.seriesTitle} 소개 보기`, `View the introduction of ${post.seriesTitle}`)}
-              >
-                {post.cover ? (
-                  <img src={post.cover} alt={bt(`${post.seriesTitle} 표지`, `${post.seriesTitle} cover`)} loading="lazy" decoding="async" width={640} height={800} />
-                ) : (
-                  <TypographicCover
-                    title={post.seriesTitle}
-                    seed={post.id}
-                    eyebrow={bt(post.genre, GENRE_EN[post.genre] ?? post.genre)}
-                    className="h-full w-full"
-                  />
-                )}
-                {post.videoUrl && <span className="pc-video-badge"><Clapperboard size={14} aria-hidden="true" />{bt("영상", "Video")}</span>}
-              </Link>
-              <div className="pc-card-body">
-                <div className="pc-tags">
-                  <span>{bt(PROMOTION_STAGES[post.stage], STAGE_EN[post.stage] ?? PROMOTION_STAGES[post.stage])}</span>
-                  <span>{bt(PROMOTION_KINDS[post.kind], KIND_EN[post.kind] ?? PROMOTION_KINDS[post.kind])}</span>
-                  {post.archived && <span>{bt("보관됨", "Archived")}</span>}
-                  {post.hidden && <span>{bt("운영 비공개", "Hidden by moderators")}</span>}
-                </div>
-                <h3><Link to={`/community/promote/${encodeURIComponent(post.id)}`}>{post.title}</Link></h3>
-                <p>{post.description}</p>
-                <div className="pc-card-footer">
-                  <Link to={`/u/${encodeURIComponent(post.author.id)}`}>{post.author.name}</Link>
-                  <time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleDateString("ko-KR")}</time>
-                </div>
-              </div>
-            </article>
+            <PromotionCard key={post.id} post={post} index={index} />
           ))}
         </div>
         {feed.page?.hasMore && (
