@@ -39,8 +39,8 @@ import {
   type DialogueBatchItem,
 } from "./lettering/studio-dialogue-batch";
 import {
-  loadStudioDialogueGlossaryText,
-  saveStudioDialogueGlossaryText,
+  loadStudioDialogueGlossaryTextAsync,
+  saveStudioDialogueGlossaryTextAsync,
 } from "./lettering/studio-dialogue-glossary-store";
 import { StudioDialogueGlossaryEditor } from "./lettering/StudioDialogueGlossaryEditor";
 import {
@@ -142,15 +142,6 @@ const StudioDialogueTranslationMemoryPanel = lazy(() =>
 
 // select 의 "직접 입력…" 옵션 값 — 실제 로케일 코드로 저장되지 않는 내부 센티널.
 const CUSTOM_LOCALE_OPTION = "__custom__";
-
-/** localStorage 접근 — 프라이빗 모드 등에서 던질 수 있어 저장 모듈과 같은 실패 무음 원칙으로 감싼다. */
-function browserLocalStorage(): Storage | null {
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-2 py-1.5 text-[0.7rem] text-fg outline-none transition-colors placeholder:text-fg-4 focus:border-accent/50";
@@ -335,18 +326,30 @@ export function StudioDialogueTranslatePanel({
   // ── 용어집 작품별 영속 — 세션 상태(호스트 useState)는 새로고침에 사라진다 ──────
   // 작품이 확정되면 저장본을 한 번 읽어, 지금 용어집이 비어 있을 때만 채운다(사용자가
   // 이미 입력한 텍스트를 저장본으로 덮지 않는다). 이후 변경은 같은 키로 되돌려 저장한다.
+  // 저장 정본은 IndexedDB라 읽기가 비동기다 — 읽기가 끝난 뒤에야 scopeReady를 세워,
+  // 아직 읽지 않은 빈 상태가 저장본을 지우는 저장으로 이어지지 않게 한다. 이미 입력이
+  // 있는 경우에는 채울 것이 없으므로 기다리지 않고 바로 준비 상태로 둔다.
   const [glossaryScopeReady, setGlossaryScopeReady] = useState<string | null>(null);
   useEffect(() => {
     if (glossaryScopeReady === resolvedWorkScope) return;
-    setGlossaryScopeReady(resolvedWorkScope);
-    if (glossary === "") {
-      const saved = loadStudioDialogueGlossaryText(browserLocalStorage(), resolvedWorkScope);
-      if (saved !== "") onGlossaryChange(saved);
+    if (glossary !== "") {
+      setGlossaryScopeReady(resolvedWorkScope);
+      return;
     }
+    let active = true;
+    void (async () => {
+      const saved = await loadStudioDialogueGlossaryTextAsync(resolvedWorkScope);
+      if (!active) return;
+      if (saved !== "") onGlossaryChange(saved);
+      setGlossaryScopeReady(resolvedWorkScope);
+    })();
+    return () => {
+      active = false;
+    };
   }, [glossary, glossaryScopeReady, onGlossaryChange, resolvedWorkScope]);
   useEffect(() => {
     if (glossaryScopeReady !== resolvedWorkScope) return;
-    saveStudioDialogueGlossaryText(browserLocalStorage(), resolvedWorkScope, glossary);
+    void saveStudioDialogueGlossaryTextAsync(resolvedWorkScope, glossary);
   }, [glossary, resolvedWorkScope, glossaryScopeReady]);
 
   // ── 현지화 QA — 제어형/비제어형 화면 전환 + 스냅샷 ─────────────────────────

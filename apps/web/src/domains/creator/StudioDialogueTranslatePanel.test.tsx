@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -432,7 +432,7 @@ describe("StudioDialogueTranslatePanel 번역 대조 검수 화면", () => {
 // ── 용어집 작품별 저장·규칙 행 편집 ─────────────────────────────────────
 
 describe("StudioDialogueTranslatePanel 용어집", () => {
-  it("작품에 저장된 용어집을 열 때 빈 용어집에 채워 넣는다", () => {
+  it("작품에 저장된 용어집을 열 때 빈 용어집에 채워 넣는다", async () => {
     localStorage.setItem(
       "toonstudio-studio-dialogue-glossary:v1:work-glossary-1",
       "민수: Minsu"
@@ -440,15 +440,22 @@ describe("StudioDialogueTranslatePanel 용어집", () => {
     const onGlossaryChange = vi.fn();
     generatePanel({ workScope: "work-glossary-1", onGlossaryChange });
 
-    expect(onGlossaryChange).toHaveBeenCalledWith("민수: Minsu");
+    // 용어집 정본이 IndexedDB로 옮겨가 읽기가 비동기가 됐다 — 채워 넣기는
+    // 첫 읽기가 끝난 뒤 일어난다.
+    await waitFor(() =>
+      expect(onGlossaryChange).toHaveBeenCalledWith("민수: Minsu")
+    );
   });
 
-  it("사용자가 입력한 용어집은 작품 키로 저장돼 다음에 다시 열린다", () => {
+  it("사용자가 입력한 용어집은 작품 키로 저장돼 다음에 다시 열린다", async () => {
     generatePanel({ workScope: "work-glossary-2", glossary: "지연: Jiyeon" });
 
-    expect(
-      localStorage.getItem("toonstudio-studio-dialogue-glossary:v1:work-glossary-2")
-    ).toBe("지연: Jiyeon");
+    // 이 테스트 환경에는 IndexedDB가 없어 저장이 localStorage 폴백으로 떨어진다.
+    await waitFor(() =>
+      expect(
+        localStorage.getItem("toonstudio-studio-dialogue-glossary:v1:work-glossary-2")
+      ).toBe("지연: Jiyeon")
+    );
   });
 
   it("규칙 행 모드에서 정본을 고치면 같은 용어집 텍스트로 되돌려 준다", () => {
