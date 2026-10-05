@@ -9,6 +9,9 @@ import { adminFetch, type AdminApiError } from "./admin-client";
 import { AdminEmptyState, AdminSpinner } from "./admin-ui";
 import { adminButtonClass } from "./admin-ui-utils";
 
+import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
+
 type ReviewStatus = "submitted" | "reviewing" | "approved" | "rejected" | "on_hold";
 type PayoutStatus = "not_ready" | "contract_required" | "kyc_required" | "ready" | "blocked";
 
@@ -60,9 +63,10 @@ const PAYOUT_OPTIONS: PayoutStatus[] = [
   "blocked",
 ];
 
-const formatWon = (amount: number) => `₩${amount.toLocaleString("ko-KR")}`;
+const formatWon = (amount: number) => `₩${amount.toLocaleString(getCurrentUiLocale())}`;
 
 export function AdminCreatorSupport({ uid }: { uid: string }) {
+  const t = useT();
   const [filter, setFilter] = useState<ReviewStatus | "all">("submitted");
   const [data, setData] = useState<CreatorSupportAdminResponse | null>(null);
   const [error, setError] = useState("");
@@ -146,9 +150,9 @@ export function AdminCreatorSupport({ uid }: { uid: string }) {
             <p className="text-xs font-bold tracking-[0.14em] text-accent">
               CREATOR SUPPORT REVIEW
             </p>
-            <h2 className="mt-1 text-xl font-bold text-fg">학생·아마추어 창작자 지원 심사</h2>
+            <h2 className="mt-1 text-xl font-bold text-fg">{t("admin.creatorSupport.title")}</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-3">
-              공개 프로젝트 승인과 정산 준비 상태를 분리해서 관리합니다.
+              {t("admin.creatorSupport.desc")}
             </p>
           </div>
           <span className={`rounded-full border px-3 py-1 text-xs font-bold ${
@@ -156,7 +160,7 @@ export function AdminCreatorSupport({ uid }: { uid: string }) {
               ? "border-accent/40 bg-accent-soft text-accent"
               : "border-line bg-panel text-fg-3"
           }`}>
-            지급대행 {data?.payout.ready ? "준비됨" : "비활성"}
+            {data?.payout.ready ? t("admin.creatorSupport.payoutReady") : t("admin.creatorSupport.payoutInactive")}
           </span>
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
@@ -183,7 +187,7 @@ export function AdminCreatorSupport({ uid }: { uid: string }) {
               className={adminButtonClass("ghost")}
               onClick={load}
             >
-              다시 시도
+              {t("admin.creatorSupport.retry")}
             </button>
           </p>
         ) : null}
@@ -192,7 +196,7 @@ export function AdminCreatorSupport({ uid }: { uid: string }) {
       {!data ? (
         <AdminSpinner />
       ) : data.items.length === 0 ? (
-        <AdminEmptyState title="조건에 맞는 지원 신청이 없습니다." />
+        <AdminEmptyState title={t("admin.creatorSupport.empty")} />
       ) : (
         <div className="grid gap-4">
           {data.items.map((item) => {
@@ -215,19 +219,19 @@ export function AdminCreatorSupport({ uid }: { uid: string }) {
                   </div>
                   <div className="text-right text-xs text-fg-3">
                     <p>{formatWon(item.estimatedBudgetWon)}</p>
-                    <p className="mt-1">{new Date(item.createdAt).toLocaleString("ko-KR")}</p>
+                    <p className="mt-1">{new Date(item.createdAt).toLocaleString(getCurrentUiLocale())}</p>
                   </div>
                 </div>
                 <div className="mt-5 grid gap-4 lg:grid-cols-2">
                   <div className="space-y-3">
                     <div className="rounded-xl border border-line bg-panel/60 p-4">
-                      <p className="text-xs font-bold text-fg-3">신청 사연</p>
+                      <p className="text-xs font-bold text-fg-3">{t("admin.creatorSupport.story")}</p>
                       <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-fg-2">
                         {item.story}
                       </p>
                     </div>
                     <div className="rounded-xl border border-line bg-panel/60 p-4">
-                      <p className="text-xs font-bold text-fg-3">필요한 도움</p>
+                      <p className="text-xs font-bold text-fg-3">{t("admin.creatorSupport.helpNeeded")}</p>
                       <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-fg-2">
                         {item.intendedUse}
                       </p>
@@ -246,14 +250,14 @@ export function AdminCreatorSupport({ uid }: { uid: string }) {
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent"
                       >
-                        포트폴리오 <ExternalLink size={13} aria-hidden="true" />
+                        {t("admin.creatorSupport.portfolio")} <ExternalLink size={13} aria-hidden="true" />
                       </a>
                     ) : null}
                   </div>
 
                   <div className="space-y-3 rounded-xl border border-line bg-panel/45 p-4">
                     <label className="block text-xs font-semibold text-fg-3">
-                      공개 심사 상태
+                      {t("admin.creatorSupport.reviewStatus")}
                       <select
                         value={draft.status}
                         onChange={(event) =>
@@ -267,7 +271,7 @@ export function AdminCreatorSupport({ uid }: { uid: string }) {
                       </select>
                     </label>
                     <label className="block text-xs font-semibold text-fg-3">
-                      정산 준비 상태
+                      {t("admin.creatorSupport.payoutStatus")}
                       <select
                         value={draft.payoutStatus}
                         onChange={(event) =>
@@ -292,14 +296,14 @@ export function AdminCreatorSupport({ uid }: { uid: string }) {
                         }
                       />
                       <span>
-                        금전 지원 활성화
+                        {t("admin.creatorSupport.monetaryEnable")}
                         <small className="mt-1 block text-fg-3">
-                          지급대행 계약·보안키·KYC가 준비되지 않으면 서버가 저장을 거부합니다.
+                          {t("admin.creatorSupport.monetaryNote")}
                         </small>
                       </span>
                     </label>
                     <label className="block text-xs font-semibold text-fg-3">
-                      운영 검토 메모
+                      {t("admin.creatorSupport.reviewNote")}
                       <textarea
                         rows={4}
                         maxLength={1000}
@@ -317,14 +321,14 @@ export function AdminCreatorSupport({ uid }: { uid: string }) {
                       className={adminButtonClass("accent")}
                     >
                       <Save size={14} aria-hidden="true" />
-                      심사 저장
+                      {t("admin.creatorSupport.saveReview")}
                     </button>
                   </div>
                 </div>
                 {item.ageBand !== "adult" ? (
                   <div className="mt-4 flex items-start gap-2 rounded-xl border border-line bg-panel/60 px-4 py-3 text-xs leading-5 text-fg-3">
                     <ShieldCheck size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
-                    보호자 확인: {item.guardianConfirmed ? "확인됨" : "미확인"} · 금전 정산은 보호자/KYC 검증 전까지 비활성화 권장
+                    {t("admin.creatorSupport.guardianNote", { status: item.guardianConfirmed ? t("admin.creatorSupport.guardianConfirmed") : t("admin.creatorSupport.guardianUnconfirmed") })}
                   </div>
                 ) : null}
               </article>
