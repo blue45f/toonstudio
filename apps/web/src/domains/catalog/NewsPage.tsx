@@ -4,7 +4,7 @@ import { useState } from "react";
 import { SiteFilterChips, type SiteFilterChip } from "@/domains/legal/public/site-filter-chips";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
-import { sitePageHeaderArtFor } from "@/domains/legal/public/site-page-header-art";
+import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { SiteShowMoreButton } from "@/domains/legal/public/site-rail";
 import { useShowMore } from "@/domains/legal/public/site-show-more";
 import { useApiResource } from "@/platform/use-api-resource";
@@ -169,6 +169,7 @@ export function NewsPage() {
           "Industry, adaptation, contest and release news in one place. Titles open the original article; story chips open the story page.",
         )}
         art={sitePageHeaderArtFor("/news")}
+        artPlacement={sitePageHeaderArtPlacementFor("/news")}
       />
 
       {!loading && !error && items.length > 0 ? (

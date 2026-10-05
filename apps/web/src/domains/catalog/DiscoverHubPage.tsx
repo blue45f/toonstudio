@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
-import { sitePageHeaderArtFor } from "@/domains/legal/public/site-page-header-art";
+import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { Container, Section } from "@/shared/components/section";
@@ -29,6 +29,7 @@ import { GENRES } from "@/shared/lib/taxonomy";
 import Link from "@/shared/navigation/router-link";
 import { useApiResource } from "@/platform/use-api-resource";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
+import { cn } from "@/shared/lib/utils";
 
 import { DiscoverRecentShelf } from "./DiscoverRecentShelf";
 import { DiscoverShelves } from "./DiscoverShelves";
@@ -71,8 +72,10 @@ const DESTINATIONS: readonly DiscoverDestination[] = [
 /**
  * 공개 카탈로그 요약 한 줄 — 작품·플랫폼·장르 수와 기준일, 데이터 출처.
  * 대표 작품 카드가 히어로 오른쪽을 차지하므로 수치는 검색 아래 한 줄로 둔다.
+ * 스포트라이트가 없을 때 헤더는 배너형이 되므로, 그 경우(`onArt`) 스크림 위
+ * 밝은 글자 톤으로 갈아 신는다.
  */
-function CatalogSnapshotLine({ snapshot, loading }: { readonly snapshot: DiscoverHomeSnapshot | null; readonly loading: boolean }) {
+function CatalogSnapshotLine({ snapshot, loading, onArt }: { readonly snapshot: DiscoverHomeSnapshot | null; readonly loading: boolean; readonly onArt: boolean }) {
   const bt = useBilingual("DiscoverHubPage");
   const dateLabel = snapshot ? snapshotDateLabel(snapshot.generatedAt) : null;
   const stats = snapshot
@@ -87,14 +90,17 @@ function CatalogSnapshotLine({ snapshot, loading }: { readonly snapshot: Discove
     <div
       aria-label={bt("공개 카탈로그 요약", "Public catalog summary")}
       role="group"
-      className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line/70 pt-4 text-xs text-fg-3"
+      className={cn(
+        "mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t pt-4 text-xs",
+        onArt ? "border-white/25 text-white/70" : "border-line/70 text-fg-3",
+      )}
     >
       {stats ? (
         <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           {stats.map((stat) => (
             <div key={stat.label} className="flex items-baseline gap-1">
               <dt className="order-2">{stat.label}</dt>
-              <dd className="numeral order-1 text-sm font-bold text-fg">{stat.value}</dd>
+              <dd className={cn("numeral order-1 text-sm font-bold", onArt ? "text-white" : "text-fg")}>{stat.value}</dd>
             </div>
           ))}
         </dl>
@@ -105,7 +111,7 @@ function CatalogSnapshotLine({ snapshot, loading }: { readonly snapshot: Discove
       )}
       <span className="flex flex-wrap items-center gap-x-1.5">
         {dateLabel ? <span>{`${dateLabel} ${bt("기준 공개 카탈로그", "public catalog snapshot")} ·`}</span> : null}
-        <Link href="/about/data" className="inline-flex min-h-11 items-center font-semibold text-accent underline-offset-4 hover:underline sm:min-h-0">
+        <Link href="/about/data" className={cn("inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline sm:min-h-0", onArt ? "text-white" : "text-accent")}>
           {bt("데이터 출처", "Data sources")}
         </Link>
       </span>
@@ -148,6 +154,7 @@ export function DiscoverHubPage() {
         )}
         aside={showSpotlight ? <DiscoverSpotlight snapshot={home.data} loading={home.loading} /> : undefined}
         art={sitePageHeaderArtFor("/discover")}
+        artPlacement={sitePageHeaderArtPlacementFor("/discover")}
         asideSize="wide"
         actions={
           <Link href="/research" className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-accent" })}>
@@ -197,7 +204,7 @@ export function DiscoverHubPage() {
             </li>
           </ul>
         </nav>
-        <CatalogSnapshotLine snapshot={home.data} loading={home.loading} />
+        <CatalogSnapshotLine snapshot={home.data} loading={home.loading} onArt={!showSpotlight} />
       </SitePageHeader>
 
       <section aria-labelledby="discover-shelves-title" className="mt-10 flex flex-col gap-12 sm:mt-12 sm:gap-14">
