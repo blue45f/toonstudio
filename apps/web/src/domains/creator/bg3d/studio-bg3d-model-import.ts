@@ -36,6 +36,11 @@ import {
 } from "./studio-bg3d-obj-preflight-worker-protocol";
 import { hydrateStudioBg3dObjWorkerResult } from "./studio-bg3d-obj-three-hydrator";
 import {
+  convertStudioBg3dSkpToGlb,
+  StudioBg3dSkpConverterUnavailableError,
+  StudioBg3dSkpParseError,
+} from "./studio-bg3d-skp-converter";
+import {
   StudioBg3dObjWorkerClientError,
   parseStudioBg3dObjInWorker,
 } from "./studio-bg3d-obj-worker-client";
@@ -103,6 +108,7 @@ export const STUDIO_BG3D_IMPORT_PRIMARY_FORMATS = [
   "stl",
   "ply",
   "3ds",
+  "skp",
 ] as const;
 export const STUDIO_BG3D_IMPORT_COMPANION_FORMATS = [
   "bin",
@@ -181,6 +187,8 @@ export type StudioBg3dModelImportErrorCode =
   | "output-too-large"
   | "output-total-too-large"
   | "parse-failed"
+  | "skp-converter-unavailable"
+  | "skp-parse-failed"
   | "too-many-files"
   | "too-many-models"
   | "total-too-large"
@@ -216,11 +224,13 @@ const ERROR_MESSAGES: Readonly<Record<StudioBg3dModelImportErrorCode, string>> =
   "mesh-budget-exceeded": "3D 모델의 메시 또는 프리미티브 수가 가져오기 안전 기준을 초과했습니다. 메시를 병합해 주세요.",
   "material-budget-exceeded": "3D 모델의 재질 또는 재질 슬롯 수가 변환 안전 기준을 초과했습니다. OBJ/MTL 재질을 병합해 주세요.",
   "model-byte-budget-exceeded": "변환될 3D 모델의 예상 용량이 이 기기의 안전 기준을 초과했습니다. 메시와 텍스처를 줄여 주세요.",
-  "no-model": "GLB, glTF, OBJ, FBX, DAE, STL, PLY 또는 3DS 모델 파일을 하나 이상 선택해 주세요.",
+  "no-model": "GLB, glTF, OBJ, FBX, DAE, STL, PLY, 3DS 또는 SKP 모델 파일을 하나 이상 선택해 주세요.",
   "node-budget-exceeded": "3D 모델의 노드 수가 가져오기 안전 기준을 초과했습니다. 계층을 단순화해 주세요.",
   "output-too-large": "변환된 GLB가 100MiB 제한을 초과했습니다. 텍스처나 메시를 최적화해 주세요.",
   "output-total-too-large": "한 번에 변환된 GLB의 총용량은 100MiB를 초과할 수 없습니다. 모델을 나누어 가져와 주세요.",
   "parse-failed": "3D 모델 구조를 해석하지 못했습니다. 원본 파일과 연결 리소스를 확인해 주세요.",
+  "skp-converter-unavailable": ".skp 변환기(OpenSKP)를 불러오지 못해 SketchUp 파일을 가져올 수 없습니다. SketchUp에서 DAE 또는 GLB로 내보낸 뒤 다시 시도해 주세요.",
+  "skp-parse-failed": ".skp 파일 구조를 해석하지 못했습니다. 일부 레거시 SketchUp 파일은 브라우저 변환에 실패할 수 있습니다. SketchUp에서 DAE 또는 GLB로 내보낸 뒤 가져와 주세요.",
   "too-many-files": "한 번에 선택할 수 있는 3D 모델과 연결 리소스는 최대 256개입니다.",
   "too-many-models": "한 번에 가져올 수 있는 3D 모델은 최대 32개입니다.",
   "total-too-large": "한 번에 가져올 파일의 총용량은 300MiB를 초과할 수 없습니다.",
@@ -1186,6 +1196,15 @@ async function parseGltfImport(
     }
     preflightJsonGltf(root, resolver, signal, companionDecodedImageBytes);
   }
+  return parseGlbSourceImport(source, resolver, signal);
+}
+
+/** Shared GLTFLoader tail for glTF/GLB sources — including GLB bytes produced by converters. */
+async function parseGlbSourceImport(
+  source: string | ArrayBuffer,
+  resolver: LocalResourceResolver,
+  signal?: AbortSignal,
+): Promise<ParsedImport> {
   const tracked = await createTrackedLoadingManager(resolver);
   throwIfAborted(signal);
   const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
@@ -1206,6 +1225,33 @@ async function parseGltfImport(
     if (parsedRoot) disposeStudioBg3dThreeResources(parsedRoot);
     throw error;
   }
+}
+
+/**
+ * .skp(SketchUp) 가져오기: OpenSKP(MIT) 파사드로 브라우저에서 GLB로 변환한 뒤 기존 GLB
+ * 경로로 합류한다. 변환기가 없거나(패키지 미설치) 파서가 파일을 거부하면 전용 오류 코드로
+ * 실패해 DAE·GLB 내보내기 대안을 안내한다 — 되는 척하는 대체 변환은 하지 않는다.
+ */
+async function parseSkpImport(
+  item: StudioBg3dImportPlanItem,
+  resolver: LocalResourceResolver,
+  signal?: AbortSignal,
+): Promise<ParsedImport> {
+  const bytes = await readBytes(item.primary, signal);
+  throwIfAborted(signal);
+  let glb: Uint8Array;
+  try {
+    glb = await convertStudioBg3dSkpToGlb(bytes);
+  } catch (error) {
+    if (error instanceof StudioBg3dSkpConverterUnavailableError) {
+      throw importError("skp-converter-unavailable");
+    }
+    if (error instanceof StudioBg3dSkpParseError) throw importError("skp-parse-failed");
+    throw error;
+  }
+  throwIfAborted(signal);
+  const glbBuffer = glb.buffer.slice(glb.byteOffset, glb.byteOffset + glb.byteLength) as ArrayBuffer;
+  return parseGlbSourceImport(glbBuffer, resolver, signal);
 }
 
 async function preflightObjBytesForImport(
@@ -1763,6 +1809,8 @@ async function parsePlanItem(
       return parsePlyImport(item, executionBackend, signal);
     case "3ds":
       return parse3dsImport(item, resolver, signal);
+    case "skp":
+      return parseSkpImport(item, resolver, signal);
     case "glb":
       throw importError("parse-failed");
   }

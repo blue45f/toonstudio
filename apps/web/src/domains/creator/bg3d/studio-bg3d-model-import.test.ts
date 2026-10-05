@@ -696,6 +696,25 @@ describe("planStudioBg3dModelImports", () => {
     expect(objRuntimeSource).not.toContain("loaders/MTLLoader.js");
   });
 
+  it("plans a SketchUp .skp file as a primary model item", () => {
+    const plan = planStudioBg3dModelImports([
+      sourceFile("room.skp", new Uint8Array([7]), "set/room.skp"),
+    ]);
+    expect(plan.items.map(({ format, primaryPath }) => [format, primaryPath])).toEqual([
+      ["skp", "set/room.skp"],
+    ]);
+    expect(plan.ignoredFiles).toEqual([]);
+  });
+
+  it("fails .skp conversion honestly when the OpenSKP converter is not installed", async () => {
+    // openskp is an optional dependency that is not installed in this repo state, so the
+    // dedicated unavailable code (with the DAE·GLB fallback guidance) must surface as-is.
+    const skp = sourceFile("room.skp", new Uint8Array([7, 8, 9]));
+    await expect(convertStudioBg3dModelFilesToGlb([skp])).rejects.toMatchObject({
+      code: "skp-converter-unavailable",
+    });
+  });
+
   it("plans all standard primary formats while retaining bounded companion resources", () => {
     const files = [
       sourceFile("room.gltf", "{}", "set/room.gltf"),
