@@ -96,6 +96,113 @@ function EmptySearchArt() {
     />
   );
 }
+
+type CurationState =
+  | { phase: "loading" }
+  | { phase: "ready"; items: CreatorResource[] }
+  | { phase: "unavailable" };
+
+/**
+ * 검색 전 큐레이션 — 제공처 대표 검색어로 실제 검색 API를 한 번 호출해, 돌아온 실제 자료로만
+ * 타일을 만든다. 위장 방지가 계약이다: API 미설정·실패·이미지 부족이면 타일을 만들지 않고
+ * "unavailable"로 떨어져 정직한 빈 상태 구성이 대신한다. featured가 없는 제공처
+ * (음악 메타데이터·날씨·학교·사전·조회 신호·지원사업)는 시안 지시대로 타일 자체를 시도하지 않는다.
+ */
+function useResourceCuration(provider: ResourceSearchProvider): CurationState {
+  const featured = RESOURCE_SEARCH_CONFIG[provider].featured;
+  const [state, setState] = useState<CurationState>({ phase: "loading" });
+  useEffect(() => {
+    if (!featured) { setState({ phase: "unavailable" }); return; }
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort("timeout"), 30000);
+    let disposed = false;
+    setState({ phase: "loading" });
+    const search = new URLSearchParams({ provider, q: featured.query, page: "1" });
+    void apiFetch(apiPath(`/api/creator-resources/search?${search}`), { signal: controller.signal, headers: { Accept: "application/json" } })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("curation_unavailable");
+        const parsed = parseSearchResult(await response.json());
+        if (!parsed || parsed.provider !== provider || (parsed.status !== "ready" && parsed.status !== "partial")) throw new Error("curation_unavailable");
+        const items = (featured.kind === "font" ? parsed.items : parsed.items.filter((item) => item.imageUrl)).slice(0, 8);
+        if (!disposed) setState(items.length >= 3 ? { phase: "ready", items } : { phase: "unavailable" });
+      })
+      .catch(() => { if (!disposed) setState({ phase: "unavailable" }); })
+      .finally(() => { window.clearTimeout(timeout); });
+    return () => { disposed = true; window.clearTimeout(timeout); controller.abort(); };
+  }, [provider, featured]);
+  return state;
+}
+
+function CurationTile({ item, provider, query, onRunSearch }: { item: CreatorResource; provider: ResourceSearchProvider; query: string; onRunSearch: (q: string) => void }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(item.imageUrl) && !imageFailed;
+  return (
+    <button type="button" onClick={() => onRunSearch(query)} aria-label={`${item.title} — '${query}' 검색 결과 보기`}
+      className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel text-left transition hover:border-accent/50">
+      <span className="relative block aspect-[4/3] w-full overflow-hidden bg-raised">
+        {item.provider === "googlefonts" ? <GoogleFontPreview family={item.title} />
+          : showImage ? <img src={item.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
+          : <TypographicCover title={item.title} seed={item.id} className="absolute inset-0" />}
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-1.5 bg-gradient-to-t from-black/55 via-black/25 to-transparent p-3 pt-8">
+          <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">{RESOURCE_LABELS[provider]}</span>
+          <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">{resourceUsageLabel(item)}</span>
+        </span>
+      </span>
+      <span className="flex flex-1 flex-col gap-1 p-4">
+        <span className="break-words text-sm font-bold leading-5">{item.title}</span>
+        <span className="break-words text-xs text-fg-2">{item.creator || "저작자·기관 원문 확인"}{item.dateLabel ? ` · ${item.dateLabel}` : ""}</span>
+      </span>
+    </button>
+  );
+}
+
+/**
+ * 검색 전 구성 (공통) — 큐레이션을 쓸 수 있으면 대표 아트 타일 + 다음 행동을,
+ * 쓸 수 없으면 일러스트 + 안내 + 추천 키워드(다음 행동)로 정직하게 구성한다.
+ */
+function PreSearchGuide({ provider, onRunSearch }: { provider: ResourceSearchProvider; onRunSearch: (q: string) => void }) {
+  const config = RESOURCE_SEARCH_CONFIG[provider];
+  const featured = config.featured;
+  const curation = useResourceCuration(provider);
+  if (featured && curation.phase === "loading") {
+    return (
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="overflow-hidden rounded-2xl border border-line bg-panel">
+            <div className="aspect-[4/3] w-full animate-pulse bg-raised [motion-reduce:animate-none]" />
+            <div className="space-y-2 p-4">
+              <div className="h-4 w-3/4 animate-pulse rounded bg-raised [motion-reduce:animate-none]" />
+              <div className="h-3 w-1/2 animate-pulse rounded bg-raised [motion-reduce:animate-none]" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (featured && curation.phase === "ready") {
+    return (
+      <section aria-label="검색 전 대표 자료" className="space-y-3 py-2 text-left">
+        <div>
+          <h3 className="text-base font-bold">검색 전에 둘러보기</h3>
+          <p className="mt-1 text-sm leading-6 text-fg-2">‘{featured.query}’ 검색으로 확인한 {RESOURCE_LABELS[provider]} 대표 자료입니다. 타일을 누르면 같은 검색을 바로 실행합니다.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {curation.items.map((item) => <CurationTile key={item.id} item={item} provider={provider} query={featured.query} onRunSearch={onRunSearch} />)}
+        </div>
+      </section>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center py-4 text-center">
+      <EmptySearchArt />
+      <p>검색어를 입력하거나 아래 추천 키워드로 바로 검색해 보세요.</p>
+      <div className="mt-3 flex flex-wrap justify-center gap-2">
+        {config.examples.map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => onRunSearch(value)}>{value}</button>)}
+      </div>
+      {!featured && <p className="mt-3 text-xs text-fg-3">외부 API는 검색할 때만 호출합니다.</p>}
+    </div>
+  );
+}
 export function ResourceSearchPage({ provider }: { provider: ResourceSearchProvider }) {
   const config = RESOURCE_SEARCH_CONFIG[provider];
   const [params, setParams] = useSearchParams();
@@ -175,13 +282,13 @@ export function ResourceSearchPage({ provider }: { provider: ResourceSearchProvi
       {!savedOnly && loading && <p role="status">공식 제공처에서 자료를 확인하고 있습니다…</p>}
       {!savedOnly && requestError && <p role="alert">{requestError}</p>}
       {!savedOnly && result && <p>{result.status === "not_configured" ? "API 연결 대기 · " : result.status === "unavailable" ? "일시적으로 이용 불가 · " : ""}{result.message}</p>}
-      {!savedOnly && !query && <div className="flex flex-col items-center py-4 text-center">
-        <EmptySearchArt />
-        <p>검색어를 입력하거나 추천 키워드를 선택하세요. 외부 API는 검색할 때만 호출합니다.</p>
-      </div>}
+      {!savedOnly && !query && <PreSearchGuide provider={provider} onRunSearch={searchFor} />}
       {!loading && !items.length && (savedOnly || result?.status === "ready") && <div className="flex flex-col items-center py-4 text-center">
         <EmptySearchArt />
         <p>{savedOnly ? "이 제공처에서 저장한 자료가 없습니다." : "현재 검색 범위에 표시할 자료가 없습니다. 다른 검색어 또는 다음 페이지를 확인하세요."}</p>
+        {!savedOnly && <div className="mt-3 flex flex-wrap justify-center gap-2">
+          {config.examples.filter((value) => value !== query).map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => searchFor(value)}>{value}</button>)}
+        </div>}
       </div>}
     </div>
     {!savedOnly && (requestError || result?.status === "unavailable" || result?.status === "partial") && <button className={RESOURCE_BUTTON} onClick={() => setRetry((value) => value + 1)}>다시 시도</button>}
