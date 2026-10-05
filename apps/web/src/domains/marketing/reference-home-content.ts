@@ -16,6 +16,7 @@ export const HOME_QUICK_STARTS = [
   { href: "/studio/assets/characters/new", ko: "캐릭터 만들기", en: "Create a character", detailKo: "3D 프리셋으로 표정·포즈", detailEn: "3D presets, poses and faces", image: "character-pink" },
   { href: "/studio/bg3d", ko: "배경 만들기", en: "Build a world", detailKo: "장면을 완성하는 3D 공간", detailEn: "3D spaces for your scenes", image: "background-city" },
   { href: "/studio/canvas", ko: "빈 캔버스", en: "Blank canvas", detailKo: "지금 바로 그리기", detailEn: "Start drawing now", image: "blank-canvas" },
+  { href: "/production", ko: "제작 허브", en: "Production hub", detailKo: "회차·일정·검토 한곳에서", detailEn: "Episodes, schedules and reviews", image: "project-crimson" },
 ] as const;
 
 /** 예시 작품 선반. 실제 사용자 프로젝트가 아니므로 화면에 '예시'로 표기한다. 회차·날짜 메타도 예시 표기다. */
@@ -130,11 +131,12 @@ export const SERVICE_FLOW = [
 
 export type ServiceFlowStep = (typeof SERVICE_FLOW)[number]["id"];
 
-/** 홈 하단 '더 알아보기' — 소개 흐름을 정본 순서로 보여 주고 영상 두 편을 덧붙인다. */
+/** 홈 하단 '더 알아보기' — 소개 흐름을 정본 순서로 보여 주고 영상 두 편과 전체 기능 요약을 덧붙인다. */
 export const HOME_LEARN_MORE: readonly HomeLink[] = [
   ...ABOUT_JOURNEY,
   { href: "/product-tour", ko: "8분 제품 투어", en: "8-minute product tour" },
   { href: "/brand-film", ko: "24초 브랜드 필름", en: "24-second brand film" },
+  { href: "/features", ko: "전체 기능 한눈에", en: "All features at a glance" },
 ];
 
 export function homeArt(name: string, width: 320 | 640): string {

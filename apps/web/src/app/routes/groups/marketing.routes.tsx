@@ -32,6 +32,13 @@ const PricingPage = lazyRetry(
   "PricingPage",
 );
 
+const FeaturesOverviewPage = lazyRetry(
+  () => import("@/domains/marketing/FeaturesOverviewPage").then((module) => ({
+    default: module.FeaturesOverviewPage,
+  })),
+  "FeaturesOverviewPage",
+);
+
 const EventsHubPage = lazyRetry(
   () => import("@/domains/marketing/events/EventsHubPage").then((module) => ({
     default: module.EventsHubPage,
@@ -65,6 +72,7 @@ export const marketingRoutes = defineAppRoutes([
   { id: "marketing-membership", path: "/membership", element: <MembershipPolicyPage /> },
   // 내비게이션 팀이 헤더/푸터에서 연결할 공개 요금제 안내. 상세 한도는 /membership이 소유한다.
   { id: "marketing-pricing", path: "/pricing", element: <PricingPage /> },
+  { id: "marketing-features-overview", path: "/features", element: <FeaturesOverviewPage /> },
   { id: "marketing-brand-film", path: "/brand-film", element: <BrandFilmPage /> },
   { id: "marketing-events", path: "/events", element: <EventsHubPage /> },
   { id: "marketing-event-beta-open", path: "/events/beta-open", element: <BetaOpenEventPage /> },
