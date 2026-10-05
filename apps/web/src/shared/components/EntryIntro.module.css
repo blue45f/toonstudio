@@ -14,7 +14,7 @@
   pointer-events: none;
   user-select: none;
   opacity: 1;
-  transition: opacity 450ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 550ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .root[data-phase="fade"] {
@@ -31,15 +31,16 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  animation: entry-intro-art-settle 1600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: entry-intro-art-settle 2900ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* 중앙 워드마크 가독성용 스크림 — 인트로 아트 자체의 일부이며 본문 위 틴트가 아니다. */
+/* 중앙 워드마크 가독성용 스크림 — 인트로 아트 자체의 일부이며 본문 위 틴트가 아니다.
+   중앙 텍스트가 얹히는 국소 영역만 진하게 하고 가장자리는 아트를 그대로 살린다. */
 .scrim {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(62% 52% at 50% 46%, rgba(6, 3, 9, 0.52) 0%, rgba(6, 3, 9, 0.18) 58%, rgba(6, 3, 9, 0) 100%),
+    radial-gradient(62% 52% at 50% 46%, rgba(6, 3, 9, 0.66) 0%, rgba(6, 3, 9, 0.24) 58%, rgba(6, 3, 9, 0) 100%),
     linear-gradient(180deg, rgba(6, 3, 9, 0.28) 0%, rgba(6, 3, 9, 0) 30%, rgba(6, 3, 9, 0) 70%, rgba(6, 3, 9, 0.36) 100%);
 }
 
@@ -60,17 +61,17 @@
 }
 
 .mark {
-  width: clamp(46px, 12vw, 60px);
-  height: clamp(46px, 12vw, 60px);
+  width: clamp(52px, 13vw, 68px);
+  height: clamp(52px, 13vw, 68px);
   border-radius: 26%;
   object-fit: cover;
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
 }
 
 .wordmark {
-  font-size: clamp(2.1rem, 8vw, 3.4rem);
+  font-size: clamp(2.3rem, 8.5vw, 3.6rem);
   line-height: 1;
-  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 4px 32px rgba(0, 0, 0, 0.55);
 }
 
 /* 어두운 인트로 위에서는 워드마크를 스타라이트 시그니처(청록·보라)로 — 브랜드 CSS의
@@ -93,7 +94,7 @@
   margin-top: 22px;
   border-radius: 999px;
   background: linear-gradient(90deg, #ff3b30, #ff9500, #ffcc00, #4cd964, #5ac8fa, #5856d6);
-  animation: entry-intro-line-grow 900ms 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: entry-intro-line-grow 900ms 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .tagline {
@@ -101,9 +102,10 @@
   font-size: clamp(11px, 2.8vw, 13px);
   font-weight: 600;
   letter-spacing: 0.22em;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
   opacity: 0;
-  animation: entry-intro-fade-in 800ms 450ms ease-out forwards;
+  animation: entry-intro-fade-in 800ms 650ms ease-out forwards;
 }
 
 @keyframes entry-intro-art-settle {
