@@ -55,10 +55,10 @@ function signIn(userId: string | null) {
   auth.listeners.forEach((listener) => listener(session));
 }
 
-/** 활동 적립으로 잔액을 채운다. 원장이 미래 시각 이벤트를 잔액에서 제외하므로 실제 현재 날짜를 기준으로 쌓는다. */
+/** 활동 적립으로 잔액을 채운다. 원장이 미래 시각 이벤트를 잔액에서 제외하므로, 오늘 정오처럼 실행 시각에 따라 미래가 될 수 있는 날짜는 피하고 어제부터 과거 날짜로만 쌓는다. */
 function fund(points: number): void {
   const today = new Date();
-  let dayOffset = 0;
+  let dayOffset = 1;
   let remaining = points;
   let salt = 0;
   while (remaining > 0) {
