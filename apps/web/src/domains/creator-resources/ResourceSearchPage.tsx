@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { ProviderStatus } from "./ProviderStatus";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
+import { WeatherLightBoard } from "./WeatherLightBoard";
 import { downloadText, useCreatorWorkspace } from "./workspace";
 
 import { TypographicCover } from "@/shared/components/typographic-cover";
@@ -260,6 +261,8 @@ export function ResourceSearchPage({ provider }: { provider: ResourceSearchProvi
         에서 찾고, <strong className="text-fg">단행본·작법서·창작 자료</strong>는 여기서 검색하세요.
       </p>
     </div>
+    {/* 날씨·빛 페이지는 타일 대신 빛 비교 참고판이 본체다 (시안 S4-05). 검색·상태 구분은 아래 그대로 유지한다. */}
+    {provider === "metweather" && <WeatherLightBoard />}
     <section aria-labelledby="resource-search-heading">
     <h2 id="resource-search-heading" className="sr-only">자료 검색</h2>
     <form className="space-y-3 rounded-2xl border border-line bg-panel p-5" onSubmit={(event) => { event.preventDefault(); searchFor(draft.trim()); }}>
