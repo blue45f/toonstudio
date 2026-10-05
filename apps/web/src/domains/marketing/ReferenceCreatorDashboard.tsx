@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronRight, FolderKanban, PencilLine, Plus } from "lucide-react";
+import { ArrowRight, ChevronRight, FolderKanban, PencilLine, Plus, Search } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { ToonStudioWordmark } from "@/shared/components/toonstudio-brand";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
+import { DiscoverHomePreview } from "@/domains/catalog/public/DiscoverHomePreview";
 
 import { HomeCoreStudios } from "./HomeCoreStudios";
 import { HomeLunaPanel } from "./HomeLunaPanel";
@@ -18,14 +19,24 @@ import "./reference-creator-dashboard.css";
  * 공개 홈(/)은 얇게 유지한다: 첫 화면은 포스터 히어로(아이디어 입력이 1차 행동)와
  * 시작 카드까지만, Luna 상담·예시·작업실 입구는 아래 섹션으로 나눈다.
  * 로그인해도 홈은 그대로이고 개인 동선은 히어로 아래 스트립으로만 얹는다.
+ * 읽기 동선은 히어로 바로 아래 발견 미리보기(스포트라이트 1장 + 요일 레일 1줄)까지만
+ * 얹는다 — 레일 전체와 검색은 /discover·/search가 소유한다.
  */
 export function ReferenceCreatorDashboard() {
   const bi = useBilingualLocalizer("domains.marketing.ReferenceCreatorDashboard");
   const navigate = useNavigate();
   const [idea, setIdea] = useState("");
-  const submitIdea = (event: FormEvent) => {
+  // 통합 입력의 분기: 기본은 만들기(스토리 연구실)이고, 작품 찾기로 바꾸면 카탈로그 검색으로 보낸다.
+  // 입력한 문장은 모드를 오가도 유지한다.
+  const [inputMode, setInputMode] = useState<"create" | "search">("create");
+  const searching = inputMode === "search";
+  const submitInput = (event: FormEvent) => {
     event.preventDefault();
     const text = idea.trim();
+    if (searching) {
+      navigate(text ? `/search?q=${encodeURIComponent(text)}` : "/search");
+      return;
+    }
     navigate(text ? `/story-lab?idea=${encodeURIComponent(text)}` : "/story-lab");
   };
   return <div className="reference-dashboard" data-reference-dashboard="true">
@@ -46,23 +57,37 @@ export function ReferenceCreatorDashboard() {
           <p className="rd-eyebrow">{bi("상상하는 모든 이야기, 여기서 작품이 됩니다.", "Every story you imagine starts here.")}</p>
           <h1 id="creator-hero-title">{bi("오늘은 어떤 이야기를", "What story will you")}<br /><em>{bi("만들까요?", "create today?")}</em></h1>
           <p className="rd-intro">{bi("당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.", "Your imagination. Your next extraordinary story.")}</p>
-          <form className="rd-idea" onSubmit={submitIdea}>
-            <PencilLine size={17} aria-hidden="true" />
-            <label className="sr-only" htmlFor="rd-idea-input">{bi("아이디어 입력", "Idea input")}</label>
+          <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
+            <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
+              <PencilLine size={14} aria-hidden="true" />{bi("이야기 만들기", "Create a story")}
+            </button>
+            <button type="button" aria-pressed={searching} onClick={() => setInputMode("search")}>
+              <Search size={14} aria-hidden="true" />{bi("작품 찾기", "Find stories")}
+            </button>
+          </div>
+          <form className="rd-idea" onSubmit={submitInput}>
+            {searching ? <Search size={17} aria-hidden="true" /> : <PencilLine size={17} aria-hidden="true" />}
+            <label className="sr-only" htmlFor="rd-idea-input">{searching ? bi("작품 검색", "Story search") : bi("아이디어 입력", "Idea input")}</label>
             <input
               id="rd-idea-input"
               value={idea}
               onChange={(event) => setIdea(event.target.value)}
-              placeholder={bi("아이디어를 입력해보세요 (예: 비 오는 날의 첫사랑)", "Type an idea (e.g. first love on a rainy day)")}
+              placeholder={searching
+                ? bi("작품명·작가·태그로 찾아보세요", "Search by title, creator or tag")
+                : bi("아이디어를 입력해보세요 (예: 비 오는 날의 첫사랑)", "Type an idea (e.g. first love on a rainy day)")}
               maxLength={200}
               autoComplete="off"
+              enterKeyHint={searching ? "search" : undefined}
             />
-            <button type="submit" className="rd-idea-submit">{bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
+            <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
           </form>
         </div>
       </div>
     </section>
     <HomePersonalStrip />
+    <div className="rd-discover">
+      <DiscoverHomePreview />
+    </div>
     <nav id="creator-start" className="rd-quick" aria-labelledby="creator-toolkit-title">
       <div className="rd-section-heading">
         <h2 id="creator-toolkit-title" tabIndex={-1}>{bi("무엇부터 시작할까요?", "Where would you like to start?")}</h2>
