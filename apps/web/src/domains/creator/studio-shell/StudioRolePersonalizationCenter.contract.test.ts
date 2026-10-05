@@ -17,8 +17,12 @@ const personalizePanels = readFileSync(
 
 describe("role personalization center contract", () => {
   it("is reachable from the active Studio project home", () => {
-    expect(projectHome).toContain('import("./StudioLibraryPersonalizePanels")');
-    expect(projectHome).toContain("<StudioLibraryPersonalizeDetails locale={controller.locale} />");
+    // R-3: 개인화 센터는 설정의 "내 직군 · 작업환경"으로 이관됐다. 라이브러리 딥링크는
+    // 요약+이동 링크로 남고, 패널 조합 자체는 설정 진입점이 공개 배럴로 가져온다.
+    expect(projectHome).toContain('id="role-personalization"');
+    expect(projectHome).toContain("<StudioLibraryPersonalizeDetails />");
+    expect(projectHome).toContain('href="/settings/role?tab=workspace"');
+    expect(projectHome).not.toContain('import("./StudioLibraryPersonalizePanels")');
     expect(personalizePanels).toContain(
       'import { StudioRolePersonalizationCenter } from "./StudioRolePersonalizationCenter"',
     );

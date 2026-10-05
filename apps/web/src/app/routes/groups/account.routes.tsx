@@ -33,6 +33,10 @@ const CreatorDirectoryPage = lazyPage(
   "CreatorDirectoryPage",
 );
 const SettingsPage = lazyPage(() => import("@/domains/account/SettingsPage"), "SettingsPage");
+const RoleWorkspaceSettingsPage = lazyPage(
+  () => import("@/domains/account/RoleWorkspaceSettingsPage"),
+  "RoleWorkspaceSettingsPage",
+);
 const NotificationSettingsPage = lazyPage(
   () => import("@/domains/engagement/NotificationSettingsPage"),
   "NotificationSettingsPage",
@@ -61,6 +65,7 @@ const MessageRequestPage = lazyPage(
 
 export const accountRoutes = defineAppRoutes([
   route("account-ai-settings", "/settings/ai", AiSettingsPage),
+  route("account-role-settings", "/settings/role", RoleWorkspaceSettingsPage),
   route("account-membership-usage", "/membership/usage", MembershipUsagePage),
   route("account-points", "/account/points", AssetPointsWalletPage),
   route("account-my-space", "/my", MySpaceHubPage),

@@ -65,7 +65,7 @@ describe("설정 화면 탭", () => {
     const related = document.querySelector("details[data-related-settings]") as HTMLDetailsElement;
     expect(related.open).toBe(false);
     const hrefs = within(related).getAllByRole("link").map((link) => link.getAttribute("href"));
-    expect(hrefs).toEqual(expect.arrayContaining(["/membership", "/settings/ai", "/settings/api-keys", "/settings/integrations", "/settings/notifications", "/studio#role-personalization"]));
+    expect(hrefs).toEqual(expect.arrayContaining(["/membership", "/settings/ai", "/settings/api-keys", "/settings/integrations", "/settings/notifications", "/settings/role"]));
   });
 });
 

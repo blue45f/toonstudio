@@ -126,7 +126,7 @@ function RoleNotificationSummary() {
           </p>
         </div>
         <Link
-          href="/studio#role-personalization"
+          href="/settings/role?tab=workspace"
           className={buttonClass({ variant: "outline", size: "sm", className: "shrink-0" })}
         >
           내 직군 · 작업환경에서 바꾸기

@@ -82,7 +82,7 @@ const RELATED_SETTINGS: ReadonlyArray<{
     description: ["알림 종류별 수신 여부와 직군 알림이 함께 적용되는 방식 확인", "Review per-type notification switches and how role notifications combine"],
   },
   {
-    href: "/studio#role-personalization",
+    href: "/settings/role",
     icon: Briefcase,
     title: ["내 직군 · 작업환경", "My role & workspace"],
     description: ["직군별 빠른 실행 순서, 기본 작업공간, 알림 수준 같은 작업환경 개인화", "Role-based quick actions, default workspace and notification level personalization"],
@@ -236,7 +236,7 @@ const RELATED_SEARCH_KEYWORDS: Readonly<Record<string, string>> = {
   "/settings/api-keys": "API 키 발급 api key token",
   "/settings/integrations": "연동 통합 외부 integration connect",
   "/settings/notifications": "알림 수신 끄기 켜기 종 notification alerts bell",
-  "/studio#role-personalization": "직군 직업 역할 작업환경 개인화 알림 수준 role job workspace personalization",
+  "/settings/role": "직군 직업 역할 작업환경 개인화 알림 수준 role job workspace personalization",
 };
 
 function matchesSettingsQuery(entry: SettingsSearchEntry, query: string): boolean {

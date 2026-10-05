@@ -21,11 +21,13 @@ const personalizePanels = readFileSync(
 
 describe("Studio front door UX contract", () => {
   it("keeps the project library home and integrates role and task-first panels", () => {
-    // 접힌 설정 묶음은 첫 화면 경로에서 분리하되, 활성 홈에서는 항상 도달 가능해야 한다.
-    expect(projectHome).toContain('import("./StudioLibraryPersonalizePanels")');
+    // R-3: 개인화 패널은 설정의 "내 직군 · 작업환경" 진입점으로 이관됐고, 라이브러리에는
+    // 딥링크를 지키는 요약+이동 링크가 남는다. 패널 조합(역할·시작)은 그대로 유지된다.
+    expect(projectHome).toContain('id="role-personalization"');
     expect(projectHome).toContain(
-      '{controller.view === "active" ? <StudioLibraryPersonalizeDetails locale={controller.locale} /> : null}',
+      '{controller.view === "active" ? <StudioLibraryPersonalizeDetails /> : null}',
     );
+    expect(projectHome).toContain('href="/settings/role?tab=workspace"');
     expect(personalizePanels).toContain(
       'import { StudioProjectStartPanel } from "./StudioProjectStartPanel"',
     );

@@ -111,7 +111,7 @@ describe("NotificationSettingsPage 직군 알림 안내", () => {
     expect(screen.getByText(/아직 직군을 정하지 않아 직군 알림이 적용되지 않아요/)).toBeTruthy();
     expect(
       screen.getByRole("link", { name: /내 직군 · 작업환경에서 바꾸기/ }).getAttribute("href"),
-    ).toBe("/studio#role-personalization");
+    ).toBe("/settings/role?tab=workspace");
   });
 
   it("직군 알림이 적용 중이면 켜진 개수와 꺼진 종류를 보여 준다", () => {
