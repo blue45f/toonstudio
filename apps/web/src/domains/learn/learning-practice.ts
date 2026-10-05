@@ -97,16 +97,51 @@ export function parsePracticeProgress(raw: string | null, lessons: readonly Less
   return { version: 1, missions };
 }
 
-export function loadPracticeProgress(storage: Pick<Storage, "getItem"> | null): PracticeProgress {
-  if (!storage) return emptyPracticeProgress();
-  try { return parsePracticeProgress(storage.getItem(PRACTICE_STORAGE_KEY)); }
-  catch { return emptyPracticeProgress(); }
+/**
+ * 소유자별 저장 키. 실습 기록도 개인 기록이라 계정으로 나눠, 같은 브라우저의
+ * 다른 계정에게 이전 계정의 미션 시작·완료 기록이 보이지 않게 한다
+ * (진도·노트, 수강 등록과 같은 방식).
+ * ownerKey가 없으면 레거시 키(기존 호출·테스트 호환).
+ */
+export function practiceStorageKey(ownerKey?: string): string {
+  return ownerKey ? `${PRACTICE_STORAGE_KEY}:${ownerKey}` : PRACTICE_STORAGE_KEY;
 }
 
-export function savePracticeProgress(storage: Pick<Storage, "setItem"> | null, progress: PracticeProgress): boolean {
+export function loadPracticeProgress(
+  storage: (Pick<Storage, "getItem"> & Partial<Pick<Storage, "setItem" | "removeItem">>) | null,
+  ownerKey?: string,
+): PracticeProgress {
+  if (!storage) return emptyPracticeProgress();
+  try {
+    const scopedRaw = storage.getItem(practiceStorageKey(ownerKey));
+    if (scopedRaw !== null || !ownerKey || ownerKey === "guest") return parsePracticeProgress(scopedRaw);
+    // 스코프 키가 없으면 레거시 기록을 첫 계정이 claim 한다 — 읽은 자리에서
+    // 스코프 키로 옮기고 레거시를 지워, 다음 계정이 또 claim 하지 않게 한다.
+    // 게스트는 claim 하지 않는다 — 게스트 파티션은 빈 채로 시작한다.
+    const legacyRaw = storage.getItem(PRACTICE_STORAGE_KEY);
+    const legacy = parsePracticeProgress(legacyRaw);
+    if (legacyRaw !== null && storage.setItem && storage.removeItem) {
+      try {
+        storage.setItem(practiceStorageKey(ownerKey), legacyRaw);
+        storage.removeItem(PRACTICE_STORAGE_KEY);
+      } catch {
+        // 이관 쓰기가 실패해도 읽은 값은 그대로 돌려준다.
+      }
+    }
+    return legacy;
+  } catch {
+    return emptyPracticeProgress();
+  }
+}
+
+export function savePracticeProgress(
+  storage: Pick<Storage, "setItem"> | null,
+  progress: PracticeProgress,
+  ownerKey?: string,
+): boolean {
   if (!storage) return false;
   try {
-    storage.setItem(PRACTICE_STORAGE_KEY, JSON.stringify(parsePracticeProgress(JSON.stringify(progress))));
+    storage.setItem(practiceStorageKey(ownerKey), JSON.stringify(parsePracticeProgress(JSON.stringify(progress))));
     return true;
   } catch {
     return false;
