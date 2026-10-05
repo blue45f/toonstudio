@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   getAuthUserId,
@@ -70,10 +70,15 @@ export function useMarketGroupBuy(): MarketGroupBuySurface {
     setCampaigns(getGroupBuyCampaigns());
   }, []);
 
+  const openCampaigns = useMemo(
+    () => campaigns.filter((campaign) => campaign.status === "open"),
+    [campaigns],
+  );
+
   return {
     viewerId,
     campaigns,
-    openCampaigns: campaigns.filter((campaign) => campaign.status === "open"),
+    openCampaigns,
     refresh,
   };
 }
