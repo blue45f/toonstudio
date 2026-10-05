@@ -26,6 +26,7 @@ import {
   WikimediaDashboardSkeleton,
   WikimediaInterestDashboard,
 } from "./WikimediaInterestDashboard";
+
 function GoogleFontPreview({ family }: { family: string }) {
   const safeFamily = family.replace(/["'\\]/gu, "");
   useEffect(() => {
