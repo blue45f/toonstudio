@@ -10,13 +10,12 @@ import {
   LayoutGrid,
   Presentation,
 } from "lucide-react";
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { AboutSectionNav } from "../AboutSectionNav";
 import {
   ENGINEERING_PAGES,
   ENGINEERING_PAGE_GROUPS,
-  ENGINEERING_PATH_PAGES,
   engineeringPageForPath,
   findEngineeringPage,
   type EngineeringPageEntry,
@@ -27,9 +26,15 @@ import { ENGINEERING_STATUS_META, type EngineeringStatus } from "./engineering-s
 import Link from "@/shared/navigation/router-link";
 import { usePathname } from "@/shared/navigation/navigation";
 import { Container } from "@/shared/components/section";
+import {
+  WORKFLOW_VISUAL_COPY,
+  workflowIllustrationSource,
+  workflowIllustrationSources,
+} from "@/shared/components/site-experience/workflow-illustration";
 import { cx } from "@/shared/lib/cx";
 import {
   formatI18nTemplate,
+  getActiveI18nLocale,
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
@@ -193,6 +198,36 @@ function PageMeta({ page }: { readonly page: EngineeringPageEntry }) {
   return null;
 }
 
+/**
+ * 머리말 아래 페이지 대표 이미지. 레지스트리에 매핑된 기존 브랜드 아트(workflow-20260928)를 쓴다.
+ * 원본 아트 로드가 실패하면 같은 세트의 대체 아트(illustrated-20260928)로 바꾸고,
+ * 그것도 실패하면 깨진 이미지를 남기지 않고 자리를 접는다.
+ */
+function EngineeringPageHeroArt({ page }: { readonly page: EngineeringPageEntry }) {
+  useBilingualI18nRevision();
+  const [stage, setStage] = useState<"workflow" | "fallback" | "gone">("workflow");
+  if (stage === "gone") return null;
+  const copy = WORKFLOW_VISUAL_COPY[page.art];
+  const korean = getActiveI18nLocale().startsWith("ko");
+  const fallback = stage === "fallback";
+  return (
+    <figure className="mt-8 overflow-hidden rounded-[2rem] border border-line/70 bg-[#0b1427] shadow-sm sm:mt-10 lg:col-span-2">
+      <img
+        src={fallback ? `/brand/illustrated-20260928/${copy.fallback}-640.webp` : workflowIllustrationSource(page.art)}
+        srcSet={fallback ? undefined : workflowIllustrationSources(page.art)}
+        sizes="(max-width: 767px) 100vw, 1152px"
+        width={960}
+        height={600}
+        alt={fallback ? bi("작업을 설명하는 브랜드 콘셉트 아트", "Brand concept art illustrating the task") : korean ? copy.ko : copy.en}
+        className="aspect-[4/3] w-full object-cover sm:aspect-[16/9]"
+        loading="lazy"
+        decoding="async"
+        onError={() => setStage(fallback ? "gone" : "fallback")}
+      />
+    </figure>
+  );
+}
+
 export function EngineeringPageIntro({
   eyebrow,
   title,
@@ -232,6 +267,7 @@ export function EngineeringPageIntro({
         ) : null}
       </div>
       {aside ? <div className="lg:max-w-sm">{aside}</div> : null}
+      {page ? <EngineeringPageHeroArt page={page} /> : null}
     </header>
   );
 }
@@ -259,7 +295,7 @@ function PagerCard({
     >
       <span className={cx("inline-flex items-center gap-2 text-xs font-bold text-fg-3", next && "sm:flex-row-reverse")}>
         {next ? <ArrowRight size={14} aria-hidden="true" /> : <ArrowLeft size={14} aria-hidden="true" />}
-        {next ? bi("다음 단계", "Next step") : bi("이전 단계", "Previous step")}
+        {next ? bi("다음 글", "Next article") : bi("이전 글", "Previous article")}
       </span>
       <span className={cx("inline-flex items-center gap-2 text-lg font-black text-fg group-hover:text-accent", next && "sm:flex-row-reverse")}>
         {page.step ? <StepMark step={page.step} active={next} /> : <Icon size={18} aria-hidden="true" />}
@@ -270,20 +306,21 @@ function PagerCard({
   );
 }
 
-/** 발표 동선(1→5) 기준 이전·다음 페이지. 자료 페이지는 허브와 발표 모드로 이어준다. */
+/**
+ * 전체 읽기 순서(레지스트리 배열 순서) 기준 이전·다음 글 카드.
+ * 발표 동선 밖의 자료 페이지(영상·참고 자료·용어집·라이선스)도 실제 앞뒤 글을 받는다.
+ * 순서의 처음에는 이전 글 대신, 끝에는 다음 글 대신 기술 허브 카드를 둔다.
+ */
 function EngineeringPathPager({ current, className }: { readonly current: EngineeringPageId; readonly className?: string }) {
   useBilingualI18nRevision();
-  const pathIndex = ENGINEERING_PATH_PAGES.findIndex((page) => page.id === current);
-  const previous = pathIndex > 0 ? ENGINEERING_PATH_PAGES[pathIndex - 1] : undefined;
-  const next = pathIndex >= 0 ? ENGINEERING_PATH_PAGES[pathIndex + 1] : findEngineeringPage("deck");
-
-  const hasNext = Boolean(next && next.id !== current);
+  const index = ENGINEERING_PAGES.findIndex((page) => page.id === current);
+  const previous = index > 0 ? ENGINEERING_PAGES[index - 1] : undefined;
+  const next = index >= 0 && index < ENGINEERING_PAGES.length - 1 ? ENGINEERING_PAGES[index + 1] : undefined;
 
   return (
     <nav aria-label={bi("기술 문서 이어보기", "Continue through the engineering documents")} className={cx("mt-14 grid gap-3 sm:grid-cols-2", className)}>
       {previous ? <PagerCard page={previous} direction="previous" /> : <HubCard />}
-      {next && hasNext ? <PagerCard page={next} direction="next" /> : null}
-      {previous && !hasNext ? <HubCard alignEnd /> : null}
+      {next ? <PagerCard page={next} direction="next" /> : <HubCard alignEnd />}
     </nav>
   );
 }

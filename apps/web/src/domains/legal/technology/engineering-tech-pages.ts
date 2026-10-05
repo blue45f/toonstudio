@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import type { LocalizedText } from "./engineering-story-content";
+import type { WorkflowVisual } from "@/shared/components/site-experience/workflow-illustration";
 
 /**
  * 기술 소개 하위 페이지의 단일 목록. 탭 메뉴·허브의 발표 동선·하단 이어보기가 모두 이 목록을 쓴다.
@@ -51,6 +52,8 @@ export interface EngineeringPageEntry {
   readonly label: LocalizedText;
   /** 허브 카드와 하단 이어보기에 쓰는 한 줄 목적. */
   readonly purpose: LocalizedText;
+  /** 머리말 대표 이미지. 기존 브랜드 아트(workflow-20260928) 중 페이지 주제와 맞는 종류. */
+  readonly art: WorkflowVisual;
   /** 한국어 기준 예상 읽기 시간(분). */
   readonly readingMinutes?: number;
   /** 발표 시간(분). */
@@ -74,6 +77,7 @@ export const ENGINEERING_PAGES = [
     icon: BookOpen,
     label: t("제작 스토리", "Story"),
     purpose: t("왜·어떻게 만들었나: 문제, 선택, 대가와 근거", "Why and how it was built: problems, choices, trade-offs, evidence"),
+    art: "create",
     readingMinutes: 28,
   },
   {
@@ -84,6 +88,7 @@ export const ENGINEERING_PAGES = [
     icon: GraduationCap,
     label: t("플레이북", "Playbook"),
     purpose: t("재사용할 설계 원칙과 아키텍처 결정", "Reusable design principles and architecture decisions"),
+    art: "plan",
     readingMinutes: 24,
   },
   {
@@ -94,6 +99,7 @@ export const ENGINEERING_PAGES = [
     icon: Wrench,
     label: t("적용 가이드", "Guides"),
     purpose: t("다른 서비스에 단계별로 옮기는 방법", "Step-by-step adoption in another product"),
+    art: "learn",
     readingMinutes: 23,
   },
   {
@@ -104,6 +110,7 @@ export const ENGINEERING_PAGES = [
     icon: NotebookTabs,
     label: t("심화 노트", "Field notes"),
     purpose: t("깊은 기술 노트와 장애·교훈 기록", "Deep technical notes, incidents and lessons"),
+    art: "recovery",
     readingMinutes: 31,
   },
   {
@@ -114,6 +121,7 @@ export const ENGINEERING_PAGES = [
     icon: Presentation,
     label: t("발표 모드", "Deck"),
     purpose: t("30분 세미나 슬라이드와 발표자 도구", "30-minute seminar slides and presenter tools"),
+    art: "publish",
     talkMinutes: 30,
   },
   {
@@ -123,6 +131,7 @@ export const ENGINEERING_PAGES = [
     icon: Film,
     label: t("영상", "Video"),
     purpose: t("같은 원본으로 만드는 기술 소개 영상", "Engineering film rendered from the same source"),
+    art: "storyboard",
   },
   {
     id: "references",
@@ -131,6 +140,7 @@ export const ENGINEERING_PAGES = [
     icon: LibraryBig,
     label: t("참고 자료", "References"),
     purpose: t("사용·평가·참고한 기술과 제품 구분", "Used, evaluated and referenced technology and products"),
+    art: "review",
   },
   {
     id: "glossary",
@@ -139,6 +149,7 @@ export const ENGINEERING_PAGES = [
     icon: BookMarked,
     label: t("용어집", "Glossary"),
     purpose: t("발표 용어를 쉬운 비유로 설명", "Talk terms explained with plain analogies"),
+    art: "learn",
   },
   {
     id: "licenses",
@@ -147,6 +158,7 @@ export const ENGINEERING_PAGES = [
     icon: Scale,
     label: t("라이선스", "Licenses"),
     purpose: t("코드·폰트·에셋·AI 결과물의 권리", "Rights for code, fonts, assets and AI output"),
+    art: "rights",
   },
 ] as const satisfies readonly EngineeringPageEntry[];
 
