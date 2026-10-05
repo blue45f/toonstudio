@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { useServiceCapabilityState } from "@/platform/service-capability-state";
 import { useI18n } from "@/shared/lib/i18n";
 import { useFirstRunNoticeHeight } from "@/shared/lib/overlay-clearance";
 
@@ -83,6 +84,11 @@ export function StudioBetaNoticeGate({ pathname }: StudioBetaNoticeGateProps) {
   const korean = useI18n((state) => state.lang.startsWith("ko"));
   const copy = korean ? COPY.ko : COPY.en;
   const eligible = BETA_NOTICE_ENTRY_PATHNAMES.has(pathname);
+  // 첫 실행 안내들은 겹쳐 쌓이지 않고 순서대로 보인다: 서비스 연결 준비(웜업) 칩이 떠 있는 동안에는
+  // 베타 안내를 열지 않고, 웜업이 끝난 뒤에 연다. 웜업은 길어야 수십 초인 일시 상태라
+  // 안내가 사라지는 것이 아니라 늦춰질 뿐이며, 이때가 첫 화면 CTA와 안내가 겹치는 유일한 구간이다.
+  const serviceState = useServiceCapabilityState();
+  const serviceWarmingUp = serviceState.status === "degraded" && serviceState.warmingUp === true;
   const titleId = useId();
   const detailsId = useId();
   const [open, setOpen] = useState(
@@ -91,7 +97,7 @@ export function StudioBetaNoticeGate({ pathname }: StudioBetaNoticeGateProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const noticeRef = useRef<HTMLElement>(null);
   // 같은 알림 열에 쌓이는 앱 설치 안내가 이 안내 위로 올라가도록 높이를 게시한다(pwa-install-nudge.css).
-  useFirstRunNoticeHeight(noticeRef, eligible && open);
+  useFirstRunNoticeHeight(noticeRef, eligible && open && !serviceWarmingUp);
 
   useEffect(() => {
     if (!eligible) {
@@ -108,7 +114,7 @@ export function StudioBetaNoticeGate({ pathname }: StudioBetaNoticeGateProps) {
     setDetailsOpen(false);
   };
 
-  if (!eligible || !open) return null;
+  if (!eligible || !open || serviceWarmingUp) return null;
 
   const notices = [
     {
