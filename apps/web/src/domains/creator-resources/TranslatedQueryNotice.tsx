@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
+import { RESEARCH_MT_MODEL_TOTAL_BYTES } from "./research-query-mt";
 
 import type { TranslatedResearchQuery } from "./use-translated-research-query";
+
+const MODEL_SIZE_LABEL = `약 ${Math.round(RESEARCH_MT_MODEL_TOTAL_BYTES / 1_000_000)}MB`;
 
 /**
  * 변환 투명성 안내 + 변환어 직접 수정 UI.
@@ -17,7 +20,7 @@ export function TranslatedQueryNotice({
   state: TranslatedResearchQuery;
   onApplyOverride?: (value: string) => void;
 }) {
-  const { translation, overridden, modelPending } = state;
+  const { translation, overridden, modelPending, modelProgress } = state;
   const [draft, setDraft] = useState(translation.effectiveQuery);
 
   useEffect(() => {
@@ -47,7 +50,11 @@ export function TranslatedQueryNotice({
         </p>
       )}
       {modelPending && (
-        <p className="text-xs leading-5 text-fg-3">번역 모델을 불러와 더 정확한 영문 검색어를 만드는 중입니다…</p>
+        <p role="status" className="text-xs leading-5 text-fg-3">
+          {modelProgress
+            ? <>번역 모델을 내려받는 중입니다… {modelProgress.file}{modelProgress.ratio !== null ? ` ${Math.round(modelProgress.ratio * 100)}%` : ""} (처음 한 번만 {MODEL_SIZE_LABEL}를 받습니다)</>
+            : <>번역 모델을 불러와 더 정확한 영문 검색어를 만드는 중입니다… (처음 한 번만 {MODEL_SIZE_LABEL} 모델을 내려받습니다)</>}
+        </p>
       )}
       {translation.source === "model" && (
         <p className="text-xs leading-5 text-fg-3">
