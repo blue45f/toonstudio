@@ -67,7 +67,10 @@ function declaredRoutePatterns(): Set<string> {
   // /studio/* 아래 편집기 화면은 스튜디오 라우터가 작업 공간 이름으로 해석한다.
   const surfaces = read(STUDIO_WORKSPACE_ROUTE).match(/STUDIO_2D_WORKSPACE_SURFACES = \[([\s\S]*?)\]/u)?.[1] ?? "";
   for (const match of surfaces.matchAll(/"([a-z0-9-]+)"/gu)) patterns.add(`/studio/${match[1]}`);
-  if (read(STUDIO_ROUTE_MANIFEST).includes('"/studio/publish"')) patterns.add("/studio/publish");
+  // 스튜디오 라우트 매니페스트가 정본으로 선언한 평문 경로(괄호·매개변수 없는
+  // "/studio/..." 리터럴)는 그 자체로 목적지다. publish만 있던 특수 처리를
+  // 일반화한 것 — lift3d·storyworld·assets도 매니페스트 정본 경로다.
+  for (const match of read(STUDIO_ROUTE_MANIFEST).matchAll(/"(\/studio\/[a-z0-9\-/]+)"/gu)) patterns.add(match[1] ?? "");
   // 모든 경로를 받아 주는 catch-all은 “존재하는 화면”의 근거가 될 수 없다.
   patterns.delete("*");
   patterns.delete("/studio/*");
