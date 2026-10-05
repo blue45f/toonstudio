@@ -54,7 +54,7 @@ import {
 import type { StudioWriterRoomAiDraft } from "../studio-writer-room-ai";
 
 import { normalizeStudioAiCompositionSuggestion } from "./studio-ai-composition-suggestion";
-import { StudioAiWebtoonStyleFilterEngine } from "./studio-ai-webtoon-style-filter";
+import { StudioAiWebtoonStyleFilterEngine, type WebtoonStylePurposeId } from "./studio-ai-webtoon-style-filter";
 import {
   STUDIO_AI_IMAGE_REFERENCE_LIMITS,
   compileStudioAiImageReferencePromptContexts,
@@ -1089,15 +1089,21 @@ const ANIME_STYLE_EDIT_INSTRUCTION =
 /**
  * 애니풍 img2img 변환용 프롬프트 조합(순수 함수, 단위 테스트 대상 — fetch 없음).
  * 화풍 프리셋 엔진의 `anime-cel` 프리셋을 그대로 컴파일해, 수퍼스위트 툰필터 탭에서
- * 고른 애니풍과 클라우드 변환이 같은 키워드·값을 쓰게 한다. 전송 경로(Images Edits)는
- * 네거티브 프롬프트 필드가 없어 포지티브만 싣는다 — 네거티브·디노이즈(0.65)는
- * strength를 받는 제공자용으로 프리셋(`compilePrompt`)이 계속 제공한다.
+ * 고른 애니풍과 클라우드 변환이 같은 키워드·값을 쓰게 한다. 용도(purpose)는 화풍과
+ * 직교하는 축으로 함께 컴파일된다 — 본편용이 기본이고, SD·피규어·스케치 용도는
+ * 키워드·디노이즈가 실제로 다르다(엔진의 WEBTOON_STYLE_PURPOSES). 전송 경로
+ * (Images Edits)는 네거티브 프롬프트 필드가 없어 포지티브만 싣는다 — 네거티브와
+ * 용도별 디노이즈는 strength를 받는 제공자용으로 프리셋이 계속 제공한다.
  */
-export function buildAnimeStyleEditPrompt(extraDirection = ""): string {
+export function buildAnimeStyleEditPrompt(
+  extraDirection = "",
+  purpose: WebtoonStylePurposeId = "episode",
+): string {
   const engine = new StudioAiWebtoonStyleFilterEngine();
   const trimmed = extraDirection.trim();
-  const compiled = engine.compilePrompt(
+  const compiled = engine.compilePromptForPurpose(
     "anime-cel",
+    purpose,
     ANIME_STYLE_EDIT_INSTRUCTION,
     trimmed ? [trimmed] : [],
   );
@@ -1114,7 +1120,8 @@ export function buildAnimeStyleEditPrompt(extraDirection = ""): string {
 export async function convertImageToAnimeStyle(
   settings: StudioAiSettings,
   imageSrc: string,
-  extraDirection = ""
+  extraDirection = "",
+  purpose: WebtoonStylePurposeId = "episode"
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
   if (!imageSrc) return { ok: false, code: "invalid_input", error: "변환할 이미지가 없습니다." };
   if (!isStudioAiConfigured(settings)) {
@@ -1128,7 +1135,7 @@ export async function convertImageToAnimeStyle(
   }
   const form = new FormData();
   form.set("image", blob, "source.png");
-  form.set("prompt", buildAnimeStyleEditPrompt(extraDirection));
+  form.set("prompt", buildAnimeStyleEditPrompt(extraDirection, purpose));
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");

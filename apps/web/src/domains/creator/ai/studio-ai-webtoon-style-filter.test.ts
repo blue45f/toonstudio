@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   StudioAiWebtoonStyleFilterEngine,
   WEBTOON_ART_STYLES,
+  WEBTOON_STYLE_PURPOSES,
 } from "./studio-ai-webtoon-style-filter";
 
 describe("StudioAiWebtoonStyleFilterEngine", () => {
@@ -64,5 +65,57 @@ describe("StudioAiWebtoonStyleFilterEngine", () => {
   it("safely falls back to default style on unknown ID", () => {
     const style = engine.getStyle("unknown" as any);
     expect(style.id).toBe("romance-manhwa");
+  });
+
+  it("lists exactly the 4 purposes that carry real parameter deltas", () => {
+    const purposes = engine.listPurposes();
+    expect(purposes.map((p) => p.id)).toEqual([
+      "episode",
+      "sd-sticker",
+      "figure",
+      "sketch",
+    ]);
+    expect(WEBTOON_STYLE_PURPOSES["episode"].name).toContain("본편");
+    expect(WEBTOON_STYLE_PURPOSES["sd-sticker"].name).toContain("SD");
+  });
+
+  it("compiles the episode purpose identically to the plain style compile", () => {
+    const plain = engine.compilePrompt("anime-cel", "주인공이 노을을 바라본다");
+    const purposed = engine.compilePromptForPurpose(
+      "anime-cel",
+      "episode",
+      "주인공이 노을을 바라본다",
+    );
+    expect(purposed).toEqual(plain);
+  });
+
+  it("layers SD purpose keywords with the strongest denoise for proportion redraw", () => {
+    const result = engine.compilePromptForPurpose(
+      "anime-cel",
+      "sd-sticker",
+      "주인공 전신",
+    );
+    expect(result.positivePrompt).toContain("Japanese anime style");
+    expect(result.positivePrompt).toContain("super deformed chibi proportions");
+    expect(result.positivePrompt).toContain("super-deformed chibi sticker");
+    expect(result.negativePrompt).toContain("realistic body proportions");
+    expect(result.denoiseStrength).toBe(0.75);
+  });
+
+  it("layers figure and sketch purposes with their own deltas", () => {
+    const figure = engine.compilePromptForPurpose("anime-cel", "figure", "주인공 전신");
+    expect(figure.positivePrompt).toContain("PVC figurine");
+    expect(figure.negativePrompt).toContain("2d illustration");
+    expect(figure.denoiseStrength).toBe(0.7);
+
+    const sketch = engine.compilePromptForPurpose("anime-cel", "sketch", "주인공 전신");
+    expect(sketch.positivePrompt).toContain("rough pencil sketch");
+    expect(sketch.negativePrompt).toContain("color");
+    expect(sketch.denoiseStrength).toBe(0.55);
+  });
+
+  it("safely falls back to the episode purpose on unknown ID", () => {
+    const purpose = engine.getPurpose("unknown" as any);
+    expect(purpose.id).toBe("episode");
   });
 });

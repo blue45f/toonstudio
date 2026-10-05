@@ -4,16 +4,24 @@ import {
 // 애니풍 변환 패널 — 사진·스케치·기존 컷을 애니메이션 화풍으로 바꾸는 자리.
 // 두 경로가 모두 실제 변환이다(필터 흉내 없음):
 // ① 기기 변환 — AnimeGANv2(MIT) ONNX를 브라우저에서 직접 추론. 키도
-// 서버도 필요 없고 원본이 기기를 떠나지 않는다.
+// 서버도 필요 없고 원본이 기기를 떠나지 않는다. 단, 기기 모델은 화풍만
+// 바꾸므로 용도는 본편용만 가능하다(SD 비율 변형·피규어·스케치는 못 한다).
 // ② 클라우드 변환 — 사용자가 등록한 API 키(BYOK)로 Images Edits에
-// 애니풍 프리셋(anime-cel) 프롬프트를 실어 보낸다. 키가 없으면 버튼을
-// 정직하게 비활성으로 표시한다.
+// 애니풍 프리셋(anime-cel) 프롬프트를 실어 보낸다. 용도 축(본편용/
+// 굿즈·스티커용 SD/소장용 피규어/콘티·스케치용)이 여기서 함께 적용된다.
+// 키가 없으면 버튼을 정직하게 비활성으로 표시한다.
+// 스티커의 알파 테두리 후처리는 없다 — outline이 불투명 이미지에 no-op인
+// 사유가 studio-photo-webtoon-preset.ts에 명시된 별도 경로라 경계로 둔다.
 // 모델·런타임·클라이언트는 실행 버튼을 눌렀을 때만 동적 import로 지연 로딩된다.
 import { Cloud, Loader2, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import type { StudioAnimeganStyleKind } from "../studio-onnx-animegan";
+import {
+  WEBTOON_STYLE_PURPOSES,
+  type WebtoonStylePurposeId,
+} from "./studio-ai-webtoon-style-filter";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -44,6 +52,7 @@ export function StudioOnnxAnimeStylePanel({
   onResult: (dataUrl: string) => void;
 }) {
   const [kind, setKind] = useState<StudioAnimeganStyleKind>("paprika");
+  const [purpose, setPurpose] = useState<WebtoonStylePurposeId>("episode");
   const [busy, setBusy] = useState<BusyRoute>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
@@ -103,7 +112,7 @@ export function StudioOnnxAnimeStylePanel({
         window.sessionStorage,
         window.localStorage,
       );
-      const result = await client.convertImageToAnimeStyle(settings, src);
+      const result = await client.convertImageToAnimeStyle(settings, src, "", purpose);
       if (!mountedRef.current) return;
       if (result.ok) {
         setPreviewSrc(result.data.dataUrl);
@@ -172,11 +181,36 @@ export function StudioOnnxAnimeStylePanel({
         ))}
       </div>
 
+      <div className="flex flex-wrap items-center gap-1">
+        <span className="w-14 shrink-0 text-[0.62rem] font-semibold text-fg-3">
+          {T("용도")}
+        </span>
+        {Object.values(WEBTOON_STYLE_PURPOSES).map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            disabled={busy !== null}
+            aria-pressed={purpose === option.id}
+            onClick={() => setPurpose(option.id)}
+            className={cn(
+              "rounded-full border px-2 py-0.5 text-[0.6rem] font-semibold",
+              STUDIO_FOCUS_RING,
+              purpose === option.id
+                ? "border-accent/60 bg-accent/10 text-fg"
+                : "border-line bg-card text-fg-3 hover:border-accent/40 hover:text-fg",
+              "disabled:opacity-50",
+            )}
+          >
+            {T(option.name)}
+          </button>
+        ))}
+      </div>
+
       <div className="flex gap-1.5">
         <button
           type="button"
           onClick={() => void runDevice()}
-          disabled={busy !== null}
+          disabled={busy !== null || purpose !== "episode"}
           className={cn(
             "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-bold text-on-accent",
             STUDIO_EASE,
@@ -203,6 +237,12 @@ export function StudioOnnxAnimeStylePanel({
           </button>
         )}
       </div>
+
+      {purpose !== "episode" && (
+        <p className="text-[0.66rem] leading-relaxed text-fg-3">
+          {T("기기 변환은 본편용만 돼요. SD·피규어·스케치 용도는 아래 AI 변환으로 해주세요.")}
+        </p>
+      )}
 
       <button
         type="button"

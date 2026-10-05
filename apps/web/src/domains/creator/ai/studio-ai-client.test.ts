@@ -431,6 +431,19 @@ describe("studio-ai-client network calls (fetch mocked)", () => {
       const prompt = buildAnimeStyleEditPrompt("배경은 밤하늘로");
       expect(prompt).toContain("배경은 밤하늘로");
     });
+
+    it("layers the SD purpose keywords and instruction for goods use", () => {
+      const prompt = buildAnimeStyleEditPrompt("", "sd-sticker");
+      expect(prompt).toContain("Japanese anime style");
+      expect(prompt).toContain("super deformed chibi proportions");
+      expect(prompt).toContain("super-deformed chibi sticker");
+    });
+
+    it("layers the figure purpose for collectible renders", () => {
+      const prompt = buildAnimeStyleEditPrompt("", "figure");
+      expect(prompt).toContain("PVC figurine");
+      expect(prompt).toContain("collectible figure photograph");
+    });
   });
 
   describe("convertImageToAnimeStyle", () => {
@@ -476,6 +489,18 @@ describe("studio-ai-client network calls (fetch mocked)", () => {
       expect(await (imageField as Blob).text()).toBe("source-cut-bytes");
 
       expect(result).toEqual({ ok: true, data: { dataUrl: `data:image/png;base64,${btoa("anime-cut")}` } });
+    });
+
+    it("sends the sketch purpose prompt when a purpose is given", async () => {
+      const mockFetch = vi.fn(async () => new Response(JSON.stringify({ data: [{ b64_json: btoa("sketch-cut") }] }), { status: 200 }));
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+      const result = await convertImageToAnimeStyle(CONFIGURED, sourceDataUrl, "", "sketch");
+
+      expect(result.ok).toBe(true);
+      const [, init] = mockFetch.mock.calls[0] as unknown as [string, RequestInit];
+      const form = init.body as FormData;
+      expect(form.get("prompt")).toContain("rough pencil sketch");
     });
   });
 
