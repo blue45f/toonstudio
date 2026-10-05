@@ -35,7 +35,9 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
 import { CampusObjectSource } from "@/shared/components/spatial-campus/CampusObjectSource";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { formatCreatorRelativeTime } from "@/shared/lib/creator-continuity-destinations";
 import { useI18n } from "@/shared/lib/i18n";
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -49,7 +51,16 @@ import { resolveStudioProjectViewDestination } from "../studio-project-view-dest
 import {
   readStudioProjectLibrary,
   STUDIO_PROJECT_LIBRARY_UPDATED_EVENT,
+  type StudioProjectLibraryEntry,
+  type StudioProjectStatus,
 } from "../studio-project-library-store";
+import {
+  readStudioProjectDocuments,
+  STUDIO_PROJECT_DOCUMENTS_UPDATED_EVENT,
+} from "../studio-project-document-reader";
+import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
+import { readStudioReviewHistory } from "../studio-review-history-store";
+import { StudioProjectCardThumbnail } from "./StudioProjectCardThumbnail";
 import { StudioProjectDiagnosticsBridge } from "./StudioProjectDiagnosticsBridge";
 import { StudioProjectReadinessPanel } from "./StudioProjectReadinessPanel";
 import "./studio-illustrated-project-surfaces.css";
@@ -244,6 +255,64 @@ function localeFromLanguage(language: string) {
   return language.toLowerCase().split(/[-_]/u)[0] === "ko" ? "ko" : "en";
 }
 
+const PROJECT_STATUS_LABELS: Readonly<Record<StudioProjectStatus, BilingualText>> = {
+  active: { ko: "작업 중", en: "In progress" },
+  archived: { ko: "보관됨", en: "Archived" },
+  trashed: { ko: "휴지통", en: "In trash" },
+};
+
+function projectStatusChipClasses(status: StudioProjectStatus): string {
+  if (status === "active") return "bg-accent-soft text-accent";
+  if (status === "archived") return "border border-line bg-panel text-fg-2";
+  return "border border-danger/35 bg-danger/10 text-danger";
+}
+
+interface ProjectHeaderFacts {
+  readonly documentCount: number;
+  /** 프로젝트·문서 저장 시각 중 가장 최근 값(ms). 없으면 null. */
+  readonly lastSavedAt: number | null;
+  /** 검토 중 세션에 열려 있는 스레드 수. */
+  readonly pendingReviewCount: number;
+  readonly resumeHref: string;
+  /** 이어서 열 수 있는 활성 문서가 실제로 있는지. */
+  readonly hasResumeDocument: boolean;
+  readonly resumeSummary: string | null;
+}
+
+function readProjectHeaderFacts(
+  entry: StudioProjectLibraryEntry,
+  locale: "ko" | "en",
+): ProjectHeaderFacts | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const storage = window.localStorage;
+    const documents = readStudioProjectDocuments(storage, entry.id).documents
+      .filter((document) => document.status !== "trashed");
+    const savedCandidates = [entry.updatedAt, ...documents.map((document) => document.updatedAt)]
+      .map((value) => Date.parse(value))
+      .filter((value) => Number.isFinite(value));
+    const reviewHistory = readStudioReviewHistory(storage, entry.id);
+    const pendingReviewCount = reviewHistory.sessions
+      .filter((session) => session.status === "in-review" || session.status === "changes-requested")
+      .reduce(
+        (sum, session) => sum + session.threads.filter((thread) => thread.status === "open").length,
+        0,
+      );
+    const resume = resolveStudioProjectResumeTarget(storage, entry, locale);
+    const activeDocumentCount = documents.filter((document) => document.status === "active").length;
+    return {
+      documentCount: activeDocumentCount,
+      lastSavedAt: savedCandidates.length > 0 ? Math.max(...savedCandidates) : null,
+      pendingReviewCount,
+      resumeHref: resume.href,
+      hasResumeDocument: activeDocumentCount > 0,
+      resumeSummary: resume.summary,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function projectSectionHref(projectId: string, section: StudioProjectSection): string {
   return `/studio/p/${encodeURIComponent(projectId)}/${section}`;
 }
@@ -273,6 +342,8 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
   const location = useLocation();
   const language = useI18n((state) => state.lang);
   const locale = localeFromLanguage(language);
+  const { data: session } = useSession();
+  const authUserId = session?.user?.id ?? null;
   const definition = SECTION_DEFINITIONS[section];
   const SectionIcon = definition.icon;
   const displayProjectId = useMemo(() => {
@@ -302,21 +373,34 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
   useEffect(() => {
     const refresh = () => setLibraryRevision((value) => value + 1);
     window.addEventListener(STUDIO_PROJECT_LIBRARY_UPDATED_EVENT, refresh);
-    return () => window.removeEventListener(STUDIO_PROJECT_LIBRARY_UPDATED_EVENT, refresh);
+    window.addEventListener(STUDIO_PROJECT_DOCUMENTS_UPDATED_EVENT, refresh);
+    return () => {
+      window.removeEventListener(STUDIO_PROJECT_LIBRARY_UPDATED_EVENT, refresh);
+      window.removeEventListener(STUDIO_PROJECT_DOCUMENTS_UPDATED_EVENT, refresh);
+    };
   }, []);
 
-  const projectTitle = useMemo(() => {
+  const projectEntry = useMemo(() => {
     void libraryRevision;
-    if (typeof window === "undefined") return displayProjectId;
+    if (typeof window === "undefined") return null;
     try {
-      const entry = readStudioProjectLibrary(window.localStorage).projects.find(
+      return readStudioProjectLibrary(window.localStorage).projects.find(
         (candidate) => candidate.id === displayProjectId,
-      );
-      return entry && entry.title.trim() ? entry.title : displayProjectId;
+      ) ?? null;
     } catch {
-      return displayProjectId;
+      return null;
     }
   }, [displayProjectId, libraryRevision]);
+
+  const projectTitle = projectEntry && projectEntry.title.trim()
+    ? projectEntry.title
+    : displayProjectId;
+
+  const headerFacts = useMemo(() => {
+    void libraryRevision;
+    if (!projectEntry) return null;
+    return readProjectHeaderFacts(projectEntry, locale);
+  }, [libraryRevision, locale, projectEntry]);
 
   const recentProjects = useMemo(() => {
     void libraryRevision;
@@ -387,6 +471,89 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
           <span aria-hidden="true">/</span>
           <span aria-current="page" className="shrink-0">{bt(definition.label.ko, definition.label.en)}</span>
         </nav>
+        <div
+          className="mt-4 flex flex-wrap items-center gap-3 sm:gap-4"
+          data-studio-project-header-band="true"
+        >
+          <div className="relative aspect-[3/4] w-14 shrink-0 overflow-hidden rounded-xl border border-line bg-panel sm:w-[4.5rem]">
+            {projectEntry ? (
+              <StudioProjectCardThumbnail
+                variant="cover"
+                authUserId={authUserId}
+                locale={locale}
+                project={projectEntry}
+              />
+            ) : (
+              <div
+                className="grid h-full place-items-center bg-gradient-to-br from-accent-soft to-panel px-1 text-center"
+                aria-hidden="true"
+              >
+                <span className="line-clamp-3 text-[0.65rem] font-black leading-tight text-accent">
+                  {projectTitle}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="min-w-44 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+              <strong className="min-w-0 max-w-full truncate text-lg font-black tracking-tight text-fg sm:text-xl">
+                {projectTitle}
+              </strong>
+              {projectEntry ? (
+                <span
+                  className={cn(
+                    "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[0.7rem] font-bold",
+                    projectStatusChipClasses(projectEntry.status),
+                  )}
+                  data-studio-project-status-chip={projectEntry.status}
+                >
+                  {bt(
+                    PROJECT_STATUS_LABELS[projectEntry.status].ko,
+                    PROJECT_STATUS_LABELS[projectEntry.status].en,
+                  )}
+                </span>
+              ) : null}
+            </div>
+            {headerFacts ? (
+              <ul
+                className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-3"
+                aria-label={bt("프로젝트 핵심 지표", "Project key metrics")}
+                data-studio-project-header-metrics="true"
+              >
+                <li>{bt(`원고 ${headerFacts.documentCount}개`, `${headerFacts.documentCount} manuscripts`)}</li>
+                {headerFacts.lastSavedAt !== null ? (
+                  <li>
+                    {bt(
+                      `최근 저장 ${formatCreatorRelativeTime(headerFacts.lastSavedAt, locale)}`,
+                      `Saved ${formatCreatorRelativeTime(headerFacts.lastSavedAt, locale)}`,
+                    )}
+                  </li>
+                ) : null}
+                <li>{bt(`검토 대기 ${headerFacts.pendingReviewCount}건`, `${headerFacts.pendingReviewCount} awaiting review`)}</li>
+              </ul>
+            ) : null}
+          </div>
+          {headerFacts?.hasResumeDocument ? (
+            <Link
+              href={headerFacts.resumeHref}
+              data-studio-project-header-continue="true"
+              title={headerFacts.resumeSummary ?? undefined}
+              className={buttonClass({ size: "lg", className: "shrink-0 gap-2" })}
+            >
+              <Brush size={17} aria-hidden="true" />
+              {bt("이어서 그리기", "Continue drawing")}
+            </Link>
+          ) : (
+            <Link
+              href={workHref(displayProjectId)}
+              data-studio-project-header-continue="true"
+              className={buttonClass({ size: "lg", className: "shrink-0 gap-2" })}
+            >
+              <Brush size={17} aria-hidden="true" />
+              {bt("원고 열기", "Open manuscript")}
+            </Link>
+          )}
+        </div>
         <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-2 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
@@ -452,13 +619,6 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
                 </div>
               </details>
             ) : null}
-            <Link
-              href={workHref(displayProjectId)}
-              className={buttonClass({ size: "lg", variant: "outline", className: "gap-2" })}
-            >
-              <Brush size={17} aria-hidden="true" />
-              {bt("원고 열기", "Open manuscript")}
-            </Link>
             <Link
               href={`/studio/p/${encodeURIComponent(displayProjectId)}/space`}
               className={buttonClass({ size: "lg", variant: "quiet", className: "gap-2 text-fg" })}

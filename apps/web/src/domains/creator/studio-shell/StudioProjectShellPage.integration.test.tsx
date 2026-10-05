@@ -5,7 +5,8 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CampusObjectPublisherContext, type CampusObjectPublisher } from "@/shared/components/spatial-campus/campus-object-context";
-import { createStudioProject } from "../studio-project-library-store";
+import { archiveStudioProject, createStudioProject } from "../studio-project-library-store";
+import { createStudioProjectDocument } from "../studio-project-document-store";
 import { StudioProjectShellPage } from "./StudioProjectShellPage";
 
 function LocationProbe() {
@@ -131,5 +132,100 @@ describe("StudioProjectShellPage integration", () => {
   it("hides the project switcher when there is no other active project", () => {
     renderReview("/studio/p/project-1/review?view=inbox");
     expect(document.querySelector('[data-studio-project-switcher="true"]')).toBeNull();
+  });
+
+  it("shows the header band with the real status, metrics and a continue-drawing action", () => {
+    createStudioProject(window.localStorage, { id: "project-1", title: "나의 웹툰", kind: "webtoon" });
+    createStudioProjectDocument(window.localStorage, "project-1", {
+      id: "doc-1",
+      title: "1화",
+      kind: "webtoon",
+    });
+    window.localStorage.setItem("toonstudio:review-history:v1:project-1", JSON.stringify({
+      schemaVersion: 1,
+      projectId: "project-1",
+      updatedAt: "2026-10-05T00:00:00.000Z",
+      sessions: [
+        {
+          documentId: "doc-1",
+          versionId: "v1",
+          basedOnVersionId: null,
+          status: "in-review",
+          requiredReviewerIds: [],
+          decisions: [],
+          submittedAt: "2026-10-05T00:00:00.000Z",
+          approvedAt: null,
+          updatedAt: "2026-10-05T00:00:00.000Z",
+          threads: [
+            { id: "t1", status: "open" },
+            { id: "t2", status: "open" },
+            { id: "t3", status: "resolved" },
+          ],
+        },
+        {
+          documentId: "doc-1",
+          versionId: "v0",
+          basedOnVersionId: null,
+          status: "approved",
+          requiredReviewerIds: [],
+          decisions: [],
+          submittedAt: "2026-10-04T00:00:00.000Z",
+          approvedAt: "2026-10-04T01:00:00.000Z",
+          updatedAt: "2026-10-04T01:00:00.000Z",
+          threads: [{ id: "t0", status: "open" }],
+        },
+      ],
+    }));
+    const view = renderReview("/studio/p/project-1/review?view=inbox");
+
+    const band = view.container.querySelector("[data-studio-project-header-band]");
+    expect(band).toBeTruthy();
+    const chip = view.container.querySelector("[data-studio-project-status-chip]");
+    expect(chip?.getAttribute("data-studio-project-status-chip")).toBe("active");
+    expect(chip?.textContent).toBe("작업 중");
+
+    const metrics = view.container.querySelector("[data-studio-project-header-metrics]");
+    expect(metrics?.textContent).toContain("원고 1개");
+    expect(metrics?.textContent).toContain("최근 저장");
+    // 종료된(승인) 세션의 open 스레드는 세지 않고, 검토 중 세션의 open 2건만 센다.
+    expect(metrics?.textContent).toContain("검토 대기 2건");
+
+    const continueLink = screen.getByRole("link", { name: /이어서 그리기|Continue drawing/u });
+    expect(continueLink.getAttribute("href")).toContain("/studio/p/project-1/d/doc-1");
+    expect(continueLink.getAttribute("href")).toContain("resume=latest");
+    // 헤더 1차 액션이 생겨도 기존 "다음 작업" 1차 액션 계약은 그대로다.
+    expect(view.container.querySelectorAll("[data-studio-project-primary-action]")).toHaveLength(1);
+  });
+
+  it("falls back to opening the manuscript when the project has no document yet", () => {
+    createStudioProject(window.localStorage, { id: "project-1", title: "나의 웹툰", kind: "webtoon" });
+    const view = renderReview("/studio/p/project-1/review?view=inbox");
+
+    const metrics = view.container.querySelector("[data-studio-project-header-metrics]");
+    expect(metrics?.textContent).toContain("원고 0개");
+    expect(metrics?.textContent).toContain("검토 대기 0건");
+    const openLink = within(view.container.querySelector("[data-studio-project-header-band]") as HTMLElement)
+      .getByRole("link", { name: /원고 열기|Open manuscript/u });
+    expect(openLink.getAttribute("href")).toBe("/studio/work/project-1/canvas");
+  });
+
+  it("shows the archived status chip for an archived project", () => {
+    createStudioProject(window.localStorage, { id: "project-1", title: "나의 웹툰", kind: "webtoon" });
+    archiveStudioProject(window.localStorage, "project-1");
+    const view = renderReview("/studio/p/project-1/review?view=inbox");
+
+    const chip = view.container.querySelector("[data-studio-project-status-chip]");
+    expect(chip?.getAttribute("data-studio-project-status-chip")).toBe("archived");
+    expect(chip?.textContent).toBe("보관됨");
+  });
+
+  it("keeps the band minimal for a project missing from the local library", () => {
+    const view = renderReview("/studio/p/project-1/review?view=inbox");
+
+    expect(view.container.querySelector("[data-studio-project-header-band]")).toBeTruthy();
+    expect(view.container.querySelector("[data-studio-project-status-chip]")).toBeNull();
+    expect(view.container.querySelector("[data-studio-project-header-metrics]")).toBeNull();
+    const openLink = screen.getByRole("link", { name: /원고 열기|Open manuscript/u });
+    expect(openLink.getAttribute("href")).toBe("/studio/work/project-1/canvas");
   });
 });
