@@ -19,16 +19,19 @@ import {
 import { adminButtonClass } from "./admin-ui-utils";
 import { AdminCard, AdminSpinner } from "./admin-ui";
 
+import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
+
 /** 결제 상태 코드(토스)를 운영자 언어로 바꾼다. 모르는 코드는 원본을 유지한다. */
-const ORDER_STATUS_LABELS: Readonly<Record<string, string>> = {
-  READY: "결제 준비",
-  IN_PROGRESS: "결제 진행 중",
-  WAITING_FOR_DEPOSIT: "입금 대기",
-  DONE: "결제 완료",
-  CANCELED: "결제 취소",
-  PARTIAL_CANCELED: "부분 취소",
-  ABORTED: "결제 중단",
-  EXPIRED: "만료",
+const ORDER_STATUS_KEYS: Readonly<Record<string, string>> = {
+  READY: "admin.commerce.statusReady",
+  IN_PROGRESS: "admin.commerce.statusInProgress",
+  WAITING_FOR_DEPOSIT: "admin.commerce.statusWaitingForDeposit",
+  DONE: "admin.commerce.statusDone",
+  CANCELED: "admin.commerce.statusCanceled",
+  PARTIAL_CANCELED: "admin.commerce.statusPartialCanceled",
+  ABORTED: "admin.commerce.statusAborted",
+  EXPIRED: "admin.commerce.statusExpired",
 };
 
 interface CommerceAdminSettings {
@@ -45,20 +48,21 @@ interface CommerceAdminSettings {
 }
 
 const METHODS: readonly [CommercePaymentMethod, string][] = [
-  ["card", "신용·체크카드"],
-  ["apple_pay", "Apple Pay"],
-  ["samsung_pay", "Samsung Pay"],
-  ["naver_pay", "네이버페이"],
-  ["kakao_pay", "카카오페이"],
-  ["toss_pay", "토스페이"],
-  ["bank_transfer", "계좌이체"],
-  ["virtual_account", "가상계좌"],
-  ["mobile", "휴대폰 결제"],
+  ["card", "admin.commerce.methodCard"],
+  ["apple_pay", "admin.commerce.methodApplePay"],
+  ["samsung_pay", "admin.commerce.methodSamsungPay"],
+  ["naver_pay", "admin.commerce.methodNaverPay"],
+  ["kakao_pay", "admin.commerce.methodKakaoPay"],
+  ["toss_pay", "admin.commerce.methodTossPay"],
+  ["bank_transfer", "admin.commerce.methodBankTransfer"],
+  ["virtual_account", "admin.commerce.methodVirtualAccount"],
+  ["mobile", "admin.commerce.methodMobile"],
 ];
 
-const won = (value: number) => "₩" + value.toLocaleString("ko-KR");
+const won = (value: number) => "₩" + value.toLocaleString(getCurrentUiLocale());
 
 export function AdminCommercePayments({ uid }: { uid: string }) {
+  const t = useT();
   const [settings, setSettings] = useState<CommerceAdminSettings | null>(null);
   const [draft, setDraft] = useState<CommerceAdminSettings | null>(null);
   const [orders, setOrders] = useState<CommerceOrderPublicEntry[]>([]);
@@ -157,8 +161,8 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
 
   const cancelOrder = async (order: CommerceOrderPublicEntry) => {
     const reason = window.prompt(
-      "전액 환불 사유를 입력하세요.",
-      "관리자 요청 전액 환불",
+      t("admin.commerce.cancelReasonPrompt"),
+      t("admin.commerce.cancelReasonDefault"),
     )?.trim();
     if (!reason) return;
     setBusy(order.orderId);
@@ -185,10 +189,9 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
             <p className="text-xs font-bold tracking-[0.14em] text-accent">
               SITE COMMERCE POLICY
             </p>
-            <h2 className="mt-1 text-xl font-bold text-fg">사이트 무료/유료 운영</h2>
+            <h2 className="mt-1 text-xl font-bold text-fg">{t("admin.commerce.title")}</h2>
             <p className="mt-1 max-w-3xl text-xs leading-5 text-fg-3">
-              무료 모드에서는 마켓 획득에 결제를 요구하지 않습니다. 유료 모드에서는 서버 결제 권한이 없는 리소스 획득을 차단하며,
-              리소스 자체의 GPL·CC·ToonStudio 라이선스 조건은 가격 정책과 별도로 유지됩니다.
+              {t("admin.commerce.desc")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -215,7 +218,7 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                 className={`${adminButtonClass("ghost")} mt-3`}
                 onClick={() => void load()}
               >
-                다시 시도
+                {t("admin.commerce.retry")}
               </button>
             </div>
           ) : (
@@ -225,7 +228,7 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
           <div className="mt-5 space-y-5">
             <div className="grid gap-4 lg:grid-cols-3">
               <div className="rounded-xl border border-line bg-panel/60 p-4">
-                <p className="text-xs font-semibold text-fg">운영 모드</p>
+                <p className="text-xs font-semibold text-fg">{t("admin.commerce.operationMode")}</p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {(["free", "paid"] as const).map((mode) => (
                     <button
@@ -239,14 +242,14 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                           : "border-line bg-card text-fg-2")
                       }
                     >
-                      {mode === "free" ? "무료 운영" : "유료 운영"}
+                      {mode === "free" ? t("admin.commerce.modeFree") : t("admin.commerce.modePaid")}
                     </button>
                   ))}
                 </div>
               </div>
 
               <label className="rounded-xl border border-line bg-panel/60 p-4 text-xs font-semibold text-fg">
-                결제 제공사
+                {t("admin.commerce.provider")}
                 <select
                   value={draft.provider}
                   onChange={(event) => setDraft({
@@ -256,12 +259,12 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                   className="mt-2 min-h-10 w-full rounded-xl border border-line bg-card px-3 text-sm"
                 >
                   <option value="toss">Toss Payments</option>
-                  <option value="mock">Mock (개발환경 전용)</option>
+                  <option value="mock">{t("admin.commerce.providerMock")}</option>
                 </select>
               </label>
 
               <label className="rounded-xl border border-line bg-panel/60 p-4 text-xs font-semibold text-fg">
-                마켓 기본 가격 (KRW)
+                {t("admin.commerce.defaultPrice")}
                 <input
                   type="number"
                   min={0}
@@ -278,9 +281,9 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-fg">사이트에서 허용할 결제수단</p>
+              <p className="text-xs font-semibold text-fg">{t("admin.commerce.methodsTitle")}</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {METHODS.map(([method, label]) => (
+                {METHODS.map(([method, labelKey]) => (
                   <label
                     key={method}
                     className="flex min-h-10 items-center gap-2 rounded-xl border border-line bg-panel px-3 text-xs text-fg-2"
@@ -290,18 +293,18 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                       checked={draft.paymentMethods.includes(method)}
                       onChange={() => toggleMethod(method)}
                     />
-                    {label}
+                    {t(labelKey)}
                   </label>
                 ))}
               </div>
               <p className="mt-2 text-[11px] leading-4 text-fg-3">
-                실제 PG 위젯 노출은 Toss 계약 및 심사, 브라우저·기기 지원 조건을 추가로 따릅니다.
+                {t("admin.commerce.methodsNote")}
               </p>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
               <label className="text-xs font-semibold text-fg">
-                무료 운영 정책 문구
+                {t("admin.commerce.freePolicyNotice")}
                 <textarea
                   rows={4}
                   value={draft.freePolicyNotice}
@@ -310,7 +313,7 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                 />
               </label>
               <label className="text-xs font-semibold text-fg">
-                유료 운영 정책 문구
+                {t("admin.commerce.paidPolicyNotice")}
                 <textarea
                   rows={4}
                   value={draft.paidPolicyNotice}
@@ -322,7 +325,7 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
 
             <div className="flex flex-wrap items-end gap-3 border-t border-line pt-4">
               <label className="text-xs font-semibold text-fg">
-                정책 버전
+                {t("admin.commerce.termsVersion")}
                 <input
                   value={draft.termsVersion}
                   onChange={(event) => setDraft({ ...draft, termsVersion: event.target.value })}
@@ -336,10 +339,10 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                 className={adminButtonClass("accent")}
               >
                 <Save size={14} aria-hidden="true" />
-                운영 설정 저장
+                {t("admin.commerce.saveSettings")}
               </button>
               <span className="text-xs text-fg-3">
-                체크아웃 {settings?.checkoutEnabled ? "준비됨" : "비활성"}
+                {settings?.checkoutEnabled ? t("admin.commerce.checkoutReady") : t("admin.commerce.checkoutDisabled")}
                 {settings?.disabledReason ? " · " + settings.disabledReason : ""}
               </span>
             </div>
@@ -352,12 +355,12 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-bold tracking-[0.14em] text-accent">MARKET PRICE OVERRIDE</p>
-            <h2 className="mt-1 text-lg font-bold text-fg">개별 마켓 가격</h2>
-            <p className="mt-1 text-xs text-fg-3">0원은 유료 운영 중에도 해당 패키지를 무료로 유지합니다. 가격은 패키지 업데이트에도 유지됩니다.</p>
+            <h2 className="mt-1 text-lg font-bold text-fg">{t("admin.commerce.priceTitle")}</h2>
+            <p className="mt-1 text-xs text-fg-3">{t("admin.commerce.priceDesc")}</p>
           </div>
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-xs font-semibold text-fg">
-              리소스 릴리스 ID
+              {t("admin.commerce.resourceId")}
               <input
                 value={resourceId}
                 onChange={(event) => setResourceId(event.target.value)}
@@ -365,7 +368,7 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
               />
             </label>
             <label className="text-xs font-semibold text-fg">
-              가격
+              {t("admin.commerce.price")}
               <input
                 type="number"
                 min={0}
@@ -381,7 +384,7 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
               onClick={() => void saveResourcePrice()}
               className={adminButtonClass("ghost")}
             >
-              가격 저장
+              {t("admin.commerce.savePrice")}
             </button>
           </div>
         </div>
@@ -391,11 +394,11 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold tracking-[0.14em] text-accent">MARKET PAYMENT LEDGER</p>
-            <h2 className="mt-1 text-lg font-bold text-fg">마켓 결제·환불</h2>
+            <h2 className="mt-1 text-lg font-bold text-fg">{t("admin.commerce.ledgerTitle")}</h2>
           </div>
           <button type="button" onClick={() => void load()} className={adminButtonClass("ghost")}>
             <RefreshCw size={14} aria-hidden="true" />
-            새로고침
+            {t("admin.commerce.refresh")}
           </button>
         </div>
 
@@ -403,12 +406,12 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
           <table className="w-full min-w-[920px] text-sm">
             <thead className="bg-raised/50 text-left text-xs text-fg-3">
               <tr>
-                <th scope="col" className="px-3 py-2 font-medium">상품</th>
-                <th scope="col" className="px-3 py-2 font-medium">금액</th>
-                <th scope="col" className="px-3 py-2 font-medium">상태</th>
-                <th scope="col" className="px-3 py-2 font-medium">결제</th>
-                <th scope="col" className="px-3 py-2 font-medium">주문</th>
-                <th scope="col" className="px-3 py-2 font-medium">작업</th>
+                <th scope="col" className="px-3 py-2 font-medium">{t("admin.commerce.colProduct")}</th>
+                <th scope="col" className="px-3 py-2 font-medium">{t("admin.commerce.colAmount")}</th>
+                <th scope="col" className="px-3 py-2 font-medium">{t("admin.commerce.colStatus")}</th>
+                <th scope="col" className="px-3 py-2 font-medium">{t("admin.commerce.colPayment")}</th>
+                <th scope="col" className="px-3 py-2 font-medium">{t("admin.commerce.colOrder")}</th>
+                <th scope="col" className="px-3 py-2 font-medium">{t("admin.commerce.colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -418,20 +421,20 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                     {!ordersLoaded ? (
                       error ? (
                         <span role="alert" className="text-bad">
-                          결제 내역을 불러오지 못했습니다.{" "}
+                          {t("admin.commerce.ordersLoadError")}{" "}
                           <button
                             type="button"
                             className="font-semibold underline"
                             onClick={() => void load()}
                           >
-                            다시 시도
+                            {t("admin.commerce.retry")}
                           </button>
                         </span>
                       ) : (
-                        "결제 내역을 불러오는 중…"
+                        t("admin.commerce.ordersLoading")
                       )
                     ) : (
-                      "마켓 결제 내역이 없습니다."
+                      t("admin.commerce.ordersEmpty")
                     )}
                   </td>
                 </tr>
@@ -445,12 +448,12 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                   <td className="px-3 py-3 font-semibold text-fg">
                     {won(order.balanceAmount)}
                     {order.balanceAmount !== order.amount ? (
-                      <div className="text-[10px] font-normal text-fg-3">원결제 {won(order.amount)}</div>
+                      <div className="text-[10px] font-normal text-fg-3">{t("admin.commerce.originalAmount", { amount: won(order.amount) })}</div>
                     ) : null}
                   </td>
                   <td className="px-3 py-3">
                     <span className="rounded-full border border-line px-2 py-0.5 text-xs">
-                      {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                      {ORDER_STATUS_KEYS[order.status] ? t(ORDER_STATUS_KEYS[order.status]) : order.status}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-xs text-fg-2">
@@ -466,7 +469,7 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                         rel="noreferrer"
                         className="mt-1 flex items-center gap-1 text-xs font-semibold text-accent"
                       >
-                        영수증 <ExternalLink size={11} aria-hidden="true" />
+                        {t("admin.commerce.receipt")} <ExternalLink size={11} aria-hidden="true" />
                       </a>
                     ) : null}
                   </td>
@@ -478,11 +481,11 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
                         onClick={() => void cancelOrder(order)}
                         className={adminButtonClass("danger")}
                       >
-                        전액 환불
+                        {t("admin.commerce.cancelAll")}
                       </button>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[11px] text-fg-3">
-                        <ShieldCheck size={12} aria-hidden="true" /> 처리 없음
+                        <ShieldCheck size={12} aria-hidden="true" /> {t("admin.commerce.noAction")}
                       </span>
                     )}
                   </td>
@@ -493,7 +496,7 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
         </div>
         <p className="mt-3 flex items-center gap-1.5 text-[11px] leading-4 text-fg-3">
           <CreditCard size={12} aria-hidden="true" />
-          카드번호·간편결제 인증정보는 저장하지 않고 PG 결제키와 주문 상태만 보관합니다.
+          {t("admin.commerce.footerNote")}
         </p>
       </AdminCard>
     </>
