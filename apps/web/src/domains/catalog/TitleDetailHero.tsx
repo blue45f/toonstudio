@@ -9,6 +9,7 @@ import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { useNextgenLabSettings } from "@/shared/hooks/use-nextgen-lab-settings";
 import { useApp, useHydrated } from "@/shared/lib/store";
 import { AGE_LABEL, STATUS_LABEL, TYPE_LABEL } from "@/shared/lib/taxonomy";
 import { toast } from "@/shared/lib/toast-store";
@@ -71,6 +72,8 @@ export function TitleDetailHero({
 }) {
   useBilingualI18nRevision();
   const hydrated = useHydrated();
+  // 실험 기능: 읽기 시작 이동에 View Transition (지원 환경 + 설정 켜짐일 때만).
+  const labSettings = useNextgenLabSettings();
   const current = useApp((s) => s.reads[title.id]);
   const setRead = useApp((s) => s.setRead);
   const saved = hydrated && current != null && current !== "dropped";
@@ -202,6 +205,7 @@ export function TitleDetailHero({
           {firstEpisodeHref && (
             <Link
               href={firstEpisodeHref}
+              viewTransition={labSettings.viewTransitions}
               className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[linear-gradient(100deg,var(--color-accent),var(--color-accent-2))] px-6 text-sm font-bold text-on-accent shadow-[0_10px_28px_-10px_oklch(0.4_0.15_295/0.7)] transition-transform duration-150 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100"
             >
               <BookOpen size={17} aria-hidden />

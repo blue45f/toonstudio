@@ -1948,3 +1948,30 @@ body[data-studio-app="true"] .route-stage::before,
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* 실험: View Transitions 루트 전환 — 링크가 명시적으로 켠 지점에서만 발동한다.
+   동작 줄이기 환경에서는 애니메이션 없이 즉시 전환한다. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: nextgen-vt-fade-out 160ms ease-out;
+  }
+  ::view-transition-new(root) {
+    animation: nextgen-vt-fade-in 200ms ease-in;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+@keyframes nextgen-vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes nextgen-vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
