@@ -52,18 +52,18 @@ describe("StudioVirtualAvatarCustomizer", () => {
     expect(screen.getByRole("checkbox", { name: "걷기 애니메이션" })).toBeTruthy();
   });
 
-  it("10개 피부색·18개 헤어스타일·16개 액세서리·11개 프리셋 버튼을 제공한다", () => {
+  it("12개 피부색·18개 헤어스타일·16개 액세서리·14개 프리셋 버튼을 제공한다", () => {
     render(<StudioVirtualAvatarCustomizer identity="tester" />);
     const skinFieldset = screen.getByText("피부색").closest("fieldset");
-    expect(skinFieldset?.querySelectorAll("button")).toHaveLength(10);
+    expect(skinFieldset?.querySelectorAll("button")).toHaveLength(12);
     const hairFieldset = screen.getByText("헤어스타일").closest("fieldset");
     expect(hairFieldset?.querySelectorAll("button")).toHaveLength(18);
     const accessoryFieldset = screen.getByText("액세서리").closest("fieldset");
     expect(accessoryFieldset?.querySelectorAll("button")).toHaveLength(16);
     const presetFieldset = screen.getByText("프리셋").closest("fieldset");
-    expect(presetFieldset?.querySelectorAll("button")).toHaveLength(11);
+    expect(presetFieldset?.querySelectorAll("button")).toHaveLength(14);
     for (const preset of STUDIO_CHARACTER_PART_PRESETS) {
-      expect(presetFieldset?.querySelectorAll("button").length).toBe(11);
+      expect(presetFieldset?.querySelectorAll("button").length).toBe(14);
       expect(screen.getByRole("button", { name: preset.labelKo }), preset.key).toBeTruthy();
     }
   });
