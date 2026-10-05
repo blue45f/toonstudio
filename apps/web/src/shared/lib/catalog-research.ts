@@ -18,6 +18,15 @@ export interface ResearchFilters {
 export const RESEARCH_STATUSES = ["ongoing", "completed", "hiatus"];
 export const RESEARCH_STATUS_LABELS: Record<string, string> = { ongoing: "연재", completed: "완결", hiatus: "휴재" };
 export const RESEARCH_NOTE_KEY = "toonstudio.catalog-research.notebook.v1";
+/**
+ * 소유자별 저장 키. 기획 노트는 개인 기록이라 계정으로 나눠, 같은
+ * 브라우저의 다른 계정에게 이전 계정의 노트가 보이지 않게 한다(학습
+ * 기록·마켓 찜과 같은 방식). ownerKey가 없으면 레거시 키(기존 호출·
+ * 테스트 호환).
+ */
+export function researchNoteStorageKey(ownerKey?: string): string {
+  return ownerKey ? `${RESEARCH_NOTE_KEY}:${ownerKey}` : RESEARCH_NOTE_KEY;
+}
 export const RESEARCH_LIMIT = 4;
 export const RESEARCH_PAGE_SIZE = 24;
 const MAX_RECORDS = 100000;
@@ -127,9 +136,10 @@ export function parseResearchNotebook(raw: string | null): ResearchNotebook {
     typeof data.savedAt !== "string" || (data.savedAt !== "" && !date(data.savedAt)) || typeof data.sourceHash !== "string" || data.sourceHash.length > 64) throw new Error("저장된 노트 형식이 손상되어 덮어쓰지 않았습니다.");
   return data as unknown as ResearchNotebook;
 }
-export function saveResearchNotebook(storage: Pick<Storage, "getItem" | "setItem">, expected: string | null, note: ResearchNotebook): string {
-  if (storage.getItem(RESEARCH_NOTE_KEY) !== expected) throw new Error("다른 탭에서 노트가 변경되었습니다. 내보내기로 현재 초안을 보관한 뒤 저장된 노트를 다시 불러오세요.");
-  const raw = JSON.stringify(note); parseResearchNotebook(raw); storage.setItem(RESEARCH_NOTE_KEY, raw); return raw;
+export function saveResearchNotebook(storage: Pick<Storage, "getItem" | "setItem">, expected: string | null, note: ResearchNotebook, ownerKey?: string): string {
+  const key = researchNoteStorageKey(ownerKey);
+  if (storage.getItem(key) !== expected) throw new Error("다른 탭에서 노트가 변경되었습니다. 내보내기로 현재 초안을 보관한 뒤 저장된 노트를 다시 불러오세요.");
+  const raw = JSON.stringify(note); parseResearchNotebook(raw); storage.setItem(key, raw); return raw;
 }
 const markdownText = (value: string): string => value.replace(/[\\`*_[\]{}()<>#+.!|]/gu, "\\$&").replace(/[\r\n]+/gu, " ");
 export function researchMarkdown(note: ResearchNotebook, works: readonly ResearchWork[], snapshot: ResearchSnapshot): string {
