@@ -26,8 +26,25 @@ describe("Studio collaboration route gateways", () => {
     });
   });
 
-  it("keeps asset guidance and its working editor exit outside the collaboration contract", () => {
-    const onOpenStudio = vi.fn();
+  // Work/remix assets are now an actual asset grid surface, not a placeholder.
+  // The unscoped /studio/assets guidance below stays only as the hub-shadowed fallback.
+  it.each([
+    ["/studio/work/work-1/assets", "/studio/work/work-1/canvas", "work-1", null],
+    ["/studio/remix/source-1/assets", "/studio/remix/source-1/canvas", null, "source-1"],
+  ])("routes %s to the work asset grid instead of the placeholder", (pathname, editorHref, workId, remixSourceWorkId) => {
+    const route = resolveStudioRoute({ pathname });
+    expect(route).toMatchObject({
+      kind: "assets",
+      canonicalPathname: pathname,
+      ownsDocumentTitle: true,
+      editorHref,
+      workId,
+      remixSourceWorkId,
+    });
+    expect(route).not.toHaveProperty("placeholderId");
+  });
+
+  it("keeps asset guidance and its working editor exit outside the collaboration contract", () => {    const onOpenStudio = vi.fn();
     render(
       <MemoryRouter>
         <StudioRoutePlaceholder placeholderId="assets" onOpenStudio={onOpenStudio} />

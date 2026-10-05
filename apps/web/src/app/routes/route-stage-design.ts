@@ -113,6 +113,7 @@ function runtimeDesign(resolution: StudioRouteResolution | null): RouteStageDesi
     case "production": return design("production", "studio-runtime", "none");
     case "companion": return design("production", "studio-runtime", "none");
     case "placeholder": return design("assets", "studio-runtime");
+    case "assets": return design("assets", "studio-runtime");
   }
 }
 

@@ -17,7 +17,7 @@ describe("Studio route manifest", () => {
   });
 
   it("declares one owner for each Studio route family", () => {
-    expect(new Set(STUDIO_ROUTE_MANIFEST.map((route) => route.kind)).size).toBe(8);
+    expect(new Set(STUDIO_ROUTE_MANIFEST.map((route) => route.kind)).size).toBe(9);
     expect(new Set(STUDIO_ROUTE_MANIFEST.map((route) => route.id)).size).toBe(
       STUDIO_ROUTE_MANIFEST.length,
     );
@@ -186,6 +186,20 @@ describe("Studio route manifest", () => {
       "/studio/assets",
     ],
     [
+      "/studio/work/work-1/assets",
+      "",
+      "assets",
+      "/studio/work/work-1/assets",
+      "/studio/work:work-1/assets",
+    ],
+    [
+      "/studio/remix/source-1/assets",
+      "",
+      "assets",
+      "/studio/remix/source-1/assets",
+      "/studio/remix:source-1/assets",
+    ],
+    [
       "/studio/review",
       "",
       "production",
@@ -287,6 +301,9 @@ describe("Studio route manifest", () => {
     expect(studioRouteOwnsDocumentTitle({ pathname: "/studio/storyworld" })).toBe(true);
     expect(studioRouteOwnsDocumentTitle({ pathname: "/studio/projects" })).toBe(true);
     expect(studioRouteOwnsDocumentTitle({ pathname: "/studio/assets" })).toBe(false);
+    // 작품 스코프 에셋은 플레이스홀더가 아니라 실제 그리드 화면이라 제목을 직접 소유한다.
+    expect(studioRouteOwnsDocumentTitle({ pathname: "/studio/work/work-1/assets" })).toBe(true);
+    expect(studioRouteOwnsDocumentTitle({ pathname: "/studio/remix/source-1/assets" })).toBe(true);
     expect(studioRouteOwnsDocumentTitle({ pathname: "/studio/avatar" })).toBe(false);
   });
 });
