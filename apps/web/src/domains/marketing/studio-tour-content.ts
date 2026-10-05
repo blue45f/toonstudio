@@ -9,8 +9,6 @@ import type { StudioRegionId } from "./public/intro-studio-window";
  * 예시 편집기의 다섯 영역을 번호 순서대로 설명하고, 각 영역에서 바로 열 수 있는 실제 작업공간을 건다.
  * (모든 href는 등록된 라우트여야 한다 — marketing-destinations.test)
  */
-export type StudioTourTab = "map" | "start" | "support";
-
 interface StudioRegionCopy {
   /** 번호 버튼에 들어가는 짧은 이름. */
   readonly label: string;
@@ -178,15 +176,3 @@ export const STUDIO_DEPTH_LINKS = [
   { href: "/about/principles", ko: "제품 원칙 12가지", en: "Twelve product principles" },
   { href: "/product-tour", ko: "8분 제품 투어", en: "8-minute product tour" },
 ] as const;
-
-/** 예전 섹션 앵커(`#creator-*`) → 탭. 공유된 옛 링크가 막다른 길이 되지 않게 가장 가까운 탭을 연다. */
-export const STUDIO_TOUR_ANCHORS: Readonly<Record<string, StudioTourTab>> = {
-  "#creator-start": "start",
-  "#creator-toolkit-title": "start",
-  "#creator-bridge": "map",
-  "#creator-bridge-title": "map",
-  "#creator-flow": "map",
-  "#creator-process-title": "map",
-  "#creator-support": "support",
-  "#creator-support-title": "support",
-};
