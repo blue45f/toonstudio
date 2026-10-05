@@ -50,58 +50,58 @@ interface ResidentNpcProfile {
 const RESIDENT_NPC_PROFILES: readonly ResidentNpcProfile[] = Object.freeze([
   Object.freeze({
     id: "studio-writer", roomId: "writers", skinKey: "npc-mentor", facing: "left", speed: 56,
-    points: Object.freeze([
+    points: Object.freeze<readonly [ResidentNpcPoint, ResidentNpcPoint, ResidentNpcPoint]>([
       Object.freeze({ x: 290, y: 485, vertical: true }),
       Object.freeze({ x: 120, y: 485 }),
       Object.freeze({ x: 270, y: 345 }),
     ]),
-    animations: Object.freeze(["review", "talk", "idle"] as const),
+    animations: Object.freeze<readonly [StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"]]>(["review", "talk", "idle"] as const),
   }),
   Object.freeze({
     id: "studio-docent", roomId: "storyboard", skinKey: "npc-guide", facing: "left", speed: 60,
-    points: Object.freeze([
+    points: Object.freeze<readonly [ResidentNpcPoint, ResidentNpcPoint, ResidentNpcPoint]>([
       Object.freeze({ x: 590, y: 205, vertical: true }),
       Object.freeze({ x: 390, y: 205 }),
       Object.freeze({ x: 560, y: 130 }),
     ]),
-    animations: Object.freeze(["talk", "idle", "idle"] as const),
+    animations: Object.freeze<readonly [StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"]]>(["talk", "idle", "idle"] as const),
   }),
   Object.freeze({
     id: "studio-inspector", roomId: "quality", skinKey: "npc-guard", facing: "left", speed: 58,
-    points: Object.freeze([
+    points: Object.freeze<readonly [ResidentNpcPoint, ResidentNpcPoint, ResidentNpcPoint]>([
       Object.freeze({ x: 1210, y: 485, vertical: true }),
       Object.freeze({ x: 1040, y: 485 }),
       Object.freeze({ x: 1210, y: 335, vertical: true }),
     ]),
-    animations: Object.freeze(["review", "review", "idle"] as const),
+    animations: Object.freeze<readonly [StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"]]>(["review", "review", "idle"] as const),
   }),
   Object.freeze({
     id: "studio-courier", roomId: "release", skinKey: "npc-shopkeeper", facing: "left", speed: 62,
-    points: Object.freeze([
+    points: Object.freeze<readonly [ResidentNpcPoint, ResidentNpcPoint, ResidentNpcPoint]>([
       Object.freeze({ x: 1210, y: 205, vertical: true }),
       Object.freeze({ x: 1040, y: 205 }),
       Object.freeze({ x: 1210, y: 80, vertical: true }),
     ]),
-    animations: Object.freeze(["idle", "talk", "idle"] as const),
+    animations: Object.freeze<readonly [StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"]]>(["idle", "talk", "idle"] as const),
   }),
   Object.freeze({
     id: "studio-barista", roomId: "teams", skinKey: "npc-barista", facing: "right", speed: 55,
-    points: Object.freeze([
+    points: Object.freeze<readonly [ResidentNpcPoint, ResidentNpcPoint, ResidentNpcPoint]>([
       Object.freeze({ x: 300, y: 800 }),
       Object.freeze({ x: 120, y: 800 }),
       Object.freeze({ x: 300, y: 650 }),
     ]),
-    animations: Object.freeze(["talk", "idle", "idle"] as const),
+    animations: Object.freeze<readonly [StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"]]>(["talk", "idle", "idle"] as const),
   }),
   Object.freeze({
     id: "studio-helper", roomId: "assistant", skinKey: "npc-cleaner", facing: "left", speed: 57,
-    points: Object.freeze([
+    points: Object.freeze<readonly [ResidentNpcPoint, ResidentNpcPoint, ResidentNpcPoint]>([
       // 스폰(590,890)에서 서쪽·위쪽으로 살짝 비킨 지점 — 남벽(y908)에 세로 이탈(±12)이 걸리지 않는 자리.
       Object.freeze({ x: 580, y: 885, vertical: true }),
       Object.freeze({ x: 430, y: 890 }),
       Object.freeze({ x: 560, y: 820 }),
     ]),
-    animations: Object.freeze(["review", "talk", "idle"] as const),
+    animations: Object.freeze<readonly [StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"]]>(["review", "talk", "idle"] as const),
   }),
 ]);
 
