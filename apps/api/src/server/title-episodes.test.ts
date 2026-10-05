@@ -1,6 +1,7 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -187,5 +188,30 @@ describe("loadTitleEpisodeEntries — 파일 로드", () => {
   it("파일이 없으면 빈 맵 — 상세는 회차 없이 나간다", () => {
     const loaded = loadTitleEpisodeEntries({ WEBDEX_EPISODES_FILE: "/nonexistent/title-episodes.json" });
     expect(loaded.size).toBe(0);
+  });
+});
+
+describe("커밋된 스냅샷(apps/api/data/title-episodes.json) — 구조 회귀 방지", () => {
+  const snapshotFile = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../../data/title-episodes.json",
+  );
+
+  it("실스냅샷의 모든 항목이 검증을 통과하고 회차가 번호순이다", () => {
+    if (!existsSync(snapshotFile)) return; // 스냅샷 미동봉 체크아웃에서는 건너뜀
+    const parsed = JSON.parse(readFileSync(snapshotFile, "utf8")) as Record<string, unknown>;
+    const ids = Object.keys(parsed);
+    expect(ids.length).toBeGreaterThan(0);
+    const entries = parseTitleEpisodesSnapshot(parsed);
+    // 검증을 통과하지 못해 조용히 버려지는 항목이 있으면 수집 파이프라인 회귀다
+    expect(entries.size).toBe(ids.length);
+    for (const entry of entries.values()) {
+      const numbers = entry.episodes.map((ep) => ep.number);
+      expect(numbers).toEqual([...numbers].sort((a, b) => a - b));
+      expect(entry.source).not.toBe("");
+      for (const episode of entry.episodes) {
+        if (episode.thumbnailUrl) expect(episode.thumbnailUrl).toMatch(/^\/api\/cover\?u=https%3A%2F%2F/);
+      }
+    }
   });
 });
