@@ -7,8 +7,9 @@
  * - Canvas는 생성·update·destroy만 부른다(Canvas 파일이 더 커지지 않게 캠퍼스 그리기는 모두 이 모듈에 둔다).
  * - 근접 연출(게더타운식 "다가가면 반응"): 갤러리 액자 스포트라이트·확대, 오락기 화면빛, 하위 맵 게이트 고리,
  *   무대 조명 강화. 세기는 거리로 정하고 150ms 시간 상수로 부드럽게 바뀐다(모션 줄이기면 맥동 없이 정적으로 켜진다).
- * - 사무실 소품(트랙 G): 모니터 책상 화면빛, 네온 사인 깜빡임, 벽시계 바늘(실제 시각)을 office-props 순수 계산으로 얹는다.
- *   전부 오브젝트 국소 효과이며 전면 오버레이는 만들지 않는다.
+ * - 사무실 소품(트랙 G + VS 120 웨이브 2): 모니터 책상 화면빛, 네온 사인 깜빡임, 벽시계 바늘(실제 시각),
+ *   자판기 진열창 순환광, 소프트박스 빛 웅덩이(램프 호흡), 정수기 수조 기포, 화이트보드 반사 이동을
+ *   office-props 순수 계산으로 얹는다. 전부 오브젝트 국소 효과이며 전면 오버레이는 만들지 않는다.
  * - 생동감(나비·꽃잎·새·물고기·무대 조명·분수 물보라·김·반딧불)은 campus-life 런타임이 맡는다.
  * - 건물 생동감(창문 점등·가로등 빛 웅덩이·접지 그림자·AO)은 building-life 런타임이 맡고,
  *   이 런타임은 그 목표값으로 네온사인 강조만 조절한다. 전부 오브젝트 국소 효과다.
@@ -52,10 +53,14 @@ import {
 } from "./studio-virtual-space-campus-textures";
 import { campusThemeFloorTexture } from "./studio-virtual-space-campus-floor-textures";
 import {
+  officeBoardShimmer,
   officeClockHands,
   officeClockSecondBucket,
+  officeCoolerBubbleField,
+  officeLampGlow,
   officeMonitorGlow,
   officeNeonFlicker,
+  officeScreenGlow,
 } from "./studio-virtual-space-office-props";
 import {
   studioSpaceThemeFloorSpec,
@@ -156,6 +161,12 @@ export class StudioCampusRuntime {
   private readonly monitors: { readonly image: Phaser.GameObjects.Image; readonly light: Phaser.GameObjects.Graphics;
     readonly near: ProximityTarget; readonly seed: string }[] = [];
   private readonly neons: { readonly image: Phaser.GameObjects.Image; readonly seed: string }[] = [];
+  private readonly displays: { readonly image: Phaser.GameObjects.Image; readonly seed: string }[] = [];
+  private readonly lamps: { readonly light: Phaser.GameObjects.Graphics; readonly seed: string }[] = [];
+  private readonly coolers: { readonly bubbles: Phaser.GameObjects.Graphics; readonly width: number;
+    readonly height: number; readonly ink: number; readonly seed: string; lastBucket: number }[] = [];
+  private readonly boards: { readonly sheen: Phaser.GameObjects.Graphics; readonly width: number;
+    readonly height: number; readonly seed: string; lastStep: number }[] = [];
   private readonly clocks: { readonly hands: Phaser.GameObjects.Graphics; readonly radius: number;
     readonly ink: number; readonly accent: number; lastSecond: number }[] = [];
   private readonly stage: ProximityTarget | null;
@@ -356,6 +367,30 @@ export class StudioCampusRuntime {
       this.monitors.push({ image, light, near, seed: object.id });
     } else if (object.kind === "neon-sign") {
       this.neons.push({ image, seed: object.id });
+    } else if (object.kind === "vending-machine") {
+      // 자판기 진열창: 화면 순환광 곡선으로 밝기가 천천히 오르내린다(office-props screen-glow).
+      this.displays.push({ image, seed: object.id });
+    } else if (object.kind === "softbox") {
+      // 촬영 소프트박스: 발밑에 따뜻한 빛 웅덩이가 램프 호흡 곡선으로 숨 쉰다.
+      const light = scene.add.graphics().setDepth(FLOOR_DECAL_DEPTH + 1).setPosition(object.x, object.y + 8).setBlendMode("ADD").setAlpha(0);
+      light.fillStyle(campusStyleColor(0xffe2a0, style), 0.5).fillEllipse(0, 0, object.width * 1.7, 30);
+      this.objects.push(light);
+      this.lamps.push({ light, seed: object.id });
+    } else if (object.kind === "water-cooler") {
+      // 정수기: 수조(위쪽 물통) 안에서 기포가 결정적으로 떠오른다. 150ms 버킷이 바뀔 때만 다시 그린다.
+      const bubbles = scene.add.graphics().setDepth(studioCampusObjectDepth(object) + 1)
+        .setPosition(object.x, object.y - object.height * 0.72);
+      this.objects.push(bubbles);
+      this.coolers.push({
+        bubbles, width: object.width, height: object.height,
+        ink: campusStyleColor(0xd8f4ff, style), seed: object.id, lastBucket: -1,
+      });
+    } else if (object.kind === "whiteboard") {
+      // 화이트보드: 긴 주기마다 빛 반사가 보드 면을 가로지른다(office-props board-shimmer).
+      const sheen = scene.add.graphics().setDepth(studioCampusObjectDepth(object) + 1)
+        .setPosition(object.x, object.y - object.height / 2).setBlendMode("ADD");
+      this.objects.push(sheen);
+      this.boards.push({ sheen, width: object.width, height: object.height, seed: object.id, lastStep: -2 });
     } else if (object.kind === "wall-clock") {
       // 벽시계: 바늘은 텍스처에 없고, 실제 시각으로 매초 다시 그리는 그래픽으로 얹는다.
       const hands = scene.add.graphics().setDepth(studioCampusObjectDepth(object) + 1)
@@ -447,6 +482,14 @@ export class StudioCampusRuntime {
       neon.image.setAlpha((0.55 + officeNeonFlicker(time, neon.seed, reducedMotion) * 0.45) * neonGain);
     }
     if (this.clocks.length > 0) this.updateClocks(reducedMotion);
+    for (const display of this.displays) {
+      display.image.setAlpha(0.78 + officeScreenGlow(time, display.seed, reducedMotion).intensity * 0.22);
+    }
+    for (const lamp of this.lamps) {
+      lamp.light.setAlpha(officeLampGlow(time, lamp.seed, reducedMotion) * 0.5);
+    }
+    for (const cooler of this.coolers) this.updateCooler(cooler, time, reducedMotion);
+    for (const board of this.boards) this.updateBoard(board, time, reducedMotion);
     const building = this.buildingLifeFrame;
     building.time = time;
     building.phase = frame.phase;
@@ -485,6 +528,38 @@ export class StudioCampusRuntime {
     }
   }
 
+  /** 정수기 기포를 다시 그린다. 150ms 버킷 단위로 양자화해 매 프레임 다시 그리지 않는다. */
+  private updateCooler(cooler: (typeof this.coolers)[number], time: number, reducedMotion: boolean): void {
+    const bucket = reducedMotion ? 0 : Math.floor(time / 150);
+    if (cooler.lastBucket === bucket) return;
+    cooler.lastBucket = bucket;
+    const tankWidth = cooler.width * 0.44;
+    const tankHeight = cooler.height * 0.3;
+    cooler.bubbles.clear();
+    for (const bubble of officeCoolerBubbleField(time, cooler.seed, reducedMotion)) {
+      const alpha = 0.8 * (1 - bubble.rise * 0.35);
+      cooler.bubbles.fillStyle(cooler.ink, alpha)
+        .fillCircle(bubble.offsetX * tankWidth * 0.5, (0.5 - bubble.rise) * tankHeight, bubble.radius);
+    }
+  }
+
+  /** 화이트보드 반사를 다시 그린다. sweep를 0.04 단위로 양자화하고, 반사가 없으면 한 번만 지운다. */
+  private updateBoard(board: (typeof this.boards)[number], time: number, reducedMotion: boolean): void {
+    const { intensity, sweep } = officeBoardShimmer(time, board.seed, reducedMotion);
+    const step = sweep < 0 ? -1 : Math.round(sweep / 0.04);
+    if (board.lastStep === step) return;
+    board.lastStep = step;
+    board.sheen.clear();
+    if (sweep < 0 || intensity <= 0) return;
+    const halfWidth = board.width / 2 - 8;
+    const halfHeight = board.height / 2 - 8;
+    const band = board.width * 0.14;
+    const x0 = -halfWidth + sweep * halfWidth * 2;
+    board.sheen.fillStyle(0xffffff, intensity * 0.32)
+      .fillTriangle(x0, -halfHeight, x0 + band, -halfHeight, x0 + band * 0.45, halfHeight)
+      .fillTriangle(x0, -halfHeight, x0 + band * 0.45, halfHeight, x0 - band * 0.55, halfHeight);
+  }
+
   destroy(): void {
     this.buildingLife.destroy();
     this.life.destroy();
@@ -495,6 +570,10 @@ export class StudioCampusRuntime {
     this.gates.splice(0);
     this.monitors.splice(0);
     this.neons.splice(0);
+    this.displays.splice(0);
+    this.lamps.splice(0);
+    this.coolers.splice(0);
+    this.boards.splice(0);
     this.clocks.splice(0);
   }
 }
