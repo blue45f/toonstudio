@@ -24,8 +24,13 @@ import {
   STUDIO_VIRTUAL_SPACE_INTERACTIONS,
   type StudioVirtualSpaceInteractionAction,
 } from "./studio-virtual-space-interactions";
-import { studioCharacterActionClip } from "./studio-virtual-space-character-skins";
-import { STUDIO_NPC_CAST, studioNpcCastHasKey } from "./studio-virtual-space-npc-cast";
+import {
+  STUDIO_NPC_CAST,
+  STUDIO_NPC_PROCEDURAL_DEFINITIONS,
+  studioNpcCastHasKey,
+  studioNpcCastMotionClipAvailable,
+  studioNpcCastPoseAvailable,
+} from "./studio-virtual-space-npc-cast";
 import {
   StudioWorldConnectivityIndex,
   studioWorldCircleCanOccupy,
@@ -236,6 +241,144 @@ const EXTRA_NPC_ACTIVITY_ANCHORS: readonly StudioWorldNpcActivityAnchor[] = [
     maxDurationMs: activity === "work" ? 36_000 : 16_000 };
 });
 
+/**
+ * 상주 NPC 확장 배치 (VS 120 웨이브 3 — 2026-10-06 기본 매니페스트 채택 완료).
+ *
+ * 기본 상주 8명이 커버하지 못하던 6개 방(글쓰기·스토리보드·품질·출고·협업·비서)의
+ * 상주 NPC다. 6명 모두 프로시저럴 스킨을 쓰며, 채택 전제는 세 가지였다:
+ * 캐스트 게이트의 프로시저럴 인정, 비주얼 해석(studioNpcCastSkinByKey)의 프로시저럴 해석,
+ * 클립 가용성의 구조 판정. 데이터가 이 파일에 있는 이유: 확장 모듈이 기본 매니페스트를
+ * 값으로 import하므로, 데이터가 확장 모듈에 있으면 순환 import가 된다.
+ * 확장 모듈(studio-virtual-space-resident-npc-expansion)은 이 상수들을 재export하고
+ * 미채택 매니페스트용 합본·미커버 방 조회만 담당한다.
+ *
+ * 좌표 원칙: 방 스폰·기존 NPC 앵커로 이미 검증된 지점을 우선 쓰고, 벽에 붙은 지점은
+ * 기존 EXTRA 앵커와 같은 세로 오프셋(approach 위·exit 아래) 방식을 쓴다.
+ */
+interface ResidentNpcPoint {
+  readonly x: number;
+  readonly y: number;
+  /** 벽에 붙은 지점 — 접근/이탈 오프셋을 세로(±12)로 잡는다. */
+  readonly vertical?: boolean;
+}
+
+interface ResidentNpcProfile {
+  readonly id: string;
+  readonly roomId: StudioWorldNpcDefinition["roomId"];
+  readonly skinKey: string;
+  readonly facing: StudioVirtualSpaceFacing;
+  readonly speed: number;
+  /** [홈, 순찰1, 순찰2] — 기본 프로필과 같은 3점 구성. */
+  readonly points: readonly [ResidentNpcPoint, ResidentNpcPoint, ResidentNpcPoint];
+  /** 앵커 3개의 애니메이션 [작업, 점검, 휴식]. */
+  readonly animations: readonly [StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"], StudioWorldNpcActivityAnchor["animation"]];
+}
+
+const RESIDENT_NPC_PROFILES: readonly ResidentNpcProfile[] = Object.freeze([
+  Object.freeze({
+    id: "studio-writer", roomId: "writers", skinKey: "npc-mentor", facing: "left", speed: 56,
+    points: Object.freeze([
+      Object.freeze({ x: 290, y: 485, vertical: true }),
+      Object.freeze({ x: 120, y: 485 }),
+      Object.freeze({ x: 270, y: 345 }),
+    ]),
+    animations: Object.freeze(["review", "talk", "idle"] as const),
+  }),
+  Object.freeze({
+    id: "studio-docent", roomId: "storyboard", skinKey: "npc-guide", facing: "left", speed: 60,
+    points: Object.freeze([
+      Object.freeze({ x: 590, y: 205, vertical: true }),
+      Object.freeze({ x: 390, y: 205 }),
+      Object.freeze({ x: 560, y: 130 }),
+    ]),
+    animations: Object.freeze(["talk", "idle", "idle"] as const),
+  }),
+  Object.freeze({
+    id: "studio-inspector", roomId: "quality", skinKey: "npc-guard", facing: "left", speed: 58,
+    points: Object.freeze([
+      Object.freeze({ x: 1210, y: 485, vertical: true }),
+      Object.freeze({ x: 1040, y: 485 }),
+      Object.freeze({ x: 1210, y: 335, vertical: true }),
+    ]),
+    animations: Object.freeze(["review", "review", "idle"] as const),
+  }),
+  Object.freeze({
+    id: "studio-courier", roomId: "release", skinKey: "npc-shopkeeper", facing: "left", speed: 62,
+    points: Object.freeze([
+      Object.freeze({ x: 1210, y: 205, vertical: true }),
+      Object.freeze({ x: 1040, y: 205 }),
+      Object.freeze({ x: 1210, y: 80, vertical: true }),
+    ]),
+    animations: Object.freeze(["idle", "talk", "idle"] as const),
+  }),
+  Object.freeze({
+    id: "studio-barista", roomId: "teams", skinKey: "npc-barista", facing: "right", speed: 55,
+    points: Object.freeze([
+      Object.freeze({ x: 300, y: 800 }),
+      Object.freeze({ x: 120, y: 800 }),
+      Object.freeze({ x: 300, y: 650 }),
+    ]),
+    animations: Object.freeze(["talk", "idle", "idle"] as const),
+  }),
+  Object.freeze({
+    id: "studio-helper", roomId: "assistant", skinKey: "npc-cleaner", facing: "left", speed: 57,
+    points: Object.freeze([
+      // 스폰(590,890)에서 서쪽·위쪽으로 살짝 비킨 지점 — 남벽(y908)에 세로 이탈(±12)이 걸리지 않는 자리.
+      Object.freeze({ x: 580, y: 885, vertical: true }),
+      Object.freeze({ x: 430, y: 890 }),
+      Object.freeze({ x: 560, y: 820 }),
+    ]),
+    animations: Object.freeze(["review", "talk", "idle"] as const),
+  }),
+]);
+
+const RESIDENT_NPC_ACTIVITIES: readonly StudioWorldNpcActivityAnchor["activity"][] = Object.freeze(["work", "inspect", "rest"]);
+
+function residentNpcAnchorFor(profile: ResidentNpcProfile, point: ResidentNpcPoint, index: number): StudioWorldNpcActivityAnchor {
+  const approachPoint: StudioVirtualSpacePoint = point.vertical
+    ? { x: point.x, y: point.y - 12 }
+    : { x: point.x - 18, y: point.y };
+  const exitPoint: StudioVirtualSpacePoint = point.vertical
+    ? { x: point.x, y: point.y + 12 }
+    : { x: point.x + 18, y: point.y };
+  return Object.freeze({
+    id: `${profile.id}-${index}`,
+    roomId: profile.roomId,
+    approachPoint,
+    anchorPoint: { x: point.x, y: point.y },
+    exitPoint,
+    facing: index === 2 ? "down" : profile.facing,
+    activity: RESIDENT_NPC_ACTIVITIES[index]!,
+    animation: profile.animations[index]!,
+    minDurationMs: index === 0 ? 18_000 : 7_000,
+    maxDurationMs: index === 0 ? 36_000 : 16_000,
+  });
+}
+
+/** 확장 상주 NPC 6명의 활동 앵커 18개 (NPC당 3개, 기본 프로필과 같은 구성). */
+export const STUDIO_RESIDENT_NPC_EXPANSION_ANCHORS: readonly StudioWorldNpcActivityAnchor[] = Object.freeze(
+  RESIDENT_NPC_PROFILES.flatMap((profile) => profile.points.map((point, index) => residentNpcAnchorFor(profile, point, index))),
+);
+
+/** 확장 상주 NPC 6명의 정의. 홈=1번 지점, 순찰=2·3번 지점, 앵커 id는 -0~-2. */
+export const STUDIO_RESIDENT_NPC_EXPANSION: readonly StudioWorldNpcDefinition[] = Object.freeze(
+  RESIDENT_NPC_PROFILES.map((profile) => Object.freeze({
+    id: profile.id,
+    skinKey: profile.skinKey,
+    point: { x: profile.points[0].x, y: profile.points[0].y },
+    roomId: profile.roomId,
+    facing: profile.facing,
+    scale: 0.94,
+    speed: profile.speed,
+    behavior: "patrol" as const,
+    patrol: Object.freeze([
+      Object.freeze({ x: profile.points[1].x, y: profile.points[1].y }),
+      Object.freeze({ x: profile.points[2].x, y: profile.points[2].y }),
+    ]),
+    activityAnchorIds: Object.freeze([`${profile.id}-0`, `${profile.id}-1`, `${profile.id}-2`]),
+  })),
+);
+
 const acousticZones = STUDIO_VIRTUAL_SPACE_ZONES.map(({ id, x, y, width, height }) => ({
   id: `${id}-audio`, roomId: id, x, y, width, height,
   policy: id === "meeting" || id === "review" ? "private" as const : "public" as const,
@@ -309,7 +452,7 @@ export const DEFAULT_STUDIO_WORLD_MANIFEST: StudioVirtualSpaceWorldManifest = Ob
     { id: "meeting-two", roomId: "meeting", labelKo: "회의석 2", labelEn: "Meeting seat 2",
       approachPoint: { x: 1140, y: 790 }, anchorPoint: { x: 1140, y: 790 }, seatAttachmentPoint: { x: 1130, y: 730 }, exitPoint: { x: 1175, y: 815 }, facing: "up", radius: 10 },
   ],
-  npcActivityAnchors: [...DEFAULT_NPC_ACTIVITY_ANCHORS, ...EXTRA_NPC_ACTIVITY_ANCHORS],
+  npcActivityAnchors: [...DEFAULT_NPC_ACTIVITY_ANCHORS, ...EXTRA_NPC_ACTIVITY_ANCHORS, ...STUDIO_RESIDENT_NPC_EXPANSION_ANCHORS],
   zones: STUDIO_DEFAULT_OFFICE_ZONES,
   npcs: [
     { id: "studio-guide", activityAnchorIds: ["studio-guide-0", "studio-guide-1", "studio-guide-2", "studio-guide-3", "studio-guide-4"], skinKey: "npc-concierge", roomId: "lobby", point: { x: 700, y: 910 }, facing: "down", scale: .94, speed: 62, behavior: "patrol", patrol: [{ x: 865, y: 910 }, { x: 780, y: 865 }] },
@@ -320,6 +463,7 @@ export const DEFAULT_STUDIO_WORLD_MANIFEST: StudioVirtualSpaceWorldManifest = Ob
     { id: "studio-cafe", activityAnchorIds: ["studio-cafe-0", "studio-cafe-1", "studio-cafe-2", "studio-cafe-3", "studio-cafe-4"], skinKey: "npc-cafe", roomId: "lounge", point: { x: 570, y: 745 }, facing: "left", scale: .94, speed: 55, behavior: "patrol", patrol: [{ x: 390, y: 745 }, { x: 570, y: 615 }] },
     { id: "studio-security", activityAnchorIds: ["studio-security-0", "studio-security-1", "studio-security-2", "studio-security-3", "studio-security-4"], skinKey: "npc-security", roomId: "meeting", point: { x: 1200, y: 820 }, facing: "left", scale: .94, speed: 59, behavior: "patrol", patrol: [{ x: 1010, y: 820 }, { x: 1200, y: 620 }] },
     { id: "studio-host", activityAnchorIds: ["studio-host-0", "studio-host-1", "studio-host-2", "studio-host-3", "studio-host-4"], skinKey: "npc-host", roomId: "live", point: { x: 880, y: 790 }, facing: "left", scale: .94, speed: 64, behavior: "patrol", patrol: [{ x: 660, y: 790 }, { x: 880, y: 615 }] },
+    ...STUDIO_RESIDENT_NPC_EXPANSION,
   ],
 });
 
@@ -450,7 +594,12 @@ export const STUDIO_WORLD_MAX_DIMENSION = 10_000;
 export const STUDIO_WORLD_MAX_ENTITIES = 4_096;
 const SAFE_WORLD_ID = /^[a-z0-9][a-z0-9_-]{0,63}$/iu;
 const WORLD_ACTIONS = new Set(["assistant", "assets", "canvas", "community", "comic", "live", "review", "story"]);
-const WORLD_NPC_CAST_KEYS = new Set(STUDIO_NPC_CAST.map((skin) => skin.key));
+// 캐스트 게이트 허용 목록: 드로잉 캐스트 + 프로시저럴 정의를 모두 정식 항목으로 인정한다.
+// 미지 키는 어느 쪽에도 없으므로 계속 거부된다 (게이트 완화 아님).
+const WORLD_NPC_CAST_KEYS = new Set([
+  ...STUDIO_NPC_CAST.map((skin) => skin.key),
+  ...STUDIO_NPC_PROCEDURAL_DEFINITIONS.map((item) => item.key),
+]);
 
 function hasUnsafeUrlCharacters(value: string): boolean {
   return [...value].some((char) => char === "\\" || char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
@@ -666,9 +815,11 @@ export function validateStudioWorldManifest(manifest: StudioVirtualSpaceWorldMan
       else for (const id of npc.activityAnchorIds) {
         const anchor: StudioWorldNpcActivityAnchor | undefined = Array.isArray(manifest.npcActivityAnchors) ? manifest.npcActivityAnchors.find((value) => value?.id === id) : undefined;
         if (!anchor) { errors.push(`npc references missing activity anchor: ${npc.id}`); continue; }
-        const skin = STUDIO_NPC_CAST.find((value) => value.key === npc.skinKey);
-        if (anchor.animation !== "idle" && !(anchor.animation === "sit" ? skin?.poses?.sit
-          : skin?.state?.[anchor.animation] || (skin && studioCharacterActionClip(skin, anchor.facing, anchor.animation)))) errors.push(`npc activity clip is unavailable: ${npc.id}/${anchor.id}`);
+        // 클립 가용성은 텍스처를 만들지 않는 구조 판정으로 본다 — 프로시저럴 스킨은
+        // 생성 구조(talk·draw·review 전 방향 + sit 포즈)가 고정이라 판정 가능하다.
+        if (anchor.animation !== "idle" && !(anchor.animation === "sit"
+          ? studioNpcCastPoseAvailable(npc.skinKey, "sit")
+          : studioNpcCastMotionClipAvailable(npc.skinKey, anchor.facing, anchor.animation))) errors.push(`npc activity clip is unavailable: ${npc.id}/${anchor.id}`);
         if (inBounds(anchor.approachPoint) && actorCanOccupy(npc.point) && actorCanOccupy(anchor.approachPoint)
           && !connectivity.connected(npc.point, anchor.approachPoint)) errors.push(`npc activity is unreachable: ${npc.id}/${anchor.id}`);
       }

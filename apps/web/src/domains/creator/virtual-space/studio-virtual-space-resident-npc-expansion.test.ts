@@ -27,28 +27,39 @@ const geometry = {
   connected: (a: { x: number; y: number }, b: { x: number; y: number }) => connectivity.connected(a, b),
 };
 
+// 이 파일은 원래 채택 이전 상태(기본 8명·빈 방 6개·합본 시 게이트 오류만 발생)를 고정했다.
+// 2026-10-06 채택이 끝나면서 고정 대상 사실이 바뀌었다 — 단언을 약화한 게 아니라
+// "채택됨"이라는 새 사실을 같은 강도로 고정한다.
+
 describe("상주 NPC 확장 — 대상 방", () => {
-  it("기본 월드가 비워 둔 방은 정확히 6개다 (매니페스트 방 순서)", () => {
-    expect(studioResidentNpcUncoveredRoomIds()).toEqual([
+  it("채택된 기본 월드는 전 방을 커버하고, 확장을 빼면 정확히 6개 방이 빈다 (매니페스트 방 순서)", () => {
+    expect(studioResidentNpcUncoveredRoomIds()).toEqual([]);
+    const expansionIds = new Set(STUDIO_RESIDENT_NPC_EXPANSION.map((npc) => npc.id));
+    const stripped = {
+      ...DEFAULT_STUDIO_WORLD_MANIFEST,
+      npcs: DEFAULT_STUDIO_WORLD_MANIFEST.npcs.filter((npc) => !expansionIds.has(npc.id)),
+    };
+    expect(studioResidentNpcUncoveredRoomIds(stripped)).toEqual([
       "storyboard", "release", "writers", "quality", "teams", "assistant",
     ]);
+    expect(studioResidentNpcUncoveredRoomIds(mergeStudioResidentNpcExpansion(stripped))).toEqual([]);
   });
 
-  it("확장 6명은 그 6개 방을 하나씩 메우고 id가 기존과 겹치지 않는다", () => {
+  it("확장 6명은 그 6개 방을 하나씩 메우고 기본 매니페스트에 그대로 포함돼 있다", () => {
     expect(STUDIO_RESIDENT_NPC_EXPANSION.map((npc) => npc.roomId)).toEqual([
       "writers", "storyboard", "quality", "release", "teams", "assistant",
     ]);
-    const existingIds = new Set(DEFAULT_STUDIO_WORLD_MANIFEST.npcs.map((npc) => npc.id));
+    expect(DEFAULT_STUDIO_WORLD_MANIFEST.npcs).toHaveLength(14);
+    const defaultIds = DEFAULT_STUDIO_WORLD_MANIFEST.npcs.map((npc) => npc.id);
+    expect(new Set(defaultIds).size).toBe(14);
     for (const npc of STUDIO_RESIDENT_NPC_EXPANSION) {
-      expect(existingIds.has(npc.id)).toBe(false);
+      expect(DEFAULT_STUDIO_WORLD_MANIFEST.npcs).toContain(npc);
       expect(npc.behavior).toBe("patrol");
       expect(npc.patrol).toHaveLength(2);
     }
-    const merged = mergeStudioResidentNpcExpansion();
-    expect(studioResidentNpcUncoveredRoomIds(merged)).toEqual([]);
   });
 
-  it("스킨은 전부 실재하는 프로시저럴 스킨이고 드로잉 캐스트에는 없다(채택 전제의 근거)", () => {
+  it("스킨은 전부 실재하는 프로시저럴 스킨이고 드로잉 캐스트에는 없다(통합 레지스트리로 인정된다)", () => {
     const drawingKeys = new Set(STUDIO_NPC_CAST.map((skin) => skin.key));
     for (const npc of STUDIO_RESIDENT_NPC_EXPANSION) {
       expect(studioProceduralNpcHasKey(npc.skinKey)).toBe(true);
@@ -72,8 +83,7 @@ describe("상주 NPC 확장 — 앵커·기하 검증", () => {
   });
 
   it("확장 앵커는 매니페스트 검증기와 같은 기하로 전부 통과한다", () => {
-    const merged = mergeStudioResidentNpcExpansion();
-    const errors = validateStudioNpcActivityAnchors(STUDIO_RESIDENT_NPC_EXPANSION_ANCHORS, merged, geometry);
+    const errors = validateStudioNpcActivityAnchors(STUDIO_RESIDENT_NPC_EXPANSION_ANCHORS, DEFAULT_STUDIO_WORLD_MANIFEST, geometry);
     expect(errors).toEqual([]);
   });
 
@@ -88,29 +98,29 @@ describe("상주 NPC 확장 — 앵커·기하 검증", () => {
     }
   });
 
-  it("합본 매니페스트는 앵커 예산(64) 안에 있고 기본 매니페스트는 바뀌지 않는다", () => {
+  it("기본 매니페스트는 NPC 14명·앵커 58개로 앵커 예산(64) 안에 있고 합본은 멱등이다", () => {
+    expect(DEFAULT_STUDIO_WORLD_MANIFEST.npcs).toHaveLength(14);
+    expect(DEFAULT_STUDIO_WORLD_MANIFEST.npcActivityAnchors).toHaveLength(58);
     const merged = mergeStudioResidentNpcExpansion();
-    expect(merged.npcActivityAnchors).toHaveLength(58);
     expect(merged.npcs).toHaveLength(14);
-    expect(DEFAULT_STUDIO_WORLD_MANIFEST.npcs).toHaveLength(8);
-    expect(DEFAULT_STUDIO_WORLD_MANIFEST.npcActivityAnchors).toHaveLength(40);
+    expect(merged.npcActivityAnchors).toHaveLength(58);
+    const mergedTwice = mergeStudioResidentNpcExpansion(merged);
+    expect(mergedTwice.npcs).toHaveLength(14);
+    expect(mergedTwice.npcActivityAnchors).toHaveLength(58);
   });
 
-  it("합본 검증 오류는 캐스트·클립 게이트뿐이다 (채택 전제 그 자체를 고정)", () => {
-    const errors = validateStudioWorldManifest(mergeStudioResidentNpcExpansion());
-    const expansionIds = STUDIO_RESIDENT_NPC_EXPANSION.map((npc) => npc.id);
-    expect(errors.length).toBeGreaterThan(0);
-    for (const error of errors) {
-      const owner = expansionIds.find((id) => error.includes(id));
-      expect(owner, `확장과 무관한 검증 오류: ${error}`).toBeDefined();
-      expect(
-        error.includes("references missing cast") || error.includes("activity clip is unavailable"),
-        `게이트 외 오류: ${error}`,
-      ).toBe(true);
-    }
-    // 6명 전원이 캐스트 게이트에 걸린다 — 게이트 확장이 채택의 선행 조건이다.
-    for (const id of expansionIds) {
-      expect(errors.some((error) => error.includes(id) && error.includes("references missing cast"))).toBe(true);
-    }
+  it("채택된 기본 매니페스트는 검증 오류가 없고, 게이트는 미지 스킨을 계속 거부한다", () => {
+    expect(validateStudioWorldManifest(DEFAULT_STUDIO_WORLD_MANIFEST)).toEqual([]);
+    expect(validateStudioWorldManifest(mergeStudioResidentNpcExpansion())).toEqual([]);
+    // 게이트를 끈 게 아니다: 레지스트리에 없는 스킨으로 바꾸면 캐스트·클립 게이트가 그대로 걸린다.
+    const ghost = {
+      ...DEFAULT_STUDIO_WORLD_MANIFEST,
+      npcs: DEFAULT_STUDIO_WORLD_MANIFEST.npcs.map((npc) => (
+        npc.id === "studio-writer" ? { ...npc, skinKey: "npc-ghost" } : npc
+      )),
+    };
+    const errors = validateStudioWorldManifest(ghost);
+    expect(errors).toContain("npc references missing cast: studio-writer");
+    expect(errors.some((error) => error.includes("activity clip is unavailable") && error.includes("studio-writer"))).toBe(true);
   });
 });
