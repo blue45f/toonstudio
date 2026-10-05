@@ -2101,3 +2101,128 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ── 공유 세계관 탭 ─────────────────────────────── */
+.storyworld-universe-create,
+.storyworld-universe-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+  align-items: center;
+}
+
+.storyworld-universe-create label,
+.storyworld-universe-add label {
+  flex: 0 1 auto;
+}
+
+.storyworld-universe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  border-top: 1px solid var(--storyworld-border);
+  padding-top: 16px;
+}
+
+.storyworld-universe-meta .storyworld-settings-field {
+  flex: 1 1 200px;
+}
+
+.storyworld-universe-members {
+  border-top: 1px solid var(--storyworld-border);
+  margin-top: 18px;
+  padding-top: 14px;
+}
+
+.storyworld-universe-members h3,
+.storyworld-universe-usage h4 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+
+.storyworld-universe-members ul,
+.storyworld-universe-usage ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.storyworld-universe-members li,
+.storyworld-universe-usage li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+  font-size: 0.82rem;
+}
+
+.storyworld-universe-members code,
+.storyworld-universe-usage code {
+  color: var(--storyworld-text-muted);
+  font-size: 0.72rem;
+}
+
+.storyworld-universe-elements {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.storyworld-universe-element {
+  border: 1px solid var(--storyworld-border);
+  border-radius: var(--storyworld-radius);
+  background: var(--storyworld-bg-elevated);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.storyworld-universe-element__topline {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.storyworld-universe-element__topline code {
+  margin-left: auto;
+  color: var(--storyworld-text-muted);
+  font-size: 0.72rem;
+}
+
+.storyworld-universe-designate {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.storyworld-universe-designate label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--storyworld-text-muted);
+}
+
+.storyworld-universe-edit {
+  border-top: 1px dashed var(--storyworld-border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.storyworld-universe-edit summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--storyworld-text-muted);
+}

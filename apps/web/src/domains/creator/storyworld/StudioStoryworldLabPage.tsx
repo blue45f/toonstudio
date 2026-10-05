@@ -11,6 +11,7 @@ import {
   FileJson,
   FlaskConical,
   GitBranch,
+  Globe2,
   Import,
   Info,
   Network,
@@ -39,6 +40,7 @@ import {
   StudioStoryworldSettings,
   type StoryworldSettingsFocus,
 } from "./StudioStoryworldSettings";
+import { StudioStoryworldUniverse } from "./StudioStoryworldUniverse";
 import { projectStoryworldToStudioProjectStory } from "./studio-storyworld-project-projection";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
 import {
@@ -76,6 +78,7 @@ export interface StudioStoryworldLabPageProps {
 type StoryworldTab =
   | "overview"
   | "settings"
+  | "universe"
   | "issues"
   | "multiverse"
   | "knowledge"
@@ -93,6 +96,7 @@ const TAB_ITEMS: readonly {
 }[] = [
   { id: "overview", label: "대시보드", icon: Network },
   { id: "settings", label: "설정 관리", icon: Settings2 },
+  { id: "universe", label: "공유 세계관", icon: Globe2 },
   { id: "issues", label: "모순·위험", icon: AlertTriangle },
   { id: "multiverse", label: "멀티버스", icon: GitBranch },
   { id: "knowledge", label: "인물 지식", icon: Users },
@@ -1063,6 +1067,7 @@ function StudioStoryworldLabEditor({
               project={project}
             />
           ) : null}
+          {activeTab === "universe" ? <StudioStoryworldUniverse project={project} scopeKey={storageKey} /> : null}
           {activeTab === "issues" ? <IssuesTab result={result} /> : null}
           {activeTab === "multiverse" ? <MultiverseTab project={project} result={result} /> : null}
           {activeTab === "knowledge" ? <KnowledgeTab project={project} result={result} /> : null}

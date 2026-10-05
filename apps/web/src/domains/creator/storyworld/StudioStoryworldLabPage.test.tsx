@@ -197,6 +197,35 @@ describe("Storyworld settings management layer", () => {
     });
     expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("새벽의 금고");
   });
+
+  it("universe tab creates a shared world, joins the work and designates a local element", async () => {
+    await open("work-universe");
+    fireEvent.click(screen.getByRole("button", { name: /^공유 세계관/ }));
+
+    fireEvent.change(await screen.findByLabelText("새 공유 세계관 이름"), { target: { value: "아르카나 유니버스" } });
+    fireEvent.click(screen.getByRole("button", { name: "공유 세계관 만들기" }));
+    expect(await screen.findByText(/아직 멤버가 아닙니다/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /이 작품을 멤버로 추가/ }));
+    expect(await screen.findByText(/멤버입니다\./)).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("새 공유 요소 이름"), { target: { value: "공유 주인공" } });
+    fireEvent.click(screen.getByRole("button", { name: "공유 요소 추가" }));
+    expect(await screen.findByText("공유 주인공")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("이 작품의 캐릭터 요소"), { target: { value: "haeun" } });
+    fireEvent.click(screen.getByRole("button", { name: "공유 요소로 지정" }));
+    expect(await screen.findByText(/사용 중/)).toBeTruthy();
+
+    const row = db.rows.get(`${STORYWORLD_DRAFT_NAMESPACE}:toonspectrum:storyworld-universes:v1`);
+    expect(row).toBeDefined();
+    const envelope = JSON.parse(row!) as { payload: string };
+    const registry = JSON.parse(envelope.payload) as {
+      universes: { members: unknown[]; sharedElements: { usages: unknown[] }[] }[];
+    };
+    expect(registry.universes[0]?.members).toHaveLength(1);
+    expect(registry.universes[0]?.sharedElements[0]?.usages).toHaveLength(1);
+  });
 });
 
 describe("Storyworld world board layer", () => {
