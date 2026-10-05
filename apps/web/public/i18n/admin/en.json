@@ -655,6 +655,7 @@
   "admin.traffic.viewsPerSession": "Views / session",
   "admin.traffic.visitors": "Visitors",
   "admin.traffic.visitorsLegend": "Visitors",
+  "admin.ui.close": "Close",
   "admin.ui.loading": "Loading",
   "admin.verifications.all": "All",
   "admin.verifications.approve": "Verify",

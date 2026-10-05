@@ -655,6 +655,7 @@
   "admin.traffic.viewsPerSession": "세션당 조회",
   "admin.traffic.visitors": "방문자",
   "admin.traffic.visitorsLegend": "방문자",
+  "admin.ui.close": "닫기",
   "admin.ui.loading": "불러오는 중",
   "admin.verifications.all": "전체",
   "admin.verifications.approve": "인증",
