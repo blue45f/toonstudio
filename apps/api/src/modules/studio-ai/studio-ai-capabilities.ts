@@ -13,7 +13,8 @@ import {
  *
  * - transcription: Groq Whisper (기존 Groq 서버 키 재사용)
  * - vision: Groq 비전 모델 (기존 Groq 서버 키 재사용, chat completions 위에서 동작)
- * - image-generation / embedding: Cloudflare Workers AI (별도 단위에서 등록)
+ * - image-generation / embedding: Cloudflare Workers AI (기존 계정·토큰 재사용,
+ *   무료 할당 10,000 Neurons/일 안에서 도는 모델만 allowlist)
  *
  * 무료 경계는 chat과 같은 원칙을 따른다: 운영자 확인 플래그가 켜진 제공자만,
  * 그리고 무료 구간이 공식 문서로 확인된 모델 allowlist 안의 모델만 configured가 된다.
@@ -90,8 +91,7 @@ export function isGroqVisionModel(model: string): boolean {
 function groqCapabilityConfig(
   capability: "transcription" | "vision",
   env: EnvLike,
-): StudioAiCapabilityConfig {
-  const [groq] = resolveStudioAiProviders("groq", env);
+): StudioAiCapabilityConfig {  const [groq] = resolveStudioAiProviders("groq", env);
   const model = capability === "transcription"
     ? boundedText(
         env.STUDIO_AI_FREE_GROQ_TRANSCRIPTION_MODEL,
@@ -115,6 +115,63 @@ function groqCapabilityConfig(
       : "",
     apiKey: configured ? (groq?.apiKey ?? "") : "",
     dataTerms: studioAiProviderDataTerms("groq"),
+  };
+}
+
+/**
+ * Cloudflare Workers AI 무료 할당(전 계정 10,000 Neurons/일, 공식 가격 문서
+ * 2026-10-06 확인) 안에서 쓸 모델만 허용한다. Workers Paid 플랜이 필요한 모델은
+ * 모델 페이지에 그 사실이 명시되는데(공식 limits 문서), 아래 두 모델은 가격표에
+ * Neurons 단가가 등재돼 있고 모델 페이지에 유료 플랜 요구가 없어 무료 할당으로
+ * 동작한다. Leonardo 계열과 FLUX 2 계열은 이미지당 Neurons가 수십 배라 제외했다.
+ */
+const CLOUDFLARE_IMAGE_MODELS = new Set(["@cf/black-forest-labs/flux-1-schnell"]);
+export const STUDIO_AI_CLOUDFLARE_DEFAULT_IMAGE_MODEL = "@cf/black-forest-labs/flux-1-schnell";
+
+export function isCloudflareImageModel(model: string): boolean {
+  return CLOUDFLARE_IMAGE_MODELS.has(model.trim().toLowerCase());
+}
+
+/** bge-m3는 다국어(한국어 포함) 임베딩이라 작품·설정 텍스트에 맞다. 영어 전용 bge-large는 넣지 않는다. */
+const CLOUDFLARE_EMBEDDING_MODELS = new Set(["@cf/baai/bge-m3"]);
+export const STUDIO_AI_CLOUDFLARE_DEFAULT_EMBEDDING_MODEL = "@cf/baai/bge-m3";
+
+export function isCloudflareEmbeddingModel(model: string): boolean {
+  return CLOUDFLARE_EMBEDDING_MODELS.has(model.trim().toLowerCase());
+}
+
+function cloudflareCapabilityConfig(
+  capability: "image-generation" | "embedding",
+  env: EnvLike,
+): StudioAiCapabilityConfig {
+  const [cloudflare] = resolveStudioAiProviders("cloudflare", env);
+  const model = capability === "image-generation"
+    ? boundedText(
+        env.STUDIO_AI_FREE_CLOUDFLARE_IMAGE_MODEL,
+        STUDIO_AI_CLOUDFLARE_DEFAULT_IMAGE_MODEL,
+        200,
+      )
+    : boundedText(
+        env.STUDIO_AI_FREE_CLOUDFLARE_EMBEDDING_MODEL,
+        STUDIO_AI_CLOUDFLARE_DEFAULT_EMBEDDING_MODEL,
+        200,
+      );
+  const modelAllowed = capability === "image-generation"
+    ? isCloudflareImageModel(model)
+    : isCloudflareEmbeddingModel(model);
+  // 계정 ID는 chat provider가 32-hex 검증을 마치고 만든 endpoint에서만 가져온다.
+  const accountId = cloudflare?.endpoint.match(/\/accounts\/([0-9a-f]{32})\//u)?.[1] ?? "";
+  const configured = Boolean(cloudflare) && modelAllowed && accountId.length > 0;
+  return {
+    provider: "cloudflare",
+    capability,
+    model,
+    configured,
+    endpoint: configured
+      ? `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`
+      : "",
+    apiKey: configured ? (cloudflare?.apiKey ?? "") : "",
+    dataTerms: studioAiProviderDataTerms("cloudflare"),
   };
 }
 
@@ -145,8 +202,8 @@ export function resolveStudioAiCapabilityProviders(
     const config = groqCapabilityConfig(capability, env);
     return config.configured ? [config] : [];
   }
-  // image-generation / embedding은 Cloudflare 단위에서 등록한다.
-  return [];
+  const config = cloudflareCapabilityConfig(capability, env);
+  return config.configured ? [config] : [];
 }
 
 /** 상태 응답용으로 비밀값을 제거한 능력 목록. configured가 아닌 능력도 모델·약관 배지와 함께 노출한다. */
@@ -185,5 +242,5 @@ function capabilityCandidateConfigs(
   if (capability === "transcription" || capability === "vision") {
     return [groqCapabilityConfig(capability, env)];
   }
-  return [];
+  return [cloudflareCapabilityConfig(capability, env)];
 }

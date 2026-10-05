@@ -1,4 +1,5 @@
 import { rejectUnavailableFreeAiPool, sharedFreeAiPoolEnabled } from "../../config/user-funded-ai-policy";
+import { studioAiCapabilityStatuses } from "./studio-ai-capabilities";
 import { createHmac } from "node:crypto";
 
 import {
@@ -455,7 +456,7 @@ export class StudioAiService {
     if (!sharedFreeAiPoolEnabled()) return {
       configured: false, provider: "none" as const, model: "", providers: [],
       selection: { default: "auto" as const, order: [], fallback: false },
-      capabilities: [], requiresAuth: true, operatorFunded: false, freePool: true, settingsHref: "/settings/ai",
+      capabilities: [], poolCapabilities: [], requiresAuth: true, operatorFunded: false, freePool: true, settingsHref: "/settings/ai",
     };
     const limits = resolveStudioAiQuotaLimits();
     const providers = studioAiProviderStatuses();
@@ -476,6 +477,7 @@ export class StudioAiService {
         explicitPreferenceFallback: true,
       },
       capabilities: Object.keys(TASK_SPECS),
+      poolCapabilities: studioAiCapabilityStatuses(),
       requiresAuth: true,
       operatorFunded: false,
       freePool: preferred ? preferred.freePool : true,
