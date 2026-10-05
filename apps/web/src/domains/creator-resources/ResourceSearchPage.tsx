@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
@@ -17,20 +17,10 @@ import { RESOURCE_SEARCH_CONFIG } from "./resource-search-config";
 
 import type { ResourceSearchProvider } from "./resource-search-config";
 
-function resourceUsageLabel(item: CreatorResource): string {
-  if (item.license === "CC0") return "공개 이용 확인";
-  if (item.license === "CC-BY-4.0") return "출처표시 이용";
-  if (item.license === "reference-only") return "레퍼런스 전용";
-  if (item.license === "book-promotion") return "도서 소개 목적";
-  return "정보·원문 링크";
-}
-function resourceUsageDescription(item: CreatorResource): string {
-  if (item.license === "CC0") return "공식 제공처의 공개 이용 표시를 확인했습니다. 초상·상표 등 기타 권리는 별도 확인하세요.";
-  if (item.license === "CC-BY-4.0") return "출처표시가 필요한 공개 데이터입니다. 결과와 함께 제공기관·라이선스·조회 시점을 보존하세요.";
-  if (item.license === "reference-only") return "안전한 미리보기와 메타데이터만 저장합니다. 작품별 권리·표장·초상·제3자 조건을 확인하기 전 Studio 직접 가져오기는 허용하지 않습니다.";
-  if (item.license === "book-promotion") return "도서 소개·홍보 목적의 서지정보입니다. 원본 데이터 재판매나 임의 변경은 허용 범위를 다시 확인하세요.";
-  return "검색 메타데이터입니다. 이미지·본문 재배포 또는 각색 허락을 의미하지 않습니다.";
-}
+import { PolyHavenCategoryGuide } from "./PolyHavenCategoryGuide";
+import { polyHavenCardDecoration } from "./polyhaven-resource";
+import { resourceUsageDescription, resourceUsageLabel } from "./resource-usage";
+
 function GoogleFontPreview({ family }: { family: string }) {
   const safeFamily = family.replace(/["'\\]/gu, "");
   useEffect(() => {
@@ -49,16 +39,19 @@ function GoogleFontPreview({ family }: { family: string }) {
   </div>;
 }
 
-export function ResourceCard({ item, saved, onToggle, disabled }: { item: CreatorResource; saved: boolean; onToggle: () => void; disabled: boolean }) {
+export function ResourceCard({ item, saved, onToggle, disabled, kindLabel, wideTile }: { item: CreatorResource; saved: boolean; onToggle: () => void; disabled: boolean; kindLabel?: string | null; wideTile?: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(item.imageUrl) && !imageFailed;
   return <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel">
     {/* 아트 타일 — 이미지는 풀블리드로 채우고, 없거나 불러오지 못하면 타이포그래픽 커버가 자리를 지킨다.
-        제공처·이용조건은 법적 고지라 지우지 않고 타일 아래 배지로 압축한다. */}
-    <div className="relative aspect-[4/3] w-full overflow-hidden bg-raised">
+        제공처·이용조건은 법적 고지라 지우지 않고 타일 아래 배지로 압축한다.
+        kindLabel·wideTile은 종류 구분이 있는 제공처 표면(Poly Haven)만 넘긴다 — 종류 배지는
+        좌상단에 고정하고, HDRI 타일은 2:1 파노라마 비율을 쓴다. */}
+    <div className={`relative w-full overflow-hidden bg-raised ${wideTile ? "aspect-[2/1]" : "aspect-[4/3]"}`}>
       {item.provider === "googlefonts" ? <GoogleFontPreview family={item.title} />
         : showImage ? <img src={item.imageUrl} alt={item.title} loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
         : <TypographicCover title={item.title} seed={item.id} className="absolute inset-0" />}
+      {kindLabel && <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">{kindLabel}</span>}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-1.5 bg-gradient-to-t from-black/55 via-black/25 to-transparent p-3 pt-8">
         <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">{RESOURCE_LABELS[item.provider]}</span>
         <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">{resourceUsageLabel(item)}</span>
@@ -157,6 +150,25 @@ function CurationTile({ item, provider, query, onRunSearch }: { item: CreatorRes
 }
 
 /**
+ * 검색 전 정직한 빈 상태 — 일러스트 + 안내 + 추천 키워드(다음 행동).
+ * apiNote는 "검색할 때만 API를 호출한다"는 안내를 붙일 때만 true다. 큐레이션·
+ * 카테고리 확인을 이미 시도한 표면(Poly Haven 카테고리 가이드)은 false로 둔다.
+ */
+export function ResourcePreSearchFallback({ provider, onRunSearch, apiNote }: { provider: ResourceSearchProvider; onRunSearch: (q: string) => void; apiNote: boolean }) {
+  const config = RESOURCE_SEARCH_CONFIG[provider];
+  return (
+    <div className="flex flex-col items-center py-4 text-center">
+      <EmptySearchArt />
+      <p>검색어를 입력하거나 아래 추천 키워드로 바로 검색해 보세요.</p>
+      <div className="mt-3 flex flex-wrap justify-center gap-2">
+        {config.examples.map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => onRunSearch(value)}>{value}</button>)}
+      </div>
+      {apiNote && <p className="mt-3 text-xs text-fg-3">외부 API는 검색할 때만 호출합니다.</p>}
+    </div>
+  );
+}
+
+/**
  * 검색 전 구성 (공통) — 큐레이션을 쓸 수 있으면 대표 아트 타일 + 다음 행동을,
  * 쓸 수 없으면 일러스트 + 안내 + 추천 키워드(다음 행동)로 정직하게 구성한다.
  */
@@ -192,18 +204,21 @@ function PreSearchGuide({ provider, onRunSearch }: { provider: ResourceSearchPro
       </section>
     );
   }
-  return (
-    <div className="flex flex-col items-center py-4 text-center">
-      <EmptySearchArt />
-      <p>검색어를 입력하거나 아래 추천 키워드로 바로 검색해 보세요.</p>
-      <div className="mt-3 flex flex-wrap justify-center gap-2">
-        {config.examples.map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => onRunSearch(value)}>{value}</button>)}
-      </div>
-      {!featured && <p className="mt-3 text-xs text-fg-3">외부 API는 검색할 때만 호출합니다.</p>}
-    </div>
-  );
+  return <ResourcePreSearchFallback provider={provider} onRunSearch={onRunSearch} apiNote={!featured} />;
 }
-export function ResourceSearchPage({ provider }: { provider: ResourceSearchProvider }) {
+/** 결과 카드 장식 — 종류 배지·타일 비율처럼 제공처 표면 전용 표현을 카드에 넘기는 통로. */
+export interface ResourceCardDecoration {
+  kindLabel?: string | null;
+  wideTile?: boolean;
+}
+
+export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }: {
+  provider: ResourceSearchProvider;
+  /** 제공처 전용 검색 전 구성. 지정하면 공통 큐레이션(PreSearchGuide) 대신 이 구성을 쓴다. */
+  preSearchGuide?: (onRunSearch: (q: string) => void) => ReactNode;
+  /** 결과·저장 카드 장식. 지정한 제공처 표면만 넘긴다 — 나머지 제공처는 기존 카드 그대로다. */
+  cardDecoration?: (item: CreatorResource) => ResourceCardDecoration | undefined;
+}) {
   const config = RESOURCE_SEARCH_CONFIG[provider];
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
@@ -282,7 +297,7 @@ export function ResourceSearchPage({ provider }: { provider: ResourceSearchProvi
       {!savedOnly && loading && <p role="status">공식 제공처에서 자료를 확인하고 있습니다…</p>}
       {!savedOnly && requestError && <p role="alert">{requestError}</p>}
       {!savedOnly && result && <p>{result.status === "not_configured" ? "API 연결 대기 · " : result.status === "unavailable" ? "일시적으로 이용 불가 · " : ""}{result.message}</p>}
-      {!savedOnly && !query && <PreSearchGuide provider={provider} onRunSearch={searchFor} />}
+      {!savedOnly && !query && (preSearchGuide ? preSearchGuide(searchFor) : <PreSearchGuide provider={provider} onRunSearch={searchFor} />)}
       {!loading && !items.length && (savedOnly || result?.status === "ready") && <div className="flex flex-col items-center py-4 text-center">
         <EmptySearchArt />
         <p>{savedOnly ? "이 제공처에서 저장한 자료가 없습니다." : "현재 검색 범위에 표시할 자료가 없습니다. 다른 검색어 또는 다음 페이지를 확인하세요."}</p>
@@ -307,7 +322,7 @@ export function ResourceSearchPage({ provider }: { provider: ResourceSearchProvi
       </div>
     ) : (
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3" aria-busy={!savedOnly && loading}>
-        {items.map((item) => <ResourceCard key={item.id} item={item} saved={workspace.saved.some((saved) => saved.id === item.id)} disabled={!ready || !writable || saving} onToggle={() => toggle(item)} />)}
+        {items.map((item) => { const decoration = cardDecoration?.(item); return <ResourceCard key={item.id} item={item} saved={workspace.saved.some((saved) => saved.id === item.id)} disabled={!ready || !writable || saving} onToggle={() => toggle(item)} kindLabel={decoration?.kindLabel} wideTile={decoration?.wideTile} />; })}
       </div>
     )}
     {!savedOnly && result && (result.status === "ready" || result.status === "partial") && <nav className="flex items-center justify-center gap-4" aria-label="검색 결과 페이지">
@@ -321,7 +336,11 @@ export function ResourceSearchPage({ provider }: { provider: ResourceSearchProvi
 export function ReferencesPage() { return <ResourceSearchPage provider="met" />; }
 export function OpportunitiesPage() { return <ResourceSearchPage provider="bizinfo" />; }
 export function WorksPage() { return <ResourceSearchPage provider="kakao" />; }
-export function PolyHavenPage() { return <ResourceSearchPage provider="polyhaven" />; }
+export function PolyHavenPage() {
+  return <ResourceSearchPage provider="polyhaven"
+    preSearchGuide={(onRunSearch) => <PolyHavenCategoryGuide onRunSearch={onRunSearch} />}
+    cardDecoration={polyHavenCardDecoration} />;
+}
 export function AmbientCgPage() { return <ResourceSearchPage provider="ambientcg" />; }
 export function NasaImagesPage() { return <ResourceSearchPage provider="nasa" />; }
 export function VamCollectionsPage() { return <ResourceSearchPage provider="vam" />; }
