@@ -5,3 +5,12 @@
 
 .pc-form-section-title{margin:36px 0 2px}
 .pc-post-cover-fallback{aspect-ratio:16/9;max-height:420px;border-radius:16px;margin:0 auto 28px}
+.pc-editor-top{max-width:860px}
+.pc-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:40px;align-items:start}
+.pc-preview{position:sticky;top:20px;min-width:0}
+.pc-preview h2{font-size:1.3rem;margin-bottom:8px}
+.pc-preview .pc-caption{margin:0 0 16px}
+.pc-preview-empty{border:1px dashed var(--pc-line);border-radius:19px;background:var(--pc-soft);padding:24px;font-size:13px;line-height:1.8}
+.pc-preview-empty p{font-weight:650;margin-bottom:10px}
+.pc-preview-empty ul{margin:0;padding-left:18px;opacity:.85}
+@media(max-width:1023px){.pc-editor-layout{grid-template-columns:1fr}.pc-preview{position:static}}
