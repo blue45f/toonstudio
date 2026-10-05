@@ -24,13 +24,14 @@ function renderPricing() {
 }
 
 describe("pricing page", () => {
-  it("presents the simple free/pro structure with a full tier comparison", () => {
+  it("presents all four plan cards with a full tier comparison", () => {
     renderPricing();
     expect(screen.getByRole("heading", { level: 1, name: "핵심 기능은 무료로 시작하세요" })).toBeTruthy();
-    // 히어로 카드는 무료/Pro 두 장만 노출한다.
-    expect(screen.getAllByRole("article")).toHaveLength(2);
-    expect(screen.getByRole("article", { name: "Free" })).toBeTruthy();
-    expect(screen.getByRole("article", { name: "Pro" })).toBeTruthy();
+    // 플랜 카드는 4개 등급(Free·Creator·Pro·Team)을 모두 카드 그리드로 노출한다.
+    expect(screen.getAllByRole("article")).toHaveLength(4);
+    for (const plan of ["Free", "Creator", "Pro", "Team"]) {
+      expect(screen.getByRole("article", { name: plan })).toBeTruthy();
+    }
     // 전체 등급 비교 표에서는 4개 등급을 모두 보여준다.
     expect(screen.getByRole("heading", { name: "전체 등급 비교" })).toBeTruthy();
     const table = screen.getByRole("table");
@@ -62,10 +63,10 @@ describe("pricing page", () => {
 });
 
 describe("pricing polish integration", () => {
-  it("renders both plan cards as static tilt cards under reduced motion", () => {
+  it("renders all four plan cards as static tilt cards under reduced motion", () => {
     renderPricing();
     const cards = screen.getAllByRole("article");
-    expect(cards).toHaveLength(2);
+    expect(cards).toHaveLength(4);
     for (const card of cards) {
       expect(card.getAttribute("data-tilt")).toBe("static");
     }
@@ -86,6 +87,10 @@ describe("pricing polish integration", () => {
     const pro = screen.getByRole("article", { name: "Pro" });
     expect(within(pro).getByText("500GB")).toBeTruthy();
     expect(within(pro).getByText("10,000")).toBeTruthy();
+    const creator = screen.getByRole("article", { name: "Creator" });
+    expect(within(creator).getByText("100GB")).toBeTruthy();
+    const team = screen.getByRole("article", { name: "Team" });
+    expect(within(team).getByText("1000GB")).toBeTruthy();
   });
 
   it("gives each plan card its own CTA", () => {
@@ -93,9 +98,12 @@ describe("pricing polish integration", () => {
     const free = screen.getByRole("article", { name: "Free" });
     const freeCta = within(free).getByRole("link", { name: "무료로 시작하기" });
     expect(freeCta.getAttribute("href")).toBe("/studio/new");
-    const pro = screen.getByRole("article", { name: "Pro" });
-    const proCta = within(pro).getByRole("link", { name: "멤버십 정책 자세히 보기" });
-    expect(proCta.getAttribute("href")).toBe("/membership");
+    // 결제 CTA는 두지 않는다 — Free 외 등급 카드는 멤버십 정책 동선만 둔다.
+    for (const plan of ["Creator", "Pro", "Team"]) {
+      const card = screen.getByRole("article", { name: plan });
+      const cta = within(card).getByRole("link", { name: "멤버십 정책 자세히 보기" });
+      expect(cta.getAttribute("href")).toBe("/membership");
+    }
   });
 
   it("does not render the pulse ring under reduced motion", () => {

@@ -103,7 +103,6 @@ function formatCount(value: number): string {
   return new Intl.NumberFormat("ko-KR").format(value);
 }
 
-const HERO_PLAN_IDS = ["free", "pro"] as const;
 const PLAN_ORDER = ["free", "creator", "pro", "team"] as const;
 
 /** MEMBERSHIP_PLAN_POLICIES.description은 한국어 고정이므로 페이지에서 bilingual로 덮는다. */
@@ -165,18 +164,20 @@ function planFeatures(
   ];
 }
 
-function PlanCardCta({ planId }: { planId: "free" | "pro" }) {
+function PlanCardCta({ planId }: { planId: (typeof PLAN_ORDER)[number] }) {
   const t = useT();
-  if (planId === "pro") {
+  // 결제 CTA는 두지 않는다 — Free는 시작 동선, 나머지 등급은 개설 조건을 안내하는
+  // 멤버십 정책 동선만 둔다 (Creator·Team은 특정 활동·역할로 열리는 등급).
+  if (planId === "free") {
     return (
-      <PulseCta href="/membership" className="mt-6 w-full">
-        {t(COPY.membershipPolicyCta)}
+      <PulseCta href="/studio/new" className="mt-6 w-full">
+        {t(COPY.startCta)}
       </PulseCta>
     );
   }
   return (
-    <PulseCta href="/studio/new" className="mt-6 w-full">
-      {t(COPY.startCta)}
+    <PulseCta href="/membership" className="mt-6 w-full">
+      {t(COPY.membershipPolicyCta)}
     </PulseCta>
   );
 }
@@ -216,6 +217,12 @@ export function PricingPage() {
         />
       }
     >
+      {/* 히어로 하단 얇은 아트 배너 — 기존 SectionArt 브랜드 아트를 얇은 띠로만 쓴다. */}
+      <SectionArt
+        image="explore"
+        className="mt-6 aspect-[16/4] w-full rounded-2xl border border-line object-cover"
+      />
+
       {!MEMBERSHIP_ECONOMY_POLICY.paymentsEnabled ? (
         <p className="mt-8 flex items-start gap-2.5 rounded-2xl border border-line bg-panel p-5 text-sm leading-6 text-fg-2" role="note">
           <Sparkles size={16} aria-hidden="true" className="mt-1 shrink-0 text-accent" />
@@ -223,9 +230,9 @@ export function PricingPage() {
         </p>
       ) : null}
 
-      <SectionContainer id="plans" spacing="compact" className="mx-auto max-w-4xl">
-        <div role="group" aria-label={t(COPY.eyebrow)} className="grid gap-4 md:grid-cols-2">
-          {HERO_PLAN_IDS.map((id) => {
+      <SectionContainer id="plans" spacing="compact" className="mx-auto max-w-6xl">
+        <div role="group" aria-label={t(COPY.eyebrow)} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {PLAN_ORDER.map((id) => {
             const plan = MEMBERSHIP_PLAN_POLICIES[id];
             const features = planFeatures(t, plan);
             const isPro = plan.id === "pro";
@@ -247,7 +254,7 @@ export function PricingPage() {
                   {plan.id === "free" ? t(COPY.freePrice) : t(COPY.betaFreePrice)}
                 </p>
                 <p className="mt-1 text-xs text-fg-3">{t(COPY.officialPriceLater)}</p>
-                <ul className="mt-5 space-y-2.5 border-t border-line pt-5 text-sm">
+                <ul className="mt-5 flex-1 space-y-2.5 border-t border-line pt-5 text-sm">
                   {features.map((feature) => (
                     <li key={feature.label} className="flex items-center justify-between gap-3">
                       <span className="text-fg-2">{feature.label}</span>
