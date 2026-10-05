@@ -54,6 +54,18 @@ describe("shell chrome policy — 몰입 예외 단일 기준", () => {
     expect(decide("/anywhere", { protectedCampus: true }).immersiveVirtualExperience).toBe(true);
   });
 
+  it("웹툰 뷰어 경로는 리더 몰입으로 판정한다", () => {
+    expect(decide("/title/fog-signal/read/1").immersiveReader).toBe(true);
+    expect(decide("/title/fog-signal/read/128").immersiveReader).toBe(true);
+    expect(decide("/title/fog-signal/read/128/").immersiveReader).toBe(true);
+    expect(decide("/title/fog-signal/read/128").immersiveVirtualExperience).toBe(true);
+    // 작품 상세 자체와 숫자 아닌 회차는 몰입이 아니다 — 전역 크롬이 탈출 동선을 지킨다.
+    expect(decide("/title/fog-signal").immersiveReader).toBe(false);
+    expect(decide("/title/fog-signal/read/abc").immersiveReader).toBe(false);
+    expect(decide("/title/fog-signal/read").immersiveReader).toBe(false);
+    expect(decide("/title/fog-signal/read/1/extra").immersiveReader).toBe(false);
+  });
+
   it("일반 공개 경로는 어떤 몰입 플래그도 켜지지 않는다", () => {
     for (const path of ["/", "/research", "/research/catalog", "/learn", "/discover", "/community"]) {
       const decision = decide(path);

@@ -50,6 +50,10 @@ const TitleDetailPage = lazyRetry(
   () => import("@/domains/catalog/TitleDetailPage").then((module) => ({ default: module.TitleDetailPage })),
   "TitleDetailPage",
 );
+const TitleReaderPage = lazyRetry(
+  () => import("@/domains/catalog/TitleReaderPage").then((module) => ({ default: module.TitleReaderPage })),
+  "TitleReaderPage",
+);
 const AuthorPage = lazyRetry(
   () => import("@/domains/catalog/AuthorPage").then((module) => ({ default: module.AuthorPage })),
   "AuthorPage",
@@ -88,5 +92,6 @@ export const catalogRoutes = defineAppRoutes([
   { id: "catalog-news", path: "/news", element: <NewsPage /> },
   { id: "catalog-guide", path: "/guide", element: <GuidePage /> },
   { id: "catalog-title", path: "/title/:slug", element: <TitleDetailPage /> },
+  { id: "catalog-title-read", path: "/title/:slug/read/:episode", element: <TitleReaderPage /> },
   { id: "catalog-author", path: "/author/:name", element: <AuthorPage /> },
 ]);

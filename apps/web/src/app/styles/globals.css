@@ -26,6 +26,9 @@ html[data-studio-canvas-only="true"] body {
 @theme {
   /* 중립 — 따뜻한 잉크(hue ~70), #000/#fff 금지 */
   --color-canvas: oklch(0.155 0.008 70);
+  /* 뷰어 — 테마와 무관하게 항상 어두운 남색인 읽기 캔버스(별빛 테마 캔버스보다 한 단계 어둡게) */
+  --color-reader-canvas: oklch(0.095 0.018 265);
+  --color-reader-panel: oklch(0.14 0.02 265);
   --color-panel: oklch(0.185 0.009 68);
   --color-card: oklch(0.208 0.01 66);
   --color-raised: oklch(0.247 0.011 64);

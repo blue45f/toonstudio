@@ -5,9 +5,11 @@
  *
  * 규칙 (표준 S-1):
  * - 전역 헤더·푸터는 아래 몰입 예외에서만 숨긴다. 예외는 이 파일의 명시 목록이 전부다.
- * - 몰입 예외는 "가상스튜디오"와 "에디터 집중 모드"뿐이다. 에디터 워크스페이스는
+ * - 몰입 예외는 "가상스튜디오", "에디터 집중 모드", "웹툰 뷰어"뿐이다. 에디터 워크스페이스는
  *   App.tsx의 `isImmersiveMobileRoute` 게이트가, 관리자 자체 셸은 `isAdminPath` 게이트가 맡고,
- *   이 모듈은 AppShell이 소유하는 가상 경험·작업 프레임·보호 캠퍼스 판정을 맡는다.
+ *   이 모듈은 AppShell이 소유하는 가상 경험·작업 프레임·보호 캠퍼스·뷰어 판정을 맡는다.
+ * - 뷰어는 자체 상·하단 바에 작품 상세로 나가는 닫기와 회차 목록 동선을 항상 들고 있어
+ *   표준 S-5(몰입 예외의 홈 탈출 보장)를 뷰어 안에서 만족한다.
  * - 새 예외를 추가할 때는 이 목록만 고치고 표준 문서 표를 함께 갱신한다.
  */
 
@@ -31,10 +33,15 @@ export const IMMERSIVE_VIRTUAL_HOME_PATHS: readonly string[] = [
 /** 프로젝트 가상공간 — `/studio/p/:projectId/space`. */
 export const VIRTUAL_PROJECT_SPACE_PATTERN = /^\/studio\/p\/[^/]+\/space\/?$/u;
 
+/** 웹툰 뷰어 — `/title/:slug/read/:episode`. 읽기 화면이 자체 상·하단 바를 소유한다. */
+export const READER_PATTERN = /^\/title\/[^/]+\/read\/\d+\/?$/u;
+
 export interface ShellChromeDecision {
   readonly immersiveTeamExperience: boolean;
   readonly immersiveVirtualHome: boolean;
   readonly immersiveVirtualProject: boolean;
+  /** 웹툰 뷰어 — 자체 리더 크롬이 전역 헤더·푸터를 대신한다. */
+  readonly immersiveReader: boolean;
   readonly immersiveVirtualExperience: boolean;
 }
 
@@ -55,15 +62,18 @@ export function resolveShellChrome(input: ShellChromeInput): ShellChromeDecision
   const immersiveVirtualHome =
     immersiveTeamExperience || IMMERSIVE_VIRTUAL_HOME_PATHS.includes(input.normalizedPath);
   const immersiveVirtualProject = VIRTUAL_PROJECT_SPACE_PATTERN.test(input.pathname);
+  const immersiveReader = READER_PATTERN.test(input.pathname);
   const immersiveVirtualExperience =
     immersiveVirtualHome
     || immersiveVirtualProject
+    || immersiveReader
     || input.hasTaskRoute
     || input.protectedCampus;
   return {
     immersiveTeamExperience,
     immersiveVirtualHome,
     immersiveVirtualProject,
+    immersiveReader,
     immersiveVirtualExperience,
   };
 }
