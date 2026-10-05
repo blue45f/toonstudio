@@ -91,6 +91,7 @@ const WEBTOON_ART_STYLE_IDS = [
   "action-shonen-ink",
   "fantasy-noble-cel",
   "thriller-noir-grit",
+  "anime-cel",
 ] as const satisfies readonly WebtoonArtStyleId[];
 
 const LIGHT_DIRECTION_BUTTONS = [

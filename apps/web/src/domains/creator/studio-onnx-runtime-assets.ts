@@ -18,6 +18,10 @@
  */
 import type { StudioOnnxRuntime } from "./studio-onnx-inference-provider";
 import {
+  STUDIO_ANIMEGAN_MODEL_BYTE_LENGTHS,
+  type StudioAnimeganStyleKind,
+} from "./studio-onnx-animegan";
+import {
   STUDIO_REALESRGAN_MODEL_BYTE_LENGTH,
 } from "./studio-onnx-realesrgan";
 import {
@@ -158,4 +162,42 @@ export function loadStudioTeedModelBytes(): Promise<Uint8Array> {
     },
   );
   return teedModelBytesPromise;
+}
+
+const animeganModelBytesPromises = new Map<
+  StudioAnimeganStyleKind,
+  Promise<Uint8Array>
+>();
+
+async function loadAnimeganModelBytesUncached(
+  kind: StudioAnimeganStyleKind,
+): Promise<Uint8Array> {
+  const modelModule = kind === "paprika"
+    ? await import("./assets/animegan2-paprika.onnx?url")
+    : await import("./assets/animegan2-face-paint-512-v2.onnx?url");
+  const response = await fetch(modelModule.default);
+  if (!response.ok) {
+    throw new Error(
+      `애니풍 변환 모델을 내려받지 못했습니다. (HTTP ${response.status})`,
+    );
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.byteLength !== STUDIO_ANIMEGAN_MODEL_BYTE_LENGTHS[kind]) {
+    throw new Error("애니풍 변환 모델 파일 크기가 등록 정보와 다릅니다.");
+  }
+  return bytes;
+}
+
+export function loadStudioAnimeganModelBytes(
+  kind: StudioAnimeganStyleKind,
+): Promise<Uint8Array> {
+  let promise = animeganModelBytesPromises.get(kind);
+  if (!promise) {
+    promise = loadAnimeganModelBytesUncached(kind).catch((cause: unknown) => {
+      animeganModelBytesPromises.delete(kind);
+      throw cause;
+    });
+    animeganModelBytesPromises.set(kind, promise);
+  }
+  return promise;
 }

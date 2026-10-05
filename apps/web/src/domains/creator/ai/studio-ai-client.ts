@@ -54,6 +54,7 @@ import {
 import type { StudioWriterRoomAiDraft } from "../studio-writer-room-ai";
 
 import { normalizeStudioAiCompositionSuggestion } from "./studio-ai-composition-suggestion";
+import { StudioAiWebtoonStyleFilterEngine, type WebtoonStylePurposeId } from "./studio-ai-webtoon-style-filter";
 import {
   STUDIO_AI_IMAGE_REFERENCE_LIMITS,
   compileStudioAiImageReferencePromptContexts,
@@ -1072,6 +1073,69 @@ export async function colorizeLineArt(
   const form = new FormData();
   form.set("image", blob, "lineart.png");
   form.set("prompt", trimmed);
+  form.set("model", settings.imageModel);
+  form.set("n", "1");
+  form.set("response_format", "b64_json");
+  const result = await postImageForm(settings, form);
+  if (!result.ok) return result;
+  const b64 = extractFirstB64Json(result.data);
+  if (!b64) return { ok: false, code: "parse_error", error: "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다." };
+  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
+}
+
+const ANIME_STYLE_EDIT_INSTRUCTION =
+  "Convert this exact image into Japanese anime style. Preserve the composition, characters, poses, and background layout unchanged; only restyle the rendering.";
+
+/**
+ * 애니풍 img2img 변환용 프롬프트 조합(순수 함수, 단위 테스트 대상 — fetch 없음).
+ * 화풍 프리셋 엔진의 `anime-cel` 프리셋을 그대로 컴파일해, 수퍼스위트 툰필터 탭에서
+ * 고른 애니풍과 클라우드 변환이 같은 키워드·값을 쓰게 한다. 용도(purpose)는 화풍과
+ * 직교하는 축으로 함께 컴파일된다 — 본편용이 기본이고, SD·피규어·스케치 용도는
+ * 키워드·디노이즈가 실제로 다르다(엔진의 WEBTOON_STYLE_PURPOSES). 전송 경로
+ * (Images Edits)는 네거티브 프롬프트 필드가 없어 포지티브만 싣는다 — 네거티브와
+ * 용도별 디노이즈는 strength를 받는 제공자용으로 프리셋이 계속 제공한다.
+ */
+export function buildAnimeStyleEditPrompt(
+  extraDirection = "",
+  purpose: WebtoonStylePurposeId = "episode",
+): string {
+  const engine = new StudioAiWebtoonStyleFilterEngine();
+  const trimmed = extraDirection.trim();
+  const compiled = engine.compilePromptForPurpose(
+    "anime-cel",
+    purpose,
+    ANIME_STYLE_EDIT_INSTRUCTION,
+    trimmed ? [trimmed] : [],
+  );
+  return compiled.positivePrompt;
+}
+
+/**
+ * (애니풍) 이미지 → 애니메이션 화풍 변환 — BYOK. 원본 이미지(data URL)를 Images Edits
+ * 형태 API에 애니풍 프리셋 프롬프트와 함께 보낸다. 기기 ONNX 변환(AnimeGANv2)의
+ * 클라우드 대응 경로로, 키가 없으면 fetch 없이 not_configured를 돌려준다 — 패널은
+ * 그 상태를 "키를 등록하면 사용할 수 있어요"로 정직하게 표시한다. 결과 dataUrl은
+ * 호출부가 같은 요소의 src를 교체하는 데 쓴다(colorizeLineArt와 동일 관례).
+ */
+export async function convertImageToAnimeStyle(
+  settings: StudioAiSettings,
+  imageSrc: string,
+  extraDirection = "",
+  purpose: WebtoonStylePurposeId = "episode"
+): Promise<StudioAiResult<{ dataUrl: string }>> {
+  if (!imageSrc) return { ok: false, code: "invalid_input", error: "변환할 이미지가 없습니다." };
+  if (!isStudioAiConfigured(settings)) {
+    return { ok: false, code: "not_configured", error: "설정에서 API 키를 등록하세요." };
+  }
+  let blob: Blob;
+  try {
+    blob = dataUrlToBlob(imageSrc);
+  } catch (e) {
+    return { ok: false, code: "invalid_input", error: e instanceof Error ? e.message : "이미지를 읽지 못했습니다." };
+  }
+  const form = new FormData();
+  form.set("image", blob, "source.png");
+  form.set("prompt", buildAnimeStyleEditPrompt(extraDirection, purpose));
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
