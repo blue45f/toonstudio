@@ -3,6 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminBusinessInquiries } from "./AdminBusinessInquiries";
+import "../admin-i18n-loader";
 
 const get = vi.hoisted(() => vi.fn<(path: string, options?: unknown) => Promise<unknown>>());
 vi.mock("@/platform/api", () => ({
