@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Pri prihlásení došlo k chybám.",
   "auth.callback.message.done": "Zákaz dokončený, čoskoro sa presmerujeme.",
   "auth.callback.message.doneDemo": "Demografické prihlásenie dokončené.",
-  "auth.callback.demo.message": "Vstupujete s demo účtom. Niektoré funkcie môžu byť obmedzené."
+  "auth.callback.demo.message": "Vstupujete s demo účtom. Niektoré funkcie môžu byť obmedzené.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

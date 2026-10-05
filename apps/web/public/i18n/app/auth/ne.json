@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "साइन इन गर्दा एउटा त्रुटि भएको थियो।",
   "auth.callback.message.done": "साइन इन पूरा भयो, चाँडै पुनःनिर्देशित हुँदैछ।",
   "auth.callback.message.doneDemo": "डेमो साइन-इन पूरा भयो, चाँडै पुनःनिर्देशन गर्दैछौं।",
-  "auth.callback.demo.message": "तपाईँ डेमो खाताको साथ लग इन हुनुहुन्छ। केही सुविधाहरू सीमित हुन सक्छन्।"
+  "auth.callback.demo.message": "तपाईँ डेमो खाताको साथ लग इन हुनुहुन्छ। केही सुविधाहरू सीमित हुन सक्छन्।",
+  "auth.callback.backToLogin": "Back to sign in"
 }

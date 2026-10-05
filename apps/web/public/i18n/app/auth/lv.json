@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Pievienojoties notika kļūda.",
   "auth.callback.message.done": "Pievienošanās pabeigta.",
   "auth.callback.message.doneDemo": "Demo reģistrācija pabeigta.",
-  "auth.callback.demo.message": "Jūs esat reģistrēts ar demo kontu."
+  "auth.callback.demo.message": "Jūs esat reģistrēts ar demo kontu.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

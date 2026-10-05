@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Каттоо учурунда ката пайда болду.",
   "auth.callback.message.done": "Каттоо бүттү, жакында багытты өзгөртүп жатам.",
   "auth.callback.message.doneDemo": "Демо жазууну аяктады.",
-  "auth.callback.demo.message": "Демо эсеп менен киргендиктен, айрым өзгөчөлүктөр чектелүү болушу мүмкүн."
+  "auth.callback.demo.message": "Демо эсеп менен киргендиктен, айрым өзгөчөлүктөр чектелүү болушу мүмкүн.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

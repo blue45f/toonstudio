@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "S'ha produït un error al iniciar-se.",
   "auth.callback.message.done": "L'inscripció completada.",
   "auth.callback.message.doneDemo": "La inscripció a la demo s'ha completat.",
-  "auth.callback.demo.message": "Estàs connectat amb un compte demo. Algunes funcions poden ser limitades."
+  "auth.callback.demo.message": "Estàs connectat amb un compte demo. Algunes funcions poden ser limitades.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

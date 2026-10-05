@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Во время регистрации произошла ошибка.",
   "auth.callback.message.done": "Зарегистрировано, скоро перенаправляемся.",
   "auth.callback.message.doneDemo": "Демо-подпись завершена, скоро перенаправляюсь.",
-  "auth.callback.demo.message": "Вы зарегистрированы с демо-аккаунтом."
+  "auth.callback.demo.message": "Вы зарегистрированы с демо-аккаунтом.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

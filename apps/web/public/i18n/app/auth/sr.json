@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Пропао је грешка приликом пријаве.",
   "auth.callback.message.done": "Регистрација завршена.",
   "auth.callback.message.doneDemo": "Допис на демо завршен.",
-  "auth.callback.demo.message": "Уписали сте се са демо рачуном."
+  "auth.callback.demo.message": "Уписали сте се са демо рачуном.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

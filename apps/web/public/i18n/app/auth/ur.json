@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "سائن ان کرتے وقت ایک غلطی ہوئی۔",
   "auth.callback.message.done": "سائن ان مکمل.",
   "auth.callback.message.doneDemo": "ڈیمو سائن ان مکمل.",
-  "auth.callback.demo.message": "آپ ڈیمو اکاؤنٹ کے ساتھ سائن ان ہیں. کچھ خصوصیات محدود ہوسکتی ہیں۔"
+  "auth.callback.demo.message": "آپ ڈیمو اکاؤنٹ کے ساتھ سائن ان ہیں. کچھ خصوصیات محدود ہوسکتی ہیں۔",
+  "auth.callback.backToLogin": "Back to sign in"
 }

@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Ett fel inträffade när du loggade in.",
   "auth.callback.message.done": "Inloggning klar, omdirigering om en stund.",
   "auth.callback.message.doneDemo": "Demo-registreringen är klar.",
-  "auth.callback.demo.message": "Du är inloggad med ett demokonto."
+  "auth.callback.demo.message": "Du är inloggad med ett demokonto.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

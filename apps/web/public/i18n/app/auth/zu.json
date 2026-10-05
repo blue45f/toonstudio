@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Kwenzeke iphutha ngesikhathi sokungena ngemvume.",
   "auth.callback.message.done": "Ukubhalisa sekuqediwe, sekuzodlula isikhathi.",
   "auth.callback.message.doneDemo": "Ukubhalisa kwedemo sekuqediwe, sekuzodlula isikhathi.",
-  "auth.callback.demo.message": "Ungene ngemvume nge-akhawunti yedemo."
+  "auth.callback.demo.message": "Ungene ngemvume nge-akhawunti yedemo.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

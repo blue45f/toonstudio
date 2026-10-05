@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Įstojimo metu įvyko klaida.",
   "auth.callback.message.done": "Pasirašymas baigtas.",
   "auth.callback.message.doneDemo": "Demos registracija baigta.",
-  "auth.callback.demo.message": "Jūs užsiregistruojate demo paskyrą."
+  "auth.callback.demo.message": "Jūs užsiregistruojate demo paskyrą.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

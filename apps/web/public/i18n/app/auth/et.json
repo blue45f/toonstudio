@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Saegumisel tekkis viga.",
   "auth.callback.message.done": "Saada sisse ja vahetada kohe.",
   "auth.callback.message.doneDemo": "Demo-sõnum on valmis.",
-  "auth.callback.demo.message": "Sa oled sisse loginud demo-kontoga."
+  "auth.callback.demo.message": "Sa oled sisse loginud demo-kontoga.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

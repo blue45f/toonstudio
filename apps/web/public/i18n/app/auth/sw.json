@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Hitilafu ilitokea wakati wa kuingia.",
   "auth.callback.message.done": "Kuingia kukamilika.",
   "auth.callback.message.doneDemo": "Demo kuingia kukamilika.",
-  "auth.callback.demo.message": "Umeingia kwenye akaunti ya kuonyesha."
+  "auth.callback.demo.message": "Umeingia kwenye akaunti ya kuonyesha.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

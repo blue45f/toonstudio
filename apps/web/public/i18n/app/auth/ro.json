@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "S-a întâmplat o eroare în timpul înregistrării.",
   "auth.callback.message.done": "Înregistrarea completată, redirecţionarea în curând.",
   "auth.callback.message.doneDemo": "Demo-înregistrare completă.",
-  "auth.callback.demo.message": "Sunteți conectat cu un cont demo."
+  "auth.callback.demo.message": "Sunteți conectat cu un cont demo.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

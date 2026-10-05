@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Có lỗi khi đăng nhập.",
   "auth.callback.message.done": "Đăng nhập hoàn tất, sắp chuyển hướng.",
   "auth.callback.message.doneDemo": "Đăng ký demo hoàn tất, sắp chuyển hướng.",
-  "auth.callback.demo.message": "Bạn đã đăng nhập với tài khoản demo."
+  "auth.callback.demo.message": "Bạn đã đăng nhập với tài khoản demo.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "ဝင်ရောက်နေစဉ် အမှားတစ်ခု ဖြစ်ပေါ်ခဲ့တယ်။",
   "auth.callback.message.done": "လက်မှတ်ထိုးပြီးစီးပြီး မကြာခင် ပြန်ညွှန်းပေးနေတာပါ။",
   "auth.callback.message.doneDemo": "Demo sign-in ပြီးစီးပြီး မကြာခင် ပြန်ညွှန်းပေးနေပါတယ်",
-  "auth.callback.demo.message": "သင်ဟာ demo account နဲ့ ဝင်ရောက်ရှိထားပြီး တချို့ features တွေက ကန့်သတ်ထားနိုင်ပါတယ်။"
+  "auth.callback.demo.message": "သင်ဟာ demo account နဲ့ ဝင်ရောက်ရှိထားပြီး တချို့ features တွေက ကန့်သတ်ထားနိုင်ပါတယ်။",
+  "auth.callback.backToLogin": "Back to sign in"
 }

@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Pri prijavi se je zgodila napaka.",
   "auth.callback.message.done": "Prijava je zaključena, kmalu se preusmerim.",
   "auth.callback.message.doneDemo": "Demo prijavo je dokončana.",
-  "auth.callback.demo.message": "Vnesete se z demo računom."
+  "auth.callback.demo.message": "Vnesete se z demo računom.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

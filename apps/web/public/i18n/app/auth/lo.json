@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "ເກີດຂໍ້ຜິດພາດໃນເວລາເຂົ້າສູ່ລະບົບ.",
   "auth.callback.message.done": "ການລົງທະບຽນ ສໍາ ເລັດແລ້ວ, ຈະປ່ຽນເສັ້ນທາງໃນໄວໆນີ້.",
   "auth.callback.message.doneDemo": "ການລົງທະບຽນ Demo ສໍາ ເລັດແລ້ວ. ການປ່ຽນເສັ້ນທາງໃນໄວໆນີ້.",
-  "auth.callback.demo.message": "ທ່ານໄດ້ເຂົ້າສູ່ລະບົບດ້ວຍບັນຊີ demo ບາງຄຸນສົມບັດອາດຈະ ຈໍາ ກັດ."
+  "auth.callback.demo.message": "ທ່ານໄດ້ເຂົ້າສູ່ລະບົບດ້ວຍບັນຊີ demo ບາງຄຸນສົມບັດອາດຈະ ຈໍາ ກັດ.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

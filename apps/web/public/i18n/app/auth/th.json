@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "เกิดความผิดพลาดระหว่างการลงทะเบียน",
   "auth.callback.message.done": "การลงทะเบียนเสร็จแล้ว กําลังเปลี่ยนทางอีกไม่นาน",
   "auth.callback.message.doneDemo": "การลงทะเบียนเสร็จแล้ว เปลี่ยนทางในไม่ช้า",
-  "auth.callback.demo.message": "คุณเข้าใช้บริการด้วยบัญชีทดลอง คุณอาจมีส่วนจํากัด"
+  "auth.callback.demo.message": "คุณเข้าใช้บริการด้วยบัญชีทดลอง คุณอาจมีส่วนจํากัด",
+  "auth.callback.backToLogin": "Back to sign in"
 }

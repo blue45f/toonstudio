@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Появи се грешка при влизане.",
   "auth.callback.message.done": "Регистрацията приключи, скоро се пренасочваме.",
   "auth.callback.message.doneDemo": "Демо регистрация завършена, скоро се пренасочва.",
-  "auth.callback.demo.message": "Включени сте с демо акаунт. Някои функции могат да бъдат ограничени."
+  "auth.callback.demo.message": "Включени сте с демо акаунт. Някои функции могат да бъдат ограничени.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

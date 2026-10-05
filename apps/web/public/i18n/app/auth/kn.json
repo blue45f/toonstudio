@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "ಸೈನ್ ಇನ್ ಮಾಡುವಾಗ ಒಂದು ದೋಷ ಸಂಭವಿಸಿದೆ.",
   "auth.callback.message.done": "ಸೈನ್ ಇನ್ ಪೂರ್ಣಗೊಂಡಿದೆ. ಶೀಘ್ರದಲ್ಲೇ ಮರುನಿರ್ದೇಶನ.",
   "auth.callback.message.doneDemo": "ಡೆಮೊ ಸೈನ್ ಇನ್ ಪೂರ್ಣಗೊಂಡಿದೆ. ಶೀಘ್ರದಲ್ಲೇ ಮರುನಿರ್ದೇಶನ.",
-  "auth.callback.demo.message": "ಡೆಮೊ ಖಾತೆಯೊಂದಿಗೆ ನೀವು ಸೈನ್ ಇನ್ ಆಗಿದ್ದೀರಿ. ಕೆಲವು ವೈಶಿಷ್ಟ್ಯಗಳು ಸೀಮಿತವಾಗಿರಬಹುದು."
+  "auth.callback.demo.message": "ಡೆಮೊ ಖಾತೆಯೊಂದಿಗೆ ನೀವು ಸೈನ್ ಇನ್ ಆಗಿದ್ದೀರಿ. ಕೆಲವು ವೈಶಿಷ್ಟ್ಯಗಳು ಸೀಮಿತವಾಗಿರಬಹುದು.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

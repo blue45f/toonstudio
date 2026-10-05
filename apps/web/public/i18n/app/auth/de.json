@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Bei der Anmeldung ist ein Fehler aufgetreten.",
   "auth.callback.message.done": "Die Anmeldung ist abgeschlossen.",
   "auth.callback.message.doneDemo": "Demo-Anmeldung abgeschlossen.",
-  "auth.callback.demo.message": "Sie sind mit einem Demo-Konto angemeldet."
+  "auth.callback.demo.message": "Sie sind mit einem Demo-Konto angemeldet.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

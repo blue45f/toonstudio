@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Tilvikur varð þegar ég var að skrá mig inn.",
   "auth.callback.message.done": "Skráning lokið og ég er ađ leiđast á næstunni.",
   "auth.callback.message.doneDemo": "Sýningunni er lokið og ég er ađ leiđast aftur.",
-  "auth.callback.demo.message": "Þú ert skráður inn með sýningarreikningi."
+  "auth.callback.demo.message": "Þú ert skráður inn með sýningarreikningi.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

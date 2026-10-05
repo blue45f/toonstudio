@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Houbo un erro ao iniciar sesión.",
   "auth.callback.message.done": "O rexistro completado, redireccionando en breve.",
   "auth.callback.message.doneDemo": "Concluído o inicio de sesión da demostración.",
-  "auth.callback.demo.message": "Vostede está rexistrado cunha conta demo."
+  "auth.callback.demo.message": "Vostede está rexistrado cunha conta demo.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

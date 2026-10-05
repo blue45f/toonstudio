@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Giriş sırasında bir hata oluştu.",
   "auth.callback.message.done": "Kayıt tamamlandı, yakında yönlendiriliyor.",
   "auth.callback.message.doneDemo": "Demo kayıt tamamlandı, yakında yönlendiriliyor.",
-  "auth.callback.demo.message": "Demo hesabı ile giriş yapıyorsunuz. Bazı özellikler sınırlı olabilir."
+  "auth.callback.demo.message": "Demo hesabı ile giriş yapıyorsunuz. Bazı özellikler sınırlı olabilir.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

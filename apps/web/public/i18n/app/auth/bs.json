@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Dogodila se greška prilikom prijave.",
   "auth.callback.message.done": "Potpisivanje je završeno, preusmjeravam se uskoro.",
   "auth.callback.message.doneDemo": "Demografska registracija je završena.",
-  "auth.callback.demo.message": "Priključeni ste sa demo računom. Neke funkcije mogu biti ograničene."
+  "auth.callback.demo.message": "Priključeni ste sa demo računom. Neke funkcije mogu biti ograničene.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

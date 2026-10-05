@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Кіріспе кезінде қате орын алды.",
   "auth.callback.message.done": "Тіркеу аяқталды.",
   "auth.callback.message.doneDemo": "Демоға қосылу аяқталды.",
-  "auth.callback.demo.message": "Демо тіркелгісімен тіркелгіңіз бар."
+  "auth.callback.demo.message": "Демо тіркелгісімен тіркелгіңіз бар.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

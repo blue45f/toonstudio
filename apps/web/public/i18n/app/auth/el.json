@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "Υπήρξε σφάλμα κατά την εγγραφή.",
   "auth.callback.message.done": "Η εγγραφή ολοκληρώθηκε.",
   "auth.callback.message.doneDemo": "Η εγγραφή ολοκληρώθηκε.",
-  "auth.callback.demo.message": "Μπορεί να έχετε συνδεθεί με demo λογαριασμό."
+  "auth.callback.demo.message": "Μπορεί να έχετε συνδεθεί με demo λογαριασμό.",
+  "auth.callback.backToLogin": "Back to sign in"
 }

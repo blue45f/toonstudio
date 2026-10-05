@@ -17,5 +17,6 @@
   "auth.callback.error.failed": "ලියාපදිංචි වීමේදී වැරැද්දක් වුණා.",
   "auth.callback.message.done": "ලියාපදිංචි වීම සම්පූර්ණයි.",
   "auth.callback.message.doneDemo": "ඩෙමෝ ලියාපදිංචි කිරීම සම්පූර්ණයි.",
-  "auth.callback.demo.message": "ඔයා ලියාපදිංචි වෙලා ඉන්නේ Demo Account එකකින්. සමහර features වලට සීමා වෙන්න පුළුවන්."
+  "auth.callback.demo.message": "ඔයා ලියාපදිංචි වෙලා ඉන්නේ Demo Account එකකින්. සමහර features වලට සීමා වෙන්න පුළුවන්.",
+  "auth.callback.backToLogin": "Back to sign in"
 }
