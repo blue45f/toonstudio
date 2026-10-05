@@ -10,6 +10,7 @@ export * from "./models/membership-model";
 export * from "./models/membership-store";
 export * from "./membership-api";
 export { MembershipTierEditor } from "./components/MembershipTierEditor";
+export { MembershipTierCard } from "./components/MembershipTierCard";
 export { MembershipJoinDialog } from "./components/MembershipJoinDialog";
 export { MyMembershipCard } from "./components/MyMembershipCard";
 export { CreatorMembershipPage } from "./pages/CreatorMembershipPage";

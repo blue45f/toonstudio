@@ -141,3 +141,51 @@ export function monthRange(month: string): RevenuePeriod {
   const to = new Date(Date.UTC(year, mon, 1));
   return { from: from.toISOString(), to: to.toISOString() };
 }
+
+/** 월 키("YYYY-MM")의 절대 월 인덱스 (연 × 12 + 월 − 1). */
+function monthIndexOf(monthKey: string): number {
+  const [year, mon] = monthKey.split("-").map(Number);
+  return year * 12 + (mon - 1);
+}
+
+function monthKeyFromIndex(index: number): string {
+  const year = Math.floor(index / 12);
+  const mon = (index % 12) + 1;
+  return `${year}-${String(mon).padStart(2, "0")}`;
+}
+
+/**
+ * 주어진 기간 바로 앞의 동일 길이 기간.
+ * 대시보드 기간은 월 경계로 정렬돼 있으므로 월 단위로 이동한다.
+ * 비교 기간의 끝은 현재 기간의 시작과 맞닿아 겹치거나 비지 않는다.
+ */
+export function previousPeriod(period: RevenuePeriod): RevenuePeriod {
+  const fromIndex = monthIndexOf(period.from.slice(0, 7));
+  const toIndex = monthIndexOf(period.to.slice(0, 7));
+  const spanMonths = Math.max(1, toIndex - fromIndex);
+  return {
+    from: monthRange(monthKeyFromIndex(fromIndex - spanMonths)).from,
+    to: period.from,
+  };
+}
+
+export interface RevenueDelta {
+  /**
+   * 이전 기간 대비 증감률(%). 이전 기간 금액이 0이면 비율 자체가
+   * 성립하지 않으므로 지어내지 않고 null을 돌려준다.
+   */
+  readonly percent: number | null;
+  readonly direction: "up" | "down" | "flat";
+}
+
+/** 현재 기간 총액과 이전 기간 총액 사이의 변화를 계산한다. */
+export function computeRevenueDelta(current: number, previous: number): RevenueDelta {
+  if (previous <= 0) {
+    return { percent: null, direction: current > 0 ? "up" : "flat" };
+  }
+  const percent = Math.round(((current - previous) / previous) * 1000) / 10;
+  return {
+    percent,
+    direction: percent > 0 ? "up" : percent < 0 ? "down" : "flat",
+  };
+}

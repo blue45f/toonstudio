@@ -7,9 +7,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   aggregateRevenue,
+  computeRevenueDelta,
   groupEntriesByMonth,
   lastNMonths,
   monthRange,
+  previousPeriod,
   type RevenueEntry,
 } from "./revenue-model";
 import {
@@ -94,6 +96,49 @@ describe("lastNMonths / monthRange", () => {
       from: "2026-10-01T00:00:00.000Z",
       to: "2026-11-01T00:00:00.000Z",
     });
+  });
+});
+
+describe("previousPeriod", () => {
+  it("한 달 기간이면 바로 앞 달을 돌려준다", () => {
+    expect(previousPeriod(monthRange("2026-10"))).toEqual({
+      from: "2026-09-01T00:00:00.000Z",
+      to: "2026-10-01T00:00:00.000Z",
+    });
+  });
+
+  it("연 경계를 넘어도 같은 길이로 이동한다", () => {
+    expect(previousPeriod(monthRange("2026-01"))).toEqual({
+      from: "2025-12-01T00:00:00.000Z",
+      to: "2026-01-01T00:00:00.000Z",
+    });
+  });
+
+  it("여러 달 구간이면 구간 길이만큼 앞으로 이동한다", () => {
+    const threeMonths = { from: "2026-08-01T00:00:00.000Z", to: "2026-11-01T00:00:00.000Z" };
+    expect(previousPeriod(threeMonths)).toEqual({
+      from: "2026-05-01T00:00:00.000Z",
+      to: "2026-08-01T00:00:00.000Z",
+    });
+  });
+});
+
+describe("computeRevenueDelta", () => {
+  it("증가율을 소수 첫째 자리까지 계산한다", () => {
+    expect(computeRevenueDelta(1124, 1000)).toEqual({ percent: 12.4, direction: "up" });
+  });
+
+  it("감소하면 음수 비율과 down을 돌려준다", () => {
+    expect(computeRevenueDelta(900, 1000)).toEqual({ percent: -10, direction: "down" });
+  });
+
+  it("같으면 0% flat이다", () => {
+    expect(computeRevenueDelta(1000, 1000)).toEqual({ percent: 0, direction: "flat" });
+  });
+
+  it("이전 기간이 0이면 비율을 만들지 않는다", () => {
+    expect(computeRevenueDelta(5000, 0)).toEqual({ percent: null, direction: "up" });
+    expect(computeRevenueDelta(0, 0)).toEqual({ percent: null, direction: "flat" });
   });
 });
 
