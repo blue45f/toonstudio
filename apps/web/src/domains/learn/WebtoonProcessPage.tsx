@@ -40,6 +40,7 @@ import {
 import { cn } from "@/shared/lib/utils";
 
 import { LearningReferenceLayout } from "./LearningReferenceLayout";
+import { WebtoonProcessToolchain } from "./WebtoonProcessToolchain";
 import { WebtoonProductionSupportGuide } from "./WebtoonProductionSupportGuide";
 import {
   WEBTOON_APPROVAL_GATES,
@@ -552,6 +553,8 @@ export function WebtoonProcessPage() {
           {activeView === "onboarding" ? <OnboardingGuide selection={selection} onChange={setSelection} /> : null}
         </div>
       </section>
+
+      <WebtoonProcessToolchain />
 
       <section className="grid gap-5 rounded-3xl border border-line bg-panel p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.8fr)]" aria-labelledby="sustainable-title">
         <div>
