@@ -9,6 +9,21 @@ import { ENGINEERING_PAGES, ENGINEERING_PAGE_GROUPS, ENGINEERING_PATH_PAGES } fr
 
 vi.mock("@/shared/seo/use-document-title", () => ({ useDocumentTitle: vi.fn() }));
 
+const capabilityMocks = vi.hoisted(() => ({
+  state: {
+    status: "unknown",
+    checking: false,
+    report: null,
+    lastError: null,
+    nextProbeAt: null,
+    recoveredAt: null,
+  } as Record<string, unknown>,
+}));
+
+vi.mock("@/platform/service-capability-state", () => ({
+  useServiceCapabilityState: () => capabilityMocks.state,
+}));
+
 afterEach(cleanup);
 
 describe("기술 허브", () => {
@@ -65,3 +80,93 @@ describe("소개 메뉴", () => {
     expect(technology.textContent).toBe("기술과 신뢰");
   });
 });
+
+const ALL_CAPABILITIES = {
+  publicCatalog: "available",
+  authSession: "available",
+  communityRead: "available",
+  communityWrite: "available",
+  marketplaceRead: "available",
+  studioLocalEditing: "available",
+  studioProjectRead: "available",
+  studioCloudSave: "available",
+  realtimeCollaboration: "available",
+  publishing: "available",
+  serverAi: "available",
+} as const;
+
+function renderHub() {
+  return render(
+    <MemoryRouter initialEntries={["/about/technology"]}>
+      <TechnologyPage />
+    </MemoryRouter>,
+  );
+}
+
+describe("기술 허브 상태 스트립", () => {
+  it("확인된 보고서가 없으면 정상이라고 말하지 않고 상태 페이지로 안내한다", () => {
+    capabilityMocks.state = {
+      status: "unknown",
+      checking: false,
+      report: null,
+      lastError: null,
+      nextProbeAt: null,
+      recoveredAt: null,
+    };
+    renderHub();
+
+    const strip = screen.getByRole("region", { name: /서비스 상태 요약|Service status summary/u });
+    expect(within(strip).getByText(/아직 확인하지 못했습니다|has not been checked yet/u)).toBeTruthy();
+    expect(within(strip).queryByText(/전체 서비스 정상|All services operational/u)).toBeNull();
+    expect(within(strip).getByRole("link", { name: /상태 자세히 보기|View status details/u }).getAttribute("href")).toBe("/status");
+  });
+
+  it("보고서가 정상이면 기능 수와 최근 확인 시각을 실제 값으로 보여준다", () => {
+    capabilityMocks.state = {
+      status: "available",
+      checking: false,
+      report: {
+        status: "available",
+        incidentId: null,
+        retryAfterSeconds: null,
+        checkedAt: "2026-09-25T20:00:00.000Z",
+        capabilities: ALL_CAPABILITIES,
+      },
+      lastError: null,
+      nextProbeAt: null,
+      recoveredAt: null,
+    };
+    renderHub();
+
+    const strip = screen.getByRole("region", { name: /서비스 상태 요약|Service status summary/u });
+    expect(within(strip).getByText(/전체 서비스 정상|All services operational/u)).toBeTruthy();
+    expect(within(strip).getByText(/11개 기능 모두 사용 가능|All 11 capabilities are available/u)).toBeTruthy();
+    const checked = within(strip).getByText(/최근 확인|Last checked/u).querySelector("time");
+    expect(checked?.getAttribute("dateTime")).toBe("2026-09-25T20:00:00.000Z");
+    expect(checked?.textContent?.length).toBeGreaterThan(0);
+  });
+
+  it("일부 기능이 제한되면 제한 개수와 장애 ID를 보여준다", () => {
+    capabilityMocks.state = {
+      status: "degraded",
+      checking: false,
+      report: {
+        status: "degraded",
+        incidentId: "inc_status",
+        retryAfterSeconds: 30,
+        checkedAt: "2026-09-25T20:00:00.000Z",
+        capabilities: { ...ALL_CAPABILITIES, authSession: "degraded", studioCloudSave: "unavailable" },
+      },
+      lastError: null,
+      nextProbeAt: null,
+      recoveredAt: null,
+    };
+    renderHub();
+
+    const strip = screen.getByRole("region", { name: /서비스 상태 요약|Service status summary/u });
+    expect(within(strip).getByText(/일부 온라인 기능 제한 중|Some online capabilities are limited/u)).toBeTruthy();
+    expect(within(strip).getByText(/11개 중 2개 기능 제한 중|2 of 11 capabilities are limited/u)).toBeTruthy();
+    expect(within(strip).getByText(/inc_status/u)).toBeTruthy();
+  });
+});
+

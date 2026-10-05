@@ -87,6 +87,24 @@ describe("EngineeringGlossaryPage", () => {
     expect(document.querySelectorAll('article[id^="glossary-"]')).toHaveLength(brushCount);
   });
 
+  it("자료 페이지도 읽기 순서의 앞뒤 글과 대표 이미지를 받는다", () => {
+    render(
+      <MemoryRouter initialEntries={["/about/technology/glossary"]}>
+        <EngineeringGlossaryPage />
+      </MemoryRouter>,
+    );
+
+    const heroArt = screen.getByRole("img", { name: /단계별 예제|Step-by-step examples/u });
+    expect(heroArt.getAttribute("src")).toBe("/brand/workflow-20260928/learn-640.webp");
+
+    const pager = screen.getByRole("navigation", { name: /기술 문서 이어보기|Continue through/u });
+    expect(within(pager).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/about/technology/references",
+      "/about/technology/licenses",
+    ]);
+    expect(within(pager).getByRole("link", { name: /다음 글.*라이선스|Next article.*Licenses/u })).toBeTruthy();
+  });
+
   it("links glossary terms to story chapters", () => {
     render(
       <MemoryRouter initialEntries={["/about/technology/glossary"]}>

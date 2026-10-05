@@ -1,4 +1,4 @@
-import { translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision, formatI18nTemplate, getActiveI18nLocale } from "@/shared/lib/i18n-bilingual-copy";
 import {
   AlertTriangle,
   Boxes,
@@ -7,8 +7,10 @@ import {
   FileText,
   PackageCheck,
   Scale,
+  Search,
   ShieldCheck,
 } from "lucide-react";
+import { useState } from "react";
 
 import {
   ENGINEERING_LICENSE_GROUPS,
@@ -122,6 +124,16 @@ const OPEN_SOURCE_ROLES: readonly {
 export function EngineeringLicensesPage() {
   useBilingualI18nRevision();
 
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLocaleLowerCase(getActiveI18nLocale());
+  const visibleGroups = normalizedQuery
+    ? ENGINEERING_LICENSE_GROUPS.filter((group) =>
+        [group.title.ko, group.title.en, ...group.examples]
+          .join(" ")
+          .toLocaleLowerCase(getActiveI18nLocale())
+          .includes(normalizedQuery))
+    : ENGINEERING_LICENSE_GROUPS;
+
 
 
   useDocumentTitle(
@@ -216,6 +228,25 @@ export function EngineeringLicensesPage() {
           {bi("아래 내용은 빠른 분류 기준입니다. 정확한 의무는 설치한 버전의 원문, 수정·결합·배포 방식과 관할 법률에 따라 검토합니다.", "These are triage rules. Exact obligations depend on the installed version's text, modification, combination and distribution model, and applicable law.")
           }
         </p>
+        <div className="mt-6 max-w-xl">
+          <label htmlFor="engineering-license-search" className="text-xs font-black text-fg">
+            {bi("라이선스 이름 검색", "Search by license name")}
+          </label>
+          <div className="relative mt-2">
+            <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-3" aria-hidden="true" />
+            <input
+              id="engineering-license-search"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              placeholder={bi("예: MIT, Apache, MPL, OFL", "e.g. MIT, Apache, MPL, OFL")}
+              className="min-h-11 w-full rounded-2xl border border-line bg-card py-2 pl-10 pr-4 text-sm text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/40"
+            />
+          </div>
+          <p className="mt-2 text-[0.72rem] text-fg-3" role="status">
+            {formatI18nTemplate(String(bi("{value0}개 / 전체 {value1}개 종류", "{value0} of {value1} families")), { value0: visibleGroups.length, value1: ENGINEERING_LICENSE_GROUPS.length })}
+          </p>
+        </div>
         <div className="mt-7 overflow-hidden rounded-[1.75rem] border border-line/70 bg-panel/55">
           <div className="hidden grid-cols-[0.8fr_1.1fr_1.45fr_1.45fr] gap-5 border-b border-line bg-raised/70 px-6 py-3 font-display text-[0.64rem] font-black uppercase tracking-[0.12em] text-fg-3 lg:grid">
             <span>{bi("종류", "Family")}</span>
@@ -223,7 +254,7 @@ export function EngineeringLicensesPage() {
             <span>{bi("기본 의무", "Baseline obligation")}</span>
             <span>{bi("주의", "Caution")}</span>
           </div>
-          {ENGINEERING_LICENSE_GROUPS.map((group) => (
+          {visibleGroups.map((group) => (
             <article key={group.id} className="grid gap-4 border-b border-line/70 px-5 py-6 last:border-b-0 sm:px-6 lg:grid-cols-[0.8fr_1.1fr_1.45fr_1.45fr] lg:gap-5">
               <div>
                 <span className="lg:hidden text-[0.62rem] font-black uppercase tracking-[0.12em] text-fg-3">{bi("종류", "Family")}</span>
@@ -249,6 +280,21 @@ export function EngineeringLicensesPage() {
               </div>
             </article>
           ))}
+          {visibleGroups.length === 0 ? (
+            <div className="px-6 py-10 text-center">
+              <p className="text-sm font-black text-fg">{bi("검색과 일치하는 라이선스 종류가 없습니다.", "No license family matches the search.")}</p>
+              <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-fg-3">
+                {bi("이름 일부만 입력하거나 다른 표기로 시도해 보세요. 검색을 비우면 전체 종류를 다시 볼 수 있습니다.", "Try part of the name or another spelling. Clear the search to see every family again.")}
+              </p>
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                {bi("검색 초기화", "Reset search")}
+              </button>
+            </div>
+          ) : null}
         </div>
       </section>
 

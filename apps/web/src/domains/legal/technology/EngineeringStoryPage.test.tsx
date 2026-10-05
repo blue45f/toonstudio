@@ -53,7 +53,7 @@ function expectCurrentTechPage(label: RegExp): void {
 }
 
 describe("제작 스토리", () => {
-  it("31개 챕터를 주제 그룹과 스크롤 목차로 보여주고 다음 단계로 이어진다", () => {
+  it("31개 챕터를 주제 그룹과 스크롤 목차로 보여주고 다음 글로 이어진다", () => {
     renderAt("/about/technology/story", <EngineeringStoryPage />);
 
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
@@ -62,9 +62,16 @@ describe("제작 스토리", () => {
     expect(document.querySelectorAll("article[id]")).toHaveLength(PUBLISHED_ENGINEERING_CHAPTERS.length);
     expect(expectTocTargetsExist(firstToc(/기술 스토리 목차|Engineering story table of contents/u))).toBe(PUBLISHED_ENGINEERING_CHAPTERS.length);
 
+    // 머리말 대표 이미지는 페이지에 매핑된 기존 브랜드 아트(create)를 쓴다.
+    const heroArt = screen.getByRole("img", { name: /선화를 채색|Line art becomes/u });
+    expect(heroArt.getAttribute("src")).toBe("/brand/workflow-20260928/create-640.webp");
+
     const pager = screen.getByRole("navigation", { name: /기술 문서 이어보기|Continue through/u });
-    expect(within(pager).getByRole("link", { name: /다음 단계.*플레이북|Next step.*Playbook/u }).getAttribute("href"))
+    expect(within(pager).getByRole("link", { name: /다음 글.*플레이북|Next article.*Playbook/u }).getAttribute("href"))
       .toBe("/about/technology/playbook");
+    // 읽기 순서의 첫 글이라 이전 글 자리에는 기술 허브 카드가 온다.
+    expect(within(pager).getByRole("link", { name: /기술 허브|Engineering hub/u }).getAttribute("href"))
+      .toBe("/about/technology");
   });
 
   it("세부 내용은 접혀 있고 모두 펼치기·모두 접기로 한 번에 바꾼다", () => {
