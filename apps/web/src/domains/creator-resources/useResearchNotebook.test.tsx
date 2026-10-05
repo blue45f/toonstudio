@@ -5,8 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   addResearchNotebookEntry,
-  RESEARCH_NOTEBOOK_KEY,
+  researchNotebookStorageKey,
 } from "./research-notebook";
+
+// 이 테스트는 비로그인 상태라 노트가 게스트 파티션 키에 저장된다(소유자 스코프).
+const GUEST_NOTEBOOK_KEY = researchNotebookStorageKey("guest");
 import { useResearchNotebook } from "./useResearchNotebook";
 
 function NotebookHarness() {
@@ -34,7 +37,7 @@ afterEach(() => {
 
 describe("useResearchNotebook", () => {
   it("loads versioned notes and preserves the in-memory notebook when a later browser write fails", async () => {
-    localStorage.setItem(RESEARCH_NOTEBOOK_KEY, JSON.stringify({
+    localStorage.setItem(GUEST_NOTEBOOK_KEY, JSON.stringify({
       version: 1,
       entries: [{
         id: "existing",
