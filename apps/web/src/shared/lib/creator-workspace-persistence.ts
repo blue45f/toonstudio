@@ -6,6 +6,18 @@ import type { CreatorWorkspace, StoryField } from "./creator-resources";
 export const CREATOR_WORKSPACE_KEY = "toonstudio.creator-resources.v1";
 export const CREATOR_WORKSPACE_EVENT = "toonstudio:creator-resources";
 export const CREATOR_STORY_DRAFT_KEY = "toonstudio.creator-story-draft.v1";
+/**
+ * 소유자별 저장 키. 워크스페이스(기획서·저장 보드)와 임시 초안은 개인 기록이라
+ * 계정으로 나눠, 같은 브라우저의 다른 계정에게 이전 계정의 기록이 보이지 않게
+ * 한다(학습 기록·마켓 찜과 같은 방식). ownerKey가 없으면 레거시 키(기존 호출·
+ * 테스트 호환).
+ */
+export function creatorWorkspaceStorageKey(ownerKey?: string): string {
+  return ownerKey ? `${CREATOR_WORKSPACE_KEY}:${ownerKey}` : CREATOR_WORKSPACE_KEY;
+}
+export function creatorStoryDraftStorageKey(ownerKey?: string): string {
+  return ownerKey ? `${CREATOR_STORY_DRAFT_KEY}:${ownerKey}` : CREATOR_STORY_DRAFT_KEY;
+}
 export type WorkspaceLock = <T>(operation: () => T) => Promise<T>;
 export interface StoryDraft {
   version: 1;
@@ -89,32 +101,52 @@ export function workspaceWriteError(error: unknown): string {
   return error instanceof Error ? error.message : "저장하지 못했습니다. 현재 초안을 내보내세요.";
 }
 /** Cooperating tabs share this lock. Unsupported contexts are read/export-only, never race-prone writers. */
-export function browserWorkspaceLock(manager: LockManager | undefined, timeoutMs = 4000): WorkspaceLock | undefined {
+export function browserWorkspaceLock(manager: LockManager | undefined, timeoutMs = 4000, lockName = `${CREATOR_WORKSPACE_KEY}:write`): WorkspaceLock | undefined {
   if (!manager?.request) return undefined;
   return async <T>(operation: () => T): Promise<T> => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await manager.request(`${CREATOR_WORKSPACE_KEY}:write`, { mode: "exclusive", signal: controller.signal }, operation);
+      return await manager.request(lockName, { mode: "exclusive", signal: controller.signal }, operation);
     } finally { clearTimeout(timer); }
   };
 }
 export function createCreatorWorkspaceStorage(options: {
-  storage: () => Pick<Storage, "getItem" | "setItem">;
+  storage: () => Pick<Storage, "getItem" | "setItem" | "removeItem">;
   withLock?: WorkspaceLock;
   notify?: () => void;
+  ownerKey?: string;
 }) {
-  const readRaw = () => options.storage().getItem(CREATOR_WORKSPACE_KEY);
+  const key = creatorWorkspaceStorageKey(options.ownerKey);
+  // 스코프 키가 없으면 레거시 기록을 첫 계정이 claim 한다 — 읽는 자리에서
+  // 스코프 키로 옮기고 레거시를 지워, 다음 계정이 또 claim 하지 않게 한다.
+  // 게스트와 소유자 미지정(레거시 모드)은 claim 하지 않는다.
+  const canClaim = Boolean(options.ownerKey && options.ownerKey !== "guest");
+  function claimLegacy(storage: Pick<Storage, "getItem" | "setItem" | "removeItem">): void {
+    if (!canClaim || storage.getItem(key) !== null) return;
+    const legacy = storage.getItem(CREATOR_WORKSPACE_KEY);
+    if (legacy === null) return;
+    try {
+      storage.setItem(key, legacy);
+      storage.removeItem(CREATOR_WORKSPACE_KEY);
+    } catch { /* 이관 쓰기가 실패하면 다음 읽기에서 다시 시도한다. */ }
+  }
+  const readRaw = () => {
+    const storage = options.storage();
+    claimLegacy(storage);
+    return storage.getItem(key);
+  };
   async function transaction(change: (raw: string | null) => CreatorWorkspace): Promise<CreatorWorkspace> {
     if (!options.withLock) throw new Error("안전한 동시 저장을 지원하지 않는 브라우저입니다. HTTPS 환경의 최신 브라우저에서 저장하거나 파일로 내보내세요.");
     const next = await options.withLock(() => {
       const storage = options.storage();
-      const before = storage.getItem(CREATOR_WORKSPACE_KEY);
+      claimLegacy(storage);
+      const before = storage.getItem(key);
       // No await inside the read/validate/write critical section.
       const normalized = parseWorkspace(JSON.stringify(change(before)));
       const serialized = JSON.stringify(normalized);
-      if (storage.getItem(CREATOR_WORKSPACE_KEY) !== before) throw new WorkspaceConflictError();
-      if (serialized !== before) storage.setItem(CREATOR_WORKSPACE_KEY, serialized);
+      if (storage.getItem(key) !== before) throw new WorkspaceConflictError();
+      if (serialized !== before) storage.setItem(key, serialized);
       return normalized;
     });
     // Notifications cannot turn a successful storage commit into a reported failure.
