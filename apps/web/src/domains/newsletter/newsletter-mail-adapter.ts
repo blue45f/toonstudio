@@ -1,13 +1,14 @@
 /**
- * 뉴스레터 메일 발송 계약 지점 — 실제 이메일 전송은 이 파일에서만 연결한다.
+ * 뉴스레터 메일 발송 계약 지점 — 실제 이메일 전송은 이 계약으로만 연결한다.
  *
- * 현재 기본 어댑터(`localLogNewsletterMailAdapter`)는 네트워크 호출을 전혀 하지
- * 않고 수신자 수만 확정해 반환한다. 스토어는 그 결과로 상태 전이(발송 완료)와
- * 이력 기록만 수행하므로, 이 파일럿 단계에서 실제 이메일은 한 통도 나가지 않는다.
+ * 어댑터는 둘이다:
+ * - `localLogNewsletterMailAdapter` (기본): 네트워크 호출 없이 수신자 수만 확정한다.
+ * - Resend BYOK 어댑터(`newsletter-mail-resend.ts`): 사용자가 통합 API 키 허브에
+ *   자기 Resend 키를 등록하면 활성화된다. 발송은 서버 릴레이(POST /api/newsletter/deliver)를
+ *   경유하고, 스토어는 `resolveNewsletterMailAdapter()`로 둘 중 하나를 고른다.
  *
- * 실제 발송을 붙일 때는 Resend 등 발송 서비스 어댑터를 새로 만들어
- * `NEWSLETTER_MAIL_ADAPTER`를 교체한다. 유료 발송 서비스 도입은 통당 과금과
- * 스팸 평판 관리가 걸려 있어 별도 승인 후 진행한다(설계 6.2-1).
+ * 서버 릴레이가 아직 없어서 Resend 발송이 실패하면 스토어가 실패 이력을 남기고
+ * 초안은 그대로 둔다 — 성공으로 위장하지 않는다.
  * 수신자 이메일 주소는 서버 계약 이후 어댑터 내부에서만 해석하고,
  * 이 인터페이스에는 사용자 ID만 넘긴다.
  */
@@ -46,5 +47,9 @@ export const localLogNewsletterMailAdapter: NewsletterMailAdapter = {
   },
 };
 
-/** 스토어가 사용하는 현재 어댑터. 실제 발송 연결 시 이 한 줄만 교체한다. */
+/**
+ * 키 미등록 시의 기본 어댑터. 실제 선택은 스토어가
+ * `resolveNewsletterMailAdapter()`(newsletter-mail-resend.ts)로 수행한다 —
+ * Resend 키가 등록돼 있으면 그쪽 어댑터가 우선한다.
+ */
 export const NEWSLETTER_MAIL_ADAPTER: NewsletterMailAdapter = localLogNewsletterMailAdapter;

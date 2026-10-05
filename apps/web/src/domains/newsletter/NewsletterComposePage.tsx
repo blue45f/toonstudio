@@ -4,13 +4,15 @@
  * 필명(작가 이름) 단위로 구독자 수를 확인하고, 제목·본문을 써서 임시 저장하거나
  * 발송한다. 발송 전 미리보기로 실제 메일 형태를 확인한다.
  *
- * 주의: 실제 이메일은 아직 나가지 않는다. 발송은 로컬 기록 전용 어댑터를 통한
- * 상태 전이 + 이력 기록까지만이며, 화면에도 그 사실을 그대로 표시한다
- * (`newsletter-mail-adapter.ts`가 유일한 실제 발송 연결 지점).
+ * 발송은 어댑터가 정한다: 통합 API 키 허브에 Resend 키를 등록하면 서버 릴레이를
+ * 거쳐 실제 메일이 나가고, 키가 없으면 로컬 기록 전용으로 상태 전이 + 이력만
+ * 남는다. 화면의 발송 상태 문구가 어느 쪽인지 그대로 표시한다
+ * (`newsletter-mail-adapter.ts`, `newsletter-mail-resend.ts` 참조).
  */
 
 import { Eye, History, PenLine, Plus, Save, Send, Trash2, Users } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { Link } from "react-router-dom";
 
 import { getAuthSession } from "@/domains/auth/public/session/auth-session-state";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
@@ -27,6 +29,12 @@ import {
   listAuthorNewsletterIssues,
   listAuthorNewsletterSendHistory,
 } from "./newsletter-model";
+import {
+  RESEND_NEWSLETTER_ADAPTER_ID,
+  browserNewsletterSessionStorage,
+  isNewsletterResendConfigured,
+  loadNewsletterResendApiKey,
+} from "./newsletter-mail-resend";
 import { useNewsletterStore } from "./newsletter-store";
 import type { NewsletterIssue, SendIssueFailureReason } from "./newsletter-types";
 
@@ -69,6 +77,13 @@ export function NewsletterComposePage() {
   const [penNameInput, setPenNameInput] = useState<string>(
     () => penName ?? getAuthSession()?.user.name ?? "",
   );
+  // Resend 키 등록 여부는 화면 진입 시점에 읽는다 — 키 등록은 API 키 허브에서 하고,
+  // 등록 뒤 이 화면으로 돌아오면 새 상태로 다시 읽힌다.
+  const [resendConfigured] = useState(() =>
+    isNewsletterResendConfigured(
+      loadNewsletterResendApiKey(browserNewsletterSessionStorage()),
+    ),
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -108,6 +123,11 @@ export function NewsletterComposePage() {
         return t("이미 발송한 뉴스레터예요.", "This newsletter was already sent.");
       case "not-found":
         return t("초안을 찾을 수 없어요.", "The draft could not be found.");
+      case "delivery-failed":
+        return t(
+          "실제 메일 발송에 실패했어요. 발송 이력에 실패로 기록했고, 초안은 그대로 남아 있어 다시 보낼 수 있어요.",
+          "Real email delivery failed. The attempt was recorded as failed in your history, and the draft is still here so you can send it again.",
+        );
     }
   };
 
@@ -165,12 +185,18 @@ export function NewsletterComposePage() {
     try {
       const result = await sendIssue(issueId, actorId);
       if (result.sent) {
+        const deliveredByResend = result.record?.adapterId === RESEND_NEWSLETTER_ADAPTER_ID;
         setNotice({
           kind: "success",
-          text: t(
-            `발송을 기록했어요. 수신 ${result.record?.recipientCount ?? 0}명 · 실제 이메일은 메일 서비스 연결 후 발송됩니다.`,
-            `Send recorded for ${result.record?.recipientCount ?? 0} recipients. Actual email goes out once a mail service is connected.`,
-          ),
+          text: deliveredByResend
+            ? t(
+                `실제 메일을 보냈어요. 수신 ${result.record?.recipientCount ?? 0}명 · Resend 발송`,
+                `Email sent to ${result.record?.recipientCount ?? 0} recipients via Resend.`,
+              )
+            : t(
+                `발송을 기록했어요. 수신 ${result.record?.recipientCount ?? 0}명 · 실제 이메일은 메일 서비스 연결 후 발송됩니다.`,
+                `Send recorded for ${result.record?.recipientCount ?? 0} recipients. Actual email goes out once a mail service is connected.`,
+              ),
         });
       } else if (result.reason) {
         setNotice({ kind: "error", text: failureCopy(result.reason) });
@@ -390,10 +416,20 @@ export function NewsletterComposePage() {
                   {sending ? t("보내는 중…", "Sending…") : t("발송하기", "Send")}
                 </button>
                 <span className="text-xs text-fg-3">
-                  {t(
-                    "지금은 로컬 기록 전용이에요. 실제 이메일은 메일 서비스 연결 후 발송됩니다.",
-                    "Local record only for now. Actual email goes out once a mail service is connected.",
-                  )}
+                  {resendConfigured
+                    ? t(
+                        "Resend 키가 등록돼 있어요. 발송하면 실제 메일이 나갑니다.",
+                        "A Resend key is registered. Sending delivers real email.",
+                      )
+                    : t(
+                        "지금은 로컬 기록 전용이에요. 실제 이메일은 메일 서비스 연결 후 발송됩니다.",
+                        "Local record only for now. Actual email goes out once a mail service is connected.",
+                      )}{" "}
+                  <Link to="/settings/api-keys" className="font-medium text-accent hover:underline">
+                    {resendConfigured
+                      ? t("키 관리", "Manage key")
+                      : t("실발송 키 등록하기", "Register a sending key")}
+                  </Link>
                 </span>
               </div>
             )}
@@ -472,10 +508,15 @@ export function NewsletterComposePage() {
                 <ul className="mt-4 flex flex-col gap-1.5 border-t border-line pt-4">
                   {myHistory.map((record) => (
                     <li key={record.id} className="text-xs text-fg-3">
-                      {t(
-                        `${new Date(record.sentAt).toLocaleString()} · 「${record.issueTitle}」 수신 ${record.recipientCount}명 · ${record.adapterId === "local-log" ? "로컬 기록 전용" : record.adapterId}`,
-                        `${new Date(record.sentAt).toLocaleString()} · “${record.issueTitle}” to ${record.recipientCount} recipients · ${record.adapterId === "local-log" ? "local record only" : record.adapterId}`,
-                      )}
+                      {record.failed
+                        ? t(
+                            `${new Date(record.sentAt).toLocaleString()} · 「${record.issueTitle}」 발송 실패 · ${record.adapterId} · ${record.failureMessage ?? ""}`,
+                            `${new Date(record.sentAt).toLocaleString()} · “${record.issueTitle}” delivery failed · ${record.adapterId}`,
+                          )
+                        : t(
+                            `${new Date(record.sentAt).toLocaleString()} · 「${record.issueTitle}」 수신 ${record.recipientCount}명 · ${record.adapterId === "local-log" ? "로컬 기록 전용" : record.adapterId}`,
+                            `${new Date(record.sentAt).toLocaleString()} · “${record.issueTitle}” to ${record.recipientCount} recipients · ${record.adapterId === "local-log" ? "local record only" : record.adapterId}`,
+                          )}
                     </li>
                   ))}
                 </ul>

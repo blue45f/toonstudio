@@ -9,8 +9,9 @@
  *   서버 구독/발송 계약이 생기면 이 스토어의 동기화 지점만 교체한다.
  *
  * 발송 정책:
- * - 실제 이메일은 보내지 않는다. 발송은 메일 어댑터(`newsletter-mail-adapter.ts`,
- *   현재 로컬 기록 전용)가 확정한 건수를 이력에 남기는 상태 전이까지만 한다.
+ * - 어댑터는 둘 중 하나다: Resend 키가 등록돼 있으면 실발송 어댑터, 없으면
+ *   로컬 기록 전용 어댑터(`newsletter-mail-adapter.ts`, `newsletter-mail-resend.ts`).
+ * - 실발송이 실패하면 실패 이력을 남기고 이슈는 초안으로 둔다 — 보낸 것처럼 위장하지 않는다.
  * - 발송 직전 가드: 이미 보낸 글, 빈 제목/본문, 구독자 0명은 차단한다.
  */
 
@@ -20,10 +21,8 @@ import { persist } from "zustand/middleware";
 
 import { idbJsonStorage } from "@/shared/lib/idb-json-storage";
 
-import {
-  NEWSLETTER_MAIL_ADAPTER,
-  type NewsletterMailAdapter,
-} from "./newsletter-mail-adapter";
+import type { NewsletterMailAdapter } from "./newsletter-mail-adapter";
+import { resolveNewsletterMailAdapter } from "./newsletter-mail-resend";
 import {
   NEWSLETTER_UNSUBSCRIBE_PATH,
   listNewsletterRecipientIds,
@@ -63,8 +62,7 @@ interface NewsletterState {
   createIssue: (authorName: string, input: { title: string; body: string }, actorId?: string | null) => NewsletterIssue;
   updateIssue: (issueId: string, patch: { title?: string; body?: string }, actorId?: string | null) => NewsletterIssue | null;
   deleteIssue: (issueId: string, actorId?: string | null) => boolean;
-  sendIssue: (issueId: string, actorId?: string | null, adapter?: NewsletterMailAdapter) => Promise<SendIssueResult>;
-  resetForTests: () => void;
+  sendIssue: (issueId: string, actorId?: string | null, adapter?: NewsletterMailAdapter) => Promise<SendIssueResult>;  resetForTests: () => void;
 }
 
 let fallbackIdCounter = 0;
@@ -233,7 +231,7 @@ export const useNewsletterStore = create<NewsletterState>()(
         return true;
       },
 
-      sendIssue: async (issueId, actorId, adapter = NEWSLETTER_MAIL_ADAPTER) => {
+      sendIssue: async (issueId, actorId, adapter) => {
         const issue = get().issues.find((item) => item.id === issueId);
         if (!issue || !ownsRecord(issue.ownerId, actorId)) return { sent: false, reason: "not-found" };
         if (issue.status === "sent") return { sent: false, reason: "already-sent" };
@@ -242,13 +240,36 @@ export const useNewsletterStore = create<NewsletterState>()(
         const recipientIds = listNewsletterRecipientIds(get().subscriptions, issue.authorName);
         if (recipientIds.length === 0) return { sent: false, reason: "no-subscribers" };
 
-        const receipt = await adapter.send({
-          authorName: issue.authorName,
-          subject: issue.title.trim(),
-          body: issue.body,
-          recipientIds,
-          unsubscribePath: NEWSLETTER_UNSUBSCRIBE_PATH,
-        });
+        const mailAdapter = adapter ?? resolveNewsletterMailAdapter();
+        let receipt: Awaited<ReturnType<NewsletterMailAdapter["send"]>>;
+        try {
+          receipt = await mailAdapter.send({
+            authorName: issue.authorName,
+            subject: issue.title.trim(),
+            body: issue.body,
+            recipientIds,
+            unsubscribePath: NEWSLETTER_UNSUBSCRIBE_PATH,
+          });
+        } catch {
+          // 실발송 실패는 숨기지 않는다: 실패 이력을 남기고 이슈는 초안으로 둬서
+          // 다시 보낼 수 있게 한다. 오류 원문에 있을 수 있는 민감 정보는 기록하지 않는다.
+          const failedRecord: NewsletterSendRecord = {
+            id: nextNewsletterId("newsletter-send"),
+            issueId: issue.id,
+            authorName: issue.authorName,
+            ownerId: issue.ownerId,
+            issueTitle: issue.title.trim(),
+            sentAt: nowIso(),
+            recipientCount: 0,
+            adapterId: mailAdapter.id,
+            failed: true,
+            failureMessage: "메일 발송 서비스가 요청을 처리하지 못했습니다.",
+          };
+          set((state) => ({
+            sendHistory: [failedRecord, ...state.sendHistory].slice(0, MAX_SEND_HISTORY),
+          }));
+          return { sent: false, reason: "delivery-failed", record: failedRecord };
+        }
 
         const record: NewsletterSendRecord = {
           id: nextNewsletterId("newsletter-send"),
