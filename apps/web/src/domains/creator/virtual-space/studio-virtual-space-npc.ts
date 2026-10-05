@@ -11,11 +11,13 @@ import type { StudioSpaceObstacle } from "./studio-virtual-space-physics";
 /**
  * 상주 NPC 시스템 (분위기형 NPC)
  *
- * 가상 오피스에 생기를 주는 4종의 NPC:
+ * 가상 오피스에 생기를 주는 6종의 NPC:
  * - 안내 NPC (모아 · 컨시어지): 입구에서 환영 + 조작법 안내
  * - 바리스타 NPC (린 · 카페 매니저): 커피 제공 (☕ 휴식 버프)
  * - 멘토 NPC (하루 · 아틀리에 메이트): 드로잉 팁 제공
  * - 리셉션 NPC (윤 · 프로듀서): 회의실 예약 도움
+ * - 에디터 NPC (솔 · 리뷰 에디터): 원고 검토 피드백 정리
+ * - 아키비스트 NPC (담 · 에셋 아키비스트): 자료·에셋 보관소 안내
  *
  * - 웨이포인트 순찰 (배회 AI 사용)
  * - 플레이어 접근 시 바라보기 + 인사 말풍선
@@ -25,10 +27,10 @@ import type { StudioSpaceObstacle } from "./studio-virtual-space-physics";
  */
 
 /** NPC 역할. */
-export type StudioAmbientNpcRole = "guide" | "barista" | "mentor" | "receptionist";
+export type StudioAmbientNpcRole = "guide" | "barista" | "mentor" | "receptionist" | "editor" | "archivist";
 
 /** NPC 서비스 종류. */
-export type StudioNpcServiceKind = "coffee" | "tip" | "booking" | "tour";
+export type StudioNpcServiceKind = "coffee" | "tip" | "booking" | "tour" | "feedback" | "archive";
 
 export interface StudioAmbientNpcDefinition {
   readonly id: string;
@@ -43,7 +45,7 @@ export interface StudioAmbientNpcDefinition {
   readonly home: StudioVirtualSpacePoint;
 }
 
-/** 기본 상주 NPC 4종. */
+/** 기본 상주 NPC 6종. */
 export const STUDIO_AMBIENT_NPC_DEFINITIONS: readonly StudioAmbientNpcDefinition[] = Object.freeze([
   {
     id: "npc-guide-moa",
@@ -98,6 +100,32 @@ export const STUDIO_AMBIENT_NPC_DEFINITIONS: readonly StudioAmbientNpcDefinition
       { x: 760, y: 430 },
     ],
   },
+  {
+    id: "npc-editor-sol",
+    role: "editor",
+    skinKey: "npc-editor",
+    nameKo: "솔",
+    nameEn: "Sol",
+    home: { x: 1020, y: 230 },
+    waypoints: [
+      { x: 1020, y: 230 },
+      { x: 930, y: 300 },
+      { x: 1120, y: 290 },
+    ],
+  },
+  {
+    id: "npc-archivist-dam",
+    role: "archivist",
+    skinKey: "npc-archivist",
+    nameKo: "담",
+    nameEn: "Dam",
+    home: { x: 235, y: 250 },
+    waypoints: [
+      { x: 235, y: 250 },
+      { x: 150, y: 320 },
+      { x: 330, y: 315 },
+    ],
+  },
 ]);
 
 export interface StudioAmbientNpcState {
@@ -147,6 +175,10 @@ export function ambientNpcTimeHint(
       return period === "work" || period === "review" ? "station" : "patrol";
     case "receptionist":
       return period === "meeting" ? "station" : "patrol";
+    case "editor":
+      return period === "review" ? "station" : "patrol";
+    case "archivist":
+      return period === "work" ? "station" : "patrol";
   }
 }
 
@@ -175,6 +207,8 @@ function roleService(role: StudioAmbientNpcRole): StudioNpcServiceKind {
     case "barista": return "coffee";
     case "mentor": return "tip";
     case "receptionist": return "booking";
+    case "editor": return "feedback";
+    case "archivist": return "archive";
   }
 }
 
@@ -260,6 +294,8 @@ export function npcRoleLabel(role: StudioAmbientNpcRole): { readonly ko: string;
     case "barista": return { ko: "바리스타", en: "Barista" };
     case "mentor": return { ko: "멘토", en: "Mentor" };
     case "receptionist": return { ko: "리셉션", en: "Reception" };
+    case "editor": return { ko: "에디터", en: "Editor" };
+    case "archivist": return { ko: "아키비스트", en: "Archivist" };
   }
 }
 
@@ -274,6 +310,10 @@ export function npcGreetingText(role: StudioAmbientNpcRole): { readonly ko: stri
       return { ko: "그림 그릴 때 막히면 언제든 물어보세요.", en: "Ask me anytime you're stuck drawing." };
     case "receptionist":
       return { ko: "회의실 예약 도와드릴까요?", en: "Need help booking a meeting room?" };
+    case "editor":
+      return { ko: "원고 검토는 저에게 맡겨 주세요. 피드백을 모아 드릴게요.", en: "Leave manuscript reviews to me — I'll round up the feedback." };
+    case "archivist":
+      return { ko: "자료 찾고 계세요? 보관소에서 바로 꺼내 드릴게요.", en: "Looking for a reference? I'll fetch it from the archive." };
   }
 }
 
@@ -323,5 +363,9 @@ export function npcServiceText(
     case "tour":
       void role;
       return { ko: "가이드 투어를 시작합니다! 저를 따라오세요.", en: "Starting the guide tour! Follow me." };
+    case "feedback":
+      return { ko: "검토 메모를 모아 정리했어요. 원고 옆에 붙여 둘게요.", en: "I've rounded up the review notes — pinned beside your manuscript." };
+    case "archive":
+      return { ko: "필요한 자료를 보관소에서 꺼내 왔어요.", en: "Fetched the references you need from the archive." };
   }
 }

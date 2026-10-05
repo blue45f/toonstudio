@@ -27,10 +27,10 @@ function baseInput(overrides: Partial<StudioAmbientNpcInput> = {}): StudioAmbien
 }
 
 describe("createAmbientNpcStates", () => {
-  it("기본 NPC 4종을 생성한다", () => {
+  it("기본 NPC 6종을 생성한다", () => {
     const states = createAmbientNpcStates();
-    expect(states).toHaveLength(4);
-    expect(states.map((s) => s.definition.role).sort()).toEqual(["barista", "guide", "mentor", "receptionist"]);
+    expect(states).toHaveLength(6);
+    expect(states.map((s) => s.definition.role).sort()).toEqual(["archivist", "barista", "editor", "guide", "mentor", "receptionist"]);
   });
 
   it("정의된 스킨 키를 사용한다", () => {
@@ -39,6 +39,8 @@ describe("createAmbientNpcStates", () => {
     expect(byRole.get("barista")).toBe("npc-cafe");
     expect(byRole.get("mentor")).toBe("npc-artist");
     expect(byRole.get("receptionist")).toBe("npc-producer");
+    expect(byRole.get("editor")).toBe("npc-editor");
+    expect(byRole.get("archivist")).toBe("npc-archivist");
   });
 });
 
@@ -114,6 +116,14 @@ describe("activateNpcService", () => {
     expect(event).toMatchObject({ kind: "npc-service", role: "mentor", service: "tip" });
   });
 
+  it("에디터는 피드백 정리를, 아키비스트는 자료 찾기를 제공한다", () => {
+    const states = createAmbientNpcStates();
+    expect(activateNpcService("npc-editor-sol", states, 5000).event)
+      .toMatchObject({ kind: "npc-service", role: "editor", service: "feedback" });
+    expect(activateNpcService("npc-archivist-dam", states, 5000).event)
+      .toMatchObject({ kind: "npc-service", role: "archivist", service: "archive" });
+  });
+
   it("없는 NPC id면 이벤트 없이 그대로 반환한다", () => {
     const states = createAmbientNpcStates();
     const { states: next, event } = activateNpcService("npc-unknown", states, 5000);
@@ -128,6 +138,10 @@ describe("ambientNpcTimeHint", () => {
     expect(ambientNpcTimeHint("barista", "break")).toBe("serve");
     expect(ambientNpcTimeHint("mentor", "work")).toBe("station");
     expect(ambientNpcTimeHint("receptionist", "meeting")).toBe("station");
+    expect(ambientNpcTimeHint("editor", "review")).toBe("station");
+    expect(ambientNpcTimeHint("editor", "work")).toBe("patrol");
+    expect(ambientNpcTimeHint("archivist", "work")).toBe("station");
+    expect(ambientNpcTimeHint("archivist", "break")).toBe("patrol");
     expect(ambientNpcTimeHint("guide", "work")).toBe("patrol");
   });
 
@@ -151,6 +165,8 @@ describe("ambientNpcTimeHint", () => {
 describe("문구", () => {
   it("역할 라벨이 있다", () => {
     expect(npcRoleLabel("barista")).toEqual({ ko: "바리스타", en: "Barista" });
+    expect(npcRoleLabel("editor")).toEqual({ ko: "에디터", en: "Editor" });
+    expect(npcRoleLabel("archivist")).toEqual({ ko: "아키비스트", en: "Archivist" });
   });
 
   it("인사 문구가 있다", () => {
@@ -169,6 +185,10 @@ describe("문구", () => {
     expect(coffee.ko).toContain("커피");
     const tip = npcServiceText("mentor", "tip", 0);
     expect(tip.ko).toContain("💡");
+    expect(npcServiceText("editor", "feedback").ko).toContain("검토 메모");
+    expect(npcServiceText("archivist", "archive").ko).toContain("보관소");
+    expect(npcGreetingText("editor").ko).toContain("원고 검토");
+    expect(npcGreetingText("archivist").en.length).toBeGreaterThan(0);
   });
 
   it("기본 NPC 정의가 유효하다", () => {
