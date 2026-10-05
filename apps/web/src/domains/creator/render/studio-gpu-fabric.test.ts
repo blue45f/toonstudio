@@ -130,6 +130,9 @@ describe("studio-gpu-fabric: 단일 소유권·참조 카운트", () => {
     expect(second!.epoch).toBe(first!.epoch);
     expect(activeStudioGpuDeviceLeaseCount()).toBe(2);
     expect(requestAdapter).toHaveBeenCalledTimes(1);
+    expect(requestAdapter).toHaveBeenCalledWith({
+      powerPreference: "high-performance",
+    });
     expect(requestDevice).toHaveBeenCalledTimes(1);
   });
 
