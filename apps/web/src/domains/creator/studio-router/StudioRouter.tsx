@@ -13,6 +13,7 @@ import { StudioEditorRoute } from "./routes/StudioEditorRoute";
 import { StudioProductionRoute } from "./routes/StudioProductionRoute";
 import { StudioPublishRoute } from "./routes/StudioPublishRoute";
 import { StudioStoryworldRoute } from "./routes/StudioStoryworldRoute";
+import { StudioWorkAssetsRoute } from "./routes/StudioWorkAssetsRoute";
 import { resolveStudioRoute } from "./studio-route-manifest";
 import { resolveStudioRouterCanonicalHref } from "./studio-router-canonical-href";
 import { StudioRouteFailure, StudioRoutePlaceholder } from "./StudioRouteFallbacks";
@@ -83,6 +84,13 @@ export function StudioRouter() {
           key={resolution.lifecycleKey}
           remixSourceWorkId={resolution.remixSourceWorkId}
           workId={resolution.workId}
+        />
+      );
+    case "assets":
+      return (
+        <StudioWorkAssetsRoute
+          key={resolution.lifecycleKey}
+          resolution={resolution}
         />
       );
     case "placeholder":

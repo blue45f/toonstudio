@@ -27,6 +27,7 @@ export type StudioCompanionRouteSurface =
   (typeof STUDIO_COMPANION_SURFACES)[number];
 
 export type StudioRouteKind =
+  | "assets"
   | "companion"
   | "composition"
   | "editor"
@@ -123,15 +124,15 @@ export const STUDIO_ROUTE_MANIFEST = Object.freeze([
     pattern: "/studio/assets",
   },
   {
-    id: "studio-work-placeholder",
-    kind: "placeholder",
-    ownsDocumentTitle: false,
+    id: "studio-work-assets",
+    kind: "assets",
+    ownsDocumentTitle: true,
     pattern: "/studio/work/:workId/assets",
   },
   {
-    id: "studio-remix-placeholder",
-    kind: "placeholder",
-    ownsDocumentTitle: false,
+    id: "studio-remix-assets",
+    kind: "assets",
+    ownsDocumentTitle: true,
     pattern: "/studio/remix/:sourceWorkId/assets",
   },
 ] as const satisfies readonly StudioRouteManifestEntry[]);
@@ -208,6 +209,13 @@ export interface StudioPlaceholderRouteResolution extends StudioResolvedRouteBas
   readonly placeholderId: StudioPlaceholderRouteId;
 }
 
+export interface StudioWorkAssetsRouteResolution extends StudioResolvedRouteBase {
+  readonly kind: "assets";
+  readonly workId: string | null;
+  readonly remixSourceWorkId: string | null;
+  readonly editorHref: string;
+}
+
 export interface StudioInvalidRouteResolution
   extends Omit<StudioResolvedRouteBase, "canonicalHref" | "canonicalPathname"> {
   readonly errorCode: StudioWorkspaceRouteErrorCode;
@@ -224,7 +232,8 @@ export type StudioRouteResolution =
   | StudioPlaceholderRouteResolution
   | StudioProductionRouteResolution
   | StudioPublishRouteResolution
-  | StudioStoryworldRouteResolution;
+  | StudioStoryworldRouteResolution
+  | StudioWorkAssetsRouteResolution;
 
 const PRODUCTION_ROUTE_IDS = new Set<StudioProductionRouteId>(
   STUDIO_PRODUCTION_ROUTE_IDS,
@@ -628,20 +637,22 @@ function resolveWorkScopedProduction(
   });
 }
 
-function resolveWorkScopedPlaceholder(
+function resolveWorkScopedAssets(
   pathname: string,
   search: string | URLSearchParams | undefined,
-): StudioPlaceholderRouteResolution | null {
+): StudioWorkAssetsRouteResolution | null {
   const scoped = resolveWorkScopedSurface(pathname);
   if (scoped === null || scoped.candidateSurface !== "assets") return null;
   const canonicalPathname = scopedCanonicalPathname(scoped.scope, scoped.parsed, "assets");
   return Object.freeze({
     canonicalHref: href(canonicalPathname, queryParams(search)),
     canonicalPathname,
-    kind: "placeholder",
+    kind: "assets",
     lifecycleKey: scopedLifecycleKey(scoped.scope, scoped.parsed, "assets"),
-    ownsDocumentTitle: false,
-    placeholderId: "assets",
+    ownsDocumentTitle: true,
+    workId: scoped.parsed.workId,
+    remixSourceWorkId: scoped.parsed.remixSourceWorkId,
+    editorHref: scopedCanonicalPathname(scoped.scope, scoped.parsed, "canvas"),
   });
 }
 
@@ -665,8 +676,8 @@ export function resolveStudioRoute({
   if (workScopedProduction !== null) return workScopedProduction;
   const placeholder = resolvePlaceholder(pathname, search);
   if (placeholder !== null) return placeholder;
-  const workScopedPlaceholder = resolveWorkScopedPlaceholder(pathname, search);
-  if (workScopedPlaceholder !== null) return workScopedPlaceholder;
+  const workScopedAssets = resolveWorkScopedAssets(pathname, search);
+  if (workScopedAssets !== null) return workScopedAssets;
 
   // Keep bare /studio owned by the home page, but preserve legacy editor identities.
   const params = queryParams(search);
