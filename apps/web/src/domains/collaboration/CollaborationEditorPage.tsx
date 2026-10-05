@@ -4,14 +4,14 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import {
   COLLABORATION_MODES, COLLABORATION_PAY, COLLABORATION_ROLES, COLLABORATION_TYPES,
-  COLLABORATION_UNITS, validateCollaborationInput,
+  COLLABORATION_UNITS, collaborationDeadline, validateCollaborationInput,
 } from "../../../../../packages/core/src/collaboration";
 
 import { collaborationDraftKey, collaborationTemplate, emptyCollaborationDraft, parseCollaborationTemplate, readCollaborationDraft, saveCollaborationDraft, startCollaborationEditor, type CollaborationTemplateKind } from "./collaboration-draft";
 import { CollaborationConflictPanel, isCollaborationConflictError } from "./collaboration-conflict";
-import { CollabField, CollabLogin, CollabNotice, collabButton, collabInput, collabPrimary } from "./collaboration-ui";
+import { CollabField, CollabLogin, CollabNotice, CollaborationCard, collabButton, collabInput, collabPrimary } from "./collaboration-ui";
 
-import type { CollaborationDetails, CollaborationInput } from "../../../../../packages/core/src/collaboration";
+import type { CollaborationDetails, CollaborationInput, CollaborationPost, CollaborationStatus } from "../../../../../packages/core/src/collaboration";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -58,7 +58,7 @@ export function CollaborationEditorPage() {
   const { id } = useParams();
   const userId = useApp((state) => state.userId);
   useDocumentTitle(bt(id ? "구인·의뢰 공고 수정" : "구인·의뢰 공고 등록", id ? "Edit gig post" : "Post a gig"));
-  return <Container size="wide" className="max-w-4xl py-8 sm:py-12"><Link href={id ? `/collaborate/${id}` : "/collaborate"} className="inline-flex min-h-11 items-center gap-2 text-sm text-fg-3"><ArrowLeft size={16} aria-hidden="true" />{bt("공고로 돌아가기", "Back to the post")}</Link><h1 className="mt-4 text-3xl font-bold text-fg">{id ? bt("공고 수정", "Edit post") : bt("함께할 사람에게, 정확한 제안을.", "A clear proposal for your future teammate.")}</h1><p className="mt-3 text-sm leading-7 text-fg-3">{bt("작업 범위와 보수, 서로 지킬 약속을 미리 적으면 더 잘 맞는 동료를 만날 수 있어요.", "Write the scope, pay, and shared rules up front and you'll find a better fit.")}</p><div className="mt-7">{userId ? <EditorLoader key={`${id || "new"}:${userId}`} id={id} userId={userId} /> : <><CollabLogin />{!id && <GuestTemplatePreview />}</>}</div></Container>;
+  return <Container size="wide" className="max-w-6xl py-8 sm:py-12"><Link href={id ? `/collaborate/${id}` : "/collaborate"} className="inline-flex min-h-11 items-center gap-2 text-sm text-fg-3"><ArrowLeft size={16} aria-hidden="true" />{bt("공고로 돌아가기", "Back to the post")}</Link><h1 className="mt-4 text-3xl font-bold text-fg">{id ? bt("공고 수정", "Edit post") : bt("함께할 사람에게, 정확한 제안을.", "A clear proposal for your future teammate.")}</h1><p className="mt-3 text-sm leading-7 text-fg-3">{bt("작업 범위와 보수, 서로 지킬 약속을 미리 적으면 더 잘 맞는 동료를 만날 수 있어요.", "Write the scope, pay, and shared rules up front and you'll find a better fit.")}</p><div className="mt-7">{userId ? <EditorLoader key={`${id || "new"}:${userId}`} id={id} userId={userId} /> : <div className="max-w-4xl"><CollabLogin />{!id && <GuestTemplatePreview />}</div>}</div></Container>;
 }
 const TEMPLATE_CHOICES: readonly { readonly kind: CollaborationTemplateKind; readonly ko: string; readonly en: string }[] = [
   { kind: "ink", ko: "선화 보조 의뢰", en: "Line-art help" },
@@ -94,7 +94,7 @@ function GuestTemplatePreview() {
 }
 function EditorLoader({ id, userId }: { id?: string; userId: string }) {
   const bt = useBilingual(SCOPE);
-  const [initial, setInitial] = useState<{ input: CollaborationInput; version: number } | null>(id ? null : { input: emptyCollaborationDraft(), version: 1 });
+  const [initial, setInitial] = useState<{ input: CollaborationInput; version: number; status: CollaborationStatus; hidden: boolean } | null>(id ? null : { input: emptyCollaborationDraft(), version: 1, status: "open", hidden: false });
   const [error, setError] = useState(""); const [refresh, setRefresh] = useState(0);
   const [notFound, setNotFound] = useState(false);
   useEffect(() => {
@@ -103,7 +103,7 @@ function EditorLoader({ id, userId }: { id?: string; userId: string }) {
     void collaborationClient.detail(id, controller.signal).then((data) => {
       if (controller.signal.aborted) return;
       if (!data.canManage) { setError(bt("공고 작성자만 수정할 수 있어요.", "Only the post author can edit it.")); return; }
-      setInitial({ input: data.post, version: data.post.version }); setError(""); setNotFound(false);
+      setInitial({ input: data.post, version: data.post.version, status: data.post.status, hidden: data.post.hidden }); setError(""); setNotFound(false);
     }).catch(async (reason) => {
       if (controller.signal.aborted) return;
       // 존재하지 않는 공고 id는 404 전용 화면으로 분리한다(일시 오류·권한 오류와 구분).
@@ -118,9 +118,63 @@ function EditorLoader({ id, userId }: { id?: string; userId: string }) {
   if (notFound) return <NotFoundPage />;
   if (error) return <CollabNotice error>{error}<button type="button" className={`${collabButton} ml-3`} onClick={() => setRefresh((value) => value + 1)}>{bt("다시 불러오기", "Reload")}</button></CollabNotice>;
   if (!initial) return <div role="status" aria-label={bt("공고 작성 폼을 불러오는 중", "Loading the post form")} className="space-y-5" aria-hidden="true"><div className="skeleton h-24 rounded-2xl" /><div className="skeleton h-72 rounded-2xl" /><div className="skeleton h-64 rounded-2xl" /></div>;
-  return <CollaborationEditorForm key={`${initial.version}:${refresh}`} id={id} userId={userId} initial={initial.input} version={initial.version} onReloadLatest={() => setRefresh((value) => value + 1)} />;
+  return <CollaborationEditorForm key={`${initial.version}:${refresh}`} id={id} userId={userId} initial={initial.input} version={initial.version} postStatus={initial.status} postHidden={initial.hidden} onReloadLatest={() => setRefresh((value) => value + 1)} />;
 }
-function CollaborationEditorForm({ id, userId, initial, version, onReloadLatest }: { id?: string; userId: string; initial: CollaborationInput; version: number; onReloadLatest: () => void }) {
+/**
+ * 입력 중인 값을 게시판 카드가 받는 CollaborationPost 모양으로 바꾼다.
+ * 서버 필드는 클라이언트가 확정할 수 있는 값만 채운다: 마감 경과는 서버와 같은 규칙
+ * (collaborationDeadline, 한국 시간 그날 23:59:59.999)으로 계산하고, 작성자 이름은
+ * 게시할 때 서버가 넣으므로 자리 표시로 둔다. 도구 목록은 제출할 때와 같은 정규화
+ * (trim 후 빈 값 제거)를 거쳐 빈 칩이 생기지 않게 한다.
+ */
+function collaborationPreviewPost(
+  input: CollaborationInput,
+  meta: { postId?: string; userId: string; authorName: string; titlePlaceholder: string; status: CollaborationStatus; hidden: boolean; version: number },
+): CollaborationPost {
+  const deadlineAt = input.details.deadline ? collaborationDeadline(input.details.deadline) : null;
+  const now = new Date().toISOString();
+  return {
+    ...input,
+    title: input.title.trim() ? input.title : meta.titlePlaceholder,
+    details: { ...input.details, tools: input.details.tools.map((tool) => tool.trim()).filter(Boolean) },
+    id: meta.postId ?? "preview",
+    author: { id: meta.userId, name: meta.authorName },
+    status: meta.status,
+    version: meta.version,
+    hidden: meta.hidden,
+    createdAt: now,
+    updatedAt: now,
+    saved: false,
+    expired: deadlineAt !== null && deadlineAt < Date.now(),
+  };
+}
+/**
+ * 작성 중인 공고를 게시판 목록의 실제 카드로 실시간 미리 보여 준다.
+ * 카드 안의 제목 링크와 저장 버튼은 아직 게시되지 않은 공고라 동작할 수 없어,
+ * 클릭의 기본 동작만 막고 카드 내용은 그대로 읽을 수 있게 둔다.
+ */
+function CollaborationLivePreview({ input, userId, postId, status, hidden, version }: { input: CollaborationInput; userId: string; postId?: string; status: CollaborationStatus; hidden: boolean; version: number }) {
+  const bt = useBilingual(SCOPE);
+  const post = collaborationPreviewPost(input, {
+    postId,
+    userId,
+    authorName: bt("나", "You"),
+    titlePlaceholder: bt("공고 제목", "Post title"),
+    status,
+    hidden,
+    version,
+  });
+  return <aside className="min-w-0 lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)]">
+    <section aria-labelledby="collaboration-live-preview-title" className="rounded-2xl border border-dashed border-line-strong p-4 sm:p-5">
+      <h2 id="collaboration-live-preview-title" className="text-sm font-bold text-fg">{bt("공고 미리 보기", "Post preview")}</h2>
+      <p className="mt-2 text-xs leading-6 text-fg-3">{bt("게시판 목록에 실제로 표시되는 카드예요. 입력하면 바로 반영되고, 작성자 이름은 게시할 때 내 이름으로 들어가요.", "This is the actual card shown in the board list. It updates as you type, and your name is filled in when you publish.")}</p>
+      <div className="mt-4" onClickCapture={(event) => event.preventDefault()}>
+        <CollaborationCard post={post} onSave={() => undefined} busy />
+      </div>
+    </section>
+  </aside>;
+}
+function CollaborationEditorForm({ id, userId, initial, version, postStatus, postHidden, onReloadLatest }: { id?: string; userId: string; initial: CollaborationInput; version: number; postStatus: CollaborationStatus; postHidden: boolean; onReloadLatest: () => void }) {
   const bt = useBilingual(SCOPE);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -175,7 +229,8 @@ function CollaborationEditorForm({ id, userId, initial, version, onReloadLatest 
     finally { submitting.current = false; setBusy(false); }
   }
   const noAmount = input.payType === "volunteer" || input.payType === "revenue_share";
-  return <form onSubmit={(event) => { event.preventDefault(); void submit(); }} className="space-y-7">
+  return <form onSubmit={(event) => { event.preventDefault(); void submit(); }} className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="min-w-0 space-y-7">
     {!id && <section className="rounded-2xl border border-line bg-panel p-5"><h2 className="text-sm font-bold text-fg">{bt("빈칸이 막막하다면 작성 예시로 시작하세요", "Staring at a blank form? Start from an example")}</h2><p className="mt-2 text-xs leading-6 text-fg-3">{bt("예시 문구를 실제 작업 조건으로 바꿔 주세요. 버튼을 눌러도 공개 등록되지 않습니다.", "Adapt the example to your real terms. Pressing a button doesn't publish anything.")}</p>{start.templateSkipped && <p role="status" className="mt-3 rounded-xl border border-warn/35 bg-warn/10 px-3 py-2 text-xs leading-6 text-fg-2">{bt("이 기기에 쓰던 초안이 있어 초안을 먼저 열었어요. 예시로 바꾸려면 아래 버튼을 눌러 주세요.", "You had a draft on this device, so we opened it first. Pick an example below to replace it.")}</p>}<div className="mt-3 flex flex-wrap gap-2"><button type="button" className={collabButton} onClick={() => template("ink")}>{bt("선화 보조 의뢰", "Line-art help example")}</button><button type="button" className={collabButton} onClick={() => template("background")}>{bt("배경 작업 의뢰", "Background example")}</button><button type="button" className={collabButton} onClick={() => template("team")}>{bt("팀원 모집", "Team hiring example")}</button></div></section>}
     <fieldset disabled={busy} className="space-y-5 rounded-2xl border border-line bg-panel p-5 sm:p-7"><legend className="px-2 text-lg font-bold text-fg">{bt("01 · 어떤 동료를 찾나요?", "01 · Who are you looking for?")}</legend>
       <div className="grid gap-5 sm:grid-cols-2"><CollabField label={bt("공고 유형", "Post type")}><select className={collabInput} value={input.type} onChange={(event) => setInput((current) => ({ ...current, type: event.target.value as CollaborationInput["type"], payType: event.target.value !== "team" && ["volunteer", "revenue_share"].includes(current.payType) ? "negotiable" : current.payType }))}>{Object.entries(COLLABORATION_TYPES).map(([key, label]) => <option key={key} value={key}>{optLabel(label)}</option>)}</select></CollabField><CollabField label={bt("작업 분야", "Role")}><select className={collabInput} value={input.role} onChange={(event) => setInput({ ...input, role: event.target.value as CollaborationInput["role"] })}>{Object.entries(COLLABORATION_ROLES).map(([key, label]) => <option key={key} value={key}>{optLabel(label)}</option>)}</select></CollabField></div>
@@ -198,6 +253,8 @@ function CollaborationEditorForm({ id, userId, initial, version, onReloadLatest 
     </fieldset>
     {error && <div ref={errorRef} tabIndex={-1} className="outline-none"><CollabNotice error>{error}</CollabNotice></div>}
     {conflict && <CollaborationConflictPanel inputWarning busy={conflictBusy} onReload={() => { setConflictBusy(true); onReloadLatest(); }} onKeepEditing={() => setConflict(false)} />}
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-panel p-5"><p role="status" className="inline-flex max-w-xl items-center gap-2 text-xs leading-6 text-fg-3"><Save size={15} className="shrink-0" aria-hidden="true" />{id ? bt("수정한 내용은 저장 버튼을 눌러야 반영돼요.", "You must press save for edits to apply.") : draftStatus || bt("초안 임시저장 준비 중", "Preparing draft autosave")}</p><button disabled={busy} type="submit" className={collabPrimary}><CheckCircle2 size={17} aria-hidden="true" />{busy ? bt("저장 중…", "Saving…") : id ? bt("수정 내용 저장", "Save changes") : bt("공고 공개 등록", "Publish post")}</button></div>
+    </div>
+    <CollaborationLivePreview input={input} userId={userId} postId={id} status={postStatus} hidden={postHidden} version={version} />
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-panel p-5 lg:col-span-2"><p role="status" className="inline-flex max-w-xl items-center gap-2 text-xs leading-6 text-fg-3"><Save size={15} className="shrink-0" aria-hidden="true" />{id ? bt("수정한 내용은 저장 버튼을 눌러야 반영돼요.", "You must press save for edits to apply.") : draftStatus || bt("초안 임시저장 준비 중", "Preparing draft autosave")}</p><button disabled={busy} type="submit" className={collabPrimary}><CheckCircle2 size={17} aria-hidden="true" />{busy ? bt("저장 중…", "Saving…") : id ? bt("수정 내용 저장", "Save changes") : bt("공고 공개 등록", "Publish post")}</button></div>
   </form>;
 }
