@@ -9,6 +9,9 @@ import {
   STUDIO_NPC_CAST,
   STUDIO_NPC_PROCEDURAL_DEFINITIONS,
   studioNpcCastHasKey,
+  studioNpcCastLabel,
+  studioNpcCastMotionClipAvailable,
+  studioNpcCastPoseAvailable,
   studioNpcCastSkinByKey,
   studioNpcCastTextureUrls,
   studioProceduralNpcHasKey,
@@ -185,5 +188,45 @@ describe("프로시저럴 NPC 변형 7종", () => {
     expect(studioProceduralNpcSkin("unknown", deps)).toBeUndefined();
     expect(studioProceduralNpcSkinByKey("unknown", deps).key).toBe("npc-guide");
     expect(studioProceduralNpcSkinByKey("npc-guard", deps).labelKo).toBe("든든 · 경비원");
+  });
+});
+
+describe("통합 캐스트 레지스트리 (드로잉+프로시저럴)", () => {
+  it("hasKey는 프로시저럴 정의까지 인정하고 미지 키는 계속 거부한다", () => {
+    for (const item of STUDIO_NPC_PROCEDURAL_DEFINITIONS) {
+      expect(studioNpcCastHasKey(item.key)).toBe(true);
+    }
+    expect(studioNpcCastHasKey("npc-concierge")).toBe(true);
+    expect(studioNpcCastHasKey("pink")).toBe(false);
+    expect(studioNpcCastHasKey("missing")).toBe(false);
+  });
+
+  it("라벨은 텍스처 생성 없이 드로잉·프로시저럴 양쪽에서 조회된다", () => {
+    expect(studioNpcCastLabel("npc-concierge")).toEqual({ ko: "모아 · 컨시어지", en: "Moa · Concierge" });
+    expect(studioNpcCastLabel("npc-mentor")).toEqual({ ko: "슬기 · 멘토", en: "Seulgi · Mentor" });
+    expect(studioNpcCastLabel("npc-shopkeeper")).toEqual({ ko: "보리 · 상점주인", en: "Bori · Shopkeeper" });
+    expect(studioNpcCastLabel("missing")).toBeUndefined();
+  });
+
+  it("포즈·모션 가용성은 프로시저럴 고정 구조(wave·sit, talk·draw·review)를 판정한다", () => {
+    expect(studioNpcCastPoseAvailable("npc-mentor", "sit")).toBe(true);
+    expect(studioNpcCastPoseAvailable("npc-mentor", "wave")).toBe(true);
+    expect(studioNpcCastPoseAvailable("npc-mentor", "lie")).toBe(false);
+    for (const facing of ["down", "left", "right", "up"] as const) {
+      for (const motion of ["talk", "draw", "review"] as const) {
+        expect(studioNpcCastMotionClipAvailable("npc-guard", facing, motion)).toBe(true);
+      }
+    }
+    expect(studioNpcCastPoseAvailable("missing", "sit")).toBe(false);
+    expect(studioNpcCastMotionClipAvailable("missing", "down", "talk")).toBe(false);
+  });
+
+  it("드로잉 캐스트의 포즈·모션 판정은 기존 스킨 정의와 일치한다", () => {
+    // npcSkin() 기본 구성: poses wave·sit, state talk·draw·review.
+    expect(studioNpcCastPoseAvailable("npc-artist", "sit")).toBe(true);
+    expect(studioNpcCastPoseAvailable("npc-artist", "wave")).toBe(true);
+    expect(studioNpcCastPoseAvailable("npc-artist", "lie")).toBe(false);
+    expect(studioNpcCastMotionClipAvailable("npc-artist", "left", "review")).toBe(true);
+    expect(studioNpcCastMotionClipAvailable("npc-host", "up", "talk")).toBe(true);
   });
 });

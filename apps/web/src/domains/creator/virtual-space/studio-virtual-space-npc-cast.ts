@@ -16,6 +16,7 @@ import {
   type StudioCharacterPartPreset,
 } from "./studio-virtual-space-character-parts";
 import {
+  studioCharacterActionClip,
   studioCharacterSkinForArtStyle,
   type StudioCharacterAction,
   type StudioCharacterAtlasClip,
@@ -158,13 +159,61 @@ export function studioNpcCastSkinByKey(
   key: string,
   artStyle: StudioVirtualArtStyleKey = "webtoon",
 ): StudioCharacterSkin {
-  const source = STUDIO_NPC_CAST.find((skin) => skin.key === key) ?? FALLBACK;
+  const source = STUDIO_NPC_CAST.find((skin) => skin.key === key);
+  if (!source) {
+    // 프로시저럴 스킨은 스타일 변형 없이 네이티브 렌더링 하나로 그린다
+    // (캔버스의 앰비언트 가이드와 같은 경로다). 생성에는 캔버스가 필요하므로
+    // 이름만 필요한 소비자는 studioNpcCastLabel을 써야 한다.
+    const procedural = studioProceduralNpcSkin(key);
+    if (procedural) return procedural;
+  }
+  const resolved = source ?? FALLBACK;
   // 픽셀 아틀리에처럼 LPC NPC를 쓰는 스타일은 같은 역할의 LPC 픽셀 캐릭터로 바꾼다(identity는 그대로).
-  return studioLpcNpcSkinForArtStyle(source.key, artStyle) ?? studioCharacterSkinForArtStyle(source, artStyle);
+  return studioLpcNpcSkinForArtStyle(resolved.key, artStyle) ?? studioCharacterSkinForArtStyle(resolved, artStyle);
 }
 
+/** 드로잉 캐스트와 프로시저럴 정의를 합친 통합 캐스트 키 판정. */
 export function studioNpcCastHasKey(key: string): boolean {
-  return STUDIO_NPC_CAST.some((skin) => skin.key === key);
+  return STUDIO_NPC_CAST.some((skin) => skin.key === key) || studioProceduralNpcHasKey(key);
+}
+
+/**
+ * 텍스처를 생성하지 않고 캐스트 라벨만 조회한다. 패널·대화처럼 이름만 필요한
+ * 소비자는 이쪽을 써야 한다 (프로시저럴 스킨 생성은 캔버스가 필요하다).
+ */
+export function studioNpcCastLabel(
+  key: string,
+): { readonly ko: string; readonly en: string } | undefined {
+  const drawn = STUDIO_NPC_CAST.find((skin) => skin.key === key);
+  if (drawn) return { ko: drawn.labelKo, en: drawn.labelEn };
+  const procedural = STUDIO_NPC_PROCEDURAL_DEFINITIONS.find((item) => item.key === key);
+  if (procedural) return { ko: procedural.labelKo, en: procedural.labelEn };
+  return undefined;
+}
+
+/**
+ * 텍스처 생성 없이 포즈 시트 존재만 판정한다 (매니페스트 검증·디렉터 공용).
+ * 프로시저럴 스킨은 생성 구조가 고정이다: 포즈는 wave·sit만 있고 lie는 없다.
+ */
+export function studioNpcCastPoseAvailable(key: string, pose: "wave" | "sit" | "lie"): boolean {
+  const drawn = STUDIO_NPC_CAST.find((skin) => skin.key === key);
+  if (drawn) return Boolean(drawn.poses?.[pose]);
+  if (studioProceduralNpcHasKey(key)) return pose === "wave" || pose === "sit";
+  return false;
+}
+
+/**
+ * 텍스처 생성 없이 상태 이미지·액션 클립 가용성만 판정한다 (매니페스트 검증·디렉터 공용).
+ * 프로시저럴 스킨은 talk·draw·review 액션 클립을 전 방향으로 고정 제공한다(state 이미지는 없다).
+ */
+export function studioNpcCastMotionClipAvailable(
+  key: string,
+  facing: StudioVirtualSpaceFacing,
+  motion: StudioCharacterAction,
+): boolean {
+  const drawn = STUDIO_NPC_CAST.find((skin) => skin.key === key);
+  if (drawn) return Boolean(drawn.state?.[motion]) || Boolean(studioCharacterActionClip(drawn, facing, motion));
+  return studioProceduralNpcHasKey(key);
 }
 
 export function studioNpcCastTextureUrls(artStyle: StudioVirtualArtStyleKey = "webtoon"): ReadonlySet<string> {
