@@ -1626,3 +1626,248 @@
   .storyworld-recovery, .storyworld-recovery p, .storyworld-recovery .storyworld-button { background: Canvas; color: CanvasText; border-color: CanvasText; }
   .storyworld-recovery .storyworld-button:focus-visible { outline-color: Highlight; }
 }
+
+/* 세계관 보드: 대시보드 상단 표시 계층. 진단(점검 결과)보다 위에 얹힌다. */
+.storyworld-checkup {
+  display: grid;
+  gap: 15px;
+}
+
+.storyworld-checkup__heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.storyworld-checkup__heading p {
+  margin: 4px 0 0;
+  color: var(--storyworld-text-muted);
+  font-size: 0.78rem;
+}
+
+.storyworld-board__relations {
+  flex: 0 0 auto;
+  border: 1px solid var(--storyworld-border);
+  border-radius: 999px;
+  padding: 4px 11px;
+  color: var(--storyworld-text-muted);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.storyworld-board__filters {
+  margin-bottom: 15px;
+}
+
+.storyworld-board-graph {
+  margin: 0 0 15px;
+  border: 1px solid var(--storyworld-border);
+  border-radius: var(--storyworld-radius-small);
+  background: var(--storyworld-bg-elevated);
+  padding: 12px 10px 8px;
+}
+
+.storyworld-board-graph svg {
+  display: block;
+}
+
+.storyworld-board-graph figcaption {
+  margin-top: 6px;
+  color: var(--storyworld-text-muted);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.storyworld-board-graph__edge {
+  fill: none;
+  stroke: var(--storyworld-border-strong);
+  stroke-width: 1.2;
+}
+
+.storyworld-board-graph__edge--depends-on {
+  stroke: var(--storyworld-violet);
+  stroke-dasharray: 4 3;
+}
+
+.storyworld-board-graph__node circle {
+  stroke: rgb(0 0 0 / 35%);
+  stroke-width: 1;
+}
+
+.storyworld-board-graph__node--character circle {
+  fill: var(--storyworld-accent);
+}
+
+.storyworld-board-graph__node--scene circle {
+  fill: var(--storyworld-good);
+}
+
+.storyworld-board-graph__node--location circle {
+  fill: var(--storyworld-warn);
+}
+
+.storyworld-board-graph__node text {
+  fill: var(--storyworld-text);
+  font-size: 12px;
+}
+
+.storyworld-board-note {
+  margin: 0 0 15px;
+  border: 1px dashed var(--storyworld-border);
+  border-radius: var(--storyworld-radius-small);
+  padding: 10px 12px;
+  color: var(--storyworld-text-muted);
+  font-size: 0.8rem;
+}
+
+.storyworld-board-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.storyworld-board-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+}
+
+.storyworld-board-group h3 svg {
+  color: var(--storyworld-accent);
+}
+
+.storyworld-board-group h3 span {
+  color: var(--storyworld-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.storyworld-board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 10px;
+}
+
+.storyworld-board-card {
+  border: 1px solid var(--storyworld-border);
+  border-radius: var(--storyworld-radius-small);
+  background: rgb(255 255 255 / 2%);
+  padding: 11px 12px;
+}
+
+.storyworld-board-card__topline {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.storyworld-board-card__topline svg {
+  flex: 0 0 auto;
+  color: var(--storyworld-accent);
+}
+
+.storyworld-board-card__topline strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storyworld-board-card__topline code {
+  margin-left: auto;
+}
+
+.storyworld-board-card__order {
+  flex: 0 0 auto;
+  border-radius: 6px;
+  background: var(--storyworld-panel-strong);
+  padding: 1px 7px;
+  color: var(--storyworld-accent-strong);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.storyworld-board-card__badge {
+  flex: 0 0 auto;
+  border: 1px solid var(--storyworld-border-strong);
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: var(--storyworld-text-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.storyworld-board-card__place {
+  margin-left: 0;
+  font-size: 0.84rem;
+}
+
+.storyworld-board-card__goal {
+  margin: 8px 0 0;
+  color: var(--storyworld-text-muted);
+  font-size: 0.8rem;
+}
+
+.storyworld-board-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 9px 0 0;
+  padding: 0;
+  color: var(--storyworld-text-muted);
+  font-size: 0.76rem;
+  list-style: none;
+}
+
+.storyworld-board-empty {
+  display: flex;
+  min-height: 190px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  text-align: center;
+}
+
+.storyworld-board-empty svg {
+  color: var(--storyworld-accent);
+}
+
+.storyworld-board-empty h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.storyworld-board-empty p {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--storyworld-text-muted);
+  font-size: 0.84rem;
+}
+
+@media (max-width: 640px) {
+  .storyworld-board-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .storyworld-board-graph {
+    overflow-x: auto;
+  }
+
+  .storyworld-board-graph svg {
+    min-width: 480px;
+  }
+}
+
+@media (forced-colors: active) {
+  .storyworld-board-card,
+  .storyworld-board-graph {
+    border-color: ButtonText;
+  }
+
+  .storyworld-board-graph__edge {
+    stroke: ButtonText;
+  }
+}

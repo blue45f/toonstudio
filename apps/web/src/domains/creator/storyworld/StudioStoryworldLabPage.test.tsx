@@ -135,3 +135,82 @@ describe("Storyworld actual page integration", () => {
     await ready();
   });
 });
+
+describe("Storyworld world board layer", () => {
+  beforeEach(() => {
+    db.rows.clear();
+    db.kvGet.mockReset().mockImplementation(async (namespace: string, id: string) => db.rows.get(`${namespace}:${id}`) ?? null);
+    db.kvSet.mockReset().mockImplementation(async (namespace: string, id: string, value: string) => { db.rows.set(`${namespace}:${id}`, value); });
+  });
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+  function applyProject(project: unknown) {
+    fireEvent.click(screen.getByRole("button", { name: "원본 데이터" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "스토리월드 JSON" }), {
+      target: { value: JSON.stringify(project) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "적용 후 분석" }));
+    fireEvent.click(screen.getByRole("button", { name: "대시보드" }));
+  }
+
+  it("renders the world board above the checkup section with real element cards", async () => {
+    const view = await open("work-board");
+    const boardTitle = screen.getByRole("heading", { name: "세계관 보드" });
+    const checkupTitle = screen.getByRole("heading", { name: "점검 결과" });
+    // 2층 구조: 보드가 점검 결과보다 문서 순서상 앞에 있다.
+    expect(boardTitle.compareDocumentPosition(checkupTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // 요소 카드는 원본 데이터 그대로다 (데모 프로젝트).
+    expect(screen.getByRole("heading", { name: /캐릭터\s*2/ })).toBeTruthy();
+    expect(screen.getByText("하은", { selector: "strong" })).toBeTruthy();
+    expect(screen.getByText("사라진 동생의 기억 찾기")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /장면\s*4/ })).toBeTruthy();
+    expect(screen.getByText("비 내리는 시장", { selector: "strong" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /장소\s*2/ })).toBeTruthy();
+    expect(screen.getAllByText("memory-market").length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: /사실\s*4/ })).toBeTruthy();
+    expect(screen.getByText("도진은 사라진 동생이다")).toBeTruthy();
+    // 관계 미니 그래프: 관계 14개가 선으로 그려진다.
+    expect(screen.getByRole("img", { name: /세계관 관계 미니 그래프|캐릭터 2·장면 4·장소 2/ })).toBeTruthy();
+    expect(view.container.querySelectorAll(".storyworld-board-graph path")).toHaveLength(14);
+    // 진단 층은 그대로 아래에 있다.
+    expect(screen.getByText("통합 건전성")).toBeTruthy();
+  });
+
+  it("filters element cards by kind without touching the graph or checkup", async () => {
+    await open("work-board-filter");
+    fireEvent.click(screen.getByRole("button", { name: "장면 4" }));
+    expect(screen.queryByRole("heading", { name: /캐릭터\s*2/ })).toBeNull();
+    expect(screen.getByRole("heading", { name: /장면\s*4/ })).toBeTruthy();
+    expect(screen.getByText("붉은 우산의 주인", { selector: "strong" })).toBeTruthy();
+    expect(screen.getByText("통합 건전성")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "전체 12" }));
+    expect(screen.getByRole("heading", { name: /캐릭터\s*2/ })).toBeTruthy();
+  });
+
+  it("shows an onboarding empty state and a start route when the world has no elements", async () => {
+    await open("work-board-empty");
+    applyProject({ ...STORYWORLD_DEMO_PROJECT, id: "empty-authored", title: "빈 세계", characters: [], facts: [], scenes: [], setupContracts: [], motifs: [] });
+    expect(screen.getByRole("heading", { name: "아직 세계관 요소가 없어요" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "세계관 보드" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /원본 데이터에서 요소 만들기/ }));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("원본 데이터");
+  });
+
+  it("draws no graph region when elements exist without relations", async () => {
+    const view = await open("work-board-norel");
+    applyProject({
+      ...STORYWORLD_DEMO_PROJECT,
+      id: "no-relations",
+      title: "관계 없는 세계",
+      characters: [{ id: "solo", name: "솔로" }],
+      facts: [],
+      scenes: [{ id: "only", title: "홀로 있는 장면", order: 1 }],
+      setupContracts: [],
+      motifs: [],
+    });
+    expect(screen.getByText("솔로")).toBeTruthy();
+    expect(screen.getByText("홀로 있는 장면")).toBeTruthy();
+    expect(view.container.querySelector(".storyworld-board-graph")).toBeNull();
+    expect(view.container.querySelector(".storyworld-board-note")).toBeNull();
+  });
+});
