@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initialOperationPolicy, resolveOperationPolicy } from "@toonstudio/contracts/operation-policy";
 import { AdminOperatingMode } from "./AdminOperatingMode";
+import "../admin-i18n-loader";
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 vi.mock("@/platform/api", () => ({ api: mocks, getApiErrorMessage: async (error: unknown) => error instanceof Error ? error.message : "실패" }));
