@@ -238,7 +238,7 @@ export function VersionSharePage() {
         <p className="mt-2 text-sm text-fg-2">{share.artifactTitle}</p>
       </div>
     </header>
-    <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
       <section className="rounded-3xl border border-line bg-card p-5 sm:p-6" aria-label={bt("공유된 버전 정보", "Shared version details")}>
         <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em] text-accent">
           {bt("공유된 버전", "Shared version")}
@@ -268,6 +268,6 @@ export function VersionSharePage() {
           </Link>
         </div>
       </section>
-    </main>
+    </div>
   </div>;
 }
