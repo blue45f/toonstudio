@@ -46,6 +46,8 @@ export const STUDIO_OPFS_ROOTS: readonly string[] = Object.freeze([
   "toonstudio-studio-bg3d-libraries-v12",
   // studio-storage-recovery-runtime.ts quota/save-failure recovery journal
   "studio-recovery",
+  // studio-project-thumbnail.ts STUDIO_PROJECT_THUMBNAIL_OPFS_ROOT
+  "toonstudio-studio-thumbnails",
 ]);
 
 export const STUDIO_INDEXED_DB_DATABASES: readonly string[] = Object.freeze([

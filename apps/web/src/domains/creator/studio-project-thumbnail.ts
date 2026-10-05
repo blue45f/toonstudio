@@ -7,10 +7,13 @@
  *   절단되는 URL 문자열이고, 라이브러리 전체가 localStorage 한 키에 산다. 수십 KB짜리
  *   data URL을 항목마다 넣으면 리더가 잘라 깨뜨리고, 쿼터 초과 시 라이브러리의 모든
  *   쓰기(이름 변경·열기 기록까지)가 함께 실패한다.
- * - 그래서 이미지 바이트는 전용 IndexedDB(`toonstudio-project-thumbnails`)에 Blob으로
- *   두고, 항목에는 `studio-thumbnail:v1/<projectId>` 로케이터만 기록한다. 읽는 쪽
+ * - 그래서 이미지 바이트는 로케이터가 가리키는 전용 저장소에 두고, 항목에는
+ *   `studio-thumbnail:v1/<projectId>` 로케이터만 기록한다. 읽는 쪽
  *   (useResolvedStudioProjectThumbnailUrl)이 로케이터만 골라 Blob URL로 해석하고,
  *   http(s) 등 일반 URL은 기존처럼 그대로 통과시킨다.
+ * - 저장소 정본은 순수 OPFS 파일이다(프로젝트당 파일 쌍 — 아래 저장 계층 절 참고).
+ *   이전 정본이던 IndexedDB(`toonstudio-project-thumbnails`)는 이관 소스이자
+ *   OPFS를 못 쓰는 환경의 폴백으로 남는다.
  *
  * 생성 경로:
  * - 대표 페이지는 자동저장 페이로드에서 고른다(현재 페이지 우선, 그다음 순서대로
@@ -41,6 +44,11 @@ import {
   type ThumbNode,
   type ThumbPageLike,
 } from "./studio-page-thumbs";
+import {
+  createStudioOpfsNativeFileSystem,
+  type StudioOpfsFileSystem,
+  type StudioOpfsStorageManagerLike,
+} from "./studio-opfs-filesystem";
 import { sha256HexPortable } from "./studio-sha256";
 import {
   readStudioProjectLibrary,
@@ -76,7 +84,170 @@ export function isStudioProjectThumbnailLocator(value: string): boolean {
   return parseStudioProjectThumbnailLocator(value) !== null;
 }
 
-// ── IndexedDB 기록 저장소 (실패해도 throw 하지 않는 idb-kv와 같은 규율) ─────────────
+// ── OPFS 파일 저장소 (정본) ─────────────────────────────────────────────────────
+//
+// 이미지 바이트는 파일형 바이너리라 레코드 저장소보다 순수 OPFS 파일이 직접적이다:
+// base64 부풀림 없이 바이트 그대로 담기고, 프로젝트당 파일 쌍만으로 끝나며 인덱스도
+// 필요 없다. 전용 루트 아래 `thumbs/<sha256(projectId)>.bin`(바이트) +
+// `thumbs/<sha256(projectId)>.json`(메타) 쌍으로 둔다. 쓰기는 바이트 → 메타 순서라
+// 메타가 존재하면 완결된 기록이고, 읽기에서 쌍이 어긋나면 정본으로 취급하지 않는다.
+
+export const STUDIO_PROJECT_THUMBNAIL_OPFS_ROOT = "toonstudio-studio-thumbnails";
+
+interface StudioProjectThumbnailMeta {
+  readonly fingerprint: string;
+  readonly updatedAt: string;
+  readonly width: number;
+  readonly height: number;
+  readonly mimeType: string;
+  readonly byteLength: number;
+}
+
+let thumbnailFileSystemOverride: StudioOpfsFileSystem | null | undefined;
+let cachedThumbnailFileSystem: {
+  readonly manager: StudioOpfsStorageManagerLike;
+  readonly fileSystem: StudioOpfsFileSystem;
+} | null = null;
+
+/** 테스트 seam — 제품 코드는 호출하지 않는다. undefined를 넘기면 실환경 해석으로 돌아간다. */
+export function setStudioProjectThumbnailFileSystemForTests(
+  fileSystem: StudioOpfsFileSystem | null | undefined,
+): void {
+  thumbnailFileSystemOverride = fileSystem;
+}
+
+function resolveThumbnailFileSystem(): StudioOpfsFileSystem | null {
+  if (thumbnailFileSystemOverride !== undefined) return thumbnailFileSystemOverride;
+  let manager: StudioOpfsStorageManagerLike | null = null;
+  try {
+    const storage = (
+      globalThis as { navigator?: { storage?: StudioOpfsStorageManagerLike } }
+    ).navigator?.storage;
+    if (storage && typeof storage.getDirectory === "function") manager = storage;
+  } catch {
+    manager = null;
+  }
+  if (!manager) return null;
+  if (cachedThumbnailFileSystem?.manager === manager) {
+    return cachedThumbnailFileSystem.fileSystem;
+  }
+  const fileSystem = createStudioOpfsNativeFileSystem(
+    manager,
+    STUDIO_PROJECT_THUMBNAIL_OPFS_ROOT,
+  );
+  cachedThumbnailFileSystem = { manager, fileSystem };
+  return fileSystem;
+}
+
+function thumbnailOpfsPaths(projectId: string): { bin: string; meta: string } {
+  const stem = sha256HexPortable(TEXT_ENCODER.encode(projectId));
+  return { bin: `thumbs/${stem}.bin`, meta: `thumbs/${stem}.json` };
+}
+
+function validThumbnailMeta(value: unknown): StudioProjectThumbnailMeta | null {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (typeof record.fingerprint !== "string" || !record.fingerprint) return null;
+  if (typeof record.updatedAt !== "string" || !record.updatedAt) return null;
+  if (typeof record.mimeType !== "string" || !record.mimeType.startsWith("image/")) return null;
+  if (typeof record.byteLength !== "number" || !(record.byteLength > 0)) return null;
+  return {
+    fingerprint: record.fingerprint,
+    updatedAt: record.updatedAt,
+    width:
+      typeof record.width === "number" && record.width > 0
+        ? record.width
+        : STUDIO_PROJECT_THUMBNAIL_WIDTH,
+    height:
+      typeof record.height === "number" && record.height > 0
+        ? record.height
+        : STUDIO_PROJECT_THUMBNAIL_HEIGHT,
+    mimeType: record.mimeType,
+    byteLength: record.byteLength,
+  };
+}
+
+async function readOpfsThumbnailRecord(
+  fileSystem: StudioOpfsFileSystem,
+  projectId: string,
+): Promise<StudioProjectThumbnailRecord | null> {
+  const paths = thumbnailOpfsPaths(projectId);
+  let metaBytes: Uint8Array | null;
+  let binBytes: Uint8Array | null;
+  try {
+    metaBytes = await fileSystem.read(paths.meta);
+    binBytes = await fileSystem.read(paths.bin);
+  } catch {
+    return null;
+  }
+  if (!metaBytes || !binBytes) {
+    // 메타만/바이트만 남은 불완전 항목은 정본으로 취급하지 않고 정리한다.
+    if (metaBytes || binBytes) {
+      await fileSystem.remove(paths.meta).catch(() => false);
+      await fileSystem.remove(paths.bin).catch(() => false);
+    }
+    return null;
+  }
+  let meta: StudioProjectThumbnailMeta | null;
+  try {
+    meta = validThumbnailMeta(JSON.parse(new TextDecoder().decode(metaBytes)));
+  } catch {
+    meta = null;
+  }
+  if (!meta || meta.byteLength !== binBytes.byteLength) {
+    await fileSystem.remove(paths.meta).catch(() => false);
+    await fileSystem.remove(paths.bin).catch(() => false);
+    return null;
+  }
+  const copy = new Uint8Array(binBytes.byteLength);
+  copy.set(binBytes);
+  return {
+    fingerprint: meta.fingerprint,
+    updatedAt: meta.updatedAt,
+    width: meta.width,
+    height: meta.height,
+    blob: new Blob([copy], { type: meta.mimeType }),
+  };
+}
+
+async function writeOpfsThumbnailRecord(
+  fileSystem: StudioOpfsFileSystem,
+  projectId: string,
+  stored: StoredThumbnailRecord,
+): Promise<boolean> {
+  const paths = thumbnailOpfsPaths(projectId);
+  const meta: StudioProjectThumbnailMeta = {
+    fingerprint: stored.fingerprint,
+    updatedAt: stored.updatedAt,
+    width: stored.width,
+    height: stored.height,
+    mimeType: stored.mimeType,
+    byteLength: stored.bytes.byteLength,
+  };
+  try {
+    // 바이트를 먼저 쓰고 메타를 마지막에 쓴다 — 메타가 있으면 완결된 기록이다.
+    await fileSystem.write(paths.bin, new Uint8Array(stored.bytes));
+    await fileSystem.write(paths.meta, TEXT_ENCODER.encode(JSON.stringify(meta)));
+    return (await fileSystem.size(paths.bin)) === stored.bytes.byteLength;
+  } catch {
+    return false;
+  }
+}
+
+async function deleteOpfsThumbnailRecord(
+  fileSystem: StudioOpfsFileSystem,
+  projectId: string,
+): Promise<void> {
+  const paths = thumbnailOpfsPaths(projectId);
+  try {
+    await fileSystem.remove(paths.bin);
+    await fileSystem.remove(paths.meta);
+  } catch {
+    // 삭제 실패는 조용히 무시한다 — 이 모듈의 throw 금지 규율을 유지한다.
+  }
+}
+
+// ── IndexedDB 기록 저장소 (이관 소스·폴백, 실패해도 throw 하지 않는 idb-kv와 같은 규율) ──
 
 export interface StudioProjectThumbnailRecord {
   readonly fingerprint: string;
@@ -167,7 +338,7 @@ function validThumbnailRecord(value: unknown): StudioProjectThumbnailRecord | nu
   };
 }
 
-export async function readStudioProjectThumbnailRecord(
+async function readLegacyThumbnailRecord(
   projectId: string,
 ): Promise<StudioProjectThumbnailRecord | null> {
   const database = await openThumbnailDatabase();
@@ -184,44 +355,7 @@ export async function readStudioProjectThumbnailRecord(
   });
 }
 
-export async function readStudioProjectThumbnailBlob(projectId: string): Promise<Blob | null> {
-  const record = await readStudioProjectThumbnailRecord(projectId);
-  return record?.blob ?? null;
-}
-
-async function writeStudioProjectThumbnailRecord(
-  projectId: string,
-  record: StudioProjectThumbnailRecord,
-): Promise<boolean> {
-  const database = await openThumbnailDatabase();
-  if (!database) return false;
-  let stored: StoredThumbnailRecord;
-  try {
-    stored = {
-      fingerprint: record.fingerprint,
-      updatedAt: record.updatedAt,
-      width: record.width,
-      height: record.height,
-      mimeType: record.blob.type || "image/webp",
-      bytes: await record.blob.arrayBuffer(),
-    };
-  } catch {
-    return false;
-  }
-  return new Promise((resolve) => {
-    try {
-      const transaction = database.transaction(THUMBNAIL_STORE_NAME, "readwrite");
-      transaction.objectStore(THUMBNAIL_STORE_NAME).put({ ...stored }, projectId);
-      transaction.oncomplete = () => resolve(true);
-      transaction.onerror = () => resolve(false);
-      transaction.onabort = () => resolve(false);
-    } catch {
-      resolve(false);
-    }
-  });
-}
-
-export async function deleteStudioProjectThumbnail(projectId: string): Promise<void> {
+async function deleteLegacyThumbnailRecord(projectId: string): Promise<void> {
   const database = await openThumbnailDatabase();
   if (!database) return;
   await new Promise<void>((resolve) => {
@@ -235,6 +369,96 @@ export async function deleteStudioProjectThumbnail(projectId: string): Promise<v
       resolve();
     }
   });
+}
+
+/**
+ * 썸네일 기록 읽기 — OPFS 정본을 먼저 보고, 없으면 IDB 구 기록을 읽어 이관한다.
+ * 이관은 OPFS 쓰기+크기 검증이 끝난 뒤에만 IDB 원본을 지우므로 중단돼도 유실이 없다.
+ */
+export async function readStudioProjectThumbnailRecord(
+  projectId: string,
+): Promise<StudioProjectThumbnailRecord | null> {
+  const fileSystem = resolveThumbnailFileSystem();
+  if (fileSystem) {
+    const fromOpfs = await readOpfsThumbnailRecord(fileSystem, projectId);
+    if (fromOpfs) return fromOpfs;
+  }
+  const legacy = await readLegacyThumbnailRecord(projectId);
+  if (legacy && fileSystem) {
+    const stored = await toStoredThumbnailRecord(legacy);
+    if (stored && (await writeOpfsThumbnailRecord(fileSystem, projectId, stored))) {
+      await deleteLegacyThumbnailRecord(projectId);
+    }
+  }
+  return legacy;
+}
+
+export async function readStudioProjectThumbnailBlob(projectId: string): Promise<Blob | null> {
+  const record = await readStudioProjectThumbnailRecord(projectId);
+  return record?.blob ?? null;
+}
+
+async function toStoredThumbnailRecord(
+  record: StudioProjectThumbnailRecord,
+): Promise<StoredThumbnailRecord | null> {
+  try {
+    return {
+      fingerprint: record.fingerprint,
+      updatedAt: record.updatedAt,
+      width: record.width,
+      height: record.height,
+      mimeType: record.blob.type || "image/webp",
+      bytes: await record.blob.arrayBuffer(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function writeLegacyThumbnailRecord(
+  projectId: string,
+  stored: StoredThumbnailRecord,
+): Promise<boolean> {
+  const database = await openThumbnailDatabase();
+  if (!database) return false;
+  return new Promise((resolve) => {
+    try {
+      const transaction = database.transaction(THUMBNAIL_STORE_NAME, "readwrite");
+      transaction.objectStore(THUMBNAIL_STORE_NAME).put({ ...stored }, projectId);
+      transaction.oncomplete = () => resolve(true);
+      transaction.onerror = () => resolve(false);
+      transaction.onabort = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+async function writeStudioProjectThumbnailRecord(
+  projectId: string,
+  record: StudioProjectThumbnailRecord,
+): Promise<boolean> {
+  const stored = await toStoredThumbnailRecord(record);
+  if (!stored) return false;
+  const fileSystem = resolveThumbnailFileSystem();
+  if (fileSystem && (await writeOpfsThumbnailRecord(fileSystem, projectId, stored))) {
+    // OPFS가 정본이 됐으니 낡은 IDB 사본이 다음 읽기에서 되살아나지 않게 지운다.
+    await deleteLegacyThumbnailRecord(projectId);
+    return true;
+  }
+  const written = await writeLegacyThumbnailRecord(projectId, stored);
+  if (written && fileSystem) {
+    // IDB 폴백으로 쓴 경우, 낡은 OPFS 사본이 새 기록을 가리지 않게 지운다.
+    await deleteOpfsThumbnailRecord(fileSystem, projectId);
+  }
+  return written;
+}
+
+/** 프로젝트 삭제 등에 쓰는 정리 — 정본(OPFS)과 이관 소스(IDB) 양쪽에서 지운다. */
+export async function deleteStudioProjectThumbnail(projectId: string): Promise<void> {
+  const fileSystem = resolveThumbnailFileSystem();
+  if (fileSystem) await deleteOpfsThumbnailRecord(fileSystem, projectId);
+  await deleteLegacyThumbnailRecord(projectId);
 }
 
 // ── 대표 페이지 선택 (로비 카드 미리보기의 정규화 규칙과 동일) ───────────────────────
