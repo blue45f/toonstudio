@@ -47,7 +47,7 @@ function makePayload(text: string): StudioAutosavePayload {
     savedAt: "2026-10-03T00:00:00.000Z",
     pagesList: [
       { id: "page-1", canvasH: 1080, bg: "#fdfdfd", elements: [{ ...TEXT_ELEMENT, text }] },
-    ] as StudioAutosavePayload["pagesList"],
+    ] as unknown as StudioAutosavePayload["pagesList"],
     currentPageId: "page-1",
   };
 }
