@@ -41,9 +41,7 @@ export function StudioRouter() {
   const currentHref = `${location.pathname}${location.search}`;
   const canonicalHref = resolveStudioRouterCanonicalHref(resolution, location.search);
   // Canonical equality is about parameter content, not serialization order or
-  // encoding: runtime writers may append a parameter (e.g. the live `?room=` id)
-  // after the editor has mounted, and treating that as a canonical violation
-  // would swap the mounted editor for a redirect and mount it a second time.
+  // encoding: a live `?room=` id appended after mount must not remount the editor.
   if (!isStudioCanonicalHref(currentHref, canonicalHref)) {
     return <Navigate replace state={location.state} to={canonicalHref} />;
   }
@@ -87,12 +85,7 @@ export function StudioRouter() {
         />
       );
     case "assets":
-      return (
-        <StudioWorkAssetsRoute
-          key={resolution.lifecycleKey}
-          resolution={resolution}
-        />
-      );
+      return <StudioWorkAssetsRoute key={resolution.lifecycleKey} resolution={resolution} />;
     case "placeholder":
       return (
         <StudioRoutePlaceholder
