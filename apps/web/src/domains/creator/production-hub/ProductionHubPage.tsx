@@ -153,7 +153,7 @@ function SurfaceContent({ surface, ...props }: SurfaceProps & { readonly surface
     case "control": return <ProductionOperationsControlWorkspace aggregate={aggregate} execute={executeStrict} canEdit={access.edit} canManage={access.manage} />;
     case "handoff": return <ProductionHandoffSurface aggregate={aggregate} roleLens={roleLens} execute={execute} canEdit={access.edit} isDemo={isDemo} />;
     case "review": return <ProductionReviewSurface aggregate={aggregate} execute={executeStrict} canEdit={access.edit} roleLens={roleLens} />;
-    case "activity": return <ProductionActivityWorkspace aggregate={aggregate} viewerUserId={props.viewerUserId} viewerAssignmentIds={props.viewerAssignmentIds} />;
+    case "activity": return <ProductionActivityWorkspace aggregate={aggregate} viewerUserId={props.viewerUserId} viewerAssignmentIds={props.viewerAssignmentIds} versionActivityEnabled={!isDemo} />;
     case "procurement": return <ProductionProcurementSurface aggregate={aggregate} />;
     case "rights": return <ProductionRightsSurface aggregate={aggregate} />;
     case "settings": return <ProductionTeamSurface aggregate={aggregate} access={access} />;
