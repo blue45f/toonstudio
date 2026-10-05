@@ -4,7 +4,10 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CatalogResearchPage } from "./CatalogResearchPage";
 import { downloadResearchFile, loadCatalogResearch } from "./catalog-research-data";
-import { buildResearchSnapshot, emptyResearchNotebook, parseResearchSnapshot, RESEARCH_NOTE_KEY } from "@/shared/lib/catalog-research";
+import { buildResearchSnapshot, emptyResearchNotebook, parseResearchSnapshot, researchNoteStorageKey } from "@/shared/lib/catalog-research";
+
+// 이 테스트는 비로그인 상태라 기획 노트가 게스트 파티션 키에 저장된다(소유자 스코프).
+const GUEST_NOTE_KEY = researchNoteStorageKey("guest");
 
 vi.mock("./catalog-research-data", () => ({ loadCatalogResearch: vi.fn(), downloadResearchFile: vi.fn() }));
 const records = Array.from({ length: 30 }, (_, index) => ({ id: `w${index}`, slug: `w${index}`, title: `작품 ${String(index).padStart(2, "0")}`, author: "김 작가", type: "webtoon", status: "ongoing", ageRating: "all", releaseYear: 2020 + index % 5, genres: [index % 2 ? "액션" : "판타지"], tags: ["회귀"], availability: [{ platformId: "naver-webtoon" }] }));
@@ -55,18 +58,18 @@ describe("catalog research user journeys", () => {
   it("saves a private notebook and exports it with source metadata", async () => {
     page("/research/catalog/notebook?compare=w0"); const input = await screen.findByLabelText(/조사 질문/u);
     fireEvent.change(input, { target: { value: "나만의 비밀 기획" } }); fireEvent.click(screen.getByRole("button", { name: "기획 노트 저장" }));
-    await waitFor(() => expect(localStorage.getItem(RESEARCH_NOTE_KEY)).toContain("나만의 비밀 기획"));
+    await waitFor(() => expect(localStorage.getItem(GUEST_NOTE_KEY)).toContain("나만의 비밀 기획"));
     fireEvent.click(screen.getByRole("button", { name: "Markdown 내보내기" })); expect(download.mock.calls[0]?.[1]).toContain("2026-06-27");
     expect(download.mock.calls[0]?.[1]).toContain("나만의 비밀 기획");
   });
   it("preserves newer data written by another tab", async () => {
     page("/research/catalog/notebook"); await screen.findByLabelText(/조사 질문/u);
-    const newer = JSON.stringify({ ...emptyResearchNotebook(), question: "다른 탭의 노트" }); localStorage.setItem(RESEARCH_NOTE_KEY, newer);
+    const newer = JSON.stringify({ ...emptyResearchNotebook(), question: "다른 탭의 노트" }); localStorage.setItem(GUEST_NOTE_KEY, newer);
     fireEvent.click(screen.getByRole("button", { name: "기획 노트 저장" }));
-    expect(await screen.findByText(/다른 탭에서 노트가 변경/u)).toBeTruthy(); expect(localStorage.getItem(RESEARCH_NOTE_KEY)).toBe(newer);
+    expect(await screen.findByText(/다른 탭에서 노트가 변경/u)).toBeTruthy(); expect(localStorage.getItem(GUEST_NOTE_KEY)).toBe(newer);
   });
   it("does not overwrite damaged stored notes", async () => {
-    localStorage.setItem(RESEARCH_NOTE_KEY, "{"); page("/research/catalog/notebook"); await screen.findByLabelText(/조사 질문/u);
-    expect(screen.getByRole("button", { name: "기획 노트 저장" }).hasAttribute("disabled")).toBe(true); expect(localStorage.getItem(RESEARCH_NOTE_KEY)).toBe("{");
+    localStorage.setItem(GUEST_NOTE_KEY, "{"); page("/research/catalog/notebook"); await screen.findByLabelText(/조사 질문/u);
+    expect(screen.getByRole("button", { name: "기획 노트 저장" }).hasAttribute("disabled")).toBe(true); expect(localStorage.getItem(GUEST_NOTE_KEY)).toBe("{");
   });
 });

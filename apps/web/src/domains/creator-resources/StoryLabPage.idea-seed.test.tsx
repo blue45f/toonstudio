@@ -3,8 +3,11 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { CREATOR_STORY_DRAFT_KEY } from "@/shared/lib/creator-workspace-persistence";
+import { creatorStoryDraftStorageKey } from "@/shared/lib/creator-workspace-persistence";
+
 import { StoryLabPage } from "./StoryLabPage";
+// 훅 모의가 소유자를 게스트로 고정하므로 초안도 게스트 파티션 키에 보관된다(소유자 스코프).
+const GUEST_DRAFT_KEY = creatorStoryDraftStorageKey("guest");
 
 vi.mock("./workspace", () => ({
   downloadText: vi.fn(),
@@ -16,6 +19,7 @@ vi.mock("./workspace", () => ({
     ready: true,
     saving: false,
     writable: true,
+    ownerKey: "guest",
   }),
 }));
 
@@ -31,12 +35,12 @@ describe("스토리 연구실 홈 아이디어 시딩", () => {
     const title = document.querySelector<HTMLTextAreaElement>("#story-title");
     expect(title?.value).toBe("비 오는 날의 첫사랑");
     expect(screen.getByText(/홈에서 입력한 아이디어를 작품 가제로 가져왔습니다/u)).toBeTruthy();
-    expect(window.sessionStorage.getItem(CREATOR_STORY_DRAFT_KEY)).toContain("비 오는 날의 첫사랑");
+    expect(window.sessionStorage.getItem(GUEST_DRAFT_KEY)).toContain("비 오는 날의 첫사랑");
   });
 
   it("이미 가제가 있으면 아이디어로 덮지 않는다", () => {
     window.sessionStorage.clear();
-    window.sessionStorage.setItem(CREATOR_STORY_DRAFT_KEY, JSON.stringify({ version: 1, base: {}, story: { title: "기존 가제" } }));
+    window.sessionStorage.setItem(GUEST_DRAFT_KEY, JSON.stringify({ version: 1, base: {}, story: { title: "기존 가제" } }));
     render(<MemoryRouter initialEntries={["/story-lab?idea=새 아이디어"]}><StoryLabPage /></MemoryRouter>);
     const title = document.querySelector<HTMLTextAreaElement>("#story-title");
     expect(title?.value).toBe("기존 가제");
@@ -47,6 +51,6 @@ describe("스토리 연구실 홈 아이디어 시딩", () => {
     render(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
     const title = document.querySelector<HTMLTextAreaElement>("#story-title");
     expect(title?.value).toBe("");
-    expect(window.sessionStorage.getItem(CREATOR_STORY_DRAFT_KEY)).toBeNull();
+    expect(window.sessionStorage.getItem(GUEST_DRAFT_KEY)).toBeNull();
   });
 });

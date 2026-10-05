@@ -1,12 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { downloadResearchFile } from "./catalog-research-data";
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
-import { emptyResearchNotebook, parseResearchNotebook, RESEARCH_NOTE_KEY, researchMarkdown, researchPrompts, saveResearchNotebook } from "@/shared/lib/catalog-research";
+import {
+  getAuthUserId,
+  listeners as authListeners,
+  type Session,
+} from "@/domains/auth/public/session/auth-session-state";
+import { emptyResearchNotebook, parseResearchNotebook, RESEARCH_NOTE_KEY, researchMarkdown, researchNoteStorageKey, researchPrompts, saveResearchNotebook } from "@/shared/lib/catalog-research";
 import type { ResearchNotebook, ResearchSnapshot, ResearchWork } from "@/shared/lib/catalog-research";
 
-function readSaved() {
-  try { const raw = localStorage.getItem(RESEARCH_NOTE_KEY); return { raw, note: parseResearchNotebook(raw), error: "" }; }
+/**
+ * 소유자 파티션의 저장 노트를 읽는다. 스코프 키가 없으면 레거시 기록을
+ * 첫 계정이 claim 한다 — 읽은 자리에서 스코프 키로 옮기고 레거시를
+ * 지운다. 게스트는 claim 하지 않는다(학습 기록·마켓 찜과 같은 계약).
+ */
+function readSaved(ownerKey: string) {
+  const key = researchNoteStorageKey(ownerKey);
+  try {
+    let raw = localStorage.getItem(key);
+    if (raw === null && ownerKey !== "guest") {
+      const legacy = localStorage.getItem(RESEARCH_NOTE_KEY);
+      if (legacy !== null) {
+        raw = legacy;
+        try {
+          localStorage.setItem(key, legacy);
+          localStorage.removeItem(RESEARCH_NOTE_KEY);
+        } catch { /* 이관 쓰기가 실패하면 다음 읽기에서 다시 시도한다. */ }
+      }
+    }
+    return { raw, note: parseResearchNotebook(raw), error: "" };
+  }
   catch (error) { return { raw: null, note: emptyResearchNotebook(), error: error instanceof Error ? error.message : "브라우저 저장 공간에 접근할 수 없습니다." }; }
 }
 const FIELDS = [
@@ -16,9 +40,30 @@ const FIELDS = [
   ["experiment", "나만의 5컷 실험", "도입 → 단서 → 선택 → 대가 → 다음 질문. 기존 작품의 대사·장면을 복제하지 않고 설계하세요."],
 ] as const;
 export function CatalogResearchNotebook({ works, snapshot, onRestore }: { works: ResearchWork[]; snapshot: ResearchSnapshot; onRestore: (ids: string[]) => void }) {
-  const [saved, setSaved] = useState(readSaved); const [note, setNote] = useState<ResearchNotebook>(saved.note);
+  // 소유자 스코프: 생성 시점의 계정으로 시작하고, 세션 전환마다 저장
+  // 키를 갈아끼운다. 게스트는 "guest" 파티션을 쓴다.
+  const [ownerKey, setOwnerKey] = useState(() => getAuthUserId() ?? "guest");
+  const [saved, setSaved] = useState(() => readSaved(ownerKey)); const [note, setNote] = useState<ResearchNotebook>(saved.note);
   const [feedback, setFeedback] = useState(saved.error); const [dirty, setDirty] = useState(false); const [saving, setSaving] = useState(false);
+  const savedOwner = useRef(ownerKey);
   const canSave = typeof navigator !== "undefined" && Boolean(navigator.locks);
+  useEffect(() => {
+    const syncOwner = (session: Session) => {
+      setOwnerKey(session?.user.id ?? "guest");
+    };
+    authListeners.add(syncOwner);
+    return () => {
+      authListeners.delete(syncOwner);
+    };
+  }, []);
+  useEffect(() => {
+    // 소유자가 바뀌면 그 파티션의 저장 노트로 갈아끼운다. 저장하지 않은
+    // 편집은 이전 소유자의 것이라 새 파티션으로 넘어가지 않는다.
+    if (savedOwner.current === ownerKey) return;
+    savedOwner.current = ownerKey;
+    const next = readSaved(ownerKey);
+    setSaved(next); setNote(next.note); setDirty(false); setFeedback(next.error);
+  }, [ownerKey]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => { if (dirty) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn);
@@ -29,14 +74,15 @@ export function CatalogResearchNotebook({ works, snapshot, onRestore }: { works:
     setSaving(true);
     try {
       const next = draft();
-      const raw = await navigator.locks.request(RESEARCH_NOTE_KEY, () => saveResearchNotebook(localStorage, saved.raw, next));
+      const key = researchNoteStorageKey(ownerKey);
+      const raw = await navigator.locks.request(key, () => saveResearchNotebook(localStorage, saved.raw, next, ownerKey));
       setSaved({ raw, note: next, error: "" }); setNote(next); setDirty(false); setFeedback("이 브라우저에 기획 노트를 저장했습니다.");
     } catch (error) { setFeedback(error instanceof Error ? error.message : "저장하지 못했습니다. 내보내기로 보관하세요."); }
     finally { setSaving(false); }
   }
   function restore() {
     if (dirty && !window.confirm("현재 초안을 저장된 노트로 바꿀까요? 저장하지 않은 내용은 사라집니다.")) return;
-    const next = readSaved(); setSaved(next); setNote(next.note); setDirty(false); setFeedback(next.error || "저장된 노트를 불러왔습니다.");
+    const next = readSaved(ownerKey); setSaved(next); setNote(next.note); setDirty(false); setFeedback(next.error || "저장된 노트를 불러왔습니다.");
     if (!next.error) onRestore(next.note.selected);
   }
   async function importNote(file: File | undefined) {

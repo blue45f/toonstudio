@@ -3,7 +3,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ContentPacksPage } from "./ContentPacksPage";
-import { CREATOR_WORKSPACE_KEY } from "@/shared/lib/creator-workspace-persistence";
+import { creatorWorkspaceStorageKey } from "@/shared/lib/creator-workspace-persistence";
+
+// 이 테스트들은 비로그인 상태라 워크스페이스가 게스트 파티션 키에 저장된다(소유자 스코프).
+const GUEST_WORKSPACE_KEY = creatorWorkspaceStorageKey("guest");
 
 const request = vi.fn<typeof fetch>();
 const resource = { id: "aic:42", provider: "aic", title: "Museum armor", creator: "Maker", sourceUrl: "https://www.artic.edu/artworks/42", license: "CC0", credit: "Collection", fetchedAt: "2026-09-13T10:00:00Z", description: "" };
@@ -24,7 +27,7 @@ describe("free content creation page", () => {
   it("searches on demand, saves a source and uses selected credits in the brief", async () => {
     mount(); fireEvent.click(screen.getByRole("button", { name: "갑옷 검색" }));
     fireEvent.click(await screen.findByRole("button", { name: "보드에 저장" }));
-    await waitFor(() => expect(JSON.parse(localStorage.getItem(CREATOR_WORKSPACE_KEY)!).saved).toHaveLength(1));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(GUEST_WORKSPACE_KEY)!).saved).toHaveLength(1));
     fireEvent.click(screen.getByRole("checkbox", { name: /Museum armor/u }));
     expect(screen.getByText(/원문: https:\/\/www.artic.edu\/artworks\/42/u)).toBeTruthy();
     expect(request).toHaveBeenCalledTimes(1); expect(String(request.mock.calls[0][0])).toContain("provider=aic");

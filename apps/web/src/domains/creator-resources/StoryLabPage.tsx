@@ -9,7 +9,7 @@ import type { StoryDraft } from "@/shared/lib/creator-workspace-persistence";
 
 import { STORY_FIELDS, STORY_LABELS, storyMarkdown } from "@/shared/lib/creator-resources";
 import {
-  changedStoryFields, CREATOR_STORY_DRAFT_KEY, editStoryDraft, parseStoryDraft,
+  changedStoryFields, creatorStoryDraftStorageKey, editStoryDraft, parseStoryDraft,
   resolveStoryConflict, storyDraftConflicts, storyDraftView,
 } from "@/shared/lib/creator-workspace-persistence";
 import {
@@ -24,7 +24,10 @@ const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "
 
 export function StoryLabPage() {
   useBilingualI18nRevision();
-  const { workspace, saveStory, clearError, error, ready, saving, writable } = useCreatorWorkspace();
+  const { workspace, saveStory, clearError, error, ready, saving, writable, ownerKey } = useCreatorWorkspace();
+  // 임시 초안도 워크스페이스와 같은 소유자 파티션에 둔다 — 같은 탭에서
+  // 계정을 바꿔도 이전 계정의 미저장 기획이 새 계정의 화면에 섞이지 않는다.
+  const draftKey = creatorStoryDraftStorageKey(ownerKey);
   const [draft, setDraft] = useState<StoryDraft | null>(null);
   const active = useRef(false);
   const latestDraft = useRef<StoryDraft | null>(null);
@@ -39,7 +42,10 @@ export function StoryLabPage() {
     active.current = true;
     let raw: string | null = null;
     let storageAvailable = true;
-    try { raw = window.sessionStorage.getItem(CREATOR_STORY_DRAFT_KEY); }
+    // 소유자가 바뀌면 이전 소유자의 화면 상태(초안·손상 표시)를 비우고
+    // 새 소유자 파티션의 초안으로 갈아끼운다 — 미저장 편집은 넘어가지 않는다.
+    setDraft(null); latestDraft.current = null; setCorruptDraft(false); setDraftError("");
+    try { raw = window.sessionStorage.getItem(draftKey); }
     catch {
       storageAvailable = false;
       setDraftError(tx("브라우저가 임시 보관을 차단했습니다. 편집은 가능하지만 이동 전에 현재 기획서를 파일로 내보내세요."));
@@ -56,7 +62,7 @@ export function StoryLabPage() {
     }
     setDraftReady(true);
     return () => { active.current = false; };
-  }, []);
+  }, [draftKey]);
   const dirty = draft ? changedStoryFields(draft).length : 0;
   useEffect(() => {
     if (!dirty) return;
@@ -76,16 +82,16 @@ export function StoryLabPage() {
     if (storyDraftView(workspace.story, current).title?.trim()) return;
     const seeded = editStoryDraft(current, workspace.story, "title", idea.slice(0, 200));
     latestDraft.current = seeded; setDraft(seeded);
-    try { window.sessionStorage.setItem(CREATOR_STORY_DRAFT_KEY, JSON.stringify(seeded)); }
+    try { window.sessionStorage.setItem(draftKey, JSON.stringify(seeded)); }
     catch { /* 임시 보관 실패 안내는 기존 편집 경로가 담당한다. */ }
     setNotice(tx("홈에서 입력한 아이디어를 작품 가제로 가져왔습니다. 다듬은 뒤 기획서를 저장하세요."));
-  }, [draftReady, corruptDraft, location.search, location.pathname, location.hash, navigate, workspace.story]);
+  }, [draftReady, corruptDraft, location.search, location.pathname, location.hash, navigate, workspace.story, draftKey]);
   const remember = (next: StoryDraft) => {
     clearError();
     latestDraft.current = next; setDraft(next); setDraftError("");
     try {
-      if (changedStoryFields(next).length) window.sessionStorage.setItem(CREATOR_STORY_DRAFT_KEY, JSON.stringify(next));
-      else window.sessionStorage.removeItem(CREATOR_STORY_DRAFT_KEY);
+      if (changedStoryFields(next).length) window.sessionStorage.setItem(draftKey, JSON.stringify(next));
+      else window.sessionStorage.removeItem(draftKey);
       setNotice(changedStoryFields(next).length ? tx("이 탭에 임시 보관했습니다. 기획서 저장을 눌러 보드에 반영하세요.") : tx("저장본과 같은 내용입니다."));
     } catch {
       setDraftError(tx("임시 보관에 실패했습니다. 화면의 입력은 유지했으니 이동하기 전에 현재 기획서를 내보내세요."));
@@ -94,7 +100,7 @@ export function StoryLabPage() {
   const discard = () => {
     if (!window.confirm(tx("이 탭의 미저장 초안을 지우고 최신 저장본으로 돌아갈까요? 필요한 내용은 먼저 내보내세요."))) return;
     try {
-      window.sessionStorage.removeItem(CREATOR_STORY_DRAFT_KEY);
+      window.sessionStorage.removeItem(draftKey);
       clearError(); latestDraft.current = null; setDraft(null); setCorruptDraft(false); setDraftError(""); setNotice(tx("임시 초안을 지웠습니다. 최신 저장본을 표시합니다."));
     } catch { setDraftError(tx("임시 초안을 지우지 못했습니다. 브라우저 저장소 설정을 확인하세요.")); }
   };
@@ -104,7 +110,7 @@ export function StoryLabPage() {
     const saved = await saveStory(submitted);
     if (!saved || !active.current || latestDraft.current !== submitted) return;
     latestDraft.current = null; setDraft(null); setNotice(tx("기획서를 저장했습니다. 다른 탭에서 바꾼 별도 항목도 유지했습니다."));
-    try { window.sessionStorage.removeItem(CREATOR_STORY_DRAFT_KEY); setDraftError(""); }
+    try { window.sessionStorage.removeItem(draftKey); setDraftError(""); }
     catch { setDraftError(tx("기획서는 저장했지만 임시 보관본을 지우지 못했습니다. 다음 방문에서 같은 초안이 복구될 수 있습니다.")); }
   };
   const story = storyDraftView(workspace.story, draft);

@@ -10,6 +10,16 @@ export const RESEARCH_NOTE_SOURCE_LIMIT = 5;
 
 export const RESEARCH_NOTEBOOK_KEY = "toonstudio:research-notebook:v1";
 
+/**
+ * 소유자별 저장 키. 판단 노트는 개인 기록이라 계정으로 나눠, 같은
+ * 브라우저의 다른 계정에게 이전 계정의 노트가 보이지 않게 한다(학습
+ * 기록·마켓 찜과 같은 방식). ownerKey가 없으면 레거시 키(기존 호출·
+ * 테스트 호환).
+ */
+export function researchNotebookStorageKey(ownerKey?: string): string {
+  return ownerKey ? `${RESEARCH_NOTEBOOK_KEY}:${ownerKey}` : RESEARCH_NOTEBOOK_KEY;
+}
+
 export const RESEARCH_NOTE_KINDS = [
   {
     id: "observation",

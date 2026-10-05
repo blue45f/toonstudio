@@ -8,7 +8,10 @@ import { GlobalBooksPage } from "./GlobalBooksPage";
 
 import type { CreatorResource, ResourceSearchResult } from "@/shared/lib/creator-resources";
 
-import { CREATOR_WORKSPACE_KEY } from "@/shared/lib/creator-workspace-persistence";
+import { creatorWorkspaceStorageKey } from "@/shared/lib/creator-workspace-persistence";
+
+// 이 테스트들은 비로그인 상태라 워크스페이스가 게스트 파티션 키에 저장된다(소유자 스코프).
+const GUEST_WORKSPACE_KEY = creatorWorkspaceStorageKey("guest");
 
 vi.mock("./ProviderStatus", () => ({ ProviderStatus: () => null }));
 
@@ -170,7 +173,7 @@ describe("global book search and saved sources", () => {
     renderPage("?q=manga");
     fireEvent.click(await screen.findByRole("button", { name: "보드에 저장" }));
     expect((await screen.findByRole("button", { name: "저장 해제" })).getAttribute("aria-pressed")).toBe("true");
-    expect(JSON.parse(localStorage.getItem(CREATOR_WORKSPACE_KEY)!).saved[0].title).toBe("Drawing reference");
+    expect(JSON.parse(localStorage.getItem(GUEST_WORKSPACE_KEY)!).saved[0].title).toBe("Drawing reference");
     vi.useFakeTimers();
     fireEvent.click(screen.getByRole("button", { name: "출처 내보내기" }));
     expect(createUrl.mock.calls[0]![0]).toBeInstanceOf(Blob);
@@ -179,7 +182,7 @@ describe("global book search and saved sources", () => {
     expect(revokeUrl).toHaveBeenCalledWith("blob:book-sources");
     vi.useRealTimers();
     fireEvent.click(screen.getByRole("button", { name: "저장 해제" }));
-    await waitFor(() => expect(JSON.parse(localStorage.getItem(CREATOR_WORKSPACE_KEY)!).saved).toEqual([]));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(GUEST_WORKSPACE_KEY)!).saved).toEqual([]));
     expect(screen.getByRole("button", { name: "출처 내보내기" })).toHaveProperty("disabled", true);
   });
 

@@ -6,11 +6,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreatorHubPage } from "./CreatorHubPage";
 import { RESEARCH_DESK_SESSION_KEY } from "./research-desk-session";
-import { RESEARCH_NOTEBOOK_KEY } from "./research-notebook";
+import { researchNotebookStorageKey } from "./research-notebook";
+
 
 import type { CreatorResource, CreatorWorkspace } from "@/shared/lib/creator-resources";
 
-import { CREATOR_WORKSPACE_KEY } from "@/shared/lib/creator-workspace-persistence";
+import { creatorWorkspaceStorageKey } from "@/shared/lib/creator-workspace-persistence";
+// 이 테스트는 비로그인 상태라 판단 노트가 게스트 파티션 키에 저장된다(소유자 스코프).
+const GUEST_NOTEBOOK_KEY = researchNotebookStorageKey("guest");
+
+// 이 테스트들은 비로그인 상태라 워크스페이스가 게스트 파티션 키에 저장된다(소유자 스코프).
+const GUEST_WORKSPACE_KEY = creatorWorkspaceStorageKey("guest");
 
 vi.mock("./ProviderStatus", () => ({ ProviderStatus: () => <p>provider-status-loaded</p> }));
 
@@ -59,7 +65,7 @@ afterEach(() => {
 
 describe("research synthesis workspace", () => {
   it("persists a source-linked observation and lets the creator reclassify it as a scene decision", async () => {
-    localStorage.setItem(CREATOR_WORKSPACE_KEY, JSON.stringify(workspace([resource()])));
+    localStorage.setItem(GUEST_WORKSPACE_KEY, JSON.stringify(workspace([resource()])));
     renderPage();
     const synthesis = screen.getByRole("heading", { name: "자료를 장면 선택으로 바꾸는 판단 노트" }).closest("section")!;
     const noteText = "역무실 시계는 출입문 맞은편에서 보인다.";
@@ -71,7 +77,7 @@ describe("research synthesis workspace", () => {
     expect(await within(synthesis).findByText(noteText)).toBeTruthy();
     expect(within(synthesis).getByRole("link", { name: "Costume reference ↗" })).toBeTruthy();
     await waitFor(() => {
-      const persisted = JSON.parse(localStorage.getItem(RESEARCH_NOTEBOOK_KEY)!) as { entries: Array<{ kind: string; sourceIds: string[] }> };
+      const persisted = JSON.parse(localStorage.getItem(GUEST_NOTEBOOK_KEY)!) as { entries: Array<{ kind: string; sourceIds: string[] }> };
       expect(persisted.entries).toHaveLength(1);
       expect(persisted.entries[0]).toMatchObject({ kind: "observation", sourceIds: ["met:costume"] });
     });
@@ -79,7 +85,7 @@ describe("research synthesis workspace", () => {
     fireEvent.change(within(synthesis).getByLabelText(`${noteText} 노트 유형`), { target: { value: "decision" } });
     expect(await within(synthesis).findByRole("link", { name: "Story Lab에 반영" })).toBeTruthy();
     await waitFor(() => {
-      const persisted = JSON.parse(localStorage.getItem(RESEARCH_NOTEBOOK_KEY)!) as { entries: Array<{ kind: string }> };
+      const persisted = JSON.parse(localStorage.getItem(GUEST_NOTEBOOK_KEY)!) as { entries: Array<{ kind: string }> };
       expect(persisted.entries[0]!.kind).toBe("decision");
     });
   });
