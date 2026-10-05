@@ -39,6 +39,12 @@ allowBuilds:
   unrs-resolver: true
   # Cloudflare's official local Workers runtime; required by Wrangler/Vitest pool.
   workerd: true
+  # Transformers.js(한글 기계번역)는 apps/web의 브라우저 경로에서만 동적으로 로드되고
+  # 브라우저는 WASM/WebGPU 백엔드를 쓴다. Node 전용 네이티브 onnxruntime-node와
+  # it-tar가 끌어온 iso-constants 설치가 불필요하므로 명시적으로 거부한다.
+  # pnpm 11 strict의 ERR_PNPM_IGNORED_BUILDS로 install이 실패하지 않게 한다.
+  onnxruntime-node: false
+  iso-constants: false
 
 overrides:
   handlebars: '>=4.7.9'
