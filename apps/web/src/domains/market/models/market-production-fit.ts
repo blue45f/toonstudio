@@ -155,6 +155,53 @@ export interface MarketProductionFitRecord {
   readonly evaluation: MarketProductionFitEvaluation;
 }
 
+export interface MarketProductionFitReason {
+  readonly tone: MarketProductionFitStatus;
+  readonly text: string;
+}
+
+/**
+ * 결과 카드에 붙는 한 줄 근거. 평가가 이미 만든 체크 문장만 조합하고 새 판정 문구를
+ * 만들지 않는다. 차단·확인은 가장 먼저 걸린 체크를, 조건 일치는 추천 근거가 되는
+ * 사용권·출처·AI 체크의 통과 문장을 우선순위대로 최대 두 개까지 이어 붙인다.
+ */
+export function marketProductionFitReasonLine(
+  evaluation: MarketProductionFitEvaluation,
+): MarketProductionFitReason {
+  if (evaluation.status === "blocked") {
+    const firstBlock = evaluation.checks.find((check) => check.status === "block");
+    return {
+      tone: "blocked",
+      text: firstBlock
+        ? `${firstBlock.label} — ${firstBlock.summary}`
+        : evaluation.headline,
+    };
+  }
+  if (evaluation.status === "review") {
+    const firstReview = evaluation.checks.find((check) => check.status === "review");
+    return {
+      tone: "review",
+      text: firstReview
+        ? `${firstReview.label} — ${firstReview.summary}`
+        : evaluation.headline,
+    };
+  }
+  const reasonPriority: readonly MarketProductionFitCheckId[] = [
+    "license",
+    "provenance",
+    "ai-disclosure",
+  ];
+  const merits = reasonPriority
+    .map((id) => evaluation.checks.find((check) => check.id === id))
+    .filter((check) => check !== undefined && check.status === "pass")
+    .slice(0, 2)
+    .map((check) => check.summary);
+  return {
+    tone: "ready",
+    text: merits.length > 0 ? merits.join(" · ") : evaluation.headline,
+  };
+}
+
 const ENGINE_LABELS: Readonly<Record<CreatorMarketplaceResourceEngine, string>> = {
   canvas2d: "Canvas 2D",
   webgl2: "WebGL 2",
