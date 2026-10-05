@@ -536,9 +536,12 @@ import {
 } from "./studio-frame-animation";
 import {
   applySharedGutterDragPlan,
+  applyVerticalGapDragPlan,
   planSharedGutterDrag,
   planSharedGutterSegments,
+  planVerticalGapDrag,
   sharedGutterSegmentKey,
+  verticalGapDragKey,
   type SharedGutterSegment,
 } from "./studio-frame-folder";
 import {
@@ -9318,6 +9321,11 @@ export function StudioCuttoonEditor({
   const freehandObjectSnapLatchRef = useRef<FreehandObjectSnapLatch>(EMPTY_FREEHAND_OBJECT_SNAP_LATCH);
   /** Shared-gutter co-edit session: plan always from pre-drag snapshot + cumulative delta. */
   const sharedGutterDragBaseRef = useRef<{
+    elements: El[];
+    segment: SharedGutterSegment;
+  } | null>(null);
+  /** Vertical-gap (CSP-style paneling) session: same snapshot + cumulative delta contract. */
+  const verticalGapDragBaseRef = useRef<{
     elements: El[];
     segment: SharedGutterSegment;
   } | null>(null);
@@ -18602,6 +18610,57 @@ const puppetWarpArmed =
     sharedGutterDragBaseRef.current = null;
     if (session && delta !== 0) {
       announceDrawingShortcut("공유 거터 조정 · 양 프레임 · 자식 리플로우");
+    }
+  }
+
+  function beginVerticalGapDrag(segment: SharedGutterSegment) {
+    verticalGapDragBaseRef.current = {
+      elements: elements.map((el) => el),
+      segment,
+    };
+  }
+
+  function previewVerticalGapDrag(_segment: SharedGutterSegment, delta: number) {
+    const session = verticalGapDragBaseRef.current;
+    if (!session) return;
+    const baseFrames = session.elements.filter(
+      (el): el is FrameEl => el.type === "frame" && !el.hidden
+    );
+    const plan = planVerticalGapDrag({
+      segment: session.segment,
+      frames: baseFrames,
+      delta,
+      elements: session.elements,
+    });
+    if (!plan) return;
+    const next = applyVerticalGapDragPlan(session.elements, plan) as El[];
+    commitCoalesced(next, verticalGapDragKey(session.segment));
+  }
+
+  function commitVerticalGapDrag(segment: SharedGutterSegment, delta: number) {
+    previewVerticalGapDrag(segment, delta);
+    const session = verticalGapDragBaseRef.current;
+    verticalGapDragBaseRef.current = null;
+    if (session && delta !== 0) {
+      // Widening the gap pushes the stack down — grow the canvas so the lowest cut stays
+      // inside the page (mirrors addFrame's canvas growth, shrink never contracts it).
+      const baseFrames = session.elements.filter(
+        (el): el is FrameEl => el.type === "frame" && !el.hidden
+      );
+      const plan = planVerticalGapDrag({
+        segment: session.segment,
+        frames: baseFrames,
+        delta,
+        elements: session.elements,
+      });
+      if (plan && plan.appliedDelta > 0) {
+        const movedBottom = plan.framePatches.reduce(
+          (max, patch) => Math.max(max, patch.y + patch.height),
+          0
+        );
+        if (movedBottom > 0) setCanvasH((h) => Math.max(h, movedBottom + 24));
+      }
+      announceDrawingShortcut("세로 공백 조정 · 아래 컷 이동");
     }
   }
 
@@ -28384,6 +28443,9 @@ function clearSelectionForEdit() {
     beginSharedGutterDrag,
     previewSharedGutterDrag,
     commitSharedGutterDrag,
+    beginVerticalGapDrag,
+    previewVerticalGapDrag,
+    commitVerticalGapDrag,
     endLiveResourceEdit: endCanvasNodeInteraction,
     nodeInteractionBegin,
     patchEl,

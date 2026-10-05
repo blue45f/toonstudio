@@ -236,6 +236,9 @@ export interface StudioCanvasViewportHandlers {
   beginSharedGutterDrag: (segment: SharedGutterSegment) => void;
   previewSharedGutterDrag: (segment: SharedGutterSegment, delta: number) => void;
   commitSharedGutterDrag: (segment: SharedGutterSegment, delta: number) => void;
+  beginVerticalGapDrag: (segment: SharedGutterSegment) => void;
+  previewVerticalGapDrag: (segment: SharedGutterSegment, delta: number) => void;
+  commitVerticalGapDrag: (segment: SharedGutterSegment, delta: number) => void;
   setContextMenu: import("react").Dispatch<import("react").SetStateAction<{ visible: boolean; x: number; y: number; elId: string | null; }>>;
   setError: import("react").Dispatch<import("react").SetStateAction<string | null>>;
   setStudioRasterHandoffCandidate: import("react").Dispatch<import("react").SetStateAction<StudioRasterHandoffCandidate | null>>;

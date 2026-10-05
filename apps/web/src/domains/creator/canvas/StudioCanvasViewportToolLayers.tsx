@@ -27,6 +27,7 @@ export interface StudioCanvasViewportToolLayersProps {
   advancedRulers: StudioCanvasViewportProps["advancedRulers"];
   appSettings: StudioCanvasViewportProps["appSettings"];
   beginSharedGutterDrag: StudioCanvasViewportHandlers["beginSharedGutterDrag"];
+  beginVerticalGapDrag: StudioCanvasViewportHandlers["beginVerticalGapDrag"];
   brush: StudioCanvasViewportProps["brush"];
   brushCursorRef: StudioCanvasViewportProps["brushCursorRef"];
   bubbleShapeActiveHandleIndex: StudioCanvasViewportProps["bubbleShapeActiveHandleIndex"];
@@ -36,6 +37,7 @@ export interface StudioCanvasViewportToolLayersProps {
   canvasInteractionBlocked: StudioCanvasViewportProps["canvasInteractionBlocked"];
   commitIsometricOrigin: StudioCanvasViewportHandlers["commitIsometricOrigin"];
   commitSharedGutterDrag: StudioCanvasViewportHandlers["commitSharedGutterDrag"];
+  commitVerticalGapDrag: StudioCanvasViewportHandlers["commitVerticalGapDrag"];
   cropRect: StudioCanvasViewportProps["cropRect"];
   dodgeBurnArmed: StudioCanvasViewportProps["dodgeBurnArmed"];
   dodgeBurnRadius: StudioCanvasViewportProps["dodgeBurnRadius"];
@@ -117,6 +119,7 @@ export interface StudioCanvasViewportToolLayersProps {
   previewIsometricOrigin: StudioCanvasViewportHandlers["previewIsometricOrigin"];
   previewPerspectiveEyeLevelY: StudioCanvasViewportHandlers["previewPerspectiveEyeLevelY"];
   previewSharedGutterDrag: StudioCanvasViewportHandlers["previewSharedGutterDrag"];
+  previewVerticalGapDrag: StudioCanvasViewportHandlers["previewVerticalGapDrag"];
   previewVanishingPointById: StudioCanvasViewportHandlers["previewVanishingPointById"];
   puppetWarpArmed: StudioCanvasViewportProps["puppetWarpArmed"];
   puppetWarpBusy: StudioCanvasViewportProps["puppetWarpBusy"];
@@ -164,6 +167,7 @@ export function StudioCanvasViewportToolLayers({
   advancedRulers,
   appSettings,
   beginSharedGutterDrag,
+  beginVerticalGapDrag,
   brush,
   brushCursorRef,
   brushCursorStyle,
@@ -176,6 +180,7 @@ export function StudioCanvasViewportToolLayers({
   canvasInteractionBlocked,
   commitIsometricOrigin,
   commitSharedGutterDrag,
+  commitVerticalGapDrag,
   cropRect,
   dodgeBurnArmed,
   dodgeBurnRadius,
@@ -257,6 +262,7 @@ export function StudioCanvasViewportToolLayers({
   previewIsometricOrigin,
   previewPerspectiveEyeLevelY,
   previewSharedGutterDrag,
+  previewVerticalGapDrag,
   previewVanishingPointById,
   puppetWarpArmed,
   puppetWarpBusy,
@@ -578,6 +584,9 @@ export function StudioCanvasViewportToolLayers({
               onBeginSharedGutterDrag={beginSharedGutterDrag}
               onPreviewSharedGutterDrag={previewSharedGutterDrag}
               onCommitSharedGutterDrag={commitSharedGutterDrag}
+              onBeginVerticalGapDrag={beginVerticalGapDrag}
+              onPreviewVerticalGapDrag={previewVerticalGapDrag}
+              onCommitVerticalGapDrag={commitVerticalGapDrag}
             />
     </>
   );
