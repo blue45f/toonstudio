@@ -20,7 +20,7 @@ export const ENGINEERING_STORY_GROUPS = [
     id: "foundation",
     title: t("제품과 구조", "Product and structure"),
     intro: t("왜 브라우저 제작실인가, 경계를 어떻게 나눴나", "Why a browser studio, and how the boundaries were drawn"),
-    chapterIds: ["product-intent", "architecture", "open-source"],
+    chapterIds: ["product-intent", "architecture", "open-source", "nextgen-web-experiments"],
   },
   {
     id: "drawing",
@@ -38,7 +38,7 @@ export const ENGINEERING_STORY_GROUPS = [
     id: "collaboration",
     title: t("협업과 가상 스튜디오", "Collaboration and the virtual studio"),
     intro: t("함께 편집하고, 공간에서 만나기", "Editing together and meeting in space"),
-    chapterIds: ["collaborative-crdt-boundary", "webrtc-media-authority", "virtual-studio-world-authority"],
+    chapterIds: ["collaborative-crdt-boundary", "webrtc-media-authority", "virtual-studio-world-authority", "webtransport-transport"],
   },
   {
     id: "three-d",
@@ -50,13 +50,13 @@ export const ENGINEERING_STORY_GROUPS = [
     id: "ai",
     title: t("AI", "AI"),
     intro: t("제안은 AI, 확정은 사람", "AI proposes, people decide"),
-    chapterIds: ["ai-routing", "free-ai-routing", "image-generation", "sound-generation", "ai-assisted-engineering", "on-device-inference"],
+    chapterIds: ["ai-routing", "free-ai-routing", "image-generation", "sound-generation", "ai-assisted-engineering", "on-device-inference", "on-device-translation"],
   },
   {
     id: "trust",
     title: t("계정·공유·권리", "Accounts, sharing and rights"),
     intro: t("로그인, 공유, 라이선스와 데이터 출처", "Sign-in, sharing, licenses and data provenance"),
-    chapterIds: ["authentication", "social-identity-lifecycle", "share-distribution-boundary", "licenses", "crawling", "open-api-data"],
+    chapterIds: ["authentication", "social-identity-lifecycle", "share-distribution-boundary", "licenses", "crawling", "open-api-data", "content-addressing"],
   },
   {
     id: "quality",
