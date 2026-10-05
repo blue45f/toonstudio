@@ -344,6 +344,69 @@ export interface StudioTag2pixColorization {
   readonly receipt: StudioOnnxSessionReceipt;
 }
 
+/**
+ * 레이어 분리처럼 합성 이후 단계가 모델 색상을 원본 해상도에서 다시 읽을 때 쓰는
+ * 공개 샘플링 경계. `compositeStudioTag2pixColor`와 같은 좌표 매핑·쌍선형 보간·
+ * HSL 변환을 그대로 공유하므로, 분리 결과는 합성 결과와 어긋나지 않는다.
+ */
+export interface StudioTag2pixModelColorSample {
+  readonly h: number;
+  readonly s: number;
+  /** 모델 자체 명도 (원본 휘도를 곱하기 전). */
+  readonly l: number;
+}
+
+export function sampleStudioTag2pixModelColor(
+  colorPlane: Float32Array,
+  x: number,
+  y: number,
+  sourceWidth: number,
+  sourceHeight: number,
+): StudioTag2pixModelColorSample {
+  if (colorPlane.length !== 3 * INPUT_PIXELS) {
+    throw new RangeError("Tag2Pix 색상 평면 길이가 모델 출력과 일치하지 않습니다.");
+  }
+  const size = STUDIO_TAG2PIX_INPUT_SIZE;
+  const modelX = (x + 0.5) * (size / sourceWidth) - 0.5;
+  const modelY = (y + 0.5) * (size / sourceHeight) - 0.5;
+  const channel = (index: number): number => Math.min(
+    1,
+    Math.max(0, (sampleBilinear(colorPlane, index, modelX, modelY) + 1) / 2),
+  );
+  return rgbToHsl(channel(0), channel(1), channel(2));
+}
+
+/** HSL → RGB (0..1). 합성 내부 변환과 같은 식을 분리 단계에서도 쓰기 위한 공개 경계. */
+export function studioTag2pixHslToRgb(
+  h: number,
+  s: number,
+  l: number,
+): readonly [number, number, number] {
+  return hslToRgb(h, s, l);
+}
+
+export interface StudioTag2pixOverWhitePixel {
+  /** 흰 배경에 합성한 채널값 (0..255, 실수). */
+  readonly r: number;
+  readonly g: number;
+  readonly b: number;
+  /** 합성 휘도 (0..1). */
+  readonly luminance: number;
+}
+
+/** 원본 RGBA 한 픽셀을 흰 배경에 합성한 값과 휘도 — 합성의 명도 기준과 동일하다. */
+export function studioTag2pixOverWhitePixel(
+  r: number,
+  g: number,
+  b: number,
+  alpha: number,
+): StudioTag2pixOverWhitePixel {
+  const cr = compositeOverWhiteChannel(r, alpha);
+  const cg = compositeOverWhiteChannel(g, alpha);
+  const cb = compositeOverWhiteChannel(b, alpha);
+  return { r: cr, g: cg, b: cb, luminance: luminance255(cr, cg, cb) / 255 };
+}
+
 export interface StudioTag2pixColorizer {
   colorize(
     line: Float32Array,

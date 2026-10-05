@@ -60,6 +60,19 @@ export interface StudioOnnxColorizeResult {
   readonly executionProvider: StudioOnnxExecutionProvider;
 }
 
+/**
+ * 레이어 분리 내보내기용 결과. 합성에 쓴 입력(모델 색상 평면·원본 래스터)과
+ * 합성본을 함께 돌려줘, 패널이 추론을 다시 돌리지 않고 분리 단계로 넘길 수
+ * 있게 한다. 분리·PSD 조립 자체는 `studio-onnx-colorize-layers` 모듈의 몫이다.
+ */
+export interface StudioOnnxColorizeLayeredResult extends StudioOnnxColorizeResult {
+  readonly width: number;
+  readonly height: number;
+  readonly colorPlane: Float32Array;
+  readonly sourceRgba: Uint8ClampedArray;
+  readonly compositedRgba: Uint8ClampedArray;
+}
+
 function createAbortError(): Error {
   if (typeof DOMException === "function") {
     return new DOMException("채색을 취소했습니다.", "AbortError");
@@ -170,6 +183,10 @@ export interface StudioOnnxColorizeService {
     src: string,
     options: ColorizeLineArtOnDeviceOptions,
   ): Promise<StudioOnnxColorizeResult>;
+  colorizeLineArtOnDeviceWithLayers(
+    src: string,
+    options: ColorizeLineArtOnDeviceOptions,
+  ): Promise<StudioOnnxColorizeLayeredResult>;
 }
 
 export function createStudioOnnxColorizeService(
@@ -182,52 +199,69 @@ export function createStudioOnnxColorizeService(
     return colorizer;
   };
 
+  async function runColorizePipeline(
+    src: string,
+    colorizeOptions: ColorizeLineArtOnDeviceOptions,
+  ): Promise<StudioOnnxColorizeLayeredResult> {
+    if (typeof src !== "string" || src.length === 0) {
+      throw new TypeError("이미지 주소가 비어 있습니다.");
+    }
+    const { signal } = colorizeOptions;
+    throwIfAborted(signal);
+    const tags = buildStudioTag2pixTagVector(colorizeOptions.tags);
+    const loaded = await imageLoader(src, signal);
+    throwIfAborted(signal);
+    const modelRgba = readRaster(
+      loaded.image,
+      STUDIO_TAG2PIX_INPUT_SIZE,
+      STUDIO_TAG2PIX_INPUT_SIZE,
+    );
+    const line = preprocessStudioTag2pixLine(
+      modelRgba,
+      STUDIO_TAG2PIX_INPUT_SIZE,
+      STUDIO_TAG2PIX_INPUT_SIZE,
+    );
+    const colorization = await getColorizer().colorize(line, tags, { signal });
+    throwIfAborted(signal);
+    const sourceRgba = readRaster(loaded.image, loaded.width, loaded.height);
+    const composited = compositeStudioTag2pixColor({
+      colorPlane: colorization.color,
+      sourceRgba,
+      sourceWidth: loaded.width,
+      sourceHeight: loaded.height,
+    });
+    throwIfAborted(signal);
+    const canvas = document.createElement("canvas");
+    canvas.width = loaded.width;
+    canvas.height = loaded.height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("캔버스를 만들 수 없습니다.");
+    const imageData = new ImageData(composited, loaded.width, loaded.height);
+    context.putImageData(imageData, 0, 0);
+    throwIfAborted(signal);
+    return Object.freeze({
+      dataUrl: canvas.toDataURL("image/png"),
+      executionProvider: colorization.executionProvider,
+      width: loaded.width,
+      height: loaded.height,
+      colorPlane: colorization.color,
+      sourceRgba,
+      compositedRgba: composited,
+    });
+  }
+
   return Object.freeze({
     async colorizeLineArtOnDevice(
       src: string,
       colorizeOptions: ColorizeLineArtOnDeviceOptions,
     ): Promise<StudioOnnxColorizeResult> {
-      if (typeof src !== "string" || src.length === 0) {
-        throw new TypeError("이미지 주소가 비어 있습니다.");
-      }
-      const { signal } = colorizeOptions;
-      throwIfAborted(signal);
-      const tags = buildStudioTag2pixTagVector(colorizeOptions.tags);
-      const loaded = await imageLoader(src, signal);
-      throwIfAborted(signal);
-      const modelRgba = readRaster(
-        loaded.image,
-        STUDIO_TAG2PIX_INPUT_SIZE,
-        STUDIO_TAG2PIX_INPUT_SIZE,
-      );
-      const line = preprocessStudioTag2pixLine(
-        modelRgba,
-        STUDIO_TAG2PIX_INPUT_SIZE,
-        STUDIO_TAG2PIX_INPUT_SIZE,
-      );
-      const colorization = await getColorizer().colorize(line, tags, { signal });
-      throwIfAborted(signal);
-      const sourceRgba = readRaster(loaded.image, loaded.width, loaded.height);
-      const composited = compositeStudioTag2pixColor({
-        colorPlane: colorization.color,
-        sourceRgba,
-        sourceWidth: loaded.width,
-        sourceHeight: loaded.height,
-      });
-      throwIfAborted(signal);
-      const canvas = document.createElement("canvas");
-      canvas.width = loaded.width;
-      canvas.height = loaded.height;
-      const context = canvas.getContext("2d");
-      if (!context) throw new Error("캔버스를 만들 수 없습니다.");
-      const imageData = new ImageData(composited, loaded.width, loaded.height);
-      context.putImageData(imageData, 0, 0);
-      throwIfAborted(signal);
+      const result = await runColorizePipeline(src, colorizeOptions);
       return Object.freeze({
-        dataUrl: canvas.toDataURL("image/png"),
-        executionProvider: colorization.executionProvider,
+        dataUrl: result.dataUrl,
+        executionProvider: result.executionProvider,
       });
     },
+    colorizeLineArtOnDeviceWithLayers: runColorizePipeline,
   });
 }
 
@@ -238,4 +272,11 @@ export function colorizeLineArtOnDevice(
   options: ColorizeLineArtOnDeviceOptions,
 ): Promise<StudioOnnxColorizeResult> {
   return defaultService.colorizeLineArtOnDevice(src, options);
+}
+
+export function colorizeLineArtOnDeviceWithLayers(
+  src: string,
+  options: ColorizeLineArtOnDeviceOptions,
+): Promise<StudioOnnxColorizeLayeredResult> {
+  return defaultService.colorizeLineArtOnDeviceWithLayers(src, options);
 }
