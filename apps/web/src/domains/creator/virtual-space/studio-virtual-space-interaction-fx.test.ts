@@ -7,6 +7,7 @@ import {
   STUDIO_INTERACTION_BURST_MS,
   StudioInteractionFxRuntime,
   type StudioInteractionFxCallbacks,
+  type StudioInteractionFxObjectStateChange,
 } from "./studio-virtual-space-interaction-fx";
 import {
   studioWorldInsideStageApron,
@@ -148,10 +149,12 @@ function runtimeFor(interactions: readonly StudioWorldInteractionDefinition[] = 
   const events: StudioSpaceUiEvent[] = [];
   const lines: string[] = [];
   const emotes: string[] = [];
+  const changes: StudioInteractionFxObjectStateChange[] = [];
   const callbacks: StudioInteractionFxCallbacks = {
     npcSay: (_point, _radius, ko) => { lines.push(ko); },
     selfEmote: (emote) => { emotes.push(emote); },
     notify: (event) => { events.push(event); },
+    onObjectStateChange: (change) => { changes.push(change); },
   };
   const runtime = new StudioInteractionFxRuntime(
     fake.scene as unknown as ConstructorParameters<typeof StudioInteractionFxRuntime>[0],
@@ -159,7 +162,7 @@ function runtimeFor(interactions: readonly StudioWorldInteractionDefinition[] = 
     { style: "sky-island", objects: CAMPUS_OBJECTS, badge: { plate: 0x0b101d, text: 0xf1f4ff, accent: 0xb39bff }, translate: (ko) => ko },
     callbacks,
   );
-  return { runtime, events, lines, emotes, ...fake };
+  return { runtime, events, lines, emotes, changes, ...fake };
 }
 
 const VIEW = { x: 0, y: 0, width: 3_200, height: 2_000 };
@@ -268,5 +271,96 @@ describe("상호작용 연출 런타임", () => {
     expect(runtime.diagnostics).toContain("bursts:1");
     frame(runtime, STUDIO_INTERACTION_BURST_MS + 10, { x: 1472, y: 1240 }, { reducedMotion: true });
     expect(runtime.diagnostics).toContain("bursts:0");
+  });
+});
+
+describe("오브젝트 상태 전파 (웨이브 3)", () => {
+  it("로컬 주문·완성 전이가 onObjectStateChange로 나간다", () => {
+    const { runtime, changes } = runtimeFor();
+    const counter = byId("campus-creator-cafe-counter");
+    const self = { x: 2690, y: 340 };
+    runtime.activate(counter, self, 1_000, false);
+    expect(changes).toEqual([
+      { objectId: counter.id, stateKey: "coffee:brewing", stateChangedAt: 1_000 },
+    ]);
+    // 가까이 있으면 완성 즉시 자동 수령(idle)까지 전이 통지가 이어진다.
+    frame(runtime, 1_000 + STUDIO_COFFEE_BREW_MS + 10, self);
+    expect(changes.at(-1)).toEqual({
+      objectId: counter.id, stateKey: "coffee:idle", stateChangedAt: 1_000 + STUDIO_COFFEE_BREW_MS + 10,
+    });
+  });
+
+  it("멀리서 완성되면 ready 전이가 통지된다", () => {
+    const { runtime, changes } = runtimeFor();
+    const counter = byId("campus-creator-cafe-counter");
+    runtime.activate(counter, { x: 2690, y: 340 }, 0, false);
+    frame(runtime, STUDIO_COFFEE_BREW_MS + 5, { x: 2400, y: 700 });
+    expect(changes.at(-1)).toEqual({
+      objectId: counter.id, stateKey: "coffee:ready", stateChangedAt: STUDIO_COFFEE_BREW_MS + 5,
+    });
+  });
+
+  it("원격 적용은 부수효과·에코 없이 상태만 맞추고, 완성돼도 내 손에 쥐지 않는다", () => {
+    const { runtime, events, lines, emotes, changes, texts } = runtimeFor();
+    const counter = byId("campus-creator-cafe-counter");
+    const self = { x: 2690, y: 340 }; // 카운터 바로 앞 — 로컬 머신이면 완성 즉시 손에 쥔다.
+    expect(runtime.applyRemoteObjectState(counter.id, "coffee:brewing", 2_000)).toBe(true);
+    expect(runtime.promptLabel(counter).ko).toBe("추출 중… · 카페 카운터");
+    frame(runtime, 2_000 + STUDIO_COFFEE_BREW_MS + 10, self);
+    expect(runtime.objectStateKey(counter.id)).toBe("coffee:ready");
+    // 상대가 추출한 커피다: 이모트·알림·바리스타 대사·재전파가 모두 없어야 한다.
+    expect(emotes).toEqual([]);
+    expect(events).toEqual([]);
+    expect(lines).toEqual([]);
+    expect(changes).toEqual([]);
+    // 대신 완성 배지는 상대 화면과 똑같이 보인다.
+    expect(texts.some((text) => text.visible && text.text === "● 준비 완료")).toBe(true);
+  });
+
+  it("원격 적용은 경과를 이어받는다 — 남은 시간만 지나면 완성된다", () => {
+    const { runtime } = runtimeFor();
+    const counter = byId("campus-creator-cafe-counter");
+    // 이미 6초 지난 추출을 지금 적용한다.
+    expect(runtime.applyRemoteObjectState(counter.id, "coffee:brewing", 4_000)).toBe(true);
+    frame(runtime, 9_999, { x: 2400, y: 700 });
+    expect(runtime.objectStateKey(counter.id)).toBe("coffee:brewing");
+    frame(runtime, 11_999, { x: 2400, y: 700 });
+    // stateChangedAt(4000) 기준 7,999ms — 아직 완성 전이다.
+    expect(runtime.objectStateKey(counter.id)).toBe("coffee:brewing");
+    frame(runtime, 12_001, { x: 2400, y: 700 });
+    // 적용 시각부터 새로 8초가 아니라, 전이 시각 + 8초에 완성된다.
+    expect(runtime.objectStateKey(counter.id)).toBe("coffee:ready");
+  });
+
+  it("머신이 없는 오브젝트·잘못된 시각은 적용하지 않는다", () => {
+    const { runtime } = runtimeFor();
+    const fountain = byId("campus-creator-fountain");
+    expect(runtime.applyRemoteObjectState(fountain.id, "coffee:brewing", 0)).toBe(false);
+    expect(runtime.applyRemoteObjectState("no-such-object", "coffee:brewing", 0)).toBe(false);
+    const counter = byId("campus-creator-cafe-counter");
+    expect(runtime.applyRemoteObjectState(counter.id, "coffee:brewing", Number.NaN)).toBe(false);
+    expect(runtime.objectStateKey(counter.id)).toBe("coffee:idle");
+  });
+
+  it("원격 상태를 정리하면 머신이 초기 상태로 돌아간다", () => {
+    const { runtime } = runtimeFor();
+    const counter = byId("campus-creator-cafe-counter");
+    runtime.applyRemoteObjectState(counter.id, "coffee:brewing", 0);
+    expect(runtime.promptLabel(counter).ko).toBe("추출 중… · 카페 카운터");
+    runtime.clearRemoteObjectStates(500);
+    expect(runtime.objectStateKey(counter.id)).toBe("coffee:idle");
+    expect(runtime.promptLabel(counter).ko).toBe("주문하기 · 카페 카운터");
+  });
+
+  it("상대가 추출한 커피를 내가 가져가면 소유가 넘어오고 idle이 전파된다", () => {
+    const { runtime, emotes, changes } = runtimeFor();
+    const counter = byId("campus-creator-cafe-counter");
+    runtime.applyRemoteObjectState(counter.id, "coffee:ready", 0);
+    runtime.activate(counter, { x: 2690, y: 340 }, 100, false);
+    expect(emotes).toEqual(["coffee"]);
+    expect(changes).toEqual([
+      { objectId: counter.id, stateKey: "coffee:idle", stateChangedAt: 100 },
+    ]);
+    expect(runtime.objectStateKey(counter.id)).toBe("coffee:idle");
   });
 });

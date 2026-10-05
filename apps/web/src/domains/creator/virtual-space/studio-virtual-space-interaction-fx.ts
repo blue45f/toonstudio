@@ -28,6 +28,7 @@ import {
   advanceInteractableRuntime,
   createInteractableRuntime,
   type StudioInteractableRuntime,
+  type StudioInteractableStateKey,
 } from "./studio-virtual-space-interactable-objects";
 import { objectReactionFrame } from "./studio-virtual-space-object-reaction";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
@@ -49,6 +50,13 @@ import type { StudioWorldInteractionDefinition } from "./studio-virtual-space-wo
 
 type FxScene = Pick<Phaser.Scene, "add" | "textures" | "make">;
 
+/** 피어 전파용 오브젝트 상태 전이 통지. 로컬 전이에서만 만들어진다. */
+export interface StudioInteractionFxObjectStateChange {
+  readonly objectId: string;
+  readonly stateKey: StudioInteractableStateKey;
+  readonly stateChangedAt: number;
+}
+
 export interface StudioInteractionFxCallbacks {
   /** point 근처(radius 안) NPC 한 명이 대사를 durationMs 동안 말한다. 근처에 NPC가 없으면 아무것도 하지 않는다. */
   readonly npcSay: (point: StudioVirtualSpacePoint, radius: number, ko: string, en: string, durationMs: number) => void;
@@ -56,6 +64,12 @@ export interface StudioInteractionFxCallbacks {
   readonly selfEmote: (emote: StudioSpaceEmoteId) => void;
   /** HUD 알림. 캔버스가 onSpaceUiEvent로 넘긴다. */
   readonly notify: (event: StudioSpaceUiEvent) => void;
+  /**
+   * 로컬 오브젝트 상태 전이가 일어날 때만 호출된다(주문·추출 완성·수령).
+   * 원격 적용(applyRemoteObjectState)은 호출하지 않는다 — 전파 에코 방지.
+   * 배선 측은 이 통지를 프레즌스 컨트롤러의 sendObjectState로 넘긴다.
+   */
+  readonly onObjectStateChange?: (change: StudioInteractionFxObjectStateChange) => void;
 }
 
 export interface StudioInteractionFxOptions {
@@ -156,6 +170,8 @@ export class StudioInteractionFxRuntime {
   private readonly bursts: Burst[] = [];
   private burstCursor = 0;
   private readonly machines = new Map<string, Machine>();
+  /** 전파로 적용된 머신(상대 소유). 완성돼도 내 손에 쥐지 않고 바리스타도 말하지 않는다. */
+  private readonly remoteMachines = new Set<string>();
   private readonly chairs = new Map<string, StudioInteractableRuntime>();
   private readonly anchors = new Map<string, StudioWorldFxAnchor>();
   private readonly kinds = new Map<string, StudioWorldInteractionKind>();
@@ -253,6 +269,47 @@ export class StudioInteractionFxRuntime {
 
   /** 월드 자리에 앉아 있으면 그 자리(캔버스가 앉은 자세를 그린다). */
   get seat(): StudioInteractionFxSeat | null { return this.seatState; }
+
+  /** 오브젝트의 현재 상태 키. 머신이 없는 오브젝트면 null이다. */
+  objectStateKey(objectId: string): StudioInteractableStateKey | null {
+    return this.machines.get(objectId)?.runtime.stateKey ?? null;
+  }
+
+  /**
+   * 피어에게서 전파된 오브젝트 상태를 부수효과 없이 적용한다 (VS 120 웨이브 3).
+   * npcSay·notify·selfEmote·onObjectStateChange 어느 것도 부르지 않는다 — 적용이
+   * 다시 전파되는 에코를 막기 위해서다. stateChangedAt은 수신 측 시계로 복원된
+   * 값이라 추출 진행(objectReactionFrame)이 처음부터 다시 시작되지 않는다.
+   * 적용한 머신은 원격 소유로 표시돼, 완성돼도 stepMachine이 내 손에 쥐지 않는다.
+   * 이 런타임이 다루지 않는 오브젝트(머신 없음)면 false를 돌려준다.
+   */
+  applyRemoteObjectState(objectId: string, stateKey: StudioInteractableStateKey, stateChangedAt: number): boolean {
+    const machine = this.machines.get(objectId);
+    if (!machine || !Number.isFinite(stateChangedAt)) return false;
+    this.remoteMachines.add(objectId);
+    if (machine.runtime.stateKey !== stateKey) {
+      machine.runtime = Object.freeze({ ...machine.runtime, stateKey, stateChangedAt });
+    }
+    return true;
+  }
+
+  /** 전파로 적용한 머신 상태를 전부 초기 상태로 되돌린다(공유 룸을 떠날 때 부른다). */
+  clearRemoteObjectStates(time: number): void {
+    for (const objectId of this.remoteMachines) {
+      const machine = this.machines.get(objectId);
+      if (machine) machine.runtime = createInteractableRuntime(objectId, "coffee-machine", time);
+    }
+    this.remoteMachines.clear();
+  }
+
+  /** 로컬 상태 전이를 전파 통지로 내보낸다. 원격 소유 머신에서는 부르지 않는다. */
+  private emitObjectState(machine: Machine): void {
+    this.callbacks.onObjectStateChange?.({
+      objectId: machine.interaction.id,
+      stateKey: machine.runtime.stateKey,
+      stateChangedAt: machine.runtime.stateChangedAt,
+    });
+  }
 
   /** X(E·탭·클릭)로 상호작용을 발동했을 때 한 번 부른다. */
   activate(interaction: StudioWorldInteractionDefinition, self: StudioVirtualSpacePoint, time: number, reducedMotion: boolean): void {
@@ -376,13 +433,20 @@ export class StudioInteractionFxRuntime {
     } else if (before === "coffee:ready") {
       this.handCoffee(machine, time);
     }
+    // 내가 직접 발동해 상태가 바뀌면 소유는 나에게 넘어오고, 전이를 피어에게 알린다.
+    // (상대가 추출한 커피를 내가 가져가는 경우도 이 경로로 idle 전파가 나간다.)
+    if (machine.runtime.stateKey !== before) {
+      this.remoteMachines.delete(machine.interaction.id);
+      this.emitObjectState(machine);
+    }
   }
 
   private stepMachine(machine: Machine, self: StudioVirtualSpacePoint, time: number): void {
     const before = machine.runtime.stateKey;
+    const remote = this.remoteMachines.has(machine.interaction.id);
     if (before === "coffee:brewing") {
       machine.runtime = advanceInteractableRuntime(machine.runtime, time);
-      if (machine.runtime.stateKey === "coffee:ready") {
+      if (machine.runtime.stateKey === "coffee:ready" && !remote) {
         const { point, radius } = machine.interaction;
         const near = Math.hypot(self.x - point.x, self.y - point.y) <= radius * COFFEE_HANDOFF_RADIUS;
         if (near) {
@@ -392,7 +456,11 @@ export class StudioInteractionFxRuntime {
           this.callbacks.npcSay(point, NPC_SEARCH_RADIUS, "주문하신 커피 나왔어요! ☕", "Your coffee is ready! ☕", NPC_LINE_MS);
         }
       }
+      // 원격 머신은 완성돼도 여기서 멈춘다 — 손에 쥐는 것도, 바리스타가 알리는 것도
+      // 상대 화면에서 이미 일어난 일이다. 렌더(drawMachine)는 상태를 그대로 보여 준다.
     }
+    // 로컬 머신의 시간 전이(추출 완성·자동 수령)도 피어에게 알린다.
+    if (!remote && machine.runtime.stateKey !== before) this.emitObjectState(machine);
     this.drawMachine(machine, time);
   }
 
