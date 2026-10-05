@@ -22,6 +22,12 @@ export interface MarketingEventBenefit {
 export interface MarketingEvent {
   readonly id: string;
   readonly slug: string;
+  /**
+   * 이벤트 자체 아트(카드 타일·대표 카드 공용). 상세 페이지가 쓰는 자기 비주얼을 가리킨다.
+   * 이벤트 전용 아트가 없으면 null — 카드는 공용 섹션 이미지를 대신 쓰지 않고
+   * 타이포그래픽 커버로 떨어진다.
+   */
+  readonly image: string | null;
   readonly startsAt: string;
   readonly endsAt: string | null;
   readonly firstVisitExposure: boolean;
@@ -41,6 +47,8 @@ export interface MarketingEvent {
 export const BETA_OPEN_EVENT: MarketingEvent = {
   id: "beta-open-2026",
   slug: "beta-open",
+  // 베타 오픈 상세 페이지(/events/beta-open) 히어로가 쓰는 바로 그 스튜디오 아트다.
+  image: "/images/hero-studio.webp",
   startsAt: "2026-09-18T00:00:00+09:00",
   endsAt: null,
   firstVisitExposure: true,
