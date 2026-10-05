@@ -4,6 +4,7 @@ import { defineAppRoutes } from "../app-route-definition";
 import {
   CatalogResearchPage,
   CreatorHubPage,
+  MaterialAtlasPage,
   NowPage,
   OpportunitiesPage,
   ReferenceAssetsPage,
@@ -53,6 +54,7 @@ export const creatorResourcesRoutes = defineAppRoutes([
   { id: "research-books", path: "/research/books", element: <GlobalBooksPage /> },
   { id: "research-polyhaven", path: "/research/3d-assets", element: <PolyHavenPage /> },
   { id: "research-ambientcg", path: "/research/material-assets", element: <AmbientCgPage /> },
+  { id: "resources-materials", path: "/research/materials", element: <MaterialAtlasPage /> },
   { id: "research-nasa-images", path: "/research/space-assets", element: <NasaImagesPage /> },
   { id: "research-vam", path: "/research/vam", element: <VamCollectionsPage /> },
   { id: "research-rijksmuseum", path: "/research/rijksmuseum", element: <RijksmuseumPage /> },

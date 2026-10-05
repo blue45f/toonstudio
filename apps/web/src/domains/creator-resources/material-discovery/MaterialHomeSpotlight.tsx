@@ -78,8 +78,8 @@ export function MaterialHomeSpotlight({ locale = "ko" }: { locale?: Locale }) {
         </li>)}
       </ul>
       <div className="md-spotlight-actions">
-        <Link href="/research/material-atlas" className="md-spotlight-primary">{copy.primary}<ArrowRight size={16} aria-hidden="true" /></Link>
-        <Link href="/research/material-atlas#material-search" className="md-spotlight-secondary">{copy.secondary}</Link>
+        <Link href="/research/materials" className="md-spotlight-primary">{copy.primary}<ArrowRight size={16} aria-hidden="true" /></Link>
+        <Link href="/research/materials#material-search" className="md-spotlight-secondary">{copy.secondary}</Link>
       </div>
     </div>
     <div className="md-spotlight-stats" role="list" aria-label={locale === "ko" ? "소재 도감 핵심 수치" : "Material atlas highlights"}>
