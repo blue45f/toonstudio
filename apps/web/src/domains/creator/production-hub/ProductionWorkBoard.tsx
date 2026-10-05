@@ -1,4 +1,4 @@
-import { buildProductionWorkflowTasks } from "@toonstudio/contracts/production-workflow";
+import { buildProductionWorkflowTasks, canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import "./production-workboard.css";
 import { Filter } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -24,6 +24,7 @@ import { useBoardOptimistic } from "./board/use-board-optimistic";
 import { useProductionBoardOrder } from "./board/use-board-order";
 import { useBoardShortcuts, type BoardMoveDirection } from "./board/use-board-shortcuts";
 import type { ProductionClientCommand } from "./production-api";
+import { resolveBoardRoleProcess, useBoardRoleDefaultFilters } from "./production-board-role-defaults";
 import { orderedProductionColumns, collapsedProductionColumns } from "./production-board-columns";
 import { previewProductionBoardMove } from "./production-board-move-preview";
 import { productionMineAssignments } from "./production-project-dashboard-model";
@@ -155,6 +156,49 @@ function ProductionWorkBoardForProject({
         { replace: true },
       ),
     [setParams],
+  );
+  // R-4: 주소에 필터가 하나도 없을 때만 직군 기본값을 한 번 골라 둔다. 사용자가 이미
+  // 고른 필터(공유 링크·저장된 보기 포함)는 덮지 않고, 한 번 적용한 뒤에는 사용자가
+  // 바꾸거나 지워도 다시 적용하지 않는다.
+  const roleDefaults = useBoardRoleDefaultFilters();
+  const roleDefaultAppliedRef = useRef(false);
+  const [roleDefaultActive, setRoleDefaultActive] = useState(false);
+  const availableProcesses = useMemo(
+    () =>
+      new Set([
+        ...(aggregate.workflowProfile?.steps.map((step) => canonicalProductionProcessKey(step.key)) ?? []),
+        ...aggregate.tasks.map((task) => canonicalProductionProcessKey(task.processKey)),
+      ]),
+    [aggregate],
+  );
+  useEffect(() => {
+    if (!roleDefaults || roleDefaultAppliedRef.current) return;
+    roleDefaultAppliedRef.current = true;
+    if (FILTER_ONLY_KEYS.some((key) => params.has(key))) return;
+    const next = new URLSearchParams(params);
+    let applied = false;
+    if (roleDefaults.focus && roleDefaults.focus !== "all") {
+      next.set("boardFocus", roleDefaults.focus);
+      applied = true;
+    }
+    if (roleDefaults.processCandidates) {
+      const process = resolveBoardRoleProcess(roleDefaults.processCandidates, availableProcesses);
+      if (process) {
+        next.set("boardProcess", process);
+        applied = true;
+      }
+    }
+    if (applied) {
+      setParams(next, { replace: true });
+      setRoleDefaultActive(true);
+    }
+  }, [roleDefaults, params, setParams, availableProcesses]);
+  const handleFilter = useCallback(
+    (key: string, value: string) => {
+      if (key === "boardFocus" || key === "boardProcess") setRoleDefaultActive(false);
+      setFilter(key, value);
+    },
+    [setFilter],
   );
   const openWorkflow = useCallback(() => setWorkflowOpen(true), [setWorkflowOpen]);
   const actions = useBoardActions({
@@ -418,7 +462,8 @@ function ProductionWorkBoardForProject({
   });
 
   // ───── 저장 동작 ─────
-  const clearFilters = () =>
+  const clearFilters = () => {
+    setRoleDefaultActive(false);
     setParams(
       (previous) => {
         const next = new URLSearchParams(previous);
@@ -427,6 +472,7 @@ function ProductionWorkBoardForProject({
       },
       { replace: true },
     );
+  };
   const runDialog = async (action: () => Promise<void>, message: string): Promise<boolean> => {
     if (saving.current) return false;
     saving.current = true;
@@ -614,7 +660,7 @@ function ProductionWorkBoardForProject({
         completedCount={completedCount}
         activeCount={activeCount}
         processFilter={filters.process}
-        onProcessFilter={(key) => setFilter("boardProcess", key)}
+        onProcessFilter={(key) => handleFilter("boardProcess", key)}
         onCreate={() => setEditor({ task: createProductionTaskDraft(aggregate, crypto.randomUUID()), isNew: true })}
         onOpenWorkflow={() => setWorkflowOpen(true)}
         onOpenGeneration={() => {
@@ -635,12 +681,13 @@ function ProductionWorkBoardForProject({
         focusCounts={focusCounts}
         shown={visible.length}
         total={aggregate.tasks.length}
+        roleDefaultActive={roleDefaultActive}
         viewTools={
           layout === "board" ? (
             <ProductionBoardColumnSettings order={params.get("boardColumns")} collapsed={params.get("boardCollapsed")} busy={dialogBusy} onChange={setFilter} />
           ) : null
         }
-        onFilter={setFilter}
+        onFilter={handleFilter}
         onClear={clearFilters}
         onApplyView={applyView}
         onSaveView={() => {
