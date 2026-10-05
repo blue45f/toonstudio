@@ -5,6 +5,7 @@ import {
 } from "./studio-p2p-huddle-protocol";
 import type { StudioLiveParticipant } from "../studio-live-collaboration-protocol";
 import type { StudioLiveDirectPort } from "../studio-live-direct-port";
+import { getStudioIceServers } from "../studio-ice-configuration";
 
 export interface HuddleMessage {
   id: string; author: string; name: string; text: string; self: boolean; at: number;
@@ -258,8 +259,9 @@ export class StudioP2pHuddleController {
     const existing = this.links.get(id);
     if (existing) return existing;
     try {
-      const pc = this.deps.createPeerConnection?.(huddleRtcConfiguration())
-        ?? new RTCPeerConnection(huddleRtcConfiguration());
+      const configuration = huddleRtcConfiguration(getStudioIceServers());
+      const pc = this.deps.createPeerConnection?.(configuration)
+        ?? new RTCPeerConnection(configuration);
       const link: Link = { pc, audio: pc.addTransceiver("audio", { direction: "sendrecv" }).sender,
         video: pc.addTransceiver("video", { direction: "sendrecv" }).sender, makingOffer: false,
         ignoreOffer: false, settingAnswer: false, pendingIce: [], queue: Promise.resolve(), epoch: peer.epoch, pendingSignals: 0,

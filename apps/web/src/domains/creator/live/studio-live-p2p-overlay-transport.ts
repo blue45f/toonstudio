@@ -60,9 +60,10 @@ import type {
   StudioLiveTransportControlEvent,
   StudioLiveTransportFactory,
 } from "./studio-live-collaboration-transport";
+import { getStudioIceServers } from "./studio-ice-configuration";
 
 /**
- * Reserved screen-signal share id for the STUN-only data-channel mesh. Media screen shares never
+ * Reserved screen-signal share id for the data-channel mesh. Media screen shares never
  * use this id, and the room swallows these envelopes so a mesh offer cannot start playback.
  */
 export const STUDIO_LIVE_P2P_MESH_SHARE_ID = "p2p-mesh-v1";
@@ -101,8 +102,6 @@ const STUDIO_LIVE_P2P_COOPERATIVE_LOCK_KINDS = new Set<StudioLiveMessageKind>([
   "lock:claim",
   "lock:release",
 ]);
-
-const STUDIO_LIVE_P2P_STUN_URLS = ["stun:stun.l.google.com:19302"] as const;
 
 export function isStudioLiveP2pMeshShareId(shareId: string): boolean {
   return shareId === STUDIO_LIVE_P2P_MESH_SHARE_ID;
@@ -183,7 +182,7 @@ function firstNonNullCrdtSyncResponse(
 function defaultCreatePeerConnection(): StudioLiveP2pRtcPeerConnection | null {
   if (typeof RTCPeerConnection !== "function") return null;
   return new RTCPeerConnection({
-    iceServers: [{ urls: [...STUDIO_LIVE_P2P_STUN_URLS] }],
+    iceServers: getStudioIceServers(),
     bundlePolicy: "max-bundle",
   }) as unknown as StudioLiveP2pRtcPeerConnection;
 }
@@ -1464,8 +1463,8 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
 }
 
 /**
- * Wraps a server live factory with an opportunistic P2P overlay. Local BroadcastChannel rooms
- * are already same-origin P2P and are left untouched. Missing WebRTC is a no-op wrap.
+ * Wraps a server live factory with an opportunistic P2P overlay; local BroadcastChannel rooms
+ * are already same-origin P2P and left untouched, and missing WebRTC is a no-op wrap.
  */
 export function applyStudioLiveP2pOverlay(
   primaryFactory: StudioLiveTransportFactory,
