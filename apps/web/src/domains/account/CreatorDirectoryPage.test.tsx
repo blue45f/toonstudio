@@ -9,13 +9,16 @@ import { CreatorDirectoryPage } from "./CreatorDirectoryPage";
 import type {
   CreatorDirectoryEntry,
   CreatorDirectoryResult,
+  WorkSummary,
 } from "@/platform/creator-client";
 import type { PublicCreatorRoleProfile } from "@/shared/lib/creator-role-contract";
 import { CREATOR_PUBLIC_ROLE_PROFILE_VERSION } from "@/shared/lib/creator-role-contract";
 
 const searchCreatorDirectory = vi.hoisted(() => vi.fn());
+const listWorks = vi.hoisted(() => vi.fn());
 vi.mock("@/platform/creator-client", () => ({
   searchCreatorDirectory,
+  listWorks,
 }));
 
 function profile(overrides: Partial<PublicCreatorRoleProfile> = {}): PublicCreatorRoleProfile {
@@ -56,6 +59,8 @@ function view() {
 
 beforeEach(() => {
   searchCreatorDirectory.mockReset();
+  listWorks.mockReset();
+  listWorks.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -217,5 +222,77 @@ describe("CreatorDirectoryPage", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(screen.queryByText("이전조건다음페이지")).toBeNull();
     expect(screen.getByText("공개 창작자 1명")).toBeTruthy();
+  });
+
+  function directoryWork(overrides: Partial<WorkSummary> = {}): WorkSummary {
+    return {
+      id: "work-1",
+      title: "달빛 검객",
+      description: "",
+      cover: "https://example.com/directory-cover.jpg",
+      tags: ["판타지", "액션"],
+      format: "cuttoon",
+      titleId: null,
+      status: "published",
+      author: { id: "a", name: "창작자A", avatar: "#123456" },
+      likes: 9,
+      comments: 2,
+      views: 90,
+      liked: false,
+      createdAt: "2026-09-16T00:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  it("대표작이 있는 창작자는 카드 상단에 표지 타일과 장르 스펙트럼 칩을 보여준다", async () => {
+    searchCreatorDirectory.mockResolvedValue(result([entry("a", "창작자A")]));
+    listWorks.mockResolvedValue([directoryWork()]);
+    const { container } = render(view());
+
+    await waitFor(() =>
+      expect(container.querySelector('img[src="https://example.com/directory-cover.jpg"]')).toBeTruthy(),
+    );
+    expect(screen.getByText("판타지")).toBeTruthy();
+    expect(screen.getByText("액션")).toBeTruthy();
+    expect(listWorks).toHaveBeenCalledWith({ userId: "a" }, expect.any(AbortSignal));
+  });
+
+  it("대표작이 없으면 타이포그래픽 커버로 떨어지고 창작자 이름은 카드에 한 번만 나타난다", async () => {
+    searchCreatorDirectory.mockResolvedValue(result([entry("a", "창작자A")]));
+    listWorks.mockResolvedValue([]);
+    const { container } = render(view());
+
+    await waitFor(() => expect(screen.getByText("창작자A")).toBeTruthy());
+    await waitFor(() => expect(listWorks).toHaveBeenCalled());
+    expect(container.querySelector('img[src="https://example.com/directory-cover.jpg"]')).toBeNull();
+  });
+
+  it("직무 칩을 누르면 토글로 선택되고 검색 시 질의에 반영된다", async () => {
+    searchCreatorDirectory.mockResolvedValue(result([]));
+    render(view());
+    await waitFor(() => expect(searchCreatorDirectory).toHaveBeenCalledTimes(1));
+
+    const storyChip = screen.getByRole("button", { name: "글작가" });
+    fireEvent.click(storyChip);
+    expect(storyChip.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+
+    await waitFor(() =>
+      expect(searchCreatorDirectory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ role: "story", limit: 24, offset: 0 }),
+        expect.any(AbortSignal),
+      ),
+    );
+
+    // 이미 선택된 칩을 다시 누르면 전체 직무로 해제된다.
+    fireEvent.click(storyChip);
+    expect(storyChip.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+    await waitFor(() =>
+      expect(searchCreatorDirectory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ role: undefined }),
+        expect.any(AbortSignal),
+      ),
+    );
   });
 });
