@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { PROMOTION_GENRES, PROMOTION_KINDS, PROMOTION_STAGES, validatePromotion } from "../../../../../packages/core/src/promotion";
+import type { PromotionPost } from "../../../../../packages/core/src/promotion";
+import { PromotionCard } from "./PromotionCard";
 import { PromotionCoverDropzone } from "./PromotionCoverDropzone";
 import { PromotionReadiness } from "./PromotionReadiness";
 import { PromotionVideo } from "./PromotionVideo";
@@ -65,6 +67,9 @@ function PromotionEditor({ id, userId }: { id?: string; userId: string }) {
   const [version, setVersion] = useState<number | null>(null), [loading, setLoading] = useState(!!id);
   const [error, setError] = useState(""), [sending, setSending] = useState(false), [coverBusy, setCoverBusy] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  // 수정 중인 글의 실제 작성자·작성일은 서버 응답에만 있어 미리보기 카드 하단에 그대로 쓴다.
+  const [origin, setOrigin] = useState<{ author: { id: string; name: string }; createdAt: string } | null>(null);
+  const [previewNow] = useState(() => new Date().toISOString());
   const busy = useRef(false), live = useRef(true), imageGeneration = useRef(0);
   const navigate = useNavigate();
   useEffect(() => {
@@ -88,6 +93,7 @@ function PromotionEditor({ id, userId }: { id?: string; userId: string }) {
       const parsed = validatePromotion(data.post);
       if (!parsed.value) throw new Error(bt("기존 글을 확인하지 못했어요. 빈 양식으로 덮어쓰지 않습니다.", "Couldn't verify the existing post. It won't be overwritten with an empty form."));
       setDraft({ ...parsed.value, rightsConfirmed: false }); setTags(parsed.value.tags.join(", ")); setVersion(data.post.version);
+      setOrigin({ author: data.post.author, createdAt: data.post.createdAt });
     }).catch(async (cause: unknown) => {
       if (controller.signal.aborted) return;
       // 존재하지 않는 홍보글 id는 404 전용 화면으로 분리한다(일시 오류·권한 오류와 구분).
@@ -127,9 +133,26 @@ function PromotionEditor({ id, userId }: { id?: string; userId: string }) {
     } catch (cause) { const message = await getApiErrorMessage(cause, bt("등록하지 못했어요. 입력 내용은 유지됩니다.", "Couldn't publish. Your input is kept.")); if (live.current) setError(message); }
     finally { busy.current = false; if (live.current) setSending(false); }
   };
+  // 미리보기는 보드가 쓰는 카드 컴포넌트에 초안을 게시물 모양으로 넘겨 그린다.
+  // 새 글은 작성자 표시 이름이 클라이언트에 없어 본인 자리 표시로 두고, 날짜는 게시 시점인 오늘로 둔다.
+  const previewPost: PromotionPost = {
+    kind: draft.kind, stage: draft.stage, genre: draft.genre,
+    title: draft.title, seriesTitle: draft.seriesTitle, description: draft.description,
+    readingUrl: draft.readingUrl, videoUrl: draft.videoUrl, cover: draft.cover,
+    tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+    contentWarning: draft.contentWarning, rightsConfirmed: true,
+    id: id ?? "preview",
+    author: origin?.author ?? { id: userId, name: bt("작성자 본인", "You (the author)") },
+    createdAt: origin?.createdAt ?? previewNow,
+    updatedAt: origin?.createdAt ?? previewNow,
+    version: version ?? 1,
+    hidden: false, archived: false, saved: false,
+  };
+  const hasPreviewContent = [draft.seriesTitle, draft.title, draft.description, draft.cover].some((value) => value.trim().length > 0);
   if (notFound) return <NotFoundPage />;
   return (
-    <div className="pc-shell pc-narrow">
+    <div className="pc-shell">
+      <div className="pc-editor-top">
       <Link to={id ? `/community/promote/${encodeURIComponent(id)}` : "/community/promote"}>← {id ? bt("게시물로 돌아가기", "Back to post") : bt("홍보 커뮤니티", "Promotion community")}</Link>
       <header className="pc-editor-heading">
         <p className="pc-eyebrow">YOUR STORY STARTS HERE</p>
@@ -143,8 +166,10 @@ function PromotionEditor({ id, userId }: { id?: string; userId: string }) {
         </aside>
       )}
       {error && <p className="pc-error" role="alert">{error}</p>}
+      </div>
       {loading && <LoadingState variant="skeleton" label={bt("기존 내용을 불러오고 있어요.", "Loading the existing content…")} />}
       {!loading && (!id || version !== null) && (
+        <div className="pc-editor-layout">
         <form className="pc-form" onSubmit={(event) => void submit(event)}>
           <fieldset disabled={sending}>
             <legend className="sr-only">{bt("작품 소개 작성", "Write a work introduction")}</legend>
@@ -213,6 +238,25 @@ function PromotionEditor({ id, userId }: { id?: string; userId: string }) {
             </section>
           </fieldset>
         </form>
+        <aside className="pc-preview" aria-labelledby="pc-preview-title">
+          <h2 id="pc-preview-title">{bt("홍보 보드 미리보기", "Promotion board preview")}</h2>
+          <p className="pc-caption">{bt("입력하는 내용이 홍보 보드에 게시될 카드에 바로 반영됩니다. 눌러도 이동하지 않는 미리보기 전용 표시예요.", "Your input appears right away on the card as it will be posted on the promotion board. This preview does not navigate when clicked.")}</p>
+          {hasPreviewContent ? (
+            <PromotionCard post={previewPost} interactive={false} />
+          ) : (
+            <div className="pc-preview-empty">
+              <p>{bt("아직 입력된 내용이 없어요.", "Nothing entered yet.")}</p>
+              <ul>
+                <li>{bt("작품명·장르 → 표지가 없을 때 보이는 타이포그래피 커버", "Work title & genre → the typographic cover shown when there is no cover image")}</li>
+                <li>{bt("표지 이미지 → 카드 커버", "Cover image → the card cover")}</li>
+                <li>{bt("소개 제목·소개글 → 카드 제목과 본문", "Headline & introduction → the card title and body")}</li>
+                <li>{bt("소개 유형·활동 단계 → 카드 상단 칩", "Introduction type & creator stage → the chips at the top of the card")}</li>
+                <li>{bt("홍보 영상 주소 → 카드의 영상 배지", "Promo video URL → the video badge on the card")}</li>
+              </ul>
+            </div>
+          )}
+        </aside>
+        </div>
       )}
     </div>
   );
