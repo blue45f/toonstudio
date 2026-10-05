@@ -1,6 +1,7 @@
 import type { StudioColorProofDocument } from "./color/studio-color-proof-document";
 import type { StudioDrawingAssistDocument } from "./brush/studio-drawing-assist-document";
 import type { StudioPaperSurfaceSettings } from "./brush/studio-paper-granulation-runtime";
+import type { DialogueReviewMap } from "./lettering/studio-dialogue-review";
 import type { DialogueLocaleMap } from "./lettering/studio-dialogue-translate";
 import type { StudioLayerComp } from "./layer/studio-layer-comps";
 import type { AnimationTimelineDoc } from "./studio-anim-tracks";
@@ -43,6 +44,7 @@ export interface PageState {
   shotType?: string; // 샷 타입(클로즈업/와이드 등) — studio-panel-shot-tags 관리. 미설정=태그 없음(빈 값 저장 시 키 제거).
   cameraAngle?: string; // 카메라 앵글(로우/하이/더치 등) — studio-panel-shot-tags 관리. 미설정=태그 없음(빈 값 저장 시 키 제거).
   dialogueI18n?: DialogueLocaleMap; // 대사 번역 저장소(studio-dialogue-translate) — elId→로케일→텍스트. 미설정=번역 없음(기존 문서 100% 호환).
+  dialogueReview?: DialogueReviewMap; // 대사 번역 검수 상태(studio-dialogue-review) — elId→로케일→승인/수정 필요. 미설정=미검수.
   review?: PageReviewState; // 페이지 검토 상태·담당·메모·로컬 편집 잠금.
   /** 페이지 소유 원근자·아이소메트릭 가이드. 미설정 레거시는 비활성 기본값으로 정규화. */
   drawingAssist?: StudioDrawingAssistDocument;
