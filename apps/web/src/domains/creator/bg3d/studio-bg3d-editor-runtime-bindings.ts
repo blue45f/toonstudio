@@ -23,6 +23,7 @@ export {
   Layers,
   LayoutTemplate,
   Loader2,
+  Link2,
   LocateFixed,
   Lock,
   Magnet,

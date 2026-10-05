@@ -419,6 +419,9 @@ function primitiveNodeFromRuntime(value: BgPrimitive): StudioBg3dSceneNode | nul
     castsShadow: true,
     receivesShadow: true,
     parentId: value.parentId ?? null,
+    ...(typeof value.linkedSourceId === "string" && value.linkedSourceId !== value.id
+      ? { linkedSourceId: value.linkedSourceId }
+      : {}),
   };
 }
 
@@ -497,6 +500,9 @@ function modelNodeFromRuntime(
       castsShadow: true,
       receivesShadow: true,
       parentId: value.parentId ?? null,
+      ...(typeof value.linkedSourceId === "string" && value.linkedSourceId !== value.id
+        ? { linkedSourceId: value.linkedSourceId }
+        : {}),
       ...(materialOverride ? { materialOverride } : {}),
       ...(animation ? { animation } : {}),
       ...(pose ? { pose } : {}),
@@ -800,6 +806,7 @@ export function hydrateStudioBg3dDocumentToRuntime(
         visible: node.visible !== false,
         locked: node.locked === true,
         parentId: node.parentId ?? null,
+        linkedSourceId: node.linkedSourceId,
       });
       continue;
     }
@@ -849,6 +856,7 @@ export function hydrateStudioBg3dDocumentToRuntime(
       visible: node.visible !== false,
       locked: node.locked === true,
       parentId: node.parentId ?? null,
+      linkedSourceId: node.linkedSourceId,
       materialOverride: node.materialOverride ? { ...node.materialOverride } : undefined,
       animation: node.animation ? { ...node.animation } : undefined,
       pose: node.pose ? {

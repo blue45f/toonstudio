@@ -47,6 +47,8 @@ export interface BgCustomModelInstance {
   locked?: boolean;
   /** Parent entity ID for hierarchy grouping. null/undefined means root. */
   parentId?: string | null;
+  /** Linked-clone source ID (연결 복제): appearance follows the source on canonical commits. */
+  linkedSourceId?: string;
   /** Engine-neutral, per-instance adjustments applied to cloned materials only. */
   materialOverride?: StudioBg3dMaterialOverride;
   /** Optional clip playback state for animated glTF/FBX-derived assets. */

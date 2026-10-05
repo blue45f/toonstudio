@@ -512,6 +512,12 @@ interface StudioBg3dSceneNodeBase {
   readonly receivesShadow: boolean;
   /** Parent node ID for hierarchy grouping. null/undefined means root. */
   readonly parentId?: string | null;
+  /**
+   * Linked-clone source node ID (연결 복제). When set, this node follows the source node's
+   * appearance (color/material/shadow flags) on every canonical commit; transform, name,
+   * visibility and hierarchy stay independent. Always points at the root source (never a chain).
+   */
+  readonly linkedSourceId?: string;
 }
 
 export interface StudioBg3dPrimitiveNode extends StudioBg3dSceneNodeBase {
@@ -1892,6 +1898,7 @@ function normalizeNode(
   if (!isRecord(value)) return null;
   const id = normalizedId(value.id);
   if (!id) return null;
+  const linkedSourceId = normalizedId(value.linkedSourceId);
   const base = {
     id,
     name: normalizedText(value.name, MAX_NODE_NAME_LENGTH, true) ?? "3D 요소",
@@ -1901,6 +1908,8 @@ function normalizeNode(
     castsShadow: normalizedBoolean(value.castsShadow, true),
     receivesShadow: normalizedBoolean(value.receivesShadow, true),
     parentId: normalizedId(value.parentId) ?? null,
+    // A node can never link to itself; dangling links are dropped by the sync pass, not here.
+    ...(linkedSourceId && linkedSourceId !== id ? { linkedSourceId } : {}),
   };
   if (value.kind === "primitive") {
     if (typeof value.primitiveKind !== "string" || !PRIMITIVE_KIND_SET.has(value.primitiveKind)) {

@@ -89,6 +89,9 @@ interface StudioBg3dShapesPanelContext {
   readonly focusSelectedEntity: () => void;
   readonly ScanLine: typeof import("lucide-react").ScanLine;
   readonly duplicateSelected: () => void;
+  /** 연결 복제: 외형이 원본과 동기화되는 복제본을 만든다. 미제공 시 버튼을 숨긴다. */
+  readonly duplicateSelectedLinked?: () => void;
+  readonly Link2?: typeof import("lucide-react").Link2;
   readonly Copy: typeof import("lucide-react").Copy;
   readonly deleteSelected: () => void;
   readonly Trash2: typeof import("lucide-react").Trash2;
@@ -222,6 +225,8 @@ export function StudioBg3dShapesPanel({
     focusSelectedEntity,
     ScanLine,
     duplicateSelected,
+    duplicateSelectedLinked,
+    Link2,
     Copy,
     deleteSelected,
     Trash2,
@@ -601,6 +606,17 @@ export function StudioBg3dShapesPanel({
                           >
                             <Copy size={14} aria-hidden />
                           </button>
+                          {duplicateSelectedLinked && Link2 ? (
+                            <button
+                              type="button"
+                              aria-label="연결 복제"
+                              title="연결 복제 (외형이 원본과 동기화됨)"
+                              className={ICON_BUTTON}
+                              onClick={duplicateSelectedLinked}
+                            >
+                              <Link2 size={14} aria-hidden />
+                            </button>
+                          ) : null}
                           <button
                             type="button"
                             aria-label="삭제"
