@@ -56,7 +56,8 @@ function marketPlaceState(id: MarketPlaceId, pathname: string, findingAsset: boo
     case "wishlist":
       return { active: pathname === "/market/wishlist", current: pathname === "/market/wishlist" };
     case "distribute": {
-      const distributing = pathname === "/market/manage" || pathname === "/market/publish";
+      const distributing =
+        pathname === "/market/manage" || pathname === "/market/publish" || pathname === "/market/seller";
       return { active: distributing, current: distributing };
     }
   }
