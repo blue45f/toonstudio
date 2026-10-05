@@ -113,7 +113,7 @@ function assignmentLabel(
   const party = assignment
     ? aggregate.parties.find((entry) => entry.id === assignment.partyId)
     : null;
-  return `${party?.publicDisplayName ?? "알 수 없는 담당자"} · ${assignment?.roleType ?? "역할 미정"}`;
+  return `${party?.publicDisplayName ?? "알 수 없는 담당자"} · ${assignment?.roleType ?? "담당 역할 미정"}`;
 }
 export function ProductionRiskEditorDialog({
   open,

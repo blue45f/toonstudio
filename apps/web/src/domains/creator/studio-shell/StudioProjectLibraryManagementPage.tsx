@@ -1,10 +1,11 @@
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 
 import { Container } from "@/shared/components/section";
+import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import Link from "@/shared/navigation/router-link";
 
-import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { StudioCreatorLobby } from "./StudioCreatorLobby";
 import { StudioProjectLibraryManagementContent } from "./StudioProjectLibraryManagementContent";
 import { StudioProjectLibraryManagementDialogs } from "./StudioProjectLibraryManagementDialogs";
@@ -21,31 +22,26 @@ const VoiceGuideButton = lazyRetry(
   "StudioLibraryVoiceGuideButton",
 );
 
-const StudioLibraryPersonalizePanels = lazyRetry(
-  () => import("./StudioLibraryPersonalizePanels").then((module) => ({
-    default: module.StudioLibraryPersonalizePanels,
-  })),
-  "StudioLibraryPersonalizePanels",
-);
-
-/** 접힌 설정 묶음은 처음 펼칠 때만 청크와 프로필 요청을 시작한다. */
-function StudioLibraryPersonalizeDetails({ locale }: { readonly locale: string }) {
+/**
+ * R-3: 개인화 센터는 설정의 "내 직군 · 작업환경"(/settings/role) 단일 진입점으로 이관됐다.
+ * 이 딥링크(#role-personalization)는 깨지 않도록 요약과 이동 링크만 남긴다.
+ */
+function StudioLibraryPersonalizeDetails() {
   const bt = useBilingual("StudioProjectLibraryManagementPage");
-  const [opened, setOpened] = useState(false);
   return (
-    <details
-      id="role-personalization"
-      className="workspace-library-personalize scroll-mt-28"
-      onToggle={(event) => {
-        if (event.currentTarget.open) setOpened(true);
-      }}
-    >
+    <details id="role-personalization" className="workspace-library-personalize scroll-mt-28">
       <summary>{bt("작업 방식과 시작 가이드 설정", "Work preferences and getting started")}</summary>
-      {opened ? (
-        <Suspense fallback={<StudioPanelLoading label={bt("설정을 불러오는 중…", "Loading preferences…")} />}>
-          <StudioLibraryPersonalizePanels locale={locale} />
-        </Suspense>
-      ) : null}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-2xl text-sm leading-6 text-fg-2">
+          {bt(
+            "직군별 빠른 실행 순서·기본 작업공간·알림 수준 같은 작업환경 개인화는 설정의 '내 직군 · 작업환경'으로 모았습니다.",
+            "Role-based quick actions, default workspace and notification levels now live under Settings → My role · workspace.",
+          )}
+        </p>
+        <Link href="/settings/role?tab=workspace" className={buttonClass({ variant: "outline", className: "shrink-0" })}>
+          {bt("내 직군 · 작업환경에서 바꾸기", "Change in My role · workspace")}
+        </Link>
+      </div>
     </details>
   );
 }
@@ -61,7 +57,7 @@ export function StudioProjectLibraryManagementPage() {
         {controller.view === "active" ? <StudioCreatorLobby controller={controller} /> : null}
         <StudioProjectLibraryManagementHeader controller={controller} />
         <StudioProjectLibraryManagementContent controller={controller} />
-        {controller.view === "active" ? <StudioLibraryPersonalizeDetails locale={controller.locale} /> : null}
+        {controller.view === "active" ? <StudioLibraryPersonalizeDetails /> : null}
       </Container>
       <StudioProjectLibraryManagementDialogs controller={controller} />
     </div>

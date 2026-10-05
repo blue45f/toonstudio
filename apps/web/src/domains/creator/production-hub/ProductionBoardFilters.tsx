@@ -38,6 +38,8 @@ interface Props {
   /** 지금 조건으로 보이는 카드 수와 전체 수. */
   readonly shown: number;
   readonly total: number;
+  /** 직군 기본값(R-4)으로 골라 둔 필터가 아직 살아 있으면 안내 문구를 보인다. */
+  readonly roleDefaultActive?: boolean;
   /** 열 맞춤 설정처럼 보드 보기에서만 쓰는 도구를 툴바 한 줄에 함께 놓는다. */
   readonly viewTools?: ReactNode;
   readonly onFilter: (key: string, value: string) => void;
@@ -62,6 +64,7 @@ export function ProductionBoardFilters({
   focusCounts,
   shown,
   total,
+  roleDefaultActive = false,
   viewTools,
   onFilter,
   onClear,
@@ -271,6 +274,14 @@ export function ProductionBoardFilters({
           {filtered ? bt(`${shown}/${total}장 표시`, `${shown} of ${total} shown`) : bt(`카드 ${total}장`, `${total} cards`)}
         </span>
       </div>
+      {roleDefaultActive ? (
+        <p className="mt-1.5 text-xs leading-5 text-fg-3">
+          {bt(
+            "내 직군 기본값으로 먼저 골라 둔 필터예요. 권한으로 숨긴 게 아니라 시작 선택일 뿐이니, 칩을 끄면 전체 작업이 보입니다.",
+            "Pre-selected from your role preset. Nothing is hidden by permission — turn a chip off to see everything.",
+          )}
+        </p>
+      ) : null}
       <div id={regionId} hidden={!expanded}>
         <div className="mt-3 grid gap-2 border-t border-line pt-3 sm:grid-cols-2 xl:grid-cols-3">
           <select

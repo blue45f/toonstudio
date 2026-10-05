@@ -334,7 +334,9 @@ export function productionReviewMatchesApprovedFinal(
 }
 
 export interface ProductionRolePreset {
-  readonly id: "producer" | "writer" | "storyboard" | "line-art" | "color" | "lettering" | "external-reviewer";
+  // ID는 층 A 직군 ID(story·storyboard·line-art 등)와 겹치지 않게 `invite-` 접두사를 쓴다.
+  // 이 프리셋은 직군이 아니라 초대 시 거는 권한 묶음이다 (role-ux-review R-6).
+  readonly id: "invite-producer" | "invite-story-writer" | "invite-storyboard" | "invite-line-art" | "invite-color" | "invite-lettering" | "invite-external-reviewer";
   readonly label: string;
   readonly description: string;
   readonly workspaceRole: "admin" | "member" | "guest";
@@ -345,31 +347,52 @@ export interface ProductionRolePreset {
 }
 
 export const PRODUCTION_ROLE_PRESETS: readonly ProductionRolePreset[] = Object.freeze([
-  { id: "producer", label: "PD·편집자", description: "프로젝트 운영, 검수 정책과 최종 전달을 관리합니다.", workspaceRole: "admin", projectRole: "admin",
+  { id: "invite-producer", label: "PD·편집자", description: "프로젝트 운영, 검수 정책과 최종 전달을 관리합니다.", workspaceRole: "admin", projectRole: "admin",
     capabilities: ["schedule.manage", "review.configure", "review.decide", "delivery.issue"],
     allowedActions: ["전체 공정 보기", "담당자·기한 관리", "검수 승인", "공식 전달"], blockedActions: ["소유권 이전"] },
-  { id: "writer", label: "스토리 작가", description: "대본 공정의 작성·제출·수정에 집중합니다.", workspaceRole: "member", projectRole: "editor",
+  { id: "invite-story-writer", label: "스토리 작가", description: "대본 공정의 작성·제출·수정에 집중합니다.", workspaceRole: "member", projectRole: "editor",
     capabilities: ["story.edit", "story.submit", "review.comment"],
     allowedActions: ["대본 편집", "검수 제출", "의견 답변"], blockedActions: ["작화 원본 편집", "최종 승인", "공식 전달"] },
-  { id: "storyboard", label: "콘티 작가", description: "콘티·연출 공정을 편집하고 검수본을 제출합니다.", workspaceRole: "member", projectRole: "editor",
+  { id: "invite-storyboard", label: "콘티 작가", description: "콘티·연출 공정을 편집하고 검수본을 제출합니다.", workspaceRole: "member", projectRole: "editor",
     capabilities: ["storyboard.edit", "storyboard.submit", "review.comment"],
     allowedActions: ["콘티 편집", "검수 제출", "비교 확인"], blockedActions: ["다른 공정 원본 편집", "최종 승인"] },
-  { id: "line-art", label: "선화 작가", description: "선화 원고와 수정 요청을 처리합니다.", workspaceRole: "member", projectRole: "editor",
+  { id: "invite-line-art", label: "선화 작가", description: "선화 원고와 수정 요청을 처리합니다.", workspaceRole: "member", projectRole: "editor",
     capabilities: ["drawing.edit", "drawing.submit", "review.comment"],
     allowedActions: ["선화 편집", "수정 요청 처리", "검수 제출"], blockedActions: ["프로젝트 설정", "최종 승인", "공식 전달"] },
-  { id: "color", label: "채색 작가", description: "채색 결과와 색상 수정 요청을 처리합니다.", workspaceRole: "member", projectRole: "editor",
+  { id: "invite-color", label: "채색 작가", description: "채색 결과와 색상 수정 요청을 처리합니다.", workspaceRole: "member", projectRole: "editor",
     capabilities: ["color.edit", "color.submit", "review.comment"],
     allowedActions: ["채색 편집", "AI 보조 handoff", "검수 제출"], blockedActions: ["권한 관리", "최종 승인"] },
-  { id: "lettering", label: "식자·현지화", description: "대사·식자·번역 공정을 편집하고 제출합니다.", workspaceRole: "member", projectRole: "editor",
+  { id: "invite-lettering", label: "식자·현지화", description: "대사·식자·번역 공정을 편집하고 제출합니다.", workspaceRole: "member", projectRole: "editor",
     capabilities: ["lettering.edit", "localization.edit", "review.comment"],
     allowedActions: ["텍스트 공정 편집", "검수 제출", "플랫폼 출력 확인"], blockedActions: ["다른 원고 원본 편집", "공식 전달"] },
-  { id: "external-reviewer", label: "외부 검토자", description: "고정 검수본만 보고 의견을 남깁니다.", workspaceRole: "guest", projectRole: "commenter",
+  { id: "invite-external-reviewer", label: "외부 검토자", description: "고정 검수본만 보고 의견을 남깁니다.", workspaceRole: "guest", projectRole: "commenter",
     capabilities: ["review.view", "review.comment"],
     allowedActions: ["고정 검수본 열람", "의견 작성"], blockedActions: ["원본 편집", "원본 다운로드", "멤버 관리", "검수 승인", "공식 전달"] },
 ]);
 
 export function productionRolePreset(id: ProductionRolePreset["id"]): ProductionRolePreset {
   return PRODUCTION_ROLE_PRESETS.find((preset) => preset.id === id) ?? PRODUCTION_ROLE_PRESETS[0]!;
+}
+
+/**
+ * R-6 이전 ID(층 A 직군 ID와 겹치던 이름) → 현재 ID. 이미 공유된 `?rolePreset=` 링크가
+ * 깨지지 않게 읽을 때만 별칭을 허용하고, 새로 쓰는 링크는 항상 현재 ID만 쓴다.
+ */
+const PRODUCTION_ROLE_PRESET_ID_ALIASES: Readonly<Record<string, ProductionRolePreset["id"]>> = Object.freeze({
+  producer: "invite-producer",
+  writer: "invite-story-writer",
+  storyboard: "invite-storyboard",
+  "line-art": "invite-line-art",
+  color: "invite-color",
+  lettering: "invite-lettering",
+  "external-reviewer": "invite-external-reviewer",
+});
+
+/** URL 파라미터 등 외부 입력에서 온 프리셋 ID를 현재 ID로 해석한다. 모르는 값이면 null. */
+export function parseProductionRolePresetId(value: string | null | undefined): ProductionRolePreset["id"] | null {
+  if (!value) return null;
+  if (PRODUCTION_ROLE_PRESETS.some((preset) => preset.id === value)) return value as ProductionRolePreset["id"];
+  return PRODUCTION_ROLE_PRESET_ID_ALIASES[value] ?? null;
 }
 
 export interface ProductionAiAssistPlan {

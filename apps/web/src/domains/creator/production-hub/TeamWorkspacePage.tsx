@@ -13,7 +13,7 @@ import { normalizeCollaborationOnboardingCandidate, readCollaborationOnboardingC
 import { inviteStudioTeamMember, type StudioTeamAssignableRole } from "../studio-team-client";
 import { listProductionProjects, type ProductionProjectSummary } from "./production-dashboard-api";
 import { getEffectiveOperationPolicy, acceptTeamInvite, commandTeamWorkspace, createTeamWorkspace, getTeamUsage, getTeamWorkspace, listTeamWorkspaces } from "./team-workspace-api";
-import { PRODUCTION_ROLE_PRESETS, productionRolePreset, type ProductionRolePreset } from "./production-manuscript-competitive-model";
+import { parseProductionRolePresetId, PRODUCTION_ROLE_PRESETS, productionRolePreset, type ProductionRolePreset } from "./production-manuscript-competitive-model";
 import { TeamAccessGuide } from "./TeamAccessGuide";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
@@ -71,23 +71,23 @@ function tierFromPreset(preset: ProductionRolePreset): WorkspaceRoleTier {
 }
 /** 프리셋별 담당 공정 범위. 공정 단위 편집 제한은 서버 강제 계약이 없어 미리보기로 표시한다. */
 const PRESET_PROCESS_SCOPE: Record<ProductionRolePreset["id"], BilingualCopy> = {
-  producer: { ko: "전체 공정", en: "Full pipeline" },
-  writer: { ko: "대본 공정", en: "Script stage" },
-  storyboard: { ko: "콘티·연출 공정", en: "Storyboard & directing" },
-  "line-art": { ko: "선화 공정", en: "Line-art stage" },
-  color: { ko: "채색 공정", en: "Coloring stage" },
-  lettering: { ko: "식자·현지화 공정", en: "Lettering & localization" },
-  "external-reviewer": { ko: "고정 검수본", en: "Fixed review copy" },
+  "invite-producer": { ko: "전체 공정", en: "Full pipeline" },
+  "invite-story-writer": { ko: "대본 공정", en: "Script stage" },
+  "invite-storyboard": { ko: "콘티·연출 공정", en: "Storyboard & directing" },
+  "invite-line-art": { ko: "선화 공정", en: "Line-art stage" },
+  "invite-color": { ko: "채색 공정", en: "Coloring stage" },
+  "invite-lettering": { ko: "식자·현지화 공정", en: "Lettering & localization" },
+  "invite-external-reviewer": { ko: "고정 검수본", en: "Fixed review copy" },
 };
 /** 초대 프리셋 이름. 공유 계약(ko)은 수정하지 않고 페이지에서만 영문을 매핑한다. */
 const PRESET_LABELS_EN: Record<ProductionRolePreset["id"], string> = {
-  producer: "PD · Editor",
-  writer: "Story writer",
-  storyboard: "Storyboard artist",
-  "line-art": "Line artist",
-  color: "Colorist",
-  lettering: "Lettering & localization",
-  "external-reviewer": "External reviewer",
+  "invite-producer": "PD · Editor",
+  "invite-story-writer": "Story writer",
+  "invite-storyboard": "Storyboard artist",
+  "invite-line-art": "Line artist",
+  "invite-color": "Colorist",
+  "invite-lettering": "Lettering & localization",
+  "invite-external-reviewer": "External reviewer",
 };
 /** 작품별 부여 가능 역할. */
 const ASSIGNABLE_ROLE_LABELS: Record<StudioTeamAssignableRole, BilingualCopy> = {
@@ -188,8 +188,8 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
     try { return readCollaborationOnboardingCandidate(sessionStorage, onboardingId); }
     catch { return null; }
   });
-  const requestedPreset = searchParams.get("rolePreset") as ProductionRolePreset["id"] | null;
-  const invitePreset = productionRolePreset(PRODUCTION_ROLE_PRESETS.some((preset) => preset.id === requestedPreset) ? requestedPreset! : "writer");
+  const requestedPreset = parseProductionRolePresetId(searchParams.get("rolePreset"));
+  const invitePreset = productionRolePreset(requestedPreset ?? "invite-story-writer");
   const [operationPolicy, setOperationPolicy] = useState<EffectiveOperationPolicy | null>(null);
   const [items, setItems] = useState<readonly TeamWorkspaceSummary[]>([]);
   const [detail, setDetail] = useState<TeamWorkspaceDetail | null>(null);
