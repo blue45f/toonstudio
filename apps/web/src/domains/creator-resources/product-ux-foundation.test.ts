@@ -28,7 +28,7 @@ describe("purpose-first product UX foundation", () => {
     const launcher = '<ProductIntentStart headingId="creator-toolkit-title" />';
     expect(experience).toContain(launcher);
     expect(experience.indexOf('id="creator-start"')).toBeLessThan(experience.indexOf(launcher));
-    expect(experience.indexOf(launcher)).toBeLessThan(experience.indexOf('className="cf-bridge cf-shell"'));
+    expect(experience.indexOf(launcher)).toBeLessThan(experience.indexOf("<StudioIntroBridge />"));
     expect(experience.match(/<ProductIntentStart\b/gu)).toHaveLength(1);
   });
 
