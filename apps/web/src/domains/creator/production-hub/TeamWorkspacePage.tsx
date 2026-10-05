@@ -108,6 +108,39 @@ const fieldClass = "min-h-11 rounded-lg border border-line bg-canvas px-3 text-f
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return <section className="creator-workflow-panel rounded-2xl border border-line bg-card p-5"><h2 className="mb-4 text-lg font-bold">{title}</h2>{children}</section>;
 }
+/** 목록 로딩 스켈레톤 한 장. 실제 워크스페이스 카드(Link)와 같은 테두리·여백·줄 높이를 쓴다.
+ *  로딩 안내는 role="status" 문구가 맡으므로 이 블록은 장식으로 숨긴다. */
+function WorkspaceListSkeletonCard() {
+  return <div aria-hidden="true" data-testid="workspace-list-skeleton-card" className="animate-pulse rounded-xl border border-line p-4 motion-reduce:animate-none">
+    <div className="h-6 w-1/2 rounded bg-raised" />
+    <div className="mt-2 h-5 w-3/4 rounded bg-raised" />
+  </div>;
+}
+/** 상세 로딩 스켈레톤. 이름·연결 프로젝트·구성원 카드가 앉을 자리와 크기를 그대로 채운다. */
+function WorkspaceDetailSkeleton() {
+  return <div aria-hidden="true" data-testid="workspace-detail-skeleton" className="animate-pulse space-y-5 motion-reduce:animate-none">
+    <section className="creator-workflow-panel rounded-2xl border border-line bg-card p-5">
+      <div className="h-7 w-1/3 rounded bg-raised" />
+      <div className="mt-3 h-5 w-1/4 rounded bg-raised" />
+    </section>
+    <section className="creator-workflow-panel rounded-2xl border border-line bg-card p-5">
+      <div className="mb-4 h-7 w-40 rounded bg-raised" />
+      <div className="space-y-3">
+        <div className="h-12 rounded-lg border border-line" />
+        <div className="h-12 rounded-lg border border-line" />
+      </div>
+    </section>
+    <section className="creator-workflow-panel rounded-2xl border border-line bg-card p-5">
+      <div className="mb-4 h-7 w-32 rounded bg-raised" />
+      <div className="space-y-3">
+        {[0, 1].map((index) => <div key={index} className="flex items-center gap-3 rounded-lg border border-line p-3">
+          <div className="h-5 w-24 rounded bg-raised" />
+          <div className="h-5 w-16 rounded bg-raised" />
+        </div>)}
+      </div>
+    </section>
+  </div>;
+}
 function roleValue(value: string): InvitableWorkspaceRole { return value === "admin" || value === "guest" ? value : "member"; }
 function UsageCard({ usage }: { usage: WorkspaceUsageResponse }) {
   const bt = useBilingual("TeamWorkspacePage");
@@ -264,6 +297,7 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
       <p className="mt-2 text-xs text-fg-3">{bt(`지원서 ${onboarding.applicationId} · 계정 ${onboarding.userId}`, `Application ${onboarding.applicationId} · account ${onboarding.userId}`)}</p>
     </Card>}
     {!workspaceId && <Card title={bt("내 워크스페이스", "My workspaces")}><div className="grid gap-3 sm:grid-cols-2">
+      {loading && items.length === 0 && <><WorkspaceListSkeletonCard /><WorkspaceListSkeletonCard /></>}
       {items.map((item) => <Link key={item.id} className="rounded-xl border border-line p-4 hover:bg-raised" to={`/team/people/${item.id}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`} state={onboardingRouteState}>
         <strong>{item.name}</strong><p className="mt-2 text-sm">{bt(ROLE_LABELS[item.role].ko, ROLE_LABELS[item.role].en)} · {bt(`접근 가능한 작품 ${item.projectCount}개 · 구성원 ${item.memberCount}명`, `${item.projectCount} accessible projects · ${item.memberCount} members`)}</p></Link>)}
       {!loading && items.length === 0 && <p>{bt("아직 참여한 팀이 없습니다. 새 팀을 만들거나 초대를 수락해주세요.", "No teams yet. Create one or accept an invite.")}</p>}</div>
@@ -274,6 +308,7 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
       <summary className="flex min-h-12 cursor-pointer list-none items-center px-5 text-sm font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">{bt("역할과 초대 방법 알아보기", "Learn about roles and invites")}</summary>
       <div className="border-t border-line p-5"><TeamAccessGuide /></div>
     </details>}
+    {loading && workspaceId && !detail && <WorkspaceDetailSkeleton />}
     {detail && <><Card title={detail.workspace.name}><p className="text-sm text-fg-2">{bt("현재 역할:", "Current role:")} {bt(ROLE_LABELS[detail.workspace.role].ko, ROLE_LABELS[detail.workspace.role].en)}</p>
       {manager && <form className="mt-4 flex flex-wrap gap-3" onSubmit={(event) => { event.preventDefault(); void run(() => command({ type: "rename", name })); }}>
         <label className="flex flex-col gap-2">{bt("팀 이름", "Team name")}<input required maxLength={20} value={name} onChange={(event) => setName(event.target.value)} className={fieldClass} /></label>
