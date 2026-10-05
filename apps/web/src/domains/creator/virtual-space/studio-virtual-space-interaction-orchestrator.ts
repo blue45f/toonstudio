@@ -22,6 +22,7 @@ const panelByAction: Partial<Record<StudioSpatialActionId, StudioVirtualWorkspac
   board: "board",
   people: "people",
   huddle: "chat",
+  "booth-booking": "booth",
   "team-hub": "team",
   "today-board": "today",
   "open-customization": "build",

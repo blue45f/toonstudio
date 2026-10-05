@@ -36,6 +36,26 @@ describe("Virtual Studio spatial action orchestration", () => {
     expect(actions.filter((item) => item.id === "huddle")).toHaveLength(1);
   });
 
+  it("회의 콘솔에서는 녹음부스 예약으로 바로 이어진다", () => {
+    const value = interaction("meeting-room-console");
+    const room = DEFAULT_STUDIO_WORLD_MANIFEST.rooms.find((item) => item.id === value.zoneId);
+    const actions = studioSpatialActions(value, room);
+    const ids = actions.map((item) => item.id);
+    // 녹음부스 예약 패널이 곧 녹음 게이트이므로 콘솔의 명시적 선택지에 포함된다.
+    expect(ids).toContain("booth-booking");
+    expect(actions.find((item) => item.id === "booth-booking")?.risk).toBe("inspect");
+    // 동작 상한(6개) 안에서 무대 발표보다 부스 예약을 앞세운다.
+    expect(actions.length).toBeLessThanOrEqual(6);
+    expect(ids).not.toContain("spotlight");
+    // 개인 공간에서도 부스 예약은 열 수 있다(예약 패널은 프로젝트 전용이 아니다).
+    const personal = studioSpatialActions(value, room, { personal: true, nearbyPeerCount: 0 }).map((item) => item.id);
+    expect(personal).toContain("booth-booking");
+    // 플라자 무대처럼 회의 콘솔이 아닌 live 지점에는 부스 예약을 붙이지 않는다.
+    const stage = interaction("creator-plaza-stage");
+    const stageRoom = DEFAULT_STUDIO_WORLD_MANIFEST.rooms.find((item) => item.id === stage.zoneId);
+    expect(studioSpatialActions(stage, stageRoom).map((item) => item.id)).not.toContain("booth-booking");
+  });
+
   it("keeps release and team changes behind authority-labelled actions", () => {
     const release = interaction("release-delivery-console");
     const releaseRoom = DEFAULT_STUDIO_WORLD_MANIFEST.rooms.find((item) => item.id === release.zoneId);
