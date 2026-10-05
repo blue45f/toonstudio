@@ -1,0 +1,39 @@
+/* /events/beta-open — 캠페인 랜딩 전용 토큰 (S1-T9).
+ *
+ * 이 페이지는 라이트모드에서도 다크 시네마틱을 유지하는 캠페인 예외(QA M5 승인)라
+ * 전역 테마 토큰(--color-*) 대신 캠페인 스코프 토큰으로 색을 고정한다.
+ * 토큰 값은 토큰화 이전에 페이지 마크업에 하드코딩돼 있던 색과 1:1로 같다(값 변경 없음).
+ *
+ * 재사용 패턴: 캠페인마다 스코프 클래스(.campaign-<slug>)를 하나 만들고 그 안에
+ * --campaign-* 토큰 값만 다시 정의하면, 마크업 구조와 아래 글로우·고대비 규칙을
+ * 그대로 재사용할 수 있다. */
+
+.campaign-beta-open {
+  --campaign-bg: oklch(0.145 0.025 270);
+  --campaign-fg: #fff;
+  --campaign-glow-warm: oklch(0.8 0.16 75 / 0.2);
+  --campaign-glow-magenta: oklch(0.72 0.19 318 / 0.18);
+  --campaign-glow-sky: oklch(0.68 0.15 235 / 0.14);
+  background: var(--campaign-bg);
+  color: var(--campaign-fg);
+}
+
+/* 배경 글로우 — 따뜻한 빛(좌상)·마젠타(우상)·하늘빛(하단) 3점 방사 그라디언트. */
+.campaign-beta-open__glow {
+  background:
+    radial-gradient(circle at 10% 5%, var(--campaign-glow-warm), transparent 28%),
+    radial-gradient(circle at 86% 18%, var(--campaign-glow-magenta), transparent 31%),
+    radial-gradient(circle at 50% 100%, var(--campaign-glow-sky), transparent 36%);
+}
+
+/* 고대비에서는 글로우(빛 번짐)를 끄고 카드·버튼의 보더만으로 구조를 읽게 한다.
+   OS 설정(prefers-contrast)과 앱 내 고대비 토글(data-contrast="more") 양쪽을 존중한다. */
+@media (prefers-contrast: more) {
+  .campaign-beta-open__glow {
+    display: none;
+  }
+}
+
+:root[data-contrast="more"] .campaign-beta-open__glow {
+  display: none;
+}

@@ -24,6 +24,7 @@ import {
 
 import { BETA_OPEN_EVENT } from "./event-catalog";
 import { useMarketingEventText } from "./marketing-event-copy";
+import "./beta-open-event.css";
 
 const BENEFIT_ICONS = [InfinityIcon, UserPlus, Brush] as const;
 
@@ -77,8 +78,9 @@ export function BetaOpenEventPage() {
   return (
     // 캠페인 예외: Beta Open 2026 이벤트 랜딩은 의도적 다크 시네마틱 디자인.
     // 일반 페이지와 달리 라이트모드에서도 다크 유지. QA M5 승인.
-    <div className="relative min-h-screen overflow-hidden bg-[oklch(0.145_0.025_270)] text-white">
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_5%,oklch(0.8_0.16_75/0.20),transparent_28%),radial-gradient(circle_at_86%_18%,oklch(0.72_0.19_318/0.18),transparent_31%),radial-gradient(circle_at_50%_100%,oklch(0.68_0.15_235/0.14),transparent_36%)]" />
+    // 배경·전경·글로우 색은 beta-open-event.css의 --campaign-* 토큰이 정본이다.
+    <div className="campaign-beta-open relative min-h-screen overflow-hidden">
+      <div aria-hidden className="campaign-beta-open__glow pointer-events-none absolute inset-0" />
       <Container size="wide" className="relative pb-20 pt-6 sm:pb-28">
         <nav className="flex items-center justify-between gap-3" aria-label={text({ ko: "이벤트 탐색", en: "Event navigation" })}>
           <Link href="/events" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-white/75 hover:bg-white/8 hover:text-white">
