@@ -126,6 +126,14 @@ const CAPABILITY_COPY: Readonly<Record<NextgenCapabilityId, () => CapabilityCopy
     name: bi("입력 자동 크기", "field-sizing"),
     purpose: bi("입력 필드가 내용에 맞춰 스스로 커집니다.", "Fields that size themselves to their content."),
   }),
+  "handwriting-recognition": () => ({
+    name: bi("필기 인식", "Handwriting Recognition"),
+    purpose: bi("손글씨를 텍스트로 바꾸는 후보 — ChromeOS 전용 단계라 판정만 기록했습니다.", "Handwriting-to-text candidate — ChromeOS-only stage, recorded as a verdict only."),
+  }),
+  "virtual-keyboard": () => ({
+    name: bi("가상 키보드 제어", "VirtualKeyboard"),
+    purpose: bi("모바일 편집에서 키보드가 캔버스를 가리는 문제의 후보 — 접점 실측 후 판정합니다.", "Candidate for keyboard-over-canvas issues in mobile editing — judged after seam checks."),
+  }),
   "scroll-state-queries": () => ({
     name: bi("스크롤 상태 쿼리", "Scroll-state Queries"),
     purpose: bi("스크롤 도달·고정 상태를 CSS만으로 판정합니다.", "Scroll and stuck state, judged in CSS alone."),

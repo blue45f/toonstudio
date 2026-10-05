@@ -31,6 +31,8 @@ export const NEXTGEN_CAPABILITY_IDS = [
   "anchor-positioning",
   "field-sizing",
   "scroll-state-queries",
+  "handwriting-recognition",
+  "virtual-keyboard",
 ] as const;
 
 export type NextgenCapabilityId = (typeof NEXTGEN_CAPABILITY_IDS)[number];
@@ -188,6 +190,14 @@ const DETECTORS: Readonly<Record<NextgenCapabilityId, () => boolean>> = {
   "anchor-positioning": () => cssSupports("anchor-name: --nextgen-probe"),
   "field-sizing": () => cssSupports("field-sizing: content"),
   "scroll-state-queries": () => cssSupports("container-type: scroll-state"),
+  // Handwriting Recognition — Chrome 99~ ChromeOS 한정으로만 노출됐던 진입점.
+  // 데스크톱·모바일 Chrome과 타 브라우저에는 존재하지 않으므로 보통 미지원이다.
+  "handwriting-recognition": () => {
+    const nav = navigatorLike();
+    return Boolean(nav) && typeof nav?.["createHandwritingRecognizer"] === "function";
+  },
+  // VirtualKeyboard — Chrome 94+ (ChromeOS·Android 중심). overlaysContent opt-in형.
+  "virtual-keyboard": () => navigatorHas("virtualKeyboard"),
 };
 
 /** 현재 환경의 차세대 API 지원 여부를 전부 감지한다. 어떤 경우에도 던지지 않는다. */

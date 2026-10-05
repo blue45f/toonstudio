@@ -40,6 +40,8 @@ describe("detectNextgenCapabilities", () => {
       "anchor-positioning",
       "field-sizing",
       "scroll-state-queries",
+      "handwriting-recognition",
+      "virtual-keyboard",
     ];
     for (const id of expectedUnsupported) {
       expect(map[id]).toBe(false);
@@ -78,12 +80,16 @@ describe("detectNextgenCapabilities", () => {
       ml: {},
       xr: {},
       requestMIDIAccess: async () => ({}),
+      virtualKeyboard: { overlaysContent: false },
+      createHandwritingRecognizer: async () => ({}),
     });
     const map = detectNextgenCapabilities();
     expect(map["screen-wake-lock"]).toBe(true);
     expect(map["webnn"]).toBe(true);
     expect(map["webxr"]).toBe(true);
     expect(map["web-midi"]).toBe(true);
+    expect(map["virtual-keyboard"]).toBe(true);
+    expect(map["handwriting-recognition"]).toBe(true);
   });
 
   it("wakeLock이 있어도 request가 없으면 미지원이다", () => {
