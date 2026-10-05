@@ -2,8 +2,9 @@
  * RevenueChart.tsx
  *
  * 월별 수익 막대 차트 (SVG, 라이브러리 미사용).
+ * 막대는 테마 액센트 그라디언트로 채우고 가장 최근 달을 가장 진하게 강조한다.
  */
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 
 import { useT } from "@/shared/lib/i18n";
 
@@ -16,7 +17,7 @@ interface RevenueChartProps {
 
 const BAR_WIDTH = 44;
 const BAR_GAP = 18;
-const CHART_HEIGHT = 160;
+const CHART_HEIGHT = 184;
 const LABEL_HEIGHT = 24;
 
 function formatShort(amount: number): string {
@@ -27,6 +28,7 @@ function formatShort(amount: number): string {
 
 export function RevenueChart({ data, className }: RevenueChartProps) {
   const t = useT();
+  const gradientId = `rev-bar-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const width = data.length * (BAR_WIDTH + BAR_GAP) + BAR_GAP;
 
   const bars = useMemo(() => {
@@ -56,7 +58,21 @@ export function RevenueChart({ data, className }: RevenueChartProps) {
         className="h-auto w-full"
         aria-hidden
       >
-        {bars.map((bar) => (
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" style={{ stopColor: "var(--color-accent-2)" }} />
+            <stop offset="100%" style={{ stopColor: "var(--color-accent)" }} />
+          </linearGradient>
+        </defs>
+        <line
+          x1={0}
+          x2={width}
+          y1={CHART_HEIGHT}
+          y2={CHART_HEIGHT}
+          strokeWidth={1}
+          className="stroke-line"
+        />
+        {bars.map((bar, index) => (
           <g key={bar.month}>
             <rect
               x={bar.x}
@@ -64,7 +80,8 @@ export function RevenueChart({ data, className }: RevenueChartProps) {
               width={BAR_WIDTH}
               height={bar.height}
               rx={6}
-              className="fill-accent/70"
+              fill={`url(#${gradientId})`}
+              opacity={index === bars.length - 1 ? 1 : 0.45}
             />
             <text
               x={bar.x + BAR_WIDTH / 2}
