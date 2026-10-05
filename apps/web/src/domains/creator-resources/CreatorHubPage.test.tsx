@@ -9,7 +9,10 @@ import { RESEARCH_DESK_SESSION_KEY } from "./research-desk-session";
 
 import type { CreatorResource, CreatorWorkspace } from "@/shared/lib/creator-resources";
 
-import { CREATOR_WORKSPACE_KEY } from "@/shared/lib/creator-workspace-persistence";
+import { creatorWorkspaceStorageKey } from "@/shared/lib/creator-workspace-persistence";
+
+// 이 테스트들은 비로그인 상태라 워크스페이스가 게스트 파티션 키에 저장된다(소유자 스코프).
+const GUEST_WORKSPACE_KEY = creatorWorkspaceStorageKey("guest");
 
 vi.mock("./ProviderStatus", () => ({ ProviderStatus: () => <p>provider-status-loaded</p> }));
 
@@ -122,7 +125,7 @@ describe("research command center", () => {
       resource({ id: "openlibrary:edition", provider: "openlibrary", title: "Edition reference" }),
       resource({ id: "bizinfo:grant", provider: "bizinfo", title: "Grant reference", deadline: "2026-09-20" }),
     ];
-    localStorage.setItem(CREATOR_WORKSPACE_KEY, JSON.stringify(workspace({
+    localStorage.setItem(GUEST_WORKSPACE_KEY, JSON.stringify(workspace({
       saved,
       story: { title: "Night Train", protagonist: "Mina", desire: "Escape", obstacle: "Closed border" },
       checks: ["publish-rights"],
@@ -166,11 +169,11 @@ describe("research command center", () => {
     vi.useRealTimers();
 
     fireEvent.click(within(board).getByRole("button", { name: "Costume reference 저장 해제" }));
-    await waitFor(() => expect(JSON.parse(localStorage.getItem(CREATOR_WORKSPACE_KEY)!).saved).toHaveLength(2));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(GUEST_WORKSPACE_KEY)!).saved).toHaveLength(2));
   });
 
   it("merges a valid backup without discarding the current board", async () => {
-    localStorage.setItem(CREATOR_WORKSPACE_KEY, JSON.stringify(workspace({
+    localStorage.setItem(GUEST_WORKSPACE_KEY, JSON.stringify(workspace({
       saved: [resource({ id: "met:current", provider: "met", title: "Current source" })],
       story: { title: "Current title" },
     })));
@@ -186,14 +189,14 @@ describe("research command center", () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     expect(await screen.findByText("현재 작업을 유지하고 백업을 합쳤습니다.")).toBeTruthy();
-    const restored = JSON.parse(localStorage.getItem(CREATOR_WORKSPACE_KEY)!) as CreatorWorkspace;
+    const restored = JSON.parse(localStorage.getItem(GUEST_WORKSPACE_KEY)!) as CreatorWorkspace;
     expect(restored.saved.map((item) => item.title)).toEqual(["Current source", "Backup source"]);
     expect(restored.story.title).toBe("Current title");
     expect(restored.story.protagonist).toBe("Backup protagonist");
   });
 
   it("leads with searchable categories and task recipes, and keeps every workspace area one tab away", async () => {
-    localStorage.setItem(CREATOR_WORKSPACE_KEY, JSON.stringify(workspace({
+    localStorage.setItem(GUEST_WORKSPACE_KEY, JSON.stringify(workspace({
       saved: [
         resource({ id: "met:one", provider: "met", title: "One" }),
         resource({ id: "met:two", provider: "met", title: "Two" }),
