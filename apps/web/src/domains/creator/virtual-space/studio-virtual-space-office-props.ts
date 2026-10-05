@@ -1,8 +1,9 @@
 /**
- * 사무실 소품 생동감 (비주얼 웨이브 트랙 G)
+ * 사무실 소품 생동감 (비주얼 웨이브 트랙 G + VS 120 웨이브 2 오브젝트 연출)
  *
  * 모니터 화면 빛 · 벽시계 바늘 · 네온 깜빡임 · 화분 흔들림처럼 저비용으로
  * 공간을 살아 있게 만드는 소품 애니메이션의 순수 계산 모듈.
+ * 웨이브 2에서 램프 빛 호흡 · 정수기 기포 · 화이트보드 반짝임 · 화면 순환광을 더했다.
  *
  * - 모든 값은 시각(nowMs)과 시드의 결정적 함수다. 타이머·난수·렌더러 의존 없음.
  * - `reducedMotion`이면 움직임/깜빡임을 멈추고 정적 값을 돌려준다.
@@ -12,10 +13,13 @@
  */
 
 /** 사무실 소품 애니메이션 종류. */
-export type StudioOfficePropKind = "monitor-glow" | "wall-clock" | "neon-flicker" | "plant-sway";
+export type StudioOfficePropKind =
+  | "monitor-glow" | "wall-clock" | "neon-flicker" | "plant-sway"
+  | "lamp-glow" | "cooler-bubbles" | "board-shimmer" | "screen-glow";
 
 export const STUDIO_OFFICE_PROP_KINDS: readonly StudioOfficePropKind[] = Object.freeze([
   "monitor-glow", "wall-clock", "neon-flicker", "plant-sway",
+  "lamp-glow", "cooler-bubbles", "board-shimmer", "screen-glow",
 ]);
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
@@ -111,14 +115,103 @@ export function officePlantSway(nowMs: number, seed: string, reducedMotion: bool
   });
 }
 
+/**
+ * 램프 빛 강도 0~1 (플로어 램프·촬영 소프트박스).
+ * 모니터보다 느리고 깊은 호흡 + 아주 약한 전류 떨림. reducedMotion이면 고정 밝기.
+ */
+export function officeLampGlow(nowMs: number, seed: string, reducedMotion: boolean): number {
+  if (reducedMotion) return 0.92;
+  const now = safeNow(nowMs);
+  const phase = hash01(seed) * TAU;
+  const breath = 0.84 + 0.11 * Math.sin(now / 1500 + phase);
+  const hum = 0.02 * Math.sin(now / 90 + phase * 3);
+  return clamp01(breath + hum);
+}
+
+/**
+ * 화면 순환광 (대형 스크린·자판기 진열창).
+ * 느린 색 순환 위상(progress)과 함께 밝기가 천천히 오르내리고, 드물게 짧게 어두워진다.
+ */
+export function officeScreenGlow(nowMs: number, seed: string, reducedMotion: boolean): { readonly intensity: number; readonly progress: number } {
+  const now = safeNow(nowMs);
+  const phase = hash01(seed) * TAU;
+  const progress = ((now / 9000) + hash01(seed)) % 1;
+  if (reducedMotion) return Object.freeze({ intensity: 0.85, progress: 0 });
+  const wave = 0.8 + 0.14 * Math.sin(now / 2600 + phase);
+  const bucket = Math.floor(now / 240);
+  const dip = hash01(`${seed}:screen:${bucket}`) < 0.04 ? -0.16 : 0;
+  return Object.freeze({ intensity: clamp01(wave + dip), progress });
+}
+
+/**
+ * 화이트보드 반짝임.
+ * 긴 주기마다 한 번, 빛 반사가 보드를 왼쪽에서 오른쪽으로 가로지른다(sweep 0~1).
+ * 반사가 없을 때 sweep는 -1이다. reducedMotion이면 반사 없음.
+ */
+export function officeBoardShimmer(nowMs: number, seed: string, reducedMotion: boolean): { readonly intensity: number; readonly sweep: number } {
+  if (reducedMotion) return Object.freeze({ intensity: 0, sweep: -1 });
+  const now = safeNow(nowMs);
+  const cycleMs = 7000;
+  const cycle = ((now + hash01(seed) * cycleMs) % cycleMs) / cycleMs;
+  // 주기의 앞 45% 동안만 반사가 지나가고 나머지는 쉰다.
+  if (cycle >= 0.45) return Object.freeze({ intensity: 0, sweep: -1 });
+  const sweep = cycle / 0.45;
+  const envelope = Math.sin(Math.PI * sweep);
+  return Object.freeze({ intensity: envelope * envelope * 0.8, sweep });
+}
+
+export interface StudioOfficeCoolerBubble {
+  /** 수조 안 수평 위치 (-1~1, 0이 가운데). */
+  readonly offsetX: number;
+  /** 떠오른 정도 0(바닥)~1(수면). */
+  readonly rise: number;
+  /** 기포 반지름 (px). */
+  readonly radius: number;
+}
+
+/** 정수기 기포 한 묶음의 최대 개수. */
+export const STUDIO_OFFICE_COOLER_BUBBLE_COUNT = 5;
+
+/**
+ * 정수기 수조 기포 필드.
+ * 기포마다 속도와 시작 위상이 달라 결정적으로 떠오른다. reducedMotion이면
+ * 시간과 무관한 정적 배치(위상 그대로)를 돌려준다.
+ */
+export function officeCoolerBubbleField(
+  nowMs: number,
+  seed: string,
+  reducedMotion: boolean,
+): readonly StudioOfficeCoolerBubble[] {
+  const now = safeNow(nowMs);
+  const bubbles: StudioOfficeCoolerBubble[] = [];
+  for (let index = 0; index < STUDIO_OFFICE_COOLER_BUBBLE_COUNT; index += 1) {
+    const offsetX = hash01(`${seed}:bubble-x:${index}`) * 1.4 - 0.7;
+    const speed = 0.6 + hash01(`${seed}:bubble-speed:${index}`) * 0.7;
+    const start = hash01(`${seed}:bubble-start:${index}`);
+    const rise = reducedMotion ? start : (start + (now / 3600) * speed) % 1;
+    const radius = 1.4 + hash01(`${seed}:bubble-radius:${index}`) * 1.8;
+    bubbles.push(Object.freeze({ offsetX, rise, radius }));
+  }
+  return Object.freeze(bubbles);
+}
+
+/** 정수기 기포 주기 진행 0~1 (수조 빛 세기와 묶어 쓰는 값). */
+export function officeCoolerCycle(nowMs: number, seed: string): number {
+  return ((safeNow(nowMs) / 3600) + hash01(seed)) % 1;
+}
+
 export interface StudioOfficePropFrame {
   readonly kind: StudioOfficePropKind;
-  /** 빛 강도 0~1 — monitor-glow · neon-flicker. */
+  /** 빛 강도 0~1 — monitor-glow · neon-flicker · lamp-glow · screen-glow · board-shimmer. */
   readonly intensity: number;
   /** 흔들림 회전 (라디안) — plant-sway. */
   readonly rotation: number;
   /** 흔들림 오프셋 (px) — plant-sway. */
   readonly offsetX: number;
+  /** 주기 진행 0~1 — screen-glow(색 순환 위상) · cooler-bubbles(기포 주기). 그 외 0. */
+  readonly progress: number;
+  /** 반사 위치 0~1, 없으면 -1 — board-shimmer 전용. */
+  readonly sweep: number;
   /** 시계 바늘 — wall-clock 전용, 그 외 종류는 null. */
   readonly clock: StudioOfficeClockHands | null;
 }
@@ -132,18 +225,30 @@ export function officePropFrame(
 ): StudioOfficePropFrame {
   switch (kind) {
     case "monitor-glow":
-      return Object.freeze({ kind, intensity: officeMonitorGlow(nowMs, seed, reducedMotion), rotation: 0, offsetX: 0, clock: null });
+      return Object.freeze({ kind, intensity: officeMonitorGlow(nowMs, seed, reducedMotion), rotation: 0, offsetX: 0, progress: 0, sweep: -1, clock: null });
     case "neon-flicker":
-      return Object.freeze({ kind, intensity: officeNeonFlicker(nowMs, seed, reducedMotion), rotation: 0, offsetX: 0, clock: null });
+      return Object.freeze({ kind, intensity: officeNeonFlicker(nowMs, seed, reducedMotion), rotation: 0, offsetX: 0, progress: 0, sweep: -1, clock: null });
     case "plant-sway": {
       const sway = officePlantSway(nowMs, seed, reducedMotion);
-      return Object.freeze({ kind, intensity: 0, rotation: sway.rotation, offsetX: sway.offsetX, clock: null });
+      return Object.freeze({ kind, intensity: 0, rotation: sway.rotation, offsetX: sway.offsetX, progress: 0, sweep: -1, clock: null });
     }
     case "wall-clock": {
       // reducedMotion이면 초침을 1초 단위로 끊어 움직인다 (부드러운 흐름 대신 틱).
       const clockNow = reducedMotion ? Math.floor(safeNow(nowMs) / 1000) * 1000 : nowMs;
-      return Object.freeze({ kind, intensity: 0, rotation: 0, offsetX: 0, clock: officeClockHands(clockNow) });
+      return Object.freeze({ kind, intensity: 0, rotation: 0, offsetX: 0, progress: 0, sweep: -1, clock: officeClockHands(clockNow) });
     }
+    case "lamp-glow":
+      return Object.freeze({ kind, intensity: officeLampGlow(nowMs, seed, reducedMotion), rotation: 0, offsetX: 0, progress: 0, sweep: -1, clock: null });
+    case "screen-glow": {
+      const screen = officeScreenGlow(nowMs, seed, reducedMotion);
+      return Object.freeze({ kind, intensity: screen.intensity, rotation: 0, offsetX: 0, progress: screen.progress, sweep: -1, clock: null });
+    }
+    case "board-shimmer": {
+      const shimmer = officeBoardShimmer(nowMs, seed, reducedMotion);
+      return Object.freeze({ kind, intensity: shimmer.intensity, rotation: 0, offsetX: 0, progress: 0, sweep: shimmer.sweep, clock: null });
+    }
+    case "cooler-bubbles":
+      return Object.freeze({ kind, intensity: 0.7 + 0.3 * Math.sin(officeCoolerCycle(nowMs, seed) * TAU), rotation: 0, offsetX: 0, progress: officeCoolerCycle(nowMs, seed), sweep: -1, clock: null });
   }
 }
 
@@ -156,6 +261,10 @@ export function officePropKindForCampusObject(objectKind: string): StudioOfficeP
     case "desk-monitor": return "monitor-glow";
     case "wall-clock": return "wall-clock";
     case "neon-sign": return "neon-flicker";
+    case "whiteboard": return "board-shimmer";
+    case "water-cooler": return "cooler-bubbles";
+    case "vending-machine": return "screen-glow";
+    case "softbox": return "lamp-glow";
     default: return null;
   }
 }
@@ -167,6 +276,11 @@ export function officePropKindForFurniture(furnitureKind: string): StudioOfficeP
     case "wall-clock": return "wall-clock";
     case "neon-sign": return "neon-flicker";
     case "plant": return "plant-sway";
+    case "floor-lamp": return "lamp-glow";
+    case "water-cooler": return "cooler-bubbles";
+    case "whiteboard": return "board-shimmer";
+    case "display-screen": return "screen-glow";
+    case "vending-machine": return "screen-glow";
     default: return null;
   }
 }
