@@ -14,9 +14,12 @@ import type { CreatorResource, ResourceSearchResult } from "@/shared/lib/creator
 import { attributionMarkdown, deadlineCalendar, deadlineLabel, parseSearchResult, RESOURCE_LABELS } from "@/shared/lib/creator-resources";
 import { apiFetch, apiPath } from "@/platform/api";
 
-import { RESOURCE_SEARCH_CONFIG } from "./resource-search-config";
+import { RESOURCE_SEARCH_CONFIG, RESOURCE_SEARCH_TRANSLATED_PROVIDERS } from "./resource-search-config";
 
 import type { ResourceSearchProvider } from "./resource-search-config";
+
+import { TranslatedQueryNotice } from "./TranslatedQueryNotice";
+import { useTranslatedResearchQuery } from "./use-translated-research-query";
 
 import { PolyHavenCategoryGuide } from "./PolyHavenCategoryGuide";
 import { polyHavenCardDecoration } from "./polyhaven-resource";
@@ -261,6 +264,11 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
   const config = RESOURCE_SEARCH_CONFIG[provider];
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
+  // 영문 인덱스 제공처는 한글 검색어를 공용 변환 계층으로 영문 변환해 보낸다.
+  // URL에는 사용자 원문을 유지하고, 변환은 표시·수정 가능한 상태로만 얹는다.
+  const translationEnabled = RESOURCE_SEARCH_TRANSLATED_PROVIDERS.has(provider);
+  const translated = useTranslatedResearchQuery(query, { enabled: translationEnabled });
+  const effectiveQuery = translationEnabled ? translated.effectiveQuery : query;
   const pageValue = Number(params.get("page") ?? 1);
   const page = Number.isInteger(pageValue) && pageValue >= 1 && pageValue <= 20 ? pageValue : 1;
   const [draft, setDraft] = useState(query);
@@ -279,7 +287,7 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
     const timeout = window.setTimeout(() => controller.abort("timeout"), 30000);
     let disposed = false;
     setLoading(true);
-    const search = new URLSearchParams({ provider, q: query, page: String(page) });
+    const search = new URLSearchParams({ provider, q: effectiveQuery, page: String(page) });
     void apiFetch(apiPath(`/api/creator-resources/search?${search}`), { signal: controller.signal, headers: { Accept: "application/json" } })
       .then(async (response) => {
         if (response.status === 429) throw new Error("요청이 많습니다. 1분 후 다시 검색하세요.");
@@ -291,7 +299,7 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
         if (!disposed) setRequestError(controller.signal.aborted ? "검색 시간이 초과되었습니다. 다시 시도하세요." : cause instanceof Error ? cause.message : "검색하지 못했습니다.");
       }).finally(() => { window.clearTimeout(timeout); if (!disposed) setLoading(false); });
     return () => { disposed = true; window.clearTimeout(timeout); controller.abort(); };
-  }, [provider, query, page, retry, savedOnly]);
+  }, [provider, query, effectiveQuery, page, retry, savedOnly]);
   const savedItems = workspace.saved.filter((item) => item.provider === provider);
   const items = savedOnly ? savedItems : result?.items ?? [];
   // wikimedia 검색 결과 1건이 곧 대시보드다 (S4-09) — 일별 시계열이 실린 항목이면
@@ -328,6 +336,7 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
       <div className="flex flex-col gap-3 sm:flex-row"><input id={`resource-query-${provider}`} className={RESOURCE_INPUT} type="search" required minLength={2} maxLength={80} value={draft} placeholder={config.hint} onChange={(event) => setDraft(event.target.value)} /><button className={`${RESOURCE_BUTTON} shrink-0 bg-accent-soft`} type="submit">검색하기</button></div>
       <div className="flex flex-wrap gap-2">{config.examples.map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => searchFor(value)}>{value}</button>)}</div>
     </form>
+    {translationEnabled && query && <TranslatedQueryNotice state={translated} />}
     <div className="flex flex-wrap items-center gap-3">
       <button className={RESOURCE_BUTTON} aria-pressed={!savedOnly} onClick={() => setSavedOnly(false)}>검색 결과</button>
       <button className={RESOURCE_BUTTON} aria-pressed={savedOnly} onClick={() => setSavedOnly(true)}>저장한 자료 {savedItems.length}</button>

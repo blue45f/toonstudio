@@ -5,6 +5,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { ProviderStatus } from "./ProviderStatus";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
+import { TranslatedQueryNotice } from "./TranslatedQueryNotice";
+import { useTranslatedResearchQuery } from "./use-translated-research-query";
 import { downloadText, useCreatorWorkspace } from "./workspace";
 
 import type { CreatorResource, ResourceProvider, ResourceSearchResult } from "@/shared/lib/creator-resources";
@@ -119,6 +121,9 @@ export function GlobalBooksPage() {
   useBilingualI18nRevision();
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
+  // 글로벌 서지 인덱스는 영문 질의가 기본이라 한글 주제어는 공용 변환 계층으로
+  // 영문 변환해 보낸다. ISBN 조회는 숫자 질의라 변환을 거치지 않는다.
+  const translated = useTranslatedResearchQuery(query);
   const pageValue = Number(params.get("page") ?? 1);
   const page = Number.isInteger(pageValue) && pageValue >= 1 && pageValue <= 20 ? pageValue : 1;
   const [draft, setDraft] = useState(query);
@@ -148,10 +153,11 @@ export function GlobalBooksPage() {
     const providers = isbn && page === 1
       ? SEARCH_PROVIDERS
       : ["openlibrary", "googlebooks"] satisfies ResourceProvider[];
+    const searchQuery = isbn ? trimmed : translated.effectiveQuery;
     void Promise.allSettled(
       providers.map(async (provider) => ({
         provider,
-        result: await requestProvider(provider, trimmed, page, controller.signal),
+        result: await requestProvider(provider, searchQuery, page, controller.signal),
       })),
     ).then((settled) => {
       if (disposed) return;
@@ -177,7 +183,7 @@ export function GlobalBooksPage() {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [query, page, retry]);
+  }, [query, page, retry, translated.effectiveQuery]);
 
   const items = useMemo(
     () => states.flatMap((state) => state.result?.items ?? []),
@@ -239,6 +245,7 @@ export function GlobalBooksPage() {
           {EXAMPLES.map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => searchFor(value)}>{value}</button>)}
         </div>
       </form>
+      {query && <TranslatedQueryNotice state={translated} />}
 
       <div className="flex flex-wrap items-center gap-3">
         <span className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-panel px-4 py-2 text-sm font-semibold text-fg">
