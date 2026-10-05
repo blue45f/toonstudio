@@ -10,6 +10,7 @@ import {
 } from "../../../../packages/core/src/catalog/catalog-store";
 import { isDatabaseAvailabilityError } from "../platform/http/database-availability";
 import { db, reviewLikes, reviews, users } from "../platform/database";
+import { loadTitleEpisodeEntries, withTitleEpisodes } from "./title-episodes";
 
 import type { SeedReview, Title } from "@toonstudio/contracts/types";
 
@@ -108,7 +109,7 @@ export async function getTitleDetail(identifier: string) {
     ? allReviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
     : 0;
 
-  return {
+  const detail = {
     title,
     reviews: allReviews,
     reviewsStatus: reviewLoad.status,
@@ -121,4 +122,6 @@ export async function getTitleDetail(identifier: string) {
     generatedAt: new Date().toISOString(),
     source: "server-catalog",
   };
+  // 회차 메타데이터 스냅샷이 있는 작품만 응답 루트에 episodes 를 싣는다(웹 회차 경계가 읽는 위치).
+  return withTitleEpisodes(detail, loadTitleEpisodeEntries());
 }

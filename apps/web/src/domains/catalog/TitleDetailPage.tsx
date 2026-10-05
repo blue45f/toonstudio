@@ -204,7 +204,7 @@ export function TitleDetailPage() {
     { icon: Bookmark, label: "관심", value: fmtStat(title.stats.bookmarks) },
     { icon: Star, label: "평가", value: fmtStat(reviewCount) },
   ];
-  // 회차 계약은 아직 없어 resolveTitleEpisodes가 undefined를 돌려준다(빈 상태).
+  // 회차는 API 상세 응답 루트의 episodes 로 온다(스냅샷 수집 작품만). 없으면 undefined → 빈 상태.
   const episodes = resolveTitleEpisodes(data);
   const firstEpisodeHref =
     !episodes && title.totalEpisodes === 0

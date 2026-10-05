@@ -113,6 +113,30 @@ export interface RelatedInfoItem {
   badge?: string; // "공식 PV", "단독 보도" 등
 }
 
+// ── 회차 메타데이터 (크롤 수집 · apps/api/data/title-episodes.json 스냅샷) ─────────────
+// 플랫폼이 공개하는 회차 목록 메타데이터만 담는다(번호·제목·공개일·썸네일). 컷 이미지
+// 본문은 수집하지 않는다. 웹 소비 계약(apps/web/src/domains/catalog/title-episodes.ts의
+// TitleEpisode)과 필드 단위로 동일하며, 상세 응답 루트의 episodes 로 공급된다.
+// 공개 수치가 없는 필드(예: 플랫폼이 좋아요를 목록에 안 주는 경우)는 지어내지 않고 비운다.
+export interface TitleEpisode {
+  number: number; // 1부터 시작하는 회차 번호
+  title?: string; // 회차 제목 — 없으면 화면은 "N화"로만 표기
+  publishedAt?: string; // 공개일 (ISO 날짜 문자열)
+  likes?: number; // 회차 좋아요 수 — 플랫폼이 공개할 때만
+  thumbnailUrl?: string; // 회차 썸네일 (/api/cover 프록시 URL — 표지와 동일 선례)
+  status?: "published" | "scheduled"; // 없으면 공개로 간주
+}
+
+// 스냅샷 항목 — 작품 1편의 회차 수집 결과. partial 이면 플랫폼 총수보다 적게 수집된 상태
+// (상한 캡 도달)이며, totalEpisodes 는 그 경우에도 플랫폼이 보고한 총수를 유지한다.
+export interface TitleEpisodeEntry {
+  episodes: TitleEpisode[];
+  totalEpisodes?: number; // 플랫폼이 보고한 총 회차 수
+  crawledAt: string; // 수집 시각 (ISO)
+  source: string; // 수집 플랫폼 id (예: "naver-webtoon")
+  partial?: boolean;
+}
+
 // ── 정적 카탈로그 경량 카드 (additive) ─────────────────────────
 // public/data 의 목록형 산출물(catalog.json, ranking/*.json 의 items[].title,
 // calendar.json 의 days[].items)은 전송량을 줄이기 위해 상세 전용 필드를 생략/축약한
