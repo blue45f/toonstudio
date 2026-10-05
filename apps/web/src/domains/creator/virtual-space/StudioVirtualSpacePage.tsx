@@ -398,6 +398,8 @@ export function VirtualSpaceExperience({
     chatBubbles: [],
     selfChatBubble: null,
     peerTyping: [],
+    peerImpacts: [],
+    objectStates: [],
     direct: false,
   }));
   const {
