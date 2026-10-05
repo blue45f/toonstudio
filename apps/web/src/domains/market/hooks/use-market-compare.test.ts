@@ -4,8 +4,8 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  compareStorageKey,
   MARKET_COMPARE_MAX_ITEMS,
-  MARKET_COMPARE_STORAGE_KEY,
   useMarketCompare,
 } from "./use-market-compare";
 
@@ -25,7 +25,8 @@ describe("useMarketCompare", () => {
     });
     expect(result.current.compareCount).toBe(1);
     expect(result.current.isCompared(record.id)).toBe(true);
-    expect(localStorage.getItem(MARKET_COMPARE_STORAGE_KEY)).toContain(record.id);
+    // 비로그인(게스트) 상태라 비교 목록은 게스트 파티션 키에 저장된다(소유자 스코프).
+    expect(localStorage.getItem(compareStorageKey("guest"))).toContain(record.id);
 
     act(() => {
       expect(result.current.toggleCompare(record)).toBe("removed");

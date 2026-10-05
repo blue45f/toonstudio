@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { MARKET_COMPARE_STORAGE_KEY } from "../hooks/use-market-compare";
+import { compareStorageKey } from "../hooks/use-market-compare";
 
 import { MarketResourceDetailArticle } from "./MarketResourceDetailArticle";
 import { MarketWebtoon3dViewerModal } from "./MarketWebtoon3dViewerModal";
@@ -56,7 +56,8 @@ describe("recovered marketplace integrity", () => {
     const button = screen.getByRole("button", { name: `${record.name} 비교 목록에 추가` });
     fireEvent.click(button);
     expect(screen.getByRole("button", { name: `${record.name} 비교 목록에서 제거` }).getAttribute("aria-pressed")).toBe("true");
-    expect(localStorage.getItem(MARKET_COMPARE_STORAGE_KEY)).toContain(record.id);
+    // 비로그인(게스트) 상태라 비교 목록은 게스트 파티션 키에 저장된다(소유자 스코프).
+    expect(localStorage.getItem(compareStorageKey("guest"))).toContain(record.id);
   });
 
   it("labels the example honestly, omits invented specifications, and links to the real Studio route", () => {
