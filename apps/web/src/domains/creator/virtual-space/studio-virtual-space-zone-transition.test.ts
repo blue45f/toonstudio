@@ -8,6 +8,8 @@ import {
   beginStudioZonePortalTransition,
   beginStudioZoneSpawnTransition,
   createStudioZoneTransitionState,
+  drawStudioZoneSeparationVeil,
+  drawStudioZoneTransitionOverlay,
   markStudioZoneTransitionReady,
   revealStudioZoneTransition,
   stepStudioZoneTransition,
@@ -213,5 +215,66 @@ describe("구역 스플래시 적격 판정", () => {
     expect(studioZoneSplashEligible({ roomId: "meeting-room" })).toBe(true);
     expect(studioZoneSplashEligible({ roomId: STUDIO_VIRTUAL_CAMPUS_COMMONS_ID })).toBe(false);
     expect(studioZoneSplashEligible({ roomId: null })).toBe(false);
+  });
+});
+
+describe("구역 오버레이 그리기", () => {
+  function recorder() {
+    const calls: string[] = [];
+    return {
+      calls,
+      clear: () => { calls.push("clear"); },
+      fillStyle: (color: number, alpha?: number) => { calls.push(`fillStyle:${color}:${alpha}`); },
+      fillRect: (x: number, y: number, w: number, h: number) => { calls.push(`fillRect:${x},${y},${w},${h}`); },
+      lineStyle: (width: number, color: number, alpha?: number) => { calls.push(`lineStyle:${width}:${color}:${alpha}`); },
+      strokeEllipse: (x: number, y: number, w: number, h: number) => { calls.push(`ellipse:${x},${y},${w},${h}`); },
+    };
+  }
+  const frame = (overrides: Record<string, unknown> = {}) => ({
+    phase: "fade-in" as const, kind: "portal" as const, zoneId: null, veilAlpha: 0.5,
+    teleportDue: false, departureDue: false, blocksInput: false, fadeInProgress: 0.5, active: true, ...overrides,
+  });
+
+  it("베일은 알파만큼 덮고, 도착 링은 진행도에 따라 넓어지며 그린다", () => {
+    const veil = recorder();
+    const ring = recorder();
+    drawStudioZoneTransitionOverlay({
+      veil, ring, frame: frame(), width: 800, height: 600, arrivalGround: { x: 100, y: 200 },
+    });
+    expect(veil.calls).toEqual(["clear", "fillStyle:460299:0.5", "fillRect:0,0,800,600"]);
+    expect(ring.calls[0]).toBe("clear");
+    expect(ring.calls).toContain("ellipse:100,200,49,24.5");
+    expect(ring.calls).toContain("ellipse:100,200,29,14.5");
+  });
+
+  it("출발 전환·진행 완료·도착점 없음에서는 링을 그리지 않고, 베일 알파 0이면 덮지 않는다", () => {
+    const veil = recorder();
+    const ring = recorder();
+    drawStudioZoneTransitionOverlay({
+      veil, ring, frame: frame({ kind: "departure", veilAlpha: 0, fadeInProgress: 0.5 }),
+      width: 800, height: 600, arrivalGround: { x: 100, y: 200 },
+    });
+    expect(veil.calls).toEqual(["clear"]);
+    expect(ring.calls).toEqual(["clear"]);
+    const ring2 = recorder();
+    drawStudioZoneTransitionOverlay({
+      veil: null, ring: ring2, frame: frame({ fadeInProgress: null }),
+      width: 800, height: 600, arrivalGround: { x: 100, y: 200 },
+    });
+    expect(ring2.calls).toEqual(["clear"]);
+  });
+
+  it("분리 베일은 구역 바깥 네 변만 칠하고, rect가 없으면 지우기만 한다", () => {
+    const graphics = recorder();
+    drawStudioZoneSeparationVeil({
+      graphics, rect: { x: 100, y: 50, width: 200, height: 100 }, alpha: 0.28, worldWidth: 800, worldHeight: 600,
+    });
+    expect(graphics.calls).toEqual([
+      "clear", "fillStyle:460299:0.28",
+      "fillRect:0,0,800,50", "fillRect:0,50,100,100", "fillRect:300,50,500,100", "fillRect:0,150,800,450",
+    ]);
+    const empty = recorder();
+    drawStudioZoneSeparationVeil({ graphics: empty, rect: null, alpha: 0.28, worldWidth: 800, worldHeight: 600 });
+    expect(empty.calls).toEqual(["clear"]);
   });
 });

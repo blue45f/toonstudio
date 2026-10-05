@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS,
+  STUDIO_DISPLAY_DAMP_TAU_REFERENCE_SPEED,
   STUDIO_DISPLAY_DAMP_TAU_SECONDS,
   STUDIO_DISPLAY_SNAP_DISTANCE_PX,
+  STUDIO_PEER_ENTER_FADE_MS,
+  STUDIO_PEER_EXIT_FADE_MS,
   STUDIO_SPRITE_CROSSFADE_MS,
   createStudioSpriteCrossfadeState,
   dampStudioDisplayPoint,
   finishStudioSpriteCrossfade,
   studioBreathPhaseAt,
+  studioDisplayDampTauSeconds,
+  studioPeerPresenceFade,
   studioSmoothingPhaseSeed,
   studioSpriteCrossfadeAlpha,
   transitionStudioSpriteCrossfade,
@@ -208,5 +214,56 @@ describe("크로스페이드 상태 머신", () => {
     const { state, started } = transitionStudioSpriteCrossfade(s1, walk, 120);
     expect(started).toBeNull();
     expect(state.fade?.startedAt).toBe(100);
+  });
+});
+
+describe("studioPeerPresenceFade", () => {
+  const base = { spawnedAt: 1_000, leavingAt: null, reducedMotion: false, effectsSuppressed: false };
+
+  it("입장 직후 0에서 시작해 페이드인 구간이 끝나면 1이 된다", () => {
+    expect(studioPeerPresenceFade({ ...base, now: 1_000 })).toBe(0);
+    const mid = studioPeerPresenceFade({ ...base, now: 1_000 + STUDIO_PEER_ENTER_FADE_MS / 2 });
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(1);
+    expect(studioPeerPresenceFade({ ...base, now: 1_000 + STUDIO_PEER_ENTER_FADE_MS })).toBe(1);
+    expect(studioPeerPresenceFade({ ...base, now: 9_999 })).toBe(1);
+  });
+
+  it("퇴장은 leavingAt부터 내려가 구간이 끝나면 0(파괴 신호)이 된다", () => {
+    const leaving = { ...base, leavingAt: 2_000 };
+    expect(studioPeerPresenceFade({ ...leaving, now: 2_000 })).toBe(1);
+    expect(studioPeerPresenceFade({ ...leaving, now: 2_000 + STUDIO_PEER_EXIT_FADE_MS })).toBe(0);
+    expect(studioPeerPresenceFade({ ...leaving, now: 9_999 })).toBe(0);
+  });
+
+  it("모션 줄이기·효과 억제에서는 페이드 없이 즉시 갈린다", () => {
+    expect(studioPeerPresenceFade({ ...base, now: 1_000, reducedMotion: true })).toBe(1);
+    expect(studioPeerPresenceFade({ ...base, now: 1_000, effectsSuppressed: true })).toBe(1);
+    expect(studioPeerPresenceFade({ ...base, leavingAt: 2_000, now: 2_000, reducedMotion: true })).toBe(0);
+  });
+});
+
+describe("studioDisplayDampTauSeconds", () => {
+  it("기준 속도까지는 기본 τ를 유지한다", () => {
+    expect(studioDisplayDampTauSeconds(0)).toBe(STUDIO_DISPLAY_DAMP_TAU_SECONDS);
+    expect(studioDisplayDampTauSeconds(STUDIO_DISPLAY_DAMP_TAU_REFERENCE_SPEED)).toBe(STUDIO_DISPLAY_DAMP_TAU_SECONDS);
+  });
+
+  it("빠를수록 τ가 줄고 하한 아래로는 내려가지 않는다", () => {
+    const fast = studioDisplayDampTauSeconds(200);
+    expect(fast).toBeCloseTo(0.04, 5);
+    expect(fast).toBeLessThan(STUDIO_DISPLAY_DAMP_TAU_SECONDS);
+    expect(fast).toBeGreaterThan(STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS);
+    // 달리기 속도에서는 이미 하한에 닿아 그 아래로는 내려가지 않는다.
+    expect(studioDisplayDampTauSeconds(277)).toBe(STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS);
+    expect(studioDisplayDampTauSeconds(10_000)).toBe(STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS);
+  });
+
+  it("속도 적응 τ를 쓰면 달리기 속도에서 표시 뒤처짐이 줄어든다", () => {
+    // 277px/s로 멀어지는 목표를 60fps로 따라갈 때 정상상태 뒤처짐 ≈ 속도 × τ.
+    const fixedLag = 277 * STUDIO_DISPLAY_DAMP_TAU_SECONDS;
+    const adaptiveLag = 277 * studioDisplayDampTauSeconds(277);
+    expect(adaptiveLag).toBeLessThan(fixedLag);
+    expect(adaptiveLag).toBeLessThan(9);
   });
 });

@@ -58,6 +58,19 @@ describe("월드 게임필 조율기", () => {
     expect(reduced.noteImpact(true, 20, 1_016)).toBe(false);
     expect(reduced.effective.particleDensity).toBe(0);
   });
+
+  it("흔들림 세기는 고정값이 아니라 최고 속도 대비 충돌 비율 곡선을 따른다", () => {
+    // 최고 속도가 아주 큰 월드에서는 같은 230px/s 충돌도 스치는 수준이라 흔들지 않는다.
+    const wide = new StudioWorldFeelController(preference());
+    wide.refresh(0, false);
+    wide.noteImpact(false, 230, 1_000);
+    expect(wide.noteImpact(true, 20, 1_016, 1_000)).toBe(false);
+    // 최고 속도의 절반으로 부딪히면 약하게라도 흔들린다.
+    const mid = new StudioWorldFeelController(preference());
+    mid.refresh(0, false);
+    mid.noteImpact(false, 260, 1_000);
+    expect(mid.noteImpact(true, 20, 1_016, 520)).toBe(true);
+  });
 });
 
 describe("월드별 이벤트 디렉터 트리거", () => {

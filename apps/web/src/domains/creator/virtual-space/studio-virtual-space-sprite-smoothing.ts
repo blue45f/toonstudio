@@ -181,3 +181,55 @@ export function finishStudioSpriteCrossfade(
     ? { identity: state.identity, fade: null }
     : state;
 }
+
+/** 동료 입장 페이드인 시간(ms). 공간에 사람이 "툭" 나타나지 않게 한다. */
+export const STUDIO_PEER_ENTER_FADE_MS = 260;
+/** 동료 퇴장 페이드아웃 시간(ms). 이 시간이 지나면 호출 측이 스프라이트를 파괴한다. */
+export const STUDIO_PEER_EXIT_FADE_MS = 200;
+
+function smoothstepUnit(value: number): number {
+  const t = Math.min(1, Math.max(0, value));
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * 동료 프레즌스 페이드 배율(0~1). 표시 전용 — 논리 존재·충돌과 무관하다.
+ * - 입장: spawnedAt부터 ENTER 구간 동안 smoothstep으로 차오른다.
+ * - 퇴장: leavingAt부터 EXIT 구간 동안 내려가고, 끝나면 0 (파괴 신호).
+ * - 모션 줄이기·효과 억제에서는 페이드 없이 즉시 1/0으로 갈린다.
+ */
+export function studioPeerPresenceFade(input: {
+  readonly spawnedAt: number;
+  readonly leavingAt: number | null;
+  readonly now: number;
+  readonly reducedMotion: boolean;
+  readonly effectsSuppressed: boolean;
+}): number {
+  const instant = input.reducedMotion || input.effectsSuppressed || !Number.isFinite(input.now);
+  if (input.leavingAt !== null) {
+    if (instant) return 0;
+    const progress = (input.now - input.leavingAt) / STUDIO_PEER_EXIT_FADE_MS;
+    return 1 - smoothstepUnit(progress);
+  }
+  if (instant) return 1;
+  const progress = (input.now - finiteOr(input.spawnedAt, input.now)) / STUDIO_PEER_ENTER_FADE_MS;
+  return smoothstepUnit(progress);
+}
+
+/** 표시 감쇠 시간상수의 하한(초). 달리기처럼 빠를 때 위치 뒤처짐을 줄이는 바닥이다. */
+export const STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS = 0.03;
+/** 표시 감쇠 시간상수의 기준 속도(px/s). 이 속도까지는 기본 τ를 유지한다. */
+export const STUDIO_DISPLAY_DAMP_TAU_REFERENCE_SPEED = 160;
+
+/**
+ * 속도 적응형 표시 감쇠 시간상수(초).
+ * 고정 τ=50ms는 달리기(약 277px/s)에서 표시 위치가 논리 위치보다 약 14px 뒤처져
+ * 몸이 미끄러져 따라오는 느낌을 만든다. 기준 속도보다 빠르면 τ를 하한까지 줄여
+ * 뒤처짐을 약 8px로 묶고, 느릴 때는 기본 τ로 정지 끝의 계단감을 둥글게 유지한다.
+ */
+export function studioDisplayDampTauSeconds(speed: number): number {
+  const safeSpeed = Number.isFinite(speed) ? Math.abs(speed) : 0;
+  if (safeSpeed <= STUDIO_DISPLAY_DAMP_TAU_REFERENCE_SPEED) return STUDIO_DISPLAY_DAMP_TAU_SECONDS;
+  const ratio = STUDIO_DISPLAY_DAMP_TAU_REFERENCE_SPEED / safeSpeed;
+  return Math.max(STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS, STUDIO_DISPLAY_DAMP_TAU_SECONDS * ratio);
+}

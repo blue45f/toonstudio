@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { StudioCameraFollowModeController, studioBlinkScaleY, studioEffectiveGaitStride, studioGaitBodyOffset, studioGaitRockAngle, studioGaitShadowScale, studioGaitSquashScaleY, studioIdleSwayOffsetX, studioPlayerLocomotionProfile } from "./studio-virtual-space-locomotion-presentation";
+import { StudioCameraFollowModeController, studioAwayDozeMotion, studioBlinkScaleY, studioEffectiveGaitStride, studioGaitBodyOffset, studioGaitRockAngle, studioGaitShadowScale, studioGaitSquashScaleY, studioIdleSwayOffsetX, studioPlayerLocomotionProfile } from "./studio-virtual-space-locomotion-presentation";
 import { DEFAULT_STUDIO_MOTION_CONFIG, stepStudioVirtualSpaceMotion } from "./studio-virtual-space-motion";
 import { STUDIO_VIRTUAL_SPACE_WALK_SPEED } from "./studio-virtual-space-navigation";
 import { studioGaitFrame } from "./studio-virtual-space-presentation";
@@ -205,5 +205,25 @@ describe("대기 생명감", () => {
     expect(dippedFrames).toBeGreaterThan(0);
     expect(dippedFrames).toBeLessThanOrEqual(20);
     expect(studioBlinkScaleY(1_000, 0.5, true)).toBe(1);
+  });
+});
+
+describe("자리 비움 졸기 모션", () => {
+  it("주기 안에서는 고개가 아래로 떨어졌다 돌아오고, 주기 밖에서는 중립이다", () => {
+    // 시드 0이면 딥 구간은 0~1700ms, 가장 깊은 지점은 850ms.
+    const deepest = studioAwayDozeMotion(850, 0, false);
+    expect(deepest.offsetY).toBeCloseTo(2.4, 5);
+    expect(Math.abs(deepest.angleDegrees)).toBeCloseTo(1.8, 5);
+    expect(studioAwayDozeMotion(0, 0, false)).toEqual({ offsetY: 0, angleDegrees: 0 });
+    expect(studioAwayDozeMotion(3_000, 0, false)).toEqual({ offsetY: 0, angleDegrees: 0 });
+    // 다음 주기에서 같은 위상이 반복된다.
+    expect(studioAwayDozeMotion(6_400 + 850, 0, false).offsetY).toBeCloseTo(2.4, 5);
+  });
+
+  it("시드가 다르면 위상과 기울기 방향이 어긋나고, 모션 감소에서는 항상 중립이다", () => {
+    expect(studioAwayDozeMotion(850, 0.5, false).offsetY).toBe(0);
+    expect(Math.sign(studioAwayDozeMotion(850, 0, false).angleDegrees)).toBe(-1);
+    expect(Math.sign(studioAwayDozeMotion(3_410, 0.6, false).angleDegrees)).toBe(1);
+    expect(studioAwayDozeMotion(850, 0, true)).toEqual({ offsetY: 0, angleDegrees: 0 });
   });
 });

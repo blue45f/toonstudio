@@ -25,6 +25,7 @@ import {
   type StudioEffectiveGameFeel,
   type StudioVirtualGameFeelPreference,
 } from "./studio-virtual-space-game-feel-preference";
+import { collisionShake } from "./studio-virtual-space-locomotion-feel";
 import type { StudioMiniGameTriggerZone } from "./studio-virtual-space-mini-games";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import { StudioStuckSampler } from "./studio-virtual-space-stuck-detector";
@@ -34,6 +35,7 @@ import {
   studioWorldSpawn,
   type StudioVirtualSpaceWorldManifest,
   type StudioWorldInteractionDefinition,
+  type StudioWorldNpcDefinition,
 } from "./studio-virtual-space-world-manifest";
 
 /** 게임필 설정을 다시 읽는 간격(ms). 설정 패널에서 바꾼 값이 1초 안에 반영된다. */
@@ -45,6 +47,8 @@ const ESCAPE_STRENGTH = 0.9;
 const IMPACT_SPEED = 220;
 const IMPACT_STOP_SPEED = 60;
 const IMPACT_COOLDOWN_MS = 400;
+/** 흔들림 곡선의 기준 최고 속도(px/s). 호출 측이 현재 최고 속도를 넘기지 않을 때의 기본값(기본 걷기 205 × 달리기 1.35). */
+const IMPACT_DEFAULT_MAX_SPEED = 205 * 1.35;
 /** 이벤트 디렉터를 돌리는 간격(ms). 근접 판정에 60fps가 필요 없어 6분의 1 이하로 줄인다. */
 export const STUDIO_WORLD_FEEL_EVENT_INTERVAL_MS = 150;
 /** NPC 인사 대사를 머리 위 말풍선으로 보여 주는 시간(ms). */
@@ -127,14 +131,20 @@ export class StudioWorldFeelController {
     this.escapeUntil = -Infinity;
   }
 
-  /** 빠르게 달리다 벽에 부딪혀 멈추면 카메라 흔들림을 요청한다. 요청했으면 true. */
-  noteImpact(touching: boolean, speed: number, time: number): boolean {
+  /**
+   * 빠르게 달리다 벽에 부딪혀 멈추면 카메라 흔들림을 요청한다. 요청했으면 true.
+   * 흔들림의 세기·길이는 고정값이 아니라 locomotion-feel의 `collisionShake` 정본 곡선이
+   * 정한다 — 최고 속도에 가까운 충돌일수록 강하고 길게, 스치는 충돌은 흔들지 않는다.
+   */
+  noteImpact(touching: boolean, speed: number, time: number, maxSpeed: number = IMPACT_DEFAULT_MAX_SPEED): boolean {
     const previous = this.previousImpactSpeed;
     this.previousImpactSpeed = Number.isFinite(speed) ? speed : 0;
     if (!touching || previous <= IMPACT_SPEED || speed > IMPACT_STOP_SPEED) return false;
     if (!this.feel.screenShakeEnabled || this.osReducedMotion || time - this.lastShakeAt < IMPACT_COOLDOWN_MS) return false;
+    const shake = collisionShake(previous, maxSpeed, this.osReducedMotion);
+    if (shake.intensity <= 0 || shake.durationMs <= 0) return false;
     this.lastShakeAt = time;
-    this.camera.requestShake(0.4, 200, time);
+    this.camera.requestShake(shake.intensity, shake.durationMs, time);
     return true;
   }
 }
@@ -224,6 +234,23 @@ export class StudioWorldEventFeed {
 
   addPeer(id: string, name: string, x: number, y: number): void { this.add(this.input.peers, id, name, x, y); }
   addNpc(id: string, name: string, x: number, y: number): void { this.add(this.input.npcs, id, name, x, y); }
+
+  /** 캔버스의 동료·NPC 목록을 디렉터 입력으로 채운다. NPC 이름 해석은 호출 측이 넘긴다. */
+  syncActors(
+    peers: ReadonlyMap<string, { readonly displayName: string; readonly targetX: number; readonly targetY: number }>,
+    npcs: Iterable<{
+      readonly definition: StudioWorldNpcDefinition;
+      readonly sprite: { readonly visible: boolean };
+      readonly groundPoint: StudioVirtualSpacePoint;
+    }>,
+    npcName: (definition: StudioWorldNpcDefinition) => string,
+  ): void {
+    for (const [id, peer] of peers) this.addPeer(id, peer.displayName, peer.targetX, peer.targetY);
+    for (const npc of npcs) {
+      if (!npc.sprite.visible) continue;
+      this.addNpc(npc.definition.id, npcName(npc.definition), npc.groundPoint.x, npc.groundPoint.y);
+    }
+  }
 
   run(): void {
     this.director.update(this.input);

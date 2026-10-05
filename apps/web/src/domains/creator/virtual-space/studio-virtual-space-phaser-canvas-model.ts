@@ -119,6 +119,10 @@ export interface PeerVisual {
   chatBubble?: string | null;
   /** 채팅 입력 중인지. 말풍선이 없을 때 타이핑 말풍선(···)으로 보인다. */
   typing?: boolean;
+  /** 캔버스에 처음 등장한 시각(ms). 입장 페이드인의 기준이다. */
+  spawnedAt: number;
+  /** 퇴장이 시작된 시각(ms). null이면 퇴장 중이 아니다. 페이드아웃이 끝나면 파괴한다. */
+  leavingAt: number | null;
 }
 
 /** 대상 쪽을 보는 방향(객체를 만들지 않는다). 가로가 더 멀면 좌우, 아니면 상하. */

@@ -12,6 +12,11 @@ import type * as Phaser from "phaser";
 import { campusKeycapTexture } from "./studio-virtual-space-campus-textures";
 import type { StudioCanvasBubbleColors } from "./studio-virtual-space-emote-runtime";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
+import {
+  studioWorldRoomAt,
+  type StudioVirtualSpaceWorldManifest,
+  type StudioWorldPortalDefinition,
+} from "./studio-virtual-space-world-manifest";
 
 export interface StudioWorldPromptCandidate {
   readonly id: string;
@@ -49,6 +54,29 @@ export function studioWorldPromptTarget(
     else if (!portal || distance < portal.distance) portal = target;
   }
   return interaction ?? npc ?? portal;
+}
+
+/**
+ * 포털 프롬프트 후보. 밟으면 이동하므로 키캡 없이 목적지 이름만 보여 준다.
+ * 우선순위가 가장 낮아 상호작용·NPC 프롬프트가 있을 때는 양보한다(선정은 studioWorldPromptTarget).
+ */
+export function studioPortalPromptCandidate(
+  manifest: StudioVirtualSpaceWorldManifest,
+  portal: StudioWorldPortalDefinition,
+): StudioWorldPromptCandidate {
+  const destinationRoomId = portal.targetRoomId
+    ?? (!portal.href && portal.targetPoint ? studioWorldRoomAt(manifest, portal.targetPoint) : null);
+  const destinationRoom = destinationRoomId
+    ? manifest.rooms.find((candidate) => candidate.id === destinationRoomId)
+    : undefined;
+  return {
+    id: `portal:${portal.id}`,
+    kind: "portal",
+    point: portal.point,
+    radius: (portal.radius ?? 26) + 48,
+    labelKo: destinationRoom ? `${destinationRoom.labelKo} · 이동` : "다른 공간 · 이동",
+    labelEn: destinationRoom ? `${destinationRoom.labelEn} · Enter` : "Another space · Enter",
+  };
 }
 
 /** 2글자 원형 표식은 이 거리 밖에서 숨긴다. */

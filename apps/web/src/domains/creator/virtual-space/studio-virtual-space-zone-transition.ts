@@ -1,5 +1,6 @@
 import { STUDIO_VIRTUAL_CAMPUS_COMMONS_ID } from "./studio-virtual-space-campus-world";
 import type { StudioVirtualSpaceZoneChange } from "./studio-virtual-space-engine-events";
+import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 
 /**
  * 구역·포털·스폰 전환 시퀀스를 한곳에서 규격화하는 순수 상태 머신.
@@ -277,6 +278,73 @@ export function stepStudioZoneTransition(
       };
     }
   }
+}
+
+/** 전환 베일·도착 링을 그릴 Graphics 포트 (Phaser Graphics의 부분 집합). */
+export interface StudioZoneTransitionGraphics {
+  clear(): unknown;
+  fillStyle(color: number, alpha?: number): unknown;
+  fillRect(x: number, y: number, width: number, height: number): unknown;
+  lineStyle(width: number, color: number, alpha?: number): unknown;
+  strokeEllipse(x: number, y: number, width: number, height: number): unknown;
+}
+
+/**
+ * 전환 베일과 도착 링을 그린다. 베일은 전환 순간에만 존재하는 단색 막이고,
+ * 도착 링은 페이드인 진행도에 따라 넓어지며 옅어진다. 둘 다 끝나면 완전히 사라진다.
+ * arrivalGround는 도착 지점의 화면 투영 좌표다 (없으면 링을 그리지 않는다).
+ */
+export function drawStudioZoneTransitionOverlay(input: {
+  readonly veil: StudioZoneTransitionGraphics | null;
+  readonly ring: StudioZoneTransitionGraphics | null;
+  readonly frame: StudioZoneTransitionFrame;
+  readonly width: number;
+  readonly height: number;
+  readonly arrivalGround: StudioVirtualSpacePoint | null;
+}): void {
+  const { frame } = input;
+  if (input.veil) {
+    input.veil.clear();
+    if (frame.veilAlpha > 0.003) {
+      input.veil.fillStyle(STUDIO_ZONE_FADE_COLOR, frame.veilAlpha);
+      input.veil.fillRect(0, 0, input.width, input.height);
+    }
+  }
+  if (input.ring) {
+    input.ring.clear();
+    const progress = frame.fadeInProgress;
+    if (progress !== null && progress < 1 && input.arrivalGround && frame.kind !== "departure") {
+      const ground = input.arrivalGround;
+      const ringAlpha = (1 - progress) * 0.75;
+      input.ring.lineStyle(2.5, 0xe8ddff, ringAlpha);
+      input.ring.strokeEllipse(ground.x, ground.y, 26 + progress * 46, 13 + progress * 23);
+      input.ring.lineStyle(1.5, 0xc8b8ff, ringAlpha * 0.7);
+      input.ring.strokeEllipse(ground.x, ground.y, 14 + progress * 30, 7 + progress * 15);
+    }
+  }
+}
+
+/**
+ * 프라이빗 구역 분리 베일을 그린다. 구역 바깥을 어둡게 가려 대화가 밖으로
+ * 새지 않는 느낌을 만든다. rect가 없으면 지우기만 한다 (공개 구역에서는 투명).
+ */
+export function drawStudioZoneSeparationVeil(input: {
+  readonly graphics: StudioZoneTransitionGraphics | null;
+  readonly rect: { readonly x: number; readonly y: number; readonly width: number; readonly height: number } | null;
+  readonly alpha: number;
+  readonly worldWidth: number;
+  readonly worldHeight: number;
+}): void {
+  const graphics = input.graphics;
+  if (!graphics) return;
+  graphics.clear();
+  if (!input.rect) return;
+  const rect = input.rect;
+  graphics.fillStyle(0x07060b, input.alpha);
+  graphics.fillRect(0, 0, input.worldWidth, rect.y);
+  graphics.fillRect(0, rect.y, rect.x, rect.height);
+  graphics.fillRect(rect.x + rect.width, rect.y, Math.max(0, input.worldWidth - rect.x - rect.width), rect.height);
+  graphics.fillRect(0, rect.y + rect.height, input.worldWidth, Math.max(0, input.worldHeight - rect.y - rect.height));
 }
 
 /**
