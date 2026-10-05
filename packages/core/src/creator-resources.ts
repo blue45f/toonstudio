@@ -37,6 +37,15 @@ export interface CreatorAssetMetadata {
   additionalImageUrls: string[];
 }
 
+/**
+ * 제공처가 실제로 돌려준 일별 조회 시계열 (예: Wikimedia Pageviews의 일별 조회수).
+ * 시계열을 주는 제공처·응답에서만 채워지고, 그 외에는 필드 자체가 없다.
+ */
+export interface ResourceDailyViews {
+  date: string;
+  views: number;
+}
+
 export interface CreatorResource {
   id: string;
   provider: ResourceProvider;
@@ -54,6 +63,7 @@ export interface CreatorResource {
   eligibility?: string;
   isbn?: string;
   asset?: CreatorAssetMetadata;
+  dailyViews?: ResourceDailyViews[];
   provenance?: ResourceProvenanceReceipt;
 }
 
@@ -282,6 +292,25 @@ export function parseCreatorAssetMetadata(value: unknown): CreatorAssetMetadata 
   return hasContent ? metadata : undefined;
 }
 
+/**
+ * 일별 조회 시계열 검증. 한 점이라도 형식이 깨졌거나 날짜가 중복·역순이면
+ * 시계열 전체를 버린다 — 일부만 골라 그리면 실제 추이를 위장하게 되기 때문이다.
+ */
+function parseDailyViews(value: unknown): ResourceDailyViews[] | undefined {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 366) return undefined;
+  const points: ResourceDailyViews[] = [];
+  for (const raw of value) {
+    const entry = recordOf(raw);
+    const date = dateOnly(entry.date);
+    const views = entry.views;
+    if (!date || typeof views !== "number" || !Number.isSafeInteger(views) || views < 0) return undefined;
+    const previous = points.at(-1);
+    if (previous && previous.date >= date) return undefined;
+    points.push({ date, views });
+  }
+  return points;
+}
+
 export function parseResource(value: unknown): CreatorResource | null {
   const v = recordOf(value);
   if (!isProvider(v.provider)) return null;
@@ -313,6 +342,7 @@ export function parseResource(value: unknown): CreatorResource | null {
           ? "https://openbd.jp/terms/"
           : "";
   const asset = provider === "met" && license === "CC0" ? parseCreatorAssetMetadata(v.asset) : undefined;
+  const dailyViews = parseDailyViews(v.dailyViews);
   const creator = textOf(v.creator, 300);
   const credit = textOf(v.credit, 500);
   const requestedPermission = textOf(v.importPermission, 40);
@@ -348,6 +378,7 @@ export function parseResource(value: unknown): CreatorResource | null {
     dateLabel: textOf(v.dateLabel, 100), deadline: dateOnly(v.deadline),
     eligibility: textOf(v.eligibility, 300), isbn: textOf(v.isbn, 100),
     ...(asset ? { asset } : {}),
+    ...(dailyViews ? { dailyViews } : {}),
   };
 }
 

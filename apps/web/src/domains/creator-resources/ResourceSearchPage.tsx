@@ -21,7 +21,11 @@ import type { ResourceSearchProvider } from "./resource-search-config";
 import { PolyHavenCategoryGuide } from "./PolyHavenCategoryGuide";
 import { polyHavenCardDecoration } from "./polyhaven-resource";
 import { resourceUsageDescription, resourceUsageLabel } from "./resource-usage";
-
+import { useWikimediaDefaultDashboard } from "./use-wikimedia-default-dashboard";
+import {
+  WikimediaDashboardSkeleton,
+  WikimediaInterestDashboard,
+} from "./WikimediaInterestDashboard";
 function GoogleFontPreview({ family }: { family: string }) {
   const safeFamily = family.replace(/["'\\]/gu, "");
   useEffect(() => {
@@ -213,6 +217,39 @@ export interface ResourceCardDecoration {
   wideTile?: boolean;
 }
 
+/**
+ * 검색 전 wikimedia 구성 (S4-09) — 기본 주제의 실제 조회 추이가 닿으면 대시보드를
+ * 페이지 주인공으로 세우고, 닿지 않으면(API 미설정·실패·시계열 없음) 공통의
+ * 정직한 빈 상태(일러스트+추천 키워드)로 떨어진다. 타일을 강제하지 않는 제공처라
+ * PreSearchGuide의 featured 경로는 타지 않는다.
+ */
+function WikimediaPreSearch({ isSaved, onToggleItem, saveDisabled, onRunSearch }: {
+  isSaved: (itemId: string) => boolean;
+  onToggleItem: (item: CreatorResource) => void;
+  saveDisabled: boolean;
+  onRunSearch: (q: string) => void;
+}) {
+  const topic = RESOURCE_SEARCH_CONFIG.wikimedia.examples[0];
+  const state = useWikimediaDefaultDashboard();
+  if (state.phase === "loading") return <WikimediaDashboardSkeleton />;
+  if (state.phase === "ready") {
+    return (
+      <section aria-label="기본 주제 조회 추이" className="space-y-3 py-2 text-left">
+        <p className="text-sm leading-6 text-fg-2">
+          기본 주제 <strong className="text-fg">‘{topic}’</strong>의 최근 30일 조회 추이입니다. 다른 백과 문서는 위에서 검색하면 그 문서의 추이로 바뀝니다.
+        </p>
+        <WikimediaInterestDashboard
+          item={state.item}
+          saved={isSaved(state.item.id)}
+          disabled={saveDisabled}
+          onToggle={() => onToggleItem(state.item)}
+        />
+      </section>
+    );
+  }
+  return <PreSearchGuide provider="wikimedia" onRunSearch={onRunSearch} />;
+}
+
 export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }: {
   provider: ResourceSearchProvider;
   /** 제공처 전용 검색 전 구성. 지정하면 공통 큐레이션(PreSearchGuide) 대신 이 구성을 쓴다. */
@@ -256,6 +293,11 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
   }, [provider, query, page, retry, savedOnly]);
   const savedItems = workspace.saved.filter((item) => item.provider === provider);
   const items = savedOnly ? savedItems : result?.items ?? [];
+  // wikimedia 검색 결과 1건이 곧 대시보드다 (S4-09) — 일별 시계열이 실린 항목이면
+  // 카드 그리드 대신 조회 추이 대시보드로 본체를 교체하고, 시계열이 없으면 기존 카드로 폴백한다.
+  const dashboardItem = !savedOnly && provider === "wikimedia"
+    ? items.find((item) => (item.dailyViews?.length ?? 0) >= 2)
+    : undefined;
   const toggle = (item: CreatorResource) => {
     const remove = workspace.saved.some((saved) => saved.id === item.id);
     void update((value) => ({ ...value,
@@ -300,7 +342,14 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
       {!savedOnly && loading && <p role="status">공식 제공처에서 자료를 확인하고 있습니다…</p>}
       {!savedOnly && requestError && <p role="alert">{requestError}</p>}
       {!savedOnly && result && <p>{result.status === "not_configured" ? "API 연결 대기 · " : result.status === "unavailable" ? "일시적으로 이용 불가 · " : ""}{result.message}</p>}
-      {!savedOnly && !query && (preSearchGuide ? preSearchGuide(searchFor) : <PreSearchGuide provider={provider} onRunSearch={searchFor} />)}
+      {!savedOnly && !query && (provider === "wikimedia"
+        ? <WikimediaPreSearch
+            isSaved={(itemId) => workspace.saved.some((saved) => saved.id === itemId)}
+            onToggleItem={toggle}
+            saveDisabled={!ready || !writable || saving}
+            onRunSearch={searchFor}
+          />
+        : preSearchGuide ? preSearchGuide(searchFor) : <PreSearchGuide provider={provider} onRunSearch={searchFor} />)}
       {!loading && !items.length && (savedOnly || result?.status === "ready") && <div className="flex flex-col items-center py-4 text-center">
         <EmptySearchArt />
         <p>{savedOnly ? "이 제공처에서 저장한 자료가 없습니다." : "현재 검색 범위에 표시할 자료가 없습니다. 다른 검색어 또는 다음 페이지를 확인하세요."}</p>
@@ -310,7 +359,14 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
       </div>}
     </div>
     {!savedOnly && (requestError || result?.status === "unavailable" || result?.status === "partial") && <button className={RESOURCE_BUTTON} onClick={() => setRetry((value) => value + 1)}>다시 시도</button>}
-    {!savedOnly && loading && items.length === 0 ? (
+    {dashboardItem ? (
+      <WikimediaInterestDashboard
+        item={dashboardItem}
+        saved={workspace.saved.some((saved) => saved.id === dashboardItem.id)}
+        disabled={!ready || !writable || saving}
+        onToggle={() => toggle(dashboardItem)}
+      />
+    ) : !savedOnly && loading && items.length === 0 ? (
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
         {Array.from({ length: 6 }, (_, index) => (
           <div key={index} className="overflow-hidden rounded-2xl border border-line bg-panel">
