@@ -92,7 +92,7 @@ export const STUDIO_FEATURE_SURFACE_REGISTRY: readonly StudioFeatureSurfaceRegis
     descriptionEn: "Validate files, previews, licenses, AI provenance, compatibility, pricing and review state before submission.",
     primaryActionKo: "판매자 센터 열기",
     primaryActionEn: "Open seller center",
-    destination: { href: "/market/seller" },
+    destination: { href: "/market/manage" },
   },
   {
     id: "extensions.plugins",
