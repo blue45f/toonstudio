@@ -6,6 +6,7 @@ import {
 } from "./admin-i18n-loader";
 
 import { resolveI18nValue, useI18n } from "@/shared/lib/i18n";
+import { ADMIN_I18N_NAMESPACES } from "@/shared/lib/i18n-asset-manifest";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -36,7 +37,7 @@ describe("admin lazy i18n loader", () => {
 
     await loadAdminI18nLocale("fr-CA", "/preview");
 
-    expect(fetchSpy).toHaveBeenCalledTimes(25);
+    expect(fetchSpy).toHaveBeenCalledTimes(ADMIN_I18N_NAMESPACES.length);
     expect(fetchSpy).toHaveBeenCalledWith(
       "/preview/i18n/admin/dashboard/fr.json",
       {
@@ -58,7 +59,7 @@ describe("admin lazy i18n loader", () => {
     const first = loadAdminI18nLocale("de-DE", "/preview");
     const second = loadAdminI18nLocale("de-AT", "/preview");
 
-    expect(fetchSpy).toHaveBeenCalledTimes(25);
+    expect(fetchSpy).toHaveBeenCalledTimes(ADMIN_I18N_NAMESPACES.length);
 
     resolveResponse(
       new Response(JSON.stringify({ "admin.title": "Admin-Konsole" }), {
@@ -68,7 +69,7 @@ describe("admin lazy i18n loader", () => {
     );
     await Promise.all([first, second]);
 
-    expect(fetchSpy).toHaveBeenCalledTimes(25);
+    expect(fetchSpy).toHaveBeenCalledTimes(ADMIN_I18N_NAMESPACES.length);
     expect(resolveI18nValue("de-DE", "admin.title")).toBe("Admin-Konsole");
     expect(resolveI18nValue("de-AT", "admin.title")).toBe("Admin-Konsole");
   });
@@ -91,7 +92,7 @@ describe("admin lazy i18n loader", () => {
       loadAdminI18nLocale("es-MX", "/preview"),
     ).resolves.toBeUndefined();
 
-    expect(fetchSpy).toHaveBeenCalledTimes(25);
+    expect(fetchSpy).toHaveBeenCalledTimes(ADMIN_I18N_NAMESPACES.length);
     expect(resolveI18nValue("es-MX", "admin.title")).toBe(
       "Consola de administración",
     );

@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreatorMarketplaceModerationBoard } from "./CreatorMarketplaceModerationBoard";
+import "../admin-i18n-loader";
 
 import type {
   CreatorMarketplaceResourceModerationQueueItem,

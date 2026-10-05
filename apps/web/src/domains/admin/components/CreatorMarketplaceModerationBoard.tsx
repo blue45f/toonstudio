@@ -20,6 +20,8 @@ import type {
 } from "@/shared/lib/creator-marketplace-resource-contract";
 
 import { CREATOR_MARKETPLACE_RESOURCE_MODERATION_NOTE_MAX_CHARACTERS } from "@/shared/lib/creator-marketplace-resource-contract";
+import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import {
@@ -28,20 +30,22 @@ import {
   moderateCreatorMarketplaceResource,
 } from "@/platform/creator-marketplace-client";
 
+type Translate = ReturnType<typeof useT>;
+
 const PAGE_SIZE = 10;
 
-const REASON_LABELS: Record<CreatorMarketplaceResourceReportReason, string> = {
-  copyright: "저작권·권리 침해",
-  unsafe: "위험·유해 콘텐츠",
-  spam: "스팸·무관한 리소스",
-  misleading: "오해를 부르는 설명",
-  other: "기타",
+const REASON_KEYS: Record<CreatorMarketplaceResourceReportReason, string> = {
+  copyright: "admin.moderation.reasonCopyright",
+  unsafe: "admin.moderation.reasonUnsafe",
+  spam: "admin.moderation.reasonSpam",
+  misleading: "admin.moderation.reasonMisleading",
+  other: "admin.moderation.reasonOther",
 };
 
-const ACTION_LABELS: Record<CreatorMarketplaceResourceModerationAction, string> = {
-  hide: "관리자 숨김",
-  restore: "관리자 숨김 해제",
-  dismiss: "신고 기각",
+const ACTION_KEYS: Record<CreatorMarketplaceResourceModerationAction, string> = {
+  hide: "admin.moderation.actionHide",
+  restore: "admin.moderation.actionRestore",
+  dismiss: "admin.moderation.actionDismiss",
 };
 
 interface ModerationFocusRestoreRequest {
@@ -62,61 +66,62 @@ function formatDate(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? value
-    : new Intl.DateTimeFormat("ko-KR", {
+    : new Intl.DateTimeFormat(getCurrentUiLocale(), {
         dateStyle: "medium",
         timeStyle: "short",
       }).format(date);
 }
 
-function currentState(item: CreatorMarketplaceResourceModerationQueueItem): {
+function currentState(t: Translate, item: CreatorMarketplaceResourceModerationQueueItem): {
   readonly label: string;
   readonly description: string;
   readonly tone: "bad" | "good" | "warn";
 } {
   if (!item.currentResource) {
     return {
-      label: "현재 릴리스 행 없음",
-      description: "신고 당시 증거는 보존됐지만 현재 리소스가 없어 숨김·복원할 수 없습니다. 증거 확인 후 이 신고만 기각할 수 있습니다.",
+      label: t("admin.moderation.stateNoResourceLabel"),
+      description: t("admin.moderation.stateNoResourceDesc"),
       tone: "warn",
     };
   }
   const currentPackage = item.currentPackage;
   if (!currentPackage) {
     return {
-      label: "현재 패키지 확인 불가",
-      description: "신고 릴리스 행은 남아 있지만 현재 패키지 권한 상태를 확인할 수 없어 공개 링크를 제공하지 않습니다.",
+      label: t("admin.moderation.stateNoPackageLabel"),
+      description: t("admin.moderation.stateNoPackageDesc"),
       tone: "warn",
     };
   }
   if (currentPackage.availability.state === "available") {
     return {
-      label: "공개 중",
-      description: "현재 절대 head와 배급자 계정이 공개 가능한 상태입니다.",
+      label: t("admin.moderation.stateAvailableLabel"),
+      description: t("admin.moderation.stateAvailableDesc"),
       tone: "good",
     };
   }
   if (currentPackage.availability.reason === "moderated") {
     return {
-      label: "관리자 숨김",
-      description: "관리자가 현재 패키지의 공개 상세와 목록 노출을 숨긴 상태입니다.",
+      label: t("admin.moderation.stateModeratedLabel"),
+      description: t("admin.moderation.stateModeratedDesc"),
       tone: "bad",
     };
   }
   if (currentPackage.availability.reason === "owner-delisted") {
     return {
-      label: "배급자 목록 내림",
-      description: "배급자가 절대 head를 목록에서 내렸습니다. 신고된 과거 릴리스도 공개 상세로 연결하지 않으며, 관리자 복원 액션으로 다시 게시되지 않습니다.",
+      label: t("admin.moderation.stateDelistedLabel"),
+      description: t("admin.moderation.stateDelistedDesc"),
       tone: "warn",
     };
   }
   return {
-    label: "배급자 사용 불가",
-    description: "배급자 계정이 현재 활동 상태가 아니므로 패키지와 과거 릴리스의 공개 상세를 제공하지 않습니다.",
+    label: t("admin.moderation.statePublisherUnavailableLabel"),
+    description: t("admin.moderation.statePublisherUnavailableDesc"),
     tone: "warn",
   };
 }
 
 function actionResultMessage(
+  t: Translate,
   action: CreatorMarketplaceResourceModerationAction,
   item: CreatorMarketplaceResourceModerationQueueItem,
   result: {
@@ -126,16 +131,22 @@ function actionResultMessage(
   },
 ): string {
   const state = result.hidden && result.delisted
-    ? "관리자 숨김이 적용되었고 배급자 목록 내림은 유지됩니다."
+    ? t("admin.moderation.resultHiddenDelisted")
     : result.hidden
-      ? "관리자 숨김이 적용되었습니다."
+      ? t("admin.moderation.resultHidden")
     : result.delisted
-      ? "관리자 숨김은 해제됐지만 배급자 목록 내림은 유지됩니다."
-      : "관리자 숨김 없이 공개 가능한 상태입니다.";
-  return `${item.evidence.name}: ${ACTION_LABELS[action]} 완료 · 연관된 열린 신고 ${result.reviewedReportCount}건 처리. ${state}`;
+      ? t("admin.moderation.resultDelisted")
+      : t("admin.moderation.resultPublic");
+  return t("admin.moderation.resultSummary", {
+    name: item.evidence.name,
+    action: t(ACTION_KEYS[action]),
+    count: result.reviewedReportCount,
+    state,
+  });
 }
 
 export function CreatorMarketplaceModerationBoard() {
+  const t = useT();
   const headingId = useId();
   const requestGenerationRef = useRef(0);
   const busyTargetRef = useRef<string | null>(null);
@@ -170,13 +181,13 @@ export function CreatorMarketplaceModerationBoard() {
       })
       .catch((caught: unknown) => {
         if (controller.signal.aborted || requestGenerationRef.current !== generation) return;
-        setError(errorMessage(caught, "마켓 신고 검수 목록을 불러오지 못했습니다."));
+        setError(errorMessage(caught, t("admin.moderation.loadError")));
       })
       .finally(() => {
         if (requestGenerationRef.current === generation) setLoading(false);
       });
     return () => controller.abort();
-  }, [offset, refreshToken]);
+  }, [offset, refreshToken, t]);
 
   useEffect(() => {
     const request = focusRestoreRef.current;
@@ -265,8 +276,8 @@ export function CreatorMarketplaceModerationBoard() {
         Object.entries(current).filter(([reportId]) => !relatedReportIds.has(reportId)),
       ));
       setStatusMessage(resourceResult
-        ? actionResultMessage(action, item, resourceResult)
-        : `${item.evidence.name}: 원본 릴리스가 없어 신고 ${orphanResult?.dismissedReportCount ?? 0}건만 기각했습니다. 리소스 공개 상태는 변경하지 않았습니다.`);
+        ? actionResultMessage(t, action, item, resourceResult)
+        : t("admin.moderation.resultOrphan", { name: item.evidence.name, count: orphanResult?.dismissedReportCount ?? 0 }));
       if (focusRestoreRef.current) {
         focusRestoreRef.current = {
           ...focusRestoreRef.current,
@@ -285,8 +296,8 @@ export function CreatorMarketplaceModerationBoard() {
       setActionError(errorMessage(
         caught,
         resourceId
-          ? `${item.evidence.name} 검수 상태를 변경하지 못했습니다.`
-          : `${item.evidence.name}의 원본 없는 신고를 종결하지 못했습니다.`,
+          ? t("admin.moderation.actionFailed", { name: item.evidence.name })
+          : t("admin.moderation.orphanFailed", { name: item.evidence.name }),
       ));
     } finally {
       busyTargetRef.current = null;
@@ -305,10 +316,10 @@ export function CreatorMarketplaceModerationBoard() {
             <Flag size={13} aria-hidden /> CREATOR MARKET REPORTS
           </p>
           <h2 id={headingId} className="mt-1 text-xl font-bold text-fg">
-            Creator Market 신고 검수
+            {t("admin.moderation.title")}
           </h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-fg-3">
-            열린 신고와 신고 시점의 변경 불가능한 릴리스 증거를 함께 확인합니다. 숨김 해제는 관리자 숨김만 제거하며 배급자의 목록 내림을 되돌리지 않습니다.
+            {t("admin.moderation.desc")}
           </p>
         </div>
         <button
@@ -322,7 +333,7 @@ export function CreatorMarketplaceModerationBoard() {
             className={cn(loading && "animate-spin motion-reduce:animate-none")}
             aria-hidden
           />
-          열린 신고 새로고침
+          {t("admin.moderation.refresh")}
         </button>
       </div>
 
@@ -334,13 +345,13 @@ export function CreatorMarketplaceModerationBoard() {
             onClick={() => setRefreshToken((token) => token + 1)}
             className="mt-2 min-h-11 rounded-lg border border-current/30 px-3 font-semibold hover:bg-bad/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bad/70"
           >
-            목록 다시 불러오기
+            {t("admin.moderation.reloadList")}
           </button>
         </div>
       ) : null}
       {actionError ? (
         <p role="alert" className="mb-3 rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-xs leading-relaxed text-bad">
-          {actionError} 작성한 검수 메모는 유지되었습니다. 버튼을 다시 누를 때만 새 요청을 보냅니다.
+          {actionError} {t("admin.moderation.noteKept")}
         </p>
       ) : null}
       {statusMessage ? (
@@ -356,7 +367,7 @@ export function CreatorMarketplaceModerationBoard() {
       ) : null}
 
       {loading && !page ? (
-        <div role="status" className="space-y-2.5" aria-label="창작자 마켓 신고 목록을 불러오는 중">
+        <div role="status" className="space-y-2.5" aria-label={t("admin.moderation.loadingLabel")}>
           {Array.from({ length: 3 }, (_, index) => (
             <div key={index} className="skeleton h-52 rounded-xl" />
           ))}
@@ -364,13 +375,13 @@ export function CreatorMarketplaceModerationBoard() {
       ) : !loading && !error && (page?.items.length ?? 0) === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-card/40 p-8 text-center">
           <ShieldCheck className="mx-auto text-good" size={24} aria-hidden />
-          <p className="mt-2 text-sm font-semibold text-fg">검수 대기 중인 Creator Market 신고가 없습니다.</p>
-          <p className="mt-1 text-xs text-fg-3">이 표시는 현재 열린 신고 큐만 비어 있다는 뜻입니다.</p>
+          <p className="mt-2 text-sm font-semibold text-fg">{t("admin.moderation.emptyTitle")}</p>
+          <p className="mt-1 text-xs text-fg-3">{t("admin.moderation.emptyDesc")}</p>
         </div>
       ) : page && page.items.length > 0 ? (
         <ul className={cn("space-y-3", loading && "opacity-65")} aria-busy={loading}>
           {page.items.map((item) => {
-            const state = currentState(item);
+            const state = currentState(t, item);
             const note = notes[item.reportId] ?? "";
             const noteValid = note.trim().length > 0;
             const targetMissing = item.currentResource === null;
@@ -384,9 +395,9 @@ export function CreatorMarketplaceModerationBoard() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 text-[0.68rem] text-fg-3">
                       <span className="rounded-full bg-bad/10 px-2 py-0.5 font-semibold text-bad">
-                        {REASON_LABELS[item.reason]}
+                        {t(REASON_KEYS[item.reason])}
                       </span>
-                      <span className="rounded-full border border-line px-2 py-0.5">열린 신고</span>
+                      <span className="rounded-full border border-line px-2 py-0.5">{t("admin.moderation.openReport")}</span>
                       <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
                     </div>
                     <h3 className="mt-2 break-words text-base font-bold text-fg">{item.evidence.name}</h3>
@@ -406,28 +417,30 @@ export function CreatorMarketplaceModerationBoard() {
                 </div>
 
                 <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  <section aria-label="신고 내용" className="rounded-xl border border-line bg-panel p-3">
-                    <h4 className="text-xs font-semibold text-fg">신고 내용</h4>
+                  <section aria-label={t("admin.moderation.reportSection")} className="rounded-xl border border-line bg-panel p-3">
+                    <h4 className="text-xs font-semibold text-fg">{t("admin.moderation.reportSection")}</h4>
                     <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs leading-relaxed">
-                      <dt className="text-fg-3">신고자</dt>
+                      <dt className="text-fg-3">{t("admin.moderation.reporter")}</dt>
                       <dd className="min-w-0 break-all text-fg-2">
-                        {item.reporter.name}{item.reporter.id ? ` · ${item.reporter.id}` : " · 탈퇴 계정"}
+                        {item.reporter.id
+                          ? t("admin.moderation.reporterLine", { name: item.reporter.name, id: item.reporter.id })
+                          : t("admin.moderation.reporterLineWithdrawn", { name: item.reporter.name })}
                       </dd>
-                      <dt className="text-fg-3">상세</dt>
+                      <dt className="text-fg-3">{t("admin.moderation.details")}</dt>
                       <dd className="whitespace-pre-wrap break-words text-fg-2">
-                        {item.details || "상세 설명 없음"}
+                        {item.details || t("admin.moderation.noDetails")}
                       </dd>
                     </dl>
                   </section>
 
-                  <section aria-label="신고 시점 릴리스 증거" className="rounded-xl border border-line bg-panel p-3">
-                    <h4 className="text-xs font-semibold text-fg">신고 시점 릴리스 증거</h4>
+                  <section aria-label={t("admin.moderation.evidenceSection")} className="rounded-xl border border-line bg-panel p-3">
+                    <h4 className="text-xs font-semibold text-fg">{t("admin.moderation.evidenceSection")}</h4>
                     <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs leading-relaxed">
-                      <dt className="text-fg-3">종류·라이선스</dt>
+                      <dt className="text-fg-3">{t("admin.moderation.kindLicense")}</dt>
                       <dd className="text-fg-2">{item.evidence.kind} · {item.evidence.license}</dd>
-                      <dt className="text-fg-3">크기</dt>
+                      <dt className="text-fg-3">{t("admin.moderation.size")}</dt>
                       <dd className="text-fg-2">{formatByteSize(item.evidence.manifestByteSize)}</dd>
-                      <dt className="text-fg-3">릴리스 시각</dt>
+                      <dt className="text-fg-3">{t("admin.moderation.releasedAt")}</dt>
                       <dd className="text-fg-2">
                         <time dateTime={item.evidence.releaseCreatedAt}>{formatDate(item.evidence.releaseCreatedAt)}</time>
                       </dd>
@@ -438,24 +451,24 @@ export function CreatorMarketplaceModerationBoard() {
                 </div>
 
                 <div className="mt-3 rounded-xl border border-line bg-raised/35 px-3 py-2.5 text-xs leading-relaxed">
-                  <p className="font-semibold text-fg">현재 상태 · {state.label}</p>
+                  <p className="font-semibold text-fg">{t("admin.moderation.currentState", { label: state.label })}</p>
                   <p className="mt-1 text-fg-3">{state.description}</p>
                   {item.currentPackage?.availability.state === "available" ? (
                     <Link
                       href={`/market/resource/${encodeURIComponent(item.currentPackage.availability.currentHead.id)}`}
                       className="mt-1.5 inline-flex min-h-8 items-center font-semibold text-accent underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                     >
-                      현재 공개 상세 확인
+                      {t("admin.moderation.viewCurrentDetail")}
                     </Link>
                   ) : null}
                 </div>
 
                 <div className="mt-4">
                   <label htmlFor={`market-moderation-note-${item.reportId}`} className="text-xs font-semibold text-fg-2">
-                    해결 메모 (필수)
+                    {t("admin.moderation.noteLabel")}
                   </label>
                   <div className="mt-1 flex items-center justify-between gap-3 text-[0.68rem] text-fg-3">
-                    <span>검수 근거와 후속 조치를 남겨 주세요.</span>
+                    <span>{t("admin.moderation.noteHint")}</span>
                     <span className="tabular-nums" aria-hidden>
                       {note.length}/{CREATOR_MARKETPLACE_RESOURCE_MODERATION_NOTE_MAX_CHARACTERS}
                     </span>
@@ -470,12 +483,12 @@ export function CreatorMarketplaceModerationBoard() {
                       setNotes((current) => ({ ...current, [item.reportId]: event.target.value }));
                       setActionError(null);
                     }}
-                    placeholder="예: 권리자 증빙 확인 전 임시 숨김. 2026. 9. 7. 재검수 예정."
+                    placeholder={t("admin.moderation.notePlaceholder")}
                     className="mt-1.5 w-full resize-y rounded-lg border border-line bg-canvas/50 px-3 py-2.5 text-xs leading-relaxed text-fg outline-none placeholder:text-fg-3 focus:border-accent focus:ring-2 focus:ring-accent/20"
                   />
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={`${item.evidence.name} 검수 액션`}>
+                <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t("admin.moderation.actionsLabel", { name: item.evidence.name })}>
                   <button
                     type="button"
                     disabled={targetMissing || Boolean(busyAction) || !noteValid || item.currentPackage?.moderation.state === "hidden"}
@@ -484,7 +497,7 @@ export function CreatorMarketplaceModerationBoard() {
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-bad/40 px-3 text-xs font-semibold text-bad hover:bg-bad/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bad/70 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {busy && busyAction?.action === "hide" ? <LoaderCircle size={13} className="animate-spin motion-reduce:animate-none" aria-hidden /> : <EyeOff size={13} aria-hidden />}
-                    {busy && busyAction?.action === "hide" ? "숨김 처리 중…" : "숨김"}
+                    {busy && busyAction?.action === "hide" ? t("admin.moderation.hideBusy") : t("admin.moderation.hide")}
                   </button>
                   <button
                     type="button"
@@ -494,7 +507,7 @@ export function CreatorMarketplaceModerationBoard() {
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-good/40 px-3 text-xs font-semibold text-good hover:bg-good/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-good/70 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {busy && busyAction?.action === "restore" ? <LoaderCircle size={13} className="animate-spin motion-reduce:animate-none" aria-hidden /> : <RotateCcw size={13} aria-hidden />}
-                    {busy && busyAction?.action === "restore" ? "숨김 해제 중…" : "숨김 해제"}
+                    {busy && busyAction?.action === "restore" ? t("admin.moderation.restoreBusy") : t("admin.moderation.restore")}
                   </button>
                   <button
                     type="button"
@@ -504,7 +517,7 @@ export function CreatorMarketplaceModerationBoard() {
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line px-3 text-xs font-semibold text-fg-2 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {busy && busyAction?.action === "dismiss" ? <LoaderCircle size={13} className="animate-spin motion-reduce:animate-none" aria-hidden /> : <XCircle size={13} aria-hidden />}
-                    {busy && busyAction?.action === "dismiss" ? "신고 기각 중…" : "신고 기각"}
+                    {busy && busyAction?.action === "dismiss" ? t("admin.moderation.dismissBusy") : t("admin.moderation.dismiss")}
                   </button>
                 </div>
               </li>
@@ -514,9 +527,9 @@ export function CreatorMarketplaceModerationBoard() {
       ) : null}
 
       {page ? (
-        <nav aria-label="Creator Market 신고 페이지" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label={t("admin.moderation.navLabel")} className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-fg-3">
-            {visibleStart === 0 ? "표시 항목 없음" : `${visibleStart}–${visibleEnd}번째 열린 신고`}
+            {visibleStart === 0 ? t("admin.moderation.rangeEmpty") : t("admin.moderation.range", { start: visibleStart, end: visibleEnd })}
           </p>
           <div className="flex gap-2">
             <button
@@ -525,7 +538,7 @@ export function CreatorMarketplaceModerationBoard() {
               onClick={() => setOffset(Math.max(0, page.offset - PAGE_SIZE))}
               className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line px-3 text-xs font-semibold text-fg-2 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <ChevronLeft size={14} aria-hidden /> 이전
+              <ChevronLeft size={14} aria-hidden /> {t("admin.moderation.previous")}
             </button>
             <button
               type="button"
@@ -535,7 +548,7 @@ export function CreatorMarketplaceModerationBoard() {
               }}
               className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line px-3 text-xs font-semibold text-fg-2 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              다음 <ChevronRight size={14} aria-hidden />
+              {t("admin.moderation.next")} <ChevronRight size={14} aria-hidden />
             </button>
           </div>
         </nav>

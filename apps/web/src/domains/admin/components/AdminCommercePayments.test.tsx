@@ -3,6 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminCommercePayments } from "./AdminCommercePayments";
+import "../admin-i18n-loader";
 
 const api = vi.hoisted(
   () =>

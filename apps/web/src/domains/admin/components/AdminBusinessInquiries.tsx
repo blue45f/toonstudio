@@ -1,5 +1,6 @@
 import {
   formatI18nTemplate,
+  getCurrentUiLocale,
   translateCurrentStaticSourceText,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { ExternalLink, Inbox, RefreshCw } from "lucide-react";
@@ -21,7 +22,7 @@ import { AdminEmptyState, AdminSpinner } from "./admin-ui";
 function formatDate(value: string): string {
   const timestamp = Date.parse(value);
   if (!Number.isFinite(timestamp)) return value;
-  return new Intl.DateTimeFormat("ko-KR", {
+  return new Intl.DateTimeFormat(getCurrentUiLocale(), {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -108,7 +109,7 @@ export function AdminBusinessInquiries() {
       });
       setPage(result);
     } catch (requestError) {
-      setError(await getApiErrorMessage(requestError, "비즈니스 문의를 불러오지 못했어요."));
+      setError(await getApiErrorMessage(requestError, translateCurrentStaticSourceText("domains.admin.components.AdminBusinessInquiries", "ko", "비즈니스 문의를 불러오지 못했어요.")));
     } finally {
       setLoading(false);
     }
@@ -130,7 +131,7 @@ export function AdminBusinessInquiries() {
         items: current.items.map((item) => item.id === id ? updated : item),
       }));
     } catch (requestError) {
-      setError(await getApiErrorMessage(requestError, "문의 상태를 변경하지 못했어요."));
+      setError(await getApiErrorMessage(requestError, translateCurrentStaticSourceText("domains.admin.components.AdminBusinessInquiries", "ko", "문의 상태를 변경하지 못했어요.")));
     } finally {
       setUpdatingId(null);
     }

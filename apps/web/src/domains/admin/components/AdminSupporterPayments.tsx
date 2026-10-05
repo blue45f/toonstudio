@@ -13,6 +13,9 @@ import {
 import { AdminCard, AdminEmptyState, AdminSpinner, AdminTableWrap, StatusBadge } from "./admin-ui";
 import { adminButtonClass } from "./admin-ui-utils";
 
+import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
+
 interface SupporterPaymentItem {
   id: string;
   orderId: string;
@@ -63,16 +66,17 @@ const FILTERS = [
   "CANCELED",
 ] as const;
 
-const formatWon = (amount: number) => `₩${amount.toLocaleString("ko-KR")}`;
+const formatWon = (amount: number) => `₩${amount.toLocaleString(getCurrentUiLocale())}`;
 
-const SUPPORTER_STATUS_LABELS: Readonly<Record<string, string>> = {
-  READY: "준비",
-  WAITING_FOR_DEPOSIT: "입금 대기",
-  DONE: "완료",
-  CANCELED: "취소",
+const SUPPORTER_STATUS_KEYS: Readonly<Record<string, string>> = {
+  READY: "admin.supporters.statusReady",
+  WAITING_FOR_DEPOSIT: "admin.supporters.statusWaitingForDeposit",
+  DONE: "admin.supporters.statusDone",
+  CANCELED: "admin.supporters.statusCanceled",
 };
 
 export function AdminSupporterPayments({ uid }: { uid: string }) {
+  const t = useT();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
   const [mode, setMode] = useState<"all" | "test" | "live">("all");
   const [queryInput, setQueryInput] = useState("");
@@ -137,8 +141,8 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
     let body: string | undefined;
     if (kind === "cancel") {
       const reason = window.prompt(
-        "전액 취소 사유를 입력하세요.",
-        "운영자 요청 전액 환불",
+        t("admin.supporters.cancelReasonPrompt"),
+        t("admin.supporters.cancelReasonDefault"),
       )?.trim();
       if (!reason) return;
       body = JSON.stringify({ reason });
@@ -215,50 +219,50 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
             <p className="text-xs font-bold tracking-[0.14em] text-accent">
               OPERATING-COST SUPPORT
             </p>
-            <h2 className="mt-1 text-xl font-bold text-fg">운영비 후원 관리</h2>
+            <h2 className="mt-1 text-xl font-bold text-fg">{t("admin.supporters.title")}</h2>
             <p className="mt-1 text-xs leading-5 text-fg-3">
-              무료 서비스 운영을 위한 자발적 후원 원장입니다. 카드번호와 계좌 인증정보는 저장하지 않습니다.
+              {t("admin.supporters.desc")}
             </p>
           </div>
           <span className="rounded-full border border-line bg-panel px-3 py-1 text-xs text-fg-3">
             {data
-              ? `조회 결과 ${data.total}건`
+              ? t("admin.supporters.resultCount", { total: data.total })
               : error
-                ? "조회 실패"
-                : "조회 중…"}
+                ? t("admin.supporters.loadFailed")
+                : t("admin.supporters.loading")}
           </span>
         </div>
         {listLoading && data ? (
           <p role="status" className="mt-2 text-xs text-fg-3">
-            새 조건으로 다시 조회하는 중이에요. 아래 수치는 이전 조건의 결과입니다.
+            {t("admin.supporters.refetching")}
           </p>
         ) : null}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-line bg-panel/60 p-4">
-            <p className="text-xs text-fg-3">승인 잔액 합계</p>
+            <p className="text-xs text-fg-3">{t("admin.supporters.summaryTotalAmount")}</p>
             <p className="mt-1 text-lg font-bold text-fg">{data ? formatWon(data.summary.totalAmount) : "—"}</p>
           </div>
           <div className="rounded-xl border border-line bg-panel/60 p-4">
-            <p className="text-xs text-fg-3">승인</p>
-            <p className="mt-1 text-lg font-bold text-fg">{data ? `${data.summary.doneCount}건` : "—"}</p>
+            <p className="text-xs text-fg-3">{t("admin.supporters.summaryApproved")}</p>
+            <p className="mt-1 text-lg font-bold text-fg">{data ? t("admin.supporters.countUnit", { count: data.summary.doneCount }) : "—"}</p>
           </div>
           <div className="rounded-xl border border-line bg-panel/60 p-4">
-            <p className="text-xs text-fg-3">입금 대기</p>
-            <p className="mt-1 text-lg font-bold text-fg">{data ? `${data.summary.waitingCount}건` : "—"}</p>
+            <p className="text-xs text-fg-3">{t("admin.supporters.summaryWaiting")}</p>
+            <p className="mt-1 text-lg font-bold text-fg">{data ? t("admin.supporters.countUnit", { count: data.summary.waitingCount }) : "—"}</p>
           </div>
           <div className="rounded-xl border border-line bg-panel/60 p-4">
-            <p className="text-xs text-fg-3">전액 취소</p>
-            <p className="mt-1 text-lg font-bold text-fg">{data ? `${data.summary.canceledCount}건` : "—"}</p>
+            <p className="text-xs text-fg-3">{t("admin.supporters.summaryCanceled")}</p>
+            <p className="mt-1 text-lg font-bold text-fg">{data ? t("admin.supporters.countUnit", { count: data.summary.canceledCount }) : "—"}</p>
           </div>
         </div>
       </AdminCard>
 
       <AdminCard>
-        <h2 className="mb-4 text-base font-bold text-fg">후원 설정</h2>
+        <h2 className="mb-4 text-base font-bold text-fg">{t("admin.supporters.settingsTitle")}</h2>
         <div className="flex flex-wrap items-end gap-4">
           <label className="text-sm font-semibold text-fg">
-            월 운영비 목표
+            {t("admin.supporters.monthlyGoal")}
             <input
               type="number"
               min={0}
@@ -277,7 +281,7 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
               disabled={settings === null}
               onChange={(event) => setWallDraft(event.target.checked)}
             />
-            공개 후원자 벽 사용
+            {t("admin.supporters.publicWall")}
           </label>
           <button
             type="button"
@@ -286,15 +290,15 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
             className={adminButtonClass("accent")}
           >
             <Save size={14} aria-hidden="true" />
-            설정 저장
+            {t("admin.supporters.saveSettings")}
           </button>
           {settings ? (
             <span className="text-xs text-fg-3">
-              현재 목표 {formatWon(settings.monthlyGoalAmount)}
+              {t("admin.supporters.currentGoal", { amount: formatWon(settings.monthlyGoalAmount) })}
             </span>
           ) : settingsError ? null : (
             <span role="status" className="text-xs text-fg-3">
-              후원 설정을 불러오는 중…
+              {t("admin.supporters.settingsLoading")}
             </span>
           )}
         </div>
@@ -310,14 +314,14 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
                   : loadSettings
               }
             >
-              다시 시도
+              {t("admin.supporters.retry")}
             </button>
           </p>
         ) : null}
       </AdminCard>
 
       <AdminCard>
-        <h2 className="mb-4 text-base font-bold text-fg">후원 결제 내역</h2>
+        <h2 className="mb-4 text-base font-bold text-fg">{t("admin.supporters.listTitle")}</h2>
         <div className="flex flex-wrap items-center gap-2">
           {FILTERS.map((value) => (
             <button
@@ -352,12 +356,12 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
             <input
               value={queryInput}
               onChange={(event) => setQueryInput(event.target.value)}
-              placeholder="주문번호 · 이름 · 메시지 검색"
+              placeholder={t("admin.supporters.searchPlaceholder")}
               className="min-h-10 min-w-0 flex-1 rounded-xl border border-line bg-panel px-3 text-sm text-fg"
             />
             <button type="submit" className={adminButtonClass("ghost")}>
               <Search size={14} aria-hidden="true" />
-              검색
+              {t("admin.supporters.search")}
             </button>
           </form>
         </div>
@@ -370,14 +374,14 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
               className={adminButtonClass("ghost")}
               onClick={load}
             >
-              다시 시도
+              {t("admin.supporters.retry")}
             </button>
           </p>
         ) : null}
         {!data && !error ? <AdminSpinner /> : null}
         {data && data.items.length === 0 ? (
           <div className="mt-4">
-            <AdminEmptyState title="조건에 맞는 후원 결제가 없습니다." />
+            <AdminEmptyState title={t("admin.supporters.empty")} />
           </div>
         ) : null}
         {data && data.items.length > 0 ? (
@@ -403,7 +407,7 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
                     <tr key={item.id} className="border-t border-line align-top">
                       <td className="px-3 py-3">
                         <div className="font-medium text-fg">
-                          {item.visibility === "name" && item.supporterName ? item.supporterName : "익명"}
+                          {item.visibility === "name" && item.supporterName ? item.supporterName : t("admin.supporters.anonymous")}
                         </div>
                         {item.message ? (
                           <div className="mt-1 max-w-64 truncate text-xs text-fg-3">
@@ -412,7 +416,7 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
                         ) : null}
                         {item.visibility === "name" ? (
                           <div className="mt-1 text-[11px] text-fg-3">
-                            공개: 이름 · 금액 {item.showAmount ? "O" : "X"} · 메시지 {item.showMessage ? "O" : "X"}
+                            {t("admin.supporters.publicSummary", { amount: item.showAmount ? "O" : "X", message: item.showMessage ? "O" : "X" })}
                           </div>
                         ) : null}
                       </td>
@@ -420,14 +424,14 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
                         {formatWon(item.balanceAmount)}
                         {item.balanceAmount !== item.amount ? (
                           <div className="text-[11px] font-normal text-fg-3">
-                            원결제 {formatWon(item.amount)}
+                            {t("admin.supporters.originalAmount", { amount: formatWon(item.amount) })}
                           </div>
                         ) : null}
                       </td>
                       <td className="px-3 py-3">
                         <StatusBadge
                           status={item.status}
-                          label={`${SUPPORTER_STATUS_LABELS[item.status] ?? item.status} · ${item.mode === "live" ? "실결제" : item.mode === "test" ? "테스트" : item.mode}`}
+                          label={`${SUPPORTER_STATUS_KEYS[item.status] ? t(SUPPORTER_STATUS_KEYS[item.status]) : item.status} · ${item.mode === "live" ? t("admin.supporters.modeLive") : item.mode === "test" ? t("admin.supporters.modeTest") : item.mode}`}
                         />
                       </td>
                       <td className="px-3 py-3 text-fg-2">{item.method || "—"}</td>
@@ -440,14 +444,14 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
                             rel="noreferrer"
                             className="mt-1 flex items-center gap-1 text-xs font-semibold text-accent"
                           >
-                            영수증 <ExternalLink size={12} aria-hidden="true" />
+                            {t("admin.supporters.receipt")} <ExternalLink size={12} aria-hidden="true" />
                           </a>
                         ) : null}
                       </td>
                       <td className="px-3 py-3 text-xs text-fg-3">
-                        {new Date(item.createdAt).toLocaleString("ko-KR")}
+                        {new Date(item.createdAt).toLocaleString(getCurrentUiLocale())}
                         {item.webhookVerifiedAt ? (
-                          <div className="mt-1">웹훅 검증 완료</div>
+                          <div className="mt-1">{t("admin.supporters.webhookVerified")}</div>
                         ) : null}
                       </td>
                       <td className="px-3 py-3">
@@ -460,7 +464,7 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
                               className={adminButtonClass("ghost")}
                             >
                               <RefreshCw size={13} aria-hidden="true" />
-                              Toss 동기화
+                              {t("admin.supporters.resync")}
                             </button>
                           ) : null}
                           {canCancel ? (
@@ -470,7 +474,7 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
                               onClick={() => void act(item, "cancel")}
                               className={adminButtonClass("danger")}
                             >
-                              전액 환불
+                              {t("admin.supporters.cancelAll")}
                             </button>
                           ) : null}
                           {item.visibility === "name" ? (
@@ -480,12 +484,12 @@ export function AdminSupporterPayments({ uid }: { uid: string }) {
                               onClick={() => void togglePublicVisibility(item)}
                               className={adminButtonClass("ghost")}
                             >
-                              {item.publicHidden ? "공개 복원" : "공개 숨김"}
+                              {item.publicHidden ? t("admin.supporters.restorePublic") : t("admin.supporters.hidePublic")}
                             </button>
                           ) : null}
                           {item.status === "DONE" && item.method === "가상계좌" ? (
                             <span className="max-w-48 text-[11px] leading-4 text-fg-3">
-                              입금 완료 가상계좌는 Toss에서 환불계좌 확인 후 처리
+                              {t("admin.supporters.virtualAccountNote")}
                             </span>
                           ) : null}
                         </div>

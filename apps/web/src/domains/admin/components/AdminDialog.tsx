@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 interface AdminDialogProps {
   open: boolean;
@@ -46,8 +47,10 @@ export function AdminDialog({
   footer,
   size = "md",
   busy = false,
-  closeLabel = "닫기",
+  closeLabel,
 }: AdminDialogProps) {
+  const t = useT();
+  const resolvedCloseLabel = closeLabel ?? t("admin.ui.close");
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -148,7 +151,7 @@ export function AdminDialog({
             type="button"
             onClick={onClose}
             disabled={busy}
-            aria-label={closeLabel}
+            aria-label={resolvedCloseLabel}
             className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-line text-fg-3 transition-colors hover:border-fg-3/40 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
           >
             <X size={17} />
