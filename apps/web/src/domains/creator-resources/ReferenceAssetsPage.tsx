@@ -32,6 +32,8 @@ import { AssetImage, CountBadge } from "./reference-asset-ui";
 import { RESOURCE_BUTTON } from "./navigation";
 import { ProviderStatus } from "./ProviderStatus";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
+import { TranslatedQueryNotice } from "./TranslatedQueryNotice";
+import { useTranslatedResearchQuery } from "./use-translated-research-query";
 import { downloadText, useCreatorWorkspace } from "./workspace";
 
 import type { CreatorResource, ResourceSearchResult } from "@/shared/lib/creator-resources";
@@ -116,6 +118,10 @@ export function ReferenceAssetsPage() {
     search.highlightOnly,
   ]);
   const [draft, setDraft] = useState<ReferenceSearchState>(requestSearch);
+  // Met 인덱스는 영문이라 한글 검색어는 공용 변환 계층으로 영문 변환해 보낸다.
+  // 서버에도 같은 사전 변환이 있어 멱등하고, 여기서는 투명 표시·직접 수정·
+  // 모델 보강까지 얹는다. URL·최근 검색에는 사용자 원문을 유지한다.
+  const translated = useTranslatedResearchQuery(requestSearch.query);
   const [advancedOpen, setAdvancedOpen] = useState(() => Boolean(
     search.departmentId || search.medium || search.geoLocation || search.dateBegin || search.dateEnd || search.highlightOnly || search.field !== "all",
   ));
@@ -163,7 +169,7 @@ export function ReferenceAssetsPage() {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort("timeout"), 30000);
     let disposed = false;
-    void apiFetch(apiPath(`/api/creator-resources/search?${buildReferenceApiParams(requestSearch)}`), {
+    void apiFetch(apiPath(`/api/creator-resources/search?${buildReferenceApiParams({ ...requestSearch, query: translated.effectiveQuery })}`), {
       signal: controller.signal,
       headers: { Accept: "application/json" },
     }).then(async (response) => {
@@ -186,7 +192,7 @@ export function ReferenceAssetsPage() {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [requestSearch, view.mode, retry]);
+  }, [requestSearch, view.mode, retry, translated.effectiveQuery]);
 
   const savedItems = useMemo(
     () => workspace.saved.filter((item) => item.provider === "met"),
@@ -341,6 +347,7 @@ export function ReferenceAssetsPage() {
           writeRecentSearches([]);
         }}
       />
+      {search.query ? <TranslatedQueryNotice state={translated} /> : null}
 
       {!search.query && view.mode === "results" ? <SearchLensGrid onSelect={(next) => runSearch(next)} /> : null}
 

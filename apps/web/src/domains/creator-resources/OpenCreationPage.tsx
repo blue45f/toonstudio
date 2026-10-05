@@ -10,6 +10,8 @@ import {
 import type { KitFormat, OpenProvider, OpenReference } from "./open-creation";
 import { readOpenJson } from "./open-creation-transport";
 import { ResourceLayout } from "./ResourceLayout";
+import { TranslatedQueryNotice } from "./TranslatedQueryNotice";
+import { useTranslatedResearchQuery } from "./use-translated-research-query";
 import { downloadText, useCreatorWorkspace } from "./workspace";
 import {
   formatI18nTemplate,
@@ -53,6 +55,10 @@ export function OpenCreationPage() {
   useBilingualI18nRevision();
   const [provider, setProvider] = useState<OpenProvider>("artic");
   const [query, setQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  // 자체 사전(openSearchQuery)이 1차 변환을 맡고, 공용 계층은 제출된 검색어에
+  // 모델 보강·변환어 직접 수정을 얹는다. wikipedia는 한국어 위키라 변환 제외.
+  const translated = useTranslatedResearchQuery(submittedQuery, { enabled: provider !== "wikipedia" });
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<OpenReference[]>([]);
   const [resultKey, setResultKey] = useState("");
@@ -84,13 +90,14 @@ export function OpenCreationPage() {
   }, []);
 
   const invalidateSearch = () => {
-    requestNumber.current += 1; controller.current?.abort(); setPending(false); setResult([]); setResultKey(""); setPage(1); setSearchError("");
+    requestNumber.current += 1; controller.current?.abort(); setPending(false); setResult([]); setResultKey(""); setPage(1); setSearchError(""); setSubmittedQuery("");
     setStatus(tx("검색 버튼을 누르면 선택한 제공처에서 검색합니다."));
   };
-  const search = async (targetPage = 1) => {
+  const search = async (targetPage = 1, rawQuery: string = query) => {
     let url: string; let effectiveQuery: string;
-    try { url = openSearchUrl(provider, query, targetPage); effectiveQuery = openSearchQuery(provider, query); }
+    try { url = openSearchUrl(provider, rawQuery, targetPage); effectiveQuery = openSearchQuery(provider, rawQuery); }
     catch (cause) { setSearchError(cause instanceof Error ? cause.message : tx("검색어를 확인하세요.")); return; }
+    setSubmittedQuery(rawQuery);
     const key = `${provider}:${effectiveQuery}:${targetPage}`;
     const id = ++requestNumber.current;
     controller.current?.abort();
@@ -167,6 +174,12 @@ export function OpenCreationPage() {
     </section>
     <div className="flex flex-wrap gap-2" aria-label={tx("자료 보기")}><button className={RESOURCE_BUTTON} aria-pressed={tab === "results"} onClick={() => setTab("results")}>{tx("검색 결과")}</button><button className={RESOURCE_BUTTON} aria-pressed={tab === "board"} onClick={() => setTab("board")}>{formatI18nTemplate(tx("재료 보드 {v0}/{v1}"), { v0: board.length, v1: BOARD_LIMIT })}</button><button className={RESOURCE_BUTTON} aria-pressed={tab === "existing"} onClick={() => setTab("existing")}>{formatI18nTemplate(tx("기존 저장 자료 {v0}"), { v0: existing.length })}</button><button className={RESOURCE_BUTTON} disabled={!board.length} onClick={() => exportText("toonstudio-material-board.json", JSON.stringify({ version: 1, items: board }, null, 2), "application/json;charset=utf-8")}>{tx("보드 JSON 백업")}</button></div>
     <p role="status" className="text-sm leading-6 text-fg-2">{status}</p>
+    {submittedQuery && provider !== "wikipedia" && (
+      <TranslatedQueryNotice
+        state={translated}
+        onApplyOverride={(value) => { setQuery(value); void search(1, value); }}
+      />
+    )}
     {searchError && <div className="flex flex-wrap items-center gap-3"><p role="alert" className="text-sm text-warn">{searchError}</p><button className={RESOURCE_BUTTON} type="button" disabled={pending} onClick={() => void search(page)}>{tx("다시 검색")}</button></div>}
     {storageError && <p role="alert" className="text-sm text-warn">{formatI18nTemplate(tx("{v0} 성공으로 표시하지 않으며, 검색과 초안 내보내기는 계속 사용할 수 있습니다."), { v0: storageError })}</p>}
     {tab === "existing" && <p className="text-sm text-fg-2">{existingError || (!existingReady ? tx("기존 저장 보드를 읽고 있습니다…") : tx("기존 Met·도서·지원사업 자료를 재료 보드로 복사할 수 있습니다. 원래 보드는 변경하지 않습니다."))}</p>}

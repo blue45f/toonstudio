@@ -4,6 +4,8 @@ import { buildContentBrief, CONTENT_FORMATS, CONTENT_PACKS, findContentPack, isC
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
 import { ResourceCard } from "./ResourceSearchPage";
+import { TranslatedQueryNotice } from "./TranslatedQueryNotice";
+import { useTranslatedResearchQuery } from "./use-translated-research-query";
 import { packProvider, usePackResourceSearch } from "./usePackResourceSearch";
 import { downloadText, useCreatorWorkspace } from "./workspace";
 import { RESOURCE_LABELS } from "@/shared/lib/creator-resources";
@@ -35,7 +37,10 @@ export function ContentPacksPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const { workspace, update, ready, writable, saving, error } = useCreatorWorkspace();
-  const search = usePackResourceSearch(provider, query, page);
+  // aic·cleveland·met 모두 영문 인덱스 — 한글 검색어는 공용 변환 계층으로 보낸다.
+  // 서버에도 같은 사전 변환이 있어 이중 적용해도 멱등하다.
+  const translated = useTranslatedResearchQuery(query);
+  const search = usePackResourceSearch(provider, translated.effectiveQuery, page);
   useEffect(() => { setDraft(query); }, [query]);
   const changeParams = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -101,6 +106,7 @@ export function ContentPacksPage() {
       </form>
       <div className="flex flex-wrap gap-2">{pack.keywords.map((keyword) => <button key={keyword} className={RESOURCE_BUTTON} disabled={search.loading} onClick={() => changeParams({ q: keyword, page: "1" })}>{formatI18nTemplate(tx("{v0} 검색"), { v0: tx(keyword) })}</button>)}</div>
       {resolution && <p className="text-sm text-fg-2">{formatI18nTemplate(tx("실제 검색어: {v0}{v1}"), { v0: resolution.providerQuery, v1: resolution.unresolved.length ? ` · ${formatI18nTemplate(tx("사전에 없는 표현: {v0}"), { v0: resolution.unresolved.join(", ") })}` : "" })}</p>}
+      {query && <TranslatedQueryNotice state={translated} />}
       {!query && <p className="text-sm text-fg-2">{tx("검색어를 선택하기 전에는 외부 자료 API를 호출하지 않습니다.")}</p>}
       {search.loading && <MotionEmptyState kind="loading" title={tx("공식 자료를 확인하고 있습니다")} description={tx("선택한 제공처의 공개 API를 호출하는 중입니다.")} />}
       {search.error && <p role="alert">{search.error}</p>}

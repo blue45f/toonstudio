@@ -51,3 +51,18 @@ export const OPEN_DATA_PROVIDERS = [
   "kheritage", "neis", "tourapi", "korean", "smithsonian", "wikimedia",
   "europeana", "dpla",
 ] as const satisfies readonly ResourceSearchProvider[];
+
+/**
+ * 한글 검색어를 영문으로 자동 변환해 보내는 제공처 (2026-10-06 실측 판정).
+ * 기준: 제공처 인덱스가 영문인데 서버 단 변환이 없거나(met·nasa·vam·rijksmuseum은
+ * 서버에도 같은 사전 변환이 있어 멱등) 클라이언트 변환이 결과를 바꾸는 경우.
+ * 제외: kakao·bizinfo·kheritage·neis·tourapi·korean·wikimedia는 한글 네이티브라
+ * 변환하면 오히려 깨지고, musicbrainz는 고유명사 검색이라 변환 대상이 아니며,
+ * metweather는 지명 지오코딩이라 한글 지명이 그대로 동작한다.
+ * googlefonts·gbif는 서버에 소규모 한글 별칭표가 있어 그 범위 밖 용어를 클라이언트
+ * 사전이 보강한다.
+ */
+export const RESOURCE_SEARCH_TRANSLATED_PROVIDERS: ReadonlySet<ResourceSearchProvider> = new Set([
+  "met", "polyhaven", "ambientcg", "nasa", "vam", "rijksmuseum",
+  "googlefonts", "gbif", "internetarchive", "smithsonian", "europeana", "dpla",
+]);
