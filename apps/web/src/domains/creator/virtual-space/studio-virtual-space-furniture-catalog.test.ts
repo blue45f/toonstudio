@@ -38,6 +38,24 @@ describe("STUDIO_FURNITURE_CATALOG", () => {
 });
 
 describe("furnitureById / furnitureByKind / furnitureByTag", () => {
+  it("모든 종류에 변형이 2개 이상 있다", () => {
+    for (const kind of STUDIO_FURNITURE_KINDS) {
+      expect(furnitureByKind(kind).length, kind).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("종류별 두 번째 변형이 조회된다", () => {
+    for (const id of [
+      "desk-corner", "floor-lamp-arc", "locker-tall", "meeting-table-round", "neon-sign-studio",
+      "partition-glass", "phone-pod-duo", "wall-clock-square", "water-cooler-mini", "whiteboard-mobile",
+    ]) {
+      expect(furnitureById(id), id).not.toBeNull();
+    }
+    expect(furnitureById("meeting-table-round")?.seats).toBe(6);
+    expect(furnitureById("phone-pod-duo")?.seats).toBe(2);
+    expect(furnitureById("partition-glass")?.interactable).toBe(false);
+  });
+
   it("id로 조회한다", () => {
     expect(furnitureById("meeting-table")?.kind).toBe("meeting-table");
     expect(furnitureById("whiteboard")?.interactionHintKo).toBe("보드에 그리기");
