@@ -19,9 +19,12 @@ import { useMarketingEventText } from "./marketing-event-copy";
 export function EventArtwork({
   event,
   zoomOnHover = false,
+  priority = false,
 }: {
   event: MarketingEvent;
   zoomOnHover?: boolean;
+  /** 대표 카드처럼 첫 화면의 주인공인 아트면 지연 로딩을 끈다. */
+  priority?: boolean;
 }) {
   const text = useMarketingEventText();
   const [failed, setFailed] = useState(false);
@@ -43,7 +46,8 @@ export function EventArtwork({
       src={event.image}
       alt=""
       aria-hidden="true"
-      loading="lazy"
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : undefined}
       decoding="async"
       className="absolute inset-0 h-full w-full object-cover"
       variants={zoomOnHover ? { rest: { scale: 1 }, hover: { scale: 1.06 } } : undefined}
