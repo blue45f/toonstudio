@@ -1,5 +1,5 @@
-import { studioCharacterActionClip, type StudioCharacterMotionState } from "./studio-virtual-space-character-skins";
-import { studioNpcCastSkinByKey } from "./studio-virtual-space-npc-cast";
+import { type StudioCharacterMotionState } from "./studio-virtual-space-character-skins";
+import { studioNpcCastMotionClipAvailable, studioNpcCastPoseAvailable } from "./studio-virtual-space-npc-cast";
 import { studioNpcScheduleIndex, studioNpcSchedulePeriod } from "./studio-virtual-space-npc-schedule";
 import { selectStudioNpcUtilityChoice } from "./studio-virtual-space-npc-utility";
 import { StudioNpcActivityReservations, type StudioNpcActivityStage, type StudioWorldNpcActivityAnchor } from "./studio-virtual-space-npc-activity";
@@ -110,10 +110,21 @@ export function studioNpcMotionBudget(environment: StudioNpcEnvironment): { move
   return { movers, routines: quiet ? 0 : Math.max(0, movers - Math.floor(environment.people.length / 8)) };
 }
 
+/**
+ * 디렉터가 동시에 세우는 액터 상한. 기본 월드 상주 캐스트(14명)를 전부 수용하면서
+ * 대형 외부 월드에서 액터가 폭증하는 것만 막는 안전 상한이다. 동시에 걷는 수는
+ * studioNpcMotionBudget이 따로 제한하므로 상한을 올려도 이동량은 늘지 않는다.
+ */
+const MAX_NPC_ACTORS = 16;
+
 function availableAnimation(actor: NpcActor, requested: StudioCharacterMotionState): StudioCharacterMotionState {
-  const skin = studioNpcCastSkinByKey(actor.definition.skinKey);
-  if (requested === "sit" || requested === "wave") return skin.poses?.[requested] ? requested : "idle";
-  if (requested === "talk" || requested === "draw" || requested === "review") return skin.state?.[requested] || studioCharacterActionClip(skin, actor.facing, requested) ? requested : "idle";
+  // 텍스처를 만들지 않는 구조 판정만 쓴다 — 프로시저럴 스킨은 캔버스 없는 환경에서 생성할 수 없다.
+  if (requested === "sit" || requested === "wave") {
+    return studioNpcCastPoseAvailable(actor.definition.skinKey, requested) ? requested : "idle";
+  }
+  if (requested === "talk" || requested === "draw" || requested === "review") {
+    return studioNpcCastMotionClipAvailable(actor.definition.skinKey, actor.facing, requested) ? requested : "idle";
+  }
   return requested;
 }
 
@@ -205,7 +216,7 @@ export class StudioNpcDirector {
     // 충돌 목록은 새 월드 revision을 받을 때만 갱신하며 미세 이동마다 재구성하지 않는다.
     this.colliders = studioWorldCollisionRects(manifest);
     // Invalid spawns are omitted, never silently teleported to the player's spawn.
-    this.actors = manifest.npcs.slice(0, 8).filter((npc) => studioWorldCanOccupy(manifest, npc.point)).map((definition) => {
+    this.actors = manifest.npcs.slice(0, MAX_NPC_ACTORS).filter((npc) => studioWorldCanOccupy(manifest, npc.point)).map((definition) => {
       const anchors = [definition.point, ...(definition.patrol ?? [])]
         .filter((point, index, all) => studioWorldCanOccupy(manifest, point)
           && all.findIndex((other) => distance(other, point) < 1) === index);
