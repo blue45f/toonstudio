@@ -12,7 +12,7 @@ import {
   studioCharacterStaticAsset,
   type StudioCharacterTextureAsset,
 } from "./studio-virtual-space-character-assets";
-import type { StudioCharacterSkin } from "./studio-virtual-space-character-skins";
+import type { StudioCharacterSkin, StudioCharacterMotionState  } from "./studio-virtual-space-character-skins";
 import type { StudioVirtualSpaceFacing } from "./studio-virtual-space-model";
 import type { createStudioNameplateRenderer } from "./studio-virtual-space-nameplate-renderer";
 import { studioNpcCastSkinByKey } from "./studio-virtual-space-npc-cast";
@@ -32,7 +32,6 @@ import type {
   StudioWorldInteractionDefinition,
   StudioWorldNpcDefinition,
 } from "./studio-virtual-space-world-manifest";
-import type { StudioCharacterMotionState } from "./studio-virtual-space-character-motion";
 
 type NameplateStyle = ReturnType<typeof createStudioNameplateRenderer>["nameplateStyle"];
 
