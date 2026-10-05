@@ -131,6 +131,14 @@ describe("CreatorAdaptiveOnboardingGate", () => {
     }));
   });
 
+  it("names the role settings entry in the always-visible skip guidance", async () => {
+    render(gateUi());
+    await screen.findByRole("dialog");
+    const guidance = screen.getByText(/내 직군 · 작업환경/);
+    expect(guidance.textContent).toContain("건너뛰어도");
+    expect(guidance.className).not.toContain("hidden");
+  });
+
   it.each(["header", "footer", "escape"])("remembers %s dismissal across remounts", async (way) => {
     const view = render(gateUi());
     const dialog = await screen.findByRole("dialog");
