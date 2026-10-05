@@ -1,14 +1,16 @@
 import {
   CheckCircle2,
   CircleAlert,
+  Layers,
   RefreshCw,
   Search,
   ShieldCheck,
   ShieldX,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
+import { MarketFitScenePreview } from "../components/MarketFitScenePreview";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketProductionProfileEditor } from "../components/MarketProductionProfileEditor";
 import { MarketResourceCard } from "../components/MarketResourceCard";
@@ -17,6 +19,7 @@ import { useMarketProductionProfile } from "../hooks/use-market-production-profi
 import { useMarketResources } from "../hooks/use-market-resources";
 import {
   evaluateAndSortMarketProductionRecords,
+  marketProductionFitReasonLine,
   marketProductionFitSearchText,
 } from "../models/market-production-fit";
 
@@ -67,6 +70,8 @@ export function MarketFitLabPage() {
   ];
   const [search, setSearch] = useState("");
   const [fitFilter, setFitFilter] = useState<FitFilter>("all");
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const previewSectionRef = useRef<HTMLDivElement | null>(null);
   const {
     profile,
     updateProfile,
@@ -99,6 +104,18 @@ export function MarketFitLabPage() {
     return normalizedSearch.length === 0
       || marketProductionFitSearchText(record).includes(normalizedSearch);
   }), [evaluated, fitFilter, normalizedSearch]);
+  const selectedFit = evaluated.find((item) => item.record.id === previewId)
+    ?? visible[0]
+    ?? evaluated[0];
+
+  const focusPreview = () => {
+    const node = previewSectionRef.current;
+    if (!node || typeof node.scrollIntoView !== "function") return;
+    const reduceMotion = typeof window !== "undefined"
+      && typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    node.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  };
 
   return (
     <div>
@@ -122,6 +139,15 @@ export function MarketFitLabPage() {
           onReset={resetProfile}
           persistenceAvailable={persistenceAvailable}
         />
+
+        {!page.loading && selectedFit ? (
+          <div ref={previewSectionRef} className="mt-6 scroll-mt-6">
+            <MarketFitScenePreview
+              record={selectedFit.record}
+              evaluation={selectedFit.evaluation}
+            />
+          </div>
+        ) : null}
 
         <section aria-labelledby="market-fit-results-title" className="mt-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -249,9 +275,58 @@ export function MarketFitLabPage() {
             </div>
           ) : (
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {visible.map(({ record }) => (
-                <MarketResourceCard key={record.id} record={record} />
-              ))}
+              {visible.map(({ record, evaluation }) => {
+                const reason = marketProductionFitReasonLine(evaluation);
+                const ReasonIcon = reason.tone === "ready"
+                  ? CheckCircle2
+                  : reason.tone === "review"
+                    ? CircleAlert
+                    : ShieldX;
+                const reasonIconClass = reason.tone === "ready"
+                  ? "text-good"
+                  : reason.tone === "review"
+                    ? "text-warn"
+                    : "text-danger";
+                const selected = selectedFit?.record.id === record.id;
+                return (
+                  <div key={record.id} className="flex flex-col gap-2">
+                    <MarketResourceCard record={record} className="flex-1" />
+                    <div className="flex items-start justify-between gap-2 px-0.5">
+                      <p className="flex min-w-0 items-start gap-1.5 text-xs leading-relaxed text-fg-2">
+                        <ReasonIcon
+                          className={cn("mt-0.5 size-3.5 shrink-0", reasonIconClass)}
+                          aria-hidden="true"
+                        />
+                        <span className="line-clamp-2">{reason.text}</span>
+                      </p>
+                      <button
+                        type="button"
+                        aria-pressed={selected}
+                        aria-label={t(
+                          `${record.name} 장면에 올려보기`,
+                          `Preview ${record.name} on a scene`,
+                        )}
+                        onClick={() => {
+                          setPreviewId(record.id);
+                          focusPreview();
+                        }}
+                        className={cn(
+                          "inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold transition-colors duration-150 pointer-coarse:min-h-11",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+                          selected
+                            ? "border-accent bg-accent/10 text-accent"
+                            : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+                        )}
+                      >
+                        <Layers className="size-3.5" aria-hidden="true" />
+                        {selected
+                          ? t("올려보는 중", "On scene")
+                          : t("올려보기", "Preview")}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
