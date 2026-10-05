@@ -277,6 +277,94 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       { ko: "keyboard·검색·목록·reduced motion 경로와 mic·camera의 실제 수신자 표시를 수락 조건에 포함합니다.", en: "Include keyboard, search, list and reduced-motion paths plus actual microphone and camera recipient disclosure in acceptance criteria." },
     ],
   },
+  {
+    id: "on-device-inference",
+    order: 32,
+    status: "live",
+    eyebrow: "32 · ON-DEVICE INFERENCE",
+    title: {
+      ko: "서버 GPU 없이 브라우저에서 도는 AI 추론",
+      en: "AI inference in the browser, with no server GPU",
+    },
+    thesis: {
+      ko: "채색, 배경 제거, 선화 추출, 업스케일, 애니메이션풍 변환처럼 입력과 출력이 이미지 한 장으로 닫히는 추론은 ONNX Runtime Web으로 사용자 기기 안에서 끝냅니다. 서버 추론은 큰 모델이 필요한 생성 작업에만 남깁니다.",
+      en: "Inference that closes over a single image—colorization, background removal, line extraction, upscaling, anime-style conversion—finishes on the user's device with ONNX Runtime Web. Server inference remains only for generation work that needs large models.",
+    },
+    problem: {
+      ko: "이미지 추론을 전부 서버로 보내면 호출마다 GPU 비용과 업로드 대기가 쌓이고, API 키가 없거나 오프라인이면 기능 자체가 꺼집니다. 반대로 모델을 무작정 브라우저에 넣으면 수십 MB 다운로드와 기기 성능 편차가 사용자를 막습니다.",
+      en: "Sending every image inference to a server stacks GPU cost and upload latency per call, and the feature simply turns off without an API key or a network. Putting models in the browser carelessly instead blocks users with tens of megabytes of downloads and wide device-performance variance.",
+    },
+    decision: {
+      ko: "모델 레지스트리에 파일 크기, SHA-256 다이제스트와 텐서 계약을 등록한 모델만 기능이 켜지는 순간에 지연 로드하고, 받은 바이트의 다이제스트가 등록값과 같을 때만 세션을 엽니다. 실행 제공자는 WebGPU를 먼저 고르고, 쓸 수 없는 브라우저에서는 WASM 실행 제공자로 같은 모델을 돌립니다. 원본 픽셀은 기기를 떠나지 않습니다.",
+      en: "Only models registered with a byte size, SHA-256 digest and tensor contract lazy-load when a feature is invoked, and a session opens only after the received bytes match the registered digest. The execution provider prefers WebGPU and runs the same model on the WASM provider where WebGPU is unavailable. Source pixels never leave the device.",
+    },
+    userValue: {
+      ko: "키가 없어도, 네트워크가 끊겨도 채색·배경 제거·업스케일이 동작하고, 결과가 서버 왕복 없이 바로 캔버스로 돌아옵니다.",
+      en: "Colorization, background removal and upscaling work without a key and without a network, and results return straight to the canvas with no server round trip.",
+    },
+    tradeoff: {
+      ko: "모델 크기와 기기 성능이 그대로 제약이 됩니다. 선화 채색 모델은 약 79MB라 처음 켤 때 내려받는 대가가 크고, 저사양 기기에서는 추론이 느립니다. 그래서 모델마다 켜는 자리, 진행 표시와 취소 경로를 따로 둡니다.",
+      en: "Model size and device performance remain hard constraints. The line-art colorizer is about 79MB, so first use carries a real download cost, and inference is slow on low-end devices. Each model therefore gets its own entry point, progress surface and cancellation path.",
+    },
+    technologies: ["ONNX Runtime Web", "WebGPU execution provider", "WASM execution provider", "SHA-256 digest", "lazy loading"],
+    evidence: [
+      evidence("code", "apps/web/src/domains/creator/studio-onnx-inference-provider.ts", "모델 레지스트리·다이제스트 검증·실행 제공자 선택", "Model registry, digest verification and execution-provider selection"),
+      evidence("code", "apps/web/src/domains/creator/studio-onnx-runtime-assets.ts", "런타임과 모델 자산의 지연 로드", "Lazy loading of runtime and model assets"),
+      evidence("code", "apps/web/src/domains/creator/ai/StudioOnnxColorizePanel.tsx", "기기 안 채색 패널", "On-device colorize panel"),
+      evidence("document", "apps/web/src/domains/creator/assets/tag2pix.LICENSE.md", "모델별 출처와 라이선스 고지", "Per-model provenance and license notices"),
+      evidence("test", "apps/web/src/domains/creator/studio-onnx-inference-provider.test.ts", "추론 제공자 경계와 실패 경로 검사", "Inference-provider boundary and failure-path tests"),
+    ],
+    reuseSteps: [
+      { ko: "추론을 입력·출력이 한 번에 닫히는 작업과 맥락이 필요한 작업으로 나누고, 앞쪽만 온디바이스 후보로 둡니다.", en: "Split inference into self-contained jobs and context-heavy jobs, and keep only the former as on-device candidates." },
+      { ko: "모델마다 파일 크기, 다이제스트, 텐서 계약과 라이선스 고지를 레지스트리에 함께 등록합니다.", en: "Register byte size, digest, tensor contract and license notice together for every model." },
+      { ko: "실행 제공자는 능력 감지로 고르고, 미지원 환경에서는 같은 모델을 느린 제공자로 돌리는 폴백을 유지합니다.", en: "Choose the execution provider by capability detection and keep a fallback that runs the same model on the slower provider." },
+      { ko: "모델 다운로드는 기능이 켜지는 순간으로 미루고 진행·취소·재시도를 사용자에게 드러냅니다.", en: "Defer model downloads until the feature is invoked and expose progress, cancellation and retry." },
+    ],
+  },
+  {
+    id: "storage-migration",
+    order: 33,
+    status: "live",
+    eyebrow: "33 · STORAGE MIGRATION",
+    title: {
+      ko: "localStorage에 쌓인 문서를 IndexedDB로 옮기는 법",
+      en: "Moving documents out of localStorage into IndexedDB",
+    },
+    thesis: {
+      ko: "localStorage는 동기식이고 용량이 작아서, 이미지와 문서가 함께 자라는 데이터가 먼저 벽에 닿습니다. 성장형 문서는 IndexedDB로 옮기되, 이전은 검증이 끝날 때까지 기존 데이터를 지우지 않는 절차로만 합니다.",
+      en: "localStorage is synchronous and small, so data where images and documents grow together hits the wall first. Growing documents move to IndexedDB, and migration never deletes the old copy until verification completes.",
+    },
+    problem: {
+      ko: "캐릭터 캐논 문서는 시트 이미지가 포함돼 localStorage 상한에 걸렸고 한동안 이미지를 512px로 줄이는 우회로 버텼습니다. 큰 JSON을 저장할 때마다 UI 스레드가 멈추고, 이전 도중 실패하면 유일한 사본을 잃을 수 있습니다.",
+      en: "Character canon documents carry sheet images and hit the localStorage ceiling; for a while the workaround was shrinking images to 512px. Saving large JSON stalls the UI thread, and a failed migration can lose the only copy.",
+    },
+    decision: {
+      ko: "공용 이전 도구가 기존 키를 읽어 IndexedDB에 쓰고, 다시 읽어 같은 값인지 확인한 뒤에만 기존 키를 지웁니다. 화면은 하이드레이션이 끝나기 전에 저장을 시작하지 않고, 읽는 동안 도착한 편집은 병합해 잃지 않습니다. IndexedDB를 쓸 수 없는 환경에서는 localStorage가 폴백으로 남고, 인증과 부팅 초기값처럼 동기 읽기가 필요한 작은 값은 옮기지 않습니다.",
+      en: "A shared migration helper reads the old key, writes it to IndexedDB, reads it back to confirm the same value, and only then removes the old key. Screens do not start saving before hydration finishes, and edits arriving during the read are merged rather than lost. Where IndexedDB is unavailable, localStorage remains the fallback, and small values that need synchronous reads—auth and boot defaults—do not move.",
+    },
+    userValue: {
+      ko: "문서가 커져도 저장 용량 부족으로 작업을 잃지 않고, 큰 문서를 열고 저장할 때 화면이 멈추지 않습니다.",
+      en: "Documents can grow without losing work to storage limits, and opening or saving a large document no longer freezes the screen.",
+    },
+    tradeoff: {
+      ko: "비동기 하이드레이션을 기다리는 동안의 편집 병합과, 두 저장소에 값이 갈라지는 중간 상태를 코드가 계속 책임져야 합니다. 옮길 가치가 없는 작은 값까지 이전하면 복잡도만 늘어납니다.",
+      en: "Edit merging during asynchronous hydration and the in-between state where two stores disagree remain the code's responsibility. Migrating small values with no growth pressure only adds complexity.",
+    },
+    technologies: ["IndexedDB", "localStorage", "verified migration", "hydration merge"],
+    evidence: [
+      evidence("code", "apps/web/src/shared/lib/idb-kv.ts", "읽기·쓰기·재읽기 검증 후에만 기존 키를 지우는 이전 도구", "Migration helper that removes the old key only after read-write-reread verification"),
+      evidence("code", "apps/web/src/shared/lib/idb-json-storage.ts", "상태 스토어용 IndexedDB JSON 저장소", "IndexedDB JSON storage for state stores"),
+      evidence("code", "apps/web/src/domains/creator/ai/canon/useStudioCharacterCanon.ts", "캐릭터 캐논 문서의 IndexedDB 이전 적용", "Character canon documents migrated to IndexedDB"),
+      evidence("code", "apps/web/src/domains/creator/lettering/studio-dialogue-glossary-store.ts", "작품별 용어집의 IndexedDB 이전 적용", "Per-work glossaries migrated to IndexedDB"),
+      evidence("test", "apps/web/src/shared/lib/idb-kv.test.ts", "이전 검증과 폴백 회귀 검사", "Migration verification and fallback regression tests"),
+    ],
+    reuseSteps: [
+      { ko: "저장 데이터를 성장형 문서, 작은 동기 값, 파생 캐시로 나누고 성장형만 이전 대상으로 정합니다.", en: "Classify stored data into growing documents, small synchronous values and derived caches, and migrate only the growing documents." },
+      { ko: "이전은 쓰기 뒤 재읽기 검증이 통과한 경우에만 기존 데이터를 지우는 순서로 고정합니다.", en: "Fix the migration order so the old data is removed only after a write-then-reread verification passes." },
+      { ko: "하이드레이션 중 편집을 막을지 병합할지를 화면마다 정하고, 병합 규칙을 테스트로 고정합니다.", en: "Decide per screen whether edits during hydration are blocked or merged, and pin the merge rule with tests." },
+      { ko: "새 저장소를 쓸 수 없는 환경을 폴백으로 유지하고 저장 실패를 빈 상태로 위장하지 않습니다.", en: "Keep a fallback for environments without the new store, and never disguise a save failure as an empty state." },
+    ],
+  },
 ] as const satisfies readonly EngineeringChapter[];
 
 export const ENGINEERING_ADVANCED_GUIDES = [

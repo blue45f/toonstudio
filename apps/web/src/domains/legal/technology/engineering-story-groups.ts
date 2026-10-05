@@ -32,7 +32,7 @@ export const ENGINEERING_STORY_GROUPS = [
     id: "local-first",
     title: t("로컬 우선 실행", "Local-first execution"),
     intro: t("서버 없이도 작업이 남는 구조", "Keeping work alive without a server"),
-    chapterIds: ["storage", "browser-local-compute", "worker-architecture", "pwa-continuity"],
+    chapterIds: ["storage", "browser-local-compute", "worker-architecture", "pwa-continuity", "storage-migration"],
   },
   {
     id: "collaboration",
@@ -50,7 +50,7 @@ export const ENGINEERING_STORY_GROUPS = [
     id: "ai",
     title: t("AI", "AI"),
     intro: t("제안은 AI, 확정은 사람", "AI proposes, people decide"),
-    chapterIds: ["ai-routing", "free-ai-routing", "image-generation", "sound-generation", "ai-assisted-engineering"],
+    chapterIds: ["ai-routing", "free-ai-routing", "image-generation", "sound-generation", "ai-assisted-engineering", "on-device-inference"],
   },
   {
     id: "trust",

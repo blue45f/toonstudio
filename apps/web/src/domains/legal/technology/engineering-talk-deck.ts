@@ -339,8 +339,8 @@ export const TALK_SLIDES = [
     eyebrow: t("04 · 로컬 우선 저장", "04 · LOCAL-FIRST STORAGE"),
     title: t("서버가 잠들어도 작품은 기기에 남습니다", "The work stays on the device even when the server sleeps"),
     lead: t(
-      "대형 원본은 OPFS, 검색용 메타데이터는 SQLite WASM, 무거운 계산은 Worker에 둡니다.",
-      "Large sources go to OPFS, searchable metadata to SQLite WASM, heavy computation to Workers.",
+      "대형 원본은 OPFS, 검색용 메타데이터는 SQLite WASM, 무거운 계산은 Worker에 둡니다. 계속 커지는 문서인 캐릭터 캐논과 작품별 용어집은 localStorage에서 IndexedDB로 옮겼습니다.",
+      "Large sources go to OPFS, searchable metadata to SQLite WASM, heavy computation to Workers. Documents that keep growing—the character canon and per-work glossaries—moved from localStorage to IndexedDB.",
     ),
     flow: [
       t("편집 명령", "Edit command"),
@@ -354,7 +354,7 @@ export const TALK_SLIDES = [
       t("Service Worker는 원고 저장소가 아니라 앱 셸 복구 계층입니다", "The Service Worker restores the app shell; it is not the manuscript store"),
       t("브라우저 저장소 삭제·기기 분실은 내보내기와 개인 클라우드로 대비합니다", "Storage eviction and lost devices are covered by export and personal cloud"),
     ],
-    stack: ["OPFS", "SQLite WASM", "Dedicated Worker", "Web Locks", "Service Worker"],
+    stack: ["OPFS", "SQLite WASM", "IndexedDB", "Dedicated Worker", "Web Locks", "Service Worker"],
     notes: t(
       "‘정전 때 집 전체는 못 밝혀도 랜턴 하나는 켤 수 있어야 한다’는 비유를 씁니다. 인터넷이 끊겨도 미리 준비된 범위의 그리기는 계속됩니다.\n주의: ‘모든 기능이 오프라인’이 아닙니다. 협업·AI·게시는 연결이 필요하고, 브라우저 저장소는 영구 백업이 아니라서 내보내기를 안내합니다.",
       "Use the lantern analogy: a blackout cannot light the whole house, but one lantern should work. Drawing within the prepared scope continues offline.\nCaution: not everything is offline. Collaboration, AI and publishing need a connection, and browser storage is not a permanent backup, so export is recommended.",
@@ -490,8 +490,8 @@ export const TALK_SLIDES = [
     eyebrow: t("04 · AI 보조", "04 · AI ASSISTANCE"),
     title: t("제안은 AI가, 확정은 사람이", "AI proposes, people decide"),
     lead: t(
-      "브라우저 로컬 추론과 무료 우선 라우팅을 쓰되, 비용이 드는 경로는 사용자가 명시적으로 승인합니다.",
-      "Browser-local inference and free-first routing are used; paid paths require explicit user approval.",
+      "브라우저 로컬 추론과 무료 우선 라우팅을 쓰되, 비용이 드는 경로는 사용자가 명시적으로 승인합니다. 채색·배경 제거·선화 추출·업스케일·애니메이션풍 변환은 기기 안 ONNX 모델이 맡습니다.",
+      "Browser-local inference and free-first routing are used; paid paths require explicit user approval. Colorization, background removal, line extraction, upscaling and anime-style conversion run on on-device ONNX models.",
     ),
     flow: [
       t("요청 분류", "Classify the request"),
@@ -505,7 +505,7 @@ export const TALK_SLIDES = [
       t("시간 초과·5xx처럼 결과가 모호한 실패는 자동으로 다시 보내지 않습니다", "Ambiguous failures such as timeouts or 5xx are not retried automatically"),
       t("운영 공급자 키와 예산 반영은 승인 배포를 기다리는 ‘설정 필요’ 상태입니다", "Production provider keys and budgets are still ‘configured’, awaiting an approved release"),
     ],
-    stack: ["onnxruntime-web", "MediaPipe", "OpenAI-compatible API", "BYOK", "Quota ledger"],
+    stack: ["onnxruntime-web", "WebGPU/WASM execution providers", "MediaPipe", "OpenAI-compatible API", "BYOK", "Quota ledger"],
     notes: t(
       "AI는 결과를 확정하지 않고 제안만 합니다. 작가가 받아들이거나 버립니다.\n비용 원칙: 무료 우선이란 공짜라는 뜻이 아니라 돈이 드는 지점을 숨기지 않는다는 뜻입니다.\n정직하게: 운영 환경의 AI 공급자 키·예산 값은 다음 승인 배포에 반영될 예정인 ‘설정 필요’ 상태입니다.",
       "AI never commits results; it proposes, and the artist accepts or discards.\nCost principle: free-first does not mean free; it means cost boundaries stay visible.\nBe honest: production AI provider keys and budgets are ‘configured’ and scheduled for the next approved release.",
@@ -514,6 +514,7 @@ export const TALK_SLIDES = [
     evidence: [
       "apps/web/src/shared/ai/free-ai-policy.ts",
       "apps/web/src/shared/ai/free-ai-runtime-budget.ts",
+      "apps/web/src/domains/creator/studio-onnx-inference-provider.ts",
       "apps/api/src/modules/studio-ai/studio-ai-provider.ts",
     ],
     seconds: 110,

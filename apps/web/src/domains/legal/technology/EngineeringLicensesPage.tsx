@@ -20,6 +20,7 @@ import {
   EngineeringPageFrame,
   EngineeringPageIntro,
 } from "./EngineeringStoryUi";
+import { EngineeringLicenseInventory } from "./EngineeringLicenseInventory";
 import { SitePageArt } from "../public/site-page-art";
 
 
@@ -297,6 +298,8 @@ export function EngineeringLicensesPage() {
           ) : null}
         </div>
       </section>
+
+      <EngineeringLicenseInventory />
 
       <section className="mt-16 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]" aria-labelledby="license-pipeline-title">
         <div className="space-y-6">
