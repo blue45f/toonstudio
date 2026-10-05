@@ -102,6 +102,29 @@ export function brushPreviewData(
   return items.length > 0 ? items : null;
 }
 
+/**
+ * 필터 프리뷰 값에서 브라우저 CSS filter 문자열을 만든다. MarketFilterPreview가
+ * 상세 화면에서 쓰는 근사 규칙과 같은 기준이며, 장면 합성 미리보기처럼 임의의
+ * 이미지에 필터를 적용하는 표면이 공유한다. 지원하지 않는 값만 있으면 기본
+ * 보정값을 돌려줘 빈 효과를 실제 효과처럼 보이게 하지 않는다.
+ */
+export function marketFilterCss(
+  values: Record<string, number | string | boolean>,
+): string {
+  const filters: string[] = [];
+  if (typeof values.brightness === "number") filters.push(`brightness(${values.brightness})`);
+  if (typeof values.contrast === "number") filters.push(`contrast(${values.contrast})`);
+  if (typeof values.saturate === "number") filters.push(`saturate(${values.saturate})`);
+  else if (typeof values.saturation === "number") filters.push(`saturate(${1 + values.saturation / 100})`);
+  if (typeof values.hue === "number") filters.push(`hue-rotate(${values.hue}deg)`);
+  else if (typeof values.hueRotate === "number") filters.push(`hue-rotate(${values.hueRotate}deg)`);
+  if (typeof values.blur === "number" && values.blur > 0) filters.push(`blur(${Math.min(8, values.blur)}px)`);
+  if (typeof values.sepia === "number") filters.push(`sepia(${values.sepia})`);
+  if (typeof values.grayscale === "number") filters.push(`grayscale(${values.grayscale})`);
+  if (typeof values.invert === "number") filters.push(`invert(${values.invert})`);
+  return filters.length > 0 ? filters.join(" ") : "contrast(1.15) saturate(1.2)";
+}
+
 export function filterPreviewData(
   record: CreatorMarketplaceResourceRecord
 ): readonly FilterPreviewData[] | null {
