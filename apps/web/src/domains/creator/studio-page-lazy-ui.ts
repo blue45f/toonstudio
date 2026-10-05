@@ -630,6 +630,10 @@ const StudioAiCharacterConsistencyPanel = lazyRetry(
     })),
   "StudioAiCharacterConsistencyPanel"
 );
+const StudioAiLoraTrainingPanel = lazyRetry(
+  () => import( "./ai/StudioAiLoraTrainingPanel").then((mod) => ({ default: mod.StudioAiLoraTrainingPanel })),
+  "StudioAiLoraTrainingPanel"
+);
 const StudioDialogueSuggestPanel = lazyRetry(
   () => import("./StudioDialogueSuggestPanel").then((mod) => ({ default: mod.StudioDialogueSuggestPanel })),
   "StudioDialogueSuggestPanel"
@@ -814,6 +818,7 @@ export {
   StudioAdvancedRulerPanel,
   StudioAiBackgroundPanel,
   StudioAiCharacterConsistencyPanel,
+  StudioAiLoraTrainingPanel,
   StudioAiColorizePanel,
   StudioOnnxColorizePanel,
   StudioOnnxUpscalePanel,
