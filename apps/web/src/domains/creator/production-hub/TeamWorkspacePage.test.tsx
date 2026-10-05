@@ -66,6 +66,31 @@ describe("free team workspace UI", () => {
     expect(screen.queryByText("Pro 업그레이드")).toBeNull();
     expect(screen.getByText(/미측정 사용량을 0으로 표시하지/)).toBeTruthy();
   });
+  it("shows workspace-card skeletons in the list while the first load is pending", async () => {
+    let resolveList!: (value: unknown) => void;
+    mocks.list.mockImplementation(() => new Promise((resolve) => { resolveList = resolve; }));
+    render(<App />);
+    // 로딩 안내는 status 문구가 맡고, 목록 자리에는 실제 카드와 같은 크기의 스켈레톤이 앉는다.
+    expect(screen.getByRole("status").textContent).toContain("워크스페이스를 불러오는 중입니다.");
+    expect(screen.getAllByTestId("workspace-list-skeleton-card")).toHaveLength(2);
+    expect(screen.queryByText(/아직 참여한 팀이 없습니다/)).toBeNull();
+    resolveList({ workspaces: [workspace] });
+    await screen.findByText("비공개 검수 팀");
+    expect(screen.queryByTestId("workspace-list-skeleton-card")).toBeNull();
+  });
+  it("shows detail-card skeletons while a workspace detail is pending", async () => {
+    let resolveDetail!: (value: unknown) => void;
+    mocks.detail.mockImplementation(() => new Promise((resolve) => { resolveDetail = resolve; }));
+    render(<App path="/production/workspaces/team-a" />);
+    expect(screen.getByTestId("workspace-detail-skeleton")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "구성원 초대" })).toBeNull();
+    // 상세 조회는 목록·정책 조회가 끝난 뒤에 시작되므로 호출 시점까지 기다린다.
+    await waitFor(() => expect(mocks.detail).toHaveBeenCalledWith("team-a"));
+    resolveDetail({ workspace, projects: [{ id: "project-a", workId: "work-a", title: "검수 원고" }],
+      members: [{ userId: "owner", displayName: "소유자", role: "owner", joinedAt: workspace.createdAt }], invites: [] });
+    await screen.findByRole("heading", { name: "구성원 초대" });
+    expect(screen.queryByTestId("workspace-detail-skeleton")).toBeNull();
+  });
   it("passes a pinned revision on invite and accurately says email was not sent", async () => {
     mocks.command.mockResolvedValue({ workspaceId: "team-a", revision: 4, invitationId: "invite-a", token: "a".repeat(43), delivery: "manual-link" });
     render(<App path="/production/workspaces/team-a" />);
