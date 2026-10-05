@@ -84,7 +84,7 @@ function partyLabel(aggregate: ProductionProjectAggregate, assignmentId: string)
   return party?.publicDisplayName ?? assignmentId;
 }
 
-/** "이름 · 역할". 이름에 이미 역할이 붙어 있으면(예: "이서진 PD") 역할을 다시 붙이지 않는다. */
+/** "이름 · 담당 역할". 이름에 이미 역할이 붙어 있으면(예: "이서진 PD") 역할을 다시 붙이지 않는다. */
 function assignmentBadge(name: string, role: string): string {
   return name.endsWith(role) ? name : `${name} · ${role}`;
 }
@@ -335,7 +335,7 @@ function ProductionReviewWorkspaceForProject({
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex max-w-full overflow-x-auto rounded-xl border border-line bg-card p-1" role="group" aria-label="검수 비교 방식">{REVIEW_MODE.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)} className={cn("inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-accent", mode === id ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-raised")}><Icon className="size-3.5" aria-hidden="true" />{label}</button>)}</div>
-          <div className="flex flex-wrap gap-2"><Pill tone={submission?.status === "approved" ? "good" : submission ? "warn" : "neutral"}>{submission ? bt(`${submissionStatusLabel(submission.status, bt)} · ${submission.revisionRef.revision}차`, `${submissionStatusLabel(submission.status, bt)} · rev. ${submission.revisionRef.revision}`) : bt("제출본 없음", "No submission")}</Pill><Pill tone={evaluation?.approved ? "good" : "warn"}>{evaluation?.approved ? bt("검수 통과", "Review passed") : bt(`승인 대기 ${evaluation?.blockingLanes.length ?? 0}개 영역`, `${evaluation?.blockingLanes.length ?? 0} areas awaiting approval`)}</Pill><Pill>{assignment ? assignmentBadge(partyLabel(aggregate, assignment.id), assignment.publicCreditRole ?? roleTypeLabel(assignment.roleType, bt)) : bt("역할 배정 없음", "No role assigned")}</Pill></div>
+          <div className="flex flex-wrap gap-2"><Pill tone={submission?.status === "approved" ? "good" : submission ? "warn" : "neutral"}>{submission ? bt(`${submissionStatusLabel(submission.status, bt)} · ${submission.revisionRef.revision}차`, `${submissionStatusLabel(submission.status, bt)} · rev. ${submission.revisionRef.revision}`) : bt("제출본 없음", "No submission")}</Pill><Pill tone={evaluation?.approved ? "good" : "warn"}>{evaluation?.approved ? bt("검수 통과", "Review passed") : bt(`승인 대기 ${evaluation?.blockingLanes.length ?? 0}개 영역`, `${evaluation?.blockingLanes.length ?? 0} areas awaiting approval`)}</Pill><Pill>{assignment ? assignmentBadge(partyLabel(aggregate, assignment.id), assignment.publicCreditRole ?? roleTypeLabel(assignment.roleType, bt)) : bt("담당 역할 배정 없음", "No assigned role")}</Pill></div>
         </div>
         {requestError ? <p role="alert" className="mt-3 rounded-xl border border-bad/30 bg-bad/10 p-3 text-sm">{requestError}</p> : null}
       </header>

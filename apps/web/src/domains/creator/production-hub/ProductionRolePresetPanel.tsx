@@ -6,17 +6,29 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import {
+  parseProductionRolePresetId,
   PRODUCTION_ROLE_PRESETS,
   productionRolePreset,
   type ProductionRolePreset,
 } from "./production-manuscript-competitive-model";
 
+// 층 B(작품 권한) 이름으로 표기한다 — 프리셋이 고르는 것은 직군이 아니라 권한이다 (R-6).
+const WORKSPACE_ROLE_LABELS: Record<ProductionRolePreset["workspaceRole"], string> = {
+  admin: "관리자",
+  member: "구성원",
+  guest: "게스트",
+};
+const PROJECT_ROLE_LABELS: Record<ProductionRolePreset["projectRole"], string> = {
+  admin: "관리자",
+  editor: "편집자",
+  commenter: "검토자",
+  viewer: "열람자",
+};
+
 export function ProductionRolePresetPanel({ canManage }: { readonly canManage: boolean }) {
   const [params, setParams] = useSearchParams();
-  const requested = params.get("rolePreset") as ProductionRolePreset["id"] | null;
-  const selected = useMemo(() => productionRolePreset(
-    PRODUCTION_ROLE_PRESETS.some((preset) => preset.id === requested) ? requested! : "producer",
-  ), [requested]);
+  const requested = parseProductionRolePresetId(params.get("rolePreset"));
+  const selected = useMemo(() => productionRolePreset(requested ?? "invite-producer"), [requested]);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -34,8 +46,8 @@ export function ProductionRolePresetPanel({ canManage }: { readonly canManage: b
   const copy = async () => {
     const text = [
       `${selected.label} 권한 프리셋`,
-      `워크스페이스 역할: ${selected.workspaceRole}`,
-      `프로젝트 역할: ${selected.projectRole}`,
+      `워크스페이스 권한: ${WORKSPACE_ROLE_LABELS[selected.workspaceRole]}(${selected.workspaceRole})`,
+      `작품 권한: ${PROJECT_ROLE_LABELS[selected.projectRole]}(${selected.projectRole})`,
       `허용: ${selected.allowedActions.join(", ")}`,
       `차단: ${selected.blockedActions.join(", ")}`,
       `capabilities: ${selected.capabilities.join(", ")}`,
@@ -61,7 +73,7 @@ export function ProductionRolePresetPanel({ canManage }: { readonly canManage: b
     <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_18rem]">
       <article className="rounded-2xl border border-good/30 bg-good/10 p-4"><div className="flex items-center gap-2"><ShieldCheck className="size-4 text-good" aria-hidden="true" /><h3 className="font-black text-fg">허용되는 행동</h3></div><p className="mt-2 text-xs text-fg-2">{selected.description}</p><ul className="mt-3 space-y-2">{selected.allowedActions.map((action) => <li key={action} className="flex items-start gap-2 text-sm text-fg-2"><Check className="mt-0.5 size-4 shrink-0 text-good" aria-hidden="true" />{action}</li>)}</ul></article>
       <article className="rounded-2xl border border-warn/30 bg-warn/10 p-4"><div className="flex items-center gap-2"><LockKeyhole className="size-4 text-warn" aria-hidden="true" /><h3 className="font-black text-fg">차단·별도 승인 행동</h3></div><p className="mt-2 text-xs text-fg-2">권한 저장 전에 사용자가 할 수 없는 작업을 명시합니다.</p><ul className="mt-3 space-y-2">{selected.blockedActions.map((action) => <li key={action} className="flex items-start gap-2 text-sm text-fg-2"><LockKeyhole className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden="true" />{action}</li>)}</ul></article>
-      <aside className="rounded-2xl border border-line bg-panel p-4"><h3 className="font-black text-fg">적용 제안</h3><dl className="mt-3 space-y-3 text-xs"><div><dt className="text-fg-3">워크스페이스</dt><dd className="mt-1 font-bold text-fg">{selected.workspaceRole}</dd></div><div><dt className="text-fg-3">프로젝트</dt><dd className="mt-1 font-bold text-fg">{selected.projectRole}</dd></div><div><dt className="text-fg-3">세부 capability</dt><dd className="mt-1 break-words font-mono text-[0.625rem] text-fg-2">{selected.capabilities.join(" · ")}</dd></div></dl>{!canManage ? <p className="mt-4 rounded-xl border border-line bg-card p-3 text-xs text-fg-3">현재 계정은 권한 미리보기만 할 수 있습니다.</p> : null}</aside>
+      <aside className="rounded-2xl border border-line bg-panel p-4"><h3 className="font-black text-fg">적용 제안</h3><dl className="mt-3 space-y-3 text-xs"><div><dt className="text-fg-3">워크스페이스 권한</dt><dd className="mt-1 font-bold text-fg">{WORKSPACE_ROLE_LABELS[selected.workspaceRole]} <span className="font-mono text-[0.625rem] text-fg-3">{selected.workspaceRole}</span></dd></div><div><dt className="text-fg-3">작품 권한</dt><dd className="mt-1 font-bold text-fg">{PROJECT_ROLE_LABELS[selected.projectRole]} <span className="font-mono text-[0.625rem] text-fg-3">{selected.projectRole}</span></dd></div><div><dt className="text-fg-3">세부 capability</dt><dd className="mt-1 break-words font-mono text-[0.625rem] text-fg-2">{selected.capabilities.join(" · ")}</dd></div></dl>{!canManage ? <p className="mt-4 rounded-xl border border-line bg-card p-3 text-xs text-fg-3">현재 계정은 권한 미리보기만 할 수 있습니다.</p> : null}</aside>
     </div>
     {notice ? <p className="mt-4 text-xs text-fg-2" role="status">{notice}</p> : null}
   </section>;

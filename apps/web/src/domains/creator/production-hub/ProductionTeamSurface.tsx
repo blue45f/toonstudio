@@ -43,8 +43,8 @@ export function ProductionTeamSurface({
     <div className="space-y-4">
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <ProductionSectionCard
-          title={bt("참여자와 역할", "Members and roles")}
-          description={bt("역할 배정은 실제 기여·저작권·보상과 따로 기록합니다.", "Role assignments are recorded separately from contribution, rights and pay.")}
+          title={bt("참여자와 담당 역할", "Members and assigned roles")}
+          description={bt("담당 역할 배정은 실제 기여·저작권·보상과 따로 기록합니다.", "Assigned roles are recorded separately from contribution, rights and pay.")}
           action={
             <Link className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })} to="/team/people">
               {bt("사람·권한 관리", "People & access")}

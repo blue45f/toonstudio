@@ -11,6 +11,7 @@ import {
   manifestPageFromPreview,
   moveProductionManifestPage,
   parseProductionWorkbenchState,
+  parseProductionRolePresetId,
   productionManifestPageState,
   productionReviewMatchesApprovedFinal,
   productionRolePreset,
@@ -111,9 +112,22 @@ describe("production manuscript competitive model", () => {
     )).toBe(false);
   });
 
+  it("resolves invite preset ids and keeps legacy ids as read-only aliases", () => {
+    // 현재 ID는 그대로 해석한다.
+    expect(parseProductionRolePresetId("invite-story-writer")).toBe("invite-story-writer");
+    expect(parseProductionRolePresetId("invite-external-reviewer")).toBe("invite-external-reviewer");
+    // R-6 이전 ID(층 A 직군 ID와 겹치던 이름)는 이미 공유된 링크를 위해 별칭으로만 읽는다.
+    expect(parseProductionRolePresetId("writer")).toBe("invite-story-writer");
+    expect(parseProductionRolePresetId("producer")).toBe("invite-producer");
+    expect(parseProductionRolePresetId("external-reviewer")).toBe("invite-external-reviewer");
+    expect(parseProductionRolePresetId("story")).toBeNull();
+    expect(parseProductionRolePresetId("unknown")).toBeNull();
+    expect(parseProductionRolePresetId(null)).toBeNull();
+  });
+
   it("keeps role presets least-privileged and preserves existing task fields in bulk updates", () => {
-    expect(productionRolePreset("external-reviewer")).toMatchObject({ projectRole: "commenter", workspaceRole: "guest" });
-    expect(productionRolePreset("external-reviewer").blockedActions).toContain("원본 편집");
+    expect(productionRolePreset("invite-external-reviewer")).toMatchObject({ projectRole: "commenter", workspaceRole: "guest" });
+    expect(productionRolePreset("invite-external-reviewer").blockedActions).toContain("원본 편집");
     const p = process("a", "review-a");
     const existing: ProductionTask = {
       id: "task", projectId: "p", scope: episodeScope("p", "ep-1"), processKey: "drawing", title: "기존", status: "in-progress",
