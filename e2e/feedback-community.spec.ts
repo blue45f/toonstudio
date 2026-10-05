@@ -72,7 +72,8 @@ const composer = (page: Page) => page.getByRole("form", { name: "공개 제보 �
 test("guest can read but not write/vote, and no false private-inquiry claim", async ({ page }) => {
   const state = await setup(page);
   await open(page, "?viewer=guest");
-  await expect(page.getByRole("heading", { name: "제보·제안 커뮤니티" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "더 나은 창작 경험," })).toBeVisible();
+  await expect(page.getByText("제보·제안 커뮤니티", { exact: true })).toBeVisible();
   await expect(page.getByText("읽기는 누구나,")).toBeVisible();
   await expect(page.getByRole("button", { name: /필터 적용 후 브러시가 멈춰요 공감/ })).toBeDisabled();
   await expect(composer(page)).toHaveCount(0);
