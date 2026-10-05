@@ -29,7 +29,11 @@ function fixture(initial: string | null = null) {
   let raw = initial;
   let writes = 0;
   let notifications = 0;
-  const storage = { getItem: () => raw, setItem: (_key: string, value: string) => { raw = value; writes += 1; } };
+  const storage = {
+    getItem: () => raw,
+    setItem: (_key: string, value: string) => { raw = value; writes += 1; },
+    removeItem: () => { raw = null; },
+  };
   const withLock = mutex();
   const options = { storage: () => storage, withLock, notify: () => { notifications += 1; } };
   return { options, api: createCreatorWorkspaceStorage(options), raw: () => raw, writeCount: () => writes, noticeCount: () => notifications };
@@ -68,12 +72,12 @@ export const creatorWorkspacePersistenceCases: CreatorResourceCase[] = [
   } },
   { name: "unsupported lock environments remain readable but refuse unsafe writes", async run() {
     let wrote = false;
-    const api = createCreatorWorkspaceStorage({ storage: () => ({ getItem: () => JSON.stringify(baseline), setItem: () => { wrote = true; } }) });
+    const api = createCreatorWorkspaceStorage({ storage: () => ({ getItem: () => JSON.stringify(baseline), setItem: () => { wrote = true; }, removeItem: () => { wrote = true; } }) });
     equal(api.read().story.title, "기존 제목"); await rejects(() => api.update(() => emptyWorkspace())); equal(wrote, false);
   } },
   { name: "quota errors preserve previous data and do not broadcast success", async run() {
     let notices = 0; const initial = JSON.stringify(baseline);
-    const api = createCreatorWorkspaceStorage({ withLock: mutex(), storage: () => ({ getItem: () => initial, setItem: () => { throw new DOMException("full", "QuotaExceededError"); } }), notify: () => { notices += 1; } });
+    const api = createCreatorWorkspaceStorage({ withLock: mutex(), storage: () => ({ getItem: () => initial, setItem: () => { throw new DOMException("full", "QuotaExceededError"); }, removeItem: () => { throw new DOMException("full", "QuotaExceededError"); } }), notify: () => { notices += 1; } });
     await rejects(() => api.update(() => emptyWorkspace())); equal(api.readRaw(), initial); equal(notices, 0);
   } },
   { name: "blocked localStorage getter rejects without creating an empty replacement", async run() {

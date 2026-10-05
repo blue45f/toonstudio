@@ -193,7 +193,7 @@ export function marketProductionFitReasonLine(
   ];
   const merits = reasonPriority
     .map((id) => evaluation.checks.find((check) => check.id === id))
-    .filter((check) => check !== undefined && check.status === "pass")
+    .filter((check): check is MarketProductionFitCheck => check !== undefined && check.status === "pass")
     .slice(0, 2)
     .map((check) => check.summary);
   return {
