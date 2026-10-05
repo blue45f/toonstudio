@@ -46,6 +46,10 @@ export const TeamPeoplePage = lazyRetry(
   () => import("@/domains/creator/production-hub/TeamPeoplePage").then((module) => ({ default: module.TeamPeoplePage })),
   "TeamPeoplePage",
 );
+export const OrganizationHomePage = lazyRetry(
+  () => import("@/domains/creator/production-hub/OrganizationHomePage").then((module) => ({ default: module.OrganizationHomePage })),
+  "OrganizationHomePage",
+);
 export const TeamWorkspacePage = lazyRetry(
   () => import("@/domains/creator/production-hub/TeamWorkspacePage").then((module) => ({ default: module.TeamWorkspacePage })),
   "TeamWorkspacePage",

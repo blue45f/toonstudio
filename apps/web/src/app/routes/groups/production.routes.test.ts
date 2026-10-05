@@ -22,6 +22,7 @@ describe("production route ownership", () => {
       "/production/projects/:projectId/settings",
       "/production/projects/:projectId/episodes/:episodeId",
       "/team/people",
+      "/team/organization",
       "/team/people/join",
       "/team/people/:workspaceId",
       "/team/people/:workspaceId/usage",

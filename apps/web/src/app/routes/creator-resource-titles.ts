@@ -3,6 +3,7 @@ export const CREATOR_RESOURCE_TITLES: Record<string, string> = {
   "/home": "내 홈",
   "/team": "협업 홈",
   "/team/people": "사람·권한 관리",
+  "/team/organization": "조직 홈",
   "/team/recruiting": "인재·지원 관리",
   "/collaborate": "구인·의뢰",
   "/production/projects": "제작 프로젝트",

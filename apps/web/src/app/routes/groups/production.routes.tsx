@@ -7,6 +7,7 @@ import {
   StudioPinnedReviewSharePage,
   ProductionLandingPage,
   ProductionProjectPage,
+  OrganizationHomePage,
   TeamPeoplePage,
   TeamWorkspacePage,
   TeamWorkspaceJoinPage,
@@ -15,6 +16,7 @@ import {
 
 export const productionRoutes = defineAppRoutes([
   { id: "team-people", path: "/team/people", element: <TeamPeoplePage /> },
+  { id: "team-organization", path: "/team/organization", element: <OrganizationHomePage /> },
   { id: "team-people-join", path: "/team/people/join", element: <TeamWorkspaceJoinPage /> },
   { id: "team-people-detail", path: "/team/people/:workspaceId", element: <TeamPeoplePage /> },
   { id: "team-people-usage", path: "/team/people/:workspaceId/usage", element: <TeamPeoplePage /> },

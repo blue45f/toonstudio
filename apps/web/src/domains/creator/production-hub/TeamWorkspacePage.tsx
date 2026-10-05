@@ -282,7 +282,7 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
     <div className="mx-auto max-w-6xl space-y-5"><TeamAreaNavigation />
     <header className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-panel p-5 sm:p-6">
       <div><p className="eyebrow text-accent">TEAM · PEOPLE & ACCESS</p><h1 className="mt-2 text-2xl font-black">{bt("사람·권한 관리", "People & access")}</h1><p className="mt-2 text-sm text-fg-2">{operationPolicy?.notice ?? bt("팀 소속과 프로젝트 접근 권한을 한 흐름에서 관리합니다.", "Manage team membership and project access in one flow.")}</p></div>
-      <nav aria-label={bt("팀 관리", "Team management")} className="flex flex-wrap gap-3"><Link to="/team">{bt("협업 홈", "Collaboration home")}</Link><Link to="/team/people">{bt("전체 팀", "All teams")}</Link><Link to="/team/people/join">{bt("초대 수락", "Accept invite")}</Link></nav>
+      <nav aria-label={bt("팀 관리", "Team management")} className="flex flex-wrap gap-3"><Link to="/team">{bt("협업 홈", "Collaboration home")}</Link><Link to="/team/people">{bt("전체 팀", "All teams")}</Link><Link to="/team/organization">{bt("조직 홈", "Organization home")}</Link><Link to="/team/people/join">{bt("초대 수락", "Accept invite")}</Link></nav>
     </header>{error && <div role="alert" className="rounded-xl border border-bad p-4">{error}<button className="ml-3 underline" onClick={() => setRefresh((value) => value + 1)}>{bt("새로고침", "Refresh")}</button></div>}
     {notice && <p role="status">{notice}</p>}
     {operationPolicy && !operationPolicy.features["team-workspace"].enabled && <p role="status">{operationPolicy.features["team-workspace"].reason} {bt("기존 자료 조회와 접근 회수는 유지됩니다.", "Existing data reads and access recovery remain available.")}</p>}
