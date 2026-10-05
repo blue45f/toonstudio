@@ -1240,3 +1240,106 @@
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
+/* 애니툰 원클릭 변환 위저드 */
+.mw-anime-toon-entry {
+  margin: 0 auto 1rem;
+  max-width: 80rem;
+  display: flex;
+  justify-content: center;
+}
+
+.mw-anime-toon {
+  margin: 0 auto 1rem;
+  max-width: 80rem;
+}
+
+.mw-anime-toon-steps {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mw-anime-toon-step {
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--color-fg);
+}
+
+.mw-anime-toon-step[aria-current="step"] {
+  border-color: color-mix(in oklch, var(--color-accent) 55%, transparent);
+  background: var(--color-accent-soft);
+  font-weight: 600;
+}
+
+.mw-anime-toon-sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mw-anime-toon-source {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  border: 1px solid var(--color-line);
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.8rem;
+}
+
+.mw-anime-toon-source-title {
+  font-weight: 600;
+}
+
+.mw-anime-toon-source-meta {
+  color: var(--color-muted, var(--color-fg));
+  font-size: 0.85rem;
+}
+
+.mw-anime-toon-cuts {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.6rem;
+}
+
+.mw-anime-toon-cut {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+}
+
+.mw-anime-toon-cut img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-line);
+}
+
+.mw-anime-toon-failure {
+  border: 1px solid color-mix(in oklch, var(--color-warn) 55%, transparent);
+  background: color-mix(in oklch, var(--color-warn) 10%, transparent);
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.8rem;
+}
+
+.mw-anime-toon-summary {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
