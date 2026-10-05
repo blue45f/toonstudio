@@ -50,11 +50,12 @@ describe("organization home", () => {
 
   it("creates an organization locally, links a team, and rolls up server counters", async () => {
     render(<App />);
-    await screen.findByText("본편 제작팀");
 
     fireEvent.change(screen.getByLabelText("조직 이름"), { target: { value: "희준 스튜디오" } });
     fireEvent.click(screen.getByRole("button", { name: "조직 만들기" }));
-    await screen.findByRole("status");
+    // 조직을 만든 뒤에야 팀 연결 카드가 열린다.
+    await screen.findByText("본편 제작팀");
+    expect(screen.getByText("희준 스튜디오")).toBeTruthy();
 
     // 프로필이 소유자 스코프 키로 저장됐는지 확인한다.
     const saved = window.localStorage.getItem(organizationStorageKey("owner"));
@@ -82,9 +83,8 @@ describe("organization home", () => {
     expect(screen.getByRole("button", { name: "다시 시도" })).toBeTruthy();
   });
 
-  it("states plainly that organization membership grants no manuscript access", async () => {
+  it("states plainly that organization membership grants no manuscript access", () => {
     render(<App />);
-    await screen.findByText("본편 제작팀");
     expect(screen.getByText(/조직에 소속돼도 원고 접근 권한은 생기지 않습니다/)).toBeTruthy();
     expect(screen.getByRole("heading", { name: "서버 계약이 필요한 조직 기능" })).toBeTruthy();
   });
