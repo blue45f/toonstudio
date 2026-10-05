@@ -61,6 +61,16 @@
 .rd-idea:focus-within { outline: 3px solid var(--rd-cyan); outline-offset: 3px; }
 .rd-idea-submit { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 46px; padding: 0 20px; border: 0; border-radius: 999px; background: linear-gradient(120deg, var(--rd-accent), color-mix(in srgb, var(--rd-accent) 55%, var(--rd-cyan))); color: var(--color-on-accent); font-size: 15px; font-weight: 800; }
 
+/* 통합 입력 모드 — 만들기(기본)와 작품 찾기의 분기. 포스터 아트 위라 어두운 면+밝은 글자를 유지한다. */
+.rd-idea-modes { display: inline-flex; gap: 4px; margin-top: 10px; padding: 4px; border: 1px solid var(--rd-art-line); border-radius: 999px; background: var(--rd-art-card); }
+.rd-idea-modes > button { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--rd-on-art-2); font-size: 13px; font-weight: 700; }
+.rd-idea-modes > button[aria-pressed="true"] { background: var(--rd-on-art); color: var(--rd-on-paper); }
+.rd-idea-modes > button:not([aria-pressed="true"]):hover { color: var(--rd-on-art); }
+
+/* 발견 미리보기 — 내용이 실제로 있을 때만 섹션 여백을 차지한다(빈 래퍼의 공백 방지). */
+.rd-discover { min-width: 0; }
+.rd-discover:has(> section) { margin-top: 44px; }
+
 /* Luna 안내 — 제안 칩 + 실제 대화 */
 .rd-luna-section { margin-top: 44px; }
 .rd-luna { min-width: 0; max-width: 880px; }

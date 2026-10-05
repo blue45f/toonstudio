@@ -228,4 +228,33 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     const more = screen.getByRole("navigation", { name: "서비스 더 알아보기" });
     expect(within(more).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(HOME_LEARN_MORE.map((link) => link.href));
   });
+
+  it("작품 찾기로 바꾸면 입력한 문장이 카탈로그 검색으로 이동한다", async () => {
+    await dashboard();
+    fireEvent.click(screen.getByRole("button", { name: "작품 찾기" }));
+    expect(screen.getByRole("button", { name: "작품 찾기" }).getAttribute("aria-pressed")).toBe("true");
+    const search = screen.getByRole("textbox", { name: "작품 검색" });
+    fireEvent.change(search, { target: { value: "회색의 도시" } });
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+    expect(screen.getByLabelText("현재 URL").textContent).toBe(`/search?q=${encodeURIComponent("회색의 도시")}`);
+  });
+
+  it("작품 찾기에서 빈 문장으로 제출하면 검색 홈으로 이동한다", async () => {
+    await dashboard();
+    fireEvent.click(screen.getByRole("button", { name: "작품 찾기" }));
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+    expect(screen.getByLabelText("현재 URL").textContent).toBe("/search");
+  });
+
+  it("모드를 오가도 입력한 문장은 유지되고 만들기로 제출하면 스토리 연구실로 간다", async () => {
+    await dashboard();
+    const idea = screen.getByRole("textbox", { name: "아이디어 입력" });
+    fireEvent.change(idea, { target: { value: "비 오는 날의 첫사랑" } });
+    fireEvent.click(screen.getByRole("button", { name: "작품 찾기" }));
+    expect((screen.getByRole("textbox", { name: "작품 검색" }) as HTMLInputElement).value).toBe("비 오는 날의 첫사랑");
+    fireEvent.click(screen.getByRole("button", { name: "이야기 만들기" }));
+    expect((screen.getByRole("textbox", { name: "아이디어 입력" }) as HTMLInputElement).value).toBe("비 오는 날의 첫사랑");
+    fireEvent.click(screen.getByRole("button", { name: "시작하기" }));
+    expect(screen.getByLabelText("현재 URL").textContent).toBe(`/story-lab?idea=${encodeURIComponent("비 오는 날의 첫사랑")}`);
+  });
 });
