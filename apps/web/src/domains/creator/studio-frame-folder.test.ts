@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applySharedGutterDragPlan,
   applyVerticalGapDragPlan,
+  createFrameFolderGroupForNewFrame,
   formatFrameFolderGroupName,
   planBindSelectionToFrameFolder,
   planSharedGutterDrag,
@@ -20,6 +21,25 @@ describe("formatFrameFolderGroupName", () => {
 
   it("falls back when the frame label is empty", () => {
     expect(formatFrameFolderGroupName("   ")).toBe("컷 폴더");
+  });
+});
+
+describe("createFrameFolderGroupForNewFrame", () => {
+  it("creates an empty cut folder named after the frame label", () => {
+    const group = createFrameFolderGroupForNewFrame({ frameLabel: "1컷", groupId: "g-new" });
+    expect(group).not.toBeNull();
+    expect(group!.id).toBe("g-new");
+    expect(group!.name).toBe("컷 폴더 · 1컷");
+    expect(Object.isFrozen(group)).toBe(true);
+  });
+
+  it("falls back to the bare folder name for an unlabeled frame", () => {
+    const group = createFrameFolderGroupForNewFrame({ frameLabel: "  ", groupId: "g-new" });
+    expect(group!.name).toBe("컷 폴더");
+  });
+
+  it("returns null for an empty group id", () => {
+    expect(createFrameFolderGroupForNewFrame({ frameLabel: "컷", groupId: "" })).toBeNull();
   });
 });
 

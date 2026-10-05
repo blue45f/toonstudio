@@ -653,6 +653,23 @@ export function formatFrameFolderGroupName(frameLabel: string): string {
 }
 
 /**
+ * Create the frame folder that is born together with a newly created cut (CSP frame-border
+ * contract: drawing a frame creates its folder + mask in the same action). The folder starts
+ * empty — layers drawn or moved into the cut join it afterwards, and the panel mask itself is
+ * the frame's clip (`containingPanel` + `noClip`), not group membership. Returns null when the
+ * caller-supplied group id is empty so a broken id can never produce an unaddressable folder.
+ */
+export function createFrameFolderGroupForNewFrame(input: {
+  readonly frameLabel: string;
+  readonly groupId: string;
+}): LayerGroup | null {
+  if (!input.groupId) return null;
+  return freezeGroup(
+    createLayerGroup(input.groupId, formatFrameFolderGroupName(input.frameLabel))
+  );
+}
+
+/**
  * Plan binding seed layers into a new contiguous group tied to a frame (by naming + member clip).
  * Returns null when there is nothing to bind (empty seeds after filtering the frame itself).
  */
