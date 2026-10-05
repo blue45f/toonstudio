@@ -20,6 +20,10 @@ export const ReferenceAssetsPage = lazyRetry(
   () => import("@/domains/creator-resources/ReferenceAssetsPage").then((module) => ({ default: module.ReferenceAssetsPage })),
   "ReferenceAssetsPage",
 );
+export const MaterialAtlasPage = lazyRetry(
+  () => import("@/domains/creator-resources/MaterialAtlasPage").then((module) => ({ default: module.MaterialAtlasPage })),
+  "MaterialAtlasPage",
+);
 export const WorksPage = lazyRetry(
   () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.WorksPage })),
   "WorksPage",

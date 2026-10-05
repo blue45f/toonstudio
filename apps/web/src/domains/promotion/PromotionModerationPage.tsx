@@ -101,7 +101,7 @@ function PromotionReports({ userId }: { userId: string | null }) {
           icon={ShieldCheck}
           title={bt("운영자 계정으로 로그인해 주세요", "Sign in with a moderator account")}
           description={bt("신고 관리 기능은 운영자 권한이 필요합니다.", "Report moderation requires moderator access.")}
-          primary={{ href: "/login", label: bt("로그인", "Sign in") }}
+          primary={{ href: "/auth/login", label: bt("로그인", "Sign in") }}
         />
       )}
 

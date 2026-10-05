@@ -191,7 +191,7 @@ export function AuthorPage() {
               title={translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "등록된 작품이 아직 없습니다")}
               description={translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "이 작가의 공개 작품이 등록되면 여기에 표시됩니다. 다른 작가의 작품을 둘러보세요.")}
               primary={{ href: "/authors", label: translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "다른 작가 둘러보기") }}
-              secondary={{ href: "/browse", label: translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "작품 탐색하기") }}
+              secondary={{ href: "/explore", label: translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "작품 탐색하기") }}
               art="library"
             />
           ) : (

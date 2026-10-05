@@ -178,7 +178,7 @@ export function VersionSharePage() {
         <h1 className="mt-4 text-xl font-black">{title}</h1>
         <p className="mt-2 text-sm leading-6 text-fg-2">{description}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {blocked === "login_required" ? <Link to="/login" className={buttonClass({ variant: "solid" })}>
+          {blocked === "login_required" ? <Link to="/auth/login" className={buttonClass({ variant: "solid" })}>
             {bt("로그인하기", "Sign in")}
           </Link> : null}
           {state.kind === "error" ? <button
