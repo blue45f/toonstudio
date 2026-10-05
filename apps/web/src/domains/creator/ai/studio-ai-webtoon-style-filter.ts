@@ -4,11 +4,14 @@
  * Webtoon AI Style Transfer & Toon Filter Engine.
  * Benchmarks Naver Webtoon Toon Filter, Krea AI, and ComfyUI Webtoon pipelines.
  *
- * - 4 Archetypal webtoon art styles:
+ * - 5 Archetypal webtoon art styles:
  *   1. `romance-manhwa` (화사한 순정/로판 - 파스텔 톤, 반짝이는 눈망울, 맑은 피부)
  *   2. `action-shonen-ink` (역동적 소년/액션 - 묵직한 먹선, 강렬한 명암비, 속도선)
  *   3. `fantasy-noble-cel` (판타지 웹소설 표지 - 금장 디테일, 웅장한 극화체)
  *   4. `thriller-noir-grit` (다크 스릴러/좀비 - 거친 해칭, 음산한 청회색조)
+ *   5. `anime-cel` (일본 애니메이션 셀 작화 - 균일한 선화, 평탄한 셀 음영, 맑은 색면.
+ *      기기 ONNX 변환(AnimeGANv2)의 클라우드 대응 프리셋으로, img2img 변환
+ *      프롬프트와 디노이즈 권장값을 같은 값으로 맞춘다)
  *
  * Synthesizes style-specific prompt prefixes, negative prompts, lineart weights,
  * and color grading lookups for generative AI backends.
@@ -18,7 +21,8 @@ export type WebtoonArtStyleId =
   | "romance-manhwa"
   | "action-shonen-ink"
   | "fantasy-noble-cel"
-  | "thriller-noir-grit";
+  | "thriller-noir-grit"
+  | "anime-cel";
 
 export interface WebtoonArtStyleMeta {
   readonly id: WebtoonArtStyleId;
@@ -132,6 +136,32 @@ export const WEBTOON_ART_STYLES: Record<WebtoonArtStyleId, WebtoonArtStyleMeta> 
     contrastBoost: 1.45,
     saturationMultiplier: 0.7,
     recommendedDenoiserStrength: 0.7,
+  },
+  "anime-cel": {
+    id: "anime-cel",
+    name: "애니메이션 셀 / 애니풍",
+    genre: "애니메이션 / 일상 / 학원",
+    description: "일본 TV 애니메이션 셀 작화 — 또렷하고 균일한 선화, 평탄한 셀 음영, 맑고 선명한 색면",
+    promptKeywords: [
+      "Japanese anime style",
+      "cel shading with flat color planes",
+      "clean uniform lineart",
+      "anime screencap look",
+      "bright clear colors",
+      "two-tone cel shadow",
+    ],
+    negativeKeywords: [
+      "photorealistic",
+      "semi-realistic painterly rendering",
+      "3d render",
+      "oil painting texture",
+      "soft airbrush gradients",
+      "realistic skin texture",
+    ],
+    lineThicknessFactor: 1.0,
+    contrastBoost: 1.15,
+    saturationMultiplier: 1.2,
+    recommendedDenoiserStrength: 0.65,
   },
 };
 
