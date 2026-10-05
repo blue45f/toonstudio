@@ -51,8 +51,16 @@ export interface NewsletterSendRecord {
   /** ISO 8601. */
   readonly sentAt: string;
   readonly recipientCount: number;
-  /** 발송을 처리한 메일 어댑터 식별자. 현재는 "local-log"(실제 발송 없음). */
+  /** 발송을 처리한 메일 어댑터 식별자. "local-log"(실제 발송 없음) 또는 "resend". */
   readonly adapterId: string;
+  /**
+   * 발송 실패 기록이면 true. 실패 기록은 recipientCount가 0이고 이슈는 초안으로
+   * 남는다 — 성공 이력과 섞어 "보낸 것처럼" 보이지 않게 화면이 구분해 표시한다.
+   * 구 persist 데이터에는 이 필드 자체가 없어 undefined = 성공 기록이다.
+   */
+  readonly failed?: boolean;
+  /** 실패 사유 요약. 키·수신자 같은 민감 정보는 넣지 않는다. */
+  readonly failureMessage?: string;
 }
 
 export interface SubscribeResult {
@@ -66,7 +74,9 @@ export type SendIssueFailureReason =
   | "already-sent"
   | "empty-title"
   | "empty-body"
-  | "no-subscribers";
+  | "no-subscribers"
+  /** 메일 어댑터가 발송에 실패했다(릴레이 부재·서비스 거부 등). 실패 이력이 함께 남는다. */
+  | "delivery-failed";
 
 export interface SendIssueResult {
   readonly sent: boolean;

@@ -176,6 +176,42 @@ describe("newsletter store 발송", () => {
     expect(result.record?.sentAt).toBe("2026-10-02T00:00:00.000Z");
   });
 
+  it("어댑터가 발송에 실패하면 delivery-failed와 실패 이력을 남기고 초안은 유지된다", async () => {
+    const state = useNewsletterStore.getState();
+    state.subscribe(AUTHOR, READER);
+    const issue = state.createIssue(AUTHOR, { title: "제목", body: "본문" });
+
+    const failingAdapter: NewsletterMailAdapter = {
+      id: "resend",
+      async send() {
+        throw new Error("relay unavailable");
+      },
+    };
+
+    const result = await state.sendIssue(issue.id, null, failingAdapter);
+    expect(result.sent).toBe(false);
+    expect(result.reason).toBe("delivery-failed");
+    expect(result.record).toMatchObject({
+      issueId: issue.id,
+      adapterId: "resend",
+      recipientCount: 0,
+      failed: true,
+    });
+    // 실패 사유에는 어댑터 오류 원문(민감 정보 가능)이 그대로 실리지 않는다.
+    expect(result.record?.failureMessage).not.toContain("relay unavailable");
+
+    const after = useNewsletterStore.getState();
+    expect(after.issues[0].status).toBe("draft");
+    expect(after.sendHistory).toHaveLength(1);
+    expect(after.sendHistory[0].failed).toBe(true);
+
+    // 초안이 남았으므로 정상 어댑터로 다시 보낼 수 있다.
+    const retry = await after.sendIssue(issue.id);
+    expect(retry.sent).toBe(true);
+    expect(useNewsletterStore.getState().issues[0].status).toBe("sent");
+    expect(useNewsletterStore.getState().sendHistory).toHaveLength(2);
+  });
+
   it("계정 소유 초안은 다른 계정이 수정·삭제·발송할 수 없다", async () => {
     const state = useNewsletterStore.getState();
     state.subscribe(AUTHOR, READER);

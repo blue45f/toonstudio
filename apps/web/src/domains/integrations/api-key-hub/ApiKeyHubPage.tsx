@@ -6,6 +6,7 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
 
 import { AiKeyStatusCard } from "./AiKeyStatusCard";
+import { ResendKeyConnectCard } from "./ResendKeyConnectCard";
 import { UnsplashKeyConnectCard } from "./UnsplashKeyConnectCard";
 
 /**
@@ -55,8 +56,8 @@ export function ApiKeyHubPage() {
             <h2 className="font-bold text-fg">{ko ? "키는 내 브라우저에만" : "Keys stay in your browser"}</h2>
             <p className="mt-1 text-sm leading-6 text-fg-2">
               {ko
-                ? "AI 키는 메모리 전용 또는 암호화 보관함에, Unsplash 키는 현재 탭 세션에만 저장됩니다. ToonStudio 서버로 키가 전송되지 않아요. 키를 다른 사람과 공유하지 마세요."
-                : "AI keys live in memory or an encrypted vault; the Unsplash key lives in this tab's session only. Keys are never sent to ToonStudio servers. Never share your keys."}
+                ? "AI 키는 메모리 전용 또는 암호화 보관함에, Unsplash·Resend 키는 현재 탭 세션에만 저장됩니다. 키가 서버에 보관되지는 않지만, Resend 키는 뉴스레터 발송 순간에만 서버 릴레이로 한 번 전달됩니다. 키를 다른 사람과 공유하지 마세요."
+                : "AI keys live in memory or an encrypted vault; the Unsplash and Resend keys live in this tab's session only. Keys are never stored on ToonStudio servers, though the Resend key is passed to the sending relay once, at the moment you send a newsletter. Never share your keys."}
             </p>
           </div>
         </div>
@@ -68,6 +69,7 @@ export function ApiKeyHubPage() {
       >
         <AiKeyStatusCard />
         <UnsplashKeyConnectCard />
+        <ResendKeyConnectCard />
       </section>
 
       <section

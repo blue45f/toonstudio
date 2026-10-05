@@ -6,6 +6,23 @@ export {
   NEWSLETTER_MAIL_ADAPTER,
   localLogNewsletterMailAdapter,
 } from "./newsletter-mail-adapter";
+export {
+  NEWSLETTER_RESEND_API_KEY_STORAGE_KEY,
+  NewsletterMailDeliveryError,
+  RESEND_NEWSLETTER_ADAPTER_ID,
+  browserNewsletterSessionStorage,
+  createResendNewsletterMailAdapter,
+  isNewsletterResendConfigured,
+  loadNewsletterResendApiKey,
+  resolveNewsletterMailAdapter,
+  saveNewsletterResendApiKey,
+} from "./newsletter-mail-resend";
+export type {
+  NewsletterMailKeyStorage,
+  NewsletterResendDeliver,
+  NewsletterResendDeliveryRequest,
+  NewsletterResendDeliveryResult,
+} from "./newsletter-mail-resend";
 export type {
   NewsletterMailAdapter,
   NewsletterMailReceipt,
