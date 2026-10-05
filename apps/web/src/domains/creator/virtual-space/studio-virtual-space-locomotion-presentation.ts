@@ -86,6 +86,35 @@ export function studioIdleSwayOffsetX(timeMs: number, seed: number, reducedMotio
   return Math.sin((timeMs / IDLE_SWAY_PERIOD_MS + safeSeed) * Math.PI * 2) * IDLE_SWAY_AMPLITUDE_PX;
 }
 
+const DOZE_CYCLE_MS = 6_400;
+const DOZE_DIP_MS = 1_700;
+const DOZE_DIP_DEPTH_PX = 2.4;
+const DOZE_TILT_DEGREES = 1.8;
+
+/**
+ * 자리 비움(away) 졸기 오프셋. 자리 비움은 지금까지 이름표·투명도뿐이라 몸은
+ * available 대기 자세와 똑같이 서 있어 상태가 몸짓으로 읽히지 않았다.
+ * 긴 주기(6.4초)마다 한 번씩 고개가 아래로 살짝 떨어졌다 돌아오는 꾸벅임을
+ * 기존 idle 생명감(호흡·sway·깜빡임)과 같은 절차 모션 어휘로 얹는다.
+ * 전용 아트가 아니라 몸 전체의 미세 변위이며, 진폭을 작게 잡는 이유도 그 전제다.
+ * 배우별 시드로 위상을 어긋나게 하고, 모션 감소에서는 중립값을 돌려준다.
+ */
+export function studioAwayDozeMotion(
+  timeMs: number,
+  seed: number,
+  reducedMotion: boolean,
+): { readonly offsetY: number; readonly angleDegrees: number } {
+  if (reducedMotion || !Number.isFinite(timeMs) || timeMs < 0) return { offsetY: 0, angleDegrees: 0 };
+  const safeSeed = Number.isFinite(seed) ? Math.max(0, Math.min(1, seed)) : 0;
+  const phaseMs = (timeMs + safeSeed * DOZE_CYCLE_MS) % DOZE_CYCLE_MS;
+  if (phaseMs >= DOZE_DIP_MS) return { offsetY: 0, angleDegrees: 0 };
+  const depth = Math.sin((phaseMs / DOZE_DIP_MS) * Math.PI);
+  const tiltSign = safeSeed >= 0.5 ? 1 : -1;
+  // depth 0에서 기울기 부호를 곱하면 -0이 되어 중립값과 달라지므로 0은 그대로 둔다.
+  const angleDegrees = depth === 0 ? 0 : depth * DOZE_TILT_DEGREES * tiltSign;
+  return { offsetY: depth * DOZE_DIP_DEPTH_PX, angleDegrees };
+}
+
 const BLINK_MIN_INTERVAL_MS = 3_400;
 const BLINK_INTERVAL_SPREAD_MS = 3_400;
 const BLINK_DURATION_MS = 110;

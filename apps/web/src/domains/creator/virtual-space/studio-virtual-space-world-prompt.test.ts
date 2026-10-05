@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   STUDIO_WORLD_MARKER_VISIBLE_DISTANCE,
+  studioPortalPromptCandidate,
   studioWorldMarkerVisible,
   studioWorldPromptTarget,
   type StudioWorldPromptCandidate,
 } from "./studio-virtual-space-world-prompt";
+import { DEFAULT_STUDIO_WORLD_MANIFEST } from "./studio-virtual-space-world-manifest";
 
 const candidate = (id: string, kind: StudioWorldPromptCandidate["kind"], x: number, y: number, radius: number): StudioWorldPromptCandidate =>
   ({ id, kind, point: { x, y }, radius, labelKo: id, labelEn: id });
@@ -48,5 +50,23 @@ describe("월드 내 'E' 상호작용 프롬프트", () => {
     // 포털끼리는 가장 가까운 하나만 고른다.
     const twoPortals = [candidate("far-gate", "portal", 190, 100, 120), candidate("near-gate", "portal", 130, 100, 120)];
     expect(studioWorldPromptTarget({ x: 100, y: 100 }, twoPortals)?.id).toBe("near-gate");
+  });
+
+  it("포털 후보는 목적지 방 이름으로 라벨을 만들고, 외부 링크 포털은 일반 안내를 쓴다", () => {
+    const manifest = DEFAULT_STUDIO_WORLD_MANIFEST;
+    const room = manifest.rooms.find((candidateRoom) => candidateRoom.id === "writers")!;
+    const gate = studioPortalPromptCandidate(manifest, {
+      id: "story-gate", point: { x: 720, y: 900 }, radius: 18, targetRoomId: "writers",
+    });
+    expect(gate.id).toBe("portal:story-gate");
+    expect(gate.kind).toBe("portal");
+    expect(gate.radius).toBe(66);
+    expect(gate.labelKo).toBe(`${room.labelKo} · 이동`);
+    expect(gate.labelEn).toBe(`${room.labelEn} · Enter`);
+    const external = studioPortalPromptCandidate(manifest, {
+      id: "out", point: { x: 0, y: 0 }, radius: 20, href: "https://example.com",
+    });
+    expect(external.labelKo).toBe("다른 공간 · 이동");
+    expect(external.labelEn).toBe("Another space · Enter");
   });
 });
