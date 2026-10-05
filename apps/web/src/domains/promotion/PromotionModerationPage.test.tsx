@@ -85,7 +85,7 @@ describe("PromotionModerationPage 인라인 모더레이션", () => {
       </MemoryRouter>,
     );
     const loginLink = await screen.findByRole("link", { name: /로그인/ });
-    expect(loginLink.getAttribute("href")).toBe("/login");
+    expect(loginLink.getAttribute("href")).toBe("/auth/login");
     expect(mocks.reports).not.toHaveBeenCalled();
   });
 });
