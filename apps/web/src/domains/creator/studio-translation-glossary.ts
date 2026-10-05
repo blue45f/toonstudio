@@ -273,3 +273,96 @@ export function findStudioTranslationMemoryGlossaryConflicts(input: {
   }
   return conflicts;
 }
+
+// ── 텍스트 원본의 분리/재직렬화 (행 단위 편집용) ─────────────────────────
+//
+// 번역 패널의 용어집은 "자유 텍스트"가 정본이다 — 번역 프롬프트 주입(studio-dialogue-
+// translate.buildTranslationPrompt)이 그 텍스트를 그대로 읽기 때문이다. 행 단위 편집
+// (작품별 용어집 관리 표면)은 이 정본을 바꾸지 않고, 텍스트를 규칙 행 + 메모 줄로
+// **분리해서 보여 주고 다시 같은 텍스트로 합치는** 방식으로 얹는다.
+//
+// 왕복 보장: parseStudioTranslationMemoryGlossaryText(serialize(split(t))) 는
+// parseStudioTranslationMemoryGlossaryText(t) 와 규칙 집합이 같다(순서 포함). 단,
+// 텍스트 형식은 sourceLocale/targetLocale/caseSensitive 를 실을 수 없어서, 분리된
+// 규칙은 항상 그 셋이 없는 형태다 — 이건 기존 파서 계약 그대로다(새 경계가 아니다).
+
+export interface StudioGlossaryTextParts {
+  /** 파싱된 규칙 행(중복 제거·상한 적용 후). 정본이 빈 "미정 규칙"도 행으로는 남는다. */
+  rules: StudioTranslationMemoryGlossaryRule[];
+  /** 규칙으로 읽히지 않은 줄(자유 메모·주석) — 편집에서 삭제되지 않게 그대로 보존한다. */
+  memoLines: string[];
+}
+
+const EMPTY_TARGET_RULE_LINE = /^\s*(.+?)\s*(?:=>|:|=)\s*$/u;
+
+/**
+ * 용어집 텍스트를 규칙 행과 메모 줄로 분리한다. 판정은 줄 단위로 기존 파서를 그대로
+ * 쓴다(한 줄을 파싱해 규칙이 정확히 1개 나오면 규칙 줄). 파서는 정본이 빈 줄을 규칙으로
+ * 읽지 않지만, 편집 표면에서는 "정본 미정" 행이 사라지면 안 되므로 구분자만 있는 줄은
+ * targetTerm이 빈 규칙 행으로 따로 잡는다(프롬프트·QA 등 파서 소비자에게는 지금처럼
+ * 보이지 않는다 — 동작 변화 없음). 상한(160개)을 넘는 규칙 줄은 메모 줄로 내려보내
+ * 텍스트가 유실되지 않게 한다.
+ */
+export function splitStudioGlossaryText(
+  text: string | null | undefined
+): StudioGlossaryTextParts {
+  const rules: StudioTranslationMemoryGlossaryRule[] = [];
+  const memoLines: string[] = [];
+  const seen = new Set<string>();
+  for (const rawLine of normalizeNfkc(text ?? "").split(/\r?\n/u)) {
+    const line = rawLine.trim();
+    if (line === "") continue;
+    let rule: StudioTranslationMemoryGlossaryRule | null = null;
+    const parsed = parseStudioTranslationMemoryGlossaryText(line);
+    if (parsed.length === 1) {
+      rule = parsed[0];
+    } else {
+      const emptyTarget = line.match(EMPTY_TARGET_RULE_LINE);
+      if (emptyTarget) {
+        // normalizeGlossaryRule 은 정본이 비면 null 이라 미정 규칙은 같은 경계만 적용해 직접 만든다.
+        const sourceTerm = normalizeStoredText(emptyTarget[1]);
+        if (
+          sourceTerm !== ""
+          && sourceTerm.length <= STUDIO_TRANSLATION_MEMORY_MAX_GLOSSARY_TERM_CHARS
+        ) {
+          rule = { sourceTerm, targetTerm: "" };
+        }
+      }
+    }
+    if (rule && rules.length < STUDIO_TRANSLATION_MEMORY_MAX_GLOSSARY_RULES) {
+      const key = JSON.stringify([
+        normalizeCaseInsensitive(rule.sourceTerm),
+        normalizeCaseInsensitive(rule.targetTerm),
+      ]);
+      if (seen.has(key)) continue; // 전체 파서와 동일하게 중복 규칙은 한 번만.
+      seen.add(key);
+      rules.push(rule);
+      continue;
+    }
+    memoLines.push(line);
+  }
+  return { rules, memoLines };
+}
+
+/**
+ * 규칙 행 + 메모 줄을 용어집 텍스트로 다시 합친다. 규칙은 `원문: 정본` 한 줄씩,
+ * 메모 줄은 그 뒤에 원문 그대로 붙는다. 규칙의 정본이 비어 있으면 `원문:` 형태로
+ * 남겨 "정본 미정" 규칙이 조용히 사라지지 않게 한다.
+ */
+export function serializeStudioGlossaryText(
+  rules: readonly StudioTranslationMemoryGlossaryRule[],
+  memoLines: readonly string[]
+): string {
+  const lines: string[] = [];
+  for (const rule of rules) {
+    const sourceTerm = rule.sourceTerm.trim();
+    if (sourceTerm === "") continue;
+    const targetTerm = rule.targetTerm.trim();
+    lines.push(targetTerm === "" ? `${sourceTerm}:` : `${sourceTerm}: ${targetTerm}`);
+  }
+  for (const memo of memoLines) {
+    const line = memo.trim();
+    if (line !== "") lines.push(line);
+  }
+  return lines.join("\n");
+}

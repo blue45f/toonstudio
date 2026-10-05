@@ -1,5 +1,9 @@
 import { Suspense, memo } from "react";
 
+import {
+  setDialogueReviewStatus,
+  updateDialogueTranslationText,
+} from "../lettering/studio-dialogue-review";
 import { dialogueLocalesForPages, dialogueTranslationCoverage } from "../lettering/studio-dialogue-translate";
 import { moveKeyframe, removeKeyframe, removeTrack, resolveTimelineComposite, type AnimationTimelineDoc } from "../studio-anim-tracks";
 import { defaultStudioAppSettings, type StudioAppSettings, type StudioAppSettingsTab } from "../studio-app-settings";
@@ -8,6 +12,7 @@ import { MAX_ANIM_FRAMES, type OnionSkinSettings } from "../studio-frame-animati
 import { computeHistoryBrushAvailability } from "../studio-history-brush";
 import { isEffectivelyHidden, isEffectivelyLocked, type LayerGroup } from "../studio-layers";
 import { createEmptyDocumentMaster, togglePageHideMaster, type DocumentMaster } from "../studio-master-page";
+import type { PageState } from "../studio-page-state";
 import {
   StudioAnimTimelinePanel,
   StudioAppSettingsPanel,
@@ -485,6 +490,24 @@ export const StudioCanvasModalsBody = memo(function StudioCanvasModalsBody({
             workScope={workId ?? authorizedWorkAssetScopeId ?? undefined}
             qaOpen={dialogueTranslateOpen === "qa"}
             onQaOpenChange={(open) => setDialogueTranslateOpen(open ? "qa" : "translate")}
+            reviewOpen={dialogueTranslateOpen === "review"}
+            onReviewOpenChange={(open) => setDialogueTranslateOpen(open ? "review" : "translate")}
+            onReviewTextChange={(pageId, elId, locale, text) =>
+              commitPages(
+                updateDialogueTranslationText(pages, {
+                  pageId,
+                  elId,
+                  locale,
+                  text,
+                  visibleLocale: activeDialogueLocale,
+                }) as PageState[]
+              )
+            }
+            onReviewStatusChange={(pageId, elId, locale, status) =>
+              commitPages(
+                setDialogueReviewStatus(pages, { pageId, elId, locale, status }) as PageState[]
+              )
+            }
             webtoonTheme={webtoonTheme}
             onRevealCue={selectDialogueElement}
           />

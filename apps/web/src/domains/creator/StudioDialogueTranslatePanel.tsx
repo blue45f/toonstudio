@@ -16,7 +16,16 @@ import {
 // 보고서는 스냅샷이다: 검사 입력(대사·상자·서체·초안·로케일·테마)의 지문을 함께 저장해 두고,
 // 지문이 어긋나면 "다시 검사" 배너를 띄운다. 캔버스에서 말풍선 하나를 옮길 때마다 회차 전체를
 // 다시 재지 않으려는 선택이다 — 넘침 판정은 큐마다 글자 폭을 재는 이진 탐색이라 공짜가 아니다.
-import { BookOpenCheck, Check, Globe2, Languages, Loader2, ScanText, X } from "lucide-react";
+//
+// (D) 번역 대조 검수 화면 — `reviewOpen`이 켜지면 그려진다. 적용이 끝난 번역(dialogueI18n)을
+// 원문과 나란히 놓고 승인/수정 필요를 남기는 상설 검수 표면이다(초안 검토와 별개). 조립은
+// lettering/StudioDialogueReviewSection.tsx + studio-dialogue-review.ts(순수)가 하고, 문서
+// 커밋은 호스트 콜백으로 위임한다. QA에는 용어집 규칙을 파싱해 넘긴다 — 예전에는 규칙을
+// 넘기지 않아 QA의 용어집 검사가 실제 경로에서 돌지 않았다.
+//
+// 용어집은 작품(workScope)별로 localStorage에 남긴다(lettering/studio-dialogue-glossary-store).
+// 호스트의 세션 상태만으로는 새로고침마다 용어집이 사라져 작품 자산이 되지 못했다.
+import { BookOpenCheck, Check, Globe2, Languages, ListChecks, Loader2, ScanText, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -28,9 +37,21 @@ import {
   collectDialogueItems,
   isDialogueElement,
   type DialogueBatchItem,
-  type DialoguePageLike,
 } from "./lettering/studio-dialogue-batch";
+import {
+  loadStudioDialogueGlossaryText,
+  saveStudioDialogueGlossaryText,
+} from "./lettering/studio-dialogue-glossary-store";
+import { StudioDialogueGlossaryEditor } from "./lettering/StudioDialogueGlossaryEditor";
+import {
+  StudioDialogueReviewSection,
+} from "./lettering/StudioDialogueReviewSection";
+import {
+  type DialogueReviewPageLike,
+  type DialogueReviewStatus,
+} from "./lettering/studio-dialogue-review";
 import { DIALOGUE_LOCALE_PRESETS, SOURCE_LOCALE, localeLabel } from "./lettering/studio-dialogue-translate";
+import { parseStudioTranslationMemoryGlossaryText } from "./studio-translation-glossary";
 import {
   runStudioLocalizationQa,
   studioLocalizationQaCueIndex,
@@ -53,11 +74,11 @@ import { cx } from "@/shared/lib/cx";
  * 별도 boolean 을 하나 더 두지 않는 이유: 호스트 세션 백(any 개수)과 뷰포트 prop 묶음이
  * 래칫으로 동결돼 있어, 새 키 하나가 곧 래칫 위반이다.
  */
-export type StudioDialogueTranslateSurface = false | "translate" | "qa";
+export type StudioDialogueTranslateSurface = false | "translate" | "qa" | "review";
 
 export type StudioDialogueTranslatePanelProps = {
-  /** 전체 페이지(요소·그룹 포함) — StudioPage 의 pages 를 그대로 받는다. */
-  pages: readonly DialoguePageLike[];
+  /** 전체 페이지(요소·그룹·번역·검수 저장소 포함) — StudioPage 의 pages 를 그대로 받는다. */
+  pages: readonly DialogueReviewPageLike[];
   /** API 키 설정 완료 여부 — false 면 "번역 생성" 이 비활성화된다(네트워크 요청 없음). */
   configured: boolean;
   providerLabel?: string;
@@ -90,6 +111,21 @@ export type StudioDialogueTranslatePanelProps = {
    */
   qaOpen?: boolean;
   onQaOpenChange?: (open: boolean) => void;
+  /**
+   * 번역 대조 검수 화면 표시 여부 — QA와 같은 제어형 패턴. 검수 화면은 적용이 끝난 번역을
+   * 원문과 나란히 놓고 판정하는 상설 표면이라 초안 유무와 무관하게 열 수 있다.
+   */
+  reviewOpen?: boolean;
+  onReviewOpenChange?: (open: boolean) => void;
+  /** 검수 화면에서 번역문 하나를 저장할 때 — 호스트가 dialogueI18n 갱신을 문서에 커밋한다. */
+  onReviewTextChange?: (pageId: string, elId: string, locale: string, text: string) => void;
+  /** 검수 화면에서 승인/수정 필요를 남길 때 — null은 상태 지우기(미검수 복귀). */
+  onReviewStatusChange?: (
+    pageId: string,
+    elId: string,
+    locale: string,
+    status: DialogueReviewStatus | null
+  ) => void;
   /** 말풍선 테마 — 행간·자간 기본값을 고른다. 없으면 리졸버의 안전 기본값을 쓴다. */
   webtoonTheme?: BubbleWebtoonTheme;
   /** 발견 → 캔버스 요소 선택(다른 페이지면 전환). 없으면 초안 화면 안에서만 되짚는다. */
@@ -106,6 +142,15 @@ const StudioDialogueTranslationMemoryPanel = lazy(() =>
 
 // select 의 "직접 입력…" 옵션 값 — 실제 로케일 코드로 저장되지 않는 내부 센티널.
 const CUSTOM_LOCALE_OPTION = "__custom__";
+
+/** localStorage 접근 — 프라이빗 모드 등에서 던질 수 있어 저장 모듈과 같은 실패 무음 원칙으로 감싼다. */
+function browserLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-2 py-1.5 text-[0.7rem] text-fg outline-none transition-colors placeholder:text-fg-4 focus:border-accent/50";
@@ -125,13 +170,15 @@ type QaSnapshot = {
 };
 
 type QaInput = {
-  readonly pages: readonly DialoguePageLike[];
+  readonly pages: readonly DialogueReviewPageLike[];
   readonly draft: Map<string, string> | null;
   /** 캔버스에 지금 표시 중인 로케일 — 초안 검사 중이고 이 값이 원문이면 요소의 text 가 곧 원문이다. */
   readonly activeLocale: string;
   /** 검사 대상 문자열의 로케일(초안이면 대상 언어, 아니면 표시 중인 언어). */
   readonly locale: string;
   readonly theme: BubbleWebtoonTheme | undefined;
+  /** 용어집 자유 텍스트 — 파싱된 규칙이 QA의 용어집 검사(위반 표시)에 들어간다. */
+  readonly glossary: string;
 };
 
 /**
@@ -139,7 +186,7 @@ type QaInput = {
  * 하나라도 빠지면 그 필드만 바뀐 회차가 "여전히 통과"로 보인다.
  */
 function qaFingerprint(input: QaInput): string {
-  const parts: string[] = [input.locale, input.theme ?? ""];
+  const parts: string[] = [input.locale, input.theme ?? "", input.glossary];
   for (const page of input.pages) {
     for (const el of page.elements) {
       if (!isDialogueElement(el)) continue;
@@ -166,16 +213,35 @@ function qaFingerprint(input: QaInput): string {
 
 /** 순수 조립층을 부르고 지문과 함께 묶는다 — 자동 실행(효과)과 "다시 검사"(클릭)가 같은 길을 탄다. */
 function computeQaSnapshot(input: QaInput, measurer: BubbleTextMeasurer): QaSnapshot {
-  // 초안 검사 중이고 캔버스가 원문을 보여 주고 있으면 요소의 현재 text 가 원문이다 — 확장률 추정에만
-  // 쓰인다. 캔버스가 다른 번역을 보여 주는 중이면 원문을 알 수 없으므로 넘기지 않는다.
-  const sourceById =
-    input.draft && input.activeLocale === SOURCE_LOCALE
-      ? new Map(collectDialogueItems(input.pages).map((item) => [item.id, item.text]))
-      : null;
+  // 원문 확보 경로가 두 가지다. 초안 검사 중이고 캔버스가 원문을 보여 주고 있으면 요소의
+  // 현재 text 가 원문이다. 적용된 번역을 검사할 때는 dialogueI18n의 원문 스냅샷이 원문이다 —
+  // 스냅샷이 없는 큐는 sourceTextFor가 undefined를 돌려줘, 전제(원문)가 없는 검사가 조용히
+  // 건너뛰어진다(QA 조립층 계약). 검사 대상이 원문 자체면 원문을 넘기지 않는다.
+  const sourceById = (() => {
+    if (input.draft) {
+      return input.activeLocale === SOURCE_LOCALE
+        ? new Map(collectDialogueItems(input.pages).map((item) => [item.id, item.text]))
+        : null;
+    }
+    if (input.locale === SOURCE_LOCALE) return null;
+    const map = new Map<string, string>();
+    for (const page of input.pages) {
+      if (!page.dialogueI18n) continue;
+      for (const [elId, entry] of Object.entries(page.dialogueI18n)) {
+        const source = entry[SOURCE_LOCALE];
+        if (source !== undefined) map.set(elId, source);
+      }
+    }
+    return map.size > 0 ? map : null;
+  })();
+  // 용어집 규칙 주입 — 지금까지 이 패널은 규칙을 넘기지 않아 QA의 용어집 검사가 실제
+  // 사용 경로에서는 0개 규칙으로 돌았다. 규칙이 있을 때만 넘긴다(없으면 검사 자체가 없다).
+  const glossaryRules = parseStudioTranslationMemoryGlossaryText(input.glossary);
   const report = runStudioLocalizationQa(input.pages, measurer, {
     targetLocale: input.locale,
     ...(input.draft ? { translations: input.draft } : {}),
     ...(sourceById ? { sourceTextFor: (cueId: string) => sourceById.get(cueId) } : {}),
+    ...(glossaryRules.length > 0 ? { glossaryRules } : {}),
     ...(input.theme === undefined ? {} : { theme: input.theme }),
   });
   return { report, fingerprint: qaFingerprint(input) };
@@ -215,6 +281,10 @@ export function StudioDialogueTranslatePanel({
   workScope,
   qaOpen,
   onQaOpenChange,
+  reviewOpen,
+  onReviewOpenChange,
+  onReviewTextChange,
+  onReviewStatusChange,
   webtoonTheme,
   onRevealCue,
   measurer,
@@ -262,12 +332,36 @@ export function StudioDialogueTranslatePanel({
   const canGenerate = configured && !busy && items.length > 0 && targetLocaleError === null;
   const resolvedWorkScope = workScope?.trim() || `local:${pages[0]?.id ?? "untitled"}`;
 
+  // ── 용어집 작품별 영속 — 세션 상태(호스트 useState)는 새로고침에 사라진다 ──────
+  // 작품이 확정되면 저장본을 한 번 읽어, 지금 용어집이 비어 있을 때만 채운다(사용자가
+  // 이미 입력한 텍스트를 저장본으로 덮지 않는다). 이후 변경은 같은 키로 되돌려 저장한다.
+  const [glossaryScopeReady, setGlossaryScopeReady] = useState<string | null>(null);
+  useEffect(() => {
+    if (glossaryScopeReady === resolvedWorkScope) return;
+    setGlossaryScopeReady(resolvedWorkScope);
+    if (glossary === "") {
+      const saved = loadStudioDialogueGlossaryText(browserLocalStorage(), resolvedWorkScope);
+      if (saved !== "") onGlossaryChange(saved);
+    }
+  }, [glossary, glossaryScopeReady, onGlossaryChange, resolvedWorkScope]);
+  useEffect(() => {
+    if (glossaryScopeReady !== resolvedWorkScope) return;
+    saveStudioDialogueGlossaryText(browserLocalStorage(), resolvedWorkScope, glossary);
+  }, [glossary, resolvedWorkScope, glossaryScopeReady]);
+
   // ── 현지화 QA — 제어형/비제어형 화면 전환 + 스냅샷 ─────────────────────────
   const [uncontrolledQaOpen, setUncontrolledQaOpen] = useState(false);
   const qaVisible = qaOpen ?? uncontrolledQaOpen;
   const setQaVisible = (open: boolean) => {
     if (qaOpen === undefined) setUncontrolledQaOpen(open);
     onQaOpenChange?.(open);
+  };
+  // ── 번역 대조 검수 — QA와 같은 제어형/비제어형 패턴 ────────────────────────
+  const [uncontrolledReviewOpen, setUncontrolledReviewOpen] = useState(false);
+  const reviewVisible = reviewOpen ?? uncontrolledReviewOpen;
+  const setReviewVisible = (open: boolean) => {
+    if (reviewOpen === undefined) setUncontrolledReviewOpen(open);
+    onReviewOpenChange?.(open);
   };
   const [qaSnapshot, setQaSnapshot] = useState<QaSnapshot | null>(null);
   // 발견 → 초안 행으로 되짚을 때 포커스할 textarea. QA 화면이 닫히고 초안 행이 다시 그려진 뒤에야
@@ -278,7 +372,14 @@ export function StudioDialogueTranslatePanel({
 
   // 검사 로케일: 초안이 있으면 초안의 언어, 없으면 캔버스에 지금 표시 중인 언어(원문 포함).
   const qaLocale = draft ? targetLocale : activeLocale;
-  const qaInput: QaInput = { pages, draft, activeLocale, locale: qaLocale, theme: webtoonTheme };
+  const qaInput: QaInput = {
+    pages,
+    draft,
+    activeLocale,
+    locale: qaLocale,
+    theme: webtoonTheme,
+    glossary,
+  };
   const qaStale = qaVisible && qaSnapshot !== null && qaSnapshot.fingerprint !== qaFingerprint(qaInput);
 
   // QA 화면이 열렸는데 보고서가 없으면 한 번 자동 실행한다 — 메뉴에서 열었을 때 버튼을 한 번 더
@@ -287,11 +388,11 @@ export function StudioDialogueTranslatePanel({
     if (!qaVisible || qaSnapshot !== null) return;
     setQaSnapshot(
       computeQaSnapshot(
-        { pages, draft, activeLocale, locale: qaLocale, theme: webtoonTheme },
+        { pages, draft, activeLocale, locale: qaLocale, theme: webtoonTheme, glossary },
         resolvedMeasurer
       )
     );
-  }, [qaVisible, qaSnapshot, pages, draft, activeLocale, qaLocale, webtoonTheme, resolvedMeasurer]);
+  }, [qaVisible, qaSnapshot, pages, draft, activeLocale, qaLocale, webtoonTheme, glossary, resolvedMeasurer]);
 
   useEffect(() => {
     if (pendingFocusId === null) return;
@@ -332,6 +433,22 @@ export function StudioDialogueTranslatePanel({
           {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "대사 번역")}<span className="font-medium text-fg-4">· {providerLabel}</span>
         </p>
         <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setReviewVisible(!reviewVisible)}
+            aria-pressed={reviewVisible}
+            title={translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "번역 대조 검수 — 적용된 번역을 원문과 나란히 놓고 승인·수정 필요를 남긴다")}
+            className={cx(
+              "inline-flex items-center gap-1 rounded-lg border px-2 text-[0.62rem] font-semibold transition-colors",
+              reviewVisible
+                ? "border-accent/35 bg-accent-soft text-accent"
+                : "border-line bg-card text-fg-2 hover:bg-raised",
+              STUDIO_FOCUS_RING,
+              STUDIO_TOUCH_TARGET
+            )}
+          >
+            <ListChecks size={12} aria-hidden />
+            {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "대조 검수")}</button>
           <button
             type="button"
             onClick={() => setQaVisible(!qaVisible)}
@@ -389,7 +506,18 @@ export function StudioDialogueTranslatePanel({
         )}
       </div>
 
-      {qaVisible ? (
+      {reviewVisible ? (
+        // ── D. 번역 대조 검수 화면 ────────────────────────────────────────
+        <StudioDialogueReviewSection
+          pages={pages}
+          activeLocale={activeLocale}
+          availableLocales={availableLocales}
+          glossary={glossary}
+          onTextChange={(pageId, elId, locale, text) => onReviewTextChange?.(pageId, elId, locale, text)}
+          onStatusChange={(pageId, elId, locale, status) => onReviewStatusChange?.(pageId, elId, locale, status)}
+          {...(onRevealCue ? { onRevealCue } : {})}
+        />
+      ) : qaVisible ? (
         // ── C. 현지화 QA 화면 ─────────────────────────────────────────────
         <div className="flex min-h-0 flex-1 flex-col">
           <p className="border-b border-line/60 px-3 py-1.5 text-[0.62rem] text-fg-3">
@@ -459,18 +587,7 @@ export function StudioDialogueTranslatePanel({
             ) : null}
           </div>
 
-          <div className="space-y-1">
-            <label className="block text-[0.66rem] font-medium text-fg-3" htmlFor="dialogue-translate-glossary">
-              {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "용어집(선택)")}</label>
-            <textarea
-              id="dialogue-translate-glossary"
-              value={glossary}
-              onChange={(e) => onGlossaryChange(e.target.value)}
-              placeholder={translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "예: 주인공 이름은 항상 \"Yuna\"로 번역해줘")}
-              rows={3}
-              className={cx(inputClass, "resize-y leading-snug")}
-            />
-          </div>
+          <StudioDialogueGlossaryEditor glossary={glossary} onGlossaryChange={onGlossaryChange} />
 
           {!configured ? (
             <AiRecoveryNotice
