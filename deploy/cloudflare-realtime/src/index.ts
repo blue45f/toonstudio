@@ -25,6 +25,10 @@ import {
   extractRealtimeTicketFromSubprotocols,
   verifyRealtimeTicket,
 } from "./ticket";
+import {
+  REALTIME_TURN_CREDENTIALS_PATH,
+  handleRealtimeTurnCredentialsRequest,
+} from "./turn";
 
 import type { RealtimeWorkerEnv } from "./runtime-types";
 
@@ -64,6 +68,13 @@ async function handleFetch(
       status: controlConfigured ? "ok" : "unavailable",
       service: "cloudflare-realtime-coordinator",
     });
+  }
+
+  // TURN 발급은 control plane과 독립이다. 인증은 WebSocket 입장과 같은 realtime
+  // ticket이 담당하고, ticket secret이 없으면 검증 자체가 실패하므로 이 라우트를
+  // control 설정 게이트보다 앞에 둬도 fail-closed 성질은 유지된다.
+  if (url.pathname === REALTIME_TURN_CREDENTIALS_PATH) {
+    return await handleRealtimeTurnCredentialsRequest(request, env);
   }
 
   if (!controlConfigured) {
