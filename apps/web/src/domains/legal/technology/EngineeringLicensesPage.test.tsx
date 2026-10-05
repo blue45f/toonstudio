@@ -102,7 +102,7 @@ describe("라이브러리 현황", () => {
     expect(within(section).getAllByText("mixbox").length).toBeGreaterThan(0);
     expect(within(section).getByText("u2netp.onnx")).toBeTruthy();
     expect(within(section).getByText("tag2pix.onnx")).toBeTruthy();
-    expect(within(section).getByRole("status").textContent).toContain("113개 / 전체 113개 라이브러리");
+    expect(within(section).getByRole("status").textContent).toContain("116개 / 전체 116개 라이브러리");
   });
 
   it("라이브러리 검색은 이름으로 걸러 개수를 알린다", () => {
@@ -111,7 +111,7 @@ describe("라이브러리 현황", () => {
     const search = within(section).getByLabelText(/라이브러리·라이선스 검색|Search libraries/u);
     fireEvent.change(search, { target: { value: "opencascade" } });
 
-    expect(within(section).getByRole("status").textContent).toContain("1개 / 전체 113개 라이브러리");
+    expect(within(section).getByRole("status").textContent).toContain("1개 / 전체 116개 라이브러리");
     expect(within(section).getAllByText("opencascade.js").length).toBeGreaterThan(0);
     expect(within(section).queryByText("three")).toBeNull();
   });

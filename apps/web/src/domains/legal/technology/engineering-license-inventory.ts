@@ -3,7 +3,7 @@
  *
  * 수집 기준 (2026-10-06 실측): 워크스페이스 전 패키지(루트, apps/*, packages/*,
  * tests/integration/*)의 package.json에서 직접 의존성(dependencies와
- * optionalDependencies, workspace 내부 패키지 제외) 113개를 뽑고, 라이선스 명은
+ * optionalDependencies, workspace 내부 패키지 제외) 116개를 뽑고, 라이선스 명은
  * 설치된 패키지의 package.json license 필드에서 확인했다. 이 환경에 설치되지 않은
  * 패키지는 pnpm-lock.yaml이 고정한 바로 그 버전의 레지스트리 메타데이터로 대조했다.
  * 전이 의존성과 개발 전용 도구(devDependencies: Vite, Vitest, Playwright, ESLint,
@@ -86,11 +86,25 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     role: { ko: "자체 데스크 클라우드 연동", en: "First-party desk-cloud integration" },
   },
   {
+    name: "@helia/verified-fetch",
+    version: "8.1.2",
+    license: "Apache-2.0 OR MIT",
+    surface: "web",
+    role: { ko: "IPFS 콘텐츠 주소의 검증 가져오기(Helia 경량축)", en: "Verified fetching for IPFS content addresses (Helia, lightweight axis)" },
+  },
+  {
     name: "@hookform/resolvers",
     version: "5.4.0",
     license: "MIT",
     surface: "web",
     role: { ko: "폼 검증 스키마 리졸버 연결", en: "Connecting form validation schema resolvers" },
+  },
+  {
+    name: "@huggingface/transformers",
+    version: "4.3.0",
+    license: "Apache-2.0",
+    surface: "web",
+    role: { ko: "리서치 데스크 한글 질의의 기기 안 번역(Transformers.js)", en: "On-device translation of the research desk's Korean queries (Transformers.js)" },
   },
   {
     name: "@mediapipe/tasks-vision",
@@ -367,6 +381,13 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     license: "MIT",
     surface: "web",
     role: { ko: "UI 애니메이션 라이브러리", en: "UI animation library" },
+  },
+  {
+    name: "multiformats",
+    version: "14.0.5",
+    license: "Apache-2.0 OR MIT",
+    surface: "web",
+    role: { ko: "IPFS CID 생성·파싱과 해시 검증의 기반 라이브러리", en: "Base library for IPFS CID creation, parsing and hash verification" },
   },
   {
     name: "onnxruntime-web",
