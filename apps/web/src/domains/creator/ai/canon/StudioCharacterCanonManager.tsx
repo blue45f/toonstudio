@@ -1,5 +1,5 @@
 // 캐릭터 캐논 관리자 — 등록·목록·수정·삭제와 캐릭터별 생성 갤러리를 한 화면에 둔다.
-// 게스트는 이 브라우저 localStorage에만 저장되고, 상단에 그 사실을 알린다.
+// 게스트는 이 브라우저 로컬 저장소(IndexedDB)에만 저장되고, 상단에 그 사실을 알린다.
 import { useState } from "react";
 import { ClipboardCopy, ImagePlus, MessageCircle, Pencil, Plus, Trash2, UserRound, Users, X } from "lucide-react";
 
@@ -182,7 +182,14 @@ export function StudioCharacterCanonManager({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {view === "library" ? (
-          canon.sheets.length === 0 ? (
+          !canon.hydrated && canon.sheets.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-line p-8 text-center" role="status" aria-live="polite">
+              <p className="text-sm font-semibold">{bt("등록한 캐릭터를 불러오는 중이에요.", "Loading your registered characters…")}</p>
+              <p className="mt-1 text-xs text-fg-3">
+                {bt("예전에 저장한 시트도 그대로 가져옵니다.", "Sheets you saved before are carried over as they are.")}
+              </p>
+            </div>
+          ) : canon.sheets.length === 0 ? (
             <div className="rounded-xl border border-dashed border-line p-8 text-center">
               <p className="text-sm font-semibold">{bt("아직 등록된 캐릭터가 없어요.", "No characters registered yet.")}</p>
               <p className="mt-1 text-xs text-fg-3">

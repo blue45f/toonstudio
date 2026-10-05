@@ -1,7 +1,8 @@
 // 캐릭터 "캐논" 시트 — AI 만화 생성에서 매 패널마다 얼굴·의상이 바뀌는 문제를
 // 막기 위해 캐릭터의 외모·의상·특징을 한 장의 시트로 고정해 두는 모델.
-// 게스트는 localStorage에만 저장하고, 로그인 상태에서는 apiPost로 서버에
-// write-through 한다(기존 useApp 스토어의 평점/읽기 상태와 같은 패턴).
+// 게스트는 이 브라우저의 로컬 저장소(IndexedDB, 구 localStorage 값은 1회 이관)에만
+// 저장하고, 로그인 상태에서는 apiPost로 서버에 write-through 한다(기존 useApp
+// 스토어의 평점/읽기 상태와 같은 패턴). 이 모듈은 저장 매체를 모르는 순수 모델이다.
 import { apiPost } from "@/shared/lib/store-api-post";
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 
@@ -282,6 +283,32 @@ export function saveCharacterCanonDocument(
   } catch {
     // 용량 초과 같은 쓰기 실패는 조용히 무시 — 메모리 상태는 유지된다.
   }
+}
+
+/**
+ * 두 캐논 문서를 어느 쪽 데이터도 버리지 않고 합친다 — 비동기 하이드레이션이
+ * 끝나기 전에 사용자가 먼저 편집한 경우의 경쟁 해소용이다. 시트는 id가 겹치면
+ * overlay(나중 문서)가 이기고, 사용 기록은 id로 중복을 제거한 뒤 시간순으로
+ * 상한을 유지한다. 삭제 전파는 하지 않는다(병합으로 삭제가 되살아날 수 있는
+ * 쪽이, 편집 자체가 사라지는 쪽보다 안전하기 때문이다).
+ */
+export function mergeCharacterCanonDocuments(
+  base: CharacterCanonDocument,
+  overlay: CharacterCanonDocument,
+): CharacterCanonDocument {
+  const overlaySheetIds = new Set(overlay.sheets.map((sheet) => sheet.id));
+  const sheets = [
+    ...base.sheets.filter((sheet) => !overlaySheetIds.has(sheet.id)),
+    ...overlay.sheets,
+  ];
+  const usageById = new Map<string, CanonPanelUsage>();
+  for (const entry of [...base.usage, ...overlay.usage]) {
+    usageById.set(entry.id, entry);
+  }
+  const usage = [...usageById.values()]
+    .sort((left, right) => left.injectedAt.localeCompare(right.injectedAt))
+    .slice(-CANON_USAGE_MAX);
+  return { version: CHARACTER_CANON_DOCUMENT_VERSION, sheets, usage };
 }
 
 export function upsertCharacterCanonSheet(

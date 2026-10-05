@@ -5,6 +5,7 @@ import {
   canonPanelUsageForCharacter,
   emptyCharacterCanonDocument,
   loadCharacterCanonDocument,
+  mergeCharacterCanonDocuments,
   parseCharacterCanonDocument,
   recordCanonPanelUsage,
   removeCharacterCanonSheet,
@@ -153,5 +154,54 @@ describe("캐릭터 캐논 시트 모델", () => {
       "c1",
     );
     expect(document.usage).toHaveLength(0);
+  });
+
+  it("문서 병합은 양쪽 시트를 보존하고 겹치는 id는 나중 문서가 이긴다", () => {
+    const baseSheet = buildCharacterCanonSheet(draft({ name: "기존" }), {
+      id: "c1",
+      now: "2026-10-01T00:00:00.000Z",
+    });
+    const base = {
+      ...emptyCharacterCanonDocument(),
+      sheets: [baseSheet],
+      usage: [
+        {
+          id: "u1",
+          characterId: "c1",
+          sessionId: "s1",
+          sessionLabel: "세션 1",
+          panelIndex: 0,
+          panelSummary: "첫 컷",
+          injectedAt: "2026-10-01T01:00:00.000Z",
+        },
+      ],
+    };
+    const editedSheet = { ...baseSheet, name: "수정됨" };
+    const newSheet = buildCharacterCanonSheet(draft({ name: "신규" }), {
+      id: "c2",
+      now: "2026-10-02T00:00:00.000Z",
+    });
+    const overlay = {
+      ...emptyCharacterCanonDocument(),
+      sheets: [editedSheet, newSheet],
+      usage: [
+        {
+          id: "u2",
+          characterId: "c2",
+          sessionId: "s1",
+          sessionLabel: "세션 1",
+          panelIndex: 1,
+          panelSummary: "둘째 컷",
+          injectedAt: "2026-10-02T01:00:00.000Z",
+        },
+      ],
+    };
+
+    const merged = mergeCharacterCanonDocuments(base, overlay);
+    expect(merged.sheets.map((sheet) => sheet.id)).toEqual(["c1", "c2"]);
+    expect(merged.sheets[0]?.name).toBe("수정됨");
+    expect(merged.usage.map((entry) => entry.id)).toEqual(["u1", "u2"]);
+    // 입력은 변경하지 않는다.
+    expect(base.sheets[0]?.name).toBe("기존");
   });
 });
