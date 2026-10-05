@@ -97,7 +97,7 @@ describe("public shell integration", () => {
     expect([...((immersiveHomeRoutes ?? "").matchAll(/"([^"]+)"/gu))].map((match) => match[1]))
       .toEqual(["/home", "/hub", "/studio", "/studio/space", "/onboarding/character"]);
     expect(normalizedPolicy).toContain('normalizedPath === "/team" || normalizedPath.startsWith("/team/")');
-    expect(normalizedPolicy).toContain('const immersiveVirtualExperience = immersiveVirtualHome || immersiveVirtualProject || input.hasTaskRoute || input.protectedCampus;');
+    expect(normalizedPolicy).toContain('const immersiveVirtualExperience = immersiveVirtualHome || immersiveVirtualProject || immersiveReader || input.hasTaskRoute || input.protectedCampus;');
     expect(shell).toMatch(/<ErrorBoundary resetKey=\{pathname\}>\s*<Suspense fallback=\{<Suspense fallback=\{null\}><PublicSiteWayfinder \/><\/Suspense>\}>\s*<PublicSiteNextSteps pathname=\{pathname\}\s*\/>/u);
   });
 });
