@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
@@ -90,7 +90,8 @@ describe("EventCard", () => {
 
   it("endsAt이 없으면 카운트다운 배지 대신 종료일 미정 안내를 보여준다", () => {
     renderCard(BETA_OPEN_EVENT);
-    expect(screen.getByText("종료일 추후 안내")).toBeTruthy();
+    // 같은 안내가 타일 위 배지와 기간 행 끝에 함께 나온다.
+    expect(screen.getAllByText("종료일 추후 안내").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText(/^D-/)).toBeNull();
   });
 
@@ -120,13 +121,66 @@ describe("EventCard", () => {
     expect(badge.className).not.toContain("bg-warn");
   });
 
-  it("대표 이미지를 렌더한다", () => {
+  it("이벤트 자체 아트를 타일에 렌더한다", () => {
     const { container } = render(
       <MemoryRouter>
         <EventCard event={BETA_OPEN_EVENT} />
       </MemoryRouter>,
     );
     const img = container.querySelector("img");
-    expect(img?.getAttribute("src")).toBe("/images/section-community.webp");
+    // 베타 오픈 상세 페이지 히어로와 같은 자체 아트다. 공용 섹션 이미지로
+    // 되돌아가면 이 단언이 깨진다.
+    expect(img?.getAttribute("src")).toBe("/images/hero-studio.webp");
+  });
+
+  it("자체 아트가 없는 이벤트는 공용 이미지 대신 타이포그래픽 커버를 쓴다", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <EventCard event={makeEvent({ image: null })} />
+      </MemoryRouter>,
+    );
+    expect(container.querySelector("img")).toBeNull();
+    // 커버 글리프는 제목 첫 글자다 (aria-hidden 장식이라 텍스트로 찾는다).
+    expect(container.textContent).toContain("지");
+  });
+
+  it("자체 아트 로드에 실패하면 타이포그래픽 커버로 떨어진다", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <EventCard event={BETA_OPEN_EVENT} />
+      </MemoryRouter>,
+    );
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
+    fireEvent.error(img as HTMLImageElement);
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.textContent).toContain("지");
+  });
+
+  it("기간 행에 시작일을 time 요소로 표시한다", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <EventCard event={BETA_OPEN_EVENT} />
+      </MemoryRouter>,
+    );
+    const start = container.querySelector(
+      'time[datetime="2026-09-18T00:00:00+09:00"]',
+    );
+    expect(start).not.toBeNull();
+    expect(start?.textContent).toContain("2026");
+    // 종료일이 없으면 기간 행도 추후 안내로 끝난다 (배지의 안내와 별개로 존재).
+    expect(screen.getAllByText("종료일 추후 안내").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("종료일이 있으면 기간 행에 시작–종료 범위를 표시한다", () => {
+    const endsAt = "2026-12-31T23:59:59+09:00";
+    const { container } = render(
+      <MemoryRouter>
+        <EventCard event={makeEvent({ endsAt })} />
+      </MemoryRouter>,
+    );
+    expect(
+      container.querySelector(`time[datetime="${endsAt}"]`),
+    ).not.toBeNull();
   });
 });

@@ -14,6 +14,7 @@ import {
 import { IntroTabs, type IntroTab } from "../public/intro-tabs";
 
 import { EVENT_STATUS_I18N_KEY, MARKETING_EVENTS, resolveMarketingEventStatus } from "./event-catalog";
+import { EventArtwork } from "./EventArtwork";
 import { EventCard } from "./EventCard";
 import { useMarketingEventText } from "./marketing-event-copy";
 
@@ -31,9 +32,6 @@ type EventsTab = "official" | "guide" | "community";
 
 /** 예전 섹션 앵커(`/events#guide`, `/events#board`)를 탭으로 연다. */
 const EVENTS_TAB_ANCHORS: Readonly<Record<string, EventsTab>> = { "#guide": "guide", "#board": "official" };
-
-/** 대표 이벤트 이미지. 카탈로그에 이미지 필드가 생기면 EventCard의 매핑과 함께 옮긴다. */
-const FEATURED_IMAGE = "/images/section-community.webp";
 
 /** 공식 이벤트 카탈로그가 비었을 때의 안내 문구. 카탈로그는 시즌 따라 비워질 수 있다. */
 const OFFICIAL_EMPTY = {
@@ -84,7 +82,7 @@ export function EventsHubPage() {
         </div>
         {featured ? (
           <Link className="events-hub__featured" href={featuredHref}>
-            <img src={FEATURED_IMAGE} alt="" width={1280} height={720} decoding="async" fetchPriority="high" />
+            <EventArtwork event={featured} priority />
             <span className="events-hub__featured-copy">
               <span className="mk-badge"><Gift size={13} aria-hidden="true" />{t(EVENT_STATUS_I18N_KEY[resolveMarketingEventStatus(featured)])}</span>
               <small>{text(featured.eyebrow)}</small>

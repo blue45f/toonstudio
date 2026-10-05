@@ -3,24 +3,21 @@ import { ArrowRight, CalendarDays, Gift } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { cx } from "@/shared/lib/cx";
-import { useT } from "@/shared/lib/i18n";
+import { useI18n, useT } from "@/shared/lib/i18n";
 
 import {
   EVENT_STATUS_I18N_KEY,
   resolveMarketingEventStatus,
   type MarketingEvent,
 } from "./event-catalog";
-import { getEventCountdown } from "./event-countdown";
+import { formatEventDate, getEventCountdown } from "./event-countdown";
+import { EventArtwork } from "./EventArtwork";
 import { useMarketingEventText } from "./marketing-event-copy";
 
-/** 이벤트별 대표 이미지 — 카탈로그에 이미지가 생기면 이 매핑을 대체한다. */
-const EVENT_IMAGES: Record<string, string> = {
-  "beta-open-2026": "/images/section-community.webp",
-};
-const EVENT_IMAGE_FALLBACK = "/images/section-explore.webp";
-
 /**
- * 시네마틱 이벤트 카드 — 호버 시 이미지 줌 + 오버레이 그라디언트 심화 + 정보 슬라이드업.
+ * 이벤트 아트 타일 카드 — 16:9 타일(이벤트 자체 아트, 없으면 타이포그래픽 커버) 위에
+ * 상태 배지를 얹고, 아래 정보 영역에 기간·제목·요약을 둔다.
+ * 호버 시 이미지 줌 + 오버레이 그라디언트 심화 + 정보 슬라이드업.
  * 마감 임박 이벤트에는 글로우 D-day 배지를 표시한다 (임박 시 펄스).
  *
  * reduced-motion 환경에서는 모든 모션 변형을 비활성화하고 정적 카드로 렌더한다.
@@ -28,12 +25,14 @@ const EVENT_IMAGE_FALLBACK = "/images/section-explore.webp";
 export function EventCard({ event }: { event: MarketingEvent }) {
   const text = useMarketingEventText();
   const t = useT();
+  const lang = useI18n((state) => state.lang);
   const prefersReducedMotion = useReducedMotion();
   const animated = !prefersReducedMotion;
 
   const status = resolveMarketingEventStatus(event);
   const countdown = getEventCountdown(event.endsAt);
-  const image = EVENT_IMAGES[event.id] ?? EVENT_IMAGE_FALLBACK;
+  const periodStart = formatEventDate(event.startsAt, lang);
+  const periodEnd = event.endsAt ? formatEventDate(event.endsAt, lang) : "";
 
   return (
     <motion.article
@@ -53,22 +52,13 @@ export function EventCard({ event }: { event: MarketingEvent }) {
           href={`/events/${event.slug}`}
           className="block rounded-[2rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
         >
-          <div className="relative overflow-hidden">
-            <motion.img
-              src={image}
-              alt=""
-              aria-hidden="true"
-              loading="lazy"
-              decoding="async"
-              className="aspect-[21/9] w-full object-cover"
-              variants={{ rest: { scale: 1 }, hover: { scale: 1.06 } }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-            />
-            {/* 오버레이 그라디언트 — 호버 시 심화 */}
+          <div className="relative aspect-[16/9] overflow-hidden">
+            <EventArtwork event={event} zoomOnHover />
+            {/* 오버레이 그라디언트 — 배지 행 가독성용 상단 스크림. 호버 시 심화 */}
             <motion.div
               aria-hidden="true"
-              className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
-              variants={{ rest: { opacity: 0.8 }, hover: { opacity: 1 } }}
+              className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent"
+              variants={{ rest: { opacity: 0.7 }, hover: { opacity: 1 } }}
               transition={{ duration: 0.4 }}
             />
             {/* 배지 행 — 상태 칩 + 카운트다운 글로우 배지 */}
@@ -108,23 +98,32 @@ export function EventCard({ event }: { event: MarketingEvent }) {
                 </span>
               )}
             </div>
-            {/* 이미지 위 타이틀 */}
-            <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-              <p className="text-xs font-black tracking-[0.12em] text-white/80">
-                {text(event.eyebrow)}
-              </p>
-              <h3 className="mt-2 font-display text-2xl font-black tracking-[-0.02em] text-white sm:text-4xl">
-                {text(event.title)}
-              </h3>
-            </div>
           </div>
-          {/* 정보 영역 — 호버 시 슬라이드업 */}
+          {/* 정보 영역 — 기간 · 제목 · 요약. 호버 시 슬라이드업 */}
           <motion.div
             className="p-6 sm:p-8"
             variants={{ rest: { y: 0 }, hover: { y: -6 } }}
             transition={{ duration: 0.35, ease: "easeOut" }}
           >
-            <p className="text-sm leading-7 text-fg-2 sm:text-base">
+            <p className="text-xs font-black tracking-[0.12em] text-fg-3">
+              {text(event.eyebrow)}
+            </p>
+            <h3 className="mt-2 font-display text-2xl font-black tracking-[-0.02em] text-fg sm:text-3xl">
+              {text(event.title)}
+            </h3>
+            {periodStart ? (
+              <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-fg-2">
+                <CalendarDays size={14} aria-hidden="true" />
+                <time dateTime={event.startsAt}>{periodStart}</time>
+                {" – "}
+                {periodEnd && event.endsAt ? (
+                  <time dateTime={event.endsAt}>{periodEnd}</time>
+                ) : (
+                  <span>{t("page.events.card.noEndDate")}</span>
+                )}
+              </p>
+            ) : null}
+            <p className="mt-3 text-sm leading-7 text-fg-2 sm:text-base">
               {text(event.summary)}
             </p>
             <p className="mt-4 inline-flex items-center gap-2 text-sm font-black text-accent">
