@@ -16,6 +16,7 @@ import {
   Network,
   RefreshCcw,
   Save,
+  Settings2,
   ShieldCheck,
   Sparkles,
   TimerReset,
@@ -34,6 +35,10 @@ import {
 
 import { storyworldDraftStore } from "./draft-store";
 import { StudioStoryworldBoard } from "./StudioStoryworldBoard";
+import {
+  StudioStoryworldSettings,
+  type StoryworldSettingsFocus,
+} from "./StudioStoryworldSettings";
 import { projectStoryworldToStudioProjectStory } from "./studio-storyworld-project-projection";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
 import {
@@ -70,6 +75,7 @@ export interface StudioStoryworldLabPageProps {
 
 type StoryworldTab =
   | "overview"
+  | "settings"
   | "issues"
   | "multiverse"
   | "knowledge"
@@ -86,6 +92,7 @@ const TAB_ITEMS: readonly {
   readonly icon: typeof Network;
 }[] = [
   { id: "overview", label: "대시보드", icon: Network },
+  { id: "settings", label: "설정 관리", icon: Settings2 },
   { id: "issues", label: "모순·위험", icon: AlertTriangle },
   { id: "multiverse", label: "멀티버스", icon: GitBranch },
   { id: "knowledge", label: "인물 지식", icon: Users },
@@ -177,12 +184,28 @@ function assertOptionalFiniteNumber(record: Record<string, unknown>, key: string
   if (record[key] !== undefined) assertFiniteNumber(record[key], `${path}.${key}`);
 }
 
+function assertOptionalString(record: Record<string, unknown>, key: string, path: string): void {
+  if (record[key] !== undefined && typeof record[key] !== "string") {
+    throw new Error(`${path}.${key}는 문자열이어야 합니다.`);
+  }
+}
+
 function assertStoryworldCharacter(value: unknown, path: string): void {
   if (!isRecord(value)) throw new Error(`${path}는 객체여야 합니다.`);
   assertString(value.id, `${path}.id`);
   assertString(value.name, `${path}.name`);
+  assertOptionalString(value, "goal", path);
+  assertOptionalString(value, "description", path);
+  assertOptionalStringArray(value, "aliases", path);
+  assertOptionalStringArray(value, "tags", path);
   assertOptionalStringArray(value, "initialFactIds", path);
   assertOptionalStringArray(value, "secretFactIds", path);
+  if (value.motion !== undefined) {
+    if (!isRecord(value.motion)) throw new Error(`${path}.motion은 객체여야 합니다.`);
+    for (const key of ["reveal", "emphasis", "expressionNotes", "voiceNote"]) {
+      assertOptionalString(value.motion, key, `${path}.motion`);
+    }
+  }
 }
 
 function assertStoryworldFact(value: unknown, path: string): void {
@@ -191,6 +214,7 @@ function assertStoryworldFact(value: unknown, path: string): void {
   assertString(value.label, `${path}.label`);
   assertString(value.subjectId, `${path}.subjectId`);
   assertString(value.key, `${path}.key`);
+  assertOptionalString(value, "description", path);
   assertOptionalFiniteNumber(value, "intendedReaderRevealOrder", path);
   assertOptionalStringArray(value, "tags", path);
 }
@@ -199,6 +223,8 @@ function assertStoryworldScene(value: unknown, path: string): void {
   if (!isRecord(value)) throw new Error(`${path}는 객체여야 합니다.`);
   assertString(value.id, `${path}.id`);
   assertString(value.title, `${path}.title`);
+  assertOptionalString(value, "description", path);
+  assertOptionalString(value, "locationId", path);
   assertFiniteNumber(value.order, `${path}.order`);
   assertOptionalFiniteNumber(value, "timeIndex", path);
   assertOptionalStringArray(value, "participantIds", path);
@@ -441,16 +467,17 @@ function IssueList({ issues, limit }: {
   );
 }
 
-function OverviewTab({ project, result, onOpenIssues, onOpenData }: {
+function OverviewTab({ project, result, onOpenIssues, onOpenData, onEditElement }: {
   readonly project: StoryworldProject;
   readonly result: StoryworldAnalysisResult;
   readonly onOpenIssues: () => void;
   readonly onOpenData: () => void;
+  readonly onEditElement: (kind: "character" | "fact", id: string) => void;
 }) {
   const blockingIssues = result.issues.filter((issue) => issue.severity === "error").length;
   return (
     <div className="storyworld-tab-stack">
-      <StudioStoryworldBoard onOpenData={onOpenData} project={project} />
+      <StudioStoryworldBoard onEditElement={onEditElement} onOpenData={onOpenData} project={project} />
       <section aria-labelledby="storyworld-checkup-title" className="storyworld-checkup">
         <div className="storyworld-checkup__heading">
           <h2 id="storyworld-checkup-title">점검 결과</h2>
@@ -885,6 +912,7 @@ function StudioStoryworldLabEditor({
   const storageKey = useMemo(() => projectStorageKey(workId, remixSourceWorkId), [workId, remixSourceWorkId]);
   const [project, setProject] = useState<StoryworldProject>(initialProject);
   const [activeTab, setActiveTab] = useState<StoryworldTab>("overview");
+  const [settingsFocus, setSettingsFocus] = useState<StoryworldSettingsFocus | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [statusText, setStatusText] = useState("결정적 로컬 분석 준비됨");
   const importRef = useRef<HTMLInputElement>(null);
@@ -932,6 +960,11 @@ function StudioStoryworldLabEditor({
     });
     return () => { active = false; };
   }, [project, storageKey, workId]);
+
+  const openInSettings = (kind: "character" | "fact" | "scene", id: string) => {
+    setSettingsFocus({ kind, id, nonce: Date.now() });
+    setActiveTab("settings");
+  };
 
   const reset = () => {
     setProject(cloneDemoProject());
@@ -1022,7 +1055,14 @@ function StudioStoryworldLabEditor({
             </div>
           </div>
 
-          {activeTab === "overview" ? <OverviewTab onOpenData={() => setActiveTab("json")} onOpenIssues={() => setActiveTab("issues")} project={project} result={result} /> : null}
+          {activeTab === "overview" ? <OverviewTab onEditElement={openInSettings} onOpenData={() => setActiveTab("json")} onOpenIssues={() => setActiveTab("issues")} project={project} result={result} /> : null}
+          {activeTab === "settings" ? (
+            <StudioStoryworldSettings
+              focusRequest={settingsFocus}
+              onChange={(next) => { setProject(authoredStoryworldProject(next)); setStatusText("설정을 저장했습니다."); }}
+              project={project}
+            />
+          ) : null}
           {activeTab === "issues" ? <IssuesTab result={result} /> : null}
           {activeTab === "multiverse" ? <MultiverseTab project={project} result={result} /> : null}
           {activeTab === "knowledge" ? <KnowledgeTab project={project} result={result} /> : null}

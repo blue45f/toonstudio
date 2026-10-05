@@ -41,6 +41,8 @@ export interface StoryworldFactDefinition {
   readonly label: string;
   readonly subjectId: string;
   readonly key: string;
+  /** 작가가 적는 자유 서술. 분석은 이 값을 사실로 해석하지 않는다. */
+  readonly description?: string;
   readonly initialValue?: StoryworldPrimitive;
   /** Reader-facing reveal target. Omit when no fixed reveal order exists. */
   readonly intendedReaderRevealOrder?: number;
@@ -130,6 +132,8 @@ export interface StoryworldProductionEstimate {
 export interface StoryworldScene {
   readonly id: string;
   readonly title: string;
+  /** 작가가 적는 자유 서술. 분석은 이 값을 사실로 해석하지 않는다. */
+  readonly description?: string;
   /** Stable narrative order. Ties are resolved by id for deterministic analysis. */
   readonly order: number;
   readonly timeIndex?: number;
@@ -151,13 +155,39 @@ export interface StoryworldScene {
   readonly disabled?: boolean;
 }
 
+/**
+ * 무빙툰(효과툰) 확장 설정 — 캐릭터 단위 연출 메모 데이터.
+ *
+ * `reveal`·`emphasis`는 `studio-motion-fx`의 REVEAL_PRESETS·EMPHASIS_PRESETS id 어휘를
+ * 그대로 쓴다. 단, 모션 엔진은 작품·컷 단위 WorkFxSettings만 소비하므로 이 프로필은
+ * 아직 렌더에 연결되지 않은 "설정 데이터"다 — 렌더 연결은 별도 계약이 필요하다.
+ * 표정·음성은 프리셋이 실재하지 않아 자유 서술 메모로만 관리한다.
+ */
+export interface StoryworldCharacterMotionProfile {
+  /** 등장 리빌 프리셋 id (REVEAL_PRESETS). 미지정이면 작품 기본을 따른다는 메모 수준. */
+  readonly reveal?: string;
+  /** 등장 강조 프리셋 id (EMPHASIS_PRESETS). */
+  readonly emphasis?: string;
+  /** 표정 세트 메모 (예: 기본 표정 6종, 눈물 표정 필수). */
+  readonly expressionNotes?: string;
+  /** 음성 연기 방향 메모 (톤·말투·캐스팅 기준). 실제 음성 합성 계약은 없다. */
+  readonly voiceNote?: string;
+}
+
 export interface StoryworldCharacter {
   readonly id: string;
   readonly name: string;
+  /** 별칭·이명. 이름 표기 흔들림을 한곳에서 관리한다. */
+  readonly aliases?: readonly string[];
+  /** 작가가 적는 자유 서술. 분석은 이 값을 사실로 해석하지 않는다. */
+  readonly description?: string;
+  readonly tags?: readonly string[];
   /** Facts known before scene one. */
   readonly initialFactIds?: readonly string[];
   readonly goal?: string;
   readonly secretFactIds?: readonly string[];
+  /** 무빙툰 확장 설정. 없으면 확장 설정을 아직 정하지 않은 상태다. */
+  readonly motion?: StoryworldCharacterMotionProfile;
 }
 
 export interface StoryworldSetupContract {

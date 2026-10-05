@@ -1,4 +1,4 @@
-import { BookOpenCheck, Clapperboard, LayoutGrid, MapPin, Shapes, Users } from "lucide-react";
+import { BookOpenCheck, Clapperboard, LayoutGrid, MapPin, Pencil, Shapes, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { StoryworldProject } from "./studio-storyworld-causality";
@@ -69,7 +69,10 @@ function BoardGraph({ board }: { readonly board: StoryworldBoard }) {
   );
 }
 
-function CharacterCards({ board }: { readonly board: StoryworldBoard }) {
+function CharacterCards({ board, onEditElement }: {
+  readonly board: StoryworldBoard;
+  readonly onEditElement?: (kind: "character" | "fact", id: string) => void;
+}) {
   return (
     <div className="storyworld-board-grid">
       {board.characters.map((card) => (
@@ -78,13 +81,25 @@ function CharacterCards({ board }: { readonly board: StoryworldBoard }) {
             <Users aria-hidden size={16} />
             <strong>{card.name}</strong>
             <code>{card.id}</code>
+            {onEditElement ? (
+              <button className="storyworld-board-card__edit" onClick={() => onEditElement("character", card.id)} type="button">
+                <Pencil aria-hidden size={13} /> 편집
+              </button>
+            ) : null}
           </div>
           {card.goal ? <p className="storyworld-board-card__goal">{card.goal}</p> : null}
+          {card.description ? <p className="storyworld-board-card__description">{card.description}</p> : null}
           <ul className="storyworld-board-card__meta">
             <li>등장 장면 {card.sceneCount}</li>
             <li>아는 사실 {card.initialFactCount}</li>
             <li>비밀 {card.secretFactCount}</li>
+            {card.motionReveal ? <li>무빙툰 리빌 <code>{card.motionReveal}</code></li> : null}
           </ul>
+          {card.tags.length > 0 ? (
+            <div className="storyworld-board-card__tags">
+              {card.tags.map((tag) => <span key={tag}>{tag}</span>)}
+            </div>
+          ) : null}
         </article>
       ))}
     </div>
@@ -131,7 +146,10 @@ function LocationCards({ board }: { readonly board: StoryworldBoard }) {
   );
 }
 
-function FactCards({ board }: { readonly board: StoryworldBoard }) {
+function FactCards({ board, onEditElement }: {
+  readonly board: StoryworldBoard;
+  readonly onEditElement?: (kind: "character" | "fact", id: string) => void;
+}) {
   return (
     <div className="storyworld-board-grid">
       {board.facts.map((card) => (
@@ -140,11 +158,22 @@ function FactCards({ board }: { readonly board: StoryworldBoard }) {
             <BookOpenCheck aria-hidden size={16} />
             <strong>{card.label}</strong>
             {card.canonical ? <span className="storyworld-board-card__badge">캐논</span> : null}
+            {onEditElement ? (
+              <button className="storyworld-board-card__edit" onClick={() => onEditElement("fact", card.id)} type="button">
+                <Pencil aria-hidden size={13} /> 편집
+              </button>
+            ) : null}
           </div>
+          {card.description ? <p className="storyworld-board-card__description">{card.description}</p> : null}
           <ul className="storyworld-board-card__meta">
             <li>주체 {card.subjectLabel}</li>
             <li>키 <code>{card.key}</code></li>
           </ul>
+          {card.tags.length > 0 ? (
+            <div className="storyworld-board-card__tags">
+              {card.tags.map((tag) => <span key={tag}>{tag}</span>)}
+            </div>
+          ) : null}
         </article>
       ))}
     </div>
@@ -158,7 +187,11 @@ const GROUP_RENDERERS: Readonly<Record<StoryworldBoardElementKind, (board: Story
   fact: (board) => board.facts.length,
 };
 
-function BoardGroup({ board, kind }: { readonly board: StoryworldBoard; readonly kind: StoryworldBoardElementKind }) {
+function BoardGroup({ board, kind, onEditElement }: {
+  readonly board: StoryworldBoard;
+  readonly kind: StoryworldBoardElementKind;
+  readonly onEditElement?: (kind: "character" | "fact", id: string) => void;
+}) {
   const Icon = KIND_ICONS[kind];
   return (
     <div className="storyworld-board-group">
@@ -167,17 +200,18 @@ function BoardGroup({ board, kind }: { readonly board: StoryworldBoard; readonly
         {KIND_LABELS[kind]}
         <span>{GROUP_RENDERERS[kind](board)}</span>
       </h3>
-      {kind === "character" ? <CharacterCards board={board} /> : null}
+      {kind === "character" ? <CharacterCards board={board} onEditElement={onEditElement} /> : null}
       {kind === "scene" ? <SceneCards board={board} /> : null}
       {kind === "location" ? <LocationCards board={board} /> : null}
-      {kind === "fact" ? <FactCards board={board} /> : null}
+      {kind === "fact" ? <FactCards board={board} onEditElement={onEditElement} /> : null}
     </div>
   );
 }
 
-export function StudioStoryworldBoard({ project, onOpenData }: {
+export function StudioStoryworldBoard({ project, onOpenData, onEditElement }: {
   readonly project: StoryworldProject;
   readonly onOpenData: () => void;
+  readonly onEditElement?: (kind: "character" | "fact", id: string) => void;
 }) {
   const board = useMemo(() => buildStoryworldBoard(project), [project]);
   const [filter, setFilter] = useState<BoardFilter>("all");
@@ -229,7 +263,7 @@ export function StudioStoryworldBoard({ project, onOpenData }: {
       ) : null}
 
       <div className="storyworld-board-groups">
-        {visibleKinds.map((kind) => <BoardGroup board={board} kind={kind} key={kind} />)}
+        {visibleKinds.map((kind) => <BoardGroup board={board} kind={kind} key={kind} onEditElement={onEditElement} />)}
       </div>
     </section>
   );
