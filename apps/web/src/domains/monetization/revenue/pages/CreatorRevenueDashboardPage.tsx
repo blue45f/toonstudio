@@ -31,7 +31,7 @@ import {
 } from "../models/revenue-model";
 import { aggregateCreatorRevenue, computeSettlementBreakdown, formatKrw } from "../revenue-aggregator";
 import { RevenueChart } from "../components/RevenueChart";
-import { CountUpAmount } from "../components/CountUpAmount";
+import { CountUp } from "@/shared/components/count-up";
 import { PeriodDeltaBadge } from "../components/PeriodDeltaBadge";
 import { RevenueSpectrumBar } from "../components/RevenueSpectrumBar";
 import {
@@ -184,8 +184,11 @@ export function CreatorRevenueDashboardPage() {
               </p>
             </div>
             <p className="mt-2">
-              <CountUpAmount
-                amount={summary.totalAmount}
+              <CountUp
+                value={summary.totalAmount}
+                separator
+                suffix="원"
+                duration={0.9}
                 className="text-5xl font-bold tracking-tight tabular-nums text-fg"
               />
             </p>
@@ -212,8 +215,11 @@ export function CreatorRevenueDashboardPage() {
                 {t(sourceLabelKey(bucket.sourceId))}
               </p>
               <p className="mt-2">
-                <CountUpAmount
-                  amount={bucket.amount}
+                <CountUp
+                  value={bucket.amount}
+                  separator
+                  suffix="원"
+                  duration={0.9}
                   className="text-3xl font-bold tracking-tight tabular-nums text-fg"
                 />
               </p>
