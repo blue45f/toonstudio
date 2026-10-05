@@ -167,10 +167,7 @@ function checkNeverReferencedFacts(project: StoryworldProject): StoryworldContin
     for (const setupId of scene.setupIds ?? []) referenced.add(setupId);
     for (const payoffId of scene.payoffIds ?? []) referenced.add(payoffId);
   }
-  for (const contract of project.setupContracts ?? []) {
-    referenced.add(contract.setupId);
-    referenced.add(contract.payoffId);
-  }
+  for (const contract of project.setupContracts ?? []) referenced.add(contract.id);
   return project.facts
     .filter((fact) => !referenced.has(fact.id))
     .map((fact) => ({

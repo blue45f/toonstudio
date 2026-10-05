@@ -2,7 +2,7 @@ import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 import {
   getStudioProjectByWork,
-  type StudioArtifactRecord,
+  type StudioProjectArtifactRecord,
 } from "../project-graph/studio-project-graph-client";
 import {
   fetchServerManuscriptSnapshots,
@@ -44,7 +44,7 @@ export interface ProductionVersionActivityEntry {
 }
 
 export interface ProductionVersionActivitySource {
-  readonly artifacts: readonly StudioArtifactRecord[];
+  readonly artifacts: readonly StudioProjectArtifactRecord[];
   readonly snapshots: readonly ServerManuscriptSnapshot[];
   readonly shares: readonly ServerVersionShareLink[];
 }

@@ -49,8 +49,8 @@ describe("analyzeStoryworldContinuity", () => {
       ],
       scenes: [scene("s1", 10, {
         participantIds: [],
-        preconditions: [{ factId: "fact-other", equals: "jin" }],
-        effects: [{ factId: "fact-gate-a", set: "open" }],
+        preconditions: [{ factId: "fact-other", comparator: "equals", value: "jin" }],
+        effects: [{ factId: "fact-gate-a", op: "set", value: "open" }],
       })],
     }));
     const conflict = issues.find((issue) => issue.code === "fact-initial-value-conflict");
@@ -111,7 +111,7 @@ describe("analyzeStoryworldContinuity", () => {
       facts: [fact("fact-used"), fact("fact-orphan")],
       scenes: [scene("s1", 10, {
         participantIds: ["hero"],
-        effects: [{ factId: "fact-used", set: true }],
+        effects: [{ factId: "fact-used", op: "set", value: true }],
       })],
     }));
     expect(issues.find((issue) => issue.code === "character-never-appears")?.target)

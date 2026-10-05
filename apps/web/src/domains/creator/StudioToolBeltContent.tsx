@@ -466,6 +466,14 @@ export interface StudioToolBeltContentHandlers {
 
 export interface StudioToolBeltContentProps {
   activePage: PageState;
+  addRenderedImage: (
+    src: string,
+    width: number,
+    height: number,
+    aiProvenance?: StudioPublishAiProvenance,
+    isAnimatedGif?: boolean,
+    elementPatch?: Partial<ImageEl> & { name?: string }
+  ) => boolean;
   activeServerAiProviderLabel: string;
   activeSurfaceReviewLocked: boolean;
   activeToolbarGroup: StudioToolbarGroupId | null;

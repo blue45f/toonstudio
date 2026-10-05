@@ -119,7 +119,7 @@ describe("updateDialogueTranslationText", () => {
 
   it("그 로케일이 표시 중이면 el.text도 함께 맞춘다", () => {
     const page = makePage();
-    page.elements[0] = { ...page.elements[0], text: "Hi? Minsu" }; // en 표시 중 상태.
+    page.elements = [{ ...page.elements[0], text: "Hi? Minsu" }, ...page.elements.slice(1)]; // en 표시 중 상태.
     const next = updateDialogueTranslationText([page], {
       pageId: "p1",
       elId: "b1",
@@ -144,7 +144,7 @@ describe("updateDialogueTranslationText", () => {
 
   it("번역문을 비우면 그 로케일이 사라져 미번역으로 돌아가고, 표시 중이면 원문으로 되돌린다", () => {
     const page = makePage();
-    page.elements[0] = { ...page.elements[0], text: "Hi? Minsu" };
+    page.elements = [{ ...page.elements[0], text: "Hi? Minsu" }, ...page.elements.slice(1)];
     const next = updateDialogueTranslationText([page], {
       pageId: "p1",
       elId: "b1",
@@ -172,7 +172,7 @@ describe("updateDialogueTranslationText", () => {
 
     // 다른 로케일이 표시 중이면 el.text는 그 로케일 텍스트라 원문으로 기록하지 않는다.
     const page2 = makePage();
-    page2.elements[1] = { ...page2.elements[1], text: "ミンスの朝" };
+    page2.elements = [...page2.elements.slice(0, 1), { ...page2.elements[1], text: "ミンスの朝" }, ...page2.elements.slice(2)];
     const unseeded = updateDialogueTranslationText([page2], {
       pageId: "p1",
       elId: "t1",

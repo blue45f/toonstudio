@@ -192,7 +192,7 @@ export function updateDialogueTranslationText<P extends DialogueReviewPageLike>(
       if (Object.keys(entry).length === 0) delete dialogueI18n[edit.elId];
       else dialogueI18n[edit.elId] = entry;
     } else {
-      const seedSource =
+      const seedSource: Record<string, string> =
         existingEntry?.[SOURCE_LOCALE] === undefined && edit.visibleLocale === SOURCE_LOCALE
           ? { [SOURCE_LOCALE]: el.text }
           : {};

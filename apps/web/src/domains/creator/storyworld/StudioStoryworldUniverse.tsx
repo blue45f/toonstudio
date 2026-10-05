@@ -21,7 +21,6 @@ import {
   designateStoryworldSharedUsage,
   joinStoryworldUniverse,
   leaveStoryworldUniverse,
-  parseStoryworldTagInput,
   removeStoryworldSharedElement,
   revokeStoryworldSharedUsage,
   updateStoryworldSharedElement,
@@ -31,6 +30,7 @@ import {
   type StoryworldUniverse,
   type StoryworldUniverseRegistry,
 } from "./studio-storyworld-universe";
+import { parseStoryworldTagInput } from "./studio-storyworld-editing";
 import { loadStoryworldUniverseRegistry, saveStoryworldUniverseRegistry } from "./universe-store";
 
 const SHARED_KIND_LABELS: Readonly<Record<StoryworldSharedElementKind, string>> = {

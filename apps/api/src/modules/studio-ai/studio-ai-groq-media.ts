@@ -162,7 +162,7 @@ export async function transcribeWithGroq(
   if (input.audio) {
     form.append(
       "file",
-      new Blob([input.audio.bytes], { type: input.audio.contentType }),
+      new Blob([new Uint8Array(input.audio.bytes)], { type: input.audio.contentType }),
       input.audio.filename,
     );
   } else if (input.audioUrl) {
