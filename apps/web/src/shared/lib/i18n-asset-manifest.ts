@@ -6,5 +6,5 @@ export const STUDIO_I18N_NAMESPACES = [
   "aiNotice", "aiToolPopover", "assetMenu", "background", "bubble", "bubbleTail", "canvas", "character", "commandBar", "commandSearch", "community", "creativeModes", "customFonts", "hub", "imageAdjustments", "mainMenu", "mobileDock", "modeSwitch", "quickShape", "quickStart", "settings", "shortcuts", "toolsCompanion", "tutorial", "tutorialTry", "vrmPoser",
 ] as const;
 export const ADMIN_I18N_NAMESPACES = [
-  "announcements", "audit", "auditLogs", "campaigns", "commerce", "community", "console", "dashboard", "desc", "gate", "members", "ops", "palette", "plans", "promos", "refresh", "reports", "revenue", "role", "security", "splitRoutes", "stats", "supporters", "tabs", "title", "traffic", "ui",
+  "announcements", "audit", "auditLogs", "campaigns", "commerce", "community", "console", "dashboard", "desc", "gate", "members", "membership", "membershipOps", "ops", "palette", "plans", "promos", "refresh", "reports", "revenue", "role", "security", "splitRoutes", "stats", "supporters", "tabs", "title", "traffic", "ui",
 ] as const;

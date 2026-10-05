@@ -5,6 +5,9 @@ import { adminFetch, type AdminApiError } from "./admin-client";
 import { AdminNotice, AdminSpinner } from "./admin-ui";
 import { adminButtonClass } from "./admin-ui-utils";
 
+import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
+
 type PolicyChange = {
   revision: number | string;
   key: string;
@@ -30,6 +33,7 @@ type PendingRecovery = {
 };
 
 export function AdminMembershipOperations({ uid }: { uid: string }) {
+  const t = useT();
   const [history, setHistory] = useState<PolicyChange[] | null>(null);
   const [recoveries, setRecoveries] = useState<PendingRecovery[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +66,7 @@ export function AdminMembershipOperations({ uid }: { uid: string }) {
     if (error) {
       return (
         <AdminNotice
-          title="멤버십 운영 이력 오류"
+          title={t("admin.membershipOps.errorTitle")}
           body={error}
         />
       );
@@ -76,10 +80,10 @@ export function AdminMembershipOperations({ uid }: { uid: string }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="flex items-center gap-2 font-semibold text-fg">
-              <History size={16} /> 정책 변경 이력
+              <History size={16} /> {t("admin.membershipOps.historyTitle")}
             </h3>
             <p className="mt-1 text-xs leading-5 text-fg-3">
-              override의 현재값만 보지 않고 DB가 기록한 before/after revision을 확인합니다.
+              {t("admin.membershipOps.historyDesc")}
             </p>
           </div>
           <button
@@ -87,7 +91,7 @@ export function AdminMembershipOperations({ uid }: { uid: string }) {
             className={adminButtonClass("ghost")}
             onClick={() => void load()}
           >
-            <RefreshCw size={13} /> 새로고침
+            <RefreshCw size={13} /> {t("admin.membershipOps.refresh")}
           </button>
         </div>
 
@@ -95,7 +99,7 @@ export function AdminMembershipOperations({ uid }: { uid: string }) {
         <div className="mt-4 max-h-80 space-y-2 overflow-auto pr-1">
           {history.length === 0 ? (
             <p className="rounded-xl bg-card/45 p-3 text-xs text-fg-3">
-              아직 정책 override 변경 이력이 없습니다.
+              {t("admin.membershipOps.historyEmpty")}
             </p>
           ) : (
             history.map((item) => (
@@ -111,7 +115,7 @@ export function AdminMembershipOperations({ uid }: { uid: string }) {
                   {JSON.stringify(item.beforeValue)} → {JSON.stringify(item.afterValue)}
                 </p>
                 <p className="mt-1 text-[0.68rem] text-fg-3">
-                  {new Date(item.changedAt).toLocaleString("ko-KR")}
+                  {new Date(item.changedAt).toLocaleString(getCurrentUiLocale())}
                   {item.changedBy ? ` · ${item.changedBy}` : ""}
                 </p>
               </div>
@@ -122,16 +126,15 @@ export function AdminMembershipOperations({ uid }: { uid: string }) {
 
       <article className="rounded-2xl border border-line bg-panel/55 p-4">
         <h3 className="flex items-center gap-2 font-semibold text-fg">
-          <AlertTriangle size={16} /> 미회수 활동 포인트
+          <AlertTriangle size={16} /> {t("admin.membershipOps.recoveryTitle")}
         </h3>
         <p className="mt-1 text-xs leading-5 text-fg-3">
-          삭제·운영조치 시 잔액 부족으로 즉시 회수하지 못한 포인트입니다.
-          이후 Reward Point 지급 시 자동 상계됩니다.
+          {t("admin.membershipOps.recoveryDesc")}
         </p>
         <div className="mt-4 max-h-80 space-y-2 overflow-auto pr-1">
           {recoveries.length === 0 ? (
             <p className="rounded-xl bg-card/45 p-3 text-xs text-good">
-              미회수 포인트가 없습니다.
+              {t("admin.membershipOps.recoveryEmpty")}
             </p>
           ) : (
             recoveries.map((item) => (
@@ -142,16 +145,15 @@ export function AdminMembershipOperations({ uid }: { uid: string }) {
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-fg">{item.userId}</span>
                   <span className="font-black text-warn">
-                    {Number(item.pendingAmount).toLocaleString("ko-KR")} P
+                    {Number(item.pendingAmount).toLocaleString(getCurrentUiLocale())} P
                   </span>
                 </div>
                 <p className="mt-1 text-fg-3">
                   {item.activity} · {item.reason}
                 </p>
                 <p className="mt-1 text-[0.68rem] text-fg-3">
-                  요청 {Number(item.requestedAmount).toLocaleString("ko-KR")} P /
-                  회수 {Number(item.reversedAmount).toLocaleString("ko-KR")} P ·
-                  {new Date(item.createdAt).toLocaleString("ko-KR")}
+                  {t("admin.membershipOps.recoveryAmounts", { requested: Number(item.requestedAmount).toLocaleString(getCurrentUiLocale()), reversed: Number(item.reversedAmount).toLocaleString(getCurrentUiLocale()) })} ·
+                  {new Date(item.createdAt).toLocaleString(getCurrentUiLocale())}
                 </p>
               </div>
             ))

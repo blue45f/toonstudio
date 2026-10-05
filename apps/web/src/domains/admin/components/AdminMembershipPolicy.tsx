@@ -6,6 +6,8 @@ import { AdminNotice, AdminSpinner, adminInputClass } from "./admin-ui";
 import { adminButtonClass } from "./admin-ui-utils";
 import { formatNumber } from "@toonstudio/core/format";
 
+import { useT } from "@/shared/lib/i18n";
+
 type PolicyState = {
   economy: {
     mode: string;
@@ -69,6 +71,7 @@ const creatorLevels = [
 const trustLevels = ["new", "verified", "trusted", "restricted"];
 const sellerLevels = ["none", "starter", "verified", "professional"];
 export function AdminMembershipPolicy({ uid }: { uid: string }) {
+  const t = useT();
   const [policy, setPolicy] = useState<PolicyState | null>(null);
   const [policyError, setPolicyError] = useState<string | null>(null);
   const [targetUserId, setTargetUserId] = useState("");
@@ -76,7 +79,7 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
   const [userError, setUserError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [delta, setDelta] = useState("100");
-  const [reason, setReason] = useState("운영 보정");
+  const [reason, setReason] = useState(() => t("admin.membership.defaultReason"));
   const [planId, setPlanId] = useState("creator");
   const [durationDays, setDurationDays] = useState("30");
   const [creatorLevel, setCreatorLevel] = useState("new");
@@ -154,7 +157,7 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
         requestKey: crypto.randomUUID(),
         reason: reason.trim(),
       },
-      "포인트 조정을 반영했습니다.",
+      t("admin.membership.adjustSuccess"),
     );
   };
   const applyMembership = () => {
@@ -168,7 +171,7 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
         requestKey: crypto.randomUUID(),
         reason: "관리자 멤버십 부여",
       },
-      "멤버십을 부여했습니다.",
+      t("admin.membership.grantSuccess"),
     );
   };
 
@@ -183,7 +186,7 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
         sellerLevel,
         trustScore: Number(trustScore),
       },
-      "회원 등급을 갱신했습니다.",
+      t("admin.membership.levelsSuccess"),
     );
   };
   const applyOverride = async () => {
@@ -191,7 +194,7 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
     try {
       value = JSON.parse(overrideJson);
     } catch {
-      setPolicyError("정책 JSON 형식을 확인해 주세요.");
+      setPolicyError(t("admin.membership.overrideJsonError"));
       return;
     }
     setBusy(true);
@@ -206,7 +209,7 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
           body: JSON.stringify({ value, active: true }),
         },
       );
-      setMessage("정책 오버라이드를 저장했습니다.");
+      setMessage(t("admin.membership.overrideSuccess"));
       await loadPolicy();
     } catch (error) {
       setPolicyError((error as AdminApiError).message);
@@ -224,10 +227,10 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
             MEMBERSHIP POLICY ENGINE
           </p>
           <h2 className="mt-1 text-xl font-bold text-fg">
-            멤버십 · 포인트 · 회원등급 운영
+            {t("admin.membership.title")}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-3">
-            베타 권한, 활동 포인트 원장, 신뢰·판매자 등급을 중앙 정책에서 관리합니다.
+            {t("admin.membership.desc")}
           </p>
         </div>
         <button
@@ -235,41 +238,41 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
           className={adminButtonClass("ghost")}
           onClick={() => void loadPolicy()}
         >
-          <RefreshCw size={14} /> 정책 새로고침
+          <RefreshCw size={14} /> {t("admin.membership.refreshPolicy")}
         </button>
       </div>
 
       {policyError ? (
         <div className="mt-4">
-          <AdminNotice title="멤버십 정책 오류" body={policyError} />
+          <AdminNotice title={t("admin.membership.policyErrorTitle")} body={policyError} />
         </div>
       ) : null}
       {policy ? (
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           <article className="rounded-2xl border border-line bg-panel/55 p-4">
             <ShieldCheck size={18} className="text-accent" />
-            <h3 className="mt-3 font-semibold text-fg">경제 정책</h3>
+            <h3 className="mt-3 font-semibold text-fg">{t("admin.membership.economyTitle")}</h3>
             <dl className="mt-3 space-y-2 text-xs">
               <div className="flex justify-between gap-3">
-                <dt className="text-fg-3">운영 모드</dt>
+                <dt className="text-fg-3">{t("admin.membership.economyMode")}</dt>
                 <dd className="font-semibold text-fg">{policy.economy.mode}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-fg-3">실결제</dt>
+                <dt className="text-fg-3">{t("admin.membership.economyPayments")}</dt>
                 <dd className="font-semibold text-fg">
-                  {policy.economy.paymentsEnabled ? "활성" : "비활성"}
+                  {policy.economy.paymentsEnabled ? t("admin.membership.enabled") : t("admin.membership.disabled")}
                 </dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-fg-3">크레딧 구매</dt>
+                <dt className="text-fg-3">{t("admin.membership.economyCreditPurchases")}</dt>
                 <dd className="font-semibold text-fg">
-                  {policy.economy.creditPurchasesEnabled ? "활성" : "비활성"}
+                  {policy.economy.creditPurchasesEnabled ? t("admin.membership.enabled") : t("admin.membership.disabled")}
                 </dd>
               </div>
             </dl>
           </article>
           <article className="rounded-2xl border border-line bg-panel/55 p-4 lg:col-span-2">
-            <h3 className="font-semibold text-fg">활동 포인트 정책</h3>
+            <h3 className="font-semibold text-fg">{t("admin.membership.rewardsTitle")}</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {policy.activityRewards.map((reward) => (
                 <div
@@ -281,7 +284,7 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
                     <span className="font-bold text-accent">+{reward.points} P</span>
                   </div>
                   <p className="mt-1 text-fg-3">
-                    {reward.dailyGrantLimit}회/일 · {reward.cooldownSeconds}초
+                    {t("admin.membership.rewardCadence", { limit: reward.dailyGrantLimit, seconds: reward.cooldownSeconds })}
                   </p>
                 </div>
               ))}
@@ -293,21 +296,21 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
       <div className="mt-5 grid gap-4 xl:grid-cols-2">
         <article className="rounded-2xl border border-line bg-panel/55 p-4">
           <h3 className="flex items-center gap-2 font-semibold text-fg">
-            <Search size={16} /> 사용자 운영
+            <Search size={16} /> {t("admin.membership.userOpsTitle")}
           </h3>
           <div className="mt-3 flex gap-2">
             <input
               className={adminInputClass}
               value={targetUserId}
               onChange={(event) => setTargetUserId(event.target.value)}
-              placeholder="사용자 ID"
+              placeholder={t("admin.membership.userIdPlaceholder")}
             />
             <button
               type="button"
               className={adminButtonClass("ghost")}
               onClick={() => void loadUser()}
             >
-              조회
+              {t("admin.membership.lookup")}
             </button>
           </div>
 
@@ -318,8 +321,8 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
             <div className="mt-4 space-y-4">
               <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                 {[
-                  ["멤버십", user.membership.planId],
-                  ["포인트", formatNumber(user.wallet.points.available) + " P"],
+                  [t("admin.membership.statMembership"), user.membership.planId],
+                  [t("admin.membership.statPoints"), formatNumber(user.wallet.points.available) + " P"],
                   ["Credit", formatNumber(user.wallet.studioCredits.available) + " C"],
                   ["Trust", user.levels.trustLevel],
                 ].map(([label, value]) => (
@@ -330,25 +333,25 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
                 ))}
               </div>
               <div>
-                <p className="mb-2 text-xs font-semibold text-fg-2">포인트 지급/회수</p>
+                <p className="mb-2 text-xs font-semibold text-fg-2">{t("admin.membership.pointsAdjustTitle")}</p>
                 <div className="grid gap-2 sm:grid-cols-[7rem_1fr_auto]">
                   <input type="number" className={adminInputClass} value={delta}
                     onChange={(event) => setDelta(event.target.value)}
-                    aria-label="포인트 조정량" />
+                    aria-label={t("admin.membership.pointsDeltaLabel")} />
                   <input className={adminInputClass} value={reason}
                     onChange={(event) => setReason(event.target.value)}
-                    placeholder="조정 사유" />
+                    placeholder={t("admin.membership.adjustReasonPlaceholder")} />
                   <button type="button" className={adminButtonClass("accent")}
                     disabled={busy || Number(delta) === 0}
-                    onClick={applyPointAdjustment}>반영</button>
+                    onClick={applyPointAdjustment}>{t("admin.membership.apply")}</button>
                 </div>
                 <p className="mt-1 text-[0.68rem] text-fg-3">
-                  음수 회수도 기존 거래를 수정하지 않고 adjustment 원장을 추가합니다.
+                  {t("admin.membership.pointsAdjustNote")}
                 </p>
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-semibold text-fg-2">멤버십 부여</p>
+                <p className="mb-2 text-xs font-semibold text-fg-2">{t("admin.membership.grantTitle")}</p>
                 <div className="grid gap-2 sm:grid-cols-[1fr_8rem_auto]">
                   <select className={adminInputClass} value={planId}
                     onChange={(event) => setPlanId(event.target.value)}>
@@ -359,14 +362,14 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
                   <input type="number" min={1} className={adminInputClass}
                     value={durationDays}
                     onChange={(event) => setDurationDays(event.target.value)}
-                    aria-label="멤버십 일수" />
+                    aria-label={t("admin.membership.durationLabel")} />
                   <button type="button" className={adminButtonClass("accent")}
-                    disabled={busy} onClick={applyMembership}>부여</button>
+                    disabled={busy} onClick={applyMembership}>{t("admin.membership.grant")}</button>
                 </div>
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-semibold text-fg-2">회원 등급</p>
+                <p className="mb-2 text-xs font-semibold text-fg-2">{t("admin.membership.levelsTitle")}</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <select className={adminInputClass} value={creatorLevel}
                     onChange={(event) => setCreatorLevel(event.target.value)}>
@@ -389,11 +392,11 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
                   <input type="number" min={0} max={1000}
                     className={adminInputClass} value={trustScore}
                     onChange={(event) => setTrustScore(event.target.value)}
-                    aria-label="신뢰 점수" />
+                    aria-label={t("admin.membership.trustScoreLabel")} />
                 </div>
                 <button type="button"
                   className={adminButtonClass("ghost") + " mt-2"}
-                  disabled={busy} onClick={applyLevels}>등급 저장</button>
+                  disabled={busy} onClick={applyLevels}>{t("admin.membership.saveLevels")}</button>
               </div>
             </div>
           ) : null}
@@ -401,19 +404,18 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
 
         <article className="rounded-2xl border border-line bg-panel/55 p-4">
           <h3 className="flex items-center gap-2 font-semibold text-fg">
-            <SlidersHorizontal size={16} /> 정책 오버라이드
+            <SlidersHorizontal size={16} /> {t("admin.membership.overrideTitle")}
           </h3>
           <p className="mt-2 text-xs leading-5 text-fg-3">
-            코드 배포 없이 plan:, activity:, credit: 정책 값을 조정합니다.
-            변경 내역은 관리자 감사 로그에 남습니다.
+            {t("admin.membership.overrideDesc")}
           </p>
           <label className="mt-4 block text-xs font-semibold text-fg-2">
-            정책 키
+            {t("admin.membership.overrideKey")}
             <input className={adminInputClass + " mt-1"} value={overrideKey}
               onChange={(event) => setOverrideKey(event.target.value)} />
           </label>
           <label className="mt-3 block text-xs font-semibold text-fg-2">
-            JSON 값
+            {t("admin.membership.overrideValue")}
             <textarea className={adminInputClass + " mt-1 min-h-36 font-mono text-xs"}
               value={overrideJson}
               onChange={(event) => setOverrideJson(event.target.value)} />
@@ -421,11 +423,11 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
           <button type="button"
             className={adminButtonClass("accent") + " mt-3"}
             disabled={busy || !overrideKey.trim()}
-            onClick={() => void applyOverride()}>정책 저장</button>
+            onClick={() => void applyOverride()}>{t("admin.membership.savePolicy")}</button>
 
           {policy?.overrides.length ? (
             <div className="mt-5 space-y-2">
-              <p className="text-xs font-semibold text-fg-2">활성 오버라이드</p>
+              <p className="text-xs font-semibold text-fg-2">{t("admin.membership.activeOverrides")}</p>
               {policy.overrides.map((override) => (
                 <div key={override.key}
                   className="rounded-xl border border-line bg-card/45 px-3 py-2 text-xs">
