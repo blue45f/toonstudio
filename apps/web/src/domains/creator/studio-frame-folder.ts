@@ -490,6 +490,155 @@ export function sharedGutterSegmentKey(segment: SharedGutterSegment): string {
   return `${segment.axis}:${segment.frameAId}:${segment.frameBId}`;
 }
 
+/** Stable coalesce key for a vertical-gap drag session (CSP-style paneling). */
+export function verticalGapDragKey(segment: SharedGutterSegment): string {
+  return `vertical-gap:${sharedGutterSegmentKey(segment)}`;
+}
+
+export interface VerticalGapDragPlan {
+  /** Frames that translate with the gap (frameB + every frame stacked at/below it). */
+  readonly framePatches: readonly FrameBoxPatch[];
+  /** Non-frame elements that translate (children of moved frames + loose elements below). */
+  readonly elementTranslates: readonly ElementTranslatePatch[];
+  /** Delta actually applied after clamping (never below -gap, so frames never overlap). */
+  readonly appliedDelta: number;
+  /** Gap width between frameA's bottom edge and frameB's top edge after the drag. */
+  readonly nextGap: number;
+}
+
+function emptyVerticalGapPlan(gap: number): VerticalGapDragPlan {
+  return { framePatches: [], elementTranslates: [], appliedDelta: 0, nextGap: gap };
+}
+
+/**
+ * Plan a CSP Ver.2.0-style vertical paneling drag: dragging the horizontal gap between two
+ * stacked frames changes the gap itself. The top frame (frameA) stays put; the bottom frame
+ * (frameB) and every frame stacked at or below it translate together, and their children
+ * reflow with them. Loose (unframed) elements below the gap inside the shared column span
+ * translate too. This is the complement of the shared-gutter co-edit above, which resizes
+ * both frames while preserving the gap — here the frames keep their sizes and the gap moves.
+ *
+ * Only horizontal segments (axis "h") describe a vertical gap; other axes return null.
+ * The drag is clamped so the gap never goes negative (frameB never crosses into frameA).
+ */
+export function planVerticalGapDrag(input: {
+  readonly segment: SharedGutterSegment;
+  readonly frames: readonly FrameFolderFrameLike[];
+  readonly delta: number;
+  readonly elements?: readonly SharedGutterDragElementLike[];
+}): VerticalGapDragPlan | null {
+  const { segment } = input;
+  if (segment.axis !== "h") return null;
+  const frameA = input.frames.find((frame) => frame.id === segment.frameAId);
+  const frameB = input.frames.find((frame) => frame.id === segment.frameBId);
+  if (!frameA || !frameB) return null;
+  if (!Number.isFinite(input.delta)) return emptyVerticalGapPlan(segment.gap);
+
+  const applied = Math.max(-segment.gap, input.delta);
+  if (applied === 0) return emptyVerticalGapPlan(segment.gap);
+
+  const epsilon = FRAME_FOLDER_SHARED_GUTTER_EPSILON_PX;
+  const stackTop = frameB.y;
+  // frameB always moves. Other frames move only when stacked at/below frameB *and* sharing
+  // the gutter's column span, so a side-by-side column at the same height is not dragged along.
+  const movedFrames = input.frames.filter((frame) => {
+    if (frame.id === frameA.id) return false;
+    if (frame.y < stackTop - epsilon) return false;
+    if (frame.id === frameB.id) return true;
+    const overlap = rangeOverlap(frame.x, frame.x + frame.width, segment.from, segment.to);
+    return overlap !== null && overlap.length >= FRAME_FOLDER_SHARED_GUTTER_MIN_OVERLAP_PX;
+  });
+  const movedFrameIds = new Set(movedFrames.map((frame) => frame.id));
+  const framePatches = movedFrames.map((frame) => {
+    const patch = snapshotFramePatch(frame);
+    return { ...patch, y: Math.round((frame.y + applied) * 100) / 100 };
+  });
+
+  const elementTranslates: ElementTranslatePatch[] = [];
+  for (const el of input.elements ?? []) {
+    if (el.hidden || el.type === "frame" || movedFrameIds.has(el.id)) continue;
+    if (movedFrames.some((frame) => frameCenterInside(el, frame))) {
+      elementTranslates.push({ id: el.id, dx: 0, dy: applied });
+      continue;
+    }
+    // Elements owned by a frame that does not move stay with that frame.
+    if (input.frames.some((frame) => !movedFrameIds.has(frame.id) && frameCenterInside(el, frame))) {
+      continue;
+    }
+    // Loose element below the gap within the shared column span moves with the stack.
+    const bounds = elementBounds(el);
+    if (!bounds) continue;
+    const cx = bounds.x + bounds.width / 2;
+    const cy = bounds.y + bounds.height / 2;
+    if (cy >= stackTop - epsilon && cx >= segment.from - epsilon && cx <= segment.to + epsilon) {
+      elementTranslates.push({ id: el.id, dx: 0, dy: applied });
+    }
+  }
+
+  return {
+    framePatches,
+    elementTranslates,
+    appliedDelta: applied,
+    nextGap: Math.round((segment.gap + applied) * 100) / 100,
+  };
+}
+
+function elementBounds(
+  el: SharedGutterDragElementLike
+): { x: number; y: number; width: number; height: number } | null {
+  let x = el.x;
+  let y = el.y;
+  let w = el.width ?? 0;
+  let h = el.height ?? 0;
+  if (el.type === "draw" && el.points && el.points.length >= 2) {
+    let minX = el.points[0]!;
+    let minY = el.points[1]!;
+    let maxX = minX;
+    let maxY = minY;
+    for (let i = 2; i < el.points.length; i += 2) {
+      const px = el.points[i]!;
+      const py = el.points[i + 1]!;
+      if (px < minX) minX = px;
+      else if (px > maxX) maxX = px;
+      if (py < minY) minY = py;
+      else if (py > maxY) maxY = py;
+    }
+    x = minX;
+    y = minY;
+    w = maxX - minX;
+    h = maxY - minY;
+  }
+  if (
+    x === undefined ||
+    y === undefined ||
+    !Number.isFinite(x) ||
+    !Number.isFinite(y) ||
+    !Number.isFinite(w) ||
+    !Number.isFinite(h)
+  ) {
+    return null;
+  }
+  return { x, y, width: w, height: h };
+}
+
+/**
+ * Apply a vertical-gap plan onto a flat element list (frames translated, children reflowed).
+ * Reuses the shared-gutter applier: frame patches carry the translated y, translates carry dy.
+ * Pure: returns a new array; unchanged elements keep identity.
+ */
+export function applyVerticalGapDragPlan<T extends SharedGutterDragElementLike>(
+  elements: readonly T[],
+  plan: VerticalGapDragPlan
+): readonly T[] {
+  if (plan.appliedDelta === 0) return elements;
+  return applySharedGutterDragPlan(elements, {
+    framePatches: plan.framePatches,
+    appliedDelta: plan.appliedDelta,
+    nextSegmentPos: 0,
+    childTranslates: plan.elementTranslates,
+  });
+}
+
 function freezeGroup(group: LayerGroup): LayerGroup {
   return Object.freeze({ ...group });
 }
@@ -501,6 +650,23 @@ function freezeGroup(group: LayerGroup): LayerGroup {
 export function formatFrameFolderGroupName(frameLabel: string): string {
   const trimmed = frameLabel.trim().slice(0, 120);
   return trimmed.length > 0 ? `컷 폴더 · ${trimmed}` : "컷 폴더";
+}
+
+/**
+ * Create the frame folder that is born together with a newly created cut (CSP frame-border
+ * contract: drawing a frame creates its folder + mask in the same action). The folder starts
+ * empty — layers drawn or moved into the cut join it afterwards, and the panel mask itself is
+ * the frame's clip (`containingPanel` + `noClip`), not group membership. Returns null when the
+ * caller-supplied group id is empty so a broken id can never produce an unaddressable folder.
+ */
+export function createFrameFolderGroupForNewFrame(input: {
+  readonly frameLabel: string;
+  readonly groupId: string;
+}): LayerGroup | null {
+  if (!input.groupId) return null;
+  return freezeGroup(
+    createLayerGroup(input.groupId, formatFrameFolderGroupName(input.frameLabel))
+  );
 }
 
 /**

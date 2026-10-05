@@ -139,6 +139,27 @@ describe("Studio BG3D runtime to document adapter", () => {
     expect(refreshed.document.nodes[0]?.visible).toBe(false);
   });
 
+  it("carries linkedSourceId through runtime → document → runtime round-trips", () => {
+    const adapted = adaptStudioBg3dRuntimeToDocument({
+      primitives: [
+        primitive("root-node"),
+        { ...primitive("clone-node", 2), linkedSourceId: "root-node" },
+      ],
+      customModels: [],
+      attachmentByStorageModelId: new Map(),
+    });
+    expect(adapted.diagnostics).toEqual([]);
+    expect(adapted.document.nodes[1]?.linkedSourceId).toBe("root-node");
+
+    const hydrated = hydrateStudioBg3dDocumentToRuntime({
+      document: adapted.document,
+      storageModelIdByAttachmentId: new Map(),
+    });
+    expect(hydrated.ok).toBe(true);
+    expect(hydrated.primitives[1]?.linkedSourceId).toBe("root-node");
+    expect(hydrated.primitives[0]?.linkedSourceId).toBeUndefined();
+  });
+
   it("fails closed instead of silently repairing a shot that references a removed runtime node", () => {
     const source = adaptStudioBg3dRuntimeToDocument({
       primitives: [primitive("kept-node"), primitive("removed-node", 2)],

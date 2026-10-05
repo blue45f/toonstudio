@@ -81,4 +81,26 @@ describe("useStudioBg3dCanonicalDocumentState", () => {
     ]);
     expect(result.current.canonicalRevision).toBe(2);
   });
+
+  it("syncs a linked clone's appearance from its root on every commit", () => {
+    const { result } = renderHook(() => useStudioBg3dCanonicalDocumentState({
+      initialDocument: DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+    }));
+    const root = { ...primitive("root"), color: "#ff0000" };
+    const clone = { ...primitive("clone"), color: "#00ff00", linkedSourceId: "root" };
+    act(() => {
+      result.current.replaceCanonicalDocumentState({ primitives: [root, clone] });
+    });
+    // The clone was born stale on purpose: the fence syncs it to the root immediately.
+    expect(result.current.liveSceneRef.current.primitives[1]?.color).toBe("#ff0000");
+
+    act(() => {
+      result.current.replaceCanonicalDocumentState({
+        primitives: [{ ...root, color: "#0000ff" }, clone],
+      });
+    });
+    expect(result.current.liveSceneRef.current.primitives[1]?.color).toBe("#0000ff");
+    // The clone keeps its own transform and link.
+    expect(result.current.liveSceneRef.current.primitives[1]?.linkedSourceId).toBe("root");
+  });
 });

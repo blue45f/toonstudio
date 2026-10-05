@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   applySharedGutterDragPlan,
+  applyVerticalGapDragPlan,
+  createFrameFolderGroupForNewFrame,
   formatFrameFolderGroupName,
   planBindSelectionToFrameFolder,
   planSharedGutterDrag,
   planSharedGutterSegments,
+  planVerticalGapDrag,
+  verticalGapDragKey,
 } from "./studio-frame-folder";
 
 type Item = { id: string; groupId?: string; noClip?: boolean };
@@ -17,6 +21,25 @@ describe("formatFrameFolderGroupName", () => {
 
   it("falls back when the frame label is empty", () => {
     expect(formatFrameFolderGroupName("   ")).toBe("컷 폴더");
+  });
+});
+
+describe("createFrameFolderGroupForNewFrame", () => {
+  it("creates an empty cut folder named after the frame label", () => {
+    const group = createFrameFolderGroupForNewFrame({ frameLabel: "1컷", groupId: "g-new" });
+    expect(group).not.toBeNull();
+    expect(group!.id).toBe("g-new");
+    expect(group!.name).toBe("컷 폴더 · 1컷");
+    expect(Object.isFrozen(group)).toBe(true);
+  });
+
+  it("falls back to the bare folder name for an unlabeled frame", () => {
+    const group = createFrameFolderGroupForNewFrame({ frameLabel: "  ", groupId: "g-new" });
+    expect(group!.name).toBe("컷 폴더");
+  });
+
+  it("returns null for an empty group id", () => {
+    expect(createFrameFolderGroupForNewFrame({ frameLabel: "컷", groupId: "" })).toBeNull();
   });
 });
 
@@ -230,6 +253,86 @@ describe("planSharedGutterDrag + child reflow", () => {
     expect(plan).not.toBeNull();
     expect(plan!.appliedDelta).toBe(10);
     expect(plan!.framePatches).toHaveLength(2);
+  });
+});
+
+describe("planVerticalGapDrag (세로 공백 드래그 패널링)", () => {
+  const top = { id: "top", x: 0, y: 0, width: 200, height: 100 };
+  const bottom = { id: "bottom", x: 0, y: 124, width: 200, height: 80 };
+  const third = { id: "third", x: 0, y: 228, width: 200, height: 60 };
+  const side = { id: "side", x: 400, y: 124, width: 100, height: 80 };
+  const frames = [top, bottom, third, side];
+  const segment = planSharedGutterSegments([top, bottom]).filter(
+    (candidate) => candidate.axis === "h"
+  )[0]!;
+
+  it("widens the gap: top stays, the whole stack below translates, sizes preserved", () => {
+    const plan = planVerticalGapDrag({
+      segment,
+      frames,
+      delta: 30,
+      elements: [
+        { id: "ink-top", type: "image", x: 10, y: 10, width: 40, height: 40 },
+        { id: "ink-bottom", type: "image", x: 10, y: 140, width: 40, height: 40 },
+        { id: "loose-below", type: "image", x: 60, y: 300, width: 30, height: 30 },
+        { id: "loose-outside", type: "image", x: 420, y: 300, width: 30, height: 30 },
+      ],
+    });
+    expect(plan).not.toBeNull();
+    expect(plan!.appliedDelta).toBe(30);
+    expect(plan!.nextGap).toBe(54);
+    const byId = new Map(plan!.framePatches.map((patch) => [patch.id, patch]));
+    expect(byId.get("bottom")).toMatchObject({ y: 154, height: 80 });
+    expect(byId.get("third")).toMatchObject({ y: 258, height: 60 });
+    expect(byId.has("top")).toBe(false);
+    expect(byId.has("side")).toBe(false);
+    expect(plan!.elementTranslates).toEqual([
+      { id: "ink-bottom", dx: 0, dy: 30 },
+      { id: "loose-below", dx: 0, dy: 30 },
+    ]);
+
+    const next = applyVerticalGapDragPlan(
+      [
+        top,
+        bottom,
+        third,
+        side,
+        { id: "ink-bottom", type: "image", x: 10, y: 140, width: 40, height: 40 },
+      ],
+      plan!
+    );
+    expect(next.find((el) => el.id === "top")).toBe(top);
+    expect(next.find((el) => el.id === "side")).toBe(side);
+    expect(next.find((el) => el.id === "bottom")).toMatchObject({ y: 154 });
+    expect(next.find((el) => el.id === "ink-bottom")).toMatchObject({ y: 170 });
+  });
+
+  it("clamps shrinking at gap zero so frames never overlap", () => {
+    const plan = planVerticalGapDrag({ segment, frames, delta: -100 });
+    expect(plan!.appliedDelta).toBe(-24);
+    expect(plan!.nextGap).toBe(0);
+    const bottomPatch = plan!.framePatches.find((patch) => patch.id === "bottom")!;
+    expect(bottomPatch.y).toBe(100); // top frame bottom edge
+  });
+
+  it("returns null for non-horizontal segments and missing frames", () => {
+    const vertical = planSharedGutterSegments([
+      { id: "a", x: 0, y: 0, width: 100, height: 200 },
+      { id: "b", x: 124, y: 0, width: 100, height: 200 },
+    ])[0]!;
+    expect(planVerticalGapDrag({ segment: vertical, frames, delta: 10 })).toBeNull();
+    expect(planVerticalGapDrag({ segment, frames: [top], delta: 10 })).toBeNull();
+  });
+
+  it("zero delta is an identity plan", () => {
+    const plan = planVerticalGapDrag({ segment, frames, delta: 0 });
+    expect(plan!.appliedDelta).toBe(0);
+    const elements = [top, bottom];
+    expect(applyVerticalGapDragPlan(elements, plan!)).toBe(elements);
+  });
+
+  it("exposes a stable coalesce key distinct from the co-edit key", () => {
+    expect(verticalGapDragKey(segment)).toBe(`vertical-gap:h:top:bottom`);
   });
 });
 

@@ -536,9 +536,13 @@ import {
 } from "./studio-frame-animation";
 import {
   applySharedGutterDragPlan,
+  applyVerticalGapDragPlan,
+  createFrameFolderGroupForNewFrame,
   planSharedGutterDrag,
   planSharedGutterSegments,
+  planVerticalGapDrag,
   sharedGutterSegmentKey,
+  verticalGapDragKey,
   type SharedGutterSegment,
 } from "./studio-frame-folder";
 import {
@@ -9321,6 +9325,11 @@ export function StudioCuttoonEditor({
     elements: El[];
     segment: SharedGutterSegment;
   } | null>(null);
+  /** Vertical-gap (CSP-style paneling) session: same snapshot + cumulative delta contract. */
+  const verticalGapDragBaseRef = useRef<{
+    elements: El[];
+    segment: SharedGutterSegment;
+  } | null>(null);
   const quickShapeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const quickShapeStillElapsedRef = useRef<number>(0);
   const quickShapeStillAnchorRef = useRef<{ x: number; y: number } | null>(null);
@@ -17875,7 +17884,14 @@ const puppetWarpArmed =
     }
 
     const nextElements = elements.filter((e) => e.id !== f.id);
-    commit([...nextElements, f1, f2]);
+    const splitLabel =
+      "name" in f && typeof f.name === "string" && f.name.trim() ? f.name : "컷";
+    const folder1 = createFrameFolderGroupForNewFrame({ frameLabel: splitLabel, groupId: uid() });
+    const folder2 = createFrameFolderGroupForNewFrame({ frameLabel: splitLabel, groupId: uid() });
+    updateActivePage({
+      elements: [...nextElements, f1, f2],
+      groups: [...groups, ...(folder1 ? [folder1] : []), ...(folder2 ? [folder2] : [])],
+    });
     setSelectedId(f1.id);
   }
   function addFocusLines() {
@@ -18602,6 +18618,57 @@ const puppetWarpArmed =
     sharedGutterDragBaseRef.current = null;
     if (session && delta !== 0) {
       announceDrawingShortcut("공유 거터 조정 · 양 프레임 · 자식 리플로우");
+    }
+  }
+
+  function beginVerticalGapDrag(segment: SharedGutterSegment) {
+    verticalGapDragBaseRef.current = {
+      elements: elements.map((el) => el),
+      segment,
+    };
+  }
+
+  function previewVerticalGapDrag(_segment: SharedGutterSegment, delta: number) {
+    const session = verticalGapDragBaseRef.current;
+    if (!session) return;
+    const baseFrames = session.elements.filter(
+      (el): el is FrameEl => el.type === "frame" && !el.hidden
+    );
+    const plan = planVerticalGapDrag({
+      segment: session.segment,
+      frames: baseFrames,
+      delta,
+      elements: session.elements,
+    });
+    if (!plan) return;
+    const next = applyVerticalGapDragPlan(session.elements, plan) as El[];
+    commitCoalesced(next, verticalGapDragKey(session.segment));
+  }
+
+  function commitVerticalGapDrag(segment: SharedGutterSegment, delta: number) {
+    previewVerticalGapDrag(segment, delta);
+    const session = verticalGapDragBaseRef.current;
+    verticalGapDragBaseRef.current = null;
+    if (session && delta !== 0) {
+      // Widening the gap pushes the stack down — grow the canvas so the lowest cut stays
+      // inside the page (mirrors addFrame's canvas growth, shrink never contracts it).
+      const baseFrames = session.elements.filter(
+        (el): el is FrameEl => el.type === "frame" && !el.hidden
+      );
+      const plan = planVerticalGapDrag({
+        segment: session.segment,
+        frames: baseFrames,
+        delta,
+        elements: session.elements,
+      });
+      if (plan && plan.appliedDelta > 0) {
+        const movedBottom = plan.framePatches.reduce(
+          (max, patch) => Math.max(max, patch.y + patch.height),
+          0
+        );
+        if (movedBottom > 0) setCanvasH((h) => Math.max(h, movedBottom + 24));
+      }
+      announceDrawingShortcut("세로 공백 조정 · 아래 컷 이동");
     }
   }
 
@@ -19729,8 +19796,16 @@ const puppetWarpArmed =
       width: CANVAS_W - margin * 2,
       height,
     };
-    setCanvasH((h) => Math.max(h, y + height + margin));
-    addEl(frame);
+    // 컷 생성 = 폴더도 함께 태어난다(컷 폴더 · 마스크는 프레임 클립). 한 번의 페이지 커밋으로
+    // 원자적으로 반영해 폴더 없는 맨 컷이 중간 상태로 남지 않게 한다.
+    const folder = createFrameFolderGroupForNewFrame({ frameLabel: "컷", groupId: uid() });
+    updateActivePage({
+      elements: [...elements, frame],
+      groups: folder ? [...groups, folder] : groups,
+      canvasH: Math.max(canvasH, y + height + margin),
+    });
+    setSelectedId(frame.id);
+    setTool("select");
   }
   // 사선 2분할 컷 — 기울어진 분할선으로 두 패널을 깐다(역동적 만화 연출).
   function addDiagonalSplit() {
@@ -19766,8 +19841,13 @@ const puppetWarpArmed =
       height: lowerH,
       points: [0, t1 - t2, w, 0, w, lowerH, 0, lowerH],
     };
-    setCanvasH((hh) => Math.max(hh, top + h + margin));
-    commit([...elements, upper, lower]);
+    const folderUpper = createFrameFolderGroupForNewFrame({ frameLabel: "컷", groupId: uid() });
+    const folderLower = createFrameFolderGroupForNewFrame({ frameLabel: "컷", groupId: uid() });
+    updateActivePage({
+      elements: [...elements, upper, lower],
+      groups: [...groups, ...(folderUpper ? [folderUpper] : []), ...(folderLower ? [folderLower] : [])],
+      canvasH: Math.max(canvasH, top + h + margin),
+    });
     setTool("select");
   }
   // 선택한 사각형 프레임을 평행사변형(사선)으로 ↔ 사각형으로 토글.
@@ -28384,6 +28464,9 @@ function clearSelectionForEdit() {
     beginSharedGutterDrag,
     previewSharedGutterDrag,
     commitSharedGutterDrag,
+    beginVerticalGapDrag,
+    previewVerticalGapDrag,
+    commitVerticalGapDrag,
     endLiveResourceEdit: endCanvasNodeInteraction,
     nodeInteractionBegin,
     patchEl,

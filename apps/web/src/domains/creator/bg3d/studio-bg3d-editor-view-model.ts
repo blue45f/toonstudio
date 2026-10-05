@@ -182,6 +182,7 @@ export function bindStudioBg3dEditorViewModel(h) {
     addPrimitiveRef, addSceneTemplateRef, objectInsertSeedKeyRef, addRoomBuild,
     applyRoomBuilderPreset, handleRoomBuilderSpecChange, commitSceneEntityRemoval, removeSceneEntities,
     deleteSelected, deleteSelectedCustomModel, deleteSelectedEntity, duplicateSelected,
+    duplicateSelectedLinked,
     duplicateSelectedCustomModel, applyMultiSelectDelta, updateTransform, updateCustomModelTransform,
     updateCustomModelMaterial, updateCustomModelAnimation, updateCustomModelPose, updateCustomModelMorph,
     updateCustomModelConstraints, reparentSceneEntity, registerModelAnimationTime, registerModelRigBake,

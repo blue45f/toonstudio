@@ -1385,6 +1385,21 @@ describe("Studio BG3D scene nodes and budgets", () => {
     expect(serializeStudioBg3dSceneDocument(candidate)).toBeNull();
   });
 
+  it("preserves linkedSourceId through normalize and strict serialize round-trips, drops self-links", () => {
+    const linked = { ...primitiveNode(2), linkedSourceId: "node-1" };
+    const selfLinked = { ...primitiveNode(3), linkedSourceId: "node-3" };
+    const candidate = currentDocument({ nodes: [primitiveNode(1), linked, selfLinked] });
+
+    const normalized = normalizeStudioBg3dSceneDocument(candidate);
+    expect(normalized.nodes[1]?.linkedSourceId).toBe("node-1");
+    expect(normalized.nodes[2]).not.toHaveProperty("linkedSourceId");
+
+    const serialized = serializeStudioBg3dSceneDocument(normalized);
+    expect(serialized).not.toBeNull();
+    const parsed = parseStudioBg3dSceneDocument(serialized as string);
+    expect(parsed?.nodes[1]?.linkedSourceId).toBe("node-1");
+  });
+
   it("repairs orphan/self/cyclic parents leniently and rejects them at the strict boundary", () => {
     const cycleA = { ...primitiveNode(1), parentId: "node-2" };
     const cycleB = { ...primitiveNode(2), parentId: "node-1" };

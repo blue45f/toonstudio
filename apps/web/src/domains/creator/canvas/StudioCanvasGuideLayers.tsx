@@ -203,6 +203,13 @@ export interface StudioCanvasGuideOverlayLayersProps {
   onBeginSharedGutterDrag?: (segment: SharedGutterSegment) => void;
   onPreviewSharedGutterDrag?: (segment: SharedGutterSegment, delta: number) => void;
   onCommitSharedGutterDrag?: (segment: SharedGutterSegment, delta: number) => void;
+  /**
+   * CSP-style vertical paneling: dragging the pill in a horizontal gap changes the gap size
+   * itself (frames below translate). Only rendered for axis "h" segments when provided.
+   */
+  onBeginVerticalGapDrag?: (segment: SharedGutterSegment) => void;
+  onPreviewVerticalGapDrag?: (segment: SharedGutterSegment, delta: number) => void;
+  onCommitVerticalGapDrag?: (segment: SharedGutterSegment, delta: number) => void;
 }
 
 /** Interactive and transient guides that must remain above every authored and tool overlay. */
@@ -243,9 +250,13 @@ export function StudioCanvasGuideOverlayLayers({
   onBeginSharedGutterDrag,
   onPreviewSharedGutterDrag,
   onCommitSharedGutterDrag,
+  onBeginVerticalGapDrag,
+  onPreviewVerticalGapDrag,
+  onCommitVerticalGapDrag,
 }: StudioCanvasGuideOverlayLayersProps) {
   // Cumulative document deltas per gutter handle (node offsets are zeroed after each move).
   const sharedGutterDragTotalsRef = useRef(new Map<string, number>());
+  const verticalGapDragTotalsRef = useRef(new Map<string, number>());
   if (isExporting) return null;
 
   const sharedGutterInteractive =
@@ -254,6 +265,12 @@ export function StudioCanvasGuideOverlayLayers({
     && typeof onPreviewSharedGutterDrag === "function"
     && typeof onCommitSharedGutterDrag === "function"
     && sharedGutters.length > 0;
+
+  const verticalGapInteractive =
+    sharedGutterInteractive
+    && typeof onBeginVerticalGapDrag === "function"
+    && typeof onPreviewVerticalGapDrag === "function"
+    && typeof onCommitVerticalGapDrag === "function";
 
   return (
     <>
@@ -337,6 +354,63 @@ export function StudioCanvasGuideOverlayLayers({
                     if (stage) stage.container().style.cursor = "";
                   }}
                 />
+                {verticalGapInteractive && segment.axis === "h" ? (
+                  <Group
+                    x={(segment.from + segment.to) / 2}
+                    y={segment.pos}
+                    draggable
+                    name="vertical-gap-handle"
+                    dragBoundFunc={(pos) => ({ x: (segment.from + segment.to) / 2, y: pos.y })}
+                    onMouseEnter={(event) => {
+                      const stage = event.target.getStage();
+                      if (stage) stage.container().style.cursor = "ns-resize";
+                    }}
+                    onMouseLeave={(event) => {
+                      const stage = event.target.getStage();
+                      if (stage) stage.container().style.cursor = "";
+                    }}
+                    onDragStart={() => {
+                      verticalGapDragTotalsRef.current.set(key, 0);
+                      onBeginVerticalGapDrag!(segment);
+                    }}
+                    onDragMove={(event) => {
+                      const node = event.target;
+                      const step = node.y() - segment.pos;
+                      const total = (verticalGapDragTotalsRef.current.get(key) ?? 0) + step;
+                      verticalGapDragTotalsRef.current.set(key, total);
+                      node.position({ x: (segment.from + segment.to) / 2, y: segment.pos });
+                      onPreviewVerticalGapDrag!(segment, total);
+                    }}
+                    onDragEnd={(event) => {
+                      const node = event.target;
+                      const step = node.y() - segment.pos;
+                      const total = (verticalGapDragTotalsRef.current.get(key) ?? 0) + step;
+                      verticalGapDragTotalsRef.current.set(key, 0);
+                      node.position({ x: (segment.from + segment.to) / 2, y: segment.pos });
+                      onCommitVerticalGapDrag!(segment, total);
+                      const stage = event.target.getStage();
+                      if (stage) stage.container().style.cursor = "";
+                    }}
+                  >
+                    <Rect
+                      x={-23 / effScale}
+                      y={-6 / effScale}
+                      width={46 / effScale}
+                      height={12 / effScale}
+                      cornerRadius={6 / effScale}
+                      fill="rgba(14, 165, 233, 0.92)"
+                      stroke="rgba(255, 255, 255, 0.85)"
+                      strokeWidth={1 / effScale}
+                      hitStrokeWidth={14 / effScale}
+                    />
+                    <Line
+                      points={[-12 / effScale, 0, 12 / effScale, 0]}
+                      stroke="rgba(255, 255, 255, 0.9)"
+                      strokeWidth={1.5 / effScale}
+                      listening={false}
+                    />
+                  </Group>
+                ) : null}
               </Group>
             );
           })}

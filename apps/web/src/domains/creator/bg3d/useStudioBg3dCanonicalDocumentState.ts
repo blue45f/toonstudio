@@ -13,6 +13,7 @@ import {
   normalizeStudioBg3dSceneDocument,
   type StudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
+import { syncLinkedCloneAppearance } from "./studio-bg3d-linked-clones";
 
 export interface StudioBg3dCanonicalDocumentSnapshot {
   readonly revision: number;
@@ -83,11 +84,17 @@ export function useStudioBg3dCanonicalDocumentState(input: {
     const hasPrimitives = mutation.primitives !== undefined;
     const hasModels = mutation.customModels !== undefined;
     const hasDocument = mutation.document !== undefined;
-    const nextPrimitives = hasPrimitives
-      ? copyPrimitives(mutation.primitives ?? [])
+    // 연결 복제 동기화: 링크가 있는 커밋에서만 원본 외형을 복제본에 반영한다. 링크가 없으면
+    // sync가 입력 배열을 그대로 돌려줘 기존 no-op 판정이 유지된다.
+    const synced = syncLinkedCloneAppearance({
+      primitives: hasPrimitives ? (mutation.primitives ?? []) : current.primitives,
+      customModels: hasModels ? (mutation.customModels ?? []) : current.customModels,
+    });
+    const nextPrimitives = hasPrimitives || synced.changed
+      ? copyPrimitives(synced.primitives)
       : current.primitives;
-    const nextModels = hasModels
-      ? copyModels(mutation.customModels ?? [])
+    const nextModels = hasModels || synced.changed
+      ? copyModels(synced.customModels)
       : current.customModels;
     const nextDocument = hasDocument
       ? mutation.document === current.document
@@ -96,7 +103,8 @@ export function useStudioBg3dCanonicalDocumentState(input: {
       : current.document;
 
     if (
-      (!hasPrimitives || mutation.primitives === current.primitives)
+      !synced.changed
+      && (!hasPrimitives || mutation.primitives === current.primitives)
       && (!hasModels || mutation.customModels === current.customModels)
       && nextDocument === current.document
     ) return current;

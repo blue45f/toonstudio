@@ -14,6 +14,7 @@ import {
 import { applyStudio3dCommand } from "./studio-bg3d-grade-plates";
 import { captureStudio3dPlatesFromAdapter } from "./studio-bg3d-grade-plates-production";
 import { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
+import { resolveLinkedCloneRootId } from "./studio-bg3d-linked-clones";
 import {
   commitStudioBg3dHistoryTransition,
   resetStudioBg3dCommandHistory,
@@ -691,7 +692,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
   const templateInstanceMatchesCompleteSource = (instance, source) =>
     templateSourceNodeCount(instance, source) === instance.nodes.length &&
     instance.nodes.every((node, ordinal) => node.ordinal === ordinal);
-  const duplicateSelected = () => {
+  const duplicateSelectedImpl = (linked: boolean) => {
     if (selectedIds.size === 0) return;
     const live = physicsRuntimeSourceRef.current;
     const occupiedNodeIds = new Set([
@@ -745,6 +746,8 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
         primitivePairs.push({ source: p, clone: {
           ...clone,
           id: taggedCloneIdBySourceId.get(p.id) ?? clone.id,
+          // 연결 복제: 루트 원본에 링크한다. 일반 복제: 원본이 링크돼 있어도 독립 복사본으로 끊는다.
+          linkedSourceId: linked ? (resolveLinkedCloneRootId(p) ?? undefined) : undefined,
         } });
       } else {
         const m = live.customModels.find(x => x.id === id);
@@ -753,6 +756,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
           modelPairs.push({ source: m, clone: {
             ...clone,
             id: taggedCloneIdBySourceId.get(m.id) ?? clone.id,
+            linkedSourceId: linked ? (resolveLinkedCloneRootId(m) ?? undefined) : undefined,
           } });
         }
       }
@@ -779,7 +783,10 @@ export function attachStudioBg3dEditorSceneOpsHost(h) {
     setSelectedIds(new Set(orderStudioBg3dHierarchySelectionRootsFirst(clonedEntities)));
     setError(null);
   };
+  const duplicateSelected = () => duplicateSelectedImpl(false);
   h.duplicateSelected = duplicateSelected;
+  const duplicateSelectedLinked = () => duplicateSelectedImpl(true);
+  h.duplicateSelectedLinked = duplicateSelectedLinked;
   const duplicateSelectedCustomModel = () => {
     duplicateSelected();
   };
