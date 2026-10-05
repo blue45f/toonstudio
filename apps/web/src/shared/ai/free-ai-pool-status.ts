@@ -5,6 +5,18 @@ export interface FreeAiPoolProviderStatus {
   label: string;
   configured: boolean;
   model: string;
+  /** 무료 티어 데이터 약관 배지 — 서버 풀 메타데이터가 내려줄 때만 존재한다. */
+  dataUsage?: "training" | "no-training" | "varies" | "unconfirmed";
+  dataTermsLabel?: string;
+}
+
+export interface FreeAiPoolCapabilityStatus {
+  provider: FreeAiPoolProviderStatus["id"];
+  capability: "chat" | "transcription" | "vision" | "image-generation" | "embedding";
+  model: string;
+  configured: boolean;
+  dataUsage?: "training" | "no-training" | "varies" | "unconfirmed";
+  dataTermsLabel?: string;
 }
 
 export interface FreeAiPoolStatus {
@@ -20,6 +32,7 @@ export interface FreeAiPoolStatus {
   };
   requiresAuth: boolean;
   freePool?: boolean;
+  poolCapabilities?: FreeAiPoolCapabilityStatus[];
   settingsHref?: string;
   quota?: {
     enforced: boolean;
