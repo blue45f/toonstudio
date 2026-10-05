@@ -6,6 +6,7 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
 
 import { AiKeyStatusCard } from "./AiKeyStatusCard";
+import { FalKeyConnectCard } from "./FalKeyConnectCard";
 import { ResendKeyConnectCard } from "./ResendKeyConnectCard";
 import { UnsplashKeyConnectCard } from "./UnsplashKeyConnectCard";
 
@@ -14,6 +15,8 @@ import { UnsplashKeyConnectCard } from "./UnsplashKeyConnectCard";
  *
  * - AI API 키: 상태만 표시, 편집은 `/settings/ai` 소유 (기존 소유권 유지)
  * - Unsplash Access Key: 인라인 원클릭 연결 플로우
+ * - Resend 키: 뉴스레터 실발송 BYOK (연결 테스트 없음 — 실발송으로만 확인)
+ * - fal.ai 키: 캐릭터·화풍 LoRA 학습/생성 BYOK (연결 테스트 없음 — 과금 호출이라 부르지 않음)
  * - 키 원문은 절대 렌더·로그하지 않고 마스킹 + 복사만 제공한다
  */
 export function ApiKeyHubPage() {
@@ -56,8 +59,8 @@ export function ApiKeyHubPage() {
             <h2 className="font-bold text-fg">{ko ? "키는 내 브라우저에만" : "Keys stay in your browser"}</h2>
             <p className="mt-1 text-sm leading-6 text-fg-2">
               {ko
-                ? "AI 키는 메모리 전용 또는 암호화 보관함에, Unsplash·Resend 키는 현재 탭 세션에만 저장됩니다. 키가 서버에 보관되지는 않지만, Resend 키는 뉴스레터 발송 순간에만 서버 릴레이로 한 번 전달됩니다. 키를 다른 사람과 공유하지 마세요."
-                : "AI keys live in memory or an encrypted vault; the Unsplash and Resend keys live in this tab's session only. Keys are never stored on ToonStudio servers, though the Resend key is passed to the sending relay once, at the moment you send a newsletter. Never share your keys."}
+                ? "AI 키는 메모리 전용 또는 암호화 보관함에, Unsplash·Resend·fal 키는 현재 탭 세션에만 저장됩니다. 키가 서버에 보관되지는 않지만, Resend 키는 뉴스레터 발송 순간에만 서버 릴레이로 한 번 전달되고, fal 키는 학습·생성 순간에 브라우저에서 fal로 직접 전송됩니다. 키를 다른 사람과 공유하지 마세요."
+                : "AI keys live in memory or an encrypted vault; the Unsplash, Resend and fal keys live in this tab's session only. Keys are never stored on ToonStudio servers, though the Resend key is passed to the sending relay once, at the moment you send a newsletter, and the fal key is sent from your browser directly to fal when you train or generate. Never share your keys."}
             </p>
           </div>
         </div>
@@ -70,6 +73,7 @@ export function ApiKeyHubPage() {
         <AiKeyStatusCard />
         <UnsplashKeyConnectCard />
         <ResendKeyConnectCard />
+        <FalKeyConnectCard />
       </section>
 
       <section
