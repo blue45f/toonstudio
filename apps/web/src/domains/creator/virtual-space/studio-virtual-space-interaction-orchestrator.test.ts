@@ -11,6 +11,7 @@ describe("spatial interaction orchestrator", () => {
   });
   it.each([
     ["work-inbox", "work"], ["sessions", "sessions"], ["board", "board"], ["huddle", "chat"],
+    ["booth-booking", "booth"],
     ["team-hub", "team"], ["today-board", "today"], ["bubble", "chat"], ["open-customization", "build"], ["mini-game", "town"],
   ] as const)("opens %s as the %s panel without issuing a domain command", (action, panel) => {
     expect(orchestrateStudioSpatialInteraction(action, context)).toEqual({ kind: "panel", panel });

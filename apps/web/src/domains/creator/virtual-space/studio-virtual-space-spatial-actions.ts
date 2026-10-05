@@ -11,6 +11,7 @@ export type StudioSpatialActionId =
   | "today-board"
   | "schedule"
   | "huddle"
+  | "booth-booking"
   | "project-overview"
   | "project-settings"
   | "production-control"
@@ -50,6 +51,7 @@ const COMMON: Readonly<Record<Exclude<StudioSpatialActionId, "primary">, StudioS
   "today-board": action({ id: "today-board", labelKo: "오늘의 일정·다음 작업", labelEn: "Today & next work", descriptionKo: "마감, 검수, 회의와 다음 작업을 한 번에 확인합니다.", descriptionEn: "See deadlines, reviews, meetings and the next useful action.", risk: "inspect" }),
   schedule: action({ id: "schedule", labelKo: "제작 일정 열기", labelEn: "Open production schedule", descriptionKo: "프로젝트 일정과 마감 계획을 엽니다.", descriptionEn: "Open the project schedule and delivery plan.", risk: "inspect" }),
   huddle: action({ id: "huddle", labelKo: "회의·통화 준비", labelEn: "Prepare meeting", descriptionKo: "참여자 동의를 받은 뒤 음성·영상 장치를 직접 선택합니다.", descriptionEn: "Request participant consent, then explicitly choose audio and video devices.", risk: "collaborative" }),
+  "booth-booking": action({ id: "booth-booking", labelKo: "녹음부스 예약", labelEn: "Book the recording booth", descriptionKo: "회의실 안 녹음부스의 예약 현황을 확인하고 시간을 예약한 뒤 그 자리에서 녹음을 준비합니다.", descriptionEn: "Check recording-booth availability, reserve a time slot and get ready to record right there.", risk: "inspect" }),
   "project-overview": action({ id: "project-overview", labelKo: "프로젝트 현황", labelEn: "Project overview", descriptionKo: "에피소드, 작업, 리스크와 진행률을 확인합니다.", descriptionEn: "Inspect episodes, tasks, risks and project progress.", risk: "inspect" }),
   "project-settings": action({ id: "project-settings", labelKo: "프로젝트 설정", labelEn: "Project settings", descriptionKo: "권한과 프로젝트 연결 설정을 확인합니다.", descriptionEn: "Review permissions and project integration settings.", risk: "authority" }),
   "production-control": action({ id: "production-control", labelKo: "프로덕션 관제실", labelEn: "Production control", descriptionKo: "병목, 일정, 작업 배정과 제작 상태를 확인합니다.", descriptionEn: "Inspect bottlenecks, schedule, assignments and production state.", risk: "inspect" }),
@@ -79,7 +81,7 @@ export interface StudioSpatialActionContext {
 
 /** 개인 공간에서도 의미가 있는 동작. 나머지는 팀 프로젝트 공간이나 동료가 필요하다. */
 const PERSONAL_ACTIONS: ReadonlySet<StudioSpatialActionId> = new Set<StudioSpatialActionId>([
-  "primary", "waterfall-splash", "make-wish", "take-photo", "release-petals", "toggle-lanterns",
+  "primary", "booth-booking", "waterfall-splash", "make-wish", "take-photo", "release-petals", "toggle-lanterns",
   "pet-animal", "ring-gong", "open-customization", "town-hub", "mini-game",
 ]);
 
@@ -158,7 +160,15 @@ function baseSpatialActions(
     case "community": values.push(COMMON.bubble, COMMON.people, COMMON["team-hub"], COMMON["town-hub"]); break;
     case "assistant": values.push(COMMON["today-board"], COMMON["production-control"], COMMON.schedule); break;
   }
-  if (/meeting|conference|huddle/u.test(id)) values.push(COMMON.huddle, COMMON.sessions, COMMON.people);
+  if (/meeting|conference|huddle/u.test(id)) {
+    values.push(COMMON.huddle, COMMON.sessions, COMMON.people);
+    // 녹음부스는 회의실 안에 있고(기본 월드 기준) 예약 패널이 곧 녹음 게이트다.
+    // 콘솔에서 예약까지 바로 이어져야 하므로, 회의 콘솔에서는 무대 발표(spotlight)보다
+    // 부스 예약을 앞세운다(동작 상한 6개 안에서 자리를 맞바꾼다).
+    const spotlightIndex = values.findIndex((item) => item.id === "spotlight");
+    if (spotlightIndex >= 0) values.splice(spotlightIndex, 0, COMMON["booth-booking"]);
+    else values.push(COMMON["booth-booking"]);
+  }
   if (/team|reception|lobby|concierge/u.test(id)) values.push(COMMON["team-hub"], COMMON["today-board"]);
   if (/schedule|calendar|producer|control/u.test(id)) values.push(COMMON.schedule, COMMON["production-control"]);
   if (/qc|quality/u.test(id)) values.push(COMMON["quality-control"], COMMON["work-inbox"]);
