@@ -103,6 +103,8 @@ describe("Cloudflare static gateway", () => {
       "/ranking",
       "/play",
       "/assets/opencascade.wasm-*.wasm",
+      "/assets/ort-wasm-simd-threaded.jsep-*.wasm",
+      "/assets/tag2pix-*.onnx",
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
       "/brand/toonstudio-product-tour.mp4",
     ]);
@@ -480,6 +482,37 @@ describe("Cloudflare static gateway", () => {
       undefined,
     );
     expect(head).not.toHaveBeenCalled();
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("serves the ONNX JSEP runtime and Tag2Pix model from R2, not Static Assets", async () => {
+    const assetFetch = vi.fn<typeof fetch>();
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => r2Object("onnx-bytes"));
+    const head = vi.fn(async (_key: string) => null);
+    const upstream = vi.fn<typeof fetch>();
+    const gateway = createCloudflareStaticGateway({ fetch: upstream });
+    const env = environment({
+      ASSETS: { fetch: assetFetch },
+      LARGE_ASSETS: { get, head },
+    });
+
+    for (const [pathname, contentType] of [
+      ["/assets/ort-wasm-simd-threaded.jsep-DC5y_g6C.wasm", "application/wasm"],
+      ["/assets/tag2pix-B03WmUfQ.onnx", "application/octet-stream"],
+    ] as const) {
+      const response = await gateway(
+        new Request(`https://www.toonstudio.cloud${pathname}`),
+        env,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toBe(contentType);
+      expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
+    }
+    expect(assetFetch).not.toHaveBeenCalled();
     expect(upstream).not.toHaveBeenCalled();
   });
 

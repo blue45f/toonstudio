@@ -6,6 +6,8 @@ export const CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL =
 
 export const CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS = [
   "assets/opencascade.wasm-*.wasm",
+  "assets/ort-wasm-simd-threaded.jsep-*.wasm",
+  "assets/tag2pix-*.onnx",
   "assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
   "brand/toonstudio-product-tour.mp4",
 ] as const;
@@ -23,6 +25,9 @@ const MODULAR_STREET_SEATING_PATH =
 const PRODUCT_TOUR_PATH = "/brand/toonstudio-product-tour.mp4";
 const OPENCASCADE_PATH_PATTERN =
   /^\/assets\/opencascade\.wasm-[A-Za-z0-9_-]+\.wasm$/u;
+const ORT_JSEP_WASM_PATH_PATTERN =
+  /^\/assets\/ort-wasm-simd-threaded\.jsep-[A-Za-z0-9_-]+\.wasm$/u;
+const TAG2PIX_MODEL_PATH_PATTERN = /^\/assets\/tag2pix-[A-Za-z0-9_-]+\.onnx$/u;
 
 export function cloudflareLargeAssetDescriptor(
   pathname: string,
@@ -36,6 +41,12 @@ export function cloudflareLargeAssetDescriptor(
   if (OPENCASCADE_PATH_PATTERN.test(pathname)) {
     return { contentType: "application/wasm" };
   }
+  if (ORT_JSEP_WASM_PATH_PATTERN.test(pathname)) {
+    return { contentType: "application/wasm" };
+  }
+  if (TAG2PIX_MODEL_PATH_PATTERN.test(pathname)) {
+    return { contentType: "application/octet-stream" };
+  }
   return null;
 }
 
@@ -44,6 +55,10 @@ export function isCloudflareOversizedAssetPath(pathname: string): boolean {
 }
 
 export function supportsCloudflareStaticSidecar(pathname: string): boolean {
+  // Tag2Pix is a 79 MB ONNX graph whose Brotli sidecar is still ~73 MB, so a
+  // compressed Static Assets copy cannot exist. R2 is its only authority, the
+  // same arrangement the product tour video already uses.
+  if (TAG2PIX_MODEL_PATH_PATTERN.test(pathname)) return false;
   return pathname !== PRODUCT_TOUR_PATH && isCloudflareOversizedAssetPath(pathname);
 }
 
