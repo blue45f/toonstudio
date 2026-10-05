@@ -83,6 +83,6 @@ export function setReaderProgress(slug: string, episode: number, ratio: number):
 }
 
 /** 이어보기로 제안할 만한 진도인지 — 시작 직후나 완독 직전은 제안하지 않는다. */
-export function isResumable(progress: ReaderProgress | null): progress is ReaderProgress {
+export function isResumable(progress: ReaderProgress | null): boolean {
   return progress !== null && progress.ratio > 0.02 && progress.ratio < 0.98;
 }
