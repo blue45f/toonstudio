@@ -23,6 +23,7 @@ import {
   TimerReset,
   Users,
   WandSparkles,
+  Wrench,
   XCircle,
 } from "lucide-react";
 import {
@@ -34,6 +35,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { loadStoryworldIssueDispositions, saveStoryworldIssueDispositions } from "./disposition-store";
 import { storyworldDraftStore } from "./draft-store";
 import { StudioStoryworldBoard } from "./StudioStoryworldBoard";
 import {
@@ -41,6 +43,13 @@ import {
   type StoryworldSettingsFocus,
 } from "./StudioStoryworldSettings";
 import { StudioStoryworldUniverse } from "./StudioStoryworldUniverse";
+import { analyzeStoryworldContinuity, type StoryworldContinuityIssue } from "./studio-storyworld-continuity";
+import {
+  clearStoryworldIssueDisposition,
+  upsertStoryworldIssueDisposition,
+  type StoryworldIssueDispositionDocument,
+  type StoryworldIssueDispositionStatus,
+} from "./studio-storyworld-issue-dispositions";
 import { projectStoryworldToStudioProjectStory } from "./studio-storyworld-project-projection";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
 import {
@@ -442,9 +451,94 @@ function AxisCards({ result }: { readonly result: StoryworldAnalysisResult }) {
   );
 }
 
-function IssueList({ issues, limit }: {
+function IssueDispositionControls({ issueKey, dispositions, onSet, onClear }: {
+  readonly issueKey: string;
+  readonly dispositions: StoryworldIssueDispositionDocument | null;
+  readonly onSet: (issueKey: string, status: StoryworldIssueDispositionStatus, note?: string) => void;
+  readonly onClear: (issueKey: string) => void;
+}) {
+  const [ignoring, setIgnoring] = useState(false);
+  const [note, setNote] = useState("");
+  const disposition = dispositions?.dispositions.find((item) => item.issueKey === issueKey) ?? null;
+  if (disposition) {
+    return (
+      <div className="storyworld-disposition">
+        <span className="storyworld-disposition__chip">
+          {disposition.status === "resolved" ? "해결 표시됨" : "무시됨"}
+        </span>
+        {disposition.note ? <span className="storyworld-disposition__note">{disposition.note}</span> : null}
+        <button className="storyworld-button" onClick={() => onClear(issueKey)} type="button">처리 되돌리기</button>
+      </div>
+    );
+  }
+  return (
+    <div className="storyworld-disposition">
+      <button className="storyworld-button" onClick={() => onSet(issueKey, "resolved")} type="button">해결 표시</button>
+      {ignoring ? (
+        <>
+          <label className="sr-only" htmlFor={`ignore-note-${issueKey}`}>무시 사유</label>
+          <input
+            id={`ignore-note-${issueKey}`}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="무시 사유 (예: 의도된 연출)"
+            value={note}
+          />
+          <button
+            className="storyworld-button"
+            onClick={() => { onSet(issueKey, "ignored", note.trim() ? note.trim() : undefined); setIgnoring(false); }}
+            type="button"
+          >
+            무시 확정
+          </button>
+        </>
+      ) : (
+        <button className="storyworld-button" onClick={() => setIgnoring(true)} type="button">무시</button>
+      )}
+    </div>
+  );
+}
+
+function ContinuityIssueCard({ issue, dispositions, onSet, onClear, onFix }: {
+  readonly issue: StoryworldContinuityIssue;
+  readonly dispositions: StoryworldIssueDispositionDocument | null;
+  readonly onSet: (issueKey: string, status: StoryworldIssueDispositionStatus, note?: string) => void;
+  readonly onClear: (issueKey: string) => void;
+  readonly onFix: (issue: StoryworldContinuityIssue) => void;
+}) {
+  return (
+    <article className={`storyworld-issue storyworld-issue--${issue.severity}`}>
+      {issue.severity === "error"
+        ? <XCircle aria-hidden size={18} />
+        : issue.severity === "warning"
+          ? <AlertTriangle aria-hidden size={18} />
+          : <Info aria-hidden size={18} />}
+      <div>
+        <div className="storyworld-issue__meta">
+          <span>{SEVERITY_LABELS[issue.severity]}</span>
+          <span>연속성 검사</span>
+          <code>{issue.code}</code>
+        </div>
+        <p>{issue.messageKo}</p>
+        <ul className="storyworld-issue__evidence">
+          {issue.evidence.map((line) => <li key={line}>{line}</li>)}
+        </ul>
+        <div className="storyworld-disposition">
+          <button className="storyworld-button storyworld-button--primary" onClick={() => onFix(issue)} type="button">
+            <Wrench aria-hidden size={14} /> 설정에서 고치기
+          </button>
+        </div>
+        <IssueDispositionControls dispositions={dispositions} issueKey={issue.id} onClear={onClear} onSet={onSet} />
+      </div>
+    </article>
+  );
+}
+
+function IssueList({ issues, limit, dispositions, onSetDisposition, onClearDisposition }: {
   readonly issues: readonly StoryworldIssue[];
   readonly limit?: number;
+  readonly dispositions?: StoryworldIssueDispositionDocument | null;
+  readonly onSetDisposition?: (issueKey: string, status: StoryworldIssueDispositionStatus, note?: string) => void;
+  readonly onClearDisposition?: (issueKey: string) => void;
 }) {
   const visible = limit === undefined ? issues : issues.slice(0, limit);
   if (visible.length === 0) return <EmptyState>현재 필터에서 발견된 문제가 없습니다.</EmptyState>;
@@ -463,6 +557,14 @@ function IssueList({ issues, limit }: {
               </div>
               <p>{issue.message}</p>
               <small>{issue.code}</small>
+              {onSetDisposition && onClearDisposition ? (
+                <IssueDispositionControls
+                  dispositions={dispositions ?? null}
+                  issueKey={issue.id}
+                  onClear={onClearDisposition}
+                  onSet={onSetDisposition}
+                />
+              ) : null}
             </div>
           </article>
         );
@@ -549,15 +651,66 @@ function OverviewTab({ project, result, onOpenIssues, onOpenData, onEditElement 
   );
 }
 
-function IssuesTab({ result }: { readonly result: StoryworldAnalysisResult }) {
+function IssuesTab({ result, continuityIssues, dispositions, onSetDisposition, onClearDisposition, onFixContinuity }: {
+  readonly result: StoryworldAnalysisResult;
+  readonly continuityIssues: readonly StoryworldContinuityIssue[];
+  readonly dispositions: StoryworldIssueDispositionDocument | null;
+  readonly onSetDisposition: (issueKey: string, status: StoryworldIssueDispositionStatus, note?: string) => void;
+  readonly onClearDisposition: (issueKey: string) => void;
+  readonly onFixContinuity: (issue: StoryworldContinuityIssue) => void;
+}) {
   const [severity, setSeverity] = useState<StoryworldSeverity | "all">("all");
   const [axis, setAxis] = useState<StoryworldAxisId | "all">("all");
   const filtered = result.issues.filter((issue) =>
     (severity === "all" || issue.severity === severity)
       && (axis === "all" || issue.axis === axis),
   );
+  const handledKeys = new Set((dispositions?.dispositions ?? []).map((item) => item.issueKey));
+  const activeContinuity = continuityIssues.filter((issue) => !handledKeys.has(issue.id));
+  const handledContinuity = continuityIssues.filter((issue) => handledKeys.has(issue.id));
   return (
     <div className="storyworld-tab-stack">
+      <Panel
+        description="인과 엔진이 보지 않는 행정적 불일치를 규칙으로만 검사합니다. 각 항목은 충돌한 데이터를 근거로 함께 보여 주며, 설정 관리 탭으로 바로 이동해 고칠 수 있습니다."
+        title="설정·연속성 검사"
+      >
+        {continuityIssues.length === 0 ? (
+          <EmptyState>연속성 검사에서 발견된 불일치가 없습니다.</EmptyState>
+        ) : (
+          <>
+            <div className="storyworld-issue-list">
+              {activeContinuity.map((issue) => (
+                <ContinuityIssueCard
+                  dispositions={dispositions}
+                  issue={issue}
+                  key={issue.id}
+                  onClear={onClearDisposition}
+                  onFix={onFixContinuity}
+                  onSet={onSetDisposition}
+                />
+              ))}
+            </div>
+            {activeContinuity.length === 0 ? <EmptyState>활성 불일치가 없습니다. 처리된 항목은 아래에 있습니다.</EmptyState> : null}
+            {handledContinuity.length > 0 ? (
+              <details className="storyworld-handled">
+                <summary>해결·무시됨 {handledContinuity.length}개</summary>
+                <div className="storyworld-issue-list">
+                  {handledContinuity.map((issue) => (
+                    <ContinuityIssueCard
+                      dispositions={dispositions}
+                      issue={issue}
+                      key={issue.id}
+                      onClear={onClearDisposition}
+                      onFix={onFixContinuity}
+                      onSet={onSetDisposition}
+                    />
+                  ))}
+                </div>
+              </details>
+            ) : null}
+          </>
+        )}
+      </Panel>
       <Panel title="모순·위험 탐색기" description="필터는 표시만 바꾸며 분석 결과와 영수증을 변경하지 않습니다.">
         <div className="storyworld-filter-row">
           <label>
@@ -578,7 +731,12 @@ function IssuesTab({ result }: { readonly result: StoryworldAnalysisResult }) {
           </label>
           <span aria-live="polite">{filtered.length}개 표시</span>
         </div>
-        <IssueList issues={filtered} />
+        <IssueList
+          dispositions={dispositions}
+          issues={filtered}
+          onClearDisposition={onClearDisposition}
+          onSetDisposition={onSetDisposition}
+        />
       </Panel>
       <Panel title="비파괴 수선 의도" description="각 제안은 설명 가능한 중립 명령이며 명시적 승인 전에는 원고를 바꾸지 않습니다.">
         <div className="storyworld-proposal-grid">
@@ -917,10 +1075,12 @@ function StudioStoryworldLabEditor({
   const [project, setProject] = useState<StoryworldProject>(initialProject);
   const [activeTab, setActiveTab] = useState<StoryworldTab>("overview");
   const [settingsFocus, setSettingsFocus] = useState<StoryworldSettingsFocus | null>(null);
+  const [issueDispositions, setIssueDispositions] = useState<StoryworldIssueDispositionDocument | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [statusText, setStatusText] = useState("결정적 로컬 분석 준비됨");
   const importRef = useRef<HTMLInputElement>(null);
   const result = useMemo(() => analyzeStoryworldProject(project), [project]);
+  const continuityIssues = useMemo(() => analyzeStoryworldContinuity(project), [project]);
   const backHref = editorHref(workId, remixSourceWorkId);
   const documentScope = workId !== null ? `작품 ${workId}` : remixSourceWorkId !== null ? `리믹스 ${remixSourceWorkId}` : "로컬 초안";
 
@@ -964,6 +1124,39 @@ function StudioStoryworldLabEditor({
     });
     return () => { active = false; };
   }, [project, storageKey, workId]);
+
+  useEffect(() => {
+    let active = true;
+    void loadStoryworldIssueDispositions(storageKey).then((loaded) => {
+      if (active) setIssueDispositions(loaded);
+    }).catch(() => {
+      // 처리 기록을 열 수 없어도 진단 자체는 계속 보여 준다. 기록만 비어 있는 것으로 취급한다.
+      if (active) setIssueDispositions({ version: 1, scopeKey: storageKey, dispositions: [] });
+    });
+    return () => { active = false; };
+  }, [storageKey]);
+
+  const persistDispositions = (next: StoryworldIssueDispositionDocument) => {
+    setIssueDispositions(next);
+    void saveStoryworldIssueDispositions(next).catch(() => {
+      setStatusText("이슈 처리 상태를 저장하지 못했습니다. 현재 표시는 이 탭에만 남아 있습니다.");
+    });
+  };
+
+  const setDisposition = (issueKey: string, status: StoryworldIssueDispositionStatus, note?: string) => {
+    const base = issueDispositions ?? { version: 1 as const, scopeKey: storageKey, dispositions: [] };
+    persistDispositions(upsertStoryworldIssueDisposition(base, {
+      issueKey,
+      status,
+      ...(note ? { note } : {}),
+      updatedAtIso: new Date().toISOString(),
+    }));
+  };
+
+  const clearDisposition = (issueKey: string) => {
+    if (!issueDispositions) return;
+    persistDispositions(clearStoryworldIssueDisposition(issueDispositions, issueKey));
+  };
 
   const openInSettings = (kind: "character" | "fact" | "scene", id: string) => {
     setSettingsFocus({ kind, id, nonce: Date.now() });
@@ -1068,7 +1261,16 @@ function StudioStoryworldLabEditor({
             />
           ) : null}
           {activeTab === "universe" ? <StudioStoryworldUniverse project={project} scopeKey={storageKey} /> : null}
-          {activeTab === "issues" ? <IssuesTab result={result} /> : null}
+          {activeTab === "issues" ? (
+            <IssuesTab
+              continuityIssues={continuityIssues}
+              dispositions={issueDispositions}
+              onClearDisposition={clearDisposition}
+              onFixContinuity={(issue) => openInSettings(issue.target.kind, issue.target.id)}
+              onSetDisposition={setDisposition}
+              result={result}
+            />
+          ) : null}
           {activeTab === "multiverse" ? <MultiverseTab project={project} result={result} /> : null}
           {activeTab === "knowledge" ? <KnowledgeTab project={project} result={result} /> : null}
           {activeTab === "contracts" ? <ContractsTab result={result} /> : null}

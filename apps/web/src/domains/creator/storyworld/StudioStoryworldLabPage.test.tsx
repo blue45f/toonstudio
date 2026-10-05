@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -225,6 +225,60 @@ describe("Storyworld settings management layer", () => {
     };
     expect(registry.universes[0]?.members).toHaveLength(1);
     expect(registry.universes[0]?.sharedElements[0]?.usages).toHaveLength(1);
+  });
+
+  it("continuity tab shows rule-based conflicts, jumps to settings, and records an ignore reason", async () => {
+    await open("work-continuity");
+    fireEvent.click(screen.getByRole("button", { name: "원본 데이터" }));
+    const conflicting = {
+      ...STORYWORLD_DEMO_PROJECT,
+      id: "authored-continuity",
+      facts: [
+        ...STORYWORLD_DEMO_PROJECT.facts,
+        { id: "vault-open-dup", label: "금고 상태 중복 정의", subjectId: "vault", key: "open", initialValue: true },
+      ],
+      scenes: [
+        ...STORYWORLD_DEMO_PROJECT.scenes,
+        {
+          id: "scene-ghost",
+          title: "유령 지식 장면",
+          order: 999,
+          participantIds: ["haeun"],
+          knowledgeUses: [{ characterId: "dojin", factId: "vault-open" }],
+        },
+      ],
+    };
+    fireEvent.change(screen.getByRole("textbox", { name: "스토리월드 JSON" }), {
+      target: { value: JSON.stringify(conflicting) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "적용 후 분석" }));
+
+    fireEvent.click(screen.getByRole("button", { name: /모순·위험/ }));
+    const conflictText = await screen.findByText(/서로 다른 초기값을 선언했습니다/);
+    expect(screen.getByText(/지식을 사용하지만 장면 참여자에 없습니다/)).toBeTruthy();
+    const conflictCard = conflictText.closest("article");
+    expect(conflictCard).not.toBeNull();
+    expect(within(conflictCard!).getByText(/vault-open 초기값/)).toBeTruthy();
+
+    // 정정 동선: 충돌한 사실의 설정 폼으로 바로 이동한다.
+    fireEvent.click(within(conflictCard!).getByRole("button", { name: "설정에서 고치기" }));
+    expect((await screen.findByLabelText("라벨") as HTMLInputElement).value).toBe("기억 금고가 열린다");
+
+    fireEvent.click(screen.getByRole("button", { name: /모순·위험/ }));
+    const conflictAgain = (await screen.findByText(/서로 다른 초기값을 선언했습니다/)).closest("article")!;
+    fireEvent.click(within(conflictAgain).getByRole("button", { name: "무시" }));
+    fireEvent.change(await within(conflictAgain).findByPlaceholderText(/무시 사유/), { target: { value: "초안 단계라 보류" } });
+    fireEvent.click(within(conflictAgain).getByRole("button", { name: "무시 확정" }));
+    expect(await screen.findByText(/해결·무시됨 1개/)).toBeTruthy();
+
+    const dispositionRow = db.rows.get(
+      `${STORYWORLD_DRAFT_NAMESPACE}:toonspectrum:storyworld-issue-dispositions:v1:toonspectrum:storyworld-lab:v1:work:work-continuity`,
+    );
+    expect(dispositionRow).toBeDefined();
+    const envelope = JSON.parse(dispositionRow!) as { payload: string };
+    const document = JSON.parse(envelope.payload) as { dispositions: { status: string; note?: string }[] };
+    expect(document.dispositions[0]?.status).toBe("ignored");
+    expect(document.dispositions[0]?.note).toBe("초안 단계라 보류");
   });
 });
 
