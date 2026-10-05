@@ -68,6 +68,69 @@ describe("public page primitives", () => {
     expect(container.querySelector("[data-site-page-header-art]")).toBeNull();
   });
 
+  it("promotes the assigned art to a scrim banner only when the banner placement is requested", () => {
+    const { container } = render(
+      <SitePageHeader
+        eyebrow="DISCOVER"
+        title="작품 탐색"
+        description="배너 위 설명"
+        art={sitePageHeaderArtFor("/discover")}
+        artPlacement="banner"
+      />,
+    );
+    const header = container.querySelector("[data-site-page-header]");
+    expect(header?.getAttribute("data-site-page-header-variant")).toBe("banner");
+    // 아트는 측면 장식이 아니라 헤더 전면을 덮는 배경으로 그려진다.
+    const art = container.querySelector<HTMLImageElement>("[data-site-page-header-art]");
+    expect(art?.getAttribute("data-site-page-header-art")).toBe("hero");
+    expect(art?.className).toContain("absolute");
+    expect(art?.alt).toBe("");
+    expect(screen.queryAllByRole("img")).toHaveLength(0);
+    // 제목·설명은 스크림 위 밝은 글자로 얹힌다.
+    expect(screen.getByRole("heading", { level: 1, name: "작품 탐색" }).className).toContain("text-white");
+    expect(screen.getByText("배너 위 설명").className).toContain("text-white/80");
+  });
+
+  it("keeps the aside layout even in banner placement when an aside is given", () => {
+    const { container } = render(
+      <SitePageHeader
+        eyebrow="DISCOVER"
+        title="작품 탐색"
+        art="hero"
+        artPlacement="banner"
+        aside={<p>스포트라이트</p>}
+      />,
+    );
+    expect(screen.getByText("스포트라이트")).toBeTruthy();
+    const header = container.querySelector("[data-site-page-header]");
+    expect(header?.getAttribute("data-site-page-header-variant")).toBeNull();
+    expect(container.querySelector("[data-site-page-header-art]")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1 }).className).not.toContain("text-white");
+  });
+
+  it("falls back to the plain panel when banner placement has no art to show", () => {
+    const { container } = render(
+      <SitePageHeader eyebrow="NEWS" title="소식" artPlacement="banner" />,
+    );
+    const header = container.querySelector("[data-site-page-header]");
+    expect(header?.getAttribute("data-site-page-header-variant")).toBeNull();
+    expect(header?.className).toContain("bg-panel/60");
+  });
+
+  it("keeps the title readable on the navy fallback when the banner art fails to load", () => {
+    const { container } = render(
+      <SitePageHeader eyebrow="NEWS" title="소식" art="canvas-noir" artPlacement="banner" />,
+    );
+    const art = container.querySelector<HTMLImageElement>("[data-site-page-header-art]");
+    expect(art).not.toBeNull();
+    fireEvent.error(art as HTMLImageElement);
+    // 실패한 이미지만 걷어 내고 남색 폴백+스크림 층은 남는다.
+    expect(container.querySelector("[data-site-page-header-art]")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "소식" }).className).toContain("text-white");
+    const header = container.querySelector("[data-site-page-header]");
+    expect(header?.getAttribute("data-site-page-header-variant")).toBe("banner");
+  });
+
   it("makes the whole destination card one keyboard-reachable link with its title and description", () => {
     render(
       <MemoryRouter>

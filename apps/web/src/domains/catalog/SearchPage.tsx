@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import "./search-page-layout.css";
 
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
-import { sitePageHeaderArtFor } from "@/domains/legal/public/site-page-header-art";
+import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { SearchExplorer } from "@/shared/components/search-explorer";
 import { DiscoveryWorkspaceNav } from "@/shared/components/discovery-workspace-nav";
@@ -34,6 +34,7 @@ export function SearchPage() {
         title={t("search.title")}
         description={t("search.subtitle")}
         art={sitePageHeaderArtFor("/search")}
+        artPlacement={sitePageHeaderArtPlacementFor("/search")}
         actions={
           <>
             <a
@@ -43,10 +44,10 @@ export function SearchPage() {
               <SlidersHorizontal size={14} aria-hidden="true" />
               {t("search.filterButton")}
             </a>
-            {/* 랭킹 동선은 보조 링크로 격하 — 검색이 목적인 페이지의 주 CTA가 아니다. */}
+            {/* 랭킹 동선은 보조 링크로 격하 — 검색이 목적인 페이지의 주 CTA가 아니다. 배너 스크림 위라 밝은 글자로 둔다. */}
             <Link
               href="/ranking"
-              className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-medium text-fg-3 underline-offset-4 transition-colors hover:text-accent hover:underline"
+              className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-medium text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"
             >
               {t("search.compareFromRanking")}
             </Link>
@@ -54,14 +55,15 @@ export function SearchPage() {
         }
       >
         {/* 검색 입력은 바로 아래 탐색기 하나만 둔다 — 390px에서도 첫 화면 안에 보이므로 헤더에 중복 입력을 두지 않는다. */}
-        <p className="flex flex-wrap items-center gap-3 text-xs text-fg-3">
+        {/* 상태 한 줄은 배너 스크림 위에 직접 얹히므로 테마 회색 대신 밝은 글자로 둔다. */}
+        <p className="flex flex-wrap items-center gap-3 text-xs text-white/70">
           <span>
             {t("search.currentQuery")}:{" "}
-            <span className="text-fg-2">
+            <span className="text-white">
               {state.query ? `"${state.query}"` : t("search.queryAll")}
             </span>
           </span>
-          <span className="h-1 w-1 rounded-full bg-fg-3" aria-hidden="true" />
+          <span className="h-1 w-1 rounded-full bg-white/50" aria-hidden="true" />
           <span>
             {t("search.freeOnlyLabel")}: {freeOnly ? "ON" : "OFF"}
           </span>
