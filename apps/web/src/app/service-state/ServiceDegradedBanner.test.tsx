@@ -147,6 +147,28 @@ it("일반 문서 흐름의 알림은 고정 조작부의 공간을 변경하지
   view.unmount();
 });
 
+it("웜업 안내에서 고정 배너로 바뀌는 전이에서도 배너의 점유 높이를 이어서 게시한다", () => {
+  const property = "--service-status-overlay-clearance";
+  mocks.state = { ...mocks.state, report: null, warmingUp: true };
+  const view = renderBanner(true);
+  expect(screen.getByRole("status").getAttribute("data-service-degraded-banner")).toBe("warming");
+
+  // 웜업이 끝나면 같은 자리에 고정 배너가 붙는다. 이때부터 배너 높이만큼 위 요소가 올라가야 한다.
+  mocks.state = { ...mocks.state, warmingUp: false };
+  view.rerender(<MemoryRouter><ServiceDegradedBanner immersive /></MemoryRouter>);
+  const banner = screen.getByRole("status");
+  expect(banner.getAttribute("data-service-degraded-banner")).toBe("degraded");
+  banner.style.position = "fixed";
+  const bounds = vi.spyOn(banner, "getBoundingClientRect");
+  bounds.mockReturnValue(new DOMRect(0, 600, 390, 150));
+  fireEvent(window, new Event("resize"));
+  expect(document.documentElement.style.getPropertyValue(property)).toBe(`${window.innerHeight - 600 + 12}px`);
+  view.unmount();
+  expect(document.documentElement.style.getPropertyValue(property)).toBe("");
+  bounds.mockRestore();
+  document.documentElement.style.removeProperty(property);
+});
+
 
 it("단일 요청 실패만으로 커뮤니티·저장·협업 전체가 제한됐다고 안내하지 않는다", () => {
   mocks.state = { ...mocks.state, report: null };

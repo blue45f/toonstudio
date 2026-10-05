@@ -51,7 +51,13 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
   const visible = state.status === "degraded" || recoveryVisible;
 
   // 실제 알림 높이를 공유해 OST·베타 안내가 경고·재시도 버튼을 가리거나 그 아래 숨지 않게 한다.
-  useOverlayClearance(bannerRef, visible && immersive, compact);
+  // 웜업 동안에는 이 컴포넌트가 연결 칩을 따로 렌더링해 bannerRef가 비어 있으므로,
+  // 렌더링 형태가 바뀌는 전이(웜업→저하·복구)에서도 다시 재도록 상태 조합을 다시 잼 키에 넣는다.
+  useOverlayClearance(
+    bannerRef,
+    visible && immersive,
+    `${state.status}:${state.warmingUp === true}:${compact}`,
+  );
 
   useEffect(() => {
     if (!state.recoveredAt) return;
