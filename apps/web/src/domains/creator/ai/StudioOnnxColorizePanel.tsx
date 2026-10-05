@@ -6,10 +6,12 @@ import {
 // 클라우드 경로가 가능하면 그쪽이 우선이며, 이 패널은 ① AI 미설정 시 제안
 // 자리에서, ② 사용자가 "기기에서 채색"을 명시적으로 고를 때만 쓰인다.
 // 모델·런타임은 실행 버튼을 눌렀을 때만 동적 import로 지연 로딩된다.
-import { Loader2, Palette, X } from "lucide-react";
+import { Layers, Loader2, Palette, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { downloadBlob } from "../export/studio-export";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
+import type { StudioOnnxColorizeLayeredResult } from "../studio-onnx-colorize";
 import type { StudioTag2pixTagName } from "../studio-onnx-tag2pix";
 
 import { cn } from "@/shared/lib/utils";
@@ -156,6 +158,10 @@ export function StudioOnnxColorizePanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [layered, setLayered] = useState<StudioOnnxColorizeLayeredResult | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportNote, setExportNote] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => {
@@ -168,6 +174,9 @@ export function StudioOnnxColorizePanel({
   useEffect(() => {
     setPreviewSrc(null);
     setError(null);
+    setLayered(null);
+    setExportNote(null);
+    setExportError(null);
   }, [src]);
 
   const selectedTags = TAG_GROUPS
@@ -178,16 +187,20 @@ export function StudioOnnxColorizePanel({
     if (busy) return;
     setBusy(true);
     setError(null);
+    setLayered(null);
+    setExportNote(null);
+    setExportError(null);
     const controller = new AbortController();
     abortRef.current = controller;
     try {
       const service = await import("../studio-onnx-colorize");
-      const result = await service.colorizeLineArtOnDevice(src, {
+      const result = await service.colorizeLineArtOnDeviceWithLayers(src, {
         tags: selectedTags,
         signal: controller.signal,
       });
       if (!mountedRef.current) return;
       setPreviewSrc(result.dataUrl);
+      setLayered(result);
       onResult(result.dataUrl);
     } catch (cause) {
       if (!mountedRef.current) return;
@@ -203,6 +216,47 @@ export function StudioOnnxColorizePanel({
     } finally {
       if (mountedRef.current) setBusy(false);
       if (abortRef.current === controller) abortRef.current = null;
+    }
+  };
+
+  const exportLayeredPsd = async () => {
+    if (!layered || exporting) return;
+    setExporting(true);
+    setExportNote(null);
+    setExportError(null);
+    try {
+      // 분리·PSD 조립 모듈(ag-psd 포함)은 저장 버튼을 눌렀을 때만 불러온다.
+      const layersModule = await import("./studio-onnx-colorize-layers");
+      const split = layersModule.splitStudioColorizeLayers({
+        colorPlane: layered.colorPlane,
+        sourceRgba: layered.sourceRgba,
+        sourceWidth: layered.width,
+        sourceHeight: layered.height,
+      });
+      const { blob, receipt } = layersModule.buildStudioColorizeLayerPsd({
+        title: T("기기 채색 레이어"),
+        width: layered.width,
+        height: layered.height,
+        layers: split.layers,
+        skipped: split.skipped,
+        flattened: layered.compositedRgba,
+      });
+      downloadBlob(blob, "toonstudio-colorize-layers.psd");
+      if (!mountedRef.current) return;
+      const skippedReason = receipt.skipped[0]?.reason;
+      setExportNote(
+        layersModule.studioColorizeLayerPsdMessage(receipt)
+        + (skippedReason ? ` ${skippedReason}` : ""),
+      );
+    } catch (cause) {
+      if (!mountedRef.current) return;
+      setExportError(
+        cause instanceof Error && cause.message
+          ? cause.message
+          : T("레이어 PSD를 만들지 못했어요. 이미지가 너무 크면 줄여서 다시 시도해 주세요."),
+      );
+    } finally {
+      if (mountedRef.current) setExporting(false);
     }
   };
 
@@ -229,6 +283,37 @@ export function StudioOnnxColorizePanel({
             alt={T("기기 채색 결과 미리보기")}
             className="max-h-32 w-full object-contain"
           />
+        </div>
+      )}
+
+      {previewSrc && layered && (
+        <div className="flex flex-col gap-1.5 border-t border-line pt-2">
+          <button
+            type="button"
+            onClick={() => void exportLayeredPsd()}
+            disabled={exporting || busy}
+            className={cn(
+              "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 py-2 text-sm font-semibold text-fg-2",
+              STUDIO_EASE,
+              "hover:border-accent/40 hover:text-fg disabled:cursor-not-allowed disabled:opacity-60",
+            )}
+          >
+            {exporting
+              ? <Loader2 size={14} className="animate-spin" aria-hidden />
+              : <Layers size={14} aria-hidden />}
+            {exporting ? T("PSD 만드는 중…") : T("레이어를 나눠 PSD로 저장")}
+          </button>
+          <p className="text-[0.66rem] leading-relaxed text-fg-3">
+            {T("선화·음영·밑색 레이어로 나눈 PSD예요. 포토샵·클립스튜디오에서 이어서 편집할 수 있어요.")}
+          </p>
+          {exportNote && (
+            <p className="text-xs leading-relaxed text-fg-2">{exportNote}</p>
+          )}
+          {exportError && (
+            <p role="alert" className="text-xs leading-relaxed text-bad">
+              {exportError}
+            </p>
+          )}
         </div>
       )}
 
