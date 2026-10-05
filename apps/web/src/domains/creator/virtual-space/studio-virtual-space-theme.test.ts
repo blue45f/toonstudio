@@ -19,9 +19,9 @@ import {
 const TONES = [...new Set(CAMPUS_ZONES.map((zone) => zone.tone))] as StudioCampusZoneTone[];
 
 describe("공간 테마 모델", () => {
-  it("테마 5종이 모두 등록돼 있고 기본 테마가 존재한다", () => {
+  it("테마 7종이 모두 등록돼 있고 기본 테마가 존재한다", () => {
     expect(STUDIO_SPACE_THEMES.map((theme) => theme.key)).toEqual([...STUDIO_SPACE_THEME_KEYS]);
-    expect(STUDIO_SPACE_THEME_KEYS).toEqual(["modern-office", "cozy-wood", "neon-night", "garden-terrace", "library"]);
+    expect(STUDIO_SPACE_THEME_KEYS).toEqual(["modern-office", "cozy-wood", "neon-night", "garden-terrace", "library", "sakura-campus", "sunset-harbor"]);
     expect(studioSpaceTheme(DEFAULT_STUDIO_SPACE_THEME).key).toBe("modern-office");
     expect(isStudioSpaceThemeKey("neon-night")).toBe(true);
     expect(isStudioSpaceThemeKey("pastel")).toBe(false);

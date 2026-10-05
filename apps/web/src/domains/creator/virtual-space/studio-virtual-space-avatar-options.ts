@@ -18,7 +18,7 @@ export interface StudioAvatarColorOption {
   readonly labelEn: string;
 }
 
-/** 피부색 10종. 앞의 4개는 기존 해시 풀과 동일하다. */
+/** 피부색 12종. 앞의 4개는 기존 해시 풀과 동일하다. */
 export const STUDIO_AVATAR_SKIN_OPTIONS: readonly StudioAvatarColorOption[] = [
   { value: "oklch(0.91 0.055 55)", labelKo: "밝은 살구", labelEn: "Light peach" },
   { value: "oklch(0.86 0.07 48)", labelKo: "살구", labelEn: "Peach" },
@@ -30,6 +30,8 @@ export const STUDIO_AVATAR_SKIN_OPTIONS: readonly StudioAvatarColorOption[] = [
   { value: "oklch(0.52 0.065 40)", labelKo: "에스프레소", labelEn: "Espresso" },
   { value: "oklch(0.88 0.06 25)", labelKo: "로즈 베이지", labelEn: "Rose beige" },
   { value: "oklch(0.74 0.055 95)", labelKo: "올리브", labelEn: "Olive" },
+  { value: "oklch(0.93 0.05 20)", labelKo: "핑크 포슬린", labelEn: "Pink porcelain" },
+  { value: "oklch(0.58 0.08 35)", labelKo: "모카", labelEn: "Mocha" },
 ];
 
 /** 헤어 색상 옵션 (하이라이트 포함). 앞의 6개는 기존 해시 풀과 동일하다. */
@@ -50,9 +52,11 @@ export const STUDIO_AVATAR_HAIR_COLOR_OPTIONS: readonly StudioAvatarHairColorOpt
   { value: "oklch(0.78 0.11 55)", highlight: "oklch(0.88 0.1 65)", labelKo: "피치", labelEn: "Peach" },
   { value: "oklch(0.34 0.09 255)", highlight: "oklch(0.55 0.11 250)", labelKo: "딥 네이비", labelEn: "Deep navy" },
   { value: "oklch(0.62 0.02 260)", highlight: "oklch(0.8 0.015 255)", labelKo: "애쉬 그레이", labelEn: "Ash gray" },
+  { value: "oklch(0.6 0.13 165)", highlight: "oklch(0.79 0.12 165)", labelKo: "에메랄드", labelEn: "Emerald" },
+  { value: "oklch(0.66 0.13 70)", highlight: "oklch(0.83 0.11 75)", labelKo: "카라멜", labelEn: "Caramel" },
 ];
 
-/** 의상 색상 10종. 앞의 6개는 기존 해시 풀과 동일하다. */
+/** 의상 색상 12종. 앞의 6개는 기존 해시 풀과 동일하다. */
 export const STUDIO_AVATAR_OUTFIT_COLOR_OPTIONS: readonly StudioAvatarColorOption[] = [
   { value: "oklch(0.63 0.2 300)", labelKo: "바이올렛", labelEn: "Violet" },
   { value: "oklch(0.68 0.18 355)", labelKo: "로즈", labelEn: "Rose" },
@@ -64,9 +68,11 @@ export const STUDIO_AVATAR_OUTFIT_COLOR_OPTIONS: readonly StudioAvatarColorOptio
   { value: "oklch(0.8 0.06 75)", labelKo: "베이지", labelEn: "Beige" },
   { value: "oklch(0.62 0.09 110)", labelKo: "카키", labelEn: "Khaki" },
   { value: "oklch(0.74 0.09 295)", labelKo: "라벤더", labelEn: "Lavender" },
+  { value: "oklch(0.58 0.13 190)", labelKo: "틸", labelEn: "Teal" },
+  { value: "oklch(0.72 0.09 350)", labelKo: "더스티 핑크", labelEn: "Dusty pink" },
 ];
 
-/** 포인트 색상 8종. 앞의 6개는 기존 해시 풀과 동일하다. */
+/** 포인트 색상 10종. 앞의 6개는 기존 해시 풀과 동일하다. */
 export const STUDIO_AVATAR_ACCENT_OPTIONS: readonly StudioAvatarColorOption[] = [
   { value: "oklch(0.78 0.19 335)", labelKo: "핫핑크", labelEn: "Hot pink" },
   { value: "oklch(0.78 0.17 250)", labelKo: "페리윙클", labelEn: "Periwinkle" },
@@ -76,6 +82,8 @@ export const STUDIO_AVATAR_ACCENT_OPTIONS: readonly StudioAvatarColorOption[] = 
   { value: "oklch(0.72 0.18 295)", labelKo: "그레이프", labelEn: "Grape" },
   { value: "oklch(0.8 0.13 220)", labelKo: "스카이", labelEn: "Sky" },
   { value: "oklch(0.8 0.13 50)", labelKo: "피치", labelEn: "Peach" },
+  { value: "oklch(0.76 0.14 190)", labelKo: "민트 소다", labelEn: "Mint soda" },
+  { value: "oklch(0.7 0.16 310)", labelKo: "오키드", labelEn: "Orchid" },
 ];
 
 /** 키 + 라벨 옵션. */

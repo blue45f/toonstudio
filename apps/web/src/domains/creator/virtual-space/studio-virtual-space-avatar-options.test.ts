@@ -12,13 +12,24 @@ import {
 } from "./studio-virtual-space-avatar-options";
 
 describe("아바타 꾸미기 옵션 카탈로그", () => {
-  it("요구 수량을 만족한다 (피부 10·헤어색 12·헤어스타일 18·의상 18·액세서리 16)", () => {
-    expect(STUDIO_AVATAR_SKIN_OPTIONS).toHaveLength(10);
-    expect(STUDIO_AVATAR_HAIR_COLOR_OPTIONS).toHaveLength(12);
+  it("요구 수량을 만족한다 (피부 12·헤어색 14·헤어스타일 18·의상 18·액세서리 16)", () => {
+    expect(STUDIO_AVATAR_SKIN_OPTIONS).toHaveLength(12);
+    expect(STUDIO_AVATAR_HAIR_COLOR_OPTIONS).toHaveLength(14);
+    expect(STUDIO_AVATAR_OUTFIT_COLOR_OPTIONS).toHaveLength(12);
+    expect(STUDIO_AVATAR_ACCENT_OPTIONS).toHaveLength(10);
     expect(STUDIO_AVATAR_HAIR_STYLE_OPTIONS.length).toBeGreaterThanOrEqual(10);
     expect(STUDIO_AVATAR_OUTFIT_STYLE_OPTIONS.length).toBeGreaterThanOrEqual(10);
     expect(STUDIO_AVATAR_ACCESSORY_OPTIONS).toHaveLength(16);
     expect(STUDIO_AVATAR_EXPRESSION_OPTIONS).toHaveLength(4);
+  });
+
+  it("기존 해시 풀 앞부분의 값·순서가 그대로다 (기본 아바타 불변)", () => {
+    expect(STUDIO_AVATAR_SKIN_OPTIONS.slice(0, 4).map((option) => option.value)).toEqual([
+      "oklch(0.91 0.055 55)", "oklch(0.86 0.07 48)", "oklch(0.78 0.08 52)", "oklch(0.68 0.075 50)",
+    ]);
+    expect(STUDIO_AVATAR_HAIR_COLOR_OPTIONS[0]?.value).toBe("oklch(0.31 0.055 25)");
+    expect(STUDIO_AVATAR_OUTFIT_COLOR_OPTIONS[0]?.value).toBe("oklch(0.63 0.2 300)");
+    expect(STUDIO_AVATAR_ACCENT_OPTIONS[0]?.value).toBe("oklch(0.78 0.19 335)");
   });
 
   it("모든 색상 값이 oklch 형식이다", () => {

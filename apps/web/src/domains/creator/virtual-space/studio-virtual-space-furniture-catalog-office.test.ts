@@ -27,7 +27,7 @@ describe("사무실 확장 가구 (트랙 G)", () => {
 
   it("신규 스펙 14종이 모두 조회된다", () => {
     for (const id of NEW_SPEC_IDS) expect(furnitureById(id), id).not.toBeNull();
-    expect(STUDIO_FURNITURE_CATALOG.length).toBe(34);
+    expect(STUDIO_FURNITURE_CATALOG.length).toBe(44);
   });
 
   it("카탈로그 구조 검증을 통과한다", () => {

@@ -11,7 +11,7 @@ afterEach(() => cleanup());
 vi.setConfig({ testTimeout: 30000 });
 
 describe("StudioVirtualSpaceThemePicker", () => {
-  it("테마 5종을 모두 보여 주고 현재 테마가 눌린 상태로 표시된다", () => {
+  it("테마 7종을 모두 보여 주고 현재 테마가 눌린 상태로 표시된다", () => {
     render(<StudioVirtualSpaceThemePicker value="modern-office" onChange={vi.fn()} />);
     const buttons = screen.getAllByRole("button");
     expect(buttons).toHaveLength(STUDIO_SPACE_THEMES.length);

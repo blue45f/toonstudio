@@ -168,7 +168,7 @@ export const STUDIO_CHARACTER_ACCESSORY_PARTS: readonly StudioCharacterAccessory
   }),
 );
 
-/** 스킨톤 파츠 10종 (색상 값 포함). */
+/** 스킨톤 파츠 12종 (색상 값 포함). */
 export interface StudioCharacterSkinPart extends StudioCharacterPartBase {
   readonly kind: "skin";
   readonly color: string;
@@ -276,6 +276,18 @@ export const STUDIO_CHARACTER_PART_PRESETS: readonly StudioCharacterPartPreset[]
     hairStyle: "hime", outfitStyle: "hanbok", accessory: "flower",
     skin: "oklch(0.91 0.055 55)", hair: "oklch(0.31 0.055 25)", hairHighlight: "oklch(0.56 0.12 25)",
     outfit: "oklch(0.74 0.09 295)", accent: "oklch(0.78 0.19 335)" }),
+  preset({ key: "editor", labelKo: "에디터 룩", labelEn: "Editor look",
+    hairStyle: "ponytail", outfitStyle: "turtleneck", accessory: "scarf",
+    skin: "oklch(0.58 0.08 35)", hair: "oklch(0.6 0.13 165)", hairHighlight: "oklch(0.79 0.12 165)",
+    outfit: "oklch(0.58 0.13 190)", accent: "oklch(0.7 0.16 310)" }),
+  preset({ key: "archivist", labelKo: "아키비스트 룩", labelEn: "Archivist look",
+    hairStyle: "braid", outfitStyle: "jacket", accessory: "tote",
+    skin: "oklch(0.93 0.05 20)", hair: "oklch(0.66 0.13 70)", hairHighlight: "oklch(0.83 0.11 75)",
+    outfit: "oklch(0.72 0.09 350)", accent: "oklch(0.76 0.14 190)" }),
+  preset({ key: "broadcast", labelKo: "방송 룩", labelEn: "Broadcast look",
+    hairStyle: "wolf", outfitStyle: "hoodie", accessory: "sunglasses",
+    skin: "oklch(0.82 0.09 35)", hair: "oklch(0.34 0.09 255)", hairHighlight: "oklch(0.55 0.11 250)",
+    outfit: "oklch(0.6 0.16 20)", accent: "oklch(0.86 0.16 85)" }),
 ]);
 
 export function studioCharacterPartPreset(key: string): StudioCharacterPartPreset | null {
