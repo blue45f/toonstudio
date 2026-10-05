@@ -8,6 +8,7 @@ import {
   DEFAULT_MARKET_PRODUCTION_PROFILE,
   evaluateAndSortMarketProductionRecords,
   evaluateMarketProductionFit,
+  marketProductionFitReasonLine,
   mergeMarketProductionProfile,
   parseMarketProductionProfile,
   serializeMarketProductionProfile,
@@ -232,5 +233,44 @@ describe("market production fit", () => {
 
     expect(sorted.map((item) => item.record.name)).toEqual(["Ready", "Blocked"]);
     expect(sorted.map((item) => item.evaluation.status)).toEqual(["ready", "blocked"]);
+  });
+});
+
+describe("market production fit reason line", () => {
+  it("derives the ready reason from the license and provenance pass summaries only", () => {
+    const evaluation = evaluateMarketProductionFit(record(), completeProfile);
+    const reason = marketProductionFitReasonLine(evaluation);
+
+    expect(reason.tone).toBe("ready");
+    expect(reason.text).toBe(
+      "상업 작품 사용이 허용된 사용권입니다. · 배급자가 직접 만든 원본으로 선언했습니다.",
+    );
+    for (const fragment of reason.text.split(" · ")) {
+      expect(evaluation.checks.map((check) => check.summary)).toContain(fragment);
+    }
+  });
+
+  it("names the first blocked check instead of inventing a recommendation", () => {
+    const evaluation = evaluateMarketProductionFit(
+      record({ minimumStudioVersion: "9.0.0" }),
+      completeProfile,
+    );
+    const reason = marketProductionFitReasonLine(evaluation);
+
+    expect(reason.tone).toBe("blocked");
+    expect(reason.text).toBe("Studio 버전 — Studio v9.0.0 이상이 필요합니다.");
+  });
+
+  it("names the first review check when nothing is blocked", () => {
+    const evaluation = evaluateMarketProductionFit(
+      record(),
+      DEFAULT_MARKET_PRODUCTION_PROFILE,
+    );
+    const reason = marketProductionFitReasonLine(evaluation);
+
+    expect(reason.tone).toBe("review");
+    expect(reason.text).toBe(
+      "Studio 버전 — 현재 Studio 버전을 입력하면 설치 가능 여부를 판정합니다.",
+    );
   });
 });

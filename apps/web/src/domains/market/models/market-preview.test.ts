@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   brushPreviewData,
   filterPreviewData,
+  marketFilterCss,
   palettePreviewData,
   palettePreviewColors,
   recipePreviewData,
@@ -443,5 +444,23 @@ describe("market-preview", () => {
       recipeId: "studio-3d-asset:classroom-chair",
       runtimeRef: "studio-3d-asset:classroom-chair",
     });
+  });
+});
+
+describe("marketFilterCss", () => {
+  it("builds css filters from numeric preview values in a stable order", () => {
+    expect(marketFilterCss({ brightness: 1.1, contrast: 1.2, saturate: 0.8, hue: 15 }))
+      .toBe("brightness(1.1) contrast(1.2) saturate(0.8) hue-rotate(15deg)");
+  });
+
+  it("converts percent saturation and clamps blur like the detail preview", () => {
+    expect(marketFilterCss({ saturation: 40, blur: 20 })).toBe("saturate(1.4) blur(8px)");
+    expect(marketFilterCss({ blur: 0 })).toBe("contrast(1.15) saturate(1.2)");
+  });
+
+  it("falls back to the default correction when no supported value exists", () => {
+    expect(marketFilterCss({})).toBe("contrast(1.15) saturate(1.2)");
+    expect(marketFilterCss({ brightness: "1.2", enabled: true }))
+      .toBe("contrast(1.15) saturate(1.2)");
   });
 });
