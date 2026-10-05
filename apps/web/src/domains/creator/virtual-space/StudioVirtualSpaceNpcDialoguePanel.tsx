@@ -15,7 +15,7 @@ import {
 import type { StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import { studioVirtualCampusZoneMeta } from "./studio-virtual-space-campus-world";
 import type { StudioVirtualSpacePeer } from "./studio-virtual-space-model";
-import { studioNpcCastHasKey, studioNpcCastSkinByKey } from "./studio-virtual-space-npc-cast";
+import { studioNpcCastLabel } from "./studio-virtual-space-npc-cast";
 import { studioNpcLabel, studioNpcRole } from "./studio-virtual-space-npc-director";
 import type { StudioWorldNpcDefinition, StudioWorldRoomDefinition } from "./studio-virtual-space-world-manifest";
 import { studioTownCompanionSnapshot, studioTownEvents, studioTownSeasonAt } from "./studio-virtual-space-town-program";
@@ -40,14 +40,15 @@ function nextWork(snapshot: StudioVirtualOperationsSnapshot, fallback: string): 
 /** 캐스트 라벨 '모아 · 컨시어지'를 이름과 역할로 나눈다. 캐스트 밖 NPC는 역할 라벨만 쓴다. */
 function npcIdentity(npc: StudioWorldNpcDefinition) {
   const role = studioNpcLabel(npc);
-  if (!studioNpcCastHasKey(npc.skinKey)) {
+  // 이름만 필요하므로 텍스처를 만들지 않고 라벨을 조회한다(프로시저럴 스킨 생성은 캔버스가 필요하다).
+  const castLabel = studioNpcCastLabel(npc.skinKey);
+  if (!castLabel) {
     const roleKo = role.ko.replace(/^NPC\s*·\s*/u, "");
     const roleEn = role.en.replace(/^NPC\s*·\s*/u, "");
     return { nameKo: roleKo, nameEn: roleEn, roleKo, roleEn };
   }
-  const skin = studioNpcCastSkinByKey(npc.skinKey);
-  const [nameKo = skin.labelKo, roleKo = ""] = skin.labelKo.split(" · ");
-  const [nameEn = skin.labelEn, roleEn = ""] = skin.labelEn.split(" · ");
+  const [nameKo = castLabel.ko, roleKo = ""] = castLabel.ko.split(" · ");
+  const [nameEn = castLabel.en, roleEn = ""] = castLabel.en.split(" · ");
   return { nameKo, nameEn, roleKo, roleEn };
 }
 

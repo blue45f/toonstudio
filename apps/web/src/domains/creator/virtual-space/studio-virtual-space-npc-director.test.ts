@@ -35,11 +35,17 @@ describe("living studio NPC director", () => {
     expect(validateStudioWorldManifest(DEFAULT_STUDIO_WORLD_MANIFEST)).toEqual([]);
     expect(DEFAULT_STUDIO_WORLD_MANIFEST.npcs.map(studioNpcRole)).toEqual([
       "guide", "producer", "editor", "artist", "librarian", "cafe", "security", "host",
+      // 상주 확장 6명 — 역할은 스킨이 아니라 방에서 파생된다(studioNpcRole).
+      "writer", "artist", "editor", "host", "resident", "producer",
     ]);
     expect(new Set(DEFAULT_STUDIO_WORLD_MANIFEST.npcs.map((actor) => actor.skinKey)).size)
       .toBe(DEFAULT_STUDIO_WORLD_MANIFEST.npcs.length);
     expect(DEFAULT_STUDIO_WORLD_MANIFEST.npcs.map((actor) => studioNpcInteraction(DEFAULT_STUDIO_WORLD_MANIFEST, actor)?.action))
-      .toEqual(["assistant", "assistant", "review", "canvas", "assets", "community", "live", "live"]);
+      .toEqual([
+        "assistant", "assistant", "review", "canvas", "assets", "community", "live", "live",
+        // 확장 6명도 전원 자기 방의 도구와 연결된다 — 역할 액션이 방에 없으면 방 스테이션으로 폴백한다.
+        "story", "comic", "review", "assistant", "community", "assistant",
+      ]);
     for (const actor of DEFAULT_STUDIO_WORLD_MANIFEST.npcs) expect(studioNpcLabel(actor).en).toMatch(/^NPC · /u);
     expect(studioNpcInteraction(fixture(), npc)).toBeNull();
   });
