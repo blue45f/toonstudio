@@ -20,6 +20,13 @@ describe("createStudioManualChunks", () => {
       .toBe("studio-core-micro-contracts");
   });
 
+  it("keeps the lazy-surface skeleton leaf out of the Studio i18n loader chunk", () => {
+    expect(manualChunk(creatorModule("StudioLazySurfaceFallback.tsx")))
+      .toBe("studio-lazy-surface-fallback");
+    expect(manualChunk(creatorModule("studio-router/useStudioI18nPriorityLoading.ts")))
+      .toBeUndefined();
+  });
+
   it("does not color connected brush runtime graphs into the app entry closure", () => {
     expect(manualChunk(creatorModule("brush/studio-brush-pack-id.ts")))
       .toBeUndefined();

@@ -219,6 +219,16 @@ export function createStudioManualChunks(predicates: {
       // Keep the tiny texture helper in the same request instead of paying a second chunk.
       return "studio-paper-brush-response";
     }
+    if (id.endsWith("/src/domains/creator/StudioLazySurfaceFallback.tsx")) {
+      // The route/panel skeleton leaf is dependency-free apart from React, but rolldown left
+      // it to shared-color grouping. Once the Studio i18n loader changed entry reachability,
+      // that grouping absorbed this leaf into the `useStudioI18nPriorityLoading` chunk, so every
+      // BG3D editor panel that only wants a skeleton spinner gained a static edge to ~82 KiB of
+      // i18n loader code (+97 KiB raw / +34 KiB gzip / +8 chunks on the editor activation).
+      // Naming the leaf keeps it one small request owned by the same importers as before.
+      // Never add routers, panels, dictionaries or locale catalogs to this chunk.
+      return "studio-lazy-surface-fallback";
+    }
     if (
       id.includes("/node_modules/react/") ||
       id.includes("/node_modules/react-dom/") ||
