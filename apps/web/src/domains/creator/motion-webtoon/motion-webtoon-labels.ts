@@ -149,3 +149,31 @@ export const MOTION_WEBTOON_UI_LABELS = {
 } as const;
 
 export type MotionWebtoonUiLabelKey = keyof typeof MOTION_WEBTOON_UI_LABELS;
+
+/** 자막 패널 라벨. */
+export const CAPTION_UI_LABELS = {
+  captionTitle: label("자막", "Captions"),
+  captionDesc: label(
+    "대사와 컷 타이밍으로 자막을 자동 생성합니다. 자막 문구를 고치면 대사가 함께 바뀝니다.",
+    "Captions are generated from dialogue and cut timing. Editing a caption updates the dialogue too.",
+  ),
+  captionEmpty: label(
+    "대사가 있는 컷이 없어 자막을 만들 수 없습니다.",
+    "No cut has dialogue yet, so there are no captions to build.",
+  ),
+  captionSkipped: label(
+    "컷 길이를 벗어나거나 비어 있어 자막에서 빠진 대사가 {count}개 있습니다.",
+    "{count} line(s) fall outside their cut or are empty and were left out of the captions.",
+  ),
+  captionTextLabel: label("자막 문구", "Caption text"),
+  captionPosition: label("자막 위치", "Caption position"),
+  captionSize: label("자막 크기", "Caption size"),
+  positionBottom: label("아래", "Bottom"),
+  positionTop: label("위", "Top"),
+  sizeSmall: label("작게", "Small"),
+  sizeMedium: label("보통", "Medium"),
+  sizeLarge: label("크게", "Large"),
+  captionPreview: label("자막 미리보기", "Caption preview"),
+  downloadSrt: label("SRT 내려받기", "Download SRT"),
+  downloadVtt: label("VTT 내려받기", "Download VTT"),
+} as const;

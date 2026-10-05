@@ -1146,3 +1146,97 @@
   background: linear-gradient(135deg, color-mix(in oklch, var(--color-accent) 45%, var(--color-panel)), var(--color-raised));
 }
 
+
+/* 자막 패널 */
+.mw-caption-stage {
+  position: relative;
+  min-height: 6.5rem;
+  border-radius: 0.6rem;
+  background: #101014;
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+}
+
+.mw-caption-stage-bottom {
+  align-items: flex-end;
+}
+
+.mw-caption-stage-top {
+  align-items: flex-start;
+}
+
+.mw-caption-stage-text {
+  margin: 0;
+  max-width: 90%;
+  text-align: center;
+  color: #fff;
+  background: rgb(0 0 0 / 55%);
+  border-radius: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  line-height: 1.45;
+}
+
+.mw-caption-size-small .mw-caption-stage-text {
+  font-size: 0.78rem;
+}
+
+.mw-caption-size-medium .mw-caption-stage-text {
+  font-size: 0.92rem;
+}
+
+.mw-caption-size-large .mw-caption-stage-text {
+  font-size: 1.1rem;
+}
+
+.mw-caption-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mw-caption-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.mw-caption-time {
+  border: 1px solid var(--color-line);
+  border-radius: 0.4rem;
+  background: var(--color-panel);
+  color: var(--color-fg);
+  font-size: 0.78rem;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mw-caption-cut {
+  font-size: 0.78rem;
+  color: var(--color-fg-3);
+  padding-top: 0.35rem;
+  white-space: nowrap;
+}
+
+.mw-caption-input {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: 0.4rem;
+  background: var(--color-panel);
+  color: var(--color-fg);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.5rem;
+  resize: vertical;
+}
+
+.mw-caption-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
