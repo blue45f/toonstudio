@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -81,5 +82,49 @@ describe("StudioWriterRoomPanel byte admission", () => {
     expect(screen.queryByText("501/500")).toBeNull();
     expect(screen.getByRole("button", { name: "비트 추가" }).hasAttribute("disabled"))
       .toBe(false);
+  });
+});
+
+describe("StudioWriterRoomPanel 소설에서 가져오기", () => {
+  it("소설 텍스트를 변환해 작가실 문서의 장면·대사로 반영한다", () => {
+    const document = createEmptyStudioWriterRoomDocument();
+    const onChange = vi.fn();
+    render(
+      <MemoryRouter>
+        <StudioWriterRoomPanel
+          open
+          onClose={vi.fn()}
+          document={document}
+          onChange={onChange}
+          characters={[
+            {
+              id: "char-minjun",
+              name: "민준",
+              role: "",
+              appearance: "",
+              costume: "",
+              colors: [],
+              voice: "",
+              goal: "",
+              relationships: [],
+              props: [],
+              lockedFields: [],
+            },
+          ]}
+        />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "소설에서 가져오기" }));
+    fireEvent.change(screen.getByLabelText("소설 원고"), {
+      target: { value: '민준이 말했다. "오늘은 여기까지 하자."' },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "글콘티 초안으로 변환" }));
+    fireEvent.click(screen.getByRole("button", { name: "작가실에 반영하기" }));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const applied = onChange.mock.calls[0]?.[0] as StudioWriterRoomDocument;
+    expect(applied.stages.scenes.items).toHaveLength(1);
+    expect(applied.stages["dialogue-sfx"].dialogue[0]?.characterId).toBe("char-minjun");
   });
 });

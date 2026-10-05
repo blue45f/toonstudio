@@ -1,7 +1,5 @@
 import {
   ArrowDown,
-  ArrowLeft,
-  ArrowRight,
   ArrowUp,
   BookOpenText,
   Check,
@@ -38,6 +36,11 @@ import {
   type StudioWriterRoomSynopsis,
 } from "./studio-writer-room";
 import { STUDIO_WRITER_ROOM_STAGE_META } from "./studio-writer-room-ui";
+import {
+  StudioWriterRoomNovelImportButton,
+  StudioWriterRoomNovelImportScreen,
+} from "./StudioWriterRoomNovelImport";
+import { StudioWriterRoomPanelFooter } from "./StudioWriterRoomPanelFooter";
 import {
   StudioWriterRoomAiReviewPanel,
   StudioWriterRoomCanvasPlanHandoff,
@@ -1319,6 +1322,7 @@ export function StudioWriterRoomPanel({
   const [activeStage, setActiveStage] = useState<StudioWriterRoomStage>("premise");
   const [actionError, setActionError] = useState<string | null>(null);
   const [requestingAi, setRequestingAi] = useState(false);
+  const [novelConvertOpen, setNovelConvertOpen] = useState(false);
   const completedCount = STUDIO_WRITER_ROOM_STAGES.reduce(
     (count, stage) => count + (document.completion[stage] ? 1 : 0),
     0
@@ -1644,6 +1648,10 @@ export function StudioWriterRoomPanel({
               {STUDIO_WRITER_ROOM_STAGE_META[activeStage].description}
             </p>
           </div>
+          <StudioWriterRoomNovelImportButton
+            open={novelConvertOpen}
+            onToggle={() => setNovelConvertOpen((current) => !current)}
+          />
           <label
             className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 text-xs font-semibold transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent ${
               document.completion[activeStage]
@@ -1734,64 +1742,45 @@ export function StudioWriterRoomPanel({
           />
         ) : null}
 
-        <div className="min-h-0 flex-1 overflow-y-auto xl:grid xl:grid-cols-[minmax(0,1fr)_23rem] xl:overflow-hidden">
-          <div
-            id={`writer-room-panel-${activeStage}`}
-            role="tabpanel"
-            aria-labelledby={`writer-room-tab-${activeStage}`}
-            tabIndex={0}
-            className="min-h-0 bg-canvas focus:outline-none xl:overflow-y-auto"
-          >
-            {stageEditor}
-          </div>
-          <StudioWriterRoomSuggestionsPanel
-            stage={activeStage}
+        {novelConvertOpen ? (
+          <StudioWriterRoomNovelImportScreen
             document={document}
             characters={characters}
             onChange={onChange}
             onError={setActionError}
-          />
-        </div>
-
-        <footer
-          className="flex shrink-0 items-center gap-2 border-t border-line bg-panel px-3 pt-2 sm:px-5"
-          style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
-        >
-          <span className="hidden min-w-0 flex-1 truncate text-[0.68rem] text-fg-3 sm:block">
-            변경 내용은 현재 작품 문서와 함께 저장됩니다. · Esc로 닫기
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              const previous = STUDIO_WRITER_ROOM_STAGES[activeIndex - 1];
-              if (previous) selectStage(previous);
+            onApplied={() => {
+              setActionError(null);
+              setNovelConvertOpen(false);
+              setActiveStage("scenes");
             }}
-            disabled={activeIndex <= 0}
-            className={`${BUTTON_CLASS} flex-1 sm:flex-none`}
-          >
-            <ArrowLeft size={14} aria-hidden /> 이전
-          </button>
-          {activeIndex < STUDIO_WRITER_ROOM_STAGES.length - 1 ? (
-            <button
-              type="button"
-              onClick={() => {
-                const next = STUDIO_WRITER_ROOM_STAGES[activeIndex + 1];
-                if (next) selectStage(next);
-              }}
-              className={`${BUTTON_CLASS} flex-1 bg-accent text-on-accent hover:border-accent hover:bg-accent-hover hover:text-on-accent sm:flex-none`}
+            onCancel={() => setNovelConvertOpen(false)}
+          />
+        ) : (
+          <div className="min-h-0 flex-1 overflow-y-auto xl:grid xl:grid-cols-[minmax(0,1fr)_23rem] xl:overflow-hidden">
+            <div
+              id={`writer-room-panel-${activeStage}`}
+              role="tabpanel"
+              aria-labelledby={`writer-room-tab-${activeStage}`}
+              tabIndex={0}
+              className="min-h-0 bg-canvas focus:outline-none xl:overflow-y-auto"
             >
-              다음 <ArrowRight size={14} aria-hidden />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onClose}
-              className={`${BUTTON_CLASS} flex-1 bg-accent text-on-accent hover:border-accent hover:bg-accent-hover hover:text-on-accent sm:flex-none`}
-            >
-              Writer Room 닫기
-            </button>
-          )}
-        </footer>
+              {stageEditor}
+            </div>
+            <StudioWriterRoomSuggestionsPanel
+              stage={activeStage}
+              document={document}
+              characters={characters}
+              onChange={onChange}
+              onError={setActionError}
+            />
+          </div>
+        )}
+
+        <StudioWriterRoomPanelFooter
+          activeStage={activeStage}
+          onSelectStage={selectStage}
+          onClose={onClose}
+        />
       </div>
     </div>
   );
