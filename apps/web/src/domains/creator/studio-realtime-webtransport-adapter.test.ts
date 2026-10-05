@@ -42,6 +42,8 @@ class FakeWebTransport implements StudioWebTransportLike {
   ) => void;
   private streamController!: ReadableStreamDefaultController<Uint8Array>;
   private datagramController!: ReadableStreamDefaultController<Uint8Array>;
+  private datagramGate: Promise<void> | null = null;
+  private releaseDatagramGate: (() => void) | null = null;
   readonly datagrams: StudioWebTransportLike["datagrams"];
 
   constructor() {
@@ -59,11 +61,28 @@ class FakeWebTransport implements StudioWebTransportLike {
         },
       }),
       writable: new WritableStream<Uint8Array>({
-        write: (chunk) => {
+        write: async (chunk) => {
+          if (this.datagramGate) await this.datagramGate;
           this.datagramSent.push(chunk);
         },
       }),
     };
+  }
+
+  blockDatagrams(): void {
+    this.datagramGate = new Promise<void>((resolve) => {
+      this.releaseDatagramGate = resolve;
+    });
+  }
+
+  releaseDatagrams(): void {
+    this.releaseDatagramGate?.();
+    this.datagramGate = null;
+    this.releaseDatagramGate = null;
+  }
+
+  setMaxDatagramSize(bytes: number): void {
+    (this.datagrams as { maxDatagramSize?: number }).maxDatagramSize = bytes;
   }
 
   createBidirectionalStream() {
@@ -270,6 +289,52 @@ describe("WebTransport 소켓: 레인 구분과 종료", () => {
     expect(transport.datagramSent).toHaveLength(1);
     expect(new TextDecoder().decode(transport.datagramSent[0])).toBe(cursor);
     expect(deframe(transport.streamSent)).toEqual([upsert]);
+  });
+
+  it("정체 시 데이터그램은 최신값으로 합쳐진다(중간 커서는 버려진다)", async () => {
+    const transport = new FakeWebTransport();
+    const { socket } = createSocketWith(transport, {
+      datagramCursorLane: true,
+    });
+    transport.open();
+    await flush();
+    const cursorAt = (x: number) =>
+      JSON.stringify({
+        version: 1,
+        type: "publish",
+        channel: "presence",
+        payload: { kind: "presence.cursor", x, y: 0.5 },
+      });
+    transport.blockDatagrams();
+    socket.send(cursorAt(0.1));
+    socket.send(cursorAt(0.2));
+    socket.send(cursorAt(0.3));
+    transport.releaseDatagrams();
+    await flush();
+    const sent = transport.datagramSent.map((chunk) =>
+      new TextDecoder().decode(chunk),
+    );
+    expect(sent).toEqual([cursorAt(0.1), cursorAt(0.3)]);
+  });
+
+  it("협상된 최대 크기를 넘는 커서 프레임은 reliable 스트림으로 되돌아간다", async () => {
+    const transport = new FakeWebTransport();
+    transport.setMaxDatagramSize(32);
+    const { socket } = createSocketWith(transport, {
+      datagramCursorLane: true,
+    });
+    transport.open();
+    await flush();
+    const cursor = JSON.stringify({
+      version: 1,
+      type: "publish",
+      channel: "presence",
+      payload: { kind: "presence.cursor", x: 0.3, y: 0.4 },
+    });
+    socket.send(cursor);
+    await flush();
+    expect(transport.datagramSent).toHaveLength(0);
+    expect(deframe(transport.streamSent)).toEqual([cursor]);
   });
 
   it("close는 코드·사유를 전송에 전달하고 wasClean 종료로 알린다", async () => {

@@ -17,8 +17,10 @@ import type {
  * - reliable 스트림: ping·resume·ack 대상 발행 등 전부. 길이 접두(4바이트
  *   big-endian) + UTF-8 JSON 프레임으로 WebSocket의 메시지 경계를 재현한다.
  * - unreliable 데이터그램: `presence.cursor` 발행 프레임만. 최신 좌표가 이전 것을
- *   대체하는 휘발성 동기화라 유실이 허용된다. 단, 발행 ack 의미는 서버 계약이
- *   정하므로 이 레인은 옵션(`datagramCursorLane`)으로 명시 활성화할 때만 열린다.
+ *   대체하는 휘발성 동기화라 유실이 허용된다. 전송 측은 최신값 합치기(전송 중
+ *   1개 + 대기 최신 1개)를 적용하고, 협상된 최대 크기를 넘는 프레임은 reliable로
+ *   되돌린다. 단, 발행 ack 의미는 서버 계약이 정하므로 이 레인은
+ *   옵션(`datagramCursorLane`)으로 명시 활성화할 때만 열린다.
  *   기본값은 전 프레임 reliable — WebSocket과 동작이 동일하다.
  */
 
@@ -39,6 +41,8 @@ export interface StudioWebTransportLike {
   readonly datagrams: {
     readonly readable: ReadableStream<Uint8Array>;
     readonly writable: WritableStream<Uint8Array>;
+    /** 협상으로 정해진 송신 데이터그램 최대 크기(바이트). 구현이 알려줄 때만 있다. */
+    readonly maxDatagramSize?: number;
   };
   createBidirectionalStream(): Promise<StudioWebTransportBidirectionalStreamLike>;
   close(info?: StudioWebTransportCloseInfoLike): void;
@@ -150,6 +154,8 @@ export class StudioWebTransportSocket
   private streamWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private datagramWriter: WritableStreamDefaultWriter<Uint8Array> | null =
     null;
+  private datagramInFlight = false;
+  private datagramPending: Uint8Array | null = null;
   private requestedClose: { code: number; reason: string } | null = null;
   private closeDispatched = false;
 
@@ -213,12 +219,10 @@ export class StudioWebTransportSocket
     if (
       this.datagramCursorLane &&
       this.datagramWriter &&
-      bytes.byteLength <= MAX_DATAGRAM_BYTES &&
+      bytes.byteLength <= this.effectiveDatagramCap() &&
       isStudioRealtimeVolatileFrame(data)
     ) {
-      // 데이터그램 유실은 설계상 허용된다(다음 커서가 대체). 쓰기 실패도 조용히
-      // 버린다 — 전송 자체가 죽으면 closed 경로가 오류를 알린다.
-      void this.datagramWriter.write(bytes).catch(() => undefined);
+      this.enqueueDatagram(bytes);
       return;
     }
     const writer = this.streamWriter;
@@ -243,6 +247,41 @@ export class StudioWebTransportSocket
     } catch {
       this.handleTransportClosed(undefined);
     }
+  }
+
+  /** 협상된 최대 크기가 보고되면 그쪽이 상한이다 — 초과 쓰기는 규격상 버려진다. */
+  private effectiveDatagramCap(): number {
+    const reported = this.transport.datagrams.maxDatagramSize;
+    return typeof reported === "number" && reported > 0
+      ? Math.min(MAX_DATAGRAM_BYTES, reported)
+      : MAX_DATAGRAM_BYTES;
+  }
+
+  /**
+   * 최신값 합치기: 전송 중 1개 + 대기 1개(최신)만 유지한다. 정체 시 오래된 커서가
+   * 큐에 쌓여 늦게 도착하는 것보다, 중간 커서를 버리고 최신만 보내는 편이
+   * latest-wins 의미에 맞다. 쓰기 실패는 조용히 버린다(다음 커서가 대체하고,
+   * 전송 자체가 죽으면 closed 경로가 오류를 알린다).
+   */
+  private enqueueDatagram(bytes: Uint8Array): void {
+    if (this.datagramInFlight) {
+      this.datagramPending = bytes;
+      return;
+    }
+    const writer = this.datagramWriter;
+    if (!writer) return;
+    this.datagramInFlight = true;
+    void writer
+      .write(bytes)
+      .catch(() => undefined)
+      .finally(() => {
+        this.datagramInFlight = false;
+        const pending = this.datagramPending;
+        this.datagramPending = null;
+        if (pending && this.state === READY_STATE_OPEN) {
+          this.enqueueDatagram(pending);
+        }
+      });
   }
 
   private async openStreams(): Promise<void> {
