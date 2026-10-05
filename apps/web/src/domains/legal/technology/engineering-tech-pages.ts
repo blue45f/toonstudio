@@ -78,7 +78,7 @@ export const ENGINEERING_PAGES = [
     label: t("제작 스토리", "Story"),
     purpose: t("왜·어떻게 만들었나: 문제, 선택, 대가와 근거", "Why and how it was built: problems, choices, trade-offs, evidence"),
     art: "create",
-    readingMinutes: 31,
+    readingMinutes: 39,
   },
   {
     id: "playbook",
@@ -100,7 +100,7 @@ export const ENGINEERING_PAGES = [
     label: t("적용 가이드", "Guides"),
     purpose: t("다른 서비스에 단계별로 옮기는 방법", "Step-by-step adoption in another product"),
     art: "learn",
-    readingMinutes: 23,
+    readingMinutes: 26,
   },
   {
     id: "field-notes",

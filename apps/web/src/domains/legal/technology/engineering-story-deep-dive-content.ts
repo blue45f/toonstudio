@@ -791,6 +791,34 @@ export const ENGINEERING_REFERENCES = [
       evidence("code", "apps/web/src/shared/ai/user-ai-transport.ts", "실제 보수적 fallback", "Implemented conservative fallback"),
     ],
   },
+  {
+    id: "transformers-js",
+    relation: "used",
+    status: "configured",
+    category: { ko: "기기 안 AI", en: "On-device AI" },
+    title: "Transformers.js · OPUS-MT",
+    summary: { ko: "브라우저에서 번역 모델을 실행해 리서치 데스크의 한글 질의를 영문으로 바꾸는 온디바이스 추론 경로입니다.", en: "An on-device inference path that runs a translation model in the browser to turn the research desk's Korean queries into English." },
+    applied: { ko: "모델 경로는 자체 호스팅으로 고정하고 원격 다운로드는 코드에서 차단하며, 번역은 사전 변환 사다리의 한 칸으로만 씁니다.", en: "The model path is pinned to self-hosting with remote downloads blocked in code, and translation is used only as one rung of the dictionary ladder." },
+    caution: { ko: "모델 파일(약 123MB)은 배포 시 배치하는 전제라, 배치 전 환경에서는 모델 층 없이 종전 동작과 같습니다.", en: "The model files (about 123MB) are a deploy-time placement prerequisite; before placement the model rung is absent and behavior matches the previous release." },
+    evidence: [
+      evidence("code", "apps/web/src/domains/creator-resources/research-query-mt.ts", "기계번역 로더와 자체 호스팅 고정", "Machine-translation loader with self-hosting pin"),
+      evidence("test", "apps/web/src/domains/creator-resources/research-query-mt.test.ts", "환경 고정과 폴백 검사", "Environment pinning and fallback tests"),
+    ],
+  },
+  {
+    id: "helia-ipfs",
+    relation: "used",
+    status: "live",
+    category: { ko: "콘텐츠 주소", en: "Content addressing" },
+    title: "Helia · IPFS CID",
+    summary: { ko: "내용 해시(CID)로 파일을 주소화하고, trustless 게이트웨이에서 받은 바이트를 해시와 대조해 검증하며 가져오는 경량 IPFS 표면입니다.", en: "A lightweight IPFS surface that addresses files by content hash (CID) and fetches from trustless gateways, verifying received bytes against the hash." },
+    applied: { ko: "풀 노드 대신 @helia/verified-fetch와 multiformats로 CID 생성·검증·검증 가져오기만 구현하고, 개발이 종료된 js-ipfs는 쓰지 않습니다.", en: "Instead of a full node, only CID creation, verification and verified fetching are implemented with @helia/verified-fetch and multiformats; the discontinued js-ipfs is not used." },
+    caution: { ko: "브라우저는 네트워크에 콘텐츠를 제공하지 않습니다. CID는 무결성 주소일 뿐이고 바이트 배포는 게이트웨이가 맡습니다.", en: "The browser does not provide content to the network. A CID is an integrity address; byte distribution belongs to gateways." },
+    evidence: [
+      evidence("code", "apps/web/src/domains/integrations/ipfs-content-address.ts", "CID 생성·검증·검증 가져오기", "CID creation, verification and verified fetching"),
+      evidence("test", "apps/web/src/domains/integrations/ipfs-content-address.test.ts", "공개 CID 벡터 검사", "Public CID vector tests"),
+    ],
+  },
 ] as const satisfies readonly EngineeringReference[];
 
 export interface EngineeringTroubleshootingCase {

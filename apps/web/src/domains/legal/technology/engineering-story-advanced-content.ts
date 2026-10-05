@@ -207,8 +207,8 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "Treating signaling, STUN or TURN, document sync and media routes as one realtime connection lets spatial UI drift from actual recipients and turns revoked authority, network changes and late SDP into privacy and resource leaks.",
     },
     decision: {
-      ko: "room membership과 immutable conversation scope로 peer를 제한하고, 권한 프롬프트 뒤 revision을 다시 확인한 다음에만 track을 연결합니다. perfect negotiation, bounded ICE queue, restartIce, short-lived TURN policy refresh와 명시적 track·peer teardown을 각각 운영합니다.",
-      en: "Room membership and immutable conversation scope bound peers, and authority revision is rechecked after every permission prompt before tracks attach. Perfect negotiation, bounded ICE queues, restartIce, short-lived TURN refresh and explicit track and peer teardown remain separate controls.",
+      ko: "room membership과 immutable conversation scope로 peer를 제한하고, 권한 프롬프트 뒤 revision을 다시 확인한 다음에만 track을 연결합니다. perfect negotiation, bounded ICE queue, restartIce, short-lived TURN policy refresh와 명시적 track·peer teardown을 각각 운영합니다. 라이브 룸의 데이터 경로도 같은 원칙으로 나눠 둡니다. 시그널링(WebSocket) 위에 RTCDataChannel 풀메시를 얹어 잉크 프레임과 CRDT diff를 서버 중계 없이 주고받고, 메시 피어는 8명으로 상한을 둡니다. 큰 파일은 24KB 청크로 나눠 sha256으로 무결성을 확인하는 벌크 전송으로 보내며, 한 번의 전송은 최대 256MB로 제한합니다.",
+      en: "Room membership and immutable conversation scope bound peers, and authority revision is rechecked after every permission prompt before tracks attach. Perfect negotiation, bounded ICE queues, restartIce, short-lived TURN refresh and explicit track and peer teardown remain separate controls. The live room's data path follows the same separation: a full-mesh RTCDataChannel overlay on WebSocket signaling carries ink frames and CRDT diffs without a server relay, capped at eight peers, and large files move through a bulk-transfer protocol split into 24KB chunks with sha256 integrity checks, limited to 256MB per transfer.",
     },
     userValue: {
       ko: "사용자는 누가 실제 음성·영상·화면을 받는지 확인하고 권한 요청 전에도 공간을 탐색할 수 있으며, 네트워크가 바뀌거나 방을 나가면 연결과 장치가 예측 가능하게 복구·종료됩니다.",
@@ -221,6 +221,8 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
     technologies: ["WebRTC", "RTCPeerConnection", "RTCDataChannel", "ICE", "STUN/TURN", "getUserMedia", "getDisplayMedia", "Socket.IO signaling"],
     evidence: [
       evidence("code", "apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-controller.ts", "P2P 협상·미디어·ICE 복구 controller", "P2P negotiation, media and ICE recovery controller"),
+      evidence("code", "apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport.ts", "라이브 룸 DataChannel 풀메시 오버레이(상한 8피어)", "Live-room DataChannel full-mesh overlay (eight-peer cap)"),
+      evidence("code", "apps/web/src/domains/creator/live/studio-peer-bulk-transfer.ts", "24KB 청크·sha256·최대 256MB 벌크 전송 프로토콜", "Bulk-transfer protocol: 24KB chunks, sha256, 256MB cap"),
       evidence("code", "apps/web/src/domains/creator/studio-screen-share.ts", "양방향 동의형 화면 공유", "Two-sided-consent screen sharing"),
       evidence("code", "apps/web/src/domains/creator/studio-voice-ice-policy.ts", "단기 TURN 정책과 기존 peer 갱신", "Short-lived TURN policy and existing-peer refresh"),
       evidence("document", "docs/studio-p2p-huddle.md", "시그널링·데이터·미디어 권위 경계", "Signaling, data and media authority boundary"),
@@ -295,8 +297,8 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "Sending every image inference to a server stacks GPU cost and upload latency per call, and the feature simply turns off without an API key or a network. Putting models in the browser carelessly instead blocks users with tens of megabytes of downloads and wide device-performance variance.",
     },
     decision: {
-      ko: "모델 레지스트리에 파일 크기, SHA-256 다이제스트와 텐서 계약을 등록한 모델만 기능이 켜지는 순간에 지연 로드하고, 받은 바이트의 다이제스트가 등록값과 같을 때만 세션을 엽니다. 실행 제공자는 WebGPU를 먼저 고르고, 쓸 수 없는 브라우저에서는 WASM 실행 제공자로 같은 모델을 돌립니다. 원본 픽셀은 기기를 떠나지 않습니다.",
-      en: "Only models registered with a byte size, SHA-256 digest and tensor contract lazy-load when a feature is invoked, and a session opens only after the received bytes match the registered digest. The execution provider prefers WebGPU and runs the same model on the WASM provider where WebGPU is unavailable. Source pixels never leave the device.",
+      ko: "모델 레지스트리에 파일 크기, SHA-256 다이제스트와 텐서 계약을 등록한 모델만 기능이 켜지는 순간에 지연 로드하고, 받은 바이트의 다이제스트가 등록값과 같을 때만 세션을 엽니다. 실행 제공자는 WebGPU를 먼저 고르고, 쓸 수 없는 브라우저에서는 WASM 실행 제공자로 같은 모델을 돌립니다. 원본 픽셀은 기기를 떠나지 않습니다. WebGPU를 고르기 전에는 어댑터가 실제로 잡히는지도 확인합니다. 페이지 전역에서 한 번만 도는 프로브가 requestAdapter로 어댑터를 확인하고, 없으면 ORT 세션을 만들 시도 자체를 하지 않은 채 WASM 경로로 떨어집니다. 가상머신이나 GPU 블록리스트 환경에서 모델마다 세션 생성 실패를 반복해서 치르지 않기 위해서입니다.",
+      en: "Only models registered with a byte size, SHA-256 digest and tensor contract lazy-load when a feature is invoked, and a session opens only after the received bytes match the registered digest. The execution provider prefers WebGPU and runs the same model on the WASM provider where WebGPU is unavailable. Source pixels never leave the device. Before WebGPU is chosen, a page-wide probe that runs once calls requestAdapter to confirm an adapter can actually be obtained; when none exists, the code falls to the WASM path without attempting an ORT session at all, instead of paying a failed session creation per model in virtual machines or on GPU blocklists.",
     },
     userValue: {
       ko: "키가 없어도, 네트워크가 끊겨도 채색·배경 제거·업스케일이 동작하고, 결과가 서버 왕복 없이 바로 캔버스로 돌아옵니다.",
@@ -309,6 +311,8 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
     technologies: ["ONNX Runtime Web", "WebGPU execution provider", "WASM execution provider", "SHA-256 digest", "lazy loading"],
     evidence: [
       evidence("code", "apps/web/src/domains/creator/studio-onnx-inference-provider.ts", "모델 레지스트리·다이제스트 검증·실행 제공자 선택", "Model registry, digest verification and execution-provider selection"),
+      evidence("code", "apps/web/src/domains/creator/studio-onnx-webgpu-probe.ts", "WebGPU 어댑터 실재 프로브(페이지 전역 1회)", "WebGPU adapter existence probe (once per page)"),
+      evidence("test", "apps/web/src/domains/creator/studio-onnx-webgpu-probe.test.ts", "어댑터 부재 시 세션 생성 시도 0회 검사", "Zero session-creation attempts when no adapter exists"),
       evidence("code", "apps/web/src/domains/creator/studio-onnx-runtime-assets.ts", "런타임과 모델 자산의 지연 로드", "Lazy loading of runtime and model assets"),
       evidence("code", "apps/web/src/domains/creator/ai/StudioOnnxColorizePanel.tsx", "기기 안 채색 패널", "On-device colorize panel"),
       evidence("document", "apps/web/src/domains/creator/assets/tag2pix.LICENSE.md", "모델별 출처와 라이선스 고지", "Per-model provenance and license notices"),
@@ -363,6 +367,179 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       { ko: "이전은 쓰기 뒤 재읽기 검증이 통과한 경우에만 기존 데이터를 지우는 순서로 고정합니다.", en: "Fix the migration order so the old data is removed only after a write-then-reread verification passes." },
       { ko: "하이드레이션 중 편집을 막을지 병합할지를 화면마다 정하고, 병합 규칙을 테스트로 고정합니다.", en: "Decide per screen whether edits during hydration are blocked or merged, and pin the merge rule with tests." },
       { ko: "새 저장소를 쓸 수 없는 환경을 폴백으로 유지하고 저장 실패를 빈 상태로 위장하지 않습니다.", en: "Keep a fallback for environments without the new store, and never disguise a save failure as an empty state." },
+    ],
+  },
+  {
+    id: "webtransport-transport",
+    order: 34,
+    status: "configured",
+    eyebrow: "34 · WEBTRANSPORT TRANSPORT",
+    title: {
+      ko: "WebTransport 클라이언트는 완성, 켜는 스위치는 서버에 있습니다",
+      en: "The WebTransport client is done; the switch lives on the server",
+    },
+    thesis: {
+      ko: "실시간 전송 추상화에 WebTransport 소켓을 기존 WebSocket과 같은 계약으로 구현해 두었습니다. 엔드포인트가 설정되면 시도 순서가 WebTransport → WebSocket이 되고, 설정이 없으면 지금과 완전히 동일하게 WebSocket만으로 동작합니다.",
+      en: "A WebTransport socket now implements the same contract as the existing WebSocket inside the realtime transport abstraction. With an endpoint configured, attempts run WebTransport first, then WebSocket; without one, behavior is exactly today's WebSocket only.",
+    },
+    problem: {
+      ko: "WebSocket은 TCP라서 패킷 하나가 재전송을 기다리는 동안 뒤의 메시지가 전부 함께 막힙니다(head-of-line blocking). 커서 위치처럼 낡으면 버려도 되는 갱신까지, 순서가 생명인 메시지 뒤에 줄 서서 늦게 도착합니다.",
+      en: "WebSocket rides TCP, so one packet waiting on retransmission blocks every message behind it (head-of-line blocking). Even disposable updates such as cursor positions queue behind messages whose ordering actually matters.",
+    },
+    decision: {
+      ko: "Cloudflare 어댑터가 받는 소켓 계약을 WebTransport로 구현하고(studio-realtime-webtransport-socket.ts), 와이어 프로토콜은 바꾸지 않았습니다. 신뢰 스트림은 4바이트 길이 접두와 JSON으로 WebSocket의 메시지 경계를 재현합니다. 능력 감지는 팩토리 생성 시점에 끝나서, API가 없는 브라우저는 네트워크 비용 없이 곧바로 WebSocket 팩토리로 넘어갑니다. 커서 전용 데이터그램 레인은 전송 중 1개와 대기 중인 최신 1개만 남기는 합치기까지 구현했지만, 서버의 ack 정책이 정해지기 전이라 기본값은 꺼짐입니다.",
+      en: "The socket contract the Cloudflare adapter consumes is implemented over WebTransport (studio-realtime-webtransport-socket.ts) without changing the wire protocol: reliable streams reproduce WebSocket message boundaries with a 4-byte length prefix plus JSON. Capability detection finishes at factory creation, so browsers without the API fall through to the WebSocket factory at zero network cost. A cursor-only datagram lane is implemented, including coalescing that keeps one in-flight and one latest pending frame, but it ships off until the server's ack policy is decided.",
+    },
+    userValue: {
+      ko: "지금 당장 사용자의 화면이 달라지지는 않습니다. 그게 정직한 상태입니다. 대신 서버 종단이 붙는 날에는 코드가 아니라 엔드포인트 설정 한 줄로, 휘발성 갱신이 TCP 줄서기에서 빠져나갈 길이 열립니다.",
+      en: "Nothing changes on user screens today, and that is the honest state. What is ready is the path: when a server endpoint lands, one endpoint setting—not new client code—lets volatile updates escape the TCP queue.",
+    },
+    tradeoff: {
+      ko: "Cloudflare Workers(workerd)는 WebTransport 서버를 종단할 수 없고, Cloudflare 프록시는 QUIC를 오리진으로 넘기지 못합니다. 별도 QUIC 서버나 브리지가 필요해서, 클라이언트만으로 '도입 완료'라고 말하지 않고 상태를 '설정 완료'로 둡니다. UDP가 막힌 네트워크에서는 WebSocket이 호환 하한으로 남습니다.",
+      en: "Cloudflare Workers (workerd) cannot terminate a WebTransport server, and the Cloudflare proxy does not pass QUIC through to origins. A separate QUIC server or bridge is required, so the client alone is not called 'shipped'—the status stays 'configured'. On networks where UDP is blocked, WebSocket remains the compatibility floor.",
+    },
+    technologies: ["WebTransport", "HTTP/3 (QUIC)", "WebSocket fallback", "datagrams", "capability detection"],
+    evidence: [
+      evidence("code", "apps/web/src/domains/creator/studio-realtime-webtransport-socket.ts", "WebSocket 계약을 WebTransport로 구현한 소켓", "Socket implementing the WebSocket contract over WebTransport"),
+      evidence("code", "apps/web/src/domains/creator/studio-realtime-webtransport-adapter.ts", "WebTransport 어댑터 팩토리와 체인 합성", "WebTransport adapter factory and chain composition"),
+      evidence("code", "apps/web/src/domains/creator/live/studio-live-purpose-routed-transport.ts", "엔드포인트가 설정될 때만 체인에 WebTransport를 넣는 배선", "Wiring that adds WebTransport to the chain only when an endpoint is set"),
+      evidence("test", "apps/web/src/domains/creator/studio-realtime-webtransport-adapter.test.ts", "프레이밍·레인 구분·핸드셰이크 왕복 검사", "Framing, lane separation and handshake round-trip tests"),
+    ],
+    reuseSteps: [
+      { ko: "전송을 바꾸기 전에 기존 소켓 계약을 먼저 고정하고, 새 전송이 그 계약을 구현하게 합니다.", en: "Freeze the existing socket contract first, and make the new transport implement it." },
+      { ko: "능력 감지는 연결 시도가 아니라 팩토리 생성 시점에 끝내 폴백 비용을 0으로 만듭니다.", en: "Finish capability detection at factory creation, not at connect time, so fallback costs nothing." },
+      { ko: "휘발성 프레임의 분류 기준을 코드 한곳에 두고, 데이터그램 레인은 서버 정책이 정해질 때까지 기본 꺼짐으로 둡니다.", en: "Keep the volatile-frame classification in one place, and ship the datagram lane off until server policy is set." },
+      { ko: "서버 종단 조건(티켓 전달, 프로토콜 선택, 방 브리지, ack 정책)을 계약 조항으로 먼저 적고 클라이언트와 맞춥니다.", en: "Write the server termination conditions—ticket passing, protocol selection, room bridging, ack policy—as contract clauses first and match the client to them." },
+    ],
+  },
+  {
+    id: "on-device-translation",
+    order: 35,
+    status: "configured",
+    eyebrow: "35 · ON-DEVICE TRANSLATION",
+    title: {
+      ko: "한글 검색어는 기기를 떠나지 않고 영어가 됩니다",
+      en: "Korean queries become English without leaving the device",
+    },
+    thesis: {
+      ko: "리서치 데스크의 자료 인덱스가 영문 중심이라, 한글 질의를 Transformers.js(OPUS-MT 한→영 모델)로 브라우저 안에서 번역해 기존 영문 검색에 태웁니다. 검색어 텍스트가 외부 번역 API로 나가지 않습니다.",
+      en: "The research desk's index is English-centric, so Korean queries are translated inside the browser with Transformers.js (an OPUS-MT Korean→English model) and fed into the existing English search. Query text never leaves for an outside translation API.",
+    },
+    problem: {
+      ko: "한글 질의로는 영문 인덱스의 자료에 닿지 않았습니다. 외부 번역 API를 붙이면 질의마다 비용이 들고 민감할 수 있는 검색어가 기기를 떠납니다. 반대로 사전(辭典) 기반 변환만으로는 조사와 어미가 붙은 질의를 다 바꾸지 못합니다.",
+      en: "Korean queries could not reach the English index. An external translation API would add per-query cost and send potentially sensitive search text off the device, while dictionary-only conversion cannot handle queries with particles and endings attached.",
+    },
+    decision: {
+      ko: "번역 사다리(사전 → 모델 → 부분 사전 → 원문)는 그대로 두고, 비어 있던 모델 층에 @huggingface/transformers 4.3.0을 실제 동적 import로 연결했습니다(research-query-mt.ts). 런타임은 자체 호스팅으로 고정했습니다. 모델 경로는 /models/가 기본이고 allowRemoteModels=false라 외부에서 모델을 받아오는 경로는 코드에서 닫혀 있습니다. 내려받는 동안은 파일별 진행률을 안내 UI가 보여주고, 처음 한 번 약 123MB라는 용량을 받기 전에 고지합니다.",
+      en: "The translation ladder—dictionary, model, partial dictionary, original text—stays as it was; the empty model rung now connects @huggingface/transformers 4.3.0 through a real dynamic import (research-query-mt.ts). The runtime is pinned to self-hosting: the model path defaults to /models/ and allowRemoteModels=false closes the remote-download path in code. While downloading, the notice UI shows per-file progress and states the roughly 123MB one-time size before anything is fetched.",
+    },
+    userValue: {
+      ko: "한글로 입력해도 영문 인덱스의 자료가 검색되고, 영문 입력의 동작은 전과 같습니다. 모델이 없거나 실패하면 사전 변환과 원문으로 조용히 떨어질 뿐, 검색 자체가 막히는 일은 없습니다.",
+      en: "Korean input now reaches the English index, and English input behaves exactly as before. If the model is absent or fails, the ladder quietly falls back to dictionary conversion and the original text—search itself is never blocked.",
+    },
+    tradeoff: {
+      ko: "모델 파일 약 123MB(양자화 인코더 52.9MB, 디코더 60.2MB, 토크나이저 등 약 10MB)는 저장소에 넣지 않습니다. 배포할 때 dist/models/Xenova/opus-mt-ko-en/에 파일을 배치해야 켜지고, 배치 전 환경에서는 모델 층이 없는 것과 같아 종전 동작과 동일합니다. 번역 품질은 검색 질의 수준에서만 다룹니다. 긴 문장을 번역하는 도구가 아닙니다.",
+      en: "The roughly 123MB of model files (52.9MB quantized encoder, 60.2MB decoder, about 10MB of tokenizer files) are not committed to the repository. They must be placed under dist/models/Xenova/opus-mt-ko-en/ at deploy time; until then the model rung is simply absent and behavior matches the previous release. Translation quality is scoped to search queries—this is not a long-sentence translation tool.",
+    },
+    technologies: ["Transformers.js", "@huggingface/transformers 4.3.0", "OPUS-MT ko→en", "ONNX Runtime Web", "self-hosted model files"],
+    evidence: [
+      evidence("code", "apps/web/src/domains/creator-resources/research-query-mt.ts", "자체 호스팅 고정과 진행률 구독을 갖춘 기계번역 로더", "Machine-translation loader pinned to self-hosting with progress subscription"),
+      evidence("code", "apps/web/src/domains/creator-resources/use-translated-research-query.ts", "번역 사다리를 검색 입력에 연결하는 훅", "Hook connecting the translation ladder to search input"),
+      evidence("code", "apps/web/src/domains/creator-resources/TranslatedQueryNotice.tsx", "용량 고지와 파일별 진행률을 보여주는 안내 UI", "Notice UI showing the size disclosure and per-file progress"),
+      evidence("test", "apps/web/src/domains/creator-resources/research-query-mt.test.ts", "환경 고정·실패 폴백·진행률 검사", "Environment pinning, failure fallback and progress tests"),
+    ],
+    reuseSteps: [
+      { ko: "번역 같은 보조 층은 사다리의 한 칸으로 넣고, 그 층의 실패가 전체 기능을 막지 않게 합니다.", en: "Add auxiliary layers such as translation as one rung of a ladder, so its failure never blocks the whole feature." },
+      { ko: "모델 경로는 자체 호스팅으로 고정하고 원격 다운로드를 코드에서 차단합니다.", en: "Pin model paths to self-hosting and block remote downloads in code." },
+      { ko: "큰 모델은 받기 전에 용량을 고지하고 파일별 진행률을 보여줍니다.", en: "Disclose the size before downloading a large model and show per-file progress." },
+      { ko: "모델 파일의 배포 배치는 코드와 분리하고, 배치 전 동작이 종전과 같은지 테스트로 고정합니다.", en: "Keep model-file placement at deploy time separate from code, and pin with tests that pre-placement behavior matches the previous release." },
+    ],
+  },
+  {
+    id: "content-addressing",
+    order: 36,
+    status: "live",
+    eyebrow: "36 · CONTENT ADDRESSING",
+    title: {
+      ko: "파일의 주소가 위치가 아니라 내용이면, 주소가 곧 검증입니다",
+      en: "When a file's address is its content, the address is the verification",
+    },
+    thesis: {
+      ko: "통합 연동 센터에 IPFS 콘텐츠 주소 도구를 넣었습니다. 파일의 CID를 만들고, CID로 가져온 바이트가 정말 그 해시와 맞는지 검증한 뒤에야 성공으로 칩니다. 링크가 죽는 문제와 받은 파일이 원본인지 확인하는 문제를, 주소 하나로 같이 다룹니다.",
+      en: "The integration center now has an IPFS content-addressing tool. It mints a file's CID and, for fetched bytes, succeeds only after checking they really match the hash in the address. Dead links and 'is this the original?' become one problem, handled by one address.",
+    },
+    problem: {
+      ko: "URL은 위치라서 원본이 옮겨지거나 사라지면 링크가 죽고, 받은 파일이 원본과 같은지는 별도 절차로 확인해야 했습니다. 반대로 브라우저가 IPFS 노드인 척 풀 노드를 들이면, DHT 제공자 역할을 할 수 없는 환경에서 약속할 수 없는 기능이 생깁니다.",
+      en: "URLs are locations: move or delete the origin and the link dies, and confirming a received file equals the original takes a separate procedure. Pretending the browser is a full IPFS node is the opposite failure—it promises network roles a browser cannot perform, such as acting as a DHT provider.",
+    },
+    decision: {
+      ko: "개발이 끝난 js-ipfs는 어떤 경우에도 쓰지 않고, 후계인 Helia의 경량 패키지 @helia/verified-fetch 8.1.2와 multiformats 14.0.5로 '검증하며 가져오기'만 구현했습니다(ipfs-content-address.ts). CID 생성·파싱·바이트 단위 검증은 raw 코덱과 sha2-256 범위에서 하고, dag-pb 같은 범위 밖 코덱은 조용히 넘기지 않고 unsupported-codec으로 구분해 답합니다. 가져오기는 trustless 게이트웨이 규격으로 받고, 받은 바이트를 CID와 대조한 뒤에만 건넵니다.",
+      en: "The discontinued js-ipfs is not used under any circumstances. The implementation uses only Helia's lightweight packages—@helia/verified-fetch 8.1.2 and multiformats 14.0.5—to do verified fetching (ipfs-content-address.ts). CID creation, parsing and byte-level verification cover the raw codec and sha2-256; out-of-scope codecs such as dag-pb are answered distinctly as unsupported-codec instead of being silently passed over. Fetches use the trustless gateway spec, and bytes are handed over only after matching the CID.",
+    },
+    userValue: {
+      ko: "파일에서 CID를 만들어 공유 링크로 쓸 수 있고, CID로 받은 파일이 변조되지 않았음을 도구가 확인해 줍니다. 동작은 공개 테스트 벡터(빈 바이트와 'hello world'의 CID)와 실제 게이트웨이에서 검증하며 가져오는 방식으로 확인했습니다.",
+      en: "Users can mint a CID from a file to use as a share link, and the tool confirms that bytes fetched by CID are untampered. Behavior was checked against public test vectors—the CIDs of empty bytes and of 'hello world'—and by verified fetching from a live gateway.",
+    },
+    tradeoff: {
+      ko: "브라우저에서 네트워크에 콘텐츠를 제공하는 기능은 없습니다. CID는 무결성 주소이자 공유 링크일 뿐, 바이트의 배포는 게이트웨이와 기존 서버 표면이 맡습니다. raw CID와 UnixFS(dag-pb) CID는 같은 파일이어도 서로 호환되지 않고, 풀 노드 도입은 파일 CID 호환이나 제공 역할이 실제로 필요해질 때의 후속으로 남겼습니다.",
+      en: "The browser does not provide content to the network. A CID here is an integrity address and share link; byte distribution stays with gateways and the existing server surfaces. Raw CIDs and UnixFS (dag-pb) CIDs are not interchangeable even for the same file, and a full node remains follow-up work for when file-CID compatibility or a provider role is actually needed.",
+    },
+    technologies: ["IPFS CID", "@helia/verified-fetch 8.1.2", "multiformats 14.0.5", "SHA-256", "trustless gateway"],
+    evidence: [
+      evidence("code", "apps/web/src/domains/integrations/ipfs-content-address.ts", "CID 생성·검증·검증 가져오기 모듈", "CID creation, verification and verified-fetch module"),
+      evidence("code", "apps/web/src/domains/integrations/IpfsContentAddressPanel.tsx", "연동 센터의 콘텐츠 주소 도구 패널", "Content-addressing tool panel in the integration center"),
+      evidence("test", "apps/web/src/domains/integrations/ipfs-content-address.test.ts", "공개 CID 벡터와 코덱 경계 검사", "Public CID vectors and codec-boundary tests"),
+    ],
+    reuseSteps: [
+      { ko: "콘텐츠 주소는 정본 저장소를 바꾸는 일이 아니라, 무결성과 공유 표면부터 붙입니다.", en: "Attach content addressing at the integrity and sharing surface first, not as a replacement for the canonical store." },
+      { ko: "지원 코덱 범위를 코드에서 명시하고 범위 밖은 실패로 뭉개지 말고 구분된 답으로 돌려줍니다.", en: "Declare the supported codec scope in code, and answer out-of-scope input distinctly instead of collapsing it into failure." },
+      { ko: "가져오기는 받은 바이트를 주소의 해시와 대조한 뒤에만 성공으로 칩니다.", en: "Count a fetch as successful only after the received bytes match the hash in the address." },
+      { ko: "브라우저가 할 수 없는 일(네트워크 제공)은 UI 문구에서도 약속하지 않습니다.", en: "Never promise in UI copy what the browser cannot do, such as providing content to the network." },
+    ],
+  },
+  {
+    id: "nextgen-web-experiments",
+    order: 37,
+    status: "experimental",
+    eyebrow: "37 · NEXT-GEN WEB EXPERIMENTS",
+    title: {
+      ko: "실험 API는 감지해서, 표지를 달고, 끌 수 있게 넣습니다",
+      en: "Experimental APIs go in detected, labeled and switchable",
+    },
+    thesis: {
+      ko: "아직 표준이 굳지 않은 웹 API를 제품에 넣는 규칙을 하나로 정했습니다. 능력 감지는 한곳에서, 화면에는 실험 표지를, 설정에는 끄는 토글을. 이 세 가지가 갖춰진 실험만 사용자 화면에 닿습니다.",
+      en: "One rule now governs putting not-yet-settled web APIs into the product: capability detection in a single place, an experiment label on the surface, and an off switch in settings. Only experiments with all three reach user screens.",
+    },
+    problem: {
+      ko: "실험 API를 화면마다 제멋대로 감지하면 지원 판정이 어긋나고, 끌 방법이 없는 실험은 문제가 생겼을 때 사용자가 피할 길이 없습니다. 반대로 전부 막아 두면 화면 유지, 문서 미리 불러오기, CPU 압력 신호처럼 이미 쓸 수 있는 이득을 영영 못 씁니다.",
+      en: "Letting each screen detect experimental APIs on its own makes support verdicts disagree, and an experiment with no off switch leaves users no escape when something misbehaves. Blocking everything instead forfeits gains that are already usable—keeping the screen awake, prerendering document navigations, CPU pressure signals.",
+    },
+    decision: {
+      ko: "차세대 API 27종의 감지를 nextgen-web-capabilities.ts 한 모듈에 모았습니다. 감지는 절대 예외를 던지지 않고 미지원은 그냥 false입니다. 실험 설정(nextgen-lab-settings.ts)은 토글 3종(리더 화면 유지, 스튜디오 프리렌더, 읽기 전환)을 정본으로 관리하고, 설정 화면의 실험 기능 섹션이 실험 배지와 함께 이 기기의 지원 여부를 그대로 보여줍니다. 실제로 켠 것은 Screen Wake Lock(작품 리더), Speculation Rules(공개 페이지에서 스튜디오로 넘어가는 문서 이동의 프리렌더), View Transitions(작품 상세에서 읽기 시작할 때의 전환), Compute Pressure(관찰 모듈과 최신 판정 지점까지)입니다.",
+      en: "Detection for 27 next-generation APIs lives in one module, nextgen-web-capabilities.ts. Detection never throws; unsupported simply means false. Lab settings (nextgen-lab-settings.ts) own three toggles—reader wake lock, studio prerender, reading transition—and the settings screen's experiment section shows this device's support next to an experiment badge. What is actually switched on: Screen Wake Lock in the title reader, Speculation Rules prerendering document navigations from public pages into the studio, View Transitions when starting to read from a title page, and Compute Pressure up to the observation module and its latest-verdict seam.",
+    },
+    userValue: {
+      ko: "작품을 읽는 동안 화면이 꺼지지 않고, 스튜디오로 넘어가는 이동이 미리 준비되며, 읽기를 시작하는 전환이 부드럽습니다. 전부 이 기기가 지원할 때만 동작하고, 실험 기능 섹션에서 언제든 끌 수 있습니다.",
+      en: "The screen stays awake while reading, navigations into the studio are prepared ahead of time, and starting to read transitions smoothly. All of it runs only where the device supports it, and all of it can be switched off in the experiment section at any time.",
+    },
+    tradeoff: {
+      ko: "실험 기능에는 폴백을 만들지 않는 것이 이 축의 운용 방침이라, 미지원 브라우저에서는 기능이 조용히 없을 뿐입니다. 기존 제품 표면의 폴백 원칙(ONNX 제공자 사다리 같은)은 그대로 유지합니다. Compute Pressure는 신호만 열어 뒀고 실제 품질 적응은 가상 스튜디오와 추론 표면이 각자 붙입니다. 필기 인식과 가상 키보드처럼 접점이 없거나 지원이 끝난 API는 감지만 넣어 두고 켜지 않습니다.",
+      en: "The operating policy for this axis is that experimental features get no fallback: on unsupported browsers the feature is simply, quietly absent. Established fallback principles on product surfaces—such as the ONNX provider ladder—remain untouched. Compute Pressure is opened as a signal only; actual quality adaptation is wired by the virtual studio and inference surfaces themselves. APIs with no contact point or ended support, such as handwriting recognition and the virtual keyboard API, are detection-only and never switched on.",
+    },
+    technologies: ["capability registry (27 APIs)", "Screen Wake Lock", "Speculation Rules", "View Transitions", "Compute Pressure"],
+    evidence: [
+      evidence("code", "apps/web/src/shared/lib/nextgen-web-capabilities.ts", "차세대 API 27종의 능력 감지 레지스트리", "Capability-detection registry for 27 next-generation APIs"),
+      evidence("code", "apps/web/src/shared/lib/nextgen-lab-settings.ts", "실험 토글의 정본과 구독", "Canonical lab toggles with subscription"),
+      evidence("code", "apps/web/src/domains/account/NextgenLabSettingsSection.tsx", "설정 화면의 실험 기능 섹션", "Experiment section on the settings screen"),
+      evidence("code", "apps/web/src/shared/lib/screen-wake-lock.ts", "리더 화면 유지 모듈", "Reader wake-lock module"),
+      evidence("code", "apps/web/src/shared/lib/speculation-rules.ts", "문서 이동 프리렌더 규칙 모듈", "Document-navigation prerender rules module"),
+      evidence("test", "apps/web/src/shared/lib/nextgen-web-capabilities.test.ts", "감지 경계와 never-throw 검사", "Detection boundary and never-throw tests"),
+    ],
+    reuseSteps: [
+      { ko: "새 실험 API는 화면에 붙이기 전에 감지 레지스트리에 먼저 등록합니다.", en: "Register a new experimental API in the detection registry before attaching it to any screen." },
+      { ko: "실험마다 끄는 토글과 실험 표지를 함께 만들고, 기본값과 그 이유를 기록합니다.", en: "Ship every experiment with an off toggle and a label, and record the default and why." },
+      { ko: "감지는 던지지 않게 만들고, 미지원을 오류 상태로 표시하지 않습니다.", en: "Make detection non-throwing, and never render 'unsupported' as an error state." },
+      { ko: "켜지 않기로 한 실험도 판정과 재검토 조건을 남겨 다음 검토가 처음부터 시작하지 않게 합니다.", en: "Leave a verdict and revisit conditions even for experiments that stay off, so the next review does not start from zero." },
     ],
   },
 ] as const satisfies readonly EngineeringChapter[];
@@ -522,6 +699,110 @@ export const ENGINEERING_ADVANCED_GUIDES = [
       { ko: "object action은 allowlist와 schema 검증을 통과", en: "Object actions pass allowlists and schema validation" },
       { ko: "mic·camera·screen share의 실제 수신자와 잠금 상태 표시", en: "Actual recipients and lock state shown for microphone, camera and screen share" },
       { ko: "공간을 사용하지 않아도 모든 핵심 업무를 목록·키보드로 완료", en: "Every core task remains completable through list and keyboard without the spatial view" },
+    ],
+  },
+  {
+    id: "webtransport-transport",
+    status: "configured",
+    title: { ko: "WebTransport 전송 계층 붙이기", en: "Adding a WebTransport transport layer" },
+    summary: {
+      ko: "기존 소켓 계약을 그대로 구현하는 WebTransport 소켓을 만들고, 엔드포인트 설정이 있을 때만 시도 체인 앞에 둡니다.",
+      en: "Build a WebTransport socket that implements the existing socket contract unchanged, and place it at the head of the attempt chain only when an endpoint is configured.",
+    },
+    outcome: {
+      ko: "서버 종단이 붙기 전에도 클라이언트는 완성돼 있고, 동작은 WebSocket과 동일함이 테스트로 고정됩니다.",
+      en: "The client is complete before any server endpoint exists, with behavior identical to WebSocket pinned by tests.",
+    },
+    steps: [
+      { ko: "현재 소켓 계약(연결·메시지·종료 의미)을 먼저 명세로 고정하고 어댑터가 그 계약만 보게 합니다.", en: "Freeze the current socket contract—connect, message and close semantics—as a spec first, and let adapters see only that contract." },
+      { ko: "신뢰 스트림의 프레이밍(길이 접두 + JSON)으로 기존 메시지 경계를 재현하고 왕복 테스트로 고정합니다.", en: "Reproduce existing message boundaries on the reliable stream with length-prefixed JSON framing, pinned by round-trip tests." },
+      { ko: "능력 감지는 팩토리에서 끝내고, 미지원이면 같은 시도 안에서 다음 팩토리로 넘어가게 합니다.", en: "Finish capability detection in the factory, so unsupported environments move to the next factory within the same attempt." },
+      { ko: "휘발성 프레임 분류를 한곳에 두고 데이터그램 레인은 서버 ack 정책이 정해질 때까지 기본 꺼짐으로 둡니다.", en: "Keep volatile-frame classification in one place and ship the datagram lane off until the server ack policy is decided." },
+      { ko: "서버 계약 조항(티켓 전달, 프로토콜 선택, 방 브리지, 크기 상한)을 클라이언트와 같은 문서에 적습니다.", en: "Write the server contract clauses—ticket passing, protocol selection, room bridging, size caps—in the same document as the client." },
+    ],
+    checklist: [
+      { ko: "엔드포인트 미설정 시 기존 WebSocket 동작과 바이트 의미가 동일", en: "With no endpoint configured, WebSocket behavior and byte semantics are unchanged" },
+      { ko: "API 미지원 브라우저에서 네트워크 시도 없이 폴백", en: "Browsers without the API fall back with no network attempt" },
+      { ko: "데이터그램 레인의 기본값이 꺼짐이고 켜는 조건이 문서화됨", en: "The datagram lane defaults to off, with its enabling conditions documented" },
+      { ko: "서버 종단 전제를 '도입 완료'로 표기하지 않음", en: "The server-termination prerequisite is never labeled as already shipped" },
+    ],
+  },
+  {
+    id: "on-device-translation",
+    status: "configured",
+    title: { ko: "기기 안 기계번역으로 검색 잇기", en: "Connecting search with on-device machine translation" },
+    summary: {
+      ko: "한글 질의를 자체 호스팅한 번역 모델로 기기 안에서 바꾸고, 실패해도 검색이 막히지 않는 사다리에 얹습니다.",
+      en: "Translate Korean queries on-device with a self-hosted model, placed on a ladder whose failure never blocks search.",
+    },
+    outcome: {
+      ko: "외부 번역 API 없이 한글 질의가 영문 인덱스에 닿고, 모델 배포 전에는 종전 동작이 그대로 유지됩니다.",
+      en: "Korean queries reach the English index with no external translation API, and pre-deployment behavior stays identical to the previous release.",
+    },
+    steps: [
+      { ko: "번역 층을 사전 → 모델 → 부분 사전 → 원문 사다리의 한 칸으로 넣고 각 칸의 실패를 격리합니다.", en: "Place translation as one rung of a dictionary → model → partial dictionary → original ladder and isolate each rung's failure." },
+      { ko: "런타임 환경에서 모델 경로를 자체 호스팅으로 고정하고 원격 다운로드를 코드로 차단합니다.", en: "Pin the runtime's model path to self-hosting and block remote downloads in code." },
+      { ko: "진행률 콜백을 구독 API로 노출해 안내 UI가 파일별 진행과 용량 고지를 보여주게 합니다.", en: "Expose the progress callback through a subscription API so the notice UI can show per-file progress and the size disclosure." },
+      { ko: "모델 파일 목록과 배치 경로를 배포 절차로 분리하고, 배치 전에는 모델 층이 null로 귀결되게 합니다.", en: "Separate the model file list and placement path into the deploy procedure, with the model rung resolving to null before placement." },
+      { ko: "영문 입력이 모델을 거치지 않는지, 모델 실패 시 사전과 원문으로 떨어지는지 테스트로 고정합니다.", en: "Pin with tests that English input skips the model and that model failure falls back to dictionary and original text." },
+    ],
+    checklist: [
+      { ko: "모델 경로·원격 다운로드 차단이 코드에 고정됨", en: "Model path and remote-download blocking are pinned in code" },
+      { ko: "받기 전에 모델 용량 고지가 표시됨", en: "The model size is disclosed before download" },
+      { ko: "모델 파일이 저장소에 커밋되지 않음", en: "Model files are not committed to the repository" },
+      { ko: "번역 실패가 검색 실패로 표시되지 않음", en: "Translation failure is never surfaced as search failure" },
+    ],
+  },
+  {
+    id: "content-addressing",
+    status: "live",
+    title: { ko: "콘텐츠 주소 도구 붙이기", en: "Adding a content-addressing tool" },
+    summary: {
+      ko: "파일의 CID를 만들고 trustless 게이트웨이에서 검증하며 가져오는 도구를, 제공 역할 없이 무결성 표면부터 붙입니다.",
+      en: "Attach a tool that mints file CIDs and fetches them verified from trustless gateways, starting at the integrity surface with no provider role.",
+    },
+    outcome: {
+      ko: "공유 링크가 곧 무결성 검사가 되고, 브라우저가 할 수 없는 일은 처음부터 약속하지 않습니다.",
+      en: "Share links double as integrity checks, and what the browser cannot do is never promised in the first place.",
+    },
+    steps: [
+      { ko: "지원 코덱과 해시 범위를 코드에 명시하고, 범위 밖 코덱은 구분된 답으로 돌려줍니다.", en: "Declare the supported codec and hash scope in code, and answer out-of-scope codecs distinctly." },
+      { ko: "CID 생성·파싱은 공개 테스트 벡터로 먼저 고정하고 구현을 맞춥니다.", en: "Pin CID creation and parsing against public test vectors first, then match the implementation." },
+      { ko: "가져오기는 trustless 게이트웨이 규격으로 받고, 받은 바이트를 CID와 대조한 뒤에만 성공으로 칩니다.", en: "Fetch through the trustless gateway spec and count success only after the received bytes match the CID." },
+      { ko: "무거운 검증 라이브러리는 사용 시점에만 지연 로드해 초기 번들과 분리합니다.", en: "Lazy-load the heavy verification library at use time, keeping it out of the initial bundle." },
+      { ko: "패널은 로딩·오류·빈 상태를 구분하고, 제공 기능이 없다는 경계를 문구에 그대로 적습니다.", en: "The panel separates loading, error and empty states, and its copy states the no-providing boundary as-is." },
+    ],
+    checklist: [
+      { ko: "공개 CID 벡터와 구현 결과가 일치", en: "Public CID vectors match implementation output" },
+      { ko: "범위 밖 코덱이 조용히 성공으로 처리되지 않음", en: "Out-of-scope codecs never silently succeed" },
+      { ko: "UI 문구가 브라우저의 네트워크 제공을 약속하지 않음", en: "UI copy does not promise browser network providing" },
+      { ko: "제품 데이터의 정본 저장소가 콘텐츠 주소로 바뀌지 않음", en: "The canonical store for product data is not replaced by content addressing" },
+    ],
+  },
+  {
+    id: "nextgen-web-experiments",
+    status: "experimental",
+    title: { ko: "실험 웹 기능 도입 절차", en: "Rolling out experimental web features" },
+    summary: {
+      ko: "감지 레지스트리 등록, 실험 토글과 표지, 지원 여부 공개를 한 묶음으로 만들어 실험 API를 화면에 붙입니다.",
+      en: "Attach experimental APIs as one bundle: registry entry, lab toggle and label, and published per-device support.",
+    },
+    outcome: {
+      ko: "새 API가 주는 이득은 지원 환경에서 바로 쓰이고, 문제 있는 실험은 사용자가 직접 끌 수 있습니다.",
+      en: "New API gains are usable immediately on supporting devices, and a misbehaving experiment can be switched off by the user.",
+    },
+    steps: [
+      { ko: "API를 감지 레지스트리에 등록합니다. 감지는 던지지 않고 미지원은 false로만 답합니다.", en: "Register the API in the detection registry; detection never throws and unsupported answers false." },
+      { ko: "실험 토글의 기본값과 이유를 정하고, 설정의 실험 섹션에 지원 여부와 함께 노출합니다.", en: "Decide the lab toggle's default and rationale, and expose it in the settings experiment section alongside support state." },
+      { ko: "표면에는 실험 표지를 달고, 미지원 환경에서는 기능이 조용히 없게 합니다(가짜 폴백 금지).", en: "Label the surface as experimental, and let the feature be quietly absent on unsupported devices—no fake fallbacks." },
+      { ko: "실제 소비 지점(품질 적응 같은)은 신호를 읽는 seam만 열고, 소비 배선은 그 표면의 소관으로 남깁니다.", en: "For real consumption points such as quality adaptation, open only a seam that reads the signal and leave consumption wiring to the owning surface." },
+      { ko: "켜지 않는 API도 판정과 재검토 조건을 기록해 다음 검토가 이어지게 합니다.", en: "Record a verdict and revisit conditions even for APIs that stay off, so the next review continues from there." },
+    ],
+    checklist: [
+      { ko: "감지가 레지스트리 한곳에만 있고 화면별 중복 감지가 없음", en: "Detection lives only in the registry, with no per-screen duplicates" },
+      { ko: "모든 실험에 끄는 토글과 실험 표지가 있음", en: "Every experiment has an off toggle and an experiment label" },
+      { ko: "미지원이 오류 상태로 표시되지 않음", en: "Unsupported is never rendered as an error state" },
+      { ko: "기존 제품 표면의 폴백 원칙을 실험이 침범하지 않음", en: "Experiments do not intrude on established fallback principles of product surfaces" },
     ],
   },
 ] as const satisfies readonly EngineeringGuide[];
