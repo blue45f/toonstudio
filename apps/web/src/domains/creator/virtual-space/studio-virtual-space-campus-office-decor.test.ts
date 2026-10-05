@@ -98,7 +98,11 @@ describe("캠퍼스 사무실 확장 오브젝트 (트랙 G)", () => {
     expect(officePropKindForCampusObject(objectById("studio-monitor-desk").kind)).toBe("monitor-glow");
     expect(officePropKindForCampusObject(objectById("lobby-wall-clock").kind)).toBe("wall-clock");
     expect(officePropKindForCampusObject(objectById("cafe-neon-sign").kind)).toBe("neon-flicker");
-    expect(officePropKindForCampusObject(objectById("cafe-vending-machine").kind)).toBeNull();
+    // 웨이브 2: 자판기 진열창도 살아있는 화면으로 연결된다.
+    expect(officePropKindForCampusObject(objectById("cafe-vending-machine").kind)).toBe("screen-glow");
+    expect(officePropKindForCampusObject("whiteboard")).toBe("board-shimmer");
+    expect(officePropKindForCampusObject("water-cooler")).toBe("cooler-bubbles");
+    expect(officePropKindForCampusObject("softbox")).toBe("lamp-glow");
   });
 });
 

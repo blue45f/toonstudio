@@ -194,7 +194,7 @@ describe("상호작용 연출 런타임", () => {
   });
 
   it("카페 카운터: 멀리 가 있으면 완성 알림 뒤 카운터에서 기다리고 X로 가져간다", () => {
-    const { runtime, lines, emotes } = runtimeFor();
+    const { runtime, lines, emotes, texts } = runtimeFor();
     const counter = byId("campus-creator-cafe-counter");
     runtime.activate(counter, { x: 2690, y: 340 }, 0, false);
     const away = { x: 2400, y: 700 };
@@ -202,6 +202,8 @@ describe("상호작용 연출 런타임", () => {
     expect(lines).toContain("주문하신 커피 나왔어요! ☕");
     expect(runtime.promptLabel(counter).ko).toBe("커피 가져가기 · 카페 카운터");
     expect(emotes).toEqual([]);
+    // 기다리는 동안 머신 위에 반응 표의 "준비 완료" 배지가 보인다(웨이브 2).
+    expect(texts.some((text) => text.visible && text.text === "● 준비 완료")).toBe(true);
     runtime.activate(counter, { x: 2690, y: 340 }, STUDIO_COFFEE_BREW_MS + 2_000, false);
     expect(emotes).toEqual(["coffee"]);
     expect(runtime.promptLabel(counter).ko).toBe("주문하기 · 카페 카운터");

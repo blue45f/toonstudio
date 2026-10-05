@@ -5,7 +5,8 @@
  * - 프롬프트 라벨: "주문하기 · 카페 카운터"처럼 동사가 먼저 오는 라벨(상태 가구는 상태에 따른 동사).
  * - 상태 가구(main interactable-objects 상태 머신):
  *   · 카페 카운터 = 커피 머신. 주문하면 8초 동안 김이 오르고 추출 고리가 차오른다. 완성되면 바리스타가 알리고,
- *     카운터 가까이 있으면 바로 손에 컵이 들린다(멀리 있으면 카운터 위 컵이 빛나며 기다린다).
+ *     카운터 가까이 있으면 바로 손에 컵이 들린다(멀리 있으면 카운터 위 컵이 빛나며 기다리고 "준비 완료" 배지가 붙는다).
+ *     추출 진행·완성 맥동·배지 문구는 오브젝트 상태 반응 표(object-reaction)가 정한다.
  *   · 책상 = 의자. 앉으면 앉은 자세(캔버스가 seat를 읽는다)와 책상 조명이 켜지고, 움직이거나 다시 X면 일어선다.
  * - 일회성 발동 연출: 분수 동전(포물선 → 물보라·반짝임), 무대 꽃가루, 오락기 픽셀 폭죽, 갤러리 조명,
  *   보드 마커 선, 자료 책장, 촬영 플래시, 고양이 하트, 회의 고리, 안내 종소리 등.
@@ -23,12 +24,12 @@ import { campusCoffeeCupTexture, campusStyleColor } from "./studio-virtual-space
 import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
 import type { StudioSpaceUiEvent } from "./studio-virtual-space-engine-events";
 import {
-  STUDIO_COFFEE_BREW_MS,
   activateInteractableRuntime,
   advanceInteractableRuntime,
   createInteractableRuntime,
   type StudioInteractableRuntime,
 } from "./studio-virtual-space-interactable-objects";
+import { objectReactionFrame } from "./studio-virtual-space-object-reaction";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import {
   studioWorldInsideStageApron,
@@ -665,8 +666,10 @@ export class StudioInteractionFxRuntime {
     }
     graphics.clear().setVisible(true);
     const x = anchor.x, y = anchor.y;
+    // 진행·맥동은 오브젝트 상태 반응 표(object-reaction)가 정한다 — 종류별 반응을 데이터로 모으는 배선.
+    const reaction = objectReactionFrame(machine.runtime, time, this.reducedMotion);
     if (state === "coffee:brewing") {
-      const progress = progressOf(time, machine.runtime.stateChangedAt, STUDIO_COFFEE_BREW_MS);
+      const progress = reaction.progress;
       // 추출 고리(앰버)가 시계 방향으로 차오른다.
       graphics.lineStyle(4, this.color(0x2a2236), 0.55).strokeCircle(x, y - 34, 11);
       graphics.lineStyle(4, this.color(COLORS.amber), 0.95).beginPath()
@@ -683,12 +686,37 @@ export class StudioInteractionFxRuntime {
       }
       cup.setVisible(true).setPosition(x, y + 14).setAlpha(0.85);
     } else {
-      // 완성: 카운터 위 컵이 빛나며 기다린다.
-      const pulse = this.reducedMotion ? 0.6 : 0.45 + Math.sin(time / 260) * 0.25;
+      // 완성: 카운터 위 컵이 빛나며 기다리고, 반응 표의 "준비 완료" 배지가 머신 위에 붙는다.
+      const pulse = reaction.pulse;
       graphics.fillStyle(this.color(COLORS.amber), pulse * 0.5).fillEllipse(x, y + 10, 34, 14);
       this.sparkles(graphics, x, y - 4, 31, 3, 14, this.color(COLORS.gold), pulse);
       cup.setVisible(true).setPosition(x, y + 14).setAlpha(1);
+      if (reaction.label) this.showBadge(x, y - 52, reaction.label.ko, reaction.label.en);
     }
+  }
+
+  /** 상태 배지를 배지 풀에서 꺼내 보인다(발표 배지와 같은 풀·같은 모양). 풀 상한을 넘으면 그리지 않는다. */
+  private showBadge(x: number, y: number, ko: string, en: string): void {
+    if (this.badgesUsed >= BADGE_POOL) return;
+    let badge = this.badges[this.badgesUsed];
+    if (!badge) {
+      const { plate, text, accent } = this.options.badge;
+      const label = this.options.translate(ko, en);
+      const object = this.scene.add.text(0, 0, label, {
+        fontFamily: "Pretendard, Inter, sans-serif",
+        fontSize: "11px",
+        fontStyle: "bold",
+        color: `#${text.toString(16).padStart(6, "0")}`,
+        backgroundColor: `#${plate.toString(16).padStart(6, "0")}`,
+        padding: { x: 7, y: 3 },
+      }).setOrigin(0.5, 1).setDepth(BADGE_DEPTH).setStroke(`#${accent.toString(16).padStart(6, "0")}`, 0);
+      badge = { text: object, label };
+      this.badges.push(badge);
+    }
+    this.badgesUsed += 1;
+    const label = this.options.translate(ko, en);
+    if (label !== badge.label) { badge.label = label; badge.text.setText(label); }
+    badge.text.setPosition(x, y).setVisible(true);
   }
 
   private drawLamp(time: number): void {
