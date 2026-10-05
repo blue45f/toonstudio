@@ -5,6 +5,7 @@ import { api, getApiErrorMessage } from "@/platform/api";
 
 import { AdminEmptyState, AdminSpinner } from "./admin-ui";
 
+import { useT } from "@/shared/lib/i18n";
 import type { BusinessVerificationStatus } from "@/shared/lib/types";
 
 interface BusinessVerificationItem {
@@ -22,14 +23,15 @@ interface BusinessVerificationItem {
   userEmail: string | null;
 }
 
-const STATUS_LABEL: Record<BusinessVerificationStatus, string> = {
-  draft: "작성 중",
-  pending: "검토 대기",
-  verified: "인증 완료",
-  rejected: "보완 필요",
+const STATUS_KEYS: Record<BusinessVerificationStatus, string> = {
+  draft: "admin.verifications.statusDraft",
+  pending: "admin.verifications.statusPending",
+  verified: "admin.verifications.statusVerified",
+  rejected: "admin.verifications.statusRejected",
 };
 
 export function AdminBusinessVerifications() {
+  const t = useT();
   const [status, setStatus] = useState<BusinessVerificationStatus | "all">("pending");
   const [items, setItems] = useState<BusinessVerificationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,11 +48,11 @@ export function AdminBusinessVerifications() {
       );
       setItems(result.items);
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, "기업 인증 대기열을 불러오지 못했어요."));
+      setError(await getApiErrorMessage(cause, t("admin.verifications.loadError")));
     } finally {
       setLoading(false);
     }
-  }, [status]);
+  }, [status, t]);
 
   useEffect(() => {
     void load();
@@ -61,7 +63,7 @@ export function AdminBusinessVerifications() {
     nextStatus: "verified" | "rejected",
   ) {
     const reviewNote = nextStatus === "rejected"
-      ? window.prompt("보완이 필요한 이유를 입력해 주세요.", "") ?? ""
+      ? window.prompt(t("admin.verifications.rejectReasonPrompt"), "") ?? ""
       : "";
     if (nextStatus === "rejected" && !reviewNote.trim()) return;
     setUpdating(userId);
@@ -73,7 +75,7 @@ export function AdminBusinessVerifications() {
       );
       await load();
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, "기업 인증 상태를 변경하지 못했어요."));
+      setError(await getApiErrorMessage(cause, t("admin.verifications.updateError")));
     } finally {
       setUpdating("");
     }
@@ -84,23 +86,22 @@ export function AdminBusinessVerifications() {
       <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-line bg-card p-5">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent">Creator IP business verification</p>
-          <h2 id="business-verification-title" className="mt-1 text-xl font-bold text-fg">작가 협업 기업 인증</h2>
+          <h2 id="business-verification-title" className="mt-1 text-xl font-bold text-fg">{t("admin.verifications.title")}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
-            굿즈·영상·브랜드·판권 제안을 보내려는 기업·단체의 공개 정보와 담당 연락처를 확인합니다.
-            인증은 신뢰 표시이며 개별 계약 조건이나 지급 능력을 보증하지 않습니다.
+            {t("admin.verifications.desc")}
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <label className="grid gap-1 text-xs font-semibold text-fg-3">
-            상태
+            {t("admin.verifications.statusLabel")}
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value as BusinessVerificationStatus | "all")}
               className="min-h-10 rounded-xl border border-line bg-panel px-3 text-sm font-semibold text-fg"
             >
-              <option value="all">전체</option>
-              {Object.entries(STATUS_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+              <option value="all">{t("admin.verifications.all")}</option>
+              {Object.entries(STATUS_KEYS).map(([value, labelKey]) => (
+                <option key={value} value={value}>{t(labelKey)}</option>
               ))}
             </select>
           </label>
@@ -111,7 +112,7 @@ export function AdminBusinessVerifications() {
             className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-panel px-3 text-sm font-semibold text-fg-2 disabled:opacity-60"
           >
             <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden="true" />
-            새로고침
+            {t("admin.verifications.refresh")}
           </button>
         </div>
       </div>
@@ -131,7 +132,7 @@ export function AdminBusinessVerifications() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent">
-                    {STATUS_LABEL[profile.verificationStatus]}
+                    {t(STATUS_KEYS[profile.verificationStatus])}
                   </span>
                   <span className="text-xs text-fg-3">{userName || userEmail || profile.userId}</span>
                 </div>
@@ -146,7 +147,7 @@ export function AdminBusinessVerifications() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    공식 사이트 <ExternalLink size={13} aria-hidden="true" />
+                    {t("admin.verifications.website")} <ExternalLink size={13} aria-hidden="true" />
                   </a>
                 </div>
               </div>
@@ -155,7 +156,7 @@ export function AdminBusinessVerifications() {
               {profile.evidenceNote}
             </p>
             {profile.reviewNote ? (
-              <p className="mt-3 text-xs text-fg-3">최근 검토 메모: {profile.reviewNote}</p>
+              <p className="mt-3 text-xs text-fg-3">{t("admin.verifications.reviewNotePrefix", { note: profile.reviewNote })}</p>
             ) : null}
             {profile.verificationStatus === "pending" ? (
               <div className="mt-4 flex flex-wrap gap-2">
@@ -165,7 +166,7 @@ export function AdminBusinessVerifications() {
                   onClick={() => void review(profile.userId, "verified")}
                   className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 text-sm font-bold disabled:opacity-60"
                 >
-                  <BadgeCheck size={15} aria-hidden="true" /> 인증
+                  <BadgeCheck size={15} aria-hidden="true" /> {t("admin.verifications.approve")}
                 </button>
                 <button
                   type="button"
@@ -173,14 +174,14 @@ export function AdminBusinessVerifications() {
                   onClick={() => void review(profile.userId, "rejected")}
                   className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line px-3 text-sm font-bold disabled:opacity-60"
                 >
-                  <ShieldAlert size={15} aria-hidden="true" /> 보완 요청
+                  <ShieldAlert size={15} aria-hidden="true" /> {t("admin.verifications.reject")}
                 </button>
               </div>
             ) : null}
           </article>
         ))}
         {!loading && !error && items.length === 0 ? (
-          <AdminEmptyState icon={<BadgeCheck size={20} />} title="해당 상태의 기업 인증 요청이 없습니다." />
+          <AdminEmptyState icon={<BadgeCheck size={20} />} title={t("admin.verifications.empty")} />
         ) : null}
       </div>
     </section>

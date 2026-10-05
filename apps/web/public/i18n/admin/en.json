@@ -571,5 +571,22 @@
   "admin.traffic.viewsPerSession": "Views / session",
   "admin.traffic.visitors": "Visitors",
   "admin.traffic.visitorsLegend": "Visitors",
-  "admin.ui.loading": "Loading"
+  "admin.ui.loading": "Loading",
+  "admin.verifications.all": "All",
+  "admin.verifications.approve": "Verify",
+  "admin.verifications.desc": "Review the public information and contact details of businesses and organizations that want to send goods, video, brand, or licensing offers. Verification is a trust signal and does not guarantee individual contract terms or payment ability.",
+  "admin.verifications.empty": "No business verification requests in this status.",
+  "admin.verifications.loadError": "Failed to load the business verification queue.",
+  "admin.verifications.refresh": "Refresh",
+  "admin.verifications.reject": "Request changes",
+  "admin.verifications.rejectReasonPrompt": "Enter what needs to be fixed.",
+  "admin.verifications.reviewNotePrefix": "Latest review note: {note}",
+  "admin.verifications.statusDraft": "Draft",
+  "admin.verifications.statusLabel": "Status",
+  "admin.verifications.statusPending": "Pending review",
+  "admin.verifications.statusRejected": "Changes requested",
+  "admin.verifications.statusVerified": "Verified",
+  "admin.verifications.title": "Creator collaboration business verification",
+  "admin.verifications.updateError": "Failed to update the business verification status.",
+  "admin.verifications.website": "Official site"
 }
