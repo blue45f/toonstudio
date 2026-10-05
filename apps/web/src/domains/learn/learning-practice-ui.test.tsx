@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { LearnPage } from "./LearnPage";
-import { PRACTICE_STORAGE_KEY } from "./learning-practice";
+import { practiceStorageKey } from "./learning-practice";
 
 afterEach(() => {
   cleanup();
@@ -46,7 +46,8 @@ describe("강좌 상세 실습 미션", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "실습 완료로 표시" }));
     expect(screen.getByText("실습 완료", { selector: ".learn-mission-status" })).toBeTruthy();
-    const stored = JSON.parse(window.localStorage.getItem(PRACTICE_STORAGE_KEY) ?? "{}") as {
+    // 이 테스트는 비로그인(게스트) 상태라 기록은 게스트 파티션 키에 쌓인다.
+    const stored = JSON.parse(window.localStorage.getItem(practiceStorageKey("guest")) ?? "{}") as {
       missions?: Record<string, { completedAt: string | null }>;
     };
     expect(stored.missions?.["story-board"]?.completedAt).toBeTruthy();
