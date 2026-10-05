@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { VOICE_CHARACTER_PRESET_IDS, getVoiceCharacterPreset } from "@/shared/voice/voice-character-presets";
 
+import { MotionWebtoonCaptionPanel } from "./MotionWebtoonCaptionPanel";
 import { MotionWebtoonPlayer } from "./MotionWebtoonPlayer";
 import {
   autoDirectEpisode,
@@ -653,6 +654,7 @@ export function MotionWebtoonEditor(props: MotionWebtoonEditorProps): JSX.Elemen
               onVoiceEnabledChange={setVoiceEnabled}
             />
           </section>
+          <MotionWebtoonCaptionPanel episode={episode} onEpisodeChange={update} />
         </div>
       </div>
     </div>
