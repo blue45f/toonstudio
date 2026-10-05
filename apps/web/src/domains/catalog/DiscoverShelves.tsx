@@ -1,20 +1,15 @@
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { Rail, Section } from "@/shared/components/section";
 import { TitleCard } from "@/shared/components/title-card";
-import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-import {
-  buildDiscoverShelves,
-  currentKstWeekDay,
-  englishWeekDay,
-  type DiscoverHomeSnapshot,
-  type DiscoverShelfId,
-} from "./discover-home";
+import { buildDiscoverShelves, type DiscoverHomeSnapshot } from "./discover-home";
+import { discoverShelfCopies } from "./discover-shelf-copy";
 
 const SKELETON_SHELF_COUNT = 2;
 const SKELETON_CARD_COUNT = 6;
 
-function ShelfSkeleton({ label }: { readonly label: string }) {
+export function DiscoverShelfSkeleton({ label }: { readonly label: string }) {
   return (
     <div role="status" aria-busy="true" aria-label={label} className="skeleton-group">
       <span data-slot="skeleton" className="skeleton block h-3 w-20" aria-hidden="true" />
@@ -30,13 +25,6 @@ function ShelfSkeleton({ label }: { readonly label: string }) {
       </div>
     </div>
   );
-}
-
-interface ShelfCopy {
-  readonly eyebrow: string;
-  readonly title: string;
-  readonly desc: string;
-  readonly action: string;
 }
 
 export interface DiscoverShelvesProps {
@@ -71,41 +59,12 @@ export function DiscoverShelves({ snapshot, loading, error, onRetry }: DiscoverS
     const label = bt("추천 작품을 불러오는 중", "Loading story picks");
     return (
       <div className="flex flex-col gap-12">
-        {Array.from({ length: SKELETON_SHELF_COUNT }, (_, index) => <ShelfSkeleton key={index} label={label} />)}
+        {Array.from({ length: SKELETON_SHELF_COUNT }, (_, index) => <DiscoverShelfSkeleton key={index} label={label} />)}
       </div>
     );
   }
 
-  const day = snapshot.todayDay;
-  const isToday = day === currentKstWeekDay();
-  const copies: Record<DiscoverShelfId, ShelfCopy> = {
-    weekday: {
-      eyebrow: isToday ? "TODAY" : "WEEKLY",
-      title: isToday
-        ? bt("오늘 업데이트되는 웹툰", "Webtoons updating today")
-        : formatI18nTemplate(bt("{v0}요일 연재 인기작", "Popular {v0} serials"), { v0: bt(day, englishWeekDay(day)) }),
-      desc: bt("연재 중인 웹툰을 조회 신호가 높은 순서로 보여 줘요.", "Ongoing webtoons, highest view signals first."),
-      action: bt("연재 캘린더", "Release calendar"),
-    },
-    "top-rated": {
-      eyebrow: "TOP RATED",
-      title: bt("평점 랭킹 상위 작품", "Top of the rating ranking"),
-      desc: bt("통합 랭킹의 평점 산식으로 고른 작품이에요.", "Picked with the unified ranking's rating formula."),
-      action: bt("평점 랭킹 보기", "Rating ranking"),
-    },
-    free: {
-      eyebrow: "FREE TO START",
-      title: bt("무료·기다리면 무료로 시작", "Start free or wait-for-free"),
-      desc: bt("무료 또는 기다리면 무료로 볼 수 있는 인기작이에요.", "Popular stories you can start free or wait-for-free."),
-      action: bt("무료 작품 더 보기", "More free stories"),
-    },
-    newest: {
-      eyebrow: "NEW",
-      title: bt("최근 공개된 작품", "Recently released"),
-      desc: bt("공개 연도가 가까운 작품부터 보여 줘요.", "Stories with the most recent release year first."),
-      action: bt("탐색에서 더 보기", "More in Explore"),
-    },
-  };
+  const copies = discoverShelfCopies(bt, snapshot);
 
   return (
     <div className="flex flex-col gap-12 sm:gap-14" data-discover-shelves="">
