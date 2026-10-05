@@ -72,6 +72,7 @@ import {
   studioBuildingSkyTint,
 } from "./studio-virtual-space-building-life";
 import {
+  createStudioGhostModeApplier,
   studioGhostCollisionOverrides,
   studioGhostSeekInput,
   STUDIO_GHOST_SPRITE_ALPHA,
@@ -222,7 +223,8 @@ import {
   type StudioDisplayPoint,
 } from "./studio-virtual-space-sprite-smoothing";
 import { StudioCollisionResponder, studioCollisionContact } from "./studio-virtual-space-collision-response";
-import { createStudioPeerVisual } from "./studio-virtual-space-peer-visual";
+import { applyStudioPeerImpact, createStudioPeerVisual, destroyStudioPeerVisual } from "./studio-virtual-space-peer-visual";
+import { peerImpactOffsetAt } from "./studio-virtual-space-peer-motion";
 import { createStudioNpcVisuals } from "./studio-virtual-space-npc-visuals";
 import { createStudioLocalVisual } from "./studio-virtual-space-local-visual";
 import { studioPresenceEmoteBob, studioPresenceEmoteIndicator, studioPresenceEmoteParticleColor, studioPresenceEmoteReaction } from "./studio-virtual-space-presence-emote";
@@ -316,6 +318,7 @@ export function StudioVirtualSpacePhaserCanvas({
   onGhostModeChange,
   onEngineStatusChange,
   onSpaceUiEvent,
+  onSelfImpact,
   tileEffects = [],
   onTileEffectTrigger,
 }: StudioVirtualSpacePhaserCanvasProps) {
@@ -363,6 +366,7 @@ export function StudioVirtualSpacePhaserCanvas({
     onStuckChange,
     onGhostModeChange,
     onSpaceUiEvent,
+    onSelfImpact,
   });
   const runtimeRef = useRef<{
     syncSnapshot: (next: StudioVirtualSpaceSnapshot) => void;
@@ -388,6 +392,7 @@ export function StudioVirtualSpacePhaserCanvas({
       onStuckChange,
       onGhostModeChange,
       onSpaceUiEvent,
+      onSelfImpact,
     };
   }, [
     onCancelFollow,
@@ -403,6 +408,7 @@ export function StudioVirtualSpacePhaserCanvas({
     onStuckChange,
     onGhostModeChange,
     onSpaceUiEvent,
+    onSelfImpact,
   ]);
 
   const engineStatus: StudioVirtualSpaceEngineStatus = failure ? "error" : ready ? "ready" : "loading";
@@ -734,35 +740,22 @@ export function StudioVirtualSpacePhaserCanvas({
       };
 
       /** 동료 비주얼의 완전한 파괴: 스프라이트·이름표·상태 점·이모트·말풍선·장식·에셋 거주를 한곳에서 해제한다. */
-      const destroyPeerVisual = (id: string, visual: PeerVisual) => {
-        spriteCrossfades?.release(visual.sprite);
-        visual.sprite.destroy();
-        visual.label.destroy();
-        statusDots.get(id)?.destroy();
-        statusDots.delete(id);
-        emotes?.remove(`peer:${id}`);
-        speech?.remove(`peer:${id}`);
-        decorationRuntime?.removeActor(id);
-        peers.delete(id);
-        characterAssets.release(`peer:${id}`);
-      };
+      const destroyPeerVisual = (id: string, visual: PeerVisual) => destroyStudioPeerVisual({
+        releaseCrossfade: (sprite) => spriteCrossfades?.release(sprite),
+        destroyStatusDot: (dotId) => { statusDots.get(dotId)?.destroy(); statusDots.delete(dotId); },
+        removeEmote: (key) => emotes?.remove(key),
+        removeSpeech: (key) => speech?.remove(key),
+        removeDecoration: (actorId) => decorationRuntime?.removeActor(actorId),
+        releaseAsset: (owner) => characterAssets.release(owner),
+      }, peers, id, visual);
 
       /** 월드 충돌기(벽·장애물) 활성/비활성. 고스트 모드와 따라가기 벽 통과가 공유한다. */
-      const setWorldCollidersActive = (active: boolean) => {
-        for (const collider of ghostColliders) collider.active = active;
-      };
-
-      /**
-       * 고스트 모드 적용: 충돌기 비활성화(통과 이동) + 반투명.
-       * 반투명은 트랙1이 ghost 플래그 렌더 API를 노출하면 그쪽으로 이관한다
-       * (STUDIO_GHOST_SPRITE_ALPHA 값을 공유).
-       * 고스트를 꺼도 따라가기 벽 통과 중이면 충돌기는 계속 비활성이다.
-       */
-      const applyGhostMode = (enabled: boolean) => {
-        setWorldCollidersActive(!enabled && !followWallPassApplied);
-        localSprite?.setAlpha(enabled ? STUDIO_GHOST_SPRITE_ALPHA : 1);
-        callbacksRef.current.onGhostModeChange?.(enabled);
-      };
+      const { setWorldCollidersActive, applyGhostMode } = createStudioGhostModeApplier({
+        colliders: ghostColliders,
+        followWallPassApplied: () => followWallPassApplied,
+        localSprite: () => localSprite,
+        onGhostModeChange: (enabled) => callbacksRef.current.onGhostModeChange?.(enabled),
+      });
 
       const syncPeer = (peer: StudioVirtualSpacePeer, nearby: boolean) => {
         const id = peer.participant.sessionId;
@@ -835,6 +828,7 @@ export function StudioVirtualSpacePhaserCanvas({
         const nearby = new Set(next.nearbyPeers.map((peer) => peer.participant.sessionId));
         const present = new Set<string>();
         const reactionsBySession = new Map(next.peerReactions.map((item) => [item.sessionId, item] as const));
+        const impactsBySession = new Map(next.peerImpacts.map((item) => [item.sessionId, item] as const));
         const chatBubblesBySession = new Map(next.chatBubbles.map((item) => [item.sessionId, item.text] as const));
         const typingSessions = new Set(next.peerTyping.map((item) => item.sessionId));
         selfChatBubbleText = next.selfChatBubble?.text ?? null;
@@ -848,6 +842,7 @@ export function StudioVirtualSpacePhaserCanvas({
           if (visual) {
             visual.chatBubble = chatBubblesBySession.get(id) ?? null;
             visual.typing = typingSessions.has(id);
+            applyStudioPeerImpact(visual, impactsBySession.get(id), frameTime);
           }
           const key = reaction && reaction.expiresAt > now ? `${reaction.reaction}@${reaction.expiresAt}` : "";
           if (visual && key !== visual.emoteKey) {
@@ -1750,6 +1745,8 @@ export function StudioVirtualSpacePhaserCanvas({
           // 반발이 있으면 "멈춤"이 아니라 "튕김"이라 아래쪽 급정지 판정만으로는 흔들림이 죽는다.
           // 강한 충돌의 흔들림은 충격 시점에 여기서 함께 발화한다 (직전 프레임 속도가 판정 기준).
           worldFeel.noteImpact(true, 0, time, config.maxSpeed);
+          // 같은 반발을 피어 화면에서도 재생할 수 있게 속도를 그대로 전파한다.
+          callbacksRef.current.onSelfImpact?.(bounce.x, bounce.y);
         } else {
           lastAppliedVelocity.x = motion.velocity.x * turnFactor;
           lastAppliedVelocity.y = motion.velocity.y * turnFactor;
@@ -2434,9 +2431,12 @@ export function StudioVirtualSpacePhaserCanvas({
           // 자리 비움은 몸짓으로도 읽히게: 긴 주기로 고개가 살짝 떨어졌다 돌아오는 졸기를 얹는다.
           const peerDoze = visual.activity === "away" && !target.moving && !peerSeatRequested && !peerEmotePose
             ? studioAwayDozeMotion(time, studioSmoothingPhaseSeed(peerId), reducedMotion.matches) : null;
-          const peerTargetX = peerVisualPoint.x + peerGait.offsetX + peerIdleSway + (peerEmotePose?.bodyX ?? 0);
+          // 전파된 충돌 반발: 같은 감쇠 곡선으로 재생한 표시 오프셋(흡수 창이 지나면 0).
+          const peerImpact = peerImpactOffsetAt(visual.impactVx, visual.impactVy, time - visual.impactAt,
+            { suppressed: reducedMotion.matches || experienceRef.current.effectLevel === "low" });
+          const peerTargetX = peerVisualPoint.x + peerGait.offsetX + peerIdleSway + (peerEmotePose?.bodyX ?? 0) + peerImpact.x;
           const peerTargetY = peerVisualPoint.y + peerGait.offsetY + (peerEmotePose?.bodyY ?? 0) + presenceBob + peerBreathY
-            + (peerDoze?.offsetY ?? 0);
+            + (peerDoze?.offsetY ?? 0) + peerImpact.y;
           const peerBeforeX = visual.sprite.x;
           const peerBeforeY = visual.sprite.y;
           if (distance >= 128) {

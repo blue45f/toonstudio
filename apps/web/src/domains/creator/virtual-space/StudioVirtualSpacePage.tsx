@@ -2046,6 +2046,7 @@ export function VirtualSpaceExperience({
           onEngineStatusChange={setEngineStatus}
           onGhostModeChange={setGhostMode}
           onSpaceUiEvent={spaceUi.handleSpaceUiEvent}
+          onSelfImpact={(vx, vy) => controllerRef.current?.sendImpact(vx, vy)}
           tileEffects={tileEffects}
           onTileEffectTrigger={handleTileEffectTrigger}
         /> : <div className="studio-vspace-engine-message" role="status">{worldLoadError
