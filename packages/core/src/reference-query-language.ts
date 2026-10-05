@@ -2,7 +2,7 @@
  * Bounded Korean vocabulary shared by the browser and the Met adapter.
  * Not a general-purpose translator: unknown words and names are preserved.
  */
-export const REFERENCE_QUERY_LANGUAGE_VERSION = 2;
+export const REFERENCE_QUERY_LANGUAGE_VERSION = 3;
 export const REFERENCE_QUERY_MAX_LENGTH = 80;
 
 const TERMS: Readonly<Record<string, string>> = Object.freeze({
@@ -56,6 +56,54 @@ const TERMS: Readonly<Record<string, string>> = Object.freeze({
   "손 포즈": "hand gesture", "두 손": "hands", "인물 눈": "human eyes",
   "옷 주름": "drapery", "천 주름": "drapery", "무도회": "ballroom",
   "로코코": "Rococo", "바로크": "Baroque", "빅토리아": "Victorian",
+  // Research-desk vocabulary added 2026-10-06: places, materials, weather,
+  // mood, creatures, props and styles that webtoon material searches use most.
+  // Additive only — existing mappings above keep their established meaning.
+  "오두막": "cabin", "등대": "lighthouse", "항구": "harbor", "시장": "market",
+  "광장": "plaza", "지하실": "basement", "옥상": "rooftop", "온실": "greenhouse",
+  "병원": "hospital", "카페": "cafe", "식당": "restaurant", "호텔": "hotel",
+  "공항": "airport", "학교": "school", "도서관": "library", "박물관": "museum",
+  "미술관": "art museum", "극장": "theater", "교회": "church", "절": "temple",
+  "터널": "tunnel", "동굴": "cave", "화산": "volcano", "정글": "jungle",
+  "초원": "grassland", "절벽": "cliff", "계곡": "valley", "협곡": "canyon",
+  "숲속": "forest", "바닷가": "seaside", "들판": "field", "언덕": "hill",
+  "빙하": "glacier", "섬": "island", "연못": "pond", "늪": "swamp",
+  "이끼": "moss", "덩굴": "vines", "갈대": "reeds", "풀": "grass",
+  "안개": "fog", "황혼": "dusk", "새벽": "dawn", "노을": "sunset glow",
+  "일출": "sunrise", "무지개": "rainbow", "번개": "lightning", "천둥": "thunder",
+  "홍수": "flood", "눈보라": "blizzard", "서리": "frost", "그림자": "shadow",
+  "어둠": "darkness", "달빛": "moonlight", "햇빛": "sunlight", "밤하늘": "night sky",
+  "별": "star", "은하": "galaxy", "우주": "space", "행성": "planet",
+  "아늑한": "cozy", "신비로운": "mysterious", "음산한": "gloomy", "웅장한": "majestic",
+  "평화로운": "peaceful", "화려한": "ornate", "몽환적인": "dreamlike", "고요한": "quiet",
+  "벽돌": "brick", "콘크리트": "concrete", "대리석": "marble", "타일": "tile",
+  "천": "fabric", "가죽": "leather", "유리": "glass", "종이": "paper",
+  "돌": "stone", "흙": "soil", "모래": "sand", "연기": "smoke",
+  "원목": "wood", "통나무": "log", "줄무늬": "striped", "체크무늬": "checkered",
+  "꽃무늬": "floral", "기하학": "geometric", "추상": "abstract",
+  "램프": "lamp", "양초": "candle", "촛불": "candlelight", "횃불": "torch",
+  "화살": "arrow", "총": "gun", "대포": "cannon", "보석": "gem",
+  "지도": "map", "나침반": "compass", "열쇠": "key", "자물쇠": "lock",
+  "상자": "box", "병": "bottle", "접시": "plate", "우산": "umbrella",
+  "장갑": "gloves", "목도리": "scarf", "부츠": "boots", "망토": "cloak",
+  "가면": "mask", "인형": "doll", "피아노": "piano", "바이올린": "violin",
+  "기타": "guitar", "종": "bell", "시계": "clock", "조각상": "statue",
+  "깃발": "flag", "돛": "sail", "닻": "anchor", "바퀴": "wheel",
+  "날개": "wings", "뿔": "horn", "발톱": "claw", "비늘": "scales",
+  "깃털": "feather", "털": "fur", "무덤": "tomb", "왕좌": "throne",
+  "여우": "fox", "늑대": "wolf", "사자": "lion", "곰": "bear",
+  "토끼": "rabbit", "사슴": "deer", "돼지": "pig", "소": "cow",
+  "양": "sheep", "염소": "goat", "닭": "chicken", "오리": "duck",
+  "독수리": "eagle", "부엉이": "owl", "까마귀": "crow", "갈매기": "seagull",
+  "벌": "bee", "개미": "ant", "거미": "spider", "뱀": "snake",
+  "개구리": "frog", "물고기": "fish", "상어": "shark", "고래": "whale",
+  "돌고래": "dolphin", "문어": "octopus", "해파리": "jellyfish",
+  "장미": "rose", "튤립": "tulip", "해바라기": "sunflower", "단풍": "autumn leaves",
+  "은행나무": "ginkgo", "고딕": "gothic", "아르누보": "art nouveau", "아르데코": "art deco",
+  "모던": "modern", "레트로": "retro", "빈티지": "vintage", "사이버펑크": "cyberpunk",
+  "스팀펑크": "steampunk", "판타지": "fantasy", "공포": "horror", "미니멀": "minimalist",
+  "미래": "futuristic", "전투": "battle", "전쟁": "war", "축제": "festival",
+  "결혼식": "wedding", "연회장": "banquet hall", "지하": "underground",
 });
 
 export type ReferenceQueryResolution = Readonly<{
