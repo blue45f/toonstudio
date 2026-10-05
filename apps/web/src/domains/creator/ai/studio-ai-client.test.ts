@@ -3,8 +3,10 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createEmptyStudioWriterRoomDocument } from "../studio-writer-room";
 
 import {
+  buildAnimeStyleEditPrompt,
   buildCharacterConsistencyPrompt,
   colorizeLineArt,
+  convertImageToAnimeStyle,
   dataUrlToBlob,
   DEFAULT_STUDIO_AI_IMAGE_SIZE,
   generateBackgroundImage,
@@ -414,6 +416,66 @@ describe("studio-ai-client network calls (fetch mocked)", () => {
       expect(await (imageField as Blob).text()).toBe("line-art-bytes");
 
       expect(result).toEqual({ ok: true, data: { dataUrl: `data:image/png;base64,${btoa("colored")}` } });
+    });
+  });
+
+  describe("buildAnimeStyleEditPrompt", () => {
+    it("compiles the anime-cel preset with a composition-preserving instruction", () => {
+      const prompt = buildAnimeStyleEditPrompt();
+      expect(prompt).toContain("Japanese anime style");
+      expect(prompt).toContain("cel shading");
+      expect(prompt).toContain("Preserve the composition");
+    });
+
+    it("appends the artist's extra direction when given", () => {
+      const prompt = buildAnimeStyleEditPrompt("배경은 밤하늘로");
+      expect(prompt).toContain("배경은 밤하늘로");
+    });
+  });
+
+  describe("convertImageToAnimeStyle", () => {
+    const sourceDataUrl = `data:image/png;base64,${btoa("source-cut-bytes")}`;
+
+    it("does NOT call fetch when not configured (honest disabled state)", async () => {
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+      const result = await convertImageToAnimeStyle(STUDIO_AI_DEFAULT_SETTINGS, sourceDataUrl);
+
+      expect(result).toEqual({ ok: false, code: "not_configured", error: expect.any(String) });
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("does NOT call fetch for a non-data-URL source", async () => {
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+      const result = await convertImageToAnimeStyle(CONFIGURED, "https://example.com/cut.png");
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.code).toBe("invalid_input");
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("sends the source image with the compiled anime preset prompt to the edits endpoint", async () => {
+      const mockFetch = vi.fn(async () => new Response(JSON.stringify({ data: [{ b64_json: btoa("anime-cut") }] }), { status: 200 }));
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+      const result = await convertImageToAnimeStyle(CONFIGURED, sourceDataUrl);
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [url, init] = mockFetch.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe("https://api.example.com/v1/images/edits");
+      expect(init.body).toBeInstanceOf(FormData);
+      const form = init.body as FormData;
+      expect(form.get("prompt")).toContain("Japanese anime style");
+      expect(form.get("model")).toBe(CONFIGURED.imageModel);
+      expect(form.get("response_format")).toBe("b64_json");
+      const imageField = form.get("image");
+      expect(imageField).toBeInstanceOf(Blob);
+      expect(await (imageField as Blob).text()).toBe("source-cut-bytes");
+
+      expect(result).toEqual({ ok: true, data: { dataUrl: `data:image/png;base64,${btoa("anime-cut")}` } });
     });
   });
 
