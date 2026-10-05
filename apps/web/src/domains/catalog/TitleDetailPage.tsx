@@ -8,17 +8,18 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import { TitleDetailBreadcrumb } from "./TitleDetailBreadcrumb";
+import { TitleDetailHero } from "./TitleDetailHero";
+import { TitleEpisodeSection } from "./TitleEpisodeSection";
 import { TitleNotFound } from "./TitleNotFound";
+import { resolveTitleEpisodes } from "./title-episodes";
 import { TitleEarlyAccessNotice } from "@/domains/monetization/public/title-early-access";
 
 
 import type { SeedReview, Title } from "@/shared/lib/types";
 
 import { AdaptationGraph } from "@/shared/components/adaptation-graph";
-import { AuthorLine } from "@/shared/components/author-line";
 import { AvailabilityRouter } from "@/shared/components/availability";
 import { CollectionAdd } from "@/shared/components/collection-add";
-import { CoverImage } from "@/shared/components/cover-image";
 import { FanCafePanel } from "@/shared/components/fan-cafe-panel";
 import { PriceCompare } from "@/shared/components/price-compare";
 import { AvailabilityHistoryPanel } from "@/domains/engagement/AvailabilityHistoryPanel";
@@ -37,12 +38,11 @@ import { TitleExternal } from "@/shared/components/title-external";
 import { TitleFanWorks } from "@/shared/components/title-fan-works";
 import { TitleOst } from "@/shared/components/title-ost";
 import { TitlePoster } from "@/shared/components/title-poster";
-import { Badge, GenreChip } from "@/shared/components/ui/chip";
+import { Badge } from "@/shared/components/ui/chip";
 import { DistributionBars, GenreSpectrum, MeterBar } from "@/shared/components/ui/spectrum-bar";
 import { Stars } from "@/shared/components/ui/stars";
 import { statsAreEstimated } from "@/shared/lib/estimate";
 import { useApp } from "@/shared/lib/store";
-import { AGE_LABEL, STATUS_LABEL, TYPE_LABEL } from "@/shared/lib/taxonomy";
 import { mergedUniverse } from "@/shared/lib/title-universe";
 import { formatCount } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
@@ -204,23 +204,25 @@ export function TitleDetailPage() {
     { icon: Bookmark, label: "관심", value: fmtStat(title.stats.bookmarks) },
     { icon: Star, label: "평가", value: fmtStat(reviewCount) },
   ];
+  // 회차 계약은 아직 없어 resolveTitleEpisodes가 undefined를 돌려준다(빈 상태).
+  const episodes = resolveTitleEpisodes(data);
+  const firstEpisodeHref =
+    !episodes && title.totalEpisodes === 0
+      ? null
+      : `/title/${encodeURIComponent(title.slug)}/read/1`;
 
   return (
     <PageEntrance variant="pop">
     <Container size="wide" className="relative py-8 lg:py-10">
       <TitleDetailBreadcrumb title={title.title} />
-      {title.coverImage && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[480px] w-screen -translate-x-1/2 overflow-hidden"
-        >
-          <CoverImage src={title.coverImage} alt="" className="size-full scale-110 object-cover opacity-25 blur-2xl" />
-          <div
-            aria-hidden
-            className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0.155_0.008_70/0.32),oklch(0.155_0.008_70/0.86)_58%,oklch(0.155_0.008_70))]"
-          />
-        </div>
-      )}
+      <TitleDetailHero
+        title={title}
+        reviewAvg={reviewAvg}
+        reviewCount={reviewCount}
+        estimated={estimated}
+        showSynopsis={showSynopsis}
+        firstEpisodeHref={firstEpisodeHref}
+      />
 
       <div className="grid gap-8 lg:grid-cols-[19rem_1fr]">
         <aside className="flex flex-col gap-4 lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)] lg:self-start">
@@ -238,70 +240,12 @@ export function TitleDetailPage() {
             imageUrl={title.coverImage}
             className="self-start"
           />
-          <div className="rounded-2xl border border-line bg-panel/50 p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <MapPin size={15} className="text-accent" />
-              <p className="text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "어디서 볼 수 있나요")}</p>
-            </div>
-            <AvailabilityRouter availability={title.availability} />
-            <p className="mt-3 text-xs leading-relaxed text-fg-3">
-              {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "플랫폼을 가로질러 가격(무료·기다무·유료)을 비교합니다. 가장 저렴한 진입점을 위로 정렬했어요.")}</p>
-          </div>
-          <PriceCompare availability={title.availability} />
           {/* 수익화: 서포터 얼리 액세스 안내 (monetization/paywall) */}
           <TitleEarlyAccessNotice titleId={title.id} />
           <AvailabilityHistoryPanel title={title} />
         </aside>
 
         <div className="flex flex-col gap-6">
-          <div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Badge tone="accent">{TYPE_LABEL[title.type]}</Badge>
-              <Badge tone={title.status === "completed" ? "good" : title.status === "hiatus" ? "warn" : "neutral"}>
-                {STATUS_LABEL[title.status]}
-              </Badge>
-              <Badge tone={title.ageRating === "19" ? "bad" : "neutral"}>{AGE_LABEL[title.ageRating]}</Badge>
-              {title.updateDays && title.updateDays.length > 0 && (
-                <Badge tone="cool">{title.updateDays.join("·")} {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "연재")}</Badge>
-              )}
-            </div>
-
-            <h1 className="mt-3 text-pretty [word-break:keep-all] text-[clamp(1.6rem,6.5vw,1.875rem)] font-bold leading-tight tracking-tight sm:text-4xl">
-              {title.title}
-            </h1>
-            {title.altTitles && title.altTitles.length > 0 && (
-              <p className="mt-1.5 text-sm text-fg-3">{title.altTitles.join(" · ")}</p>
-            )}
-            <AuthorLine author={title.author} artist={title.artist} year={title.releaseYear} />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-line bg-card p-5">
-            <div className="flex items-center gap-3">
-              <span className="numeral text-4xl text-accent">{reviewAvg.toFixed(1)}</span>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <Stars value={reviewAvg} size="md" />
-                  {estimated && <Badge tone="neutral">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "추정")}</Badge>}
-                </div>
-                <p className="mt-1 text-xs text-fg-3">
-                  {estimated ? formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "약 {v0} 평가 (추정)"), { v0: String(formatCount(reviewCount)) }) : formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "{v0}개의 평가"), { v0: String(formatCount(reviewCount)) })}
-                </p>
-              </div>
-            </div>
-            <div className="ml-auto flex flex-wrap gap-1.5">
-              {title.genres.map((genre) => (
-                <GenreChip key={genre} genre={genre} />
-              ))}
-            </div>
-          </div>
-
-          {showSynopsis && title.synopsis && (
-            <section aria-labelledby="title-synopsis-title">
-              <h2 id="title-synopsis-title" className="eyebrow mb-2 text-accent">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "줄거리")}</h2>
-              <p className="text-pretty text-[0.95rem] leading-relaxed text-fg-2">{title.synopsis}</p>
-            </section>
-          )}
-
           {title.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {title.tags.map((tag) => (
@@ -331,7 +275,55 @@ export function TitleDetailPage() {
         </div>
       </div>
 
-      <section className="mt-10 sm:mt-14">
+      <div className="mt-10 grid gap-6 sm:mt-14 lg:grid-cols-[1fr_20rem] lg:items-start">
+        <TitleEpisodeSection title={title} episodes={episodes} />
+        <div className="flex flex-col gap-4">
+          <div className="rounded-2xl border border-line bg-panel/50 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <MapPin size={15} className="text-accent" />
+              <p className="text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "어디서 볼 수 있나요")}</p>
+            </div>
+            <AvailabilityRouter availability={title.availability} />
+            <p className="mt-3 text-xs leading-relaxed text-fg-3">
+              {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "플랫폼을 가로질러 가격(무료·기다무·유료)을 비교합니다. 가장 저렴한 진입점을 위로 정렬했어요.")}</p>
+          </div>
+          <PriceCompare availability={title.availability} />
+          <section aria-labelledby="title-metrics-summary" className="rounded-2xl border border-line bg-card p-5">
+            <h3 id="title-metrics-summary" className="text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "지표 요약")}</h3>
+            <dl className="mt-3.5 flex flex-col gap-2.5 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "평점")}</dt>
+                <dd className="numeral font-semibold text-fg">
+                  {reviewAvg.toFixed(1)}
+                  <span className="ml-1.5 text-xs font-normal text-fg-3">
+                    {formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "{v0}개의 평가"), { v0: String(formatCount(reviewCount)) })}
+                  </span>
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률")}</dt>
+                <dd className="numeral font-semibold text-fg">{Math.round(title.stats.completionRate)}%</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "몰입 지수")}</dt>
+                <dd className="numeral font-semibold text-fg">{Math.round(title.stats.bingeIndex)}</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "관심")}</dt>
+                <dd className="numeral font-semibold text-fg">{fmtStat(title.stats.bookmarks)}</dd>
+              </div>
+            </dl>
+            <a
+              href="#metrics"
+              className="mt-4 inline-flex min-h-10 items-center text-xs font-semibold text-accent transition-colors hover:text-accent-2"
+            >
+              {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "지표 자세히 보기")}
+            </a>
+          </section>
+        </div>
+      </div>
+
+      <section id="metrics" className="mt-10 scroll-mt-24 sm:mt-14">
         <h2 className="eyebrow mb-1 text-accent">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "METRICS · 지표")}</h2>
         <p className="mb-4 text-xs text-fg-2">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률·몰입·분포는 수집값과 추정값을 함께 사용합니다.")}</p>
         <div className="grid gap-4 lg:grid-cols-2">
