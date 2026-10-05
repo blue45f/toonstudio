@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { UserProfilePage } from "./UserProfilePage";
 
-import { getCreatorProfile, listSeries, listWorks, type CreatorProfile } from "@/platform/creator-client";
+import { getCreatorProfile, listSeries, listWorks, type CreatorProfile, type WorkSummary } from "@/platform/creator-client";
 import {
   publicCreatorRoleProfile,
   type PublicCreatorRoleProfile,
@@ -247,5 +247,68 @@ describe("UserProfilePage tab failure and empty states", () => {
     expect(screen.getByText("마음에 드는 작품에 첫 리뷰를 남겨 보세요.")).toBeTruthy();
     const cta = screen.getByRole("link", { name: "작품 보러 가기" });
     expect(cta.getAttribute("href")).toBe("/community");
+  });
+});
+
+describe("UserProfilePage cover band", () => {
+  function publishedWork(overrides: Partial<WorkSummary> = {}): WorkSummary {
+    return {
+      id: "work-1",
+      title: "달빛 검객",
+      description: "",
+      cover: "https://example.com/featured-cover.jpg",
+      tags: ["판타지"],
+      format: "cuttoon",
+      titleId: null,
+      status: "published",
+      author: { id: "public-creator", name: "Public creator", avatar: "#7c5cfc" },
+      likes: 12,
+      comments: 3,
+      views: 120,
+      liked: false,
+      createdAt: "2026-09-16T00:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  async function renderWithWorks(works: WorkSummary[]) {
+    vi.mocked(getCreatorProfile).mockResolvedValue({
+      id: "public-creator",
+      name: "Public creator",
+      avatar: "#7c5cfc",
+      bio: "Creator biography",
+      createdAt: null,
+      followers: 0,
+      following: 0,
+      isFollowing: false,
+      works: works.length,
+      series: 0,
+      creatorRoleProfile: publicProfile(),
+    });
+    vi.mocked(listWorks).mockResolvedValue(works);
+    render(
+      <MemoryRouter initialEntries={["/u/public-creator"]}>
+        <Routes>
+          <Route path="/u/:userId" element={<UserProfilePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByRole("heading", { name: "Public creator" });
+  }
+
+  it("대표작이 있으면 그 표지를 커버 밴드에 페이드로 얹는다", async () => {
+    await renderWithWorks([publishedWork()]);
+
+    const bandImage = await screen.findByAltText("");
+    expect(bandImage.getAttribute("src")).toBe("https://example.com/featured-cover.jpg");
+    // 작품 목록은 페이지에서 한 번만 불러와 밴드와 작품 탭이 공유한다.
+    expect(vi.mocked(listWorks).mock.calls.length).toBe(1);
+  });
+
+  it("대표작이 없으면 표지 이미지 없이 스펙트럼 밴드만으로 성립한다", async () => {
+    await renderWithWorks([]);
+
+    expect(screen.queryByAltText("")).toBeNull();
+    expect(screen.getByText("Creator biography")).toBeTruthy();
   });
 });

@@ -1,5 +1,5 @@
 import { BookOpen, Mail, MessageSquareText, PenLine, RefreshCw, UserCheck, UserPlus, BriefcaseBusiness, Sparkles } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
 
@@ -9,7 +9,7 @@ import Link from "@/shared/navigation/router-link";
 
 import { ReviewCard } from "@/shared/components/review-card";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
-import { SectionArt } from "@/shared/components/section-art";
+import { CoverImage } from "@/shared/components/cover-image";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { Stars } from "@/shared/components/ui/stars";
@@ -23,6 +23,7 @@ import {
   type CreatorRoleLocale,
 } from "@/shared/lib/creator-role-contract";
 import { useT } from "@/shared/lib/i18n";
+import { spectrumGradient } from "@/shared/lib/genre-color";
 import { compactPublicShareDescription, publicShareImageUrl } from "@/shared/lib/public-share-policy";
 import { useApp } from "@/shared/lib/store";
 import { cn, formatCount } from "@/shared/lib/utils";
@@ -39,6 +40,7 @@ import {
   type WorkSummary,
 } from "@/platform/creator-client";
 import { useApiResource } from "@/platform/use-api-resource";
+import { buildCreatorProfileShowcase } from "./creator-profile-showcase";
 import { getActiveI18nLocale, useBilingualI18nRevision,
   translateCurrentStaticSourceText,
 } from "@/shared/lib/i18n-bilingual-copy";
@@ -72,37 +74,20 @@ function isTab(value: string | null): value is ProfileTab {
 }
 
 // ── 창작 작품 탭 ──────────────────────────────────────────────────────
-function ProfileWorksTab({ userId }: { userId: string }) {
+// 작품 목록은 페이지가 한 번만 불러와 커버 밴드(대표작 산출)와 이 탭이 함께 쓴다.
+function ProfileWorksTab({
+  works,
+  loading,
+  error,
+  onRetry,
+}: {
+  works: readonly WorkSummary[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}) {
   useBilingualI18nRevision();
   const t = useT();
-  const [works, setWorks] = useState<WorkSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryNonce, setRetryNonce] = useState(0);
-
-  useEffect(() => {
-    let alive = true;
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-    listWorks({ userId }, controller.signal)
-      .then((result) => {
-        if (alive) setWorks(result);
-      })
-      .catch((failure: unknown) => {
-        if (!alive) return;
-        if (failure instanceof DOMException && failure.name === "AbortError") return;
-        setWorks([]);
-        setError(t("userProfile.works.error"));
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
-    return () => {
-      alive = false;
-      controller.abort();
-    };
-  }, [userId, retryNonce, t]);
 
   if (loading) return <WorkGridSkeleton count={5} />;
   if (error) {
@@ -110,7 +95,7 @@ function ProfileWorksTab({ userId }: { userId: string }) {
       <ErrorState
         title={t("userProfile.fetchError")}
         message={error}
-        onRetry={() => setRetryNonce((nonce) => nonce + 1)}
+        onRetry={onRetry}
       />
     );
   }
@@ -241,6 +226,39 @@ export function UserProfilePage() {
     };
   }, [userId, viewerId]);
 
+  // 공개 작품 목록 — 커버 밴드의 대표작 산출과 작품 탭이 공유하므로 페이지에서 한 번만 부른다.
+  const [works, setWorks] = useState<WorkSummary[]>([]);
+  const [worksLoading, setWorksLoading] = useState(true);
+  const [worksError, setWorksError] = useState<string | null>(null);
+  const [worksRetryNonce, setWorksRetryNonce] = useState(0);
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    const controller = new AbortController();
+    setWorksLoading(true);
+    setWorksError(null);
+    void (async () => {
+      try {
+        const result = await listWorks({ userId }, controller.signal);
+        if (alive) setWorks(Array.isArray(result) ? result : []);
+      } catch (failure) {
+        if (!alive) return;
+        if (failure instanceof DOMException && failure.name === "AbortError") return;
+        setWorks([]);
+        setWorksError(t("userProfile.works.error"));
+      } finally {
+        if (alive) setWorksLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+      controller.abort();
+    };
+  }, [userId, worksRetryNonce, t]);
+
+  const showcase = useMemo(() => buildCreatorProfileShowcase(works), [works]);
+  const featuredWork = showcase.featured[0] ?? null;
+
   const feed = data?.feed ?? [];
   const author = profile?.name ?? feed[0]?.author ?? t("userProfile.authorFallback");
   const avatar = profile?.avatar ?? feed[0]?.avatar ?? "#7c5cfc";
@@ -324,11 +342,25 @@ export function UserProfilePage() {
   return (
     <div>
       <section className="relative overflow-hidden border-b border-line bg-ledger">
-        <SectionArt
-          image="community"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-20"
-        />
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-ledger/60 via-ledger/80 to-ledger" />
+        {/* 커버 밴드(160~192px): 장르 스펙트럼 기본값 위에 대표작 표지를 페이드로 얹는다.
+            대표작이 없으면 스펙트럼만으로 밴드가 성립한다. 밴드 아래쪽은 헤더 배경으로 녹아든다. */}
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-40 sm:h-48">
+          <div
+            className="absolute inset-0"
+            style={{ background: spectrumGradient(featuredWork?.tags ?? [], 100) }}
+          />
+          {featuredWork?.cover ? (
+            <div className="absolute inset-0 opacity-55 [mask-image:linear-gradient(to_bottom,black_45%,transparent_97%)]">
+              <CoverImage
+                src={featuredWork.cover}
+                alt=""
+                fallback={null}
+                className="size-full object-cover"
+              />
+            </div>
+          ) : null}
+          <div className="absolute inset-0 bg-gradient-to-b from-ledger/30 via-ledger/55 to-ledger" />
+        </div>
         <Container size="wide" className="relative py-8 sm:py-12 lg:py-16">
           <p className="eyebrow text-accent">{t("userProfile.eyebrow")}</p>
           <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -508,7 +540,12 @@ export function UserProfilePage() {
         </div>
 
         {tab === "works" ? (
-          <ProfileWorksTab userId={userId} />
+          <ProfileWorksTab
+            works={works}
+            loading={worksLoading}
+            error={worksError}
+            onRetry={() => setWorksRetryNonce((nonce) => nonce + 1)}
+          />
         ) : tab === "series" ? (
           <ProfileSeriesTab userId={userId} />
         ) : loading ? (

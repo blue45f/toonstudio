@@ -1,7 +1,9 @@
 import {
   BriefcaseBusiness,
+  ChevronDown,
   Loader2,
   Search,
+  SlidersHorizontal,
   Sparkles,
   UsersRound,
 } from "lucide-react";
@@ -9,17 +11,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import {
+  listWorks,
   searchCreatorDirectory,
   type CreatorDirectoryEntry,
   type CreatorDirectoryQuery,
+  type WorkSummary,
 } from "@/platform/creator-client";
+import { buildCreatorProfileShowcase } from "./creator-profile-showcase";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
+import { CoverImage } from "@/shared/components/cover-image";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { SectionArt } from "@/shared/components/section-art";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { genreBorder, genreTextColor, genreTint, spectrumGradient } from "@/shared/lib/genre-color";
+import { cn } from "@/shared/lib/utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useI18n } from "@/shared/lib/i18n-core";
 import {
@@ -30,7 +38,6 @@ import {
   creatorSpecialtyDefinition,
   creatorText,
   normalizeCreatorCollaborationStatus,
-  normalizeCreatorRoleId,
   normalizeCreatorSpecialtyId,
 } from "@/shared/lib/creator-role-contract";
 
@@ -48,13 +55,124 @@ const EMPTY_FILTERS: DirectoryFilters = {
   collaborationStatus: undefined,
 };
 
+function filterChipClass(active: boolean): string {
+  return cn(
+    "inline-flex min-h-11 items-center rounded-full border px-3 text-xs font-semibold transition-colors",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60",
+    active
+      ? "border-accent bg-accent text-on-accent"
+      : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg",
+  );
+}
+
+type CreatorCoverState =
+  | { readonly status: "loading" }
+  | { readonly status: "ready"; readonly featured: WorkSummary | null; readonly tags: readonly string[] };
+
+/** 표지 이미지가 없을 때의 타이포그래픽 커버 — 대표작 제목(없으면 창작자 이름)의 첫 글자를 크게 얹는다. */
+function CreatorTypographicGlyph({ glyph }: { readonly glyph: string }) {
+  return (
+    <span aria-hidden="true" className="absolute inset-0 block overflow-hidden">
+      <span className="absolute -right-2 -top-7 select-none font-display text-[6.5rem] font-bold leading-none text-[oklch(0.97_0.01_85/0.32)] mix-blend-overlay">
+        {glyph}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * 카드 상단 16:9 아트 타일. 디렉터리 응답에는 작품 데이터가 없어 공개 작품 목록에서
+ * 대표작(creator-profile-showcase)을 뽑아 표지를 얹는다. 표지가 없거나 불러오기에
+ * 실패하면 장르 스펙트럼 위 타이포그래픽 커버로 떨어지며, 카드 자체는 깨지지 않는다.
+ */
+function CreatorCoverTile({ creator }: { readonly creator: CreatorDirectoryEntry }) {
+  const [state, setState] = useState<CreatorCoverState>({ status: "loading" });
+
+  useEffect(() => {
+    let alive = true;
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const works = await listWorks({ userId: creator.id }, controller.signal);
+        if (!alive) return;
+        const showcase = buildCreatorProfileShowcase(Array.isArray(works) ? works : [], 1);
+        setState({ status: "ready", featured: showcase.featured[0] ?? null, tags: showcase.specialties });
+      } catch {
+        if (alive) setState({ status: "ready", featured: null, tags: [] });
+      }
+    })();
+    return () => {
+      alive = false;
+      controller.abort();
+    };
+  }, [creator.id]);
+
+  const featured = state.status === "ready" ? state.featured : null;
+  const tags = state.status === "ready" ? state.tags : [];
+  const glyphSource = featured?.title || creator.name;
+  const glyph = glyphSource.replace(/[^가-힣A-Za-z0-9]/g, "").charAt(0) || glyphSource.charAt(0);
+  const showTitle = state.status === "ready" && featured !== null && !featured.cover;
+
+  return (
+    <div
+      className="relative aspect-video w-full overflow-hidden"
+      style={{ background: spectrumGradient(tags, 115) }}
+    >
+      {state.status === "loading" ? (
+        <span aria-hidden="true" className="skeleton absolute inset-0 block" />
+      ) : featured?.cover ? (
+        <CoverImage
+          src={featured.cover}
+          alt=""
+          className="absolute inset-0 size-full object-cover"
+          fallback={<CreatorTypographicGlyph glyph={glyph} />}
+        />
+      ) : (
+        <CreatorTypographicGlyph glyph={glyph} />
+      )}
+      {showTitle || tags.length > 0 ? (
+        <div className="absolute inset-x-0 bottom-0">
+          <span
+            aria-hidden="true"
+            className="absolute inset-0 bg-gradient-to-t from-[oklch(0.15_0.02_265/0.6)] via-[oklch(0.15_0.02_265/0.22)] to-transparent"
+          />
+          <div className="relative flex flex-col gap-1.5 p-2">
+            {showTitle ? (
+              <p className="truncate text-xs font-bold text-white">{featured.title}</p>
+            ) : null}
+            {tags.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {tags.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border px-2 py-0.5 text-[0.65rem] font-bold"
+                    style={{
+                      color: genreTextColor(tag),
+                      backgroundColor: genreTint(tag, 0.85),
+                      borderColor: genreBorder(tag, 0.5),
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function CreatorCard({ creator, locale }: { readonly creator: CreatorDirectoryEntry; readonly locale: string }) {
   const t = useBilingual("CreatorDirectoryPage");
   const profile = creator.creatorRoleProfile;
   const primary = creatorRoleDefinition(profile.primaryRole);
   const displayRole = primary ? creatorText(primary.label, locale) : t("창작자", "Creator");
   return (
-    <article className="flex min-w-0 flex-col rounded-2xl border border-line bg-card p-4 shadow-sm">
+    <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm">
+      <CreatorCoverTile creator={creator} />
+      <div className="flex min-w-0 flex-1 flex-col p-4">
       <div className="flex min-w-0 items-start gap-3">
         <span
           className="flex size-12 shrink-0 items-center justify-center rounded-2xl text-base font-black text-white"
@@ -90,10 +208,11 @@ function CreatorCard({ creator, locale }: { readonly creator: CreatorDirectoryEn
       ) : null}
       <Link
         href={`/u/${encodeURIComponent(creator.id)}`}
-        className={buttonClass({ variant: "quiet", size: "sm", className: "mt-4 w-full" })}
+        className={buttonClass({ variant: "quiet", size: "sm", className: "mt-auto w-full pt-4" })}
       >
         {t("프로필과 포트폴리오 보기", "View profile and portfolio")}
       </Link>
+      </div>
     </article>
   );
 }
@@ -112,6 +231,8 @@ export function CreatorDirectoryPage() {
   const lang = useI18n((state) => state.lang);
   const [draft, setDraft] = useState<DirectoryFilters>(EMPTY_FILTERS);
   const [filters, setFilters] = useState<DirectoryFilters>(EMPTY_FILTERS);
+  // 모바일에서는 필터 폼을 접어 두고 토글로 펼친다. 데스크톱에서는 항상 펼쳐진다.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [result, setResult] = useState<DirectoryQueryState>({ status: "loading" });
   const [loadingMore, setLoadingMore] = useState(false);
   // "더 보기" 실패는 이미 받은 목록을 유지한 채 그 자리에서 다시 시도한다(본 조회 실패와 분리).
@@ -179,6 +300,9 @@ export function CreatorDirectoryPage() {
     setFilters(EMPTY_FILTERS);
   };
 
+  const activeDraftCount = [draft.q?.trim(), draft.role, draft.specialty, draft.collaborationStatus]
+    .filter(Boolean).length;
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-bg">
       <Container size="wide" className="py-8 sm:py-12">
@@ -197,15 +321,35 @@ export function CreatorDirectoryPage() {
           asideClassName="hidden md:block"
         />
 
-        <section aria-label={t("창작자 찾기 조건", "Creator search filters")}>
+        <section aria-label={t("창작자 찾기 조건", "Creator search filters")} className="sticky top-16 z-20 bg-bg pt-7">
         <form
-          className="mt-7 rounded-2xl border border-line bg-card p-4"
+          className="rounded-2xl border border-line bg-card p-4 shadow-sm"
           onSubmit={(event) => {
             event.preventDefault();
             setFilters(draft);
           }}
         >
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto]">
+          <button
+            type="button"
+            className="flex min-h-11 w-full items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:hidden"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            <SlidersHorizontal size={15} className="shrink-0 text-accent" aria-hidden="true" />
+            <span className="flex-1 text-sm font-black text-fg">{t("검색 조건", "Search filters")}</span>
+            {activeDraftCount > 0 ? (
+              <span className="inline-flex min-h-6 items-center rounded-full bg-accent px-2 text-[0.68rem] font-black text-on-accent">
+                {activeDraftCount}
+              </span>
+            ) : null}
+            <ChevronDown
+              size={16}
+              aria-hidden="true"
+              className={cn("shrink-0 text-fg-3 transition-transform", filtersOpen && "rotate-180")}
+            />
+          </button>
+          <div className={cn(!filtersOpen && "hidden", "sm:block")}>
+          <div className="mt-3 grid gap-3 sm:mt-0 lg:grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,1fr))_auto]">
             <label className="text-xs font-bold text-fg">
               {t("이름·소개", "Name / bio")}
               <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-line bg-panel px-3 focus-within:border-accent">
@@ -221,24 +365,6 @@ export function CreatorDirectoryPage() {
                   className="min-w-0 flex-1 bg-transparent text-sm text-fg outline-none"
                 />
               </span>
-            </label>
-            <label className="text-xs font-bold text-fg">
-              {t("직무", "Role")}
-              <select
-                value={draft.role ?? ""}
-                onChange={(event) => {
-                  const value = event.currentTarget.value;
-                  setDraft((current) => ({ ...current, role: normalizeCreatorRoleId(value) ?? undefined }));
-                }}
-                className="mt-1.5 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg outline-none focus:border-accent"
-              >
-                <option value="">{t("전체 직무", "All roles")}</option>
-                {CREATOR_ROLE_DEFINITIONS.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {creatorText(entry.label, lang)}
-                  </option>
-                ))}
-              </select>
             </label>
             <label className="text-xs font-bold text-fg">
               {t("전문 분야", "Specialty")}
@@ -282,6 +408,33 @@ export function CreatorDirectoryPage() {
               {t("검색", "Search")}
             </button>
           </div>
+          <div className="mt-3 border-t border-line pt-3">
+            <span className="text-xs font-bold text-fg">{t("직무", "Role")}</span>
+            <div role="group" aria-label={t("직무", "Role")} className="mt-1.5 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                aria-pressed={!draft.role}
+                onClick={() => setDraft((current) => ({ ...current, role: undefined }))}
+                className={filterChipClass(!draft.role)}
+              >
+                {t("전체 직무", "All roles")}
+              </button>
+              {CREATOR_ROLE_DEFINITIONS.map((entry) => {
+                const active = draft.role === entry.id;
+                return (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setDraft((current) => ({ ...current, role: active ? undefined : entry.id }))}
+                    className={filterChipClass(active)}
+                  >
+                    {creatorText(entry.label, lang)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
             <p className="flex items-center gap-1.5 text-[0.68rem] leading-5 text-fg-3">
               <Sparkles size={13} aria-hidden="true" />
@@ -294,6 +447,7 @@ export function CreatorDirectoryPage() {
             >
               {t("검색 조건 초기화", "Clear filters")}
             </button>
+          </div>
           </div>
         </form>
         </section>
