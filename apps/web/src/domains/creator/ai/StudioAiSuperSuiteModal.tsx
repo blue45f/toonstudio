@@ -11,15 +11,11 @@
  *   use-studio-copy-feedback   — await·타이머 정리·실패 상태까지 가진 복사(“복사됨”이 거짓말하지 않게)
  */
 import {
-  AlertTriangle,
-  Check,
   Clapperboard,
   Compass,
-  Copy,
   MessageCircle,
   Palette,
   Sparkles,
-  Sun,
   X,
   Zap,
 } from "lucide-react";
@@ -30,7 +26,6 @@ import {
   STUDIO_EASE,
   STUDIO_FOCUS_RING,
   STUDIO_TOUCH_TARGET,
-  StudioEmptyState,
 } from "../studio-panel-ui";
 import {
   loadStudioWorkbenchPrefs,
@@ -46,10 +41,7 @@ import { useStudioCopyFeedback } from "../use-studio-copy-feedback";
 import { useStudioModalSheet } from "../useStudioModalSheet";
 
 import { StudioAiEmotionBubbleMatcher } from "./studio-ai-emotion-bubble-matcher";
-import {
-  StudioAiPromptEnhancer,
-  type PromptGenreHint,
-} from "./studio-ai-prompt-enhancer";
+import { StudioAiPromptEnhancer } from "./studio-ai-prompt-enhancer";
 import {
   StudioAiShadingAssistEngine,
   type LightDirectionPreset,
@@ -61,146 +53,32 @@ import {
   type WebtoonArtStyleId,
 } from "./studio-ai-webtoon-style-filter";
 
-import type { StudioWorkbenchTab } from "../studio-workbench-tabs";
-import type { StudioCopyFeedbackStatus } from "../use-studio-copy-feedback";
 import type { StudioAiSuitePromptHandoff } from "./studio-ai-suite-handoff";
-import type { ReactElement } from "react";
+
+import {
+  StudioAiSuiteInputNeeded,
+  StudioCopyTextButton,
+} from "./StudioAiSuperSuiteControls";
+import {
+  AI_SUPER_SUITE_TAB_IDS,
+  AI_SUPER_SUITE_TABS,
+  AMBIENT_TEMPERATURE_BUTTONS,
+  AMBIENT_TEMPERATURE_IDS,
+  GENRE_HINT_CHOICES,
+  GENRE_HINT_IDS,
+  LIGHT_DIRECTION_BUTTONS,
+  LIGHT_DIRECTION_IDS,
+  MIN_IDEA_LENGTH,
+  PANEL_CARD_CLASS,
+  TEXT_FIELD_CLASS,
+  WEBTOON_ART_STYLE_IDS,
+  type AiSuperSuiteTab,
+  type GenreHintChoice,
+} from "./studio-ai-super-suite-options";
 
 import { cn } from "@/shared/lib/utils";
 
-const AI_SUPER_SUITE_TAB_IDS = [
-  "style-filter",
-  "shading-assist",
-  "prompt-enhancer",
-  "storyboard-director",
-  "emotion-bubble",
-] as const;
-
-export type AiSuperSuiteTab = (typeof AI_SUPER_SUITE_TAB_IDS)[number];
-
-const AI_SUPER_SUITE_TABS: readonly (StudioWorkbenchTab & { readonly id: AiSuperSuiteTab })[] = [
-  { id: "style-filter", label: "화풍 변환 툰필터", icon: Palette },
-  { id: "shading-assist", label: "AI 음영 어시스트", icon: Sun },
-  { id: "prompt-enhancer", label: "프롬프트 증강기", icon: Zap },
-  { id: "storyboard-director", label: "콘티 자동 디렉터", icon: Clapperboard },
-  { id: "emotion-bubble", label: "감정-말풍선 매처", icon: MessageCircle },
-];
-
-const WEBTOON_ART_STYLE_IDS = [
-  "romance-manhwa",
-  "action-shonen-ink",
-  "fantasy-noble-cel",
-  "thriller-noir-grit",
-  "anime-cel",
-] as const satisfies readonly WebtoonArtStyleId[];
-
-const LIGHT_DIRECTION_BUTTONS = [
-  { id: "top-left", label: "↖ 좌상단" },
-  { id: "top", label: "↑ 상단 정면" },
-  { id: "top-right", label: "↗ 우상단" },
-  { id: "left", label: "← 좌측광" },
-  { id: "backlight-rim", label: "☼ 역광/림" },
-  { id: "right", label: "→ 우측광" },
-  { id: "bottom-left", label: "↙ 좌하단" },
-  { id: "bottom", label: "↓ 하단 언더" },
-  { id: "bottom-right", label: "↘ 우하단" },
-] as const satisfies readonly { id: LightDirectionPreset; label: string }[];
-
-const LIGHT_DIRECTION_IDS = LIGHT_DIRECTION_BUTTONS.map((button) => button.id);
-
-const AMBIENT_TEMPERATURE_BUTTONS = [
-  { id: "warm-dawn", label: "새벽 웜톤" },
-  { id: "neutral-day", label: "대낮 뉴트럴" },
-  { id: "cool-moon", label: "달빛 쿨톤" },
-  { id: "sunset-golden", label: "석양 골든" },
-] as const satisfies readonly { id: AmbientLightingTemperature; label: string }[];
-
-const AMBIENT_TEMPERATURE_IDS = AMBIENT_TEMPERATURE_BUTTONS.map((button) => button.id);
-
-/** 빈 문자열 = "자동 감지". 엔진의 detectGenre 에 맡긴다는 뜻이라 정당한 저장 값이다. */
-const GENRE_HINT_CHOICES = [
-  { id: "", label: "자동 감지" },
-  { id: "action", label: "액션" },
-  { id: "romance", label: "로맨스" },
-  { id: "fantasy", label: "판타지" },
-  { id: "slice-of-life", label: "일상" },
-  { id: "horror", label: "호러" },
-] as const satisfies readonly { id: PromptGenreHint | ""; label: string }[];
-
-type GenreHintChoice = (typeof GENRE_HINT_CHOICES)[number]["id"];
-
-const GENRE_HINT_IDS = GENRE_HINT_CHOICES.map((choice) => choice.id);
-
-/**
- * 아이디어 입력의 최소 길이. 이보다 짧으면 화풍 키워드만 남은 "주어 없는 프롬프트"가 나와서
- * 생성기에 넣어도 쓸 수 없다 — 결과를 만들어 보여주는 대신 입력을 요구한다.
- */
-const MIN_IDEA_LENGTH = 2;
-
-const PANEL_CARD_CLASS = "flex flex-col gap-2 rounded-xl border border-line bg-card/60 p-3";
-const TEXT_FIELD_CLASS = cn(
-  "w-full rounded-md border border-line bg-card px-3 py-2 text-xs text-fg",
-  STUDIO_EASE,
-  STUDIO_FOCUS_RING,
-  "aria-[invalid=true]:border-bad/60"
-);
-
-/**
- * 복사 버튼 — useStudioCopyFeedback 이 확정한 결과만 표시한다.
- * 클립보드가 막힌 환경에서 "복사됨"을 띄우면 사용자는 붙여넣기가 될 거라 믿고 창을 닫는다.
- */
-function StudioCopyTextButton({
-  copyKey,
-  text,
-  statusFor,
-  onCopy,
-  variant = "solid",
-  label,
-}: {
-  readonly copyKey: string;
-  readonly text: string;
-  readonly statusFor: (id: string) => StudioCopyFeedbackStatus | null;
-  readonly onCopy: (id: string, text: string) => void;
-  readonly variant?: "solid" | "quiet";
-  readonly label: string;
-}): ReactElement {
-  const status = statusFor(copyKey);
-  const copied = status === "copied";
-  const failed = status === "failed";
-  const Icon = copied ? Check : failed ? AlertTriangle : Copy;
-  return (
-    <button
-      type="button"
-      onClick={() => onCopy(copyKey, text)}
-      aria-label={`${label} 복사`}
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-lg border px-2.5 text-[0.62rem] font-bold",
-        STUDIO_EASE,
-        STUDIO_FOCUS_RING,
-        STUDIO_TOUCH_TARGET,
-        failed
-          ? "border-bad/35 bg-bad/10 text-bad"
-          : variant === "solid"
-            ? "border-transparent bg-accent text-on-accent"
-            : "border-line bg-card text-fg hover:bg-raised"
-      )}
-    >
-      <Icon size={12} aria-hidden />
-      <span>{copied ? "복사됨" : failed ? "복사 실패" : "복사"}</span>
-    </button>
-  );
-}
-
-/** 입력이 모자랄 때 결과 자리에 세우는 안내. 빈 결과를 그리지 않는다. */
-function StudioAiSuiteInputNeeded({
-  icon,
-  description,
-}: {
-  readonly icon: ReactElement;
-  readonly description: string;
-}): ReactElement {
-  return <StudioEmptyState icon={icon} title="입력이 더 필요해요" description={description} />;
-}
+export type { AiSuperSuiteTab } from "./studio-ai-super-suite-options";
 
 export interface StudioAiSuperSuiteModalProps {
   readonly open: boolean;
