@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from "node:fs";
+
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -44,5 +46,39 @@ describe("BetaOpenEventPage 세션 판정 중 CTA", () => {
     );
     expect(screen.queryByText(/로그인 상태 확인 중/)).toBeNull();
     expect(screen.getAllByRole("link", { name: /바로 시작하기/ }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("BetaOpenEventPage 캠페인 토큰 (S1-T9)", () => {
+  it("페이지 색을 하드코딩 클래스가 아니라 캠페인 토큰 스코프로 건다", () => {
+    session.ready = true;
+    session.status = "unauthenticated";
+    const { container } = render(
+      <MemoryRouter>
+        <BetaOpenEventPage />
+      </MemoryRouter>,
+    );
+    const root = container.querySelector(".campaign-beta-open");
+    expect(root).toBeTruthy();
+    // 배경 oklch·글로우 그라디언트 같은 원시 색 리터럴이 마크업에 남아 있으면 안 된다.
+    expect(root?.className).not.toContain("oklch");
+    expect(container.querySelector(".campaign-beta-open__glow")).toBeTruthy();
+  });
+
+  it("캠페인 CSS 토큰 값이 토큰화 이전 하드코딩 색과 같다", () => {
+    // vitest는 repo 루트에서 실행하는 것이 정본 — 루트 기준 상대 경로로 읽는다
+    // (jsdom 환경에서는 import.meta.url이 file 스킴이 아니다).
+    const css = readFileSync(
+      "apps/web/src/domains/marketing/events/beta-open-event.css",
+      "utf8",
+    );
+    expect(css).toContain("--campaign-bg: oklch(0.145 0.025 270)");
+    expect(css).toContain("--campaign-fg: #fff");
+    expect(css).toContain("--campaign-glow-warm: oklch(0.8 0.16 75 / 0.2)");
+    expect(css).toContain("--campaign-glow-magenta: oklch(0.72 0.19 318 / 0.18)");
+    expect(css).toContain("--campaign-glow-sky: oklch(0.68 0.15 235 / 0.14)");
+    // 고대비에서는 글로우를 끄는 규칙이 OS 설정과 앱 토글 양쪽에 있어야 한다.
+    expect(css).toContain("@media (prefers-contrast: more)");
+    expect(css).toContain(':root[data-contrast="more"] .campaign-beta-open__glow');
   });
 });
