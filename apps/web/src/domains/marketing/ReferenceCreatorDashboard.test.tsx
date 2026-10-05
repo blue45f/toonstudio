@@ -88,7 +88,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/story-lab");
   });
 
-  it("다섯 시작 동선이 실제 작업과 템플릿으로 이동한다", async () => {
+  it("여섯 시작 동선이 실제 작업과 템플릿으로 이동한다", async () => {
     const observedNavigation = await dashboard();
     const start = screen.getByRole("navigation", { name: "무엇부터 시작할까요?" });
     const links = within(start).getAllByRole("link");
@@ -98,6 +98,8 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
       "/studio/assets/characters/new",
       "/studio/bg3d",
       "/studio/canvas",
+      // 웨이브 C 발견 동선 실측: 1차 시작 카드에 제작 허브가 없던 구멍을 메웠다.
+      "/production",
     ]);
     fireEvent.click(within(start).getByRole("link", { name: /빈 캔버스/u }));
     expect(observedNavigation).toEqual([{ href: "/studio/canvas", prevented: false }]);

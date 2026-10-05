@@ -22,6 +22,7 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 const META_LINKS = [
   { key: "footer.link.about", href: "/about" },
   { key: "footer.link.guide", href: "/guide" },
+  { key: "footer.link.features", href: "/features" },
   { key: "footer.link.sitemap", href: "/sitemap" },
   { key: "footer.link.support", href: "/help" },
 ] as const;
