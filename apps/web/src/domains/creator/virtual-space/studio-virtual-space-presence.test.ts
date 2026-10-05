@@ -11,6 +11,7 @@ import {
   STUDIO_PRESENCE_BUBBLE_MAX_LENGTH,
   STUDIO_PRESENCE_BUBBLE_TTL_MS,
   STUDIO_PRESENCE_TYPING_STALE_MS,
+  STUDIO_VIRTUAL_SPACE_IMPACT_TTL_MS,
   STUDIO_VIRTUAL_SPACE_PACKET_MAX_BYTES,
   STUDIO_VIRTUAL_SPACE_WIRE,
   StudioVirtualSpacePresenceController,
@@ -446,5 +447,128 @@ describe("StudioVirtualSpacePresenceController 외형 동기화", () => {
       expect(encoder.encode(packet.raw).byteLength)
         .toBeLessThanOrEqual(STUDIO_VIRTUAL_SPACE_PACKET_MAX_BYTES);
     }
+  });
+});
+
+describe("presence 피어 모션 전파 (impact·object, 웨이브 3)", () => {
+  function createPair() {
+    const clock = createClock();
+    const self = participant("self-1", "나");
+    const peer = participant("peer-1", "동료");
+    const { portFor, sent } = createLinkedPorts([self, peer]);
+    const peerController = new StudioVirtualSpacePresenceController(peer, portFor(peer), { x: 100, y: 100 }, clock.dependencies);
+    const selfController = new StudioVirtualSpacePresenceController(self, portFor(self), { x: 780, y: 900 }, clock.dependencies);
+    peerController.start();
+    selfController.start();
+    return { clock, self, peer, sent, peerController, selfController };
+  }
+
+  it("impact 패킷이 왕복한다(반발 속도가 그대로 실린다)", () => {
+    const raw = JSON.stringify({
+      wire: STUDIO_VIRTUAL_SPACE_WIRE, kind: "impact", sequence: 11, at: 1_700_000_000_000, vx: -84, vy: 36,
+    });
+    const parsed = parseStudioVirtualSpacePacket(raw);
+    expect(parsed?.kind).toBe("impact");
+    if (parsed?.kind !== "impact") throw new Error("impact 패킷이어야 한다");
+    expect(parsed.vx).toBe(-84);
+    expect(parsed.vy).toBe(36);
+  });
+
+  it("impact 속도가 비유한하거나 상한을 넘으면 패킷째 버린다", () => {
+    const base = { wire: STUDIO_VIRTUAL_SPACE_WIRE, kind: "impact", sequence: 11, at: 1_700_000_000_000 };
+    expect(parseStudioVirtualSpacePacket(JSON.stringify({ ...base, vx: "fast", vy: 0 }))).toBeNull();
+    expect(parseStudioVirtualSpacePacket(JSON.stringify({ ...base, vx: 4_001, vy: 0 }))).toBeNull();
+    expect(parseStudioVirtualSpacePacket(JSON.stringify({ ...base, vx: 0 }))).toBeNull();
+  });
+
+  it("object 패킷이 왕복한다(상태 키와 경과가 실린다)", () => {
+    const raw = JSON.stringify({
+      wire: STUDIO_VIRTUAL_SPACE_WIRE, kind: "object", sequence: 12, at: 1_700_000_000_000,
+      objectId: "campus-creator-cafe-counter", stateKey: "coffee:brewing", elapsedMs: 3_000,
+    });
+    const parsed = parseStudioVirtualSpacePacket(raw);
+    expect(parsed?.kind).toBe("object");
+    if (parsed?.kind !== "object") throw new Error("object 패킷이어야 한다");
+    expect(parsed.objectId).toBe("campus-creator-cafe-counter");
+    expect(parsed.stateKey).toBe("coffee:brewing");
+    expect(parsed.elapsedMs).toBe(3_000);
+  });
+
+  it("object 패킷의 모르는 상태 키·잘못된 id·범위 밖 경과는 패킷째 버린다", () => {
+    const base = {
+      wire: STUDIO_VIRTUAL_SPACE_WIRE, kind: "object", sequence: 12, at: 1_700_000_000_000,
+      objectId: "campus-creator-cafe-counter", stateKey: "coffee:brewing", elapsedMs: 0,
+    };
+    expect(parseStudioVirtualSpacePacket(JSON.stringify({ ...base, stateKey: "coffee:exploded" }))).toBeNull();
+    expect(parseStudioVirtualSpacePacket(JSON.stringify({ ...base, objectId: "bad id!" }))).toBeNull();
+    expect(parseStudioVirtualSpacePacket(JSON.stringify({ ...base, objectId: "" }))).toBeNull();
+    expect(parseStudioVirtualSpacePacket(JSON.stringify({ ...base, elapsedMs: -1 }))).toBeNull();
+    expect(parseStudioVirtualSpacePacket(JSON.stringify({ ...base, elapsedMs: 86_400_001 }))).toBeNull();
+  });
+
+  it("모르는 kind는 지금도 패킷째 무시한다(혼재 방에서 presence가 깨지지 않는 전제)", () => {
+    const raw = JSON.stringify({
+      wire: STUDIO_VIRTUAL_SPACE_WIRE, kind: "impact2", sequence: 1, at: 1_700_000_000_000, vx: 1, vy: 1,
+    });
+    expect(parseStudioVirtualSpacePacket(raw)).toBeNull();
+  });
+
+  it("sendImpact가 피어 스냅샷에 닿고, 스로틀·무효 값은 걸러진다", () => {
+    const { clock, selfController, peerController, sent } = createPair();
+    selfController.sendImpact(-120, 24);
+    const impacts = peerController.snapshot().peerImpacts;
+    expect(impacts).toHaveLength(1);
+    expect(impacts[0]).toMatchObject({ sessionId: "self-1", vx: -120, vy: 24 });
+    // 자기 스냅샷에는 넣지 않는다(로컬 반발은 캔버스가 직접 렌더).
+    expect(selfController.snapshot().peerImpacts).toHaveLength(0);
+
+    // 스로틀(250ms) 안의 두 번째 반발은 나가지 않는다.
+    sent.length = 0;
+    selfController.sendImpact(90, 0);
+    expect(sent.filter((item) => item.raw.includes("\"impact\""))).toHaveLength(0);
+    expect(peerController.snapshot().peerImpacts[0]?.vx).toBe(-120);
+    clock.advance(300);
+    selfController.sendImpact(90, 0);
+    expect(peerController.snapshot().peerImpacts[0]?.vx).toBe(90);
+
+    // 0 벡터·비유한 값은 보내지 않는다.
+    sent.length = 0;
+    clock.advance(300);
+    selfController.sendImpact(0, 0);
+    selfController.sendImpact(Number.NaN, 10);
+    expect(sent.filter((item) => item.raw.includes("\"impact\""))).toHaveLength(0);
+  });
+
+  it("impact는 신선도가 지나면 피어 스냅샷에서 사라진다", () => {
+    const { clock, selfController, peerController } = createPair();
+    selfController.sendImpact(-60, 0);
+    expect(peerController.snapshot().peerImpacts).toHaveLength(1);
+    clock.advance(STUDIO_VIRTUAL_SPACE_IMPACT_TTL_MS + 1);
+    expect(peerController.snapshot().peerImpacts).toHaveLength(0);
+  });
+
+  it("sendObjectState가 경과를 실어 보내고 수신 측은 자기 시계로 stateChangedAt을 복원한다", () => {
+    const { clock, selfController, peerController } = createPair();
+    const changedAt = clock.now() - 3_000;
+    expect(selfController.sendObjectState("campus-creator-cafe-counter", "coffee:brewing", changedAt)).toBe(true);
+    const states = peerController.snapshot().objectStates;
+    expect(states).toHaveLength(1);
+    expect(states[0]).toMatchObject({
+      objectId: "campus-creator-cafe-counter",
+      stateKey: "coffee:brewing",
+      senderSessionId: "self-1",
+    });
+    // 송신 측 시계와 같은 가짜 시계라 복원값이 원래 전이 시각과 일치한다.
+    expect(states[0]?.stateChangedAt).toBe(changedAt);
+  });
+
+  it("sendObjectState의 잘못된 인자는 보내지 않고 false를 돌려준다", () => {
+    const { selfController, peerController, sent } = createPair();
+    sent.length = 0;
+    expect(selfController.sendObjectState("bad id!", "coffee:brewing", 0)).toBe(false);
+    expect(selfController.sendObjectState("campus-creator-cafe-counter", "coffee:exploded" as never, 0)).toBe(false);
+    expect(selfController.sendObjectState("campus-creator-cafe-counter", "coffee:brewing", Number.NaN)).toBe(false);
+    expect(sent.filter((item) => item.raw.includes("\"object\""))).toHaveLength(0);
+    expect(peerController.snapshot().objectStates).toHaveLength(0);
   });
 });

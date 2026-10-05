@@ -63,3 +63,32 @@ export function studioGhostCollisionOverrides(enabled: boolean): {
     keepWorldBounds: true,
   };
 }
+
+/**
+ * 고스트 모드 적용 어댑터 (캔버스에서 응집 단위로 추출).
+ * 충돌기 활성/비활성과 로컬 스프라이트 반투명을 한곳에서 적용한다.
+ * 고스트를 꺼도 따라가기 벽 통과 중이면 충돌기는 계속 비활성이다.
+ * collaborators는 호출 시점에 읽으므로, 캔버스의 let 바인딩(스프라이트 교체 등)을
+ * 그대로 넘겨도 최신 값을 본다.
+ */
+export interface StudioGhostModeApplierDeps {
+  readonly colliders: readonly { active: boolean }[];
+  readonly followWallPassApplied: () => boolean;
+  readonly localSprite: () => { setAlpha(value: number): unknown } | null;
+  readonly onGhostModeChange?: (enabled: boolean) => void;
+}
+
+export function createStudioGhostModeApplier(deps: StudioGhostModeApplierDeps): {
+  readonly setWorldCollidersActive: (active: boolean) => void;
+  readonly applyGhostMode: (enabled: boolean) => void;
+} {
+  const setWorldCollidersActive = (active: boolean): void => {
+    for (const collider of deps.colliders) collider.active = active;
+  };
+  const applyGhostMode = (enabled: boolean): void => {
+    setWorldCollidersActive(!enabled && !deps.followWallPassApplied());
+    deps.localSprite()?.setAlpha(enabled ? STUDIO_GHOST_SPRITE_ALPHA : 1);
+    deps.onGhostModeChange?.(enabled);
+  };
+  return { setWorldCollidersActive, applyGhostMode };
+}

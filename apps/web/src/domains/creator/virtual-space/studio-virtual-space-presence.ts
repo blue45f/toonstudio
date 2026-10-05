@@ -15,6 +15,7 @@ import {
   type StudioVirtualSpaceChatTyping,
 } from "./studio-virtual-space-chat";
 import type { StudioEmoteKind } from "./studio-virtual-space-emotes";
+import type { StudioInteractableStateKey } from "./studio-virtual-space-interactable-objects";
 import type { StudioUserStatus } from "./studio-virtual-space-user-status";
 import {
   isStudioSpaceEmoteId,
@@ -33,6 +34,8 @@ import {
 } from "./studio-virtual-space-model";
 import {
   encodePacket,
+  isStudioInteractableStateKey,
+  isStudioVirtualSpaceObjectId,
   parseStudioPresenceEmote,
   parseStudioPresenceUserStatus,
   parseStudioVirtualSpacePacket,
@@ -41,11 +44,16 @@ import {
   STUDIO_PRESENCE_BUBBLE_TTL_MS,
   STUDIO_PRESENCE_TYPING_STALE_MS,
   STUDIO_VIRTUAL_SPACE_HEARTBEAT_MS,
+  STUDIO_VIRTUAL_SPACE_IMPACT_MAX_SPEED,
+  STUDIO_VIRTUAL_SPACE_IMPACT_THROTTLE_MS,
+  STUDIO_VIRTUAL_SPACE_IMPACT_TTL_MS,
   STUDIO_VIRTUAL_SPACE_PRESENCE_INTERVAL_MS,
   STUDIO_VIRTUAL_SPACE_REACTION_THROTTLE_MS,
   STUDIO_VIRTUAL_SPACE_STALE_MS,
   STUDIO_VIRTUAL_SPACE_WIRE,
   type StudioVirtualSpacePresenceDependencies,
+  type StudioVirtualSpaceObjectState,
+  type StudioVirtualSpacePeerImpact,
   type StudioVirtualSpaceReaction,
   type StudioVirtualSpaceReactionSnapshot,
   type StudioVirtualSpaceSnapshot,
@@ -58,6 +66,8 @@ export {
   STUDIO_PRESENCE_BUBBLE_TTL_MS,
   STUDIO_PRESENCE_TYPING_STALE_MS,
   STUDIO_VIRTUAL_SPACE_HEARTBEAT_MS,
+  STUDIO_VIRTUAL_SPACE_IMPACT_THROTTLE_MS,
+  STUDIO_VIRTUAL_SPACE_IMPACT_TTL_MS,
   STUDIO_VIRTUAL_SPACE_PACKET_MAX_BYTES,
   STUDIO_VIRTUAL_SPACE_PRESENCE_INTERVAL_MS,
   STUDIO_VIRTUAL_SPACE_REACTION_THROTTLE_MS,
@@ -71,7 +81,9 @@ export {
   sanitizeStudioPresenceBubble,
 } from "./studio-virtual-space-presence-protocol";
 export type {
+  StudioVirtualSpaceObjectState,
   StudioVirtualSpacePacket,
+  StudioVirtualSpacePeerImpact,
   StudioVirtualSpacePresenceDependencies,
   StudioVirtualSpacePresenceExtras,
   StudioVirtualSpaceReaction,
@@ -141,6 +153,13 @@ export class StudioVirtualSpacePresenceController {
   private readonly peers = new Map<string, StudioVirtualSpacePeer>();
   private readonly peerReactions = new Map<string, StudioVirtualSpaceReactionSnapshot>();
   private readonly reactionSequences = new Map<string, number>();
+  /** impact 패킷 전용 순서 추적. presence 순서와 섞지 않는다. */
+  private readonly impactSequences = new Map<string, number>();
+  private readonly peerImpacts = new Map<string, StudioVirtualSpacePeerImpact>();
+  private lastImpactSentAt = Number.NEGATIVE_INFINITY;
+  /** object 패킷 전용 순서 추적과 오브젝트별 최신 전파 상태. */
+  private readonly objectSequences = new Map<string, number>();
+  private readonly objectStatesById = new Map<string, StudioVirtualSpaceObjectState>();
   /** chat·typing 패킷 전용 순서 추적. presence 순서와 섞지 않는다. */
   private readonly chatSequences = new Map<string, number>();
   private chatMessages: readonly StudioVirtualSpaceChatMessage[] = Object.freeze([]);
@@ -250,6 +269,17 @@ export class StudioVirtualSpacePresenceController {
           })
           .sort((left, right) => left.sessionId.localeCompare(right.sessionId))
           .map((typing) => Object.freeze({ ...typing })),
+      ),
+      peerImpacts: Object.freeze(
+        [...this.peerImpacts.values()]
+          .filter((impact) => now - impact.receivedAt <= STUDIO_VIRTUAL_SPACE_IMPACT_TTL_MS)
+          .sort((left, right) => left.sessionId.localeCompare(right.sessionId))
+          .map((impact) => Object.freeze({ ...impact })),
+      ),
+      objectStates: Object.freeze(
+        [...this.objectStatesById.values()]
+          .sort((left, right) => left.objectId.localeCompare(right.objectId))
+          .map((state) => Object.freeze({ ...state })),
       ),
       direct: true,
     });
@@ -442,6 +472,56 @@ export class StudioVirtualSpacePresenceController {
     this.emit();
   }
 
+  /**
+   * 로컬 충돌 반발이 채택된 순간의 속도를 피어에게 전파한다.
+   * 자기 스냅샷에는 넣지 않는다 — 로컬 반발은 캔버스가 이미 직접 렌더한다.
+   * 0 벡터·비유한 값·상한 초과는 보내지 않고, 스로틀 안의 연타는 버린다.
+   */
+  sendImpact(vx: number, vy: number): void {
+    if (this.closed) return;
+    if (!Number.isFinite(vx) || !Number.isFinite(vy)) return;
+    if (Math.abs(vx) > STUDIO_VIRTUAL_SPACE_IMPACT_MAX_SPEED || Math.abs(vy) > STUDIO_VIRTUAL_SPACE_IMPACT_MAX_SPEED) return;
+    if (vx === 0 && vy === 0) return;
+    const now = this.now();
+    if (now - this.lastImpactSentAt < STUDIO_VIRTUAL_SPACE_IMPACT_THROTTLE_MS) return;
+    this.lastImpactSentAt = now;
+    const packet = encodePacket({
+      wire: STUDIO_VIRTUAL_SPACE_WIRE,
+      ...(this.dependencies.worldScope ? { worldScope: this.dependencies.worldScope } : {}),
+      kind: "impact",
+      sequence: this.nextSequence(),
+      at: now,
+      vx,
+      vy,
+    });
+    if (packet) this.sendPacketToPeers(packet);
+  }
+
+  /**
+   * 로컬 오브젝트 상태 전이를 피어에게 전파한다. stateChangedAt은 내 시계 기준이며,
+   * 와이어에는 경과 시간만 실어 수신 측이 자기 시계로 복원하게 한다.
+   * 잘못된 id·상태 키·시각이면 보내지 않고 false를 돌려준다.
+   */
+  sendObjectState(objectId: string, stateKey: StudioInteractableStateKey, stateChangedAt: number): boolean {
+    if (this.closed) return false;
+    if (!isStudioVirtualSpaceObjectId(objectId) || !isStudioInteractableStateKey(stateKey)) return false;
+    if (!Number.isFinite(stateChangedAt)) return false;
+    const now = this.now();
+    const packet = encodePacket({
+      wire: STUDIO_VIRTUAL_SPACE_WIRE,
+      ...(this.dependencies.worldScope ? { worldScope: this.dependencies.worldScope } : {}),
+      kind: "object",
+      sequence: this.nextSequence(),
+      at: now,
+      objectId,
+      stateKey,
+      elapsedMs: Math.max(0, now - stateChangedAt),
+    });
+    if (!packet) return false;
+    this.sendPacketToPeers(packet);
+    return true;
+  }
+
   private sendPacketToPeers(packet: string): void {
     for (const peer of this.port.getPeers().slice(0, STUDIO_VIRTUAL_SPACE_MAX_PARTICIPANTS - 1)) {
       if (peer.sessionId !== this.participant.sessionId) {
@@ -553,6 +633,8 @@ export class StudioVirtualSpacePresenceController {
         this.chatSequences.delete(sessionId);
         this.chatBubbles.delete(sessionId);
         this.peerTypingStates.delete(sessionId);
+        this.peerImpacts.delete(sessionId);
+        this.impactSequences.delete(sessionId);
         changed = true;
       }
     }
@@ -692,16 +774,48 @@ export class StudioVirtualSpacePresenceController {
       return;
     }
 
+    if (packet.kind === "impact") {
+      const previousImpactSequence = this.impactSequences.get(sender.sessionId) ?? -1;
+      if (packet.sequence <= previousImpactSequence) return;
+      this.impactSequences.set(sender.sessionId, packet.sequence);
+      this.peerImpacts.set(sender.sessionId, Object.freeze({
+        sessionId: sender.sessionId,
+        vx: packet.vx,
+        vy: packet.vy,
+        receivedAt: this.now(),
+      }));
+      this.emit();
+      return;
+    }
+
+    if (packet.kind === "object") {
+      const previousObjectSequence = this.objectSequences.get(sender.sessionId) ?? -1;
+      if (packet.sequence <= previousObjectSequence) return;
+      this.objectSequences.set(sender.sessionId, packet.sequence);
+      // 오브젝트별 최신 전이만 유지한다(동시접속 2명 기준이라 발신자는 상대 한 명뿐이다).
+      // stateChangedAt은 수신 측 시계로 복원한다 — 송신 측 시계와의 오프셋에 흔들리지 않는다.
+      this.objectStatesById.set(packet.objectId, Object.freeze({
+        objectId: packet.objectId,
+        stateKey: packet.stateKey,
+        stateChangedAt: this.now() - packet.elapsedMs,
+        senderSessionId: sender.sessionId,
+      }));
+      this.emit();
+      return;
+    }
+
     const previous = this.peers.get(sender.sessionId);
     if (previous && packet.sequence <= previous.sequence) return;
     if (packet.kind === "leave") {
-      if (previous || this.peerReactions.has(sender.sessionId) || this.chatBubbles.has(sender.sessionId) || this.peerTypingStates.has(sender.sessionId)) {
+      if (previous || this.peerReactions.has(sender.sessionId) || this.chatBubbles.has(sender.sessionId) || this.peerTypingStates.has(sender.sessionId) || this.peerImpacts.has(sender.sessionId)) {
         this.peers.delete(sender.sessionId);
         this.peerReactions.delete(sender.sessionId);
         this.reactionSequences.delete(sender.sessionId);
         this.chatSequences.delete(sender.sessionId);
         this.chatBubbles.delete(sender.sessionId);
         this.peerTypingStates.delete(sender.sessionId);
+        this.peerImpacts.delete(sender.sessionId);
+        this.impactSequences.delete(sender.sessionId);
         this.emit();
       }
       return;
@@ -753,6 +867,10 @@ export class StudioVirtualSpacePresenceController {
     this.chatSequences.clear();
     this.chatBubbles.clear();
     this.peerTypingStates.clear();
+    this.peerImpacts.clear();
+    this.impactSequences.clear();
+    this.objectSequences.clear();
+    this.objectStatesById.clear();
     this.chatMessages = Object.freeze([]);
     this.selfReaction = null;
     this.bubbleExpiresAt = 0;

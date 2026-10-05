@@ -84,6 +84,8 @@ export interface StudioVirtualSpacePhaserCanvasProps {
   readonly onEngineStatusChange?: (status: StudioVirtualSpaceEngineStatus) => void;
   /** 이벤트 디렉터(근접 트리거·NPC 인사·동료 접근·타운 이벤트)의 UI 이벤트. 이벤트마다 한 번 호출한다. */
   readonly onSpaceUiEvent?: (event: StudioSpaceUiEvent) => void;
+  /** 로컬 충돌 반발이 채택된 순간의 속도(px/s). 페이지가 프레즌스 컨트롤러의 sendImpact로 넘긴다. */
+  readonly onSelfImpact?: (vx: number, vy: number) => void;
   /** 저작된 타일 이펙트 배치. 캔버스가 매 프레임 진입 판정을 소비한다. */
   readonly tileEffects?: readonly StudioTileEffectDefinition[];
   /** 타일 이펙트에 새로 진입했을 때만 호출한다. 같은 타일에 머물면 반복하지 않는다. */
@@ -123,6 +125,13 @@ export interface PeerVisual {
   spawnedAt: number;
   /** 퇴장이 시작된 시각(ms). null이면 퇴장 중이 아니다. 페이드아웃이 끝나면 파괴한다. */
   leavingAt: number | null;
+  /** 전파된 충돌 반발 속도(px/s). 렌더 루프가 peerImpactOffsetAt으로 표시 오프셋을 만든다. */
+  impactVx: number;
+  impactVy: number;
+  /** 반발을 캔버스 시계(frameTime)로 받은 시각. 0이면 아직 받은 반발이 없다. */
+  impactAt: number;
+  /** 마지막으로 적용한 반발 패킷의 수신 시각(컨트롤러 시계). 중복 적용 방지용. */
+  impactReceivedAt: number;
 }
 
 /** 대상 쪽을 보는 방향(객체를 만들지 않는다). 가로가 더 멀면 좌우, 아니면 상하. */

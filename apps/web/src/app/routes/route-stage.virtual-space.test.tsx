@@ -113,7 +113,7 @@ vi.mock("@/domains/creator/virtual-space/studio-virtual-space-presence", async (
         participant: { sessionId: id, displayName: index ? "Cleo" : "Bob", role: "editor" as const },
         state: { ...this.self, x: this.self.x + 20 + index * 15, y: this.self.y, ...f.presenceOverrides[id] }, lastSeen: Date.now(), sequence: 1,
       }));
-      return { self: { ...this.self, ...f.presenceOverrides.alice }, peers, nearbyPeers: peers, selfReaction: null, peerReactions: [], chatMessages: [], chatBubbles: [], selfChatBubble: null, peerTyping: [], direct: true };
+      return { self: { ...this.self, ...f.presenceOverrides.alice }, peers, nearbyPeers: peers, selfReaction: null, peerReactions: [], chatMessages: [], chatBubbles: [], selfChatBubble: null, peerTyping: [], peerImpacts: [], objectStates: [], direct: true };
     }
   },
 }; });
