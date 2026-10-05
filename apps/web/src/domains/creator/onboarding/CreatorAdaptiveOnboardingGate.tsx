@@ -780,6 +780,7 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
                 }}
                 notificationPreset={notificationPreset}
                 onNotificationPresetChange={setNotificationPreset}
+                notificationOverrides={workspace.snapshot.document.notificationOverrides}
               />
               <p className="mt-3 text-xs leading-5 text-fg-3">
                 {localized(locale, "전체 도구는 항상 ‘모든 도구’와 검색에서 접근할 수 있습니다. 개인화는 기능을 숨기거나 권한을 변경하지 않습니다.", "All tools remain available through All Tools and search. Personalization never removes capabilities or changes permissions.")}

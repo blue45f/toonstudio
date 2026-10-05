@@ -15,6 +15,7 @@ import {
   CREATOR_ROLE_NOTIFICATION_PRESETS,
   CREATOR_ROLE_WORKSPACE_PRESETS,
   creatorRoleNotificationSettings,
+  type CreatorRoleNotificationEvent,
   type CreatorRoleNotificationPreset,
   type CreatorRoleWorkspacePreset,
 } from "@/shared/lib/creator-role-workspace-contract";
@@ -82,12 +83,16 @@ export interface CreatorOnboardingPreviewSettingsProps {
   readonly onWorkspacePresetChange: (preset: CreatorRoleWorkspacePreset) => void;
   readonly notificationPreset: CreatorRoleNotificationPreset;
   readonly onNotificationPresetChange: (preset: CreatorRoleNotificationPreset) => void;
+  /** 저장 문서에 이미 들어 있는 알림 개별 설정. 미리보기 도출이 실제 적용 결과와 어긋나지 않게 그대로 반영한다. */
+  readonly notificationOverrides: Readonly<Partial<Record<CreatorRoleNotificationEvent, boolean>>>;
 }
 
 /**
  * 온보딩 마지막 단계에서 "선택한 직군으로 무엇이 실제로 바뀌는지"를 보여주는 블록.
  * 빠른 실행 순서는 직군 정의(CREATOR_ROLE_DEFINITIONS)의 정본 액션을 그대로 쓰고,
  * 작업공간·알림 두 프리셋은 이 자리에서 바로 바꿀 수 있다 (부분 되돌리기).
+ * 알림 미리보기는 저장 문서의 개별 설정(overrides)까지 반영해 creatorRoleNotificationSettings로
+ * 도출하므로, 저장 뒤 실제 알림 구성과 숫자가 어긋나지 않는다.
  */
 export function CreatorOnboardingPreviewSettings({
   locale,
@@ -97,11 +102,12 @@ export function CreatorOnboardingPreviewSettings({
   onWorkspacePresetChange,
   notificationPreset,
   onNotificationPresetChange,
+  notificationOverrides,
 }: CreatorOnboardingPreviewSettingsProps) {
   useBilingualI18nRevision();
   const notificationSettings = creatorRoleNotificationSettings(primaryRole, {
     notificationPreset,
-    notificationOverrides: {},
+    notificationOverrides,
   });
   const enabledCount = CREATOR_ROLE_NOTIFICATION_EVENTS.filter(
     (event) => notificationSettings[event],
