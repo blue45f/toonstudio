@@ -1,4 +1,4 @@
-import { createStudioCloudflareRealtimeAdapterFactory } from "../studio-realtime-provider-cloudflare-adapter";
+import { createStudioRealtimeAdapterFactories } from "../studio-realtime-webtransport-adapter";
 import {
   STUDIO_REALTIME_CAPABILITIES,
   type StudioRealtimeInboundEvent,
@@ -55,6 +55,7 @@ export interface StudioPurposeRoutedLiveTransportFactoryOptions {
 export interface StudioCloudflarePurposeRoutedFactoryOptions {
   readonly primaryFactory: StudioLiveTransportFactory;
   readonly realtimeOrigin: string;
+  readonly webTransportEndpoint?: string;
   readonly providerId?: string;
   readonly roomId?: (context: StudioLiveTransportContext) => string;
 }
@@ -1027,12 +1028,11 @@ export function createStudioCloudflarePurposeRoutedLiveTransportFactory(
             routeId: "cloudflare-ephemeral",
             workloads: ["presence", "comments", "screen-signaling"],
             capabilities: [...STUDIO_REALTIME_CAPABILITIES],
-            providers: [
-              createStudioCloudflareRealtimeAdapterFactory({
-                providerId,
-                realtimeOrigin: options.realtimeOrigin,
-              }),
-            ],
+            providers: createStudioRealtimeAdapterFactories({
+              providerId,
+              realtimeOrigin: options.realtimeOrigin,
+              webTransportEndpoint: options.webTransportEndpoint,
+            }),
           },
         ],
         ticketIssuer: createStudioRealtimeHttpTicketIssuer({}),
