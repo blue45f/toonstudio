@@ -689,6 +689,26 @@ export function mergeNovelCutWithNext(
   return replaceSceneCuts(draft, location.sceneIndex, cuts);
 }
 
+/** 컷을 첫 문장 뒤에서 나눌 수 있는지 (문장이 2개 이상인지). */
+export function canSplitNovelCut(cut: NovelDraftCut): boolean {
+  return splitSentences(cut.text).length >= 2;
+}
+
+/** mergeNovelCutWithNext가 실제로 합치는 조건인지 미리 확인한다 (UI 비활성 판정용). */
+export function canMergeNovelCutWithNext(draft: NovelScriptDraft, cutId: string): boolean {
+  const location = locateCut(draft, cutId);
+  if (!location) return false;
+  const scene = draft.scenes[location.sceneIndex]!;
+  const current = scene.cuts[location.cutIndex];
+  const next = scene.cuts[location.cutIndex + 1];
+  if (!current || !next || current.kind !== next.kind) return false;
+  if (current.kind === "dialogue" && current.speaker !== next.speaker) return false;
+  if (current.kind === "dialogue" && `${current.text} ${next.text}`.trim().length > DIALOGUE_TEXT_MAX) {
+    return false;
+  }
+  return true;
+}
+
 /** 컷을 첫 문장 뒤에서 나눈다. 문장이 하나뿐이면 원본을 유지한다. */
 export function splitNovelCutAtFirstSentence(
   draft: NovelScriptDraft,
