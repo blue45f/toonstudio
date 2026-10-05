@@ -283,7 +283,7 @@ function AppRuntime() {
             ? "min-h-0 h-[100dvh] overflow-hidden outline-none pb-0"
             : adminChrome
               ? "min-h-[100dvh] outline-none"
-              : "min-h-screen pb-20 outline-none md:pb-0"
+              : "min-h-screen pb-[max(5rem,var(--floating-stack-clearance,0px))] outline-none md:pb-[var(--floating-stack-clearance,0px)]"
         }
         chromeOverlay={
           <>

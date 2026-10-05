@@ -78,19 +78,44 @@ export function useOverlayClearance(
  */
 export const FIRST_RUN_NOTICE_HEIGHT_PROPERTY = "--first-run-notice-height";
 
-/** 요소의 현재 높이를 :root 변수로 게시하고 크기가 바뀔 때마다 갱신한다. 반환값으로 해제하면 변수를 지운다. */
-export function claimFirstRunNoticeHeight(element: HTMLElement): () => void {
+/**
+ * 접힌 OST 알약이 하단 알림 열에서 차지하는 높이.
+ * 알약은 점유 높이를 clearance로 게시하지 않으므로(게시하면 칩이 없을 때도 전 페이지 여백이 따라 오른다),
+ * 본문 하단 여백 합성(--floating-stack-clearance) 전용으로 높이만 따로 게시한다.
+ */
+export const SITE_OST_PILL_HEIGHT_PROPERTY = "--site-ost-pill-height";
+
+/** 요소의 현재 높이를 지정한 :root 변수로 게시하고 크기가 바뀔 때마다 갱신한다. 반환값으로 해제하면 변수를 지운다. */
+export function claimElementHeight(element: HTMLElement, property: string): () => void {
   const root = element.ownerDocument.documentElement;
   const measure = () => {
-    root.style.setProperty(FIRST_RUN_NOTICE_HEIGHT_PROPERTY, `${Math.max(0, Math.ceil(element.getBoundingClientRect().height))}px`);
+    root.style.setProperty(property, `${Math.max(0, Math.ceil(element.getBoundingClientRect().height))}px`);
   };
   measure();
   const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
   observer?.observe(element);
   return () => {
     observer?.disconnect();
-    root.style.removeProperty(FIRST_RUN_NOTICE_HEIGHT_PROPERTY);
+    root.style.removeProperty(property);
   };
+}
+
+/** `enabled`인 동안 `ref` 요소의 높이를 지정한 :root 변수로 게시한다. */
+export function useElementHeight(
+  ref: RefObject<HTMLElement | null>,
+  property: string,
+  enabled: boolean,
+): void {
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!enabled || !element) return undefined;
+    return claimElementHeight(element, property);
+  }, [ref, property, enabled]);
+}
+
+/** 요소의 현재 높이를 :root 변수로 게시하고 크기가 바뀔 때마다 갱신한다. 반환값으로 해제하면 변수를 지운다. */
+export function claimFirstRunNoticeHeight(element: HTMLElement): () => void {
+  return claimElementHeight(element, FIRST_RUN_NOTICE_HEIGHT_PROPERTY);
 }
 
 /** `enabled`인 동안 `ref` 요소의 높이를 게시한다. */

@@ -15,6 +15,8 @@
  *    위 요소가 함께 올라가 칩 문구와 서로를 가리지 않는다.
  *  - 조작 열: 휴대폰은 ⚙ 설정 묶음 → 음성 안내 → 맨 위로 한 줄, 넓은 화면은 ⚙ 행 위에 맨 위로.
  *  - 휴대폰은 OST 알약을 따로 띄우지 않고 ⚙ 묶음 안의 🎵 버튼으로 OST 패널을 연다.
+ *  - 알림 열 전체의 점유 높이는 --floating-stack-clearance 로 합성해 셸 본문 하단 여백이 보장한다.
+ *    페이지를 끝까지 내려도 마지막 콘텐츠가 스택 뒤에 갇히지 않는다.
  * 휴대폰의 기준선(--site-float-base)은 하단 탭 위 5.75rem, 하단 탭이 없는 화면은 1rem이다. */
 :root {
   --site-float-base: calc(1rem + env(safe-area-inset-bottom));
@@ -38,6 +40,21 @@
 :root {
   --site-float-voice-bottom: calc(var(--site-float-base) + var(--site-float-controls-slot));
   --site-float-top-bottom: calc(var(--site-float-voice-bottom) + var(--site-float-voice-slot));
+  /* 알림 열 스택의 총 점유 높이. 셸 본문의 하단 여백(App.tsx mainClassName)이 이 값만큼은 확보해
+   * 페이지를 끝까지 스크롤해도 마지막 콘텐츠가 스택 뒤에 갇히지 않게 한다.
+   * 기본값은 연결 칩·상태 배너가 게시한 점유 높이(--service-status-overlay-clearance)이고,
+   * 접힌 OST 알약이 떠 있으면 알약이 게시한 높이(--site-ost-pill-height)만큼 더한다.
+   * 베타 안내가 떠 있는 동안의 합성은 아래 :has 규칙이 맡는다(안내 높이 + 간격). */
+  --floating-stack-clearance: max(
+    var(--service-status-overlay-clearance, 0px),
+    calc(max(var(--site-float-base), var(--service-status-overlay-clearance, 0px)) + var(--site-ost-pill-height, 0px))
+  );
+}
+:root:has([data-studio-beta-notice-host="true"]) {
+  --floating-stack-clearance: calc(
+    max(var(--site-float-base), var(--service-status-overlay-clearance, 0px))
+    + var(--first-run-notice-height, 0px) + 0.75rem
+  );
 }
 
 @media (max-width: 767px) {
@@ -359,6 +376,12 @@ html {
 
 /* 열린 대화상자가 작업을 소유하는 동안 기존 홍보는 숨기고 닫힌 뒤 원래 상태로 복원한다. */
 body:has([aria-modal="true"], dialog[open]) > [data-beta-open-prompt="engaged"] {
+  display: none;
+}
+
+/* 첫 실행 안내(스튜디오 베타 확인)가 떠 있는 동안에는 홍보 카드도 순서를 양보한다.
+ * 둘 다 알림 열의 같은 아래 칸을 쓰므로 함께 뜨면 서로 겹친다. 베타 확인을 닫으면 홍보가 돌아온다. */
+body:has([data-studio-beta-notice-host="true"]) > [data-beta-open-prompt="engaged"] {
   display: none;
 }
 
