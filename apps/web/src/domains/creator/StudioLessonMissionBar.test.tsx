@@ -7,7 +7,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { StudioLessonMissionBar } from "./StudioLessonMissionBar";
 import { parseStudioLessonMission } from "./studio-lesson-mission";
 
-const PRACTICE_KEY = "toonstudio:learning-practice:v1";
+// 실습 기록은 소유자별로 갈라진다 — 이 테스트는 비로그인 상태라 게스트 파티션 키를 읽는다.
+const PRACTICE_KEY = "toonstudio:learning-practice:v1:guest";
 const MISSION_URL = "/studio/canvas?practice=lesson&lesson=story-board&mission=mission-story-board";
 
 function renderBar(url: string) {
