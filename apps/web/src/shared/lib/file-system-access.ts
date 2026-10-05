@@ -226,6 +226,60 @@ export async function writeBlobToFileHandle(
   }
 }
 
+export type SaveFileTarget =
+  | Readonly<{ kind: "file-handle"; handle: FileSystemFileHandleLike }>
+  | Readonly<{ kind: "picker-unavailable" }>
+  | Readonly<{ kind: "cancelled" }>
+  | Readonly<{ kind: "denied" }>
+  | Readonly<{ kind: "failed"; message: string }>;
+
+/**
+ * 저장 대상을 먼저 확정한다 — Blob 생성이 비싼 흐름(대형 PSD 조립 등)에서는
+ * 선택기를 사용자 제스처 안에서 먼저 띄워야 전환 활성화를 잃지 않는다
+ * (프로젝트 패키지 save-first와 같은 계약). 쓰기는 writeBlobToFileHandle로.
+ */
+export async function chooseSaveFileTarget(options: {
+  readonly suggestedName: string;
+  readonly types?: readonly FilePickerAcceptTypeLike[];
+  readonly handleKey?: string;
+  readonly targetWindow?: FileSystemAccessWindowLike | null;
+  readonly handleStore?: FileHandleStoreLike;
+}): Promise<SaveFileTarget> {
+  const targetWindow =
+    options.targetWindow ??
+    (typeof window !== "undefined" ? (window as FileSystemAccessWindowLike) : null);
+  const store = options.handleStore ?? defaultHandleStore;
+
+  if (options.handleKey) {
+    const stored = await store.load(options.handleKey).catch(() => null);
+    if (stored) {
+      const granted = await ensureFileHandlePermission(stored, "readwrite");
+      if (granted) return Object.freeze({ kind: "file-handle", handle: stored });
+      await store.forget(options.handleKey).catch(() => false);
+      return Object.freeze({ kind: "denied" });
+    }
+  }
+
+  if (!isFileSystemAccessSupported(targetWindow)) {
+    return Object.freeze({ kind: "picker-unavailable" });
+  }
+
+  let handle: FileSystemFileHandleLike;
+  try {
+    handle = await targetWindow!.showSaveFilePicker!({
+      suggestedName: options.suggestedName,
+      types: options.types,
+    });
+  } catch (error) {
+    if (isAbortError(error)) return Object.freeze({ kind: "cancelled" });
+    return Object.freeze({ kind: "failed", message: errorMessage(error) });
+  }
+  if (options.handleKey) {
+    await store.store(options.handleKey, handle).catch(() => false);
+  }
+  return Object.freeze({ kind: "file-handle", handle });
+}
+
 export type FilePickerSaveOutcome =
   | Readonly<{ kind: "stored-handle" }>
   | Readonly<{ kind: "picker" }>

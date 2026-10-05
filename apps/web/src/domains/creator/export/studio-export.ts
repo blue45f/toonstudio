@@ -2,6 +2,17 @@
 // 브라우저 캔버스는 한 변이 대략 16k~32k px를 넘으면 조용히 빈 이미지를 내놓으므로
 // 합성 전에 총 높이를 검사해 배율 하향 또는 분할 저장으로 우회한다.
 
+import {
+  chooseSaveFileTarget,
+  forgetStoredFileHandle,
+  saveBlobWithFilePicker,
+  writeBlobToFileHandle,
+  type FileHandleStoreLike,
+  type FilePickerAcceptTypeLike,
+  type FileSystemAccessWindowLike,
+  type FileSystemFileHandleLike,
+} from "@/shared/lib/file-system-access";
+
 import { tagStudioRasterBlobResolution } from "../render/studio-raster-resolution-metadata";
 
 import {
@@ -263,6 +274,109 @@ export function downloadBlob(blob: Blob, filename: string): void {
     link.remove();
     globalThis.setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_OBJECT_URL_REVOKE_DELAY_MS);
   }
+}
+
+export type StudioExportSaveOutcome = "file-handle" | "download" | "cancelled";
+
+/**
+ * 내보내기 Blob을 로컬 파일에 저장한다 — File System Access를 쓸 수 있으면
+ * 저장 위치 선택(또는 이전에 저장한 핸들로 묻지 않고 덮어쓰기)으로 쓰고,
+ * 못 쓰면 기존 downloadBlob 다운로드로 폴백한다.
+ *
+ * 주의: 파일 선택기는 사용자 제스처 안에서만 열리므로, 클릭 핸들러에서 Blob을
+ * 만든 직후 곧바로 불러야 한다. 사용자가 선택을 취소하면 다운로드도 하지 않고
+ * "cancelled"를 돌려준다(취소를 실패로 포장하지 않는다).
+ */
+export async function saveExportBlob(
+  blob: Blob,
+  filename: string,
+  options: {
+    readonly handleKey?: string;
+    readonly pickerTypes?: readonly FilePickerAcceptTypeLike[];
+    readonly targetWindow?: FileSystemAccessWindowLike | null;
+    readonly handleStore?: FileHandleStoreLike;
+  } = {},
+): Promise<StudioExportSaveOutcome> {
+  const outcome = await saveBlobWithFilePicker(blob, {
+    suggestedName: sanitizeStudioDownloadFileName(filename),
+    types: options.pickerTypes,
+    handleKey: options.handleKey,
+    targetWindow: options.targetWindow,
+    handleStore: options.handleStore,
+  });
+  switch (outcome.kind) {
+    case "stored-handle":
+    case "picker":
+      return "file-handle";
+    case "cancelled":
+      return "cancelled";
+    default:
+      downloadBlob(blob, filename);
+      return "download";
+  }
+}
+
+export type StudioExportSaveTarget =
+  | Readonly<{ kind: "file-handle"; handle: FileSystemFileHandleLike }>
+  | Readonly<{ kind: "download" }>
+  | Readonly<{ kind: "cancelled" }>;
+
+export interface StudioExportSaveOptions {
+  readonly handleKey?: string;
+  readonly pickerTypes?: readonly FilePickerAcceptTypeLike[];
+  readonly targetWindow?: FileSystemAccessWindowLike | null;
+  readonly handleStore?: FileHandleStoreLike;
+}
+
+/**
+ * 저장 대상을 Blob 생성보다 먼저 확정한다 — 조립이 비싼 내보내기(대형 PSD 등)는
+ * 선택기를 클릭 제스처 안에서 먼저 띄우지 않으면 브라우저가 전환 활성화를
+ * 회수해 선택기를 거부한다. writeExportBlobToTarget와 쌍으로 쓴다.
+ */
+export async function chooseExportSaveTarget(
+  filename: string,
+  options: StudioExportSaveOptions = {},
+): Promise<StudioExportSaveTarget> {
+  const target = await chooseSaveFileTarget({
+    suggestedName: sanitizeStudioDownloadFileName(filename),
+    types: options.pickerTypes,
+    handleKey: options.handleKey,
+    targetWindow: options.targetWindow,
+    handleStore: options.handleStore,
+  });
+  switch (target.kind) {
+    case "file-handle":
+      return Object.freeze({ kind: "file-handle", handle: target.handle });
+    case "cancelled":
+      return Object.freeze({ kind: "cancelled" });
+    default:
+      return Object.freeze({ kind: "download" });
+  }
+}
+
+/** chooseExportSaveTarget으로 확정한 대상에 Blob을 쓴다. 쓰기 실패 시 다운로드로 폴백한다. */
+export async function writeExportBlobToTarget(
+  blob: Blob,
+  filename: string,
+  target: StudioExportSaveTarget,
+  options: StudioExportSaveOptions = {},
+): Promise<StudioExportSaveOutcome> {
+  if (target.kind === "cancelled") return "cancelled";
+  if (target.kind === "file-handle") {
+    try {
+      await writeBlobToFileHandle(target.handle, blob);
+      return "file-handle";
+    } catch {
+      if (options.handleKey) {
+        await (options.handleStore?.forget(options.handleKey)
+          ?? forgetStoredFileHandle(options.handleKey)).catch(() => false);
+      }
+      downloadBlob(blob, filename);
+      return "download";
+    }
+  }
+  downloadBlob(blob, filename);
+  return "download";
 }
 
 // 이미지 클립보드 복사 지원 여부 — navigator.clipboard + ClipboardItem 둘 다 필요(Firefox 등은 미지원).

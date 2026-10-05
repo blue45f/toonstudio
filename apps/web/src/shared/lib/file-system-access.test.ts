@@ -3,6 +3,7 @@ import "fake-indexeddb/auto";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  chooseSaveFileTarget,
   ensureFileHandlePermission,
   forgetStoredFileHandle,
   isFileSystemAccessSupported,
@@ -245,6 +246,64 @@ describe("saveBlobWithFilePicker", () => {
       },
     });
     expect(outcome.kind).toBe("failed");
+  });
+});
+
+describe("chooseSaveFileTarget", () => {
+  it("저장된 핸들이 있으면 선택기 없이 그 핸들을 대상으로 돌려준다", async () => {
+    const { handle } = createHandleMock({ permission: "granted" });
+    const memory = createMemoryStore(handle);
+    const picker = vi.fn();
+    const target = await chooseSaveFileTarget({
+      suggestedName: "a.psd",
+      handleKey: "k1",
+      handleStore: memory.store,
+      targetWindow: { showSaveFilePicker: picker },
+    });
+    expect(target.kind).toBe("file-handle");
+    expect(picker).not.toHaveBeenCalled();
+  });
+
+  it("저장된 핸들의 권한이 거부되면 핸들을 지우고 denied다", async () => {
+    const { handle } = createHandleMock({ permission: "prompt", requestResult: "denied" });
+    const memory = createMemoryStore(handle);
+    const target = await chooseSaveFileTarget({
+      suggestedName: "a.psd",
+      handleKey: "k1",
+      handleStore: memory.store,
+      targetWindow: {},
+    });
+    expect(target).toEqual({ kind: "denied" });
+    expect(memory.forgotten).toEqual(["k1"]);
+  });
+
+  it("지원되지 않으면 picker-unavailable, 취소하면 cancelled다", async () => {
+    await expect(
+      chooseSaveFileTarget({ suggestedName: "a.psd", targetWindow: {} }),
+    ).resolves.toEqual({ kind: "picker-unavailable" });
+    await expect(
+      chooseSaveFileTarget({
+        suggestedName: "a.psd",
+        targetWindow: {
+          showSaveFilePicker: async () => {
+            throw new DOMException("user cancelled", "AbortError");
+          },
+        },
+      }),
+    ).resolves.toEqual({ kind: "cancelled" });
+  });
+
+  it("선택기로 고른 핸들은 저장돼 다음 대상 확정에서 재사용된다", async () => {
+    const { handle } = createHandleMock();
+    const memory = createMemoryStore(null);
+    const target = await chooseSaveFileTarget({
+      suggestedName: "a.psd",
+      handleKey: "k9",
+      handleStore: memory.store,
+      targetWindow: { showSaveFilePicker: async () => handle },
+    });
+    expect(target.kind).toBe("file-handle");
+    expect(memory.storedKeys).toEqual(["k9"]);
   });
 });
 
