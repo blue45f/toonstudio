@@ -283,14 +283,6 @@ const StudioShortcutsHelp = lazyRetry(
   () => import("./StudioShortcutsHelp").then((mod) => ({ default: mod.StudioShortcutsHelp })),
   "StudioShortcutsHelp"
 );
-const StudioStickerGrid = lazyRetry(
-  () => import("./studio-sticker-grid").then((mod) => ({ default: mod.StudioStickerGrid })),
-  "StudioStickerGrid"
-);
-const StudioCollagePanel = lazyRetry(
-  () => import("./StudioCollagePanel").then((mod) => ({ default: mod.StudioCollagePanel })),
-  "StudioCollagePanel"
-);
 const StudioElementsPanel = lazyRetry(
   () => import("./StudioElementsPanel").then((mod) => ({ default: mod.StudioElementsPanel })),
   "StudioElementsPanel"
@@ -851,7 +843,6 @@ export {
   StudioCanvasResizer,
   StudioCharacterBiblePanel,
   StudioCheckpointPanel,
-  StudioCollagePanel,
   StudioColorPalettePanel,
   StudioColorPopoverContent,
   StudioColorWheelOverlay,
@@ -945,7 +936,6 @@ export {
   StudioExtendedBlendPanel,
   StudioPathBooleanPanel,
   QuickStartPanel,
-  StudioStickerGrid,
   StudioStockImagePanel,
   StudioStoryboardGridPanel,
   StudioStrokeShapePanel,
@@ -994,6 +984,8 @@ export type {
   StudioComipoAssemblyModule,
   StudioWebtoonGuidesModule,
 };
+
+export { StudioCollagePanel, StudioStickerGrid } from "./studio-page-lazy-assets";
 
 // Keep optional scene loading in the shared registry, never in a popover body.
 export const Studio2dSceneBrowser = lazyRetry(
