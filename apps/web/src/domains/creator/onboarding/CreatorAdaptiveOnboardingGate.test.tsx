@@ -118,6 +118,25 @@ describe("CreatorAdaptiveOnboardingGate", () => {
     expect((screen.getByLabelText("알림 수준") as HTMLSelectElement).value).toBe("balanced");
   });
 
+  it("counts notifications in the preview with the document's existing overrides applied", async () => {
+    const base = workspaceState();
+    mocks.useWorkspace.mockImplementation(() => ({
+      ...base,
+      snapshot: {
+        ...base.snapshot,
+        document: normalizeCreatorRoleWorkspacePreference({
+          notificationOverrides: { assignment: false },
+        }),
+      },
+    }));
+    render(gateUi());
+    await fillWorkspace();
+    // story·balanced 기본 도출은 5개가 켜지지만, 문서에 이미 있는 assignment 끄기가 우선한다.
+    expect(screen.getByText(/알림 종류 10개 중 4개가 켜집니다/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("알림 수준"), { target: { value: "all" } });
+    expect(screen.getByText(/알림 종류 10개 중 9개가 켜집니다/)).toBeTruthy();
+  });
+
   it("saves notification and workspace presets changed in place on the preview step", async () => {
     render(gateUi());
     await fillWorkspace();
@@ -129,6 +148,14 @@ describe("CreatorAdaptiveOnboardingGate", () => {
     expect(mocks.saveWorkspace).toHaveBeenCalledWith(expect.objectContaining({
       activeRole: "story", notificationPreset: "muted", workspacePreset: "coloring",
     }));
+  });
+
+  it("names the role settings entry in the always-visible skip guidance", async () => {
+    render(gateUi());
+    await screen.findByRole("dialog");
+    const guidance = screen.getByText(/내 직군 · 작업환경/);
+    expect(guidance.textContent).toContain("건너뛰어도");
+    expect(guidance.className).not.toContain("hidden");
   });
 
   it.each(["header", "footer", "escape"])("remembers %s dismissal across remounts", async (way) => {

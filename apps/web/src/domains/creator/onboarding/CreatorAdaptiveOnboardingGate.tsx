@@ -780,6 +780,7 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
                 }}
                 notificationPreset={notificationPreset}
                 onNotificationPresetChange={setNotificationPreset}
+                notificationOverrides={workspace.snapshot.document.notificationOverrides}
               />
               <p className="mt-3 text-xs leading-5 text-fg-3">
                 {localized(locale, "전체 도구는 항상 ‘모든 도구’와 검색에서 접근할 수 있습니다. 개인화는 기능을 숨기거나 권한을 변경하지 않습니다.", "All tools remain available through All Tools and search. Personalization never removes capabilities or changes permissions.")}
@@ -795,7 +796,7 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
         </div>
 
         <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-line bg-panel/70 px-5 py-4 sm:px-7">
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
             <button
               type="button"
               onClick={dismiss}
@@ -804,8 +805,8 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
             >
               {localized(locale, "나중에 설정", "Set up later")}
             </button>
-            <span className="hidden text-xs leading-5 text-fg-3 md:block">
-              {localized(locale, "건너뛰어도 설정에서 언제든 다시 정할 수 있어요.", "Skipping is fine — you can set this up anytime in Settings.")}
+            <span className="text-xs leading-5 text-fg-3">
+              {localized(locale, "건너뛰어도 설정의 '내 직군 · 작업환경'에서 언제든 다시 정할 수 있어요.", "Skipping is fine — you can set this up anytime in Settings, under 'My role · workspace'.")}
             </span>
           </div>
           <div className="flex items-center gap-2">
