@@ -182,9 +182,15 @@ export function studioNpcInteraction(
   manifest: StudioVirtualSpaceWorldManifest,
   definition: StudioWorldNpcDefinition,
 ): StudioWorldInteractionDefinition | null {
+  const roomInteractions = studioWorldInteractions(manifest)
+    .filter((interaction) => interaction.zoneId === definition.roomId);
   const action = studioNpcToolAction(definition);
-  if (!action) return null;
-  return studioWorldInteractions(manifest).find((interaction) => interaction.zoneId === definition.roomId && interaction.action === action) ?? null;
+  const preferred = action ? roomInteractions.find((interaction) => interaction.action === action) : undefined;
+  if (preferred) return preferred;
+  // 역할 도구가 그 방에 없으면 방의 스테이션 도구를 연다 — 상주 NPC가 자기 방의 업무와
+  // 끊기지 않게 하기 위함이다 (place-world 생성기의 ?? mainAction과 같은 원칙).
+  // 방에 상호작용 자체가 없으면 없는 도구를 지어내지 않고 null을 유지한다.
+  return roomInteractions[0] ?? null;
 }
 
 function seedFor(id: string): number {

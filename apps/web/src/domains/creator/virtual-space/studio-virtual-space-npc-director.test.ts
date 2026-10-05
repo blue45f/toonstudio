@@ -43,9 +43,8 @@ describe("living studio NPC director", () => {
     expect(DEFAULT_STUDIO_WORLD_MANIFEST.npcs.map((actor) => studioNpcInteraction(DEFAULT_STUDIO_WORLD_MANIFEST, actor)?.action))
       .toEqual([
         "assistant", "assistant", "review", "canvas", "assets", "community", "live", "live",
-        // 확장 6명 중 writer·inspector·helper만 방 상호작용과 역할 액션이 맞물린다.
-        // docent(storyboard)·courier(release)·barista(teams)는 도구 상호작용 없이 상주·대화만 한다.
-        "story", undefined, "review", undefined, undefined, "assistant",
+        // 확장 6명도 전원 자기 방의 도구와 연결된다 — 역할 액션이 방에 없으면 방 스테이션으로 폴백한다.
+        "story", "comic", "review", "assistant", "community", "assistant",
       ]);
     for (const actor of DEFAULT_STUDIO_WORLD_MANIFEST.npcs) expect(studioNpcLabel(actor).en).toMatch(/^NPC · /u);
     expect(studioNpcInteraction(fixture(), npc)).toBeNull();
