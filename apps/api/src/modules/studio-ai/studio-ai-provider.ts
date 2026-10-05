@@ -21,6 +21,74 @@ export const STUDIO_AI_PROVIDER_IDS = [
 export type StudioAiProviderId = (typeof STUDIO_AI_PROVIDER_IDS)[number];
 export type StudioAiFreeProviderId = (typeof STUDIO_AI_FREE_PROVIDER_IDS)[number];
 
+/**
+ * 무료 티어에서 사용자가 보낸 데이터가 제공자 쪽에서 어떻게 쓰이는지에 대한 고지.
+ * 제공자별 데이터 약관 차이를 풀 메타데이터에 배지로 남기기 위한 분류이며,
+ * 확인 근거는 2026-10-06 공식 문서 검토(free-ai-onnx-review) 기준이다.
+ * - "training": 무료 티어 콘텐츠가 제품 개선·학습에 사용될 수 있음이 공식 문서에 명시됨
+ * - "no-training": 무료 플랜이 데이터를 학습에 쓰지 않는 것으로 확인됨
+ * - "varies": 하위 제공자·설정에 따라 달라짐
+ * - "unconfirmed": 공식 문서로 확인하지 못함 (안전하다고 단정하지 않는다)
+ */
+export type StudioAiDataUsage = "training" | "no-training" | "varies" | "unconfirmed";
+
+export interface StudioAiProviderDataTerms {
+  dataUsage: StudioAiDataUsage;
+  dataTermsLabel: string;
+}
+
+export const STUDIO_AI_PROVIDER_DATA_TERMS: Record<
+  StudioAiFreeProviderId,
+  StudioAiProviderDataTerms
+> = {
+  gemini: {
+    dataUsage: "training",
+    dataTermsLabel: "무료 티어 콘텐츠는 Google 제품 개선에 사용될 수 있어요",
+  },
+  qwen: {
+    dataUsage: "unconfirmed",
+    dataTermsLabel: "중국 베이징 리전에서 처리돼요 · 학습 사용 여부는 공식 확인이 안 됐어요",
+  },
+  groq: {
+    dataUsage: "no-training",
+    dataTermsLabel: "무료 플랜은 데이터를 학습에 사용하지 않아요",
+  },
+  sambanova: {
+    dataUsage: "unconfirmed",
+    dataTermsLabel: "무료 티어 데이터 정책이 공식으로 확인되지 않았어요",
+  },
+  zai: {
+    dataUsage: "unconfirmed",
+    dataTermsLabel: "무료 모델 데이터 정책이 공식으로 확인되지 않았어요",
+  },
+  mistral: {
+    dataUsage: "training",
+    dataTermsLabel: "무료 모드는 데이터 학습 동의가 조건일 수 있어요",
+  },
+  cloudflare: {
+    dataUsage: "unconfirmed",
+    dataTermsLabel: "무료 할당 데이터 정책이 공식으로 확인되지 않았어요",
+  },
+  openrouter: {
+    dataUsage: "varies",
+    dataTermsLabel: "무료 모델 제공자마다 데이터 학습 여부가 달라요",
+  },
+  siliconflow: {
+    dataUsage: "unconfirmed",
+    dataTermsLabel: "무료 모델 데이터 정책이 공식으로 확인되지 않았어요",
+  },
+};
+
+const STUDIO_AI_LEGACY_DATA_TERMS: StudioAiProviderDataTerms = {
+  dataUsage: "unconfirmed",
+  dataTermsLabel: "데이터 정책이 공식으로 확인되지 않았어요",
+};
+
+export function studioAiProviderDataTerms(id: StudioAiProviderId): StudioAiProviderDataTerms {
+  return (STUDIO_AI_PROVIDER_DATA_TERMS as Partial<Record<StudioAiProviderId, StudioAiProviderDataTerms>>)[id]
+    ?? STUDIO_AI_LEGACY_DATA_TERMS;
+}
+
 export interface StudioAiProviderConfig {
   id: StudioAiProviderId;
   label: string;
@@ -432,11 +500,14 @@ export function resolveStudioAiProviderCandidates(
 export function studioAiProviderStatuses(env: EnvLike = process.env) {
   return providerUniverse(env).map((id) => {
     const provider = providerConfig(id, env);
+    const dataTerms = studioAiProviderDataTerms(provider.id);
     return {
       id: provider.id,
       label: provider.label,
       configured: provider.configured,
       model: provider.model,
+      dataUsage: dataTerms.dataUsage,
+      dataTermsLabel: dataTerms.dataTermsLabel,
     };
   });
 }

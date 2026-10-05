@@ -25,6 +25,37 @@ provider는 shared pool 활성화, server key 존재, 대응하는 `STUDIO_AI_FR
 모두 만족해야 한다. confirmation은 billing 자동 검사 결과가 아니라 운영 승인이다. shared credential은
 server에만 두고 `VITE_` 변수를 사용하지 않는다.
 
+## 무료 풀 모달리티 확장 (능력 레지스트리)
+
+`studio-ai-capabilities.ts`가 chat 밖의 능력을 능력 단위로 등록한다. 전부 이미 풀에 있는
+제공자의 무료 구간을 재사용하므로 **신규 키·신규 계약이 없다.**
+
+| 능력 | 제공자 | 기본 모델 | 무료 경계 |
+| --- | --- | --- | --- |
+| transcription | Groq | `whisper-large-v3` | Groq 무료 rate limit 표의 Whisper 모델만 allowlist (`STUDIO_AI_FREE_GROQ_TRANSCRIPTION_MODEL`로 turbo 전환 가능, allowlist 밖이면 비활성화) |
+| vision | Groq | `qwen/qwen3.8-27b` | Groq 공식 비전 문서의 현행 모델만 allowlist (`STUDIO_AI_FREE_GROQ_VISION_MODEL`) |
+| image-generation | Cloudflare | `@cf/black-forest-labs/flux-1-schnell` | Workers AI 무료 할당 10,000 Neurons/일. 가격표 등재 + 모델 페이지에 유료 플랜 요구 없음 (2026-10-06 공식 문서 확인). `STUDIO_AI_FREE_CLOUDFLARE_IMAGE_MODEL` |
+| embedding | Cloudflare | `@cf/baai/bge-m3` | 위와 동일. 다국어 모델만 allowlist (`STUDIO_AI_FREE_CLOUDFLARE_EMBEDDING_MODEL`) |
+
+- 전사 계약(`studio-ai-groq-media.ts`)은 자막 도메인이 바로 쓰는 형태다: 전체 텍스트, 언어,
+  구간 배열 `{startSeconds, endSeconds, text}` (SRT/VTT 큐와 1:1), 단어 타이밍, 길이.
+  무료 티어 파일 상한 25MB는 호출 전에 확정 거절한다. 표면 배선(모션 웹툰 자막 등)은
+  이 모듈 밖의 후속 작업이다.
+- 이미지·임베딩 어댑터(`studio-ai-cloudflare-media.ts`)는 결과에 공식 단가 기준
+  Neurons 근사를 함께 돌려준다 (원장 근사 기록용).
+- 실패 전환은 chat과 같은 규칙을 `runStudioAiCapability`가 강제한다: 추론 수락 전 확정
+  거절(402·429·Cloudflare 403/5035 등)에서만 다음 후보로 넘어가고, 전환 시 출처를
+  결과의 `failover`에 남긴다. 네트워크 오류·5xx·형식이 깨진 성공은 재전송하지 않는다.
+
+## 무료 티어 데이터 약관 배지
+
+제공자별 무료 티어의 데이터 사용 차이를 상태 응답의 제공자 항목에 배지로 싣는다
+(`dataUsage`, `dataTermsLabel`). Gemini 무료는 "제품 개선에 사용"이 공식 가격표에 명시돼
+있고 Mistral 무료는 학습 동의가 조건일 수 있어 `training`, Groq 무료는 `no-training`,
+OpenRouter 무료는 하위 제공자별로 갈려 `varies`, 공식 확인이 안 된 제공자는 안전하다고
+단정하지 않고 `unconfirmed`로 표기한다. 미공개 원고를 보내는 표면은 실행 전에 이 배지를
+그대로 보여줘야 한다.
+
 ## 안전한 provider 전환
 
 inference 수락 전 기계적으로 확인 가능한 다음 거절에서만 다음 provider를 시도한다.
