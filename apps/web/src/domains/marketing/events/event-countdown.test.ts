@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   EVENT_COUNTDOWN_URGENT_DAYS,
+  formatEventDate,
   getEventCountdown,
 } from "./event-countdown";
 
@@ -53,5 +54,18 @@ describe("getEventCountdown", () => {
 
   it("임박 기준 상수는 3이다", () => {
     expect(EVENT_COUNTDOWN_URGENT_DAYS).toBe(3);
+  });
+});
+
+describe("formatEventDate", () => {
+  it("한국어 로케일로 연·월·일을 표기한다", () => {
+    const label = formatEventDate("2026-09-18T00:00:00+09:00", "ko");
+    expect(label).toContain("2026");
+    expect(label).toContain("9");
+    expect(label).toContain("18");
+  });
+
+  it("파싱할 수 없는 날짜면 빈 문자열을 돌려준다", () => {
+    expect(formatEventDate("not-a-date", "ko")).toBe("");
   });
 });
