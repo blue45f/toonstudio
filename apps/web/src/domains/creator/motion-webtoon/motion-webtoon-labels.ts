@@ -151,8 +151,7 @@ export const MOTION_WEBTOON_UI_LABELS = {
 export type MotionWebtoonUiLabelKey = keyof typeof MOTION_WEBTOON_UI_LABELS;
 
 /** 자막 패널 라벨. */
-export const CAPTION_UI_LABELS = {
-  captionTitle: label("자막", "Captions"),
+export const CAPTION_UI_LABELS = {  captionTitle: label("자막", "Captions"),
   captionDesc: label(
     "대사와 컷 타이밍으로 자막을 자동 생성합니다. 자막 문구를 고치면 대사가 함께 바뀝니다.",
     "Captions are generated from dialogue and cut timing. Editing a caption updates the dialogue too.",
@@ -176,4 +175,61 @@ export const CAPTION_UI_LABELS = {
   captionPreview: label("자막 미리보기", "Caption preview"),
   downloadSrt: label("SRT 내려받기", "Download SRT"),
   downloadVtt: label("VTT 내려받기", "Download VTT"),
+} as const;
+
+/** 애니툰 원클릭 변환 라벨. */
+export const ANIME_TOON_UI_LABELS = {
+  entryCta: label("🎬 웹툰을 애니툰으로 만들기", "🎬 Turn a webtoon into an AnimeToon"),
+  wizardTitle: label("웹툰을 애니툰으로 만들기", "Turn a webtoon into an AnimeToon"),
+  wizardDesc: label(
+    "이 브라우저에 저장된 회차를 고르면, AI 자동 연출이 카메라·BGM·음성·자막을 입힌 애니툰 초안을 만들어 드립니다. 원본 회차는 그대로 남습니다.",
+    "Pick an episode saved in this browser and AI auto-direction drafts an AnimeToon with camera work, BGM, voices, and captions. Your original episode stays untouched.",
+  ),
+  directorNote: label(
+    "자동 생성은 규칙 기반 연출입니다 — 대사 감정을 읽어 카메라·BGM·음성 프리셋·자막을 채웁니다. 영상 파일을 렌더링하거나 음성 파일을 합성하지는 않습니다.",
+    "Auto-generation is rule-based direction — it reads dialogue emotion to fill in camera work, BGM, voice presets, and captions. It does not render a video file or synthesize voice audio.",
+  ),
+  stepSelect: label("작품 선택", "Choose a work"),
+  stepPreview: label("컷 미리보기", "Preview cuts"),
+  stepResult: label("애니툰 결과", "AnimeToon result"),
+  emptyLibrary: label(
+    "아직 저장된 회차가 없어요. 먼저 아래 에디터에서 컷을 등록해 회차를 만들면, 여기서 애니툰으로 변환할 수 있습니다.",
+    "No saved episodes yet. Create an episode with cuts in the editor below first, then convert it into an AnimeToon here.",
+  ),
+  selectThis: label("이 회차로 변환", "Convert this episode"),
+  cutMeta: label("컷 {cuts}개 · 대사 {lines}개", "{cuts} cuts · {lines} lines"),
+  generateCta: label("✨ 애니툰 자동 생성", "✨ Generate AnimeToon"),
+  noCutsFailure: label(
+    "선택한 회차에 컷이 없어 변환할 수 없습니다. 컷이 있는 회차를 골라 주세요.",
+    "The selected episode has no cuts, so it can't be converted. Please pick an episode with cuts.",
+  ),
+  saveFailed: label(
+    "초안을 이 브라우저에 저장하지 못했습니다. 저장 공간이나 비공개 모드 설정을 확인해 주세요.",
+    "Couldn't save the draft in this browser. Check storage space or private-mode settings.",
+  ),
+  draftTitleLabel: label("애니툰 제목", "AnimeToon title"),
+  openInEditor: label("편집기에서 다듬기", "Open in editor"),
+  back: label("뒤로", "Back"),
+  close: label("닫기", "Close"),
+  summaryCuts: label("컷 {count}개 · 총 {seconds}초", "{count} cuts · {seconds}s total"),
+  summaryCaptions: label(
+    "대사가 있는 컷에서 자막 {count}개가 자동 생성됐습니다.",
+    "{count} captions were generated from cuts with dialogue.",
+  ),
+  summaryNoCaptions: label(
+    "대사가 없어 자막은 생성되지 않았습니다. 편집기에서 대사를 넣으면 자막 패널에서 바로 만들 수 있습니다.",
+    "There was no dialogue, so no captions were generated. Add dialogue in the editor and captions follow from the caption panel.",
+  ),
+  summarySkipped: label(
+    "컷 길이를 벗어나거나 비어 있어 자막에서 빠진 대사가 {count}개 있습니다.",
+    "{count} line(s) fall outside their cut or are empty and were left out of the captions.",
+  ),
+  summaryVoice: label(
+    "캐릭터 {count}명의 음성 프리셋을 대표 감정에 맞게 바꿨습니다.",
+    "Voice presets for {count} character(s) were matched to their dominant emotion.",
+  ),
+  manualNote: label(
+    "전환 효과·컷별 세부 연출·자막 문구 다듬기는 편집기에서 직접 하는 단계입니다.",
+    "Transitions, per-cut fine-tuning, and caption wording are manual steps in the editor.",
+  ),
 } as const;

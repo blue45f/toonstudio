@@ -5,6 +5,7 @@ import {
   buildShareHashId,
   deleteMotionEpisode,
   isStoredMotionEpisode,
+  listStoredMotionEpisodes,
   loadLastEpisodeId,
   loadMotionEpisode,
   parseShareHashId,
@@ -99,6 +100,22 @@ describe("motion-webtoon-storage", () => {
     expect(saveMotionEpisode(makeEpisode("ep-x"), null)).toBe(false);
     expect(loadMotionEpisode("ep-x", null)).toBeNull();
     expect(loadLastEpisodeId(null)).toBeNull();
+  });
+
+  it("저장된 회차를 모두 열거하고 손상된 항목은 건너뛴다", () => {
+    const storage = memoryStorage();
+    saveMotionEpisode(makeEpisode("ep-a"), storage);
+    saveMotionEpisode(makeEpisode("ep-b"), storage);
+    storage.setItem("toonstudio:motion-webtoon:episode:broken", "{not json");
+    storage.setItem("toonstudio:motion-webtoon:episode:odd", JSON.stringify({ id: 1 }));
+    storage.setItem("unrelated:key", "value");
+    const listed = listStoredMotionEpisodes(storage);
+    expect(listed.map((episode) => episode.id).sort()).toEqual(["ep-a", "ep-b"]);
+  });
+
+  it("storage가 없으면 빈 목록을 돌려준다", () => {
+    expect(listStoredMotionEpisodes(null)).toEqual([]);
+    expect(listStoredMotionEpisodes(memoryStorage())).toEqual([]);
   });
 
   it("저장 공간이 가득 차면 false를 돌려주고 마지막 회차 표시를 바꾸지 않는다", () => {

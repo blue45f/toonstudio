@@ -89,6 +89,27 @@ export function loadMotionEpisode(episodeId: string, storage: Storage | null = d
   }
 }
 
+/**
+ * 저장된 회차를 모두 열거한다 (애니툰 변환의 작품 선택용).
+ * 손상됐거나 형식이 다른 항목은 조용히 건너뛴다. 순서는 저장 키 순서다.
+ */
+export function listStoredMotionEpisodes(storage: Storage | null = defaultStorage()): MotionEpisode[] {
+  if (!storage) return [];
+  const episodes: MotionEpisode[] = [];
+  const prefix = "toonstudio:motion-webtoon:episode:";
+  try {
+    for (let index = 0; index < storage.length; index += 1) {
+      const key = storage.key(index);
+      if (!key || !key.startsWith(prefix)) continue;
+      const episode = loadMotionEpisode(key.slice(prefix.length), storage);
+      if (episode) episodes.push(episode);
+    }
+  } catch {
+    return episodes;
+  }
+  return episodes;
+}
+
 /** 마지막으로 편집하던 회차 ID. */
 export function loadLastEpisodeId(storage: Storage | null = defaultStorage()): string | null {
   return readStorage("toonstudio:motion-webtoon:last-episode-id", storage);
