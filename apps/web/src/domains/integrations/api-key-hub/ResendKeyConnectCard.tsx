@@ -9,7 +9,7 @@
  * 키 저장은 뉴스레터 도메인의 공개 경계(`newsletter/public/newsletter-mail-key`)를
  * 쓴다. 현재 탭의 sessionStorage에만 보관하며, 발송 시 서버 릴레이로 1회 전달된다.
  */
-import { ExternalLink, Eye, EyeOff, Mail, Unlink } from "lucide-react";
+import { ExternalLink, Eye, EyeOff, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
@@ -18,14 +18,20 @@ import {
   loadNewsletterResendApiKey,
   saveNewsletterResendApiKey,
 } from "@/domains/newsletter/public/newsletter-mail-key";
-import { MaskedKeyField, StoredKeyRow, type StoredKeyActionStatus } from "./MaskedKeyField";
-import { validateApiKeyFormat } from "./api-key-hub-model";
+import { StoredKeyRow } from "./MaskedKeyField";
+import { maskApiKey, validateApiKeyFormat } from "./api-key-hub-model";
 
 const RESEND_API_KEYS_URL = "https://resend.com/api-keys";
 /** Resend 키는 `re_`로 시작한다(공식 문서 기준). 접두사가 다르면 등록 전에 알려준다. */
 const RESEND_API_KEY_PREFIX = "re_";
 
-type ResendKeyStatus = StoredKeyActionStatus | "idle" | "registered";
+type ResendKeyStatus =
+  | "idle"
+  | "registered"
+  | "disconnected"
+  | "empty"
+  | "too_short"
+  | "save_failed";
 
 export function ResendKeyConnectCard() {
   const [savedKey, setSavedKey] = useState(() =>
@@ -36,12 +42,21 @@ export function ResendKeyConnectCard() {
   const [status, setStatus] = useState<ResendKeyStatus>("idle");
 
   useEffect(() => {
-    if (status === "idle" || status === "copied") return;
+    if (status === "idle") return;
     const timer = window.setTimeout(() => setStatus("idle"), 3000);
     return () => window.clearTimeout(timer);
   }, [status]);
 
   const configured = isNewsletterResendConfigured(savedKey);
+
+  const copyKey = async (): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(savedKey);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   const registerKey = () => {
     const formatError = validateApiKeyFormat(input);
@@ -126,19 +141,10 @@ export function ResendKeyConnectCard() {
         <div className="mt-5">
           <StoredKeyRow
             label="내 Resend 키"
-            apiKey={savedKey}
-            status={status}
-            onStatusChange={setStatus}
-            trailingAction={
-              <button
-                type="button"
-                onClick={disconnectKey}
-                className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-danger transition hover:bg-danger/10"
-              >
-                <Unlink className="h-3.5 w-3.5" aria-hidden />
-                연결 해제
-              </button>
-            }
+            masked={maskApiKey(savedKey)}
+            meta="현재 탭 세션에만 저장 · 발송 순간에만 서버 릴레이로 1회 전달"
+            onCopy={copyKey}
+            onRemove={disconnectKey}
           />
           <p className="mt-2 text-xs leading-5 text-fg-3" role="status" aria-live="polite">
             {status === "registered"
@@ -209,9 +215,14 @@ export function ResendKeyConnectCard() {
                 Resend 키는 보통 <code className="font-mono">re_</code>로 시작합니다. 다른
                 서비스의 키가 아닌지 확인해 주세요.
               </p>
-            ) : (
-              <MaskedKeyField apiKey={input} label="입력한 키 미리보기" />
-            )}
+            ) : input.trim() ? (
+              <p className="mt-2 text-xs text-fg-3">
+                입력한 키 미리보기:{" "}
+                <code className="font-mono" aria-label="입력한 키 마스킹 미리보기">
+                  {maskApiKey(input)}
+                </code>
+              </p>
+            ) : null}
           </div>
         </div>
       )}

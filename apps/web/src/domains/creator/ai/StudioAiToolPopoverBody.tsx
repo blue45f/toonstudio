@@ -19,6 +19,7 @@ import {
   StudioAiAssistHub,
   StudioAiBackgroundPanel,
   StudioAiCharacterConsistencyPanel,
+  StudioAiLoraTrainingPanel,
   StudioAiCompositionPanel,
   StudioDialogueSuggestPanel,
   StudioIntegrationsSettingsPanel,
@@ -77,6 +78,7 @@ export function StudioAiToolPopoverBody({
   const {
     activePage,
     activeServerAiProviderLabel,
+    addRenderedImage,
     aiAssistTool,
     aiBgBusy,
     aiBgError,
@@ -462,6 +464,7 @@ export function StudioAiToolPopoverBody({
                     />
                   ) : null}
                   {aiAssistTool === "character" ? (
+                    <>
                     <StudioAiCharacterConsistencyPanel
                       configured={isStudioAiConfigured(aiSettings)}
                       hasReference={selected?.type === "image"}
@@ -487,6 +490,13 @@ export function StudioAiToolPopoverBody({
                         onGenerateAiCharacter();
                       }}
                     />
+                    <StudioAiLoraTrainingPanel
+                      selectedImageSrc={selected?.type === "image" ? selected.src : null}
+                      onInsertImage={(dataUrl, width, height) => {
+                        addRenderedImage(dataUrl, width, height);
+                      }}
+                    />
+                    </>
                   ) : null}
                   {aiAssistTool === "composition" ? (
                     <StudioAiCompositionPanel
