@@ -215,6 +215,12 @@ function normalizeWikimedia(article: string, raw: unknown, fetchedAt: string): C
   const day = (value: string) => `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
   const peakDay = day(textOf(items[peakIndex].timestamp, 10).slice(0, 8));
   const sourceSlug = encodeURIComponent(articleName);
+  // 일별 시계열은 버리지 않고 계약(dailyViews)에 그대로 실어 보낸다 — 대시보드의 추이 바가
+  // 이 배열로만 그려지며, 집계 수치는 같은 배열에서 다시 계산된다.
+  const dailyViews = items.map((item, index) => ({
+    date: day(textOf(item.timestamp, 10).slice(0, 8)),
+    views: views[index],
+  }));
   return parseResource({
     id: `wikimedia:${sourceSlug.slice(0, 150)}`,
     provider: "wikimedia",
@@ -226,6 +232,7 @@ function normalizeWikimedia(article: string, raw: unknown, fetchedAt: string): C
     license: "metadata-only",
     rightsStatement: "집계 조회 통계 메타데이터 · 원문 내용과 미디어의 권리는 별도 확인",
     termsReviewedAt: "2026-09-25",
+    dailyViews,
     fetchedAt,
   });
 }

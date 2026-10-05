@@ -81,6 +81,10 @@ describe("international discovery providers", () => {
     expect(result.items).toHaveLength(1);
     expect(result.items[0].description).toContain("총 300회");
     expect(result.items[0].description).toContain("독자 수·매출");
+    expect(result.items[0].dailyViews).toEqual([
+      { date: "2026-09-23", views: 120 },
+      { date: "2026-09-24", views: 180 },
+    ]);
     expect(result.hasMore).toBe(false);
   });
 
