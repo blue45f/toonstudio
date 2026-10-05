@@ -1,6 +1,11 @@
 import {
   resolveStudioCloudflareRealtimeOrigin,
 } from "../studio-realtime-provider-cloudflare-adapter";
+import {
+  createStudioRealtimeTurnCredentialSource,
+  primeStudioIceServers,
+  registerStudioIceCredentialSource,
+} from "./studio-ice-configuration";
 import { STUDIO_ACOUSTIC_CONVERSATION_EVENT } from "@toonstudio/studio-project-model/world-conversation";
 import { parseStudioLiveAcousticInvalidation, type StudioLiveAcousticCoreBinding } from "./studio-live-acoustic-control";
 
@@ -494,6 +499,17 @@ export function createStudioServerLiveTransportFactory(
   const realtimeOrigin = resolveStudioCloudflareRealtimeOrigin(
     import.meta.env.VITE_STUDIO_REALTIME_ORIGIN,
   );
+  if (realtimeOrigin) {
+    // TURN 자격증명 소스를 공유 ICE 캐시에 등록한다. 실제 발급은 아래 반환 팩토리가
+    // context마다 미리 걸어 두고, 발급 실패·secret 미구성은 STUN 전용으로 떨어지므로
+    // 어떤 경우에도 연결 수립을 막지 않는다.
+    registerStudioIceCredentialSource(
+      createStudioRealtimeTurnCredentialSource({
+        realtimeOrigin,
+        providerId: import.meta.env.VITE_STUDIO_REALTIME_PROVIDER_ID,
+      }),
+    );
+  }
   const {
     socketEndpoint: _socketEndpoint,
     createLocalTransport: _createLocalTransport,
@@ -531,6 +547,12 @@ export function createStudioServerLiveTransportFactory(
     },
   );
   return (context) => {
+    // 목적 라우팅과 같은 scope 규칙(room 기본값 = workId)으로 ICE 캐시를 미리 채운다.
+    void primeStudioIceServers({
+      workId: context.workId,
+      roomId: context.workId,
+      sessionId: context.participant.sessionId,
+    });
     if (hasLocalTransportOverride || !isStudioLiveInstantJamTransportContext(context)) {
       return configuredFactory(context);
     }

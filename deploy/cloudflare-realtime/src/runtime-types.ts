@@ -67,6 +67,9 @@ export interface RealtimeWorkerEnv {
   readonly REALTIME_CONTROL_SECRET: string;
   readonly REALTIME_TICKET_ISSUER: string;
   readonly REALTIME_TICKET_AUDIENCE: string;
+  readonly REALTIME_TURN_KEY_ID?: string;
+  readonly REALTIME_TURN_API_TOKEN?: string;
+  readonly REALTIME_TURN_ENABLED?: string;
   readonly REALTIME_ALLOWED_ORIGINS?: string;
   readonly REALTIME_MAX_CONNECTIONS_PER_ROOM?: string;
   readonly REALTIME_MAX_CONNECTIONS_PER_ACTOR?: string;
