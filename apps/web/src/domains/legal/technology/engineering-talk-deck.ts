@@ -505,10 +505,10 @@ export const TALK_SLIDES = [
       t("시간 초과·5xx처럼 결과가 모호한 실패는 자동으로 다시 보내지 않습니다", "Ambiguous failures such as timeouts or 5xx are not retried automatically"),
       t("운영 공급자 키와 예산 반영은 승인 배포를 기다리는 ‘설정 필요’ 상태입니다", "Production provider keys and budgets are still ‘configured’, awaiting an approved release"),
     ],
-    stack: ["onnxruntime-web", "WebGPU/WASM execution providers", "MediaPipe", "OpenAI-compatible API", "BYOK", "Quota ledger"],
+    stack: ["onnxruntime-web", "WebGPU/WASM execution providers", "MediaPipe", "Transformers.js", "OpenAI-compatible API", "BYOK", "Quota ledger"],
     notes: t(
-      "AI는 결과를 확정하지 않고 제안만 합니다. 작가가 받아들이거나 버립니다.\n비용 원칙: 무료 우선이란 공짜라는 뜻이 아니라 돈이 드는 지점을 숨기지 않는다는 뜻입니다.\n정직하게: 운영 환경의 AI 공급자 키·예산 값은 다음 승인 배포에 반영될 예정인 ‘설정 필요’ 상태입니다.",
-      "AI never commits results; it proposes, and the artist accepts or discards.\nCost principle: free-first does not mean free; it means cost boundaries stay visible.\nBe honest: production AI provider keys and budgets are ‘configured’ and scheduled for the next approved release.",
+      "AI는 결과를 확정하지 않고 제안만 합니다. 작가가 받아들이거나 버립니다.\n비용 원칙: 무료 우선이란 공짜라는 뜻이 아니라 돈이 드는 지점을 숨기지 않는다는 뜻입니다.\n기기 안 번역: 리서치 데스크의 한글 질의는 Transformers.js 모델이 기기에서 번역합니다. 모델 파일(약 123MB)은 배포 시 배치되는 전제라, 배치 전에는 사전 변환으로 동작합니다.\n정직하게: 운영 환경의 AI 공급자 키·예산 값은 다음 승인 배포에 반영될 예정인 ‘설정 필요’ 상태입니다.",
+      "AI never commits results; it proposes, and the artist accepts or discards.\nCost principle: free-first does not mean free; it means cost boundaries stay visible.\nOn-device translation: the research desk's Korean queries are translated on-device by a Transformers.js model. The model files (about 123MB) are placed at deploy time; before placement, the dictionary converter carries the flow.\nBe honest: production AI provider keys and budgets are ‘configured’ and scheduled for the next approved release.",
     ),
     chapterId: "free-ai-routing",
     evidence: [
