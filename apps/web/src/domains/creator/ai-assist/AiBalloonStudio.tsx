@@ -13,6 +13,12 @@ import {
   recommendBalloonPlacement,
   type AiBalloonKind,
 } from "./ai-balloon-placement";
+import {
+  isLocalFontAccessSupported,
+  listLocalFontFamilies,
+  loadLocalFontFace,
+  localFontFamilyStack,
+} from "./studio-local-fonts";
 
 const VIEW_W = 320;
 const VIEW_H = 260;
@@ -78,6 +84,12 @@ export function AiBalloonStudio() {
   const [text, setText] = useState(t("이게 정말 사실이야?", "Is that really true?"));
   const [kindOverride, setKindOverride] = useState<AiBalloonKind | "auto">("auto");
   const [fontName, setFontName] = useState<string | null>(null);
+  // 로컬 폰트(Local Font Access) — 지원 브라우저에서만 열리는 추가 선택지.
+  const [localFamilies, setLocalFamilies] = useState<readonly string[] | null>(null);
+  const [localFamily, setLocalFamily] = useState<string | null>(null);
+  const [localNote, setLocalNote] = useState<string | null>(null);
+  const [localBusy, setLocalBusy] = useState(false);
+  const localFontSupported = useMemo(() => isLocalFontAccessSupported(), []);
 
   const kind: AiBalloonKind = kindOverride === "auto" ? guessBalloonKind(text) : kindOverride;
   const fonts = useMemo(() => recommendBalloonFonts(kind), [kind]);
@@ -98,6 +110,50 @@ export function AiBalloonStudio() {
   }, [fonts]);
 
   const activeFont: AiBalloonFont = fonts.find((f) => f.name === fontName) ?? fonts[0];
+  const previewFontFamily = localFamily ? localFontFamilyStack(localFamily) : activeFont.family;
+
+  // 로컬 폰트 열거는 권한이 걸려 있어 클릭 제스처 안에서만 부른다.
+  const handleLoadLocalFonts = async (): Promise<void> => {
+    if (localBusy) return;
+    setLocalBusy(true);
+    try {
+      const result = await listLocalFontFamilies();
+      if (result.kind === "ok") {
+        setLocalFamilies(result.families);
+        setLocalNote(
+          result.families.length > 0
+            ? t(`이 기기의 폰트 ${result.families.length}개를 불러왔어요.`, `Loaded ${result.families.length} fonts from this device.`)
+            : t("이 기기에서 읽을 수 있는 폰트가 없어요.", "No readable fonts were found on this device."),
+        );
+      } else if (result.kind === "denied") {
+        setLocalNote(
+          t(
+            "로컬 폰트 접근이 거부됐어요. 브라우저의 사이트 권한에서 폰트 접근을 허용해 주세요.",
+            "Local font access was denied. Allow font access in the browser's site permissions.",
+          ),
+        );
+      } else if (result.kind === "failed") {
+        setLocalNote(t("로컬 폰트 목록을 읽지 못했어요.", "Couldn't read the local font list."));
+      } else {
+        setLocalNote(t("이 브라우저는 로컬 폰트를 지원하지 않아요.", "This browser doesn't support local fonts."));
+      }
+    } finally {
+      setLocalBusy(false);
+    }
+  };
+
+  const handleSelectLocalFont = async (family: string): Promise<void> => {
+    setLocalFamily(family);
+    const loaded = await loadLocalFontFace(family);
+    setLocalNote(
+      loaded
+        ? null
+        : t(
+            `'${family}' 폰트 데이터를 불러오지 못해 미리보기가 기본 글꼴로 표시될 수 있어요.`,
+            `Couldn't load the '${family}' font data — the preview may fall back to a default font.`,
+          ),
+    );
+  };
 
   const placement = useMemo(
     () =>
@@ -164,7 +220,7 @@ export function AiBalloonStudio() {
               textAnchor="middle"
               dominantBaseline="central"
               fontSize={fontSize}
-              fontFamily={activeFont.family}
+              fontFamily={previewFontFamily}
               fill="#1a1a2e"
             >
               {(text.length > 0 ? text : "…").slice(0, 28)}
@@ -224,9 +280,12 @@ export function AiBalloonStudio() {
                   key={f.name}
                   type="button"
                   role="radio"
-                  aria-checked={activeFont.name === f.name}
-                  className={`ai-studio__font-btn${activeFont.name === f.name ? " ai-studio__font-btn--active" : ""}`}
-                  onClick={() => setFontName(f.name)}
+                  aria-checked={localFamily === null && activeFont.name === f.name}
+                  className={`ai-studio__font-btn${localFamily === null && activeFont.name === f.name ? " ai-studio__font-btn--active" : ""}`}
+                  onClick={() => {
+                    setFontName(f.name);
+                    setLocalFamily(null);
+                  }}
                   title={f.reason.ko}
                 >
                   <span className="ai-studio__font-sample" style={{ fontFamily: f.family }}>
@@ -237,6 +296,42 @@ export function AiBalloonStudio() {
               ))}
             </div>
             <p className="ai-studio__advanced-note">{activeFont.reason.ko}</p>
+            {localFontSupported && (
+              <>
+                <button
+                  type="button"
+                  className="ai-studio__font-btn"
+                  disabled={localBusy}
+                  onClick={() => void handleLoadLocalFonts()}
+                >
+                  {localBusy ? t("불러오는 중…", "Loading…") : t("내 폰트 불러오기", "Load my fonts")}
+                </button>
+                {localFamilies !== null && localFamilies.length > 0 && (
+                  <div className="ai-studio__font-list" role="listbox" aria-label={t("내 폰트", "My fonts")}>
+                    {localFamilies.map((family) => (
+                      <button
+                        key={family}
+                        type="button"
+                        role="option"
+                        aria-selected={localFamily === family}
+                        className={`ai-studio__font-btn${localFamily === family ? " ai-studio__font-btn--active" : ""}`}
+                        onClick={() => void handleSelectLocalFont(family)}
+                      >
+                        <span className="ai-studio__font-sample" style={{ fontFamily: localFontFamilyStack(family) }}>
+                          {t("가", "Aa")}
+                        </span>
+                        <span className="ai-studio__font-name">{family}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {localNote && (
+              <p className="ai-studio__advanced-note" role="status">
+                {localNote}
+              </p>
+            )}
           </div>
 
           <details className="ai-studio__advanced">

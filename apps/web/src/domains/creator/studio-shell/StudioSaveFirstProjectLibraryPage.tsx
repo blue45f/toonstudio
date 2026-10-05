@@ -216,6 +216,7 @@ export function StudioSaveFirstProjectLibraryPage({
       const target = await chooseStudioProjectPackageSaveTarget(
         studioProjectPackageFileName(project.title),
         window,
+        `project-package:${project.id}`,
       );
       const profile = profiles.ensure(project.id) ?? profiles.profileFor(project.id);
       const result = await createPackage(project, profile);

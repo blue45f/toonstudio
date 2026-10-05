@@ -9,7 +9,7 @@ import {
 import { Layers, Loader2, Palette, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { downloadBlob } from "../export/studio-export";
+import { chooseExportSaveTarget, writeExportBlobToTarget } from "../export/studio-export";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import type { StudioOnnxColorizeLayeredResult } from "../studio-onnx-colorize";
 import type { StudioTag2pixTagName } from "../studio-onnx-tag2pix";
@@ -225,6 +225,18 @@ export function StudioOnnxColorizePanel({
     setExportNote(null);
     setExportError(null);
     try {
+      // 저장 대상은 PSD 조립보다 먼저 확정한다 — 선택기는 클릭 제스처 안에서만 열린다.
+      const saveTarget = await chooseExportSaveTarget("toonstudio-colorize-layers.psd", {
+        handleKey: "colorize-layers-psd",
+        pickerTypes: [{
+          description: "Photoshop document",
+          accept: { "image/vnd.adobe.photoshop": [".psd"] },
+        }],
+      });
+      if (saveTarget.kind === "cancelled") {
+        setExportNote(T("저장을 취소했어요."));
+        return;
+      }
       // 분리·PSD 조립 모듈(ag-psd 포함)은 저장 버튼을 눌렀을 때만 불러온다.
       const layersModule = await import("./studio-onnx-colorize-layers");
       const split = layersModule.splitStudioColorizeLayers({
@@ -241,12 +253,18 @@ export function StudioOnnxColorizePanel({
         skipped: split.skipped,
         flattened: layered.compositedRgba,
       });
-      downloadBlob(blob, "toonstudio-colorize-layers.psd");
+      const saveOutcome = await writeExportBlobToTarget(
+        blob,
+        "toonstudio-colorize-layers.psd",
+        saveTarget,
+        { handleKey: "colorize-layers-psd" },
+      );
       if (!mountedRef.current) return;
       const skippedReason = receipt.skipped[0]?.reason;
       setExportNote(
         layersModule.studioColorizeLayerPsdMessage(receipt)
-        + (skippedReason ? ` ${skippedReason}` : ""),
+        + (skippedReason ? ` ${skippedReason}` : "")
+        + (saveOutcome === "file-handle" ? ` ${T("선택한 파일에 저장했어요.")}` : ""),
       );
     } catch (cause) {
       if (!mountedRef.current) return;

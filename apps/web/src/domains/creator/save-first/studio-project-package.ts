@@ -1,3 +1,9 @@
+import {
+  ensureFileHandlePermission,
+  loadStoredFileHandle,
+  storeFileHandle,
+} from "@/shared/lib/file-system-access";
+
 import type { StudioProjectDocumentEntry } from "../studio-project-document-store";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
 import type { StudioSaveProfile } from "./studio-save-profile";
@@ -247,11 +253,23 @@ export type StudioProjectPackageSaveTarget =
  * Ask for the destination before asynchronous snapshot collection starts. Browsers require the
  * file picker to run inside the original click/keyboard activation; separating selection from the
  * later write preserves that contract even when a large project must read OPFS/SQLite first.
+ *
+ * When a handleKey is given, a previously chosen file handle for that key is reused
+ * (permission is re-checked/requested inside the same activation) so saving the same
+ * project again overwrites the same file without asking for a location again. A freshly
+ * picked handle is stored under the key for the next save.
  */
 export async function chooseStudioProjectPackageSaveTarget(
   suggestedName: string,
   ownerWindow: Window = window,
+  handleKey?: string,
 ): Promise<StudioProjectPackageSaveTarget> {
+  if (handleKey) {
+    const stored = await loadStoredFileHandle(handleKey);
+    if (stored && (await ensureFileHandlePermission(stored, "readwrite"))) {
+      return Object.freeze({ kind: "file-handle", handle: stored });
+    }
+  }
   const pickerWindow = ownerWindow as FilePickerWindow;
   if (typeof pickerWindow.showSaveFilePicker === "function") {
     const handle = await pickerWindow.showSaveFilePicker({
@@ -261,6 +279,9 @@ export async function chooseStudioProjectPackageSaveTarget(
         accept: { [STUDIO_PROJECT_PACKAGE_MIME]: [".toonstudio"] },
       }],
     });
+    if (handleKey) {
+      await storeFileHandle(handleKey, handle);
+    }
     return Object.freeze({ kind: "file-handle", handle });
   }
   return Object.freeze({ kind: "download", ownerWindow });
@@ -294,6 +315,10 @@ export async function saveStudioProjectPackage(
   result: StudioProjectPackageResult,
   ownerWindow: Window = window,
 ): Promise<"file-picker" | "download"> {
-  const target = await chooseStudioProjectPackageSaveTarget(result.fileName, ownerWindow);
+  const target = await chooseStudioProjectPackageSaveTarget(
+    result.fileName,
+    ownerWindow,
+    `project-package:${result.manifest.projectId}`,
+  );
   return writeStudioProjectPackageToTarget(result, target);
 }
