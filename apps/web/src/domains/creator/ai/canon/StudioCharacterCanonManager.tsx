@@ -1,7 +1,7 @@
 // 캐릭터 캐논 관리자 — 등록·목록·수정·삭제와 캐릭터별 생성 갤러리를 한 화면에 둔다.
 // 게스트는 이 브라우저 localStorage에만 저장되고, 상단에 그 사실을 알린다.
 import { useState } from "react";
-import { ClipboardCopy, MessageCircle, Pencil, Plus, Trash2, UserRound, Users, X } from "lucide-react";
+import { ClipboardCopy, ImagePlus, MessageCircle, Pencil, Plus, Trash2, UserRound, Users, X } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -10,6 +10,7 @@ import { cn } from "@/shared/lib/utils";
 import { buildCanonPromptBlock } from "./studio-character-canon-prompt";
 import { StudioCharacterCanonEditor } from "./StudioCharacterCanonEditor";
 import { StudioCharacterCanonGallery } from "./StudioCharacterCanonGallery";
+import { StudioPhotoCharacterWizard } from "./StudioPhotoCharacterWizard";
 import type { useStudioCharacterCanon } from "./useStudioCharacterCanon";
 import type { CharacterCanonSheet } from "./studio-character-canon";
 
@@ -77,6 +78,7 @@ export function StudioCharacterCanonManager({
   const bt = useBilingual("canon.manager");
   const [view, setView] = useState<"library" | "gallery">("library");
   const [editorOpen, setEditorOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [editing, setEditing] = useState<CharacterCanonSheet | null>(null);
   const [galleryActiveId, setGalleryActiveId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -123,6 +125,14 @@ export function StudioCharacterCanonManager({
           <MessageCircle size={14} aria-hidden />
           {bt("캐릭터 챗 관리", "Character chats")}
         </Link>
+        <button
+          type="button"
+          onClick={() => setWizardOpen(true)}
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line px-3 text-xs font-bold text-fg-2 hover:border-accent/50 hover:text-accent"
+        >
+          <ImagePlus size={14} aria-hidden />
+          {bt("사진으로 캐릭터 만들기", "From a photo")}
+        </button>
         <button
           type="button"
           onClick={openNew}
@@ -208,6 +218,17 @@ export function StudioCharacterCanonManager({
           />
         )}
       </div>
+
+      {wizardOpen ? (
+        <div className="fixed inset-0 z-[120] grid place-items-center bg-[oklch(0.08_0.01_70/0.7)] p-3" role="dialog" aria-modal="true" aria-label={bt("사진으로 캐릭터 만들기", "Make a character from a photo")}>
+          <div className="max-h-full w-full max-w-xl overflow-y-auto rounded-2xl border border-line bg-canvas p-4 shadow-2xl">
+            <StudioPhotoCharacterWizard
+              canon={canon}
+              onClose={() => setWizardOpen(false)}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {editorOpen ? (
         <div className="fixed inset-0 z-[120] grid place-items-center bg-[oklch(0.08_0.01_70/0.7)] p-3" role="dialog" aria-modal="true" aria-label={editing ? bt("캐릭터 캐논 수정", "Edit character canon") : bt("캐릭터 캐논 등록", "Register character canon")}>
