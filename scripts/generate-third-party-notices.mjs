@@ -245,10 +245,17 @@ const REMOTION_LICENSE_SHA256 =
 const REVIEWED_LICENSE_EXPRESSIONS = new Set([
   "0BSD",
   "(MIT AND Zlib)",
+  "(MIT OR Apache-2.0)",
+  "(MIT OR CC0-1.0)",
+  "(WTFPL OR MIT)",
   "Apache-2.0",
+  "Apache-2.0 OR MIT",
+  "BlueOak-1.0.0",
   "BSD-2-Clause",
   "BSD-3-Clause",
+  "(BSD-3-Clause OR GPL-2.0)",
   "CC0-1.0",
+  "CC-BY-4.0",
   "CC-BY-NC-4.0",
   "ISC",
   "LGPL-2.1",
@@ -257,10 +264,13 @@ const REVIEWED_LICENSE_EXPRESSIONS = new Set([
   "MIT",
   "MIT OR Apache-2.0",
   "MPL-2.0",
+  "MPL 2.0",
   "Public Domain",
   REMOTION_LICENSE_EXPRESSION,
   "SGI-B-2.0",
   "Unlicense",
+  "WTFPL",
+  "WTFPL OR ISC",
 ]);
 
 const REVIEWED_RESTRICTED_PRODUCTION_DEPENDENCIES = Object.freeze({
