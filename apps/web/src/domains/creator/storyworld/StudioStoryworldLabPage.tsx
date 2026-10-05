@@ -33,6 +33,7 @@ import {
 } from "react";
 
 import { storyworldDraftStore } from "./draft-store";
+import { StudioStoryworldBoard } from "./StudioStoryworldBoard";
 import { projectStoryworldToStudioProjectStory } from "./studio-storyworld-project-projection";
 import { updateStudioProjectStory } from "../studio-project-feature-adapters";
 import {
@@ -440,13 +441,22 @@ function IssueList({ issues, limit }: {
   );
 }
 
-function OverviewTab({ result, onOpenIssues }: {
+function OverviewTab({ project, result, onOpenIssues, onOpenData }: {
+  readonly project: StoryworldProject;
   readonly result: StoryworldAnalysisResult;
   readonly onOpenIssues: () => void;
+  readonly onOpenData: () => void;
 }) {
   const blockingIssues = result.issues.filter((issue) => issue.severity === "error").length;
   return (
     <div className="storyworld-tab-stack">
+      <StudioStoryworldBoard onOpenData={onOpenData} project={project} />
+      <section aria-labelledby="storyworld-checkup-title" className="storyworld-checkup">
+        <div className="storyworld-checkup__heading">
+          <h2 id="storyworld-checkup-title">점검 결과</h2>
+          <p>위 보드와 같은 원본 데이터에서 계산한 진단입니다. 점수·축·신호 계산은 기존 분석 그대로입니다.</p>
+        </div>
+        <div className="storyworld-tab-stack">
       <div className="storyworld-score-hero">
         <div className={`storyworld-score-orb storyworld-tone--${scoreTone(result.overallScore)}`}>
           <strong>{result.overallScore}</strong>
@@ -502,6 +512,8 @@ function OverviewTab({ result, onOpenIssues }: {
       >
         <IssueList issues={result.issues} limit={5} />
       </Panel>
+        </div>
+      </section>
     </div>
   );
 }
@@ -1010,7 +1022,7 @@ function StudioStoryworldLabEditor({
             </div>
           </div>
 
-          {activeTab === "overview" ? <OverviewTab onOpenIssues={() => setActiveTab("issues")} result={result} /> : null}
+          {activeTab === "overview" ? <OverviewTab onOpenData={() => setActiveTab("json")} onOpenIssues={() => setActiveTab("issues")} project={project} result={result} /> : null}
           {activeTab === "issues" ? <IssuesTab result={result} /> : null}
           {activeTab === "multiverse" ? <MultiverseTab project={project} result={result} /> : null}
           {activeTab === "knowledge" ? <KnowledgeTab project={project} result={result} /> : null}
