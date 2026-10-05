@@ -4,7 +4,9 @@ import { isStudioCrossOriginIsolationPath } from "../studio-cross-origin-isolati
 
 import {
   STUDIO_SERVICE_WORKER_CACHE_PREFIX,
+  STUDIO_SERVICE_WORKER_CONTRACT_VERSION,
   STUDIO_SERVICE_WORKER_MESSAGE,
+  STUDIO_SERVICE_WORKER_RUNTIME_LIMITS,
   classifyStudioServiceWorkerRequest,
   isStudioServiceWorkerCachedResponseUsable,
   isStudioServiceWorkerMessage,
@@ -95,7 +97,10 @@ describe("classifyStudioServiceWorkerRequest", () => {
       ["/assets/studio/cc0-20260906/manifest.json", "catalog-data"],
       ["/assets/studio/cc0-20260906/manifest.json?v=diversity-20260913", "catalog-data"],
       ["/assets/studio/cc0-20260906/assets/example/model.glb", "immutable-asset"],
-      ["/assets/canvaskit-DB1zH3nD.wasm", "immutable-asset"],
+      ["/assets/canvaskit-DB1zH3nD.wasm", "heavy-asset"],
+      ["/assets/tag2pix-X1y2Z3.onnx", "heavy-asset"],
+      ["/assets/sqlite3-opfs-abc123.wasm", "heavy-asset"],
+      ["/assets/model.onnx.json", "immutable-asset"],
       ["/assets/index-r07BZoLj.css", "immutable-asset"],
       ["/vrm/Vivi.vrm", "static-media"],
       ["/audio/theme.mp3", "static-media"],
@@ -127,6 +132,7 @@ describe("classifyStudioServiceWorkerRequest", () => {
 describe("strategy per asset class", () => {
   it("assigns a distinct, defensible strategy to each class", () => {
     expect(studioServiceWorkerStrategy("immutable-asset")).toBe("cache-first");
+    expect(studioServiceWorkerStrategy("heavy-asset")).toBe("cache-first");
     expect(studioServiceWorkerStrategy("static-media")).toBe("cache-first");
     expect(studioServiceWorkerStrategy("cover-image")).toBe("cache-first");
     expect(studioServiceWorkerStrategy("catalog-data")).toBe("stale-while-revalidate");
@@ -138,11 +144,23 @@ describe("strategy per asset class", () => {
 
   it("sends every cacheable class to its own bucket", () => {
     expect(studioServiceWorkerCacheBucket("immutable-asset")).toBe("immutable");
+    expect(studioServiceWorkerCacheBucket("heavy-asset")).toBe("heavy");
     expect(studioServiceWorkerCacheBucket("static-media")).toBe("media");
     expect(studioServiceWorkerCacheBucket("catalog-data")).toBe("data");
     expect(studioServiceWorkerCacheBucket("cover-image")).toBe("cover");
     expect(studioServiceWorkerCacheBucket("navigation")).toBe("precache");
     expect(studioServiceWorkerCacheBucket("api")).toBeNull();
+  });
+
+  it("retains heavy binaries in a small dedicated pool, not the chunk pool", () => {
+    // The build ships a bounded set of models/WASM (dozens, not hundreds);
+    // the cap keeps them from competing with the 600-entry chunk pool while
+    // still bounding how many stale hashed copies can accumulate.
+    expect(STUDIO_SERVICE_WORKER_RUNTIME_LIMITS.heavy).toBe(64);
+    expect(STUDIO_SERVICE_WORKER_RUNTIME_LIMITS.heavy)
+      .toBeLessThan(STUDIO_SERVICE_WORKER_RUNTIME_LIMITS.immutable);
+    expect(studioServiceWorkerCacheNames("aaaaaaaaaaaa").heavy)
+      .toBe(`${STUDIO_SERVICE_WORKER_CACHE_PREFIX}heavy-v${STUDIO_SERVICE_WORKER_CONTRACT_VERSION}`);
   });
 });
 
@@ -154,6 +172,7 @@ describe("cache naming and invalidation", () => {
     // Content-hashed URLs are self-invalidating, so a deploy must not throw
     // away still-valid immutable bytes.
     expect(a.immutable).toBe(b.immutable);
+    expect(a.heavy).toBe(b.heavy);
     expect(a.media).toBe(b.media);
     for (const name of Object.values(a)) {
       expect(name.startsWith(STUDIO_SERVICE_WORKER_CACHE_PREFIX)).toBe(true);

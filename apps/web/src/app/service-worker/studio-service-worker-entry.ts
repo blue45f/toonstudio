@@ -55,6 +55,7 @@ const criticalPathnames = new Set(
 const RUNTIME_LIMIT_BY_BUCKET: Record<StudioServiceWorkerCacheBucket, number> = {
   precache: Number.POSITIVE_INFINITY,
   immutable: STUDIO_SERVICE_WORKER_RUNTIME_LIMITS.immutable,
+  heavy: STUDIO_SERVICE_WORKER_RUNTIME_LIMITS.heavy,
   media: STUDIO_SERVICE_WORKER_RUNTIME_LIMITS.media,
   data: STUDIO_SERVICE_WORKER_RUNTIME_LIMITS.data,
   cover: STUDIO_SERVICE_WORKER_RUNTIME_LIMITS.cover,
@@ -154,7 +155,10 @@ async function handleCacheFirst(
 ): Promise<Response> {
   // First-install critical assets may exist only in precache. Requiring a second
   // online visit to duplicate them into the runtime bucket breaks offline boot.
-  const critical = routeClass === "immutable-asset"
+  // Heavy assets need the same courtesy: the offline drawing pack pins its
+  // sqlite3 WASM into precache, and re-downloading tens of megabytes just
+  // because the runtime bucket differs would defeat the pin.
+  const critical = routeClass === "immutable-asset" || routeClass === "heavy-asset"
     ? await readCached("precache", request, routeClass) : undefined;
   const cached = critical ?? await readCached(bucket, request, routeClass);
   if (cached) return cached;

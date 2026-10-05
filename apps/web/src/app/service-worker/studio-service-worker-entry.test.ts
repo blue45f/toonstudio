@@ -173,6 +173,30 @@ describe("fetch routing", () => {
     const { response } = await harness.dispatch("fetch", { request: new Request(`${ORIGIN}/assets/index-abc.js`) });
     expect(await response?.text()).toBe("critical bundle"); expect(harness.fetchCalls).toEqual([]);
   });
+  it("stores ONNX models in the dedicated heavy bucket and replays them without network", async () => {
+    harness.setNetwork(async () => new Response("model bytes"));
+    await loadWorker();
+    const modelUrl = `${ORIGIN}/assets/tag2pix-X1y2Z3.onnx`;
+    const first = await harness.dispatch("fetch", { request: new Request(modelUrl) });
+    expect(await first.response?.text()).toBe("model bytes");
+    expect(harness.fetchCalls).toEqual([modelUrl]);
+    expect(harness.caches.entries("toonstudio-sw-heavy-v5")).toContain(modelUrl);
+    expect(harness.caches.entries("toonstudio-sw-immutable-v5")).not.toContain(modelUrl);
+    harness.setNetwork(async () => { throw new Error("offline"); });
+    const second = await harness.dispatch("fetch", { request: new Request(modelUrl) });
+    expect(await second.response?.text()).toBe("model bytes");
+    expect(harness.fetchCalls).toEqual([modelUrl]);
+  });
+  it("serves an offline-pack WASM pinned in precache instead of re-downloading it as heavy", async () => {
+    const wasmUrl = `${ORIGIN}/assets/sqlite3-abc123.wasm`;
+    harness.caches.seed(PRECACHE, "/assets/sqlite3-abc123.wasm", new Response("pinned wasm"));
+    harness.setNetwork(async () => { throw new Error("offline"); });
+    await loadWorker();
+    const { response } = await harness.dispatch("fetch", { request: new Request(wasmUrl) });
+    expect(await response?.text()).toBe("pinned wasm");
+    expect(harness.fetchCalls).toEqual([]);
+    expect(harness.caches.entries("toonstudio-sw-heavy-v5")).toEqual([]);
+  });
   it("serves stable bootstrap code from the build precache while offline", async () => {
     harness.caches.seed(PRECACHE, "/bootstrap-compat.js", new Response("cached bootstrap"));
     harness.setNetwork(async () => { throw new Error("offline"); });

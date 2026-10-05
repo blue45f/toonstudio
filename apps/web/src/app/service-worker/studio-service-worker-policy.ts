@@ -39,6 +39,7 @@ export const STUDIO_SERVICE_WORKER_CONTRACT_VERSION = 5;
  * head approximates LRU without storing timestamps alongside every entry. */
 export const STUDIO_SERVICE_WORKER_RUNTIME_LIMITS = Object.freeze({
   immutable: 600,
+  heavy: 64,
   media: 120,
   data: 80,
   cover: 300,
@@ -51,6 +52,16 @@ export type StudioServiceWorkerRouteClass =
   | "navigation"
   /** Content-hashed build output under `/assets/` — immutable forever. */
   | "immutable-asset"
+  /**
+   * ML/runtime binaries under `/assets/` (`.onnx`, `.wasm`). Same hashed,
+   * immutable contract as any other build asset, but a single file can be
+   * tens of megabytes (tag2pix is ~76 MB; dist WASM totals ~123 MB), so they
+   * get their own bucket: inside the shared `immutable` bucket their early
+   * insertion order makes them the first victims of count-based trimming
+   * whenever small-chunk churn pushes past the cap, and re-downloading one
+   * is the most expensive cache miss this app can produce.
+   */
+  | "heavy-asset"
   /** Long-lived binaries served from `public/` (VRM models, audio, images). */
   | "static-media"
   /** Snapshot JSON that should be fast but eventually fresh. */
@@ -73,6 +84,7 @@ export type StudioServiceWorkerStrategy =
 export type StudioServiceWorkerCacheBucket =
   | "precache"
   | "immutable"
+  | "heavy"
   | "media"
   | "data"
   | "cover";
@@ -109,6 +121,13 @@ const SW_RUNTIME_PATHS = new Set([
 
 const STATIC_MEDIA_PREFIXES = ["/vrm/", "/audio/", "/images/", "/assets/media/"];
 const CATALOG_DATA_PREFIXES = ["/data/", "/i18n/", "/catalog/"];
+
+/** Extensions whose files are orders of magnitude larger than a JS chunk. */
+const HEAVY_ASSET_EXTENSIONS = [".onnx", ".wasm"] as const;
+
+function isHeavyAssetPath(pathname: string): boolean {
+  return HEAVY_ASSET_EXTENSIONS.some((extension) => pathname.endsWith(extension));
+}
 
 function parsePathname(url: string): string | null {
   try {
@@ -147,7 +166,9 @@ export function classifyStudioServiceWorkerRequest(
 
   // The library manifest is mutable; keep an offline snapshot but revalidate it.
   if (pathname === "/assets/studio/cc0-20260906/manifest.json") return "catalog-data";
-  if (pathname.startsWith("/assets/")) return "immutable-asset";
+  if (pathname.startsWith("/assets/")) {
+    return isHeavyAssetPath(pathname) ? "heavy-asset" : "immutable-asset";
+  }
   if (pathname === "/api/cover") return "cover-image";
   if (pathname.startsWith("/api/")) return "api";
   if (STATIC_MEDIA_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
@@ -164,6 +185,7 @@ export function studioServiceWorkerStrategy(
 ): StudioServiceWorkerStrategy {
   switch (routeClass) {
     case "immutable-asset":
+    case "heavy-asset":
     case "static-media":
     case "cover-image":
       // Content-hashed or explicitly `immutable` upstream: the URL *is* the
@@ -193,6 +215,8 @@ export function studioServiceWorkerCacheBucket(
       return "precache";
     case "immutable-asset":
       return "immutable";
+    case "heavy-asset":
+      return "heavy";
     case "static-media":
       return "media";
     case "catalog-data":
@@ -209,6 +233,7 @@ export function studioServiceWorkerCacheBucket(
 export interface StudioServiceWorkerCacheNames {
   readonly precache: string;
   readonly immutable: string;
+  readonly heavy: string;
   readonly media: string;
   readonly data: string;
   readonly cover: string;
@@ -227,6 +252,7 @@ export function studioServiceWorkerCacheNames(
   return {
     precache: `${prefix}precache-v${version}-${buildId}`,
     immutable: `${prefix}immutable-v${version}`,
+    heavy: `${prefix}heavy-v${version}`,
     media: `${prefix}media-v${version}`,
     data: `${prefix}data-v${version}`,
     cover: `${prefix}cover-v${version}`,
