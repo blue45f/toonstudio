@@ -156,7 +156,11 @@ async function createFabricState(
 ): Promise<FabricState | null> {
   if (!supportsStudioGpuFabric(gpu)) return null;
   try {
-    const adapter = await gpu!.requestAdapter();
+    // 제품 전역 기준(bg3d Babylon·three WebGPU·ONNX 프로브)과 동일하게 고성능 GPU를
+    // 선호한다 — 옵션 없는 요청은 절전형 어댑터를 골라 편집기 GPU 작업이 느려질 수 있다.
+    const adapter = await gpu!.requestAdapter({
+      powerPreference: "high-performance",
+    });
     if (!adapter) return null;
     const device = await adapter.requestDevice();
     if (generation !== fabricGeneration) {
