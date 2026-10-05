@@ -3,10 +3,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  claimElementHeight,
   claimFirstRunNoticeHeight,
   claimOverlayClearance,
   FIRST_RUN_NOTICE_HEIGHT_PROPERTY,
   OVERLAY_CLEARANCE_PROPERTY,
+  SITE_OST_PILL_HEIGHT_PROPERTY,
 } from "./overlay-clearance";
 
 const root = document.documentElement;
@@ -24,6 +26,7 @@ afterEach(() => {
   document.body.replaceChildren();
   root.style.removeProperty(OVERLAY_CLEARANCE_PROPERTY);
   root.style.removeProperty(FIRST_RUN_NOTICE_HEIGHT_PROPERTY);
+  root.style.removeProperty(SITE_OST_PILL_HEIGHT_PROPERTY);
   vi.restoreAllMocks();
 });
 
@@ -125,6 +128,30 @@ describe("claimFirstRunNoticeHeight", () => {
 
     release();
     expect(root.style.getPropertyValue(FIRST_RUN_NOTICE_HEIGHT_PROPERTY)).toBe("");
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("claimElementHeight", () => {
+  it("지정한 변수에 요소 높이를 게시하고 해제하면 지우며, 다른 높이 변수와 독립이다", () => {
+    const resizeCallbacks: Array<() => void> = [];
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(callback: () => void) { resizeCallbacks.push(callback); }
+      observe() { /* 시험은 콜백을 직접 부른다 */ }
+      disconnect() { resizeCallbacks.length = 0; }
+    });
+    const { element, bounds } = overlay(760, 57.2);
+    const release = claimElementHeight(element, SITE_OST_PILL_HEIGHT_PROPERTY);
+
+    expect(root.style.getPropertyValue(SITE_OST_PILL_HEIGHT_PROPERTY)).toBe("58px");
+    expect(root.style.getPropertyValue(FIRST_RUN_NOTICE_HEIGHT_PROPERTY)).toBe("");
+
+    bounds.mockReturnValue(new DOMRect(0, 760, 240, 0));
+    for (const callback of resizeCallbacks) callback();
+    expect(root.style.getPropertyValue(SITE_OST_PILL_HEIGHT_PROPERTY)).toBe("0px");
+
+    release();
+    expect(root.style.getPropertyValue(SITE_OST_PILL_HEIGHT_PROPERTY)).toBe("");
     vi.unstubAllGlobals();
   });
 });

@@ -42,6 +42,10 @@ import {
   writeSiteBgmVocals,
 } from "@/shared/lib/site-background-music";
 import { useI18n } from "@/shared/lib/i18n";
+import {
+  SITE_OST_PILL_HEIGHT_PROPERTY,
+  useElementHeight,
+} from "@/shared/lib/overlay-clearance";
 import { cn } from "@/shared/lib/utils";
 
 import { SiteOstTrackSelect } from "./SiteOstTrackSelect";
@@ -182,6 +186,9 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
   const [sourceError, setSourceError] = useState("");
   const suspended = externallySuspended || experience.suspended || focusedTask;
   const hasPublishedOst = playlistTracks.length > 0;
+  // 접힌 알약이 떠 있는 동안 그 높이를 게시해 본문 하단 여백(--floating-stack-clearance)이
+  // 알약까지 포함한 스택 총높이를 보장하게 한다. 펼친 패널은 하단 모서리를 통째로 쓰므로 제외한다.
+  useElementHeight(asideRef, SITE_OST_PILL_HEIGHT_PROPERTY, !dock && !expanded);
   const playbackEpoch = useRef(0);
   // Async unlocks belong to this route and catalogue, not to a later screen or user intent.
   useEffect(() => () => { playbackEpoch.current += 1; }, [pathname, search, suspended, hasPublishedOst]);

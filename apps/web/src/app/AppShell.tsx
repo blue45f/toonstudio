@@ -181,7 +181,7 @@ export function AppShell({
   showCommandPalette = true,
   showGlobalOverlays = true,
   publicExperience = false,
-  mainClassName = "min-h-screen pb-20 outline-none md:pb-0",
+  mainClassName = "min-h-screen pb-[max(5rem,var(--floating-stack-clearance,0px))] outline-none md:pb-[var(--floating-stack-clearance,0px)]",
 }: AppShellProps) {
   const { pathname, search } = useLocation();
   const publicCreativeRoute = isPublicCreativeRoute(pathname);
