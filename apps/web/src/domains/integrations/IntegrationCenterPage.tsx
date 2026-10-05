@@ -12,6 +12,7 @@ import {
 } from "./IntegrationUi";
 import { INTEGRATION_CATEGORY_LABELS } from "./integration-platform-copy";
 import { IntegrationRuntimeWorkbench } from "./IntegrationRuntimeWorkbench";
+import { IpfsContentAddressPanel } from "./IpfsContentAddressPanel";
 import type {
   IntegrationCategory,
   IntegrationProviderStatusKind,
@@ -115,6 +116,7 @@ export function IntegrationCenterPage() {
         </div>
       </section>
       <IntegrationRuntimeWorkbench />
+      <IpfsContentAddressPanel />
       <section className="mb-7 grid gap-3 rounded-2xl border border-line bg-card p-4 lg:grid-cols-[1fr_14rem_14rem_auto]">
         <label className="relative block">
           <span className="sr-only">{ko ? "연동 검색" : "Search integrations"}</span>
