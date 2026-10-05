@@ -1,5 +1,5 @@
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { studioNpcCastSkinByKey } from "./studio-virtual-space-npc-cast";
+import { studioNpcCastLabel, studioNpcCastSkinByKey } from "./studio-virtual-space-npc-cast";
 import { studioNpcInteraction, studioNpcLabel } from "./studio-virtual-space-npc-director";
 import { studioWorldCanOccupy } from "./studio-virtual-space-world-pathfinding";
 import type { StudioVirtualSpaceWorldManifest, StudioWorldInteractionDefinition } from "./studio-virtual-space-world-manifest";
@@ -18,7 +18,14 @@ export function StudioVirtualSpaceNpcPanel({ manifest, onInteract }: StudioVirtu
     .flatMap((npc) => {
       const interaction = studioNpcInteraction(manifest, npc);
       if (!interaction) return [];
-      return [{ npc, interaction, skin: studioNpcCastSkinByKey(npc.skinKey), role: studioNpcLabel(npc) }];
+      // 이름만 필요하므로 텍스처를 만들지 않고 라벨을 조회한다(프로시저럴 스킨 생성은 캔버스가 필요하다).
+      // 레지스트리에 없는 키만 기존 폴백 스킨의 라벨을 쓴다.
+      let label = studioNpcCastLabel(npc.skinKey);
+      if (!label) {
+        const fallbackSkin = studioNpcCastSkinByKey(npc.skinKey);
+        label = { ko: fallbackSkin.labelKo, en: fallbackSkin.labelEn };
+      }
+      return [{ npc, interaction, label, role: studioNpcLabel(npc) }];
     });
   if (!assistants.length) return null;
 
@@ -27,16 +34,16 @@ export function StudioVirtualSpaceNpcPanel({ manifest, onInteract }: StudioVirtu
       <h2>{bt("스튜디오 도우미", "Studio helpers")}</h2>
       <p>{bt("NPC를 선택하면 연결된 작업 도구를 열어요.", "Choose an NPC to open their workspace tool.")}</p>
       <ul className="studio-vspace-npc-list">
-        {assistants.map(({ npc, interaction, skin, role }) => (
+        {assistants.map(({ npc, interaction, label, role }) => (
           <li key={npc.id}>
             <button
               type="button"
               className="studio-vspace-npc-button"
-              aria-label={`${bt(skin.labelKo, skin.labelEn)} · ${bt(role.ko, role.en)} · ${bt("열기", "Open")} ${bt(interaction.labelKo, interaction.labelEn)}`}
+              aria-label={`${bt(label.ko, label.en)} · ${bt(role.ko, role.en)} · ${bt("열기", "Open")} ${bt(interaction.labelKo, interaction.labelEn)}`}
               onClick={() => onInteract(interaction)}
             >
               <span className="studio-vspace-npc-identity">
-                <strong>{bt(skin.labelKo, skin.labelEn)}</strong>
+                <strong>{bt(label.ko, label.en)}</strong>
                 <span>{bt(role.ko, role.en)}</span>
               </span>
               <span className="studio-vspace-npc-action">{bt(interaction.labelKo, interaction.labelEn)} {bt("열기", "Open")}</span>
