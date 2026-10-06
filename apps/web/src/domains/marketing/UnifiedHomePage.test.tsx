@@ -42,4 +42,10 @@ describe("통합 홈(/)의 로그인 동선", () => {
     expect(container.querySelector("[aria-busy='true']")).not.toBeNull();
     expect(screen.queryByText("사이트 홈")).toBeNull();
   });
+
+  it("세션 게이트는 라우트 폴백과 같은 사이트 홈 실루엣을 재사용한다", () => {
+    const { container } = renderHome({ data: null, ready: false, status: "unauthenticated", update: async () => null });
+    expect(container.querySelector("[data-route-silhouette='site-home']")).not.toBeNull();
+    expect(screen.getByRole("status", { name: "창작 공간을 준비하고 있습니다." })).toBeTruthy();
+  });
 });
