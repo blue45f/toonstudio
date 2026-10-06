@@ -1,4 +1,5 @@
 {
+  "lintStrictMaxWarnings": 2421,
   "creatorRootFiles": 3477,
   "webAdminFiles": 74,
   "apiServerFiles": 67,

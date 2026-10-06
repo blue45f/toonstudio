@@ -31,6 +31,9 @@ export default defineConfig(
     // 커밋되진 않지만, eslint 기본 스캔은 gitignore 를 안 따라가므로 이 안에 있는 이 저장소의
     // 사본까지 전부 다시 스캔해버린다 — vitest.config.ts 의 동일 제외와 같은 이유).
     '**/.claude/worktrees/**',
+    // vite 가 deps 를 미리 번들해둔 로컬 캐시다(테스트 서버 실행 시 생성). eslint 기본 스캔은
+    // gitignore 를 안 따라가므로, 커밋되지 않는 생성물까지 스캔해 에러를 만든다.
+    '**/.qa/feedback-vite-cache/**',
     '**/.codex/**',
     '**/.remember/**',
     '**/scratch/**',
