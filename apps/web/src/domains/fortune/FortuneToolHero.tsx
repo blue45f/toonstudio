@@ -7,7 +7,9 @@ import { ELEMENT_COLORS, ELEMENT_KO, FORTUNE_TAB_META, type FortuneTab } from ".
 import { FORTUNE_TOOL_HERO, FORTUNE_ZODIAC_GLYPHS, type FortuneToolVisualKind } from "./fortune-tool-hero";
 import { drawFortuneTodayCards } from "./fortune-today-cards";
 import { getTarotVisual, tarotAccent, tarotFaceGradient } from "./tarot-visuals";
+import { getTarotArtPath } from "./tarot-art";
 import { TarotMotif } from "./TarotMotif";
+import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 
 // 착지 히어로(FortuneLunaHero)의 루나 패널과 같은 그라디언트 문법을 쓴다.
 const COMPANION_GRADIENT = "linear-gradient(135deg, oklch(0.87 0.13 172), oklch(0.7 0.18 296))";
@@ -37,15 +39,30 @@ function kstMonthDay(date: string): string {
 
 function ToolVisual({ kind, tab }: { kind: FortuneToolVisualKind; tab: FortuneTab }) {
   const [today] = useState(fortuneKstDate);
+  // 타로 카드 사진 아트의 로드 실패 상태 — 실패하면 그라디언트+글리프로 폴백한다.
+  const [artFailed, setArtFailed] = useState(false);
   if (kind === "tarot-card") {
     const [card] = drawFortuneTodayCards(today, 1);
     const visual = getTarotVisual(card.id);
     const accent = tarotAccent(visual.hue);
+    const artPath = getTarotArtPath(card.id);
+    const showArt = artPath !== null && !artFailed;
     return (
       <div className="relative flex h-full min-h-44 items-center justify-center overflow-hidden" style={{ backgroundImage: tarotFaceGradient(visual.hue) }}>
-        <div aria-hidden className="absolute right-6 top-1/2 -translate-y-1/2" style={{ color: accent, filter: `drop-shadow(0 4px 18px ${accent})` }}>
-          <TarotMotif id={visual.motif} size={96} strokeWidth={1.25} />
-        </div>
+        {showArt && (
+          <img
+            src={resolveAssetUrl(artPath)}
+            alt=""
+            aria-hidden
+            onError={() => setArtFailed(true)}
+            className="absolute inset-0 h-full w-full object-cover object-top"
+          />
+        )}
+        {!showArt && (
+          <div aria-hidden className="absolute right-6 top-1/2 -translate-y-1/2" style={{ color: accent, filter: `drop-shadow(0 4px 18px ${accent})` }}>
+            <TarotMotif id={visual.motif} size={96} strokeWidth={1.25} />
+          </div>
+        )}
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent p-4 pt-12">
           <span className="block text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: accent }}>
             {card.nameEn}

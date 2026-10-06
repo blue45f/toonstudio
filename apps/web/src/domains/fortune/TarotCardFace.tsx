@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 
 import { TarotMotif } from "./TarotMotif";
+import { getTarotArtPath } from "./tarot-art";
 import { getTarotVisual, tarotAccent, tarotFaceGradient } from "./tarot-visuals";
+import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 
 import { Card3D } from "@/shared/components/ui/card-3d";
 
@@ -16,13 +19,17 @@ interface TarotCardFaceProps {
   className?: string;
 }
 
-// 메이저 아르카나 카드 한 장 — 카드별 고유 색상(hue)·모티프 글리프로 그려지는
-// 생성형 타로 카드 페이스. 정/역방향을 글리프 회전과 배지로 구분한다.
+// 메이저 아르카나 카드 한 장 — 사진풍 아트가 있는 카드는 아트 페이스로,
+// 없거나 로드에 실패하면 카드별 고유 색상(hue)·모티프 글리프의 벡터 페이스로
+// 그려진다. 정/역방향은 아트·글리프 회전과 배지로 구분한다.
 export function TarotCardFace({ card, className }: TarotCardFaceProps) {
   const reducedMotion = useReducedMotion();
   const visual = getTarotVisual(card.id);
   const accent = tarotAccent(visual.hue);
   const reversed = card.type === "reversed";
+  const artPath = getTarotArtPath(card.id);
+  const [artFailed, setArtFailed] = useState(false);
+  const showArt = artPath !== null && !artFailed;
 
   return (
     <Card3D maxTilt={reducedMotion ? 0 : 14} scale={reducedMotion ? 1 : 1.04} className={className}>
@@ -34,6 +41,17 @@ export function TarotCardFace({ card, className }: TarotCardFaceProps) {
         boxShadow: `0 14px 36px -10px oklch(0.3 0.12 ${visual.hue} / 0.5)`,
       }}
     >
+      {/* 사진풍 카드 아트 — 로드 실패 시 벡터 페이스로 폴백 */}
+      {showArt && (
+        <img
+          src={resolveAssetUrl(artPath)}
+          alt=""
+          aria-hidden
+          onError={() => setArtFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+          style={reversed ? { transform: "rotate(180deg)" } : undefined}
+        />
+      )}
       {/* 코너 글로 */}
       <div
         aria-hidden
@@ -53,7 +71,10 @@ export function TarotCardFace({ card, className }: TarotCardFaceProps) {
       />
 
       {/* 상단: 로마 숫자 + 영문명 */}
-      <div className="relative z-10 border-b pb-2" style={{ borderColor: `${accent}40` }}>
+      <div
+        className="relative z-10 border-b pb-2"
+        style={{ borderColor: `${accent}40`, background: showArt ? "rgba(0,0,0,0.38)" : undefined }}
+      >
         <span className="font-display text-sm font-extrabold tracking-widest" style={{ color: accent }}>
           {visual.roman}
         </span>
@@ -62,20 +83,25 @@ export function TarotCardFace({ card, className }: TarotCardFaceProps) {
         </span>
       </div>
 
-      {/* 중앙: 모티프 글리프 (은은한 떠오름 + 글로우) */}
+      {/* 중앙: 사진 아트가 없을 때만 모티프 글리프 (은은한 떠오름 + 글로우) */}
       <div className="relative z-10 flex flex-1 items-center justify-center">
-        <motion.div
-          className="grid place-items-center"
-          style={{ transform: reversed ? "rotate(180deg)" : undefined, filter: `drop-shadow(0 3px 14px ${accent})` }}
-          animate={reducedMotion ? { y: 0, scale: 1 } : { y: [0, -5, 0], scale: [1, 1.06, 1] }}
-          transition={{ duration: 3.4, ease: "easeInOut", repeat: 0 }}
-        >
-          <TarotMotif id={visual.motif} size={64} />
-        </motion.div>
+        {!showArt && (
+          <motion.div
+            className="grid place-items-center"
+            style={{ transform: reversed ? "rotate(180deg)" : undefined, filter: `drop-shadow(0 3px 14px ${accent})` }}
+            animate={reducedMotion ? { y: 0, scale: 1 } : { y: [0, -5, 0], scale: [1, 1.06, 1] }}
+            transition={{ duration: 3.4, ease: "easeInOut", repeat: 0 }}
+          >
+            <TarotMotif id={visual.motif} size={64} />
+          </motion.div>
+        )}
       </div>
 
       {/* 하단: 한글명 + 정/역 배지 + 키워드 */}
-      <div className="relative z-10 border-t pt-2" style={{ borderColor: `${accent}40` }}>
+      <div
+        className="relative z-10 border-t pt-2"
+        style={{ borderColor: `${accent}40`, background: showArt ? "rgba(0,0,0,0.38)" : undefined }}
+      >
         <span className="block font-serif text-lg font-extrabold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
           {card.name}
         </span>
