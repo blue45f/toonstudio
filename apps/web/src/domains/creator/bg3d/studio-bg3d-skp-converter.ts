@@ -3,8 +3,11 @@
  *
  * .skp는 Trimble의 독점 바이너리 포맷이지만, MIT 라이선스의 OpenSKP(openskp, npm)가
  * 브라우저에서 동작하는 순수 TypeScript 파서를 제공한다(VFF 2021+ / 레거시 MFC 2013–2020).
- * 이 파사드는 그 패키지를 선택적 동적 로딩으로만 참조한다 — 패키지가 설치돼 있지 않으면
- * 정직하게 "변환기를 사용할 수 없음"으로 실패하고, 가짜 변환이나 조용한 스킵을 하지 않는다.
+ *
+ * 활성화 상태 (2026-10-06): openskp 1.3.0이 정식 의존성으로 선언됐고, 아래 로더는 실제
+ * 동적 import로 번들의 lazy chunk에 포함된다. 패키지가 없던 시절의 @vite-ignore 우회는
+ * 제거됐다. 동적 import 자체가 실패하는 경우(청크 로드 실패 등)에만 정직하게 "변환기를
+ * 사용할 수 없음"으로 실패하고, 가짜 변환이나 조용한 스킵을 하지 않는다.
  *
  * 브라우저 변환 경로(공식 TS 문서 기준): `toGLB(buildScene(arrayBuffer))`.
  * 단계 추출(선화/음영/밑색)은 변환된 GLB가 기존 3D 가져오기·멀티패스 PSD 파이프라인에
@@ -40,8 +43,6 @@ export interface OpenSkpModuleLike {
 
 export type OpenSkpModuleLoader = () => Promise<OpenSkpModuleLike>;
 
-const OPENSKP_MODULE_ID = "openskp";
-
 function isOpenSkpModuleLike(value: unknown): value is OpenSkpModuleLike {
   if (typeof value !== "object" || value === null) return false;
   const candidate = value as { buildScene?: unknown; toGLB?: unknown };
@@ -51,7 +52,7 @@ function isOpenSkpModuleLike(value: unknown): value is OpenSkpModuleLike {
 async function loadOpenSkpModuleDefault(): Promise<OpenSkpModuleLike> {
   let loaded: unknown;
   try {
-    loaded = await import(/* @vite-ignore */ OPENSKP_MODULE_ID);
+    loaded = await import("openskp");
   } catch {
     throw new StudioBg3dSkpConverterUnavailableError();
   }
