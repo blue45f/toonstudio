@@ -34,6 +34,16 @@ describe("route loading fallback", () => {
     ["/home", "studio-home"],
     ["/learn/process", "learn"],
     ["/learn", "learn"],
+    ["/", "site-home"],
+    ["/market", "market"],
+    ["/fortune", "fortune"],
+    ["/fortune/tarot", "fortune"],
+    ["/discover", "catalog-grid"],
+    ["/search", "catalog-grid"],
+    ["/library", "catalog-grid"],
+    ["/explore", "catalog-grid"],
+    ["/recommend", "catalog-grid"],
+    ["/ranking", "catalog-rank"],
   ])("%s에서는 일반 카드 그리드 대신 %s 실루엣 스켈레톤을 보여 준다", (pathname, family) => {
     render(
       <MemoryRouter initialEntries={[pathname]}>
@@ -47,12 +57,25 @@ describe("route loading fallback", () => {
 
   it("실루엣 대상이 아닌 경로는 일반 카드 스켈레톤을 유지한다", () => {
     render(
-      <MemoryRouter initialEntries={["/market"]}>
+      <MemoryRouter initialEntries={["/settings"]}>
         <RouteFallback />
       </MemoryRouter>,
     );
     expect(document.querySelector("[data-route-silhouette]")).toBeNull();
     expect(document.querySelector("[data-skeleton-card]")).not.toBeNull();
+  });
+
+  it("골격이 다른 하위 경로는 화면군에 억지로 넣지 않는다", () => {
+    for (const pathname of ["/market/browse", "/market/checkout/demo", "/fortune-hub"]) {
+      const { unmount } = render(
+        <MemoryRouter initialEntries={[pathname]}>
+          <RouteFallback />
+        </MemoryRouter>,
+      );
+      expect(document.querySelector("[data-route-silhouette]"), pathname).toBeNull();
+      expect(document.querySelector("[data-skeleton-card]"), pathname).not.toBeNull();
+      unmount();
+    }
   });
 
   it("suggests popular routes with working links when loading stalls", async () => {

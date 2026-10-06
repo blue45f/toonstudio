@@ -7,7 +7,7 @@ import { LoadingState } from "@/shared/components/LoadingState";
 import {
   RouteSilhouetteSkeleton,
   type RouteSilhouetteFamily,
-} from "./route-fallback-silhouette";
+} from "@/shared/components/route-silhouette";
 
 import {
   defineBilingualText,
@@ -16,7 +16,12 @@ import {
 import { useT } from "@/shared/lib/i18n";
 import { resolveSiteRouteExperience } from "@/shared/lib/site-route-experience";
 
-/** 경로가 속한 실루엣 화면군. 어느 군에도 속하지 않으면 null(일반 카드 스켈레톤 유지). */
+/**
+ * 경로가 속한 실루엣 화면군. 어느 군에도 속하지 않으면 null(일반 카드 스켈레톤 유지).
+ * 매핑은 "첫 화면 골격이 같은가"가 기준이다 — 본문이 목록형이라도 상세·도구 화면처럼
+ * 골격이 다른 하위 경로는 군에 넣지 않는다. 규격과 역할 경계는
+ * shared/components/route-silhouette.tsx 머리말이 정본이다.
+ */
 function routeSilhouetteFamily(pathname: string): RouteSilhouetteFamily | null {
   const path = pathname.replace(/\/+$/u, "") || "/";
   if (path === "/studio/space" || /^\/studio\/p\/[^/]+\/space(?:\/.*)?$/u.test(path)) {
@@ -24,6 +29,19 @@ function routeSilhouetteFamily(pathname: string): RouteSilhouetteFamily | null {
   }
   if (path === "/home") return "studio-home";
   if (path === "/learn" || path.startsWith("/learn/")) return "learn";
+  if (path === "/") return "site-home";
+  if (path === "/market") return "market";
+  if (path === "/fortune" || path.startsWith("/fortune/")) return "fortune";
+  if (path === "/ranking") return "catalog-rank";
+  if (
+    path === "/discover"
+    || path === "/search"
+    || path === "/library"
+    || path === "/explore"
+    || path === "/recommend"
+  ) {
+    return "catalog-grid";
+  }
   return null;
 }
 
@@ -99,6 +117,10 @@ const QUICK_LINKS = [
  * Route loading fallback mirrors the eventual page structure. When a chunk or loader takes longer
  * than a normal transition, it explains what is happening instead of leaving an endless silent
  * skeleton. RouteStage owns the final recovery controls after the longer timeout.
+ *
+ * 경계: 이 폴백은 Suspense 경계(코드 청크·셸 준비) 전용이다. 페이지가 마운트된 뒤의
+ * 데이터 로딩 표시는 페이지 내부 스켈레톤이 소유하므로, 페이지 안에서 이 폴백을
+ * 다시 렌더해 이중으로 겹치지 않는다 (공용 규격: shared/components/route-silhouette.tsx).
  */
 export function RouteFallback({ accessibleTitle }: { readonly accessibleTitle?: string }) {
   const t = useT();
