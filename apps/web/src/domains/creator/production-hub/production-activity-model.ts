@@ -69,7 +69,7 @@ const TARGET_KIND_LABELS: Readonly<Record<string, BilingualLabel>> = Object.free
   collaboration: { ko: "협업 구성", en: "Collaboration" },
   "external-review-access": { ko: "외부 검수", en: "External review" },
   "planning-snapshot": { ko: "기획 스냅샷", en: "Planning snapshot" },
-  "schedule-scenario": { ko: "일정 시나리오", en: "Schedule scenario" },
+  "schedule-scenario": { ko: "일정 회복 계획", en: "Schedule recovery plan" },
   "automation-execution": { ko: "자동화 실행", en: "Automation run" },
 });
 

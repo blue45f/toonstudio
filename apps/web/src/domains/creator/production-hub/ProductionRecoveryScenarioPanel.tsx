@@ -190,7 +190,7 @@ export function ProductionRecoveryScenarioPanel({
         type: "upsert-task-batch",
         tasks: appliedTasks,
         expectedTasks: originalTasks,
-      }, `${scenario.title} 복구 시나리오를 원자적으로 적용했습니다.`);
+      }, `${scenario.title} 복구 계획을 적용했습니다.`);
       setLastApplied({
         scenarioId: scenario.id,
         title: scenario.title,
@@ -201,7 +201,7 @@ export function ProductionRecoveryScenarioPanel({
     } catch (cause) {
       setOperationError(cause instanceof Error
         ? cause.message
-        : "복구 시나리오를 안전하게 적용하지 못했습니다.");
+        : "복구 계획을 적용하지 못했습니다.");
     } finally {
       setApplyingScenarioId(null);
     }
@@ -221,12 +221,12 @@ export function ProductionRecoveryScenarioPanel({
         expectedTasks: aggregate.revision > lastApplied.baseRevision
           ? lastApplied.appliedTasks.map((expected) => taskById(aggregate, expected.id) ?? expected)
           : lastApplied.appliedTasks,
-      }, `${lastApplied.title} 복구 시나리오를 원자적으로 되돌렸습니다.`);
+      }, `${lastApplied.title} 복구 계획을 되돌렸습니다.`);
       setLastApplied(null);
     } catch (cause) {
       setOperationError(cause instanceof Error
         ? cause.message
-        : "다른 변경이 있어 복구 시나리오를 안전하게 되돌리지 못했습니다.");
+        : "다른 변경이 있어 복구 계획을 되돌리지 못했습니다.");
     } finally {
       setUndoing(false);
     }
@@ -244,19 +244,19 @@ export function ProductionRecoveryScenarioPanel({
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 text-accent">
               <FlaskConical className="size-4" aria-hidden="true" />
-              <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "en", "Recovery Scenario Lab")}</p>
+              <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "en", "Recovery Plan Lab")}</p>
             </div>
             <h2 id="production-recovery-scenarios-heading" className="mt-2 text-lg font-black text-fg">
-              {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "복구 시나리오 비교")}</h2>
+              {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "복구 계획 비교")}</h2>
             <p className="mt-1 text-xs leading-5 text-fg-2">
               {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "일정·지원 인력·차단 해소·선행 작업·범위 분할을 원본 데이터에 적용하지 않고 먼저 계산합니다. 안전하게 되돌릴 수 있는 변경만 사용자 확인 후 적용할 수 있습니다.")}</p>
           </div>
           {selectableSignals.length > 0 ? (
             <label className="flex min-h-10 min-w-0 max-w-full items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2 sm:min-w-72">
               <Workflow className="size-4 shrink-0 text-fg-3" aria-hidden="true" />
-              <span className="sr-only">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "시나리오를 비교할 위험")}</span>
+              <span className="sr-only">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "계획을 비교할 위험")}</span>
               <select
-                aria-label={translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "시나리오를 비교할 위험")}
+                aria-label={translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "계획을 비교할 위험")}
                 value={selectedSignal?.id ?? ""}
                 onChange={(event) => setSelectedSignalId(event.target.value)}
                 className="min-w-0 flex-1 truncate bg-transparent font-semibold text-fg outline-none"
@@ -291,7 +291,7 @@ export function ProductionRecoveryScenarioPanel({
           <button
             type="button"
             className={buttonClass({ variant: "outline", size: "sm" })}
-            aria-label={`${lastApplied.title} 복구 시나리오 되돌리기`}
+            aria-label={`${lastApplied.title} 복구 계획 되돌리기`}
             disabled={!canEdit || undoConflictTaskIds.length > 0 || applyingScenarioId !== null || undoing}
             onClick={() => void undoLastScenario()}
           >
@@ -357,7 +357,7 @@ export function ProductionRecoveryScenarioPanel({
                     <button
                       type="button"
                       className={buttonClass({ size: "sm" })}
-                      aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "{v0} 복구 시나리오 적용"), { v0: String(scenario.title) })}
+                      aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "{v0} 복구 계획 적용"), { v0: String(scenario.title) })}
                       disabled={!canEdit || applyingScenarioId !== null || undoing}
                       onClick={() => void applyScenario(scenario)}
                     >
@@ -375,7 +375,7 @@ export function ProductionRecoveryScenarioPanel({
       ) : (
         <div className="p-10 text-center">
           <CheckCircle2 className="mx-auto size-8 text-good" aria-hidden="true" />
-          <p className="mt-3 text-sm font-black text-fg">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "비교할 복구 시나리오가 없습니다")}</p>
+          <p className="mt-3 text-sm font-black text-fg">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "비교할 복구 계획이 없습니다")}</p>
           <p className="mt-1 text-xs leading-5 text-fg-2">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionRecoveryScenarioPanel", "ko", "작업에 마감·공수·담당자·선행 관계가 연결되면 자동으로 후보를 계산합니다.")}</p>
         </div>
       )}

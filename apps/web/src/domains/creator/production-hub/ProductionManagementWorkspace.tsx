@@ -340,10 +340,10 @@ export function ProductionManagementWorkspace({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="accent">{roleCopy.label}</Pill>
-              <Pill tone={healthTone(overview.health)}>{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "운영 안정도 ")}{overview.healthScore} · {overview.healthLabel}</Pill>
+              <Pill tone={healthTone(overview.health)}>{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "건강 점수 ")}{overview.healthScore} · {overview.healthLabel}</Pill>
             </div>
             <h2 id="production-management-heading" className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">
-              {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "프로젝트 운영 조종석")}</h2>
+              {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "프로젝트 상태 한눈에")}</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">{roleCopy.description}</p>
             <p className="mt-2 max-w-3xl text-xs leading-5 text-fg-3">
               {translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "실제 회차·업무·검수·배정 데이터에서 우선순위를 계산합니다. 숫자를 누르면 원인이 되는 작업으로 이동합니다.")}</p>
@@ -360,12 +360,12 @@ export function ProductionManagementWorkspace({
           <div className={cn("rounded-2xl border p-4", toneClass(healthTone(overview.health)))}>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "운영 안정도 근거")}</p>
+                <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">{translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "건강 점수 근거")}</p>
                 <p className="mt-1 text-3xl font-black text-fg">{overview.healthScore}</p>
               </div>
               <Gauge className="size-8" aria-hidden="true" />
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-canvas/70" aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "운영 안정도 {v0}점"), { v0: String(overview.healthScore) })}>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-canvas/70" aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.production.hub.ProductionManagementWorkspace", "ko", "건강 점수 {v0}점"), { v0: String(overview.healthScore) })}>
               <div className="h-full rounded-full bg-current" style={{ width: `${overview.healthScore}%` }} />
             </div>
             <ul className="mt-3 space-y-1.5 text-xs leading-5 text-fg-2">

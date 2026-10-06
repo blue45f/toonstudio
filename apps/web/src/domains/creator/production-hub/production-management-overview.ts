@@ -629,7 +629,7 @@ function buildActions(input: {
         detail: recommendation
           ? `${productionDepartment(departmentKey).label} · ${recommendation.candidateName} 추천 · 예상 ${recommendation.projectedLoadPercent}%`
           : `${productionDepartment(departmentKey).label} · 책임자 미배정 · 적합 후보 없음`,
-        actionLabel: recommendation ? "추천 배정 확인" : "담당 역할 보강",
+        actionLabel: recommendation ? "담당자 추천 확인" : "담당 역할 보강",
         href: recommendation ? `${projectBase}/overview#assignment-recommendations` : `${projectBase}/settings`,
         dueAt: task.dueAt,
         sourceId: task.id,
@@ -735,7 +735,7 @@ function buildActions(input: {
       severity: predictiveActionSeverity(signal),
       title: signal.title,
       detail: `${signal.summary} · ${signal.impact}`,
-      actionLabel: signal.existingRiskId ? "위험 원장 확인" : "예측 근거 확인",
+      actionLabel: signal.existingRiskId ? "위험 목록 확인" : "예측 근거 확인",
       href: signal.existingRiskId ? `${projectBase}/planning` : `${projectBase}/overview#predictive-risk-intelligence`,
       dueAt: signal.dueAt,
       sourceId: signal.taskId ?? signal.id,

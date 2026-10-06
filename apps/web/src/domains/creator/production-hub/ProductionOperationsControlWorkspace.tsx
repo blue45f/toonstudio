@@ -49,7 +49,7 @@ const VIEWS: readonly {
   readonly description: string;
   readonly icon: LucideIcon;
 }[] = [
-  { id: "schedule", label: "일정 회복", description: "임계경로·대안", icon: GitBranch },
+  { id: "schedule", label: "일정 회복", description: "핵심 흐름·대안", icon: GitBranch },
   { id: "inbox", label: "개인 작업함", description: "내 업무·검수", icon: ClipboardList },
   { id: "calendar", label: "근무 캘린더", description: "휴가·가용량", icon: CalendarDays },
   { id: "cuts", label: "컷 분배", description: "컷 범위 배정", icon: Scissors },
@@ -327,7 +327,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
 
   const [automationName, setAutomationName] = useState("마감 경과 즉시 알림");
   const [automationTrigger, setAutomationTrigger] = useState<ProductionAutomationRule["trigger"]>("due-passed");
-  const [savedViewName, setSavedViewName] = useState("내 운영 조종석");
+  const [savedViewName, setSavedViewName] = useState("내 운영 보기");
   const [savedViewDensity, setSavedViewDensity] = useState<ProductionSavedView["density"]>("comfortable");
   const [savedViewShared, setSavedViewShared] = useState(false);
 
@@ -690,14 +690,14 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                       : `게시 여유 ${Math.floor(schedule.marginHours / 24)}일`}
               </Pill>
             </div>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">제작 운영 완성도 센터</h2>
+            <h2 className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">운영 센터</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
-              실제 근무 캘린더, 임계경로, 컷 배정, 플랫폼별 연재, 외부 검수, 자동화와 개인화 설정을 한곳에서 운영합니다.
+              실제 근무 캘린더, 마감을 좌우하는 핵심 작업, 컷 배정, 플랫폼별 연재, 외부 검수, 자동화와 개인화 설정을 한곳에서 관리합니다.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl border border-line bg-panel p-3">
-              <p className="text-[0.6875rem] font-bold text-fg-3">임계 업무</p>
+              <p className="text-[0.6875rem] font-bold text-fg-3">핵심 업무</p>
               <p className="mt-1 text-xl font-black text-fg">{schedule.criticalTaskIds.length}</p>
             </div>
             <div className="rounded-xl border border-line bg-panel p-3">
@@ -752,8 +752,8 @@ export function ProductionOperationsControlWorkspace({  aggregate,
           </div>
 
           <Section
-            title="일정 회복 시나리오"
-            description="현재 계획과 검수 병렬화·핵심 작화 분할·임계 공정 용량 추가안을 동일 기준으로 비교합니다. 적용 전 예상 완료일, 절감 시간과 부작용을 확인할 수 있습니다."
+            title="일정 회복 계획"
+            description="현재 계획과 검수 병렬화·핵심 작화 분할·핵심 공정 인원 추가안을 동일 기준으로 비교합니다. 적용 전 예상 완료일, 절감 시간과 부작용을 확인할 수 있습니다."
           >
             <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
               {(schedule.inputReadiness.complete ? scenarios : []).map((scenario) => {
@@ -812,7 +812,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
           </Section>
 
           <Section
-            title="임계경로와 여유시간"
+            title="핵심 일정과 여유 시간"
             description="공수의 3점 추정값과 의존관계를 사용해 가장 긴 제작 경로, 총 여유시간과 근무 캘린더 기준 예상 완료일을 계산합니다."
             action={schedule.cycleTaskIds.length > 0 ? <Pill tone="danger">순환 의존성 해결 필요</Pill> : <Pill tone="success">의존성 정상</Pill>}
           >
@@ -834,7 +834,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                       <tr key={node.task.id} className={cn("border-t border-line text-xs", node.critical && "bg-bad/5")}>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-2">
-                            {node.critical ? <Pill tone="danger">임계</Pill> : <Pill tone="neutral">여유</Pill>}
+                            {node.critical ? <Pill tone="danger">핵심</Pill> : <Pill tone="neutral">여유</Pill>}
                             <span className="font-bold text-fg">{node.task.title}</span>
                           </div>
                         </td>
@@ -1001,7 +1001,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
 
           <Section
             title="등록된 예외 일정"
-            description="휴가·공휴일·가용량 변경은 임계경로와 담당자 배정 예측에 즉시 반영됩니다."
+            description="휴가·공휴일·가용량 변경은 핵심 작업 흐름과 담당자 배정 예측에 즉시 반영됩니다."
           >
             <div className="space-y-2">
               {((aggregate.resourceCalendars ?? []).find((entry) => entry.assignmentId === selectedAssignmentId)?.exceptions ?? []).map((exception) => (

@@ -105,7 +105,7 @@ describe("production management overview", () => {
       .toBeGreaterThan(overview.assignmentRecommendations[0]?.currentLoadPercent ?? 0);
     expect(overview.actions.some((action) =>
       action.id === `unassigned-task:${task.id}`
-      && action.actionLabel === "추천 배정 확인"))
+      && action.actionLabel === "담당자 추천 확인"))
       .toBe(true);
   });
 
