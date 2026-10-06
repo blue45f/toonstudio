@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { deflateSync } from "node:zlib";
 
+import { create as createSkpBuilder } from "openskp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -706,13 +707,27 @@ describe("planStudioBg3dModelImports", () => {
     expect(plan.ignoredFiles).toEqual([]);
   });
 
-  it("fails .skp conversion honestly when the OpenSKP converter is not installed", async () => {
-    // openskp is an optional dependency that is not installed in this repo state, so the
-    // dedicated unavailable code (with the DAE·GLB fallback guidance) must surface as-is.
+  it("rejects a corrupt .skp file with the dedicated parse-failed code", async () => {
+    // openskp가 정식 의존성으로 활성화된 상태에서는 모듈 로드는 성공하고, 파서가
+    // 깨진 바이트를 거부하므로 parse-failed 코드가 표면화돼야 한다.
     const skp = sourceFile("room.skp", new Uint8Array([7, 8, 9]));
     await expect(convertStudioBg3dModelFilesToGlb([skp])).rejects.toMatchObject({
-      code: "skp-converter-unavailable",
+      code: "skp-parse-failed",
     });
+  });
+
+  it("converts a real .skp file to GLB through the OpenSKP converter", async () => {
+    vi.stubGlobal("FileReader", TestFileReader);
+    // openskp의 작성기(SkpBuilder)로 실제 .skp 바이트를 만들어 가져오기 경로 전체를 태운다.
+    const builder = createSkpBuilder();
+    builder.addFace([[0, 0, 0], [100, 0, 0], [100, 100, 0], [0, 100, 0]]);
+    const skp = sourceFile("room.skp", builder.toBytes());
+    const converted = await convertStudioBg3dModelFilesToGlb([skp]);
+    expect(converted).toHaveLength(1);
+    const glb = new Uint8Array(await converted[0].arrayBuffer());
+    expect(glb.byteLength).toBeGreaterThan(0);
+    // GLB magic "glTF"
+    expect([...glb.slice(0, 4)]).toEqual([0x67, 0x6c, 0x54, 0x46]);
   });
 
   it("plans all standard primary formats while retaining bounded companion resources", () => {
