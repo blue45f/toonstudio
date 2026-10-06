@@ -2,7 +2,14 @@
  * 콘티룸·녹음부스 시간제 예약 상태 머신 (D-4).
  *
  * 서버 없이 동작하는 순수 함수 집합. 모든 시각은 epoch ms, 날짜 표기는 KST(Asia/Seoul) 기준.
- * 부스/룸 단위 예약만 다루며, 스페이스 전체 예약(E-5)은 후속 티켓에서 다룬다.
+ * 부스/룸 단위 예약만 다룬다.
+ *
+ * 보존 근거 (웨이브 5 U4, 2026-10-06): D-4 전용 UI(예약 패널·일정 탭)는 미배선이라 제거됐지만,
+ * 이 모듈의 KST 헬퍼(formatKstDate·formatKstTime·kstDayStartMs·kstWallToEpochMs·kstWeekdayIndex)와
+ * 상수 2종(STUDIO_BOOKING_MAX_RECURRENCE·STUDIO_BOOKING_MAX_NOTE_LENGTH)은 라이브 E-5 모듈
+ * (studio-virtual-space-space-booking.ts)이 import·재노출하므로 모듈째 삭제할 수 없다.
+ * 부스 상태 머신 함수군은 현재 전용 테스트만 소비한다 — E-5가 KST 헬퍼를 자체 보유하게 되면
+ * 그때 이 모듈의 잔여분 삭제 여부를 다시 판단한다.
  */
 
 export const STUDIO_BOOKING_TIMEZONE = "Asia/Seoul";
