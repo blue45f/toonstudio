@@ -39,7 +39,7 @@ export interface StudioIceCredentialScope {
 }
 
 export interface StudioIceCredentialResult {
-  readonly iceServers: readonly RTCIceServer[];
+  readonly iceServers: readonly StudioTurnIceServer[];
   /** TURN 자격증명의 수명(초). 0이면 만료 없는 STUN 전용 결과다. */
   readonly ttlSeconds: number;
 }
@@ -57,7 +57,7 @@ export interface StudioIceConfigurationCacheDependencies {
 }
 
 interface StudioIceCacheEntry {
-  readonly servers: readonly RTCIceServer[];
+  readonly servers: readonly StudioTurnIceServer[];
   readonly expiresAtMs: number;
   readonly refreshAfterMs: number;
 }
@@ -66,9 +66,17 @@ function scopeKey(scope: StudioIceCredentialScope): string {
   return JSON.stringify([scope.workId, scope.roomId]);
 }
 
+/**
+ * TURN REST 자격증명 URL은 `credentialType` 쿼리를 쓰지만 표준 RTCIceServer 타입엔
+ * 필드가 없다. 실제 브라우저가 받는 형태를 그대로 다루도록 로컬 확장을 쓴다.
+ */
+export type StudioTurnIceServer = RTCIceServer & {
+  readonly credentialType?: string;
+};
+
 function cloneIceServers(
-  servers: readonly RTCIceServer[],
-): RTCIceServer[] {
+  servers: readonly StudioTurnIceServer[],
+): StudioTurnIceServer[] {
   return servers.map((server) => ({
     urls:
       typeof server.urls === "string" || server.urls === undefined
@@ -151,6 +159,7 @@ export class StudioIceConfigurationCache {
     const source = this.source;
     const controller = new AbortController();
     this.abortControllers.add(controller);
+    const self: { current: Promise<void> | null } = { current: null };
     const refresh = (async () => {
       try {
         const result = await source(scope, controller.signal);
@@ -165,9 +174,10 @@ export class StudioIceConfigurationCache {
         if (!this.disposed) this.lastFailureAt.set(key, this.now());
       } finally {
         this.abortControllers.delete(controller);
-        if (this.inFlight.get(key) === refresh) this.inFlight.delete(key);
+        if (this.inFlight.get(key) === self.current) this.inFlight.delete(key);
       }
     })();
+    self.current = refresh;
     this.inFlight.set(key, refresh);
     return refresh;
   }

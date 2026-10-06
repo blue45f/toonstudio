@@ -13,7 +13,14 @@ describe("StudioVirtualSpaceNpcPanel", () => {
     const interact = vi.fn();
     const view = render(<StudioVirtualSpaceNpcPanel manifest={DEFAULT_STUDIO_WORLD_MANIFEST} onInteract={interact} />);
     const buttons = view.getAllByRole("button");
-    expect(buttons).toHaveLength(DEFAULT_STUDIO_WORLD_MANIFEST.npcs.length);
+    // 상주 확장 NPC 중 docent(storyboard)·courier(release)·barista(teams)는 방 상호작용이
+    // 없어 도구 버튼이 아니다 — studioNpcRole이 resident로 떨어져 액션이 없다.
+    // 패널은 도구를 여는 선택지만 제공하므로 상호작용이 있는 NPC만 버튼이 된다.
+    const interactiveNpcs = DEFAULT_STUDIO_WORLD_MANIFEST.npcs.filter((actor) =>
+      studioNpcInteraction(DEFAULT_STUDIO_WORLD_MANIFEST, actor) !== null,
+    );
+    expect(buttons).toHaveLength(interactiveNpcs.length);
+    expect(interactiveNpcs.length).toBeLessThan(DEFAULT_STUDIO_WORLD_MANIFEST.npcs.length);
     expect(interact).not.toHaveBeenCalled();
     const producer = view.getByRole("button", { name: /Yoon · Producer · NPC · Producer/u });
     producer.focus();

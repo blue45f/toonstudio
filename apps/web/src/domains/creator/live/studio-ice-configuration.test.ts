@@ -22,7 +22,7 @@ const TURN_RESULT: StudioIceCredentialResult = {
       urls: ["turn:turn.cloudflare.com:3478?transport=udp"],
       username: "cf-user",
       credential: "cf-credential",
-      credentialType: "password",
+      credentialType: "password" as const,
     },
   ],
   ttlSeconds: 14_400,
@@ -147,11 +147,11 @@ describe("StudioIceConfigurationCache", () => {
 
   it("동시 갱신 요청은 발급 한 번으로 합쳐진다", async () => {
     const cache = new StudioIceConfigurationCache({ now: () => 1_000 });
-    let release: ((result: StudioIceCredentialResult) => void) | null = null;
+    const releases: ((result: StudioIceCredentialResult) => void)[] = [];
     const source = vi.fn(
       () =>
         new Promise<StudioIceCredentialResult>((resolve) => {
-          release = resolve;
+          releases.push(resolve);
         }),
     );
     cache.registerSource(source);
@@ -159,7 +159,7 @@ describe("StudioIceConfigurationCache", () => {
     const first = cache.ensureFresh(SCOPE);
     const second = cache.ensureFresh(SCOPE);
     expect(source).toHaveBeenCalledTimes(1);
-    release?.(TURN_RESULT);
+    releases[0]?.(TURN_RESULT);
     await Promise.all([first, second]);
     expect(cache.getIceServers(SCOPE)).toEqual(TURN_RESULT.iceServers);
   });
