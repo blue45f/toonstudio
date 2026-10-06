@@ -38,6 +38,7 @@ import {
 } from "./studio-virtual-space-interactable-objects";
 import { objectReactionFrame, type StudioObjectReactionFrame } from "./studio-virtual-space-object-reaction";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
+import { playStudioSfxSound } from "./studio-virtual-space-sound-engine";
 import {
   studioWorldInsideStageApron,
   studioWorldInteractableKindForInteraction,
@@ -454,6 +455,7 @@ export class StudioInteractionFxRuntime {
     // 내가 직접 발동해 상태가 바뀌면 소유는 나에게 넘어오고, 전이를 피어에게 알린다.
     // (상대가 추출한 커피를 내가 가져가는 경우도 이 경로로 idle 전파가 나간다.)
     if (machine.runtime.stateKey !== before) {
+      playStudioSfxSound("activate", 1);
       this.remoteMachines.delete(machine.interaction.id);
       this.emitObjectStateChange(machine.interaction.id, machine.runtime);
     }
@@ -491,6 +493,8 @@ export class StudioInteractionFxRuntime {
     const before = fixture.runtime.stateKey;
     fixture.runtime = activateInteractableRuntime(advanceInteractableRuntime(fixture.runtime, time), time).runtime;
     if (fixture.runtime.stateKey === before) return;
+    // 상태가 실제로 바뀐 로컬 활성화에만 확인음 하나. 원격 적용 경로는 이 메서드를 타지 않는다.
+    playStudioSfxSound("activate", 1);
     this.remoteFixtures.delete(fixture.interaction.id);
     this.emitObjectStateChange(fixture.interaction.id, fixture.runtime);
     const notice = interactableStateNotice(fixture.kind, fixture.runtime.stateKey);

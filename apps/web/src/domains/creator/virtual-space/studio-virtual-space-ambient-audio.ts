@@ -1,4 +1,10 @@
-import { STUDIO_AMBIENT_TRACKS, type StudioAmbientTrackId } from "./studio-virtual-space-ambient-tracks";
+import {
+  STUDIO_AMBIENT_TRACKS,
+  type StudioAmbientRecordingTrack,
+  type StudioAmbientSynthTrack,
+  type StudioAmbientTrackId,
+} from "./studio-virtual-space-ambient-tracks";
+import { createStudioAmbientSynthBuffer } from "./studio-virtual-space-ambient-synth";
 
 export type StudioAmbientPauseReason = "world" | "focus" | "away" | "hidden" | "blur" | null;
 export interface StudioAmbientAudioSnapshot {
@@ -11,10 +17,13 @@ export interface StudioAmbientAudioSnapshot {
 }
 export interface StudioAmbientAudioDependencies {
   createContext(): AudioContext;
-  load(track: typeof STUDIO_AMBIENT_TRACKS[number], signal: AbortSignal): Promise<ArrayBuffer>;
+  load(track: StudioAmbientRecordingTrack, signal: AbortSignal): Promise<ArrayBuffer>;
+  /** 합성 트랙용 버퍼 생성. 없으면 절차 생성 모듈의 기본 구현을 쓴다. */
+  synthBuffer?(context: AudioContext, track: StudioAmbientSynthTrack): AudioBuffer;
 }
 const browserDependencies: StudioAmbientAudioDependencies = {
   createContext: () => new AudioContext(),
+  synthBuffer: (context, track) => createStudioAmbientSynthBuffer(context, track.synth, track.duration),
   async load(track, signal) {
     const response = await fetch(track.src, { signal, credentials: "omit" });
     if (!response.ok) throw new Error("Ambient recording unavailable");
@@ -90,12 +99,17 @@ export class StudioVirtualAmbientAudioController {
       if (generation !== this.generation) return;
       if (!this.buffer) {
         const track = STUDIO_AMBIENT_TRACKS.find((item) => item.id === this.state.trackId)!;
-        const bytes = await this.dependencies.load(track, loading.signal);
-        if (generation !== this.generation) return;
-        const buffer = await context.decodeAudioData(bytes);
-        if (generation !== this.generation) return;
-        if (buffer.numberOfChannels !== 2 || Math.abs(buffer.duration - track.duration) > .05) throw new Error("Ambient recording format mismatch");
-        this.buffer = buffer;
+        if (track.kind === "synth") {
+          // 합성 트랙은 파일을 읽지 않는다. 기기에서 만든 버퍼가 곧 재생 소스다.
+          this.buffer = (this.dependencies.synthBuffer ?? browserDependencies.synthBuffer!)(context, track);
+        } else {
+          const bytes = await this.dependencies.load(track, loading.signal);
+          if (generation !== this.generation) return;
+          const buffer = await context.decodeAudioData(bytes);
+          if (generation !== this.generation) return;
+          if (buffer.numberOfChannels !== 2 || Math.abs(buffer.duration - track.duration) > .05) throw new Error("Ambient recording format mismatch");
+          this.buffer = buffer;
+        }
       }
       if (generation !== this.generation || this.disposed || this.state.pauseReason || !this.state.enabled) return;
       this.loading = null;

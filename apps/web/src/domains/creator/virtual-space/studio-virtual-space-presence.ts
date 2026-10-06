@@ -16,6 +16,8 @@ import {
 } from "./studio-virtual-space-chat";
 import type { StudioEmoteKind } from "./studio-virtual-space-emotes";
 import type { StudioInteractableStateKey } from "./studio-virtual-space-interactable-objects";
+import { studioProximityGainForPreset } from "./studio-virtual-space-acoustics";
+import { playStudioSfxSound } from "./studio-virtual-space-sound-engine";
 import type { StudioUserStatus } from "./studio-virtual-space-user-status";
 import {
   isStudioSpaceEmoteId,
@@ -145,6 +147,11 @@ function nextOutboundSequence(sessionId: string): number {
   outboundSequenceBySessionId.set(sessionId, sequence);
   writeStoredOutboundSequence(sessionId, sequence);
   return sequence;
+}
+
+/** 피어 이벤트 소리의 거리 게인. acoustics 그룹 곡선을 그대로 쓴다(가까운 피어만 들린다). */
+function studioPeerSoundGain(self: { x: number; y: number }, peer: { x: number; y: number }): number {
+  return studioProximityGainForPreset(Math.hypot(peer.x - self.x, peer.y - self.y), "group");
 }
 
 /**
@@ -388,6 +395,7 @@ export class StudioVirtualSpacePresenceController {
     if (this.closed) return;
     const parsed = emote === null ? undefined : parseStudioPresenceEmote(emote);
     if (parsed === this.self.emote) return;
+    if (parsed) playStudioSfxSound("emote", 0.9);
     const next = { ...this.self };
     if (parsed) next.emote = parsed;
     else delete next.emote;
@@ -690,6 +698,7 @@ export class StudioVirtualSpacePresenceController {
     let changed = false;
     for (const [sessionId, peer] of this.peers) {
       if (!available.has(sessionId) || now - peer.lastSeen > STUDIO_VIRTUAL_SPACE_STALE_MS) {
+        playStudioSfxSound("peer-leave", studioPeerSoundGain(this.self, peer.state));
         this.peers.delete(sessionId);
         this.peerReactions.delete(sessionId);
         this.reactionSequences.delete(sessionId);
@@ -893,6 +902,7 @@ export class StudioVirtualSpacePresenceController {
     if (previous && packet.sequence <= previous.sequence) return;
     if (packet.kind === "leave") {
       if (previous || this.peerReactions.has(sender.sessionId) || this.chatBubbles.has(sender.sessionId) || this.peerTypingStates.has(sender.sessionId) || this.peerImpacts.has(sender.sessionId) || this.peerFixturesBySession.has(sender.sessionId)) {
+        if (previous) playStudioSfxSound("peer-leave", studioPeerSoundGain(this.self, previous.state));
         this.peers.delete(sender.sessionId);
         this.peerReactions.delete(sender.sessionId);
         this.reactionSequences.delete(sender.sessionId);
@@ -920,6 +930,11 @@ export class StudioVirtualSpacePresenceController {
       lastSeen: this.now(),
       sequence: packet.sequence,
     });
+    // 입장은 첫 상태 패킷에서 한 번, 이모트는 바뀐 순간에만 소리를 낸다.
+    if (!previous) playStudioSfxSound("peer-join", studioPeerSoundGain(this.self, packet.state));
+    else if (packet.state.emote && packet.state.emote !== previous.state.emote) {
+      playStudioSfxSound("emote", studioPeerSoundGain(this.self, packet.state));
+    }
     this.emit();
   }
 

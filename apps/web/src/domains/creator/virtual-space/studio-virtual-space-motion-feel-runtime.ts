@@ -3,6 +3,7 @@
  *
  * 발밑 먼지·발걸음 조각·급정지 퍼프·미끄럼 먼지·달리기 잔상·이모트 파티클을 그린다.
  * - 개수와 시점은 footsteps·movement-particles 순수 모듈의 규칙 함수를 그대로 쓴다.
+ * - 발걸음 이벤트는 사운드 엔진 버스에도 그대로 흘려 합성 발소리를 재생한다(엔진 미등록·꺼짐이면 무음).
  * - 파티클 이미터 하나와 잔상 스프라이트 4개 풀을 재사용해 매 프레임 객체를 만들지 않는다.
  * - 모션 줄이기(또는 게임필 설정의 OS 연동)에서는 규칙 함수가 0을 돌려줘 아무것도 내지 않는다.
  * - 색은 바닥 재질의 픽셀 아트 팔레트다(UI 색이 아니므로 CSS 토큰을 쓰지 않는다).
@@ -11,10 +12,14 @@ import type * as Phaser from "phaser";
 
 import { CAMPUS_TERRAIN, type StudioCampusTerrain } from "./studio-virtual-space-campus-blueprint";
 import {
+  createStudioFootstepState,
+  stepStudioFootsteps,
   studioDustSpawnCount,
   studioFootstepSurfaceSpec,
+  type StudioFootstepState,
   type StudioFootstepSurface,
 } from "./studio-virtual-space-footsteps";
+import { playStudioFootstepSound } from "./studio-virtual-space-sound-engine";
 import type { StudioVirtualTerrainKind } from "./studio-virtual-space-living-world";
 import { skidIntensity } from "./studio-virtual-space-locomotion-feel";
 import {
@@ -147,7 +152,7 @@ export class StudioMotionFeelRuntime {
   private nextGhostAt = 0;
   private previousSpeed = 0;
   private skidCarry = 0;
-  private stepRemaining = 0;
+  private footstepState: StudioFootstepState = createStudioFootstepState();
   private lastX = Number.NaN;
   private lastY = Number.NaN;
 
@@ -185,13 +190,14 @@ export class StudioMotionFeelRuntime {
     // 1) 이동 먼지: 속도·표면·밀도에 비례(규칙: studioDustSpawnRule).
     const dust = density > 0 ? studioDustSpawnCount(speed, frame.surface.surface, density, frame.reducedMotion, frame.deltaSeconds) : 0;
     if (dust > 0) this.emit(dust, frame.x, frame.y + 3, frame.surface.color);
-    // 2) 발걸음 조각: 표면 보폭마다 한 알(규칙: stepStudioFootsteps).
+    // 2) 발걸음 조각·발소리: 표면 보폭마다 한 걸음(규칙: stepStudioFootsteps).
+    //    파티클과 같은 이벤트로 합성 발소리를 재생한다(엔진 미등록·꺼짐이면 무음).
     if (density > 0 && moved > 0 && moved < MAX_STEP_DELTA && speed >= 8) {
-      const stride = studioFootstepSurfaceSpec(frame.surface.surface).stridePx;
-      this.stepRemaining -= moved;
-      while (this.stepRemaining < 0) {
-        this.stepRemaining += stride;
+      const stepped = stepStudioFootsteps(this.footstepState, moved, frame.surface.surface, speed);
+      this.footstepState = stepped.state;
+      for (const event of stepped.events) {
         this.emit(1, frame.x, frame.y + 2, frame.surface.color);
+        playStudioFootstepSound(event);
       }
     }
     // 3) 미끄럼 먼지: 입력을 놓아 급감속할 때(규칙: stepStudioSkidDust).
