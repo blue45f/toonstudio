@@ -2838,253 +2838,253 @@
     },
     {
       "file": "ink/players/player-silver-direction-down.webp",
-      "bytes": 5400,
-      "sha256": "09d8ff34361ddf82279832ade2a4c5fa9248de73f2b72925cfa9e612fd2a3967",
+      "bytes": 4036,
+      "sha256": "3972b8fc0fc71576218c91d4a49e848cfb763e952faf89b26655f774906a7b2e",
       "size": [
         160,
         160
       ],
-      "visualSignature": "6e2e34408f39842f49e4abbf9d3533b177099720eb2dd8db3376df38f7604b46"
+      "visualSignature": "2e3830505d4c61c31eef2bb138a9e776979ecf0f45c339ed3aca69660424dc78"
     },
     {
       "file": "ink/players/player-silver-direction-left.webp",
-      "bytes": 5082,
-      "sha256": "ae9bf3fb91f235d505ef8b41fb7252d1591db7909892ae39793033aaf35157f5",
+      "bytes": 4020,
+      "sha256": "f2d1c4ffd692a2d946dacee38569d3b46986c3cfecdf5c138eddd38d1015fc4c",
       "size": [
         160,
         160
       ],
-      "visualSignature": "3173a4c2da00d571372c9b55192cfe88b4886f63f454753b735943fa508c1e9c"
+      "visualSignature": "d39b67adc9e66c9a44152cebd8024b73bc5614d7f39cfe5af234b5cf3d8c84fe"
     },
     {
       "file": "ink/players/player-silver-direction-right.webp",
-      "bytes": 5106,
-      "sha256": "080fe5d11666f6f92a895f61eaee5992e1258f1af59a3a7a75addc43d0114910",
+      "bytes": 3736,
+      "sha256": "6d687f7d81380b5ecb25ee8c1e688549c2b5f2980a2882b2ad241b677501bec1",
       "size": [
         160,
         160
       ],
-      "visualSignature": "a43fbd55ca38488ba0331744cb4b48dbcefc4902034aa9d088b036eafda29d5d"
+      "visualSignature": "da96c4122004dab6a8e7f887e64c5f08f42be4f10768c20d564ae0210381c596"
     },
     {
       "file": "ink/players/player-silver-direction-up.webp",
-      "bytes": 4724,
-      "sha256": "4553d9d383ff2821718c799dfa7777c1cb7e66113682d4b10d41db5ba245daea",
+      "bytes": 3804,
+      "sha256": "8fcbc8adf84c359c75f381f8a0f1e0328e3a3e408baab55b3587c0e7216835e7",
       "size": [
         160,
         160
       ],
-      "visualSignature": "95f48a637195178370182bcb0a300e8efcfa299977b59e32be89486924edb27c"
+      "visualSignature": "35e9d15039de9c2bb995b1e3170b68766204eb4616ef5001fff7e5d78d6977a4"
     },
     {
       "file": "ink/players/player-silver-draw-down.webp",
-      "bytes": 13528,
-      "sha256": "362ce92540091a582a02c5bad796ce2af7199b0f6901479ee2fcefa150111fa4",
+      "bytes": 17450,
+      "sha256": "a516d283f5dcce0a73c5612a62182b37b0f9ad01824112ddec97fd2539c6e074",
       "size": [
         640,
         160
       ],
-      "visualSignature": "3d942ddc1ba3b1db29afc3043e3bddd202707492a9d69ce7ab0110aa90dde1f7"
+      "visualSignature": "3973c959d9c1a0f6507d8de37d8592d5ea80697571a9422cb286a39c5ad67ea3"
     },
     {
       "file": "ink/players/player-silver-draw-left.webp",
-      "bytes": 12480,
-      "sha256": "f4f4cb61d3989af10d5d6fe1e559a7721b42c15fd4a3795285442fd417b981c4",
+      "bytes": 16322,
+      "sha256": "6378d518706acbe18a6635244d007c8e552db5c2c47af5405d4f059e22a69e6f",
       "size": [
         640,
         160
       ],
-      "visualSignature": "2ccebbc25b378c02d07593402fc1730574b4dbcd243ca77c53650705b686eb5c"
+      "visualSignature": "521f77e82c543d36544e722d08c0a377f9e8e9ea0a1a9b0b3d8fc42840bb66d0"
     },
     {
       "file": "ink/players/player-silver-draw-right.webp",
-      "bytes": 12454,
-      "sha256": "df5e0004346f8a11f67bd49a5da350d9c74842c6864475d29b233389643ef4a2",
+      "bytes": 16990,
+      "sha256": "aa357e7ba0ac911f515d009cb6b51fac1fa117ddcfeb32d21df7c73034adff99",
       "size": [
         640,
         160
       ],
-      "visualSignature": "a544d5f1e0e70aa32f5f508ccaa1e7d0a2651d888877c13f2c8e80c76d52719a"
+      "visualSignature": "4946cab055a3d5146ccd94e2eea5764048b02856b3f9685c0864733f0833d435"
     },
     {
       "file": "ink/players/player-silver-draw-up.webp",
-      "bytes": 11142,
-      "sha256": "becacc68361611c36a2e5b5e3071d8c2043811727695f816ca73c2e060f12115",
+      "bytes": 15010,
+      "sha256": "5b8f2df2bbf6a0c04e7341563910173bac6fd6336bebf1871eca65ab0387e629",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e78993a3da947693b74fbe37101a0aa8acc26c543a2dfc0011be8e3f9f2c3350"
+      "visualSignature": "6c2c02e48a11b7b921c68194b9a555158ca489bb9500fa1bbfe8687832ba5566"
     },
     {
       "file": "ink/players/player-silver-review-down.webp",
-      "bytes": 13528,
-      "sha256": "362ce92540091a582a02c5bad796ce2af7199b0f6901479ee2fcefa150111fa4",
+      "bytes": 18460,
+      "sha256": "0b14908991db7306bda5e8f46c7de9fe919b81fc8b642edbbb1a8a8dd8acc40c",
       "size": [
         640,
         160
       ],
-      "visualSignature": "3d942ddc1ba3b1db29afc3043e3bddd202707492a9d69ce7ab0110aa90dde1f7"
+      "visualSignature": "55b51a52a5bed2d7b31ab2cbff6c95573bae4ad8913ab4f7137b3e51697e0c1c"
     },
     {
       "file": "ink/players/player-silver-review-left.webp",
-      "bytes": 12480,
-      "sha256": "f4f4cb61d3989af10d5d6fe1e559a7721b42c15fd4a3795285442fd417b981c4",
+      "bytes": 9864,
+      "sha256": "31c51038ed085f42ab4b64da88a2d36524a5a0abdb84d040c456a6fb1716f15b",
       "size": [
         640,
         160
       ],
-      "visualSignature": "2ccebbc25b378c02d07593402fc1730574b4dbcd243ca77c53650705b686eb5c"
+      "visualSignature": "9091edb584ae41b878658888a0c00571540bff7555d8544f3cab1fa394a8ead2"
     },
     {
       "file": "ink/players/player-silver-review-right.webp",
-      "bytes": 12454,
-      "sha256": "df5e0004346f8a11f67bd49a5da350d9c74842c6864475d29b233389643ef4a2",
+      "bytes": 9856,
+      "sha256": "2c03eaf415609e6ed894489dcdf772bdce3cfb7d701a7396d2de67a306195614",
       "size": [
         640,
         160
       ],
-      "visualSignature": "a544d5f1e0e70aa32f5f508ccaa1e7d0a2651d888877c13f2c8e80c76d52719a"
+      "visualSignature": "bb62bd5ac116469652dc53a7ebc6ff5c6f5347c17e6f423bec3c45dec0c18566"
     },
     {
       "file": "ink/players/player-silver-review-up.webp",
-      "bytes": 11142,
-      "sha256": "becacc68361611c36a2e5b5e3071d8c2043811727695f816ca73c2e060f12115",
+      "bytes": 16044,
+      "sha256": "b98f7956acc5e62a7e59871107fec3fb3872c43b2214ef3a3d9873eb2a8551ec",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e78993a3da947693b74fbe37101a0aa8acc26c543a2dfc0011be8e3f9f2c3350"
+      "visualSignature": "c9b9291e32e82f80bcee578190dc1c9b756fb21d7562f066d55a00f61e8ca142"
     },
     {
       "file": "ink/players/player-silver-sit.webp",
-      "bytes": 15526,
-      "sha256": "9acff8690234b3147ac2b85fa19fc2c7d58f8075774125d4dd1e651a4d25abff",
+      "bytes": 20206,
+      "sha256": "e2accdb98d01b002c8cd599c872b23cdaab48d241a05277c23ca7405e59f2232",
       "size": [
         640,
         160
       ],
-      "visualSignature": "5b1d66267714ac5e14342b3f35b23012c21a75339a0556c4500ae77280419473"
+      "visualSignature": "d85d1a3d652c9b83214e17fd95358a94ef795bccc752ed6c2ffb7d2f35553c87"
     },
     {
       "file": "ink/players/player-silver-state-draw.webp",
-      "bytes": 4780,
-      "sha256": "064e67527c3551d3e35517f2e79273bbaed283acd7b537ca9caf9e52d2db7a53",
+      "bytes": 4664,
+      "sha256": "92d737895552a293e48e01b3b15c2174804f3fc3653871c6ead2cda83be1f1d7",
       "size": [
         160,
         160
       ],
-      "visualSignature": "20d3964152a382eb25c4aec57b3c5e623a04791bb32564cfd7627435c31970e4"
+      "visualSignature": "9a09bad572d7d64f20054e4e529d7e3c08332a6f320b5f93742761fe4a4f27bb"
     },
     {
       "file": "ink/players/player-silver-state-review.webp",
-      "bytes": 4780,
-      "sha256": "064e67527c3551d3e35517f2e79273bbaed283acd7b537ca9caf9e52d2db7a53",
+      "bytes": 4698,
+      "sha256": "db8c22211d5a10965ad21e70ad675557940ed572dfcf989869d1b01b9720fc16",
       "size": [
         160,
         160
       ],
-      "visualSignature": "20d3964152a382eb25c4aec57b3c5e623a04791bb32564cfd7627435c31970e4"
+      "visualSignature": "591bcbbdf7dfd445a76a8ba74bec187d3441ef4f81c98d48f2dfbb4c945184ad"
     },
     {
       "file": "ink/players/player-silver-state-talk.webp",
-      "bytes": 5536,
-      "sha256": "ba2ceb2d236a4f4f076fdebedafc8d9029bbd97e013614cb938299ab1c3d2bfc",
+      "bytes": 4190,
+      "sha256": "9f0b3569e396ae4d58ff1c2d6c4632692bb859ce4a1f4430b9cfd43d24835af4",
       "size": [
         160,
         160
       ],
-      "visualSignature": "ba4f3fa723d2dc43d32ed3d836918e5533d956dbcc57c8c654171f344b5b14a2"
+      "visualSignature": "defa284a3f456d1cca7bfe99ea87465ef8f2a9e0842eea1e8677f1ae545a1ad7"
     },
     {
       "file": "ink/players/player-silver-talk-down.webp",
-      "bytes": 15764,
-      "sha256": "d6b15535ae7f7955874f079cfa25d9058dc30a2b4f7ee82271ed1e90c732c9c2",
+      "bytes": 9088,
+      "sha256": "60d21b441f616f8b698a6a887d986676112ee64a6d02adf76003f34d22e85e15",
       "size": [
         640,
         160
       ],
-      "visualSignature": "01b9aaa2e6380e09e909d7ccb907af0b15a387af7ec37da3653c5615cfe6b272"
+      "visualSignature": "67d5b6778dcc0f3465056e825945bc5eb81801efc39713bb58551b1188e62fa2"
     },
     {
       "file": "ink/players/player-silver-talk-left.webp",
-      "bytes": 14880,
-      "sha256": "263949bde5b26198a90c5cef00b35c99b857ef6b1390395d8082a4a65b8fc044",
+      "bytes": 12616,
+      "sha256": "e7d87e2af9263addb6a4920afc141431679897956f24174525aca61366d12408",
       "size": [
         640,
         160
       ],
-      "visualSignature": "ad8e579f4fa070bacb2b2d4266a030d573f96bcebe81c68e823fe5be59bc425f"
+      "visualSignature": "1dc6c052c704d9903b60725e709d7d1d09536164fe2261599d270ebc43670db1"
     },
     {
       "file": "ink/players/player-silver-talk-right.webp",
-      "bytes": 15166,
-      "sha256": "95ab2a67a79e889d8fdbe9ae80f7cd3a932657002cce548d7ecfb7e6ccb7db59",
+      "bytes": 9238,
+      "sha256": "03629059bf86b73475dfe7ce380ec0e3d56b3ac906428bbfd35abd8d92cbc5ba",
       "size": [
         640,
         160
       ],
-      "visualSignature": "76f349938ee699ccb5f274f84253a767b84d3ad52a95cd366097f5ed937dcc2f"
+      "visualSignature": "ba4001e59ec7d6a6e4e74a671c544f32d566eab0c0bcc3ce4f3bd85cfdf1fa8a"
     },
     {
       "file": "ink/players/player-silver-talk-up.webp",
-      "bytes": 13240,
-      "sha256": "470ed0ef54120d85c4cfb488bb6f3a6b91fd5bbaa688f9a3cbe1a917897c7921",
+      "bytes": 14862,
+      "sha256": "24144408c1a9d5c6d163dd5501710b53eff526c356550bb04637a0c6e209fd64",
       "size": [
         640,
         160
       ],
-      "visualSignature": "32fd6c173fe65282fed1fb708d52a667a07f6b558237ce4705cf1b58b7719c32"
+      "visualSignature": "3f2a79d042f7a4dd9c59c9dc8c4e5de4e3b8e563792ebdb85703fd58464cf191"
     },
     {
       "file": "ink/players/player-silver-walk-down.webp",
-      "bytes": 16440,
-      "sha256": "86d1b530b0d497d2ab6bedbd5e097d338cbff8613716b1548a6954c57dbbbe7a",
+      "bytes": 9018,
+      "sha256": "de54a96a5b4c6e4e85006391f5d24c082001e52055b41586cd47bea85be79f19",
       "size": [
         640,
         160
       ],
-      "visualSignature": "a734f8b40e3f9d42030929128bcd208cefffc89578cff25d1693bafa2098c6ef"
+      "visualSignature": "6eedec4dab5fcf777a29e5425b2ad3f4491e96b7de6e138f3c6e03e8bfc90ec1"
     },
     {
       "file": "ink/players/player-silver-walk-left.webp",
-      "bytes": 15710,
-      "sha256": "b6b2ea43c585cb767757ef5eaa80e0c5275cdcd4c607af052f6635d57fd62deb",
+      "bytes": 16320,
+      "sha256": "18e8c430f1dece66c1da883078226163bb6123601411de5b9b29214bacb56429",
       "size": [
         640,
         160
       ],
-      "visualSignature": "f3612f83b8fe6b88fa76a2d4088b076069ef0917ac8dfe1ce7a6e3f583490789"
+      "visualSignature": "b204d5249e8c1a73010e6b929c8999c23a27a9d95d048f8f262b9d5549a4c06b"
     },
     {
       "file": "ink/players/player-silver-walk-right.webp",
-      "bytes": 15328,
-      "sha256": "31b9847644f6712c816091ee20338d89df057dbf69aadeadfb729866290df2c2",
+      "bytes": 14116,
+      "sha256": "faae87181062835e94b45b0e215dd356ff073765bab733da3334f96406ef1183",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e6a8dba79c34d353519a42f18d8eea9de966dc4152544a00c934cba17d691a8e"
+      "visualSignature": "43c5ff51a229f3314ad470b014df8642425545bc97690dcc764a3df6c169bf4f"
     },
     {
       "file": "ink/players/player-silver-walk-up.webp",
-      "bytes": 14378,
-      "sha256": "a9e16ac4e65bbe7ab56b00ca2399a1b3b70437d327324ee66b865daadbc899cd",
+      "bytes": 15076,
+      "sha256": "83d821cf97f43ab1cf3819f8d6db8f5fab4a2ca816bbe1d595ae8faedde9d214",
       "size": [
         640,
         160
       ],
-      "visualSignature": "756d521666ac95074958d5f2195a928e098a91fb8e5b49aca83ec476ed2b922d"
+      "visualSignature": "bb5955f90cb00fc15c9723292efc34e8961db3c66c65d59930a1d8a6654d09cf"
     },
     {
       "file": "ink/players/player-silver-wave.webp",
-      "bytes": 17592,
-      "sha256": "0577ab5f4a51c23664e8f16885798f36ae20eb661096523b7bd475d467f0caee",
+      "bytes": 21562,
+      "sha256": "b563ecb7978d6a4e4719011589584b8979e4abad131787d68c9cf4e1d3818c54",
       "size": [
         640,
         160
       ],
-      "visualSignature": "edb8c98f141eb783b90a7471c5852cb45e83fce309600d7f76efb027b9fe6f69"
+      "visualSignature": "d69d86c6bcc69b4166355aebbde81aced74445ac16accf17e30f70dc84d7453f"
     },
     {
       "file": "ink/world/cloud-back.webp",
