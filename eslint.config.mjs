@@ -1,4 +1,5 @@
 import { base, react, plugin, boundaries, defineConfig } from '@heejun/eslint-config'
+import { plugin as shadcn } from '@shadcn/lint'
 import js from '@eslint/js'
 import { globalIgnores } from 'eslint/config'
 import globals from 'globals'
@@ -72,6 +73,32 @@ export default defineConfig(
   // apps/web/src 아래의 Vite 브라우저 앱 — React 19 + RC + jsx-a11y.
   // 루트 package.json이 프런트엔드 툴체인을 소유하고, NestJS API만 별도 workspace package다.
   react({ files: ['apps/web/src/**/*.{ts,tsx}'] }),
+
+  // @shadcn/lint 파일럿 (2026-10-06 도입 검토 판정: 조건부 도입, 단계 0~1).
+  // Tailwind 클래스 규율을 기계로 집행하는 공식 플러그인이다. 전면 도입이 아니라
+  // no-raw-colors/no-unknown-classes 2개 룰만 warn 으로 켜서 표본 범위의 오탐률을
+  // 실측하는 단계이므로 나머지 4개 룰은 명시적으로 끈다. 특히 no-arbitrary-values 는
+  // 타입 스케일 정책이 정해지기 전까지 켜지 않는다(표본 추정 9,315건).
+  // CI(lint:ci --max-warnings=0)에는 아직 편입하지 않는다 — error 승격과 CI 편입은
+  // 파일럿 실측 결과를 보고 별도 단위에서 판단한다.
+  {
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    plugins: { shadcn },
+    settings: {
+      shadcn: {
+        ui: '@/shared/components/ui',
+        note: 'DESIGN.md 토큰 정책: 컴포넌트에 색을 하드코딩하지 말고 의미 토큰(canvas·panel·card·raised·line·fg·fg-2·fg-3·accent·cool·good·warn·bad)을 사용한다. raw rgb()/hex와 #000/#fff는 금지하고 색은 OKLCH 토큰으로만 표현한다.',
+      },
+    },
+    rules: {
+      'shadcn/no-raw-colors': 'warn',
+      'shadcn/no-unknown-classes': 'warn',
+      'shadcn/no-restyle': 'off',
+      'shadcn/no-arbitrary-values': 'off',
+      'shadcn/no-inline-styles': 'off',
+      'shadcn/require-static-classes': 'off',
+    },
+  },
 
   // The architecture move changed every app import root at once; keep import order diagnostics disabled
   // for the moved surfaces until the shared resolver understands the new workspace aliases.
