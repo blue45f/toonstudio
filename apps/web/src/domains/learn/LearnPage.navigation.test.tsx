@@ -11,44 +11,56 @@ afterEach(() => {
 });
 
 describe("공통 학습 탐색", () => {
-  it("첫 화면에는 하나의 탐색만 표시하고 전체 메뉴에 기존 목적지를 보존한다", async () => {
+  it("섹션 내비는 공용 SectionNav 하나로 전체 목적지를 펼쳐 보인다", () => {
     render(<MemoryRouter initialEntries={["/learn"]}><LearnPage /></MemoryRouter>);
-    const navigation = screen.getAllByRole("navigation", { name: "웹툰 학습" });
+    const navigation = screen.getAllByRole("navigation", { name: "배우기 영역" });
     expect(navigation).toHaveLength(1);
     const menu = within(navigation[0]);
+    // 목적지는 기존 자체 내비가 보존하던 13곳 그대로다 — 지우지도, 드롭다운 뒤에 숨기지도 않는다.
     expect(menu.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
-      "/learn", "/learn/resources", "/learn/classroom",
+      "/learn", "/learn/resources", "/learn/classroom", "/learn/classes", "/learn#learning-paths",
+      "/learn/trace", "/learn/studio", "/learn/glossary", "/learn/process", "/learn/careers",
+      "/learn/education", "/learn/records", "/research",
     ]);
-    fireEvent.click(menu.getByText("전체 메뉴"));
-    await menu.findByRole("link", { name: "용어 사전" });
-    expect(menu.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
-      // 학습 → 리서치 → 제작 동선: 전체 메뉴 맨 앞에 리서치 데스크가 있다.
-      "/learn", "/learn/resources", "/learn/classroom", "/research", "/learn#learning-paths",
-      "/learn/glossary", "/learn/studio", "/learn/classes", "/learn/trace", "/learn/process",
-      "/learn/careers", "/learn/education", "/learn/records",
-    ]);
-    fireEvent.keyDown(menu.getByRole("link", { name: "용어 사전" }), { key: "Escape" });
-    expect(menu.queryByRole("link", { name: "용어 사전" })).toBeNull();
-    expect(document.activeElement?.tagName).toBe("SUMMARY");
+    // 이름은 다른 표면의 정본과 맞춘다(클래스룸·교육 안내 등).
+    expect(menu.getByRole("link", { name: /클래스룸/u })).toBeTruthy();
+    expect(menu.getByRole("link", { name: /교육 안내/u })).toBeTruthy();
+    // 현재 위치는 학습 홈 하나만 표시한다.
+    const currents = menu.getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page");
+    expect(currents.map((link) => link.getAttribute("href"))).toEqual(["/learn"]);
   });
 
-  it("메뉴로 다른 학습 화면에 이동하면 선택 상태를 표시하고 목록을 닫는다", async () => {
+  it("학습 경로 상세에서는 학습 경로 항목이 현재 위치가 되고, 앵커 착지는 경로 탭을 연다", async () => {
+    render(<MemoryRouter initialEntries={["/learn#learning-paths"]}><LearnPage /></MemoryRouter>);
+    // 앵커의 실제 계약: 학습 홈이 경로 탭을 열어 보인다(홈의 앵커 처리가 주소를 ?view=paths로
+    // 교체하며 hash를 소비하므로, 내비 현재 표시는 학습 홈으로 settled 된다 — 구 내비와 같은 동작).
+    const pathsTab = await screen.findByRole("tab", { name: /학습 경로/u });
+    expect(pathsTab.getAttribute("aria-selected")).toBe("true");
+    cleanup();
+
+    render(<MemoryRouter initialEntries={["/learn/paths/first-three-panels"]}><LearnPage /></MemoryRouter>);
+    const detailNavigation = screen.getByRole("navigation", { name: "배우기 영역" });
+    const detailCurrents = within(detailNavigation).getAllByRole("link")
+      .filter((link) => link.getAttribute("aria-current") === "page");
+    expect(detailCurrents.map((link) => link.getAttribute("href"))).toEqual(["/learn#learning-paths"]);
+  });
+
+  it("내비로 다른 학습 화면에 이동하면 선택 상태가 따라간다", async () => {
     render(<MemoryRouter initialEntries={["/learn"]}><LearnPage /></MemoryRouter>);
-    const navigation = screen.getByRole("navigation", { name: "웹툰 학습" });
-    fireEvent.click(within(navigation).getByText("전체 메뉴"));
-    fireEvent.click(await within(navigation).findByRole("link", { name: "따라 그리기" }));
+    const navigation = screen.getByRole("navigation", { name: "배우기 영역" });
+    fireEvent.click(within(navigation).getByRole("link", { name: /따라 그리기/u }));
     expect(screen.getByRole("heading", { name: /참고 이미지는 가이드로/u })).toBeTruthy();
-    expect(screen.getAllByRole("navigation", { name: "웹툰 학습" })).toHaveLength(1);
-    const currentNavigation = screen.getByRole("navigation", { name: "웹툰 학습" });
-    const summary = currentNavigation.querySelector("summary");
-    expect(summary?.getAttribute("data-current")).toBe("true");
-    expect(summary?.textContent).toContain("따라 그리기");
-    expect(currentNavigation.querySelector("details")?.open).toBe(false);
+    expect(screen.getAllByRole("navigation", { name: "배우기 영역" })).toHaveLength(1);
+    const currentNavigation = screen.getByRole("navigation", { name: "배우기 영역" });
+    expect(within(currentNavigation).getByRole("link", { name: /따라 그리기/u })
+      .getAttribute("aria-current")).toBe("page");
+    expect(within(currentNavigation).getByRole("link", { name: /학습 홈/u })
+      .getAttribute("aria-current")).toBeNull();
   });
 
-  it("학습 기록 화면도 같은 메뉴를 사용하며 백업 기능을 유지한다", () => {
+  it("학습 기록 화면도 같은 내비를 사용하며 백업 기능을 유지한다", () => {
     render(<MemoryRouter initialEntries={["/learn/records"]}><LearnPage /></MemoryRouter>);
-    expect(screen.getAllByRole("navigation", { name: "웹툰 학습" })).toHaveLength(1);
+    expect(screen.getAllByRole("navigation", { name: "배우기 영역" })).toHaveLength(1);
     expect(screen.getByRole("heading", { name: /배운 과정도/u })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "내 학습 기록 보관" })).toBeTruthy();
   });
