@@ -87,19 +87,25 @@ export function TasteOnboardingPage() {
     setContentIntensity(existing.contentIntensity);
   }, [hydrated, existing]);
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [loadTick, setLoadTick] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    setLoading(true);
     void apiFetch("/api/titles?sort=popular&limit=12", { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error("popular titles unavailable");
         const payload = await response.json() as { items?: Title[] };
         setPopular(Array.isArray(payload.items) ? payload.items : []);
         setError(false);
+        setLoading(false);
       })
       .catch((cause: unknown) => {
-        if ((cause as Error)?.name !== "AbortError") setError(true);
+        if ((cause as Error)?.name !== "AbortError") {
+          setError(true);
+          setLoading(false);
+        }
       });
     return () => controller.abort();
   }, [loadTick]);
@@ -139,13 +145,18 @@ export function TasteOnboardingPage() {
 
   return (
     <Container size="wide" className="py-8 sm:py-12">
-      <img
-        src="/images/hero-main.webp"
-        alt=""
-        loading="lazy"
-        decoding="async"
-        className="mb-8 h-36 w-full rounded-3xl object-cover sm:h-44"
-      />
+      <figure className="relative mb-8 overflow-hidden rounded-3xl">
+        <img
+          src="/images/onboarding-taste-spectrum.webp"
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-44 w-full object-cover sm:h-60"
+        />
+        <figcaption className="absolute bottom-3 left-3 rounded-full bg-canvas/80 px-3 py-1.5 text-xs font-bold text-fg backdrop-blur">
+          장르를 고를 때마다 아래 스펙트럼이 색으로 채워져요
+        </figcaption>
+      </figure>
       <PageIntro variant="unfold">
       <header className="mx-auto max-w-3xl text-center">
         <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent">
@@ -262,9 +273,18 @@ export function TasteOnboardingPage() {
                   );
                 })}
               </div>
+            ) : loading ? (
+              <div role="status" aria-label="작품 목록을 불러오는 중" className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {Array.from({ length: 8 }, (_, index) => (
+                  <span key={index} className="flex flex-col items-center rounded-xl border border-line bg-panel p-2" aria-hidden="true">
+                    <span className="aspect-[3/4] w-14 rounded bg-line/60 motion-safe:animate-pulse" />
+                    <span className="mt-2 h-3 w-16 rounded bg-line/50 motion-safe:animate-pulse" />
+                  </span>
+                ))}
+              </div>
             ) : (
               <p className="mt-3 text-xs text-fg-3">
-                {error ? "작품 목록을 불러오지 못해 건너뜁니다. 장르만 골라도 완료할 수 있어요." : "작품 목록을 불러오는 중이에요."}
+                {error ? "작품 목록을 불러오지 못해 건너뜁니다. 장르만 골라도 완료할 수 있어요." : "지금은 보여 줄 인기 작품이 없어요. 장르만 골라도 취향을 완성할 수 있어요."}
               </p>
             )}
           </div>
@@ -426,7 +446,11 @@ export function TasteOnboardingPage() {
               </ul>
             ) : (
               <p className="mt-3 text-xs leading-5 text-fg-3">
-                작품 목록을 불러오지 못해 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다.
+                {error
+                  ? "작품 목록을 불러오지 못해 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다."
+                  : loading
+                    ? "작품 목록을 불러오는 중이라 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다."
+                    : "지금은 보여 줄 작품이 없어 추천 미리보기를 건너뜁니다. 저장한 취향은 추천 화면에 그대로 반영됩니다."}
               </p>
             )}
           </div>
