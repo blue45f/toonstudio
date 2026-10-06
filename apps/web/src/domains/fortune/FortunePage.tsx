@@ -429,8 +429,8 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
       {/* 스크린리더 전용 라이브 영역 — 운세 결과 도착 안내 */}
       <p className="sr-only" role="status" aria-live="polite">{liveMsg}</p>
 
-      {/* 타이틀 헤더 */}
-      <FortunePageHeader tx={tx} />
+      {/* 타이틀 헤더 — 현재 도구의 이름·맥락을 보여 준다 */}
+      <FortunePageHeader tx={tx} activeTab={activeTab} />
 
       {/* 1단계: 캐릭터 에이전트 선택 */}
       {!selectedChar ? (
