@@ -24,9 +24,9 @@ type RoleFilter = CreatorHiringRole | "all";
 /**
  * 창작자 커리어 갤러리 — 공개 경력을 "전시"로 보여 주는 표면.
  *
- * 이미지는 복제·게시하지 않는다는 기존 원칙을 지켜, 대표작 아트는 작품 제목의
- * 타이포그래픽 커버로 대신한다(등록 정보 재사용). 카드 상단에 아트를 가장 크게 두고,
- * 역할 필터 칩과 협업 기록 배지(상대방 확인)를 얹는다.
+ * 대표작 아트는 창작자가 권리를 확인해 등록한 실제 커버 이미지를 우선 쓰고,
+ * 등록하지 않은 항목만 작품 제목의 타이포그래픽 커버로 대신한다(등록 정보 재사용).
+ * 카드 상단에 아트를 가장 크게 두고, 역할 필터 칩과 협업 기록 배지(상대방 확인)를 얹는다.
  */
 export function CreatorCareerGalleryPage() {
   const [items, setItems] = useState<CreatorCareerPublic[] | null>(null);
@@ -72,7 +72,7 @@ export function CreatorCareerGalleryPage() {
           {translateCurrentStaticSourceText("domains.collaboration.hiring.CreatorCareerPanel", "ko", "면책 안내")}
         </summary>
         <p className="mt-2 pb-1 text-xs leading-6 text-fg-3">
-          창작자가 공개 권리를 확인하고 올린 링크입니다. 경력은 본인 작성이며 검증 배지가 아닙니다. 이미지는 이곳에 복제·게시하지 않습니다.
+          창작자가 공개 권리를 확인하고 올린 링크입니다. 경력은 본인 작성이며 검증 배지가 아닙니다. 커버 이미지는 창작자가 등록한 외부 주소를 그대로 불러와 보여 주며, 이곳에 복제·저장하지 않습니다.
         </p>
       </details>
 
@@ -162,12 +162,22 @@ export function CreatorCareerGalleryPage() {
                 return (
                   <article key={item.id} className="flex flex-col overflow-hidden rounded-2xl border border-line bg-panel">
                     <div className="relative">
-                      <TypographicCover
-                        title={item.title}
-                        seed={item.id}
-                        eyebrow={item.displayName}
-                        className="aspect-[16/8] w-full"
-                      />
+                      {item.coverImageUrl ? (
+                        <img
+                          src={item.coverImageUrl}
+                          alt={`${item.title} 대표 커버`}
+                          className="aspect-[16/8] w-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <TypographicCover
+                          title={item.title}
+                          seed={item.id}
+                          eyebrow={item.displayName}
+                          className="aspect-[16/8] w-full"
+                        />
+                      )}
                       <span className="absolute bottom-3 left-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
                         {CREATOR_HIRING_ROLES[item.role]}
                       </span>

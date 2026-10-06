@@ -9,7 +9,7 @@ import type { CreatorActivitySummary, CreatorCareerInput, CreatorCareerItem, Cre
 type CareerRow = { id: string; user_id: string; name: string; revision: number; content: Omit<CreatorCareerInput, "expectedRevision">; updated_at: Date; version_id: string };
 export class CreatorCareerRepository {
   constructor(readonly store = new HiringStore()) {}
-  private item(r: CareerRow): CreatorCareerItem { return { ...r.content, id: r.id, userId: r.user_id, displayName: r.name || "창작자", revision: r.revision, expectedRevision: r.revision, proof: "self-declared", updatedAt: r.updated_at.toISOString(), currentVersionId: r.version_id }; }
+  private item(r: CareerRow): CreatorCareerItem { return { ...r.content, coverImageUrl: r.content.coverImageUrl ?? null, id: r.id, userId: r.user_id, displayName: r.name || "창작자", revision: r.revision, expectedRevision: r.revision, proof: "self-declared", updatedAt: r.updated_at.toISOString(), currentVersionId: r.version_id }; }
   list(actor: string) {
     return this.store.tx(async (c) => { await this.store.active(c, actor); const rows = await c.query<CareerRow>(`SELECT c.*,u.name,v.id AS version_id FROM creator_hiring_career c JOIN "user" u ON u.id=c.user_id JOIN creator_hiring_career_version v ON v.career_id=c.id AND v.revision=c.revision WHERE c.user_id=$1 ORDER BY c.updated_at DESC,c.id LIMIT 100`, [actor]); return rows.rows.map((r) => this.item(r)); });
   }
@@ -17,13 +17,15 @@ export class CreatorCareerRepository {
     return this.store.tx(async (c) => { const rows = await c.query<CareerRow>(`SELECT c.*,u.name,v.id AS version_id FROM creator_hiring_career c JOIN "user" u ON u.id=c.user_id AND u.status='active'
       JOIN creator_hiring_career_version v ON v.career_id=c.id AND v.revision=c.revision WHERE c.visibility='public' AND c.rights IN ('owned','authorized') ORDER BY c.updated_at DESC,c.id LIMIT 50`);
       // Explicit public projection; no raw evidence, contact, documents or unapproved media.
+      // Rows here already satisfy visibility='public' AND rights IN ('owned','authorized'),
+      // so a registered cover is only ever exposed for rights-confirmed public careers.
       return rows.rows.map((r) => ({ id: r.id, displayName: r.name || "창작자", title: r.content.title, role: r.content.role, startMonth: r.content.startMonth, endMonth: r.content.endMonth, episodeFrom: r.content.episodeFrom, episodeTo: r.content.episodeTo,
-        scope: r.content.scope, contribution: r.content.contribution, portfolioUrl: r.content.portfolioUrl, proof: "self-declared" as const })); });
+        scope: r.content.scope, contribution: r.content.contribution, portfolioUrl: r.content.portfolioUrl, coverImageUrl: r.content.coverImageUrl ?? null, proof: "self-declared" as const })); });
   }
   versions(actor: string, id: string): Promise<CreatorCareerVersion[]> {
     return this.store.tx(async (c) => { await this.store.active(c, actor); const own = await c.query(`SELECT id FROM creator_hiring_career WHERE id=$1 AND user_id=$2`, [id, actor]); if (!own.rows.length) throw new NotFoundException("내 경력을 찾을 수 없어요.");
       const rows = await c.query<{ id: string; career_id: string; revision: number; content: CreatorCareerVersion["content"]; created_at: Date }>(`SELECT * FROM creator_hiring_career_version WHERE career_id=$1 ORDER BY revision DESC LIMIT 100`, [id]);
-      return rows.rows.map((r) => ({ id: r.id, careerId: r.career_id, revision: r.revision, content: r.content, createdAt: r.created_at.toISOString() })); });
+      return rows.rows.map((r) => ({ id: r.id, careerId: r.career_id, revision: r.revision, content: { ...r.content, coverImageUrl: r.content.coverImageUrl ?? null }, createdAt: r.created_at.toISOString() })); });
   }
   save(actor: string, id: string | null, input: CreatorCareerInput) {
     return this.store.tx(async (c) => { await this.store.active(c, actor); await c.query(`SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, [`hiring-career:${actor}`]);

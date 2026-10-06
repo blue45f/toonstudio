@@ -24,7 +24,7 @@ function disposable(raw: string) {
   if (!["postgres:", "postgresql:"].includes(url.protocol) || !["127.0.0.1", "[::1]"].includes(url.hostname)
     || !/^\/creator_hiring_disposable_[a-z0-9_]+$/u.test(url.pathname) || url.search || url.hash) throw new Error("Explicit disposable loopback creator_hiring_disposable_* database required");
 }
-const content: CreatorCareerInput = { title: "완료한 선화", role: "lineart", startMonth: "2026-01", endMonth: "2026-06", episodeFrom: 1, episodeTo: 5, scope: "5회 선화 범위", contribution: "선화 직접 제작", portfolioUrl: "https://example.com/private-evidence", rights: "owned", visibility: "private", expectedRevision: 0 };
+const content: CreatorCareerInput = { title: "완료한 선화", role: "lineart", startMonth: "2026-01", endMonth: "2026-06", episodeFrom: 1, episodeTo: 5, scope: "5회 선화 범위", contribution: "선화 직접 제작", portfolioUrl: "https://example.com/private-evidence", coverImageUrl: null, rights: "owned", visibility: "private", expectedRevision: 0 };
 
 describe.skipIf(!database)("career confirmation actual 0078 + managed 0080 runtime persistence", () => {
   const schema = `career_test_${randomUUID().replaceAll("-", "")}`, role = `career_runtime_${randomUUID().replaceAll("-", "")}`;

@@ -10,15 +10,20 @@ export const hiringRole = z.enum(Object.keys(CREATOR_HIRING_ROLES) as [keyof typ
 export const unique = <T extends z.ZodType>(schema: T, max: number, min = 0) => z.array(schema).min(min).max(max).refine((v) => new Set(v).size === v.length);
 export const toolsSchema = unique(z.enum(HIRING_TOOLS), 12);
 export const formatsSchema = unique(z.enum(HIRING_FORMATS), 12);
-// Links only. Never fetch these URLs on the server or turn them into embedded media.
-export const portfolioUrl = text(500).refine((raw) => {
+// Only validated public HTTPS addresses may be registered. The server never fetches them.
+function isPublicHttpsUrl(raw: string): boolean {
   try {
     const url = new URL(raw);
     return url.protocol === "https:" && !url.username && !url.password && !url.port
       && !url.hostname.includes(":") && !/^\d+(\.\d+)*$/u.test(url.hostname)
       && url.hostname.includes(".") && !/(^|\.)(localhost|local|internal|test|invalid)$/iu.test(url.hostname);
   } catch { return false; }
-});
+}
+// Links only. Never fetch these URLs on the server or turn them into embedded media.
+export const portfolioUrl = text(500).refine(isPublicHttpsUrl);
+// An owner-registered cover image address. The server never fetches or proxies it;
+// clients render it directly as the career item's cover art.
+export const publicImageUrl = text(500).refine(isPublicHttpsUrl);
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u).refine((v) => v >= "1900-01" && v <= "2200-12");
 export const resumeContentSchema = z.strictObject({
   penName: text(60), summary: text(1500, 0), roles: unique(hiringRole, 6, 1), tools: toolsSchema, formats: formatsSchema,

@@ -3,13 +3,13 @@ import { z } from "zod";
 
 import { collaborationWriteGate } from "../collaboration/collaboration.controller";
 import { requireCollaborationUser } from "../collaboration/collaboration.service";
-import { hiringId, hiringRole, parseHiring, portfolioUrl, revision } from "../collaboration/hiring.validation";
+import { hiringId, hiringRole, parseHiring, portfolioUrl, publicImageUrl, revision } from "../collaboration/hiring.validation";
 
 import { CreatorCareerRepository } from "./career.repository";
 
 const month = z.string().regex(/^(19|20|21)\d{2}-(0[1-9]|1[0-2])$/u);
 export const careerSchema = z.strictObject({ title: z.string().trim().min(1).max(100), role: hiringRole, startMonth: month, endMonth: month.nullable(), episodeFrom: z.number().int().min(0).max(100000).nullable(), episodeTo: z.number().int().min(0).max(100000).nullable(),
-  scope: z.string().trim().min(1).max(800), contribution: z.string().trim().min(1).max(800), portfolioUrl, rights: z.enum(["pending", "owned", "authorized"]), visibility: z.enum(["private", "public"]), expectedRevision: revision,
+  scope: z.string().trim().min(1).max(800), contribution: z.string().trim().min(1).max(800), portfolioUrl, coverImageUrl: publicImageUrl.nullable().default(null), rights: z.enum(["pending", "owned", "authorized"]), visibility: z.enum(["private", "public"]), expectedRevision: revision,
 }).refine((v) => (v.visibility !== "public" || v.rights !== "pending") && (!v.endMonth || v.endMonth >= v.startMonth)
   && ((v.episodeFrom === null && v.episodeTo === null) || (v.episodeFrom !== null && v.episodeTo !== null && v.episodeFrom <= v.episodeTo)));
 @Controller("/collaborations/career")
