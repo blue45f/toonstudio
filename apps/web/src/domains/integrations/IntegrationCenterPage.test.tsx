@@ -21,7 +21,7 @@ vi.mock("./use-integration-catalog", () => ({
 }));
 
 vi.mock("./IntegrationRuntimeWorkbench", () => ({
-  IntegrationRuntimeWorkbench: () => null,
+  IntegrationRuntimeWorkbench: () => <div>런타임 작업대 표식</div>,
 }));
 
 const catalog: IntegrationCatalogResponse = {
@@ -66,6 +66,22 @@ describe("연동 센터 빈 상태와 로딩", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "필터 초기화" }));
     expect(screen.getByText("드라이브 저장소")).toBeTruthy();
+  });
+
+  it("공급자 목록이 고급 도구보다 먼저 오고, 고급 도구는 라벨로 격리된다", () => {
+    render(
+      <MemoryRouter initialEntries={["/settings/integrations"]}>
+        <IntegrationCenterPage />
+      </MemoryRouter>,
+    );
+
+    const provider = screen.getByText("드라이브 저장소");
+    const advanced = screen.getByText("고급 도구");
+    const workbench = screen.getByText("런타임 작업대 표식");
+    // 문서 순서: 공급자 카드 → 고급 도구 제목 → 작업대.
+    expect(provider.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(advanced.compareDocumentPosition(workbench) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText(/공급자 연결 확인만이라면 위 목록으로 충분합니다/)).toBeTruthy();
   });
 
   it("연동 로딩은 정적 텍스트가 아니라 상태 역할과 동적 표시를 함께 제공한다", () => {

@@ -115,8 +115,6 @@ export function IntegrationCenterPage() {
           </div>
         </div>
       </section>
-      <IntegrationRuntimeWorkbench />
-      <IpfsContentAddressPanel />
       <section className="mb-7 grid gap-3 rounded-2xl border border-line bg-card p-4 lg:grid-cols-[1fr_14rem_14rem_auto]">
         <label className="relative block">
           <span className="sr-only">{ko ? "연동 검색" : "Search integrations"}</span>
@@ -191,6 +189,19 @@ export function IntegrationCenterPage() {
           ))}
         </section>
       ) : null}
+
+      <div className="mt-12">
+        <h2 className="text-lg font-black text-fg">{ko ? "고급 도구" : "Advanced tools"}</h2>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-fg-2">
+          {ko
+            ? "연동 실행 상태를 직접 확인하거나 콘텐츠 주소를 다루는 도구입니다. 공급자 연결 확인만이라면 위 목록으로 충분합니다."
+            : "Tools for inspecting runtime state and working with content addresses. The provider list above is enough for everyday connection checks."}
+        </p>
+        <div className="mt-5">
+          <IntegrationRuntimeWorkbench />
+          <IpfsContentAddressPanel />
+        </div>
+      </div>
     </IntegrationPage>
   );
 }
