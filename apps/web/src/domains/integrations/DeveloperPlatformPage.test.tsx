@@ -62,6 +62,22 @@ describe("DeveloperPlatformPage", () => {
     expect(mocks.developerManifest).toHaveBeenCalledTimes(2);
   });
 
+  it("계약 불러오기가 실패해도 시작 안내와 첫 요청은 먼저 읽힌다", async () => {
+    mocks.developerManifest.mockRejectedValueOnce(new Error("network"));
+
+    render(
+      <MemoryRouter>
+        <DeveloperPlatformPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "시작하기" })).toBeTruthy();
+    expect(screen.getByText("GET /api/integrations/developer-manifest")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "기술 참고 자료" }).getAttribute("href")).toBe("/about/technology/references");
+    expect(screen.getByRole("link", { name: "API 키 화면" }).getAttribute("href")).toBe("/settings/api-keys");
+    await screen.findByRole("button", { name: "다시 확인" });
+  });
+
   it("웹훅 계약을 헤더가 있는 코드 카드로 보여준다", async () => {
     mocks.developerManifest.mockResolvedValueOnce(manifestFixture);
 

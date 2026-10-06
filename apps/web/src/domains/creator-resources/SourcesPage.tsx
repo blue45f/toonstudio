@@ -70,7 +70,26 @@ export function SourcesPage() {
     setLiveOnly(false);
     setDirectImportOnly(false);
   };
-  return <ResourceLayout title={tx("데이터 출처·상업 이용 준비")} intro={tx("구현된 검색 어댑터, 신청 예정 API, 계약 검토 대상과 운영 제외 소스를 구분합니다. 연결 상태와 개별 자료 권리는 별도이며, 권리가 확인되지 않은 자료는 Studio 가져오기와 상업 활용을 차단합니다.")}>
+  // 머리말 한눈에 — 개수는 제공처 원본 데이터에서 직접 세어, 목록과 어긋나지 않게 한다.
+  const liveCount = RESOURCE_SOURCES.filter((source) => resourceSourceIntegrationLabel(source) === "운영 연결").length;
+  const keylessCount = RESOURCE_SOURCES.filter((source) => source.freeKeyless === true).length;
+  const categoryCount = new Set(RESOURCE_SOURCES.map((source) => source.category)).size;
+  const dataFlowSteps = [
+    { title: tx("모으기"), body: tx("공식 API·오픈데이터·표준 인터페이스로만 수집합니다.") },
+    { title: tx("판정하기"), body: tx("자료마다 권리·상업 이용 상태를 따로 기록하고, 미확인은 차단합니다.") },
+    { title: tx("쓰기"), body: tx("리서치 검색과 Studio 가져오기로 제작 흐름에 연결합니다.") },
+  ];
+  return <ResourceLayout title={tx("데이터 출처·상업 이용 준비")} intro={tx("구현된 검색 어댑터, 신청 예정 API, 계약 검토 대상과 운영 제외 소스를 구분합니다. 연결 상태와 개별 자료 권리는 별도이며, 권리가 확인되지 않은 자료는 Studio 가져오기와 상업 활용을 차단합니다.")}
+    heroContent={<div className="rounded-2xl border border-line bg-panel p-4 sm:p-5">
+      <p className="text-sm font-semibold leading-6 text-fg">{formatI18nTemplate(tx("제공처 {v0}곳 · 실제 검색 연결 {v1}곳 · 가입·키 없이 바로 사용 {v2}곳 · 분야 {v3}개"), { v0: RESOURCE_SOURCES.length, v1: liveCount, v2: keylessCount, v3: categoryCount })}</p>
+      <ol className="mt-3 grid gap-3 sm:grid-cols-3">
+        {dataFlowSteps.map((step, index) => <li key={step.title} className="flex gap-2.5">
+          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-bold text-accent" aria-hidden="true">{index + 1}</span>
+          <div><h2 className="text-sm font-bold">{step.title}</h2><p className="mt-0.5 text-xs leading-5 text-fg-2">{step.body}</p></div>
+        </li>)}
+      </ol>
+      <Link className={`${RESOURCE_BUTTON} mt-4`} to="/about/crawler">{tx("수집 정책")}</Link>
+    </div>}>
     <section className="space-y-3 rounded-2xl border border-accent/30 bg-accent-soft p-6">
       <p className="text-xs font-semibold text-accent">{tx("무료 운영 · 공개 API 활용")}</p>
       <h2 className="text-xl font-bold">{tx("자료를 모으는 데서, 콘텐츠를 만드는 데까지")}</h2>
