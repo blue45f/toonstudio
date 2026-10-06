@@ -56,6 +56,14 @@ export const TOOLCHAIN_STAGES_FRONT: readonly ProcessToolchainStage[] = [
         kind: "external",
       },
       {
+        name: { ko: "지니어스 지니큐브 (GeeniCube)", en: "Geenius GeeniCube" },
+        role: {
+          ko: "짧은 스토리텔링 문구를 작품으로 변환하는 AI 모델",
+          en: "AI model that turns a short storytelling blurb into a work",
+        },
+        kind: "external",
+      },
+      {
         name: { ko: "세계관 랩", en: "Storyworld Lab" },
         role: {
           ko: "세계관의 인과를 분석하고 설정 이슈를 찾아내는 전용 랩",
