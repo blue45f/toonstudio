@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualSpaceSpaceBookingPanel } from "./StudioVirtualSpaceSpaceBookingPanel";
 import type { StudioSpaceBooking, StudioSpaceWaitlistEntry } from "./studio-virtual-space-space-booking";
@@ -104,5 +104,106 @@ describe("StudioVirtualSpaceSpaceBookingPanel", () => {
     fireEvent.change(screen.getByLabelText(/예약자/), { target: { value: "김작가" } });
     fireEvent.click(screen.getByRole("button", { name: "예약하기" }));
     expect(screen.getByTestId("shared-count").textContent).toBe("1");
+  });
+
+  it("게스트 보류 묶음이 있으면 확인 카드에 예약 내용과 버리기 고지를 보여 준다", () => {
+    const onPromote = vi.fn();
+    const onDismiss = vi.fn();
+    render(
+      <StudioVirtualSpaceSpaceBookingPanel
+        spaces={SPACES}
+        nowMs={NOW}
+        guestPromotion={{
+          bundle: {
+            bookings: [
+              {
+                id: "g1",
+                spaceId: "rec-booth",
+                spaceName: "녹음부스",
+                capacity: 2,
+                equipmentTags: [],
+                startsAt: NOW + 3_600_000,
+                endsAt: NOW + 7_200_000,
+                bookerNames: ["김작가", "이작가"],
+                note: "",
+                status: "confirmed",
+              },
+            ],
+            waitlist: [],
+          },
+          summary: null,
+          busy: false,
+          onPromote,
+          onDismiss,
+          onClearSummary: vi.fn(),
+        }}
+      />,
+    );
+    const card = screen.getByTestId("guest-promotion");
+    expect(card.textContent).toContain("녹음부스");
+    expect(card.textContent).toContain("김작가, 이작가");
+    expect(card.textContent).toContain("버리면 위 예약은 이 기기에서도 사라져요");
+    fireEvent.click(screen.getByRole("button", { name: "계정으로 가져오기" }));
+    expect(onPromote).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "버리기" }));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("승격 결과가 있으면 승격·충돌 건수와 충돌 사유를 보여 준다", () => {
+    const onClearSummary = vi.fn();
+    render(
+      <StudioVirtualSpaceSpaceBookingPanel
+        spaces={SPACES}
+        nowMs={NOW}
+        guestPromotion={{
+          bundle: { bookings: [], waitlist: [] },
+          summary: {
+            promotedCount: 1,
+            deferredCount: 0,
+            rejected: [
+              {
+                kind: "booking",
+                id: "g2",
+                status: "rejected",
+                code: "slot-taken",
+                spaceName: "녹음부스",
+                startsAt: NOW + 3_600_000,
+                endsAt: NOW + 7_200_000,
+              },
+            ],
+          },
+          busy: false,
+          onPromote: vi.fn(),
+          onDismiss: vi.fn(),
+          onClearSummary,
+        }}
+      />,
+    );
+    const result = screen.getByTestId("guest-promotion-result");
+    expect(result.textContent).toContain("승격 1건");
+    expect(result.textContent).toContain("충돌 1건");
+    expect(result.textContent).toContain("승격 실패");
+    expect(result.textContent).toContain("이미 예약됨");
+    fireEvent.click(screen.getByRole("button", { name: "확인" }));
+    expect(onClearSummary).toHaveBeenCalledTimes(1);
+  });
+
+  it("보류가 비어 있으면 승격 카드를 그리지 않는다", () => {
+    render(
+      <StudioVirtualSpaceSpaceBookingPanel
+        spaces={SPACES}
+        nowMs={NOW}
+        guestPromotion={{
+          bundle: { bookings: [], waitlist: [] },
+          summary: null,
+          busy: false,
+          onPromote: vi.fn(),
+          onDismiss: vi.fn(),
+          onClearSummary: vi.fn(),
+        }}
+      />,
+    );
+    expect(screen.queryByTestId("guest-promotion")).toBeNull();
+    expect(screen.queryByTestId("guest-promotion-result")).toBeNull();
   });
 });

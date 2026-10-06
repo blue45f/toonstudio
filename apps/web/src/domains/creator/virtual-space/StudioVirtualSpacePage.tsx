@@ -408,7 +408,7 @@ export function VirtualSpaceExperience({
   const panel = studioVirtualWorkspacePanelForScope(requestedPanel, personal);
   // 트랙 B: 녹음부스 예약(예약 패널과 부스 입장 게이트가 공유)과 전시관 집계.
   // F-4: 예약·대기열·갤러리 좋아요는 서버 정본과 동기화한다(게스트는 세션 동작 유지).
-  const { bookings: boothBookings, setBookings: setBoothBookings, waitlist: boothWaitlist, setWaitlist: setBoothWaitlist, galleryStats, setGalleryStats } =
+  const { bookings: boothBookings, setBookings: setBoothBookings, waitlist: boothWaitlist, setWaitlist: setBoothWaitlist, galleryStats, setGalleryStats, guestBundle, promoteGuestBundle, dismissGuestBundle, promotionSummary, promotingGuestBundle, clearPromotionSummary } =
     useStudioVirtualSpaceSocialSync({ projectId, worldScope: activeWorldScope, userId: privateActorId, enabled: !isGuest });
   const boothConfig = useMemo(() => studioDefaultRecordingBoothConfig(), []);
   const galleryFrames = useMemo(() => studioVirtualSpaceDefaultGalleryFrames(), []);
@@ -1907,7 +1907,7 @@ export function VirtualSpaceExperience({
           : <button type="button" className="space-link-row" onClick={() => setPanel("work")}><BookOpen size={17} aria-hidden />{bt("내 작업 열기", "Open my work")}</button>}
       </StudioVirtualSpacePanelGate>;
       case "booth": return <StudioVirtualSpacePanelGate active>
-        <StudioVirtualSpaceSpaceBookingPanel spaces={boothSpaces} bookings={boothBookings} waitlist={boothWaitlist}
+        <StudioVirtualSpaceSpaceBookingPanel spaces={boothSpaces} bookings={boothBookings} waitlist={boothWaitlist} guestPromotion={isGuest ? undefined : { bundle: guestBundle, summary: promotionSummary, busy: promotingGuestBundle, onPromote: promoteGuestBundle, onDismiss: dismissGuestBundle, onClearSummary: clearPromotionSummary }}
           onBookingsChange={setBoothBookings} onWaitlistChange={setBoothWaitlist} />
         <StudioVirtualSpaceRecordingBoothPanel config={boothConfig} bookings={boothBookings}
           position={{ x: snapshot.self.x, y: snapshot.self.y }} userName={localName}

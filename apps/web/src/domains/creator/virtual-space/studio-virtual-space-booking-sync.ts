@@ -38,8 +38,35 @@ function galleryLikesPath(scopeKey: string): string {
   return `/studio/space/gallery-likes/${encodeURIComponent(scopeKey)}`;
 }
 
+/**
+ * 서버가 거절한 동기화 요청의 오류. 상태 코드와 서버가 돌려준 안내 문구를
+ * 함께 실어, 호출부가 "왜 거절됐는지"를 사용자에게 보여 줄 수 있게 한다.
+ * 네트워크 자체가 닿지 않은 실패는 이 타입이 아니라 원래 오류가 그대로 던져진다.
+ */
+export class StudioVirtualSpaceSocialRequestError extends Error {
+  readonly status: number;
+  /** 서버 응답 본문의 message. 본문이 없거나 형식이 다르면 null. */
+  readonly serverMessage: string | null;
+
+  constructor(status: number, serverMessage: string | null) {
+    super(`studio space social request failed: ${status}`);
+    this.name = "StudioVirtualSpaceSocialRequestError";
+    this.status = status;
+    this.serverMessage = serverMessage;
+  }
+}
+
 async function requestJson(response: Response): Promise<unknown> {
-  if (!response.ok) throw new Error(`studio space social request failed: ${response.status}`);
+  if (!response.ok) {
+    let serverMessage: string | null = null;
+    try {
+      const body: unknown = await response.json();
+      if (isRecord(body) && typeof body.message === "string") serverMessage = body.message;
+    } catch {
+      // 본문이 JSON이 아닌 오류 응답은 상태 코드만으로 충분하다.
+    }
+    throw new StudioVirtualSpaceSocialRequestError(response.status, serverMessage);
+  }
   return response.json();
 }
 
