@@ -65,6 +65,13 @@ describe("게스트", () => {
     );
     expect(useAssetPointsStore.getState().events).toHaveLength(0);
   });
+
+  it("로그인 전에 포인트의 용도와 적립 방법을 먼저 설명한다", () => {
+    renderPage();
+    expect(screen.getByText("포인트로 할 수 있는 일")).toBeTruthy();
+    expect(screen.getByText(/마켓에서 브러시·소재 같은 에셋으로 교환/)).toBeTruthy();
+    expect(screen.getByText(/하루 첫 로그인 보너스 \+10P/)).toBeTruthy();
+  });
 });
 
 describe("로그인 사용자", () => {
@@ -75,6 +82,16 @@ describe("로그인 사용자", () => {
     // 적립 안내 카드와 내역 목록 양쪽에 라벨이 보인다.
     expect(screen.getAllByText("하루 첫 로그인 보너스")).toHaveLength(2);
     expect(useAssetPointsStore.getState().events).toHaveLength(1);
+  });
+
+  it("잔액이 있으면 다음 행동 밴드가 마켓 교환으로 안내한다", () => {
+    authState.userId = "user-1";
+    renderPage();
+    // 첫 방문 보너스로 잔액 10P가 생긴 상태의 밴드.
+    expect(screen.getByText(/지금 10P로 에셋을 교환할 수 있어요/)).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /포인트로 살 에셋 보기/ }).getAttribute("href"),
+    ).toBe("/market");
   });
 
   it("구매 내역과 포인트로 산 에셋 수가 보인다", () => {
