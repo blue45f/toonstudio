@@ -37,6 +37,8 @@ export interface StaggerRevealProps {
   className?: string;
   itemClassName?: string;
   style?: CSSProperties;
+  /** 컨테이너가 영역을 대표하면 라벨을 그대로 전달한다. */
+  "aria-label"?: string;
 }
 
 /**
@@ -59,11 +61,12 @@ export function StaggerReveal({
   className,
   itemClassName,
   style,
+  "aria-label": ariaLabel,
 }: StaggerRevealProps) {
   const items = Children.toArray(children);
   return createElement(
     Tag,
-    { className, style },
+    { className, style, "aria-label": ariaLabel },
     items.map((child, index) => (
       <RevealOnScroll
         key={child.key ?? index}
