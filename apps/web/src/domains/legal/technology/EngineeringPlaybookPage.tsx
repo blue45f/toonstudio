@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Cuboid,
   Database,
+  ExternalLink,
   Film,
   Gauge,
   Globe2,
@@ -21,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { externalLinkForName } from "./engineering-external-links";
 import {
   ENGINEERING_AI_WORKBENCH,
   ENGINEERING_BENCHMARK_GROUPS,
@@ -54,6 +56,26 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("EngineeringPlaybookPage", ko, en);
 
 const BODY_ID = "engineering-playbook-body";
+
+/** 이름 칩: 외부 링크 레지스트리에 공식 주소가 있으면 새 탭 링크로, 없으면 텍스트로 그린다. */
+function NameChip({ name, className }: { readonly name: string; readonly className: string }) {
+  const url = externalLinkForName(name);
+  if (!url) return <li className={className}>{name}</li>;
+  return (
+    <li>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${name} · ${bi("공식 사이트", "Official site")}`}
+        className={`${className} inline-flex items-center gap-1 transition-colors hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
+      >
+        {name}
+        <ExternalLink size={10} aria-hidden="true" className="shrink-0 opacity-70" />
+      </a>
+    </li>
+  );
+}
 
 const DOSSIER_ICONS: Record<string, LucideIcon> = {
   "service-product-architecture": Layers3,
@@ -292,7 +314,7 @@ export function EngineeringPlaybookPage() {
                   <h3 className="text-lg font-black tracking-tight text-fg">{bi(group.title.ko, group.title.en)}</h3>
                   <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={bi("비교 제품", "Compared products")}>
                     {group.products.map((product) => (
-                      <li key={product} className="rounded-full border border-line bg-panel px-2.5 py-1 text-[0.68rem] font-bold text-fg-2">{product}</li>
+                      <NameChip key={product} name={product} className="rounded-full border border-line bg-panel px-2.5 py-1 text-[0.68rem] font-bold text-fg-2" />
                     ))}
                   </ul>
                   <p className="mt-4 rounded-2xl bg-raised/70 p-4 text-sm leading-7 text-fg-2">{bi(group.marketSignal.ko, group.marketSignal.en)}</p>
@@ -345,7 +367,7 @@ export function EngineeringPlaybookPage() {
                   </div>
                   <ul className="mt-4 flex flex-wrap gap-1.5" aria-label={bi("도구", "Tools")}>
                     {item.tools.map((tool) => (
-                      <li key={tool} className="rounded-full bg-raised px-2.5 py-1 text-[0.66rem] font-semibold text-fg-2">{tool}</li>
+                      <NameChip key={tool} name={tool} className="rounded-full bg-raised px-2.5 py-1 text-[0.66rem] font-semibold text-fg-2" />
                     ))}
                   </ul>
                   <dl className="mt-4 grid gap-3 text-xs leading-6">
