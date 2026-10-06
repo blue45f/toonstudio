@@ -37,6 +37,14 @@ describe("sitewide visual identity v3 contract", () => {
     expect(workspaceCss).toContain("@media(forced-colors:active)");
   });
 
+  it("넓은 화면의 좌측 메뉴는 시안처럼 아이콘+글자 행 목록으로 편다", () => {
+    expect(workspaceCss).toContain("@media (min-width:1181px)");
+    expect(workspaceCss).toContain(".workspace-nav-shortcuts");
+    expect(workspaceCss).toContain(".workspace-nav-row-icon");
+    // 중간·좁은 화면의 타일 열과 하단 탭 바 규칙은 그대로 남는다.
+    expect(workspaceCss).toContain(".workspace-nav-visual{width:34px;height:34px");
+  });
+
   it("keeps the canvas quiet while upgrading editor chrome and the beta gate", () => {
     expect(editorCss).toContain('[data-studio-canvas-viewport]');
     expect(editorCss).toContain('[data-studio-rail-tool-id="pen"]');

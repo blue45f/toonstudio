@@ -119,3 +119,29 @@
 @media(max-width:760px){.workspace-nav-visual>img{width:28px;height:28px}.workspace-nav-line-icon{right:2px!important;bottom:2px!important;width:10px!important;height:10px!important;padding:1px}}
 @media(forced-colors:active){.workspace-nav-visual>img,.workspace-nav-line-icon{display:none!important}}
 .workspace-nav-visual>img+.workspace-nav-line-icon{display:none}
+
+/* ── 좌측 메뉴 행 형태 (넓은 화면) ───────────────────────────────
+ * 시안(s1/hub)의 좌측 메뉴는 큰 아트 타일이 아니라 아이콘+글자의 가로 행 목록이다.
+ * 넓은 화면에서는 타일 열을 행 목록으로 펴고 제작 바로가기 묶음을 이어 붙인다.
+ * 중간·좁은 화면은 기존 타일 열과 하단 탭 바를 그대로 쓴다. */
+.workspace-nav-row-icon{display:none}
+.workspace-nav-shortcuts{display:none}
+@media (min-width:1181px){
+  .workspace-shell{grid-template-columns:216px minmax(0,1fr)}
+  .workspace-sidebar{padding:16px 10px;overflow-y:auto}
+  .workspace-sidebar .workspace-nav{gap:2px}
+  .workspace-sidebar .workspace-nav a{flex-direction:row;justify-content:flex-start;min-height:44px;gap:10px;padding:0 10px;border-radius:10px;font-size:14px;transform:none}
+  .workspace-sidebar .workspace-nav a:hover{transform:none}
+  .workspace-nav-visual{display:none}
+  .workspace-nav-row-icon{display:block;flex:none;color:var(--color-fg-3)}
+  .workspace-sidebar .workspace-nav a:hover .workspace-nav-row-icon{color:var(--color-accent)}
+  .workspace-sidebar .workspace-nav a[aria-current="page"]{border-color:transparent;background:var(--color-accent-soft);color:var(--color-accent);box-shadow:none}
+  .workspace-sidebar .workspace-nav a[aria-current="page"] .workspace-nav-row-icon{color:var(--color-accent)}
+  .workspace-nav-shortcuts{display:flex;flex-direction:column;gap:2px;margin-top:10px;padding-top:10px;border-top:1px solid var(--color-line)}
+  .workspace-nav-shortcuts a{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:10px;color:var(--color-fg-2);font-size:14px;text-decoration:none}
+  .workspace-nav-shortcuts a:hover{background:var(--color-raised);color:var(--color-fg)}
+  .workspace-nav-shortcuts a:hover .workspace-nav-row-icon{color:var(--color-accent)}
+  .workspace-nav-shortcuts a[aria-current="page"]{background:var(--color-accent-soft);color:var(--color-accent);font-weight:700}
+  .workspace-nav-shortcuts a[aria-current="page"] .workspace-nav-row-icon{color:var(--color-accent)}
+  .workspace-support-nav a{flex-direction:row;justify-content:flex-start;min-height:44px;gap:10px;padding:0 10px;font-size:13px}
+}
