@@ -1,5 +1,6 @@
 import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
 
+import { MARKET_FAMILY_ART } from "../models/market-family-art";
 import {
   MARKET_RESOURCE_FAMILIES,
   marketResourceBrowseHref,
@@ -16,14 +17,6 @@ interface MarketResourceFamilyExplorerProps {
   readonly compact?: boolean;
 }
 
-const FAMILY_STUDIES = {
-  template: { image: "/brand/atelier-process.webp", position: "12% 45%", label: ["컷의 시작 · 구도와 이야기", "Where a panel starts · composition and story"] },
-  "2d": { image: "/assets/studio/cc0-20260906/assets/polyhaven-background-wooden-lounge/background.webp", position: "50% 50%", label: ["장면의 재료 · 배경과 소품", "Scene materials · backgrounds and props"] },
-  "3d": { image: "/assets/3d/environments/refined-v6/thumbnails/classroom_art_studio.png", position: "50% 55%", label: ["공간의 기준 · 구도와 투시", "Space as reference · composition and perspective"] },
-  brush: { image: "/brand/atelier-materials.webp", position: "5% 40%", label: ["선의 표정 · 필치와 질감", "Expressive lines · strokes and texture"] },
-  look: { image: "/brand/atelier-world.webp", position: "20% 20%", label: ["장면의 온도 · 색과 빛", "Scene temperature · color and light"] },
-} as const satisfies Record<MarketResourceFamily["id"], { readonly image: string; readonly position: string; readonly label: readonly [string, string] }>;
-
 function FamilyCard({
   family,
   featured = false,
@@ -38,7 +31,7 @@ function FamilyCard({
   const primary = family.subcategories.slice(0, 3);
   const rest = family.subcategories.slice(3);
   const first = family.subcategories[0];
-  const study = FAMILY_STUDIES[family.id];
+  const study = MARKET_FAMILY_ART[family.id];
 
   return (
     <article
