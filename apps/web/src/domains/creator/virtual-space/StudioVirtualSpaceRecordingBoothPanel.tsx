@@ -10,6 +10,7 @@ import {
 } from "./studio-virtual-space-recording-booth";
 import type { StudioSpaceBooking } from "./studio-virtual-space-space-booking";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
+import { StudioVirtualSpaceRecordingBoothSavedAssets } from "./StudioVirtualSpaceRecordingBoothSavedAssets";
 import { StudioVirtualSpaceSilentZoneBadge } from "./StudioVirtualSpaceSilentZoneBadge";
 import { useStudioVirtualSpaceRecordingBooth } from "./use-studio-virtual-space-recording-booth";
 
@@ -24,7 +25,8 @@ export interface StudioVirtualSpaceRecordingBoothPanelProps {
   readonly driver?: StudioRecordingBoothDriver;
   readonly nowMs?: number;
   readonly onRequireLogin?: () => void;
-  readonly onProjectAsset?: (descriptor: StudioProjectAudioAssetDescriptor, blob: Blob | null) => void;
+  /** 실제 저장 콜백. false/throw면 실패로 표시하고 테이크를 남긴다. */
+  readonly onProjectAsset?: (descriptor: StudioProjectAudioAssetDescriptor, blob: Blob | null) => Promise<boolean> | boolean | void;
   readonly onEffectiveMicMuted?: (muted: boolean) => void;
 }
 
@@ -183,14 +185,25 @@ export function StudioVirtualSpaceRecordingBoothPanel({
         <p className="space-panel-note">{bt("아직 녹음한 테이크가 없어요.", "No takes recorded yet.")}</p>
       ) : (
         <ul>
-          {booth.takes.map(({ take, blob, addedToProject }) => (
+          {booth.takes.map(({ take, blob, saveState }) => (
             <li key={take.id}>
               <span>
                 {new Date(take.recordedAtMs).toLocaleTimeString()} · {formatClock(take.durationSec)}
                 {blob ? ` · ${Math.max(1, Math.round(blob.size / 1024))}KB` : ""}
               </span>
-              {addedToProject ? (
+              {saveState === "saved" ? (
                 <span>{bt("프로젝트 에셋에 넣었어요", "Added to project assets")}</span>
+              ) : saveState === "saving" ? (
+                <button type="button" disabled>
+                  {bt("저장 중…", "Saving…")}
+                </button>
+              ) : saveState === "failed" ? (
+                <>
+                  <span role="alert">{bt("저장에 실패했어요. 테이크는 이 기기에 남아 있어요.", "Save failed. The take is still on this device.")}</span>
+                  <button type="button" onClick={() => booth.addTakeToProject(take.id)}>
+                    {bt("다시 저장하기", "Retry save")}
+                  </button>
+                </>
               ) : (
                 <button type="button" onClick={() => booth.addTakeToProject(take.id)}>
                   {bt("프로젝트 에셋으로 넣기", "Add to project assets")}
@@ -200,6 +213,13 @@ export function StudioVirtualSpaceRecordingBoothPanel({
           ))}
         </ul>
       )}
+
+      {projectId && !isGuest ? (
+        <StudioVirtualSpaceRecordingBoothSavedAssets
+          workId={projectId}
+          refreshKey={booth.takes.filter((entry) => entry.saveState === "saved").length}
+        />
+      ) : null}
     </section>
   );
 }
