@@ -66,23 +66,23 @@ export function parseLockfileResolvedVersions(lockfileText) {
     }
     if (inImporters && /^\S/.test(line)) break; // 다음 최상위 키에서 종료
     if (!inImporters) continue;
-    if (/^    (dependencies|optionalDependencies):\s*$/.test(line)) {
+    if (/^ {4}(dependencies|optionalDependencies):\s*$/.test(line)) {
       inDeps = true;
       currentName = null;
       continue;
     }
-    if (/^    \S/.test(line)) {
+    if (/^ {4}\S/.test(line)) {
       inDeps = false;
       currentName = null;
       continue;
     }
     if (!inDeps) continue;
-    const nameMatch = line.match(/^      ('([^']+)'|([^\s:]+)):\s*$/);
+    const nameMatch = line.match(/^ {6}('([^']+)'|([^\s:]+)):\s*$/);
     if (nameMatch) {
       currentName = (nameMatch[2] ?? nameMatch[3]).trim();
       continue;
     }
-    const versionMatch = line.match(/^        version:\s*(\S+)\s*$/);
+    const versionMatch = line.match(/^ {8}version:\s*(\S+)\s*$/);
     if (versionMatch && currentName) {
       const version = versionMatch[1].replace(/\(.*$/, "");
       if (!resolved.has(currentName)) resolved.set(currentName, new Set());
