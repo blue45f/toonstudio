@@ -32,8 +32,6 @@ export * from "./review-delivery.schema";
 
 export * from "./review-voice-note.schema";
 
-export * from "./recording-booth-asset.schema";
-
 export * from "./studio-virtual-space-decoration.schema";
 
 export * from "./studio-virtual-space-booking.schema";

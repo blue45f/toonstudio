@@ -7,7 +7,7 @@ import {
   observePgPoolIdleErrors,
   resolvePgPoolOptions,
 } from "./pg-connection";
-import * as schema from "./schema";
+import * as schema from "./schema/index";
 
 // PostgreSQL(Neon) — node-postgres 드라이버. 로컬 검증은 docker postgres(:55432), 운영/원격은 Neon.
 // pg v9의 sslmode=require 의미 변경에 기대지 않고 원격은 verify-full로 정규화한다.
@@ -52,7 +52,7 @@ export const dbClient = {
 };
 
 export const dbPool = pool;
-export * from "./schema";
+export * from "./schema/index";
 export * from "./creator-asset-object-storage.schema";
 export * from "./creator-asset-platform.schema";
 export * from "./creator-asset-processing.schema";

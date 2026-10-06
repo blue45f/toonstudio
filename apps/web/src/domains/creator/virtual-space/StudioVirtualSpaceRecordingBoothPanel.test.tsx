@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { StudioVirtualSpaceRecordingBoothPanel } from "./StudioVirtualSpaceRecordingBoothPanel";
 import {
   createScriptedRecordingBoothDriver,
+  type StudioProjectAudioAssetDescriptor,
   type StudioRecordingBoothConfig,
 } from "./studio-virtual-space-recording-booth";
 import type { StudioSpaceBooking } from "./studio-virtual-space-space-booking";
@@ -55,7 +56,7 @@ describe("StudioVirtualSpaceRecordingBoothPanel", () => {
   });
 
   it("반향 프리셋을 골라 녹음하고 테이크를 프로젝트 에셋으로 넣는다", async () => {
-    const onProjectAsset = vi.fn(async () => true);
+    const onProjectAsset = vi.fn(async (_descriptor: StudioProjectAudioAssetDescriptor, _blob: Blob | null) => true);
     renderPanel({ onProjectAsset });
     fireEvent.click(screen.getByRole("radio", { name: /홀/ }));
     expect((screen.getByRole("radio", { name: /홀/ }) as HTMLInputElement).checked).toBe(true);
@@ -70,7 +71,7 @@ describe("StudioVirtualSpaceRecordingBoothPanel", () => {
   });
 
   it("저장이 실패하면 실패를 알리고 테이크를 남겨 다시 저장할 수 있다", async () => {
-    const onProjectAsset = vi.fn(async () => false);
+    const onProjectAsset = vi.fn(async (_descriptor: StudioProjectAudioAssetDescriptor, _blob: Blob | null) => false);
     renderPanel({ onProjectAsset });
     fireEvent.click(screen.getByRole("button", { name: /녹음 시작/ }));
     fireEvent.click(await screen.findByRole("button", { name: /녹음 종료/ }));

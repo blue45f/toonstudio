@@ -66,8 +66,9 @@ describe("career cover image", () => {
     expect(parseHiring(careerSchema, { ...career, coverImageUrl: null }).coverImageUrl).toBeNull();
     expect(parseHiring(careerSchema, { ...career, coverImageUrl: "https://images.example.com/cover.png" }).coverImageUrl).toBe("https://images.example.com/cover.png");
   });
+  // 자격증명이 박힌 주소는 사용자명만 있어도 거부된다(비밀번호 없이도 userinfo가 남아면 안 된다).
   it("rejects cover addresses that are not public HTTPS", () => {
-    for (const coverImageUrl of ["http://images.example.com/cover.png", "https://user:pass@images.example.com/cover.png", "https://127.0.0.1/cover.png", "https://images.example.com:8443/cover.png", "https://localhost/cover.png"]) {
+    for (const coverImageUrl of ["http://images.example.com/cover.png", "https://user@images.example.com/cover.png", "https://127.0.0.1/cover.png", "https://images.example.com:8443/cover.png", "https://localhost/cover.png"]) {
       expect(() => parseHiring(careerSchema, { ...career, coverImageUrl })).toThrow();
     }
   });

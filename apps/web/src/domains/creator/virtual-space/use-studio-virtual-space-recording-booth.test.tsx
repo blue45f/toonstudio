@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createScriptedRecordingBoothDriver,
+  type StudioProjectAudioAssetDescriptor,
   type StudioRecordingBoothConfig,
   type StudioRecordingTake,
 } from "./studio-virtual-space-recording-booth";
@@ -112,7 +113,7 @@ describe("useStudioVirtualSpaceRecordingBooth", () => {
   });
 
   it("로그인 사용자는 테이크를 프로젝트 에셋으로 편입할 수 있다", async () => {
-    const onProjectAsset = vi.fn(async () => true);
+    const onProjectAsset = vi.fn(async (_descriptor: StudioProjectAudioAssetDescriptor, _blob: Blob | null) => true);
     const { result } = setup({ onProjectAsset });
     await act(async () => { await result.current.startRecording(); });
     await act(async () => { await result.current.stopRecording(); });
@@ -127,7 +128,7 @@ describe("useStudioVirtualSpaceRecordingBooth", () => {
   });
 
   it("저장이 실패하면 성공으로 위장하지 않고 테이크를 재시도 가능 상태로 남긴다", async () => {
-    const onProjectAsset = vi.fn(async () => false);
+    const onProjectAsset = vi.fn(async (_descriptor: StudioProjectAudioAssetDescriptor, _blob: Blob | null) => false);
     const { result } = setup({ onProjectAsset });
     await act(async () => { await result.current.startRecording(); });
     await act(async () => { await result.current.stopRecording(); });
