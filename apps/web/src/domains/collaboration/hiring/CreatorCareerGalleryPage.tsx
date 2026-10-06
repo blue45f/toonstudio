@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, ExternalLink, RotateCcw } from "lucide-react";
 
+import { CareerGalleryHero } from "./CareerGalleryHero";
+import { CareerCoverArt } from "./career-cover-art";
 import { CareerPublicConfirmation } from "./career-confirmation-public";
 import { useCareerPublicConfirmations } from "./use-career-public-confirmations";
 
@@ -13,7 +15,6 @@ import { CollabNotice, collabButton } from "../collaboration-ui";
 import Link from "@/shared/navigation/router-link";
 import { api, getApiErrorMessage } from "@/platform/api";
 import { Container } from "@/shared/components/section";
-import { TypographicCover } from "@/shared/components/typographic-cover";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
@@ -24,8 +25,11 @@ type RoleFilter = CreatorHiringRole | "all";
 /**
  * 창작자 커리어 갤러리 — 공개 경력을 "전시"로 보여 주는 표면.
  *
- * 대표작 아트는 창작자가 권리를 확인해 등록한 실제 커버 이미지를 우선 쓰고,
- * 등록하지 않은 항목만 작품 제목의 타이포그래픽 커버로 대신한다(등록 정보 재사용).
+ * 첫 화면은 전폭 히어로가 차지한다: 커버를 등록한 항목이 있으면 그 커버가
+ * "이번 주 표지"로 히어로가 되고, 없거나 불러오기가 실패하면 아카이브 아트가
+ * 골격을 유지한다. 대표작 아트는 창작자가 권리를 확인해 등록한 실제 커버 이미지를
+ * 우선 쓰고, 등록하지 않았거나 불러오기에 실패한 항목만 작품 제목의
+ * 타이포그래픽 커버로 대신한다(등록 정보 재사용).
  * 카드 상단에 아트를 가장 크게 두고, 역할 필터 칩과 협업 기록 배지(상대방 확인)를 얹는다.
  */
 export function CreatorCareerGalleryPage() {
@@ -66,7 +70,7 @@ export function CreatorCareerGalleryPage() {
   return (
     <Container size="wide" className="space-y-6 py-8">
       <Link className={collabButton} href="/collaborate">구인·의뢰로 돌아가기</Link>
-      <h1 className="text-3xl font-bold">창작자 포트폴리오 링크 전시</h1>
+      <CareerGalleryHero items={items} failed={error !== ""} />
       <details className="rounded-xl border border-line bg-panel px-4 py-2.5">
         <summary className="cursor-pointer text-sm font-bold text-fg-2 marker:text-accent">
           {translateCurrentStaticSourceText("domains.collaboration.hiring.CreatorCareerPanel", "ko", "면책 안내")}
@@ -160,24 +164,13 @@ export function CreatorCareerGalleryPage() {
               {visibleItems.map((item) => {
                 const summary = confirmations[item.id];
                 return (
-                  <article key={item.id} className="flex flex-col overflow-hidden rounded-2xl border border-line bg-panel">
+                  <article
+                    key={item.id}
+                    id={`career-card-${item.id}`}
+                    className="flex scroll-mt-24 flex-col overflow-hidden rounded-2xl border border-line bg-panel"
+                  >
                     <div className="relative">
-                      {item.coverImageUrl ? (
-                        <img
-                          src={item.coverImageUrl}
-                          alt={`${item.title} 대표 커버`}
-                          className="aspect-[16/8] w-full object-cover"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <TypographicCover
-                          title={item.title}
-                          seed={item.id}
-                          eyebrow={item.displayName}
-                          className="aspect-[16/8] w-full"
-                        />
-                      )}
+                      <CareerCoverArt item={item} className="aspect-[16/8] w-full" />
                       <span className="absolute bottom-3 left-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
                         {CREATOR_HIRING_ROLES[item.role]}
                       </span>
