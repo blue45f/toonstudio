@@ -92,7 +92,12 @@ export default defineConfig(
     },
     rules: {
       'shadcn/no-raw-colors': 'warn',
-      'shadcn/no-unknown-classes': 'warn',
+      // no-unknown-classes 는 단계 1 실측에서 오탐률 98%였다 (플러그인이 테마 파일
+      // 하나의 어휘만 알아 프로젝트 커스텀 클래스를 전부 미정의로 판정하고,
+      // 0.2.0 에는 클래스 무시 설정이 없다). 플러그인이 무시 설정이나 어휘 확장을
+      // 제공하면 재검토한다. 죽은 클래스 검출은 그때까지 계약 테스트가 맡는다.
+      // 근거: hidden_files/shadcn-lint-pilot-2026-10-06/findings.md
+      'shadcn/no-unknown-classes': 'off',
       'shadcn/no-restyle': 'off',
       'shadcn/no-arbitrary-values': 'off',
       'shadcn/no-inline-styles': 'off',
