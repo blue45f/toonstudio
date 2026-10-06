@@ -1,4 +1,4 @@
-import type { RouteSilhouetteFamily } from "./route-fallback-silhouette-family";
+export type RouteSilhouetteFamily = "virtual-space" | "studio-home" | "learn";
 
 /**
  * 라우트 진입 스켈레톤의 실루엣 변형.

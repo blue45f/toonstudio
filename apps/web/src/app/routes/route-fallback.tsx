@@ -4,14 +4,29 @@ import { useLocation } from "react-router-dom";
 
 import { LoadingState } from "@/shared/components/LoadingState";
 
-import { RouteSilhouetteSkeleton } from "./route-fallback-silhouette";
-import { routeSilhouetteFamily } from "./route-fallback-silhouette-family";
+import {
+  RouteSilhouetteSkeleton,
+  type RouteSilhouetteFamily,
+} from "./route-fallback-silhouette";
+
 import {
   defineBilingualText,
   translateBilingualValueForActiveLocale,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";
 import { resolveSiteRouteExperience } from "@/shared/lib/site-route-experience";
+
+/** 경로가 속한 실루엣 화면군. 어느 군에도 속하지 않으면 null(일반 카드 스켈레톤 유지). */
+function routeSilhouetteFamily(pathname: string): RouteSilhouetteFamily | null {
+  const path = pathname.replace(/\/+$/u, "") || "/";
+  if (path === "/studio/space" || /^\/studio\/p\/[^/]+\/space(?:\/.*)?$/u.test(path)) {
+    return "virtual-space";
+  }
+  if (path === "/home") return "studio-home";
+  if (path === "/learn" || path.startsWith("/learn/")) return "learn";
+  return null;
+}
+
 
 const COPY = {
   loadingPage: defineBilingualText("routeFallback", "loadingPage", "화면 불러오기", "Loading page"),
