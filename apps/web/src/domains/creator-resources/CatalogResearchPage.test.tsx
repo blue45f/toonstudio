@@ -51,6 +51,21 @@ describe("catalog research user journeys", () => {
     fireEvent.click(screen.getByRole("button", { name: "검색 조건 초기화" })); expect(screen.getAllByRole("button", { name: /작품 \d+ 비교 선택/u })).toHaveLength(24);
     fireEvent.click(screen.getByRole("button", { name: "선택 비우기" })); expect(screen.queryByText(/선택 중 1편/u)).toBeNull();
   });
+  it("탐색 뷰에서는 비교 보드가 하단 고정 바로 붙고 칩으로 해제할 수 있다", async () => {
+    page(); await screen.findByRole("heading", { name: "비교할 작품 찾기" });
+    // 빈 보드는 섹션으로 안내한다.
+    expect(screen.getByText(/비교에 담긴 작품이 없습니다/u)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "작품 00 비교 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "작품 01 비교 선택" }));
+    const bar = screen.getByRole("complementary", { name: "내 비교 보드" });
+    expect(bar.textContent).toContain("내 비교 보드 2/4");
+    expect(bar.textContent).toContain("작품 00");
+    fireEvent.click(screen.getByRole("button", { name: "작품 00 비교에서 제거" }));
+    expect(screen.getByRole("complementary", { name: "내 비교 보드" }).textContent).toContain("내 비교 보드 1/4");
+    // 작품 카드에는 장르 스펙트럼 커버가 붙는다(장식 영역이라 제목은 본문 제목이 담당).
+    const firstCard = screen.getByRole("button", { name: "작품 01 비교 선택" }).closest("article");
+    expect(firstCard?.querySelector("[aria-hidden='true']")).toBeTruthy();
+  });
   it("shows a failed index and allows retry", async () => {
     load.mockRejectedValueOnce(new Error("연결 실패")); page(); expect(await screen.findByRole("alert")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "색인 다시 불러오기" })); await screen.findByRole("heading", { name: "비교할 작품 찾기" }); expect(load).toHaveBeenCalledTimes(2);
