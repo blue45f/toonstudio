@@ -30,6 +30,7 @@ import {
   type StudioCharacterSkin,
 } from "./studio-virtual-space-character-skins";
 import { studioCharacterExpressionFrame } from "./studio-virtual-space-expressions";
+import { studioPoseSettleScaleY } from "./studio-virtual-space-sprite-smoothing";
 import { STUDIO_ACTOR_EXPRESSION_PRESENTATION } from "./studio-virtual-space-scene-art-runtime";
 import { studioEffectiveGaitStride } from "./studio-virtual-space-locomotion-presentation";
 import { studioGaitFrame } from "./studio-virtual-space-presentation";
@@ -90,7 +91,7 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
     const source = scene.textures.get(asset.key).source[0];
     return Boolean(source && studioCharacterStaticSheetMatches(asset, source.width, source.height));
   };
-  const applySpriteVisual = (
+  const applySpriteVisualBody = (
     sprite: import("phaser").GameObjects.Sprite,
     skin: StudioCharacterSkin,
     nextFacing: StudioVirtualSpaceFacing,
@@ -99,7 +100,8 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
     const owner = sprite.getData("assetOwner") as string;
     if (deps.isSceneReady() && owner) characterAssets.use(owner, studioCharacterVisualAssets(skin, nextFacing, nextState), sprite.texture.key);
     if (sprite.getData("visualMotionState") !== nextState) {
-      sprite.setData("visualMotionState", nextState).setData("visualStateStartedAt", scene.time.now);
+      sprite.setData("visualPreviousMotionState", (sprite.getData("visualMotionState") as StudioCharacterMotionState | undefined) ?? null)
+        .setData("visualMotionState", nextState).setData("visualStateStartedAt", scene.time.now);
     }
     sprite.setData("faceTextureUsed", false);
     const action = studioCharacterActionClip(skin, nextFacing, nextState);
@@ -205,6 +207,29 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
       sprite.setData("framePresentation", asset.presentation);
     }
     updateDisplaySize(sprite);
+  };
+
+  /**
+   * 본문 적용 뒤 자세 전이 세틀을 얹는다. 앉기·눕기·일어서기는 정적 포즈 교체라
+   * 그 자체로는 툭 바뀌는데, 전이 구간의 스쿼시가 무게감을 만든다.
+   * 본문이 매 프레임 setDisplaySize로 배율을 되돌리므로 누적되지 않고,
+   * 캔버스의 게이트 스쿼시·깜빡임 합성보다 먼저 곱해져 함께 실린다.
+   * 로컬·피어·NPC가 전부 이 함수를 거치므로 적용 범위는 전 배우 공통이다.
+   */
+  const applySpriteVisual = (
+    sprite: import("phaser").GameObjects.Sprite,
+    skin: StudioCharacterSkin,
+    nextFacing: StudioVirtualSpaceFacing,
+    nextState: StudioCharacterMotionState,
+  ) => {
+    applySpriteVisualBody(sprite, skin, nextFacing, nextState);
+    const settle = studioPoseSettleScaleY({
+      state: nextState,
+      previousState: (sprite.getData("visualPreviousMotionState") as StudioCharacterMotionState | null | undefined) ?? null,
+      elapsedMs: scene.time.now - Number(sprite.getData("visualStateStartedAt") ?? scene.time.now),
+      reducedMotion: reducedMotion.matches,
+    });
+    if (settle !== 1) sprite.setScale(sprite.scaleX, sprite.scaleY * settle);
   };
 
   const applyAvatarVisual = (

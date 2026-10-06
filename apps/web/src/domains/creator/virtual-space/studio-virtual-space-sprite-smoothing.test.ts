@@ -15,6 +15,7 @@ import {
   studioBreathPhaseAt,
   studioDisplayDampTauSeconds,
   studioPeerPresenceFade,
+  studioPoseSettleScaleY,
   studioSmoothingPhaseSeed,
   studioSpriteCrossfadeAlpha,
   transitionStudioSpriteCrossfade,
@@ -303,5 +304,37 @@ describe("studioDisplayDampTauSeconds", () => {
     const adaptiveLag = 277 * studioDisplayDampTauSeconds(277);
     expect(adaptiveLag).toBeLessThan(fixedLag);
     expect(adaptiveLag).toBeLessThan(9);
+  });
+});
+
+describe("studioPoseSettleScaleY", () => {
+  it("앉기 전이 중간에서는 눌리고, 시작과 끝에서는 1로 돌아온다", () => {
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 0, reducedMotion: false })).toBe(1);
+    const mid = studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 190, reducedMotion: false });
+    expect(mid).toBeCloseTo(1 - 0.055, 5);
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 380, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 5_000, reducedMotion: false })).toBe(1);
+  });
+
+  it("눕기는 앉기보다 얕게 눌린다", () => {
+    const lie = studioPoseSettleScaleY({ state: "lie", previousState: "idle", elapsedMs: 190, reducedMotion: false });
+    const sit = studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 190, reducedMotion: false });
+    expect(lie).toBeCloseTo(1 - 0.04, 5);
+    expect(lie).toBeGreaterThan(sit);
+  });
+
+  it("앉았다 일어설 때는 가벼운 세틀이 걸리고, 그 외 전이는 변형이 없다", () => {
+    const stand = studioPoseSettleScaleY({ state: "idle", previousState: "sit", elapsedMs: 150, reducedMotion: false });
+    expect(stand).toBeCloseTo(1 - 0.03, 5);
+    expect(studioPoseSettleScaleY({ state: "idle", previousState: "lie", elapsedMs: 300, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "idle", previousState: "walk", elapsedMs: 150, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "talk", previousState: "sit", elapsedMs: 150, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "walk", previousState: null, elapsedMs: 150, reducedMotion: false })).toBe(1);
+  });
+
+  it("모션 줄이기와 깨진 경과 시간에서는 항상 1이다", () => {
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 190, reducedMotion: true })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: Number.NaN, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: -5, reducedMotion: false })).toBe(1);
   });
 });

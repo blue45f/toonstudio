@@ -232,6 +232,39 @@ export function finishStudioSpriteCrossfade(
     : state;
 }
 
+/** 자세 전이 세틀 시간(ms). 자세 상태 머신의 전이 시간(380ms)과 맞춘다. */
+export const STUDIO_POSE_SETTLE_MS = 380;
+/** 일어서기 세틀 시간(ms). 앉기보다 짧고 가볍게 눌렸다 돌아온다. */
+export const STUDIO_POSE_STAND_SETTLE_MS = 300;
+
+/**
+ * 자세 전이 세틀 스쿼시(표시 전용 scaleY 배율).
+ * 앉기·눕기는 정적 포즈 시트 교체라 그 자체로는 "툭" 바뀌는데, 전이 구간 동안
+ * 몸이 살짝 눌렸다 돌아오는 세틀을 얹으면 무게감이 생긴다. 일어설 때도
+ * 직전 자세가 앉기·눕기였으면 더 가벼운 세틀로 받아 준다.
+ * 곡선은 sin(π·진행도)라 양끝에서 기울기가 0 — 시작·종료 모두 끊기지 않는다.
+ * 모션 줄이기에서는 항상 1(변형 없음)이다.
+ */
+export function studioPoseSettleScaleY(input: {
+  readonly state: string;
+  readonly previousState: string | null;
+  readonly elapsedMs: number;
+  readonly reducedMotion: boolean;
+}): number {
+  if (input.reducedMotion || !Number.isFinite(input.elapsedMs) || input.elapsedMs < 0) return 1;
+  const settle = (durationMs: number, depth: number): number => {
+    const progress = Math.min(1, input.elapsedMs / durationMs);
+    return 1 - Math.sin(progress * Math.PI) * depth;
+  };
+  if (input.state === "sit") return settle(STUDIO_POSE_SETTLE_MS, 0.055);
+  if (input.state === "lie") return settle(STUDIO_POSE_SETTLE_MS, 0.04);
+  if ((input.state === "idle" || input.state === "walk")
+    && (input.previousState === "sit" || input.previousState === "lie")) {
+    return settle(STUDIO_POSE_STAND_SETTLE_MS, 0.03);
+  }
+  return 1;
+}
+
 /** 동료 입장 페이드인 시간(ms). 공간에 사람이 "툭" 나타나지 않게 한다. */
 export const STUDIO_PEER_ENTER_FADE_MS = 260;
 /** 동료 퇴장 페이드아웃 시간(ms). 이 시간이 지나면 호출 측이 스프라이트를 파괴한다. */
