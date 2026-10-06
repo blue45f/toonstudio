@@ -83,7 +83,7 @@ import {
   neutralStudioMotionRequest,
   type StudioMotionRequest,
 } from "./studio-virtual-space-motion-api";
-import type { StudioSpacePose } from "./studio-virtual-space-pose-controller";
+import { studioPoseSeatAnchors, type StudioSpacePose } from "./studio-virtual-space-pose-controller";
 import {
   createMotionStateMachine,
   motionOneShotFinished,
@@ -2135,9 +2135,7 @@ export function StudioVirtualSpacePhaserCanvas({
         const localEmotePose = emotes?.pose("self", time, reducedMotion.matches) ?? null;
         const localWaving = shownLocalEmote === "wave" || poseRef.current.waveActorIds.includes(identityRef.current);
         // 자세 상태 머신: 휴식 요청(앉기/눕기) 판정 + 이동 시작 시 자동 일어서기
-        const seatAnchors = poseRef.current.seatedActors.map((actor) => ({
-          point: actor.anchorPoint, facing: actor.facing, radius: 56,
-        }));
+        const seatAnchors = studioPoseSeatAnchors({ seatedActors: poseRef.current.seatedActors, interactionSlots: manifest.interactionSlots });
         const clearanceOffsets = [{ x: 44, y: 0 }, { x: -44, y: 0 }, { x: 0, y: 44 }, { x: 0, y: -44 }];
         const openArea = clearanceOffsets.every((offset) =>
           studioWorldCanOccupy(navigationWorld, { x: currentPoint.x + offset.x, y: currentPoint.y + offset.y }))
@@ -2163,12 +2161,12 @@ export function StudioVirtualSpacePhaserCanvas({
           lastFootstepDistance = localDistance;
         }
         previousRendered = rendered;
-        localSprite.setData("walkDistance", localDistance).setData("actorReaction", shownLocalEmote);
+        localSprite.setData("walkDistance", localDistance).setData("actorReaction", shownLocalEmote).setData("actorUserStatus", snapshotRef.current.self.userStatus);
         localSprite.setData("seatAttached", Boolean(localSeat));
         const localEmoteFacing = localSeatRequested || localPoseOverride || nextMoving ? null : studioEmoteFacing(localEmotePose);
         spriteCrossfades?.capture(localSprite);
         applyAvatarVisual(localSprite, snapshotRef.current.self,
-          localSeatRequested?.facing ?? localPoseOverride?.facing ?? localEmoteFacing ?? facing, localState, identityRef.current);
+          localSeatRequested?.facing ?? poseFrame.anchor?.facing ?? localPoseOverride?.facing ?? localEmoteFacing ?? facing, localState, identityRef.current);
         spriteCrossfades?.commit(localSprite, time, crossfadeEnabled);
         applyCameraMode();
         const cameraMode = experienceRef.current.cameraMode;
@@ -2396,7 +2394,7 @@ export function StudioVirtualSpacePhaserCanvas({
           const peerSeat = scene.textures.exists(studioCharacterPoseTextureKey(peerSkin, "sit")) ? peerSeatRequested : undefined;
           const peerEmote = emotes?.activeId(`peer:${peerId}`, time) ?? null;
           const peerEmotePose = target.moving || peerSeatRequested ? null : emotes?.pose(`peer:${peerId}`, time, reducedMotion.matches) ?? null;
-          visual.sprite.setData("actorReaction", peerEmote);
+          visual.sprite.setData("actorReaction", peerEmote).setData("actorUserStatus", visual.userStatus);
           const peerWaving = poseRef.current.waveActorIds.includes(peerId) || peerEmote === "wave";
           const peerGroundPoint = peerSeat?.anchorPoint ?? target;
           const peerVisualPoint = studioProjectTownPoint(manifest, peerGroundPoint);
@@ -2630,7 +2628,7 @@ export function StudioVirtualSpacePhaserCanvas({
             .setAngle((npcEmotePose?.bodyAngle ?? 0) + npcRockAngle)
             .setDepth(studioTownDepthForPoint(manifest, groundPoint, 1_000)).setData("seatAttached", Boolean(attached));
           npc.sprite.setData("activityStage", view.activityStage).setData("activityAnchorId", view.activityAnchorId);
-          npc.sprite.setData("walkDistance", view.distance).setData("actorReaction", npcEmote);
+          npc.sprite.setData("walkDistance", view.distance).setData("actorReaction", npcEmote).setData("actorNpcPhase", view.phase);
           // 다가온 사람을 돌아본다(서 있을 때만). 대화 중(HUD 대화 포커스)인 NPC는 말하는 동작을 한다.
           const npcGap = Math.hypot(view.point.x - currentPoint.x, view.point.y - currentPoint.y);
           const lookAtPlayer = !view.moving && !attached && !blocked && npcGap < NPC_LOOK_DISTANCE;

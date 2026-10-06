@@ -3,6 +3,7 @@ import {
   studioCharacterActionFrame,
   studioCharacterActionSheetMatches,
   studioCharacterActionTextureKey,
+  studioCharacterFaceTextureKey,
   studioCharacterFrameGeometry,
   studioCharacterPoseSheetMatches,
   studioCharacterPoseTextureKey,
@@ -12,6 +13,14 @@ import {
   studioCharacterWalkAnimationKey as walkAnimationKey,
   studioCharacterWalkTextureKey as walkSheetKey,
 } from "./studio-virtual-space-character-assets";
+import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
+import {
+  resolveStudioFaceSheet,
+  studioActorFaceEmotion,
+  studioFaceLayerApplies,
+  type StudioFaceNpcPhase,
+} from "./studio-virtual-space-face-layer";
+import type { StudioUserStatus } from "./studio-virtual-space-user-status";
 import {
   resolveStudioCharacterAppearance,
   studioCharacterActionClip,
@@ -21,6 +30,7 @@ import {
   type StudioCharacterSkin,
 } from "./studio-virtual-space-character-skins";
 import { studioCharacterExpressionFrame } from "./studio-virtual-space-expressions";
+import { studioPoseSettleScaleY } from "./studio-virtual-space-sprite-smoothing";
 import { STUDIO_ACTOR_EXPRESSION_PRESENTATION } from "./studio-virtual-space-scene-art-runtime";
 import { studioEffectiveGaitStride } from "./studio-virtual-space-locomotion-presentation";
 import { studioGaitFrame } from "./studio-virtual-space-presentation";
@@ -81,7 +91,7 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
     const source = scene.textures.get(asset.key).source[0];
     return Boolean(source && studioCharacterStaticSheetMatches(asset, source.width, source.height));
   };
-  const applySpriteVisual = (
+  const applySpriteVisualBody = (
     sprite: import("phaser").GameObjects.Sprite,
     skin: StudioCharacterSkin,
     nextFacing: StudioVirtualSpaceFacing,
@@ -90,8 +100,10 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
     const owner = sprite.getData("assetOwner") as string;
     if (deps.isSceneReady() && owner) characterAssets.use(owner, studioCharacterVisualAssets(skin, nextFacing, nextState), sprite.texture.key);
     if (sprite.getData("visualMotionState") !== nextState) {
-      sprite.setData("visualMotionState", nextState).setData("visualStateStartedAt", scene.time.now);
+      sprite.setData("visualPreviousMotionState", (sprite.getData("visualMotionState") as StudioCharacterMotionState | undefined) ?? null)
+        .setData("visualMotionState", nextState).setData("visualStateStartedAt", scene.time.now);
     }
+    sprite.setData("faceTextureUsed", false);
     const action = studioCharacterActionClip(skin, nextFacing, nextState);
     const actionKey = action ? studioCharacterActionTextureKey(skin, nextFacing, nextState) : null;
     const actionSource = actionKey && scene.textures.exists(actionKey) ? scene.textures.get(actionKey).source[0] : undefined;
@@ -120,6 +132,27 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
         const frame = pose.directionFrames[nextFacing];
         sprite.setTexture(poseKey, frame).setData("framePresentation", pose.frames[frame]);
         sprite.setData("poseTextureUsed", true);
+        updateDisplaySize(sprite);
+        return;
+      }
+    }
+    // 라이브 표정 레이어: 스킨이 `face-<감정>` 세트를 선언했을 때만 동작하고,
+    // 세트가 없거나 텍스처가 준비되지 않았으면 아래 기존 표정 경로로 폴백한다.
+    // 우선순위는 동작 클립 > 포즈 시트 > 표정 세트 > 기존 표정 시트 순이다.
+    const faceEmotion = studioActorFaceEmotion({
+      emote: sprite.getData("actorReaction") as StudioSpaceEmoteId | null | undefined,
+      userStatus: sprite.getData("actorUserStatus") as StudioUserStatus | null | undefined,
+      npcPhase: sprite.getData("actorNpcPhase") as StudioFaceNpcPhase | null | undefined,
+    });
+    const face = faceEmotion && studioFaceLayerApplies(nextState) ? resolveStudioFaceSheet(skin, faceEmotion) : null;
+    if (face) {
+      const faceKey = studioCharacterFaceTextureKey(skin, face.name);
+      const faceSource = scene.textures.exists(faceKey) ? scene.textures.get(faceKey).getSourceImage() : undefined;
+      if (faceSource && studioCharacterPoseSheetMatches(face.sheet, faceSource.width, faceSource.height)) {
+        if (sprite.anims.isPlaying) sprite.stop();
+        const frame = face.sheet.directionFrames[nextFacing];
+        sprite.setTexture(faceKey, frame).setData("framePresentation", face.sheet.frames[frame]);
+        sprite.setData("faceTextureUsed", true);
         updateDisplaySize(sprite);
         return;
       }
@@ -174,6 +207,29 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
       sprite.setData("framePresentation", asset.presentation);
     }
     updateDisplaySize(sprite);
+  };
+
+  /**
+   * 본문 적용 뒤 자세 전이 세틀을 얹는다. 앉기·눕기·일어서기는 정적 포즈 교체라
+   * 그 자체로는 툭 바뀌는데, 전이 구간의 스쿼시가 무게감을 만든다.
+   * 본문이 매 프레임 setDisplaySize로 배율을 되돌리므로 누적되지 않고,
+   * 캔버스의 게이트 스쿼시·깜빡임 합성보다 먼저 곱해져 함께 실린다.
+   * 로컬·피어·NPC가 전부 이 함수를 거치므로 적용 범위는 전 배우 공통이다.
+   */
+  const applySpriteVisual = (
+    sprite: import("phaser").GameObjects.Sprite,
+    skin: StudioCharacterSkin,
+    nextFacing: StudioVirtualSpaceFacing,
+    nextState: StudioCharacterMotionState,
+  ) => {
+    applySpriteVisualBody(sprite, skin, nextFacing, nextState);
+    const settle = studioPoseSettleScaleY({
+      state: nextState,
+      previousState: (sprite.getData("visualPreviousMotionState") as StudioCharacterMotionState | null | undefined) ?? null,
+      elapsedMs: scene.time.now - Number(sprite.getData("visualStateStartedAt") ?? scene.time.now),
+      reducedMotion: reducedMotion.matches,
+    });
+    if (settle !== 1) sprite.setScale(sprite.scaleX, sprite.scaleY * settle);
   };
 
   const applyAvatarVisual = (

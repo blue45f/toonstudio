@@ -47,6 +47,17 @@ export const STUDIO_EMOTION_KINDS: readonly StudioEmotionKind[] = Object.freeze(
   "neutral", "joy", "sadness", "surprise", "sleep", "focus",
 ]);
 
+/**
+ * 표정 세트 이름 규칙. 아트 트랙이 스킨에 공급하는 전신 표정 시트는
+ * `face-<감정>` 이름으로 조회한다 (`face-joy`, `face-sleep` 등).
+ * 세트가 없는 스킨·감정은 기존 표정 경로로 폴백한다.
+ */
+export type StudioFaceSetName = `face-${StudioEmotionKind}`;
+
+export function studioFaceSetName(emotion: StudioEmotionKind): StudioFaceSetName {
+  return `face-${emotion}`;
+}
+
 export const STUDIO_EMOTION_LABELS: Readonly<Record<StudioEmotionKind, { readonly ko: string; readonly en: string }>> = Object.freeze({
   neutral: { ko: "평온", en: "Neutral" },
   joy: { ko: "기쁨", en: "Joy" },

@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   requestStudioSpacePose,
+  studioPoseSeatAnchors,
   studioSpacePoseBlend,
+  STUDIO_POSE_SEAT_ANCHOR_RADIUS,
   STUDIO_SPACE_POSE_TRANSITION_MS,
   type StudioSeatAnchor,
 } from "./studio-virtual-space-pose-controller";
+import type { StudioSeatedActor } from "./studio-virtual-space-seated-actors";
+import type { StudioWorldInteractionSlotDefinition } from "./studio-virtual-space-world-manifest";
 
 const ANCHORS: readonly StudioSeatAnchor[] = [
   { point: { x: 100, y: 100 }, facing: "down", radius: 48 },
@@ -75,6 +79,62 @@ describe("requestStudioSpacePose", () => {
     });
     expect(result.accepted).toBe(false);
     expect(result.reason).toBe("already-resting");
+  });
+});
+
+describe("studioPoseSeatAnchors", () => {
+  const seated: readonly StudioSeatedActor[] = [
+    { id: "peer-a", anchorPoint: { x: 320, y: 405 }, facing: "up" },
+  ];
+  const slot = (partial: Partial<StudioWorldInteractionSlotDefinition>): StudioWorldInteractionSlotDefinition => ({
+    id: "slot-1", roomId: "room-1", labelKo: "자리", labelEn: "Seat",
+    approachPoint: { x: 320, y: 432 }, anchorPoint: { x: 320, y: 432 },
+    exitPoint: { x: 320, y: 460 }, facing: "up", radius: 10,
+    ...partial,
+  });
+
+  it("리스 좌석과 매니페스트 가구 좌석을 하나의 앵커 목록으로 합친다", () => {
+    const anchors = studioPoseSeatAnchors({
+      seatedActors: seated,
+      interactionSlots: [slot({ id: "slot-2", seatAttachmentPoint: { x: 550, y: 345 }, facing: "down" })],
+    });
+    expect(anchors).toEqual([
+      { point: { x: 320, y: 405 }, facing: "up", radius: STUDIO_POSE_SEAT_ANCHOR_RADIUS },
+      { point: { x: 550, y: 345 }, facing: "down", radius: STUDIO_POSE_SEAT_ANCHOR_RADIUS },
+    ]);
+  });
+
+  it("앉을 자리가 없는 슬롯과 리스 좌석과 겹치는 슬롯은 제외한다", () => {
+    const anchors = studioPoseSeatAnchors({
+      seatedActors: seated,
+      interactionSlots: [
+        slot({ id: "no-seat" }),
+        slot({ id: "same-seat", seatAttachmentPoint: { x: 324, y: 402 } }),
+      ],
+    });
+    expect(anchors).toHaveLength(1);
+    expect(anchors[0]?.point).toEqual({ x: 320, y: 405 });
+  });
+
+  it("합친 앵커로는 리스 없이도 가구 좌석에 앉을 수 있다", () => {
+    const anchors = studioPoseSeatAnchors({
+      seatedActors: [],
+      interactionSlots: [slot({ seatAttachmentPoint: { x: 550, y: 345 }, facing: "down" })],
+    });
+    const result = requestStudioSpacePose({
+      current: "stand", request: "rest", position: { x: 545, y: 380 }, moving: false,
+      seatAnchors: anchors, openArea: false, now: 1000,
+    });
+    expect(result.accepted).toBe(true);
+    expect(result.pose).toBe("sit");
+    expect(result.anchor?.facing).toBe("down");
+  });
+
+  it("슬롯이 없어도 기존 리스 좌석 동작은 그대로다", () => {
+    const anchors = studioPoseSeatAnchors({ seatedActors: seated });
+    expect(anchors).toEqual([
+      { point: { x: 320, y: 405 }, facing: "up", radius: STUDIO_POSE_SEAT_ANCHOR_RADIUS },
+    ]);
   });
 });
 

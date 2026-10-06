@@ -1,3 +1,4 @@
+import type { StudioFaceSetName } from "./studio-virtual-space-character-motion";
 import type { StudioVirtualSpaceFacing } from "./studio-virtual-space-model";
 import type { StudioVirtualCharacterCustomization } from "./studio-virtual-space-customization";
 import { pixelMakerNativeWalkClip } from "./studio-virtual-space-character-native-art";
@@ -97,6 +98,12 @@ export interface StudioCharacterSkin {
   /** Actual stationary action frames; load only the active direction. */
   readonly actions?: Readonly<Partial<Record<StudioCharacterAction, Readonly<Record<StudioVirtualSpaceFacing, StudioCharacterAtlasClip>>>>>;
   readonly poses?: Readonly<Partial<Record<"sit" | "wave" | "lie", StudioCharacterPoseSheet>>>;
+  /**
+   * 전신 표정 시트 (아트 트랙 공급). 키는 `face-<감정>` 이름 규칙을 따른다.
+   * 선언한 스킨만 라이브 표정 교체 대상이 되고, 없는 감정·스킨은 기존
+   * 표정 경로(표정 시트·깜빡임·정지 프레임)로 폴백한다.
+   */
+  readonly faces?: Readonly<Partial<Record<StudioFaceSetName, StudioCharacterPoseSheet>>>;
 }
 
 function directionUrls(skin: string): Readonly<Record<StudioVirtualSpaceFacing, string>> {
