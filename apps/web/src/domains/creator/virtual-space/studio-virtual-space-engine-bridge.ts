@@ -81,6 +81,7 @@ export class StudioVirtualSpaceEngineBridge {
   private poseTransitionStartedAt: number | null = null;
   private dayNight: StudioDayNightCycleConfig = { enabled: false, startMs: 0, now: 0 };
   private lightFixtures: readonly StudioLightFixture[] = Object.freeze([]);
+  private buildPlacementEntryId: string | null = null;
   private conversationFocus: StudioVirtualSpacePoint | null = null;
   private conversationNpcId: string | null = null;
 
@@ -315,5 +316,20 @@ export class StudioVirtualSpaceEngineBridge {
   /** Canvas 전용. */
   getLightFixtures(): readonly StudioLightFixture[] {
     return this.lightFixtures;
+  }
+  /**
+   * 빌드 모드 지도 직접 배치 세션 (페이지가 소유). 배치 중인 카탈로그 항목 id만
+   * 실어 나른다 — 고스트 조준·판정·확정은 캔버스 배치 컨트롤러가 맡고, 확정
+   * 결과는 캔버스 이벤트로 페이지에 돌아간다. 세션 종료는 endBuildPlacement다.
+   */
+  beginBuildPlacement(entryId: string): void {
+    this.buildPlacementEntryId = entryId;
+  }
+  endBuildPlacement(): void {
+    this.buildPlacementEntryId = null;
+  }
+  /** Canvas 전용. */
+  getBuildPlacementEntryId(): string | null {
+    return this.buildPlacementEntryId;
   }
 }

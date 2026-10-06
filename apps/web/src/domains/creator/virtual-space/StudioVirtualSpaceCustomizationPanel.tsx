@@ -28,6 +28,7 @@ import { studioWorldCanOccupy } from "./studio-virtual-space-world-pathfinding";
 import { StudioVirtualSpaceDecorationEditor } from "./StudioVirtualSpaceDecorationEditor";
 import { StudioVirtualSpacePlacedFixturePanel } from "./StudioVirtualSpacePlacedFixturePanel";
 import type { StudioBuildPlacementRequest } from "./studio-virtual-space-build-mode";
+import type { StudioBuildPlacementPanelBinding } from "./studio-virtual-space-build-placement";
 import { StudioVirtualSpaceTileEffectEditor } from "./StudioVirtualSpaceTileEffectEditor";
 import type { StudioTileEffectDefinition } from "./studio-virtual-space-tile-effects";
 import { DEFAULT_STUDIO_VIRTUAL_ART_STYLE, type StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
@@ -73,7 +74,7 @@ const DECOR_LABELS = {
 
 export function StudioVirtualSpaceCustomizationPanel({
   nickname, character, decorations, selfPoint, onNickname, onCharacter, onDecorations, onSelectDistrict, world, artStyle = DEFAULT_STUDIO_VIRTUAL_ART_STYLE,
-  tileEffects, onTileEffectsChange, placedFixtureRequests, onPlacedFixtureRequests,
+  tileEffects, onTileEffectsChange, placedFixtureRequests, onPlacedFixtureRequests, directPlacement,
 }: {
   readonly artStyle?: StudioVirtualArtStyleKey;
   readonly nickname: string;
@@ -91,6 +92,8 @@ export function StudioVirtualSpaceCustomizationPanel({
   /** 빌드 모드로 배치한 상태 가구 요청. 페이지가 소유하고 이 브라우저에 저장한다. */
   readonly placedFixtureRequests?: readonly StudioBuildPlacementRequest[];
   readonly onPlacedFixtureRequests?: (requests: readonly StudioBuildPlacementRequest[]) => void;
+  /** 지도 직접 배치 세션 바인딩. 배치 패널로 그대로 전달된다. */
+  readonly directPlacement?: StudioBuildPlacementPanelBinding;
 }) {
   const bt = useBilingual("StudioVirtualSpaceCustomizationPanel");
   const [nicknameDraft, setNicknameDraft] = useState(nickname);
@@ -264,7 +267,7 @@ export function StudioVirtualSpaceCustomizationPanel({
     </div>
     {notice ? <p className="studio-decoration-notice" role="status">{notice}</p> : null}
     {world ? <StudioVirtualSpaceDecorationEditor artStyle={artStyle} world={world} decorations={decorations} selfPoint={selfPoint} onChange={commit} /> : null}
-    {world && placedFixtureRequests && onPlacedFixtureRequests ? <StudioVirtualSpacePlacedFixturePanel world={world} decorations={decorations} selfPoint={selfPoint} requests={placedFixtureRequests} onRequestsChange={onPlacedFixtureRequests} /> : null}
+    {world && placedFixtureRequests && onPlacedFixtureRequests ? <StudioVirtualSpacePlacedFixturePanel world={world} decorations={decorations} selfPoint={selfPoint} requests={placedFixtureRequests} onRequestsChange={onPlacedFixtureRequests} directPlacement={directPlacement} /> : null}
     {world && tileEffects && onTileEffectsChange ? <fieldset>
       <legend>{bt("타일 이펙트", "Tile effects")}</legend>
       <p>{bt("포털·지정 영역·인월드 앱 같은 타일 단위 효과를 배치해요. 배치는 이 브라우저에 저장되고, 타일을 밟으면 바로 실행돼요.", "Place tile-level effects like portals, zones and in-world apps. Layouts save in this browser and trigger as soon as a tile is stepped on.")}</p>

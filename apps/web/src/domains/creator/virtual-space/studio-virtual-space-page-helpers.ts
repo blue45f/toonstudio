@@ -6,6 +6,7 @@ import type {
   StudioVirtualSpacePresenceState,
 } from "./studio-virtual-space-model";
 import type { StudioVirtualWorkspacePanel } from "./studio-virtual-space-panel-scope";
+import type { StudioVirtualSpaceNearbyNpc } from "./studio-virtual-space-engine-events";
 import type { StudioVirtualSpaceSnapshot } from "./studio-virtual-space-presence-protocol";
 import {
   writeStudioVirtualSpaceSessionPoint,
@@ -24,6 +25,42 @@ export function initialPanel(search: string): StudioVirtualWorkspacePanel | null
 
 export function distanceBetween(left: StudioVirtualSpacePoint, right: StudioVirtualSpacePoint): number {
   return Math.hypot(left.x - right.x, left.y - right.y);
+}
+
+/** 근접 스트립이 그리는 사람·NPC 카드 파생. 개인 공간에서는 사람 카드를 비운다. */
+export function studioNearbyCards(input: {
+  readonly personal: boolean;
+  readonly snapshot: StudioVirtualSpaceSnapshot;
+  readonly nearbyNpcs: readonly StudioVirtualSpaceNearbyNpc[];
+  readonly conversationMemberIds: readonly string[];
+}): {
+  readonly people: ReturnType<typeof studioNearbyPeopleCards>;
+  readonly npcs: ReturnType<typeof studioNearbyNpcCards>;
+} {
+  return Object.freeze({
+    people: studioNearbyPeopleCards(input),
+    npcs: studioNearbyNpcCards(input.nearbyNpcs),
+  });
+}
+
+function studioNearbyPeopleCards(input: {
+  readonly personal: boolean;
+  readonly snapshot: StudioVirtualSpaceSnapshot;
+  readonly conversationMemberIds: readonly string[];
+}) {
+  return input.personal ? [] : input.snapshot.nearbyPeers.map((peer) => ({
+    id: peer.participant.sessionId, name: peer.participant.displayName, point: peer.state,
+    activity: peer.state.activity, userStatus: peer.state.userStatus ?? null,
+    avatarIndex: peer.state.avatarIndex, appearance: peer.state.appearance,
+    inConversation: input.conversationMemberIds.includes(peer.participant.sessionId),
+  }));
+}
+
+function studioNearbyNpcCards(nearbyNpcs: readonly StudioVirtualSpaceNearbyNpc[]) {
+  return nearbyNpcs.map((npc) => ({
+    id: npc.id, labelKo: npc.labelKo, labelEn: npc.labelEn, activityKo: npc.activityKo, activityEn: npc.activityEn,
+    skinKey: npc.skinKey, canTalk: Boolean(npc.interaction),
+  }));
 }
 
 /** 프레즌스 연결 전에 페이지가 그리는 빈 초기 스냅샷(자기 상태만 채워져 있다). */

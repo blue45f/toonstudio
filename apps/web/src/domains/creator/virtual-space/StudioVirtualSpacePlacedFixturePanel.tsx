@@ -1,5 +1,5 @@
-import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { MapPin, Trash2 } from "lucide-react";
+import { Fragment, useState } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   STUDIO_BUILD_CATALOG,
@@ -12,6 +12,7 @@ import {
   studioBuildGhostReactionFrame,
   studioBuildPlacedFixture,
 } from "./studio-virtual-space-build-mode-vitality";
+import type { StudioBuildPlacementPanelBinding } from "./studio-virtual-space-build-placement";
 import type { StudioVirtualDecorationState } from "./studio-virtual-space-customization";
 import { studioVirtualDecorationNavigationWorld } from "./studio-virtual-space-decoration-layout";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
@@ -33,14 +34,17 @@ const PLACEABLE_ENTRIES: readonly StudioBuildCatalogEntry[] = Object.freeze(
  * 목록이 캔버스를 거쳐 fx 고정물 층에 동기화된다. 배치 목록은 이 브라우저에만
  * 저장된다(공간 꾸미기와 달리 서버 계약이 없다). 고스트 미리보기 반응 프레임은
  * 항목마다 "켜진 모습" 배지로 보여 줘, 놓기 전에 어떤 반응인지 알 수 있게 한다.
- * 실제 고스트 렌더링 표면(캔버스 배치 모드)은 아직 없어 미리보기는 배지까지다.
+ * "지도에서 배치"를 고르면 캔버스에 고스트가 뜨고 원하는 지점을 직접 찍어
+ * 놓을 수 있다(directPlacement 바인딩 — 페이지 훅이 세션을 소유한다).
  */
-export function StudioVirtualSpacePlacedFixturePanel({ world, decorations, selfPoint, requests, onRequestsChange }: {
+export function StudioVirtualSpacePlacedFixturePanel({ world, decorations, selfPoint, requests, onRequestsChange, directPlacement }: {
   readonly world: StudioVirtualSpaceWorldManifest;
   readonly decorations: StudioVirtualDecorationState;
   readonly selfPoint: StudioVirtualSpacePoint;
   readonly requests: readonly StudioBuildPlacementRequest[];
   readonly onRequestsChange: (next: readonly StudioBuildPlacementRequest[]) => void;
+  /** 지도 직접 배치 세션 바인딩. 없으면 직접 배치 버튼을 그리지 않는다. */
+  readonly directPlacement?: StudioBuildPlacementPanelBinding;
 }) {
   const bt = useBilingual("StudioVirtualSpacePlacedFixturePanel");
   const [notice, setNotice] = useState("");
@@ -71,14 +75,30 @@ export function StudioVirtualSpacePlacedFixturePanel({ world, decorations, selfP
     <div className="studio-vspace-customization-catalog">
       {PLACEABLE_ENTRIES.map((entry) => {
         const signature = studioBuildGhostReactionFrame(entry.id, 0, false)?.label;
-        return <button key={entry.id} type="button" disabled={limitReached} onClick={() => place(entry)}
-          aria-label={bt(`${entry.labelKo} 배치`, `Place ${entry.labelEn}`)}>
-          <span aria-hidden>{entry.icon}</span>
-          <span>{bt(entry.labelKo, entry.labelEn)}</span>
-          {signature ? <small>{bt(signature.ko, signature.en)}</small> : null}
-        </button>;
+        const directActive = directPlacement?.sessionEntryId === entry.id;
+        return <Fragment key={entry.id}>
+          <button type="button" disabled={limitReached} onClick={() => place(entry)}
+            aria-label={bt(`${entry.labelKo} 배치`, `Place ${entry.labelEn}`)}>
+            <span aria-hidden>{entry.icon}</span>
+            <span>{bt(entry.labelKo, entry.labelEn)}</span>
+            {signature ? <small>{bt(signature.ko, signature.en)}</small> : null}
+          </button>
+          {directPlacement ? <button type="button" disabled={limitReached}
+            aria-pressed={directActive}
+            aria-label={bt(`${entry.labelKo} 지도에서 배치`, `Place ${entry.labelEn} on the map`)}
+            onClick={() => directActive ? directPlacement.onCancel() : directPlacement.onStart(entry.id)}>
+            <MapPin size={15} aria-hidden />
+            <span>{directActive ? bt("배치 중", "Placing") : bt("지도에서", "On map")}</span>
+          </button> : null}
+        </Fragment>;
       })}
     </div>
+    {directPlacement?.sessionEntryId ? <div className="studio-vspace-direct-placement">
+      <p>{bt("지도에서 원하는 지점을 눌러 배치하세요. 방향키로 고스트를 옮기고 Enter로 확정, Esc나 우클릭으로 취소할 수 있어요.", "Click a spot on the map to place it. Move the ghost with the arrow keys, confirm with Enter, cancel with Esc or right-click.")}</p>
+      {directPlacement.statusText ? <p role="status">{bt(directPlacement.statusText.ko, directPlacement.statusText.en)}</p> : null}
+      {directPlacement.noticeText ? <p className="studio-decoration-notice" role="status">{bt(directPlacement.noticeText.ko, directPlacement.noticeText.en)}</p> : null}
+      <button type="button" onClick={directPlacement.onCancel}>{bt("배치 취소", "Cancel placement")}</button>
+    </div> : null}
     <p>{bt(`${requests.length} / ${STUDIO_PLACED_FIXTURE_LIMIT}개 배치됨`, `${requests.length} / ${STUDIO_PLACED_FIXTURE_LIMIT} placed`)}</p>
     {notice ? <p className="studio-decoration-notice" role="status">{notice}</p> : null}
     {requests.length > 0 ? <div className="studio-vspace-customization-placed">
