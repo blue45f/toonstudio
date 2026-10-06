@@ -5,6 +5,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AboutSectionNav } from "../AboutSectionNav";
 import { TechnologyPage } from "../TechnologyPage";
+import { ENGINEERING_STATUS_META } from "./engineering-story-content";
+import { PUBLISHED_ENGINEERING_CHAPTERS } from "./engineering-story-published-content";
+import { ENGINEERING_STORY_GROUPS } from "./engineering-story-groups";
 import { ENGINEERING_PAGES, ENGINEERING_PAGE_GROUPS, ENGINEERING_PATH_PAGES } from "./engineering-tech-pages";
 
 vi.mock("@/shared/seo/use-document-title", () => ({ useDocumentTitle: vi.fn() }));
@@ -55,6 +58,52 @@ describe("기술 허브", () => {
     }
     expect(within(techNav).queryByRole("link", { current: "page" })).toBeNull();
     expect(screen.getByRole("link", { name: /발표 모드 열기|Open presentation mode/u }).getAttribute("href")).toBe("/about/technology/deck");
+  });
+});
+
+describe("기술 허브 문서 도서관", () => {
+  it("모든 챕터를 상태 배지·읽기 시간과 함께 카드로 보여주고 본문 앵커로 연결한다", () => {
+    render(
+      <MemoryRouter initialEntries={["/about/technology"]}>
+        <TechnologyPage />
+      </MemoryRouter>,
+    );
+
+    const librarySection = screen.getByRole("heading", { level: 2, name: /기술 문서 도서관|engineering library/iu }).closest("section");
+    if (!librarySection) throw new Error("library section is missing");
+
+    // 주제 묶음 여덟 개가 소제목으로 먼저 보인다.
+    const groupHeadings = within(librarySection).getAllByRole("heading", { level: 3 });
+    expect(groupHeadings.map((heading) => heading.textContent)).toEqual(
+      ENGINEERING_STORY_GROUPS.map((group) => group.title.ko),
+    );
+
+    // 카드 수는 공개 챕터 수와 같고, 전부 제작 스토리의 해당 챕터 본문으로 이어진다.
+    const cards = within(librarySection).getAllByRole("link");
+    expect(cards).toHaveLength(PUBLISHED_ENGINEERING_CHAPTERS.length);
+    expect(cards.map((card) => card.getAttribute("href"))).toEqual(
+      ENGINEERING_STORY_GROUPS.flatMap((group) => group.chapterIds.map((id) => `/about/technology/story#${id}`)),
+    );
+
+    // 카드마다 제목·논지·상태 배지(실제 상태 라벨)·읽기 시간이 정직하게 붙는다.
+    const chapterById = new Map(PUBLISHED_ENGINEERING_CHAPTERS.map((chapter) => [chapter.id, chapter]));
+    for (const card of cards) {
+      const id = card.getAttribute("href")?.split("#")[1] ?? "";
+      const chapter = chapterById.get(id);
+      if (!chapter) throw new Error(`unknown chapter card: ${id}`);
+      expect(card.textContent).toContain(chapter.title.ko);
+      expect(card.textContent).toContain(chapter.thesis.ko);
+      expect(card.textContent).toContain(ENGINEERING_STATUS_META[chapter.status].label.ko);
+      expect(card.textContent).toMatch(/읽기 약 \d+분/u);
+    }
+
+    // 도서관은 발표 동선보다 먼저 와서 첫 화면에서 챕터 목록이 보인다.
+    const pathHeading = screen.getByRole("heading", { level: 2, name: /발표 동선|Talk path/u });
+    const libraryHeading = within(librarySection).getByRole("heading", { level: 2 });
+    expect(libraryHeading.compareDocumentPosition(pathHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // 전 챕터 그리드로 대체된 여섯 개 추천 섹션은 더 이상 중복으로 남지 않는다.
+    expect(screen.queryByRole("heading", { name: /가장 많이 묻는 여섯 가지 결정/u })).toBeNull();
   });
 });
 
