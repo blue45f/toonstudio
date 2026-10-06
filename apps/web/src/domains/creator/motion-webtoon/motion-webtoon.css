@@ -1241,6 +1241,20 @@
   flex-wrap: wrap;
 }
 
+.mw-transcribe {
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-line);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mw-transcribe h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
 /* 애니툰 원클릭 변환 위저드 */
 .mw-anime-toon-entry {
   margin: 0 auto 1rem;
