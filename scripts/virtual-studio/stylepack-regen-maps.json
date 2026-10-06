@@ -21330,6 +21330,659 @@
               "rows": 1
             }
           }
+        },
+        "npc-archivist": {
+          "key": "npc-archivist",
+          "kind": "npc",
+          "outputs": {
+            "direction-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-left": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "draw-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "review-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-right": {
+              "cells": [
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "sit": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "poses-pose-r1"
+                },
+                {
+                  "col": 4,
+                  "row": 0,
+                  "sheet": "poses-pose-r1"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "poses-pose-r1"
+                },
+                {
+                  "col": 5,
+                  "row": 0,
+                  "sheet": "poses-pose-r1"
+                }
+              ]
+            },
+            "state-draw": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "state-review": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "state-talk": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "talk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "talk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk-left"
+                }
+              ]
+            },
+            "talk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "talk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "walk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "walk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk-left"
+                }
+              ]
+            },
+            "walk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "walk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "wave": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                }
+              ]
+            }
+          },
+          "sheets": {
+            "draw": {
+              "colEdges": [
+                0,
+                0.26,
+                0.502,
+                0.742,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/npc-archivist-draw.png",
+              "rowEdges": [
+                0,
+                0.259,
+                0.496,
+                0.733,
+                1
+              ],
+              "rows": 4
+            },
+            "poses-dir": {
+              "colEdges": [
+                0,
+                0.248,
+                0.5,
+                0.754,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/npc-archivist-poses-dir.png",
+              "rowEdges": [
+                0,
+                0.341,
+                0.654,
+                1
+              ],
+              "rows": 3
+            },
+            "poses-pose": {
+              "colEdges": [
+                0,
+                0.248,
+                0.505,
+                0.787,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/npc-archivist-poses-pose.png",
+              "rowEdges": [
+                0,
+                0.264,
+                0.491,
+                0.743,
+                1
+              ],
+              "rows": 4
+            },
+            "poses-pose-r1": {
+              "colEdges": [
+                0,
+                0.177,
+                0.335,
+                0.502,
+                0.666,
+                0.826,
+                1
+              ],
+              "cols": 6,
+              "file": "gen-raw/retro/npc-archivist-poses-pose-r1.png",
+              "rows": 1
+            },
+            "review": {
+              "colEdges": [
+                0,
+                0.266,
+                0.5,
+                0.733,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/npc-archivist-review.png",
+              "rowEdges": [
+                0,
+                0.34,
+                0.686,
+                1
+              ],
+              "rows": 3
+            },
+            "talk": {
+              "colEdges": [
+                0,
+                0.251,
+                0.502,
+                0.754,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/npc-archivist-talk.png",
+              "rowEdges": [
+                0,
+                0.279,
+                0.492,
+                0.705,
+                1
+              ],
+              "rows": 4
+            },
+            "talk-left": {
+              "colEdges": [
+                0,
+                0.245,
+                0.497,
+                0.751,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/npc-archivist-talk-left.png",
+              "rows": 1
+            },
+            "walk": {
+              "colEdges": [
+                0,
+                0.247,
+                0.501,
+                0.753,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/npc-archivist-walk.png",
+              "rowEdges": [
+                0,
+                0.281,
+                0.491,
+                0.701,
+                1
+              ],
+              "rows": 4
+            },
+            "walk-left": {
+              "colEdges": [
+                0,
+                0.25,
+                0.508,
+                0.766,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/npc-archivist-walk-left.png",
+              "rows": 1
+            }
+          }
         }
         
     
