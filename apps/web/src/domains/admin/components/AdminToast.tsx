@@ -28,7 +28,7 @@ export function AdminToastProvider({ children }: { children: React.ReactNode }) 
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto p-4 rounded-2xl border backdrop-blur-xl shadow-2xl flex items-start gap-3 transition-all duration-300 animate-in slide-in-from-bottom-3 ${
+            className={`pointer-events-auto p-4 rounded-2xl border backdrop-blur-xl shadow-2xl flex items-start gap-3 transition-all duration-300 animate-fade-up ${
               toast.type === "success"
                 ? "bg-card/90 border-emerald-500/30 text-emerald-300"
                 : toast.type === "error"

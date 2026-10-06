@@ -492,8 +492,7 @@ describe("StudioCommentThreadPopover", () => {
       expect(dialog.style.top).toBe("20px");
       expect(dialog.style.width).toBe("320px");
       expect(dialog.style.maxHeight).toBe("300px");
-      expect(dialog.className).toContain("motion-safe:animate-in");
-      expect(dialog.className).toContain("motion-safe:slide-in-from-bottom-3");
+      expect(dialog.className).toContain("motion-safe:animate-fade-up");
 
       fireEvent.change(textarea, { target: { value: "포커스 순환" } });
       const submit = screen.getByRole("button", { name: "답글" });

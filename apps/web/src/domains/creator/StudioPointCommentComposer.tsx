@@ -269,9 +269,9 @@ export function StudioPointCommentComposer({
         data-presentation={position.mode === "sheet" ? "bottom-sheet" : "anchored-popover"}
         data-studio-shortcut-boundary="true"
         onSubmit={submit}
-        className={`fixed z-[92] flex flex-col overflow-hidden border border-line-strong bg-panel/98 text-fg backdrop-blur-xl [scrollbar-width:thin] motion-safe:animate-in motion-safe:fade-in motion-reduce:animate-none ${position.mode === "sheet"
-          ? "rounded-t-2xl border-b-0 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] shadow-[0_-18px_54px_oklch(0.06_0.02_70/0.5)] motion-safe:slide-in-from-bottom-4"
-          : "rounded-lg shadow-[0_22px_70px_oklch(0.06_0.02_70/0.58)] motion-safe:zoom-in-95"
+        className={`fixed z-[92] flex flex-col overflow-hidden border border-line-strong bg-panel/98 text-fg backdrop-blur-xl [scrollbar-width:thin] motion-reduce:animate-none ${position.mode === "sheet"
+          ? "rounded-t-2xl border-b-0 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] shadow-[0_-18px_54px_oklch(0.06_0.02_70/0.5)] motion-safe:animate-fade-up"
+          : "rounded-lg shadow-[0_22px_70px_oklch(0.06_0.02_70/0.58)] motion-safe:animate-hud-in"
         }`}
         style={{
           left: position.left,

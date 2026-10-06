@@ -52,7 +52,7 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 animate-fade-in duration-200">
       {/* 백드롭 레이어 (Glassmorphism & Backdrop Blur) */}
       <div
         role={isBlocking ? "presentation" : "button"}

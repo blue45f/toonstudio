@@ -82,7 +82,7 @@ export function MarketEditResourceModal({
       aria-labelledby="market-edit-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
     >
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-hud-in duration-200">
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 id="market-edit-title" className="text-base font-bold text-fg flex items-center gap-2">
             <Edit className="size-4 text-accent" />
