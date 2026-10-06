@@ -189,6 +189,12 @@ export function EngineeringArchitectureDiagram({ className, fixed = false }: Eng
             "Connections: browser → Cloudflare (HTTPS) → Core API · browser ↔ Durable Objects (WSS) · Core API → PostgreSQL and file storage · voice and video connect browser to browser over WebRTC and are never stored on servers.",
           )}
         </p>
+        <p className="eng-arch__list-note">
+          {bi(
+            "모노레포 실제 구성(apps 7 · packages 13): 앱은 web·admin-web·api·mobile·desktop-sync·brush-lab·character-lab, 패키지는 contracts·core·play-core·product-tour-film과 studio 접두사 9개(brush-platform·command-registry·engine-registry·engine-skia·engine-thorvg·engine-vello·format-gateway·hokusai-wasm·project-model)입니다. 위 도식은 이 중 web 앱이 실행될 때의 런타임 경계만 그린 것입니다.",
+            "Actual monorepo layout (7 apps · 13 packages): apps are web, admin-web, api, mobile, desktop-sync, brush-lab and character-lab; packages are contracts, core, play-core, product-tour-film and nine studio-prefixed packages (brush-platform, command-registry, engine-registry, engine-skia, engine-thorvg, engine-vello, format-gateway, hokusai-wasm, project-model). The diagram above draws only the runtime boundaries of the web app.",
+          )}
+        </p>
       </div>
     </figure>
   );

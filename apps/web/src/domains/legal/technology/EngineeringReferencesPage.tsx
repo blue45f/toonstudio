@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { externalLinkForName } from "./engineering-external-links";
 import {
   ENGINEERING_REFERENCE_PRODUCTS,
   ENGINEERING_REFERENCE_ROLE_META,
@@ -181,6 +182,27 @@ export function EngineeringReferencesPage() {
                 <p className="mt-4 font-display text-[0.66rem] font-black uppercase tracking-[0.15em] text-fg-3">{bi(reference.category.ko, reference.category.en)}</p>
                 <h3 className="mt-2 text-xl font-black tracking-tight text-fg">{reference.title}</h3>
                 <p className="mt-2 text-sm leading-7 text-fg-2">{bi(reference.summary.ko, reference.summary.en)}</p>
+                {reference.linkNames?.length ? (
+                  <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={bi("공식 링크", "Official links")}>
+                    {reference.linkNames.map((name) => {
+                      const url = externalLinkForName(name);
+                      if (!url) return null;
+                      return (
+                        <li key={name}>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-1 text-[0.68rem] font-bold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                          >
+                            {name}
+                            <ExternalLink size={11} aria-hidden="true" className="shrink-0 opacity-70" />
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
                 <dl className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-good/30 bg-good/8 p-4">
                     <dt className="text-[0.66rem] font-black uppercase tracking-[0.13em] text-good">{bi("가져온 원칙", "Applied lesson")}</dt>

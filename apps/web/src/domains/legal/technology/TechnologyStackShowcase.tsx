@@ -5,9 +5,12 @@ import {
   Box,
   BrainCircuit,
   Brush,
+  ExternalLink,
   UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+
+import { externalLinkForName } from "./engineering-external-links";
 
 import {
   translateBilingualValueForActiveLocale,
@@ -19,6 +22,24 @@ import Link from "@/shared/navigation/router-link";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("TechnologyPage", ko, en);
+
+/** 스택 이름: 외부 링크 레지스트리에 공식 주소가 있으면 새 탭 링크로 그린다. */
+function StackName({ name, className }: { readonly name: string; readonly className?: string }) {
+  const url = externalLinkForName(name);
+  if (!url) return <span className={className}>{name}</span>;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${name} · ${bi("공식 사이트", "Official site")}`}
+      className={`${className ?? ""} inline-flex items-center gap-1 underline-offset-4 hover:text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
+    >
+      {name}
+      <ExternalLink size={11} aria-hidden="true" className="shrink-0 opacity-70" />
+    </a>
+  );
+}
 
 type StackTabId = "renderer" | "three-d" | "vrm" | "ai";
 
@@ -208,7 +229,7 @@ function RendererPanel() {
           <span className="text-xs font-bold text-fg-3">{bi("뒷쪽 엔진은 교체 가능:", "Backends stay replaceable:")}</span>
           {BACKENDS.map((backend) => (
             <span key={backend} className="rounded-full border border-accent/25 bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent">
-              {backend}
+              <StackName name={backend} />
             </span>
           ))}
           <span className="w-full text-xs leading-5 text-fg-3 sm:w-auto">
@@ -235,7 +256,7 @@ function RendererPanel() {
             {RENDERER_ROWS.map((row) => (
               <tr key={row.name} className="border-b border-line/50 last:border-0">
                 <th scope="row" className="whitespace-nowrap px-4 py-3.5 text-sm font-bold text-fg">
-                  {row.name}
+                  <StackName name={row.name} />
                 </th>
                 <td className="px-4 py-3.5 text-xs leading-6 text-fg-2">{bi(row.explain.ko, row.explain.en)}</td>
                 <td className="px-4 py-3.5 text-xs leading-6 text-fg-2">{bi(row.strength.ko, row.strength.en)}</td>
@@ -267,7 +288,7 @@ function ThreeDPanel() {
       <div className="mt-7 grid gap-4 md:grid-cols-2">
         {THREE_D_CARDS.map((card) => (
           <article key={card.name} className="rounded-[1.75rem] border border-line/70 bg-panel/65 p-5 sm:p-6">
-            <h3 className="text-base font-bold text-fg">{card.name}</h3>
+            <h3 className="text-base font-bold text-fg"><StackName name={card.name} /></h3>
             <p className="mt-2 text-sm font-semibold text-accent">{bi(card.role.ko, card.role.en)}</p>
             <p className="mt-2.5 text-sm leading-7 text-fg-2">{bi(card.analogy.ko, card.analogy.en)}</p>
           </article>
