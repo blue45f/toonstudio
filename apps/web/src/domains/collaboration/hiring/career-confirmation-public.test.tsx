@@ -13,7 +13,7 @@ import type { CareerConfirmationPublicSummary } from "../../../../../../packages
 import type { CreatorCareerPublic } from "../../../../../../packages/contracts/src/creator-hiring";
 
 vi.mock("./career-confirmation-client", () => ({ careerConfirmationClient: { publicSummaries: vi.fn() } }));
-const item: CreatorCareerPublic = { id: "career", title: "작품", displayName: "작가", role: "lineart", startMonth: "2026-01", endMonth: null, episodeFrom: null, episodeTo: null, scope: "선화", contribution: "기여", portfolioUrl: "https://example.com/work", proof: "self-declared" };
+const item: CreatorCareerPublic = { id: "career", title: "작품", displayName: "작가", role: "lineart", startMonth: "2026-01", endMonth: null, episodeFrom: null, episodeTo: null, scope: "선화", contribution: "기여", portfolioUrl: "https://example.com/work", coverImageUrl: null, proof: "self-declared" };
 const items = [item];
 function summary(): CareerConfirmationPublicSummary { return { careerId: item.id, publicDigest: createHash("sha256").update(careerConfirmationPublicContent(item)).digest("hex"), tier: "counterparty-confirmed", confirmedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString(), scope: item.scope, contribution: item.contribution, startMonth: item.startMonth, endMonth: item.endMonth }; }
 beforeEach(() => { vi.stubGlobal("crypto", webcrypto); vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible"); vi.mocked(client.publicSummaries).mockResolvedValue([summary()]); });

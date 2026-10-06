@@ -110,7 +110,7 @@ export interface CreatorRoomInput {
 }
 export interface CreatorCareerInput {
   title: string; role: CreatorHiringRole; startMonth: string; endMonth: string | null; episodeFrom: number | null; episodeTo: number | null; scope: string; contribution: string;
-  portfolioUrl: string; rights: "pending" | "owned" | "authorized";
+  portfolioUrl: string; coverImageUrl: string | null; rights: "pending" | "owned" | "authorized";
   visibility: "private" | "public"; expectedRevision: number;
 }
 export interface CreatorCareerItem extends CreatorCareerInput {
@@ -120,7 +120,7 @@ export interface CreatorCareerItem extends CreatorCareerInput {
 
 export interface CreatorCareerVersion { id: string; careerId: string; revision: number; content: Omit<CreatorCareerInput, "expectedRevision">; createdAt: string; }
 export interface CreatorActivitySummary { points: number; level: number; label: string; events: { id: string; kind: "award" | "reversal"; points: number; occurredAt: string }[]; hiringEffect: false; verificationEffect: false; }
-export type CreatorCareerPublic = Pick<CreatorCareerItem, "id" | "displayName" | "title" | "role" | "startMonth" | "endMonth" | "episodeFrom" | "episodeTo" | "scope" | "contribution" | "portfolioUrl" | "proof">;
+export type CreatorCareerPublic = Pick<CreatorCareerItem, "id" | "displayName" | "title" | "role" | "startMonth" | "endMonth" | "episodeFrom" | "episodeTo" | "scope" | "contribution" | "portfolioUrl" | "coverImageUrl" | "proof">;
 /** Public projection of an existing post's published one-person slot. */
 export interface HiringPublicPosition {
   id: string;
