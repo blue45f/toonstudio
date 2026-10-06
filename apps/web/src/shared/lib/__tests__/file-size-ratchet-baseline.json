@@ -148,7 +148,7 @@
   "domains/creator/studio-asset-rights-manifest.ts": 1621,
   "domains/creator/studio-auto-actions.ts": 1025,
   "domains/creator/studio-autosave-opfs-session.ts": 1028,
-  "domains/creator/studio-background-3d-model.ts": 1940,
+  "domains/creator/studio-background-3d-model.ts": 1353,
   "domains/creator/studio-bg-scenes-extra.ts": 1245,
   "domains/creator/studio-brush.ts": 2156,
   "domains/creator/studio-canonical-brush-draw-adapter.ts": 1709,
