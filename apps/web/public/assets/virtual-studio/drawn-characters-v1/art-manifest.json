@@ -21,8 +21,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-walk-right.png",
       "sourceImage": "exec-e2959a7d-f841-40f0-ad0f-89de1a64de9b.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "283efa78ad22b246931f1857661a64c798392ff59948c7162aca165540503ca7",
-      "bytes": 1059292,
+      "sha256": "a44d7809067d3126e599cabc0c9aecdf7398ef4f6b347fa5bf12a6ff303b0700",
+      "bytes": 1024458,
       "dimensions": [
         1122,
         1402
@@ -103,8 +103,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-walk-up.png",
       "sourceImage": "exec-67744884-827e-484b-b9a4-52c17a49809a.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "958bcb00ca6dee9ee512edcc414383d33e932c0b48ee92ab3f217be2f066c81e",
-      "bytes": 845247,
+      "sha256": "e1da0b21954fb6bdb661172e22d23de13097c844f3de985763d13579139f459a",
+      "bytes": 811329,
       "dimensions": [
         1122,
         1402
@@ -185,8 +185,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-walk-down.png",
       "sourceImage": "exec-eab257b7-5aa8-4b55-959d-0f467d21e99d.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "58499d0592aa09d55ba21aa2f755532b70215c28d6bbf37a6ce85dd3482b98db",
-      "bytes": 982692,
+      "sha256": "665f14fbd795c327e59defe72c6c26529b6f679638d24c6490f7f9e2280b5f4e",
+      "bytes": 956255,
       "dimensions": [
         1122,
         1402
@@ -267,8 +267,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-walk-left.png",
       "sourceImage": "exec-d54c4a26-bc0e-418a-b675-958fc5ed20df.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "e4f10f5c725cc4204f6cf990ef6cea892a9d7a381c7c1022142150761241e182",
-      "bytes": 1145627,
+      "sha256": "e83d8cdf0240f443635476ac3dbf8199dcd950bb177b5b99d5bed08c284d40be",
+      "bytes": 1127194,
       "dimensions": [
         1122,
         1402
@@ -349,8 +349,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-wave.png",
       "sourceImage": "exec-63d0be2a-7073-4bec-acfc-291a96e25568.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "c6ffcbba7576f39c9e630aba98006200e21b1f60c3a9c0729abb910fae7ec33a",
-      "bytes": 1108304,
+      "sha256": "546f1aaff1c09d8fb2b9e1d43680ce64208c9f789f2d84b733ab25c6e0bb3ff5",
+      "bytes": 1071436,
       "dimensions": [
         1122,
         1402
@@ -435,8 +435,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-sit.png",
       "sourceImage": "exec-2cdc3587-7ebc-4aef-9750-ec48d02611b1.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "0aa72fff23eba707ecb038c439525c01198a104d3f3ff68dd06676aada9334d7",
-      "bytes": 1115958,
+      "sha256": "7f404a6e9e9567016581d6830904c758183bed09b00f7b857bd0c1876d4cf9db",
+      "bytes": 1084398,
       "dimensions": [
         1122,
         1402
@@ -525,8 +525,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-walk-right.png",
       "sourceImage": "exec-ea8a6f4a-ef91-41c7-a21d-1371dec37586.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "903da65f9d5917b6d110d9387dbe80039b10952cfc92f1e6eb6e567b0e785045",
-      "bytes": 1059374,
+      "sha256": "c412a5eb409da56912900fd5fe8b1f6f311f5e1ff77860192d4a8627f421c539",
+      "bytes": 1026315,
       "dimensions": [
         1122,
         1402
@@ -607,8 +607,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-walk-up.png",
       "sourceImage": "exec-ad40ad18-2b59-4657-b042-6e915f4581b0.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "db5cf9964abb912f70698027a0bfbfdaaade2c6890c02d93f96603517e30ece9",
-      "bytes": 828273,
+      "sha256": "9d3ff7666b61bac4da8ae86785c38f5ce24a321cd992b2f7618b748897fbee93",
+      "bytes": 797788,
       "dimensions": [
         1122,
         1402
@@ -689,8 +689,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-walk-down.png",
       "sourceImage": "exec-f1b7c2d4-c5c8-45a0-ba58-9c0eadf33b77.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "2795c89a4d4042c04dfb54661bc0f25f3a993a0a1434f2b7b971f697b7bfff73",
-      "bytes": 1006397,
+      "sha256": "4548656ce7de1141365dd2ae96461fd719ba6ae8004ea9f5ea49af843fd52c8e",
+      "bytes": 981023,
       "dimensions": [
         1122,
         1402
@@ -771,8 +771,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-walk-left.png",
       "sourceImage": "exec-2232a423-85cf-48c4-b2fa-08f1ab529e56.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "cc9d46e59235f98762523c2c782d8f145707e49de2d9d3f110d8cde022bf1ef2",
-      "bytes": 1084688,
+      "sha256": "5518dcbf92828619f555c6c6441867462c979e6a3bd51aa51f1f80f2f32dbcf8",
+      "bytes": 1050498,
       "dimensions": [
         1122,
         1402
@@ -853,8 +853,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-wave.png",
       "sourceImage": "exec-3b4a0725-441d-43b2-bac1-e55de7ebb37f.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "53d18abf0e454424c38956f22b9df2d6e2faa984c23920357efa0f79357d1e94",
-      "bytes": 802582,
+      "sha256": "feabd20c879d8a6d1fb4f6fb5706efe1906d008579ccb3ad40737f8608904c78",
+      "bytes": 777893,
       "dimensions": [
         1122,
         1402
@@ -939,8 +939,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-sit.png",
       "sourceImage": "exec-d00c7809-851c-43ff-8948-7ef89976840d.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "e4b542ba09299ae15becba4c8c2faa68d7db24fac9192105683ff6d4f3630c05",
-      "bytes": 1176137,
+      "sha256": "f801ab32631961847458bd0a3f1f3425bb422b6c27e08f420841abc80012829e",
+      "bytes": 1142461,
       "dimensions": [
         1122,
         1402
@@ -1029,8 +1029,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-dark-walk-right.png",
       "sourceImage": "exec-736c0479-9a64-4c4b-9ef7-9c6da85e921d.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "85e8cb441f73c99b36029284704917836dd20ce8a27931a7d593a4736a91149d",
-      "bytes": 1092925,
+      "sha256": "5251f9626f6877dc1035d2c79000924cf86e4ddec80542ecba92b73b0f6145cc",
+      "bytes": 1064502,
       "dimensions": [
         1122,
         1402
@@ -1111,8 +1111,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-dark-walk-up.png",
       "sourceImage": "exec-5712758d-0644-43dc-bdfa-3fa1d666a5d7.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "dbebf23b6b9b779b49d2bd5291a05cf08494ea586d6136c1551bab814a224442",
-      "bytes": 897816,
+      "sha256": "6821778037f74d30e0cdfd47e489c351fe69f1dfe72a1243865e7d5c49a41e9f",
+      "bytes": 871849,
       "dimensions": [
         1122,
         1402
@@ -1193,8 +1193,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-dark-walk-down.png",
       "sourceImage": "exec-c6824643-3e04-4be9-8c65-b14091341170.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "34adc876ed5b3a48c506ac364a6b11269505f43b2a5c746cabcfb90a338b4fb7",
-      "bytes": 1120264,
+      "sha256": "19463654571e5ef92e61c35996e2583e4a21221e536acce2ea1cd7061e492c16",
+      "bytes": 1089650,
       "dimensions": [
         1122,
         1402
@@ -1275,8 +1275,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-dark-walk-left.png",
       "sourceImage": "exec-0463fe0f-ebc4-4c0b-9851-4f8b3fde2d62.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "a18b036f76a1b43a1b6a2f6b588a6957702f5ef9eeb37b5f472c38896653369b",
-      "bytes": 1048629,
+      "sha256": "9b658d33e61a6d5d642c600f085f674f4c0ad2b9d510fea4834f087f49e1b61a",
+      "bytes": 1017098,
       "dimensions": [
         1122,
         1402
@@ -1357,8 +1357,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-dark-sit.png",
       "sourceImage": "exec-db804ccb-949c-48c4-95dd-c2bd7dc45796.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "54b2307e827ea3a395a7aa7bd03215170d9534c4f11090fdbfd8fb4257bdfb02",
-      "bytes": 1173001,
+      "sha256": "1d2b0cfd2e8a622b047a95f3341b1c24ce7ea4e47bc4a965aeec541c566139d6",
+      "bytes": 1144313,
       "dimensions": [
         1122,
         1402
@@ -1447,8 +1447,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-dark-wave.png",
       "sourceImage": "exec-5303807a-8908-4735-adb2-34fa8b6c5d82.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "7deb91819651ee07a2fb33f9a0f8f64f8b9a6dd73522f6f347358eaca4948485",
-      "bytes": 1043185,
+      "sha256": "0b4a98f3758fa0f26309498c1801055cf32c13fca17777759ec2c4d71f97f59b",
+      "bytes": 1011983,
       "dimensions": [
         1122,
         1402
@@ -1533,8 +1533,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-purple-walk-down.png",
       "sourceImage": "exec-6b0ec00b-3c3f-4352-bbda-f8eebfa717f6.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "e7f2ade2e905fa695568fc94503a37be32611e2bd189e03e25d3a929645489ec",
-      "bytes": 1156754,
+      "sha256": "93ae72949599272199e3d391125ae538f6fc87ad1b231fc1698def7343771a3b",
+      "bytes": 1132598,
       "dimensions": [
         1122,
         1402
@@ -1615,8 +1615,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-purple-walk-up.png",
       "sourceImage": "exec-e0e3f9e0-4559-4210-a456-963d09e31f41.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "1a753fb201c5581648c34e5a3e7c03b137524730995498c817e4f523c1a4d159",
-      "bytes": 879153,
+      "sha256": "312d1ae1990a1f270a26b497a55eb83b85b4d90e2f5df3fd6861da63506afe50",
+      "bytes": 850082,
       "dimensions": [
         1122,
         1402
@@ -1697,8 +1697,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-purple-walk-right.png",
       "sourceImage": "exec-2a822aa7-d9a0-45c5-97d3-8b1db5b32174.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "79af99f0077dff304084614820c27c4490563557ccf2743890584d9834aa189b",
-      "bytes": 1126871,
+      "sha256": "9ca0fcd6ca0f4ef906f4100959db8559ee63b4ca6ec462f02b1aa08a96304b1e",
+      "bytes": 1093459,
       "dimensions": [
         1122,
         1402
@@ -1779,8 +1779,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-purple-walk-left.png",
       "sourceImage": "exec-faaf3e87-77ed-4fe1-8f65-78fcf2f8a45d.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "b6b9048a1bbc989d3210bef84cfef6ca16717921accbb7dfa099d0aab7d4629f",
-      "bytes": 1203039,
+      "sha256": "bb83797a995ab12d954aa5b472d57ed97a16ff9831dfed286a634960d233b441",
+      "bytes": 1168810,
       "dimensions": [
         1122,
         1402
@@ -1861,8 +1861,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-purple-sit.png",
       "sourceImage": "exec-a6c29437-d621-48ce-9efa-80093ef2bdf6.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "9c92b4e9725030c9e1f24f965bac3edd5a5a6e65b6f8579f7ece794ef1e9f297",
-      "bytes": 1223545,
+      "sha256": "a49eec913983ec07a58688175450138e550aa74c3bce17ba9a9bfb982250155c",
+      "bytes": 1194831,
       "dimensions": [
         1122,
         1402
@@ -1951,8 +1951,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-purple-wave.png",
       "sourceImage": "exec-54e30314-76d4-4b88-a97d-cc78181b4708.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "371c25dffe4f3c799f898f2d4a1800da9fb100aa287a1379016265d6dd93cd52",
-      "bytes": 1212170,
+      "sha256": "696c92c16a7ce176db9af8de7ee1a80d9fe981145d49983752315349ec2e3a94",
+      "bytes": 1175853,
       "dimensions": [
         1122,
         1402
@@ -2037,8 +2037,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-review-down.png",
       "sourceImage": "exec-3be397fb-9e73-46d5-bfd1-db339bcb87b6.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "bdcb6cfafd703fb687c34d50e41af6dbfaf64c95135d1d42350bce618ddfa62c",
-      "bytes": 1093116,
+      "sha256": "fc8975484fde52066625603d86860378166f95177dcefdb8c15de690982159e9",
+      "bytes": 1061931,
       "dimensions": [
         1122,
         1402
@@ -2158,8 +2158,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-review-right.png",
       "sourceImage": "exec-49188558-cc50-41d6-95a3-0442ee0461da.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "60ff2592fa2351bce3ba054a74eab2276b12429e2d69da6b0a8354f20c65381e",
-      "bytes": 967216,
+      "sha256": "08cfc6b963673b1f74cd468e7b3da49dd7785469aa6fc6b6dc8a010cd0a880ed",
+      "bytes": 937304,
       "dimensions": [
         1122,
         1402
@@ -2279,8 +2279,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-review-left.png",
       "sourceImage": "exec-0637ed6c-93c6-41b1-95c7-e28b51d29bd0.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "6a2d96c6181da25527f22f6a4eb93c131b028556955dd5660dfbe16eb1e13f04",
-      "bytes": 1020786,
+      "sha256": "6564b90c65ae653f33531e9b053b5d8ca86934bb50b4f71f82343739b9a2e986",
+      "bytes": 988201,
       "dimensions": [
         1122,
         1402
@@ -2401,8 +2401,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-silver-review-up.png",
       "sourceImage": "exec-58c8f4a3-1f94-4137-a257-af07a26ee5fc.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "01f82afc8c2f43696f9b1dbe6f9c5db81252200d9b310dd9e0de8816d34b5798",
-      "bytes": 887487,
+      "sha256": "ba20993987a4547c06831c82682b570cfefa784fba3236744e32e403a41114a0",
+      "bytes": 853733,
       "dimensions": [
         1122,
         1402
@@ -2523,8 +2523,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-draw-down.png",
       "sourceImage": "exec-22e04a68-134a-4f2c-9e86-6f1837b57b17.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "737b24a666d8b61d8dcfa4c5204b132ccf6d212a81742ac242771041a8496015",
-      "bytes": 1124096,
+      "sha256": "f8390b672f9134a9237e343401b05330dba8cd2319e3f95e593bf90e5f281e92",
+      "bytes": 1096340,
       "dimensions": [
         1121,
         1403
@@ -2655,8 +2655,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-draw-right.png",
       "sourceImage": "exec-d7960ae5-88b1-42e3-8add-6573084bb736.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "b8df511cb19651e5dfca5aab84ffbf7a0ffc0cdd7eb63c826ec46d3570f11f09",
-      "bytes": 1018185,
+      "sha256": "dd35ecf4e4edf4a2b4f71be6a4fb0eb9de74c502301b7dc4a805f901e103b302",
+      "bytes": 986298,
       "dimensions": [
         1122,
         1402
@@ -2787,8 +2787,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-draw-left.png",
       "sourceImage": "exec-0d51eb8d-2edb-4f0d-98f1-133f795484a1.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "650f4581f321bb1de7af0f91a4cf9bd610e9ae9506b87612bda1c13af65ece75",
-      "bytes": 1134144,
+      "sha256": "b9639330496a0eae42d1430a51300c953d398cd5f6f5bddcd956a5af52c2fd8d",
+      "bytes": 1105918,
       "dimensions": [
         1072,
         1467
@@ -2919,8 +2919,8 @@
       "url": "/assets/virtual-studio/drawn-characters-v1/player-pink-draw-up.png",
       "sourceImage": "exec-2b30c624-f20e-4745-818d-79526f6f86cb.png",
       "sourceRun": "01a0bb3f-0968-7303-bc77-c66fc680d664",
-      "sha256": "191f032e1e1d1ac96ed13ffcbf4658cc62a0777f7ae2cb9053e79dbe32fd71a0",
-      "bytes": 863900,
+      "sha256": "4e1162e6bb603228bba9ee8278b20f205d10a42056b8ab94a40353455d64b70c",
+      "bytes": 833389,
       "dimensions": [
         1072,
         1467
