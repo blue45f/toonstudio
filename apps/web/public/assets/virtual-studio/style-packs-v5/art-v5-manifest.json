@@ -11158,253 +11158,253 @@
     },
     {
       "file": "retro/npcs/npc-security-direction-down.webp",
-      "bytes": 1180,
-      "sha256": "317b7d86bd5bc9f06e8abe82169268f102ff02b04a6d81489ea9fae6e011ecd1",
+      "bytes": 1918,
+      "sha256": "1208167d793c70fde1fab265881226ec612725a30e71042ce639a5dcb9cdd53f",
       "size": [
         160,
         160
       ],
-      "visualSignature": "bce9570d4787e0ad46f25d595b5d25e7b2c86e08cb39dab40a693b1d0d89788b"
+      "visualSignature": "137ab7934e55b54e1c92f7861cec8b7761733dc795fec3de4bca90f0c5076d24"
     },
     {
       "file": "retro/npcs/npc-security-direction-left.webp",
-      "bytes": 1068,
-      "sha256": "b5b6c73a80fd0e28b4b27ea386ec8815313f91662727db723e437079fae1d68d",
+      "bytes": 1468,
+      "sha256": "c108c33f86fa787de89aaece730ee26e0d881b293cf89929d5c2cad0a95b500e",
       "size": [
         160,
         160
       ],
-      "visualSignature": "459ff1f38fe0bccf1d2d5aa8d8630c19dfacee6d0f02b1891f1aa9cc00d3ec99"
+      "visualSignature": "11d010fb608cb35aca6e81d0a267389473ecedb0e863c87ce7f73907955d5e18"
     },
     {
       "file": "retro/npcs/npc-security-direction-right.webp",
-      "bytes": 1130,
-      "sha256": "88bf2b8d3ea68f86985fd3a74337abd33ec71a1b59488f2530520b8a6c913976",
+      "bytes": 1306,
+      "sha256": "1ce7c6350ffcda2d612334e50555f8831dbe14669f79a21451143f704cedab46",
       "size": [
         160,
         160
       ],
-      "visualSignature": "6135ff61e87acb35a89f798febe03da7aae8161b99743462d7468938051e26c2"
+      "visualSignature": "cd6877506e65eb4f4ff2c4f4a4eddb19f5e750882441567885320ff7b45a4d42"
     },
     {
       "file": "retro/npcs/npc-security-direction-up.webp",
-      "bytes": 976,
-      "sha256": "6187dd33a000ea725705aaddab7c31f8fe79acba578e30ecf9c34c29ba3fbe54",
+      "bytes": 1776,
+      "sha256": "6092dbfaa2525613047c453907732c8c04c5d0485f349179c38be5880e459150",
       "size": [
         160,
         160
       ],
-      "visualSignature": "f854dda9b6e781b54686c80f206c3eafa7d8eabdd5869321461b677283617bb0"
+      "visualSignature": "15a33af7a36f15d8c78780a26abc4a36299fe4b109b18b629a5852f93b8f82b9"
     },
     {
       "file": "retro/npcs/npc-security-draw-down.webp",
-      "bytes": 1128,
-      "sha256": "ac35f77826ffba47a32096d29ebfd8a3154abdb429455a03f01146f7c4608dd6",
+      "bytes": 7674,
+      "sha256": "95563a73fe7f54e079015404f629bd9056ea23c76dd00822819319fb4a3e34a4",
       "size": [
         640,
         160
       ],
-      "visualSignature": "a0f41ab625bb00e083931fb552b87097245d6845a42172ad3d1957c269e68d49"
+      "visualSignature": "49c3a8a61f551be826a18273f56b79d355a1c0bad6bfc0cbdb002738e45261e9"
     },
     {
       "file": "retro/npcs/npc-security-draw-left.webp",
-      "bytes": 1098,
-      "sha256": "970418447ff598455babc7eb9e50ffed18060977a11fcccf0041286060661536",
+      "bytes": 6860,
+      "sha256": "3ef6ceb6390a6045eb21a1e3a87801c4eb4d9b9b771ff82bee202a560d6ab362",
       "size": [
         640,
         160
       ],
-      "visualSignature": "918d68d9f138bec82155afcdd0e69651b83c840a81b14a317e5689fa0e3613a6"
+      "visualSignature": "c676477a551c4bab759db20a3d9054f7472dd6873032f29032260601735aa671"
     },
     {
       "file": "retro/npcs/npc-security-draw-right.webp",
-      "bytes": 1092,
-      "sha256": "a860da5f9a2a3fbc57700c2e705b7bea26fe58ace9809abfdfc71d356ab0bee2",
+      "bytes": 6694,
+      "sha256": "02722c6510677f12f3fea0c66004f27eb78bf1af715408f8a8e80c82627f7c5a",
       "size": [
         640,
         160
       ],
-      "visualSignature": "ee738a330884c24616394b1b007e79b49e843f29c11578e719167112804abfb5"
+      "visualSignature": "a327aefe3a3d7dfb96ebbcc0bf2736894d7f9a34fdc383394702507bc9cf8bd3"
     },
     {
       "file": "retro/npcs/npc-security-draw-up.webp",
-      "bytes": 996,
-      "sha256": "2fb8aad17c166f084066738f4052295bfe33ca042987354858ed4afc17eb9742",
+      "bytes": 7470,
+      "sha256": "64845b83390c593be1ecec092fa4f1a5e9a07a4863bb1779df27c949d6ef5c05",
       "size": [
         640,
         160
       ],
-      "visualSignature": "9a2c774161ce2b0008bea7ffd385c1faeef74680663f0dd32b8eee8e68ac4481"
+      "visualSignature": "da18f6ec1a25c6caad2f31a836f6afa5f99465edcce5f2701437df32070bd07b"
     },
     {
       "file": "retro/npcs/npc-security-review-down.webp",
-      "bytes": 1128,
-      "sha256": "ac35f77826ffba47a32096d29ebfd8a3154abdb429455a03f01146f7c4608dd6",
+      "bytes": 9622,
+      "sha256": "44e05dc11c768f0a64a505d28c2a74ae1a3f65201146595ec76397968bddeecc",
       "size": [
         640,
         160
       ],
-      "visualSignature": "a0f41ab625bb00e083931fb552b87097245d6845a42172ad3d1957c269e68d49"
+      "visualSignature": "a2519fa2dce57c7ced64e1cc79a75ba9090b80d0a4dd9e33aad7c8de26c48b1f"
     },
     {
       "file": "retro/npcs/npc-security-review-left.webp",
-      "bytes": 1098,
-      "sha256": "970418447ff598455babc7eb9e50ffed18060977a11fcccf0041286060661536",
+      "bytes": 4018,
+      "sha256": "89cadd1a44f57f0083a81f547964baa0a7c50b0d1e08f0bf03f75605b1e8b4fd",
       "size": [
         640,
         160
       ],
-      "visualSignature": "918d68d9f138bec82155afcdd0e69651b83c840a81b14a317e5689fa0e3613a6"
+      "visualSignature": "d65a5303bbe5ec3838af98a79215611f7d9cf5a75b1097a2810cdbf3236bb0dc"
     },
     {
       "file": "retro/npcs/npc-security-review-right.webp",
-      "bytes": 1092,
-      "sha256": "a860da5f9a2a3fbc57700c2e705b7bea26fe58ace9809abfdfc71d356ab0bee2",
+      "bytes": 4002,
+      "sha256": "85eb7386b31548bc92eac6ae02983a6e0a9c94cc5fec0b40d00d5c1ce39097f5",
       "size": [
         640,
         160
       ],
-      "visualSignature": "ee738a330884c24616394b1b007e79b49e843f29c11578e719167112804abfb5"
+      "visualSignature": "70afac23a74cd53e0f24c6a75602b6d82a8929f135bc9b58bf032d104c50a3ea"
     },
     {
       "file": "retro/npcs/npc-security-review-up.webp",
-      "bytes": 996,
-      "sha256": "2fb8aad17c166f084066738f4052295bfe33ca042987354858ed4afc17eb9742",
+      "bytes": 8668,
+      "sha256": "6e32c4e1edd0ba9471a798e0ccbf80d72be2e06dbfea328261219b08c7eeb8ca",
       "size": [
         640,
         160
       ],
-      "visualSignature": "9a2c774161ce2b0008bea7ffd385c1faeef74680663f0dd32b8eee8e68ac4481"
+      "visualSignature": "73725e75085df53ed6f3c03208ed162983750e80b0025da1dede99e53616cad2"
     },
     {
       "file": "retro/npcs/npc-security-sit.webp",
-      "bytes": 3652,
-      "sha256": "c56c9b1183bb83a8bb357c558753a8e8969ebf81fedc2fc5b84cc96526f72665",
+      "bytes": 6556,
+      "sha256": "46afa4c52d9df3be483fdadeabeab2ba308baaa88cad46119a5653f744b89058",
       "size": [
         640,
         160
       ],
-      "visualSignature": "a208dd8ded6333d0e3dbddd516a07c40e7f685309f1536ea7d154e57b62a9c84"
+      "visualSignature": "aa5e3530a836eaa060df6930afe0b99a603944f678e0d8f80333ca3f5ea7acc8"
     },
     {
       "file": "retro/npcs/npc-security-state-draw.webp",
-      "bytes": 1024,
-      "sha256": "1c7188ab24ebf214c9e31561031c06ad79478d81e21b063786d945851c3dba32",
+      "bytes": 1870,
+      "sha256": "cdc11bbee2568770ebf5ac73220cc97844162305d80048dee926cbaccff15ea3",
       "size": [
         160,
         160
       ],
-      "visualSignature": "af8bc028e3cc5904a3ab793d0487bbc2f40a779e45f785e44bca50e599fda834"
+      "visualSignature": "e10e7d1966a084b4de59c2714afe3ba66de56449752dbe7bc4cf3d4180061f0b"
     },
     {
       "file": "retro/npcs/npc-security-state-review.webp",
-      "bytes": 1024,
-      "sha256": "1c7188ab24ebf214c9e31561031c06ad79478d81e21b063786d945851c3dba32",
+      "bytes": 2280,
+      "sha256": "ba8615bb6a2cbc04c3fbc7e0fe6c3c33bd1598014e03c0acda4438c16bfe8e7b",
       "size": [
         160,
         160
       ],
-      "visualSignature": "af8bc028e3cc5904a3ab793d0487bbc2f40a779e45f785e44bca50e599fda834"
+      "visualSignature": "858e316a0f57338da65c7881a261ef12f5a472bc7adad7429a5b3fdb42829135"
     },
     {
       "file": "retro/npcs/npc-security-state-talk.webp",
-      "bytes": 1120,
-      "sha256": "c4c1847b0ccf9ffda99e47e8e98311bc5987e53f3478dd1434ace7fc4f6d9e2a",
+      "bytes": 1782,
+      "sha256": "6bd152c384273d5db5d652d01ab6b2971bd8d0f6f697ab2bf8e4ea6ad4dc995a",
       "size": [
         160,
         160
       ],
-      "visualSignature": "873ea2517ffbd79cd6bdc1e51177af57e5a1120e66844fc13c698e4e440776db"
+      "visualSignature": "a12926922cf1a28b9d48abfdfbaa5375360491b5fab1d09392256cfafdafa6a5"
     },
     {
       "file": "retro/npcs/npc-security-talk-down.webp",
-      "bytes": 1230,
-      "sha256": "1651639d3c68b14cf798b6aaa15dd2101ff96ce8d4bd6cabc3aa6fa50036920c",
+      "bytes": 7462,
+      "sha256": "5f15192298b4da8d6a92ce0a08e5a6bff74bb3e9f8eaa52e9ac8caaa8e357e61",
       "size": [
         640,
         160
       ],
-      "visualSignature": "a4fe3f242870c90ff625d69aa7b65a32c26bba8bf95787628f439cb994942b2b"
+      "visualSignature": "bfc68c146c7fb6db8336cec3c54c15e980fb93ece4191d381867d044ce3ab472"
     },
     {
       "file": "retro/npcs/npc-security-talk-left.webp",
-      "bytes": 1204,
-      "sha256": "a64fc332406102403f45ecd6cb469a13044c0965ffc102773fe6c522b9e80cb1",
+      "bytes": 5314,
+      "sha256": "9d1ad54a5f1970b89f6c5acb5626df74b56ca67214bcdc1a7a5a7c09a45cd3f5",
       "size": [
         640,
         160
       ],
-      "visualSignature": "68465de3109da19f2b7a5a1521066509432f35a1443c36b6fbabd87522e1db47"
+      "visualSignature": "f3d15773aba1fe3083e7c800856734c35d60cb2ea5294bcf785e5d1fe986d715"
     },
     {
       "file": "retro/npcs/npc-security-talk-right.webp",
-      "bytes": 1210,
-      "sha256": "695ac99fff251b05587eeb8a07c815ef2e989eb3dc6d491fd3cf5ec5f7449ac6",
+      "bytes": 7284,
+      "sha256": "9bf8d10728c6aa9a89b6fb379765f8d881819d7c0325e57efad1ac066bf11625",
       "size": [
         640,
         160
       ],
-      "visualSignature": "2ce2e7676c0e45ae29b7c4e5d74ac18a3ea3107e22d1ae374cf7554d60c6cc7e"
+      "visualSignature": "03690a55a35baf98e14dccccf363600c0dea079ffdeca4f37ed40b137fca40db"
     },
     {
       "file": "retro/npcs/npc-security-talk-up.webp",
-      "bytes": 1112,
-      "sha256": "0766a52a890351ceda9c91eaf207f76ade70b26aec0613fd7df41b4fb4d55c30",
+      "bytes": 7184,
+      "sha256": "0c790473a2f528168feff32f30df58e2b0f12c993dacd6c8d9bf0fdf327f8845",
       "size": [
         640,
         160
       ],
-      "visualSignature": "c34ac52391631b765818b16494a58e281c7b998fb277f5d340a219dd1bfd3118"
+      "visualSignature": "24cc4604c4fe88ec16b193092eea97e3ad6af4b8c89ac78192b8921554fd6ce9"
     },
     {
       "file": "retro/npcs/npc-security-walk-down.webp",
-      "bytes": 2444,
-      "sha256": "d8f3fd723b36c3e52f51373c76e8201279dc0a2f55157e023f5d8ffaef1e902c",
+      "bytes": 6982,
+      "sha256": "070958bf3bb3dbedb0f34a843b5cb508cb5966bf80fdda58f7cff2ad7898f6f6",
       "size": [
         640,
         160
       ],
-      "visualSignature": "5c8a4048eba43d18acb9f689dd3d54fd42dcd0bc5b3e45a76272dce5a6c956e7"
+      "visualSignature": "84b2c64449e7cd1b1966c2141aaff7b1799491f04ebe4299d421b5e8455b5f44"
     },
     {
       "file": "retro/npcs/npc-security-walk-left.webp",
-      "bytes": 2118,
-      "sha256": "39bfb26b21d1f53c0b2ff7f05487b72bb012fc5f3e644f025a857227f258c6c9",
+      "bytes": 7670,
+      "sha256": "ef016b60d8fce5ba4479a9854a92ac8cc4369294162c7f0b016b331abfb78a7f",
       "size": [
         640,
         160
       ],
-      "visualSignature": "f3fc75c8ed5f30ca6b56dbc29fcd143a8b59498d259eee7350e2de417dad35eb"
+      "visualSignature": "f73adeeee509dbd91fc6fc2c35e887a4f160b3ebf453dc1327fc01ed24a99725"
     },
     {
       "file": "retro/npcs/npc-security-walk-right.webp",
-      "bytes": 2316,
-      "sha256": "317b853d71a02ecc1a2786ac4874b0ffe8212ea739ebc2f43dd6fa4ea6af51d4",
+      "bytes": 7238,
+      "sha256": "68f63a4636defd98f7d1f35a4c14e76f7e208091a19a85917b4b805facdf743f",
       "size": [
         640,
         160
       ],
-      "visualSignature": "9aa0b2d412ade42d584da4c5bb9f383176cfd23e8b6e4b364aa0983f93b0774c"
+      "visualSignature": "a5c70be82a0f6574f42fd0958d3d1551d4c59348976a1e27b63b71ad143fea60"
     },
     {
       "file": "retro/npcs/npc-security-walk-up.webp",
-      "bytes": 2194,
-      "sha256": "1c04f20eefda4b2257df7cdeaae9b99567d6749d5dec28630c57192bfb508bbb",
+      "bytes": 6852,
+      "sha256": "e215be8e518997c11d9b48d07c79dd0007da5b11ea9b743d9e3339aa4ab84e99",
       "size": [
         640,
         160
       ],
-      "visualSignature": "36ac6ef3e9bc5586fb389260f5422d2e6ae59c3d7c48c581393a7bfb8edb4e8a"
+      "visualSignature": "d7519d7fd87e4a167f92eaa75ead109ddafc019be6b2578ed1e8d2d61c7313fb"
     },
     {
       "file": "retro/npcs/npc-security-wave.webp",
-      "bytes": 3672,
-      "sha256": "c49df0b15f59bf01a56376efc7b5ab698daa645d439e8ef6603afb98af77d5ac",
+      "bytes": 9528,
+      "sha256": "b2676324975faa0df2838928a8900cce0836a50f9005b2dd3e2baed029a7a24e",
       "size": [
         640,
         160
       ],
-      "visualSignature": "027c37a7d835d86c57ce280215b43946137a41de5409623cb36242c09bc7046e"
+      "visualSignature": "78c85e368e66b411f24878c839d68eb75ecadb7ba473446156f89310bd63b13a"
     },
     {
       "file": "retro/objects/bench.webp",
