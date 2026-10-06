@@ -11,6 +11,9 @@
  *   · 문·조명·게시판·미디어 보드/스크린 = 고정물(fixture). X로 토글하면 반응 표의 swing(문·미디어 열림)·
  *     glow(조명)·sweep(게시판 읽음 반사)·배지로 그려지고, 로컬 전이는 커피와 같은 통지 경로로 피어에게 전파된다.
  *     원격 적용은 부수효과 없이 상태만 맞춘다(웨이브 4 — 상태 가구 월드 배치).
+ *   · 빌드 모드로 배치한 가구도 syncPlacedFixtures로 같은 고정물 층에 등록된다(웨이브 4 B).
+ *     매니페스트 상호작용이 없는 가구라 등록·해제·토글만 이 런타임이 맡고, 배치 목록의
+ *     소유는 빌드 모드 쪽이다. 커피 머신은 컵·수령 연출이 매니페스트 머신 전용이라 제외된다.
  * - 일회성 발동 연출: 분수 동전(포물선 → 물보라·반짝임), 무대 꽃가루, 오락기 픽셀 폭죽, 갤러리 조명,
  *   보드 마커 선, 자료 책장, 촬영 플래시, 고양이 하트, 회의 고리, 안내 종소리 등.
  * - 무대 앞 발표 자리에 선 사람(나·동료)에게 스포트라이트와 "발표 중" 배지(모든 접속자가 같은 위치 규칙으로 본다).
@@ -138,11 +141,19 @@ interface Machine {
 
 /** 상태 가구 고정물(문·조명·게시판·미디어 보드/스크린). 커피 머신과 달리 시간 전이·수령 연출이 없고 상태 반응만 그린다. */
 interface Fixture {
-  readonly interaction: StudioWorldInteractionDefinition;
+  /** 고정물 식별자만 필요하다 — 배치 가구는 매니페스트 상호작용 정의가 없다. */
+  readonly interaction: Pick<StudioWorldInteractionDefinition, "id">;
   readonly kind: StudioInteractableObjectKind;
   readonly anchor: StudioWorldFxAnchor;
   readonly graphics: Phaser.GameObjects.Graphics;
   runtime: StudioInteractableRuntime;
+}
+
+/** 배치 가구 고정물 등록 입력(빌드 모드 등 매니페스트 밖에서 배치된 상태 가구). */
+export interface StudioInteractionFxPlacedFixture {
+  readonly objectId: string;
+  readonly kind: StudioInteractableObjectKind;
+  readonly anchor: StudioWorldFxAnchor;
 }
 
 interface Badge {
@@ -191,6 +202,8 @@ export class StudioInteractionFxRuntime {
   private readonly fixtures = new Map<string, Fixture>();
   /** 전파로 적용된 고정물(상대 소유). 로컬 발동으로 토글하면 소유가 넘어온다. */
   private readonly remoteFixtures = new Set<string>();
+  /** syncPlacedFixtures로 등록된 배치 고정물 id. 매니페스트 고정물과 구분해 동기화·해제 범위를 정한다. */
+  private readonly placedFixtureIds = new Set<string>();
   private readonly chairs = new Map<string, StudioInteractableRuntime>();
   private readonly anchors = new Map<string, StudioWorldFxAnchor>();
   private readonly kinds = new Map<string, StudioWorldInteractionKind>();
@@ -344,6 +357,51 @@ export class StudioInteractionFxRuntime {
     this.remoteFixtures.clear();
   }
 
+  /**
+   * 배치 가구 고정물을 목록에 맞춘다 (VS 120 웨이브 4 B).
+   * 새 가구는 초기 상태로 등록하고, 목록에서 사라진 가구는 그래픽까지 해제하며,
+   * 종류가 바뀐 가구는 새 종류로 다시 등록한다. 등록된 고정물은 매니페스트
+   * 고정물과 같은 경로로 그려지고(stepFixture), 원격 적용·퇴장 정리도 같이 받는다.
+   * 매니페스트 고정물은 건드리지 않는다.
+   */
+  syncPlacedFixtures(placed: readonly StudioInteractionFxPlacedFixture[]): void {
+    const wanted = new Set(placed.map((item) => item.objectId));
+    for (const objectId of [...this.placedFixtureIds]) {
+      if (wanted.has(objectId)) continue;
+      const fixture = this.fixtures.get(objectId);
+      if (fixture) { fixture.graphics.destroy(); this.fixtures.delete(objectId); }
+      this.remoteFixtures.delete(objectId);
+      this.placedFixtureIds.delete(objectId);
+    }
+    for (const item of placed) {
+      const existing = this.fixtures.get(item.objectId);
+      if (existing && existing.kind === item.kind && this.placedFixtureIds.has(item.objectId)) continue;
+      if (existing) {
+        existing.graphics.destroy();
+        this.fixtures.delete(item.objectId);
+        this.remoteFixtures.delete(item.objectId);
+      }
+      const graphics = this.scene.add.graphics().setDepth(Math.round(item.anchor.baseY) + 1_004).setVisible(false);
+      this.fixtures.set(item.objectId, {
+        interaction: { id: item.objectId },
+        kind: item.kind,
+        anchor: item.anchor,
+        graphics,
+        runtime: createInteractableRuntime(item.objectId, item.kind, this.frameTime),
+      });
+      this.placedFixtureIds.add(item.objectId);
+    }
+  }
+
+  /** 배치 가구 고정물을 X로 토글한다(매니페스트 고정물과 같은 전이·전파·알림 경로). 배치 고정물이 아니면 false다. */
+  activatePlacedFixture(objectId: string, time: number): boolean {
+    if (!this.placedFixtureIds.has(objectId)) return false;
+    const fixture = this.fixtures.get(objectId);
+    if (!fixture) return false;
+    this.activateFixture(fixture, time);
+    return true;
+  }
+
   /** 로컬 상태 전이를 전파 통지로 내보낸다. 원격 소유 오브젝트에서는 부르지 않는다. */
   private emitObjectStateChange(objectId: string, runtime: StudioInteractableRuntime): void {
     this.callbacks.onObjectStateChange?.({
@@ -455,6 +513,7 @@ export class StudioInteractionFxRuntime {
     this.machines.clear();
     for (const fixture of this.fixtures.values()) fixture.graphics.destroy();
     this.fixtures.clear();
+    this.placedFixtureIds.clear();
     for (const cup of this.cups) cup.destroy();
     this.cups.length = 0;
     for (const badge of this.badges) badge.text.destroy();
