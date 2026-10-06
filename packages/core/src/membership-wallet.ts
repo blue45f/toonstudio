@@ -399,6 +399,10 @@ export const BETA_PROMOTIONS = Object.freeze({
 });
 
 export const REWARD_MILESTONES = Object.freeze({
+  // 웰컴은 가입 확정이 확인되는 시점에만 지급하고 기존 가입자에게 소급하지 않는다.
+  // 탈퇴 후 재가입한 새 계정에도 다시 지급될 수 있는 것이 확정 정책이며, 별도 차단
+  // 장치는 두지 않는다(낮은 금액 + 이상 패턴은 관리자 회수로 대응).
+  "welcome": { points: 100, label: "신규 가입 웰컴" },
   "profile-complete": { points: 100, label: "크리에이터 프로필 완성" },
   "first-public-work": { points: 300, label: "첫 작품 공개" },
   "beta-feedback-accepted": { points: 150, label: "채택된 베타 피드백" },
