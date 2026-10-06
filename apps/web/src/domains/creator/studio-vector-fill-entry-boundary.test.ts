@@ -10,6 +10,36 @@ const previewUrl = new URL("./studio-advanced-fill-preview.ts", import.meta.url)
 const source = readFileSync(pageUrl, "utf8");
 const viewportSource = readStudioCanvasViewportStack(import.meta.url, "./canvas/");
 const previewSource = readFileSync(previewUrl, "utf8");
+// runAdvancedFillAt는 래칫 분리로 어댑터 모듈이 소유한다 — 본문 단언은 어댑터를 대상으로 한다.
+const advancedFillRunUrl = new URL(
+  "./studio-cuttoon-editor/studio-cuttoon-advanced-fill-run.ts",
+  import.meta.url,
+);
+const advancedFillRunSource = readFileSync(advancedFillRunUrl, "utf8");
+const advancedFillRunFile = ts.createSourceFile(
+  advancedFillRunUrl.pathname,
+  advancedFillRunSource,
+  ts.ScriptTarget.Latest,
+  true,
+  ts.ScriptKind.TS,
+);
+
+function adapterFunction(name: string): string {
+  let match: ts.FunctionExpression | ts.FunctionDeclaration | null = null;
+  function visit(node: ts.Node): void {
+    if (
+      (ts.isFunctionExpression(node) || ts.isFunctionDeclaration(node))
+      && node.name?.text === name
+    ) {
+      match = node;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(advancedFillRunFile);
+  if (!match) throw new Error(`Missing adapter function ${name}`);
+  return (match as ts.FunctionExpression).getText(advancedFillRunFile);
+}
 const file = ts.createSourceFile(
   pageUrl.pathname,
   source,
@@ -54,7 +84,7 @@ describe("Studio vector line-art advanced fill entry boundary", () => {
   });
 
   it("rasterizes visible vectors through the abortable reference seam before filling", () => {
-    const run = nestedFunction("runAdvancedFillAt");
+    const run = adapterFunction("runAdvancedFillAt");
 
     expect(run).toContain("advancedFillVirtualReferenceRef.current");
     expect(run).toContain("renderStudioAdvancedFillVectorReference(vectorInput");
@@ -70,7 +100,7 @@ describe("Studio vector line-art advanced fill entry boundary", () => {
   });
 
   it("includes the same visible vector reference when filling an existing raster target", () => {
-    const run = nestedFunction("runAdvancedFillAt");
+    const run = adapterFunction("runAdvancedFillAt");
 
     expect(run).toContain("renderStudioAdvancedFillVectorReference(vectorInput");
     expect(run).toContain("composeStudioFillReferenceImageWithPageReferences(");

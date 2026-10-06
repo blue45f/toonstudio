@@ -9,6 +9,36 @@ const advancedFillEffectsSource = readFileSync(
   new URL("./studio-page-advanced-fill.ts", import.meta.url),
   "utf8",
 );
+// runAdvancedFillAt는 래칫 분리로 어댑터 모듈이 소유한다 — 본문 단언은 어댑터를 대상으로 한다.
+const advancedFillRunUrl = new URL(
+  "./studio-cuttoon-editor/studio-cuttoon-advanced-fill-run.ts",
+  import.meta.url,
+);
+const advancedFillRunSource = readFileSync(advancedFillRunUrl, "utf8");
+const advancedFillRunFile = ts.createSourceFile(
+  advancedFillRunUrl.pathname,
+  advancedFillRunSource,
+  ts.ScriptTarget.Latest,
+  true,
+  ts.ScriptKind.TS,
+);
+
+function adapterFunction(name: string): string {
+  let match: ts.FunctionExpression | ts.FunctionDeclaration | null = null;
+  function visit(node: ts.Node): void {
+    if (
+      (ts.isFunctionExpression(node) || ts.isFunctionDeclaration(node))
+      && node.name?.text === name
+    ) {
+      match = node;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(advancedFillRunFile);
+  if (!match) throw new Error(`Missing adapter function ${name}`);
+  return (match as ts.FunctionExpression).getText(advancedFillRunFile);
+}
 const file = ts.createSourceFile(
   pageUrl.pathname,
   source,
@@ -116,9 +146,9 @@ describe("Studio advanced fill entry boundary", () => {
   // 정확히 만들지 못하면 채우기 전체를 던져 — 페이지 어딘가의 지우개 획 하나가 무관한 래스터
   // 레이어 채우기까지 막고 "먼저 레이어를 병합해 주세요" 배너를 띄웠다.
   it("drops the optional vector line-art reference instead of aborting a raster fill", () => {
-    const run = nestedFunction("runAdvancedFillAt");
+    const run = adapterFunction("runAdvancedFillAt");
 
-    expect(source).toContain("describeStudioAdvancedFillVectorReferenceExclusion,");
+    expect(advancedFillRunSource).toContain("describeStudioAdvancedFillVectorReferenceExclusion,");
     expect(run).toContain(
       "vectorReferenceExclusion = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan)",
     );
@@ -139,7 +169,7 @@ describe("Studio advanced fill entry boundary", () => {
   // 자신을 늘 제외하므로, 이때 합성기를 부르면 "참조할 표시 래스터 레이어가 없습니다"로 던져
   // 채우기가 그대로 멈추고 제외 사유는 catch 로 사라진다 — 축소 계약이 무너지는 구멍이었다.
   it("falls back to the target boundary instead of composing an empty reference set", () => {
-    const run = nestedFunction("runAdvancedFillAt");
+    const run = adapterFunction("runAdvancedFillAt");
 
     expect(run).toContain(
       "if (pageReferences.length === 0 && scopedRasterReferences.length === 0) {",
@@ -155,22 +185,22 @@ describe("Studio advanced fill entry boundary", () => {
   });
 
   it("projects linked pass references through bounded verified leases before browser composition", () => {
-    const editor = nestedFunction("StudioCuttoonEditor");
+    const run = adapterFunction("runAdvancedFillAt");
 
-    expect(source).toContain('"./render/studio-raster-source-projection"');
-    expect(editor).toContain("withStudioRasterSourceProjection({");
-    expect(editor).toContain('consumer: "studio-advanced-fill-reference"');
-    expect(editor).toContain("collectOverlappingStudioFillReferenceLayers(");
-    expect(editor).toContain("projectedById.get(layer.id) ?? layer");
+    expect(advancedFillRunSource).toContain('"../render/studio-raster-source-projection"');
+    expect(run).toContain("withStudioRasterSourceProjection({");
+    expect(run).toContain('consumer: "studio-advanced-fill-reference"');
+    expect(run).toContain("collectOverlappingStudioFillReferenceLayers(");
+    expect(run).toContain("projectedById.get(layer.id) ?? layer");
   });
 
   // 래스터 대상에서 벡터 선화 참조는 래스터 경계 위에 얹는 추가 경계다. 예전에는 이 참조를
   // 정확히 만들지 못하면 채우기 전체를 던져 — 페이지 어딘가의 지우개 획 하나가 무관한 래스터
   // 레이어 채우기까지 막고 "먼저 레이어를 병합해 주세요" 배너를 띄웠다.
   it("drops the optional vector line-art reference instead of aborting a raster fill", () => {
-    const run = nestedFunction("runAdvancedFillAt");
+    const run = adapterFunction("runAdvancedFillAt");
 
-    expect(source).toContain("describeStudioAdvancedFillVectorReferenceExclusion,");
+    expect(advancedFillRunSource).toContain("describeStudioAdvancedFillVectorReferenceExclusion,");
     expect(run).toContain(
       "vectorReferenceExclusion = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan)",
     );
@@ -191,7 +221,7 @@ describe("Studio advanced fill entry boundary", () => {
   // 자신을 늘 제외하므로, 이때 합성기를 부르면 "참조할 표시 래스터 레이어가 없습니다"로 던져
   // 채우기가 그대로 멈추고 제외 사유는 catch 로 사라진다 — 축소 계약이 무너지는 구멍이었다.
   it("falls back to the target boundary instead of composing an empty reference set", () => {
-    const run = nestedFunction("runAdvancedFillAt");
+    const run = adapterFunction("runAdvancedFillAt");
 
     expect(run).toContain(
       "if (pageReferences.length === 0 && scopedRasterReferences.length === 0) {",

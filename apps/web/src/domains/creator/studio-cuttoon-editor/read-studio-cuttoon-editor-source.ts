@@ -41,6 +41,9 @@ export function readStudioCuttoonStagePointersSource(): string {
 export function readStudioPageCompositionSource(): string {
   return [
     resolve(baseDir, "../StudioPage.tsx"),
+    // 래칫 2라운드로 분리된 삽입·채우기 어댑터 — 호스트 배선 단언이 닿도록 합성에 포함한다.
+    resolve(baseDir, "./studio-cuttoon-bg3d-insert.ts"),
+    resolve(baseDir, "./studio-cuttoon-advanced-fill-run.ts"),
     resolve(baseDir, "../StudioCuttoonEditorHost.tsx"),
     // The route-layering refactor (984251d8c) moved host wiring into these runtimes. A scan that
     // reads only the page and the host now stops short of the code it is asserting on.
@@ -91,6 +94,9 @@ export function readStudioCuttoonEditorSource(): string {
     resolve(baseDir, "./studio-deferred-stroke-commit.ts"),
     // 분리된 라이브 표면의 입장·거절 조건도 기존 경계 검증에 포함한다.
     resolve(baseDir, "./studio-live-surface-start.ts"),
+    // 래칫 2라운드 분리 — 3D 배경 삽입·고급 채우기 실행 어댑터도 합성 표면에 포함한다.
+    resolve(baseDir, "./studio-cuttoon-bg3d-insert.ts"),
+    resolve(baseDir, "./studio-cuttoon-advanced-fill-run.ts"),
     resolve(baseDir, "./studio-asset-library-mutations.ts"),
     resolve(baseDir, "../studio-page-shortcut-dispatcher.ts"),
     resolve(baseDir, "../studio-page-comments-runtime.ts"),

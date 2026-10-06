@@ -46,10 +46,7 @@ import {
 } from "../lettering/studio-dialogue-translate";
 import {
   completeStudioServerText,
-  parseStudioServerAiFailoverMetadata,
-  type StudioServerAiFailoverMetadata,
   type StudioServerAiTask,
-  type StudioServerAiProviderPreference,
 } from "../studio-server-ai-client";
 import type { StudioWriterRoomAiDraft } from "../studio-writer-room-ai";
 
@@ -74,6 +71,25 @@ import {
 } from "./studio-ai-reference-images";
 import { isStudioAiConfigured, type StudioAiSettings } from "./studio-ai-settings";
 
+import {
+  extractFirstB64Json,
+  extractFirstChatContent,
+  extractGeneratedModel,
+  extractTextAiProvenance,
+  parseImageSize,
+  type StudioAiImageSize,
+  type StudioTextAiData,
+  type StudioTextAiTransport,
+} from "./studio-ai-response-parsing";
+
+export {
+  type StudioAiImageSize,
+  type StudioAiTokenUsage,
+  type StudioTextAiData,
+  type StudioTextAiProvenance,
+  type StudioTextAiTransport,
+} from "./studio-ai-response-parsing";
+
 export {
   STUDIO_AI_SETTINGS_KEY,
   STUDIO_AI_DEFAULT_SETTINGS,
@@ -92,15 +108,6 @@ export {
 } from "./studio-ai-reference-images";
 
 /** 텍스트 생성만 서버 보유 Z.ai/DeepSeek를 사용할 수 있다. 이미지 생성/편집은 계속 BYOK 설정을 요구한다. */
-export type StudioTextAiTransport =
-  | { mode: "byok"; signal?: AbortSignal }
-  | {
-      mode: "server";
-      provider?: StudioServerAiProviderPreference;
-      signal?: AbortSignal;
-      /** Stable Studio provenance operation ID reused as the paid server request retry key. */
-      operationId?: string;
-    };
 
 /**
  * Binds an already-tracked Studio operation to a server transport. BYOK requests deliberately keep
@@ -113,27 +120,6 @@ export function studioTextAiTransportForOperation(
   return transport.mode === "server" ? { ...transport, operationId } : transport;
 }
 
-export interface StudioAiTokenUsage {
-  promptTokens?: number;
-  completionTokens?: number;
-  totalTokens?: number;
-}
-
-/** 저장 가능한 텍스트 생성 이력. API 키·전체 프롬프트·응답 본문은 의도적으로 포함하지 않는다. */
-export interface StudioTextAiProvenance {
-  provider: string;
-  model: string;
-  transport: StudioTextAiTransport["mode"];
-  promptVersion: 1;
-  createdAt: string;
-  requestId?: string;
-  usage?: StudioAiTokenUsage;
-  /** 서버 자동 선택이 무료 한도·요청 제한을 감지해 다른 공급자로 전환한 경우의 안전한 구조화 이력. */
-  failover?: StudioServerAiFailoverMetadata;
-}
-
-/** 텍스트 AI 결과에 실제 공급자·모델 감사 정보를 일관되게 붙이는 공통 결과 형태. */
-export type StudioTextAiData<T extends object> = T & { textProvenance: StudioTextAiProvenance };
 
 const DEFAULT_TEXT_AI_TRANSPORT: StudioTextAiTransport = { mode: "byok" };
 
@@ -157,7 +143,6 @@ export type StudioAiErrorCode =
 
 export type StudioAiResult<T> = { ok: true; data: T } | { ok: false; code: StudioAiErrorCode; error: string };
 
-export type StudioAiImageSize = "1024x1024" | "1024x1792" | "1792x1024";
 
 export const STUDIO_AI_IMAGE_SIZES: ReadonlyArray<{ value: StudioAiImageSize; label: string }> = [
   { value: "1024x1024", label: "정사각형 (1024×1024)" },
@@ -457,113 +442,6 @@ async function postTextCompletion(
   }
   const url = buildUrl(settings.baseUrl, settings.chatCompletionsPath);
   return postJson(url, settings.apiKey, body, transport.signal);
-}
-
-function extractFirstB64Json(json: unknown): string | null {
-  if (!json || typeof json !== "object") return null;
-  const data = (json as Record<string, unknown>).data;
-  if (!Array.isArray(data) || data.length === 0) return null;
-  const first = data[0] as Record<string, unknown> | undefined;
-  const b64 = first?.b64_json;
-  return typeof b64 === "string" && b64.length > 0 ? b64 : null;
-}
-
-function extractGeneratedModel(json: unknown, fallback: string): string {
-  if (!json || typeof json !== "object") return fallback;
-  const candidate = (json as Record<string, unknown>).model;
-  return typeof candidate === "string" && candidate.trim().length > 0
-    ? candidate.trim().slice(0, 200)
-    : fallback;
-}
-
-function extractFirstChatContent(json: unknown): string | null {
-  if (!json || typeof json !== "object") return null;
-  const choices = (json as Record<string, unknown>).choices;
-  if (!Array.isArray(choices) || choices.length === 0) return null;
-  const message = (choices[0] as Record<string, unknown> | undefined)?.message as Record<string, unknown> | undefined;
-  const content = message?.content;
-  return typeof content === "string" && content.trim().length > 0 ? content.trim() : null;
-}
-
-function textProviderFromSettings(settings: StudioAiSettings): string {
-  try {
-    return new URL(settings.baseUrl).hostname.slice(0, 120) || "custom";
-  } catch {
-    return settings.baseUrl.trim().slice(0, 120) || "custom";
-  }
-}
-
-function optionalTokenCount(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
-    ? Math.min(value, 2_147_483_647)
-    : undefined;
-}
-
-function extractTextAiProvenance(
-  json: unknown,
-  settings: StudioAiSettings,
-  transport: StudioTextAiTransport
-): StudioTextAiProvenance {
-  const record = json && typeof json === "object" && !Array.isArray(json)
-    ? json as Record<string, unknown>
-    : {};
-  const usageRecord = record.usage && typeof record.usage === "object" && !Array.isArray(record.usage)
-    ? record.usage as Record<string, unknown>
-    : {};
-  const promptTokens = optionalTokenCount(usageRecord.promptTokens ?? usageRecord.prompt_tokens);
-  const completionTokens = optionalTokenCount(
-    usageRecord.completionTokens ?? usageRecord.completion_tokens
-  );
-  const totalTokens = optionalTokenCount(usageRecord.totalTokens ?? usageRecord.total_tokens);
-  const usage = promptTokens !== undefined || completionTokens !== undefined || totalTokens !== undefined
-    ? {
-        ...(promptTokens !== undefined ? { promptTokens } : {}),
-        ...(completionTokens !== undefined ? { completionTokens } : {}),
-        ...(totalTokens !== undefined ? { totalTokens } : {}),
-      }
-    : undefined;
-  const rawProvider = typeof record.provider === "string" ? record.provider.trim().slice(0, 120) : "";
-  const rawModel = typeof record.model === "string" ? record.model.trim().slice(0, 200) : "";
-  const rawRequestId = typeof record.requestId === "string"
-    ? record.requestId.trim().slice(0, 240)
-    : "";
-  const provider = rawProvider || (
-    transport.mode === "server"
-      ? transport.provider && transport.provider !== "auto"
-        ? transport.provider
-        : "server-auto"
-      : textProviderFromSettings(settings)
-  );
-  const model = rawModel || settings.textModel.trim().slice(0, 200) || "unknown";
-  const failover = transport.mode === "server"
-    && (provider === "gemini"
-      || provider === "qwen"
-      || provider === "groq"
-      || provider === "sambanova"
-      || provider === "zai"
-      || provider === "mistral"
-      || provider === "cloudflare"
-      || provider === "openrouter"
-      || provider === "siliconflow"
-      || provider === "deepseek")
-    ? parseStudioServerAiFailoverMetadata(record.failover, { provider, model })
-    : undefined;
-  return {
-    provider,
-    model,
-    transport: transport.mode,
-    promptVersion: 1,
-    createdAt: new Date().toISOString(),
-    ...(rawRequestId ? { requestId: rawRequestId } : {}),
-    ...(usage ? { usage } : {}),
-    ...(failover ? { failover } : {}),
-  };
-}
-
-function parseImageSize(size: StudioAiImageSize): { width: number; height: number } {
-  const m = /^(\d+)x(\d+)$/.exec(size);
-  if (!m) return { width: 1024, height: 1024 };
-  return { width: Number(m[1]), height: Number(m[2]) };
 }
 
 
