@@ -158,6 +158,17 @@ describe("StudioVirtualSpaceSpaceBookingPanel", () => {
         guestPromotion={{
           bundle: { bookings: [], waitlist: [] },
           summary: {
+            outcomes: [
+              {
+                kind: "booking",
+                id: "g2",
+                status: "rejected",
+                code: "slot-taken",
+                spaceName: "녹음부스",
+                startsAt: NOW + 3_600_000,
+                endsAt: NOW + 7_200_000,
+              },
+            ],
             promotedCount: 1,
             deferredCount: 0,
             rejected: [
