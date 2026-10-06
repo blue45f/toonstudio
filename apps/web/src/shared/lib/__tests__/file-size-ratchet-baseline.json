@@ -3,7 +3,7 @@
   "domains/auth/components/auth-form.tsx": 1193,
   "domains/auth/components/auth-modal.tsx": 173,
   "domains/community/components/fan-cafe-panel.tsx": 1074,
-  "domains/creator/ai/studio-ai-client.ts": 1367,
+  "domains/creator/ai/studio-ai-client.ts": 1247,
   "domains/creator/ai/StudioAiSuperSuiteModal.tsx": 987,
   "domains/creator/ai/StudioToonAutomationWorkspace.tsx": 1308,
   "domains/creator/assistant/StudioWebtoonAssistantContent.tsx": 1403,
