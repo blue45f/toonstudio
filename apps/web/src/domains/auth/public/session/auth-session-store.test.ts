@@ -411,6 +411,31 @@ describe("auth session store", () => {
     expect(getAuthSession()).toEqual(cached);
   });
 
+  it("세션 확인이 5초 안에 끝나지 않으면 중단하고 미확정 상태로 반환한다", async () => {
+    vi.useFakeTimers();
+    try {
+      const cached = { user: { id: "cached-user" }, token: null };
+      persistSession(cached);
+      apiRaw.mockImplementationOnce(
+        (_url: string, options?: { signal?: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            options?.signal?.addEventListener("abort", () => {
+              reject(new DOMException("The operation was aborted.", "AbortError"));
+            });
+          }),
+      );
+      const pending = synchronizeServerSessionState("startup");
+      await vi.advanceTimersByTimeAsync(5_000);
+      await expect(pending).resolves.toEqual({
+        status: "indeterminate",
+        session: cached,
+      });
+      expect(getAuthSession()).toEqual(cached);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("네트워크·5xx·손상 응답을 미인증이 아닌 미확정 상태로 구분한다", async () => {
     const cached = { user: { id: "cached-user" }, token: null };
     persistSession(cached);
