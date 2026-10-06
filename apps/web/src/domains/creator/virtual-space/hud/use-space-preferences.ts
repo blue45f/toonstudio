@@ -40,9 +40,18 @@ import {
   type StudioVirtualRewardInventory,
 } from "../studio-virtual-space-rewards";
 import { studioDistrictEnvironment } from "../studio-virtual-space-scene-direction";
+import type { StudioBuildPlacementRequest } from "../studio-virtual-space-build-mode";
+import {
+  studioBuildPlacedFixtures,
+  type StudioBuildPlacedFixture,
+} from "../studio-virtual-space-build-mode-vitality";
+import {
+  readStudioPlacedFixtureRequests,
+  writeStudioPlacedFixtureRequests,
+} from "../studio-virtual-space-placed-fixtures";
 
 /**
- * 이 브라우저에 저장하는 개인 설정(아트 스타일·캐릭터 꾸미기·보상·경험·환경·공간 꾸미기).
+ * 이 브라우저에 저장하는 개인 설정(아트 스타일·캐릭터 꾸미기·보상·경험·환경·공간 꾸미기·배치 가구).
  * 저장 실패는 적용은 유지하고 notify로 알린다. 새 저장 키는 만들지 않는다.
  */
 export function useSpacePreferences({ initialArtStyle, decorationScope, notify }: {
@@ -120,6 +129,21 @@ export function useSpacePreferences({ initialArtStyle, decorationScope, notify }
         });
     }
   }, [bt, decorationScope, decorations.districtKey, notify, selectEnvironmentPreference, spaceSyncEnabled]);
+  // 빌드 모드로 배치한 상태 가구. 꾸미기와 달리 서버 계약이 없어 이 브라우저에만
+  // 저장한다(배치 모듈이 키를 소유한다). 캔버스로 넘길 디스크립터는 여기서 파생한다.
+  const [placedFixtureDrafts, setPlacedFixtureDrafts] = useState<ReadonlyMap<string, readonly StudioBuildPlacementRequest[]>>(() => new Map());
+  const initialPlacedFixtureRequests = useMemo(() => readStudioPlacedFixtureRequests(decorationScope), [decorationScope]);
+  const placedFixtureRequests = placedFixtureDrafts.get(decorationScope) ?? initialPlacedFixtureRequests;
+  const selectPlacedFixtureRequests = useCallback((next: readonly StudioBuildPlacementRequest[]) => {
+    setPlacedFixtureDrafts((current) => new Map(current).set(decorationScope, next));
+    if (!writeStudioPlacedFixtureRequests(next, decorationScope)) {
+      notify(bt("배치는 적용됐지만 이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.", "The furniture layout is applied, but could not be saved on this device. Check available storage."), "warn");
+    }
+  }, [bt, decorationScope, notify]);
+  const placedFixtures: readonly StudioBuildPlacedFixture[] = useMemo(
+    () => studioBuildPlacedFixtures(placedFixtureRequests),
+    [placedFixtureRequests],
+  );
   useEffect(() => {
     if (!spaceSyncEnabled) return undefined;
     let cancelled = false;
@@ -140,5 +164,6 @@ export function useSpacePreferences({ initialArtStyle, decorationScope, notify }
     environmentPreference, selectEnvironmentPreference,
     spaceTheme, selectSpaceTheme,
     decorations, selectDecorations,
+    placedFixtureRequests, selectPlacedFixtureRequests, placedFixtures,
   };
 }
