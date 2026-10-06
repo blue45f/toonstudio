@@ -80,6 +80,7 @@ export const ENGINEERING_EXTERNAL_LINKS: readonly EngineeringExternalLink[] = [
   { name: "Transformers.js", url: "https://github.com/huggingface/transformers.js" },
   { name: "@huggingface/transformers", url: "https://github.com/huggingface/transformers.js" },
   { name: "OPUS-MT ko→en", url: "https://huggingface.co/Xenova/opus-mt-ko-en" },
+  { name: "OPUS-MT", url: "https://huggingface.co/Xenova/opus-mt-ko-en" },
   { name: "MediaPipe", url: "https://ai.google.dev/edge/mediapipe/solutions/guide" },
   { name: "MediaPipe Tasks Vision", url: "https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/web_js" },
   { name: "ONNX Runtime Web", url: "https://onnxruntime.ai/docs/tutorials/web/" },

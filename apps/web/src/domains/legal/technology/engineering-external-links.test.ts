@@ -5,6 +5,7 @@ import {
   externalLinkForName,
 } from "./engineering-external-links";
 import { ENGINEERING_BENCHMARK_GROUPS } from "./engineering-playbook-content";
+import { ENGINEERING_REFERENCES } from "./engineering-story-deep-dive-content";
 
 describe("기술 자료 외부 링크 레지스트리", () => {
   it("이름이 유일하고 모든 URL이 https 공식 주소 형식이다", () => {
@@ -20,6 +21,15 @@ describe("기술 자료 외부 링크 레지스트리", () => {
     for (const group of ENGINEERING_BENCHMARK_GROUPS) {
       for (const product of group.products) {
         expect(externalLinkForName(product), `${group.id}: ${product}`).toBeTruthy();
+      }
+    }
+  });
+
+  it("참고 자료 카드가 선언한 이름은 전부 공식 링크로 해결된다", () => {
+    for (const reference of ENGINEERING_REFERENCES) {
+      expect(reference.linkNames?.length, reference.id).toBeGreaterThan(0);
+      for (const name of reference.linkNames ?? []) {
+        expect(externalLinkForName(name), `${reference.id}: ${name}`).toBeTruthy();
       }
     }
   });
