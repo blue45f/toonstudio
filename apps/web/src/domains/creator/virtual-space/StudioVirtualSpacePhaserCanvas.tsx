@@ -325,6 +325,7 @@ export function StudioVirtualSpacePhaserCanvas({
   onSelfImpact,
   onObjectStateChange,
   tileEffects = [],
+  placedFixtures,
   onTileEffectTrigger,
 }: StudioVirtualSpacePhaserCanvasProps) {
   const bt = useBilingual("StudioVirtualSpacePhaserCanvas");
@@ -353,6 +354,7 @@ export function StudioVirtualSpacePhaserCanvas({
   displayNameRef.current = selfDisplayName;
   const tileEffectsRef = useRef(tileEffects);
   tileEffectsRef.current = tileEffects;
+  const placedFixturesRef = useRef(placedFixtures); placedFixturesRef.current = placedFixtures;
   const tileTriggerCallbackRef = useRef(onTileEffectTrigger);
   tileTriggerCallbackRef.current = onTileEffectTrigger;
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -668,7 +670,7 @@ export function StudioVirtualSpacePhaserCanvas({
       const illustratedProps: Array<{ readonly image: import("phaser").GameObjects.Image; readonly frame: number;
         readonly width: number; readonly height: number; readonly originX: number; readonly originY: number }> = [];
       let deskPodRuntime: StudioDeskPodRuntime | null = null;
-      let lastDecorationState = decorationsRef.current;
+      let lastDecorationState = decorationsRef.current; let lastPlacedFixtures = placedFixturesRef.current;
       let lastWalkablePoint: StudioVirtualSpacePoint = { x: snapshotRef.current.self.x, y: snapshotRef.current.self.y };
       const staticColliderObjects: import("phaser").GameObjects.GameObject[] = [];
       let lastFootstepDistance = 0;
@@ -1226,6 +1228,7 @@ export function StudioVirtualSpacePhaserCanvas({
           },
         );
         interactionFx = fxWiring.runtime;
+        interactionFx.syncPlacedFixtures(placedFixturesRef.current ?? []);
         cleanup.push(() => { interactionFx?.destroy(); interactionFx = null; fxWiring = null; });
         for (const [id, marker] of createStudioInteractionMarkers(this, interactions, artProfile, Phaser.Geom,
           (interaction) => { queuedInteraction = interaction; })) interactionMarkers.set(id, marker);
@@ -1448,8 +1451,10 @@ export function StudioVirtualSpacePhaserCanvas({
         // 스프라이트 크로스페이드는 모션 감소·저사양 효과 단계에서는 끈다 (즉시 교체가 기본 계약).
         const crossfadeEnabled = !reducedMotion.matches && experienceRef.current.effectLevel !== "low";
         if (!sceneReady || cancelled) return;
-        if (decorationsRef.current !== lastDecorationState) {
+        if (decorationsRef.current !== lastDecorationState || placedFixturesRef.current !== lastPlacedFixtures) {
           lastDecorationState = decorationsRef.current;
+          lastPlacedFixtures = placedFixturesRef.current;
+          interactionFx?.syncPlacedFixtures(lastPlacedFixtures ?? []);
           navigationWorld = studioVirtualDecorationNavigationWorld(manifest, lastDecorationState);
           decorationRuntime?.syncDecorations(studioVirtualDecorationStateForWorld(lastDecorationState, manifest));
           npcDirector.updateNavigationWorld(navigationWorld);
@@ -1659,7 +1664,8 @@ export function StudioVirtualSpacePhaserCanvas({
               interactionFx?.activate(chosen, currentPoint, time, reducedMotion.matches);
             }
           } else if (interactPressed && !selection) {
-            callbacksRef.current.onInteract(null);
+            // 매니페스트 프롬프트가 없을 때만 배치 가구가 입력을 받고, 소비한 입력은 방 액션으로 새지 않는다.
+            if (promptInteraction || !fxWiring?.activatePlacedFixtureNear(currentPoint, time)) callbacksRef.current.onInteract(null);
           }
           if (decision.walkTarget && !directInput && !blocked) {
             const sameWalk = previousApproach
@@ -2701,6 +2707,8 @@ export function StudioVirtualSpacePhaserCanvas({
           promptCandidates.push({ id: nearbyNpc.definition.id, kind: "npc", point: nearbyNpc.groundPoint, radius: 55,
             labelKo: `${identity.ko} · 대화`, labelEn: `${identity.en} · Talk` });
         }
+        const placedCandidate = fxWiring?.placedPromptCandidate(currentPoint);
+        if (placedCandidate) promptCandidates.push(placedCandidate);
         // 포털 근접 안내: 밟으면 이동하므로 키캡 없이 목적지 이름만 보여 준다.
         // 우선순위가 가장 낮아 상호작용·NPC 프롬프트가 있을 때는 양보한다.
         for (const portal of portals) promptCandidates.push(studioPortalPromptCandidate(manifest, portal));

@@ -11,6 +11,11 @@
  * - 전파 적용: 프레즌스 스냅샷의 objectStates를 fx에 넣되, 같은 상태(같은
  *   stateChangedAt)는 다시 적용하지 않는다. 적용 자체는 fx의 applyRemoteObjectState가
  *   부수효과 없이 수행한다 — 원격 머신은 대사·알림·재전파를 만들지 않는다.
+ * - 배치 고정물: 빌드 패널이 만든 배치 가구 목록을 fx 고정물 층에 동기화하고
+ *   (syncPlacedFixtures), 가장 가까운 배치 가구를 상호작용 프롬프트 후보와
+ *   활성 대상으로 제공한다. 프롬프트 라벨은 fx가 아는 현재 상태로 동사를 고른다
+ *   ("켜기 · 플로어 램프"). 배치 목록의 소유는 패널·페이지 쪽이고, 이 브리지는
+ *   마지막으로 동기화된 목록만 프롬프트·활성 판정에 쓴다.
  * - 정리: 공유 룸을 떠날 때 clearRemoteStates로 전파 머신을 초기 상태로 되돌리고
  *   적용 기록을 비운다. 피어가 나가는 경우도 같은 정리다 — pruneRemoteStates가
  *   상태를 보낸 세션이 현재 접속 집합에 없으면 자동으로 clearRemoteStates를 부른다.
@@ -23,13 +28,22 @@
 import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
 import type { StudioSpaceUiEvent } from "./studio-virtual-space-engine-events";
 import {
+  interactableInitialState,
+  interactableStateActionText,
+} from "./studio-virtual-space-interactable-objects";
+import {
   type StudioInteractionFxCallbacks,
   type StudioInteractionFxObjectStateChange,
   type StudioInteractionFxRuntime,
 } from "./studio-virtual-space-interaction-fx";
+import type { StudioBuildPlacedFixture } from "./studio-virtual-space-build-mode-vitality";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import type { StudioVirtualSpaceObjectState } from "./studio-virtual-space-presence-protocol";
 import type { StudioWorldBilingualText } from "./studio-virtual-space-world-interaction-kinds";
+import type { StudioWorldPromptCandidate } from "./studio-virtual-space-world-prompt";
+
+/** 배치 가구의 프롬프트·활성 반경(px). 매니페스트 상호작용 반경(50~82)과 같은 결이다. */
+export const STUDIO_PLACED_FIXTURE_PROMPT_RADIUS = 64;
 
 /** npcSay가 대사를 붙일 수 있는 NPC 후보. 캔버스가 호출 때마다 최신 발밑 좌표를 읽어 넘긴다. */
 export interface StudioInteractionFxLiveNpcCandidate {
@@ -67,6 +81,21 @@ export interface StudioInteractionFxLiveWiring {
    * 캔버스가 스냅샷 동기화 직후 매번 부른다.
    */
   pruneRemoteStates(presentSessionIds: ReadonlySet<string>, now: number): void;
+  /**
+   * 빌드 패널이 만든 배치 가구 목록을 fx 고정물 층에 맞춘다. 목록에서 사라진
+   * 가구는 해제되고, 남은 가구의 상태는 유지된다(런타임 sync가 멱등하다).
+   */
+  syncPlacedFixtures(placed: readonly StudioBuildPlacedFixture[]): void;
+  /**
+   * 지점에서 프롬프트 반경 안에 있는 가장 가까운 배치 가구의 프롬프트 후보.
+   * 라벨 동사는 fx의 현재 상태 기준이다. 없으면 null이다.
+   */
+  placedPromptCandidate(point: StudioVirtualSpacePoint): StudioWorldPromptCandidate | null;
+  /**
+   * 지점에서 가장 가까운 배치 가구를 토글한다(전이·전파·알림은 fx 경로 그대로).
+   * 반경 안에 배치 가구가 없으면 false다.
+   */
+  activatePlacedFixtureNear(point: StudioVirtualSpacePoint, time: number): boolean;
 }
 
 interface InjectedLine {
@@ -82,6 +111,20 @@ export function createStudioInteractionFxLiveWiring(
   const applied = new Map<string, number>();
   /** 전파 상태를 보낸 세션들. pruneRemoteStates가 퇴장 판정에 쓴다. */
   const stateSenders = new Set<string>();
+  /** 마지막으로 동기화된 배치 가구 목록. 프롬프트·활성 판정이 쓴다. */
+  let placedFixtures: readonly StudioBuildPlacedFixture[] = [];
+
+  const nearestPlacedFixture = (point: StudioVirtualSpacePoint): StudioBuildPlacedFixture | null => {
+    let best: StudioBuildPlacedFixture | null = null;
+    let bestGap = STUDIO_PLACED_FIXTURE_PROMPT_RADIUS;
+    for (const fixture of placedFixtures) {
+      const gap = Math.hypot(fixture.point.x - point.x, fixture.point.y - point.y);
+      if (gap > bestGap) continue;
+      bestGap = gap;
+      best = fixture;
+    }
+    return best;
+  };
 
   const clearRemote = (now: number): void => {
     runtime.clearRemoteObjectStates(now);
@@ -140,6 +183,29 @@ export function createStudioInteractionFxLiveWiring(
       // 동시접속 2명 기준이라 상태를 보내는 상대는 한 명뿐이다 — 그 세션이 없으면
       // 적용된 원격 상태 전부가 그 피어의 것이라 통째로 되돌리는 것이 맞다.
       if (departed) clearRemote(now);
+    },
+    syncPlacedFixtures(placed) {
+      placedFixtures = placed;
+      runtime.syncPlacedFixtures(placed);
+    },
+    placedPromptCandidate(point) {
+      const fixture = nearestPlacedFixture(point);
+      if (!fixture) return null;
+      const stateKey = runtime.objectStateKey(fixture.objectId) ?? interactableInitialState(fixture.kind);
+      const action = interactableStateActionText(fixture.kind, stateKey);
+      return Object.freeze({
+        id: fixture.objectId,
+        kind: "interaction",
+        point: fixture.point,
+        radius: STUDIO_PLACED_FIXTURE_PROMPT_RADIUS,
+        labelKo: `${action.ko} · ${fixture.labelKo}`,
+        labelEn: `${action.en} · ${fixture.labelEn}`,
+      });
+    },
+    activatePlacedFixtureNear(point, time) {
+      const fixture = nearestPlacedFixture(point);
+      if (!fixture) return false;
+      return runtime.activatePlacedFixture(fixture.objectId, time);
     },
   };
 }

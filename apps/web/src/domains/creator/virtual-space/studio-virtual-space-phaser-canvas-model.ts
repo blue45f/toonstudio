@@ -12,6 +12,7 @@ import type { StudioCharacterMotionState, StudioCharacterSkin } from "./studio-v
 import type { StudioEmotePose } from "./studio-virtual-space-emote-runtime";
 import type { StudioTileEffectDefinition, StudioTileEffectTrigger } from "./studio-virtual-space-tile-effects";
 import type { StudioInteractionFxObjectStateChange } from "./studio-virtual-space-interaction-fx";
+import type { StudioBuildPlacedFixture } from "./studio-virtual-space-build-mode-vitality";
 import type {
   StudioVirtualSpaceFacing,
   StudioVirtualSpacePeer,
@@ -91,6 +92,8 @@ export interface StudioVirtualSpacePhaserCanvasProps {
   readonly onObjectStateChange?: (change: StudioInteractionFxObjectStateChange) => void;
   /** 저작된 타일 이펙트 배치. 캔버스가 매 프레임 진입 판정을 소비한다. */
   readonly tileEffects?: readonly StudioTileEffectDefinition[];
+  /** 빌드 모드로 배치한 상태 가구의 고정물 디스크립터. 캔버스가 fx 고정물 층에 동기화한다. */
+  readonly placedFixtures?: readonly StudioBuildPlacedFixture[];
   /** 타일 이펙트에 새로 진입했을 때만 호출한다. 같은 타일에 머물면 반복하지 않는다. */
   readonly onTileEffectTrigger?: (trigger: StudioTileEffectTrigger) => void;
 }

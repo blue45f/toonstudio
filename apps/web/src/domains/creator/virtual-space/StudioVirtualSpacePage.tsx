@@ -241,6 +241,7 @@ import { SpaceProximityConsent, SpaceProximityVideo } from "./hud/SpaceProximity
 import { SpaceZoneWorkbar } from "./hud/SpaceZoneWorkbar";
 import { SpaceZoneSplash, type SpaceZoneSplashInput } from "./hud/SpaceZoneSplash";
 import {
+  createStudioVirtualSpaceInitialSnapshot,
   distanceBetween,
   initialPanel,
   SHARED_ACTIVITY_DISTANCE,
@@ -369,8 +370,8 @@ export function VirtualSpaceExperience({
   const {
     artStyle, selectArtStyle, characterCustomization, selectCharacterCustomization, rewardInventory, claimReward, equipReward,
     initialExperiencePreference, experiencePreference, selectExperiencePreference, environmentPreference, selectEnvironmentPreference,
-    spaceTheme, selectSpaceTheme,
-    decorations, selectDecorations,
+    spaceTheme, selectSpaceTheme, decorations, selectDecorations,
+    placedFixtureRequests, selectPlacedFixtureRequests, placedFixtures,
   } = preferences;
   const participantRole = live.room?.participant.role;
   const startLocation = initialExperiencePreference.startLocation;
@@ -381,20 +382,9 @@ export function VirtualSpaceExperience({
     return resolveStudioVirtualSpaceSessionPoint(positionScope, DEFAULT_STUDIO_WORLD_MANIFEST, preferred) ?? preferred;
   }, [fallbackIdentity, startLocation, participantRole, positionScope]);
   const initialAvatarIndex = useMemo(() => initialAvatarIndexOverride ?? readStudioVirtualSpaceAvatarIndex(), [initialAvatarIndexOverride]);
-  const [snapshot, setSnapshot] = useState<StudioVirtualSpaceSnapshot>(() => ({
-    self: studioVirtualSpaceState(initial, "down", "available", false, initialAvatarIndex),
-    peers: [],
-    nearbyPeers: [],
-    selfReaction: null,
-    peerReactions: [],
-    chatMessages: [],
-    chatBubbles: [],
-    selfChatBubble: null,
-    peerTyping: [],
-    peerImpacts: [],
-    objectStates: [],
-    direct: false,
-  }));
+  const [snapshot, setSnapshot] = useState<StudioVirtualSpaceSnapshot>(() => createStudioVirtualSpaceInitialSnapshot(
+    studioVirtualSpaceState(initial, "down", "available", false, initialAvatarIndex),
+  ));
   const {
     chatOpen, setChatOpen, chatSnapshot, chatTypingNames,
     sendSpaceChat, sendSpaceChatTyping, sendChatMessage, setChatTyping,
@@ -1950,6 +1940,7 @@ export function VirtualSpaceExperience({
       <StudioVirtualSpaceCustomizationPanel artStyle={artStyle} key={decorationScope} world={worldManifest} nickname={nickname}
         character={characterCustomization} decorations={decorations} selfPoint={snapshot.self}
         tileEffects={tileEffects} onTileEffectsChange={changeTileEffects}
+        placedFixtureRequests={placedFixtureRequests} onPlacedFixtureRequests={selectPlacedFixtureRequests}
         onNickname={onNicknameChange} onCharacter={selectCharacterCustomization} onDecorations={selectDecorations}
         onSelectDistrict={(district) => selectEnvironmentPreference(studioDistrictEnvironment(district))} />
     </StudioVirtualSpacePanelGate> },
@@ -2042,6 +2033,7 @@ export function VirtualSpaceExperience({
           onSelfImpact={(vx, vy) => controllerRef.current?.sendImpact(vx, vy)}
           onObjectStateChange={(change) => controllerRef.current?.sendObjectState(change.objectId, change.stateKey, change.stateChangedAt)}
           tileEffects={tileEffects}
+          placedFixtures={placedFixtures}
           onTileEffectTrigger={handleTileEffectTrigger}
         /> : <div className="studio-vspace-engine-message" role="status">{worldLoadError
           ? bt("이 월드에는 안전하게 시작할 수 있는 바닥이 없습니다.", "This world has no safe floor where a player can start.")
