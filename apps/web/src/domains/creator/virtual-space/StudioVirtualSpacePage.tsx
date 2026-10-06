@@ -241,6 +241,7 @@ import { SpaceProximityConsent, SpaceProximityVideo } from "./hud/SpaceProximity
 import { SpaceZoneWorkbar } from "./hud/SpaceZoneWorkbar";
 import { SpaceZoneSplash, type SpaceZoneSplashInput } from "./hud/SpaceZoneSplash";
 import {
+  createStudioVirtualSpaceInitialSnapshot,
   distanceBetween,
   initialPanel,
   SHARED_ACTIVITY_DISTANCE,
@@ -381,20 +382,9 @@ export function VirtualSpaceExperience({
     return resolveStudioVirtualSpaceSessionPoint(positionScope, DEFAULT_STUDIO_WORLD_MANIFEST, preferred) ?? preferred;
   }, [fallbackIdentity, startLocation, participantRole, positionScope]);
   const initialAvatarIndex = useMemo(() => initialAvatarIndexOverride ?? readStudioVirtualSpaceAvatarIndex(), [initialAvatarIndexOverride]);
-  const [snapshot, setSnapshot] = useState<StudioVirtualSpaceSnapshot>(() => ({
-    self: studioVirtualSpaceState(initial, "down", "available", false, initialAvatarIndex),
-    peers: [],
-    nearbyPeers: [],
-    selfReaction: null,
-    peerReactions: [],
-    chatMessages: [],
-    chatBubbles: [],
-    selfChatBubble: null,
-    peerTyping: [],
-    peerImpacts: [],
-    objectStates: [],
-    direct: false,
-  }));
+  const [snapshot, setSnapshot] = useState<StudioVirtualSpaceSnapshot>(() => createStudioVirtualSpaceInitialSnapshot(
+    studioVirtualSpaceState(initial, "down", "available", false, initialAvatarIndex),
+  ));
   const {
     chatOpen, setChatOpen, chatSnapshot, chatTypingNames,
     sendSpaceChat, sendSpaceChatTyping, sendChatMessage, setChatTyping,
