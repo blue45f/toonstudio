@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -24,6 +25,31 @@ const PREMIUM_NAV_ART: Readonly<Record<string, string>> = {
   community: "/brand/toonstudio-premium-icons/community.webp",
   "all-menu": "/brand/toonstudio-premium-icons/settings.webp",
 };
+
+/**
+ * 제작 바로가기 아트. 기존 프리미엄 글리프 세트에서 목적지와 뜻이 맞는 것을
+ * 재사용하고(create·character·background), 겹치는 목적지(둘러보기의 사진 글리프와
+ * 구분되는 작품 재료, 커뮤니티의 두 사람 실루엣과 구분되는 팀, 전용 글리프가 없던
+ * 가상 스튜디오)는 같은 화풍으로 신규 생성해 세트에 편입했다.
+ */
+const SHORTCUT_NAV_ART: Readonly<Record<string, string>> = {
+  "shortcut-canvas": "/brand/toonstudio-premium-icons/create.webp",
+  "shortcut-character": "/brand/toonstudio-premium-icons/character.webp",
+  "shortcut-bg3d": "/brand/toonstudio-premium-icons/background.webp",
+  "shortcut-assets": "/brand/toonstudio-premium-icons/materials.webp",
+  "shortcut-virtual-studio": "/brand/toonstudio-premium-icons/space.webp",
+  "shortcut-team": "/brand/toonstudio-premium-icons/team.webp",
+};
+
+/**
+ * 내비 아트 이미지. 로드에 실패하면 스스로 물러나 CSS가 줄 아이콘 폴백을
+ * 다시 보여 줄 수 있게 한다(깨진 이미지 자국을 남기지 않는다).
+ */
+function WorkspaceNavArtImage({ src }: { readonly src: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return <img src={src} alt="" decoding="async" onError={() => setFailed(true)} />;
+}
 
 /**
  * 시안(s1/hub)의 좌측 메뉴가 한 목록에 두는 제작 하위 목적지.
@@ -120,7 +146,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context }:
             >
               <span className="workspace-nav-visual" aria-hidden="true">
                 <span className="workspace-nav-visual-art" />
-                {art ? <img src={art} alt="" decoding="async" /> : null}
+                {art ? <WorkspaceNavArtImage src={art} /> : null}
                 <Icon
                   className="workspace-nav-line-icon"
                   size={18}
@@ -141,6 +167,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context }:
       <nav className="workspace-nav-shortcuts" aria-label={locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}>
         {WORKSPACE_SHORTCUTS.map((item) => {
           const Icon = item.icon;
+          const art = SHORTCUT_NAV_ART[item.id];
           const href = item.id === "shortcut-team"
             ? teamHref ?? item.href
             : item.href;
@@ -152,6 +179,10 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context }:
               data-navigation-entry={item.id}
               title={siteNavigationText(item.description, locale)}
             >
+              <span className="workspace-nav-visual" aria-hidden="true">
+                <span className="workspace-nav-visual-art" />
+                {art ? <WorkspaceNavArtImage src={art} /> : null}
+              </span>
               <Icon
                 className="workspace-nav-row-icon"
                 size={18}

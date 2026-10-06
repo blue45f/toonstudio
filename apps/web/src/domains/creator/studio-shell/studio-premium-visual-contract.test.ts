@@ -40,9 +40,22 @@ const PREMIUM_ICON_NAMES = [
   "community.webp",
   "create.webp",
   "home.webp",
+  "materials.webp",
   "projects.webp",
   "settings.webp",
+  "space.webp",
   "story.webp",
+  "team.webp",
+] as const;
+
+/** 좌측 메뉴 제작 바로가기 묶음의 목적지 id. WorkspaceNavigation의 WORKSPACE_SHORTCUTS와 한 쌍이다. */
+const WORKSPACE_SHORTCUT_IDS = [
+  "shortcut-canvas",
+  "shortcut-character",
+  "shortcut-bg3d",
+  "shortcut-assets",
+  "shortcut-virtual-studio",
+  "shortcut-team",
 ] as const;
 
 describe("ToonStudio premium visual flow contract", () => {
@@ -62,8 +75,11 @@ describe("ToonStudio premium visual flow contract", () => {
     expect(creatorLobbyModel).toContain("/brand/illustrated-20260928");
     expect(creatorLobby.match(/art: "[^"]+\.webp"/gu)).toHaveLength(7);
     const navigationArt = [...workspaceNavigation.matchAll(/(?:"([\w-]+)"|(\w+)):\s*"\/brand\/toonstudio-premium-icons\/([^"]+\.webp)"/gu)];
+    // 주 메뉴 다섯 목적지와 제작 바로가기 여섯 목적지 전원이 아트 타일을 갖는다.
     expect(navigationArt.map((entry) => entry[1] ?? entry[2]).sort())
-      .toEqual(TOONSTUDIO_PRIMARY_NAVIGATION.map(({ id }) => id).sort());
+      .toEqual(
+        [...TOONSTUDIO_PRIMARY_NAVIGATION.map(({ id }) => id), ...WORKSPACE_SHORTCUT_IDS].sort(),
+      );
     for (const entry of navigationArt) expect(PREMIUM_ICON_NAMES).toContain(entry[3]);
     expect(workspaceCss).toContain(".workspace-nav-visual>img");
   });
