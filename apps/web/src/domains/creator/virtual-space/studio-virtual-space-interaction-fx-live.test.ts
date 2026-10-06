@@ -241,4 +241,31 @@ describe("fx 라이브 배선 브리지", () => {
     ]);
     expect(rigB.wiring.runtime.objectStateKey(COUNTER_ID)).toBe("coffee:brewing");
   });
+
+  it("피어가 나가면 prune이 그 피어의 원격 상태를 정리하고, 접속 중이면 유지한다", () => {
+    const clock = createClock();
+    const rigB = wiringRig(clock);
+    rigB.wiring.syncObjectStates([
+      { objectId: COUNTER_ID, stateKey: "coffee:brewing", stateChangedAt: clock.now(), senderSessionId: "peer-a" },
+    ]);
+    expect(rigB.wiring.runtime.objectStateKey(COUNTER_ID)).toBe("coffee:brewing");
+
+    // 아직 접속 중이면 prune은 아무것도 되돌리지 않는다.
+    rigB.wiring.pruneRemoteStates(new Set(["peer-a"]), clock.now());
+    expect(rigB.wiring.runtime.objectStateKey(COUNTER_ID)).toBe("coffee:brewing");
+
+    // 퇴장하면(접속 집합에서 사라지면) 전파 머신이 초기 상태로 돌아간다.
+    rigB.wiring.pruneRemoteStates(new Set(), clock.now());
+    expect(rigB.wiring.runtime.objectStateKey(COUNTER_ID)).toBe("coffee:idle");
+
+    // 정리 뒤에는 적용 기록이 비어 있어, 같은 상태가 다시 와도 새로 적용된다.
+    rigB.wiring.syncObjectStates([
+      { objectId: COUNTER_ID, stateKey: "coffee:brewing", stateChangedAt: clock.now(), senderSessionId: "peer-a" },
+    ]);
+    expect(rigB.wiring.runtime.objectStateKey(COUNTER_ID)).toBe("coffee:brewing");
+    // 부수효과 없이 정리·재적용된다(대사·알림·재전파 없음).
+    expect(rigB.events).toEqual([]);
+    expect(rigB.emotes).toEqual([]);
+    expect(rigB.changes).toEqual([]);
+  });
 });
