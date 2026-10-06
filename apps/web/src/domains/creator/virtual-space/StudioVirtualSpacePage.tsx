@@ -156,9 +156,6 @@ import {
   writeStudioVirtualSpaceSessionPoint,
 } from "./studio-virtual-space-session-position";
 import {
-  writeStudioVirtualSpaceLastPosition,
-} from "./studio-virtual-space-last-position";
-import {
   resolveStudioLocateStage,
   studioLocateArrived,
   type StudioLocateTarget,
@@ -247,6 +244,7 @@ import {
   SHARED_ACTIVITY_DISTANCE,
   SIDE_PANEL_ID,
   TALK_DISTANCE,
+  writeStudioVirtualSpacePositionRecords,
 } from "./studio-virtual-space-page-helpers";
 import { SPACE_PROXIMITY_MEDIA_RADIUS, spacePrivateZoneAt, spaceProximityMediaScopePeers, type SpaceProximityRangeMode } from "./hud/space-proximity-media";
 import { spaceZoneWorkItems, spaceZoneWorkKind } from "./hud/space-zone-workflow";
@@ -255,6 +253,7 @@ import { useSpaceWorkProject } from "./hud/use-space-work-project";
 import { useSpaceRolePreset } from "./use-space-role-preset";
 import { useStudioSpaceLighting } from "./use-studio-space-lighting";
 import { useStudioSpaceChat } from "./use-studio-space-chat";
+import { useStudioVirtualSpacePeerFixtures } from "./use-studio-virtual-space-peer-fixtures";
 import { useStudioTileEffectWiring } from "./use-studio-tile-effect-wiring";
 import { useStudioSpacePoll } from "./use-studio-space-poll";
 import { useStudioPeerFollow } from "./use-studio-peer-follow";
@@ -371,7 +370,7 @@ export function VirtualSpaceExperience({
     artStyle, selectArtStyle, characterCustomization, selectCharacterCustomization, rewardInventory, claimReward, equipReward,
     initialExperiencePreference, experiencePreference, selectExperiencePreference, environmentPreference, selectEnvironmentPreference,
     spaceTheme, selectSpaceTheme, decorations, selectDecorations,
-    placedFixtureRequests, selectPlacedFixtureRequests, placedFixtures,
+    placedFixtureRequests, selectPlacedFixtureRequests,
   } = preferences;
   const participantRole = live.room?.participant.role;
   const startLocation = initialExperiencePreference.startLocation;
@@ -385,6 +384,7 @@ export function VirtualSpaceExperience({
   const [snapshot, setSnapshot] = useState<StudioVirtualSpaceSnapshot>(() => createStudioVirtualSpaceInitialSnapshot(
     studioVirtualSpaceState(initial, "down", "available", false, initialAvatarIndex),
   ));
+  const mergedPlacedFixtures = useStudioVirtualSpacePeerFixtures({ controllerRef, snapshot, selfSessionId: fallbackIdentity, localRequests: placedFixtureRequests });
   const {
     chatOpen, setChatOpen, chatSnapshot, chatTypingNames,
     sendSpaceChat, sendSpaceChatTyping, sendChatMessage, setChatTyping,
@@ -645,10 +645,9 @@ export function VirtualSpaceExperience({
   useEffect(() => {
     if (!worldReady) return undefined;
     const timeout = globalThis.setTimeout(() => {
-      writeStudioVirtualSpaceSessionPoint(positionScope, { x: snapshot.self.x, y: snapshot.self.y });
-      // 로그인 사용자는 탭을 닫아도 남는 마지막 위치도 함께 남긴다(W-2 위치 복원).
-      if (signedIn) writeStudioVirtualSpaceLastPosition(projectId, {
-        placeId: selectedPlaceId, point: { x: snapshot.self.x, y: snapshot.self.y },
+      writeStudioVirtualSpacePositionRecords({
+        positionScope, projectId, signedIn, placeId: selectedPlaceId,
+        point: { x: snapshot.self.x, y: snapshot.self.y },
       });
     }, 180);
     return () => globalThis.clearTimeout(timeout);
@@ -657,9 +656,8 @@ export function VirtualSpaceExperience({
   useEffect(() => {
     const save = () => {
       if (!worldReady) return;
-      writeStudioVirtualSpaceSessionPoint(positionScope, selfRef.current);
-      if (signedIn) writeStudioVirtualSpaceLastPosition(projectId, {
-        placeId: selectedPlaceId, point: { x: selfRef.current.x, y: selfRef.current.y },
+      writeStudioVirtualSpacePositionRecords({
+        positionScope, projectId, signedIn, placeId: selectedPlaceId, point: selfRef.current,
       });
     };
     globalThis.addEventListener("pagehide", save);
@@ -689,7 +687,7 @@ export function VirtualSpaceExperience({
     if (authoringMode || !sharedWorldAllowed || !connectivity.serverAvailable || !room?.direct || live.availability !== "ready") {
       controllerRef.current?.close();
       controllerRef.current = null;
-      setSnapshot((current) => ({ ...current, peers: [], nearbyPeers: [], selfReaction: null, peerReactions: [], chatMessages: [], chatBubbles: [], selfChatBubble: null, peerTyping: [], direct: false }));
+      setSnapshot((current) => ({ ...current, peers: [], nearbyPeers: [], selfReaction: null, peerReactions: [], chatMessages: [], chatBubbles: [], selfChatBubble: null, peerTyping: [], peerFixtures: [], direct: false }));
       return undefined;
     }
     const controller = new StudioVirtualSpacePresenceController(room.participant, room.direct, selfRef.current, {
@@ -2033,7 +2031,7 @@ export function VirtualSpaceExperience({
           onSelfImpact={(vx, vy) => controllerRef.current?.sendImpact(vx, vy)}
           onObjectStateChange={(change) => controllerRef.current?.sendObjectState(change.objectId, change.stateKey, change.stateChangedAt)}
           tileEffects={tileEffects}
-          placedFixtures={placedFixtures}
+          placedFixtures={mergedPlacedFixtures}
           onTileEffectTrigger={handleTileEffectTrigger}
         /> : <div className="studio-vspace-engine-message" role="status">{worldLoadError
           ? bt("이 월드에는 안전하게 시작할 수 있는 바닥이 없습니다.", "This world has no safe floor where a player can start.")
