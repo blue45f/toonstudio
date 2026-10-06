@@ -222,8 +222,8 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
         href: "/production/workspaces",
       },
       {
-        name: { ko: "게시 센터", en: "Publishing center" },
-        description: { ko: "연재 예약과 게시본을 한곳에서 확인", en: "Check scheduled releases and published versions in one place" },
+        name: { ko: "연재 센터", en: "Serialization center" },
+        description: { ko: "내 작품의 연재 현황과 게시 패키지를 한곳에서 확인", en: "Check serialization status and publication packages for your works in one place" },
         href: "/publish",
       },
       {
