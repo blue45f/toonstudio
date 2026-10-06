@@ -11,6 +11,7 @@ import type { StudioSpacePose } from "./studio-virtual-space-pose-controller";
 import type { StudioCharacterMotionState, StudioCharacterSkin } from "./studio-virtual-space-character-skins";
 import type { StudioEmotePose } from "./studio-virtual-space-emote-runtime";
 import type { StudioTileEffectDefinition, StudioTileEffectTrigger } from "./studio-virtual-space-tile-effects";
+import type { StudioInteractionFxObjectStateChange } from "./studio-virtual-space-interaction-fx";
 import type {
   StudioVirtualSpaceFacing,
   StudioVirtualSpacePeer,
@@ -86,6 +87,8 @@ export interface StudioVirtualSpacePhaserCanvasProps {
   readonly onSpaceUiEvent?: (event: StudioSpaceUiEvent) => void;
   /** 로컬 충돌 반발이 채택된 순간의 속도(px/s). 페이지가 프레즌스 컨트롤러의 sendImpact로 넘긴다. */
   readonly onSelfImpact?: (vx: number, vy: number) => void;
+  /** 로컬 오브젝트 상태 전이(주문·추출 완성·수령). 페이지가 프레즌스 컨트롤러의 sendObjectState로 넘긴다. */
+  readonly onObjectStateChange?: (change: StudioInteractionFxObjectStateChange) => void;
   /** 저작된 타일 이펙트 배치. 캔버스가 매 프레임 진입 판정을 소비한다. */
   readonly tileEffects?: readonly StudioTileEffectDefinition[];
   /** 타일 이펙트에 새로 진입했을 때만 호출한다. 같은 타일에 머물면 반복하지 않는다. */

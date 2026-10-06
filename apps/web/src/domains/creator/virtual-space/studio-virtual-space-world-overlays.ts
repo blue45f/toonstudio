@@ -7,6 +7,9 @@
 import type * as Phaser from "phaser";
 
 import type { StudioVirtualArtStyle } from "./studio-virtual-space-art-style";
+import type { StudioLocateGuide } from "./studio-virtual-space-locate-guide";
+import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
+import { buildMovePathDisplay } from "./studio-virtual-space-move-path-display";
 import { strokeStudioDashedRect, studioPrivateZoneOverlayShapes } from "./studio-virtual-space-private-zone-overlay";
 import {
   studioWorldCollisionRects,
@@ -148,4 +151,104 @@ export function drawStudioWorldDebugOverlay(
     graphics.lineBetween(spawn.point.x - 7, spawn.point.y, spawn.point.x + 7, spawn.point.y);
     graphics.lineBetween(spawn.point.x, spawn.point.y - 7, spawn.point.x, spawn.point.y + 7);
   }
+}
+
+type RouteGraphics = Pick<Phaser.GameObjects.Graphics,
+  "clear" | "lineStyle" | "beginPath" | "moveTo" | "lineTo" | "strokePath" | "strokeEllipse">;
+
+export interface StudioRouteOverlayFrame {
+  readonly current: StudioVirtualSpacePoint;
+  readonly path: readonly StudioVirtualSpacePoint[];
+  /** 마커 표시 판정에 쓰는 이동 중 여부(속도 5px/s 초과). */
+  readonly moving: boolean;
+  /** 프레임 시계(ms). 포털 링 맥동 위상. */
+  readonly now: number;
+  /** 벽시계(ms). 경로 표시 모델의 펄스 기준(기존 Date.now() 전달과 동일). */
+  readonly wallNow: number;
+  readonly markerStartedAt: number;
+  readonly reducedMotion: boolean;
+  readonly portals: readonly StudioWorldPortalDefinition[];
+  /** 월드 좌표 → 그리기 좌표 투영(캔버스가 매니페스트 투영을 감싸 넘긴다). */
+  readonly projectPoint: (point: StudioVirtualSpacePoint) => StudioVirtualSpacePoint;
+}
+
+/** 클릭 이동 경로 표시(폴리라인·목적지 마커)와 가장 가까운 포털의 바닥 펄스 링. */
+export function drawStudioRouteOverlay(graphics: RouteGraphics, frame: StudioRouteOverlayFrame): void {
+  graphics.clear();
+  const pathDisplay = buildMovePathDisplay({
+    current: frame.current,
+    path: frame.path,
+    destination: frame.path.at(-1) ?? null,
+    moving: frame.moving,
+    now: frame.wallNow,
+    markerStartedAt: frame.markerStartedAt,
+    reducedMotion: frame.reducedMotion,
+  });
+  if (pathDisplay.visible) {
+    graphics.lineStyle(1.5, 0xc8b8ff, 0.42);
+    graphics.beginPath();
+    const [firstPoint, ...restPoints] = pathDisplay.polyline;
+    if (firstPoint) {
+      graphics.moveTo(firstPoint.x, firstPoint.y);
+      for (const waypoint of restPoints) graphics.lineTo(waypoint.x, waypoint.y);
+    }
+    graphics.strokePath();
+    const marker = pathDisplay.marker;
+    if (marker) {
+      const pulseScale = frame.reducedMotion ? 1 : 1 + marker.pulse * 0.35;
+      graphics.lineStyle(2, 0xe8ddff, 0.8);
+      graphics.strokeEllipse(marker.point.x, marker.point.y, 20 * pulseScale, 10 * pulseScale);
+    }
+  }
+  // 가장 가까운 포털에는 바닥 펄스 링을 그려 "여기로 가면 이동한다"를 알린다.
+  // 모션 줄이기에서는 맥동 없이 정적 링만 그린다.
+  let nearestPortal: StudioWorldPortalDefinition | null = null;
+  let nearestPortalDistance = Number.POSITIVE_INFINITY;
+  for (const candidate of frame.portals) {
+    const distance = Math.hypot(candidate.point.x - frame.current.x, candidate.point.y - frame.current.y);
+    if (distance < nearestPortalDistance) {
+      nearestPortalDistance = distance;
+      nearestPortal = candidate;
+    }
+  }
+  if (nearestPortal && nearestPortalDistance <= 84) {
+    const pulse = frame.reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(frame.now * 0.006);
+    const ground = frame.projectPoint(nearestPortal.point);
+    const radius = nearestPortal.radius ?? 26;
+    graphics.lineStyle(2, 0xe8ddff, 0.3 + pulse * 0.45);
+    graphics.strokeEllipse(ground.x, ground.y, radius * 2 * (1 + pulse * 0.14), radius * (1 + pulse * 0.14));
+  }
+}
+
+type LocateGraphics = Pick<Phaser.GameObjects.Graphics,
+  "clear" | "lineStyle" | "lineBetween" | "fillStyle" | "fillTriangle" | "strokeCircle">;
+
+/** 참가자 locate 안내선: 화면 밖이면 자기 위치에서 가장자리 마커로 선+화살표, 안이면 마커 링. */
+export function drawStudioLocateOverlay(
+  graphics: LocateGraphics,
+  guide: StudioLocateGuide,
+  self: StudioVirtualSpacePoint,
+  time: number,
+  reducedMotion: boolean,
+): void {
+  graphics.clear();
+  if (!guide.visible) return;
+  const markerPulse = reducedMotion ? 1 : 1 + 0.22 * Math.sin(time * 0.008);
+  if (!guide.onScreen) {
+    graphics.lineStyle(2, 0xffd166, 0.85);
+    graphics.lineBetween(self.x, self.y, guide.markerPoint.x, guide.markerPoint.y);
+    const arrowAngle = guide.angle;
+    const tipX = guide.markerPoint.x + Math.cos(arrowAngle) * 22;
+    const tipY = guide.markerPoint.y + Math.sin(arrowAngle) * 22;
+    graphics.fillStyle(0xffd166, 0.9);
+    graphics.fillTriangle(
+      tipX, tipY,
+      guide.markerPoint.x + Math.cos(arrowAngle + 2.5) * 14,
+      guide.markerPoint.y + Math.sin(arrowAngle + 2.5) * 14,
+      guide.markerPoint.x + Math.cos(arrowAngle - 2.5) * 14,
+      guide.markerPoint.y + Math.sin(arrowAngle - 2.5) * 14,
+    );
+  }
+  graphics.lineStyle(2.5, 0xffd166, 0.95);
+  graphics.strokeCircle(guide.markerPoint.x, guide.markerPoint.y, 14 * markerPulse);
 }
