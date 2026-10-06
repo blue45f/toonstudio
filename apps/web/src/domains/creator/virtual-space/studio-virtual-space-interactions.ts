@@ -65,7 +65,7 @@ export const STUDIO_VIRTUAL_SPACE_INTERACTIONS: readonly StudioVirtualSpaceInter
   // 상태 가구 (웨이브 4): 문·조명은 반응 표(object-reaction)가 있어도 월드 배치 자체가 없었다.
   // 좌표는 레지스트리(studio-virtual-space-interactable-objects)의 기본 월드 배치를 현행 구역에 맞춰 옮긴 값이다.
   interaction({ id: "meeting-door", zoneId: "meeting", labelKo: "회의실 문", labelEn: "Meeting room door",
-    hintKo: "회의실 문을 여닫아요.", hintEn: "Open or close the meeting room door.", emoji: "🚪", x: 1150, y: 832, radius: 60, action: "live" }),
+    hintKo: "회의실 문을 여닫아요.", hintEn: "Open or close the meeting room door.", emoji: "🚪", x: 1095, y: 824, radius: 60, action: "live" }),
   interaction({ id: "review-door", zoneId: "review", labelKo: "리뷰실 문", labelEn: "Review room door",
     hintKo: "리뷰실 문을 여닫아요.", hintEn: "Open or close the review room door.", emoji: "🚪", x: 815, y: 522, radius: 56, action: "review" }),
   interaction({ id: "lobby-light", zoneId: "lobby", labelKo: "로비 조명", labelEn: "Lobby light",
