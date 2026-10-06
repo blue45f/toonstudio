@@ -12,7 +12,10 @@
  *   stateChangedAt)는 다시 적용하지 않는다. 적용 자체는 fx의 applyRemoteObjectState가
  *   부수효과 없이 수행한다 — 원격 머신은 대사·알림·재전파를 만들지 않는다.
  * - 정리: 공유 룸을 떠날 때 clearRemoteStates로 전파 머신을 초기 상태로 되돌리고
- *   적용 기록을 비운다.
+ *   적용 기록을 비운다. 피어가 나가는 경우도 같은 정리다 — pruneRemoteStates가
+ *   상태를 보낸 세션이 현재 접속 집합에 없으면 자동으로 clearRemoteStates를 부른다.
+ *   프레즌스 컨트롤러는 나간 피어의 오브젝트 상태를 스냅샷에 남기므로, 정리가
+ *   없으면 상대가 나간 뒤에도 켜진 조명·추출 중인 커피가 화면에 남는다.
  *
  * 로컬 상태 전이 통지(onObjectStateChange)와 HUD 알림·자기 이모트는 sink로 그대로
  * 통과시킨다. 이 모듈은 Phaser를 모른다 — 런타임 생성은 캔버스가 팩토리로 넘긴다.
@@ -58,6 +61,12 @@ export interface StudioInteractionFxLiveWiring {
   npcLineFor(npcId: string, now: number): StudioWorldBilingualText | null;
   /** 전파로 적용한 머신 상태를 전부 초기 상태로 되돌리고 적용 기록을 비운다. */
   clearRemoteStates(now: number): void;
+  /**
+   * 현재 접속 중인 피어 세션 집합을 받아, 상태를 보낸 세션이 그 안에 없으면
+   * (퇴장·연결 끊김) 그 원격 상태를 정리한다. 남은 피어의 상태는 건드리지 않는다.
+   * 캔버스가 스냅샷 동기화 직후 매번 부른다.
+   */
+  pruneRemoteStates(presentSessionIds: ReadonlySet<string>, now: number): void;
 }
 
 interface InjectedLine {
@@ -71,6 +80,13 @@ export function createStudioInteractionFxLiveWiring(
 ): StudioInteractionFxLiveWiring {
   const lines = new Map<string, InjectedLine>();
   const applied = new Map<string, number>();
+  /** 전파 상태를 보낸 세션들. pruneRemoteStates가 퇴장 판정에 쓴다. */
+  const stateSenders = new Set<string>();
+
+  const clearRemote = (now: number): void => {
+    runtime.clearRemoteObjectStates(now);
+    applied.clear();
+  };
 
   const runtime = createRuntime({
     npcSay: (point, radius, ko, en, durationMs) => {
@@ -96,6 +112,7 @@ export function createStudioInteractionFxLiveWiring(
     runtime,
     syncObjectStates(states) {
       for (const state of states) {
+        stateSenders.add(state.senderSessionId);
         if (applied.get(state.objectId) === state.stateChangedAt) continue;
         applied.set(state.objectId, state.stateChangedAt);
         runtime.applyRemoteObjectState(state.objectId, state.stateKey, state.stateChangedAt);
@@ -111,8 +128,18 @@ export function createStudioInteractionFxLiveWiring(
       return line.text;
     },
     clearRemoteStates(now) {
-      runtime.clearRemoteObjectStates(now);
-      applied.clear();
+      clearRemote(now);
+    },
+    pruneRemoteStates(presentSessionIds, now) {
+      let departed = false;
+      for (const sender of stateSenders) {
+        if (presentSessionIds.has(sender)) continue;
+        departed = true;
+        stateSenders.delete(sender);
+      }
+      // 동시접속 2명 기준이라 상태를 보내는 상대는 한 명뿐이다 — 그 세션이 없으면
+      // 적용된 원격 상태 전부가 그 피어의 것이라 통째로 되돌리는 것이 맞다.
+      if (departed) clearRemote(now);
     },
   };
 }
