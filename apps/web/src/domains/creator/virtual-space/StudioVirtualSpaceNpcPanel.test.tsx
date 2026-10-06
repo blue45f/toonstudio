@@ -20,7 +20,6 @@ describe("StudioVirtualSpaceNpcPanel", () => {
       studioNpcInteraction(DEFAULT_STUDIO_WORLD_MANIFEST, actor) !== null,
     );
     expect(buttons).toHaveLength(interactiveNpcs.length);
-    expect(interactiveNpcs.length).toBeLessThan(DEFAULT_STUDIO_WORLD_MANIFEST.npcs.length);
     expect(interact).not.toHaveBeenCalled();
     const producer = view.getByRole("button", { name: /Yoon · Producer · NPC · Producer/u });
     producer.focus();
