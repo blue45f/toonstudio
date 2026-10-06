@@ -4,10 +4,8 @@ import { useLocation } from "react-router-dom";
 
 import { LoadingState } from "@/shared/components/LoadingState";
 
-import {
-  RouteSilhouetteSkeleton,
-  routeSilhouetteFamily,
-} from "./route-fallback-silhouette";
+import { RouteSilhouetteSkeleton } from "./route-fallback-silhouette";
+import { routeSilhouetteFamily } from "./route-fallback-silhouette-family";
 import {
   defineBilingualText,
   translateBilingualValueForActiveLocale,
@@ -132,7 +130,7 @@ export function RouteFallback({ accessibleTitle }: { readonly accessibleTitle?: 
       )}
       {delayed ? (
         <div className="mt-6 flex min-w-0 items-start gap-3 rounded-2xl border border-line bg-panel/75 p-4 text-sm text-fg-2" role="status" aria-live="polite">
-          {offline ? <WifiOff size={18} className="mt-0.5 shrink-0 text-amber-500" aria-hidden="true" /> : <Clock3 size={18} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />}
+          {offline ? <WifiOff size={18} className="mt-0.5 shrink-0 text-warn" aria-hidden="true" /> : <Clock3 size={18} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />}
           <div className="min-w-0">
             <strong className="block break-words text-fg">
               {t(offline ? COPY.waitingConnection : COPY.preparingTaskState)}

@@ -80,7 +80,7 @@ const SHORTCUT_MATCHERS: readonly {
 ];
 
 /** 현재 경로에서 가장 구체적인 제작 바로가기 하나를 고른다. 없으면 null. */
-export function workspaceShortcutActiveId(pathname: string): string | null {
+function workspaceShortcutActiveId(pathname: string): string | null {
   const path = canonicalSitePath(pathname);
   return SHORTCUT_MATCHERS.find((matcher) => matcher.test(path))?.id ?? null;
 }
