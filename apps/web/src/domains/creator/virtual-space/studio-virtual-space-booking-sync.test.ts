@@ -1,11 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/platform/api", () => ({ apiFetch: vi.fn() }));
+
+import { apiFetch } from "@/platform/api";
 
 import {
   acceptBookingsSnapshot,
   acceptGalleryLikes,
+  createDefaultStudioVirtualSpaceSocialTransport,
   diffBookings,
   diffGalleryLikeToggles,
   diffWaitlist,
+  StudioVirtualSpaceSocialRequestError,
 } from "./studio-virtual-space-booking-sync";
 import type { StudioGalleryStats } from "./studio-virtual-space-gallery";
 import type {
@@ -97,6 +103,29 @@ describe("diffWaitlist", () => {
     const prev = [waitlistEntry()];
     const joined = waitlistEntry({ id: "w2" });
     expect(diffWaitlist(prev, [joined])).toEqual({ joined: [joined], leftIds: ["b1"] });
+  });
+});
+
+describe("기본 transport 오류", () => {
+  it("거절 응답이면 상태 코드와 서버 문구를 실은 오류를 던진다", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({ statusCode: 409, message: "선택한 시간대에 이미 예약이 있어요." }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const transport = createDefaultStudioVirtualSpaceSocialTransport();
+    const failure = await transport.createBooking(SCOPE, booking()).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StudioVirtualSpaceSocialRequestError);
+    expect(failure).toMatchObject({ status: 409, serverMessage: "선택한 시간대에 이미 예약이 있어요." });
+  });
+
+  it("본문이 JSON이 아니면 서버 문구는 null이다", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(new Response("upstream down", { status: 502 }));
+    const transport = createDefaultStudioVirtualSpaceSocialTransport();
+    const failure = await transport.loadBookings(SCOPE).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StudioVirtualSpaceSocialRequestError);
+    expect(failure).toMatchObject({ status: 502, serverMessage: null });
   });
 });
 
