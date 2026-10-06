@@ -32,6 +32,11 @@ import {
   type StudioVirtualSpacePresenceState,
   type StudioVirtualSpaceZoneId,
 } from "./studio-virtual-space-model";
+import type { StudioBuildPlacementRequest } from "./studio-virtual-space-build-mode";
+import {
+  studioFixtureWireItemsFromRequests,
+  studioPlacedRequestsFromWireItems,
+} from "./studio-virtual-space-peer-fixtures";
 import {
   encodePacket,
   isStudioInteractableStateKey,
@@ -52,6 +57,7 @@ import {
   STUDIO_VIRTUAL_SPACE_STALE_MS,
   STUDIO_VIRTUAL_SPACE_WIRE,
   type StudioVirtualSpacePresenceDependencies,
+  type StudioVirtualSpaceFixtureWireItem,
   type StudioVirtualSpaceObjectState,
   type StudioVirtualSpacePeerImpact,
   type StudioVirtualSpaceReaction,
@@ -65,6 +71,8 @@ export {
   STUDIO_PRESENCE_BUBBLE_MAX_LENGTH,
   STUDIO_PRESENCE_BUBBLE_TTL_MS,
   STUDIO_PRESENCE_TYPING_STALE_MS,
+  STUDIO_VIRTUAL_SPACE_FIXTURES_MAX_ITEMS,
+  STUDIO_VIRTUAL_SPACE_FIXTURES_PACKET_MAX_BYTES,
   STUDIO_VIRTUAL_SPACE_HEARTBEAT_MS,
   STUDIO_VIRTUAL_SPACE_IMPACT_THROTTLE_MS,
   STUDIO_VIRTUAL_SPACE_IMPACT_TTL_MS,
@@ -83,6 +91,7 @@ export {
 export type {
   StudioVirtualSpaceObjectState,
   StudioVirtualSpacePacket,
+  StudioVirtualSpacePeerFixtures,
   StudioVirtualSpacePeerImpact,
   StudioVirtualSpacePresenceDependencies,
   StudioVirtualSpacePresenceExtras,
@@ -160,6 +169,13 @@ export class StudioVirtualSpacePresenceController {
   /** object 패킷 전용 순서 추적과 오브젝트별 최신 전파 상태. */
   private readonly objectSequences = new Map<string, number>();
   private readonly objectStatesById = new Map<string, StudioVirtualSpaceObjectState>();
+  /** fixtures 패킷 전용 순서 추적과 피어별 최신 배치 목록. */
+  private readonly fixturesSequences = new Map<string, number>();
+  private readonly peerFixturesBySession = new Map<string, readonly StudioBuildPlacementRequest[]>();
+  /** 내 배치 목록의 와이어 형태와 전파 버전. 피어마다 보낸 버전을 기록해 늦게 합류한 피어에게도 닿게 한다. */
+  private localFixtureItems: readonly StudioVirtualSpaceFixtureWireItem[] = Object.freeze([]);
+  private localFixturesVersion = 0;
+  private readonly fixturesSentVersions = new Map<string, number>();
   /** chat·typing 패킷 전용 순서 추적. presence 순서와 섞지 않는다. */
   private readonly chatSequences = new Map<string, number>();
   private chatMessages: readonly StudioVirtualSpaceChatMessage[] = Object.freeze([]);
@@ -280,6 +296,11 @@ export class StudioVirtualSpacePresenceController {
         [...this.objectStatesById.values()]
           .sort((left, right) => left.objectId.localeCompare(right.objectId))
           .map((state) => Object.freeze({ ...state })),
+      ),
+      peerFixtures: Object.freeze(
+        [...this.peerFixturesBySession.entries()]
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([sessionId, requests]) => Object.freeze({ sessionId, requests })),
       ),
       direct: true,
     });
@@ -522,6 +543,47 @@ export class StudioVirtualSpacePresenceController {
     return true;
   }
 
+  /**
+   * 내 배치 가구 목록을 피어에게 전파한다. 목록이 바뀔 때만 버전을 올려 보내고,
+   * 그 뒤에 합류한 피어에게는 tick이 버전 차이를 보고 다시 보낸다. 목록 전체를
+   * 실어 보내므로 마지막 패킷이 곧 최신 상태다.
+   */
+  setPlacedFixtures(requests: readonly StudioBuildPlacementRequest[]): void {
+    if (this.closed) return;
+    const items = studioFixtureWireItemsFromRequests(requests);
+    if (JSON.stringify(items) === JSON.stringify(this.localFixtureItems)) return;
+    this.localFixtureItems = items;
+    this.localFixturesVersion += 1;
+    for (const sessionId of this.availablePeerIds()) this.sendFixturesTo(sessionId);
+  }
+
+  private sendFixturesTo(sessionId: string): void {
+    const packet = encodePacket({
+      wire: STUDIO_VIRTUAL_SPACE_WIRE,
+      ...(this.dependencies.worldScope ? { worldScope: this.dependencies.worldScope } : {}),
+      kind: "fixtures",
+      sequence: this.nextSequence(),
+      at: this.now(),
+      fixtures: this.localFixtureItems,
+    });
+    if (!packet) return;
+    // 전송이 실제로 나갔을 때만 보낸 버전을 기록한다 — 채널이 아직 열리지 않은
+    // 피어에게는 tick의 flush가 다시 보내야 하기 때문이다.
+    if (this.port.send(sessionId, packet)) {
+      this.fixturesSentVersions.set(sessionId, this.localFixturesVersion);
+    }
+  }
+
+  /** 아직 내 배치 목록의 현재 버전을 받지 못한 피어에게 보낸다(늦은 합류·재연결 대응). */
+  private flushFixtures(): void {
+    if (this.localFixturesVersion === 0) return;
+    for (const sessionId of this.availablePeerIds()) {
+      if (this.fixturesSentVersions.get(sessionId) !== this.localFixturesVersion) {
+        this.sendFixturesTo(sessionId);
+      }
+    }
+  }
+
   private sendPacketToPeers(packet: string): void {
     for (const peer of this.port.getPeers().slice(0, STUDIO_VIRTUAL_SPACE_MAX_PARTICIPANTS - 1)) {
       if (peer.sessionId !== this.participant.sessionId) {
@@ -603,6 +665,7 @@ export class StudioVirtualSpacePresenceController {
   private tick(): void {
     if (this.closed) return;
     const changed = this.prune();
+    this.flushFixtures();
     const reactionsChanged = this.pruneReactions();
     const chatChanged = this.pruneChat();
     const bubbleExpired = this.expireBubble();
@@ -635,8 +698,20 @@ export class StudioVirtualSpacePresenceController {
         this.peerTypingStates.delete(sessionId);
         this.peerImpacts.delete(sessionId);
         this.impactSequences.delete(sessionId);
+        this.peerFixturesBySession.delete(sessionId);
+        this.fixturesSequences.delete(sessionId);
         changed = true;
       }
+    }
+    // presence 없이 배치 목록만 보낸 세션도 접속 집합에서 사라지면 함께 거둔다.
+    for (const sessionId of [...this.peerFixturesBySession.keys()]) {
+      if (available.has(sessionId)) continue;
+      this.peerFixturesBySession.delete(sessionId);
+      this.fixturesSequences.delete(sessionId);
+      changed = true;
+    }
+    for (const sessionId of [...this.fixturesSentVersions.keys()]) {
+      if (!available.has(sessionId)) this.fixturesSentVersions.delete(sessionId);
     }
     return changed;
   }
@@ -804,10 +879,20 @@ export class StudioVirtualSpacePresenceController {
       return;
     }
 
+    if (packet.kind === "fixtures") {
+      const previousFixturesSequence = this.fixturesSequences.get(sender.sessionId) ?? -1;
+      if (packet.sequence <= previousFixturesSequence) return;
+      this.fixturesSequences.set(sender.sessionId, packet.sequence);
+      // 목록 전체가 최신 상태다. 카탈로그 대조 살균까지 끝낸 요청만 스냅샷에 싣는다.
+      this.peerFixturesBySession.set(sender.sessionId, studioPlacedRequestsFromWireItems(packet.fixtures));
+      this.emit();
+      return;
+    }
+
     const previous = this.peers.get(sender.sessionId);
     if (previous && packet.sequence <= previous.sequence) return;
     if (packet.kind === "leave") {
-      if (previous || this.peerReactions.has(sender.sessionId) || this.chatBubbles.has(sender.sessionId) || this.peerTypingStates.has(sender.sessionId) || this.peerImpacts.has(sender.sessionId)) {
+      if (previous || this.peerReactions.has(sender.sessionId) || this.chatBubbles.has(sender.sessionId) || this.peerTypingStates.has(sender.sessionId) || this.peerImpacts.has(sender.sessionId) || this.peerFixturesBySession.has(sender.sessionId)) {
         this.peers.delete(sender.sessionId);
         this.peerReactions.delete(sender.sessionId);
         this.reactionSequences.delete(sender.sessionId);
@@ -816,6 +901,8 @@ export class StudioVirtualSpacePresenceController {
         this.peerTypingStates.delete(sender.sessionId);
         this.peerImpacts.delete(sender.sessionId);
         this.impactSequences.delete(sender.sessionId);
+        this.peerFixturesBySession.delete(sender.sessionId);
+        this.fixturesSequences.delete(sender.sessionId);
         this.emit();
       }
       return;
@@ -871,6 +958,11 @@ export class StudioVirtualSpacePresenceController {
     this.impactSequences.clear();
     this.objectSequences.clear();
     this.objectStatesById.clear();
+    this.fixturesSequences.clear();
+    this.peerFixturesBySession.clear();
+    this.fixturesSentVersions.clear();
+    this.localFixtureItems = Object.freeze([]);
+    this.localFixturesVersion = 0;
     this.chatMessages = Object.freeze([]);
     this.selfReaction = null;
     this.bubbleExpiresAt = 0;

@@ -111,6 +111,7 @@ vi.mock("./studio-virtual-space-presence", async (importOriginal) => {
       this.real = f.realPresence ? new actual.StudioVirtualSpacePresenceController(participant, port, self, dependencies) : null;
     }
     setAvatarIndex(index: number) { this.real?.setAvatarIndex(index); }
+    setPlacedFixtures(...args: Parameters<InstanceType<typeof actual.StudioVirtualSpacePresenceController>["setPlacedFixtures"]>) { this.real?.setPlacedFixtures(...args); }
     start() { this.real?.start(); }
     close() { this.real?.close(); }
     setActivity(activity: StudioVirtualSpacePresenceState["activity"]) { this.real?.setActivity(activity); }
@@ -127,7 +128,7 @@ vi.mock("./studio-virtual-space-presence", async (importOriginal) => {
         participant: { sessionId: id, displayName: index ? "Cleo" : "Bob", role: "editor" as const },
         state: { ...this.self, x: this.self.x + 20 + index * 15, y: this.self.y, ...f.presenceOverrides[id] }, lastSeen: Date.now(), sequence: 1,
       }));
-      return { self: { ...this.self, ...f.presenceOverrides.alice }, peers, nearbyPeers: peers, selfReaction: null, peerReactions: [], chatMessages: [], chatBubbles: [], selfChatBubble: null, peerTyping: [], peerImpacts: [], objectStates: [], direct: true };
+      return { self: { ...this.self, ...f.presenceOverrides.alice }, peers, nearbyPeers: peers, selfReaction: null, peerReactions: [], chatMessages: [], chatBubbles: [], selfChatBubble: null, peerTyping: [], peerImpacts: [], objectStates: [], peerFixtures: [], direct: true };
     }
   },
 }; });
