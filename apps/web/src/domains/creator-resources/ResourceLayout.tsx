@@ -8,8 +8,13 @@ import {
   type ResourceMenuGroupId,
 } from "./navigation";
 
+import { ResearchSourceCover } from "./ResearchSourceCover";
+
+import type { ResearchSourceIdentity } from "./research-source-identity";
+
 import "./resource-atelier.css";
 import "./resource-illustrated.css";
+import "./research-source-identity.css";
 
 import { Container } from "@/shared/components/container";
 import {
@@ -160,6 +165,7 @@ export function ResourceLayout({
   width = "default",
   heroContent,
   heroAside,
+  sourceIdentity,
   menu = true,
   compact = false,
 }: {
@@ -171,6 +177,12 @@ export function ResourceLayout({
   heroContent?: ReactNode;
   /** 머리말 오른쪽 보조 영역 — 주면 기본 일러스트 대신 쓰고 2열 머리말이 된다. */
   heroAside?: ReactNode;
+  /**
+   * 소스 정체성 (리서치 소스 검색 템플릿 전용) — 주면 경로 기반 안내 아트 대신
+   * 소스 대표 비주얼을 쓰고, 제목 아래에 소스 칩·한 줄 정체성을 단다.
+   * 소스 색 토큰(research-source-identity.css)이 마스트헤드·표지에 닿는다.
+   */
+  sourceIdentity?: ResearchSourceIdentity;
   /** 리서치 묶음 메뉴 표시 여부 — 모든 도구를 본문에서 직접 보여 주는 화면은 끈다. */
   menu?: boolean;
   /**
@@ -182,20 +194,27 @@ export function ResourceLayout({
   useBilingualI18nRevision();
   const bt = useBilingual(LAYOUT_SCOPE);
   const { pathname } = useLocation();
-  const introArt = heroAside || compact ? undefined : INTRO_ART[pathname.replace(/\/$/u, "")];
+  const introArt = heroAside || compact || sourceIdentity ? undefined : INTRO_ART[pathname.replace(/\/$/u, "")];
+  const hasMastheadArt = Boolean(introArt) || Boolean(sourceIdentity && !heroAside);
   // 사이트 공통 Container(data-page-container)로 감싸 다른 공개 페이지와 폭·좌우선·통합 계약을 맞춘다.
   return <Container size={width === "wide" ? "wide" : "default"}>
-  <section className="resource-atelier resource-illustrated space-y-8 py-8 text-fg sm:py-12">
-    <header className={`resource-masthead ${heroAside ? "resource-masthead--desk" : "resource-masthead--detail"} ${introArt ? "resource-masthead--illustrated" : ""} ${compact ? "resource-masthead--compact" : ""}`}>
+  <section className={`resource-atelier resource-illustrated space-y-8 py-8 text-fg sm:py-12${sourceIdentity ? ` research-source research-source--${sourceIdentity.provider}` : ""}`}>
+    <header className={`resource-masthead ${heroAside ? "resource-masthead--desk" : "resource-masthead--detail"} ${hasMastheadArt ? "resource-masthead--illustrated" : ""} ${compact ? "resource-masthead--compact" : ""}`}>
       <div className="resource-masthead-copy">
         {heroAside
           ? <p className="inline-flex min-h-8 items-center text-xs font-semibold tracking-[.12em] text-accent">{layoutTx("TOONSTUDIO / 리서치 데스크")}</p>
           : <Link to="/research" className="inline-flex min-h-11 items-center text-xs font-semibold tracking-[.12em] text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{layoutTx("TOONSTUDIO / 리서치 데스크")}</Link>}
         <h1 className="font-bold">{title}</h1>
+        {sourceIdentity ? (
+          <p className="mt-3 flex items-start gap-2.5 text-sm leading-6 text-fg-2 sm:mt-4">
+            <span className="resource-source-dot mt-[.45rem] h-2.5 w-2.5 shrink-0 rounded-full" aria-hidden="true" />
+            <span><strong className="font-bold text-fg">{sourceIdentity.name}</strong> — {sourceIdentity.tagline}</span>
+          </p>
+        ) : null}
         <p className={`mt-3 max-w-3xl text-base leading-7 text-fg-2 sm:mt-5 sm:leading-8 ${compact ? "max-sm:hidden" : ""}`}>{intro}</p>
-        {heroContent ? <div className="mt-4 sm:mt-5">{heroContent}</div> : compact ? null : <p className="resource-context">{layoutTx("복식·소품·배경을 관찰하고, 다음 웹툰 컷의 근거로")}</p>}
+        {heroContent ? <div className="mt-4 sm:mt-5">{heroContent}</div> : compact || sourceIdentity ? null : <p className="resource-context">{layoutTx("복식·소품·배경을 관찰하고, 다음 웹툰 컷의 근거로")}</p>}
       </div>
-      {heroAside ?? (introArt ? <img className="resource-masthead-image" src={`/brand/illustrated-20260928/${introArt}.webp`} alt="" aria-hidden="true" width={320} height={240} /> : null)}
+      {heroAside ?? (sourceIdentity ? <ResearchSourceCover identity={sourceIdentity} /> : introArt ? <img className="resource-masthead-image" src={`/brand/illustrated-20260928/${introArt}.webp`} alt="" aria-hidden="true" width={320} height={240} /> : null)}
     </header>
     {menu ? (
       <div className="resource-shell">

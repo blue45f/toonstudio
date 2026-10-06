@@ -14,6 +14,7 @@ import type { CreatorResource, ResourceSearchResult } from "@/shared/lib/creator
 import { attributionMarkdown, deadlineCalendar, deadlineLabel, parseSearchResult, RESOURCE_LABELS } from "@/shared/lib/creator-resources";
 import { apiFetch, apiPath } from "@/platform/api";
 
+import { researchSourceIdentity } from "./research-source-identity";
 import { RESOURCE_SEARCH_CONFIG, RESOURCE_SEARCH_TRANSLATED_PROVIDERS } from "./resource-search-config";
 
 import type { ResourceSearchProvider } from "./resource-search-config";
@@ -315,7 +316,7 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
     }));
   };
   const searchFor = (q: string) => { setSavedOnly(false); setParams({ q, page: "1" }); };
-  return <ResourceLayout title={config.title} intro={config.intro}>
+  return <ResourceLayout title={config.title} intro={config.intro} sourceIdentity={researchSourceIdentity(provider)}>
     <ProviderStatus provider={provider} />
     {/* 역할 분담 안내 — 웹툰 작품은 /search·/explore, 단행본·작법서·창작 자료는 여기서 */}
     <div className="rounded-2xl border border-line bg-panel p-4 text-sm leading-6 text-fg-2" role="note" aria-label="자료 검색 역할 안내">
