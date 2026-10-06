@@ -15,6 +15,8 @@ import { listProductionProjects, type ProductionProjectSummary } from "./product
 import { getEffectiveOperationPolicy, commandTeamWorkspace, createTeamWorkspace, getTeamUsage, getTeamWorkspace, listTeamWorkspaces } from "./team-workspace-api";
 import { parseProductionRolePresetId, PRODUCTION_ROLE_PRESETS, productionRolePreset, type ProductionRolePreset } from "./production-manuscript-competitive-model";
 import { TeamAccessGuide } from "./TeamAccessGuide";
+import { TeamPeopleOverviewStrip } from "./TeamPeopleOverview";
+import { ProductionAvatar } from "./production-ui";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   createStudioSpatialInviteFragment,
@@ -294,12 +296,14 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
       <p className="text-sm leading-7 text-fg-2">{bt("합류를 확정한 지원자입니다. 아래에서 소속시킬 팀을 선택하거나 새 워크스페이스를 만든 뒤, 팀 초대와 작품 권한을 같은 화면에서 설정하세요.", "This applicant confirmed joining. Pick a team below or create a workspace, then set team invites and project permissions on this screen.")}</p>
       <p className="mt-2 text-xs text-fg-3">{bt(`지원서 ${onboarding.applicationId} · 계정 ${onboarding.userId}`, `Application ${onboarding.applicationId} · account ${onboarding.userId}`)}</p>
     </Card>}
+    {!workspaceId && !loading && items.length > 0 && <TeamPeopleOverviewStrip items={items} />}
     {!workspaceId && <Card title={bt("내 워크스페이스", "My workspaces")}><div className="grid gap-3 sm:grid-cols-2">
       {loading && items.length === 0 && <><WorkspaceListSkeletonCard /><WorkspaceListSkeletonCard /></>}
-      {items.map((item) => <Link key={item.id} className="rounded-xl border border-line p-4 hover:bg-raised" to={`/team/people/${item.id}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`} state={onboardingRouteState}>
-        <strong>{item.name}</strong><p className="mt-2 text-sm">{bt(ROLE_LABELS[item.role].ko, ROLE_LABELS[item.role].en)} · {bt(`접근 가능한 작품 ${item.projectCount}개 · 구성원 ${item.memberCount}명`, `${item.projectCount} accessible projects · ${item.memberCount} members`)}</p></Link>)}
+      {items.map((item) => <Link key={item.id} className="flex items-center gap-3 rounded-xl border border-line p-4 hover:bg-raised" to={`/team/people/${item.id}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`} state={onboardingRouteState}>
+        <ProductionAvatar name={item.name} size="lg" />
+        <span className="min-w-0"><strong className="block truncate">{item.name}</strong><span className="mt-1 block text-sm">{bt(ROLE_LABELS[item.role].ko, ROLE_LABELS[item.role].en)} · {bt(`접근 가능한 작품 ${item.projectCount}개 · 구성원 ${item.memberCount}명`, `${item.projectCount} accessible projects · ${item.memberCount} members`)}</span></span></Link>)}
       {!loading && items.length === 0 && <p>{bt("아직 참여한 팀이 없습니다. 새 팀을 만들거나 초대를 수락해주세요.", "No teams yet. Create one or accept an invite.")}</p>}</div>
-      <form className="mt-5 flex flex-wrap gap-3" onSubmit={(event: FormEvent) => { event.preventDefault(); void run(async () => { const result = await createTeamWorkspace(name); navigate(`/team/people/${result.workspaceId}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`, { state: onboardingRouteState }); }); }}>
+      <form id="team-create-workspace" className="mt-5 flex flex-wrap gap-3" onSubmit={(event: FormEvent) => { event.preventDefault(); void run(async () => { const result = await createTeamWorkspace(name); navigate(`/team/people/${result.workspaceId}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`, { state: onboardingRouteState }); }); }}>
         <label className="flex flex-col gap-2">{bt("새 워크스페이스 이름", "New workspace name")}<input required maxLength={20} value={name} onChange={(event) => setName(event.target.value)} className={fieldClass} /></label>
         <button disabled={busy || !name.trim() || !operationPolicy?.features["team-workspace"].enabled} className={`${buttonClass()} self-end`} type="submit">{bt("워크스페이스 만들기", "Create workspace")}</button></form></Card>}
     {!workspaceId && <details className="group rounded-2xl border border-line bg-panel">
