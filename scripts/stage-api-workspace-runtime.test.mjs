@@ -93,7 +93,7 @@ test("stages workspace packages inside the emitted API boundary", async () => {
     // 위에서 만든 상대 의존성 fixture를 덮어쓰지 않아 실제 전이 의존성 해석도 검증한다.
     await compiledPackage(root, "packages/contracts/src/private-internal.js", "module.exports = {};\n");
 
-    const optionalModelEntries = ["work-session", "work-session-evidence", "pinned-review-share", "review-delivery", "review-voice-note", "world-publication", "world-acoustic", "world-conversation"];
+    const optionalModelEntries = ["work-session", "work-session-evidence", "pinned-review-share", "review-delivery", "review-voice-note", "world-publication", "world-acoustic", "world-conversation", "recording-booth-asset"];
     for (const name of optionalModelEntries) {
       await compiledPackage(root, `packages/studio-project-model/src/graph/${name}.js`, `module.exports = { contract: ${JSON.stringify(name)} };`);
     }
@@ -345,7 +345,7 @@ test("API가 소비하지 않는 Web 포함 Core 루트는 강제 emit하지 않
       ...["creator-role", "creator-resources", "infrastructure-fabric", "production/index"].map((name) => `packages/core/src/${name}.js`),
       "packages/studio-project-model/src/index.js",
       "packages/studio-format-gateway/src/index.js",
-      ...["work-session", "work-session-evidence", "pinned-review-share", "review-delivery", "review-voice-note", "world-publication", "world-acoustic", "world-conversation"].map((name) => `packages/studio-project-model/src/graph/${name}.js`),
+      ...["work-session", "work-session-evidence", "pinned-review-share", "review-delivery", "review-voice-note", "world-publication", "world-acoustic", "world-conversation", "recording-booth-asset"].map((name) => `packages/studio-project-model/src/graph/${name}.js`),
     ];
     for (const entry of entries) await compiledPackage(root, entry, "module.exports = { ready: true };\n");
     const caller = await compiledPackage(root, "apps/api/src/main.js", 'module.exports = require("@toonstudio/core/creator-role");\n');
