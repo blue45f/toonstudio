@@ -221,6 +221,26 @@ describe("Virtual Studio character texture residency", () => {
     for (let frame = 0; frame < 60; frame++) h.residency.use("peer", [next], standing.key);
     expect(h.load).toHaveBeenCalledTimes(1); expect(h.loaded.has(standing.key)).toBe(true);
   });
+  it("표정 세트를 선언한 스킨은 상태와 무관하게 face 시트를 상주 목록에 포함한다", () => {
+    const presentation = { originX: 0.5, originY: 0.95, displayHeightRatio: 1 };
+    const faceSheet = {
+      textureUrl: "/faces/joy.png", frameWidth: 160, frameHeight: 160,
+      directionFrames: { down: 0, right: 1, left: 2, up: 3 },
+      frames: [presentation, presentation, presentation, presentation],
+    };
+    const faced = { ...skin, faces: { "face-joy": faceSheet, "face-sleep": { ...faceSheet, textureUrl: "/faces/sleep.png" } } };
+    for (const state of ["idle", "walk", "talk"] as const) {
+      const assets = studioCharacterVisualAssets(faced, "down", state);
+      const faceAssets = assets.filter((asset) => asset.key.includes("face-"));
+      expect(faceAssets.map((asset) => asset.key).sort()).toEqual([
+        `studio-player-${skin.key}-face-joy-sheet`,
+        `studio-player-${skin.key}-face-sleep-sheet`,
+      ]);
+      expect(faceAssets.every((asset) => asset.type === "spritesheet")).toBe(true);
+    }
+    // 표정 세트가 없는 스킨은 기존 목록과 동일하다.
+    expect(studioCharacterVisualAssets(skin, "down", "idle").some((asset) => asset.key.includes("face-"))).toBe(false);
+  });
   it("invalidates old-scene completions and releases every subscription on teardown", () => {
     const h = harness(); h.residency.use("self", walking); h.residency.close();
     for (const asset of walking) h.pending.get(asset.key)!(true);

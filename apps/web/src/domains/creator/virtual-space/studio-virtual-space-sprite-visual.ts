@@ -3,6 +3,7 @@ import {
   studioCharacterActionFrame,
   studioCharacterActionSheetMatches,
   studioCharacterActionTextureKey,
+  studioCharacterFaceTextureKey,
   studioCharacterFrameGeometry,
   studioCharacterPoseSheetMatches,
   studioCharacterPoseTextureKey,
@@ -12,6 +13,14 @@ import {
   studioCharacterWalkAnimationKey as walkAnimationKey,
   studioCharacterWalkTextureKey as walkSheetKey,
 } from "./studio-virtual-space-character-assets";
+import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
+import {
+  resolveStudioFaceSheet,
+  studioActorFaceEmotion,
+  studioFaceLayerApplies,
+  type StudioFaceNpcPhase,
+} from "./studio-virtual-space-face-layer";
+import type { StudioUserStatus } from "./studio-virtual-space-user-status";
 import {
   resolveStudioCharacterAppearance,
   studioCharacterActionClip,
@@ -92,6 +101,7 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
     if (sprite.getData("visualMotionState") !== nextState) {
       sprite.setData("visualMotionState", nextState).setData("visualStateStartedAt", scene.time.now);
     }
+    sprite.setData("faceTextureUsed", false);
     const action = studioCharacterActionClip(skin, nextFacing, nextState);
     const actionKey = action ? studioCharacterActionTextureKey(skin, nextFacing, nextState) : null;
     const actionSource = actionKey && scene.textures.exists(actionKey) ? scene.textures.get(actionKey).source[0] : undefined;
@@ -120,6 +130,27 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
         const frame = pose.directionFrames[nextFacing];
         sprite.setTexture(poseKey, frame).setData("framePresentation", pose.frames[frame]);
         sprite.setData("poseTextureUsed", true);
+        updateDisplaySize(sprite);
+        return;
+      }
+    }
+    // 라이브 표정 레이어: 스킨이 `face-<감정>` 세트를 선언했을 때만 동작하고,
+    // 세트가 없거나 텍스처가 준비되지 않았으면 아래 기존 표정 경로로 폴백한다.
+    // 우선순위는 동작 클립 > 포즈 시트 > 표정 세트 > 기존 표정 시트 순이다.
+    const faceEmotion = studioActorFaceEmotion({
+      emote: sprite.getData("actorReaction") as StudioSpaceEmoteId | null | undefined,
+      userStatus: sprite.getData("actorUserStatus") as StudioUserStatus | null | undefined,
+      npcPhase: sprite.getData("actorNpcPhase") as StudioFaceNpcPhase | null | undefined,
+    });
+    const face = faceEmotion && studioFaceLayerApplies(nextState) ? resolveStudioFaceSheet(skin, faceEmotion) : null;
+    if (face) {
+      const faceKey = studioCharacterFaceTextureKey(skin, face.name);
+      const faceSource = scene.textures.exists(faceKey) ? scene.textures.get(faceKey).getSourceImage() : undefined;
+      if (faceSource && studioCharacterPoseSheetMatches(face.sheet, faceSource.width, faceSource.height)) {
+        if (sprite.anims.isPlaying) sprite.stop();
+        const frame = face.sheet.directionFrames[nextFacing];
+        sprite.setTexture(faceKey, frame).setData("framePresentation", face.sheet.frames[frame]);
+        sprite.setData("faceTextureUsed", true);
         updateDisplaySize(sprite);
         return;
       }

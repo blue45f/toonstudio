@@ -1,3 +1,4 @@
+import type { StudioFaceSetName } from "./studio-virtual-space-character-motion";
 import {
   studioCharacterWalkClip,
   studioCharacterActionClip,
@@ -66,6 +67,8 @@ export const studioCharacterWalkAnimationKey = (skin: StudioCharacterSkin, facin
   `studio-player-${skin.key}-walk-animation-${facing}`;
 export const studioCharacterPoseTextureKey = (skin: StudioCharacterSkin, state: "sit" | "wave" | "lie") =>
   skin.sharedAtlas ? `studio-player-${skin.key}-atlas` : `studio-player-${skin.key}-pose-sheet-${state}`;
+export const studioCharacterFaceTextureKey = (skin: StudioCharacterSkin, name: StudioFaceSetName) =>
+  skin.sharedAtlas ? `studio-player-${skin.key}-atlas` : `studio-player-${skin.key}-${name}-sheet`;
 export const studioCharacterActionTextureKey = (skin: StudioCharacterSkin, facing: StudioVirtualSpaceFacing, state: StudioCharacterMotionState) =>
   skin.sharedAtlas ? `studio-player-${skin.key}-atlas` : `studio-player-${skin.key}-${state}-sheet${motionSheetSuffix(skin, facing)}`;
 
@@ -158,6 +161,14 @@ export function studioCharacterVisualAssets(
   const pose = state === "sit" || state === "wave" || state === "lie" ? skin.poses?.[state] : undefined;
   if (pose && (state === "sit" || state === "wave" || state === "lie") && !assets.some((asset) => asset.key === studioCharacterPoseTextureKey(skin, state))) assets.push({ key: studioCharacterPoseTextureKey(skin, state), url: pose.textureUrl,
     type: "spritesheet", frameWidth: pose.frameWidth, frameHeight: pose.frameHeight, atlas: pose.atlas, ...pixelTextureFilter(skin) });
+  // 표정 세트는 상태와 무관하게 상주시킨다: 감정은 이모트·상태 변화로 언제든
+  // 바뀔 수 있어, 바뀌는 순간 텍스처가 이미 준비돼 있어야 교체가 끊기지 않는다.
+  for (const [faceName, faceSheet] of Object.entries(skin.faces ?? {})) {
+    if (!faceSheet) continue;
+    const key = studioCharacterFaceTextureKey(skin, faceName as StudioFaceSetName);
+    if (!assets.some((asset) => asset.key === key)) assets.push({ key, url: faceSheet.textureUrl,
+      type: "spritesheet", frameWidth: faceSheet.frameWidth, frameHeight: faceSheet.frameHeight, atlas: faceSheet.atlas, ...pixelTextureFilter(skin) });
+  }
   return assets;
 }
 

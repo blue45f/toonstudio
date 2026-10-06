@@ -2163,7 +2163,7 @@ export function StudioVirtualSpacePhaserCanvas({
           lastFootstepDistance = localDistance;
         }
         previousRendered = rendered;
-        localSprite.setData("walkDistance", localDistance).setData("actorReaction", shownLocalEmote);
+        localSprite.setData("walkDistance", localDistance).setData("actorReaction", shownLocalEmote).setData("actorUserStatus", snapshotRef.current.self.userStatus);
         localSprite.setData("seatAttached", Boolean(localSeat));
         const localEmoteFacing = localSeatRequested || localPoseOverride || nextMoving ? null : studioEmoteFacing(localEmotePose);
         spriteCrossfades?.capture(localSprite);
@@ -2396,7 +2396,7 @@ export function StudioVirtualSpacePhaserCanvas({
           const peerSeat = scene.textures.exists(studioCharacterPoseTextureKey(peerSkin, "sit")) ? peerSeatRequested : undefined;
           const peerEmote = emotes?.activeId(`peer:${peerId}`, time) ?? null;
           const peerEmotePose = target.moving || peerSeatRequested ? null : emotes?.pose(`peer:${peerId}`, time, reducedMotion.matches) ?? null;
-          visual.sprite.setData("actorReaction", peerEmote);
+          visual.sprite.setData("actorReaction", peerEmote).setData("actorUserStatus", visual.userStatus);
           const peerWaving = poseRef.current.waveActorIds.includes(peerId) || peerEmote === "wave";
           const peerGroundPoint = peerSeat?.anchorPoint ?? target;
           const peerVisualPoint = studioProjectTownPoint(manifest, peerGroundPoint);
@@ -2630,7 +2630,7 @@ export function StudioVirtualSpacePhaserCanvas({
             .setAngle((npcEmotePose?.bodyAngle ?? 0) + npcRockAngle)
             .setDepth(studioTownDepthForPoint(manifest, groundPoint, 1_000)).setData("seatAttached", Boolean(attached));
           npc.sprite.setData("activityStage", view.activityStage).setData("activityAnchorId", view.activityAnchorId);
-          npc.sprite.setData("walkDistance", view.distance).setData("actorReaction", npcEmote);
+          npc.sprite.setData("walkDistance", view.distance).setData("actorReaction", npcEmote).setData("actorNpcPhase", view.phase);
           // 다가온 사람을 돌아본다(서 있을 때만). 대화 중(HUD 대화 포커스)인 NPC는 말하는 동작을 한다.
           const npcGap = Math.hypot(view.point.x - currentPoint.x, view.point.y - currentPoint.y);
           const lookAtPlayer = !view.moving && !attached && !blocked && npcGap < NPC_LOOK_DISTANCE;
