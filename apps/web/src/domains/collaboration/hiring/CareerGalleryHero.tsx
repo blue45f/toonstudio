@@ -80,8 +80,7 @@ export function CareerGalleryHero({
             src={featured.coverImageUrl ?? undefined}
             alt=""
             aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover"
-            style={reducedMotion ? undefined : { animation: "fade-in 0.6s ease-out" }}
+            className={`absolute inset-0 h-full w-full object-cover ${reducedMotion ? "" : "animate-fade-in"}`}
             fetchPriority="high"
             decoding="async"
             onError={() =>
