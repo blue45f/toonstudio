@@ -12,7 +12,7 @@ import {
   Upload,
 } from "lucide-react";
 
-import { MarketFamilyPicker } from "../components/MarketFamilyPicker";
+import { MarketCategoryTiles } from "../components/MarketCategoryTiles";
 import { MarketHomeSearch } from "../components/MarketHomeSearch";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketMaterialPreview } from "../components/MarketMaterialPreview";
@@ -24,7 +24,6 @@ import { useMarketResources } from "../hooks/use-market-resources";
 import { marketHomeJsonLd } from "../models/market-jsonld";
 import { MARKET_LICENSE_GUIDE } from "../models/market-kind";
 import { isMarketPublicKeywordTag } from "../models/market-catalog-public";
-import { marketResourceBrowseHref } from "../models/market-resource-taxonomy";
 import { MARKET_CURATED_THEMES } from "../models/market-theme";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
@@ -89,8 +88,7 @@ export function MarketHomePage() {
   return (
     <div>
       <section className="border-b border-line bg-ledger">
-        <Container size="wide" className="py-7 sm:py-10 lg:py-12">
-          <MarketNavHeader />
+        <Container size="wide" className="py-6 sm:py-8 lg:py-10">
           <SitePageHeader
             size="hero"
             icon={Store}
@@ -115,37 +113,95 @@ export function MarketHomePage() {
             }
           >
             <MarketHomeSearch className="max-w-xl" />
-            <p id="market-home-family-title" className="mb-2 mt-4 text-xs font-semibold text-fg-3">
-              {t("무엇을 찾고 있나요?", "What are you looking for?")}
-            </p>
-            <MarketFamilyPicker
-              selected={null}
-              labelledBy="market-home-family-title"
-              target={{ kind: "link", hrefFor: (family) => (family ? marketResourceBrowseHref(family.subcategories[0]) : "/market/browse") }}
-              className="max-w-3xl"
-            />
           </SitePageHeader>
-
-          <SiteDisclosure
-            className="mt-5"
-            icon={HelpCircle}
-            title={t("처음이라면 종류보다 하고 싶은 작업부터 고르세요", "New here? Start from the task you want to do, not the asset type")}
-            summary={t("템플릿·에셋·브러시는 적용 방식이 서로 다릅니다.", "Templates, assets and brushes are applied differently.")}
-          >
-            <p className="text-sm leading-6 text-fg-2">{t("상세 화면에서 실제 사용 위치와 호환성을 먼저 보여드립니다.", "The detail screen shows where each is used and its compatibility first.")}</p>
-            <SiteStepList
-              className="mt-3"
-              steps={[
-                t("장면을 통째로 시작하려면 템플릿, 캔버스에 놓을 재료가 필요하면 2D·3D를 고릅니다.", "To start a whole scene, pick a template; for materials to place on the canvas, pick 2D/3D."),
-                t("선화·채색 도구는 브러시, 작품의 색감과 마감은 색·보정에서 찾습니다.", "Find line-art and coloring tools under brushes, and your work's color and finish under color/retouch."),
-                t("미리보기에서 결과와 사용권을 확인한 뒤 Studio에서 시험하거나 내 에셋에 저장합니다.", "Check the result and license in the preview, then test in Studio or save to your assets."),
-              ]}
-            />
-          </SiteDisclosure>
         </Container>
       </section>
 
-      <Container size="wide" className="py-9 sm:py-11 lg:py-14">
+      <Container size="wide" className="pt-6 sm:pt-8">
+        <MarketCategoryTiles />
+      </Container>
+
+      <Container size="wide" className="pb-10 pt-8 sm:pb-12 sm:pt-10">
+        <div className="flex items-baseline justify-between gap-3">
+          <div>
+            <h2 className="eyebrow text-fg-3">{t("최근 공유", "Recently shared")}</h2>
+            <p className="mt-1 text-xs leading-5 text-fg-3">{t("최근 공개된 리소스를 실제 미리보기와 함께 확인합니다.", "Browse recently published resources with real previews.")}</p>
+          </div>
+          <Link href="/market/browse" className="inline-flex min-h-11 items-center text-sm text-accent hover:text-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
+            {t("전체 보기", "View all")} <ArrowRight size={14} aria-hidden="true" className="ml-1" />
+          </Link>
+        </div>
+        {hasFatalLatestError ? (
+          <div role="alert" className="mt-6 rounded-2xl border border-warn/30 bg-warn/5 p-8 text-center sm:p-10">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-warn/10 text-warn">
+              <AlertTriangle className="size-6" aria-hidden="true" />
+            </div>
+            <h3 className="mt-3 text-base font-bold text-fg">{t("최근 공유 리소스를 불러올 수 없어요", "Recently shared resources could not be loaded")}</h3>
+            <p className="mx-auto mt-1.5 max-w-sm text-sm text-fg-2">{t("일시적인 네트워크 문제이거나 서버 장애일 수 있어요. 다시 시도해도 다른 작업에는 영향을 주지 않습니다.", "This may be a temporary network issue or a server problem. Retrying will not affect your other work.")}</p>
+            <button type="button" onClick={latest.reload} className={buttonClass({ variant: "outline", size: "sm", className: "mt-4" })}>
+              <RefreshCw className="mr-1.5 size-3.5" aria-hidden="true" />
+              {t("다시 시도", "Try again")}
+            </button>
+          </div>
+        ) : null}
+        {latest.stale ? (
+          <StaleNoticeBar
+            savedAt={latest.staleSavedAt ?? new Date().toISOString()}
+            onRetry={latest.reload}
+            className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-fg-2 [&>button]:ml-auto"
+          />
+        ) : null}
+        {hasFatalLatestError ? null : (
+          <>
+            {latest.loading ? <p role="status" className="sr-only">{t("최근 공유된 마켓 리소스를 불러오는 중입니다.", "Loading recently shared market resources.")}</p> : null}
+            <ul aria-busy={latest.loading || undefined} className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+              {latest.loading && latest.items.length === 0
+                ? Array.from({ length: 8 }, (_, index) => (
+                    <li key={index} aria-hidden="true">
+                      <div className="skeleton aspect-[16/9] w-full rounded-t-xl" />
+                      <div className="space-y-2 rounded-b-xl border border-t-0 border-line bg-card p-3.5">
+                        <div className="skeleton h-4 w-4/5" />
+                        <div className="skeleton h-3 w-2/5" />
+                      </div>
+                    </li>
+                  ))
+                : latest.items.map((record, index) => (
+                    <li key={record.id} {...introItemProps(index)} className={recentMore.hiddenOnMobile(index) ? "max-sm:hidden" : undefined}>
+                      <MarketResourceCard record={record} className="h-full" />
+                    </li>
+                  ))}
+            </ul>
+            <SiteShowMoreButton
+              className="sm:hidden"
+              remaining={recentMore.remaining}
+              onClick={recentMore.expand}
+              label={t(`최근 공유 ${recentMore.remaining}개 더 보기`, `Show ${recentMore.remaining} more`)}
+            />
+            {!latest.loading && latest.items.length === 0 ? (
+              <div className="mt-6 rounded-2xl border border-dashed border-line bg-panel p-8 text-center sm:p-10">
+                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-raised text-fg-3">
+                  <PackageSearch className="size-6" aria-hidden="true" />
+                </div>
+                <h3 className="mt-3 text-base font-bold text-fg">{t("아직 공유된 리소스가 없어요", "No shared resources yet")}</h3>
+                <p className="mx-auto mt-1.5 max-w-md text-sm text-fg-2">{t("공개 마켓 소재와 별개로 기본 무료 제작 소재는 회원가입 없이 사용할 수 있습니다. 원본 파일과 사용 조건을 확인한 뒤 내 편집기로 가져오세요.", "Separately from public market materials, the built-in free production materials are available without signing up. Check the source files and terms, then bring them into your editor.")}</p>
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <Link href="/studio/assets?view=essentials" className={buttonClass({ variant: "solid", size: "sm" })}>{t("기본 무료 소재 사용하기", "Use built-in free materials")}</Link>
+                  <Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "solid", size: "sm" })}>
+                    <Upload className="mr-1.5 size-3.5" aria-hidden="true" />
+                    {t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio")}
+                  </Link>
+                </div>
+              </div>
+            ) : null}
+          </>
+        )}
+      </Container>
+
+      <Container size="wide">
+        <MarketNavHeader />
+      </Container>
+
+      <Container size="wide" className="py-8 sm:py-10 lg:py-12">
         <MarketResourceFamilyExplorer />
       </Container>
 
@@ -271,83 +327,23 @@ export function MarketHomePage() {
         </Container>
       ) : null}
 
-      <Container size="wide" className="pb-10 sm:pb-12">
-        <div className="flex items-baseline justify-between gap-3">
-          <div>
-            <h2 className="eyebrow text-fg-3">{t("최근 공유", "Recently shared")}</h2>
-            <p className="mt-1 text-xs leading-5 text-fg-3">{t("최근 공개된 리소스를 실제 미리보기와 함께 확인합니다.", "Browse recently published resources with real previews.")}</p>
-          </div>
-          <Link href="/market/browse" className="inline-flex min-h-11 items-center text-sm text-accent hover:text-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
-            {t("전체 보기", "View all")} <ArrowRight size={14} aria-hidden="true" className="ml-1" />
-          </Link>
-        </div>
-        {hasFatalLatestError ? (
-          <div role="alert" className="mt-6 rounded-2xl border border-warn/30 bg-warn/5 p-8 text-center sm:p-10">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-warn/10 text-warn">
-              <AlertTriangle className="size-6" aria-hidden="true" />
-            </div>
-            <h3 className="mt-3 text-base font-bold text-fg">{t("최근 공유 리소스를 불러올 수 없어요", "Recently shared resources could not be loaded")}</h3>
-            <p className="mx-auto mt-1.5 max-w-sm text-sm text-fg-2">{t("일시적인 네트워크 문제이거나 서버 장애일 수 있어요. 다시 시도해도 다른 작업에는 영향을 주지 않습니다.", "This may be a temporary network issue or a server problem. Retrying will not affect your other work.")}</p>
-            <button type="button" onClick={latest.reload} className={buttonClass({ variant: "outline", size: "sm", className: "mt-4" })}>
-              <RefreshCw className="mr-1.5 size-3.5" aria-hidden="true" />
-              {t("다시 시도", "Try again")}
-            </button>
-          </div>
-        ) : null}
-        {latest.stale ? (
-          <StaleNoticeBar
-            savedAt={latest.staleSavedAt ?? new Date().toISOString()}
-            onRetry={latest.reload}
-            className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-fg-2 [&>button]:ml-auto"
-          />
-        ) : null}
-        {hasFatalLatestError ? null : (
-          <>
-            {latest.loading ? <p role="status" className="sr-only">{t("최근 공유된 마켓 리소스를 불러오는 중입니다.", "Loading recently shared market resources.")}</p> : null}
-            <ul aria-busy={latest.loading || undefined} className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-              {latest.loading && latest.items.length === 0
-                ? Array.from({ length: 8 }, (_, index) => (
-                    <li key={index} aria-hidden="true">
-                      <div className="skeleton aspect-[16/9] w-full rounded-t-xl" />
-                      <div className="space-y-2 rounded-b-xl border border-t-0 border-line bg-card p-3.5">
-                        <div className="skeleton h-4 w-4/5" />
-                        <div className="skeleton h-3 w-2/5" />
-                      </div>
-                    </li>
-                  ))
-                : latest.items.map((record, index) => (
-                    <li key={record.id} {...introItemProps(index)} className={recentMore.hiddenOnMobile(index) ? "max-sm:hidden" : undefined}>
-                      <MarketResourceCard record={record} className="h-full" />
-                    </li>
-                  ))}
-            </ul>
-            <SiteShowMoreButton
-              className="sm:hidden"
-              remaining={recentMore.remaining}
-              onClick={recentMore.expand}
-              label={t(`최근 공유 ${recentMore.remaining}개 더 보기`, `Show ${recentMore.remaining} more`)}
-            />
-            {!latest.loading && latest.items.length === 0 ? (
-              <div className="mt-6 rounded-2xl border border-dashed border-line bg-panel p-8 text-center sm:p-10">
-                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-raised text-fg-3">
-                  <PackageSearch className="size-6" aria-hidden="true" />
-                </div>
-                <h3 className="mt-3 text-base font-bold text-fg">{t("아직 공유된 리소스가 없어요", "No shared resources yet")}</h3>
-                <p className="mx-auto mt-1.5 max-w-md text-sm text-fg-2">{t("공개 마켓 소재와 별개로 기본 무료 제작 소재는 회원가입 없이 사용할 수 있습니다. 원본 파일과 사용 조건을 확인한 뒤 내 편집기로 가져오세요.", "Separately from public market materials, the built-in free production materials are available without signing up. Check the source files and terms, then bring them into your editor.")}</p>
-                <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <Link href="/studio/assets?view=essentials" className={buttonClass({ variant: "solid", size: "sm" })}>{t("기본 무료 소재 사용하기", "Use built-in free materials")}</Link>
-                  <Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "solid", size: "sm" })}>
-                    <Upload className="mr-1.5 size-3.5" aria-hidden="true" />
-                    {t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio")}
-                  </Link>
-                </div>
-              </div>
-            ) : null}
-          </>
-        )}
-      </Container>
-
       <Container size="wide" className="pb-14">
+        <SiteDisclosure
+          className="mb-10"
+          icon={HelpCircle}
+          title={t("처음이라면 종류보다 하고 싶은 작업부터 고르세요", "New here? Start from the task you want to do, not the asset type")}
+          summary={t("템플릿·에셋·브러시는 적용 방식이 서로 다릅니다.", "Templates, assets and brushes are applied differently.")}
+        >
+          <p className="text-sm leading-6 text-fg-2">{t("상세 화면에서 실제 사용 위치와 호환성을 먼저 보여드립니다.", "The detail screen shows where each is used and its compatibility first.")}</p>
+          <SiteStepList
+            className="mt-3"
+            steps={[
+              t("장면을 통째로 시작하려면 템플릿, 캔버스에 놓을 재료가 필요하면 2D·3D를 고릅니다.", "To start a whole scene, pick a template; for materials to place on the canvas, pick 2D/3D."),
+              t("선화·채색 도구는 브러시, 작품의 색감과 마감은 색·보정에서 찾습니다.", "Find line-art and coloring tools under brushes, and your work's color and finish under color/retouch."),
+              t("미리보기에서 결과와 사용권을 확인한 뒤 Studio에서 시험하거나 내 에셋에 저장합니다.", "Check the result and license in the preview, then test in Studio or save to your assets."),
+            ]}
+          />
+        </SiteDisclosure>
         <section className="market-production-route mb-12" aria-labelledby="market-next-step-title">
           <div><span className="eyebrow text-accent">MATERIALS INTO YOUR NEXT PANEL</span><h2 id="market-next-step-title" className="mt-3">{t("재료를 골랐다면,", "Picked your materials?")}<br />{t("이제 내 원고에 맞춰보세요.", "Now fit them to your manuscript.")}</h2><p>{t("마음에 드는 소재를 모으고 제작 조건을 비교하세요. 선화·채색이 막히는 순간에는 학습 과정을, 장면의 근거가 필요할 때에는 리서치 데스크를 이어서 활용할 수 있습니다.", "Collect the materials you like and compare production conditions. When line art or coloring stalls, continue with learning paths; when a scene needs grounding, continue with the research desk.")}</p></div>
           <nav aria-label={t("리소스 선택 다음 작업", "Next steps after choosing resources")}><Link href="/market/library">{t("내 에셋에서 작업 재료 정리", "Organize working materials in my assets")} <ArrowRight size={16} aria-hidden="true" /></Link><Link href="/learn/paths/visual-finish">{t("선과 색의 완성도를 높이는 실습", "Practice to polish lines and colors")} <ArrowRight size={16} aria-hidden="true" /></Link><Link href="/research/assets">{t("복식·소품·배경 레퍼런스 찾기", "Find costume, prop & background references")} <ArrowRight size={16} aria-hidden="true" /></Link><Link href="/studio">{t("ToonStudio에서 다음 컷 그리기", "Draw the next panel in ToonStudio")} <ArrowRight size={16} aria-hidden="true" /></Link></nav>

@@ -56,28 +56,30 @@ afterEach(() => {
 });
 
 describe("MarketHomePage", () => {
-  it("스토어 내비게이션을 맨 위에 두고 표제·소재 찾기 뒤에 작업군 바로가기를 제공한다", () => {
+  it("첫 화면은 표제·검색 뒤에 카테고리 아트 타일과 최근 공유를 두고 스토어 내비게이션은 그 아래에 둔다", () => {
     useResources.mockReturnValue(marketPage());
     render(<MemoryRouter initialEntries={["/market"]}><MarketHomePage /></MemoryRouter>);
 
     const heading = screen.getByRole("heading", { level: 1 });
     const browse = screen.getByRole("link", { name: "소재 찾기" });
+    const categories = screen.getByRole("navigation", { name: "소재 카테고리" });
+    const recent = screen.getByRole("heading", { name: "최근 공유" });
     const navigation = screen.getByRole("navigation", { name: "마켓 주요 내비게이션" });
-    const families = screen.getByRole("group", { name: "무엇을 찾고 있나요?" });
-    // 스토어 내비게이션은 모든 마켓 화면에서 맨 위, 작업군 바로가기는 표제·검색 뒤에 둔다.
-    expect(navigation.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // 첫 화면의 주인공은 카테고리 아트 타일과 상품 카드다. 스토어 내비게이션은 지우지 않고 그 아래로 내린다.
     expect(heading.compareDocumentPosition(browse) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(heading.compareDocumentPosition(families) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(heading.compareDocumentPosition(categories) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(categories.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(recent.compareDocumentPosition(navigation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(browse.getAttribute("href")).toBe("/market/browse");
+    const tiles = within(categories);
+    for (const label of ["템플릿", "2D 에셋", "3D", "브러시", "색·보정"]) {
+      expect(tiles.getByRole("link", { name: new RegExp(label) })).toBeTruthy();
+    }
+    expect(tiles.getByRole("link", { name: /템플릿/ }).getAttribute("href")).toBe("/market/browse?kind=template");
     const menu = within(navigation);
     for (const label of ["찾아보기", "내 에셋", "찜 목록", "배포하기", "조건 맞춤", "후보 비교"]) {
       expect(menu.getByRole("link", { name: label })).toBeTruthy();
     }
-    const familyLinks = within(families);
-    for (const label of ["전체", "템플릿", "2D 에셋", "3D", "브러시", "색·보정"]) {
-      expect(familyLinks.getByRole("link", { name: label })).toBeTruthy();
-    }
-    expect(familyLinks.getByRole("link", { name: "템플릿" }).getAttribute("href")).toBe("/market/browse?kind=template");
     expect(menu.getByRole("link", { name: "장면 레퍼런스" }).getAttribute("href")).toBe("/research/assets");
     expect(menu.getByRole("link", { name: "제작 강좌 ↗" }).getAttribute("href")).toBe("/learn");
   });
