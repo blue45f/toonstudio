@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { TracePracticePage } from "./TracePracticePage";
@@ -21,7 +21,7 @@ describe("trace practice", () => {
   it("is reachable from the existing /learn wildcard without a duplicate router", async () => {
     render(<MemoryRouter initialEntries={["/learn/trace"]}><LearnPage /></MemoryRouter>);
     expect(screen.getByRole("heading", { name: /참고 이미지는 가이드로/ })).toBeTruthy();
-    fireEvent.click(screen.getByText("따라 그리기", { selector: "summary span" }));
+    // 섹션 내비(공용 SectionNav)는 목적지를 드롭다운 없이 펼쳐 보이고 현재 위치를 링크에 표시한다.
     expect((await screen.findByRole("link", { name: "따라 그리기" })).getAttribute("aria-current")).toBe("page");
   });
 });

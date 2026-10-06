@@ -156,6 +156,12 @@ describe("site navigation information architecture", () => {
     expect(siteNavigationJourneyForPath("/market")).toBe("create");
     expect(siteNavigationGroupForPath("/studio/publish")?.id).toBe("publish");
     expect(siteNavigationJourneyForPath("/studio/growth")).toBe("publish");
+    // 학습 하위 경로는 전부 자료·성장(grow) 구간 — 전역 내비의 현재 여정 강조가 학습을 가리킨다.
+    expect(siteNavigationGroupForPath("/learn")?.id).toBe("grow");
+    expect(siteNavigationGroupForPath("/learn/classroom")?.id).toBe("grow");
+    expect(siteNavigationGroupForPath("/learn/paths/first-three-panels")?.id).toBe("grow");
+    expect(siteNavigationGroupForPath("/learn/recipes")?.id).toBe("grow");
+    expect(siteNavigationJourneyForPath("/learn")).toBe("create");
     expect(siteNavigationGroupForPath("/team/people")?.id).toBe("connect");
     expect(siteNavigationJourneyForPath("/collaborate")).toBe("collaborate");
     expect(siteNavigationGroupForPath("/settings")).toBeNull();

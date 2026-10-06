@@ -24,9 +24,9 @@ async function openStoryBoardFromHub(page: Page) {
 }
 
 async function openLearningRecords(page: Page) {
-  const navigation = page.getByRole("navigation", { name: "웹툰 학습", exact: true });
-  await navigation.locator("summary").click();
-  const records = navigation.getByRole("link", { name: "내 학습 기록 · 백업 / 복원", exact: true });
+  // 섹션 내비(공용 SectionNav)는 목적지를 접지 않고 펼쳐 보이므로 바로 클릭한다.
+  const navigation = page.getByRole("navigation", { name: "배우기 영역", exact: true });
+  const records = navigation.getByRole("link", { name: "내 학습 기록", exact: true });
   await expect(records).toHaveAttribute("href", "/learn/records");
   await records.click();
 }
@@ -54,7 +54,7 @@ test("exports a real file and restores only after preview and explicit confirmat
     await expect(destination.getByRole("heading", { name: "복원 전 확인", exact: true })).toBeVisible();
     expect(await destination.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).toBeNull();
     await destination.getByRole("button", { name: "기존 기록 유지하고 복원", exact: true }).click();
-    await destination.getByRole("navigation", { name: "웹툰 학습", exact: true }).getByRole("link", { name: "학습 홈", exact: true }).click();
+    await destination.getByRole("navigation", { name: "배우기 영역", exact: true }).getByRole("link", { name: "학습 홈", exact: true }).click();
     await openStoryBoardFromHub(destination);
     await expect(destination.getByLabel("나의 실습 메모", { exact: true })).toHaveValue("내 컷의 호흡 🖋");
   } finally { await fresh.close(); }
@@ -148,7 +148,7 @@ test("failed writes survive real other-tab edits and SPA navigation to record ma
     await expect(page.getByLabel("나의 실습 메모", { exact: true })).toHaveValue("반드시 보존할 미저장 메모");
     await openLearningRecords(page);
     await expect(page.getByRole("heading", { name: "다른 탭의 기록과 충돌했습니다", exact: true })).toBeVisible();
-    await page.getByRole("navigation", { name: "웹툰 학습", exact: true }).getByRole("link", { name: "학습 홈", exact: true }).click();
+    await page.getByRole("navigation", { name: "배우기 영역", exact: true }).getByRole("link", { name: "학습 홈", exact: true }).click();
     await openStoryBoardFromHub(page);
     await expect(page.getByLabel("나의 실습 메모", { exact: true })).toHaveValue("반드시 보존할 미저장 메모");
     expect(await other.evaluate((key) => JSON.parse(localStorage.getItem(key)!).lessons["story-board"].notes, STORAGE_KEY)).toBe("다른 탭 메모");
