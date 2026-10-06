@@ -18,6 +18,8 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 
 function OfflineHeroArt() {
   return (
+    <>
+      {/* eslint-disable shadcn/no-raw-colors -- 오프라인 안내 히어로 SVG 아트워크(브랜드 그라디언트 마크 포함)의 색은 그림 데이터라 UI 토큰 대상이 아니다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */}
     <svg viewBox="0 0 240 160" aria-hidden="true" className="pwa-offline__hero-art">
       <defs>
         <linearGradient id="pwa-offline-g" x1="0" y1="0" x2="1" y2="1">
@@ -46,6 +48,8 @@ function OfflineHeroArt() {
       <circle cx="200" cy="120" r="4" className="pwa-offline__spark pwa-offline__spark--late" />
       <circle cx="200" cy="40" r="5" className="pwa-offline__spark pwa-offline__spark--late" />
     </svg>
+      {/* eslint-enable shadcn/no-raw-colors */}
+    </>
   );
 }
 

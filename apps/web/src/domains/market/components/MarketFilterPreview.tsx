@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-raw-colors -- 파일 전체가 필터 미리보기 SVG 일러스트 아트워크라 색이 UI가 아닌 그림 데이터다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
 import { SlidersHorizontal, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 

@@ -349,6 +349,7 @@ export function ShareDialog({ payload, trigger, defaultOpen = false }: ShareDial
                 onClick={() => void runAppShare(channel)}
                 className={CHANNEL_CLASS}
               >
+                {/* eslint-disable shadcn/no-raw-colors -- 인스타그램 브랜드 그라디언트 아이콘: 외부 서비스 브랜드 색이라 토큰으로 바꾸면 브랜드 표현이 달라진다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */}
                 <span className={cn(
                   "grid size-9 place-items-center rounded-full text-sm font-black text-white",
                   channel === "instagram"
@@ -359,6 +360,7 @@ export function ShareDialog({ payload, trigger, defaultOpen = false }: ShareDial
                     ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
                     : channel === "instagram" ? "◎" : "♪"}
                 </span>
+                {/* eslint-enable shadcn/no-raw-colors */}
                 {channel === "instagram" ? "Instagram" : "TikTok"}
               </button>
             ))}
@@ -420,6 +422,8 @@ export function ShareDialog({ payload, trigger, defaultOpen = false }: ShareDial
           </div>
 
           {qrVisible && qrDataUrl && (
+            <>
+              {/* eslint-disable shadcn/no-raw-colors -- QR 카드는 스캔을 위해 테마와 무관하게 고정된 흰 배경+어두운 글자여야 한다(fg 토큰은 다크 테마에서 반전돼 QR 영역 글자가 안 읽힌다). 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */}
             <section
               aria-label={t("share.qrTitle")}
               className="mt-4 flex flex-col items-center rounded-2xl border border-line bg-white p-4 text-center text-slate-900"
@@ -436,6 +440,8 @@ export function ShareDialog({ payload, trigger, defaultOpen = false }: ShareDial
                 {t("share.qrDescription")}
               </p>
             </section>
+              {/* eslint-enable shadcn/no-raw-colors */}
+            </>
           )}
 
           {notice && (

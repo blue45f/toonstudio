@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-raw-colors -- 치비 캐릭터 스프라이트 SVG 아트워크의 색은 캐릭터 작화 데이터라 UI 토큰 대상이 아니다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
 import type { CSSProperties } from "react";
 
 import "./studio-chibi-sprite.css";
