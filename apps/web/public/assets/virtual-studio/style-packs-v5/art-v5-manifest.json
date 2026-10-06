@@ -12528,8 +12528,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-direction-down.webp",
-      "bytes": 15436,
-      "sha256": "ba175381c6c6d855b1dc3ef50f0a62bb35110b3bbfe1f35ad9579a9e48e37b2e",
+      "bytes": 12778,
+      "sha256": "9d13baba8cc8b8244d7a97a3e5b18e2cefd5296a5fdafcd31984986f427b15df",
       "size": [
         160,
         160
@@ -12538,8 +12538,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-direction-left.webp",
-      "bytes": 17620,
-      "sha256": "c74149f064789a98d31c26032675cfc48d0c01665178d1d6fe63ca67ba0444f0",
+      "bytes": 14758,
+      "sha256": "9a113545cb2dbc8c0c5eef13923f07e80e89a68b833438faa887b9405fd43ab9",
       "size": [
         160,
         160
@@ -12548,8 +12548,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-direction-right.webp",
-      "bytes": 18654,
-      "sha256": "3b4745af2c72b96506a39703a5fa503776df58b24d3b96d2c7260412bb0a1aae",
+      "bytes": 15338,
+      "sha256": "cf5225453fa8f35e15bcfac70e24add73b671e2439d623016db46ae4bc05a88c",
       "size": [
         160,
         160
@@ -12558,8 +12558,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-direction-up.webp",
-      "bytes": 16190,
-      "sha256": "3fc5ff79830f23d69c14ecfd3b868eabf12d22766968d00b48098c8bce65b46b",
+      "bytes": 13256,
+      "sha256": "e03dcf83bdc94fe220caf401a0b619a104ac5dfeafc70a51f586d412279b6bd9",
       "size": [
         160,
         160
@@ -12568,8 +12568,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-draw-down.webp",
-      "bytes": 61202,
-      "sha256": "f138e52732744760872cf4d04c877ad5ba6c721ec56633e5570d84c9942bfaee",
+      "bytes": 50178,
+      "sha256": "0321e130f05db7246f4b7635b644dce37198e4a911b8f8c20e29fd7182d8308e",
       "size": [
         640,
         160
@@ -12588,8 +12588,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-draw-right.webp",
-      "bytes": 75434,
-      "sha256": "babce5bfd484ef7892d8e3a1dc7b1fe5ba54a12abfa7df81b1c69357e6a76920",
+      "bytes": 63086,
+      "sha256": "49dc23113053596c101c01845caf0d9255700bd4ceddefb7f4c3717fdfd002a3",
       "size": [
         640,
         160
@@ -12598,8 +12598,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-draw-up.webp",
-      "bytes": 65460,
-      "sha256": "f295b5d39e9292a8eb0dd67231ddb5281c31729234fae700ea674d45d8d3329f",
+      "bytes": 54814,
+      "sha256": "927c55d240bf8824337bc530ec483960e07f22621758c665f393c973af84c03c",
       "size": [
         640,
         160
@@ -12608,8 +12608,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-review-down.webp",
-      "bytes": 45824,
-      "sha256": "6bf4cd468a39c80d0246e0497893b467c638f85d8acf9fbe117db98ef569ddf2",
+      "bytes": 37296,
+      "sha256": "c649be94bfc9b4b1fdbf1c0060ef205511521b44344bff48d64a496903ac80f8",
       "size": [
         640,
         160
@@ -12618,8 +12618,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-review-left.webp",
-      "bytes": 51224,
-      "sha256": "4c6be38b08af8589f4ce1e50f3170c5b6a990f3f7564e4e834b1c8b2c65b752d",
+      "bytes": 42266,
+      "sha256": "b8547a89a66454c48afa9011954438466405fc067b86e0b7ee151ad13ed3df70",
       "size": [
         640,
         160
@@ -12628,8 +12628,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-review-right.webp",
-      "bytes": 53602,
-      "sha256": "e102ec1e9ddd0800cd509c8fca2f86892ad6bb2ed9a6acce500bf46f9a0f8427",
+      "bytes": 43490,
+      "sha256": "aa6ea2b247fc1087fb8fb03b8a36f64bb4a9e0f0937109bed761400776c418b9",
       "size": [
         640,
         160
@@ -12638,8 +12638,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-review-up.webp",
-      "bytes": 47544,
-      "sha256": "2eb6c18c618d9975f336994092bce08368ef394f3f254b1419161cb9418594be",
+      "bytes": 38390,
+      "sha256": "ea98fd40a98bc3581300e2646471ff3e261ad36f83ac67d6377bc43f5ee91e7d",
       "size": [
         640,
         160
@@ -12648,8 +12648,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-sit.webp",
-      "bytes": 65086,
-      "sha256": "68e62ab3642b476e41e33dc77803aef1d27762190d8b60c32194c60bce75c568",
+      "bytes": 55830,
+      "sha256": "15984728db8f53c4dcf517db5f2d5953784570cb4b3eb8fc7ccd33e6eeadf2fd",
       "size": [
         640,
         160
@@ -12658,8 +12658,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-state-draw.webp",
-      "bytes": 15700,
-      "sha256": "4c9af336409beb29f4971730a4cb99587ad0ca6350c3cc8681b91f4676ae96b4",
+      "bytes": 13036,
+      "sha256": "b7ac901545e58616a0c11fe3500f3a6e1aece505b0ac15130488600d692d1dae",
       "size": [
         160,
         160
@@ -12668,8 +12668,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-state-review.webp",
-      "bytes": 15436,
-      "sha256": "ba175381c6c6d855b1dc3ef50f0a62bb35110b3bbfe1f35ad9579a9e48e37b2e",
+      "bytes": 12958,
+      "sha256": "5460900072b368e0063135be1be34a86ac51f919fa3ff9244ad133eb3d177949",
       "size": [
         160,
         160
@@ -12678,8 +12678,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-state-talk.webp",
-      "bytes": 15726,
-      "sha256": "529470d1359abb61f7c133e5b428e9629303d914514ee781a9272535b59b97e8",
+      "bytes": 12976,
+      "sha256": "52f658f2aac3152c46b400c08a2f6643ca5c5dc618b77b23652f91f391028202",
       "size": [
         160,
         160
@@ -12688,8 +12688,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-talk-down.webp",
-      "bytes": 61060,
-      "sha256": "2c46e9e6cba05df2e3e28cf5f510c897e82056d7e5b8ef95071345a376266377",
+      "bytes": 50742,
+      "sha256": "2c26c508329bff7fd16f77a78156da43dc9effbf06f1901643f3ddd44088e5ef",
       "size": [
         640,
         160
@@ -12698,8 +12698,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-talk-left.webp",
-      "bytes": 71380,
-      "sha256": "da85bf36ed90630b0ead882e50ef78c7234b00445621f9c4138bbbf0fe753f6c",
+      "bytes": 59088,
+      "sha256": "3456fb4fa4d6dbb6384ccadb051a7c4978c8d6ade34a3d35f00e0dab82931668",
       "size": [
         640,
         160
@@ -12708,8 +12708,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-talk-right.webp",
-      "bytes": 75320,
-      "sha256": "b53d1ca6c3f64d9fcc505227fcfc587a43f7b15c056386fce289f06cb9b89831",
+      "bytes": 62832,
+      "sha256": "f6c4febe4551ed02bdd6c784d2cc5546710f1a6af805bdb34251e3e0c5e2b297",
       "size": [
         640,
         160
@@ -12718,8 +12718,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-talk-up.webp",
-      "bytes": 65344,
-      "sha256": "8a860f7343a390195d246240156717b2bd5bf044ac23ebe03795a41fa2908b6c",
+      "bytes": 55188,
+      "sha256": "67f7174112b8b2fea060b26080d437dacc3729f41fa96955f8fb703a2dc5de24",
       "size": [
         640,
         160
@@ -12728,8 +12728,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-walk-down.webp",
-      "bytes": 60642,
-      "sha256": "ae02d323f1cddcea6972f88f1a3d5a5bc164a99e4aee781bc4fa91b3810cec9a",
+      "bytes": 51528,
+      "sha256": "0ca4724f74b68c49a29bd45072e85fa5922e7a4de9e23902c038829138e166c7",
       "size": [
         640,
         160
@@ -12738,8 +12738,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-walk-left.webp",
-      "bytes": 66026,
-      "sha256": "6093ab33af7adeaac9a96116a3420028c1d6a012dd730a92e76adffec5ce1d3f",
+      "bytes": 56508,
+      "sha256": "566d014f3b72ed9785b6097e68f1cd87715ab17c42277fb739926d81b1a23174",
       "size": [
         640,
         160
@@ -12748,8 +12748,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-walk-right.webp",
-      "bytes": 68212,
-      "sha256": "8debfecb16e431619ef1e7b39fc3acf4814e27304e1b87f85573f90a96fa2b56",
+      "bytes": 57824,
+      "sha256": "d0bf88ab6e453be82b7a43b1df736f84805f790f9835328cf2778979cf9d92c5",
       "size": [
         640,
         160
@@ -12758,8 +12758,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-walk-up.webp",
-      "bytes": 64130,
-      "sha256": "0ebb9b2596afa65baf5aa088a97d87ff130ad422577aeecb1ad9b2bd1a28183a",
+      "bytes": 54790,
+      "sha256": "78217854fd184968e50199a7110da67607c262355cf1da45d430de17ea3c5d05",
       "size": [
         640,
         160
@@ -12768,8 +12768,8 @@
     },
     {
       "file": "sky-island/npcs/npc-archivist-wave.webp",
-      "bytes": 67836,
-      "sha256": "5fd1fa84092b136d8fad4542ade935cb7f3e2e66b4811ed7602a5abd63898c2f",
+      "bytes": 56990,
+      "sha256": "52b050e7508aa25290b4ab65699725f14d6027f00ea038fc1cd4738f4a87ac93",
       "size": [
         640,
         160
@@ -12778,8 +12778,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-direction-down.webp",
-      "bytes": 14970,
-      "sha256": "0ba0c6d4b11dff52d21c4d354aad714d2f67ef608980eb47fabf348cabd11481",
+      "bytes": 12704,
+      "sha256": "c1982ddbee24b2ffbe5b126bed6eab60c082b8edf62bc094c8dfafdb6525417b",
       "size": [
         160,
         160
@@ -12788,8 +12788,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-direction-left.webp",
-      "bytes": 17292,
-      "sha256": "28af902c33d8bde48a8024ac827603e7a87a2f765062ec80714d7af76476f143",
+      "bytes": 14478,
+      "sha256": "95df82434ac569568dbd3c46bedde2bd2af01423141cfb08eab3afdc8c30a2af",
       "size": [
         160,
         160
@@ -12798,8 +12798,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-direction-right.webp",
-      "bytes": 17484,
-      "sha256": "72f54c3a91fb847af5c98cf6cf6184b0d1da8e6f957d34b8ce24870d9dd7d278",
+      "bytes": 14432,
+      "sha256": "1b36d68c4215ab56e7fb6d8be0cebb7e963b6677b3919b4ba28f342ab755984e",
       "size": [
         160,
         160
@@ -12808,8 +12808,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-direction-up.webp",
-      "bytes": 14694,
-      "sha256": "e96a78f8d68dbbede9391fd5d02a73e7b711f9b528c4fef6051d7bdc2423495e",
+      "bytes": 12494,
+      "sha256": "3654add059c70a1fee60eb104c6f57f71ce9ee5c713c553866a066109f95aa23",
       "size": [
         160,
         160
@@ -12818,8 +12818,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-draw-down.webp",
-      "bytes": 59804,
-      "sha256": "3a5edb1744dcabc8cb2aee9e404c442ded2c5dda62d1ca02876f143c0e20cc73",
+      "bytes": 49834,
+      "sha256": "8fc02807e256d7aa7fb8c634fb1a4c57bf383013f928c66ec23a0b54c673f030",
       "size": [
         640,
         160
@@ -12828,8 +12828,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-draw-left.webp",
-      "bytes": 69158,
-      "sha256": "0672139f340b7cbc04f2f2ec3c07cb22585685e60f2f50d99a5b9962123536cc",
+      "bytes": 56732,
+      "sha256": "921d60ae25a88cf53688b8d11735b16905f40a5d2c2dbcf1256e0488e089145f",
       "size": [
         640,
         160
@@ -12838,8 +12838,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-draw-right.webp",
-      "bytes": 69396,
-      "sha256": "e8c63bedd33899936558cbdc8cd0fc31523f685c650c3f71483068b07505a4ee",
+      "bytes": 57176,
+      "sha256": "9e6c44cbc7a9f03ca93d462738fbb94ea04cd7c1715998bf63c2364394ed4abc",
       "size": [
         640,
         160
@@ -12848,8 +12848,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-draw-up.webp",
-      "bytes": 58870,
-      "sha256": "4a1310a7446c01b36c441dc9b62db47584867fd291798dd4390a1402028ea4dc",
+      "bytes": 48848,
+      "sha256": "061ff073f8ddf793be0cf11a9911db50f2590969fc7dd7c81381eef6bf2cc217",
       "size": [
         640,
         160
@@ -12858,8 +12858,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-review-down.webp",
-      "bytes": 43806,
-      "sha256": "7096dce723dff19c98247136a2307aeab0cff49df2e1d7e802f2bcdaee8bb1ed",
+      "bytes": 36014,
+      "sha256": "fc73396c503aa359eedd91d916850a393afeeec923d4f7e6d6a5da57c739ffc7",
       "size": [
         640,
         160
@@ -12868,8 +12868,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-review-left.webp",
-      "bytes": 50422,
-      "sha256": "e28362b25ce0b1ad28b445f4a5d2a8a4e27e0de988f5e1552b540a78dc101dbd",
+      "bytes": 40870,
+      "sha256": "ced366b31b64a2b7b14ecf1c87d0a3abc7c9fcc352bdfbe5385b964df921190f",
       "size": [
         640,
         160
@@ -12878,8 +12878,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-review-right.webp",
-      "bytes": 50068,
-      "sha256": "828fc6693ea1e97d44c3abd9c9fd83c05e78b678ea98c849bbf48c3aa942ffcc",
+      "bytes": 39868,
+      "sha256": "736de85a2728e3dfe7f7da7f4a9c606a725223310d74c96f6f9fd9018e9dc688",
       "size": [
         640,
         160
@@ -12888,8 +12888,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-review-up.webp",
-      "bytes": 42676,
-      "sha256": "67e0ef38e4c6c1adc7f4d698e644c1c855acd5d5332d393a3f1133f1c9a593da",
+      "bytes": 34752,
+      "sha256": "ee97a86da6ffaccbefbd2d8e5cb84990b2282ca590e80d339d733f055da3337d",
       "size": [
         640,
         160
@@ -12898,8 +12898,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-sit.webp",
-      "bytes": 61848,
-      "sha256": "03f3f75693c49c1d7ae5e3d55a5c33290362dfbce3e4289eceebc8f4dab426ee",
+      "bytes": 52120,
+      "sha256": "5d06d3b7cae1136f68a8049da98cf619f371e7448b16ba1fa4d3fb95c3e1e850",
       "size": [
         640,
         160
@@ -12908,8 +12908,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-state-draw.webp",
-      "bytes": 15514,
-      "sha256": "89371efb732541886480189f28141fd16744f2269846486699e10a5214eb733f",
+      "bytes": 12972,
+      "sha256": "8a635fc1156ef24c3f4d0a7fca569b77f4fb2dddba19f9b6bbb80a2b75bdd9d2",
       "size": [
         160,
         160
@@ -12918,8 +12918,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-state-review.webp",
-      "bytes": 14970,
-      "sha256": "0ba0c6d4b11dff52d21c4d354aad714d2f67ef608980eb47fabf348cabd11481",
+      "bytes": 12704,
+      "sha256": "c1982ddbee24b2ffbe5b126bed6eab60c082b8edf62bc094c8dfafdb6525417b",
       "size": [
         160,
         160
@@ -12928,8 +12928,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-state-talk.webp",
-      "bytes": 15540,
-      "sha256": "79c363cdf4985c0004347aa61fb4547cff2b816063ff1ca4ce0abd7605e27bff",
+      "bytes": 12924,
+      "sha256": "21040ccc4e4d943579e94898c01db64d13756bd1ca9665125265c1e9f0b879b9",
       "size": [
         160,
         160
@@ -12938,8 +12938,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-talk-down.webp",
-      "bytes": 60070,
-      "sha256": "1e035bd1dcbe6f6d7b4f3667a092f5226c3c3fc3f95e873868b5554918d89239",
+      "bytes": 49780,
+      "sha256": "5b3f65d87623f30b360771b1c7176ee876ee54b79ba00b9919732b71fc15e5d2",
       "size": [
         640,
         160
@@ -12948,8 +12948,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-talk-left.webp",
-      "bytes": 68914,
-      "sha256": "35f5f88fa5a1e07caa55515ce4b3276f0a3b9facedc41bd3bde150fe05d6de8d",
+      "bytes": 56554,
+      "sha256": "8ea5d85f97fc4f7b79c07140d24335ef3d971c202cd29d48efd23dfe839cbaf0",
       "size": [
         640,
         160
@@ -12958,8 +12958,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-talk-right.webp",
-      "bytes": 69274,
-      "sha256": "eb937dbba3bcf0e48e64da4c642b353263ee6ecd1221cbdc5932137bc48d2761",
+      "bytes": 56802,
+      "sha256": "ecee80029978e1d35c591e149f12ae27a4acee2ce061dd40c6692d69da611ff1",
       "size": [
         640,
         160
@@ -12968,8 +12968,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-talk-up.webp",
-      "bytes": 58794,
-      "sha256": "83370ac029e9ed0b91be2cc1c5cd4b9a6d6ad703f21efc9c28b598805e506672",
+      "bytes": 48952,
+      "sha256": "3f0e35de33439a9b16b6cc049f10050ad6c0470b3624f0eb425b4ff00f1e8314",
       "size": [
         640,
         160
@@ -12978,8 +12978,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-walk-down.webp",
-      "bytes": 60276,
-      "sha256": "7a046ed0101514c63ecc40ccf36061f3f399c152681a831259a1d14235ad13fe",
+      "bytes": 51964,
+      "sha256": "1eacae22b83af0f2280184cc766078aba356359a7b339e5a4f759b1c5c599884",
       "size": [
         640,
         160
@@ -12988,8 +12988,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-walk-left.webp",
-      "bytes": 64806,
-      "sha256": "837370e060ab04b59b2d4ee9875c2c5463b78b92b56c3161d16cede271871a40",
+      "bytes": 54234,
+      "sha256": "b7c41e1e964d86837fad9779c005aa7cfb68e12aa37685578474bef3d980740b",
       "size": [
         640,
         160
@@ -12998,8 +12998,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-walk-right.webp",
-      "bytes": 68748,
-      "sha256": "51c94417cd2126dc1cea2c4cca1052fe1fedd71e5954809a055d59a391411916",
+      "bytes": 56618,
+      "sha256": "9b98efcf222b06832516064c8d2a5410dcf29303c3c7a9c6f62e6920ad8810a5",
       "size": [
         640,
         160
@@ -13008,8 +13008,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-walk-up.webp",
-      "bytes": 56006,
-      "sha256": "1c572ad1fe8466f092f2423583e3f895262370e0dd20d897a9910789e6cbab3a",
+      "bytes": 47160,
+      "sha256": "aeaa28a33557b0e170c9113127a045f4e33352edbdd1e694264dd8b4d086f750",
       "size": [
         640,
         160
@@ -13018,8 +13018,8 @@
     },
     {
       "file": "sky-island/npcs/npc-artist-wave.webp",
-      "bytes": 64320,
-      "sha256": "3dee203f76e10ddc63f2ebe7ffb33b6725ef45c3ec2299139ebc8d6d4faf1459",
+      "bytes": 53070,
+      "sha256": "2c82adc351267def8f10b3a4215bccfdece2a19079e94297e763beb431c73bcd",
       "size": [
         640,
         160
@@ -13028,8 +13028,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-direction-down.webp",
-      "bytes": 16220,
-      "sha256": "47e255224fcd20f8876cde5774267c901ff14b0bd5a41a43db258eb7ed7d9a46",
+      "bytes": 14160,
+      "sha256": "226372d7b0d6bb3aefab825bfc4a4b077ed2c230ea1a26ebcf66938a55790d62",
       "size": [
         160,
         160
@@ -13038,8 +13038,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-direction-left.webp",
-      "bytes": 16738,
-      "sha256": "e66022cb853943a11f9f730c8999a79737cc78a82a660294cb40596c0b5cb13c",
+      "bytes": 14998,
+      "sha256": "8ef7ff21fc4aa25d67f3a0ef0bcd9526de5afb9a1d601e92f765154793981b7e",
       "size": [
         160,
         160
@@ -13048,8 +13048,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-direction-right.webp",
-      "bytes": 16768,
-      "sha256": "2868e460d4b90785e9176994366e09f66ddc0ae18a98a6fb30a3316da8037316",
+      "bytes": 14902,
+      "sha256": "551e1db5537bea6361569bcf4b9f2822cf6827b4c7e3c1e9073a315418684a42",
       "size": [
         160,
         160
@@ -13058,8 +13058,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-direction-up.webp",
-      "bytes": 16300,
-      "sha256": "7b4b5e15b86549a6cf26b6242142f8d82af08e2bcf25e810a92362b78de81796",
+      "bytes": 14470,
+      "sha256": "2a59616d665c149e0aedbf187e903a00797beb33144c4ed58dc75fe0caf4ef52",
       "size": [
         160,
         160
@@ -13068,8 +13068,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-draw-down.webp",
-      "bytes": 64392,
-      "sha256": "a04f2fcd7cb8043ad06f2b3d212dc3fa92aa963517f6891b6b2784b1d05977e6",
+      "bytes": 56402,
+      "sha256": "66becc4383c03f1d91ea0fb0e7b7e619e03cc8eb77c48cf071790dd22d7c6716",
       "size": [
         640,
         160
@@ -13078,8 +13078,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-draw-left.webp",
-      "bytes": 67008,
-      "sha256": "7f67c093c2fbc12528fe4aa9a378179efa89e6f767b0dbd96aee246f7a35cab7",
+      "bytes": 58526,
+      "sha256": "98fe311d4ca537f743040286ea4d36cccee325afa21cd50de31280c6cb63022b",
       "size": [
         640,
         160
@@ -13088,8 +13088,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-draw-right.webp",
-      "bytes": 67180,
-      "sha256": "9107c7a32d055fa72a65461d578b4848f04d390e5a91b7692fe662a3bee917e3",
+      "bytes": 58716,
+      "sha256": "328a7ba367444fd04db9d1ead9deee0100a1b64241ceb87fc0958896aabfb9fe",
       "size": [
         640,
         160
@@ -13098,8 +13098,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-draw-up.webp",
-      "bytes": 65824,
-      "sha256": "46232c7560298b516665106a8531f21cdb7d2cd1efc0f655d7a999cec2d0f13f",
+      "bytes": 57178,
+      "sha256": "049b50078370eb8ba9c06c8b3c041ce56af20662a5bc391ca2f451487ea04135",
       "size": [
         640,
         160
@@ -13108,8 +13108,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-review-down.webp",
-      "bytes": 47428,
-      "sha256": "5455c495cb5f3a8c429ff49d04f1fada6319c408362cb35ada14bcd94de03cd1",
+      "bytes": 40636,
+      "sha256": "df1bf9234dc93d50984a3118e96840e817ec6233eea23cdebb660b82b369ce8d",
       "size": [
         640,
         160
@@ -13118,8 +13118,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-review-left.webp",
-      "bytes": 48328,
-      "sha256": "3ca177982293190a7e4109d655b95e040cf9b7e69f145ff2d78f71abcd4caaac",
+      "bytes": 42874,
+      "sha256": "8538edb315f7d969a7ba41dcea56782d1459a7b168c6dc15fd0048754d61efe0",
       "size": [
         640,
         160
@@ -13128,8 +13128,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-review-right.webp",
-      "bytes": 48572,
-      "sha256": "af01c8dfa81e482a21b550b67d61ac690ace387493dae1d84857faf8d298de8d",
+      "bytes": 42204,
+      "sha256": "a8d2015e03bacfbc4b26801175eff222af21f2fd4cbd0b0d12b350a6bccd34bb",
       "size": [
         640,
         160
@@ -13138,8 +13138,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-review-up.webp",
-      "bytes": 50234,
-      "sha256": "132b0dc6f4da7f78683111b3b2d09393cbca6a42ffe2c5b2f1688b5bfcfc529e",
+      "bytes": 41366,
+      "sha256": "5f0675ca3b1b9e2ea887f6552054d91d3d790c293d313b9648fd8696059dad67",
       "size": [
         640,
         160
@@ -13148,8 +13148,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-sit.webp",
-      "bytes": 62916,
-      "sha256": "d5d58fc343a6bdb871de90f5fc1b75bcdcbaa8c17adc09bed893bc3e2a3340f1",
+      "bytes": 56150,
+      "sha256": "88f911cea6d9f9f203d5e9a0da8a9ce700165018d72ab6ea94f0b32bff832556",
       "size": [
         640,
         160
@@ -13158,8 +13158,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-state-draw.webp",
-      "bytes": 16668,
-      "sha256": "87bf4494fdbd319d8ffc460f723d4d3faf21132e58329fa102649a68382dff0c",
+      "bytes": 14584,
+      "sha256": "e54bb0c830c3526ab49cfc77470fe423a363e22cda355cbc009e9a3edae3e82e",
       "size": [
         160,
         160
@@ -13168,8 +13168,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-state-review.webp",
-      "bytes": 16220,
-      "sha256": "47e255224fcd20f8876cde5774267c901ff14b0bd5a41a43db258eb7ed7d9a46",
+      "bytes": 14160,
+      "sha256": "226372d7b0d6bb3aefab825bfc4a4b077ed2c230ea1a26ebcf66938a55790d62",
       "size": [
         160,
         160
@@ -13178,8 +13178,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-state-talk.webp",
-      "bytes": 16658,
-      "sha256": "7db798c5f7509711af84641cfaa453e6161b7029967581e797fb3365e0385b6d",
+      "bytes": 14314,
+      "sha256": "2a9696861010bee0f8e7cdcf65e4089b2292407bbbca2c84db07318f44977b30",
       "size": [
         160,
         160
@@ -13188,8 +13188,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-talk-down.webp",
-      "bytes": 64630,
-      "sha256": "e14670139ab5bef794278766a0cbb6d168a515002b63e7543e64c4d4f2af6b42",
+      "bytes": 56152,
+      "sha256": "0cb320954419c2541570f0c959f6c401d6cae76887c22cf94d1df6176667cbde",
       "size": [
         640,
         160
@@ -13198,8 +13198,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-talk-left.webp",
-      "bytes": 67238,
-      "sha256": "15cc51bed6f0a07165f2474fea1ec1803908b31ee8e1c45a29a64769d61ad283",
+      "bytes": 58050,
+      "sha256": "339e1737d06670eca9bfbf9e902afd9c7a13e7847de9c1720caf0fa12918c990",
       "size": [
         640,
         160
@@ -13208,8 +13208,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-talk-right.webp",
-      "bytes": 66938,
-      "sha256": "ef0d63be9d707d95d404fceac254d347d12f3cb1e56b2d36995f6a6590e5c6ae",
+      "bytes": 58300,
+      "sha256": "7ff26a5011a75cb7991f8f00e8d96b65d7ebe9a85cccb8d68d828590da5f7f33",
       "size": [
         640,
         160
@@ -13218,8 +13218,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-talk-up.webp",
-      "bytes": 65736,
-      "sha256": "fdaa997751a6d817c87b3d737d6cbf7ceb2bf4eeb6336e9729baf2deed41cab6",
+      "bytes": 57164,
+      "sha256": "8ecb7053733526b1af74d106db922018f851f67c23bad3f1880e4a50a16f3f5b",
       "size": [
         640,
         160
@@ -13228,8 +13228,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-walk-down.webp",
-      "bytes": 61976,
-      "sha256": "de9c73651eaff7d843fcc4f9e7e6eb2947604916fabfcffec392322f33f24f75",
+      "bytes": 55056,
+      "sha256": "4eaf0ae05027e41c5e160b3d5b19151426feffb9b470793d06521a1f3da33746",
       "size": [
         640,
         160
@@ -13238,8 +13238,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-walk-left.webp",
-      "bytes": 65204,
-      "sha256": "85274ca12dcba5b58c0f76a22f31100960094fa53239ba5c88a8c055f973d6c3",
+      "bytes": 58214,
+      "sha256": "a1df6eed409666836d138ffde7eafc3a96ab0aaaa34a56d7af39cca308087a5d",
       "size": [
         640,
         160
@@ -13248,8 +13248,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-walk-right.webp",
-      "bytes": 65820,
-      "sha256": "eb8f1e387ec88f4af0b4ed6c87e1dfedde39078dded8eae2fd15fdaf46631c90",
+      "bytes": 58324,
+      "sha256": "0cde9d71f00772a7b25aa7d84cdf5736650fcc6d6e5da98209787fbac69c1829",
       "size": [
         640,
         160
@@ -13258,8 +13258,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-walk-up.webp",
-      "bytes": 60920,
-      "sha256": "5f7753d5f7aa9e60cf81eb7e3352d74941761b670be57f23c361932075d85fe9",
+      "bytes": 53982,
+      "sha256": "2fbad290a39b4c9afdb7bfa8bd1e5146515e458bda40304eca3336c1860c5a83",
       "size": [
         640,
         160
@@ -13268,8 +13268,8 @@
     },
     {
       "file": "sky-island/npcs/npc-cafe-wave.webp",
-      "bytes": 66596,
-      "sha256": "cd23961875d7ebd3b6ec51095de73a7b10407439dea2fcc34f4dd122a539673a",
+      "bytes": 57872,
+      "sha256": "fe1c217dcd3ca3e68faf805b3046924f7c73ea81490289cedef1b79878285e5d",
       "size": [
         640,
         160
@@ -13278,8 +13278,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-direction-down.webp",
-      "bytes": 16238,
-      "sha256": "cb257d4cba9530e56f3e8b9003ed6ad8495f7429af27c5a33955df556903cfe9",
+      "bytes": 14330,
+      "sha256": "11a4d1ee77c085f19c956d428e21b190d8448eadd73f1c00ac2cdaac299f7ade",
       "size": [
         160,
         160
@@ -13288,8 +13288,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-direction-left.webp",
-      "bytes": 15758,
-      "sha256": "5b90680f62a851730f5ee93a0d7d9f677d6f44ab1640d3e2e9f922f970880655",
+      "bytes": 14054,
+      "sha256": "c5b50b8fc842c2a64cc7cbb0db1729bcbd431764fbbe332c2d43675a193b291e",
       "size": [
         160,
         160
@@ -13298,8 +13298,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-direction-right.webp",
-      "bytes": 15824,
-      "sha256": "d501fe09b199b3168e6b93b4c1bfd640240967f9b59671c4fec6f28715361064",
+      "bytes": 14034,
+      "sha256": "7b6722afedb05592a86ea36878645fcfaf9b50f7622e5692e749c96f54957f23",
       "size": [
         160,
         160
@@ -13308,8 +13308,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-direction-up.webp",
-      "bytes": 16644,
-      "sha256": "70546e442a70f4e28369507e8e16ae45ee6922b54bab1a1465e2fd17b5f88a73",
+      "bytes": 14204,
+      "sha256": "efda93d42e443e058811cb2d398b3ed6c348cce0d3aa972e4616cd717e28e4c9",
       "size": [
         160,
         160
@@ -13318,8 +13318,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-draw-down.webp",
-      "bytes": 64970,
-      "sha256": "34dab056ba15fca84ed0490e3548841f79b0c52c3f86d92493e866fd9f2cb41f",
+      "bytes": 55614,
+      "sha256": "646c965bddbf619ce43761fec4572ce1e24ef156dc7c29ce01b1fe7a1bc89a09",
       "size": [
         640,
         160
@@ -13328,8 +13328,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-draw-left.webp",
-      "bytes": 63006,
-      "sha256": "39315eafcb84f13223d666db93f9df18ea14cc63d4ca3ada0483b7941490aa58",
+      "bytes": 55170,
+      "sha256": "df1fbec09543489e60dca8965f25517ab8d8f99a9b218c758b85881fb1889725",
       "size": [
         640,
         160
@@ -13338,8 +13338,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-draw-right.webp",
-      "bytes": 63038,
-      "sha256": "72d9a8a2e4b879352f14d7fb0c32d0a0d95827bc8caeb1b11e58e2963132509a",
+      "bytes": 55450,
+      "sha256": "8c112d33a45f95fd50e9803271a0aa67ee9578ee2f46f0c1253338979081f53d",
       "size": [
         640,
         160
@@ -13348,8 +13348,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-draw-up.webp",
-      "bytes": 67262,
-      "sha256": "58944766173be92d2c8e95510cbe5944fa1ae31bcf247bde37abf6ea438602c4",
+      "bytes": 56796,
+      "sha256": "deb4188c497fb5eaeb4713efb4bcb99f44fddad16f604413d4aa54bf06e93aa6",
       "size": [
         640,
         160
@@ -13358,8 +13358,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-review-down.webp",
-      "bytes": 47588,
-      "sha256": "307788550035524c6a0a81161d5ef22192190b6ec75e73c6f9e2205c84dbad9c",
+      "bytes": 41128,
+      "sha256": "059b374c651dbee37ac9d6b4ad82bb6801647f1caa2a5456208c4ea83ef3a689",
       "size": [
         640,
         160
@@ -13368,8 +13368,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-review-left.webp",
-      "bytes": 46916,
-      "sha256": "d3854cabd676ccce51721f24bf790a4243e5123ffa3c6c4c2a29bfc3b391e3e0",
+      "bytes": 40710,
+      "sha256": "fab1af2561b74c2dbe1a565add933f7df78440382a2f5fcd7ebeb9b9694fa3c3",
       "size": [
         640,
         160
@@ -13378,8 +13378,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-review-right.webp",
-      "bytes": 49462,
-      "sha256": "ea43b07fda94b689d678c0f43f7884ae8f894a9d944e646bdbde666bf340ca80",
+      "bytes": 40698,
+      "sha256": "8c9f8ed09d14b2b8d58f9eecb8c6777d1fba14cf6962da07f6192ccbae0c8000",
       "size": [
         640,
         160
@@ -13388,8 +13388,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-review-up.webp",
-      "bytes": 51734,
-      "sha256": "cb12be6dbea0303ee97dea218fcb29aa1c35fcbba408a617b31cf7f70ed9dee1",
+      "bytes": 40082,
+      "sha256": "226aa0b74ddbf7897795f7ae87d519a55ecfacf61f3b369583bc4934310cdfd8",
       "size": [
         640,
         160
@@ -13398,8 +13398,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-sit.webp",
-      "bytes": 62450,
-      "sha256": "05587b4b45af0857fa972ee5a70ef56186528c95dbaa39ef95e8da121d39dd7c",
+      "bytes": 54600,
+      "sha256": "5bf0dd0e8da9854e7f696fe66a84236c7e328f69a7c05f93d58a015afc0c3d0d",
       "size": [
         640,
         160
@@ -13408,8 +13408,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-state-draw.webp",
-      "bytes": 16734,
-      "sha256": "78cb60cb828f5e93072eee27daf66a4c61757bad9a5822c7f7f6647c0d8488d0",
+      "bytes": 14416,
+      "sha256": "42057719803a57f329585982170dc79f8630a5071c5fe9c3ccac6504519949f5",
       "size": [
         160,
         160
@@ -13418,8 +13418,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-state-review.webp",
-      "bytes": 16238,
-      "sha256": "cb257d4cba9530e56f3e8b9003ed6ad8495f7429af27c5a33955df556903cfe9",
+      "bytes": 14330,
+      "sha256": "11a4d1ee77c085f19c956d428e21b190d8448eadd73f1c00ac2cdaac299f7ade",
       "size": [
         160,
         160
@@ -13428,8 +13428,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-state-talk.webp",
-      "bytes": 16802,
-      "sha256": "21ba004cb21856cd369f76cd2a7d75aff92ab2707fc51e93189c42980c47204f",
+      "bytes": 14306,
+      "sha256": "04181259400aa681201babcf28d732913ea49315bc94297d3cb7b68f9f709629",
       "size": [
         160,
         160
@@ -13438,8 +13438,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-talk-down.webp",
-      "bytes": 64868,
-      "sha256": "97d271b24de3882ce505852fe30dc9d5f5b93d28efad6fe8556cadf83b317863",
+      "bytes": 55234,
+      "sha256": "fd0c09fe52d9fc80e4d503be78e54d95947cc73876c92d72b193cb439ebb4063",
       "size": [
         640,
         160
@@ -13448,8 +13448,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-talk-left.webp",
-      "bytes": 63232,
-      "sha256": "74534b7813bd2989783323563f7fa74fd83a8f793483b927343b75f982d850b2",
+      "bytes": 54944,
+      "sha256": "bf89fa788f22daa78cba53f7b2cf43e33663ac2e4b61798d4d586f6444a33447",
       "size": [
         640,
         160
@@ -13458,8 +13458,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-talk-right.webp",
-      "bytes": 63116,
-      "sha256": "3cdc416ea57c00d3733359d5f3345459ed07d622833a368fa6efe52919dccc52",
+      "bytes": 55040,
+      "sha256": "98b87348604b189bb447bc04577f44ac4d98873ce05ce2c0cce69a2d2b039694",
       "size": [
         640,
         160
@@ -13468,8 +13468,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-talk-up.webp",
-      "bytes": 66970,
-      "sha256": "fb6085f47acc79c20304faecee47a4de151e0579bb3f2e7101f5a3164d80a6b9",
+      "bytes": 56654,
+      "sha256": "11d8a23bd958fb72c736260142396a386bdaba89501bfe16ef6bfd4610426495",
       "size": [
         640,
         160
@@ -13478,8 +13478,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-walk-down.webp",
-      "bytes": 64024,
-      "sha256": "306e17c8f82fcac8353f8e7c09eafe9b8d041ca6a40778cb561a95511d7e3292",
+      "bytes": 55706,
+      "sha256": "49dc1739700f55add88733cc21e0d9b5f3de4e806e169ebc52342ea6958645f3",
       "size": [
         640,
         160
@@ -13488,8 +13488,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-walk-left.webp",
-      "bytes": 61832,
-      "sha256": "28e2ba8a82a9081469a9a7e4420addd5a60a0af041f1122bb6bf6e08d3bbd867",
+      "bytes": 54546,
+      "sha256": "424185a4e55c2b30ac14f58eec6412c81b4d36a743fe8fc2b7cc6af9ac2bd987",
       "size": [
         640,
         160
@@ -13498,8 +13498,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-walk-right.webp",
-      "bytes": 63544,
-      "sha256": "870eaf96235f786f74b445fef83137da8130c1f238951dcf6bcad9e783f5e7de",
+      "bytes": 55992,
+      "sha256": "f53a748bcd4fd9c18171a9e97304bbd3b658f13a012803e62b3403ba26ec08aa",
       "size": [
         640,
         160
@@ -13508,8 +13508,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-walk-up.webp",
-      "bytes": 66266,
-      "sha256": "895ef1ccba384e25ce335d6225b27d190767168c40eee0bba5bdaf7f1c53936c",
+      "bytes": 56030,
+      "sha256": "61618138edddd63fde80db834ea4b5e3045d1f0b5d9275e8fd11c6a0fd7d3892",
       "size": [
         640,
         160
@@ -13518,8 +13518,8 @@
     },
     {
       "file": "sky-island/npcs/npc-concierge-wave.webp",
-      "bytes": 64424,
-      "sha256": "10ba4fee4d8d24d0a22772d6d1c8d214d39d47df9e4194fb6c5db17228f9f4b1",
+      "bytes": 56046,
+      "sha256": "04f2b8b3de0b20471a7fb39f065229b323e4102b8279de1b0f8acaa1b6d5b298",
       "size": [
         640,
         160
@@ -13528,8 +13528,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-direction-down.webp",
-      "bytes": 13700,
-      "sha256": "1b4a14588b29b70c05e7a0dea857a7bcf196b77d74177b2a2fe1cbd57b651579",
+      "bytes": 12390,
+      "sha256": "221d9ff4b83e337181d6526b9b3802c58fa55c4c16f92aec4fcdb38da14b5e36",
       "size": [
         160,
         160
@@ -13538,8 +13538,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-direction-left.webp",
-      "bytes": 14928,
-      "sha256": "59fd63d5aa8175df17756f84bc3d4b764e61cfd76a8e4417466564fcdd7d65de",
+      "bytes": 13310,
+      "sha256": "ec08fedbf05bc2b84b97579e89d15319cac23a03f22dcbd3a31d4368e01f739d",
       "size": [
         160,
         160
@@ -13548,8 +13548,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-direction-right.webp",
-      "bytes": 15228,
-      "sha256": "167941e5af8658545151fdc271ffea0d3ea72840cf26405a3b829b0858cd97f2",
+      "bytes": 13448,
+      "sha256": "9092f3b604cfa0bd59a46e539daed1519d5f499d36ce935c2b7ac354a238ac3a",
       "size": [
         160,
         160
@@ -13558,8 +13558,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-direction-up.webp",
-      "bytes": 13776,
-      "sha256": "28b27b871b89eeec90947382f06d64867ab513eeb2314af33746ae2badfc4711",
+      "bytes": 12346,
+      "sha256": "3492f358a6f61c282ba7b9ff39ffc481363ecfbdf2994f3b4dcf274b8d2179d4",
       "size": [
         160,
         160
@@ -13568,8 +13568,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-draw-down.webp",
-      "bytes": 53796,
-      "sha256": "a58606830443991c3e39b4dc59c7714caaa7c211a6d4268000153896954d5863",
+      "bytes": 47778,
+      "sha256": "b1eaeec7ac91bafef21ca69a102cf8d0978295ee797bf83fbd0a514234e0c603",
       "size": [
         640,
         160
@@ -13578,8 +13578,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-draw-left.webp",
-      "bytes": 60026,
-      "sha256": "2f670bb4c329d9882226e79a48b9a47e63a44f394c5b20d6fa2267fc34b82bfd",
+      "bytes": 51998,
+      "sha256": "4a34a2859ee0f502bc87852309742015557827d378ba31955585bf132e9a0324",
       "size": [
         640,
         160
@@ -13588,8 +13588,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-draw-right.webp",
-      "bytes": 60134,
-      "sha256": "5e987d8dbd894a444d6158c238c8265ed04187aa41fbe65cc7f18d81961a0dcf",
+      "bytes": 52702,
+      "sha256": "c8401ba59813a669b09e002f4290f05c7ee794d0553123ea5de46744d09323e1",
       "size": [
         640,
         160
@@ -13598,8 +13598,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-draw-up.webp",
-      "bytes": 54608,
-      "sha256": "4a2bf181e77972924f8a8a0bf52bec3f51c60db7a264597c882345f8d265985b",
+      "bytes": 48324,
+      "sha256": "b01e06b0767b6836f3c56b293a9e2f265d61b327fd77fff08340f761ad21a728",
       "size": [
         640,
         160
@@ -13608,8 +13608,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-review-down.webp",
-      "bytes": 40694,
-      "sha256": "2e76bf6e9d9e35852fb028fe55ba53c77e067cc3e9da15796693a709b924a4e5",
+      "bytes": 36566,
+      "sha256": "3fffe81fe3d92433065fba60866ac0672260b5005980dfc8194a954556d6b5d5",
       "size": [
         640,
         160
@@ -13618,8 +13618,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-review-left.webp",
-      "bytes": 44328,
-      "sha256": "85210242c032ba13368cd1346dd1ae89f21baf9c32d8134bafb767c5bb136c40",
+      "bytes": 39058,
+      "sha256": "42fa61ee93f17d6657ae7453dee6d39f2f653ca9b1761f140bec098b2f341ff9",
       "size": [
         640,
         160
@@ -13628,8 +13628,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-review-right.webp",
-      "bytes": 44300,
-      "sha256": "d6d0be0dbc5931a458a82bb4cd4146de3482200dc04da7bd3922d5ea7fccef10",
+      "bytes": 38646,
+      "sha256": "3538cb340a75ee300f9a5750e06d168bb0c2c957b253187f42a8ca540edbb29b",
       "size": [
         640,
         160
@@ -13638,8 +13638,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-review-up.webp",
-      "bytes": 40140,
-      "sha256": "5825129dad68d8954e785bc3bc009028bb23ed47ed53b49cb77a8569e9be0489",
+      "bytes": 35646,
+      "sha256": "05e2c6524f74a7752d247a264b77d510e586c903c99c1c89b07b94bc375c8a59",
       "size": [
         640,
         160
@@ -13648,8 +13648,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-sit.webp",
-      "bytes": 54668,
-      "sha256": "09e9231c47f2531f4caeb2e1b3ee09d4d7393f2120f213e0c596b0ac0a808590",
+      "bytes": 49328,
+      "sha256": "165d61ec2d91821371d991cbd72bcadf480e58cf5406c346db710a676f04cd1f",
       "size": [
         640,
         160
@@ -13658,8 +13658,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-state-draw.webp",
-      "bytes": 14006,
-      "sha256": "92287256ef315a7be7ebb7f754f8b450491dfe3f297d221baa2d5ce6027375c9",
+      "bytes": 12324,
+      "sha256": "f7e5441b6a383f23ce77c1b643abeaedd91e3b0fda80e96c5f3d1a93433adad4",
       "size": [
         160,
         160
@@ -13668,8 +13668,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-state-review.webp",
-      "bytes": 13700,
-      "sha256": "1b4a14588b29b70c05e7a0dea857a7bcf196b77d74177b2a2fe1cbd57b651579",
+      "bytes": 12390,
+      "sha256": "221d9ff4b83e337181d6526b9b3802c58fa55c4c16f92aec4fcdb38da14b5e36",
       "size": [
         160,
         160
@@ -13678,8 +13678,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-state-talk.webp",
-      "bytes": 14020,
-      "sha256": "03724dd1a2041ff37f9b85120722f152d05212c652b3aac8957bfeb02619f8c7",
+      "bytes": 12314,
+      "sha256": "4fa93bf63b18b5a54ff501c133387b17ef6fd49d0dbffc627cacc7a573c20399",
       "size": [
         160,
         160
@@ -13688,8 +13688,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-talk-down.webp",
-      "bytes": 53978,
-      "sha256": "37010af634631a9471a54032bf46288e9b9a38933b602e8e841359d09c30c002",
+      "bytes": 47422,
+      "sha256": "9e36a77dd0a5d74aa446c730a4051ef2e1f802575d66b48b32460392eb645d0f",
       "size": [
         640,
         160
@@ -13698,8 +13698,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-talk-left.webp",
-      "bytes": 59644,
-      "sha256": "f2df7a60a0f3a04a1b57c6d67c1f515400b2aec0899c4dd5a7f3e3b917415acc",
+      "bytes": 51472,
+      "sha256": "06af4a330253b5a381caa0d6e6f83abf014627d461f76356bd0b9e6fe67004db",
       "size": [
         640,
         160
@@ -13708,8 +13708,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-talk-right.webp",
-      "bytes": 60024,
-      "sha256": "0550fbb7eb358eee92c3c5445a05a528de221ec7855f90795eff16abe52381b5",
+      "bytes": 52580,
+      "sha256": "6a401009b697678f84760fcf0258679b0149fc354f745729f185b44ed098b5fa",
       "size": [
         640,
         160
@@ -13718,8 +13718,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-talk-up.webp",
-      "bytes": 54840,
-      "sha256": "eef193eea6d88f7686a496c76d32ed2ae62a2008d4ee2f11660f309b93a001aa",
+      "bytes": 47994,
+      "sha256": "066ebf28f39319a352567348cf79bcf46e17ede959236c222404109f5dee718c",
       "size": [
         640,
         160
@@ -13728,8 +13728,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-walk-down.webp",
-      "bytes": 53148,
-      "sha256": "7ec5543b6dd090afe4c0610912e497ba78b310081e74d5805a21291c9661cefd",
+      "bytes": 47876,
+      "sha256": "1d89f69891aee8ee7eda51cf31d2909a9160198b31565f0db5f34566fbbf478f",
       "size": [
         640,
         160
@@ -13738,8 +13738,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-walk-left.webp",
-      "bytes": 58950,
-      "sha256": "e51faa938fc4a40d893b37296ac25b6b56eed4436eedd46d370dc8442e92c077",
+      "bytes": 51942,
+      "sha256": "eeb3ae67c6d28b26cc4b4be087a0731d706a6d23445a07f0a9b9fef11adc9647",
       "size": [
         640,
         160
@@ -13748,8 +13748,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-walk-right.webp",
-      "bytes": 59016,
-      "sha256": "deb83ba272f8f8c8275ef53919889f713d02ec0c8c61db0814284aa3e5318480",
+      "bytes": 52454,
+      "sha256": "9639f1526521da7a30230fd696fea879d3afc5a136143820274cbaa3f796be5f",
       "size": [
         640,
         160
@@ -13758,8 +13758,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-walk-up.webp",
-      "bytes": 53072,
-      "sha256": "f4f949fd370a0fd2bb8ae8171d4a17df02e991ed53e368ddd95d6256f2176228",
+      "bytes": 47724,
+      "sha256": "c593c29417264bc71ca569e9dca4bdb8a6809ac8ff13c5effe4b0b0f6bb564ea",
       "size": [
         640,
         160
@@ -13768,8 +13768,8 @@
     },
     {
       "file": "sky-island/npcs/npc-editor-wave.webp",
-      "bytes": 57202,
-      "sha256": "5d24d8199923c7dd41e923dd9bb2779e7a76265ad76d3b5dcf91c9a95fdcd3b9",
+      "bytes": 49992,
+      "sha256": "d56d5bfee4e1a1aeccb2371dbafa8355ae109ab3668661f3542b960da8b5806a",
       "size": [
         640,
         160
@@ -13778,8 +13778,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-direction-down.webp",
-      "bytes": 15542,
-      "sha256": "eb7b4f0bfcef774362922061ba0ae06f67819f16a6849869620b607107d85697",
+      "bytes": 13456,
+      "sha256": "0b07ebfe34194e2b6dee15defe89bde50e361a3f8a306f0692dc589ca9af1817",
       "size": [
         160,
         160
@@ -13788,8 +13788,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-direction-left.webp",
-      "bytes": 17044,
-      "sha256": "164b608d95a983f718467596448c4aae64198f004fc6d104096ba77153f29681",
+      "bytes": 14974,
+      "sha256": "4455a8b038930d480eff7b90d581bc42b010d2489a1318b69f95dd45ee3eff58",
       "size": [
         160,
         160
@@ -13798,8 +13798,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-direction-right.webp",
-      "bytes": 16580,
-      "sha256": "004ed272cbf16a63556c5beb95cdbae90c5883e8e5ba604319b33f5e0736faa5",
+      "bytes": 14550,
+      "sha256": "a718562413cc8f121e36cf03a5171acd61064dace9b2b2514526eaf4cd938e0f",
       "size": [
         160,
         160
@@ -13808,8 +13808,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-direction-up.webp",
-      "bytes": 16184,
-      "sha256": "587f0761630ecc61ead17babf29455ae2e8da54a6048cd9789e8c39af325e9ca",
+      "bytes": 14186,
+      "sha256": "4c1c9a7db21888a9a2d657325a0656d55182e86d62fd41faa92888ffcffca4bd",
       "size": [
         160,
         160
@@ -13818,8 +13818,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-draw-down.webp",
-      "bytes": 61740,
-      "sha256": "0785401995cfb842d5b23ab47bd9164f90f4eff3eae2bb1a70d47a011936e54f",
+      "bytes": 52870,
+      "sha256": "5d7a8cee5b4a8be7cb4f561e01b46f9c64126e7e5dd9326fd66772b72faee950",
       "size": [
         640,
         160
@@ -13828,8 +13828,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-draw-left.webp",
-      "bytes": 67874,
-      "sha256": "6988590d7c6fbd25341fe4830a5d9e8cf2d3ee9c29152915863bef4989c2842f",
+      "bytes": 59346,
+      "sha256": "9ad758cc223af5b28c134e8c1e9d27187661b156e582a20b9477f5afb8e083d1",
       "size": [
         640,
         160
@@ -13838,8 +13838,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-draw-right.webp",
-      "bytes": 65958,
-      "sha256": "35644b0088a7157168d6075a0b8848f29ca91da6f031e436d9261fde87da2535",
+      "bytes": 57102,
+      "sha256": "2a992b6c99356d95f5c389d6eddc824e09263e6f33bf106241c04d45d477716f",
       "size": [
         640,
         160
@@ -13848,8 +13848,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-draw-up.webp",
-      "bytes": 64724,
-      "sha256": "4c0f1153cbee7f6ebdd39997e432fd0191bdc78b59a8e94b35ff4438af5d064d",
+      "bytes": 55946,
+      "sha256": "be8bde1a93071b2dc666c7064392ed3b77542c95e5af48ee2e1f0a3bf9f477ba",
       "size": [
         640,
         160
@@ -13858,8 +13858,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-review-down.webp",
-      "bytes": 47120,
-      "sha256": "904f0654d2bd853b3cc4641af94bccf7d76c6bd17744dac6e933dcec80c0edcb",
+      "bytes": 40446,
+      "sha256": "7344472623c67e806f410318b88ef04cc92356cdc5669a7a66e191de969c91f5",
       "size": [
         640,
         160
@@ -13868,8 +13868,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-review-left.webp",
-      "bytes": 51900,
-      "sha256": "a74aede6852092e48a9211b7607e6c6cf5d6468019c58270f86036e4591f4422",
+      "bytes": 44960,
+      "sha256": "70486de36bd7ac22922432e45f48c0db52fa999ad1469df3b3c3e2f39585fe01",
       "size": [
         640,
         160
@@ -13878,8 +13878,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-review-right.webp",
-      "bytes": 49318,
-      "sha256": "25d5889238eade10090aa289f01601c6be6552b6047ad22e55d3837b796ffe58",
+      "bytes": 43662,
+      "sha256": "b6452e97a0bef7752504bbc1aebfa0deec33e8c1f161cf062e56fbb03ed6d1b8",
       "size": [
         640,
         160
@@ -13888,8 +13888,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-review-up.webp",
-      "bytes": 47646,
-      "sha256": "f027c67856f35d9ef4bf157f733e593a6744d75ea38c2695bcb516d14de4a3c9",
+      "bytes": 41096,
+      "sha256": "b6f2ade5aa3399ccfdcdecc938627e0a5e5db5087ded08f03b39f0d16f2a5644",
       "size": [
         640,
         160
@@ -13898,8 +13898,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-sit.webp",
-      "bytes": 62962,
-      "sha256": "457831bed495e47338511e7560bac533b5e0fa2ccd7cd3656beae0825e7a4645",
+      "bytes": 56388,
+      "sha256": "8b9a1ce2d65c316aa65d778736970be4537ec3d4828ddf66afdd464fd70e9bf6",
       "size": [
         640,
         160
@@ -13908,8 +13908,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-state-draw.webp",
-      "bytes": 15990,
-      "sha256": "c77f4f29d6407aeaad5b3270f0e2c610eabf7b498a52fec7f327a5ead6438af0",
+      "bytes": 13648,
+      "sha256": "da3f07ac6cb31343a7ddcc34cf6d91a2e5946b036cafd85dfacebbefc294e70d",
       "size": [
         160,
         160
@@ -13918,8 +13918,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-state-review.webp",
-      "bytes": 15542,
-      "sha256": "eb7b4f0bfcef774362922061ba0ae06f67819f16a6849869620b607107d85697",
+      "bytes": 13456,
+      "sha256": "0b07ebfe34194e2b6dee15defe89bde50e361a3f8a306f0692dc589ca9af1817",
       "size": [
         160,
         160
@@ -13928,8 +13928,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-state-talk.webp",
-      "bytes": 15872,
-      "sha256": "b6f9638dcc744ab55cbbbdfa3095ed2cdea40a43dc1594b4992270c82906ba21",
+      "bytes": 13560,
+      "sha256": "e251240ef5a52c8b454fe9bd747b1797c67ac3890d95553c463f065065aacddc",
       "size": [
         160,
         160
@@ -13938,8 +13938,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-talk-down.webp",
-      "bytes": 61662,
-      "sha256": "bdebe89d39c860e3e1622ed89781f255abf1dae3307ff17010660ccc18b100f5",
+      "bytes": 52356,
+      "sha256": "9ccc90d2becb079d1cbb17c6236dfd11d4ae85896ba587e82f61ece92db85e49",
       "size": [
         640,
         160
@@ -13948,8 +13948,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-talk-left.webp",
-      "bytes": 67898,
-      "sha256": "f87915ed9b4212f81038b942c1e9d1dc21bc29723e68476ab865e2da9b24bd02",
+      "bytes": 59458,
+      "sha256": "3127f564eb5bc528088de78fec7238e3fdadc6d44ee8876d13d0f92c3c9b9a15",
       "size": [
         640,
         160
@@ -13958,8 +13958,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-talk-right.webp",
-      "bytes": 65916,
-      "sha256": "bb7f786e6fd4f707932fb554ad208c0a823d0a9ede22491f8e09c01100d41e61",
+      "bytes": 56824,
+      "sha256": "7d45d3b132ec46995d530f6549c194591bb8cfb9568e003a36cb2d98c76ebed5",
       "size": [
         640,
         160
@@ -13968,8 +13968,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-talk-up.webp",
-      "bytes": 64600,
-      "sha256": "cc533d74ef57e8f1fa35531f52cbafe1ca7d3630187ac99c895ee3aae25dc391",
+      "bytes": 56038,
+      "sha256": "188ae41d5e68e88915c86422162b1a548b23251b540bcf0222840290eb4bf5c6",
       "size": [
         640,
         160
@@ -13978,8 +13978,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-walk-down.webp",
-      "bytes": 60316,
-      "sha256": "5f5ccf904e8086af24325378556fd7d59437b8614ddb160b3776b3a24a65fe7b",
+      "bytes": 53702,
+      "sha256": "ccce548db3f574d23f59351be948e39922b53dfd446238e0bf89dd697d589eef",
       "size": [
         640,
         160
@@ -13988,8 +13988,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-walk-left.webp",
-      "bytes": 65936,
-      "sha256": "eca64d0636623fd169f14e0599ba030886e12745facb1d743e1d42c1ccb03c71",
+      "bytes": 58210,
+      "sha256": "cf864194dd021aa43fbf9a3df9306e194b914cc6daa288296161f5bfc5ab4dc1",
       "size": [
         640,
         160
@@ -13998,8 +13998,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-walk-right.webp",
-      "bytes": 65480,
-      "sha256": "0da2f613b7d95f7832bba94edfbd19020003453d707e047f79e6a0aa1099d015",
+      "bytes": 57942,
+      "sha256": "edaf6b6cbe725a773297ab1234a93b9dd6518925934df5ac7d8be17140e62661",
       "size": [
         640,
         160
@@ -14008,8 +14008,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-walk-up.webp",
-      "bytes": 62466,
-      "sha256": "1ce4e23852a0c118eedc33149d23adc648bcc553a56d8fb9f4d0a5b7bfdd3882",
+      "bytes": 54082,
+      "sha256": "30bfc1938e2a1ca839fab1397b97723336a6f2c10be7455685b9ef1203095db3",
       "size": [
         640,
         160
@@ -14018,8 +14018,8 @@
     },
     {
       "file": "sky-island/npcs/npc-host-wave.webp",
-      "bytes": 64878,
-      "sha256": "541b071fca692a9bc06bad2533935001710dad10d981497d606a35a107db1191",
+      "bytes": 55616,
+      "sha256": "2eb211b74b72f5f8f7a5a9bac4ea060acd33ae3c0fbf272b5c2545f6c7b8669e",
       "size": [
         640,
         160
@@ -14028,8 +14028,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-direction-down.webp",
-      "bytes": 13348,
-      "sha256": "f5c84a8adb432b4c897f0a427f305badbc11edb4f0ac25228a34ebd9760035b4",
+      "bytes": 12180,
+      "sha256": "5e65cd1033ac4386ebc4e343e37269a900732a8d55b9c297ee1d46d39d39fcee",
       "size": [
         160,
         160
@@ -14038,8 +14038,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-direction-left.webp",
-      "bytes": 14388,
-      "sha256": "254ecd1ace18dd13ad841634c36a2cc277e732004f0c6d4c539451b48c204c19",
+      "bytes": 12922,
+      "sha256": "d68ee1076083330bcc54dbc5763be4d142ddc1a29f114644ce914d14f2891054",
       "size": [
         160,
         160
@@ -14048,8 +14048,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-direction-right.webp",
-      "bytes": 13738,
-      "sha256": "362e8ce04561a47c6950d3f51e56be32b7ef04722e1f70ff2ce8d3a11416aa47",
+      "bytes": 12436,
+      "sha256": "44266f2cb5ec348c790f487207455b2d9c1abac0d7e2c7a6d348c3499ba1308f",
       "size": [
         160,
         160
@@ -14058,8 +14058,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-direction-up.webp",
-      "bytes": 12424,
-      "sha256": "3373fce32cd09bb727a05fa386832c6680d0a4e3f98ad3ec0f9f7b512318ed67",
+      "bytes": 11258,
+      "sha256": "26fba0523bfa0d46f09d6e2fc21765ad8ad980f2be7268d9a5280cff475b3a51",
       "size": [
         160,
         160
@@ -14068,8 +14068,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-draw-down.webp",
-      "bytes": 53058,
-      "sha256": "3b0c84c2bff5ad9bbf206761b9e91f495e9f75ea93db7f34c4812b978f4c9aea",
+      "bytes": 47674,
+      "sha256": "ed6fe2806a8aa8cd3a6100086e35e3374d3b04fed93fae74608ba7e0af5e9c07",
       "size": [
         640,
         160
@@ -14078,8 +14078,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-draw-left.webp",
-      "bytes": 56352,
-      "sha256": "1dfaae4a2e1dcf9c813a662284d29447933045630da809f9cad698ddca6a71e0",
+      "bytes": 50770,
+      "sha256": "fbe7c91018c382aa19a8f516dd23ec2aa2e518c48a3ce1a7b31cfb3b306772a5",
       "size": [
         640,
         160
@@ -14088,8 +14088,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-draw-right.webp",
-      "bytes": 53640,
-      "sha256": "4614df0d59aaf5b8794649581a79e2a9136087aa30f8ca358f41d269cc066507",
+      "bytes": 47608,
+      "sha256": "c646bf10ebeb49ccd259e9c4a94f9cc3680de081286c6a59b7c529fc37f0a3de",
       "size": [
         640,
         160
@@ -14098,8 +14098,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-draw-up.webp",
-      "bytes": 49590,
-      "sha256": "8a2002ea7c179eb6472a87135b0b0facc8c8a81e7d57150130d5079108b7709a",
+      "bytes": 44208,
+      "sha256": "abb7cab0968f5a2fe0af971400f42e5337ee3b573594354f4c11f003dc447118",
       "size": [
         640,
         160
@@ -14108,8 +14108,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-review-down.webp",
-      "bytes": 40156,
-      "sha256": "c3c6a15bbdb9d28622fc512870833fa206c72692f44bcba186d1bcdcc6759067",
+      "bytes": 36264,
+      "sha256": "b0015118bc83781d7fec90fbe9117db07665dd11c7acfddf85a959cfeb8b5965",
       "size": [
         640,
         160
@@ -14118,8 +14118,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-review-left.webp",
-      "bytes": 42418,
-      "sha256": "6b8b27806cc98530a3ef26f6f4650fbd75b54c2335d505a3f7b7b7af6145a962",
+      "bytes": 38158,
+      "sha256": "bbc02cd886f5b81b2c19edd2bb5757a9d347b4e60ad4406f5d61e2aeeee8bdc3",
       "size": [
         640,
         160
@@ -14128,8 +14128,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-review-right.webp",
-      "bytes": 40522,
-      "sha256": "61d6d394c771c8994be43c6c97694d83c2c3195665fd2d73b00b9c654a73d3ee",
+      "bytes": 36302,
+      "sha256": "a4499c31b541ca1aa101fac514c6c8f0ae9c6df18ff5133ca3338b7a83103830",
       "size": [
         640,
         160
@@ -14138,8 +14138,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-review-up.webp",
-      "bytes": 36146,
-      "sha256": "2438429368393a2270ad8dfcc20f108f90e8e37b5343df7933863a9864b94ebb",
+      "bytes": 32490,
+      "sha256": "d7efcf03b12e9656e2ff48931f35f7015f4507efb7b96b866cc4e1c92050d1df",
       "size": [
         640,
         160
@@ -14148,8 +14148,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-sit.webp",
-      "bytes": 51012,
-      "sha256": "caff3de1dfb03ff45eadd136ad2daa0886fec0ec959f5e6a8b434828898471d2",
+      "bytes": 46636,
+      "sha256": "fd1f7fa6c5c457a2900256e13cd36e1123dae9f281338a97236d00e826a742d7",
       "size": [
         640,
         160
@@ -14158,8 +14158,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-state-draw.webp",
-      "bytes": 13766,
-      "sha256": "f9b97b8a810c7d891f2dd56671aab78d2d78125a451cc91f9298c105c98c5842",
+      "bytes": 12380,
+      "sha256": "7dc304ebce6f18c0133404c68ef115bc4c8961bee26f5a11077538bd9f43a40c",
       "size": [
         160,
         160
@@ -14168,8 +14168,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-state-review.webp",
-      "bytes": 13348,
-      "sha256": "f5c84a8adb432b4c897f0a427f305badbc11edb4f0ac25228a34ebd9760035b4",
+      "bytes": 12180,
+      "sha256": "5e65cd1033ac4386ebc4e343e37269a900732a8d55b9c297ee1d46d39d39fcee",
       "size": [
         160,
         160
@@ -14178,8 +14178,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-state-talk.webp",
-      "bytes": 13712,
-      "sha256": "7dd9ad6c5bb4db0f5749c7891d08a3bdbdc6e4ccccc3bd3bd29c9a58710cc338",
+      "bytes": 12314,
+      "sha256": "7fc76cfbebb907e8e1684f1bf1ee4fefcb82c12893db44500d161d42d2d39b16",
       "size": [
         160,
         160
@@ -14188,8 +14188,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-talk-down.webp",
-      "bytes": 53094,
-      "sha256": "94ade49f7c1317a668711d8c619ea6423e5e7f47bc014525ea32c4ee236684ac",
+      "bytes": 47818,
+      "sha256": "5a86379419579fab7cd22c56e8d4e98877255398f8f60f56a98431171dd64498",
       "size": [
         640,
         160
@@ -14198,8 +14198,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-talk-left.webp",
-      "bytes": 56434,
-      "sha256": "5351f80d3d939e8f3f2b4ce65fd494a12a317585f22eeb04a6ee2123cb6c91b5",
+      "bytes": 50934,
+      "sha256": "26c93c19bdd1895ded9c17015c6c6f6b1ea9ed711f99bb0c89996d478f4243b5",
       "size": [
         640,
         160
@@ -14208,8 +14208,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-talk-right.webp",
-      "bytes": 53594,
-      "sha256": "260512281fce45e797110c0b88bd08ee12bf3acf803a36e99d437101ef0ccf90",
+      "bytes": 47910,
+      "sha256": "a0bfa175142ad864dbced346782ec234b2f6cd540777739790f3713c42120287",
       "size": [
         640,
         160
@@ -14218,8 +14218,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-talk-up.webp",
-      "bytes": 49406,
-      "sha256": "824e1e54022fe9e22b53ed3af7f0746e3a627537d55173ffa1a70d6feff0a208",
+      "bytes": 44196,
+      "sha256": "557d1eb4de9e628bce481d5d1ee4e32e4ab31eff45d1cbf772a30a5a7a9bdc4c",
       "size": [
         640,
         160
@@ -14228,8 +14228,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-walk-down.webp",
-      "bytes": 52712,
-      "sha256": "7153be9f36775d8a795229568c0b373ef49b4fba4f2c10c7eeb37c33ff005bdd",
+      "bytes": 48100,
+      "sha256": "c2dfc70a6add6c0970b1ba9704b8400008f71631741816cacc2b341dff69da47",
       "size": [
         640,
         160
@@ -14238,8 +14238,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-walk-left.webp",
-      "bytes": 55944,
-      "sha256": "2c64ed6e61bad0b3b8948beaae30c0e3e4ca04f481f14b6dc5bbbc29924fc01e",
+      "bytes": 50356,
+      "sha256": "db0a724a110d0a105baec79cea5dca4f3b5fea5e79ba3a1e35dac9ba9563d578",
       "size": [
         640,
         160
@@ -14248,8 +14248,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-walk-right.webp",
-      "bytes": 56726,
-      "sha256": "bcef845d7e7c0b7a090dd15dabbcfd8fa0954e8da23b2e69d76e5b21bd4d12d7",
+      "bytes": 50998,
+      "sha256": "c3eb94fc0f62dd7db486f205cae7bc1cfb8d640c6e1c5314b23ff1725b29b549",
       "size": [
         640,
         160
@@ -14258,8 +14258,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-walk-up.webp",
-      "bytes": 51128,
-      "sha256": "be69eaa2ad2abf2f1214845b50e2e396e0c6092885d5110d300830262d63ef20",
+      "bytes": 46624,
+      "sha256": "92b040a5a6f709b28bac801dcb7350d63f24dfb9a1d6b095703030469477e32c",
       "size": [
         640,
         160
@@ -14268,8 +14268,8 @@
     },
     {
       "file": "sky-island/npcs/npc-producer-wave.webp",
-      "bytes": 53250,
-      "sha256": "c5a3c9cd5a63bea11b8663ec9b6d3921a52d13b6e5da5939c1044fc21c887af3",
+      "bytes": 48028,
+      "sha256": "96f54525d413ef6ea64a18a1b14c63b7cf80a2323f233a325d5bf543a30cad9a",
       "size": [
         640,
         160
@@ -14278,8 +14278,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-direction-down.webp",
-      "bytes": 11784,
-      "sha256": "72ed4e125c64d7bb797db651b52b4bc2e10aceb57fcda795d6205aaac5594b44",
+      "bytes": 9838,
+      "sha256": "d1e63a5d4a0627b8b4498cbcd2a77921e1f62bf688d145be8481d932d817111d",
       "size": [
         160,
         160
@@ -14288,8 +14288,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-direction-left.webp",
-      "bytes": 13400,
-      "sha256": "82d92fe299e6929ff46d27a7a2bf1a047b725845e366e505e218f7665214987e",
+      "bytes": 11464,
+      "sha256": "90fc17b5f8f241f6c2bfe78fea014e0dd3b526360a44ca8efbe51017e0ca2706",
       "size": [
         160,
         160
@@ -14298,8 +14298,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-direction-right.webp",
-      "bytes": 13130,
-      "sha256": "7dd74a295e38d1da8e5bb1cbb1ed40650dc9b2658673412727afb58095736d43",
+      "bytes": 11182,
+      "sha256": "dba07e31e59acbabaa7ebf5f00db87e412ea342e4540a17bdb4a7d8c7b4908b9",
       "size": [
         160,
         160
@@ -14308,8 +14308,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-direction-up.webp",
-      "bytes": 11728,
-      "sha256": "133f67303c0e7284317f50fefeecc9b32db0d12df6dfc988f19dfe2ff267fda5",
+      "bytes": 10120,
+      "sha256": "e98424dbca48d611da23675d1128d11fb84e9f7c206b9033beb0aafa89a36a33",
       "size": [
         160,
         160
@@ -14318,8 +14318,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-draw-down.webp",
-      "bytes": 46564,
-      "sha256": "988540e0815d0f29ef8f0f2b57ea017d79a175040debeca9edcc73928a315334",
+      "bytes": 39160,
+      "sha256": "54239ba70a406d334a63f11d9f7bde3d9f58ae3edcfb98f4c6590d5495d21500",
       "size": [
         640,
         160
@@ -14328,8 +14328,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-draw-left.webp",
-      "bytes": 52888,
-      "sha256": "5afbaa2ec228df5dec698829237c164948066d74948632f6457be93e42c6229b",
+      "bytes": 45006,
+      "sha256": "d6c604b4913ff56d5b6dab0bf6fbde0f926ef5bb1fb13325f06c1d02ea3c4f79",
       "size": [
         640,
         160
@@ -14338,8 +14338,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-draw-right.webp",
-      "bytes": 52048,
-      "sha256": "b33217b8b77db22f506e4d8d1c59c03b07acb2028af2bcfc662c10bad06b4d09",
+      "bytes": 43378,
+      "sha256": "e6bb7ee5f6c530908135b55e32a6b626b0f929dabad9fc4fa7d6b21d4fc382e8",
       "size": [
         640,
         160
@@ -14348,8 +14348,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-draw-up.webp",
-      "bytes": 46710,
-      "sha256": "626cbedd0fc8cf6be76af185102607151bcc525863ad548f6abaa24c6738442f",
+      "bytes": 39232,
+      "sha256": "a245117beee014e6f4c75486bb6cb070e76f515c945a721a07ed5d1d190c121d",
       "size": [
         640,
         160
@@ -14358,8 +14358,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-review-down.webp",
-      "bytes": 35676,
-      "sha256": "6bc1969c09d3f6338166dc489fd45315ef170380386b5031c3628ab715313de8",
+      "bytes": 29094,
+      "sha256": "a6cccd4d934754be0490bb1b08c368cb6d26dc6674629a046c7500bc6c46d60e",
       "size": [
         640,
         160
@@ -14368,8 +14368,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-review-left.webp",
-      "bytes": 39384,
-      "sha256": "3d684eb8dc4fdb32328d005d28c101d03158a38ce32c77614233682bec787fac",
+      "bytes": 33146,
+      "sha256": "50a6c9932d89e882f6904867dcd96286cad9b6a2a73719d9bd816664b795d59b",
       "size": [
         640,
         160
@@ -14378,8 +14378,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-review-right.webp",
-      "bytes": 38866,
-      "sha256": "079136bd66a49fca7974fe5bc58843453858143f4a8f0cf3d8964f8903557b7a",
+      "bytes": 32208,
+      "sha256": "37479cb44cb63472b96e536bfdfdc7619862ec0e0ca608a58bb042b2ca4e2736",
       "size": [
         640,
         160
@@ -14388,8 +14388,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-review-up.webp",
-      "bytes": 35268,
-      "sha256": "5ab0dc31a7bc190e7e93bf1a4e1732071232a77457f40fde5df98d486956f8ed",
+      "bytes": 29660,
+      "sha256": "59f1b6f36aa3dfebacb4c95f0956413dbd3b1791070de3f2d502555e70a95b89",
       "size": [
         640,
         160
@@ -14398,8 +14398,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-sit.webp",
-      "bytes": 47296,
-      "sha256": "734adedbfed5f902610e72feb13756fd915364cda8c630aeb9c3d5b89d842a6d",
+      "bytes": 40282,
+      "sha256": "04ffd321c75e7e2631a4f4e2c80a4679548ec4ed9d23f34b51df56e4aeff2bad",
       "size": [
         640,
         160
@@ -14408,8 +14408,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-state-draw.webp",
-      "bytes": 12192,
-      "sha256": "811adc3e2308b2ae3ff44358fcdc0c57406c0e75aaee30ff6294fa922445f492",
+      "bytes": 10230,
+      "sha256": "d5c08280de407f76a47206144c91a65c42cbc10600eb3370285b54c0f1a63c3f",
       "size": [
         160,
         160
@@ -14418,8 +14418,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-state-review.webp",
-      "bytes": 11784,
-      "sha256": "72ed4e125c64d7bb797db651b52b4bc2e10aceb57fcda795d6205aaac5594b44",
+      "bytes": 9838,
+      "sha256": "d1e63a5d4a0627b8b4498cbcd2a77921e1f62bf688d145be8481d932d817111d",
       "size": [
         160,
         160
@@ -14428,8 +14428,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-state-talk.webp",
-      "bytes": 12112,
-      "sha256": "669a594d2c9dfe2d2594027bd4ac6f32c92106571ece3461ffae9bedadf6bf93",
+      "bytes": 10210,
+      "sha256": "39159720ac557f629164e4c92c4ea63dac5585be96b64527e80500fd2692922b",
       "size": [
         160,
         160
@@ -14438,8 +14438,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-talk-down.webp",
-      "bytes": 46608,
-      "sha256": "38c520cd7a6a4d3adad268e2defd09f9052c250ecf18656c9505f7b2bb2eda5b",
+      "bytes": 38994,
+      "sha256": "5bab5c91c72a06abd1ef57201c4e88d20e55c2da1a497bf4c0409fcf25c576d7",
       "size": [
         640,
         160
@@ -14448,8 +14448,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-talk-left.webp",
-      "bytes": 52740,
-      "sha256": "fa565b7fc0aa506f84cfc4811bcf1febd80a001b7173b5b4cd3013190fab1151",
+      "bytes": 45048,
+      "sha256": "f67484c95b6375c95437eba9472732418ac067f0448f3fecdc2b3018c3f4a8b3",
       "size": [
         640,
         160
@@ -14458,8 +14458,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-talk-right.webp",
-      "bytes": 52026,
-      "sha256": "0a07b1335f983b78afc8dcc0670821738b4680c2aaf7d98c68d56e472f81b350",
+      "bytes": 43352,
+      "sha256": "40903ad338b710a1cb428115883d46c1bd9762acaec05794b81341f0d7ef6c2d",
       "size": [
         640,
         160
@@ -14468,8 +14468,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-talk-up.webp",
-      "bytes": 46824,
-      "sha256": "43ab975d3a10d8df18d2c0314a24cdc43e0786033d1f36ec454caf46b73b67de",
+      "bytes": 39648,
+      "sha256": "cb58518f1747af75548b9a408e8a1ba1875c08be2dad6b21198c36fae89fac9a",
       "size": [
         640,
         160
@@ -14478,8 +14478,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-walk-down.webp",
-      "bytes": 47348,
-      "sha256": "8a98a189f6990d939c548c98c285a6ea7156f9f58d2e92de3f6eacccdb27eca4",
+      "bytes": 39982,
+      "sha256": "f575155d4a06bfb2dd09fdb8e6a278d2741751b9b2a8f6e248304f3ea8e7d191",
       "size": [
         640,
         160
@@ -14488,8 +14488,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-walk-left.webp",
-      "bytes": 53538,
-      "sha256": "1fd1ad688e24b339c4a597b46e5f5ecfe39c1bd0124d7398edd0b190d8bb1d65",
+      "bytes": 46690,
+      "sha256": "8cb48481b6f7a76e64af07b76d3f41af250d4656eeb3afa31ea0d4ca529d7501",
       "size": [
         640,
         160
@@ -14498,8 +14498,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-walk-right.webp",
-      "bytes": 51548,
-      "sha256": "8c549ca245e124722b5c5a3e1897eb3eca395871a74011487288b8caf276a350",
+      "bytes": 44298,
+      "sha256": "0f66d0ead4b2d2102dc80c48677ba013bafb596a96b978ba813b4d4f63a2a197",
       "size": [
         640,
         160
@@ -14508,8 +14508,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-walk-up.webp",
-      "bytes": 45060,
-      "sha256": "451463b1bdbca932f594dcae2e5c477e49ba1f2346a9a8e880579a18b7896bbe",
+      "bytes": 38546,
+      "sha256": "db9df90f5413ff574eb7e4f64d107fcfbacb2f3f09c03849769525b980d8212e",
       "size": [
         640,
         160
@@ -14518,8 +14518,8 @@
     },
     {
       "file": "sky-island/npcs/npc-security-wave.webp",
-      "bytes": 49424,
-      "sha256": "cd288c750248a73e2b76217f421eb5ced9bf72bd03afa5592a9ba2256fdc72e7",
+      "bytes": 41858,
+      "sha256": "239e507479155ba063463fb0923fc4816b5c0516dc20b20dace51371826a6864",
       "size": [
         640,
         160
@@ -14568,8 +14568,8 @@
     },
     {
       "file": "sky-island/players/player-dark-direction-down.webp",
-      "bytes": 10018,
-      "sha256": "c94a1f79f0c063c35392addad58b6956c6e72904dda7768c0300e2627599531b",
+      "bytes": 8568,
+      "sha256": "478585563c88b8be373f9324445d83228858db5aa872bf4d4673b73921a87278",
       "size": [
         160,
         160
@@ -14578,8 +14578,8 @@
     },
     {
       "file": "sky-island/players/player-dark-direction-left.webp",
-      "bytes": 9344,
-      "sha256": "44d7f4644bd4ec8d48ec0d39ef87c2856526926b5b52d9301d824501f458e47d",
+      "bytes": 7826,
+      "sha256": "3c2e550f1d5b45e10fc01edaf4a89d5688efd3260d20a4a08e52a95d0485e719",
       "size": [
         160,
         160
@@ -14588,8 +14588,8 @@
     },
     {
       "file": "sky-island/players/player-dark-direction-right.webp",
-      "bytes": 9278,
-      "sha256": "3529793f3efddfafa7232c7c09bbf160fa5e73751653db9b6dd1f3a6e7968b44",
+      "bytes": 7804,
+      "sha256": "59591e83480d9bfc3a87b0ed31af36449c2f263eb48c329751179878dc08acd6",
       "size": [
         160,
         160
@@ -14598,8 +14598,8 @@
     },
     {
       "file": "sky-island/players/player-dark-direction-up.webp",
-      "bytes": 9860,
-      "sha256": "f968b9b558227515a8c3eb21395a68f5b856c44742a0d34c06c5caa8276bfc77",
+      "bytes": 8230,
+      "sha256": "7ff5418b05e967826c282d802de5435a45fa9721de99df9421802270aa97823f",
       "size": [
         160,
         160
@@ -14608,8 +14608,8 @@
     },
     {
       "file": "sky-island/players/player-dark-draw-down.webp",
-      "bytes": 37372,
-      "sha256": "16f1db21cc559042e5a010c85dbcf3f7ee498501ce3622274729bf34c4dad9f0",
+      "bytes": 32978,
+      "sha256": "ff7dad295e29f7f9f8cd1ff41c8e3aa1400e566075fe410bafc3fb89b2e6f549",
       "size": [
         640,
         160
@@ -14618,8 +14618,8 @@
     },
     {
       "file": "sky-island/players/player-dark-draw-left.webp",
-      "bytes": 34890,
-      "sha256": "0ca0a4b7b571d0dca339749ce29a83b33b612e743b2322bc0ec61054cdc794ae",
+      "bytes": 30694,
+      "sha256": "8350c0cfa1bc21dc419394b053f97f1eeadc0ba94ece4904216091bea3568168",
       "size": [
         640,
         160
@@ -14628,8 +14628,8 @@
     },
     {
       "file": "sky-island/players/player-dark-draw-right.webp",
-      "bytes": 34390,
-      "sha256": "d96ff9aac93cf4d0a20ff2dd2b445f139537b987ab3e14e853fe883f1a1d7de8",
+      "bytes": 30158,
+      "sha256": "3a4d41b5dca73ff460e590b6654fda6fa4f4707b3f155232f7f5dc10c51d1734",
       "size": [
         640,
         160
@@ -14638,8 +14638,8 @@
     },
     {
       "file": "sky-island/players/player-dark-draw-up.webp",
-      "bytes": 36458,
-      "sha256": "ec5dc72b228a1317280782fc79cd62bf6e93ea011ec9a3e891defe2383fe9d26",
+      "bytes": 31706,
+      "sha256": "934561912b1b457abe9163c31bc083eb5e9fc533d3a32c7b6b0991f1c80a702d",
       "size": [
         640,
         160
@@ -14648,8 +14648,8 @@
     },
     {
       "file": "sky-island/players/player-dark-review-down.webp",
-      "bytes": 29828,
-      "sha256": "f713766ac3645973fa135fa1b8807afa446f094bf3d9b17e7282a90cac62a95e",
+      "bytes": 24364,
+      "sha256": "ee5a572cbc5911a97496fea91a04ea2ae9e7526ee5563d2f5cbeb4ee9eda5506",
       "size": [
         640,
         160
@@ -14658,8 +14658,8 @@
     },
     {
       "file": "sky-island/players/player-dark-review-left.webp",
-      "bytes": 28710,
-      "sha256": "ab9d2c4f444ea7057b10d92cd464e0d3b65d0a728b9b4c71414d16a991a4d81d",
+      "bytes": 22856,
+      "sha256": "5b6ce8c49678b92f3b14bd045d9390bac4ea54dc374240072c1b29f712ff450b",
       "size": [
         640,
         160
@@ -14668,8 +14668,8 @@
     },
     {
       "file": "sky-island/players/player-dark-review-right.webp",
-      "bytes": 27982,
-      "sha256": "522526e70217215185f629c74ae96298deeb0fddc90893da3a24d495de6d7753",
+      "bytes": 22702,
+      "sha256": "dc35b1ae3e8bf622ae7745d17e7425d5ed3ae73400b6926901633eab687be3ed",
       "size": [
         640,
         160
@@ -14678,8 +14678,8 @@
     },
     {
       "file": "sky-island/players/player-dark-review-up.webp",
-      "bytes": 29202,
-      "sha256": "ee104a250c42015eec434e7143bbdbfdd0d22c0e6fe9098980c787faf44a8271",
+      "bytes": 23278,
+      "sha256": "8d218a0514cf9311fd1e4253f038ad48905e591ba21859df895d29541a818a4c",
       "size": [
         640,
         160
@@ -14688,8 +14688,8 @@
     },
     {
       "file": "sky-island/players/player-dark-sit.webp",
-      "bytes": 38092,
-      "sha256": "8a6b415b63bc2a300886300f2fe23a0e047f514f3d58d3f95f9f610a69b6c12d",
+      "bytes": 31606,
+      "sha256": "7f02ba2ce0e4a4aa25a51248405707369a6c92edf47e7a75119365c2cf2e5662",
       "size": [
         640,
         160
@@ -14698,8 +14698,8 @@
     },
     {
       "file": "sky-island/players/player-dark-state-draw.webp",
-      "bytes": 9976,
-      "sha256": "d56b3dc7bf1fe3652a68f42b96f4772320c8474338e30ac09d797bfd0f1cff0d",
+      "bytes": 8708,
+      "sha256": "869f70db9268f349a33620f154741deb8abc4ce10d84976247f6eea50aa42015",
       "size": [
         160,
         160
@@ -14708,8 +14708,8 @@
     },
     {
       "file": "sky-island/players/player-dark-state-review.webp",
-      "bytes": 10018,
-      "sha256": "c94a1f79f0c063c35392addad58b6956c6e72904dda7768c0300e2627599531b",
+      "bytes": 8568,
+      "sha256": "478585563c88b8be373f9324445d83228858db5aa872bf4d4673b73921a87278",
       "size": [
         160,
         160
@@ -14718,8 +14718,8 @@
     },
     {
       "file": "sky-island/players/player-dark-state-talk.webp",
-      "bytes": 9938,
-      "sha256": "c67913fda37b3a3df5c0820ca4efd2660d1504eebb20e6061890a4f450887587",
+      "bytes": 8660,
+      "sha256": "726cce861f74a0ba85bf678ca394d3961e4e03a1636b0cb8b46cc68fdac9e2cb",
       "size": [
         160,
         160
@@ -14728,8 +14728,8 @@
     },
     {
       "file": "sky-island/players/player-dark-talk-down.webp",
-      "bytes": 37688,
-      "sha256": "3c6e4f61b796a6eccb9c7ec90e8c1cea2abe62b5ce9c45a5fca93412081ce851",
+      "bytes": 33080,
+      "sha256": "1b3c84bb1b86767f98b64200ceead9303dd33742d1934ff17b5287589c98f8bb",
       "size": [
         640,
         160
@@ -14738,8 +14738,8 @@
     },
     {
       "file": "sky-island/players/player-dark-talk-left.webp",
-      "bytes": 35704,
-      "sha256": "4127d60b1bb0fa6d7020ff881d94ed0a96d57a0462965bc51d99b6f08c6877dc",
+      "bytes": 30754,
+      "sha256": "dd449f39969136801cc59f7114b4bb0716f8c4e9b445ca3d8c76404c4aff6dda",
       "size": [
         640,
         160
@@ -14748,8 +14748,8 @@
     },
     {
       "file": "sky-island/players/player-dark-talk-right.webp",
-      "bytes": 34506,
-      "sha256": "529093de6f7d951d08901efb47c90bbd44c65cda6406360ee0849376bb46c9aa",
+      "bytes": 30496,
+      "sha256": "b618bf20170c25819237be2a0efe9d875a092b13268bb2a58d3651dc82f06e6b",
       "size": [
         640,
         160
@@ -14758,8 +14758,8 @@
     },
     {
       "file": "sky-island/players/player-dark-talk-up.webp",
-      "bytes": 36602,
-      "sha256": "10884902ca8ef80b5e7b90ecd44042b124f30a36e869c562c51dbe10e52a3e43",
+      "bytes": 31806,
+      "sha256": "884b609bddbf3d29e8936879cd22a842ed97f89d9a42545830125cb951dccde4",
       "size": [
         640,
         160
@@ -14768,8 +14768,8 @@
     },
     {
       "file": "sky-island/players/player-dark-walk-down.webp",
-      "bytes": 35962,
-      "sha256": "b55fb6d399ced50c3c849004719d6eede7b6189676d3610576e1ca66ca5d2469",
+      "bytes": 30402,
+      "sha256": "eb66aecb55aba6e3be42ddbff27dbaf7b1d5ecca5e3843c67ebf01ff29fe6abd",
       "size": [
         640,
         160
@@ -14778,8 +14778,8 @@
     },
     {
       "file": "sky-island/players/player-dark-walk-left.webp",
-      "bytes": 39128,
-      "sha256": "81f636cdd2ab749a19e0bceea768201043fb5c40193550054c59ba764a585e55",
+      "bytes": 33314,
+      "sha256": "1f1c7ee3fcd078f5871711cece093162a6cecdc7069b54703203bd35a1c04704",
       "size": [
         640,
         160
@@ -14788,8 +14788,8 @@
     },
     {
       "file": "sky-island/players/player-dark-walk-right.webp",
-      "bytes": 38118,
-      "sha256": "277cd64235e457309e77aed3d3095bae0b2cbb1b8467e9892077e37dc947cea3",
+      "bytes": 32102,
+      "sha256": "0dfc492de6614e712f9f939dba0dede5132821666fc3a43e4d5bc99f7f4a80cc",
       "size": [
         640,
         160
@@ -14798,8 +14798,8 @@
     },
     {
       "file": "sky-island/players/player-dark-walk-up.webp",
-      "bytes": 32298,
-      "sha256": "6115411a2c2200f3e8973c0c54294ca730719741d2113561f959e8b6ef2b66bb",
+      "bytes": 27008,
+      "sha256": "06c1cdf27c76dea1d677522f3a9d1f000d22a36fe5203a54fe75dad6cc2aacb9",
       "size": [
         640,
         160
@@ -14808,8 +14808,8 @@
     },
     {
       "file": "sky-island/players/player-dark-wave.webp",
-      "bytes": 37490,
-      "sha256": "b016d1eec16d30e549be3af3793034a12f6cee75b3904814b43e81a9e6e12294",
+      "bytes": 31358,
+      "sha256": "a714760a7e1218dd4fce2efb3aa8a47e746260468e4d2c7353556530bddc4cfc",
       "size": [
         640,
         160
@@ -14818,8 +14818,8 @@
     },
     {
       "file": "sky-island/players/player-pink-direction-down.webp",
-      "bytes": 9862,
-      "sha256": "8a25ba2be4732e362145cf9a0ca2ca5fe429e7073c1711a6a017104c540e1d95",
+      "bytes": 8548,
+      "sha256": "ab222d005efeb9e0087f931eb94daabd7a6a016e5c658e6c1327b38cf89d0080",
       "size": [
         160,
         160
@@ -14828,8 +14828,8 @@
     },
     {
       "file": "sky-island/players/player-pink-direction-left.webp",
-      "bytes": 10142,
-      "sha256": "0aa8b1c4194e17b786da9949088f723e109847a16b3f63fce1fd28ad32aefdd0",
+      "bytes": 8882,
+      "sha256": "3e427c8700462b6b464653e89405eb2d5af3b0958a92528e404659d5b7b07c54",
       "size": [
         160,
         160
@@ -14838,8 +14838,8 @@
     },
     {
       "file": "sky-island/players/player-pink-direction-right.webp",
-      "bytes": 9778,
-      "sha256": "4b5d95b10b3956226160301d5d63b3b331833c49b33eb2e87efab787677feade",
+      "bytes": 8658,
+      "sha256": "1e5fe65906559b89ef4e66a75d60e3599be08920421ce06785877737ae2b1575",
       "size": [
         160,
         160
@@ -14848,8 +14848,8 @@
     },
     {
       "file": "sky-island/players/player-pink-direction-up.webp",
-      "bytes": 9112,
-      "sha256": "0ccdf20c3b4aecf0389bc908ec485a5186ef5290c24b95741c0e06e0f50d697f",
+      "bytes": 8090,
+      "sha256": "a33373a9de14836d21dc65b569cd52d889c32d289dabef4ebbe0b0d02720f13f",
       "size": [
         160,
         160
@@ -14858,8 +14858,8 @@
     },
     {
       "file": "sky-island/players/player-pink-draw-down.webp",
-      "bytes": 36292,
-      "sha256": "90d26229dc6538beadddb08bb2144c6888f95941020d3978cdc130490853b04d",
+      "bytes": 31404,
+      "sha256": "3ff55cd8503348cce9f38f80cefd097ac6ac398bae011701f0228347df3b9345",
       "size": [
         640,
         160
@@ -14868,8 +14868,8 @@
     },
     {
       "file": "sky-island/players/player-pink-draw-left.webp",
-      "bytes": 35246,
-      "sha256": "cfdc6294ccc2af6af830f4d79200b53d148a90662447f549198ee1031cda5169",
+      "bytes": 30586,
+      "sha256": "98b25a33c8ac64b2b5e3e85c8306c2440090b342e5800bb9ac9c5126a6d16061",
       "size": [
         640,
         160
@@ -14878,8 +14878,8 @@
     },
     {
       "file": "sky-island/players/player-pink-draw-right.webp",
-      "bytes": 34736,
-      "sha256": "8459f94c5669fa35baeb1505655703c1cc70bec119157d5d6c89a6b3ea99d467",
+      "bytes": 29714,
+      "sha256": "05c134e48acdb7017f5972e8349852be792f78e46bdd55a8ab9980bb2d3e91d4",
       "size": [
         640,
         160
@@ -14888,8 +14888,8 @@
     },
     {
       "file": "sky-island/players/player-pink-draw-up.webp",
-      "bytes": 30582,
-      "sha256": "579b6e66c5e17f8a7a6c0dff03681800f74bb75e58ad0c4f4b00ce72833de53e",
+      "bytes": 26412,
+      "sha256": "f9ae7a22480c0c48509d449a58be5cdce9181deb421ae2c5a582da640d200ce5",
       "size": [
         640,
         160
@@ -14898,8 +14898,8 @@
     },
     {
       "file": "sky-island/players/player-pink-review-down.webp",
-      "bytes": 30024,
-      "sha256": "5c7a8ed337656ff87ca4708d86b49e36ac87d7f439af1e2a637b8fc3176ccd4b",
+      "bytes": 25520,
+      "sha256": "54ca760e16a8cf1c21d2c73133abaec2c2ed4421ed9bfdf75c0242eb352f5570",
       "size": [
         640,
         160
@@ -14908,8 +14908,8 @@
     },
     {
       "file": "sky-island/players/player-pink-review-left.webp",
-      "bytes": 30984,
-      "sha256": "ae72d4944dbf52b1f29688375dd01dd794bdacc423383929fcf02b8bcf009d8b",
+      "bytes": 26258,
+      "sha256": "97c7598ca8dea8ca80cf6a4d6599e8ce4bc9d3e764c637d458a3243151a1912e",
       "size": [
         640,
         160
@@ -14918,8 +14918,8 @@
     },
     {
       "file": "sky-island/players/player-pink-review-right.webp",
-      "bytes": 29982,
-      "sha256": "b94af04b229450b7390a3d7dd63c74ec8c17288855d4dfb43d1d6d7e587852a9",
+      "bytes": 25866,
+      "sha256": "819d90115df0c5cb36ceec25d5bebeab84637bcc4afd7ec4578a92ae02e13b8e",
       "size": [
         640,
         160
@@ -14928,8 +14928,8 @@
     },
     {
       "file": "sky-island/players/player-pink-review-up.webp",
-      "bytes": 27086,
-      "sha256": "7fae10f81bf486de8d3ca0f34ac3655b5c0bbe6a8e0c797869a39d282a2b203f",
+      "bytes": 23680,
+      "sha256": "3af7abf6466b9cbb0d5306c27124663239588ffc8001aa2938c43128a0f2225d",
       "size": [
         640,
         160
@@ -14938,8 +14938,8 @@
     },
     {
       "file": "sky-island/players/player-pink-sit.webp",
-      "bytes": 35332,
-      "sha256": "c09eb537bb23504eb7af2fd76c8aa1fbffd8111adad7e95f1036ba554a99cfa9",
+      "bytes": 30096,
+      "sha256": "29c124410dbe18713830a72ea658e87857906ebe7062e0a7e0727d732c3cbd6a",
       "size": [
         640,
         160
@@ -14948,8 +14948,8 @@
     },
     {
       "file": "sky-island/players/player-pink-state-draw.webp",
-      "bytes": 9626,
-      "sha256": "c95bf3671f90d16d8024d6c0ed65157a831733c368d9a4a3f6631f7bfc112cb5",
+      "bytes": 8286,
+      "sha256": "f4eabd71efd95aab67226b5c5e935e149b597e4f673e1f70c552152b7350a14d",
       "size": [
         160,
         160
@@ -14958,8 +14958,8 @@
     },
     {
       "file": "sky-island/players/player-pink-state-review.webp",
-      "bytes": 9862,
-      "sha256": "8a25ba2be4732e362145cf9a0ca2ca5fe429e7073c1711a6a017104c540e1d95",
+      "bytes": 8548,
+      "sha256": "ab222d005efeb9e0087f931eb94daabd7a6a016e5c658e6c1327b38cf89d0080",
       "size": [
         160,
         160
@@ -14968,8 +14968,8 @@
     },
     {
       "file": "sky-island/players/player-pink-state-talk.webp",
-      "bytes": 9876,
-      "sha256": "084700af92e6c3f720177493928db9e0d4ce897c5d1ebf0e301c71e7d977c155",
+      "bytes": 8712,
+      "sha256": "2e14b52830cae13969ee62fe30ec528e737bf19d7f75b5bc8f5334094641e4a0",
       "size": [
         160,
         160
@@ -14978,8 +14978,8 @@
     },
     {
       "file": "sky-island/players/player-pink-talk-down.webp",
-      "bytes": 37644,
-      "sha256": "7f25b979e4f99d66ef779954665299605ca18e0e68981ee8f32f179d0277c299",
+      "bytes": 33290,
+      "sha256": "04392fb25f9968ce4aa9084fd1f01d74570253f9254b6c42d3bb3b676bc724b4",
       "size": [
         640,
         160
@@ -14988,8 +14988,8 @@
     },
     {
       "file": "sky-island/players/player-pink-talk-left.webp",
-      "bytes": 37932,
-      "sha256": "cd9cab39a2d633cf02bde4619576c62ad70bb0a2f076c9cb7e0ce95891535cf1",
+      "bytes": 34294,
+      "sha256": "fbb0112c491c6dad6c007ee23f26ca32238bc25ce97e5bc35d93242c0b9cef93",
       "size": [
         640,
         160
@@ -14998,8 +14998,8 @@
     },
     {
       "file": "sky-island/players/player-pink-talk-right.webp",
-      "bytes": 36934,
-      "sha256": "e31a3a5e0518755a93abd27c480b50b931b025ee37b83a541bbfd5d3664fba1d",
+      "bytes": 33332,
+      "sha256": "909f2a363e32cbc6714c1b3d6849f76a132586ebc68e855d3fa05055b5dd7620",
       "size": [
         640,
         160
@@ -15008,8 +15008,8 @@
     },
     {
       "file": "sky-island/players/player-pink-talk-up.webp",
-      "bytes": 34938,
-      "sha256": "3e3b3efef7f29f26687e8efdaa3c7cd4d87ca10ddc95a725f0dd828bb010a6d6",
+      "bytes": 31244,
+      "sha256": "ac23ca3fa987e5dde2f298bf2bbd3134b87d2d16291ba4d4651228b2ccc40c6a",
       "size": [
         640,
         160
@@ -15018,8 +15018,8 @@
     },
     {
       "file": "sky-island/players/player-pink-walk-down.webp",
-      "bytes": 32970,
-      "sha256": "bf0c3619589954e755f74e44900c842822ad89a01f8e968b1400f28aa29f48db",
+      "bytes": 28766,
+      "sha256": "d020316822fbd816e5611fc98dde7190062bbecee7e03d078a4aa46b17295fc6",
       "size": [
         640,
         160
@@ -15028,8 +15028,8 @@
     },
     {
       "file": "sky-island/players/player-pink-walk-left.webp",
-      "bytes": 38642,
-      "sha256": "e3e81c019c1b5a2ec3cba26f1723924bc4825c88b75399d69dd4c377bb9f547f",
+      "bytes": 33972,
+      "sha256": "87616022502d7a03ed747ea14eba36ef42155433f708617a89a5d85d40e113e2",
       "size": [
         640,
         160
@@ -15038,8 +15038,8 @@
     },
     {
       "file": "sky-island/players/player-pink-walk-right.webp",
-      "bytes": 35552,
-      "sha256": "8046cae3d1aaf63908d5b997b39241ef6239819249e99b51cfe5447f533909c5",
+      "bytes": 31080,
+      "sha256": "3d0592ba11eb02e2c0b263709bab659e21e412f25ec56914c8a5e4e90db00d82",
       "size": [
         640,
         160
@@ -15048,8 +15048,8 @@
     },
     {
       "file": "sky-island/players/player-pink-walk-up.webp",
-      "bytes": 30202,
-      "sha256": "3dbb65cf71390a0446237ad4539933ea7e62c3717256963d9da5fd7dfa8c81ff",
+      "bytes": 26122,
+      "sha256": "9fc77c2a728d7236ae62f6562190cd408ea22ab3e5706fb0415be3371bfbf488",
       "size": [
         640,
         160
@@ -15058,8 +15058,8 @@
     },
     {
       "file": "sky-island/players/player-pink-wave.webp",
-      "bytes": 36542,
-      "sha256": "0c80064962a416faeb9b6d46457cf590937ffe402f4f211c4475df3d6612f302",
+      "bytes": 31896,
+      "sha256": "3fe12a037d61a9bbff5fc887bc6b3bdfaf59e6f6a9c2df3313ce71d74c81dd0f",
       "size": [
         640,
         160
@@ -15068,8 +15068,8 @@
     },
     {
       "file": "sky-island/players/player-purple-direction-down.webp",
-      "bytes": 10150,
-      "sha256": "96f012a71dfb3a927a71c5c23f6d7b46924d5e8b19e213ea74807f93d8ba8235",
+      "bytes": 8762,
+      "sha256": "414ae9a530508420c5d98bb85abbaeb37000f2b239eea837a507dde2dd820df8",
       "size": [
         160,
         160
@@ -15078,8 +15078,8 @@
     },
     {
       "file": "sky-island/players/player-purple-direction-left.webp",
-      "bytes": 9726,
-      "sha256": "508df61aef17f6546018f9013644939f75036fe1310d497e17186473ce09dcdb",
+      "bytes": 8328,
+      "sha256": "5c32f25f21d20f6a8037ae3c205b786f6d8004d965a3d29db0e6cd3199e0d9e1",
       "size": [
         160,
         160
@@ -15088,8 +15088,8 @@
     },
     {
       "file": "sky-island/players/player-purple-direction-right.webp",
-      "bytes": 9138,
-      "sha256": "9ac98671ed309790d3e8f74b12cc0d86e202aa5223e11113c55a51c9f04379bb",
+      "bytes": 7674,
+      "sha256": "62b378e397abfb7b44e78d0e49837a0778942c432faefcbba06b1b9a66dd2749",
       "size": [
         160,
         160
@@ -15098,8 +15098,8 @@
     },
     {
       "file": "sky-island/players/player-purple-direction-up.webp",
-      "bytes": 9056,
-      "sha256": "be4816e03a5a393c645cfdbf88ba5a66ff7b7558821f8f830ef4b8b32f6ca038",
+      "bytes": 7812,
+      "sha256": "4b55d8db4d704b8973de03de74a267e5d16eb04d962a5858ffad24e08e634898",
       "size": [
         160,
         160
@@ -15108,8 +15108,8 @@
     },
     {
       "file": "sky-island/players/player-purple-draw-down.webp",
-      "bytes": 39366,
-      "sha256": "017359054457ee9c2fa5237a43b1e23dfc4e267291fda5f9e3caf8f08b697701",
+      "bytes": 34100,
+      "sha256": "9301882ee46432f857a0bcf1f010575eb8942c59b85bf74537c38083a540d9a3",
       "size": [
         640,
         160
@@ -15118,8 +15118,8 @@
     },
     {
       "file": "sky-island/players/player-purple-draw-left.webp",
-      "bytes": 36430,
-      "sha256": "a6ebdfda5116430999c51ceaad9e00b5777266e22355fc2a22c72650a6003d31",
+      "bytes": 32160,
+      "sha256": "a710966f16f87e7593351f86522979baa654c3a56c9daf3489e597cd462f20c0",
       "size": [
         640,
         160
@@ -15128,8 +15128,8 @@
     },
     {
       "file": "sky-island/players/player-purple-draw-right.webp",
-      "bytes": 34634,
-      "sha256": "481e7984b30982a41d5ebf451c6e47106f93865ea1aa46b2b3f327ac5ffa8669",
+      "bytes": 30180,
+      "sha256": "23de4dcf5d6852656d0fb22f28528947e28fc59d38a638c4a3e041beebea40c8",
       "size": [
         640,
         160
@@ -15138,8 +15138,8 @@
     },
     {
       "file": "sky-island/players/player-purple-draw-up.webp",
-      "bytes": 34116,
-      "sha256": "73191b0c07d7f6b75e8ab62aa718cb6c79e9318f352dcd1080ade5c833791e0f",
+      "bytes": 30574,
+      "sha256": "11b97237e221d8b8b733137800f1a44dc17ebc20ef68907a59aab6281583a265",
       "size": [
         640,
         160
@@ -15148,8 +15148,8 @@
     },
     {
       "file": "sky-island/players/player-purple-review-down.webp",
-      "bytes": 30574,
-      "sha256": "9a08aa3b9a9d786c29abe811ae5949df9c01be1d8895b540466fbfffc8efc1af",
+      "bytes": 25686,
+      "sha256": "b1d62d6289f23eeeec054643a0f431d73a76a2e47aad471358195989c953b24e",
       "size": [
         640,
         160
@@ -15158,8 +15158,8 @@
     },
     {
       "file": "sky-island/players/player-purple-review-left.webp",
-      "bytes": 30180,
-      "sha256": "cf98a1d76a3308522dea25203ab0024d57070c9779aaf566a173668edc8df507",
+      "bytes": 24908,
+      "sha256": "b4985df72fe3e765a4f08966d3f362e97c6279998fbd019efd9a827e49d0e2bd",
       "size": [
         640,
         160
@@ -15168,8 +15168,8 @@
     },
     {
       "file": "sky-island/players/player-purple-review-right.webp",
-      "bytes": 27966,
-      "sha256": "430745643f604df47e27104fce0e9ec0ca47b56770c0c1840d4ce6ca845cd80d",
+      "bytes": 22858,
+      "sha256": "eda6320c395c4d91f77ca7d0cc6b87906da1e5df732462deb6f1f9f9fbd9cff6",
       "size": [
         640,
         160
@@ -15178,8 +15178,8 @@
     },
     {
       "file": "sky-island/players/player-purple-review-up.webp",
-      "bytes": 27036,
-      "sha256": "bd6948563f2574eaa2be8f000e94e3b0662d8c26293b72b52dffff20b4f32f66",
+      "bytes": 22516,
+      "sha256": "9b694f16358fa87ac121171db31a5c9e34b56f6a6331daa26dcc859582d2dfda",
       "size": [
         640,
         160
@@ -15188,8 +15188,8 @@
     },
     {
       "file": "sky-island/players/player-purple-sit.webp",
-      "bytes": 37770,
-      "sha256": "6e88fb85eac14fca250d0c2867fb9ae0f4cb956b1e6333302cd4d172d51d7299",
+      "bytes": 31824,
+      "sha256": "ae163eaebcb530b1899df9960b1c4a6bffaee2a6bf4d7eff249179f4264c6fe0",
       "size": [
         640,
         160
@@ -15198,8 +15198,8 @@
     },
     {
       "file": "sky-island/players/player-purple-state-draw.webp",
-      "bytes": 10300,
-      "sha256": "9cc80fdbcc8a9e12ec9d7461c97157e6dbcdffa7686443adfa6bc701d4d5da40",
+      "bytes": 8864,
+      "sha256": "8b576bc2bd897f3b831e952518b4f6ddef61ae6753938e15153a86f6056f835b",
       "size": [
         160,
         160
@@ -15208,8 +15208,8 @@
     },
     {
       "file": "sky-island/players/player-purple-state-review.webp",
-      "bytes": 10150,
-      "sha256": "96f012a71dfb3a927a71c5c23f6d7b46924d5e8b19e213ea74807f93d8ba8235",
+      "bytes": 8762,
+      "sha256": "414ae9a530508420c5d98bb85abbaeb37000f2b239eea837a507dde2dd820df8",
       "size": [
         160,
         160
@@ -15218,8 +15218,8 @@
     },
     {
       "file": "sky-island/players/player-purple-state-talk.webp",
-      "bytes": 10140,
-      "sha256": "c3903b7cb527145ce50a2daac56e8dbff0940c0ca2cf2fd25d3cf9a4a3ea868e",
+      "bytes": 8776,
+      "sha256": "16313912f7e4620d0aec2d2453e89bb57aa4e5d438e9e20674b0e1e50dfd1799",
       "size": [
         160,
         160
@@ -15228,8 +15228,8 @@
     },
     {
       "file": "sky-island/players/player-purple-talk-down.webp",
-      "bytes": 39100,
-      "sha256": "ba65a6f6011571f4d8e6d9207e3b4e0bc8b31bd6461753c69d33f85e8af4c69e",
+      "bytes": 33676,
+      "sha256": "f4db0cde1374ab22cd1aeb49ebca215e1dd921671f0766658b89e57b0659777b",
       "size": [
         640,
         160
@@ -15238,8 +15238,8 @@
     },
     {
       "file": "sky-island/players/player-purple-talk-left.webp",
-      "bytes": 36464,
-      "sha256": "b38ec223a88909fcf34811479139083c6cf0dc3d98136af9e441abe8d93bc452",
+      "bytes": 31876,
+      "sha256": "82958508e3b157fa1c04f229598bf44601cda0efa86be74676a0d170f9f3a08b",
       "size": [
         640,
         160
@@ -15248,8 +15248,8 @@
     },
     {
       "file": "sky-island/players/player-purple-talk-right.webp",
-      "bytes": 34196,
-      "sha256": "73f2a34ae14b98e089d8ed4bc4e5580d38dbc513d506a879e8d774963c149641",
+      "bytes": 30364,
+      "sha256": "39af83c7e9fa9ac412affc04af32e9d9a179ab200381790a9d43912bd21ff997",
       "size": [
         640,
         160
@@ -15258,8 +15258,8 @@
     },
     {
       "file": "sky-island/players/player-purple-talk-up.webp",
-      "bytes": 33922,
-      "sha256": "f5855f8927489e6179b55908cae78078be2af0c469507d06790273f60b604778",
+      "bytes": 30510,
+      "sha256": "873927eba0453ee622162c0753f909129841f1b8182b7ef2a88a9995b147016c",
       "size": [
         640,
         160
@@ -15268,8 +15268,8 @@
     },
     {
       "file": "sky-island/players/player-purple-walk-down.webp",
-      "bytes": 36814,
-      "sha256": "261523601a89fdabab207231702df17a615216d402f057764c0d0902d535f207",
+      "bytes": 31066,
+      "sha256": "4b85ad2a247da1ba7197dc2590e13537606a20cedba6fe5506498676686e3bf9",
       "size": [
         640,
         160
@@ -15278,8 +15278,8 @@
     },
     {
       "file": "sky-island/players/player-purple-walk-left.webp",
-      "bytes": 39936,
-      "sha256": "c1cad6f7b9026d0d7e01797056a7e668511c15a38d62c3a93c47b6d9f6d5efc1",
+      "bytes": 34240,
+      "sha256": "d7bb95469afbc5caa622db1587b04600a700cce79140fc1278a08837af0b5f62",
       "size": [
         640,
         160
@@ -15288,8 +15288,8 @@
     },
     {
       "file": "sky-island/players/player-purple-walk-right.webp",
-      "bytes": 39176,
-      "sha256": "1d37b6e1787f4db33dcf3969eb8fcc7f710dc0fbc444d28f50b902c40c6de33a",
+      "bytes": 33424,
+      "sha256": "2809ed31a0aa6332455b4fa23b55c82c571525fbdd0cfea855382b12dcc0016f",
       "size": [
         640,
         160
@@ -15298,8 +15298,8 @@
     },
     {
       "file": "sky-island/players/player-purple-walk-up.webp",
-      "bytes": 32566,
-      "sha256": "bb6a2b5a5b4b1c5d4a73bb3e6bb5e8963e54538048d6e9e66413c2dedd88450d",
+      "bytes": 27322,
+      "sha256": "735390c9229ba2cdeda52d2cd0aea9f8983262a30cacceba3ea6506f6d5ccaef",
       "size": [
         640,
         160
@@ -15308,8 +15308,8 @@
     },
     {
       "file": "sky-island/players/player-purple-wave.webp",
-      "bytes": 38898,
-      "sha256": "75b636d24bc7ac76c275d52be51f78d5822aa9e87303afb91bcd6099d34c8efe",
+      "bytes": 32926,
+      "sha256": "b2cd02ead5922c4d173473058bf65c13dc54281836870758da0bae5646d5eb1c",
       "size": [
         640,
         160
@@ -15318,8 +15318,8 @@
     },
     {
       "file": "sky-island/players/player-silver-direction-down.webp",
-      "bytes": 10136,
-      "sha256": "91323cf29fde15d5ff79823b0c834ab9d63531523b2e237bc750657053881ef9",
+      "bytes": 8538,
+      "sha256": "4431e6078315ee0a1f1e6b09e0207036af4fee9621e04c582c555a445493aa43",
       "size": [
         160,
         160
@@ -15328,8 +15328,8 @@
     },
     {
       "file": "sky-island/players/player-silver-direction-left.webp",
-      "bytes": 8928,
-      "sha256": "9a2ef15d2149df03e02b3ad3bc5f9b517e24f42a2c293ce09d1786ffce127de0",
+      "bytes": 7416,
+      "sha256": "f808185add098166aff13c222e8c3fa79333f3fa1dab51f8eb5867d915e8c1cc",
       "size": [
         160,
         160
@@ -15338,8 +15338,8 @@
     },
     {
       "file": "sky-island/players/player-silver-direction-right.webp",
-      "bytes": 9016,
-      "sha256": "122a02151760eb7c8c7e7a7f1620cd45aab7247c30b8d1057a638c9934752e75",
+      "bytes": 7316,
+      "sha256": "6012b00d312a9ab62d1ae0ecd0b30116860193c2eef31549820fd32001163291",
       "size": [
         160,
         160
@@ -15348,8 +15348,8 @@
     },
     {
       "file": "sky-island/players/player-silver-direction-up.webp",
-      "bytes": 9556,
-      "sha256": "2141a48c25c96090e6ffef46ef75943611c7d62a42770e6d3c72e5de91fcd846",
+      "bytes": 7942,
+      "sha256": "22607de479c1e77468b14088a5c2a500a1895cd585975afac82580df24b32a1e",
       "size": [
         160,
         160
@@ -15358,8 +15358,8 @@
     },
     {
       "file": "sky-island/players/player-silver-draw-down.webp",
-      "bytes": 38182,
-      "sha256": "76540b209bd732c1ceda216c085bd895c34237375a2d2440bf02690f26c429ef",
+      "bytes": 33102,
+      "sha256": "d3526d5f2b131196f564fd482709490fe0824ae68cfa06b56d9a64b9c13ab7ff",
       "size": [
         640,
         160
@@ -15368,8 +15368,8 @@
     },
     {
       "file": "sky-island/players/player-silver-draw-left.webp",
-      "bytes": 33338,
-      "sha256": "95efe353617f17d29d3a9187efaaae1e6c7cb57661163c6618696a04a03ef7d5",
+      "bytes": 28666,
+      "sha256": "7471490028b12040a081de9f0a4e3dadb552113fc4d09fcde1dfaa36aec1a0d0",
       "size": [
         640,
         160
@@ -15378,8 +15378,8 @@
     },
     {
       "file": "sky-island/players/player-silver-draw-right.webp",
-      "bytes": 33050,
-      "sha256": "7cd01d824af45c8b7d67ec7958f44192fccc5b2b5c48ff288a747b8d4c18ce72",
+      "bytes": 27864,
+      "sha256": "f216c6c45eeccbfd8ae0109697efc3bf1b2d677e8d42a0854737c3b953a803a4",
       "size": [
         640,
         160
@@ -15388,8 +15388,8 @@
     },
     {
       "file": "sky-island/players/player-silver-draw-up.webp",
-      "bytes": 35578,
-      "sha256": "1bce0e914110133829769bac8f06ff67f24cf48d7d80478787828c85164b16ee",
+      "bytes": 30840,
+      "sha256": "c6e0ebc76bcdcdd9a9476d0791bfc674cedccc3878f99712bdfa4bce9d572030",
       "size": [
         640,
         160
@@ -15398,8 +15398,8 @@
     },
     {
       "file": "sky-island/players/player-silver-review-down.webp",
-      "bytes": 36182,
-      "sha256": "df5e7a11c49954b147cba20104cf55238056080d3162e69736e2430f6269a4eb",
+      "bytes": 30260,
+      "sha256": "5fa3793d7e5ced945e7a754e0183d551db638068407f7df686c1ab84639a8be5",
       "size": [
         640,
         160
@@ -15408,8 +15408,8 @@
     },
     {
       "file": "sky-island/players/player-silver-review-left.webp",
-      "bytes": 33876,
-      "sha256": "11f9fa493aa387fc856ca2af88488fbc123c9956009a29eafc00b1c7cf162202",
+      "bytes": 28200,
+      "sha256": "637b77e30631a6f53f5dc5a455839788158c3b8cc68a40ae04081271e967d537",
       "size": [
         640,
         160
@@ -15418,8 +15418,8 @@
     },
     {
       "file": "sky-island/players/player-silver-review-right.webp",
-      "bytes": 33414,
-      "sha256": "18fd34b176a9679e1a8293c19d6495e439436e138f9901f089c079ff4ed81706",
+      "bytes": 27776,
+      "sha256": "55d0890c82a9b370c94247de2d56353817d4ddb16c9c729eb25f7cec4170d536",
       "size": [
         640,
         160
@@ -15428,8 +15428,8 @@
     },
     {
       "file": "sky-island/players/player-silver-review-up.webp",
-      "bytes": 30746,
-      "sha256": "911540ec78fc051dc8e1de792e2f7f4972aac42900d236c1a4adc760e530625e",
+      "bytes": 26116,
+      "sha256": "a70a2f1e05520d9e3af11ab08a538f11742431b88fc9a7ad02aea71abadc7a6e",
       "size": [
         640,
         160
@@ -15438,8 +15438,8 @@
     },
     {
       "file": "sky-island/players/player-silver-sit.webp",
-      "bytes": 37242,
-      "sha256": "1d91e8c790e49c2c9f91065ce716a8a6013f2b038eac1d04c122ebc46e3c26fc",
+      "bytes": 30872,
+      "sha256": "0046c02396538fc56235093859ba0eabfbc1b14c4a1473f786025eeb8db94f70",
       "size": [
         640,
         160
@@ -15448,8 +15448,8 @@
     },
     {
       "file": "sky-island/players/player-silver-state-draw.webp",
-      "bytes": 9978,
-      "sha256": "f8a575eb231b11d0947e374b01a07244072bf9cc28fe3dde3adddfe07bd1c325",
+      "bytes": 8530,
+      "sha256": "f199da1bd0403e28d96b1661f08b72e7a9f536e7893c89e6faf61fd18f878227",
       "size": [
         160,
         160
@@ -15458,8 +15458,8 @@
     },
     {
       "file": "sky-island/players/player-silver-state-review.webp",
-      "bytes": 9214,
-      "sha256": "ea758a5f64ddd529f3b9cff18da66fd63b7c0abab0adfb162978345d369c00d4",
+      "bytes": 7748,
+      "sha256": "43fd3a6d3afbbf81bde360308ee45ce496cc5bc9c617e674e41ecaa46258beee",
       "size": [
         160,
         160
@@ -15468,8 +15468,8 @@
     },
     {
       "file": "sky-island/players/player-silver-state-talk.webp",
-      "bytes": 9936,
-      "sha256": "876e60f7ae3bf499b3340049de8563e3a8535c395e4dbba89292f9c597df3e50",
+      "bytes": 8624,
+      "sha256": "ab2163efce7a1daf019be3e9f8cacad6df585d95bab10e06281170b36032f202",
       "size": [
         160,
         160
@@ -15478,8 +15478,8 @@
     },
     {
       "file": "sky-island/players/player-silver-talk-down.webp",
-      "bytes": 38168,
-      "sha256": "c13fffefb145d0a3114b5b0fbce1a89ae0241a08a1403ac9abf9805ac05c994a",
+      "bytes": 33122,
+      "sha256": "9f87cd8ae7530056450662341edba46f81caed479413c60289226a8b98eae20a",
       "size": [
         640,
         160
@@ -15488,8 +15488,8 @@
     },
     {
       "file": "sky-island/players/player-silver-talk-left.webp",
-      "bytes": 33474,
-      "sha256": "a349a968d2bfd8874baf0572d423b1ce44c699bcb15447b6c0e04849066088ea",
+      "bytes": 28426,
+      "sha256": "81d636e92c9176850ed77d800761f2d793a0f051f9a8cba5a4896505272056ef",
       "size": [
         640,
         160
@@ -15498,8 +15498,8 @@
     },
     {
       "file": "sky-island/players/player-silver-talk-right.webp",
-      "bytes": 33074,
-      "sha256": "cac43256bca3d17ae86114b61ada26137d83a77312db77f4146a969b89cc82b5",
+      "bytes": 28144,
+      "sha256": "7f6d07b0b4a08fe2dd0171a00d286c9b59c0f8bf2b678e0eb662c3eaa434652f",
       "size": [
         640,
         160
@@ -15508,8 +15508,8 @@
     },
     {
       "file": "sky-island/players/player-silver-talk-up.webp",
-      "bytes": 35524,
-      "sha256": "55bbee5c08085b2bd690b2cbae829faff89bb4b36bd586351e394fe1041eb88a",
+      "bytes": 30612,
+      "sha256": "8087f671aab13ea4a69091a72fc02781680083bf73046f5d2edffd3d6d6c163b",
       "size": [
         640,
         160
@@ -15518,8 +15518,8 @@
     },
     {
       "file": "sky-island/players/player-silver-walk-down.webp",
-      "bytes": 34506,
-      "sha256": "9e675ebfdd5143bc373867fe6a14460cf9e6c741aeea0b2e31fec4623296e0d3",
+      "bytes": 28952,
+      "sha256": "cf4052171c2b2ceab9fa17d170126a74e4ed48071e5560ea8ef9171be4ea5940",
       "size": [
         640,
         160
@@ -15528,8 +15528,8 @@
     },
     {
       "file": "sky-island/players/player-silver-walk-left.webp",
-      "bytes": 38070,
-      "sha256": "1a34ead12ad2ba406b5660b2f4c7f8e44c5e30a5c7e36359b57c5efb563c5825",
+      "bytes": 32036,
+      "sha256": "57bf7c0353a0fefa4b6655c159d8f9a418199d7e2aa5d262a6cca208cbad1b98",
       "size": [
         640,
         160
@@ -15538,8 +15538,8 @@
     },
     {
       "file": "sky-island/players/player-silver-walk-right.webp",
-      "bytes": 36404,
-      "sha256": "43f2f3e632490ea0458eb6e8d143a56ddfc90875a2adb1ce87b5a73e0307a79d",
+      "bytes": 30252,
+      "sha256": "e91fb8c870d295aec50f1bc1643ef1864b900bad6dd20b8d41105c62bdb8b87d",
       "size": [
         640,
         160
@@ -15548,8 +15548,8 @@
     },
     {
       "file": "sky-island/players/player-silver-walk-up.webp",
-      "bytes": 30034,
-      "sha256": "ac79a579382b2c837521e1d9e7b20ed5aefaf196d78e768593a4ae18bd45b20f",
+      "bytes": 25226,
+      "sha256": "b331368571d1f869f0fac5a07c6068f9d1858758c5fa03b42f9cc27d60484e4b",
       "size": [
         640,
         160
@@ -15558,8 +15558,8 @@
     },
     {
       "file": "sky-island/players/player-silver-wave.webp",
-      "bytes": 29200,
-      "sha256": "4b6a0630541aa5edf4195d662a11363b532b83ed30c23ce00ca24cebfbc0c0f4",
+      "bytes": 24592,
+      "sha256": "8f5813375d1f138f8d334ea1f8faf447ef9a9ea43ce2433532334172c5aa5aec",
       "size": [
         640,
         160
