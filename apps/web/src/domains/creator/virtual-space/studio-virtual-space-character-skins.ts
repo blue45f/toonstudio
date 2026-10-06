@@ -20,6 +20,7 @@ import {
   DARK_DRAWN_POSES, DARK_DRAWN_WALKS,
   PURPLE_DRAWN_POSES, PURPLE_DRAWN_WALKS,
 } from "./studio-virtual-space-character-drawn-art";
+import { studioCharacterFaceSheets } from "./studio-virtual-space-character-frame-sets";
 import {
   createProceduralCharacterSkin,
   defaultProceduralSheetDeps,
@@ -194,6 +195,9 @@ export const STUDIO_CHARACTER_SKINS: readonly StudioCharacterSkin[] = Object.fre
     directional: directionUrls("pink"),
     clips: PINK_DRAWN_WALKS,
     poses: PINK_DRAWN_POSES,
+    // 표정 시트(actor-emotions)에 자기 행이 있는 드로잉 4종만 faces를 선언한다.
+    // 선언 데이터는 프레임 세트 등록부가 정본이다.
+    faces: studioCharacterFaceSheets("pink"),
     actions: { draw: PINK_DRAWN_DRAWS },
     state: {
       talk: "/assets/virtual-studio/production-v2/player-pink-state-talk.png",
@@ -201,9 +205,9 @@ export const STUDIO_CHARACTER_SKINS: readonly StudioCharacterSkin[] = Object.fre
       review: "/assets/virtual-studio/production-v2/player-pink-state-review.png",
     },
   },
-  { key: "silver", labelKo: "시나", labelEn: "Sina", directional: directionUrls("silver"), clips: SILVER_DRAWN_WALKS, poses: SILVER_DRAWN_POSES, actions: { review: SILVER_DRAWN_REVIEWS } },
-  { key: "dark", labelKo: "지훈", labelEn: "Jihun", directional: directionUrls("dark"), clips: DARK_DRAWN_WALKS, poses: DARK_DRAWN_POSES },
-  { key: "purple", labelKo: "리호", labelEn: "Riho", directional: directionUrls("purple"), clips: PURPLE_DRAWN_WALKS, poses: PURPLE_DRAWN_POSES },
+  { key: "silver", labelKo: "시나", labelEn: "Sina", directional: directionUrls("silver"), clips: SILVER_DRAWN_WALKS, poses: SILVER_DRAWN_POSES, faces: studioCharacterFaceSheets("silver"), actions: { review: SILVER_DRAWN_REVIEWS } },
+  { key: "dark", labelKo: "지훈", labelEn: "Jihun", directional: directionUrls("dark"), clips: DARK_DRAWN_WALKS, poses: DARK_DRAWN_POSES, faces: studioCharacterFaceSheets("dark") },
+  { key: "purple", labelKo: "리호", labelEn: "Riho", directional: directionUrls("purple"), clips: PURPLE_DRAWN_WALKS, poses: PURPLE_DRAWN_POSES, faces: studioCharacterFaceSheets("purple") },
   imagegen25Skin(),
   ...STUDIO_THEME_CHARACTER_SOURCES.map(createStudioThemeCharacterSkin),
   // LPC 픽셀 프리셋은 기존 인덱스·자동 배정을 바꾸지 않게 끝에 붙이고 명시 선택에만 노출한다.
@@ -386,6 +390,10 @@ export function studioCharacterSkinForArtStyle(
     clips,
     actions,
     poses: Object.freeze({ wave: v5Pose(source, artStyle, "wave"), sit: v5Pose(source, artStyle, "sit") }),
+    // 표정 시트는 드로잉 원본 캐릭터의 초상이라, 기존 표정 경로와 같은 규칙으로
+    // sky-island(드로잉 축소본 팩)에서만 원본 선언을 이어받는다. 다른 스타일의
+    // 몸 작화에 드로잉 얼굴을 얹지 않는다.
+    faces: artStyle === "sky-island" ? source.faces : undefined,
   });
   STYLED_SKIN_CACHE.set(cacheKey, styled);
   return styled;
