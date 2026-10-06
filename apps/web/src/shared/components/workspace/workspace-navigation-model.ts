@@ -6,6 +6,8 @@ export function workspaceNavigationActiveId(pathname: string): string | null {
   if (path === "/" || path === "/home" || path === "/studio/space" || /^\/studio\/p\/[^/]+\/space$/u.test(path)) return "workspace-home";
   const matches = (prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
   if (["/studio", "/production", "/story-lab", "/publish"].some(matches)) return "studio";
+  // /create 정확 경로는 작품 시작 시트라 제작 문맥이다. 하위 경로(작품·연재·챌린지)는 갤러리 문맥을 유지한다.
+  if (path === "/create") return "studio";
   if (["/team", "/collaborate", "/community", "/showcase", "/create", "/reviews", "/events", "/pencafe"].some(matches)) return "community";
   const explore = [
     "/hub", "/discover", "/explore", "/ranking", "/market", "/research",

@@ -260,7 +260,6 @@ export const STUDIO_LEGACY_ROUTE_ALIASES = [
   { from: "/shaper", to: "/studio/assets/characters/new" },
   { from: "/music", to: "/studio/assets/audio" },
   { from: "/publishing", to: "/studio/publish" },
-  { from: "/create", to: "/showcase" },
 ] as const;
 
 /** Return each duplicated string once, preserving first duplicate discovery order. */

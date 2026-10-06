@@ -14,6 +14,8 @@ export type PublicJourneyId = (typeof PUBLIC_JOURNEY)[number]["id"];
 
 export function activePublicJourney(pathname: string): PublicJourneyId | undefined {
   const path = canonicalSitePath(pathname);
+  // /create 정확 경로는 작품 시작 시트(만들기 여정)다. 하위 경로(작품·챌린지)는 나누기 여정을 유지한다.
+  if (path === "/create") return "make";
   return PUBLIC_JOURNEY.find((item) => item.paths.some((prefix) => path === prefix || path.startsWith(`${prefix}/`)))?.id;
 }
 

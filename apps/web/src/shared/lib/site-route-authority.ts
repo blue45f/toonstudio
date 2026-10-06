@@ -96,7 +96,6 @@ export const SITE_ROUTE_ALIASES = {
   "/brush-lab": "/studio/assets/brushes/new",
   "/canvas": "/studio/canvas",
   "/challenges": "/showcase/challenges",
-  "/create": "/showcase",
   "/create/challenges": "/showcase/challenges",
   "/create/promo": "/showcase/promo",
   "/creator-hub": "/studio",

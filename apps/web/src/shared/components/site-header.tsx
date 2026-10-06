@@ -396,6 +396,8 @@ function headerSectionForPath(rawPathname: string): HeaderSectionId | null {
     || pathMatchesAny(pathname, STUDIO_ASSET_PREFIXES)
     || pathMatchesAny(pathname, STUDIO_PUBLISH_PREFIXES)
   ) return "studio";
+  // /create 정확 경로는 작품 시작 시트라 제작 문맥이다. 하위 경로는 갤러리 문맥을 유지한다.
+  if (pathname === "/create") return "studio";
   if (matchesPrefix(pathname, "/community") || pathMatchesAny(pathname, COMMUNITY_PURPOSE_PREFIXES)) return "community";
   if (isDiscoverPurposeRoute(pathname)) return "explore";
   return null;
@@ -426,7 +428,8 @@ function purposeActive(
   if (href === "/discover") return isDiscoverPurposeRoute(pathname);
   if (href === "/ranking") return matchesPrefix(pathname, "/ranking");
   if (href === "/community")
-    return pathMatchesAny(pathname, COMMUNITY_PURPOSE_PREFIXES);
+    // /create 정확 경로는 시작 시트(제작 목적)라 커뮤니티로 세지 않는다. 하위 경로는 그대로다.
+    return pathname !== "/create" && pathMatchesAny(pathname, COMMUNITY_PURPOSE_PREFIXES);
   if (href === "/library") return matchesPrefix(pathname, "/library");
   if (href === "/my") return pathMatchesAny(pathname, MY_PURPOSE_PREFIXES);
   if (href === "/market") return matchesPrefix(pathname, "/market");

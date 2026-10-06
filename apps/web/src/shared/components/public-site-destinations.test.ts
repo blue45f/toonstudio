@@ -9,7 +9,7 @@ describe("connected public destinations", () => {
     ["/references", "discover"], ["/research/assets/", "discover"], ["/learn/lessons/panels", "learn"],
     ["/guide", "learn"], ["/market/resource/brush", "market"], ["/create/work/a", "share"],
     ["/pencafe/100%25", "share"], ["/community/post/a", "share"],
-    ["/make?from=home", "make"], ["/studio/new", "make"], ["/create/promo", "share"],
+    ["/make?from=home", "make"], ["/studio/new", "make"], ["/create", "make"], ["/create/promo", "share"],
     ["/market/browse?sort=newest", "market"], ["/learn/#lessons", "learn"],
   ])("announces one purpose for %s", (path, expected) => {
     expect(activePublicJourney(path)).toBe(expected);

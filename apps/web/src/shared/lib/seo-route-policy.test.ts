@@ -25,15 +25,24 @@ describe("resolveSeoRoutePolicy", () => {
   });
 
   it("canonicalizes historical aliases before deciding indexability", () => {
-    expect(resolveSeoRoutePolicy("/create")).toEqual({
-      canonicalPath: "/showcase",
-      robots: INDEX_ROBOTS,
-      indexable: true,
-    });
     expect(resolveSeoRoutePolicy("/shaper")).toEqual({
       canonicalPath: "/studio/assets/characters/new",
       robots: NOINDEX_PRIVATE_ROBOTS,
       indexable: false,
+    });
+  });
+
+  it("treats the /create start sheet as its own canonical app surface", () => {
+    expect(resolveSeoRoutePolicy("/create")).toEqual({
+      canonicalPath: "/create",
+      robots: NOINDEX_FOLLOW_ROBOTS,
+      indexable: false,
+    });
+    // 갤러리로 일원화된 하위 경로는 여전히 쇼케이스가 정본이다.
+    expect(resolveSeoRoutePolicy("/create/challenges")).toEqual({
+      canonicalPath: "/showcase/challenges",
+      robots: INDEX_ROBOTS,
+      indexable: true,
     });
   });
 

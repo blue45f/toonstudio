@@ -127,6 +127,8 @@ export function resolveRouteStageDesign(
 ): RouteStageDesign {
   const pathname = canonicalSitePath(input);
   if (pathname === "/") return design("home", "site-family");
+  // /create 정확 경로는 작품 시작 시트라 프로젝트 문맥이다. 하위 경로는 발행 패밀리를 유지한다.
+  if (pathname === "/create") return design("projects", "site-family");
   const isStudio = belongsTo(pathname, "/studio");
   const registration = pathname.startsWith("/") ? resolveStudioRouteRegistration(pathname) : null;
   if (registration && registration.shell !== "editor") {
