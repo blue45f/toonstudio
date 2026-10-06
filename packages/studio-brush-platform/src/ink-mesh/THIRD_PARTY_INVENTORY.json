@@ -24,11 +24,11 @@
   "artifacts": [
     {
       "path": "ink_mesh.mjs",
-      "sha256": "e81d758845ef37cca23fa47330fc23c109fc813ffcbe332f813b4bd15ad29493"
+      "sha256": "24df68c4d35ed25960c8af90fa16f354726a007a40df220d0e77c6945a8bd8e8"
     },
     {
       "path": "ink_mesh.wasm",
-      "sha256": "baee81840296eab12301803261d47200560d78c955a97a6679cbe67527ebbc3d"
+      "sha256": "74b6bebcf64b6a48f6648f898df5529f2627d1f29d4d861c215447bec8aa9312"
     }
   ]
 }
