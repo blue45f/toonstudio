@@ -81,8 +81,10 @@ describe("ProductionLandingPage portfolio", () => {
     // The heading belongs to the loading shell; both API results settle before cards appear.
     expect(await screen.findByText("위험한 연재작")).toBeTruthy();
     expect(screen.getByText("내 통합 작업함")).toBeTruthy();
-    expect(screen.getByText("18화 선화 마무리")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /운영 열기/u }).getAttribute("href"))
+    // 개요의 "다음 행동"이 작업함 첫 항목을 한 번 더 승격해 보여 주므로 두 곳에 나타난다.
+    expect(screen.getAllByText("18화 선화 마무리")).toHaveLength(2);
+    expect(screen.getByText("오늘의 제작 한눈에")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /개요 열기/u }).getAttribute("href"))
       .toBe("/production/projects/project-risk/overview");
     await waitFor(() => expect(api.listProductionProjects).toHaveBeenCalledTimes(1));
     expect(api.getProductionPersonalInbox).toHaveBeenCalledTimes(1);
