@@ -28,10 +28,8 @@ describe("공통 브랜드 푸터의 이동 계약", () => {
     for (const group of SITE_NAVIGATION_GROUPS) {
       const navigation = within(footer).getByRole("navigation", { name: siteNavigationText(group.label, locale) });
       for (const item of group.items.filter((item) => item.id !== "technology")) {
-        // 운세는 내비 톤에 맞춰 "운세" 라벨로 노출한다 ("사주·타로 운세" 아님).
-        const name = item.id === "fortune"
-          ? (locale === "ko" ? "운세" : "Fortune")
-          : siteNavigationText(item.label, locale);
+        // 모든 목적지는 단일 지도의 정본 라벨 그대로 노출한다 (표면별 덮어씀 없음).
+        const name = siteNavigationText(item.label, locale);
         expect(within(navigation).getByRole("link", { name }).getAttribute("href")).toBe(item.href);
       }
     }

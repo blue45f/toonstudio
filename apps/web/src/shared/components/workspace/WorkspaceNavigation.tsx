@@ -1,4 +1,3 @@
-import { Mountain } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -30,29 +29,25 @@ const PREMIUM_NAV_ART: Readonly<Record<string, string>> = {
  * 시안(s1/hub)의 좌측 메뉴가 한 목록에 두는 제작 하위 목적지.
  * 다섯 개 주 목적지 계약(TOONSTUDIO_PRIMARY_NAVIGATION)은 그대로 두고,
  * 넓은 화면에서만 별도 "제작 바로가기" 묶음으로 이어 붙인다.
+ * 이름은 단일 지도(SITE_NAVIGATION_ITEMS)의 정본 라벨을 그대로 쓴다 —
+ * 같은 목적지를 표면마다 다른 이름으로 부르지 않는다.
  */
 const WORKSPACE_SHORTCUTS: readonly SiteNavigationItem[] = [
   {
     ...SITE_NAVIGATION_ITEMS.make,
     id: "shortcut-canvas",
-    label: { ko: "캔버스", en: "Canvas" },
   },
   {
     ...SITE_NAVIGATION_ITEMS.shaper,
     id: "shortcut-character",
-    label: { ko: "캐릭터", en: "Character" },
   },
   {
+    ...SITE_NAVIGATION_ITEMS.bg3d,
     id: "shortcut-bg3d",
-    href: "/studio/bg3d",
-    icon: Mountain,
-    label: { ko: "배경 · 3D", en: "Background · 3D" },
-    description: { ko: "장면·카메라·원근을 잡아 배경 완성", en: "Frame scenes, cameras and perspective" },
   },
   {
     ...SITE_NAVIGATION_ITEMS.studioAssets,
     id: "shortcut-assets",
-    label: { ko: "에셋", en: "Assets" },
   },
   {
     ...SITE_NAVIGATION_ITEMS.virtualStudio,
@@ -61,7 +56,6 @@ const WORKSPACE_SHORTCUTS: readonly SiteNavigationItem[] = [
   {
     ...SITE_NAVIGATION_ITEMS.workspaceTeam,
     id: "shortcut-team",
-    label: { ko: "팀", en: "Team" },
   },
 ];
 

@@ -6,7 +6,6 @@ import {
   SITE_UTILITY_NAVIGATION,
   siteNavigationLocale,
   siteNavigationText,
-  type SiteNavigationText,
 } from "./site-navigation";
 import { ToonStudioBrand } from "./toonstudio-brand";
 
@@ -33,13 +32,7 @@ const POLICY_LINKS = [
   { key: "footer.link.copyright", href: "/copyright" },
 ] as const;
 
-/** "별빛 관측소" 세계관은 /fortune 페이지 내부에 두고, 내비 라벨은 사이트 톤에 맞춘다. */
-const FORTUNE_NAV_LABEL: SiteNavigationText = { ko: "운세", en: "Fortune" };
-const FORTUNE_NAV_DESCRIPTION: SiteNavigationText = {
-  ko: "오늘의 운세와 타로를 가볍게 확인",
-  en: "Check today's fortune and tarot, lightly",
-};
-
+/** 목적지 이름은 단일 지도의 정본 라벨을 그대로 쓴다. 표면별 덮어씀 금지. */
 export function SiteFooter() {
   useBilingualI18nRevision();
   const language = useI18n((state) => state.lang);
@@ -90,15 +83,9 @@ export function SiteFooter() {
                   <li key={item.id}>
                     <Link
                       href={item.href}
-                      title={siteNavigationText(
-                        item.id === "fortune" ? FORTUNE_NAV_DESCRIPTION : item.description,
-                        locale
-                      )}
+                      title={siteNavigationText(item.description, locale)}
                     >
-                      {siteNavigationText(
-                        item.id === "fortune" ? FORTUNE_NAV_LABEL : item.label,
-                        locale
-                      )}
+                      {siteNavigationText(item.label, locale)}
                     </Link>
                   </li>
                 ))}

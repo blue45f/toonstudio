@@ -91,6 +91,9 @@
 .site-menu-directory:hover, .site-menu-directory[aria-current="page"] { border-color: var(--color-accent); color: var(--color-accent); }
 .site-menu-directory:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 .site-menu-group { min-width: 0; padding: 4px 0; }
+/* 단일 지도에서 현재 여정 구간만 강조한다. 지도 자체는 모든 화면에서 같다. */
+.site-menu-group[data-current-journey="true"] { border-radius: 14px; outline: 1px solid var(--color-accent); outline-offset: 6px; background: var(--color-accent-soft); }
+.site-menu-group__current { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; color: var(--color-on-accent); background: var(--color-accent); font-size: 0.625rem; font-weight: 700; letter-spacing: 0.04em; vertical-align: 2px; }
 
 .public-footer-invitation {
   /* Artwork always uses a dark stage, independently of the surrounding theme. */

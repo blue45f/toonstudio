@@ -14,7 +14,9 @@ import {
   mobileSiteTabsForPath,
   primarySiteNavigationForPath,
   siteNavigationContextForPath,
+  siteNavigationGroupForPath,
   siteNavigationGroupsForPath,
+  siteNavigationJourneyForPath,
   siteNavigationLocale,
   siteNavigationText,
 } from "./site-navigation";
@@ -51,8 +53,8 @@ describe("site navigation information architecture", () => {
     expect(SITE_NAVIGATION_ITEMS.market.label.ko).toBe("소재 마켓");
   });
 
-  it("학습과 작업 자료를 먼저 제공하고 운세·타로 기능도 성장 메뉴에 유지한다", () => {
-    const growItems = TOONSPECTRUM_NAVIGATION_GROUPS.find(
+  it("학습과 작업 자료를 먼저 제공하고 운세 기능도 성장 메뉴에 유지한다", () => {
+    const growItems = SITE_NAVIGATION_GROUPS.find(
       (group) => group.id === "grow",
     )?.items;
 
@@ -67,51 +69,97 @@ describe("site navigation information architecture", () => {
       "technology",
     ]);
     expect(SITE_NAVIGATION_ITEMS.fortune.href).toBe("/fortune");
-    expect(SITE_NAVIGATION_ITEMS.fortune.label.ko).toContain("타로");
+    // 목적지 이름은 하나다: 내비 정본 라벨은 "운세"이고 상세는 설명이 맡는다.
+    expect(SITE_NAVIGATION_ITEMS.fortune.label.ko).toBe("운세");
+    expect(SITE_NAVIGATION_ITEMS.fortune.description.ko).toContain("타로");
     expect(siteNavigationContextForPath("/fortune")).toBe("spectrum");
   });
 
-  it("exposes the engineering story from both product drawers", () => {
-    const studioResources = TOONSTUDIO_NAVIGATION_GROUPS.find(
-      (group) => group.id === "production-resources",
-    )?.items;
-    const spectrumGrowth = TOONSPECTRUM_NAVIGATION_GROUPS.find(
+  it("exposes the engineering story from the single map", () => {
+    const growth = SITE_NAVIGATION_GROUPS.find(
       (group) => group.id === "grow",
     )?.items;
 
-    expect(studioResources).toContain(SITE_NAVIGATION_ITEMS.technology);
-    expect(spectrumGrowth).toContain(SITE_NAVIGATION_ITEMS.technology);
+    expect(growth).toContain(SITE_NAVIGATION_ITEMS.technology);
   });
 
-  it("keeps compatibility exports attached to the Spectrum product context", () => {
+  it("keeps compatibility exports attached to the single map", () => {
     expect(PRIMARY_SITE_NAVIGATION).toBe(TOONSPECTRUM_PRIMARY_NAVIGATION);
     expect(SITE_NAVIGATION_GROUPS).toBe(TOONSPECTRUM_NAVIGATION_GROUPS);
+    expect(SITE_NAVIGATION_GROUPS).toBe(TOONSTUDIO_NAVIGATION_GROUPS);
   });
 
-  it("opens the Spectrum drawer with creation tools before discovery, growth, community and history", () => {
-    expect(TOONSPECTRUM_NAVIGATION_GROUPS.map((group) => group.id)).toEqual([
-      "create",
+  it("지도는 하나뿐이며 여정 순서(시작 → 제작 → 연재 → 협업)로 구간이 이어진다", () => {
+    expect(SITE_NAVIGATION_GROUPS.map((group) => group.id)).toEqual([
       "discover",
+      "create",
       "grow",
+      "publish",
       "connect",
       "personal",
     ]);
-    expect(TOONSPECTRUM_NAVIGATION_GROUPS[0]?.items.map((item) => item.href)).toEqual([
+    expect(SITE_NAVIGATION_GROUPS.map((group) => group.journey)).toEqual([
+      "start",
+      "create",
+      "create",
+      "publish",
+      "collaborate",
+      "start",
+    ]);
+    const create = SITE_NAVIGATION_GROUPS.find((group) => group.id === "create");
+    expect(create?.items.map((item) => item.href)).toEqual([
+      "/studio",
       "/studio/new",
       "/studio/comic",
       "/studio/assets/characters/new",
+      "/studio/bg3d",
       "/studio/space",
+      "/studio/assets",
       "/production",
     ]);
-    expect(TOONSPECTRUM_NAVIGATION_GROUPS[1]?.items[0]).toBe(
-      SITE_NAVIGATION_ITEMS.explore,
-    );
+    expect(SITE_NAVIGATION_ITEMS.virtualStudio.href).toBe("/studio/space");
   });
 
-  it("puts the virtual studio next to the personal workspace in the Studio drawer", () => {
-    const flow = TOONSTUDIO_NAVIGATION_GROUPS.find((group) => group.id === "production-flow")?.items;
-    expect(flow?.map((item) => item.id)).toEqual(["workspace-home", "virtual-studio", "production", "growth-lab"]);
-    expect(SITE_NAVIGATION_ITEMS.virtualStudio.href).toBe("/studio/space");
+  it("구 이중 지도의 목적지를 하나도 잃지 않고 중복 없이 담는다", () => {
+    const hrefs = SITE_NAVIGATION_GROUPS.flatMap((group) =>
+      group.items.map((item) => item.href),
+    );
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    // 구 ToonStudio 지도(15)에만 있던 목적지
+    for (const href of ["/studio/growth", "/studio/assets", "/studio/publish", "/team", "/hub"]) {
+      expect(hrefs, href).toContain(href);
+    }
+    // 구 ToonSpectrum 지도(25)에만 있던 목적지
+    for (const href of [
+      "/studio/new", "/studio/comic", "/studio/assets/characters/new", "/discover",
+      "/ranking", "/calendar", "/recommend", "/opportunities", "/insights", "/now",
+      "/fortune", "/reviews", "/play", "/library", "/",
+    ]) {
+      expect(hrefs, href).toContain(href);
+    }
+    // 두 지도 공통 목적지
+    for (const href of [
+      "/home", "/studio/space", "/production", "/research", "/market", "/learn",
+      "/about/technology", "/showcase", "/community", "/collaborate",
+    ]) {
+      expect(hrefs, href).toContain(href);
+    }
+  });
+
+  it("현재 경로가 속한 여정 구간을 지도 자체에서 판정한다", () => {
+    expect(siteNavigationGroupForPath("/")?.id).toBe("personal");
+    expect(siteNavigationJourneyForPath("/")).toBe("start");
+    expect(siteNavigationGroupForPath("/home")?.id).toBe("personal");
+    expect(siteNavigationGroupForPath("/ranking")?.id).toBe("discover");
+    expect(siteNavigationGroupForPath("/studio/assets/characters/new")?.id).toBe("create");
+    expect(siteNavigationGroupForPath("/studio/canvas")?.id).toBe("create");
+    expect(siteNavigationJourneyForPath("/market")).toBe("create");
+    expect(siteNavigationGroupForPath("/studio/publish")?.id).toBe("publish");
+    expect(siteNavigationJourneyForPath("/studio/growth")).toBe("publish");
+    expect(siteNavigationGroupForPath("/team/people")?.id).toBe("connect");
+    expect(siteNavigationJourneyForPath("/collaborate")).toBe("collaborate");
+    expect(siteNavigationGroupForPath("/settings")).toBeNull();
+    expect(siteNavigationJourneyForPath("/settings")).toBeNull();
   });
 
   it("switches desktop and mobile navigation from the current audience context", () => {
@@ -135,10 +183,10 @@ describe("site navigation information architecture", () => {
     expect(primarySiteNavigationForPath("/help")).toBe(TOONSPECTRUM_PRIMARY_NAVIGATION);
     expect(primarySiteNavigationForPath("/home")).toBe(TOONSTUDIO_PRIMARY_NAVIGATION);
     expect(primarySiteNavigationForPath("/studio")).toBe(TOONSTUDIO_PRIMARY_NAVIGATION);
-    expect(siteNavigationGroupsForPath("/")).toBe(TOONSPECTRUM_NAVIGATION_GROUPS);
-    expect(siteNavigationGroupsForPath("/about/technology")).toBe(TOONSPECTRUM_NAVIGATION_GROUPS);
-    expect(siteNavigationGroupsForPath("/home")).toBe(TOONSTUDIO_NAVIGATION_GROUPS);
-    expect(siteNavigationGroupsForPath("/studio")).toBe(TOONSTUDIO_NAVIGATION_GROUPS);
+    // 그룹 지도는 컨텍스트가 달라도 같은 단일 지도다. 바뀌는 것은 강조뿐이다.
+    for (const pathname of ["/", "/about/technology", "/home", "/studio", "/fortune", "/team"]) {
+      expect(siteNavigationGroupsForPath(pathname), pathname).toBe(SITE_NAVIGATION_GROUPS);
+    }
     expect(mobileSiteTabsForPath("/")).toBe(TOONSPECTRUM_MOBILE_TABS);
     expect(mobileSiteTabsForPath("/discover")).toBe(TOONSPECTRUM_MOBILE_TABS);
     expect(mobileSiteTabsForPath("/home")).toBe(TOONSTUDIO_MOBILE_TABS);

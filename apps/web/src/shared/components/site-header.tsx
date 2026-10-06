@@ -165,7 +165,7 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
         href: "/studio",
         exact: true,
         icon: Palette,
-        label: { ko: "내 작품", en: "My works" },
+        label: SITE_NAVIGATION_ITEMS.studio.label,
         description: { ko: "최근 작업을 이어서 그리기", en: "Continue your recent work" },
       },
       {
@@ -186,7 +186,7 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
         id: "studio-character-3d",
         href: "/studio/assets/characters/new",
         icon: Box,
-        label: { ko: "3D 캐릭터", en: "3D character" },
+        label: SITE_NAVIGATION_ITEMS.shaper.label,
         description: { ko: "프리셋·포즈·표정으로 캐릭터 만들기", en: "Build characters with presets, poses and expressions" },
       },
       {
@@ -269,7 +269,7 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
         id: "explore-new",
         href: "/calendar",
         icon: CalendarDays,
-        label: { ko: "신작", en: "New releases" },
+        label: SITE_NAVIGATION_ITEMS.calendar.label,
         description: {
           ko: "요일별 신작과 연재 일정",
           en: "New releases and schedules by weekday",
