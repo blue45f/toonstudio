@@ -10939,6 +10939,745 @@
               ]
             }
           }
+        },
+        "npc-concierge": {
+          "key": "npc-concierge",
+          "kind": "npc",
+          "outputs": {
+            "direction-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-left": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "walk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk2"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk2"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk2"
+                },
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk2"
+                }
+              ]
+            },
+            "talk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk2"
+                }
+              ]
+            },
+            "draw-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw3"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw3"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw3"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw3"
+                }
+              ]
+            },
+            "walk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "walk2"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "walk2"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "walk2"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "walk2"
+                }
+              ]
+            },
+            "talk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "talk2"
+                }
+              ]
+            },
+            "draw-right": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "draw3p"
+                },
+                {
+                  "col": 4,
+                  "row": 1,
+                  "sheet": "draw3p"
+                },
+                {
+                  "col": 5,
+                  "row": 1,
+                  "sheet": "draw3p"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "draw3p"
+                }
+              ]
+            },
+            "walk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "walk2"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "walk2"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "walk2"
+                },
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "walk2"
+                }
+              ]
+            },
+            "talk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "talk2"
+                }
+              ]
+            },
+            "draw-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "draw3p"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "draw3p"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "draw3p"
+                },
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "draw3p"
+                }
+              ]
+            },
+            "walk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk-up"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk-up"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk-up"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk-up"
+                }
+              ]
+            },
+            "talk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "talk2"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "talk2"
+                }
+              ]
+            },
+            "draw-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "draw3"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "draw3"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "draw3"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "draw3"
+                }
+              ]
+            },
+            "review-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review2"
+                }
+              ]
+            },
+            "review-right": {
+              "cells": [
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review2"
+                }
+              ]
+            },
+            "review-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "review2"
+                }
+              ]
+            },
+            "review-up": {
+              "cells": [
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "review2"
+                }
+              ]
+            },
+            "sit": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                }
+              ]
+            },
+            "wave": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-pose2"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "poses-pose2"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "poses-pose2"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-pose2"
+                }
+              ]
+            },
+            "state-talk": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "state-draw": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw3"
+                }
+              ]
+            },
+            "state-review": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review2"
+                }
+              ]
+            }
+          },
+          "sheets": {
+            "walk": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-walk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.298,
+                0.517,
+                0.717,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.269,
+                0.501,
+                0.733,
+                1
+              ]
+            },
+            "poses-dir": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-poses-dir.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.343,
+                0.665,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.277,
+                0.494,
+                0.723,
+                1
+              ]
+            },
+            "poses-pose": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-poses-pose.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.26,
+                0.481,
+                0.728,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.258,
+                0.502,
+                0.737,
+                1
+              ]
+            },
+            "talk": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-talk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.267,
+                0.488,
+                0.708,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.263,
+                0.502,
+                0.73,
+                1
+              ]
+            },
+            "draw": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-draw.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.238,
+                0.47,
+                0.709,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.265,
+                0.501,
+                0.737,
+                1
+              ]
+            },
+            "review": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-review.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.325,
+                0.668,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.263,
+                0.501,
+                0.739,
+                1
+              ]
+            },
+            "talk2": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-talk2.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.259,
+                0.489,
+                0.713,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.282,
+                0.493,
+                0.725,
+                1
+              ]
+            },
+            "review2": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-review2.png",
+              "rows": 2,
+              "rowEdges": [
+                0,
+                0.507,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.26,
+                0.5,
+                0.74,
+                1
+              ]
+            },
+            "poses-pose2": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-poses-pose2.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.279,
+                0.505,
+                0.741,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.278,
+                0.503,
+                0.728,
+                1
+              ]
+            },
+            "walk2": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-walk2.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.277,
+                0.483,
+                0.707,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.267,
+                0.501,
+                0.734,
+                1
+              ]
+            },
+            "draw3": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-draw3.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.368,
+                0.638,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.256,
+                0.501,
+                0.745,
+                1
+              ]
+            },
+            "draw3p": {
+              "cols": 6,
+              "file": "gen-raw/pastel/npc-concierge-draw3.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.368,
+                0.638,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.198,
+                0.339,
+                0.496,
+                0.652,
+                0.798,
+                1
+              ]
+            },
+            "walk-up": {
+              "cols": 4,
+              "file": "gen-raw/pastel/npc-concierge-walk-up2.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.25,
+                0.5,
+                0.75,
+                1
+              ]
+            }
+          }
         }
       }
     }
