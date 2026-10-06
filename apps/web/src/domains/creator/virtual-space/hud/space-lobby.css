@@ -86,6 +86,18 @@
   /* 기본값은 다수 스타일의 포털 초점이다. 실제 표시 값은 스타일별 실측 초점이 인라인으로 우선한다
      (studio-virtual-space-art-style의 STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS). */
   object-position: 61% 73%;
+  transition: opacity .45s ease;
+}
+/* 텍스처가 도착하기 전에는 빈 무대가 먼저 튀지 않게 감추고, 도착하면 부드럽게 드러낸다.
+   실패하면 아트 없이 캐릭터 무대만 남기고 머리말에 안내를 띄운다. */
+.space-lobby__scene-art[data-preview-state="loading"],
+.space-lobby__scene-art[data-preview-state="error"] { opacity: 0; }
+.space-lobby__scene-status {
+  margin: 0;
+  color: color-mix(in srgb, var(--color-warn) 82%, var(--color-fg));
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 /* 상단 제목·하단 칩 행의 가독성을 위한 무대 안쪽 국소 그라디언트 (화면 전체 워시가 아니다). */
 .space-lobby__scene::before {
@@ -440,6 +452,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .space-lobby__character { animation: none; }
+  .space-lobby__scene-art { transition: none; }
 }
 @media (forced-colors: active) {
   .space-lobby__stage,

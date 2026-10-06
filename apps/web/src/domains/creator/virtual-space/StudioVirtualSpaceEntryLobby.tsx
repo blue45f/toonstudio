@@ -92,6 +92,12 @@ export function StudioVirtualSpaceEntryLobby({
   const nicknameInvalid = nickname.length > 0 && !normalizedNickname;
   const canEnter = characterSelected && Boolean(normalizedNickname);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  // 월드 미리보기 텍스처의 도착 상태. 스타일별로 마지막 결과만 들고 있어,
+  // 스타일을 바꾸면 새 텍스처가 도착할 때까지 다시 로딩으로 판정한다.
+  const [previewResult, setPreviewResult] = useState<{ readonly style: StudioVirtualArtStyleKey; readonly status: "ready" | "error" } | null>(null);
+  const previewStatus: "loading" | "ready" | "error" = onboarding
+    ? "ready"
+    : previewResult && previewResult.style === artStyle ? previewResult.status : "loading";
   const resolvedBackLabel = backLabel ?? (onboarding
     ? bt("홈으로 돌아가기", "Back to home")
     : bt("작업 목록으로", "Back to work list"));
@@ -150,11 +156,19 @@ export function StudioVirtualSpaceEntryLobby({
           {onboarding
             ? <img className="space-lobby__scene-art space-lobby__scene-art--onboarding" src="/images/onboarding-character-stage.webp" alt="" draggable={false} data-onboarding-stage-art />
             : <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle}
-              style={{ objectPosition: studioVirtualLobbyPreviewObjectPosition(artStyle) }} />}
+              data-preview-state={previewStatus}
+              style={{ objectPosition: studioVirtualLobbyPreviewObjectPosition(artStyle) }}
+              ref={(img) => { if (img && img.naturalWidth > 0) setPreviewResult({ style: artStyle, status: "ready" }); }}
+              onLoad={() => setPreviewResult({ style: artStyle, status: "ready" })}
+              onError={() => setPreviewResult({ style: artStyle, status: "error" })} />}
         </div>
         <header className="space-lobby__stage-head">
           <p className="space-lobby__kicker"><Sparkles size={15} aria-hidden />{onboarding ? "ToonStudio Character" : "ToonStudio Spatial Campus"}</p>
           <p className="space-lobby__place">{projectName}</p>
+          {previewStatus === "error" ? <p className="space-lobby__scene-status" role="status">{bt(
+            "월드 미리보기를 불러오지 못했어요. 입장에는 영향이 없어요.",
+            "The world preview couldn't be loaded. You can still enter.",
+          )}</p> : null}
         </header>
         <div className="space-lobby__avatar" data-empty={!selectedCharacter || undefined}>
           <p className="space-lobby__nameplate" aria-live="polite">

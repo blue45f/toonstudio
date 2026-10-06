@@ -197,6 +197,34 @@ describe("캐릭터 온보딩 variant 아트 전면 구도 (W5-T3)", () => {
   });
 });
 
+describe("월드 미리보기 로딩·실패 상태 (W5-T7)", () => {
+  const props = { returning: false, projectName: "Project Aurora", onAvatarIndex: vi.fn(), onNickname: vi.fn(), onEnter: vi.fn() } as const;
+
+  it("텍스처가 도착하기 전에는 미리보기를 감춘 상태로 두고 도착하면 드러낸다", () => {
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" {...props} /></MemoryRouter>);
+    const preview = document.querySelector<HTMLImageElement>("[data-world-preview]")!;
+    expect(preview.getAttribute("data-preview-state")).toBe("loading");
+    fireEvent.load(preview);
+    expect(preview.getAttribute("data-preview-state")).toBe("ready");
+  });
+
+  it("스타일을 바꾸면 새 텍스처 기준으로 로딩 상태가 초기화된다", () => {
+    const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" {...props} /></MemoryRouter>);
+    fireEvent.load(document.querySelector("[data-world-preview]")!);
+    view.rerender(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" artStyle="neon" {...props} /></MemoryRouter>);
+    expect(document.querySelector("[data-world-preview]")!.getAttribute("data-preview-state")).toBe("loading");
+  });
+
+  it("텍스처 로딩에 실패하면 무대 머리에 안내를 띄우되 입장은 그대로 가능하다", () => {
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" {...props} /></MemoryRouter>);
+    const preview = document.querySelector<HTMLImageElement>("[data-world-preview]")!;
+    fireEvent.error(preview);
+    expect(preview.getAttribute("data-preview-state")).toBe("error");
+    expect(screen.getByText("월드 미리보기를 불러오지 못했어요. 입장에는 영향이 없어요.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "선택하고 입장" }).hasAttribute("disabled")).toBe(false);
+  });
+});
+
 describe("입장 로비 조작법 미리보기", () => {
   it("접힌 상태로 조작법 3가지를 미리 보여주고 미니 투어를 안내한다", () => {
     render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}
