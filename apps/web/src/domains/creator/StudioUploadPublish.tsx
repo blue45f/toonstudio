@@ -737,7 +737,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
         {/* 인앱 브라우저에는 주소창도 뒤로 가기 크롬도 없다 — 이 링크가 게시 화면을 벗어나는
             유일한 문이다. 모든 입력 방식에서 링크를 누를 수 있도록 44px 클릭 영역을 유지한다. */}
         <Link
-          href="/create"
+          href="/showcase"
           className="inline-flex min-h-11 items-center gap-1.5 text-sm text-fg-3 transition-colors hover:text-fg pointer-coarse:min-h-11 pointer-coarse:-mx-1 pointer-coarse:px-1"
         >
           <ArrowLeft size={15} />

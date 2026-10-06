@@ -160,7 +160,7 @@ export function StudioWorkAssetsPage({
             <Link href="/studio/assets" className={SECONDARY_ACTION_CLASS}>
               {bt("에셋 허브에서 가져오기", "Get from asset hub")}
             </Link>
-            <Link href="/create" data-studio-route-exit="site" className={SECONDARY_ACTION_CLASS}>
+            <Link href="/showcase" data-studio-route-exit="site" className={SECONDARY_ACTION_CLASS}>
               {bt("창작 게시판으로", "To creator board")}
             </Link>
           </div>

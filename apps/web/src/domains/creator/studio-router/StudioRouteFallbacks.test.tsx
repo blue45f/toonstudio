@@ -37,7 +37,7 @@ describe("studio route dead ends", () => {
     const exits = document.querySelectorAll("[data-studio-route-exit]");
     expect(exits).toHaveLength(2);
     expect(document.querySelector('[data-studio-route-exit="site"]')?.getAttribute("href"))
-      .toBe("/create");
+      .toBe("/showcase");
   });
 
   it.each(ERROR_CODES)("gives the %s failure screen both exits", (errorCode) => {

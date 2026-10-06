@@ -1512,7 +1512,7 @@ export function StudioPublishingCommandCenter({
       <Container size="wide" className={STUDIO_UPLOAD_CONTAINER_CLASS}>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Link
-          href="/create"
+          href="/showcase"
           className="inline-flex min-h-11 items-center gap-1.5 text-sm text-fg-3 transition-colors hover:text-fg"
         >
           <ArrowLeft size={15} />

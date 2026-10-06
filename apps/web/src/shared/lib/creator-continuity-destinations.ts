@@ -25,7 +25,7 @@ export const CREATOR_DESTINATIONS: readonly CreatorDestinationDefinition[] = [
   { id: "shaper", pathname: "/shaper", label: { ko: "캐릭터 셰이퍼", en: "Character shaper" }, description: { ko: "캐릭터와 포즈 구상 이어가기", en: "Continue shaping characters and poses" } },
   { id: "market", pathname: "/market", label: { ko: "에셋 마켓", en: "Asset market" }, description: { ko: "브러시·배경·소품 다시 살펴보기", en: "Return to brushes, backgrounds and props" } },
   { id: "daily", pathname: "/now", label: { ko: "오늘의 영감", en: "Daily inspiration" }, description: { ko: "오늘의 소재와 5컷 미션 이어보기", en: "Continue today's prompt and five-panel mission" } },
-  { id: "gallery", pathname: "/create", label: { ko: "창작 갤러리", en: "Creator gallery" }, description: { ko: "다른 창작자의 작품과 흐름 보기", en: "Continue discovering other creators" } },
+  { id: "gallery", pathname: "/showcase", label: { ko: "창작 갤러리", en: "Creator gallery" }, description: { ko: "다른 창작자의 작품과 흐름 보기", en: "Continue discovering other creators" } },
   { id: "explore", pathname: "/explore", label: { ko: "작품 탐색", en: "Story discovery" }, description: { ko: "장르와 태그 탐색 이어보기", en: "Continue exploring genres and tags" } },
   { id: "ranking", pathname: "/ranking", label: { ko: "통합 랭킹", en: "Rankings" }, description: { ko: "지금 움직이는 작품 다시 보기", en: "Return to stories gaining momentum" } },
   { id: "calendar", pathname: "/calendar", label: { ko: "연재 캘린더", en: "Release calendar" }, description: { ko: "요일별 연재 일정 다시 보기", en: "Return to the release schedule" } },
