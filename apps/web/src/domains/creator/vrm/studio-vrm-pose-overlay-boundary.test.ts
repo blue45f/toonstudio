@@ -32,8 +32,35 @@ describe("Studio VRM visual pose bone boundary", () => {
     expect(source).toContain("getNormalizedBoneNode(boneName)");
     expect(source).toContain('depthTest={false}');
     expect(source).toContain('depthWrite={false}');
+    // 두 오버레이 분기(수동 토글·사진 포즈 저신뢰)는 같은 억제 조건을 공유한다.
+    // 캡처 흐름은 상태 전환 뒤 프레임을 기다렸다가 장면 전체를 읽으므로, 어느
+    // 분기로 켜졌든 마커는 캡처·공유·페인트·웹캠·방송 상태에 남으면 안 된다.
+    const manualGateStart = source.indexOf("const manualPoseBoneOverlayVisible =");
+    const manualGate = source.slice(manualGateStart, source.indexOf(";", manualGateStart));
+    expect(manualGateStart).toBeGreaterThan(-1);
+    expect(manualGate).toContain("showPoseBoneOverlay");
+    const lowConfidenceGateStart = source.indexOf(
+      "const photoPoseLowConfidenceOverlayVisible =",
+    );
+    const lowConfidenceGate = source.slice(
+      lowConfidenceGateStart,
+      source.indexOf(";", lowConfidenceGateStart),
+    );
+    expect(lowConfidenceGateStart).toBeGreaterThan(-1);
+    expect(lowConfidenceGate).toContain("photoPoseLowConfidenceBones.length > 0");
+    for (const gate of [manualGate, lowConfidenceGate]) {
+      expect(gate).toContain("!texturePaintModeSelected");
+      expect(gate).toContain("!isCapturing");
+      expect(gate).toContain("!isSharingPose");
+      expect(gate).toContain("!isThumbnailCapturing");
+      expect(gate).toContain("!webcamActive");
+      expect(gate).toContain("!broadcastPreviewActive");
+    }
     expect(source).toContain(
-      "vrm && showPoseBoneOverlay && !texturePaintModeSelected && !isCapturing && !isSharingPose && !isThumbnailCapturing && !webcamActive",
+      "vrm && (manualPoseBoneOverlayVisible || photoPoseLowConfidenceOverlayVisible)",
+    );
+    expect(source).not.toContain(
+      "(showPoseBoneOverlay || photoPoseLowConfidenceOverlayVisible)",
     );
     expect(source).toContain("const releaseCaptureHelpers = acquireVrmCaptureHelperLease()");
     expect(source).toContain("await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))");

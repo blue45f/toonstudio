@@ -207,6 +207,17 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
   // MSAA가 특히 비싸서 끄고, DPR 하향은 viewportBudget이 함께 적용한다.
   const gpuTier = getStudioVrmQualityTier();
   const frameless = broadcastPreviewActive || presentation === "shaper";
+  // 수동 본 오버레이는 캡처·공유·썸네일·웹캠·방송 미리보기·표면 페인트 상태에서는
+  // 숨긴다. 캡처 흐름이 상태 전환 뒤 프레임을 기다렸다가 장면 전체를 읽으므로,
+  // 이 게이트가 마커가 어떤 캡처에도 들어가지 않는다는 경계의 근거다.
+  const manualPoseBoneOverlayVisible =
+    showPoseBoneOverlay &&
+    !texturePaintModeSelected &&
+    !isCapturing &&
+    !isSharingPose &&
+    !isThumbnailCapturing &&
+    !webcamActive &&
+    !broadcastPreviewActive;
   /**
    * 마지막 사진 포즈 적용에서 저신뢰 관절이 있으면 노란색 마커로 표시한다.
    * 다음 사진 적용이나 닫기 버튼으로 교체·해제된다.
@@ -372,7 +383,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       onTexturePaintSurfaceStateChange={setTexturePaintSurfaceToolSnapshot}
                     />
                   ) : null}
-                  {vrm && (showPoseBoneOverlay || photoPoseLowConfidenceOverlayVisible) ? (
+                  {vrm && (manualPoseBoneOverlayVisible || photoPoseLowConfidenceOverlayVisible) ? (
                     <VrmPoseBoneOverlay
                       vrm={vrm}
                       selectedBone={selectedViewportPoseBone}
