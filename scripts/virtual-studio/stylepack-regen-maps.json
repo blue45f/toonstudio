@@ -17473,7 +17473,678 @@
               "rows": 4
             }
           }
+        },
+        "player-purple": {
+          "key": "player-purple",
+          "kind": "player",
+          "outputs": {
+            "direction-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-left": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "draw-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw-left"
+                }
+              ]
+            },
+            "draw-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "review-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-right": {
+              "cells": [
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "sit": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "poses-pose-sit"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "poses-pose-sit"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "poses-pose-sit"
+                }
+              ]
+            },
+            "state-draw": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "state-review": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "state-talk": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "talk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "talk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk-left"
+                }
+              ]
+            },
+            "talk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "talk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "walk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "walk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk-left"
+                }
+              ]
+            },
+            "walk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "walk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "wave": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                }
+              ]
+            }
+          },
+          "sheets": {
+            "draw": {
+              "colEdges": [
+                0,
+                0.27,
+                0.5,
+                0.731,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-draw.png",
+              "rowEdges": [
+                0,
+                0.287,
+                0.499,
+                0.701,
+                1
+              ],
+              "rows": 4
+            },
+            "draw-left": {
+              "colEdges": [
+                0,
+                0.238,
+                0.493,
+                0.749,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-draw-left.png",
+              "rows": 1
+            },
+            "poses-dir": {
+              "colEdges": [
+                0,
+                0.247,
+                0.497,
+                0.753,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-poses-dir.png",
+              "rowEdges": [
+                0,
+                0.349,
+                0.667,
+                1
+              ],
+              "rows": 3
+            },
+            "poses-pose": {
+              "colEdges": [
+                0,
+                0.282,
+                0.499,
+                0.72,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-poses-pose.png",
+              "rowEdges": [
+                0,
+                0.235,
+                0.426,
+                0.694,
+                1
+              ],
+              "rows": 4
+            },
+            "poses-pose-sit": {
+              "colEdges": [
+                0,
+                0.282,
+                0.499,
+                0.72,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-poses-pose.png",
+              "rowEdges": [
+                0,
+                0.265,
+                0.426,
+                0.694,
+                1
+              ],
+              "rows": 4
+            },
+            "review": {
+              "colEdges": [
+                0,
+                0.261,
+                0.499,
+                0.739,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-review.png",
+              "rowEdges": [
+                0,
+                0.34,
+                0.672,
+                1
+              ],
+              "rows": 3
+            },
+            "talk": {
+              "colEdges": [
+                0,
+                0.253,
+                0.501,
+                0.748,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-talk.png",
+              "rowEdges": [
+                0,
+                0.303,
+                0.502,
+                0.704,
+                1
+              ],
+              "rows": 4
+            },
+            "talk-left": {
+              "colEdges": [
+                0,
+                0.25,
+                0.493,
+                0.746,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-talk-left.png",
+              "rows": 1
+            },
+            "walk": {
+              "colEdges": [
+                0,
+                0.248,
+                0.499,
+                0.748,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-walk.png",
+              "rowEdges": [
+                0,
+                0.303,
+                0.494,
+                0.697,
+                1
+              ],
+              "rows": 4
+            },
+            "walk-left": {
+              "colEdges": [
+                0,
+                0.251,
+                0.504,
+                0.756,
+                1
+              ],
+              "cols": 4,
+              "file": "gen-raw/retro/player-purple-walk-left.png",
+              "rows": 1
+            }
+          }
         }
+        
     
           
         }
