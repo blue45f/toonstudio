@@ -6,14 +6,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useApp } from "@/shared/lib/store";
 
-import type { ProductionProjectSummary } from "@/domains/creator/production-hub/production-api";
+import type { ProductionProjectSummary } from "@/domains/creator/public/production-projects";
 import { SerialCenterOverview } from "./SerialCenterOverview";
 
 const api = vi.hoisted(() => ({
   listProductionProjects: vi.fn(),
 }));
 
-vi.mock("@/domains/creator/production-hub/production-api", () => ({
+vi.mock("@/domains/creator/public/production-projects", () => ({
   listProductionProjects: api.listProductionProjects,
 }));
 

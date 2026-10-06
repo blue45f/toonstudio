@@ -8,7 +8,7 @@ import Link from "@/shared/navigation/router-link";
 import {
   listProductionProjects,
   type ProductionProjectSummary,
-} from "@/domains/creator/production-hub/production-api";
+} from "@/domains/creator/public/production-projects";
 
 /**
  * 연재 센터 첫 화면의 "내 작품 연재 현황".
