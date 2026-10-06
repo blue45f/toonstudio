@@ -1,4 +1,4 @@
-import { BookOpen, ExternalLink, LibraryBig, Search } from "lucide-react";
+import { ExternalLink, LibraryBig, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -21,6 +21,7 @@ import {
   translateCurrentStaticSourceText,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { TypographicCover } from "@/shared/components/typographic-cover";
 import { MotionEmptyState } from "@/shared/motion-assets";
 import { apiFetch, apiPath } from "@/platform/api";
 
@@ -47,6 +48,32 @@ function usageLabel(item: CreatorResource): string {
   return tx("메타데이터·원문 링크");
 }
 
+function BookCover({ item }: { item: CreatorResource }) {
+  const [failed, setFailed] = useState(false);
+  // 표지가 없거나 불러오지 못하면 출판사·연도 타이포 커버로 통일한다(시안 폴백 규칙).
+  if (item.imageUrl && !failed) {
+    return (
+      <img
+        src={item.imageUrl}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
+        className="aspect-[3/4] w-full bg-raised object-cover"
+      />
+    );
+  }
+  return (
+    <TypographicCover
+      title={item.title}
+      seed={item.id}
+      eyebrow={[item.credit, item.dateLabel].filter(Boolean).join(" · ") || undefined}
+      className="aspect-[3/4] w-full"
+    />
+  );
+}
+
 function BookResultCard({
   item,
   saved,
@@ -59,41 +86,32 @@ function BookResultCard({
   onToggle: () => void;
 }) {
   return (
-    <article className="flex h-full min-w-0 flex-col rounded-2xl border border-line bg-panel p-5">
-      <div className="flex items-start justify-between gap-4">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-raised text-accent">
-          <BookOpen size={19} aria-hidden="true" />
-        </span>
-        <span className="rounded-full border border-line bg-canvas px-2.5 py-1 text-xs font-semibold text-fg-2">
-          {usageLabel(item)}
-        </span>
-      </div>
-      <p className="mt-5 text-xs font-semibold text-accent">{RESOURCE_LABELS[item.provider]}</p>
-      <h3 className="mt-2 break-words text-lg font-bold leading-7 text-fg">{item.title}</h3>
-      <p className="mt-2 text-sm leading-6 text-fg-2">
-        {item.creator || tx("저자 정보는 원문에서 확인하세요.")}
-        {item.dateLabel ? ` · ${item.dateLabel}` : ""}
-      </p>
-      {item.description ? <p className="mt-3 text-sm leading-6 text-fg-2">{item.description}</p> : null}
-      <dl className="mt-4 grid gap-2 rounded-xl bg-raised p-3 text-xs leading-5 text-fg-2">
-        {item.credit ? <div><dt className="inline font-semibold text-fg">{tx("출판·제공")} </dt><dd className="inline">{item.credit}</dd></div> : null}
-        {item.isbn ? <div><dt className="inline font-semibold text-fg">ISBN </dt><dd className="inline break-all">{item.isbn}</dd></div> : null}
-        <div><dt className="inline font-semibold text-fg">{tx("조회")} </dt><dd className="inline">{new Date(item.fetchedAt).toLocaleString("ko-KR")}</dd></div>
-      </dl>
-      <p className="mt-3 text-xs leading-5 text-fg-3">
-        {item.provider === "openbd"
-          ? tx("openBD 자료는 일본 도서의 소개·홍보 범위로 사용하며 원본 서지 데이터의 재판매나 임의 변경을 하지 않습니다.")
-          : item.provider === "googlebooks"
-            ? tx("Google Books 결과는 판본 발견용 메타데이터입니다. 표지·미리보기·본문의 복제나 각색 권한을 뜻하지 않습니다.")
-            : tx("Open Library 검색 결과는 판본 조사와 원문 연결을 위한 메타데이터입니다. 표지나 도서 원문의 이용 권한을 뜻하지 않습니다.")}
-      </p>
-      <div className="mt-auto flex flex-wrap gap-2 pt-5">
-        <a className={RESOURCE_BUTTON} href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
-          {tx("원문 확인")} <ExternalLink size={14} aria-hidden="true" />
-        </a>
-        <button type="button" className={RESOURCE_BUTTON} aria-pressed={saved} disabled={disabled} onClick={onToggle}>
-          {tx(saved ? "저장 해제" : "보드에 저장")}
-        </button>
+    <article className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel">
+      <BookCover item={item} />
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-xs font-semibold text-accent">{RESOURCE_LABELS[item.provider]}</p>
+          <span className="shrink-0 rounded-full border border-line bg-canvas px-2.5 py-1 text-xs font-semibold text-fg-2">
+            {usageLabel(item)}
+          </span>
+        </div>
+        <h3 className="mt-2 break-words text-lg font-bold leading-7 text-fg">{item.title}</h3>
+        <p className="mt-2 text-sm leading-6 text-fg-2">
+          {item.creator || tx("저자 정보는 원문에서 확인하세요.")}
+        </p>
+        <dl className="mt-4 grid gap-2 rounded-xl bg-raised p-3 text-xs leading-5 text-fg-2">
+          {item.dateLabel ? <div><dt className="inline font-semibold text-fg">{tx("출판연도")} </dt><dd className="inline">{item.dateLabel}</dd></div> : null}
+          {item.isbn ? <div><dt className="inline font-semibold text-fg">ISBN </dt><dd className="inline break-all">{item.isbn}</dd></div> : null}
+          {!item.dateLabel && !item.isbn ? <div>{tx("연도·ISBN 정보는 원문에서 확인하세요.")}</div> : null}
+        </dl>
+        <div className="mt-auto flex flex-wrap gap-2 pt-5">
+          <a className={RESOURCE_BUTTON} href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
+            {tx("원문 확인")} <ExternalLink size={14} aria-hidden="true" />
+          </a>
+          <button type="button" className={RESOURCE_BUTTON} aria-pressed={saved} disabled={disabled} onClick={onToggle}>
+            {tx(saved ? "저장 해제" : "보드에 저장")}
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -189,6 +207,17 @@ export function GlobalBooksPage() {
     () => states.flatMap((state) => state.result?.items ?? []),
     [states],
   );
+  // 같은 작품의 판본은 제목 정규화 키로 묶어 표지 타일을 나란히 비교하게 한다.
+  const editionGroups = useMemo(() => {
+    const groups = new Map<string, CreatorResource[]>();
+    for (const item of items) {
+      const key = item.title.toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, "");
+      const group = groups.get(key);
+      if (group) group.push(item);
+      else groups.set(key, [item]);
+    }
+    return [...groups.values()];
+  }, [items]);
   const paginatedResults = states.filter((state) => state.provider === "openlibrary" || state.provider === "googlebooks").flatMap((state) => state.result ? [state.result] : []);
   const savedItems = workspace.saved.filter((item) => SEARCH_PROVIDERS.includes(item.provider));
   const hasPartialFailure = states.some((state) => state.error || state.result?.status === "partial" || state.result?.status === "unavailable" || state.result?.status === "not_configured");
@@ -274,15 +303,27 @@ export function GlobalBooksPage() {
 
       {requestError || hasPartialFailure ? <button className={RESOURCE_BUTTON} type="button" onClick={() => setRetry((value) => value + 1)}>{tx("다시 시도")}</button> : null}
 
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3" aria-busy={loading}>
-        {items.map((item) => (
-          <BookResultCard
-            key={item.id}
-            item={item}
-            saved={workspace.saved.some((saved) => saved.id === item.id)}
-            disabled={!ready || !writable || saving}
-            onToggle={() => toggle(item)}
-          />
+      <div className="space-y-8" aria-busy={loading}>
+        {editionGroups.map((group) => (
+          <div key={group[0].id}>
+            {group.length > 1 ? (
+              <p className="mb-3 text-sm font-bold text-fg">
+                {group[0].title}
+                <span className="ml-2 font-semibold text-fg-3">{formatI18nTemplate(tx("판본 {v0}종"), { v0: group.length })}</span>
+              </p>
+            ) : null}
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {group.map((item) => (
+                <BookResultCard
+                  key={item.id}
+                  item={item}
+                  saved={workspace.saved.some((saved) => saved.id === item.id)}
+                  disabled={!ready || !writable || saving}
+                  onToggle={() => toggle(item)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 

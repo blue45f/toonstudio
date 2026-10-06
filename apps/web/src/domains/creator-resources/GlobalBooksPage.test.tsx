@@ -186,6 +186,20 @@ describe("global book search and saved sources", () => {
     expect(screen.getByRole("button", { name: "출처 내보내기" })).toHaveProperty("disabled", true);
   });
 
+  it("groups editions of the same work side by side with typographic cover fallback", async () => {
+    request.mockImplementation(async (raw) => {
+      const provider = new URL(String(raw), "https://local.test").searchParams.get("provider") as BookProvider;
+      return response(provider);
+    });
+    renderPage("?q=manga");
+    expect(await screen.findByText(/판본 2종/u)).toBeTruthy();
+    expect(screen.getAllByRole("article")).toHaveLength(2);
+    expect(screen.getAllByRole("heading", { name: "Drawing reference" })).toHaveLength(2);
+    // 표지 이미지가 없는 판본은 출판사·연도 타이포 커버(장식 영역)로 떨어진다.
+    const card = screen.getAllByRole("article")[0];
+    expect(card.querySelector("[aria-hidden='true']")?.textContent).toContain("Publisher");
+  });
+
   it("keeps metadata readable when safe concurrent storage is unavailable", async () => {
     Object.defineProperty(navigator, "locks", { value: undefined, configurable: true });
     request.mockResolvedValueOnce(response("openlibrary", { items: [{ ...book("openlibrary"), creator: "", description: "", credit: "", isbn: "", dateLabel: "" }] }));
