@@ -61,6 +61,17 @@ export const STUDIO_VIRTUAL_SPACE_INTERACTIONS: readonly StudioVirtualSpaceInter
     hintKo: "NPC에게 일정·다음 작업·팀원 위치를 물어봐요.", hintEn: "Ask an NPC about schedules, next work and teammate locations.", emoji: "🤖", x: 490, y: 885, radius: 74, action: "assistant" }),
   interaction({ id: "lobby-today-board", zoneId: "lobby", labelKo: "오늘의 스튜디오 보드", labelEn: "Studio today board",
     hintKo: "입장 전 오늘 일정·검수·다음 작업을 확인해요.", hintEn: "Review today's schedule, reviews and next work before entering.", emoji: "📅", x: 780, y: 895, radius: 72, action: "assistant" }),
+
+  // 상태 가구 (웨이브 4): 문·조명은 반응 표(object-reaction)가 있어도 월드 배치 자체가 없었다.
+  // 좌표는 레지스트리(studio-virtual-space-interactable-objects)의 기본 월드 배치를 현행 구역에 맞춰 옮긴 값이다.
+  interaction({ id: "meeting-door", zoneId: "meeting", labelKo: "회의실 문", labelEn: "Meeting room door",
+    hintKo: "회의실 문을 여닫아요.", hintEn: "Open or close the meeting room door.", emoji: "🚪", x: 1150, y: 832, radius: 60, action: "live" }),
+  interaction({ id: "review-door", zoneId: "review", labelKo: "리뷰실 문", labelEn: "Review room door",
+    hintKo: "리뷰실 문을 여닫아요.", hintEn: "Open or close the review room door.", emoji: "🚪", x: 815, y: 522, radius: 56, action: "review" }),
+  interaction({ id: "lobby-light", zoneId: "lobby", labelKo: "로비 조명", labelEn: "Lobby light",
+    hintKo: "로비 조명을 켜고 꺼요.", hintEn: "Turn the lobby light on or off.", emoji: "💡", x: 860, y: 880, radius: 50, action: "assistant" }),
+  interaction({ id: "production-light", zoneId: "production", labelKo: "프로덕션 조명", labelEn: "Production light",
+    hintKo: "프로덕션 조명을 켜고 꺼요.", hintEn: "Turn the production light on or off.", emoji: "💡", x: 890, y: 200, radius: 50, action: "assistant" }),
 ]);
 
 export function studioVirtualSpaceInteractionDistance(
