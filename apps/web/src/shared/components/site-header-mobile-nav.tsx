@@ -9,10 +9,10 @@ import {
   SITE_UTILITY_NAVIGATION,
   mobileSiteTabsForPath,
   siteNavigationContextForPath,
+  siteNavigationGroupForPath,
   siteNavigationGroupsForPath,
   siteNavigationLocale,
   siteNavigationText,
-  type SiteNavigationText,
 } from "./site-navigation";
 import { ToonStudioMark } from "./toonstudio-mark";
 import { ToonStudioWordmark } from "./toonstudio-brand";
@@ -25,32 +25,7 @@ import { useI18n, useT } from "@/shared/lib/i18n";
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("site-header-mobile-nav", ko, en);
 
-/** "별빛 관측소" 세계관은 /fortune 페이지 내부에 두고, 내비 라벨은 사이트 톤에 맞춘다. */
-const FORTUNE_NAV_LABEL: SiteNavigationText = { ko: "운세", en: "Fortune" };
-const FORTUNE_NAV_DESCRIPTION: SiteNavigationText = {
-  ko: "오늘의 운세와 타로를 가볍게 확인",
-  en: "Check today's fortune and tarot, lightly",
-};
-
-function navigationLabel(
-  item: { id: string; label: SiteNavigationText },
-  locale: string
-): string {
-  return siteNavigationText(
-    item.id === "fortune" ? FORTUNE_NAV_LABEL : item.label,
-    locale
-  );
-}
-
-function navigationDescription(
-  item: { id: string; description: SiteNavigationText },
-  locale: string
-): string {
-  return siteNavigationText(
-    item.id === "fortune" ? FORTUNE_NAV_DESCRIPTION : item.description,
-    locale
-  );
-}
+/** 목적지 이름은 단일 지도의 정본 라벨을 그대로 쓴다. 표면별 덮어씀 금지. */
 
 /** 메뉴 맨 위 고정 행동(새 작품·내 프로젝트)과 같은 목적지는 그룹 목록에서 반복하지 않는다. */
 const PINNED_MENU_HREFS: ReadonlySet<string> = new Set(["/studio/new", "/studio"]);
@@ -147,6 +122,8 @@ export function MobileHeaderNavigation({
   const overlayRef = useRef<HTMLDivElement>(null);
   const navigationContext = siteNavigationContextForPath(pathname);
   const navigationGroups = siteNavigationGroupsForPath(pathname);
+  /** 지도는 하나다. 현재 경로가 속한 여정 구간만 강조 표시한다. */
+  const currentGroupId = siteNavigationGroupForPath(pathname)?.id ?? null;
   const mobileTabs = mobileSiteTabsForPath(pathname);
   /** The bottom tab bar is a mobile-only surface: never render it on desktop,
    * even if the CSS media query hiding it were lost. Tabs keep the canonical
@@ -297,6 +274,7 @@ export function MobileHeaderNavigation({
                     key={group.id}
                     aria-labelledby={`${menuId}-${group.id}`}
                     className="site-menu-group"
+                    data-current-journey={group.id === currentGroupId ? "true" : undefined}
                   >
                     <div className="mb-3 flex items-start gap-3 px-1 sm:px-2">
                       <span
@@ -311,6 +289,11 @@ export function MobileHeaderNavigation({
                           className="font-display text-sm font-bold text-fg"
                         >
                           {siteNavigationText(group.label, locale)}
+                          {group.id === currentGroupId && (
+                            <span className="site-menu-group__current">
+                              {bi("현재 여정", "Current journey")}
+                            </span>
+                          )}
                         </h2>
                         <p className="mt-1 text-xs leading-5 text-fg-3">
                           {siteNavigationText(group.description, locale)}
@@ -321,7 +304,7 @@ export function MobileHeaderNavigation({
                       {group.items.filter((item) => !PINNED_MENU_HREFS.has(item.href)).map((item) => {
                         const active = isActive(item.href, item.exact);
                         const Icon = item.icon;
-                        const label = navigationLabel(item, locale);
+                        const label = siteNavigationText(item.label, locale);
                         return (
                           <li key={item.id}>
                             <Link
@@ -361,7 +344,7 @@ export function MobileHeaderNavigation({
                                   aria-hidden="true"
                                   className="mt-0.5 line-clamp-1 block text-[0.68rem] leading-4 text-fg-3"
                                 >
-                                  {navigationDescription(item, locale)}
+                                  {siteNavigationText(item.description, locale)}
                                 </span>
                               </span>
                             </Link>

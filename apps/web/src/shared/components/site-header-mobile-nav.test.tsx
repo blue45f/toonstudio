@@ -58,6 +58,21 @@ describe("모바일 전체 메뉴", () => {
     expect(navigation.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
   });
 
+  it.each([
+    ["/market", "자료·성장"],
+    ["/team/people", "함께 보기"],
+    ["/studio/publish", "연재·내보내기"],
+  ])("%s에서는 현재 여정 구간 하나만 강조하고 지도는 그대로다", (pathname, groupLabel) => {
+    render(menu(true, vi.fn(), pathname));
+    const dialog = screen.getByRole("dialog");
+    const highlighted = dialog.querySelectorAll('[data-current-journey="true"]');
+    expect(highlighted).toHaveLength(1);
+    expect(highlighted[0]?.textContent).toContain(groupLabel);
+    expect(highlighted[0]?.textContent).toContain("현재 여정");
+    // 지도 자체는 컨텍스트마다 달라지지 않는다: 구간 수는 항상 같다.
+    expect(dialog.querySelectorAll(".site-menu-group")).toHaveLength(6);
+  });
+
   it("키보드 포커스를 메뉴 안에 유지하고 닫힐 때 배경 조작을 복원한다", async () => {
     const closeMenu = vi.fn();
     const view = render(menu(true, closeMenu));
