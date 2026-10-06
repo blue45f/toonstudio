@@ -6,7 +6,9 @@ import { cn } from "@/shared/lib/utils";
 import { useFortuneStore } from "./fortune-store";
 import { drawFortuneTodayCards, fortuneTodayCardsText, type FortuneTodayCard } from "./fortune-today-cards";
 import { getTarotVisual, tarotAccent, tarotFaceGradient } from "./tarot-visuals";
+import { getTarotArtPath } from "./tarot-art";
 import { TarotMotif } from "./TarotMotif";
+import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 import type { FortuneTab } from "./fortune-page-data";
 
 // 시안(s4/fortune.png)의 착지 구도 — 좌 루나 입력 카드 + 우 오늘의 카드.
@@ -25,6 +27,10 @@ const CTA_INK = "oklch(0.16 0.03 280)";
 function TodayCardArt({ card, onOpen }: { card: FortuneTodayCard; onOpen: () => void }) {
   const visual = getTarotVisual(card.id);
   const accent = tarotAccent(visual.hue);
+  // 사진풍 아트가 있으면 배너로 깔고, 없거나 로드 실패 시 그라디언트+글리프.
+  const artPath = getTarotArtPath(card.id);
+  const [artFailed, setArtFailed] = useState(false);
+  const showArt = artPath !== null && !artFailed;
   return (
     <article className="overflow-hidden rounded-3xl border border-line bg-panel/30">
       <button
@@ -34,13 +40,24 @@ function TodayCardArt({ card, onOpen }: { card: FortuneTodayCard; onOpen: () => 
         className="block w-full text-left"
       >
         <div className="relative h-40 overflow-hidden sm:h-44" style={{ backgroundImage: tarotFaceGradient(visual.hue) }}>
-          <div
-            aria-hidden
-            className="absolute right-5 top-1/2 -translate-y-1/2"
-            style={{ color: accent, filter: `drop-shadow(0 4px 18px ${accent})` }}
-          >
-            <TarotMotif id={visual.motif} size={88} strokeWidth={1.25} />
-          </div>
+          {showArt && (
+            <img
+              src={resolveAssetUrl(artPath)}
+              alt=""
+              aria-hidden
+              onError={() => setArtFailed(true)}
+              className="absolute inset-0 h-full w-full object-cover object-top"
+            />
+          )}
+          {!showArt && (
+            <div
+              aria-hidden
+              className="absolute right-5 top-1/2 -translate-y-1/2"
+              style={{ color: accent, filter: `drop-shadow(0 4px 18px ${accent})` }}
+            >
+              <TarotMotif id={visual.motif} size={88} strokeWidth={1.25} />
+            </div>
+          )}
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent p-4 pt-12">
             <span className="block text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: accent }}>
               {card.nameEn}
