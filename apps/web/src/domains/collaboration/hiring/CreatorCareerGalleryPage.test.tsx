@@ -31,6 +31,7 @@ function makeItem(id: string, role: CreatorCareerPublic["role"], title: string):
     scope: "본편 선화 전담",
     contribution: "전 회차 선화를 맡았어요.",
     portfolioUrl: "https://example.com/portfolio",
+    coverImageUrl: null,
     proof: "self-declared",
   };
 }
@@ -67,6 +68,18 @@ describe("CreatorCareerGalleryPage", () => {
     expect(links[0]?.getAttribute("rel")).toContain("noopener");
     // 스크린 리더에도 새 탭임을 명시한다
     expect(screen.getAllByText("(새 탭에서 열림)")).toHaveLength(2);
+  });
+
+  it("커버를 등록한 항목은 실제 이미지를 쓰고, 없는 항목은 타이포그래픽 커버로 폴백한다", async () => {
+    const covered = { ...makeItem("c3", "color", "파도 소나타"), coverImageUrl: "https://images.example.com/wave.png" };
+    getMock.mockResolvedValue([covered, makeItem("c4", "story", "무제 노트")]);
+    renderGallery();
+
+    const img = await screen.findByRole("img", { name: "파도 소나타 대표 커버" });
+    expect(img.getAttribute("src")).toBe("https://images.example.com/wave.png");
+    // 커버 이미지는 등록한 항목에만 있고, 커버 없는 항목은 장식용 타이포 커버(aria-hidden)를 유지한다
+    expect(screen.getAllByRole("img")).toHaveLength(1);
+    expect(screen.getByText("무제 노트")).toBeTruthy();
   });
 
   it("역할 필터로 카드를 거르고, 필터 빈 결과는 성공 빈 상태로 보여준다", async () => {
