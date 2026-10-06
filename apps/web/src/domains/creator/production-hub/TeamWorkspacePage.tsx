@@ -105,8 +105,8 @@ function TierEnforcementNote({ tier }: { tier: WorkspaceRoleTier }) {
   </p>;
 }
 const fieldClass = "min-h-11 rounded-lg border border-line bg-canvas px-3 text-fg";
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="creator-workflow-panel rounded-2xl border border-line bg-card p-5"><h2 className="mb-4 text-lg font-bold">{title}</h2>{children}</section>;
+function Card({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
+  return <section id={id} className="creator-workflow-panel scroll-mt-6 rounded-2xl border border-line bg-card p-5"><h2 className="mb-4 text-lg font-bold">{title}</h2>{children}</section>;
 }
 /** 목록 로딩 스켈레톤 한 장. 실제 워크스페이스 카드(Link)와 같은 테두리·여백·줄 높이를 쓴다.
  *  로딩 안내는 role="status" 문구가 맡으므로 이 블록은 장식으로 숨긴다. */
@@ -266,6 +266,8 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
     if (input.type === "remove-member" && input.userId === userId) navigate("/team/people");
   }
   const manager = detail && isWorkspaceManager(detail.workspace.role);
+  /** /usage 라우트에서는 사용량 카드를 상세 첫 화면으로 끌어올린다. */
+  const usageFocused = location.pathname.replace(/\/+$/u, "").endsWith("/usage");
   const inviteTier = workspaceRoleTier(inviteTierId);
   const onboardingProject = detail?.projects.find((project) => project.workId === inviteProjectId) ?? null;
   async function inviteOnboardingProjectAccess() {
@@ -312,10 +314,19 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
     </details>}
     {loading && workspaceId && !detail && <WorkspaceDetailSkeleton />}
     {detail && <><Card title={detail.workspace.name}><p className="text-sm text-fg-2">{bt("현재 역할:", "Current role:")} {bt(ROLE_LABELS[detail.workspace.role].ko, ROLE_LABELS[detail.workspace.role].en)}</p>
+      <ul aria-label={bt("팀 요약", "Team summary")} className="mt-3 flex flex-wrap gap-2 text-sm">
+        <li className="rounded-full border border-line bg-raised px-3 py-1">{bt(`구성원 ${detail.workspace.memberCount}명`, `${detail.workspace.memberCount} members`)}</li>
+        <li className="rounded-full border border-line bg-raised px-3 py-1">{bt(`대기 초대 ${detail.workspace.pendingInvites}건`, `${detail.workspace.pendingInvites} pending invites`)}</li>
+        <li className="rounded-full border border-line bg-raised px-3 py-1">{bt(`연결 작품 ${detail.workspace.projectCount}개`, `${detail.workspace.projectCount} linked projects`)}</li>
+      </ul>
+      <nav aria-label={bt("사람·권한 바로가기", "People & access shortcuts")} className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+        {detail.workspace.role !== "guest" && <a className="underline" href="#team-people-members">{bt("구성원 보기", "View members")}</a>}
+        {manager && <a className="underline" href="#team-invite">{bt("사람 초대하기", "Invite people")}</a>}
+        {manager && <Link className="underline" to={`/team/people/${detail.workspace.id}/usage`}>{bt("사용량 확인", "View usage")}</Link>}
+      </nav>
       {manager && <form className="mt-4 flex flex-wrap gap-3" onSubmit={(event) => { event.preventDefault(); void run(() => command({ type: "rename", name })); }}>
         <label className="flex flex-col gap-2">{bt("팀 이름", "Team name")}<input required maxLength={20} value={name} onChange={(event) => setName(event.target.value)} className={fieldClass} /></label>
-        <button type="submit" disabled={busy || !name.trim()} className={`${buttonClass({ variant: "outline" })} self-end`}>{bt("이름 저장", "Save name")}</button>
-        <Link className="self-end underline" to={`/team/people/${detail.workspace.id}/usage`}>{bt("사용량 확인", "View usage")}</Link></form>}</Card>
+        <button type="submit" disabled={busy || !name.trim()} className={`${buttonClass({ variant: "outline" })} self-end`}>{bt("이름 저장", "Save name")}</button></form>}</Card>
     {manager && onboarding && <Card title={bt(`${onboarding.name} 님 프로젝트 합류`, `${onboarding.name} — project join`)}>
       <p className="text-sm leading-7 text-fg-2">{bt("채용 결과를 팀 소속, 작품 접근, 첫 작업으로 이어갑니다. 각 권한은 별도로 적용되며 이 화면에서 순서대로 완료할 수 있습니다.", "Carry hiring results into team membership, project access, and a first task. Each permission applies separately and can be completed in order on this screen.")}</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -336,23 +347,16 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
       {!onboarding.email && <p className="mt-3 text-xs text-warn">{bt("지원 연락처가 이메일 형식이 아닙니다. 팀 초대 이메일을 확인해 입력해 주세요. 작품 권한 초대는 계정 ID로 보낼 수 있습니다.", "The applicant contact isn't an email address. Enter a team invite email. Project-permission invites can use the account ID.")}</p>}
       <p className="mt-3 text-xs leading-6 text-fg-3">{bt("팀 소속만으로 원고 접근 권한이 생기지 않습니다. 작품 권한 초대를 수락한 뒤 제작 보드에서 실제 담당 역할과 작업을 배정하세요.", "Team membership alone doesn't grant manuscript access. After the project-permission invite is accepted, assign real roles and tasks on the production board.")}</p>
     </Card>}
-    <Card title={bt("연결한 제작 프로젝트", "Linked projects")}><p className="mb-3 text-sm text-fg-2">{bt("팀 연결은 작품 열람 권한을 자동으로 부여하지 않습니다. 작품별 기존 구성원·비공개 원고 권한을 유지합니다.", "Linking a team doesn't auto-grant project view permissions. Existing per-project members and private manuscript permissions are kept.")}</p>
-      <ul className="space-y-3">{detail.projects.map((project) => <li key={project.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line p-3">
-        <Link className="font-semibold underline" to={`/production/projects/${project.id}/overview`}>{project.title}</Link>
-        {manager && <button disabled={busy} onClick={() => { if (window.confirm(bt("팀 연결만 해제합니다. 작품과 작품 권한은 유지됩니다.", "This only unlinks the team. The project and its permissions stay."))) void run(() => command({ type: "detach-project", projectId: project.id })); }} className={buttonClass({ variant: "outline", size: "sm" })}>{bt("연결 해제", "Unlink")}</button>}</li>)}</ul>
-      {detail.projects.length === 0 && <p className="text-sm">{bt("접근 가능한 연결 작품이 없습니다.", "No linked projects you can access.")}</p>}
-      {manager && <div className="mt-4"><label className="flex flex-col gap-2">{bt("소유한 프로젝트 연결", "Link an owned project")}<select aria-label={bt("연결할 프로젝트", "Project to link")} className={fieldClass} disabled={busy} value="" onChange={(event) => { const projectId = event.target.value; if (projectId) void run(() => command({ type: "attach-project", projectId })); }}>
-        <option value="">{bt("기존 프로젝트 선택", "Choose an existing project")}</option>{available.filter((item) => !detail.projects.some((project) => project.id === item.projectId)).map((project) => <option key={project.projectId} value={project.projectId}>{project.title}</option>)}</select></label>
-        <Link to="/studio" className="mt-3 inline-block underline">{bt("작품 라이브러리·작품별 권한 관리", "Project library & per-project permissions")}</Link></div>}</Card>
-    {detail.workspace.role !== "guest" && <Card title={bt("구성원", "Members")}><ul className="space-y-3">{detail.members.map((member) => <li key={member.userId} className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3">
-      <strong className="mr-auto">{member.displayName}</strong><span>{bt(ROLE_LABELS[member.role].ko, ROLE_LABELS[member.role].en)}</span>
+    {usageFocused && usage && <UsageCard usage={usage} />}
+    {detail.workspace.role !== "guest" && <Card id="team-people-members" title={bt("구성원", "Members")}><ul className="space-y-3">{detail.members.map((member) => <li key={member.userId} className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3">
+      <ProductionAvatar name={member.displayName} /><strong className="mr-auto">{member.displayName}</strong><span>{bt(ROLE_LABELS[member.role].ko, ROLE_LABELS[member.role].en)}</span>
       {manager && member.role !== "owner" && (detail.workspace.role === "owner" || member.role !== "admin") && <>
         <select aria-label={bt(`${member.displayName} 역할`, `${member.displayName} — role`)} disabled={busy} value={member.role} className={fieldClass} onChange={(event) => { const role = roleValue(event.target.value); void run(() => command({ type: "change-member-role", userId: member.userId, role })); }}>
           {detail.workspace.role === "owner" && <option value="admin">{bt(ROLE_LABELS.admin.ko, ROLE_LABELS.admin.en)}</option>}<option value="member">{bt(ROLE_LABELS.member.ko, ROLE_LABELS.member.en)}</option><option value="guest">{bt(ROLE_LABELS.guest.ko, ROLE_LABELS.guest.en)}</option></select>
         <button disabled={busy} className={buttonClass({ variant: "outline", size: "sm" })} onClick={() => { if (window.confirm(bt("팀에서 제외합니다. 별도로 부여한 작품 권한은 작품 설정에서 관리해주세요.", "Removes them from the team. Project permissions granted separately are managed in project settings."))) void run(() => command({ type: "remove-member", userId: member.userId })); }}>{bt("팀에서 제외", "Remove from team")}</button>
         {detail.workspace.role === "owner" && <button disabled={busy} className="underline" onClick={() => { if (window.confirm(bt(`${member.displayName}에게 팀 소유권을 이전할까요? 작품 소유권은 바뀌지 않습니다.`, `Transfer team ownership to ${member.displayName}? Project ownership stays unchanged.`))) void run(() => command({ type: "transfer-owner", userId: member.userId })); }}>{bt("소유권 이전", "Transfer ownership")}</button>}
       </>}</li>)}</ul><p className="mt-3 text-xs text-fg-3">{bt("표시된 역할은 워크스페이스 서버가 강제하는 4단계(소유자·관리자·구성원·게스트)입니다. 세분 역할(편집자·검수자·뷰어)은 워크스페이스 서버 계약에 없어 작품별 권한에서 서버가 강제합니다.", "Shown roles are the four tiers the workspace server enforces (owner, admin, member, guest). Granular roles (editor, reviewer, viewer) aren't in the workspace server contract — they're enforced per project.")}</p></Card>}
-    {manager && <Card title={bt("구성원 초대", "Invite members")}><div className="mb-4 rounded-xl border border-line bg-raised p-3">
+    {manager && <Card id="team-invite" title={bt("구성원 초대", "Invite members")}><div className="mb-4 rounded-xl border border-line bg-raised p-3">
       <p className="text-xs font-bold text-fg-2">{bt("초대 프리셋 · 초대할 사람의 권한 묶음을 고릅니다. 실제 워크스페이스 역할과 가능한 행동을 초대 전에 확인합니다.", "Invite preset · pick a permission bundle for the invitee. Check the actual workspace role and allowed actions before inviting.")}</p>
       <div className="mt-2 flex gap-2 overflow-x-auto pb-1">{PRODUCTION_ROLE_PRESETS.map((preset) => <button key={preset.id} type="button" aria-pressed={invitePreset.id === preset.id} className={`min-h-11 shrink-0 rounded-lg border px-3 text-xs font-bold ${invitePreset.id === preset.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2"}`} onClick={() => { const next = new URLSearchParams(searchParams); next.set("rolePreset", preset.id); setSearchParams(next, { replace: true }); const tier = tierFromPreset(preset); setInviteTierId(tier.id); setInviteProjectRole(tier.projectRole); }}>{bt(preset.label, PRESET_LABELS_EN[preset.id])}</button>)}</div>
       <p className="mt-2 text-xs text-fg-2">{bt("허용:", "Allowed:")} {invitePreset.allowedActions.join(" · ")}</p>
@@ -393,8 +397,17 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
       <button type="submit" disabled={busy || !email.trim() || (inviteEntryKind === "project-space" && !inviteProjectId)} className={buttonClass()}>{bt("초대 링크 만들기", "Create invite link")}</button></form>
       <p className="mt-3 text-sm text-fg-2">{bt("7일간 유효하며 대기 초대도 구성원 한도에 포함됩니다. 같은 이메일로 재발행하면 이전 링크는 무효가 됩니다. 이메일은 자동 발송하지 않습니다. 입장 안내는 이동 목적지만 전달하며 프로젝트 권한을 새로 부여하지 않습니다.", "Valid for 7 days; pending invites count toward the member limit. Re-issuing for the same email invalidates the old link. No email is auto-sent. The landing guide only sets the destination — it doesn't grant project permissions.")}</p>
       <ul className="mt-4 space-y-2">{detail.invites.map((invitation) => <li key={invitation.id} className="flex flex-wrap items-center gap-3"><span>{invitation.email} · {bt(ROLE_LABELS[invitation.role].ko, ROLE_LABELS[invitation.role].en)} · {bt("만료", "Expires")} {new Date(invitation.expiresAt).toLocaleDateString(bt("ko-KR", "en-US"))}</span>
-        <button disabled={busy} className="underline" onClick={() => { void run(() => command({ type: "revoke-invite", invitationId: invitation.id })); }}>{bt("초대 취소", "Cancel invite")}</button></li>)}</ul></Card>}
-    {usage && <UsageCard usage={usage} />}
+        <button disabled={busy} className="underline" onClick={() => { void run(() => command({ type: "revoke-invite", invitationId: invitation.id })); }}>{bt("초대 취소", "Cancel invite")}</button></li>)}</ul>
+      <p className="mt-4 border-t border-line pt-3 text-sm leading-6 text-fg-2">{bt("만든 초대 링크는 합류 시트로 연결됩니다. 링크를 받은 사람은 합류 시트에서 초대 코드를 확인하고 수락해요. 코드만 받은 사람은 같은 화면에서 직접 입력할 수 있습니다.", "Invite links open the join sheet, where recipients review the code and accept. Anyone with only a code can enter it on the same sheet.")} <Link className="font-semibold underline" to="/team/people/join">{bt("합류 시트 열기", "Open the join sheet")}</Link></p></Card>}
+    <Card title={bt("연결한 제작 프로젝트", "Linked projects")}><p className="mb-3 text-sm text-fg-2">{bt("팀 연결은 작품 열람 권한을 자동으로 부여하지 않습니다. 작품별 기존 구성원·비공개 원고 권한을 유지합니다.", "Linking a team doesn't auto-grant project view permissions. Existing per-project members and private manuscript permissions are kept.")}</p>
+      <ul className="space-y-3">{detail.projects.map((project) => <li key={project.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line p-3">
+        <Link className="font-semibold underline" to={`/production/projects/${project.id}/overview`}>{project.title}</Link>
+        {manager && <button disabled={busy} onClick={() => { if (window.confirm(bt("팀 연결만 해제합니다. 작품과 작품 권한은 유지됩니다.", "This only unlinks the team. The project and its permissions stay."))) void run(() => command({ type: "detach-project", projectId: project.id })); }} className={buttonClass({ variant: "outline", size: "sm" })}>{bt("연결 해제", "Unlink")}</button>}</li>)}</ul>
+      {detail.projects.length === 0 && <p className="text-sm">{bt("접근 가능한 연결 작품이 없습니다.", "No linked projects you can access.")}</p>}
+      {manager && <div className="mt-4"><label className="flex flex-col gap-2">{bt("소유한 프로젝트 연결", "Link an owned project")}<select aria-label={bt("연결할 프로젝트", "Project to link")} className={fieldClass} disabled={busy} value="" onChange={(event) => { const projectId = event.target.value; if (projectId) void run(() => command({ type: "attach-project", projectId })); }}>
+        <option value="">{bt("기존 프로젝트 선택", "Choose an existing project")}</option>{available.filter((item) => !detail.projects.some((project) => project.id === item.projectId)).map((project) => <option key={project.projectId} value={project.projectId}>{project.title}</option>)}</select></label>
+        <Link to="/studio" className="mt-3 inline-block underline">{bt("작품 라이브러리·작품별 권한 관리", "Project library & per-project permissions")}</Link></div>}</Card>
+    {!usageFocused && usage && <UsageCard usage={usage} />}
     {detail.workspace.role !== "owner" && <button disabled={busy} className={buttonClass({ variant: "outline" })} onClick={() => { if (window.confirm(bt("이 워크스페이스에서 나갈까요? 별도의 작품 접근 권한은 유지됩니다.", "Leave this workspace? Your separate project access stays."))) void run(() => command({ type: "remove-member", userId })); }}>{bt("워크스페이스 나가기", "Leave workspace")}</button>}
     </>}</>}
     </div></div>;
