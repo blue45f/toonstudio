@@ -911,6 +911,8 @@ export function StudioVirtualSpacePhaserCanvas({
         }
         // 전파된 오브젝트 상태는 fx 런타임에 합친다(적용 중복 방지·부수효과 없음은 브리지가 맡는다).
         fxWiring?.syncObjectStates(next.objectStates);
+        // 나간 피어가 남긴 원격 상태는 초기 상태로 되돌린다(브리지가 발신 세션으로 판정한다).
+        fxWiring?.pruneRemoteStates(present, frameTime);
       };
       const runtime = { syncSnapshot };
       runtimeRef.current = runtime;
