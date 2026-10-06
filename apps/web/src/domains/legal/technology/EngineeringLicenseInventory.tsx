@@ -1,5 +1,5 @@
 import { translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision, formatI18nTemplate, getActiveI18nLocale } from "@/shared/lib/i18n-bilingual-copy";
-import { AlertTriangle, Search } from "lucide-react";
+import { AlertTriangle, ExternalLink, Search } from "lucide-react";
 import { useState } from "react";
 
 import type { LocalizedText } from "./engineering-story-content";
@@ -48,6 +48,22 @@ function formatMegabytes(bytes: number): string {
   return `${(bytes / 1_000_000).toFixed(1)}MB`;
 }
 
+/** 패키지 메타데이터에서 확인한 공식 링크가 있으면 이름을 외부 링크로 그린다. */
+function LibraryName({ library, className }: { readonly library: (typeof LIBRARIES)[number]; readonly className: string }) {
+  if (!library.url) return <span className={className}>{library.name}</span>;
+  return (
+    <a
+      href={library.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`${className} inline-flex items-center gap-1.5 underline-offset-4 hover:text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
+    >
+      {library.name}
+      <ExternalLink size={12} aria-hidden="true" className="shrink-0 text-fg-3" />
+    </a>
+  );
+}
+
 export function EngineeringLicenseInventory() {
   useBilingualI18nRevision();
 
@@ -87,7 +103,7 @@ export function EngineeringLicenseInventory() {
           {flagged.map((library) => (
             <li key={library.name} className="rounded-2xl border border-line/70 bg-card/80 p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-sm font-bold text-fg">{library.name}</span>
+                <LibraryName library={library} className="font-mono text-sm font-bold text-fg" />
                 <span className="rounded-full border border-line bg-panel px-2.5 py-1 font-display text-[0.64rem] font-bold text-fg-2">{library.license}</span>
                 {library.flag ? (
                   <span className="rounded-full border border-accent/40 bg-accent-soft px-2.5 py-1 font-display text-[0.64rem] font-bold text-accent">
@@ -139,7 +155,7 @@ export function EngineeringLicenseInventory() {
               {rows.map((library) => (
                 <article key={library.name} className="grid gap-3 border-b border-line/70 px-5 py-4 last:border-b-0 sm:px-6 lg:grid-cols-[1.2fr_0.9fr_1.5fr] lg:gap-5">
                   <div>
-                    <p className="font-mono text-[0.82rem] font-bold text-fg">{library.name}</p>
+                    <LibraryName library={library} className="font-mono text-[0.82rem] font-bold text-fg" />
                     <p className="mt-0.5 font-mono text-[0.68rem] text-fg-3">{library.version}</p>
                   </div>
                   <div>
