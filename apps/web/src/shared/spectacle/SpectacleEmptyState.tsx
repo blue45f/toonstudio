@@ -114,7 +114,7 @@ export function SpectacleEmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-4 px-6 py-12 text-center text-slate-500 dark:text-slate-400",
+        "flex flex-col items-center justify-center gap-4 px-6 py-12 text-center text-fg-3",
         level !== "none" && "spectacle-motion",
         className,
       )}
@@ -122,7 +122,7 @@ export function SpectacleEmptyState({
     >
       <EmptyFigure kind={kind} />
       <div className="max-w-xs">
-        <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">
+        <p className="text-lg font-semibold text-fg">
           {title ?? labels.emptyTitle(kind)}
         </p>
         <p className="mt-1 text-sm">{description ?? labels.emptyDescription(kind)}</p>

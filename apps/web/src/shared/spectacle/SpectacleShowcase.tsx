@@ -30,8 +30,8 @@ function ShowcaseSection({
 }) {
   return (
     <section className="mx-auto w-full max-w-5xl px-6 py-10">
-      <h2 className="mb-4 text-xl font-bold text-slate-800 dark:text-slate-100">{title}</h2>
-      <div className="rounded-2xl border border-slate-200 bg-white/70 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
+      <h2 className="mb-4 text-xl font-bold text-fg">{title}</h2>
+      <div className="rounded-2xl border border-line bg-card/70 p-6 shadow-sm backdrop-blur">
         {children}
       </div>
     </section>
@@ -54,9 +54,9 @@ export function SpectacleShowcase() {
   const [pageKey, setPageKey] = useState("a");
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen bg-canvas text-fg">
       <SpectacleHero className="px-6 py-20 text-center">
-        <p className="text-sm font-medium uppercase tracking-widest text-indigo-500 dark:text-indigo-300">
+        <p className="text-sm font-medium uppercase tracking-widest text-accent">
           {ko ? "스펙터클 쇼케이스" : "Spectacle Showcase"}
         </p>
         <h1 className="mt-3 text-4xl font-extrabold md:text-6xl">
@@ -68,7 +68,7 @@ export function SpectacleShowcase() {
             }
           />
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-slate-600 dark:text-slate-300">
+        <p className="mx-auto mt-4 max-w-xl text-fg-2">
           {ko
             ? `현재 스펙터클 수준: ${level} — 설정에서 연출 강도를 바꿔보세요.`
             : `Current spectacle level: ${level} — try changing the intensity in settings.`}
@@ -78,14 +78,14 @@ export function SpectacleShowcase() {
           <button
             type="button"
             onClick={() => celebrate()}
-            className="spectacle-pop-in rounded-full bg-indigo-600 px-8 py-3.5 text-base font-bold text-white shadow-xl shadow-indigo-600/30 transition hover:bg-indigo-500 hover:shadow-indigo-500/40 active:scale-95"
+            className="spectacle-pop-in rounded-full bg-accent px-8 py-3.5 text-base font-bold text-on-accent shadow-xl shadow-accent/30 transition hover:bg-accent-2 hover:shadow-accent-2/40 active:scale-95"
           >
             🎉 {labels.celebrate}
           </button>
           <button
             type="button"
             onClick={() => fireworks()}
-            className="text-sm font-medium text-slate-500 underline-offset-4 transition hover:text-slate-700 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+            className="text-sm font-medium text-fg-3 underline-offset-4 transition hover:text-fg hover:underline"
           >
             {ko ? "폭죽으로 축하하기" : "Celebrate with fireworks"}
           </button>
@@ -97,7 +97,7 @@ export function SpectacleShowcase() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="mb-3 rounded-xl bg-indigo-500/10 p-4 text-sm font-medium"
+              className="mb-3 rounded-xl bg-accent-soft p-4 text-sm font-medium"
             >
               {ko
                 ? `스크롤하면 순차 등장하는 블록 ${i + 1}`
@@ -111,12 +111,12 @@ export function SpectacleShowcase() {
         <button
           type="button"
           onClick={() => setPageKey((k) => (k === "a" ? "b" : "a"))}
-          className="mb-4 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium dark:border-slate-600"
+          className="mb-4 rounded-full border border-line px-4 py-2 text-sm font-medium"
         >
           {ko ? "페이지 전환" : "Switch page"}
         </button>
         <SpectaclePageTransition transitionKey={pageKey}>
-          <div className="rounded-2xl bg-gradient-to-br from-pink-500/15 to-amber-500/15 p-6">
+          <div className="rounded-2xl bg-gradient-to-br from-accent/15 to-warn/15 p-6">
             <p className="font-semibold">
               {pageKey === "a"
                 ? ko
@@ -134,12 +134,13 @@ export function SpectacleShowcase() {
         <div className="flex flex-wrap gap-3">
           <SpectacleGlowButton
             onClick={() => celebrate({ count: 40 })}
-            className="bg-indigo-600 px-6 py-3 font-semibold text-white shadow-lg"
+            className="bg-accent px-6 py-3 font-semibold text-on-accent shadow-lg"
           >
             ✨ {ko ? "마우스를 올려보세요" : "Hover me"}
           </SpectacleGlowButton>
           <SpectacleGlowButton
             glowColor="rgba(236, 72, 153, 0.55)"
+            // eslint-disable-next-line shadcn/no-raw-colors -- 글로우 연출 데모의 핑크 샘플 버튼: 색 자체가 데모 콘텐츠라 토큰으로 바꾸면 시연 의미가 달라진다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md
             className="bg-pink-600 px-6 py-3 font-semibold text-white shadow-lg"
           >
             💖 {ko ? "핑크 글로우" : "Pink glow"}
@@ -162,12 +163,12 @@ export function SpectacleShowcase() {
       <ShowcaseSection title={ko ? "숫자 · 프로그레스" : "Numbers · Progress"}>
         <div className="flex flex-wrap items-center gap-10">
           <div className="text-center">
-            <SpectacleCountUp value={128400} className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-300" />
-            <p className="mt-1 text-sm text-slate-500">{ko ? "누적 창작자" : "Total creators"}</p>
+            <SpectacleCountUp value={128400} className="text-4xl font-extrabold text-accent" />
+            <p className="mt-1 text-sm text-fg-3">{ko ? "누적 창작자" : "Total creators"}</p>
           </div>
           <div className="text-center">
-            <SpectacleCountUp value={98.6} decimals={1} className="text-4xl font-extrabold text-emerald-600 dark:text-emerald-300" />
-            <p className="mt-1 text-sm text-slate-500">{ko ? "만족도 %" : "Satisfaction %"}</p>
+            <SpectacleCountUp value={98.6} decimals={1} className="text-4xl font-extrabold text-good" />
+            <p className="mt-1 text-sm text-fg-3">{ko ? "만족도 %" : "Satisfaction %"}</p>
           </div>
           <SpectacleProgressRing value={0.72} label={ko ? "진행률" : "Progress"} />
           <SpectacleProgressRing value={0.35} size={72} strokeWidth={8} />
@@ -178,18 +179,18 @@ export function SpectacleShowcase() {
         <div className="grid gap-4 sm:grid-cols-3">
           {(
             [
-              { art: "celebration", title: ko ? "틸트" : "Tilt", desc: ko ? "마우스를 올려보세요" : "Hover to tilt", color: "text-indigo-500" },
-              { art: "magic", title: ko ? "광택" : "Glare", desc: ko ? "빛 반사가 스칩니다" : "A light glare sweeps", color: "text-violet-500" },
-              { art: "growth", title: ko ? "복귀" : "Return", desc: ko ? "떼면 제자리로" : "Eases back on leave", color: "text-emerald-500" },
+              { art: "celebration", title: ko ? "틸트" : "Tilt", desc: ko ? "마우스를 올려보세요" : "Hover to tilt", color: "text-cool" },
+              { art: "magic", title: ko ? "광택" : "Glare", desc: ko ? "빛 반사가 스칩니다" : "A light glare sweeps", color: "text-accent" },
+              { art: "growth", title: ko ? "복귀" : "Return", desc: ko ? "떼면 제자리로" : "Eases back on leave", color: "text-good" },
             ] as const
           ).map((card) => (
             <SpectacleTiltCard
               key={card.title}
-              className="rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-500/10 to-pink-500/10 p-6 dark:border-slate-700"
+              className="rounded-2xl border border-line bg-gradient-to-br from-accent/10 to-warn/10 p-6"
             >
               <SpectacleArt kind={card.art} className={card.color} />
               <p className="mt-2 text-lg font-bold">{card.title}</p>
-              <p className="mt-1 text-sm text-slate-500">{card.desc}</p>
+              <p className="mt-1 text-sm text-fg-3">{card.desc}</p>
             </SpectacleTiltCard>
           ))}
         </div>
@@ -199,7 +200,7 @@ export function SpectacleShowcase() {
         <button
           type="button"
           onClick={() => setSkeletonLoading((v) => !v)}
-          className="mb-4 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium dark:border-slate-600"
+          className="mb-4 rounded-full border border-line px-4 py-2 text-sm font-medium"
         >
           {skeletonLoading ? (ko ? "콘텐츠 표시" : "Show content") : ko ? "로딩으로" : "Show skeleton"}
         </button>
@@ -209,9 +210,9 @@ export function SpectacleShowcase() {
           label={labels.loading}
           className="w-full"
         >
-          <div className="rounded-2xl bg-emerald-500/15 p-6">
+          <div className="rounded-2xl bg-good-soft p-6">
             <p className="font-semibold">{ko ? "짜잔! 콘텐츠가 나타났어요" : "Ta-da! Content appeared"}</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-fg-3">
               {ko ? "블러·스케일·페이드로 부드럽게 모핑됩니다" : "Morphs in with blur, scale, and fade"}
             </p>
           </div>
@@ -227,13 +228,13 @@ export function SpectacleShowcase() {
 
       <SpectacleBackdrop variants={["aurora", "beams", "noise"]} className="py-16 text-center">
         <h2 className="text-2xl font-extrabold">{ko ? "배경 연출" : "Backdrop FX"}</h2>
-        <p className="mt-2 text-slate-600 dark:text-slate-300">
+        <p className="mt-2 text-fg-2">
           {ko ? "오로라 + 빛줄기 + 노이즈 레이어" : "Aurora + light beams + grain layers"}
         </p>
       </SpectacleBackdrop>
 
-      <SpectacleBackdrop variants={["grid"]} className="border-t border-slate-200 py-10 text-center dark:border-slate-800">
-        <p className="text-sm text-slate-500">
+      <SpectacleBackdrop variants={["grid"]} className="border-t border-line py-10 text-center">
+        <p className="text-sm text-fg-3">
           {ko
             ? "이 페이지는 데모용입니다. 라우트에 연결해 사용하세요."
             : "This is a demo page. Wire it to a route to use it."}
