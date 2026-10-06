@@ -1,0 +1,51 @@
+/* 리서치 소스 정체성 토큰·스타일 (디자인 웨이브 3 · R5).
+   소스별 액센트 색의 정본은 이 파일이다 — 컴포넌트는 var(--source-accent)만 참조하고
+   색 값을 직접 쓰지 않는다. 색은 장식이 아니라 "어느 소스인가"를 알리는 정체성
+   신호라, 적용 범위는 마스트헤드 테두리·정체성 칩·표지(아트 표면)에 한정한다.
+   본문·일반 UI는 기존 의미 토큰을 그대로 쓴다.
+   새 소스는 research-source-identity.ts의 레지스트리 한 줄 + 아래 토큰 한 블록으로 추가한다. */
+
+.research-source {
+  --source-accent: var(--color-accent);
+  --source-accent-deep: var(--color-accent-2);
+}
+
+/* 소스별 액센트 — 색상환을 나눠 쓰고, 이름·글리프와 함께 읽히므로 근접 색도 구분된다. */
+.research-source--met { --source-accent: oklch(0.72 0.15 88); --source-accent-deep: oklch(0.42 0.13 88); }
+.research-source--kakao { --source-accent: oklch(0.72 0.15 102); --source-accent-deep: oklch(0.42 0.13 102); }
+.research-source--bizinfo { --source-accent: oklch(0.72 0.15 258); --source-accent-deep: oklch(0.42 0.13 258); }
+.research-source--polyhaven { --source-accent: oklch(0.72 0.15 182); --source-accent-deep: oklch(0.42 0.13 182); }
+.research-source--ambientcg { --source-accent: oklch(0.72 0.15 58); --source-accent-deep: oklch(0.42 0.13 58); }
+.research-source--nasa { --source-accent: oklch(0.72 0.15 282); --source-accent-deep: oklch(0.42 0.13 282); }
+.research-source--vam { --source-accent: oklch(0.72 0.15 338); --source-accent-deep: oklch(0.42 0.13 338); }
+.research-source--googlefonts { --source-accent: oklch(0.72 0.15 210); --source-accent-deep: oklch(0.42 0.13 210); }
+.research-source--rijksmuseum { --source-accent: oklch(0.72 0.15 40); --source-accent-deep: oklch(0.42 0.13 40); }
+.research-source--gbif { --source-accent: oklch(0.72 0.15 148); --source-accent-deep: oklch(0.42 0.13 148); }
+.research-source--musicbrainz { --source-accent: oklch(0.72 0.15 308); --source-accent-deep: oklch(0.42 0.13 308); }
+.research-source--internetarchive { --source-accent: oklch(0.72 0.15 78); --source-accent-deep: oklch(0.42 0.13 78); }
+.research-source--metweather { --source-accent: oklch(0.72 0.15 235); --source-accent-deep: oklch(0.42 0.13 235); }
+.research-source--kheritage { --source-accent: oklch(0.72 0.15 18); --source-accent-deep: oklch(0.42 0.13 18); }
+.research-source--neis { --source-accent: oklch(0.72 0.15 168); --source-accent-deep: oklch(0.42 0.13 168); }
+.research-source--tourapi { --source-accent: oklch(0.72 0.15 192); --source-accent-deep: oklch(0.42 0.13 192); }
+.research-source--korean { --source-accent: oklch(0.72 0.15 268); --source-accent-deep: oklch(0.42 0.13 268); }
+.research-source--smithsonian { --source-accent: oklch(0.72 0.15 60); --source-accent-deep: oklch(0.42 0.13 60); }
+.research-source--wikimedia { --source-accent: oklch(0.72 0.15 248); --source-accent-deep: oklch(0.42 0.13 248); }
+.research-source--europeana { --source-accent: oklch(0.72 0.15 355); --source-accent-deep: oklch(0.42 0.13 355); }
+.research-source--dpla { --source-accent: oklch(0.72 0.15 220); --source-accent-deep: oklch(0.42 0.13 220); }
+
+/* 마스트헤드 테두리에 소스 색을 섞어, 첫 화면의 프레임부터 소스가 읽히게 한다. */
+.research-source .resource-masthead {
+  border-color: color-mix(in srgb, var(--source-accent) 42%, var(--color-line));
+}
+
+/* 정체성 칩의 점 — 소스 색을 점으로만 쓰고 글자는 본문 토큰을 유지해 대비를 지킨다. */
+.resource-source-dot {
+  background: var(--source-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--source-accent) 22%, transparent);
+}
+
+/* 타이포그래픽 표지 — 맞는 기존 아트가 없는 소스의 대표 비주얼.
+   TypographicCover와 같은 문법(그라디언트+고리+큰 글리프)이되, 색은 소스 토큰에서 온다. */
+.resource-source-cover {
+  background: linear-gradient(135deg, var(--source-accent-deep) 0%, color-mix(in srgb, var(--source-accent) 65%, var(--source-accent-deep)) 55%, var(--source-accent) 100%);
+}
