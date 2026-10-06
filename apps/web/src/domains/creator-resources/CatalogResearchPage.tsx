@@ -12,6 +12,7 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { MotionEmptyState } from "@/shared/motion-assets";
+import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { GenreSpectrum } from "@/shared/components/ui/spectrum-bar";
 import { genreColor, spectrumGradient } from "@/shared/lib/genre-color";
 import { PLATFORM_LIST } from "@/shared/lib/platforms";
@@ -30,7 +31,7 @@ function Distribution({ title, rows, total, onSelect, platform = false, spectrum
   return <section className={BOX} aria-label={title}><h2 className="text-lg font-bold">{title}</h2>
     <p className="mt-2 text-xs leading-6 text-fg-3">{formatI18nTemplate(tx("현재 조건 {v0}편이 분모입니다. 중복 분류로 합계가 100%를 넘을 수 있습니다. 상위 8개 표시."), { v0: count(total) })}</p>
     {spectrum && top.length ? <div aria-hidden="true" className="mt-4 flex h-2.5 gap-px overflow-hidden rounded-full bg-raised">{top.map((row) => <span key={row.name} className="h-full shrink-0" style={{ width: `${row.share}%`, background: genreColor(row.name, 0.72) }} />)}</div> : null}
-    <div className="mt-4 space-y-2">{top.map((row) => <button type="button" key={row.name} onClick={() => onSelect(row.name)} className="block min-h-14 w-full rounded-lg p-2 text-left hover:bg-raised focus-visible:outline-2 focus-visible:outline-accent">
+    <div className="mt-4 space-y-2">{top.map((row) => <button type="button" key={row.name} onClick={() => onSelect(row.name)} className="fx-press block min-h-14 w-full rounded-lg p-2 text-left hover:bg-raised focus-visible:outline-2 focus-visible:outline-accent">
       <span className="flex justify-between gap-3 text-sm"><span>{platform ? platformName(row.name) : row.name}</span><span className="shrink-0 tabular-nums">{formatI18nTemplate(tx("{v0}편 · {v1}%"), { v0: count(row.count), v1: row.share.toFixed(1) })}</span></span>
       <span aria-hidden="true" className="mt-2 block h-1.5 overflow-hidden rounded-full bg-raised"><span className={`block h-full rounded-full ${spectrum ? "" : "bg-accent"}`} style={{ width: `${row.share}%`, background: spectrum ? genreColor(row.name, 0.72) : undefined }} /></span></button>)}</div>
     {!rows.length && <p className="mt-4 text-sm text-fg-2">{tx("이 조건에서 집계할 분류가 없습니다.")}</p>}</section>;
@@ -113,9 +114,9 @@ export function CatalogResearchPage() {
           <div className="mt-4 flex flex-wrap items-center gap-4"><label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={filters.mature} onChange={(event) => update("mature", event.target.checked ? "true" : "")} />{tx("19세 작품 메타데이터 포함")}</label>
             {filters.tag && <button type="button" className={RESOURCE_BUTTON} onClick={() => update("tag", "")}>{formatI18nTemplate(tx("태그: {v0} 해제"), { v0: filters.tag })}</button>}<button type="button" className={RESOURCE_BUTTON} onClick={() => setParams(ids.length ? { compare: ids.join(",") } : {})}>{tx("검색 조건 초기화")}</button></div>
         </section>
-        <section aria-label={tx("검색 결과 요약")} className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[
+        <StaggerReveal as="section" aria-label={tx("검색 결과 요약")} variant="fade" className="grid grid-cols-2 gap-3 lg:grid-cols-4" itemClassName="h-full">{[
           [tx("현재 조건의 작품"), formatI18nTemplate(tx("{v0}편"), { v0: count(filtered.length) })], [tx("기록된 장르"), formatI18nTemplate(tx("{v0}개"), { v0: count(genres.length) })], [tx("기록된 플랫폼"), formatI18nTemplate(tx("{v0}개"), { v0: count(platforms.length) })], [tx("장르 정보 미상"), formatI18nTemplate(tx("{v0}편"), { v0: count(filtered.filter((work) => !work.genres.length).length) })],
-        ].map(([label, value]) => <div key={label} className={BOX}><p className="text-xs text-fg-3">{label}</p><p className="mt-3 text-2xl font-bold tabular-nums">{value}</p></div>)}</section>
+        ].map(([label, value]) => <div key={label} className={`${BOX} h-full`}><p className="text-xs text-fg-3">{label}</p><p className="mt-3 text-2xl font-bold tabular-nums">{value}</p></div>)}</StaggerReveal>
         <div className="grid gap-4 lg:grid-cols-2"><Distribution title={tx("장르별 수록 분포")} rows={genres} total={filtered.length} onSelect={(value) => update("genre", value)} spectrum />
           <Distribution title={tx("플랫폼별 수록 분포")} rows={platforms} total={filtered.length} onSelect={(value) => update("platform", value)} platform /></div>
         <section className={BOX}><h2 className="text-lg font-bold">{tx("함께 조사할 소재 태그")}</h2><p className="mt-2 text-sm leading-7 text-fg-2">{tx("현재 검색 결과에 기록된 태그입니다. 실제 줄거리 분석이나 인기 순위가 아닙니다. 상위 16개를 표시합니다.")}</p>
@@ -127,12 +128,12 @@ export function CatalogResearchPage() {
             description={tx("검색어를 줄이거나 장르·태그 조건을 해제해 보세요.")}
             action={<button type="button" className={RESOURCE_BUTTON} onClick={() => setParams(ids.length ? { compare: ids.join(",") } : {})}>{tx("검색어·조건 초기화")}</button>}
           /></div>}
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{displayed.map((work) => <article key={work.id} className={`${BOX} flex flex-col`}>
+          <StaggerReveal className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" itemClassName="h-full">{displayed.map((work) => <article key={work.id} className={`${BOX} fx-lift flex h-full flex-col`}>
             <WorkCover work={work} />
             <h3 className="break-words text-lg font-bold"><Link to={`/title/${encodeURIComponent(work.slug)}`} className="hover:underline">{work.title}</Link></h3><WorkMetadata work={work} />
-            <div className="my-4 flex flex-wrap gap-2">{work.tags.slice(0, 6).map((tag) => <button type="button" key={tag} className="min-h-11 rounded-lg border border-line px-3 text-xs hover:bg-raised" onClick={() => update("tag", tag)}>#{tag}</button>)}</div>
+            <div className="my-4 flex flex-wrap gap-2">{work.tags.slice(0, 6).map((tag) => <button type="button" key={tag} className="fx-press min-h-11 rounded-lg border border-line px-3 text-xs hover:bg-raised" onClick={() => update("tag", tag)}>#{tag}</button>)}</div>
             <button type="button" className={`${RESOURCE_BUTTON} mt-auto ${ids.includes(work.id) ? "bg-accent-soft text-accent" : ""}`} aria-label={formatI18nTemplate(tx("{v0} 비교 선택"), { v0: work.title })} aria-pressed={ids.includes(work.id)} onClick={() => toggle(work)} disabled={!ids.includes(work.id) && ids.length >= RESEARCH_LIMIT}>{tx(ids.includes(work.id) ? "비교에서 빼기" : "비교에 담기")}</button>
-          </article>)}</div>
+          </article>)}</StaggerReveal>
           <nav aria-label={tx("작품 결과 페이지")} className="mt-6 flex items-center justify-center gap-4"><button type="button" className={RESOURCE_BUTTON} disabled={page <= 1} onClick={() => update("page", String(page - 1))}>{tx("이전 결과")}</button><span className="text-sm">{formatI18nTemplate(tx("{v0} / {v1}"), { v0: page, v1: pages })}</span><button type="button" className={RESOURCE_BUTTON} disabled={page >= pages} onClick={() => update("page", String(page + 1))}>{tx("다음 결과")}</button></nav>
         </section>
       </>}
