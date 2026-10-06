@@ -177,6 +177,22 @@ describe("SiteBackgroundMusicPlayer", () => {
     expect(screen.getByRole("button", { name: /오리지널 애니·웹툰 OST/u }).className).toContain("min-h-11");
   });
 
+  it("멈춤 상태의 알약은 아이콘 크기로 접혀 본문을 덜 가리고, 곡 정보는 화면 읽기 전용으로 남는다", async () => {
+    renderAt("/");
+    expect(await screen.findByText("툰스튜디오 오프닝")).toBeTruthy();
+    const pill = document.querySelector("[data-site-ost-pill]");
+    expect(pill?.getAttribute("data-site-ost-pill-compact")).toBe("true");
+    // 접근 가능한 이름은 유지되어 펼치기 버튼을 그대로 찾을 수 있다.
+    expect(screen.getByRole("button", { name: /오리지널 애니·웹툰 OST/u })).toBeTruthy();
+  });
+
+  it("재생 중인 알약은 곡 정보를 펼친 형태로 보여 준다", async () => {
+    mocks.enabled = true;
+    renderAt("/");
+    expect(await screen.findByText("툰스튜디오 오프닝")).toBeTruthy();
+    await waitFor(() => expect(document.querySelector("[data-site-ost-pill]")?.getAttribute("data-site-ost-pill-compact")).toBeNull());
+  });
+
   it("lets the listener override page following, style and dedicated BGM volume", async () => {
     renderAt("/ranking");
     await screen.findByText("네온 스크롤");

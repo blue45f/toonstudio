@@ -60,4 +60,13 @@ describe("하단 플로팅 스택 배치 계약", () => {
       "`${state.status}:${state.warmingUp === true}:${compact}`",
     );
   });
+
+  it("알림 열의 점유 폭을 줄여 첫 화면 본문을 덜 가린다", () => {
+    // 연결 칩의 보조 문장은 화면 읽기 전용으로만 남아 칩이 모든 폭에서 한 줄을 유지한다.
+    expect(degradedBanner).toContain('<span className="sr-only">');
+    expect(degradedBanner).not.toContain("max-md:sr-only");
+    // OST 알약은 재생 중이 아닐 때 아이콘 크기로 접힌다(휴대폰의 기존 컴팩트 형태와 같은 접기).
+    expect(ostPlayer).toContain("data-site-ost-pill-compact");
+    expect(ostPlayer).toContain("const compactPill = !playing;");
+  });
 });

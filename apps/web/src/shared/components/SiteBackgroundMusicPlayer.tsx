@@ -266,6 +266,9 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
     ?? null;
   const activeLabel = activeOstTrack?.title || (hasPublishedOst ? themeLabel : (korean ? "오리지널 OST 준비 중" : "Original OST in production"));
   const playing = hasPublishedOst && bgmEnabled && !audio.muted;
+  // 재생 중이 아닐 때는 알약을 아이콘 크기로 접어 하단 알림 열이 첫 화면 본문을 덮는 폭을 줄인다.
+  // 곡 정보는 화면 읽기 전용으로 남기고, 펼치면(패널) 전체 정보를 그대로 보여 준다.
+  const compactPill = !playing;
 
   const togglePlayback = async () => {
     if (!hasPublishedOst) return;
@@ -419,18 +422,18 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
         </div>
       ) : null}
 
-      {dock ? <button ref={dockToggle} type="button" onClick={toggleExpanded} className="grid size-11 place-items-center rounded-lg border border-line bg-panel text-fg-2" aria-expanded={expanded} aria-label={korean ? "OST 설정" : "OST settings"}><Music2 size={18} aria-hidden="true" /></button> : <div data-site-ost-pill className="flex max-w-[min(26rem,calc(100vw-2rem))] items-center gap-1 rounded-full border border-line bg-panel/95 p-1.5 shadow-xl backdrop-blur-xl max-md:w-[6.625rem] max-md:max-w-none">
+      {dock ? <button ref={dockToggle} type="button" onClick={toggleExpanded} className="grid size-11 place-items-center rounded-lg border border-line bg-panel text-fg-2" aria-expanded={expanded} aria-label={korean ? "OST 설정" : "OST settings"}><Music2 size={18} aria-hidden="true" /></button> : <div data-site-ost-pill data-site-ost-pill-compact={compactPill || undefined} className={cn("flex items-center gap-1 rounded-full border border-line bg-panel/95 p-1.5 shadow-xl backdrop-blur-xl max-md:w-[6.625rem] max-md:max-w-none", compactPill ? "w-[6.625rem] max-w-none" : "max-w-[min(22rem,calc(100vw-2rem))]")}>
         <button type="button" onClick={() => void togglePlayback()} disabled={!hasPublishedOst} className={cn("grid size-11 shrink-0 place-items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent", !hasPublishedOst ? "cursor-not-allowed bg-raised text-fg-3" : playing ? "bg-accent text-on-accent" : "bg-raised text-fg-2 hover:text-fg")} aria-label={playing ? (korean ? "OST 일시정지" : "Pause OST") : (korean ? "OST 재생" : "Play OST")} aria-pressed={playing}>
           {playing ? <Pause className="size-4" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
         </button>
-        <button ref={pillToggle} type="button" onClick={toggleExpanded} className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full px-2 text-left hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-md:size-11 max-md:flex-none max-md:justify-center max-md:px-0" aria-expanded={expanded}>
-          <Music2 className="hidden size-4 text-fg-2 max-md:block" aria-hidden="true" />
-          <span className={cn("size-2 shrink-0 rounded-full max-md:hidden", playing ? "animate-pulse bg-good" : hasPublishedOst ? "bg-fg-3" : "bg-warn")} aria-hidden="true" />
-          <span className="min-w-0 flex-1 max-md:sr-only">
+        <button ref={pillToggle} type="button" onClick={toggleExpanded} className={cn("flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full px-2 text-left hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent max-md:size-11 max-md:flex-none max-md:justify-center max-md:px-0", compactPill && "size-11 flex-none justify-center px-0")} aria-expanded={expanded}>
+          <Music2 className={compactPill ? "size-4 shrink-0 text-fg-2" : "hidden size-4 shrink-0 text-fg-2 max-md:block"} aria-hidden="true" />
+          <span className={cn("size-2 shrink-0 rounded-full", compactPill ? "hidden" : "max-md:hidden", playing ? "animate-pulse bg-good" : hasPublishedOst ? "bg-fg-3" : "bg-warn")} aria-hidden="true" />
+          <span className={compactPill ? "sr-only" : "min-w-0 flex-1 max-md:sr-only"}>
             <span className="block truncate text-[0.6875rem] font-bold text-fg-3">{korean ? "오리지널 애니·웹툰 OST" : "Original animation · webtoon OST"}</span>
             <span className="block truncate text-xs font-black text-fg">{activeLabel}</span>
           </span>
-          {expanded ? <ChevronDown className="size-4 shrink-0 text-fg-3 max-md:hidden" aria-hidden="true" /> : <ChevronUp className="size-4 shrink-0 text-fg-3 max-md:hidden" aria-hidden="true" />}
+          {expanded ? <ChevronDown className={cn("size-4 shrink-0 text-fg-3 max-md:hidden", compactPill && "hidden")} aria-hidden="true" /> : <ChevronUp className={cn("size-4 shrink-0 text-fg-3 max-md:hidden", compactPill && "hidden")} aria-hidden="true" />}
         </button>
       </div>}
     </aside>
