@@ -51,12 +51,12 @@ export function MiniPoster({
   );
 }
 
-// 목록 진입 스태거 — 첫 화면 분량(12행)까지만 순차 등장시키고, 이후 행은 즉시 표시한다.
+// 목록 진입 스태거 파라미터 — 첫 화면 분량(12행)까지만 순차 등장시키고, 이후 행은 즉시 표시한다.
 // 200행짜리 긴 리스트에서 아래 행들이 하염없이 늦게 나타나는 느낌을 방지(캡 밖은 애니메이션 자체 생략).
+// 등장 모션 자체는 ranking-board가 StaggerReveal(stepMs·limit)로 입히고, RankRow는
+// 이 상수를 카운트업 게이팅에만 쓴다.
 export const RANK_ENTRY_STAGGER_CAP = 12;
 export const RANK_ENTRY_STAGGER_STEP_MS = 45;
-export const RANK_ENTRY_ANIMATION_CLASS =
-  "motion-safe:[animation:fade-up_0.45s_var(--ease-out-expo)_both]";
 
 // Top3 메달 글로 톤 — 금/은/동. rank-medal-pulse 키프레임이 --medal-glow 로 소비한다.
 const MEDAL_GLOW: Record<number, string> = {
@@ -100,7 +100,7 @@ export function RankRow({
     countSuffix?: string;
   };
   className?: string;
-  /** 목록 진입 스태거 인덱스 — 캡(12) 미만이면 순차 fade-up + 지표 카운트업. */
+  /** 목록 진입 스태거 인덱스 — 캡(12) 미만이면 지표 카운트업. 등장 지연은 보드의 StaggerReveal이 담당한다. */
   entryIndex?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -114,18 +114,16 @@ export function RankRow({
   // 별점 축(rating·hidden)은 RatingInline이 이미 ≈를 붙이므로 중복 표기를 피한다.
   const estimated = statsAreEstimated(title);
   const metricEstimated = estimated && axis !== "rating" && axis !== "hidden";
-  // 진입 스태거 대상(첫 화면 분량)만 모션·카운트업 — 캡 밖 행은 즉시 정적 표시(rAF 낭비 방지).
+  // 진입 스태거 대상(첫 화면 분량)만 카운트업 — 캡 밖 행은 즉시 정적 표시(rAF 낭비 방지).
   const staggered = entryIndex !== undefined && entryIndex < RANK_ENTRY_STAGGER_CAP;
 
   return (
     <div
       className={cn(
-        "group/row flex flex-col rounded-xl border border-line/45 bg-card/35 transition-all duration-150 hover:border-line hover:bg-card mb-2 last:mb-0 overflow-hidden",
-        staggered && RANK_ENTRY_ANIMATION_CLASS,
+        "group/row flex flex-col rounded-xl border border-line/45 bg-card/35 transition-all duration-150 hover:border-line hover:bg-card overflow-hidden",
         expanded && "border-accent/40 bg-card shadow-sm",
         className
       )}
-      style={staggered ? { animationDelay: `${entryIndex * RANK_ENTRY_STAGGER_STEP_MS}ms` } : undefined}
     >
       {/* Main Row Content — 좁은 화면(320px)에선 표지/메트릭 칼럼을 좁히고 gap을 줄여 제목 폭을 확보 */}
       <div className="grid grid-cols-[2.5rem_2.25rem_1fr_auto] items-center gap-2 px-2 py-2.5 sm:grid-cols-[2.75rem_2.5rem_1fr_auto] sm:gap-4 sm:px-3">

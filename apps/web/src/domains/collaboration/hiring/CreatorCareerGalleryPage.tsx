@@ -15,6 +15,7 @@ import { CollabNotice, collabButton } from "../collaboration-ui";
 import Link from "@/shared/navigation/router-link";
 import { api, getApiErrorMessage } from "@/platform/api";
 import { Container } from "@/shared/components/section";
+import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
@@ -123,7 +124,7 @@ export function CreatorCareerGalleryPage() {
               aria-pressed={roleFilter === "all"}
               onClick={() => setRoleFilter("all")}
               className={cn(
-                "min-h-9 rounded-full border px-3.5 text-xs font-bold transition-colors",
+                "fx-press min-h-9 rounded-full border px-3.5 text-xs font-bold transition-colors",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                 roleFilter === "all"
                   ? "border-accent bg-accent-soft/50 text-accent"
@@ -139,7 +140,7 @@ export function CreatorCareerGalleryPage() {
                 aria-pressed={roleFilter === role}
                 onClick={() => setRoleFilter(role)}
                 className={cn(
-                  "min-h-9 rounded-full border px-3.5 text-xs font-bold transition-colors",
+                  "fx-press min-h-9 rounded-full border px-3.5 text-xs font-bold transition-colors",
                   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                   roleFilter === role
                     ? "border-accent bg-accent-soft/50 text-accent"
@@ -160,14 +161,14 @@ export function CreatorCareerGalleryPage() {
               </button>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <StaggerReveal className="grid gap-4 md:grid-cols-2" itemClassName="h-full">
               {visibleItems.map((item) => {
                 const summary = confirmations[item.id];
                 return (
                   <article
                     key={item.id}
                     id={`career-card-${item.id}`}
-                    className="flex scroll-mt-24 flex-col overflow-hidden rounded-2xl border border-line bg-panel"
+                    className="flex h-full scroll-mt-24 flex-col overflow-hidden rounded-2xl border border-line bg-panel"
                   >
                     <div className="relative">
                       <CareerCoverArt item={item} className="aspect-[16/8] w-full" />
@@ -204,7 +205,7 @@ export function CreatorCareerGalleryPage() {
                   </article>
                 );
               })}
-            </div>
+            </StaggerReveal>
           )}
         </>
       )}

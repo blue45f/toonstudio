@@ -189,7 +189,7 @@ export function TitleRow({ title, className }: { title: Title; className?: strin
       data-no-sfx
       onPointerDown={popOnTitleTap}
       className={cn(
-        "group flex gap-3.5 rounded-xl border border-line bg-card/85 p-3 transition-colors duration-150 hover:border-line-strong hover:bg-raised",
+        "fx-press group flex gap-3.5 rounded-xl border border-line bg-card/85 p-3 transition-colors duration-150 hover:border-line-strong hover:bg-raised",
         className
       )}
     >

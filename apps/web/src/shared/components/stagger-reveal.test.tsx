@@ -70,6 +70,25 @@ describe("StaggerReveal", () => {
     expect(item?.classList.contains("reveal")).toBe(true);
   });
 
+  it("limit 밖 아이템은 reveal 없이 plain 래퍼로 렌더한다", () => {
+    const { container } = render(
+      <StaggerReveal limit={2} itemClassName="row">
+        <p>첫째</p>
+        <p>둘째</p>
+        <p>셋째</p>
+        <p>넷째</p>
+      </StaggerReveal>,
+    );
+    const wrappers = Array.from(container.querySelectorAll<HTMLElement>(".row"));
+    expect(wrappers).toHaveLength(4);
+    // limit 안쪽만 reveal + 지연, 바깥은 reveal 클래스·지연이 모두 없다.
+    expect(container.querySelectorAll(".reveal")).toHaveLength(2);
+    expect(wrappers[1]?.style.getPropertyValue("--reveal-delay")).toBe(String(STAGGER_STEP_MS));
+    expect(wrappers[2]?.classList.contains("reveal")).toBe(false);
+    expect(wrappers[2]?.getAttribute("style") ?? "").not.toContain("--reveal-delay");
+    expect(wrappers[3]?.classList.contains("reveal")).toBe(false);
+  });
+
   it("빈 자식·null은 건너뛴다", () => {
     const { container } = render(
       <StaggerReveal>

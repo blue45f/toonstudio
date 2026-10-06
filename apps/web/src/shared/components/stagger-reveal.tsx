@@ -15,6 +15,12 @@ export interface StaggerRevealProps {
   stepMs?: number;
   /** 지연 상한(ms). */
   maxDelayMs?: number;
+  /**
+   * 스태거를 입힐 앞쪽 아이템 수. 이 인덱스부터는 reveal 래퍼 없이 plain으로
+   * 렌더한다 — 긴 목록에서 뒤쪽 아이템까지 등장 모션이 걸리는 것을 막는 상한.
+   * (예: 랭킹 보드는 첫 화면 12행만 스태거하고 나머지는 즉시 표시한다.)
+   */
+  limit?: number;
   /** 컨테이너 태그(기본 "div"). 목록이면 "ul" + itemAs="li" 조합을 쓴다. */
   as?: "div" | "section" | "ul";
   /** 각 아이템 래퍼 태그(기본 "div"). */
@@ -41,6 +47,7 @@ export function StaggerReveal({
   variant = "up",
   stepMs = STAGGER_STEP_MS,
   maxDelayMs = STAGGER_MAX_DELAY_MS,
+  limit,
   as: Tag = "div",
   itemAs = "div",
   className,
@@ -52,17 +59,24 @@ export function StaggerReveal({
   return createElement(
     Tag,
     { className, style, "aria-label": ariaLabel },
-    items.map((child, index) => (
-      <RevealOnScroll
-        key={isValidElement(child) ? (child.key ?? index) : index}
-        as={itemAs}
-        variant={variant}
-        delayMs={staggerDelayMs(index, stepMs, maxDelayMs)}
-        className={itemClassName}
-      >
-        {child}
-      </RevealOnScroll>
-    )),
+    items.map((child, index) => {
+      const key = isValidElement(child) ? (child.key ?? index) : index;
+      // limit 밖 아이템은 등장 모션 없이 같은 태그·클래스의 plain 래퍼로만 감싼다.
+      if (limit !== undefined && index >= limit) {
+        return createElement(itemAs, { key, className: itemClassName }, child);
+      }
+      return (
+        <RevealOnScroll
+          key={key}
+          as={itemAs}
+          variant={variant}
+          delayMs={staggerDelayMs(index, stepMs, maxDelayMs)}
+          className={itemClassName}
+        >
+          {child}
+        </RevealOnScroll>
+      );
+    }),
   );
 }
 

@@ -1,5 +1,3 @@
-import { RANK_ENTRY_STAGGER_CAP, RANK_ENTRY_STAGGER_STEP_MS } from "./rank-row";
-
 import type { RankingMeta } from "./ranking-board-types";
 import type { RankAxis } from "@/shared/lib/ranking";
 import type { Title } from "@/shared/lib/types";
@@ -39,13 +37,6 @@ export function metricFor(
     default:
       return (t) => ({ label: "조회", value: formatCount(t.stats.views) });
   }
-}
-
-// 목록 진입 스태거 — 첫 화면 분량(캡)까지만 지연을 주고, 캡 밖 행은 애니메이션 없이 즉시 표시.
-export function entryStaggerStyle(index: number): React.CSSProperties | undefined {
-  return index < RANK_ENTRY_STAGGER_CAP
-    ? { animationDelay: `${index * RANK_ENTRY_STAGGER_STEP_MS}ms` }
-    : undefined;
 }
 
 export function formatUpdatedAt(value?: string) {
