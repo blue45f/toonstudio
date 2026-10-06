@@ -2,6 +2,7 @@ import { BadgeCheck, CalendarDays, Megaphone, ShieldCheck, Sparkles, Users } fro
 import { Link } from "react-router-dom";
 
 import { FanCafePanel } from "./components/fan-cafe-panel";
+import { CommunityEventsBoard } from "./components/community-events-board";
 
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
@@ -123,7 +124,9 @@ export function CommunityEventsPage() {
         />
       </header>
 
-      <section aria-label={t("공식 이벤트와 커뮤니티 게시판 비교", "Comparing official events and the community board")} className="mt-6">
+      <CommunityEventsBoard />
+
+      <section aria-label={t("공식 이벤트와 커뮤니티 게시판 비교", "Comparing official events and the community board")} className="mt-10">
         <h2 className="text-lg font-black tracking-tight">{t("둘의 차이 한눈에 보기", "The two channels at a glance")}</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <EventChannelCard
