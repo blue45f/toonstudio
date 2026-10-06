@@ -78,7 +78,7 @@ export const ENGINEERING_PAGES = [
     label: t("제작 스토리", "Story"),
     purpose: t("왜·어떻게 만들었나: 문제, 선택, 대가와 근거", "Why and how it was built: problems, choices, trade-offs, evidence"),
     art: "create",
-    readingMinutes: 39,
+    readingMinutes: 44,
   },
   {
     id: "playbook",

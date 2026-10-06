@@ -26,7 +26,7 @@ export const ENGINEERING_STORY_GROUPS = [
     id: "drawing",
     title: t("드로잉 엔진", "Drawing engine"),
     intro: t("손의 입력이 문서의 획이 되기까지", "From hand input to a document stroke"),
-    chapterIds: ["brush-engine", "brush-render-authority"],
+    chapterIds: ["brush-engine", "brush-render-authority", "wasm-fixed-simd"],
   },
   {
     id: "local-first",
@@ -38,13 +38,13 @@ export const ENGINEERING_STORY_GROUPS = [
     id: "collaboration",
     title: t("협업과 가상 스튜디오", "Collaboration and the virtual studio"),
     intro: t("함께 편집하고, 공간에서 만나기", "Editing together and meeting in space"),
-    chapterIds: ["collaborative-crdt-boundary", "webrtc-media-authority", "virtual-studio-world-authority", "webtransport-transport"],
+    chapterIds: ["collaborative-crdt-boundary", "webrtc-media-authority", "virtual-studio-world-authority", "webtransport-transport", "turn-credential-issuance"],
   },
   {
     id: "three-d",
     title: t("3D", "3D"),
     intro: t("그리기 위한 3D와 제작 도구 연결", "3D for drawing, connected to production tools"),
-    chapterIds: ["web-3d-engine", "blender-mcp-boundary"],
+    chapterIds: ["web-3d-engine", "blender-mcp-boundary", "skp-model-import"],
   },
   {
     id: "ai",

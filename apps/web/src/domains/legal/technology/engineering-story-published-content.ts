@@ -8,6 +8,7 @@ import {
   type EngineeringChapter,
   type EngineeringGuide,
 } from "./engineering-story-content";
+import { ENGINEERING_FOLLOWUP_CHAPTERS } from "./engineering-story-followup-content";
 
 /**
  * Public aggregate used by story and guide surfaces. The original content module remains the
@@ -16,6 +17,7 @@ import {
 export const PUBLISHED_ENGINEERING_CHAPTERS = [
   ...CORE_ENGINEERING_CHAPTERS,
   ...ENGINEERING_ADVANCED_CHAPTERS,
+  ...ENGINEERING_FOLLOWUP_CHAPTERS,
 ] as const satisfies readonly EngineeringChapter[];
 
 export const PUBLISHED_ENGINEERING_GUIDES = [
