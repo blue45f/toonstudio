@@ -141,7 +141,7 @@ function CurationTile({ item, provider, query, onRunSearch }: { item: CreatorRes
   const showImage = Boolean(item.imageUrl) && !imageFailed;
   return (
     <button type="button" onClick={() => onRunSearch(query)} aria-label={`${item.title} — '${query}' 검색 결과 보기`}
-      className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel text-left transition hover:border-accent/50">
+      className="fx-press flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel text-left transition hover:border-accent/50">
       <span className="relative block aspect-[4/3] w-full overflow-hidden bg-raised">
         {item.provider === "googlefonts" ? <GoogleFontPreview family={item.title} />
           : showImage ? <img src={item.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
