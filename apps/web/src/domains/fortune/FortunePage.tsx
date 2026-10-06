@@ -34,6 +34,7 @@ import { useFortunePlayback } from "./useFortunePlayback";
 import { WebtoonStrip } from "./WebtoonStrip";
 import { FortunePeriodPanel } from "./FortunePeriodPanel";
 import { FortuneBirthGate } from "./FortuneBirthGate";
+import { FortuneBirthProfileFields } from "./FortuneBirthProfileFields";
 import { FortuneGlobalHoroscope } from "./FortuneGlobalHoroscope";
 import { FortuneVoiceNarration } from "./FortuneVoiceNarration";
 import { TarotSpreadPicker } from "./TarotSpreadPicker";
@@ -84,6 +85,10 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
   const history = useFortuneStore((s) => s.history);
   const clearHistory = useFortuneStore((s) => s.clearHistory);
   const removeFromHistory = useFortuneStore((s) => s.removeFromHistory);
+  const clearBirthProfile = useFortuneStore((s) => s.clearBirthProfile);
+  const hasSavedBirthProfile = useFortuneStore((s) =>
+    Boolean(s.birthDate || s.birthTime || s.partnerBirthDate || s.partnerBirthTime)
+  );
 
   // 캐릭터 목록은 @toonstudio/core 의 정적 데이터(웹·API 단일 출처)로 즉시 채운다 —
   // API(/api/fortune/characters, 로컬은 dev:api 필요)가 없거나 실패해도 피커가 동작한다.
@@ -124,6 +129,24 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
   const fortuneResult = resultsByTab[activeTab] ?? null;
   const setActiveTabResult = (tab: FortuneTab, data: FortuneResult | null) =>
     setResultsByTab((prev) => ({ ...prev, [tab]: data ?? undefined }));
+
+  // 저장된 생년월일 삭제 (LOW-2) — 저장분과 입력 상태를 함께 비우고,
+  // 생년월일로 계산한 결과 캐시를 버려 표면이 재입력 동선으로 돌아가게 한다.
+  const handleClearBirthProfile = () => {
+    clearBirthProfile();
+    setBirthDate("");
+    setBirthTime("");
+    setGender("none");
+    setPartnerBirthDate("");
+    setPartnerBirthTime("");
+    setResultsByTab((prev) => {
+      const next = { ...prev };
+      delete next.today;
+      delete next.saju;
+      delete next.compatibility;
+      return next;
+    });
+  };
 
   // 운세 {tx("웹툰 재생")} 오케스트레이터 — 음성(Web Speech) + 컷 애니메이션 동기
   const playback = useFortunePlayback(fortuneResult?.panels);
@@ -1318,51 +1341,18 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                     </p>
                   </div>
 
-                  {/* 생년월일 입력 (선택) — 입력 시 사주 기반 개인화 */}
-                  <div className="rounded-xl border border-line/50 bg-card/15 p-4 text-left space-y-3">
-                    <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-accent">
-                      <Calendar className="h-3.5 w-3.5" /> 내 생년월일 (선택 입력 시 개인화)
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label htmlFor="today-birth-date" className="text-[11px] font-semibold text-fg-2">{tx("생년월일 (양력)")}</label>
-                        <input
-                          id="today-birth-date"
-                          type="date"
-                          value={birthDate}
-                          onChange={(e) => setBirthDate(e.target.value)}
-                          className="w-full rounded-lg border border-line bg-card px-3 py-2.5 text-sm text-fg focus:border-accent focus:outline-none"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label htmlFor="today-birth-time" className="text-[11px] font-semibold text-fg-2">{tx("태어난 시간")}</label>
-                        <input
-                          id="today-birth-time"
-                          type="time"
-                          value={birthTime}
-                          onChange={(e) => setBirthTime(e.target.value)}
-                          className="w-full rounded-lg border border-line bg-card px-3 py-2.5 text-sm text-fg focus:border-accent focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {["none", "male", "female"].map((g) => (
-                        <button
-                          key={g}
-                          type="button"
-                          onClick={() => setGender(g)}
-                          className={cn(
-                            "min-h-10 flex-1 rounded-lg border py-2 text-[11px] font-semibold transition-all",
-                            gender === g
-                              ? "border-accent bg-accent-soft text-accent"
-                              : "border-line bg-card text-fg-2 hover:text-fg"
-                          )}
-                        >
-                          {g === "none" ? "선택 안 함" : g === "male" ? "남성" : "여성"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  {/* 생년월일 입력 (선택) — 입력 시 사주 기반 개인화 + 저장 고지·삭제 동선 */}
+                  <FortuneBirthProfileFields
+                    birthDate={birthDate}
+                    birthTime={birthTime}
+                    gender={gender}
+                    onBirthDateChange={setBirthDate}
+                    onBirthTimeChange={setBirthTime}
+                    onGenderChange={setGender}
+                    hasSavedBirthProfile={hasSavedBirthProfile}
+                    onClearBirthProfile={handleClearBirthProfile}
+                    tx={tx}
+                  />
 
                   <button
                     type="button"
