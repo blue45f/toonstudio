@@ -48,11 +48,11 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-function generateChannel(spec: StudioAmbientSynthSpec, sampleRate: number, samples: number, seed: number): Float32Array {
+function generateChannel(spec: StudioAmbientSynthSpec, sampleRate: number, samples: number, seed: number): Float32Array<ArrayBuffer> {
   const random = mulberry32(seed);
   const white = new Float32Array(samples);
   for (let index = 0; index < samples; index += 1) white[index] = random() * 2 - 1;
-  const out = new Float32Array(samples);
+  const out: Float32Array<ArrayBuffer> = new Float32Array(samples);
   // 원형 버퍼를 세 번 돌린다. 필터 상태가 수렴해 시작과 끝이 자연스럽게 이어진다.
   let previous = 0;
   for (let pass = 0; pass < 3; pass += 1) {
@@ -86,7 +86,7 @@ export function generateStudioAmbientSamples(
   kind: StudioAmbientSynthKind,
   sampleRate: number,
   seconds: number,
-): { readonly left: Float32Array; readonly right: Float32Array } {
+): { readonly left: Float32Array<ArrayBuffer>; readonly right: Float32Array<ArrayBuffer> } {
   const spec = studioAmbientSynthSpec(kind);
   const samples = Math.max(1, Math.round(sampleRate * seconds));
   return Object.freeze({
