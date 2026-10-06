@@ -2,11 +2,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   coverProxy,
+  epochSecondsToKstDate,
+  extractRidiNextData,
   mapNaverArticle,
   mapNaverArticlePage,
+  mapPostypeEpisode,
+  mapRidiEpisode,
   mergeEpisodePages,
   parseNaverServiceDate,
+  parsePostypePost,
+  parsePostypeSeriesMeta,
+  parseRidiEpisodeList,
+  parseRidiRegDate,
 } from "../episode-parse.mjs";
+import {
+  POSTYPE_POST_PAGE_HTML,
+  POSTYPE_SERIES_PAGE_HTML,
+  RIDI_BOOK_NEXT_DATA,
+} from "./episode-parse.fixtures.mjs";
 
 // 실측 fixture — 2026-10-06 네이버 회차 API(api/article/list, titleId=758037) 응답 발췌.
 const NAVER_ARTICLE_264 = {
@@ -97,5 +110,112 @@ describe("episode-parse — 네이버 회차 응답 파싱", () => {
     ]);
     expect(merged.map((ep) => ep.number)).toEqual([1, 2, 3]);
     expect(merged[1]).toEqual({ number: 2 });
+  });
+});
+
+describe("episode-parse — 포스타입 공개 페이지 파싱", () => {
+  it("parsePostypeSeriesMeta: 시리즈 상세 상태에서 총수와 첫 포스트를 뽑는다", () => {
+    expect(parsePostypeSeriesMeta(POSTYPE_SERIES_PAGE_HTML)).toEqual({
+      seriesId: "1026300",
+      postCount: 18,
+      firstPostId: 13419079,
+    });
+    expect(parsePostypeSeriesMeta("<html></html>")).toBeNull();
+    expect(parsePostypeSeriesMeta(null)).toBeNull();
+  });
+
+  it("parsePostypePost: 제목·발행일(KST)·썸네일·다음 포스트 체인을 뽑는다", () => {
+    const post = parsePostypePost(POSTYPE_POST_PAGE_HTML);
+    expect(post?.postId).toBe("13419079");
+    expect(post?.title).toBe("[GL] 분리수거 하다가 전여친 마주치는 만화 01");
+    expect(post?.publishedAt).toBe("2024-10-24"); // epoch 1729749600 의 KST 날짜
+    expect(post?.prevPostId).toBeNull();
+    expect(post?.nextPostId).toBe(13499151);
+    expect(post?.seriesId).toBe("1026300");
+    expect(post?.thumbnailUrl).toBe(
+      "/api/cover?u=https%3A%2F%2Fd3mcojo3jv0dbr.cloudfront.net%2F2022%2F11%2F16%2F11%2F34%2F99771c561d36b3db6c4344bcd616bd8a.png",
+    );
+    expect(parsePostypePost("<html></html>")).toBeNull();
+  });
+
+  it("epochSecondsToKstDate: KST 자정 경계를 고정 오프셋으로 계산한다", () => {
+    expect(epochSecondsToKstDate(1729749600)).toBe("2024-10-24");
+    // 2024-10-24T15:30:00Z 는 UTC 날짜(24일)와 KST 날짜(25일)가 갈리는 지점.
+    expect(epochSecondsToKstDate(1729783800)).toBe("2024-10-25");
+    expect(epochSecondsToKstDate(0)).toBeNull();
+    expect(epochSecondsToKstDate(-1)).toBeNull();
+    expect(epochSecondsToKstDate(null)).toBeNull();
+    expect(epochSecondsToKstDate("1729749600")).toBeNull();
+  });
+
+  it("mapPostypeEpisode: 체인 순서가 번호가 되고 깨진 입력은 버린다", () => {
+    const post = parsePostypePost(POSTYPE_POST_PAGE_HTML);
+    expect(mapPostypeEpisode(post, 1)).toEqual({
+      number: 1,
+      title: "[GL] 분리수거 하다가 전여친 마주치는 만화 01",
+      publishedAt: "2024-10-24",
+      thumbnailUrl:
+        "/api/cover?u=https%3A%2F%2Fd3mcojo3jv0dbr.cloudfront.net%2F2022%2F11%2F16%2F11%2F34%2F99771c561d36b3db6c4344bcd616bd8a.png",
+    });
+    expect(mapPostypeEpisode(post, 0)).toBeNull();
+    expect(mapPostypeEpisode(null, 1)).toBeNull();
+    expect(mapPostypeEpisode({ title: "  " }, 3)).toEqual({ number: 3 });
+  });
+});
+
+describe("episode-parse — 리디 책 페이지 임베드 회차 목록 파싱", () => {
+  it("parseRidiRegDate: YYYY.MM.DD. 만 ISO로 바꾸고 나머지는 버린다", () => {
+    expect(parseRidiRegDate("2024.08.01.")).toBe("2024-08-01");
+    expect(parseRidiRegDate("2024.08.01")).toBe("2024-08-01");
+    expect(parseRidiRegDate("2024.13.01.")).toBeNull();
+    expect(parseRidiRegDate("24.08.01.")).toBeNull();
+    expect(parseRidiRegDate("")).toBeNull();
+    expect(parseRidiRegDate(null)).toBeNull();
+  });
+
+  it("extractRidiNextData: __NEXT_DATA__ JSON만 꺼낸다", () => {
+    const html = `<script id="__NEXT_DATA__" type="application/json">{"a":1}</script>`;
+    expect(extractRidiNextData(html)).toEqual({ a: 1 });
+    expect(extractRidiNextData("<html></html>")).toBeNull();
+    expect(extractRidiNextData(null)).toBeNull();
+  });
+
+  it("parseRidiEpisodeList: 회차 셀에서 식별자·제목·날짜·썸네일을 뽑는다", () => {
+    const list = parseRidiEpisodeList(RIDI_BOOK_NEXT_DATA);
+    expect(list?.seriesId).toBe("1019093550");
+    expect(list?.books).toHaveLength(8);
+    expect(list?.books[0]).toEqual({
+      bookId: "1019093550",
+      title: "반딧불이의 혼례 1권",
+      publishedAt: "2024-08-01",
+      thumbnailUrl: "/api/cover?u=https%3A%2F%2Fimg.ridicdn.net%2Fcover%2F1019093550%2Fxxlarge",
+    });
+    expect(list?.books[7]?.title).toBe("반딧불이의 혼례 8권");
+    expect(list?.books[7]?.publishedAt).toBe("2025-11-01");
+    // 실측 페이지의 pagination.nextPage 가 살아 있어 partial 전제(hasMore)로 읽는다.
+    expect(list?.hasMore).toBe(true);
+    expect(parseRidiEpisodeList(null)).toBeNull();
+    expect(parseRidiEpisodeList({})).toBeNull();
+  });
+
+  it("parseRidiEpisodeList: 제목 번호와 위치가 어긋나면 번호를 지어내지 않고 버린다", () => {
+    const broken = structuredClone(RIDI_BOOK_NEXT_DATA);
+    const cells = broken.props.pageProps.sectionProps.gridQuery.riGrid.grid.cells;
+    const listCell = cells.find((c) => c.cell__BookDetailHomeEpisodeBookList);
+    listCell.cell__BookDetailHomeEpisodeBookList.books[0].title = "반딧불이의 혼례 3권";
+    expect(parseRidiEpisodeList(broken)).toBeNull();
+  });
+
+  it("mapRidiEpisode: 위치가 번호가 되고 빈 필드는 비운다", () => {
+    const list = parseRidiEpisodeList(RIDI_BOOK_NEXT_DATA);
+    expect(mapRidiEpisode(list?.books[0], 1)).toEqual({
+      number: 1,
+      title: "반딧불이의 혼례 1권",
+      publishedAt: "2024-08-01",
+      thumbnailUrl: "/api/cover?u=https%3A%2F%2Fimg.ridicdn.net%2Fcover%2F1019093550%2Fxxlarge",
+    });
+    expect(mapRidiEpisode(list?.books[0], 0)).toBeNull();
+    expect(mapRidiEpisode(null, 1)).toBeNull();
+    expect(mapRidiEpisode({ title: "" }, 2)).toEqual({ number: 2 });
   });
 });
