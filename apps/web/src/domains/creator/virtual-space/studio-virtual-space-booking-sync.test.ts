@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/platform/api", () => ({ apiFetch: vi.fn() }));
-
 import { apiFetch } from "@/platform/api";
-
 import {
   acceptBookingsSnapshot,
   acceptGalleryLikes,
@@ -18,6 +15,9 @@ import type {
   StudioSpaceBooking,
   StudioSpaceWaitlistEntry,
 } from "./studio-virtual-space-space-booking";
+
+// vitest hoists vi.mock above the imports, so declaring it after them keeps import-x/first happy.
+vi.mock("@/platform/api", () => ({ apiFetch: vi.fn() }));
 
 const SCOPE = '["proj-1","office"]';
 
