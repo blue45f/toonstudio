@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { CatalogResearchNotebook } from "./CatalogResearchNotebook";
@@ -11,6 +12,8 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { MotionEmptyState } from "@/shared/motion-assets";
+import { GenreSpectrum } from "@/shared/components/ui/spectrum-bar";
+import { genreColor, spectrumGradient } from "@/shared/lib/genre-color";
 import { PLATFORM_LIST } from "@/shared/lib/platforms";
 import type { LoadedResearch } from "./catalog-research-data";
 import type { ResearchCount, ResearchWork } from "@/shared/lib/catalog-research";
@@ -22,13 +25,31 @@ const platformName = (id: string): string => PLATFORM_LIST.find((platform) => pl
 const count = (value: number): string => value.toLocaleString("ko-KR");
 const collected = (value: string | null): string => value ? new Date(value).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) : tx("기록 없음");
 const BOX = "rounded-2xl border border-line bg-panel p-5 sm:p-6";
-function Distribution({ title, rows, total, onSelect, platform = false }: { title: string; rows: ResearchCount[]; total: number; onSelect: (value: string) => void; platform?: boolean }) {
+function Distribution({ title, rows, total, onSelect, platform = false, spectrum = false }: { title: string; rows: ResearchCount[]; total: number; onSelect: (value: string) => void; platform?: boolean; spectrum?: boolean }) {
+  const top = rows.slice(0, 8);
   return <section className={BOX} aria-label={title}><h2 className="text-lg font-bold">{title}</h2>
     <p className="mt-2 text-xs leading-6 text-fg-3">{formatI18nTemplate(tx("현재 조건 {v0}편이 분모입니다. 중복 분류로 합계가 100%를 넘을 수 있습니다. 상위 8개 표시."), { v0: count(total) })}</p>
-    <div className="mt-4 space-y-2">{rows.slice(0, 8).map((row) => <button type="button" key={row.name} onClick={() => onSelect(row.name)} className="block min-h-14 w-full rounded-lg p-2 text-left hover:bg-raised focus-visible:outline-2 focus-visible:outline-accent">
+    {spectrum && top.length ? <div aria-hidden="true" className="mt-4 flex h-2.5 gap-px overflow-hidden rounded-full bg-raised">{top.map((row) => <span key={row.name} className="h-full shrink-0" style={{ width: `${row.share}%`, background: genreColor(row.name, 0.72) }} />)}</div> : null}
+    <div className="mt-4 space-y-2">{top.map((row) => <button type="button" key={row.name} onClick={() => onSelect(row.name)} className="block min-h-14 w-full rounded-lg p-2 text-left hover:bg-raised focus-visible:outline-2 focus-visible:outline-accent">
       <span className="flex justify-between gap-3 text-sm"><span>{platform ? platformName(row.name) : row.name}</span><span className="shrink-0 tabular-nums">{formatI18nTemplate(tx("{v0}편 · {v1}%"), { v0: count(row.count), v1: row.share.toFixed(1) })}</span></span>
-      <span aria-hidden="true" className="mt-2 block h-1.5 overflow-hidden rounded-full bg-raised"><span className="block h-full rounded-full bg-accent" style={{ width: `${row.share}%` }} /></span></button>)}</div>
+      <span aria-hidden="true" className="mt-2 block h-1.5 overflow-hidden rounded-full bg-raised"><span className={`block h-full rounded-full ${spectrum ? "" : "bg-accent"}`} style={{ width: `${row.share}%`, background: spectrum ? genreColor(row.name, 0.72) : undefined }} /></span></button>)}</div>
     {!rows.length && <p className="mt-4 text-sm text-fg-2">{tx("이 조건에서 집계할 분류가 없습니다.")}</p>}</section>;
+}
+function WorkCover({ work }: { work: ResearchWork }) {
+  // 실제 표지가 없는 색인이라 장르 스펙트럼 그라디언트 + 제목 타이포가 정직한 커버다.
+  const seedGenres = work.genres.length ? work.genres : [work.type];
+  const glyph = work.title.trim().charAt(0) || "툰";
+  return (
+    <div aria-hidden="true" className="relative -mx-5 -mt-5 mb-5 overflow-hidden rounded-t-2xl sm:-mx-6 sm:-mt-6" style={{ background: spectrumGradient(seedGenres, 135) }}>
+      <span className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+      <span className="absolute -right-3 -top-8 select-none text-[5.5rem] font-black leading-none text-white/25">{glyph}</span>
+      <div className="relative flex min-h-32 flex-col justify-end p-5">
+        <p className="text-[11px] font-bold uppercase tracking-[.16em] text-white/85">{work.genres.join(" · ") || (work.type === "webtoon" ? tx("웹툰") : tx("웹소설"))}</p>
+        <p className="mt-1.5 line-clamp-2 text-[1.35rem] font-black leading-tight text-white">{work.title}</p>
+      </div>
+      <GenreSpectrum genres={work.genres} height={5} className="relative rounded-none" />
+    </div>
+  );
 }
 function WorkMetadata({ work }: { work: ResearchWork }) {
   return <dl className="mt-3 space-y-2 text-sm leading-6 text-fg-2"><div><dt className="inline text-fg-3">{tx("작가")} </dt><dd className="inline">{work.author || tx("미상")}</dd></div>
@@ -95,7 +116,7 @@ export function CatalogResearchPage() {
         <section aria-label={tx("검색 결과 요약")} className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[
           [tx("현재 조건의 작품"), formatI18nTemplate(tx("{v0}편"), { v0: count(filtered.length) })], [tx("기록된 장르"), formatI18nTemplate(tx("{v0}개"), { v0: count(genres.length) })], [tx("기록된 플랫폼"), formatI18nTemplate(tx("{v0}개"), { v0: count(platforms.length) })], [tx("장르 정보 미상"), formatI18nTemplate(tx("{v0}편"), { v0: count(filtered.filter((work) => !work.genres.length).length) })],
         ].map(([label, value]) => <div key={label} className={BOX}><p className="text-xs text-fg-3">{label}</p><p className="mt-3 text-2xl font-bold tabular-nums">{value}</p></div>)}</section>
-        <div className="grid gap-4 lg:grid-cols-2"><Distribution title={tx("장르별 수록 분포")} rows={genres} total={filtered.length} onSelect={(value) => update("genre", value)} />
+        <div className="grid gap-4 lg:grid-cols-2"><Distribution title={tx("장르별 수록 분포")} rows={genres} total={filtered.length} onSelect={(value) => update("genre", value)} spectrum />
           <Distribution title={tx("플랫폼별 수록 분포")} rows={platforms} total={filtered.length} onSelect={(value) => update("platform", value)} platform /></div>
         <section className={BOX}><h2 className="text-lg font-bold">{tx("함께 조사할 소재 태그")}</h2><p className="mt-2 text-sm leading-7 text-fg-2">{tx("현재 검색 결과에 기록된 태그입니다. 실제 줄거리 분석이나 인기 순위가 아닙니다. 상위 16개를 표시합니다.")}</p>
           <div className="mt-4 flex flex-wrap gap-2">{tags.slice(0, 16).map((tag) => <button type="button" key={tag.name} className={RESOURCE_BUTTON} onClick={() => update("tag", tag.name)}>{formatI18nTemplate(tx("{v0} · {v1}"), { v0: tag.name, v1: count(tag.count) })}</button>)}{!tags.length && <p className="text-sm text-fg-2">{tx("기록된 태그가 없습니다.")}</p>}</div></section>
@@ -107,6 +128,7 @@ export function CatalogResearchPage() {
             action={<button type="button" className={RESOURCE_BUTTON} onClick={() => setParams(ids.length ? { compare: ids.join(",") } : {})}>{tx("검색어·조건 초기화")}</button>}
           /></div>}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{displayed.map((work) => <article key={work.id} className={`${BOX} flex flex-col`}>
+            <WorkCover work={work} />
             <h3 className="break-words text-lg font-bold"><Link to={`/title/${encodeURIComponent(work.slug)}`} className="hover:underline">{work.title}</Link></h3><WorkMetadata work={work} />
             <div className="my-4 flex flex-wrap gap-2">{work.tags.slice(0, 6).map((tag) => <button type="button" key={tag} className="min-h-11 rounded-lg border border-line px-3 text-xs hover:bg-raised" onClick={() => update("tag", tag)}>#{tag}</button>)}</div>
             <button type="button" className={`${RESOURCE_BUTTON} mt-auto ${ids.includes(work.id) ? "bg-accent-soft text-accent" : ""}`} aria-label={formatI18nTemplate(tx("{v0} 비교 선택"), { v0: work.title })} aria-pressed={ids.includes(work.id)} onClick={() => toggle(work)} disabled={!ids.includes(work.id) && ids.length >= RESEARCH_LIMIT}>{tx(ids.includes(work.id) ? "비교에서 빼기" : "비교에 담기")}</button>
@@ -114,14 +136,47 @@ export function CatalogResearchPage() {
           <nav aria-label={tx("작품 결과 페이지")} className="mt-6 flex items-center justify-center gap-4"><button type="button" className={RESOURCE_BUTTON} disabled={page <= 1} onClick={() => update("page", String(page - 1))}>{tx("이전 결과")}</button><span className="text-sm">{formatI18nTemplate(tx("{v0} / {v1}"), { v0: page, v1: pages })}</span><button type="button" className={RESOURCE_BUTTON} disabled={page >= pages} onClick={() => update("page", String(page + 1))}>{tx("다음 결과")}</button></nav>
         </section>
       </>}
+      {notebookView ? (
       <section className={BOX} aria-labelledby="research-compare-title"><h2 id="research-compare-title" className="text-2xl font-bold">{formatI18nTemplate(tx("내 비교 보드 {v0}/4"), { v0: selected.length })}</h2>
         <p className="mt-3 text-sm leading-7 text-fg-2">{tx("공통 장르와 서로 다른 태그를 비교하고, 작품 상세에서 원문을 확인하세요. 선택 작품은 검색 조건이 바뀌어도 유지됩니다.")}</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">{selected.map((work) => <article key={work.id} className="min-w-0 rounded-xl border border-line p-4"><h3 className="break-words font-bold"><Link to={`/title/${encodeURIComponent(work.slug)}`} className="hover:underline">{work.title}</Link></h3><WorkMetadata work={work} /><p className="mt-3 break-words text-sm leading-7 text-fg-2">{work.tags.join(" · ") || tx("태그 미상")}</p><button type="button" className={`${RESOURCE_BUTTON} mt-4`} aria-label={formatI18nTemplate(tx("{v0} 비교에서 제거"), { v0: work.title })} onClick={() => toggle(work)}>{tx("선택 해제")}</button></article>)}</div>
         {!selected.length && <p className="mt-5 text-sm text-fg-2">{tx("작품 탐색에서 비교에 담기를 누르세요. 작품을 선택하지 않고도 기획 노트를 작성할 수 있습니다.")}</p>}
         {ids.length > selected.length && <p role="status" className="mt-4 text-sm text-fg-2">{formatI18nTemplate(tx("선택 중 {v0}편은 현재 색인에 없거나 연령 필터로 숨겨져 있습니다. 선택 비우기로 정리하거나 검색 화면에서 연령 필터를 확인하세요."), { v0: ids.length - selected.length })}</p>}
-        <div className="mt-5 flex flex-wrap gap-2"><button type="button" className={RESOURCE_BUTTON} onClick={() => void share()}>{tx("검색·비교 링크 복사")}</button><button type="button" className={RESOURCE_BUTTON} disabled={!selected.length} onClick={exportSelected}>{tx("비교 목록 CSV 내보내기")}</button><button type="button" className={RESOURCE_BUTTON} disabled={!ids.length} onClick={() => setSelection([])}>{tx("선택 비우기")}</button>{!notebookView && <Link to={`/research/catalog/notebook${suffix}`} className={`${RESOURCE_BUTTON} bg-accent text-on-accent`}>{tx("비교로 기획 시작")}</Link>}</div>
+        <div className="mt-5 flex flex-wrap gap-2"><button type="button" className={RESOURCE_BUTTON} onClick={() => void share()}>{tx("검색·비교 링크 복사")}</button><button type="button" className={RESOURCE_BUTTON} disabled={!selected.length} onClick={exportSelected}>{tx("비교 목록 CSV 내보내기")}</button><button type="button" className={RESOURCE_BUTTON} disabled={!ids.length} onClick={() => setSelection([])}>{tx("선택 비우기")}</button></div>
         {message && <p role="status" className="mt-4 text-sm leading-7">{message}</p>}
       </section>
+      ) : selected.length > 0 ? (
+      <aside className="sticky bottom-4 z-40 mx-auto max-w-5xl rounded-2xl border border-accent/40 bg-canvas/95 p-3 shadow-2xl backdrop-blur sm:p-4" aria-label={tx("내 비교 보드")}>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-sm font-bold">{formatI18nTemplate(tx("내 비교 보드 {v0}/4"), { v0: selected.length })}</h2>
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+            {selected.map((work) => (
+              <span key={work.id} className="inline-flex max-w-60 items-center gap-1 rounded-full border border-line bg-panel py-1 pl-3 pr-1.5 text-xs font-semibold text-fg">
+                <span className="truncate">{work.title}</span>
+                <button type="button" className="grid size-6 shrink-0 place-items-center rounded-full transition hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" aria-label={formatI18nTemplate(tx("{v0} 비교에서 제거"), { v0: work.title })} onClick={() => toggle(work)}>
+                  <X size={13} aria-hidden="true" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link to={`/research/catalog/notebook${suffix}`} className={`${RESOURCE_BUTTON} bg-accent text-on-accent`}>{tx("비교로 기획 시작")}</Link>
+          <button type="button" className={RESOURCE_BUTTON} onClick={exportSelected}>{tx("비교 목록 CSV 내보내기")}</button>
+          <button type="button" className={RESOURCE_BUTTON} onClick={() => void share()}>{tx("검색·비교 링크 복사")}</button>
+          <button type="button" className={RESOURCE_BUTTON} onClick={() => setSelection([])}>{tx("선택 비우기")}</button>
+        </div>
+        {ids.length > selected.length && <p role="status" className="mt-3 text-sm text-fg-2">{formatI18nTemplate(tx("선택 중 {v0}편은 현재 색인에 없거나 연령 필터로 숨겨져 있습니다. 선택 비우기로 정리하거나 검색 화면에서 연령 필터를 확인하세요."), { v0: ids.length - selected.length })}</p>}
+        {message && <p role="status" className="mt-3 text-sm leading-7">{message}</p>}
+      </aside>
+      ) : (
+      <section className={BOX} aria-labelledby="research-compare-title"><h2 id="research-compare-title" className="text-2xl font-bold">{formatI18nTemplate(tx("내 비교 보드 {v0}/4"), { v0: selected.length })}</h2>
+        <p className="mt-3 text-sm leading-7 text-fg-2">{tx("비교에 담긴 작품이 없습니다. 작품 탐색에서 비교에 담기를 누르면 하단 고정 바에서 바로 기획으로 이어집니다. 작품을 선택하지 않고도 기획 노트를 작성할 수 있습니다.")}</p>
+        {ids.length > selected.length && <p role="status" className="mt-4 text-sm text-fg-2">{formatI18nTemplate(tx("선택 중 {v0}편은 현재 색인에 없거나 연령 필터로 숨겨져 있습니다. 선택 비우기로 정리하거나 검색 화면에서 연령 필터를 확인하세요."), { v0: ids.length - selected.length })}</p>}
+        <div className="mt-5 flex flex-wrap gap-2"><button type="button" className={RESOURCE_BUTTON} onClick={() => void share()}>{tx("검색·비교 링크 복사")}</button><button type="button" className={RESOURCE_BUTTON} disabled={!selected.length} onClick={exportSelected}>{tx("비교 목록 CSV 내보내기")}</button><button type="button" className={RESOURCE_BUTTON} disabled={!ids.length} onClick={() => setSelection([])}>{tx("선택 비우기")}</button><Link to={`/research/catalog/notebook${suffix}`} className={`${RESOURCE_BUTTON} bg-accent text-on-accent`}>{tx("비교로 기획 시작")}</Link></div>
+        {message && <p role="status" className="mt-4 text-sm leading-7">{message}</p>}
+      </section>
+      )}
       {notebookView && <CatalogResearchNotebook works={selected} snapshot={snapshot} onRestore={setSelection} />}
       <details className={BOX}><summary className="min-h-8 cursor-pointer text-lg font-bold">{tx("집계 방법·데이터 이용 원칙")}</summary><div className="mt-4 space-y-3 text-sm leading-7 text-fg-2"><p>{tx("단위는 중복 ID를 제거한 수록 작품 1편입니다. 장르·태그·플랫폼은 한 작품 안에서 중복을 제거하고, 현재 검색 결과 전체를 분모로 집계합니다. 미상 값은 새로 추정하지 않습니다.")}</p><p>{tx("기록 연도는 원본 메타데이터의 값이며 실제 첫 연재일로 검증한 값이 아닙니다. 서로 다른 플랫폼에 실린 작품이나 판본은 별개 ID일 수 있습니다. 현재 서비스 중인지, 이용 조건이 바뀌었는지는 원문에서 확인하세요.")}</p><p>{tx("이 기능은 기존 수집 스냅샷의 메타데이터만 가공합니다. 외부 사이트에 새 수집 요청을 보내지 않고, 표지·본문·평점·조회수·추정 트렌드 점수를 이 색인에 포함하지 않습니다. 출처 링크는 작품 내용의 복제·학습·상업 이용 허락이 아닙니다.")}</p><div className="flex flex-wrap gap-2"><Link className={RESOURCE_BUTTON} to="/about/data">{tx("데이터 출처")}</Link><Link className={RESOURCE_BUTTON} to="/about/crawler">{tx("수집 정책")}</Link><Link className={RESOURCE_BUTTON} to="/insights/resources">{tx("공개 API 안내")}</Link></div></div></details>
     </>}

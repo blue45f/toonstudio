@@ -32,12 +32,15 @@ const PACKS: { title: string; query: string; format: KitFormat; description: str
   { title: "작가의 자료 노트", query: "가구", format: "article", description: "비교 포인트와 출처가 있는 큐레이션 초안" },
 ];
 
-function ReferenceTile({ item, saved, disabled, toggle }: { item: OpenReference; saved: boolean; disabled: boolean; toggle: () => void }) {
+function ReferenceTile({ item, saved, disabled, toggle, order }: { item: OpenReference; saved: boolean; disabled: boolean; toggle: () => void; order?: number }) {
   const [failed, setFailed] = useState(false);
   return <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel">
-    {item.imageUrl && !failed
-      ? <img src={item.imageUrl} alt={item.title} loading="lazy" decoding="async" crossOrigin="anonymous" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-48 w-full bg-raised object-contain p-3" />
-      : <div className="flex h-24 items-center justify-center bg-raised px-4 text-center text-sm text-fg-2">{failed ? tx("이미지를 불러오지 못했습니다 · 원문에서 확인") : tx("원문 링크로 확인하는 자료")}</div>}
+    <div className="relative">
+      {item.imageUrl && !failed
+        ? <img src={item.imageUrl} alt={item.title} loading="lazy" decoding="async" crossOrigin="anonymous" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="aspect-[4/3] w-full bg-raised object-cover" />
+        : <div className="flex aspect-[4/3] items-center justify-center bg-raised px-4 text-center text-sm text-fg-2">{failed ? tx("이미지를 불러오지 못했습니다 · 원문에서 확인") : tx("원문 링크로 확인하는 자료")}</div>}
+      {order !== undefined ? <span className="absolute left-3 top-3 grid size-8 place-items-center rounded-full bg-accent text-sm font-black text-on-accent shadow-lg"><span className="sr-only">{tx("보드 순서")} </span>{order}</span> : null}
+    </div>
     <div className="flex flex-1 flex-col gap-3 p-4">
       <p className="text-xs font-semibold text-accent">{formatI18nTemplate(tx("{v0} · {v1}"), { v0: OPEN_PROVIDERS.find((provider) => provider.id === item.provider)?.name ?? tx("기존 저장 보드"), v1: item.rights })}</p>
       <h3 className="break-words text-base font-bold">{item.title}</h3>
@@ -184,12 +187,20 @@ export function OpenCreationPage() {
     {storageError && <p role="alert" className="text-sm text-warn">{formatI18nTemplate(tx("{v0} 성공으로 표시하지 않으며, 검색과 초안 내보내기는 계속 사용할 수 있습니다."), { v0: storageError })}</p>}
     {tab === "existing" && <p className="text-sm text-fg-2">{existingError || (!existingReady ? tx("기존 저장 보드를 읽고 있습니다…") : tx("기존 Met·도서·지원사업 자료를 재료 보드로 복사할 수 있습니다. 원래 보드는 변경하지 않습니다."))}</p>}
     {pending && tab === "results" && !items.length && <MotionEmptyState kind="loading" title={tx("선택한 제공처에서 무료 자료를 확인하고 있습니다")} description={tx("검색 버튼을 눌렀을 때만 연결하며, 검색어는 선택한 제공처 한 곳으로만 전송됩니다.")} />}
-    {!pending && !items.length && !(tab === "results" && searchError) && <MotionEmptyState
+    {!pending && !items.length && !(tab === "results" && searchError) && (tab === "board" ? (
+      <div className="rounded-3xl border border-dashed border-line bg-panel p-8 text-center">
+        <div aria-hidden="true" className="mx-auto grid max-w-md grid-cols-4 gap-2">
+          {Array.from({ length: 8 }, (_, index) => <span key={index} className={`rounded-xl border border-dashed border-line bg-raised/60 ${index % 3 === 0 ? "aspect-[3/4]" : "aspect-square"}`} />)}
+        </div>
+        <h3 className="mt-6 text-lg font-bold">{tx("아직 담은 재료가 없습니다")}</h3>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-fg-2">{tx("검색 결과에서 마음에 드는 재료를 보드에 담아 오세요. 담은 순서가 무드보드의 번호 배지가 됩니다.")}</p>
+      </div>
+    ) : <MotionEmptyState
       kind="search"
       title={tx(tab === "results" ? "표시할 자료가 없습니다" : "저장된 자료가 없습니다")}
       description={tx(tab === "results" ? "검색어를 입력해 검색하거나 다음 페이지·공식 제공처를 확인하세요." : "검색 결과에서 재료 보드에 저장해 보세요.")}
-    />}
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy={pending && tab === "results"}>{items.map((item) => <ReferenceTile key={item.id} item={item} saved={board.some((saved) => saved.id === item.id)} disabled={!boardReady} toggle={() => toggleBoard(item)} />)}</div>
+    />)}
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy={pending && tab === "results"}>{items.map((item, index) => <ReferenceTile key={item.id} item={item} order={tab === "board" ? index + 1 : undefined} saved={board.some((saved) => saved.id === item.id)} disabled={!boardReady} toggle={() => toggleBoard(item)} />)}</div>
     {tab === "results" && resultKey && <nav className="flex items-center justify-center gap-3" aria-label={tx("무료 자료 검색 페이지")}><button className={RESOURCE_BUTTON} disabled={pending || page <= 1} onClick={() => void search(page - 1)}>{tx("이전")}</button><span>{formatI18nTemplate(tx("{v0} / 최대 10페이지"), { v0: page })}</span><button className={RESOURCE_BUTTON} disabled={pending || page >= 10} onClick={() => void search(page + 1)}>{tx("다음 페이지 확인")}</button></nav>}
     <section aria-labelledby="creation-kit-title" className="space-y-4 rounded-2xl border border-line bg-panel p-5">
       <h2 id="creation-kit-title" className="text-xl font-bold">{tx("자료를 제작 브리프로")}</h2>
@@ -200,8 +211,12 @@ export function OpenCreationPage() {
       <fieldset className="space-y-2"><legend className="font-semibold">{formatI18nTemplate(tx("브리프에 쓸 자료 {v0}/12"), { v0: selectedItems.length })}</legend><button className={RESOURCE_BUTTON} disabled={!board.length} onClick={() => setSelected(board.slice(0, 12).map((item) => item.id))}>{tx("앞 12개 선택")}</button><button className={RESOURCE_BUTTON} disabled={!selected.length} onClick={() => setSelected([])}>{tx("선택 해제")}</button>
         <div className="grid gap-2 sm:grid-cols-2">{board.map((item) => <label key={item.id} className="flex min-w-0 items-start gap-2 rounded-lg bg-raised p-3 text-sm"><input type="checkbox" className="mt-1" checked={selected.includes(item.id)} disabled={!selected.includes(item.id) && selectedItems.length >= 12} onChange={(event) => setSelected((ids) => event.target.checked ? [...ids.filter((id) => id !== item.id), item.id].slice(0, 12) : ids.filter((id) => id !== item.id))} /><span className="break-words">{item.title}</span></label>)}</div>
       </fieldset>
-      <button className={`${RESOURCE_BUTTON} bg-accent-soft`} onClick={() => { setOutput(buildCreationKit(format, subject, notes, selectedItems)); setCopyStatus(tx("초안을 만들었습니다. 원문 사실과 권리를 확인한 뒤 편집하세요.")); }}>{tx("무료 제작 브리프 만들기")}</button>
-      {output && <><label className="block text-sm font-semibold">{tx("제작 브리프 (직접 수정 가능)")}<textarea className={`${RESOURCE_INPUT} mt-2 min-h-96 font-mono text-sm`} value={output} maxLength={60000} onChange={(event) => { setOutput(event.target.value); setCopyStatus(""); }} /></label><div className="flex flex-wrap gap-2"><button className={RESOURCE_BUTTON} onClick={() => exportText("toonstudio-creation-kit.md", output)}>{tx("출처 포함 Markdown 내보내기")}</button><button className={RESOURCE_BUTTON} onClick={() => { void navigator.clipboard?.writeText(output).then(() => setCopyStatus(tx("초안을 복사했습니다.")), () => setCopyStatus(tx("복사를 허용하지 않는 환경입니다. 텍스트를 선택하거나 파일로 내보내세요."))); if (!navigator.clipboard) setCopyStatus(tx("텍스트를 선택하거나 파일로 내보내세요.")); }}>{tx("초안 복사")}</button><Link className={RESOURCE_BUTTON} to="/studio/new">{tx("Studio에서 새 작업")}</Link></div><p className="text-xs text-fg-2">{tx("Studio에는 자료가 자동 삽입되지 않습니다. 내보낸 초안을 참고해 새 작업을 시작하세요.")}</p></>}
+      {output && <><label className="block text-sm font-semibold">{tx("제작 브리프 (직접 수정 가능)")}<textarea className={`${RESOURCE_INPUT} mt-2 min-h-96 font-mono text-sm`} value={output} maxLength={60000} onChange={(event) => { setOutput(event.target.value); setCopyStatus(""); }} /></label><p className="text-xs text-fg-2">{tx("Studio에는 자료가 자동 삽입되지 않습니다. 내보낸 초안을 참고해 새 작업을 시작하세요.")}</p></>}
+      <div className="sticky bottom-4 z-30 flex flex-wrap items-center gap-2 rounded-2xl border border-accent/40 bg-canvas/95 p-3 shadow-2xl backdrop-blur">
+        <span className="text-sm font-bold">{formatI18nTemplate(tx("선택한 재료 {v0}개"), { v0: selectedItems.length })}</span>
+        <button className={`${RESOURCE_BUTTON} bg-accent text-on-accent`} onClick={() => { setOutput(buildCreationKit(format, subject, notes, selectedItems)); setCopyStatus(tx("초안을 만들었습니다. 원문 사실과 권리를 확인한 뒤 편집하세요.")); }}>{tx("무료 제작 브리프 만들기")}</button>
+        {output && <><button className={RESOURCE_BUTTON} onClick={() => exportText("toonstudio-creation-kit.md", output)}>{tx("출처 포함 Markdown 내보내기")}</button><button className={RESOURCE_BUTTON} onClick={() => { void navigator.clipboard?.writeText(output).then(() => setCopyStatus(tx("초안을 복사했습니다.")), () => setCopyStatus(tx("복사를 허용하지 않는 환경입니다. 텍스트를 선택하거나 파일로 내보내세요."))); if (!navigator.clipboard) setCopyStatus(tx("텍스트를 선택하거나 파일로 내보내세요.")); }}>{tx("초안 복사")}</button><Link className={RESOURCE_BUTTON} to="/studio/new">{tx("Studio에서 새 작업")}</Link></>}
+      </div>
       <p role="status" className="text-sm text-fg-2">{copyStatus}</p>
     </section>
     <p className="text-xs leading-6 text-fg-2">{tx("신규 외부 API 사용료와 생성형 모델 비용은 없습니다. 기존 호스팅·도메인·전송량의 비용과 무료 한도는 별도입니다. 호출 한도 초과 시 자동 업그레이드·유료 대체·우회 호출을 하지 않습니다.")}</p>

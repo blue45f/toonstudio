@@ -3,7 +3,6 @@ import {
   Check,
   ExternalLink,
   Maximize2,
-  Scale,
   Search,
   Sparkles,
 } from "lucide-react";
@@ -56,27 +55,39 @@ export function AssetCard({
   const date = formatReferenceDateRange(item);
   return (
     <article data-saved={saved || undefined} data-compared={compared || undefined} className="resource-asset-card group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg">
-      <button
-        type="button"
-        className="relative block overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
-        onClick={(event) => onOpen(event.currentTarget)}
-        aria-label={`${item.title} 상세 보기`}
-      >
-        <AssetImage item={item} className={`w-full p-3 transition duration-300 group-hover:scale-[1.02] ${density === "compact" ? "aspect-square" : "aspect-[4/3]"}`} />
-        <span className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
-          <span className="inline-flex min-h-7 items-center rounded-full border border-line bg-canvas/85 px-2.5 text-xs font-bold text-fg backdrop-blur">
-            CC0
-          </span>
+      <div className="relative">
+        <button
+          type="button"
+          className="relative block w-full overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
+          onClick={(event) => onOpen(event.currentTarget)}
+          aria-label={`${item.title} 상세 보기`}
+        >
+          <AssetImage fit="cover" item={item} className={`w-full transition duration-300 group-hover:scale-[1.03] ${density === "compact" ? "aspect-square" : "aspect-[4/3]"}`} />
+        </button>
+        <span className="pointer-events-none absolute left-3 top-3 inline-flex min-h-7 items-center rounded-full border border-line bg-canvas/85 px-2.5 text-xs font-bold text-fg backdrop-blur">
+          CC0
+        </span>
+        <span className="absolute right-3 top-3 flex items-center gap-1.5">
           {asset?.isHighlight ? (
-            <span className="inline-flex min-h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-xs font-bold text-on-accent">
+            <span className="pointer-events-none inline-flex min-h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-xs font-bold text-on-accent">
               <Sparkles size={12} aria-hidden="true" /> 대표작
             </span>
           ) : null}
+          <button
+            type="button"
+            className={`grid size-9 place-items-center rounded-full border backdrop-blur transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${compared ? "border-accent bg-accent text-on-accent" : "border-line bg-canvas/85 text-fg hover:bg-canvas"}`}
+            aria-pressed={compared}
+            aria-label={compared ? "비교에서 제거" : "비교에 추가"}
+            title={compared ? "비교에서 제거" : "비교에 추가"}
+            onClick={onToggleCompare}
+          >
+            <Check size={16} aria-hidden="true" />
+          </button>
         </span>
-        <span className="absolute bottom-3 right-3 grid size-9 place-items-center rounded-full border border-line bg-canvas/85 text-fg opacity-0 backdrop-blur transition group-hover:opacity-100 group-focus-within:opacity-100">
+        <span className="pointer-events-none absolute bottom-3 right-3 grid size-9 place-items-center rounded-full border border-line bg-canvas/85 text-fg opacity-0 backdrop-blur transition group-hover:opacity-100 group-focus-within:opacity-100">
           <Maximize2 size={16} aria-hidden="true" />
         </span>
-      </button>
+      </div>
       <div className={`flex flex-1 flex-col ${density === "compact" ? "p-3.5" : "p-5"}`}>
         <div className="flex flex-wrap gap-1.5">
           {asset?.department ? <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{asset.department}</span> : null}
@@ -88,7 +99,7 @@ export function AssetCard({
           {date ? ` · ${date}` : ""}
         </p>
         {density === "comfortable" && asset?.medium ? <p className="mt-3 line-clamp-2 text-sm leading-6 text-fg-2">{asset.medium}</p> : null}
-        <div className="resource-asset-actions mt-auto grid grid-cols-3 gap-2 pt-4">
+        <div className="resource-asset-actions mt-auto grid grid-cols-2 gap-2 pt-4">
           <button
             type="button"
             className={`inline-flex min-h-10 items-center justify-center rounded-xl border text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${saved ? "border-accent bg-accent-soft text-accent" : "border-line text-fg-2 hover:bg-raised"}`}
@@ -99,16 +110,6 @@ export function AssetCard({
           >
             {saved ? <Check size={15} aria-hidden="true" /> : <Bookmark size={15} aria-hidden="true" />}
             <span className="sr-only">{saved ? "저장됨" : "저장"}</span>
-          </button>
-          <button
-            type="button"
-            className={`inline-flex min-h-10 items-center justify-center rounded-xl border text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${compared ? "border-accent bg-accent-soft text-accent" : "border-line text-fg-2 hover:bg-raised"}`}
-            aria-pressed={compared}
-            onClick={onToggleCompare}
-            title={compared ? "비교에서 제거" : "비교에 추가"}
-          >
-            <Scale size={15} aria-hidden="true" />
-            <span className="sr-only">{compared ? "비교에서 제거" : "비교"}</span>
           </button>
           <a
             className="inline-flex min-h-10 items-center justify-center rounded-xl border border-line text-fg-2 transition hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"

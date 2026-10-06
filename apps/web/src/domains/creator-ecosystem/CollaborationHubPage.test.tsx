@@ -94,4 +94,17 @@ describe("협업 허브 페이지", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("협업 가능한 작가를 불러오지 못했어요.");
   });
+
+  it("작가 목록이 첫 화면에 오고 타일마다 아트 밴드가 붙는다", async () => {
+    renderPage();
+    const directoryHeading = await screen.findByRole("heading", { name: "협업 가능한 작가" });
+    const canvasHeading = screen.getByRole("heading", { name: "실시간 공동 캔버스" });
+    // 디렉터리 섹션이 캔버스 섹션보다 문서 순서상 앞에 있다.
+    expect(
+      directoryHeading.compareDocumentPosition(canvasHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const tile = screen.getByRole("button", { name: /별작가/ });
+    // 아바타가 없는 작가는 이름 타이포 커버 밴드(장식 영역)를 단다.
+    expect(tile.querySelector("[aria-hidden='true']")).toBeTruthy();
+  });
 });

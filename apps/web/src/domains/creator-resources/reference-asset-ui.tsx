@@ -93,10 +93,13 @@ export function AssetImage({
   item,
   className,
   eager = false,
+  fit = "contain",
 }: {
   item: CreatorResource;
   className: string;
   eager?: boolean;
+  /** contain: 레터박스(상세·썸네일 공용 기본값). cover: 패턴 B 타일처럼 영역을 꽉 채운다. */
+  fit?: "contain" | "cover";
 }) {
   const [failed, setFailed] = useState(false);
   if (!item.imageUrl || failed) {
@@ -115,7 +118,7 @@ export function AssetImage({
       decoding="async"
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
-      className={`${className} bg-raised object-contain`}
+      className={`${className} bg-raised ${fit === "cover" ? "object-cover" : "object-contain"}`}
     />
   );
 }
