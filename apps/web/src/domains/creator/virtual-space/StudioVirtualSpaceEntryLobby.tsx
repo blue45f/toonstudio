@@ -11,6 +11,7 @@ import {
   DEFAULT_STUDIO_VIRTUAL_ART_STYLE,
   STUDIO_VIRTUAL_ART_STYLES,
   studioVirtualArtTextureUrl,
+  studioVirtualLobbyPreviewObjectPosition,
   type StudioVirtualArtStyleKey,
 } from "./studio-virtual-space-art-style";
 import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
@@ -148,7 +149,8 @@ export function StudioVirtualSpaceEntryLobby({
         <div className="space-lobby__scene" aria-hidden>
           {onboarding
             ? <img className="space-lobby__scene-art space-lobby__scene-art--onboarding" src="/images/onboarding-character-stage.webp" alt="" draggable={false} data-onboarding-stage-art />
-            : <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle} />}
+            : <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle}
+              style={{ objectPosition: studioVirtualLobbyPreviewObjectPosition(artStyle) }} />}
         </div>
         <header className="space-lobby__stage-head">
           <p className="space-lobby__kicker"><Sparkles size={15} aria-hidden />{onboarding ? "ToonStudio Character" : "ToonStudio Spatial Campus"}</p>

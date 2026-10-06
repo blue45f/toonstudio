@@ -4,12 +4,14 @@ import {
   DEFAULT_STUDIO_VIRTUAL_ART_STYLE,
   STUDIO_VIRTUAL_ART_STYLES,
   STUDIO_VIRTUAL_ART_STYLE_KEYS,
+  STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS,
   isStudioVirtualArtStyleKey,
   studioVirtualArtAssetUrl,
   studioVirtualArtObjectUrl,
   studioVirtualArtStyle,
   studioVirtualArtTextureUrl,
   studioVirtualLivingTownAssetUrl,
+  studioVirtualLobbyPreviewObjectPosition,
 } from "./studio-virtual-space-art-style";
 
 describe("Virtual Studio art direction", () => {
@@ -52,5 +54,20 @@ describe("Virtual Studio art direction", () => {
       .toBe("/assets/virtual-studio/living-town-v6/sky-island/waterfall-sheet.webp");
     expect(studioVirtualLivingTownAssetUrl("retro", "terrain-tile-atlas"))
       .toBe("/assets/virtual-studio/living-town-v6/retro/terrain-tile-atlas.webp");
+  });
+
+  it("로비 미리보기 초점은 여섯 스타일 모두 실측 좌표를 갖고 object-position으로 변환된다 (W5-T7)", () => {
+    for (const key of STUDIO_VIRTUAL_ART_STYLE_KEYS) {
+      const focus = STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS[key];
+      expect(focus.x).toBeGreaterThanOrEqual(0);
+      expect(focus.x).toBeLessThanOrEqual(100);
+      expect(focus.y).toBeGreaterThanOrEqual(0);
+      expect(focus.y).toBeLessThanOrEqual(100);
+      expect(studioVirtualLobbyPreviewObjectPosition(key)).toBe(`${focus.x}% ${focus.y}%`);
+    }
+    // 포털은 전 스타일 하단 세 번째 건물(x 61%)에 모이고, sky-island만 대성당이 길어 초점이 더 높다.
+    expect(STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS["sky-island"]).toEqual({ x: 61, y: 68 });
+    expect(STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS.webtoon).toEqual({ x: 61, y: 73 });
+    expect(STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS.neon).toEqual({ x: 61, y: 73 });
   });
 });

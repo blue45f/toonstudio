@@ -83,8 +83,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* 월드 베이스는 여러 구역이 모인 시트라, 입장 지점인 중앙 상단 구역이 보이게 맞춘다. */
-  object-position: 50% 30%;
+  /* 기본값은 다수 스타일의 포털 초점이다. 실제 표시 값은 스타일별 실측 초점이 인라인으로 우선한다
+     (studio-virtual-space-art-style의 STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS). */
+  object-position: 61% 73%;
 }
 /* 상단 제목·하단 칩 행의 가독성을 위한 무대 안쪽 국소 그라디언트 (화면 전체 워시가 아니다). */
 .space-lobby__scene::before {

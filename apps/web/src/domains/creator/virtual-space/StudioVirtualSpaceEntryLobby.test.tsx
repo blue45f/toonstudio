@@ -145,9 +145,13 @@ describe("StudioVirtualSpaceEntryLobby 월드 미리보기와 첫 화면 순서"
     const preview = stage.querySelector<HTMLImageElement>("[data-world-preview]");
     expect(preview).not.toBeNull();
     expect(preview!.getAttribute("src")).toBe("/assets/virtual-studio/style-packs-v5/sky-island/world/world-base.webp");
+    // 초점은 스타일별 실측 좌표(포털 구역)를 인라인 object-position으로 적용한다.
+    expect(preview!.style.objectPosition).toBe("61% 68%");
     view.rerender(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" artStyle="retro" {...props} /></MemoryRouter>);
-    expect(stage.querySelector<HTMLImageElement>("[data-world-preview]")!.getAttribute("src"))
+    const retroPreview = stage.querySelector<HTMLImageElement>("[data-world-preview]")!;
+    expect(retroPreview.getAttribute("src"))
       .toBe("/assets/virtual-studio/style-packs-v5/retro/world/world-base.webp");
+    expect(retroPreview.style.objectPosition).toBe("61% 73%");
   });
 
   it("필수 입력 순서는 닉네임이 캐릭터 선택보다 먼저이고, 입장 버튼이 입장코드보다 먼저다", () => {
