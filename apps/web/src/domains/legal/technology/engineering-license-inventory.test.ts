@@ -6,13 +6,13 @@ import {
 } from "./engineering-license-inventory";
 
 describe("라이브러리 라이선스 현황 데이터", () => {
-  it("직접 의존성 116개를 표면별로 빠짐없이 담는다", () => {
-    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(116);
+  it("직접 의존성 117개를 표면별로 빠짐없이 담는다", () => {
+    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(117);
     const bySurface = new Map<string, number>();
     for (const library of ENGINEERING_LIBRARY_LICENSES) {
       bySurface.set(library.surface, (bySurface.get(library.surface) ?? 0) + 1);
     }
-    expect(bySurface.get("web")).toBe(83);
+    expect(bySurface.get("web")).toBe(84);
     expect(bySurface.get("api")).toBe(23);
     expect(bySurface.get("mobile")).toBe(8);
     expect(bySurface.get("labs")).toBe(2);
