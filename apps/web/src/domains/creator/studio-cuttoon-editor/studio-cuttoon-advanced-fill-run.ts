@@ -5,7 +5,7 @@
  */
 import { shouldClipToExistingAlpha } from "../studio-alpha-lock";
 import { collectOverlappingStudioFillReferenceLayers, composeStudioFillReferenceImageWithPageReferences } from "../studio-fill-reference";
-import type { StudioFillPageReference } from "../studio-fill-reference";
+import type { StudioFillPageReference, StudioFillReferenceLayer  } from "../studio-fill-reference";
 import { flipNormalizedPoint } from "../studio-magic-wand";
 import { canvasPointToNormalized } from "../studio-selection-tools";
 import type { SelectionFrame } from "../studio-selection-tools";
@@ -35,7 +35,7 @@ export function bindStudioAdvancedFillRun(h: StudioAdvancedFillRunHost) {
     setAdvancedFillVirtualTarget,
     advancedFillVirtualReferenceRef,
     advancedFillSettings,
-    advancedFillRasterLayers,
+    advancedFillRasterLayers: advancedFillRasterLayersRaw,
     color,
     createAdvancedFillSelectionMask,
     canApplyStudioMutation,
@@ -44,6 +44,11 @@ export function bindStudioAdvancedFillRun(h: StudioAdvancedFillRunHost) {
     setAdvancedFillPreview,
     setAdvancedFillActive,
   } = host;
+  // The host bag is intentionally untyped across the extraction seam, but the layers we consume
+  // must stay typed: they flow into the raster projection helper, which preserves extra fields.
+  const advancedFillRasterLayers = advancedFillRasterLayersRaw as StudioFillReferenceLayer[];
+  // Same seam, same reason: element identity is compared against raster targets below.
+  const activeElements = activeElementsRef.current as Array<{ readonly id: string; readonly type: string; readonly src?: string }>;
   return async function runAdvancedFillAt(pos: { x: number; y: number }, frame: SelectionFrame) {
     if (advancedFillAbortRef.current || advancedFillBusy || !advancedFillArmed) return;
     const rasterTarget = advancedFillRasterArmed && selected?.type === "image" ? selected : null;
@@ -247,7 +252,7 @@ export function bindStudioAdvancedFillRun(h: StudioAdvancedFillRunHost) {
       ) return;
       if (!canApplyStudioMutation(mutationTicket)) return;
       if (rasterTarget) {
-        const current = activeElementsRef.current.find((element) => element.id === rasterTarget.id);
+        const current = activeElements.find((element) => element.id === rasterTarget.id);
         if (!current || current.type !== "image" || current.src !== rasterTarget.src) return;
       } else if (vectorTarget) {
         const currentPlan = planStudioAdvancedFillVectorTarget(currentAdvancedFillVectorInput());

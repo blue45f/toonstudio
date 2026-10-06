@@ -4,6 +4,7 @@
  * 공유하는 기반 정의만 모았다.
  */
 
+import type { StudioGeneric3dWorkflowMetadataRecord } from "../studio-generic-3d-workflow-metadata";
 import type { StudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-versions";
 
 export const STUDIO_BG3D_SCENE_DOCUMENT_KIND = "toonstudio.bg3d-scene" as const;
