@@ -2609,10 +2609,10 @@ export function StudioVirtualSpacePhaserCanvas({
           const visualPoint = studioProjectTownPoint(manifest, groundPoint);
           const npcEmote = emotes?.activeId(`npc:${view.id}`, time) ?? null;
           const npcEmotePose = view.moving || attached ? null : emotes?.pose(`npc:${view.id}`, time, reducedMotion.matches) ?? null;
-          // 표시 전용 지수 감쇠(τ=50ms): 디렉터 60Hz 보간의 계단 이동과 웨이포인트 방향 전환의 꺾임을 둥글게 한다.
-          // 좌석 부착 시에는 앵커에 정확히 붙어야 하므로 스냅한다. 논리 좌표(view.point·충돌)는 건드리지 않는다.
-          const npcDisplay = attached ? visualPoint : dampStudioDisplayPoint(
-            npcDisplayPoints.get(view.id) ?? null, visualPoint, dt, { enabled: !reducedMotion.matches });
+          // 표시 전용 지수 감쇠: 디렉터 60Hz 보간의 계단 이동과 웨이포인트 방향 전환의 꺾임을 둥글게 한다.
+          // 시간상수는 로컬과 같은 속도 적응 규칙 — 디렉터 뷰가 노출한 현재 속도로 정한다. 좌석 부착 시에는 스냅한다.
+          const npcDisplay = attached ? visualPoint : dampStudioDisplayPoint(npcDisplayPoints.get(view.id) ?? null,
+            visualPoint, dt, { enabled: !reducedMotion.matches, tauSeconds: studioDisplayDampTauSeconds(view.speed) });
           if (!attached) npcDisplayPoints.set(view.id, npcDisplay);
           // 마이크로 모션: 걷기는 보행 거리와 동기된 게이트 bob(로컬·피어와 같은 함수), 대기는 NPC별 위상의 호흡.
           const npcGaitStride = studioEffectiveGaitStride(undefined,

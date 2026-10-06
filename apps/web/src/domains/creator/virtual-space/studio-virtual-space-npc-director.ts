@@ -50,6 +50,8 @@ export interface StudioNpcView {
   readonly animation: StudioCharacterMotionState;
   readonly distance: number;
   readonly moving: boolean;
+  /** 현재 속도 크기(px/s). 정지·차단으로 멈춰 있으면 0이다. 렌더 측 표시 감쇠의 속도 적응 판정에 쓴다. */
+  readonly speed: number;
   readonly greeting: boolean;
   readonly activityAnchorId?: string;
   readonly activityStage: StudioNpcActivityStage | null;
@@ -254,7 +256,8 @@ export class StudioNpcDirector {
         facing: actor.facing, phase: actor.phase, animation: availableAnimation(actor, animation),
         // 좌표와 발걸음 위상을 같은 시각으로 보간해 중간 렌더 프레임의 발 미끄러짐을 막는다.
         distance: actor.previousDistance + (actor.distance - actor.previousDistance) * alpha,
-        moving: actor.moving, greeting: actor.phase === "greet",
+        moving: actor.moving, speed: Math.hypot(actor.velocity.x, actor.velocity.y),
+        greeting: actor.phase === "greet",
         activityAnchorId: actor.activity?.id, activityStage: actor.activityStage,
         ...(actor.activityStage === "perform" && actor.activity?.animation === "sit" && availableAnimation(actor, "sit") === "sit"
           ? { seatAttachmentPoint: actor.activity.seatAttachmentPoint } : {}),
