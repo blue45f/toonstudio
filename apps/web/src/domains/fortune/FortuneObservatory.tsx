@@ -16,6 +16,7 @@ import { FortuneReadingView } from "./FortuneReadingView";
 import { readFortunePreferences, writeFortunePreferences, clearFortunePreferences } from "./fortune-observatory-storage";
 import type { FortunePreferences } from "./fortune-observatory-storage";
 import { FortuneStoryPortal, FortuneJourney } from "./FortuneStoryPortal";
+import { FortuneLunaHero } from "./FortuneLunaHero";
 import { FortuneInteractiveDeck } from "./FortuneInteractiveDeck";
 import { FortuneSceneArt } from "./FortuneSceneArt";
 import { fortuneSceneTheme } from "./fortune-cinematic-model";
@@ -56,6 +57,7 @@ function FortuneObservatorySession({ characterContent, accountId, forceCharacter
   const persist = (next: FortunePreferences) => { setPreferences(next); const stored = writeFortunePreferences(next, accountId); if (!stored) setNotice("이 브라우저에서 저장이 제한되어 있어요. 현재 화면에서만 유지됩니다."); return stored; };
   const favorite = (id: string) => persist({ ...preferences, favorites: preferences.favorites.includes(id) ? preferences.favorites.filter((v) => v !== id) : [...preferences.favorites, id] });
   const saveReading = () => { if (!reading) return; const entry = { id: `${reading.id}-${Date.now()}`, title: reading.title, text: fortuneReadingText(reading), savedAt: fortuneKstDate() }; const stored = persist({ ...preferences, notebook: [entry, ...preferences.notebook].slice(0, 12) }); if (stored) setNotice("생일·시간·꿈 원문을 제외한 해석을 이 브라우저의 보관함에 추가했어요."); };
+  const saveTodayCards = (text: string) => { const entry = { id: `today-cards-${Date.now()}`, title: "오늘의 카드", text, savedAt: fortuneKstDate() }; const stored = persist({ ...preferences, notebook: [entry, ...preferences.notebook].slice(0, 12) }); if (stored) setNotice("오늘의 카드를 이 브라우저의 보관함에 추가했어요. 아래 ‘나의 보관함’에서 다시 볼 수 있어요."); };
   const invalidateReading = () => { sequence.current += 1; setReading(null); setRunning(false); setError(""); };
   const clearInputs = () => { sequence.current += 1; setBirth({ date: "", calendar: "solar" }); setPartner({ date: "", calendar: "solar" }); setQuestion(""); setPick(null); setReading(null); setError(""); setRunning(false); setNotice("현재 입력과 결과를 지웠어요."); };
   const clearSaved = () => { const ok = clearFortunePreferences(accountId); setPreferences({ favorites: [], notebook: [] }); setNotice(ok ? "관측소의 즐겨찾기와 보관함을 모두 지웠어요." : "브라우저 저장소를 지울 수 없어요. 브라우저 설정에서 사이트 데이터를 확인해 주세요."); };
@@ -72,6 +74,7 @@ function FortuneObservatorySession({ characterContent, accountId, forceCharacter
   if (requested === "character" || forceCharacter) return <div className="fortune-observatory fo-legacy"><button type="button" className="fo-button" onClick={() => (forceCharacter ? routerNavigate("/fortune") : navigate(""))}><ArrowLeft size={16} />운세 관측소로</button><p className="fo-safety">{FORTUNE_DISCLAIMER}</p>{characterContent}</div>;
   return <div className="fortune-observatory" data-fortune-experience="cinematic-v2" data-campus-domain={campus ? "fortune" : undefined} data-fortune-room={fortuneCampusRoom(requested)?.id}>
     {!campus && <FortuneAmbientLayer theme={selected ? fortuneSceneTheme(selected.id) : "violet"} />}
+    {!campus && !selected && <FortuneLunaHero onSaveTodayCards={saveTodayCards} />}
     {campus ? <FortuneCampusDirectory group={selected?.group ?? group} onSelect={(next) => { setGroup(next); setSearch(""); setFavoritesOnly(false); navigate(""); }} />
       : <FortuneStoryPortal onNavigate={navigate} compact={Boolean(selected)} cast={cast} onCastChange={changeCast} />}
     <p className="fo-safety">{FORTUNE_DISCLAIMER}</p>
