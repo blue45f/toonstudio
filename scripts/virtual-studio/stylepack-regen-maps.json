@@ -1203,6 +1203,729 @@
               ]
             }
           }
+        },
+        "player-dark": {
+          "key": "player-dark",
+          "kind": "player",
+          "outputs": {
+            "direction-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-left": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "walk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk-down"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk-down"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk-down"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk-down"
+                }
+              ]
+            },
+            "walk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "walk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk-left"
+                }
+              ]
+            },
+            "walk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "talk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk-right"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk-right"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk-right"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk-right"
+                }
+              ]
+            },
+            "talk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk-left"
+                }
+              ]
+            },
+            "talk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "draw-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw-right"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw-right"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw-right"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw-right"
+                }
+              ]
+            },
+            "draw-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw-left"
+                }
+              ]
+            },
+            "draw-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "review-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review-down"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review-down"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review-down"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review-down"
+                }
+              ]
+            },
+            "review-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review-right"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review-right"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review-right"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review-right"
+                }
+              ]
+            },
+            "review-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review-left"
+                }
+              ]
+            },
+            "review-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "sit": {
+              "cells": [
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "wave": {
+              "cells": [
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk-right"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "state-talk": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "state-draw": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "state-review": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review-down"
+                }
+              ]
+            }
+          },
+          "sheets": {
+            "walk": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-walk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.28,
+                0.47,
+                0.694,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.273,
+                0.501,
+                0.716,
+                1
+              ]
+            },
+            "poses-dir": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-poses-dir.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.352,
+                0.669,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.245,
+                0.498,
+                0.757,
+                1
+              ]
+            },
+            "poses-pose": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-poses-pose.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.27,
+                0.484,
+                0.705,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.259,
+                0.501,
+                0.738,
+                1
+              ]
+            },
+            "talk": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-talk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.297,
+                0.49,
+                0.697,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.254,
+                0.501,
+                0.734,
+                1
+              ]
+            },
+            "draw": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-draw.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.342,
+                0.663,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.269,
+                0.498,
+                0.728,
+                1
+              ]
+            },
+            "review": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-review.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.251,
+                0.48,
+                0.708,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.28,
+                0.501,
+                0.721,
+                1
+              ]
+            },
+            "walk-down": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-walk-down.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.254,
+                0.501,
+                0.744,
+                1
+              ]
+            },
+            "walk-left": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-walk-left.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.266,
+                0.503,
+                0.75,
+                1
+              ]
+            },
+            "talk-right": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-talk-right.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.258,
+                0.491,
+                0.724,
+                1
+              ]
+            },
+            "talk-left": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-talk-left.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.24,
+                0.491,
+                0.749,
+                1
+              ]
+            },
+            "review-down": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-review-down.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.249,
+                0.5,
+                0.752,
+                1
+              ]
+            },
+            "review-right": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-review-right.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.253,
+                0.499,
+                0.739,
+                1
+              ]
+            },
+            "review-left": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-review-left.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.252,
+                0.499,
+                0.754,
+                1
+              ]
+            },
+            "draw-left": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-draw-left.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.252,
+                0.499,
+                0.752,
+                1
+              ]
+            },
+            "draw-right": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-dark-draw-right.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.267,
+                0.5,
+                0.748,
+                1
+              ]
+            }
+          }
         }
       }
     }

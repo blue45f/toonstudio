@@ -103,6 +103,8 @@ def remove_background(cell: Image.Image) -> Image.Image:
     alpha = np.where(background, 0, 255).astype(np.uint8)
 
     # 캐릭터 본체(가장 큰 불투명 덩어리)와 그 주변 소품만 남기고 이웃 셀 침범을 버린다.
+    # 본체가 아닌 덩어리는 유지 구역 안에 있고, 본체 면적의 1% 이상이며, 셀 경계에
+    # 닿지 않을 때만 소품으로 인정한다. 경계에 닿은 조각은 이웃 셀의 잘린 부분이다.
     solid = alpha > 0
     body_labels, body_count = ndimage.label(solid)
     if body_count > 1:
@@ -114,7 +116,14 @@ def remove_background(cell: Image.Image) -> Image.Image:
         x_slice = slice(max(0, main_box[1].start - pad), min(alpha.shape[1], main_box[1].stop + pad))
         keep_zone = np.zeros_like(solid)
         keep_zone[y_slice, x_slice] = True
-        alpha = np.where(keep_zone | (body_labels == main), alpha, 0).astype(np.uint8)
+        border_ids = set()
+        for edge in (body_labels[0, :], body_labels[-1, :], body_labels[:, 0], body_labels[:, -1]):
+            border_ids.update(int(v) for v in np.unique(edge) if v != 0)
+        allowed = np.zeros(body_count + 1, dtype=bool)
+        for idx in range(1, body_count + 1):
+            allowed[idx] = sizes[idx - 1] >= sizes.max() * 0.01 and idx not in border_ids
+        keep_labels = keep_zone & allowed[body_labels]
+        alpha = np.where(keep_labels | (body_labels == main), alpha, 0).astype(np.uint8)
 
     # 배경에 닿은 얇은 띠에서만 흰 프린지를 알파로 환산하고 혼합을 되돌린다.
     halo_band = ndimage.binary_dilation(background, iterations=2) & (alpha > 0)

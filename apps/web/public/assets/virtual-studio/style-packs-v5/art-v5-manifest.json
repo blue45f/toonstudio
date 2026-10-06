@@ -17688,253 +17688,253 @@
     },
     {
       "file": "webtoon/players/player-dark-direction-down.webp",
-      "bytes": 6268,
-      "sha256": "f6b013cef25cc7b662c0156540a3ab3bf21feac2ec9d03b8fbb27d161090b89e",
+      "bytes": 8214,
+      "sha256": "1b00730228705c292a49014d7c8e93eb1739b0aed716a7e2ebbe1dfa15c84185",
       "size": [
         160,
         160
       ],
-      "visualSignature": "afca562eaa789d531a43712913e5a1a507c9561bc01300491f63dcce6e0bfc4d"
+      "visualSignature": "da2b37652b9eccfaa14af475227d841c580497c8ad908aab3283d6ef907dd64b"
     },
     {
       "file": "webtoon/players/player-dark-direction-left.webp",
-      "bytes": 6064,
-      "sha256": "02c5a23b63d78223c4948937b5d0be23a115b86c1d094101f181af458c26c343",
+      "bytes": 6882,
+      "sha256": "624946179fea08c633e10813c16dc720a9b0bf7c6d7985a3b02ac90817068c7e",
       "size": [
         160,
         160
       ],
-      "visualSignature": "b95e0c00145c2d42ec71cb7c6fb04677a9fd301ee52c2d0ff5ec8b59c5dbe763"
+      "visualSignature": "e4badf734a55f3c03d7163fb57c9fe01d93a2af8de4324ac92dc6bb4ae5a6cc7"
     },
     {
       "file": "webtoon/players/player-dark-direction-right.webp",
-      "bytes": 6032,
-      "sha256": "dac28470937d5df5b66dea7555e219353b8888af4f52b61baf66cbc269ca04f1",
+      "bytes": 7094,
+      "sha256": "7092e1ff9c720f40dfe52730221109c1863d645f0f525a05ee8c110c15602455",
       "size": [
         160,
         160
       ],
-      "visualSignature": "41fcf98a7a5b4d28aca74837560248e54d7abad2cf0c6ad7ee61b3817c908128"
+      "visualSignature": "ecb2feecb0a9135ee56d8488040579bb0cb541b5f6019a1ee31c6661c4f8590b"
     },
     {
       "file": "webtoon/players/player-dark-direction-up.webp",
-      "bytes": 5696,
-      "sha256": "38ccc386f8a27597d69c6ece4023dc9e8116c787ead1f371dd38ecb1aaedcb60",
+      "bytes": 7518,
+      "sha256": "0de072b340b9903df6d69a6a06af846bf564284ceb472b682a0aabf3d4f1283f",
       "size": [
         160,
         160
       ],
-      "visualSignature": "942b0911922be84fef7abdee5aea4de0b0910f4c84252aee92e6d461e4b3d01c"
+      "visualSignature": "75a2d03017e7907aa18a526a21d176f14a78165075bfa37152471a816fb448b1"
     },
     {
       "file": "webtoon/players/player-dark-draw-down.webp",
-      "bytes": 17834,
-      "sha256": "541a97120f997cc5747f0a20f4c599579be4b430844c5ac9fb1454a8076af5c2",
+      "bytes": 30204,
+      "sha256": "84cbb4612744579db470d3de6de1c2aee4fc8e6e738c5115327514cb42903bbc",
       "size": [
         640,
         160
       ],
-      "visualSignature": "64a87495b26123832ec5fe3d0488538f316ab98282135c1b8920ecc5c1f691b5"
+      "visualSignature": "75e31bb70dd13607de4ffbe7696e62f6a7938418bfc7c5ba9748bc9bbc87c5f4"
     },
     {
       "file": "webtoon/players/player-dark-draw-left.webp",
-      "bytes": 16706,
-      "sha256": "59f7544cd6e99b8030a589efff43d4b9efb431b1d5760606930b9334a307e3ca",
+      "bytes": 30212,
+      "sha256": "a254d3987c9f00d2111079bea19420cb30e6ecd72aef87090c660f3971e05756",
       "size": [
         640,
         160
       ],
-      "visualSignature": "ef4e5881df8ab70f88ac1fdc7c8a01a01a2b53cc0f63cad7a4cf4156145dedaf"
+      "visualSignature": "b7e0e46f6569e5d6fe3657afd949c4872ddfca00acfc55785ab458bce997c7f4"
     },
     {
       "file": "webtoon/players/player-dark-draw-right.webp",
-      "bytes": 16460,
-      "sha256": "31aa71090e8d07409957036f088c3bc7d70c406be9d3b3c77a95723a044e6a00",
+      "bytes": 31948,
+      "sha256": "1df098690d54120322d5d42ced29323134bd7cdfe9dc44a089f9d64ae234398c",
       "size": [
         640,
         160
       ],
-      "visualSignature": "186032dfdd4b80bb698f54e826fd55bf05d0e4e18315380b46f150bd2749c680"
+      "visualSignature": "6e2a2a64854a74c3acc15a2de632c987c5528d9e65bab3c1ee69ba0f28fa277e"
     },
     {
       "file": "webtoon/players/player-dark-draw-up.webp",
-      "bytes": 15652,
-      "sha256": "7a338cb5b1e920302bcf5aa5da2a3ac3c0bcc097afc1140c42ad9edb44d955eb",
+      "bytes": 27444,
+      "sha256": "8aa8cb9d090ea6fce0d54e21f64638b76219345278e52de912849f465a6d986f",
       "size": [
         640,
         160
       ],
-      "visualSignature": "c8c57796f820ffb7d7e9f80f1dd45bb517a4f204f50c361769d8c062c4a4005f"
+      "visualSignature": "9f1eefd03d7294d3df02d194e05c134fb1ed19cd019e6afc7b37f4a621b33d4a"
     },
     {
       "file": "webtoon/players/player-dark-review-down.webp",
-      "bytes": 17834,
-      "sha256": "541a97120f997cc5747f0a20f4c599579be4b430844c5ac9fb1454a8076af5c2",
+      "bytes": 33094,
+      "sha256": "2e5247d96003b9ebeb59473498d1dbb48ae1610806d53510f5c462364f4a2e7a",
       "size": [
         640,
         160
       ],
-      "visualSignature": "64a87495b26123832ec5fe3d0488538f316ab98282135c1b8920ecc5c1f691b5"
+      "visualSignature": "22630f23f2e7db7c42df180fdaf7ebccd5f57f487f0079146c8096aea34a6780"
     },
     {
       "file": "webtoon/players/player-dark-review-left.webp",
-      "bytes": 16706,
-      "sha256": "59f7544cd6e99b8030a589efff43d4b9efb431b1d5760606930b9334a307e3ca",
+      "bytes": 30198,
+      "sha256": "1c30fe799ab68e32b79ed9a53dbe7106c15bfe7d0481224f670808b03c56da20",
       "size": [
         640,
         160
       ],
-      "visualSignature": "ef4e5881df8ab70f88ac1fdc7c8a01a01a2b53cc0f63cad7a4cf4156145dedaf"
+      "visualSignature": "76249b8b7794c3003a5624d6033db4acd19be24e038db517e62daf6544bf1565"
     },
     {
       "file": "webtoon/players/player-dark-review-right.webp",
-      "bytes": 16460,
-      "sha256": "31aa71090e8d07409957036f088c3bc7d70c406be9d3b3c77a95723a044e6a00",
+      "bytes": 29158,
+      "sha256": "9f0f4d28b2071e1a61aa1a5d86f843ec323dc7ec96ae29281eb8527f2785c04a",
       "size": [
         640,
         160
       ],
-      "visualSignature": "186032dfdd4b80bb698f54e826fd55bf05d0e4e18315380b46f150bd2749c680"
+      "visualSignature": "4f0df3e5b5cdbc0fa7f6541c1f4a1f36fe54e96955f6920b81227a74a55b7b72"
     },
     {
       "file": "webtoon/players/player-dark-review-up.webp",
-      "bytes": 15652,
-      "sha256": "7a338cb5b1e920302bcf5aa5da2a3ac3c0bcc097afc1140c42ad9edb44d955eb",
+      "bytes": 29462,
+      "sha256": "7445ea58351eb11dcf2824b394ff794b2514a5ae5fae2d08ff42bf8ee78a673a",
       "size": [
         640,
         160
       ],
-      "visualSignature": "c8c57796f820ffb7d7e9f80f1dd45bb517a4f204f50c361769d8c062c4a4005f"
+      "visualSignature": "efaa99413fd9ff166f279e37b8c4a8e8ceba19ccbc1b672947ecee42243f04c6"
     },
     {
       "file": "webtoon/players/player-dark-sit.webp",
-      "bytes": 18878,
-      "sha256": "6750e93aa79992b819fd685eba4936788cf66613fb3519d10d92a4bac8fcc46f",
+      "bytes": 29862,
+      "sha256": "2c205412760d66cb948fb96b6963a688208beec61749398ef27be6f7bc24d210",
       "size": [
         640,
         160
       ],
-      "visualSignature": "54c6a5b8aa29649c479118d17d47c4a23e65bc41965a1f5feae8c96f8992ea4c"
+      "visualSignature": "e5909b1082f3234694a727961fecbf95a491b2fba8424702ddfed65960e0d3c4"
     },
     {
       "file": "webtoon/players/player-dark-state-draw.webp",
-      "bytes": 5952,
-      "sha256": "b59153c3b85c08f66d739022f7f354fbc84c04f9336c688ca1640c222cf05141",
+      "bytes": 7802,
+      "sha256": "33614247863b3e2e7a99bda9f33356894788c1cd2d028cdd0a0e3e5d5eed8b21",
       "size": [
         160,
         160
       ],
-      "visualSignature": "3344b42c5004a76cf9278d597fe2118e951b7254437709eff4e9b4eba3990f3b"
+      "visualSignature": "ef77dde87be4321cf568b1f3e60b7bacf6e7a24d2a044ca564a1f04f38774a6d"
     },
     {
       "file": "webtoon/players/player-dark-state-review.webp",
-      "bytes": 5952,
-      "sha256": "b59153c3b85c08f66d739022f7f354fbc84c04f9336c688ca1640c222cf05141",
+      "bytes": 9278,
+      "sha256": "aacaab8bf7731c0878b8b525fa5635e3a9c391f65c5247239ad16a320ec20f83",
       "size": [
         160,
         160
       ],
-      "visualSignature": "3344b42c5004a76cf9278d597fe2118e951b7254437709eff4e9b4eba3990f3b"
+      "visualSignature": "1eea56b85ac1a8af472f5f5ba42a335526aaf00a8c5fad583d27243192445690"
     },
     {
       "file": "webtoon/players/player-dark-state-talk.webp",
-      "bytes": 6632,
-      "sha256": "62593746bad0d3a1b8e4b84fbf03431a50a600e9abb5cfb848926a47730f6472",
+      "bytes": 8448,
+      "sha256": "613d2b3e01f18a8e19db25b6380760dd1fc397cdc2e1e06607d341b1d8839384",
       "size": [
         160,
         160
       ],
-      "visualSignature": "20a8158f69f4875fa07d7eafffcf0c17d498702c1c0f403fb96dbdbfa412aa2e"
+      "visualSignature": "121d67195f523a7f283c0db3413c9a6244f8da431a0ffb103cdfd654ffaa40f1"
     },
     {
       "file": "webtoon/players/player-dark-talk-down.webp",
-      "bytes": 19576,
-      "sha256": "8013f4a7ed54476ada6e60fcabdaa7361a252e74c9693559e6f298b34d732be4",
+      "bytes": 35766,
+      "sha256": "1b154394706eb5a543b60472d53084b8c7576544a0c9ebfffbfbc577721974fd",
       "size": [
         640,
         160
       ],
-      "visualSignature": "fc4e4ed60be41f264c9de2aa4bd6f9ae0e738ed43aaed5551225a930354a7cca"
+      "visualSignature": "098b3ef5974ba58ec04f5d63ebc5c415abfc89c2c530c7bb8be75fa420f34c30"
     },
     {
       "file": "webtoon/players/player-dark-talk-left.webp",
-      "bytes": 18352,
-      "sha256": "af14a55a615258bce089176b791872f239717485bc4fbe4ac5d3c3d844975fc3",
+      "bytes": 33332,
+      "sha256": "fb919534eb8d70a263c9f129525218523bd14287e9d906ae610c95227b2e4682",
       "size": [
         640,
         160
       ],
-      "visualSignature": "b26958d43b10fb7166c63eafa3639cb1e6bfeb89a57002a8170f28b27d901a77"
+      "visualSignature": "ab7d36a7e7c5fc7011325dea004903c0411e52f3c38efff8a052fea4d98d8eec"
     },
     {
       "file": "webtoon/players/player-dark-talk-right.webp",
-      "bytes": 18644,
-      "sha256": "a53025c13c37a5156666d9bc9df3a000cfeaa179b30a0541f74df6798fd3caa1",
+      "bytes": 28812,
+      "sha256": "f7644bf10319ebcc5d03810d2877efb4fd462766e6e534f1787afea75e63201d",
       "size": [
         640,
         160
       ],
-      "visualSignature": "a7305d1ba48dad632b45a5c268ae33f5cef54a17459cd41f567b6ac90dec0866"
+      "visualSignature": "78efe677e7cdd7067554240cc3f49e4786de6e45df4c707472d9609e740d4e10"
     },
     {
       "file": "webtoon/players/player-dark-talk-up.webp",
-      "bytes": 17034,
-      "sha256": "aed7ce00c9852ae3c453bd3e6508d6beb3d97b4a6e6a62836ee1570b180d3c65",
+      "bytes": 33704,
+      "sha256": "f5722e23fa624f12b67948c65ea4553e5a25f327f53ff30899ecc24256e4dc9d",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e5d5c6b2fede97cc69f4bae0037bb5c8599e810682d21e95865578ffd88a41e7"
+      "visualSignature": "e746c649c6250577903e0b8142c9a792280567b8aaf8bc869cfcce439039e429"
     },
     {
       "file": "webtoon/players/player-dark-walk-down.webp",
-      "bytes": 19534,
-      "sha256": "5afeba38c3f9668b580983fd212575f64697d7731fde42386e685fe8c681fe6b",
+      "bytes": 32232,
+      "sha256": "d4c85e3c07c27f4ee23cc0e7513c637cf6b1181a96a075132899d41a4be5a17e",
       "size": [
         640,
         160
       ],
-      "visualSignature": "62927d0c59dea748b806e566f5632d61ff5a142d3c4e62e56cd854c4cde75591"
+      "visualSignature": "1621efc441cfd71320029343d03269a09c450bfdcd1e46e23128666adf1b6311"
     },
     {
       "file": "webtoon/players/player-dark-walk-left.webp",
-      "bytes": 18272,
-      "sha256": "5df3fc1da43124f3533ef91ba197ec528628c730121b2c99dfe1758cefd3b8c4",
+      "bytes": 30824,
+      "sha256": "d13b830d0f9c128c401f6a92db6c78cdb7079af79e388f74531a529cd56a2e83",
       "size": [
         640,
         160
       ],
-      "visualSignature": "09eabaa2364b41cef0dee4e9b94893acdde4ae45b6a82b87c80f0038f301f915"
+      "visualSignature": "66bf32c93d1625bb5a080c932e61c0f629ffdece10e5ef8cd4bc462b5bf4f199"
     },
     {
       "file": "webtoon/players/player-dark-walk-right.webp",
-      "bytes": 18178,
-      "sha256": "4187c7def882aff100ae9ccb63dca09f9a8c8fe438ccb36fe3792acef7e4e573",
+      "bytes": 36332,
+      "sha256": "43f4b95ed36bb243a056204c3cd7e7c8ef9e362793e16cf090bd81e78f32f4b9",
       "size": [
         640,
         160
       ],
-      "visualSignature": "3de61406817f3a99818f6544109d86fb7a009a5b6aa1f12e9999295a776e6329"
+      "visualSignature": "f80c38e029a87ebf6d23af92f38d18cbbebe54b124b5332e249454eaf7c64b88"
     },
     {
       "file": "webtoon/players/player-dark-walk-up.webp",
-      "bytes": 17138,
-      "sha256": "c2e6b3b69dcf3695df0e7a593e8db0f064d9e77500ec217ac8b13931b832b947",
+      "bytes": 28390,
+      "sha256": "e0621be014c78173ecf732b649db44ae50008b888ffa07584c3449fe84eb0ab2",
       "size": [
         640,
         160
       ],
-      "visualSignature": "6717be88435a6d204ef905381630156de324297de700e6872835749075e2aa59"
+      "visualSignature": "465e7f85eff059c2655ba440e12c643ac530b579de658f62ca01abcbee7b62f7"
     },
     {
       "file": "webtoon/players/player-dark-wave.webp",
-      "bytes": 20668,
-      "sha256": "5a7f04865355dd298596dd85c2c4c57862867c41be5ebf29ad98707713d7d931",
+      "bytes": 34230,
+      "sha256": "26d80a0f1d4e954990d0cdacb555334adbc06f580ecf91182fbaf91f35be9107",
       "size": [
         640,
         160
       ],
-      "visualSignature": "c585cc1797f9baf512ce2dd6869a5f84a3793e95165ee55ea34756759e6cae43"
+      "visualSignature": "f3be8fb1d1c4b9d607ee022d249a14606c72fa9967a00588ea252cc9cc331401"
     },
     {
       "file": "webtoon/players/player-pink-direction-down.webp",
