@@ -2,6 +2,7 @@ import { Brush, MapPinned, PersonStanding, Share2, Sparkles, UsersRound, type Lu
 import type { CSSProperties, ReactNode } from "react";
 
 import { EngineeringArchitectureDiagram } from "./EngineeringArchitectureDiagram";
+import { externalLinkForName } from "./engineering-external-links";
 import type { DeckSectionPlan, DeckSlide } from "./engineering-deck-model";
 import { formatClock } from "./engineering-deck-model";
 import { ENGINEERING_STATUS_META } from "./engineering-story-content";
@@ -339,7 +340,18 @@ export function EngineeringDeckSlide({
         <footer className="deck-slide__foot">
           {slide.stack?.length ? (
             <ul className="deck-slide__stack-chips" aria-label={bi("사용 기술", "Technologies")}>
-              {slide.stack.map((item) => <li key={item}>{item}</li>)}
+              {slide.stack.map((item) => {
+                const url = decorative ? undefined : externalLinkForName(item);
+                return (
+                  <li key={item}>
+                    {url ? (
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="deck-slide__stack-link">
+                        {item}
+                      </a>
+                    ) : item}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <span className="deck-slide__section-name">{section?.title ?? ""}</span>

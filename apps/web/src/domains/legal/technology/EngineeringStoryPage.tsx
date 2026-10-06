@@ -1,6 +1,7 @@
 import {
   CheckCircle2,
   Code2,
+  ExternalLink,
   FileCode2,
   FileText,
   GitBranch,
@@ -9,6 +10,7 @@ import {
   Workflow,
 } from "lucide-react";
 
+import { externalLinkForName } from "./engineering-external-links";
 import { PUBLISHED_ENGINEERING_CHAPTERS } from "./engineering-story-published-content";
 import {
   ENGINEERING_STATUS_META,
@@ -87,11 +89,28 @@ function StoryChapter({ chapter, position }: { readonly chapter: EngineeringChap
       <h3 className="mt-4 text-balance break-keep text-2xl font-black tracking-tight text-fg">{bi(chapter.title.ko, chapter.title.en)}</h3>
       <p className="mt-3 max-w-4xl text-base leading-8 text-fg-2">{bi(chapter.thesis.ko, chapter.thesis.en)}</p>
       <ul className="mt-4 flex flex-wrap gap-2" aria-label={bi("관련 기술", "Related technologies")}>
-        {chapter.technologies.map((technology) => (
-          <li key={technology} className="rounded-full border border-line bg-card/75 px-3 py-1.5 font-display text-[0.68rem] font-semibold text-fg-2">
-            {technology}
-          </li>
-        ))}
+        {chapter.technologies.map((technology) => {
+          const url = externalLinkForName(technology);
+          const chipClass = "rounded-full border border-line bg-card/75 px-3 py-1.5 font-display text-[0.68rem] font-semibold text-fg-2";
+          return (
+            <li key={technology}>
+              {url ? (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${technology} · ${bi("공식 사이트", "Official site")}`}
+                  className={`${chipClass} inline-flex items-center gap-1 transition-colors hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
+                >
+                  {technology}
+                  <ExternalLink size={10} aria-hidden="true" className="shrink-0 opacity-70" />
+                </a>
+              ) : (
+                <span className={chipClass}>{technology}</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       <EngineeringDisclosure
