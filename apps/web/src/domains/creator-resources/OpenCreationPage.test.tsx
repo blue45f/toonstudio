@@ -27,6 +27,19 @@ test("explicit search, local board and editable brief preserve provenance", asyn
   search(); await waitFor(() => expect(screen.getByText(/24시간 캐시/u)).toBeTruthy());
   expect(request).toHaveBeenCalledTimes(1);
 });
+test("board tab shows moodboard order badges on tiles", async () => {
+  mount(); fireEvent.change(screen.getByLabelText("찾을 소재"), { target: { value: "갑옷" } }); search();
+  fireEvent.click(await screen.findByRole("button", { name: "재료 보드에 저장" }));
+  fireEvent.click(screen.getByRole("button", { name: /재료 보드 1\/12/u }));
+  expect(screen.getByRole("heading", { name: "Verified armor" })).toBeTruthy();
+  expect(screen.getByText("보드 순서")).toBeTruthy();
+});
+test("empty board shows a collage placeholder with guidance", () => {
+  mount();
+  fireEvent.click(screen.getByRole("button", { name: /재료 보드 0\/12/u }));
+  expect(screen.getByText("아직 담은 재료가 없습니다")).toBeTruthy();
+  expect(screen.getByText(/담은 순서가 무드보드의 번호 배지/u)).toBeTruthy();
+});
 test("Commons search sends the browser API user agent", async () => {
   request.mockResolvedValueOnce(Response.json({ query: { pages: [] } }));
   mount();
