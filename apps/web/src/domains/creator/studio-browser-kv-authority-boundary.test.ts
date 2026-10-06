@@ -402,6 +402,10 @@ const STANDALONE_DRAFT_IDB =
   "Explicit IndexedDB draft for the standalone promo editor; JSON export and revision checks bound this local working copy.";
 const STANDALONE_DRAFT_IDB_PROOF =
   "The database name, object-store operation, revision conflict check, and exact call count are pinned; no other Studio authority is covered.";
+const THUMBNAIL_IDB_FALLBACK =
+  "OPFS files are the canonical project-thumbnail store; this IndexedDB is its migration source and the designed fallback tier when OPFS is unavailable or a write fails.";
+const THUMBNAIL_IDB_FALLBACK_PROOF =
+  "studio-project-thumbnail-opfs.test.ts pins OPFS-first writes, migration that deletes the IDB original only after a verified OPFS write, and the fallback put when OPFS writes fail.";
 
 const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   // Deletion-only cleanup of browser compatibility remnants.
@@ -462,6 +466,11 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-entry-preference.ts", "local-storage-write", '"toonspectrum:virtual-space-tour:v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-entry-preference.ts", "local-storage-cleanup", '"toonspectrum:virtual-space-tour:v1"', 1, CLEANUP_ONLY, CLEANUP_PROOF),
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-game-feel-preference.ts", "local-storage-write", '"toonspectrum:virtual-space-game-feel:v1"', 1, UI_ONLY, UI_PROOF),
+  // 가상 스튜디오: 효과음 켬/음량, 공간 테마(닫힌 열거형 키 하나), 마지막 위치(장소·좌표·시각)만 저장한다.
+  // 마지막 위치는 세션 복원과 별개의 재방문 복원 기록이며 월드 상태 자체는 담지 않는다.
+  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-sound-preference.ts", "local-storage-write", '"toonspectrum:virtual-space-sound:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-theme.ts", "local-storage-write", '"toonspectrum:virtual-space-theme:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-last-position.ts", "durable-storage-write", "studioVirtualSpaceLastPositionStorageKey(projectId)", 1, UI_ONLY, UI_PROOF),
   // 3D 포즈 갤러리의 즐겨찾기(핀)·최근 사용 id 목록(최대 64개). 잃어도 기본 갤러리로 돌아갈 뿐이다.
   allow("apps/web/src/domains/creator/scene-3d/studio-pose-preset-storage.ts", "durable-storage-write", "key", 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
   allow("apps/web/src/domains/creator/scene-3d/studio-webtoon-pose-preset-storage.ts", "durable-storage-write", "key", 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
@@ -471,6 +480,9 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/production-hub/production-manuscript-snapshots.ts", "local-storage-write", '"toonstudio.manuscript-snapshots.v1"', 1, REVIEWED_LOCAL_WORKING_COPY, REVIEWED_LOCAL_WORKING_COPY_PROOF),
   allow("apps/web/src/domains/creator/production-hub/one-click-version-share-model.ts", "local-storage-write", '"toonstudio.version-share-links.v1"', 1, REVIEWED_LOCAL_WORKING_COPY, REVIEWED_LOCAL_WORKING_COPY_PROOF),
   allow("apps/web/src/domains/creator/publish/publish-schedule-store.ts", "local-storage-write", '"toonstudio.publish-schedule.v1"', 1, REVIEWED_LOCAL_WORKING_COPY, REVIEWED_LOCAL_WORKING_COPY_PROOF),
+  // 서버 정본 동기화(CT-1)의 이관 완료 표식: 아티팩트별 이관 시각만 기록하고, 동기화 분기는 이 표식을
+  // 읽지 않는다. 스냅샷·공유 링크 본체는 위의 검토된 로컬 스토어 두 곳이 소유한다.
+  allow("apps/web/src/domains/creator/production-hub/production-manuscript-version-share-sync.ts", "local-storage-write", '"toonstudio.manuscript-version-share.migrated.v1"', 1, "Migration-completion marker for the server-canonical manuscript snapshot/share sync; it stores only per-artifact timestamps and confers no local authority.", "markMigrated is the only writer of this key and no sync branch reads it; runSync always merges from the server lists, so the marker cannot establish or refresh local authority."),
 
   // Injected localStorage-compatible codecs retained outside product authority selection.
   allow("apps/web/src/domains/creator/studio-animatic-timeline.ts", "durable-storage-write", "studioAnimaticStorageKey(document.workScope)", 1, INJECTED_COMPATIBILITY, INJECTED_PROOF),
@@ -575,6 +587,10 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceGuide.tsx", "local-storage-write", "\"toonspectrum:virtual-studio-guide:v1\"", 1, UI_ONLY, "Only the seen marker is stored. StudioVirtualSpaceGuide.test.tsx verifies skip, replay and unavailable storage without automatic movement, tool execution or document writes."),
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-authoring.ts", "local-storage-write", "studioWorldDraftStorageKey(projectId)", 1, REVIEWED_LOCAL_WORKING_COPY, "studio-virtual-space-world-authoring.test.ts verifies explicit Tiled JSON round-trip, project-scoped authoring drafts and rejection of invalid manifests."),
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-authoring.ts", "local-storage-cleanup", "studioWorldDraftStorageKey(projectId)", 1, CLEANUP_ONLY, "studio-virtual-space-world-authoring.test.ts verifies deletion only affects the requested project draft, not other projects or canonical revisions."),
+  // 가상 스튜디오 빌드 모드 배치 목록과 타일 이펙트 초안: 꾸미기(decorations)는 서버 정본 계약이라
+  // 얹을 수 없어 이 브라우저 로컬 범위로 확정한 작업 사본이다. 읽을 때 저장값을 다시 검증·살균한다.
+  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-placed-fixtures.ts", "local-storage-write", "storageKey(scope)", 1, REVIEWED_LOCAL_WORKING_COPY, "studio-virtual-space-placed-fixtures.test.ts verifies the localStorage round-trip, scope isolation, corrupt-value rejection, catalog/coordinate/rotation validation, and the 24-item placement cap."),
+  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-tile-effects-storage.ts", "local-storage-write", "storageKey(scope)", 1, REVIEWED_LOCAL_WORKING_COPY, "studio-virtual-space-tile-effect-runtime.test.ts covers this storage module; reads re-sanitize every entry through createTileEffect, and the module header demotes it to a draft once world data gains the field."),
 
   // Explicit legacy IndexedDB seams. Operation counts prevent a file-level blanket exemption.
   allow("apps/web/src/domains/creator/bg3d/bg3d-model-library.ts", "indexeddb-open", '"toonstudio-studio-bg3d-model-library"', 1, LEGACY_IDB, LEGACY_IDB_PROOF),
@@ -612,6 +628,12 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/vrm/vrm-library.ts", "indexeddb-open", '"toonstudio-studio-vrm-library"', 1, LEGACY_IDB, LEGACY_IDB_PROOF),
   allow("apps/web/src/domains/creator/vrm/vrm-library.ts", "indexeddb-write", "put", 6, VRM_LIBRARY_MIXED_PERSISTENCE, VRM_LIBRARY_MIXED_PERSISTENCE_PROOF),
   allow("apps/web/src/domains/creator/vrm/vrm-library.ts", "indexeddb-cleanup", "delete", 2, CLEANUP_ONLY, CLEANUP_PROOF),
+
+  // 프로젝트 썸네일: 저장 정본은 OPFS 파일 쌍이고, 이 IndexedDB는 이관 소스이자 OPFS를 못 쓰거나
+  // OPFS 쓰기가 실패할 때만 쓰는 설계된 폴백 티어다 (이전 누락 잔재 아님 — 폴백 전용 테스트가 있다).
+  allow("apps/web/src/domains/creator/studio-project-thumbnail.ts", "indexeddb-open", '"toonstudio-project-thumbnails"', 1, THUMBNAIL_IDB_FALLBACK, THUMBNAIL_IDB_FALLBACK_PROOF),
+  allow("apps/web/src/domains/creator/studio-project-thumbnail.ts", "indexeddb-write", "put", 1, THUMBNAIL_IDB_FALLBACK, THUMBNAIL_IDB_FALLBACK_PROOF),
+  allow("apps/web/src/domains/creator/studio-project-thumbnail.ts", "indexeddb-cleanup", "delete", 1, CLEANUP_ONLY, CLEANUP_PROOF),
 ]);
 
 function allowanceId(value: Pick<BrowserKvFinding | BrowserKvAllowance, "file" | "kind" | "key">) {
