@@ -17,8 +17,8 @@ describe("route title resolution", () => {
     expect(resolveRouteTitle("/", translate, "en")).toBe(PRODUCT_IDENTITY.en.seoTitle);
   });
 
-  it("keeps legacy and canonical showcase URLs on the same browser title", () => {
-    expect(resolveRouteTitle("/create", translate)).toBe("route.create");
+  it("gives the start sheet and the showcase their own browser titles", () => {
+    expect(resolveRouteTitle("/create", translate)).toBe("route.createStart");
     expect(resolveRouteTitle("/showcase", translate)).toBe("route.create");
   });
 
