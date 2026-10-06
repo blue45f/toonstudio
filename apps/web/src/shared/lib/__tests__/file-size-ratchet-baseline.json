@@ -15,7 +15,7 @@
   "domains/creator/bg3d/studio-bg3d-editor-transform-host.ts": 1019,
   "domains/creator/bg3d/studio-bg3d-glb-validation.ts": 1723,
   "domains/creator/bg3d/studio-bg3d-model-import.ts": 1958,
-  "domains/creator/bg3d/studio-bg3d-scene-document.ts": 2713,
+  "domains/creator/bg3d/studio-bg3d-scene-document.ts": 2227,
   "domains/creator/bg3d/studio-bg3d-shot-batch-export-run.ts": 1065,
   "domains/creator/bg3d/studio-bg3d-shot-batch-plan.ts": 1024,
   "domains/creator/bg3d/studio-bg3d-shot-batch-recovery-store.ts": 3414,
