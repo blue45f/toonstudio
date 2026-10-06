@@ -449,6 +449,11 @@ export function createHokusaiReleaseBuildEnvironment({
     ({ source, destination }) =>
       `--remap-path-prefix=${source}=${destination}`,
   );
+  // fixed SIMD(+simd128)를 명시 적용한다 — rustc의 wasm32 기본 타깃 기능에는
+  // simd128이 없어 플래그가 없으면 수치 커널이 스칼라로만 컴파일된다. fixed
+  // SIMD128은 Baseline Widely Available이라 dual-build 없이 단일 바이너리로
+  // 배포한다(프론티어 기록 §5 SIMD fixed 재빌드 단위).
+  const rustFlags = [...remapFlags, "-C", "target-feature=+simd128"];
   return Object.freeze({
     PATH: path,
     HOME: home,
@@ -457,7 +462,7 @@ export function createHokusaiReleaseBuildEnvironment({
     CARGO_TARGET_DIR: targetDirectory,
     CARGO_NET_OFFLINE: "true",
     CARGO_INCREMENTAL: "0",
-    CARGO_ENCODED_RUSTFLAGS: remapFlags.join("\u001f"),
+    CARGO_ENCODED_RUSTFLAGS: rustFlags.join("\u001f"),
     CARGO_TERM_COLOR: "never",
     RUSTC: rustc,
     RUST_BACKTRACE: "0",

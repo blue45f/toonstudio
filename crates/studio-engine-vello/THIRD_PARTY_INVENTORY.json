@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "engine": "studio-engine-vello",
   "target": "wasm32-unknown-unknown",
-  "cargoManifestSha256": "1196c28ce92a2d62c2af0f373cf0bce17ee65ac994ed62064d7180d40a63a877",
+  "cargoManifestSha256": "d5515fedfb85fc6c1af16c937d9e78c919a47f6b3990947591cfa19ab44cae5e",
   "cargoLockSha256": "62f41b422d24d3a14186b4a141f967eb725bf9e281c66cc8ea107f3b53da735e",
   "artifacts": [
     {
@@ -102,7 +102,7 @@
         },
         {
           "path": "pkg/studio_engine_vello_bg.wasm",
-          "sha256": "4eb937c25085cc973f8e13ac81b2942d77535f1c983cf11f791b616973bed165"
+          "sha256": "af2881067470c458b3ec1d72a689af9d52e2e88b36f0a48f129be0989ef37511"
         }
       ]
     },
@@ -255,11 +255,11 @@
       "files": [
         {
           "path": "pkg-gpu/studio_engine_vello.js",
-          "sha256": "519554584092f24b183ab627e07f2bd2b6211f8c9c8c0c10ec51420777523e67"
+          "sha256": "10f9df561aeabe472a509bbb7b7f5da381f838d77de65bf3667490c786e4385a"
         },
         {
           "path": "pkg-gpu/studio_engine_vello_bg.wasm",
-          "sha256": "8b668579fd8fc872d7d3a9d14d056e2d3b91c15f8c367b3918aecdc486d39b65"
+          "sha256": "f8d841a836393b06e861b3e5cffbf67ac47b4523009cd931ab5dd788128146d7"
         }
       ]
     }

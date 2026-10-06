@@ -24,6 +24,11 @@ pinned bytes). Verified by `scripts/verify-studio-engine.mjs`.
   excluding tests/benchmarks/fuzz/JNI and `ink/geometry/tessellator.cc`.
   Measured consequence: the subset needs **no libtess2, no Skia, no protobuf,
   no Dawn** — those upstream deps belong to the rendering/storage/JNI lanes.
+- fixed SIMD: every em++ compile/link step and the abseil build carry
+  `-msimd128` (emcc emits no wasm SIMD without it — the pre-SIMD artifact
+  measured 0 v128 instructions). fixed SIMD128 is Baseline Widely Available,
+  so a single binary is shipped without a dual-build fallback lane
+  (프론티어 기록 §5 SIMD fixed 재빌드 단위).
 - abseil-cpp: `20260526.0` LTS (`5650e9cf76d3be4318d5fa3af38ee483ddfd5e4a`),
   built separately with emcmake (the ink-stroke-modeler lane's 20250512.0
   archives are too old — ink 1.1.0 uses e.g. `absl/status/status_macros.h`).
@@ -39,7 +44,8 @@ source ~/emsdk/emsdk_env.sh
 # 1. abseil static libs
 cd ~/toolchains/abseil-cpp
 emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 \
-  -DABSL_PROPAGATE_CXX_STD=ON -DBUILD_TESTING=OFF -DABSL_BUILD_TESTING=OFF
+  -DABSL_PROPAGATE_CXX_STD=ON -DBUILD_TESTING=OFF -DABSL_BUILD_TESTING=OFF \
+  -DCMAKE_CXX_FLAGS=-msimd128 -DCMAKE_C_FLAGS=-msimd128
 cmake --build build-wasm -j8
 
 # 2. ink subset (76 TUs -> archive)
@@ -48,14 +54,14 @@ find ink/types ink/color ink/geometry ink/brush ink/strokes -name "*.cc" \
   | grep -v -E "_test|_benchmark|fuzz|/jni/|test_helpers|test_matchers|type_matchers|test_params" \
   | grep -v "geometry/tessellator.cc" \
   | while read f; do
-      em++ -O3 -std=c++20 -I. -I$HOME/toolchains/abseil-cpp -c "$f" \
+      em++ -O3 -std=c++20 -msimd128 -I. -I$HOME/toolchains/abseil-cpp -c "$f" \
         -o "build-wasm/obj/$(echo "$f" | tr / _).o"
     done
 emar rcs build-wasm/libink_subset.a build-wasm/obj/*.o
 
 # 3. bridge + link
 cp <this-dir>/imk_bridge.cc bridge/imk_bridge.cc
-em++ -O3 -std=c++20 -I. -I$HOME/toolchains/abseil-cpp bridge/imk_bridge.cc \
+em++ -O3 -std=c++20 -msimd128 -I. -I$HOME/toolchains/abseil-cpp bridge/imk_bridge.cc \
   build-wasm/libink_subset.a \
   $(find ~/toolchains/abseil-cpp/build-wasm -name "libabsl_*.a") \
   -o bridge/out/ink_mesh.mjs \

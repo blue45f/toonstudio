@@ -16,11 +16,18 @@ Velato **0.12.0**, usvg **0.48.1**, wgpu/naga **29.0.4**다. `kurbo 0.13.1`,
 `peniko 0.6.1`, Parley **0.11.0**과 vendored `wgpu-toon` 단일-device 패치는 유지한다.
 Skrifa는 **0.43.2 / 0.44.0**, HarfRust는 **0.10.0 / 0.12.0**이 잠긴다.
 
-브라우저 GPU 산출물은 다음으로 재현한다.
+브라우저 산출물(CPU `pkg`·GPU `pkg-gpu`)은 다음으로 재현한다. 두 레인 모두
+fixed SIMD를 명시 적용한다 — rustc의 wasm32 기본 타깃 기능에는 simd128이 없어
+플래그가 없으면 수치 커널이 스칼라로만 컴파일된다(적용 전 바이너리 v128 명령
+0개 실측). fixed SIMD128은 Baseline Widely Available이라 dual-build 없이 단일
+바이너리로 배포한다(프론티어 기록 §5 SIMD fixed 재빌드 단위).
 
 ```bash
 cd crates/studio-engine-vello
-wasm-pack build --target web --release --out-dir pkg-gpu -- \
+RUSTFLAGS="-C target-feature=+simd128" \
+  wasm-pack build --target web --release --out-dir pkg
+RUSTFLAGS="-C target-feature=+simd128" \
+  wasm-pack build --target web --release --out-dir pkg-gpu -- \
   --features hybrid,lottie,svg
 ```
 
