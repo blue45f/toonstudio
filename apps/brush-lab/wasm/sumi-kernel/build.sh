@@ -5,12 +5,15 @@
 #   bash build.sh --check  → 빌드 후 pkg 산출물과 바이트 비교 + INTEGRITY 검증 + kernel-{integrity,embedded}.ts 일치
 #                            (불일치 시 종료 코드 1)
 # 요구: rustc/cargo 1.97.0 + wasm32-unknown-unknown(wasm-bindgen 불필요, 외부 crate 0).
+# fixed SIMD(+simd128)를 명시 적용한다 — rustc의 wasm32 기본 타깃 기능에는 simd128이 없어
+# 플래그가 없으면 커널이 스칼라로만 컴파일된다. fixed SIMD128은 Baseline Widely Available이라
+# dual-build 없이 단일 바이너리로 배포한다(프론티어 기록 §5 SIMD fixed 재빌드 단위).
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODE="${1:-build}"
 export CARGO_TARGET_DIR="${TMPDIR:-/tmp}/sumi-kernel-target"
 # 소스 경로를 고정해 바이너리에 절대 경로가 들어가지 않게 한다(재현성).
-export RUSTFLAGS="--remap-path-prefix=${HERE}=/sumi-kernel ${RUSTFLAGS:-}"
+export RUSTFLAGS="--remap-path-prefix=${HERE}=/sumi-kernel -C target-feature=+simd128 ${RUSTFLAGS:-}"
 export CARGO_INCREMENTAL=0
 INTEGRITY_TS="${HERE}/../../src/engine/wasm/kernel-integrity.ts"
 EMBEDDED_TS="${HERE}/../../src/engine/wasm/kernel-embedded.ts"
@@ -85,7 +88,7 @@ if [ "$MODE" = "--check" ]; then
 fi
 cp "$BUILT" pkg/sumi_kernel.wasm
 {
-  echo "# ${RUSTC_VERSION} / target wasm32-unknown-unknown / opt-level=s lto codegen-units=1 panic=abort strip"
+  echo "# ${RUSTC_VERSION} / target wasm32-unknown-unknown / opt-level=s lto codegen-units=1 panic=abort strip target-feature=+simd128"
   sha256sum Cargo.toml Cargo.lock src/lib.rs pkg/sumi_kernel.wasm
 } > pkg/INTEGRITY.sha256
 render_integrity_ts > "$INTEGRITY_TS"
