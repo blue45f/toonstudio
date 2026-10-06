@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import type {
+  StudioGuestBookingBundle,
+  StudioPromotionRejectCode,
+  StudioPromotionRunSummary,
+} from "./studio-virtual-space-booking-promotion";
 import {
   addSpaceBooking,
   addSpaceWaitlistEntry,
@@ -8,6 +13,8 @@ import {
   checkSpaceBookingAt,
   createSpaceBooking,
   expandSpaceRecurringBooking,
+  formatKstDate,
+  formatKstTime,
   kstWallToEpochMs,
   parseSpaceBookerRoster,
   promoteSpaceWaitlist,
@@ -20,6 +27,16 @@ import {
   type StudioVirtualSpace,
 } from "./studio-virtual-space-space-booking";
 
+/** 게스트 예약 승격 확인 표면. 동기화 훅이 들고 있는 보류 묶음과 실행 상태를 그대로 보여 준다. */
+export interface StudioVirtualSpaceGuestPromotionView {
+  readonly bundle: StudioGuestBookingBundle;
+  readonly summary: StudioPromotionRunSummary | null;
+  readonly busy: boolean;
+  readonly onPromote: () => void;
+  readonly onDismiss: () => void;
+  readonly onClearSummary: () => void;
+}
+
 export interface StudioVirtualSpaceSpaceBookingPanelProps {
   readonly spaces: readonly StudioVirtualSpace[];
   readonly nowMs?: number;
@@ -28,6 +45,8 @@ export interface StudioVirtualSpaceSpaceBookingPanelProps {
   readonly waitlist?: readonly StudioSpaceWaitlistEntry[];
   readonly onBookingsChange?: (bookings: readonly StudioSpaceBooking[]) => void;
   readonly onWaitlistChange?: (waitlist: readonly StudioSpaceWaitlistEntry[]) => void;
+  /** 로그인 전 로컬 예약의 승격 확인. 없거나 묶음이 비면 아무것도 그리지 않는다. */
+  readonly guestPromotion?: StudioVirtualSpaceGuestPromotionView;
 }
 
 function todayText(nowMs: number): string {
@@ -42,6 +61,7 @@ export function StudioVirtualSpaceSpaceBookingPanel({
   waitlist: controlledWaitlist,
   onBookingsChange,
   onWaitlistChange,
+  guestPromotion,
 }: StudioVirtualSpaceSpaceBookingPanelProps) {
   const bt = useBilingual("StudioVirtualSpaceSpaceBookingPanel");
   const [now] = useState(() => nowMs ?? Date.now());
@@ -205,10 +225,78 @@ export function StudioVirtualSpaceSpaceBookingPanel({
     setNotice(bt("예약을 취소했어요.", "Booking cancelled."));
   };
 
+  const rejectReasonText = (code: StudioPromotionRejectCode | undefined): string => {
+    switch (code) {
+      case "slot-taken": return bt("이미 예약됨", "already booked");
+      case "already-processed": return bt("이미 처리된 예약이에요", "already processed");
+      case "past-start": return bt("시간이 지나 승격할 수 없어요", "the time has passed");
+      default: return bt("승격할 수 없어요", "could not be moved");
+    }
+  };
+
+  const guestBundle = guestPromotion?.bundle;
+  const guestItemCount = (guestBundle?.bookings.length ?? 0) + (guestBundle?.waitlist.length ?? 0);
+  const promotionSummary = guestPromotion?.summary ?? null;
+
   return (
     <section aria-label={bt("스페이스 예약", "Space booking")}>
       <h2>{bt("스페이스 예약", "Space booking")}</h2>
       <p><small>{bt("콘티룸·녹음부스 등 스페이스를 시간대로 예약해요. 모든 시간은 한국 시간(KST) 기준이에요.", "Reserve spaces like the conti room or recording booth by time slot. All times are KST.")}</small></p>
+
+      {guestPromotion && guestItemCount > 0 ? (
+        <fieldset data-testid="guest-promotion">
+          <legend>{bt("로그인 전에 만든 예약", "Bookings made before sign-in")}</legend>
+          <p>{bt(
+            `이 기기에만 있던 예약 ${guestItemCount}건이 있어요. 계정 예약으로 가져오면 어느 기기에서든 볼 수 있어요.`,
+            `You have ${guestItemCount} booking(s) stored only on this device. Move them to your account to see them on any device.`,
+          )}</p>
+          <ul>
+            {guestBundle?.bookings.map((booking) => (
+              <li key={booking.id}>
+                {booking.spaceName} · {formatKstDate(booking.startsAt)} {formatKstTime(booking.startsAt)}–{formatKstTime(booking.endsAt)} · {booking.bookerNames.join(", ")}
+              </li>
+            ))}
+            {guestBundle?.waitlist.map((entry) => (
+              <li key={entry.id}>
+                {entry.spaceName} · {formatKstDate(entry.startsAt)} {formatKstTime(entry.startsAt)}–{formatKstTime(entry.endsAt)} · {entry.bookerNames.join(", ")} ({bt("대기 신청", "waitlist")})
+              </li>
+            ))}
+          </ul>
+          <div>
+            <button type="button" onClick={guestPromotion.onPromote} disabled={guestPromotion.busy}>
+              {guestPromotion.busy ? bt("가져오는 중…", "Moving…") : bt("계정으로 가져오기", "Move to my account")}
+            </button>
+            <button type="button" onClick={guestPromotion.onDismiss} disabled={guestPromotion.busy}>
+              {bt("버리기", "Discard")}
+            </button>
+          </div>
+          <p><small>{bt("버리면 위 예약은 이 기기에서도 사라져요.", "Discarding removes these bookings from this device too.")}</small></p>
+        </fieldset>
+      ) : null}
+
+      {guestPromotion && promotionSummary ? (
+        <div data-testid="guest-promotion-result" role="status">
+          <p>{bt(
+            `가져오기 결과: 승격 ${promotionSummary.promotedCount}건 · 충돌 ${promotionSummary.rejected.length}건${promotionSummary.deferredCount > 0 ? ` · 보류 ${promotionSummary.deferredCount}건` : ""}`,
+            `Move result: ${promotionSummary.promotedCount} moved · ${promotionSummary.rejected.length} conflict(s)${promotionSummary.deferredCount > 0 ? ` · ${promotionSummary.deferredCount} kept for later` : ""}`,
+          )}</p>
+          {promotionSummary.rejected.length > 0 ? (
+            <ul>
+              {promotionSummary.rejected.map((outcome) => (
+                <li key={outcome.id}>
+                  {bt("승격 실패", "Could not move")} — {outcome.spaceName ?? ""}{" "}
+                  {outcome.startsAt !== undefined ? `${formatKstDate(outcome.startsAt)} ${formatKstTime(outcome.startsAt)}` : ""}{" "}
+                  · {rejectReasonText(outcome.code)}. {bt("다른 시간으로 다시 예약해 보세요.", "Please pick another time.")}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {promotionSummary.deferredCount > 0 ? (
+            <p>{bt("연결 문제로 일부는 지금 가져오지 못했어요. 남겨 뒀으니 다음에 다시 시도할 수 있어요.", "Some bookings could not be moved due to a connection problem. They are kept so you can retry later.")}</p>
+          ) : null}
+          <button type="button" onClick={guestPromotion.onClearSummary}>{bt("확인", "OK")}</button>
+        </div>
+      ) : null}
 
       {liveNow ? <p role="status">{bt(`지금 "${liveNow.spaceName}" 예약이 진행 중이에요.`, `A booking for "${liveNow.spaceName}" is live now.`)}</p> : null}
 
