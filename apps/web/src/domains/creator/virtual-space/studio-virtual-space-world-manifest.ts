@@ -189,7 +189,7 @@ const DEFAULT_PROPS: readonly StudioWorldPropDefinition[] = [
   worldProp({ id: "meeting-room-table", kind: "interactive", x: 1100, y: 714, depth: "y-sort", action: "live", interactionRadius: 88, labelKo: "팀 회의실 콘솔", labelEn: "Team meeting console", collider: { x: 1034, y: 672, width: 128, height: 42 } }),
   worldProp({ id: "producer-assistant-desk", kind: "interactive", x: 490, y: 870, depth: "y-sort", action: "assistant", interactionRadius: 74, labelKo: "프로듀서 데스크", labelEn: "Producer desk", collider: { x: 428, y: 834, width: 124, height: 36 } }),
   // 상태 가구 (웨이브 4): 문은 통로라 충돌기를 두지 않고(순찰·연결성 무영향), 조명은 벽 부착이라 충돌기가 없다.
-  worldProp({ id: "meeting-door", kind: "interactive", x: 1095, y: 838, depth: "y-sort", action: "live", interactionRadius: 60, labelKo: "회의실 문", labelEn: "Meeting room door" }),
+  worldProp({ id: "meeting-door", kind: "interactive", x: 1095, y: 838, depth: "fixed", action: "live", interactionRadius: 60, labelKo: "회의실 문", labelEn: "Meeting room door" }),
   worldProp({ id: "review-door", kind: "interactive", x: 815, y: 500, depth: "fixed", action: "review", interactionRadius: 56, labelKo: "리뷰실 문", labelEn: "Review room door" }),
   worldProp({ id: "lobby-light", kind: "interactive", x: 860, y: 852, depth: "fixed", action: "assistant", interactionRadius: 50, labelKo: "로비 조명", labelEn: "Lobby light" }),
   worldProp({ id: "production-light", kind: "interactive", x: 890, y: 172, depth: "fixed", action: "assistant", interactionRadius: 50, labelKo: "프로덕션 조명", labelEn: "Production light" }),

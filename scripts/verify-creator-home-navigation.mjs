@@ -50,11 +50,12 @@ try {
 
     assert.equal(experience, "all-in-one-studio-v3", `Unexpected creator experience: ${experience}`);
     const supportTitle = page.locator("#creator-support-title");
-    await expect(page).toHaveURL(/[?&]tab=support/);
+    // 소개 페이지는 탭에서 서사 스크롤로 바뀌었으므로 앵커가 곧 구역 주소다. tab 파라미터는 더 이상 쓰지 않는다.
+    await expect(page).toHaveURL(/#creator-support-title$/);
     await expect(supportTitle).toBeVisible({ timeout: 30000 });
     releaseArtwork();
     releaseArtwork = undefined;
-    // 소개(/about/studio)는 '화면 구성 · 바로 시작 · 재료·협업·도움' 세 탭이다. 예전 섹션 주소는 해당 탭을 열고 제목에 초점을 둔다.
+    // 소개(/about/studio)는 한 번에 읽히는 서사 스크롤이다. 구역 주소는 앵커로 유지되고 제목에 초점이 맞춰진다.
     await expect.poll(async () => {
       const target = await supportTitle.boundingBox();
       const stickyHeader = await page.locator("header").first().boundingBox();
