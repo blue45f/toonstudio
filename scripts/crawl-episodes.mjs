@@ -8,6 +8,8 @@
 //   node scripts/crawl-episodes.mjs                      # naver-webtoon 인기순 상위 50개(기본), 신선분 스킵
 //   node scripts/crawl-episodes.mjs --limit 200          # 상위 200개
 //   node scripts/crawl-episodes.mjs --id nw-758037       # 특정 작품만
+//   node scripts/crawl-episodes.mjs --platform postype   # 포스타입(공개 포스트 페이지 체인 추적)
+//   node scripts/crawl-episodes.mjs --platform ridi      # 리디(책 페이지 임베드 회차 목록, 첫 30건까지)
 //   node scripts/crawl-episodes.mjs --refresh            # 신선도와 무관하게 다시 수집
 //   node scripts/crawl-episodes.mjs --max-episodes 100   # 작품당 최신 100화까지만(부분 수집 표시)
 //   node scripts/crawl-episodes.mjs --dry-run            # 수집·집계만 하고 파일은 쓰지 않음
@@ -20,7 +22,16 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 
-import { mapNaverArticlePage, mergeEpisodePages } from "./episode-parse.mjs";
+import {
+  extractRidiNextData,
+  mapNaverArticlePage,
+  mapPostypeEpisode,
+  mapRidiEpisode,
+  mergeEpisodePages,
+  parsePostypePost,
+  parsePostypeSeriesMeta,
+  parseRidiEpisodeList,
+} from "./episode-parse.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CATALOG_GZ = join(ROOT, "apps/api/data/catalog.json.gz");
@@ -52,7 +63,7 @@ const MAX_EPISODES = argNum("--max-episodes", 0); // 0 = 무제한
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── 플랫폼별 수집기 ──────────────────────────────────────────────────────────
-// extractExternalId: 카탈로그 작품 → 플랫폼 작품 식별자(못 뽑으면 null = 이 플랫폼 수집 대상 아님)
+// extractTarget: 카탈로그 작품 → 플랫폼 수집 대상(못 뽑으면 null = 이 플랫폼 수집 대상 아님)
 // fetchEpisodes: 회차 전 페이지 수집. 실패하면 null(호출측이 기존 항목을 유지한다).
 
 function naverExternalId(title) {
@@ -70,6 +81,22 @@ async function fetchJson(url, headers) {
     const r = await fetch(url, { headers, signal: ctl.signal });
     clearTimeout(to);
     return r.ok ? await r.json() : null;
+  } catch {
+    clearTimeout(to);
+    return null;
+  }
+}
+
+async function fetchHtml(url, referer) {
+  const ctl = new AbortController();
+  const to = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const r = await fetch(url, {
+      headers: { "User-Agent": UA, Referer: referer, Accept: "text/html" },
+      signal: ctl.signal,
+    });
+    clearTimeout(to);
+    return r.ok ? await r.text() : null;
   } catch {
     clearTimeout(to);
     return null;
@@ -105,8 +132,88 @@ async function fetchNaverEpisodes(titleId) {
   return { episodes, totalEpisodes: totalRows ?? episodes.length, partial: false };
 }
 
+// 포스타입: 카탈로그 id(pt-<seriesId>)와 availability URL(/@<handle>/series/<seriesId>)이
+// 일치할 때만 대상으로 삼는다 — 핸들은 URL에서만 얻을 수 있다.
+function postypeTarget(title) {
+  const m = /^pt-(\d+)$/.exec(title.id ?? "");
+  if (!m) return null;
+  const av = (title.availability ?? []).find((a) => a.platformId === "postype");
+  if (!av || typeof av.url !== "string") return null;
+  const um = /^https:\/\/www\.postype\.com\/@([\w-]+)\/series\/(\d+)\/?$/.exec(av.url.trim());
+  if (!um || um[2] !== m[1]) return null;
+  return { handle: um[1], seriesId: m[1] };
+}
+
+const POSTYPE_CHAIN_SAFETY_CAP = 2000; // 체인 추적 폭주 방지 상한(초과 시 partial).
+
+// 포스타입 회차 수집 — 시리즈 페이지 임베드 상태로 첫 포스트와 총수를 확정하고,
+// 공개 포스트 페이지를 nextPost 체인으로 따라가며 모은다. 중간 페이지가 실패하면
+// 부분 수집으로 확정하지 않고 실패(null)로 돌린다(네이버와 동일 원칙).
+// 체인이 자연 종료했는데 플랫폼 총수보다 적으면(비공개 포스트 등) partial 로 기록한다.
+// --max-episodes 는 체인이 첫 화부터라 최신이 아닌 오래된 쪽부터 캡이 걸린다.
+async function fetchPostypeEpisodes({ handle, seriesId }) {
+  const origin = "https://www.postype.com";
+  const seriesUrl = `${origin}/@${handle}/series/${seriesId}`;
+  const seriesHtml = await fetchHtml(seriesUrl, `${origin}/`);
+  if (!seriesHtml) return null;
+  const meta = parsePostypeSeriesMeta(seriesHtml);
+  if (!meta || meta.seriesId !== seriesId) return null;
+  const cap = MAX_EPISODES > 0 ? MAX_EPISODES : meta.postCount;
+  const want = Math.min(meta.postCount, cap, POSTYPE_CHAIN_SAFETY_CAP);
+  const episodes = [];
+  const visited = new Set();
+  let postId = meta.firstPostId;
+  while (postId !== null && episodes.length < want) {
+    if (visited.has(postId)) return null; // 체인 순환 — 구조 이상으로 보고 실패 처리
+    visited.add(postId);
+    const html = await fetchHtml(`${origin}/@${handle}/post/${postId}`, seriesUrl);
+    if (!html) return null;
+    const post = parsePostypePost(html);
+    if (!post || post.postId !== String(postId)) return null;
+    if (post.seriesId && post.seriesId !== seriesId) return null;
+    const episode = mapPostypeEpisode(post, episodes.length + 1);
+    if (!episode) return null;
+    episodes.push(episode);
+    postId = post.nextPostId;
+    if (postId !== null && episodes.length < want) await sleep(DELAY_MS);
+  }
+  if (episodes.length === 0) return null;
+  return { episodes, totalEpisodes: meta.postCount, partial: episodes.length < meta.postCount };
+}
+
+// 리디: 카탈로그 id(rd-<bookId>)와 availability 에 리디 진입점이 있을 때만 대상.
+function ridiExternalId(title) {
+  const m = /^rd-(\d+)$/.exec(title.id ?? "");
+  if (!m) return null;
+  const ok = (title.availability ?? []).some((a) => a.platformId === "ridi");
+  return ok ? m[1] : null;
+}
+
+// 리디 회차 수집 — 책 페이지 __NEXT_DATA__ 의 회차 목록 셀(첫 30건)을 파싱한다.
+// 다음 페이지는 /api 전용(robots 금지)이라 hasMore 면 partial 로 기록하고,
+// 플랫폼 총수를 알 수 없으므로 totalEpisodes 를 비운다(지어내지 않는다).
+async function fetchRidiEpisodes(bookId) {
+  const html = await fetchHtml(`https://ridibooks.com/books/${encodeURIComponent(bookId)}`, "https://ridibooks.com/");
+  if (!html) return null;
+  const list = parseRidiEpisodeList(extractRidiNextData(html));
+  if (!list || list.books.length === 0) return null;
+  let episodes = list.books.map((book, i) => mapRidiEpisode(book, i + 1)).filter((ep) => ep !== null);
+  if (episodes.length === 0) return null;
+  let partial = list.hasMore;
+  let totalEpisodes = list.hasMore ? undefined : episodes.length;
+  if (MAX_EPISODES > 0 && episodes.length > MAX_EPISODES) {
+    episodes = episodes.slice(0, MAX_EPISODES);
+    partial = true;
+    // 전체를 임베드로 확정한 경우에만 총수를 유지한다.
+    if (list.hasMore) totalEpisodes = undefined;
+  }
+  return { episodes, totalEpisodes, partial };
+}
+
 const PLATFORMS = {
-  "naver-webtoon": { extractExternalId: naverExternalId, fetchEpisodes: fetchNaverEpisodes },
+  "naver-webtoon": { extractTarget: naverExternalId, fetchEpisodes: fetchNaverEpisodes },
+  postype: { extractTarget: postypeTarget, fetchEpisodes: fetchPostypeEpisodes },
+  ridi: { extractTarget: ridiExternalId, fetchEpisodes: fetchRidiEpisodes },
 };
 
 // 인기 지표 — 관련 정보 크롤과 동일한 산식(스칼라 stats 기준).
@@ -175,7 +282,7 @@ async function main() {
   const targets = ONLY_ID
     ? titles.filter((t) => t.id === ONLY_ID)
     : [...titles]
-        .filter((t) => platform.extractExternalId(t) !== null)
+        .filter((t) => platform.extractTarget(t) !== null)
         .sort((a, b) => popScore(b) - popScore(a))
         .slice(0, LIMIT);
   if (targets.length === 0) {
@@ -197,12 +304,12 @@ async function main() {
       skipped += 1;
       continue; // resumable — 신선한 수집분은 건너뜀
     }
-    const externalId = platform.extractExternalId(title);
-    if (externalId === null) {
+    const target = platform.extractTarget(title);
+    if (target === null) {
       failed += 1;
       continue;
     }
-    const result = await platform.fetchEpisodes(externalId);
+    const result = await platform.fetchEpisodes(target);
     done += 1;
     if (result && result.episodes.length > 0) {
       existing[title.id] = {
