@@ -200,6 +200,18 @@ describe("global book search and saved sources", () => {
     expect(card.querySelector("[aria-hidden='true']")?.textContent).toContain("Publisher");
   });
 
+  it("heads each provider status with its source identity (mark · name · tagline)", () => {
+    const { container } = renderPage();
+    for (const provider of ["openlibrary", "googlebooks", "openbd"]) {
+      const scope = container.querySelector(`.research-source--${provider}`);
+      expect(scope, `${provider} 정체성 스코프가 없다`).toBeTruthy();
+      expect(scope?.querySelector(".resource-source-cover")).toBeTruthy();
+    }
+    expect(screen.getByText(/전 세계 도서 서지를 모은 열린 도서관에서 작품과 판본을 찾습니다/u)).toBeTruthy();
+    expect(screen.getByText(/Google 도서 검색으로 전 세계 책의 서지와 미리보기를 찾습니다/u)).toBeTruthy();
+    expect(screen.getByText(/일본 출판 서지 데이터베이스에서 일본 도서와 ISBN 정보를 찾습니다/u)).toBeTruthy();
+  });
+
   it("keeps metadata readable when safe concurrent storage is unavailable", async () => {
     Object.defineProperty(navigator, "locks", { value: undefined, configurable: true });
     request.mockResolvedValueOnce(response("openlibrary", { items: [{ ...book("openlibrary"), creator: "", description: "", credit: "", isbn: "", dateLabel: "" }] }));

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { buildContentBrief, CONTENT_FORMATS, CONTENT_PACKS, findContentPack, isContentFormat, MAX_BRIEF_SOURCES } from "./content-packs";
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
+import { researchSourceIdentity } from "./research-source-identity";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
 import { ResourceCard } from "./ResourceSearchPage";
 import { TranslatedQueryNotice } from "./TranslatedQueryNotice";
@@ -26,6 +27,7 @@ export function ContentPacksPage() {
   const [params, setParams] = useSearchParams();
   const pack = findContentPack(params.get("pack"));
   const provider = packProvider(params.get("provider"));
+  const providerIdentity = researchSourceIdentity(provider);
   const rawFormat = params.get("format");
   const format = isContentFormat(rawFormat) ? rawFormat : "storyboard";
   const query = params.get("q") ?? "";
@@ -104,6 +106,10 @@ export function ContentPacksPage() {
         <label className="flex-1">{tx("자료 검색어")}<input className={RESOURCE_INPUT} type="search" onKeyDown={(event) => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }} minLength={2} maxLength={80} required value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={tx("예: 갑옷, 도자기, 정원")} /></label>
         <button type="submit" className={RESOURCE_BUTTON} disabled={search.loading}>{tx("자료 검색")}</button>
       </form>
+      <p className={`research-source research-source--${provider} flex items-start gap-2 text-sm leading-6 text-fg-2`}>
+        <span className="resource-source-dot mt-[.45rem] h-2.5 w-2.5 shrink-0 rounded-full" aria-hidden="true" />
+        <span><strong className="font-bold text-fg">{providerIdentity.name}</strong> — {providerIdentity.tagline}</span>
+      </p>
       <div className="flex flex-wrap gap-2">{pack.keywords.map((keyword) => <button key={keyword} className={RESOURCE_BUTTON} disabled={search.loading} onClick={() => changeParams({ q: keyword, page: "1" })}>{formatI18nTemplate(tx("{v0} 검색"), { v0: tx(keyword) })}</button>)}</div>
       {resolution && <p className="text-sm text-fg-2">{formatI18nTemplate(tx("실제 검색어: {v0}{v1}"), { v0: resolution.providerQuery, v1: resolution.unresolved.length ? ` · ${formatI18nTemplate(tx("사전에 없는 표현: {v0}"), { v0: resolution.unresolved.join(", ") })}` : "" })}</p>}
       {query && <TranslatedQueryNotice state={translated} />}

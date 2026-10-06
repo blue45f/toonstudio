@@ -24,6 +24,14 @@ describe("free content creation page", () => {
     fireEvent.change(screen.getByLabelText("산출물 형식"), { target: { value: "world" } });
     expect(screen.getByText(/세계관 설정 워크시트/u)).toBeTruthy(); expect(request).not.toHaveBeenCalled();
   });
+  it("shows the selected provider's source identity chip and follows provider changes", () => {
+    const { container } = mount();
+    expect(container.querySelector(".research-source--aic")).toBeTruthy();
+    expect(screen.getByText(/시카고 미술관이 공개한 회화·조각·공예 소장품에서 시대의 원형을 찾습니다/u)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("제공처"), { target: { value: "cleveland" } });
+    expect(container.querySelector(".research-source--cleveland")).toBeTruthy();
+    expect(screen.getByText(/클리블랜드 미술관이 CC0로 공개한 유물·문양·회화 소장품을 찾습니다/u)).toBeTruthy();
+  });
   it("searches on demand, saves a source and uses selected credits in the brief", async () => {
     mount(); fireEvent.click(screen.getByRole("button", { name: "갑옷 검색" }));
     fireEvent.click(await screen.findByRole("button", { name: "보드에 저장" }));

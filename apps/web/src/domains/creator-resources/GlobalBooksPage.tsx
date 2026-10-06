@@ -4,7 +4,9 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { ProviderStatus } from "./ProviderStatus";
+import { researchSourceIdentity } from "./research-source-identity";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
+import { ResearchSourceMark } from "./ResearchSourceCover";
 import { TranslatedQueryNotice } from "./TranslatedQueryNotice";
 import { useTranslatedResearchQuery } from "./use-translated-research-query";
 import { downloadText, useCreatorWorkspace } from "./workspace";
@@ -243,9 +245,21 @@ export function GlobalBooksPage() {
       <section aria-labelledby="global-books-providers-title">
         <h2 id="global-books-providers-title" className="sr-only">{tx("검색 제공처 상태")}</h2>
         <div className="grid gap-3 md:grid-cols-3">
-          <ProviderStatus provider="openlibrary" />
-          <ProviderStatus provider="googlebooks" />
-          <ProviderStatus provider="openbd" />
+          {(["openlibrary", "googlebooks", "openbd"] as const).map((provider) => {
+            const identity = researchSourceIdentity(provider);
+            return (
+              <div key={provider} className={`research-source research-source--${provider} flex flex-col gap-2`}>
+                <p className="flex items-center gap-3">
+                  <ResearchSourceMark identity={identity} />
+                  <span>
+                    <strong className="block text-base font-bold">{identity.name}</strong>
+                    <span className="block text-xs leading-5 text-fg-2">{identity.tagline}</span>
+                  </span>
+                </p>
+                <ProviderStatus provider={provider} />
+              </div>
+            );
+          })}
         </div>
       </section>
 

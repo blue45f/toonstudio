@@ -30,6 +30,22 @@ describe("resource source cost visibility", () => {
     expect(within(kmas!).getByText("무료 · 키/신청 필요")).toBeTruthy();
   });
 
+  it("binds source identity by product route, not by name", () => {
+    const { container } = renderPage();
+    // 기능 경로 바인딩이 있는 17개 행만 소스 정체성(스코프·마크)을 단다.
+    expect(container.querySelectorAll("article.research-source")).toHaveLength(17);
+    // 경로를 가진 행은 그 경로의 제공처로 확정된다 — 이름이 비슷한
+    // "Wikidata·Wikimedia" 행이 아니라 "Wikimedia Analytics" 행이다.
+    const wikimedia = screen.getByRole("heading", { name: "Wikimedia Analytics" }).closest("article");
+    expect(wikimedia?.classList.contains("research-source--wikimedia")).toBe(true);
+    expect(wikimedia?.querySelector(".resource-source-cover")).toBeTruthy();
+    const ambient = container.querySelector("article.research-source--ambientcg");
+    expect(ambient?.querySelector("img")?.getAttribute("src")).toBe("/brand/illustrated-20260928/materials.webp");
+    // 경로가 없는 Google Books는 제공처가 실재해도 정체성을 추정해 붙이지 않는다.
+    const google = screen.getByRole("heading", { name: "Google Books" }).closest("article");
+    expect(google?.classList.contains("research-source")).toBe(false);
+  });
+
   it("filters free providers separately from keyless providers", () => {
     renderPage();
     fireEvent.click(screen.getByRole("checkbox", { name: "무료 제공처만 보기" }));

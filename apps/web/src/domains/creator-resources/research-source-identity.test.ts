@@ -3,21 +3,25 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { RESOURCE_SEARCH_CONFIG } from "./resource-search-config";
 import {
   RESEARCH_SOURCE_PROVIDERS,
+  RESEARCH_SOURCE_ROUTE_PROVIDERS,
   researchSourceIdentity,
+  researchSourceIdentityForRoute,
 } from "./research-source-identity";
+import { RESOURCE_SOURCES } from "./sources";
 
 import { RESOURCE_LABELS } from "@/shared/lib/creator-resources";
 
-import type { ResourceSearchProvider } from "./resource-search-config";
+import type { ResourceProvider } from "@/shared/lib/creator-resources";
 
-const ALL_PROVIDERS = Object.keys(RESOURCE_SEARCH_CONFIG) as ResourceSearchProvider[];
+// 정체성 키트의 완전성 기준은 전체 제공처(RESOURCE_LABELS 정본)다 —
+// 검색 템플릿 21곳만이 아니라 팩·도서 제공처까지 같은 표를 쓴다.
+const ALL_PROVIDERS = Object.keys(RESOURCE_LABELS) as ResourceProvider[];
 const IDENTITY_CSS = readFileSync(new URL("./research-source-identity.css", import.meta.url), "utf8");
 
 describe("리서치 소스 정체성 키트", () => {
-  it("검색 템플릿의 전체 제공처에 정체성이 있다", () => {
+  it("전체 제공처에 정체성이 있다", () => {
     expect([...RESEARCH_SOURCE_PROVIDERS].sort()).toEqual([...ALL_PROVIDERS].sort());
     for (const provider of ALL_PROVIDERS) {
       const identity = researchSourceIdentity(provider);
@@ -61,5 +65,17 @@ describe("리서치 소스 정체성 키트", () => {
       // 표지 그라디언트의 짙은 쪽도 같은 색상이어야 정체성이 유지된다.
       expect(Number(deep?.[1])).toBe(hue);
     }
+  });
+
+  it("경로 바인딩은 출처 디렉터리가 실제로 쓰는 기능 경로와만 이어진다", () => {
+    const usedRoutes = new Set(RESOURCE_SOURCES.map((source) => source.productRoute).filter(Boolean));
+    for (const [route, provider] of Object.entries(RESEARCH_SOURCE_ROUTE_PROVIDERS)) {
+      // 바인딩 키는 디렉터리 행이 실제로 가진 productRoute여야 한다(낡은 바인딩 방지).
+      expect(usedRoutes.has(route), `${route}를 productRoute로 가진 디렉터리 행이 없다`).toBe(true);
+      expect(researchSourceIdentityForRoute(route)?.provider).toBe(provider);
+    }
+    // 경로가 없거나 바인딩되지 않은 행은 정체성을 확정하지 않는다.
+    expect(researchSourceIdentityForRoute(undefined)).toBeNull();
+    expect(researchSourceIdentityForRoute("/research")).toBeNull();
   });
 });
