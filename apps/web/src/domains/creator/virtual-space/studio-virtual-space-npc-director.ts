@@ -5,7 +5,7 @@ import { selectStudioNpcUtilityChoice } from "./studio-virtual-space-npc-utility
 import { StudioNpcActivityReservations, type StudioNpcActivityStage, type StudioWorldNpcActivityAnchor } from "./studio-virtual-space-npc-activity";
 import { studioNpcGuideStops, type StudioNpcGuideStop, type StudioVirtualNpcGuideTourRequest, type StudioVirtualNpcGuideTourState } from "./studio-virtual-space-npc-guide";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
-import { DEFAULT_STUDIO_MOTION_CONFIG, stepStudioVirtualSpaceMotion } from "./studio-virtual-space-motion";
+import { stepStudioVirtualSpaceMotion } from "./studio-virtual-space-motion";
 import { advanceStudioWorldPath } from "./studio-virtual-space-path-steering";
 import { studioStableFacing } from "./studio-virtual-space-presentation";
 import {
@@ -88,6 +88,25 @@ interface NpcActor {
 const FIXED_STEP = 1 / 60;
 const DECISION_MS = 250;
 const AWARENESS_MS = 1000 / 12;
+/**
+ * NPC 전용 가감속. 플레이어 기본값(가속 1500·감속 2100)은 NPC 순항 속도
+ * (상한 90px/s)에 비하면 사실상 즉각이라 출발·정지가 "툭" 끊겨 보였다.
+ * 순항까지 약 90ms, 감속은 그보다 조금 빠르게 잡아 사람이 걷기 시작하고
+ * 멈추는 리듬에 맞춘다. 도착 램프도 넓혀 목표 앞에서 미리 속도를 줄인다.
+ */
+export const STUDIO_NPC_ACCELERATION = 700;
+export const STUDIO_NPC_DECELERATION = 1_050;
+export const STUDIO_NPC_ARRIVAL_RAMP_PX = 36;
+
+/**
+ * 도착 램프 곡선: 남은 거리 비율의 제곱근. 선형 램프는 램프(36px)보다 짧은
+ * 이동(양보 34px 등)에서 전체 구간이 감속이 돼 NPC가 기어간다. 제곱근이면
+ * 먼 쪽에서는 빠르게 줄고 목표 근처에서만 부드럽게 잦아든다.
+ */
+export function studioNpcArrivalFactor(distancePx: number): number {
+  if (!Number.isFinite(distancePx) || distancePx <= 0) return 0;
+  return Math.sqrt(Math.min(1, distancePx / STUDIO_NPC_ARRIVAL_RAMP_PX));
+}
 const PERSON_CLEARANCE = 32;
 const NPC_CLEARANCE = 23;
 const ZERO = Object.freeze({ x: 0, y: 0 });
@@ -602,8 +621,8 @@ export class StudioNpcDirector {
     const dx = target.x - actor.point.x, dy = target.y - actor.point.y;
     const gap = Math.hypot(dx, dy);
     const maxSpeed = Math.min(90, actor.definition.speed ?? 62);
-    const config = { ...DEFAULT_STUDIO_MOTION_CONFIG, maxSpeed };
-    const arrival = Math.min(1, distance(actor.point, actor.target) / 12);
+    const config = { acceleration: STUDIO_NPC_ACCELERATION, deceleration: STUDIO_NPC_DECELERATION, maxSpeed };
+    const arrival = studioNpcArrivalFactor(distance(actor.point, actor.target));
     const motion = stepStudioVirtualSpaceMotion({ velocity: actor.velocity }, { x: dx / Math.max(1, gap) * arrival, y: dy / Math.max(1, gap) * arrival }, FIXED_STEP, config);
     let next = { x: actor.point.x + motion.velocity.x * FIXED_STEP, y: actor.point.y + motion.velocity.y * FIXED_STEP };
     // Grid smoothing can graze a rounded collider corner. Project the tiny fixed step
