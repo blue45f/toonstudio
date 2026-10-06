@@ -3,6 +3,7 @@ import {
   Feather,
   Grid3X3,
   PenLine,
+  Plus,
   Sparkles,
 } from "lucide-react";
 
@@ -58,6 +59,14 @@ const GOALS = Object.freeze([
     section: "tip",
     Icon: PenLine,
   },
+  {
+    id: "custom-brush",
+    label: "나만의 브러시",
+    description: "지금 설정 그대로 커스텀 브러시로 저장합니다.",
+    presetId: "ink-particle",
+    section: "engines",
+    Icon: Plus,
+  },
 ] as const satisfies readonly {
   readonly id: string;
   readonly label: string;
@@ -96,7 +105,7 @@ export function StudioBrushGoalStart({
         </span>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin] sm:grid sm:grid-cols-5 sm:overflow-visible sm:pb-0">
+      <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin] sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0 xl:grid-cols-6">
         {GOALS.map(({ id, label, description, presetId, section, Icon }) => {
           const active = activePresetId === presetId && activeSection === section;
           return (

@@ -1366,6 +1366,32 @@ export function StudioBrushStudio({
     ) : <DynamicsRequiredNotice onRequestCompatibleBrush={onRequestCompatibleBrush} />
   ) : category === "engines" ? (
     <div className="space-y-3">
+      <ol
+        aria-label="커스텀 브러시 만들기 단계"
+        className="flex items-center gap-1.5 rounded-xl border border-line bg-card/45 px-3 py-2.5 text-[0.66rem] font-semibold"
+      >
+        {[
+          { step: "1", label: "설정 조정" },
+          { step: "2", label: "미리보기 확인" },
+          { step: "3", label: "이름 붙여 저장" },
+        ].map(({ step, label }, index) => (
+          <li key={step} className="flex min-w-0 flex-1 items-center gap-1.5">
+            <span
+              aria-hidden
+              className={cn(
+                "grid size-5 shrink-0 place-items-center rounded-full text-[0.62rem] font-bold",
+                index === 2 ? "bg-accent text-on-accent" : "bg-raised text-fg-2 ring-1 ring-line"
+              )}
+            >
+              {step}
+            </span>
+            <span className="truncate text-fg-2">{label}</span>
+            {index < 2 ? (
+              <ChevronRight size={12} className="shrink-0 text-fg-3" aria-hidden />
+            ) : null}
+          </li>
+        ))}
+      </ol>
       <StudioBrushComposerIntro />
       <Suspense fallback={<p role="status">엔진 시험 도구를 불러오는 중…</p>}>
         <StudioNativeBrushEngineProbe color={color} strokeWidth={strokeWidth} />
@@ -1585,8 +1611,8 @@ export function StudioBrushStudio({
           <button
             type="button"
             onClick={() => setCategory("engines")}
-            aria-label="커스텀 브러시로 저장"
-            title="커스텀 브러시로 저장"
+            aria-label="커스텀 브러시로 저장 (엔진 조합 탭의 저장 카드로 이동)"
+            title="엔진 조합 탭의 저장 카드로 이동해 커스텀 브러시로 저장"
             className={cn(
               "grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
               category === "engines" && "border-accent/55 text-accent",
