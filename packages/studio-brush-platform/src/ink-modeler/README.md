@@ -16,6 +16,11 @@ the pinned bytes). Verified by `scripts/verify-studio-engine.mjs`.
 - Toolchain: emsdk emcc 6.0.6, cmake 4.x (`/opt/homebrew/bin/cmake`),
   abseil-cpp `bc257a88f7c1939f24e0379f14a3589e926c950c` (20250512.0, fetched by
   upstream CMake FetchContent)
+- fixed SIMD: the CMake build and the bridge link carry `-msimd128` (emcc
+  emits no wasm SIMD without it — the pre-SIMD artifact measured 0 v128
+  instructions). fixed SIMD128 is Baseline Widely Available, so a single
+  binary is shipped without a dual-build fallback lane
+  (프론티어 기록 §5 SIMD fixed 재빌드 단위).
 
 ## Rebuild
 
@@ -26,9 +31,10 @@ git checkout f2388813b0b25bc3e33d143d369a8367ab2e30c8
 cp <this-dir>/ism_bridge.cc bridge/ism_bridge.cc
 source ~/emsdk/emsdk_env.sh
 emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release \
-  -DINK_STROKE_MODELER_BUILD_TESTING=OFF -DINK_STROKE_MODELER_ENABLE_INSTALL=OFF
+  -DINK_STROKE_MODELER_BUILD_TESTING=OFF -DINK_STROKE_MODELER_ENABLE_INSTALL=OFF \
+  -DCMAKE_CXX_FLAGS=-msimd128 -DCMAKE_C_FLAGS=-msimd128
 cmake --build build-wasm -j8
-em++ -O3 -std=c++20 -I. -Ibuild-wasm/_deps/abseil-cpp-src bridge/ism_bridge.cc \
+em++ -O3 -std=c++20 -msimd128 -I. -Ibuild-wasm/_deps/abseil-cpp-src bridge/ism_bridge.cc \
   build-wasm/lib/libink_stroke_modeler_*.a \
   $(find build-wasm -name "libabsl_*.a") \
   -o bridge/out/ink_stroke_modeler.mjs \
