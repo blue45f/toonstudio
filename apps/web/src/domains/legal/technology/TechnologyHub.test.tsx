@@ -86,7 +86,9 @@ describe("기술 허브 문서 도서관", () => {
     );
 
     // 카드마다 제목·논지·상태 배지(실제 상태 라벨)·읽기 시간이 정직하게 붙는다.
-    const chapterById = new Map(PUBLISHED_ENGINEERING_CHAPTERS.map((chapter) => [chapter.id, chapter]));
+    const chapterById = new Map<string, (typeof PUBLISHED_ENGINEERING_CHAPTERS)[number]>(
+      PUBLISHED_ENGINEERING_CHAPTERS.map((chapter) => [chapter.id, chapter]),
+    );
     for (const card of cards) {
       const id = card.getAttribute("href")?.split("#")[1] ?? "";
       const chapter = chapterById.get(id);
