@@ -124,10 +124,13 @@ export function synchronizeServerSessionState(
   const request = (async (): Promise<ServerSessionSynchronization> => {
     let response: Response;
     try {
+      // 세션 확인이 공개 렌더링을 붙잡지 않도록 5초 상한을 둔다. 타임아웃은
+      // 아래 catch에서 indeterminate로 수렴해 게스트 폴백 후 백그라운드 재시도로 이어진다.
       response = await api.raw(apiPath("/auth/session"), {
         method: "GET",
         cache: "no-store",
         throwHttpErrors: false,
+        signal: AbortSignal.timeout(5_000),
       });
     } catch {
       return { status: "indeterminate", session: getAuthSession() };

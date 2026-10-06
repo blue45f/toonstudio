@@ -13,7 +13,7 @@ import {
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 
 import { resolveStudioBrushRenderFamily } from "../studio-brush";
 import { STUDIO_FOCUS_RING, StudioSectionHeader } from "../studio-panel-ui";
@@ -124,7 +124,7 @@ export function StudioBrushEngineStackPanel({
       </ul>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
-        <div className="rounded-xl border border-line bg-bg-2/55 px-2.5 py-2">
+        <div className="rounded-xl border border-line bg-card/55 px-2.5 py-2">
           <span className="flex items-center gap-1 text-[0.62rem] font-semibold text-fg-3">
             <Gauge size={12} aria-hidden /> 품질 안정도
           </span>
@@ -136,7 +136,7 @@ export function StudioBrushEngineStackPanel({
             />
           </span>
         </div>
-        <div className="rounded-xl border border-line bg-bg-2/55 px-2.5 py-2">
+        <div className="rounded-xl border border-line bg-card/55 px-2.5 py-2">
           <span className="text-[0.62rem] font-semibold text-fg-3">조합 복잡도</span>
           <strong className="mt-1 block text-sm text-fg">
             {COMPLEXITY_LABELS[quality.complexityLevel]} · {quality.complexityScore}
@@ -145,7 +145,7 @@ export function StudioBrushEngineStackPanel({
             모듈 {quality.activeModuleCount}개 · 매핑 {quality.mappedInputCount}개
           </span>
         </div>
-        <div className="rounded-xl border border-line bg-bg-2/55 px-2.5 py-2">
+        <div className="rounded-xl border border-line bg-card/55 px-2.5 py-2">
           <span className="text-[0.62rem] font-semibold text-fg-3">실시간 작업량</span>
           <strong className="mt-1 block text-sm tabular-nums text-fg">
             {quality.estimatedMarksPerDab} mark/dab
@@ -165,7 +165,7 @@ export function StudioBrushEngineStackPanel({
                 "flex gap-2 rounded-lg border px-2.5 py-2 text-[0.65rem] leading-relaxed",
                 issue.severity === "warning"
                   ? "border-warn/35 bg-warn/5 text-fg-2"
-                  : "border-line bg-bg-2/45 text-fg-3",
+                  : "border-line bg-card/45 text-fg-3",
               )}
             >
               <TriangleAlert size={13} className="mt-0.5 shrink-0 text-warn" aria-hidden />
@@ -450,7 +450,7 @@ export function StudioBrushTraitImportControls({ settings, onSettingsChange }: T
                 disabled={applyingRecipeId !== null}
                 onClick={() => void handleRecipeApply(recipe.id)}
                 className={cn(
-                  "rounded-xl border border-line bg-bg-2/45 p-2.5 text-left transition-colors hover:border-accent/45 hover:bg-raised disabled:cursor-wait disabled:opacity-60",
+                  "rounded-xl border border-line bg-card/45 p-2.5 text-left transition-colors hover:border-accent/45 hover:bg-raised disabled:cursor-wait disabled:opacity-60",
                   STUDIO_FOCUS_RING,
                 )}
               >
@@ -524,15 +524,32 @@ interface SaveAsCustomProps {
 
 export function StudioBrushSaveAsCustomControls({ snapshot, baseBrushName }: SaveAsCustomProps) {
   const [name, setName] = useState(() => suggestStudioBrushMixName(baseBrushName));
+  const [memo, setMemo] = useState("");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ tone: "done" | "error"; message: string } | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const nameId = useId();
+  const memoId = useId();
+  const nameErrorId = useId();
+  const trimmedName = name.trim();
+  const engineProgramCount = snapshot.enginePrograms
+    ? Object.keys(snapshot.enginePrograms).length
+    : 0;
 
   async function handleSave() {
     if (saving) return;
+    if (!trimmedName) {
+      setNameError("브러시 이름을 입력해 주세요. 공백만으로는 저장할 수 없습니다.");
+      return;
+    }
     setSaving(true);
     setStatus(null);
+    setNameError(null);
     try {
-      const created = createBrush(name, snapshot);
+      // memo는 아직 저장 스키마에 포함하지 않는 UI 전용 메모다.
+      // 스키마 확장 시 createBrush(name, snapshot) 호출부에 memo를 함께 전달하는 확장점을 둔다.
+      void memo;
+      const created = createBrush(trimmedName, snapshot);
       const product = await openProductBrushLibraryRepository();
       await product.repository.put(created);
       notifyStudioBrushLibraryChanged();
@@ -559,38 +576,104 @@ export function StudioBrushSaveAsCustomControls({ snapshot, baseBrushName }: Sav
       title="커스텀 브러시로 저장"
       description="캐리어·펜촉·질감·반응·엔진 프로그램과 레시피 결과를 하나의 재현 가능한 브러시로 저장합니다."
     >
+      <ul aria-label="저장될 브러시 구성 요약" className="mb-2.5 flex flex-wrap gap-1.5">
+        <li className="rounded-lg border border-line bg-raised px-2 py-1 text-[0.64rem] font-semibold text-fg-2">
+          기반 {baseBrushName}
+        </li>
+        <li className="rounded-lg border border-line bg-raised px-2 py-1 text-[0.64rem] font-semibold text-fg-2">
+          엔진 프로그램 {engineProgramCount}개
+        </li>
+      </ul>
       <form
-        className="flex flex-col gap-2 sm:flex-row sm:items-center"
+        className="flex flex-col gap-2"
         onSubmit={(event) => {
           event.preventDefault();
           void handleSave();
         }}
       >
-        <input
-          type="text"
-          value={name}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.currentTarget.value)}
-          maxLength={40}
-          aria-label="새 브러시 이름"
-          placeholder="새 브러시 이름"
-          className={cn(
-            "h-11 min-w-0 flex-1 rounded-xl border border-line bg-card px-2.5 text-xs font-medium text-fg placeholder:text-fg-3",
-            STUDIO_FOCUS_RING,
-          )}
-        />
-        <button
-          type="submit"
-          disabled={saving}
-          className={cn(
-            "flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-accent bg-accent px-3.5 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 disabled:cursor-wait disabled:opacity-60",
-            STUDIO_FOCUS_RING,
-          )}
-        >
-          {saving
-            ? <LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
-            : <Save size={14} aria-hidden />}
-          {saving ? "저장 중" : "내 브러시에 저장"}
-        </button>
+        <div className="flex items-center justify-between gap-2">
+          <label htmlFor={nameId} className="text-xs font-semibold text-fg-2">
+            새 브러시 이름
+          </label>
+          <span aria-hidden="true" className="text-[0.64rem] tabular-nums text-fg-3">
+            {name.length}/40
+          </span>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            id={nameId}
+            type="text"
+            value={name}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setName(event.currentTarget.value);
+              if (nameError) setNameError(null);
+            }}
+            maxLength={40}
+            aria-label="새 브러시 이름"
+            aria-invalid={nameError ? true : undefined}
+            aria-describedby={nameError ? nameErrorId : undefined}
+            placeholder="새 브러시 이름"
+            className={cn(
+              "h-11 min-w-0 flex-1 rounded-xl border bg-card px-2.5 text-xs font-medium text-fg placeholder:text-fg-3",
+              nameError ? "border-bad" : "border-line",
+              STUDIO_FOCUS_RING,
+            )}
+          />
+          <button
+            type="submit"
+            disabled={saving}
+            className={cn(
+              "flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-accent bg-accent px-3.5 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 disabled:cursor-wait disabled:opacity-60",
+              STUDIO_FOCUS_RING,
+            )}
+          >
+            {saving
+              ? <LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
+              : <Save size={14} aria-hidden />}
+            {saving ? "저장 중" : "내 브러시에 저장"}
+          </button>
+        </div>
+        {nameError ? (
+          <p id={nameErrorId} role="alert" className="text-[0.66rem] font-medium leading-relaxed text-bad">
+            {nameError}
+          </p>
+        ) : null}
+        <div>
+          <label htmlFor={memoId} className="text-xs font-semibold text-fg-2">
+            메모 <span className="font-normal text-fg-3">(선택, 80자)</span>
+          </label>
+          <div className="mt-1 flex gap-2">
+            <input
+              id={memoId}
+              type="text"
+              value={memo}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setMemo(event.currentTarget.value)}
+              maxLength={80}
+              placeholder="예: 채색용 부드러운 엣지"
+              className={cn(
+                "h-11 min-w-0 flex-1 rounded-xl border border-line bg-card px-2.5 text-xs font-medium text-fg placeholder:text-fg-3",
+                STUDIO_FOCUS_RING,
+              )}
+            />
+            {(name !== suggestStudioBrushMixName(baseBrushName) || memo) && !saving ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setName(suggestStudioBrushMixName(baseBrushName));
+                  setMemo("");
+                  setNameError(null);
+                  setStatus(null);
+                }}
+                className={cn(
+                  "h-11 shrink-0 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised",
+                  STUDIO_FOCUS_RING,
+                )}
+              >
+                입력 지우기
+              </button>
+            ) : null}
+          </div>
+        </div>
       </form>
       {status ? (
         <p
@@ -710,7 +793,7 @@ export function StudioBrushWatercolorProgramControls({
                 "min-h-9 rounded-lg border px-2 py-1 text-[0.62rem] font-semibold transition-colors",
                 selected
                   ? "border-accent bg-accent-soft text-fg"
-                  : "border-line bg-bg-2/45 text-fg-3 hover:bg-raised",
+                  : "border-line bg-card/45 text-fg-3 hover:bg-raised",
                 STUDIO_FOCUS_RING,
               )}
             >

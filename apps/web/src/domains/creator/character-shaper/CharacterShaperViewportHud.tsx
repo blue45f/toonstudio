@@ -110,6 +110,35 @@ function readLtLayerCommit(host: StudioVrmPoserHost): StudioLtLayerCommit | null
     : null;
 }
 
+/**
+ * LT 페이로드(ImageData)를 PNG 파일로 저장한다.
+ * 레이어 document authority 연동 전까지 적용 버튼이 데드엔드가 되지 않도록
+ * 하는 폴백 경로다. 캔버스·Blob·앵커 다운로드가 막힌 환경에서는 false를
+ * 반환하고 호출 측이 안내 문구로 대체한다.
+ */
+function downloadLtPayloadAsPng(payload: StudioLtConvertLayerPayload): boolean {
+  if (typeof document === "undefined") return false;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = payload.width;
+    canvas.height = payload.height;
+    const context = canvas.getContext("2d");
+    if (!context) return false;
+    context.putImageData(payload.imageData, 0, 0);
+    const dataUrl = canvas.toDataURL("image/png");
+    const anchor = document.createElement("a");
+    anchor.href = dataUrl;
+    anchor.download = `toonstudio-${payload.kind}-${Date.now()}.png`;
+    anchor.rel = "noopener";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }: CharacterShaperViewportHudProps) {
   const locale = useI18n((state) => state.lang);
   const bt = useBilingual("CharacterShaperViewportHud");
@@ -242,10 +271,14 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
       const payloads = createStudioLtConvertLayerPayloads(result);
       const commit = readLtLayerCommit(h);
       if (!commit) {
-        // 레이어 document authority(StudioPage) 연동 전까지는 페이로드까지만
-        // 만들고 사용자에게 알린다. 연동 지점은 studio-lt-convert-layer.ts 참고.
+        // 레이어 document authority(StudioPage) 연동 전까지는 페이로드를
+        // PNG 파일로 저장해 적용 버튼이 데드엔드가 되지 않게 한다.
+        // 연동 지점은 studio-lt-convert-layer.ts 참고.
+        const saved = payloads.map(downloadLtPayloadAsPng);
         setLtApplyError(
-          "레이어 저장을 아직 연결하지 못했어요. (Studio 레이어 연동 TODO)",
+          saved.every(Boolean)
+            ? "레이어에 바로 넣는 기능은 준비 중이라 선화·톤 PNG 파일로 저장했어요."
+            : "레이어 저장을 아직 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
         );
         return;
       }

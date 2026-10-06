@@ -5,9 +5,11 @@
  * StudioPage의 document/command authority에 묶여 있어, 외부 도메인(3D 뷰)에서
  * 직접 호출할 수 있는 "ImageData → 래스터 레이어 추가" 공개 API가 없다.
  * 그래서 이 파일은 연동에 필요한 페이로드 타입과 변환 결과→페이로드 빌더만
- * 정의하고, 실제 문서 커밋은 호출 측(StudioPage 권한 영역)의 TODO로 남긴다.
+ * 정의하고, 실제 문서 커밋은 호출 측(StudioPage 권한 영역)에서 수행한다.
+ * 현재는 호출 측 연동이 없어 CharacterShaperViewportHud가 PNG 다운로드
+ * 폴백으로 결과를 보존한다.
  *
- * TODO(레이어 연동 담당):
+ * 연동 메모(레이어 연동 담당):
  * 1. StudioPage(또는 레이어 authority 소유 영역)에서
  *    `createStudioLtConvertLayerPayloads()` 결과를 받아
  *    `ImageData` → canvas → `toDataURL()`(또는 blob URL)로 직렬화한다.

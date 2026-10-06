@@ -55,12 +55,20 @@ overrides:
   'colord@<2.9.4': 2.9.4
   hono: '>=4.12.25'
   find-my-way: '>=8.2.2'
+  # 2026-10-07 신규 공개 취약점을 고�� 버전으로 수렴시킨다. 직접 의존성 메이저를
+  # 올리지 않고 전이 의존성만 패치/마이너로 올려 API·에셋 파이프라인 계약을 유지한다.
+  proxy-addr: 2.0.8
+  fast-copy: 4.1.2
+  smol-toml: 1.9.0
+  source-map-js: 1.2.2
   '@fastify/middie': '>=9.3.2'
   fastify: '>=5.7.2'
   'fast-uri@>=3.0.0 <3.1.8': 3.1.8
   'socket.io-parser@>=4.0.0 <4.2.7': 4.2.7
   'minimatch@3.1.5>brace-expansion': 5.0.12
   'brace-expansion@>=3.0.0 <5.0.12': 5.0.12
+  'node-forge': '>=1.4.0'
+  'braces@>=3.0.0 <3.0.4': 3.0.3
   # Socket.IO Engine.IO 프로토콜 리비전 불일치 DoS(GHSA-2gc4-cqfq-p2gv): 취약 범위만 수정 릴리스로 올린다.
   'engine.io@>=6.6.0 <6.6.10': 6.6.10
   'js-yaml@>=4.0.0 <4.3.2': 4.3.2
@@ -68,7 +76,7 @@ overrides:
   # xcode@3.0.1 still requests uuid ^7; force only the vulnerable range onto the
   # last CommonJS-compatible patched major for GHSA-w5hq-g745-h8pq.
   'uuid@<11.1.1': 11.1.1
-  'sharp@<0.35.4': 0.35.4
+  'sharp@<0.35.5': 0.35.5
   # 이전에 루트 package.json 의 npm 전용 "overrides" 에 있던 핀. pnpm 워크스페이스는 그 블록을
   # 읽지 않으므로 실제 의존성 트리를 수정 버전의 tar로 수렴시킨다.
   # (동일 블록의 minimatch 핀은 옮기지 않는다 — 아래 patchedDependencies 의 minimatch@3.1.5
