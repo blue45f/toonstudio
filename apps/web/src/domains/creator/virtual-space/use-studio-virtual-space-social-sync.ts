@@ -235,19 +235,19 @@ export function useStudioVirtualSpaceSocialSync(
             const value = await transport.createBooking(activeScope, booking);
             if (scopeRef.current !== activeScope) return;
             if (applyBookingsSnapshot(value)) {
-              outcomes.push({ kind: "booking", id: booking.id, status: "promoted" });
+              outcomes.push({ kind: "booking", id: booking.id, status: "promoted", spaceName: booking.spaceName, startsAt: booking.startsAt, endsAt: booking.endsAt });
               resolvedBookingIds.push(booking.id);
             } else {
-              outcomes.push({ kind: "booking", id: booking.id, status: "deferred" });
+              outcomes.push({ kind: "booking", id: booking.id, status: "deferred", spaceName: booking.spaceName, startsAt: booking.startsAt, endsAt: booking.endsAt });
             }
           } catch (error) {
             if (scopeRef.current !== activeScope) return;
             const failure = classifyPromotionFailure(error);
             if (failure.kind === "rejected") {
-              outcomes.push({ kind: "booking", id: booking.id, status: "rejected", code: failure.code });
+              outcomes.push({ kind: "booking", id: booking.id, status: "rejected", code: failure.code, spaceName: booking.spaceName, startsAt: booking.startsAt, endsAt: booking.endsAt });
               resolvedBookingIds.push(booking.id);
             } else {
-              outcomes.push({ kind: "booking", id: booking.id, status: "deferred" });
+              outcomes.push({ kind: "booking", id: booking.id, status: "deferred", spaceName: booking.spaceName, startsAt: booking.startsAt, endsAt: booking.endsAt });
             }
           }
         }
@@ -256,19 +256,19 @@ export function useStudioVirtualSpaceSocialSync(
             const value = await transport.joinWaitlist(activeScope, entry);
             if (scopeRef.current !== activeScope) return;
             if (applyBookingsSnapshot(value)) {
-              outcomes.push({ kind: "waitlist", id: entry.id, status: "promoted" });
+              outcomes.push({ kind: "waitlist", id: entry.id, status: "promoted", spaceName: entry.spaceName, startsAt: entry.startsAt, endsAt: entry.endsAt });
               resolvedWaitlistIds.push(entry.id);
             } else {
-              outcomes.push({ kind: "waitlist", id: entry.id, status: "deferred" });
+              outcomes.push({ kind: "waitlist", id: entry.id, status: "deferred", spaceName: entry.spaceName, startsAt: entry.startsAt, endsAt: entry.endsAt });
             }
           } catch (error) {
             if (scopeRef.current !== activeScope) return;
             const failure = classifyPromotionFailure(error);
             if (failure.kind === "rejected") {
-              outcomes.push({ kind: "waitlist", id: entry.id, status: "rejected", code: failure.code });
+              outcomes.push({ kind: "waitlist", id: entry.id, status: "rejected", code: failure.code, spaceName: entry.spaceName, startsAt: entry.startsAt, endsAt: entry.endsAt });
               resolvedWaitlistIds.push(entry.id);
             } else {
-              outcomes.push({ kind: "waitlist", id: entry.id, status: "deferred" });
+              outcomes.push({ kind: "waitlist", id: entry.id, status: "deferred", spaceName: entry.spaceName, startsAt: entry.startsAt, endsAt: entry.endsAt });
             }
           }
         }

@@ -158,7 +158,15 @@ describe("게스트 예약 확인 후 승격", () => {
     const summary = view.result.current.promotionSummary;
     expect(summary?.promotedCount).toBe(1);
     expect(summary?.rejected).toEqual([
-      { kind: "booking", id: "guest-2", status: "rejected", code: "slot-taken" },
+      {
+        kind: "booking",
+        id: "guest-2",
+        status: "rejected",
+        code: "slot-taken",
+        spaceName: "녹음부스",
+        startsAt: 1_000,
+        endsAt: 2_000,
+      },
     ]);
     expect(summary?.deferredCount).toBe(0);
     expect(view.result.current.guestBundle.bookings).toEqual([]);

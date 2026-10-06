@@ -137,6 +137,10 @@ export interface StudioPromotionItemOutcome {
   readonly status: "promoted" | "rejected" | "deferred";
   /** status가 rejected일 때만 있다. */
   readonly code?: StudioPromotionRejectCode;
+  /** 결과 표시용: 어느 예약이었는지 사용자가 알아볼 수 있게 남긴다. */
+  readonly spaceName?: string;
+  readonly startsAt?: number;
+  readonly endsAt?: number;
 }
 
 export interface StudioPromotionRunSummary {
