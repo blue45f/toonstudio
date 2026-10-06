@@ -53,6 +53,17 @@ html[data-studio-canvas-only="true"] body {
   --color-warning: var(--color-warn);
   --color-warning-soft: oklch(0.82 0.15 80 / 0.14);
   --color-bad: oklch(0.66 0.2 25);
+  /* `danger`/`success`/`bg` 별칭과 `good-soft`/`bad-soft` — 값의 단일 출처는 bad/good/canvas다.
+     컴포넌트들이 이 이름들을 혼용하는데 선언이 없어 text-danger·bg-success·bg-bg·bg-good-soft 류가
+     클래스로 생성되지 않아 무색으로 렌더됐다(@shadcn/lint 파일럿 실측, 2026-10-06).
+     warning 별칭과 같은 방식으로 선언해 사용처 전부를 한 번에 살린다. 새 색 값은 만들지 않는다. */
+  --color-danger: var(--color-bad);
+  --color-danger-soft: oklch(0.66 0.2 25 / 0.14);
+  --color-success: var(--color-good);
+  --color-success-soft: oklch(0.8 0.15 150 / 0.14);
+  --color-good-soft: oklch(0.8 0.15 150 / 0.14);
+  --color-bad-soft: oklch(0.66 0.2 25 / 0.14);
+  --color-bg: var(--color-canvas);
 
   /* 타이포 — grotesque=데이터/serif=문학/sans=한국어UI */
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
@@ -98,6 +109,14 @@ html[data-studio-canvas-only="true"] body {
   --color-warning: var(--color-warn);
   --color-warning-soft: oklch(0.5 0.15 80 / 0.14);
   --color-bad: oklch(0.51 0.21 25);
+  /* 별칭 — @theme와 같은 구성, light 값으로 추적한다. */
+  --color-danger: var(--color-bad);
+  --color-danger-soft: oklch(0.51 0.21 25 / 0.14);
+  --color-success: var(--color-good);
+  --color-success-soft: oklch(0.5 0.15 150 / 0.14);
+  --color-good-soft: oklch(0.5 0.15 150 / 0.14);
+  --color-bad-soft: oklch(0.51 0.21 25 / 0.14);
+  --color-bg: var(--color-canvas);
 }
 
 /* ── 고대비 선호(prefers-contrast: more) — OS 접근성 설정 존중. ──────────────
