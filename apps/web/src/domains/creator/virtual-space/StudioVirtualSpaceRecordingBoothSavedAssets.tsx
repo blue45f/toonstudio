@@ -21,6 +21,14 @@ function formatClock(totalSec: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+/** 전사가 없는 테이크라, 검수 음성 메모의 폴백과 같은 결로 이름 자막 트랙을 단다. */
+function nameCaptionTrack(name: string, durationMs: number): string {
+  const totalSec = Math.max(1, Math.ceil(durationMs / 1000));
+  const end = `${String(Math.floor(totalSec / 60)).padStart(2, "0")}:${String(totalSec % 60).padStart(2, "0")}.000`;
+  const body = `WEBVTT\n\n00:00.000 --> ${end}\n${name.replace(/[\r\n]+/gu, " ")}\n`;
+  return `data:text/vtt;charset=utf-8,${encodeURIComponent(body)}`;
+}
+
 /**
  * 프로젝트에 저장된 부스 테이크 목록. 부스 패널이 마운트될 때와 새 테이크가
  * 저장될 때마다 서버 목록을 다시 읽는다 — 목록의 정본은 서버다.
@@ -107,7 +115,9 @@ export function StudioVirtualSpaceRecordingBoothSavedAssets({ workId, refreshKey
                 </span>
                 {isPlaying ? (
                   <>
-                    <audio controls autoPlay src={playing.url} aria-label={asset.name} />
+                    <audio controls autoPlay src={playing.url} aria-label={asset.name}>
+                      <track kind="captions" src={nameCaptionTrack(asset.name, asset.durationMs)} srcLang="ko" label={bt("테이크 이름", "Take name")} default />
+                    </audio>
                     <button type="button" onClick={() => setPlaying(null)}>
                       <Square size={14} aria-hidden />{bt("닫기", "Close")}
                     </button>
