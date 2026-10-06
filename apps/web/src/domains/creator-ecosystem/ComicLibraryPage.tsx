@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { CreatorEcosystemLayout } from "./CreatorEcosystemLayout";
 
+import { TypographicCover } from "@/shared/components/typographic-cover";
 import { api, getApiErrorMessage } from "@/platform/api";
 import { RESOURCE_LABELS } from "@/shared/lib/creator-resources";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -99,6 +100,46 @@ const EDITION_EN: Record<CollectionEditionType, string> = {
   signed: "Signed",
   digital: "E-book",
 };
+
+function SearchCover({ resource }: { resource: CreatorResource }) {
+  const [failed, setFailed] = useState(false);
+  // 표지가 없거나 불러오지 못하면 타이포 커버로 통일한다(판본 카드와 같은 폴백 규칙).
+  if (resource.imageUrl && !failed) {
+    return (
+      <img
+        src={resource.imageUrl}
+        alt=""
+        className="aspect-[3/4] w-full bg-raised object-cover"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <TypographicCover
+      title={resource.title}
+      seed={resource.id}
+      eyebrow={resource.credit || undefined}
+      className="aspect-[3/4] w-full"
+    />
+  );
+}
+
+function EmptyShelfArt() {
+  return (
+    <svg viewBox="0 0 120 84" className="h-24 w-36 text-fg-3" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="14" y="14" width="10" height="26" rx="1.5" />
+      <rect x="27" y="10" width="10" height="30" rx="1.5" />
+      <rect x="40" y="16" width="10" height="24" rx="1.5" strokeDasharray="4 3" opacity="0.5" />
+      <line x1="8" y1="42" x2="112" y2="42" strokeWidth="3" />
+      <rect x="70" y="52" width="10" height="26" rx="1.5" transform="rotate(8 75 78)" />
+      <rect x="86" y="54" width="10" height="24" rx="1.5" strokeDasharray="4 3" opacity="0.5" />
+      <line x1="8" y1="80" x2="112" y2="80" strokeWidth="3" />
+    </svg>
+  );
+}
 
 function isbn13Of(value: string | undefined): string {
   if (!value) return "";
@@ -301,9 +342,7 @@ export function ComicLibraryPage() {
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {(searchResult?.items ?? []).map((resource) => (
             <article key={resource.id} className="overflow-hidden rounded-2xl border border-line">
-              {resource.imageUrl ? (
-                <img src={resource.imageUrl} alt="" className="h-48 w-full bg-raised object-contain p-3" loading="lazy" referrerPolicy="no-referrer" />
-              ) : null}
+              <SearchCover resource={resource} />
               <div className="p-4">
                 <h3 className="font-black">{resource.title}</h3>
                 <p className="mt-1 text-xs text-fg-3">{resource.creator || bt("저자 확인", "Author unknown")} · {resource.credit || bt("출판사 확인", "Publisher unknown")}</p>
@@ -339,9 +378,17 @@ export function ComicLibraryPage() {
         ) : null}
         <div className="mt-5 space-y-4">
           {items.map((item) => (
-            <article key={item.id} className="grid gap-4 rounded-2xl border border-line p-4 lg:grid-cols-[90px_1fr]">
-              <div>
-                {item.coverUrl ? <img src={item.coverUrl} alt="" className="h-32 w-full rounded-lg bg-raised object-contain" loading="lazy" /> : <div className="flex h-32 items-center justify-center rounded-lg bg-raised text-xs text-fg-3">{bt("표지 없음", "No cover")}</div>}
+            <article key={item.id} className="grid gap-4 rounded-2xl border border-line p-4 lg:grid-cols-[120px_1fr]">
+              <div className="relative w-24 shrink-0 lg:w-full">
+                {item.coverUrl ? (
+                  <img src={item.coverUrl} alt="" className="aspect-[3/4] w-full rounded-lg bg-raised object-cover" loading="lazy" referrerPolicy="no-referrer" />
+                ) : (
+                  <TypographicCover title={item.title} seed={item.id} eyebrow={item.publisher || undefined} className="aspect-[3/4] w-full" />
+                )}
+                <div className="absolute inset-x-1.5 bottom-1.5 flex flex-wrap gap-1">
+                  <span className="rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-bold text-white">{bt(OWNERSHIP_KO[item.ownershipStatus], OWNERSHIP_EN[item.ownershipStatus])}</span>
+                  <span className="rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-bold text-white">{bt(READ_KO[item.readStatus], READ_EN[item.readStatus])}</span>
+                </div>
               </div>
               <div>
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -378,9 +425,7 @@ export function ComicLibraryPage() {
           ))}
           {userId && !items.length ? (
             <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-line bg-canvas/60 px-6 py-12 text-center">
-              <span className="grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-accent to-accent-2 text-on-accent shadow-lg">
-                <LibraryBig size={28} aria-hidden="true" />
-              </span>
+              <EmptyShelfArt />
               <div>
                 <h3 className="text-lg font-black">{bt("저장한 만화·단행본이 없어요", "Your library is empty")}</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-fg-2">

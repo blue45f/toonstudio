@@ -71,4 +71,30 @@ describe("만화 라이브러리 페이지", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("내 서재를 불러오지 못했어요.");
   });
+
+  it("서재 행은 표지 타일 위에 소장·읽음 상태 배지를 겹쳐 보여준다", async () => {
+    mocks.userId = "me";
+    mocks.apiGet.mockImplementation(async (url: string) => {
+      if (url === "/creator-ecosystem/library/me") {
+        return {
+          items: [{
+            id: "c1", isbn13: "9784088820118", title: "책장 속 만화", creator: "작가", publisher: "출판사",
+            volumeLabel: "1권", coverUrl: "", ownershipStatus: "owned", readStatus: "reading",
+            editionType: "standard", lentTo: "", notes: "", sourceProvider: "kakao",
+            sourceUrl: "https://example.com/book", createdAt: "2026-10-01T00:00:00.000Z", updatedAt: "2026-10-01T00:00:00.000Z",
+          }],
+        };
+      }
+      throw new Error(`unexpected url: ${url}`);
+    });
+    renderPage();
+    const card = (await screen.findByRole("heading", { name: "책장 속 만화" })).closest("article");
+    expect(card).toBeTruthy();
+    // 상태 배지(소장/읽는 중)는 select 옵션과 별개로 표지 위에 겹쳐 보인다.
+    const badges = [...(card?.querySelectorAll("span") ?? [])].filter((span) => span.className.includes("bg-black/70"));
+    expect(badges.map((span) => span.textContent)).toEqual(["소장", "읽는 중"]);
+    // 표지가 없으면 "표지 없음" 박스 대신 타이포 커버(장식 영역)가 붙는다.
+    expect(card?.textContent).not.toContain("표지 없음");
+    expect(card?.querySelector("[aria-hidden='true']")).toBeTruthy();
+  });
 });
