@@ -5172,6 +5172,634 @@
               ]
             }
           }
+        },
+        "npc-artist": {
+          "key": "npc-artist",
+          "kind": "npc",
+          "outputs": {
+            "direction-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-left": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "walk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "review-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "walk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "review-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "walk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "review-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "walk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "review-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "draw-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw-left"
+                }
+              ]
+            },
+            "draw-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "sit": {
+              "cells": [
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "poses-dir"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "wave": {
+              "cells": [
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "state-talk": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "state-draw": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "state-review": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            }
+          },
+          "sheets": {
+            "walk": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-artist-walk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.254,
+                0.501,
+                0.744,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.263,
+                0.501,
+                0.737,
+                1
+              ]
+            },
+            "poses-dir": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-artist-poses-dir.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.348,
+                0.664,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.256,
+                0.498,
+                0.749,
+                1
+              ]
+            },
+            "poses-pose": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-artist-poses-pose.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.253,
+                0.503,
+                0.744,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.263,
+                0.501,
+                0.738,
+                1
+              ]
+            },
+            "talk": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-artist-talk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.247,
+                0.484,
+                0.719,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.258,
+                0.501,
+                0.744,
+                1
+              ]
+            },
+            "draw": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-artist-draw.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.259,
+                0.497,
+                0.737,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.282,
+                0.503,
+                0.72,
+                1
+              ]
+            },
+            "draw-left": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-artist-draw-left.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.259,
+                0.501,
+                0.741,
+                1
+              ]
+            },
+            "review": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-artist-review.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.261,
+                0.502,
+                0.743,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.259,
+                0.513,
+                0.744,
+                1
+              ]
+            }
+          }
         }
       }
     }
