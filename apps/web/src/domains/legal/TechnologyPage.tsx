@@ -11,6 +11,8 @@ import {
 
 import { AboutSectionNav } from "./AboutSectionNav";
 import { EngineeringArchitectureDiagram } from "./technology/EngineeringArchitectureDiagram";
+import { BLUEPRINT_GRID_STYLE } from "./technology/engineering-blueprint";
+import { EngineeringChapterLibrary } from "./technology/EngineeringChapterLibrary";
 import { EngineeringHubStatusStrip } from "./technology/EngineeringHubStatusStrip";
 import {
   ENGINEERING_STATUS_META,
@@ -20,6 +22,7 @@ import { PUBLISHED_ENGINEERING_CHAPTERS as ENGINEERING_CHAPTERS } from "./techno
 import {
   ENGINEERING_PAGES,
   ENGINEERING_PATH_PAGES,
+  findEngineeringPage,
   type EngineeringPageEntry,
 } from "./technology/engineering-tech-pages";
 import {
@@ -30,7 +33,6 @@ import { TechnologyStackShowcase } from "./technology/TechnologyStackShowcase";
 
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
-import { PublicStoryHero } from "@/shared/components/public-story-hero";
 import { Container } from "@/shared/components/section";
 import { cx } from "@/shared/lib/cx";
 
@@ -39,17 +41,10 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 
 const STATIC_SCOPE = "domains.legal.TechnologyPage";
 
-/** 발표에서 가장 자주 묻는 여섯 가지 결정. 전체 목록은 제작 스토리에 있다. */
-const FEATURED_CHAPTER_IDS = [
-  "architecture",
-  "browser-local-compute",
-  "brush-engine",
-  "collaborative-crdt-boundary",
-  "virtual-studio-world-authority",
-  "web-3d-engine",
-] as const;
-
 const SHOWN_STATUSES = ["live", "configured", "experimental", "documented"] as const satisfies readonly EngineeringStatus[];
+
+/** 도서관 머리말의 전체 읽기 시간. 제작 스토리 페이지 항목에 고정된 공표값을 그대로 쓴다. */
+const STORY_READING_MINUTES = findEngineeringPage("story").readingMinutes ?? 0;
 
 const RESOURCE_PAGES: readonly EngineeringPageEntry[] = ENGINEERING_PAGES.filter(
   (page) => page.group === "resources" || page.id === "videos",
@@ -123,11 +118,6 @@ function PathCard({ page, last }: { readonly page: EngineeringPageEntry; readonl
 export function TechnologyPage() {
   useBilingualI18nRevision();
 
-  const chapterById = new Map(ENGINEERING_CHAPTERS.map((chapter) => [chapter.id, chapter]));
-  const featuredChapters = FEATURED_CHAPTER_IDS.flatMap((id) => {
-    const chapter = chapterById.get(id);
-    return chapter ? [chapter] : [];
-  });
   const statusCounts = ENGINEERING_CHAPTERS.reduce<Partial<Record<EngineeringStatus, number>>>(
     (counts, chapter) => ({ ...counts, [chapter.status]: (counts[chapter.status] ?? 0) + 1 }),
     {},
@@ -139,42 +129,50 @@ export function TechnologyPage() {
 
   return (
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
-      <PublicStoryHero
-        purpose="create"
-        eyebrow="TOONSTUDIO ENGINEERING"
-        title={bi("브라우저에서 웹툰 제작 스튜디오를 만들기까지.", "How we built a webtoon production studio in the browser.")}
-        description={bi(
-          "무엇을 썼는지보다 왜 선택했는지, 실제로 어디까지 동작하는지, 실패와 대체 경로는 무엇인지, 다른 서비스에는 어떻게 옮기는지를 다섯 단계로 정리했습니다.",
-          "Not only what we used, but why, how far it really works, what fails, which fallback remains and how to reuse it elsewhere — in five steps.",
-        )}
-        image="materials"
-        imageAlt={bi(
-          "브러시와 코드, 데이터, 3D, 테스트 요소가 하나의 제작 흐름으로 연결되는 기술 일러스트",
-          "Engineering illustration connecting brushes, code, data, 3D and tests into one production flow",
-        )}
-        caption="WEB · CANVAS · STORAGE · COLLABORATION · AI · DELIVERY"
-      >
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/about/technology/deck"
-            className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-          >
-            <Play size={16} aria-hidden="true" />
-            {bi("발표 모드 열기", "Open presentation mode")}
-          </Link>
-          <Link
-            href="/about/technology/story"
-            className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-line-strong px-5 py-3 text-sm font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            {bi("전체 제작 과정 보기", "Read the full story")}
-            <ArrowRight size={16} aria-hidden="true" />
-          </Link>
+      <header className="relative overflow-hidden rounded-[2rem] border border-line/70 bg-panel/65 shadow-sm">
+        <div aria-hidden="true" className="absolute inset-0" style={BLUEPRINT_GRID_STYLE} />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-panel via-panel/80 to-panel/20" />
+        <div className="relative px-6 py-8 sm:px-9 sm:py-10">
+          <p className="eyebrow text-accent">TOONSTUDIO ENGINEERING</p>
+          <h1 className="mt-3 max-w-3xl text-balance break-keep text-3xl font-black tracking-tight text-fg sm:text-4xl">
+            {bi("브라우저에서 웹툰 제작 스튜디오를 만들기까지.", "How we built a webtoon production studio in the browser.")}
+          </h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2 sm:text-base sm:leading-8">
+            {bi(
+              "무엇을 썼는지보다 왜 선택했는지, 실제로 어디까지 동작하는지, 실패와 대체 경로는 무엇인지, 다른 서비스에는 어떻게 옮기는지를 챕터로 정리했습니다. 아래 도서관에서 챕터를 골라 바로 읽을 수 있습니다.",
+              "Not only what we used, but why, how far it really works, what fails, which fallback remains and how to reuse it elsewhere — organised as chapters you can open straight from the library below.",
+            )}
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link
+              href="/about/technology/deck"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+            >
+              <Play size={16} aria-hidden="true" />
+              {bi("발표 모드 열기", "Open presentation mode")}
+            </Link>
+            <Link
+              href="/about/technology/story"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-card/70 px-4 py-2.5 text-sm font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {bi("전체 제작 과정 보기", "Read the full story")}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <p className="text-xs font-bold text-fg-3">
+              {formatI18nTemplate(String(bi("챕터 {value0}개 · 전체 읽기 약 {value1}분", "{value0} chapters · about {value1} min in total")), {
+                value0: ENGINEERING_CHAPTERS.length,
+                value1: STORY_READING_MINUTES,
+              })}
+            </p>
+          </div>
         </div>
-      </PublicStoryHero>
+      </header>
 
       <AboutSectionNav className="mt-8" />
       <EngineeringTechNav className="mt-2" />
       <EngineeringHubStatusStrip />
+
+      <EngineeringChapterLibrary />
 
       <section className="py-12 sm:py-16" aria-labelledby="engineering-path-title">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
@@ -249,49 +247,6 @@ export function TechnologyPage() {
       </section>
 
       <TechnologyStackShowcase />
-
-      <section aria-labelledby="engineering-featured-title">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "CORE DECISIONS")}</p>
-            <h2 id="engineering-featured-title" className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">
-              {bi("발표에서 가장 많이 묻는 여섯 가지 결정", "Six decisions the audience asks about most")}
-            </h2>
-          </div>
-          <Link
-            href="/about/technology/story"
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-card px-4 py-2.5 text-sm font-bold text-fg-2 transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            {formatI18nTemplate(String(bi("{value0}개 챕터 전체 보기", "All {value0} chapters")), { value0: ENGINEERING_CHAPTERS.length })}
-            <ArrowRight size={15} aria-hidden="true" />
-          </Link>
-        </div>
-        <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {featuredChapters.map((chapter) => (
-            <Link
-              key={chapter.id}
-              href={`/about/technology/story#${chapter.id}`}
-              className="group flex flex-col rounded-3xl border border-line/70 bg-panel/55 p-5 shadow-sm transition-colors hover:border-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:p-6"
-            >
-              <span className="flex flex-wrap items-center justify-between gap-3">
-                <span className="font-display text-[0.66rem] font-black uppercase tracking-[0.16em] text-accent-2">
-                  {chapter.eyebrow.replace(/^\d+\s·\s/u, "")}
-                </span>
-                <EngineeringStatusBadge status={chapter.status} />
-              </span>
-              <span className="mt-4 text-balance text-lg font-black tracking-tight text-fg group-hover:text-accent">{bi(chapter.title.ko, chapter.title.en)}</span>
-              <span className="mt-2 flex-1 text-sm leading-7 text-fg-2">{bi(chapter.thesis.ko, chapter.thesis.en)}</span>
-              <span className="mt-4 flex flex-wrap gap-1.5">
-                {chapter.technologies.slice(0, 4).map((technology) => (
-                  <span key={technology} className="rounded-full border border-line bg-card px-2.5 py-1 text-[0.68rem] font-semibold text-fg-3">
-                    {technology}
-                  </span>
-                ))}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
 
       <section className="py-12 sm:py-16" aria-labelledby="engineering-resources-title">
         <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "RESOURCES")}</p>
