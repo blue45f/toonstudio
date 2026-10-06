@@ -16,6 +16,7 @@ import {
   type StudioVirtualSpaceChatTyping,
 } from "./studio-virtual-space-chat";
 import type { StudioEmoteKind } from "./studio-virtual-space-emotes";
+import type { StudioBuildPlacementRequest } from "./studio-virtual-space-build-mode";
 import type { StudioInteractableStateKey } from "./studio-virtual-space-interactable-objects";
 import type { StudioUserStatus } from "./studio-virtual-space-user-status";
 import {
@@ -54,6 +55,14 @@ export const STUDIO_VIRTUAL_SPACE_IMPACT_TTL_MS = 1_200;
 export const STUDIO_VIRTUAL_SPACE_IMPACT_MAX_SPEED = 4_000;
 /** 오브젝트 상태 경과(ms) 검증 상한. 이보다 오래된 전이는 복원 가치가 없어 버린다. */
 export const STUDIO_VIRTUAL_SPACE_OBJECT_ELAPSED_MAX_MS = 86_400_000;
+/**
+ * 배치 가구 패킷 전용 바이트 상한. 목록 전체를 실어 보내므로 presence 등 다른
+ * 패킷의 1024 상한과 별도로 둔다. 구버전 파서는 이보다 큰 패킷을 크기 게이트에서
+ * 버리고, 신버전 파서도 fixtures kind가 아닌 패킷에는 1024 상한을 그대로 적용한다.
+ */
+export const STUDIO_VIRTUAL_SPACE_FIXTURES_PACKET_MAX_BYTES = 6_144;
+/** 배치 가구 패킷이 실을 수 있는 항목 상한. 배치 상한(STUDIO_PLACED_FIXTURE_LIMIT)과 같은 값이다. */
+export const STUDIO_VIRTUAL_SPACE_FIXTURES_MAX_ITEMS = 24;
 /** 말풍선 텍스트 최대 길이 (1024바이트 패킷 제한 안에서 여유 있게). */
 export const STUDIO_PRESENCE_BUBBLE_MAX_LENGTH = 140;
 /** 말풍선 표시 시간. 만료되면 송신 측이 직접 지워 브로드캐스트한다. */
@@ -163,6 +172,29 @@ interface StudioVirtualSpaceObjectPacket {
   readonly elapsedMs: number;
 }
 
+/**
+ * 배치 가구 와이어 항목 — [entryId, x, y, rotation] 튜플.
+ * 요청 객체 전체를 실으면 패킷이 커져 튜플로 압축한다. entryId로 카탈로그를
+ * 조회하면 category·refId가 복원되고, 최종 살균은 수신 측이 저장값 파서와 같은
+ * 경로(parseStudioPlacedFixtureRequests)로 수행한다.
+ */
+export type StudioVirtualSpaceFixtureWireItem = readonly [entryId: string, x: number, y: number, rotation: number];
+
+/**
+ * 배치 가구 목록 전파 패킷 (VS 120 — 빌드 모드 배치의 피어 동기화).
+ * 와이어는 그대로 두고 kind만 추가한 하위호환 확장이다 — 구버전 파서는 모르는
+ * kind를 패킷째 무시하므로 구버전 피어가 섞여도 presence는 깨지지 않는다.
+ * 목록 전체를 실어 보내 마지막 패킷이 곧 최신 상태가 된다(델타 누적 없음).
+ */
+interface StudioVirtualSpaceFixturesPacket {
+  readonly wire: typeof STUDIO_VIRTUAL_SPACE_WIRE;
+  readonly worldScope?: string;
+  readonly kind: "fixtures";
+  readonly sequence: number;
+  readonly at: number;
+  readonly fixtures: readonly StudioVirtualSpaceFixtureWireItem[];
+}
+
 export type StudioVirtualSpacePacket =
   | StudioVirtualSpacePresencePacket
   | StudioVirtualSpaceLeavePacket
@@ -170,7 +202,8 @@ export type StudioVirtualSpacePacket =
   | StudioVirtualSpaceChatPacket
   | StudioVirtualSpaceTypingPacket
   | StudioVirtualSpaceImpactPacket
-  | StudioVirtualSpaceObjectPacket;
+  | StudioVirtualSpaceObjectPacket
+  | StudioVirtualSpaceFixturesPacket;
 
 /** 피어의 최근 충돌 반발. 수신 측 시계 기준 receivedAt으로 재생 경과를 잰다. */
 export interface StudioVirtualSpacePeerImpact {
@@ -186,6 +219,12 @@ export interface StudioVirtualSpaceObjectState {
   readonly stateKey: StudioInteractableStateKey;
   readonly stateChangedAt: number;
   readonly senderSessionId: string;
+}
+
+/** 피어가 전파한 배치 가구 목록(소유 세션별 최신 1건). 수신 측에서 살균까지 끝난 요청 목록이다. */
+export interface StudioVirtualSpacePeerFixtures {
+  readonly sessionId: string;
+  readonly requests: readonly StudioBuildPlacementRequest[];
 }
 
 export interface StudioVirtualSpaceSnapshot {
@@ -205,6 +244,8 @@ export interface StudioVirtualSpaceSnapshot {
   readonly peerImpacts: readonly StudioVirtualSpacePeerImpact[];
   /** 전파된 오브젝트 상태(오브젝트별 최신 1건). 로컬 상태 머신과 합치지 않는 수신 전용 목록이다. */
   readonly objectStates: readonly StudioVirtualSpaceObjectState[];
+  /** 피어별 배치 가구 목록. 로컬 목록과의 합성·충돌 해소는 소비 측(peer-fixtures)이 맡는다. */
+  readonly peerFixtures: readonly StudioVirtualSpacePeerFixtures[];
   readonly direct: boolean;
 }
 
@@ -335,10 +376,40 @@ function packetBytes(value: string): number {
   return new TextEncoder().encode(value).byteLength;
 }
 
-export function parseStudioVirtualSpacePacket(raw: string): StudioVirtualSpacePacket | null {
-  if (typeof raw !== "string" || raw.length === 0 || packetBytes(raw) > STUDIO_VIRTUAL_SPACE_PACKET_MAX_BYTES) {
-    return null;
+/** 배치 항목 회전 허용값. 빌드 모드 회전 단계(90° 단위)와 같은 집합이다. */
+const FIXTURE_ROTATIONS = new Set<number>([0, 90, 180, 270]);
+
+/** 카탈로그 항목 id 검증. 항목 id 규약(영숫자·콜론·하이픈·밑줄)을 따른다. */
+function isFixtureEntryId(value: unknown): value is string {
+  return typeof value === "string"
+    && value.length > 0
+    && value.length <= 96
+    && /^[a-z0-9][a-z0-9:_-]*$/iu.test(value);
+}
+
+/**
+ * 배치 가구 와이어 목록을 검증한다. 배열이 아니거나 상한을 넘으면 패킷째 버리고,
+ * 개별 항목의 모양·범위가 틀리면 그 항목만 버린다 — 목록 의미상 한 항목의 손상이
+ * 나머지 배치를 지울 이유가 없고, 카탈로그 대조 살균은 수신 측 파서가 한 번 더 한다.
+ */
+function parseFixtureWireItems(value: unknown): readonly StudioVirtualSpaceFixtureWireItem[] | null {
+  if (!Array.isArray(value) || value.length > STUDIO_VIRTUAL_SPACE_FIXTURES_MAX_ITEMS) return null;
+  const items: StudioVirtualSpaceFixtureWireItem[] = [];
+  for (const raw of value) {
+    if (!Array.isArray(raw) || raw.length !== 4) continue;
+    const [entryId, x, y, rotation] = raw as unknown[];
+    if (!isFixtureEntryId(entryId)) continue;
+    if (!isFiniteCoordinate(x) || !isFiniteCoordinate(y)) continue;
+    if (typeof rotation !== "number" || !FIXTURE_ROTATIONS.has(rotation)) continue;
+    items.push(Object.freeze([entryId, x, y, rotation] as const));
   }
+  return Object.freeze(items);
+}
+
+export function parseStudioVirtualSpacePacket(raw: string): StudioVirtualSpacePacket | null {
+  if (typeof raw !== "string" || raw.length === 0) return null;
+  const bytes = packetBytes(raw);
+  if (bytes > STUDIO_VIRTUAL_SPACE_FIXTURES_PACKET_MAX_BYTES) return null;
   let candidate: unknown;
   try {
     candidate = JSON.parse(raw);
@@ -349,13 +420,15 @@ export function parseStudioVirtualSpacePacket(raw: string): StudioVirtualSpacePa
   const packet = candidate as Record<string, unknown>;
   if (
     packet.wire !== STUDIO_VIRTUAL_SPACE_WIRE
-    || (packet.kind !== "presence" && packet.kind !== "leave" && packet.kind !== "reaction" && packet.kind !== "chat" && packet.kind !== "typing" && packet.kind !== "impact" && packet.kind !== "object")
+    || (packet.kind !== "presence" && packet.kind !== "leave" && packet.kind !== "reaction" && packet.kind !== "chat" && packet.kind !== "typing" && packet.kind !== "impact" && packet.kind !== "object" && packet.kind !== "fixtures")
     || !Number.isSafeInteger(packet.sequence)
     || Number(packet.sequence) < 0
     || !Number.isFinite(packet.at)
   ) {
     return null;
   }
+  // 큰 바이트 허용은 fixtures 패킷 전용이다. 나머지 kind는 기존 1024 상한을 유지한다.
+  if (packet.kind !== "fixtures" && bytes > STUDIO_VIRTUAL_SPACE_PACKET_MAX_BYTES) return null;
   if (packet.worldScope !== undefined && (typeof packet.worldScope !== "string" || !/^[a-f0-9]{64}$/u.test(packet.worldScope))) return null;
   const scope = typeof packet.worldScope === "string" ? { worldScope: packet.worldScope } : {};
   if (packet.kind === "leave") {
@@ -437,6 +510,18 @@ export function parseStudioVirtualSpacePacket(raw: string): StudioVirtualSpacePa
       elapsedMs: packet.elapsedMs,
     };
   }
+  if (packet.kind === "fixtures") {
+    const fixtures = parseFixtureWireItems(packet.fixtures);
+    if (!fixtures) return null;
+    return {
+      wire: STUDIO_VIRTUAL_SPACE_WIRE,
+      ...scope,
+      kind: "fixtures",
+      sequence: Number(packet.sequence),
+      at: Number(packet.at),
+      fixtures,
+    };
+  }
   if (!packet.state || typeof packet.state !== "object" || Array.isArray(packet.state)) return null;
   const state = packet.state as Record<string, unknown>;
   if (
@@ -495,5 +580,8 @@ export function parseStudioVirtualSpacePacket(raw: string): StudioVirtualSpacePa
 
 export function encodePacket(packet: StudioVirtualSpacePacket): string | null {
   const raw = JSON.stringify(packet);
-  return packetBytes(raw) <= STUDIO_VIRTUAL_SPACE_PACKET_MAX_BYTES ? raw : null;
+  const maxBytes = packet.kind === "fixtures"
+    ? STUDIO_VIRTUAL_SPACE_FIXTURES_PACKET_MAX_BYTES
+    : STUDIO_VIRTUAL_SPACE_PACKET_MAX_BYTES;
+  return packetBytes(raw) <= maxBytes ? raw : null;
 }
