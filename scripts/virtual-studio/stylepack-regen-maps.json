@@ -65,8 +65,7 @@
                   "row": 0,
                   "sheet": "draw"
                 }
-              ],
-              "pending": true
+              ]
             },
             "draw-left": {
               "cells": [
@@ -90,8 +89,7 @@
                   "row": 2,
                   "sheet": "draw"
                 }
-              ],
-              "pending": true
+              ]
             },
             "draw-right": {
               "cells": [
@@ -115,8 +113,7 @@
                   "row": 1,
                   "sheet": "draw"
                 }
-              ],
-              "pending": true
+              ]
             },
             "draw-up": {
               "cells": [
@@ -140,8 +137,7 @@
                   "row": 3,
                   "sheet": "draw"
                 }
-              ],
-              "pending": true
+              ]
             },
             "review-down": {
               "cells": [
@@ -165,8 +161,7 @@
                   "row": 0,
                   "sheet": "review"
                 }
-              ],
-              "pending": true
+              ]
             },
             "review-left": {
               "cells": [
@@ -190,8 +185,7 @@
                   "row": 2,
                   "sheet": "review"
                 }
-              ],
-              "pending": true
+              ]
             },
             "review-right": {
               "cells": [
@@ -215,8 +209,7 @@
                   "row": 1,
                   "sheet": "review"
                 }
-              ],
-              "pending": true
+              ]
             },
             "review-up": {
               "cells": [
@@ -240,8 +233,7 @@
                   "row": 3,
                   "sheet": "review"
                 }
-              ],
-              "pending": true
+              ]
             },
             "sit": {
               "cells": [
@@ -274,8 +266,7 @@
                   "row": 0,
                   "sheet": "draw"
                 }
-              ],
-              "pending": true
+              ]
             },
             "state-review": {
               "cells": [
@@ -284,8 +275,7 @@
                   "row": 0,
                   "sheet": "review"
                 }
-              ],
-              "pending": true
+              ]
             },
             "state-talk": {
               "cells": [
@@ -318,8 +308,7 @@
                   "row": 0,
                   "sheet": "talk"
                 }
-              ],
-              "pending": true
+              ]
             },
             "talk-left": {
               "cells": [
@@ -343,8 +332,7 @@
                   "row": 2,
                   "sheet": "talk"
                 }
-              ],
-              "pending": true
+              ]
             },
             "talk-right": {
               "cells": [
@@ -368,8 +356,7 @@
                   "row": 1,
                   "sheet": "talk"
                 }
-              ],
-              "pending": true
+              ]
             },
             "talk-up": {
               "cells": [
@@ -393,8 +380,7 @@
                   "row": 3,
                   "sheet": "talk"
                 }
-              ],
-              "pending": true
+              ]
             },
             "walk-down": {
               "cells": [

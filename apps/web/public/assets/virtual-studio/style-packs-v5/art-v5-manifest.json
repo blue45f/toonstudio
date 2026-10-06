@@ -17938,253 +17938,253 @@
     },
     {
       "file": "webtoon/players/player-pink-direction-down.webp",
-      "bytes": 5980,
-      "sha256": "d1bdfe2e2cca1f403d1097f179d6777a9d3cfe619f59efcc67e800dc64393581",
+      "bytes": 8824,
+      "sha256": "f2d3485637b1104fe4647a72a719159df4440051e5a18dee90e4c6e45f6059c6",
       "size": [
         160,
         160
       ],
-      "visualSignature": "efd2823032602cd3b8fbf8ed920924f7304a4a4048d5a75be1093cfcb5bbb1a0"
+      "visualSignature": "7041b2f396c088cd8a1df40393f7c98abdd45489b0388c969b4b5f2554313191"
     },
     {
       "file": "webtoon/players/player-pink-direction-left.webp",
-      "bytes": 5516,
-      "sha256": "f9acc6fe72b0ac21d6d2f031ccba1eaeb6cbb671e5075381689517ee851404bc",
+      "bytes": 6500,
+      "sha256": "275d257ab57733bea36e53aca9466d60d465566b4bd01395e6d26e9dc0e56f8c",
       "size": [
         160,
         160
       ],
-      "visualSignature": "f32cb9fa5a0961f2c4e9368b6341357ff8e61cdb5d6b3d493849a3d4675780b7"
+      "visualSignature": "3da04ca9e066e8d4eb595fd92c735cf3fb38ec97894fc1f6d5031eb753df22cc"
     },
     {
       "file": "webtoon/players/player-pink-direction-right.webp",
-      "bytes": 5482,
-      "sha256": "2b1c8fb752c4fc3cea3536a6cdfb8d16d529a4368b7e3020f9982baba58ab020",
+      "bytes": 6718,
+      "sha256": "d1318a78de2dd11e196017ae637ad26ba57470ac8249305a281f713dc9c1d80f",
       "size": [
         160,
         160
       ],
-      "visualSignature": "8470fb1a13c0293d139f4745eb7b2aa484ec2a58beea8fb148978794d5dbca5e"
+      "visualSignature": "c395cbddf1b5aa894ddef1b80ae60a2136af05a6cf717ceeba1a63d91f25a8c3"
     },
     {
       "file": "webtoon/players/player-pink-direction-up.webp",
-      "bytes": 6140,
-      "sha256": "41450aca6f5f16c503cdbc93257944d088516ec5e71355329bfdfac712021410",
+      "bytes": 7602,
+      "sha256": "5dd2dc0bb5a71a0deb50c31c19471d0fcef6c857738ffd18ea6bf26c8b4954f2",
       "size": [
         160,
         160
       ],
-      "visualSignature": "d7360ba4131dc875a9a4c3b4b67f7e2127705477d4ddf8c29192fc6394e1fbef"
+      "visualSignature": "25e747355e48e8498f17112f9f1880786a2cefa59e16a6636b2052c113c52ecc"
     },
     {
       "file": "webtoon/players/player-pink-draw-down.webp",
-      "bytes": 17790,
-      "sha256": "dbc9b4bb0d9e6ef6d09a802ca27e09de1f9814f08c8747495a869e22b4a2fdf5",
+      "bytes": 33218,
+      "sha256": "3413a679a680bdc6b609085025702bbc34e24ce3609c069d4f8f724e3df05a33",
       "size": [
         640,
         160
       ],
-      "visualSignature": "92c792e6dc264ab3b32f5382c4fe9b15601628463214dfd0e5514125e81abf87"
+      "visualSignature": "b9b4c554e884095ec82cceb91d46fff3301812eaa263fe9f5bd7d4cd7cb0074a"
     },
     {
       "file": "webtoon/players/player-pink-draw-left.webp",
-      "bytes": 16578,
-      "sha256": "e87611e2925d306f22d8af17ab9d5868b7eff69f48c5f0c40ea3fcc039432c97",
+      "bytes": 31290,
+      "sha256": "8ae19abc364a951149aabd34f2ea0908899ff91a17f6633cd583f581e9103337",
       "size": [
         640,
         160
       ],
-      "visualSignature": "d08d65a734fc878454927a770d14dbe7e38595a8c48a5134906219896249188a"
+      "visualSignature": "95338f447c1a9cfa3bddacf608569bea7ed6285c95f26c135a5276504e6c7a2f"
     },
     {
       "file": "webtoon/players/player-pink-draw-right.webp",
-      "bytes": 16354,
-      "sha256": "3c657433bcaac05354662c45928bc0798a80d4ed8259e1504ec1a1167cb6aca0",
+      "bytes": 29570,
+      "sha256": "475e96bd1a68b8ec2427b95f2b446f69b50c6e49e22922dc6e5e0b78781c1f31",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e0e69fc7a5bdf6740bd1ddbb168f1af7d01d447fd929cdbf9904544223b34e10"
+      "visualSignature": "004f859922b76d075a84923b125e3eafcb61af42822e33a0ad06f651913b0d5b"
     },
     {
       "file": "webtoon/players/player-pink-draw-up.webp",
-      "bytes": 16420,
-      "sha256": "ff0540c9bdab6eb76cbdaa8fd15abaeb06ab9e2e049760bbe6784cfef81a6dd7",
+      "bytes": 28534,
+      "sha256": "6eba52c94ed13547b3a393a079e4ef1e7ecb219181c3a2313ab49a0512592632",
       "size": [
         640,
         160
       ],
-      "visualSignature": "b566b4439c2be390df18d47e53641e57062adb991e5afcbb0b7862b67a6c737e"
+      "visualSignature": "1e5da170c57f161058b01a2090e9081c5daa86add681117f0fb9bbcf32557941"
     },
     {
       "file": "webtoon/players/player-pink-review-down.webp",
-      "bytes": 17790,
-      "sha256": "dbc9b4bb0d9e6ef6d09a802ca27e09de1f9814f08c8747495a869e22b4a2fdf5",
+      "bytes": 32368,
+      "sha256": "5795b2693d9963e7f7a0d1c12dff93561fb9f8feace1e3a84f7bb36befc49262",
       "size": [
         640,
         160
       ],
-      "visualSignature": "92c792e6dc264ab3b32f5382c4fe9b15601628463214dfd0e5514125e81abf87"
+      "visualSignature": "a3f5460d8bb1f059995d4874e853e093dcdaa6cfcd36e2cd53ff7d919ca6c230"
     },
     {
       "file": "webtoon/players/player-pink-review-left.webp",
-      "bytes": 16578,
-      "sha256": "e87611e2925d306f22d8af17ab9d5868b7eff69f48c5f0c40ea3fcc039432c97",
+      "bytes": 32048,
+      "sha256": "94334440242891a4f4520fa8a53a7001381ad9b69630b2fd36de0152f3345d94",
       "size": [
         640,
         160
       ],
-      "visualSignature": "d08d65a734fc878454927a770d14dbe7e38595a8c48a5134906219896249188a"
+      "visualSignature": "38b5f3f121c0ce29c3827379b199beb39847f839b2669224f93fa9569099a123"
     },
     {
       "file": "webtoon/players/player-pink-review-right.webp",
-      "bytes": 16354,
-      "sha256": "3c657433bcaac05354662c45928bc0798a80d4ed8259e1504ec1a1167cb6aca0",
+      "bytes": 29514,
+      "sha256": "f3923311b9f4bea0fe184c3538e7fad9df4cea8db3d141bf0b92d8c1162958fc",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e0e69fc7a5bdf6740bd1ddbb168f1af7d01d447fd929cdbf9904544223b34e10"
+      "visualSignature": "64b50aa8d54dae79e7d33e33d1021d517dfaa454c1029932f9fcdcc4ca350197"
     },
     {
       "file": "webtoon/players/player-pink-review-up.webp",
-      "bytes": 16420,
-      "sha256": "ff0540c9bdab6eb76cbdaa8fd15abaeb06ab9e2e049760bbe6784cfef81a6dd7",
+      "bytes": 29646,
+      "sha256": "82e06129a9c0d11b83c5fc578eee045b415de6e44b4ca674535d69714c6a06dc",
       "size": [
         640,
         160
       ],
-      "visualSignature": "b566b4439c2be390df18d47e53641e57062adb991e5afcbb0b7862b67a6c737e"
+      "visualSignature": "dbe72fc0cb4525af5b32c119a64900c851cdfb9cfd8b1d0da073df2c320556a7"
     },
     {
       "file": "webtoon/players/player-pink-sit.webp",
-      "bytes": 18946,
-      "sha256": "2fdbbe8d8b5dc7f75228dbc71e8e31312f266650f06731ae9bd9718899ab8d38",
+      "bytes": 24116,
+      "sha256": "e7b18786c2f771127860b0bd11a1f7ce783e194d861bd82ad94e3e7a121d71b9",
       "size": [
         640,
         160
       ],
-      "visualSignature": "43bf3dc049f1f610ca566668c0022d399f474d273a5dee746b156672af8b9111"
+      "visualSignature": "4867c73ebdc08cdd87babda8d27f062986095e71603843dcc1bae5c5a55f54db"
     },
     {
       "file": "webtoon/players/player-pink-state-draw.webp",
-      "bytes": 5846,
-      "sha256": "463ef9a84f51249193c557671d46392f480948b6fed973cb0740df021da61e4d",
+      "bytes": 8780,
+      "sha256": "9eed9bed3542aaa91c07be7c63c8b6fbaff38ae6f25ba750d957497f1faf157e",
       "size": [
         160,
         160
       ],
-      "visualSignature": "fe3efa34af9ee82950fc62979e69511e0444159f70cd9b22b94ca338025d06dd"
+      "visualSignature": "6e7cb4dc9ac6c29afd098bd4852bcf6f1c2adca87ca446a3f797865f43f4a3c9"
     },
     {
       "file": "webtoon/players/player-pink-state-review.webp",
-      "bytes": 5846,
-      "sha256": "463ef9a84f51249193c557671d46392f480948b6fed973cb0740df021da61e4d",
+      "bytes": 8380,
+      "sha256": "b9a5016443b8540707e2fe250488d97e16bdfd7a4897cc782b819856d851970c",
       "size": [
         160,
         160
       ],
-      "visualSignature": "fe3efa34af9ee82950fc62979e69511e0444159f70cd9b22b94ca338025d06dd"
+      "visualSignature": "e6ecd54f5d3ebb1b6fb975120334c3cfe93acecfb6ab1e04305823b89dc654a3"
     },
     {
       "file": "webtoon/players/player-pink-state-talk.webp",
-      "bytes": 6464,
-      "sha256": "1c2721833bfa5aaf910eef56718fcae546257d7b9cc5aac65f03d482498e23be",
+      "bytes": 8912,
+      "sha256": "6703f81cc2731c5c52be0a355819580f63aeafdeaf8bbbe1c7e5a07d14c86fb7",
       "size": [
         160,
         160
       ],
-      "visualSignature": "93ecc0c22758c8e5c981949602d4d9d5c7b3c56d3a4ebc826ee39a5ebba127ac"
+      "visualSignature": "75b7b3a3bdf568e19181593710bcf40b0ef200998fd6aef1d41adc4178d90aa3"
     },
     {
       "file": "webtoon/players/player-pink-talk-down.webp",
-      "bytes": 19672,
-      "sha256": "776fb68d62a54d8c7a003a4a3f935558a4ac335c1b9afd54b9c5c2fe20bd72b2",
+      "bytes": 35728,
+      "sha256": "59ccb01ab5594de80e7357c5678706028a3bb032a7cdf53fe28631887a9c9654",
       "size": [
         640,
         160
       ],
-      "visualSignature": "70fe62bba88dafb80516bc4229ea049eb8979a7e427af976223559d12eb3213f"
+      "visualSignature": "11f4856002356873c405e54e9bad806dd3de5d9062064ea95a433d2622d10a0c"
     },
     {
       "file": "webtoon/players/player-pink-talk-left.webp",
-      "bytes": 18288,
-      "sha256": "2438a894c2fd3366f1e6425669c6b08873d9c0b587fd5c69cab5965be799a141",
+      "bytes": 32528,
+      "sha256": "d7e31d354ba0a37adb51b15f0aacfe55da1c7c1aeb804675e936c44186dc20d1",
       "size": [
         640,
         160
       ],
-      "visualSignature": "d326ec0239a889a372d2421467a0a1bb13cbb64852655cf0a24c7458326dd490"
+      "visualSignature": "ed01ea3471cccdd57983534cb011a5620ab05e128d02c04916d6d42f904b8e9d"
     },
     {
       "file": "webtoon/players/player-pink-talk-right.webp",
-      "bytes": 18412,
-      "sha256": "dbaa095de26596810f479d59b7145614eb194c47477778ec167f913967ea5271",
+      "bytes": 31176,
+      "sha256": "11b61015c6633845c46fcc76a75242e7c4ab24b3b135e6447a5963e550b0387a",
       "size": [
         640,
         160
       ],
-      "visualSignature": "4d7b43651002a91dea2135d00cef5568cf8c12df120208e971c18fdd93c32408"
+      "visualSignature": "44c017faedb2b38ea57afd85a011a9bb02b3e69d25e8d3eedabf043e33f4f31c"
     },
     {
       "file": "webtoon/players/player-pink-talk-up.webp",
-      "bytes": 18866,
-      "sha256": "095571793e2b6e64779fc40fa08a805b7d53705f97f4fe885f23b33ad70254e1",
+      "bytes": 34526,
+      "sha256": "4d11d6a84e1ef0b887787d21f2caeb606722e4ffd737540c4671757ba6af0090",
       "size": [
         640,
         160
       ],
-      "visualSignature": "bd79a4138d7c2cf4bf82676da2fa050dfdd82e840d1d1b7e49322f2070ace6a2"
+      "visualSignature": "dec88d7968bb081c2dd81383d5ba3abfcfd190449bdde015fabca15a52c6173e"
     },
     {
       "file": "webtoon/players/player-pink-walk-down.webp",
-      "bytes": 19326,
-      "sha256": "c4ba2715e3006ec06cc1b6abb3d16032c4e6635765dd5a6b4f059382de3354f0",
+      "bytes": 36598,
+      "sha256": "3afdf31199b159e992ec9e5f4221cb35c7018db5049d92713f368392954a5027",
       "size": [
         640,
         160
       ],
-      "visualSignature": "1492b7e44f43759423d7ab9d6cd4c28855dc5e8249abaca99cd7b59b479b3166"
+      "visualSignature": "8a69d23d6dc6de8fed03c4e2495a8ed2df97da8a238461354f779ba1d5270dd2"
     },
     {
       "file": "webtoon/players/player-pink-walk-left.webp",
-      "bytes": 17308,
-      "sha256": "9fa83d780332b345947728a99b9073e0272654dc6e212646e1ef610b31cac40b",
+      "bytes": 34056,
+      "sha256": "f48edc6aa7e9fb91d59287f5c3d074478f4faddd786abf920b03b374099a20cd",
       "size": [
         640,
         160
       ],
-      "visualSignature": "691b3258ed7cc5fb49aaae71898094dc3d9dac39103f786f64f537906d328237"
+      "visualSignature": "8a98367f20a1f082f774a9b8a756f7d97bb192240c002e0e2b61f65fb5cc1085"
     },
     {
       "file": "webtoon/players/player-pink-walk-right.webp",
-      "bytes": 17184,
-      "sha256": "115dc4e63b9864892303b3c0f30253028c27979f0bf4f9b20d9f572c894564ca",
+      "bytes": 32664,
+      "sha256": "9c2ff1b906b03a04988cf9d3159261d62c813d12247008ac7bfcb8aae24c1fe1",
       "size": [
         640,
         160
       ],
-      "visualSignature": "5e8459f8b9e2bc74ae3cac817d36c8b925f3224e6240c43e90ccf082be45c92a"
+      "visualSignature": "45ba31e6491c4d804d070ae01cf9e7c0e13d6a74fb38149283f3f42f31391e90"
     },
     {
       "file": "webtoon/players/player-pink-walk-up.webp",
-      "bytes": 18586,
-      "sha256": "ab501e7cea7e067f0d2e22c2e8fc847862e5b42414c7275b2dcc7e0f8331aaa7",
+      "bytes": 31502,
+      "sha256": "d4f51d2c438391e50edfe8df4fc4d4b07db127c3186dd3514fc2d6f362ac150e",
       "size": [
         640,
         160
       ],
-      "visualSignature": "d9edf6be53ed78c048750de2a840cce70692e4004ca4cc57918987811547f141"
+      "visualSignature": "407ddb962522cb91b6d1a87e25a8e7d825a93a95fdd1bd5853dfda81f9fa40e2"
     },
     {
       "file": "webtoon/players/player-pink-wave.webp",
-      "bytes": 21614,
-      "sha256": "213a3f826add50ce53f06f05133601e4ddf62887d2f9777a65db4a359d555ffc",
+      "bytes": 30648,
+      "sha256": "ff05107f94a055b81b83ef4564e9a7cf66061d69bf63fa089c7c79cd07487138",
       "size": [
         640,
         160
       ],
-      "visualSignature": "29c79b6f4579a52d430aee6124b9577758756a76b857167533f67b71bfd96da6"
+      "visualSignature": "e035eabb18074a6493e6e50fcd45e6d2c8eb10b06a1e903c83279d2543c76544"
     },
     {
       "file": "webtoon/players/player-purple-direction-down.webp",
@@ -18766,5 +18766,8 @@
       ],
       "visualSignature": "681fc1a4c68019e84713382f25c72d7d64fbc3904d6740644bfd6043761f1fcd"
     }
-  ]
+  ],
+  "regenProvenance": {
+    "webtoon": "image-generated drawn master sheets sliced per actor (2026-10-07); no cross-style or cross-actor pixel reuse"
+  }
 }
