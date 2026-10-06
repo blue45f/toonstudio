@@ -169,10 +169,11 @@ export function TechnologyPage() {
       </header>
 
       <AboutSectionNav className="mt-8" />
-      <EngineeringTechNav className="mt-2" />
-      <EngineeringHubStatusStrip />
 
       <EngineeringChapterLibrary />
+
+      <EngineeringTechNav className="mt-10" />
+      <EngineeringHubStatusStrip />
 
       <section className="py-12 sm:py-16" aria-labelledby="engineering-path-title">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
