@@ -14,6 +14,9 @@ import {
 const skin = STUDIO_CHARACTER_SKINS[0]!;
 const standing = studioCharacterStaticAsset(skin, "down");
 const walking = studioCharacterVisualAssets(skin, "left", "walk");
+/** 드로잉 스킨이 선언한 표정 세트(neutral·joy·surprise)는 상태와 무관하게 상주 목록에 붙는다. */
+const pinkFaceKeys = ["face-neutral", "face-joy", "face-surprise"].map((name) => `studio-player-pink-${name}-sheet`);
+const silverFaceKeys = ["face-neutral", "face-joy", "face-surprise"].map((name) => `studio-player-silver-${name}-sheet`);
 function harness(initial: readonly StudioCharacterTextureAsset[] = []) {
   const loaded = new Set(initial.map((asset) => asset.key));
   const pending = new Map<string, (success: boolean) => void>();
@@ -109,14 +112,16 @@ describe("Virtual Studio character texture residency", () => {
     }
   });
   it("requests only the current skin, direction and supported action, with no idle atlas", () => {
-    expect(studioCharacterVisualAssets(skin, "down", "idle")).toEqual([standing]);
-    expect(walking.map((asset) => asset.key)).toEqual(["studio-player-pink-direction-left", "studio-player-pink-walk-sheet-left"]);
-    expect(studioCharacterVisualAssets(STUDIO_CHARACTER_SKINS[1]!, "up", "draw")).toHaveLength(1);
+    const idleAssets = studioCharacterVisualAssets(skin, "down", "idle");
+    expect(idleAssets[0]).toEqual(standing);
+    expect(idleAssets.map((asset) => asset.key)).toEqual([standing.key, ...pinkFaceKeys]);
+    expect(walking.map((asset) => asset.key)).toEqual(["studio-player-pink-direction-left", "studio-player-pink-walk-sheet-left", ...pinkFaceKeys]);
+    expect(studioCharacterVisualAssets(STUDIO_CHARACTER_SKINS[1]!, "up", "draw")).toHaveLength(4);
   });
   it("shares one directional pose sheet and keeps its directional static fallback", () => {
     const down = studioCharacterVisualAssets(skin, "down", "wave");
     const right = studioCharacterVisualAssets(skin, "right", "wave");
-    expect(down).toHaveLength(2);
+    expect(down).toHaveLength(2 + pinkFaceKeys.length);
     expect(right[1]?.key).toBe(down[1]?.key);
     expect(down[0]).toEqual(standing);
     expect(down[1]?.type).toBe("spritesheet");
@@ -125,13 +130,14 @@ describe("Virtual Studio character texture residency", () => {
     const silver = STUDIO_CHARACTER_SKINS[1]!;
     for (const direction of ["down", "left", "right", "up"] as const) {
       const assets = studioCharacterVisualAssets(silver, direction, "review");
-      expect(assets).toHaveLength(2);
+      expect(assets).toHaveLength(2 + silverFaceKeys.length);
       expect(assets[0]).toEqual(studioCharacterStaticAsset(silver, direction));
       expect(assets[1]).toMatchObject({ key: `studio-player-silver-review-sheet-${direction}`, type: "spritesheet", frameWidth: 561, frameHeight: 701 });
       expect(studioCharacterVisualAssets(silver, direction, "walk").map((asset) => asset.key))
-        .toEqual([`studio-player-silver-direction-${direction}`, `studio-player-silver-walk-sheet-${direction}`]);
-      expect(studioCharacterVisualAssets(silver, direction, "idle")).toEqual([assets[0]]);
-      expect(studioCharacterVisualAssets(STUDIO_CHARACTER_SKINS[2]!, direction, "review")).toHaveLength(1);
+        .toEqual([`studio-player-silver-direction-${direction}`, `studio-player-silver-walk-sheet-${direction}`, ...silverFaceKeys]);
+      expect(studioCharacterVisualAssets(silver, direction, "idle").map((asset) => asset.key))
+        .toEqual([assets[0]!.key, ...silverFaceKeys]);
+      expect(studioCharacterVisualAssets(STUDIO_CHARACTER_SKINS[2]!, direction, "review")).toHaveLength(1 + silverFaceKeys.length);
     }
   });
   it("loads one actual pink drawing direction and accepts only its declared original PNG layout", () => {
@@ -139,7 +145,7 @@ describe("Virtual Studio character texture residency", () => {
       const clip = studioCharacterActionClip(skin, direction, "draw")!;
       const assets = studioCharacterVisualAssets(skin, direction, "draw");
       expect(assets.filter((asset) => asset.type === "spritesheet").map((asset) => asset.key))
-        .toEqual([`studio-player-pink-draw-sheet-${direction}`]);
+        .toEqual([`studio-player-pink-draw-sheet-${direction}`, ...pinkFaceKeys]);
       expect(assets).toContainEqual(studioCharacterStaticAsset(skin, direction, "draw"));
       expect(studioCharacterActionSheetMatches(clip, clip.atlas!.width, clip.atlas!.height)).toBe(true);
       expect(studioCharacterActionSheetMatches(clip, clip.atlas!.width + 1, clip.atlas!.height)).toBe(false);
@@ -181,13 +187,13 @@ describe("Virtual Studio character texture residency", () => {
   it("deduplicates a shared skin, retains it for another actor and evicts only after the grace period", () => {
     const h = harness();
     h.residency.use("self", walking); h.residency.use("npc", walking); h.residency.use("self", walking);
-    expect(h.load).toHaveBeenCalledTimes(2);
+    expect(h.load).toHaveBeenCalledTimes(walking.length);
     for (const asset of walking) h.pending.get(asset.key)!(true);
     h.residency.release("self"); h.advance(200); h.residency.collect();
     expect(h.remove).not.toHaveBeenCalled();
     h.residency.release("npc"); h.advance(99); h.residency.collect();
     expect(h.remove).not.toHaveBeenCalled();
-    h.advance(1); h.residency.collect(); expect(h.remove).toHaveBeenCalledTimes(2);
+    h.advance(1); h.residency.collect(); expect(h.remove).toHaveBeenCalledTimes(walking.length);
   });
   it("keeps the displayed old frame while a new skin loads, then releases it after the switch", () => {
     const h = harness([standing]);
@@ -203,7 +209,7 @@ describe("Virtual Studio character texture residency", () => {
     const h = harness();
     h.residency.use("peer:a", walking); h.residency.release("peer:a");
     for (const asset of walking) h.pending.get(asset.key)!(true);
-    expect(h.loaded.size).toBe(0); expect(h.remove).toHaveBeenCalledTimes(2);
+    expect(h.loaded.size).toBe(0); expect(h.remove).toHaveBeenCalledTimes(walking.length);
   });
   it("shares an in-flight download with a new actor without letting the departed actor own it", () => {
     const h = harness();
@@ -239,13 +245,14 @@ describe("Virtual Studio character texture residency", () => {
       expect(faceAssets.every((asset) => asset.type === "spritesheet")).toBe(true);
     }
     // 표정 세트가 없는 스킨은 기존 목록과 동일하다.
-    expect(studioCharacterVisualAssets(skin, "down", "idle").some((asset) => asset.key.includes("face-"))).toBe(false);
+    const faceless = { ...skin, faces: undefined };
+    expect(studioCharacterVisualAssets(faceless, "down", "idle").some((asset) => asset.key.includes("face-"))).toBe(false);
   });
   it("invalidates old-scene completions and releases every subscription on teardown", () => {
     const h = harness(); h.residency.use("self", walking); h.residency.close();
     for (const asset of walking) h.pending.get(asset.key)!(true);
     h.residency.use("next", [standing]); h.residency.collect();
-    expect(h.load).toHaveBeenCalledTimes(2); expect(h.remove).not.toHaveBeenCalled();
+    expect(h.load).toHaveBeenCalledTimes(walking.length); expect(h.remove).not.toHaveBeenCalled();
     expect(h.disposers.every((dispose) => dispose.mock.calls.length === 1)).toBe(true);
   });
 });
