@@ -32,6 +32,12 @@
 .research-source--wikimedia { --source-accent: oklch(0.72 0.15 248); --source-accent-deep: oklch(0.42 0.13 248); }
 .research-source--europeana { --source-accent: oklch(0.72 0.15 355); --source-accent-deep: oklch(0.42 0.13 355); }
 .research-source--dpla { --source-accent: oklch(0.72 0.15 220); --source-accent-deep: oklch(0.42 0.13 220); }
+/* 웨이브 5 · T5 확장 — 제작 팩·글로벌 도서 제공처. 기존 21곳과 hue가 겹치지 않는다. */
+.research-source--aic { --source-accent: oklch(0.72 0.15 160); --source-accent-deep: oklch(0.42 0.13 160); }
+.research-source--cleveland { --source-accent: oklch(0.72 0.15 25); --source-accent-deep: oklch(0.42 0.13 25); }
+.research-source--openlibrary { --source-accent: oklch(0.72 0.15 115); --source-accent-deep: oklch(0.42 0.13 115); }
+.research-source--googlebooks { --source-accent: oklch(0.72 0.15 200); --source-accent-deep: oklch(0.42 0.13 200); }
+.research-source--openbd { --source-accent: oklch(0.72 0.15 48); --source-accent-deep: oklch(0.42 0.13 48); }
 
 /* 마스트헤드 테두리에 소스 색을 섞어, 첫 화면의 프레임부터 소스가 읽히게 한다. */
 .research-source .resource-masthead {
