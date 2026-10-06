@@ -59,6 +59,9 @@
       ],
       "@toonstudio/studio-project-model/review-voice-note": [
         "../../packages/studio-project-model/src/graph/review-voice-note.ts"
+      ],
+      "@toonstudio/studio-project-model/recording-booth-asset": [
+        "../../packages/studio-project-model/src/graph/recording-booth-asset.ts"
       ]
     },
     "outDir": "dist",

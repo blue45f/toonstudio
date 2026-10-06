@@ -112,17 +112,59 @@ describe("useStudioVirtualSpaceRecordingBooth", () => {
   });
 
   it("로그인 사용자는 테이크를 프로젝트 에셋으로 편입할 수 있다", async () => {
-    const onProjectAsset = vi.fn();
+    const onProjectAsset = vi.fn(async () => true);
     const { result } = setup({ onProjectAsset });
     await act(async () => { await result.current.startRecording(); });
     await act(async () => { await result.current.stopRecording(); });
     const takeId = result.current.takes[0]?.take.id ?? "";
-    act(() => { result.current.addTakeToProject(takeId); });
+    await act(async () => { result.current.addTakeToProject(takeId); });
     expect(onProjectAsset).toHaveBeenCalledTimes(1);
     expect(onProjectAsset.mock.calls[0]?.[0]).toMatchObject({
       kind: "audio", projectId: "project-1", takeId, source: "recording-booth",
     });
     expect(result.current.takes[0]?.addedToProject).toBe(true);
+    expect(result.current.takes[0]?.saveState).toBe("saved");
+  });
+
+  it("저장이 실패하면 성공으로 위장하지 않고 테이크를 재시도 가능 상태로 남긴다", async () => {
+    const onProjectAsset = vi.fn(async () => false);
+    const { result } = setup({ onProjectAsset });
+    await act(async () => { await result.current.startRecording(); });
+    await act(async () => { await result.current.stopRecording(); });
+    const takeId = result.current.takes[0]?.take.id ?? "";
+    await act(async () => { result.current.addTakeToProject(takeId); });
+    expect(result.current.takes[0]?.addedToProject).toBe(false);
+    expect(result.current.takes[0]?.saveState).toBe("failed");
+    // 실패한 테이크는 사라지지 않고, 다시 저장하면 성공 상태로 수렴한다.
+    onProjectAsset.mockResolvedValue(true);
+    await act(async () => { result.current.addTakeToProject(takeId); });
+    expect(onProjectAsset).toHaveBeenCalledTimes(2);
+    expect(result.current.takes[0]?.saveState).toBe("saved");
+    expect(result.current.takes[0]?.addedToProject).toBe(true);
+  });
+
+  it("저장 콜백이 던져도 실패 상태로 남고, 저장 중 중복 호출은 한 번만 실행된다", async () => {
+    let release: ((value: boolean) => void) | undefined;
+    const onProjectAsset = vi.fn(() => new Promise<boolean>((resolve) => { release = resolve; }));
+    const { result } = setup({ onProjectAsset });
+    await act(async () => { await result.current.startRecording(); });
+    await act(async () => { await result.current.stopRecording(); });
+    const takeId = result.current.takes[0]?.take.id ?? "";
+    act(() => { result.current.addTakeToProject(takeId); });
+    act(() => { result.current.addTakeToProject(takeId); });
+    expect(onProjectAsset).toHaveBeenCalledTimes(1);
+    expect(result.current.takes[0]?.saveState).toBe("saving");
+    await act(async () => { release?.(true); });
+    expect(result.current.takes[0]?.saveState).toBe("saved");
+
+    const rejecting = vi.fn(async (): Promise<boolean> => { throw new Error("network"); });
+    const second = setup({ onProjectAsset: rejecting });
+    await act(async () => { await second.result.current.startRecording(); });
+    await act(async () => { await second.result.current.stopRecording(); });
+    const secondTakeId = second.result.current.takes[0]?.take.id ?? "";
+    await act(async () => { second.result.current.addTakeToProject(secondTakeId); });
+    expect(second.result.current.takes[0]?.saveState).toBe("failed");
+    expect(second.result.current.takes[0]?.addedToProject).toBe(false);
   });
 
   it("프로젝트가 없으면 project-required 오류를 남긴다", async () => {

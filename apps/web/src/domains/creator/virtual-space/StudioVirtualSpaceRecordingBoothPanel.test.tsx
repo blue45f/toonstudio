@@ -9,6 +9,12 @@ import {
 } from "./studio-virtual-space-recording-booth";
 import type { StudioSpaceBooking } from "./studio-virtual-space-space-booking";
 
+vi.mock("./studio-recording-booth-asset-client", () => ({
+  listStudioRecordingBoothAssets: vi.fn(async () => ({ items: [] })),
+  readStudioRecordingBoothAsset: vi.fn(),
+  deleteStudioRecordingBoothAsset: vi.fn(),
+}));
+
 function config(overrides: Partial<StudioRecordingBoothConfig> = {}): StudioRecordingBoothConfig {
   return {
     boothId: "booth-a",
@@ -49,7 +55,7 @@ describe("StudioVirtualSpaceRecordingBoothPanel", () => {
   });
 
   it("반향 프리셋을 골라 녹음하고 테이크를 프로젝트 에셋으로 넣는다", async () => {
-    const onProjectAsset = vi.fn();
+    const onProjectAsset = vi.fn(async () => true);
     renderPanel({ onProjectAsset });
     fireEvent.click(screen.getByRole("radio", { name: /홀/ }));
     expect((screen.getByRole("radio", { name: /홀/ }) as HTMLInputElement).checked).toBe(true);
@@ -61,6 +67,20 @@ describe("StudioVirtualSpaceRecordingBoothPanel", () => {
     expect(onProjectAsset).toHaveBeenCalledTimes(1);
     expect(onProjectAsset.mock.calls[0]?.[0]).toMatchObject({ kind: "audio", projectId: "project-1" });
     expect(await screen.findByText("프로젝트 에셋에 넣었어요")).toBeTruthy();
+  });
+
+  it("저장이 실패하면 실패를 알리고 테이크를 남겨 다시 저장할 수 있다", async () => {
+    const onProjectAsset = vi.fn(async () => false);
+    renderPanel({ onProjectAsset });
+    fireEvent.click(screen.getByRole("button", { name: /녹음 시작/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /녹음 종료/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "프로젝트 에셋으로 넣기" }));
+    expect(await screen.findByText(/저장에 실패했어요/)).toBeTruthy();
+    expect(screen.queryByText("프로젝트 에셋에 넣었어요")).toBeNull();
+    onProjectAsset.mockResolvedValue(true);
+    fireEvent.click(screen.getByRole("button", { name: "다시 저장하기" }));
+    expect(await screen.findByText("프로젝트 에셋에 넣었어요")).toBeTruthy();
+    expect(onProjectAsset).toHaveBeenCalledTimes(2);
   });
 
   it("독점 부스에서 예약이 없으면 녹음이 막히고 안내가 보인다", () => {

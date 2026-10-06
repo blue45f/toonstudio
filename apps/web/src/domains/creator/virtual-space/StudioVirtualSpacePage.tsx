@@ -135,11 +135,11 @@ import {
   studioVirtualPlaceWorldScope,
 } from "./studio-virtual-space-place-world";
 import { studioVirtualSpaceDefaultGalleryFrames } from "./studio-virtual-space-gallery-defaults";
-import type { StudioProjectAudioAssetDescriptor } from "./studio-virtual-space-recording-booth";
 import { studioDefaultRecordingBoothConfig } from "./studio-virtual-space-recording-booth-defaults";
 import type {
   StudioVirtualSpace as StudioBookableSpace,
 } from "./studio-virtual-space-space-booking";
+import { useStudioVirtualSpaceBoothAsset } from "./use-studio-virtual-space-booth-asset";
 import { useStudioVirtualSpaceSocialSync } from "./use-studio-virtual-space-social-sync";
 import {
   STUDIO_VIRTUAL_SPACE_REACTION_TTL_MS,
@@ -222,7 +222,6 @@ import { SpaceToasts } from "./hud/SpaceToasts";
 import { SpaceTownBanner } from "./hud/SpaceTownBanner";
 import { SpaceWorkLauncher } from "./hud/SpaceWorkLauncher";
 import { spaceStatusOptionById, type SpaceDockPopover, type SpaceStatusOption } from "./hud/space-dock-model";
-import { spaceKoParticle } from "./hud/space-korean";
 import { spaceMoreItems } from "./hud/space-more-items";
 import { useSpaceAttentionLoss } from "./hud/use-space-attention-loss";
 import { useSpaceConnectionStatus } from "./hud/use-space-connection-status";
@@ -1690,14 +1689,9 @@ export function VirtualSpaceExperience({
     {officeStart}
   </SpaceWorkLauncher>;
 
-  // 트랙 B 배선: 저장 시점 로그인 안내와 에셋 편입 알림. 부스 자동 음소는
-  // 페이지 상단의 조용한 구역 중재 훅이 소유한다(부스 패널 개폐와 무관).
-  const requestSaveLogin = useCallback(() => {
-    notify(bt("로그인하면 프로젝트에 저장할 수 있어요.", "Sign in to save this to your project."), "info");
-  }, [bt, notify]);
-  const handleBoothProjectAsset = useCallback((descriptor: StudioProjectAudioAssetDescriptor) => {
-    notify(bt(`${spaceKoParticle(descriptor.name, "을")} 프로젝트 에셋에 넣었어요.`, `Added "${descriptor.name}" to the project assets.`), "success");
-  }, [bt, notify]);
+  // 트랙 B 배선: 저장 시점 로그인 안내와 에셋 편입(서버 저장 훅 소유).
+  // 부스 자동 음소는 페이지 상단의 조용한 구역 중재 훅이 소유한다(부스 패널 개폐와 무관).
+  const { requestSaveLogin, handleBoothProjectAsset } = useStudioVirtualSpaceBoothAsset({ bt, notify });
 
   const renderPanel = (): ReactNode => {
     switch (panel) {

@@ -63,6 +63,11 @@
       "types": "./src/graph/review-voice-note.ts",
       "import": "./src/graph/review-voice-note.ts",
       "default": "./src/graph/review-voice-note.ts"
+    },
+    "./recording-booth-asset": {
+      "types": "./src/graph/recording-booth-asset.ts",
+      "import": "./src/graph/recording-booth-asset.ts",
+      "default": "./src/graph/recording-booth-asset.ts"
     }
   },
   "scripts": {

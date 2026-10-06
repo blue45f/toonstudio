@@ -163,7 +163,7 @@ export function createScriptedRecordingBoothDriver(now: () => number = () => Dat
   };
 }
 
-/** 프로젝트 에셋 기술자 (실제 업로드는 에셋 파이프라인 연동이 필요). */
+/** 프로젝트 에셋 기술자. 업로드 멱등 키는 takeId+recordedAtMs 조합으로 만든다. */
 export interface StudioProjectAudioAssetDescriptor {
   readonly kind: "audio";
   readonly projectId: string;
@@ -172,6 +172,7 @@ export interface StudioProjectAudioAssetDescriptor {
   readonly name: string;
   readonly mimeType: "audio/webm";
   readonly durationSec: number;
+  readonly recordedAtMs: number;
   readonly source: "recording-booth";
 }
 
@@ -191,6 +192,7 @@ export function studioRecordingTakeToProjectAsset(
     name: `녹음부스 테이크 ${stamp}`,
     mimeType: "audio/webm",
     durationSec: take.durationSec,
+    recordedAtMs: take.recordedAtMs,
     source: "recording-booth",
   };
 }

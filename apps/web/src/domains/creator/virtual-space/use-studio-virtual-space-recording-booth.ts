@@ -42,11 +42,15 @@ const EMPTY_OFFICE_ZONES: readonly never[] = Object.freeze([]);
 /** 예약 상태가 바뀌는 경계(시작·종료)를 놓치지 않기 위한 게이트 재평가 주기. */
 const GATE_TICK_MS = 30_000;
 
+/** 테이크의 프로젝트 저장 상태. 실패해도 테이크는 남아 재시도할 수 있다. */
+export type StudioRecordingTakeSaveState = "idle" | "saving" | "saved" | "failed";
+
 export interface StudioVirtualSpaceRecordedTake {
   readonly take: StudioRecordingTake;
   /** 실제 녹음 Blob. 모의 드라이버처럼 Blob이 없으면 null. */
   readonly blob: Blob | null;
   readonly addedToProject: boolean;
+  readonly saveState: StudioRecordingTakeSaveState;
 }
 
 export interface UseStudioVirtualSpaceRecordingBoothInput {
@@ -65,7 +69,11 @@ export interface UseStudioVirtualSpaceRecordingBoothInput {
   /** 테스트용 현재 시각 고정. */
   readonly nowMs?: number;
   readonly onRequireLogin?: () => void;
-  readonly onProjectAsset?: (descriptor: StudioProjectAudioAssetDescriptor, blob: Blob | null) => void;
+  /**
+   * 테이크를 프로젝트 에셋으로 실제 저장하는 콜백. false를 반환하거나
+   * 던지면 저장 실패로 처리하고 테이크를 재시도 가능 상태로 남긴다.
+   */
+  readonly onProjectAsset?: (descriptor: StudioProjectAudioAssetDescriptor, blob: Blob | null) => Promise<boolean> | boolean | void;
   /** 실제 마이크에 적용할 음소 값. 호출자가 장치 제어를 수행한다. */
   readonly onEffectiveMicMuted?: (muted: boolean) => void;
 }
@@ -167,10 +175,10 @@ export function useStudioVirtualSpaceRecordingBooth(
     try {
       if (isMediaDriver(driver)) {
         const { take, blob } = await driver.stopBoothSessionWithBlob(current.id);
-        setTakes((previous) => [...previous, { take, blob, addedToProject: false }]);
+        setTakes((previous) => [...previous, { take, blob, addedToProject: false, saveState: "idle" }]);
       } else {
         const take = await driver.stopBoothSession(current.id);
-        setTakes((previous) => [...previous, { take, blob: null, addedToProject: false }]);
+        setTakes((previous) => [...previous, { take, blob: null, addedToProject: false, saveState: "idle" }]);
       }
     } catch (reason) {
       setError(errorCodeOf(reason));
@@ -225,9 +233,10 @@ export function useStudioVirtualSpaceRecordingBooth(
     setElapsedSec(0);
   }, [driver]);
 
+  const savingTakeIdsRef = useRef<ReadonlySet<string>>(new Set());
   const addTakeToProject = useCallback((takeId: string) => {
     const entry = takes.find((item) => item.take.id === takeId);
-    if (!entry || entry.addedToProject) return;
+    if (!entry || entry.saveState === "saved" || savingTakeIdsRef.current.has(takeId)) return;
     if (isGuest) {
       setLoginNudge(true);
       onRequireLogin?.();
@@ -237,10 +246,31 @@ export function useStudioVirtualSpaceRecordingBooth(
       setError("project-required");
       return;
     }
+    if (!onProjectAsset) {
+      setTakes((previous) => previous.map((item) =>
+        item.take.id === takeId ? { ...item, saveState: "failed" } : item));
+      return;
+    }
     const descriptor = studioRecordingTakeToProjectAsset(entry.take, projectId);
-    onProjectAsset?.(descriptor, entry.blob);
+    savingTakeIdsRef.current = new Set(savingTakeIdsRef.current).add(takeId);
     setTakes((previous) => previous.map((item) =>
-      item.take.id === takeId ? { ...item, addedToProject: true } : item));
+      item.take.id === takeId ? { ...item, saveState: "saving" } : item));
+    void (async () => {
+      try {
+        const result = await onProjectAsset(descriptor, entry.blob);
+        if (result === false) throw new Error("project-asset-save-rejected");
+        setTakes((previous) => previous.map((item) =>
+          item.take.id === takeId ? { ...item, addedToProject: true, saveState: "saved" } : item));
+      } catch {
+        // 실패를 성공으로 위장하지 않는다 — 테이크는 남아 다시 저장할 수 있다.
+        setTakes((previous) => previous.map((item) =>
+          item.take.id === takeId ? { ...item, saveState: "failed" } : item));
+      } finally {
+        const next = new Set(savingTakeIdsRef.current);
+        next.delete(takeId);
+        savingTakeIdsRef.current = next;
+      }
+    })();
   }, [takes, isGuest, onRequireLogin, onProjectAsset, projectId]);
 
   return {

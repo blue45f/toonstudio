@@ -10,6 +10,9 @@ import { ManuscriptVersionShareRepository } from "./manuscript-version-share/man
 import { StudioReviewVoiceNoteController } from "./studio-review-voice-note.controller";
 import { StudioReviewVoiceNoteRepository } from "./studio-review-voice-note.repository";
 import { StudioReviewVoiceNoteService } from "./studio-review-voice-note.service";
+import { StudioRecordingBoothAssetController } from "./studio-recording-booth-asset.controller";
+import { StudioRecordingBoothAssetRepository } from "./studio-recording-booth-asset.repository";
+import { StudioRecordingBoothAssetService } from "./studio-recording-booth-asset.service";
 import { StudioReviewPolicyController, StudioReviewPolicyService } from "./studio-review-policy.controller";
 import { StudioReviewPolicyRepository } from "./studio-review-policy.repository";
 import { StudioSessionEvidenceController, StudioSessionEvidenceService } from "./studio-session-evidence.controller";
@@ -43,11 +46,12 @@ const privateObjectStorageModule = PrivateObjectStorageModule.fromEnvironment(pr
 
 @Module({
   imports: [CreatorModule, ...(privateObjectStorageModule ? [privateObjectStorageModule] : [])],
-  controllers: [StudioReviewDeliveryController, StudioReviewVoiceNoteController, PinnedReviewShareController, ManuscriptVersionShareController, StudioReviewPolicyController, StudioSessionEvidenceController, StudioWorkSessionController, StudioProjectGraphController, StudioReviewPreviewController, StudioReviewPreviewProducerController, StudioWorldPublicationController, StudioWorldAcousticController, StudioWorldConversationController],
+  controllers: [StudioReviewDeliveryController, StudioReviewVoiceNoteController, StudioRecordingBoothAssetController, PinnedReviewShareController, ManuscriptVersionShareController, StudioReviewPolicyController, StudioSessionEvidenceController, StudioWorkSessionController, StudioProjectGraphController, StudioReviewPreviewController, StudioReviewPreviewProducerController, StudioWorldPublicationController, StudioWorldAcousticController, StudioWorldConversationController],
   providers: [
     { provide: STUDIO_REVIEW_DELIVERY_POOL, useValue: dbPool }, StudioReviewDeliveryRepository, StudioReviewDeliveryService,
     ManuscriptVersionShareRepository, ManuscriptVersionShareService,
     StudioReviewVoiceNoteRepository, StudioReviewVoiceNoteService,
+    StudioRecordingBoothAssetRepository, StudioRecordingBoothAssetService,
     PinnedReviewShareRepository, PinnedReviewShareService,
     StudioReviewPolicyRepository, StudioReviewPolicyService,
     StudioSessionEvidenceService,
