@@ -57,16 +57,15 @@ export function ReferenceCreatorDashboard() {
           <p className="rd-eyebrow">{bi("상상하는 모든 이야기, 여기서 작품이 됩니다.", "Every story you imagine starts here.")}</p>
           <h1 id="creator-hero-title">{bi("오늘은 어떤 이야기를", "What story will you")}<br /><em>{bi("만들까요?", "create today?")}</em></h1>
           <p className="rd-intro">{bi("당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.", "Your imagination. Your next extraordinary story.")}</p>
-          <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
-            <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
-              <PencilLine size={14} aria-hidden="true" />{bi("이야기 만들기", "Create a story")}
-            </button>
-            <button type="button" aria-pressed={searching} onClick={() => setInputMode("search")}>
-              <Search size={14} aria-hidden="true" />{bi("작품 찾기", "Find stories")}
-            </button>
-          </div>
           <form className="rd-idea" onSubmit={submitInput}>
-            {searching ? <Search size={17} aria-hidden="true" /> : <PencilLine size={17} aria-hidden="true" />}
+            <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
+              <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
+                <PencilLine size={14} aria-hidden="true" /><span>{bi("이야기 만들기", "Create a story")}</span>
+              </button>
+              <button type="button" aria-pressed={searching} onClick={() => setInputMode("search")}>
+                <Search size={14} aria-hidden="true" /><span>{bi("작품 찾기", "Find stories")}</span>
+              </button>
+            </div>
             <label className="sr-only" htmlFor="rd-idea-input">{searching ? bi("작품 검색", "Story search") : bi("아이디어 입력", "Idea input")}</label>
             <input
               id="rd-idea-input"

@@ -53,19 +53,18 @@
 .reference-dashboard .rd-intro { color: var(--rd-on-art-2); font-size: 15.5px; line-height: 1.55; }
 
 /* 아이디어 입력 — 만들기의 시작점 */
-.rd-idea { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; margin-top: 14px; padding: 6px 6px 6px 18px; border: 1px solid color-mix(in srgb, var(--rd-accent) 55%, transparent); border-radius: 999px; background: var(--rd-on-art); color: var(--rd-on-paper); box-shadow: 0 0 32px color-mix(in srgb, var(--rd-accent) 26%, transparent); }
-.rd-idea > svg { flex: none; color: var(--rd-on-paper-muted); }
+.rd-idea { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; margin-top: 14px; padding: 6px; border: 1px solid color-mix(in srgb, var(--rd-accent) 55%, transparent); border-radius: 999px; background: var(--rd-on-art); color: var(--rd-on-paper); box-shadow: 0 0 32px color-mix(in srgb, var(--rd-accent) 26%, transparent); }
 .reference-dashboard .rd-idea input { flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--rd-on-paper); font: 15px/1.4 var(--font-sans), sans-serif; }
 .rd-idea input::placeholder { color: var(--rd-on-paper-muted); }
 .rd-idea input:focus-visible { outline: none; }
 .rd-idea:focus-within { outline: 3px solid var(--rd-cyan); outline-offset: 3px; }
 .rd-idea-submit { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 46px; padding: 0 20px; border: 0; border-radius: 999px; background: linear-gradient(120deg, var(--rd-accent), color-mix(in srgb, var(--rd-accent) 55%, var(--rd-cyan))); color: var(--color-on-accent); font-size: 15px; font-weight: 800; }
 
-/* 통합 입력 모드 — 만들기(기본)와 작품 찾기의 분기. 포스터 아트 위라 어두운 면+밝은 글자를 유지한다. */
-.rd-idea-modes { display: inline-flex; gap: 4px; margin-top: 10px; padding: 4px; border: 1px solid var(--rd-art-line); border-radius: 999px; background: var(--rd-art-card); }
-.rd-idea-modes > button { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--rd-on-art-2); font-size: 13px; font-weight: 700; }
-.rd-idea-modes > button[aria-pressed="true"] { background: var(--rd-on-art); color: var(--rd-on-paper); }
-.rd-idea-modes > button:not([aria-pressed="true"]):hover { color: var(--rd-on-art); }
+/* 통합 입력 모드 — 만들기(기본)와 작품 찾기의 분기를 별도 단으로 쌓지 않고 입력 바 안에 접어 넣는다. 바가 밝은 면이라 토글은 종이 톤으로 맞춘다. */
+.rd-idea-modes { display: inline-flex; flex: none; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in oklch, var(--rd-on-paper) 9%, transparent); }
+.rd-idea-modes > button { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--rd-on-paper-muted); font-size: 13px; font-weight: 700; }
+.rd-idea-modes > button[aria-pressed="true"] { background: var(--rd-on-paper); color: var(--rd-paper); }
+.rd-idea-modes > button:not([aria-pressed="true"]):hover { color: var(--rd-on-paper); }
 
 /* 발견 미리보기 — 내용이 실제로 있을 때만 섹션 여백을 차지한다(빈 래퍼의 공백 방지). */
 .rd-discover { min-width: 0; }
@@ -251,7 +250,9 @@
   .reference-dashboard .rd-eyebrow { font-size: 13px; }
   .reference-dashboard .rd-poster h1 { margin-top: 10px; font-size: clamp(29px, 8.6vw, 36px); }
   .reference-dashboard .rd-intro { max-width: 32ch; font-size: 14px; line-height: 1.6; }
-  .rd-idea { min-height: 54px; margin-top: 12px; padding-left: 14px; }
+  .rd-idea { min-height: 54px; margin-top: 12px; }
+  .rd-idea-modes > button { padding: 0 10px; }
+  .rd-idea-modes > button > span { display: none; }
   .rd-idea-submit { padding: 0 14px; }
   .rd-luna { max-width: none; }
   .rd-luna-card { max-height: 430px; }
@@ -300,6 +301,7 @@
   .rd-poster h1 em { background: none; color: CanvasText; }
   .rd-core-primary, .rd-idea-submit, .rd-luna-form > button, .rd-personal-primary { background: ButtonFace; color: ButtonText; border: 1px solid ButtonText; }
   .rd-editor-strip button[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -4px; }
+  .rd-idea-modes > button[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -4px; }
 }
 
 /* 고정된 어두운 삽화 위의 전경은 밝은 문서 테마와 독립적으로 보장한다. */
