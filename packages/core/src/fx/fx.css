@@ -13,6 +13,8 @@
  *   - reveal / reveal-soft : 스크롤-진입 모션(IO 가 .is-revealed 부여). 가시성은 모션과 분리(CLS 0).
  *   - pulse-dot / pulse-ring : 라이브/실시간 신호 표시점(레이더처럼 확산하는 링).
  *   - sheen-sweep   : 표면을 한 번 가로지르는 빛 띠(히어로/피처 카드 프리미엄 질감).
+ *   - fx-lift       : 카드·타일 호버 리프트(2px 상승 + 그림자 심화). 가는 포인터+모션 허용에서만.
+ *   - fx-press      : 행·칩·타일의 프레스 피드백(누르는 동안 0.98 축소).
  *
  * 색은 토큰(--ts-fx-glow 등)으로 빼서 앱별 브랜드 색을 주입할 수 있게 했어요.
  * 미지정 시 웹툰 웜 액센트(oklch ~42 hue)로 폴백합니다.
@@ -32,6 +34,8 @@
   --ts-fx-pulse: oklch(0.72 0.185 42);
   /* 시머 타이틀 글로우 색(drop-shadow). 기본은 웜 액센트. */
   --ts-fx-shimmer-glow: oklch(0.72 0.185 42 / 0.5);
+  /* 카드 리프트 그림자 색. 앱이 --ts-fx-lift-shadow 로 덮어쓸 수 있어요. */
+  --ts-fx-lift-shadow: oklch(0.16 0.02 60 / 0.3);
 
   /* easing — 앱 전역 변수가 있으면 그걸 쓰고, 없으면 리터럴로 폴백합니다. */
   --ts-ease-out-expo: var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1));
@@ -356,6 +360,31 @@
   }
 }
 
+/* ── fx-lift / fx-press — 카드·행 마이크로 인터랙션 ──────────────────────────────
+ * fx-lift: 포인터 호버에서 2px 떠오르고 그림자가 깊어진다(카드·타일 공용 리프트).
+ * fx-press: 누르는 동안 살짝 눌린다(행·칩·타일 공용 프레스 피드백).
+ * transform·box-shadow 만 애니메이트한다(레이아웃 스래시 없음). 호버 리프트는
+ * 가는 포인터 + 모션 허용 환경에서만 켜고, reduced-motion 에서는 아래 블록이
+ * 트랜지션과 프레스 변형을 모두 무효화한다.
+ */
+.fx-lift {
+  transition:
+    transform 0.25s var(--ts-ease-out-quart),
+    box-shadow 0.25s var(--ts-ease-out-quart);
+}
+@media (prefers-reduced-motion: no-preference) and (pointer: fine) {
+  .fx-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px -16px var(--ts-fx-lift-shadow);
+  }
+}
+.fx-press {
+  transition: transform 0.15s var(--ts-ease-out-quart);
+}
+.fx-press:active {
+  transform: scale(0.98);
+}
+
 /* ── pf-click-ripple — 클릭시 방사형 후광 리플 ──────────────────────────────── */
 @keyframes pf-click-ripple-anim {
   0% {
@@ -476,5 +505,13 @@
   /* 호버 시머는 멈춥니다. */
   .sheen-sweep:hover::after {
     animation: none;
+  }
+  /* 마이크로 인터랙션 — 트랜지션을 끄고 프레스 변형을 무효화해 표면을 정지 상태로 유지. */
+  .fx-lift,
+  .fx-press {
+    transition: none;
+  }
+  .fx-press:active {
+    transform: none;
   }
 }
