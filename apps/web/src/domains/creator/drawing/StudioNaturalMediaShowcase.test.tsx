@@ -22,7 +22,7 @@ function props(
 }
 
 describe("StudioNaturalMediaShowcase", () => {
-  it("10종의 브러시 카드를 렌더링한다", { timeout: 30000 }, () => {
+  it("11종의 브러시 카드를 렌더링한다", { timeout: 30000 }, () => {
     render(<StudioNaturalMediaShowcase {...props()} />);
     for (const preset of STUDIO_NATURAL_MEDIA_PRESETS) {
       expect(

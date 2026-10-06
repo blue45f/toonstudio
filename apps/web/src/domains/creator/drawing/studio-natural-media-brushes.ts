@@ -17,14 +17,15 @@
 export type StudioNaturalMediaBrushId =
   | "pencil-2b"
   | "pencil-hb"
+  | "pencil-2h"
   | "color-pencil"
+  | "crayon"
+  | "pastel"
   | "pen"
   | "rotring"
   | "charcoal"
   | "marker"
-  | "marker2"
-  | "spray"
-  | "hatch";
+  | "spray";
 
 export interface StudioNaturalMediaPreset {
   readonly id: StudioNaturalMediaBrushId;
@@ -39,7 +40,7 @@ export interface StudioNaturalMediaPreset {
   readonly crafts: ReadonlyArray<"sketch" | "lineart" | "coloring" | "tone" | "effect">;
 }
 
-/** p5.brush 내장 11종 중 내추럴 미디어 10종 매핑. */
+/** p5.brush 2.2.1 표준 11종 전수 매핑 (src/stroke/stroke.js _standard_brushes 기준). */
 export const STUDIO_NATURAL_MEDIA_PRESETS: ReadonlyArray<StudioNaturalMediaPreset> =
   Object.freeze([
     {
@@ -61,6 +62,15 @@ export const STUDIO_NATURAL_MEDIA_PRESETS: ReadonlyArray<StudioNaturalMediaPrese
       crafts: ["sketch"],
     },
     {
+      id: "pencil-2h",
+      brushName: "2H",
+      labelKo: "연필 2H",
+      labelEn: "Pencil 2H",
+      descriptionKo: "단단한 정밀 연필. 가이드선·해칭 밑선에.",
+      defaultWeight: 1.2,
+      crafts: ["sketch", "lineart"],
+    },
+    {
       id: "color-pencil",
       brushName: "cpencil",
       labelKo: "색연필",
@@ -68,6 +78,24 @@ export const STUDIO_NATURAL_MEDIA_PRESETS: ReadonlyArray<StudioNaturalMediaPrese
       descriptionKo: "색연필 질감. 가벼운 채색·톤 작업에.",
       defaultWeight: 3,
       crafts: ["sketch", "coloring"],
+    },
+    {
+      id: "crayon",
+      brushName: "crayon",
+      labelKo: "크레용",
+      labelEn: "Crayon",
+      descriptionKo: "필압에 따라 굵기가 변하는 크레용 질감. 채색에.",
+      defaultWeight: 6,
+      crafts: ["coloring"],
+    },
+    {
+      id: "pastel",
+      brushName: "pastel",
+      labelKo: "파스텔",
+      labelEn: "Pastel",
+      descriptionKo: "부드럽게 번지는 파스텔. 넓은 명암·배경 톤에.",
+      defaultWeight: 14,
+      crafts: ["sketch", "tone"],
     },
     {
       id: "pen",
@@ -106,15 +134,6 @@ export const STUDIO_NATURAL_MEDIA_PRESETS: ReadonlyArray<StudioNaturalMediaPrese
       crafts: ["coloring"],
     },
     {
-      id: "marker2",
-      brushName: "marker2",
-      labelKo: "브러시 마커",
-      labelEn: "Brush Marker",
-      descriptionKo: "붓 느낌의 마커. 굵기 변화가 큰 채색에.",
-      defaultWeight: 14,
-      crafts: ["coloring"],
-    },
-    {
       id: "spray",
       brushName: "spray",
       labelKo: "스프레이",
@@ -122,15 +141,6 @@ export const STUDIO_NATURAL_MEDIA_PRESETS: ReadonlyArray<StudioNaturalMediaPrese
       descriptionKo: "에어브러시 스프레이. 톤·그라데이션·효과에.",
       defaultWeight: 20,
       crafts: ["tone", "effect"],
-    },
-    {
-      id: "hatch",
-      brushName: "hatch_brush",
-      labelKo: "해칭",
-      labelEn: "Hatch",
-      descriptionKo: "깨끗한 빗금선. 명암 해칭 전용.",
-      defaultWeight: 1.5,
-      crafts: ["tone", "lineart"],
     },
   ]);
 

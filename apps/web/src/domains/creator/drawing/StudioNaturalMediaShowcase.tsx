@@ -1,7 +1,7 @@
 /**
  * 내추럴 미디어 브러시 쇼케이스.
  *
- * 새로 통합한 무료 드로잉 라이브러리(p5.brush 어댑터)의 10종 브러시를
+ * 새로 통합한 무료 드로잉 라이브러리(p5.brush 어댑터)의 11종 브러시를
  * 시각적으로 탐색·선택하는 패널이다.
  *
  * 설계 원칙 (화려하면서도 직관적):
@@ -93,14 +93,15 @@ const CRAFT_LABEL_KO: Record<string, string> = {
 const BRUSH_PREVIEW_STYLES: Record<StudioNaturalMediaBrushId, BrushPreviewStyle> = {
   "pencil-2b": { size: 9, thinning: 0.55, smoothing: 0.6, jitter: 1.2, dotted: false, layers: 1 },
   "pencil-hb": { size: 6, thinning: 0.55, smoothing: 0.7, jitter: 0.6, dotted: false, layers: 1 },
+  "pencil-2h": { size: 4, thinning: 0.5, smoothing: 0.8, jitter: 0.3, dotted: false, layers: 1 },
   "color-pencil": { size: 6, thinning: 0.45, smoothing: 0.6, jitter: 1.6, dotted: false, layers: 2 },
+  crayon: { size: 12, thinning: 0.5, smoothing: 0.55, jitter: 1.8, dotted: false, layers: 1 },
+  pastel: { size: 20, thinning: 0.3, smoothing: 0.4, jitter: 2.8, dotted: false, layers: 2 },
   pen: { size: 7, thinning: 0.7, smoothing: 0.75, jitter: 0, dotted: false, layers: 1 },
   rotring: { size: 4.5, thinning: 0.12, smoothing: 0.85, jitter: 0, dotted: false, layers: 1 },
   charcoal: { size: 22, thinning: 0.35, smoothing: 0.35, jitter: 3.2, dotted: false, layers: 2 },
   marker: { size: 15, thinning: 0.12, smoothing: 0.8, jitter: 0, dotted: false, layers: 1 },
-  marker2: { size: 17, thinning: 0.62, smoothing: 0.7, jitter: 0.4, dotted: false, layers: 1 },
   spray: { size: 13, thinning: 0.2, smoothing: 0.5, jitter: 2.4, dotted: true, layers: 1 },
-  hatch: { size: 3, thinning: 0.3, smoothing: 0.7, jitter: 0.8, dotted: false, layers: 3 },
 };
 
 /** 브러시 프리뷰용 SVG pathData 목록을 만든다. */
@@ -204,14 +205,14 @@ function BrushCard({
       className={[
         "studio-brush-card group relative overflow-hidden rounded-2xl border p-4 text-left",
         "transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         selected
-          ? "border-violet-400 bg-gradient-to-br from-violet-500/25 via-fuchsia-500/15 to-cyan-400/20 shadow-lg shadow-violet-500/20"
-          : "border-white/10 bg-white/[0.04] hover:border-violet-300/50 hover:bg-white/[0.07]",
+          ? "border-accent bg-gradient-to-br from-accent/25 via-accent-2/15 to-cool/20 shadow-lg shadow-accent/20"
+          : "border-white/10 bg-white/[0.04] hover:border-accent/50 hover:bg-white/[0.07]",
       ].join(" ")}
     >
       {selected && (
-        <span className="studio-brush-selected-badge absolute right-3 top-3 rounded-full bg-violet-500 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-md shadow-violet-500/40">
+        <span className="studio-brush-selected-badge absolute right-3 top-3 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold text-on-accent shadow-md shadow-accent/40">
           {tx("선택됨")}
         </span>
       )}
@@ -304,9 +305,9 @@ export function StudioNaturalMediaShowcase({
 
       {/* 배경 오브 (장식) */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="studio-brush-orb absolute -left-16 -top-16 h-64 w-64 rounded-full bg-violet-600/25 blur-3xl" />
+        <div className="studio-brush-orb absolute -left-16 -top-16 h-64 w-64 rounded-full bg-accent/25 blur-3xl" />
         <div
-          className="studio-brush-orb absolute -right-10 top-1/3 h-56 w-56 rounded-full bg-cyan-500/15 blur-3xl"
+          className="studio-brush-orb absolute -right-10 top-1/3 h-56 w-56 rounded-full bg-cool/15 blur-3xl"
           style={{ animationDelay: "-4.5s" }}
         />
       </div>
@@ -315,10 +316,10 @@ export function StudioNaturalMediaShowcase({
         {/* 헤더: 10초 안에 목적 파악 */}
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300/80">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
               {tx("무료 내추럴 미디어")}
             </p>
-            <h2 className="mt-1 bg-gradient-to-r from-white via-violet-100 to-cyan-100 bg-clip-text text-2xl font-black text-transparent sm:text-3xl">
+            <h2 className="mt-1 bg-gradient-to-r from-white via-accent to-cool bg-clip-text text-2xl font-black text-transparent sm:text-3xl">
               {tx("마음에 드는 브러시를 하나 골라보세요")}
             </h2>
             <p className="mt-2 max-w-xl text-sm text-white/55">
@@ -329,7 +330,7 @@ export function StudioNaturalMediaShowcase({
             className="rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3 text-center"
             aria-label={tx("브러시 종류 수")}
           >
-            <div className="bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-3xl font-black tabular-nums text-transparent">
+            <div className="bg-gradient-to-r from-accent to-cool bg-clip-text text-3xl font-black tabular-nums text-transparent">
               <CountUp value={STUDIO_NATURAL_MEDIA_PRESETS.length} duration={0.9} />
             </div>
             <div className="text-[11px] text-white/50">{tx("종의 브러시")}</div>
@@ -359,7 +360,7 @@ export function StudioNaturalMediaShowcase({
           <button
             type="button"
             onClick={() => onStartDrawing?.(selectedPreset)}
-            className="rounded-2xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500 bg-[length:200%_100%] px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-fuchsia-500/30 transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-fuchsia-500/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-400 active:scale-[0.98]"
+            className="rounded-2xl bg-gradient-to-r from-accent via-accent-2 to-accent bg-[length:200%_100%] px-8 py-3.5 text-base font-bold text-on-accent shadow-lg shadow-accent/30 transition-all duration-300 hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-accent/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98]"
           >
             {tx("이 브러시로 그리기 시작")}
           </button>
@@ -398,7 +399,7 @@ export function StudioNaturalMediaShowcase({
                   step={0.1}
                   value={strokeWeight}
                   onChange={(e) => setStrokeWeight(Number(e.target.value))}
-                  className="w-full accent-violet-400"
+                  className="w-full accent-accent"
                   aria-label={tx("스트로크 굵기 배율")}
                 />
               </label>

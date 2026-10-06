@@ -1,4 +1,4 @@
-import { studioMarketplaceCc0EntrySourceMatches } from "@/domains/creator/studio-marketplace-cc0-provenance";
+import { studioMarketplaceCc0EntrySourceMatches } from "@/domains/creator/public/marketplace-asset-access";
 
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 

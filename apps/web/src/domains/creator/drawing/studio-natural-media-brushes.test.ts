@@ -10,8 +10,8 @@ import {
 } from "./studio-natural-media-brushes";
 
 describe("STUDIO_NATURAL_MEDIA_PRESETS", () => {
-  it("10종의 내추럴 미디어 프리셋이 있다", () => {
-    expect(STUDIO_NATURAL_MEDIA_PRESETS).toHaveLength(10);
+  it("11종의 내추럴 미디어 프리셋이 있다 (p5.brush 표준 전수)", () => {
+    expect(STUDIO_NATURAL_MEDIA_PRESETS).toHaveLength(11);
   });
 
   it("모든 프리셋 id가 고유하다", () => {
@@ -36,13 +36,13 @@ describe("STUDIO_NATURAL_MEDIA_PRESETS", () => {
       "HB",
       "2H",
       "cpencil",
+      "crayon",
+      "pastel",
       "pen",
       "rotring",
       "spray",
       "marker",
-      "marker2",
       "charcoal",
-      "hatch_brush",
     ]);
     for (const preset of STUDIO_NATURAL_MEDIA_PRESETS) {
       expect(brushNames.has(preset.brushName)).toBe(true);

@@ -51,7 +51,7 @@ export interface StudioDraftOperationSyncAssistantProps {
 
 const TONE_CLASS: Readonly<Record<StudioDraftOperationSyncTone, string>> = {
   success: "border-accent/35 bg-accent-soft/25 text-accent",
-  progress: "border-accent/35 bg-accent-soft/25 text-accent",
+  progress: "border-cool/30 bg-cool/10 text-cool",
   warning: "border-warning/40 bg-warning-soft/25 text-warning",
   danger: "border-danger/40 bg-danger-soft/25 text-danger",
   neutral: "border-line bg-card/95 text-fg-2",
@@ -363,7 +363,7 @@ export function StudioDraftOperationSyncAssistant({
               type="button"
               onClick={() => void runPrimaryAction()}
               disabled={busyAction !== null}
-              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-black text-accent-foreground shadow-sm hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-black text-on-accent shadow-sm hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ActionIcon action={model.primaryAction} busy={busyAction !== null} />
               {busyAction === "export-recovery" ? "복구 파일 만드는 중" : model.primaryActionLabel}

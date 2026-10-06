@@ -231,17 +231,12 @@ export class PwaOfflineOutbox {
         }
       }
       onProgress?.(index + 1, queue.length);
-      if (attemptsExceeded(item)) break;
     }
 
     const remaining = this.pending().length + this.storage.load()
       .filter((item) => item.status === "conflicted").length;
     return { synced, failed, conflicted, remaining };
   }
-}
-
-function attemptsExceeded(item: PwaOutboxItem): boolean {
-  return item.attempts + 1 >= MAX_ATTEMPTS;
 }
 
 /** syncOne이 충돌을 알릴 때 던지는 오류. */

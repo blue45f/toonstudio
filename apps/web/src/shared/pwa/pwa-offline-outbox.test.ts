@@ -106,4 +106,18 @@ describe("pwa-offline-outbox", () => {
     const [item] = outbox.list();
     expect(item.attempts).toBe(5);
   });
+
+  it("한 항목이 상한에 도달해도 나머지 항목 동기화를 계속한다", async () => {
+    outbox.enqueue("note", "실패 항목", {});
+    outbox.enqueue("comment", "성공 항목", {});
+    await outbox.syncAll(async (item) => {
+      if (item.kind === "note") {
+        const err = new Error("down") as Error & { attempts?: number };
+        throw err;
+      }
+    });
+    const report = await outbox.syncAll(async () => undefined);
+    expect(report.synced).toBe(1);
+    expect(outbox.list().some((entry) => entry.kind === "comment")).toBe(false);
+  });
 });
