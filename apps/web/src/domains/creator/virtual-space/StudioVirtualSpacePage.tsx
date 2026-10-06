@@ -240,6 +240,13 @@ import { SpaceCoworkSheet, type SpaceCoworkAction } from "./hud/SpaceCoworkSheet
 import { SpaceProximityConsent, SpaceProximityVideo } from "./hud/SpaceProximityVideo";
 import { SpaceZoneWorkbar } from "./hud/SpaceZoneWorkbar";
 import { SpaceZoneSplash, type SpaceZoneSplashInput } from "./hud/SpaceZoneSplash";
+import {
+  distanceBetween,
+  initialPanel,
+  SHARED_ACTIVITY_DISTANCE,
+  SIDE_PANEL_ID,
+  TALK_DISTANCE,
+} from "./studio-virtual-space-page-helpers";
 import { SPACE_PROXIMITY_MEDIA_RADIUS, spacePrivateZoneAt, spaceProximityMediaScopePeers, type SpaceProximityRangeMode } from "./hud/space-proximity-media";
 import { spaceZoneWorkItems, spaceZoneWorkKind } from "./hud/space-zone-workflow";
 import { useSpaceProximityMedia } from "./hud/use-space-proximity-media";
@@ -282,20 +289,6 @@ import {
 import "./studio-virtual-space.css";
 import "./studio-workspace-live.css";
 import "./hud/space-hud.css";
-
-const SIDE_PANEL_ID = "studio-space-side-panel";
-const TALK_DISTANCE = 120;
-const SHARED_ACTIVITY_DISTANCE = 156;
-
-function initialPanel(search: string): StudioVirtualWorkspacePanel | null {
-  const query = new URLSearchParams(search);
-  if (query.get("activity") === "board") return "board";
-  return query.has("session") || query.get("activity") === "sessions" ? "sessions" : null;
-}
-
-function distanceBetween(left: StudioVirtualSpacePoint, right: StudioVirtualSpacePoint): number {
-  return Math.hypot(left.x - right.x, left.y - right.y);
-}
 
 export function VirtualSpaceExperience({
   projectId,
