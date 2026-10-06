@@ -8,20 +8,18 @@ import { sha256 } from "multiformats/hashes/sha2";
  * 채택 경위 (2026-10-06 실측):
  * - js-ipfs는 저장소가 archived되고 README에 "DEPRECATED: superseded by
  *   Helia, 보안 수정이 제공되지 않는다"고 명시돼 있어 어떤 경우에도 넣지 않는다.
- * - 후계 Helia의 풀 노드(helia + @helia/unixfs)는 libp2p 전체 스택이라 번들이
- *   크고, 브라우저 노드는 DHT 서버가 될 수 없어 콘텐츠 제공이 게이트웨이·
- *   위임 라우팅에 어차피 의존한다. 그래서 이 제품에서 실제로 닫히는 범위 —
- *   CID 생성·검증, 검증 게이트웨이 가져오기, 게이트웨이 내보내기 링크 — 는
- *   Helia 프로젝트의 브라우저 전용 패키지 @helia/verified-fetch와 그 기반인
- *   multiformats로 구현한다. UnixFS 파일 단위 CID 호환·브라우저 노드 제공이
- *   필요해지면 @helia/unixfs를 같은 자리에 얹는 것이 후속이다.
+ * - 후계 Helia 생태계의 @helia/verified-fetch도 전이 의존성 보안 권고(node-forge,
+ *   braces)가 아직 해소되지 않아, 실제로 닫히는 범위 — CID 생성·검증,
+ *   검증 게이트웨이 가져오기, 게이트웨이 내보내기 링크 — 는 multiformats와
+ *   공개 게이트웨이 fetch로 구현한다. UnixFS 파일 단위 CID 호환·브라우저 노드
+ *   제공이 필요해지면 같은 자리에서 다시 검토한다.
  *
  * 정직한 경계:
  * - 여기서 만드는 CID는 raw 코덱(0x55) 단일 블록 주소다. 바이트열 자체가
  *   블록이라 해시 검증이 곧 콘텐츠 검증이다. 큰 파일을 UnixFS로 쪼갠
  *   dag-pb CID와는 주소가 다르다 — 같은 파일이라도 두 주소는 호환되지 않는다.
- * - 가져오기는 공개 게이트웨이를 경유하되 verified-fetch가 블록 해시를
- *   CID와 대조해 검증한다. 게이트웨이가 거짓 데이터를 주면 검증에서 걸러진다.
+ * - 가져오기는 공개 게이트웨이를 경유하고, 내려받은 바이트를 CID 해시와
+ *   직접 대조해 검증한다. 게이트웨이가 거짓 데이터를 주면 검증에서 걸러진다.
  * - 브라우저에서 네트워크에 콘텐츠를 "제공(provide)"하는 기능은 없다.
  *   CID는 무결성 주소·공유 링크로 쓰고, 실제 바이트 배포는 게이트웨이와
  *   기존 서버 표면이 맡는다.
@@ -148,33 +146,55 @@ export function toIpfsGatewayUrl(
   return `${gateway.replace(/\/+$/u, "")}/ipfs/${parsed.cid}`;
 }
 
-interface VerifiedFetchModuleShape {
-  createVerifiedFetch: (init?: Record<string, unknown>) => Promise<
-    (url: string) => Promise<Response>
-  >;
-}
+/** 공개 게이트웨이에서 검증 가져오기를 시도할 때 네트워크 타임아웃 상한. */
+const VERIFIED_FETCH_TIMEOUT_MS = 15_000;
 
 let verifiedFetchPromise: Promise<((url: string) => Promise<Response>) | null> | null = null;
 
 async function loadVerifiedFetch(): Promise<((url: string) => Promise<Response>) | null> {
   verifiedFetchPromise ??= (async () => {
-    try {
-      const mod: unknown = await import("@helia/verified-fetch");
-      if (typeof mod !== "object" || mod === null) return null;
-      const candidate = mod as { createVerifiedFetch?: unknown };
-      if (typeof candidate.createVerifiedFetch !== "function") return null;
-      const create = candidate.createVerifiedFetch as VerifiedFetchModuleShape["createVerifiedFetch"];
-      return await create({ gateways: [...VERIFIED_FETCH_GATEWAYS] });
-    } catch {
-      return null;
-    }
+    const baseFetch: typeof fetch | undefined =
+      typeof fetch === "function" ? fetch.bind(globalThis) : undefined;
+    if (!baseFetch) return null;
+    return async (url: string) => {
+      const cid = url.replace(/^ipfs:\/\//iu, "").split(/[/?#]/u)[0] ?? "";
+      let lastError: unknown = null;
+      for (const gateway of VERIFIED_FETCH_GATEWAYS) {
+        const target = `${gateway.replace(/\/+$/u, "")}/ipfs/${encodeURIComponent(cid)}`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), VERIFIED_FETCH_TIMEOUT_MS);
+        try {
+          const response = await baseFetch(target, { signal: controller.signal });
+          if (!response.ok) {
+            lastError = new Error(`게이트웨이 응답 ${response.status}`);
+            continue;
+          }
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          const verdict = await verifyContentBytes(bytes, cid);
+          if (verdict !== "match") {
+            throw new Error(`게이트웨이가 돌려준 내용이 CID와 일치하지 않습니다 (${verdict}).`);
+          }
+          return new Response(bytes.slice().buffer, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+          });
+        } catch (cause) {
+          if (cause instanceof Error && cause.message.includes("CID와 일치하지")) throw cause;
+          lastError = cause;
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+      throw lastError instanceof Error ? lastError : new Error("게이트웨이에서 콘텐츠를 가져오지 못했습니다.");
+    };
   })();
   return verifiedFetchPromise;
 }
 
 /**
- * CID로 콘텐츠를 가져오되, 게이트웨이가 돌려준 블록의 해시를 CID와 대조해
- * 검증한다(@helia/verified-fetch). 검증에 실패하면 응답이 오지 않고 던져진다 —
+ * CID로 콘텐츠를 가져오되, 게이트웨이가 돌려준 바이트 해시를 CID와 대조해
+ * 검증한다. 검증에 실패하면 응답이 오지 않고 던져진다 —
  * 호출자는 실패를 그대로 사용자에게 보여주면 된다.
  * `fetchImpl`은 테스트 주입용이다.
  */
@@ -189,7 +209,7 @@ export async function fetchVerifiedContent(
   return fetcher(uri);
 }
 
-/** 테스트 전용: 캐시된 verified-fetch를 비운다. */
+/** 테스트 전용: 캐시된 검증 가져오기를 비운다. */
 export function resetIpfsForTests(): void {
   verifiedFetchPromise = null;
 }
