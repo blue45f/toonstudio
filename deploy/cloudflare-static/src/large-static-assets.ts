@@ -7,6 +7,7 @@ export const CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL =
 export const CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS = [
   "assets/opencascade.wasm-*.wasm",
   "assets/ort-wasm-simd-threaded.jsep-*.wasm",
+  "assets/ort-wasm-simd-threaded.asyncify-*.wasm",
   "assets/tag2pix-*.onnx",
   "assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
   "brand/toonstudio-product-tour.mp4",
@@ -27,6 +28,8 @@ const OPENCASCADE_PATH_PATTERN =
   /^\/assets\/opencascade\.wasm-[A-Za-z0-9_-]+\.wasm$/u;
 const ORT_JSEP_WASM_PATH_PATTERN =
   /^\/assets\/ort-wasm-simd-threaded\.jsep-[A-Za-z0-9_-]+\.wasm$/u;
+const ORT_ASYNCIFY_WASM_PATH_PATTERN =
+  /^\/assets\/ort-wasm-simd-threaded\.asyncify-[A-Za-z0-9_-]+\.wasm$/u;
 const TAG2PIX_MODEL_PATH_PATTERN = /^\/assets\/tag2pix-[A-Za-z0-9_-]+\.onnx$/u;
 
 export function cloudflareLargeAssetDescriptor(
@@ -41,7 +44,7 @@ export function cloudflareLargeAssetDescriptor(
   if (OPENCASCADE_PATH_PATTERN.test(pathname)) {
     return { contentType: "application/wasm" };
   }
-  if (ORT_JSEP_WASM_PATH_PATTERN.test(pathname)) {
+  if (ORT_JSEP_WASM_PATH_PATTERN.test(pathname) || ORT_ASYNCIFY_WASM_PATH_PATTERN.test(pathname)) {
     return { contentType: "application/wasm" };
   }
   if (TAG2PIX_MODEL_PATH_PATTERN.test(pathname)) {
