@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { readStudioPageCompositionSource } from "../studio-cuttoon-editor/read-studio-cuttoon-editor-source";
@@ -16,17 +18,20 @@ import type { StudioBackground3DInsertResult } from "../scene-3d/studio-3d-inser
 import type { El } from "../studio-element-model";
 
 const studioPageSource = readStudioPageCompositionSource();
+// applyBg3dRenderedImage 본문은 래칫 분리로 어댑터가 소유한다 — 본문 단언은 어댑터를 대상으로 한다.
+const bg3dInsertAdapterSource = readFileSync(
+  new URL("../studio-cuttoon-editor/studio-cuttoon-bg3d-insert.ts", import.meta.url),
+  "utf8",
+);
 const VALID_COLOR_PNG = "data:image/png;base64,Y29sb3I=";
 const VALID_COMPOSITE_PNG = "data:image/png;base64,Y29tcG9zaXRl";
 const VALID_UPDATED_PNG = "data:image/png;base64,dXBkYXRlZA==";
 const VALID_LINE_PNG = "data:image/png;base64,bGluZQ==";
 
 function applyBg3dRenderedImageBody(): string {
-  const start = studioPageSource.indexOf("async function applyBg3dRenderedImage(");
-  const end = studioPageSource.indexOf("async function addBuiltinRasterAsset", start);
+  const start = bg3dInsertAdapterSource.indexOf("async function applyBg3dRenderedImage(");
   expect(start).toBeGreaterThanOrEqual(0);
-  expect(end).toBeGreaterThan(start);
-  return studioPageSource.slice(start, end);
+  return bg3dInsertAdapterSource.slice(start);
 }
 
 function characterElement(): Extract<El, { type: "image" }> {

@@ -261,7 +261,7 @@
   "domains/creator/StudioCompanionAssistantDisplay.tsx": 1418,
   "domains/creator/StudioCompanionReferenceDisplay.tsx": 1416,
   "domains/creator/StudioContinuityPanel.tsx": 1100,
-  "domains/creator/StudioCuttoonEditorHost.tsx": 29712,
+  "domains/creator/StudioCuttoonEditorHost.tsx": 29062,
   "domains/creator/StudioDialogueBatchPanel.tsx": 1694,
   "domains/creator/StudioFloatingSurface.tsx": 1034,
   "domains/creator/StudioHelpHubDialog.tsx": 1018,

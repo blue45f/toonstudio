@@ -90,18 +90,9 @@ import {
 } from "./ai/studio-ai-provenance-recorder";
 import { createStudioScenarioImageGenerationExecutors } from "./ai/studio-scenario-image-generation";
 import type { StudioAiComicComposerHandoff } from "./ai/studio-ai-comic-composer-handoff";
-import {
-  planStudioBg3dLtDetachComposite,
-  planStudioBg3dLtDrawingAssist,
-  planStudioBg3dRealtimeMergedApply,
-  planStudioBg3dSharedCharacterVisibility,
-  planStudioBg3dSharedStageMutation,
-  resolveStudioBg3dCapturedCharacterPlacements,
-  resolveStudioBg3dLinkedRenderState,
-  resolveStudioBg3dLtLinkedScene,
-} from "./bg3d/studio-bg3d-lt-apply";
-import { planStudioBg3dLtLayers } from "./bg3d/studio-bg3d-lt-layer-plan";
-import { attachStudioBg3dMagicFilterMaskToLtPlan } from "./bg3d/studio-bg3d-magic-layer-attach";
+
+
+
 import { StudioBg3dRecoveryAccessGate } from "./bg3d/studio-bg3d-recovery-access-lease";
 import { isStudioBrushAliasId, isStudioBrushEraserAliasId } from "./brush/studio-brush-alias-profile";
 import {
@@ -157,6 +148,8 @@ import {
 } from "./studio-retained-stroke-history";
 import { acquireStudioCatalogInputRecoveryRepository, serializeStudioCatalogInputRecovery, restoreStudioCatalogInputRecovery } from "./brush/studio-pending-catalog-input-persistence";
 import { StudioPendingCatalogInput, type StudioBrushSelectionLifecycle } from "./brush/studio-pending-catalog-input";
+import { bindStudioBg3dRenderedImage } from "./studio-cuttoon-editor/studio-cuttoon-bg3d-insert";
+import { bindStudioAdvancedFillRun } from "./studio-cuttoon-editor/studio-cuttoon-advanced-fill-run";
 import { bindStudioCuttoonStagePointers } from "./studio-cuttoon-editor/studio-cuttoon-stage-pointers";
 import { bindStudioDrawLiveSurfaces } from "./studio-cuttoon-editor/studio-live-surface-start";
 import { isLayerMetadataPatch } from "./studio-cuttoon-editor/studio-layer-metadata-patch";
@@ -214,11 +207,7 @@ import { useStudioSelectionTransform } from "./selection/studio-selection-transf
 import { useStudioQuickComic } from "./comipo/studio-quick-comic-controller";
 import { StudioCuttoonEditorView } from "./studio-cuttoon-editor/StudioCuttoonEditorView";
 import { applyStudioBg3dAiMethodReference } from "./scene-3d/studio-3d-ai-reference-application";
-import {
-  applyStudioBg3dInsertResult,
-  applyStudioVrmInsertResult,
-  mapStudioBg3dPerspectiveGuidesToAnchor,
-} from "./scene-3d/studio-3d-insert-controller";
+import { applyStudioBg3dInsertResult, applyStudioVrmInsertResult } from "./scene-3d/studio-3d-insert-controller";
 import {
   planStudioActiveStrokeUnmountRecovery,
   runStudioDrawingUnmountLifecycle,
@@ -234,7 +223,7 @@ import {
 import type { StudioAdvancedFillTapGesture } from "./studio-advanced-fill-tap";
 import type { StudioAdvancedRuler } from "./studio-advanced-ruler-document";
 import type { StudioAdvancedRulerSnapState } from "./studio-advanced-ruler-snap";
-import { shouldClipToExistingAlpha } from "./studio-alpha-lock";
+
 import {
   clampGlobalFrameIndex,
   globalFrameIndexAtElapsed,
@@ -504,12 +493,7 @@ import {
   executeStudioPublishPackageExport,
 } from "./export/studio-publish-package-export";
 import { pickColorFromImageData } from "./studio-eyedropper";
-import {
-  collectOverlappingStudioFillReferenceLayers,
-  composeStudioFillReferenceImageWithPageReferences,
-  type StudioFillPageReference,
-  type StudioFillReferenceLayer,
-} from "./studio-fill-reference";
+import { collectOverlappingStudioFillReferenceLayers, type StudioFillReferenceLayer } from "./studio-fill-reference";
 import { canFilterMask, type FilterMaskPaintMode } from "./filter/studio-filter-mask";
 import { useStudioRetouchMaskTools } from "./filter/studio-retouch-mask-tools-controller";
 import {
@@ -651,20 +635,12 @@ import {
   studioLivingInkSupportsElement,
   yieldStudioPixelEditMainThread,
 } from "./studio-legacy-editor-runtime-helpers";
-import {
-  commitStudioLinked3dPreparedPass,
-  prepareStudioLinked3dLinePass,
-} from "./studio-linked-3d-pass-transaction";
+
 import {
   studioLinked3dPassDestructiveEditReason,
   studioLinked3dPassSourceReplacementReason,
 } from "./studio-linked-3d-raster-edit-policy";
-import {
-  detachStudioLinked3dCorrections,
-  materializeStudioLinked3dLinePassLocator,
-  removeStudioLinked3dRenderLinks,
-  upsertStudioLinked3dRenderLink,
-} from "./studio-linked-3d-render-document";
+
 import {
   describeStudioScene3dLinkedLayerReview,
   resolveStudioScene3dLinkedLayerEditSource,
@@ -1155,7 +1131,7 @@ import {
   type StudioServerAiProviderPreference,
   type StudioServerAiStatus,
 } from "./studio-server-ai-client";
-import { studioShared3dStageEntryAsDocument } from "./studio-shared-3d-stage-collection";
+
 import {
   resolveStudioShared3dStageBundleIdForElement,
   type StudioShared3dStageDccSource,
@@ -1223,17 +1199,7 @@ import {
   planStudioVectorEraseToIntersectionApply,
   STUDIO_ERASE_TO_INTERSECTION_LABEL,
 } from "./studio-vector-erase-to-intersection-apply";
-import {
-  currentStudioVectorReferenceBudgets,
-  describeStudioAdvancedFillVectorReferenceExclusion,
-  materializeStudioAdvancedFillVectorTarget,
-  planStudioAdvancedFillVectorTarget,
-  prepareStudioVectorReferenceExport,
-  renderPreparedStudioVectorReference,
-  renderStudioAdvancedFillVectorReference,
-  renderStudioVectorReference,
-  type StudioAdvancedFillVirtualTarget,
-} from "./studio-vector-fill-reference";
+import { currentStudioVectorReferenceBudgets, materializeStudioAdvancedFillVectorTarget, planStudioAdvancedFillVectorTarget, prepareStudioVectorReferenceExport, renderPreparedStudioVectorReference, renderStudioVectorReference, type StudioAdvancedFillVirtualTarget } from "./studio-vector-fill-reference";
 import {
   planStudioViewRestore,
   planStudioViewRotationTransition,
@@ -1387,7 +1353,7 @@ import type {
 } from "./render/studio-webgpu-live-stroke-plan";
 import type { StudioGpuStroke } from "./render/studio-webgpu-stroke";
 import type { StudioBg3dAiMethodReferenceCapture } from "./scene-3d/studio-3d-ai-reference-handoff";
-import type { StudioBackground3DInsertResult } from "./scene-3d/studio-3d-insert-contract";
+
 import type { AdvancedFillMaskLike } from "./studio-advanced-fill";
 import type { StudioAdvancedFillPreview } from "./studio-advanced-fill-preview";
 import type { StudioAsset } from "./studio-asset-library";
@@ -17318,430 +17284,41 @@ const puppetWarpArmed =
       ...elementPatch,
     });
   }
-  async function applyBg3dRenderedImage(
-    result: StudioBackground3DInsertResult,
-    targetElementId?: string
-  ): Promise<boolean> {
-    setError(null);
-    setStatusNotice(null);
-    const anchorLayer = result.layers.at(-1);
-    if (!anchorLayer) {
-      setError("삽입할 3D LT 레이어가 없습니다.");
-      return false;
-    }
-    /**
-     * 문서 마스터용 자기완결 이미지 레이어. 마스터에는 분리 번들을 담을 그룹도 페이지별 Shared
-     * Stage도 없으므로 래스터와 장면 원본만 남긴다. 실시간 페이지는 아래의 별도 원자 계획에서
-     * 같은 병합 레이어에 안정적인 배경 앵커와 Shared Stage를 함께 결박한다.
-     */
-    function materializeBg3dMergedComposite(magicMaskMessage: string): boolean {
-      if (result.magicFilterMask) {
-        setError(magicMaskMessage);
-        return false;
-      }
-      if (targetElementId) {
-        const target = elementById.get(targetElementId);
-        if (!target || target.type !== "image") {
-          setError("다시 적용할 3D 배경 이미지를 찾지 못했습니다.");
-          return false;
-        }
-        if (isEffectivelyLocked(target, groups)) {
-          setError("잠긴 레이어예요. 레이어 잠금을 해제한 뒤 3D 장면을 다시 적용해 주세요.");
-          return false;
-        }
-        if (!patchEl(targetElementId, {
-          src: result.compositePngDataUrl,
-          height: Math.max(1, Math.round(target.width * (result.height / result.width))),
-          bg3dScene: result.bg3dScene,
-          bg3dLtBundleId: undefined,
-          bg3dLtRole: undefined,
-          bg3dLtRenderMode: undefined,
-          name: "3D LT 배경 · 병합",
-        })) return false;
-        // Match the other destructive raster replacements: browser verification must be able to
-        // distinguish a successful document commit from the exact new PNG reaching the visible
-        // Konva layer. The probe is absent in production, so this is otherwise a no-op.
-        expectStudioRasterImagePresentation({
-          elementId: targetElementId,
-          src: result.compositePngDataUrl,
-        });
-        return true;
-      }
-      const mergedImage = createCanvasImageElement({
-        id: uid(),
-        src: result.compositePngDataUrl,
-        canvasWidth: CANVAS_W,
-        canvasHeight: canvasH,
-        sourceWidth: result.width,
-        sourceHeight: result.height,
-      });
-      if (!addEl({
-        ...mergedImage,
-        name: "3D LT 배경 · 병합",
-        bg3dScene: result.bg3dScene,
-      })) return false;
-      expectStudioRasterImagePresentation({
-        elementId: mergedImage.id,
-        src: result.compositePngDataUrl,
-      });
-      return true;
-    }
-
-    // The separated LT raster bundle still stays out of a realtime room because its multiple pixel
-    // bodies do not share one bounded CRDT/CAS receipt. The merged raster + embedded Scene remains
-    // self-contained, while its page-local bundle identity and Shared Stage relationship are
-    // committed atomically so selecting/reopening the background can resolve the character link.
-    if (isRealtimeTeamSession) {
-      const realtimePlan = planStudioBg3dRealtimeMergedApply({
-        result,
-        elements,
-        groups,
-        shared3dStage: activePage.shared3dStage,
-        targetElementId,
-        canvasHeight: canvasH,
-        newElementId: uid(),
-        allocatedBundleId: uid(),
-        allocatedGroupId: uid(),
-        dccSource: bg3dDccSourceRef.current,
-      });
-      if (!realtimePlan.ok) {
-        setError(realtimePlan.message);
-        return false;
-      }
-      if (!commit([...realtimePlan.nextElements], {
-        groups: [...realtimePlan.nextGroups],
-        shared3dStage: realtimePlan.nextShared3dStage,
-      })) return false;
-      setSelectedId(realtimePlan.anchorElementId);
-      setTool("select");
-      expectStudioRasterImagePresentation({
-        elementId: realtimePlan.anchorElementId,
-        src: result.compositePngDataUrl,
-      });
-      const sharedStageNotice = realtimePlan.sharedStageMutationKind === "unlink"
-        ? " 캐릭터 공유 연결은 해제했어요."
-        : realtimePlan.hiddenElementIds.length > 0
-          ? ` 캐릭터 ${realtimePlan.hiddenElementIds.length}명과의 공유 연결도 함께 저장했어요.`
-          : " 배경 전용 공유 장면으로 저장했어요.";
-      setStatusNotice(
-        `실시간 공동 편집이라 컬러·톤·선화를 한 레이어로 합쳐 추가했어요. 3D 장면 원본은 그대로 남아 다시 편집할 수 있어요.${sharedStageNotice}`,
-      );
-      if (realtimePlan.restoredElementIds.length > 0) {
-        announceDrawingShortcut(
-          `공유 캐릭터 원본 ${realtimePlan.restoredElementIds.length}명 복원`,
-        );
-      } else if (realtimePlan.hiddenElementIds.length > 0) {
-        announceDrawingShortcut(
-          `공유 캐릭터 ${realtimePlan.hiddenElementIds.length}명 합성 · 원본 레이어는 숨김 상태로 보존`,
-        );
-      }
-      return true;
-    }
-
-    // 문서 마스터는 의도적으로 그룹을 지원하지 않는다. 이 표면에서는 분리 레이어를 거짓으로
-    // 그룹화하지 않고 같은 LT 결과의 투명 합성 PNG를 사용하며, 장면 원본은 계속 재편집 가능하다.
-    if (masterEditMode) {
-      return materializeBg3dMergedComposite(
-        "매직 레이어 마스크는 일반 페이지의 분리된 컬러·톤 레이어에서만 안전하게 만들 수 있어요. 문서 마스터를 닫고 새 3D 배경으로 추가해 주세요.",
-      );
-    }
-
-    const linkedSceneResolution = resolveStudioBg3dLtLinkedScene({
-      activePage,
-      result,
-      targetElementId,
-      dccSource: bg3dDccSourceRef.current,
-    });
-    if (!linkedSceneResolution.ok) {
-      setError(linkedSceneResolution.message);
-      return false;
-    }
-    const { linkedScene, renderResult } = linkedSceneResolution;
-
-    if (targetElementId && renderResult.magicFilterMask) {
-      setError(
-        "매직 레이어 마스크는 기존 3D 배경 업데이트에 합성하지 않아요. 새 3D 배경으로 추가해 주세요.",
-      );
-      return false;
-    }
-
-    const template = createCanvasImageElement({
-      id: uid(),
-      src: anchorLayer.pngDataUrl,
-      canvasWidth: CANVAS_W,
-      canvasHeight: canvasH,
-      sourceWidth: renderResult.width,
-      sourceHeight: renderResult.height,
-    });
-    const plan = planStudioBg3dLtLayers<El, StudioBg3dSceneDocument>({
-      elements,
-      groups,
-      render: renderResult,
-      targetElementId,
-      pageLocked: pageEditLocked,
-      allocations: {
-        bundleId: uid(),
-        groupId: uid(),
-        elementIds: {
-          color: uid(),
-          tone: uid(),
-          "texture-line": uid(),
-          "main-line": uid(),
-        },
-      },
-      newElementTemplate: template,
-    });
-    if (!plan.ok) {
-      setError(plan.message);
-      return false;
-    }
-    const detachResolution = planStudioBg3dLtDetachComposite({
-      renderResult,
-      plan,
-      targetElementId,
-      pageLocked: pageEditLocked,
-    });
-    if (!detachResolution.ok) {
-      setError(detachResolution.message);
-      return false;
-    }
-    const { detachEditableComposite, detachPlan } = detachResolution;
-    const magicAttachment = detachPlan?.ok
-      ? {
-          ok: true as const,
-          applied: false as const,
-          targetElementId: null,
-          nextElements: detachPlan.nextElements,
-        }
-      : attachStudioBg3dMagicFilterMaskToLtPlan({
-          plan,
-          insertResult: renderResult,
-        });
-    if (!magicAttachment.ok) {
-      setError(magicAttachment.message);
-      return false;
-    }
-    const materializedGroups = detachPlan?.ok ? detachPlan.nextGroups : plan.nextGroups;
-    const capturedPlacements = resolveStudioBg3dCapturedCharacterPlacements({ renderResult });
-    if (!capturedPlacements.ok) {
-      setError(capturedPlacements.message);
-      return false;
-    }
-    const { capturedCharacterElementIds, capturedCharacterPlacements } = capturedPlacements;
-    const visibilityResolution = planStudioBg3dSharedCharacterVisibility({
-      shared3dStage: activePage.shared3dStage,
-      elements: magicAttachment.nextElements,
-      capturedCharacterElementIds,
-      groups,
-    });
-    if (!visibilityResolution.ok) {
-      setError(visibilityResolution.message);
-      return false;
-    }
-    const { currentStageCollection, sharedCharacterVisibility } = visibilityResolution;
-    let nextElements = [...sharedCharacterVisibility.nextElements];
-    const anchor = nextElements.find((element) => element.id === plan.anchorElementId);
-    const mappedGuides = anchor?.type === "image"
-      ? mapStudioBg3dPerspectiveGuidesToAnchor(renderResult.perspectiveGuides, anchor)
-      : [];
-    const nextDrawingAssist = planStudioBg3dLtDrawingAssist({
-      mappedGuides,
-      activePageId: activePage.id,
-      currentStudioDrawingAssistDocument,
-    });
-    const stageMutationResolution = planStudioBg3dSharedStageMutation({
-      currentStageCollection,
-      bundleId: plan.bundleId,
-      requestedMutationKind: renderResult.sharedStageMutation?.kind,
-      nextElements,
-      capturedCharacterElementIds,
-      capturedCharacterPlacements,
-      hiddenElementIds: sharedCharacterVisibility.hiddenElementIds,
-      dccSource: bg3dDccSourceRef.current,
-    });
-    if (!stageMutationResolution.ok) {
-      setError(stageMutationResolution.message);
-      return false;
-    }
-    const { sharedStageMutationKind, stageMutation } = stageMutationResolution;
-    nextElements = [...stageMutation.nextElements];
-    const linkedRenderResolution = resolveStudioBg3dLinkedRenderState({
-      linked3dRender: activePage.linked3dRender,
-      activeShotId: linkedScene.activeShotId,
-      dccShotMappings: bg3dDccShotMappingsRef.current,
-    });
-    if (!linkedRenderResolution.ok) {
-      setError(linkedRenderResolution.message);
-      return false;
-    }
-    const { currentLinkedRender, sourceShotId } = linkedRenderResolution;
-    if (sharedStageMutationKind === "unlink") {
-      const detachedElements = detachStudioLinked3dCorrections(nextElements, [plan.bundleId]);
-      if (!detachedElements) {
-        setError("연결 해제할 artist correction provenance가 손상되어 적용하지 않았어요.");
-        return false;
-      }
-      nextElements = detachedElements;
-      const nextLinkedRender = removeStudioLinked3dRenderLinks(
-        currentLinkedRender,
-        [plan.bundleId],
-      );
-      if (nextLinkedRender === null || !commit(nextElements, {
-        groups: materializedGroups,
-        shared3dStage: stageMutation.nextState,
-        linked3dRender: nextLinkedRender,
-        ...(nextDrawingAssist ? { drawingAssist: nextDrawingAssist } : {}),
-      })) return false;
-    } else if (!renderResult.layers.some(({ role }) => role === "main-line")) {
-      // Tone/color-only LT output has no canonical line raster to persist. Preserve the visible
-      // DrawEls, but explicitly detach their retired 3D provenance before removing the sidecar.
-      const detachedElements = detachStudioLinked3dCorrections(nextElements, [plan.bundleId]);
-      if (!detachedElements) {
-        setError("line pass에서 분리할 artist correction provenance가 손상되어 적용하지 않았어요.");
-        return false;
-      }
-      nextElements = detachedElements;
-      const nextLinkedRender = removeStudioLinked3dRenderLinks(
-        currentLinkedRender,
-        [plan.bundleId],
-      );
-      if (nextLinkedRender === null || !commit(nextElements, {
-        groups: materializedGroups,
-        shared3dStage: stageMutation.nextState,
-        linked3dRender: nextLinkedRender,
-        ...(nextDrawingAssist ? { drawingAssist: nextDrawingAssist } : {}),
-      })) return false;
-    } else {
-      const linkedStage = studioShared3dStageEntryAsDocument(
-        stageMutation.nextState,
-        plan.bundleId,
-      );
-      if (!linkedStage) {
-        setError("canonical 3D Stage revision을 찾지 못해 line pass를 저장하지 않았어요.");
-        return false;
-      }
-      try {
-        const { acquireStudioLinked3dPassProductAuthority } = await import("./studio-linked-3d-pass-product-authority"
-        );
-        const authority = await acquireStudioLinked3dPassProductAuthority();
-        const previousPass = currentLinkedRender?.links.find(
-          ({ bundleId }) => bundleId === plan.bundleId,
-        )?.passRevision;
-        const prepared = await prepareStudioLinked3dLinePass({
-          authority,
-          sourceHash: linkedStage.background.sourceHash,
-          scene: linkedScene,
-          layers: renderResult.layers,
-          previous: previousPass,
-        });
-        const durableElements = materializeStudioLinked3dLinePassLocator(
-          nextElements,
-          plan.bundleId,
-          prepared.descriptor,
-        );
-        if (!durableElements) {
-          setError("canonical line pass를 실제 Canvas main-line 레이어에 결박하지 못했어요.");
-          return false;
-        }
-        const nextLinkedRender = upsertStudioLinked3dRenderLink({
-          value: currentLinkedRender,
-          bundleId: plan.bundleId,
-          shotId: linkedScene.activeShotId!,
-          ...(sourceShotId ? { sourceShotId } : {}),
-          passRevision: prepared.descriptor,
-          elements: durableElements,
-          shared3dStage: stageMutation.nextState!,
-        });
-        if (!nextLinkedRender) {
-          setError("Canvas line pass·3D Shot·artist correction 교차참조를 검증하지 못했어요.");
-          return false;
-        }
-        const accepted = await commitStudioLinked3dPreparedPass({
-          authority,
-          ownerId: `studio-linked-3d-pass:${activePage.id}:${plan.bundleId}`,
-          prepared,
-          apply: () => {
-            const mutationTicket = bg3dMutationTicketRef.current;
-            if (
-              !mutationTicket
-              || !canApplyStudioMutation(mutationTicket)
-              || currentPageIdRef.current !== activePage.id
-            ) return false;
-            // LT layers, Scene/Shot, Stage, correction reapplication/conflict projection, and CAS
-            // receipt enter the existing pagesHistory/CRDT bridge as one undoable transition.
-            return commit(durableElements, {
-              groups: materializedGroups,
-              shared3dStage: stageMutation.nextState,
-              linked3dRender: nextLinkedRender,
-              ...(nextDrawingAssist ? { drawingAssist: nextDrawingAssist } : {}),
-            });
-          },
-        });
-        if (!accepted) return false;
-        nextElements = durableElements;
-      } catch (cause) {
-        setError(
-          cause instanceof Error
-            ? `연결형 3D line pass를 OPFS/CAS에 저장하지 못했습니다: ${cause.message}`
-            : "연결형 3D line pass를 OPFS/CAS에 저장하지 못했습니다.",
-        );
-        return false;
-      }
-    }
-    const magicMask = renderResult.magicFilterMask;
-    const magicTarget = magicAttachment.applied
-      ? nextElements.find((element) => element.id === magicAttachment.targetElementId)
-      : null;
-    const rasterWorkId = authorizedWorkAssetScopeId;
-    const rasterActorId = studioAuthUserId;
-    const rasterDocument = studioCrdtDocumentRef.current;
-    const rasterRuntime = studioCrdtSceneRuntimeRef.current;
-    if (
-      magicAttachment.applied
-      && magicMask
-      && magicTarget?.type === "image"
-      && rasterWorkId
-      && rasterActorId
-      && rasterDocument
-      && rasterRuntime
-      && studioCrdtOperationSyncReady
-      && !collaborationDocumentLocked
-    ) {
-      const publicationGeneration = studioFilterMaskPublicationClockRef.current + 1;
-      studioFilterMaskPublicationClockRef.current = publicationGeneration;
-      studioFilterMaskPublicationGenerationRef.current.set(
-        magicAttachment.targetElementId,
-        publicationGeneration
-      );
-      queueStudioBg3dMagicFilterMaskPublication({
-        pageId: activePage.id,
-        layerId: magicTarget.groupId ?? "page-root",
-        targetElementId: magicAttachment.targetElementId,
-        mask: magicMask,
-        workId: rasterWorkId,
-        actorId: rasterActorId,
-        document: rasterDocument,
-        runtime: rasterRuntime,
-        accessGeneration: collaborationAccessRef.current.accessGeneration,
-        publicationGeneration,
-      });
-    }
-    if (nextDrawingAssist) {
-      setDrawingAssistPreview(null);
-    }
-    setSelectedId(plan.anchorElementId);
-    setTool("select");
-    if (detachEditableComposite) {
-      announceDrawingShortcut(
-        `3D 배경을 한 장으로 정리했어요 · 3D 원본 유지 · 캐릭터 원본 ${stageMutation.restoredElementIds.length}명 복원`,
-      );
-    } else if (sharedCharacterVisibility.hiddenElementIds.length > 0) {
-      announceDrawingShortcut(
-        `공유 캐릭터 ${sharedCharacterVisibility.hiddenElementIds.length}명 합성 · 원본 레이어는 숨김 상태로 보존`,
-      );
-    }
-    return true;
-  }
+  const applyBg3dRenderedImage = bindStudioBg3dRenderedImage({
+    setError,
+    setStatusNotice,
+    elementById,
+    groups,
+    patchEl,
+    canvasH,
+    addEl,
+    isRealtimeTeamSession,
+    elements,
+    activePage,
+    bg3dDccSourceRef,
+    commit,
+    setSelectedId,
+    setTool,
+    announceDrawingShortcut,
+    masterEditMode,
+    pageEditLocked,
+    currentStudioDrawingAssistDocument,
+    bg3dDccShotMappingsRef,
+    bg3dMutationTicketRef,
+    canApplyStudioMutation,
+    currentPageIdRef,
+    authorizedWorkAssetScopeId,
+    studioAuthUserId,
+    studioCrdtDocumentRef,
+    studioCrdtSceneRuntimeRef,
+    studioCrdtOperationSyncReady,
+    collaborationDocumentLocked,
+    studioFilterMaskPublicationClockRef,
+    studioFilterMaskPublicationGenerationRef,
+    queueStudioBg3dMagicFilterMaskPublication: (...args: Parameters<typeof queueStudioBg3dMagicFilterMaskPublication>) => queueStudioBg3dMagicFilterMaskPublication(...args),
+    collaborationAccessRef,
+    setDrawingAssistPreview,
+  });
   async function addBuiltinRasterAsset(asset: StudioRasterAsset) {
     if (builtinRasterBusyId) return false;
     const mutationTicket = captureStudioMutationTicket();
@@ -22383,259 +21960,32 @@ const puppetWarpArmed =
     setError(null);
   }
 
-  async function runAdvancedFillAt(pos: { x: number; y: number }, frame: SelectionFrame) {
-    if (advancedFillAbortRef.current || advancedFillBusy || !advancedFillArmed) return;
-    const rasterTarget = advancedFillRasterArmed && selected?.type === "image" ? selected : null;
-    let vectorTarget = rasterTarget ? null : advancedFillVirtualTarget;
-    if (!rasterTarget && !vectorTarget) return;
-    const targetFrame = vectorTarget?.frame ?? frame;
-    const displayPoint = canvasPointToNormalized(pos.x, pos.y, targetFrame);
-    if (displayPoint.x < 0 || displayPoint.x > 1 || displayPoint.y < 0 || displayPoint.y > 1) {
-      setAdvancedFillStatus(
-        vectorTarget
-          ? vectorTarget.sourceElementCount > 0
-            ? "페이지 안쪽의 닫힌 선화 영역을 탭하세요."
-            : "페이지 안쪽을 탭하세요."
-          : "선택한 래스터 레이어 안쪽을 탭하세요.",
-      );
-      return;
-    }
-    const mutationTicket = captureStudioMutationTicket();
-    const historyIndex = pagesHiRef.current;
-    const sourcePoint = rasterTarget
-      ? flipNormalizedPoint(displayPoint, rasterTarget.flipped ?? false, rasterTarget.flippedY ?? false)
-      : displayPoint;
-    const targetId = rasterTarget?.id ?? vectorTarget!.id;
-    const originalSrc = rasterTarget?.src ?? vectorTarget!.blankSrc;
-    const previousPreview =
-      advancedFillPreview?.targetId === targetId &&
-      advancedFillPreview.originalSrc === originalSrc &&
-      advancedFillPreview.historyIndex === historyIndex &&
-      (!vectorTarget || advancedFillPreview.virtualTarget?.sourceFingerprint === vectorTarget.sourceFingerprint)
-        ? advancedFillPreview
-        : null;
-    const workingSrc = previousPreview?.resultSrc ?? originalSrc;
-    const runId = ++advancedFillRunIdRef.current;
-    const controller = new AbortController();
-    advancedFillAbortRef.current = controller;
-    setAdvancedFillBusy(true);
-    setAdvancedFillStatus("경계와 누수 가능성을 분석하고 있어요…");
-    try {
-      // The browser raster engine is only needed after an explicit fill gesture. Start loading it
-      // beside the busy-state paint/reference preparation instead of charging every Studio launch.
-      const advancedFillBrowserModulePromise = import("./studio-advanced-fill-browser");
-      // Give React one paint opportunity so large source scans do not hide the busy state.
-      await new Promise<void>((resolve) => globalThis.requestAnimationFrame(() => resolve()));
-      if (
-        runId !== advancedFillRunIdRef.current ||
-        controller.signal.aborted ||
-        pagesHiRef.current !== historyIndex
-      ) return;
-      let referenceSrc: string | undefined;
-      // 래스터 경로에서 벡터 선화 참조를 빼고 진행했을 때 결과 문구 뒤에 붙일 사유.
-      let vectorReferenceExclusion: string | null = null;
-      const withVectorExclusionNotice = (message: string) =>
-        vectorReferenceExclusion === null ? message : `${message} · ${vectorReferenceExclusion}`;
-      if (vectorTarget) {
-        const vectorInput = currentAdvancedFillVectorInput();
-        const vectorPlan = planStudioAdvancedFillVectorTarget(vectorInput);
-        if (!vectorPlan.ok) throw new Error(vectorPlan.reason);
-        vectorTarget = vectorPlan.target;
-        setAdvancedFillVirtualTarget(vectorTarget);
-        const cachedReference = advancedFillVirtualReferenceRef.current;
-        if (cachedReference?.fingerprint === vectorTarget.sourceFingerprint) {
-          referenceSrc = cachedReference.dataUrl;
-        } else {
-          setAdvancedFillStatus("벡터 선화를 채우기 경계로 변환하고 있어요…");
-          const renderedReference = await renderStudioAdvancedFillVectorReference(vectorInput, {
-            rasterExecutionBackend: "offscreen-worker",
-            signal: controller.signal,
-          });
-          if (renderedReference.fingerprint !== vectorTarget.sourceFingerprint) {
-            throw new Error("벡터 선화가 변환 중 바뀌었습니다. 캔버스를 다시 탭해 주세요.");
-          }
-          advancedFillVirtualReferenceRef.current = {
-            fingerprint: renderedReference.fingerprint,
-            dataUrl: renderedReference.dataUrl,
-          };
-          referenceSrc = renderedReference.dataUrl;
-        }
-      } else if (rasterTarget && advancedFillSettings.referenceScope !== "current") {
-        const referenceScope = advancedFillSettings.referenceScope;
-        const layers = advancedFillRasterLayers.map((layer) =>
-          layer.id === rasterTarget.id ? { ...layer, src: workingSrc } : layer
-        );
-        const vectorInput = currentAdvancedFillVectorInput();
-        const vectorPlan = planStudioAdvancedFillVectorTarget(vectorInput);
-        const pageReferences: StudioFillPageReference[] = [];
-        if (vectorPlan.ok && vectorPlan.target.sourceElementCount > 0) {
-          const cachedReference = advancedFillVirtualReferenceRef.current;
-          let vectorReferenceSrc: string;
-          if (cachedReference?.fingerprint === vectorPlan.target.sourceFingerprint) {
-            vectorReferenceSrc = cachedReference.dataUrl;
-          } else {
-            setAdvancedFillStatus("래스터와 벡터 선화를 하나의 채우기 경계로 합성하고 있어요…");
-            const renderedReference = await renderStudioAdvancedFillVectorReference(vectorInput, {
-              rasterExecutionBackend: "offscreen-worker",
-              signal: controller.signal,
-            });
-            if (renderedReference.fingerprint !== vectorPlan.target.sourceFingerprint) {
-              throw new Error("벡터 선화가 변환 중 바뀌었습니다. 캔버스를 다시 탭해 주세요.");
-            }
-            advancedFillVirtualReferenceRef.current = {
-              fingerprint: renderedReference.fingerprint,
-              dataUrl: renderedReference.dataUrl,
-            };
-            vectorReferenceSrc = renderedReference.dataUrl;
-          }
-          pageReferences.push({
-            id: `advanced-fill-page-reference-${vectorPlan.target.sourceFingerprint}`,
-            name: "표시 벡터 선화",
-            src: vectorReferenceSrc,
-            pageWidth: vectorInput.width,
-            pageHeight: vectorInput.height,
-            fillReference: true,
-          });
-        } else if (!vectorPlan.ok) {
-          // 여기서 벡터 선화 참조는 래스터 경계 위에 얹는 추가 경계일 뿐이다. 구조 손상,
-          // 미지원 합성 또는 예산 초과로 참조를 못 만든 경우에도 채우기 전체를 막지 않는다.
-          // 참조만 빼고 진행하고 무엇을 왜 뺐는지 결과에 붙인다. 적용 전까지는 미리보기라
-          // 경계 하나 빠진 결과를 눈으로 확인할 수 있다.
-          vectorReferenceExclusion = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan);
-        }
-        const scopedRasterReferences = collectOverlappingStudioFillReferenceLayers(
-          layers,
-          rasterTarget.id,
-          referenceScope,
-        );
-        if (pageReferences.length === 0 && scopedRasterReferences.length === 0) {
-          // 합성할 참조가 하나도 남지 않았다. 이 상태로 합성기를 부르면 "참조할 표시 래스터
-          // 레이어가 없습니다"로 던져 채우기가 그대로 멈추고, 정작 벡터 선화를 왜 뺐는지는
-          // catch 로 흘러가 사라진다 — 축소해서 진행한다는 계약이 무너진다.
-          //
-          // 참조가 비는 건 대상 하나만 있는 페이지에서 흔하다. 참조 범위는 대상 자신을 늘
-          // 제외하므로(studio-fill-reference.ts `collectStudioFillReferenceLayers`), 선화가
-          // 유일한 참조였다가 빠지면 곧바로 0이 된다. 대상 레이어 자체를 경계로 삼아
-          // 진행하고(현재 레이어 범위와 같은 동작) 두 사실을 모두 문구에 싣는다.
-          referenceSrc = undefined;
-          const emptyReferenceNotice = "참조로 남은 레이어가 없어 대상 레이어만 경계로 사용했어요.";
-          vectorReferenceExclusion = vectorReferenceExclusion === null
-            ? emptyReferenceNotice
-            : `${vectorReferenceExclusion} ${emptyReferenceNotice}`;
-        } else {
-          const projectedLayerIds = new Set([
-            rasterTarget.id,
-            ...scopedRasterReferences.map(({ id }) => id),
-          ]);
-          const { withStudioRasterSourceProjection } = await import("./render/studio-raster-source-projection"
-          );
-          const composed = await withStudioRasterSourceProjection({
-            consumer: "studio-advanced-fill-reference",
-            signal: controller.signal,
-            values: layers.filter(({ id }) => projectedLayerIds.has(id)),
-            run: async (projectedLayers) => {
-              const projectedById = new Map(
-                projectedLayers.map((layer) => [layer.id, layer] as const),
-              );
-              return composeStudioFillReferenceImageWithPageReferences(
-                layers.map((layer) => projectedById.get(layer.id) ?? layer),
-                rasterTarget.id,
-                referenceScope,
-                pageReferences,
-                undefined,
-                controller.signal,
-              );
-            },
-          });
-          referenceSrc = composed.dataUrl;
-        }
-      }
-      if (
-        runId !== advancedFillRunIdRef.current ||
-        controller.signal.aborted ||
-        pagesHiRef.current !== historyIndex
-      ) return;
-      const {
-        runStudioAdvancedFillInBrowser,
-        studioAdvancedFillResultMessage,
-        summarizeStudioAdvancedFillPreview,
-      } = await advancedFillBrowserModulePromise;
-      if (
-        runId !== advancedFillRunIdRef.current ||
-        controller.signal.aborted ||
-        pagesHiRef.current !== historyIndex
-      ) return;
-      const result = await runStudioAdvancedFillInBrowser({
-        targetSrc: workingSrc,
-        referenceSrc,
-        alphaLockSrc: rasterTarget && shouldClipToExistingAlpha(rasterTarget) ? rasterTarget.src : undefined,
-        intentionalWholeCanvasFill: vectorTarget?.sourceElementCount === 0,
-        xRatio: sourcePoint.x,
-        yRatio: sourcePoint.y,
-        fillColor: color,
-        settings: advancedFillSettings,
-        createSelectionMask: rasterTarget
-          ? (width, height) => createAdvancedFillSelectionMask(rasterTarget, width, height)
-          : undefined,
-        abort: controller.signal,
-      });
-      if (
-        runId !== advancedFillRunIdRef.current ||
-        controller.signal.aborted ||
-        pagesHiRef.current !== historyIndex
-      ) return;
-      if (!canApplyStudioMutation(mutationTicket)) return;
-      if (rasterTarget) {
-        const current = activeElementsRef.current.find((element) => element.id === rasterTarget.id);
-        if (!current || current.type !== "image" || current.src !== rasterTarget.src) return;
-      } else if (vectorTarget) {
-        const currentPlan = planStudioAdvancedFillVectorTarget(currentAdvancedFillVectorInput());
-        if (
-          !currentPlan.ok ||
-          currentPlan.target.pageId !== vectorTarget.pageId ||
-          currentPlan.target.sourceFingerprint !== vectorTarget.sourceFingerprint ||
-          currentPlan.target.id !== vectorTarget.id
-        ) return;
-      }
-      const message = studioAdvancedFillResultMessage(result);
-      if (!result.changed) {
-        // 빠진 경계가 곧 누수 보호가 막은 이유일 수 있다 — 배너에도 사유를 함께 싣는다.
-        const blockedMessage = withVectorExclusionNotice(message);
-        setAdvancedFillStatus(blockedMessage);
-        if (result.blockedReason) setError(blockedMessage);
-        return;
-      }
-      const diagnostics = result.diagnostics;
-      const previewSummary = summarizeStudioAdvancedFillPreview(message, diagnostics, previousPreview);
-      // 누적 미리보기는 요약 문구가 원본 문구를 대체하므로 제외 사유는 요약 뒤에 붙인다.
-      // 앞이 아니라 뒤인 것도 계약이다 — 패널이 "누적 미리보기" 접두사로 누적 여부를 읽는다.
-      const previewMessage = withVectorExclusionNotice(previewSummary.message);
-      setAdvancedFillPreview({
-        targetId: rasterTarget?.id ?? vectorTarget!.id,
-        originalSrc: rasterTarget?.src ?? vectorTarget!.blankSrc,
-        historyIndex,
-        resultSrc: result.dataUrl,
-        diagnostics,
-        message: previewMessage,
-        paintedPixelCount: previewSummary.paintedPixelCount,
-        regionCount: previewSummary.regionCount,
-        ...(vectorTarget ? { virtualTarget: vectorTarget } : null),
-      });
-      setAdvancedFillStatus(previewMessage);
-      if (!advancedFillSettings.continuousFill) setAdvancedFillActive(false);
-      setError(null);
-    } catch (err) {
-      if (runId !== advancedFillRunIdRef.current || controller.signal.aborted) return;
-      const message = err instanceof Error ? err.message : "고급 채우기에 실패했습니다.";
-      setAdvancedFillStatus(message);
-      setError(message);
-    } finally {
-      if (runId === advancedFillRunIdRef.current) {
-        setAdvancedFillBusy(false);
-        advancedFillAbortRef.current = null;
-      }
-    }
-  }
+  const runAdvancedFillAt = bindStudioAdvancedFillRun({
+    advancedFillAbortRef,
+    advancedFillBusy,
+    advancedFillArmed,
+    advancedFillRasterArmed,
+    selected,
+    advancedFillVirtualTarget,
+    setAdvancedFillStatus,
+    captureStudioMutationTicket,
+    pagesHiRef,
+    advancedFillPreview,
+    advancedFillRunIdRef,
+    setAdvancedFillBusy,
+    currentAdvancedFillVectorInput,
+    setAdvancedFillVirtualTarget,
+    advancedFillVirtualReferenceRef,
+    advancedFillSettings,
+    advancedFillRasterLayers,
+    color,
+    createAdvancedFillSelectionMask,
+    canApplyStudioMutation,
+    activeElementsRef,
+    setError,
+    setAdvancedFillPreview,
+    setAdvancedFillActive,
+  });
 
   // ── 이미지 크롭 적용 — 원본 자연 해상도로 잘라 data URL 교체(파괴적, 히스토리 1건) ──
   // 크롭 후에도 화면상 위치가 유지되도록 src 와 요소 프레임(x/y/width/height)을 한 번의

@@ -141,7 +141,11 @@ describe("Studio 3D insert controller boundary", () => {
       )
     ).toEqual(["./scene-3d/studio-3d-insert-controller"]);
     expect(page.dynamicImports).not.toContain("./scene-3d/studio-3d-insert-controller");
-    expect(page.wholeClauseTypeImports).toContain("./scene-3d/studio-3d-insert-contract");
+    // 삽입 결과 타입은 래칫 분리로 어댑터가 소비한다 — 타입 계약의 소유만 어댑터로 옮겨 단언한다.
+    const insertAdapter = moduleShape(
+      "../studio-cuttoon-editor/studio-cuttoon-bg3d-insert.ts"
+    );
+    expect(insertAdapter.wholeClauseTypeImports).toContain("../scene-3d/studio-3d-insert-contract");
     expect(page.allImports).not.toContain("../bg3d/StudioBackground3D");
     expect(controllerTest.wholeClauseTypeImports).toContain("./studio-3d-insert-contract");
     expect(controllerTest.allImports).not.toContain("../bg3d/StudioBackground3D");
@@ -207,14 +211,18 @@ describe("Studio 3D insert controller boundary", () => {
 
   it("wires fail-closed commit results before selection, tool, and guide side effects", () => {
     const page = moduleShape("../StudioCuttoonEditorHost.tsx").source;
+    // applyBg3dRenderedImage 본문은 래칫 분리로 어댑터가 소유한다 — 본문 단언은 어댑터를 대상으로 한다.
+    const insertAdapter = moduleShape(
+      "../studio-cuttoon-editor/studio-cuttoon-bg3d-insert.ts"
+    ).source;
     const addStart = page.indexOf("function addEl(el: El): boolean");
     const addEnd = page.indexOf("// ── 레이어 그룹", addStart);
     const addElement = page.slice(addStart, addEnd);
     const renderedImageStart = page.indexOf("function addRenderedImage(");
-    const bgStart = page.indexOf("function applyBg3dRenderedImage(");
-    const renderedImage = page.slice(renderedImageStart, bgStart);
-    const bgEnd = page.indexOf("async function addBuiltinRasterAsset", bgStart);
-    const backgroundInsert = page.slice(bgStart, bgEnd);
+    const binderStart = page.indexOf("const applyBg3dRenderedImage = bindStudioBg3dRenderedImage({");
+    const renderedImage = page.slice(renderedImageStart, binderStart);
+    const bgStart = insertAdapter.indexOf("function applyBg3dRenderedImage(");
+    const backgroundInsert = insertAdapter.slice(bgStart);
 
     expect(addStart).toBeGreaterThanOrEqual(0);
     expect(addElement.indexOf("if (!commit([...elements, el])) return false;")).toBeGreaterThanOrEqual(0);
