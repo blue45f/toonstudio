@@ -2,7 +2,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { StaggerReveal, staggerDelayMs, STAGGER_MAX_DELAY_MS, STAGGER_STEP_MS } from "./stagger-reveal";
+import { staggerDelayMs, STAGGER_MAX_DELAY_MS, STAGGER_STEP_MS } from "./stagger-delay";
+import { StaggerReveal } from "./stagger-reveal";
 
 describe("staggerDelayMs", () => {
   it("첫 아이템은 지연이 없다", () => {
