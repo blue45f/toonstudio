@@ -1,19 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
-import { CareerPublicConfirmation } from "./career-confirmation-public";
-import { useCareerPublicConfirmations } from "./use-career-public-confirmations";
 import { CareerConfirmationPanel } from "./CareerConfirmationPanel";
 
 import { CREATOR_HIRING_ROLES } from "../../../../../../packages/contracts/src/creator-hiring";
 import { CollabField, CollabNotice, collabButton, collabInput, collabPrimary } from "../collaboration-ui";
 
 
-import type { CreatorActivitySummary, CreatorCareerInput, CreatorCareerItem, CreatorCareerPublic, CreatorCareerVersion } from "../../../../../../packages/contracts/src/creator-hiring";
+import type { CreatorActivitySummary, CreatorCareerInput, CreatorCareerItem, CreatorCareerVersion } from "../../../../../../packages/contracts/src/creator-hiring";
 
 import Link from "@/shared/navigation/router-link";
 import { api, getApiErrorMessage } from "@/platform/api";
-import { Container } from "@/shared/components/section";
-import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 
 const root = "/collaborations/career";
 const empty = (): CreatorCareerInput => ({ title: "", role: "lineart", startMonth: "", endMonth: null, episodeFrom: null, episodeTo: null, scope: "", contribution: "", portfolioUrl: "", rights: "pending", visibility: "private", expectedRevision: 0 });
@@ -41,17 +37,11 @@ function CareerEditor({ initial, busy, onSave }: { initial: CreatorCareerInput; 
     {([ ["scope", "공개 가능한 작업 범위"], ["contribution", "직접 기여한 작업"] ] as const).map(([key, label]) => <CollabField key={key} label={label}><textarea required maxLength={800} className={collabInput} value={v[key]} onChange={(e) => change(key, e.target.value)} /></CollabField>)}
     <CollabField label="공유 가능한 HTTPS 포트폴리오 주소"><input type="url" required maxLength={500} className={collabInput} value={v.portfolioUrl} onChange={(e) => change("portfolioUrl", e.target.value)} /></CollabField><CollabField label="공유 권리"><select className={collabInput} value={v.rights} onChange={(e) => set({ ...v, rights: e.target.value as typeof v.rights, visibility: e.target.value === "pending" ? "private" : v.visibility })}><option value="pending">권리 미확인 · 비공개</option><option value="owned">본인 소유</option><option value="authorized">권리자의 공유 허락을 받음</option></select></CollabField><label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={v.visibility === "public"} disabled={v.rights === "pending"} onChange={(e) => change("visibility", e.target.checked ? "public" : "private")} />이 내용과 링크를 공개 전시에 표시합니다</label><p className="text-xs">공개 시 작업 범위·기여·기간·회차·활동명도 표시됩니다. 비공개 프로젝트 정보와 연락처를 포함하지 마세요.</p><button type="submit" className={collabPrimary}>새 경력 버전 저장</button></fieldset></form>;
 }
-export function CreatorCareerGalleryPage() {
-  const [items, setItems] = useState<CreatorCareerPublic[] | null>(null), [error, setError] = useState("");
-  const confirmations = useCareerPublicConfirmations(items);
-  useEffect(() => { const c = new AbortController(); void api.get<CreatorCareerPublic[]>(`${root}/gallery`, { signal: c.signal }).then((v) => { if (!c.signal.aborted) setItems(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, "전시를 불러오지 못했어요."); if (!c.signal.aborted) setError(m); }); return () => c.abort(); }, []);
-  return <Container size="wide" className="space-y-6 py-8"><Link className={collabButton} href="/collaborate">구인·의뢰로 돌아가기</Link><h1 className="text-3xl font-bold">창작자 포트폴리오 링크 전시</h1><details className="rounded-xl border border-line bg-panel px-4 py-2.5"><summary className="cursor-pointer text-sm font-bold text-fg-2 marker:text-accent">{translateCurrentStaticSourceText("domains.collaboration.hiring.CreatorCareerPanel", "ko", "면책 안내")}</summary><p className="mt-2 pb-1 text-xs leading-6 text-fg-3">창작자가 공개 권리를 확인하고 올린 링크입니다. 경력은 본인 작성이며 검증 배지가 아닙니다. 이미지는 이곳에 복제·게시하지 않습니다.</p></details>{error && <CollabNotice error>{error}</CollabNotice>}
-    {items === null && !error && <div role="status" aria-label="전시를 불러오는 중" className="grid gap-4 md:grid-cols-2" aria-hidden="true"><div className="skeleton h-40 rounded-xl" /><div className="skeleton h-40 rounded-xl" /><div className="skeleton h-40 rounded-xl" /><div className="skeleton h-40 rounded-xl" /></div>}
-    {items?.length === 0 && <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center"><img src="/images/empty-library.webp" alt="" aria-hidden="true" loading="lazy" decoding="async" className="mx-auto mb-4 h-32 w-full max-w-sm rounded-xl border border-line/60 object-cover" /><p className="text-sm font-medium text-fg">공개된 포트폴리오가 아직 없어요.</p><p className="mt-1 text-xs leading-6 text-fg-3">경력·포트폴리오 탭에서 경력을 작성하고 공개 전시를 켜면 이곳에 표시됩니다.</p></div>}
-    <div className="grid gap-4 md:grid-cols-2">{items?.map((i) => <article key={i.id} className="space-y-3 rounded-xl border border-line bg-panel p-5"><h2 className="text-xl font-bold">{i.title}</h2><p>{i.displayName} · {CREATOR_HIRING_ROLES[i.role]} · 본인 작성</p><CareerPublicConfirmation summary={confirmations[i.id]} /><p>{i.startMonth}~{i.endMonth ?? "진행 중"}{i.episodeFrom !== null ? ` · ${i.episodeFrom}~${i.episodeTo}화` : ""}</p><p className="whitespace-pre-wrap">{i.scope}</p><p className="whitespace-pre-wrap">{i.contribution}</p><a className={collabButton} href={i.portfolioUrl} target="_blank" rel="noopener noreferrer nofollow">외부 포트폴리오 보기</a></article>)}</div></Container>;
-}
 export function CreatorActivityPanel() {
   const [data, setData] = useState<CreatorActivitySummary | null>(null), [error, setError] = useState("");
   useEffect(() => { const c = new AbortController(); void api.get<CreatorActivitySummary>(`${root}/activity/me`, { signal: c.signal }).then((v) => { if (!c.signal.aborted) setData(v); }).catch(async (e) => { const m = await getApiErrorMessage(e, "활동 기록을 불러오지 못했어요."); if (!c.signal.aborted) setError(m); }); return () => c.abort(); }, []);
   return <section className="space-y-3 rounded-2xl border border-line p-5"><h2 className="text-xl font-bold">협업 참여 기록</h2><p className="text-sm">현재 자동 적립은 연결되지 않았습니다. 실제 제작 완료의 검증된 서버 이벤트가 연결되기 전에는 지원·초대·프로필 작성으로 점수를 만들지 않습니다. 기록은 능력·경력 검증·유료 등급과 별개이며 채용에 영향을 주지 않습니다.</p>{error && <CollabNotice error>{error}</CollabNotice>}{!data && !error && <div role="status" aria-label="협업 참여 기록을 불러오는 중" className="space-y-2" aria-hidden="true"><div className="skeleton h-12 rounded-lg" /><div className="skeleton h-12 rounded-lg" /></div>}{data && <><p>레벨 {data.level} · 유효 활동 {data.points}점</p>{data.events.length === 0 && <div className="rounded-xl border border-dashed border-line px-4 py-6 text-center"><p className="text-sm font-medium text-fg">기록된 활동이 없어요.</p><p className="mt-1 text-xs leading-6 text-fg-3">검증된 제작 완료가 기록되면 이곳에 표시됩니다.</p></div>}<ul>{data.events.map((e) => <li key={e.id} className="py-2 text-sm">{new Date(e.occurredAt).toLocaleString("ko-KR")} · {e.kind === "award" ? "검증된 제작 완료 기록" : "기록 취소"} · {e.points}점</li>)}</ul></>}</section>;
 }
+
+// 갤러리 페이지는 전용 파일로 분리했고, 기존 라우트 import 경로를 유지하려고 여기서 다시 내보낸다.
+export { CreatorCareerGalleryPage } from "./CreatorCareerGalleryPage";
