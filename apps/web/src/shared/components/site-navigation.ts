@@ -14,6 +14,7 @@ import {
   MessageCircle,
   MessageSquareQuote,
   Moon,
+  Mountain,
   PackageCheck,
   Palette,
   Settings,
@@ -28,6 +29,7 @@ import {
 } from "lucide-react";
 
 import {
+  canonicalSitePath,
   primarySiteRouteAuthority,
   type SitePrimaryRouteId,
 } from "@/shared/lib/site-route-authority";
@@ -48,10 +50,17 @@ export interface SiteNavigationItem {
   exact?: boolean;
 }
 
+/** 핵심 여정 4단계. 지도는 하나이고, 현재 여정에 맞는 구간만 강조가 바뀐다. */
+export type SiteNavigationJourney = "start" | "create" | "publish" | "collaborate";
+
 export interface SiteNavigationGroup {
   id: string;
   label: SiteNavigationText;
   description: SiteNavigationText;
+  /** 이 구간이 속한 핵심 여정. 현재 여정 구간 하이라이트의 기준이다.
+   * 단일 지도(SITE_NAVIGATION_GROUPS)는 항상 지정한다. 사이트 디렉터리처럼
+   * 같은 타입을 쓰는 자체 구간 데이터는 지정하지 않을 수 있다. */
+  journey?: SiteNavigationJourney;
   items: readonly SiteNavigationItem[];
 }
 
@@ -223,10 +232,19 @@ export const SITE_NAVIGATION_ITEMS = {
     "fortune",
     "/fortune",
     Moon,
-    "사주·타로 운세",
-    "Fortune & tarot",
+    "운세",
+    "Fortune",
     "오늘의 운세·별자리·사주·궁합·타로·독서 처방",
     "Explore daily fortune, zodiac, saju, compatibility, tarot and reading prescriptions",
+  ),
+  bg3d: item(
+    "bg3d",
+    "/studio/bg3d",
+    Mountain,
+    "배경 · 3D",
+    "Background · 3D",
+    "장면·카메라·원근을 잡아 배경 완성",
+    "Frame scenes, cameras and perspective to finish backgrounds",
   ),
   research: item(
     "research",
@@ -372,43 +390,16 @@ export const TOONSPECTRUM_PRIMARY_NAVIGATION = [
 export const UNIFIED_PRIMARY_NAVIGATION = TOONSPECTRUM_PRIMARY_NAVIGATION;
 export const PRIMARY_SITE_NAVIGATION = TOONSPECTRUM_PRIMARY_NAVIGATION;
 
-export const TOONSTUDIO_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
-  {
-    id: "production-flow",
-    label: { ko: "제작 흐름", en: "Production flow" },
-    description: { ko: "작품 전체를 계획하고 오늘 할 일을 바로 확인", en: "Plan the whole work and see what needs attention today" },
-    items: [I.workspaceHome, I.virtualStudio, I.production, I.growthLab],
-  },
-  {
-    id: "production-resources",
-    label: { ko: "작품 준비", en: "Prepare the work" },
-    description: {
-      ko: "리서치·소재·작품 재료를 작업 가까이에",
-      en: "Keep research, marketplace assets and project materials close to the work",
-    },
-    items: [I.research, I.market, I.studioAssets, I.learn, I.technology],
-  },
-  {
-    id: "production-delivery",
-    label: { ko: "완성·협업", en: "Finish & collaborate" },
-    description: {
-      ko: "검수하고 내보내고 함께할 사람과 연결",
-      en: "Review, export and connect with collaborators",
-    },
-    items: [I.publish, I.workspaceTeam, I.collaborate, I.workspaceHub, I.gallery, I.community],
-  },
-];
-
-export const TOONSPECTRUM_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
-  {
-    id: "create",
-    label: { ko: "만들기", en: "Create" },
-    description: {
-      ko: "그리고 조립하고 함께 작업하는 창작 도구",
-      en: "Draw, compose and work together",
-    },
-    items: [I.make, I.comic, I.shaper, I.virtualStudio, I.production],
-  },
+/**
+ * 사이트 전체의 단일 목적지 지도 (R7에서 확정).
+ *
+ * 예전에는 작업실 컨텍스트용 15항목 지도와 공개 컨텍스트용 25항목 지도가
+ * 따로 있어, 같은 목적지가 화면 맥락마다 다른 그룹·다른 순서로 나타났다.
+ * 이제 지도는 이 하나뿐이고, 컨텍스트가 바꾸는 것은 어느 여정 구간이
+ * 강조되는지뿐이다. 두 구 지도의 목적지는 하나도 빠짐없이 여기에 있다.
+ * 그룹 순서는 핵심 여정(시작 → 제작 → 연재 → 협업)을 따른다.
+ */
+export const SITE_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
   {
     id: "discover",
     label: { ko: "작품 찾기", en: "Discover" },
@@ -416,7 +407,18 @@ export const TOONSPECTRUM_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
       ko: "취향과 흐름에서 다음 작품을",
       en: "Find the next story for your taste",
     },
+    journey: "start",
     items: [I.explore, I.ranking, I.calendar, I.recommend],
+  },
+  {
+    id: "create",
+    label: { ko: "만들기", en: "Create" },
+    description: {
+      ko: "그리고 조립하고 함께 작업하는 창작 도구",
+      en: "Draw, compose and work together",
+    },
+    journey: "create",
+    items: [I.studio, I.make, I.comic, I.shaper, I.bg3d, I.virtualStudio, I.studioAssets, I.production],
   },
   {
     id: "grow",
@@ -425,7 +427,18 @@ export const TOONSPECTRUM_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
       ko: "영감·자료·기회를 실제 작업으로",
       en: "Connect inspiration, research and opportunity",
     },
+    journey: "create",
     items: [I.research, I.market, I.learn, I.opportunities, I.insights, I.now, I.fortune, I.technology],
+  },
+  {
+    id: "publish",
+    label: { ko: "연재·내보내기", en: "Publish" },
+    description: {
+      ko: "검수하고 내보내고 독자 반응으로 다음 화를 준비",
+      en: "Review, export and prepare the next episode from reader response",
+    },
+    journey: "publish",
+    items: [I.publish, I.growthLab],
   },
   {
     id: "connect",
@@ -434,7 +447,8 @@ export const TOONSPECTRUM_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
       ko: "작품과 생각을 사람들과",
       en: "Share stories and ideas with people",
     },
-    items: [I.gallery, I.reviews, I.community, I.collaborate, I.play],
+    journey: "collaborate",
+    items: [I.gallery, I.reviews, I.community, I.collaborate, I.play, I.workspaceTeam, I.workspaceHub],
   },
   {
     id: "personal",
@@ -443,12 +457,17 @@ export const TOONSPECTRUM_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
       ko: "내 작업실과 읽던 작품으로 돌아가기",
       en: "Return to your workspace and reading library",
     },
+    journey: "start",
     items: [I.workspaceHome, I.library, I.home],
   },
 ];
 
-/** Compatibility export for the legacy all-menu consumer. */
-export const SITE_NAVIGATION_GROUPS = TOONSPECTRUM_NAVIGATION_GROUPS;
+/**
+ * 호환 별칭: 단일 지도 확정 이전의 컨텍스트별 그룹 이름으로 import하는
+ * 소비자를 위해 남겨 둔다. 두 이름 모두 같은 단일 지도를 가리킨다.
+ */
+export const TOONSTUDIO_NAVIGATION_GROUPS = SITE_NAVIGATION_GROUPS;
+export const TOONSPECTRUM_NAVIGATION_GROUPS = SITE_NAVIGATION_GROUPS;
 
 export const TOONSTUDIO_MOBILE_TABS = TOONSTUDIO_PRIMARY_NAVIGATION;
 export const TOONSPECTRUM_MOBILE_TABS = TOONSPECTRUM_PRIMARY_NAVIGATION;
@@ -472,11 +491,41 @@ export function primarySiteNavigationForPath(pathname: string): readonly SiteNav
     : TOONSPECTRUM_PRIMARY_NAVIGATION;
 }
 
-/** Return grouped drawer navigation for the pathname's product context. */
-export function siteNavigationGroupsForPath(pathname: string): readonly SiteNavigationGroup[] {
-  return siteNavigationContextForPath(pathname) === "studio"
-    ? TOONSTUDIO_NAVIGATION_GROUPS
-    : TOONSPECTRUM_NAVIGATION_GROUPS;
+/**
+ * 그룹 지도는 컨텍스트와 무관하게 단일 지도를 반환한다.
+ * 컨텍스트가 바꾸는 것은 지도 자체가 아니라 강조(현재 여정 구간)뿐이다.
+ */
+export function siteNavigationGroupsForPath(_pathname: string): readonly SiteNavigationGroup[] {
+  return SITE_NAVIGATION_GROUPS;
+}
+
+/**
+ * 현재 경로가 속한 지도 구간을 찾는다. 항목 href와의 최장 접두사 일치가
+ * 기준이며, 루트("/")는 정확히 일치할 때만 내 기록 구간의 홈으로 본다.
+ * 어느 구간에도 속하지 않는 경로는 null이다.
+ */
+export function siteNavigationGroupForPath(pathname: string): SiteNavigationGroup | null {
+  const path = canonicalSitePath(pathname);
+  let current: SiteNavigationGroup | null = null;
+  let longest = -1;
+  for (const group of SITE_NAVIGATION_GROUPS) {
+    for (const entry of group.items) {
+      const href = canonicalSitePath(entry.href);
+      const matches = href === "/"
+        ? path === "/"
+        : path === href || path.startsWith(`${href}/`);
+      if (matches && href.length > longest) {
+        current = group;
+        longest = href.length;
+      }
+    }
+  }
+  return current;
+}
+
+/** 현재 경로가 속한 핵심 여정. 지도에 없는 경로는 null이다. */
+export function siteNavigationJourneyForPath(pathname: string): SiteNavigationJourney | null {
+  return siteNavigationGroupForPath(pathname)?.journey ?? null;
 }
 
 /** Return stable mobile tabs for the pathname's product context. */
