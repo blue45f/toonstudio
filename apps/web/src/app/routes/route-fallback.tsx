@@ -3,6 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import { LoadingState } from "@/shared/components/LoadingState";
+
+import {
+  RouteSilhouetteSkeleton,
+  routeSilhouetteFamily,
+} from "./route-fallback-silhouette";
 import {
   defineBilingualText,
   translateBilingualValueForActiveLocale,
@@ -104,6 +109,7 @@ export function RouteFallback({ accessibleTitle }: { readonly accessibleTitle?: 
     };
   }, []);
 
+  const silhouette = routeSilhouetteFamily(pathname);
   const title = accessibleTitle?.trim() || t(COPY.loadingPage);
   const recoveryMessage = experience.recoveryPolicy === "restore-revision"
     ? t(COPY.recoveryRevision)
@@ -119,7 +125,11 @@ export function RouteFallback({ accessibleTitle }: { readonly accessibleTitle?: 
       <p className="sr-only">
         {t(experience.pagePurpose)}
       </p>
-      <LoadingState variant="cards" label={t("common.loading")} />
+      {silhouette ? (
+        <RouteSilhouetteSkeleton family={silhouette} label={t("common.loading")} />
+      ) : (
+        <LoadingState variant="cards" label={t("common.loading")} />
+      )}
       {delayed ? (
         <div className="mt-6 flex min-w-0 items-start gap-3 rounded-2xl border border-line bg-panel/75 p-4 text-sm text-fg-2" role="status" aria-live="polite">
           {offline ? <WifiOff size={18} className="mt-0.5 shrink-0 text-amber-500" aria-hidden="true" /> : <Clock3 size={18} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />}
