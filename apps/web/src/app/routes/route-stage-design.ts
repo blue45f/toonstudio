@@ -78,7 +78,7 @@ const FAMILY_DOMAINS: readonly [SiteDesignDomain, readonly string[]][] = [
   ["community", ["/team", "/community", "/collaborate", "/messages", "/reviews", "/pencafe", "/creators", "/u", "/opportunities", "/events", "/ecosystem/collaboration", "/ecosystem/fandom", "/cuts", "/newsletter", "/character-chat"]],
   ["story", ["/story-lab"]],
   ["assets", ["/market", "/research/assets", "/research/packs", "/research/vam", "/research/rijksmuseum", "/research/fonts", "/research/creatures", "/research/music-metadata", "/research/archive", "/research/open-data"]],
-  ["learn", ["/learn", "/guide", "/references", "/research", "/developers", "/help", "/about/workflow", "/about/technology", "/about/studio", "/product-tour", "/brand-film", "/ecosystem/education", "/ecosystem"]],
+  ["learn", ["/learn", "/guide", "/references", "/research", "/developers", "/help", "/about/workflow", "/about/technology", "/about/studio", "/product-tour", "/brand-film", "/features", "/ecosystem/education", "/ecosystem"]],
   ["account", ["/settings", "/my", "/me", "/auth", "/notifications", "/membership", "/memberships", "/pricing", "/onboarding/taste", "/account/points"]],
   ["catalog", ["/hub", "/discover", "/ranking", "/search", "/recommend", "/explore", "/calendar", "/library", "/compare", "/random", "/insights", "/tags", "/authors", "/news", "/title", "/author", "/lists", "/now", "/fortune", "/play"]],
   ["system", ["/admin", "/about", "/status", "/accessibility", "/design", "/sitemap", "/terms", "/privacy", "/copyright", "/contact", "/business", "/support-us", "/support-creators", "/support", "/feedback", "/install", "/offline"]],

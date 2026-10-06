@@ -1,6 +1,7 @@
 import {
   Bell,
   BookOpen,
+  Briefcase,
   Database,
   MessageCircle,
   Search,
@@ -148,6 +149,16 @@ export const PERSONAL_DESTINATIONS = [
       en: "Manage per-category notifications and role notification settings",
     },
   },
+  {
+    id: "role-settings",
+    href: "/settings/role",
+    icon: Briefcase,
+    label: { ko: "직군·작업환경", en: "Role & workspace" },
+    description: {
+      ko: "내 직군 프로필과 직군에 맞는 작업환경 개인화 관리",
+      en: "Manage your role profile and role-based workspace personalization",
+    },
+  },
   ...SITE_UTILITY_NAVIGATION,
 ] as const;
 
@@ -167,6 +178,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/home", "내 스튜디오", "My studio", "선택 작품의 공간과 목록에서 이어서 작업", "Continue your selected work in spatial or list view"),
       destination("/onboarding/character", "캐릭터 선택", "Choose character", "서비스와 가상스튜디오에서 사용할 내 캐릭터 선택", "Choose your identity for the service and virtual studio"),
       destination("/team", "팀 작업실", "Team workspace", "작품 멤버와 채용·면접 작업실 연결", "Connect project members, hiring and interviews"),
+      destination("/team/organization", "조직 홈", "Organization home", "회사·스튜디오 단위 조직 프로필과 소속 팀 연결·현황 관리", "Manage your organization profile, linked teams and status rollups"),
       destination("/hub", "둘러보기", "Explore hub", "작품·소재·창작자·학습 찾기", "Find works, materials, creators and learning"),
       destination("/about/studio", "스튜디오 소개", "Studio introduction", "기존 제작 가이드와 서비스 기능 살펴보기", "Explore the preserved production guides and features"),
       destination("/collaborate/positions", "조건별 인력 모집", "Find hiring positions", "역할·도구·보수 조건으로 모집 자리 찾기", "Find positions by role, tools and compensation"),
@@ -342,6 +354,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/market/fit", "에셋 핏 랩", "Asset fit lab", "현재 작업에 맞는 에셋 점검", "Evaluate assets against the current project"),
       destination("/market/publish", "에셋 등록", "Publish an asset", "마켓에 리소스 제출·배포", "Submit and publish resources to Market"),
       destination("/market/manage", "판매·배포 관리", "Manage listings", "등록한 에셋과 배포 상태 관리", "Manage published assets and distribution"),
+      destination("/market/seller", "포인트 판매·공동구매", "Point sales & group buys", "활동 포인트로 창작자 리스팅을 사고파고 공동구매로 함께 확정", "Buy and sell creator listings with activity points, or confirm together through group buys"),
       destination("/market/library", "내 에셋", "My assets", "획득한 리소스 관리", "Manage acquired resources"),
       destination("/market/wishlist", "찜한 에셋", "Saved assets", "나중에 사용할 리소스", "Keep resources for later"),
       destination("/market/compare", "에셋 비교", "Compare assets", "후보 리소스의 차이 비교", "Compare shortlisted resources"),
@@ -365,6 +378,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/research/books", "글로벌 판본 탐색", "Global editions", "Open Library·Google Books·openBD 메타데이터 검색", "Search Open Library, Google Books and openBD metadata"),
       destination("/research/3d-assets", "무료 3D 재료실", "Free 3D assets", "Poly Haven CC0 3D·HDRI·텍스처 검색", "Search Poly Haven CC0 models, HDRIs and textures"),
       destination("/research/material-assets", "CC0 PBR·3D 소재", "CC0 PBR & 3D assets", "ambientCG 재질·HDRI·데칼·3D 모델·지형 검색", "Search ambientCG materials, HDRIs, decals, models and terrain"),
+      destination("/research/materials", "소재 아틀라스", "Materials atlas", "제공처별 CC0 소재를 모아 담고 스튜디오로 보내기", "Collect CC0 materials across providers and send them to the Studio"),
       destination("/research/space-assets", "NASA 우주·과학 자료", "NASA space references", "행성·우주선·과학 이미지를 출처와 함께 탐색", "Explore sourced planetary, spacecraft and science imagery"),
       destination("/research/vam", "V&A 패션·디자인", "V&A fashion & design", "복식·직물·가구·장식미술 고증", "Research costume, textiles, furniture and decorative arts"),
       destination("/research/rijksmuseum", "Rijksmuseum 고증", "Rijksmuseum references", "제작자·시대·권리 표시가 있는 문화 자료", "Explore cultural references with maker, period and rights evidence"),
@@ -444,6 +458,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
     items: [
       destination("/product-tour", "툰스튜디오 전체 제품 투어", "ToonStudio full product tour", "8분 24초 장편 영상과 실제 제품 화면으로 전체 제작 흐름 이해", "Understand the full production journey through an 8m 24s tour and real product screens"),
       destination("/brand-film", "툰스튜디오 홍보영상", "ToonStudio brand film", "24초 브랜드 필름으로 핵심 제작 경험 빠르게 보기", "Watch the 24-second brand film for a quick product overview"),
+      destination("/features", "기능 한눈에 보기", "Features at a glance", "툰스튜디오의 모든 기능을 카테고리별로 한눈에 확인", "Browse every ToonStudio feature by category at a glance"),
       destination("/about", "서비스 소개", "About ToonStudio", "기능과 운영 원칙", "Features and operating principles"),
       destination(
         "/about/workflow",
