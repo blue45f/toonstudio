@@ -8,6 +8,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   DEFAULT_STUDIO_VIRTUAL_ART_STYLE,
   STUDIO_VIRTUAL_ART_STYLES,
+  studioVirtualArtTextureUrl,
   type StudioVirtualArtStyleKey,
 } from "./studio-virtual-space-art-style";
 import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
@@ -137,6 +138,11 @@ export function StudioVirtualSpaceEntryLobby({
     </div>
     <div className="space-lobby__layout">
       <section className="space-lobby__stage" aria-label={bt("입장 미리보기", "Entry preview")}>
+        {/* 들어갈 월드의 실제 베이스 아트를 무대 배경으로 깐다. 입장 전 프리뷰라 위치·신호는 만들지 않고,
+            부트 로더가 받는 것과 같은 스타일별 world-base 텍스처만 정적으로 보여 준다. */}
+        <div className="space-lobby__scene" aria-hidden>
+          <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle} />
+        </div>
         <header className="space-lobby__stage-head">
           <p className="space-lobby__kicker"><Sparkles size={15} aria-hidden />{onboarding ? "ToonStudio Character" : "ToonStudio Spatial Campus"}</p>
           <p className="space-lobby__place">{projectName}</p>
@@ -245,15 +251,16 @@ export function StudioVirtualSpaceEntryLobby({
           </div>
         </div> : null}
 
-        {onEnterWithCode ? <div className="space-lobby__entry-code">
-          <StudioVirtualSpaceEntryCodePanel onEnterWithCode={onEnterWithCode} />
-        </div> : null}
-
         <div className="space-lobby__actions">
           <Link href={backHref} className={buttonClass({ variant: "outline" })}>{resolvedBackLabel}</Link>
           {resumeAvailable ? null : <button type="button" className={buttonClass()} disabled={!canEnter} onClick={onEnter}>{enterLabel}</button>}
         </div>
         <p className="space-lobby__note" role={!canEnter ? "status" : undefined}>{note}</p>
+
+        {/* 입장코드는 닉네임 입장의 대체 경로라 기본 행동 아래에 둔다. 첫 화면의 주인공은 닉네임+입장 버튼이다. */}
+        {onEnterWithCode ? <div className="space-lobby__entry-code">
+          <StudioVirtualSpaceEntryCodePanel onEnterWithCode={onEnterWithCode} />
+        </div> : null}
       </section>
     </div>
   </div>;

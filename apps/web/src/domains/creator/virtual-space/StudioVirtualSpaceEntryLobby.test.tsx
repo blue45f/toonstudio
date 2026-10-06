@@ -137,6 +137,32 @@ describe("StudioVirtualSpaceEntryLobby", () => {
   });
 });
 
+describe("StudioVirtualSpaceEntryLobby 월드 미리보기와 첫 화면 순서", () => {
+  it("무대에 입장할 월드의 실제 베이스 아트를 깔고 아트 스타일을 바꾸면 그 스타일의 월드로 교체한다", () => {
+    const props = { returning: false, projectName: "Project Aurora", onAvatarIndex: vi.fn(), onNickname: vi.fn(), onEnter: vi.fn() } as const;
+    const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" {...props} /></MemoryRouter>);
+    const stage = screen.getByRole("region", { name: "입장 미리보기" });
+    const preview = stage.querySelector<HTMLImageElement>("[data-world-preview]");
+    expect(preview).not.toBeNull();
+    expect(preview!.getAttribute("src")).toBe("/assets/virtual-studio/style-packs-v5/sky-island/world/world-base.webp");
+    view.rerender(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" artStyle="retro" {...props} /></MemoryRouter>);
+    expect(stage.querySelector<HTMLImageElement>("[data-world-preview]")!.getAttribute("src"))
+      .toBe("/assets/virtual-studio/style-packs-v5/retro/world/world-base.webp");
+  });
+
+  it("필수 입력 순서는 닉네임이 캐릭터 선택보다 먼저이고, 입장 버튼이 입장코드보다 먼저다", () => {
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()}
+      onEnterWithCode={vi.fn()} /></MemoryRouter>);
+    const nickname = screen.getByLabelText(/공개 닉네임/u);
+    const picker = screen.getByRole("group", { name: "내 캐릭터" });
+    expect(nickname.compareDocumentPosition(picker) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const enterButton = screen.getByRole("button", { name: "선택하고 입장" });
+    const codeHeading = screen.getByRole("heading", { name: "입장코드로 입장" });
+    expect(enterButton.compareDocumentPosition(codeHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
 describe("입장 로비 조작법 미리보기", () => {
   it("접힌 상태로 조작법 3가지를 미리 보여주고 미니 투어를 안내한다", () => {
     render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}
