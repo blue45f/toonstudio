@@ -43,7 +43,7 @@
 .rd-poster { position: relative; isolation: isolate; overflow: hidden; border: 1px solid var(--rd-border); border-radius: 20px; background: var(--rd-art-scrim); }
 .rd-poster-art { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 16%; }
 .rd-poster::before { content: ""; position: absolute; z-index: -1; inset: 0; pointer-events: none; background: linear-gradient(90deg, color-mix(in oklch, var(--rd-art-scrim) 90%, transparent), color-mix(in oklch, var(--rd-art-scrim) 46%, transparent) 56%, color-mix(in oklch, var(--rd-art-scrim) 22%, transparent)), linear-gradient(0deg, color-mix(in oklch, var(--rd-art-scrim) 88%, transparent), transparent 56%); }
-.rd-poster-inner { position: relative; display: grid; grid-template-columns: minmax(0, 780px); align-items: end; min-height: 520px; padding: 48px 44px 40px; }
+.rd-poster-inner { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); column-gap: 36px; align-items: end; min-height: 520px; padding: 48px 44px 40px; }
 .rd-story { display: grid; align-content: end; gap: 9px; min-width: 0; max-width: 680px; }
 .creator-home[data-home-view="dashboard"] .reference-dashboard .rd-brand { width: fit-content; font-family: var(--font-display), sans-serif; font-size: 48px; font-weight: 800; line-height: 1; letter-spacing: -.04em; }
 .reference-dashboard .rd-brand > small { display: block; margin-top: 6px; color: var(--rd-on-art-2); font-family: var(--font-serif), serif; font-size: 15px; font-style: italic; line-height: 1.3; letter-spacing: .01em; text-align: right; }
@@ -71,9 +71,9 @@
 .rd-discover { min-width: 0; }
 .rd-discover:has(> section) { margin-top: 44px; }
 
-/* Luna 안내 — 제안 칩 + 실제 대화 */
-.rd-luna-section { margin-top: 44px; }
+/* Luna 안내 — 히어로 우측 패널 (제안 칩 + 실제 대화) */
 .rd-luna { min-width: 0; max-width: 880px; }
+.rd-poster-inner .rd-luna { width: 100%; }
 .rd-luna-card { display: flex; flex-direction: column; gap: 10px; max-height: 480px; padding: 14px; border: 1px solid color-mix(in srgb, var(--rd-accent) 45%, transparent); border-radius: 16px; background: linear-gradient(160deg, color-mix(in oklch, var(--rd-accent) 16%, var(--rd-art-card)), var(--rd-art-card)); box-shadow: 0 14px 34px color-mix(in oklch, var(--rd-art-scrim) 55%, transparent); }
 .rd-luna-head { display: flex; align-items: center; gap: 10px; }
 .creator-home .reference-dashboard .rd-luna-head > img { width: 44px; height: 44px; block-size: 44px; border-radius: 12px; object-fit: cover; object-position: center 14%; }
@@ -223,7 +223,8 @@
 }
 
 @media (max-width: 1199px) {
-  .rd-poster-inner { grid-template-columns: minmax(0, 720px); min-height: 500px; padding: 38px 32px 34px; }
+  .rd-poster-inner { grid-template-columns: minmax(0, 720px); row-gap: 26px; min-height: 500px; padding: 38px 32px 34px; }
+  .rd-poster-inner .rd-luna { max-width: 640px; }
   .rd-editor-body { grid-template-columns: 44px minmax(0, 1fr); }
   .rd-editor-layers { display: none; }
   .rd-core-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
