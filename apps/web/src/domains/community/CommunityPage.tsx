@@ -10,6 +10,7 @@ import {
 import { Navigate, useParams } from "react-router-dom";
 
 import { CommunityScopeDirectory } from "./components/community-scope-directory";
+import { CommunityActivityPreview } from "./components/community-activity-preview";
 import {
   COMMUNITY_SCOPE_DESCRIPTION_KEYS,
   COMMUNITY_SCOPE_DIRECTORY_DESCRIPTION_KEYS,
@@ -69,6 +70,12 @@ const COPY = {
     "heroArtCaption",
     "브랜드 콘셉트 아트 · 실제 커뮤니티 화면이 아닙니다",
     "Brand concept art · not a live community screen",
+  ),
+  tagline: defineBilingualText(
+    "communityPage",
+    "tagline",
+    "Together, We Create More",
+    "Together, We Create More",
   ),
   ctaGallery: defineBilingualText("communityPage", "ctaGallery", "창작자 갤러리", "Creator gallery"),
   ctaCollab: defineBilingualText("communityPage", "ctaCollab", "웹툰 구인·의뢰", "Jobs & commissions"),
@@ -186,6 +193,12 @@ export function CommunityPage() {
           </>
         }
       />
+
+      <p className="mt-5 text-center text-xs font-black uppercase tracking-[0.28em] text-fg-3 lg:text-left">
+        {t(COPY.tagline)}
+      </p>
+
+      <CommunityActivityPreview />
 
       <Section
         className="mt-10 sm:mt-12"
