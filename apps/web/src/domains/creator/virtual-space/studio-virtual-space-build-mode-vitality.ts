@@ -120,3 +120,18 @@ export function studioBuildPlacedFixtures(
   }
   return Object.freeze(fixtures);
 }
+
+/**
+ * 카탈로그 항목이 fx 고정물 층에 배치될 수 있는 상태 가구인지(좌표 무관 판정).
+ * 빌드 패널이 "배치하면 반응하는 가구" 목록을 만들 때 쓴다 — 디스크립터 변환
+ * (studioBuildPlacedFixture)과 같은 기준이라, 여기서 true인 항목은 어떤 좌표에
+ * 놓아도 디스크립터가 생긴다. 커피 머신은 종류 매핑은 있지만 고정물 층 제외라 false다.
+ */
+export function studioBuildFixturePlaceable(entryId: string): boolean {
+  const entry = studioBuildCatalogEntryById(entryId);
+  if (!entry || entry.category !== "furniture") return false;
+  const spec = furnitureById(entry.refId);
+  if (!spec) return false;
+  const kind = studioBuildFurnitureInteractableKind(spec.kind);
+  return kind !== null && PLACED_FIXTURE_KINDS.has(kind);
+}

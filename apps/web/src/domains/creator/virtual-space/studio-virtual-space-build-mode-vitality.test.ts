@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import type { StudioBuildPlacementRequest } from "./studio-virtual-space-build-mode";
+import { STUDIO_BUILD_CATALOG } from "./studio-virtual-space-build-mode";
 import {
+  studioBuildFixturePlaceable,
   studioBuildFurnitureInteractableKind,
   studioBuildGhostReactionFrame,
   studioBuildPlacedFixture,
@@ -111,5 +113,34 @@ describe("빌드 모드 가구 생동감 — 배치 고정물 디스크립터", 
       furnitureRequest("display-screen", 500, 200),
     ]);
     expect(fixtures.map((fixture) => fixture.objectId)).toEqual(["build:floor-lamp@100,200", "build:display-screen@500,200"]);
+  });
+});
+
+describe("빌드 모드 가구 생동감 — 배치 가능 판정", () => {
+  it("고정물 층에 닿는 가구만 true이고, 디스크립터 변환과 기준이 같다", () => {
+    expect(studioBuildFixturePlaceable("furniture:floor-lamp")).toBe(true);
+    expect(studioBuildFixturePlaceable("furniture:neon-sign-open")).toBe(true);
+    expect(studioBuildFixturePlaceable("furniture:whiteboard")).toBe(true);
+    expect(studioBuildFixturePlaceable("furniture:display-screen")).toBe(true);
+    expect(studioBuildFixturePlaceable("furniture:arcade-cabinet")).toBe(true);
+    // 커피 머신은 종류 매핑은 있지만 고정물 층에서 제외라 배치 대상이 아니다.
+    expect(studioBuildFixturePlaceable("furniture:coffee-machine")).toBe(false);
+    expect(studioBuildFixturePlaceable("furniture:coffee-cart")).toBe(false);
+    // 상태가 없는 가구·타 카테고리·없는 항목은 false다.
+    expect(studioBuildFixturePlaceable("furniture:rug-round")).toBe(false);
+    expect(studioBuildFixturePlaceable("furniture:sofa-two")).toBe(false);
+    expect(studioBuildFixturePlaceable("decor:lamp")).toBe(false);
+    expect(studioBuildFixturePlaceable("light:floor-lamp")).toBe(false);
+    expect(studioBuildFixturePlaceable("furniture:없는가구")).toBe(false);
+  });
+
+  it("카탈로그 전수에서 배치 가능한 항목은 전부 디스크립터를 만든다", () => {
+    for (const entry of STUDIO_BUILD_CATALOG) {
+      if (!studioBuildFixturePlaceable(entry.id)) continue;
+      const fixture = studioBuildPlacedFixture({
+        entryId: entry.id, category: "furniture", refId: entry.refId, point: { x: 320, y: 320 }, rotation: 0,
+      });
+      expect(fixture, entry.id).not.toBeNull();
+    }
   });
 });
