@@ -12,14 +12,12 @@ import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { normalizeCollaborationOnboardingCandidate, readCollaborationOnboardingCandidate, type CollaborationOnboardingCandidate } from "@/shared/lib/collaboration-onboarding";
 import { inviteStudioTeamMember, type StudioTeamAssignableRole } from "../studio-team-client";
 import { listProductionProjects, type ProductionProjectSummary } from "./production-dashboard-api";
-import { getEffectiveOperationPolicy, acceptTeamInvite, commandTeamWorkspace, createTeamWorkspace, getTeamUsage, getTeamWorkspace, listTeamWorkspaces } from "./team-workspace-api";
+import { getEffectiveOperationPolicy, commandTeamWorkspace, createTeamWorkspace, getTeamUsage, getTeamWorkspace, listTeamWorkspaces } from "./team-workspace-api";
 import { parseProductionRolePresetId, PRODUCTION_ROLE_PRESETS, productionRolePreset, type ProductionRolePreset } from "./production-manuscript-competitive-model";
 import { TeamAccessGuide } from "./TeamAccessGuide";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   createStudioSpatialInviteFragment,
-  parseStudioSpatialInviteFragment,
-  studioSpatialInviteDestination,
   type StudioSpatialInviteContext,
 } from "../virtual-space/studio-spatial-invite-context";
 
@@ -396,35 +394,4 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
     {detail.workspace.role !== "owner" && <button disabled={busy} className={buttonClass({ variant: "outline" })} onClick={() => { if (window.confirm(bt("이 워크스페이스에서 나갈까요? 별도의 작품 접근 권한은 유지됩니다.", "Leave this workspace? Your separate project access stays."))) void run(() => command({ type: "remove-member", userId })); }}>{bt("워크스페이스 나가기", "Leave workspace")}</button>}
     </>}</>}
     </div></div>;
-}
-export function TeamWorkspaceJoinPage() {
-  const bt = useBilingual("TeamWorkspacePage");
-  const userId = useApp((state) => state.userId);
-  const navigate = useNavigate();
-  const [token, setToken] = useState("");
-  const [entryContext, setEntryContext] = useState<StudioSpatialInviteContext>({ kind: "team-lobby" });
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    const parsed = parseStudioSpatialInviteFragment(window.location.hash);
-    if (parsed.token) setToken(parsed.token);
-    setEntryContext(parsed.context);
-    if (window.location.hash) {
-      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
-    }
-  }, []);
-  return <div data-creator-workflow="team-join" data-route-ready="team-workspace-join" className="min-h-dvh bg-canvas px-4 py-8 text-fg"><div className="mx-auto max-w-xl space-y-4">
-    <h1 className="text-2xl font-black">{bt("워크스페이스 초대 수락", "Accept workspace invite")}</h1><p>{bt("초대받은 이메일로 로그인하고 이메일 인증을 완료해주세요. 작품별 접근 권한은 별도로 적용됩니다.", "Sign in with your invited email and finish email verification. Per-project access applies separately.")}</p>
-    {error && <p role="alert">{error}</p>}
-    {!userId && <p>{bt("로그인 후 원래 초대 링크를 다시 열거나 초대 코드를 입력해주세요.", "After signing in, reopen the original invite link or enter the invite code.")} <button type="button" className="underline" onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "team-workspace-invite", mode: "login" })}>{bt("로그인", "Sign in")}</button></p>}
-    <form className="flex flex-col gap-4" onSubmit={(event) => { event.preventDefault(); setBusy(true); setError("");
-      void acceptTeamInvite(token.trim()).then((result) => {
-        setToken("");
-        navigate(studioSpatialInviteDestination(entryContext, result.workspaceId), { replace: true });
-      })
-        .catch(async (cause: unknown) => setError(await getApiErrorMessage(cause, bt("초대를 수락하지 못했습니다.", "Couldn't accept the invite.")))).finally(() => setBusy(false)); }}>
-      <label className="flex flex-col gap-2">{bt("초대 코드", "Invite code")}<input className={fieldClass} value={token} onChange={(event) => setToken(event.target.value)} autoComplete="off" spellCheck={false} maxLength={43} /></label>
-      <button disabled={!userId || busy || !/^[A-Za-z0-9_-]{43}$/u.test(token.trim())} className={buttonClass()} type="submit">{bt("초대 수락하기", "Accept invite")}</button></form>
-    <Link to="/team/people" className="inline-block underline">{bt("팀 목록으로", "Back to teams")}</Link>
-  </div></div>;
 }

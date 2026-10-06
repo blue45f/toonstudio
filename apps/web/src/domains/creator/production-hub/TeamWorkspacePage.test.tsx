@@ -4,7 +4,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FREE_USAGE_POLICY } from "@toonstudio/contracts/production-workspace";
-import { TeamWorkspacePage, TeamWorkspaceJoinPage } from "./TeamWorkspacePage";
+import { TeamWorkspacePage } from "./TeamWorkspacePage";
+import { TeamWorkspaceJoinPage } from "./TeamWorkspaceJoinPage";
 import { saveCollaborationOnboarding } from "@/shared/lib/collaboration-onboarding";
 
 const mocks = vi.hoisted(() => ({ userId: "owner" as string | null,

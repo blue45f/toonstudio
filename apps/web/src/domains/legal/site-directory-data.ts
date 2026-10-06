@@ -328,7 +328,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
     },
     items: [
       destination("/team/people", "사람·권한 관리", "People and access", "팀 소속·프로젝트 접근·이용 한도 관리", "Manage team membership, project access and usage"),
-      destination("/team/people/join", "팀 초대 수락", "Accept a team invitation", "인증된 이메일로 초대받은 팀에 참여", "Join an invited team using your verified email"),
+      destination("/team/people/join", "팀 합류", "Join a team", "초대 코드·링크로 초대받은 팀에 합류", "Join an invited team with a code or link"),
       destination("/studio/review", "리뷰·승인", "Review & approval", "작업을 검수하고 의견 반영", "Review work and resolve feedback"),
       destination("/showcase/reviews", "승인 검수본 전시", "Approved review showcase", "공개에 동의한 고정 승인본을 안전하게 열람", "Browse immutable approved review snapshots that were explicitly published"),
       destination("/studio/versions", "버전·복구", "Versions & recovery", "저장 이력과 복구 지점 관리", "Manage version history and recovery points"),

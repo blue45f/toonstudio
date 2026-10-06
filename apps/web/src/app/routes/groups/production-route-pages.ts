@@ -55,6 +55,6 @@ export const TeamWorkspacePage = lazyRetry(
   "TeamWorkspacePage",
 );
 export const TeamWorkspaceJoinPage = lazyRetry(
-  () => import("@/domains/creator/production-hub/TeamWorkspacePage").then((module) => ({ default: module.TeamWorkspaceJoinPage })),
+  () => import("@/domains/creator/production-hub/TeamWorkspaceJoinPage").then((module) => ({ default: module.TeamWorkspaceJoinPage })),
   "TeamWorkspaceJoinPage",
 );

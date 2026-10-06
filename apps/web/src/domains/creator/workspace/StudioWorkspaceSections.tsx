@@ -32,7 +32,7 @@ export function WorkspaceTeamContent({ project, links }: {
     members: {
       title: bt("함께 만드는 사람과 권한", "People and permissions"),
       description: bt("현재 작품의 멤버십과 권한을 관리합니다. 모집 게시물은 팀 가입이나 원고 접근 권한이 아닙니다.", "Manage membership and access for the current work. A recruitment post does not grant access."),
-      items: [[project ? links.team : "/studio", project ? bt("선택 작품의 멤버·권한 관리", "Manage this work's team") : bt("팀을 관리할 작품 선택", "Choose a work"), bt("기존 작품 권한 설정으로 이동", "Open existing work permissions")], [project ? links.production : "/production", bt("진행·담당·일정 확인", "Production and assignments"), bt("실제 제작 보드 확인", "Check the production board")], ["/team/people", bt("팀 소속과 접근 권한 관리", "Manage team membership and access"), bt("팀과 작품 권한을 한 흐름에서 확인", "Review team and work access in one flow")]] satisfies Destination[],
+      items: [["/team/people/join", bt("초대 코드로 합류", "Join with an invite code"), bt("초대받은 팀에 합류 시트 한 장으로 합류", "Join an invited team on a single join sheet")], [project ? links.team : "/studio", project ? bt("선택 작품의 멤버·권한 관리", "Manage this work's team") : bt("팀을 관리할 작품 선택", "Choose a work"), bt("기존 작품 권한 설정으로 이동", "Open existing work permissions")], [project ? links.production : "/production", bt("진행·담당·일정 확인", "Production and assignments"), bt("실제 제작 보드 확인", "Check the production board")], ["/team/people", bt("팀 소속과 접근 권한 관리", "Manage team membership and access"), bt("팀과 작품 권한을 한 흐름에서 확인", "Review team and work access in one flow")]] satisfies Destination[],
     },
     recruit: {
       title: bt("작품에 필요한 동료를 찾으세요", "Find the right collaborators"),

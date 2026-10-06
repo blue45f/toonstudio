@@ -10,6 +10,7 @@ import {
   getTeamWorkspace,
   listTeamWorkspaces,
 } from "../production-hub/team-workspace-api";
+import { createStudioSpatialInviteFragment } from "./studio-spatial-invite-context";
 
 const roleOptions: readonly { readonly id: InvitableWorkspaceRole; readonly ko: string; readonly en: string }[] = [
   { id: "admin", ko: "관리자", en: "Admin" },
@@ -69,7 +70,7 @@ export function StudioVirtualSpaceTeamHub({ productionProjectId, workId }: {
     try {
       const result = await commandTeamWorkspace(detail.workspace.id, detail.workspace.revision, command);
       if (result.token) {
-        const url = `${globalThis.location.origin}/production/workspaces/join?token=${encodeURIComponent(result.token)}`;
+        const url = `${globalThis.location.origin}/team/people/join${createStudioSpatialInviteFragment(result.token, { kind: "team-lobby" })}`;
         setInviteUrl(url); setCopied(false);
       }
       await loadList(detail.workspace.id);
