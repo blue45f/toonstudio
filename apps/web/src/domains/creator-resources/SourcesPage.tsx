@@ -10,7 +10,9 @@ import { MotionEmptyState } from "@/shared/motion-assets";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { OPEN_API_FEATURES } from "./open-api-features";
+import { researchSourceIdentityForRoute } from "./research-source-identity";
 import { ResourceLayout } from "./ResourceLayout";
+import { ResearchSourceMark } from "./ResearchSourceCover";
 import {
   isFreeResourceSource, resourceSourceAuthLabel, resourceSourceCostLabel, resourceSourceImportLabel,
   resourceSourceIntegrationLabel, resourceSourceRightsLabel, RESOURCE_SOURCES,
@@ -94,14 +96,21 @@ export function SourcesPage() {
       description={tx("검색어를 줄이거나 필터 선택을 해제하면 더 많은 제공처를 확인할 수 있습니다.")}
       action={<button type="button" className={RESOURCE_BUTTON} onClick={resetFilters}>{tx("검색·필터 초기화")}</button>}
     />}
-    <div className="grid gap-4 md:grid-cols-2">{rows.map((source) => <article key={source.name} className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-5">
+    <div className="grid gap-4 md:grid-cols-2">{rows.map((source) => {
+      // 정체성은 이름 추정이 아니라 기능 경로(productRoute) 바인딩으로만 확정한다.
+      const identity = researchSourceIdentityForRoute(source.productRoute);
+      return <article key={source.name} className={`flex flex-col gap-3 rounded-2xl border border-line bg-panel p-5${identity ? ` research-source research-source--${identity.provider}` : ""}`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold text-accent">{tx(source.category)} · {tx(source.status)}</span>
         <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${sourceCostStyle(resourceSourceCostLabel(source))}`}>{tx(resourceSourceCostLabel(source))}</span>
         <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${COMMERCIAL_STYLE[source.commercial]}`}>{tx(source.commercial)}</span>
         <span className="rounded-full border border-line bg-raised px-2 py-0.5 text-xs font-semibold text-fg-2">{tx(resourceSourceIntegrationLabel(source))}</span>
       </div>
-      <h2 className="text-lg font-bold">{source.name}</h2><p className="flex-1 text-sm leading-7 text-fg-2">{tx(source.note)}</p>
+      <div className="flex items-center gap-3">
+        {identity && <ResearchSourceMark identity={identity} />}
+        <h2 className="text-lg font-bold">{source.name}</h2>
+      </div>
+      <p className="flex-1 text-sm leading-7 text-fg-2">{tx(source.note)}</p>
       <dl className="grid grid-cols-1 gap-2 rounded-xl bg-raised p-3 text-xs text-fg-2 sm:grid-cols-3">
         <div><dt className="font-semibold text-fg">{tx("인증")}</dt><dd>{tx(resourceSourceAuthLabel(source))}</dd></div>
         <div><dt className="font-semibold text-fg">{tx("권리 판정")}</dt><dd>{tx(resourceSourceRightsLabel(source))}</dd></div>
@@ -109,7 +118,8 @@ export function SourcesPage() {
       </dl>
       {source.termsReviewedAt && <p className="text-xs text-fg-3">{formatI18nTemplate(tx("약관·기술 검토 기준일 {v0}"), { v0: source.termsReviewedAt })}</p>}
       <div className="flex flex-wrap gap-2">{source.productRoute && <Link className={`${RESOURCE_BUTTON} bg-accent-soft`} to={source.productRoute}>{tx("기능 열기")}</Link>}<a className={RESOURCE_BUTTON} href={source.url} target="_blank" rel="noopener noreferrer">{tx("공식 안내 확인 ↗")}</a></div>
-    </article>)}</div>
+      </article>;
+    })}</div>
 
     <section className="space-y-4 rounded-2xl border border-line bg-panel p-6" aria-labelledby="live-open-api-searches">
       <div><p className="text-xs font-semibold text-accent">{txEn("LIVE · KEYLESS OPEN API")}</p><h2 id="live-open-api-searches" className="mt-2 text-xl font-bold">{tx("가입 없이 바로 쓰는 새 레퍼런스 검색")}</h2></div>
