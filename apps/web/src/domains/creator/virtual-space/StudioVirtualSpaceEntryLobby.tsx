@@ -2,6 +2,8 @@ import { CameraOff, Lock, MicOff, Network, ShieldCheck, Sparkles, UserRound } fr
 import { Suspense, useState, type ReactNode } from "react";
 
 import Link from "@/shared/navigation/router-link";
+import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
+import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -30,7 +32,8 @@ const StudioVirtualSpaceRtcPanel = createStudioVirtualSpacePanel(() => import(".
 export type StudioVirtualSpaceEntryVariant = "entry" | "character-onboarding";
 
 function LobbyChip({ icon, children }: { readonly icon: ReactNode; readonly children: ReactNode }) {
-  return <li>{icon}<span>{children}</span></li>;
+  // li 껍데기는 StaggerReveal(itemAs="li")이 입힌다 — 칩 내용만 반환한다.
+  return <>{icon}<span>{children}</span></>;
 }
 
 /**
@@ -137,7 +140,7 @@ export function StudioVirtualSpaceEntryLobby({
       <StudioVirtualExperienceArtPreview className="space-lobby__backdrop-art" kind="landmarks" artStyle={artStyle} frame={0} preserveAspectRatio="xMidYMid slice" />
     </div>
     <div className="space-lobby__layout">
-      <section className="space-lobby__stage" aria-label={bt("입장 미리보기", "Entry preview")}>
+      <RevealOnScroll as="section" variant="fade" className="space-lobby__stage" aria-label={bt("입장 미리보기", "Entry preview")}>
         {/* 들어갈 월드의 실제 베이스 아트를 무대 배경으로 깐다. 입장 전 프리뷰라 위치·신호는 만들지 않고,
             부트 로더가 받는 것과 같은 스타일별 world-base 텍스처만 정적으로 보여 준다. */}
         <div className="space-lobby__scene" aria-hidden>
@@ -157,19 +160,19 @@ export function StudioVirtualSpaceEntryLobby({
             : <span className="space-lobby__placeholder"><UserRound size={44} aria-hidden /><small>{bt("캐릭터를 골라 주세요", "Choose a character")}</small></span>}
           <span className="space-lobby__floor" aria-hidden />
         </div>
-        {!onboarding && !personal && !guestMode ? <ul className="space-lobby__chips" aria-label={bt("입장 시 기본 상태", "Default state on entry")}>
+        {!onboarding && !personal && !guestMode ? <StaggerReveal as="ul" itemAs="li" className="space-lobby__chips" aria-label={bt("입장 시 기본 상태", "Default state on entry")}>
           <LobbyChip icon={<MicOff size={15} aria-hidden />}>{bt("마이크 꺼짐", "Microphone off")}</LobbyChip>
           <LobbyChip icon={<CameraOff size={15} aria-hidden />}>{bt("카메라 꺼짐", "Camera off")}</LobbyChip>
           <LobbyChip icon={<Network size={15} aria-hidden />}>{bt("동료가 수락하면 함께 작업", "Work together after an invitation is accepted")}</LobbyChip>
           <LobbyChip icon={<ShieldCheck size={15} aria-hidden />}>{bt("미디어는 별도 동의 후 시작", "Media starts only after consent")}</LobbyChip>
-        </ul> : null}
-        {personal && !onboarding ? <ul className="space-lobby__chips" aria-label={bt("개인 작업실 안내", "About your personal office")}>
+        </StaggerReveal> : null}
+        {personal && !onboarding ? <StaggerReveal as="ul" itemAs="li" className="space-lobby__chips" aria-label={bt("개인 작업실 안내", "About your personal office")}>
           <LobbyChip icon={<Lock size={15} aria-hidden />}>{bt("나만 입장하는 개인 작업실", "A personal office only you enter")}</LobbyChip>
           <LobbyChip icon={<MicOff size={15} aria-hidden />}>{bt("마이크·카메라를 쓰지 않아요", "No microphone or camera")}</LobbyChip>
-        </ul> : null}
-      </section>
+        </StaggerReveal> : null}
+      </RevealOnScroll>
 
-      <section className="studio-vspace-entry-card space-lobby__form" aria-labelledby="studio-vspace-entry-title">
+      <RevealOnScroll as="section" variant="up" delayMs={120} className="studio-vspace-entry-card space-lobby__form" aria-labelledby="studio-vspace-entry-title">
         <header className="space-lobby__heading">
           <h1 id="studio-vspace-entry-title">{title}</h1>
           <p>{description}</p>
@@ -211,7 +214,7 @@ export function StudioVirtualSpaceEntryLobby({
                 "Choose the art for buildings, furniture and floors. Your character keeps the look you chose.",
               )}</p>
               <div className="studio-vspace-art-style-grid">
-                {STUDIO_VIRTUAL_ART_STYLES.map((style) => <button key={style.key} type="button" data-art-style={style.key}
+                {STUDIO_VIRTUAL_ART_STYLES.map((style) => <button key={style.key} type="button" className="fx-press" data-art-style={style.key}
                   aria-pressed={artStyle === style.key} title={bt(style.descriptionKo, style.descriptionEn)}
                   onClick={() => onArtStyle?.(style.key)}>
                   <StudioVirtualExperienceArtPreview kind="landmarks" artStyle={style.key} frame={0} preserveAspectRatio="xMidYMid slice" />
@@ -261,7 +264,7 @@ export function StudioVirtualSpaceEntryLobby({
         {onEnterWithCode ? <div className="space-lobby__entry-code">
           <StudioVirtualSpaceEntryCodePanel onEnterWithCode={onEnterWithCode} />
         </div> : null}
-      </section>
+      </RevealOnScroll>
     </div>
   </div>;
 }
