@@ -161,6 +161,22 @@ export const TOOLCHAIN_STAGES_LAUNCH: readonly ProcessToolchainStage[] = [
         kind: "external",
       },
       {
+        name: { ko: "지니어스 Geeni Canvas 캐릭터", en: "Geenius Geeni Canvas Character" },
+        role: {
+          ko: "사진 한 장을 7종 스타일(2D·SD·피규어·스티커 등)의 캐릭터로 생성해 보관함에 저장",
+          en: "Generates a character from a single photo in seven styles (2D, SD, figure, sticker, and more) and saves it to your library",
+        },
+        kind: "external",
+      },
+      {
+        name: { ko: "지니어스 Geeni Canvas Toon", en: "Geenius Geeni Canvas Toon" },
+        role: {
+          ko: "캐릭터와 참조 이미지, 시나리오를 넣으면 AI가 4컷 만화 형식으로 구성해 주는 지니어스의 AI 웹툰 제작 도구",
+          en: "Geenius's AI webtoon tool that composes a four-panel comic from a character, reference images, and a scenario",
+        },
+        kind: "external",
+      },
+      {
         name: { ko: "AI 코믹 디렉터", en: "AI Comic Director" },
         role: {
           ko: "시나리오 비트를 장면 후보 이미지로 만들어 검토·적용하는 AI 연출",

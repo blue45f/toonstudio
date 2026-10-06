@@ -535,6 +535,14 @@ export const TOOLCHAIN_STAGES_ART: readonly ProcessToolchainStage[] = [
         kind: "external",
       },
       {
+        name: { ko: "지니어스 Geeni Canvas 애니툰", en: "Geenius Geeni Canvas AnimeToon" },
+        role: {
+          ko: "보관된 웹툰의 장면을 바탕으로 애니메이션을 자동 생성하는 웹툰 영상화",
+          en: "Webtoon-to-video feature that automatically generates animation from the scenes of a saved webtoon",
+        },
+        kind: "external",
+      },
+      {
         name: { ko: "AI 업스케일", en: "On-Device AI Upscale" },
         role: {
           ko: "선택 이미지를 기기에서 4배로 확대하는 ONNX 기능 (에디터 안)",
