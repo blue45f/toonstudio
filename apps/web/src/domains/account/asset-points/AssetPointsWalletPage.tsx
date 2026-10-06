@@ -106,6 +106,10 @@ export function AssetPointsWalletPage() {
   if (!userId) {
     return (
       <Container size="prose" className="py-10 sm:py-16">
+        <SectionArt
+          image="market"
+          className="mb-7 aspect-[16/9] w-full rounded-3xl border border-line object-cover"
+        />
         <p className="text-xs font-black tracking-[0.14em] text-accent">STUDIO POINTS</p>
         <h1 className="mt-2 text-3xl font-black text-fg">{t("포인트 지갑", "Points wallet")}</h1>
         <p className="mt-4 text-sm leading-6 text-fg-2">
@@ -114,6 +118,47 @@ export function AssetPointsWalletPage() {
             "Studio Points are rewards you earn from signing in and creating. Sign in to see your balance and history.",
           )}
         </p>
+        <section
+          aria-label={t("포인트 안내", "About points")}
+          className="mt-6 rounded-3xl border border-line bg-panel p-5"
+        >
+          <h2 className="text-sm font-black text-fg">{t("포인트로 할 수 있는 일", "What points do")}</h2>
+          <ul className="mt-3 space-y-2 text-sm leading-6 text-fg-2">
+            <li className="flex gap-2">
+              <Coins size={16} className="mt-1 shrink-0 text-accent" aria-hidden />
+              {t(
+                "쌓은 포인트는 마켓에서 브러시·소재 같은 에셋으로 교환할 수 있습니다.",
+                "Exchange earned points for market assets such as brushes and materials.",
+              )}
+            </li>
+            <li className="flex gap-2">
+              <Sparkles size={16} className="mt-1 shrink-0 text-accent" aria-hidden />
+              {t(
+                "로그인하면 오늘의 보너스부터 자동 적립됩니다. 작품 활동으로도 쌓입니다.",
+                "Signing in grants today's bonus automatically, and creating earns more.",
+              )}
+            </li>
+            <li className="flex gap-2">
+              <Info size={16} className="mt-1 shrink-0 text-accent" aria-hidden />
+              {t(
+                "포인트는 현금이 아니며 충전할 수 없습니다. 지급일로부터 365일 동안 유효합니다.",
+                "Points are not cash and cannot be purchased. They stay valid for 365 days.",
+              )}
+            </li>
+          </ul>
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {Object.values(ASSET_POINT_EARN_RULES)
+              .filter((rule) => rule.status === "live")
+              .map((rule) => (
+                <span
+                  key={rule.key}
+                  className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-2.5 text-xs font-semibold text-fg-2"
+                >
+                  {t(rule.labelKo, rule.labelEn)} +{rule.points}P
+                </span>
+              ))}
+          </div>
+        </section>
         <button
           type="button"
           onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "asset-points-wallet", mode: "login" })}
@@ -128,9 +173,14 @@ export function AssetPointsWalletPage() {
   if (userId && !hydrated) {
     return (
       <Container size="prose" className="py-10 sm:py-16">
-        <p role="status" className="text-sm text-fg-2">
-          {t("포인트 원장을 불러오는 중입니다…", "Loading your points ledger…")}
-        </p>
+        <div aria-busy="true">
+          <div className="h-4 w-28 animate-pulse rounded bg-raised" aria-hidden />
+          <div className="mt-3 h-9 w-52 animate-pulse rounded-lg bg-raised" aria-hidden />
+          <div className="mt-6 h-32 animate-pulse rounded-3xl bg-raised" aria-hidden />
+          <p role="status" className="mt-4 text-sm text-fg-2">
+            {t("포인트 원장을 불러오는 중입니다…", "Loading your points ledger…")}
+          </p>
+        </div>
       </Container>
     );
   }
@@ -220,8 +270,60 @@ export function AssetPointsWalletPage() {
         </article>
       </section>
 
+      <section
+        aria-label={t("다음 행동", "Next step")}
+        className={`mt-6 flex flex-wrap items-center justify-between gap-3 rounded-3xl border p-5 ${
+          summary.expiringSoonPoints > 0
+            ? "border-warn/40 bg-warn/5"
+            : "border-accent/30 bg-accent-soft/40"
+        }`}
+      >
+        <div className="min-w-0">
+          <h2 className="text-base font-black text-fg">
+            {summary.expiringSoonPoints > 0
+              ? t(
+                  `만료 예정 ${number.format(summary.expiringSoonPoints)}P부터 사용하세요`,
+                  `Spend the ${number.format(summary.expiringSoonPoints)}P that expire soon first`,
+                )
+              : summary.balance > 0
+                ? t(
+                    `지금 ${number.format(summary.balance)}P로 에셋을 교환할 수 있어요`,
+                    `You can exchange ${number.format(summary.balance)}P for assets now`,
+                  )
+                : t("아직 쓸 포인트가 없어요", "No points to spend yet")}
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-fg-2">
+            {summary.expiringSoonPoints > 0
+              ? t(
+                  "포인트는 만료가 가까운 순서대로 차감됩니다. 만료 전에 마켓 에셋으로 교환하세요.",
+                  "Points closest to expiry are spent first. Exchange them for market assets before they lapse.",
+                )
+              : summary.balance > 0
+                ? t(
+                    "마켓에서 포인트로 살 수 있는 에셋을 확인하고, 산 에셋은 내 에셋에서 관리하세요.",
+                    "Browse assets you can buy with points in the market, and manage purchases under My assets.",
+                  )
+                : t(
+                    "오늘의 로그인 보너스와 작품 활동으로 첫 포인트를 쌓을 수 있어요. 아래 적립 방법을 확인하세요.",
+                    "Earn your first points with today's login bonus and creative activity. See how to earn below.",
+                  )}
+          </p>
+        </div>
+        {summary.balance > 0 ? (
+          <Link to="/market" className={buttonClass({ className: "shrink-0" })}>
+            {t("포인트로 살 에셋 보기", "Browse assets to buy with points")}
+            <ArrowRight size={15} aria-hidden />
+          </Link>
+        ) : (
+          <a href="#points-earn" className={buttonClass({ className: "shrink-0" })}>
+            {t("포인트 쌓는 법 보기", "See how to earn")}
+            <ArrowRight size={15} aria-hidden />
+          </a>
+        )}
+      </section>
+
       <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_1fr]">
-        <section aria-labelledby="points-earn-title" className="rounded-3xl border border-line bg-panel p-6">
+        <section id="points-earn" aria-labelledby="points-earn-title" className="scroll-mt-24 rounded-3xl border border-line bg-panel p-6">
           <div className="flex items-center gap-2">
             <Coins size={18} className="text-accent" aria-hidden />
             <h2 id="points-earn-title" className="text-xl font-black text-fg">{t("포인트 쌓는 법", "How to earn")}</h2>

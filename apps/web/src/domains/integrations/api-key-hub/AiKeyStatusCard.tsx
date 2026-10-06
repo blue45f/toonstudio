@@ -57,7 +57,8 @@ export function AiKeyStatusCard() {
 
   return (
     <article
-      className="flex min-h-64 flex-col rounded-2xl border border-line bg-card p-5 shadow-sm"
+      id="api-key-ai"
+      className="flex min-h-64 scroll-mt-24 flex-col rounded-2xl border border-line bg-card p-5 shadow-sm"
       aria-labelledby="ai-key-title"
     >
       <div className="flex items-start justify-between gap-3">

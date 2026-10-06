@@ -90,6 +90,28 @@ describe("NotificationSettingsPage 종류별 알림 받기", () => {
     expect(useEngagement.getState().notificationCategorySettings.market).toBe(true);
   });
 
+  it("헤더에서 이 화면이 무엇을 정하는지 먼저 설명한다", () => {
+    renderPage();
+
+    expect(screen.getByText(/어떤 알림을 받을지 종류별로 정합니다/)).toBeTruthy();
+  });
+
+  it("켜진 종류 수를 요약으로 보여 주고, 끄면 바로 반영된다", () => {
+    useEngagement.getState().setNotificationCategoryEnabled("release", false);
+    renderPage();
+
+    expect(screen.getByText("6개 중 5개 켜짐")).toBeTruthy();
+  });
+
+  it("전부 꺼져 있으면 새 알림이 표시되지 않는다는 경고를 보여 준다", () => {
+    for (const category of ["release", "availability", "production", "market", "community", "system"] as const) {
+      useEngagement.getState().setNotificationCategoryEnabled(category, false);
+    }
+    renderPage();
+
+    expect(screen.getByText(/모든 종류가 꺼져 있어/)).toBeTruthy();
+  });
+
   it("알림 센터로 돌아가는 링크를 제공한다", () => {
     renderPage();
 
