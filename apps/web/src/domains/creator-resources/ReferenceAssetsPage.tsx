@@ -8,6 +8,7 @@ import {
   Scale,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
   Tags,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -317,20 +318,43 @@ export function ReferenceAssetsPage() {
   const gridClass = view.density === "compact"
     ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
     : "grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+  // 히어로 대표작은 위장 큐레이션을 만들지 않고, 이미 불러와 공개 검증된
+  // 결과·저장 자료 중 대표작(isHighlight) 표시가 있는 1점만 쓴다.
+  const heroItem = useMemo(() => {
+    const pool = view.mode === "saved" ? savedItems : result?.items ?? EMPTY_RESOURCES;
+    return pool.find((item) => item.asset?.isHighlight && item.imageUrl) ?? null;
+  }, [view.mode, savedItems, result]);
 
   return (
     <ResourceLayout
       width="wide"
       title="창작 레퍼런스 아틀라스"
       intro="The Met의 공개 미술 자료를 장면 목적에 맞게 찾고, 비교한 뒤 출처와 함께 연구 보드에 보관하세요. CC0·공개 도메인이 확인된 자료만 미리 볼 수 있어요."
+      heroContent={(
+        <ul className="flex flex-wrap gap-2" aria-label="레퍼런스 아틀라스 특징">
+          <li><CountBadge><ShieldCheck size={14} aria-hidden="true" /> 공개 이용 검증</CountBadge></li>
+          <li><CountBadge><Filter size={14} aria-hidden="true" /> 장면 목적 필터</CountBadge></li>
+          <li><CountBadge><Scale size={14} aria-hidden="true" /> 최대 4개 비교</CountBadge></li>
+          <li><CountBadge><Tags size={14} aria-hidden="true" /> 저장 자료 {savedItems.length}개</CountBadge></li>
+        </ul>
+      )}
+      heroAside={heroItem ? (
+        <figure className="relative min-h-60 self-stretch overflow-hidden rounded-3xl border border-line bg-panel">
+          <AssetImage fit="cover" eager item={heroItem} className="absolute inset-0 h-full w-full" />
+          <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+          <figcaption className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
+            <span className="inline-flex min-h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-xs font-bold text-on-accent">
+              <Sparkles size={12} aria-hidden="true" /> 대표작 · 공개 검증 완료
+            </span>
+            <p className="mt-2 break-words text-base font-bold leading-snug">{heroItem.title}</p>
+            <p className="mt-1 text-xs leading-5 text-white/80">
+              {heroItem.creator || "제작자 미상"}
+              {heroItem.asset?.department ? ` · ${heroItem.asset.department}` : ""}
+            </p>
+          </figcaption>
+        </figure>
+      ) : undefined}
     >
-      <ul className="flex flex-wrap gap-2" aria-label="레퍼런스 아틀라스 특징">
-        <li><CountBadge><ShieldCheck size={14} aria-hidden="true" /> 공개 이용 검증</CountBadge></li>
-        <li><CountBadge><Filter size={14} aria-hidden="true" /> 장면 목적 필터</CountBadge></li>
-        <li><CountBadge><Scale size={14} aria-hidden="true" /> 최대 4개 비교</CountBadge></li>
-        <li><CountBadge><Tags size={14} aria-hidden="true" /> 저장 자료 {savedItems.length}개</CountBadge></li>
-      </ul>
-
       <ProviderStatus provider="met" />
 
       <SearchWorkspace
