@@ -60,3 +60,4 @@ export * from "./graph/review-policy-history";
 
 export * from "./graph/review-delivery";
 export * from "./graph/review-voice-note";
+export * from "./graph/recording-booth-asset";
