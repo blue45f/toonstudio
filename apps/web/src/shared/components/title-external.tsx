@@ -111,7 +111,7 @@ const RelatedInfoCard = memo(function RelatedInfoCard({ item }: RelatedInfoCardP
                 loading="lazy"
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-80 transition-opacity group-hover:opacity-100">
-                <span className="flex size-10 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition-transform group-hover:scale-110">
+                <span className="flex size-10 items-center justify-center rounded-full bg-bad text-white shadow-md transition-transform group-hover:scale-110">
                   <Play size={18} className="ml-0.5 fill-current" />
                 </span>
               </div>

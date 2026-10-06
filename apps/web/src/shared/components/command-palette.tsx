@@ -586,7 +586,7 @@ export function CommandPalette({
                         clearRecentSearches();
                         playSfx("tick");
                       }}
-                      className="text-[10px] text-fg-3 hover:text-red-400"
+                      className="text-[10px] text-fg-3 hover:text-bad"
                     >
                       전체 삭제
                     </button>
@@ -616,7 +616,7 @@ export function CommandPalette({
                         removeRecentSearch(searchQuery);
                         playSfx("tick");
                       }}
-                      className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
+                      className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-bad"
                       title="검색어 삭제"
                     >
                       <X size={13} />

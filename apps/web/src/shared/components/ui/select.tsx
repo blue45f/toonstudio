@@ -54,7 +54,7 @@ export function Select<T extends string>({
           "group inline-flex h-9 items-center justify-between gap-2 rounded-lg px-3 outline-none transition-colors",
           "data-[placeholder]:text-fg-3 focus-visible:border-accent/60 data-[state=open]:border-accent/50",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
-          "aria-invalid:border-red-500/70 disabled:pointer-events-none disabled:opacity-45",
+          "aria-invalid:border-bad/70 disabled:pointer-events-none disabled:opacity-45",
           triggerClassName
         )}
       >

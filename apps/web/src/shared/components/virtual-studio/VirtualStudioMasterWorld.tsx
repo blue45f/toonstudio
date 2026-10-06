@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-raw-colors -- 가상스튜디오 월드 SVG 아트워크(지형·건물·소품)의 색은 월드를 그리는 데이터라 UI 토큰 대상이 아니다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
 import type { CSSProperties } from "react";
 
 import Link from "@/shared/navigation/router-link";

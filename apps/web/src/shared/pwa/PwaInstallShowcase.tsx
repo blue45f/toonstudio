@@ -111,6 +111,8 @@ function FeatureArt({ icon }: { icon: FeatureCard["icon"] }) {
 
 function HeroArt() {
   return (
+    <>
+      {/* eslint-disable shadcn/no-raw-colors -- 설치 안내 히어로 SVG 아트워크(브랜드 그라디언트 마크 포함)의 색은 그림 데이터라 UI 토큰 대상이 아니다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */}
     <svg viewBox="0 0 200 120" aria-hidden="true" className="pwa-showcase__hero-art">
       <defs>
         <linearGradient id="pwa-hero-g" x1="0" y1="0" x2="1" y2="1">
@@ -127,6 +129,8 @@ function HeroArt() {
       <circle cx="168" cy="92" r="5" className="art-spark" />
       <circle cx="34" cy="94" r="3" className="art-spark" />
     </svg>
+      {/* eslint-enable shadcn/no-raw-colors */}
+    </>
   );
 }
 

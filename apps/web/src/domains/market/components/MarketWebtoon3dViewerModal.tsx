@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-raw-colors -- 3D 뷰어 조명 프리셋(sky·amber·rose·indigo 등)의 색 자체가 프리셋 데이터이고 스테이지 배경도 렌더 표면이라 UI 토큰으로 바꾸면 프리셋 의미가 달라진다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
 import {
   Box,
   Moon,

@@ -104,7 +104,7 @@ export function CommandPalettePreview({
                   </span>
                 )}
                 {t.ageRating === "19" && (
-                  <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-[10px] font-bold text-red-400">
+                  <span className="rounded bg-bad-soft px-1.5 py-0.5 text-[10px] font-bold text-bad">
                     19+
                   </span>
                 )}
@@ -215,7 +215,7 @@ export function CommandPalettePreview({
                     className={cn(
                       "rounded px-1.5 py-0.5 text-[10px] font-medium",
                       state.active
-                        ? "bg-emerald-950/70 text-emerald-400"
+                        ? "bg-good-soft text-good"
                         : "bg-panel text-fg-3"
                     )}
                   >

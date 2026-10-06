@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- 일러스트 레지스트리: 컴포넌트와 이름 상수/조회 함수를 한 파일에 둠 */
+/* eslint-disable shadcn/no-raw-colors -- 모션 일러스트 SVG 아트워크의 색은 그림 데이터라 UI 토큰 대상이 아니다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
 import type { JSX } from "react";
 
 import "./motion-assets-effects.css";

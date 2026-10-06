@@ -835,6 +835,7 @@ function SettingsTab({
       aria-label={label}
       aria-selected={active}
       onClick={onClick}
+      // eslint-disable-next-line shadcn/no-raw-colors -- 오탐: focus-visible:outline-inset은 아웃라인 위치 값으로 색상이 아닌데 룰이 미선언 색 토큰으로 오인한다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md
       className={`inline-flex min-h-14 items-center justify-center gap-2 px-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-accent ${active ? "bg-accent/10 text-accent" : "text-fg-2 hover:bg-raised hover:text-fg"}`}
     >
       {icon}<span className="hidden sm:inline">{label}</span><span className="sm:hidden">{label.replace("AI ", "")}</span>

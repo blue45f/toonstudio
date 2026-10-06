@@ -33,6 +33,7 @@ function sceneReferenceImage(recipeId: string): string | null {
 }
 
 function ProceduralAssetCardArtwork({ recipeId }: { readonly recipeId: string }) {
+  // eslint-disable-next-line shadcn/no-raw-colors -- 오탐: fill-none은 채우기 없음 유틸리티로 색상이 아닌데 룰이 미선언 색 토큰으로 오인한다(파일럿 findings에서도 오탐으로 확정). 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md
   const common = "fill-none stroke-current";
   if (/sword|blade/u.test(recipeId)) {
     return <svg aria-hidden="true" className="absolute inset-0 size-full p-8 text-fg/55" viewBox="0 0 240 120">

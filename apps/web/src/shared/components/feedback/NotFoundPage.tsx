@@ -29,7 +29,7 @@ export function NotFoundPage() {
   return (
     <Container size="wide" className="grid min-h-[64vh] place-items-center py-12 sm:py-20">
       <section className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-line bg-panel p-6 text-center sm:p-12" aria-labelledby="not-found-title">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-400 via-rose-400 to-violet-400" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-accent-2 to-warn" aria-hidden="true" />
         <NotFoundDecorations />
         {/* 404 키 비주얼 — 장식용. */}
         <img

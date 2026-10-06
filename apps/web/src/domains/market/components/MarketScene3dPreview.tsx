@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-raw-colors -- 조명 프리셋으로 구동되는 3D 장면 미리보기 SVG 일러스트라 색이 장면 렌더 데이터다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
 import { Box, Camera, Layers, Sun } from "lucide-react";
 import { useState } from "react";
 

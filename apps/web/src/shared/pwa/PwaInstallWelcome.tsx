@@ -49,6 +49,8 @@ const STEPS: readonly WelcomeStep[] = [
 function WelcomeArt({ art }: { art: WelcomeStep["art"] }) {
   if (art === "home") {
     return (
+      <>
+        {/* eslint-disable shadcn/no-raw-colors -- 웰컴 투어 SVG 아트워크(그라디언트 원 위 흰 체크)의 색은 그림 데이터라 UI 토큰 대상이 아니다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */}
       <svg viewBox="0 0 120 90" aria-hidden="true" className="pwa-welcome__art">
         <rect x="14" y="14" width="92" height="62" rx="12" className="art-bg" />
         {[0, 1, 2].map((row) =>
@@ -67,6 +69,8 @@ function WelcomeArt({ art }: { art: WelcomeStep["art"] }) {
         <circle cx="46" cy="42" r="10" fill="none" stroke="#fff" strokeWidth="2.5" />
         <path d="M42 42l3 3 5-6" stroke="#fff" strokeWidth="2.5" fill="none" strokeLinecap="round" />
       </svg>
+        {/* eslint-enable shadcn/no-raw-colors */}
+      </>
     );
   }
   if (art === "offline") {
