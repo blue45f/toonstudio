@@ -187,6 +187,9 @@ export function NotificationSettingsPage() {
   const categorySettings = useEngagement((state) => state.notificationCategorySettings);
   const setNotificationCategoryEnabled = useEngagement((state) => state.setNotificationCategoryEnabled);
   const hydrated = useEngagementHydrated();
+  const enabledCategoryCount = NOTIFICATION_CATEGORY_ORDER.filter(
+    (category) => categorySettings[category] !== false,
+  ).length;
 
   return (
     <Container size="wide" className="py-8 sm:py-12">
@@ -201,6 +204,11 @@ export function NotificationSettingsPage() {
       <header className="mb-7 mt-3 max-w-3xl">
         <p className="eyebrow text-accent">NOTIFICATION SETTINGS</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">알림 설정</h1>
+        <p className="mt-3 text-sm leading-7 text-fg-2">
+          어떤 알림을 받을지 종류별로 정합니다. 여기서 끈 종류는 알림 센터 목록과 알림 뱃지에서
+          숨겨지지만, 이미 받은 알림이 삭제되지는 않습니다. 제작 알림에는 아래 직군 알림 설정도
+          함께 적용됩니다.
+        </p>
       </header>
 
       <section aria-label="알림 종류별 설정" className="rounded-2xl border border-line bg-panel/60 p-4 sm:p-5">
@@ -209,17 +217,30 @@ export function NotificationSettingsPage() {
             <h2 className="text-sm font-black text-fg">종류별 알림 받기</h2>
             <p className="mt-1 text-xs leading-5 text-fg-3">끄면 해당 종류의 알림은 목록과 알림 뱃지에서 숨겨집니다. 저장된 알림은 삭제되지 않습니다.</p>
           </div>
-          <button
-            type="button"
-            disabled={!hydrated}
-            onClick={() => {
-              for (const category of NOTIFICATION_CATEGORY_ORDER) setNotificationCategoryEnabled(category, true);
-            }}
-            className={buttonClass({ variant: "ghost", size: "sm" })}
-          >
-            전부 켜기
-          </button>
+          <div className="flex items-center gap-2">
+            {hydrated ? (
+              <p role="status" className="text-xs font-bold text-fg-2">
+                {NOTIFICATION_CATEGORY_ORDER.length}개 중 {enabledCategoryCount}개 켜짐
+              </p>
+            ) : null}
+            <button
+              type="button"
+              disabled={!hydrated}
+              onClick={() => {
+                for (const category of NOTIFICATION_CATEGORY_ORDER) setNotificationCategoryEnabled(category, true);
+              }}
+              className={buttonClass({ variant: "ghost", size: "sm" })}
+            >
+              전부 켜기
+            </button>
+          </div>
         </div>
+        {hydrated && enabledCategoryCount === 0 ? (
+          <p role="alert" className="mt-3 text-xs leading-5 text-warn">
+            지금은 모든 종류가 꺼져 있어 알림 센터에 새 알림이 표시되지 않습니다. 필요한 종류만
+            골라 켜도 됩니다.
+          </p>
+        ) : null}
         {!hydrated ? (
           <p role="status" className="mt-3 text-xs leading-5 text-fg-3">
             저장된 알림 설정을 불러오는 중이에요…
