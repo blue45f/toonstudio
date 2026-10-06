@@ -53,6 +53,7 @@ export const ENGINEERING_EXTERNAL_LINKS: readonly EngineeringExternalLink[] = [
   // 사용 라이브러리·엔진 (설치본 package.json homepage·repository와 저장소 기록 기준)
   { name: "Three.js", url: "https://threejs.org/" },
   { name: "React Three Fiber", url: "https://r3f.docs.pmnd.rs/" },
+  { name: "React Three Fiber · Drei", url: "https://r3f.docs.pmnd.rs/" },
   { name: "Drei", url: "https://github.com/pmndrs/drei" },
   { name: "Babylon.js", url: "https://www.babylonjs.com/" },
   { name: "VRM", url: "https://vrm.dev/" },
