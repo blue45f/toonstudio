@@ -71,7 +71,6 @@ const INTRO_ART: Record<string, string> = {
   "/now": "project-crimson",
   "/opportunities": "background-classroom",
   "/insights/resources": "storyboard",
-  "/learn/recipes": "character-pink",
   "/learn/resources": "blank-canvas",
   "/discover/works": "hero",
 };

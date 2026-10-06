@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
+import { RESOURCE_BUTTON } from "./navigation";
 import { exerciseSvg, recipeById, RECIPES } from "./recipes";
-import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
+import { LocalSaveNotice } from "./ResourceLayout";
 import { CampusObjectSource } from "@/shared/components/spatial-campus/CampusObjectSource";
+import { Container } from "@/shared/components/container";
+import { SectionArt } from "@/shared/components/section-art";
 import { downloadText, useCreatorWorkspace } from "./workspace";
 
 import type { Recipe } from "./recipes";
@@ -51,10 +53,42 @@ function RecipeLesson({ recipe }: { recipe: Recipe }) {
     <LocalSaveNotice error={error} writable={writable} saving={saving} />
   </section>;
 }
+
+/**
+ * 실습 목차 — 여섯 실습을 첫 화면에서 펼쳐 보여 고르게 한다.
+ * 선택은 지금까지와 같은 ?lesson= 딥링크가 소유하고, 카드가 드롭다운을 대신한다.
+ */
+function RecipeIndex({ current, onSelect }: { current: Recipe; onSelect: (id: string) => void }) {
+  return <section aria-labelledby="recipe-index-title" className="space-y-4">
+    <div>
+      <h2 id="recipe-index-title" className="text-xl font-bold">실습 고르기</h2>
+      <p className="mt-1.5 text-sm leading-6 text-fg-2">여섯 가지 연출 실험 중 하나를 고르면 아래에서 바로 시작합니다. 실습 체크는 이 브라우저에 저장됩니다.</p>
+    </div>
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {RECIPES.map((item) => {
+        const selected = item.id === current.id;
+        return <button
+          key={item.id}
+          type="button"
+          onClick={() => onSelect(item.id)}
+          aria-pressed={selected}
+          className={`fx-press flex h-full flex-col rounded-2xl border p-5 text-left ${selected ? "border-accent bg-accent-soft" : "border-line bg-panel hover:bg-raised"}`}
+        >
+          <span className="text-xs font-semibold text-accent">{item.tag} · 약 {item.minutes}분</span>
+          <span className="mt-2 font-bold leading-6">{item.title}</span>
+          <span className="mt-2 line-clamp-3 text-sm leading-6 text-fg-2">{item.intro}</span>
+          <span className="mt-4 text-sm font-semibold">{selected ? "지금 실습 중" : "이 실습 열기 →"}</span>
+        </button>;
+      })}
+    </div>
+  </section>;
+}
+
 export function RecipesPage() {
   const [params, setParams] = useSearchParams();
   const recipe = recipeById(params.get("lesson"));
-  return <ResourceLayout title="웹툰 제작 레시피" intro="설명을 읽고 끝내지 말고, 값을 바꾸어 차이를 확인하세요. 여섯 개의 자체 제작 실습과 편집 가능한 컷 시트를 제공합니다.">
+  const minutes = RECIPES.map((item) => item.minutes);
+  return <Container size="wide" className="py-7 sm:py-10 lg:py-12">
     <CampusObjectSource objects={RECIPES.map((item) => ({
       id: item.id,
       title: item.title,
@@ -62,7 +96,18 @@ export function RecipesPage() {
       kind: "recipe",
       exposure: "public",
     }))} />
-    <label htmlFor="recipe-select" className="block font-semibold">실습 선택<select id="recipe-select" className={`${RESOURCE_INPUT} mt-2`} value={recipe.id} onChange={(event) => setParams({ lesson: event.target.value })}>{RECIPES.map((item) => <option key={item.id} value={item.id}>{item.tag} · {item.title}</option>)}</select></label>
-    <RecipeLesson key={recipe.id} recipe={recipe} />
-  </ResourceLayout>;
+    <div className="space-y-8">
+      <header className="overflow-hidden rounded-3xl border border-line bg-panel">
+        <SectionArt image="learn" className="h-28 w-full object-cover sm:h-36" />
+        <div className="p-6 sm:p-8">
+          <p className="eyebrow text-accent">배우기 · 실습 레시피</p>
+          <h1 className="mt-3 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">웹툰 제작 레시피</h1>
+          <p className="mt-4 max-w-3xl leading-7 text-fg-2">설명을 읽고 끝내지 말고, 값을 바꾸어 차이를 확인하세요. 여섯 개의 자체 제작 실습과 편집 가능한 컷 시트를 제공합니다.</p>
+          <p className="mt-3 text-sm font-semibold text-fg-2">실습 {RECIPES.length}종 · 각 {Math.min(...minutes)}~{Math.max(...minutes)}분 · 슬라이더 실험 + 실습 체크</p>
+        </div>
+      </header>
+      <RecipeIndex current={recipe} onSelect={(id) => setParams({ lesson: id })} />
+      <RecipeLesson key={recipe.id} recipe={recipe} />
+    </div>
+  </Container>;
 }
