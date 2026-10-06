@@ -248,6 +248,21 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/search");
   });
 
+  it("Luna 패널은 히어로 안에 있고 히어로 입력은 모드 토글을 품은 한 단으로 통합돼 있다", async () => {
+    await dashboard();
+    const hero = document.querySelector(".rd-poster");
+    const luna = screen.getByRole("complementary", { name: "Luna 창작 안내" });
+    expect(hero?.contains(luna)).toBe(true);
+    // 중간 섹션으로 따로 서 있지 않다.
+    expect(document.querySelector(".rd-luna-section")).toBeNull();
+    const forms = document.querySelectorAll("form.rd-idea");
+    expect(forms).toHaveLength(1);
+    const form = forms[0];
+    expect(form?.contains(screen.getByRole("group", { name: "입력 모드" }))).toBe(true);
+    expect(form?.contains(screen.getByRole("textbox", { name: "아이디어 입력" }))).toBe(true);
+    expect(form?.contains(screen.getByRole("button", { name: "시작하기" }))).toBe(true);
+  });
+
   it("모드를 오가도 입력한 문장은 유지되고 만들기로 제출하면 스토리 연구실로 간다", async () => {
     await dashboard();
     const idea = screen.getByRole("textbox", { name: "아이디어 입력" });

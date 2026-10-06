@@ -16,8 +16,8 @@ import { HOME_EXAMPLES, HOME_LEARN_MORE, HOME_QUICK_STARTS, homeArt } from "./re
 import "./reference-creator-dashboard.css";
 
 /**
- * 공개 홈(/)은 얇게 유지한다: 첫 화면은 포스터 히어로(아이디어 입력이 1차 행동)와
- * 시작 카드까지만, Luna 상담·예시·작업실 입구는 아래 섹션으로 나눈다.
+ * 공개 홈(/)은 얇게 유지한다: 첫 화면은 포스터 히어로(아이디어 입력이 1차 행동,
+ * 우측 패널에 Luna 창작 안내)와 시작 카드까지만, 예시·작업실 입구는 아래 섹션으로 나눈다.
  * 로그인해도 홈은 그대로이고 개인 동선은 히어로 아래 스트립으로만 얹는다.
  * 읽기 동선은 히어로 바로 아래 발견 미리보기(스포트라이트 1장 + 요일 레일 1줄)까지만
  * 얹는다 — 레일 전체와 검색은 /discover·/search가 소유한다.
@@ -57,16 +57,15 @@ export function ReferenceCreatorDashboard() {
           <p className="rd-eyebrow">{bi("상상하는 모든 이야기, 여기서 작품이 됩니다.", "Every story you imagine starts here.")}</p>
           <h1 id="creator-hero-title">{bi("오늘은 어떤 이야기를", "What story will you")}<br /><em>{bi("만들까요?", "create today?")}</em></h1>
           <p className="rd-intro">{bi("당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.", "Your imagination. Your next extraordinary story.")}</p>
-          <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
-            <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
-              <PencilLine size={14} aria-hidden="true" />{bi("이야기 만들기", "Create a story")}
-            </button>
-            <button type="button" aria-pressed={searching} onClick={() => setInputMode("search")}>
-              <Search size={14} aria-hidden="true" />{bi("작품 찾기", "Find stories")}
-            </button>
-          </div>
           <form className="rd-idea" onSubmit={submitInput}>
-            {searching ? <Search size={17} aria-hidden="true" /> : <PencilLine size={17} aria-hidden="true" />}
+            <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
+              <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
+                <PencilLine size={14} aria-hidden="true" /><span>{bi("이야기 만들기", "Create a story")}</span>
+              </button>
+              <button type="button" aria-pressed={searching} onClick={() => setInputMode("search")}>
+                <Search size={14} aria-hidden="true" /><span>{bi("작품 찾기", "Find stories")}</span>
+              </button>
+            </div>
             <label className="sr-only" htmlFor="rd-idea-input">{searching ? bi("작품 검색", "Story search") : bi("아이디어 입력", "Idea input")}</label>
             <input
               id="rd-idea-input"
@@ -82,6 +81,7 @@ export function ReferenceCreatorDashboard() {
             <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
           </form>
         </div>
+        <HomeLunaPanel />
       </div>
     </section>
     <HomePersonalStrip />
@@ -98,13 +98,6 @@ export function ReferenceCreatorDashboard() {
     <section className="rd-examples" aria-labelledby="rd-examples-title">
       <div className="rd-examples-heading"><h2 id="rd-examples-title">{bi("예시 작품", "Example works")}</h2><Link href="/studio"><FolderKanban size={13} aria-hidden="true" />{bi("내 프로젝트", "My projects")}<ChevronRight size={13} aria-hidden="true" /></Link></div>
       <div className="rd-example-shelf">{HOME_EXAMPLES.map((example) => <div className="rd-example-cover" key={example.image}><img src={homeArt(example.image, 320)} alt="" width={180} height={120} decoding="async" /><span>{bi(example.ko, example.en)}<small>{bi(example.metaKo, example.metaEn)}</small></span></div>)}<Link className="rd-new-project" href="/studio/new"><Plus size={22} aria-hidden="true" /><span>{bi("새 작품", "New work")}</span></Link></div>
-    </section>
-    <section className="rd-luna-section" aria-labelledby="rd-luna-title">
-      <div className="rd-section-heading">
-        <h2 id="rd-luna-title">{bi("Luna에게 물어보세요", "Ask Luna")}</h2>
-        <span aria-hidden="true">CREATIVE GUIDE</span>
-      </div>
-      <HomeLunaPanel />
     </section>
     <HomeCoreStudios />
     <ReferenceEditorPreview />
