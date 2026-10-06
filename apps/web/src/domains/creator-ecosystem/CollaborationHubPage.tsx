@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { CreatorEcosystemLayout } from "./CreatorEcosystemLayout";
 import { SectionArt } from "@/shared/components/section-art";
+import { TypographicCover } from "@/shared/components/typographic-cover";
 
 import {
   COLLABORATION_TYPES,
@@ -132,6 +133,28 @@ const EMPTY_BUSINESS: BusinessProfile = {
   evidenceNote: "",
   verificationStatus: "draft",
 };
+
+function CreatorArtBand({ creator }: { creator: CreatorDirectoryItem }) {
+  const [failed, setFailed] = useState(false);
+  // 디렉터리 API에는 작품 썸네일이 없어, 대표 아트는 아바타(없으면 이름 타이포 커버)로 대신한다.
+  return (
+    <span aria-hidden="true" className="-mx-4 -mt-4 mb-4 block h-28 overflow-hidden bg-raised">
+      {creator.avatar && !failed ? (
+        <img
+          src={creator.avatar}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <TypographicCover title={creator.name} seed={creator.userId} className="h-full w-full" />
+      )}
+    </span>
+  );
+}
 
 function money(value: number, negotiated: string): string {
   if (!value) return negotiated;
@@ -343,6 +366,61 @@ export function CollaborationHubPage() {
         </p>
       ) : null}
 
+      <section className="rounded-2xl border border-line bg-panel p-5">
+        <h2 className="text-xl font-black">{bt("협업 가능한 작가", "Open for collaboration")}</h2>
+        <p className="mt-2 text-sm text-fg-2">{bt("작가가 직접 공개하고 제안 유형을 선택한 프로필만 표시합니다.", "Only profiles creators published themselves, with their chosen proposal types.")}</p>
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {creators.map((creator) => (
+            <button
+              key={creator.userId}
+              type="button"
+              onClick={() => setSelectedCreatorId(creator.userId)}
+              className={selectedCreatorId === creator.userId
+                ? "overflow-hidden rounded-2xl border border-accent bg-accent-soft p-4 text-left"
+                : "overflow-hidden rounded-2xl border border-line p-4 text-left hover:bg-raised"}
+            >
+              <CreatorArtBand creator={creator} />
+              <span className="font-black">{creator.name}</span>
+              <span className="mt-2 block text-xs leading-5 text-fg-3">{creator.note || bt("협업 제안을 받고 있습니다.", "Accepting collaboration proposals.")}</span>
+              <span className="mt-3 flex flex-wrap gap-1.5">
+                {creator.acceptedTypes.slice(0, 4).map((type) => (
+                  <span key={type} className="rounded-full bg-raised px-2 py-1 text-[11px]">
+                    {typeLabel(type)}
+                  </span>
+                ))}
+              </span>
+              <span className="mt-3 block text-[11px] text-fg-3">
+                {creator.acceptUnverified
+                  ? bt("미인증 제안 허용", "Accepts unverified proposals")
+                  : bt("인증 기업 제안만", "Verified businesses only")}
+              </span>
+            </button>
+          ))}
+        </div>
+        {!creators.length ? (
+          <div className="mt-5 flex flex-col items-center gap-4 rounded-2xl border border-dashed border-line bg-canvas/60 px-6 py-12 text-center">
+            <span className="grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-accent to-accent-2 text-on-accent shadow-lg">
+              <Search size={28} aria-hidden="true" />
+            </span>
+            <div>
+              <h3 className="text-lg font-black">{bt("아직 공개된 협업 가능 작가가 없어요", "No creators are listed yet")}</h3>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-fg-2">
+                {bt(
+                  "작가님이 먼저 프로필을 공개하면 제안이 시작됩니다. 제안 수신 설정에서 협업 가능 목록에 올라가 보세요.",
+                  "Proposals start when creators publish their profiles. List yourself from the proposal settings above.",
+                )}
+              </p>
+            </div>
+            {userId ? (
+              <a href="#collab-preference" className={`${BUTTON} bg-accent text-on-accent`}>
+                <Sparkles size={16} className="mr-1" aria-hidden="true" />
+                {bt("프로필 공개 설정하기", "Publish my profile")}
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
       <section aria-labelledby="collab-canvas-title" className="rounded-2xl border border-line bg-panel p-5">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -483,59 +561,6 @@ export function CollaborationHubPage() {
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-line bg-panel p-5">
-        <h2 className="text-xl font-black">{bt("협업 가능한 작가", "Open for collaboration")}</h2>
-        <p className="mt-2 text-sm text-fg-2">{bt("작가가 직접 공개하고 제안 유형을 선택한 프로필만 표시합니다.", "Only profiles creators published themselves, with their chosen proposal types.")}</p>
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {creators.map((creator) => (
-            <button
-              key={creator.userId}
-              type="button"
-              onClick={() => setSelectedCreatorId(creator.userId)}
-              className={selectedCreatorId === creator.userId
-                ? "rounded-2xl border border-accent bg-accent-soft p-4 text-left"
-                : "rounded-2xl border border-line p-4 text-left hover:bg-raised"}
-            >
-              <span className="font-black">{creator.name}</span>
-              <span className="mt-2 block text-xs leading-5 text-fg-3">{creator.note || bt("협업 제안을 받고 있습니다.", "Accepting collaboration proposals.")}</span>
-              <span className="mt-3 flex flex-wrap gap-1.5">
-                {creator.acceptedTypes.slice(0, 4).map((type) => (
-                  <span key={type} className="rounded-full bg-raised px-2 py-1 text-[11px]">
-                    {typeLabel(type)}
-                  </span>
-                ))}
-              </span>
-              <span className="mt-3 block text-[11px] text-fg-3">
-                {creator.acceptUnverified
-                  ? bt("미인증 제안 허용", "Accepts unverified proposals")
-                  : bt("인증 기업 제안만", "Verified businesses only")}
-              </span>
-            </button>
-          ))}
-        </div>
-        {!creators.length ? (
-          <div className="mt-5 flex flex-col items-center gap-4 rounded-2xl border border-dashed border-line bg-canvas/60 px-6 py-12 text-center">
-            <span className="grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-accent to-accent-2 text-on-accent shadow-lg">
-              <Search size={28} aria-hidden="true" />
-            </span>
-            <div>
-              <h3 className="text-lg font-black">{bt("아직 공개된 협업 가능 작가가 없어요", "No creators are listed yet")}</h3>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-fg-2">
-                {bt(
-                  "작가님이 먼저 프로필을 공개하면 제안이 시작됩니다. 제안 수신 설정에서 협업 가능 목록에 올라가 보세요.",
-                  "Proposals start when creators publish their profiles. List yourself from the proposal settings above.",
-                )}
-              </p>
-            </div>
-            {userId ? (
-              <a href="#collab-preference" className={`${BUTTON} bg-accent text-on-accent`}>
-                <Sparkles size={16} className="mr-1" aria-hidden="true" />
-                {bt("프로필 공개 설정하기", "Publish my profile")}
-              </a>
-            ) : null}
-          </div>
-        ) : null}
-      </section>
 
       {userId && selectedCreator ? (
         <section className="rounded-2xl border border-line bg-panel p-5">
