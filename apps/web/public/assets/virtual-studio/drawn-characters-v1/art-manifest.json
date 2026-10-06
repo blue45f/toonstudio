@@ -79,23 +79,49 @@
         ]
       ],
       "transparentPixels": [
-        256796,
-        262324,
-        264270,
-        265827
+        257106,
+        262388,
+        264386,
+        265901
       ],
       "frameRgbaSha256": [
-        "13ab876bd770c475c0cc397c30509fff8c4acb6974ce1f2e4bdd3ce6db1fff0a",
-        "97b0a36eab0878ed5ec21a16484d03021219cadd23018a9f6667d0ee7fdf33e6",
-        "342ec303e662e73bea53bbd0edd70d55f8f55bc1e995ab63f2d337d0f9bc656b",
-        "081b0d47f60711a868e037fc5197c86cece7b01ba945f625a4b48585dd38865c"
+        "ecac0c8114f4f188c07957d4a7328ba12700053dbb2f25ba3201a0f15d525487",
+        "f67174e6550e64479f1505d19ba2d9a4c5b0b1de9823937223e212d862d69b57",
+        "92057ba26c7f32e58d47f21cb587c3a2000a29d7187ca0a77c030f8b6267c3fe",
+        "980fe7762a69c9b7e3af887e12c99b73f3af44759d801b0b7e7245092d9a363e"
       ],
       "authoredReferences": [
         "production-v2/player-pink-direction-right.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-right.png": "db0f3c32ec818a6f991144a6ecedb8fd0eb2faff91c494c636268a566686517c"
-      }
+        "production-v2/player-pink-direction-right.png": "3a9dc00eb6f297f677d7837448f9f1af713fdd56d794738bc04f919b767f17ba"
+      },
+      "footBounds": [
+        [
+          197,
+          591,
+          446,
+          667
+        ],
+        [
+          176,
+          591,
+          316,
+          668
+        ],
+        [
+          223,
+          591,
+          446,
+          636
+        ],
+        [
+          204,
+          591,
+          306,
+          636
+        ]
+      ]
     },
     "pink/walk-up": {
       "skin": "pink",
@@ -161,23 +187,49 @@
         ]
       ],
       "transparentPixels": [
-        276557,
-        274196,
-        278527,
-        274147
+        276632,
+        274293,
+        278587,
+        274209
       ],
       "frameRgbaSha256": [
-        "6fd2d495134aa912bda5bad970bbbcd668362090096a0a29261c68157df62d32",
-        "198e84df47b1b2c42b8d25d3494297f84ad1023e42cb75f02995bb66c58654a9",
-        "ef8be5bd4abf684a3af4ed5b5b16ded341f9f7feccbba62b363c98a88956a5b2",
-        "7f9cfa5cc88c1283c4a92bb47c8bb61adc93e08342d1d6bcb1367c47564b3507"
+        "9ca80a4fbb2615a066ffddd7fb08a52882b114196056556a6811c26697507f0f",
+        "ada283a6d48b0e87267470abdf5427f303ce9f9747fdb791545894e44f8796bb",
+        "05a607d2e0f818640e87836460c9eb40eacd71bcc5055e5379695cb07bae9249",
+        "d5c10f4c74e2c2696fc416808aac010701234cd5703e157e584831b92b662ac2"
       ],
       "authoredReferences": [
         "production-v2/player-pink-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-up.png": "ba66a0ea323c2a9caef8b952e7606534b902bffca174f251676ae1eb70fac23e"
-      }
+        "production-v2/player-pink-direction-up.png": "c46e64581dc7fdf7745a39a78645e73242b32fa4e4e8f3b1423bc45cc08246d3"
+      },
+      "footBounds": [
+        [
+          251,
+          591,
+          374,
+          661
+        ],
+        [
+          222,
+          591,
+          308,
+          651
+        ],
+        [
+          245,
+          591,
+          350,
+          643
+        ],
+        [
+          217,
+          591,
+          309,
+          641
+        ]
+      ]
     },
     "pink/walk-down": {
       "skin": "pink",
@@ -243,23 +295,49 @@
         ]
       ],
       "transparentPixels": [
-        271252,
-        273059,
-        272030,
-        272079
+        271337,
+        273113,
+        272089,
+        272145
       ],
       "frameRgbaSha256": [
-        "cf9ffa03b4722296d5976c5222522c599b5cc2ca0802fa912854efd8839c967f",
-        "741b741cff5f665bf9760353d06cf3d47923f5203c6268556e37872aa1820527",
-        "8d4b04e700a962d687b9425339c5c986bedf5377977a7b83311e5bd4b736c2e0",
-        "ad2f2a7f4d28f4d5fc756ba9008c1c592e1403d8dd7ccb6bb364b13ac4096871"
+        "5c9ebee85db6e66616bd79ee49508a7bbf338d8bceb24c20a9250dd8b5296071",
+        "399604ec0fdbb55f70b922ee94a8a8c3696122a93696aba9d8499806b25be4f8",
+        "0ac5221664ac77d896cbe037d5d92784a64001fff3bd3cd6a4e33784b02badd2",
+        "89984c37235e9dc5c7dd6ef9312acb535da0684686f250cae4117965136e35f7"
       ],
       "authoredReferences": [
         "production-v2/player-pink-direction-down.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-down.png": "bdc7798b527b04385c5618d6e05ec23d93e2d75c1cc68c13b29dee481612195e"
-      }
+        "production-v2/player-pink-direction-down.png": "9a1c0d9bc217b484e195bfea1e44e7dc04fde26af7939a2c51089f5491b015b6"
+      },
+      "footBounds": [
+        [
+          269,
+          591,
+          388,
+          677
+        ],
+        [
+          196,
+          591,
+          283,
+          668
+        ],
+        [
+          301,
+          591,
+          360,
+          649
+        ],
+        [
+          199,
+          591,
+          278,
+          641
+        ]
+      ]
     },
     "pink/walk-left": {
       "skin": "pink",
@@ -325,23 +403,49 @@
         ]
       ],
       "transparentPixels": [
-        251325,
-        255348,
-        262988,
-        263227
+        251463,
+        255445,
+        263117,
+        263310
       ],
       "frameRgbaSha256": [
-        "fa30927b458a06a58ceb21e46f0144998d91ab398403f62bd7a1ceeed2c2ba7b",
-        "1036c48c7d34c0c783b737cc58019930ddc206908328bee999a8953d252f0ad8",
-        "5f0d83ca44ff1c8100cae7ed6310e7bad8e42fceb791f79e6830c702396d1fae",
-        "d800f494d2888123b88e0a256be2f63a07910c16607e2c1199c3ab198b023f5d"
+        "b1956001ef4c9b0ed5bd48c238aa77b6592b0be2d6867d4b72124e3118a0a065",
+        "7162af68909b6b46021e4dbc6a27532deaafc23378e8c5cc127830a2276313b6",
+        "bd3cb0df1a62843a7c181dc38cdf6626ce149f36d9a74d4691be6898bb0ac280",
+        "dcff9773b517c14679c78c4be1682c4c5d4d92d7a7b52bfc328420ea1259cf57"
       ],
       "authoredReferences": [
         "production-v2/player-pink-direction-left.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-left.png": "b1d956018f82335b8ffddf6d2175f5cc6929df691de77f1befbc72fe1f762aa1"
-      }
+        "production-v2/player-pink-direction-left.png": "aa422da0226dc224991d4b6d475941c61915c0763cc2a1f63ced02ec3269b186"
+      },
+      "footBounds": [
+        [
+          183,
+          591,
+          419,
+          666
+        ],
+        [
+          183,
+          591,
+          322,
+          668
+        ],
+        [
+          159,
+          591,
+          407,
+          637
+        ],
+        [
+          182,
+          591,
+          304,
+          648
+        ]
+      ]
     },
     "pink/wave": {
       "skin": "pink",
@@ -407,16 +511,16 @@
         ]
       ],
       "transparentPixels": [
-        256082,
-        251807,
-        245846,
-        241444
+        256263,
+        251877,
+        245957,
+        241555
       ],
       "frameRgbaSha256": [
-        "f983a59e8187708c05680afb7e7261f39790c664905222cf107354bdd750c57f",
-        "559d6956ea43868f7a889cc59d88c35c4b6a78381ac5964cd72e53840caff163",
-        "8a9cc8c04aeb894612cdc018f06550b55e63ed60ae522b6944b97bf5d7511f44",
-        "19ba17b6ffb914c26bbb7a0e7443856a3547e2eb25c8088b7338bfb328c6018c"
+        "2977a29f32db00046a5f04c5ec5a948d44e3cc987cb44e1abb3a3a1e9a7c0a28",
+        "c02b73612cd139334b3ee7f1f4b0ce836c587a428b3a50e6be2b5e5a108e0170",
+        "8e8c45bfb53357b57bfa2512f5a907c269b05f42385a059916f9a356531c3264",
+        "d6abdee10c5a5014e3c701fe01facc4726f4bdc25548a325a5584d2f58a3428c"
       ],
       "authoredReferences": [
         "production-v2/player-pink-direction-down.png",
@@ -424,10 +528,36 @@
         "production-v2/player-pink-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-down.png": "bdc7798b527b04385c5618d6e05ec23d93e2d75c1cc68c13b29dee481612195e",
-        "production-v2/player-pink-direction-right.png": "db0f3c32ec818a6f991144a6ecedb8fd0eb2faff91c494c636268a566686517c",
-        "production-v2/player-pink-direction-up.png": "ba66a0ea323c2a9caef8b952e7606534b902bffca174f251676ae1eb70fac23e"
-      }
+        "production-v2/player-pink-direction-down.png": "9a1c0d9bc217b484e195bfea1e44e7dc04fde26af7939a2c51089f5491b015b6",
+        "production-v2/player-pink-direction-right.png": "3a9dc00eb6f297f677d7837448f9f1af713fdd56d794738bc04f919b767f17ba",
+        "production-v2/player-pink-direction-up.png": "c46e64581dc7fdf7745a39a78645e73242b32fa4e4e8f3b1423bc45cc08246d3"
+      },
+      "footBounds": [
+        [
+          245,
+          591,
+          367,
+          643
+        ],
+        [
+          201,
+          591,
+          324,
+          644
+        ],
+        [
+          238,
+          591,
+          364,
+          641
+        ],
+        [
+          216,
+          591,
+          343,
+          638
+        ]
+      ]
     },
     "pink/sit": {
       "skin": "pink",
@@ -497,16 +627,16 @@
         ]
       ],
       "transparentPixels": [
-        252864,
-        256599,
-        252264,
-        247086
+        252926,
+        256729,
+        252328,
+        247151
       ],
       "frameRgbaSha256": [
-        "88f89524a7fb4e57d3bdd65e991ffab671b28a8b31f97b752f8249d2d92b3063",
-        "80dc8aa8c1920f930108d0f8f46e4757c607d816966565c241039d24f02d2ac8",
-        "635008089cab738bf69fa2e734c330436ce5905caad1acac39f1b0e2bb71cc83",
-        "7b015c3f2868a4e39dada09003f9bfcaa906eb18ee1c32968b42c379c8167677"
+        "d1e0991e6228ffc7f7b755d68d306931ba8b1f25d7b8ebace02629ccb9d28231",
+        "9d9e66d221b6772782930f92a24afc1750ebf39f0d271890d52206e724106797",
+        "03aefde7d5721fe59d5b1041e810fd27c034df9d71a0767b835d722ec13e33a8",
+        "f96bcca5e6959801328312a74ec02eb32cb95c635926ed85bcfcb736bd82d04e"
       ],
       "authoredReferences": [
         "production-v2/player-pink-direction-down.png",
@@ -514,10 +644,36 @@
         "production-v2/player-pink-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-down.png": "bdc7798b527b04385c5618d6e05ec23d93e2d75c1cc68c13b29dee481612195e",
-        "production-v2/player-pink-direction-right.png": "db0f3c32ec818a6f991144a6ecedb8fd0eb2faff91c494c636268a566686517c",
-        "production-v2/player-pink-direction-up.png": "ba66a0ea323c2a9caef8b952e7606534b902bffca174f251676ae1eb70fac23e"
-      }
+        "production-v2/player-pink-direction-down.png": "9a1c0d9bc217b484e195bfea1e44e7dc04fde26af7939a2c51089f5491b015b6",
+        "production-v2/player-pink-direction-right.png": "3a9dc00eb6f297f677d7837448f9f1af713fdd56d794738bc04f919b767f17ba",
+        "production-v2/player-pink-direction-up.png": "c46e64581dc7fdf7745a39a78645e73242b32fa4e4e8f3b1423bc45cc08246d3"
+      },
+      "footBounds": [
+        [
+          252,
+          591,
+          376,
+          682
+        ],
+        [
+          254,
+          591,
+          383,
+          683
+        ],
+        [
+          182,
+          591,
+          308,
+          661
+        ],
+        [
+          174,
+          591,
+          305,
+          661
+        ]
+      ]
     },
     "silver/walk-right": {
       "skin": "silver",
@@ -583,23 +739,49 @@
         ]
       ],
       "transparentPixels": [
-        259820,
-        273802,
-        262152,
-        272890
+        259830,
+        273803,
+        262156,
+        272892
       ],
       "frameRgbaSha256": [
-        "82e2aedda3e5293a38b80f37dca81c15ff46753c6d42ccad41500af2c5c8e3c5",
-        "f32e6478c479f2cff2667aa3657cd413fb7f13e14e188211861c885b948b6d7d",
-        "eebf0b9a6836b479e6607d9a052e6910ffe6f90f9310a4f41f6e0965dc9767d6",
-        "7357a7dbb2d050907dd9e5e91c8302ab50dcfa2eaccd8f6318f5655a663810a7"
+        "2e9e37f25bdb5f66247500edabd414909b28c9933aa60e70058bf86d6be724c9",
+        "e23577745000a3c3d4ccfdd38ad9277154208d23108eabc4c7c852babe1c132d",
+        "354fdf01775f8c7a8dd6e78d9f45333fc7ebff708a0b8a3fc94a486c54e404ff",
+        "0709ec34d132a042428e01c315956a8d9a5a96883e696fc6545ce72de388f4dc"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-right.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-right.png": "edc7fdb96c13062f44f8668bde605b1c1dfc717d73c9a81879ad3f2c8f47abd0"
-      }
+        "production-v2/player-silver-direction-right.png": "c8a6c47072f4eb2ae7f279259ba01dbcf4a52145fa9081c279b09a02ba92a46f"
+      },
+      "footBounds": [
+        [
+          172,
+          591,
+          469,
+          673
+        ],
+        [
+          152,
+          591,
+          315,
+          673
+        ],
+        [
+          172,
+          591,
+          481,
+          659
+        ],
+        [
+          176,
+          591,
+          322,
+          665
+        ]
+      ]
     },
     "silver/walk-up": {
       "skin": "silver",
@@ -665,23 +847,49 @@
         ]
       ],
       "transparentPixels": [
-        287792,
-        289271,
-        286561,
-        288078
+        287796,
+        289275,
+        286566,
+        288087
       ],
       "frameRgbaSha256": [
-        "9bfa4aab4901eac43b95666089903c151302593162f1d3f4ae4e09e4cbd957ec",
-        "09dd541c936a22d8462f37f018b063bdfe33c622c03268489744da2bc6438ef9",
-        "74a4c5e528228a8a992c517c50c872420bdcc800754b766625ca6b1dce801944",
-        "1dfbaeecd493b8ad037740be2bd81199be825cacc70edb3b77567e6e185e0336"
+        "47b1b08200b6dce7a99d365b424b992f7c509aadd3224a62a277bda88ef8119c",
+        "45d876f898b4a83da98ecc2b6df32f9e451fcf7105207499755ab66eb3673283",
+        "79a7f46139735fcfe5df8e8688c424885e189e824c11b51a7acba9f09a641b5a",
+        "28d878ba5fcd1c61f0adac6703df7ab90f44333fd7b71b7abdd304a67a7d0075"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-up.png": "ecd9e413c09791fc11f87136df925bcab0c4e2ff2b9d52216c2676de0f03f93e"
-      }
+        "production-v2/player-silver-direction-up.png": "bd2a907fb6ca159b9ddc9544d226da5024546e61dc9686c1f99976a40022e4d8"
+      },
+      "footBounds": [
+        [
+          247,
+          591,
+          374,
+          650
+        ],
+        [
+          214,
+          591,
+          313,
+          652
+        ],
+        [
+          292,
+          591,
+          354,
+          635
+        ],
+        [
+          206,
+          591,
+          303,
+          632
+        ]
+      ]
     },
     "silver/walk-down": {
       "skin": "silver",
@@ -747,23 +955,49 @@
         ]
       ],
       "transparentPixels": [
-        278889,
-        276483,
-        277536,
-        276267
+        278904,
+        276487,
+        277542,
+        276270
       ],
       "frameRgbaSha256": [
-        "15f03c7df176d0f6419d6ddb7b1f10bee6ef4d71c96fdc269179ababb0cfb046",
-        "fb0e7f12e3c73bddc9a6356af40f59fd3741ec24ff928eb8413418fdabc3f873",
-        "ed168ea5192a735729facbf9b5bbc902ad18177cdc8637190d5a8cbeb09633a7",
-        "c086d8922eec26abf4ee853be63565fb0f3b44fd3075a40b4cb0ae24ae1b2418"
+        "c675d832cfba1d1ac51c82616a704f0a92fc7bbbaf469f4a7ad7d4b5d1789308",
+        "f51387ad4b0eafeaae903feb13c05552a935fdbb8e99b2c8cad4107e996bce40",
+        "1f4a1a952eed34dc4bbc01250c69f0de6a4b58fe3fa53fb8ba393369a5277581",
+        "eaa67513ce0c890df3bf044f98ea5dc1495cb2e0d33bbe53736fa08cbcde2142"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-down.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-down.png": "8898e0c45c2c35caf49e87f0c06e2288aa1057069a144bf17ea39bafb80b5f80"
-      }
+        "production-v2/player-silver-direction-down.png": "48b12be5575d86f80ef14733b8fec4ffa6c406e1dfe542b14a068142616abffe"
+      },
+      "footBounds": [
+        [
+          268,
+          591,
+          390,
+          664
+        ],
+        [
+          190,
+          591,
+          293,
+          671
+        ],
+        [
+          308,
+          591,
+          371,
+          637
+        ],
+        [
+          188,
+          591,
+          290,
+          644
+        ]
+      ]
     },
     "silver/walk-left": {
       "skin": "silver",
@@ -829,23 +1063,49 @@
         ]
       ],
       "transparentPixels": [
-        259009,
-        263159,
-        262938,
-        261993
+        259030,
+        263192,
+        262962,
+        262030
       ],
       "frameRgbaSha256": [
-        "e39d0f0fd524f3eb996acf24554dc625988bf9d2402243906c9c68050449f8f1",
-        "e77ca72f80f71ab994a509c83155143783263c314ecf4f3522cdcf9cb8ec3084",
-        "2f7d1b44fb7af67401aea7d1ebbfdcd3a75b2e48501ad5d9457eecbf92d6a250",
-        "426dc68e5aca2adfa90ae7f206bb296443285810bb7a7135fed5312909541dfe"
+        "356b176b8e3748035405c5362dc7bac710af7e37556888ae6e2fbc3356cad610",
+        "43230f61536aed15c4c33917caa11dce56314f9ea9540b118d884ba1850e684f",
+        "87885aff700a055a22a508534cd715a8a57edb3ca800e21fd0237a042b9bfd98",
+        "66943461acc1c46536753044a9411d6e8434293244d605559ef39a7e596c80e8"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-left.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-left.png": "7556e3abb3e6db9b1831fb481af677436f1b7e2eed86e6ecc48f93ce4fbd4810"
-      }
+        "production-v2/player-silver-direction-left.png": "a392c369aa9504995d04f56991e8e8cf83804390277d842ec36cc1c4125625e0"
+      },
+      "footBounds": [
+        [
+          170,
+          591,
+          427,
+          677
+        ],
+        [
+          159,
+          591,
+          348,
+          681
+        ],
+        [
+          159,
+          591,
+          432,
+          643
+        ],
+        [
+          143,
+          591,
+          346,
+          646
+        ]
+      ]
     },
     "silver/wave": {
       "skin": "silver",
@@ -911,16 +1171,16 @@
         ]
       ],
       "transparentPixels": [
-        303592,
-        310419,
-        305284,
-        297400
+        303601,
+        310422,
+        305295,
+        297426
       ],
       "frameRgbaSha256": [
-        "503f9f0f26acb9c8aa1fc3a4348e86ba2ccfa613025d8128ac2a73ecb5d54ce0",
-        "b1328eed49d7988fbe313e947b7328e5a54fdb088ec4bead4fbf0d4169d6c6c5",
-        "bdef2f6dbef77261a50a26a3927e8b440d65ef6a4988f707fc8840990ab3c5d6",
-        "ee0617a27262d6952a50740e8f7e66473f6a06ce043fb0b5b121ce3785279ebc"
+        "64e1b1e17ed9c10807754f401f1c2aace5494d7a52930ab7d22eac4cf065ff28",
+        "8b420983365c5d60c93c98f40d3b81173bb07f2de80169ef658f3f86d47a71e6",
+        "0e2023f5478ba44ba30729387495de5074636b604c918e67652bb9c4b1b62154",
+        "9e71b13aa97b2f890e4d880ba434dc585c3de582848610c6083221111ec3a198"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-down.png",
@@ -928,10 +1188,36 @@
         "production-v2/player-silver-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-down.png": "8898e0c45c2c35caf49e87f0c06e2288aa1057069a144bf17ea39bafb80b5f80",
-        "production-v2/player-silver-direction-right.png": "edc7fdb96c13062f44f8668bde605b1c1dfc717d73c9a81879ad3f2c8f47abd0",
-        "production-v2/player-silver-direction-up.png": "ecd9e413c09791fc11f87136df925bcab0c4e2ff2b9d52216c2676de0f03f93e"
-      }
+        "production-v2/player-silver-direction-down.png": "48b12be5575d86f80ef14733b8fec4ffa6c406e1dfe542b14a068142616abffe",
+        "production-v2/player-silver-direction-right.png": "c8a6c47072f4eb2ae7f279259ba01dbcf4a52145fa9081c279b09a02ba92a46f",
+        "production-v2/player-silver-direction-up.png": "bd2a907fb6ca159b9ddc9544d226da5024546e61dc9686c1f99976a40022e4d8"
+      },
+      "footBounds": [
+        [
+          238,
+          591,
+          389,
+          604
+        ],
+        [
+          217,
+          591,
+          335,
+          607
+        ],
+        [
+          232,
+          591,
+          366,
+          609
+        ],
+        [
+          198,
+          591,
+          344,
+          608
+        ]
+      ]
     },
     "silver/sit": {
       "skin": "silver",
@@ -1001,16 +1287,16 @@
         ]
       ],
       "transparentPixels": [
-        240683,
+        240684,
         252038,
         249100,
-        244856
+        244863
       ],
       "frameRgbaSha256": [
-        "856404ef0c1b96fc79ddea591f29aad3eb2956da2642c94592b208d03a5d3fb4",
-        "91c5da5ca7d283424f4c5c76e205f168ecb79395c85e7807de0ed90261a9e879",
-        "24d2178e89bb1ce191022c46ddd2a2878236ed3f2b38d3254dc237bee48d8390",
-        "79aab6e9354878276f65c838ea98b6c00b75925b838e5e6ee542fa079b713aa8"
+        "4b1183fdaf12e6b9c9e802c2e4767a39e990a237c6dc763a4d99194b52d38ffb",
+        "85ec542c29f1904f61255263ab1282a0f99f228282c6b6982cb7e39c652d79f8",
+        "300f3d3ee5a608f0199d0b88e7a1f11e2f7ba65105a6f543225fb88cb818f88b",
+        "d860403d11abd3144755b95b6eba15d354924a1950d1af077a7d9e6bf3eeb091"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-down.png",
@@ -1018,10 +1304,36 @@
         "production-v2/player-silver-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-down.png": "8898e0c45c2c35caf49e87f0c06e2288aa1057069a144bf17ea39bafb80b5f80",
-        "production-v2/player-silver-direction-right.png": "edc7fdb96c13062f44f8668bde605b1c1dfc717d73c9a81879ad3f2c8f47abd0",
-        "production-v2/player-silver-direction-up.png": "ecd9e413c09791fc11f87136df925bcab0c4e2ff2b9d52216c2676de0f03f93e"
-      }
+        "production-v2/player-silver-direction-down.png": "48b12be5575d86f80ef14733b8fec4ffa6c406e1dfe542b14a068142616abffe",
+        "production-v2/player-silver-direction-right.png": "c8a6c47072f4eb2ae7f279259ba01dbcf4a52145fa9081c279b09a02ba92a46f",
+        "production-v2/player-silver-direction-up.png": "bd2a907fb6ca159b9ddc9544d226da5024546e61dc9686c1f99976a40022e4d8"
+      },
+      "footBounds": [
+        [
+          235,
+          591,
+          409,
+          685
+        ],
+        [
+          291,
+          591,
+          451,
+          685
+        ],
+        [
+          103,
+          591,
+          284,
+          667
+        ],
+        [
+          188,
+          591,
+          357,
+          663
+        ]
+      ]
     },
     "dark/walk-right": {
       "skin": "dark",
@@ -1087,23 +1399,49 @@
         ]
       ],
       "transparentPixels": [
-        255091,
-        272293,
-        258575,
-        265005
+        255113,
+        272303,
+        258593,
+        265021
       ],
       "frameRgbaSha256": [
-        "e73206477058c640a73ace9aa6a2479361b1a52aed9d7d71bfe0f2fc672a3c08",
-        "06c71515b5f1cf1faf6a382ab62a1d4d8cc583dde75b10582479973f75e9a0fa",
-        "2f95b724baa4435ac5c35c29a6c7acf508ba0b3127144a3ad6e904aacfeb1813",
-        "283a1206c0d1ce1041589a428386ec3c2e680409858d959f3426b1b0c09c5a7a"
+        "d917268cfd9c9fd3e0b200e235494518aa411dbaa49e8e3d910057e8f60352a7",
+        "4371457a6ac2db82847a7c1ad6bcaf4c53aa1fa45f502f97b5e707227a85c1a8",
+        "f3c248e9c37415d0b3a069fae50f577d80e7f15256df4fde4436cbba2202b44d",
+        "b462578f88bffdb980a15d1ab12f92987079daf9c81a55a431f3504cc4358c49"
       ],
       "authoredReferences": [
         "production-v2/player-dark-direction-right.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-dark-direction-right.png": "d1e83c5dae37a602cebd6e0e5fd02ad7a26eab63af9cbe008fa0bad1c29ce29b"
-      }
+        "production-v2/player-dark-direction-right.png": "51bebfc62141bed84d94d6f7f70349484569c68f3e6a9329646e56c769f42b26"
+      },
+      "footBounds": [
+        [
+          186,
+          591,
+          502,
+          677
+        ],
+        [
+          159,
+          591,
+          335,
+          678
+        ],
+        [
+          185,
+          591,
+          510,
+          660
+        ],
+        [
+          185,
+          591,
+          342,
+          667
+        ]
+      ]
     },
     "dark/walk-up": {
       "skin": "dark",
@@ -1169,23 +1507,49 @@
         ]
       ],
       "transparentPixels": [
-        284737,
-        284218,
-        283487,
-        282161
+        284747,
+        284223,
+        283497,
+        282169
       ],
       "frameRgbaSha256": [
-        "d52e2ba6ed6d800f01a5b38bd7199334a7679bc69e458a70bd5affa86a04efba",
-        "73df1febcfca55700364cb05bca000323f14b1eb66ce0cdcac1e438603c281e7",
-        "b6e4091469d4641b8bcb2740e293cda91b86126f2c87217bcb6993e9e5181823",
-        "5136db7f25b597f6491b35200ba222497851d88db9000c6e6bafbe328a766e03"
+        "edeb078e40ca9d5fa0d12e990a43bcbc73b5e88beede6105a33d59a28b168d2f",
+        "339d0051d8c8f542d71cde95bcfef086f121ed46c2eb02f9f4aceff30fa3635f",
+        "703d0a9f1ed7e9acbc8bd3aa6271d1eef50c1efe582e813cd0de69ebbcc91b82",
+        "03ff92502e294b18fe11e94b83ff35a1b62277629dc2a347f3e1a49d4da2f634"
       ],
       "authoredReferences": [
         "production-v2/player-dark-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-dark-direction-up.png": "83a5046807ba5eac405acb950099d72c8577a4ce7bde98e3abc1766bc55e0136"
-      }
+        "production-v2/player-dark-direction-up.png": "c5fbb8262ca4704d87447d8fa8561c59e7d1c35e2bfad49a9bfb951e39fe7afe"
+      },
+      "footBounds": [
+        [
+          262,
+          591,
+          385,
+          650
+        ],
+        [
+          203,
+          591,
+          307,
+          659
+        ],
+        [
+          263,
+          591,
+          369,
+          638
+        ],
+        [
+          206,
+          591,
+          304,
+          652
+        ]
+      ]
     },
     "dark/walk-down": {
       "skin": "dark",
@@ -1251,23 +1615,49 @@
         ]
       ],
       "transparentPixels": [
-        258598,
-        258229,
-        258096,
-        257905
+        258605,
+        258249,
+        258104,
+        257925
       ],
       "frameRgbaSha256": [
-        "9767b20bd0d7e6da9fe9ca40f1298d61909961ff77c455d389a02de5a97ee001",
-        "61fc99b673b285b7266c82eacd4fa6add7d97a05094af548df1a9bbf579e788d",
-        "8d374cdac0bcb63d950b7aacc06970692f25f1dea76445e4b691d437a360ed3c",
-        "05bdeb0de85256251565ed0114e01f5b804f13d5253114592eaa191b3c4d8848"
+        "28028374a960e3fa83c23a865ccc37f2fe85810bacb349aa6298b42bb05abe36",
+        "bbd38d8b8e26d1739f656b7b51497502ffb8943e9e757b2448e57a84d0d1355f",
+        "816fc3eba5ad7d84a1b4da87fbda1b0c88428e3af850d23d85919a1a9238b95f",
+        "208d6aef3e5fba99405dc086b18267c349fa4b1df18fd37ce735a740fb4a4b04"
       ],
       "authoredReferences": [
         "production-v2/player-dark-direction-down.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-dark-direction-down.png": "056418cee120278c645b02173428212a173ba6b18a3699a4da04379b0f8b15de"
-      }
+        "production-v2/player-dark-direction-down.png": "de4b785612492fee8bd57e9476f2388e60b3db6d10df6cdd654d38295f575436"
+      },
+      "footBounds": [
+        [
+          261,
+          591,
+          407,
+          678
+        ],
+        [
+          194,
+          591,
+          311,
+          684
+        ],
+        [
+          247,
+          591,
+          381,
+          664
+        ],
+        [
+          196,
+          591,
+          313,
+          673
+        ]
+      ]
     },
     "dark/walk-left": {
       "skin": "dark",
@@ -1333,23 +1723,49 @@
         ]
       ],
       "transparentPixels": [
-        255311,
-        270757,
-        259792,
-        271976
+        255341,
+        270770,
+        259808,
+        271983
       ],
       "frameRgbaSha256": [
-        "ce6e74cfa7b4f87eddf755724a1e2cdd4910677c2ecfbf4f9bc83e2613f89c9d",
-        "5a037faaf405fa8880dffa0be65060360572e9fb5878d00fd384b51d34439f10",
-        "88dc866e2a8b8d6d697f56d00040653cc15f53541234811e8b14d032eab488c9",
-        "40740b76d11c47a787a97ebc289822b07de9732fde8277b86485ef6601480396"
+        "844e46b5f253818a24124cf7ed0a4d792fde57cd5467dd24e4a393ca5b22d61f",
+        "a22a269abaf21d71186f80eaec120b9dcb4ca97c4c5fd91e07cae1daa6d8f4be",
+        "5f192477b7b1115d413cf6b788a3f670296f6f174d4ad874364847f840cff45a",
+        "ccaeef1ae91d2d789a02afe2dfef3b9a94a605dfc9b34e3ea8b8d52744a71d64"
       ],
       "authoredReferences": [
         "production-v2/player-dark-direction-left.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-dark-direction-left.png": "527cb33352cfc8939456553577bc2452f6289eeacb67c5bfa02acb4e3e8f2bfb"
-      }
+        "production-v2/player-dark-direction-left.png": "9d70717e25d66af1b36164111614f9e7578afdaa64250a707baa740478e9924f"
+      },
+      "footBounds": [
+        [
+          156,
+          591,
+          436,
+          676
+        ],
+        [
+          171,
+          591,
+          329,
+          676
+        ],
+        [
+          144,
+          591,
+          448,
+          641
+        ],
+        [
+          195,
+          591,
+          304,
+          644
+        ]
+      ]
     },
     "dark/sit": {
       "skin": "dark",
@@ -1419,16 +1835,16 @@
         ]
       ],
       "transparentPixels": [
-        243710,
-        251962,
-        251770,
-        245223
+        243712,
+        251968,
+        251788,
+        245233
       ],
       "frameRgbaSha256": [
-        "2a0efac219426850aa116511a227d39c1be1e2ab3157b770f68c5fc26550fa13",
-        "b00b88437854f5b6642afd4a05ff5af952378e943b4d4990f3685c17eb0614f2",
-        "b125189e834e4ce051371821c6f5918d6878dc64dcdda24676869aff92abf438",
-        "90bd1f65e4bbc9bf656c95b2b5d1fb031775cd9b0e04d223061f928082b726f4"
+        "37ba6ccbbb4708c0ea0dc275643b8bd841d3fb09aabeef5fc670ef48dd27eb2d",
+        "fe1e21067377b771d8a0e20d81f93b79af0d49079b4f6cc956d66b830feac52e",
+        "d30e6aca9bc04beb853364db8504a5fb321180f04c7885655a8abf56df7464cd",
+        "a1ee95bd27ba182627ae5f6af9d3a1ad87ecedd24504a28dc148f7acb8545597"
       ],
       "authoredReferences": [
         "production-v2/player-dark-direction-down.png",
@@ -1436,10 +1852,36 @@
         "production-v2/player-dark-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-dark-direction-down.png": "056418cee120278c645b02173428212a173ba6b18a3699a4da04379b0f8b15de",
-        "production-v2/player-dark-direction-right.png": "d1e83c5dae37a602cebd6e0e5fd02ad7a26eab63af9cbe008fa0bad1c29ce29b",
-        "production-v2/player-dark-direction-up.png": "83a5046807ba5eac405acb950099d72c8577a4ce7bde98e3abc1766bc55e0136"
-      }
+        "production-v2/player-dark-direction-down.png": "de4b785612492fee8bd57e9476f2388e60b3db6d10df6cdd654d38295f575436",
+        "production-v2/player-dark-direction-right.png": "51bebfc62141bed84d94d6f7f70349484569c68f3e6a9329646e56c769f42b26",
+        "production-v2/player-dark-direction-up.png": "c5fbb8262ca4704d87447d8fa8561c59e7d1c35e2bfad49a9bfb951e39fe7afe"
+      },
+      "footBounds": [
+        [
+          232,
+          591,
+          428,
+          682
+        ],
+        [
+          286,
+          591,
+          461,
+          683
+        ],
+        [
+          106,
+          591,
+          289,
+          669
+        ],
+        [
+          188,
+          591,
+          350,
+          666
+        ]
+      ]
     },
     "dark/wave": {
       "skin": "dark",
@@ -1505,16 +1947,16 @@
         ]
       ],
       "transparentPixels": [
-        264329,
-        273415,
-        274162,
-        263809
+        264346,
+        273428,
+        274182,
+        263822
       ],
       "frameRgbaSha256": [
-        "79831502ce79d10ab9a9f922866ab0a8e2a7b35a59cb0836dbe3dbf9c0aafc32",
-        "4051ea2421845a6f703316da4665e0efde3f050a6d896537bb4abb3e58aeb740",
-        "1a0d1eb22092cd72b97c729c2543f36b63bbffac70b1e57f67d353264b9e3829",
-        "a046c4e062f1725235d51ba48fb797f01a15728bd90f0912fbf63231c3620a99"
+        "cfe2881fb11303d728d4f2121aeaa9a625da021a2073d94e92e8b7def81c0b3a",
+        "624d0bdcd84105bb0461a5c79ec1fb2f7bc75cc2121246b75ac73b9e2f11a72d",
+        "8db8fb8697f7b8cfc8533fd5e0abccb9470df0050fd36063214160b37b6d09ee",
+        "eb9fe49a5690695f0c167894391bb3fec21684b6e72d7211b9462ec5353747fc"
       ],
       "authoredReferences": [
         "production-v2/player-dark-direction-down.png",
@@ -1522,10 +1964,36 @@
         "production-v2/player-dark-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-dark-direction-down.png": "056418cee120278c645b02173428212a173ba6b18a3699a4da04379b0f8b15de",
-        "production-v2/player-dark-direction-right.png": "d1e83c5dae37a602cebd6e0e5fd02ad7a26eab63af9cbe008fa0bad1c29ce29b",
-        "production-v2/player-dark-direction-up.png": "83a5046807ba5eac405acb950099d72c8577a4ce7bde98e3abc1766bc55e0136"
-      }
+        "production-v2/player-dark-direction-down.png": "de4b785612492fee8bd57e9476f2388e60b3db6d10df6cdd654d38295f575436",
+        "production-v2/player-dark-direction-right.png": "51bebfc62141bed84d94d6f7f70349484569c68f3e6a9329646e56c769f42b26",
+        "production-v2/player-dark-direction-up.png": "c5fbb8262ca4704d87447d8fa8561c59e7d1c35e2bfad49a9bfb951e39fe7afe"
+      },
+      "footBounds": [
+        [
+          226,
+          591,
+          410,
+          663
+        ],
+        [
+          208,
+          591,
+          354,
+          671
+        ],
+        [
+          233,
+          591,
+          397,
+          627
+        ],
+        [
+          171,
+          591,
+          353,
+          628
+        ]
+      ]
     },
     "purple/walk-down": {
       "skin": "purple",
@@ -1591,23 +2059,49 @@
         ]
       ],
       "transparentPixels": [
-        253970,
-        252164,
-        250437,
-        250119
+        253988,
+        252177,
+        250453,
+        250132
       ],
       "frameRgbaSha256": [
-        "923ce827a83da58165316f3ec0518c58aa22f0959eaa08b93bae7413404261ee",
-        "6564aa778ae2699e2ad9d8889600b39dc56062035cb4aa2c9a358a904e09a0c9",
-        "a14d6d68ca177a2c2c6f3555240ea002d434f395457841db68866b7d1fc8bcd7",
-        "a75915b9fc19c4ed4d3697ee6036614f313a22384e52488a0c714ee96bb56e5c"
+        "f01d2335a4fe793e875046347feb3146c44183166d9297d6fa3b3bf6bd905a9a",
+        "43b83d08958756c575be0c08655b885ed94ee5c823905abc0f3dd0bc9c63775b",
+        "e18e95ceeb62086c11589dd3c5063b41e3d95cf08f388c9d2276de100bdfb0c2",
+        "4e6a16b2270cd6182906c4893799020735850804cd0f0bea8be829b5bf2ad6e3"
       ],
       "authoredReferences": [
         "production-v2/player-purple-direction-down.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-purple-direction-down.png": "01651d42d1598f357041975d4241f6b691ea29334a535b181e8c21a8606cffe9"
-      }
+        "production-v2/player-purple-direction-down.png": "7dcb240d9c1a3ebce83a95b6f972359ee0b1421e613dbc7cdf245de24372daad"
+      },
+      "footBounds": [
+        [
+          278,
+          591,
+          388,
+          673
+        ],
+        [
+          180,
+          591,
+          266,
+          674
+        ],
+        [
+          308,
+          591,
+          369,
+          655
+        ],
+        [
+          181,
+          591,
+          268,
+          655
+        ]
+      ]
     },
     "purple/walk-up": {
       "skin": "purple",
@@ -1673,23 +2167,49 @@
         ]
       ],
       "transparentPixels": [
-        275901,
-        274636,
-        277101,
-        273192
+        275921,
+        274647,
+        277132,
+        273202
       ],
       "frameRgbaSha256": [
-        "67c52c3caa7f49e954070a76fd464e13ed4e51d564ef6a8e2c4b2e2651d9ee1d",
-        "4326bad54ab0227a788f81c7c794a1906ba00899a9aa1012dad4d2820c562c1d",
-        "762f29cb9dd823e135b5859fa40e2871465c6a9f4a0f80b0c3c3e1a5543402c0",
-        "403780f10dfabf34e9f48d5626e586224afd54f6b9cdea22f33964ebaa27555c"
+        "303e7d0d16c4a3b949ead2007c5c1cf7fb43b9db19dd76a3adca66d0d7fe426e",
+        "058e2878f4914dc6054398aaaa595ca20f2269ee06c20d1bb82d18cdf4dce182",
+        "08692b0fcc106e7a8d34021eb2ab09f71ed4ad22a5abc7512dae1caf48fdae22",
+        "1834f0972ba9529fbf7882592c8be23d3d5c1b31de062d521edbe363b120973e"
       ],
       "authoredReferences": [
         "production-v2/player-purple-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-purple-direction-up.png": "c13961834cd5961ac3097fd9dc010ee9441fa50d04bac63cf63c46da02488b8a"
-      }
+        "production-v2/player-purple-direction-up.png": "d49bef10076236b57bdaf61975fc55f59789f94a34adc962cc5a593129830387"
+      },
+      "footBounds": [
+        [
+          239,
+          591,
+          368,
+          660
+        ],
+        [
+          211,
+          591,
+          319,
+          662
+        ],
+        [
+          254,
+          591,
+          351,
+          645
+        ],
+        [
+          217,
+          591,
+          313,
+          647
+        ]
+      ]
     },
     "purple/walk-right": {
       "skin": "purple",
@@ -1755,23 +2275,49 @@
         ]
       ],
       "transparentPixels": [
-        245154,
-        254710,
-        250208,
-        259910
+        245210,
+        254727,
+        250253,
+        259929
       ],
       "frameRgbaSha256": [
-        "c3f6621b818f90489e470d36ff1688d92740a54e46400d4887766bf822b78a29",
-        "e47d064ba38815179aec4f50ef8f9c349cfc10ef7198ccc0a109d0e65443958b",
-        "847c9c424a823552f1d17967e7adf9f0b5e3b93b526de6fff23b40d788f321b2",
-        "fcf116491722c0e385237ae1c031232395054ccfd7e0f17a5f00ed7b3f6e702c"
+        "2d59fb566dd14407516fe8829da3b39dcda49f3bffbab485a693b3b04b250485",
+        "0c21c57e033245535ee2cb541a5587c38443542c6228b7fa60b8c6aad5ec5c74",
+        "1f3ecc65c1ef5287285f340955655a8f0814b671484bd7acf254f363111c6cc6",
+        "70ef8f52d39da0445d2951d6b395f6762078290f28dab0000b3173660a5da563"
       ],
       "authoredReferences": [
         "production-v2/player-purple-direction-right.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-purple-direction-right.png": "3276ae39cc3762c92930731efcfe06058a0c755c3cac59c16152908b92aa8e75"
-      }
+        "production-v2/player-purple-direction-right.png": "8f0e699803caf9735817fc4f670bac962d10d409b381a5cc51a7b624f1f4908f"
+      },
+      "footBounds": [
+        [
+          173,
+          591,
+          477,
+          683
+        ],
+        [
+          157,
+          591,
+          331,
+          687
+        ],
+        [
+          188,
+          591,
+          510,
+          648
+        ],
+        [
+          212,
+          591,
+          324,
+          651
+        ]
+      ]
     },
     "purple/walk-left": {
       "skin": "purple",
@@ -1837,23 +2383,49 @@
         ]
       ],
       "transparentPixels": [
-        236005,
-        252215,
-        236408,
-        251042
+        236155,
+        252217,
+        236448,
+        251064
       ],
       "frameRgbaSha256": [
-        "3e6ad66e8dd8da24e6830ef353d9164720afe4cc77a64cb66600bde217135820",
-        "886684053c178ad68f3f322e98032df33881ccc33a1c416c0115f974a1a8061e",
-        "be5339df2c402fd468cfb1b131d5e57bbec64bb5bc0f0b6873696692cfd0a679",
-        "c037d605216e0aa5ca682eef8cdc42115cc0aef70477911cfbcb2b540b87a206"
+        "17fa942c9a127d0c43ff65db2fe975adf5017e069b261a1c844cabf3d293383c",
+        "4657f0b9e7af11a855360a782838caefb73e21939aa54d4967d5296f4abbf8a8",
+        "346009734ceb50a59d4bc3dd7d85dc260bf4dcba667fb99c83a4db2ee76158d5",
+        "e986ad6fc5c82ddde1cea70f843ad5d9de2fcd827849eef6c3fac29d83fce000"
       ],
       "authoredReferences": [
         "production-v2/player-purple-direction-left.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-purple-direction-left.png": "6fa370303f53d2d73f49266c3e10caa97338e96c02b41647f23bf9952571cff7"
-      }
+        "production-v2/player-purple-direction-left.png": "c02d42a7ecaab4644026eb731a125244686cb39fcab65ce3e6415e4c50688bd5"
+      },
+      "footBounds": [
+        [
+          124,
+          591,
+          476,
+          675
+        ],
+        [
+          188,
+          591,
+          341,
+          679
+        ],
+        [
+          116,
+          591,
+          484,
+          647
+        ],
+        [
+          204,
+          591,
+          332,
+          655
+        ]
+      ]
     },
     "purple/sit": {
       "skin": "purple",
@@ -1923,16 +2495,16 @@
         ]
       ],
       "transparentPixels": [
-        229067,
-        241613,
-        240862,
-        235361
+        229068,
+        241621,
+        240867,
+        235374
       ],
       "frameRgbaSha256": [
-        "b957ab692f7180aa18eda518372e282f5b52ec840669cbf00bfdd1e100464c02",
-        "1f9ab556019b28714608de99f8be05c399b8f1370d1b9324d4cd7212305bb0e4",
-        "10f935e1afce7bb53fa907c4828005406a72434ac6afcf87dd6f025f2c38c1fe",
-        "b1abfcdb2303d0bff2c052b56fbe9cc635c4e6e4237811a1a82987de65bc6f56"
+        "2e53b81de2a69f213b78ca6bf015328553546466641edc6092765e03a90da409",
+        "64a197d0bdb9f0f84648f769aa384de4483ad21361128ec191c52955eff1c8b1",
+        "66696c5e416293892cc2efc4e8634131655f33c31c797f5fb852c88f72c5635d",
+        "dfce9e625b4ee0059928d3466b3cfaf110131658209968fa6a10bcd3f94c7d3b"
       ],
       "authoredReferences": [
         "production-v2/player-purple-direction-down.png",
@@ -1940,10 +2512,36 @@
         "production-v2/player-purple-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-purple-direction-down.png": "01651d42d1598f357041975d4241f6b691ea29334a535b181e8c21a8606cffe9",
-        "production-v2/player-purple-direction-right.png": "3276ae39cc3762c92930731efcfe06058a0c755c3cac59c16152908b92aa8e75",
-        "production-v2/player-purple-direction-up.png": "c13961834cd5961ac3097fd9dc010ee9441fa50d04bac63cf63c46da02488b8a"
-      }
+        "production-v2/player-purple-direction-down.png": "7dcb240d9c1a3ebce83a95b6f972359ee0b1421e613dbc7cdf245de24372daad",
+        "production-v2/player-purple-direction-right.png": "8f0e699803caf9735817fc4f670bac962d10d409b381a5cc51a7b624f1f4908f",
+        "production-v2/player-purple-direction-up.png": "d49bef10076236b57bdaf61975fc55f59789f94a34adc962cc5a593129830387"
+      },
+      "footBounds": [
+        [
+          245,
+          591,
+          374,
+          687
+        ],
+        [
+          271,
+          591,
+          413,
+          686
+        ],
+        [
+          146,
+          591,
+          291,
+          669
+        ],
+        [
+          189,
+          591,
+          318,
+          662
+        ]
+      ]
     },
     "purple/wave": {
       "skin": "purple",
@@ -2009,16 +2607,16 @@
         ]
       ],
       "transparentPixels": [
-        236069,
-        248467,
-        244740,
-        237817
+        236103,
+        248492,
+        244752,
+        237859
       ],
       "frameRgbaSha256": [
-        "5ebad38fece1c3a5de43e85d737d2fd5a31f43d04406030d18806a5c7f650a20",
-        "dec3c8c6914cb1c806f39ca002f8215d607e008d3c1fde1ea0e275b10e056b86",
-        "e63300f9ff1dabaf3fd9e9e43d2f4e7853ad597652fccc23c94202ae40e62779",
-        "7b98a48ff0b991a6d5e9a86789ff11fe73d19db031fff7a87d4192397f36425f"
+        "2ff78f87ba5de7f4cc46837eab6edfc8069976344242f9c990fbd64baee49e5d",
+        "7b57ead9771c06ec47031ae0329670e8f678ee84f7a069834a92dbf8d6f249b0",
+        "2839652d4ce41395902a5d2e12e52e99ee1ed7c24a1e39fa760abb4951b75591",
+        "cbfcd1d465363afa9b58d90832e7dae1140f5a41bc542ee9c794a1f3e962be92"
       ],
       "authoredReferences": [
         "production-v2/player-purple-direction-down.png",
@@ -2026,10 +2624,36 @@
         "production-v2/player-purple-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-purple-direction-down.png": "01651d42d1598f357041975d4241f6b691ea29334a535b181e8c21a8606cffe9",
-        "production-v2/player-purple-direction-right.png": "3276ae39cc3762c92930731efcfe06058a0c755c3cac59c16152908b92aa8e75",
-        "production-v2/player-purple-direction-up.png": "c13961834cd5961ac3097fd9dc010ee9441fa50d04bac63cf63c46da02488b8a"
-      }
+        "production-v2/player-purple-direction-down.png": "7dcb240d9c1a3ebce83a95b6f972359ee0b1421e613dbc7cdf245de24372daad",
+        "production-v2/player-purple-direction-right.png": "8f0e699803caf9735817fc4f670bac962d10d409b381a5cc51a7b624f1f4908f",
+        "production-v2/player-purple-direction-up.png": "d49bef10076236b57bdaf61975fc55f59789f94a34adc962cc5a593129830387"
+      },
+      "footBounds": [
+        [
+          234,
+          591,
+          366,
+          662
+        ],
+        [
+          199,
+          591,
+          336,
+          665
+        ],
+        [
+          209,
+          591,
+          366,
+          652
+        ],
+        [
+          196,
+          591,
+          329,
+          657
+        ]
+      ]
     },
     "silver/review-down": {
       "skin": "silver",
@@ -2095,22 +2719,22 @@
         ]
       ],
       "transparentPixels": [
-        262853,
-        264341,
-        263087,
-        261840
+        262854,
+        264348,
+        263094,
+        261850
       ],
       "frameRgbaSha256": [
-        "f70062572097da1b24f05b35b4fc2718b565bfc3a512fa8c0f43af50e0f5763a",
-        "c613ad13bc644664c315a31bbd343c0c6262baace96f10786e47d2f6e773d77f",
-        "7c83dd82b93ae464197a874c12566918b0506cbab0decb3079138214b5b9e545",
-        "cfd11b24f1ac7730f9bd1666b5c1e4d645c0d25101c0ba6a9c01debc9f3db233"
+        "ceb93e59ca0140d765545e0d419132df34dc5b3ed2c403c7b2cde517b949bae2",
+        "970f5d3b55bda2980c1091dbb8cf8802f069582716a34690e02d38240113af5e",
+        "795703d885c5c9c377b6f5623c953866a39e4dff8da474807cad663219cca74c",
+        "66eaa34e7f66cbf3a21f86a55dd51ad58c81886fa71d1400d32ab95005604d6b"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-down.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-down.png": "8898e0c45c2c35caf49e87f0c06e2288aa1057069a144bf17ea39bafb80b5f80"
+        "production-v2/player-silver-direction-down.png": "48b12be5575d86f80ef14733b8fec4ffa6c406e1dfe542b14a068142616abffe"
       },
       "action": "review",
       "direction": "down",
@@ -2216,22 +2840,22 @@
         ]
       ],
       "transparentPixels": [
-        278248,
-        279161,
-        279725,
-        277139
+        278255,
+        279163,
+        279735,
+        277140
       ],
       "frameRgbaSha256": [
-        "8002d78e0c9d370bd97b0eb6de981346ad4cef920fd2e39e3e62e8b7888aea0a",
-        "1b691287a87306cf283cf94599a3bb0d55afe405f55cdfd7304bb8af4d270f56",
-        "628a08d9dfc2c8090aa76c250879179a288cc62daa2f008effdea7f2d44bb6c4",
-        "a40172f1534faa949c6fa5027a65017aec6819064438db17fc94f3b088541ffc"
+        "357ba2e55ed226406144f9f3c4d107217aca321eed71f8a9b47e927a7b2f1954",
+        "43f6c6046338b222e87117d19d9d787e29c4d6dd22e1ad50e416b241f22d0b63",
+        "48548bdf471a1da7b312e40131ec2b56ebe7c3c69ba696ddcd6e7f41e7c11e00",
+        "05316642228ebc60d5446253cfbaedfd395b103d3339f9dbab3efe2b811f43f7"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-right.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-right.png": "edc7fdb96c13062f44f8668bde605b1c1dfc717d73c9a81879ad3f2c8f47abd0"
+        "production-v2/player-silver-direction-right.png": "c8a6c47072f4eb2ae7f279259ba01dbcf4a52145fa9081c279b09a02ba92a46f"
       },
       "action": "review",
       "direction": "right",
@@ -2337,22 +2961,22 @@
         ]
       ],
       "transparentPixels": [
-        272330,
-        275538,
-        274470,
-        273159
+        272336,
+        275539,
+        274471,
+        273162
       ],
       "frameRgbaSha256": [
-        "6db35560c8a3a6b05890f0c9574eb98a069e112ae6ba8726e2b677ce8e436fb9",
-        "8bc6365a3dbf63240f49a0680b3ee096f3764f5558f081e0f1be1f591fc58846",
-        "5433f752bb16d0d6cd61b2395704b786e54fd5e48e6a414e47015d4d6bf3bf38",
-        "93313a540aa5f60c40adfe1b39383b9fc675e13cd6805165f3b707d2420c6377"
+        "675560c7a492aea8066e27e72a0f40d6e49de49ce6ec673362790aa7fd2aae66",
+        "d973a94a374ef5c1c682182800026d868f270efaf92925f8209476b1b0e8d80d",
+        "88f3a8086d36aba94eba90d35fa06b6277148d377b65ed6bda8c66755e40fa4b",
+        "7b630e6d3202a274dca0fb396d2d7593bb39bafb3bc633a8fbf1ecc72a961d0e"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-left.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-left.png": "7556e3abb3e6db9b1831fb481af677436f1b7e2eed86e6ecc48f93ce4fbd4810"
+        "production-v2/player-silver-direction-left.png": "a392c369aa9504995d04f56991e8e8cf83804390277d842ec36cc1c4125625e0"
       },
       "action": "review",
       "direction": "left",
@@ -2459,22 +3083,22 @@
         ]
       ],
       "transparentPixels": [
-        275510,
-        281602,
-        282593,
-        274516
+        275524,
+        281610,
+        282602,
+        274532
       ],
       "frameRgbaSha256": [
-        "ff247553dd22bf26aa760e078490cbbde976954e6af308f8b75e99ea115bfbca",
-        "5b430bb569802cf69db535b40a34bd855c5047ac1cea89d4c7e92503d609815a",
-        "3136119775d4e3147f11e4402685f241076b4a1f2b1b45e38b4729fa1bc81155",
-        "299cf717fe29fde4fa6693bc5ec91fe8bf0b69045f57c55419f078a89fda7240"
+        "35db3bc2b3b23673f57dff2646163b61ee650b9d3e0c98f51acecae87a9b20e2",
+        "72dca2102bff659bab6395c96db0e9256cd89ee3f8421eb8885846fbeb826e41",
+        "2321bda172156072ec9b330f3bcb2744f4afe1bf75394de053802ae59290e1a5",
+        "ad2fcbe492e6f37231459c91027a4428836b237127fb253bac5c10fce13772dc"
       ],
       "authoredReferences": [
         "production-v2/player-silver-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-silver-direction-up.png": "ecd9e413c09791fc11f87136df925bcab0c4e2ff2b9d52216c2676de0f03f93e"
+        "production-v2/player-silver-direction-up.png": "bd2a907fb6ca159b9ddc9544d226da5024546e61dc9686c1f99976a40022e4d8"
       },
       "action": "review",
       "direction": "up",
@@ -2592,16 +3216,16 @@
         ]
       ],
       "transparentPixels": [
-        255921,
-        253233,
-        251907,
-        249979
+        256037,
+        253816,
+        252006,
+        250227
       ],
       "frameRgbaSha256": [
-        "0de513ec2941a64760d9f126c808580553ce6c196badb185bcc79c2e642900d5",
-        "c7bed5e9408ce72a32589ccf6e477ac0c5da239a305e9a622a655d79e2cd983e",
-        "d525167f9454e2d013c5275717b74ff17787597097fd978dbd5ba7b67d21bde9",
-        "45c6af5d763c8d68a06a6159e1d00bc20a4edfbe7705cc623e523ec2fc6d821c"
+        "539fad160a3b986dd5362b7042a811f9bd936af44ab259ed84d4517794e6e8af",
+        "e3f9ebb4d92486dc978c2eece3c3273f960391bbc51c4887272282e167f15d14",
+        "a2478777110b8b1500a8406e8fea539dde245c523fa81bcdb2fe3113124c131e",
+        "9967b7e3142f3f69035685ecfc2881f3c7b08e6693dde1a00c6d8dbf8c32edc4"
       ],
       "footBounds": [
         [
@@ -2633,11 +3257,11 @@
         "production-v2/player-pink-direction-down.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-down.png": "bdc7798b527b04385c5618d6e05ec23d93e2d75c1cc68c13b29dee481612195e"
+        "production-v2/player-pink-direction-down.png": "9a1c0d9bc217b484e195bfea1e44e7dc04fde26af7939a2c51089f5491b015b6"
       },
       "drawingPropReference": {
         "path": "production-v2/player-pink-state-draw.png",
-        "sha256": "bf39afaf60fbf2158353e1d892bc5afef64ea6edfb09b0f3c9ef678f328d8c68"
+        "sha256": "6e232deb380b26f4ed91684dba8e5f82283f9c08f9582206167d196b28dee824"
       },
       "action": "draw",
       "direction": "down",
@@ -2724,16 +3348,16 @@
         ]
       ],
       "transparentPixels": [
-        267729,
-        265452,
-        265741,
-        265110
+        267792,
+        265516,
+        265879,
+        265196
       ],
       "frameRgbaSha256": [
-        "91d09135455a695cf1fc7c2590d46219bdb2f75e8d3da296233ed5031f4fe45f",
-        "c5a2d918e1578dfd387dc9ce6549729d5dad4bb07c12927e7f4f7e26c396d735",
-        "5eb23f95a0d47d14676c420dd185aaefa4bb18a9b702be635bea3d737addecec",
-        "42b9ea6b94ee848904ddc752dc2d06ae4a23bfdfc46b6cf0166771f092cfa21f"
+        "71a4d7d512a7ae1a9ad820c60e1f398bbf4fe878f63d8d98244ba78e5f40a556",
+        "96d74e9c041f3aba990caaec0d23f61630342ca9b4a3157eaa48eb87bdbfcadd",
+        "fa642fbfada91442f33fefda326764aa02c5cc99f3e91946fbd6871287200c82",
+        "d5bf290a835f6cfd29e8a74e1a7fe84f1956049a46f5151f2f1f495b6447f806"
       ],
       "footBounds": [
         [
@@ -2765,11 +3389,11 @@
         "production-v2/player-pink-direction-right.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-right.png": "db0f3c32ec818a6f991144a6ecedb8fd0eb2faff91c494c636268a566686517c"
+        "production-v2/player-pink-direction-right.png": "3a9dc00eb6f297f677d7837448f9f1af713fdd56d794738bc04f919b767f17ba"
       },
       "drawingPropReference": {
         "path": "production-v2/player-pink-state-draw.png",
-        "sha256": "bf39afaf60fbf2158353e1d892bc5afef64ea6edfb09b0f3c9ef678f328d8c68"
+        "sha256": "6e232deb380b26f4ed91684dba8e5f82283f9c08f9582206167d196b28dee824"
       },
       "action": "draw",
       "direction": "right",
@@ -2856,16 +3480,16 @@
         ]
       ],
       "transparentPixels": [
-        254178,
-        253444,
-        255122,
-        253973
+        254400,
+        253555,
+        255216,
+        254078
       ],
       "frameRgbaSha256": [
-        "b4b5a36ff619d64c2ad8aa38065829585d78451250bc3f515fc9d5a183cf527f",
-        "e94e79acb31fec2b1adc09e53555478b0db3567658964f3e2eacdbdaba242671",
-        "f2664011f006319a6437287d4c14520b70eadf7bd9d13902ee62c5f01050eea8",
-        "69a726ebe5311c07c3e0b922c39c17c68ece4caae72c1d13963b4e3f93e04fa3"
+        "32d139d37be9aaba259329bab9650926b66c5e5f3e45ab2c5b530a1fb7c3a380",
+        "f48c7dbbcdc2684fdf8d1d607e131358d5e65000f58f62bb56a8334c7042e846",
+        "6e138f5abb704963ae37c0ee94e533d7cf7e29c79aa9a778797790eae0dbc9e3",
+        "e5b8d2b1e689e9bf57530a3188358a2b3789d9ab6bb3b84439666c00b12af22b"
       ],
       "footBounds": [
         [
@@ -2897,11 +3521,11 @@
         "production-v2/player-pink-direction-left.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-left.png": "b1d956018f82335b8ffddf6d2175f5cc6929df691de77f1befbc72fe1f762aa1"
+        "production-v2/player-pink-direction-left.png": "aa422da0226dc224991d4b6d475941c61915c0763cc2a1f63ced02ec3269b186"
       },
       "drawingPropReference": {
         "path": "production-v2/player-pink-state-draw.png",
-        "sha256": "bf39afaf60fbf2158353e1d892bc5afef64ea6edfb09b0f3c9ef678f328d8c68"
+        "sha256": "6e232deb380b26f4ed91684dba8e5f82283f9c08f9582206167d196b28dee824"
       },
       "action": "draw",
       "direction": "left",
@@ -2988,16 +3612,16 @@
         ]
       ],
       "transparentPixels": [
-        269603,
-        266264,
-        267829,
-        266709
+        269694,
+        266331,
+        267893,
+        266815
       ],
       "frameRgbaSha256": [
-        "4c71b4b7ad7f01015098ba03c45331e631a940daaed55b7260902612e7adcc31",
-        "754617fc26353f7bef3179d7e1833566d5e4b0d64fc58e5fd7186136e2204d9f",
-        "9c45020aad4596c4cdd1c5936938802f8bd32d4c5a900e3e37bccad25bc33e0d",
-        "7dbd1899e3b8626e4b06be75af0a0bba5d313eeefcb3cd97ec3a0ba074a1adba"
+        "ed798079f1ff24a15872d5c93db0863f6a4f8c848a2256faa8fc64fcc08f2136",
+        "34b43d68026c92b660f3c4ca68e437cb3842bfd955a529b7ea55c11ed654f1a4",
+        "4d7be779c54f5b2a55817bf738886114c294322cd0102fb5319c9bb60330e831",
+        "20ddead0539f8f22b707db1212e518ef2a6c00af2c97f7da9c5ce855fd736813"
       ],
       "footBounds": [
         [
@@ -3029,11 +3653,11 @@
         "production-v2/player-pink-direction-up.png"
       ],
       "authoredReferenceSha256": {
-        "production-v2/player-pink-direction-up.png": "ba66a0ea323c2a9caef8b952e7606534b902bffca174f251676ae1eb70fac23e"
+        "production-v2/player-pink-direction-up.png": "c46e64581dc7fdf7745a39a78645e73242b32fa4e4e8f3b1423bc45cc08246d3"
       },
       "drawingPropReference": {
         "path": "production-v2/player-pink-state-draw.png",
-        "sha256": "bf39afaf60fbf2158353e1d892bc5afef64ea6edfb09b0f3c9ef678f328d8c68"
+        "sha256": "6e232deb380b26f4ed91684dba8e5f82283f9c08f9582206167d196b28dee824"
       },
       "action": "draw",
       "direction": "up",

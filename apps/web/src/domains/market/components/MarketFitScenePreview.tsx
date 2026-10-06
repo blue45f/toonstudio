@@ -21,14 +21,10 @@ import { cn } from "@/shared/lib/utils";
  */
 const FIT_LAB_SCENES = [
   { id: "creator-room", src: "/assets/studio/backgrounds/webtoon_creator_room.png", ko: "창작자의 방", en: "Creator room" },
-  { id: "cafe", src: "/assets/studio/backgrounds/webtoon_cafe.png", ko: "카페", en: "Café" },
-  { id: "classroom", src: "/assets/studio/backgrounds/webtoon_classroom.png", ko: "교실", en: "Classroom" },
-  { id: "corridor", src: "/assets/studio/backgrounds/webtoon_corridor.png", ko: "복도", en: "Corridor" },
   { id: "moonlit-forest", src: "/assets/studio/backgrounds/webtoon_moonlit_forest.png", ko: "달빛 숲", en: "Moonlit forest" },
   { id: "neon-alley", src: "/assets/studio/backgrounds/webtoon_neon_alley.png", ko: "네온 골목", en: "Neon alley" },
   { id: "palace", src: "/assets/studio/backgrounds/webtoon_palace.png", ko: "궁궐", en: "Palace" },
   { id: "rooftop-sunset", src: "/assets/studio/backgrounds/webtoon_rooftop_sunset.png", ko: "옥상 노을", en: "Rooftop sunset" },
-  { id: "street", src: "/assets/studio/backgrounds/webtoon_street.png", ko: "거리", en: "Street" },
 ] as const;
 
 type FitLabSceneId = (typeof FIT_LAB_SCENES)[number]["id"];

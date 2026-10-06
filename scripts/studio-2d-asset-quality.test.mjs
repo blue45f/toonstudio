@@ -23,7 +23,7 @@ test("every declared original matches its bytes, dimensions, format and reviewed
   assert.equal(result.originalCount, 9);
   assert.equal(result.largeOriginals, 9);
   assert.equal(result.smallOriginals, 0);
-  assert.equal(result.recommended, 5);
+  assert.equal(result.recommended, 6);
 });
 
 test("JPEG originals use .jpg while all retained legacy .png aliases preserve identical bytes", () => {

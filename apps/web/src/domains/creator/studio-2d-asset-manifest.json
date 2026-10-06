@@ -1,1 +1,337 @@
-{"version":1,"description":"활성 레거시 배경의 실측 원본 정보입니다. GPT25로 교체·검수 완료된 저해상도 20종과 동일 바이트 PNG 별칭은 2026-09-18 tracked 에셋 정리에서 제거했습니다. 추천은 시각 검수·픽셀 크기 기준이며 이용 권리의 승인을 의미하지 않습니다.","assets":[{"id":"webtoon-cafe","title":"손님이 있는 따뜻한 카페","src":"/assets/studio/backgrounds/webtoon_cafe.jpg","width":1024,"height":1024,"bytes":1062684,"sha256":"a309307df821baf1a529d19bf513c8f69b97e028603919e444fcd16338b0ed3a","tags":["카페","커피","만남","일상","사람","간판"],"environment":"실내","timeOfDay":"낮","containsPeople":true,"containsText":true,"recommended":false,"review":{"method":"full-image","status":"usable","reviewedAt":"2026-09-06","notes":["배경에 인물이 포함되어 있습니다. 빈 장면이 필요하면 보정하세요.","간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."]},"provenance":{"kind":"legacy-catalog","licenseStatus":"unverified","aiLabelInCatalog":false},"mediaType":"image/jpeg","legacySrc":"/assets/studio/backgrounds/webtoon_cafe.png"},{"id":"webtoon-classroom","title":"햇빛이 드는 빈 교실","src":"/assets/studio/backgrounds/webtoon_classroom.jpg","width":1024,"height":1024,"bytes":930622,"sha256":"b22ff827fe7a6c600efaca44b4e6a14701109e9de8dc2ce0b6e846f35320c2f5","tags":["교실","학교","학원","책상","칠판","수업"],"environment":"실내","timeOfDay":"낮","containsPeople":false,"containsText":true,"recommended":false,"review":{"method":"full-image","status":"usable","reviewedAt":"2026-09-06","notes":["간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."]},"provenance":{"kind":"legacy-catalog","licenseStatus":"unverified","aiLabelInCatalog":false},"mediaType":"image/jpeg","legacySrc":"/assets/studio/backgrounds/webtoon_classroom.png"},{"id":"webtoon-corridor","title":"하교 시간의 학교 복도","src":"/assets/studio/backgrounds/webtoon_corridor.jpg","width":1024,"height":1024,"bytes":819161,"sha256":"83db66a04fdc7c28e6e8afd716e11bbd74104ba16d2eba410ca02ae3b248b22a","tags":["복도","학교","학원","하교","사물함","학생"],"environment":"실내","timeOfDay":"노을","containsPeople":true,"containsText":true,"recommended":false,"review":{"method":"full-image","status":"usable","reviewedAt":"2026-09-06","notes":["배경에 인물이 포함되어 있습니다. 빈 장면이 필요하면 보정하세요.","간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."]},"provenance":{"kind":"legacy-catalog","licenseStatus":"unverified","aiLabelInCatalog":false},"mediaType":"image/jpeg","legacySrc":"/assets/studio/backgrounds/webtoon_corridor.png"},{"id":"webtoon-creator-room","title":"작업등을 켠 창작자 방","src":"/assets/studio/backgrounds/webtoon_creator_room.png","width":1536,"height":1024,"bytes":2241188,"sha256":"d5ac7988107f160589d83af47bac9e8156afe645025200a882ff817f78d0e9c0","tags":["작업실","웹툰","작가","책상","태블릿","침실","야경"],"environment":"실내","timeOfDay":"밤","containsPeople":false,"containsText":false,"recommended":true,"review":{"method":"full-image","status":"usable","reviewedAt":"2026-09-06","notes":[]},"provenance":{"kind":"legacy-catalog","licenseStatus":"unverified","aiLabelInCatalog":true},"mediaType":"image/png","legacySrc":null},{"id":"webtoon-moonlit-forest","title":"달빛 아래 숲속 돌길","src":"/assets/studio/backgrounds/webtoon_moonlit_forest.png","width":1536,"height":1024,"bytes":3173171,"sha256":"d83a84ecea2f2628a12eba53a1dfaba3ddbb57fc0af07a744806f32e33749ad0","tags":["달빛","숲","돌길","유적","자연","판타지"],"environment":"실외","timeOfDay":"밤","containsPeople":false,"containsText":false,"recommended":true,"review":{"method":"full-image","status":"usable","reviewedAt":"2026-09-06","notes":[]},"provenance":{"kind":"legacy-catalog","licenseStatus":"unverified","aiLabelInCatalog":true},"mediaType":"image/png","legacySrc":null},{"id":"webtoon-neon-alley","title":"빗물이 반사되는 네온 골목","src":"/assets/studio/backgrounds/webtoon_neon_alley.png","width":1536,"height":1024,"bytes":2847526,"sha256":"c4a938e70a9c8b5af244ddfc4eb7a1e07aee816b3aac294e0283a8ef4b84521a","tags":["비","골목","네온","도시","밤","사이버펑크"],"environment":"실외","timeOfDay":"밤","containsPeople":false,"containsText":true,"recommended":true,"review":{"method":"full-image","status":"usable","reviewedAt":"2026-09-06","notes":["간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."]},"provenance":{"kind":"legacy-catalog","licenseStatus":"unverified","aiLabelInCatalog":true},"mediaType":"image/png","legacySrc":null},{"id":"webtoon-palace","title":"황금 샹들리에 왕좌의 방","src":"/assets/studio/backgrounds/webtoon_palace.jpg","width":1024,"height":1024,"bytes":1160792,"sha256":"aa1e0df0d20e7e8c812737131cbfd40cd91049ac1d9bd6d33117cdec121d93f5","tags":["궁전","왕궁","왕실","왕좌","샹들리에","판타지","로판"],"environment":"실내","timeOfDay":"밤","containsPeople":false,"containsText":false,"recommended":true,"review":{"method":"full-image","status":"usable","reviewedAt":"2026-09-06","notes":[]},"provenance":{"kind":"legacy-catalog","licenseStatus":"unverified","aiLabelInCatalog":false},"mediaType":"image/jpeg","legacySrc":"/assets/studio/backgrounds/webtoon_palace.png"},{"id":"webtoon-rooftop-sunset","title":"석양이 내려앉은 빈 옥상","src":"/assets/studio/backgrounds/webtoon_rooftop_sunset.png","width":1672,"height":941,"bytes":2251327,"sha256":"6da3a1994bd8b46edaa4ec028f29bc1324df8867cb7f68bae6d7630b0f696031","tags":["옥상","하늘","석양","노을","도시","로맨스"],"environment":"실외","timeOfDay":"노을","containsPeople":false,"containsText":false,"recommended":true,"review":{"method":"full-image","status":"usable","reviewedAt":"2026-09-06","notes":[]},"provenance":{"kind":"legacy-catalog","licenseStatus":"unverified","aiLabelInCatalog":true},"mediaType":"image/png","legacySrc":null},{"id":"webtoon-street","title":"석양 속 도심 교차로","src":"/assets/studio/backgrounds/webtoon_street.jpg","width":1024,"height":1024,"bytes":996231,"sha256":"4153eb6ebea4422301ec4884c2d00d55e558025169809e29601a0a3e3c750e04","tags":["도시","거리","교차로","자동차","사람","간판","일상"],"environment":"실외","timeOfDay":"노을","containsPeople":true,"containsText":true,"recommended":false,"review":{"method":"full-image","status":"usable","reviewedAt":"2026-09-06","notes":["배경에 인물이 포함되어 있습니다. 빈 장면이 필요하면 보정하세요.","간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."]},"provenance":{"kind":"legacy-catalog","licenseStatus":"unverified","aiLabelInCatalog":false},"mediaType":"image/jpeg","legacySrc":"/assets/studio/backgrounds/webtoon_street.png"}]}
+{
+  "version": 1,
+  "description": "활성 레거시 배경의 실측 원본 정보입니다. GPT25로 교체·검수 완료된 저해상도 20종과 동일 바이트 PNG 별칭은 2026-09-18 tracked 에셋 정리에서 제거했습니다. 추천은 시각 검수·픽셀 크기 기준이며 이용 권리의 승인을 의미하지 않습니다.",
+  "assets": [
+    {
+      "id": "webtoon-cafe",
+      "title": "손님이 있는 따뜻한 카페",
+      "src": "/assets/studio/backgrounds/webtoon_cafe.jpg",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 1062684,
+      "sha256": "a309307df821baf1a529d19bf513c8f69b97e028603919e444fcd16338b0ed3a",
+      "tags": [
+        "카페",
+        "커피",
+        "만남",
+        "일상",
+        "사람",
+        "간판"
+      ],
+      "environment": "실내",
+      "timeOfDay": "낮",
+      "containsPeople": true,
+      "containsText": true,
+      "recommended": false,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-09-06",
+        "notes": [
+          "배경에 인물이 포함되어 있습니다. 빈 장면이 필요하면 보정하세요.",
+          "간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."
+        ]
+      },
+      "provenance": {
+        "kind": "legacy-catalog",
+        "licenseStatus": "unverified",
+        "aiLabelInCatalog": false
+      },
+      "mediaType": "image/jpeg",
+      "legacySrc": "/assets/studio/backgrounds/webtoon_cafe.png"
+    },
+    {
+      "id": "webtoon-classroom",
+      "title": "햇빛이 드는 빈 교실",
+      "src": "/assets/studio/backgrounds/webtoon_classroom.jpg",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 930622,
+      "sha256": "b22ff827fe7a6c600efaca44b4e6a14701109e9de8dc2ce0b6e846f35320c2f5",
+      "tags": [
+        "교실",
+        "학교",
+        "학원",
+        "책상",
+        "칠판",
+        "수업"
+      ],
+      "environment": "실내",
+      "timeOfDay": "낮",
+      "containsPeople": false,
+      "containsText": true,
+      "recommended": false,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-09-06",
+        "notes": [
+          "간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."
+        ]
+      },
+      "provenance": {
+        "kind": "legacy-catalog",
+        "licenseStatus": "unverified",
+        "aiLabelInCatalog": false
+      },
+      "mediaType": "image/jpeg",
+      "legacySrc": "/assets/studio/backgrounds/webtoon_classroom.png"
+    },
+    {
+      "id": "webtoon-corridor",
+      "title": "하교 시간의 학교 복도",
+      "src": "/assets/studio/backgrounds/webtoon_corridor.jpg",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 819161,
+      "sha256": "83db66a04fdc7c28e6e8afd716e11bbd74104ba16d2eba410ca02ae3b248b22a",
+      "tags": [
+        "복도",
+        "학교",
+        "학원",
+        "하교",
+        "사물함",
+        "학생"
+      ],
+      "environment": "실내",
+      "timeOfDay": "노을",
+      "containsPeople": true,
+      "containsText": true,
+      "recommended": false,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-09-06",
+        "notes": [
+          "배경에 인물이 포함되어 있습니다. 빈 장면이 필요하면 보정하세요.",
+          "간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."
+        ]
+      },
+      "provenance": {
+        "kind": "legacy-catalog",
+        "licenseStatus": "unverified",
+        "aiLabelInCatalog": false
+      },
+      "mediaType": "image/jpeg",
+      "legacySrc": "/assets/studio/backgrounds/webtoon_corridor.png"
+    },
+    {
+      "id": "webtoon-creator-room",
+      "title": "작업등을 켠 창작자 방",
+      "src": "/assets/studio/backgrounds/webtoon_creator_room.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2241188,
+      "sha256": "d5ac7988107f160589d83af47bac9e8156afe645025200a882ff817f78d0e9c0",
+      "tags": [
+        "작업실",
+        "웹툰",
+        "작가",
+        "책상",
+        "태블릿",
+        "침실",
+        "야경"
+      ],
+      "environment": "실내",
+      "timeOfDay": "밤",
+      "containsPeople": false,
+      "containsText": false,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-09-06",
+        "notes": []
+      },
+      "provenance": {
+        "kind": "legacy-catalog",
+        "licenseStatus": "unverified",
+        "aiLabelInCatalog": true
+      },
+      "mediaType": "image/png",
+      "legacySrc": null
+    },
+    {
+      "id": "webtoon-moonlit-forest",
+      "title": "달빛 아래 숲속 돌길",
+      "src": "/assets/studio/backgrounds/webtoon_moonlit_forest.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 3173171,
+      "sha256": "d83a84ecea2f2628a12eba53a1dfaba3ddbb57fc0af07a744806f32e33749ad0",
+      "tags": [
+        "달빛",
+        "숲",
+        "돌길",
+        "유적",
+        "자연",
+        "판타지"
+      ],
+      "environment": "실외",
+      "timeOfDay": "밤",
+      "containsPeople": false,
+      "containsText": false,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-09-06",
+        "notes": []
+      },
+      "provenance": {
+        "kind": "legacy-catalog",
+        "licenseStatus": "unverified",
+        "aiLabelInCatalog": true
+      },
+      "mediaType": "image/png",
+      "legacySrc": null
+    },
+    {
+      "id": "webtoon-neon-alley",
+      "title": "빗물이 반사되는 네온 골목",
+      "src": "/assets/studio/backgrounds/webtoon_neon_alley.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2847526,
+      "sha256": "c4a938e70a9c8b5af244ddfc4eb7a1e07aee816b3aac294e0283a8ef4b84521a",
+      "tags": [
+        "비",
+        "골목",
+        "네온",
+        "도시",
+        "밤",
+        "사이버펑크"
+      ],
+      "environment": "실외",
+      "timeOfDay": "밤",
+      "containsPeople": false,
+      "containsText": true,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-09-06",
+        "notes": [
+          "간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."
+        ]
+      },
+      "provenance": {
+        "kind": "legacy-catalog",
+        "licenseStatus": "unverified",
+        "aiLabelInCatalog": true
+      },
+      "mediaType": "image/png",
+      "legacySrc": null
+    },
+    {
+      "id": "webtoon-palace",
+      "title": "황금 샹들리에 왕좌의 방",
+      "src": "/assets/studio/backgrounds/webtoon_palace.jpg",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 1160792,
+      "sha256": "aa1e0df0d20e7e8c812737131cbfd40cd91049ac1d9bd6d33117cdec121d93f5",
+      "tags": [
+        "궁전",
+        "왕궁",
+        "왕실",
+        "왕좌",
+        "샹들리에",
+        "판타지",
+        "로판"
+      ],
+      "environment": "실내",
+      "timeOfDay": "밤",
+      "containsPeople": false,
+      "containsText": false,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-09-06",
+        "notes": []
+      },
+      "provenance": {
+        "kind": "legacy-catalog",
+        "licenseStatus": "unverified",
+        "aiLabelInCatalog": false
+      },
+      "mediaType": "image/jpeg",
+      "legacySrc": "/assets/studio/backgrounds/webtoon_palace.png"
+    },
+    {
+      "id": "webtoon-rooftop-sunset",
+      "title": "석양이 내려앉은 빈 옥상",
+      "src": "/assets/studio/backgrounds/webtoon_rooftop_sunset.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2251327,
+      "sha256": "6da3a1994bd8b46edaa4ec028f29bc1324df8867cb7f68bae6d7630b0f696031",
+      "tags": [
+        "옥상",
+        "하늘",
+        "석양",
+        "노을",
+        "도시",
+        "로맨스"
+      ],
+      "environment": "실외",
+      "timeOfDay": "노을",
+      "containsPeople": false,
+      "containsText": false,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-09-06",
+        "notes": []
+      },
+      "provenance": {
+        "kind": "legacy-catalog",
+        "licenseStatus": "unverified",
+        "aiLabelInCatalog": true
+      },
+      "mediaType": "image/png",
+      "legacySrc": null
+    },
+    {
+      "id": "webtoon-street",
+      "title": "석양 속 도심 교차로",
+      "src": "/assets/studio/backgrounds/webtoon_street.jpg",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 996231,
+      "sha256": "4153eb6ebea4422301ec4884c2d00d55e558025169809e29601a0a3e3c750e04",
+      "tags": [
+        "도시",
+        "거리",
+        "교차로",
+        "자동차",
+        "사람",
+        "간판",
+        "일상"
+      ],
+      "environment": "실외",
+      "timeOfDay": "노을",
+      "containsPeople": true,
+      "containsText": true,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-09-06",
+        "notes": [
+          "배경에 인물이 포함되어 있습니다. 빈 장면이 필요하면 보정하세요.",
+          "간판·게시물·문자 형태가 포함되어 있습니다. 확대 후 내용을 확인하세요."
+        ]
+      },
+      "provenance": {
+        "kind": "legacy-catalog",
+        "licenseStatus": "unverified",
+        "aiLabelInCatalog": false
+      },
+      "mediaType": "image/jpeg",
+      "legacySrc": "/assets/studio/backgrounds/webtoon_street.png"
+    }
+  ]
+}

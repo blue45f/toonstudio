@@ -24,8 +24,8 @@
   "files": [
     {
       "file": "imagegen25-character/player-imagegen25-direction-down.webp",
-      "bytes": 2502,
-      "sha256": "ca705e110c9f7bc119a705c1b4ea083acaf1a05fdb121d3c595ec47d71d2a1ca",
+      "bytes": 2790,
+      "sha256": "682dccf0f15687615a0d3fba40ec43f781adf3576ebf5497394bcd2462005e1a",
       "size": [
         160,
         160
@@ -34,8 +34,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-direction-left.webp",
-      "bytes": 2414,
-      "sha256": "e5d8e146d5d5ac81ee26442600069713d76e28e4138d2a03c8336593c4c3c1e3",
+      "bytes": 4158,
+      "sha256": "d0fd7754592c1e5487314806d18054e6184b41de562863b1d871fc936ddd1c93",
       "size": [
         160,
         160
@@ -44,8 +44,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-direction-right.webp",
-      "bytes": 2518,
-      "sha256": "ae6711ba7c2b49fe85e1c00d027ff30111b3cf840ccc51d504ee43caea486ad1",
+      "bytes": 4100,
+      "sha256": "9558bf2e422c48a6328243e14eb7eedeadd194c61bf33961df259bfdf07256a3",
       "size": [
         160,
         160
@@ -54,8 +54,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-direction-up.webp",
-      "bytes": 2400,
-      "sha256": "86d2a2f286542aa794b9c85f1a4f035e831338137438f406a19aed7ab28985ab",
+      "bytes": 4248,
+      "sha256": "5ac335330b92b6eea1baa946f600a303b84f31a5ff663651a13e07b25f27ec01",
       "size": [
         160,
         160
@@ -64,8 +64,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-draw-down.webp",
-      "bytes": 2904,
-      "sha256": "d05fe8068cbeaedd2afe32b9915aded002894d8acf4133d15a4164a712836159",
+      "bytes": 14322,
+      "sha256": "9ff8e55a73d5f30c0be81817ea15b7e512cdf38c2ca55b08e22f7278345838b9",
       "size": [
         640,
         160
@@ -74,8 +74,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-draw-left.webp",
-      "bytes": 2968,
-      "sha256": "15996a43d7f391a77463d6f5ddead5524ec9edd4eb30dfc1d9acf1be04aeeeed",
+      "bytes": 11634,
+      "sha256": "398006f157af3a94a5d86d04d50490ecfcf84cb7f591c6aa620fcf17b06fb9ef",
       "size": [
         640,
         160
@@ -84,8 +84,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-draw-right.webp",
-      "bytes": 2992,
-      "sha256": "792c927267c4dd42b8b84bf125a0e6cef207122b210407cd230cac2aef7fcdde",
+      "bytes": 11896,
+      "sha256": "e6fb0eede1210328a670353933841da0bafe7aa8ab6e39107d80e72fd3779d6c",
       "size": [
         640,
         160
@@ -94,8 +94,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-draw-up.webp",
-      "bytes": 2854,
-      "sha256": "1984bfe1531fad7cebdd300618fd2a5ffc1369b94c9a6b4b2db75a5b9f25b4b4",
+      "bytes": 15874,
+      "sha256": "db25bcfbeb4d03e7e7b1bad21f616718b8f938c60392f9bf1b0f0d7ebb5d6207",
       "size": [
         640,
         160
@@ -104,8 +104,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-preset-sheet.webp",
-      "bytes": 23232,
-      "sha256": "436befa14fbadc758595d9c457e282b08e2e960899910d31fbf6e57ae1b0f7ad",
+      "bytes": 33022,
+      "sha256": "dd69e3cf7d48326f79961ae2ea99c95908fb020a1b6f9b3b9d31329c7e522f8b",
       "size": [
         1024,
         128
@@ -114,8 +114,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-review-down.webp",
-      "bytes": 2798,
-      "sha256": "8f6f1fb1a51e211733c046fdd9dba4520fb840d1cd2676e0664835fde21fb3f2",
+      "bytes": 16586,
+      "sha256": "0a48446b551b1256b14c6e0b05a72c03d4cfe6365474da0d603bd26ff321344f",
       "size": [
         640,
         160
@@ -124,8 +124,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-review-left.webp",
-      "bytes": 2850,
-      "sha256": "fc98c4140c7b348e0788016ef89fbd2355bf215599e030b405b23a3beceaf9d7",
+      "bytes": 9104,
+      "sha256": "dd214612c015991c99e7d50be4842ce5a9017e09da5cd52f983f717333c50786",
       "size": [
         640,
         160
@@ -134,8 +134,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-review-right.webp",
-      "bytes": 2918,
-      "sha256": "b15fd4ba9b5ef895b2bd92dba875271afeaf50670490045718ee7ce0ad71ebdd",
+      "bytes": 9424,
+      "sha256": "bf86b58e57c4f72ad5cfdfa8443fec658784ecd7d43a5a01276297611d7f326d",
       "size": [
         640,
         160
@@ -144,8 +144,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-review-up.webp",
-      "bytes": 2752,
-      "sha256": "bada18e65c253a7aeed037679cd9d8050ee422fe8d63e9c3ac7b6172efc9df51",
+      "bytes": 15700,
+      "sha256": "712ed6cf3d94fd34667b0b09ee261fbe67a55740e982d2603a7371e428c56d35",
       "size": [
         640,
         160
@@ -154,8 +154,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-sit.webp",
-      "bytes": 9714,
-      "sha256": "c8be2333964f7298564dc9eb1fdd9ced3ef8af44fe69b54ca3691655a7d22da8",
+      "bytes": 16032,
+      "sha256": "956b5d0cdae5dc8283ead2f1c6f1dbc9e21def53df2932dcfbbd5d76dfcd89d6",
       "size": [
         640,
         160
@@ -164,8 +164,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-state-draw.webp",
-      "bytes": 2502,
-      "sha256": "19e0071363c2eb36751723156d9307b4f20048d9eef95b14a8ac2bb7f1849628",
+      "bytes": 1754,
+      "sha256": "19272afe4450b35fed289906d9e5dae0393c86751b2f12e235bd4ed8aa36e281",
       "size": [
         160,
         160
@@ -174,8 +174,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-state-review.webp",
-      "bytes": 2502,
-      "sha256": "ca705e110c9f7bc119a705c1b4ea083acaf1a05fdb121d3c595ec47d71d2a1ca",
+      "bytes": 2790,
+      "sha256": "682dccf0f15687615a0d3fba40ec43f781adf3576ebf5497394bcd2462005e1a",
       "size": [
         160,
         160
@@ -184,8 +184,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-state-talk.webp",
-      "bytes": 2502,
-      "sha256": "af4857825169e69519d786c52c650ca8271934c2255b4aed2175b892d185ce5c",
+      "bytes": 2956,
+      "sha256": "fcb299b4116e7bd1d5c8c436910576025df35574dc1d0c598be14d86ee881b59",
       "size": [
         160,
         160
@@ -194,8 +194,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-talk-down.webp",
-      "bytes": 2958,
-      "sha256": "a7f149c5736c207b305bbfa5bf19b130a7bb10353f5ec594d6aa8c6ac4a505f9",
+      "bytes": 16266,
+      "sha256": "08feda26735514de5157e2d8548704804ecc365a249c3ef885801021517cfb0f",
       "size": [
         640,
         160
@@ -204,8 +204,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-talk-left.webp",
-      "bytes": 2866,
-      "sha256": "8476323c30027cb0e740418e9518afd7f12e7aa68c0153be0c9bf774c5fc95db",
+      "bytes": 14852,
+      "sha256": "02889e6842e27be2d58a423832323ba4a02ba8831d68ddc7f8163944f91cd81c",
       "size": [
         640,
         160
@@ -214,8 +214,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-talk-right.webp",
-      "bytes": 2878,
-      "sha256": "b229b33f1c27310adff6c4a5bb8db95b5365ab1edfd4997ae8547e42f2efc28b",
+      "bytes": 15430,
+      "sha256": "b7778e9ae515de9ef8c4dba29e34f925ba15f49f53476d80ee8cc82e98f5b8e3",
       "size": [
         640,
         160
@@ -224,8 +224,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-talk-up.webp",
-      "bytes": 2874,
-      "sha256": "b6fa25a5aa4e00b724d6fc6c6755e5269a66528a8208e751e727a752e1d9d576",
+      "bytes": 16004,
+      "sha256": "dc7678cd960415d243146a5a87f5bf5a71f80dd2245bce97604803cb29563181",
       "size": [
         640,
         160
@@ -234,8 +234,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-walk-down.webp",
-      "bytes": 2874,
-      "sha256": "9745e841591b28c1ee6608f16e7ac4b21dbeab97ec1a7b0d8235c2ebc25fdea8",
+      "bytes": 17768,
+      "sha256": "0b3ce55d1a7e672400e508d05f1652e27f92d251ec0c168b4bb4e791c77383dc",
       "size": [
         640,
         160
@@ -244,8 +244,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-walk-left.webp",
-      "bytes": 2874,
-      "sha256": "0db2240e38477636061fb930226a21d67051a25e55501e8d7c7cab5a2e9028f9",
+      "bytes": 15024,
+      "sha256": "9784df76a4cfa260b4d097e891377db164be681229ad63d9cf7cb026c45fc784",
       "size": [
         640,
         160
@@ -254,8 +254,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-walk-right.webp",
-      "bytes": 2922,
-      "sha256": "40bec85f2fb3673063c4ef768a73c4c177fa26b896f3d16a31c7aeda5d7b457a",
+      "bytes": 15698,
+      "sha256": "34602b2897fb41963eb340c79377a1de790224b7c8a66444530e1debb525dedf",
       "size": [
         640,
         160
@@ -264,8 +264,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-walk-up.webp",
-      "bytes": 2882,
-      "sha256": "2519d96d0a0a92da459a7106deb117d7c122bf0f5c1d704371258d76dae64bdd",
+      "bytes": 16100,
+      "sha256": "8dd02d78a4caa0d6e19e209ab3fe8e28a5891d1deb9833757bca83f7d347c096",
       "size": [
         640,
         160
@@ -274,8 +274,8 @@
     },
     {
       "file": "imagegen25-character/player-imagegen25-wave.webp",
-      "bytes": 9790,
-      "sha256": "843fbb2d013f6754f03adcbd8ddb3e36f11d50889c8e5ec36759876261d8407b",
+      "bytes": 14724,
+      "sha256": "1ed0810c7f83350ef5fe0a20496337158d4c5e16b2a725e04805c585dd08cb19",
       "size": [
         640,
         160
@@ -284,8 +284,8 @@
     },
     {
       "file": "sky-island/decor-sheet.webp",
-      "bytes": 80838,
-      "sha256": "d61ed034e5f71ff550c597d666e597d449f25a8c1cad21ec04acf76e56e34804",
+      "bytes": 67780,
+      "sha256": "10bcd170e5ab78aa18f7389368505c1502e0e07235e377795e826decda8e127d",
       "size": [
         1536,
         128

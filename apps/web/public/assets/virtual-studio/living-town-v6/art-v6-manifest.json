@@ -28,8 +28,8 @@
   "files": [
     {
       "file": "ink/accessory-sheet.webp",
-      "bytes": 8130,
-      "sha256": "27a5cc1ef6590230830747db1a1b1e544a6587a4f6eafa5a7df2ba242dd91e1b",
+      "bytes": 5258,
+      "sha256": "1c53bad37070cdb92ade1550356ed47645fd34b7041ac7f4aff1e1447b05e052",
       "size": [
         1920,
         96
@@ -58,8 +58,8 @@
     },
     {
       "file": "ink/interaction-fx-sheet.webp",
-      "bytes": 13092,
-      "sha256": "45acea7991082fd47030e3743dc90c7f7b68e7773a3470bf544310aca4777f8d",
+      "bytes": 5534,
+      "sha256": "e65878a358b75b38f6086fce7284d092ac5ad79d72abd780df0341c0b63078c4",
       "size": [
         1024,
         128
@@ -68,8 +68,8 @@
     },
     {
       "file": "ink/path-overlay.webp",
-      "bytes": 71192,
-      "sha256": "72ea36c014c0b85dbfb53681dc190bbfd817c1aab730dffdd23aa8b34c775e4c",
+      "bytes": 61982,
+      "sha256": "0c16299b746aa2b65dae07163f3b11b82e7d4c5820e69e7621becb563557ebb8",
       "size": [
         1280,
         960
@@ -98,8 +98,8 @@
     },
     {
       "file": "ink/waterfall-splash-sheet.webp",
-      "bytes": 7128,
-      "sha256": "ec5129c204ef44fbf6e80588f00f79b26d9dd6051d12d892b629fbf2bc70a7b6",
+      "bytes": 3744,
+      "sha256": "3e58ed7a756d79d5b682a6fd9dbf7270ba60662887db422b4a360ff3d219aa29",
       "size": [
         1024,
         64
@@ -108,8 +108,8 @@
     },
     {
       "file": "neon/accessory-sheet.webp",
-      "bytes": 12256,
-      "sha256": "b148b0ee4f1be19c5d5eac49b8fa88681aaa670df9dea16cec942e3b50a0b30e",
+      "bytes": 9128,
+      "sha256": "44ee42ff1b4a25c11e348e2cebc25ab4295a582cb632eb398c1945574e18aafe",
       "size": [
         1920,
         96
@@ -118,8 +118,8 @@
     },
     {
       "file": "neon/decor-sheet.webp",
-      "bytes": 19944,
-      "sha256": "da884aa34f5eca4368bfb5897bcb25e52bb341f0172823a96484e11d75d3a3e9",
+      "bytes": 17758,
+      "sha256": "79c34b36055bcadafff39f17c2a126d807e2b11fc18b4cce101805da200f27ae",
       "size": [
         1536,
         128
@@ -138,8 +138,8 @@
     },
     {
       "file": "neon/interaction-fx-sheet.webp",
-      "bytes": 17958,
-      "sha256": "0f93132f53788b95c430cada6f2e3562df5a95f6b2bddc66e3a681f782c4284e",
+      "bytes": 5216,
+      "sha256": "be8f146e4675f9b977c9c43e0cb16d35f07af99fc3167ee58ba514b59a3e42de",
       "size": [
         1024,
         128
@@ -148,8 +148,8 @@
     },
     {
       "file": "neon/path-overlay.webp",
-      "bytes": 69038,
-      "sha256": "0d7992be852a3d8180940b6c7c11dec04357d97ad26b31cca5eb771de36315df",
+      "bytes": 60284,
+      "sha256": "4642dbe86f8063b4ccc1fd47a881bad7acee41fadcad8e4f503c443ede570698",
       "size": [
         1280,
         960
@@ -158,8 +158,8 @@
     },
     {
       "file": "neon/terrain-tile-atlas.webp",
-      "bytes": 43090,
-      "sha256": "9b8fc9d947a6e96a36e9ed175a5ef79017ec77f2a907e9fcb17746a43041974c",
+      "bytes": 41584,
+      "sha256": "41c59cbdfbf4e82b2899da3df6f5da7c393177cd390291c2258c317b5edb672e",
       "size": [
         512,
         512
@@ -168,8 +168,8 @@
     },
     {
       "file": "neon/waterfall-sheet.webp",
-      "bytes": 46526,
-      "sha256": "6984fa20b2e3a2d4e1870f6d54f33e611c500018895ef5e8e4b7d57797616e53",
+      "bytes": 44458,
+      "sha256": "a38974f1b0f654d68c9ea5b681022653f940b6c7b2d04c18fff61dd645a423fd",
       "size": [
         1024,
         192
@@ -178,8 +178,8 @@
     },
     {
       "file": "neon/waterfall-splash-sheet.webp",
-      "bytes": 9014,
-      "sha256": "dd9915cad89ee8744f5077b0340302fce9fbc79392d3614ccb75cc3167b51804",
+      "bytes": 5422,
+      "sha256": "c9755a60e9a37411f8d0164ccc03e34a1549e275d5514f3a9e7f4f1bfccb2dce",
       "size": [
         1024,
         64
@@ -188,8 +188,8 @@
     },
     {
       "file": "pastel/accessory-sheet.webp",
-      "bytes": 11478,
-      "sha256": "1d867e39e2e2b9644255c50f4e8b82140318c669730bbf24c85d7ae9aa0458e7",
+      "bytes": 7502,
+      "sha256": "77027df263b412e2fde2cff6b4211bad28abc05af4a2a81afe53064af6fa86b6",
       "size": [
         1920,
         96
@@ -198,8 +198,8 @@
     },
     {
       "file": "pastel/decor-sheet.webp",
-      "bytes": 19130,
-      "sha256": "9bbff7aeaa3fa1605108807ef3cd31460a65599de80f0b532ae1072969dc4238",
+      "bytes": 15154,
+      "sha256": "aac84b3d6c4e6d89bd4f5ee1872deddaf087440cc66464d801a647a11b7910d4",
       "size": [
         1536,
         128
@@ -218,8 +218,8 @@
     },
     {
       "file": "pastel/interaction-fx-sheet.webp",
-      "bytes": 16574,
-      "sha256": "84d5d63a58bbb6019a95ae2ad2a1ce4abccc9305fcbac58440a95bd5781245ae",
+      "bytes": 9652,
+      "sha256": "feeeec92a205b7c227fb5943c6cb80a967fc3a887dcd7e8c56de141c54203a30",
       "size": [
         1024,
         128
@@ -228,8 +228,8 @@
     },
     {
       "file": "pastel/path-overlay.webp",
-      "bytes": 73588,
-      "sha256": "cc912d0576b7d9056dbb9dd1b9bdc7630b9dde88344b48f0f99006769aa6992a",
+      "bytes": 63462,
+      "sha256": "b89736c269fae0e9fd9368bca9276ee650bf8d4512d5137c42a21f91c1c692da",
       "size": [
         1280,
         960
@@ -238,8 +238,8 @@
     },
     {
       "file": "pastel/terrain-tile-atlas.webp",
-      "bytes": 34792,
-      "sha256": "a8f70d2d5a0a1ca0bdf2ad65bd377c5cc3ad178fefaa1f8c017025be3496a4ac",
+      "bytes": 32550,
+      "sha256": "fc49363b50e51ef764db35325dc2a3940b1819a3c220b4cb53c2814a6e82cb71",
       "size": [
         512,
         512
@@ -248,8 +248,8 @@
     },
     {
       "file": "pastel/waterfall-sheet.webp",
-      "bytes": 40602,
-      "sha256": "3705181bf0da89cdb8eb1fc383a8c4077694a36d347734fe8936756e151d4b0a",
+      "bytes": 37876,
+      "sha256": "acc33ae7d8645ebe0c67a156b00ee7e0163ac51531a5528add771ef5659b70d6",
       "size": [
         1024,
         192
@@ -258,8 +258,8 @@
     },
     {
       "file": "pastel/waterfall-splash-sheet.webp",
-      "bytes": 8076,
-      "sha256": "24f2a10ab44b6a138f8a680cba215cb87db6fecc71a532fd79e079a45fccdb5c",
+      "bytes": 4040,
+      "sha256": "03315ac6136215b855aed482ecb1109c6dc92f3bb087d863fefa196713d85c3b",
       "size": [
         1024,
         64
@@ -268,8 +268,8 @@
     },
     {
       "file": "retro/accessory-sheet.webp",
-      "bytes": 1738,
-      "sha256": "f4182d4a4ec2917f3788ae67f10793ab61788df2ac35500827a2068ef358515f",
+      "bytes": 5588,
+      "sha256": "28017a24b43f740d48c4aebaf043bd2adaa144f286be44b648740a068c6b8ac3",
       "size": [
         1920,
         96
@@ -278,8 +278,8 @@
     },
     {
       "file": "retro/decor-sheet.webp",
-      "bytes": 5246,
-      "sha256": "28406f9c7e0ef810d3ddf8db5328309496d69825f1ce259d13601ef7245054c8",
+      "bytes": 10644,
+      "sha256": "f4a32b5614236012b7b123c9dc702970bedc278cbdea7269ec347d8f5ff7c4c4",
       "size": [
         1536,
         128
@@ -298,8 +298,8 @@
     },
     {
       "file": "retro/interaction-fx-sheet.webp",
-      "bytes": 2516,
-      "sha256": "2e354825819b042d59741f6ce3a0cc375942c51d07599af4151e91d41a9cebe5",
+      "bytes": 2126,
+      "sha256": "4d40c29ad8ab164b079ae4918377ce27afc24f1250201b47812539753a2da1fd",
       "size": [
         1024,
         128
@@ -308,8 +308,8 @@
     },
     {
       "file": "retro/path-overlay.webp",
-      "bytes": 46756,
-      "sha256": "bd848a1e90299854b93eeb87cbf67dfee7a560f2cdb3673759be0996df4b2eb8",
+      "bytes": 53446,
+      "sha256": "56335fab40f041a5d713324592811920f92aef119b7e4a0417e471939f2b2333",
       "size": [
         1280,
         960
@@ -318,8 +318,8 @@
     },
     {
       "file": "retro/terrain-tile-atlas.webp",
-      "bytes": 10256,
-      "sha256": "e00d85dbc149ca781cc4d08031aa9b37a06d1b20bf944bd674b9d38101687db3",
+      "bytes": 16308,
+      "sha256": "2d8590e8cfdd3e1d33876a41585632c00887c224cc3ea51f7d560603dad6fd4b",
       "size": [
         512,
         512
@@ -328,8 +328,8 @@
     },
     {
       "file": "retro/waterfall-sheet.webp",
-      "bytes": 11272,
-      "sha256": "72c2552e0fc1f88f9bd0297b42f749bb9b6f3ae89e90e70c23e2369c3d89187b",
+      "bytes": 20464,
+      "sha256": "0036ef60a21883567d7f3aede3806bd3625d8c33a51387a14afbccb3c533b853",
       "size": [
         1024,
         192
@@ -338,8 +338,8 @@
     },
     {
       "file": "retro/waterfall-splash-sheet.webp",
-      "bytes": 1454,
-      "sha256": "a5aea153d93a0db9ddc29bab9ce63837b0ecfe6b9205c860885c956b95dfff3f",
+      "bytes": 5956,
+      "sha256": "803cb9ea025ee7d40cb993a61583a7a20aa35c631f722a3b9c37e55864086eef",
       "size": [
         1024,
         64
@@ -348,8 +348,8 @@
     },
     {
       "file": "sky-island/accessory-sheet.webp",
-      "bytes": 11040,
-      "sha256": "f9220265f3146401d9618f6b46d75317da3bffb5c7b4e1119e07bd4a7ae8e16b",
+      "bytes": 7450,
+      "sha256": "9866ca7a4cc5a7224980c57e6b11499270e6d6f576a70f102f7096131af81e89",
       "size": [
         1920,
         96
@@ -358,8 +358,8 @@
     },
     {
       "file": "sky-island/decor-sheet.webp",
-      "bytes": 80838,
-      "sha256": "d61ed034e5f71ff550c597d666e597d449f25a8c1cad21ec04acf76e56e34804",
+      "bytes": 67780,
+      "sha256": "10bcd170e5ab78aa18f7389368505c1502e0e07235e377795e826decda8e127d",
       "size": [
         1536,
         128
@@ -378,8 +378,8 @@
     },
     {
       "file": "sky-island/interaction-fx-sheet.webp",
-      "bytes": 18230,
-      "sha256": "dc47e8a7dedd24fa0acd232efd1d9c31903bc180c19373b54b06354deb6cd10a",
+      "bytes": 4046,
+      "sha256": "db033d3931089d50116c96219aa9c6c5dd926f0bbcf7b911f5326a9c76d98d25",
       "size": [
         1024,
         128
@@ -388,8 +388,8 @@
     },
     {
       "file": "sky-island/path-overlay.webp",
-      "bytes": 77940,
-      "sha256": "5462de842defb58ec66d67d1a5c0d7cdd52c3be88a669b117337ebd30a5653e7",
+      "bytes": 70640,
+      "sha256": "579c23f2572c02bc5c850189d49bcfce9d9a6e53d6729d172b6b217e91be228e",
       "size": [
         1280,
         960
@@ -408,8 +408,8 @@
     },
     {
       "file": "sky-island/waterfall-sheet.webp",
-      "bytes": 46952,
-      "sha256": "efd461f3158bb1a18b85ac32c5db48ac512488e703a04757863f223d6872aad9",
+      "bytes": 45260,
+      "sha256": "1d2f0b6bfa0ea45c776975eb4f0547fa2aff26675d138854352a5eb46679ce5c",
       "size": [
         1024,
         192
@@ -418,8 +418,8 @@
     },
     {
       "file": "sky-island/waterfall-splash-sheet.webp",
-      "bytes": 8960,
-      "sha256": "04f6b3d81fca4981feea1660c4e9893d1edeaa8aedae7f50854392e1194bc77e",
+      "bytes": 6924,
+      "sha256": "61e2b2399f83a60f50da67d19a191f9b3e8873f40717b888a05957bf3615775b",
       "size": [
         1024,
         64
@@ -428,8 +428,8 @@
     },
     {
       "file": "webtoon/accessory-sheet.webp",
-      "bytes": 10700,
-      "sha256": "0663c8a32cdb23f8e7887ee02504ab8e95ffd74a02796aafe1b8efb6a774358f",
+      "bytes": 7130,
+      "sha256": "8b2d366d1f5d3aa93aa39c16773c67394ea7ffbf45f85cf0d51434c45a3771b1",
       "size": [
         1920,
         96
@@ -438,8 +438,8 @@
     },
     {
       "file": "webtoon/decor-sheet.webp",
-      "bytes": 19786,
-      "sha256": "a72536b7e902c2e762f405beec481451184ed9794a445ba480d0fbfc019cf7f5",
+      "bytes": 18794,
+      "sha256": "d1d88c7ed85e8ed94047f7aa0d60c68e96c59511df03320d236470c3cd406e84",
       "size": [
         1536,
         128
@@ -458,8 +458,8 @@
     },
     {
       "file": "webtoon/interaction-fx-sheet.webp",
-      "bytes": 18026,
-      "sha256": "1ed0b2e4b22cef9e5574114213252a4700d8ea84baff697e7ddb64e432db97d0",
+      "bytes": 4438,
+      "sha256": "fbc6028df057ab3df1f7b086fc8deccb35f61749b6dbe80500577b97f3d2a22e",
       "size": [
         1024,
         128
@@ -468,8 +468,8 @@
     },
     {
       "file": "webtoon/path-overlay.webp",
-      "bytes": 75810,
-      "sha256": "b8710438601a7e933748e6116c71aa2184c887ae24bba49c0b32f4c5109ba75b",
+      "bytes": 67114,
+      "sha256": "f8cb0c701ad914e1e419c4b65decd4c773e16317580ad175c764d4a2481bc026",
       "size": [
         1280,
         960
@@ -478,8 +478,8 @@
     },
     {
       "file": "webtoon/terrain-tile-atlas.webp",
-      "bytes": 39446,
-      "sha256": "691b000965fa7673fd8b893f42d97cea98e74db65f9108deb91e9cd300c8b62f",
+      "bytes": 37108,
+      "sha256": "491e6b996d4fa746cf6957efa886a0ce4c39c5946d0aee6c01b6f7644be4e776",
       "size": [
         512,
         512
@@ -488,8 +488,8 @@
     },
     {
       "file": "webtoon/waterfall-sheet.webp",
-      "bytes": 44274,
-      "sha256": "42b56bd60f24537fe70699cef8f3536d38fcdfa61b9a04590284a3197593cac7",
+      "bytes": 51468,
+      "sha256": "82d153fdf7432be0f66cd30eec01d4492cd0a78ea7afaea1536a43887d9d6aae",
       "size": [
         1024,
         192
@@ -498,8 +498,8 @@
     },
     {
       "file": "webtoon/waterfall-splash-sheet.webp",
-      "bytes": 9206,
-      "sha256": "da622ed34548e57796da1f274f6cc342a96d296aa4d4f27190da4e1055588557",
+      "bytes": 5468,
+      "sha256": "a58c67944c40cbced9dcf60d50d615ddde81c214adf43ef182be567e4d4bc5fc",
       "size": [
         1024,
         64

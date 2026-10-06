@@ -19,8 +19,10 @@ export function verifyVirtualStudioAmbientAudio({ directory = VIRTUAL_STUDIO_AMB
   assert.equal(provenance.processing.startsWith("None."), true, "original recording bytes must be unchanged");
   assert.equal(provenance.licenseTextSha256, CC0_TEXT_SHA256);
   assert.equal(sha(readFileSync(resolve(directory, "CC0-1.0.txt"))), CC0_TEXT_SHA256, "official CC0 legal text integrity");
-  assert.equal(provenance.files.length, STUDIO_AMBIENT_TRACKS.length);
-  for (const track of STUDIO_AMBIENT_TRACKS) {
+  // 합성 트랙(synth)은 원본 파일이 없으므로 provenance 대상이 아니다.
+  const recordedTracks = STUDIO_AMBIENT_TRACKS.filter((track) => "src" in track);
+  assert.equal(provenance.files.length, recordedTracks.length);
+  for (const track of recordedTracks) {
     const bytes = readFileSync(resolve(directory, basename(track.src)));
     assert.equal(bytes.subarray(0, 4).toString(), "OggS", `${track.id}: OGG container`);
     assert.equal(bytes.length, track.bytes, `${track.id}: byte length`);
@@ -36,7 +38,7 @@ export function verifyVirtualStudioAmbientAudio({ directory = VIRTUAL_STUDIO_AMB
     assert(recorded.seamJump < recorded.differenceP99, `${track.id}: recorded seam discontinuity`);
     assert(Math.abs(recorded.startEndRmsDeltaDb) < 1, `${track.id}: recorded seam level`);
   }
-  return { assetCount: STUDIO_AMBIENT_TRACKS.length, totalBytes: STUDIO_AMBIENT_TRACKS.reduce((sum, track) => sum + track.bytes, 0),
+  return { assetCount: recordedTracks.length, totalBytes: recordedTracks.reduce((sum, track) => sum + track.bytes, 0),
     originalBytesVerified: true, license: "CC0-1.0", subjectiveListeningReverified: false };
 }
 
