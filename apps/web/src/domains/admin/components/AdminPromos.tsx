@@ -274,7 +274,7 @@ export function AdminPromos({ userId }: AdminPromosProps) {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-canvas/80 backdrop-blur-md flex items-center justify-center p-4">
           <form
             onSubmit={(e) => void handleCreate(e)}
             className="bg-card border border-line p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl"
