@@ -63,12 +63,12 @@ describe("webtoon production collaboration UI", () => {
     expect(screen.getByRole("link", { name: /다음 단계:.*공정 보드 열기/u }).getAttribute("href"))
       .toBe("/production/projects/sample-project/production");
     // 운영 상세는 접혀 있다가 열 때 그린다.
-    expect(screen.queryByRole("heading", { name: "프로젝트 운영 조종석" })).toBeNull();
-    const details = screen.getByText("운영 상세 보기").closest("details");
+    expect(screen.queryByRole("heading", { name: "프로젝트 상태 한눈에" })).toBeNull();
+    const details = screen.getByText("운영 자세히 보기").closest("details");
     expect(details).not.toBeNull();
     (details as HTMLDetailsElement).open = true;
     fireEvent(details as HTMLDetailsElement, new Event("toggle"));
-    expect(await screen.findByRole("heading", { name: "프로젝트 운영 조종석" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "프로젝트 상태 한눈에" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "오늘의 운영 판단" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "회차 공정 매트릭스" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "팀 작업량" })).toBeTruthy();
@@ -135,7 +135,7 @@ describe("webtoon production collaboration UI", () => {
     fireEvent.click(decision);
     await waitFor(() => expect(screen.queryByRole("button", { name: "결정 기록" })).toBeNull());
     expect(screen.getByText(/문양은 보여도 되지만/u)).toBeTruthy();
-    // 질문에 답해도 작업 넘기기나 검수 승인이 자동으로 바뀌지 않는다.
+    // 질문에 답해도 인계나 검수 승인이 자동으로 바뀌지 않는다.
     expect(screen.getByText("이 브라우저에 반영됨")).toBeTruthy();
     expect(screen.getAllByText("대기").length).toBeGreaterThan(0);
   });
@@ -294,7 +294,7 @@ describe("webtoon production collaboration UI", () => {
         </Routes>
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "역할별 작업실" }));
+    fireEvent.click(screen.getByRole("button", { name: "역할별 작업" }));
     expect(screen.getByRole("heading", { name: "직군별 제작 셀과 인수인계를 한 화면에서" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "팀 구성" }));
     expect(screen.getByRole("heading", { name: "담당 역할별 팀 커버리지" })).toBeTruthy();
@@ -315,7 +315,7 @@ describe("webtoon production collaboration UI", () => {
         </Routes>
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "역할별 작업실" }));
+    fireEvent.click(screen.getByRole("button", { name: "역할별 작업" }));
     fireEvent.click(screen.getByRole("button", { name: "공정 흐름" }));
     expect(screen.getByRole("heading", { name: "웹툰 표준 공정" })).toBeTruthy();
     expect(screen.getByText("캐릭터·선화")).toBeTruthy();

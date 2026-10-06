@@ -26,6 +26,7 @@ import {
   type ProductionProjectSummary,
 } from "./production-dashboard-api";
 import { formatProductionDay } from "./production-format";
+import { ProductionLandingOverview } from "./ProductionLandingOverview";
 import { ProductionMetric, ProductionPill, ProductionSampleBadge, type ProductionTone } from "./production-ui";
 
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
@@ -248,7 +249,7 @@ function PortfolioSection({
       <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="production-portfolio-title" className="text-base font-black text-fg">{bt("내 제작 포트폴리오", "My production portfolio")}</h2>
-          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-fg-2">{bt("여러 작품의 다음 연재, 막힘·검수·배정 공백을 같은 기준으로 비교합니다. 위험한 작품이 먼저 보입니다.", "Compare upcoming releases, blockers, reviews and unassigned work across projects. Riskier projects come first.")}</p>
+          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-fg-2">{bt("여러 작품의 다음 연재와 막힌 작업·검수 대기·담당 없는 작업을 같은 기준으로 비교합니다. 위험한 작품이 먼저 보입니다.", "Compare upcoming releases, blocked work, pending reviews and unassigned tasks across projects. Riskier projects come first.")}</p>
         </div>
         <Link className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })} to="/create"><Plus className="size-4" aria-hidden="true" />{bt("작품 시작하기", "Start a work")}</Link>
       </header>
@@ -266,8 +267,9 @@ function PortfolioSection({
         </div>
       ) : projects.length > 0 ? (
         <div className="space-y-4">
+          <ProductionLandingOverview projects={projects} inboxItems={inboxItems} />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <ProductionMetric label={bt("운영 작품", "Projects")} value={String(projects.length)} detail={bt(`진행 회차 ${sum((project) => project.activeEpisodeCount)}개`, `${sum((project) => project.activeEpisodeCount)} active episodes`)} icon={LayoutDashboard} tone="accent" />
+            <ProductionMetric label={bt("내 작품", "Projects")} value={String(projects.length)} detail={bt(`진행 회차 ${sum((project) => project.activeEpisodeCount)}개`, `${sum((project) => project.activeEpisodeCount)} active episodes`)} icon={LayoutDashboard} tone="accent" />
             <ProductionMetric label={bt("위험 작품", "At risk")} value={String(projects.filter((project) => project.healthScore < 64).length)} detail={bt(`기한 초과 ${sum((project) => project.overdueTaskCount)}건`, `${sum((project) => project.overdueTaskCount)} overdue`)} icon={AlertTriangle} tone={projects.some((project) => project.healthScore < 64) ? "danger" : "success"} />
             <ProductionMetric label={bt("완성 비축", "Ready buffer")} value={bt(`${sum((project) => project.readyBufferCount)}회`, `${sum((project) => project.readyBufferCount)}`)} detail={bt("게시 준비가 끝난 미공개 회차", "Finished, unreleased episodes")} icon={BadgeCheck} tone="success" />
             <ProductionMetric label={bt("검수 대기", "Waiting review")} value={String(sum((project) => project.reviewTaskCount))} detail={bt(`미배정 ${sum((project) => project.unassignedTaskCount)}건`, `${sum((project) => project.unassignedTaskCount)} unassigned`)} icon={ClipboardCheck} tone="warning" />
@@ -312,7 +314,7 @@ function PortfolioSection({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 truncate text-base font-black text-fg">{project.title}</p>
-                    <ProductionPill tone={healthTone}>{bt(`안정도 ${project.healthScore}`, `Health ${project.healthScore}`)}</ProductionPill>
+                    <ProductionPill tone={healthTone}>{bt(`건강 점수 ${project.healthScore}`, `Health score ${project.healthScore}`)}</ProductionPill>
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[0.6875rem]">
                     <div className="rounded-lg border border-line bg-card p-2"><p className="text-fg-3">{bt("진행 회차", "Active")}</p><p className="mt-1 font-black text-fg">{project.activeEpisodeCount}</p></div>
@@ -321,7 +323,7 @@ function PortfolioSection({
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 text-xs text-fg-2">
                     <span>{bt("다음 공개", "Next release")} {formatProductionDay(project.nextReleaseAt, bt("미정", "TBD"))}</span>
-                    <span className="flex items-center gap-1 font-bold text-accent">{bt("운영 열기", "Open")} <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" /></span>
+                    <span className="flex items-center gap-1 font-bold text-accent">{bt("개요 열기", "Open")} <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" /></span>
                   </div>
                 </Link>
               );

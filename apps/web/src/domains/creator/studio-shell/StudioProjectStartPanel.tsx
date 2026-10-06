@@ -36,7 +36,7 @@ function projectStartActions(bt: (ko: string, en: string) => string): readonly S
       icon: UsersRound,
       title: bt("팀 프로젝트를 시작해요", "I am starting a team project"),
       visual: "/brand/production-os-journey.svg",
-      description: bt("역할·마감·작업 넘기기·검수 기준을 먼저 정하고 함께 제작합니다.", "Set roles, deadlines, handoffs and review rules before producing together."),
+      description: bt("역할·마감·인계·검수 기준을 먼저 정하고 함께 제작합니다.", "Set roles, deadlines, handoffs and review rules before producing together."),
     },
     {
       href: "/production/projects/sample-project/overview",

@@ -188,16 +188,16 @@ export function ProductionRiskIntelligencePanel({
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 text-accent">
               <Radar className="size-4" aria-hidden="true" />
-              <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">Predictive Risk Intelligence</p>
+              <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em]">Risk Outlook</p>
             </div>
-            <h2 id="predictive-risk-heading" className="mt-2 text-lg font-black text-fg">예측 리스크 레이더</h2>
+            <h2 id="predictive-risk-heading" className="mt-2 text-lg font-black text-fg">위험 미리 보기</h2>
             <p className="mt-1 text-xs leading-5 text-fg-2">
               이미 늦은 작업뿐 아니라 남은 공수, 담당자 가용량, 선행 작업, 검수, revision 연결과 연재 버퍼를 함께 계산합니다.
               결과는 규칙 기반 설명이며, 자동으로 담당자나 일정을 바꾸지 않습니다.
             </p>
           </div>
           <Link className={buttonClass({ variant: "outline", size: "sm" })} to={`/production/projects/${encodeURIComponent(projectId)}/planning`}>
-            위험 원장 열기 <ArrowRight className="size-3.5" aria-hidden="true" />
+            위험 목록 열기 <ArrowRight className="size-3.5" aria-hidden="true" />
           </Link>
         </div>
 
@@ -330,10 +330,10 @@ export function ProductionRiskIntelligencePanel({
                     onClick={() => void registerRisk(signal)}
                   >
                     {registering ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : registered ? <CheckCircle2 className="size-4" aria-hidden="true" /> : <ShieldAlert className="size-4" aria-hidden="true" />}
-                    {registering ? "등록 중…" : registered ? "위험 원장 등록됨" : canEdit ? "위험으로 등록" : "편집 권한 필요"}
+                    {registering ? "등록 중…" : registered ? "위험 목록에 등록됨" : canEdit ? "위험으로 등록" : "편집 권한 필요"}
                   </button>
                 ) : (
-                  <Pill tone="success"><CheckCircle2 className="mr-1 size-3" aria-hidden="true" />위험 원장</Pill>
+                  <Pill tone="success"><CheckCircle2 className="mr-1 size-3" aria-hidden="true" />위험 목록</Pill>
                 )}
               </footer>
             </article>

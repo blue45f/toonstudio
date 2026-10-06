@@ -27,7 +27,7 @@ function renderWorkspace() {
 describe("ProductionOperationsControlWorkspace", () => {
   it("exposes the complete production operations toolset", () => {
     renderWorkspace();
-    expect(screen.getByRole("heading", { name: "제작 운영 완성도 센터" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "운영 센터" })).toBeTruthy();
     for (const label of [
       "일정 회복",
       "개인 작업함",
@@ -41,8 +41,8 @@ describe("ProductionOperationsControlWorkspace", () => {
     ]) {
       expect(screen.getByRole("button", { name: new RegExp(label, "u") })).toBeTruthy();
     }
-    expect(screen.getByRole("heading", { name: "일정 회복 시나리오" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "임계경로와 여유시간" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "일정 회복 계획" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "핵심 일정과 여유 시간" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /분석·예산/u }));
     expect(screen.getByRole("heading", { name: "공정 병목 분석" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "예산·정산 전망" })).toBeTruthy();

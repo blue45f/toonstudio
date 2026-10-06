@@ -44,14 +44,14 @@ const SURFACE_ITEMS: readonly {
   readonly description: string;
   readonly icon: LucideIcon;
 }[] = [
-  { id: "overview", label: "프로젝트 홈", description: "오늘 할 일과 막힌 작업", icon: LayoutDashboard },
+  { id: "overview", label: "개요", description: "오늘 할 일과 막힌 작업", icon: LayoutDashboard },
   { id: "planning", label: "기획", description: "작품·시즌·장면 기준", icon: BookOpenText },
   { id: "episodes", label: "회차", description: "회차별 상태와 원고", icon: PanelTopOpen },
-  { id: "production", label: "작업 보드", description: "담당자와 진행 상태", icon: Workflow },
+  { id: "production", label: "공정 보드", description: "담당자와 진행 상태", icon: Workflow },
   { id: "schedule", label: "일정", description: "마감과 작업량 확인", icon: CalendarClock },
-  { id: "handoff", label: "작업 넘기기", description: "꼭 지킬 내용과 질문", icon: Handshake },
-  { id: "review", label: "검수·수정", description: "수정 요청과 승인", icon: ClipboardCheck },
-  { id: "procurement", label: "외주·발주", description: "의뢰 범위와 납품", icon: BriefcaseBusiness },
+  { id: "handoff", label: "인계", description: "꼭 지킬 내용과 질문", icon: Handshake },
+  { id: "review", label: "검수", description: "수정 요청과 승인", icon: ClipboardCheck },
+  { id: "procurement", label: "외주 맡기기", description: "의뢰 범위와 납품", icon: BriefcaseBusiness },
   { id: "rights", label: "계약·정산", description: "권리·크레딧·보상", icon: Scale },
   { id: "settings", label: "팀 설정", description: "참여자와 역할", icon: Users },
 ];

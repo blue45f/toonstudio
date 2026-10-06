@@ -77,7 +77,7 @@ export const PRODUCTION_HUB_TOUR_STEPS: readonly ProductionTourStep[] = [
   {
     id: "review",
     title: "외부 검수는 링크 하나로",
-    body: "운영 제어 → 외부 검수에서 링크를 만들면, 검수자는 로그인 없이 댓글·승인을 남길 수 있습니다. 링크는 자동 만료되고 워터마크가 적용됩니다.",
+    body: "운영 → 외부 검수에서 링크를 만들면, 검수자는 로그인 없이 댓글·승인을 남길 수 있습니다. 링크는 자동 만료되고 워터마크가 적용됩니다.",
   },
   {
     id: "team",

@@ -533,7 +533,7 @@ function buildTaskSignals(
             `공수 범위 ${spread}h · 기준 ${task.estimateHours.likely}h`,
             `현재 상태 ${statusLabel(task.status)}`,
           ],
-          impact: "비관 시나리오가 현실화되면 계획된 담당자 용량과 후속 마감이 함께 흔들릴 수 있습니다.",
+          impact: "상황이 나쁜 쪽으로 흘러가면 계획된 담당자 용량과 후속 마감이 함께 흔들릴 수 있습니다.",
           mitigations: [
             "불확실한 하위 작업을 분리하고 각각 완료 기준과 공수를 다시 추정합니다.",
             "첫 산출물 또는 샘플을 빠르게 검수해 남은 공수 범위를 좁힙니다.",

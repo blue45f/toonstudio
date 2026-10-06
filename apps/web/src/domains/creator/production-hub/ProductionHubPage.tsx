@@ -63,7 +63,7 @@ function viewerAssignmentIdsFor(aggregate: ProductionProjectAggregate, userId: s
 
 /**
  * 개요: 첫 화면은 네 가지 판단(진행률·마감 임박 회차·내 할 일·최근 피드백)만 보여 주고,
- * 위험 예측·복구 시나리오·추천 배정 같은 운영 상세는 펼칠 때만 계산해 그린다.
+ * 위험 미리 보기·복구 계획·담당자 추천 같은 운영 상세는 펼칠 때만 계산해 그린다.
  */
 function OverviewSurface({ aggregate, access, roleLens, execute, executeStrict, isDemo, viewerAssignmentIds }: SurfaceProps) {
   const bt = useBilingual("ProductionOverviewSurface");
@@ -79,8 +79,8 @@ function OverviewSurface({ aggregate, access, roleLens, execute, executeStrict, 
           <span className="flex min-w-0 items-center gap-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><Gauge className="size-4" aria-hidden="true" /></span>
             <span className="min-w-0">
-              <span className="block text-sm font-black text-fg">{bt("운영 상세 보기", "Operations detail")}</span>
-              <span className="block truncate text-xs text-fg-3">{bt("운영 안정도 근거·위험 예측·복구 시나리오·추천 배정·팀 작업량", "Health evidence, risk forecast, recovery scenarios, suggested assignments, workload")}</span>
+              <span className="block text-sm font-black text-fg">{bt("운영 자세히 보기", "Operations detail")}</span>
+              <span className="block truncate text-xs text-fg-3">{bt("건강 점수 근거·위험 미리 보기·복구 계획·담당자 추천·팀 작업량", "Health score evidence, risk outlook, recovery plans, assignee suggestions, workload")}</span>
             </span>
           </span>
           <ChevronDown className="size-4 shrink-0 text-fg-3 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
@@ -102,7 +102,7 @@ function BoardSurface({ aggregate, access, roleLens, execute, executeStrict, isD
   const roleView = params.get("productionView") === "roles" || (params.has("task") && params.get("productionView") !== "board");
   const views = [
     { id: "board", label: bt("팀 공정 보드", "Team board"), active: !roleView },
-    { id: "roles", label: bt("역할별 작업실", "Role workspace"), active: roleView },
+    { id: "roles", label: bt("역할별 작업", "Role workspace"), active: roleView },
   ] as const;
   return (
     <div className="min-w-0 space-y-4">
