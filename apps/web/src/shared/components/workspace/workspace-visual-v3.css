@@ -145,3 +145,23 @@
   .workspace-nav-shortcuts a[aria-current="page"] .workspace-nav-row-icon{color:var(--color-accent)}
   .workspace-support-nav a{flex-direction:row;justify-content:flex-start;min-height:44px;gap:10px;padding:0 10px;font-size:13px}
 }
+
+/* ── 좌측 메뉴 행의 아트 타일 (넓은 화면) ─────────────────────────
+ * 행 목록에서도 주 메뉴·제작 바로가기 목적지에 작은 아트 타일을 붙인다.
+ * 타일은 행 높이(44px) 안에 들어가는 30px로 줄여 레일 폭·행 높이를 바꾸지
+ * 않는다. 아트가 없거나 로드에 실패한 목적지는 타일 상자를 숨기고 기존 줄
+ * 아이콘 표시를 그대로 유지한다. 강제 색상 모드에서는 그림을 걷고 줄
+ * 아이콘으로 돌아간다. */
+@media (min-width:1181px){
+  .workspace-nav-visual{display:grid;width:30px;height:30px;border-radius:9px;flex:none}
+  .workspace-nav-visual>img{width:23px;height:23px}
+  .workspace-nav-visual:not(:has(>img)){display:none}
+  .workspace-nav-line-icon{display:none}
+  .workspace-sidebar .workspace-nav a:has(>.workspace-nav-visual>img) .workspace-nav-row-icon{display:none}
+  .workspace-sidebar .workspace-nav-shortcuts a:has(>.workspace-nav-visual>img) .workspace-nav-row-icon{display:none}
+}
+@media (min-width:1181px) and (forced-colors:active){
+  .workspace-nav-visual{display:none}
+  .workspace-sidebar .workspace-nav a:has(>.workspace-nav-visual) .workspace-nav-row-icon{display:block}
+  .workspace-sidebar .workspace-nav-shortcuts a:has(>.workspace-nav-visual) .workspace-nav-row-icon{display:block}
+}
