@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { SourcesPage } from "./SourcesPage";
+import { RESOURCE_SOURCES } from "./sources";
 
 function renderPage() {
   return render(
@@ -58,6 +59,18 @@ describe("resource source cost visibility", () => {
     );
     const art = container.querySelector<HTMLImageElement>(".resource-masthead-image");
     expect(art?.getAttribute("src")).toBe("/brand/illustrated-20260928/materials.webp");
+  });
+
+  it("머리말에서 제공처 규모와 수집-판정-활용 흐름을 먼저 읽을 수 있다", () => {
+    const { container } = renderPage();
+    const masthead = container.querySelector(".resource-masthead");
+    expect(masthead).not.toBeNull();
+    const scoped = within(masthead as HTMLElement);
+    expect(scoped.getByText(new RegExp(`제공처 ${RESOURCE_SOURCES.length}곳`))).toBeTruthy();
+    expect(scoped.getByRole("heading", { name: "모으기" })).toBeTruthy();
+    expect(scoped.getByRole("heading", { name: "판정하기" })).toBeTruthy();
+    expect(scoped.getByRole("heading", { name: "쓰기" })).toBeTruthy();
+    expect(scoped.getByRole("link", { name: "수집 정책" }).getAttribute("href")).toBe("/about/crawler");
   });
 
   it("필터와 결과 목록이 설명 섹션보다 먼저 나온다", () => {
