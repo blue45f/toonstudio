@@ -21,6 +21,8 @@ import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
+import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
+import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { Container, Section } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -209,8 +211,12 @@ export function DiscoverHubPage() {
 
       <section aria-labelledby="discover-shelves-title" className="mt-10 flex flex-col gap-12 sm:mt-12 sm:gap-14">
         <h2 id="discover-shelves-title" className="sr-only">{bt("작품 둘러보기", "Browse stories")}</h2>
-        <DiscoverRecentShelf />
-        <DiscoverShelves snapshot={home.data} loading={home.loading} error={home.error} onRetry={home.reload} />
+        <RevealOnScroll>
+          <DiscoverRecentShelf />
+        </RevealOnScroll>
+        <RevealOnScroll>
+          <DiscoverShelves snapshot={home.data} loading={home.loading} error={home.error} onRetry={home.reload} />
+        </RevealOnScroll>
       </section>
 
       <Section
@@ -222,7 +228,7 @@ export function DiscoverHubPage() {
           "Go straight to the tool that fits: search, filters, rankings or the release calendar.",
         )}
       >
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-5">
+        <StaggerReveal className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-5" itemClassName="h-full">
           {DESTINATIONS.map((destination) => (
             <SiteLinkCard
               key={destination.href}
@@ -231,10 +237,10 @@ export function DiscoverHubPage() {
               icon={destination.icon}
               title={bt(...destination.title)}
               description={bt(...destination.body)}
-              className={destination.highlight ? "border-accent/45 bg-accent-soft/50" : undefined}
+              className={cn("h-full", destination.highlight ? "border-accent/45 bg-accent-soft/50" : undefined)}
             />
           ))}
-        </div>
+        </StaggerReveal>
         <SiteDisclosure
           className="mt-4"
           icon={HelpCircle}
