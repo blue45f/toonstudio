@@ -317,6 +317,66 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
 }
+@keyframes space-lobby-character-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── 캐릭터 온보딩: 아트 전면 구도 ───────────────────────
+   무대 배경은 타일 시트가 아니라 전용 일러스트(네온 라운지·포디움)이고,
+   고른 캐릭터가 포디움 위에 크게 선다. 피커는 한 번에 더 많이 보이게 높인다. */
+.space-lobby__scene-art--onboarding { object-position: 34% 68%; }
+.space-lobby[data-entry-variant="character-onboarding"] .space-lobby__character {
+  width: min(74%, 320px);
+  height: min(52vh, 400px);
+  animation: space-lobby-character-in .45s ease backwards, space-lobby-idle 3.2s ease-in-out .45s infinite;
+}
+.space-lobby[data-entry-variant="character-onboarding"] .space-lobby__picker .studio-vspace-character-picker__grid { max-height: 448px; }
+.space-lobby[data-entry-variant="character-onboarding"] .space-lobby__picker .studio-vspace-character-picker__item { min-height: 148px; }
+.space-lobby__onboarding-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.space-lobby__onboarding-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-card) 72%, transparent);
+  color: var(--color-fg-2);
+}
+.space-lobby__onboarding-steps li[data-done] { border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line)); color: var(--color-fg); }
+.space-lobby__onboarding-step-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 900;
+}
+.space-lobby__onboarding-steps li[data-done] .space-lobby__onboarding-step-icon { background: var(--color-accent); color: var(--color-on-accent, #fff); }
+.space-lobby__onboarding-step-text { display: grid; min-width: 0; }
+.space-lobby__onboarding-step-text strong { font-size: 12px; font-weight: 850; white-space: nowrap; }
+.space-lobby__onboarding-step-text small {
+  overflow: hidden;
+  color: var(--color-fg-3);
+  font-size: 11px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.space-lobby__onboarding-steps li[data-done] .space-lobby__onboarding-step-text small { color: var(--color-fg-2); }
 
 /* ── 작은 화면: 무대를 한 줄 카드로 ─────────────────────── */
 @media (max-width: 1023px) {
@@ -369,6 +429,13 @@
 }
 @media (max-width: 360px) {
   .space-lobby__actions { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1023px) {
+  /* 온보딩 무대는 모바일에서도 아트가 주인공이게 아바타 열을 넓힌다. */
+  .space-lobby[data-entry-variant="character-onboarding"] .space-lobby__stage { grid-template-columns: 132px minmax(0, 1fr); }
+  .space-lobby[data-entry-variant="character-onboarding"] .space-lobby__character,
+  .space-lobby[data-entry-variant="character-onboarding"] .space-lobby__placeholder { width: 124px; height: 156px; animation: none; }
+  .space-lobby__onboarding-steps { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   .space-lobby__character { animation: none; }

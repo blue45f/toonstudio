@@ -61,7 +61,7 @@ export function StudioCharacterOnboardingPage() {
   /></PageIntro>{saveFailed ? (
     <p
       role="status"
-      className="mx-auto mt-4 w-fit max-w-xl rounded-xl border border-warn/40 bg-warn/10 px-4 py-3 text-center text-sm leading-6 text-fg"
+      className="fixed bottom-4 left-1/2 z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-warn/40 bg-panel px-4 py-3 text-center text-sm leading-6 text-fg shadow-2xl"
     >
       {bt(
         "이 브라우저에 입장 설정을 저장하지 못했어요. 그대로 입장하면 다음 방문 때 다시 설정해야 할 수 있어요. 입장 버튼을 한 번 더 누르면 계속 진행합니다.",

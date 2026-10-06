@@ -1,4 +1,4 @@
-import { CameraOff, Lock, MicOff, Network, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { CameraOff, Check, Lock, MicOff, Network, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { Suspense, useState, type ReactNode } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -137,14 +137,18 @@ export function StudioVirtualSpaceEntryLobby({
   return <div className="studio-vspace-entry space-lobby" data-route-ready={onboarding ? "studio-character-onboarding" : "studio-virtual-entry"}
     data-art-style={artStyle} data-entry-variant={variant}>
     <div className="space-lobby__backdrop" aria-hidden>
-      <StudioVirtualExperienceArtPreview className="space-lobby__backdrop-art" kind="landmarks" artStyle={artStyle} frame={0} preserveAspectRatio="xMidYMid slice" />
+      {onboarding
+        ? <img className="space-lobby__backdrop-art" src="/images/onboarding-character-stage.webp" alt="" draggable={false} />
+        : <StudioVirtualExperienceArtPreview className="space-lobby__backdrop-art" kind="landmarks" artStyle={artStyle} frame={0} preserveAspectRatio="xMidYMid slice" />}
     </div>
     <div className="space-lobby__layout">
       <RevealOnScroll as="section" variant="fade" className="space-lobby__stage" aria-label={bt("입장 미리보기", "Entry preview")}>
         {/* 들어갈 월드의 실제 베이스 아트를 무대 배경으로 깐다. 입장 전 프리뷰라 위치·신호는 만들지 않고,
             부트 로더가 받는 것과 같은 스타일별 world-base 텍스처만 정적으로 보여 준다. */}
         <div className="space-lobby__scene" aria-hidden>
-          <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle} />
+          {onboarding
+            ? <img className="space-lobby__scene-art space-lobby__scene-art--onboarding" src="/images/onboarding-character-stage.webp" alt="" draggable={false} data-onboarding-stage-art />
+            : <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle} />}
         </div>
         <header className="space-lobby__stage-head">
           <p className="space-lobby__kicker"><Sparkles size={15} aria-hidden />{onboarding ? "ToonStudio Character" : "ToonStudio Spatial Campus"}</p>
@@ -156,7 +160,7 @@ export function StudioVirtualSpaceEntryLobby({
             <strong>{normalizedNickname ?? bt("닉네임을 입력하세요", "Enter a nickname")}</strong>
           </p>
           {selectedCharacter
-            ? <StudioVirtualCharacterPreview skin={selectedCharacter} className="space-lobby__character" />
+            ? <StudioVirtualCharacterPreview key={selectedCharacter.key} skin={selectedCharacter} className="space-lobby__character" />
             : <span className="space-lobby__placeholder"><UserRound size={44} aria-hidden /><small>{bt("캐릭터를 골라 주세요", "Choose a character")}</small></span>}
           <span className="space-lobby__floor" aria-hidden />
         </div>
@@ -165,6 +169,11 @@ export function StudioVirtualSpaceEntryLobby({
           <LobbyChip icon={<CameraOff size={15} aria-hidden />}>{bt("카메라 꺼짐", "Camera off")}</LobbyChip>
           <LobbyChip icon={<Network size={15} aria-hidden />}>{bt("동료가 수락하면 함께 작업", "Work together after an invitation is accepted")}</LobbyChip>
           <LobbyChip icon={<ShieldCheck size={15} aria-hidden />}>{bt("미디어는 별도 동의 후 시작", "Media starts only after consent")}</LobbyChip>
+        </StaggerReveal> : null}
+        {onboarding ? <StaggerReveal as="ul" itemAs="li" className="space-lobby__chips" aria-label={bt("캐릭터 안내", "About your character")}>
+          <LobbyChip icon={<UserRound size={15} aria-hidden />}>{bt("홈·프로필·방문 목록에 같은 모습", "The same look on home, profile and visitor lists")}</LobbyChip>
+          <LobbyChip icon={<ShieldCheck size={15} aria-hidden />}>{bt("공개되는 건 닉네임과 캐릭터뿐", "Only your nickname and character are public")}</LobbyChip>
+          <LobbyChip icon={<Sparkles size={15} aria-hidden />}>{bt("나중에도 언제든 변경 가능", "Change it anytime later")}</LobbyChip>
         </StaggerReveal> : null}
         {personal && !onboarding ? <StaggerReveal as="ul" itemAs="li" className="space-lobby__chips" aria-label={bt("개인 작업실 안내", "About your personal office")}>
           <LobbyChip icon={<Lock size={15} aria-hidden />}>{bt("나만 입장하는 개인 작업실", "A personal office only you enter")}</LobbyChip>
@@ -177,6 +186,17 @@ export function StudioVirtualSpaceEntryLobby({
           <h1 id="studio-vspace-entry-title">{title}</h1>
           <p>{description}</p>
         </header>
+
+        {onboarding ? <ol className="space-lobby__onboarding-steps" aria-label={bt("시작 준비 상태", "Getting-ready status")}>
+          {[
+            { done: Boolean(normalizedNickname), label: bt("공개 닉네임", "Public nickname"), detail: normalizedNickname ?? bt("아직 입력 전", "Not entered yet") },
+            { done: characterSelected, label: bt("캐릭터 선택", "Character choice"), detail: selectedCharacter ? bt(selectedCharacter.labelKo, selectedCharacter.labelEn) : bt("아직 선택 전", "Not chosen yet") },
+            { done: canEnter, label: bt("시작 준비", "Ready to start"), detail: canEnter ? bt("바로 시작할 수 있어요", "You can start now") : bt("두 가지를 마치면 시작", "Finish both to start") },
+          ].map((step, index) => <li key={step.label} data-done={step.done || undefined}>
+            <span className="space-lobby__onboarding-step-icon" aria-hidden>{step.done ? <Check size={13} /> : index + 1}</span>
+            <span className="space-lobby__onboarding-step-text"><strong>{step.label}</strong><small>{step.detail}</small></span>
+          </li>)}
+        </ol> : null}
 
         <label className="space-lobby__field" htmlFor="studio-virtual-nickname">
           <span className="space-lobby__field-label"><UserRound size={16} aria-hidden />{bt("공개 닉네임", "Public nickname")}

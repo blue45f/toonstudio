@@ -163,6 +163,36 @@ describe("StudioVirtualSpaceEntryLobby 월드 미리보기와 첫 화면 순서"
   });
 });
 
+describe("캐릭터 온보딩 variant 아트 전면 구도 (W5-T3)", () => {
+  it("무대 배경이 타일 시트가 아닌 전용 일러스트이고 준비 상태와 무대 칩을 보여 준다", () => {
+    const props = { returning: false, projectName: "나의 창작 홈", onAvatarIndex: vi.fn(), onNickname: vi.fn(), onEnter: vi.fn() } as const;
+    const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby variant="character-onboarding" avatarIndex={-1} nickname="" {...props} /></MemoryRouter>);
+    const stage = screen.getByRole("region", { name: "입장 미리보기" });
+    const art = stage.querySelector<HTMLImageElement>("[data-onboarding-stage-art]");
+    expect(art).not.toBeNull();
+    expect(art!.getAttribute("src")).toBe("/images/onboarding-character-stage.webp");
+    expect(stage.querySelector("[data-world-preview]")).toBeNull();
+    expect(within(stage).getByText("나중에도 언제든 변경 가능")).toBeTruthy();
+    const steps = screen.getByRole("list", { name: "시작 준비 상태" });
+    expect(within(steps).getByText("아직 입력 전")).toBeTruthy();
+    expect(within(steps).getByText("아직 선택 전")).toBeTruthy();
+    expect(within(steps).getByText("두 가지를 마치면 시작")).toBeTruthy();
+
+    view.rerender(<MemoryRouter><StudioVirtualSpaceEntryLobby variant="character-onboarding" avatarIndex={0} nickname="희준 작가" {...props} /></MemoryRouter>);
+    expect(within(steps).getByText("희준 작가")).toBeTruthy();
+    expect(within(steps).getByText("바로 시작할 수 있어요")).toBeTruthy();
+    expect(steps.querySelectorAll("li[data-done]")).toHaveLength(3);
+  });
+
+  it("일반 입장 variant는 기존 월드 베이스 미리보기와 단계 표시 없음을 유지한다", () => {
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()} /></MemoryRouter>);
+    expect(screen.queryByRole("list", { name: "시작 준비 상태" })).toBeNull();
+    expect(document.querySelector("[data-onboarding-stage-art]")).toBeNull();
+    expect(document.querySelector("[data-world-preview]")).not.toBeNull();
+  });
+});
+
 describe("입장 로비 조작법 미리보기", () => {
   it("접힌 상태로 조작법 3가지를 미리 보여주고 미니 투어를 안내한다", () => {
     render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}

@@ -106,6 +106,22 @@ describe("TasteOnboardingPage", () => {
     expect(await screen.findByText("추천 화면 도착")).toBeTruthy();
   });
 
+  it("로딩 중에는 작품 카드 모양의 스켈레톤을 보여 주고 빈 결과와 구분한다", async () => {
+    apiFetchMock.mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+    renderPage();
+
+    expect(await screen.findByText(/지금은 보여 줄 인기 작품이 없어요/)).toBeTruthy();
+    expect(screen.queryByText("인기 작품 목록을 불러오지 못했습니다")).toBeNull();
+  });
+
+  it("응답이 오기 전에는 스켈레톤 상태를 표시한다", () => {
+    apiFetchMock.mockReturnValue(new Promise(() => {}));
+    renderPage();
+
+    expect(screen.getByRole("status", { name: "작품 목록을 불러오는 중" })).toBeTruthy();
+    expect(screen.queryByText(/지금은 보여 줄 인기 작품이 없어요/)).toBeNull();
+  });
+
   it("인기 작품 로드가 실패하면 오류 상태와 재시도를 보여주고 장르만으로 완료할 수 있다", async () => {
     apiFetchMock.mockResolvedValue({ ok: false, json: async () => ({}) });
     renderPage();
