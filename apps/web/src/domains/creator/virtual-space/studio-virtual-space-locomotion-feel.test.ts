@@ -9,6 +9,9 @@ import {
   facingAngleFromVelocity,
   LOCOMOTION_PRECISION_SPEED,
   LOCOMOTION_SHARP_TURN_RADIANS,
+  LOCOMOTION_SQUASH_SCALE_MAX,
+  LOCOMOTION_SQUASH_SCALE_MIN,
+  locomotionDirectionalSquashStretch,
   locomotionSquashStretch,
   shortestAngleDelta,
   skidIntensity,
@@ -120,6 +123,69 @@ describe("스쿼시 & 스트레치", () => {
 
   it("reduced-motion에서는 항상 1이다", () => {
     expect(locomotionSquashStretch(210, 210, true)).toEqual({ scaleX: 1, scaleY: 1 });
+  });
+});
+
+describe("방향성 스쿼시 & 스트레치 (절차 근사)", () => {
+  const dt = 1 / 60;
+
+  it("정지하면 변형이 정확히 0으로 수렴한다", () => {
+    expect(locomotionDirectionalSquashStretch({ x: 0, y: 0 }, { x: 0, y: 0 }, dt, 210, false))
+      .toEqual({ scaleX: 1, scaleY: 1 });
+    // 멈추는 마지막 프레임(속도 0, 직전 속도 큼)에서도 가감속 항이 남지 않는다.
+    expect(locomotionDirectionalSquashStretch({ x: 0, y: 0 }, { x: 200, y: 0 }, dt, 210, false))
+      .toEqual({ scaleX: 1, scaleY: 1 });
+  });
+
+  it("수평 이동에서는 기존 속도 스쿼시와 같은 배율이 나온다", () => {
+    const steady = locomotionDirectionalSquashStretch({ x: 210, y: 0 }, { x: 210, y: 0 }, dt, 210, false);
+    expect(steady.scaleX).toBeCloseTo(1.09, 6);
+    expect(steady.scaleY).toBeCloseTo(0.93, 6);
+  });
+
+  it("수직 이동에서는 늘어나는 축이 세로로 바뀐다", () => {
+    const steady = locomotionDirectionalSquashStretch({ x: 0, y: 210 }, { x: 0, y: 210 }, dt, 210, false);
+    expect(steady.scaleY).toBeCloseTo(1.09, 6);
+    expect(steady.scaleX).toBeCloseTo(0.93, 6);
+  });
+
+  it("대각 이동에서는 두 축에 방향 성분만큼 나눠 실린다", () => {
+    const diagonal = 210 / Math.SQRT2;
+    const steady = locomotionDirectionalSquashStretch(
+      { x: diagonal, y: diagonal }, { x: diagonal, y: diagonal }, dt, 210, false);
+    expect(steady.scaleX).toBeCloseTo(1.01, 6);
+    expect(steady.scaleY).toBeCloseTo(1.01, 6);
+  });
+
+  it("가속하면 이동 축으로 더 늘어나고 제동하면 눌린다", () => {
+    const accelerating = locomotionDirectionalSquashStretch({ x: 160, y: 0 }, { x: 60, y: 0 }, dt, 210, false);
+    const steady = locomotionDirectionalSquashStretch({ x: 160, y: 0 }, { x: 160, y: 0 }, dt, 210, false);
+    const braking = locomotionDirectionalSquashStretch({ x: 160, y: 0 }, { x: 210, y: 0 }, dt, 210, false);
+    expect(accelerating.scaleX).toBeGreaterThan(steady.scaleX);
+    expect(braking.scaleX).toBeLessThan(steady.scaleX);
+    // 수직 축은 부피 보존 방향으로 반대로 움직인다.
+    expect(accelerating.scaleY).toBeLessThan(steady.scaleY);
+    expect(braking.scaleY).toBeGreaterThan(steady.scaleY);
+  });
+
+  it("어떤 입력에서도 과변형 상한을 벗어나지 않는다", () => {
+    const cases = [
+      locomotionDirectionalSquashStretch({ x: 210, y: 0 }, { x: 0, y: 0 }, dt, 210, false),
+      locomotionDirectionalSquashStretch({ x: 0, y: 210 }, { x: 0, y: 0 }, dt, 210, false),
+      locomotionDirectionalSquashStretch({ x: 500, y: 500 }, { x: 0, y: 0 }, dt, 210, false),
+      locomotionDirectionalSquashStretch({ x: 100, y: 0 }, { x: 210, y: 0 }, dt, 210, false),
+    ];
+    for (const result of cases) {
+      expect(result.scaleX).toBeGreaterThanOrEqual(LOCOMOTION_SQUASH_SCALE_MIN);
+      expect(result.scaleX).toBeLessThanOrEqual(LOCOMOTION_SQUASH_SCALE_MAX);
+      expect(result.scaleY).toBeGreaterThanOrEqual(LOCOMOTION_SQUASH_SCALE_MIN);
+      expect(result.scaleY).toBeLessThanOrEqual(LOCOMOTION_SQUASH_SCALE_MAX);
+    }
+  });
+
+  it("reduced-motion에서는 방향·가감속과 무관하게 항상 1이다", () => {
+    expect(locomotionDirectionalSquashStretch({ x: 160, y: 0 }, { x: 60, y: 0 }, dt, 210, true))
+      .toEqual({ scaleX: 1, scaleY: 1 });
   });
 });
 

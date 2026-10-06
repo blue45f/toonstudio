@@ -72,6 +72,24 @@ export function studioGaitSquashScaleY(distance: number, stride: number, moving:
   return 1 - GAIT_SQUASH_DEPTH * contact;
 }
 
+/** 접지 스쿼시의 가로 반동 비율. 세로로 눌린 만큼의 60%를 가로로 돌려 부피가 보존되는 느낌을 준다. */
+const GAIT_SQUASH_LATERAL_REBOUND = 0.6;
+
+/**
+ * 접지 스쿼시 배율 쌍. 세로는 기존 곡선 그대로, 가로에는 부피 보존 반동을 더해
+ * 발이 닿는 순간 몸이 아래로만 꺼지지 않고 살짝 퍼지며 "착지"로 읽히게 한다.
+ * 정지·벽·모션 감소에서는 두 축 모두 1이다.
+ */
+export function studioGaitSquashScale(
+  distance: number,
+  stride: number,
+  moving: boolean,
+  reducedMotion: boolean,
+): { readonly scaleX: number; readonly scaleY: number } {
+  const scaleY = studioGaitSquashScaleY(distance, stride, moving, reducedMotion);
+  return { scaleX: 1 + (1 - scaleY) * GAIT_SQUASH_LATERAL_REBOUND, scaleY };
+}
+
 const IDLE_SWAY_AMPLITUDE_PX = 1.2;
 const IDLE_SWAY_PERIOD_MS = 5_900;
 

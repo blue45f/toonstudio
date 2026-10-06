@@ -187,6 +187,69 @@ export function locomotionSquashStretch(
   });
 }
 
+/** 방향성 스쿼시의 과변형 상한. 어떤 입력 조합에서도 이 범위를 벗어나지 않는다. */
+export const LOCOMOTION_SQUASH_SCALE_MIN = 0.9;
+export const LOCOMOTION_SQUASH_SCALE_MAX = 1.13;
+
+/** 가감속 항이 최대가 되는 가속도 기준 (maxSpeed/s 단위). 물리 가속(1600)·감속(2200)은 이 기준에서 포화한다. */
+const LOCOMOTION_ACCEL_REFERENCE_PER_SECOND = 4;
+
+/** 가감속 항의 진폭. 가속하면 이동 축으로 이만큼 더 늘어나고, 감속하면 그만큼 눌린다. */
+const LOCOMOTION_ACCEL_STRETCH = 0.035;
+
+function clampSquashScale(value: number): number {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(LOCOMOTION_SQUASH_SCALE_MAX, Math.max(LOCOMOTION_SQUASH_SCALE_MIN, value));
+}
+
+/**
+ * 방향성 스쿼시 & 스트레치 (절차 근사).
+ *
+ * `locomotionSquashStretch`가 속도 크기를 화면 X 고정으로 펼친 것과 달리, 이동
+ * 방향 축을 따라 늘리고 그 수직 축을 눌러 방향이 몸의 변형으로 읽히게 한다.
+ * 스프라이트를 회전시키지 않으므로 축 투영(방향 성분의 제곱 가중)의 근사다.
+ * 여기에 직전 프레임 대비 가감속 항을 같은 축에 더한다: 가속하면 이동 축으로
+ * 더 늘어나고, 제동하면 눌린다. 가감속 항은 저속에서 가중이 빠져 정지하면
+ * 변형이 정확히 0(배율 1)으로 수렴한다. 진폭은 기존 속도 스쿼시의 연장선에서
+ * 절제하고, 최종 배율은 과변형 상한으로 클램프한다.
+ */
+export function locomotionDirectionalSquashStretch(
+  velocity: StudioVirtualSpacePoint,
+  previousVelocity: StudioVirtualSpacePoint,
+  deltaSeconds: number,
+  maxSpeed: number,
+  reducedMotion: boolean,
+): LocomotionSquashStretch {
+  if (reducedMotion || !(maxSpeed > 0)) return Object.freeze({ scaleX: 1, scaleY: 1 });
+  const vx = Number.isFinite(velocity.x) ? velocity.x : 0;
+  const vy = Number.isFinite(velocity.y) ? velocity.y : 0;
+  const speed = Math.hypot(vx, vy);
+  const previousSpeed = Math.hypot(
+    Number.isFinite(previousVelocity.x) ? previousVelocity.x : 0,
+    Number.isFinite(previousVelocity.y) ? previousVelocity.y : 0,
+  );
+  if (speed < 1 && previousSpeed < 1) return Object.freeze({ scaleX: 1, scaleY: 1 });
+  // 방향은 현재 속도를 우선하고, 거의 멈춘 프레임에서는 직전 속도의 방향을 쓴다.
+  const direction = speed >= 1 ? { x: vx, y: vy } : previousVelocity;
+  const directionLength = Math.hypot(direction.x, direction.y);
+  if (!(directionLength > 0)) return Object.freeze({ scaleX: 1, scaleY: 1 });
+  const ux = direction.x / directionLength;
+  const uy = direction.y / directionLength;
+  const weightX = ux * ux;
+  const weightY = uy * uy;
+  const eased = easeOutCubic(clampUnit(speed / maxSpeed));
+  const dt = Number.isFinite(deltaSeconds) ? deltaSeconds : 0;
+  const acceleration = dt > 0 ? (speed - previousSpeed) / dt : 0;
+  const accelRatio = Math.max(-1, Math.min(1, acceleration / (maxSpeed * LOCOMOTION_ACCEL_REFERENCE_PER_SECOND)))
+    * clampUnit(speed / LOCOMOTION_PRECISION_SPEED);
+  const along = 0.09 * eased + LOCOMOTION_ACCEL_STRETCH * accelRatio;
+  const perpendicular = -0.07 * eased - LOCOMOTION_ACCEL_STRETCH * 0.6 * accelRatio;
+  return Object.freeze({
+    scaleX: clampSquashScale(1 + along * weightX + perpendicular * weightY),
+    scaleY: clampSquashScale(1 + along * weightY + perpendicular * weightX),
+  });
+}
+
 /**
  * 충돌 반발 벡터를 계산한다.
  * 벽 법선(normal) 기준으로 속도를 반사하고 반발 계수를 곱한다.
