@@ -3,7 +3,7 @@ import { MarketBuiltinAssetPreview } from "./MarketBuiltinAssetPreview";
 
 import { MarketVerifiedAssetPreview } from "./MarketVerifiedAssetPreview";
 
-import { findStudioMarketplaceCc0Asset } from "@/domains/creator/studio-marketplace-cc0-catalog";
+import { findStudioMarketplaceCc0Asset } from "@/domains/creator/public/marketplace-asset-access";
 
 import type { RecipePreviewData } from "../models/market-preview";
 

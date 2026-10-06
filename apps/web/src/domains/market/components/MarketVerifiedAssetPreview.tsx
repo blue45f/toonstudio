@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { findStudioMarketplaceCc0Asset } from "@/domains/creator/studio-marketplace-cc0-catalog";
-import { findGeneratedStudio2dAsset } from "@/domains/creator/studio-2d-generated-backgrounds";
-import { studioCc0AssetUrl } from "@/domains/creator/studio-cc0-asset-delivery";
-
-import type { StudioCc0Asset } from "@/domains/creator/studio-cc0-asset-delivery";
+import {
+  findGeneratedStudio2dAsset,
+  findStudioMarketplaceCc0Asset,
+  studioCc0AssetUrl,
+  type StudioCc0Asset,
+} from "@/domains/creator/public/marketplace-asset-access";
 
 interface Preview {
   reference: string; src: string; download: string; name: string;
@@ -56,7 +57,7 @@ export function MarketVerifiedAssetPreview({ reference, compact = false }: {
       });
       return () => { current = false; };
     }
-    void import("@/domains/creator/studio-original-free-asset-packs").then(({ findStudioOriginalFreeAsset }) => {
+    void import("@/domains/creator/public/marketplace-asset-access").then(({ findStudioOriginalFreeAsset }) => {
       const asset = findStudioOriginalFreeAsset(normalizedReference);
       if (current && asset) setPreview({ reference, src: `data:image/svg+xml,${encodeURIComponent(asset.svg)}`,
         download: `data:image/svg+xml,${encodeURIComponent(asset.svg)}`, name: asset.name,

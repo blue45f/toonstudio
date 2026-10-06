@@ -1,5 +1,7 @@
-import { studioCc0AssetUrl } from "@/domains/creator/studio-cc0-asset-delivery";
-import { resolveStudioMarketplaceCc0Entry } from "@/domains/creator/studio-marketplace-cc0-assets";
+import {
+  resolveStudioMarketplaceCc0Entry,
+  studioCc0AssetUrl,
+} from "@/domains/creator/public/marketplace-asset-access";
 
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 

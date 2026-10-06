@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 
-import type { StudioMarketplaceAssetPreview } from "@/domains/creator/studio-marketplace-preview";
+import type { StudioMarketplaceAssetPreview } from "@/domains/creator/public/marketplace-asset-access";
 
 export function MarketBuiltinAssetPreview({ runtimeRef }: { readonly runtimeRef: string }) {
   const [resolved, setResolved] = useState<{ ref: string; preview: StudioMarketplaceAssetPreview | null } | null>(null);
   const [failedSource, setFailedSource] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    void import("@/domains/creator/studio-marketplace-preview").then(({ resolveStudioMarketplaceAssetPreview }) => {
+    void import("@/domains/creator/public/marketplace-asset-access").then(({ resolveStudioMarketplaceAssetPreview }) => {
       if (active) setResolved({ ref: runtimeRef, preview: resolveStudioMarketplaceAssetPreview(runtimeRef) });
     }).catch(() => {
       if (active) setResolved({ ref: runtimeRef, preview: null });
