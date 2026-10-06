@@ -16,10 +16,11 @@ describe("공통 학습 탐색", () => {
     const navigation = screen.getAllByRole("navigation", { name: "배우기 영역" });
     expect(navigation).toHaveLength(1);
     const menu = within(navigation[0]);
-    // 목적지는 기존 자체 내비가 보존하던 13곳 그대로다 — 지우지도, 드롭다운 뒤에 숨기지도 않는다.
+    // 목적지는 기존 자체 내비가 보존하던 13곳에 제작 레시피를 더한 14곳이다 —
+    // 지우지도, 드롭다운 뒤에 숨기지도 않는다(레시피 편입 사유는 LearnSectionShell 주석).
     expect(menu.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/learn", "/learn/resources", "/learn/classroom", "/learn/classes", "/learn#learning-paths",
-      "/learn/trace", "/learn/studio", "/learn/glossary", "/learn/process", "/learn/careers",
+      "/learn/trace", "/learn/recipes", "/learn/studio", "/learn/glossary", "/learn/process", "/learn/careers",
       "/learn/education", "/learn/records", "/research",
     ]);
     // 이름은 다른 표면의 정본과 맞춘다(클래스룸·교육 안내 등).

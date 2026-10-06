@@ -3,6 +3,7 @@ import {
   BookMarked,
   BookOpen,
   Briefcase,
+  FlaskConical,
   GraduationCap,
   History,
   LibraryBig,
@@ -45,8 +46,10 @@ interface LearnNavGroupSpec {
 /**
  * 학습 섹션 목적지 — 단일 지도(SITE_NAVIGATION_GROUPS)의 "배우기" 구간 아래 목적지들이다.
  * 이름은 다른 표면이 이미 쓰는 정본과 맞춘다: 클래스룸(사이트 헤더), 교육 안내·Studio 실습 과정
- * (사이트 디렉터리), 리서치 데스크(사이트 헤더). 목적지 자체는 기존 학습 내비가 보존하던
- * 13곳 그대로이며, 여기서 지우거나 늘리지 않는다.
+ * (사이트 디렉터리), 리서치 데스크(사이트 헤더). 목적지는 기존 학습 내비가 보존하던
+ * 13곳에 제작 레시피를 더한 14곳이다 — 레시피는 /learn 아래에 살면서도 LearnPage 밖
+ * 라우트로 렌더링돼 학습 영역에서 유일하게 섹션 내비가 없는 화면이었다(웨이브 5 재채점
+ * §7-2). 2026-10-07 셸 편입과 함께 목적지로 등록해 발견 동선과 현재 위치 표시를 맞춘다.
  */
 const NAV_GROUPS: readonly LearnNavGroupSpec[] = [
   {
@@ -65,6 +68,7 @@ const NAV_GROUPS: readonly LearnNavGroupSpec[] = [
     label: defineBilingualText("learnPageNavGroup", "practice", "실습·참고", "Practice & references"),
     items: [
       { id: "trace", path: "/learn/trace", icon: PenTool, label: defineBilingualText("learnPageNav", "trace", "따라 그리기", "Trace practice") },
+      { id: "recipes", path: "/learn/recipes", icon: FlaskConical, label: defineBilingualText("learnPageNav", "recipes", "제작 레시피", "Recipes") },
       { id: "studio", path: "/learn/studio", icon: Shapes, label: defineBilingualText("learnPageNav", "studio", "Studio 실습 과정", "Studio practice") },
       { id: "glossary", path: "/learn/glossary", icon: BookMarked, label: defineBilingualText("learnPageNav", "glossary", "용어 사전", "Glossary") },
       { id: "process", path: "/learn/process", icon: Workflow, label: defineBilingualText("learnPageNav", "process", "웹툰 제작 과정", "Webtoon production process") },
