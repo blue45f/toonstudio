@@ -23,6 +23,8 @@ const SCOPE = "domains.creator.resources.CatalogResearchPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 
 const platformName = (id: string): string => PLATFORM_LIST.find((platform) => platform.id === id)?.name ?? id;
+/** 플랫폼 정본(PLATFORM_LIST)이 가진 브랜드 색 — 카탈로그의 출처는 플랫폼이라, 소스 정체성은 이 색으로 읽힌다. */
+const platformColor = (id: string): string | undefined => PLATFORM_LIST.find((platform) => platform.id === id)?.color;
 const count = (value: number): string => value.toLocaleString("ko-KR");
 const collected = (value: string | null): string => value ? new Date(value).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) : tx("기록 없음");
 const BOX = "rounded-2xl border border-line bg-panel p-5 sm:p-6";
@@ -32,8 +34,8 @@ function Distribution({ title, rows, total, onSelect, platform = false, spectrum
     <p className="mt-2 text-xs leading-6 text-fg-3">{formatI18nTemplate(tx("현재 조건 {v0}편이 분모입니다. 중복 분류로 합계가 100%를 넘을 수 있습니다. 상위 8개 표시."), { v0: count(total) })}</p>
     {spectrum && top.length ? <div aria-hidden="true" className="mt-4 flex h-2.5 gap-px overflow-hidden rounded-full bg-raised">{top.map((row) => <span key={row.name} className="h-full shrink-0" style={{ width: `${row.share}%`, background: genreColor(row.name, 0.72) }} />)}</div> : null}
     <div className="mt-4 space-y-2">{top.map((row) => <button type="button" key={row.name} onClick={() => onSelect(row.name)} className="fx-press block min-h-14 w-full rounded-lg p-2 text-left hover:bg-raised focus-visible:outline-2 focus-visible:outline-accent">
-      <span className="flex justify-between gap-3 text-sm"><span>{platform ? platformName(row.name) : row.name}</span><span className="shrink-0 tabular-nums">{formatI18nTemplate(tx("{v0}편 · {v1}%"), { v0: count(row.count), v1: row.share.toFixed(1) })}</span></span>
-      <span aria-hidden="true" className="mt-2 block h-1.5 overflow-hidden rounded-full bg-raised"><span className={`block h-full rounded-full ${spectrum ? "" : "bg-accent"}`} style={{ width: `${row.share}%`, background: spectrum ? genreColor(row.name, 0.72) : undefined }} /></span></button>)}</div>
+      <span className="flex justify-between gap-3 text-sm"><span className="flex min-w-0 items-center gap-2">{platform && <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: platformColor(row.name) }} />}{platform ? platformName(row.name) : row.name}</span><span className="shrink-0 tabular-nums">{formatI18nTemplate(tx("{v0}편 · {v1}%"), { v0: count(row.count), v1: row.share.toFixed(1) })}</span></span>
+      <span aria-hidden="true" className="mt-2 block h-1.5 overflow-hidden rounded-full bg-raised"><span className={`block h-full rounded-full ${spectrum || platform ? "" : "bg-accent"}`} style={{ width: `${row.share}%`, background: spectrum ? genreColor(row.name, 0.72) : platform ? platformColor(row.name) : undefined }} /></span></button>)}</div>
     {!rows.length && <p className="mt-4 text-sm text-fg-2">{tx("이 조건에서 집계할 분류가 없습니다.")}</p>}</section>;
 }
 function WorkCover({ work }: { work: ResearchWork }) {
@@ -56,7 +58,7 @@ function WorkMetadata({ work }: { work: ResearchWork }) {
   return <dl className="mt-3 space-y-2 text-sm leading-6 text-fg-2"><div><dt className="inline text-fg-3">{tx("작가")} </dt><dd className="inline">{work.author || tx("미상")}</dd></div>
     <div><dt className="inline text-fg-3">{tx("형식·상태")} </dt><dd className="inline">{work.type === "webtoon" ? tx("웹툰") : tx("웹소설")} · {RESEARCH_STATUS_LABELS[work.status] ?? tx("상태 미상")} · {work.year ? formatI18nTemplate(tx("{v0}년 기록"), { v0: work.year }) : tx("연도 미상")}</dd></div>
     <div><dt className="inline text-fg-3">{tx("장르")} </dt><dd className="inline">{work.genres.join(" · ") || tx("미상")}</dd></div>
-    <div><dt className="inline text-fg-3">{tx("플랫폼")} </dt><dd className="inline">{work.platforms.map(platformName).join(" · ") || tx("미상")}</dd></div></dl>;
+    <div><dt className="inline text-fg-3">{tx("플랫폼")} </dt><dd className="inline">{work.platforms.length ? work.platforms.map((id, index) => <span key={`${id}-${index}`}>{index > 0 ? " · " : null}<span aria-hidden="true" className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle" style={{ background: platformColor(id) }} />{platformName(id)}</span>) : tx("미상")}</dd></div></dl>;
 }
 export function CatalogResearchPage() {
   useBilingualI18nRevision();

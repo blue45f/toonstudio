@@ -29,6 +29,18 @@ describe("catalog research user journeys", () => {
     expect(screen.getByText(/원본 전체 수집 기록/u).textContent).toContain("2026");
     expect(screen.getByRole("region", { name: "장르별 수록 분포" }).textContent).toContain("50.0%");
   });
+  it("marks platforms with their registered brand color in distribution and metadata", async () => {
+    page(); await screen.findByRole("heading", { name: "비교할 작품 찾기" });
+    // 플랫폼 분포: 이름 점과 막대가 플랫폼 정본의 브랜드 색(#00DC64)을 쓴다.
+    const region = screen.getByRole("region", { name: "플랫폼별 수록 분포" });
+    const colored = [...region.querySelectorAll("span")].filter((el) => getComputedStyle(el).backgroundColor === "rgb(0, 220, 100)");
+    expect(colored.length).toBeGreaterThanOrEqual(2);
+    // 작품 메타데이터의 플랫폼 이름 앞에도 같은 색 점이 붙는다.
+    const card = screen.getByRole("button", { name: "작품 00 비교 선택" }).closest("article");
+    const dot = [...(card?.querySelectorAll("span") ?? [])].find((el) => getComputedStyle(el).backgroundColor === "rgb(0, 220, 100)");
+    expect(dot).toBeTruthy();
+    expect(card?.textContent).toContain("네이버 웹툰");
+  });
   it("submits Korean searches without additional API calls and resets pagination", async () => {
     page("/research/catalog?page=2"); const input = await screen.findByRole("searchbox", { name: "작품명·작가·장르·태그 검색" });
     fireEvent.change(input, { target: { value: "작품 01" } }); fireEvent.submit(input.closest("form")!);
