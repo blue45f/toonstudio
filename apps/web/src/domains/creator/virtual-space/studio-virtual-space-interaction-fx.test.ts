@@ -27,6 +27,13 @@ const byId = (id: string) => {
   return found;
 };
 
+const defaultInteractions = studioWorldInteractions(DEFAULT_STUDIO_WORLD_MANIFEST);
+const defaultById = (id: string) => {
+  const found = defaultInteractions.find((interaction) => interaction.id === id);
+  if (!found) throw new Error(`missing ${id}`);
+  return found;
+};
+
 describe("월드 상호작용 종류·동사", () => {
   it("캠퍼스 상호작용을 id 규약으로 분류한다(고양이·카페·갤러리처럼 겹치는 단어 포함)", () => {
     const kinds = Object.fromEntries(campus.map((interaction) => [interaction.id, studioWorldInteractionKind(interaction)]));
@@ -390,5 +397,98 @@ describe("오브젝트 상태 전파 (웨이브 3)", () => {
       { objectId: counter.id, stateKey: "coffee:idle", stateChangedAt: 100 },
     ]);
     expect(runtime.objectStateKey(counter.id)).toBe("coffee:idle");
+  });
+});
+
+describe("상태 가구 고정물 (웨이브 4)", () => {
+  it("기본 월드의 문·조명·게시판·미디어가 고정물로 배치되고, 아닌 스테이션은 상태가 없다", () => {
+    const { runtime } = runtimeFor(defaultInteractions);
+    expect(runtime.objectStateKey("meeting-door")).toBe("door:closed");
+    expect(runtime.objectStateKey("review-door")).toBe("door:closed");
+    expect(runtime.objectStateKey("lobby-light")).toBe("light:off");
+    expect(runtime.objectStateKey("production-light")).toBe("light:off");
+    expect(runtime.objectStateKey("lobby-today-board")).toBe("bulletin:unread");
+    expect(runtime.objectStateKey("storyboard-wall")).toBe("media:closed");
+    expect(runtime.objectStateKey("production-control-board")).toBe("media:closed");
+    expect(runtime.objectStateKey("review-theater-monitor")).toBe("media:closed");
+    expect(runtime.objectStateKey("quality-control-console")).toBeNull();
+    expect(runtime.objectStateKey("creator-plaza-stage")).toBeNull();
+  });
+
+  it("문: X로 열면 전이가 전파되고 알림이 뜨며 프롬프트 동사가 바뀐다", () => {
+    const { runtime, events, changes } = runtimeFor(defaultInteractions);
+    const door = defaultById("meeting-door");
+    expect(runtime.promptLabel(door).ko).toBe("열기 · 회의실 문");
+    runtime.activate(door, { x: 1095, y: 824 }, 1_000, false);
+    expect(runtime.objectStateKey(door.id)).toBe("door:open");
+    expect(changes).toEqual([{ objectId: door.id, stateKey: "door:open", stateChangedAt: 1_000 }]);
+    expect(events.at(-1)?.titleKo).toBe("문을 열었어요.");
+    expect(runtime.promptLabel(door).ko).toBe("닫기 · 회의실 문");
+    expect(runtime.diagnostics).toContain("fixtures:1");
+    runtime.activate(door, { x: 1095, y: 824 }, 2_000, false);
+    expect(changes.at(-1)).toEqual({ objectId: door.id, stateKey: "door:closed", stateChangedAt: 2_000 });
+    expect(runtime.diagnostics).toContain("fixtures:0");
+  });
+
+  it("조명: 원격 적용은 부수효과 없이 켜진 상태를 맞추고, 정리하면 꺼진다", () => {
+    const { runtime, events, changes } = runtimeFor(defaultInteractions);
+    const light = defaultById("lobby-light");
+    expect(runtime.applyRemoteObjectState(light.id, "light:on", 500)).toBe(true);
+    expect(runtime.objectStateKey(light.id)).toBe("light:on");
+    expect(runtime.promptLabel(light).ko).toBe("끄기 · 로비 조명");
+    frame(runtime, 600, { x: 860, y: 900 });
+    expect(events).toEqual([]);
+    expect(changes).toEqual([]);
+    expect(runtime.diagnostics).toContain("fixtures:1");
+    runtime.clearRemoteObjectStates(700);
+    expect(runtime.objectStateKey(light.id)).toBe("light:off");
+    expect(runtime.promptLabel(light).ko).toBe("켜기 · 로비 조명");
+  });
+
+  it("종류와 맞지 않는 상태 가족은 고정물에 적용하지 않는다", () => {
+    const { runtime } = runtimeFor(defaultInteractions);
+    expect(runtime.applyRemoteObjectState("meeting-door", "coffee:brewing", 0)).toBe(false);
+    expect(runtime.applyRemoteObjectState("lobby-light", "door:open", 0)).toBe(false);
+    expect(runtime.objectStateKey("meeting-door")).toBe("door:closed");
+    expect(runtime.objectStateKey("lobby-light")).toBe("light:off");
+  });
+
+  it("게시판: 처음엔 새 공지 배지가 보이고, 읽으면 읽음 전이가 한 번만 전파된다", () => {
+    const { runtime, events, changes, texts } = runtimeFor(defaultInteractions);
+    const board = defaultById("lobby-today-board");
+    frame(runtime, 100, { x: 780, y: 920 });
+    expect(texts.some((text) => text.visible && text.text === "● 새 공지")).toBe(true);
+    runtime.activate(board, { x: 780, y: 920 }, 1_000, false);
+    expect(runtime.objectStateKey(board.id)).toBe("bulletin:read");
+    expect(changes).toEqual([{ objectId: board.id, stateKey: "bulletin:read", stateChangedAt: 1_000 }]);
+    expect(events.at(-1)?.titleKo).toBe("게시판을 읽었어요.");
+    // 읽음 배지는 읽은 직후 구간(반사 사양 900ms)에만 보인다.
+    frame(runtime, 1_200, { x: 780, y: 920 });
+    expect(texts.some((text) => text.visible && text.text === "● 읽음")).toBe(true);
+    frame(runtime, 2_500, { x: 780, y: 920 });
+    expect(texts.some((text) => text.visible && text.text === "● 읽음")).toBe(false);
+    // 다시 눌러도 멱등하다 — 전파·알림이 반복되지 않는다.
+    runtime.activate(board, { x: 780, y: 920 }, 3_000, false);
+    expect(changes).toHaveLength(1);
+  });
+
+  it("미디어 스크린: X로 열면 media:open이 전파되고 열림 배지가 붙는다", () => {
+    const { runtime, changes, texts } = runtimeFor(defaultInteractions);
+    const monitor = defaultById("review-theater-monitor");
+    expect(runtime.promptLabel(monitor).ko).toBe("열기 · 리뷰 시어터 모니터");
+    runtime.activate(monitor, { x: 815, y: 470 }, 100, false);
+    expect(changes).toEqual([{ objectId: monitor.id, stateKey: "media:open", stateChangedAt: 100 }]);
+    frame(runtime, 500, { x: 815, y: 470 });
+    expect(texts.some((text) => text.visible && text.text === "● 열림")).toBe(true);
+    expect(runtime.promptLabel(monitor).ko).toBe("닫기 · 리뷰 시어터 모니터");
+  });
+
+  it("상대가 연 문을 내가 닫으면 소유가 넘어오고 닫힘 전이가 전파된다", () => {
+    const { runtime, changes } = runtimeFor(defaultInteractions);
+    const door = defaultById("review-door");
+    expect(runtime.applyRemoteObjectState(door.id, "door:open", 0)).toBe(true);
+    runtime.activate(door, { x: 815, y: 540 }, 100, false);
+    expect(changes).toEqual([{ objectId: door.id, stateKey: "door:closed", stateChangedAt: 100 }]);
+    expect(runtime.objectStateKey(door.id)).toBe("door:closed");
   });
 });

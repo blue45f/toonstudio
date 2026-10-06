@@ -8,6 +8,9 @@
  *     카운터 가까이 있으면 바로 손에 컵이 들린다(멀리 있으면 카운터 위 컵이 빛나며 기다리고 "준비 완료" 배지가 붙는다).
  *     추출 진행·완성 맥동·배지 문구는 오브젝트 상태 반응 표(object-reaction)가 정한다.
  *   · 책상 = 의자. 앉으면 앉은 자세(캔버스가 seat를 읽는다)와 책상 조명이 켜지고, 움직이거나 다시 X면 일어선다.
+ *   · 문·조명·게시판·미디어 보드/스크린 = 고정물(fixture). X로 토글하면 반응 표의 swing(문·미디어 열림)·
+ *     glow(조명)·sweep(게시판 읽음 반사)·배지로 그려지고, 로컬 전이는 커피와 같은 통지 경로로 피어에게 전파된다.
+ *     원격 적용은 부수효과 없이 상태만 맞춘다(웨이브 4 — 상태 가구 월드 배치).
  * - 일회성 발동 연출: 분수 동전(포물선 → 물보라·반짝임), 무대 꽃가루, 오락기 픽셀 폭죽, 갤러리 조명,
  *   보드 마커 선, 자료 책장, 촬영 플래시, 고양이 하트, 회의 고리, 안내 종소리 등.
  * - 무대 앞 발표 자리에 선 사람(나·동료)에게 스포트라이트와 "발표 중" 배지(모든 접속자가 같은 위치 규칙으로 본다).
@@ -27,14 +30,18 @@ import {
   activateInteractableRuntime,
   advanceInteractableRuntime,
   createInteractableRuntime,
+  interactableInitialState,
+  interactableStateNotice,
+  isInteractableStateKeyFor,
+  type StudioInteractableObjectKind,
   type StudioInteractableRuntime,
   type StudioInteractableStateKey,
 } from "./studio-virtual-space-interactable-objects";
-import { objectReactionFrame } from "./studio-virtual-space-object-reaction";
+import { objectReactionFrame, type StudioObjectReactionFrame } from "./studio-virtual-space-object-reaction";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import {
   studioWorldInsideStageApron,
-  studioWorldInteractableKind,
+  studioWorldInteractableKindForInteraction,
   studioWorldInteractionFxAnchor,
   studioWorldInteractionKind,
   studioWorldInteractionPromptLabel,
@@ -129,6 +136,15 @@ interface Machine {
   runtime: StudioInteractableRuntime;
 }
 
+/** 상태 가구 고정물(문·조명·게시판·미디어 보드/스크린). 커피 머신과 달리 시간 전이·수령 연출이 없고 상태 반응만 그린다. */
+interface Fixture {
+  readonly interaction: StudioWorldInteractionDefinition;
+  readonly kind: StudioInteractableObjectKind;
+  readonly anchor: StudioWorldFxAnchor;
+  readonly graphics: Phaser.GameObjects.Graphics;
+  runtime: StudioInteractableRuntime;
+}
+
 interface Badge {
   readonly text: Phaser.GameObjects.Text;
   label: string;
@@ -172,6 +188,9 @@ export class StudioInteractionFxRuntime {
   private readonly machines = new Map<string, Machine>();
   /** 전파로 적용된 머신(상대 소유). 완성돼도 내 손에 쥐지 않고 바리스타도 말하지 않는다. */
   private readonly remoteMachines = new Set<string>();
+  private readonly fixtures = new Map<string, Fixture>();
+  /** 전파로 적용된 고정물(상대 소유). 로컬 발동으로 토글하면 소유가 넘어온다. */
+  private readonly remoteFixtures = new Set<string>();
   private readonly chairs = new Map<string, StudioInteractableRuntime>();
   private readonly anchors = new Map<string, StudioWorldFxAnchor>();
   private readonly kinds = new Map<string, StudioWorldInteractionKind>();
@@ -211,11 +230,16 @@ export class StudioInteractionFxRuntime {
       this.kinds.set(interaction.id, kind);
       const anchor = studioWorldInteractionFxAnchor(interaction, options.objects);
       this.anchors.set(interaction.id, anchor);
-      if (studioWorldInteractableKind(kind) === "coffee-machine") {
+      const interactable = studioWorldInteractableKindForInteraction(interaction);
+      if (interactable === "coffee-machine") {
         const graphics = scene.add.graphics().setDepth(Math.round(anchor.baseY) + 1_004).setVisible(false);
         const cup = scene.add.image(anchor.x, anchor.y + 12, this.cupTexture).setOrigin(0.5, 1)
           .setDisplaySize(14, 14).setDepth(Math.round(anchor.baseY) + 1_005).setVisible(false);
         this.machines.set(interaction.id, { interaction, anchor, graphics, cup, runtime: createInteractableRuntime(interaction.id, "coffee-machine", 0) });
+      } else if (interactable && interactable !== "chair") {
+        // 의자는 앉기 자리(seat) 경로가 따로 있어 고정물로 만들지 않는다.
+        const graphics = scene.add.graphics().setDepth(Math.round(anchor.baseY) + 1_004).setVisible(false);
+        this.fixtures.set(interaction.id, { interaction, kind: interactable, anchor, graphics, runtime: createInteractableRuntime(interaction.id, interactable, 0) });
       }
     }
     this.aprons = studioWorldStageAprons(interactions);
@@ -236,6 +260,7 @@ export class StudioInteractionFxRuntime {
   /** 지금 상태에 맞는 프롬프트 라벨("주문하기 · 카페 카운터"). 상태가 바뀔 때만 새로 만든다. */
   promptLabel(interaction: StudioWorldInteractionDefinition): StudioWorldBilingualText {
     const state = this.machines.get(interaction.id)?.runtime.stateKey
+      ?? this.fixtures.get(interaction.id)?.runtime.stateKey
       ?? (this.seatInteraction?.id === interaction.id ? "chair:occupied" : null);
     const key = `${interaction.id}|${state ?? ""}`;
     let label = this.promptLabels.get(key);
@@ -270,44 +295,61 @@ export class StudioInteractionFxRuntime {
   /** 월드 자리에 앉아 있으면 그 자리(캔버스가 앉은 자세를 그린다). */
   get seat(): StudioInteractionFxSeat | null { return this.seatState; }
 
-  /** 오브젝트의 현재 상태 키. 머신이 없는 오브젝트면 null이다. */
+  /** 오브젝트의 현재 상태 키. 상태 가구가 아닌 오브젝트면 null이다. */
   objectStateKey(objectId: string): StudioInteractableStateKey | null {
-    return this.machines.get(objectId)?.runtime.stateKey ?? null;
+    return this.machines.get(objectId)?.runtime.stateKey
+      ?? this.fixtures.get(objectId)?.runtime.stateKey
+      ?? null;
   }
 
   /**
-   * 피어에게서 전파된 오브젝트 상태를 부수효과 없이 적용한다 (VS 120 웨이브 3).
+   * 피어에게서 전파된 오브젝트 상태를 부수효과 없이 적용한다 (VS 120 웨이브 3·4).
    * npcSay·notify·selfEmote·onObjectStateChange 어느 것도 부르지 않는다 — 적용이
    * 다시 전파되는 에코를 막기 위해서다. stateChangedAt은 수신 측 시계로 복원된
-   * 값이라 추출 진행(objectReactionFrame)이 처음부터 다시 시작되지 않는다.
+   * 값이라 반응 전이(objectReactionFrame)가 처음부터 다시 시작되지 않는다.
    * 적용한 머신은 원격 소유로 표시돼, 완성돼도 stepMachine이 내 손에 쥐지 않는다.
-   * 이 런타임이 다루지 않는 오브젝트(머신 없음)면 false를 돌려준다.
+   * 고정물(문·조명·게시판·미디어)은 종류와 맞지 않는 상태 가족을 적용하지 않는다.
+   * 이 런타임이 다루지 않는 오브젝트면 false를 돌려준다.
    */
   applyRemoteObjectState(objectId: string, stateKey: StudioInteractableStateKey, stateChangedAt: number): boolean {
+    if (!Number.isFinite(stateChangedAt)) return false;
     const machine = this.machines.get(objectId);
-    if (!machine || !Number.isFinite(stateChangedAt)) return false;
-    this.remoteMachines.add(objectId);
-    if (machine.runtime.stateKey !== stateKey) {
-      machine.runtime = Object.freeze({ ...machine.runtime, stateKey, stateChangedAt });
+    if (machine) {
+      this.remoteMachines.add(objectId);
+      if (machine.runtime.stateKey !== stateKey) {
+        machine.runtime = Object.freeze({ ...machine.runtime, stateKey, stateChangedAt });
+      }
+      return true;
+    }
+    const fixture = this.fixtures.get(objectId);
+    if (!fixture || !isInteractableStateKeyFor(fixture.kind, stateKey)) return false;
+    this.remoteFixtures.add(objectId);
+    if (fixture.runtime.stateKey !== stateKey) {
+      fixture.runtime = Object.freeze({ ...fixture.runtime, stateKey, stateChangedAt });
     }
     return true;
   }
 
-  /** 전파로 적용한 머신 상태를 전부 초기 상태로 되돌린다(공유 룸을 떠날 때 부른다). */
+  /** 전파로 적용한 머신·고정물 상태를 전부 초기 상태로 되돌린다(공유 룸을 떠날 때 부른다). */
   clearRemoteObjectStates(time: number): void {
     for (const objectId of this.remoteMachines) {
       const machine = this.machines.get(objectId);
       if (machine) machine.runtime = createInteractableRuntime(objectId, "coffee-machine", time);
     }
     this.remoteMachines.clear();
+    for (const objectId of this.remoteFixtures) {
+      const fixture = this.fixtures.get(objectId);
+      if (fixture) fixture.runtime = createInteractableRuntime(objectId, fixture.kind, time);
+    }
+    this.remoteFixtures.clear();
   }
 
-  /** 로컬 상태 전이를 전파 통지로 내보낸다. 원격 소유 머신에서는 부르지 않는다. */
-  private emitObjectState(machine: Machine): void {
+  /** 로컬 상태 전이를 전파 통지로 내보낸다. 원격 소유 오브젝트에서는 부르지 않는다. */
+  private emitObjectStateChange(objectId: string, runtime: StudioInteractableRuntime): void {
     this.callbacks.onObjectStateChange?.({
-      objectId: machine.interaction.id,
-      stateKey: machine.runtime.stateKey,
-      stateChangedAt: machine.runtime.stateChangedAt,
+      objectId,
+      stateKey: runtime.stateKey,
+      stateChangedAt: runtime.stateChangedAt,
     });
   }
 
@@ -317,6 +359,8 @@ export class StudioInteractionFxRuntime {
     const anchor = this.anchors.get(interaction.id) ?? studioWorldInteractionFxAnchor(interaction, this.options.objects);
     const machine = this.machines.get(interaction.id);
     if (machine) this.activateMachine(machine, time);
+    const fixture = this.fixtures.get(interaction.id);
+    if (fixture) this.activateFixture(fixture, time);
     if (kind === "desk") this.toggleSeat(interaction, time);
     if (kind === "stage" && !this.selfOnStage) {
       this.callbacks.notify({ kind: "toast", titleKo: "무대 앞 발표 자리로 가면 스포트라이트가 켜져요.",
@@ -382,6 +426,7 @@ export class StudioInteractionFxRuntime {
     const time = this.frameTime;
     if (selfMoving && this.seatState) this.standUp(time);
     for (const machine of this.machines.values()) this.stepMachine(machine, self, time);
+    for (const fixture of this.fixtures.values()) this.stepFixture(fixture, time);
     this.drawLamp(time);
     for (const burst of this.bursts) if (burst.active) this.drawBurst(burst, time);
     for (let index = this.cupsUsed; index < this.cups.length; index += 1) this.cups[index]!.setVisible(false);
@@ -394,9 +439,13 @@ export class StudioInteractionFxRuntime {
   get diagnostics(): string {
     let brewing = 0;
     for (const machine of this.machines.values()) if (machine.runtime.stateKey !== "coffee:idle") brewing += 1;
+    let fixtures = 0;
+    for (const fixture of this.fixtures.values()) {
+      if (fixture.runtime.stateKey !== interactableInitialState(fixture.kind)) fixtures += 1;
+    }
     let bursts = 0;
     for (const burst of this.bursts) if (burst.active) bursts += 1;
-    return `bursts:${bursts}|machines:${brewing}|seat:${this.seatInteraction?.id ?? ""}|cups:${this.cupsUsed}|stage:${this.presentersDrawn}`;
+    return `bursts:${bursts}|machines:${brewing}|seat:${this.seatInteraction?.id ?? ""}|cups:${this.cupsUsed}|stage:${this.presentersDrawn}|fixtures:${fixtures}`;
   }
 
   destroy(): void {
@@ -404,6 +453,8 @@ export class StudioInteractionFxRuntime {
     this.bursts.length = 0;
     for (const machine of this.machines.values()) { machine.graphics.destroy(); machine.cup.destroy(); }
     this.machines.clear();
+    for (const fixture of this.fixtures.values()) fixture.graphics.destroy();
+    this.fixtures.clear();
     for (const cup of this.cups) cup.destroy();
     this.cups.length = 0;
     for (const badge of this.badges) badge.text.destroy();
@@ -437,7 +488,7 @@ export class StudioInteractionFxRuntime {
     // (상대가 추출한 커피를 내가 가져가는 경우도 이 경로로 idle 전파가 나간다.)
     if (machine.runtime.stateKey !== before) {
       this.remoteMachines.delete(machine.interaction.id);
-      this.emitObjectState(machine);
+      this.emitObjectStateChange(machine.interaction.id, machine.runtime);
     }
   }
 
@@ -460,8 +511,114 @@ export class StudioInteractionFxRuntime {
       // 상대 화면에서 이미 일어난 일이다. 렌더(drawMachine)는 상태를 그대로 보여 준다.
     }
     // 로컬 머신의 시간 전이(추출 완성·자동 수령)도 피어에게 알린다.
-    if (!remote && machine.runtime.stateKey !== before) this.emitObjectState(machine);
+    if (!remote && machine.runtime.stateKey !== before) this.emitObjectStateChange(machine.interaction.id, machine.runtime);
     this.drawMachine(machine, time);
+  }
+
+  /**
+   * 고정물 발동: 상태를 토글하고, 실제로 바뀌면 소유를 가져와 전이를 전파하고
+   * 상태 머신의 알림 문구를 토스트로 보인다. 게시판 읽음처럼 멱등한 전이는
+   * 아무것도 내보내지 않는다(두 번 눌러도 전파·알림이 반복되지 않는다).
+   */
+  private activateFixture(fixture: Fixture, time: number): void {
+    const before = fixture.runtime.stateKey;
+    fixture.runtime = activateInteractableRuntime(advanceInteractableRuntime(fixture.runtime, time), time).runtime;
+    if (fixture.runtime.stateKey === before) return;
+    this.remoteFixtures.delete(fixture.interaction.id);
+    this.emitObjectStateChange(fixture.interaction.id, fixture.runtime);
+    const notice = interactableStateNotice(fixture.kind, fixture.runtime.stateKey);
+    this.callbacks.notify({ kind: "toast", titleKo: notice.ko, titleEn: notice.en, at: time, targetId: fixture.interaction.id });
+  }
+
+  private stepFixture(fixture: Fixture, time: number): void {
+    // 고정물 종류에는 시간 전이가 없어 advance는 형태만 맞춘다. 원격 소유 고정물도
+    // 같은 경로로 그린다 — 적용·그리기 모두 부수효과가 없어 대사·알림·재전파가 생기지 않는다.
+    fixture.runtime = advanceInteractableRuntime(fixture.runtime, time);
+    this.drawFixture(fixture, time);
+  }
+
+  /** 고정물의 상태 반응을 그린다. 모든 채널(swing·glow·sweep·pulse·배지)은 반응 표가 정한다. */
+  private drawFixture(fixture: Fixture, time: number): void {
+    const { graphics, anchor, runtime } = fixture;
+    if (!this.inView(anchor.x, anchor.y)) { graphics.setVisible(false); return; }
+    const frame = objectReactionFrame(runtime, time, this.reducedMotion);
+    graphics.clear().setVisible(true);
+    switch (fixture.kind) {
+      case "door": this.drawDoorFixture(fixture, frame.swing); break;
+      case "light-switch": this.drawLightFixture(fixture, frame.glow); break;
+      case "bulletin": this.drawBulletinFixture(fixture, frame); break;
+      default: this.drawMediaFixture(fixture, frame.swing); break;
+    }
+    // 상태 배지는 반응 표의 라벨을 배지 풀로 보인다. 게시판 "읽음"만은 읽은 직후
+    // 반사 구간(사양 전이 900ms)까지만 보인다 — 영구 배지로 남기면 공지판이 덮인다.
+    if (frame.label && !(runtime.stateKey === "bulletin:read" && time - runtime.stateChangedAt >= 900)) {
+      this.showBadge(anchor.x, anchor.y - 34, frame.label.ko, frame.label.en);
+    }
+  }
+
+  /** 문: 문틀 안에서 문짝이 힌지 쪽으로 접힌다(swing). 바닥에 열림 궤적을 남긴다. */
+  private drawDoorFixture(fixture: Fixture, swing: number): void {
+    const { graphics, anchor } = fixture;
+    const x = anchor.x;
+    const baseY = anchor.baseY;
+    const top = baseY - 58;
+    graphics.lineStyle(3, this.color(0x4a3826), 0.9).strokeRect(x - 21, top, 42, 58);
+    const width = 34 * (1 - swing * 0.78);
+    const drop = swing * 7;
+    graphics.fillStyle(this.color(0x9a6b45), 0.95).fillRect(x - 17, top + 4 + drop * 0.4, width, 50 - drop * 0.4);
+    graphics.fillStyle(this.color(0x6e4c2e), 0.9).fillCircle(x - 17 + width - 5, top + 30, 2.2);
+    if (swing > 0.02) {
+      graphics.lineStyle(1.5, this.color(0x9a6b45), 0.35 * swing).strokeEllipse(x - 17, baseY, 68, 16);
+    }
+  }
+
+  /** 조명: 켜지면 발밑에 따뜻한 빛 웅덩이가 차오른다(glow). 오브젝트 국소 효과이며 전면 워시가 아니다. */
+  private drawLightFixture(fixture: Fixture, glow: number): void {
+    const { graphics, anchor } = fixture;
+    const x = anchor.x;
+    const baseY = anchor.baseY;
+    if (glow > 0.01) {
+      graphics.fillStyle(this.color(COLORS.lamp), 0.26 * glow).fillEllipse(x, baseY + 6, 118 * glow, 34 * glow);
+      graphics.fillStyle(this.color(COLORS.lamp), 0.4 * glow).fillEllipse(x, baseY + 4, 62 * glow, 18 * glow);
+      graphics.fillStyle(this.color(0xfff6d8), 0.55 * glow).fillCircle(x, anchor.y - 4, 5 + 3 * glow);
+    }
+    // 전구 본체는 꺼져 있어도 희미하게 보인다.
+    graphics.fillStyle(this.color(0xfff6d8), 0.35 + 0.55 * glow).fillCircle(x, anchor.y - 4, 3);
+    graphics.lineStyle(2, this.color(0x8d93a6), 0.8).lineBetween(x, anchor.y - 16, x, anchor.y - 8);
+  }
+
+  /** 게시판: 종이 면과 공지 줄, 미읽음 주목 점(pulse), 읽은 직후 반사 띠(sweep). */
+  private drawBulletinFixture(fixture: Fixture, frame: StudioObjectReactionFrame): void {
+    const { graphics, anchor, runtime } = fixture;
+    const x = anchor.x;
+    const y = anchor.y;
+    const left = x - 29;
+    const top = y - 19;
+    graphics.fillStyle(this.color(COLORS.paper), 0.96).fillRect(left, top, 58, 38);
+    graphics.lineStyle(3, this.color(0x6b5136), 0.95).strokeRect(left, top, 58, 38);
+    graphics.fillStyle(this.color(0xb9c2d4), 0.8)
+      .fillRect(left + 8, top + 10, 42, 3).fillRect(left + 8, top + 18, 34, 3).fillRect(left + 8, top + 26, 38, 3);
+    graphics.fillStyle(this.color(COLORS.red), 0.9).fillCircle(x, top + 4, 2.4);
+    if (runtime.stateKey === "bulletin:unread") {
+      graphics.fillStyle(this.color(COLORS.red), 0.95).fillCircle(left + 50, top + 8, 2.4 + frame.pulse * 1.6);
+    } else if (frame.sweep >= 0) {
+      graphics.fillStyle(this.color(0xffffff), 0.35).fillRect(left + 3 + frame.sweep * 47, top + 3, 7, 32);
+    }
+  }
+
+  /** 미디어 보드/스크린: 닫혀 있으면 어두운 화면, 열리면 화면이 차오르고 내용 줄이 보인다(swing). */
+  private drawMediaFixture(fixture: Fixture, swing: number): void {
+    const { graphics, anchor } = fixture;
+    const x = anchor.x;
+    const y = anchor.y;
+    const left = x - 30;
+    const top = y - 18;
+    graphics.fillStyle(this.color(0x232936), 0.95).fillRect(left - 2, top - 2, 64, 40);
+    graphics.fillStyle(this.color(0x9fd8e8), 0.1 + 0.5 * swing).fillRect(left, top, 60, 36);
+    if (swing > 0.05) {
+      graphics.fillStyle(this.color(0xffffff), 0.45 * swing)
+        .fillRect(left + 7, top + 8, 30, 4).fillRect(left + 7, top + 17, 42, 4).fillRect(left + 7, top + 26, 24, 4);
+    }
   }
 
   private handCoffee(machine: Machine, time: number): void {
