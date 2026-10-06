@@ -6,6 +6,11 @@ import type { FortuneResult, FortuneTab } from "./FortunePage";
 // 운세 페이지 재방문 영속화 — 생년월일 등 입력을 기억해 재입력을 없애고,
 // 운세를 본 날짜를 모아 '연속 출석(스트릭)'을 계산하고, 최근 본 운세를 보관(재방문)한다.
 // localStorage 영속.
+//
+// 민감정보 정책 (LOW-2, 2026-10-06 확정): 생년월일·출생시간은 이 기기의 localStorage에만
+// 저장한다. 서버 프로필에는 저장하지 않으며, 사용자는 clearBirthProfile로 언제든
+// 저장된 생년월일 정보를 지울 수 있다. 지우면 생년월일이 필요한 운세 표면은
+// 재입력 동선으로 돌아간다.
 
 export interface SavedFortune {
   id: string;
@@ -32,6 +37,7 @@ interface FortuneStore extends FortuneProfile {
   history: SavedFortune[]; // 최근 본 운세(최신순, 최대 8개)
   bonusDates: string[]; // 스페셜 부적 카드를 연 KST 날짜(보상형 광고 보상 — 하루 1회 잠금해제)
   setProfile: (patch: Partial<FortuneProfile>) => void;
+  clearBirthProfile: () => void;
   recordView: () => void;
   recordBonusUnlock: () => void;
   addToHistory: (rec: Omit<SavedFortune, "id" | "dateLabel">) => void;
@@ -57,6 +63,16 @@ export const useFortuneStore = create<FortuneStore>()(
       history: [],
       bonusDates: [],
       setProfile: (patch) => set(patch),
+      // 저장된 생년월일 정보만 비운다 — 출석·기록·보너스 같은 이용 이력은
+      // 생년월일과 무관하므로 건드리지 않는다(기록 삭제는 clearHistory의 몫).
+      clearBirthProfile: () =>
+        set({
+          birthDate: "",
+          birthTime: "",
+          gender: "none",
+          partnerBirthDate: "",
+          partnerBirthTime: "",
+        }),
       recordView: () =>
         set((s) => {
           const today = todayKst();
