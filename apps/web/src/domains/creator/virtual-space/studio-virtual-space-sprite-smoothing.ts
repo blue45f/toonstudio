@@ -6,9 +6,11 @@
  * - 표시 위치 지수 감쇠: 물리 스텝(60Hz)·디렉터 보간이 렌더 프레임과 어긋날 때 생기는
  *   계단 이동과 정지·회전 끝의 "툭" 끊김을 둥글게 한다. 논리 좌표는 건드리지 않는다.
  * - 호흡 위상: NPC·피어가 각자 다른 위상으로 숨쉬도록 id 해시 기반 시드를 쓴다.
- * - 텍스처 크로스페이드 상태 머신: idle↔walk↔액션·표정 교체 시 100ms 알파 블렌드.
- *   걷기 게이트 프레임 진행·Phaser 애니메이션 연속 재생처럼 "연속 운동"인 교체는
- *   페이드하지 않는다 (페이드하면 오히려 다리가 겹쳐 보인다).
+ * - 텍스처 크로스페이드 상태 머신: idle↔walk↔액션·표정 교체 시 150ms 알파 블렌드.
+ *   Phaser 애니메이션 연속 재생처럼 "연속 운동"인 교체는 페이드하지 않는다
+ *   (페이드하면 오히려 다리가 겹쳐 보인다). 단, 수동 게이트 걷기의 프레임 진행은
+ *   직전 프레임 체류가 충분히 길 때만 짧은 근사 페이드를 건다 — 진짜 인비트위닝이
+ *   아니라 직전 프레임을 잠깐 겹쳐 프레임 전환의 팝을 누그러뜨리는 절차 근사다.
  *
  * 전부 순수 함수이고 프레임당 할당은 호출자 캐시 재사용으로 피한다.
  */
@@ -24,8 +26,21 @@ export const STUDIO_DISPLAY_DAMP_TAU_SECONDS = 0.05;
 /** 이 거리(px)보다 멀면 텔레포트·포털·좌석 강제 이동으로 보고 즉시 스냅한다. */
 export const STUDIO_DISPLAY_SNAP_DISTANCE_PX = 96;
 
-/** 상태 전환 크로스페이드 시간(ms). 80~120ms 구간 중앙값. */
-export const STUDIO_SPRITE_CROSSFADE_MS = 100;
+/**
+ * 상태 전환 크로스페이드 시간(ms).
+ * 걷기 한 프레임 체류(약 169ms @160px/s·보폭 108px)보다 살짝 짧게 잡아, 상태가
+ * 바뀐 뒤에도 이전 그림이 다음 걸음까지 겹쳐 남지 않게 한다.
+ */
+export const STUDIO_SPRITE_CROSSFADE_MS = 150;
+
+/**
+ * 걷기 프레임 근사 페이드를 거는 최소 직전 프레임 체류(ms).
+ * 이보다 빠르게 프레임이 도는 걷기(달리기 등)에서는 겹침이 상시화되므로 걸지 않는다.
+ */
+export const STUDIO_SPRITE_WALK_FRAME_FADE_MIN_DWELL_MS = 120;
+
+/** 걷기 프레임 근사 페이드 상한(ms). 실제 길이는 직전 체류의 40%를 넘지 않는다. */
+export const STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS = 56;
 
 /** 호흡 주기(ms). 로컬 호흡(초당 0.25바퀴)과 같은 리듬이다. */
 export const STUDIO_SMOOTHING_BREATH_PERIOD_MS = 4_000;
@@ -101,15 +116,19 @@ export interface StudioSpriteFade {
   readonly textureKey: string;
   readonly frame: string;
   readonly startedAt: number;
+  /** 이 페이드의 길이(ms). 상태 전이는 기본값, 걷기 프레임 근사 페이드는 짧게 잡는다. */
+  readonly durationMs: number;
 }
 
 export interface StudioSpriteCrossfadeState {
   readonly identity: StudioSpriteVisualIdentity | null;
   readonly fade: StudioSpriteFade | null;
+  /** 현재 정체성이 채택된 시각(ms). 걷기 프레임 체류 — 근사 페이드의 캡 계산에만 쓴다. */
+  readonly lastChangeAtMs: number | null;
 }
 
 export function createStudioSpriteCrossfadeState(): StudioSpriteCrossfadeState {
-  return { identity: null, fade: null };
+  return { identity: null, fade: null, lastChangeAtMs: null };
 }
 
 /**
@@ -129,8 +148,23 @@ function isContinuousSpriteMotion(previous: StudioSpriteVisualIdentity, next: St
 }
 
 /**
+ * 수동 게이트 걷기의 프레임 진행인지 판정: 같은 텍스처·같은 방향 클립에서
+ * 프레임만 바뀌는 교체. Phaser 애니메이션 재생(연속 운동)과 달리 프레임 사이가
+ * 통째로 비어 있어, 체류가 길 때 짧은 근사 페이드를 걸 여지가 있는 유일한 구간이다.
+ */
+function isWalkFrameProgression(previous: StudioSpriteVisualIdentity, next: StudioSpriteVisualIdentity): boolean {
+  if (previous.animated || next.animated) return false;
+  if (previous.textureKey !== next.textureKey) return false;
+  if (previous.state !== "walk" || next.state !== "walk") return false;
+  if ((previous.clipKey ?? "") !== (next.clipKey ?? "")) return false;
+  return previous.frame !== next.frame;
+}
+
+/**
  * 새 정체성을 받아 상태 전이를 계산한다. 페이드가 시작되면 `started`에 이전 그림이 담긴다.
  * 페이드 도중 다시 교체되면 방금까지의 본 그림을 새 페이드 원본으로 삼아 끊기지 않게 한다.
+ * 걷기 프레임 진행은 직전 프레임 체류가 최소값 이상일 때만, 체류의 40%·상한 캡으로
+ * 짧은 근사 페이드를 건다 (빠른 걷기에서는 겹침이 상시화되므로 걸지 않는다).
  */
 export function transitionStudioSpriteCrossfade(
   state: StudioSpriteCrossfadeState,
@@ -139,21 +173,36 @@ export function transitionStudioSpriteCrossfade(
   options: { readonly fadeMs?: number; readonly enabled?: boolean } = {},
 ): { readonly state: StudioSpriteCrossfadeState; readonly started: StudioSpriteFade | null } {
   const fadeMs = finiteOr(options.fadeMs ?? STUDIO_SPRITE_CROSSFADE_MS, STUDIO_SPRITE_CROSSFADE_MS);
+  const now = finiteOr(timeMs, 0);
   if (options.enabled === false || fadeMs <= 0) {
-    return { state: { identity: next, fade: null }, started: null };
+    return { state: { identity: next, fade: null, lastChangeAtMs: now }, started: null };
   }
   const previous = state.identity;
-  if (!previous) return { state: { identity: next, fade: null }, started: null };
+  if (!previous) return { state: { identity: next, fade: null, lastChangeAtMs: now }, started: null };
   if (previous.key === next.key) return { state, started: null };
+  if (isWalkFrameProgression(previous, next)) {
+    const dwellMs = state.lastChangeAtMs === null ? 0 : Math.max(0, now - state.lastChangeAtMs);
+    if (dwellMs >= STUDIO_SPRITE_WALK_FRAME_FADE_MIN_DWELL_MS) {
+      const started: StudioSpriteFade = {
+        textureKey: previous.textureKey,
+        frame: previous.frame,
+        startedAt: now,
+        durationMs: Math.min(STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS, dwellMs * 0.4),
+      };
+      return { state: { identity: next, fade: started, lastChangeAtMs: now }, started };
+    }
+    return { state: { identity: next, fade: state.fade, lastChangeAtMs: now }, started: null };
+  }
   if (isContinuousSpriteMotion(previous, next)) {
-    return { state: { identity: next, fade: state.fade }, started: null };
+    return { state: { identity: next, fade: state.fade, lastChangeAtMs: now }, started: null };
   }
   const started: StudioSpriteFade = {
     textureKey: previous.textureKey,
     frame: previous.frame,
-    startedAt: finiteOr(timeMs, 0),
+    startedAt: now,
+    durationMs: fadeMs,
   };
-  return { state: { identity: next, fade: started }, started };
+  return { state: { identity: next, fade: started, lastChangeAtMs: now }, started };
 }
 
 /** 페이드 스프라이트 알파: 1에서 시작해 완만하게 0으로. 페이드가 없으면 0. */
@@ -164,9 +213,10 @@ export function studioSpriteCrossfadeAlpha(
 ): number {
   const fade = state.fade;
   if (!fade) return 0;
-  const safeFadeMs = finiteOr(fadeMs, STUDIO_SPRITE_CROSSFADE_MS);
-  if (safeFadeMs <= 0) return 0;
-  const progress = Math.min(1, Math.max(0, (finiteOr(timeMs, 0) - fade.startedAt) / safeFadeMs));
+  // 페이드마다 길이가 다를 수 있어(상태 전이 vs 걷기 프레임 근사) 기록된 길이가 우선이다.
+  const durationMs = finiteOr(fade.durationMs, finiteOr(fadeMs, STUDIO_SPRITE_CROSSFADE_MS));
+  if (durationMs <= 0) return 0;
+  const progress = Math.min(1, Math.max(0, (finiteOr(timeMs, 0) - fade.startedAt) / durationMs));
   return Math.pow(1 - progress, 1.6);
 }
 
@@ -178,7 +228,7 @@ export function finishStudioSpriteCrossfade(
 ): StudioSpriteCrossfadeState {
   if (!state.fade) return state;
   return studioSpriteCrossfadeAlpha(state, timeMs, fadeMs) <= 0
-    ? { identity: state.identity, fade: null }
+    ? { identity: state.identity, fade: null, lastChangeAtMs: state.lastChangeAtMs }
     : state;
 }
 

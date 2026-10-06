@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { StudioCameraFollowModeController, studioAwayDozeMotion, studioBlinkScaleY, studioEffectiveGaitStride, studioGaitBodyOffset, studioGaitRockAngle, studioGaitShadowScale, studioGaitSquashScaleY, studioIdleSwayOffsetX, studioPlayerLocomotionProfile } from "./studio-virtual-space-locomotion-presentation";
+import { StudioCameraFollowModeController, studioAwayDozeMotion, studioBlinkScaleY, studioEffectiveGaitStride, studioGaitBodyOffset, studioGaitRockAngle, studioGaitShadowScale, studioGaitSquashScale, studioGaitSquashScaleY, studioIdleSwayOffsetX, studioPlayerLocomotionProfile } from "./studio-virtual-space-locomotion-presentation";
 import { DEFAULT_STUDIO_MOTION_CONFIG, stepStudioVirtualSpaceMotion } from "./studio-virtual-space-motion";
 import { STUDIO_VIRTUAL_SPACE_WALK_SPEED } from "./studio-virtual-space-navigation";
 import { studioGaitFrame } from "./studio-virtual-space-presentation";
@@ -179,6 +179,18 @@ describe("걸음 위상 동기 2차 모션", () => {
     expect(studioGaitSquashScaleY(0, 84, true, true)).toBe(1);
     expect(studioGaitRockAngle(Number.NaN, 84, true, false)).toBe(0);
     expect(studioGaitSquashScaleY(30, 0, true, false)).toBe(1);
+  });
+
+  it("접지 스쿼시 쌍은 세로 눌림의 60%를 가로 반동으로 돌려준다", () => {
+    const stride = 84;
+    const contact = studioGaitSquashScale(0, stride, true, false);
+    expect(contact.scaleY).toBeCloseTo(0.988, 10);
+    expect(contact.scaleX).toBeCloseTo(1 + 0.012 * 0.6, 10);
+    // 발이 떠오른 위상에서는 두 축 모두 원복한다.
+    expect(studioGaitSquashScale(stride / 4, stride, true, false)).toEqual({ scaleX: 1, scaleY: 1 });
+    // 정지·모션 감소에서는 두 축 모두 중립이다.
+    expect(studioGaitSquashScale(0, stride, false, false)).toEqual({ scaleX: 1, scaleY: 1 });
+    expect(studioGaitSquashScale(0, stride, true, true)).toEqual({ scaleX: 1, scaleY: 1 });
   });
 });
 
