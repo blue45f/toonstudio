@@ -61,4 +61,23 @@ describe("admin shell review regressions", () => {
       /--color-(canvas|panel|card|raised|line|line-strong|fg|fg-2|fg-3)\s*:/,
     );
   });
+
+  it("관리자 상태 색이 팔레트 클래스 대신 의미 토큰을 쓴다", () => {
+    // 상태(정상·경고·위험·정보)는 good/warn/bad/cool 토큰으로만 표현한다.
+    const componentFiles = [
+      "AdminSecurity.tsx",
+      "AdminHeaderStats.tsx",
+      "AdminPromos.tsx",
+      "AdminToast.tsx",
+      "AdminReports.tsx",
+      "AdminBusinessVerifications.tsx",
+    ];
+    for (const file of componentFiles) {
+      const source = readFileSync(
+        join(process.cwd(), "apps/web/src/domains/admin/components", file),
+        "utf8",
+      );
+      expect(source, file).not.toMatch(/(?:rose|emerald|amber|cyan)-\d{3}/);
+    }
+  });
 });

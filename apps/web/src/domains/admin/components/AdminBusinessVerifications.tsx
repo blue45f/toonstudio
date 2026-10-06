@@ -164,7 +164,7 @@ export function AdminBusinessVerifications() {
                   type="button"
                   disabled={updating === profile.userId}
                   onClick={() => void review(profile.userId, "verified")}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 text-sm font-bold disabled:opacity-60"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-good/40 bg-good/10 px-3 text-sm font-bold disabled:opacity-60"
                 >
                   <BadgeCheck size={15} aria-hidden="true" /> {t("admin.verifications.approve")}
                 </button>
