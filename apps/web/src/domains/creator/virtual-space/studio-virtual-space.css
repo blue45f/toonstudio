@@ -431,6 +431,9 @@
 .studio-vspace-customization-decor-preview{display:block;width:2.7rem;height:2.7rem;background-repeat:no-repeat}
 .studio-vspace-customization-placed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.3rem;margin-top:.45rem}
 .studio-vspace-customization-placed button{display:flex;align-items:center;justify-content:space-between;text-align:left}
+.studio-vspace-customization-catalog>button[aria-pressed="true"]{border-color:var(--color-accent);background:var(--color-accent-soft)}
+.studio-vspace-direct-placement{display:grid;gap:.3rem;margin-top:.45rem;padding:.45rem;border:1px dashed var(--vs2-line);border-radius:.5rem}
+.studio-vspace-direct-placement p{margin:0}
 @media(max-width:640px){.studio-vspace-customization-placed{grid-template-columns:1fr}}
 
 /* Living-production program: quests, events, bubbles, annotation and companion views. */

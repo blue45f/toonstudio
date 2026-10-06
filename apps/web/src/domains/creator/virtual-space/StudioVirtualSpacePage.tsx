@@ -231,6 +231,7 @@ import { useSpaceAttentionLoss } from "./hud/use-space-attention-loss";
 import { useSpaceConnectionStatus } from "./hud/use-space-connection-status";
 import { useSpaceDockClearance } from "./hud/use-space-dock-clearance";
 import { useSpaceDesktop } from "./hud/use-space-media-query";
+import { useSpaceBuildPlacement } from "./hud/use-space-build-placement";
 import { useSpacePreferences } from "./hud/use-space-preferences";
 import { useSpaceShortcuts } from "./hud/use-space-shortcuts";
 import { useSpacePrivateZoneNotice, useSpaceToasts } from "./hud/use-space-toasts";
@@ -244,6 +245,7 @@ import {
   createStudioVirtualSpaceInitialSnapshot,
   distanceBetween,
   initialPanel,
+  studioNearbyCards,
   SHARED_ACTIVITY_DISTANCE,
   SIDE_PANEL_ID,
   TALK_DISTANCE,
@@ -501,6 +503,7 @@ export function VirtualSpaceExperience({
   const modalSurfaceOpen = searchOpen
     || (!desktop && (panel !== null || (dockPopover !== null && dockPopover !== "react") || mapOpen || pendingInteraction !== null || dialogueNpc !== null));
   useEffect(() => { if (modalSurfaceOpen) engineBridge.clearMovement(); }, [modalSurfaceOpen, engineBridge]);
+  const buildPlacement = useSpaceBuildPlacement({ bridge: engineBridge, requests: placedFixtureRequests, onRequestsChange: selectPlacedFixtureRequests });
   useEffect(() => {
     const openSearch = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || event.altKey || !(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
@@ -1940,21 +1943,13 @@ export function VirtualSpaceExperience({
       <StudioVirtualSpaceCustomizationPanel artStyle={artStyle} key={decorationScope} world={worldManifest} nickname={nickname}
         character={characterCustomization} decorations={decorations} selfPoint={snapshot.self}
         tileEffects={tileEffects} onTileEffectsChange={changeTileEffects}
-        placedFixtureRequests={placedFixtureRequests} onPlacedFixtureRequests={selectPlacedFixtureRequests}
+        placedFixtureRequests={placedFixtureRequests} onPlacedFixtureRequests={selectPlacedFixtureRequests} directPlacement={buildPlacement.panel}
         onNickname={onNicknameChange} onCharacter={selectCharacterCustomization} onDecorations={selectDecorations}
         onSelectDistrict={(district) => selectEnvironmentPreference(studioDistrictEnvironment(district))} />
     </StudioVirtualSpacePanelGate> },
   ];
   const minimapPeople = useMemo(() => snapshot.peers.map((peer) => ({ id: peer.participant.sessionId, name: peer.participant.displayName, point: peer.state })), [snapshot.peers]);
-  const nearbyPeopleCards = personal ? [] : snapshot.nearbyPeers.map((peer) => ({
-    id: peer.participant.sessionId, name: peer.participant.displayName, activity: peer.state.activity, userStatus: peer.state.userStatus ?? null,
-    avatarIndex: peer.state.avatarIndex, appearance: peer.state.appearance,
-    inConversation: conversationMemberIds.includes(peer.participant.sessionId),
-  }));
-  const nearbyNpcCards = nearbyNpcs.map((npc) => ({
-    id: npc.id, labelKo: npc.labelKo, labelEn: npc.labelEn, activityKo: npc.activityKo, activityEn: npc.activityEn,
-    skinKey: npc.skinKey, canTalk: Boolean(npc.interaction),
-  }));
+  const { people: nearbyPeopleCards, npcs: nearbyNpcCards } = studioNearbyCards({ personal, snapshot, nearbyNpcs, conversationMemberIds });
   const dockMedia = {
     available: mediaAvailable, onOpen: openMedia,
     micOn: proximityLive && proximity.snapshot ? !proximity.snapshot.muted : false,
@@ -2033,7 +2028,7 @@ export function VirtualSpaceExperience({
           onSelfImpact={(vx, vy) => controllerRef.current?.sendImpact(vx, vy)}
           onObjectStateChange={(change) => controllerRef.current?.sendObjectState(change.objectId, change.stateKey, change.stateChangedAt)}
           tileEffects={tileEffects}
-          placedFixtures={placedFixtures}
+          placedFixtures={placedFixtures} onBuildPlacementEvent={buildPlacement.handleCanvasEvent}
           onTileEffectTrigger={handleTileEffectTrigger}
         /> : <div className="studio-vspace-engine-message" role="status">{worldLoadError
           ? bt("이 월드에는 안전하게 시작할 수 있는 바닥이 없습니다.", "This world has no safe floor where a player can start.")
