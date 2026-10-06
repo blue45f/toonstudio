@@ -11,6 +11,7 @@ import {
   apiKeyExpiryStatus,
   maskApiKey,
   summarizeAiKeyStatus,
+  summarizeHubConnections,
   validateApiKeyFormat,
 } from "./api-key-hub-model";
 
@@ -145,5 +146,28 @@ describe("summarizeAiKeyStatus", () => {
     expect(summary.coveredCapabilities).toEqual(["text"]);
     // 키 값이 요약에 포함되지 않는지 확인
     expect(JSON.stringify(summary)).not.toContain("sk-secret-value-9999");
+  });
+});
+
+describe("summarizeHubConnections", () => {
+  it("아무것도 연결되지 않으면 noneConfigured다", () => {
+    const summary = summarizeHubConnections({ ai: false, unsplash: false, resend: false, fal: false });
+    expect(summary.configuredCount).toBe(0);
+    expect(summary.totalCount).toBe(4);
+    expect(summary.noneConfigured).toBe(true);
+    expect(summary.allConfigured).toBe(false);
+  });
+
+  it("일부만 연결되면 개수를 센다", () => {
+    const summary = summarizeHubConnections({ ai: true, unsplash: false, resend: true, fal: false });
+    expect(summary.configuredCount).toBe(2);
+    expect(summary.noneConfigured).toBe(false);
+    expect(summary.allConfigured).toBe(false);
+  });
+
+  it("전부 연결되면 allConfigured다", () => {
+    const summary = summarizeHubConnections({ ai: true, unsplash: true, resend: true, fal: true });
+    expect(summary.configuredCount).toBe(4);
+    expect(summary.allConfigured).toBe(true);
   });
 });

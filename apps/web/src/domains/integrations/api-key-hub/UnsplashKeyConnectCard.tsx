@@ -111,7 +111,8 @@ export function UnsplashKeyConnectCard() {
 
   return (
     <article
-      className={`flex min-h-64 flex-col rounded-2xl border bg-card p-5 shadow-sm transition-colors ${
+      id="api-key-unsplash"
+      className={`flex min-h-64 scroll-mt-24 flex-col rounded-2xl border bg-card p-5 shadow-sm transition-colors ${
         justConnected ? "border-good/60" : "border-line"
       }`}
       aria-labelledby="unsplash-key-title"

@@ -73,6 +73,37 @@ export function apiKeyExpiryLabel(
   return ko ? `만료일 ${date}` : `Expires ${date}`;
 }
 
+/** 허브가 관리하는 연결 4종의 구성 여부 — 키 값은 절대 포함하지 않는다. */
+export interface ApiKeyHubConnectionStates {
+  readonly ai: boolean;
+  readonly unsplash: boolean;
+  readonly resend: boolean;
+  readonly fal: boolean;
+}
+
+export interface ApiKeyHubConnectionSummary {
+  /** 연결이 구성된 종류 수 */
+  readonly configuredCount: number;
+  /** 전체 종류 수 */
+  readonly totalCount: number;
+  readonly noneConfigured: boolean;
+  readonly allConfigured: boolean;
+}
+
+/** 허브 첫 화면 상태 요약 — 어떤 종류가 연결됐는지만 세고, 키 값은 다루지 않는다. */
+export function summarizeHubConnections(
+  states: ApiKeyHubConnectionStates,
+): ApiKeyHubConnectionSummary {
+  const flags = [states.ai, states.unsplash, states.resend, states.fal];
+  const configuredCount = flags.filter(Boolean).length;
+  return {
+    configuredCount,
+    totalCount: flags.length,
+    noneConfigured: configuredCount === 0,
+    allConfigured: configuredCount === flags.length,
+  };
+}
+
 export interface AiKeyHubSummary {
   /** 키가 등록된 연결 수 */
   configuredConnections: number;
