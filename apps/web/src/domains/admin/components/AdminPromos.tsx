@@ -208,7 +208,7 @@ export function AdminPromos({ userId }: AdminPromosProps) {
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                         item.isActive
-                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                          ? "bg-good/20 text-good border border-good/30"
                           : "bg-raised text-fg-3 border border-line-strong"
                       }`}
                     >
@@ -222,15 +222,15 @@ export function AdminPromos({ userId }: AdminPromosProps) {
                     {confirmingDeleteId === item.id ? (
                       <div
                         role="alert"
-                        className="flex items-center justify-end gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-2"
+                        className="flex items-center justify-end gap-2 rounded-xl border border-bad/30 bg-bad/10 p-2"
                       >
-                        <span className="text-xs text-rose-300">
+                        <span className="text-xs text-bad">
                           {t("admin.promos.confirmDelete")}
                         </span>
                         <button
                           onClick={() => void handleDelete(item.id)}
                           disabled={deleting}
-                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white font-medium rounded-lg text-xs transition-colors"
+                          className="px-3 py-1.5 bg-bad hover:bg-bad/90 disabled:opacity-60 text-white font-medium rounded-lg text-xs transition-colors"
                         >
                           {t("admin.promos.confirmDeleteButton")}
                         </button>
@@ -251,14 +251,14 @@ export function AdminPromos({ userId }: AdminPromosProps) {
                           className="p-2 text-fg-3 hover:text-fg rounded-lg hover:bg-raised transition-colors"
                         >
                           {item.isActive ? (
-                            <ToggleRight className="w-5 h-5 text-emerald-400" />
+                            <ToggleRight className="w-5 h-5 text-good" />
                           ) : (
                             <ToggleLeft className="w-5 h-5 text-fg-3" />
                           )}
                         </button>
                         <button
                           onClick={() => setConfirmingDeleteId(item.id)}
-                          className="p-2 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                          className="p-2 text-bad hover:bg-bad/10 rounded-lg transition-colors"
                           aria-label={t("admin.promos.confirmDelete")}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -274,7 +274,7 @@ export function AdminPromos({ userId }: AdminPromosProps) {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-canvas/80 backdrop-blur-md flex items-center justify-center p-4">
           <form
             onSubmit={(e) => void handleCreate(e)}
             className="bg-card border border-line p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl"
@@ -282,7 +282,7 @@ export function AdminPromos({ userId }: AdminPromosProps) {
             <h3 className="text-lg font-bold text-fg">{t("admin.promos.modalTitle")}</h3>
 
             {modalError && (
-              <div role="alert" className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-sm">
+              <div role="alert" className="p-4 bg-bad/10 border border-bad/20 text-bad rounded-xl text-sm">
                 {modalError}
               </div>
             )}

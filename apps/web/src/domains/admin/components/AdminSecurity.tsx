@@ -130,7 +130,7 @@ export function AdminSecurity({ userId }: AdminSecurityProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/60 border border-line p-6 rounded-2xl backdrop-blur-xl">
         <div>
           <h2 className="text-xl font-bold text-fg flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+            <ShieldCheck className="w-5 h-5 text-good" />
             {t("admin.security.title")}
           </h2>
           <p className="text-sm text-fg-3 mt-1">
@@ -141,9 +141,9 @@ export function AdminSecurity({ userId }: AdminSecurityProps) {
           <button
             onClick={() => setConfirmingRevoke(true)}
             disabled={revoking}
-            className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-bad/10 hover:bg-bad/20 text-bad border border-bad/30 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
           >
-            <Key className="w-4 h-4 text-rose-400" />
+            <Key className="w-4 h-4 text-bad" />
             {revoking ? t("admin.security.revoking") : t("admin.security.revokeSessions")}
           </button>
           <button
@@ -159,14 +159,14 @@ export function AdminSecurity({ userId }: AdminSecurityProps) {
       {confirmingRevoke && (
         <div
           role="alert"
-          className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm"
+          className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-warn/10 border border-warn/30 rounded-xl text-sm"
         >
-          <p className="flex-1 text-amber-200">{t("admin.security.confirmRevokeSessions")}</p>
+          <p className="flex-1 text-warn">{t("admin.security.confirmRevokeSessions")}</p>
           <div className="flex gap-2 shrink-0">
             <button
               onClick={() => void handleRevokeAllSessions()}
               disabled={revoking}
-              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white rounded-xl text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-bad hover:bg-bad/90 disabled:opacity-60 text-white rounded-xl text-sm font-medium transition-colors"
             >
               {revoking ? t("admin.security.revoking") : t("admin.security.confirmRevokeButton")}
             </button>
@@ -183,7 +183,7 @@ export function AdminSecurity({ userId }: AdminSecurityProps) {
       )}
 
       {notice && (
-        <div role="status" className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded-xl text-sm">
+        <div role="status" className="p-4 bg-good/10 border border-good/20 text-good rounded-xl text-sm">
           {notice}
         </div>
       )}
@@ -235,12 +235,12 @@ export function AdminSecurity({ userId }: AdminSecurityProps) {
               {ipRules.map((rule) => (
                 <tr key={rule.id} className="hover:bg-raised/30 transition-colors">
                   <td className="p-4 font-mono text-fg font-semibold flex items-center gap-2">
-                    <AlertOctagon className="w-4 h-4 text-rose-400" />
+                    <AlertOctagon className="w-4 h-4 text-bad" />
                     {rule.ipAddress}
                   </td>
                   <td className="p-4 text-fg-2">{rule.reason || "—"}</td>
                   <td className="p-4">
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-bad/20 text-bad border border-bad/30 uppercase">
                       {rule.action}
                     </span>
                   </td>
@@ -249,15 +249,15 @@ export function AdminSecurity({ userId }: AdminSecurityProps) {
                     {confirmingDeleteId === rule.id ? (
                       <div
                         role="alert"
-                        className="flex items-center justify-end gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-2"
+                        className="flex items-center justify-end gap-2 rounded-xl border border-bad/30 bg-bad/10 p-2"
                       >
-                        <span className="text-xs text-rose-300">
+                        <span className="text-xs text-bad">
                           {t("admin.security.confirmDeleteIp")}
                         </span>
                         <button
                           onClick={() => void handleDeleteIp(rule.id)}
                           disabled={deleting}
-                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white font-medium rounded-lg text-xs transition-colors"
+                          className="px-3 py-1.5 bg-bad hover:bg-bad/90 disabled:opacity-60 text-white font-medium rounded-lg text-xs transition-colors"
                         >
                           {t("admin.security.confirmDeleteIpButton")}
                         </button>
@@ -273,7 +273,7 @@ export function AdminSecurity({ userId }: AdminSecurityProps) {
                     ) : (
                       <button
                         onClick={() => setConfirmingDeleteId(rule.id)}
-                        className="p-2 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        className="p-2 text-bad hover:bg-bad/10 rounded-lg transition-colors"
                         title="Unblock"
                         aria-label={t("admin.security.confirmDeleteIp")}
                       >
@@ -296,7 +296,7 @@ export function AdminSecurity({ userId }: AdminSecurityProps) {
           >
             <h3 className="text-lg font-bold text-fg">{t("admin.security.modalTitle")}</h3>
             {modalError && (
-              <div role="alert" className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-sm">
+              <div role="alert" className="p-4 bg-bad/10 border border-bad/20 text-bad rounded-xl text-sm">
                 {modalError}
               </div>
             )}
@@ -334,7 +334,7 @@ export function AdminSecurity({ userId }: AdminSecurityProps) {
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-fg rounded-xl text-sm font-medium shadow-lg shadow-rose-600/20"
+                className="px-4 py-2 bg-bad hover:bg-bad/90 text-white rounded-xl text-sm font-medium shadow-lg shadow-bad/20"
               >
                 {submitting ? t("admin.announcements.submitting") : t("admin.security.submitAddIp")}
               </button>

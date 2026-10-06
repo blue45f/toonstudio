@@ -146,7 +146,7 @@ export function AdminAuditLogs({ userId }: AdminAuditLogsProps) {
       )}
 
       {selectedLog && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-canvas/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-card border border-line p-6 rounded-2xl w-full max-w-lg space-y-4 shadow-2xl relative">
             <button
               onClick={() => setSelectedLog(null)}

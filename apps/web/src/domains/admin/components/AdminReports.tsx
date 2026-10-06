@@ -328,7 +328,7 @@ export function AdminReports({ userId }: AdminReportsProps) {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-xl font-bold text-fg">
-              <Flag className="size-5 text-amber-400" />
+              <Flag className="size-5 text-warn" />
               {t("admin.reports.title")}
             </h2>
             <p className="mt-1 text-sm text-fg-3">
@@ -532,7 +532,7 @@ export function AdminReports({ userId }: AdminReportsProps) {
                       </p>
                       <div className="rounded-xl border border-line/80 bg-canvas/60 p-3 text-sm text-fg-2">
                         <p>
-                          <span className="font-semibold text-amber-400">
+                          <span className="font-semibold text-warn">
                             {t("admin.reports.reasonPrefix")}
                           </span>{" "}
                           {item.reason}
@@ -561,7 +561,7 @@ export function AdminReports({ userId }: AdminReportsProps) {
                                 className={cn(
                                   "rounded-lg border border-line bg-canvas p-3",
                                   message.id === messageEvidence.targetMessageId &&
-                                    "border-amber-500/50 bg-amber-500/5",
+                                    "border-warn/50 bg-warn/5",
                                 )}
                               >
                                 <div className="flex flex-wrap items-center gap-2 text-[0.68rem] text-fg-3">
@@ -569,7 +569,7 @@ export function AdminReports({ userId }: AdminReportsProps) {
                                   <span>{message.type}</span>
                                   <span>{formatDate(message.createdAt)}</span>
                                   {message.id === messageEvidence.targetMessageId ? (
-                                    <span className="font-semibold text-amber-400">신고 대상</span>
+                                    <span className="font-semibold text-warn">신고 대상</span>
                                   ) : null}
                                 </div>
                                 <p className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-fg-2">

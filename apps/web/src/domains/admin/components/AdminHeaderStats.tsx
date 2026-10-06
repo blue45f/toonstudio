@@ -68,7 +68,7 @@ export function AdminHeaderStats({ userId }: AdminHeaderStatsProps) {
   return (
     <div className="grid grid-cols-2 gap-3 rounded-2xl border border-line/80 bg-card/40 p-4 backdrop-blur-xl sm:grid-cols-5">
       <div className="flex items-center gap-3">
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-emerald-400">
+        <div className="rounded-xl border border-good/20 bg-good/10 p-2.5 text-good">
           <Activity className="size-4" />
         </div>
         <div>
@@ -79,8 +79,8 @@ export function AdminHeaderStats({ userId }: AdminHeaderStatsProps) {
             <span
               className={`size-2 rounded-full ${
                 health.status === "healthy"
-                  ? "animate-pulse bg-emerald-400"
-                  : "bg-rose-400"
+                  ? "animate-pulse bg-good"
+                  : "bg-bad"
               }`}
             />
             {health.status === "healthy"
@@ -94,7 +94,7 @@ export function AdminHeaderStats({ userId }: AdminHeaderStatsProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-2.5 text-cyan-400">
+        <div className="rounded-xl border border-cool/20 bg-cool/10 p-2.5 text-cool">
           <Radio className="size-4" />
         </div>
         <div>
@@ -125,7 +125,7 @@ export function AdminHeaderStats({ userId }: AdminHeaderStatsProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-2.5 text-cyan-400">
+        <div className="rounded-xl border border-cool/20 bg-cool/10 p-2.5 text-cool">
           <Flag className="size-4" />
         </div>
         <div>
@@ -140,7 +140,7 @@ export function AdminHeaderStats({ userId }: AdminHeaderStatsProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-2.5 text-amber-400">
+        <div className="rounded-xl border border-warn/20 bg-warn/10 p-2.5 text-warn">
           <ShieldAlert className="size-4" />
         </div>
         <div>
@@ -149,7 +149,7 @@ export function AdminHeaderStats({ userId }: AdminHeaderStatsProps) {
           </p>
           <p className="pt-0.5 text-xs font-bold text-fg">
             {health.maintenance.enabled ? (
-              <span className="font-bold text-rose-400">
+              <span className="font-bold text-bad">
                 {t("admin.stats.maintenanceOn")}
               </span>
             ) : (
