@@ -54,6 +54,10 @@ export interface OAuthUser {
   image: string | null;
   role: string;
   sessionVersion?: number | null;
+  // 이 호출에서 새 계정이 실제로 생성된 경우에만 true. 가입 확정 후처리(웰컴
+  // 마일스톤 등)가 기존 가입자에게 소급 실행되지 않도록 하는 내부 신호이며
+  // 클라이언트 응답(authResponseUser)에는 포함되지 않는다.
+  isNewAccount?: boolean;
 }
 
 export class GoogleAuthConfigurationError extends Error {
@@ -973,7 +977,7 @@ async function upsertOAuthUser(
     eq(accounts.providerAccountId, profile.providerAccountId),
   );
 
-  const userId = await db.transaction(async (transaction) => {
+  const { userId, isNewAccount } = await db.transaction(async (transaction) => {
     const findLinkedUserId = async (): Promise<string | null> => {
       const [linked] = await transaction
         .select({ userId: accounts.userId })
@@ -984,7 +988,9 @@ async function upsertOAuthUser(
     };
 
     const alreadyLinkedUserId = await findLinkedUserId();
-    if (alreadyLinkedUserId) return alreadyLinkedUserId;
+    if (alreadyLinkedUserId) {
+      return { userId: alreadyLinkedUserId, isNewAccount: false };
+    }
 
     if (trustedEmail) {
       const [existingEmailOwner] = await transaction
@@ -998,7 +1004,9 @@ async function upsertOAuthUser(
         // provider identity may win automatically; unrelated accounts must link
         // from an already authenticated session.
         const racedLinkedUserId = await findLinkedUserId();
-        if (racedLinkedUserId) return racedLinkedUserId;
+        if (racedLinkedUserId) {
+          return { userId: racedLinkedUserId, isNewAccount: false };
+        }
         throw new OAuthAccountLinkRequiredError(id);
       }
     }
@@ -1021,7 +1029,9 @@ async function upsertOAuthUser(
     let accountOwnerCandidateId = insertedUser?.id ?? null;
     if (!accountOwnerCandidateId) {
       const racedLinkedUserId = await findLinkedUserId();
-      if (racedLinkedUserId) return racedLinkedUserId;
+      if (racedLinkedUserId) {
+        return { userId: racedLinkedUserId, isNewAccount: false };
+      }
       if (trustedEmail) throw new OAuthAccountLinkRequiredError(id);
 
       // Provider-scoped placeholder addresses are deterministic and cannot be
@@ -1058,7 +1068,14 @@ async function upsertOAuthUser(
     if (insertedUser && authoritativeUserId !== insertedUser.id) {
       await transaction.delete(users).where(eq(users.id, insertedUser.id));
     }
-    return authoritativeUserId;
+    return {
+      userId: authoritativeUserId,
+      // 삽입한 사용자 행이 그대로 계정 소유자가 된 경우에만 신규 가입으로 본다.
+      // 경합 복구로 기존 행을 재사용한 경우는 신규가 아니다.
+      isNewAccount: Boolean(
+        insertedUser && authoritativeUserId === insertedUser.id,
+      ),
+    };
   });
 
   // 레거시 구현이 저장했던 공급자 토큰도 해당 계정의 다음 로그인에서 제거한다.
@@ -1090,6 +1107,7 @@ async function upsertOAuthUser(
     image: user?.image ?? profile.image ?? null,
     role,
     sessionVersion: normalizeSessionVersion(user?.sessionVersion),
+    ...(isNewAccount ? { isNewAccount: true } : {}),
   };
 }
 

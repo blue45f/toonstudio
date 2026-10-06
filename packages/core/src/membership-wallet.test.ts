@@ -7,6 +7,7 @@ import {
   highestMembershipPlan,
   MEMBERSHIP_ECONOMY_POLICY,
   membershipPolicy,
+  REWARD_MILESTONES,
 } from "./membership-wallet";
 
 describe("membership wallet policy", () => {
@@ -24,6 +25,19 @@ describe("membership wallet policy", () => {
     expect(MEMBERSHIP_ECONOMY_POLICY.pointExpiryDays).toBe(365);
     expect(ACTIVITY_POINT_POLICIES["creator.work.published"].points).toBe(100);
     expect(ACTIVITY_POINT_POLICIES["community.comment.created"].dailyGrantLimit).toBe(10);
+  });
+
+  it("grants the welcome milestone once at 100P, below the first-public-work milestone", () => {
+    expect(REWARD_MILESTONES.welcome).toEqual({
+      points: 100,
+      label: "신규 가입 웰컴",
+    });
+    expect(REWARD_MILESTONES.welcome.points).toBe(
+      REWARD_MILESTONES["profile-complete"].points,
+    );
+    expect(REWARD_MILESTONES.welcome.points).toBeLessThan(
+      REWARD_MILESTONES["first-public-work"].points,
+    );
   });
 
   it("derives creator level from verified, published and activity signals", () => {

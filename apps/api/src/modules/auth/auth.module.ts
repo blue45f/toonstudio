@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { MembershipWalletModule } from "../membership-wallet/membership-wallet.module";
 import { StudioRealtimeRevocationModule } from "../../platform/adapters/studio-realtime-revocation/studio-realtime-revocation.module";
 import { UpstashCoordinationModule } from "../../platform/adapters/upstash-coordination/upstash-coordination.module";
 import { UPSTASH_COORDINATION_PORT } from "../../platform/adapters/upstash-coordination/upstash-coordination.port";
@@ -26,6 +27,7 @@ const upstashCoordinationModule = authRateLimitConfig.distributed
 
 @Module({
   imports: [
+    MembershipWalletModule,
     StudioRealtimeRevocationModule,
     ...(upstashCoordinationModule ? [upstashCoordinationModule] : []),
   ],

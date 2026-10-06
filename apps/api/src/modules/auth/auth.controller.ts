@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Inject,
   Logger,
+  Optional,
   Param,
   Post,
   Query,
@@ -116,6 +117,11 @@ import {
   resolveSessionCookieOptions,
 } from "../../session-cookie";
 
+import {
+  MEMBERSHIP_REWARD_SERVICE,
+  type MembershipRewardService,
+} from "../membership-wallet/membership-wallet.tokens";
+
 import { AuthClientIpPolicy, resolveAuthClientIp } from "./auth-client-ip";
 import { isAllowedAuthRequestOrigin } from "./auth-origin";
 import {
@@ -182,6 +188,9 @@ export class AuthController {
     @Inject(StudioRealtimeRevocationService)
     private readonly realtimeRevocation: StudioRealtimeRevocationService =
       new StudioRealtimeRevocationService({ enabled: false }),
+    @Optional()
+    @Inject(MEMBERSHIP_REWARD_SERVICE)
+    private readonly membershipWallet?: MembershipRewardService,
   ) {
     if (rateLimitConfig.distributed && !coordination) {
       throw new AuthRateLimitDependencyError();
@@ -189,6 +198,21 @@ export class AuthController {
     this.rateLimitDistributed = rateLimitConfig.distributed;
     this.clientIpPolicy = clientIpPolicy;
     this.coordination = coordination;
+  }
+
+  // 가입 확정에 붙는 웰컴 마일스톤 후처리. 가입·인증 자체가 권위 있는 동작이므로
+  // 리워드 회계가 불가해도 실패를 삼키고 원래 동작을 롤백하지 않는다.
+  private async grantWelcomeMilestone(userId: string): Promise<void> {
+    if (!this.membershipWallet) return;
+    try {
+      await this.membershipWallet.grantRewardMilestone(
+        userId,
+        "welcome",
+        userId,
+      );
+    } catch {
+      // Welcome rewards remain best-effort when reward accounting is unavailable.
+    }
   }
 
   private assertAuthEmailDeliveryConfigured(): void {
@@ -491,6 +515,9 @@ export class AuthController {
         normalizeSessionVersion(user.sessionVersion),
       );
       applyAuthSessionCookie(res, token);
+      if (!linkToUserId && user.isNewAccount) {
+        await this.grantWelcomeMilestone(user.id);
+      }
       return linkToUserId
         ? res.redirect(`${web}/auth/callback#linked=${provider}`)
         : res.redirect(`${web}/auth/callback#session=1`);
@@ -591,6 +618,9 @@ export class AuthController {
     }
     const token = signSession(user.id, normalizeSessionVersion(user.sessionVersion));
     applyAuthSessionCookie(response, token);
+    if (user.isNewAccount) {
+      await this.grantWelcomeMilestone(user.id);
+    }
     return {
       ok: true,
       user: authResponseUser(user),
@@ -894,6 +924,9 @@ export class AuthController {
     }
     invalidateSessionUser(verifiedUserId);
     this.logger.log({ event: "auth.email.verified" });
+    // 이메일 인증 완료가 이메일 가입의 확정 시점이다. 인증 토큰은 가입 흐름에서만
+    // 발급되므로 기존 가입자에게 소급 지급되지 않는다.
+    await this.grantWelcomeMilestone(verifiedUserId);
     return { ok: true };
   }
 
