@@ -5,7 +5,7 @@
  * 미리보기를 보여주고, 슬라이더(톤 농도/선 굵기/선 임계값)로 조절한 뒤
  * 적용하면 두 레이어의 `ImageData`를 `onApply`로 전달한다.
  * 레이어 문서에 실제로 커밋하는 것은 호출 측(레이어 API 경계)의 몫이다.
- * (`studio-lt-convert-layer.ts`의 TODO 참고)
+ * (연동 페이로드 규격은 `studio-lt-convert-layer.ts` 참고)
  */
 import { ImagePlus, X } from "lucide-react";
 import {
