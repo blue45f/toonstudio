@@ -61,7 +61,11 @@ describe("공통 학습 탐색", () => {
     trace.unmount();
 
     render(<MemoryRouter initialEntries={["/learn/process"]}><LearnPage /></MemoryRouter>);
-    expect(screen.getByRole("region", { name: "내 학습 진행" })).toBeTruthy();
+    const processStrip = screen.getByRole("region", { name: "내 학습 진행" });
+    expect(processStrip).toBeTruthy();
+    // 레퍼런스 화면에서는 진행 스트립이 히어로보다 아래에 있어 첫 화면을 차지하지 않는다.
+    const heroTitle = screen.getByRole("heading", { name: "기획부터 계약·제작·연재 운영까지" });
+    expect(heroTitle.compareDocumentPosition(processStrip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     cleanup();
 
     render(<MemoryRouter initialEntries={["/learn"]}><LearnPage /></MemoryRouter>);

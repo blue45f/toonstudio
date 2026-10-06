@@ -1,5 +1,4 @@
 import {
-  translateCurrentStaticSourceText,
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
@@ -11,7 +10,6 @@ import {
   FolderKanban,
   GraduationCap,
   LayoutGrid,
-  Map as MapIcon,
   Menu,
   MessageSquareText,
   Mountain,
@@ -143,7 +141,6 @@ interface HeaderNavigationChild {
 interface HeaderPrimaryNavigationItem {
   id: string;
   href: string;
-  icon: LucideIcon;
   label: SiteNavigationText;
   description: SiteNavigationText;
   exact?: boolean;
@@ -160,7 +157,6 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   {
     id: "studio",
     href: SITE_NAVIGATION_ITEMS.studio.href,
-    icon: SITE_NAVIGATION_ITEMS.studio.icon,
     label: { ko: "제작", en: "Studio" },
     description: SITE_NAVIGATION_ITEMS.studio.description,
     children: [
@@ -205,7 +201,6 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   {
     id: "virtual-studio",
     href: "/studio/space",
-    icon: MapIcon,
     label: { ko: "가상 스튜디오", en: "Virtual studio" },
     description: {
       ko: "내 캐릭터로 걷고 만나고 함께 작업하는 공간",
@@ -215,7 +210,6 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   {
     id: "collaborate",
     href: SITE_NAVIGATION_ITEMS.production.href,
-    icon: FolderKanban,
     label: { ko: "협업", en: "Collaborate" },
     description: {
       ko: "작품·회차·공정·원고 피드백을 팀과 함께",
@@ -248,7 +242,6 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   {
     id: "explore",
     href: SITE_NAVIGATION_ITEMS.explore.href,
-    icon: SITE_NAVIGATION_ITEMS.explore.icon,
     label: { ko: "탐색", en: "Discover" },
     description: SITE_NAVIGATION_ITEMS.explore.description,
     children: [
@@ -287,14 +280,12 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   {
     id: "community",
     href: SITE_NAVIGATION_ITEMS.community.href,
-    icon: SITE_NAVIGATION_ITEMS.community.icon,
     label: { ko: "커뮤니티", en: "Community" },
     description: SITE_NAVIGATION_ITEMS.community.description,
   },
   {
     id: "learn",
     href: SITE_NAVIGATION_ITEMS.learn.href,
-    icon: SITE_NAVIGATION_ITEMS.learn.icon,
     label: { ko: "배우기", en: "Learn" },
     description: SITE_NAVIGATION_ITEMS.learn.description,
     children: [
@@ -333,7 +324,6 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   {
     id: "market",
     href: SITE_NAVIGATION_ITEMS.market.href,
-    icon: SITE_NAVIGATION_ITEMS.market.icon,
     label: { ko: "마켓", en: "Market" },
     description: SITE_NAVIGATION_ITEMS.market.description,
   },
@@ -479,7 +469,8 @@ function MobileNavigationFallback() {
 
 /** One top-level header destination, with an optional hover/focus dropdown.
  * The panel opens on pointer hover and on keyboard focus-within; it is
- * `visibility: hidden` otherwise so its links stay out of the tab order. */
+ * `visibility: hidden` otherwise so its links stay out of the tab order.
+ * 1차 표시는 시안처럼 글자 링크만 둔다(목적지·드롭다운은 그대로, 아이콘은 패널 안에서만). */
 function HeaderPrimaryNavigationEntry({
   item,
   locale,
@@ -496,7 +487,6 @@ function HeaderPrimaryNavigationEntry({
   const activeChild = highlighted
     ? item.children?.find((child) => isActive(child.href, child.exact))
     : undefined;
-  const Icon = item.icon;
   const label = siteNavigationText(item.label, locale);
 
   const link = (
@@ -508,15 +498,6 @@ function HeaderPrimaryNavigationEntry({
       data-navigation-entry={item.id}
       className="site-header__primary-link group"
     >
-      <Icon
-        size={15}
-        strokeWidth={highlighted ? 2.35 : 1.9}
-        aria-hidden="true"
-        className={cx(
-          "shrink-0 transition-transform",
-          highlighted ? "text-accent" : "text-fg-3 group-hover:text-accent"
-        )}
-      />
       <span>{label}</span>
       {item.children ? (
         <ChevronDown
@@ -678,16 +659,6 @@ export function SiteHeader() {
               <span className="flex items-center gap-1.5">
                 <span className="truncate font-display text-[1.05rem] font-bold tracking-[-0.02em] text-fg transition-colors group-hover:text-accent sm:text-lg">
                   <ToonStudioWordmark />
-                </span>
-                <span
-                  className="site-header__beta hidden rounded border border-accent/35 bg-accent-soft px-1 py-0.5 font-display text-[0.6rem] font-bold uppercase leading-none tracking-[0.08em] text-accent min-[480px]:inline"
-                  title={t("app.brandBeta")}
-                >
-                  {translateCurrentStaticSourceText(
-                    "shared.components.site.header",
-                    "en",
-                    "BETA"
-                  )}
                 </span>
               </span>
               <span className="site-header__tagline">

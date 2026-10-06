@@ -168,13 +168,18 @@ export function LearnPage() {
   const showArtBanner =
     normalizedPath === "/learn/resources" ||
     referencePage !== null;
+  // 레퍼런스 화면(제작 과정·진로·교육기관)은 자체 히어로가 첫 화면의 주인공이다.
+  // 진행 스트립을 히어로 위에 얹으면 안내 바·탭·배너와 겹쳐 첫 화면이 무거워지므로,
+  // 이 화면군에서는 스트립을 본문 아래로 내린다(기능·목적지는 그대로 유지).
+  const stripBelowContent = referencePage !== null;
 
   return (
     <>
       <LearningNavigation key={normalizedPath} pathname={normalizedPath} hash={hash} />
       {showArtBanner ? <LearningArtBanner /> : null}
-      {showProgressStrip ? <LearningProgressStrip /> : null}
+      {showProgressStrip && !stripBelowContent ? <LearningProgressStrip /> : null}
       {normalizedPath === "/learn/records" ? <LearningRecordsPage /> : academyPage ?? referencePage ?? (isHome ? <LearningHome /> : pathMatch ? <LearningPathPage pathId={pathMatch[1]} /> : <LearnContent />)}
+      {showProgressStrip && stripBelowContent ? <LearningProgressStrip /> : null}
     </>
   );
 }

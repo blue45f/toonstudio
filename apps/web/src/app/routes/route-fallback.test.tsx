@@ -28,6 +28,33 @@ describe("route loading fallback", () => {
     expect(screen.getByRole("status", { name: /불러오는 중/u })).toBeTruthy();
   });
 
+  it.each([
+    ["/studio/space", "virtual-space"],
+    ["/studio/p/demo/space", "virtual-space"],
+    ["/home", "studio-home"],
+    ["/learn/process", "learn"],
+    ["/learn", "learn"],
+  ])("%s에서는 일반 카드 그리드 대신 %s 실루엣 스켈레톤을 보여 준다", (pathname, family) => {
+    render(
+      <MemoryRouter initialEntries={[pathname]}>
+        <RouteFallback />
+      </MemoryRouter>,
+    );
+    expect(document.querySelector(`[data-route-silhouette="${family}"]`)).not.toBeNull();
+    expect(document.querySelector("[data-skeleton-card]")).toBeNull();
+    expect(screen.getByRole("status", { name: /불러오는 중/u })).toBeTruthy();
+  });
+
+  it("실루엣 대상이 아닌 경로는 일반 카드 스켈레톤을 유지한다", () => {
+    render(
+      <MemoryRouter initialEntries={["/market"]}>
+        <RouteFallback />
+      </MemoryRouter>,
+    );
+    expect(document.querySelector("[data-route-silhouette]")).toBeNull();
+    expect(document.querySelector("[data-skeleton-card]")).not.toBeNull();
+  });
+
   it("suggests popular routes with working links when loading stalls", async () => {
     vi.useFakeTimers();
     render(

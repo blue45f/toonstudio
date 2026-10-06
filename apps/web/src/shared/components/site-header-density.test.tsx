@@ -81,6 +81,18 @@ describe("단일 창작 헤더", () => {
       .toBe("/studio/new");
   });
 
+  it("주 메뉴 1차 표시는 글자 링크만 두고 브랜드에 BETA 배지를 얹지 않는다", () => {
+    const { container } = render(<HeaderWithAppearance />);
+    const header = screen.getByRole("banner");
+    expect(within(header).queryByText("BETA")).toBeNull();
+    expect(container.querySelector(".site-header__beta")).toBeNull();
+    const navigation = within(header).getByRole("navigation", { name: "주요 메뉴" });
+    // 드롭다운이 없는 목적지는 아이콘 없이 글자만으로 표시한다(시안의 가벼운 1차 표시).
+    expect(within(navigation).getByRole("link", { name: "커뮤니티" }).querySelector("svg")).toBeNull();
+    expect(within(navigation).getByRole("link", { name: "마켓" }).querySelector("svg")).toBeNull();
+    expect(within(navigation).getByRole("link", { name: "가상 스튜디오" }).querySelector("svg")).toBeNull();
+  });
+
   it("탐색과 배우기 드롭다운은 필요한 곳에만 두고 canonical 목적지로 연결한다", () => {
     render(<HeaderWithAppearance />);
     const navigation = screen.getByRole("navigation", { name: "주요 메뉴" });

@@ -167,6 +167,8 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
  * 알림 열(왼쪽 아래)의 맨 아래 칸. 넓은 화면은 왼쪽 아래 모서리에, 휴대폰은 하단 탭 위 기준선에 놓고
  * 오른쪽 조작 열(⚙·음성 안내·맨 위로)을 비켜 폭을 줄인다.
  * 위에 쌓이는 OST·베타 안내는 이 칩이 게시한 높이(useOverlayClearance)만큼 올라가 서로 가리지 않는다.
+ * 칩은 모든 폭에서 한 줄로 유지한다 — 두 번째 문장까지 보이면 칩이 두 줄·넓어져
+ * 첫 화면 본문 카드를 덮는 면적이 커지기 때문이다(보조 설명은 화면 읽기 전용으로 남긴다).
  */
 const WARMUP_CHIP_CLASS = cn(
   "pointer-events-none fixed left-4 z-[90] flex w-max items-center gap-2.5 border border-line bg-panel/95 text-sm text-fg-2 shadow-lg backdrop-blur-md",
@@ -195,7 +197,7 @@ function ServiceWarmupNotice() {
       <LoaderCircle className="size-4 shrink-0 animate-spin text-accent motion-reduce:animate-none" aria-hidden="true" />
       <span className="min-w-0 break-keep">
         <strong className="font-bold text-fg">{bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.")}</strong>{" "}
-        <span className="max-md:sr-only">{bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.")}</span>
+        <span className="sr-only">{bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.")}</span>
       </span>
     </aside>
   );

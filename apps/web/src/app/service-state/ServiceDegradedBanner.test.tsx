@@ -277,11 +277,13 @@ describe("연결 준비 칩의 자리", () => {
 
     expect(chip.className).toContain("left-4");
     expect(chip.className).not.toContain("left-1/2");
-    // 휴대폰: 하단 탭 위 기준선, 오른쪽 조작 열 폭만큼 줄임, 두 번째 문장은 화면 읽기 전용.
+    // 휴대폰: 하단 탭 위 기준선, 오른쪽 조작 열 폭만큼 줄임.
     expect(chip.className).toContain("max-md:bottom-[max(var(--site-float-base),");
     expect(chip.className).toContain("max-md:left-3");
     expect(chip.className).toContain("max-md:max-w-[calc(100vw-0.75rem-max(0.75rem,var(--site-float-column)))]");
-    expect(screen.getByText("탐색과 로컬 작업은 지금 바로 할 수 있어요.").className).toContain("max-md:sr-only");
+    // 칩은 모든 폭에서 한 줄 — 두 번째 문장은 화면 읽기 전용으로만 남겨 칩 점유를 줄인다.
+    expect(screen.getByText("탐색과 로컬 작업은 지금 바로 할 수 있어요.").className).toContain("sr-only");
+    expect(screen.getByText("탐색과 로컬 작업은 지금 바로 할 수 있어요.").className).not.toContain("max-md:sr-only");
   });
 
   it("점유 높이를 게시해 그 위의 OST·베타 안내가 칩을 가리지 않게 하고, 사라지면 거둔다", () => {
