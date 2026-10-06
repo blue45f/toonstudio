@@ -4,7 +4,8 @@
  * - 종류는 manifest 상호작용 id 규약(HUD spatial-actions 정규식과 같은 단어)과 action으로 정한다.
  *   새 월드가 id 규약을 따르지 않아도 action으로 알맞은 종류를 고른다.
  * - 프롬프트 라벨은 "동사 · 대상"(예: "주문하기 · 카페 카운터")이다. 월드 키캡과 HUD 도크 프롬프트가 같은 함수를 쓴다.
- * - 상태가 있는 가구(커피 머신·의자)는 main interactable-objects 상태 머신 종류로 옮겨 상태에 따라 동사를 바꾼다.
+ * - 상태가 있는 가구(커피 머신·의자·문·조명·게시판·미디어 보드/스크린)는 main interactable-objects 상태 머신
+ *   종류로 옮겨 상태에 따라 동사를 바꾼다. 문·조명·게시판은 종류만으로 구분할 수 없어 id 규약으로 정한다.
  * - 연출 기준점(anchor)은 캠퍼스 오브젝트 그림의 실제 위치(커피 머신 노즐·화이트보드 면 등)에서 고른다.
  * 모두 순수 함수다(Phaser 의존 없음).
  */
@@ -100,6 +101,32 @@ export function studioWorldInteractableKind(kind: StudioWorldInteractionKind): S
 }
 
 /**
+ * 문·조명·게시판은 월드 종류만으로 구분할 수 없어(회의실 문도, 로비 보드도 종류는 따로 없다)
+ * id 규약으로 먼저 정한다. 단어 경계로만 맞힌다 — "spotlight"의 light처럼 다른 단어에
+ * 묻힌 부분 일치는 상태 가구로 오인하지 않기 위해서다.
+ */
+const INTERACTABLE_ID_RULES: readonly (readonly [RegExp, StudioInteractableObjectKind])[] = Object.freeze([
+  [/(^|-)door(-|$)/u, "door"],
+  [/(^|-)(light|lamp)(-|$)/u, "light-switch"],
+  [/bulletin|notice|(^|-)today-board(-|$)/u, "bulletin"],
+]);
+
+/**
+ * 상호작용 하나의 상태 가구 종류 (VS 120 웨이브 4 — 상태 가구 월드 배치).
+ * id 규약(문·조명·게시판)이 먼저고, 보드는 미디어 보드(화이트보드), 모니터·스크린
+ * 콘솔은 미디어 스크린(함께 보기)으로 옮긴다. 나머지는 월드 종류 매핑과 같다.
+ * 상태 가구가 아닌 상호작용은 null이다.
+ */
+export function studioWorldInteractableKindForInteraction(interaction: InteractionRef): StudioInteractableObjectKind | null {
+  const id = interaction.id.toLowerCase();
+  for (const [pattern, kind] of INTERACTABLE_ID_RULES) if (pattern.test(id)) return kind;
+  const kind = studioWorldInteractionKind(interaction);
+  if (kind === "board") return "whiteboard";
+  if (kind === "console" && /(^|-)(monitor|screen)(-|$)/u.test(id)) return "youtube";
+  return studioWorldInteractableKind(kind);
+}
+
+/**
  * 프롬프트 라벨 "동사 · 대상". 상태 가구는 상태에 따른 동사(추출 중…·커피 가져가기·일어서기)를 쓴다.
  * 비어 있는 상태(커피 대기·빈 의자)는 종류 동사(주문하기·앉아서 작업)가 더 분명하다.
  */
@@ -108,7 +135,7 @@ export function studioWorldInteractionPromptLabel(
   stateKey: StudioInteractableStateKey | null = null,
 ): StudioWorldBilingualText {
   const kind = studioWorldInteractionKind(interaction);
-  const interactable = studioWorldInteractableKind(kind);
+  const interactable = studioWorldInteractableKindForInteraction(interaction);
   const action = interactable && stateKey && stateKey !== "coffee:idle" && stateKey !== "chair:empty"
     ? interactableStateActionText(interactable, stateKey)
     : studioWorldInteractionVerb(kind);

@@ -11,6 +11,7 @@ import {
 } from "./studio-virtual-space-interaction-fx";
 import {
   studioWorldInsideStageApron,
+  studioWorldInteractableKindForInteraction,
   studioWorldInteractionFxAnchor,
   studioWorldInteractionKind,
   studioWorldInteractionPromptLabel,
@@ -69,6 +70,33 @@ describe("월드 상호작용 종류·동사", () => {
     expect(studioWorldInteractionPromptLabel(desk, "chair:occupied").ko).toBe("일어서기 · 내 드로잉 책상");
     expect(studioWorldInteractionPromptLabel(byId("campus-creator-fountain")).ko).toBe("동전 던지기 · 소원 분수");
     expect(studioWorldNpcPromptLabel({ ko: "린", en: "Rin" })).toEqual({ ko: "대화하기 · 린", en: "Talk · Rin" });
+  });
+
+  it("상태 가구 종류는 id 규약(문·조명·게시판)과 보드·모니터 규칙으로 정한다 (웨이브 4)", () => {
+    const defaults = Object.fromEntries(studioWorldInteractions(DEFAULT_STUDIO_WORLD_MANIFEST)
+      .map((interaction) => [interaction.id, studioWorldInteractableKindForInteraction(interaction)]));
+    expect(defaults).toMatchObject({
+      "lobby-today-board": "bulletin",
+      "storyboard-wall": "whiteboard",
+      "production-control-board": "whiteboard",
+      "review-theater-monitor": "youtube",
+      "quality-control-console": null,
+      "release-delivery-console": null,
+      "cafe-community-table": "coffee-machine",
+      "writers-script-desk": "chair",
+      "meeting-room-table": null,
+    });
+    // 문·조명은 id 규약으로만 생긴다.
+    expect(studioWorldInteractableKindForInteraction({ id: "meeting-door", action: "live" })).toBe("door");
+    expect(studioWorldInteractableKindForInteraction({ id: "lobby-light", action: "assistant" })).toBe("light-switch");
+    // 단어에 묻힌 부분 일치는 상태 가구로 오인하지 않는다.
+    expect(studioWorldInteractableKindForInteraction({ id: "stage-spotlight", action: "live" })).toBeNull();
+    expect(studioWorldInteractableKindForInteraction({ id: "campus-event-stage-screen", action: "live" })).toBeNull();
+    // 게시판 프롬프트는 상태 동사를 쓴다.
+    const board = studioWorldInteractions(DEFAULT_STUDIO_WORLD_MANIFEST).find((item) => item.id === "lobby-today-board");
+    if (!board) throw new Error("missing lobby-today-board");
+    expect(studioWorldInteractionPromptLabel(board, "bulletin:unread").ko).toBe("읽기 · 오늘의 스튜디오 보드");
+    expect(studioWorldInteractionPromptLabel(board, "bulletin:read").ko).toBe("다시 읽기 · 오늘의 스튜디오 보드");
   });
 
   it("연출 기준점은 오브젝트 그림에서 고르고, 카페 카운터는 커피 머신 노즐이다", () => {
