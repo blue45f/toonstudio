@@ -1,0 +1,60 @@
+diff --git a/lib/parse.js b/lib/parse.js
+index 3a6988e..4e57de6 100644
+--- a/lib/parse.js
++++ b/lib/parse.js
+@@ -165,25 +165,33 @@ const parse = (input, options = {}) => {
+      */
+ 
+     if (value === CHAR_DOUBLE_QUOTE || value === CHAR_SINGLE_QUOTE || value === CHAR_BACKTICK) {
+-      const open = value;
+-      let next;
++      const leftQuote = value;
++      // Looking for the nearest unescaped quote of the same type.
++      // @todo Use negative lookbehind after targeting the node@8.10+
++      const hasRightQuote = input.slice(index).search(new RegExp(`[^\\\\]${leftQuote}|^${leftQuote}`)) !== -1;
+ 
+-      if (options.keepQuotes !== true) {
+-        value = '';
+-      }
++      let next;
+ 
+-      while (index < length && (next = advance())) {
+-        if (next === CHAR_BACKSLASH) {
+-          value += next + advance();
+-          continue;
++      // If there is no right quote, consume an unpaired quote as a regular character.
++      if (hasRightQuote) {
++        if (options.keepQuotes !== true) {
++          value = '';
+         }
+ 
+-        if (next === open) {
+-          if (options.keepQuotes === true) value += next;
+-          break;
+-        }
++        while (index <= length && (next = advance())) {
++          // Skip escaped quotes.
++          if (next === CHAR_BACKSLASH) {
++            value += next + advance();
++            continue;
++          }
+ 
+-        value += next;
++          if (next === leftQuote) {
++            if (options.keepQuotes === true) value += next;
++            break;
++          }
++
++          value += next;
++        }
+       }
+ 
+       push({ type: 'text', value });
+@@ -246,6 +254,7 @@ const parse = (input, options = {}) => {
+         const open = block.nodes.shift();
+         block.nodes = [open, { type: 'text', value: stringify(block) }];
+       }
++      block.invalid = false;
+ 
+       push({ type: 'comma', value });
+       block.commas++;
