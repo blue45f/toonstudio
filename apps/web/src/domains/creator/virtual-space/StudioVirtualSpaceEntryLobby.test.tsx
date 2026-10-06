@@ -225,6 +225,25 @@ describe("월드 미리보기 로딩·실패 상태 (W5-T7)", () => {
   });
 });
 
+describe("입장코드 동선 안내 (W5-T7)", () => {
+  it("코드로 들어올 수 있는 방문자에게 첫 화면에서 코드 경로를 안내하고 누르면 코드 패널로 포커스가 이동한다", () => {
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()}
+      onEnterWithCode={vi.fn()} /></MemoryRouter>);
+    const hint = screen.getByRole("button", { name: /초대 코드가 있으면/u });
+    fireEvent.click(hint);
+    expect(document.activeElement).toBe(document.getElementById("studio-vspace-entry-code"));
+  });
+
+  it("코드 콜백이 없는 방문자와 게스트 모드에서는 안내를 띄우지 않는다", () => {
+    const props = { returning: false, projectName: "Project Aurora", onAvatarIndex: vi.fn(), onNickname: vi.fn(), onEnter: vi.fn() } as const;
+    const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" {...props} /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: /초대 코드가 있으면/u })).toBeNull();
+    view.rerender(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" guestMode onEnterWithCode={vi.fn()} {...props} /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: /초대 코드가 있으면/u })).toBeNull();
+  });
+});
+
 describe("입장 로비 조작법 미리보기", () => {
   it("접힌 상태로 조작법 3가지를 미리 보여주고 미니 투어를 안내한다", () => {
     render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}

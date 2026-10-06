@@ -1,4 +1,4 @@
-import { CameraOff, Check, Lock, MicOff, Network, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { CameraOff, Check, KeyRound, Lock, MicOff, Network, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { Suspense, useState, type ReactNode } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -15,6 +15,7 @@ import {
   type StudioVirtualArtStyleKey,
 } from "./studio-virtual-space-art-style";
 import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
+import { STUDIO_ENTRY_CODE_PANEL_ID } from "./studio-virtual-space-entry-code";
 import { StudioVirtualSpaceEntryCodePanel } from "./StudioVirtualSpaceEntryCodePanel";
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
@@ -140,6 +141,14 @@ export function StudioVirtualSpaceEntryLobby({
           ? bt("게스트 세션은 24시간 동안 유효해요.", "Your guest session is valid for 24 hours.")
           : bt("닉네임·캐릭터·아트 스타일 선택은 이 브라우저에 저장돼요.", "Nickname, character and art-style choices are saved in this browser.")
       : bt("캐릭터를 직접 선택하면 다음 단계로 이동할 수 있어요.", "Choose a character to continue.");
+  // 코드로 들어오는 방문자는 캐릭터 설정을 건너뛰는 경로가 있다는 것부터 알아야 한다.
+  // 첫 화면 안내에서 카드 아래쪽 코드 패널로 바로 이동시켜 동선을 눈으로 잇는다.
+  const scrollToEntryCode = () => {
+    const panel = document.getElementById(STUDIO_ENTRY_CODE_PANEL_ID);
+    if (!panel) return;
+    if (typeof panel.scrollIntoView === "function") panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    panel.focus({ preventScroll: true });
+  };
 
   return <div className="studio-vspace-entry space-lobby" data-route-ready={onboarding ? "studio-character-onboarding" : "studio-virtual-entry"}
     data-art-style={artStyle} data-entry-variant={variant}>
@@ -201,6 +210,13 @@ export function StudioVirtualSpaceEntryLobby({
         <header className="space-lobby__heading">
           <h1 id="studio-vspace-entry-title">{title}</h1>
           <p>{description}</p>
+          {onEnterWithCode && !guestMode && !onboarding ? <button type="button" className="space-lobby__code-hint" onClick={scrollToEntryCode}>
+            <KeyRound size={14} aria-hidden />
+            {bt(
+              "초대 코드가 있으면 캐릭터를 고르지 않아도 아래 입장코드 칸에서 바로 들어갈 수 있어요.",
+              "Have an invite code? You can skip the character setup and enter from the entry-code section below.",
+            )}
+          </button> : null}
         </header>
 
         {onboarding ? <ol className="space-lobby__onboarding-steps" aria-label={bt("시작 준비 상태", "Getting-ready status")}>
