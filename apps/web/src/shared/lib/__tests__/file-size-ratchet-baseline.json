@@ -22,7 +22,7 @@
   "domains/creator/bg3d/studio-bg3d-shot-batch.ts": 1545,
   "domains/creator/bg3d/StudioBg3dEditorViewport.tsx": 1201,
   "domains/creator/bg3d/StudioBg3dSceneAssistantWorkspace.tsx": 1020,
-  "domains/creator/bg3d/StudioBg3dShapesPanel.tsx": 1954,
+  "domains/creator/bg3d/StudioBg3dShapesPanel.tsx": 1793,
   "domains/creator/bg3d/StudioBg3dViewPanelContent.tsx": 1677,
   "domains/creator/brush/studio-brush-backend-quality-policy.ts": 1685,
   "domains/creator/brush/studio-brush-library.ts": 1202,
