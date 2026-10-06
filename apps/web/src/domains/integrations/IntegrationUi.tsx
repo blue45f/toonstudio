@@ -13,7 +13,7 @@ import type { IntegrationProviderStatus } from "./integration-platform-types";
 const NAVIGATION = [
   ["/settings/integrations", "연동 센터"],
   ["/automation", "자동화"],
-  ["/publish", "게시·배포"],
+  ["/publish", "연재 센터"],
   ["/developers", "개발자"],
 ] as const;
 

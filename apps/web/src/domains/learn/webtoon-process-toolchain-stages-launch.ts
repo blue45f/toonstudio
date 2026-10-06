@@ -387,10 +387,10 @@ export const TOOLCHAIN_STAGES_LAUNCH: readonly ProcessToolchainStage[] = [
         href: "/studio/publish",
       },
       {
-        name: { ko: "게시 센터", en: "Publish Center" },
+        name: { ko: "연재 센터", en: "Serialization Center" },
         role: {
-          ko: "발행 패키지를 만드는 통합 게시 센터",
-          en: "Unified publish center for building release packages",
+          ko: "내 작품의 연재 현황과 발행 패키지를 한곳에서 다루는 연재 센터",
+          en: "Serialization center for checking works' status and building release packages in one place",
         },
         kind: "builtin",
         href: "/publish",

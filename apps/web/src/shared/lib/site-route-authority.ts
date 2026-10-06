@@ -201,9 +201,9 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
   route({
     id: "publish-center",
     path: "/publish",
-    titleKey: "route.production",
-    label: { ko: "게시·배포", en: "Publish" },
-    description: { ko: "공식 API와 수동 업로드용 게시 패키지 준비", en: "Prepare official API and manual publication packages" },
+    titleKey: "route.serialCenter",
+    label: { ko: "연재 센터", en: "Serialization center" },
+    description: { ko: "내 작품의 연재 현황과 게시 패키지를 한곳에서 확인하고 준비", en: "Check serialization status and prepare publication packages for your works in one place" },
     purpose: "create",
     access: "sign-in",
     projectContext: "optional",

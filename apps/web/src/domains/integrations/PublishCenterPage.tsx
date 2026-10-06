@@ -17,6 +17,7 @@ import {
   downloadIntegrationText,
 } from "./integration-platform-storage";
 import type { IntegrationProviderStatus, PublishPackageResponse } from "./integration-platform-types";
+import { SerialCenterOverview } from "./SerialCenterOverview";
 import { useIntegrationCatalog } from "./use-integration-catalog";
 
 /**
@@ -136,19 +137,29 @@ export function PublishCenterPage() {
 
   return (
     <IntegrationPage
-      eyebrow={ko ? "배포 · 게시 패키지" : "Delivery · publication package"}
-      title={ko ? "세상과 만날 시간입니다" : "Share your story"}
+      eyebrow={ko ? "연재 센터" : "Serialization center"}
+      title={ko ? "연재 센터" : "Serialization center"}
       description={ko
-        ? "공식 API 채널과 수동 업로드 채널을 같은 패키지에서 준비합니다. 공식 승인 없는 웹툰 플랫폼은 규격 검사·ZIP·복사·수동 확인까지만 제공합니다."
-        : "Prepare official API channels and manual handoff channels in one package. Platforms without approved APIs remain validation and human-confirmed upload flows."}
+        ? "내 작품의 연재 현황을 확인하고, 공식 API 채널과 수동 업로드 채널을 같은 패키지로 준비합니다. 공식 승인 없는 웹툰 플랫폼은 규격 검사·ZIP·복사·수동 확인까지만 제공합니다."
+        : "Check your works' serialization status and prepare official API channels and manual handoff channels in one package. Platforms without approved APIs remain validation and human-confirmed upload flows."}
       art={{ kind: "publish", caption: ko ? "브랜드 콘셉트 아트 · 실제 화면이 아닙니다" : "Brand concept art · not a product screen" }}
     >
+      <div className="mb-6">
+        <SerialCenterOverview
+          ko={ko}
+          onSelectProject={(project) => {
+            setProjectId(project.projectId);
+            setTitle(project.title);
+            document.getElementById("serial-publish-target")?.scrollIntoView({ block: "start" });
+          }}
+        />
+      </div>
       {loading ? <IntegrationLoading /> : null}
       {error ? <IntegrationError message={error} onRetry={refresh} /> : null}
       {catalog ? (
         <div className="space-y-6">
           {/* 발행할 작품 히어로 — 제목 포스터·준비 상태·다음 행동을 한눈에. */}
-          <section className="overflow-hidden rounded-3xl border border-line bg-card" aria-label={ko ? "발행할 작품" : "Work to publish"}>
+          <section id="serial-publish-target" className="scroll-mt-24 overflow-hidden rounded-3xl border border-line bg-card" aria-label={ko ? "발행할 작품" : "Work to publish"}>
             <div className="flex flex-col gap-5 p-5 sm:flex-row sm:p-6">
               <div
                 aria-hidden="true"
