@@ -83,7 +83,7 @@ import {
   neutralStudioMotionRequest,
   type StudioMotionRequest,
 } from "./studio-virtual-space-motion-api";
-import type { StudioSpacePose } from "./studio-virtual-space-pose-controller";
+import { studioPoseSeatAnchors, type StudioSpacePose } from "./studio-virtual-space-pose-controller";
 import {
   createMotionStateMachine,
   motionOneShotFinished,
@@ -2135,9 +2135,7 @@ export function StudioVirtualSpacePhaserCanvas({
         const localEmotePose = emotes?.pose("self", time, reducedMotion.matches) ?? null;
         const localWaving = shownLocalEmote === "wave" || poseRef.current.waveActorIds.includes(identityRef.current);
         // 자세 상태 머신: 휴식 요청(앉기/눕기) 판정 + 이동 시작 시 자동 일어서기
-        const seatAnchors = poseRef.current.seatedActors.map((actor) => ({
-          point: actor.anchorPoint, facing: actor.facing, radius: 56,
-        }));
+        const seatAnchors = studioPoseSeatAnchors({ seatedActors: poseRef.current.seatedActors, interactionSlots: manifest.interactionSlots });
         const clearanceOffsets = [{ x: 44, y: 0 }, { x: -44, y: 0 }, { x: 0, y: 44 }, { x: 0, y: -44 }];
         const openArea = clearanceOffsets.every((offset) =>
           studioWorldCanOccupy(navigationWorld, { x: currentPoint.x + offset.x, y: currentPoint.y + offset.y }))
@@ -2168,7 +2166,7 @@ export function StudioVirtualSpacePhaserCanvas({
         const localEmoteFacing = localSeatRequested || localPoseOverride || nextMoving ? null : studioEmoteFacing(localEmotePose);
         spriteCrossfades?.capture(localSprite);
         applyAvatarVisual(localSprite, snapshotRef.current.self,
-          localSeatRequested?.facing ?? localPoseOverride?.facing ?? localEmoteFacing ?? facing, localState, identityRef.current);
+          localSeatRequested?.facing ?? poseFrame.anchor?.facing ?? localPoseOverride?.facing ?? localEmoteFacing ?? facing, localState, identityRef.current);
         spriteCrossfades?.commit(localSprite, time, crossfadeEnabled);
         applyCameraMode();
         const cameraMode = experienceRef.current.cameraMode;

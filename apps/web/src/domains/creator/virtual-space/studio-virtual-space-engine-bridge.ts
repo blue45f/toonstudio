@@ -42,6 +42,8 @@ export interface StudioPoseFrameState {
   readonly pose: StudioSpacePose;
   /** 자세 전이 블렌드 0~1. */
   readonly poseBlend: number;
+  /** 앉은 자리 앵커 (pose === "sit"일 때만). 캔버스가 좌석 방향으로 facing을 맞추는 데 쓴다. */
+  readonly anchor: StudioSeatAnchor | null;
 }
 
 export interface StudioVirtualEnvironmentEffectRequest {
@@ -79,6 +81,7 @@ export class StudioVirtualSpaceEngineBridge {
   private pose: StudioSpacePose = "stand";
   private pendingPoseRequest: StudioSpacePoseRequest | null = null;
   private poseTransitionStartedAt: number | null = null;
+  private poseAnchor: StudioSeatAnchor | null = null;
   private dayNight: StudioDayNightCycleConfig = { enabled: false, startMs: 0, now: 0 };
   private lightFixtures: readonly StudioLightFixture[] = Object.freeze([]);
   private buildPlacementEntryId: string | null = null;
@@ -268,6 +271,7 @@ export class StudioVirtualSpaceEngineBridge {
       this.pose = "stand";
       this.poseTransitionStartedAt = now;
       this.pendingPoseRequest = null;
+      this.poseAnchor = null;
     } else if (this.pendingPoseRequest) {
       const request = this.pendingPoseRequest;
       this.pendingPoseRequest = null;
@@ -283,11 +287,13 @@ export class StudioVirtualSpaceEngineBridge {
       if (result.accepted) {
         this.pose = result.pose;
         this.poseTransitionStartedAt = result.transitionStartedAt;
+        this.poseAnchor = result.anchor;
       }
     }
     return {
       pose: this.pose,
       poseBlend: studioSpacePoseBlend(this.poseTransitionStartedAt, now),
+      anchor: this.pose === "sit" ? this.poseAnchor : null,
     };
   }
   /** 주야 사이클 설정. 가상 시계(now)는 페이지가 1초마다 갱신한다. */

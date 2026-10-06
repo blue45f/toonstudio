@@ -1,5 +1,7 @@
 import { easeInOutCubic } from "./studio-virtual-space-locomotion-feel";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
+import type { StudioSeatedActor } from "./studio-virtual-space-seated-actors";
+import type { StudioWorldInteractionSlotDefinition } from "./studio-virtual-space-world-manifest";
 
 /**
  * 아바타 자세 상태 머신 (서기/앉기/눕기)
@@ -31,6 +33,35 @@ export interface StudioSeatAnchor {
 
 /** 자세 전이 애니메이션 시간 (ms). */
 export const STUDIO_SPACE_POSE_TRANSITION_MS = 380;
+
+/** 자세 앉기 판정 반경(px). 출처가 달라도 "앉을 수 있는 거리"는 하나로 통일한다. */
+export const STUDIO_POSE_SEAT_ANCHOR_RADIUS = 56;
+
+/**
+ * 자세 판정용 자리 앵커를 합성한다.
+ *
+ * - 리스 점유 좌석(seatedActors): 예약·점유의 권위에서 온 좌석. 기존과 동일하다.
+ * - 매니페스트 상호작용 슬롯: 월드가 저작한 가구 좌석(seatAttachmentPoint 보유분).
+ *   지금까지는 리스를 잡아야만 앉을 수 있어, 빈 의자에 다가가 "휴식"을 눌러도
+ *   앉지 못했다. 자세 앉기는 시각 상태일 뿐 리스를 주장하지 않으므로
+ *   (점유·충돌 판정은 슬롯 리스와 프레즌스가 계속 소유한다) 빈 좌석에도 앉을 수
+ *   있게 연다. 리스 좌석과 8px 이내로 겹치는 슬롯은 중복으로 넣지 않는다.
+ */
+export function studioPoseSeatAnchors(input: {
+  readonly seatedActors: readonly StudioSeatedActor[];
+  readonly interactionSlots?: readonly StudioWorldInteractionSlotDefinition[];
+}): readonly StudioSeatAnchor[] {
+  const anchors: StudioSeatAnchor[] = input.seatedActors.map((actor) => ({
+    point: actor.anchorPoint, facing: actor.facing, radius: STUDIO_POSE_SEAT_ANCHOR_RADIUS,
+  }));
+  for (const slot of input.interactionSlots ?? []) {
+    if (!slot.seatAttachmentPoint) continue;
+    const point = slot.seatAttachmentPoint;
+    if (anchors.some((anchor) => Math.hypot(anchor.point.x - point.x, anchor.point.y - point.y) < 8)) continue;
+    anchors.push({ point, facing: slot.facing, radius: STUDIO_POSE_SEAT_ANCHOR_RADIUS });
+  }
+  return Object.freeze(anchors);
+}
 
 /** 눕기 판정에 쓰는 최소 빈 공간 반경(px) 가이드. */
 export const STUDIO_SPACE_LIE_CLEARANCE_RADIUS = 44;
