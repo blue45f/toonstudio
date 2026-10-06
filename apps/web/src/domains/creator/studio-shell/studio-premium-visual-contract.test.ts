@@ -40,9 +40,22 @@ const PREMIUM_ICON_NAMES = [
   "community.webp",
   "create.webp",
   "home.webp",
+  "materials.webp",
   "projects.webp",
   "settings.webp",
+  "space.webp",
   "story.webp",
+  "team.webp",
+] as const;
+
+/** 좌측 메뉴 제작 바로가기 묶음의 목적지 id. WorkspaceNavigation의 WORKSPACE_SHORTCUTS와 한 쌍이다. */
+const WORKSPACE_SHORTCUT_IDS = [
+  "shortcut-canvas",
+  "shortcut-character",
+  "shortcut-bg3d",
+  "shortcut-assets",
+  "shortcut-virtual-studio",
+  "shortcut-team",
 ] as const;
 
 describe("ToonStudio premium visual flow contract", () => {
