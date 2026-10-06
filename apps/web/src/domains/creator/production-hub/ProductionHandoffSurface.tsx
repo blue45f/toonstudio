@@ -66,7 +66,7 @@ export function ProductionHandoffSurface({
   if (!handoff) {
     return (
       <ProductionEmptyState
-        title={bt("넘길 작업이 없습니다", "Nothing to hand off")}
+        title={bt("인계할 작업이 없습니다", "Nothing to hand off")}
         description={bt("스토리 확정 후 회차 의도와 참고 파일을 묶어 다음 작업자에게 전달하세요.", "After locking the story, bundle the episode intent and references for the next artist.")}
       />
     );
@@ -82,7 +82,7 @@ export function ProductionHandoffSurface({
   return (
     <div className="grid gap-4 xl:grid-cols-[0.78fr_1.22fr]">
       <ProductionSectionCard
-        title={bt("작업 넘기기 준비도", "Handoff readiness")}
+        title={bt("인계 준비도", "Handoff readiness")}
         description={bt("필수 확인 항목이 하나라도 남으면 다음 작업을 시작할 수 없습니다.", "The next step can't start while a required item is missing.")}
       >
         <div className="flex items-end justify-between gap-4 rounded-xl border border-line bg-panel p-4">

@@ -86,7 +86,7 @@ export function ProductionClarificationAnswer({
       </button>
       <p id={hintId} className="text-[0.6875rem] leading-4 text-fg-3">
         {canAnswer
-          ? bt("기록한 결정은 작업 넘기기와 검수의 근거로 남습니다.", "The decision is kept as evidence for handoff and review.")
+          ? bt("기록한 결정은 인계와 검수의 근거로 남습니다.", "The decision is kept as evidence for handoff and review.")
           : lockedHint}
       </p>
     </form>

@@ -117,7 +117,7 @@ export function ProductionEpisodeRoomPage() {
 
   const pipeline = [
     { label: bt("스토리 확정", "Story locked"), done: episode.storyLockApproved, active: episode.state.startsWith("story") },
-    { label: bt("작업 넘기기", "Handoff"), done: Boolean(episode.activeHandoffId), active: episode.state === "art-clarification" },
+    { label: bt("인계", "Handoff"), done: Boolean(episode.activeHandoffId), active: episode.state === "art-clarification" },
     { label: bt("콘티", "Storyboard"), done: episode.thumbnailLockApproved, active: episode.state.includes("thumbnail") },
     { label: bt("최종 원고", "Final art"), done: Boolean(episode.visualRevisionRef) && episode.thumbnailLockApproved, active: episode.state === "final-art-production" },
     { label: bt("최종 검수", "Final proof"), done: episode.jointProofApproved, active: episode.state === "joint-proof" },
@@ -239,7 +239,7 @@ export function ProductionEpisodeRoomPage() {
                 })}
               </ul>
             ) : (
-              <ProductionEmptyState title={bt("열린 질문이 없습니다", "No open questions")} description={bt("작업 넘기기 화면에서 질문을 남기면 여기에 모입니다.", "Questions from the handoff show up here.")} />
+              <ProductionEmptyState title={bt("열린 질문이 없습니다", "No open questions")} description={bt("인계 화면에서 질문을 남기면 여기에 모입니다.", "Questions from the handoff show up here.")} />
             )}
           </ProductionSectionCard>
 
