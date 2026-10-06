@@ -112,8 +112,8 @@ import {
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
 import { drawStudioModularCampus } from "./studio-virtual-space-modular-campus";
 import { studioIllustratedPropFrame, studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
-import { studioExperienceAssetUrl, studioExperienceFrameGeometry } from "./studio-virtual-space-experience-art";
-import { STUDIO_EXPERIENCE_ATLAS, registerStudioSceneAtlas,
+import { studioExperienceFrameGeometry } from "./studio-virtual-space-experience-art";
+import { registerStudioSceneAtlas,
   StudioVirtualSetDressingRuntime, studioSceneActorScale, studioSceneOverlayScale } from "./studio-virtual-space-scene-art-runtime";
 import { studioVirtualWorldSetDressing } from "./studio-virtual-space-world-set-dressing";
 import { studioVirtualWorldKind } from "./studio-virtual-space-world-presentation";
@@ -228,6 +228,11 @@ import { StudioInteractionFxRuntime } from "./studio-virtual-space-interaction-f
 import {
   createStudioInteractionFxLiveWiring, type StudioInteractionFxLiveWiring,
 } from "./studio-virtual-space-interaction-fx-live";
+import {
+  createStudioBuildPlacementCanvasController,
+  type StudioBuildPlacementCanvasController,
+} from "./studio-virtual-space-build-placement-canvas";
+import { createStudioOptionalSceneArtLoader } from "./studio-virtual-space-optional-scene-art";
 import { createStudioNpcVisuals } from "./studio-virtual-space-npc-visuals";
 import { createStudioLocalVisual } from "./studio-virtual-space-local-visual";
 import { studioPresenceEmoteBob, studioPresenceEmoteIndicator, studioPresenceEmoteParticleColor, studioPresenceEmoteReaction } from "./studio-virtual-space-presence-emote";
@@ -324,6 +329,7 @@ export function StudioVirtualSpacePhaserCanvas({
   onSpaceUiEvent,
   onSelfImpact,
   onObjectStateChange,
+  onBuildPlacementEvent,
   tileEffects = [],
   placedFixtures,
   onTileEffectTrigger,
@@ -355,6 +361,7 @@ export function StudioVirtualSpacePhaserCanvas({
   const tileEffectsRef = useRef(tileEffects);
   tileEffectsRef.current = tileEffects;
   const placedFixturesRef = useRef(placedFixtures); placedFixturesRef.current = placedFixtures;
+  const buildPlacementEventRef = useRef(onBuildPlacementEvent); buildPlacementEventRef.current = onBuildPlacementEvent;
   const tileTriggerCallbackRef = useRef(onTileEffectTrigger);
   tileTriggerCallbackRef.current = onTileEffectTrigger;
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -605,6 +612,7 @@ export function StudioVirtualSpacePhaserCanvas({
       let promptRuntime: StudioWorldPromptRuntime | null = null;
       /** 상호작용 fx 런타임(오브젝트 반응·배지·발표 스포트라이트)과 그 라이브 배선 브리지. create에서 만든다. */
       let interactionFx: StudioInteractionFxRuntime | null = null;
+      let buildPlacement: StudioBuildPlacementCanvasController | null = null;
       let fxWiring: StudioInteractionFxLiveWiring | null = null;
       let lastMarkerCullAt = -Infinity;
       let zoneVeil: import("phaser").GameObjects.Graphics | null = null;
@@ -1230,6 +1238,22 @@ export function StudioVirtualSpacePhaserCanvas({
         interactionFx = fxWiring.runtime;
         interactionFx.syncPlacedFixtures(placedFixturesRef.current ?? []);
         cleanup.push(() => { interactionFx?.destroy(); interactionFx = null; fxWiring = null; });
+        buildPlacement = createStudioBuildPlacementCanvasController(this, {
+          bridge, heldKeys, badgeColors: { plate: fxBadgeColors.plate, text: fxBadgeColors.text },
+          getWorld: () => navigationWorld,
+          getOccupiedPoints: () => [
+            ...(placedFixturesRef.current ?? []).map((fixture) => fixture.point),
+            ...decorationsRef.current.placements.map((placement) => ({ x: placement.x, y: placement.y })),
+          ],
+          getPlacedCount: () => (placedFixturesRef.current ?? []).length,
+          getSelfPoint: () => ({ x: localBodyPhysics?.center.x ?? initialPoint.x, y: localBodyPhysics?.center.y ?? initialPoint.y }),
+          isInputBlocked: runtimeInputBlocked,
+          reducedMotion: () => reducedMotion.matches,
+          translate: (ko, en) => btRef.current(ko, en),
+          emit: (event) => buildPlacementEventRef.current?.(event),
+          onSessionStart: () => bridge.clearMovement(),
+        });
+        cleanup.push(() => { buildPlacement?.destroy(); buildPlacement = null; });
         for (const [id, marker] of createStudioInteractionMarkers(this, interactions, artProfile, Phaser.Geom,
           (interaction) => { queuedInteraction = interaction; })) interactionMarkers.set(id, marker);
         createStudioPortalGateways(this, manifest, portals, artProfile, (ko, en) => btRef.current(ko, en), (portal) => setPathTo(portal.point));
@@ -1260,6 +1284,7 @@ export function StudioVirtualSpacePhaserCanvas({
         }, false, false) as Record<string, import("phaser").Input.Keyboard.Key> | null;
 
         this.input.on("pointerdown", (pointer: import("phaser").Input.Pointer) => {
+          if (buildPlacement?.consumePointerDown(pointer)) return;
           if (!pointer.leftButtonDown() || runtimeInputBlocked()) return;
           const nativePointer = pointer.event as PointerEvent | undefined;
           if (nativePointer?.pointerType === "touch" && experienceRef.current.controlMode !== "tap") return;
@@ -1324,11 +1349,11 @@ export function StudioVirtualSpacePhaserCanvas({
         // window keyboard handler ignores defaultPrevented events from focused elements.
         const preventGameScrolling = (event: KeyboardEvent) => {
           if (event.target !== canvas) return;
-          if (event.key === "Escape") { npcDirector.cancelGuideTour(); stopMovement(); return; }
+          if (event.key === "Escape") { if (buildPlacement?.handleEscape()) return; npcDirector.cancelGuideTour(); stopMovement(); return; }
           if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || runtimeInputBlocked()) return;
           if (!WORLD_KEY_CODES.has(event.code)) return;
           heldKeys.add(event.code);
-          if (event.code === "KeyX" && !event.repeat) queueKeyboardInteraction();
+          if (event.code === "KeyX" && !event.repeat && !buildPlacement?.active) queueKeyboardInteraction();
           // 고스트 모드 토글: 반투명 + 장애물 통과 이동 (대규모 이벤트 끼임 해소)
           if (event.code === STUDIO_GHOST_TOGGLE_KEY && !event.repeat) {
             const next = !bridge.isGhostMode();
@@ -1404,43 +1429,15 @@ export function StudioVirtualSpacePhaserCanvas({
         };
         if (!manifest.tilemap) focusWorldOnReady();
         syncSnapshot(snapshotRef.current);
-        startOptionalSceneArt = () => {
-          // 선택 PNG의 다운로드나 실패가 입장·이동 준비를 막지 않게 필수 장면 생성 후 요청한다.
-          const optionalArt = [
-            { key: decorationTextureKeys.furniture, url: studioExperienceAssetUrl("furniture", artStyle) },
-            { key: decorationTextureKeys.cat, url: "/assets/virtual-studio/experience-v8/cat-emotions.png" },
-            ...(worldSetDressing.length > 0 ? [{ key: landmarksTextureKey, url: studioExperienceAssetUrl("landmarks", artStyle) }] : []),
-            ...(artStyle === "sky-island" ? [{ key: actorExpressionTextureKey, url: "/assets/virtual-studio/experience-v8/actor-emotions.png" }] : []),
-          ];
-          const refreshSceneArt = () => {
-            if (cancelled || engineFailed) return;
-            setDressingRuntime?.destroy();
-            setDressingRuntime = new StudioVirtualSetDressingRuntime(this, manifest, {
-              landmarks: landmarksTextureKey, furniture: decorationTextureKeys.furniture, cat: decorationTextureKeys.cat, artStyle,
-            }, artProfile.palette);
-            decorationRuntime?.refreshTextures();
-            if (this.textures.exists(decorationTextureKeys.furniture)) for (const { image, frame, width, height, originX, originY } of illustratedProps) {
-              const geometry = studioExperienceFrameGeometry("furniture", artStyle, frame, width, height, originX, originY);
-              image.setTexture(decorationTextureKeys.furniture, frame).setDisplaySize(geometry.width, geometry.height)
-                .setOrigin(geometry.originX, geometry.originY);
-            }
-            parent.dataset.sceneArt = optionalArt.filter((asset) => this.textures.exists(asset.key)).map((asset) => asset.key).join(",");
-          };
-          for (const asset of optionalArt) {
-            const event = `filecomplete-image-${asset.key}`;
-            const loaded = () => {
-              if (cancelled || engineFailed) return;
-              if (!registerStudioSceneAtlas(this.textures.get(asset.key), sceneArtAtlases.get(asset.key) ?? STUDIO_EXPERIENCE_ATLAS)) {
-                failedTextures.add(asset.key); this.textures.remove(asset.key);
-              }
-              refreshSceneArt();
-            };
-            this.load.once(event, loaded);
-            cleanup.push(() => this.load.off(event, loaded));
-            this.load.image(asset.key, asset.url);
-          }
-          this.load.start();
-        };
+        startOptionalSceneArt = createStudioOptionalSceneArtLoader(this, manifest, {
+          artStyle, palette: artProfile.palette, parent, illustratedProps, sceneArtAtlases, failedTextures,
+          textureKeys: { furniture: decorationTextureKeys.furniture, cat: decorationTextureKeys.cat,
+            landmarks: landmarksTextureKey, actorExpression: actorExpressionTextureKey },
+          hasSetDressing: worldSetDressing.length > 0, isCancelled: () => cancelled || engineFailed,
+          swapSetDressingRuntime: (runtime) => { setDressingRuntime?.destroy(); setDressingRuntime = runtime; },
+          refreshDecorationTextures: () => decorationRuntime?.refreshTextures(),
+          onCleanup: (fn) => cleanup.push(fn),
+        });
         if (!manifest.tilemap) { startOptionalSceneArt(); startOptionalSceneArt = null; }
       };
 
@@ -1507,7 +1504,8 @@ export function StudioVirtualSpacePhaserCanvas({
           callbacksRef.current.onCancelFollow();
         }
         wasInputBlocked = blocked;
-        const typing = blocked || document.activeElement !== this.game.canvas;
+        buildPlacement?.update(time, { canvasFocused: document.activeElement === this.game.canvas });
+        const typing = blocked || buildPlacement?.active || document.activeElement !== this.game.canvas;
         if (bridge.getStopRevision() !== lastStopRevision) {
           lastStopRevision = bridge.getStopRevision();
           path = [];
@@ -1522,8 +1520,8 @@ export function StudioVirtualSpacePhaserCanvas({
           emotes?.play("self", requestedEmote, time, "person", STUDIO_EMOTE_DEDUPE_MS);
           queueEmoteReaction(requestedEmote, null);
         }
-        let ix = blocked ? 0 : bridge.getJoystick().x;
-        let iy = blocked ? 0 : bridge.getJoystick().y;
+        let ix = blocked || buildPlacement?.active ? 0 : bridge.getJoystick().x;
+        let iy = blocked || buildPlacement?.active ? 0 : bridge.getJoystick().y;
         if (!typing) {
           if (heldKeys.has("ArrowLeft") || heldKeys.has("KeyA") || keys?.left?.isDown || keys?.a?.isDown) ix -= 1;
           if (heldKeys.has("ArrowRight") || heldKeys.has("KeyD") || keys?.right?.isDown || keys?.d?.isDown) ix += 1;
