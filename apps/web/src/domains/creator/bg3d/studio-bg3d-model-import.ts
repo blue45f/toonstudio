@@ -1229,7 +1229,7 @@ async function parseGlbSourceImport(
 
 /**
  * .skp(SketchUp) 가져오기: OpenSKP(MIT) 파사드로 브라우저에서 GLB로 변환한 뒤 기존 GLB
- * 경로로 합류한다. 변환기가 없거나(패키지 미설치) 파서가 파일을 거부하면 전용 오류 코드로
+ * 경로로 합류한다. 변환 청크를 불러오지 못하거나 파서가 파일을 거부하면 전용 오류 코드로
  * 실패해 DAE·GLB 내보내기 대안을 안내한다 — 되는 척하는 대체 변환은 하지 않는다.
  */
 async function parseSkpImport(

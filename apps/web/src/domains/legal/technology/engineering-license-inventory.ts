@@ -3,7 +3,7 @@
  *
  * 수집 기준 (2026-10-06 실측): 워크스페이스 전 패키지(루트, apps/*, packages/*,
  * tests/integration/*)의 package.json에서 직접 의존성(dependencies와
- * optionalDependencies, workspace 내부 패키지 제외) 116개를 뽑고, 라이선스 명은
+ * optionalDependencies, workspace 내부 패키지 제외) 117개를 뽑고, 라이선스 명은
  * 설치된 패키지의 package.json license 필드에서 확인했다. 이 환경에 설치되지 않은
  * 패키지는 pnpm-lock.yaml이 고정한 바로 그 버전의 레지스트리 메타데이터로 대조했다.
  * 전이 의존성과 개발 전용 도구(devDependencies: Vite, Vitest, Playwright, ESLint,
@@ -403,6 +403,13 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     surface: "web",
     flag: "weak-copyleft",
     role: { ko: "CAD 정밀 형상 연산 WASM", en: "CAD precision geometry WASM" },
+  },
+  {
+    name: "openskp",
+    version: "1.3.0",
+    license: "MIT",
+    surface: "web",
+    role: { ko: "SketchUp .skp 파일을 브라우저에서 GLB로 변환", en: "Converting SketchUp .skp files to GLB in the browser" },
   },
   {
     name: "p5.brush",

@@ -1,3 +1,4 @@
+import { create as createSkpBuilder } from "openskp";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -73,5 +74,27 @@ describe("convertStudioBg3dSkpToGlb", () => {
       fakeModule({ toGLB: () => fakeGlbBytes().buffer as ArrayBuffer });
     const glb = await convertStudioBg3dSkpToGlb(new Uint8Array([1]), loader);
     expect(glb.byteLength).toBe(12);
+  });
+});
+
+describe("convertStudioBg3dSkpToGlb with the real openskp package", () => {
+  // openskp 1.3.0이 정식 의존성으로 활성화된 뒤의 기본 로더 경로를 검증한다.
+  // 픽스처는 openskp 자체 작성기(SkpBuilder)로 만든 실제 .skp 바이트다.
+  function realSkpBytes(): Uint8Array {
+    const builder = createSkpBuilder();
+    builder.addFace([[0, 0, 0], [100, 0, 0], [100, 100, 0], [0, 100, 0]]);
+    return builder.toBytes();
+  }
+
+  it("converts a real .skp file to a GLB through the default loader", async () => {
+    const glb = await convertStudioBg3dSkpToGlb(realSkpBytes());
+    expect(glb.byteLength).toBeGreaterThan(0);
+    expect(glb.subarray(0, 4)).toEqual(new Uint8Array([0x67, 0x6c, 0x54, 0x46]));
+  });
+
+  it("maps a corrupt .skp file to the parse error, not the unavailable error", async () => {
+    await expect(convertStudioBg3dSkpToGlb(new Uint8Array([7, 8, 9]))).rejects.toBeInstanceOf(
+      StudioBg3dSkpParseError,
+    );
   });
 });
