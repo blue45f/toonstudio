@@ -350,7 +350,7 @@ describe("Studio VRM texture-paint production integration boundary", () => {
     const actorWiring = sourceBetween(
       poserSource,
       "<VrmActor",
-      "{vrm && showPoseBoneOverlay",
+      "{vrm && (manualPoseBoneOverlayVisible",
     );
 
     const success = requiredIndex(
