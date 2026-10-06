@@ -4556,6 +4556,622 @@
               ]
             }
           }
+        },
+        "npc-editor": {
+          "key": "npc-editor",
+          "kind": "npc",
+          "outputs": {
+            "direction-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-left": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "walk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "draw-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "walk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "draw-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "walk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "draw-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "walk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "draw-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "review-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-right": {
+              "cells": [
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "review"
+                },
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "sit": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                }
+              ]
+            },
+            "wave": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                }
+              ]
+            },
+            "state-talk": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "state-draw": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "state-review": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            }
+          },
+          "sheets": {
+            "walk": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-editor-walk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.262,
+                0.505,
+                0.745,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.261,
+                0.498,
+                0.741,
+                1
+              ]
+            },
+            "poses-dir": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-editor-poses-dir.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.342,
+                0.67,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.252,
+                0.5,
+                0.748,
+                1
+              ]
+            },
+            "poses-pose": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-editor-poses-pose.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.277,
+                0.495,
+                0.723,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.266,
+                0.499,
+                0.732,
+                1
+              ]
+            },
+            "talk": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-editor-talk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.259,
+                0.503,
+                0.72,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.255,
+                0.501,
+                0.742,
+                1
+              ]
+            },
+            "draw": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-editor-draw.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.26,
+                0.501,
+                0.742,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.289,
+                0.501,
+                0.718,
+                1
+              ]
+            },
+            "review": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/npc-editor-review.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.278,
+                0.503,
+                0.732,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.258,
+                0.499,
+                0.744,
+                1
+              ]
+            }
+          }
         }
       }
     }
