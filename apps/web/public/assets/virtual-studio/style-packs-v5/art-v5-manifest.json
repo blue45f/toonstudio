@@ -16898,253 +16898,253 @@
     },
     {
       "file": "webtoon/npcs/npc-host-direction-down.webp",
-      "bytes": 7530,
-      "sha256": "972bad9f66d1352b6fd45b10c38ce07bdd6e39bd9cde4d797edf5e27b92c1352",
+      "bytes": 8928,
+      "sha256": "aa9e12422aaf21bb7df5ed6b8af42b446047a4f3c2f4c1b944002bb8a69eacf6",
       "size": [
         160,
         160
       ],
-      "visualSignature": "9d17ab7cfd1e27198530069eabe38333f285afcea3b603f24fd06072eb3d5b4f"
+      "visualSignature": "49fa0e984a7e71d30d5cc36ad928e366cf41bca814a82d118aba62c3871a54b2"
     },
     {
       "file": "webtoon/npcs/npc-host-direction-left.webp",
-      "bytes": 7596,
-      "sha256": "82599bc3d461256e5ffa12513b9a70674b9c53d85ea1f5dbbc14f71a2cd98f28",
+      "bytes": 6684,
+      "sha256": "caf1cd19de90ec561ef78875070d6204667544838f3dafb9d44e9dc3eb008072",
       "size": [
         160,
         160
       ],
-      "visualSignature": "ae4cdf1dbc97646d1e61403f4a36cebc594a5d3f573885921f3a7aaaa433bf5e"
+      "visualSignature": "257f92c76376aea1544146a5cf7369555cbf8d8def3792210106a8b61220fcad"
     },
     {
       "file": "webtoon/npcs/npc-host-direction-right.webp",
-      "bytes": 7304,
-      "sha256": "8e7832346e8787ae8ff234eb2a948410f1dd67ce073f6b0c4cbd6065eca10b11",
+      "bytes": 6688,
+      "sha256": "8fbfdcff6cc1abb78cd1d36a6ae175d03ca7b0a50c2c076310211f07d853cb76",
       "size": [
         160,
         160
       ],
-      "visualSignature": "dee20c5669cb0f71019049e2dabbe5cb09dee8e708b8e89bbaccb5a95f35a4ab"
+      "visualSignature": "1a2fd09b1b0031db411a51672c144df5dcfe034eac04b537ab9dd519626f5259"
     },
     {
       "file": "webtoon/npcs/npc-host-direction-up.webp",
-      "bytes": 6968,
-      "sha256": "f525d63e2d3fb76109e8260ae7421e4854ae507138908d0aaec0baeceeb2ae3a",
+      "bytes": 7922,
+      "sha256": "b3da20cea0e01b3cc0bc39200748d138231ebb4a9a5b4987614fdf634de2c8d0",
       "size": [
         160,
         160
       ],
-      "visualSignature": "bea3eb1f5124b7298b422cc3fed6994c6da27be6da0701ab5047714128352ca4"
+      "visualSignature": "8c5b41e7936da85a4b6106cb868db0e4f2cc3451dede6c696ef85eba59180b77"
     },
     {
       "file": "webtoon/npcs/npc-host-draw-down.webp",
-      "bytes": 22336,
-      "sha256": "cc0d40c2c57f7121d39de304add6a8868810318931b9a147938131c22aa09c21",
+      "bytes": 33054,
+      "sha256": "989ef6d1e2b05cad5d9252d77d0418fffded0db48c81fb49ae0f1af46a2d625b",
       "size": [
         640,
         160
       ],
-      "visualSignature": "432ecc36d0da6b1e40f8a301771e4e8bc72f745fb04477ca2978926075ed5d72"
+      "visualSignature": "2d9d51af9b45c28d05c8c93b8a63c90abfd622c6d27e3278ca9720d1bd97ad56"
     },
     {
       "file": "webtoon/npcs/npc-host-draw-left.webp",
-      "bytes": 21778,
-      "sha256": "e42b3074468f0276d31484d7f147445d2f26b16b9446d0a0ec1cbbf851479807",
+      "bytes": 31564,
+      "sha256": "410d2f329cafdaa4929e62bce1d3f85976a9f37100f889fa0d4f1675b55691dd",
       "size": [
         640,
         160
       ],
-      "visualSignature": "505e62d9718a52ee94a6485257d99fd3a0d275d1a266b5f5b096461b6394c241"
+      "visualSignature": "b91eeb11dbc9c98492c0bc0daa264950d965c69b8c6d68c537aad62f7e1024ba"
     },
     {
       "file": "webtoon/npcs/npc-host-draw-right.webp",
-      "bytes": 21386,
-      "sha256": "f5fd3cbc172a810318ae2fe859912aa263673a662e2de1f37686a66570ca79fc",
+      "bytes": 32514,
+      "sha256": "6401f6643ebf22f8d8a9830d9362167a2b2382ed998c4b63698a9fcc470c2014",
       "size": [
         640,
         160
       ],
-      "visualSignature": "306e87c5e0e0be6b42ef82e3ec76e6606f89eab0b089fa69736e9c9d8a83bbea"
+      "visualSignature": "5cf8c7ce4424530d8d9698b346900e5445586c2ebc4724577c67dd3dbc6af89d"
     },
     {
       "file": "webtoon/npcs/npc-host-draw-up.webp",
-      "bytes": 20530,
-      "sha256": "255782e94786a7a393ac6dc6b351a6d6833827027e609ce249e0168f5dd07320",
+      "bytes": 28794,
+      "sha256": "66e8e6c35b209dc9457a3da27b1fc3554e6d3f837d69072e766f4e178eabbe96",
       "size": [
         640,
         160
       ],
-      "visualSignature": "9d635570d95bb8e8540bf39caeea1d95d207a016f61cac21b0e6a15141faf580"
+      "visualSignature": "c2f10d61297262cb2f2064e76cca03e4674be1635e8c352da28e96344c4250bf"
     },
     {
       "file": "webtoon/npcs/npc-host-review-down.webp",
-      "bytes": 22336,
-      "sha256": "cc0d40c2c57f7121d39de304add6a8868810318931b9a147938131c22aa09c21",
+      "bytes": 31804,
+      "sha256": "63cfd080e0b9607f611f5d8cde385b0099bd09ac20edcb53a8f9a5d855acbded",
       "size": [
         640,
         160
       ],
-      "visualSignature": "432ecc36d0da6b1e40f8a301771e4e8bc72f745fb04477ca2978926075ed5d72"
+      "visualSignature": "c6a48457b573039e448a0a2c2ae52b0a1767a4d8d6d12f00fc59b2ad16bf1aa8"
     },
     {
       "file": "webtoon/npcs/npc-host-review-left.webp",
-      "bytes": 21778,
-      "sha256": "e42b3074468f0276d31484d7f147445d2f26b16b9446d0a0ec1cbbf851479807",
+      "bytes": 29494,
+      "sha256": "c55af93ca6a22969c08e0a43f46d837c8d2181ba726f00944d2c070c12b817a2",
       "size": [
         640,
         160
       ],
-      "visualSignature": "505e62d9718a52ee94a6485257d99fd3a0d275d1a266b5f5b096461b6394c241"
+      "visualSignature": "bee625c01f9f8f073bbfb8abef584abb1610c0b94030a7822dc853a6d7638775"
     },
     {
       "file": "webtoon/npcs/npc-host-review-right.webp",
-      "bytes": 21386,
-      "sha256": "f5fd3cbc172a810318ae2fe859912aa263673a662e2de1f37686a66570ca79fc",
+      "bytes": 29354,
+      "sha256": "905eb6701b699d0994860bd02a29f5fb47f1126d52938fac3ce6cc4fa05e63a1",
       "size": [
         640,
         160
       ],
-      "visualSignature": "306e87c5e0e0be6b42ef82e3ec76e6606f89eab0b089fa69736e9c9d8a83bbea"
+      "visualSignature": "68dd76bd476e5b0e4e677ab4241e5535d4ead3e08fc04b6d23fb5c613ec0eb4f"
     },
     {
       "file": "webtoon/npcs/npc-host-review-up.webp",
-      "bytes": 20530,
-      "sha256": "255782e94786a7a393ac6dc6b351a6d6833827027e609ce249e0168f5dd07320",
+      "bytes": 26860,
+      "sha256": "96e6e3b9aeb47d250807fdbf899891fa3a07418ac1d1a914614113d9172c7341",
       "size": [
         640,
         160
       ],
-      "visualSignature": "9d635570d95bb8e8540bf39caeea1d95d207a016f61cac21b0e6a15141faf580"
+      "visualSignature": "d2a39c817b883590b53133364c86eb589ce15141acdb70b2b7db89d2f49eb24c"
     },
     {
       "file": "webtoon/npcs/npc-host-sit.webp",
-      "bytes": 23566,
-      "sha256": "63de0b093b42edab90dde2c0c83efc2350f60dce0dd10028a34fdc95c56e9100",
+      "bytes": 25830,
+      "sha256": "64d60e48f594d682a6235828589579796f87a6db0d8cd0abe195fa2ab200625c",
       "size": [
         640,
         160
       ],
-      "visualSignature": "419e1877c087e1fd8e649520f43febd8e79b0298f5ec03187d02d4df94b84bd6"
+      "visualSignature": "ecdfcda9d34fa57fe9f30f4fc5abda6229914dee12852cf180cbf8678b4ecd8a"
     },
     {
       "file": "webtoon/npcs/npc-host-state-draw.webp",
-      "bytes": 7476,
-      "sha256": "cb7af378380e2fe1a0aef44713a4dbfce66c38cbe245056de91de1670bc47c8a",
+      "bytes": 8652,
+      "sha256": "f1b6294a15b7f3e99a7ed9cf657a3d58fc49a2ca143489c4010ac0935b2c59f4",
       "size": [
         160,
         160
       ],
-      "visualSignature": "b267ac22f32658a4f1035326ef2375410ab1a8c5198a4a14eac83e65013fd3d1"
+      "visualSignature": "0c69dbacbeb05b3d07f61fa4d5859290b4d3cd60cd6fd684e8a6802ed1b586af"
     },
     {
       "file": "webtoon/npcs/npc-host-state-review.webp",
-      "bytes": 7476,
-      "sha256": "cb7af378380e2fe1a0aef44713a4dbfce66c38cbe245056de91de1670bc47c8a",
+      "bytes": 8686,
+      "sha256": "70caabe38d10551087812585f6e5b33b7b4be3f008c02a6eb0a5c40bb36164bd",
       "size": [
         160,
         160
       ],
-      "visualSignature": "b267ac22f32658a4f1035326ef2375410ab1a8c5198a4a14eac83e65013fd3d1"
+      "visualSignature": "6d638f35e69ab77fbe693aa0167d216efc8544b15cd80f484791b0f530d3f3ca"
     },
     {
       "file": "webtoon/npcs/npc-host-state-talk.webp",
-      "bytes": 8296,
-      "sha256": "bb98acf1a87c0b68501e7aa8a5f4ef4eb2ad4aceecab6fffe0eb6b403289bd90",
+      "bytes": 8832,
+      "sha256": "1cb85b3e2b6a28bc55c8392e6db99ff158775a0a20905d21d401071737e105f7",
       "size": [
         160,
         160
       ],
-      "visualSignature": "36a57cff4b4d218d7959c8c45b1ca552bec6aa8fc5aa63259020f358eb2df5bf"
+      "visualSignature": "c19cc3c88356905bd9d12b026d9186afe7bd2b78e3c721b11d4ed509a217682e"
     },
     {
       "file": "webtoon/npcs/npc-host-talk-down.webp",
-      "bytes": 24734,
-      "sha256": "4661e1689f862a655029e5ec82f2addefd7de89a1117a8ada5758d36047de014",
+      "bytes": 33738,
+      "sha256": "951cfc1b440b4cf2107e26f9f057be79ca18737413dd28e1d68f3e64a45e118b",
       "size": [
         640,
         160
       ],
-      "visualSignature": "56081366a54a92a4729d0d5d76ae104d99ada93ae83105dc657fe8f9fb4c509b"
+      "visualSignature": "7bb1a07805b5c5435c5d855cabdb4480b8ad8fb881750cb0e199def30a6368b5"
     },
     {
       "file": "webtoon/npcs/npc-host-talk-left.webp",
-      "bytes": 23920,
-      "sha256": "d89e5c42d2fb46a4f63f714358eadcf9846780f8c50c98e00ee2711f00d4a52b",
+      "bytes": 28694,
+      "sha256": "dc27d65a62071644042afd31847a66aa5ae77cab74c8cfeefd5c3dd3f9c0095b",
       "size": [
         640,
         160
       ],
-      "visualSignature": "536a86239eaad05fcd0e7e59d2e0b35119df79a128d2404e5eec4f8f20ec47ee"
+      "visualSignature": "013598c70b05150cef42bb837e098bea03c85244e0ba6639ea43852d848366aa"
     },
     {
       "file": "webtoon/npcs/npc-host-talk-right.webp",
-      "bytes": 24080,
-      "sha256": "9ccec1e20a8e3718dcf891921d93534b8c73bc134b8af42bfe4f2ba89084ecc3",
+      "bytes": 29336,
+      "sha256": "e2b8c495478028ef80cbc00c0c04694901bb37895e3ec2654f4a21e91c57f581",
       "size": [
         640,
         160
       ],
-      "visualSignature": "9441c48214184961d258610197eac8fd1b6136ee24607a3e3de4ec4b2df53c4b"
+      "visualSignature": "51309e9cc47ff38e6aa510a9eac8ec7664f2c98bd1cb04deef14fc77ffb61636"
     },
     {
       "file": "webtoon/npcs/npc-host-talk-up.webp",
-      "bytes": 22766,
-      "sha256": "c6ffaf986f2d64df24b6d1ab973ca52a9b269fef7312169b8fe4b19597196e25",
+      "bytes": 30982,
+      "sha256": "00e6493c37337907282284b29a0bb73db649a2cfb16ee4b428ee5182859fc25a",
       "size": [
         640,
         160
       ],
-      "visualSignature": "1b40b9d461395fab89d1279bfada85b2f3f899373a3ebabb0e3561f87cd11a13"
+      "visualSignature": "3605b183d6445cd9e1e803922a29248af14561f76cad4525dd9f72bcce898efc"
     },
     {
       "file": "webtoon/npcs/npc-host-walk-down.webp",
-      "bytes": 23188,
-      "sha256": "a25c373baa205535f2bbee378f8e564c7bd4a2fa49f2ec381bb749638b2bfe02",
+      "bytes": 31154,
+      "sha256": "85da7ac9e859dfbc19c65068279534da8662c194e925c8aa3f17754a85f74b15",
       "size": [
         640,
         160
       ],
-      "visualSignature": "aabf7ad2ebb79bff1e92acf9a4aa74b3bb1daf13e0a226c0bb426c6433c92bf1"
+      "visualSignature": "6182bedaeccdbf6b0bdd9d380ca12ae312e0a7371a005ea80e27a2fc35f0b180"
     },
     {
       "file": "webtoon/npcs/npc-host-walk-left.webp",
-      "bytes": 23194,
-      "sha256": "d6a3a578645057ed4761bbf91ab9c5c949ff0cddef3108fc5a0b0fe71b0e1396",
+      "bytes": 30938,
+      "sha256": "d3fecf9d06faf1cd0bf3dac83b258ec79b20643d64ef6eb72caeb05659c7e14c",
       "size": [
         640,
         160
       ],
-      "visualSignature": "5bc895735c8da2a33e30deefef35e7873fc20db8861b1e91d3f6bd5265a244f5"
+      "visualSignature": "319abdd713ee7f919afca22c0d75fbf353690ec6fa491846aedf22eff2556446"
     },
     {
       "file": "webtoon/npcs/npc-host-walk-right.webp",
-      "bytes": 22360,
-      "sha256": "14fc9393ec25c9daa4d9085d9e8fd17808a3770f8a4bc7eda75df96d438d51d7",
+      "bytes": 31322,
+      "sha256": "3cd86660da677e40945138f9efbfe55803792447938d17c81274efea18998dc9",
       "size": [
         640,
         160
       ],
-      "visualSignature": "d3fda5f06b798f169a32c20f08b2fe647aac46fe6992679d2f4fa859a0ed3bd9"
+      "visualSignature": "2a1fbc79aa322cde0411abb68cb155ae50ac4124cffbdc034464b46e4ef050fb"
     },
     {
       "file": "webtoon/npcs/npc-host-walk-up.webp",
-      "bytes": 21346,
-      "sha256": "704f51a75dfee1c4997c0ce6cbfa1ae36550380fccfb70e38891602a27b404e5",
+      "bytes": 28806,
+      "sha256": "f4b3f2093e6832da21ab0cdd5963215b78e43c7cb40bd4d5022e7a8a46bed335",
       "size": [
         640,
         160
       ],
-      "visualSignature": "9c4352d11495236667e33ac23398b99df0a06da091cbeb1d28a07a4a0a5fa6da"
+      "visualSignature": "c3ddee26e729c6fed1f713f5ab1437df2500fba36f650ab80154740f662e790f"
     },
     {
       "file": "webtoon/npcs/npc-host-wave.webp",
-      "bytes": 26290,
-      "sha256": "72a14f0c94993a7c74bf786c1d6c981a587f36f86c8928a0553bcf8484b02317",
+      "bytes": 31616,
+      "sha256": "3254e9b0069fe63c5f9e79ebb89b94b574b0c068d1f65a7a6e4df1291fde7b06",
       "size": [
         640,
         160
       ],
-      "visualSignature": "1919569db1932064d2ea8013b50f5b36b057b581b04679cae05eff32aef45d3e"
+      "visualSignature": "5e2d0dde6724a4a9579e89c516250ef3c9c125e21624224567dcc76b52f590be"
     },
     {
       "file": "webtoon/npcs/npc-producer-direction-down.webp",
