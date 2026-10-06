@@ -40,7 +40,7 @@ describe("StaggerReveal", () => {
       </StaggerReveal>,
     );
     expect(screen.getByText("첫째")).toBeTruthy();
-    const wrappers = Array.from(container.querySelectorAll(".reveal"));
+    const wrappers = Array.from(container.querySelectorAll<HTMLElement>(".reveal"));
     expect(wrappers).toHaveLength(3);
     // 첫 아이템은 지연 스타일 자체가 없다(즉시), 이후는 간격 누적.
     expect(wrappers[0]?.getAttribute("style") ?? "").not.toContain("--reveal-delay");
