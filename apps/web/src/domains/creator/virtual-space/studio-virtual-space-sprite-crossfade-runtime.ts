@@ -3,7 +3,8 @@
  *
  * 상태 전이 판정은 순수 모듈(`studio-virtual-space-sprite-smoothing`)이 하고,
  * 이 클래스는 배우(owner) 스프라이트 1장당 페이드 스프라이트 최대 1장을 붙여
- * 이전 그림을 100ms 동안 겹쳐 보여 주는 일만 한다.
+ * 이전 그림을 페이드 길이(상태 전이 150ms, 걷기 프레임 근사는 그보다 짧게) 동안
+ * 겹쳐 보여 주는 일만 한다.
  *
  * - 페이드 스프라이트는 배우가 처음 바뀔 때만 lazy 생성되고 이후 재사용된다 (증식 없음).
  * - 매 프레임 배우의 최종 변환(위치·각도·반전)을 복사하므로 텔레포트·좌석 이동 중에도
@@ -96,7 +97,7 @@ export class StudioSpriteCrossfadeRuntime {
     if (!pending) return;
     // 캡처 시점의 정체성을 상태 머신의 "이전 그림"으로 먼저 맞춘 뒤 전이를 계산한다.
     // (capture/commit 쌍이 매 프레임 돌므로 상태는 항상 직전 프레임과 동기화된다.)
-    entry.state = { identity: pending, fade: entry.state.fade };
+    entry.state = { identity: pending, fade: entry.state.fade, lastChangeAtMs: entry.state.lastChangeAtMs };
     const { state, started } = transitionStudioSpriteCrossfade(entry.state, identityOf(owner), time, {
       fadeMs: STUDIO_SPRITE_CROSSFADE_MS,
       enabled,

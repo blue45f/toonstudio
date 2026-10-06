@@ -8,6 +8,7 @@ import {
   STUDIO_PEER_ENTER_FADE_MS,
   STUDIO_PEER_EXIT_FADE_MS,
   STUDIO_SPRITE_CROSSFADE_MS,
+  STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS,
   createStudioSpriteCrossfadeState,
   dampStudioDisplayPoint,
   finishStudioSpriteCrossfade,
@@ -110,12 +111,12 @@ describe("크로스페이드 상태 머신", () => {
     const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), identity(), 0).state;
     const walk = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
     const { state, started } = transitionStudioSpriteCrossfade(first, walk, 500);
-    expect(started).toEqual({ textureKey: "idle-sheet", frame: "0", startedAt: 500 });
+    expect(started).toEqual({ textureKey: "idle-sheet", frame: "0", startedAt: 500, durationMs: STUDIO_SPRITE_CROSSFADE_MS });
     expect(state.identity?.textureKey).toBe("walk-sheet");
     expect(state.fade).toEqual(started);
   });
 
-  it("같은 텍스처의 게이트 걷기 프레임 진행은 페이드하지 않는다", () => {
+  it("같은 텍스처의 게이트 걷기 프레임 진행은 체류가 짧으면(빠른 걷기) 페이드하지 않는다", () => {
     const walk0 = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
     const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), walk0, 0).state;
     const walk1 = identity({ key: "walk-sheet#1|walk", textureKey: "walk-sheet", frame: "1", state: "walk" });
@@ -146,7 +147,7 @@ describe("크로스페이드 상태 머신", () => {
     const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), down, 0).state;
     const left = identity({ key: "atlas#4|walk|clip:walk-left", textureKey: "atlas", frame: "4", state: "walk", clipKey: "walk-left" });
     const { started } = transitionStudioSpriteCrossfade(first, left, 200);
-    expect(started).toEqual({ textureKey: "atlas", frame: "8", startedAt: 200 });
+    expect(started).toEqual({ textureKey: "atlas", frame: "8", startedAt: 200, durationMs: STUDIO_SPRITE_CROSSFADE_MS });
   });
 
   it("공유 아틀라스에서 같은 방향 클립의 프레임 진행은 페이드하지 않는다", () => {
@@ -157,6 +158,43 @@ describe("크로스페이드 상태 머신", () => {
     expect(started).toBeNull();
     expect(state.fade).toBeNull();
     expect(state.identity?.frame).toBe("9");
+  });
+
+  it("게이트 걷기 프레임 진행은 체류가 길면 짧은 근사 페이드를 건다 (절차 근사)", () => {
+    const walk0 = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), walk0, 0).state;
+    const walk1 = identity({ key: "walk-sheet#1|walk", textureKey: "walk-sheet", frame: "1", state: "walk" });
+    // 체류 200ms → 체류의 40%(80ms)가 상한 56ms에 걸린다.
+    const { state, started } = transitionStudioSpriteCrossfade(first, walk1, 200);
+    expect(started).toEqual({
+      textureKey: "walk-sheet", frame: "0", startedAt: 200,
+      durationMs: STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS,
+    });
+    expect(state.fade).toEqual(started);
+    // 근사 페이드는 기록된 짧은 길이에 맞춰 끝나고 상태 전이 길이까지 끌지 않는다.
+    expect(studioSpriteCrossfadeAlpha(state, 200 + STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS)).toBe(0);
+    expect(finishStudioSpriteCrossfade(state, 200 + STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS).fade).toBeNull();
+  });
+
+  it("걷기 프레임 근사 페이드 길이는 체류의 40%를 넘지 않는다", () => {
+    const walk0 = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), walk0, 0).state;
+    const walk1 = identity({ key: "walk-sheet#1|walk", textureKey: "walk-sheet", frame: "1", state: "walk" });
+    // 체류 130ms(최소값 120ms 초과) → 52ms.
+    const { started } = transitionStudioSpriteCrossfade(first, walk1, 130);
+    expect(started?.durationMs).toBeCloseTo(52, 6);
+    expect(started?.durationMs).toBeLessThan(STUDIO_SPRITE_CROSSFADE_MS);
+  });
+
+  it("걷기 프레임 근사 페이드는 프레임마다 새로 걸리지 않는다 (체류 재측정)", () => {
+    const walk0 = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), walk0, 0).state;
+    const walk1 = identity({ key: "walk-sheet#1|walk", textureKey: "walk-sheet", frame: "1", state: "walk" });
+    const second = transitionStudioSpriteCrossfade(first, walk1, 200).state;
+    const walk2 = identity({ key: "walk-sheet#2|walk", textureKey: "walk-sheet", frame: "2", state: "walk" });
+    // 직전 교체가 200ms였으므로 다음 프레임까지의 체류는 짧아 다시 걸지 않는다.
+    const { started } = transitionStudioSpriteCrossfade(second, walk2, 260);
+    expect(started).toBeNull();
   });
 
   it("한쪽에만 방향 클립이 있으면 종전 판정을 유지한다 (하위 호환)", () => {
@@ -172,7 +210,7 @@ describe("크로스페이드 상태 머신", () => {
     const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), calm, 0).state;
     const happy = identity({ key: "emotions#1|idle", textureKey: "emotions", frame: "1" });
     const { started } = transitionStudioSpriteCrossfade(first, happy, 300);
-    expect(started).toEqual({ textureKey: "emotions", frame: "0", startedAt: 300 });
+    expect(started).toEqual({ textureKey: "emotions", frame: "0", startedAt: 300, durationMs: STUDIO_SPRITE_CROSSFADE_MS });
   });
 
   it("enabled=false면 페이드 없이 즉시 교체한다 (모션 감소·저사양)", () => {
@@ -190,7 +228,7 @@ describe("크로스페이드 상태 머신", () => {
     const s1 = transitionStudioSpriteCrossfade(s0, walk, 100).state;
     const talk = identity({ key: "talk-sheet#0|talk", textureKey: "talk-sheet", state: "talk" });
     const { started } = transitionStudioSpriteCrossfade(s1, talk, 150);
-    expect(started).toEqual({ textureKey: "walk-sheet", frame: "0", startedAt: 150 });
+    expect(started).toEqual({ textureKey: "walk-sheet", frame: "0", startedAt: 150, durationMs: STUDIO_SPRITE_CROSSFADE_MS });
   });
 
   it("알파는 1에서 시작해 페이드 시간에 0이 되고, finish가 상태를 정리한다", () => {
@@ -203,8 +241,8 @@ describe("크로스페이드 상태 머신", () => {
     expect(mid).toBeLessThan(0.5);
     expect(studioSpriteCrossfadeAlpha(state, 1_000 + STUDIO_SPRITE_CROSSFADE_MS)).toBe(0);
     expect(finishStudioSpriteCrossfade(state, 1_050).fade).not.toBeNull();
-    expect(finishStudioSpriteCrossfade(state, 1_100).fade).toBeNull();
-    expect(finishStudioSpriteCrossfade(state, 1_100).identity?.textureKey).toBe("walk-sheet");
+    expect(finishStudioSpriteCrossfade(state, 1_000 + STUDIO_SPRITE_CROSSFADE_MS).fade).toBeNull();
+    expect(finishStudioSpriteCrossfade(state, 1_000 + STUDIO_SPRITE_CROSSFADE_MS).identity?.textureKey).toBe("walk-sheet");
   });
 
   it("동일 정체성 재적용은 진행 중인 페이드를 건드리지 않는다", () => {
