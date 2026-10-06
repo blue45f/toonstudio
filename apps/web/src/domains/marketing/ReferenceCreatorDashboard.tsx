@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronRight, FolderKanban, PencilLine, Plus, Search } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
+import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { ToonStudioWordmark } from "@/shared/components/toonstudio-brand";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { DiscoverHomePreview } from "@/domains/catalog/public/DiscoverHomePreview";
@@ -85,9 +86,10 @@ export function ReferenceCreatorDashboard() {
       </div>
     </section>
     <HomePersonalStrip />
-    <div className="rd-discover">
+    <RevealOnScroll variant="fade" className="rd-discover">
       <DiscoverHomePreview />
-    </div>
+    </RevealOnScroll>
+    <RevealOnScroll>
     <nav id="creator-start" className="rd-quick" aria-labelledby="creator-toolkit-title">
       <div className="rd-section-heading">
         <h2 id="creator-toolkit-title" tabIndex={-1}>{bi("무엇부터 시작할까요?", "Where would you like to start?")}</h2>
@@ -95,15 +97,22 @@ export function ReferenceCreatorDashboard() {
       </div>
       <div className="rd-quick-grid">{HOME_QUICK_STARTS.map((item) => <Link key={item.href} href={item.href}><img src={homeArt(item.image, 320)} alt="" width={240} height={144} decoding="async" /><strong>{bi(item.ko, item.en)}</strong><small>{bi(item.detailKo, item.detailEn)}</small></Link>)}</div>
     </nav>
+    </RevealOnScroll>
+    <RevealOnScroll>
     <section className="rd-examples" aria-labelledby="rd-examples-title">
       <div className="rd-examples-heading"><h2 id="rd-examples-title">{bi("예시 작품", "Example works")}</h2><Link href="/studio"><FolderKanban size={13} aria-hidden="true" />{bi("내 프로젝트", "My projects")}<ChevronRight size={13} aria-hidden="true" /></Link></div>
       <div className="rd-example-shelf">{HOME_EXAMPLES.map((example) => <div className="rd-example-cover" key={example.image}><img src={homeArt(example.image, 320)} alt="" width={180} height={120} decoding="async" /><span>{bi(example.ko, example.en)}<small>{bi(example.metaKo, example.metaEn)}</small></span></div>)}<Link className="rd-new-project" href="/studio/new"><Plus size={22} aria-hidden="true" /><span>{bi("새 작품", "New work")}</span></Link></div>
     </section>
-    <HomeCoreStudios />
-    <ReferenceEditorPreview />
-    <div className="rd-flow-next">
+    </RevealOnScroll>
+    <RevealOnScroll>
+      <HomeCoreStudios />
+    </RevealOnScroll>
+    <RevealOnScroll>
+      <ReferenceEditorPreview />
+    </RevealOnScroll>
+    <RevealOnScroll variant="fade" className="rd-flow-next">
       <ServiceFlowNext current="home" title={bi("처음이라면 서비스 소개부터", "New here? Start with the introduction")} />
-    </div>
+    </RevealOnScroll>
     <nav className="rd-chapters" aria-label={bi("서비스 더 알아보기", "Learn more about ToonStudio")}>
       <span className="rd-chapters-label">{bi("더 알아보기", "Learn more")}</span>
       {HOME_LEARN_MORE.map((link) => <Link key={link.href} href={link.href}>{bi(link.ko, link.en)}<ArrowRight size={14} aria-hidden="true" /></Link>)}

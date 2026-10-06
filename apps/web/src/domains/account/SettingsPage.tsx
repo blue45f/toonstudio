@@ -16,6 +16,7 @@ import { detectBrowserRegionSettings, planRegionSettingsSync, readLocalRegionSet
 
 import { AppearanceSettings } from "@/shared/components/appearance/AppearanceSettings";
 import { PageIntro } from "@/shared/components/page-intro";
+import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { RegionalPreferences } from "@/shared/components/RegionalPreferences";
 import { useSiteExperience } from "@/shared/components/site-experience/site-experience-context";
 import { Container } from "@/shared/components/section";
@@ -617,6 +618,7 @@ export function SettingsPage() {
       <div className="min-w-0 max-w-3xl">
 
       <SiteTabPanel idPrefix={SETTINGS_TAB_PREFIX} id="display" active={activeTab === "display"} mounted={isMounted("display")}>
+      <RevealOnScroll variant="fade">
       <div id="settings-display" className="scroll-mt-28">
         <section className="mb-6 rounded-2xl border border-line bg-panel/40 p-5" aria-labelledby="appearance-heading">
           <h2 id="appearance-heading" className="mb-4 text-base font-semibold">
@@ -644,6 +646,7 @@ export function SettingsPage() {
       <div id="settings-voice" className="mt-6 scroll-mt-28">
         <VoiceGuideSettingsSection />
       </div>
+      </RevealOnScroll>
 
       <div id="settings-ambient" className="mt-6 scroll-mt-28">
         <AmbientSettingsSection />
@@ -656,6 +659,7 @@ export function SettingsPage() {
       </SiteTabPanel>
 
       <SiteTabPanel idPrefix={SETTINGS_TAB_PREFIX} id="region" active={activeTab === "region"} mounted={isMounted("region")}>
+      <RevealOnScroll variant="fade">
       <div id="settings-region" className="scroll-mt-28">
         {regionStatus === "loading" ? (
           <div className="rounded-2xl border border-line bg-panel/40 p-5" role="status">
@@ -691,8 +695,10 @@ export function SettingsPage() {
           </div>
         )}
       </div>
+      </RevealOnScroll>
 
       {/* 필터 */}
+      <RevealOnScroll variant="fade">
       <div id="settings-filters" className="mt-8 scroll-mt-28">
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-fg-3">{t("settings.section.filters")}</h2>
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.filters")}>
@@ -724,11 +730,13 @@ export function SettingsPage() {
           </Row>
         </section>
       </div>
+      </RevealOnScroll>
 
       </SiteTabPanel>
 
       <SiteTabPanel idPrefix={SETTINGS_TAB_PREFIX} id="data" active={activeTab === "data"} mounted={isMounted("data")}>
       {/* 연령 확인 */}
+      <RevealOnScroll variant="fade">
       <div id="settings-age" className="scroll-mt-28">
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-fg-3">{t("settings.section.age")}</h2>
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.age")}>
@@ -763,8 +771,10 @@ export function SettingsPage() {
           </Row>
         </section>
       </div>
+      </RevealOnScroll>
 
       {/* 내 데이터 */}
+      <RevealOnScroll variant="fade">
       <div id="settings-data" className="mt-8 scroll-mt-28">
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-fg-3">{t("settings.section.data")}</h2>
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.data")}>
@@ -876,11 +886,13 @@ export function SettingsPage() {
           </p>
           </section>
       </div>
+      </RevealOnScroll>
 
       </SiteTabPanel>
 
       <SiteTabPanel idPrefix={SETTINGS_TAB_PREFIX} id="account" active={activeTab === "account"} mounted={isMounted("account")}>
       {/* 계정 */}
+      <RevealOnScroll variant="fade">
       <div id="account-security" className="scroll-mt-28">
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-fg-3">{t("settings.section.account")}</h2>
         <section
@@ -913,6 +925,7 @@ export function SettingsPage() {
           />
         </div>
       </div>
+      </RevealOnScroll>
       </SiteTabPanel>
       </div>
       </div>

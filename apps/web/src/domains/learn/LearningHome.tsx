@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PageIntro } from "@/shared/components/page-intro";
+import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 
@@ -359,6 +360,7 @@ export function LearningHome() {
         <SiteSectionTabs tabs={hubTabs} value={activeTab} onChange={selectTab} label="학습 영역" idPrefix={LEARN_TAB_PREFIX} />
 
         <SiteTabPanel idPrefix={LEARN_TAB_PREFIX} id="today" active={activeTab === "today"} mounted={isMounted("today")} className="learn-hub-panel">
+          <RevealOnScroll>
           <section className="learn-session-section" aria-labelledby="learn-session-title">
             <div className="learn-session-heading">
               <div><p className="learn-eyebrow">YOUR NEXT SESSION · {recommendedPath.title}</p><h2 id="learn-session-title">{profile.sessionMinutes}분 안에 이어갈 학습</h2></div>
@@ -377,6 +379,7 @@ export function LearningHome() {
               })}
             </ol>
           </section>
+          </RevealOnScroll>
 
           <details id="learn-plan" className="learn-plan-section learn-plan-disclosure" open={planOpen} onToggle={(event) => setPlanOpen(event.currentTarget.open)}>
             <summary>
@@ -439,6 +442,7 @@ export function LearningHome() {
         </SiteTabPanel>
 
         <SiteTabPanel idPrefix={LEARN_TAB_PREFIX} id="paths" active={activeTab === "paths"} mounted={isMounted("paths")} className="learn-hub-panel">
+          <RevealOnScroll>
           <section id="learning-paths" aria-labelledby="learning-paths-title">
             <div className="learn-section-heading">
               <div><p className="learn-eyebrow">GUIDED PATHS</p><h2 id="learning-paths-title">목표까지 길을 잃지 않는 학습 경로</h2></div>
@@ -448,10 +452,14 @@ export function LearningHome() {
               {LEARNING_PATHS.map((path) => <PathCard key={path.id} path={path} store={store} recommended={path.id === recommendedPath.id} />)}
             </SiteRail>
           </section>
-          <LearningProcessStudy />
+          </RevealOnScroll>
+          <RevealOnScroll variant="fade">
+            <LearningProcessStudy />
+          </RevealOnScroll>
         </SiteTabPanel>
 
         <SiteTabPanel idPrefix={LEARN_TAB_PREFIX} id="library" active={activeTab === "library"} mounted={isMounted("library")} className="learn-hub-panel">
+          <RevealOnScroll>
           <section id="learn-library" className="learn-library-section" aria-labelledby="learn-library-title">
             <div className="learn-section-heading">
               <div><p className="learn-eyebrow">COURSE LIBRARY</p><h2 id="learn-library-title">필요한 수업을 바로 찾는 전체 강좌</h2></div>
@@ -512,9 +520,11 @@ export function LearningHome() {
               <div className="learn-empty"><h3>조건에 맞는 강좌가 없습니다.</h3><p>검색어나 필터를 바꾸어 보세요.</p><button type="button" onClick={resetFilters}>전체 강좌 보기</button></div>
             )}
           </section>
+          </RevealOnScroll>
         </SiteTabPanel>
 
         <SiteTabPanel idPrefix={LEARN_TAB_PREFIX} id="skills" active={activeTab === "skills"} mounted={isMounted("skills")} className="learn-hub-panel">
+          <RevealOnScroll>
           <section className="learn-skill-section" aria-labelledby="learn-skills-title">
             <div className="learn-section-heading">
               <div><p className="learn-eyebrow">SKILL MAP</p><h2 id="learn-skills-title">완료한 강좌로 보는 나의 제작 경험</h2></div>
@@ -526,9 +536,11 @@ export function LearningHome() {
               ))}
             </div>
           </section>
+          </RevealOnScroll>
         </SiteTabPanel>
       </section>
 
+      <RevealOnScroll variant="fade">
       <section className="learn-next-steps" aria-labelledby="learn-next-steps-title">
         <div className="learn-section-heading">
           <div><p className="learn-eyebrow">NEXT STEPS</p><h2 id="learn-next-steps-title">배운 것을 자료와 작업으로 잇기</h2></div>
@@ -548,6 +560,7 @@ export function LearningHome() {
           ))}
         </SiteRail>
       </section>
+      </RevealOnScroll>
 
       <footer className="learn-local-footer">
         <p>한국어 학습 콘텐츠 · 로그인 없이 이용 가능 · 학습 기록과 목표 설정은 현재 브라우저에만 저장됩니다.</p>
