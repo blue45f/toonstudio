@@ -46,7 +46,6 @@ const INTENTIONAL_NON_DIRECTORY_ROUTES = new Set([
 ]);
 
 const LEGACY_SHARED_PAGE_ALIASES = new Map([
-  ["/create", "/showcase"],
   ["/create/challenges", "/showcase/challenges"],
   ["/create/promo", "/showcase/promo"],
 ]);

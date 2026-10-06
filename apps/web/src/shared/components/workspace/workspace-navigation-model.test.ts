@@ -12,7 +12,7 @@ describe("studio-first navigation contract", () => {
     ["/ranking", "explore"], ["/settings", "all-menu"],
     ["/make?from=home", "studio"], ["/shaper", "studio"], ["/music", "studio"],
     ["/brush-lab", "studio"], ["/publishing", "studio"], ["/creator-hub", "studio"],
-    ["/create", "community"], ["/create/work/a", "community"], ["/challenges", "community"],
+    ["/create", "studio"], ["/create/work/a", "community"], ["/challenges", "community"],
     ["/pencafe/artist", "community"], ["/references", "explore"], ["/compare", "explore"],
     ["/story-lab", "studio"], ["/my", "all-menu"], ["/notifications", "all-menu"],
   ])("keeps %s in the right global destination", (path, id) => {

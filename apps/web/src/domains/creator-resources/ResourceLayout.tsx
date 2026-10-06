@@ -244,7 +244,7 @@ export function ResourceLayout({
       <div className="flex flex-wrap gap-2">
         <Link className={`${RESOURCE_BUTTON} border-accent bg-accent text-on-accent hover:bg-accent-2`} to="/studio" reloadDocument>{layoutTx("스튜디오 열기 ↗")}</Link>
         <Link className={RESOURCE_BUTTON} to="/learn">{layoutTx("제작 강좌")}</Link>
-        <Link className={RESOURCE_BUTTON} to="/create">{layoutTx("작품 갤러리")}</Link>
+        <Link className={RESOURCE_BUTTON} to="/showcase">{layoutTx("작품 갤러리")}</Link>
         <Link className={RESOURCE_BUTTON} to="/community">{layoutTx("창작 커뮤니티")}</Link>
       </div>
     </footer>

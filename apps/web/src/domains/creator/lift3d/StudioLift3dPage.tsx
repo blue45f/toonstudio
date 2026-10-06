@@ -485,7 +485,7 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
             >
               Studio 편집기 열기
             </button>
-            <Link href="/create" data-studio-route-exit="site" className={SECONDARY_BUTTON_CLASS}>
+            <Link href="/showcase" data-studio-route-exit="site" className={SECONDARY_BUTTON_CLASS}>
               창작 게시판으로
             </Link>
           </div>

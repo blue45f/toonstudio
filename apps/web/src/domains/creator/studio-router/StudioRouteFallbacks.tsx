@@ -46,7 +46,7 @@ function StudioRouteExits({
       >
         {openLabel}
       </button>
-      <Link href="/create" data-studio-route-exit="site" className={SECONDARY_EXIT_CLASS}>
+      <Link href="/showcase" data-studio-route-exit="site" className={SECONDARY_EXIT_CLASS}>
         창작 게시판으로
       </Link>
     </div>

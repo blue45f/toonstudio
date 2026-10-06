@@ -66,7 +66,7 @@ const COPY = {
       ["리서치", "출처와 이용조건을 보존하며 자료 모으기", "/research"],
       ["스토리 연구실", "인물·욕망·갈등·전환점을 구조화", "/story-lab"],
       ["Studio 프로젝트", "페이지·레이어·3D·협업으로 실제 원고 제작", "/studio"],
-      ["공개와 피드백", "창작 갤러리와 커뮤니티에서 작품 공유", "/create"],
+      ["공개와 피드백", "창작 갤러리와 커뮤니티에서 작품 공유", "/showcase"],
     ],
     tools: [
       ["브러시 연구실", "브러시를 만들고 시험한 뒤 Studio나 마켓에 연결", "/brush-lab"],
@@ -110,7 +110,7 @@ const COPY = {
       ["Research", "Collect references while preserving sources and usage terms", "/research"],
       ["Story lab", "Structure character, desire, conflict and turning points", "/story-lab"],
       ["Studio projects", "Build real pages with layers, 3D and collaboration", "/studio"],
-      ["Release & feedback", "Share work through the creator gallery and community", "/create"],
+      ["Release & feedback", "Share work through the creator gallery and community", "/showcase"],
     ],
     tools: [
       ["Brush lab", "Build and test brushes, then connect them to Studio or Market", "/brush-lab"],

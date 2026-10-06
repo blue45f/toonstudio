@@ -237,6 +237,8 @@ export function resolveSiteRouteVisualKind(input: string): SiteRouteVisualKind {
   ) return "spatial";
   if (family(pathname, ["/studio/assets", "/market", "/research/assets", "/research/packs", "/research/3d-assets", "/research/material-assets", "/research/space-assets", "/research/vam", "/research/rijksmuseum", "/research/fonts", "/research/creatures", "/research/music-metadata", "/research/archive", "/research/weather-light", "/research/open-data"])) return "assets";
   if (pathname.includes("/review") || family(pathname, ["/reviews", "/feedback"])) return "review";
+  // /create 정확 경로는 작품 시작 시트라 만들기 문맥이다. 하위 경로는 발행 문맥을 유지한다.
+  if (pathname === "/create") return "create";
   if (pathname.includes("/publish") || family(pathname, ["/showcase", "/create"])) return "publish";
   if (family(pathname, ["/studio/manual", "/studio/environment", "/learn", "/help", "/guide", "/references", "/research", "/about/workflow", "/about/technology"])) return "learn";
   if (exact(pathname, ["/studio/toolchain", "/studio/engines", "/studio/jobs"])) return "production";

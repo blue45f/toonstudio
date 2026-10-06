@@ -107,7 +107,7 @@ describe("StudioWorkAssetsPage", () => {
     expect(document.querySelector('[data-studio-route-exit="editor"]')?.getAttribute("href"))
       .toBe("/studio/work/work-1/canvas");
     expect(document.querySelector('[data-studio-route-exit="site"]')?.getAttribute("href"))
-      .toBe("/create");
+      .toBe("/showcase");
     expect(await screen.findByRole("list", { name: "에셋 목록" })).toBeTruthy();
   });
 

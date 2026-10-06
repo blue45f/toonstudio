@@ -7,7 +7,7 @@ import {
   CharacterShaperLandingPage, CreatorEnvironmentGuidePage, CreatorEcosystemPage,
   CreatorGrowthIpPage, CreatorGrowthLabPage, CreatorEcosystemViewerPage,
   CreatorInferencePage, CreateChallengesPage, CreateGalleryPage,
-  CreateSeriesPage, CreateWorkPage, LearnPage,
+  CreateSeriesPage, CreateStartPage, CreateWorkPage, LearnPage,
   PersonalInferencePage, StudioAiSettingsPage, StudioAssetHubPage,
   StudioBrushLabPage, StudioCharacterConversionPage, StudioCharacterOnboardingPage,
   StudioCreatorSupportPage, StudioDocumentWorkspaceRoute, StudioHomePage,
@@ -80,8 +80,9 @@ export const creatorRoutes = defineAppRoutes([
   { id: "creator-brush-lab", path: "/brush-lab", element: <Navigate to={studioRoutePath("asset-brush-new")} replace /> },
   { id: "creator-studio-brush-lab", path: "/studio/brush-lab", element: <Navigate to={studioRoutePath("asset-brush-new")} replace /> },
 
-  // Existing public gallery URLs remain compatible while links migrate to /showcase.
-  { id: "creator-gallery", path: "/create", element: <CreateGalleryPage /> },
+  // /create는 작품 시작 시트가 정본이다. 갤러리 본문은 /showcase로 일원화됐고,
+  // 갤러리 보기 조건을 단 옛 /create 주소는 시작 시트가 /showcase로 넘긴다.
+  { id: "creator-gallery", path: "/create", element: <CreateStartPage /> },
   { id: "creator-challenges", path: "/create/challenges", element: <CreateChallengesPage /> },
   { id: "creator-promo", path: "/create/promo", element: <StudioPromoPage /> },
   { id: "creator-series", path: "/create/series/:id", element: <CreateSeriesPage /> },
