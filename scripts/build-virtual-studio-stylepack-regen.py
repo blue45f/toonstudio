@@ -10,6 +10,11 @@
 셀 출처는 scripts/virtual-studio/stylepack-regen-maps.json이 정본이다.
 어떤 출력 파일이 어떤 시트의 어떤 셀에서 왔는지 전부 그 파일에 남는다.
 
+생성 시트의 행·열이 균등 격자와 어긋나는 경우가 있어, 시트별로 실측한
+경계 비율(rowEdges/colEdges, 0~1, 길이 rows+1/cols+1)을 맵에 적을 수
+있다. 경계가 있으면 그 비율로 자르고, 없으면 균등 분할한다. 경계는
+피규어 사이 빈 띠의 한가운데로 잡는 것이 원칙이다.
+
 규칙:
 - 스타일 간·배우 간 픽셀 재사용 금지. 한 배우의 출력은 그 배우의
   시트에서만 만든다 (미러링 포함 금지).
@@ -63,8 +68,16 @@ def sheet_image(maps_root: Path, spec: dict) -> Image.Image:
 def crop_cell(sheet: Image.Image, spec: dict, row: int, col: int) -> Image.Image:
     cols, rows = int(spec["cols"]), int(spec["rows"])
     w, h = sheet.size
-    x0, x1 = round(col * w / cols), round((col + 1) * w / cols)
-    y0, y1 = round(row * h / rows), round((row + 1) * h / rows)
+    col_edges = spec.get("colEdges")
+    row_edges = spec.get("rowEdges")
+    if col_edges:
+        x0, x1 = round(col_edges[col] * w), round(col_edges[col + 1] * w)
+    else:
+        x0, x1 = round(col * w / cols), round((col + 1) * w / cols)
+    if row_edges:
+        y0, y1 = round(row_edges[row] * h), round(row_edges[row + 1] * h)
+    else:
+        y0, y1 = round(row * h / rows), round((row + 1) * h / rows)
     return sheet.crop((x0, y0, x1, y1))
 
 
@@ -203,6 +216,15 @@ def check_maps(maps: dict) -> list[str]:
                 if not path.exists():
                     problems.append(f"{style}/{actor}: 시트 없음 {sheet_spec['file']}")
                     continue
+                for edge_key, count_key in (("rowEdges", "rows"), ("colEdges", "cols")):
+                    edges = sheet_spec.get(edge_key)
+                    if edges is None:
+                        continue
+                    want_len = int(sheet_spec[count_key]) + 1
+                    if len(edges) != want_len:
+                        problems.append(f"{style}/{actor}/{sheet_key}: {edge_key} 길이는 {want_len}이어야 합니다")
+                    elif edges[0] != 0 or edges[-1] != 1 or any(b <= a for a, b in zip(edges, edges[1:])):
+                        problems.append(f"{style}/{actor}/{sheet_key}: {edge_key}는 0에서 1까지 단조 증가해야 합니다")
                 with Image.open(path) as image:
                     if image.width % int(sheet_spec["cols"]) or image.height % int(sheet_spec["rows"]):
                         pass  # 균등 분할은 반올림으로 처리하므로 경고로 삼지 않는다

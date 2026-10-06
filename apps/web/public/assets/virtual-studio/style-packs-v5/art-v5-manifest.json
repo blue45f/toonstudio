@@ -18438,253 +18438,253 @@
     },
     {
       "file": "webtoon/players/player-silver-direction-down.webp",
-      "bytes": 7506,
-      "sha256": "7b91817e1df1370d673d14519a22755e2707ecea8a269a3f9a4c96e029a00ccb",
+      "bytes": 7822,
+      "sha256": "8754550c75b5b29fa4ef5a492a56dd86b7eae88534e637208fc4d52ed6d9cdac",
       "size": [
         160,
         160
       ],
-      "visualSignature": "ba89aac5c563a68a91c678d4594e6ec2a2e40e104fd07e2d7d6873997556e696"
+      "visualSignature": "a68e001251e2d34a8dff670cc78b50e2ee4139f125986c65535e916bd0e4de87"
     },
     {
       "file": "webtoon/players/player-silver-direction-left.webp",
-      "bytes": 7124,
-      "sha256": "b9f07b531a7e397008f8b239c7d8d2367fe19a6d6b48528a8b3d07f36577b0f4",
+      "bytes": 7114,
+      "sha256": "6369bd8a5888218c8f753c2b1abc422946e9fa5a887c67ce05986a209fdd8570",
       "size": [
         160,
         160
       ],
-      "visualSignature": "c61d86ccd7b9f884be784368925e8b4b941702253efb2b291e2c1ce9f0f9e067"
+      "visualSignature": "0853b07461aac9cd4c86606c81060493d2d6e12aa7a04c05ffcfa72965b0ca84"
     },
     {
       "file": "webtoon/players/player-silver-direction-right.webp",
-      "bytes": 7064,
-      "sha256": "66a623d15d074e0dc13beebe127c8878c741b486e39a4861ca47f40e102c5d59",
+      "bytes": 6976,
+      "sha256": "fe3f005e641b40a4ae69939785218dc4eed184f04f6c0838bc5571d82af17a9a",
       "size": [
         160,
         160
       ],
-      "visualSignature": "70240dcc72e8949d9b3d29fe857832046054841a192f6c56affc34cea73b8aad"
+      "visualSignature": "126308cba98a08789e53dc1ba3a924f7abe1036b339eefd581a07a1377de5d45"
     },
     {
       "file": "webtoon/players/player-silver-direction-up.webp",
-      "bytes": 6934,
-      "sha256": "227feba8a2824347fb3171a961252c8cea4514e4ab0059e58b35cca0fcb893af",
+      "bytes": 6508,
+      "sha256": "d448aeda60d4c09b2eff5355b8e729735ba7437856d370a21d0da301d929c002",
       "size": [
         160,
         160
       ],
-      "visualSignature": "b46de7587f9307552fcc15a30d6b99f67fbe14f3bc13625262f46aff6ae0bf25"
+      "visualSignature": "b174777a7a0d5ea8b170af1fa82fe061e2dbc3e7992b489dec61a76b9405a6dd"
     },
     {
       "file": "webtoon/players/player-silver-draw-down.webp",
-      "bytes": 21402,
-      "sha256": "bf8d0c3dfe98931dd33437580d336a0935e679dbc34279652edc7f7254ba94d1",
+      "bytes": 35072,
+      "sha256": "ec7f3d3a6d075d09ae8eb4d7f0bdb67b5390dc68e2ae837945a172752af0fe6e",
       "size": [
         640,
         160
       ],
-      "visualSignature": "02d5b68dccbd2cd7bd6e5b409f05b0c93ee4ee73aa3702328f382bfdddac292a"
+      "visualSignature": "9a0971265b6d2a61991a5657665f00635cd9cf963b6c317363e63886d36b1afa"
     },
     {
       "file": "webtoon/players/player-silver-draw-left.webp",
-      "bytes": 19724,
-      "sha256": "a6c8fa45131fedae361a0cee0e608e478e1ca7a4cd2b748b3a72d44626bfca4c",
+      "bytes": 31866,
+      "sha256": "ac662d6407970f0f22e616d7d9117626e6bfd289ef9922fdadb629accd3cb4f9",
       "size": [
         640,
         160
       ],
-      "visualSignature": "588ce72a7dadcacf59f7b70d2836d1bde99c4175afc084f21621ee9c6e021558"
+      "visualSignature": "1dede9d9a3b68c14e309167a5733df6c35b9eae6b1aac94a26fa9278e158dac8"
     },
     {
       "file": "webtoon/players/player-silver-draw-right.webp",
-      "bytes": 19540,
-      "sha256": "d6f0f7466068162d8f61a6b9b49bab88b578f10968b926c7ead4bd8df4d636df",
+      "bytes": 33798,
+      "sha256": "4f6578306da9bde37dea440dec85dc54689d340ab032a51803fbffa5f4af5eb2",
       "size": [
         640,
         160
       ],
-      "visualSignature": "42a91f7667268334a67008164ace3be7b985bfb08670d24df28754268a38d57e"
+      "visualSignature": "20c00de5664c49d5a995d2fca225a21b9d736b52fc316ef8968affca6a699e68"
     },
     {
       "file": "webtoon/players/player-silver-draw-up.webp",
-      "bytes": 19592,
-      "sha256": "30f31a59d24c797d24df83d0cd8398b5dd02571c594d1da8b7734615a51606bb",
+      "bytes": 27908,
+      "sha256": "8b20501ded9f60d62a658b840987d956ed3da986a05475e81276ce19e6ad50a6",
       "size": [
         640,
         160
       ],
-      "visualSignature": "bc70b13e6ff49a680850f5f3771b0a7324ef4489ef2f4c63ec3c33a771d798df"
+      "visualSignature": "ba7e09b115b5409a6996c88ed58d880fde468f5a09e3553c56915e3a8391b11d"
     },
     {
       "file": "webtoon/players/player-silver-review-down.webp",
-      "bytes": 21402,
-      "sha256": "bf8d0c3dfe98931dd33437580d336a0935e679dbc34279652edc7f7254ba94d1",
+      "bytes": 29952,
+      "sha256": "07c452441e1a80e936656b8eac3e46203bc69f4024f45dcc0467508b4365a3b8",
       "size": [
         640,
         160
       ],
-      "visualSignature": "02d5b68dccbd2cd7bd6e5b409f05b0c93ee4ee73aa3702328f382bfdddac292a"
+      "visualSignature": "ae8e6947a8f2129a54c207a3d3e6c4a7649300e6fa80e9b03dafb6a687bcb18f"
     },
     {
       "file": "webtoon/players/player-silver-review-left.webp",
-      "bytes": 19724,
-      "sha256": "a6c8fa45131fedae361a0cee0e608e478e1ca7a4cd2b748b3a72d44626bfca4c",
+      "bytes": 29444,
+      "sha256": "0ca0afaab085efa3ce22c5296c919cf36bc085bed4fa3860c9923aa9dab52b98",
       "size": [
         640,
         160
       ],
-      "visualSignature": "588ce72a7dadcacf59f7b70d2836d1bde99c4175afc084f21621ee9c6e021558"
+      "visualSignature": "79e86e064892e30ce8d97dd6148da4bd917666f297798788f2afc61c0a74e852"
     },
     {
       "file": "webtoon/players/player-silver-review-right.webp",
-      "bytes": 19540,
-      "sha256": "d6f0f7466068162d8f61a6b9b49bab88b578f10968b926c7ead4bd8df4d636df",
+      "bytes": 26760,
+      "sha256": "d3a8fb24c59bff4f3712f9f7899faf766ed9a706a370a01b64361eb150b59780",
       "size": [
         640,
         160
       ],
-      "visualSignature": "42a91f7667268334a67008164ace3be7b985bfb08670d24df28754268a38d57e"
+      "visualSignature": "f8d48c3c847a0ba3a0102817ab11fc5666a9f8a80c4194af616a935090adf794"
     },
     {
       "file": "webtoon/players/player-silver-review-up.webp",
-      "bytes": 19592,
-      "sha256": "30f31a59d24c797d24df83d0cd8398b5dd02571c594d1da8b7734615a51606bb",
+      "bytes": 27520,
+      "sha256": "e7fe27c5bb0f4297f59b26599953629dfc198a277605c18f6648b16c9935b9b3",
       "size": [
         640,
         160
       ],
-      "visualSignature": "bc70b13e6ff49a680850f5f3771b0a7324ef4489ef2f4c63ec3c33a771d798df"
+      "visualSignature": "29ebe35ffffbe42bf553ddbef822c75427abd1f940dd9a5e273c1697a7e79f05"
     },
     {
       "file": "webtoon/players/player-silver-sit.webp",
-      "bytes": 23432,
-      "sha256": "0eed922c1d7ba9a718e23aee3fcba9a971d5afa8d7a2c2d6108c5af833a45499",
+      "bytes": 25486,
+      "sha256": "4265880c17082ad3c1163dce48460db7734ec4fa049273c692c3167194e366e0",
       "size": [
         640,
         160
       ],
-      "visualSignature": "7994dc77e2b54bb58afa0e13034e8e63d30545b8034321d8255736aa8c4c06db"
+      "visualSignature": "65613596a1590f8f12bfa6c2438865f9e07547b454c0e8e798dbcc018e88c025"
     },
     {
       "file": "webtoon/players/player-silver-state-draw.webp",
-      "bytes": 6894,
-      "sha256": "24a6895d6126cd4554aba87a18289ea0d12339a5b639bac548d7d9ef48c8b6da",
+      "bytes": 9042,
+      "sha256": "b93d229bc7abc3802ff87c5ba26519f398ca448cc11f41e6904eb4f3dd5b0b82",
       "size": [
         160,
         160
       ],
-      "visualSignature": "0a6daf7bca370638b2a4bb1fa95023069a5f3753063d3845e050d23aaef2a359"
+      "visualSignature": "f3a502ae90e12576ead3cae5ca8cb47237a583cd8aada3e30e160ead418377ff"
     },
     {
       "file": "webtoon/players/player-silver-state-review.webp",
-      "bytes": 6894,
-      "sha256": "24a6895d6126cd4554aba87a18289ea0d12339a5b639bac548d7d9ef48c8b6da",
+      "bytes": 7890,
+      "sha256": "8fa0d7c1c4176bc5459cf3a33a4154caf20a3d0f0b001f37e880b8205a9a9ac9",
       "size": [
         160,
         160
       ],
-      "visualSignature": "0a6daf7bca370638b2a4bb1fa95023069a5f3753063d3845e050d23aaef2a359"
+      "visualSignature": "fbdd58d8501424bbd676d2d2dffa339b145934013b92f786459b5aac6a28de73"
     },
     {
       "file": "webtoon/players/player-silver-state-talk.webp",
-      "bytes": 7560,
-      "sha256": "824201aba9dfac0e6a61ac138b2adc2ad58eba8c97ed7332da80345891982ef5",
+      "bytes": 8026,
+      "sha256": "0920635967ff7ebec51216da5bcf8d1fe069112aa0458e4e672ee72892b98888",
       "size": [
         160,
         160
       ],
-      "visualSignature": "3d4f9b2a4c804d0b5d8d00a13981a53b22189c14077502e09b9b5f1801329d97"
+      "visualSignature": "96067f289b215eddf0359829bf5ec0c3afa8fc67a239fc94e2eda8491ea2120a"
     },
     {
       "file": "webtoon/players/player-silver-talk-down.webp",
-      "bytes": 23194,
-      "sha256": "89c5456813c8cffc63962da9651aed0ec9b5c862183ea367498a28b75a3cd210",
+      "bytes": 31960,
+      "sha256": "a4d1d6deb8627d0b6a333a7ff63c55867e1a0fe574c49228940ac70409024743",
       "size": [
         640,
         160
       ],
-      "visualSignature": "85abbc4143459dd78525745641ec1301bf054d1c5bdb296aafce60b60c7b471b"
+      "visualSignature": "de3fb17fec41ca51a341bbfe1d7924de1321b745b0d3cf3867564e3f96bfdd4e"
     },
     {
       "file": "webtoon/players/player-silver-talk-left.webp",
-      "bytes": 22098,
-      "sha256": "456b6c2f61c9129b1ba525a8ee1a2430bd7c8505646c9d0817e817fd0427640b",
+      "bytes": 30022,
+      "sha256": "896dc477890ffb6a4dc308989aff888a676c77fc98cb566b867dca0e573d27fb",
       "size": [
         640,
         160
       ],
-      "visualSignature": "611b75e742f6b767f19762f5780092c0cd806e892a68d0542f2991598f49e54b"
+      "visualSignature": "07c13af32c5dbdfbbfd239e0ef645aa2c3787d940247a8380a6759bc279613d4"
     },
     {
       "file": "webtoon/players/player-silver-talk-right.webp",
-      "bytes": 21992,
-      "sha256": "699e5932dedbcba4c067ef5a764968610178423d7e76e9e7ea077a41d7d97ae3",
+      "bytes": 28034,
+      "sha256": "16e2a8fcfaab8c77d66730d973dea2709b4e009de84756f8d9ba6e66d30af300",
       "size": [
         640,
         160
       ],
-      "visualSignature": "df8b07a4dc1fbd7b4bbf0d7a13a0caf91a5975d7da25185576b0b7413ad714a6"
+      "visualSignature": "20436b2b4d5d89a0890e002bbdb54e3071fc9ae24d89a1029e4450f01a2dae9e"
     },
     {
       "file": "webtoon/players/player-silver-talk-up.webp",
-      "bytes": 21626,
-      "sha256": "e10c57b7a53678ff8a673e79baec211d1bbaa33d711ade791adc340911f36b37",
+      "bytes": 29096,
+      "sha256": "0695a99a366608fadebb8acf891ad190e691f08a171e6c17922c0ceb115895af",
       "size": [
         640,
         160
       ],
-      "visualSignature": "da6e4b30c9d5a2e554bc121717830c18d86f7636ee9c5cfd564174e48222987d"
+      "visualSignature": "4f811ebfb9f8f27ddbffc870027be01d081bcbc498d100c6df4b6ad0338cf771"
     },
     {
       "file": "webtoon/players/player-silver-walk-down.webp",
-      "bytes": 23928,
-      "sha256": "28aa98be2568f982c6c1a4ff1a9673739f8d03fb1a14abe24f4209dfafbff490",
+      "bytes": 32266,
+      "sha256": "370b1a543afca881f4eab869f5c063e76239359704cabc6df99bf8c9208c48c8",
       "size": [
         640,
         160
       ],
-      "visualSignature": "062cee4c93a162d7c9df03fa44f8d078c451733ad06bfb6edb34d5596b95e31b"
+      "visualSignature": "a9cff7236bef3568539cc45c3b66d9410abf1f389b3aa48422902075569bf5e0"
     },
     {
       "file": "webtoon/players/player-silver-walk-left.webp",
-      "bytes": 22388,
-      "sha256": "c5ae69737d423ecdcaf5d0990331eda8efbc3504fcf01cc5e99eb15d539e23e3",
+      "bytes": 32424,
+      "sha256": "22ee7d87d8a572ba355c9de044be5e22082f717a0f748235ae0e83e6389dcf71",
       "size": [
         640,
         160
       ],
-      "visualSignature": "7093b5e0e5128ad18183e52fc3202fdde18267165a2b8a116f146cd0ba081eb7"
+      "visualSignature": "9e0bb5739741d23bd16b17700efe6910d1cc0d7944c4275350e08835642b71f4"
     },
     {
       "file": "webtoon/players/player-silver-walk-right.webp",
-      "bytes": 22190,
-      "sha256": "4c6c58aa90ecf1b46601a86f01dc41de0515a2197f79da5ad3506efd0f74b887",
+      "bytes": 32384,
+      "sha256": "cc474b606497fc1766ad1e21892a7812c94096dc56b9c7917b46d527db825146",
       "size": [
         640,
         160
       ],
-      "visualSignature": "b8155f37937b7f64a3b34c9f377f046b90aa13316c23ab952c67c2a1451e0820"
+      "visualSignature": "e37e61454825b377b7780b7306292350461a3f86251b2311b6296c0b5916e6ff"
     },
     {
       "file": "webtoon/players/player-silver-walk-up.webp",
-      "bytes": 22386,
-      "sha256": "ce79b19f676feaea1f865ce546fd67dcea80e2c60ed3ed3821e1b116b30bcf9c",
+      "bytes": 29362,
+      "sha256": "b3d0483a1736d42ac964847ce35b381fd1693e84207b5e4dd2bcce19174dc2dc",
       "size": [
         640,
         160
       ],
-      "visualSignature": "7cc04075998149db54aa425e967f66f297cf392999d5ae9ed63a58d915b2abdd"
+      "visualSignature": "ee3f8db79fb1c81d6df97178684cd34bbf699ebf82d9a6a872863f8290c922de"
     },
     {
       "file": "webtoon/players/player-silver-wave.webp",
-      "bytes": 24830,
-      "sha256": "2e686d6e593d54d86f2885c70c37afb7da28abcde92b7e55f024670d0df5e220",
+      "bytes": 31994,
+      "sha256": "3d17c0f59bb709225be92a8fd2d947c00a9d08cc413227cbc534de3c1dd4de30",
       "size": [
         640,
         160
       ],
-      "visualSignature": "97cba24be61c5725eccfd7fc0d1cadea2e8938865b4ecb4523d9065c98391705"
+      "visualSignature": "05be1a7463561b4cb631ed0e086f7b42e9cef9aaee6473b8d901d3a96a96593b"
     },
     {
       "file": "webtoon/world/cloud-back.webp",

@@ -535,6 +535,674 @@
               "rows": 4
             }
           }
+        },
+        "player-silver": {
+          "key": "player-silver",
+          "kind": "player",
+          "outputs": {
+            "direction-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "direction-up": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "poses-pose"
+                }
+              ]
+            },
+            "direction-left": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "walk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "walk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "walk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "walk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "walk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "walk"
+                }
+              ]
+            },
+            "talk-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "talk-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk-right"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk-right"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk-right"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk-right"
+                }
+              ]
+            },
+            "talk-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "talk-left"
+                }
+              ]
+            },
+            "talk-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "talk"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "talk"
+                }
+              ]
+            },
+            "draw-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-right": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "draw-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 1,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 2,
+                  "row": 3,
+                  "sheet": "draw"
+                },
+                {
+                  "col": 3,
+                  "row": 3,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "review-down": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "review-right": {
+              "cells": [
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 2,
+                  "row": 1,
+                  "sheet": "review2"
+                },
+                {
+                  "col": 3,
+                  "row": 1,
+                  "sheet": "review2"
+                }
+              ]
+            },
+            "review-left": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review-left"
+                },
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "review-left"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "review-left"
+                },
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "review-left"
+                }
+              ]
+            },
+            "review-up": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "review"
+                },
+                {
+                  "col": 3,
+                  "row": 2,
+                  "sheet": "review"
+                }
+              ]
+            },
+            "sit": {
+              "cells": [
+                {
+                  "col": 1,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "poses-dir"
+                },
+                {
+                  "col": 1,
+                  "row": 1,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 1,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "wave": {
+              "cells": [
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "poses-pose"
+                },
+                {
+                  "col": 2,
+                  "row": 0,
+                  "sheet": "talk-left"
+                },
+                {
+                  "col": 2,
+                  "row": 2,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "state-talk": {
+              "cells": [
+                {
+                  "col": 3,
+                  "row": 0,
+                  "sheet": "poses-dir"
+                }
+              ]
+            },
+            "state-draw": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "draw"
+                }
+              ]
+            },
+            "state-review": {
+              "cells": [
+                {
+                  "col": 0,
+                  "row": 0,
+                  "sheet": "review"
+                }
+              ]
+            }
+          },
+          "sheets": {
+            "walk": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-walk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.292,
+                0.5,
+                0.719,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.269,
+                0.497,
+                0.725,
+                1
+              ]
+            },
+            "poses-dir": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-poses-dir.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.344,
+                0.666,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.248,
+                0.494,
+                0.746,
+                1
+              ]
+            },
+            "poses-pose": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-poses-pose.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.343,
+                0.629,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.275,
+                0.501,
+                0.721,
+                1
+              ]
+            },
+            "talk": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-talk.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.309,
+                0.498,
+                0.687,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.256,
+                0.497,
+                0.741,
+                1
+              ]
+            },
+            "draw": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-draw.png",
+              "rows": 4,
+              "rowEdges": [
+                0,
+                0.255,
+                0.471,
+                0.702,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.266,
+                0.498,
+                0.731,
+                1
+              ]
+            },
+            "review": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-review.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.352,
+                0.664,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.256,
+                0.498,
+                0.74,
+                1
+              ]
+            },
+            "review2": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-review2.png",
+              "rows": 3,
+              "rowEdges": [
+                0,
+                0.339,
+                0.661,
+                1
+              ],
+              "colEdges": [
+                0,
+                0.279,
+                0.501,
+                0.724,
+                1
+              ]
+            },
+            "review-left": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-review-left.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.263,
+                0.504,
+                0.747,
+                1
+              ]
+            },
+            "talk-right": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-talk-right.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.241,
+                0.492,
+                0.73,
+                1
+              ]
+            },
+            "talk-left": {
+              "cols": 4,
+              "file": "gen-raw/webtoon/player-silver-talk-left.png",
+              "rows": 1,
+              "colEdges": [
+                0,
+                0.266,
+                0.496,
+                0.751,
+                1
+              ]
+            }
+          }
         }
       }
     }
