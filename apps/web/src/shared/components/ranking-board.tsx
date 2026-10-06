@@ -26,12 +26,13 @@ import {
   RankRow,
   MiniPoster,
   RANK_ENTRY_STAGGER_CAP,
-  RANK_ENTRY_ANIMATION_CLASS,
+  RANK_ENTRY_STAGGER_STEP_MS,
 } from "./rank-row";
 import { SignalWorkbench } from "./ranking-board-signal";
 import { RankingSkeleton } from "./ranking-board-skeleton";
 import { ErrorState } from "./feedback/error-state";
-import { metricFor, entryStaggerStyle, formatUpdatedAt } from "./ranking-board-utils";
+import { metricFor, formatUpdatedAt } from "./ranking-board-utils";
+import { StaggerReveal } from "./stagger-reveal";
 import { TitleCard } from "./title-card";
 import { TitleFilterPanel } from "./title-filter-panel";
 import { Segmented } from "./ui/segmented";
@@ -72,6 +73,10 @@ const axisIcons: Record<RankAxis, ComponentType<{ size?: number; className?: str
   rookie: Sprout,
 };
 const RANKING_DEFAULT_LIMIT = "200";
+// 진입 스태거의 마지막 지연 — 캡 마지막 행(11번째)이 기존 수제 스태거와 같은
+// 시점에 등장하도록 (캡-1)×간격으로 고정한다.
+const RANK_ENTRY_STAGGER_MAX_DELAY_MS =
+  (RANK_ENTRY_STAGGER_CAP - 1) * RANK_ENTRY_STAGGER_STEP_MS;
 const PLATFORM_FILTER_ITEMS: { value: PlatformId | "all"; label: string }[] = [
   { value: "all", label: "전체 플랫폼" },
   ...PLATFORM_LIST.map((platform) => ({ value: platform.id, label: platform.short })),
@@ -525,27 +530,37 @@ export function RankingBoard({
           </p>
         </div>
       ) : view === "list" ? (
-        <div className="rounded-xl border border-line bg-panel/30 p-2 sm:p-3">
+        <StaggerReveal
+          className="rounded-xl border border-line bg-panel/30 p-2 sm:p-3"
+          stepMs={RANK_ENTRY_STAGGER_STEP_MS}
+          maxDelayMs={RANK_ENTRY_STAGGER_MAX_DELAY_MS}
+          limit={RANK_ENTRY_STAGGER_CAP}
+          itemClassName="mb-2 last:mb-0"
+        >
           {visibleRanked.map((r, i) => (
             <RankRow key={r.title.id} ranked={r} axis={axis} metric={metric} entryIndex={i} />
           ))}
-        </div>
+        </StaggerReveal>
       ) : view === "poster" ? (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {/* 진입 스태거 — TitleCard API 는 그대로 두고 얇은 래퍼에 지연만 입힌다(캡 밖은 즉시). */}
-          {visibleRanked.map((r, i) => (
-            <div
-              key={r.title.id}
-              className={cn(i < RANK_ENTRY_STAGGER_CAP && RANK_ENTRY_ANIMATION_CLASS)}
-              style={entryStaggerStyle(i)}
-            >
-              <TitleCard title={r.title} rank={r.rank} />
-            </div>
+        <StaggerReveal
+          className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+          stepMs={RANK_ENTRY_STAGGER_STEP_MS}
+          maxDelayMs={RANK_ENTRY_STAGGER_MAX_DELAY_MS}
+          limit={RANK_ENTRY_STAGGER_CAP}
+        >
+          {/* 진입 스태거 — TitleCard API는 그대로 두고 StaggerReveal 래퍼에 지연만 입힌다(캡 밖은 즉시). */}
+          {visibleRanked.map((r) => (
+            <TitleCard key={r.title.id} title={r.title} rank={r.rank} />
           ))}
-        </div>
+        </StaggerReveal>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {visibleRanked.map((r, i) => {
+        <StaggerReveal
+          className="grid gap-2 sm:grid-cols-2"
+          stepMs={RANK_ENTRY_STAGGER_STEP_MS}
+          maxDelayMs={RANK_ENTRY_STAGGER_MAX_DELAY_MS}
+          limit={RANK_ENTRY_STAGGER_CAP}
+        >
+          {visibleRanked.map((r) => {
             const mm = metric(r.title);
             // 별점 축은 RatingInline이 ≈를 붙이므로 지표 컬럼 중복 표기를 피한다.
             const mmEstimated = statsAreEstimated(r.title) && axis !== "rating" && axis !== "hidden";
@@ -553,11 +568,7 @@ export function RankingBoard({
               <Link
                 key={r.title.id}
                 href={`/title/${r.title.slug}`}
-                className={cn(
-                  "group flex items-center gap-3 rounded-xl border border-line bg-card px-3 py-2 transition-colors hover:border-line-strong",
-                  i < RANK_ENTRY_STAGGER_CAP && RANK_ENTRY_ANIMATION_CLASS
-                )}
-                style={entryStaggerStyle(i)}
+                className="group flex h-full items-center gap-3 rounded-xl border border-line bg-card px-3 py-2 transition-colors hover:border-line-strong"
               >
                 <span
                   className={cn(
@@ -585,7 +596,7 @@ export function RankingBoard({
               </Link>
             );
           })}
-        </div>
+        </StaggerReveal>
       )}
     </div>
   );
