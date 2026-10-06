@@ -57,6 +57,17 @@ describe("SpaceZoneSplash", () => {
     expect(view.container.firstChild).toBeNull();
   });
 
+  it("구역이 바뀌면 카드 노드를 교체해 등장 애니메이션이 처음부터 다시 재생된다", () => {
+    vi.useFakeTimers();
+    const view = render(<SpaceZoneSplash input={MEETING} />);
+    const first = screen.getByRole("status");
+    act(() => { vi.advanceTimersByTime(800); });
+    view.rerender(<SpaceZoneSplash input={{ ...MEETING, roomId: "creator-cafe", labelKo: "카페", labelEn: "Cafe" }} />);
+    const second = screen.getByRole("status");
+    expect(second).not.toBe(first);
+    expect(second.textContent).toContain("카페");
+  });
+
   it("프라이빗 구역이면 배지를 함께 보여 준다", () => {
     render(<SpaceZoneSplash input={{ ...MEETING, privateZone: true }} />);
     expect(screen.getByRole("status").textContent).toContain("프라이빗 구역");

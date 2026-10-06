@@ -49,7 +49,10 @@ export function SpaceZoneSplash({ input }: { readonly input: SpaceZoneSplashInpu
   if (!shown) return null;
   const snapshot = shown.input;
   return (
-    <div className="space-zone-splash" role="status">
+    // key를 구역 단위로 바꿔 카드를 리마운트한다. 노드를 재사용하면 CSS
+    // 등장·퇴장 애니메이션이 재시작되지 않아, 연속 이동 때 두 번째 카드가
+    // 투명한 채로 머물거나 연출 없이 나타나기 때문이다.
+    <div key={shown.key} className="space-zone-splash" role="status">
       <span className="space-zone-splash__kicker">
         {snapshot.reason === "initial"
           ? bt("지금 이곳에 있어요", "You are here")
