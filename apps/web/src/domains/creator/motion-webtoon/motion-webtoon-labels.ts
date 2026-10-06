@@ -175,6 +175,64 @@ export const CAPTION_UI_LABELS = {  captionTitle: label("자막", "Captions"),
   captionPreview: label("자막 미리보기", "Caption preview"),
   downloadSrt: label("SRT 내려받기", "Download SRT"),
   downloadVtt: label("VTT 내려받기", "Download VTT"),
+  transcriptionTitle: label("오디오에서 자막 만들기", "Create captions from audio"),
+  transcriptionDesc: label(
+    "녹음한 나레이션·대사 오디오를 Groq Whisper로 전사해, 시간에 맞는 대사로 넣습니다. 통합 AI 설정에 등록한 본인 Groq 키로 브라우저에서 직접 호출합니다.",
+    "Transcribe a recorded narration or dialogue audio file with Groq Whisper and add the lines at their timestamps. It calls Groq directly from your browser with the Groq key you registered in the unified AI settings.",
+  ),
+  transcriptionNeedKey: label(
+    "통합 AI 설정에 등록된 Groq 키가 없어 전사를 사용할 수 없어요.",
+    "No Groq key is registered in the unified AI settings, so transcription is unavailable.",
+  ),
+  transcriptionSettingsCta: label("AI 설정에서 Groq 키 등록하기", "Register a Groq key in AI settings"),
+  transcriptionFileLabel: label("오디오 파일", "Audio file"),
+  transcriptionSpeakerLabel: label("전사 대사를 맡을 캐릭터", "Character for the transcribed lines"),
+  transcriptionNoCharacters: label(
+    "캐릭터가 없어 전사 대사를 넣을 수 없어요. 먼저 에디터에서 캐릭터를 추가하세요.",
+    "There are no characters yet, so transcribed lines cannot be added. Add a character in the editor first.",
+  ),
+  transcriptionRun: label("전사해 자막 만들기", "Transcribe into captions"),
+  transcriptionRunning: label("전사 중…", "Transcribing…"),
+  transcriptionApplied: label(
+    "전사한 대사 {count}개를 자막에 넣었어요.",
+    "Added {count} transcribed line(s) as captions.",
+  ),
+  transcriptionSkippedPart: label(
+    "회차 길이를 벗어난 구간 {count}개는 넣지 않았어요.",
+    "{count} segment(s) fell outside the episode length and were not added.",
+  ),
+  transcriptionEmpty: label(
+    "인식된 대사가 없어요. 다른 오디오로 다시 시도해 보세요.",
+    "No speech was recognized. Try another audio file.",
+  ),
+  transcriptionErrorAuth: label(
+    "Groq 키 인증에 실패했어요. AI 설정에서 키를 확인한 뒤 다시 시도하세요.",
+    "The Groq key was rejected. Check the key in AI settings and try again.",
+  ),
+  transcriptionErrorQuota: label(
+    "Groq 사용량 한도에 닿았어요. 잠시 뒤 다시 시도하세요.",
+    "The Groq usage limit was reached. Try again later.",
+  ),
+  transcriptionErrorFormat: label(
+    "지원하지 않는 오디오 형식이에요. (flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, webm)",
+    "This audio format is not supported. (flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, webm)",
+  ),
+  transcriptionErrorTooLarge: label(
+    "오디오는 25MB 이하만 전사할 수 있어요.",
+    "Only audio files up to 25MB can be transcribed.",
+  ),
+  transcriptionErrorEmptyFile: label(
+    "오디오 파일이 비어 있어요.",
+    "The audio file is empty.",
+  ),
+  transcriptionErrorNetwork: label(
+    "Groq에 연결하지 못했어요. 네트워크 상태를 확인하고 다시 시도하세요.",
+    "Could not reach Groq. Check your network and try again.",
+  ),
+  transcriptionErrorGeneric: label(
+    "전사에 실패했어요. 다시 시도하세요.",
+    "Transcription failed. Please try again.",
+  ),
 } as const;
 
 /** 애니툰 원클릭 변환 라벨. */

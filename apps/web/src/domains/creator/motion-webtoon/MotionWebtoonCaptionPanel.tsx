@@ -26,6 +26,7 @@ import {
 } from "./motion-webtoon-captions";
 import { CAPTION_UI_LABELS } from "./motion-webtoon-labels";
 import type { MotionEpisode } from "./motion-webtoon-model";
+import { MotionWebtoonTranscriptionSection } from "./MotionWebtoonTranscriptionSection";
 
 export interface MotionWebtoonCaptionPanelProps {
   readonly episode: MotionEpisode;
@@ -187,6 +188,11 @@ export function MotionWebtoonCaptionPanel(props: MotionWebtoonCaptionPanelProps)
           </div>
         </>
       )}
+
+      <MotionWebtoonTranscriptionSection
+        episode={props.episode}
+        onEpisodeChange={props.onEpisodeChange}
+      />
     </section>
   );
 }
