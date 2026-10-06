@@ -103,7 +103,7 @@ describe("ProductionManagementWorkspace predictive risk intelligence", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "예측 리스크 레이더" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "위험 미리 보기" })).toBeTruthy();
     expect(screen.getAllByText("왜 위험한가").length).toBeGreaterThan(0);
     expect(screen.getAllByText("권장 대응").length).toBeGreaterThan(0);
     expect(execute).not.toHaveBeenCalled();
