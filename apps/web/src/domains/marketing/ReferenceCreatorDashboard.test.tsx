@@ -88,12 +88,13 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/story-lab");
   });
 
-  it("여섯 시작 동선이 실제 작업과 템플릿으로 이동한다", async () => {
+  it("여섯 시작 동선이 시작 시트와 실제 작업으로 이동한다", async () => {
     const observedNavigation = await dashboard();
     const start = screen.getByRole("navigation", { name: "무엇부터 시작할까요?" });
     const links = within(start).getAllByRole("link");
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
-      "/studio/new?kind=webtoon&template=webtoon-vertical",
+      // 작품 시작은 시작 시트(/create)로 수렴한다 — 새 작품·템플릿·이어가기를 한 화면에서 고른다.
+      "/create",
       "/story-lab",
       "/studio/assets/characters/new",
       "/studio/bg3d",

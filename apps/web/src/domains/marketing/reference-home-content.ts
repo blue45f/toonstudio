@@ -11,7 +11,7 @@ export interface HomeLink {
 }
 
 export const HOME_QUICK_STARTS = [
-  { href: "/studio/new?kind=webtoon&template=webtoon-vertical", ko: "새 웹툰 시작하기", en: "Create a webtoon", detailKo: "첫 컷부터 나의 이야기", detailEn: "Your first panel", image: "storyboard" },
+  { href: "/create", ko: "작품 시작하기", en: "Start a work", detailKo: "새 작품·템플릿·이어가기 한곳에서", detailEn: "New, template or continue — in one place", image: "storyboard" },
   { href: "/story-lab", ko: "스토리 만들기", en: "Shape a story", detailKo: "아이디어를 대본으로", detailEn: "Ideas into scripts", image: "character-blue" },
   { href: "/studio/assets/characters/new", ko: "캐릭터 만들기", en: "Create a character", detailKo: "3D 프리셋으로 표정·포즈", detailEn: "3D presets, poses and faces", image: "character-pink" },
   { href: "/studio/bg3d", ko: "배경 만들기", en: "Build a world", detailKo: "장면을 완성하는 3D 공간", detailEn: "3D spaces for your scenes", image: "background-city" },

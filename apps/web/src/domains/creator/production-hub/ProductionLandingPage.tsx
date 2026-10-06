@@ -250,7 +250,7 @@ function PortfolioSection({
           <h2 id="production-portfolio-title" className="text-base font-black text-fg">{bt("내 제작 포트폴리오", "My production portfolio")}</h2>
           <p className="mt-1 max-w-3xl text-xs leading-relaxed text-fg-2">{bt("여러 작품의 다음 연재, 막힘·검수·배정 공백을 같은 기준으로 비교합니다. 위험한 작품이 먼저 보입니다.", "Compare upcoming releases, blockers, reviews and unassigned work across projects. Riskier projects come first.")}</p>
         </div>
-        <Link className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })} to="/studio/new"><Plus className="size-4" aria-hidden="true" />{bt("새 프로젝트 만들기", "New project")}</Link>
+        <Link className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })} to="/create"><Plus className="size-4" aria-hidden="true" />{bt("작품 시작하기", "Start a work")}</Link>
       </header>
       {loading ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" aria-label={bt("프로젝트 목록 불러오는 중", "Loading projects")} role="status">
@@ -333,7 +333,7 @@ function PortfolioSection({
           icon={LayoutDashboard}
           title={bt("첫 제작 프로젝트를 연결하세요", "Connect your first production project")}
           description={bt("새 작품을 만든 뒤 제작 관리에 연결하면 회차·담당·마감·검수를 한 흐름에서 운영할 수 있습니다.", "Create a work, then connect it to run episodes, owners, deadlines and reviews in one flow.")}
-          primary={{ href: "/studio/new", label: bt("새 작품 만들기", "Create a work") }}
+          primary={{ href: "/create", label: bt("작품 시작하기", "Start a work") }}
           secondary={{ href: "/studio", label: bt("기존 작품 열기", "Open existing works") }}
           sample={{ href: `${SAMPLE_BASE}/overview`, label: bt("샘플로 먼저 보기", "See the sample first") }}
         />
@@ -416,8 +416,8 @@ export function ProductionLandingPage() {
                 <Link className={buttonClass({ size: "lg", className: "gap-2" })} to={`${SAMPLE_BASE}/overview`}>
                   {bt("샘플 프로젝트로 체험하기", "Try the sample project")} <ArrowRight className="size-4" aria-hidden="true" />
                 </Link>
-                <Link className={buttonClass({ variant: "outline", size: "lg" })} to="/studio/new">
-                  {bt("새 작품 만들기", "Create a work")}
+                <Link className={buttonClass({ variant: "outline", size: "lg" })} to="/create">
+                  {bt("작품 시작하기", "Start a work")}
                 </Link>
                 <Link className={buttonClass({ variant: "ghost", size: "lg" })} to="/team/people">
                   {bt("사람·권한", "People & roles")}

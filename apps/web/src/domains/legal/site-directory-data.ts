@@ -207,6 +207,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       en: "Core entry points for production, projects, assets and publishing",
     },
     items: [
+      destination("/create", "작품 시작하기", "Start a work", "새 작품·템플릿·이어가기를 한 화면에서 고르기", "Start new, begin from a template or continue — in one place"),
       authorityDestination("production"),
       authorityDestination("studio-home"),
       authorityDestination("studio-new"),
