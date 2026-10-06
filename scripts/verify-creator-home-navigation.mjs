@@ -69,14 +69,13 @@ try {
 
     await expect(page.locator('.cf-hero a[href="/studio/new"]')).toHaveCount(1);
     await expect(page.locator('.cf-hero a[href="/studio"]')).toHaveCount(1);
-    const tourTabs = home.getByRole("tablist").first().getByRole("tab");
-    await expect(tourTabs).toHaveCount(3);
-    await expect(tourTabs.nth(2)).toHaveAttribute("aria-selected", "true");
+    // 소개 페이지는 탭 3개에서 한 번에 읽히는 서사 스크롤로 전환됐다. 구역은 앵커로-addressed 되고
+    // 모든 시작점이 문서 안에 있으므로 탭을 열거나 선택 상태를 검증하지 않는다.
+    await expect(home.getByRole("tablist")).toHaveCount(0);
     await expect(page.locator('a[rel="prev"][href="/about"]')).toHaveCount(1);
     await expect(page.locator('a[rel="next"][href="/about/workflow"]')).toHaveCount(1);
 
-    // 바로 시작 탭: 시작 선택기가 여섯 시작점으로 이어진다.
-    await tourTabs.nth(1).click();
+    // 시작 구역: 시작 선택기가 여섯 시작점으로 이어진다.
     await expect(page.locator("#creator-toolkit-title")).toHaveCount(1);
     await expect(page.locator("#creator-start .cf-intent-visual-nav a")).toHaveCount(6);
     assert.deepEqual(await page.locator("#creator-start .cf-intent-visual-nav a").evaluateAll((links) => links.map((link) => link.getAttribute("href"))),
@@ -87,10 +86,9 @@ try {
         "Task artwork must retain its bounded card layout before and after decoding");
     }
 
-    // 화면 구성 탭의 제목 주소로 이동하면 그 탭이 열리고 제목에 초점이 간다. 뒤로·앞으로 가도 같다.
+    // 구역 제목 주소로 이동하면 그 구역에 초점이 간다. 뒤로·앞으로 가도 때문이다.
     await page.evaluate(() => { window.location.hash = "creator-bridge-title"; });
     const bridgeTitle = page.locator("#creator-bridge-title");
-    await expect(tourTabs.nth(0)).toHaveAttribute("aria-selected", "true");
     await expect(bridgeTitle).toBeVisible();
     await expect.poll(async () => {
       const target = await bridgeTitle.boundingBox();
@@ -103,7 +101,6 @@ try {
     assert.equal(await page.locator("video").count(), 0);
     assert.deepEqual(mediaRequests, [], "The all-in-one homepage must not mount or download a video");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
-    await tourTabs.nth(1).click();
     for (const control of await page.locator(
       ".cf-hero a,.cf-intent-visual-nav a,.cf-tour-end a",
     ).all()) {
