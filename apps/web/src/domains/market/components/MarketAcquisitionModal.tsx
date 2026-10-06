@@ -334,7 +334,7 @@ export function MarketAcquisitionModal({
       aria-labelledby="market-acquire-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
     >
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-line bg-card shadow-2xl animate-hud-in duration-200">
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 id="market-acquire-title" className="flex items-center gap-2 text-base font-bold text-fg">
             <Sparkles className="size-4 text-accent" aria-hidden="true" />

@@ -46,7 +46,7 @@ export function StudioDrawingShortcutNoticeLayer({
       {notice ? (
         <span
           key={notice.id}
-          className="mx-3 block max-w-[min(28rem,calc(100vw-1.5rem))] whitespace-normal rounded-lg border border-line bg-panel/95 px-3 py-1.5 text-center text-xs font-semibold leading-relaxed text-fg shadow-lg backdrop-blur motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1"
+          className="mx-3 block max-w-[min(28rem,calc(100vw-1.5rem))] whitespace-normal rounded-lg border border-line bg-panel/95 px-3 py-1.5 text-center text-xs font-semibold leading-relaxed text-fg shadow-lg backdrop-blur motion-safe:animate-fade-up"
         >
           {notice.message}
         </span>

@@ -66,7 +66,7 @@ export function MarketDetailStickyBar({
       data-market-sticky-bar="true"
       className={cn(
         "fixed bottom-0 inset-x-0 z-40 border-t border-line/80 bg-card/90 backdrop-blur-md px-4 py-2.5 shadow-xl",
-        "animate-in slide-in-from-bottom-3 duration-200",
+        "animate-fade-up duration-200",
       )}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">

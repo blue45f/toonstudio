@@ -638,7 +638,7 @@ export function StudioCommentThreadPopover({
       <span
         aria-hidden
         data-studio-comment-thread-active-pin="true"
-        className="pointer-events-none fixed z-[93] size-11 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent/65 bg-accent-soft/20 shadow-[0_0_0_4px_oklch(0.72_0.185_42/0.12)] motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95"
+        className="pointer-events-none fixed z-[93] size-11 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent/65 bg-accent-soft/20 shadow-[0_0_0_4px_oklch(0.72_0.185_42/0.12)] motion-safe:animate-hud-in"
         style={{ left: visiblePoint.x, top: visiblePoint.y }}
       />
 
@@ -657,10 +657,10 @@ export function StudioCommentThreadPopover({
         onFocusCapture={() => {
           suppressDeferredFocusRef.current = false;
         }}
-        className={`fixed z-[94] flex overflow-hidden border border-line-strong bg-panel/98 text-fg backdrop-blur-xl motion-safe:animate-in motion-safe:fade-in motion-reduce:transition-none ${
+        className={`fixed z-[94] flex overflow-hidden border border-line-strong bg-panel/98 text-fg backdrop-blur-xl motion-reduce:transition-none ${
           bottomSheet
-            ? "rounded-t-2xl border-b-0 shadow-[0_-18px_58px_oklch(0.06_0.02_70/0.5)] motion-safe:slide-in-from-bottom-3"
-            : "rounded-2xl shadow-[0_24px_74px_oklch(0.06_0.02_70/0.62)] motion-safe:zoom-in-95 [transform-origin:var(--studio-comment-popover-origin)]"
+            ? "rounded-t-2xl border-b-0 shadow-[0_-18px_58px_oklch(0.06_0.02_70/0.5)] motion-safe:animate-fade-up"
+            : "rounded-2xl shadow-[0_24px_74px_oklch(0.06_0.02_70/0.62)] motion-safe:animate-hud-in [transform-origin:var(--studio-comment-popover-origin)]"
         }`}
         style={{
           left: position.left,
