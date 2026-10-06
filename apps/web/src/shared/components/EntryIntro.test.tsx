@@ -9,8 +9,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ENTRY_INTRO_ART_WAIT_CAP_MS,
   ENTRY_INTRO_FADE_MS,
-  ENTRY_INTRO_HOLD_MS,
+  ENTRY_INTRO_MIN_HOLD_MS,
+  ENTRY_INTRO_READY_HOLD_MS,
   ENTRY_INTRO_REDUCED_HOLD_MS,
   ENTRY_INTRO_SKIP_FADE_MS,
   ENTRY_INTRO_SKIP_GUARD_MS,
@@ -31,6 +33,26 @@ function installMatchMedia(reduced: boolean) {
   };
   vi.stubGlobal("matchMedia", vi.fn(() => mql));
   return mql;
+}
+
+/** 배경 아트 <img>를 찾는다(마크 이미지와 구분되는 인트로 전용 아트). */
+function artImage(container: HTMLElement): HTMLImageElement {
+  const img = container.querySelector<HTMLImageElement>(
+    'img[src*="hero-main-intro"]',
+  );
+  if (!img) throw new Error("인트로 배경 아트 이미지를 찾지 못했다");
+  return img;
+}
+
+/**
+ * 아트가 아직 도착하지 않은 상태를 강제한다. jsdom은 이미지를 실제로
+ * 네트워크로 받지 않아 complete가 환경마다 다르게 잡힐 수 있어, load
+ * 이벤트 경로만으로 타이밍을 검증할 수 있게 명시적으로 고정한다.
+ */
+function stubArtIncomplete() {
+  return vi
+    .spyOn(HTMLImageElement.prototype, "complete", "get")
+    .mockReturnValue(false);
 }
 
 describe("EntryIntro", () => {
@@ -85,22 +107,26 @@ describe("EntryIntro", () => {
     expect(renderToStaticMarkup(createElement(EntryIntro))).toBe("");
   });
 
-  it("전체 길이가 2.6~3.2초 구간 안에 있고 끝나면 완전히 사라진다", () => {
-    // 계약 교체(2026-10-06): 구 계약 "총 1.8초 이하"는 브랜드 인지에는 너무 짧다는
-    // 사용자 피드백으로 폐기하고, 총 길이가 2600~3200ms 구간 안에 있다는
-    // 하한+상한 계약으로 대체했다. 단언을 지우거나 완화한 것이 아니다.
-    const totalMs = ENTRY_INTRO_HOLD_MS + ENTRY_INTRO_FADE_MS;
-    expect(totalMs).toBeGreaterThanOrEqual(2600);
-    expect(totalMs).toBeLessThanOrEqual(3200);
+  it("전체 길이가 3.2~3.8초 구간 안에 있고 끝나면 완전히 사라진다", () => {
+    // 계약 교체(2026-10-07): 구 계약(유지 2350 + 페이드 550 = 2.9초, 2.6~3.2초
+    // 구간)은 배경 아트 도착이 늦으면 완성 장면이 잠깐만 보이고 사라져 깜빡임만
+    // 느껴진다는 사용자 보고로 폐기했다. 유지 시계를 마운트가 아니라 아트 준비
+    // 완료부터 재고, 총 길이가 3200~3800ms 구간 안에 있다는 하한+상한 계약으로
+    // 대체한다. 단언을 지우거나 완화한 것이 아니다.
+    const totalMs = ENTRY_INTRO_MIN_HOLD_MS + ENTRY_INTRO_FADE_MS;
+    expect(totalMs).toBeGreaterThanOrEqual(3200);
+    expect(totalMs).toBeLessThanOrEqual(3800);
     vi.useFakeTimers();
 
     const { container } = render(<EntryIntro />);
     expect(container.firstChild).not.toBeNull();
 
+    // 아트가 준비된 시점부터 완성 카드 유지가 보장되고, 최소 유지가 끝나면
+    // 페이드 단계로 넘어간다 — 아직 DOM에 있다.
+    fireEvent.load(artImage(container));
     act(() => {
-      vi.advanceTimersByTime(ENTRY_INTRO_HOLD_MS);
+      vi.advanceTimersByTime(ENTRY_INTRO_MIN_HOLD_MS);
     });
-    // 유지 시간이 끝나면 페이드 단계 — 아직 DOM에 있다.
     expect(container.firstChild).not.toBeNull();
     expect(container.querySelector("[data-phase='fade']")).not.toBeNull();
 
@@ -108,6 +134,82 @@ describe("EntryIntro", () => {
       vi.advanceTimersByTime(ENTRY_INTRO_FADE_MS);
     });
     expect(container.firstChild).toBeNull();
+  });
+
+  it("아트 load가 오기 전에는 페이드가 시작되지 않는다", () => {
+    stubArtIncomplete();
+    vi.useFakeTimers();
+    const { container } = render(<EntryIntro />);
+
+    // 폴백 상한 직전까지는 아트 미준비라 페이드 스케줄 자체가 걸리지 않는다.
+    act(() => {
+      vi.advanceTimersByTime(ENTRY_INTRO_ART_WAIT_CAP_MS - 1);
+    });
+    expect(container.querySelector("[data-phase='show']")).not.toBeNull();
+    expect(container.querySelector("[data-phase='fade']")).toBeNull();
+
+    // 상한 직전 load가 도착하면 그 시점부터 완성 카드 유지를 재되, 페이드는
+    // 최소 유지(마운트 + MIN_HOLD)를 채운 뒤에 시작한다.
+    fireEvent.load(artImage(container));
+    act(() => {
+      vi.advanceTimersByTime(
+        ENTRY_INTRO_MIN_HOLD_MS - ENTRY_INTRO_ART_WAIT_CAP_MS,
+      );
+    });
+    expect(container.querySelector("[data-phase='show']")).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(container.querySelector("[data-phase='fade']")).not.toBeNull();
+  });
+
+  it("아트가 끝내 로드되지 않아도 폴백 상한 뒤에는 예정대로 끝난다", () => {
+    stubArtIncomplete();
+    vi.useFakeTimers();
+    const { container } = render(<EntryIntro />);
+
+    // load를 끝내 발생시키지 않는다. 상한이 지나면 준비된 것으로 쳐서
+    // 시계가 시작되고, 최소 유지 뒤 페이드 → 완전히 사라진다.
+    act(() => {
+      vi.advanceTimersByTime(ENTRY_INTRO_ART_WAIT_CAP_MS);
+    });
+    expect(container.querySelector("[data-phase='show']")).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(
+        ENTRY_INTRO_MIN_HOLD_MS - ENTRY_INTRO_ART_WAIT_CAP_MS - 1,
+      );
+    });
+    expect(container.querySelector("[data-phase='show']")).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(container.querySelector("[data-phase='fade']")).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(ENTRY_INTRO_FADE_MS);
+    });
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("아트가 즉시 준비돼도 최소 유지 시간 전에는 페이드하지 않는다", () => {
+    stubArtIncomplete();
+    vi.useFakeTimers();
+    const { container } = render(<EntryIntro />);
+
+    fireEvent.load(artImage(container));
+    // 준비 + READY_HOLD만으로는 부족하다 — max()의 마운트 기준 하한이 이긴다.
+    act(() => {
+      vi.advanceTimersByTime(ENTRY_INTRO_READY_HOLD_MS);
+    });
+    expect(container.querySelector("[data-phase='show']")).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(ENTRY_INTRO_MIN_HOLD_MS - ENTRY_INTRO_READY_HOLD_MS);
+    });
+    expect(container.querySelector("[data-phase='fade']")).not.toBeNull();
   });
 
   it("키 입력으로 건너뛰고, 원래 유지 시간이 지나도 다시 나타나지 않는다", () => {
@@ -127,7 +229,7 @@ describe("EntryIntro", () => {
     expect(container.firstChild).toBeNull();
 
     act(() => {
-      vi.advanceTimersByTime(ENTRY_INTRO_HOLD_MS + ENTRY_INTRO_FADE_MS);
+      vi.advanceTimersByTime(ENTRY_INTRO_MIN_HOLD_MS + ENTRY_INTRO_FADE_MS);
     });
     expect(container.firstChild).toBeNull();
   });
