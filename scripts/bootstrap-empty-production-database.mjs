@@ -49,7 +49,7 @@ const REQUIRED_PENDING_MIGRATION_IDS = Object.freeze([
 ]);
 const DRIZZLE_SCHEMA_PATHS = Object.freeze([
   "apps/api/drizzle.config.ts",
-  "apps/api/src/platform/database/schema.ts",
+  "apps/api/src/platform/database/schema/index.ts",
   "apps/api/src/platform/database/schema/admin.schema.ts",
   "apps/api/src/platform/database/admin-schema-contract.ts",
   "apps/api/src/platform/database/creator-marketplace-resource.schema.ts",
