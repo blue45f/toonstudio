@@ -36,6 +36,7 @@ import type {
 } from "@/shared/lib/types";
 
 import { Container } from "@/shared/components/section";
+import { MotionIllustration } from "@/shared/motion-assets";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { useApp } from "@/shared/lib/store";
@@ -50,6 +51,7 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import {
   CAFE_JOIN_POLICY_LABEL_KEYS,
+  CAFE_KIND_ILLUSTRATIONS,
   CAFE_KIND_LABEL_KEYS,
   CAFE_POSTING_POLICY_LABEL_KEYS,
   CAFE_ROLE_LABEL_KEYS,
@@ -490,6 +492,11 @@ export function CafeManagePage() {
   return (
     <div lang={pageLang}>
       <Container size="wide" className="py-8 lg:py-10">
+        {/* 상세 화면과 같은 카페 유형 배너 — 관리 화면도 같은 카페의 얼굴로 시작한다. */}
+        <div className="relative mb-5 flex h-24 items-center justify-between gap-3 overflow-hidden rounded-3xl border border-line bg-accent-soft/25 px-5 sm:px-8" aria-hidden="true">
+          <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-on-accent">{t(CAFE_KIND_LABEL_KEYS[cafe.kind])}</span>
+          <MotionIllustration name={CAFE_KIND_ILLUSTRATIONS[cafe.kind]} size="lg" animated={false} />
+        </div>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <Link href={`/community/cafes/${encodeURIComponent(slug)}`} className="inline-flex items-center gap-1 text-xs text-fg-3 hover:text-fg"><ArrowLeft size={13} />{t(COPY.backToCafe)}</Link>

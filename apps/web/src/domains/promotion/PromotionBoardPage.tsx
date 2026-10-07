@@ -32,6 +32,9 @@ export function PromotionBoardPage() {
   const feed = usePromotionFeed(filters.toString(), userId);
   const setFilter = (name: string, value: string) => setParams((previous) => { const next = new URLSearchParams(previous); if (value && value !== "all") next.set(name, value); else next.delete(name); return next; });
   const publicPosts = (feed.page?.items ?? []).filter((post) => !post.hidden && !post.archived).slice(0, 24);
+  // 첫 화면 무대 — 표지를 등록한 공개 소개 중 가장 최근 글을 세운다.
+  // 실물 표지가 없을 때는 꾸민 대체재를 만들지 않고 환영 노트를 유지한다.
+  const featuredPost = publicPosts.find((post) => post.cover);
   return (
     <div className="pc-shell">
       <CampusObjectSource objects={publicPosts.map((post) => ({
@@ -52,12 +55,31 @@ export function PromotionBoardPage() {
             <Link className="pc-button" to="/showcase">{bt("창작 갤러리", "Creator gallery")} <ArrowRight size={16} aria-hidden="true" /></Link>
           </div>
         </div>
-        <aside className="pc-hero-note">
-          <Clapperboard size={42} aria-hidden="true" />
-          <strong>{bt("완성 전의 이야기도,", "Unfinished stories are welcome,")}<br />{bt("시작하는 작가도 환영해요.", "and so are starting creators.")}</strong>
-          <span>{bt("직접 창작한 작품 · 제작 과정 · 첫 독자의 피드백", "Original works · process · first-reader feedback")}</span>
-          <p>{bt("유료 상단 노출 없이 최신 등록순으로 만나요.", "No paid boosts — just the newest posts first.")}</p>
-        </aside>
+        {featuredPost ? (
+          <aside className="pc-hero-feature">
+            <Link
+              className="pc-hero-feature-cover"
+              to={`/community/promote/${encodeURIComponent(featuredPost.id)}`}
+              aria-label={bt(`${featuredPost.seriesTitle} 소개 보기`, `View the introduction of ${featuredPost.seriesTitle}`)}
+            >
+              <img src={featuredPost.cover} alt="" loading="lazy" decoding="async" />
+              <span className="pc-hero-feature-badge">{bt("최신 표지 소개", "Newest cover spotlight")}</span>
+            </Link>
+            <div className="pc-hero-feature-body">
+              <strong>{featuredPost.seriesTitle}</strong>
+              <span>{featuredPost.title}</span>
+              <span>{featuredPost.author.name} · {bt(featuredPost.genre, GENRE_EN[featuredPost.genre] ?? featuredPost.genre)} · {bt(PROMOTION_STAGES[featuredPost.stage], STAGE_EN[featuredPost.stage] ?? PROMOTION_STAGES[featuredPost.stage])}</span>
+              <p>{bt("유료 상단 노출 없이 최신 등록순으로 만나요.", "No paid boosts — just the newest posts first.")}</p>
+            </div>
+          </aside>
+        ) : (
+          <aside className="pc-hero-note">
+            <Clapperboard size={42} aria-hidden="true" />
+            <strong>{bt("완성 전의 이야기도,", "Unfinished stories are welcome,")}<br />{bt("시작하는 작가도 환영해요.", "and so are starting creators.")}</strong>
+            <span>{bt("직접 창작한 작품 · 제작 과정 · 첫 독자의 피드백", "Original works · process · first-reader feedback")}</span>
+            <p>{bt("유료 상단 노출 없이 최신 등록순으로 만나요.", "No paid boosts — just the newest posts first.")}</p>
+          </aside>
+        )}
       </header>
       <nav className="pc-quick" aria-label={bt("추천 탐색", "Suggested browsing")}>
         <button type="button" onClick={() => { setParams((previous) => { const next = new URLSearchParams(previous); next.set("stage", "amateur"); next.delete("q"); return next; }); setSearch(""); }}>01 <strong>{bt("아마추어 작가 발견", "Discover amateur creators")}</strong><ArrowRight size={16} aria-hidden="true" /></button>

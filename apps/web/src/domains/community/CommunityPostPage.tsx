@@ -71,9 +71,24 @@ export function CommunityPostPage() {
   if (loading) {
     return (
       <Container size="default" className="py-10">
-        <div className="skeleton h-8 w-44 rounded-lg" />
-        <div className="skeleton mt-6 h-44 w-full rounded-2xl" />
-        <div className="skeleton mt-4 h-28 w-full rounded-2xl" />
+        {/* 글 상세 실루엣 — 이동 경로·머리말·이미지 무대·본문 줄의 골격을 미리 보여준다. */}
+        <div aria-hidden="true">
+          <div className="skeleton h-4 w-44 rounded-md" />
+          <div className="mt-6 rounded-3xl border border-line bg-card p-5 sm:p-7">
+            <div className="flex items-start gap-3">
+              <div className="skeleton size-11 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1">
+                <div className="skeleton h-4 w-28 rounded-md" />
+                <div className="skeleton mt-2 h-6 w-3/5 rounded-md" />
+                <div className="skeleton mt-1.5 h-3 w-16 rounded-md" />
+              </div>
+            </div>
+            <div className="skeleton mt-5 aspect-[16/10] w-full rounded-xl" />
+            <div className="skeleton mt-5 h-3.5 w-full rounded-md" />
+            <div className="skeleton mt-1.5 h-3.5 w-5/6 rounded-md" />
+            <div className="skeleton mt-1.5 h-3.5 w-4/6 rounded-md" />
+          </div>
+        </div>
       </Container>
     );
   }
@@ -196,8 +211,9 @@ export function CommunityPostPage() {
           )}
         </header>
 
-        <p className="mt-5 whitespace-pre-wrap break-words text-[0.95rem] leading-relaxed text-fg-2">{post.text}</p>
+        {/* 첨부 이미지가 본체인 글(팬아트·코스프레)은 아트가 본문보다 먼저 닿게 한다. */}
         <FanPostImages title={post.title} images={post.images} />
+        <p className="mt-5 whitespace-pre-wrap break-words text-[0.95rem] leading-relaxed text-fg-2">{post.text}</p>
         {post.tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
             {post.tags.map((tag) => (

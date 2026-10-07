@@ -2,7 +2,7 @@ import { apiFetch } from "@/platform/api";
 import { MessageCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-import { FanPostImages } from "./fan-cafe-images";
+import { FanPostCardArt } from "./fan-cafe-images";
 import { FanPostReplySection } from "./fan-cafe-reply-section";
 import { countReplies } from "./fan-cafe-tree-utils";
 import { KIND_LABEL } from "./fan-cafe-utils";
@@ -97,8 +97,8 @@ export default function FanPostCard({
           </button>
         )}
       </header>
+      <FanPostCardArt title={post.title} images={post.images} />
       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-fg-2">{post.text}</p>
-      <FanPostImages title={post.title} images={post.images} />
       {post.tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {post.tags.map((tag) => (
@@ -145,5 +145,3 @@ export default function FanPostCard({
   </Card3D>
   );
 }
-
-// 첨부 이미지 그리드 — 서버 검증을 거치지만 레거시/손상 행도 방어적으로 다시 거른다.
