@@ -48,6 +48,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import { MessagingSettingsPanel } from "./MessagingSettingsPanel";
+import { ConversationSkeleton, ThreadListSkeleton } from "./MessagingSkeletons";
 import { UserAvatar } from "./MessagingUserAvatar";
 
 type InboxTab = "active" | "requests" | "archived";
@@ -642,9 +643,7 @@ export function MessagesPage() {
             </div>
           )}
           {listLoading ? (
-            <div className="grid min-h-72 place-items-center p-5">
-              <LoadingState variant="skeleton" label="대화 목록을 불러오는 중" className="w-full" />
-            </div>
+            <ThreadListSkeleton />
           ) : threads.length === 0 ? (
             listError ? (
               <div role="alert" className="grid min-h-72 place-items-center p-5 text-center">
@@ -685,9 +684,7 @@ export function MessagesPage() {
               />
             </div>
           ) : detailLoading ? (
-            <div className="grid min-h-[620px] place-items-center p-8">
-              <LoadingState variant="skeleton" label="대화를 불러오는 중" className="w-full max-w-md" />
-            </div>
+            <ConversationSkeleton />
           ) : detailError && !detail ? (
             <div className="grid min-h-[620px] place-items-center p-8 text-center">
               <div>
