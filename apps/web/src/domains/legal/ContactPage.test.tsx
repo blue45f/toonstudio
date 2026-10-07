@@ -30,4 +30,17 @@ describe("ContactPage", () => {
     expect(screen.queryByRole("link", { name: /창작 도구·교육/ })).toBeNull();
     expect(screen.getByRole("link", { name: /비즈니스 문의/ }).getAttribute("href")).toBe("/business");
   });
+
+  it("보낸 뒤의 진행 방식(보드 답변·이메일 회신·상태 페이지)을 첫 화면에서 안내한다", () => {
+    render(
+      <MemoryRouter>
+        <ContactPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "보낸 뒤에는 이렇게 진행돼요" })).toBeTruthy();
+    expect(screen.getByText(/운영자 답변과 처리 상태가 붙어요/)).toBeTruthy();
+    expect(screen.getByText(/입력한 이메일로 회신드려요/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "상태 페이지" }).getAttribute("href")).toBe("/status");
+  });
 });

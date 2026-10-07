@@ -1,9 +1,11 @@
 import {
+  Activity,
   Bug,
   Database,
   HandCoins,
   Handshake,
   Mail,
+  MailCheck,
   MessagesSquare,
   Palette,
 } from "lucide-react";
@@ -111,6 +113,40 @@ export function ContactPage() {
           </>
         }
       />
+
+      <section aria-labelledby="contact-after-title" className="mt-10 rounded-2xl border border-line/80 bg-panel/45 p-5 sm:mt-12 sm:p-6">
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent">AFTER YOU SEND</p>
+        <h2 id="contact-after-title" className="mt-2 font-display text-lg font-bold text-fg">
+          {bi("보낸 뒤에는 이렇게 진행돼요", "What happens after you send")}
+        </h2>
+        <ul className="mt-4 grid gap-4 sm:grid-cols-3">
+          <li className="flex gap-3">
+            <MessagesSquare className="mt-0.5 shrink-0 text-accent" size={18} aria-hidden="true" />
+            <span className="min-w-0">
+              <strong className="block text-sm font-bold text-fg">{bi("피드백 보드", "Feedback board")}</strong>
+              <span className="mt-1 block text-xs leading-5 text-fg-2">{bi("제안·버그 제보에는 운영자 답변과 처리 상태가 붙어요. 남긴 보드에서 이어서 확인할 수 있어요.", "Suggestions and bug reports get an operator reply and a progress status, right on the board where you posted.")}</span>
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <MailCheck className="mt-0.5 shrink-0 text-accent" size={18} aria-hidden="true" />
+            <span className="min-w-0">
+              <strong className="block text-sm font-bold text-fg">{bi("비즈니스 문의", "Business inquiries")}</strong>
+              <span className="mt-1 block text-xs leading-5 text-fg-2">{bi("비공개로 접수해 검토한 뒤, 입력한 이메일로 회신드려요.", "Received privately, reviewed, then answered at the email you entered.")}</span>
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <Activity className="mt-0.5 shrink-0 text-accent" size={18} aria-hidden="true" />
+            <span className="min-w-0">
+              <strong className="block text-sm font-bold text-fg">{bi("서비스 장애 같다면", "If it looks like an outage")}</strong>
+              <span className="mt-1 block text-xs leading-5 text-fg-2">
+                {bi("문의 전에 ", "Before writing in, check the ")}
+                <Link href="/status" className="font-semibold text-accent hover:underline">{bi("상태 페이지", "status page")}</Link>
+                {bi("에서 알려진 문제인지 먼저 확인해 보세요.", " to see whether it is already a known issue.")}
+              </span>
+            </span>
+          </li>
+        </ul>
+      </section>
 
       <Section
         className="mt-10 sm:mt-12"
