@@ -22,7 +22,7 @@ import {
   countActiveTitleFilters,
 } from "@/shared/lib/title-filters";
 import { useRememberedFilters } from "@/shared/lib/use-remembered-filters";
-import { cn } from "@/shared/lib/utils";
+import { cn, kstTodayIdx } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { useApiResource } from "@/platform/use-api-resource";
@@ -30,6 +30,8 @@ import { useApiResource } from "@/platform/use-api-resource";
 
 
 interface CalendarResponse {
+  // todayIdx/todayDay 는 응답 생성 시점의 서버(KST) 기준 참고값이다. 화면의 "오늘" 표시는
+  // 이 값을 쓰지 않고 클라이언트가 kstTodayIdx()로 직접 계산한다(본문 주석 참조).
   todayIdx: number;
   todayDay: string;
   todayCount: number;
@@ -117,8 +119,11 @@ export function CalendarPage() {
   const titleFilterActive = titleFilterCount > 0;
   const anyFilterActive = platformFilterActive || titleFilterActive;
 
-  const todayIdx = data?.todayIdx ?? 0;
-  const todayDay = data?.todayDay ?? WEEK_DAYS[todayIdx] ?? "월";
+  // "오늘"은 응답 데이터가 아니라 렌더 시점의 실제 날짜(KST)가 기준이다. 응답의
+  // todayIdx/todayDay 에 의존하면 스냅샷 생성 시점의 요일이 박제되고, 데이터가 없을 때는
+  // 월요일(인덱스 0)로 폴백해 실제 요일과 어긋난다 — 서버와 같은 kstTodayIdx()로 직접 계산한다.
+  const todayIdx = kstTodayIdx();
+  const todayDay = WEEK_DAYS[todayIdx];
   const rawDays = data?.days ?? WEEK_DAYS.map((day) => ({ day, items: [] }));
   // 공용 필터(플랫폼 포함)를 적용. 비활성이면 원본 그대로 사용.
   const days = anyFilterActive
@@ -130,9 +135,9 @@ export function CalendarPage() {
   const totalScheduled = anyFilterActive
     ? days.reduce((n, d) => n + d.items.length, 0)
     : data?.totalScheduled ?? 0;
-  const todayCount = anyFilterActive
-    ? days[todayIdx]?.items.length ?? 0
-    : data?.todayCount ?? 0;
+  // 오늘 편수도 오늘 칸(days[todayIdx]) 기준으로 센다. 응답의 todayCount 는 서버 기준
+  // 오늘로 계산돼 자정 경계에서 클라이언트의 오늘 라벨과 어긋날 수 있다.
+  const todayCount = days[todayIdx]?.items.length ?? 0;
   const selDay = Math.min(selectedDayIdx ?? todayIdx, Math.max(0, days.length - 1));
   const selItems = days[selDay]?.items ?? [];
   const filterIdentity = JSON.stringify(filters);
