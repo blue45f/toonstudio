@@ -252,7 +252,9 @@
   .reference-dashboard .rd-intro { max-width: 32ch; font-size: 14px; line-height: 1.6; }
   .rd-idea { min-height: 54px; margin-top: 12px; }
   .rd-idea-modes > button { padding: 0 10px; }
-  .rd-idea-modes > button > span { display: none; }
+  /* 아이콘만 남기되 이름은 남긴다: display:none은 접근성 트리에서 이름까지 지워
+     button-name 위반을 만든다. 저장소 공통 시각 숨김 패턴으로 접는다. */
+  .rd-idea-modes > button > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .rd-idea-submit { padding: 0 14px; }
   .rd-luna { max-width: none; }
   .rd-luna-card { max-height: 430px; }
