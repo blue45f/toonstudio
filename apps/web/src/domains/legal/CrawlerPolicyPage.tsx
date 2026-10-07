@@ -8,6 +8,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { DocumentReadingProgress, LegalDocAnchor, LegalDocOutline, LegalRelatedDocs } from "./LegalDocTools";
+
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
@@ -99,8 +101,18 @@ export function CrawlerPolicyPage() {
   useBilingualI18nRevision();
   useDocumentTitle(bi("크롤러 정책", "Crawler Policy"));
 
+  const outline = [
+    { id: "crawler-section-identity", label: bi("수집 봇 식별 정보", "Crawler identity") },
+    { id: "crawler-section-channels", label: bi("사용하는 수집 채널", "Collection channels we use") },
+    { id: "crawler-section-collected", label: bi("확인하는 공개 정보", "Public information we verify") },
+    { id: "crawler-section-never", label: bi("수집하거나 우회하지 않는 정보", "Information we never collect or bypass for") },
+    { id: "crawler-section-rights", label: bi("접근 허용과 재사용 권리는 다릅니다", "Permission to access is not a right to reuse") },
+    { id: "crawler-section-requests", label: bi("정정·삭제·수집 중지 요청", "Correction, removal and opt-out requests") },
+  ];
+
   return (
     <Container size="prose" className="py-10 sm:py-14">
+      <DocumentReadingProgress />
       <header>
         <p className="eyebrow text-accent">DATA COLLECTION · {bi("투명성", "TRANSPARENCY")}</p>
         <h1 className="mt-2 text-balance font-display text-[clamp(1.8rem,7vw,2.25rem)] font-bold tracking-tight text-fg sm:text-5xl">
@@ -119,13 +131,18 @@ export function CrawlerPolicyPage() {
         className="mt-6 aspect-[21/9] w-full rounded-2xl border border-line object-cover"
       />
 
-      <section className="mt-10 rounded-2xl border border-line bg-panel/50 p-5 sm:p-6">
+      <LegalDocOutline sections={outline} />
+
+      <section id="crawler-section-identity" className="mt-10 scroll-mt-28 rounded-2xl border border-line bg-panel/50 p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
             <FileSearch size={19} aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-fg">{bi("수집 봇 식별 정보", "Crawler identity")}</h2>
+            <div className="flex items-start gap-2">
+              <h2 className="min-w-0 flex-1 text-lg font-bold text-fg">{bi("수집 봇 식별 정보", "Crawler identity")}</h2>
+              <LegalDocAnchor id="crawler-section-identity" label={bi("수집 봇 식별 정보", "Crawler identity")} />
+            </div>
             <p className="mt-2 text-sm leading-7 text-fg-2">
               {bi("자동 요청은 일반 브라우저로 가장하지 않고 아래 User-Agent로 식별합니다.", "Automated requests never pretend to be a regular browser; they identify with the User-Agent below.")}
             </p>
@@ -136,10 +153,11 @@ export function CrawlerPolicyPage() {
         </div>
       </section>
 
-      <section className="mt-10">
+      <section id="crawler-section-channels" className="mt-10 scroll-mt-28">
         <div className="flex items-center gap-2">
           <Database size={19} className="text-accent" aria-hidden="true" />
-          <h2 className="text-xl font-bold text-fg">{bi("사용하는 수집 채널", "Collection channels we use")}</h2>
+          <h2 className="min-w-0 flex-1 text-xl font-bold text-fg">{bi("사용하는 수집 채널", "Collection channels we use")}</h2>
+          <LegalDocAnchor id="crawler-section-channels" label={bi("사용하는 수집 채널", "Collection channels we use")} />
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {COLLECTION_CHANNELS.map((item) => {
@@ -156,19 +174,21 @@ export function CrawlerPolicyPage() {
       </section>
 
       <section className="mt-10 grid gap-4 sm:grid-cols-2">
-        <article className="rounded-2xl border border-line bg-card/40 p-5">
+        <article id="crawler-section-collected" className="scroll-mt-28 rounded-2xl border border-line bg-card/40 p-5">
           <div className="flex items-center gap-2">
             <ShieldCheck size={18} className="text-good" aria-hidden="true" />
-            <h2 className="font-bold text-fg">{bi("확인하는 공개 정보", "Public information we verify")}</h2>
+            <h2 className="min-w-0 flex-1 font-bold text-fg">{bi("확인하는 공개 정보", "Public information we verify")}</h2>
+            <LegalDocAnchor id="crawler-section-collected" label={bi("확인하는 공개 정보", "Public information we verify")} />
           </div>
           <ul className="mt-4 space-y-3 text-sm leading-6 text-fg-2">
             {bi(COLLECTED_FIELDS.ko, COLLECTED_FIELDS.en).map((item) => <li key={item} className="flex gap-2"><span aria-hidden="true">·</span><span>{item}</span></li>)}
           </ul>
         </article>
-        <article className="rounded-2xl border border-danger/30 bg-danger/5 p-5">
+        <article id="crawler-section-never" className="scroll-mt-28 rounded-2xl border border-danger/30 bg-danger/5 p-5">
           <div className="flex items-center gap-2">
             <Ban size={18} className="text-danger" aria-hidden="true" />
-            <h2 className="font-bold text-fg">{bi("수집하거나 우회하지 않는 정보", "Information we never collect or bypass for")}</h2>
+            <h2 className="min-w-0 flex-1 font-bold text-fg">{bi("수집하거나 우회하지 않는 정보", "Information we never collect or bypass for")}</h2>
+            <LegalDocAnchor id="crawler-section-never" label={bi("수집하거나 우회하지 않는 정보", "Information we never collect or bypass for")} />
           </div>
           <ul className="mt-4 space-y-3 text-sm leading-6 text-fg-2">
             {bi(NEVER_COLLECTED.ko, NEVER_COLLECTED.en).map((item) => <li key={item} className="flex gap-2"><span aria-hidden="true">·</span><span>{item}</span></li>)}
@@ -176,8 +196,11 @@ export function CrawlerPolicyPage() {
         </article>
       </section>
 
-      <section className="mt-10 space-y-4 rounded-2xl border border-line bg-panel/50 p-5 sm:p-6">
-        <h2 className="text-xl font-bold text-fg">{bi("접근 허용과 재사용 권리는 다릅니다", "Permission to access is not a right to reuse")}</h2>
+      <section id="crawler-section-rights" className="mt-10 scroll-mt-28 space-y-4 rounded-2xl border border-line bg-panel/50 p-5 sm:p-6">
+        <div className="flex items-start gap-2">
+          <h2 className="min-w-0 flex-1 text-xl font-bold text-fg">{bi("접근 허용과 재사용 권리는 다릅니다", "Permission to access is not a right to reuse")}</h2>
+          <LegalDocAnchor id="crawler-section-rights" label={bi("접근 허용과 재사용 권리는 다릅니다", "Permission to access is not a right to reuse")} />
+        </div>
         <p className="text-sm leading-7 text-fg-2">
           {bi(
             "robots.txt가 경로 접근을 허용하더라도 이미지 캐시, 본문 저장, 수정, AI 입력, 상업 이용, 재배포까지 허용된 것으로 판단하지 않습니다. 자료마다 메타데이터 표시·썸네일 표시·프로젝트 가져오기·상업 이용 가능성을 분리하여 기록하고, 확인되지 않은 권리는 기본적으로 차단합니다.",
@@ -197,11 +220,14 @@ export function CrawlerPolicyPage() {
         </div>
       </section>
 
-      <section className="mt-10 rounded-2xl border border-line bg-card/40 p-5 sm:p-6">
+      <section id="crawler-section-requests" className="mt-10 scroll-mt-28 rounded-2xl border border-line bg-card/40 p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <MailQuestion size={20} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-fg">{bi("정정·삭제·수집 중지 요청", "Correction, removal and opt-out requests")}</h2>
+            <div className="flex items-start gap-2">
+              <h2 className="min-w-0 flex-1 text-lg font-bold text-fg">{bi("정정·삭제·수집 중지 요청", "Correction, removal and opt-out requests")}</h2>
+              <LegalDocAnchor id="crawler-section-requests" label={bi("정정·삭제·수집 중지 요청", "Correction, removal and opt-out requests")} />
+            </div>
             <p className="mt-2 text-sm leading-7 text-fg-2">
               {bi(
                 "권리자나 데이터 제공자는 대상 URL과 요청 근거를 보내 정정, 노출 중지, 캐시 삭제 또는 재수집 방지를 요청할 수 있습니다. 확인 중인 자료는 우선 공개 노출을 중지하고 처리 이력을 남깁니다.",
@@ -222,6 +248,8 @@ export function CrawlerPolicyPage() {
           </div>
         </div>
       </section>
+
+      <LegalRelatedDocs currentHref="/about/crawler" />
     </Container>
   );
 }
