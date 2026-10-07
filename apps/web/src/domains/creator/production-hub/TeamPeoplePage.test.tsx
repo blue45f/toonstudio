@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { initialOperationPolicy, resolveOperationPolicy } from "@toonstudio/contracts/operation-policy";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FREE_USAGE_POLICY } from "@toonstudio/contracts/production-workspace";
+import { SessionContext } from "@/domains/auth/public/session/auth-session-store";
 import { TeamPeoplePage } from "./TeamPeoplePage";
 
 const mocks = vi.hoisted(() => ({ userId: "owner" as string | null,
@@ -77,5 +78,93 @@ describe("people & access surface (wave 5 T2)", () => {
     const membersHeading = screen.getByRole("heading", { name: "구성원" });
     expect(usageHeading.compareDocumentPosition(membersHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getAllByRole("link", { name: "사용량 확인" })).toHaveLength(1);
+  });
+});
+
+describe("people & access surface (wave 6 T1)", () => {
+  it("shows the team scene art on all three people routes", async () => {
+    for (const path of ["/team/people", "/team/people/team-a", "/team/people/team-a/usage"]) {
+      const view = render(<App path={path} />);
+      const banner = screen.getByTestId("team-scene-art");
+      expect(banner.querySelector("img")?.getAttribute("src")).toBe("/assets/production-workspace/creator-workspace.webp");
+      await screen.findByRole("heading", { name: "사람·권한 관리" });
+      view.unmount();
+    }
+  });
+
+  it("shows an overview skeleton shaped like the strip while the list is loading", async () => {
+    let resolveList!: (value: unknown) => void;
+    mocks.list.mockImplementation(() => new Promise((resolve) => { resolveList = resolve; }));
+    render(<App />);
+    expect(screen.getByTestId("team-people-overview-skeleton")).toBeTruthy();
+    expect(screen.getAllByTestId("workspace-list-skeleton-card")).toHaveLength(2);
+    expect(screen.queryByRole("heading", { name: "사람 한눈에" })).toBeNull();
+    resolveList({ workspaces: [workspace] });
+    await screen.findByRole("heading", { name: "사람 한눈에" });
+    expect(screen.queryByTestId("team-people-overview-skeleton")).toBeNull();
+  });
+
+  it("renders a real empty state with next actions, not an error, when there are no teams", async () => {
+    mocks.list.mockResolvedValue({ workspaces: [] });
+    render(<App />);
+    const empty = await screen.findByTestId("team-people-empty");
+    expect(empty.textContent).toContain("아직 참여한 팀이 없습니다");
+    expect(empty.querySelector("img")?.getAttribute("src")).toBe("/assets/production-workspace/creator-workspace.webp");
+    expect(screen.getByRole("link", { name: "새 팀 만들기" }).getAttribute("href")).toBe("#team-create-workspace");
+    expect(screen.getByRole("link", { name: "초대 코드로 참여" }).getAttribute("href")).toBe("/team/people/join");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("leads the usage route loading state with a usage-shaped skeleton", async () => {
+    let resolveDetail!: (value: unknown) => void;
+    mocks.detail.mockImplementation(() => new Promise((resolve) => { resolveDetail = resolve; }));
+    render(<App path="/team/people/team-a/usage" />);
+    await waitFor(() => expect(screen.getByTestId("workspace-usage-skeleton")).toBeTruthy());
+    expect(screen.queryByRole("heading", { name: "사용량과 공통 이용 한도" })).toBeNull();
+    resolveDetail({ workspace, projects: [{ id: "project-a", workId: "work-a", title: "검수 원고" }],
+      members: [{ userId: "owner", displayName: "소유자", role: "owner", joinedAt: workspace.createdAt }], invites: [] });
+    await screen.findByRole("heading", { name: "사용량과 공통 이용 한도" });
+    expect(screen.queryByTestId("workspace-usage-skeleton")).toBeNull();
+  });
+
+  it("shows an empty state for pending invites instead of a blank list", async () => {
+    render(<App path="/team/people/team-a" />);
+    const empty = await screen.findByTestId("team-invites-empty");
+    expect(empty.textContent).toContain("아직 대기 중인 초대가 없어요");
+  });
+
+  it("uses the signed-in member's real profile photo and keeps monograms for members without one", async () => {
+    mocks.detail.mockResolvedValue({ workspace, projects: [{ id: "project-a", workId: "work-a", title: "검수 원고" }],
+      members: [
+        { userId: "owner", displayName: "소유자", role: "owner", joinedAt: workspace.createdAt },
+        { userId: "member-b", displayName: "채색 담당", role: "member", joinedAt: workspace.createdAt },
+      ], invites: [] });
+    render(
+      <SessionContext.Provider value={{ data: { user: { id: "owner", name: "소유자", image: "https://images.example/me.webp" } }, ready: true, status: "authenticated", update: async () => null }}>
+        <App path="/team/people/team-a" />
+      </SessionContext.Provider>,
+    );
+    await screen.findByRole("heading", { name: "구성원" });
+    const selfAvatar = screen.getByTitle("소유자");
+    expect(selfAvatar.getAttribute("data-avatar-kind")).toBe("photo");
+    expect(selfAvatar.querySelector("img")?.getAttribute("src")).toBe("https://images.example/me.webp");
+    const otherAvatar = screen.getByTitle("채색 담당");
+    expect(otherAvatar.getAttribute("data-avatar-kind")).toBe("monogram");
+    expect(otherAvatar.querySelector("img")).toBeNull();
+  });
+
+  it("falls back to the monogram when the profile photo fails to load", async () => {
+    render(
+      <SessionContext.Provider value={{ data: { user: { id: "owner", name: "소유자", image: "https://images.example/broken.webp" } }, ready: true, status: "authenticated", update: async () => null }}>
+        <App path="/team/people/team-a" />
+      </SessionContext.Provider>,
+    );
+    await screen.findByRole("heading", { name: "구성원" });
+    const avatar = screen.getByTitle("소유자");
+    const img = avatar.querySelector("img");
+    expect(img).toBeTruthy();
+    fireEvent.error(img as HTMLImageElement);
+    expect(avatar.getAttribute("data-avatar-kind")).toBe("monogram");
+    expect(avatar.querySelector("img")).toBeNull();
   });
 });

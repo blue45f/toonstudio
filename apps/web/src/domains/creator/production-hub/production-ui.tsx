@@ -6,7 +6,7 @@
  * 색은 디자인 토큰(`accent`, `good`, `warn`, `bad`, `cool`)만 사용한다.
  */
 import { FlaskConical, type LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { productionInitials } from "./production-format";
 
@@ -154,28 +154,42 @@ function avatarToneIndex(seed: string): number {
   return hash % AVATAR_TONES.length;
 }
 
-/** 이름 이니셜 아바타. 색은 이름으로 결정되어 같은 사람은 어디서나 같은 색이다. */
+/**
+ * 사람 아바타. 실제 프로필 사진(imageUrl)이 있으면 사진을, 없으면 이름 이니셜
+ * 모노그램을 보여 준다 — 없는 사진을 있는 것처럼 꾸미지 않으며, 두 상태는
+ * `data-avatar-kind`("photo" | "monogram")로 구분된다. 사진 로딩이 실패하면
+ * 모노그램으로 조용히 되돌아간다. 색은 이름으로 결정되어 같은 사람은 어디서나 같은 색이다.
+ */
 export function ProductionAvatar({
   name,
   size = "md",
   className,
+  imageUrl,
 }: {
   readonly name: string;
   readonly size?: "sm" | "md" | "lg";
   readonly className?: string;
+  /** 실제 프로필 사진 주소. 있을 때만 사진으로 렌더링한다. */
+  readonly imageUrl?: string | null;
 }) {
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const showPhoto = Boolean(imageUrl) && !photoFailed;
+  const sizeClass = size === "sm" ? "size-6 text-[0.625rem]" : size === "lg" ? "size-10 text-sm" : "size-8 text-xs";
   return (
     <span
       aria-hidden="true"
       title={name}
+      data-avatar-kind={showPhoto ? "photo" : "monogram"}
       className={cn(
-        "inline-flex shrink-0 select-none items-center justify-center rounded-full font-black ring-2 ring-card",
-        size === "sm" ? "size-6 text-[0.625rem]" : size === "lg" ? "size-10 text-sm" : "size-8 text-xs",
-        AVATAR_TONES[avatarToneIndex(name)],
+        "inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-black ring-2 ring-card",
+        sizeClass,
+        showPhoto ? "bg-raised" : AVATAR_TONES[avatarToneIndex(name)],
         className,
       )}
     >
-      {productionInitials(name)}
+      {showPhoto
+        ? <img src={imageUrl ?? undefined} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" onError={() => setPhotoFailed(true)} />
+        : productionInitials(name)}
     </span>
   );
 }
