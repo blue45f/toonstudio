@@ -53,7 +53,7 @@ const STUDIO_DOMAINS = {
   "character-convert": "characters", ecosystem: "learn", "growth-ip": "publish",
   "environment-guide": "learn", "ecosystem-viewer": "learn", toolchain: "production",
   engines: "production", jobs: "production", immersive: "backgrounds",
-  "motion-webtoon": "story", poser: "characters",
+  "motion-webtoon": "story", poser: "characters", "pdf-workbench": "publish",
   recovery: "projects", trash: "projects", "asset-brushes": "assets",
   "asset-brush-new": "assets", "asset-brush-edit": "assets", "asset-character-new": "characters",
   "asset-audio": "assets", "asset-3d": "backgrounds", "project-root": "projects",

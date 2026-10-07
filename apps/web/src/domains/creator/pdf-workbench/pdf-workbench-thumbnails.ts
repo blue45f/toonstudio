@@ -31,15 +31,18 @@ export async function renderPdfPageThumbnail(input: {
   readonly bytes: Uint8Array;
   readonly pageIndex: number;
   readonly targetWidth?: number;
+  /** 원본 회전에 더해지는 추가 회전 (워크벤치 회전 상태와 화면을 맞춘다). */
+  readonly rotationDelta?: number;
 }): Promise<string> {
   const pdfjs = await loadPdfjs();
   const loadingTask = pdfjs.getDocument({ data: input.bytes.slice() });
   const doc = await loadingTask.promise;
   try {
     const page = await doc.getPage(input.pageIndex + 1);
-    const baseViewport = page.getViewport({ scale: 1 });
+    const rotation = page.rotate + (input.rotationDelta ?? 0);
+    const baseViewport = page.getViewport({ scale: 1, rotation });
     const targetWidth = input.targetWidth ?? 240;
-    const viewport = page.getViewport({ scale: targetWidth / baseViewport.width });
+    const viewport = page.getViewport({ scale: targetWidth / baseViewport.width, rotation });
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.ceil(viewport.width));
     canvas.height = Math.max(1, Math.ceil(viewport.height));

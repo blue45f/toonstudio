@@ -17,6 +17,7 @@ import {
   StudioProductionJobsPage, StudioPromoPage, StudioPinnedReviewShowcasePage,
   StudioPinnedReviewShowcaseDetailPage, StudioGenerativePage, StudioSpatialReaderPage,
   StudioTemplatesPage, StudioRouter, CreatorAnalyticsPage, StudioPoserPage,
+  PdfWorkbenchPage,
 } from "./creator-route-pages";
 
 export const creatorRoutes = defineAppRoutes([
@@ -103,6 +104,10 @@ export const creatorRoutes = defineAppRoutes([
   // /studio/poser 데드링크 해소: 실제 포저(데생 인형 + 매직 포저) 독립 진입점.
   // /studio/* 와일드카드보다 먼저 둔다.
   { id: "creator-studio-poser", path: studioRoutePath("poser"), element: <StudioPoserPage /> },
+
+  // PDF 워크벤치: 발행·가져온 PDF의 페이지 재배열·병합·분할 후단 작업 화면.
+  // /studio/* 와일드카드보다 먼저 둔다.
+  { id: "creator-studio-pdf-workbench", path: studioRoutePath("pdf-workbench"), element: <PdfWorkbenchPage /> },
 
   // /studio/canvas and all scoped editor/production routes continue through the established router.
   { id: "creator-studio", path: "/studio/*", element: <StudioRouter /> },
