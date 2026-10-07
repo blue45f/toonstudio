@@ -20,7 +20,18 @@ import {
   EngineeringPageFrame,
   EngineeringPageIntro,
 } from "./EngineeringStoryUi";
+import {
+  EngineeringKeySummary,
+  EngineeringLongformLayout,
+  EngineeringMetaChip,
+  type EngineeringTocGroup,
+} from "./EngineeringLongform";
 import { EngineeringLicenseInventory } from "./EngineeringLicenseInventory";
+import {
+  ENGINEERING_LIBRARY_LICENSES,
+  ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT,
+  ENGINEERING_MODEL_ASSET_LICENSES,
+} from "./engineering-license-inventory";
 import { SitePageArt } from "../public/site-page-art";
 
 
@@ -28,6 +39,8 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("EngineeringLicensesPage", ko, en);
+
+const BODY_ID = "engineering-licenses-body";
 
 const RIGHTS_LAYERS: readonly {
   readonly title: LocalizedText;
@@ -135,7 +148,18 @@ export function EngineeringLicensesPage() {
           .includes(normalizedQuery))
     : ENGINEERING_LICENSE_GROUPS;
 
-
+  const tocGroups: readonly EngineeringTocGroup[] = [
+    {
+      id: "licenses",
+      items: [
+        { id: "license-roles", label: bi("역할 지도", "Role map") },
+        { id: "rights-layers", label: bi("권리 계층", "Rights layers") },
+        { id: "license-families", label: bi("라이선스 종류", "License families") },
+        { id: "license-inventory", label: bi("라이브러리 현황", "Library inventory") },
+        { id: "license-pipeline", label: bi("고지와 검토", "Notices and review") },
+      ],
+    },
+  ];
 
   useDocumentTitle(
     bi("ToonStudio 오픈소스와 라이선스 · 코드부터 생성 결과까지", "ToonStudio open source and licensing · From code to generated output"),
@@ -166,7 +190,23 @@ export function EngineeringLicensesPage() {
         }
       />
 
-      <section aria-labelledby="open-source-map-title">
+      <EngineeringKeySummary
+        points={[
+          bi("권리는 코드 하나로 판단하지 않습니다. 실행 코드, 폰트와 시각 자산, 외부 서비스, AI 모델과 생성 결과를 나눠 각 층의 규칙으로 봅니다.", "Rights are never judged by code alone: runtime code, fonts and visual assets, external services, and AI models and generated output are reviewed under separate layer rules."),
+          bi("라이브러리 현황은 설치 메타데이터에서 자동 수집하고 사람이 검토한 기록과 함께 유지합니다. 자동 수집은 출발점이고 판단은 검토 기록에 남습니다.", "The library inventory is collected automatically from installed metadata and kept with human review records. Automation is the starting point; judgment stays in the review record."),
+          bi("종류별 표는 빠른 분류 기준일 뿐입니다. 정확한 의무는 설치한 버전의 원문과 배포 방식으로 다시 확인합니다.", "The family table is a triage guide only. Exact obligations are rechecked against the installed version's original text and the distribution model."),
+        ]}
+        meta={(
+          <>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("라이브러리 {value0}종", "{value0} libraries")), { value0: ENGINEERING_LIBRARY_LICENSES.length })}</EngineeringMetaChip>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("모델·자산 {value0}종", "{value0} models & assets")), { value0: ENGINEERING_MODEL_ASSET_LICENSES.length })}</EngineeringMetaChip>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("검토일 {value0}", "Reviewed {value0}")), { value0: ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT })}</EngineeringMetaChip>
+          </>
+        )}
+      />
+
+      <EngineeringLongformLayout groups={tocGroups} bodyId={BODY_ID} tocLabel={bi("라이선스 문서 목차", "Licensing document contents")} collapsible={false}>
+      <section id="license-roles" className="scroll-mt-32" aria-labelledby="open-source-map-title">
         <p className="eyebrow text-accent">{translateCurrentStaticSourceText("domains.legal.technology.EngineeringLicensesPage", "en", "OPEN-SOURCE ROLE MAP")}</p>
         <h2 id="open-source-map-title" className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">
           {bi("사용한 기술과 소유하지 않는 역할을 함께 공개합니다.", "Document what each technology does—and what it does not own.")}
@@ -191,7 +231,7 @@ export function EngineeringLicensesPage() {
         </div>
       </section>
 
-      <section className="mt-16" aria-labelledby="rights-layers-title">
+      <section id="rights-layers" className="mt-16 scroll-mt-32" aria-labelledby="rights-layers-title">
         <p className="eyebrow text-accent">{translateCurrentStaticSourceText("domains.legal.technology.EngineeringLicensesPage", "en", "RIGHTS LAYERS")}</p>
         <h2 id="rights-layers-title" className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">
           {bi("코드 라이선스 하나로 모든 권리를 판단하지 않습니다.", "One code license cannot answer every rights question.")}
@@ -220,7 +260,7 @@ export function EngineeringLicensesPage() {
         </div>
       </section>
 
-      <section className="mt-16" aria-labelledby="license-groups-title">
+      <section id="license-families" className="mt-16 scroll-mt-32" aria-labelledby="license-groups-title">
         <p className="eyebrow text-accent">{translateCurrentStaticSourceText("domains.legal.technology.EngineeringLicensesPage", "en", "LICENSE FAMILIES")}</p>
         <h2 id="license-groups-title" className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">
           {bi("종류별 기본 의무와 추가 확인 지점", "Baseline obligations and review points by license family")}
@@ -299,9 +339,11 @@ export function EngineeringLicensesPage() {
         </div>
       </section>
 
-      <EngineeringLicenseInventory />
+      <div id="license-inventory" className="scroll-mt-32">
+        <EngineeringLicenseInventory />
+      </div>
 
-      <section className="mt-16 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]" aria-labelledby="license-pipeline-title">
+      <section id="license-pipeline" className="mt-16 grid gap-6 scroll-mt-32 lg:grid-cols-[0.95fr_1.05fr]" aria-labelledby="license-pipeline-title">
         <div className="space-y-6">
           <div className="rounded-[2rem] border border-line/70 bg-panel/65 p-6 shadow-sm sm:p-8">
             <FileCheck2 size={23} className="text-accent" aria-hidden="true" />
@@ -390,6 +432,7 @@ export function EngineeringLicensesPage() {
           </p>
         </div>
       </aside>
+      </EngineeringLongformLayout>
     </EngineeringPageFrame>
   );
 }
