@@ -280,6 +280,26 @@ export function CreatorSupportPage() {
         </a>
       </PublicStoryHero>
 
+      {/* 첫 화면에서 받는 사람·주는 사람의 두 갈래를 나눈다 — 히어로 버튼만으로는 두 흐름이 읽히지 않았다. */}
+      <section className="mt-8 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-3xl border border-line bg-card p-5 sm:p-6">
+          <HandHeart className="size-6 text-accent" aria-hidden="true" />
+          <h2 className="mt-3 text-lg font-bold text-fg">{t("creatorSupport.paths.receiveTitle")}</h2>
+          <p className="mt-1.5 text-sm leading-6 text-fg-2">{t("creatorSupport.paths.receiveBody")}</p>
+          <a href="#creator-support-apply" className="mt-4 inline-flex min-h-11 items-center text-sm font-bold text-accent hover:underline">
+            {t("creatorSupport.hero.apply")}
+          </a>
+        </div>
+        <div className="rounded-3xl border border-line bg-card p-5 sm:p-6">
+          <Lightbulb className="size-6 text-accent" aria-hidden="true" />
+          <h2 className="mt-3 text-lg font-bold text-fg">{t("creatorSupport.paths.giveTitle")}</h2>
+          <p className="mt-1.5 text-sm leading-6 text-fg-2">{t("creatorSupport.paths.giveBody")}</p>
+          <a href="#creator-support-projects" className="mt-4 inline-flex min-h-11 items-center text-sm font-bold text-accent hover:underline">
+            {t("creatorSupport.hero.browse")}
+          </a>
+        </div>
+      </section>
+
       <section
         id="creator-support-projects"
         className="mt-8"
