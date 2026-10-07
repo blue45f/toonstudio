@@ -16,15 +16,26 @@ function valid(scope: string, room: string): boolean {
   return scope.length > 0 && scope.length <= 4096
     && /^work-instant-[a-z0-9]+-[a-z0-9]{4}$/u.test(room) && room.length <= 160;
 }
-export function hasStudioLocalDraftOrigin(storage: OriginStorage, scope: string, room: string): boolean {
-  if (!valid(scope, room)) return false;
+/**
+ * Reads the room a scope's origin receipt points at, with the same strict shape checks as the
+ * verifier below. Re-entry paths that carry no room of their own (document links,
+ * `resume=latest`) need the pointed room itself as their recovery candidate; without this read
+ * they can only mint a fresh room and then overwrite the receipt, orphaning the previous room
+ * and every recovery layer keyed by it. Fail-closed: anything malformed reads as no receipt.
+ */
+export function readStudioLocalDraftOriginRoom(storage: OriginStorage, scope: string): string | null {
   try {
     const raw = storage.getItem(STUDIO_LOCAL_DRAFT_OWNER_PREFIX + encodeURIComponent(scope));
-    if (!raw || raw.length > 12288) return false;
+    if (!raw || raw.length > 12288) return null;
     const value = JSON.parse(raw) as { v?: unknown; scope?: unknown; room?: unknown };
-    return value?.v === 1 && value.scope === scope && value.room === room
-      && Object.keys(value).sort().join() === "room,scope,v";
-  } catch { return false; }
+    if (value?.v !== 1 || value.scope !== scope || typeof value.room !== "string") return null;
+    if (Object.keys(value).sort().join() !== "room,scope,v") return null;
+    return valid(scope, value.room) ? value.room : null;
+  } catch { return null; }
+}
+export function hasStudioLocalDraftOrigin(storage: OriginStorage, scope: string, room: string): boolean {
+  if (!valid(scope, room)) return false;
+  return readStudioLocalDraftOriginRoom(storage, scope) === room;
 }
 /**
  * A restarted local origin may reclaim only its own exact browser/account/document room after

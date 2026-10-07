@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { hasStudioLocalDraftOrigin, holdStudioLocalDraftOwnership, studioLocalDraftOwnerScope, STUDIO_LOCAL_DRAFT_OWNER_PREFIX } from "../live/studio-live-local-draft-owner";
+import { hasStudioLocalDraftOrigin, holdStudioLocalDraftOwnership, readStudioLocalDraftOriginRoom, studioLocalDraftOwnerScope, STUDIO_LOCAL_DRAFT_OWNER_PREFIX } from "../live/studio-live-local-draft-owner";
 
 const room = "work-instant-abc-1234";
 const scope = studioLocalDraftOwnerScope({ ownerId: "a", projectId: "p", documentId: "d", draftId: null });
@@ -73,6 +73,27 @@ describe("browser-local origin reclaim (not server authority)", () => {
     const denied = { getItem: () => { throw new Error("denied"); }, setItem: () => { throw new Error("denied"); } };
     const input = { ...options(f), knownTabOwner: false, storage: denied };
     holdStudioLocalDraftOwnership(input); await settle(); expect(input.onRecovered).not.toHaveBeenCalled();
+  });
+  it("reads the pointed room back for room-less re-entry candidates", async () => {
+    const f = fixture(); const close = holdStudioLocalDraftOwnership(options(f)); await settle(); close(); await settle();
+    expect(readStudioLocalDraftOriginRoom(f.storage, scope)).toBe(room);
+    expect(readStudioLocalDraftOriginRoom(f.storage,
+      studioLocalDraftOwnerScope({ ownerId: "b", projectId: "p", documentId: "d", draftId: null }))).toBeNull();
+  });
+  it("reads no room from missing, corrupt or foreign receipts", async () => {
+    const f = fixture(); const key = STUDIO_LOCAL_DRAFT_OWNER_PREFIX + encodeURIComponent(scope);
+    expect(readStudioLocalDraftOriginRoom(f.storage, scope)).toBeNull();
+    for (const raw of ["corrupt", "null",
+      JSON.stringify({ v: 1, scope, room, extra: true }),
+      JSON.stringify({ v: 1, scope, room: "not-a-room" }),
+      JSON.stringify({ v: 2, scope, room }),
+      JSON.stringify({ v: 1, scope: "other-scope", room }),
+      "x".repeat(12289)]) {
+      f.rows.set(key, raw);
+      expect(readStudioLocalDraftOriginRoom(f.storage, scope)).toBeNull();
+    }
+    const denied = { getItem: () => { throw new Error("denied"); }, setItem: () => { throw new Error("denied"); } };
+    expect(readStudioLocalDraftOriginRoom(denied, scope)).toBeNull();
   });
   it("does not recover after unmount or if the pointer changes before the lock callback", async () => {
     const f = fixture(); const owner = holdStudioLocalDraftOwnership(options(f)); await settle(); owner(); await settle();
