@@ -44,6 +44,7 @@ import {
 } from "@/platform/messaging-client";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { LoadingState } from "@/shared/components/LoadingState";
+import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
@@ -474,6 +475,21 @@ export function MessagesPage() {
 
   const messages = useMemo(() => detail?.messages ?? [], [detail]);
 
+  // 첫 화면 현황 — 이미 불러온 현재 탭 목록에서 직접 센 값만 보여준다.
+  // 로딩 중·목록 오류·빈 탭에서는 띄우지 않는다 (현황을 지어내거나 실패를 감추지 않는다).
+  const inboxSummary = !listLoading && !listError && threads.length > 0
+    ? tab === "requests"
+      ? `수락 대기 중인 요청 ${threads.filter((thread) => thread.state === "pending").length}개 · 전체 ${threads.length}개`
+      : tab === "archived"
+        ? `보관한 대화 ${threads.length}개`
+        : (() => {
+            const unread = threads.reduce((sum, thread) => sum + thread.unreadCount, 0);
+            return unread > 0
+              ? `읽지 않은 메시지 ${unread}개 · 대화 ${threads.length}개`
+              : `모든 대화를 읽었어요 · 대화 ${threads.length}개`;
+          })()
+    : null;
+
   if (!session.ready && !sessionCheckTimedOut) {
     return (
       <div data-route-pending="" className="grid min-h-[55vh] place-items-center px-6 text-center">
@@ -501,17 +517,20 @@ export function MessagesPage() {
   if (!authenticated) {
     return (
       <Container size="prose" className="py-16 sm:py-24">
-        <div className="rounded-3xl border border-line bg-card p-8 text-center shadow-sm sm:p-12">
-          <Mail size={36} className="mx-auto text-accent" />
-          <h1 className="mt-4 text-2xl font-bold">로그인 후 메시지를 확인할 수 있어요.</h1>
-          <p className="mt-2 text-sm leading-relaxed text-fg-2">로그인하면 작품 피드백과 협업 제안을 안전하게 주고받을 수 있습니다.</p>
-          <button
-            type="button"
-            onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "messages", mode: "login" })}
-            className={buttonClass({ size: "md", variant: "solid", className: "mt-6 min-h-11" })}
-          >
-            로그인하기
-          </button>
+        <div className="overflow-hidden rounded-3xl border border-line bg-card shadow-sm">
+          <SectionArt image="community" className="h-28 w-full object-cover sm:h-36" />
+          <div className="p-8 text-center sm:p-12">
+            <Mail size={36} className="mx-auto text-accent" />
+            <h1 className="mt-4 text-2xl font-bold">로그인 후 메시지를 확인할 수 있어요.</h1>
+            <p className="mt-2 text-sm leading-relaxed text-fg-2">로그인하면 작품 피드백과 협업 제안을 안전하게 주고받을 수 있습니다.</p>
+            <button
+              type="button"
+              onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "messages", mode: "login" })}
+              className={buttonClass({ size: "md", variant: "solid", className: "mt-6 min-h-11" })}
+            >
+              로그인하기
+            </button>
+          </div>
         </div>
       </Container>
     );
@@ -544,6 +563,13 @@ export function MessagesPage() {
           </button>
         </div>
       </div>
+
+      {inboxSummary && (
+        <p role="status" className="mb-3 flex items-center gap-2 text-xs font-medium text-fg-2">
+          <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />
+          {inboxSummary}
+        </p>
+      )}
 
       <div className="relative min-h-[620px] overflow-hidden rounded-3xl border border-line bg-panel shadow-sm lg:grid lg:grid-cols-[22rem_minmax(0,1fr)]">
         <aside className={cn("border-r border-line bg-card", showMobileList ? "block" : "hidden lg:block")}>

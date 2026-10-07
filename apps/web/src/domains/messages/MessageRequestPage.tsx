@@ -109,17 +109,20 @@ export function MessageRequestPage() {
   if (session.status !== "authenticated") {
     return (
       <Container size="prose" className="py-16 sm:py-24">
-        <section aria-label="로그인 안내" className="rounded-3xl border border-line bg-card p-8 text-center sm:p-12">
-          <MailPlus size={36} className="mx-auto text-accent" />
-          <h1 className="mt-4 text-2xl font-bold">로그인 후 메시지를 보낼 수 있어요.</h1>
-          <p className="mt-2 text-sm text-fg-2">스팸 방지를 위해 인증된 회원만 새 메시지 요청을 보낼 수 있습니다.</p>
-          <button
-            type="button"
-            onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "message-request", mode: "login" })}
-            className={buttonClass({ size: "md", variant: "solid", className: "mt-6 min-h-11" })}
-          >
-            로그인하기
-          </button>
+        <section aria-label="로그인 안내" className="overflow-hidden rounded-3xl border border-line bg-card shadow-sm">
+          <SectionArt image="community" className="h-28 w-full object-cover sm:h-36" />
+          <div className="p-8 text-center sm:p-12">
+            <MailPlus size={36} className="mx-auto text-accent" />
+            <h1 className="mt-4 text-2xl font-bold">로그인 후 메시지를 보낼 수 있어요.</h1>
+            <p className="mt-2 text-sm text-fg-2">스팸 방지를 위해 인증된 회원만 새 메시지 요청을 보낼 수 있습니다.</p>
+            <button
+              type="button"
+              onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "message-request", mode: "login" })}
+              className={buttonClass({ size: "md", variant: "solid", className: "mt-6 min-h-11" })}
+            >
+              로그인하기
+            </button>
+          </div>
         </section>
       </Container>
     );
