@@ -14,3 +14,12 @@
 .pc-preview-empty p{font-weight:650;margin-bottom:10px}
 .pc-preview-empty ul{margin:0;padding-left:18px;opacity:.85}
 @media(max-width:1023px){.pc-editor-layout{grid-template-columns:1fr}.pc-preview{position:static}}
+.pc-hero-feature{display:flex;flex-direction:column;gap:16px;padding:18px;border:1px solid var(--pc-line);border-radius:22px;background:var(--pc-soft)}
+.pc-hero-feature-cover{display:block;position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:14px}
+.pc-hero-feature-cover img{display:block;width:100%;height:100%;object-fit:cover}
+.pc-hero-feature-badge{position:absolute;left:12px;top:12px;padding:6px 10px;border-radius:999px;background:color-mix(in srgb,var(--unified-fg) 82%,transparent);color:var(--unified-canvas);font-size:11px;font-weight:700;letter-spacing:.04em}
+.pc-hero-feature-body{display:flex;flex-direction:column;gap:5px}
+.pc-hero-feature-body strong{font-size:clamp(19px,2vw,24px);line-height:1.35;letter-spacing:-.02em}
+.pc-hero-feature-body span{font-size:13px;line-height:1.6;opacity:.8}
+.pc-hero-feature-body p{font-size:12px;line-height:1.7;margin:6px 0 0;opacity:.7}
+@media(max-width:620px){.pc-hero-feature{margin-top:28px}}
