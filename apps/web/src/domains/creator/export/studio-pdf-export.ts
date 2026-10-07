@@ -20,8 +20,16 @@
 
 import { JPEG_QUALITY, canvasToBlob, downloadBlob } from "./studio-export";
 import { drawWatermarkOnSlice } from "./studio-export-presets";
+import {
+  buildPrintPdfFromPages,
+  countPrintPdfOutputPages,
+  rgbaToCmykBytes,
+} from "./studio-pdf-print-export";
 
 import type { WatermarkSettings } from "../studio-watermark";
+import type { PdfPrintOptions, PrintPdfPage } from "./studio-pdf-print-export";
+
+export type { PdfPrintOptions, PrintPdfPage } from "./studio-pdf-print-export";
 
 /** px→pt 변환 계수 — CSS 96dpi 픽셀을 PDF 72dpi 포인트로(1px = 0.75pt). */
 export const PDF_PX_TO_PT = 0.75;
@@ -221,6 +229,12 @@ export interface PdfPagesRenderOptions {
   quality?: number;
   /** 있으면 페이지마다 서명 합성 — 규격 슬라이스 내보내기와 같은 규칙. */
   watermark?: WatermarkSettings;
+  /**
+   * 인쇄 스펙(재단 여백·재단 마크·CMYK·스프레드 배열) — 지정하면 인쇄용 빌더로 조립한다.
+   * CMYK 모드에서는 JPEG 인코딩 대신 평탄화 캔버스의 픽셀을 CMYK 래스터로 변환한다.
+   * 없으면 기존 기본 빌더 경로와 바이트가 같다.
+   */
+  print?: PdfPrintOptions;
   onProgress?: (done: number, total: number) => void;
   /**
    * 선택적 페이지별 전처리. 긴 원고의 주석 레일처럼 큰 임시 캔버스를 전 페이지 분량 쌓지 않고
@@ -275,6 +289,7 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
   const releaseCanvas = options.releaseCanvas ?? (options.createCanvas ? undefined : releasePageCanvas);
   const quality = options.quality ?? JPEG_QUALITY;
   const jpegPages: PdfJpegPage[] = [];
+  const printPages: PrintPdfPage[] = [];
   for (let index = 0; index < valid.length; index++) {
     const { page: sourcePage, sourceIndex } = valid[index];
     let page = sourcePage;
@@ -296,7 +311,25 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
       ctx.fillRect(0, 0, page.width, page.height);
       ctx.drawImage(page, 0, 0);
       if (options.watermark) drawWatermarkOnSlice(flat, options.watermark);
-      jpegPages.push({ jpegBytes: await toJpeg(flat, quality), width: page.width, height: page.height });
+      if (options.print?.colorMode === "cmyk") {
+        // CMYK는 JPEG로 재인코딩할 수 없어 평탄화된 픽셀을 그대로 변환한다.
+        const pixels = ctx.getImageData(0, 0, page.width, page.height);
+        printPages.push({
+          kind: "cmyk-raster",
+          cmykBytes: rgbaToCmykBytes(pixels.data),
+          width: page.width,
+          height: page.height,
+        });
+      } else if (options.print) {
+        printPages.push({
+          kind: "jpeg",
+          jpegBytes: await toJpeg(flat, quality),
+          width: page.width,
+          height: page.height,
+        });
+      } else {
+        jpegPages.push({ jpegBytes: await toJpeg(flat, quality), width: page.width, height: page.height });
+      }
     } finally {
       if (flat) {
         try {
@@ -317,10 +350,13 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
   }
   let pdfBytes: Uint8Array;
   try {
-    pdfBytes = buildPdfFromJpegPages(jpegPages, { title: options.title });
+    pdfBytes = options.print
+      ? buildPrintPdfFromPages(printPages, { title: options.title, print: options.print })
+      : buildPdfFromJpegPages(jpegPages, { title: options.title });
   } finally {
-    // buildPdfFromJpegPages가 PDF 바이트로 복사한 뒤 대용량 JPEG 참조를 즉시 놓는다.
+    // 빌더가 PDF 바이트로 복사한 뒤 대용량 페이지 참조를 즉시 놓는다.
     jpegPages.length = 0;
+    printPages.length = 0;
   }
   const fileName = pdfExportFileName(options.title);
   // TS6 타입드어레이 제네릭: Blob은 ArrayBuffer 기반 뷰만 받으므로 명시 복사로 백킹 버퍼를 고정한다.
@@ -328,7 +364,8 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
   blobBytes.set(pdfBytes);
   return {
     blob: new Blob([blobBytes], { type: "application/pdf" }),
-    pageCount: valid.length,
+    // 스프레드 배열이면 결과 페이지 수는 입력 수가 아니라 펼침면 수다.
+    pageCount: options.print ? countPrintPdfOutputPages(valid.length, options.print) : valid.length,
     bytes: pdfBytes.length,
     fileName,
   };
