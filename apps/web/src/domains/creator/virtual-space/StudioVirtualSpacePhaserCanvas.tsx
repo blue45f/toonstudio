@@ -718,6 +718,8 @@ export function StudioVirtualSpacePhaserCanvas({
       const npcDisplayPoints = new Map<string, StudioDisplayPoint>();
       /** NPC 가시성 페이드 상태: 관심 경계에서 툭 나타나고 사라지던 팝을 알파 전이로 바꾼다. */
       const npcVisibilityFades = new Map<string, StudioActorVisibilityFadeState>();
+      /** 동료 가시성 페이드 상태: 관심 컬링 토글에도 같은 전이를 적용한다 (입·퇴장 페이드와 별개 층). */
+      const peerVisibilityFades = new Map<string, StudioActorVisibilityFadeState>();
       /** UI 이벤트는 이벤트 피드와 fx 알림이 같은 출구로 낸다. */
       const emitSpaceUiEvent = (event: StudioSpaceUiEvent) => {
         if (import.meta.env.DEV) parent.dataset.spaceUiEvent = `${event.kind}:${event.titleKo}`.slice(0, 120);
@@ -768,14 +770,17 @@ export function StudioVirtualSpacePhaserCanvas({
       };
 
       /** 동료 비주얼의 완전한 파괴: 스프라이트·이름표·상태 점·이모트·말풍선·장식·에셋 거주를 한곳에서 해제한다. */
-      const destroyPeerVisual = (id: string, visual: PeerVisual) => destroyStudioPeerVisual({
+      const destroyPeerVisual = (id: string, visual: PeerVisual) => {
+        peerVisibilityFades.delete(id);
+        return destroyStudioPeerVisual({
         releaseCrossfade: (sprite) => spriteCrossfades?.release(sprite),
         destroyStatusDot: (dotId) => { statusDots.get(dotId)?.destroy(); statusDots.delete(dotId); },
         removeEmote: (key) => emotes?.remove(key),
         removeSpeech: (key) => speech?.remove(key),
         removeDecoration: (actorId) => decorationRuntime?.removeActor(actorId),
         releaseAsset: (owner) => characterAssets.release(owner),
-      }, peers, id, visual);
+        }, peers, id, visual);
+      };
 
       /** 월드 충돌기(벽·장애물) 활성/비활성. 고스트 모드와 따라가기 벽 통과가 공유한다. */
       const { setWorldCollidersActive, applyGhostMode } = createStudioGhostModeApplier({
@@ -2483,29 +2488,38 @@ export function StudioVirtualSpacePhaserCanvas({
           visual.label.setText(nameplate.text).setScale(Math.max(actorVisualScale < 1 ? 1 : 0, nameplate.scale) * overlayScale);
           const peerLabelOffset = visual.label.displayHeight + 6 * overlayScale;
           const peerLabelY = peerSeat || actorVisualScale < 1 ? peerHeadY - peerLabelOffset : visual.sprite.y + 18;
+          const peerVisible = peerInterest.activeIds.has("peer:" + peerId);
+          // 관심 컬링도 즉시 토글이 아니라 가시성 페이드를 거친다 (NPC와 같은 상태 머신).
+          // 논리 판정(peerVisible)은 그대로 두고, 그리기·말풍선·이름표는 페이드가 끝날 때까지 유지한다.
+          const peerFade = transitionStudioActorVisibilityFade(peerVisibilityFades.get(peerId) ?? null, peerVisible, time, {
+            reducedMotion: reducedMotion.matches,
+            effectsSuppressed: experienceRef.current.effectLevel === "low",
+          });
+          peerVisibilityFades.set(peerId, peerFade);
+          const peerFadeAlpha = studioActorVisibilityFadeAlpha(peerFade, time);
+          const peerRendered = studioActorVisibilityFadeRendering(peerFade, time);
           visual.label.setPosition(visual.sprite.x, peerLabelY)
             .setDepth(peerSeat ? 160_000 : Math.round(visual.sprite.y) + 1_002)
-            .setAlpha(nameplate.alpha * presenceFade);
-          const peerVisible = peerInterest.activeIds.has("peer:" + peerId);
+            .setAlpha(nameplate.alpha * presenceFade * peerFadeAlpha);
           const peerBubbleBase = peerHeadY - (peerSeat || actorVisualScale < 1 ? peerLabelOffset + 4 * overlayScale : 4);
-          const peerEmoteHeight = emotes?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase, overlayScale, time, reducedMotion.matches, peerVisible) ?? 0;
+          const peerEmoteHeight = emotes?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase, overlayScale, time, reducedMotion.matches, peerRendered) ?? 0;
           // 말풍선 우선순위: 채팅 말풍선 → 프레즌스 말풍선 → 입력 중(···) 표시.
           // 프레즌스 말풍선은 표시 시간을 송신 측 TTL과 같게 잡아 끝에서 함께 페이드 아웃한다.
-          if (visual.chatBubble && peerVisible) {
+          if (visual.chatBubble && peerRendered) {
             speech?.show(`peer:${peerId}`, visual.chatBubble, "person");
             speech?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase - peerEmoteHeight, overlayScale);
-          } else if (visual.bubble && peerVisible) {
+          } else if (visual.bubble && peerRendered) {
             speech?.showTimed(`peer:${peerId}`, visual.bubble, "person", STUDIO_PRESENCE_BUBBLE_TTL_MS, time);
             speech?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase - peerEmoteHeight, overlayScale, true, time);
-          } else if (visual.typing && peerVisible) {
+          } else if (visual.typing && peerRendered) {
             // 입력 중에는 "···" 말풍선으로 바꾼다. 타이핑이 끝나면 다음 상태로 넘어간다.
             speech?.show(`peer:${peerId}`, "···", "person");
             speech?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase - peerEmoteHeight, overlayScale);
           } else speech?.hide(`peer:${peerId}`);
-          const labelVisible = peerVisible && nameplate.visible;
-          visual.sprite.setVisible(peerVisible);
-          // 자리 비움 0.62에 입·퇴장 페이드를 곱한다 (동기화 시점 고정값에서 매 프레임 합성으로 이관).
-          visual.sprite.setAlpha((visual.activity === "away" ? 0.62 : 1) * presenceFade);
+          const labelVisible = peerRendered && nameplate.visible;
+          visual.sprite.setVisible(peerRendered);
+          // 자리 비움 0.62에 입·퇴장 페이드와 관심 가시성 페이드를 곱한다 (동기화 시점 고정값에서 매 프레임 합성으로 이관).
+          visual.sprite.setAlpha((visual.activity === "away" ? 0.62 : 1) * presenceFade * peerFadeAlpha);
           visual.label.setVisible(labelVisible);
           if (labelVisible) {
             nameplateCandidates.push({ id: peerId, x: visual.label.x, y: visual.label.y, width: visual.label.displayWidth, height: visual.label.displayHeight, priority: visual.nearby ? 30 : 10 });
@@ -2515,7 +2529,7 @@ export function StudioVirtualSpacePhaserCanvas({
             peerId, visual.sprite, visual.label, peerVisualPoint,
             peerSeatRequested?.facing ?? target.facing, target.moving, peerResolved, time,
           );
-          interactionFx?.trackActor(peerId, visual.sprite, target.x, target.y, target.facing, peerEmote, peerVisible);
+          interactionFx?.trackActor(peerId, visual.sprite, target.x, target.y, target.facing, peerEmote, peerRendered);
         }
         const tourRequest = guideTourRef.current;
         if ((tourRequest?.id ?? null) !== lastGuideRequestId) {
