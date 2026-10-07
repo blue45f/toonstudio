@@ -11,7 +11,7 @@ const normalizedDatabaseUrl = normalizePgConnectionStringForTls(databaseUrl);
 // PostgreSQL(Neon). 로컬 검증은 docker postgres(:55432), 원격은 Neon(DATABASE_URL, sslmode=verify-full).
 export default defineConfig({
   schema: [
-    "./apps/api/src/platform/database/schema.ts",
+    "./apps/api/src/platform/database/schema/index.ts",
     "./apps/api/src/platform/database/creator-marketplace-resource.schema.ts",
     "./apps/api/src/platform/database/creator-marketplace-report.schema.ts",
     "./apps/api/src/platform/database/creator-marketplace-library.schema.ts",
