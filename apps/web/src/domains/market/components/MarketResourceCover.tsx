@@ -2,6 +2,7 @@ import { marketKindMeta } from "../models/market-kind";
 import {
   brushPreviewData,
   filterPreviewData,
+  marketSceneReferenceImage,
   palettePreviewColors,
   recipePreviewData,
   templatePreviewData,
@@ -22,14 +23,6 @@ function compactFilterCss(values: Record<string, number | string | boolean>): st
   if (typeof values.sepia === "number") filters.push(`sepia(${values.sepia})`);
   if (typeof values.grayscale === "number") filters.push(`grayscale(${values.grayscale})`);
   return filters.length > 0 ? filters.join(" ") : "contrast(1.08) saturate(1.08)";
-}
-
-function sceneReferenceImage(recipeId: string): string | null {
-  if (/classroom|school/u.test(recipeId)) return "/assets/3d/environments/refined-v6/thumbnails/classroom_art_studio.png";
-  if (/cyber|neon|alley/u.test(recipeId)) return "/assets/3d/environments/refined-v6/thumbnails/urban_neon_alley.png";
-  if (/hanok|joseon/u.test(recipeId)) return "/assets/3d/environments/refined-v6/thumbnails/hanok_market_courtyard.png";
-  if (/rofan|tea|fantasy/u.test(recipeId)) return "/assets/3d/environments/refined-v6/thumbnails/fantasy_alchemist_workshop_library.png";
-  return null;
 }
 
 function ProceduralAssetCardArtwork({ recipeId }: { readonly recipeId: string }) {
@@ -143,7 +136,7 @@ export function MarketResourceCover({ record }: { readonly record: CreatorMarket
       ) : null}
 
       {record.kind === "3d-preset" && recipe ? (() => {
-        const referenceImage = sceneReferenceImage(recipe.recipeId);
+        const referenceImage = marketSceneReferenceImage(recipe.recipeId);
         return referenceImage ? (
           <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
             <img src={referenceImage} alt="" loading="lazy" decoding="async" className="size-full object-cover opacity-90 transition-transform duration-300 group-hover:scale-[1.035]" />

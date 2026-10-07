@@ -4,6 +4,7 @@ import {
   brushPreviewData,
   filterPreviewData,
   marketFilterCss,
+  marketSceneReferenceImage,
   palettePreviewData,
   palettePreviewColors,
   recipePreviewData,
@@ -444,6 +445,39 @@ describe("market-preview", () => {
       recipeId: "studio-3d-asset:classroom-chair",
       runtimeRef: "studio-3d-asset:classroom-chair",
     });
+  });
+});
+
+describe("marketSceneReferenceImage", () => {
+  it("기존 4개 장면 매핑을 그대로 유지한다", () => {
+    expect(marketSceneReferenceImage("sunlit-classroom")).toContain("classroom_art_studio.png");
+    expect(marketSceneReferenceImage("cyber-alley-night")).toContain("urban_neon_alley.png");
+    expect(marketSceneReferenceImage("hanok-yard")).toContain("hanok_market_courtyard.png");
+    expect(marketSceneReferenceImage("rofan-tea-room")).toContain("fantasy_alchemist_workshop_library.png");
+  });
+
+  it("환경 카탈로그의 나머지 장면에도 실제 썸네일을 연결한다", () => {
+    expect(marketSceneReferenceImage("korean-school-rooftop")).toContain("korean_school_rooftop.png");
+    expect(marketSceneReferenceImage("convenience-store-night")).toContain("korean_convenience_store_night.png");
+    expect(marketSceneReferenceImage("seoul-subway-platform")).toContain("seoul_subway_platform.png");
+    expect(marketSceneReferenceImage("hospital-nurse-station")).toContain("hospital_emergency_nurse_station.png");
+    expect(marketSceneReferenceImage("stylized-cafe-interior")).toContain("stylized_cafe_interior.png");
+    expect(marketSceneReferenceImage("compact-apartment")).toContain("compact_apartment_interior.png");
+    expect(marketSceneReferenceImage("scifi-command-corridor")).toContain("scifi_command_corridor.png");
+    expect(marketSceneReferenceImage("fantasy-ruin-courtyard")).toContain("fantasy_ruin_courtyard.png");
+    expect(marketSceneReferenceImage("wuxia-traditional-market")).toContain("hanok_market_courtyard.png");
+  });
+
+  it("구체적인 장면이 넓은 패턴보다 먼저 매칭된다", () => {
+    // 옥상은 학교보다, 병원 복도는 SF 복도보다 먼저 판정한다.
+    expect(marketSceneReferenceImage("school-rooftop-scene")).toContain("korean_school_rooftop.png");
+    expect(marketSceneReferenceImage("hospital-corridor")).toContain("hospital_emergency_nurse_station.png");
+  });
+
+  it("닿는 썸네일이 없는 장면은 지어내지 않고 null을 돌려준다", () => {
+    expect(marketSceneReferenceImage("humanoid-base-v1")).toBeNull();
+    expect(marketSceneReferenceImage("space-station-interior")).toBeNull();
+    expect(marketSceneReferenceImage("dragon-cliff")).toBeNull();
   });
 });
 

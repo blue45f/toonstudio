@@ -171,6 +171,39 @@ export function templatePreviewData(
   return items.length > 0 ? items : null;
 }
 
+const MARKET_SCENE_REFERENCE_IMAGES: ReadonlyArray<{
+  readonly pattern: RegExp;
+  readonly image: string;
+}> = [
+  // 순서가 의미를 가진다: 더 구체적인 장면(병원·옥상)을 넓은 패턴(복도·학교)보다 먼저 본다.
+  { pattern: /hospital|nurse|emergency/u, image: "hospital_emergency_nurse_station.png" },
+  { pattern: /subway/u, image: "seoul_subway_platform.png" },
+  { pattern: /rooftop/u, image: "korean_school_rooftop.png" },
+  { pattern: /classroom|school/u, image: "classroom_art_studio.png" },
+  { pattern: /convenience|store-night/u, image: "korean_convenience_store_night.png" },
+  { pattern: /cafe|coffee/u, image: "stylized_cafe_interior.png" },
+  { pattern: /apartment/u, image: "compact_apartment_interior.png" },
+  { pattern: /scifi|sci-fi|command/u, image: "scifi_command_corridor.png" },
+  { pattern: /ruin/u, image: "fantasy_ruin_courtyard.png" },
+  { pattern: /cyber|neon|alley/u, image: "urban_neon_alley.png" },
+  { pattern: /hanok|joseon|market/u, image: "hanok_market_courtyard.png" },
+  { pattern: /rofan|tea|fantasy/u, image: "fantasy_alchemist_workshop_library.png" },
+];
+
+/**
+ * 3D 장면 레시피 id에서 실제 환경 썸네일(assets/3d refined-v6)을 찾는다.
+ * bg3d 환경 카탈로그 12종과 1:1로 맞춘 표이며, 닿는 썸네일이 없으면 null —
+ * 없는 장면을 비슷한 사진으로 대신 보여 주지 않는다.
+ */
+export function marketSceneReferenceImage(recipeId: string): string | null {
+  for (const { pattern, image } of MARKET_SCENE_REFERENCE_IMAGES) {
+    if (pattern.test(recipeId)) {
+      return `/assets/3d/environments/refined-v6/thumbnails/${image}`;
+    }
+  }
+  return null;
+}
+
 export function recipePreviewData(
   record: CreatorMarketplaceResourceRecord
 ): readonly RecipePreviewData[] | null {
