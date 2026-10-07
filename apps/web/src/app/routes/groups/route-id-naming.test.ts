@@ -120,7 +120,7 @@ const CONVENTIONS: readonly GroupConvention[] = [
     group: "production",
     routes: productionRoutes,
     prefix: "production-",
-    legacyExceptions: ["team-people", "team-people-detail", "team-people-usage", "team-people-join"],
+    legacyExceptions: ["team-organization", "team-people", "team-people-detail", "team-people-usage", "team-people-join"],
   },
   {
     group: "reference",

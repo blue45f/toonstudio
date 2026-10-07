@@ -23,6 +23,7 @@ export const STUDIO_ROUTE_IDS = [
   "immersive",
   "motion-webtoon",
   "poser",
+  "pdf-workbench",
   "recovery",
   "trash",
   "asset-brushes",
@@ -107,6 +108,7 @@ export const STUDIO_ROUTE_REGISTRY: readonly StudioRouteRegistration[] = Object.
   route("immersive", "/studio/immersive", "studio", "none", "공간 제작", "Immersive creation"),
   route("motion-webtoon", "/studio/motion-webtoon", "studio", "none", "모션 웹툰", "Motion webtoon", ["/motion-webtoon"]),
   route("poser", "/studio/poser", "studio", "none", "포즈 스튜디오", "Pose studio"),
+  route("pdf-workbench", "/studio/pdf-workbench", "studio", "none", "PDF 워크벤치", "PDF workbench"),
   route("recovery", "/studio/recovery", "studio", "none", "복구", "Recovery"),
   route("trash", "/studio/trash", "studio", "none", "휴지통", "Trash"),
   route("asset-brushes", "/studio/assets/brushes", "asset", "asset", "브러시 선택", "Choose brushes", ["/studio/brushes"]),
@@ -142,6 +144,7 @@ export const STUDIO_DISCOVERY_ROUTE_IDS = Object.freeze([
   "growth-ip",
   "environment-guide",
   "jobs",
+  "pdf-workbench",
 ] as const satisfies readonly StudioRouteId[]);
 
 export function studioRouteRegistration(id: StudioRouteId): StudioRouteRegistration {

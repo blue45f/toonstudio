@@ -277,3 +277,10 @@ export const StudioPoserPage = lazyRetry(
   })),
   "StudioPoserPage",
 );
+
+export const PdfWorkbenchPage = lazyRetry(
+  () => import("@/domains/creator/pdf-workbench/PdfWorkbenchPage").then((module) => ({
+    default: module.PdfWorkbenchPage,
+  })),
+  "PdfWorkbenchPage",
+);

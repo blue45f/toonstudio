@@ -355,6 +355,8 @@
     "openskp": "1.3.0",
     "p5.brush": "2.2.1",
     "paper": "0.12.18",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.4.299",
     "perfect-freehand": "1.2.3",
     "pg": "^8.21.0",
     "phaser": "^3.90.0",

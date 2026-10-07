@@ -38,6 +38,7 @@ describe("Studio route registry", () => {
       "growth-ip",
       "environment-guide",
       "jobs",
+      "pdf-workbench",
     ]);
     for (const id of STUDIO_DISCOVERY_ROUTE_IDS) {
       const registration = studioRouteRegistration(id);
