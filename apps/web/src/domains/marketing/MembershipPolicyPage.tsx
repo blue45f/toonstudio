@@ -82,6 +82,26 @@ export function MembershipPolicyPage() {
           ))}
         </ul>
 
+        {/* 첫 화면에서 정책의 실제 규모가 읽히게 — 수치는 탭 안쪽과 같은 정책 소스에서만 가져온다. */}
+        <section aria-label={t(COPY.summaryLabel)} className="mt-5 rounded-2xl border border-line bg-card p-4 sm:p-5">
+          <dl className="grid grid-cols-3 gap-3">
+            <div>
+              <dt className="text-xs font-semibold text-fg-3">{t(COPY.summaryPlans)}</dt>
+              <dd className="mt-1 text-2xl font-black tabular-nums text-fg">{formatter.format(plans.length)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold text-fg-3">{t(COPY.summaryActivities)}</dt>
+              <dd className="mt-1 text-2xl font-black tabular-nums text-fg">{formatter.format(activities.length)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold text-fg-3">{t(COPY.summaryExpiry)}</dt>
+              <dd className="mt-1 text-2xl font-black tabular-nums text-fg">
+                {pointExpiryDays == null ? t(COPY.summaryExpiryIndefinite) : t(COPY.summaryExpiryDays, { days: formatter.format(pointExpiryDays) })}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
         <IntroTabs
           tabs={tabs}
           fallback={userId ? "mine" : "limits"}
