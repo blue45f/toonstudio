@@ -4,6 +4,7 @@ import { HeroBannerBadge } from "./hero-banner-badge";
 
 import type { Title } from "@/shared/lib/types";
 
+import { proxiedCoverSrc } from "@/shared/lib/cover-proxy";
 import { genreColor, genreTextColor } from "@/shared/lib/genre-color";
 import Link from "@/shared/navigation/router-link";
 
@@ -39,7 +40,7 @@ export function HeroBannerStatic({
             {first.coverImage && !isRestricted ? (
               // Ken Burns — 인터랙티브 배너(hero-banner-slide)와 동일한 배경 표지 드리프트.
               <img
-                src={first.coverImage}
+                src={proxiedCoverSrc(first.coverImage)}
                 alt=""
                 loading="eager"
                 fetchPriority="high"
@@ -64,7 +65,7 @@ export function HeroBannerStatic({
             >
               {first.coverImage && !isRestricted ? (
                 <img
-                  src={first.coverImage}
+                  src={proxiedCoverSrc(first.coverImage)}
                   alt={`${first.title} 표지`}
                   loading="eager"
                   fetchPriority="high"

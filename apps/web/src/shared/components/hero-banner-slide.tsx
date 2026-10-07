@@ -7,6 +7,7 @@ import { RatingInline } from "./ui/stars";
 
 import type { Title } from "@/shared/lib/types";
 
+import { proxiedCoverSrc } from "@/shared/lib/cover-proxy";
 import { statsAreEstimated } from "@/shared/lib/estimate";
 import { formatCount } from "@/shared/lib/format";
 import { genreColor } from "@/shared/lib/genre-color";
@@ -26,7 +27,7 @@ export function HeroBannerSlide({ title }: { title: Title }) {
           // Ken Burns — 배경 표지가 14s 왕복으로 느리게 확대·팬(시네마틱 호흡). 캐러셀 래퍼가
           // overflow-hidden 이라 레이아웃 시프트 없음. reduced-motion 은 scale-110 정지 상태 유지.
           <img
-            src={title.coverImage}
+            src={proxiedCoverSrc(title.coverImage)}
             alt=""
             loading="lazy"
             className="size-full scale-110 object-cover opacity-[0.14] motion-safe:[animation:kenburns-drift_14s_ease-in-out_infinite_alternate]"

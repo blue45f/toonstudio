@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
+import { proxiedCoverSrc } from "@/shared/lib/cover-proxy";
 import { genreTint, genreBorder, genreTextColor } from "@/shared/lib/genre-color";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { formatCount } from "@/shared/lib/utils";
@@ -116,7 +117,7 @@ export function AuthorsPage() {
                 style={{ background: `linear-gradient(145deg, ${a.cover[0]}, ${a.cover[1]})` }}
               >
                 {a.coverImage ? (
-                  <img src={a.coverImage} alt="" className="absolute inset-0 size-full object-cover" loading="lazy" />
+                  <img src={proxiedCoverSrc(a.coverImage)} alt="" className="absolute inset-0 size-full object-cover" loading="lazy" />
                 ) : (
                   (a.name.replace(/[^가-힣A-Za-z0-9]/g, "").charAt(0) || "?")
                 )}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { cx } from "@/shared/lib/cx";
+import { proxiedCoverSrc, proxiedCoverSrcSet } from "@/shared/lib/cover-proxy";
 import { useAppConfig } from "@/platform/environment/use-app-config";
 
 // 표지 <img> 래퍼 — CDN 링크가 만료/404 되면 깨진 이미지 박스 대신 폴백(그라디언트+글리프)으로 전환.
@@ -30,8 +31,8 @@ export function CoverImage({
   if (!showCovers || failed) return <>{fallback ?? null}</>;
   return (
     <img
-      src={src}
-      srcSet={srcSet}
+      src={proxiedCoverSrc(src)}
+      srcSet={srcSet ? proxiedCoverSrcSet(srcSet) : undefined}
       sizes={sizes}
       alt={alt}
       loading={priority ? "eager" : "lazy"}

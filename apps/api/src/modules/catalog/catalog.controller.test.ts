@@ -140,6 +140,78 @@ describe("CatalogController cover SSRF boundary", () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.send).toHaveBeenCalledWith(Buffer.from(png));
   });
+
+  it("serves a KMAS attachment image through the proxy (octet-stream sniffed as JPEG)", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(jpeg, { headers: { "content-type": "application/octet-stream" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://www.kmas.or.kr:443/common/file/atchmnflDownload.ajax?fileImageId=abc",
+      res as unknown as Response
+    );
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      new URL("https://www.kmas.or.kr/common/file/atchmnflDownload.ajax?fileImageId=abc"),
+      expect.objectContaining({ redirect: "manual" })
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "image/jpeg");
+    expect(res.send).toHaveBeenCalledWith(Buffer.from(jpeg));
+  });
+
+  it("rejects an oversized cover by its declared Content-Length without reading the body", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    const arrayBuffer = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 200,
+      ok: true,
+      headers: new Headers({
+        "content-type": "image/png",
+        "content-length": String(10 * 1024 * 1024 + 1),
+      }),
+      body: null,
+      arrayBuffer,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/huge.png",
+      res as unknown as Response
+    );
+    expect(res.status).toHaveBeenCalledWith(502);
+    expect(res.send).toHaveBeenCalledWith("cover too large");
+    expect(arrayBuffer).not.toHaveBeenCalled();
+  });
+
+  it("stops reading a streamed cover body once it exceeds the size cap", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    const chunk = new Uint8Array(6 * 1024 * 1024);
+    chunk.set([137, 80, 78, 71, 13, 10, 26, 10]); // PNG 매직 — 크기만으로 거절되는지 분리
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(chunk);
+        controller.enqueue(chunk);
+        controller.close();
+      },
+    });
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 200,
+      ok: true,
+      headers: new Headers({ "content-type": "image/png" }),
+      body: stream,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/huge.png",
+      res as unknown as Response
+    );
+    expect(res.status).toHaveBeenCalledWith(502);
+    expect(res.send).toHaveBeenCalledWith("cover too large");
+  });
 });
 
 describe("CatalogService getHomeData & withKmasImages", () => {
