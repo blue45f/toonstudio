@@ -9,6 +9,8 @@
 import type { BgmMood } from "@/shared/bgm/bgm-engine";
 import type { VoiceCharacterPresetId } from "@/shared/voice/voice-character-presets";
 
+import type { MotionEasingPresetId } from "./motion-webtoon-easing";
+
 /** 씬 분위기 — BGM/연출 자동 추천의 기준. */
 export type MotionSceneMood =
   | "battle"
@@ -79,6 +81,12 @@ export interface CutDirection {
   readonly durationSeconds: number;
   /** 연출 강도 (0~1). shake 진폭·zoom 배율 등에 반영. */
   readonly intensity: number;
+  /**
+   * 카메라 무브 진행 이징 프리셋 (motion-webtoon-easing).
+   * 미지정이면 기존 재생과 같은 기본값 — 일반 무브는 ease-in-out, 흔들림은 linear.
+   * (구버전 저장본에는 이 필드가 없어 미지정 해석이 호환 경로다.)
+   */
+  readonly easing?: MotionEasingPresetId;
 }
 
 /** 대사 한 줄. */
