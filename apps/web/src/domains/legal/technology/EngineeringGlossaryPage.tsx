@@ -7,6 +7,10 @@ import {
   type GlossaryCategoryId,
 } from "./engineering-glossary-content";
 import { GLOSSARY_LINK_PAGE_LABELS, resolveGlossaryLink, type GlossaryLinkTarget } from "./engineering-glossary-links";
+import {
+  EngineeringKeySummary,
+  EngineeringMetaChip,
+} from "./EngineeringLongform";
 import { EngineeringPageFrame, EngineeringPageIntro } from "./EngineeringStoryUi";
 
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
@@ -66,6 +70,20 @@ export function EngineeringGlossaryPage() {
         description={bi(
           "발표에 나오는 기술 용어를 쉬운 말로 풀었습니다. 정의는 한 줄, 비유는 일상 사물, ‘툰스튜디오에서는’에는 실제 적용 위치와 선택 이유를 적었습니다.",
           "Every technical term in the talk, explained plainly: a one-line definition, an everyday analogy and, under ‘In ToonStudio’, where and why it is used.",
+        )}
+      />
+
+      <EngineeringKeySummary
+        className="mb-8"
+        points={[
+          bi("용어마다 정의는 한 줄로, 비유는 일상 사물로, ‘툰스튜디오에서는’에 실제 적용 위치와 선택 이유를 적었습니다.", "Each term gets a one-line definition, an everyday analogy and, under ‘In ToonStudio’, where it is actually used and why."),
+          bi("검색과 분야 필터로 발표 중에도 바로 찾을 수 있고, 용어마다 관련 챕터로 이어지는 ‘더 읽기’가 붙어 있습니다.", "Search and area filters find a term mid-talk, and every term links onward to the chapter that uses it."),
+        ]}
+        meta={(
+          <>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("용어 {value0}", "{value0} terms")), { value0: ENGINEERING_GLOSSARY.length })}</EngineeringMetaChip>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("분야 {value0}", "{value0} areas")), { value0: GLOSSARY_CATEGORIES.length })}</EngineeringMetaChip>
+          </>
         )}
       />
 

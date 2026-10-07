@@ -25,6 +25,28 @@ function familiesSection(): HTMLElement {
   return section;
 }
 
+describe("문서 첫 화면", () => {
+  it("자료 · 라이선스 정체성 칩과 핵심 요약을 보여준다", () => {
+    renderLicenses();
+
+    expect(screen.getByText(/자료 · 라이선스|Resources · Licenses/u)).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: /핵심 요약|Key summary/u })).toBeTruthy();
+  });
+
+  it("목차의 모든 항목이 본문 섹션으로 이어진다", () => {
+    renderLicenses();
+
+    const [toc] = screen.getAllByRole("navigation", { name: /라이선스 문서 목차|Licensing document contents/u });
+    if (!toc) throw new Error("licenses table of contents is missing");
+    const links = within(toc).getAllByRole("link");
+    expect(links).toHaveLength(5);
+    for (const link of links) {
+      const target = link.getAttribute("href")?.slice(1) ?? "";
+      expect(document.getElementById(target), target).not.toBeNull();
+    }
+  });
+});
+
 describe("라이선스 이름 검색", () => {
   it("검색 전에는 여섯 종류를 모두 보여주고 개수를 알린다", () => {
     renderLicenses();

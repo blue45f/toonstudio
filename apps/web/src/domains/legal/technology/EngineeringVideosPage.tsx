@@ -1,4 +1,4 @@
-import { translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -13,6 +13,10 @@ import {
 
 import { ENGINEERING_FILM_CUTS } from "./engineering-playbook-content";
 import { ENGINEERING_VIDEO_FORMATS } from "./engineering-story-content";
+import {
+  EngineeringKeySummary,
+  EngineeringMetaChip,
+} from "./EngineeringLongform";
 import {
   EngineeringPageFrame,
   EngineeringPageIntro,
@@ -89,6 +93,21 @@ export function EngineeringVideosPage() {
             </p>
           </div>
         }
+      />
+
+      <EngineeringKeySummary
+        className="mb-8"
+        points={[
+          bi("장면 JSON 하나가 웹 스토리보드, Remotion 컴포지션, 한국어·영어 자막(VTT)과 대본의 공통 원본입니다.", "One scene JSON is the shared source for the web storyboard, the Remotion composition, Korean and English captions (VTT) and the transcript."),
+          bi("영상은 자동 게시하지 않습니다. 렌더 결과물을 사람이 검수한 뒤 배포하고, 파일이 없으면 성공한 영상처럼 재생하지 않습니다.", "Nothing is auto-published: a person reviews the render before distribution, and a missing file is never played as if it were a finished film."),
+          bi("이 페이지의 공개 영상은 같은 파이프라인이 실제로 렌더한 결과물이라 자막과 나레이션 처리 방식을 그대로 확인할 수 있습니다.", "The public film on this page is an actual render from the same pipeline, so its caption and narration handling can be checked exactly as shipped."),
+        ]}
+        meta={(
+          <>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("개요 {value0}장면", "{value0} overview scenes")), { value0: STORYBOARD.length })}</EngineeringMetaChip>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("포맷 {value0}종", "{value0} formats")), { value0: ENGINEERING_VIDEO_FORMATS.length })}</EngineeringMetaChip>
+          </>
+        )}
       />
 
       <ServiceStoryJourney current="film" className="mb-8" />

@@ -244,6 +244,7 @@ export function EngineeringPageIntro({
 }) {
   useBilingualI18nRevision();
   const page = pageId ? findEngineeringPage(pageId) : undefined;
+  const group = page ? ENGINEERING_PAGE_GROUPS.find((entry) => entry.id === page.group) : undefined;
   return (
     <header className="grid gap-7 py-8 sm:py-12 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
       <div className="min-w-0">
@@ -251,6 +252,10 @@ export function EngineeringPageIntro({
           {page?.step ? (
             <span className="inline-flex items-center gap-2 rounded-full border border-accent/35 bg-accent-soft px-2.5 py-1 text-xs font-black text-accent">
               {formatI18nTemplate(String(bi("발표 동선 {value0}/5", "Talk path {value0}/5")), { value0: page.step })}
+            </span>
+          ) : page && group ? (
+            <span className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-raised px-2.5 py-1 text-xs font-black text-fg-2">
+              {bi(`${group.label.ko} · ${page.label.ko}`, `${group.label.en} · ${page.label.en}`)}
             </span>
           ) : null}
           <p className="eyebrow text-accent">{eyebrow}</p>
