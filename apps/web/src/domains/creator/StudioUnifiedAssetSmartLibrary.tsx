@@ -8,19 +8,25 @@ import {
 import { StudioUnifiedAssetSmartManager } from "./StudioUnifiedAssetSmartManager";
 import { projectStudioUnifiedAssetLibrary } from "./studio-unified-asset-library-projection";
 import {
+  applyStudioUnifiedAssetCurationPreset,
   createStudioUnifiedAssetLibraryState,
   discoverStudioUnifiedAssets,
   findRelatedStudioUnifiedAssets,
   parseStudioUnifiedAssetLibraryState,
   recordStudioUnifiedAssetUse,
   serializeStudioUnifiedAssetLibraryState,
+  setStudioUnifiedAssetFlag,
+  setStudioUnifiedAssetRating,
   STUDIO_UNIFIED_ASSET_LIBRARY_STORAGE_KEY,
   toggleStudioUnifiedAssetFavorite,
   toggleStudioUnifiedAssetTray,
   type StudioUnifiedAssetEditabilityFilter,
+  type StudioUnifiedAssetFlag,
+  type StudioUnifiedAssetFlagFilter,
   type StudioUnifiedAssetFormat,
   type StudioUnifiedAssetLibraryState,
   type StudioUnifiedAssetLibraryView,
+  type StudioUnifiedAssetRating,
   type StudioUnifiedAssetRightsFilter,
   type StudioUnifiedAssetSort,
 } from "./studio-unified-asset-intelligence";
@@ -78,6 +84,8 @@ export function StudioUnifiedAssetSmartLibrary({
   const [editability, setEditability] =
     useState<StudioUnifiedAssetEditabilityFilter>("all");
   const [sort, setSort] = useState<StudioUnifiedAssetSort>("recommended");
+  const [minRating, setMinRating] = useState(0);
+  const [flagFilter, setFlagFilter] = useState<StudioUnifiedAssetFlagFilter>("all");
   const [expanded, setExpanded] = useState(!defaultCollapsed);
   const [managerOpen, setManagerOpen] = useState(false);
   const [lastUsedId, setLastUsedId] = useState<string | null>(null);
@@ -123,9 +131,11 @@ export function StudioUnifiedAssetSmartLibrary({
       rights,
       editability,
       sort,
+      minRating,
+      flagFilter,
       libraryState,
     }),
-    [editability, format, items, libraryState, libraryView, rights, sort],
+    [editability, flagFilter, format, items, libraryState, libraryView, minRating, rights, sort],
   );
   const managerItems = useMemo(
     () => discoverStudioUnifiedAssets(items, {
@@ -133,10 +143,12 @@ export function StudioUnifiedAssetSmartLibrary({
       rights,
       editability,
       sort,
+      minRating,
+      flagFilter,
       limit: 12,
       libraryState,
     }),
-    [editability, format, items, libraryState, rights, sort],
+    [editability, flagFilter, format, items, libraryState, minRating, rights, sort],
   );
   const lastUsed = useMemo(
     () => items.find((item) => item.id === lastUsedId) ?? null,
@@ -151,6 +163,8 @@ export function StudioUnifiedAssetSmartLibrary({
     rights !== "all",
     editability !== "all",
     sort !== "recommended",
+    minRating > 0,
+    flagFilter !== "all",
   ].filter(Boolean).length;
 
   async function handleUseItem(
@@ -171,6 +185,8 @@ export function StudioUnifiedAssetSmartLibrary({
     setRights("all");
     setEditability("all");
     setSort("recommended");
+    setMinRating(0);
+    setFlagFilter("all");
   }
 
   return (
@@ -200,11 +216,15 @@ export function StudioUnifiedAssetSmartLibrary({
               rights={rights}
               editability={editability}
               sort={sort}
+              minRating={minRating}
+              flagFilter={flagFilter}
               activeCount={activeFilterCount}
               onFormatChange={setFormat}
               onRightsChange={setRights}
               onEditabilityChange={setEditability}
               onSortChange={setSort}
+              onMinRatingChange={setMinRating}
+              onFlagFilterChange={setFlagFilter}
               onReset={resetFilters}
             />
             <StudioUnifiedAssetSmartManager
@@ -222,6 +242,21 @@ export function StudioUnifiedAssetSmartLibrary({
               onToggleTray={(id) =>
                 setLibraryState((current) =>
                   toggleStudioUnifiedAssetTray(current, id),
+                )
+              }
+              onSetRating={(id, rating: StudioUnifiedAssetRating | 0) =>
+                setLibraryState((current) =>
+                  setStudioUnifiedAssetRating(current, id, rating),
+                )
+              }
+              onSetFlag={(id, flag: StudioUnifiedAssetFlag | null) =>
+                setLibraryState((current) =>
+                  setStudioUnifiedAssetFlag(current, id, flag),
+                )
+              }
+              onApplyCurationPreset={(ids, presetId) =>
+                setLibraryState((current) =>
+                  applyStudioUnifiedAssetCurationPreset(current, ids, presetId),
                 )
               }
               onUseItem={(item) => void handleUseItem(item)}

@@ -154,4 +154,55 @@ describe("StudioUnifiedAssetSmartLibrary", () => {
     fireEvent.click(screen.getByRole("button", { name: "최근 1" }));
     expect(screen.getByTestId("visible-items").textContent).toBe("교실 의자");
   });
+
+  it("rates and flags assets in the manager, then filters the grid by curation", () => {
+    renderLibrary();
+    fireEvent.click(screen.getByRole("button", { name: "즐겨찾기 · 프로젝트 트레이 관리" }));
+    fireEvent.click(screen.getByRole("button", { name: "비 오는 밤 학교 별점 4점" }));
+    fireEvent.click(screen.getByRole("button", { name: "비 오는 밤 학교 플래그 선별" }));
+    expect(
+      screen.getByRole("button", { name: "비 오는 밤 학교 별점 4점" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(
+      screen.getByRole("button", { name: "비 오는 밤 학교 플래그 선별" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+
+    fireEvent.change(screen.getByLabelText("최소 별점"), { target: { value: "4" } });
+    expect(screen.getByTestId("visible-items").textContent).toBe("비 오는 밤 학교");
+
+    fireEvent.change(screen.getByLabelText("선별 플래그"), { target: { value: "hold" } });
+    expect(screen.getByTestId("visible-items").textContent).toBe("");
+    fireEvent.change(screen.getByLabelText("선별 플래그"), { target: { value: "pick" } });
+    expect(screen.getByTestId("visible-items").textContent).toBe("비 오는 밤 학교");
+  });
+
+  it("applies a bulk curation preset to the checked assets only", () => {
+    renderLibrary();
+    fireEvent.click(screen.getByRole("button", { name: "즐겨찾기 · 프로젝트 트레이 관리" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "교실 의자 일괄 선택" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "반짝 효과 일괄 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선별 · 별점 4" }));
+
+    fireEvent.change(screen.getByLabelText("선별 플래그"), { target: { value: "pick" } });
+    expect(screen.getByTestId("visible-items").textContent).toContain("교실 의자");
+    expect(screen.getByTestId("visible-items").textContent).toContain("반짝 효과");
+    expect(screen.getByTestId("visible-items").textContent).not.toContain("비 오는 밤 학교");
+
+    fireEvent.change(screen.getByLabelText("최소 별점"), { target: { value: "4" } });
+    expect(screen.getByTestId("visible-items").textContent).toContain("교실 의자");
+    expect(screen.getByTestId("visible-items").textContent).toContain("반짝 효과");
+  });
+
+  it("restores curation after remounting", async () => {
+    renderLibrary();
+    fireEvent.click(screen.getByRole("button", { name: "즐겨찾기 · 프로젝트 트레이 관리" }));
+    fireEvent.click(screen.getByRole("button", { name: "교실 의자 별점 5점" }));
+    cleanup();
+
+    renderLibrary();
+    fireEvent.change(screen.getByLabelText("최소 별점"), { target: { value: "5" } });
+    await waitFor(() =>
+      expect(screen.getByTestId("visible-items").textContent).toBe("교실 의자"),
+    );
+  });
 });
