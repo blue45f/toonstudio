@@ -153,7 +153,7 @@ describe("site directory experience contracts", () => {
     for (const href of [
       "/production",
       "/studio",
-      "/studio/new",
+      "/create",
       "/studio/assets",
       "/studio/publish",
       "/learn",
