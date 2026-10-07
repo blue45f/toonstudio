@@ -5708,253 +5708,253 @@
     },
     {
       "file": "neon/players/player-purple-direction-down.webp",
-      "bytes": 12968,
-      "sha256": "ae652849c47a5cf14fc12e1ab3ca2c8ef95857973756b243a961392683b195ff",
+      "bytes": 8856,
+      "sha256": "db6d16794fb0bcdb22c2e0f5eac3e1b57f1fb70e4df02940f53d76b6ec75073f",
       "size": [
         160,
         160
       ],
-      "visualSignature": "6db531d5a3928c767648ab655204c0426f8faf4f95397ad0d010095ecd0d5cc3"
+      "visualSignature": "00727f2266af7d016dfe864d306c1187904eb7ca531617a62f141561e2ff9fe9"
     },
     {
       "file": "neon/players/player-purple-direction-left.webp",
-      "bytes": 12730,
-      "sha256": "871343488468425497ba8c8f42f4b88a85a4dcac0a3f3648440e2a4b63c1f5ab",
+      "bytes": 7598,
+      "sha256": "db7d39e5acb6a011e6057445a5f9b3ef165df4faf5147aed1a694270d3c8b6ef",
       "size": [
         160,
         160
       ],
-      "visualSignature": "cc43bf55bfb8303c94babaeb27fdc7c7b9a03a46a6bf090b2bfe0a57454ba7b9"
+      "visualSignature": "7866a64d54d30f0ca94d547ebc139f5867f1ddf8ecb2e822a6ad77d1d6bf4c8d"
     },
     {
       "file": "neon/players/player-purple-direction-right.webp",
-      "bytes": 12844,
-      "sha256": "4bce70b80a0aaff390fa53756ae622959a28b6d699d7e3fe3ec2613c299b8b01",
+      "bytes": 7372,
+      "sha256": "b964c725950329132099054f28096bf218ca438cff8bab55e76502e4c2a88190",
       "size": [
         160,
         160
       ],
-      "visualSignature": "ea872f42532a17a2e4b138d7be6aaf7bb3207a674fd230b6b9c9e11118c1e094"
+      "visualSignature": "142260ac4d415a93e6b2292bbcd0fbc1de21312c9caa2cacbf8975f4bd02679a"
     },
     {
       "file": "neon/players/player-purple-direction-up.webp",
-      "bytes": 12302,
-      "sha256": "5402819827a53d08edb12f0ee3bfe6478f4971d85954e6b438cac84fe00212ec",
+      "bytes": 8122,
+      "sha256": "054d7ba434fa4090d3f192ce277a2456995246dd2ca4396ca8dd1411293ffaf6",
       "size": [
         160,
         160
       ],
-      "visualSignature": "3fbf969ec8490726423e427144b6c03c5ebfa3a2d4518e26815eb21c80d125f2"
+      "visualSignature": "9b2fbe5294bf75c56c856341a288b1ccdf4f2de55593e42d6962880c9b584a11"
     },
     {
       "file": "neon/players/player-purple-draw-down.webp",
-      "bytes": 35850,
-      "sha256": "99abed106a171de13832276a62f9a3f0b7b3f913473c455c2e16cd9e67228de5",
+      "bytes": 36596,
+      "sha256": "54a8bab5aee88563b0d571306948bc610244da4876e92cf1bd3564dd9ad9f412",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e7680e9f4ef52268848202b8d3ebb2b254cbf6e270531b82d0a85f2f96ec1fa6"
+      "visualSignature": "49495af1513f6a7458c6d884c36a127023b82ba5c89866de0361451e004c8b22"
     },
     {
       "file": "neon/players/player-purple-draw-left.webp",
-      "bytes": 35680,
-      "sha256": "3c58ecbf30d5ab3dba4524a0ad0bb490033afcec49671b99b67dc124d40d57e8",
+      "bytes": 35974,
+      "sha256": "747a65c8b425a8caac3c3f565e66ea4a75c97c4b648607f2b505ddba8b5f91ae",
       "size": [
         640,
         160
       ],
-      "visualSignature": "ec700e8656d0d6c84353f97447f1aa43a24012c5024f36af03af6132af5f695d"
+      "visualSignature": "a035798af801d222d7da96370ae8d2e9f8ae62d4d3fb827084b8b19f4d65e81f"
     },
     {
       "file": "neon/players/player-purple-draw-right.webp",
-      "bytes": 35598,
-      "sha256": "78193e186b37feff36aed3f75e48c1a0325e232288391b406b0ed1cf62797519",
+      "bytes": 36410,
+      "sha256": "c1e18fb9675fd0d61d02694a50f3d51baeaa3d36d2660cb6543b071efbc91918",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e475bd88685d3b36fe0fadb2d57706b948d3251b3a82f54b73c4ed6869a437ca"
+      "visualSignature": "adcf12958ea3a5a2aee989abc2b782fb0287cf1fa0a4d37567120992fd63e958"
     },
     {
       "file": "neon/players/player-purple-draw-up.webp",
-      "bytes": 34148,
-      "sha256": "8b10fda5ae06fbe65a7a288b781f62828431b14c052e5fc77391116699d72541",
+      "bytes": 31264,
+      "sha256": "ffacd807a4857df17c30d937e27e201313d3d10351e553c3bfabd70e3698086b",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e67e659a1e5a51f1486db3eaf0b65e5ddfd48de8d9a83c26c93ebc920571f574"
+      "visualSignature": "5c74199c8a233b98aa30ce9e1b70df5108112a831ea48ca1f2f670fe778b699e"
     },
     {
       "file": "neon/players/player-purple-review-down.webp",
-      "bytes": 35850,
-      "sha256": "99abed106a171de13832276a62f9a3f0b7b3f913473c455c2e16cd9e67228de5",
+      "bytes": 44730,
+      "sha256": "304ea3120a28aba9e58b7eecea8983c2a011c11f878e9280f4223d26efb35309",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e7680e9f4ef52268848202b8d3ebb2b254cbf6e270531b82d0a85f2f96ec1fa6"
+      "visualSignature": "c7b8719a6bda68115dc506ff1b92895d93c6dfd96174e7dc7682bb0b07d6b1ca"
     },
     {
       "file": "neon/players/player-purple-review-left.webp",
-      "bytes": 35680,
-      "sha256": "3c58ecbf30d5ab3dba4524a0ad0bb490033afcec49671b99b67dc124d40d57e8",
+      "bytes": 35534,
+      "sha256": "e1c9fa2f1266924d71573e165d3f1e0a0c6a0eecd09106a70297585f4a01c677",
       "size": [
         640,
         160
       ],
-      "visualSignature": "ec700e8656d0d6c84353f97447f1aa43a24012c5024f36af03af6132af5f695d"
+      "visualSignature": "ce6535cad3b8fe3cbb30438c8bdb21db08b6cd725103262f83dd58559918efd8"
     },
     {
       "file": "neon/players/player-purple-review-right.webp",
-      "bytes": 35598,
-      "sha256": "78193e186b37feff36aed3f75e48c1a0325e232288391b406b0ed1cf62797519",
+      "bytes": 35700,
+      "sha256": "d306bfd67eb1dde32cc70ca720684c1bc960a8355b24211cc836df409319a597",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e475bd88685d3b36fe0fadb2d57706b948d3251b3a82f54b73c4ed6869a437ca"
+      "visualSignature": "99f3e6718354d058766fc5291080b17c32306613dc8f599e28cc373d831b8a91"
     },
     {
       "file": "neon/players/player-purple-review-up.webp",
-      "bytes": 34148,
-      "sha256": "8b10fda5ae06fbe65a7a288b781f62828431b14c052e5fc77391116699d72541",
+      "bytes": 37772,
+      "sha256": "90a8d20ca14bb03e2d57d326c866a530e651451d9d5c08195f860e778bbebebe",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e67e659a1e5a51f1486db3eaf0b65e5ddfd48de8d9a83c26c93ebc920571f574"
+      "visualSignature": "d6a9f4b2374989e382e06f6c52dd0774002618a5af2539bb25c50cc976d9c22a"
     },
     {
       "file": "neon/players/player-purple-sit.webp",
-      "bytes": 41006,
-      "sha256": "c2b5218f1638c3754e2401276a9742fb97691e0b6e3ba6f09dfef83d5151a619",
+      "bytes": 33142,
+      "sha256": "417f80a25715bf477b7a04be31f02ec69ae06d7af1dfed68f950cccf0e14eec8",
       "size": [
         640,
         160
       ],
-      "visualSignature": "dd7ecfbb8d62bbbf4ede596ff4f512fac48868a78b8b2417f191b43a17e24743"
+      "visualSignature": "9ebb26234704106d4c1d040a239b6474c36929fd53d6bacce24d268e59fde822"
     },
     {
       "file": "neon/players/player-purple-state-draw.webp",
-      "bytes": 12296,
-      "sha256": "f74e184f5f30b31ef68d4f79affa48c22279c5f9c05d00b8f7be8fc110738022",
+      "bytes": 9570,
+      "sha256": "ba221605f4b00aa080dfad557619da542f0bbb659564123923c73892f14e7d83",
       "size": [
         160,
         160
       ],
-      "visualSignature": "43550573732ffd96338bb9d9bd7de7753862f672a945a6f1673695e4492b50f7"
+      "visualSignature": "9f819b16189067b1a95642708d13c1af2f9bcf79cda86d29c74e381ad1a38f85"
     },
     {
       "file": "neon/players/player-purple-state-review.webp",
-      "bytes": 12296,
-      "sha256": "f74e184f5f30b31ef68d4f79affa48c22279c5f9c05d00b8f7be8fc110738022",
+      "bytes": 11558,
+      "sha256": "96fc8a6687117657a5dee900b7d3e3d20703eca1ea77f9266448d23d499cc875",
       "size": [
         160,
         160
       ],
-      "visualSignature": "43550573732ffd96338bb9d9bd7de7753862f672a945a6f1673695e4492b50f7"
+      "visualSignature": "3c825eb4c65a760de83156e06ff630497a3fd569719440798194f4c337612615"
     },
     {
       "file": "neon/players/player-purple-state-talk.webp",
-      "bytes": 13132,
-      "sha256": "476cf29b53e0dd7ae882deb569ee8413e257ddde0f95f8b7972618a2db3ab323",
+      "bytes": 9192,
+      "sha256": "459b701c50e4278bb164abd7e6b4e37847e02236a291437e7a7da7122324919e",
       "size": [
         160,
         160
       ],
-      "visualSignature": "54078d3ac7c9813d8e4bc9aabdf9dc3a108ce6fde04de230892471f096887d2a"
+      "visualSignature": "f58f6e9e0ba99d302f9a2675688300c91ea32e32d2b64c1bb00c6479ec7e9d06"
     },
     {
       "file": "neon/players/player-purple-talk-down.webp",
-      "bytes": 38278,
-      "sha256": "58a6cc934135dd3a368ee3736eb0fe53fb1526c3e28f5d4820f9cef8a4dbb5ab",
+      "bytes": 37966,
+      "sha256": "059c76adc035bc2b2eb5130e9b7345da54080e311c7ffe978c095b679293d123",
       "size": [
         640,
         160
       ],
-      "visualSignature": "e9b61e8f40c1da1decbab702dae7e42ff39d3da8d0e5ae5ed0288190e71eecee"
+      "visualSignature": "b540f6423efda80a877a71165080842d35c8a63d334b1cbc9519b30d2a263720"
     },
     {
       "file": "neon/players/player-purple-talk-left.webp",
-      "bytes": 38234,
-      "sha256": "2eb4e6a417dd45319d18444d149f8ec5fc6cb52b1129fc9d7a38cbe60659e74b",
+      "bytes": 32438,
+      "sha256": "7d0201234ff0b708696fcdbf0babd7127f29a7a481d37dc91c0c36154268b970",
       "size": [
         640,
         160
       ],
-      "visualSignature": "6bc285455adf3a91f89d2ed0f6ffe188d6e631215e5fbe5f704dc2f81f54c59b"
+      "visualSignature": "7d4e4b7b30e80cee1fc2076adb69df0864f0f1b83539a8eeef7d89cf39d29a23"
     },
     {
       "file": "neon/players/player-purple-talk-right.webp",
-      "bytes": 38390,
-      "sha256": "d2ba20c80003aadd2f2f7e47b93a52a52bf93c7b1d23a57ff9231d507686fd60",
+      "bytes": 31518,
+      "sha256": "fcd36abd5a6025f4379c9120b8187d00cebef78d3de67010a86905708e468826",
       "size": [
         640,
         160
       ],
-      "visualSignature": "4b8c62e6f2da1ef2d66842c927ec2aece722e6d41bbfa7069c7bc141c2ef174d"
+      "visualSignature": "ede393295c92c58ab27f2663c09d02f10f5fa66452948bfce6dbcea989301e22"
     },
     {
       "file": "neon/players/player-purple-talk-up.webp",
-      "bytes": 36678,
-      "sha256": "9865e541c51b128875efb6d2c3df0f213a9f887996cedbc80702816d03a8b579",
+      "bytes": 32008,
+      "sha256": "db11b0b08fba481f92ddee375d47de5f8c1a40dcc7a6c870972d7cfaff293306",
       "size": [
         640,
         160
       ],
-      "visualSignature": "4772da3d93a457f6a760b39b2ac9482f625287be8d3464cf2ea289c43be7db4b"
+      "visualSignature": "36fa9a55f6422f51e02bdc196ebeab9f432956601df5fc9de015d82bee009744"
     },
     {
       "file": "neon/players/player-purple-walk-down.webp",
-      "bytes": 40326,
-      "sha256": "f4f8f04fc39ae55e97273dd1b6bbb7e71e68134b377b58b28f8a41da99f21200",
+      "bytes": 38594,
+      "sha256": "4b7c295405080701bedaa80c553a8c3e28480b563b69857a095d4815e449af48",
       "size": [
         640,
         160
       ],
-      "visualSignature": "c78e9189d10697b2e492cc83dcbca59e66b4df0d81d5644ba7acaf1ec6e8d864"
+      "visualSignature": "3a6d6ce0dd9d63eda943fc6efa03816063b90ea65a0765cf6a946891ea85d816"
     },
     {
       "file": "neon/players/player-purple-walk-left.webp",
-      "bytes": 40336,
-      "sha256": "b80318f13efedc85c8fd156071adeb1127000f2146de56e4f22dda6ad64ff2c9",
+      "bytes": 37966,
+      "sha256": "c6c9eea1db6c034ad84f4b9bcb71432fd482b30ca7b8fdd5d2982d095fda7d71",
       "size": [
         640,
         160
       ],
-      "visualSignature": "550217af70523f3551ddda944642f2e59c7fa93f299cedbf086f0ca1450c1bbb"
+      "visualSignature": "adf73c7d7bcc4df8858ea914de4774087c14e6d1afdbe0ebf285f68fe9911102"
     },
     {
       "file": "neon/players/player-purple-walk-right.webp",
-      "bytes": 40422,
-      "sha256": "2fb52a775d849dac6d37a5278f8bab0f6a6a162d8ec073e498d5beace443f58e",
+      "bytes": 38770,
+      "sha256": "cfffde64b381561c352a131db91f4d2adfba0e505bb16e7c718087bf15a7b533",
       "size": [
         640,
         160
       ],
-      "visualSignature": "1b5d14700595a2fc22a433af976568e9e3fff2d9e448b84b5af70be894b7f781"
+      "visualSignature": "42fbcc9ceec085b2f932ba18748822b0563d3c96bacc1dd47ff007ecc64ac778"
     },
     {
       "file": "neon/players/player-purple-walk-up.webp",
-      "bytes": 38618,
-      "sha256": "08ab87d6fc6e0f5cd5047b6bc7d9e05b8b42b8c174aace4de22d7a9eb573e810",
+      "bytes": 31060,
+      "sha256": "ba1340ad2a2c075c4582e613122a168674efabacf8142efb75dc87ed6bb4ca2a",
       "size": [
         640,
         160
       ],
-      "visualSignature": "0947c69683edf46674421b7bb825d0b30c0c2ee609282e3280ec5f3e96db6278"
+      "visualSignature": "0375b440f53c791e302a1570ae2ceb2bcd3304c861ea9115370480192cbafdf2"
     },
     {
       "file": "neon/players/player-purple-wave.webp",
-      "bytes": 44450,
-      "sha256": "b8a12368e2a40b66c9e33bd55a4ecb5fb5a9df0a262a1f2bba0196432e41c8b0",
+      "bytes": 34710,
+      "sha256": "a506d4c74c5ec33e8ecb63555d6e09b1080ceb5f122c0f1e8b0646b3bef82f20",
       "size": [
         640,
         160
       ],
-      "visualSignature": "5e7f3b89ba4bec4471741343e0f26ee2b05bd97d2f19c700adb1e54a1bde7d82"
+      "visualSignature": "34159fde005286bd1d9a278e1253315f87e52c2b21c8a8a1c7b60febdbc475d6"
     },
     {
       "file": "neon/players/player-silver-direction-down.webp",
