@@ -29,6 +29,7 @@ import {
   KIND_ITEMS,
 } from "./fan-cafe-constants";
 import FanPostCard from "./fan-cafe-post-card";
+import { FanPostCardSkeleton } from "./fan-cafe-post-card-skeleton";
 import { FanPostImages as FanPostImagesView } from "./fan-cafe-images";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
@@ -987,8 +988,8 @@ export function FanCafePanel({
           ) : null}
           {loading && posts.length === 0 ? (
             <>
-              <div className="skeleton h-28 w-full rounded-xl" />
-              <div className="skeleton h-28 w-full rounded-xl" />
+              <FanPostCardSkeleton />
+              <FanPostCardSkeleton />
             </>
           ) : loadError && posts.length === 0 ? (
             <ErrorState
@@ -1057,7 +1058,7 @@ export function FanCafePanel({
             ))
           )}
           {loadingMore ? (
-            <div className="skeleton h-20 w-full rounded-xl" />
+            <FanPostCardSkeleton />
           ) : hasMore ? (
             <button
               type="button"

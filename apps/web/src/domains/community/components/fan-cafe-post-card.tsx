@@ -145,5 +145,3 @@ export default function FanPostCard({
   </Card3D>
   );
 }
-
-// 첨부 이미지 그리드 — 서버 검증을 거치지만 레거시/손상 행도 방어적으로 다시 거른다.
