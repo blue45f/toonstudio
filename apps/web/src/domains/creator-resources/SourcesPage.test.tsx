@@ -89,6 +89,29 @@ describe("resource source cost visibility", () => {
     expect(scoped.getByRole("link", { name: "수집 정책" }).getAttribute("href")).toBe("/about/crawler");
   });
 
+  it("/about/data에서는 권리 판정 분포와 검토 기준을 담은 투명성 밴드가 첫 화면에 있다", () => {
+    render(
+      <MemoryRouter initialEntries={["/about/data"]}>
+        <SourcesPage />
+      </MemoryRouter>,
+    );
+    const band = screen.getByRole("heading", { name: "데이터 출처와 권리 판정을 그대로 공개합니다" }).closest("section");
+    expect(band).not.toBeNull();
+    const scoped = within(band as HTMLElement);
+    const coreCount = RESOURCE_SOURCES.filter((source) => source.commercial === "상업 핵심 후보").length;
+    expect(scoped.getByText(`상업 핵심 후보 ${coreCount}곳`)).toBeTruthy();
+    const reviewed = RESOURCE_SOURCES.filter((source) => source.termsReviewedAt);
+    const latest = reviewed.map((source) => source.termsReviewedAt!).sort().at(-1);
+    expect(scoped.getByText(new RegExp(`약관·기술 검토를 마친 제공처 ${reviewed.length}곳 · 가장 최근 검토일 ${latest}`))).toBeTruthy();
+    expect(scoped.getByRole("link", { name: "저작권 안내" }).getAttribute("href")).toBe("/copyright");
+    expect(scoped.getByRole("link", { name: "서비스 소개" }).getAttribute("href")).toBe("/about");
+  });
+
+  it("/insights/resources에서는 소개용 투명성 밴드를 보여 주지 않는다", () => {
+    renderPage();
+    expect(screen.queryByRole("heading", { name: "데이터 출처와 권리 판정을 그대로 공개합니다" })).toBeNull();
+  });
+
   it("필터와 결과 목록이 설명 섹션보다 먼저 나온다", () => {
     renderPage();
     const filter = screen.getByRole("searchbox", { name: "제공처·분야·비용·상업 준비 상태 필터" });

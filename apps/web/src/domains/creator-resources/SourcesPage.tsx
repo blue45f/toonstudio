@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import {
   formatI18nTemplate,
@@ -48,6 +48,10 @@ function sourceCostStyle(label: string): string {
 export function SourcesPage() {
   useBilingualI18nRevision();
   useDocumentTitle(tx("자료 출처"));
+  const { pathname } = useLocation();
+  // /about/data는 소개 영역에서 들어오는 데이터 투명성 안내가 본체다 — 같은 목록이라도
+  // 리서치 데스크(/insights/resources)와 달리 권리 판정 분포와 검토 기준을 첫 화면에 세운다.
+  const isAboutData = pathname.replace(/\/$/u, "") === "/about/data";
   const [query, setQuery] = useState("");
   const [freeOnly, setFreeOnly] = useState(false);
   const [keylessOnly, setKeylessOnly] = useState(false);
@@ -79,6 +83,16 @@ export function SourcesPage() {
     { title: tx("판정하기"), body: tx("자료마다 권리·상업 이용 상태를 따로 기록하고, 미확인은 차단합니다.") },
     { title: tx("쓰기"), body: tx("리서치 검색과 Studio 가져오기로 제작 흐름에 연결합니다.") },
   ];
+  // 투명성 밴드의 수치는 목록 원본에서 직접 센다 — 머리말 규모와 같은 원본이라 어긋나지 않는다.
+  const commercialCounts = Object.keys(COMMERCIAL_STYLE).map((label) => ({
+    label,
+    count: RESOURCE_SOURCES.filter((source) => source.commercial === label).length,
+  }));
+  const reviewedDates = RESOURCE_SOURCES
+    .map((source) => source.termsReviewedAt)
+    .filter((value): value is string => Boolean(value))
+    .sort();
+  const latestReviewedAt = reviewedDates[reviewedDates.length - 1];
   return <ResourceLayout title={tx("데이터 출처·상업 이용 준비")} intro={tx("구현된 검색 어댑터, 신청 예정 API, 계약 검토 대상과 운영 제외 소스를 구분합니다. 연결 상태와 개별 자료 권리는 별도이며, 권리가 확인되지 않은 자료는 Studio 가져오기와 상업 활용을 차단합니다.")}
     heroContent={<div className="rounded-2xl border border-line bg-panel p-4 sm:p-5">
       <p className="text-sm font-semibold leading-6 text-fg">{formatI18nTemplate(tx("제공처 {v0}곳 · 실제 검색 연결 {v1}곳 · 가입·키 없이 바로 사용 {v2}곳 · 분야 {v3}개"), { v0: RESOURCE_SOURCES.length, v1: liveCount, v2: keylessCount, v3: categoryCount })}</p>
@@ -90,6 +104,20 @@ export function SourcesPage() {
       </ol>
       <Link className={`${RESOURCE_BUTTON} mt-4`} to="/about/crawler">{tx("수집 정책")}</Link>
     </div>}>
+    {isAboutData && <section className="space-y-4 rounded-2xl border border-line bg-panel p-6" aria-labelledby="about-data-transparency-title">
+      <p className="text-xs font-semibold text-accent">{tx("서비스 소개 · 데이터 투명성")}</p>
+      <h2 id="about-data-transparency-title" className="text-xl font-bold">{tx("데이터 출처와 권리 판정을 그대로 공개합니다")}</h2>
+      <p className="text-sm leading-7 text-fg-2">{formatI18nTemplate(tx("ToonStudio가 연결한 제공처 {v0}곳 전부에 상업 이용 판정을 붙여 공개합니다. 권리가 확인되지 않은 자료는 Studio 가져오기와 상업 활용에서 차단합니다."), { v0: RESOURCE_SOURCES.length })}</p>
+      <ul className="flex flex-wrap gap-2" aria-label={tx("상업 이용 판정 분포")}>
+        {commercialCounts.map(({ label, count }) => <li key={label} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${COMMERCIAL_STYLE[label]}`}>{formatI18nTemplate(tx("{v0} {v1}곳"), { v0: tx(label), v1: count })}</li>)}
+      </ul>
+      {latestReviewedAt && <p className="text-xs leading-6 text-fg-3">{formatI18nTemplate(tx("약관·기술 검토를 마친 제공처 {v0}곳 · 가장 최근 검토일 {v1}"), { v0: reviewedDates.length, v1: latestReviewedAt })}</p>}
+      <div className="flex flex-wrap gap-2">
+        <Link className={`${RESOURCE_BUTTON} bg-accent-soft`} to="/about">{tx("서비스 소개")}</Link>
+        <Link className={RESOURCE_BUTTON} to="/about/crawler">{tx("수집 정책")}</Link>
+        <Link className={RESOURCE_BUTTON} to="/copyright">{tx("저작권 안내")}</Link>
+      </div>
+    </section>}
     <section className="space-y-3 rounded-2xl border border-accent/30 bg-accent-soft p-6">
       <p className="text-xs font-semibold text-accent">{tx("무료 운영 · 공개 API 활용")}</p>
       <h2 className="text-xl font-bold">{tx("자료를 모으는 데서, 콘텐츠를 만드는 데까지")}</h2>
