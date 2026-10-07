@@ -83,8 +83,21 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* 월드 베이스는 여러 구역이 모인 시트라, 입장 지점인 중앙 상단 구역이 보이게 맞춘다. */
-  object-position: 50% 30%;
+  /* 기본값은 다수 스타일의 포털 초점이다. 실제 표시 값은 스타일별 실측 초점이 인라인으로 우선한다
+     (studio-virtual-space-art-style의 STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS). */
+  object-position: 61% 73%;
+  transition: opacity .45s ease;
+}
+/* 텍스처가 도착하기 전에는 빈 무대가 먼저 튀지 않게 감추고, 도착하면 부드럽게 드러낸다.
+   실패하면 아트 없이 캐릭터 무대만 남기고 머리말에 안내를 띄운다. */
+.space-lobby__scene-art[data-preview-state="loading"],
+.space-lobby__scene-art[data-preview-state="error"] { opacity: 0; }
+.space-lobby__scene-status {
+  margin: 0;
+  color: color-mix(in srgb, var(--color-warn) 82%, var(--color-fg));
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 /* 상단 제목·하단 칩 행의 가독성을 위한 무대 안쪽 국소 그라디언트 (화면 전체 워시가 아니다). */
 .space-lobby__scene::before {
@@ -299,6 +312,58 @@
 }
 .space-lobby__actions > :is(a, button) { width: 100%; min-height: 48px; justify-content: center; }
 .space-lobby__note { margin: 0; color: var(--color-fg-3); font-size: 12px; line-height: 1.5; }
+.space-lobby__code-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.5;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.space-lobby__code-hint:focus-visible { border-radius: 6px; outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* 입장코드 패널: 닉네임 입력과 같은 카드 문법으로 맞춘다.
+   (이전에는 요소 기본 스타일 그대로 떨어져 로비 디자인과 동떨어져 보였다.) */
+.space-lobby__entry-code { border-top: 1px solid var(--color-line); padding-top: 16px; }
+.space-lobby__entry-code section { display: grid; gap: 8px; outline: none; }
+.space-lobby__entry-code h2 { margin: 0; color: var(--color-fg); font-size: 14px; font-weight: 900; }
+.space-lobby__entry-code p { margin: 0; color: var(--color-fg-2); font-size: 12px; line-height: 1.55; }
+.space-lobby__entry-code label { display: grid; gap: 6px; color: var(--color-fg); font-size: 13px; font-weight: 800; }
+.space-lobby__entry-code input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 14px;
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.space-lobby__entry-code input:focus-visible { border-color: var(--color-accent); outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.space-lobby__entry-code button {
+  min-height: 44px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 14px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 14px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.space-lobby__entry-code button:hover { border-color: var(--color-accent); }
+.space-lobby__entry-code button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.space-lobby__entry-code [role="alert"] { color: var(--color-bad); font-weight: 700; }
 
 /* 고급 설정 안의 연결 진단 카드 */
 .space-lobby .studio-vspace-rtc-panel {
@@ -439,6 +504,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .space-lobby__character { animation: none; }
+  .space-lobby__scene-art { transition: none; }
 }
 @media (forced-colors: active) {
   .space-lobby__stage,

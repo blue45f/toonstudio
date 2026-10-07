@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { isEntryCodeValid, STUDIO_ENTRY_CODE_LENGTH } from "./studio-virtual-space-entry-code";
+import { isEntryCodeValid, STUDIO_ENTRY_CODE_LENGTH, STUDIO_ENTRY_CODE_PANEL_ID } from "./studio-virtual-space-entry-code";
 
 export interface StudioVirtualSpaceEntryCodePanelProps {
   /** 코드 검증 통과 시 입장 의도 콜백. */
@@ -33,7 +33,7 @@ export function StudioVirtualSpaceEntryCodePanel({ onEnterWithCode }: StudioVirt
   };
 
   return (
-    <section aria-label={bt("입장코드로 입장", "Enter with code")}>
+    <section id={STUDIO_ENTRY_CODE_PANEL_ID} tabIndex={-1} aria-label={bt("입장코드로 입장", "Enter with code")}>
       <h2>{bt("입장코드로 입장", "Enter with code")}</h2>
       <p><small>{bt("초대받은 6자리 코드를 입력하면 바로 입장해요. 가입이 필요 없어요.", "Enter the 6-digit code to join right away. No sign-up needed.")}</small></p>
       <label>{bt("입장코드", "Entry code")}

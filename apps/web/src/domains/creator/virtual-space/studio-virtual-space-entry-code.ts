@@ -16,6 +16,9 @@ export const STUDIO_ENTRY_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 export const STUDIO_ENTRY_CODE_LENGTH = 6;
 
+/** 로비 안 입장코드 패널의 DOM id. 로비 첫 화면의 안내 버튼이 이 패널로 이동할 때 쓴다. */
+export const STUDIO_ENTRY_CODE_PANEL_ID = "studio-vspace-entry-code";
+
 /** 입장코드 기본 유효기간: 30일. */
 export const STUDIO_ENTRY_CODE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 

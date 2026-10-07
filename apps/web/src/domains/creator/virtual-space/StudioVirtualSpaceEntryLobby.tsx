@@ -1,4 +1,4 @@
-import { CameraOff, Check, Lock, MicOff, Network, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { CameraOff, Check, KeyRound, Lock, MicOff, Network, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { Suspense, useState, type ReactNode } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -11,9 +11,11 @@ import {
   DEFAULT_STUDIO_VIRTUAL_ART_STYLE,
   STUDIO_VIRTUAL_ART_STYLES,
   studioVirtualArtTextureUrl,
+  studioVirtualLobbyPreviewObjectPosition,
   type StudioVirtualArtStyleKey,
 } from "./studio-virtual-space-art-style";
 import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
+import { STUDIO_ENTRY_CODE_PANEL_ID } from "./studio-virtual-space-entry-code";
 import { StudioVirtualSpaceEntryCodePanel } from "./StudioVirtualSpaceEntryCodePanel";
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
@@ -91,6 +93,12 @@ export function StudioVirtualSpaceEntryLobby({
   const nicknameInvalid = nickname.length > 0 && !normalizedNickname;
   const canEnter = characterSelected && Boolean(normalizedNickname);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  // 월드 미리보기 텍스처의 도착 상태. 스타일별로 마지막 결과만 들고 있어,
+  // 스타일을 바꾸면 새 텍스처가 도착할 때까지 다시 로딩으로 판정한다.
+  const [previewResult, setPreviewResult] = useState<{ readonly style: StudioVirtualArtStyleKey; readonly status: "ready" | "error" } | null>(null);
+  const previewStatus: "loading" | "ready" | "error" = onboarding
+    ? "ready"
+    : previewResult && previewResult.style === artStyle ? previewResult.status : "loading";
   const resolvedBackLabel = backLabel ?? (onboarding
     ? bt("홈으로 돌아가기", "Back to home")
     : bt("작업 목록으로", "Back to work list"));
@@ -133,6 +141,14 @@ export function StudioVirtualSpaceEntryLobby({
           ? bt("게스트 세션은 24시간 동안 유효해요.", "Your guest session is valid for 24 hours.")
           : bt("닉네임·캐릭터·아트 스타일 선택은 이 브라우저에 저장돼요.", "Nickname, character and art-style choices are saved in this browser.")
       : bt("캐릭터를 직접 선택하면 다음 단계로 이동할 수 있어요.", "Choose a character to continue.");
+  // 코드로 들어오는 방문자는 캐릭터 설정을 건너뛰는 경로가 있다는 것부터 알아야 한다.
+  // 첫 화면 안내에서 카드 아래쪽 코드 패널로 바로 이동시켜 동선을 눈으로 잇는다.
+  const scrollToEntryCode = () => {
+    const panel = document.getElementById(STUDIO_ENTRY_CODE_PANEL_ID);
+    if (!panel) return;
+    if (typeof panel.scrollIntoView === "function") panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    panel.focus({ preventScroll: true });
+  };
 
   return <div className="studio-vspace-entry space-lobby" data-route-ready={onboarding ? "studio-character-onboarding" : "studio-virtual-entry"}
     data-art-style={artStyle} data-entry-variant={variant}>
@@ -148,11 +164,20 @@ export function StudioVirtualSpaceEntryLobby({
         <div className="space-lobby__scene" aria-hidden>
           {onboarding
             ? <img className="space-lobby__scene-art space-lobby__scene-art--onboarding" src="/images/onboarding-character-stage.webp" alt="" draggable={false} data-onboarding-stage-art />
-            : <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle} />}
+            : <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle}
+              data-preview-state={previewStatus}
+              style={{ objectPosition: studioVirtualLobbyPreviewObjectPosition(artStyle) }}
+              ref={(img) => { if (img && img.naturalWidth > 0) setPreviewResult({ style: artStyle, status: "ready" }); }}
+              onLoad={() => setPreviewResult({ style: artStyle, status: "ready" })}
+              onError={() => setPreviewResult({ style: artStyle, status: "error" })} />}
         </div>
         <header className="space-lobby__stage-head">
           <p className="space-lobby__kicker"><Sparkles size={15} aria-hidden />{onboarding ? "ToonStudio Character" : "ToonStudio Spatial Campus"}</p>
           <p className="space-lobby__place">{projectName}</p>
+          {previewStatus === "error" ? <p className="space-lobby__scene-status" role="status">{bt(
+            "월드 미리보기를 불러오지 못했어요. 입장에는 영향이 없어요.",
+            "The world preview couldn't be loaded. You can still enter.",
+          )}</p> : null}
         </header>
         <div className="space-lobby__avatar" data-empty={!selectedCharacter || undefined}>
           <p className="space-lobby__nameplate" aria-live="polite">
@@ -185,6 +210,13 @@ export function StudioVirtualSpaceEntryLobby({
         <header className="space-lobby__heading">
           <h1 id="studio-vspace-entry-title">{title}</h1>
           <p>{description}</p>
+          {onEnterWithCode && !guestMode && !onboarding ? <button type="button" className="space-lobby__code-hint" onClick={scrollToEntryCode}>
+            <KeyRound size={14} aria-hidden />
+            {bt(
+              "초대 코드가 있으면 캐릭터를 고르지 않아도 아래 입장코드 칸에서 바로 들어갈 수 있어요.",
+              "Have an invite code? You can skip the character setup and enter from the entry-code section below.",
+            )}
+          </button> : null}
         </header>
 
         {onboarding ? <ol className="space-lobby__onboarding-steps" aria-label={bt("시작 준비 상태", "Getting-ready status")}>

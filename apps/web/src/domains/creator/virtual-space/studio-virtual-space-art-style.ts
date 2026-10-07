@@ -170,6 +170,27 @@ export function studioVirtualArtTextureUrl(key: StudioVirtualArtStyleKey, kind: 
   return `${V5_ROOT}/${key}/world/${kind}.webp`;
 }
 
+/**
+ * 로비 무대 미리보기의 초점 (2026-10-07 실측).
+ * 각 스타일의 world-base 시트(1280×960)에서 입장 포털 구역의 중심을 재서 시트 % 좌표로 기록한다.
+ * 여섯 스타일은 같은 월드 배치를 공유해 포털이 전부 하단 세 번째 건물에 있어 x는 61%로 모이고,
+ * sky-island만 대성당이 위로 길어 포털 발광 중심이 y 68%로 더 높다.
+ * object-position에 이 좌표를 그대로 넣으면 크롭량과 무관하게 포털이 무대의 같은 상대 위치에 놓인다.
+ */
+export const STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS: Readonly<Record<StudioVirtualArtStyleKey, { readonly x: number; readonly y: number }>> = Object.freeze({
+  "sky-island": { x: 61, y: 68 },
+  "webtoon": { x: 61, y: 73 },
+  "pastel": { x: 61, y: 73 },
+  "retro": { x: 61, y: 73 },
+  "ink": { x: 61, y: 73 },
+  "neon": { x: 61, y: 73 },
+});
+
+export function studioVirtualLobbyPreviewObjectPosition(key: StudioVirtualArtStyleKey): string {
+  const focus = STUDIO_VIRTUAL_LOBBY_PREVIEW_FOCUS[key];
+  return `${focus.x}% ${focus.y}%`;
+}
+
 export function studioVirtualArtObjectUrl(key: StudioVirtualArtStyleKey, kind: StudioVirtualArtObjectKind): string {
   return `${V5_ROOT}/${key}/objects/${kind}.webp`;
 }
