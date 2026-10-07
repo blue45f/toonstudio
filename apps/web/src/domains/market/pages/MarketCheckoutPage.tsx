@@ -28,6 +28,7 @@ import {
   type MarketCommerceOrder,
 } from "../commerce-api";
 import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketResourceCover } from "../components/MarketResourceCover";
 import { useMarketLibrary } from "../hooks/use-market-library";
 import { useMarketResourceDetail } from "../hooks/use-market-resource-detail";
 import { marketLicenseMeta } from "../models/market-kind";
@@ -376,7 +377,11 @@ export function MarketCheckoutPage() {
             <div className="space-y-5 pt-5">
               <section className="rounded-xl border border-line bg-panel p-4">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
+                  {/* 결제 대상이 무엇인지 텍스트만이 아니라 커버 아트로도 확인하게 한다. */}
+                  <div aria-hidden="true" className="relative hidden aspect-[16/10] w-28 shrink-0 overflow-hidden rounded-lg border border-line/70 sm:block">
+                    <MarketResourceCover record={record} />
+                  </div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-fg">{record.name}</p>
                     <p className="mt-1 text-xs text-fg-3">
                       {record.publisher.name} · v{record.resourceVersion}
