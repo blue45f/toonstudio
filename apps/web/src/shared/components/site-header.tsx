@@ -124,9 +124,11 @@ const MY_PURPOSE_PREFIXES = [
 /**
  * Canonical destinations for the header's key actions. Legacy aliases (/new, /more)
  * still redirect through the routes team, but the header links the canonical paths
- * directly so users never depend on the redirect.
+ * directly so users never depend on the redirect. 작품 시작의 정문은 /create
+ * 시작 시트 하나이며, /studio/new는 시트에서 빈 작품을 골랐을 때 닿는
+ * 2단계 생성 양식이라 헤더가 직접 가리키지 않는다.
  */
-const CANONICAL_CREATE_HREF = "/studio/new";
+const CANONICAL_CREATE_HREF = "/create";
 
 interface HeaderNavigationChild {
   id: string;
@@ -169,11 +171,12 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
         description: { ko: "최근 작업을 이어서 그리기", en: "Continue your recent work" },
       },
       {
-        id: "studio-new",
-        href: "/studio/new",
+        id: "studio-start",
+        href: "/create",
+        exact: true,
         icon: Sparkles,
-        label: { ko: "새 작품", en: "New work" },
-        description: { ko: "빈 캔버스·템플릿·가져오기로 시작", en: "Start from a canvas, template or import" },
+        label: { ko: "작품 시작하기", en: "Start a work" },
+        description: { ko: "새 작품·템플릿·이어가기를 한 화면에서 고르기", en: "Start new, begin from a template or continue — in one place" },
       },
       {
         id: "studio-comic",
@@ -417,8 +420,6 @@ function purposeActive(
   if (destination)
     return workspaceNavigationActiveId(pathname) === destination.id;
   if (href === "/studio") return isStudioWorkPurpose(pathname);
-  if (href === "/studio/new")
-    return pathMatchesAny(pathname, STUDIO_CREATE_PREFIXES);
   if (href === "/studio/assets")
     return pathMatchesAny(pathname, STUDIO_ASSET_PREFIXES);
   if (href === "/studio/publish")

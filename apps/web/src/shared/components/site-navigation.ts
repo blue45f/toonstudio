@@ -116,7 +116,18 @@ export const SITE_NAVIGATION_ITEMS = {
     true,
   ),
   production: primaryItem("production", "production", Workflow, true),
-  make: primaryItem("make", "studio-new", Palette, true),
+  // 작품 시작의 정문은 /create 시작 시트 하나다. /studio/new는 시트에서
+  // "새 작품"을 골랐을 때 닿는 2단계 생성 양식이라 내비가 직접 가리키지 않는다.
+  make: item(
+    "make",
+    "/create",
+    Palette,
+    "작품 시작하기",
+    "Start a work",
+    "새 작품·템플릿·이어가기를 한 화면에서 고르기",
+    "Start new, begin from a template or continue — in one place",
+    true,
+  ),
   studio: primaryItem("studio", "studio-home", Palette, true),
   studioAssets: primaryItem("studio-assets", "studio-assets", Store),
   publish: primaryItem("publish", "studio-publish", PackageCheck),

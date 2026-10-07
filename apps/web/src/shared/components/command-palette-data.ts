@@ -359,12 +359,12 @@ const CURATED_PALETTE_PAGES: PalettePage[] = [
   },
   {
     id: "page-make-hub",
-    href: "/make",
+    href: "/create",
     title: "만들기",
     subtitle: "프로젝트·캔버스·캐릭터·에셋·리서치에서 창작 시작",
     icon: Palette,
     category: "creator",
-    keywords: ["만들기", "창작", "프로젝트", "캔버스", "create", "make", "project"],
+    keywords: ["만들기", "창작", "프로젝트", "캔버스", "create", "make", "project", "새 작품", "New work"],
   },
   {
     id: "page-my-space",

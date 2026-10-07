@@ -29,11 +29,11 @@ function menu(menuOpen = true, closeMenu = vi.fn(), pathname = "/market") {
 }
 
 describe("모바일 전체 메뉴", () => {
-  it("새 작품과 내 프로젝트를 앞에 두고 전체 기능·계정까지 연결한다", () => {
+  it("작품 시작하기와 내 프로젝트를 앞에 두고 전체 기능·계정까지 연결한다", () => {
     render(menu());
     const dialog = screen.getByRole("dialog", { name: "nav.allMenu" });
     const navigation = within(dialog).getByRole("navigation", { name: "전체 서비스 메뉴" });
-    expect(within(navigation).getByRole("link", { name: /새 작품/u }).getAttribute("href")).toBe("/studio/new");
+    expect(within(navigation).getByRole("link", { name: /작품 시작하기/u }).getAttribute("href")).toBe("/create");
     expect(within(navigation).getByRole("link", { name: "내 프로젝트" }).getAttribute("href")).toBe("/studio");
     expect(within(navigation).getByRole("link", { name: "전체 기능" }).getAttribute("href")).toBe("/sitemap");
     for (const href of ["/market", "/learn", "/help", "/settings", "/notifications"]) {
@@ -48,7 +48,7 @@ describe("모바일 전체 메뉴", () => {
     const navigation = within(screen.getByRole("dialog")).getByRole("navigation", { name: "전체 서비스 메뉴" });
     const hrefs = [...navigation.querySelectorAll("a[href]")].map((link) => link.getAttribute("href"));
     expect(new Set(hrefs).size).toBe(hrefs.length);
-    expect(hrefs.slice(0, 2)).toEqual(["/studio/new", "/studio"]);
+    expect(hrefs.slice(0, 2)).toEqual(["/create", "/studio"]);
     const destinations = [
       ...siteNavigationGroupsForPath(pathname).flatMap((group) => group.items),
       ...SITE_UTILITY_NAVIGATION,
