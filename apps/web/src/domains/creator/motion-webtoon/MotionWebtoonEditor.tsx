@@ -16,7 +16,10 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { VOICE_CHARACTER_PRESET_IDS, getVoiceCharacterPreset } from "@/shared/voice/voice-character-presets";
 
 import { MotionWebtoonCaptionPanel } from "./MotionWebtoonCaptionPanel";
+import { MotionWebtoonEasingControl } from "./MotionWebtoonEasingControl";
+import { MotionWebtoonExportPanel } from "./MotionWebtoonExportPanel";
 import { MotionWebtoonPlayer } from "./MotionWebtoonPlayer";
+import { resolveCutEasingPresetId } from "./motion-webtoon-keyframes";
 import {
   autoDirectEpisode,
   analyzeDialogueEmotion,
@@ -468,6 +471,12 @@ export function MotionWebtoonEditor(props: MotionWebtoonEditorProps): JSX.Elemen
                       </select>
                     </label>
                   </div>
+                  <MotionWebtoonEasingControl
+                    value={resolveCutEasingPresetId(selectedCut.direction)}
+                    onChange={(easing) => updateCut(selectedCut.id, {
+                      direction: { ...selectedCut.direction, easing },
+                    })}
+                  />
                   <div className="mw-fieldrow">
                     <label className="mw-field">
                       <span>{t(L.durationLabel.titleKo, L.durationLabel.titleEn)}</span>
@@ -654,6 +663,7 @@ export function MotionWebtoonEditor(props: MotionWebtoonEditorProps): JSX.Elemen
               onVoiceEnabledChange={setVoiceEnabled}
             />
           </section>
+          <MotionWebtoonExportPanel episode={episode} />
           <MotionWebtoonCaptionPanel episode={episode} onEpisodeChange={update} />
         </div>
       </div>

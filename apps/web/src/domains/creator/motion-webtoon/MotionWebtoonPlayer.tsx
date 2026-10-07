@@ -23,6 +23,8 @@ import {
   MOTION_SCENE_MOOD_LABELS,
   MOTION_WEBTOON_UI_LABELS,
 } from "./motion-webtoon-labels";
+import { motionEasingToCss } from "./motion-webtoon-easing";
+import { resolveCutEasing } from "./motion-webtoon-keyframes";
 import { clampCutDuration, episodeDurationSeconds, type MotionEpisode } from "./motion-webtoon-model";
 import { useMotionWebtoonCountUp } from "./useMotionWebtoonCountUp";
 import { useMotionWebtoonPlayer } from "./useMotionWebtoonPlayer";
@@ -123,7 +125,15 @@ export function MotionWebtoonPlayer(props: MotionWebtoonPlayerProps): JSX.Elemen
     <section className="mw-player" aria-label={t(L.playerTitle.titleKo, L.playerTitle.titleEn)}>
       <div className={`mw-stage${isIdle || isEnded ? " mw-letterbox-hidden" : ""}`}>
         {cut && (
-          <div key={cut.id} className={`mw-cutwrap ${cameraClass}`} style={{ ["--mw-cut-duration" as string]: `${cutDuration}s` }}>
+          <div
+            key={cut.id}
+            className={`mw-cutwrap ${cameraClass}`}
+            style={{
+              ["--mw-cut-duration" as string]: `${cutDuration}s`,
+              // 컷별 이징 — 미지정이면 resolveCutEasing이 기존 CSS 기본값(ease-in-out/흔들림 linear)을 돌려준다.
+              animationTimingFunction: motionEasingToCss(resolveCutEasing(cut.direction)),
+            }}
+          >
             {cut.imageUrl ? (
               <img
                 className="mw-cutimg"
@@ -157,7 +167,7 @@ export function MotionWebtoonPlayer(props: MotionWebtoonPlayerProps): JSX.Elemen
             <p className="mw-splash-meta">{splashMeta}</p>
             <button type="button" className="mw-play-big" onClick={player.play} aria-label={t(L.play.titleKo, L.play.titleEn)}>
               <span className="mw-play-ring" aria-hidden="true" />
-              <svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="var(--color-on-accent)" aria-hidden="true">
                 <path d="M8 5v14l11-7z" />
               </svg>
             </button>
@@ -172,7 +182,7 @@ export function MotionWebtoonPlayer(props: MotionWebtoonPlayerProps): JSX.Elemen
             <p className="mw-splash-meta">{splashMeta}</p>
             <button type="button" className="mw-play-big" onClick={player.play} aria-label={t(L.replay.titleKo, L.replay.titleEn)}>
               <span className="mw-play-ring" aria-hidden="true" />
-              <svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="var(--color-on-accent)" aria-hidden="true">
                 <path d="M12 5V1L7 6l5 5V7c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H4c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8z" />
               </svg>
             </button>
