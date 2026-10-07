@@ -6,8 +6,8 @@ import { defineAppRoutes } from "../app-route-definition";
 import {
   CharacterShaperLandingPage, CreatorEnvironmentGuidePage, CreatorEcosystemPage,
   CreatorGrowthIpPage, CreatorGrowthLabPage, CreatorEcosystemViewerPage,
-  CreatorInferencePage, CreateChallengesPage, CreateGalleryPage,
-  CreateSeriesPage, CreateStartPage, CreateWorkPage, LearnPage,
+  CreatorInferencePage, CreateChallengesPage,
+  CreateSeriesPage, CreateStartPage, CreateWorkPage, LearnPage, ShowcasePage,
   PersonalInferencePage, StudioAiSettingsPage, StudioAssetHubPage,
   StudioBrushLabPage, StudioCharacterConversionPage, StudioCharacterOnboardingPage,
   StudioCreatorSupportPage, StudioDocumentWorkspaceRoute, StudioHomePage,
@@ -66,7 +66,8 @@ export const creatorRoutes = defineAppRoutes([
   { id: "creator-studio-project-settings", path: studioRoutePath("project-settings"), element: <StudioProjectShellPage section="settings" /> },
   { id: "creator-studio-project-space", path: studioRoutePath("project-space"), element: <StudioVirtualSpacePage /> },
 
-  { id: "creator-showcase", path: "/showcase", element: <CreateGalleryPage /> },
+  // /showcase는 쇼케이스 전용 첫 화면(스포트라이트·큐레이션)이 정본이다. 갤러리 본문은 그 아래 구간이 공유 컴포넌트로 잇는다.
+  { id: "creator-showcase", path: "/showcase", element: <ShowcasePage /> },
   { id: "creator-showcase-reviews", path: "/showcase/reviews", element: <StudioPinnedReviewShowcasePage /> },
   { id: "creator-showcase-review", path: "/showcase/reviews/:shareId", element: <StudioPinnedReviewShowcaseDetailPage /> },
   { id: "creator-showcase-challenges", path: "/showcase/challenges", element: <CreateChallengesPage /> },

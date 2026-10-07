@@ -20,6 +20,12 @@ export const CreateGalleryPage = lazyRetry(
   })),
   "CreateGalleryPage",
 );
+export const ShowcasePage = lazyRetry(
+  () => import("@/domains/creator/ShowcasePage").then((module) => ({
+    default: module.ShowcasePage,
+  })),
+  "ShowcasePage",
+);
 export const CreateStartPage = lazyRetry(
   () => import("@/domains/creator/CreateStartPage").then((module) => ({
     default: module.CreateStartPage,
