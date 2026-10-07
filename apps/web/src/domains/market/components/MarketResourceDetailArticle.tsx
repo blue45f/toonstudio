@@ -52,6 +52,7 @@ import { MarketFilterPreview } from "./MarketFilterPreview";
 import { MarketInstallJourney } from "./MarketInstallJourney";
 import { MarketPalettePreview } from "./MarketPalettePreview";
 import { MarketResourceCard } from "./MarketResourceCard";
+import { MarketResourceCover } from "./MarketResourceCover";
 import { MarketResourceReleaseHistory } from "./MarketResourceReleaseHistory";
 import { MarketReviewsSection } from "./MarketReviewsSection";
 import { MarketScene3dPreview } from "./MarketScene3dPreview";
@@ -118,7 +119,6 @@ export function MarketResourceDetailArticle({
 }: MarketResourceDetailArticleProps) {
   const kind = marketKindMeta(record.kind);
   const license = marketLicenseMeta(record.license);
-  const KindIcon = kind.icon;
   const palettePreviews = palettePreviewData(record);
   const brushPreviews = brushPreviewData(record);
   const filterPreviews = filterPreviewData(record);
@@ -175,6 +175,8 @@ export function MarketResourceDetailArticle({
       <header
         className="relative overflow-hidden rounded-xl border border-line bg-[linear-gradient(140deg,var(--color-card)_0%,var(--color-panel)_60%,var(--color-canvas)_100%)] p-6 text-fg sm:p-8"
       >
+        <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,380px)]">
+          <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span
             className="inline-flex min-h-6 items-center rounded-md bg-accent px-2 text-xs font-bold text-on-accent"
@@ -217,7 +219,12 @@ export function MarketResourceDetailArticle({
             </button>
           ) : null}
         </div>
-        <KindIcon strokeWidth={1} aria-hidden="true" className="pointer-events-none absolute -right-4 -top-4 h-36 w-36 text-fg/10" />
+          </div>
+          {/* 상세 첫 화면의 주인공은 리소스 자체의 아트다 — 카드와 같은 커버를 큰 무대로 재사용한다. */}
+          <div aria-hidden="true" className="group relative aspect-[16/9] overflow-hidden rounded-xl border border-line/70 lg:aspect-[4/3]">
+            <MarketResourceCover record={record} />
+          </div>
+        </div>
       </header>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
