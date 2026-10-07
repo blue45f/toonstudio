@@ -120,6 +120,24 @@ it("몰입 화면의 상단 도구를 덮지 않고 장애 상세를 펼치거�
   expect(screen.getByRole("link", { name: "상태 자세히" }).getAttribute("href")).toBe("/status");
 });
 
+it("몰입 화면의 고정 배너는 아래 편집기 조작을 가리지 않고 조작부는 계속 눌린다", () => {
+  render(<MemoryRouter><ServiceDegradedBanner immersive /></MemoryRouter>);
+  const status = screen.getByRole("status");
+  expect(status.className).toContain("pointer-events-none");
+  expect(screen.getByRole("button", { name: "서비스 상태 알림 펼치기" }).className)
+    .toContain("pointer-events-auto");
+  const actions = screen.getByRole("button", { name: "다시 확인" }).parentElement;
+  expect(actions?.className).toContain("pointer-events-auto");
+});
+
+it("일반 문서 흐름의 알림은 클릭 차단 방식을 바꾸지 않는다", () => {
+  renderBanner(false);
+  const status = screen.getByRole("status");
+  expect(status.className).not.toContain("pointer-events-none");
+  expect(screen.getByRole("button", { name: "다시 확인" }).parentElement?.className)
+    .not.toContain("pointer-events-auto");
+});
+
 it("고정 알림의 높이 변경에 맞춰 조작부 공간을 확보하고 해제한다", () => {
   const property = "--service-status-overlay-clearance";
   document.documentElement.style.setProperty(property, "8px");

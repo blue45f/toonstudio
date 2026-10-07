@@ -112,7 +112,7 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
           ? "border-good/35 bg-good/10 text-good"
           : "border-warn/40 bg-warn/10 text-fg",
         immersive
-          && "fixed left-1/2 bottom-[calc(max(5.5rem,var(--immersive-dock-clearance,0px))+env(safe-area-inset-bottom))] z-[90] w-[min(46rem,calc(100vw-1rem))] -translate-x-1/2 rounded-2xl border max-sm:bg-panel",
+          && "pointer-events-none fixed left-1/2 bottom-[calc(max(5.5rem,var(--immersive-dock-clearance,0px))+env(safe-area-inset-bottom))] z-[90] w-[min(46rem,calc(100vw-1rem))] -translate-x-1/2 rounded-2xl border max-sm:bg-panel",
       )}
     >
       <div className={cn("mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-3 gap-y-2",
@@ -131,13 +131,13 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
             : bt("서비스 상태 알림 접기", "Collapse the service status notice")}
           aria-expanded={!collapsed}
           onClick={() => setDetailsExpanded((expanded) => !expanded)}
-          className={cn("grid size-11 shrink-0 place-items-center rounded-xl border border-current/20", !immersive && "sm:hidden")}
+          className={cn("grid size-11 shrink-0 place-items-center rounded-xl border border-current/20", !immersive && "sm:hidden", immersive && "pointer-events-auto")}
         >
           {collapsed ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
         </button>
         {!recovered ? (
           <div className={cn("ml-auto flex shrink-0 items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-2",
-            immersive && "max-sm:col-span-2") }>
+            immersive && "pointer-events-auto max-sm:col-span-2") }>
             <button
               type="button"
               onClick={requestServiceCapabilityRefresh}
