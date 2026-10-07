@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { MarketGroupBuyCard } from "../components/MarketGroupBuyCard";
 import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
 import { MarketSellerDashboard } from "../components/MarketSellerDashboard";
 import { MarketSellerListingCard } from "../components/MarketSellerListingCard";
 import { useMarketGroupBuy } from "../hooks/use-market-group-buy";
@@ -64,6 +65,7 @@ export function MarketSellerPage() {
   return (
     <Container size="wide" className="market-library-page py-7 sm:py-10">
       <MarketNavHeader />
+      <MarketSectionArtBanner />
 
       <header className="border-b border-line pb-6">
         <h1 className="text-xl font-bold text-fg sm:text-2xl">

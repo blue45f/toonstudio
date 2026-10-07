@@ -22,6 +22,7 @@ import type { MarketLayout } from "../components/MarketViewToggle";
 import "../components/market-atelier.css";
 
 import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
 import { useMarketDeviceInstall } from "../hooks/use-market-device-install";
 import { marketAuthorityErrorMessage } from "../models/market-authority";
 import { formatMarketDate, marketKindMeta } from "../models/market-kind";
@@ -308,6 +309,7 @@ export function MarketCloudLibraryPage({ embedded = false }: { readonly embedded
   return (
     <Container size="wide" className="market-library-page py-7 sm:py-10">
       {!embedded ? <MarketNavHeader /> : null}
+      {!embedded ? <MarketSectionArtBanner /> : null}
 
       <header className="market-library-header">
         <div>

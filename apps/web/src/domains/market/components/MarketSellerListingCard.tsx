@@ -1,6 +1,8 @@
 import { useState } from "react";
 
+import { MARKET_FAMILY_ART } from "../models/market-family-art";
 import { formatMarketDate, marketKindMeta } from "../models/market-kind";
+import { marketResourceFamilyForKind } from "../models/market-resource-taxonomy";
 import {
   purchaseSellerListing,
   type PurchaseSellerListingResult,
@@ -43,6 +45,8 @@ export function MarketSellerListingCard({
   const bt = useBilingual("MarketSellerListingCard");
   const [message, setMessage] = useState<string | null>(null);
   const meta = marketKindMeta(listing.kind);
+  const family = marketResourceFamilyForKind(listing.kind);
+  const familyArt = family ? MARKET_FAMILY_ART[family.id] : null;
   const isMine = viewerId !== null && listing.sellerId === viewerId;
   const onSale = listing.status === "on-sale";
 
@@ -58,7 +62,21 @@ export function MarketSellerListingCard({
   };
 
   return (
-    <article className="flex h-full flex-col rounded-xl border border-line bg-card p-5">
+    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-line bg-card">
+      {/* 리스팅 자체의 표지는 없어 종류 대표 아트를 장식으로만 깐다 — 식별은 아래 텍스트가 담당한다. */}
+      {familyArt ? (
+        <div aria-hidden="true" className="relative h-24 shrink-0">
+          <img
+            src={familyArt.image}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="size-full object-cover"
+            style={{ objectPosition: familyArt.position }}
+          />
+        </div>
+      ) : null}
+      <div className="flex flex-1 flex-col p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="text-xs font-bold text-accent">{meta.label}</p>
         <span
@@ -122,6 +140,7 @@ export function MarketSellerListingCard({
             {message}
           </p>
         ) : null}
+      </div>
       </div>
     </article>
   );

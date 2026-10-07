@@ -8,6 +8,7 @@ import { useState } from "react";
 import "../components/market-library-experience.css";
 
 import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
 import { MarketWishlistResource } from "../components/MarketWishlistResource";
 import { useMarketWishlist } from "../hooks/use-market-wishlist";
 
@@ -39,13 +40,7 @@ export function MarketWishlistPage() {
     <Container size="wide" className="market-library-page py-7 sm:py-10">
       <MarketNavHeader />
 
-      <img
-        src="/images/section-market.webp"
-        alt=""
-        loading="lazy"
-        decoding="async"
-        className="mb-6 h-32 w-full rounded-3xl object-cover sm:h-40"
-      />
+      <MarketSectionArtBanner />
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">

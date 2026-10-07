@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
 import { MarketResourceCover } from "../components/MarketResourceCover";
 import { marketAuthorityErrorMessage } from "../models/market-authority";
 import {
@@ -260,6 +261,7 @@ export function MarketOwnedResourcesPage() {
   return (
     <Container size="wide" className="py-7 sm:py-10">
       <MarketNavHeader />
+      <MarketSectionArtBanner />
 
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
         <div>

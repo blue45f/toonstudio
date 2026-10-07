@@ -12,6 +12,7 @@ import { useMemo, useRef, useState } from "react";
 
 import { MarketFitScenePreview } from "../components/MarketFitScenePreview";
 import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
 import { MarketProductionProfileEditor } from "../components/MarketProductionProfileEditor";
 import { MarketResourceCard } from "../components/MarketResourceCard";
 import { StaleNoticeBar } from "../components/StaleNoticeBar";
@@ -122,6 +123,7 @@ export function MarketFitLabPage() {
       <section className="border-b border-line bg-ledger">
         <Container size="wide" className="py-7 sm:py-10">
           <MarketNavHeader />
+          <MarketSectionArtBanner className="mt-2" />
           <p className="eyebrow mt-6 text-accent">Production fit lab</p>
           <h1 className="mt-2 text-pretty text-2xl font-bold leading-tight text-fg sm:text-3xl">
             {t("제작 적합성 랩", "Production Fit Lab")}
