@@ -4,6 +4,16 @@ import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-mark
 
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/u;
 
+/**
+ * 저장 시점 버전 차이로 entries가 배열이 아닌 레코드가 와도 프리뷰 추출이
+ * 던지지 않게 한다 — 프리뷰는 장식 레이어라 본문 렌더를 깨면 안 된다.
+ */
+function recordEntries(
+  record: CreatorMarketplaceResourceRecord,
+): CreatorMarketplaceResourceRecord["entries"] {
+  return Array.isArray(record.entries) ? record.entries : [];
+}
+
 export interface BrushPreviewData {
   readonly name: string;
   readonly size?: number;
@@ -60,7 +70,7 @@ export function palettePreviewData(
 ): readonly PalettePreviewData[] | null {
   if (record.kind !== "palette") return null;
   const items: PalettePreviewData[] = [];
-  for (const entry of record.entries) {
+  for (const entry of recordEntries(record)) {
     if (entry.delivery.mode !== "portable-json") continue;
     const definition = entry.delivery.payload.definition as { colors?: unknown };
     const colors = definition?.colors;
@@ -80,7 +90,7 @@ export function brushPreviewData(
 ): readonly BrushPreviewData[] | null {
   if (record.kind !== "brush") return null;
   const items: BrushPreviewData[] = [];
-  for (const entry of record.entries) {
+  for (const entry of recordEntries(record)) {
     if (entry.delivery.mode !== "portable-json") continue;
     const definition = entry.delivery.payload.definition as { snapshot?: Record<string, unknown> };
     const snapshot = definition?.snapshot;
@@ -130,7 +140,7 @@ export function filterPreviewData(
 ): readonly FilterPreviewData[] | null {
   if (record.kind !== "filter") return null;
   const items: FilterPreviewData[] = [];
-  for (const entry of record.entries) {
+  for (const entry of recordEntries(record)) {
     if (entry.delivery.mode !== "portable-json") continue;
     const definition = entry.delivery.payload.definition as {
       engine?: unknown;
@@ -158,7 +168,7 @@ export function templatePreviewData(
 ): readonly TemplatePreviewData[] | null {
   if (record.kind !== "template") return null;
   const items: TemplatePreviewData[] = [];
-  for (const entry of record.entries) {
+  for (const entry of recordEntries(record)) {
     if (entry.delivery.mode === "portable-json") {
       const definition = entry.delivery.payload.definition as { templateId?: unknown };
       if (typeof definition?.templateId === "string") {
@@ -209,7 +219,7 @@ export function recipePreviewData(
 ): readonly RecipePreviewData[] | null {
   if (record.kind !== "asset" && record.kind !== "3d-preset" && record.kind !== "3d-asset") return null;
   const items: RecipePreviewData[] = [];
-  for (const entry of record.entries) {
+  for (const entry of recordEntries(record)) {
     if (!studioMarketplaceCc0EntrySourceMatches(record, entry)) continue;
     if (entry.delivery.mode === "procedural-recipe") {
       const definition = entry.delivery.payload.definition as {

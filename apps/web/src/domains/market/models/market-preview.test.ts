@@ -481,6 +481,18 @@ describe("marketSceneReferenceImage", () => {
   });
 });
 
+describe("프리뷰 추출 방어", () => {
+  it("entries가 없는 레코드에서도 던지지 않고 null을 돌려준다", () => {
+    const { entries: _entries, ...withoutEntries } = makeBaseRecord({ kind: "brush" });
+    const broken = withoutEntries as CreatorMarketplaceResourceRecord;
+    expect(brushPreviewData(broken)).toBeNull();
+    expect(palettePreviewData(broken)).toBeNull();
+    expect(filterPreviewData(broken)).toBeNull();
+    expect(templatePreviewData(broken)).toBeNull();
+    expect(recipePreviewData(broken)).toBeNull();
+  });
+});
+
 describe("marketFilterCss", () => {
   it("builds css filters from numeric preview values in a stable order", () => {
     expect(marketFilterCss({ brightness: 1.1, contrast: 1.2, saturate: 0.8, hue: 15 }))
