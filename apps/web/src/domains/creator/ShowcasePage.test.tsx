@@ -139,4 +139,47 @@ describe("ShowcasePage", () => {
     expect(await screen.findByRole("heading", { level: 2, name: "주인공 작품" })).toBeTruthy();
     await waitFor(() => expect(screen.queryByText("주목 작품을 잠시 불러올 수 없어요")).toBeNull());
   });
+
+  // F-B02-1 회귀 고정: API 장애 시 데이터 영역이 스켈레톤에 머물지 않고 오류 상태로 전이돼야 한다.
+  it("목록을 불러오지 못하면 갤러리도 스켈레톤을 끝내고 오류와 재시도를 보여 준다", async () => {
+    creatorClient.listWorks.mockRejectedValue(new Error("offline"));
+    creatorClient.listChallenges.mockRejectedValue(new Error("offline"));
+    const { container } = renderShowcase();
+
+    const galleryTitle = await screen.findByText("작품 목록을 잠시 불러올 수 없어요");
+    const galleryPanel = galleryTitle.closest("[data-slot='showcase-unavailable']");
+    expect(galleryPanel).not.toBeNull();
+    expect(within(galleryPanel as HTMLElement).getByRole("button", { name: "다시 시도" })).toBeTruthy();
+    // 주인공 영역도 같은 실패에서 오류 상태로 전이한다.
+    expect(await screen.findByText("주목 작품을 잠시 불러올 수 없어요")).toBeTruthy();
+    // 실패가 정산된 뒤에는 어느 데이터 영역에도 스켈레톤이 남지 않는다.
+    await waitFor(() => expect(container.querySelectorAll(".skeleton")).toHaveLength(0));
+  });
+
+  it("갤러리 재시도를 누르면 작품 목록이 복구된다", async () => {
+    creatorClient.listWorks.mockRejectedValue(new Error("offline"));
+    renderShowcase();
+    const galleryTitle = await screen.findByText("작품 목록을 잠시 불러올 수 없어요");
+    const galleryPanel = galleryTitle.closest("[data-slot='showcase-unavailable']");
+    expect(galleryPanel).not.toBeNull();
+    // 실패 상태에서는 빈 상태 문구가 섞이지 않는다.
+    expect(screen.queryByText("첫 번째 작품을 기다리고 있어요.")).toBeNull();
+
+    creatorClient.listWorks.mockResolvedValue([
+      work("w1", "표지 없는 작품"),
+      work("w2", "주인공 작품", "/covers/w2.webp"),
+    ]);
+    fireEvent.click(within(galleryPanel as HTMLElement).getByRole("button", { name: "다시 시도" }));
+    expect(await screen.findByText("작품 2개")).toBeTruthy();
+    await waitFor(() => expect(screen.queryByText("작품 목록을 잠시 불러올 수 없어요")).toBeNull());
+  });
+
+  it("빈 결과는 실패로 보이지 않고 갤러리 빈 상태를 보여 준다", async () => {
+    creatorClient.listWorks.mockResolvedValue([]);
+    renderShowcase();
+    expect(await screen.findByText("아직 조명할 작품이 없어요")).toBeTruthy();
+    expect(await screen.findByText("첫 번째 작품을 기다리고 있어요.")).toBeTruthy();
+    expect(screen.queryByText("작품 목록을 잠시 불러올 수 없어요")).toBeNull();
+    expect(screen.queryByText("주목 작품을 잠시 불러올 수 없어요")).toBeNull();
+  });
 });
