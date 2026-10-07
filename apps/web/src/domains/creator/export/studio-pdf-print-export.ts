@@ -289,7 +289,7 @@ export function deflateStoredZlib(data: Uint8Array): Uint8Array {
   out[cursor++] = (checksum >>> 24) & 0xff;
   out[cursor++] = (checksum >>> 16) & 0xff;
   out[cursor++] = (checksum >>> 8) & 0xff;
-  out[cursor++] = checksum & 0xff;
+  out[cursor] = checksum & 0xff;
   return out;
 }
 
