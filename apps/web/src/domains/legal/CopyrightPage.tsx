@@ -1,4 +1,6 @@
-import { Link2, Printer } from "lucide-react";
+import { Link2 } from "lucide-react";
+
+import { DocumentReadingProgress, LegalDocOutline, LegalRelatedDocs } from "./LegalDocTools";
 
 import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
@@ -55,6 +57,7 @@ export function CopyrightPage() {
 
   return (
     <Container size="prose" className="py-8 sm:py-12 lg:py-16">
+      <DocumentReadingProgress />
       <p className="eyebrow text-accent">COPYRIGHT</p>
       <h1 className="mt-3 text-pretty text-[clamp(1.6rem,7vw,1.875rem)] font-bold leading-tight sm:text-4xl">
         {t("copyright.title")}
@@ -65,30 +68,7 @@ export function CopyrightPage() {
         className="mt-6 aspect-[21/9] w-full rounded-2xl border border-line object-cover"
       />
 
-      <nav aria-label={bi("문서 목차", "Document outline")} className="mt-6 rounded-2xl border border-line bg-panel/60 p-4">
-        <h2 className="text-sm font-bold text-fg">{bi("문서 목차", "Contents")}</h2>
-        <ol className="mt-3 space-y-1">
-          {sections.map((section, index) => (
-            <li key={section.id}>
-              <a
-                href={`#${section.id}`}
-                className="flex min-h-10 items-start gap-2 rounded-lg px-2 py-2 text-sm leading-6 text-fg-2 hover:bg-card hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-              >
-                <span className="mt-px font-mono text-xs text-accent">{String(index + 1).padStart(2, "0")}</span>
-                <span>{section.title}</span>
-              </a>
-            </li>
-          ))}
-        </ol>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line-strong bg-card px-3 text-xs font-bold text-fg-2 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-        >
-          <Printer size={15} aria-hidden="true" />
-          {bi("인쇄·PDF 저장", "Print / save as PDF")}
-        </button>
-      </nav>
+      <LegalDocOutline sections={sections.map((section) => ({ id: section.id, label: section.title }))} />
 
       <div className="mt-8 space-y-7 text-sm leading-relaxed text-fg-2">
         {sections.map((section) => (
@@ -115,6 +95,8 @@ export function CopyrightPage() {
           </section>
         ))}
       </div>
+
+      <LegalRelatedDocs currentHref="/copyright" />
     </Container>
   );
 }

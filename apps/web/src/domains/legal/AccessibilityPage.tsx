@@ -2,6 +2,7 @@ import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from
 import { Eye, Keyboard, MousePointer2, Move, Smartphone, Sparkles } from "lucide-react";
 
 import { AccessibilityLab } from "./AccessibilityLab";
+import { LegalRelatedDocs } from "./LegalDocTools";
 
 import Link from "@/shared/navigation/router-link";
 import { SectionArt } from "@/shared/components/section-art";
@@ -91,6 +92,8 @@ export function AccessibilityPage() {
           <Link href="/help" className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-sm font-semibold text-fg-2 hover:border-line-strong hover:text-fg">{copy.help}</Link>
         </div>
       </section>
+
+      <LegalRelatedDocs currentHref="/accessibility" />
     </Container>
   );
 }

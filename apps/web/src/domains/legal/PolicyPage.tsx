@@ -6,7 +6,7 @@ import {
   Printer,
   ShieldCheck,
 } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment } from "react";
 
 import {
   formatPolicyDate,
@@ -20,6 +20,7 @@ import {
   type PolicyDocument,
   type PolicySlug,
 } from "./policy-content";
+import { DocumentReadingProgress, LegalRelatedDocs } from "./LegalDocTools";
 import "./policy-page.css";
 
 import { SectionArt } from "@/shared/components/section-art";
@@ -101,36 +102,7 @@ function PolicyBlockView({ block }: { block: PolicyBlock }) {
   return <p><InlineText text={block.text} /></p>;
 }
 
-/** 문서 읽기 진행률 바: 긴 정책 문서의 현재 위치를 상단 고정 바에 표시한다. */
-function PolicyReadingProgress() {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    const update = () => {
-      const element = document.documentElement;
-      const total = element.scrollHeight - element.clientHeight;
-      setProgress(total > 0 ? Math.min(1, Math.max(0, element.scrollTop / total)) : 0);
-    };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
-  }, []);
-  return (
-    <div
-      className="policy-page__progress"
-      role="progressbar"
-      aria-label={bi("문서 읽기 진행률", "Document reading progress")}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(progress * 100)}
-    >
-      <div className="policy-page__progress-bar" style={{ transform: `scaleX(${progress})` }} />
-    </div>
-  );
-}
+
 
 /** First-party policy body and its reviewed release identity. */
 export function PolicyArticle({ doc }: { doc: PolicyDocument }) {
@@ -202,7 +174,7 @@ function PolicyPageShell({ slug, eyebrow, fallbackName }: { slug: PolicySlug; ey
 
   return (
     <Container size="wide" className="policy-page py-8 sm:py-12 lg:py-16">
-      <PolicyReadingProgress />
+      <DocumentReadingProgress />
       <header className="max-w-4xl">
         <p className="eyebrow text-accent">{eyebrow}</p>
         <h1 className="mt-3 text-pretty font-display text-[clamp(2rem,7vw,4.5rem)] font-bold leading-[1] tracking-[-0.055em] text-fg">{title}</h1>
@@ -260,6 +232,8 @@ function PolicyPageShell({ slug, eyebrow, fallbackName }: { slug: PolicySlug; ey
           <PolicyArticle doc={doc} />
         </article>
       </div>
+
+      <LegalRelatedDocs currentHref={policyPublicUrl(slug)} />
     </Container>
   );
 }
