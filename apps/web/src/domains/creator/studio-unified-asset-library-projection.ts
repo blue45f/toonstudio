@@ -1,6 +1,8 @@
 import {
   createStudioUnifiedAssetLibraryState,
   deriveStudioUnifiedAssetFacet,
+  getStudioUnifiedAssetFlag,
+  getStudioUnifiedAssetRating,
   type DiscoverStudioUnifiedAssetsInput,
 } from "./studio-unified-asset-intelligence";
 
@@ -8,7 +10,14 @@ import type { StudioUnifiedAssetItem } from "./studio-unified-asset-catalog";
 
 export type StudioUnifiedAssetLibraryProjectionInput = Pick<
   DiscoverStudioUnifiedAssetsInput,
-  "libraryView" | "format" | "rights" | "editability" | "sort" | "libraryState"
+  | "libraryView"
+  | "format"
+  | "rights"
+  | "editability"
+  | "sort"
+  | "minRating"
+  | "flagFilter"
+  | "libraryState"
 >;
 
 /**
@@ -25,6 +34,8 @@ export function projectStudioUnifiedAssetLibrary(
   const format = input.format ?? "all";
   const rights = input.rights ?? "all";
   const editability = input.editability ?? "all";
+  const minRating = input.minRating ?? 0;
+  const flagFilter = input.flagFilter ?? "all";
   const favorites = new Set(state.favorites);
   const tray = new Set(state.tray);
   const recents = new Map(state.recents.map((recent, index) => [recent.id, index]));
@@ -33,6 +44,11 @@ export function projectStudioUnifiedAssetLibrary(
     if (view === "favorites" && !favorites.has(item.id)) return false;
     if (view === "tray" && !tray.has(item.id)) return false;
     if (view === "recent" && !recents.has(item.id)) return false;
+    if (minRating > 0 && getStudioUnifiedAssetRating(state, item.id) < minRating) return false;
+    if (flagFilter !== "all") {
+      const flag = getStudioUnifiedAssetFlag(state, item.id);
+      if (flagFilter === "unflagged" ? flag !== null : flag !== flagFilter) return false;
+    }
     if (format === "all" && rights === "all" && editability === "all") return true;
     const facet = deriveStudioUnifiedAssetFacet(item);
     if (format !== "all" && facet.format !== format) return false;
@@ -45,6 +61,11 @@ export function projectStudioUnifiedAssetLibrary(
     if (view === "recent") {
       return (recents.get(left.id) ?? Number.MAX_SAFE_INTEGER)
         - (recents.get(right.id) ?? Number.MAX_SAFE_INTEGER);
+    }
+    if (input.sort === "rating") {
+      return getStudioUnifiedAssetRating(state, right.id) - getStudioUnifiedAssetRating(state, left.id)
+        || right.sortPriority - left.sortPriority
+        || left.title.localeCompare(right.title, "ko");
     }
     if (input.sort === "name") return left.title.localeCompare(right.title, "ko");
     return right.sortPriority - left.sortPriority
