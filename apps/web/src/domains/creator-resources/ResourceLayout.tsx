@@ -17,6 +17,7 @@ import "./resource-illustrated.css";
 import "./research-source-identity.css";
 
 import { Container } from "@/shared/components/container";
+import { SectionNav, type SectionNavGroup } from "@/shared/components/section-nav";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
@@ -122,39 +123,38 @@ function ResearchGroupedMenu({ pathname }: { readonly pathname: string }) {
 }
 
 /**
- * 넓은 화면의 좌측 미니 내비 — 5묶음을 전부 펼쳐 현재 위치를 항상 보여 준다.
- * 좁은 화면에서는 묶음 메뉴(중간 폭)와 접힌 전체 메뉴(모바일)가 같은 역할을 하며,
- * CSS가 폭에 따라 하나만 노출하므로 접근성 트리에도 하나만 남는다.
+ * 넓은 화면의 좌측 레일 — 공용 SectionNav(링크 모드)가 유일한 구현이다 (표준 S-2).
+ * 5묶음을 전부 펼쳐 현재 위치를 항상 보여 주고, 데스크 항목은 정확히 일치할 때만
+ * 현재로 표시한다. 좁은 화면에서는 묶음 메뉴(중간 폭)와 접힌 전체 메뉴(모바일)가
+ * 같은 역할을 하므로 레일은 lg 미만에서 숨겨, 폭마다 메뉴 DOM이 하나만 남는
+ * 기존 계약을 유지한다.
  */
 function ResourceSideNav({ pathname }: { readonly pathname: string }) {
   const bt = useBilingual(LAYOUT_SCOPE);
-  return (
-    <aside className="resource-sidenav">
-      <nav aria-label={layoutTx("창작 리서치 미니 내비")}>
-        <Link
-          to="/research"
-          aria-current={pathname.replace(/\/$/u, "") === "/research" ? "page" : undefined}
-          className="resource-sidenav-desk"
-        >
-          {layoutTx("리서치 데스크")}
-        </Link>
-        {RESOURCE_MENU_GROUPS.map((group) => (
-          <div key={group.id} className="resource-sidenav-group" role="group" aria-label={bt(...group.title)}>
-            <p aria-hidden="true">{bt(...group.title)}</p>
-            {resourceMenuGroupPages(group).map((page) => (
-              <Link
-                key={page.path}
-                to={page.path}
-                aria-current={isCurrentPath(pathname, page.path) ? "page" : undefined}
-              >
-                {layoutTx(page.title)}
-              </Link>
-            ))}
-          </div>
-        ))}
-      </nav>
-    </aside>
-  );
+  const normalizedPath = pathname.replace(/\/$/u, "") || "/";
+  const groups: readonly SectionNavGroup[] = [
+    {
+      id: "desk",
+      items: [
+        {
+          id: "desk",
+          href: "/research",
+          label: layoutTx("리서치 데스크"),
+          current: normalizedPath === "/research",
+        },
+      ],
+    },
+    ...RESOURCE_MENU_GROUPS.map((group) => ({
+      id: group.id,
+      label: bt(...group.title),
+      items: resourceMenuGroupPages(group).map((page) => ({
+        id: page.path,
+        href: page.path,
+        label: layoutTx(page.title),
+      })),
+    })),
+  ];
+  return <SectionNav label={layoutTx("창작 리서치 미니 내비")} groups={groups} className="max-lg:hidden" />;
 }
 
 export function ResourceLayout({

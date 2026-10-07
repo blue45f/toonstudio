@@ -10,8 +10,8 @@ import { cn } from "@/shared/lib/utils";
  * 표준 문서: `~/workspace/goals/toonstudio-site-modernization/hidden_files/shell-nav-2026-10-02/nav-standard.md`
  *
  * - 데스크톱(≥1024px): 좌측 sticky 레일. 폭 13.5rem·sticky top 5.5rem·패널 배경·그룹 라벨·항목
- *   규격은 D-1 리서치 레일(`ResourceLayout`의 `.resource-sidenav`)과 같은 문법이다. 새 문법을
- *   만들지 말고 이 컴포넌트를 쓴다.
+ *   규격은 D-1 리서치 레일에서 온 문법이다. 리서치(`ResourceLayout`)도 전용 CSS 레일을 버리고
+ *   이 컴포넌트를 쓰도록 이관됐다(2026-10-07). 새 문법을 만들지 말고 이 컴포넌트를 쓴다.
  * - 모바일: 같은 DOM이 상단 칩 줄로 변환된다(링크 모드=가로 스크롤, 탭 모드=4개 이하 분할 버튼).
  *   데스크톱/모바일 DOM을 따로 렌더링하지 않으므로 접근성 트리에 내비가 중복되지 않는다.
  * - 현재 위치: 링크 모드는 `aria-current="page"`, 탭 모드는 `aria-selected` + 같은 accent 채움.
