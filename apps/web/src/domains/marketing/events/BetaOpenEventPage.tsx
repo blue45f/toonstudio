@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-raw-colors -- 베타 오픈 캠페인 고정 팔레트(amber·emerald 강조색)는 이 캠페인 자체의 시각 정체성이라 토큰으로 바꾸면 안 된다. 이 페이지는 beta-open-event.css의 --campaign-bg 어두운 캠페인 표면에 올라가므로 앱의 fg/raised 의미 토큰(라이트 테마 기준 근색)으로 치환하면 어두운 배경 위에서 강조색이 사라지거나 대비가 깨진다. share-dialog QR 예외와 같은 유형이다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
 import { SITE_URL } from "@toonstudio/core/business";
 import {
   ArrowLeft,

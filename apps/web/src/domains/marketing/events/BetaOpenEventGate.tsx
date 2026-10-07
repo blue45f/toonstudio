@@ -1,3 +1,4 @@
+/* eslint-disable shadcn/no-raw-colors -- 베타 오픈 캠페인 고정 팔레트(amber·emerald 강조색)는 BetaOpenEventPage와 같은 캠페인 정체성이라 토큰으로 바꾸면 안 된다. --campaign-bg 어두운 캠페인 표면 위 강조색이라 앱 의미 토큰으로 치환하면 대비가 깨진다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
 import {
   ArrowRight,
   BadgeCheck,

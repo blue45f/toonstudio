@@ -34,6 +34,8 @@
 | --- | --- | --- |
 | `apps/web/src/shared/components/share-dialog.tsx` (인스타그램 버튼 구간) | 3 | 외부 서비스(인스타그램) 브랜드 그라디언트 — 브랜드 표현 자체라 토큰 교체 불가 |
 | `apps/web/src/shared/components/share-dialog.tsx` (QR 섹션 구간) | 2 | QR 카드는 스캔용 고정 화이트 표면 — 의미 토큰(fg)은 다크 테마에서 반전돼 QR 영역 글자가 읽히지 않는다 |
+| `apps/web/src/domains/marketing/events/BetaOpenEventPage.tsx` (파일 전체) | 10 | 베타 오픈 캠페인 고정 강조 팔레트(amber·emerald) — `beta-open-event.css`의 `--campaign-bg` 어두운 캠페인 표면 위 시각 정체성이라 앱 의미 토큰으로 치환하면 대비가 깨진다 |
+| `apps/web/src/domains/marketing/events/BetaOpenEventGate.tsx` (파일 전체) | 6 | 위 캠페인 페이지와 같은 고정 팔레트 — 같은 표면과 같은 사유 |
 | `apps/web/src/shared/pwa/PwaOfflinePage.tsx` (히어로 SVG 구간) | 4 | 오프라인 안내 히어로 아트워크(브랜드 그라디언트 마크 `#818cf8→#c084fc` 포함) |
 | `apps/web/src/shared/pwa/PwaInstallShowcase.tsx` (히어로 SVG 구간) | 3 | 설치 안내 히어로 아트워크(브랜드 그라디언트 마크 포함) |
 | `apps/web/src/shared/pwa/PwaInstallWelcome.tsx` ("home" 아트 SVG 구간) | 2 | 웰컴 투어 아트워크 — 그라디언트 원 위 흰 체크는 그림 데이터 |
