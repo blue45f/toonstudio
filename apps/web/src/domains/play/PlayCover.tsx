@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 
+import { proxiedCoverSrc } from "@/shared/lib/cover-proxy";
 import { cn } from "@/shared/lib/utils";
 
 /** 결정적 32bit FNV-1a 해시 — 패턴/글로우 선택 시드. */
@@ -130,7 +131,7 @@ export function PlayCover({
       {/* 표지 썸네일 — 있으면 위에 덮는다. 미스터리(공개 전)는 블러+확대. */}
       {showImg && (
         <img
-          src={coverImage}
+          src={proxiedCoverSrc(coverImage ?? "")}
           alt=""
           loading="lazy"
           onError={() => setBroken(true)}
