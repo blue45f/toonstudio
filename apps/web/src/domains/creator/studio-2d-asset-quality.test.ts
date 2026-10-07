@@ -29,14 +29,14 @@ const anyScene = (id: string) => ALL_BG_SCENES.find((item) => item.id === id)!;
 describe("2D scene quality and discovery", () => {
   it("exposes only reviewed large raster originals in the default picker", () => {
     const result = filterStudio2dScenes(groups, { quality: "recommended" });
-    expect(result).toHaveLength(53 + STUDIO_ILLUSTRATION_BG_SCENES.length);
+    expect(result).toHaveLength(54 + STUDIO_ILLUSTRATION_BG_SCENES.length);
     expect(result.every(isRecommendedStudio2dScene)).toBe(true);
     expect(filterStudio2dScenes(groups, { quality: "raster" })).toEqual(result);
     expect(result).toContain(scene("webtoon-bedroom"));
     expect(result).toContain(scene("polyhaven-background-wide-street-01"));
   });
   it("keeps low-quality legacy IDs for document compatibility without exposing them by default", () => {
-    expect(BG_SCENE_COMPATIBILITY_LIBRARY).toHaveLength(4);
+    expect(BG_SCENE_COMPATIBILITY_LIBRARY).toHaveLength(3);
     expect(CURATED_CC0_BG_SCENES).toHaveLength(28);
     const activeIds = new Set(BG_SCENES.map((item) => item.id));
     expect(BG_SCENE_COMPATIBILITY_LIBRARY.every((item) => !activeIds.has(item.id))).toBe(true);
@@ -47,18 +47,17 @@ describe("2D scene quality and discovery", () => {
       "webtoon-cafe",
       "webtoon-classroom",
       "webtoon-corridor",
-      "webtoon-street",
     ]);
     const compatibilityMetadata = STUDIO_2D_ASSET_METADATA
       .filter((asset) => compatibilityIds.has(asset.id));
-    expect(compatibilityMetadata).toHaveLength(4);
+    expect(compatibilityMetadata).toHaveLength(3);
     expect(compatibilityMetadata.every((asset) => asset.recommended === false)).toBe(true);
     expect(compatibilityMetadata.every((asset) => asset.provenance.licenseStatus === "unverified")).toBe(true);
   });
   it("retains every active ID exactly once after recommendation regrouping", () => {
     const sections = bgSceneSections(BG_SCENES);
     expect(sections[0].genre).toBe("추천");
-    expect(sections[0].scenes).toHaveLength(53 + STUDIO_ILLUSTRATION_BG_SCENES.length);
+    expect(sections[0].scenes).toHaveLength(54 + STUDIO_ILLUSTRATION_BG_SCENES.length);
     const ids = sections.flatMap((group) => group.scenes.map((item) => item.id));
     expect(new Set(ids).size).toBe(BG_SCENES.length);
     expect(ids).toHaveLength(BG_SCENES.length);
@@ -90,7 +89,7 @@ describe("2D scene quality and discovery", () => {
   });
   it("filters reviewed source aspect ratios without guessing vector dimensions", () => {
     expect(filterStudio2dScenes(groups, { orientation: "landscape" })).toHaveLength(32 + STUDIO_ILLUSTRATION_BG_SCENES.filter((item) => item.width > item.height).length);
-    expect(filterStudio2dScenes(groups, { orientation: "square" })).toEqual([scene("webtoon-palace")]);
+    expect(filterStudio2dScenes(groups, { orientation: "square" })).toEqual([scene("webtoon-street"), scene("webtoon-palace")]);
     expect(filterStudio2dScenes(groups, { orientation: "portrait" })).toHaveLength(20);
   });
   it("does not advertise people scenes or unknown vectors as person-free images", () => {

@@ -34,8 +34,8 @@ describe("native-size 2D content review", () => {
     expect(cc0.every((asset) => asset.provenance.licenseStatus === "cc0-verified")).toBe(true);
     expect(generated).toHaveLength(20);
     expect(generated.every((asset) => asset.provenance.licenseStatus === "first-party-generated")).toBe(true);
-    expect(STUDIO_2D_ASSET_METADATA.filter((asset) => asset.recommended)).toHaveLength(53 + STUDIO_ILLUSTRATION_BG_SCENES.length);
+    expect(STUDIO_2D_ASSET_METADATA.filter((asset) => asset.recommended)).toHaveLength(54 + STUDIO_ILLUSTRATION_BG_SCENES.length);
     expect(STUDIO_2D_ASSET_METADATA.filter((asset) => asset.review.status === "small-panel-only")).toHaveLength(0);
-    expect(BG_SCENE_COMPATIBILITY_LIBRARY).toHaveLength(4);
+    expect(BG_SCENE_COMPATIBILITY_LIBRARY).toHaveLength(3);
   });
 });
