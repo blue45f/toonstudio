@@ -28,6 +28,7 @@ import { CountUp, ConfettiBurst } from "./fortune-fx";
 import { useFortuneStore, computeStreak } from "./fortune-store";
 import { charThemeVars } from "./fortune-theme";
 import { FortuneLoading } from "./FortuneLoading";
+import { FortunePageHeader } from "./FortunePageHeader";
 import { FortuneShareModal } from "./FortuneShareModal";
 import { TarotCardFace } from "./TarotCardFace";
 import { useFortunePlayback } from "./useFortunePlayback";
@@ -42,7 +43,6 @@ import { TarotSpreadPicker } from "./TarotSpreadPicker";
 import type { SavedFortune } from "./fortune-store";
 
 import { TitleCard } from "@/shared/components/title-card";
-import { SectionArt } from "@/shared/components/section-art";
 // 배포 환경에서도 root-relative 이미지 경로가 올바른 오리진을 가리키도록 정규화한다.
 import { cn } from "@/shared/lib/utils";
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
@@ -429,24 +429,8 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
       {/* 스크린리더 전용 라이브 영역 — 운세 결과 도착 안내 */}
       <p className="sr-only" role="status" aria-live="polite">{liveMsg}</p>
 
-      {/* 타이틀 헤더 */}
-      <header className="mb-7 text-center sm:mb-10">
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent-soft px-3.5 py-1 text-xs font-semibold text-accent">
-          <Sparkles className="h-3 w-3" />
-          <span>{tx("페르소나 캐릭터 운세 레이어")}</span>
-        </div>
-        <h1 className="font-display text-[clamp(1.6rem,8vw,1.875rem)] font-extrabold tracking-tight text-fg sm:text-4xl">
-          CHARACTER FORTUNE
-        </h1>
-        <p className="mx-auto mt-2 max-w-md text-pretty text-sm leading-relaxed text-fg-2">
-          최애 웹툰 캐릭터가 제안하는 사주팔자와 타로 큐레이션
-        </p>
-        {/* 운세 섹션 키 비주얼 — 장식용. */}
-        <SectionArt
-          image="fortune"
-          className="mx-auto mt-6 h-56 w-full max-w-2xl rounded-2xl border border-line/60 object-cover sm:h-72"
-        />
-      </header>
+      {/* 타이틀 헤더 — 현재 도구의 이름·맥락을 보여 준다 */}
+      <FortunePageHeader tx={tx} activeTab={activeTab} />
 
       {/* 1단계: 캐릭터 에이전트 선택 */}
       {!selectedChar ? (
