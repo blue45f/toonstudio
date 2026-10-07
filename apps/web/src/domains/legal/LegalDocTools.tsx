@@ -5,6 +5,7 @@ import {
   Copyright,
   Database,
   FileText,
+  Link2,
   Printer,
   ShieldCheck,
   type LucideIcon,
@@ -96,6 +97,21 @@ export function LegalDocOutline({ sections }: { sections: readonly LegalDocOutli
         {bi("인쇄·PDF 저장", "Print / save as PDF")}
       </button>
     </nav>
+  );
+}
+
+/** 섹션 제목 옆 앵커 링크: 그 섹션으로 바로 연결되는 주소를 제공한다. (정책·저작권 문서의 문법을 템플릿화) */
+export function LegalDocAnchor({ id, label }: { id: string; label: string }) {
+  useBilingualI18nRevision();
+  return (
+    <a
+      href={`#${id}`}
+      className="grid size-9 shrink-0 place-items-center rounded-lg text-fg-3 opacity-70 transition hover:bg-panel hover:text-accent focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+      aria-label={bi(`${label} 섹션 링크`, `Link to section: ${label}`)}
+      title={bi("이 섹션으로 연결", "Link to this section")}
+    >
+      <Link2 size={14} aria-hidden="true" />
+    </a>
   );
 }
 
