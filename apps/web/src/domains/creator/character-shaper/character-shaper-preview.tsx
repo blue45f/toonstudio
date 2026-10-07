@@ -1517,11 +1517,11 @@ function ExpressionArt({ weights, selected }: { readonly weights: Readonly<Recor
     const ry = 4.4 * eyeOpen * (1 - closed);
     if (ry < 1.1) {
       const curl = happy > 0.4 ? -3.2 : 1.6;
-      return <path key={side} d={`M${n(ex - rx)} ${eyeY} Q${n(ex)} ${n(eyeY + curl)} ${n(ex + rx)} ${eyeY}`} fill="none" stroke={ink} strokeLinecap="round" strokeWidth={1.8} />;
+      return <path key={`eye-${side}`} d={`M${n(ex - rx)} ${eyeY} Q${n(ex)} ${n(eyeY + curl)} ${n(ex + rx)} ${eyeY}`} fill="none" stroke={ink} strokeLinecap="round" strokeWidth={1.8} />;
     }
     const pupil = 2.3 + 0.6 * surprised;
     return (
-      <g key={side}>
+      <g key={`eye-${side}`}>
         <ellipse cx={ex} cy={eyeY} fill={CANVAS} rx={rx} ry={ry} stroke={INK} strokeOpacity={0.65} strokeWidth={0.9} />
         <circle cx={clamp(ex + lookX, ex - rx * 0.5, ex + rx * 0.5)} cy={clamp(eyeY + lookY, eyeY - ry * 0.5, eyeY + ry * 0.5)} fill={INK} r={Math.min(pupil, ry * 0.85)} />
         <circle cx={clamp(ex + lookX, ex - rx * 0.5, ex + rx * 0.5) - 0.9} cy={clamp(eyeY + lookY, eyeY - ry * 0.5, eyeY + ry * 0.5) - 0.9} fill={PAPER} r={0.8} />
@@ -1539,7 +1539,7 @@ function ExpressionArt({ weights, selected }: { readonly weights: Readonly<Recor
     const controlY = Math.min(innerY, outerY) - 1.5 + 1.2 * angry;
     return (
       <path
-        key={side}
+        key={`brow-${side}`}
         d={`M${n(inner)} ${n(innerY)} Q${n(cx + side * 8.5)} ${n(controlY)} ${n(outer)} ${n(outerY)}`}
         fill="none"
         stroke={ink}
