@@ -26,6 +26,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  Fragment,
 } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
@@ -47,6 +48,8 @@ import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
+import { MessageBubble, MessageDayDivider } from "./MessageBubble";
+import { formatMessageTime, messageDayKey, messageDayLabel } from "./message-time";
 import { MessagingSettingsPanel } from "./MessagingSettingsPanel";
 import { ConversationSkeleton, ThreadListSkeleton } from "./MessagingSkeletons";
 import { UserAvatar } from "./MessagingUserAvatar";
@@ -87,15 +90,6 @@ function isInboxTab(value: string | null): value is InboxTab {
   return value === "active" || value === "requests" || value === "archived";
 }
 
-function formatTime(value: string): string {
-  const date = new Date(value);
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-  return new Intl.DateTimeFormat("ko-KR", sameDay
-    ? { hour: "2-digit", minute: "2-digit" }
-    : { month: "short", day: "numeric" }).format(date);
-}
-
 function ThreadListItem({
   thread,
   selected,
@@ -131,7 +125,7 @@ function ThreadListItem({
           )}
           {thread.blocked && <CircleSlash2 size={13} className="shrink-0 text-danger" aria-label="차단됨" />}
           <time className="ml-auto shrink-0 text-[0.6875rem] text-fg-3" dateTime={thread.lastMessageAt}>
-            {formatTime(thread.lastMessageAt)}
+            {formatMessageTime(thread.lastMessageAt)}
           </time>
         </span>
         <span className="mt-1 flex items-center gap-2">
@@ -147,67 +141,6 @@ function ThreadListItem({
       </span>
       <ChevronRight size={15} className="shrink-0 text-fg-3 transition-transform group-hover:translate-x-0.5" />
     </Link>
-  );
-}
-
-function MessageBubble({
-  message,
-  onReport,
-}: {
-  message: MessagingMessage;
-  onReport: (message: MessagingMessage) => void;
-}) {
-  const context = message.type === "work_card" || message.type === "project_card"
-    ? message.metadata.context
-    : null;
-  const linkedContext = context && typeof context === "object" && !Array.isArray(context)
-    ? context as { label?: unknown; href?: unknown }
-    : null;
-  const label = typeof linkedContext?.label === "string" ? linkedContext.label : null;
-  const href = typeof linkedContext?.href === "string" ? linkedContext.href : null;
-
-  return (
-    <div className={cn("group flex gap-2", message.mine ? "justify-end" : "justify-start")}>
-      <div className={cn("max-w-[82%] sm:max-w-[72%]", message.mine && "text-right")}>
-        {label && (
-          <div className={cn(
-            "mb-1 rounded-xl border border-line bg-panel px-3 py-2 text-left text-xs",
-            message.mine ? "ml-auto" : "mr-auto"
-          )}>
-            <p className="font-semibold text-fg">{message.type === "project_card" ? "프로젝트" : "작품"}</p>
-            {href ? (
-              <Link href={href} className="mt-0.5 block truncate text-accent hover:underline">
-                {label}
-              </Link>
-            ) : (
-              <p className="mt-0.5 truncate text-fg-2">{label}</p>
-            )}
-          </div>
-        )}
-        <div className={cn(
-          "rounded-2xl px-3.5 py-2.5 text-left text-sm leading-relaxed whitespace-pre-wrap break-words",
-          message.mine
-            ? "rounded-br-md bg-accent text-on-accent"
-            : "rounded-bl-md border border-line bg-card text-fg"
-        )}>
-          {message.body}
-        </div>
-        <div className={cn("mt-1 flex items-center gap-1.5 text-[0.6875rem] text-fg-3", message.mine ? "justify-end" : "justify-start")}>
-          <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
-          {message.mine && message.readByOther && <span>읽음</span>}
-          {!message.mine && (
-            <button
-              type="button"
-              onClick={() => onReport(message)}
-              className="opacity-0 transition-opacity hover:text-danger focus:opacity-100 group-hover:opacity-100"
-              aria-label="메시지 신고"
-            >
-              <Flag size={11} />
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -775,9 +708,16 @@ export function MessagesPage() {
                     </button>
                   </div>
                 ) : null}
-                {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} onReport={setReportTarget} />
-                ))}
+                {messages.map((message, index) => {
+                  const previous = messages[index - 1];
+                  const showDivider = !previous || messageDayKey(previous.createdAt) !== messageDayKey(message.createdAt);
+                  return (
+                    <Fragment key={message.id}>
+                      {showDivider && <MessageDayDivider label={messageDayLabel(message.createdAt)} />}
+                      <MessageBubble message={message} otherUser={selectedThread.otherUser} onReport={setReportTarget} />
+                    </Fragment>
+                  );
+                })}
               </div>
 
               <form onSubmit={sendMessage} className="border-t border-line bg-card p-3 sm:p-4">
