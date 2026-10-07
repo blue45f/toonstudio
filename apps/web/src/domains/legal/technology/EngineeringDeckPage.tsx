@@ -39,6 +39,7 @@ import {
   DeckTimerControls,
 } from "./EngineeringDeckPresenter";
 import { EngineeringSeminarPrep } from "./EngineeringSeminarPrep";
+import { EngineeringFreeAiTokenGuide } from "./EngineeringFreeAiTokenGuide";
 import { EngineeringSeminarResources } from "./EngineeringSeminarResources";
 import { EngineeringPageFrame, EngineeringPageIntro } from "./EngineeringStoryUi";
 import { buildOfflineEngineeringDeck, downloadOfflineEngineeringDeck } from "./engineering-deck-export";
@@ -812,6 +813,7 @@ export function EngineeringDeckPage() {
       {position.track === "talk" ? <EngineeringSeminarPrep model={model} onJump={goTo} /> : null}
       <WorkshopModules />
       <EngineeringSeminarResources />
+      <EngineeringFreeAiTokenGuide />
 
       <div data-engineering-print-deck="true" aria-hidden="true">
         {model.slides.map((printSlide, slideIndex) => (
