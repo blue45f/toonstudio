@@ -27,8 +27,8 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 
 /** 목적지 이름은 단일 지도의 정본 라벨을 그대로 쓴다. 표면별 덮어씀 금지. */
 
-/** 메뉴 맨 위 고정 행동(새 작품·내 프로젝트)과 같은 목적지는 그룹 목록에서 반복하지 않는다. */
-const PINNED_MENU_HREFS: ReadonlySet<string> = new Set(["/studio/new", "/studio"]);
+/** 메뉴 맨 위 고정 행동(작품 시작하기·내 프로젝트)과 같은 목적지는 그룹 목록에서 반복하지 않는다. */
+const PINNED_MENU_HREFS: ReadonlySet<string> = new Set(["/create", "/studio"]);
 
 interface MobileHeaderNavigationProps {
   menuOpen: boolean;
@@ -257,9 +257,9 @@ export function MobileHeaderNavigation({
 
             <nav aria-label={bi("전체 서비스 메뉴", "All service navigation")} className="site-menu-navigation">
               <div className="site-menu-actions">
-                <Link href="/studio/new" aria-current={isActive("/studio/new", true) ? "page" : undefined} className="site-menu-actions__create">
+                <Link href="/create" aria-current={isActive("/create", true) ? "page" : undefined} className="site-menu-actions__create">
                   <Palette size={20} aria-hidden="true" />
-                  <span><strong>{bi("새 작품", "New work")}</strong><small>{bi("아이디어를 첫 장면으로", "Turn an idea into your first scene")}</small></span>
+                  <span><strong>{bi("작품 시작하기", "Start a work")}</strong><small>{bi("아이디어를 첫 장면으로", "Turn an idea into your first scene")}</small></span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </Link>
                 <Link href="/studio" aria-current={isActive("/studio", true) ? "page" : undefined} className="site-menu-actions__projects">
