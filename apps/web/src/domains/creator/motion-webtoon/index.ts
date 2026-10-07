@@ -114,3 +114,53 @@ export {
   type AnimeToonWizardState,
 } from "./motion-webtoon-anime-toon";
 export { MotionWebtoonAnimeToonWizard } from "./MotionWebtoonAnimeToonWizard";
+export {
+  DEFAULT_MOTION_EASING_PRESET_ID,
+  HOLD_EASING,
+  LINEAR_EASING,
+  MOTION_EASING_PRESETS,
+  applyMotionEasing,
+  bezierEasing,
+  buildEasingCurvePath,
+  cubicBezierPoint,
+  motionEasingPreset,
+  motionEasingToCss,
+  resolveMotionEasing,
+  solveCubicBezierY,
+  type CubicBezierCurve,
+  type MotionEasing,
+  type MotionEasingPreset,
+  type MotionEasingPresetId,
+} from "./motion-webtoon-easing";
+export {
+  IDENTITY_TRANSFORM,
+  buildCameraKeyframes,
+  cameraTransformCss,
+  resolveCutEasing,
+  resolveCutEasingPresetId,
+  sampleCameraTransform,
+  sampleMotionKeyframes,
+  type MotionKeyframe,
+  type MotionTransformValues,
+} from "./motion-webtoon-keyframes";
+export {
+  MOTION_EXPORT_FORMATS,
+  coverFitSize,
+  drawMotionFrame,
+  exportMotionEpisode,
+  motionExportFileName,
+  motionExportMimeType,
+  planMotionExportFrames,
+  resolveMotionExportPlan,
+  type MotionExportCapabilities,
+  type MotionExportFormat,
+  type MotionExportFramePlan,
+  type MotionExportOptions,
+  type MotionExportOutcome,
+  type MotionExportPipeline,
+  type MotionExportPlan,
+  type MotionExportTimelinePlan,
+  type MotionFrameImage,
+} from "./motion-webtoon-export";
+export { MotionWebtoonEasingControl, type MotionWebtoonEasingControlProps } from "./MotionWebtoonEasingControl";
+export { MotionWebtoonExportPanel, type MotionWebtoonExportPanelProps } from "./MotionWebtoonExportPanel";
