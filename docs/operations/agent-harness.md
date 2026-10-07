@@ -66,6 +66,13 @@ pnpm harness:verify -- --full
 새 영역 규칙은 실제로 다른 품질·보안 경계가 있을 때만 하위 `AGENTS.md`로 추가한다.
 하네스 파일을 변경하면 `scripts/agent-harness.mjs`의 필수 파일 목록과 테스트를 함께 갱신한다.
 
+## 로컬 시크릿·토큰 처리
+
+실제 API 토큰·키·자격증명은 루트 AGENTS.md의 로컬 시크릿 정책을 따른다. 사용자가 전달한 실제
+값을 작업에 사용할 필요가 있으면 .env.infrastructure.local 같은 Git-ignored 로컬 secret store에
+즉시 저장하고, 하네스·문서·테스트에는 환경변수 이름만 기록한다. 실제 값은 로그, PR, 커밋, 문서,
+채팅 결과로 재출력하지 않는다.
+
 ## 실패 처리
 
 하네스 실패를 hook 우회나 ignore로 해결하지 않는다. 누락 파일, 어댑터 drift, 잘못된 package script,

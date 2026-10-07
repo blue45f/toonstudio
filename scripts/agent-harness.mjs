@@ -130,6 +130,9 @@ export function inspectHarness(root = ROOT) {
       "## 2. 언어 및 기록 정책",
       "pnpm harness:verify",
       "## 8. 운영 및 배포 정책",
+      "## 9. 로컬 시크릿·토큰 저장 정책",
+      ".env.infrastructure.local",
+      "환경변수 이름 또는 마스킹된 상태만 사용한다",
     ]) {
       if (!agents.includes(marker)) problems.push(`AGENTS.md 기준 누락: ${marker}`);
     }

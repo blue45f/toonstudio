@@ -105,7 +105,15 @@ Cursor, Gemini, OpenCode용 어댑터는 이 문서를 다시 복제하지 않�
 - 실패하면 분석 후 중단하고 기존 정상 배포로의 롤백을 우선 검토한다.
 - 결과에는 승인, SHA, 검증, 빌드 위치, 배포 ID/URL, 남은 비용을 구분해 기록한다.
 
-## 9. 완료 보고 형식
+## 9. 로컬 시크릿·토큰 저장 정책
+
+- 사용자가 전달하거나 작업 중 발급·확인된 API 토큰, API 키, OAuth secret, private key, signing key, DB credential 등 실제 비밀값은 필요한 경우 로컬 전용 env/secret store에 즉시 저장하고 작업 중에는 값 자체를 다시 출력하지 않는다.
+- ToonStudio 운영 기준의 기본 로컬 저장 위치는 .env.infrastructure.local이다. 민감값은 Git에 기록하지 않으며 해당 파일이 ignore 대상이고 로컬 전용 권한으로 유지되는지 확인한다.
+- 코드·문서·테스트 fixture·로그·PR·커밋·채팅 결과에는 실제 비밀값을 넣지 않고 환경변수 이름 또는 마스킹된 상태만 사용한다.
+- 이미 존재하는 provider secret은 재발급하거나 다른 저장소로 복사하지 않고 기존 secret store를 우선 사용한다. 값이 없으면 provider console/secret manager에서 발급한다.
+- 이 규칙은 향후 사용자가 전달하는 토큰·키값에도 동일하게 적용한다.
+
+## 10. 완료 보고 형식
 
 완료 보고에는 최소한 다음을 포함한다.
 
