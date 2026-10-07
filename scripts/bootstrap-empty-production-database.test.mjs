@@ -1,9 +1,13 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, test } from "vitest";
 
 import {
   EMPTY_DATABASE_BOOTSTRAP_CONFIRMATION,
   assessBootstrapState,
   buildBootstrapDatabaseInspectionSql,
+  buildBootstrapDrizzleConfigSource,
+  buildBootstrapProvisioningSql,
   buildForwardMigrationBoundarySql,
   buildResetApplicationSchemasSql,
   buildRuntimeBootstrapAclSql,
@@ -11,9 +15,13 @@ import {
   buildRuntimeLoginGateVerificationSql,
   buildRuntimeLoginRestoreSql,
   expectedResetConfirmation,
+  extractDrizzleSchemaPaths,
+  findProvisioningMismatches,
   loadBootstrapContract,
   parseBootstrapArguments,
+  parseGeneratedSchemaDdl,
   redactDatabaseSecrets,
+  resolveDrizzleSchemaPaths,
   validateRuntimeDatabasePassword,
 } from "./bootstrap-empty-production-database.mjs";
 import { validateProductionDatabaseUrl } from "./validate-production-database-url.mjs";
@@ -493,5 +501,88 @@ describe("bootstrap SQL and repository contract", () => {
       expect(sql).toContain('FOREIGN KEY ("userId") REFERENCES public."user"("id") ON DELETE CASCADE');
     }
     expect(furniture).toContain('CHECK ("width" > 0 AND "height" > 0 AND "byteLength" > 0)');
+  });
+});
+
+describe("deterministic Drizzle base schema provisioning", () => {
+  test("derives the provisioning schema entries from the live Drizzle config", () => {
+    const schemaPaths = resolveDrizzleSchemaPaths();
+    expect(schemaPaths).toHaveLength(8);
+    expect(schemaPaths[0]).toMatch(
+      /apps\/api\/src\/platform\/database\/schema\/index\.ts$/u,
+    );
+    expect(schemaPaths.every((path) => path.startsWith("/"))).toBe(true);
+  });
+
+  test("fails loudly when the Drizzle config stops declaring a literal schema list", () => {
+    expect(() => extractDrizzleSchemaPaths("export default {};\n")).toThrow(
+      /literal schema path list/u,
+    );
+    expect(() =>
+      extractDrizzleSchemaPaths("export default { schema: [] };\n"),
+    ).toThrow(/empty schema path list/u);
+  });
+
+  test("generates a credential-free config so provisioning never introspects a live database", () => {
+    const source = buildBootstrapDrizzleConfigSource({
+      outDirectory: "/tmp/bootstrap-out",
+      schemaPaths: ["/repo/apps/api/src/platform/database/schema/index.ts"],
+    });
+    expect(source).toContain('dialect: "postgresql"');
+    expect(source).toContain("/tmp/bootstrap-out");
+    expect(source).not.toContain("dbCredentials");
+    expect(source).not.toContain("DATABASE_URL");
+  });
+
+  test("splits generated DDL on statement breakpoints and inventories created tables", () => {
+    const parsed = parseGeneratedSchemaDdl(
+      [
+        'CREATE TABLE "creator_work" ("id" text PRIMARY KEY);',
+        "--> statement-breakpoint",
+        'CREATE TABLE "creator_work_revision" ("workId" text);',
+        "--> statement-breakpoint",
+        'ALTER TABLE "creator_work" ADD CONSTRAINT "creator_work_fk" FOREIGN KEY ("id") REFERENCES "creator_work_revision" ("workId");',
+        "",
+      ].join("\n"),
+    );
+    expect(parsed.statements).toHaveLength(3);
+    expect(parsed.tableNames).toEqual([
+      "creator_work",
+      "creator_work_revision",
+    ]);
+  });
+
+  test("wraps provisioning DDL in exactly one transaction", () => {
+    const sql = buildBootstrapProvisioningSql([
+      'CREATE TABLE "a" ("id" text);',
+      'CREATE TABLE "b" ("id" text)',
+    ]);
+    expect(sql.startsWith("BEGIN;\n")).toBe(true);
+    expect(sql.endsWith("\nCOMMIT;")).toBe(true);
+    expect(sql).toContain('CREATE TABLE "b" ("id" text);');
+    expect(sql.match(/BEGIN;/gu)).toHaveLength(1);
+    expect(sql.match(/COMMIT;/gu)).toHaveLength(1);
+  });
+
+  test("reports provisioned table drift in both directions", () => {
+    expect(findProvisioningMismatches(["a", "b"], ["b", "c"])).toEqual({
+      missing: ["a"],
+      unexpected: ["c"],
+    });
+    expect(findProvisioningMismatches(["a"], ["a"])).toEqual({
+      missing: [],
+      unexpected: [],
+    });
+  });
+
+  test("provisions by generating DDL instead of pushing against live database state", () => {
+    const source = readFileSync(
+      new URL("./bootstrap-empty-production-database.mjs", import.meta.url),
+      "utf8",
+    );
+    expect(source).not.toContain('"drizzle-kit", "push"');
+    expect(source).not.toContain('"exec", "drizzle-kit"');
+    expect(source).toContain('"generate"');
+    expect(source).toContain("BEGIN;");
   });
 });
