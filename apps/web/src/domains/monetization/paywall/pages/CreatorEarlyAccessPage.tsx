@@ -125,6 +125,22 @@ export function CreatorEarlyAccessPage() {
           {t("paywall.creatorPage.title")}
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">{t("paywall.creatorPage.subtitle")}</p>
+        {policies.length > 0 && (
+          <p role="status" className="mt-3 inline-flex flex-wrap items-center gap-1.5 text-sm font-semibold text-fg">
+            <Zap className="h-4 w-4 text-accent" aria-hidden />
+            {t("paywall.creatorPage.statusSummary", {
+              total: policies.length,
+              active: policies.filter((policy) => policy.enabled).length,
+            })}
+            {" · "}
+            {Math.min(...policies.map((policy) => policy.earlyAccessDays)) === Math.max(...policies.map((policy) => policy.earlyAccessDays))
+              ? t("paywall.creatorPage.statusDaysSingle", { days: policies[0].earlyAccessDays })
+              : t("paywall.creatorPage.statusDaysRange", {
+                  min: Math.min(...policies.map((policy) => policy.earlyAccessDays)),
+                  max: Math.max(...policies.map((policy) => policy.earlyAccessDays)),
+                })}
+          </p>
+        )}
       </header>
 
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-3">

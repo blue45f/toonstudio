@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthCallbackPage } from "./AuthCallbackPage";
@@ -109,6 +109,29 @@ describe("AuthCallbackPage server-issued session completion", () => {
       "/settings#account-security",
       { replace: true },
     ));
+  });
+
+  it("shows a way back to sign-in when completion takes too long", async () => {
+    vi.useFakeTimers();
+    try {
+      apiRaw.mockReturnValue(new Promise(() => undefined));
+
+      render(<AuthCallbackPage />);
+
+      expect(screen.getByText("auth.callback.message.working")).toBeTruthy();
+      expect(screen.queryByText("auth.callback.slowHelp")).toBeNull();
+
+      await act(async () => {
+        vi.advanceTimersByTime(6000);
+      });
+
+      expect(screen.getByText("auth.callback.slowHelp")).toBeTruthy();
+      expect(
+        screen.getByRole("link", { name: "auth.callback.backToLogin" }).getAttribute("href"),
+      ).toBe("/auth/login");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("fails closed when the marker has no authenticated cookie session", async () => {

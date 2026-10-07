@@ -8,7 +8,7 @@ import {
   PencilLine,
   ShieldCheck,
 } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -51,6 +51,21 @@ function formatDateTime(value: string, locale: string): string {
 
 function shortHash(hash: string): string {
   return hash.length > 12 ? `${hash.slice(0, 8)}…${hash.slice(-4)}` : hash;
+}
+
+/**
+ * 해석 전 상태(확인 중·비밀번호·차단·오류)의 공통 첫 화면.
+ * 링크를 받은 사람은 아직 작품을 보지 못한 상태라, 본 화면과 같은
+ * "ToonStudio 버전 공유" 정체성을 먼저 보여 줘 누구의 링크인지 알게 한다.
+ */
+function ShareStateShell({ children }: { readonly children: ReactNode }) {
+  const bt = useBilingual("VersionSharePage");
+  return <div className="flex min-h-dvh flex-col items-center justify-center bg-canvas p-6 text-fg">
+    <p className="mb-5 rounded-full border border-accent/35 bg-accent-soft px-3 py-1.5 text-[0.6875rem] font-black text-accent">
+      {bt("ToonStudio 버전 공유", "ToonStudio version share")}
+    </p>
+    {children}
+  </div>;
 }
 
 export function VersionSharePage() {
@@ -100,16 +115,16 @@ export function VersionSharePage() {
   };
 
   if (state.kind === "loading") {
-    return <div className="flex min-h-dvh items-center justify-center bg-canvas p-6 text-fg">
+    return <ShareStateShell>
       <div className="flex items-center gap-3 rounded-2xl border border-line bg-card px-5 py-4 text-sm font-semibold">
         <LoaderCircle className="size-5 animate-spin text-accent" aria-hidden="true" />
         {bt("공유 버전을 확인하는 중…", "Checking the shared version…")}
       </div>
-    </div>;
+    </ShareStateShell>;
   }
 
   if (state.kind === "password") {
-    return <div className="flex min-h-dvh items-center justify-center bg-canvas p-6 text-fg">
+    return <ShareStateShell>
       <form
         onSubmit={handlePasswordSubmit}
         className="w-full max-w-md rounded-3xl border border-line bg-card p-7"
@@ -151,7 +166,7 @@ export function VersionSharePage() {
           {bt("버전 열기", "Open version")}
         </button>
       </form>
-    </div>;
+    </ShareStateShell>;
   }
 
   if (state.kind === "blocked" || state.kind === "error") {
@@ -172,7 +187,7 @@ export function VersionSharePage() {
         : blocked === "revoked" || blocked === "expired"
           ? bt("공유한 사람에게 새 링크를 요청해 주세요.", "Ask the person who shared it for a new link.")
           : bt("링크가 잘못됐거나 삭제됐을 수 있어요. 공유한 사람에게 확인해 주세요.", "The link may be wrong or deleted. Please check with the person who shared it.");
-    return <div className="flex min-h-dvh items-center justify-center bg-canvas p-6 text-fg">
+    return <ShareStateShell>
       <div role="alert" className="w-full max-w-lg rounded-3xl border border-line bg-card p-7 text-center">
         <AlertTriangle className="mx-auto size-10 text-warn" aria-hidden="true" />
         <h1 className="mt-4 text-xl font-black">{title}</h1>
@@ -193,7 +208,7 @@ export function VersionSharePage() {
           </Link>
         </div>
       </div>
-    </div>;
+    </ShareStateShell>;
   }
 
   const { share } = state;

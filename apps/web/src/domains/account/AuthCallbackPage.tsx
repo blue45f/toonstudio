@@ -41,8 +41,16 @@ export function AuthCallbackPage() {
   const [phase, setPhase] = useState<Phase>("working");
   const [messageKey, setMessageKey] = useState("auth.callback.message.working");
   const [demo, setDemo] = useState(false);
+  const [slow, setSlow] = useState(false);
   const ran = useRef(false); // 콜백 완료 요청은 한 번만 실행 — StrictMode 이중 실행 방지
   const t = useT();
+
+  // 처리가 길어지면 멈춘 화면으로 남지 않게, 돌아갈 길을 상태 안에 함께 보여 준다.
+  useEffect(() => {
+    if (phase !== "working") return;
+    const timer = globalThis.setTimeout(() => setSlow(true), 6000);
+    return () => globalThis.clearTimeout(timer);
+  }, [phase]);
 
   useEffect(() => {
     if (ran.current) return;
@@ -138,6 +146,14 @@ export function AuthCallbackPage() {
           <div role={phase === "error" ? "alert" : "status"}>
             <h1 className="text-sm font-medium text-fg">{t(messageKey)}</h1>
           </div>
+          {phase === "working" && slow && (
+            <p className="max-w-xs text-xs leading-relaxed text-fg-3">
+              {t("auth.callback.slowHelp")}{" "}
+              <Link href="/auth/login" className="font-semibold text-accent hover:underline">
+                {t("auth.callback.backToLogin")}
+              </Link>
+            </p>
+          )}
           {demo && (
             <p className="rounded-lg border border-line bg-card px-3 py-2 text-[0.72rem] leading-relaxed text-fg-3">
               {t("auth.callback.demo.message")}

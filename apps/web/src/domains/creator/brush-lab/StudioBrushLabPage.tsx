@@ -3,6 +3,7 @@ import {
   Brush,
   CheckCircle2,
   Gauge,
+  GitFork,
   Library,
   SlidersHorizontal,
   Sparkles,
@@ -93,6 +94,18 @@ export function StudioBrushLabPage() {
             </Link>
           </div>
         </div>
+
+        {context.kind === "remix" ? (
+          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border border-accent/35 bg-accent/10 px-4 py-3" role="status">
+            <span className="inline-flex items-center gap-1.5 text-xs font-black text-accent">
+              <GitFork size={14} aria-hidden />
+              리믹스 작업 중
+            </span>
+            <p className="text-xs leading-5 text-fg-2">
+              이 작업 공간은 원본 작품에서 갈라져 나온 리믹스 전용입니다. 여기서 만든 브러시는 리믹스 원고에만 적용되고, 원본 작품은 바뀌지 않아요.
+            </p>
+          </div>
+        ) : null}
 
         <section className="mt-6 grid gap-2 md:grid-cols-2" aria-label="브러시 스튜디오 편집 깊이">
           <article className="rounded-2xl border border-line bg-bg-2/45 p-4">

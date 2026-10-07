@@ -53,6 +53,9 @@ const PAGE_COPY = {
     extendedDescription: "직접 열 수 있는 제작·3D·AI·학습·에셋·리서치·데이터·지원 페이지는 필요할 때 펼쳐 확인합니다.",
     levels: "서비스 단계",
     levelsDescription: "핵심 제작 흐름은 항상 앞에 두고, 연결 서비스와 실험 도구는 필요할 때만 꺼냅니다.",
+    statsLabel: "디렉터리 규모",
+    statsDestinations: "전체 목적지",
+    statsExtended: "전체 디렉터리 묶음",
   },
   en: {
     eyebrow: "TOONSTUDIO DIRECTORY",
@@ -69,6 +72,9 @@ const PAGE_COPY = {
     extendedDescription: "Open the complete creation, 3D, AI, learning, asset, research, data and support directory only when needed.",
     levels: "Service levels",
     levelsDescription: "Keep the core production flow first, then open connected services and experimental tools when they are useful.",
+    statsLabel: "Directory at a glance",
+    statsDestinations: "Destinations",
+    statsExtended: "Directory groups",
   },
 } as const;
 
@@ -137,6 +143,24 @@ export function SitemapPage() {
           </>
         }
       />
+
+      {/* 첫 화면에서 디렉터리의 실제 규모가 읽히게 — 수치는 아래 목록과 같은 데이터 원본에서 센다. */}
+      <section aria-label={copy.statsLabel} className="mt-8 rounded-2xl border border-line/80 bg-panel/45 p-4 sm:p-5">
+        <dl className="grid grid-cols-3 gap-3">
+          <div>
+            <dt className="text-xs font-semibold text-fg-3">{copy.statsDestinations}</dt>
+            <dd className="numeral mt-1 text-2xl font-bold text-fg">{SITEMAP_DIRECTORY_ENTRIES.length}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-semibold text-fg-3">{copy.core}</dt>
+            <dd className="numeral mt-1 text-2xl font-bold text-fg">{SITEMAP_CORE_DESTINATION_GROUPS.length}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-semibold text-fg-3">{copy.statsExtended}</dt>
+            <dd className="numeral mt-1 text-2xl font-bold text-fg">{SITEMAP_EXTENDED_DESTINATION_GROUPS.length}</dd>
+          </div>
+        </dl>
+      </section>
 
       <div id="sitemap-directory" className="scroll-mt-24">
         <SiteDirectorySearch entries={SITEMAP_DIRECTORY_ENTRIES} locale={locale} />

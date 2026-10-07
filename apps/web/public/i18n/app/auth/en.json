@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Sign-in completed. Redirecting shortly.",
   "auth.callback.message.doneDemo": "Demo sign-in completed. Redirecting shortly.",
   "auth.callback.demo.message": "You are signed in with a demo account. Some features may be limited.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

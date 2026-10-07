@@ -216,7 +216,7 @@ export function GuidePage() {
 
   return (
     <Container size="prose" className="py-10 sm:py-14">
-      {/* 헤더 */}
+      {/* 헤더 — 첫 화면에서 이 페이지가 답하는 것과 규모, 다음 행동(랭킹 검산)을 먼저 세운다 */}
       <header>
         <p className="eyebrow text-accent">{t("guide.eyebrow")}</p>
         <h1 className="mt-2 text-pretty font-display text-3xl font-bold tracking-tight text-fg sm:text-4xl">
@@ -225,10 +225,52 @@ export function GuidePage() {
         <p className="mt-3 text-base leading-relaxed text-fg-2">
           {t("guide.lede")}
         </p>
+        <div className="mt-6 rounded-2xl border border-line bg-panel/40 p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-fg-3">{t("guide.toc.label")}</p>
+          <nav aria-label={t("guide.toc.label")} className="mt-3 flex flex-wrap gap-2">
+            {[
+              { href: "#guide-honesty", label: t("guide.toc.honesty") },
+              { href: "#guide-how", label: t("guide.toc.how") },
+              { href: "#guide-reach", label: t("guide.toc.reach") },
+              { href: "#guide-axes", label: t("guide.toc.axes") },
+              { href: "#guide-example", label: t("guide.toc.example") },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="inline-flex min-h-9 items-center rounded-full border border-line bg-card px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-line/60 pt-4">
+            <dl className="flex flex-wrap gap-x-8 gap-y-3">
+              <div>
+                <dt className="text-xs text-fg-3">{t("guide.summary.pillars")}</dt>
+                <dd className="numeral mt-0.5 text-2xl font-bold text-fg">{pillars.length}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-fg-3">{t("guide.summary.axes")}</dt>
+                <dd className="numeral mt-0.5 text-2xl font-bold text-fg">{RANK_AXES.length}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-fg-3">{t("guide.summary.platforms")}</dt>
+                <dd className="numeral mt-0.5 text-2xl font-bold text-fg">{reachRows.length}</dd>
+              </div>
+            </dl>
+            <Link
+              href="/ranking"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90"
+            >
+              {t("guide.cta.ranking")} <ArrowRight size={15} />
+            </Link>
+          </div>
+        </div>
       </header>
 
       {/* 정직성 원칙 */}
-      <section className="mt-8 rounded-2xl border border-line bg-panel/40 p-5 sm:p-6">
+      <section id="guide-honesty" className="mt-8 scroll-mt-24 rounded-2xl border border-line bg-panel/40 p-5 sm:p-6">
         <h2 className="flex items-center gap-2 text-lg font-bold text-fg">
           <span className="numeral text-accent">01</span> {t("guide.honesty.title")}
         </h2>
@@ -241,28 +283,30 @@ export function GuidePage() {
       </section>
 
       {/* 4가지 핵심 장치 — VisualStepGuide 도식 다이어그램으로 전환 */}
-      <VisualStepGuide
-        className="mt-10"
-        eyebrow="HOW IT WORKS"
-        heading={t("guide.how.heading")}
-        steps={
-          pillars.map(
-            (p): VisualStepGuideStep => ({
-              title: p.title,
-              body: p.body,
-              illustration: (
-                <PillarFigure icon={p.icon} sub={p.sub} diagram={p.diagram} formula={p.formula} t={t} />
-              ),
-            }),
-          )
-        }
-      />
-      <p className="mt-4 text-sm leading-relaxed text-fg-3">
-        {t("guide.how.note")}
-      </p>
+      <div id="guide-how" className="scroll-mt-24">
+        <VisualStepGuide
+          className="mt-10"
+          eyebrow="HOW IT WORKS"
+          heading={t("guide.how.heading")}
+          steps={
+            pillars.map(
+              (p): VisualStepGuideStep => ({
+                title: p.title,
+                body: p.body,
+                illustration: (
+                  <PillarFigure icon={p.icon} sub={p.sub} diagram={p.diagram} formula={p.formula} t={t} />
+                ),
+              }),
+            )
+          }
+        />
+        <p className="mt-4 text-sm leading-relaxed text-fg-3">
+          {t("guide.how.note")}
+        </p>
+      </div>
 
       {/* 도달 가중 표 */}
-      <section className="mt-10">
+      <section id="guide-reach" className="mt-10 scroll-mt-24">
         <h2 className="text-xl font-bold tracking-tight text-fg">{t("guide.reach.title")}</h2>
         <p className="mt-1.5 text-sm leading-relaxed text-fg-2">
           {t("guide.reach.desc")}
@@ -288,7 +332,7 @@ export function GuidePage() {
       </section>
 
       {/* 8개 랭킹 축 */}
-      <section className="mt-10">
+      <section id="guide-axes" className="mt-10 scroll-mt-24">
         <h2 className="text-xl font-bold tracking-tight text-fg">{t("guide.axes.title")}</h2>
         <p className="mt-1.5 text-sm leading-relaxed text-fg-2">
           {t("guide.axes.desc")}
@@ -310,7 +354,7 @@ export function GuidePage() {
       </section>
 
       {/* 워크드 예시 — 막대 비교 일러스트 */}
-      <section className="mt-10 rounded-2xl border border-line bg-panel/40 p-5 sm:p-6">
+      <section id="guide-example" className="mt-10 scroll-mt-24 rounded-2xl border border-line bg-panel/40 p-5 sm:p-6">
         <h2 className="text-lg font-bold text-fg">{t("guide.example.title")}</h2>
         <p className="mt-2.5 text-sm leading-relaxed text-fg-2">
           {t("guide.example.body")}

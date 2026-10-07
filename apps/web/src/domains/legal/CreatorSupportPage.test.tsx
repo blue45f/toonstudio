@@ -74,6 +74,26 @@ describe("CreatorSupportPage 내 지원 정보", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("첫 화면에서 지원받기와 지원하기 두 갈래를 앵커로 나눈다", () => {
+    api.getMyCreatorSupportApplication.mockResolvedValue({ item: null });
+    api.listMyCreatorSupportOffers.mockResolvedValue({ items: [] });
+    render(
+      <MemoryRouter>
+        <CreatorSupportPage />
+      </MemoryRouter>,
+    );
+
+    // useT 목은 키를 그대로 돌려주므로, 두 갈래 제목과 앵커 목적지가 조립되는지 확인한다.
+    expect(screen.getByRole("heading", { name: "creatorSupport.paths.receiveTitle" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "creatorSupport.paths.giveTitle" })).toBeTruthy();
+    const applyLinks = screen.getAllByRole("link", { name: "creatorSupport.hero.apply" });
+    expect(applyLinks.length).toBeGreaterThanOrEqual(2);
+    expect(applyLinks.every((link) => link.getAttribute("href") === "#creator-support-apply")).toBe(true);
+    const browseLinks = screen.getAllByRole("link", { name: "creatorSupport.hero.browse" });
+    expect(browseLinks.length).toBeGreaterThanOrEqual(2);
+    expect(browseLinks.every((link) => link.getAttribute("href") === "#creator-support-projects")).toBe(true);
+  });
+
   it("조회가 비어 있으면 실패 없이 빈 상태만 보여준다", async () => {
     api.getMyCreatorSupportApplication.mockResolvedValue({ item: null });
     api.listMyCreatorSupportOffers.mockResolvedValue({ items: [] });
