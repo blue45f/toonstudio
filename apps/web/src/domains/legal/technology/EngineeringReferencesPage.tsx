@@ -24,6 +24,10 @@ import {
 } from "./engineering-story-deep-dive-content";
 import { EngineeringSeminarResources } from "./EngineeringSeminarResources";
 import {
+  EngineeringKeySummary,
+  EngineeringMetaChip,
+} from "./EngineeringLongform";
+import {
   EngineeringPageFrame,
   EngineeringPageIntro,
   EngineeringStatusBadge,
@@ -117,6 +121,21 @@ export function EngineeringReferencesPage() {
               {bi("기능 동등성은 실제 벤치마크, 파일 왕복과 사용자 흐름 검증이 있을 때만 따로 주장합니다.", "Feature parity is claimed separately only with benchmarks, file round trips and verified user journeys.")}
             </p>
           </div>
+        )}
+      />
+
+      <EngineeringKeySummary
+        className="mb-8"
+        points={[
+          bi("설치해 쓰는 기술, 검토만 한 후보, 제품·UX에서 참고한 것, 대안으로 남긴 것을 같은 말로 소개하지 않고 관계로 구분합니다.", "Installed technology, evaluated candidates, product or UX inspiration and alternatives are never described the same way — each entry is labelled by its relationship."),
+          bi("모든 항목에는 가져온 원칙과 과장 방지 경계, 그리고 저장소 근거(코드·테스트·문서 경로)를 함께 연결합니다.", "Every entry pairs the applied lesson and a caution boundary with repository evidence — code, test and document paths."),
+          bi("참고한 제품은 가져온 원칙, 실제로 적용한 패턴, 채택하지 않은 이유를 나눠 적어 비교가 동등성 주장으로 번지지 않게 합니다.", "Reference products record the lesson, the pattern actually applied and why the rest was not adopted, so a comparison never inflates into a parity claim."),
+        ]}
+        meta={(
+          <>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("참고 항목 {value0}", "{value0} references")), { value0: ENGINEERING_REFERENCES.length })}</EngineeringMetaChip>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("참고 제품 {value0}", "{value0} products")), { value0: ENGINEERING_REFERENCE_PRODUCTS.length })}</EngineeringMetaChip>
+          </>
         )}
       />
 
