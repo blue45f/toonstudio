@@ -9,6 +9,33 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
  * 다음 행동은 두 가지로 고정한다: 관리 중인 팀이 있으면 그 팀의 초대 카드로,
  * 없으면 새 팀 만들기 폼으로. 초대받은 사람은 합류 시트로 보낸다.
  */
+/** 개요 스트립 로딩 스켈레톤. 실제 스트립(제목·설명·행동 버튼 + 지표 4칸)과
+ *  같은 테두리·여백·격자를 채운다. 로딩 안내는 페이지의 role="status" 문구가 맡는다. */
+export function TeamPeopleOverviewSkeleton() {
+  return (
+    <div aria-hidden="true" data-testid="team-people-overview-skeleton" className="animate-pulse rounded-3xl border border-line bg-panel p-5 motion-reduce:animate-none sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="h-6 w-32 rounded bg-raised" />
+          <div className="mt-2 h-4 w-2/3 rounded bg-raised" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-11 w-28 rounded-lg bg-raised" />
+          <div className="h-11 w-32 rounded-lg bg-raised" />
+        </div>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[0, 1, 2, 3].map((index) => (
+          <div key={index} className="rounded-xl border border-line bg-card p-3">
+            <div className="h-3 w-14 rounded bg-raised" />
+            <div className="mt-2 h-6 w-10 rounded bg-raised" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function TeamPeopleOverviewStrip({ items }: { items: readonly TeamWorkspaceSummary[] }) {
   const bt = useBilingual("TeamPeopleOverview");
   const memberTotal = items.reduce((sum, item) => sum + item.memberCount, 0);
