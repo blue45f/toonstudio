@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 import { ProductionCommandPalette } from "./ProductionCommandPalette";
+import { ProductionProjectStatusStrip } from "./ProductionProjectStatusStrip";
 import type { ProductionProjectAccess } from "./production-dashboard-api";
 import { projectAccessRoleLabel } from "./production-labels";
 import { ProductionPill, ProductionSampleBadge } from "./production-ui";
@@ -102,6 +103,9 @@ export function ProductionProjectHeader({
             </Link>
           )}
         </div>
+      </div>
+      <div className="mx-auto mt-3 max-w-[100rem] border-t border-line pt-3">
+        <ProductionProjectStatusStrip aggregate={aggregate} />
       </div>
     </header>
   );
