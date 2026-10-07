@@ -36,8 +36,8 @@ export const AVC1_CODEC_CANDIDATES: readonly string[] = [
   "avc1.42001f", // Baseline @ 3.1
 ];
 
-// 기존 WebM 경로와 같은 0.12bpp 기준선. H.264는 최신 코덱보다 효율이 낮아 1.25배.
-const AVC_BITS_PER_PIXEL = 0.12 * 1.25;
+// 기존 WebM 경로와 같은 0.12bpp 기준선. H.264는 최신 코덱보다 효율이 낮아 1.3배.
+const AVC_BITS_PER_PIXEL = 0.12 * 1.3;
 const MIN_BITRATE = 2_500_000;
 const MAX_BITRATE = 16_000_000;
 
