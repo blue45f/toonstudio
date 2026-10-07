@@ -103,6 +103,18 @@ export function CreatorMembershipPage() {
       </header>
 
       {tiers.length > 0 && (
+        <p role="status" className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-fg">
+            <Eye className="h-4 w-4 text-accent" aria-hidden />
+            {t("membership.creatorPage.statusActive", { count: tiers.filter((tier) => tier.isActive).length })}
+          </span>
+          <a href="#creator-membership-preview" className="font-semibold text-accent hover:underline">
+            {t("membership.creatorPage.previewTitle")}
+          </a>
+        </p>
+      )}
+
+      {tiers.length > 0 && (
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-line p-4">
             <p className="text-xs text-muted">{t("membership.creatorPage.statTiers")}</p>
@@ -191,7 +203,7 @@ export function CreatorMembershipPage() {
       </section>
 
       {tiers.length > 0 && (
-        <section aria-label={t("membership.creatorPage.previewTitle")} className="mt-10">
+        <section id="creator-membership-preview" aria-label={t("membership.creatorPage.previewTitle")} className="mt-10 scroll-mt-24">
           <h2 className="flex items-center gap-2 text-base font-bold text-fg">
             <Eye className="h-5 w-5 text-accent" aria-hidden />
             {t("membership.creatorPage.previewTitle")}
