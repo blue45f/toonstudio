@@ -123,7 +123,8 @@ export class CatalogController {
       if (!upstream.ok) return res.status(502).send("upstream error");
 
       const headerType = upstream.headers.get("content-type") ?? "";
-      const body = Buffer.from(await upstream.arrayBuffer());
+      const body = await readCoverBody(upstream);
+      if (!body) return res.status(502).send("cover too large");
       // 헤더가 이미지 타입이거나 매직바이트가 이미지면 통과. 일부 CDN(예: 네이버 확장자 없는 썸네일)은
       // 실제 이미지를 application/octet-stream 으로 응답하므로 헤더만 신뢰하지 않고 바이트로 판별한다.
       const sniffed = sniffImageType(body);
@@ -299,9 +300,39 @@ function normalizeQueryMap(query: QueryMap): Record<string, string> {
   return out;
 }
 
+// 표지 1장의 중계 상한. 실측 표지는 수십~수백 KB라 10MiB면 넉넉하고, 그보다 큰 응답은
+// 표지가 아니라 오류 페이지·악성 대형 파일로 보고 중계하지 않는다(메모리 고갈 방지).
+const COVER_MAX_BYTES = 10 * 1024 * 1024;
+
 const COVER_OK_TYPE = /^image\/(jpeg|jpg|png|webp|avif|gif)\b/i;
 const COVER_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+// 업스트림 본문을 상한까지만 읽는다. 선언된 Content-Length가 상한을 넘으면 본문을 아예
+// 읽지 않고, 길이를 속이거나 청크 응답이면 누적량이 상한을 넘는 순간 읽기를 중단한다.
+// 상한 초과 시 null — 호출부는 502로 거절한다.
+async function readCoverBody(response: globalThis.Response): Promise<Buffer | null> {
+  const declared = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > COVER_MAX_BYTES) return null;
+  if (!response.body) {
+    const buffer = Buffer.from(await response.arrayBuffer());
+    return buffer.length > COVER_MAX_BYTES ? null : buffer;
+  }
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > COVER_MAX_BYTES) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks);
+}
 
 // 응답 바이트의 매직넘버로 이미지 포맷 판별 (헤더가 octet-stream/누락이어도 실제 이미지면 인식).
 // HTML 에러페이지 등 비이미지는 null → 415 유지.

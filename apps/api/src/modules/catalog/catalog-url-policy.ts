@@ -1,5 +1,8 @@
 // Every network/redirect authority comes from server-owned constants. User input
 // can supply only the resource path, query and (for navigation) fragment.
+// 웹 클라이언트의 표지 프록시 변환 목록(apps/web/src/shared/lib/cover-proxy.ts)도
+// 이 COVER_ORIGINS 와 동기 상태여야 한다 — 한쪽만 바꾸면 표지가 직접 연결로 새거나
+// 프록시가 403으로 거절한다.
 const COVER_ORIGINS = [
   "https://image-comic.pstatic.net",
   "https://comicthumb-phinf.pstatic.net",
@@ -33,6 +36,10 @@ const COVER_ORIGINS = [
   "https://thumb.toomics.com",
   "https://contents.kyobobook.co.kr",
   "https://www.comico.kr",
+  // KMAS(한국만화영상진흥원) 첨부 다운로드 — 응답 오버레이(apps/api/src/server/kmas.ts)가
+  // 표지를 이 호스트의 원본 URL로 돌려주므로, 프록시를 거치지 않으면 방문자 브라우저가
+  // 직접 호출해 IP·리퍼러가 노출된다. 실측: UA만으로 200 JPEG(octet-stream) 응답 확인.
+  "https://www.kmas.or.kr",
 ] as const;
 
 const PLATFORM_ORIGINS: Readonly<Record<string, readonly string[]>> = {

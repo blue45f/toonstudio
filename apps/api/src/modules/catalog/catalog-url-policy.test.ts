@@ -57,6 +57,26 @@ describe("catalog destination security", () => {
     expect(resolveAffiliateDestination(platform, url)).toBeNull();
   });
 
+  it("accepts the KMAS attachment download origin and normalizes its explicit default port", () => {
+    const result = resolveCoverFetchUrl(
+      "https://www.kmas.or.kr:443/common/file/atchmnflDownload.ajax?fileImageId=58ff2761"
+    );
+    expect(result?.origin).toBe("https://www.kmas.or.kr");
+    expect(result?.port).toBe("");
+    expect(result?.href).toBe(
+      "https://www.kmas.or.kr/common/file/atchmnflDownload.ajax?fileImageId=58ff2761"
+    );
+  });
+
+  it.each([
+    "https://kmas.or.kr/a.png",
+    "https://www.kmas.or.kr.evil.test/a.png",
+    "https://sub.www.kmas.or.kr/a.png",
+    "https://www.kmas.or.kr:8443/a.png",
+  ])("rejects a KMAS look-alike cover destination: %s", (url) => {
+    expect(resolveCoverFetchUrl(url)).toBeNull();
+  });
+
   it("accepts the platform origin and preserves path/query/fragment", () => {
     expect(resolveAffiliateDestination("ridi", "https://ridibooks.com/books/1?view=2#reviews"))
       .toBe("https://ridibooks.com/books/1?view=2#reviews");
