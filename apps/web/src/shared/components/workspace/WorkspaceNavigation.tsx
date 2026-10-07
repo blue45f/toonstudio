@@ -94,7 +94,7 @@ const SHORTCUT_MATCHERS: readonly {
   { id: "shortcut-character", primaryToSuppress: "studio", test: (path) => path === "/studio/assets/characters/new" || path.startsWith("/studio/assets/characters/") },
   { id: "shortcut-bg3d", primaryToSuppress: "studio", test: (path) => path === "/studio/bg3d" || path.startsWith("/studio/bg3d/") },
   { id: "shortcut-assets", primaryToSuppress: "studio", test: (path) => path === "/studio/assets" || path.startsWith("/studio/assets/") },
-  { id: "shortcut-canvas", primaryToSuppress: "studio", test: (path) => path === "/studio/new" || path.startsWith("/studio/new/") || path === "/studio/import" || path.startsWith("/studio/import/") },
+  { id: "shortcut-canvas", primaryToSuppress: "studio", test: (path) => path === "/create" || path === "/studio/new" || path.startsWith("/studio/new/") || path === "/studio/import" || path.startsWith("/studio/import/") },
   { id: "shortcut-virtual-studio", primaryToSuppress: "workspace-home", test: (path) => path === "/studio/space" || /^\/studio\/p\/[^/]+\/space$/u.test(path) },
   { id: "shortcut-team", primaryToSuppress: "community", test: (path) => path === "/team" || path.startsWith("/team/") },
 ];

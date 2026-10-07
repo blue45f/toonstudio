@@ -48,8 +48,8 @@ describe("메뉴와 명령 팔레트의 목적지 일치", () => {
   it.each([
     ["내 프로젝트", "/studio"], ["배우기", "/learn"], ["리서치", "/research"],
     ["제작 관리", "/production"], ["검수", "/studio/publish"], ["갤러리", "/showcase"],
-    ["팀", "/team"], ["전체 기능", "/sitemap"], ["만들기", "/studio/new"],
-    ["shaper", "/studio/assets/characters/new"], ["New work", "/studio/new"],
+    ["팀", "/team"], ["전체 기능", "/sitemap"], ["만들기", "/create"],
+    ["shaper", "/studio/assets/characters/new"], ["New work", "/create"],
   ])("%s 검색으로 %s 작업에 도달한다", (query, href) => {
     const results = PALETTE_PAGES.filter((page) => matchesCommandSearch(page.title, query, page.keywords, page.subtitle));
     expect(results.map((page) => page.href)).toContain(href);

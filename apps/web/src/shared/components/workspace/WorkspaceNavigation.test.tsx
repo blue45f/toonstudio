@@ -44,7 +44,7 @@ describe("WorkspaceNavigation 좌측 메뉴", () => {
     const shortcuts = screen.getByRole("navigation", { name: "제작 바로가기" });
     const links = within(shortcuts).getAllByRole("link");
     expect(links.map((link) => [link.textContent?.trim(), link.getAttribute("href")])).toEqual([
-      ["새 작품", "/studio/new"],
+      ["작품 시작하기", "/create"],
       ["캐릭터 만들기", "/studio/assets/characters/new"],
       ["배경 · 3D", "/studio/bg3d"],
       ["작품 재료", "/studio/assets"],
@@ -104,6 +104,14 @@ describe("WorkspaceNavigation 좌측 메뉴", () => {
     const shortcuts = screen.getByRole("navigation", { name: "제작 바로가기" });
     expect(within(shortcuts).getByRole("link", { name: "캐릭터 만들기" }).getAttribute("aria-current")).toBe("page");
     expect(within(shortcuts).getByRole("link", { name: "작품 재료" }).getAttribute("aria-current")).toBeNull();
+  });
+
+  it("시작 시트에서는 작품 시작하기 바로가기가 현재 위치이고 주 메뉴 제작은 물러난다", () => {
+    renderAt("/create");
+    const shortcuts = screen.getByRole("navigation", { name: "제작 바로가기" });
+    expect(within(shortcuts).getByRole("link", { name: "작품 시작하기" }).getAttribute("aria-current")).toBe("page");
+    const nav = screen.getByRole("navigation", { name: "주 메뉴" });
+    expect(within(nav).getByRole("link", { name: "제작" }).getAttribute("aria-current")).toBeNull();
   });
 
   it("제작 홈에서는 주 메뉴 제작만 현재 위치다", () => {

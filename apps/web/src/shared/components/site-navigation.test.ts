@@ -41,7 +41,7 @@ describe("site navigation information architecture", () => {
     expect(SITE_NAVIGATION_ITEMS.home.href).toBe("/");
 
     expect(SITE_NAVIGATION_ITEMS.studio.href).toBe("/studio");
-    expect(SITE_NAVIGATION_ITEMS.make.href).toBe("/studio/new");
+    expect(SITE_NAVIGATION_ITEMS.make.href).toBe("/create");
     expect(SITE_NAVIGATION_ITEMS.studioAssets.href).toBe("/studio/assets");
     expect(SITE_NAVIGATION_ITEMS.learn.href).toBe("/learn");
     expect(SITE_NAVIGATION_ITEMS.studioAssets.label.ko).toBe("작품 재료");
@@ -109,7 +109,7 @@ describe("site navigation information architecture", () => {
     const create = SITE_NAVIGATION_GROUPS.find((group) => group.id === "create");
     expect(create?.items.map((item) => item.href)).toEqual([
       "/studio",
-      "/studio/new",
+      "/create",
       "/studio/comic",
       "/studio/assets/characters/new",
       "/studio/bg3d",
@@ -131,7 +131,7 @@ describe("site navigation information architecture", () => {
     }
     // 구 ToonSpectrum 지도(25)에만 있던 목적지
     for (const href of [
-      "/studio/new", "/studio/comic", "/studio/assets/characters/new", "/discover",
+      "/create", "/studio/comic", "/studio/assets/characters/new", "/discover",
       "/ranking", "/calendar", "/recommend", "/opportunities", "/insights", "/now",
       "/fortune", "/reviews", "/play", "/library", "/",
     ]) {
