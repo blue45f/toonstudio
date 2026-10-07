@@ -97,6 +97,9 @@ describe("EngineeringGlossaryPage", () => {
     const heroArt = screen.getByRole("img", { name: /단계별 예제|Step-by-step examples/u });
     expect(heroArt.getAttribute("src")).toBe("/brand/workflow-20260928/learn-640.webp");
 
+    expect(screen.getByText(/자료 · 용어집|Resources · Glossary/u)).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: /핵심 요약|Key summary/u })).toBeTruthy();
+
     const pager = screen.getByRole("navigation", { name: /기술 문서 이어보기|Continue through/u });
     expect(within(pager).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/about/technology/references",
