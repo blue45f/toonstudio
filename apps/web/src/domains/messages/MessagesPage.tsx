@@ -26,6 +26,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  Fragment,
 } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
@@ -43,11 +44,15 @@ import {
 } from "@/platform/messaging-client";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { LoadingState } from "@/shared/components/LoadingState";
+import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
+import { MessageBubble, MessageDayDivider } from "./MessageBubble";
+import { formatMessageTime, messageDayKey, messageDayLabel } from "./message-time";
 import { MessagingSettingsPanel } from "./MessagingSettingsPanel";
+import { ConversationSkeleton, ThreadListSkeleton } from "./MessagingSkeletons";
 import { UserAvatar } from "./MessagingUserAvatar";
 
 type InboxTab = "active" | "requests" | "archived";
@@ -86,15 +91,6 @@ function isInboxTab(value: string | null): value is InboxTab {
   return value === "active" || value === "requests" || value === "archived";
 }
 
-function formatTime(value: string): string {
-  const date = new Date(value);
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-  return new Intl.DateTimeFormat("ko-KR", sameDay
-    ? { hour: "2-digit", minute: "2-digit" }
-    : { month: "short", day: "numeric" }).format(date);
-}
-
 function ThreadListItem({
   thread,
   selected,
@@ -130,7 +126,7 @@ function ThreadListItem({
           )}
           {thread.blocked && <CircleSlash2 size={13} className="shrink-0 text-danger" aria-label="차단됨" />}
           <time className="ml-auto shrink-0 text-[0.6875rem] text-fg-3" dateTime={thread.lastMessageAt}>
-            {formatTime(thread.lastMessageAt)}
+            {formatMessageTime(thread.lastMessageAt)}
           </time>
         </span>
         <span className="mt-1 flex items-center gap-2">
@@ -146,67 +142,6 @@ function ThreadListItem({
       </span>
       <ChevronRight size={15} className="shrink-0 text-fg-3 transition-transform group-hover:translate-x-0.5" />
     </Link>
-  );
-}
-
-function MessageBubble({
-  message,
-  onReport,
-}: {
-  message: MessagingMessage;
-  onReport: (message: MessagingMessage) => void;
-}) {
-  const context = message.type === "work_card" || message.type === "project_card"
-    ? message.metadata.context
-    : null;
-  const linkedContext = context && typeof context === "object" && !Array.isArray(context)
-    ? context as { label?: unknown; href?: unknown }
-    : null;
-  const label = typeof linkedContext?.label === "string" ? linkedContext.label : null;
-  const href = typeof linkedContext?.href === "string" ? linkedContext.href : null;
-
-  return (
-    <div className={cn("group flex gap-2", message.mine ? "justify-end" : "justify-start")}>
-      <div className={cn("max-w-[82%] sm:max-w-[72%]", message.mine && "text-right")}>
-        {label && (
-          <div className={cn(
-            "mb-1 rounded-xl border border-line bg-panel px-3 py-2 text-left text-xs",
-            message.mine ? "ml-auto" : "mr-auto"
-          )}>
-            <p className="font-semibold text-fg">{message.type === "project_card" ? "프로젝트" : "작품"}</p>
-            {href ? (
-              <Link href={href} className="mt-0.5 block truncate text-accent hover:underline">
-                {label}
-              </Link>
-            ) : (
-              <p className="mt-0.5 truncate text-fg-2">{label}</p>
-            )}
-          </div>
-        )}
-        <div className={cn(
-          "rounded-2xl px-3.5 py-2.5 text-left text-sm leading-relaxed whitespace-pre-wrap break-words",
-          message.mine
-            ? "rounded-br-md bg-accent text-on-accent"
-            : "rounded-bl-md border border-line bg-card text-fg"
-        )}>
-          {message.body}
-        </div>
-        <div className={cn("mt-1 flex items-center gap-1.5 text-[0.6875rem] text-fg-3", message.mine ? "justify-end" : "justify-start")}>
-          <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
-          {message.mine && message.readByOther && <span>읽음</span>}
-          {!message.mine && (
-            <button
-              type="button"
-              onClick={() => onReport(message)}
-              className="opacity-0 transition-opacity hover:text-danger focus:opacity-100 group-hover:opacity-100"
-              aria-label="메시지 신고"
-            >
-              <Flag size={11} />
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -540,6 +475,21 @@ export function MessagesPage() {
 
   const messages = useMemo(() => detail?.messages ?? [], [detail]);
 
+  // 첫 화면 현황 — 이미 불러온 현재 탭 목록에서 직접 센 값만 보여준다.
+  // 로딩 중·목록 오류·빈 탭에서는 띄우지 않는다 (현황을 지어내거나 실패를 감추지 않는다).
+  const inboxSummary = !listLoading && !listError && threads.length > 0
+    ? tab === "requests"
+      ? `수락 대기 중인 요청 ${threads.filter((thread) => thread.state === "pending").length}개 · 전체 ${threads.length}개`
+      : tab === "archived"
+        ? `보관한 대화 ${threads.length}개`
+        : (() => {
+            const unread = threads.reduce((sum, thread) => sum + thread.unreadCount, 0);
+            return unread > 0
+              ? `읽지 않은 메시지 ${unread}개 · 대화 ${threads.length}개`
+              : `모든 대화를 읽었어요 · 대화 ${threads.length}개`;
+          })()
+    : null;
+
   if (!session.ready && !sessionCheckTimedOut) {
     return (
       <div data-route-pending="" className="grid min-h-[55vh] place-items-center px-6 text-center">
@@ -567,17 +517,20 @@ export function MessagesPage() {
   if (!authenticated) {
     return (
       <Container size="prose" className="py-16 sm:py-24">
-        <div className="rounded-3xl border border-line bg-card p-8 text-center shadow-sm sm:p-12">
-          <Mail size={36} className="mx-auto text-accent" />
-          <h1 className="mt-4 text-2xl font-bold">로그인 후 메시지를 확인할 수 있어요.</h1>
-          <p className="mt-2 text-sm leading-relaxed text-fg-2">로그인하면 작품 피드백과 협업 제안을 안전하게 주고받을 수 있습니다.</p>
-          <button
-            type="button"
-            onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "messages", mode: "login" })}
-            className={buttonClass({ size: "md", variant: "solid", className: "mt-6 min-h-11" })}
-          >
-            로그인하기
-          </button>
+        <div className="overflow-hidden rounded-3xl border border-line bg-card shadow-sm">
+          <SectionArt image="community" className="h-28 w-full object-cover sm:h-36" />
+          <div className="p-8 text-center sm:p-12">
+            <Mail size={36} className="mx-auto text-accent" />
+            <h1 className="mt-4 text-2xl font-bold">로그인 후 메시지를 확인할 수 있어요.</h1>
+            <p className="mt-2 text-sm leading-relaxed text-fg-2">로그인하면 작품 피드백과 협업 제안을 안전하게 주고받을 수 있습니다.</p>
+            <button
+              type="button"
+              onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "messages", mode: "login" })}
+              className={buttonClass({ size: "md", variant: "solid", className: "mt-6 min-h-11" })}
+            >
+              로그인하기
+            </button>
+          </div>
         </div>
       </Container>
     );
@@ -611,6 +564,13 @@ export function MessagesPage() {
         </div>
       </div>
 
+      {inboxSummary && (
+        <p role="status" className="mb-3 flex items-center gap-2 text-xs font-medium text-fg-2">
+          <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />
+          {inboxSummary}
+        </p>
+      )}
+
       <div className="relative min-h-[620px] overflow-hidden rounded-3xl border border-line bg-panel shadow-sm lg:grid lg:grid-cols-[22rem_minmax(0,1fr)]">
         <aside className={cn("border-r border-line bg-card", showMobileList ? "block" : "hidden lg:block")}>
           <div role="tablist" aria-label="메시지함" className="grid grid-cols-3 border-b border-line p-2">
@@ -642,9 +602,7 @@ export function MessagesPage() {
             </div>
           )}
           {listLoading ? (
-            <div className="grid min-h-72 place-items-center p-5">
-              <LoadingState variant="skeleton" label="대화 목록을 불러오는 중" className="w-full" />
-            </div>
+            <ThreadListSkeleton />
           ) : threads.length === 0 ? (
             listError ? (
               <div role="alert" className="grid min-h-72 place-items-center p-5 text-center">
@@ -685,9 +643,7 @@ export function MessagesPage() {
               />
             </div>
           ) : detailLoading ? (
-            <div className="grid min-h-[620px] place-items-center p-8">
-              <LoadingState variant="skeleton" label="대화를 불러오는 중" className="w-full max-w-md" />
-            </div>
+            <ConversationSkeleton />
           ) : detailError && !detail ? (
             <div className="grid min-h-[620px] place-items-center p-8 text-center">
               <div>
@@ -778,9 +734,16 @@ export function MessagesPage() {
                     </button>
                   </div>
                 ) : null}
-                {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} onReport={setReportTarget} />
-                ))}
+                {messages.map((message, index) => {
+                  const previous = messages[index - 1];
+                  const showDivider = !previous || messageDayKey(previous.createdAt) !== messageDayKey(message.createdAt);
+                  return (
+                    <Fragment key={message.id}>
+                      {showDivider && <MessageDayDivider label={messageDayLabel(message.createdAt)} />}
+                      <MessageBubble message={message} otherUser={selectedThread.otherUser} onReport={setReportTarget} />
+                    </Fragment>
+                  );
+                })}
               </div>
 
               <form onSubmit={sendMessage} className="border-t border-line bg-card p-3 sm:p-4">

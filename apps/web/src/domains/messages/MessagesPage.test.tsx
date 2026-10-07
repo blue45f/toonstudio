@@ -185,6 +185,13 @@ describe("메시지함 페이지", () => {
     expect(screen.getByText("2")).toBeTruthy();
   });
 
+  it("첫 화면 현황 스트립에 안 읽은 메시지 수를 실측으로 보여준다", async () => {
+    setSession("authenticated");
+    mocks.listThreads.mockResolvedValue({ items: [THREAD] });
+    renderPage();
+    expect(await screen.findByText("읽지 않은 메시지 2개 · 대화 1개")).toBeTruthy();
+  });
+
   it("목록을 불러오지 못하면 오류를 알린다", async () => {
     setSession("authenticated");
     mocks.listThreads.mockRejectedValue(new Error("network down"));
