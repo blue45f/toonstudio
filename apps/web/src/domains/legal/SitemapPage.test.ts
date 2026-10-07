@@ -266,4 +266,14 @@ describe("site directory experience contracts", () => {
     expect(sitemapSource).toContain("전체 기능과 페이지");
     expect(sitemapSource).toContain("focus-visible:ring-2");
   });
+
+  it("shows the directory scale from the same data the directory renders", () => {
+    // 규모 수치는 손으로 적지 않고 디렉터리 원본 배열에서 직접 센다.
+    expect(sitemapSource).toContain("{SITEMAP_DIRECTORY_ENTRIES.length}");
+    expect(sitemapSource).toContain("{SITEMAP_CORE_DESTINATION_GROUPS.length}");
+    expect(sitemapSource).toContain("{SITEMAP_EXTENDED_DESTINATION_GROUPS.length}");
+    expect(sitemapSource).toContain("디렉터리 규모");
+    expect(sitemapSource).toContain("Directory at a glance");
+    expect(SITEMAP_DIRECTORY_ENTRIES.length).toBeGreaterThan(0);
+  });
 });
