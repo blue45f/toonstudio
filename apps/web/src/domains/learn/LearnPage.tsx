@@ -1,6 +1,5 @@
 import { useLocation } from "react-router-dom";
 
-import { EducationDirectoryPage } from "./EducationDirectoryPage";
 import { LearnPage as LearnContent } from "./LearnContent";
 import { LearningHome, LearningPathPage } from "./LearningHome";
 import { LearningClassesPage } from "./LearningClassesPage";
@@ -35,13 +34,13 @@ export function LearnPage() {
         : normalizedPath === "/learn/trace"
           ? <TracePracticePage />
           : null;
+  // /learn/education은 정확 라우트가 /ecosystem/education으로 리다이렉트하므로
+  // 이 컴포넌트에 도달하지 않는다 — 분기를 두지 않는다.
   const referencePage = normalizedPath === "/learn/process"
     ? <WebtoonProcessPage />
     : normalizedPath === "/learn/careers"
       ? <WebtoonCareerPage />
-      : normalizedPath === "/learn/education"
-        ? <EducationDirectoryPage />
-        : null;
+      : null;
 
   return (
     <LearnSectionShell>
