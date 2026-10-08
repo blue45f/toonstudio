@@ -5,6 +5,9 @@
  * - 카드 클릭 = `slot/apply` dispatch 1회. 현재 적용된 카드는 `aria-pressed`. 접근성 이름은 프리셋 한글 라벨(`aria-label`)이고
  *   배지·사유는 카드 안 텍스트와 `title`로 노출한다.
  * - 능력 `unavailable`은 카드 disabled + 사유(tooltip·텍스트). `partial`은 경고 배지 + 사유.
+ * - 프리셋 단위 미제공(`SlotCapability.unavailablePresets`, 예: 남성 베이스에 없는 헤어)은 그 카드만 disabled + 한글 사유(툴팁·카드 텍스트)이고
+ *   썸네일 자리에 "미제공"을 보인다. 사유 문구는 플래너가 unsupported로 계획하는 것과 같은 `presetUnavailableReasonKo`를 쓴다. 다른 프리셋으로 바꾸지 않는다.
+ *   그 슬롯의 나머지 카드는 평소처럼 쓰고, "부분 지원" 안내는 탭 배지·캡션·카드 툴팁으로만 보인다(경고처럼 올리지 않는다).
  * - 마지막 적용 플랜(`useApplyPlan`)의 `unsupported` 사유(requires 불충족 등)도 그 슬롯에 표시한다.
  * - 현재 레시피와 `conflictsWith` 충돌이 있는 후보 카드는 "겹침 주의" 배지(적용은 가능).
  * - 썸네일은 `LabState.thumbnails[presetId]`: ready면 래스터(ImageData 지원 환경), pending/failed는 배지.
@@ -14,7 +17,7 @@
 import { useEffect, useRef } from "react";
 
 import { CHARACTER_SLOT_KINDS, SLOT_GROUPS, SLOT_GROUP_LABELS_KO, SLOT_LABELS_KO } from "../../../contracts";
-import { presetConflicts } from "../../../state/apply-plan";
+import { presetConflicts, presetUnavailableReasonKo } from "../../../state/apply-plan";
 import { useApplyPlan, useCatalog, useDispatch, useLabState, useUiActions, useUiState } from "../lab-store-context";
 
 import type { CapturedRaster, PresetEntry, PresetId, SlotCapability, SlotGroup, SlotKind, ThumbnailEntry, UnsupportedSlot } from "../../../contracts";
@@ -83,25 +86,33 @@ interface PresetCardProps {
 }
 
 function PresetCard({ entry, selected, capability, conflicts, unsupported, thumbnail, onApply }: PresetCardProps) {
-  const disabled = capability.status === "unavailable";
-  const badge = capabilityBadge(capability);
-  const reason = capability.status !== "available" ? capability.reasonKo : undefined;
+  const slotUnavailable = capability.status === "unavailable";
+  // 슬롯 전체가 미지원이면 슬롯 사유가 먼저다(플래너와 같은 순서). 프리셋 단위 미제공은 그 외 슬롯에서만 판정한다.
+  const presetReason = slotUnavailable ? null : presetUnavailableReasonKo(capability, entry.id);
+  const disabled = slotUnavailable || presetReason !== null;
+  const hasPresetTable = capability.unavailablePresets !== undefined;
+  // 제공 목록이 있는 부분 지원 슬롯에서 제공되는 카드는 슬롯 경고를 카드마다 반복하지 않고 툴팁으로만 둔다.
+  const slotWarning = capability.status !== "available" ? capability.reasonKo : undefined;
+  const badge = presetReason !== null ? { label: "미제공", className: "cl-slot-badge cl-slot-badge--preset-unavailable" } : hasPresetTable && !slotUnavailable ? null : capabilityBadge(capability);
+  const reason = presetReason ?? (hasPresetTable && !slotUnavailable ? undefined : slotWarning);
   const conflictText = conflicts.length > 0 ? `겹침 주의: ${conflicts.map((c) => c.labelKo).join(", ")}` : undefined;
-  const unsupportedText = unsupported ? `미적용: ${unsupported.reasonKo}` : undefined;
-  const title = [reason, unsupportedText, conflictText].filter((text): text is string => Boolean(text)).join(" / ");
+  // 프리셋 단위 미제공의 미적용 사유는 위 사유와 같은 문구라 중복해 보이지 않는다.
+  const unsupportedText = unsupported && presetReason === null ? `미적용: ${unsupported.reasonKo}` : undefined;
+  const title = [presetReason ?? slotWarning, unsupportedText, conflictText].filter((text): text is string => Boolean(text)).join(" / ");
   return (
     <button
       type="button"
-      className={`cl-slot-card${selected ? " cl-slot-card--selected" : ""}${disabled ? " cl-slot-card--disabled" : ""}`}
+      className={`cl-slot-card${selected ? " cl-slot-card--selected" : ""}${disabled ? " cl-slot-card--disabled" : ""}${presetReason !== null ? " cl-slot-card--preset-unavailable" : ""}`}
       aria-label={entry.labelKo}
       aria-pressed={selected}
       disabled={disabled}
       title={title || undefined}
       data-preset-id={entry.id}
+      data-preset-unavailable={presetReason !== null ? "true" : undefined}
       onClick={() => onApply(entry.id)}
     >
       <span className="cl-slot-card-thumb">
-        <ThumbnailView entry={thumbnail} labelKo={entry.labelKo} />
+        {presetReason !== null ? <span className="cl-slot-thumb cl-slot-thumb--text">미제공</span> : <ThumbnailView entry={thumbnail} labelKo={entry.labelKo} />}
       </span>
       <span className="cl-slot-card-label">{entry.labelKo}</span>
       {badge ? <span className={badge.className}>{badge.label}</span> : null}

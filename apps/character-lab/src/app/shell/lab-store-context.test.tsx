@@ -6,7 +6,8 @@ import { failVisible } from "../../contracts";
 import { createMockEngineSession, createMockLabStore, MockLabProvider } from "../../testing/mock-store";
 import { applyPlanFixture } from "../../testing/recipe-fixtures";
 
-import { useApplyPlan, useDispatch, useEngineSession, useLabState, useUiActions, useUiState, useViewportRegistry } from "./lab-store-context";
+import { createKitPlanRegistry } from "./kit-plan-registry";
+import { useApplyPlan, useDispatch, useEngineSession, useKitPlans, useLabState, useUiActions, useUiState, useViewportRegistry } from "./lab-store-context";
 import { createUiStateStore } from "./ui-state";
 
 import type { ApplyLoop, ApplyLoopSnapshot } from "./apply-loop";
@@ -62,6 +63,7 @@ describe("app/shell/lab-store-context", () => {
       lastReceipt: () => snapshot.receipt,
       snapshot: () => snapshot,
       markSourceLoaded: () => undefined,
+      retrySource: () => undefined,
       settled: () => true,
       subscribe(listener) {
         listeners.add(listener);
@@ -92,5 +94,18 @@ describe("app/shell/lab-store-context", () => {
       </MockLabProvider>,
     );
     expect(screen.getByText("플랜 없음")).toBeTruthy();
+  });
+
+  it("useKitPlans는 주입한 키트 플랜 등록소를 돌려주고 주입하지 않으면 null이다", () => {
+    const kitPlans = createKitPlanRegistry();
+    const injected = renderHook(() => useKitPlans(), {
+      wrapper: ({ children }: { children: ReactNode }) => <MockLabProvider shell={{ kitPlans }}>{children}</MockLabProvider>,
+    });
+    expect(injected.result.current).toBe(kitPlans);
+    const absent = renderHook(() => useKitPlans(), {
+      wrapper: ({ children }: { children: ReactNode }) => <MockLabProvider>{children}</MockLabProvider>,
+    });
+    expect(absent.result.current).toBeNull();
+    expect(() => renderHook(() => useKitPlans())).toThrow(/LabStoreProvider 밖/u);
   });
 });

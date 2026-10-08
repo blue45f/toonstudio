@@ -50,6 +50,7 @@ describe("app/shell/FailureBanner", () => {
       lastReceipt: () => null,
       snapshot: () => snapshot,
       markSourceLoaded: () => undefined,
+      retrySource: () => undefined,
       settled: () => true,
       subscribe: () => () => undefined,
     };

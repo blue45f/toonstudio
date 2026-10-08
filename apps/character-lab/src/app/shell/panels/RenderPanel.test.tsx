@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { DEFAULT_SHADING, QUALITY_PRESETS, createDefaultRecipe } from "../../../contracts";
+import { DEFAULT_SHADING, QUALITY_PRESETS, createDefaultRecipe, createKitDefaultRecipe } from "../../../contracts";
 import { BETA_FEATURE_IDS, betaActive, betaFailed, betaOff, betaUnsupported, betaWaiting, createBetaReport } from "../../../render/beta-features";
 import { createFeatureReport, featureActive, featureOff, featureUnavailable } from "../../../render/scene-features";
 import { createMockEngine, mockDiagnostics } from "../../../testing/mock-engine";
@@ -23,6 +23,8 @@ afterEach(() => {
 });
 
 interface PanelOptions {
+  /** 레시피의 소스 종류(기본 절차). 키트는 `createKitDefaultRecipe()`(툰 기본값 2단·림 끔)를 바탕으로 한다. */
+  readonly source?: "procedural" | "kit";
   readonly shading?: Partial<ShadingProfile>;
   readonly status?: EngineStatus;
   readonly engine?: (MockEngine & { sceneFeatures?: () => SceneFeatureReport }) | null;
@@ -31,7 +33,7 @@ interface PanelOptions {
 
 function renderPanel(options: PanelOptions = {}) {
   const dispatched: LabCommand[] = [];
-  const recipe = createDefaultRecipe();
+  const recipe = options.source === "kit" ? createKitDefaultRecipe() : createDefaultRecipe();
   const status = options.status ?? READY;
   const session = createMockEngineSession(status);
   session.setEngine(options.engine === undefined ? createMockEngine() : options.engine);
@@ -189,6 +191,33 @@ describe("shading/set 명령", () => {
     fireEvent.click(screen.getByLabelText("림 라이트"));
     expect(lastProfile(view.dispatched)).toEqual({ toon: { ...DEFAULT_SHADING.toon, rim: false } });
     expect(view.dispatched).toHaveLength(4);
+  });
+
+  it("키트 소스: 얼굴 SDF 그림자는 쓰이지 않는다는 사유를 보이되 설정값은 레시피 그대로 편집된다", () => {
+    const view = renderPanel({ source: "kit", shading: { mode: "toon" } });
+    const note = screen.getByText(/키트는 얼굴 SDF 그림자를 쓰지 않음/u);
+    expect(note.textContent).toMatch(/레시피에 남지만 키트 소스에서는 적용되지 않습니다/u);
+    const checkbox = screen.getByLabelText("얼굴 SDF 그림자") as HTMLInputElement;
+    expect(checkbox.getAttribute("aria-describedby")).toBe(note.id);
+    expect(checkbox.checked).toBe(true);
+    expect(checkbox.disabled).toBe(false);
+    fireEvent.click(checkbox);
+    expect(lastProfile(view.dispatched)).toEqual({ toon: { ...createKitDefaultRecipe().shading.toon, faceSdfShadow: false } });
+    cleanup();
+    renderPanel({ shading: { mode: "toon" } });
+    expect(screen.queryByText(/키트는 얼굴 SDF 그림자를 쓰지 않음/u)).toBeNull();
+    expect((screen.getByLabelText("얼굴 SDF 그림자") as HTMLInputElement).getAttribute("aria-describedby")).toBeNull();
+  });
+
+  it("키트 소스의 툰 기본값(음영 2단계·림 끔)을 컨트롤이 그대로 반영하고 절차 소스 기본값과 다르다", () => {
+    renderPanel({ source: "kit", shading: { mode: "toon" } });
+    expect((screen.getByLabelText("음영 단계") as HTMLSelectElement).value).toBe("2");
+    expect((screen.getByLabelText("림 라이트") as HTMLInputElement).checked).toBe(false);
+    cleanup();
+    renderPanel({ shading: { mode: "toon" } });
+    expect((screen.getByLabelText("음영 단계") as HTMLSelectElement).value).toBe(String(DEFAULT_SHADING.toon.rampSteps));
+    expect((screen.getByLabelText("림 라이트") as HTMLInputElement).checked).toBe(DEFAULT_SHADING.toon.rim);
+    expect(DEFAULT_SHADING.toon.rampSteps).not.toBe(2);
   });
 
   it("범위 밖·알 수 없는 select 값은 무시한다", () => {

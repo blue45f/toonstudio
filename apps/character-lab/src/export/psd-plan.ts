@@ -113,7 +113,10 @@ function hsvToRgb(h: number, s: number, v: number): readonly [number, number, nu
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
-/** 부위별 결정적 마스크 색(황금각 간격 HSV) */
+/**
+ * 부위별 결정적 마스크 색(황금각 간격 HSV). 색은 `PART_ROLES` 인덱스로만 정해지므로 역할은 배열 **끝에만** 더해야 기존 색이 안 바뀐다
+ * (키트 v1의 `underwear`가 그렇게 추가됐고 골든은 psd-plan.test.ts가 고정한다).
+ */
 export function idMaskColor(role: PartRole): readonly [number, number, number] {
   const index = Math.max(0, PART_ROLES.indexOf(role));
   return hsvToRgb((index * 0.381966) % 1, 0.65, 0.95);

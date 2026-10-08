@@ -4,7 +4,8 @@
  * 패널 단위 테스트는 testing/mock-store.tsx의 MockLabProvider로 같은 컨텍스트를 채운다.
  *
  * 필수 값은 store·catalog·engineSession 세 가지다. 뷰포트 레지스트리·UI 상태·썸네일 스케줄러·
- * 패키지 플랜 레지스트리·적용 루프는 셸이 주입하며, 주지 않으면 독립 인스턴스(또는 null)를 쓴다.
+ * 패키지 플랜 레지스트리·키트 플랜 등록소·적용 루프는 셸이 주입하며, 주지 않으면 독립 인스턴스(또는 null)를 쓴다.
+ * 키트 플랜 등록소는 로더·계획 빌더 포트가 있어야 의미가 있으므로 기본 인스턴스를 만들지 않고 null이다(`useKitPlans()`).
  */
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
@@ -13,6 +14,7 @@ import { createUiStateStore } from "./ui-state";
 import { createViewportRegistry } from "./viewport-registry";
 
 import type { ApplyLoop, ApplyLoopSnapshot } from "./apply-loop";
+import type { KitPlanRegistry } from "./kit-plan-registry";
 import type { PackagePlanRegistry } from "./package-plan-registry";
 import type { ThumbnailScheduler } from "./thumbnail-scheduler";
 import type { UiState, UiStateStore } from "./ui-state";
@@ -28,6 +30,8 @@ export interface LabContextValue {
   /** 셸이 구동하는 썸네일 스케줄러. 없으면 null(패널은 LabState.thumbnails만 읽어도 된다). */
   readonly thumbnails: ThumbnailScheduler | null;
   readonly packagePlans: PackagePlanRegistry;
+  /** 모듈식 키트 등록소(kit.json 캐시·계획). 조립되지 않았으면 null. */
+  readonly kitPlans: KitPlanRegistry | null;
   /** 적용 루프(마지막 플랜·영수증 구독). 없으면 null. */
   readonly applyLoop: ApplyLoop | null;
 }
@@ -42,11 +46,12 @@ export interface LabStoreProviderProps {
   readonly ui?: UiStateStore;
   readonly thumbnails?: ThumbnailScheduler | null;
   readonly packagePlans?: PackagePlanRegistry;
+  readonly kitPlans?: KitPlanRegistry | null;
   readonly applyLoop?: ApplyLoop | null;
   readonly children?: ReactNode;
 }
 
-export function LabStoreProvider({ store, catalog, engineSession, viewport, ui, thumbnails, packagePlans, applyLoop, children }: LabStoreProviderProps) {
+export function LabStoreProvider({ store, catalog, engineSession, viewport, ui, thumbnails, packagePlans, kitPlans, applyLoop, children }: LabStoreProviderProps) {
   const fallbackViewport = useMemo(() => viewport ?? createViewportRegistry(), [viewport]);
   const fallbackUi = useMemo(() => ui ?? createUiStateStore(), [ui]);
   const fallbackPlans = useMemo(() => packagePlans ?? createPackagePlanRegistry(), [packagePlans]);
@@ -59,9 +64,10 @@ export function LabStoreProvider({ store, catalog, engineSession, viewport, ui, 
       ui: fallbackUi,
       thumbnails: thumbnails ?? null,
       packagePlans: fallbackPlans,
+      kitPlans: kitPlans ?? null,
       applyLoop: applyLoop ?? null,
     }),
-    [store, catalog, engineSession, fallbackViewport, fallbackUi, thumbnails, fallbackPlans, applyLoop],
+    [store, catalog, engineSession, fallbackViewport, fallbackUi, thumbnails, fallbackPlans, kitPlans, applyLoop],
   );
   return <LabStoreContext.Provider value={value}>{children}</LabStoreContext.Provider>;
 }
@@ -115,6 +121,11 @@ export function useThumbnailScheduler(): ThumbnailScheduler | null {
 
 export function usePackagePlans(): PackagePlanRegistry {
   return useLabContext().packagePlans;
+}
+
+/** 키트 플랜 등록소(패널의 출처·라이선스·제공 파츠 조회용). 키트 로더가 조립되지 않았으면 null. */
+export function useKitPlans(): KitPlanRegistry | null {
+  return useLabContext().kitPlans;
 }
 
 export function useApplyLoop(): ApplyLoop | null {

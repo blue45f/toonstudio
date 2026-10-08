@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { INITIAL_HISTORY } from "../../../contracts";
+import { INITIAL_HISTORY, createDefaultRecipe, createKitDefaultRecipe } from "../../../contracts";
 import { createPaintSession } from "../../../paint/paint-session";
 import { createMockEngine } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
@@ -118,5 +118,65 @@ describe("PaintPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "레이어 비우기" }));
     expect(dispatched.map((command) => command.type)).toEqual(["paint/stroke"]);
     expect(session.layer("skin").rgba.every((byte) => byte === 0)).toBe(true);
+  });
+
+  describe("키트 소스 경고", () => {
+    const kitRecipe = createKitDefaultRecipe();
+
+    function paintLayer(session: ReturnType<typeof createPaintSession>, part: "skin" | "hair" | "top"): void {
+      session.setActivePart(part);
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+    }
+
+    it("키트 소스에서 변형이 있는 부위(헤어)를 고르면 UV 경고를 보이고 skin·head에는 보이지 않는다", () => {
+      const session = createPaintSession({ layerSize: 64 });
+      render(
+        <MockLabProvider initialState={{ recipe: kitRecipe }}>
+          <PaintPanel session={session} />
+        </MockLabProvider>,
+      );
+      expect(screen.queryByRole("note")).toBeNull();
+      fireEvent.change(screen.getByLabelText("레이어(부위)"), { target: { value: "hair" } });
+      expect(screen.getByRole("note").textContent).toMatch(/헤어 변형을 바꾸면 UV가 달라져 그림이 어긋납니다/u);
+      fireEvent.change(screen.getByLabelText("레이어(부위)"), { target: { value: "head" } });
+      expect(screen.queryByRole("note")).toBeNull();
+      fireEvent.change(screen.getByLabelText("레이어(부위)"), { target: { value: "top" } });
+      expect(screen.getByRole("note").textContent).toMatch(/상의 변형을 바꾸면/u);
+    });
+
+    it("이미 칠한 다른 부위 중 어긋날 수 있는 것을 목록으로 보인다(skin은 제외, 선택 부위는 중복하지 않는다)", () => {
+      const session = createPaintSession({ layerSize: 64, brush: { radiusPx: 4, hardness: 1, opacity: 1 } });
+      paintLayer(session, "skin");
+      paintLayer(session, "top");
+      paintLayer(session, "hair");
+      session.setActivePart("skin");
+      render(
+        <MockLabProvider initialState={{ recipe: kitRecipe }}>
+          <PaintPanel session={session} />
+        </MockLabProvider>,
+      );
+      const list = screen.getByRole("list", { name: "어긋날 수 있는 레이어" });
+      const items = Array.from(list.querySelectorAll("li")).map((item) => item.getAttribute("data-part"));
+      expect(items.sort()).toEqual(["hair", "top"]);
+      expect(list.textContent).toMatch(/이미 칠한 헤어 레이어: 헤어 변형을 바꾸면/u);
+      // 선택 부위(헤어)로 옮기면 그 부위는 위 단일 경고가 말하므로 목록에서 빠진다
+      fireEvent.change(screen.getByLabelText("레이어(부위)"), { target: { value: "hair" } });
+      const after = Array.from(screen.getByRole("list", { name: "어긋날 수 있는 레이어" }).querySelectorAll("li")).map((item) => item.getAttribute("data-part"));
+      expect(after).toEqual(["top"]);
+      expect(screen.getByRole("note").textContent).toMatch(/헤어 변형을 바꾸면/u);
+    });
+
+    it("절차 소스에서는 경고를 보이지 않는다", () => {
+      const session = createPaintSession({ layerSize: 64, brush: { radiusPx: 4, hardness: 1, opacity: 1 } });
+      paintLayer(session, "hair");
+      render(
+        <MockLabProvider initialState={{ recipe: createDefaultRecipe() }}>
+          <PaintPanel session={session} />
+        </MockLabProvider>,
+      );
+      expect(screen.queryByRole("note")).toBeNull();
+      expect(screen.queryByRole("list", { name: "어긋날 수 있는 레이어" })).toBeNull();
+    });
   });
 });

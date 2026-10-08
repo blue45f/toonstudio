@@ -139,8 +139,8 @@ export interface MockLabProviderProps {
   readonly store?: LabStore;
   readonly engineSession?: EngineSession;
   readonly catalog?: PresetCatalog;
-  /** 셸 전용 선택 값(뷰포트 레지스트리·UI 상태·썸네일 스케줄러·패키지 플랜·적용 루프). 없으면 Provider 기본값. */
-  readonly shell?: Pick<LabStoreProviderProps, "viewport" | "ui" | "thumbnails" | "packagePlans" | "applyLoop">;
+  /** 셸 전용 선택 값(뷰포트 레지스트리·UI 상태·썸네일 스케줄러·패키지 플랜·키트 플랜·적용 루프). 없으면 Provider 기본값(키트 플랜은 null). */
+  readonly shell?: Pick<LabStoreProviderProps, "viewport" | "ui" | "thumbnails" | "packagePlans" | "kitPlans" | "applyLoop">;
   readonly children?: ReactNode;
 }
 

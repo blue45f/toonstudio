@@ -2,7 +2,7 @@
  * CharacterEngine 포트의 모의 구현. 호출을 기록하고 결정적 합성 래스터를 돌려준다.
  * 셸(engine-session·thumbnail-scheduler)·export·vision 테스트가 Babylon 없이 엔진 경로를 검증할 때 쓴다.
  */
-import { ALL_AVAILABLE_CAPABILITIES, CAPTURE_PROFILE_ID, ENGINE_INIT_TIMEOUT_MS, failVisible } from "../contracts";
+import { ALL_AVAILABLE_CAPABILITIES, CAPTURE_PROFILE_ID, ENGINE_INIT_TIMEOUT_MS, allocatePartIdsByRole, failVisible } from "../contracts";
 import { fnv1a32 } from "../shared/hash";
 import { mulberry32 } from "../shared/prng";
 
@@ -25,6 +25,7 @@ import type {
   LabFailure,
   PaintLayer,
   PartIdPalette,
+  PartRole,
   PhysicsProvider,
   PhysicsProviderFactory,
   PhysicsProviderId,
@@ -57,6 +58,8 @@ export interface MockEngineOptions {
   readonly physicsStatus?: (id: PhysicsProviderId) => PhysicsStatus;
   /** `CharacterEngine.thumbnailSources` 값(임시 소스 썸네일 지원 시뮬레이션) */
   readonly thumbnailSources?: boolean;
+  /** `loadSource` 실패 주입(소스별 판단 가능). 호출은 기록되고, 실패하면 로드된 소스 목록에는 들어가지 않는다. */
+  readonly failLoadSource?: LabFailure | ((source: CharacterSource) => LabFailure | null);
 }
 
 export interface MockEngine extends CharacterEngine {
@@ -102,6 +105,46 @@ export function syntheticDepth(width: number, height: number): CapturedDepth {
   return { width, height, depth, near: 0.1, far: 10 };
 }
 
+/** 소스 종류별 모의 morph 이름(KT-01 컴파일 연쇄로 키트 분기 추가) */
+function mockMorphNames(source: CharacterSource): readonly string[] {
+  if (source.kind === "procedural") return source.model.morphNames;
+  if (source.kind === "kit") return source.plan.morphNames;
+  return Object.values(source.plan.shapeKeyMap);
+}
+
+/** 소스 종류별 모의 본 이름 */
+function mockBoneNames(source: CharacterSource): readonly string[] {
+  if (source.kind === "procedural") return source.model.skeleton.bones.map((b) => b.name);
+  if (source.kind === "kit") return Object.values(source.plan.skeleton.boneMap);
+  return Object.values(source.plan.boneMap);
+}
+
+/**
+ * 소스 종류별 모의 능력 맵. 키트는 실제 엔진처럼 플랜이 계산해 둔 능력 맵(`KitPlan.capabilities`)을 보고한다
+ * (엔진이 키트 파츠를 올리고 알려 주는 값 — 적용 루프가 `source/capabilities`로 스토어에 맞춘다).
+ */
+function mockCapabilities(source: CharacterSource): SlotCapabilityMap | null {
+  return source.kind === "kit" ? source.plan.capabilities : null;
+}
+
+/** 키트 플랜의 파츠 역할(베이스 + 선택 파츠 메시, 다중 프리미티브 포함)로 만든 역할 고정 partId 팔레트 */
+function mockKitPartIdPalette(source: Extract<CharacterSource, { readonly kind: "kit" }>): PartIdPalette {
+  const roles = new Set<PartRole>();
+  for (const part of source.plan.parts) {
+    for (const mesh of part.meshes) {
+      if (mesh.role !== undefined) roles.add(mesh.role);
+      for (const role of mesh.primitiveRoles ?? []) roles.add(role);
+    }
+  }
+  return allocatePartIdsByRole([...roles].map((role) => ({ role })));
+}
+
+function mockPartIdPalette(source: CharacterSource): PartIdPalette {
+  if (source.kind === "procedural") return source.model.partIdPalette;
+  if (source.kind === "kit") return mockKitPartIdPalette(source);
+  return {};
+}
+
 export function mockDiagnostics(backend: EngineBackend): EngineDiagnostics {
   return {
     backend,
@@ -126,7 +169,6 @@ export function createMockEngine(options: MockEngineOptions = {}): MockEngine {
   const record = (method: string, ...args: unknown[]): void => {
     calls.push({ method, args });
   };
-  const capabilities = options.capabilities ?? ALL_AVAILABLE_CAPABILITIES;
 
   const engine: MockEngine = {
     backend,
@@ -150,12 +192,14 @@ export function createMockEngine(options: MockEngineOptions = {}): MockEngine {
     },
     async loadSource(source) {
       record("loadSource", source);
+      const failure = typeof options.failLoadSource === "function" ? options.failLoadSource(source) : options.failLoadSource;
+      if (failure) throw failure;
       loadedSources.push(source);
       const result: SourceCapabilities = {
-        capabilities,
-        morphNames: options.morphNames ?? (source.kind === "procedural" ? source.model.morphNames : Object.values(source.plan.shapeKeyMap)),
-        boneNames: options.boneNames ?? (source.kind === "procedural" ? source.model.skeleton.bones.map((b) => b.name) : Object.values(source.plan.boneMap)),
-        partIdPalette: options.partIdPalette ?? (source.kind === "procedural" ? source.model.partIdPalette : {}),
+        capabilities: options.capabilities ?? mockCapabilities(source) ?? ALL_AVAILABLE_CAPABILITIES,
+        morphNames: options.morphNames ?? mockMorphNames(source),
+        boneNames: options.boneNames ?? mockBoneNames(source),
+        partIdPalette: options.partIdPalette ?? mockPartIdPalette(source),
       };
       return result;
     },
