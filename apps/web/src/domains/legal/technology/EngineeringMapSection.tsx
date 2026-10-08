@@ -1,4 +1,5 @@
 import { ExternalLink, Lightbulb, Table2 } from "lucide-react";
+import { useSyncExternalStore } from "react";
 
 import { EngineeringDiagramFrame } from "./EngineeringDiagramFrame";
 import type { EngineeringMap, EngineeringMapColumn, EngineeringMapRow } from "./engineering-map-types";
@@ -10,6 +11,16 @@ import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo => translateBilingualValueForActiveLocale("EngineeringMapSection", ko, en);
 const text = (value: LocalizedText | undefined): string => (value ? bi(value.ko, value.en) : "—");
+
+/** 표는 넓은 화면(lg 이상)에서만 쓴다. 두 표현을 모두 DOM 에 두면 행이 두 배가 되므로 화면 폭에 맞는 하나만 그린다. */
+const WIDE_QUERY = "(min-width: 1024px)";
+function subscribeWide(onChange: () => void): () => void {
+  if (typeof window.matchMedia !== "function") return () => undefined;
+  const list = window.matchMedia(WIDE_QUERY);
+  list.addEventListener("change", onChange);
+  return () => list.removeEventListener("change", onChange);
+}
+const readWide = (): boolean => (typeof window.matchMedia === "function" ? window.matchMedia(WIDE_QUERY).matches : true);
 
 function RowIdentity({
   mapId,
@@ -33,7 +44,7 @@ function RowIdentity({
             href={row.link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-black text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-flex min-h-6 items-center gap-1 font-black text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {row.name}
             <ExternalLink size={12} aria-hidden="true" className="shrink-0" />
@@ -55,7 +66,7 @@ function RowIdentity({
             <a
               key={item.id}
               href={`#${item.id}`}
-              className="rounded-full border border-accent/35 bg-accent-soft px-2.5 py-0.5 font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="inline-flex min-h-6 items-center rounded-full border border-accent/35 bg-accent-soft px-2.5 py-0.5 font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               {bi("도감 카드", "Atlas card")} · {item.name}
             </a>
@@ -96,6 +107,7 @@ export function EngineeringMapSection({
   readonly visibleAtlas: ReadonlyMap<string, string>;
 }) {
   useBilingualI18nRevision();
+  const wide = useSyncExternalStore(subscribeWide, readWide, () => true);
   const headingId = `map-${map.id}-title`;
   return (
     <section
@@ -136,9 +148,9 @@ export function EngineeringMapSection({
           {bi("조건에 맞는 항목이 없습니다.", "No rows match the current filters.")}
         </p>
       ) : (
-        <>
-          <div className="mt-6 hidden lg:block">
-            <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
+        wide ? (
+          <div className="mt-6">
+            <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm" data-map-table="">
               <caption className="sr-only">{text(map.title)}</caption>
               <thead>
                 <tr>
@@ -172,7 +184,8 @@ export function EngineeringMapSection({
               </tbody>
             </table>
           </div>
-          <ul className="mt-6 grid gap-3 lg:hidden" aria-label={text(map.title)}>
+        ) : (
+          <ul className="mt-6 grid gap-3" aria-label={text(map.title)} data-map-cards="">
             {rows.map((row) => (
               <li key={row.id} className="rounded-3xl border border-line/65 bg-card/65 p-4">
                 <RowIdentity mapId={map.id} row={row} visibleAtlas={visibleAtlas} />
@@ -187,7 +200,7 @@ export function EngineeringMapSection({
               </li>
             ))}
           </ul>
-        </>
+        )
       )}
 
       {map.notes?.length ? (

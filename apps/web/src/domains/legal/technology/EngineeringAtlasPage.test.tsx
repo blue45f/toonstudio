@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -27,6 +27,16 @@ vi.mock("./engineering-map-content", async () => {
 
 afterEach(cleanup);
 
+/** 카드 본문은 처음 열릴 때 그려진다(접힌 동안은 머리만). 열림 이벤트를 흉내 내 모든 카드를 연다. */
+function openAllCards(container: HTMLElement): void {
+  act(() => {
+    for (const details of container.querySelectorAll<HTMLDetailsElement>("details[data-eng-disclosure]")) {
+      details.open = true;
+      fireEvent(details, new Event("toggle"));
+    }
+  });
+}
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={["/about/technology/atlas"]}>
@@ -36,8 +46,11 @@ function renderPage() {
 }
 
 describe("EngineeringAtlasPage", () => {
-  it("카드마다 도식과 배경·쓰인 곳·샘플·링크·발표 보조 섹션을 보여준다", () => {
+  it("카드 본문은 열기 전에는 그리지 않고, 열면 배경·쓰인 곳·샘플·링크·발표 보조 섹션을 보여준다", () => {
     const { container } = renderPage();
+    expect(container.querySelector("#fixture-opfs h4")).toBeNull();
+    expect(container.querySelector("#fixture-opfs figure.eng-dia")).toBeTruthy();
+    openAllCards(container);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/기술을 한 장씩|One card for every technology/u);
     const card = container.querySelector("#fixture-opfs") as HTMLElement;
     expect(card).toBeTruthy();
@@ -51,6 +64,7 @@ describe("EngineeringAtlasPage", () => {
 
   it("외부 링크는 새 탭에서 안전하게 열리고 사용 경로는 제품 라우트로 이어진다", () => {
     const { container } = renderPage();
+    openAllCards(container);
     const link = container.querySelector('a[href^="https://developer.mozilla.org/"]') as HTMLAnchorElement;
     expect(link.target).toBe("_blank");
     expect(link.rel).toContain("noopener");
@@ -104,8 +118,26 @@ describe("EngineeringAtlasPage", () => {
     expect(official.target).toBe("_blank");
     expect(official.rel).toContain("noopener");
     expect(section.querySelector('a[href="#fixture-opfs"]')).toBeTruthy();
-    // 좁은 화면용 카드 목록에도 같은 행이 있다.
-    expect(section.querySelectorAll("ul[aria-label] > li").length).toBeGreaterThanOrEqual(2);
+    // 표만 그린다(좁은 화면용 카드 목록은 화면이 좁을 때만 그려 DOM 이 두 배가 되지 않는다).
+    expect(section.querySelector("[data-map-cards]")).toBeNull();
+  });
+
+  it("좁은 화면에서는 같은 행을 카드 목록으로 그린다", () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })) as unknown as typeof window.matchMedia;
+    try {
+      const { container } = renderPage();
+      const section = container.querySelector("#map-free-tier") as HTMLElement;
+      expect(section.querySelector("[data-map-table]")).toBeNull();
+      expect(section.querySelectorAll("[data-map-cards] > li").length).toBeGreaterThanOrEqual(2);
+    } finally {
+      window.matchMedia = original;
+    }
   });
 
   it("분야 필터를 특정 분야로 좁히면 지도는 숨고, 검색어는 지도 행에도 적용된다", () => {

@@ -11,6 +11,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 
 import { EngineeringCodeBlock } from "./EngineeringCodeBlock";
 import { EngineeringDiagramFrame } from "./EngineeringDiagramFrame";
@@ -147,8 +148,12 @@ function SampleBlock({ sample, locale }: { readonly sample: EngineeringAtlasSamp
   );
 }
 
-function AtlasCard({ entry, locale }: { readonly entry: EngineeringAtlasEntry; readonly locale: string }) {
+function AtlasCard({ entry, locale, printing }: { readonly entry: EngineeringAtlasEntry; readonly locale: string; readonly printing: boolean }) {
   useBilingualI18nRevision();
+  // 카드가 100장이 넘어 본문(샘플 코드·링크·발표 보조)까지 모두 그리면 DOM 이 12만 노드를 넘는다.
+  // 접힌 동안은 머리(도식·요점·칩)만 그리고, 처음 열릴 때(또는 인쇄할 때) 본문을 그린다. 한 번 그린 본문은 접어도 유지한다.
+  const [opened, setOpened] = useState(false);
+  const showBody = opened || printing;
   const category = categoryById.get(entry.category);
   const chapters = entry.chapterIds.flatMap((id) => {
     const chapter = chapterById.get(id);
@@ -204,6 +209,9 @@ function AtlasCard({ entry, locale }: { readonly entry: EngineeringAtlasEntry; r
 
       <EngineeringDisclosure
         className="mt-6"
+        onToggle={(open) => {
+          if (open) setOpened(true);
+        }}
         summary={(
           <>
             <BookOpen size={17} className="shrink-0 text-accent" aria-hidden="true" />
@@ -211,17 +219,18 @@ function AtlasCard({ entry, locale }: { readonly entry: EngineeringAtlasEntry; r
           </>
         )}
       >
-        <div className="grid gap-8">
-          <section aria-labelledby={`${entry.id}-background`} className="grid gap-3">
-            <SectionTitle id={`${entry.id}-background`} icon={BookOpen}>{bi("배경 지식", "Background")}</SectionTitle>
-            {entry.background.map((paragraph) => (
-              <p key={paragraph.ko} className="max-w-4xl text-sm leading-8 text-fg-2">{text(paragraph)}</p>
-            ))}
-            {entry.talk.analogy ? (
-              <p className="flex items-start gap-2.5 rounded-2xl border border-accent-2/35 bg-accent-2/10 px-4 py-3 text-sm leading-7 text-fg-2">
-                <Lightbulb size={16} className="mt-1 shrink-0 text-accent-2" aria-hidden="true" />
-                <span><strong className="mr-1 text-fg">{bi("쉬운 비유", "In plain words")}</strong>{text(entry.talk.analogy)}</span>
-              </p>
+        {showBody ? (
+          <div className="grid gap-8">
+            <section aria-labelledby={`${entry.id}-background`} className="grid gap-3">
+              <SectionTitle id={`${entry.id}-background`} icon={BookOpen}>{bi("배경 지식", "Background")}</SectionTitle>
+              {entry.background.map((paragraph) => (
+                <p key={paragraph.ko} className="max-w-4xl text-sm leading-8 text-fg-2">{text(paragraph)}</p>
+              ))}
+              {entry.talk.analogy ? (
+                <p className="flex items-start gap-2.5 rounded-2xl border border-accent-2/35 bg-accent-2/10 px-4 py-3 text-sm leading-7 text-fg-2">
+                  <Lightbulb size={16} className="mt-1 shrink-0 text-accent-2" aria-hidden="true" />
+                  <span><strong className="mr-1 text-fg">{bi("쉬운 비유", "In plain words")}</strong>{text(entry.talk.analogy)}</span>
+                </p>
             ) : null}
           </section>
 
@@ -240,7 +249,7 @@ function AtlasCard({ entry, locale }: { readonly entry: EngineeringAtlasEntry; r
                     ))}
                   </ul>
                   {usage.route ? (
-                    <Link href={usage.route} className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <Link href={usage.route} className="mt-3 inline-flex min-h-7 items-center gap-1.5 text-xs font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                       {bi("제품에서 열어보기", "Open it in the product")} <code className="font-mono">{usage.route}</code>
                       <ArrowRight size={12} aria-hidden="true" />
                     </Link>
@@ -281,7 +290,7 @@ function AtlasCard({ entry, locale }: { readonly entry: EngineeringAtlasEntry; r
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-start gap-1.5 text-sm font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                          className="inline-flex min-h-7 items-start gap-1.5 py-0.5 text-sm font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         >
                           <span>{link.title}</span>
                           <ExternalLink size={12} aria-hidden="true" className="mt-1 shrink-0" />
@@ -332,22 +341,26 @@ function AtlasCard({ entry, locale }: { readonly entry: EngineeringAtlasEntry; r
             ) : null}
           </section>
         </div>
+        ) : null}
       </EngineeringDisclosure>
     </article>
   );
 }
 
 /** 인쇄할 때는 접힌 상세를 모두 펼쳤다가 인쇄 후 원래 상태로 되돌린다. */
-function useOpenDetailsForPrint(): void {
+function useOpenDetailsForPrint(setPrinting: (printing: boolean) => void): void {
   useEffect(() => {
     let opened: HTMLDetailsElement[] = [];
     const before = (): void => {
+      // 지연 렌더하는 본문이 인쇄 전에 그려지도록 동기로 반영한다.
+      flushSync(() => setPrinting(true));
       opened = [...document.querySelectorAll<HTMLDetailsElement>(`#${BODY_ID} details[data-eng-disclosure]`)].filter((element) => !element.open);
       for (const element of opened) element.open = true;
     };
     const after = (): void => {
       for (const element of opened) element.open = false;
       opened = [];
+      setPrinting(false);
     };
     window.addEventListener("beforeprint", before);
     window.addEventListener("afterprint", after);
@@ -355,7 +368,7 @@ function useOpenDetailsForPrint(): void {
       window.removeEventListener("beforeprint", before);
       window.removeEventListener("afterprint", after);
     };
-  }, []);
+  }, [setPrinting]);
 }
 
 export function EngineeringAtlasPage() {
@@ -375,7 +388,8 @@ export function EngineeringAtlasPage() {
   }, [paramsKey]);
   const searchId = useId();
   const statusId = useId();
-  useOpenDetailsForPrint();
+  const [printing, setPrinting] = useState(false);
+  useOpenDetailsForPrint(setPrinting);
 
   useDocumentTitle(
     bi("ToonStudio 기술 도감 · 쓰인 기술을 한 장씩", "ToonStudio tech atlas · One card per technology"),
@@ -550,7 +564,7 @@ export function EngineeringAtlasPage() {
                   <p className="mt-1.5 max-w-3xl text-sm leading-7 text-fg-2">{text(section.meta.description)}</p>
                 </header>
                 {section.entries.map((entry) => (
-                  <AtlasCard key={entry.id} entry={entry} locale={locale} />
+                  <AtlasCard key={entry.id} entry={entry} locale={locale} printing={printing} />
                 ))}
               </section>
             ))}

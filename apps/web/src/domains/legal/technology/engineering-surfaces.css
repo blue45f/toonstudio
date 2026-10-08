@@ -300,7 +300,7 @@
 
 /* ── 도식 "크게 보기" ─────────────────────────────────────────────
    본문 폭에서 작아지는 넓은 도식을 대화상자로 키워 본다(EngineeringDiagramFrame). */
-.eng-dia-frame { position: relative; }
+.eng-dia-frame { position: relative; container: eng-dia-frame / inline-size; }
 .eng-dia-frame__zoom {
   position: absolute;
   top: 0.15rem;
@@ -324,6 +324,10 @@
 .eng-dia-frame__zoom:hover {
   color: var(--color-accent);
   border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-line));
+}
+/* 좁은 화면에서는 도식이 목록으로 바뀌므로(위 eng-dia 컨테이너 규칙과 같은 기준) 확대 버튼도 감춘다. */
+@container eng-dia-frame (width < 560px) {
+  .eng-dia-frame__zoom { display: none; }
 }
 .eng-dia-frame__zoom:focus-visible,
 .eng-dia-zoom__close:focus-visible {
