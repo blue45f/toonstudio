@@ -1,6 +1,6 @@
 import { ExternalLink, Lightbulb, Table2 } from "lucide-react";
 
-import { EngineeringDiagramView } from "./EngineeringDiagramView";
+import { EngineeringDiagramFrame } from "./EngineeringDiagramFrame";
 import type { EngineeringMap, EngineeringMapColumn, EngineeringMapRow } from "./engineering-map-types";
 import type { LocalizedText } from "./engineering-story-content";
 import { EngineeringStatusBadge } from "./EngineeringStoryUi";
@@ -127,7 +127,7 @@ export function EngineeringMapSection({
 
       {map.diagram ? (
         <div className="mt-5 rounded-3xl border border-line/65 bg-card/70 p-3 sm:p-5">
-          <EngineeringDiagramView diagram={map.diagram} />
+          <EngineeringDiagramFrame diagram={map.diagram} />
         </div>
       ) : null}
 
@@ -142,14 +142,14 @@ export function EngineeringMapSection({
               <caption className="sr-only">{text(map.title)}</caption>
               <thead>
                 <tr>
-                  <th scope="col" className="w-[17rem] border-b border-line px-3 py-2.5 text-xs font-black text-fg-3">
+                  <th scope="col" className="w-[13.5rem] border-b border-line px-3 py-2.5 text-xs font-black text-fg-3">
                     {bi("이름", "Name")}
                   </th>
                   {map.columns.map((column) => (
                     <th
                       key={column.id}
                       scope="col"
-                      className={cx("border-b border-line px-3 py-2.5 text-xs font-black text-fg-3", column.narrow && "w-32")}
+                      className={cx("border-b border-line px-3 py-2.5 text-xs font-black text-fg-3", column.narrow && "w-28")}
                     >
                       {text(column.label)}
                     </th>
@@ -159,11 +159,11 @@ export function EngineeringMapSection({
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id} id={`map-${map.id}-${row.id}`} className="scroll-mt-32 align-top">
-                    <th scope="row" className="border-b border-line/60 px-3 py-3.5 text-left font-normal">
+                    <th scope="row" className="border-b border-line/60 px-3 py-3 text-left text-[0.86rem] font-normal">
                       <RowIdentity mapId={map.id} row={row} visibleAtlas={visibleAtlas} />
                     </th>
                     {map.columns.map((column) => (
-                      <td key={column.id} className="break-words border-b border-line/60 px-3 py-3.5 leading-7 text-fg-2">
+                      <td key={column.id} className="break-words border-b border-line/60 px-3 py-3 text-[0.82rem] leading-6 text-fg-2">
                         {cellOf(row, column)}
                       </td>
                     ))}

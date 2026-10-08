@@ -30,6 +30,11 @@ describe("도식 텍스트 계산", () => {
     expect(wrapText("   ", 17, 200, 2)).toEqual([]);
   });
 
+  it("공백 없는 식별자는 구두점 뒤에서 끊는다", () => {
+    expect(wrapText("storage.googleapis.com", 13, 120, 2)).toEqual(["storage.", "googleapis.com"]);
+    expect(wrapText("studio-direct-v1-channel", 13, 100, 2)[0]).toBe("studio-direct-");
+  });
+
   it("영문은 단어 경계에서 줄을 나눈다", () => {
     const lines = wrapText("Dedicated Worker pool", 13, 90, 3);
     expect(lines.length).toBeGreaterThan(1);

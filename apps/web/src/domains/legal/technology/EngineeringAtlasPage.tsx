@@ -13,7 +13,7 @@ import {
 import { useEffect, useId, useMemo, useState } from "react";
 
 import { EngineeringCodeBlock } from "./EngineeringCodeBlock";
-import { EngineeringDiagramView } from "./EngineeringDiagramView";
+import { EngineeringDiagramFrame } from "./EngineeringDiagramFrame";
 import { ENGINEERING_ATLAS_ENTRIES } from "./engineering-atlas-content";
 import { ENGINEERING_MAPS } from "./engineering-map-content";
 import { filterMapRows } from "./engineering-map-filter";
@@ -191,7 +191,7 @@ function AtlasCard({ entry, locale }: { readonly entry: EngineeringAtlasEntry; r
       </ul>
 
       <div className="mt-5 rounded-3xl border border-line/65 bg-card/70 p-3 sm:p-5">
-        <EngineeringDiagramView diagram={entry.diagram} />
+        <EngineeringDiagramFrame diagram={entry.diagram} />
       </div>
 
       <ul className="mt-4 flex flex-wrap gap-2" aria-label={bi("관련 기술", "Related technologies")}>

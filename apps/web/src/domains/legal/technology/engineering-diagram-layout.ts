@@ -83,9 +83,15 @@ export function wrapText(text: string, fontSize: number, maxWidth: number, maxLi
     }
     // 공백 기준으로 되돌려 단어를 보존한다(영문). 공백이 없으면 글자 경계에서 자른다.
     const lastSpace = current.lastIndexOf(" ");
-    if (char !== " " && lastSpace > 0 && !/[\u3000-\u9fff\uac00-\ud7a3]/u.test(char)) {
+    const latin = char !== " " && !/[\u3000-\u9fff\uac00-\ud7a3]/u.test(char);
+    // 공백이 없는 식별자(storage.googleapis.com, studio-direct-v1)는 구두점 뒤에서 끊어 읽기 좋게 한다.
+    const punct = Math.max(current.lastIndexOf("."), current.lastIndexOf("/"), current.lastIndexOf("-"), current.lastIndexOf("_"), current.lastIndexOf(":"));
+    if (latin && lastSpace > 0) {
       lines.push(current.slice(0, lastSpace).trim());
       current = `${current.slice(lastSpace + 1)}${char}`;
+    } else if (latin && lastSpace <= 0 && punct >= 3 && punct < current.length - 1) {
+      lines.push(current.slice(0, punct + 1));
+      current = `${current.slice(punct + 1)}${char}`;
     } else {
       lines.push(current.trim());
       current = char === " " ? "" : char;
@@ -434,7 +440,8 @@ export function layoutSequence(diagram: EngineeringSequenceDiagram, text: TextRe
     const fromX = lineX.get(message.from) ?? 0;
     const toX = lineX.get(message.to) ?? 0;
     const self = message.from === message.to;
-    const span = self ? m.actorW + m.actorGap - 56 : Math.max(Math.abs(toX - fromX) - 24, 120);
+    // 자기 호출은 다음 생명선 쪽으로 조금 더 넓게 쓴다(라벨 줄바꿈을 줄인다). 글자에는 배경 테두리가 있어 생명선과 겹쳐도 읽힌다.
+    const span = self ? Math.round((m.actorW + m.actorGap) * 1.3) - 56 : Math.max(Math.abs(toX - fromX) - 24, 120);
     return {
       message,
       index,
