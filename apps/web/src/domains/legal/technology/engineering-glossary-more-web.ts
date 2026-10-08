@@ -36,8 +36,8 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
       "Like one shared whiteboard instead of mailing copies back and forth. Writing at the same moment would tangle the ink, so you need a one-at-a-time rule (Atomics).",
     ),
     inToonstudio: t(
-      "격리가 켜져 공유 메모리가 있으면 조각(스컬프트) 메시 한도를 높게 쓰고, 없으면 STUDIO_SCULPT_NO_SHARED_MEMORY_MAX_VERTICES = 2,097,152 정점으로 낮춥니다(studio-capability-budgets.ts). Atomics 로 펜 입력을 주고받는 링 버퍼(studio-shared-pointer-ring-buffer.ts)는 구현·테스트가 있지만 제품 화면에서 부르는 곳은 코드에서 찾지 못했습니다.",
-      "With isolation on, shared memory lets the sculpt mesh budget rise; without it the limit drops to STUDIO_SCULPT_NO_SHARED_MEMORY_MAX_VERTICES = 2,097,152 vertices (studio-capability-budgets.ts). A ring buffer that passes pen input through Atomics (studio-shared-pointer-ring-buffer.ts) is implemented and tested, but no product call site was found in the code.",
+      "공유 메모리 유무에 따라 조각(스컬프트) 메시 상한을 달리 잡는 예산 사다리(STUDIO_SCULPT_NO_SHARED_MEMORY_MAX_VERTICES = 2,097,152 정점, studio-capability-budgets.ts)를 구현·시험해 두었지만 제품 화면에는 아직 연결되지 않았습니다. Atomics 로 펜 입력을 주고받는 링 버퍼(studio-shared-pointer-ring-buffer.ts)도 구현·테스트만 있고 제품 화면에서 부르는 곳은 코드에서 찾지 못했습니다.",
+      "A budget ladder that sets the sculpt mesh ceiling according to whether shared memory exists (STUDIO_SCULPT_NO_SHARED_MEMORY_MAX_VERTICES = 2,097,152 vertices, studio-capability-budgets.ts) is implemented and tested, but it is not yet wired into a product screen. A ring buffer that passes pen input through Atomics (studio-shared-pointer-ring-buffer.ts) is also implemented and tested only, and no product call site was found in the code.",
     ),
     chapters: ["worker-architecture", "wasm-fixed-simd"],
     atlasIds: ["cross-origin-isolation-studio-gate", "implemented-not-wired-modules"],
@@ -66,8 +66,8 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
     category: "web",
     term: t("BroadcastChannel", "BroadcastChannel"),
     definition: t(
-      "같은 사이트의 탭·창·Worker 끼리 서버 없이 메시지를 주고받는 방송 채널입니다.",
-      "A broadcast channel through which tabs, windows and Workers of one site exchange messages without any server.",
+      "같은 출처(origin)의 탭·창·Worker 끼리 서버 없이 메시지를 주고받는 방송 채널입니다.",
+      "A broadcast channel through which tabs, windows and Workers of the same origin exchange messages without any server.",
     ),
     analogy: t(
       "한 건물 안의 안내방송과 같습니다. 채널 이름(방송실)을 아는 모든 층이 듣지만 건물 밖으로는 새지 않습니다.",

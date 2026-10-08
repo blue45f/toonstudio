@@ -179,12 +179,12 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
     category: "collab",
     term: t("Durable Objects", "Durable Objects"),
     definition: t(
-      "Cloudflare 가 방 하나에 ‘관리인’ 객체 하나를 붙여 주는 서비스입니다. 관리인은 한 번에 한 가지 일만 처리해서 순서가 자연히 맞습니다.",
-      "A Cloudflare service that attaches one ‘caretaker’ object to each room. It handles one thing at a time, so ordering comes for free.",
+      "Cloudflare 가 방 하나에 ‘관리인’ 객체 하나를 붙여 주는 서비스입니다. 관리인은 단일 스레드로 그 방의 일을 한곳에서 처리해 순서를 매기기 쉽습니다.",
+      "A Cloudflare service that attaches one ‘caretaker’ object to each room. It runs single-threaded and handles that room's work in one place, which makes ordering easy to enforce.",
     ),
     analogy: t(
-      "방마다 안내원이 한 명씩 서 있는 도서관과 같습니다. 안내원이 차례로 응대하니 새치기가 없고, 사람이 없으면 안내원도 쉽니다.",
-      "A library with one attendant per reading room: the attendant serves in turn so nobody cuts in, and rests when the room is empty.",
+      "방마다 안내원이 한 명씩 서 있는 도서관과 같습니다. 안내원이 한곳에서 차례를 챙기니 새치기를 막기 쉽고, 사람이 없으면 안내원도 쉽니다.",
+      "A library with one attendant per reading room: the attendant keeps the queue in one place so cutting in is easy to prevent, and rests when the room is empty.",
     ),
     inToonstudio: t(
       "접속 상태·댓글 신호·화면 공유 신호 세 채널을 방 객체가 번호를 매겨 SQLite 에 기록하고, 놓친 이벤트는 번호 이후만 다시 받습니다(방당 연결 64·계정당 4·이벤트 보존 15분, deploy/cloudflare-realtime/wrangler.jsonc). 그림 문서와 권한의 권위는 NestJS·PostgreSQL 에 남습니다. 상태는 ‘설정됨’이며 운영 활성 여부는 코드로 확인하지 못했습니다.",

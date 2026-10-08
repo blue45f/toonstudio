@@ -17,8 +17,8 @@ export const GLOSSARY_MORE_CRAFT: readonly GlossaryTerm[] = [
       "Like a ratchet wrench that turns only one way: it advances when tightening and catches so it never slips back.",
     ),
     inToonstudio: t(
-      "파일 크기 래칫(shared/lib/__tests__/file-size-ratchet.test.ts, 2026-10-02 도입)은 StudioCuttoonEditorHost.tsx 가 29,642줄까지 커졌던 일을 되풀이하지 않으려는 것입니다. 새 파일은 1,000줄이 상한이고, 베이스라인(작성 시점 327개 파일)의 기존 큰 파일은 기록된 줄 수 이상 자랄 수 없으며 줄이면 같은 변경에서 숫자도 낮춥니다.",
-      "The file-size ratchet (shared/lib/__tests__/file-size-ratchet.test.ts, introduced 2026-10-02) exists so a file never again balloons like StudioCuttoonEditorHost.tsx at 29,642 lines. New files are capped at 1,000 lines, existing big files in the baseline (327 entries when written) cannot grow past their recorded size, and when one shrinks the number is lowered in the same change.",
+      "파일 크기 래칫(shared/lib/__tests__/file-size-ratchet.test.ts)은 단일 파일이 비대해지는 일을 막으려는 것입니다. StudioCuttoonEditorHost.tsx 는 테스트 주석에 29,642줄까지 커졌다고 적혀 있고 지금도 약 2만 9천 줄로 가장 큰 파일입니다. 새 파일은 1,000줄이 상한이고, 베이스라인(현재 327개 파일)의 기존 큰 파일은 기록된 줄 수 이상 자랄 수 없으며 줄이면 같은 변경에서 숫자도 낮춥니다.",
+      "The file-size ratchet (shared/lib/__tests__/file-size-ratchet.test.ts) exists to stop single files from ballooning. A test comment says StudioCuttoonEditorHost.tsx once grew to 29,642 lines, and it is still the biggest file at roughly 29,000 lines. New files are capped at 1,000 lines, existing big files in the baseline (327 entries now) cannot grow past their recorded size, and when one shrinks the number is lowered in the same change.",
     ),
     chapters: ["quality", "quality-gates"],
   },
@@ -90,8 +90,8 @@ export const GLOSSARY_MORE_CRAFT: readonly GlossaryTerm[] = [
       "Like a warning light on an aircraft panel: if the fault is hidden and another engine quietly takes over, the real repair never happens.",
     ),
     inToonstudio: t(
-      "ADR-0018(2026-08-31)이 ‘자동 엔진 폴백 금지’를 정했습니다. 예전에는 실행 실패 뒤 다른 엔진으로 픽셀 권한을 넘겨 장치 손실을 다른 엔진의 성공으로 가렸고, 테스트 상태와 사용자가 본 픽셀이 어긋났습니다. 지금은 획 시작 때 레인을 고정하고 실패를 드러내며, AI 경로도 한도 소진·결제 필요 신호만 다음 공급자로 넘깁니다.",
-      "ADR-0018 (2026-08-31) forbids automatic engine fallback. Previously, after an execution failure pixel authority passed to another engine, hiding device loss behind another engine's success so tested state and user-visible pixels diverged. Now the lane is fixed at stroke start and failure is surfaced, and AI routes likewise pass only quota-exhausted or payment-required signals to the next provider.",
+      "ADR-0018(2026-08-31)이 ‘자동 엔진 폴백 금지’를 정했습니다. 예전에는 실행 실패 뒤 다른 엔진으로 픽셀 권한을 넘겨 장치 손실을 다른 엔진의 성공으로 가렸고, 테스트 상태와 사용자가 본 픽셀이 어긋났습니다. 지금은 획 시작 때 레인을 고정하고 실패를 드러내며, AI 경로도 무료 풀 공급자의 402·429 같은 한도·결제 신호만 다음 공급자로 넘기고 나머지 실패는 그대로 알립니다.",
+      "ADR-0018 (2026-08-31) forbids automatic engine fallback. Previously, after an execution failure pixel authority passed to another engine, hiding device loss behind another engine's success so tested state and user-visible pixels diverged. Now the lane is fixed at stroke start and failure is surfaced, and AI routes likewise pass only quota and payment signals such as a free-pool provider's 402 and 429 to the next provider and report every other failure as it is.",
     ),
     chapters: ["brush-render-authority", "troubleshooting-evidence"],
     atlasIds: ["stroke-surface-route-pointerdown", "webgpu-explicit-engine"],

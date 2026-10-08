@@ -112,8 +112,8 @@ export const GLOSSARY_MORE_DATA: readonly GlossaryTerm[] = [
       "Like the generation number on hotel room keys: if security is a worry, bump the number and every old key stops working.",
     ),
     inToonstudio: t(
-      "user.sessionVersion 을 세션에 담고 요청마다 DB 값과 맞는지 비교합니다(auth.controller.ts). 운영자의 ‘모든 세션 무효화’ 기능은 이 값을 전원 1씩 올립니다(admin-metrics.service.ts 의 revokeAllSessions). 토큰을 하나씩 찾아 지우지 않아도 한 번의 UPDATE 로 끝나는 것이 이유입니다.",
-      "user.sessionVersion is carried in the session and compared with the database value on each request (auth.controller.ts). The operator action ‘revoke all sessions’ raises everyone's value by 1 (revokeAllSessions in admin-metrics.service.ts). The reason: a single UPDATE finishes the job without hunting down tokens one by one.",
+      "user.sessionVersion 을 세션 토큰에 담고 요청마다(session-middleware.ts → isSessionAllowed) DB 값과 맞는지 비교합니다. 조회는 프로세스별 30초 캐시를 거칩니다(server/session.ts). 한 사용자의 세션 무효화는 그 프로세스의 캐시를 바로 비우지만, 운영자의 ‘모든 세션 무효화’(admin-metrics.service.ts 의 revokeAllSessions)는 한 번의 UPDATE 로 전원 값을 1씩 올릴 뿐 캐시를 비우지 않아 최대 약 30초 안에 반영됩니다.",
+      "user.sessionVersion is carried in the session token and compared with the database value on each request (session-middleware.ts, then isSessionAllowed). The lookup goes through a per-process 30-second cache (server/session.ts). Invalidating one user's sessions clears that process's cache at once, but the operator action ‘revoke all sessions’ (revokeAllSessions in admin-metrics.service.ts) only raises everyone's value by 1 in a single UPDATE and does not clear the cache, so it takes effect within about 30 seconds.",
     ),
     chapters: ["authentication", "social-identity-lifecycle"],
     atlasIds: ["session-token-csrf-oauth-cookie"],
