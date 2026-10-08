@@ -10,10 +10,14 @@
  * 같은 값이 studio-virtual-space-theme-character-sources.ts의 STUDIO_THEME_CHARACTER_PREVIEW_SCALE이며, 단위 테스트가
  * 파일 크기와 이 값의 일치를 검사한다.
  *
+ * 원본이 바뀌었는데 사본을 다시 만들지 않으면 로비 카드가 옛 그림을 보여 주므로, 사본마다 원본의 SHA-256을 manifest.json에 남기고
+ * 단위 테스트가 지금 원본의 해시와 맞는지 확인한다.
+ *
  * 사용: node apps/web/scripts/build-virtual-studio-avatar-previews.mjs
- * 출력: apps/web/public/assets/virtual-studio/experience-v8/previews/avatar-<화풍>.webp (6종)
+ * 출력: apps/web/public/assets/virtual-studio/experience-v8/previews/avatar-<화풍>.webp (6종)와 manifest.json
  */
-import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -37,6 +41,7 @@ async function loadSharp() {
 
 const sharp = await loadSharp();
 mkdirSync(OUTPUT_DIR, { recursive: true });
+const previews = [];
 for (const style of STYLES) {
   const input = join(SOURCE_DIR, `avatar-${style}.png`);
   if (!existsSync(input)) throw new Error(`원본이 없습니다: ${input}`);
@@ -48,5 +53,10 @@ for (const style of STYLES) {
     .webp({ quality: 90, alphaQuality: 100, effort: 6 }).toFile(output);
   const bytes = statSync(output).size;
   if (bytes > MAX_BYTES) throw new Error(`${style} 미리보기가 ${MAX_BYTES}바이트를 넘습니다: ${bytes}`);
+  previews.push({
+    artStyle: style, file: `avatar-${style}.webp`, source: `avatar-${style}.png`,
+    sourceSha256: createHash("sha256").update(readFileSync(input)).digest("hex"), width, height, bytes,
+  });
   console.log(`${style}: ${meta.width}×${meta.height} → ${width}×${height} ${(bytes / 1024).toFixed(0)}KB (원본 ${(statSync(input).size / 1024).toFixed(0)}KB)`);
 }
+writeFileSync(join(OUTPUT_DIR, "manifest.json"), `${JSON.stringify({ version: 1, scale: PREVIEW_SCALE, previews }, null, 2)}\n`);

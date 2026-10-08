@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -19,6 +20,10 @@ function webpHeader(bytes: Buffer): { width: number; height: number; alpha: bool
 }
 
 const publicPath = (url: string) => resolve(process.cwd(), "apps/web/public", url.replace(/^\//u, ""));
+const previewManifest = JSON.parse(readFileSync(publicPath("/assets/virtual-studio/experience-v8/previews/manifest.json"), "utf8")) as {
+  readonly scale: number;
+  readonly previews: readonly { readonly artStyle: string; readonly file: string; readonly sourceSha256: string; readonly width: number; readonly height: number; readonly bytes: number }[];
+};
 
 describe("테마 캐릭터 미리보기 사본", () => {
   it.each(STUDIO_THEME_CHARACTER_SOURCES)("$artStyle: 원본과 같은 비율의 알파 WebP이고 원본보다 훨씬 작다", (source) => {
@@ -33,6 +38,18 @@ describe("테마 캐릭터 미리보기 사본", () => {
     const original = statSync(publicPath(source.textureUrl)).size;
     expect(bytes.byteLength).toBeLessThan(400 * 1024);
     expect(bytes.byteLength).toBeLessThan(original / 3);
+  });
+
+  it.each(STUDIO_THEME_CHARACTER_SOURCES)("$artStyle: 사본은 지금 원본에서 만든 것이다(원본이 바뀌면 사본을 다시 만들어야 한다)", (source) => {
+    const entry = previewManifest.previews.find((item) => item.artStyle === source.artStyle);
+    if (!entry) throw new Error(`${source.artStyle} 사본 기록이 없다`);
+    expect(previewManifest.scale).toBe(STUDIO_THEME_CHARACTER_PREVIEW_SCALE);
+    const original = readFileSync(publicPath(source.textureUrl));
+    expect(entry.sourceSha256).toBe(createHash("sha256").update(original).digest("hex"));
+    const preview = readFileSync(publicPath(source.previewUrl ?? ""));
+    expect(entry.file).toBe(source.previewUrl?.split("/").at(-1));
+    expect(entry.bytes).toBe(preview.byteLength);
+    expect([entry.width, entry.height]).toEqual([webpHeader(preview).width, webpHeader(preview).height]);
   });
 
   it("스킨은 미리보기 사본을 따로 들고 있고 월드가 쓰는 방향별 원본 URL은 그대로다", () => {
