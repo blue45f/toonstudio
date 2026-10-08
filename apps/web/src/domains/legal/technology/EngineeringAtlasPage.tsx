@@ -15,6 +15,8 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { EngineeringCodeBlock } from "./EngineeringCodeBlock";
 import { EngineeringDiagramView } from "./EngineeringDiagramView";
 import { ENGINEERING_ATLAS_ENTRIES } from "./engineering-atlas-content";
+import { ENGINEERING_MAPS } from "./engineering-map-content";
+import { filterMapRows } from "./engineering-map-filter";
 import {
   ENGINEERING_ATLAS_CATEGORIES,
   ENGINEERING_ATLAS_LINK_KIND_LABEL,
@@ -32,6 +34,7 @@ import {
   EngineeringMetaChip,
   type EngineeringTocGroup,
 } from "./EngineeringLongform";
+import { EngineeringMapSection } from "./EngineeringMapSection";
 import { EngineeringPageFrame, EngineeringPageIntro, EngineeringStatusBadge } from "./EngineeringStoryUi";
 import { useEngineeringLocale } from "./use-engineering-locale";
 
@@ -395,11 +398,27 @@ export function EngineeringAtlasPage() {
     entries: visible.filter((entry) => entry.category === meta.id),
   })).filter((section) => section.entries.length > 0);
 
-  const tocGroups: readonly EngineeringTocGroup[] = sections.map((section) => ({
-    id: section.meta.id,
-    label: text(section.meta.label),
-    items: section.entries.map((entry) => ({ id: entry.id, label: entry.name })),
-  }));
+  // 지도는 분야를 가로지르는 표라서 분야 필터가 "전체"일 때만 보이고, 검색어·상태 필터는 행에도 적용한다.
+  const visibleMaps = useMemo(
+    () =>
+      category === "all"
+        ? ENGINEERING_MAPS.map((map) => ({ map, rows: filterMapRows(map, normalized, status) })).filter((item) => item.rows.length > 0)
+        : [],
+    [category, normalized, status],
+  );
+  const visibleAtlas = useMemo(() => new Map(visible.map((entry) => [entry.id, entry.name])), [visible]);
+  const mapRowCount = visibleMaps.reduce((sum, item) => sum + item.rows.length, 0);
+
+  const tocGroups: readonly EngineeringTocGroup[] = [
+    ...(visibleMaps.length > 0
+      ? [{ id: "maps", label: bi("지도 · 같은 종류를 한 표로", "Maps · one table per kind"), items: visibleMaps.map(({ map }) => ({ id: `map-${map.id}`, label: text(map.title) })) }]
+      : []),
+    ...sections.map((section) => ({
+      id: section.meta.id,
+      label: text(section.meta.label),
+      items: section.entries.map((entry) => ({ id: entry.id, label: entry.name })),
+    })),
+  ];
 
   const categoryCounts = new Map<CategoryFilter, number>([["all", ENGINEERING_ATLAS_ENTRIES.length]]);
   for (const entry of ENGINEERING_ATLAS_ENTRIES) categoryCounts.set(entry.category, (categoryCounts.get(entry.category) ?? 0) + 1);
@@ -429,6 +448,9 @@ export function EngineeringAtlasPage() {
         meta={(
           <>
             <EngineeringMetaChip>{formatI18nTemplate(String(bi("카드 {value0}장", "{value0} cards")), { value0: ENGINEERING_ATLAS_ENTRIES.length })}</EngineeringMetaChip>
+            {ENGINEERING_MAPS.length > 0 ? (
+              <EngineeringMetaChip>{formatI18nTemplate(String(bi("비교 지도 {value0}개", "{value0} maps")), { value0: ENGINEERING_MAPS.length })}</EngineeringMetaChip>
+            ) : null}
             <EngineeringMetaChip>{formatI18nTemplate(String(bi("샘플 코드 {value0}개", "{value0} samples")), { value0: sampleCount })}</EngineeringMetaChip>
             <EngineeringMetaChip>{formatI18nTemplate(String(bi("참고 링크 {value0}개", "{value0} references")), { value0: linkCount })}</EngineeringMetaChip>
             <EngineeringMetaChip>{formatI18nTemplate(String(bi("연결 챕터 {value0}개", "{value0} linked chapters")), { value0: referencedChapters })}</EngineeringMetaChip>
@@ -486,17 +508,38 @@ export function EngineeringAtlasPage() {
           </label>
         </div>
         <p role="status" aria-live="polite" data-atlas-result-count="" className="text-xs font-bold text-fg-3">
-          {formatI18nTemplate(String(bi("{value0}장 표시 중", "Showing {value0} cards")), { value0: visible.length })}
+          {visibleMaps.length > 0
+            ? formatI18nTemplate(String(bi("카드 {value0}장 · 지도 항목 {value1}개 표시 중", "Showing {value0} cards and {value1} map rows")), { value0: visible.length, value1: mapRowCount })
+            : formatI18nTemplate(String(bi("{value0}장 표시 중", "Showing {value0} cards")), { value0: visible.length })}
         </p>
       </section>
 
-      {visible.length === 0 ? (
+      {visible.length === 0 && visibleMaps.length === 0 ? (
         <p className="mt-8 rounded-3xl border border-dashed border-line-strong bg-card/50 p-8 text-center text-sm leading-7 text-fg-2">
           {bi("조건에 맞는 카드가 없습니다. 검색어를 줄이거나 분야와 상태를 '전체'로 바꿔 보세요.", "No cards match. Shorten the search or reset category and status to All.")}
         </p>
       ) : (
         <EngineeringLongformLayout groups={tocGroups} bodyId={BODY_ID} tocLabel={bi("도감 목차", "Atlas contents")}>
           <div className="grid gap-12">
+            {visibleMaps.length > 0 ? (
+              <section aria-labelledby="atlas-maps-title" className="grid gap-6">
+                <header>
+                  <h2 id="atlas-maps-title" className="scroll-mt-32 text-2xl font-black tracking-tight text-fg">
+                    {bi("지도 · 같은 종류를 한 표로", "Maps · one table per kind")}
+                    <span className="ml-3 text-base font-bold text-fg-3">{visibleMaps.length}</span>
+                  </h2>
+                  <p className="mt-1.5 max-w-3xl text-sm leading-7 text-fg-2">
+                    {bi(
+                      "카드가 기술 하나를 깊게 설명한다면, 지도는 무료 서비스·오픈소스·Open API·경쟁 제품·AI 개발 도구를 한 표로 나란히 비교합니다. 이름을 누르면 공식 사이트로, '도감 카드'를 누르면 자세한 설명으로 이동합니다.",
+                      "A card explains one technology in depth; a map compares free services, open source, Open APIs, competing products and AI development tools side by side. Names link to official sites and 'Atlas card' chips jump to the detailed card.",
+                    )}
+                  </p>
+                </header>
+                {visibleMaps.map(({ map, rows }) => (
+                  <EngineeringMapSection key={map.id} map={map} rows={rows} visibleAtlas={visibleAtlas} />
+                ))}
+              </section>
+            ) : null}
             {sections.map((section) => (
               <section key={section.meta.id} aria-labelledby={`category-${section.meta.id}`} className="grid gap-6">
                 <header>

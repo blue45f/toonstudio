@@ -17,6 +17,14 @@ vi.mock("./engineering-atlas-content", async () => {
   };
 });
 
+vi.mock("./engineering-map-content", async () => {
+  const fixtures = await import("./engineering-map.fixtures");
+  return {
+    ENGINEERING_MAPS: [fixtures.FIXTURE_MAP_FREE_TIER],
+    findEngineeringMap: () => undefined,
+  };
+});
+
 afterEach(cleanup);
 
 function renderPage() {
@@ -82,4 +90,38 @@ describe("EngineeringAtlasPage", () => {
     expect(container.querySelector("#fixture-free-budget")).toBeTruthy();
     expect(container.querySelector("#fixture-opfs")).toBeNull();
   });
+
+  it("지도는 표와 카드 목록을 함께 그리고, 이름은 공식 사이트로, 도감 카드 칩은 보이는 카드로 잇는다", () => {
+    const { container } = renderPage();
+    const section = container.querySelector("#map-free-tier") as HTMLElement;
+    expect(section).toBeTruthy();
+    expect(within(section).getByRole("heading", { level: 3 }).textContent).toMatch(/무료로 세운 서비스|Services built on free tiers/u);
+    expect(section.querySelector("figure.eng-dia")).toBeTruthy();
+    // 넓은 화면용 표: 열 머리글과 행 머리글이 있고 모든 칸이 채워진다.
+    expect(section.querySelectorAll("table thead th").length).toBe(4);
+    expect(section.querySelectorAll("table tbody th[scope='row']").length).toBe(2);
+    const official = section.querySelector('a[href="https://developers.cloudflare.com/workers/platform/pricing/"]') as HTMLAnchorElement;
+    expect(official.target).toBe("_blank");
+    expect(official.rel).toContain("noopener");
+    expect(section.querySelector('a[href="#fixture-opfs"]')).toBeTruthy();
+    // 좁은 화면용 카드 목록에도 같은 행이 있다.
+    expect(section.querySelectorAll("ul[aria-label] > li").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("분야 필터를 특정 분야로 좁히면 지도는 숨고, 검색어는 지도 행에도 적용된다", () => {
+    const { container } = renderPage();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "quota ledger" } });
+    const section = container.querySelector("#map-free-tier") as HTMLElement;
+    expect(section.querySelectorAll("table tbody tr").length).toBe(1);
+    expect(section.querySelector("table tbody")?.textContent).toContain("Quota ledger");
+    // 지도 행에 걸리는 카드가 없는 검색어에서도 지도는 남는다(카드 0장이어도 빈 화면이 되지 않는다).
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "cloudflare workers" } });
+    expect(container.querySelector("#fixture-opfs")).toBeNull();
+    expect(container.querySelector("#map-free-tier")).toBeTruthy();
+    expect(screen.queryByText(/조건에 맞는 카드가 없습니다|No cards match/u)).toBeNull();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /^(AI·추론|AI · inference)/u }));
+    expect(container.querySelector("#map-free-tier")).toBeNull();
+  });
 });
+
