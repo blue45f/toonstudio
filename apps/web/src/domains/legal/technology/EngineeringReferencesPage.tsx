@@ -22,6 +22,7 @@ import {
   ENGINEERING_REFERENCE_RELATION_META,
   type EngineeringReferenceRelation,
 } from "./engineering-story-deep-dive-content";
+import { EngineeringFreeAiTokenGuide } from "./EngineeringFreeAiTokenGuide";
 import { EngineeringSeminarResources } from "./EngineeringSeminarResources";
 import {
   EngineeringKeySummary,
@@ -331,6 +332,7 @@ export function EngineeringReferencesPage() {
       </section>
 
       <EngineeringSeminarResources query={query} />
+      <EngineeringFreeAiTokenGuide query={query} />
 
       <p className="mt-8 text-sm text-fg-2">
         {bi("실제 장애와 교훈은 ", "Real incidents and lessons are in ")}

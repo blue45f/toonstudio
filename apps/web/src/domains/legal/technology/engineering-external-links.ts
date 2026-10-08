@@ -50,6 +50,25 @@ export const ENGINEERING_EXTERNAL_LINKS: readonly EngineeringExternalLink[] = [
   { name: "Vercel AI Gateway", url: "https://vercel.com/docs/ai-gateway" },
   { name: "OpenRouter", url: "https://openrouter.ai/" },
 
+  // AI 공급자·무료 티어 공식 문서 (무료 AI 토큰 가이드용, 2026-10-08 공식 페이지 확인)
+  { name: "Google AI Studio", url: "https://ai.google.dev/gemini-api/docs/rate-limits" },
+  { name: "Groq", url: "https://console.groq.com/docs/rate-limits" },
+  { name: "Cerebras", url: "https://inference-docs.cerebras.ai/introduction" },
+  { name: "Mistral", url: "https://mistral.ai/pricing" },
+  { name: "SambaNova", url: "https://cloud.sambanova.ai/" },
+  { name: "Cohere", url: "https://docs.cohere.com/docs/rate-limits" },
+  { name: "SiliconFlow", url: "https://docs.siliconflow.com/" },
+  { name: "DeepSeek", url: "https://api-docs.deepseek.com/quick_start/pricing" },
+  { name: "Z.AI", url: "https://docs.z.ai/guides/overview/pricing" },
+  { name: "Alibaba Model Studio", url: "https://help.aliyun.com/en/model-studio/new-free-quota" },
+  { name: "Ollama", url: "https://ollama.com/" },
+  { name: "LM Studio", url: "https://lmstudio.ai/" },
+  { name: "llama.cpp", url: "https://github.com/ggml-org/llama.cpp" },
+  { name: "Cloudflare Workers AI", url: "https://developers.cloudflare.com/workers-ai/platform/pricing/" },
+  { name: "GitHub Models", url: "https://docs.github.com/en/github-models/prototyping-with-ai-models" },
+  { name: "Hugging Face", url: "https://huggingface.co/docs/inference-providers/index" },
+  { name: "NVIDIA NIM", url: "https://build.nvidia.com/" },
+
   // 사용 라이브러리·엔진 (설치본 package.json homepage·repository와 저장소 기록 기준)
   { name: "Three.js", url: "https://threejs.org/" },
   { name: "React Three Fiber", url: "https://r3f.docs.pmnd.rs/" },
