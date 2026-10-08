@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PwaInstallShowcase } from "./PwaInstallShowcase";
+import { PwaInstallShowcase, PwaInstallShowcasePage } from "./PwaInstallShowcase";
 
 const installSnapshotMock = {
   status: "available",
@@ -58,6 +58,14 @@ afterEach(() => {
 });
 
 describe("PwaInstallShowcase", () => {
+  it("/install 페이지로 열리면 페이지 고유 문서 제목을 설정한다", async () => {
+    render(<PwaInstallShowcasePage />);
+
+    await waitFor(() => {
+      expect(document.title).toBe("앱 설치 · 툰스튜디오");
+    });
+  });
+
   it("제목과 4개 기능 카드를 렌더링한다", () => {
     renderShowcase();
     expect(screen.getByText("툰스튜디오를 앱으로 설치하세요")).toBeTruthy();
