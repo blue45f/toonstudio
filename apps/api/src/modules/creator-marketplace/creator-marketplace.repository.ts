@@ -3,6 +3,7 @@ import {
   desc,
   eq,
   gt,
+  inArray,
   isNotNull,
   isNull,
   lt,
@@ -1525,6 +1526,55 @@ export class DrizzleCreatorMarketplaceResourceRepository
       }
       return { id: updated.id, changed: true };
     });
+  }
+
+  async findListedIds(ids: readonly string[]): Promise<readonly string[]> {
+    if (ids.length === 0) return [];
+    const rows = await db
+      .select({ id: creatorMarketplaceResources.id })
+      .from(creatorMarketplaceResources)
+      .innerJoin(
+        creatorMarketplacePackageModeration,
+        and(
+          eq(
+            creatorMarketplacePackageModeration.publisherId,
+            creatorMarketplaceResources.publisherId
+          ),
+          eq(
+            creatorMarketplacePackageModeration.packageId,
+            creatorMarketplaceResources.packageId
+          )
+        )
+      )
+      .leftJoin(users, eq(creatorMarketplaceResources.publisherId, users.id))
+      .where(
+        and(
+          inArray(creatorMarketplaceResources.id, [...ids]),
+          eq(creatorMarketplacePackageModeration.state, "active"),
+          eq(users.status, "active"),
+          isNull(creatorMarketplaceResources.delistedAt),
+          notExists(
+            db
+              .select({ id: newerCreatorMarketplaceRelease.id })
+              .from(newerCreatorMarketplaceRelease)
+              .where(and(
+                eq(
+                  newerCreatorMarketplaceRelease.publisherId,
+                  creatorMarketplaceResources.publisherId
+                ),
+                eq(
+                  newerCreatorMarketplaceRelease.packageId,
+                  creatorMarketplaceResources.packageId
+                ),
+                gt(
+                  newerCreatorMarketplaceRelease.releaseOrdinal,
+                  creatorMarketplaceResources.releaseOrdinal
+                )
+              ))
+          )
+        )
+      );
+    return rows.map((row) => row.id);
   }
 }
 
