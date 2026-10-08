@@ -48,5 +48,6 @@
   "footer.business.hosting": "Hostingdienst",
   "footer.business.serviceType": "Soort platform",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Alle rechten voorbehouden.",
-  "footer.logoTag": "Maak je volgende verhaal"
+  "footer.logoTag": "Maak je volgende verhaal",
+  "footer.link.features": "All features at a glance"
 }

@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Indmelding er afsluttet, omdirigerer snart.",
   "auth.callback.message.doneDemo": "Demo-registrering er afsluttet.",
   "auth.callback.demo.message": "Du er logget ind med en demo-konto.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

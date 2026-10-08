@@ -18,5 +18,6 @@
   "auth.callback.message.done": "การลงทะเบียนเสร็จแล้ว กําลังเปลี่ยนทางอีกไม่นาน",
   "auth.callback.message.doneDemo": "การลงทะเบียนเสร็จแล้ว เปลี่ยนทางในไม่ช้า",
   "auth.callback.demo.message": "คุณเข้าใช้บริการด้วยบัญชีทดลอง คุณอาจมีส่วนจํากัด",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

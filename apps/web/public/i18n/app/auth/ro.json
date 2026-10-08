@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Înregistrarea completată, redirecţionarea în curând.",
   "auth.callback.message.doneDemo": "Demo-înregistrare completă.",
   "auth.callback.demo.message": "Sunteți conectat cu un cont demo.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

@@ -18,5 +18,6 @@
   "auth.callback.message.done": "登入完成。很快就會重定向。",
   "auth.callback.message.doneDemo": "演示登入完成。很快就會重定向。",
   "auth.callback.demo.message": "您已使用模擬帳號登入。某些功能可能會受到限制。",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

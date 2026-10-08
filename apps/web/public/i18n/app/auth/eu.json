@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Sarrera bukatu da, laster bidaltzen ari gara.",
   "auth.callback.message.doneDemo": "Demografia-hasiera bukatu da.",
   "auth.callback.demo.message": "Kontu demo batekin sartu zara.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

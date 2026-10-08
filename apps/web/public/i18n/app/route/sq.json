@@ -68,5 +68,7 @@
   "route.characterChat": "Character Talk",
   "route.characterChatManage": "Manage Character Chats",
   "route.newsletter": "Newsletter",
-  "route.newsletterCompose": "Send a newsletter"
+  "route.newsletterCompose": "Send a newsletter",
+  "route.createStart": "Start a work",
+  "route.serialCenter": "Serialization center"
 }

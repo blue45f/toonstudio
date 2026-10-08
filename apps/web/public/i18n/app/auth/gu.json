@@ -18,5 +18,6 @@
   "auth.callback.message.done": "સાઇન-ઇન પૂર્ણ. ટૂંક સમયમાં રીડાયરેક્ટિંગ.",
   "auth.callback.message.doneDemo": "ડેમો સાઇન ઇન પૂર્ણ. ટૂંક સમયમાં રીડાયરેક્ટિંગ.",
   "auth.callback.demo.message": "તમે ડેમો એકાઉન્ટ સાથે સાઇન ઇન છો. કેટલીક સુવિધાઓ મર્યાદિત હોઈ શકે છે.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

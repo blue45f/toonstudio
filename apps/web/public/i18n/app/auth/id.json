@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Pendaftaran selesai.",
   "auth.callback.message.doneDemo": "Demo sign-in selesai.",
   "auth.callback.demo.message": "Anda masuk dengan akun demo. Beberapa fitur mungkin terbatas.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

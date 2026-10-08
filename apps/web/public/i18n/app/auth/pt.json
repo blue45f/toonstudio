@@ -18,5 +18,6 @@
   "auth.callback.message.done": "A inscrição está concluída, vamos redirecionar em breve.",
   "auth.callback.message.doneDemo": "A sessão de demonstração está concluída.",
   "auth.callback.demo.message": "Você está conectado com uma conta demo.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

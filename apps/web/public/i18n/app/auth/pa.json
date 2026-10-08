@@ -18,5 +18,6 @@
   "auth.callback.message.done": "ਰਜਿਸਟਰੇਸ਼ਨ ਪੂਰੀ ਹੋਈ ਹੈ. ਛੇਤੀ ਹੀ ਰੀਡਾਇਰੈਕਟਿੰਗ.",
   "auth.callback.message.doneDemo": "ਡੈਮੋ ਲਾਈਨ-ਇਨ ਪੂਰਾ ਹੋ ਗਿਆ ਹੈ. ਛੇਤੀ ਹੀ ਮੁੜ ਨਿਰਦੇਸ਼ਤ.",
   "auth.callback.demo.message": "ਤੁਸੀਂ ਡੈਮੋ ਖਾਤੇ ਨਾਲ ਲੌਗਇਨ ਹੋ। ਕੁਝ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ ਸੀਮਤ ਹੋ ਸਕਦੀਆਂ ਹਨ।",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }
