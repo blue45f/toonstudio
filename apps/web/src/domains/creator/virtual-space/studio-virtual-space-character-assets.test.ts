@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { STUDIO_CHARACTER_SKINS, studioCharacterAppearanceForAvatarIndex, resolveStudioCharacterAppearance, studioCharacterActionClip, studioCharacterSkinForArtStyle, studioCharacterWalkClip } from "./studio-virtual-space-character-skins";
 import { STUDIO_VIRTUAL_ART_STYLE_KEYS } from "./studio-virtual-space-art-style";
 import {
-  StudioCharacterAssetResidency, studioCharacterStaticAsset, studioCharacterVisualAssets, studioCharacterWalkTextureKey, studioCharacterWarmAssets,
+  StudioCharacterAssetResidency, studioCharacterFaceTextureKey, studioCharacterStaticAsset, studioCharacterVisualAssets, studioCharacterWalkTextureKey, studioCharacterWarmAssets,
   studioCharacterFrameGeometry,
   studioCharacterActionFrame,
   studioCharacterActionSheetMatches,
@@ -15,9 +15,14 @@ import {
 const skin = STUDIO_CHARACTER_SKINS[0]!;
 const standing = studioCharacterStaticAsset(skin, "down");
 const walking = studioCharacterVisualAssets(skin, "left", "walk");
-/** 드로잉 스킨이 선언한 표정 세트(neutral·joy·surprise)는 상태와 무관하게 상주 목록에 붙는다. */
-const pinkFaceKeys = ["face-neutral", "face-joy", "face-surprise"].map((name) => `studio-player-pink-${name}-sheet`);
-const silverFaceKeys = ["face-neutral", "face-joy", "face-surprise"].map((name) => `studio-player-silver-${name}-sheet`);
+/**
+ * 드로잉 스킨이 선언한 표정 세트(neutral·joy·surprise)는 상태와 무관하게 상주 목록에 붙는다.
+ * 세 세트가 같은 원본 이미지(actor-emotions.png)라 텍스처 하나를 나눠 쓴다(스킨 × 감정만큼 올리지 않는다).
+ */
+const faceKeysOf = (owner: (typeof STUDIO_CHARACTER_SKINS)[number]) =>
+  [...new Set((["face-neutral", "face-joy", "face-surprise"] as const).map((name) => studioCharacterFaceTextureKey(owner, name)))];
+const pinkFaceKeys = faceKeysOf(skin);
+const silverFaceKeys = faceKeysOf(STUDIO_CHARACTER_SKINS[1]!);
 function harness(initial: readonly StudioCharacterTextureAsset[] = []) {
   const loaded = new Set(initial.map((asset) => asset.key));
   const pending = new Map<string, (success: boolean) => void>();
@@ -117,7 +122,7 @@ describe("Virtual Studio character texture residency", () => {
     expect(idleAssets[0]).toEqual(standing);
     expect(idleAssets.map((asset) => asset.key)).toEqual([standing.key, ...pinkFaceKeys]);
     expect(walking.map((asset) => asset.key)).toEqual(["studio-player-pink-direction-left", "studio-player-pink-walk-sheet-left", ...pinkFaceKeys]);
-    expect(studioCharacterVisualAssets(STUDIO_CHARACTER_SKINS[1]!, "up", "draw")).toHaveLength(4);
+    expect(studioCharacterVisualAssets(STUDIO_CHARACTER_SKINS[1]!, "up", "draw")).toHaveLength(1 + silverFaceKeys.length);
   });
   it("shares one directional pose sheet and keeps its directional static fallback", () => {
     const down = studioCharacterVisualAssets(skin, "down", "wave");
@@ -239,10 +244,11 @@ describe("Virtual Studio character texture residency", () => {
     for (const state of ["idle", "walk", "talk"] as const) {
       const assets = studioCharacterVisualAssets(faced, "down", state);
       const faceAssets = assets.filter((asset) => asset.key.includes("face-"));
+      // 원본 이미지가 다른 표정 시트는 각자 텍스처를 갖고, 키는 원본 경로로 구분한다.
       expect(faceAssets.map((asset) => asset.key).sort()).toEqual([
-        `studio-player-${skin.key}-face-joy-sheet`,
-        `studio-player-${skin.key}-face-sleep-sheet`,
-      ]);
+        studioCharacterFaceTextureKey(faced, "face-joy"),
+        studioCharacterFaceTextureKey(faced, "face-sleep"),
+      ].sort());
       expect(faceAssets.every((asset) => asset.type === "spritesheet")).toBe(true);
     }
     // 표정 세트가 없는 스킨은 기존 목록과 동일하다.

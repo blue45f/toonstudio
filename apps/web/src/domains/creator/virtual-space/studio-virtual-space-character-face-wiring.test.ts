@@ -118,12 +118,42 @@ describe("표정 레이어 연결 (등록부 → 스킨 faces 선언)", () => {
       .filter((asset) => asset.key.includes("face-"))
       .map((asset) => asset.key)
       .sort();
+    // 같은 원본 이미지의 표정 시트는 감정이 달라도 텍스처 하나를 나눠 쓴다.
     expect(faceKeys).toEqual(
-      DECLARED_EMOTIONS.map((emotion) => studioCharacterFaceTextureKey(skyIsland, studioFaceSetName(emotion))).sort(),
+      [...new Set(DECLARED_EMOTIONS.map((emotion) => studioCharacterFaceTextureKey(skyIsland, studioFaceSetName(emotion))))].sort(),
     );
+    expect(faceKeys).toHaveLength(1);
     const webtoon = studioCharacterSkinForArtStyle(pink, "webtoon");
     expect(webtoon.faces).toBeUndefined();
     expect(studioCharacterVisualAssets(webtoon, "down", "idle").some((asset) => asset.key.includes("face-"))).toBe(false);
+  });
+
+  it("스킨이 달라도 같은 원본 이미지의 표정 시트는 텍스처 하나를 나눠 쓴다", () => {
+    const keys = new Set(["pink", "silver", "dark", "purple"].flatMap((skinKey) => {
+      const styled = studioCharacterSkinForArtStyle(studioCharacterSkinByKey(skinKey), "sky-island");
+      return studioCharacterVisualAssets(styled, "down", "idle").filter((asset) => asset.key.startsWith("studio-face-sheet:")).map((asset) => asset.key);
+    }));
+    // 같은 1254px 시트를 스킨 4 × 감정 3 = 12장 올리던 것이 한 장이 된다.
+    expect(keys.size).toBe(1);
+  });
+
+  it("원본 이미지나 격자가 다른 표정 시트는 텍스처를 나눠 쓰지 않는다", () => {
+    const pink = studioCharacterSkinForArtStyle(studioCharacterSkinByKey("pink"), "sky-island");
+    const name = studioFaceSetName("joy");
+    const sheet = pink.faces?.[name];
+    if (!sheet) throw new Error("표정 시트가 있어야 한다");
+    const withUrl = { ...pink, faces: { [name]: { ...sheet, textureUrl: "/assets/other-emotions.png" } } };
+    const withAtlas = sheet.atlas ? { ...pink, faces: { [name]: { ...sheet, atlas: { ...sheet.atlas, width: sheet.atlas.width + 1 } } } } : null;
+    // 원본 크기가 같아도 나누는 격자가 다르면 같은 프레임 번호가 다른 칸을 가리키므로 나눠 쓰지 않는다.
+    const withGrid = sheet.atlas?.slicing === "rounded-grid"
+      ? { ...pink, faces: { [name]: { ...sheet, atlas: { ...sheet.atlas, columns: 2, rows: 2 } } } } : null;
+    const pixel = { ...pink, pixelArt: "lpc" as const };
+    expect(studioCharacterFaceTextureKey(withUrl, name)).not.toBe(studioCharacterFaceTextureKey(pink, name));
+    if (withAtlas) expect(studioCharacterFaceTextureKey(withAtlas, name)).not.toBe(studioCharacterFaceTextureKey(pink, name));
+    expect(withGrid).not.toBeNull();
+    if (withGrid) expect(studioCharacterFaceTextureKey(withGrid, name)).not.toBe(studioCharacterFaceTextureKey(pink, name));
+    // 픽셀 아트 스킨은 최근접 필터로 올려야 하므로 같은 원본이어도 별도 텍스처다.
+    expect(studioCharacterFaceTextureKey(pixel, name)).not.toBe(studioCharacterFaceTextureKey(pink, name));
   });
 
   it("등록부에 표정 세트가 늘면 감정 대응 없이는 이 테스트가 실패한다", () => {

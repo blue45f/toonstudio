@@ -216,7 +216,7 @@ import { SpaceSelfCard } from "./hud/SpaceSelfCard";
 import { SpaceShortcutsHelp } from "./hud/SpaceShortcutsHelp";
 import { SpaceSidePanel } from "./hud/SpaceSidePanel";
 import { SpaceEventBanner } from "./hud/SpaceEventBanner";
-import { spaceHudShowsEventBanner } from "./hud/space-hud-priority";
+import { spaceHudChatHintBlocked, spaceHudShowsEventBanner } from "./hud/space-hud-priority";
 import { SpaceContextSuggestion } from "./hud/SpaceContextSuggestion";
 import { SpaceFocusChip } from "./hud/SpaceFocusChip";
 import { SpaceToasts } from "./hud/SpaceToasts";
@@ -243,6 +243,7 @@ import {
   distanceBetween,
   initialPanel,
   studioNearbyCards,
+  studioPromptNpc,
   SHARED_ACTIVITY_DISTANCE,
   SIDE_PANEL_ID,
   TALK_DISTANCE,
@@ -1642,7 +1643,7 @@ export function VirtualSpaceExperience({
     if ((snapshot.self.userStatus ?? null) === "focusing") applyWorkStatus("available", "available");
   };
 
-  const promptNpc = nearbyNpcs.find((npc) => npc.interaction) ?? null;
+  const promptNpc = studioPromptNpc(nearbyNpcs, currentInteraction !== null);
   const interactTarget = useMemo<SpaceInteractTarget | null>(() => currentInteraction
     ? { kind: "interaction", labelKo: currentInteraction.labelKo, labelEn: currentInteraction.labelEn }
     : promptNpc ? { kind: "npc", labelKo: promptNpc.labelKo, labelEn: promptNpc.labelEn } : null, [currentInteraction, promptNpc]);
@@ -1942,7 +1943,7 @@ export function VirtualSpaceExperience({
     </StudioVirtualSpacePanelGate> },
   ];
   const minimapPeople = useMemo(() => snapshot.peers.map((peer) => ({ id: peer.participant.sessionId, name: peer.participant.displayName, point: peer.state })), [snapshot.peers]);
-  const { people: nearbyPeopleCards, npcs: nearbyNpcCards } = studioNearbyCards({ personal, snapshot, nearbyNpcs, conversationMemberIds });
+  const { people: nearbyPeopleCards, npcs: nearbyNpcCards } = studioNearbyCards({ personal, snapshot, nearbyNpcs, conversationMemberIds, promptNpcId: promptNpc?.id ?? null });
   const dockMedia = {
     available: mediaAvailable, onOpen: openMedia,
     micOn: proximityLive && proximity.snapshot ? !proximity.snapshot.muted : false,
@@ -2096,7 +2097,7 @@ export function VirtualSpaceExperience({
             {worldReady && !authoringMode && activeSuggestion ? <SpaceContextSuggestion suggestion={activeSuggestion}
               onAccept={acceptSuggestion} onDismiss={dismissSuggestion} /> : null}
             {worldReady ? <SpaceInteractPrompt target={interactTarget} touch={touch} onActivate={activateInteractPrompt} /> : null}
-            {worldReady ? <SpaceChatInput blocked={blockingSurfaceOpen || panel !== null || dockPopover !== null || mapOpen || helpOpen}
+            {worldReady ? <SpaceChatInput blocked={spaceHudChatHintBlocked({ surfaceOpen: blockingSurfaceOpen || panel !== null || dockPopover !== null || mapOpen || helpOpen, chatPanelOpen: chatOpen, touch })}
               touch={touch} onTypingChange={setChatTyping} onSend={sendChatMessage}
               onClosed={() => engineBridge.focusWorld()} /> : null}
           </div>
