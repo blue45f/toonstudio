@@ -11,6 +11,7 @@ import type { EngagementNotificationCategory } from "./engagement-model";
 import type { CreatorRoleNotificationEvent } from "@/shared/lib/creator-role-workspace-contract";
 
 import Link from "@/shared/navigation/router-link";
+import { SitePageArt } from "@/domains/legal/public/site-page-art";
 import { Container } from "@/shared/components/section";
 import { SwitchIndicator } from "@/shared/components/ui/switch";
 import { useDocumentTitle, useMetaRobots } from "@/shared/seo/use-document-title";
@@ -201,14 +202,25 @@ export function NotificationSettingsPage() {
           설정 홈
         </Link>
       </div>
-      <header className="mb-7 mt-3 max-w-3xl">
-        <p className="eyebrow text-accent">NOTIFICATION SETTINGS</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">알림 설정</h1>
-        <p className="mt-3 text-sm leading-7 text-fg-2">
-          어떤 알림을 받을지 종류별로 정합니다. 여기서 끈 종류는 알림 센터 목록과 알림 뱃지에서
-          숨겨지지만, 이미 받은 알림이 삭제되지는 않습니다. 제작 알림에는 아래 직군 알림 설정도
-          함께 적용됩니다.
-        </p>
+      <header className="mb-7 mt-3">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="eyebrow text-accent">NOTIFICATION SETTINGS</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">알림 설정</h1>
+            <p className="mt-3 text-sm leading-7 text-fg-2">
+              어떤 알림을 받을지 종류별로 정합니다. 여기서 끈 종류는 알림 센터 목록과 알림 뱃지에서
+              숨겨지지만, 이미 받은 알림이 삭제되지는 않습니다. 제작 알림에는 아래 직군 알림 설정도
+              함께 적용됩니다.
+            </p>
+          </div>
+          {/* 설정 화면 헤더 템플릿 통일 (디자인 웨이브 7) — API 키 허브와 같은 아트 어사이드 문법. */}
+          <div className="hidden w-full max-w-sm shrink-0 lg:block">
+            <SitePageArt
+              kind="community"
+              caption="브랜드 콘셉트 아트 · 실제 화면이 아닙니다"
+            />
+          </div>
+        </div>
       </header>
 
       <section aria-label="알림 종류별 설정" className="rounded-2xl border border-line bg-panel/60 p-4 sm:p-5">
