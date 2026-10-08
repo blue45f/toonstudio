@@ -57,8 +57,9 @@
 | 유료 실행 게이트 선례 | `docs/interfaces/2026-09-18-creator-intelligence-providers.md` — 유료 POST는 인증 세션 + 멱등 키 필수, 전역 스위치(`CREATOR_INTELLIGENCE_PAID_EXECUTION_ENABLED`)와 일일 한도 예약 없이는 실행 금지 | 유료 도구의 게이트 기본형 (§6.3) |
 | Studio AI admission | `apps/api/src/modules/studio-ai/` — `studio-ai-admission.ts`, `studio-ai-capabilities.ts`, 생성 작업 원장(`studio-3d-generation-job-ledger.ts`) | AI 도구 호출의 입장·능력 선언 선례 |
 | 공유 계약 패키지 | `packages/contracts/` — web/api가 공유하는 DTO·schema | 스키마 코드화 시 배치 후보. 단 루트 `AGENTS.md` 규칙상 "실제 두 번째 소비자가 생긴 범위만" 승격한다 (§10) |
+| WebMCP 능력 감지 | `apps/web/src/shared/lib/nextgen-web-capabilities.ts` — `webmcp` 감지 항목(`document.modelContext` 기준)과 테스트, `NextgenLabSettingsSection.tsx`의 실험실 등재 | WebMCP 투영의 능력 감지 기반으로 재사용 (§9). 도구 등록 구현은 없음 |
 
-부재 확인: 기준 커밋에 `webmcp`·`modelContext` 식별자와 에이전트 채널 관련 코드는 **없다** (git object store 전수 대조). WebMCP 관련 기존 작업은 repo 밖 설계 초안 단계에서만 논의됐고 병합된 적이 없으므로, 이 문서는 WebMCP를 실재 표면으로 취급하지 않는다 (§9).
+부재·존재 구분 (기준 커밋 실측): **에이전트 채널** 관련 코드는 없다. **WebMCP**는 능력 감지·등재까지만 있다 — 차세대 웹 기술 능력 감지 레지스트리 `apps/web/src/shared/lib/nextgen-web-capabilities.ts`에 `webmcp` 항목이 있어 `document.modelContext`(현행 초안 진입점, `navigator.modelContext`는 구 별칭) 존재로 지원 여부를 판정하고, 실험실 설정 `apps/web/src/domains/account/NextgenLabSettingsSection.tsx`에 "WebMCP 도구 노출" 항목이 등재돼 있다. 그러나 도구를 실제로 등록·노출하는 구현(`registerTool` 류)은 없다. 따라서 §9는 이 감지 인프라를 전제로 한 접점 설계다.
 
 ## 4. 채널 개요 `[제안]`
 
@@ -242,7 +243,8 @@ integration runtime receipt(`integration-runtime.contract.ts`)의 상태 기계�
 
 ### 9.1 현재 상태 `[실재]`
 
-- 기준 커밋의 repo에는 WebMCP 코드·문서가 없다 (§3 부재 확인). 따라서 이 절은 전부 접점 **설계**다.
+- 능력 감지와 실험실 등재는 이미 있다 (§3 표의 "WebMCP 능력 감지"). 감지 기준은 현행 초안의 진입점인 `document.modelContext`다.
+- 도구를 실제로 등록·노출하는 구현은 없다. 따라서 이 절에서 감지·등재를 뺀 나머지는 전부 접점 **설계**다.
 - WebMCP는 브라우저가 페이지의 도구(폼·액션)를 브라우저 내 에이전트에게 노출하는 표면으로 논의되는 기술이며, 채널 실행 시점에 표준·지원 범위가 확정돼 있지 않다는 전제로 설계한다.
 
 ### 9.2 쓸 수 있는 부분 `[제안]`
@@ -254,7 +256,7 @@ integration runtime receipt(`integration-runtime.contract.ts`)의 상태 기계�
 ### 9.3 한계 (설계에 반영한 것)
 
 - 브라우저가 열려 있어야만 동작한다 — 백그라운드·원격 에이전트는 서버 채널이 정본이다.
-- 능력 감지가 선행돼야 한다: WebMCP를 쓸 수 없는 환경에서는 투영을 켜지 않고 서버 채널만으로 동작한다. 감지 없이 가정한 구현은 금지한다 (차세대 기술 도입 시 확정된 원칙: 능력 감지 + 실험 표지).
+- 능력 감지가 선행돼야 한다: 기존 감지 레지스트리(`nextgen-web-capabilities.ts`의 `webmcp` 항목)를 그대로 재사용하고, 쓸 수 없는 환경에서는 투영을 켜지 않고 서버 채널만으로 동작한다. 감지 없이 가정한 구현은 금지한다 (차세대 기술 도입 시 확정된 원칙: 능력 감지 + 실험 표지).
 - 페이지 단위 도구는 화면 구조에 묶인다. 채널 도구처럼 리소스 단위로 안정적이지 않으므로, 정본 계약은 서버 채널 스키마에 두고 WebMCP는 투영으로만 취급한다.
 - 표준이 바뀌면 투영 어댑터만 교체한다. 카탈로그와 승인 계약은 영향받지 않게 경계를 둔다.
 
