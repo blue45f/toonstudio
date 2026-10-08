@@ -1083,11 +1083,18 @@ const CommercialRecordSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("dispute"), value: ProductionDisputeSchema }).strict(),
 ]);
 
+/** 프로젝트 대표 표지 값 계약. 작품 표지(creator_work.cover)와 같은 형태 — https URL 또는 data:image URL만 허용한다. */
+export const ProductionCoverImageUrlSchema = z.string().trim().min(1).max(2_000_000).refine(
+  (value) => value.startsWith("https://") || value.startsWith("data:image/"),
+  { message: "표지 이미지는 https URL 또는 data:image URL이어야 합니다." },
+);
+
 export const CreateProductionProjectSchema = z.object({
   projectId: IdentitySchema,
   workId: IdentitySchema,
   organizationId: IdentitySchema.nullable().optional(),
   title: z.string().trim().min(1).max(240),
+  coverImageUrl: ProductionCoverImageUrlSchema.nullable().optional(),
   collaborationModel: z.enum(COLLABORATION_MODELS),
   ownerPartyId: IdentitySchema,
   ownerDisplayName: z.string().trim().min(1).max(120),
@@ -1274,6 +1281,10 @@ const SetBoardOrderCommandSchema = z.object({
   type: z.literal("set-board-order"),
   columns: BoardOrderColumnsSchema,
 }).strict();
+const SetProjectCoverCommandSchema = z.object({
+  type: z.literal("set-project-cover"),
+  coverImageUrl: ProductionCoverImageUrlSchema.nullable(),
+}).strict();
 const CreatePlanningSnapshotCommandSchema = z.object({
   type: z.literal("create-planning-snapshot"),
   snapshot: PlanningSnapshotInputSchema,
@@ -1321,6 +1332,7 @@ export const ProductionCommandSchema = z.discriminatedUnion("type", [
   EvaluateRisksCommandSchema,
   RebaselineTaskCommandSchema,
   SetBoardOrderCommandSchema,
+  SetProjectCoverCommandSchema,
 ]);
 
 export const ExecuteProductionCommandSchema = z.object({

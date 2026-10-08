@@ -254,6 +254,20 @@ export class ProductionCollaborationRepository {
     return { aggregate, access };
   }
 
+  /**
+   * 연결된 작품의 대표 표지(creator_work.cover)를 읽는다. 프로젝트 생성 시 표지 시드 전용 —
+   * 작품이 없거나 표지가 비어 있으면 null이다(표지를 지어내지 않는다).
+   */
+  async findWorkCoverImageUrl(workId: string): Promise<string | null> {
+    const rows = await db
+      .select({ cover: creatorWorks.cover })
+      .from(creatorWorks)
+      .where(eq(creatorWorks.id, workId))
+      .limit(1);
+    const cover = rows[0]?.cover;
+    return cover && cover.trim() ? cover : null;
+  }
+
   async createProject(input: {
     readonly actorUserId: string;
     readonly aggregate: ProductionProjectAggregate;

@@ -87,6 +87,7 @@ export interface ProductionProjectSummary {
   readonly projectId: string;
   readonly workId: string;
   readonly title: string;
+  readonly coverImageUrl: string | null;
   readonly collaborationModel: ProductionProjectAggregate["collaborationModel"];
   readonly revision: number;
   readonly updatedAt: string;
@@ -215,6 +216,7 @@ export type ProductionClientCommand =
   | { readonly type: "update-risk-policy"; readonly policy: ProductionRiskPolicy }
   | { readonly type: "evaluate-risks" }
   | { readonly type: "set-board-order"; readonly columns: Readonly<Record<string, readonly string[]>> }
+  | { readonly type: "set-project-cover"; readonly coverImageUrl: string | null }
   | { readonly type: "rebaseline-task"; readonly taskId: string; readonly newDueAt: string; readonly reason: string; readonly sourceChangeRequestId: string | null };
 
 function mutationId(): string {

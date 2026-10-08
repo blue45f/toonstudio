@@ -12,6 +12,7 @@ export function createProductionProjectAggregate(input: {
   readonly workId: string;
   readonly organizationId?: string | null;
   readonly title: string;
+  readonly coverImageUrl?: string | null;
   readonly collaborationModel: CollaborationModel;
   readonly ownerPartyId: string;
   readonly ownerUserId: string;
@@ -26,6 +27,7 @@ export function createProductionProjectAggregate(input: {
     workId: input.workId,
     organizationId: input.organizationId ?? null,
     title: input.title.trim(),
+    coverImageUrl: input.coverImageUrl ?? null,
     collaborationModel: input.collaborationModel,
     revision: 0,
     parties: Object.freeze([Object.freeze({
