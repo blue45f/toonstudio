@@ -149,6 +149,16 @@ describe("EngineeringLibrariesPage", () => {
     expect(names.filter((name, index) => names.indexOf(name) !== index)).toEqual([]);
   });
 
+  it("영역마다 있는 '더 깊이 보기' 내비게이션은 이름이 서로 달라 랜드마크 목록에서 구분된다", () => {
+    const { container } = renderPage();
+    const names = [...container.querySelectorAll("nav[aria-label$='더 깊이 보기']")].map((nav) => nav.getAttribute("aria-label"));
+    expect(names).toHaveLength(LIBRARY_GUIDE_AREAS.length);
+    expect(new Set(names).size).toBe(names.length);
+    for (const area of LIBRARY_GUIDE_AREAS) {
+      expect(container.querySelector(`#${area.id} nav[aria-label="${area.title.ko} — 더 깊이 보기"]`), area.id).toBeTruthy();
+    }
+  });
+
   it("카드는 접힌 채로 이름·종류·상태·라이선스·한 줄 소개를 보여 주고, 펼치면 하는 일·이유·대안·대가·파일·근거·링크가 나온다", async () => {
     const { container } = renderPage();
     const card = findCard("hokusai");
@@ -222,7 +232,7 @@ describe("EngineeringLibrariesPage", () => {
     const termId = first.glossaryIds[0] as string;
 
     // 영역 아래 "더 깊이 보기" 줄.
-    const linkRow = `#${first.id} nav[aria-label="더 깊이 보기"]`;
+    const linkRow = `#${first.id} nav[aria-label$="더 깊이 보기"]`;
     await waitFor(() => {
       expect(container.querySelector(`${linkRow} [data-atlas-id="${atlasId}"]`)?.textContent).toBe(`Atlas card ${atlasId}`);
     });
