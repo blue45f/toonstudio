@@ -2,14 +2,23 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getAuthSession,
+  getLastUnauthorizedDropHadSession,
   handleUnauthorizedSession,
   persistSession,
 } from "@/domains/auth/public/session/auth-session-state";
 
-import { api, apiFetch, isAppApiError } from "./api";
-import { SERVICE_CAPABILITY_ERROR_EVENT, isNotFoundError } from "./api-error";
+import { api, apiFetch, isAppApiError } from "../platform/api";
+import {
+  SERVICE_CAPABILITY_ERROR_EVENT,
+  isNotFoundError,
+  registerUnauthorizedSessionProbe,
+} from "../platform/api-error";
 
 const originalFetch = globalThis.fetch;
+
+// 앱 진입점(app/main.tsx)과 같은 방식으로 세션 판정을 등록해, 401 문구의 게스트·세션 구분을 그대로 검증한다.
+registerUnauthorizedSessionProbe(() => getAuthSession() !== null || getLastUnauthorizedDropHadSession());
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
