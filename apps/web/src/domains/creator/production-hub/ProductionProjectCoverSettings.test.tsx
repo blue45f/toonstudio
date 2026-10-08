@@ -5,8 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
+import type { ProductionClientCommand } from "./production-api";
 import { createProductionDemoProject } from "./production-demo";
 import { ProductionProjectCoverSettings } from "./ProductionProjectCoverSettings";
+
+type ExecuteCommand = (command: ProductionClientCommand, message: string) => Promise<void>;
 
 afterEach(() => cleanup());
 
@@ -16,7 +19,7 @@ function aggregateWith(coverImageUrl: string | null): ProductionProjectAggregate
 
 describe("ProductionProjectCoverSettings", () => {
   it("표지가 있으면 미리보기를 보여주고 지우면 set-project-cover(null)를 보낸다", async () => {
-    const execute = vi.fn(async () => {});
+    const execute = vi.fn<ExecuteCommand>(async () => {});
     render(
       <ProductionProjectCoverSettings
         aggregate={aggregateWith("https://example.test/cover.png")}
@@ -32,7 +35,7 @@ describe("ProductionProjectCoverSettings", () => {
   });
 
   it("표지가 없을 때 입력한 주소를 저장하면 set-project-cover 명령을 보낸다", async () => {
-    const execute = vi.fn(async () => {});
+    const execute = vi.fn<ExecuteCommand>(async () => {});
     render(
       <ProductionProjectCoverSettings aggregate={aggregateWith(null)} execute={execute} canEdit />,
     );
@@ -47,7 +50,7 @@ describe("ProductionProjectCoverSettings", () => {
   });
 
   it("https도 data:image도 아닌 주소는 명령 없이 검증 오류를 보인다", () => {
-    const execute = vi.fn(async () => {});
+    const execute = vi.fn<ExecuteCommand>(async () => {});
     render(
       <ProductionProjectCoverSettings aggregate={aggregateWith(null)} execute={execute} canEdit />,
     );
