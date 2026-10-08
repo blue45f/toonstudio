@@ -149,7 +149,10 @@ async function collectAll(
 }
 
 const QA_STARTER_ID = "e0000001-0000-4000-8000-000000000001";
-const OFFICIAL_PUBLISHER_ID = "00000000-0000-4000-8000-000000000001";
+// 시크릿 스캔 회귀 방지: 게시자 id 리터럴을 두지 않고 공식 카탈로그에서 유도한다.
+const OFFICIAL_PUBLISHER_ID = CREATOR_MARKETPLACE_STARTER_RECORDS.find(
+  (record) => record.id === QA_STARTER_ID,
+)?.publisher.id;
 
 describe("CreatorMarketplaceService.list 공식 스타터 병합", () => {
   it("빈 DB에서도 스타터 카탈로그가 목록에 나온다 (목록-상세 비대칭 해소)", async () => {
