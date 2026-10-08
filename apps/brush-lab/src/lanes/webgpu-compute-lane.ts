@@ -6,7 +6,7 @@ import { probeWebGpuAdapter, requestSumiDevice, SUMI_REQUIRED_LIMITS } from "../
 import { SumiComputeRuntime } from "../engine/gpu/pipeline-compute";
 import { paperFor } from "../engine/raster/reference-renderer";
 
-import { emptyLaneStats } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -19,6 +19,7 @@ import type {
   LaneKind,
   LaneStats,
   LaneStatus,
+  StrokeAbortReceipt,
   StrokeReceipt,
 } from "./lane";
 import type { LaneReasonCode } from "../engine/core/errors";
@@ -231,6 +232,18 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
       stats.submits += receipt.submitCount;
       stats.lastReceipt = receipt;
       return receipt;
+    },
+    /**
+     * 진행 중인 획을 문서에 합성하지 않고 버린다(런타임 `abortStroke` 참조). 건식·smudge는 문서를 보존하고 프레임을 냈다면 제출 1회로 표시를
+     * 되돌린다. 습식·임파스토가 프레임을 냈거나 장치가 손실됐다면 `documentPreserved: false`와 한글 사유를 돌려주므로 호출자가 레인을 교체해야 한다.
+     * 획 밖이면 no-op(멱등).
+     */
+    abortStroke(): StrokeAbortReceipt {
+      if (disposed) throw new InvalidStateError(`${variant.id} 레인은 dispose됐다`);
+      if (!runtime) return noStrokeAbortReceipt();
+      const result = runtime.abortStroke();
+      pipeline = null;
+      return abortReceipt(result.discardedDabs, result.documentPreserved, result.reasonKo);
     },
     /** 마지막 획의 입력 파이프라인 지연 기록(cpu-reference 레인과 같은 보조 API). */
     strokeLatency(): readonly LatencyRecord[] {

@@ -28,6 +28,7 @@ export function CharacterLabApp({ runtime }: CharacterLabAppProps) {
       ui={runtime.ui}
       thumbnails={runtime.thumbnails}
       packagePlans={runtime.packagePlans}
+      kitPlans={runtime.kitPlans}
       applyLoop={runtime.applyLoop}
     >
       <div className="cl-app">

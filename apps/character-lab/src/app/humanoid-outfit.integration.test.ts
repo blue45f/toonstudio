@@ -242,8 +242,11 @@ describe("humanoid × planApply(기본 파츠 레이아웃·morph 이름)", () =
           expect(modelPart.role).toBe(layout?.role);
           expect(planPart.visible).toBe(true);
           expect(model.partIdPalette[planPart.partId]?.role).toBe(layout?.role);
+        } else if (layout?.role === "underwear") {
+          // 키트 전용 역할(속옷)은 슬롯이 없어 플랜이 항상 표시로 계획한다. 절차 소스에는 이 파츠가 없고 엔진은 없는 partId를 무시한다.
+          expect(planPart.visible).toBe(true);
         } else {
-          // 모델에 없는 역할은 슬롯이 비어 있어 플랜도 숨긴다(슬롯 없는 역할은 항상 모델에 있다)
+          // 모델에 없는 역할은 슬롯이 비어 있어 플랜도 숨긴다(속옷을 뺀 슬롯 없는 역할은 항상 모델에 있다)
           expect(planPart.visible).toBe(false);
         }
       }

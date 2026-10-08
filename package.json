@@ -68,6 +68,7 @@
     "verify:cloudflare-realtime": "pnpm run test:cloudflare-realtime && pnpm run typecheck:cloudflare-realtime && pnpm exec wrangler deploy --dry-run --config deploy/cloudflare-realtime/wrangler.jsonc",
     "verify:backend-capability-worker": "node scripts/canary-backend-capability-worker.mjs",
     "verify:csp": "node scripts/verify-static-csp.mjs apps/web/index.html",
+    "verify:character-kit": "tsx scripts/verify-character-kit.mjs",
     "validate:architecture": "node scripts/validate-architecture.mjs && pnpm run validate:documentation && pnpm run validate:source-layout && pnpm run validate:app-boundaries",
     "verify:toolchain-coverage": "node scripts/verify-toolchain-coverage.mjs",
     "check:studio-bundle": "node scripts/check-studio-bundle.mjs",

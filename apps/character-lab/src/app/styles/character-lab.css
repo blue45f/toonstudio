@@ -922,6 +922,29 @@ body {
   margin-left: 4px;
 }
 
+/* 프리셋 단위 미제공(키트 베이스가 그 프리셋을 안 만듦): 썸네일을 요청하지 않는 비활성 카드. 흐리게만 하지 않고 점선·글자 배지로도 구분한다. */
+.cl-slot-card.cl-slot-card--preset-unavailable {
+  border-style: dashed;
+  background: transparent;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.cl-slot-card--preset-unavailable .cl-slot-card-thumb {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.cl-slot-card--preset-unavailable .cl-slot-card-label {
+  color: var(--lab-muted);
+}
+
+.cl-slot-badge--preset-unavailable {
+  border: 1px solid var(--lab-line);
+  background: var(--lab-canvas);
+  color: var(--lab-fg);
+}
+
 .cl-slot-empty {
   margin: 0;
   padding: 12px;
@@ -1613,6 +1636,248 @@ body {
   color: var(--lab-muted);
 }
 
+/* ---------- PaintPanel: 키트 소스에서 변형을 바꾸면 UV가 어긋난다는 경고(칠하는 것은 막지 않는다) */
+.cl-paint-hint.cl-paint-kit-warning,
+.cl-paint-hint.cl-paint-kit-warnings {
+  padding: 6px 10px;
+  border: 1px solid var(--lab-warn);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--lab-panel-2);
+  color: var(--lab-fg);
+  overflow-wrap: anywhere;
+}
+
+.cl-paint-hint.cl-paint-kit-warnings {
+  margin: 0;
+  padding-left: 26px;
+  list-style: disc;
+}
+
+.cl-paint-kit-warnings li + li {
+  margin-top: 4px;
+}
+
+/* ---------- ExportPanel: 레시피 불러오기 직후 안내(v1 변환·키트 페인트 경고) — 실패가 아니라 상태 문구 */
+.cl-export-notices ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-export-notice {
+  padding: 6px 10px;
+  border: 1px solid var(--lab-warn);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--lab-panel-2);
+  color: var(--lab-fg);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- PackagePanel: 모듈식 키트 영역(베이스 선택·출처·라이선스·제공 파츠 표·재시도·절차 소스 전환)
+ * 버튼은 주요 동작이라 44px 터치 타깃을 지키고, 좁은 폭에서는 줄바꿈·한 열로 접는다. 전환(transition)은 아래 prefers-reduced-motion 규칙이 끈다. */
+.cl-package-subtitle {
+  margin: 8px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--lab-line);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.cl-package-kit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--lab-line);
+  border-radius: var(--lab-radius);
+  background: var(--lab-panel);
+}
+
+.cl-package-kit h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.cl-package-kit-bases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cl-package-panel .cl-package-kit-base,
+.cl-package-panel .cl-package-kit-reload,
+.cl-package-panel .cl-package-kit-to-procedural {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.cl-package-panel .cl-package-kit-base {
+  flex: 1 1 8em;
+}
+
+.cl-package-panel .cl-package-kit-base--selected,
+.cl-package-panel .cl-package-kit-base[aria-pressed="true"] {
+  border-color: var(--lab-accent);
+  background: var(--lab-accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* 선택된 베이스는 이미 쓰는 중이라 비활성이지만 흐리게 하지 않는다(현재 값을 읽을 수 있어야 한다) */
+.cl-package-panel .cl-package-kit-base--selected:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.cl-package-panel .cl-package-kit-base:focus-visible,
+.cl-package-panel .cl-package-kit-reload:focus-visible,
+.cl-package-panel .cl-package-kit-to-procedural:focus-visible {
+  outline: 2px solid var(--lab-accent);
+  outline-offset: 2px;
+}
+
+.cl-package-kit-notice,
+.cl-package-kit-loading,
+.cl-package-kit-hint {
+  overflow-wrap: anywhere;
+}
+
+.cl-package-kit-notice {
+  padding: 6px 10px;
+  border: 1px solid var(--lab-warn);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--lab-panel-2);
+}
+
+.cl-package-kit-loading {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--lab-busy);
+  border-radius: 8px;
+  color: var(--lab-busy);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.cl-package-kit-failure {
+  border-left-width: 4px;
+  overflow-wrap: anywhere;
+}
+
+.cl-package-kit-provenance {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cl-package-kit-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-package-kit-sources li {
+  padding: 6px 10px;
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  background: var(--lab-panel-2);
+  font-size: 0.76rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.cl-package-kit-parts {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+}
+
+.cl-package-kit-parts caption {
+  padding-bottom: 4px;
+  color: var(--lab-muted);
+  text-align: left;
+}
+
+.cl-package-kit-parts th,
+.cl-package-kit-parts td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--lab-line);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.cl-package-kit-parts thead th {
+  color: var(--lab-muted);
+  font-weight: 600;
+}
+
+/* 미제공 파츠가 있는 칸(툴팁에 사유)은 점선 밑줄로 구분한다 — 색만으로 구분하지 않는다 */
+.cl-package-kit-parts td[title] {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+.cl-package-kit-procedural {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--lab-line);
+}
+
+.cl-package-panel .cl-package-kit-to-procedural {
+  border-style: dashed;
+}
+
+.cl-package-kit-procedural .cl-package-hint {
+  flex: 1 1 14em;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .cl-package-kit {
+    padding: 8px;
+  }
+
+  .cl-package-panel .cl-package-kit-base,
+  .cl-package-panel .cl-package-kit-reload,
+  .cl-package-panel .cl-package-kit-to-procedural {
+    flex: 1 1 100%;
+  }
+
+  .cl-package-kit-provenance .cl-package-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .cl-package-kit-provenance .cl-package-facts dd {
+    margin-bottom: 6px;
+  }
+}
+
 /* ---------- ViewportPane: 캔버스 위 도구 막대·HUD·관절 핸들·드로잉 레이어(배치는 패널 인라인, 모양만 여기) */
 .cl-viewport {
   background: var(--lab-canvas);
@@ -1879,6 +2144,9 @@ body {
   .cl-pose-card,
   .cl-vision-badge,
   .cl-package-badge,
+  .cl-package-kit-base,
+  .cl-package-kit-reload,
+  .cl-package-kit-to-procedural,
   .cl-vision-model,
   .cl-viewport-button {
     border-width: 2px;
@@ -1905,6 +2173,9 @@ body {
   .cl-slot-cell-badge,
   .cl-vision-badge,
   .cl-package-badge,
+  .cl-package-kit-base,
+  .cl-package-kit-reload,
+  .cl-package-kit-to-procedural,
   .cl-viewport-button {
     forced-color-adjust: none;
     border: 1px solid CanvasText;
@@ -1922,6 +2193,7 @@ body {
   .cl-slot-cell[aria-current="true"],
   .cl-expression-card--selected,
   .cl-pose-card--selected,
+  .cl-package-kit-base--selected,
   .cl-package-badge--primary {
     background: Highlight;
     color: HighlightText;

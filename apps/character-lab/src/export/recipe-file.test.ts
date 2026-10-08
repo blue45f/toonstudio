@@ -25,7 +25,7 @@ describe("recipe-file", () => {
     const syntax = parseRecipeFile("{ not json", 3);
     expect(!syntax.ok && syntax.failure.code).toBe("recipe-json-syntax");
     expect(!syntax.ok && syntax.failure.at).toBe(3);
-    const future = parseRecipeFile(JSON.stringify({ ...createDefaultRecipe(), version: 2 }));
+    const future = parseRecipeFile(JSON.stringify({ ...createDefaultRecipe(), version: 3 }));
     expect(!future.ok && future.failure.code).toBe("recipe-unsupported-version");
     expect(!future.ok && future.failure.reasonKo).toMatch(/지원하지 않는 레시피 버전/u);
     const invalid = parseRecipeFile(JSON.stringify({ ...createDefaultRecipe(), colors: { skin: "red" } }));

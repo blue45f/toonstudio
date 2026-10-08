@@ -518,3 +518,358 @@ code,
 .lab-table tr[aria-selected="true"] td {
   background: var(--lab-raised);
 }
+
+/* ------------------------------------------------------------------ */
+/* "그리기" 탭: 손맛 시험용 샌드박스                                       */
+/* ------------------------------------------------------------------ */
+.lab-draw {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  align-items: start;
+}
+
+.lab-draw-main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lab-draw-side {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 12px;
+  background: var(--lab-panel);
+  position: sticky;
+  top: 8px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+
+/* 좁은 폭(모바일 세로): 설정 패널이 캔버스 아래로 내려온다. */
+@media (max-width: 900px) {
+  .lab-draw {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lab-draw-side {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+.lab-draw-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+
+.lab-draw-size-field {
+  min-width: 180px;
+}
+
+.lab-draw-fitbox {
+  min-width: 0;
+}
+
+.lab-draw-stage-wrap {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* 그리기 표면: 포인터를 직접 받으므로 스크롤·확대·선택·길게 누르기 메뉴를 막는다. */
+.lab-draw-stage {
+  position: relative;
+  max-width: 100%;
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  background: var(--lab-paper);
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.lab-draw-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+  touch-action: none;
+}
+
+.lab-draw-preview {
+  pointer-events: none;
+}
+
+.lab-draw-hud {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 10px;
+  background: var(--lab-panel);
+}
+
+.lab-draw-hud p {
+  margin: 0;
+}
+
+.lab-draw-hud-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lab-draw-hud-badges:empty {
+  display: none;
+}
+
+.lab-draw-notices {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--lab-fail);
+  border-radius: 10px;
+  background: var(--lab-panel);
+}
+
+.lab-draw-notices ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--lab-fail);
+}
+
+.lab-draw-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--lab-line);
+}
+
+.lab-draw-section h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.lab-draw-fieldset,
+.lab-draw-color {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 10px;
+}
+
+.lab-draw-fieldset legend,
+.lab-draw-color legend {
+  padding: 0 6px;
+  color: var(--lab-muted);
+  font-size: 0.85rem;
+}
+
+.lab-draw-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--lab-warn);
+  border-radius: 4px;
+  background: var(--lab-raised);
+  color: var(--lab-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.lab-draw-error {
+  margin: 0;
+  color: var(--lab-fail);
+  font-size: 0.85rem;
+}
+
+.lab-draw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lab-draw-chip {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 6px 14px;
+  border: 1px solid var(--lab-line);
+  border-radius: 999px;
+  background: var(--lab-raised);
+  color: var(--lab-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.lab-draw-chip[aria-pressed="true"] {
+  border-color: var(--lab-accent);
+  background: var(--lab-accent);
+}
+
+.lab-draw-brush-list {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  max-height: 340px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.lab-draw-brush {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 56px;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid var(--lab-line);
+  border-radius: 10px;
+  background: var(--lab-raised);
+  color: var(--lab-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lab-draw-brush[aria-pressed="true"] {
+  border-color: var(--lab-accent);
+  box-shadow: inset 0 0 0 2px var(--lab-accent);
+}
+
+.lab-draw-thumb {
+  position: relative;
+  display: block;
+  width: 56px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--lab-paper);
+}
+
+.lab-draw-thumb canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.lab-draw-thumb[data-status="pending"],
+.lab-draw-thumb[data-status="idle"] {
+  opacity: 0.6;
+}
+
+.lab-draw-thumb-note {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #7a1c1c;
+  font-weight: 700;
+}
+
+.lab-draw-brush-text {
+  display: grid;
+  min-width: 0;
+}
+
+.lab-draw-brush-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.lab-draw-color-row {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+.lab-draw-hex {
+  flex: 1;
+}
+
+.lab-draw-swatch {
+  display: inline-block;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  flex: none;
+}
+
+.lab-draw-swatch--button {
+  padding: 0;
+  cursor: pointer;
+}
+
+.lab-draw-swatch--button[aria-pressed="true"] {
+  outline: 2px solid var(--lab-fg);
+  outline-offset: 1px;
+}
+
+.lab-draw-swatch--empty {
+  border-style: dashed;
+  opacity: 0.5;
+}
+
+.lab-draw-recent {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(4, 44px);
+  justify-content: start;
+}
+
+@media (min-width: 420px) {
+  .lab-draw-recent {
+    grid-template-columns: repeat(8, 44px);
+  }
+}
+
+/* 색 슬라이더 트랙 위에 그라데이션을 깐다(엄지는 브라우저 기본). */
+.lab-field input[type="range"].lab-draw-track {
+  border-radius: 8px;
+  min-height: 44px;
+}
+
+.lab-draw-details {
+  padding: 8px 10px;
+  border: 1px solid var(--lab-line);
+  border-radius: 10px;
+}
+
+.lab-draw-details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+@media (forced-colors: active) {
+  .lab-draw-stage,
+  .lab-draw-brush,
+  .lab-draw-chip,
+  .lab-draw-swatch {
+    border-color: CanvasText;
+  }
+
+  .lab-draw-chip[aria-pressed="true"],
+  .lab-draw-brush[aria-pressed="true"] {
+    background: Highlight;
+    color: HighlightText;
+  }
+}

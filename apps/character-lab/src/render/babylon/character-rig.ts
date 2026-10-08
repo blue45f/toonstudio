@@ -15,6 +15,7 @@ import { buildPoseFrameSkeleton } from "../pose-skeleton";
 import { unionAabb } from "../synthetic-projection";
 
 import { fromQuaternion, fromVector3, toQuaternion } from "./convert";
+import { passMaterialAlphaCutoff, passMaterialUsesVertexColor } from "./materials/toon-shader";
 import { readRigMeshMetadata } from "./mesh-binding";
 
 import type {
@@ -44,6 +45,12 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
 import type { MorphTarget } from "@babylonjs/core/Morph/morphTarget.js";
 
+/**
+ * 키트 파츠의 색 틴트(계약 4.9). recolor는 레시피 색을 알베도 텍스처에 곱하고, fixed는 레시피 색을 무시하고 항상 이 색(× 텍스처)이다.
+ * 키트 로더만 채운다. 없으면(절차·제작 패키지) 기존 규칙: 알베도 텍스처가 있으면 레시피 색을 적용하지 않는다.
+ */
+export type RigPartTint = { readonly mode: "recolor" } | { readonly mode: "fixed"; readonly hex: string };
+
 export interface RigPart {
   readonly id: string;
   readonly partId: number;
@@ -56,8 +63,10 @@ export interface RigPart {
   readonly outlineMeshes: readonly Mesh[];
   /** 원 재질(PBR). 패키지는 로더가 만든 재질, 절차는 프리셋 재질 */
   readonly pbr: PBRMaterial;
-  /** 패키지 알베도 텍스처 존재 여부(있으면 레시피 색 틴트를 적용하지 않는다) */
+  /** 알베도 텍스처 존재 여부(`tint`가 없으면 있을 때 레시피 색 틴트를 적용하지 않는다) */
   readonly hasAlbedoTexture: boolean;
+  /** 키트 파츠의 색 틴트. 있으면 알베도 텍스처가 있어도 색을 곱한다(recolor: 레시피 색, fixed: 고정색). */
+  readonly tint?: RigPartTint;
   /** 툰 ShaderMaterial(setShading("toon")에서 지연 생성) */
   toon: ShaderMaterial | null;
   /** 현재 표시 색(소문자 hex) */
@@ -92,7 +101,7 @@ export interface RigMaterialHooks {
 }
 
 export interface CharacterRig {
-  readonly kind: "procedural" | "package";
+  readonly kind: "procedural" | "package" | "kit";
   readonly root: TransformNode;
   readonly parts: readonly RigPart[];
   readonly partById: ReadonlyMap<number, RigPart>;
@@ -127,6 +136,19 @@ export function rigVisibleMeshes(rig: CharacterRig, options: { readonly includeO
     if (options.includeOutlines) out.push(...part.outlineMeshes);
   }
   return out;
+}
+
+/**
+ * 파츠의 모든 메시가 정점 색(`COLOR_0`) 버퍼를 가졌는지. 툰·밑색 패스 재질이 `color` attribute define을 켤지 정한다
+ * (일부 메시에만 있으면 끈다 — 없는 메시에 attribute를 선언하면 0으로 읽혀 알베도가 검게 곱해진다).
+ */
+export function partHasVertexColors(part: Pick<RigPart, "meshes">): boolean {
+  return part.meshes.length > 0 && part.meshes.every((mesh) => mesh.isVerticesDataPresent("color"));
+}
+
+/** 키트 파츠인지(리그 종류가 아직 모르는 호출 시점에도 파츠 자체의 틴트로 판별한다). */
+export function isKitPart(rig: Pick<CharacterRig, "kind"> | null, part: Pick<RigPart, "tint">): boolean {
+  return rig?.kind === "kit" || part.tint !== undefined;
 }
 
 /** 가시 메시의 월드 AABB 합집합(없으면 null). 스키닝 적용 전 bind 포즈 기준. */
@@ -213,7 +235,8 @@ export function applyRigPlan(rig: CharacterRig, plan: ApplyPlan, options: ApplyR
       rig.materials.applyPreset(part, planPart.materialPreset);
     }
     setRigPartVisible(part, planPart.visible, options.outlinesVisible);
-    const hex = resolvePartColorHex(part, plan.colors, planPart.color);
+    // 고정색 틴트(키트의 안구·치아·혀·속옷)는 레시피·플랜 색을 무시한다.
+    const hex = part.tint?.mode === "fixed" ? part.tint.hex : resolvePartColorHex(part, plan.colors, planPart.color);
     if (hex !== part.colorHex) {
       part.colorHex = hex;
       rig.materials.applyColor(part, hex);
@@ -296,12 +319,17 @@ export function inspectRig(rig: CharacterRig): RigInspection {
         return active;
       }),
       hasAlbedoTexture: part.hasAlbedoTexture,
+      ...(part.tint ? { tintMode: part.tint.mode } : {}),
+      subMeshCountsByMesh: part.meshes.map((mesh) => mesh.subMeshes.length),
+      alwaysSelectAsActiveByMesh: part.meshes.map((mesh) => mesh.alwaysSelectAsActiveMesh),
       meshMetadataPartIds: part.meshes.map((mesh) => readRigMeshMetadata(mesh.metadata)?.partId ?? -1),
       outlineMetadataPartIds: part.outlineMeshes.map((mesh) => readRigMeshMetadata(mesh.metadata)?.partId ?? -1),
       skinned: part.meshes.some((mesh) => mesh.skeleton !== null),
       sideOrientations: part.meshes.map((mesh) => mesh.overrideMaterialSideOrientation ?? null),
       materialClass: current ? current.getClassName() : "none",
       hasToonMaterial: part.toon !== null,
+      ...(part.toon ? { toonVertexColor: passMaterialUsesVertexColor(part.toon), toonAlphaCutoff: passMaterialAlphaCutoff(part.toon) } : {}),
+      meshesHaveVertexColor: part.meshes.map((mesh) => mesh.isVerticesDataPresent("color")),
       renderOutline: part.meshes.some((mesh) => mesh.renderOutline),
       edgesRendering: part.meshes.some((mesh) => mesh.edgesRenderer !== null),
       outlineShellVisible: part.outlineMeshes.some((mesh) => mesh.isVisible),

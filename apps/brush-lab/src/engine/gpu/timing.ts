@@ -37,6 +37,8 @@ export class GpuTimer {
   private unmapped: { staging: GPUBuffer; bytes: number; frames: number }[] = [];
   private workDoneMs = 0;
   private workDoneFrames = 0;
+  /** `abandon()`이 올리는 세대 번호. 이전 세대에서 시작한 비동기 측정은 결과를 합산하지 않는다. */
+  private generation = 0;
   private disposed = false;
 
   constructor(device: GPUDevice, hasTimestampQuery: boolean, clock: Clock | null) {
@@ -102,8 +104,9 @@ export class GpuTimer {
     this.startPendingMaps();
     if (this.source !== "submitted-work-done" || !this.clock) return;
     const t0 = this.clock.now();
+    const generation = this.generation;
     const p = this.device.queue.onSubmittedWorkDone().then(() => {
-      if (!this.clock) return;
+      if (!this.clock || generation !== this.generation) return;
       this.workDoneMs += this.clock.now() - t0;
       this.workDoneFrames += 1;
     });
@@ -133,9 +136,10 @@ export class GpuTimer {
   }
 
   private async readStaging(staging: GPUBuffer, bytes: number, frames: number): Promise<void> {
+    const generation = this.generation;
     await staging.mapAsync(0x0001);
     const view = new DataView(staging.getMappedRange(0, bytes));
-    for (let i = 0; i < frames; i += 1) {
+    for (let i = 0; i < frames && generation === this.generation; i += 1) {
       const begin = view.getBigUint64(i * TIMER_RESOLVE_STRIDE, true);
       const end = view.getBigUint64(i * TIMER_RESOLVE_STRIDE + 8, true);
       if (end >= begin) {
@@ -169,6 +173,21 @@ export class GpuTimer {
     this.framesMeasured = 0;
     this.workDoneMs = 0;
     this.workDoneFrames = 0;
+  }
+
+  /**
+   * 획을 버린다(abortStroke): 이 획이 예약한 측정을 모두 무효로 한다. 이미 시작된 비동기 map은 스테이징만 해제하고
+   * 결과를 합산하지 않아 다음 획의 측정에 섞이지 않는다. 제출되지 않은 스테이징 복사 기록은 해제한다.
+   */
+  abandon(): void {
+    this.generation += 1;
+    this.pending = [];
+    for (const { staging } of this.unmapped) staging.destroy();
+    this.unmapped = [];
+    // 링에 남은 이 획의 슬롯이 다음 획의 flushPartial에 섞이지 않도록 링 경계로 건너뛴다(읽지 않고 버린다).
+    const slot = this.frame % TIMER_RING_FRAMES;
+    if (slot !== 0) this.frame += TIMER_RING_FRAMES - slot;
+    this.reset();
   }
 
   dispose(): void {

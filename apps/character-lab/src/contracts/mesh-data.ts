@@ -25,6 +25,8 @@ export const PART_ROLES = [
   "bottom",
   "shoes",
   "accessory",
+  // 키트 v1에서 추가(2026-10-08). 기존 역할의 partId가 밀리지 않도록 반드시 끝에 둔다(rolePartId = 인덱스 + 1).
+  "underwear",
 ] as const;
 
 export type PartRole = (typeof PART_ROLES)[number];
@@ -45,6 +47,7 @@ export const PART_ROLE_LABELS_KO: Readonly<Record<PartRole, string>> = {
   bottom: "하의",
   shoes: "신발",
   accessory: "액세서리",
+  underwear: "속옷",
 };
 
 const PART_ROLE_SET: ReadonlySet<string> = new Set(PART_ROLES);

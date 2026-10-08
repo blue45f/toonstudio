@@ -19,6 +19,8 @@ export const LANE_ID_VALUES = [
   "webgl2-instanced",
   "wasm-cpu",
   "wasm-gpu-hybrid",
+  "libmypaint",
+  "hokusai",
 ] as const;
 
 export const LANE_KIND_VALUES = ["baseline", "candidate", "comparison"] as const;

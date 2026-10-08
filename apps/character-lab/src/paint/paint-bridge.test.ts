@@ -207,3 +207,24 @@ describe("clientToNdc / normalizePointerPressure", () => {
     expect(normalizePointerPressure({ pointerType: "touch", pressure: 0 })).toBe(1);
   });
 });
+
+describe("키트 속옷 역할 (underwear)", () => {
+  it("속옷 위에서는 활성 부위가 피부여도 페인트하지 않는다(몸과 겹쳐 보이는 역할이지만 페인트 대상이 아니다)", () => {
+    const { session, driver, uploads, commits } = harness(() => "underwear");
+    expect(driver.down({ ndcX: 0, ndcY: 0, pressure: 1 })).toBe(false);
+    expect(driver.move({ ndcX: 0.1, ndcY: 0.1, pressure: 1 })).toBe(0);
+    expect(driver.up()).toBeNull();
+    expect(uploads).toHaveLength(0);
+    expect(commits).toHaveLength(0);
+    expect(session.layersForExport()).toHaveLength(0);
+  });
+
+  it("같은 화면에서 속옷과 피부가 이어져도 피부 구간만 칠해진다", () => {
+    const { session, driver } = harness((u) => (u < 0.5 ? "underwear" : "skin"));
+    expect(driver.down({ ndcX: -0.5, ndcY: 0, pressure: 1 })).toBe(false);
+    expect(driver.move({ ndcX: 0.5, ndcY: 0, pressure: 1 })).toBeGreaterThan(0);
+    const token = driver.up();
+    expect(token?.part).toBe("skin");
+    expect(session.layersForExport().map((layer) => layer.part)).toEqual(["skin"]);
+  });
+});

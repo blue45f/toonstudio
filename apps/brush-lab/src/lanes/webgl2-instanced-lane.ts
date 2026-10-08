@@ -5,7 +5,7 @@ import { detectSoftwareRenderer } from "../engine/gpu/device";
 import { paperFor } from "../engine/raster/reference-renderer";
 import { WEBGL2_REQUIRED_EXTENSION, Webgl2InstancedRuntime } from "../engine/webgl2/instanced-dab";
 
-import { emptyLaneStats, supportedReport, unavailableReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport, unavailableReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -16,6 +16,7 @@ import type {
   LaneId,
   LaneInit,
   LaneStats,
+  StrokeAbortReceipt,
   StrokeReceipt,
 } from "./lane";
 import type { GpuAdapterInfo, LabImage, RawSample } from "../engine/core/types";
@@ -150,6 +151,17 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
       stats.submits += r.submitCount;
       stats.lastReceipt = receipt;
       return receipt;
+    },
+    /**
+     * 진행 중인 획을 문서에 합성하지 않고 버린다. 문서 텍스처는 endStroke의 bake에서만 바뀌므로 보존되고, 프레임을 냈다면 획 타깃을 비우고
+     * present를 다시 올린다. 프레임을 내지 않았다면 GL 호출이 없다. 획 밖이면 no-op(멱등).
+     */
+    abortStroke(): StrokeAbortReceipt {
+      if (disposed) throw new InvalidStateError("webgl2-instanced 레인은 dispose됐다");
+      if (!runtime) return noStrokeAbortReceipt();
+      const result = runtime.abortStroke();
+      pipeline = null;
+      return abortReceipt(result.discardedDabs, result.documentPreserved);
     },
     async readback(): Promise<LabImage> {
       return requireRuntime().readbackImage();

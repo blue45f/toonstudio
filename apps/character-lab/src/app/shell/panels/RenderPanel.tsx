@@ -5,6 +5,9 @@
  * - 컨트롤은 레시피의 `shading` 프로파일을 그대로 편집한다(엔진이 없어도 저장되고, 준비되면 적용 루프가 반영한다).
  * - 슬라이더(IBL 세기)는 드래그 중에는 로컬 값만 바꾸고 포인터·키보드를 놓을 때 한 번만 dispatch한다(history 1단계).
  * - 엔진이 켜지 못한 기능은 '사용 불가 + 사유'로 표에 남는다. 패널은 대체 기능을 켜거나 설정을 바꾸지 않는다(무음 축소 금지).
+ * - 키트 소스에서는 엔진이 얼굴 SDF 그림자를 쓰지 않는다(키트 UV에 SDF 전제가 없음, KT-04). 체크박스는 레시피 값을 그대로 편집하게 두고
+ *   "적용되지 않음" 사유를 같은 줄 아래 보인다(값은 레시피에 남아 절차 소스로 돌아가면 다시 쓰인다). 키트의 툰 기본값(음영 2단계·림 끔)은 레시피에 들어 있어
+ *   컨트롤이 레시피 값을 그대로 보인다.
  * - TAA·SSAO는 베타 라벨을 붙인다. 이 컨테이너에는 GPU가 없어 실제 렌더 품질은 브라우저 미검증이다.
  * - 베타 기능 4종(NodeMaterial 툰·IBL 그림자·OpenPBR·투영 페인트)은 엔진 세션 상태라 레시피·히스토리에 저장하지 않고 엔진 포트
  *   (`betaFeatures()`·`setBetaFeature()`)로 켜고 끈다. 기본은 꺼짐이고 엔진이 능력을 확인해 지원하지 않으면 체크박스가 비활성이며 한글 사유를 보인다
@@ -161,6 +164,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   const betaSupported = engine !== null && hasBetaFeatures(engine);
   const extended = readExtendedFeatures(features);
   const isToon = shading.mode === "toon";
+  const isKit = state.recipe.source.kind === "kit";
   const hudList = hud ? hudRows(hud) : [];
   const unavailable = (id: keyof SceneFeatureReport): string | null => {
     const entry = features?.[id];
@@ -327,8 +331,19 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         </div>
         <div className="cl-render-row">
           <label htmlFor={`${ids}-sdf`}>얼굴 SDF 그림자</label>
-          <input id={`${ids}-sdf`} type="checkbox" checked={shading.toon.faceSdfShadow} onChange={(event) => set({ toon: { ...shading.toon, faceSdfShadow: event.target.checked } })} />
+          <input
+            id={`${ids}-sdf`}
+            type="checkbox"
+            checked={shading.toon.faceSdfShadow}
+            aria-describedby={isKit ? `${ids}-sdf-note` : undefined}
+            onChange={(event) => set({ toon: { ...shading.toon, faceSdfShadow: event.target.checked } })}
+          />
         </div>
+        {isKit ? (
+          <p id={`${ids}-sdf-note`} className="cl-render-reason" data-role="kit-sdf-note">
+            키트는 얼굴 SDF 그림자를 쓰지 않음 — 이 설정은 레시피에 남지만 키트 소스에서는 적용되지 않습니다(절차 소스에서만 쓰입니다).
+          </p>
+        ) : null}
         <div className="cl-render-row">
           <label htmlFor={`${ids}-outline`}>외곽선</label>
           <select

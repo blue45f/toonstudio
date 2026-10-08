@@ -48,6 +48,8 @@ describe("createPaintSession", () => {
   it("페인트 불가 부위는 거부한다", () => {
     const session = createPaintSession();
     expect(() => session.setActivePart("eyeball")).toThrow(/페인트할 수 없습니다/u);
+    // 키트 v1에서 추가된 속옷 역할: 항상 표시되는 고정색 파츠라 페인트 대상이 아니다.
+    expect(() => session.setActivePart("underwear")).toThrow(/underwear/u);
   });
 
   it("replaceLayers는 복사본을 보관하고 clearLayer는 비운다", () => {

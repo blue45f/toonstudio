@@ -62,6 +62,9 @@ export function applyOverrides(base: BrushProgram, o: LabOverrides): BrushProgra
       ...base.paper,
       enabled: o.grain ?? base.paper.enabled,
       filter: o.filter ?? base.paper.filter,
+      scale: o.paperScale ?? base.paper.scale,
+      roughness: o.paperRoughness ?? base.paper.roughness,
+      absorbency: o.paperAbsorbency ?? base.paper.absorbency,
     },
     strokeDynamics: {
       ...base.strokeDynamics,

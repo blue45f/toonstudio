@@ -25,7 +25,7 @@ describe("app: 조립된 앱 스모크", () => {
       "fetch",
       vi.fn(async () => new Response("not found", { status: 404 })),
     );
-    const runtime = composeCharacterLab({ decideBackend: async (backend) => ({ ok: true, backend }), subdivisionLevels: 0 });
+    const runtime = composeCharacterLab({ defaultSource: "procedural", decideBackend: async (backend) => ({ ok: true, backend }), subdivisionLevels: 0 });
     render(<CharacterLabApp runtime={runtime} />);
     for (const tab of INSPECTOR_TAB_IDS) {
       // 슬롯 탭에도 같은 이름('표정' 등)이 있으므로 인스펙터 탭은 id로 찾는다
@@ -47,7 +47,7 @@ describe("app: 조립된 앱 스모크", () => {
   it("엔진을 명시 선택하면 뷰포트 캔버스로 엔진을 만들고 상태 배지·HUD 도구 막대를 보여준다", async () => {
     const engine = createMockEngine();
     const factory = createMockEngineFactory({ engine });
-    const runtime = composeCharacterLab({ loadFactory: async () => factory, decideBackend: async (backend) => ({ ok: true, backend }), subdivisionLevels: 0 });
+    const runtime = composeCharacterLab({ defaultSource: "procedural", loadFactory: async () => factory, decideBackend: async (backend) => ({ ok: true, backend }), subdivisionLevels: 0 });
     render(<CharacterLabApp runtime={runtime} />);
     // ViewportPane의 캔버스가 레지스트리에 등록돼 있어야 TopBar가 엔진을 만들 수 있다
     expect(screen.getByLabelText("캐릭터 뷰포트")).toBeInstanceOf(HTMLCanvasElement);

@@ -6,7 +6,7 @@ import { SUMI_KERNEL_SHA256 } from "../engine/wasm/kernel-integrity";
 import { loadSumiKernel } from "../engine/wasm/loader";
 import { WasmSurface } from "../engine/wasm/wasm-surface";
 
-import { emptyLaneStats, unavailableReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, unavailableReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -16,6 +16,7 @@ import type {
   LaneEnvironment,
   LaneInit,
   LaneStats,
+  StrokeAbortReceipt,
   StrokeReceipt,
 } from "./lane";
 import type { Clock, LabImage, RawSample } from "../engine/core/types";
@@ -182,6 +183,15 @@ export function createWasmCpuLane(): WasmCpuLane {
       stats.submits += receipt.submitCount;
       stats.lastReceipt = receipt;
       return receipt;
+    },
+    abortStroke(): StrokeAbortReceipt {
+      if (disposed) throw new InvalidStateError("abortStroke: dispose된 레인이다");
+      if (!surface) return noStrokeAbortReceipt();
+      // WasmSurface는 CPU Surface를 상속하므로 타일 단위 copy-on-write 저널 복원(습식 층·높이 포함)을 그대로 쓴다.
+      const result = surface.abortStroke();
+      pipeline = null;
+      if (!result.aborted) return noStrokeAbortReceipt();
+      return abortReceipt(result.discardedDabs, result.restored, result.reasonKo);
     },
     async readback(): Promise<LabImage> {
       return requireSurface("readback").toLabImage();

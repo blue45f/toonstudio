@@ -5,10 +5,12 @@
 ## 범위와 경계
 
 - `apps/brush-lab`(`@toonstudio/brush-lab`)은 서버 기능이 없는 정적 Vite 실험 앱이며 운영 배포 대상이 아니다. 브러시 품질·성능
-  테스트만 한다(undo·레이어·문서·저장·서버 연동을 추가하지 않는다).
+  테스트만 한다(undo·레이어·문서·저장·서버 연동을 추가하지 않는다). "그리기" 탭은 **손맛 시험용 샌드박스(PNG 스냅샷만)**이며 이 범위를 넓히지 않는다.
 - `apps/web`, `apps/admin-web`, `apps/api`, `apps/character-lab`의 application source를 직접 import하지 않는다.
   `@toonstudio/studio-brush-platform`·`@toonstudio/studio-project-model`은 `src/lanes/platform-baseline-lane.ts`에서만,
   `@toonstudio/studio-engine-registry`는 `src/bench/metrics/render-metrics.test.ts`에서만 쓴다.
+  예외: 외부 엔진 비교 레인 `src/lanes/libmypaint-lane.ts`(와 그 테스트)만 `@toonstudio/studio-brush-platform/libmypaint`(집중 진입점)을 쓰고,
+  `packages/`로 나가는 상대 import는 `libmypaint-lane`(libmypaint 로더)·`hokusai-lane`(Hokusai pkg)과 그 테스트의 지정 모듈만 허용한다(`src/boundary.test.ts`가 거부).
 - 레이어 의존 방향은 `app → platform → bench → lanes → engine`이다(역방향 import 금지). `bench`는 `engine`의 타입·CPU 참조 렌더만 쓴다.
 - `src/engine/**`은 승격 단위다: `@toonstudio/*`·react·DOM 전역(`document`·`window`·`navigator`·`requestAnimationFrame`)·
   `performance`·`Date.now`·`Math.random`을 참조하지 않고 시간·GPU·캔버스·wasm 바이트는 인자로 주입한다.

@@ -58,6 +58,38 @@ export interface SurfaceOptions {
   wetCapacityTiles?: number;
 }
 
+/** `abortStroke`의 결과. */
+export interface SurfaceAbortReceipt {
+  /** 진행 중인 획이 있었는가. false면 아무것도 하지 않은 no-op이다(멱등). */
+  aborted: boolean;
+  /** 버린 dab 수(문서에 합성되지 않은 채 사라진 획의 dab). */
+  discardedDabs: number;
+  /** 문서·습식 층·높이·표시 플래그가 획 시작 시점 상태로 복원됐는가. */
+  restored: boolean;
+  /** `restored`가 false일 때의 한글 사유. */
+  reasonKo?: string;
+  /** 저널에서 되돌린 습식 타일 수(코어 + 확장). */
+  restoredWetTiles: number;
+  /** 매체 전환 획이라 문서 전체를 복사해 두었다가 되돌렸는가. */
+  documentCopied: boolean;
+}
+
+/**
+ * 획 시작 시점의 되돌림 기준점. 문서는 `endStroke`에서만 바뀌므로 보통 복사하지 않고(습식 풀은 `TilePool` 저널이 처음 건드린 타일만
+ * 복사한다), 이번 획이 다른 매체의 습식 층을 먼저 문서에 굽는 경우(`flattenWet`)에만 문서 전체를 복사해 둔다.
+ */
+interface SurfaceCheckpoint {
+  waterLayer: boolean;
+  oilLayer: boolean;
+  hasHeight: boolean;
+  layerParams: WetParams | null;
+  layerPaper: PaperField | null;
+  /** 획 시작 전에 습식 상태 객체가 있었는가(없으면 되돌릴 때 버린다). */
+  hadWet: boolean;
+  wet: { active: Set<number>; oilTiles: Set<number>; timeMs: number; km: boolean; hadExt: boolean } | null;
+  documentCopy: Float32Array | null;
+}
+
 const tipCache = new Map<string, TipMask[]>();
 const paperCache = new Map<string, PaperField>();
 
@@ -117,6 +149,10 @@ export class Surface {
   /** 습식 층을 건조·평탄화할 때 쓰는 마지막 습식 획의 파라미터와 종이. */
   private layerParams: WetParams | null = null;
   private layerPaper: PaperField | null = null;
+  /** 진행 중인 획의 되돌림 기준점(`beginStroke`~`endStroke`/`abortStroke`). */
+  private checkpoint: SurfaceCheckpoint | null = null;
+  /** `endStroke`가 문서 합성을 시작했는가. 그 도중에 실패하면 문서를 되돌릴 수 없다. */
+  private documentTouched = false;
 
   constructor(width: number, height: number, opts: SurfaceOptions = {}) {
     if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
@@ -147,7 +183,10 @@ export class Surface {
     const needsWet = program.wet !== null && (model === "wet-flow" || model === "impasto");
     // 쌓는 순서 보존: 습식 층이 있는데 이번 획이 같은 종류의 습식 획이 아니면 먼저 굽는다.
     const kind = needsWet ? (model === "impasto" ? "oil" : "water") : null;
-    if ((this.waterLayer && kind !== "water") || (this.oilLayer && kind !== "oil")) this.flattenWet();
+    const willFlatten = (this.waterLayer && kind !== "water") || (this.oilLayer && kind !== "oil");
+    // 되돌림 기준점은 어떤 상태도 바꾸기 전(플래튼 포함)에 잡는다.
+    this.openCheckpoint(willFlatten);
+    if (willFlatten) this.flattenWet();
     if (needsWet && !this.wet) {
       this.wet = createWetState(this.width, this.height, this.wetCapacity);
     }
@@ -208,6 +247,7 @@ export class Surface {
     const program = this.program;
     if (!ctx || !program) throw new InvalidStateError("Surface.endStroke called before beginStroke");
     const poolTilesUsed = this.stroke.pool.used();
+    this.documentTouched = true;
     for (const [tile, data] of this.stroke.tiles()) {
       const tx = tile % this.tilesX;
       const ty = Math.floor(tile / this.tilesX);
@@ -227,7 +267,98 @@ export class Surface {
     };
     this.ctx = null;
     this.program = null;
+    this.closeCheckpoint();
     return receipt;
+  }
+
+  /**
+   * 진행 중인 획을 **문서에 합성하지 않고 버리고**, 문서·습식 층(수채 안료·유화 물감)·높이·표시 플래그를 `beginStroke` 직전 상태로
+   * 되돌린다. 획 레이어는 비우고, 습식 풀은 저널(타일 단위 copy-on-write: 획 도중 처음 건드린 타일만 복사해 둔 것)로 복원한다.
+   * 문서는 `endStroke`에서만 바뀌므로 복사하지 않는다(다른 매체의 습식 층을 먼저 굽는 획만 문서 전체를 복사해 둔다).
+   * 획이 없으면 no-op(멱등). `endStroke`가 문서 합성 도중 실패했다면 문서의 일부가 이미 바뀌었으므로 `restored: false`와 사유를 돌려준다.
+   */
+  abortStroke(): SurfaceAbortReceipt {
+    const cp = this.checkpoint;
+    if (!cp) {
+      return { aborted: false, discardedDabs: 0, restored: true, restoredWetTiles: 0, documentCopied: false };
+    }
+    const discardedDabs = this.strokeDabs;
+    const documentTouched = this.documentTouched;
+    this.stroke.clear();
+    let restoredWetTiles = 0;
+    const wet = this.wet;
+    if (!cp.hadWet) {
+      // 이 획이 처음 만든 습식 상태는 통째로 버린다.
+      this.wet = null;
+    } else if (wet && cp.wet) {
+      restoredWetTiles += wet.pool.rollbackJournal();
+      const ext = wet.ext;
+      if (ext) {
+        // 확장 풀이 이 획에서 처음 만들어졌다면(기준점에 없었다면) 전부 이 획의 내용이므로 비운다.
+        if (cp.wet.hadExt) restoredWetTiles += ext.rollbackJournal();
+        else ext.clear();
+      }
+      wet.active.clear();
+      for (const tile of cp.wet.active) wet.active.add(tile);
+      wet.oilTiles.clear();
+      for (const tile of cp.wet.oilTiles) wet.oilTiles.add(tile);
+      wet.timeMs = cp.wet.timeMs;
+      wet.render.km = cp.wet.km;
+    }
+    const documentCopied = cp.documentCopy !== null;
+    if (cp.documentCopy) this.document.set(cp.documentCopy);
+    this.waterLayer = cp.waterLayer;
+    this.oilLayer = cp.oilLayer;
+    this.hasHeight = cp.hasHeight;
+    this.layerParams = cp.layerParams;
+    this.layerPaper = cp.layerPaper;
+    this.ctx = null;
+    this.program = null;
+    this.strokeDabs = 0;
+    this.overflow = 0;
+    this.dirtyMax = 0;
+    this.lastWetReceipt = null;
+    this.checkpoint = null;
+    this.documentTouched = false;
+    const receipt: SurfaceAbortReceipt = { aborted: true, discardedDabs, restored: !documentTouched || documentCopied, restoredWetTiles, documentCopied };
+    if (!receipt.restored) {
+      receipt.reasonKo = "endStroke가 문서 합성 도중 실패해 문서 일부가 이미 바뀌었다(획 레이어와 습식 층만 되돌렸다)";
+    }
+    return receipt;
+  }
+
+  /** 되돌림 기준점을 연다. 확정되지 않은 이전 기준점은 버린다. */
+  private openCheckpoint(copyDocument: boolean): void {
+    this.closeCheckpoint();
+    const wet = this.wet;
+    this.checkpoint = {
+      waterLayer: this.waterLayer,
+      oilLayer: this.oilLayer,
+      hasHeight: this.hasHeight,
+      layerParams: this.layerParams,
+      layerPaper: this.layerPaper,
+      hadWet: wet !== null,
+      wet: wet
+        ? { active: new Set(wet.active), oilTiles: new Set(wet.oilTiles), timeMs: wet.timeMs, km: wet.render.km, hadExt: wet.ext !== null }
+        : null,
+      documentCopy: copyDocument ? new Float32Array(this.document) : null,
+    };
+    this.documentTouched = false;
+    if (wet) {
+      wet.pool.beginJournal();
+      wet.ext?.beginJournal();
+    }
+  }
+
+  /** 기준점을 확정한다(복사본을 버린다). */
+  private closeCheckpoint(): void {
+    const wet = this.wet;
+    if (wet) {
+      wet.pool.commitJournal();
+      wet.ext?.commitJournal();
+    }
+    this.checkpoint = null;
+    this.documentTouched = false;
   }
 
   /** 활성 타일이 없어질 때까지(상한 프레임) 습식을 전진한다. 마지막 영수증을 돌려준다. */
@@ -298,7 +429,7 @@ export class Surface {
   heightMap(wet: WetState): Float32Array {
     const out = new Float32Array(this.width * this.height);
     for (const [tile, slot] of wet.pool.entries()) {
-      const data = wet.pool.view(slot);
+      const data = wet.pool.peek(slot);
       const tx = tile % this.tilesX;
       const ty = Math.floor(tile / this.tilesX);
       for (let ly = 0; ly < TILE_SIZE; ly += 1) {

@@ -14,7 +14,7 @@ import type { GalleryRenderResult } from "../../platform/worker-client";
  * 셀렉터는 저장된 참조나 원시값을 돌려줘야 한다(매번 새 객체를 만들면 재렌더가 반복된다).
  */
 
-export type LabTab = "gallery" | "compare" | "report";
+export type LabTab = "draw" | "gallery" | "compare" | "report";
 
 /** 파라미터 패널이 프리셋 위에 얹는 오버라이드. 값이 없는 키는 프리셋 값을 쓴다. */
 export type LabOverrides = Partial<
@@ -25,6 +25,12 @@ export type LabOverrides = Partial<
       filter: SamplingFilter;
       /** 종이 그레인 on/off. */
       grain: boolean;
+      /** 종이 요철 배율(작을수록 결이 굵다). */
+      paperScale: number;
+      /** 종이 거칠기 0..1. */
+      paperRoughness: number;
+      /** 종이 흡수성 0..1(습식 번짐). */
+      paperAbsorbency: number;
       /** 습식 모듈(베타) on/off. */
       wetBeta: boolean;
       /** Kubelka-Munk 혼색(베타) on/off. */
@@ -114,6 +120,8 @@ export const LANE_IDS: readonly LaneId[] = [
   "webgl2-instanced",
   "wasm-cpu",
   "wasm-gpu-hybrid",
+  "libmypaint",
+  "hokusai",
 ];
 
 export const EMPTY_RESULTS: LabResults = {
@@ -145,7 +153,7 @@ export function emptyCapability(): Record<LaneId, LaneCapabilityReport | null> {
 
 export function initialLabState(): LabState {
   return {
-    tab: "compare",
+    tab: "draw",
     laneA: "cpu-reference",
     laneB: "webgpu-compute",
     fixtureId: "zigzag",

@@ -149,3 +149,70 @@ describe("attachPointerCapture", () => {
     detach();
   });
 });
+
+describe("attachPointerCapture: 캡처 상실·컨텍스트 메뉴", () => {
+  it("pointerup 없이 캡처가 풀리면(lostpointercapture) 소유 포인터의 획을 마지막 압력의 up 표본으로 끝낸다", () => {
+    const { el, batches, detach } = setup();
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 1, clientY: 1, pressure: 0.4 }));
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: 5, clientY: 5, pressure: 0.7 }));
+    el.dispatchEvent(pointerEvent("lostpointercapture", { clientX: 5, clientY: 5, pressure: 0 }));
+    const last = batches[batches.length - 1] ?? [];
+    expect(last).toHaveLength(1);
+    expect(last[0]).toEqual(expect.objectContaining({ phase: "up", source: "raw" }));
+    expect(last[0]?.pressure).toBeCloseTo(0.7, 5);
+    // 획이 끝났으므로 이후 move는 새 획의 down 전까지 무시된다.
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: 9, clientY: 9 }));
+    expect(batches).toHaveLength(3);
+    detach();
+  });
+
+  it("정상 pointerup 뒤의 lostpointercapture와 소유하지 않은 포인터의 lostpointercapture는 표본을 만들지 않는다", () => {
+    const { el, batches, detach } = setup();
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 1, clientY: 1 }));
+    el.dispatchEvent(pointerEvent("lostpointercapture", { pointerId: 9 }));
+    expect(batches).toHaveLength(1);
+    el.dispatchEvent(pointerEvent("pointerup", { clientX: 2, clientY: 2 }));
+    expect(batches).toHaveLength(2);
+    el.dispatchEvent(pointerEvent("lostpointercapture", { clientX: 2, clientY: 2 }));
+    expect(batches).toHaveLength(2);
+    detach();
+    // detach 뒤에는 어떤 이벤트도 표본이 되지 않는다.
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 1, clientY: 1 }));
+    el.dispatchEvent(pointerEvent("lostpointercapture"));
+    expect(batches).toHaveLength(2);
+  });
+
+  it("blockContextMenu를 켜면 contextmenu를 막고 해제하면 풀리며 기본값은 막지 않는다", () => {
+    const blocked = setup({ blockContextMenu: true });
+    const ev = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    blocked.el.dispatchEvent(ev);
+    expect(ev.defaultPrevented).toBe(true);
+    blocked.detach();
+    const after = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    blocked.el.dispatchEvent(after);
+    expect(after.defaultPrevented).toBe(false);
+
+    const open = setup();
+    const ev2 = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    open.el.dispatchEvent(ev2);
+    expect(ev2.defaultPrevented).toBe(false);
+    open.detach();
+  });
+
+  it("primaryButtonOnly는 마우스 보조 버튼 획을 막고 주 버튼·펜은 그대로 받는다(기본은 모두 받는다)", () => {
+    const strict = setup({ primaryButtonOnly: true });
+    strict.el.dispatchEvent(pointerEvent("pointerdown", { pointerType: "mouse", button: 2, buttons: 2, clientX: 1, clientY: 1 }));
+    expect(strict.batches).toHaveLength(0);
+    strict.el.dispatchEvent(pointerEvent("pointerdown", { pointerType: "mouse", button: 0, buttons: 1, clientX: 1, clientY: 1 }));
+    expect(strict.batches).toHaveLength(1);
+    strict.el.dispatchEvent(pointerEvent("pointerup", { pointerType: "mouse", button: 0, clientX: 1, clientY: 1 }));
+    strict.el.dispatchEvent(pointerEvent("pointerdown", { pointerType: "pen", button: 0, buttons: 1, clientX: 2, clientY: 2 }));
+    expect(strict.batches).toHaveLength(3);
+    strict.detach();
+
+    const open = setup();
+    open.el.dispatchEvent(pointerEvent("pointerdown", { pointerType: "mouse", button: 2, buttons: 2, clientX: 1, clientY: 1 }));
+    expect(open.batches).toHaveLength(1);
+    open.detach();
+  });
+});

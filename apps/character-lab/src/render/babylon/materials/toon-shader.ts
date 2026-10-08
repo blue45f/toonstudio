@@ -15,6 +15,8 @@ import {
   CHARACTER_SHADER_DEFINES,
   CHARACTER_SHADER_SOURCES,
   CHARACTER_SHADER_UNIFORM_BUFFERS,
+  CHARACTER_SHADER_VERTEX_COLOR_ATTRIBUTE,
+  CHARACTER_SHADER_VERTEX_COLOR_DEFINE,
   CHARACTER_VERTEX_SHADER_NAME,
   DEPTH_UNIFORMS,
   FLAT_SAMPLERS,
@@ -80,25 +82,69 @@ function samplersFor(kind: PassMaterialKind): string[] {
   return [];
 }
 
+export interface PassMaterialOptions {
+  /**
+   * 메시가 정점 색(`COLOR_0`) 버퍼를 가진다. true면 정점 셰이더가 `color` attribute를 읽어 툰·밑색 패스가 알베도에 곱한다.
+   * 이 재질을 쓰는 **모든** 메시가 색 버퍼를 가질 때만 켠다(없는 메시에 attribute를 선언하면 0으로 읽혀 알베도가 검게 곱해진다).
+   */
+  readonly vertexColor?: boolean;
+}
+
+/** 재질 define 목록(정점 색 define은 옵션이 켰을 때만) */
+export function passMaterialDefines(options: PassMaterialOptions = {}): string[] {
+  return options.vertexColor === true ? [...CHARACTER_SHADER_DEFINES, CHARACTER_SHADER_VERTEX_COLOR_DEFINE] : [...CHARACTER_SHADER_DEFINES];
+}
+
+interface PassMaterialMetadata {
+  readonly vertexColor: boolean;
+  /** 마지막으로 넣은 알파 컷오프(점검용 사본) */
+  alphaCutoff: number;
+}
+
+/** 패스 재질이 정점 색 define으로 만들어졌는지(점검·재생성 판단용) */
+export function passMaterialUsesVertexColor(material: ShaderMaterial): boolean {
+  const metadata = material.metadata as Partial<PassMaterialMetadata> | null;
+  return metadata?.vertexColor === true;
+}
+
+/** 지금 재질에 들어 있는 알파 컷오프(0 = 끔) */
+export function passMaterialAlphaCutoff(material: ShaderMaterial): number {
+  const metadata = material.metadata as Partial<PassMaterialMetadata> | null;
+  return metadata?.alphaCutoff ?? 0;
+}
+
+/**
+ * 알베도 텍스처 알파 컷오프(glTF `alphaMode: MASK`의 `alphaCutoff`). 알파가 이 값보다 작은 텍셀은 그리지 않는다. 0이면 끈다.
+ * 툰·밑색 패스 재질만 이 uniform을 가진다(법선·ID·깊이 패스는 텍스처를 읽지 않는다).
+ */
+export function setAlphaCutoff(material: ShaderMaterial, cutoff: number): void {
+  const value = Number.isFinite(cutoff) && cutoff > 0 ? Math.min(1, cutoff) : 0;
+  material.setVector4("alphaParams", new Vector4(value, 0, 0, 0));
+  const metadata = material.metadata as PassMaterialMetadata | null;
+  if (metadata) metadata.alphaCutoff = value;
+}
+
 /** 패스 재질을 만든다. 텍스처·uniform 값은 호출자가 채운다. */
-export function createPassMaterial(deps: PassMaterialDeps, kind: PassMaterialKind, name: string): ShaderMaterial {
+export function createPassMaterial(deps: PassMaterialDeps, kind: PassMaterialKind, name: string, options: PassMaterialOptions = {}): ShaderMaterial {
   registerCharacterShaders();
   const material = new ShaderMaterial(
     name,
     deps.scene,
     { vertex: CHARACTER_VERTEX_SHADER_NAME, fragment: FRAGMENT_SHADER_NAMES[kind] },
     {
-      attributes: [...CHARACTER_SHADER_ATTRIBUTES],
+      attributes: options.vertexColor === true ? [...CHARACTER_SHADER_ATTRIBUTES, CHARACTER_SHADER_VERTEX_COLOR_ATTRIBUTE] : [...CHARACTER_SHADER_ATTRIBUTES],
       uniforms: uniformsFor(kind),
       uniformBuffers: deps.language === ShaderLanguage.WGSL ? [...CHARACTER_SHADER_UNIFORM_BUFFERS] : [],
       samplers: samplersFor(kind),
-      defines: [...CHARACTER_SHADER_DEFINES],
+      defines: passMaterialDefines(options),
       needAlphaBlending: false,
       needAlphaTesting: false,
       shaderLanguage: deps.language,
     },
   );
   material.backFaceCulling = true;
+  const metadata: PassMaterialMetadata = { vertexColor: options.vertexColor === true, alphaCutoff: 0 };
+  material.metadata = metadata;
   return material;
 }
 
