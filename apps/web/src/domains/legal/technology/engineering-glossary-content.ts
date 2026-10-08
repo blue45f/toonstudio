@@ -1,3 +1,4 @@
+import { ENGINEERING_GLOSSARY_MORE } from "./engineering-glossary-more";
 import type { LocalizedText } from "./engineering-story-content";
 
 const t = (ko: string, en: string): LocalizedText => ({ ko, en });
@@ -9,7 +10,10 @@ export type GlossaryCategoryId =
   | "collab"
   | "sound"
   | "ai"
-  | "craft";
+  | "craft"
+  | "input"
+  | "data"
+  | "oss";
 
 export interface GlossaryCategory {
   readonly id: GlossaryCategoryId;
@@ -53,6 +57,21 @@ export const GLOSSARY_CATEGORIES: readonly GlossaryCategory[] = [
     label: t("개발 문화 · 배포", "Craft · Delivery"),
     hint: t("팀이 코드를 다루는 방식", "How the team treats code"),
   },
+  {
+    id: "input",
+    label: t("입력 · 상호작용", "Input · Interaction"),
+    hint: t("손과 키보드의 움직임이 동작이 되기까지", "From hand and keyboard to action"),
+  },
+  {
+    id: "data",
+    label: t("저장 · 백엔드 · 보안", "Data · Backend · Security"),
+    hint: t("작품이 안전하게 남고 오가는 방법", "How work is stored safely and moves around"),
+  },
+  {
+    id: "oss",
+    label: t("오픈소스 · Open API", "Open source · Open APIs"),
+    hint: t("남의 코드와 데이터를 안전하게 쓰는 법", "Using others' code and data safely"),
+  },
 ];
 
 export interface GlossaryTerm {
@@ -67,6 +86,8 @@ export interface GlossaryTerm {
   readonly inToonstudio: LocalizedText;
   /** 더 읽을 챕터 id */
   readonly chapters: readonly string[];
+  /** 같은 대상을 깊게 설명하는 기술 도감 카드 id(실제로 있는 카드만 — 테스트가 확인) */
+  readonly atlasIds?: readonly string[];
 }
 
 /**
@@ -74,7 +95,7 @@ export interface GlossaryTerm {
  * 규칙: 정의는 한 줄, 비유는 일상 사물, "툰스튜디오에서는"은 실제 파일명·숫자·선택 이유.
  * 지어낸 내용은 넣지 않는다 — inToonstudio는 코드에서 확인된 것만.
  */
-export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
+const BASE_GLOSSARY: readonly GlossaryTerm[] = [
   // ── 브러시 · 렌더링 ──────────────────────────────────────────────
   {
     id: "wasm",
@@ -89,8 +110,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like reading a pre-translated book instead of hiring a live interpreter. Translate once (Rust → WASM), read fast every time.",
     ),
     inToonstudio: t(
-      "packages/studio-hokusai-wasm — Rust로 짠 수채화·자연매체 렌더러를 WASM으로 묶었습니다. 무거운 픽셀 연산은 여기서 돌리고, 화면 일꾼(Worker)과 함께 써서 UI를 막지 않습니다.",
-      "packages/studio-hokusai-wasm — the watercolor / natural-media renderer written in Rust, shipped as WASM. Heavy pixel math runs here, alongside a Worker, so the UI never stalls.",
+      "packages/studio-hokusai-wasm — 외부 Rust crate Hokusai 0.3.0을 감싼 수채화·자연매체 렌더러를 WASM으로 묶었습니다. 무거운 픽셀 연산은 여기서 돌리고, 화면 일꾼(Worker)과 함께 써서 UI를 막지 않습니다.",
+      "packages/studio-hokusai-wasm — the watercolor / natural-media renderer built on the external Rust crate Hokusai 0.3.0, shipped as WASM. Heavy pixel math runs here, alongside a Worker, so the UI never stalls.",
     ),
     chapters: ["brush-engine", "worker-architecture"],
   },
@@ -107,8 +128,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like a kitchen that preps every ingredient before service — no surprises once guests (users) arrive.",
     ),
     inToonstudio: t(
-      "Hokusai 렌더러의 본체 언어입니다. 릴리스 빌드는 LTO·panic=abort로 바이트까지 다이어트하고, unsafe_code를 금지(forbid)해서 메모리 안전을 컴파일러에게 맡겼습니다.",
-      "The implementation language of the Hokusai renderer. Release builds use LTO and panic=abort for a lean binary, and forbid unsafe_code so the compiler owns memory safety.",
+      "Hokusai 렌더러와 Vello 크레이트, 먹물 커널의 언어입니다. 우리 래퍼 크레이트(studio-hokusai-wasm)의 릴리스 빌드는 LTO·panic=abort로 바이트까지 다이어트하고 unsafe_code를 금지(forbid)합니다. 이 금지는 래퍼 코드에만 적용되고 외부 crate 내부까지 보증하지는 않습니다.",
+      "The language of the Hokusai renderer, the Vello crate and the sumi kernel. Release builds of our wrapper crate (studio-hokusai-wasm) use LTO and panic=abort for a lean binary and forbid unsafe_code; that ban covers the wrapper code only and does not vouch for the external crates inside.",
     ),
     chapters: ["brush-engine"],
   },
@@ -125,8 +146,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "It doesn't paint color on — it drops pigment onto wet paper. It computes the material's reaction, not just the color.",
     ),
     inToonstudio: t(
-      "Hokusai 0.3.0을 정확히 고정(=0.3.0)해서 씁니다. 투명도 처리가 핵심이라 upstream 래퍼 대신 직접 래퍼를 만들었고, 바뀐 영역만 다시 그리는 dirty-bounds 방식으로 64px 타일 단위로 갱신합니다.",
-      "Pinned to exactly Hokusai 0.3.0. Because transparency handling is critical, we wrote our own wrapper instead of the upstream one, and repaint only changed regions via dirty-bounds in 64 px tiles.",
+      "Hokusai 0.3.0을 정확히 고정(=0.3.0)해서 씁니다. 외부 crate라서 투명도 처리가 핵심인 우리 쪽은 upstream 래퍼 대신 직접 래퍼를 만들었고, 렌더러 역할 원장에서 자연매체 authority의 primary입니다. 바뀐 영역만 다시 그리는 dirty-bounds 방식으로 64px 타일 단위로 갱신합니다. libmypaint와의 풀사이즈 벤치마크에서는 처리량이 0.318배·0.097배였고 품질 동등 게이트를 통과하지 못했습니다.",
+      "Pinned to exactly Hokusai 0.3.0. Because it is an external crate and transparency handling is critical for us, we wrote our own wrapper instead of the upstream one, and it is the primary owner of the natural-media authority in the renderer role ledger. Only changed regions are repainted via dirty-bounds in 64 px tiles. In the full-size benchmark against libmypaint its throughput was 0.318x and 0.097x and the quality-parity gate did not pass.",
     ),
     chapters: ["brush-engine"],
   },
@@ -143,8 +164,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Not one brush but a brush factory — feed the same engine a different numeric recipe (.myb) and you get a different brush.",
     ),
     inToonstudio: t(
-      "libmypaint v1.6.1을 WASM으로 묶어 씁니다. .myb 문서를 파싱해 주입(injection) 방식으로만 세팅을 넣는데, 문서가 가진 값은 하나도 조용히 버리지 않는다는 '정직 계약'을 지킵니다.",
-      "Ships as libmypaint v1.6.1 compiled to WASM. Settings go in only through injection from parsed .myb documents, under an honesty contract: no document value is silently dropped.",
+      "libmypaint v1.6.1을 WASM으로 컴파일해 두었지만, 렌더러 역할 원장에서는 비교 전용 reference이고 제품 fallback이 아닙니다(ADR-0011). .myb 문서를 파싱해 주입(injection) 방식으로만 세팅을 넣고, 문서가 가진 값은 하나도 조용히 버리지 않는다는 '정직 계약'을 벤치마크 하니스가 검사합니다.",
+      "Compiled to WASM as libmypaint v1.6.1, but it is a comparison-only reference in the renderer role ledger and not a product fallback (ADR-0011). Settings go in only through injection from parsed .myb documents, and the benchmark harness checks the honesty contract: no document value is silently dropped.",
     ),
     chapters: ["brush-engine"],
   },
@@ -157,12 +178,12 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "A filter that smooths hand jitter into clean lines. Stronger means smoother — but the line trails the pen more.",
     ),
     analogy: t(
-      "줄에 매달린 추와 같습니다. 손이 흔들려도 추는 관성 때문에 부드럽게 따라오죠. 대신 손을 멈추면추가 조금 더 미끄러집니다.",
+      "줄에 매달린 추와 같습니다. 손이 흔들려도 추는 관성 때문에 부드럽게 따라오죠. 대신 손을 멈추면 추가 조금 더 미끄러집니다.",
       "Like a weight on a string: it glides smoothly despite a shaky hand, but slides a little past where you stop.",
     ),
     inToonstudio: t(
-      "두 가지 모드를 씁니다. ema(지수이동평균)는 가볍고, spring(스프링)은 길게 끄는 먹선용입니다. 둘 다 '펜을 뗀 자리에서 정확히 끝나야 한다'는 끝점 계약을 지킵니다.",
-      "Two modes: ema (exponential moving average) for light smoothing, spring for long inking strokes. Both obey the endpoint contract — the line must end exactly where the pen lifted.",
+      "캔버스의 라이브 스태빌라이저(studio-stroke-stabilizer.ts)는 세 모드입니다. standard(고정 주기)는 보정 0이면 입력을 즉시 반영하고 0보다 크면 5ms 단계식 필터를 쓰며, adaptive(속도 적응)는 느린 선은 더 안정시키고 빠른 플릭은 지연을 줄이고, precision(정밀 추적)은 펜 끝을 가상의 끈으로 뒤따라 긴 선화와 곡선을 다듬습니다. 펜을 뗄 때는 flush가 지연을 실제 끝점까지 따라잡아 '펜을 뗀 자리에서 정확히 끝나야 한다'는 끝점 계약을 지킵니다. ema·spring 백엔드는 브러시 플랫폼 패키지의 별도 stabilizer provider에 있습니다.",
+      "The canvas's live stabilizer (studio-stroke-stabilizer.ts) has three modes. Standard (fixed rate) applies input immediately at zero strength and a 5 ms stepped filter above zero; adaptive stabilizes slow lines more and cuts latency on fast flicks; precision trails the pen tip with a virtual string to refine long linework and curves. On pen-up, flush catches the delay up to the real endpoint, keeping the endpoint contract that the line must end exactly where the pen lifted. The ema and spring backends live in the separate stabilizer provider of the brush platform package.",
     ),
     chapters: ["brush-engine"],
   },
@@ -179,8 +200,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Borrowing Chrome's own drawing hand. Different browsers have different skills, but the same hand draws the same picture.",
     ),
     inToonstudio: t(
-      "벡터 렌더러 후보 중 하나입니다. 무조건 쓰는 게 아니라 렌더러 등록부(renderer registry)에 '누가 어떤 결과를 만들 수 있는지' 적어 두고, 장치·품질 조건에 따라 고릅니다.",
-      "One candidate in the renderer registry, which records who can produce which results. The choice depends on device and quality conditions — never unconditional.",
+      "렌더러 역할 원장에서 경로 연산 품질(path-ops-quality) authority의 primary이고, Skia 문서 벡터 섬(document-vector-island)도 따로 primary로 선언돼 있습니다. 원장에 '누가 어떤 결과를 만들 수 있는지' 적어 두고, 엔진은 작업 전에 하나를 정하며 실패 뒤 다른 엔진으로 자동 전환하지 않습니다(ADR-0018).",
+      "In the renderer role ledger it is the primary owner of the path-ops-quality authority, and a separate Skia document-vector-island surface is also declared primary. The ledger records who can produce which results; an engine is chosen before the job and never switched automatically after a failure (ADR-0018).",
     ),
     chapters: ["brush-render-authority"],
   },
@@ -197,8 +218,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like switching from hand-knitting to a machine loom: the more complex the curves, the bigger the gap.",
     ),
     inToonstudio: t(
-      "실험 경로로 등록돼 있습니다. 'WebGPU를 썼다'는 말 자체가 품질 보증이 아니라는 원칙 아래, 출력 특성·메모리·색을 따로 측정합니다.",
-      "Registered as an experimental path. Under the principle that 'uses WebGPU' is not itself a quality guarantee, output, memory and color are measured separately.",
+      "ADR-0018이 2D 문서 픽셀 권한의 목표 엔진으로 정했고 단계적으로 교체합니다. 지금 원장에서 Vello Classic·Hybrid GPU는 명시 선택하는 provider, Vello CPU는 비교 전용 reference이며, Vello가 아직 표현하지 못하는 텍스트·이미지·일부 필터는 작업 전에 선언되는 legacy 경계입니다. 'WebGPU를 썼다'는 말 자체가 품질 보증이 아니라는 원칙 아래 출력 특성·메모리·색을 따로 측정합니다.",
+      "ADR-0018 names it the target engine for 2D document pixel authority, with a staged replacement. In the ledger today the Vello Classic and Hybrid GPU lanes are explicitly selected providers and Vello CPU is a comparison-only reference, while text, images and some filters Vello cannot yet express are a legacy boundary declared before the job. Under the principle that 'uses WebGPU' is not itself a quality guarantee, output, memory and color are measured separately.",
     ),
     chapters: ["brush-render-authority"],
   },
@@ -215,8 +236,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like a fuel-efficient compact car: it reaches the destination (vector rendering) without needing a highway (high-end GPU).",
     ),
     inToonstudio: t(
-      "저사양 대응 렌더러 후보입니다. 고사양 경로가 안 되는 기기에서는 조용히 다른 그림을 내는 대신, 지원 범위를 명시하고 검증된 대체 경로를 씁니다.",
-      "A low-end fallback candidate. On weak devices we prefer explicit capability notices and validated fallbacks over silently different output.",
+      "Vello가 표현하지 못하는 안전한 filter·mask·text 같은 SVG 자산을 위해 작업 전에 명시 선택하는 전문 provider입니다. 문서 권위가 아니며 Vello 실패 뒤 대신 실행되는 엔진도 아니고, 지원 범위를 명시합니다.",
+      "A specialist provider chosen before the job for SVG assets with safe filters, masks and text that Vello cannot express. It is neither document authority nor an engine that runs after Vello fails, and its supported scope is stated explicitly.",
     ),
     chapters: ["brush-render-authority"],
   },
@@ -306,8 +327,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like a hotel safe: only that hotel's (site's) guest opens it, and checkout (data deletion) clears it.",
     ),
     inToonstudio: t(
-      "원고·에셋의 로컬 저장 후보입니다. 단, 다운로드 폴더나 영구 백업이 아니라는 점을 사용자에게 숨기지 않습니다.",
-      "A candidate for local manuscript/asset storage — with the honest caveat that it is not the Downloads folder or a permanent backup.",
+      "원고·에셋의 로컬 저장소입니다. OPFS 복구 journal과 로컬 SQLite Worker가 이 공간을 씁니다. 단, 다운로드 폴더나 영구 백업이 아니라는 점을 사용자에게 숨기지 않습니다.",
+      "Local storage for manuscripts and assets: the OPFS recovery journal and the local SQLite worker use this space — with the honest caveat that it is not the Downloads folder or a permanent backup.",
     ),
     chapters: ["storage", "browser-local-first"],
   },
@@ -342,8 +363,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like painting backstage and revealing only the finished piece — the audience never sees the brushwork.",
     ),
     inToonstudio: t(
-      "브러시 렌더링을 Worker로 옮기는 핵심 부품입니다. 메인 스레드는 펜 입력 반응에만 집중합니다.",
-      "The key part for moving brush rendering into a worker, leaving the main thread free to react to pen input.",
+      "비테스트 22개 파일이 new OffscreenCanvas(로 화면에 붙지 않은 캔버스를 만들고, 그중 8개가 *.worker.ts입니다(절차형 브러시의 WebGL2 표면, GPU 브리슬·네이티브 브러시 시험의 WebGPU 표면, Hokusai·VRM·3D 샷의 PNG 인코딩 등). 화면에 보이는 캔버스를 Worker로 넘기는 transferControlToOffscreen은 쓰지 않습니다(0건).",
+      "22 non-test files create detached canvases with new OffscreenCanvas(, and 8 of them are *.worker.ts files (the procedural brush WebGL2 surface, WebGPU surfaces for the GPU bristle and native-brush probes, PNG encoding for Hokusai, VRM and 3D shots, and more). transferControlToOffscreen, which hands the visible canvas to a worker, is not used (zero occurrences).",
     ),
     chapters: ["worker-architecture", "brush-render-authority"],
   },
@@ -488,8 +509,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like a direct line with no operator: help with the connection (signaling), then the call flows peer to peer.",
     ),
     inToonstudio: t(
-      "가상 스튜디오의 음성·화면 공유용입니다. 단, '대화 연결'과 '문서 동기화'는 같은 선이 아닙니다. 문서는 별도 채널·권한으로 다룹니다.",
-      "For voice and screen share in the virtual studio. But the call connection is not the document sync channel — documents travel separately with their own authority.",
+      "가상 스튜디오의 음성·화면 공유용입니다. 허들의 SDP·ICE와 채팅은 DataChannel 직접 레인(studio-direct-v1)으로 오가고, 방 서버는 입장·presence·화면 공유 신호를 맡습니다. '대화 연결'과 '문서 동기화'는 같은 선이 아니며 문서는 별도 채널·권한으로 다룹니다.",
+      "For voice and screen share in the virtual studio. Huddle SDP, ICE and chat travel over the DataChannel direct lane (studio-direct-v1) while the room server handles admission, presence and screen-share signals. The call connection is not the document sync channel — documents travel separately with their own authority.",
     ),
     chapters: ["webrtc-media-authority", "webrtc-standard"],
   },
@@ -579,8 +600,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like seating a pianist instead of playing a CD: when the mood changes, the performance changes.",
     ),
     inToonstudio: t(
-      "Web Audio API의 오실레이터+생성형 리버브만 씁니다. 외부 음원 파일이 없어 라이선스 문제가 원천 차단되고, 페이지 무드(home/studio/draw…)마다 스케일·템포 프리셋이 바뀝니다.",
-      "Built only on Web Audio oscillators and generative reverb — zero audio files means zero licensing risk. Scale/tempo presets shift per page mood (home, studio, draw, …).",
+      "Web Audio API의 오실레이터+생성형 리버브만 쓰는 엔진(shared/bgm/bgm-engine.ts)이 있고, 모션 웹툰 재생에서 씁니다. 페이지 무드(home/studio/draw…)마다 스케일·템포 프리셋이 바뀝니다. 사이트 전체 배경음악 플레이어는 이 엔진이 아니라 승인된 오리지널 OST 15곡(ACE-Step으로 생성한 MP3, provenance 기록)을 재생하고 합성음으로 대체하지 않습니다.",
+      "An engine built only on Web Audio oscillators and generative reverb (shared/bgm/bgm-engine.ts) exists and is used for motion-webtoon playback, with scale and tempo presets per page mood (home, studio, draw, …). The site-wide background-music player does not use it: it plays 15 approved original OST tracks (MP3s generated with ACE-Step, provenance recorded) and never substitutes synthesized sound.",
     ),
     chapters: ["delivery"],
   },
@@ -597,8 +618,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like a modular synthesizer: wire up sound boxes, carving filters and echo chambers with cables.",
     ),
     inToonstudio: t(
-      "BGM 엔진의 전부입니다. 자동재생 정책 때문에 AudioContext는 반드시 사용자 클릭/탭 안에서 생성하고, 음성 안내가 나오면 BGM을 살짝 낮추는 덕킹을 겁니다.",
-      "The whole BGM engine. Autoplay policy forces AudioContext creation inside a user gesture, and voice guidance ducks the BGM down.",
+      "프로시저럴 BGM 엔진(shared/bgm/bgm-engine.ts)의 바탕입니다. 자동재생 정책 때문에 AudioContext는 반드시 사용자 클릭/탭 안에서 생성하고, 음성 안내가 나오면 BGM을 살짝 낮추는 덕킹(voice-bgm-ducking.ts)을 겁니다.",
+      "The basis of the procedural BGM engine (shared/bgm/bgm-engine.ts). Autoplay policy forces AudioContext creation inside a user gesture, and voice guidance ducks the BGM down (voice-bgm-ducking.ts).",
     ),
     chapters: ["delivery"],
   },
@@ -615,8 +636,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Not PowerPoint but programming for video: write motion as formulas instead of placing slides by hand.",
     ),
     inToonstudio: t(
-      "브랜드 필름·제품투어 영상의 제작 파이프라인입니다. 프레임·재생 제어·오디오를 코드로 동기화해 같은 영상을 매번 똑같이 뽑아냅니다.",
-      "The production pipeline for brand and product-tour films — frames, playback and audio synced in code for byte-identical renders every time.",
+      "브랜드·기술 영상 패키지(tools/media/brand-film)의 제작 파이프라인이고, 웹 앱의 제품 투어(/product-tour) 재생기도 remotion·@remotion/player runtime을 씁니다. 프레임·재생 제어·오디오를 코드로 동기화해 같은 구성을 반복해서 뽑아내지만, 바이트 단위로 동일한지는 검증한 적이 없습니다. Remotion은 자체 라이선스라 조직·렌더 방식별 자격은 저장소로 확인할 수 없습니다.",
+      "The production pipeline for the brand and technology film packages (tools/media/brand-film), and the web app's product-tour (/product-tour) player also uses the remotion and @remotion/player runtime. Frames, playback and audio are synced in code so the same composition can be rendered repeatedly, but byte-identical output has never been verified. Remotion has its own license, and eligibility by organization and render mode cannot be confirmed from the repository.",
     ),
     chapters: ["delivery"],
   },
@@ -644,16 +665,16 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
     category: "ai",
     term: t("브라우저 로컬 AI", "In-browser AI"),
     definition: t(
-      "서버가 아니라 사용자 브라우저 안에서 직접 돌리는 AI입니다. 데이터가 밖으로 나가지 않습니다.",
-      "AI that runs inside the user's browser, not on a server. Data never leaves the device.",
+      "서버가 아니라 사용자 브라우저 안에서 직접 돌리는 AI입니다. 입력 데이터는 서버로 보내지 않지만 모델 파일은 따로 내려받아야 합니다.",
+      "AI that runs inside the user's browser, not on a server. Input data is not sent to a server, but the model files still have to be downloaded.",
     ),
     analogy: t(
       "집에서 요리하는 것과 같습니다. 식당(서버)에 재료를 맡기지 않으니 빠르고 비밀도 지켜집니다.",
       "Like cooking at home: no handing ingredients to a restaurant (server) — faster and private.",
     ),
     inToonstudio: t(
-      "ONNX Runtime Web·MediaPipe 같은 런타임을 검토합니다. 포즈 스캔 같은 가벼운 비전 작업부터 브라우저 안에서 처리하는 게 목표입니다.",
-      "Evaluating runtimes like ONNX Runtime Web and MediaPipe — starting with light vision tasks like pose scanning inside the browser.",
+      "ONNX Runtime Web과 MediaPipe를 실제로 씁니다. ONNX는 기능 5종, 모델 파일 6개(AnimeGAN만 파일 2개, 합계 119,438,571바이트, 파일은 모두 sha256 고정)로 자체 배포 자산이고, MediaPipe 모델은 storage.googleapis.com에서 런타임에 내려받으며 배경 제거 모델은 latest 리비전을 따라갑니다. 포즈 스캔 같은 가벼운 비전 작업을 브라우저 안에서 처리합니다.",
+      "ONNX Runtime Web and MediaPipe are actually in use. ONNX covers five features with six model files (only AnimeGAN has two files, 119,438,571 bytes in total, every file pinned by sha256) shipped as our own assets, while MediaPipe models are downloaded at runtime from storage.googleapis.com and the background-removal model tracks a floating latest revision. Light vision tasks such as pose scanning run inside the browser.",
     ),
     chapters: ["browser-local-compute"],
   },
@@ -670,8 +691,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like slotting a game cartridge into a home console: it runs at home without the dev kit (training server).",
     ),
     inToonstudio: t(
-      "로컬 AI 실행 환경 후보입니다. 모델 크기·WASM/GPU 백엔드·첫 실행 대기시간을 함께 봅니다.",
-      "A candidate local-AI runtime. Model size, WASM/GPU backends and first-run latency are evaluated together.",
+      "선화 채색·엣지 추출·업스케일·배경 분리·애니메이션풍 변환 기능 5종(모델 파일 6개, AnimeGAN만 파일 2개, 파일은 모두 sha256 고정)이 실제로 이 실행기 위에서 돕니다. 모델 크기·WASM/GPU 실행 제공자·첫 실행 대기시간을 함께 봅니다.",
+      "Five features—line-art colorizing, edge extraction, upscaling, background separation and anime-style conversion—actually run on this runtime, with six model files (only AnimeGAN has two files, every file pinned by sha256). Model size, WASM/GPU execution providers and first-run latency are evaluated together.",
     ),
     chapters: ["browser-local-compute"],
   },
@@ -688,8 +709,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Glasses that turn a webcam into seeing eyes — reading a person's joint positions as numbers.",
     ),
     inToonstudio: t(
-      "포즈 스캐너의 비전 백엔드 후보입니다. 카메라 앞에서 포즈를 잡으면 3D 캐릭터 뼈대에 매핑합니다.",
-      "A candidate vision backend for the pose scanner: strike a pose in front of the camera, get it mapped onto a 3D character's bones.",
+      "웹캠 포즈·손·얼굴 추적과 배경 제거, 아바타 참조 추천에 쓰는 비전 백엔드입니다. 카메라 앞에서 포즈를 잡으면 3D 캐릭터 뼈대에 매핑합니다. 모델 파일은 storage.googleapis.com에서 런타임에 내려받고, 배경 제거 모델만 latest 리비전을 따라갑니다.",
+      "The vision backend for webcam pose, hand and face tracking, background removal and avatar-reference recommendation: strike a pose in front of the camera and it is mapped onto a 3D character's bones. Model files are downloaded at runtime from storage.googleapis.com, and only the background-removal model follows a floating latest revision.",
     ),
     chapters: ["browser-local-compute", "vrm-standard"],
   },
@@ -707,8 +728,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like a margin note on a recipe: without 'why salt goes in late', the next cook changes it carelessly.",
     ),
     inToonstudio: t(
-      "스태빌라이저(ADR 0005), libmypaint 레인(ADR-0011)처럼 번호를 붙여 관리합니다. 발표의 '왜 이 기술을 골랐나' 이야기는 전부 ADR에서 나옵니다.",
-      "Numbered and maintained — stabilizer (ADR 0005), the libmypaint lane (ADR-0011). Every 'why this tech' story in the talk comes from an ADR.",
+      "스태빌라이저(ADR 0005), libmypaint 레인(ADR-0011)처럼 번호를 붙여 관리합니다. 발표의 '왜 이 기술을 골랐나' 이야기는 승인된(Accepted) ADR에서 가져오고, Proposed 상태인 ADR은 구현으로 소개하지 않습니다.",
+      "Numbered and maintained — stabilizer (ADR 0005), the libmypaint lane (ADR-0011). The 'why this tech' stories in the talk come from Accepted ADRs, and ADRs still Proposed are not presented as implemented.",
     ),
     chapters: ["ai-assisted-engineering"],
   },
@@ -779,8 +800,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
       "Like inspectors on a factory conveyor: defects stop the belt, only passing goods move to shipping (deploy).",
     ),
     inToonstudio: t(
-      "main 머지 전 검증 파이프라인이 돕니다. 용어집·발표 자료를 고쳐도 테스트·타입검사가 깨지면 합쳐지지 않습니다.",
-      "A verification pipeline guards the main branch — glossary or deck edits that break tests or typechecks don't merge.",
+      "main 머지 전 검증 파이프라인(CI)이 돕니다. 용어집·발표 자료를 고쳐도 테스트·타입검사가 깨지면 합쳐지지 않습니다. 다만 CD는 자동이 아닙니다. 머지는 배포 승인이 아니며, 운영 배포는 승인한 40자리 SHA 하나만 수동으로 올립니다(AGENTS.md).",
+      "A verification pipeline (CI) guards the main branch — glossary or deck edits that break tests or typechecks don't merge. CD here is not automatic, though: a merge is not a deployment approval, and production ships only one approved 40-character SHA by manual release (AGENTS.md).",
     ),
     chapters: ["quality"],
   },
@@ -803,5 +824,8 @@ export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [
     chapters: ["licenses"],
   },
 ];
+
+/** 기본 용어 + 확장 용어(engineering-glossary-more.ts)를 한 목록으로 합친다. */
+export const ENGINEERING_GLOSSARY: readonly GlossaryTerm[] = [...BASE_GLOSSARY, ...ENGINEERING_GLOSSARY_MORE];
 
 export const GLOSSARY_TERM_COUNT = ENGINEERING_GLOSSARY.length;
