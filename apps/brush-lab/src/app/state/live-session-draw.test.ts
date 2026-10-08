@@ -68,9 +68,9 @@ async function make(extra: Partial<LiveSessionOptions> = {}) {
     createLane: () => {
       const lane = createMockLane({ id: "cpu-reference" });
       const begin = lane.beginStroke.bind(lane);
-      lane.beginStroke = (program, seed) => {
+      lane.beginStroke = (program, seed, options) => {
         programs.push(program);
-        begin(program, seed);
+        begin(program, seed, options);
       };
       const add = lane.addSamples.bind(lane);
       lane.addSamples = (samples) => {
@@ -123,6 +123,49 @@ describe("LiveStrokeSession: 그리기 화면 옵션", () => {
     expect(s.lanes).toHaveLength(1);
     expect(s.lanes[0]?.calls).not.toContain("dispose");
     expect(s.results).toHaveLength(2);
+    s.session.dispose();
+  });
+
+  it("획 색: 색이 없으면 beginStroke에 옵션을 넘기지 않고(기존과 같다), 생성 색·setColor 색은 다음 획부터 beginStroke options.color로 전달된다", async () => {
+    const plain = await make();
+    await stroke(plain, 1);
+    expect(plain.lanes[0]?.strokeOptions).toEqual([undefined]);
+    plain.session.dispose();
+
+    const s = await make({ color: [0.2, 0.4, 0.6, 1] });
+    await stroke(s, 1);
+    s.session.setColor([1, 0, 0, 1]);
+    await stroke(s, 100);
+    expect(s.lanes[0]?.strokeOptions).toEqual([{ color: [0.2, 0.4, 0.6, 1] }, { color: [1, 0, 0, 1] }]);
+    expect(s.lanes).toHaveLength(1);
+    expect(s.lanes[0]?.calls).not.toContain("dispose");
+    s.session.dispose();
+  });
+
+  it("setColor는 진행 중인 획의 색을 바꾸지 않는다(시작할 때의 색을 끝까지 쓰고 다음 획부터 새 색)", async () => {
+    const s = await make({ color: [0, 0, 1, 1] });
+    s.el.dispatchEvent(pointerEvent("pointerdown", { clientX: 4, clientY: 4, timeStamp: 1 }));
+    s.fr.tick();
+    await flush();
+    s.session.setColor([0, 1, 0, 1]);
+    s.el.dispatchEvent(pointerEvent("pointerup", { clientX: 5, clientY: 5, timeStamp: 9 }));
+    s.fr.tick();
+    await flush();
+    expect(s.lanes[0]?.strokeOptions).toEqual([{ color: [0, 0, 1, 1] }]);
+    await stroke(s, 100);
+    expect(s.lanes[0]?.strokeOptions).toEqual([{ color: [0, 0, 1, 1] }, { color: [0, 1, 0, 1] }]);
+    s.session.dispose();
+  });
+
+  it("잘못된 색은 획 시작에서 레인이 거부하고(onError) 세션은 다음 획을 받을 수 있다", async () => {
+    const s = await make({ color: [0, 0, 0, 1] });
+    s.session.setColor([2, 0, 0, 1]);
+    await stroke(s, 1);
+    expect(s.errors).toHaveLength(1);
+    expect(s.results).toHaveLength(0);
+    s.session.setColor([0, 0, 0, 1]);
+    await stroke(s, 100);
+    expect(s.results).toHaveLength(1);
     s.session.dispose();
   });
 

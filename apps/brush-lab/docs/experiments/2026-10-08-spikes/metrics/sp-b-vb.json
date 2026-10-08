@@ -1,0 +1,183 @@
+{
+ "rgbMix_strength0_5": [
+  {
+   "tS": 0,
+   "n": 2075,
+   "mixedPct": 71.76,
+   "meanAbsDevFromPure": 0.2811
+  },
+  {
+   "tS": 0.5,
+   "n": 2075,
+   "mixedPct": 75.95,
+   "meanAbsDevFromPure": 0.2926
+  },
+  {
+   "tS": 1,
+   "n": 2075,
+   "mixedPct": 77.01,
+   "meanAbsDevFromPure": 0.2995
+  },
+  {
+   "tS": 2,
+   "n": 2075,
+   "mixedPct": 79.04,
+   "meanAbsDevFromPure": 0.3102
+  }
+ ],
+ "noMix": [
+  {
+   "tS": 0,
+   "n": 2075,
+   "mixedPct": 0,
+   "meanAbsDevFromPure": 0
+  },
+  {
+   "tS": 0.5,
+   "n": 2075,
+   "mixedPct": 0,
+   "meanAbsDevFromPure": 0
+  },
+  {
+   "tS": 1,
+   "n": 2075,
+   "mixedPct": 0,
+   "meanAbsDevFromPure": 0
+  },
+  {
+   "tS": 2,
+   "n": 2075,
+   "mixedPct": 0,
+   "meanAbsDevFromPure": 0
+  }
+ ],
+ "strengthSweep": {
+  "strength_0.1": [
+   {
+    "tS": 0,
+    "mixedPct": 59.57,
+    "meanAbsDevFromPure": 0.2446
+   },
+   {
+    "tS": 0.5,
+    "mixedPct": 63.04,
+    "meanAbsDevFromPure": 0.2539
+   },
+   {
+    "tS": 1,
+    "mixedPct": 65.11,
+    "meanAbsDevFromPure": 0.2596
+   },
+   {
+    "tS": 2,
+    "mixedPct": 68.92,
+    "meanAbsDevFromPure": 0.269
+   }
+  ],
+  "strength_0.5": [
+   {
+    "tS": 0,
+    "mixedPct": 71.76,
+    "meanAbsDevFromPure": 0.2811
+   },
+   {
+    "tS": 0.5,
+    "mixedPct": 75.95,
+    "meanAbsDevFromPure": 0.2926
+   },
+   {
+    "tS": 1,
+    "mixedPct": 77.01,
+    "meanAbsDevFromPure": 0.2995
+   },
+   {
+    "tS": 2,
+    "mixedPct": 79.04,
+    "meanAbsDevFromPure": 0.3102
+   }
+  ],
+  "strength_1": [
+   {
+    "tS": 0,
+    "mixedPct": 76.67,
+    "meanAbsDevFromPure": 0.2989
+   },
+   {
+    "tS": 0.5,
+    "mixedPct": 80.34,
+    "meanAbsDevFromPure": 0.3134
+   },
+   {
+    "tS": 1,
+    "mixedPct": 80.48,
+    "meanAbsDevFromPure": 0.3203
+   },
+   {
+    "tS": 2,
+    "mixedPct": 80.48,
+    "meanAbsDevFromPure": 0.3265
+   }
+  ]
+ },
+ "swatches": {
+  "red+blue": {
+   "liquidFunSrgbAvg": [
+    0.644,
+    0.44,
+    0.582
+   ],
+   "linearAvg": [
+    0.708,
+    0.461,
+    0.691
+   ],
+   "kmFR": [
+    0.511,
+    0.37,
+    0.313
+   ]
+  },
+  "yellow+blue": {
+   "liquidFunSrgbAvg": [
+    0.668,
+    0.748,
+    0.649
+   ],
+   "linearAvg": [
+    0.742,
+    0.777,
+    0.715
+   ],
+   "kmFR": [
+    0.528,
+    0.697,
+    0.448
+   ]
+  },
+  "red+yellow": {
+   "liquidFunSrgbAvg": [
+    0.931,
+    0.622,
+    0.314
+   ],
+   "linearAvg": [
+    0.931,
+    0.712,
+    0.323
+   ],
+   "kmFR": [
+    0.928,
+    0.423,
+    0.3
+   ]
+  }
+ },
+ "counts": {
+  "mix": [
+   2075,
+   2075,
+   2075,
+   2075
+  ]
+ }
+}

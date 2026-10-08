@@ -1,0 +1,220 @@
+{
+  "id": "SP-E",
+  "summary": "SP-E 혼색 스파이크 결과(Node 22.22 단일 스레드, 부하 높은 4코어 머신, 브라우저/GPU 미검증). 정확도 기준은 모두 spectral.js 3.0.0 출력과의 CIEDE2000이며 실제 안료 측정 대비가 아니다. (1) spectral.js 3.0.0과 culori 4.0.2는 설치본 LICENSE/package.json이 MIT, 전이 의존성 0, 바이너리 0, 설치 훅 없음이라 ok. spectral.js 스펙트럼 데이터가 Burns LHTSS 변형에서 나왔다는 README 서술이 있어 데이터 출처 법무 확인 메모를 남겼다. (2) 파랑+노랑은 spectral.js와 KM 6/8밴드 근사에서 초록(h137~144, #3d933e 근방), sRGB 감마·선형·OKLab에서는 저채도 회색~올리브. culori OKLab은 자체 구현과 ΔE 0으로 동일. (3) 저장소 kmMixRgb는 spectral.js 대비 무작위 1500쌍 평균 ΔE00 11.46으로 가장 멀고(흰+파랑 50% = #01309e, 마젠타+시안 = 순수 #0101ff) 원인은 반사율 하한 1e-4의 F(R) 발산과 휘도 가중 부재. (4) 자체 근사: 3채널 KM 조정형(하한 0.01+휘도 가중) 평균 2.45, 18.9 Mpx/s; KM 8밴드 평균 0.45(p95 2.0), 약 3 Mpx/s; KM 6밴드 평균 0.92, 약 3.8 Mpx/s. 램프 LUT 조회 98 Mpx/s; spectral.js는 0.12~0.25 Mpx/s라 오프라인 전용. (5) 8개 모델 모두 같은 프로세스 반복, 입력 순서 역전, 별도 프로세스 2회에서 해시 동일. 프리멀티플라이는 선형 straight에서 혼색하고 알파 가중 t'로 처리하는 규약을 제안. (6) 번들: spectral.js 6.2KB gzip, culori fn+oklab 6.6KB(전체 16KB), 엔진 후보 1.7KB gzip(mixKm3Tuned만 286B). 산출물은 샌드박스 SP-E 폴더의 report.md, metrics.json, out/*.png, src/engine-km/.",
+  "libraries": [
+    {
+      "name": "spectral.js",
+      "version": "3.0.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "bundleBytesGzip": 6209,
+      "transitive": [],
+      "noteKo": "설치본 package.json license=MIT, LICENSE 파일 MIT(Copyright 2025 Ronald van Wijnen). 전이 의존성 0, wasm/바이너리 0, 설치 훅 없음, 소스에 mixbox 문자열 0건(README 감사 문구에만 언급). MIT는 저작권·허가문 동봉 의무가 있고 명시적 특허 허여 조항은 없으며 NOTICE 의무는 없다. 기저 스펙트럼 데이터는 README상 Burns LHTSS 변형으로 생성됐고 데이터 출처 권리는 패키지에 명시되지 않아 법무 확인 메모 1건. 동봉 spectral.min.js gzip 5802B."
+    },
+    {
+      "name": "culori",
+      "version": "4.0.2",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "bundleBytesGzip": 6618,
+      "transitive": [],
+      "noteKo": "package.json MIT, LICENSE MIT(Copyright 2018 Dan Burzo) + src/okhsl/LICENSE MIT(Bjorn Ottosson 2021). 전이 의존성 0, 바이너리 0. prepare 스크립트는 개발자용 git hook이라 의존자 설치에서 실행되지 않음. culori/fn + oklab/lrgb 모드만 6618B gzip, 전체 import는 16046B. OKLab 결과는 자체 구현과 동일하므로 채택 불필요."
+    },
+    {
+      "name": "esbuild",
+      "version": "0.28.2",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "@esbuild/linux-x64"
+      ],
+      "noteKo": "번들 크기 측정 도구로만 사용하고 제품에 포함하지 않는다. postinstall 훅이 있으나 --ignore-scripts로 실행하지 않았다."
+    },
+    {
+      "name": "engine-km (자체 후보 모듈)",
+      "version": "spike",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": false,
+      "commercialVerdict": "ok",
+      "bundleBytesGzip": 1728,
+      "transitive": [],
+      "noteKo": "자체 코드이며 기저 스펙트럼 표는 spectral.js(MIT) 데이터에서 파생되어 표 파일 머리에 MIT 고지 필요. Mixbox 코드/데이터는 사용하지 않았다. 두 표(6/8밴드)가 함께 번들된 크기이며 mixKm3Tuned만 286B gzip."
+    }
+  ],
+  "experiments": [
+    {
+      "name": "A. KM 밴드 수 스윕(훈련 seed 20261008, 검증 seed 777 1500쌍, 참조 spectral.js)",
+      "result": "8밴드 평균 ΔE00 0.45(p95 2.01, max 7.89), 6밴드 0.92, 10밴드 0.23, 16밴드 0.05; 대조군은 sRGB 감마 5.37, OKLab 6.77, 선형 8.76, 저장소 kmMixRgb 11.46",
+      "metrics": "out/lite-select.json",
+      "evidence": [
+        "metrics.json liteBandSweepHeldOut"
+      ]
+    },
+    {
+      "name": "B. 3채널 KM 변형 스윕(반사율 하한 x 휘도 가중 24조합)",
+      "result": "하한 0.01 + 휘도 가중이 최선: 훈련 2.40, 검증 평균 2.45(p95 10.16, max 33.97)",
+      "metrics": "out/km3-variants.json",
+      "evidence": [
+        "metrics.json km3Variants"
+      ]
+    },
+    {
+      "name": "C. 8쌍 x 9모델 x 11단계 스와치 그리드와 ΔE00/ΔE76 표",
+      "result": "파랑+노랑 t=0.5: 감마 #7e7942, 선형 #b99b60, OKLab #76827b, 저장소 KM #013001, KM3조정 #719201, 6밴드 #50912f, 8밴드 #42933e, spectral.js #3d933e. 쌍별 평균 ΔE00(8밴드 vs spectral.js) 0.04~1.50, 저장소 KM 4.77~35.74. culori OKLab과 자체 OKLab은 전 쌍에서 ΔE 0",
+      "metrics": "out/accuracy.json",
+      "evidence": [
+        "Read로 연 grid-blue-yellow.png: 1~4행은 회청색에서 회갈색/올리브로 가며 초록이 없고, 5행은 t=0.1~0.8이 거의 검은 초록이다가 t=0.9에 진초록, 7~9행은 청록에서 초록, 연두로 이어지며 8행과 9행이 거의 구분되지 않는다",
+        "Read로 연 grid-red-green.png: 5행 중간이 거의 검정, 7~9행은 어두운 갈색을 거쳐 올리브 초록, 8행과 9행이 거의 같다",
+        "Read로 연 grid-magenta-cyan.png: 5행은 t=0.1~0.9가 모두 순수 파랑 #0000ff 한 색으로 평탄, 1~4행은 연한 라일락 파스텔, 7~9행은 선명한 청보라 중간",
+        "Read로 연 grid-white-blue.png: 5행은 흰색에서 시작해도 밝아지지 않고 진한 파랑, 7~9행은 흰에서 하늘색을 거쳐 파랑으로 채도를 유지하며 진해짐",
+        "Read로 연 grid-dark-tint.png: 5행은 t=0.9까지 어두운 청록, 7~9행은 어두운 청록에서 선명한 청록 중간을 거쳐 연한 틴트",
+        "Read로 연 grid-pigment4.png: 합성 4안료 블루+옐로는 청록을 거쳐 연두, spectral.js 행은 더 밝은 초록. grid-white-red/white-yellow/black-tint PNG는 열어 보지 않았음"
+      ]
+    },
+    {
+      "name": "D. 합성 4안료 2상수 KM(프탈로 블루/한사 옐로/퀴나크리돈 마젠타/티타늄 화이트, 합성 곡선)",
+      "result": "같은 마스톤 끝점으로 spectral.js와 비교한 평균 ΔE00 5.29~22.0(블루+옐로 22.0, t=0.5 #006b62 vs #3db143). 455점 농도 격자 최근접으로 임의 sRGB 400색을 근사한 오차는 평균 8.18, p95 15.52, max 19.19로 색역 부족",
+      "metrics": "out/accuracy.json pigment4, pigment4GamutInverse",
+      "evidence": [
+        "파장 380nm+10nm*i와 안료 곡선은 가정/합성이며 실제 측정 아님"
+      ]
+    },
+    {
+      "name": "E. 처리량(1M 픽셀, 단일 스레드 Node 22, 브러시색 고정, t=0.3, 5회)",
+      "result": "best Mpx/s: 선형 39.9, 감마 pow 1.15, 감마 LUT 25.9, OKLab 1.44, 저장소 kmMixRgb 1.52, KM3조정 18.9, 6밴드 배치 3.79, 8밴드 배치 2.96, 램프 LUT 조회 97.7, spectral.js 픽셀마다 생성 0.12, 두 Color 캐시 0.25",
+      "metrics": "out/speed.json; load average 9~11 4코어, 재측정마다 ±30%",
+      "evidence": [
+        "프레임 4ms 예산 기준 처리 가능 픽셀: km3Tuned 75k, 8밴드 12k, spectral.js 0.5~1k, 램프 LUT 390k"
+      ]
+    },
+    {
+      "name": "F. 결정성과 프리멀티플라이",
+      "result": "8모델 모두 5000쌍 Float32 FNV 해시가 같은 프로세스 반복, 순서 역전, 별도 프로세스 2회에서 동일. 알파 0, 브러시 알파 0에서 NaN 없음. α=0.5 premul을 straight로 오용하면 올바른 경로 대비 ΔE00 15.55 차이(#42913e vs #82b630)",
+      "metrics": "out/determinism.json",
+      "evidence": [
+        "Sharma CIEDE2000 검증 벡터 2.0424597 일치(기대 2.0425), spectral.js README 예제 #002185+#fcd200=#3D933E 재현"
+      ]
+    },
+    {
+      "name": "G. 번들 크기(esbuild minify, 브라우저 ESM)",
+      "result": "spectral.js 12348B min / 6209B gzip / 5172B brotli; culori 전체 16046B gzip, culori/fn+oklab+lrgb 6618B gzip; 엔진 km-mix+표 1728B gzip; mixKm3Tuned 286B gzip",
+      "metrics": "out/bundle-size.json",
+      "evidence": [
+        "엔진 TABLE_6/TABLE_8은 트리셰이킹되지 않고 함께 번들됨"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "item": "자체 KM 밴드 근사 모듈(8밴드 기본, 6밴드 저사양) — engine/pigment/km-mix.ts + 생성 표",
+      "decision": "adopt-engine-module",
+      "rationaleKo": "spectral.js 대비 평균 ΔE00 0.45(8밴드)로 파랑+노랑=초록, 틴트 채도 보존을 재현하고, 외부 의존 0, 사칙·sqrt만 사용해 결정적이며 1.7KB gzip이다. 표는 spectral.js(MIT) 파생이므로 MIT 고지가 필요하다. 단 JS 단일 스레드 3~4 Mpx/s라 프레임당 대량 스머지는 획 단위 램프 LUT나 WGSL/WASM 이식(미측정)이 필요하다."
+    },
+    {
+      "item": "3채널 KM 조정형(mixKm3Tuned: 반사율 하한 0.01, 휘도 가중)",
+      "decision": "adopt-engine-module",
+      "rationaleKo": "18.9 Mpx/s로 프레임당 수십만 혼합에 가장 가까운 정확도 있는 선택지이며 평균 ΔE00 2.45(p95 10, max 34)라 색 쏠림이 남는다. 속도 우선 계층으로 쓰고 기존 kmMixRgb(평균 11.46, 흰색 틴트 실패)를 교체 대상으로 검토한다."
+    },
+    {
+      "item": "spectral.js 3.0.0",
+      "decision": "adopt-lane",
+      "rationaleKo": "MIT·의존 0으로 상용 허용이나 단일 혼합 0.12~0.25 Mpx/s라 실시간 루프에 부적합. 엔진(engine/**) 밖 bench 골든 테스트, 표 생성 스크립트, 오프라인 고품질 내보내기에만 두고 의존성 추가는 통합 담당에게 요청한다."
+    },
+    {
+      "item": "culori 4.0.2 OKLab 혼합",
+      "decision": "reject",
+      "rationaleKo": "라이선스는 MIT로 문제없으나 OKLab 결과가 자체 구현(수 줄)과 ΔE 0으로 같고 파랑+노랑이 초록이 되지 않는다(평균 ΔE00 6.8~14.5). 번들 6.6KB 이상의 이득이 없다. OKLab은 UI 색 선택용 보간으로만 자체 구현을 쓴다."
+    },
+    {
+      "item": "선형 광 혼합과 sRGB 감마 혼합",
+      "decision": "experiment-only",
+      "rationaleKo": "가장 빠르지만(선형 40 Mpx/s, 감마 LUT 26 Mpx/s) 물감 혼색이 되지 않는다. 선형은 틴트가 회보라로 무채색화, 감마는 어두워지고 채도가 급락한다. 광 합성/알파 합성 비교 기준선으로만 사용."
+    },
+    {
+      "item": "합성 4안료 2상수 KM 및 RGB 역변환",
+      "decision": "defer",
+      "rationaleKo": "파장 가정과 합성 곡선이라 정확도 판정 불가, 4안료 색역이 임의 sRGB를 평균 ΔE00 8.18로만 근사해 smudge에는 부적합. 측정 안료 데이터와 RGB-농도 역변환이 확보된 뒤 재평가."
+    },
+    {
+      "item": "Mixbox 및 LYGIA 계열",
+      "decision": "reject",
+      "rationaleKo": "저장소 원장 기준 CC BY-NC 계열 금지. spectral.js 소스에는 Mixbox 식별자·계수가 없음을 grep으로 확인(README 감사 문구만 있음)."
+    }
+  ],
+  "filesWritten": [
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/report.md",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/metrics.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/PROGRESS.md",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/src/models.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/src/engine-km/km-mix.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/src/engine-km/tables.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/src/pigment4.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/src/run-accuracy.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/src/run-speed.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/src/run-determinism.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/src/license-audit.mjs",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/out/grid-all.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/out/grid-blue-yellow.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/out/grid-pigment4.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/out/accuracy.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/out/speed.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/out/determinism.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/out/bundle-size.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-E/out/license-audit.json"
+  ],
+  "commandsRun": [
+    {
+      "command": "npm install --ignore-scripts --no-audit --no-fund spectral.js@3.0.0 culori@4.0.2 esbuild (샌드박스)",
+      "result": "4 패키지 설치. spectral.js 3.0.0 MIT, culori 4.0.2 MIT, esbuild 0.28.2 MIT 확인"
+    },
+    {
+      "command": "tsx src/exp-lite-select.ts; src/exp-km3-variants.ts; src/gen-tables.ts",
+      "result": "8밴드 평균 ΔE00 0.45; KM3 조정형 검증 2.45; 엔진 표 생성"
+    },
+    {
+      "command": "tsx src/run-accuracy.ts",
+      "result": "8쌍 그리드 PNG 9장과 accuracy.json 생성"
+    },
+    {
+      "command": "tsx src/run-speed.ts (여러 번)",
+      "result": "best Mpx/s: 선형 40, KM3조정 18.9, 8밴드 배치 2.96, spectral.js 0.12~0.25 (부하 높음)"
+    },
+    {
+      "command": "tsx src/run-determinism.ts",
+      "result": "8모델 해시가 반복, 역순, 별도 프로세스에서 모두 동일"
+    },
+    {
+      "command": "node src/license-audit.mjs; node src/size.mjs; node src/build-report.mjs",
+      "result": "의존성 0, 바이너리 0, 번들 크기 표, report.md와 metrics.json 생성"
+    }
+  ],
+  "unverified": [
+    "브라우저(V8) 속도와 WebGPU/WGSL, WASM-SIMD 이식 성능은 측정하지 못했다(Node 결과를 브라우저 결과로 쓰지 않음)",
+    "실제 안료 측정 데이터 대비 정확도는 측정하지 못했다(참조는 spectral.js 출력)",
+    "4안료 2상수 KM의 파장 격자(380nm+10nm*i)는 가정이며 안료 곡선은 합성이다",
+    "밴드 위치 최적화는 하지 않아 6밴드가 7밴드보다 좋은 것은 등간격 선택의 우연일 수 있다",
+    "엔진 간 비트 일치(Chrome, Firefox, Safari)는 미검증이며 spectral.js는 ** 연산자를 써서 달라질 수 있다",
+    "spectral.js 스펙트럼 데이터의 Burns LHTSS 변형 출처 권리는 법무 확인 필요",
+    "최신 npm 버전 존재 여부는 조회하지 않았다(3.0.0, 4.0.2 고정)",
+    "속도 값은 load average 9~11 환경의 best-of-5로 재측정마다 ±30% 변동했고 7기저 희소 누적 최적화의 단독 효과는 분리하지 못했다",
+    "grid-white-red, grid-white-yellow, grid-black-tint PNG는 열어 보지 않았다(수치 표만 근거)"
+  ],
+  "risks": [
+    "저장소 기존 kmMixRgb는 흰색 틴트 불가·순수 채널 포화(평균 ΔE00 11.46)라 현 레인 비교에서 혼색 품질이 과소평가될 수 있음",
+    "JS 단일 스레드에서 밴드 KM은 프레임당 수십만 혼합에 못 미침(300k px에 약 100ms) — LUT나 GPU/WASM 이식 없이는 smudge 루프에 못 씀",
+    "spectral.js 기반 파생 표에는 MIT 고지 의무와 데이터 출처 법무 확인 항목이 있음",
+    "spectral.js의 t는 factor 제곱 x 휘도 가중이라 농도 비율이 아니며 UI의 혼합비 의미와 어긋날 수 있음",
+    "premultiplied 값을 그대로 섞으면 ΔE00 약 15 오차가 나므로 반드시 straight 선형에서 혼색해야 함"
+  ],
+  "followUps": [
+    "engine/pigment/km-mix.ts를 저장소로 이식하고 골든 테스트(#002185+#fcd200 근처, 8밴드 평균 ΔE00 1.0 이하)와 NOTICE MIT 고지를 추가(통합 담당)",
+    "밴드 8의 WGSL 이식과 브라우저에서 프레임당 30만 혼합 처리량 측정",
+    "밴드 위치 최적화와 측정 안료 데이터로 정확도 검증",
+    "획 단위 램프 LUT와 canvas 색 양자화 LUT의 smudge 적용 실험",
+    "spectral.js 데이터 출처(Burns LHTSS)에 대한 법무 검토 요청"
+  ],
+  "blockers": []
+}

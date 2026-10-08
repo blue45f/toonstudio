@@ -9,6 +9,9 @@ import { InvalidStateError } from "../engine/core/errors";
 import { presetById } from "../engine/presets/catalog";
 
 import { CpuReferenceLane, createCpuReferenceLane } from "./cpu-reference-lane";
+import { drawLine, expectStrokeColorContract, meanInkColor } from "./testing/stroke-color-contract";
+
+import type { RawSample } from "../engine/core/types";
 
 const SIZE = 128;
 /** 스냅샷 대표 프리셋 4종(건식·잉크·마커·에어브러시). 습식은 느려서 runner·report 테스트에서만 다룬다. */
@@ -142,4 +145,126 @@ describe("cpu-reference 레인", () => {
     expect(run.receipt.gpuTimeMs).toBeNull();
     expect(alphaSum(run.image)).toBeGreaterThan(0);
   }, 60000);
+});
+
+describe("cpu-reference 레인: 획 색 계약(beginStroke options.color)", () => {
+  const make = (): CpuReferenceLane => new CpuReferenceLane();
+
+  it.each(["ink-g-pen", "pencil-hb", "marker-alcohol", "airbrush"] as const)(
+    "%s: 색을 지정하면 평균 색이 지정색 근처이고 색 없는 결과와 해시가 다르다",
+    async (presetId) => {
+      await expectStrokeColorContract({ make, presetId });
+      await expectStrokeColorContract({ make, presetId, color: [0.1, 0.25, 0.9, 1] });
+    },
+  );
+
+  it("색 인자가 없거나 검정 [0,0,0,1]이면 기존 결과와 같다(색 없는 호출이 기본 검정과 비트 동일)", async () => {
+    const plain = await drawLine({ make, presetId: "pencil-hb" });
+    const black = await drawLine({ make, presetId: "pencil-hb", options: { color: [0, 0, 0, 1] } });
+    const empty = await drawLine({ make, presetId: "pencil-hb", options: {} });
+    expect(pixelHash(black)).toBe(pixelHash(plain));
+    expect(pixelHash(empty)).toBe(pixelHash(plain));
+  });
+
+  it("색 알파는 dab 색의 알파로 들어간다(알파 0.4는 같은 색 알파 1보다 알파 총량이 작다)", async () => {
+    const solid = await drawLine({ make, options: { color: [0.8, 0.2, 0.2, 1] } });
+    const faint = await drawLine({ make, options: { color: [0.8, 0.2, 0.2, 0.4] } });
+    expect(alphaSum(faint)).toBeLessThan(alphaSum(solid));
+    expect(meanInkColor(faint)?.r ?? 0).toBeGreaterThan(0.6);
+  });
+
+  it("습식(수채·유화) 획도 지정한 색을 침착한다 — 혼색 로직은 프로그램 그대로", async () => {
+    for (const presetId of ["watercolor-wet", "oil-impasto"] as const) {
+      const mean = meanInkColor(await drawLine({ make, presetId, size: 64, options: { color: [0.1, 0.35, 0.85, 1] } }));
+      expect(mean, presetId).not.toBeNull();
+      if (!mean) continue;
+      // 습식은 종이·건조·조명으로 색이 옅어지므로 허용 오차를 두되, 파란 채널이 적색 채널을 앞서야 한다.
+      expect(mean.b, presetId).toBeGreaterThan(mean.r + 0.15);
+    }
+  }, 120000);
+
+  it("잘못된 색(범위 밖·NaN·길이 불일치)은 InvalidStateError로 거부하고 레인은 다음 획을 받을 수 있다", async () => {
+    const lane = createCpuReferenceLane();
+    await lane.init(fakeEnv(), { width: 32, height: 32, dpr: 1, tileSize: 16, seed: 1 });
+    const program = presetById("ink-g-pen");
+    const bad: unknown[] = [[2, 0, 0, 1], [Number.NaN, 0, 0, 1], [0, 0, 0], [0, 0, 0, 1, 1], [-0.1, 0, 0, 1]];
+    for (const color of bad) {
+      expect(() => lane.beginStroke(program, 1, { color: color as [number, number, number, number] })).toThrow(InvalidStateError);
+    }
+    lane.beginStroke(program, 1, { color: [1, 0, 0, 1] });
+    await lane.endStroke();
+    lane.dispose();
+  });
+
+  it("abortStroke 뒤 다음 획의 색은 새로 정해진다(이전 획 색이 새지 않는다)", async () => {
+    const lane = createCpuReferenceLane();
+    await lane.init(fakeEnv(), { width: 96, height: 96, dpr: 1, tileSize: 16, seed: 1 });
+    const program = presetById("ink-g-pen");
+    const fixture = buildFixture("line", { width: 96, height: 96 });
+    lane.beginStroke(program, 1, { color: [1, 0, 0, 1] });
+    lane.addSamples(fixture.samples);
+    lane.abortStroke();
+    lane.beginStroke(program, 1, { color: [0, 0, 1, 1] });
+    lane.addSamples(fixture.samples);
+    await lane.endStroke();
+    const mean = meanInkColor(await lane.readback());
+    lane.dispose();
+    expect(mean?.b ?? 0).toBeGreaterThan(0.8);
+    expect(mean?.r ?? 1).toBeLessThan(0.1);
+  });
+});
+
+describe("cpu-reference 레인: 빠른 획(프레임당 표본 1개, 큰 도약)이 버려지지 않는다", () => {
+  const CASES: ReadonlyArray<readonly [string, number, number]> = [
+    ["pencil-hb", 16, 8],
+    ["ink-g-pen", 16, 16],
+    ["charcoal", 30, 16],
+    ["airbrush", 60, 16],
+  ];
+
+  it.each(CASES)("%s: 프레임 간 %i px 도약(%i ms)도 stroke-budget-exceeded 없이 끝난다", async (presetId, stepPx, stepMs) => {
+    const lane = createCpuReferenceLane();
+    await lane.init(fakeEnv(), { width: 512, height: 128, dpr: 1, tileSize: 16, seed: 1 });
+    lane.beginStroke(presetById(presetId), 1);
+    for (let i = 0; i < 24; i += 1) {
+      lane.addSamples([
+        {
+          x: 20 + i * stepPx,
+          y: 64,
+          tMs: i * stepMs,
+          pressure: 0.6,
+          tiltXDeg: 0,
+          tiltYDeg: 0,
+          twistDeg: 0,
+          pointerType: "pen",
+          phase: i === 0 ? "down" : i === 23 ? "up" : "move",
+          source: "raw",
+        },
+      ]);
+    }
+    const receipt = await lane.endStroke();
+    expect(receipt.dabCount).toBeGreaterThan(0);
+    expect(meanInkColor(await lane.readback())).not.toBeNull();
+    lane.dispose();
+  }, 60000);
+
+  it("터무니없는 도약(수백만 px)은 한글 사유와 함께 stroke-budget-exceeded로 거부하고 레인은 abortStroke 뒤 다시 쓸 수 있다", async () => {
+    const lane = createCpuReferenceLane();
+    await lane.init(fakeEnv(), { width: 128, height: 128, dpr: 1, tileSize: 16, seed: 1 });
+    lane.beginStroke(presetById("airbrush"), 1);
+    const sample = (x: number, tMs: number): RawSample => ({ x, y: 64, tMs, pressure: 0.5, tiltXDeg: 0, tiltYDeg: 0, twistDeg: 0, pointerType: "pen", phase: "move", source: "raw" });
+    lane.addSamples([sample(10, 0)]);
+    let caught: unknown = null;
+    try {
+      lane.addSamples([sample(5_000_000, 16)]);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toMatchObject({ code: "stroke-budget-exceeded" });
+    expect(String((caught as { details?: { reasonKo?: string } }).details?.reasonKo)).toMatch(/비정상 입력/);
+    expect(lane.abortStroke().documentPreserved).toBe(true);
+    lane.beginStroke(presetById("ink-g-pen"), 1);
+    await lane.endStroke();
+    lane.dispose();
+  });
 });

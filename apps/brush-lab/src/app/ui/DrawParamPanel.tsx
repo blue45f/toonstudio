@@ -128,10 +128,6 @@ export function DrawParamPanel() {
         onChange={(v) => set({ flow: v })}
       />
       <DrawColorPicker color={color} recentColors={recentColors} onChange={(hex) => drawActions.setColor(hex)} />
-      <p className="lab-draw-note" role="note" data-testid="lab-draw-color-note">
-        현재 레인 계약(<code>beginStroke(program, seed)</code>)에는 획 색 인자가 없어 모든 레인이 기본색(검정)으로 그린다. 색 선택과 최근
-        색은 저장되며, 레인이 색을 받게 되면(후속 과제) 그대로 적용된다.
-      </p>
       <fieldset className="lab-draw-fieldset">
         <legend>입력 보정(안정화)</legend>
         <div className="lab-field">

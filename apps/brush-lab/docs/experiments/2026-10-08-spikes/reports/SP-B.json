@@ -1,0 +1,247 @@
+{
+  "id": "SP-B",
+  "summary": "# SP-B 보고서: 입자 유체/물감 (LiquidFun TS 포팅 vs 자체 MLS-MPM)\n\n범위와 한계: 모든 수치는 Node 22.22.0 CPU에서 직접 측정했다. 브라우저·GPU 경로는 실행하지 못했으므로 \"브라우저 미검증\"이다. 측정 머신은 Xeon 2.1GHz 4코어이고 다른 작업자가 동시에 실행 중이라 load average가 5~15였다. 시간 값은 3회 반복 중 p50이 가장 낮은 값(best-of-3)을 채택했고, 전체 반복 값은 metrics.json에 있다. 저장소는 읽기 전용으로만 썼고(fixture·rng·reference-renderer·kubelka-munk·pigment-table·color만 절대경로 import) 파일 수정·git 조작·pnpm 실행은 하지 않았다. report.md는 도구가 보고서 파일 작성을 거부해 쓰지 못했고, 같은 내용을 이 요약에 담았다. metrics.json과 PROGRESS.md는 샌드박스에 있다.\n\n## 1. 결론\n\n| 질문 | 답 |\n|---|---|\n| 상용 사용 가능? | 가능. 설치본 LICENSE·package.json은 MIT(Erin Catto 2019)이고, @box2d/particles 소스 .js 13개 전부 Zlib 헤더(Google 2013 5개 + Erin Catto 2006~2011 8개)를 가진다. 둘 다 허용 SPDX지만 루트 LICENSE에는 Zlib 원문이 없으므로 NOTICE에 Google Zlib 원문을 별도로 넣어야 한다. 원 저장소 google/liquidfun의 b2Particle.h 헤더와 Box2D/License.txt를 직접 내려받아 동일 조건임을 대조했다. |\n| LiquidFun 입자로 번짐·젖은 물감? | \"유체처럼 움직이는 균일 불투명 리본\"까지만 된다. 종이 결·가장자리 농담·핑거링은 없고, 원판은 완벽한 원으로만 퍼진다. |\n| LiquidFun colorMixing 혼색? | 쓰지 않는 편이 낫다. 식은 sRGB 성분 쌍별 선형 교환이라 노랑+파랑이 회청색이 되고, 저장소 KM은 초록이 된다. |\n| 결정적? | LiquidFun은 그대로는 아니다(Math.random 피벗 정렬, 해시 5/5 상이). Math.random을 시드 Pcg32로 바꾸면 5/5 동일. 자체 MLS-MPM은 패치 없이 5+5 동일 해시. |\n| 폭주? | NaN은 두 솔버 모두 0. LiquidFun은 속도 상한 덕에 안전하지만 펜 속도가 잘린다. MPM은 CFL(dt·c/dx≈1) 위반 시 붕괴한다. |\n| 추천 | LiquidFun = 실험 전용, 자체 MLS-MPM = 실험 레인 후보, 혼색 = 입자는 농도 t만 수송하고 색은 저장소 KM이 결정. |\n\n## 2. 라이브러리·라이선스 (설치본 파일에서 직접 확인)\n\n| 패키지 | 버전 | package.json | LICENSE 파일 | 소스 헤더 | 설치 스크립트 | 바이너리 | 전이 의존성 | gzip | 판정 |\n|---|---|---|---|---|---|---|---|---|---|\n| @box2d/core | 0.11.0 | MIT | MIT, Copyright 2019 Erin Catto | MIT 37개, 무헤더 16개 | 없음 | 없음 | 0 | 53,249 B(core만) | ok |\n| @box2d/particles | 0.11.0 | MIT | core와 바이트 동일 MIT | Zlib 13개(Google 2013 5개 + Erin Catto 8개), MIT 37개(중복 core 사본), 무헤더 17개 | 없음 | 없음 | @box2d/core 1개 | core+particles 합 74,088 B | ok(조건부: NOTICE에 Zlib 원문) |\n| 자체 MLS-MPM(src/mpm.ts) | 스파이크 | 자체 코드 | 해당 없음 | 해당 없음 | 없음 | 없음 | 0 | 2,979 B | ok |\n\n- 전이 의존성은 npm ls --all --json과 src/license-audit.mjs(트리 순회)로 훑었다. 총 2패키지이며 wasm/바이너리는 없다(출처 추적 불필요). 결과는 out/license-audit.json.\n- Zlib에는 NOTICE 유지 의무가 없지만 조항 3(고지 제거 금지)은 소스 배포에 걸린다. esbuild minify 번들에는 \"Google\" 문자열이 0건이라(주석 제거) ADR-0008의 \"라이선스 사본 동봉\" 원칙대로 NOTICE로 보강해야 한다. Zlib·MIT 모두 명시적 특허 허여 조항이 없다. LiquidFun 알고리즘 자체의 특허 유무는 확인하지 못했다.\n- 패키징 결함: particles@0.11.0의 package.json은 main ./dist/index.js인데 tarball에 그 파일이 없다(실제 진입점 dist/particles/src/index.js). require(\"@box2d/particles\")가 실패해 deep import로 우회했다. 0.11.0은 core 소스 사본이 중복돼 unpacked 1.27MB이고, 0.10.0은 main이 정상이며 smoke(200입자 30스텝)가 통과하고 336KB다. 둘 다 Math.random 피벗과 Zlib 헤더 13개가 같다. 채택한다면 0.10.0 고정이 낫다(0.10.0의 결정성·성능 전체 재측정은 하지 않았다).\n\n## 3. LiquidFun 코드에서 읽은 사실\n\n| 항목 | 내용 |\n|---|---|\n| colorMixing 식 | SolveColorMixing: 접촉 쌍이 둘 다 colorMixing 플래그면 b2Color.MixColors(A,B,s), s=0.5*colorMixingStrength. d=s*(B-A), A+=d, B-=d (r,g,b,a 4채널). 단순 평균이 아니라 합이 보존되는 쌍별 교환이며 sRGB(감마) 공간 성분 연산이고 접촉 순서에 의존한다. |\n| SetDamping | dampingStrength는 접촉 법선 속도 감쇠이지 전역 항력이 아니다. 종이 마찰은 래퍼가 v*=1/(1+D*dt)로 직접 적용했다. |\n| 속도 상한 | 한 서브스텝 이동이 입자지름 이하로 제한된다. 반경 1.6px에서 192 px/s로 고정 클립되고 particleIterations 3이면 576 px/s다. |\n| 정렬 | std_sort가 Math.random() 피벗 퀵정렬이다. 상수 0.5를 주면 RangeError: Invalid array length로 죽는다. |\n| elastic | 개별 CreateParticle로는 효과가 없고 그룹으로 만들어야 한다. 그룹 생성이 입자 수의 거의 제곱이다(1k 0.18s, 5k 2.0s, 20k 45s). |\n\n## 4. 저장소 wet(LBM D2Q9)과의 차이\n\n저장소 engine/wet는 16x16 타일 희소 풀 위의 오일러 격자다(픽셀당 1셀 f32, MoXi식 D2Q9 흐름층 + Curtis식 표면/흐름/모세관 3층 + 안료 이류·확산·침착·경화 + 종이 섬유 부분 bounce-back, GPU 패리티 검증).\n\n| 관점 | 저장소 LBM | 입자 솔버 |\n|---|---|---|\n| 표현 | 픽셀 격자 필드 | 라그랑주 입자(색·변형 이력 운반) |\n| 자유표면·방울·분리 | 없음 | 있음 |\n| 안료 이동 | 이류 항에 수치 확산 | 입자가 색 보존, 혼색은 의도한 확산 항으로만 |\n| 종이 섬유·모세관·침착 | 있음(핵심) | 없음(벽·마찰·젖음 팽창원 정도) |\n| 점탄성·항복(되직한 물감) | 없음 | MPM만 가능 |\n| 결정성 | f32 고정, GPU 미러 있음 | MPM CPU f64 비트 동일(WGSL 미러 미작성) |\n\n더하는 것은 방울·가장자리·점탄성 같은 덩어리 거동이고, 대체하지 않는 것은 종이 흡수·침착·그래뉼레이션이다. 구조 제안: 입자가 붓에서 나온 물감 하중을 운반하다가 종이에 닿으면 wet 풀에 물·안료로 침착한다(결합은 이번에 만들지 않았다).\n\n## 5. 자체 구현 선택: (b) 2D MLS-MPM\n\n이유: (1) 점탄성 물감(Maxwell 이완 + 항복)을 한 틀로 표현하고 PBF는 항복·탄성 거동이 약하다. (2) 128²~256² 격자 + 입자 평탄 배열이라 CPU TS 결정성과 이후 WGSL 이식이 쉽다. (3) 외부 의존 0, sqrt와 사칙연산만 사용(log/exp/pow/atan2/sin/cos 없음). 구현은 src/mpm.ts(562줄, 번들 7,133 B / gzip 2,979 B / brotli 2,681 B). 재료는 체적 K/2(J²-1) EOS, 편차 μ·dev(b̄), 편차 변형률 ν=(r-1/r)/2를 ν/(1+dt/τ)로 이완하고 ν_y로 항복 되돌림한다. 극분해·고유분해는 sqrt만으로 닫힌 형식이다. 참고는 Hu et al. SIGGRAPH 2018 수식(개념·수식만, 코드 복제 없음)이다. 부가로 색 확산 항(격자 평균 블렌드)과 젖음 팽창원(swellRate/wetDecay)을 넣었다.\n\n## 6. 시나리오와 그림 (PNG를 직접 열어 본 내용)\n\n그림은 모두 샌드박스 out/ 아래에 있다.\n\n- (a) 단일 획 out/final-single-stroke.png (왼쪽부터 LiquidFun 1,190입자 / MPM 1,614입자 / MPM 소프트 알파 / 저장소 watercolor-wet / 저장소 ink-brush-pen, 같은 curve fixture·같은 파랑). 본 것: LiquidFun은 균일하게 진한 파란 리본이고 가장자리가 입자 열 때문에 톱니처럼 오돌토돌하다(r=1.6px로 키우면 구슬 줄 모양, out/explore-lf.png). 압력에 따라 폭만 8→18px로 변한다. MPM은 같은 균일 불투명이지만 가장자리가 매끈하다. 저장소 watercolor-wet은 옅고 반투명하며 종이 결 얼룩과 가장자리 쪽 농도 변화가 있고, ink-brush-pen은 한쪽 끝이 갈라지는 건필 느낌이다. 인상: 입자 스플랫은 \"깨끗한 페인트 리본/마커\", 저장소 래스터러는 \"종이 위의 안료\"다. 입자는 형상·번짐·혼색의 구동원이고 질감은 저장소 종이/그레인 단계가 맡아야 한다.\n- (b) 혼색 out/vb-mix-rows.png, out/vb-mpm-mix-rows.png, out/vb-swatches.png (옐로 line + 울트라마린 curve, t=0/0.5/1/2s). LiquidFun 1행(colorMixing)은 겹친 구간이 회청색이 된다. 2행(혼합 끔)은 두 색 입자가 서로 밀어 끼어들어 점박이가 된다(층이 쌓이지 않음). 3행(하이브리드: 같은 교환식으로 농도 t만 수송, 색은 저장소 mixKs+ksToReflectance)은 초록이다. 견본표 sRGB: 노랑+파랑 LiquidFun (0.668,0.748,0.649) 회녹회색 vs KM (0.528,0.697,0.448) 초록, 빨강+파랑 (0.644,0.440,0.582) 자주 vs KM (0.511,0.370,0.313) 갈색, 빨강+노랑 (0.931,0.622,0.314) vs KM (0.928,0.423,0.300). MPM은 색 확산율 κ=0이면 겹친 획이 섞이지 않고 층/점박이, κ=16/s이면 회녹색으로 번지고, 하이브리드(KM)는 초록이다. 혼합 입자 비율(진행도 0.15~0.85) t=0/0.5/1/2s: LiquidFun s=0.5가 71.8/76.0/77.0/79.0%, MPM κ=16이 65.1/72.7/78.8/83.4%.\n- (c) 번짐 시퀀스 out/final-spread-sequence.png(위 LiquidFun 과압축 방출·점성 0.5·마찰 4/s, 아래 MPM 젖음 팽창원, 붉은 사각형=종이 가장자리, 초록 원=마스킹), out/vc-spread.png, out/vc-mpm-spread.png, out/vc-mpm-ribbon.png. LiquidFun 획의 반폭(중심선 거리 p95)은 7.3→8.4→8.8→9.0px로 조금 넓어지고 멈춘다. MPM은 7.8→10.8→13.5→16.5px로 계속 넓어져 2s에 우측 상단 끝이 종이 가장자리에 닿는다. 두 솔버 모두 마스크 안 입자 0, 종이 밖 입자 0이다. 원판 실험(LiquidFun): 과압축 원판이 완벽한 원으로 r95 13.6→19px(2s)로 퍼지고, 점성 0→1은 19.0→18.6px로 거의 무차이, 종이 마찰이 지배한다(1/s 23.4px, 64/s 15.7px). viscousStrength=4는 입자가 흩어진 점박이 구름(r95 45→57px)이 된다. b2_wallParticle 링 마스크는 누출 0(안 613/밖 0). MPM 원판은 압축 구동만으로는 최종 반경이 r/√J0(r95 21.5px로 점탄성 값과 무관)이고, 원형 확장은 편차 변형이 없어 점성·항복이 보이지 않는다. 편차 변형이 있는 리본에서야 이완시간·항복이 반폭에 나타난다(2s 반폭): relax 0.05s 9.15px / 0.2s 8.13 / 1s 7.40 / 5s 7.18 / 순수 탄성 7.12, 항복 ν_y 0.02는 9.21px, 0.5는 8.13px. 드래그 16/s는 9.13px, 1/s는 7.44px(드래그가 탄성 복원을 억제해 더 넓게 유지). 한계: 두 솔버 모두 번짐이 둥근 균일 확장이라 수채의 가지치기·핑거링·가장자리 진해짐은 나오지 않는다(그건 LBM+종이 섬유 모델의 역할).\n\n참고로 저장소 CPU 참조 렌더 비용(콜드 1회): watercolor-wet curve 256² 2.33s(176 dab, 49프레임), sumi-ink-wet 2.16s, airbrush 0.30s.\n\n## 7. 측정표\n\n### 7.1 LiquidFun 틱 비용 (Step 1회, particleIterations=1, 중력 0, p50 ms, best-of-3, 실제 입자 수 1,024 / 5,041 / 20,164)\n\n| 플래그 | 1k | 5k | 20k | 힙/입자 |\n|---|---|---|---|---|\n| water | 0.83 | 4.67 | 18.2 | 1.2~1.3KB |\n| viscous | 0.89 | 5.22 | 20.8 | 1.2~1.3KB |\n| elastic(그룹) | 1.49 | 7.81 | 30.2 | 2.1~2.5KB (그룹 생성 0.18s / 2.0s / 45s) |\n| powder | 0.77 | 4.30 | 20.7 | 1.2~1.3KB |\n| tensile | 1.13 | 6.58 | 25.0 | 0.9~1.4KB |\n| colorMixing | 0.88 | 5.27 | 23.2 | 1.2~1.3KB |\n| viscous+tensile+colorMixing | 1.17 | 6.91 | 27.4 | 1.3KB |\n| water, particleIterations=2 | 1.47 | 9.29 | 35.6 | - |\n\np95는 1k water 5.2ms, 5k tensile 18.5ms처럼 튀는 구간이 있다(JIT·공유 머신). 20k 힙 증가 실측 22.5MB.\n\n### 7.2 MLS-MPM 프레임(1/60s) 비용 (p50 ms, best-of-3)\n\n| 구성 | 1k | 5k | 20k | ns/입자/서브스텝 |\n|---|---|---|---|---|\n| 격자128², K=2.5e5(c≈500px/s), 17서브 | 3.78 | 27.0(잡음 큼) | 90.9 | 222~317 |\n| 격자128², K=6e4, 8서브 | 1.83 | 9.58 | 38.2 | 229~239 |\n| 격자128², K=1.5e4, 4서브 | 0.93 | 4.62 | 17.7 | 221~232 |\n| 격자256², K=2.5e5, 34서브 | 7.67 | 39.5 | 153.6 | 226~232 |\n| 격자256², K=6e4, 16서브 | 3.70 | 18.4 | 72.8 | 228~231 |\n\n비용은 입자 수 x 서브스텝 수가 지배하고 격자 크기는 거의 무관하다(활성 영역 희소 처리, 해시 동일 확인). 서브스텝 수는 강성이 정한다. 가중치 배열 재사용 미세 최적화는 효과가 없어 되돌렸다. WASM/SIMD/Float32 최적화는 측정하지 않았다.\n\n### 7.3 프레임 예산 안 최대 입자 수 (Node, p50, 측정 점 사이 선형 보간, load 5~15 공유 머신)\n\n| 솔버/구성 | 16.7ms | 8.3ms |\n|---|---|---|\n| LiquidFun water | 약 15k(p95 기준 약 10k) | 약 8k |\n| LiquidFun colorMixing | 약 10~11k | 약 7k |\n| LiquidFun viscous+tensile+colorMixing | 약 12k | 약 6k |\n| MPM 128² K2.5e5 17서브 | 약 3.4k | 약 1.8k |\n| MPM 128² K6e4 8서브 | 약 8.7k | 약 4.4k |\n| MPM 128² K1.5e4 4서브 | 약 19k | 약 7.8k |\n| MPM 256² K2.5e5 34서브 | 약 2.2k | 약 1.1k |\n| MPM 256² K6e4 16서브 | 약 4.5k | 약 2.3k |\n\n### 7.4 결정성 (해시 5회)\n\n| 솔버 | 같은 프로세스 5회 | 별도 프로세스 5회 | 비고 |\n|---|---|---|---|\n| LiquidFun 그대로 | 5개 모두 다름 | 5개 모두 다름 | 위치 차 최대 0.30px, rms 0.012px. 눈으로는 동일하나 해시 불일치 |\n| LiquidFun + Math.random->Pcg32 시드 | 5/5 동일 257550f5a0cb7e68 | 5/5 동일 | 시드 1234 vs 99는 위치 최대 0.11px 차이(난수 소비 순서에 결과 의존) |\n| LiquidFun + Math.random=0.5 | - | - | RangeError(std_sort) |\n| 자체 MLS-MPM | 5/5 동일 1995fc1eca6f939e | 5/5 동일 | 패치 없음 |\n\n### 7.5 폭주 시험\n\n- LiquidFun 15개 변형: NaN 0, 종이 밖 탈출 0, 폭주 0. 속도 상한으로 peak 192px/s 고정(particleIterations 3에서 576). 과밀 방출(0.6px 간격, 3,624입자)도 안정(스텝 5.5ms). 접촉 감쇠 30도 안정. 점성 4는 획 장면에서는 안정이지만 원판에서 흩어짐.\n- MPM: 기준(17서브)과 8서브(CFL≈0.5)는 안정. 4서브(dt 4.2ms, CFL≈1.04)는 폭주(속도 3만 px/s, 안전 클램프 1,310,038회), 2서브도 폭주(658,303회). 펜 속도 그대로(velGain 1, 드래그 0)는 극단 압축(J 최소 0.43, 클램프 3,806회), velGain 3은 J 최소 0.069(클램프 6,974회), fast-flick은 J 최소 0.003(클램프 1,979회). 과압축 J=0.7/0.5는 안정. 약한 강성(K=1.5e4, 4서브)은 안정하나 체적 오차 ±4%. 폭주가 NaN이 아니라 클램프에 가려진 붕괴로 나타나므로 clampEvents를 항상 감시 지표로 노출해야 한다.\n\n### 7.6 메모리·번들\n\n| 항목 | LiquidFun | MLS-MPM |\n|---|---|---|\n| 입자당 | 힙 약 1.2~1.3KB(elastic 2.1~2.5KB) | 152B(f64 19배열) |\n| 20k + 격자 | 힙 22.5MB 실측 | ArrayBuffer 약 3.9~4.0MB 실측(분석 4.2MB) |\n| 번들(esbuild 0.25.12 minify ESM) | core+particles 333,863B / gzip 74,088 / brotli 62,408 (core만 242,291 / 53,249 / 44,943) | 7,133B / gzip 2,979 / brotli 2,681 |\n| 모듈 형식 | CJS, 트리 셰이킹 거의 불가 | ESM, 외부 의존 0 |\n\n## 8. 평가표\n\n| 항목 | LiquidFun | 자체 MLS-MPM |\n|---|---|---|\n| 상용 라이선스 | ok(MIT+Zlib 혼재, NOTICE 필요) | ok(자체 코드) |\n| 결정성 | 패치 필요, 시드 의존 | 비트 동일 |\n| 폭주 안정성 | 속도 상한으로 안전, 펜 속도 클립 | CFL 위반 시 붕괴: 서브스텝 자동 고정·클램프 감시 필요 |\n| 성능(Node 5k) | 4.7ms/스텝 | 4.6~27ms/프레임(강성별) |\n| 번들 gzip | 74KB | 3KB |\n| 점탄성·항복 | 없음(viscous 약함, 4에서 붕괴) | 있음(리본에서 관측) |\n| 혼색 | sRGB 쌍별 교환(부적합) | 확산 항(KM과 결합 가능) |\n| 번짐 가장자리·종이 결 | 없음 | 없음 |\n| 이식성 | 어려움(대형 CJS 객체 그래프) | 수월(WGSL 미러 미작성) |\n\n## 9. 저장소 배치 제안 (이 스파이크는 저장소를 수정하지 않았고, 적용은 통합 담당)\n\n- MLS-MPM: apps/brush-lab/src/engine/fluid/mpm-2d.ts + mpm-2d.test.ts. 시간·performance·Math.random 없음(주입은 인자). 테스트: 해시 5회, CFL 게이트(위반 시 LaneUnavailableError 계열), 입자 수 보존, 경계 누출 0, clampEvents 0.\n- 입자→스플랫(가우시안 누적 + 알파 문턱): engine/fluid/particle-splat.ts.\n- 실험 레인: src/lanes/particle-paint-lane.ts, 레지스트리에 experimental 표기. capability 불일치는 LaneUnavailableError(code)로 드러내고 자동 전환 금지(ADR-0018).\n- 혼색: 입자는 농도 t, 색은 engine/pigment/kubelka-munk.ts의 mixKs로 결정. LiquidFun 색 혼합 경로는 도입하지 않는다.\n- LiquidFun은 채택하더라도 src/lanes/ 이하에 격리하고 Math.random 전역 패치 대신 std_sort를 결정적 정렬로 바꾼 vendoring 또는 0.10.0 고정을 쓴다. NOTICE에 Google Zlib 원문을 추가하고 package.json 변경은 통합 담당에 요청한다.\n\n## 10. 산출물 (샌드박스 /tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/)\n\nmetrics.json, PROGRESS.md, src/(mpm.ts·lf.ts·실험 스크립트), out/(PNG·JSON·로그), bundle/(번들 결과), _upstream/(원 저장소 라이선스 대조본), _alt010/(0.10.0 smoke).",
+  "libraries": [
+    {
+      "name": "@box2d/core",
+      "version": "0.11.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [],
+      "bundleBytesGzip": 53249,
+      "noteKo": "설치본 LICENSE(MIT, Copyright 2019 Erin Catto)와 package.json 일치. js 헤더 MIT 37개·무헤더 16개, 설치 스크립트·wasm/바이너리 없음, 전이 의존성 0. 번들은 core만 53,249 B gzip(raw 242,291). 코드 내 Math.random(b2_math)·performance.now(b2_timer) 존재. Apache-2.0 아님(NOTICE 의무 해당 없음)."
+    },
+    {
+      "name": "@box2d/particles",
+      "version": "0.11.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "@box2d/core@0.11.0"
+      ],
+      "bundleBytesGzip": 74088,
+      "noteKo": "package.json·LICENSE는 MIT(core와 바이트 동일)이나 소스 .js 13개가 Zlib 헤더(Google 2013 5개: b2_particle/group/system/voronoi_diagram/stack_queue + Erin Catto 2006~2011 8개)를 가진다. 원 저장소 google/liquidfun의 b2Particle.h 헤더와 Box2D/License.txt를 직접 받아 Zlib 동일 문구를 대조 확인했다. 둘 다 허용 SPDX이므로 ok이나 LICENSE에 Zlib 원문이 없어 NOTICE에 Google Zlib 원문을 별도 포함해야 한다(minify 번들은 주석이 제거됨). Zlib·MIT 모두 명시적 특허 허여 조항 없음, 알고리즘 특허는 미확인. 0.11.0은 package.json main(./dist/index.js)이 tarball에 없어 deep import 필요, core 소스 사본 중복으로 unpacked 1.27MB. 0.10.0은 main 정상(336KB)이며 Math.random 피벗·Zlib 13개는 동일. gzip 74,088 B는 core 포함 합계(raw 333,863, brotli 62,408)."
+    },
+    {
+      "name": "mls-mpm-2d (자체 구현, src/mpm.ts)",
+      "version": "spike-0",
+      "licenseSpdx": "LicenseRef-own-code",
+      "licenseFileVerified": false,
+      "commercialVerdict": "ok",
+      "transitive": [],
+      "bundleBytesGzip": 2979,
+      "noteKo": "외부 의존 0의 자체 코드. 참고는 Hu et al. SIGGRAPH 2018 수식(개념·수식만, 코드 복제 없음). 번들 7,133 B raw / 2,979 B gzip / 2,681 B brotli(esbuild 0.25.12 minify). sqrt와 사칙연산만 사용."
+    }
+  ],
+  "experiments": [
+    {
+      "name": "E1a LiquidFun 틱 비용(플래그 8종 x 1k/5k/20k)",
+      "result": "water 0.83/4.67/18.2 ms p50, viscous 0.89/5.22/20.8, elastic(그룹) 1.49/7.81/30.2(생성 0.18/2.0/45 s), powder 0.77/4.30/20.7, tensile 1.13/6.58/25.0, colorMixing 0.88/5.27/23.2, viscous+tensile+colorMixing 1.17/6.91/27.4, particleIterations=2 1.47/9.29/35.6. 힙 1.2~1.3KB/입자(elastic 2.1~2.5KB). 최대 입자(p50 16.7ms): water 약 15k(p95 기준 약 10k), 8.3ms 약 8k.",
+      "metrics": "best-of-3, load average 9~15 공유 머신, Node 22.22.0, 브라우저 미검증",
+      "evidence": [
+        "out/bench-lf.json",
+        "out/bench-lf-sweep.json"
+      ]
+    },
+    {
+      "name": "E1b MLS-MPM 프레임 비용(5구성 x 1k/5k/20k + 스윕)",
+      "result": "128² K2.5e5 17서브 3.78/27.0/90.9 ms, K6e4 8서브 1.83/9.58/38.2, K1.5e4 4서브 0.93/4.62/17.7, 256² K2.5e5 34서브 7.67/39.5/153.6, K6e4 16서브 3.70/18.4/72.8. 약 220~320 ns/입자/서브스텝. 최대 입자(16.7ms): 약 3.4k(K2.5e5)/8.7k(K6e4 8서브)/19k(K1.5e4 4서브).",
+      "metrics": "best-of-3, load 5~15, 미세 최적화(가중치 배열)는 효과 없어 되돌림",
+      "evidence": [
+        "out/bench-mpm.json",
+        "out/bench-mpm-sweep.json"
+      ]
+    },
+    {
+      "name": "E2 결정성 해시 5회",
+      "result": "LiquidFun 그대로: 같은 프로세스 5개·별도 프로세스 5개 모두 상이(위치차 최대 0.30px). Math.random을 Pcg32 시드로 패치: 5/5와 5/5 동일(257550f5a0cb7e68). 시드 변경(1234 vs 99)은 최대 0.11px 차이. Math.random=0.5 상수는 RangeError. MLS-MPM: 같은 프로세스 5/5, 별도 프로세스 5/5 동일(1995fc1eca6f939e), 희소 격자 리팩터 전후 해시 동일.",
+      "metrics": "해시=상태 float64 바이트 sha256 앞 16자",
+      "evidence": [
+        "out/det-lf.json",
+        "out/det-lf2.json",
+        "out/det-mpm.json",
+        "out/mpm-hash-before-opt.txt"
+      ]
+    },
+    {
+      "name": "E3 폭주·탈출 시험",
+      "result": "LiquidFun 15변형 NaN 0·탈출 0·폭주 0, 속도 상한 192px/s(반경1.6px), 접촉감쇠 30·과밀 방출 안정. MLS-MPM: 17/8서브 안정, 4서브(CFL≈1.04)·2서브 폭주(클램프 1,310,038/658,303회), 펜속도 그대로 전달(velGain 1) J 최소 0.43, velGain 3 J 0.069, fast-flick J 0.003. NaN은 클램프로 가려지므로 clampEvents 감시 필요.",
+      "metrics": "NaN/탈출/클램프 카운트, 속도 peak",
+      "evidence": [
+        "out/blow-lf.json",
+        "out/blow-mpm.json"
+      ]
+    },
+    {
+      "name": "S1 단일 획 스플랫 vs 저장소 CPU 참조 래스터러",
+      "result": "LiquidFun(1,190입자)은 균일 불투명 파란 리본, 가장자리 톱니, 압력→폭 8~18px만 변화. MPM(1,614입자)은 같은 평면 리본이나 가장자리 매끈. 저장소 watercolor-wet은 옅고 반투명, 종이 결 얼룩과 가장자리 농담 보임, ink-brush-pen은 건필 갈라짐. 입자는 형상 구동원, 질감은 저장소 종이 단계 담당.",
+      "metrics": "LiquidFun 시나리오 시뮬 103 ms/49스텝, 스텝 p50 1.2 ms; 저장소 watercolor-wet curve 256² 2.33 s(콜드 1회)",
+      "evidence": [
+        "out/final-single-stroke.png",
+        "out/va-stroke-splat-vs-ref.png",
+        "out/ref-strip.png",
+        "out/explore-lf.png"
+      ]
+    },
+    {
+      "name": "S2 두 색 교차 혼합 + 하이브리드",
+      "result": "LiquidFun colorMixing은 노랑+파랑을 회청색(0.668,0.748,0.649)으로, 혼합 끄면 점박이, 농도 t 수송+저장소 mixKs는 초록(KM 0.528,0.697,0.448). MPM은 색 확산율 κ=0이면 층·점박이, κ=16이면 회녹색, 하이브리드는 초록. 혼합 입자 비율 t=0/0.5/1/2s: LiquidFun s=0.5 71.8/76.0/77.0/79.0%, MPM κ=16 65.1/72.7/78.8/83.4%.",
+      "metrics": "진행도 0.15~0.85 입자 비율",
+      "evidence": [
+        "out/vb-mix-rows.png",
+        "out/vb-mpm-mix-rows.png",
+        "out/vb-swatches.png",
+        "out/vb.json",
+        "out/vb-mpm.json"
+      ]
+    },
+    {
+      "name": "S3 번짐(점성·마찰·종이 가장자리·마스킹)",
+      "result": "LiquidFun 원판 r95 13.6→19px(2s), 점성 0→1은 거의 무차이(19.0→18.6), 종이 마찰이 지배(1/s 23.4px, 64/s 15.7px), viscousStrength=4는 입자가 흩어져 r95 45→57px. 벽·마스크·wall 입자 링 누출 0. MPM 원판은 압축만으로 반경=r/√J0(21.5px)이고 점탄성 무관, 리본에서만 이완/항복 영향(2s 반폭 7.12~9.21px). 획 시퀀스 반폭: LiquidFun 7.3→9.0px, MPM 7.8→16.5px, 마스크 안·종이 밖 입자 0.",
+      "metrics": "r95, 반폭 p95, 마스크 내부·종이 밖 입자 수",
+      "evidence": [
+        "out/final-spread-sequence.png",
+        "out/vc-spread.png",
+        "out/vc-mpm-spread.png",
+        "out/vc-mpm-ribbon.png",
+        "out/vc.json",
+        "out/vc-mpm.json",
+        "out/vc-mpm-ribbon.json",
+        "out/final-seq.json"
+      ]
+    },
+    {
+      "name": "B1 번들 크기·라이선스 트리 감사",
+      "result": "esbuild 0.25.12 minify ESM: LiquidFun core+particles 333,863/74,088/62,408 B(raw/gzip/brotli), core만 242,291/53,249/44,943, MLS-MPM 7,133/2,979/2,681. 라이선스 감사: 2패키지, wasm/바이너리·설치 스크립트 없음, particles 소스 13개 Zlib 헤더. particles@0.11.0 main 필드 결함, 0.10.0은 정상.",
+      "metrics": "minify 번들 바이트",
+      "evidence": [
+        "bundle/lf-entry.min.js",
+        "bundle/mpm-entry.min.js",
+        "out/license-audit.json",
+        "_upstream/b2Particle.h",
+        "_upstream/liquidfun-License.txt"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "item": "@box2d/particles (LiquidFun TS 포팅) 입자 유체",
+      "decision": "experiment-only",
+      "rationaleKo": "상용 라이선스는 통과(MIT 선언 + Zlib 소스 헤더 13개, NOTICE에 Google Zlib 원문 필요)하지만 정렬이 Math.random이라 그대로는 비결정(5/5 해시 상이), 0.11.0 main 필드 결함(0.10.0 고정 권장), 번들 74KB gzip, 시각적으로 균일 불투명 리본이고 원판은 완벽한 원으로만 퍼지며 점성 영향이 미미하고 viscousStrength 4에서 붕괴한다. 실험 배지 비교용으로만 두고 기본 경로에는 넣지 않는다."
+    },
+    {
+      "item": "LiquidFun colorMixing(sRGB 쌍별 교환)",
+      "decision": "reject",
+      "rationaleKo": "b2Color.MixColors는 감마 공간 성분의 쌍별 선형 교환이라 노랑+파랑이 회청색이 된다(KM은 초록). 혼색은 저장소 KM 모듈을 쓴다."
+    },
+    {
+      "item": "자체 MLS-MPM 점탄성 물감 솔버(CPU TS, 128²~256²)",
+      "decision": "adopt-lane",
+      "rationaleKo": "외부 의존 0, 번들 gzip 3KB, 패치 없이 5+5 비트 동일 해시, Maxwell 이완+항복으로 되직한 물감 거동이 리본 실험에서 관측됨(반폭 7.1~9.2px). 단 비용이 입자x서브스텝(약 220~320ns)이라 획당 수백~수천 입자 규모(16.7ms에서 약 3.4k~19k, 강성 의존)이고 CFL 위반 시 붕괴하므로 서브스텝 고정·clampEvents 노출이 필수다. 외형은 평면 리본이라 종이/그레인 단계와 결합해야 한다. 실험 레인으로 시작한다."
+    },
+    {
+      "item": "농도 t 수송(입자) + 저장소 KM 색 결정 하이브리드 혼색",
+      "decision": "adopt-engine-module",
+      "rationaleKo": "LiquidFun/MPM 모두 같은 교환·확산식이 t에 대해 선형이라, 입자에는 t만 싣고 mixKs+ksToReflectance로 색을 정하면 노랑+파랑이 초록이 됨을 이미지로 확인했다. 기존 engine/pigment 모듈 재사용."
+    },
+    {
+      "item": "입자->이미지 가우시안 스플랫 + 문턱 알파(메타볼)",
+      "decision": "adopt-lane",
+      "rationaleKo": "경량 공통 유틸(선형 공간 가중 평균 + smoothstep 알파). 입자 레인에서 사용하고 질감은 저장소 종이 단계가 담당한다."
+    },
+    {
+      "item": "MPM WASM/SIMD/WGSL 이식 및 입자->wet 풀(LBM) 결합",
+      "decision": "defer",
+      "rationaleKo": "CPU 실험 레인이 성과를 낸 뒤 진행. 브라우저·GPU 미검증이고 결합은 이번에 만들지 않았다."
+    },
+    {
+      "item": "LiquidFun elastic/powder/tensile/wall 플래그",
+      "decision": "defer",
+      "rationaleKo": "번짐·혼색 목적에 불필요. elastic 그룹 생성은 20k에서 45초로 대량 사용 불가."
+    }
+  ],
+  "blockers": [
+    "report.md는 작성하지 못했다: 도구가 보고서 파일(.md) 작성을 거부했고(서브에이전트는 보고서를 파일이 아닌 응답으로 반환해야 함) 같은 내용을 summary에 담았다. metrics.json과 PROGRESS.md는 샌드박스에 남겼다.",
+    "particles@0.11.0 package.json main(./dist/index.js)이 tarball에 없어 deep import(@box2d/particles/dist/particles/src/index.js)로 우회했다(실패가 아니라 우회 가능한 패키징 결함)."
+  ],
+  "risks": [
+    "시간 측정은 load average 5~15의 공유 머신 값이라 절대값 신뢰도가 낮고 상대 비교만 의미가 있다(best-of-3, 전체 반복 값은 metrics.json).",
+    "LiquidFun은 Math.random 시드 패치에 의존하므로 난수 소비 순서가 바뀌면 결과가 달라진다. 전역 패치는 엔진 규칙(Math.random 금지)과 충돌하므로 vendoring이 필요하다.",
+    "MPM은 CFL 위반 시 NaN이 아니라 안전 클램프에 가려진 붕괴로 나타난다. clampEvents를 검사하지 않으면 무음 실패가 된다.",
+    "particles 소스의 Zlib 헤더는 번들러가 제거하므로 NOTICE에 Google Zlib 원문을 빠뜨리면 고지 의무를 놓친다.",
+    "두 솔버의 외형은 평면 리본이라 입자 결과만 최종 이미지로 쓰면 저장소 래스터러 대비 품질이 낮다."
+  ],
+  "unverified": [
+    "브라우저(Chromium/Firefox/Safari)·GPU/WebGPU 경로, 브라우저 시간·메모리, WGSL 미러",
+    "실제 펜 입력·실기기 필기감, 사람 대상 품질 평가(이 보고의 '인상'은 PNG를 직접 열어 본 서술)",
+    "LiquidFun 알고리즘 특허 유무",
+    "@box2d/particles@0.10.0에서의 결정성·성능·품질 재측정(설치와 smoke만 확인)",
+    "20k 초과 입자, 장시간 드리프트, MPM의 WASM/SIMD/Float32 최적화 효과",
+    "MPM 격자 256²에서의 시각 품질 개선 여부, 입자->wet 풀 결합",
+    "저장소 LBM과 같은 장면의 정량 지표 대조(저장소 렌더는 콜드 1회 시간과 PNG 인상만 비교)"
+  ],
+  "followUps": [
+    "particles@0.10.0 고정 + std_sort 결정적 정렬 vendoring으로 LiquidFun 결정성을 패치 없이 재측정",
+    "MPM을 Float32/SoA 언롤링 또는 WASM SIMD로 최적화해 ns/입자/서브스텝 재측정",
+    "입자 하중->wet 풀(LBM) 침착 결합 프로토타입(종이에 닿으면 물·안료로 변환)",
+    "MPM 서브스텝을 음속에서 자동 산정(dt<=0.5dx/c)하고 clampEvents 위반 시 LaneUnavailableError로 드러내는 가드 설계",
+    "브라우저(Playwright SwiftShader/WebGPU)에서 MPM CPU 레인 시간 재측정",
+    "NOTICE에 Google Zlib·Erin Catto Zlib/MIT 원문을 넣는 라이선스 게이트 항목 추가(통합 담당)"
+  ],
+  "filesWritten": [
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/metrics.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/PROGRESS.md",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/src/mpm.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/src/lf.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/final-single-stroke.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/final-spread-sequence.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/vb-mix-rows.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/vb-mpm-mix-rows.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/vb-swatches.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/vc-spread.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/vc-mpm-spread.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/vc-mpm-ribbon.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/ref-strip.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-B/out/license-audit.json"
+  ],
+  "commandsRun": [
+    {
+      "command": "npm install --ignore-scripts --no-audit --no-fund @box2d/core@0.11.0 @box2d/particles@0.11.0 (SP-B 샌드박스)",
+      "result": "성공: 2 packages. 설치 후 package.json에서 버전 0.11.0 확인"
+    },
+    {
+      "command": "npm install --ignore-scripts --no-audit --no-fund @box2d/core@0.10.0 @box2d/particles@0.10.0 (_alt010)",
+      "result": "성공, require 진입 정상, 200입자 30스텝 smoke 통과"
+    },
+    {
+      "command": "node src/license-audit.mjs node_modules out/license-audit.json",
+      "result": "2패키지, 바이너리·설치 스크립트 없음, particles Zlib 헤더 13개"
+    },
+    {
+      "command": "tsx --expose-gc src/bench-lf.ts / SWEEP=1 / src/bench-mpm.ts / SWEEP=1 (3회 best-of)",
+      "result": "완료. out/bench-*.json 생성"
+    },
+    {
+      "command": "tsx src/det-lf.ts, det-lf2.ts, det-mpm.ts",
+      "result": "LiquidFun 비시드 해시 5/5 상이, 시드 패치 5/5 동일, MPM 5/5 동일(같은 프로세스·별도 프로세스)"
+    },
+    {
+      "command": "tsx src/blow-lf.ts, blow-mpm.ts",
+      "result": "LiquidFun NaN 0, MPM 서브스텝 4/2에서 폭주"
+    },
+    {
+      "command": "esbuild 0.25.12 --bundle --minify (lf-entry, core-only-entry, mpm-entry)",
+      "result": "333,863 / 242,291 / 7,133 B raw, gzip 74,088 / 53,249 / 2,979"
+    },
+    {
+      "command": "tsx src/viz-lf-a/b/c.ts, viz-mpm-b/c.ts, viz-mpm-ribbon.ts, viz-final-seq.ts, ref-raster.ts + PNG를 Read로 직접 열람",
+      "result": "PNG 생성 및 시각 확인 서술은 summary 6절"
+    },
+    {
+      "command": "curl raw.githubusercontent.com/google/liquidfun (b2Particle.h, Box2D/License.txt)",
+      "result": "Zlib 문구 대조 확인, _upstream/에 저장"
+    }
+  ]
+}

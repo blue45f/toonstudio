@@ -1,0 +1,839 @@
+[
+  {
+    "preset": "pencil-hb",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 2.546344384628387,
+    "modDev": 1.2635352222088405,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "pencil-hb",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 1.169874841771889,
+    "modDev": 1.169874841771889,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "pencil-hb",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.156792428416867,
+    "modDev": 0.9745294660685073,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "pencil-6b",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 2.8964812802791338,
+    "modDev": 1.5565193880693315,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "pencil-6b",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 2.0383379946872284,
+    "modDev": 2.0383379946872284,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "pencil-6b",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.280820528373528,
+    "modDev": 1.0083234401943977,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "pencil-mechanical",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 1.8749427268154055,
+    "modDev": 0.46029531346671204,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "pencil-mechanical",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 1.2789510801956943,
+    "modDev": 1.2789510801956943,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "pencil-mechanical",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.104324639206197,
+    "modDev": 0.431319336925736,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ballpoint",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 2.063869025027173,
+    "modDev": 0.4402091800615937,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ballpoint",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 0.8714022364631413,
+    "modDev": 0.8714022364631413,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ballpoint",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 5.965194710611589,
+    "modDev": 0.5298462894084428,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ink-g-pen",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 2.728306412809983,
+    "modDev": 0.9189871539044909,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ink-g-pen",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 0.7817202952232949,
+    "modDev": 0.7817202952232949,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ink-g-pen",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.183931080496153,
+    "modDev": 0.5687795383325822,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ink-maru-pen",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 1.824414603206109,
+    "modDev": 0.606154966214794,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ink-maru-pen",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 1.1293278979488812,
+    "modDev": 1.1293278979488812,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ink-maru-pen",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 5.940858403340159,
+    "modDev": 0.43450853845398485,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ink-brush-pen",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 14.866933416558691,
+    "modDev": 14.789377350076062,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ink-brush-pen",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 3.4292122141253696,
+    "modDev": 3.4292122141253696,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "ink-brush-pen",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 11.767374865254263,
+    "modDev": 8.200897395443748,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "marker-alcohol",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 9.33250603138574,
+    "modDev": 8.18188337940125,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "marker-alcohol",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 5.140234348692573,
+    "modDev": 5.140234348692573,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "marker-alcohol",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 9.672334272018956,
+    "modDev": 5.0188857164735765,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "chalk-pastel",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 3.8650953814594025,
+    "modDev": 2.587188769255958,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "chalk-pastel",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 2.2293670243017427,
+    "modDev": 2.2293670243017427,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "chalk-pastel",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.572721302497891,
+    "modDev": 2.093473382578881,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "charcoal",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 3.466302318803873,
+    "modDev": 2.1853384624667385,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "charcoal",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 2.114544371408747,
+    "modDev": 2.114544371408747,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "charcoal",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.383916336292518,
+    "modDev": 1.2562278728885552,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "conte",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 2.971300055194129,
+    "modDev": 1.636022166253325,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "conte",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 2.809860647827226,
+    "modDev": 2.809860647827226,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "conte",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.41207977061659,
+    "modDev": 1.0156642804186635,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "crayon",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 3.376923184801387,
+    "modDev": 2.0820422898516666,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "crayon",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 1.986922930818853,
+    "modDev": 1.986922930818853,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "crayon",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.386978302729821,
+    "modDev": 1.3038866100594695,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "watercolor-wet",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 2.463743598292612,
+    "modDev": 1.4753644212553363,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "watercolor-wet",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 5.514583008614781,
+    "modDev": 5.514583008614781,
+    "baseOver": 4.085282163119063,
+    "modOver": 4.085282163119063
+  },
+  {
+    "preset": "watercolor-wet",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 8.919300287946456,
+    "modDev": 8.76973673331158,
+    "baseOver": 0,
+    "modOver": 1.9713267323797092
+  },
+  {
+    "preset": "watercolor-dry",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 8.779494787041408,
+    "modDev": 6.8516360813449655,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "watercolor-dry",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 3.4426327483535015,
+    "modDev": 3.4426327483535015,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "watercolor-dry",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 12.45824585367718,
+    "modDev": 10.381820280582389,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "sumi-ink-wet",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 17.595303896351343,
+    "modDev": 16.151742248949382,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "sumi-ink-wet",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 5.042844640657439,
+    "modDev": 5.042844640657439,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "sumi-ink-wet",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 11.708355671608185,
+    "modDev": 7.870838736066695,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "gouache",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 2.221157122522782,
+    "modDev": 0.9078753011578709,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "gouache",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 1.5328079934646892,
+    "modDev": 1.5328079934646892,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "gouache",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 5.457411944279917,
+    "modDev": 0,
+    "baseOver": 0,
+    "modOver": 0.7533171312444624
+  },
+  {
+    "preset": "oil-impasto",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 15.450200997534672,
+    "modDev": 13.94844023141302,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "oil-impasto",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 4.243438244378169,
+    "modDev": 4.243438244378169,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "oil-impasto",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 9.004404612333264,
+    "modDev": 4.168934880753568,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "acrylic",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 2.8353399472471867,
+    "modDev": 1.4894050843227697,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "acrylic",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 1.5754270092101539,
+    "modDev": 1.5754270092101539,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "acrylic",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.146890649095203,
+    "modDev": 0.422647019568009,
+    "baseOver": 0,
+    "modOver": 0.41727287786354816
+  },
+  {
+    "preset": "airbrush",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 14.617965443659699,
+    "modDev": 13.713674100033131,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "airbrush",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 4.822559491642689,
+    "modDev": 4.822559491642689,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "airbrush",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 10.718200253289758,
+    "modDev": 7.007208514852419,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "spray-splatter",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 5.329433548343579,
+    "modDev": 4.728162736772866,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "spray-splatter",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 2.793831530254782,
+    "modDev": 2.793831530254782,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "spray-splatter",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 7.2433364047297495,
+    "modDev": 4.562453832196487,
+    "baseOver": 0,
+    "modOver": 0.6013193274550547
+  },
+  {
+    "preset": "hatch-pen",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 7.91040452325135,
+    "modDev": 6.3730537325069765,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "hatch-pen",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 2.8020299512663076,
+    "modDev": 2.8020299512663076,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "hatch-pen",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 7.62474391635244,
+    "modDev": 2.356865975321588,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "screentone-halftone",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": 0.8028005375111008,
+    "modOver": 0.8321262087395933
+  },
+  {
+    "preset": "screentone-halftone",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 4.054118484057771,
+    "modDev": 4.054118484057771,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "screentone-halftone",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 1.43153642704299,
+    "modDev": 0.6251279378226035,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "texture-canvas-stamp",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 5.958535622164442,
+    "modDev": 4.964469279292837,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "texture-canvas-stamp",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 3.229321286342003,
+    "modDev": 3.229321286342003,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "texture-canvas-stamp",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 7.495798283888116,
+    "modDev": 3.336132595392659,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "texture-fabric-stamp",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 5.402893781114479,
+    "modDev": 4.187365024808676,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "texture-fabric-stamp",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 3.0738444103501905,
+    "modDev": 3.0738444103501905,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "texture-fabric-stamp",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 7.211436437089777,
+    "modDev": 2.264535820554995,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "texture-paper-stamp",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 5.59353451279761,
+    "modDev": 4.463553807397033,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "texture-paper-stamp",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 3.335318007949004,
+    "modDev": 3.335318007949004,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "texture-paper-stamp",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 7.280329885858437,
+    "modDev": 2.7596865771798074,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "smudge-blend",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": null,
+    "modOver": null
+  },
+  {
+    "preset": "smudge-blend",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": null,
+    "modOver": null
+  },
+  {
+    "preset": "smudge-blend",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": null,
+    "modOver": null
+  },
+  {
+    "preset": "eraser-soft",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": null,
+    "modOver": null
+  },
+  {
+    "preset": "eraser-soft",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": null,
+    "modOver": null
+  },
+  {
+    "preset": "eraser-soft",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": null,
+    "modOver": null
+  },
+  {
+    "preset": "eraser-hard",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": null,
+    "modOver": null
+  },
+  {
+    "preset": "eraser-hard",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": null,
+    "modOver": null
+  },
+  {
+    "preset": "eraser-hard",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 0,
+    "modDev": 0,
+    "baseOver": null,
+    "modOver": null
+  },
+  {
+    "preset": "fx-glitter",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 11.616900550799503,
+    "modDev": 6.585623221552285,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "fx-glitter",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 6.742710384580379,
+    "modDev": 6.742710384580379,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "fx-glitter",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 6.992477758813654,
+    "modDev": 4.5429314808063115,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "fx-fur-grass",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 16.072409228811125,
+    "modDev": 14.105648681249782,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "fx-fur-grass",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 5.543536256945815,
+    "modDev": 5.543536256945815,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "fx-fur-grass",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 9.48260855482876,
+    "modDev": 6.091495333485321,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "fx-cloud-smoke",
+    "fixture": "zigzag",
+    "size": 128,
+    "baseDev": 8.569428881794288,
+    "modDev": 7.642223919555247,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "fx-cloud-smoke",
+    "fixture": "corner-square",
+    "size": 128,
+    "baseDev": 4.730960591283064,
+    "modDev": 4.730960591283064,
+    "baseOver": 0,
+    "modOver": 0
+  },
+  {
+    "preset": "fx-cloud-smoke",
+    "fixture": "zigzag",
+    "size": 512,
+    "baseDev": 11.414575960106898,
+    "modDev": 10.11516604174628,
+    "baseOver": 0,
+    "modOver": 0
+  }
+]

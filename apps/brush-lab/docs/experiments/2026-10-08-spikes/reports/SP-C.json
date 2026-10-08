@@ -1,0 +1,394 @@
+{
+  "id": "SP-C",
+  "summary": "증빙 리포트 37개의 handfeel.cornerDeviationPx FAIL(2.5 px > 1.5 px)을 cpu-reference pencil-hb zigzag 128²에서 2.546 px로 재현했고, 원인을 입력 보정으로 판정했다(엔진 렌더 버그 아님, 이 대표 프리셋에서는 지표 부적합도 아님). 2.546 = 입력 통과 바닥 1.251 + 입력 보정 기여 1.295이며, 렌더(dab 간격 0.066·종이 0.078·테이퍼 0.004·표본화 0.014)는 합쳐 0.16 px뿐이다. 경로 수준 편차(128²/256²/512² = 1.48/2.96/5.87 px)가 fixture 속도에 정확히 비례해 정점 유효 지연은 약 4.1 ms로 일정하다. 즉 1€ 필터가 정점을 지연 위치로 내보내고 corner-preserve는 정점 다음 표본만 raw로 고정할 뿐 정점 자체를 복원하지 않는다. fixture는 512² 기준 설계이고 128²는 속도 1/4이라 현행 결함을 과소평가한다(설계 기준 6.16 px). 설정만으로는 해결되지 않는다: 정점 재방출 없이 minCutoff 30 Hz까지 올려도 512² 2.52 px이고 tremor 지터는 0.738 px(기준 0.5 초과). 수정안 A(engine/input/corner-preserve.ts + input-pipeline.ts에 정점 재방출, 속도 0.2 px/ms·밀림 0.25 px 가드)와 그 전제인 수정안 B(stroke-pipeline.ts 용량 추정에 배치 간 연결 구간 포함)를 저장소 사본에서 검증했다: pencil-hb zigzag 128² 2.55 → 1.26 px(PASS), 512² 6.16 → 0.97 px, 오버슈트 0 유지, 경질 9종의 입력 초과분 1.0~1.9 px → ≤ 0.17 px, 모서리 없는 fixture 해시 전부 불변, 저속 손떨림 168획 오탐 0. 단 31개 프리셋 중 19개는 입력을 통과시켜도 1.5 px를 넘는 지표 바닥(광폭·연질·습식)이라 수정 후에도 FAIL 19/31이 남고, 이 부분은 지표 적용 가능성 정리가 별도로 필요하다. 별건으로 StrokePipeline 용량 추정 결함을 발견했다(fast-flick 512²에서 4/31 프리셋이 StrokeBudgetExceededError, 마우스형 입력도 실패; 수정안 B로 0). 2부에서는 InputStage 인터페이스 위에 raw, Sumi 1€(현행·앱 슬라이더 매핑·정점 재방출), 제품 ema/spring, ink-stroke-modeler(저장소 wasm 이벤트 단위 호출), lazy-brush(catch-up 유무), perfect-freehand, kalmanjs, 자체 CV 칼만, 물리 펜(자체 오일러·Rapier), 그리고 코너 게이트 메타 단계 27종을 fixture 9종×128²/512²로 측정했다(코너 편차·오버슈트·지연·지터·길이 오차·압력/기울기·비용·결정성). 기본 단계로 Sumi 1€ + 정점 재방출(의존성 0, 약 1 µs/표본)을, 지연형 단계는 코너 게이트와 조합할 것을 추천한다. perfect-freehand 라이브러리는 표본마다 호출하면 O(n²)(4000표본에서 약 0.9 ms/표본)라 식만 차용하고, kalmanjs는 iso 조건에서 EMA와 수치까지 동일해 비채택, Rapier 물리 펜은 자체 오일러 대비 약 47배 비용과 gzip 1.28 MB에 이점이 없어 비채택, ink-stroke-modeler는 NOTICE의 wasm sha256이 실제 바이너리와 불일치해 review로 보류했다. 모든 수치는 Node 22 단일 스레드 직접 측정이며 브라우저·GPU·실제 펜 입력은 측정하지 못했다. 비교 시트 PNG 4장(A·B·C·zoom512)을 직접 열어 확인했다.",
+  "libraries": [
+    {
+      "name": "lazy-brush",
+      "version": "2.0.2",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [],
+      "bundleBytesGzip": 956,
+      "noteKo": "설치본 package.json license=MIT, LICENSE 파일(MIT 본문, Copyright 2018 Jan Hug) 직접 확인. 의존성·설치 스크립트 없음, lib/lazy-brush.js 2,956 B(gzip 956 B). 고지(저작권·허가문) 유지 의무만 있고 특허 조항은 없다. 입력 단계로는 끈 보정 모드(코너 게이트 + 획 끝 catch-up 필수)로 채택 권장."
+    },
+    {
+      "name": "perfect-freehand",
+      "version": "1.2.3",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [],
+      "bundleBytesGzip": 2009,
+      "noteKo": "LICENSE(MIT, Copyright 2021 Stephen Ruiz Ltd)와 package.json 직접 확인, 의존성 없음, dist/esm/index.mjs 4,532 B. 저장소가 이미 1.2.3을 의존한다(원장). 라이선스 문제는 없으나 getStrokePoints를 표본마다 호출하면 O(n²)(4000표본에서 마지막 100개 평균 약 0.9 ms/표본)이고 첫 표본이 1점 특수 처리로 최대 0.83 px 어긋나 입력 단계로는 비채택(같은 식의 O(1) 재귀만 사용)."
+    },
+    {
+      "name": "kalmanjs",
+      "version": "1.1.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [],
+      "bundleBytesGzip": 1325,
+      "noteKo": "LICENSE(MIT, Copyright 2019 Wouter Bulten)와 package.json 직접 확인, 의존성 없음, lib/kalman.js 3,963 B. 라이선스는 문제없으나 시간(dt)을 쓰지 않아 표본율 의존이고, iso-jitter 조건에서 EMA·perfect-freehand와 수치까지 동일(지연 7.9 ms, 길이 -6.4%)해 비채택."
+    },
+    {
+      "name": "1eurofilter",
+      "version": "1.3.0",
+      "licenseSpdx": "BSD-3-Clause",
+      "licenseFileVerified": false,
+      "commercialVerdict": "review",
+      "transitive": [],
+      "bundleBytesGzip": 2137,
+      "noteKo": "package.json license 필드는 BSD-3-Clause이나 npm 패키지에 LICENSE 파일이 없다(Readme.md와 dist만). 저장소 원장도 'casiez/OneEuroFilter 루트 LICENSE 부재'로 기록하고 있어 법무 확인 전 채택 금지. Sumi 1€는 논문 수식을 자체 구현하므로 불필요. dist/OneEuroFilter.js 6,730 B."
+    },
+    {
+      "name": "planck",
+      "version": "1.5.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "stage-js@1.0.1 (MIT, LICENSE.md 확인)"
+      ],
+      "bundleBytesGzip": 47934,
+      "noteKo": "LICENSE.txt(MIT, Erin Catto·Ali Shakiba)와 package.json 확인. 크기는 SP-A 측정값. 설치·라이선스 감사만 하고 입력 단계에는 쓰지 않았다(영 길이 스프링 불가, 자체 오일러가 같은 수식). engines node>=24라 Node 22에서 경고."
+    },
+    {
+      "name": "@dimforge/rapier2d-compat",
+      "version": "0.21.0",
+      "licenseSpdx": "Apache-2.0",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "wasm 내장 Rust crate들(MIT OR Apache-2.0, SP-A가 crates.io로 확인)"
+      ],
+      "bundleBytesGzip": 1282042,
+      "noteKo": "설치본 LICENSE(Apache-2.0 전문, 3항 명시적 특허 허여)와 package.json 확인. NOTICE 파일은 없고 wasm 내장 crate별 고지는 패키지에 없어 배포 시 THIRD-PARTY 고지 생성 권장. 물리 펜 입력 단계로 측정한 결과 자체 오일러 대비 표본당 약 47배(22 µs vs 0.47 µs), 초기화 약 150 ms, gzip 1.28 MB인데 점 하나를 끄는 모델에서 이점이 없어 입력 단계로는 비채택."
+    },
+    {
+      "name": "google/ink-stroke-modeler (저장소 wasm: packages/studio-brush-platform/src/ink-modeler)",
+      "version": "0.1.0 @ f2388813b0b25bc3e33d143d369a8367ab2e30c8 (wasm sha256 9f1478b1…)",
+      "licenseSpdx": "Apache-2.0",
+      "licenseFileVerified": true,
+      "commercialVerdict": "review",
+      "transitive": [
+        "abseil-cpp 20250512.0 @ bc257a88f7c1939f24e0379f14a3589e926c950c (Apache-2.0)",
+        "libc++abi (LLVM, Apache-2.0 WITH LLVM-exception; wasm 문자열로 확인, 인벤토리 미기재)",
+        "Emscripten 6.0.6 런타임 글루(.mjs 배너로 확인; 라이선스 전문은 미확인, 인벤토리 미기재)"
+      ],
+      "bundleBytesGzip": 48647,
+      "noteKo": "복사된 LICENSE-GOOGLE-INK-STROKE-MODELER·LICENSE-ABSEIL의 sha256(cfc7749b…, c79a7fea…)이 pinned commit의 GitHub raw LICENSE와 바이트 단위로 동일함을 확인했고 두 업스트림 모두 NOTICE 파일이 없다(raw 404). Apache-2.0 이므로 NOTICE 유지 의무와 특허 허여 조항이 있다. 그러나 ① 저장소 NOTICE 표의 wasm sha256 0b65a64a…가 실제 바이너리·THIRD_PARTY_INVENTORY.json·INTEGRITY.sha256의 9f1478b1…와 불일치(SIMD 재빌드 커밋 60ebffbb가 NOTICE를 갱신하지 않음) ② 인벤토리에 Emscripten/libc++abi 런타임 미기재 ③ wasm 문자열에 빌드 머신 경로가 남음 → 고지 문서 정정 전까지 review. 크기: wasm 99,914 B(gzip 44,300) + .mjs 12,110 B(gzip 4,347). 저장소 TS 래퍼는 한 획 일괄 API만 노출하고 Predict 미노출이라 이벤트 단위(_ism_update)로 직접 호출했으며 Node에서 실행 가능."
+    }
+  ],
+  "experiments": [
+    {
+      "name": "1부-1 재현: zigzag 128² cpu-reference",
+      "result": "pencil-hb cornerDeviationPx = 2.546 px(문서의 2.5 px와 일치), 카탈로그 31종 중 27종이 1.5 px 초과",
+      "metrics": "저장소 build-report와 같은 절차(선폭 곡선 32 정류장 → 평균/2 → cornerAccuracyFromImage), 시드 1",
+      "evidence": [
+        "p1-repro.ts 출력",
+        "out/p7-patch.json base 열",
+        "out/p2-decompose.json 행 A"
+      ]
+    },
+    {
+      "name": "1부-2 요인 분해",
+      "result": "입력 통과 1.251(입력 기여 1.295), corner-preserve 끔 4.651(CP가 이미 3.4 px 복구), 정점 정확 표본 -0.014, dab 간격 -0.066, 종이 -0.078, 테이퍼 -0.004 → 렌더·fixture 합 0.16 px, 바닥 1.089",
+      "metrics": "pencil-hb zigzag 128², 한 요인씩 변경",
+      "evidence": [
+        "out/p2-decompose.json",
+        "report.md T1-1"
+      ]
+    },
+    {
+      "name": "1부-3 캔버스 크기(속도) 의존",
+      "result": "기본 입력 2.55/3.65/6.16(128/256/512²), 입력 통과 1.25/1.12/1.10; 경로 수준 1.48/2.96/5.87이 속도 0.356/0.71/1.42 px/ms에 정확히 비례 → 정점 유효 지연 약 4.1 ms 일정",
+      "metrics": "프리셋 3종 × 크기 3 + 경로 수준",
+      "evidence": [
+        "out/p2b-decompose.json",
+        "report.md T1-2"
+      ]
+    },
+    {
+      "name": "1부-4 지표 바닥(해석적 폴리라인)",
+      "result": "엔진·입력 없이 같은 지표를 적용하면 0.2~0.64 px(선폭 8 px 128²만 1.19); 평균 반폭이 정점 부근 선폭 부풀림으로 과대평가(중앙값 반폭이면 pencil-hb 통과 1.251→1.104). 지표 식은 pencil-hb 2.5 px의 원인이 아님",
+      "metrics": "8×8 초표본 정확 AA, 선폭 1.5~8 px, 128/256/512²",
+      "evidence": [
+        "out/p3-floor.json",
+        "report.md T1-3"
+      ]
+    },
+    {
+      "name": "1부-5 설정만으로 해결 가능한가",
+      "result": "정점 재방출 없이 minCutoff 30 Hz·β 0.12까지 올려도 zigzag 512² 2.52 px, tremor 지터 0.738 px(>0.5); 편차≤1.5와 지터≤0.5를 동시에 만족하는 설정 없음. 재방출 포함 시 전 범위 128² 1.19~1.25, 512² 0.92~1.04",
+      "metrics": "로그 매핑 8점 × {재방출 유무}",
+      "evidence": [
+        "out/p13-configonly.json",
+        "report.md T2-2"
+      ]
+    },
+    {
+      "name": "1부-6 31개 프리셋 귀속",
+      "result": "FAIL(>1.5) base 27/31 → 수정안 19/31, 입력 통과도 20/31. 경질 9종 입력 기여 1.02~1.86 px → 수정 후 초과분 -0.19~+0.17 px(7종 PASS, pencil-6b 1.56·conte 1.64는 통과 바닥이 1.54·1.73). 광폭·연질·습식·텍스처는 통과로도 4~17 px라 지표 부적합",
+      "metrics": "zigzag 128², base/mod/입력 통과",
+      "evidence": [
+        "out/p7b-residual.json",
+        "out/p7-patch.json",
+        "report.md T1-4"
+      ]
+    },
+    {
+      "name": "1부-7 수정안 A(정점 재방출)+B(용량 추정) 효과와 부작용",
+      "result": "pencil-hb zigzag 128² 2.55→1.26(PASS), 512² 6.16→0.97, ballpoint 2.06→0.44, ink-maru-pen 1.82→0.61, 오버슈트 0 유지. 9 fixture×2크기×3프리셋 해시 비교에서 모서리 없는 fixture 전부 동일(오탐 없음), zigzag 표본 +5. 한계: 속도 가드로 128² corner-square(0.16 px/ms) 미개선, watercolor-wet 512² 오버슈트 0→1.97(>1.0)",
+      "metrics": "실제 StrokePipeline(patched 사본), 시드 1",
+      "evidence": [
+        "out/patch-A+B.diff",
+        "out/p7-patch.json",
+        "out/p7c-regress.json",
+        "report.md T1-5, T1-6"
+      ]
+    },
+    {
+      "name": "1부-8 오탐 가드 근거",
+      "result": "가드 전 저속 손떨림(σ0.2, 100px/2s)에서 모서리 오탐 3~4회/획, 지터 0.108→0.201 px(2배 악화). 속도 0.2 px/ms 가드 후 σ 0.1~1.2 × 24시드(168획)에서 추가 표본 0·지터 변화 0. 오탐의 raw 속도 ≤0.15 px/ms, 진짜 모서리 밀림≈속도×12 ms",
+      "metrics": "합성 tremorStroke, 120 Hz",
+      "evidence": [
+        "out/p7d-falsecorner.json",
+        "report.md T1-6"
+      ]
+    },
+    {
+      "name": "1부-9 테스트 검증(사본)",
+      "result": "engine/input 15→21 통과(신규 3건 중 2건은 base에서 실패). engine+bench+lanes 684건: base 681 통과(3파일은 사본에 wasm pkg 없어 로드 실패), A+B 674 통과·10 실패 전부 픽셀 해시 스냅샷(surface 2, wet-presets 5, wet-presets-large 2, cpu-reference-lane 1). A만이면 StrokeBudgetExceeded 15건이 추가돼 B가 전제",
+      "metrics": "vitest 4.1.11, testTimeout 240 s, maxWorkers 3",
+      "evidence": [
+        "out/vitest-base2.log",
+        "out/vitest-mod2.log",
+        "out/vitest-modab2.log"
+      ]
+    },
+    {
+      "name": "별건 StrokeBudgetExceededError",
+      "result": "fast-flick 512²에서 pencil-hb·pencil-mechanical·ink-g-pen·ink-maru-pen 4/31 실패(1024² 6/31, 128²·256² 0/31), 마우스형 1.5 px/ms@60 Hz 이상 9/9 실패. 원인: pathLen이 배치 안 표본끼리만 합산돼 배치 간 연결 구간 누락. 수정안 B로 0/31·0/9, 성공 조합 해시 불변",
+      "metrics": "31 프리셋 × fixture/크기",
+      "evidence": [
+        "out/p9-budget.json",
+        "out/p9b-budget-fix.json",
+        "t-budget4.ts"
+      ]
+    },
+    {
+      "name": "2부 입력 단계 27종 × fixture 9종 × {128²,512²} 측정",
+      "result": "기본 슬라이더(T-A)와 iso-jitter ≤0.5(T-B) 두 잣대로 비교. iso: Sumi+재방출 1.22/0.92(PASS), ema·pf·kalmanjs 3.29/9.8(FAIL, 서로 수치 동일), ISM 3.55/10.5, lazy(r 1.8px) 2.89/2.84, CV 칼만 편차 0.00이나 오버슈트 1.50/6.76, 물리 펜 2.89/8.74(flick 오버슈트 3.7/14.9 px), +코너 게이트는 전부 1.17~1.56/0.97~1.37. 지연(iso): CV 칼만 2.4 ms 최저, ema 7.9, ISM 15.1, 물리 펜 15.8/20.1",
+      "metrics": "코너 편차는 저장소 지표 그대로(pencil-hb), 지연=트림 최소제곱, 지터=slowSpeedJitterRms(tremor)",
+      "evidence": [
+        "out/p4-measure-all.json",
+        "out/p5-iso.json",
+        "out/p5-sweep.json",
+        "metrics.json",
+        "report.md T-A, T-B"
+      ]
+    },
+    {
+      "name": "2부 코너 게이트(메타 단계)",
+      "result": "어떤 지연형 단계 앞에도 붙여 zigzag 편차를 raw 수준(1.17~1.56/0.97~1.37)으로 회복, 오버슈트 0, 지연은 유지. 속도 0.2 px/ms 가드 필수: 가드 전 중간 실행에서 lazy 지터 0.018→0.123(오탐 4.5/획), 가드 후 σ0.1~0.6×5단계×12시드 동작 0회. 밀림 하한을 두면 CV 칼만 오버슈트가 안 고쳐져 하한은 두지 않음",
+      "metrics": "비용 +0.3~1.4 µs/표본",
+      "evidence": [
+        "out/p11-extra.json",
+        "report.md T2-4"
+      ]
+    },
+    {
+      "name": "2부 슬라이더 매핑",
+      "result": "측정한 모든 가변 단계에서 지터가 s=0..100(21점)에서 단조 감소(위반 0). 앱 현행 매핑은 s=0에서도 지터 0.335라 '끔'이 아님. 권장 로그 매핑 B: minCutoff=30·(0.4/30)^u, β=0.12·(0.006/0.12)^u → 지터 0.738→0.112, 지연(512²) 1.7→15.3 ms, 재방출 포함 zigzag512 0.92~1.04 일정. 강한 안정화는 spiral 형상 RMS 1.5 px·길이 +4%의 대가",
+      "metrics": "Sumi 1€ + 정점 재방출, 9점",
+      "evidence": [
+        "out/p6-mapping.json",
+        "out/p5-sweep.json",
+        "report.md T2-1, T2-6"
+      ]
+    },
+    {
+      "name": "2부 보조: perfect-freehand 비용·lazy catch-up·압력/기울기",
+      "result": "pf 라이브러리 표본당 약 61 µs(9 fixture 평균), 획이 길수록 증가(4000표본 마지막 100개 평균 약 0.9 ms) vs 재귀 0.12 µs; 라이브러리 대 재귀 출력은 첫 3표본 이후 동일. lazy-brush는 catch-up 없으면 획이 반경만큼 짧게 끝남(반경 12.3 px에서 끝점 간격 12.25 px), 60 ms smoothstep catch-up은 끝점 0 px·획 +54 ms. 압력/기울기: Sumi는 1€로 압력 RMS 0.020·기울기 2.83° 평활, ISM 압력 RMS 0.013, 나머지 0",
+      "metrics": "µs/표본, px, ms",
+      "evidence": [
+        "out/p11-extra.json",
+        "out/validate-stages.json",
+        "report.md T2-3, T2-5"
+      ]
+    },
+    {
+      "name": "결정성·충실도 검증",
+      "result": "27개 단계 모두 새 인스턴스 2회·reset 재사용 해시 일치, 3회 실행에 걸쳐 변경 없는 단계의 9 fixture×2크기 해시 405/405 일치(Rapier 포함). Sumi 복제는 저장소 InputPipeline과 9 fixture 전 표본 최대 절대 차이 0 px, product-ema 스트리밍은 배치 applyStabilizer와 일치(꼬리 제외)",
+      "metrics": "SHA-256 해시 비교",
+      "evidence": [
+        "out/p4-measure-all.json determinism",
+        "out/validate-stages.json"
+      ]
+    },
+    {
+      "name": "시각 증거: 비교 시트 4장 직접 확인",
+      "result": "sheet-A: RAW는 꼭짓점·모서리·나선 깨끗. 현행 SUMI는 지그재그 꼭짓점이 뭉툭하게 잘리고 빨간 의도선에서 벌어지며, 나선이 둥근 다각형으로 찌그러지고 flick이 불룩하게 휨. SUMI-BF는 꼭짓점이 빨간 정점까지 복원되나 나선 다각형 찌그러짐은 그대로. sheet-B: KALMAN-CV는 꼭짓점이 정점 위로 부풀고 사각형 모서리에 돌출·갈고리, PHYS-NATIVE/RAPIER는 flick 끝이 의도 끝점을 지나 더 뻗음. sheet-C: 코너 게이트 6단계 모두 지그재그 꼭짓점 복원(128² corner-square는 속도 가드 아래라 CV·물리 펜에 작은 갈고리 잔존). zoom512: SUMI는 꼭짓점이 평평하게 잘리고 한참 밀림, EMA·ISM·PF는 둥글게 깎임, KALMAN-CV는 정점 위로 큰 돔",
+      "metrics": "ink-maru-pen, CPU 참조 래스터러, 입력 통과 설정, 128² ×2 및 512² 64px 크롭 ×4",
+      "evidence": [
+        "out/sheet-A.png",
+        "out/sheet-B.png",
+        "out/sheet-C.png",
+        "out/sheet-zoom512.png"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "item": "Sumi 1€ + 정점 재방출(수정안 A) + StrokePipeline 용량 추정 보정(수정안 B) — #9 코너 편차 FAIL 수정",
+      "decision": "adopt-engine-module",
+      "rationaleKo": "원인이 1€의 정점 지연을 corner-preserve가 복원하지 못하는 입력 단계 설계 결함이고 설정만으로는 해결되지 않는다(minCutoff 30 Hz에서도 512² 2.52 px·지터 0.738). 변경 위치: apps/brush-lab/src/engine/input/corner-preserve.ts 끝에 vertexEmitTimeMs·VERTEX_BACKFILL_MIN_PX(0.25)·VERTEX_BACKFILL_MIN_SPEED_PX_PER_MS(0.2) 추가, input-pipeline.ts의 model() isCorner 분기에서 backfillVertex() 호출(직전 raw 정점을 모서리 직후 표본보다 먼저 commit, vertexOut 소비), input-pipeline.test.ts 3건 추가, stroke-pipeline.ts emitSamples에서 prevX/prevY를 직전 배치 마지막 위치로 시작(B, A의 전제). 기대값(실측): pencil-hb zigzag 128² 2.55→1.26 px(PASS), 512² 6.16→0.97 px, 오버슈트 0, 경질 9종 입력 초과분 ≤0.17 px. 전체 diff는 out/patch-A+B.diff. 후속: 10개 픽셀 해시 스냅샷 재생성, 습식 GPU 미러 명세 §9.3 기준 해시·증빙 리포트 37개 재생성, 브라우저 재검증."
+    },
+    {
+      "item": "코너 게이트(메타 단계, 속도 0.2 px/ms 가드) — 지연형 단계와의 조합",
+      "decision": "adopt-input-stage",
+      "rationaleKo": "lazy-brush·ISM·EMA·칼만·물리 펜 어느 앞단에 붙여도 zigzag 편차가 raw 수준(128² 1.17~1.56, 512² 0.97~1.37)이고 오버슈트 0, 지연(안정화 감각)은 유지, 비용 +0.3~1.4 µs. 속도 가드 없이는 저속 손떨림 오탐으로 지터가 악화되므로 가드 필수."
+    },
+    {
+      "item": "lazy-brush 2.0.2(MIT) — 끈 보정 모드",
+      "decision": "adopt-input-stage",
+      "rationaleKo": "gzip 956 B, 0.5~0.7 µs/표본, 지터 억제 우수(반경 1.8 px로 iso 달성). 반경만큼 코너를 깎고 길이가 줄어들므로 코너 게이트와 획 끝 catch-up(없으면 끝점이 반경만큼 모자람)을 반드시 함께 쓴다. 슬라이더는 반경 로그 매핑 권장(선형 매핑은 s=5.6에서 이미 iso 도달해 대부분 구간이 과평활)."
+    },
+    {
+      "item": "안정화 슬라이더 매핑: Sumi 1€ 로그 매핑 B",
+      "decision": "adopt-engine-module",
+      "rationaleKo": "minCutoff = 30·(0.4/30)^u, β = 0.12·(0.006/0.12)^u (u=s/100). 지터 0.738→0.112 단조, 지연(512²) 1.7→15.3 ms, 정점 재방출과 함께 zigzag512 편차 0.92~1.04로 일정. 현행 앱 매핑(3.0→0.5 선형)은 s=0에서도 지터 0.335라 '끔'이 되지 않는다."
+    },
+    {
+      "item": "ink-stroke-modeler(저장소 wasm) 입력 단계",
+      "decision": "defer",
+      "rationaleKo": "코너·형상·지연에서 Sumi+재방출보다 나은 항이 없고(iso 3.55/10.5, 길이 -7%, 지연 15 ms) 예측이 노출되지 않아 장점이 쓰이지 않는다. 라이선스는 Apache-2.0이나 NOTICE의 wasm sha256 불일치·Emscripten/libc++abi 인벤토리 누락으로 review. 고지 정정 후 'ISM 느낌' 옵션(코너 게이트 병용)으로 재평가."
+    },
+    {
+      "item": "perfect-freehand getStrokePoints를 입력 단계로 사용",
+      "decision": "reject",
+      "rationaleKo": "표본마다 호출하면 O(n²)(평균 61 µs, 4000표본 말미 약 0.9 ms)이고 첫 표본이 최대 0.83 px 어긋나며 수식은 EMA와 같다. 같은 식의 O(1) 재귀(0.12 µs)만 차용한다."
+    },
+    {
+      "item": "kalmanjs 1.1.0",
+      "decision": "reject",
+      "rationaleKo": "iso 조건에서 EMA·perfect-freehand와 지연·편차·길이 오차까지 동일(정상상태 고정 이득 수렴)하고 dt를 무시해 표본율 의존이라 이점이 없다."
+    },
+    {
+      "item": "자체 등속(CV) 칼만",
+      "decision": "experiment-only",
+      "rationaleKo": "iso에서 지연 2.4 ms로 최저이나 코너에서 넘치고(오버슈트 1.50/6.76 px; 편차 지표는 0.00으로 가려짐) 곡선이 부풀어 spiral 형상 RMS 1.54 px. 코너 게이트와 함께일 때만 쓸 만하고(1.17/0.97) 슬라이더 범위가 지터 0.47까지만 닿아 매핑 재설계가 필요하다."
+    },
+    {
+      "item": "물리 펜(자체 오일러, SP-A 모델)",
+      "decision": "experiment-only",
+      "rationaleKo": "끌림 감각용 선택지: 지연 15.8 ms, 코너 게이트와 함께 편차 1.25/1.25, 0.47 µs. 단 ζ=0.55 저감쇠라 획 끝 오버슈트가 flick 3.7(128²)/14.9(512²) px이고 정착 70~112 ms. ζ≥1 설정은 측정하지 않았다."
+    },
+    {
+      "item": "Rapier 0.21 물리 펜 입력 단계",
+      "decision": "reject",
+      "rationaleKo": "자체 오일러 대비 표본당 약 47배(22 µs), gzip 1.28 MB, 초기화 약 150 ms인데 지연 20.1 ms·오버슈트 6.7/26.8 px로 이점이 없다(강체 엔진은 붓털 다발에서만 의미, SP-A)."
+    },
+    {
+      "item": "cornerDeviationPx 지표 정리(적용 가능성 게이트 또는 입력 통과 대비 초과분 판정, 128²·512² 병기)",
+      "decision": "defer",
+      "rationaleKo": "FAIL의 본체는 입력 결함이라 지표 완화로 통과시키지 않는다. 다만 31종 중 20종은 입력을 통과시켜도 >1.5 px(광폭·연질·습식·텍스처, 바닥 7~17 px)라 이 지표가 입력을 게이트하지 못한다. 초과분 기준(dev(입력)-dev(통과)≤1.5)이면 base 7/31 FAIL·수정안 0/31 FAIL(최대 0.53). 편측 지표라 오버슈트와 함께 읽어야 하고 128²는 설계 기준 512²보다 입력 지연을 4배 과소평가한다. 변경은 별도 승인 후."
+    }
+  ],
+  "blockers": [],
+  "risks": [
+    "수정안 A의 속도 가드 0.2 px/ms와 밀림 0.25 px는 합성 손떨림(σ 0.1~1.2 px, 168획)에 기댄 경험값이다. 128² corner-square(0.16 px/ms)처럼 느린 모서리는 개선되지 않고, 가드를 낮추려면 정점 뒤 2~3표본 방향 지속으로 모서리 판정을 확정하는 추가 설계가 필요하다(미구현).",
+    "수정안 A는 정점 직전 raw 점을 출력에 추가(zigzag +5 표본)하므로 픽셀 해시 스냅샷 10건(surface 2, wet-presets 5, wet-presets-large 2, cpu-reference-lane 1)이 의도적으로 바뀌고 습식 GPU 미러 명세 §9.3의 합성 지그재그 CPU 기준 해시와 docs/evidence 37개 리포트가 재생성 대상이 된다. GPU 레인 패리티는 StrokePipeline 전단 공유라는 구조 근거와 모의 장치 테스트 통과뿐이고 브라우저 검증은 하지 못했다.",
+    "수정안 A 단독 적용은 StrokeBudgetExceededError를 더 자주 유발한다(사본에서 모의 GPU 레인 테스트 15건 실패). 수정안 B와 반드시 함께 적용해야 한다.",
+    "watercolor-wet zigzag 512²에서 수정안 후 오버슈트가 0→1.97 px(임계 1.0 초과)로 올라간다(31종 중 1건, 이 프리셋은 편차가 8.8 px로 어차피 지표 부적합 영역).",
+    "저장소 ink-stroke-modeler NOTICE의 wasm sha256(0b65a64a…)이 실제 바이너리(9f1478b1…)와 불일치하고 Emscripten/libc++abi 런타임이 인벤토리에 없다. 이미 저장소에 배포되는 wasm이므로 법무 증빙 정확성 문제다.",
+    "측정 중 다른 작업자가 저장소 작업 트리(reference-renderer.ts 등)를 수정 중이었다. 입력·엔진 핵심 파일 sha256이 측정 시작·종료 시 동일함을 확인했고 patched/base 사본과의 차이는 app/platform 파일뿐이었지만, 이후 렌더러가 바뀌면 수치가 달라질 수 있다.",
+    "사본에서 vitest를 실행하면서 저장소 apps/brush-lab/node_modules/.vite* 아래에 캐시 파일(git 무시 대상)이 생겼다. 소스 파일은 수정하지 않았다.",
+    "표본당 비용(µs)은 실행 간 최대 2~4배 흔들린다(단계마다 21회 반복 중앙값 × 독립 3회의 중앙값으로 안정화했으나 순위·자릿수 판단용이다).",
+    "1€ 지연은 속도 의존이라 같은 설정이 128²에서 9 ms, 512²에서 4 ms로 달라진다. 슬라이더가 만드는 감각이 캔버스 배율에 따라 달라지며 속도를 문서 단위로 정규화하는 후속이 필요하다."
+  ],
+  "unverified": [
+    "브라우저(WebGPU/WebGL2/Canvas2D) 경로와 실 GPU는 이 환경에서 실행하지 못했다. 모든 수치는 Node 22 단일 스레드와 저장소 CPU 참조 래스터러의 값이며 브라우저 결과가 아니다.",
+    "실제 펜·터치·마우스 입력과 실제 사람 손떨림은 측정하지 못했다(합성 가우시안 잡음, 시드 고정). 교차 기계·교차 브라우저 결정성도 측정하지 못했다.",
+    "수정안을 저장소에 적용한 상태의 전체 테스트·typecheck·eslint·harness:verify는 실행하지 않았다(저장소 수정 금지). 사본에서 engine+bench+lanes 684건만 실행했고 registry·libmypaint-lane·hokusai-lane 3개 파일은 사본에 wasm pkg가 없어 로드 실패해 검증에서 빠졌다.",
+    "정점 재방출이 GPU 레인·wasm-gpu-hybrid·platform-baseline·libmypaint·hokusai 레인의 패리티 증빙(ΔE p99 0 등)에 주는 영향은 측정하지 못했다.",
+    "ink-stroke-modeler wasm에 정적 링크된 Emscripten 런타임·libc++abi의 라이선스 전문은 확인하지 못했다(wasm 문자열로 libcxxabi 경로, .mjs 배너로 emcc 6.0.6만 확인).",
+    "물리 펜 ζ≥1(오버슈트 완화) 설정, 속도의 문서 단위(mm/s) 정규화, CV 칼만의 슬라이더 범위 재설계는 측정하지 않았다.",
+    "지연(ms) 추정은 트림 최소제곱이라 모서리가 많은 fixture에서는 값이 달라질 수 있어 표의 지연은 curve fixture 기준이다. tilt/pressure 보존 오차는 slow-pressure-ramp·tilt-sweep 두 fixture에서만 표로 정리했다.",
+    "수정안 B(용량 추정)가 실제 브라우저 Worker 경로의 메모리 사용에 주는 영향(배치 용량이 커질 수 있음)은 측정하지 못했다."
+  ],
+  "followUps": [
+    "통합 담당: out/patch-A+B.diff를 apps/brush-lab에 적용(corner-preserve.ts, input-pipeline.ts, input-pipeline.test.ts, stroke-pipeline.ts)하고 pnpm harness:verify·typecheck:brush-lab·test:brush-lab 후 의도적 해시 스냅샷 10건 재생성(vitest -u 대상: surface.test.ts, wet-presets.snapshot.test.ts, wet-presets-large.snapshot.test.ts, cpu-reference-lane.test.ts).",
+    "습식 GPU 미러 명세 §9.3 기준 해시, docs/evidence 37개 인증 리포트, docs/drafts/evidence-brush-lab-README.md 55행의 '2.5 px' 서술을 수정안 적용 후 재생성(pencil-hb zigzag 128² 약 1.26 px 예상)하고 128²와 512² 두 조건을 모두 기록.",
+    "StrokePipeline 용량 추정 결함(fast-flick 512²에서 4/31 프리셋 실패)을 별도 이슈로 등록하고 수정안 B를 먼저 반영(마우스형 1.5 px/ms@60 Hz 이상 입력도 실패).",
+    "ink-stroke-modeler NOTICE 표의 wasm sha256을 현재 바이너리(9f1478b1…)로 정정하고 THIRD_PARTY_INVENTORY에 Emscripten·libc++abi 런타임 고지를 추가한 뒤 review 재판정; wasm에 남은 빌드 머신 경로 제거 검토.",
+    "모서리 판정을 정점 뒤 2~3표본의 방향 지속으로 확정해 오탐 없이 속도 가드를 낮추는 후속(128² corner-square 0.16 px/ms 포함)과, 정점 재방출·코너 게이트의 임계 재조정.",
+    "앱 안정화 슬라이더를 로그 매핑 B로 교체하고(0=사실상 끔) UI 문구에 '코너 보존이 아니라 지터 대 지연·형상 왜곡의 교환'임을 반영; 속도를 문서 단위로 정규화하는 방안 검토.",
+    "별도 승인 하에 cornerDeviationPx에 적용 가능성 게이트 또는 입력 통과 대비 초과분 판정을 추가(31종 중 20종이 입력 통과로도 >1.5 px).",
+    "lazy-brush 끈 보정 모드를 실험 배지 입력 단계로 통합할 때 코너 게이트·catch-up·반경 로그 매핑을 함께 구현하고, 자체 물리 펜은 ζ≥1 설정과 획 끝 오버슈트를 추가 측정."
+  ],
+  "filesWritten": [
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/report.md",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/metrics.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/PROGRESS.md",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/out/patch-A+B.diff",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/out/sheet-A.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/out/sheet-B.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/out/sheet-C.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/out/sheet-zoom512.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/src/stage.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/src/stages/index.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/src/stages/sumi.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/src/stages/own.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/src/stages/libs.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/src/stages/basic.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/src/measure.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/out/p4-measure-all.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/out/p5-iso.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/out/p7-patch.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/patched/mod-ab/src/engine/input/corner-preserve.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/patched/mod-ab/src/engine/input/input-pipeline.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/patched/mod-ab/src/engine/input/input-pipeline.test.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-C/patched/mod-ab/src/engine/dynamics/stroke-pipeline.ts"
+  ],
+  "commandsRun": [
+    {
+      "command": "tsx p1-repro.ts / p2-decompose.ts / p2b-decompose.ts / p3-floor.ts (저장소 모듈 절대경로 import)",
+      "result": "pencil-hb zigzag 128² 2.546 px 재현, 31종 중 27 FAIL, 요인 분해·크기 의존·지표 바닥 JSON 생성"
+    },
+    {
+      "command": "tsx p4-measure-all.ts; p5-iso.ts; p6-mapping.ts; p11-extra.ts; p13-configonly.ts; p14-cost.ts; p10-build.ts (최종 재실행)",
+      "result": "27 단계 × 9 fixture × {128²,512²} 측정, 결정성 27/27 일치·교차 실행 해시 405/405 일치, iso-jitter·슬라이더 스윕(단조 위반 0), 비용 3×21회 중앙값, metrics.json 222 KB"
+    },
+    {
+      "command": "tsx p7-patch.ts; p7b-residual.ts; p7c-regress.ts; p7d-falsecorner.ts (patched/base vs patched/mod)",
+      "result": "수정안 A: 31종 zigzag 128² FAIL 27→19, pencil-hb 2.55→1.26/512² 6.16→0.97, 모서리 없는 fixture 해시 동일, 오탐 가드 후 168획 오탐 0"
+    },
+    {
+      "command": "tsx p9-budget.ts; p9b-budget-fix.ts",
+      "result": "fast-flick 512² 4/31(1024² 6/31) StrokeBudgetExceededError 확인, 수정안 B로 0/31·마우스형 0/9, 해시 불변"
+    },
+    {
+      "command": "vitest run src/engine/input (patched/mod, base-newtest)",
+      "result": "mod 21/21 통과, 신규 테스트 2건은 base에서 실패(의미 있음)"
+    },
+    {
+      "command": "vitest run src/engine src/bench src/lanes --testTimeout=240000 --maxWorkers=3 (patched/base, mod, mod-ab)",
+      "result": "base 681 통과(3파일 로드 실패=환경), A만 25 실패, A+B 674 통과·10 실패(전부 픽셀 해시 스냅샷)"
+    },
+    {
+      "command": "curl raw.githubusercontent.com/{google/ink-stroke-modeler,abseil/abseil-cpp}/<pinned commit>/LICENSE·NOTICE; sha256sum; strings ink_stroke_modeler.wasm",
+      "result": "복사된 LICENSE 2종 sha256이 업스트림 raw와 동일, NOTICE 404, 저장소 NOTICE의 wasm sha(0b65a64a…)가 실제(9f1478b1…)와 불일치, wasm에 libcxxabi 경로 문자열 확인"
+    },
+    {
+      "command": "npm install --ignore-scripts --no-audit --no-fund lazy-brush@2.0.2 perfect-freehand@1.2.3 kalmanjs@1.1.0 1eurofilter@1.3.0 planck@1.5.0 @dimforge/rapier2d-compat@0.21.0 (이전 단계에서 수행) + license-audit.mjs",
+      "result": "7개 패키지 설치본의 package.json·LICENSE 직접 확인(1eurofilter만 LICENSE 파일 없음), 설치 스크립트 없음"
+    },
+    {
+      "command": "Read out/sheet-A.png, sheet-B.png, sheet-C.png, sheet-zoom512.png",
+      "result": "4장 모두 직접 열어 관찰 내용을 report.md §5에 기록"
+    }
+  ]
+}

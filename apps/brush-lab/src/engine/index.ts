@@ -46,6 +46,7 @@ export * from "./raster/tile-binning";
 export * from "./raster/tile-pool";
 
 export * from "./pigment/kubelka-munk";
+export * from "./pigment/km-mix";
 export * from "./pigment/pigment-table";
 
 export * from "./wet/active-tiles";

@@ -19,7 +19,8 @@ export interface MockWebgl2 {
   shaders: { type: number; source: string }[];
   programs: number;
   uniforms: Map<string, unknown>;
-  bufferSubData: { target: number; offset: number; bytes: number }[];
+  /** 업로드 기록. `floats`는 Float32Array로 올린 내용의 복사본(dab 인스턴스의 색 전달 계약 시험용), 그 밖의 뷰는 null. */
+  bufferSubData: { target: number; offset: number; bytes: number; floats: Float32Array | null }[];
   texImages: { target: number; level: number; width: number; height: number }[];
   boundFramebuffer: number | null;
   extensionsAsked: string[];
@@ -151,7 +152,12 @@ export function createMockWebgl2(options: MockWebgl2Options = {}): MockWebgl2 {
       record("bufferSubData");
       const elem = (data as unknown as { BYTES_PER_ELEMENT?: number }).BYTES_PER_ELEMENT ?? 1;
       const bytes = length !== undefined ? length * elem : data.byteLength - (srcOffset ?? 0) * elem;
-      bufferSubData.push({ target, offset, bytes });
+      let floats: Float32Array | null = null;
+      if (data instanceof Float32Array) {
+        const start = srcOffset ?? 0;
+        floats = data.slice(start, length !== undefined ? start + length : data.length);
+      }
+      bufferSubData.push({ target, offset, bytes, floats });
     },
     deleteBuffer(): void {
       record("deleteBuffer");

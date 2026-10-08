@@ -36,6 +36,12 @@ function byteHex(v: number): string {
   return c.toString(16).padStart(2, "0");
 }
 
+/** `#rrggbb`/`#rgb` → 레인 획 색(`StrokeOptions.color`: sRGB straight RGBA 0..1, 알파 1). 해석할 수 없으면 null. */
+export function hexToStrokeColor(hex: string): [number, number, number, number] | null {
+  const rgb = parseHex(hex);
+  return rgb ? [rgb.r / 255, rgb.g / 255, rgb.b / 255, 1] : null;
+}
+
 /** 소문자 `#rrggbb`. */
 export function toHex(rgb: Rgb8): string {
   return `#${byteHex(rgb.r)}${byteHex(rgb.g)}${byteHex(rgb.b)}`;

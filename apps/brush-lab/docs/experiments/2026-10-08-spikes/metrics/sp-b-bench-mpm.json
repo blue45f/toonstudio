@@ -1,0 +1,392 @@
+[
+ {
+  "cfg": "grid128 K2.5e5 sub17",
+  "n": 1000,
+  "frameP50": 3.78,
+  "frameP95": 6.31,
+  "frameMax": 7.74,
+  "nsPerParticleSubstep": 222,
+  "arrayBufferMB": 1.29,
+  "heapMB": 0.01,
+  "maxSpeed": 0.7,
+  "minJ": 0.999,
+  "maxJ": 1.001,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 14.5,
+  "p50All": [
+   3.78,
+   3.84,
+   4.39
+  ],
+  "load1All": [
+   14.5,
+   14.5,
+   14.5
+  ]
+ },
+ {
+  "cfg": "grid128 K2.5e5 sub17",
+  "n": 5000,
+  "frameP50": 26.97,
+  "frameP95": 37.6,
+  "frameMax": 45.78,
+  "nsPerParticleSubstep": 317,
+  "arrayBufferMB": 0.58,
+  "heapMB": 0.02,
+  "maxSpeed": 1,
+  "minJ": 0.999,
+  "maxJ": 1.002,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 14.5,
+  "p50All": [
+   26.97,
+   27.03,
+   41
+  ],
+  "load1All": [
+   14.5,
+   14.5,
+   14.5
+  ]
+ },
+ {
+  "cfg": "grid128 K2.5e5 sub17",
+  "n": 20000,
+  "frameP50": 90.91,
+  "frameP95": 118.53,
+  "frameMax": 118.53,
+  "nsPerParticleSubstep": 267,
+  "arrayBufferMB": 4.04,
+  "heapMB": 0.06,
+  "maxSpeed": 2.4,
+  "minJ": 0.995,
+  "maxJ": 1.004,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 14.6,
+  "p50All": [
+   90.91,
+   98.93,
+   116.43
+  ],
+  "load1All": [
+   14.6,
+   14.8,
+   14.6
+  ]
+ },
+ {
+  "cfg": "grid128 K6e4 sub8",
+  "n": 1000,
+  "frameP50": 1.83,
+  "frameP95": 5.82,
+  "frameMax": 8,
+  "nsPerParticleSubstep": 229,
+  "arrayBufferMB": 0,
+  "heapMB": -0.01,
+  "maxSpeed": 1.6,
+  "minJ": 0.996,
+  "maxJ": 1.002,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 14.8,
+  "p50All": [
+   1.83,
+   1.86,
+   1.98
+  ],
+  "load1All": [
+   14.8,
+   14.8,
+   14.8
+  ]
+ },
+ {
+  "cfg": "grid128 K6e4 sub8",
+  "n": 5000,
+  "frameP50": 9.58,
+  "frameP95": 16.22,
+  "frameMax": 17.23,
+  "nsPerParticleSubstep": 239,
+  "arrayBufferMB": 0,
+  "heapMB": 0,
+  "maxSpeed": 1.7,
+  "minJ": 0.996,
+  "maxJ": 1.003,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 14.9,
+  "p50All": [
+   9.58,
+   10.19,
+   11.47
+  ],
+  "load1All": [
+   14.9,
+   14.8,
+   14.9
+  ]
+ },
+ {
+  "cfg": "grid128 K6e4 sub8",
+  "n": 20000,
+  "frameP50": 38.18,
+  "frameP95": 52.2,
+  "frameMax": 52.2,
+  "nsPerParticleSubstep": 239,
+  "arrayBufferMB": 2.17,
+  "heapMB": 0.02,
+  "maxSpeed": 2.5,
+  "minJ": 0.991,
+  "maxJ": 1.009,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 14.9,
+  "p50All": [
+   38.18,
+   38.81,
+   43.22
+  ],
+  "load1All": [
+   14.9,
+   14.9,
+   14.9
+  ]
+ },
+ {
+  "cfg": "grid128 K1.5e4 sub4",
+  "n": 1000,
+  "frameP50": 0.93,
+  "frameP95": 1.35,
+  "frameMax": 2.25,
+  "nsPerParticleSubstep": 232,
+  "arrayBufferMB": 1.29,
+  "heapMB": 0.01,
+  "maxSpeed": 3.9,
+  "minJ": 0.99,
+  "maxJ": 1.017,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 14.9,
+  "p50All": [
+   0.93,
+   0.95,
+   0.99
+  ],
+  "load1All": [
+   14.9,
+   14.9,
+   14.9
+  ]
+ },
+ {
+  "cfg": "grid128 K1.5e4 sub4",
+  "n": 5000,
+  "frameP50": 4.62,
+  "frameP95": 5.32,
+  "frameMax": 6.84,
+  "nsPerParticleSubstep": 231,
+  "arrayBufferMB": 1.87,
+  "heapMB": 0.04,
+  "maxSpeed": 2.4,
+  "minJ": 0.984,
+  "maxJ": 1.018,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 14.9,
+  "p50All": [
+   4.62,
+   4.62,
+   4.88
+  ],
+  "load1All": [
+   14.9,
+   13.9,
+   14.9
+  ]
+ },
+ {
+  "cfg": "grid128 K1.5e4 sub4",
+  "n": 20000,
+  "frameP50": 17.71,
+  "frameP95": 18.34,
+  "frameMax": 18.34,
+  "nsPerParticleSubstep": 221,
+  "arrayBufferMB": 4.04,
+  "heapMB": 0,
+  "maxSpeed": 3.5,
+  "minJ": 0.98,
+  "maxJ": 1.026,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 13.9,
+  "p50All": [
+   17.71,
+   19.13,
+   22.75
+  ],
+  "load1All": [
+   13.9,
+   13.9,
+   13.9
+  ]
+ },
+ {
+  "cfg": "grid256 K2.5e5 sub34",
+  "n": 1000,
+  "frameP50": 7.67,
+  "frameP95": 8.46,
+  "frameMax": 10.01,
+  "nsPerParticleSubstep": 226,
+  "arrayBufferMB": 4.68,
+  "heapMB": 0,
+  "maxSpeed": 1,
+  "minJ": 1,
+  "maxJ": 1,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 13.9,
+  "p50All": [
+   7.67,
+   8.17,
+   11.04
+  ],
+  "load1All": [
+   13.9,
+   13.9,
+   13.9
+  ]
+ },
+ {
+  "cfg": "grid256 K2.5e5 sub34",
+  "n": 5000,
+  "frameP50": 39.5,
+  "frameP95": 48.06,
+  "frameMax": 51.33,
+  "nsPerParticleSubstep": 232,
+  "arrayBufferMB": 5.26,
+  "heapMB": 0.01,
+  "maxSpeed": 0.9,
+  "minJ": 0.999,
+  "maxJ": 1.001,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 13.3,
+  "p50All": [
+   39.5,
+   59.16,
+   64.64
+  ],
+  "load1All": [
+   13.3,
+   13.3,
+   13.9
+  ]
+ },
+ {
+  "cfg": "grid256 K2.5e5 sub34",
+  "n": 20000,
+  "frameP50": 153.55,
+  "frameP95": 208.95,
+  "frameMax": 208.95,
+  "nsPerParticleSubstep": 226,
+  "arrayBufferMB": 7.44,
+  "heapMB": 0.02,
+  "maxSpeed": 1.7,
+  "minJ": 0.997,
+  "maxJ": 1.003,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 13.3,
+  "p50All": [
+   153.55,
+   172.17,
+   222.32
+  ],
+  "load1All": [
+   13.3,
+   13.5,
+   13.2
+  ]
+ },
+ {
+  "cfg": "grid256 K6e4 sub16",
+  "n": 1000,
+  "frameP50": 3.7,
+  "frameP95": 5,
+  "frameMax": 5.04,
+  "nsPerParticleSubstep": 231,
+  "arrayBufferMB": 4.68,
+  "heapMB": 0,
+  "maxSpeed": 0.7,
+  "minJ": 0.999,
+  "maxJ": 1.004,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 13,
+  "p50All": [
+   3.7,
+   3.78,
+   4.34
+  ],
+  "load1All": [
+   13,
+   13,
+   13
+  ]
+ },
+ {
+  "cfg": "grid256 K6e4 sub16",
+  "n": 5000,
+  "frameP50": 18.41,
+  "frameP95": 20.86,
+  "frameMax": 22.83,
+  "nsPerParticleSubstep": 230,
+  "arrayBufferMB": 5.26,
+  "heapMB": 0.04,
+  "maxSpeed": 1.3,
+  "minJ": 0.999,
+  "maxJ": 1.002,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 13,
+  "p50All": [
+   18.41,
+   18.52,
+   19.7
+  ],
+  "load1All": [
+   13,
+   13,
+   12.1
+  ]
+ },
+ {
+  "cfg": "grid256 K6e4 sub16",
+  "n": 20000,
+  "frameP50": 72.84,
+  "frameP95": 101.05,
+  "frameMax": 101.05,
+  "nsPerParticleSubstep": 228,
+  "arrayBufferMB": 7.44,
+  "heapMB": 0,
+  "maxSpeed": 2.3,
+  "minJ": 0.994,
+  "maxJ": 1.005,
+  "nan": 0,
+  "clamp": 0,
+  "load1": 12,
+  "p50All": [
+   72.84,
+   84.59,
+   105.1
+  ],
+  "load1All": [
+   12,
+   12.1,
+   12.1
+  ]
+ }
+]
