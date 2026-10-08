@@ -102,3 +102,4 @@ apps/api/src/platform/database/migrations/0101_studio_virtual_space_booking_like
 apps/api/src/platform/database/migrations/0102_studio_recording_booth_asset.sql
 apps/api/src/platform/database/migrations/0103_studio_virtual_space_entry_code.sql
 apps/api/src/platform/database/migrations/0104_community_post_likes.sql
+apps/api/src/platform/database/migrations/0105_community_post_reports.sql

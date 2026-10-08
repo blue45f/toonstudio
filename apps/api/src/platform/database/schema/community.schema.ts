@@ -78,6 +78,31 @@ export const fanPostLikes = pgTable(
   ],
 );
 
+// 글 신고 — 홍보 creator_promotion_report와 같은 (postId, userId) 복합 PK로 중복 신고를 막는다.
+// 상태는 운영 큐(admin 신고 목록)의 pending/resolved/dismissed 체계를 그대로 쓴다.
+export const fanPostReports = pgTable(
+  "fan_post_report",
+  {
+    postId: text("postId")
+      .notNull()
+      .references(() => fanPosts.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    reason: text("reason").notNull(),
+    status: text("status").notNull().default("pending"), // pending | resolved | dismissed
+    resolvedBy: text("resolvedBy").references(() => users.id, { onDelete: "set null" }),
+    resolvedAt: timestamp("resolvedAt", { mode: "date" }),
+    resolutionNote: text("resolutionNote").notNull().default(""),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.postId, t.userId] }),
+    index("idx_fan_post_report_queue").on(t.status, t.createdAt),
+    index("idx_fan_post_report_recent").on(t.createdAt),
+  ],
+);
+
 // ── 회원 개설형 커뮤니티 ─────────────────────────────────────────────
 // 기존 community_cafe URL/행을 그대로 확장하고 게시글은 fan_post(scope='cafe')를 재사용한다.
 export const communityCafes = pgTable(

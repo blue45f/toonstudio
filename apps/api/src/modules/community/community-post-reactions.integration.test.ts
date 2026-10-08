@@ -147,6 +147,8 @@ suite("real Postgres: community post reactions", () => {
     // 빈 DB에 실제 마이그레이션을 적용하고, 기존 상태 재적용(멱등)까지 확인한다.
     await target.query(migration("0104_community_post_likes.sql"));
     await target.query(migration("0104_community_post_likes.sql"));
+    await target.query(migration("0105_community_post_reports.sql"));
+    await target.query(migration("0105_community_post_reports.sql"));
 
     await target.query(
       `INSERT INTO "user" ("id", "name", "avatar") VALUES ($1, '작성자', '#111'), ($2, '독자', '#222')`,
@@ -209,5 +211,43 @@ suite("real Postgres: community post reactions", () => {
   it("숨김·없는 글에는 좋아요할 수 없다", async () => {
     await expect(community.toggleFanPostLike(fanId, hiddenPostId)).resolves.toBeNull();
     await expect(community.toggleFanPostLike(fanId, "post-missing")).resolves.toBeNull();
+  });
+
+  it("신고가 접수되고 같은 회원의 중복 신고는 한 건으로 합쳐진다", async () => {
+    await expect(
+      community.reportFanPost(fanId, postId, "스팸 홍보가 반복되는 글입니다."),
+    ).resolves.toEqual({ reported: true });
+    // 중복 신고도 성공으로 응답하지만(멱등) 저장되는 행은 하나뿐이다.
+    await expect(
+      community.reportFanPost(fanId, postId, "같은 글을 다시 신고합니다."),
+    ).resolves.toEqual({ reported: true });
+    const { rows } = await target.query(
+      `SELECT "reason", "status" FROM "fan_post_report" WHERE "postId" = $1`,
+      [postId],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      reason: "스팸 홍보가 반복되는 글입니다.",
+      status: "pending",
+    });
+
+    // 다른 회원의 신고는 별도 행으로 쌓인다.
+    await expect(
+      community.reportFanPost(authorId, postId, "부적절한 내용이 포함돼 있습니다."),
+    ).resolves.toEqual({ reported: true });
+    const after = await target.query(
+      `SELECT count(*)::int AS count FROM "fan_post_report" WHERE "postId" = $1`,
+      [postId],
+    );
+    expect(after.rows[0].count).toBe(2);
+  });
+
+  it("숨김·없는 글은 신고할 수 없다", async () => {
+    await expect(
+      community.reportFanPost(fanId, hiddenPostId, "숨김 글 신고 시도입니다."),
+    ).resolves.toBeNull();
+    await expect(
+      community.reportFanPost(fanId, "post-missing", "없는 글 신고 시도입니다."),
+    ).resolves.toBeNull();
   });
 });

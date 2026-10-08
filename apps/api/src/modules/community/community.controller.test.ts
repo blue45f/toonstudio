@@ -35,3 +35,26 @@ describe("CommunityController post like boundary", () => {
     expect(togglePostLike).toHaveBeenCalledWith("post-1", "user-1");
   });
 });
+
+describe("CommunityController post report boundary", () => {
+  it("게스트 신고는 401이고 서비스를 호출하지 않는다", async () => {
+    const reportPost = vi.fn();
+    const controller = new CommunityController({ reportPost } as never);
+
+    await expect(
+      controller.reportPost("post-1", { reason: "스팸 글입니다. 확인해 주세요." }, undefined, fakeReq),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(reportPost).not.toHaveBeenCalled();
+  });
+
+  it("회원 신고는 본문과 함께 서비스에 위임된다", async () => {
+    const reportPost = vi.fn().mockResolvedValue({ reported: true });
+    const controller = new CommunityController({ reportPost } as never);
+    const body = { reason: "스팸 글입니다. 확인해 주세요." };
+
+    await expect(controller.reportPost("post-1", body, "user-1", fakeReq)).resolves.toEqual({
+      reported: true,
+    });
+    expect(reportPost).toHaveBeenCalledWith("post-1", "user-1", body);
+  });
+});

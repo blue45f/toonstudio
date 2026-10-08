@@ -8,6 +8,7 @@ import {
   db,
   fanPostLikes,
   fanPostReplies,
+  fanPostReports,
   fanPosts,
   reviewReplies,
   users,
@@ -62,6 +63,8 @@ export const ensureCommunityTables = createSchemaReadinessCheck([
   `SELECT "id", "postId", "parentId", "userId", "text", "deletedAt", "createdAt"
    FROM "fan_post_reply" WHERE FALSE`,
   `SELECT "postId", "userId", "createdAt" FROM "fan_post_like" WHERE FALSE`,
+  `SELECT "postId", "userId", "reason", "status", "resolvedBy", "resolvedAt",
+          "resolutionNote", "createdAt" FROM "fan_post_report" WHERE FALSE`,
   `SELECT "id", "slug", "name", "description", "genre", "kind", "tags",
           "visibility", "joinPolicy", "postingPolicy", "rules", "status",
           "createdBy", "hidden", "createdAt", "updatedAt"
@@ -807,6 +810,41 @@ export async function toggleFanPostLike(
 
   const state = await getFanPostLikeState(postId, userId);
   return { liked, likeCount: state.likeCount };
+}
+
+// 글 신고 사유 검증 — 홍보 신고와 같은 기준(10~1000자, 개행 정규화 후 trim).
+export function validateFanPostReport(input: unknown): { reason?: string; error?: string } {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { error: "신고 사유는 10~1000자로 입력해 주세요." };
+  }
+  const rawReason = (input as Record<string, unknown>).reason;
+  const reason = typeof rawReason === "string" ? normalizeMultiline(rawReason) : "";
+  if (reason.length < 10 || reason.length > 1000) {
+    return { error: "신고 사유는 10~1000자로 입력해 주세요." };
+  }
+  return { reason };
+}
+
+// 글 신고 접수 — (postId, userId) 복합 PK + onConflictDoNothing이라 같은 회원의
+// 중복 신고는 첫 신고 하나로 합쳐진다(홍보 신고와 같은 멱등 계약).
+// 숨김·없는 글이면 null을 돌려주고 호출자가 404로 변환한다.
+export async function reportFanPost(
+  userId: string,
+  postId: string,
+  reason: string,
+): Promise<{ reported: true } | null> {
+  await ensureCommunityTables();
+  const [post] = await db
+    .select({ id: fanPosts.id })
+    .from(fanPosts)
+    .where(and(eq(fanPosts.id, postId), eq(fanPosts.hidden, false)))
+    .limit(1);
+  if (!post) return null;
+  await db
+    .insert(fanPostReports)
+    .values({ postId, userId, reason })
+    .onConflictDoNothing();
+  return { reported: true };
 }
 
 // 토론 스레드 상세 — 단일 게시글(숨김 제외) + 답글 트리.

@@ -25,7 +25,9 @@ import {
   parseCommunityScopeFilter,
   parsePostKindOrNull,
   parsePostSort,
+  reportFanPost,
   toggleFanPostLike,
+  validateFanPostReport,
   validatePostInput,
   validateReplyPayload,
 } from "../../server/community";
@@ -332,6 +334,23 @@ export class CommunityService {
         "community.posts.write",
       );
       const result = await toggleFanPostLike(userId, postId);
+      if (!result) throw new NotFoundException("토론 글을 찾을 수 없어요.");
+      return result;
+    });
+  }
+
+  async reportPost(postId: string, userId: string, body: unknown) {
+    return withDatabaseCapability("community.posts.write", async () => {
+      if (!postId) throw new BadRequestException("postId 필요");
+      const parsed = validateFanPostReport(body);
+      if (parsed.error || !parsed.reason) {
+        throw new BadRequestException(parsed.error ?? "신고 사유를 확인해 주세요.");
+      }
+      await governed(
+        () => assertCafePostAccess(postId, userId),
+        "community.posts.write",
+      );
+      const result = await reportFanPost(userId, postId, parsed.reason);
       if (!result) throw new NotFoundException("토론 글을 찾을 수 없어요.");
       return result;
     });
