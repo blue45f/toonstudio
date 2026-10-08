@@ -1,13 +1,23 @@
 import { HTTPError, TimeoutError } from "ky";
-import {
-  getAuthSession,
-  getLastUnauthorizedDropHadSession,
-} from "@/domains/auth/public/session/auth-session-state";
 import { getLang, FALLBACK_CHAIN, resolveTranslationForDisplay } from "@/shared/lib/i18n-core";
 import { defineStaticSourceText, resolveUiLocale } from "@/shared/lib/i18n-bilingual-copy";
 
 export const SERVICE_CAPABILITY_ERROR_EVENT =
   "toonspectrum:service-capability-error";
+
+/**
+ * 401 문구를 세션 유무로 가르는 판정. 플랫폼 오류 모듈은 도메인 인증 상태를 import하지 않고, 앱 진입점이
+ * registerUnauthorizedSessionProbe로 등록한다. 등록 전에는 게스트로 본다.
+ */
+export type UnauthorizedSessionProbe = () => boolean;
+let unauthorizedSessionProbe: UnauthorizedSessionProbe = () => false;
+
+export function registerUnauthorizedSessionProbe(probe: UnauthorizedSessionProbe): () => void {
+  unauthorizedSessionProbe = probe;
+  return () => {
+    if (unauthorizedSessionProbe === probe) unauthorizedSessionProbe = () => false;
+  };
+}
 
 export type AppApiErrorKind =
   | "offline"
@@ -138,7 +148,7 @@ function localizeAuthoredMessage(source: string): string {
  * ky 경로는 후크가 세션을 먼저 폐기하므로, 폐기 직전 세션 존재 기록까지 함께 본다.
  */
 function unauthorizedMessageSource(): string {
-  const hadSession = getAuthSession() !== null || getLastUnauthorizedDropHadSession();
+  const hadSession = unauthorizedSessionProbe();
   return hadSession
     ? "로그인이 만료되었습니다. 작성 중인 내용은 유지됩니다."
     : "로그인이 필요합니다. 작성 중인 내용은 유지됩니다.";
