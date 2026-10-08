@@ -1,10 +1,9 @@
-import { existsSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { validateEngineeringDiagram } from "./engineering-diagram-validate";
 import { ENGINEERING_MAPS } from "./engineering-map-content";
 import { ENGINEERING_MAP_IDS, ENGINEERING_MAP_META, type EngineeringMap } from "./engineering-map-types";
+import { repoPathExists } from "./engineering-repo-paths-test-kit";
 
 /**
  * 기술 지도(표) 계약 검사. 같은 검사를 실제 지도와 의도적으로 망가뜨린 지도에 적용해,
@@ -98,7 +97,7 @@ function problemsOfEngineeringMap(map: EngineeringMap): string[] {
     for (const key of Object.keys(row.cells)) if (!columnIds.has(key)) problems.push(`${rid}: 열 정의에 없는 칸 ${key}`);
     for (const key of columnIds) if (!(key in row.cells)) problems.push(`${rid}: 칸 ${key} 비어 있음(해당 없으면 "—")`);
     if (row.evidence.length < 1) problems.push(`${rid}: 근거 경로가 없음`);
-    for (const path of row.evidence) if (!existsSync(repoPath(path))) problems.push(`${rid}: 존재하지 않는 경로 ${path}`);
+    for (const path of row.evidence) if (!repoPathExists(repoPath(path))) problems.push(`${rid}: 존재하지 않는 경로 ${path}`);
     if (row.link) {
       try {
         const url = new URL(row.link.url);

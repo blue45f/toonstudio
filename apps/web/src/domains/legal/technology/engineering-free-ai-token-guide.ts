@@ -293,7 +293,7 @@ export const FREE_AI_TOKEN_METHODS: readonly FreeAiTokenMethod[] = [
   {
     id: "huggingface-inference",
     categoryId: "router",
-    linkName: "Hugging Face",
+    linkName: "Hugging Face Inference Providers",
     name: t("Hugging Face Inference Providers", "Hugging Face Inference Providers"),
     freeScope: t(
       "무료 계정에 매달 $0.10의 제공자 크레딧이 자동으로 붙습니다(공식 요금 문서, 이월 없음). 작아 보여도 소형 모델 실험에는 닿는 금액이고, 자동 라우터가 비용 0으로 표기된 제공자를 골라 줄 때도 있습니다. 서버리스로 되는 작업 종류는 모델마다 다릅니다.",

@@ -52,6 +52,14 @@ export const EngineeringAtlasPage = lazyRetry(
   () => import("@/domains/legal/technology/EngineeringAtlasPage").then((module) => ({ default: module.EngineeringAtlasPage })),
   "EngineeringAtlasPage",
 );
+export const EngineeringArchitecturePage = lazyRetry(
+  () => import("@/domains/legal/technology/EngineeringArchitecturePage").then((module) => ({ default: module.EngineeringArchitecturePage })),
+  "EngineeringArchitecturePage",
+);
+export const EngineeringLibrariesPage = lazyRetry(
+  () => import("@/domains/legal/technology/EngineeringLibrariesPage").then((module) => ({ default: module.EngineeringLibrariesPage })),
+  "EngineeringLibrariesPage",
+);
 export const ProductPrinciplesPage = lazyRetry(
   () => import("@/domains/legal/ProductPrinciplesPage").then((module) => ({ default: module.ProductPrinciplesPage })),
   "ProductPrinciplesPage",

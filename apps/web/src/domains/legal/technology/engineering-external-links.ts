@@ -67,7 +67,7 @@ export const ENGINEERING_EXTERNAL_LINKS: readonly EngineeringExternalLink[] = [
   { name: "llama.cpp", url: "https://github.com/ggml-org/llama.cpp" },
   { name: "Cloudflare Workers AI", url: "https://developers.cloudflare.com/workers-ai/platform/pricing/" },
   { name: "GitHub Models", url: "https://docs.github.com/en/github-models/prototyping-with-ai-models" },
-  { name: "Hugging Face", url: "https://huggingface.co/docs/inference-providers/index" },
+  { name: "Hugging Face Inference Providers", url: "https://huggingface.co/docs/inference-providers/index" },
   { name: "NVIDIA NIM", url: "https://build.nvidia.com/" },
 
   // 사용 라이브러리·엔진 (설치본 package.json homepage·repository와 저장소 기록 기준)

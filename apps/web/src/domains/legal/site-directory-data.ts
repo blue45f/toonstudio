@@ -477,6 +477,20 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
         "See the web, 2D, 3D, storage, collaboration and trust foundations",
       ),
       destination(
+        "/about/technology/architecture",
+        "기술 아키텍처 해설",
+        "Architecture guide",
+        "브라우저·엣지·서버·데이터·AI가 맞물리는 구조를 도식과 쉬운 배경 지식으로",
+        "How the browser, edge, server, data and AI fit together, with diagrams and plain background",
+      ),
+      destination(
+        "/about/technology/libraries",
+        "주요 라이브러리와 선택 이유",
+        "Main libraries and why",
+        "브러시 엔진·VRM·3D·협업·AI 등 쓰인 라이브러리와 고른 이유를 영역별로",
+        "The libraries behind the brush engines, VRM, 3D, collaboration and AI, and why each was chosen",
+      ),
+      destination(
         "/about/technology/story",
         "기술 제작 스토리",
         "Engineering story",

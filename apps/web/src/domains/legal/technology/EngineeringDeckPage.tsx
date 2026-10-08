@@ -62,6 +62,7 @@ import {
 import { DECK_TRACKS, engineeringDeckHref, type DeckTrack } from "./engineering-deck-state";
 import { ENGINEERING_SEMINAR_MODULES } from "./engineering-playbook-content";
 import { CONTROL_BUTTON, DECK_PAGE_I18N_SCOPE, deckPageBi as bi } from "./engineering-deck-ui";
+import { ENGINEERING_SEMINAR_MODULES } from "./engineering-playbook-content";
 import type { LocalizedText } from "./engineering-story-content";
 import {
   deckCommandForKey,
@@ -755,14 +756,16 @@ export function EngineeringDeckPage() {
         ) : null}
       </section>
 
-      <DeckSlideIndex
-        model={model}
-        index={index}
-        onJump={(slideIndex) => {
-          goTo(slideIndex);
-          stageRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
-        }}
-      />
+      {timed ? (
+        <DeckSlideIndex
+          model={model}
+          index={index}
+          onJump={(slideIndex) => {
+            goTo(slideIndex);
+            stageRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+          }}
+        />
+      ) : null}
 
       <ServiceStoryJourney current="deck" className="mt-8" />
 

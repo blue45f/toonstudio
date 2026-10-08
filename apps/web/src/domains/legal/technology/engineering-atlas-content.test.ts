@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 
 import { ENGINEERING_ATLAS_ENTRIES } from "./engineering-atlas-content";
@@ -9,6 +7,7 @@ import {
   type EngineeringAtlasEntry,
 } from "./engineering-atlas-types";
 import { validateEngineeringDiagram } from "./engineering-diagram-validate";
+import { repoPathExists } from "./engineering-repo-paths-test-kit";
 import { PUBLISHED_ENGINEERING_CHAPTERS } from "./engineering-story-published-content";
 
 /**
@@ -84,10 +83,10 @@ function problemsOfAtlasEntry(entry: EngineeringAtlasEntry): string[] {
   if (entry.usage.length < 1 || entry.usage.length > 4) problems.push(`${id}: 쓰인 곳은 1~4개`);
   for (const usage of entry.usage) {
     if (usage.paths.length < 1) problems.push(`${id}: 쓰인 곳 "${usage.feature.ko}"에 근거 경로 없음`);
-    for (const path of usage.paths) if (!existsSync(repoPath(path))) problems.push(`${id}: 존재하지 않는 경로 ${path}`);
+    for (const path of usage.paths) if (!repoPathExists(repoPath(path))) problems.push(`${id}: 존재하지 않는 경로 ${path}`);
     if (usage.route && !usage.route.startsWith("/")) problems.push(`${id}: route는 /로 시작`);
   }
-  for (const fact of entry.facts ?? []) if (!existsSync(repoPath(fact.source))) problems.push(`${id}: fact 근거 경로 없음 ${fact.source}`);
+  for (const fact of entry.facts ?? []) if (!repoPathExists(repoPath(fact.source))) problems.push(`${id}: fact 근거 경로 없음 ${fact.source}`);
 
   if (entry.samples.length < 1 || entry.samples.length > 2) problems.push(`${id}: 샘플 코드는 1~2개`);
   for (const [index, sample] of entry.samples.entries()) {
@@ -95,7 +94,7 @@ function problemsOfAtlasEntry(entry: EngineeringAtlasEntry): string[] {
     if (lines < 3 || lines > 30) problems.push(`${id}: 샘플 ${index + 1}은 3~30줄(현재 ${lines}줄)`);
     if (sample.codeEn && lineCount(sample.codeEn) !== lines) problems.push(`${id}: 샘플 ${index + 1}의 codeEn 줄 수가 code 와 다름`);
     if (sample.kind === "simplified" && !sample.source) problems.push(`${id}: simplified 샘플은 source 경로 필요`);
-    if (sample.source && !existsSync(repoPath(sample.source))) problems.push(`${id}: 샘플 source 경로 없음 ${sample.source}`);
+    if (sample.source && !repoPathExists(repoPath(sample.source))) problems.push(`${id}: 샘플 source 경로 없음 ${sample.source}`);
     for (const pattern of SECRET_PATTERNS) {
       if (pattern.test(sample.code) || (sample.codeEn && pattern.test(sample.codeEn))) problems.push(`${id}: 샘플 ${index + 1}에 비밀값처럼 보이는 문자열 (${pattern})`);
     }
