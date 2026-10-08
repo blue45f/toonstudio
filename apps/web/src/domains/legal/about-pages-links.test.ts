@@ -11,6 +11,7 @@ const WORKFLOW = readFileSync("apps/web/src/domains/legal/WebtoonWorkflowPage.ts
 
 const LINKS = [
   "/features",
+  "/about/technology/architecture",
   "/about/technology/story",
   "/about/technology/deck",
   "/about/technology/atlas",
@@ -20,7 +21,7 @@ describe("소개 페이지의 기능·기술 자료 연결", () => {
   it.each([
     ["AboutPage", ABOUT],
     ["WebtoonWorkflowPage", WORKFLOW],
-  ] as const)("%s는 전체 기능 한눈에와 제작 스토리·발표 자료·기술 도감으로 이어진다", (_name, source) => {
+  ] as const)("%s는 전체 기능 한눈에와 아키텍처 해설·제작 스토리·발표 모드·기술 도감으로 이어진다", (_name, source) => {
     for (const href of LINKS) expect(source, href).toContain(`href: "${href}"`);
   });
 
@@ -33,7 +34,7 @@ describe("소개 페이지의 기능·기술 자료 연결", () => {
     expect(ABOUT).toContain('href: "/product-tour"');
   });
 
-  it("기술 발표 자료 링크는 이전 audience/duration 주소가 아니라 기본 트랙 주소를 쓴다", () => {
+  it("기술 발표 모드 링크는 이전 audience/duration 주소가 아니라 기본 트랙 주소를 쓴다", () => {
     for (const source of [ABOUT, WORKFLOW]) expect(source).not.toMatch(/audience=|duration=/u);
   });
 });
