@@ -116,7 +116,7 @@ export function StudioBrushLabPage() {
         ) : null}
 
         <section className="mt-6 grid gap-2 md:grid-cols-2" aria-label="브러시 스튜디오 편집 깊이">
-          <article className="rounded-2xl border border-line bg-bg-2/45 p-4">
+          <article className="rounded-2xl border border-line bg-panel/45 p-4">
             <span className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-fg-3">QUICK</span>
             <h2 className="mt-1 text-sm font-black text-fg">{STUDIO_BRUSH_LABELS.editCurrent}</h2>
             <p className="mt-1 text-xs leading-5 text-fg-3">
@@ -134,7 +134,7 @@ export function StudioBrushLabPage() {
 
         <ol className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4" aria-label="브러시 전체 편집 단계">
           {STEPS.map(({ icon: Icon, number, title, description }) => (
-            <li key={number} className="rounded-2xl border border-line bg-bg-2/55 p-3.5">
+            <li key={number} className="rounded-2xl border border-line bg-panel/55 p-3.5">
               <div className="flex items-center gap-2">
                 <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
                   <Icon size={15} aria-hidden />
@@ -147,7 +147,7 @@ export function StudioBrushLabPage() {
           ))}
         </ol>
 
-        <details className="mt-4 rounded-2xl border border-line bg-bg-2/35 p-3.5">
+        <details className="mt-4 rounded-2xl border border-line bg-panel/35 p-3.5">
           <summary className={`flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold text-fg-2 ${STUDIO_FOCUS_RING}`}>
             <Gauge size={15} className="text-accent" aria-hidden />
             전문가 설정은 필요할 때만 표시됩니다
