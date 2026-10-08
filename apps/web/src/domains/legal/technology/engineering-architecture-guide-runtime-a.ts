@@ -26,12 +26,12 @@ export const BROWSER_STUDIO_SECTION: ArchitectureGuideSection = {
     kind: "layers",
     title: t("내 기기 안의 여섯 층", "Six layers inside your device"),
     caption: t(
-      "아래로 갈수록 작품을 지키는 층입니다. 모두 서버 없이 내 기기 안에서 돕니다.",
-      "The lower the layer, the closer it is to keeping your work safe, and every layer runs on your device without a server.",
+      "아래로 갈수록 작품을 지키는 층입니다. 한 번 온라인으로 연 뒤에는 모두 서버 없이 내 기기 안에서 돕니다.",
+      "The lower the layer, the closer it is to keeping your work safe, and after one online visit every layer runs on your device without a server.",
     ),
     alt: t(
-      "맨 위는 화면과 입력이고 그 아래로 문서와 명령, 그리기·3D 엔진, 일꾼(Worker·WASM), 기기 저장소, 앱 셸을 보관하는 서비스 워커가 이어집니다. 작품은 문서와 명령으로 저장되고, 무거운 계산은 일꾼이 맡으며, 저장은 기기 안의 SQLite 와 OPFS 에 남습니다.",
-      "From the top: screen and input, document and commands, drawing and 3D engines, workers and WASM, on-device storage, and a Service Worker that keeps the app shell. The work is stored as a document with commands, workers do the heavy math, and saving lands in on-device SQLite and OPFS.",
+      "맨 위는 화면과 입력이고 그 아래로 문서와 명령, 그리기·3D 엔진, 일꾼(Worker·WASM), 기기 저장소, 앱 셸을 보관하는 서비스 워커가 이어집니다. 작품은 직렬화되는 문서로 저장되고, 필터·PNG 같은 무거운 작업은 일꾼이 맡으며, 저장은 기기 안의 SQLite 와 OPFS 에 남습니다.",
+      "From the top: screen and input, document and commands, drawing and 3D engines, workers and WASM, on-device storage, and a Service Worker that keeps the app shell. The work is stored as a serializable document, workers do heavy jobs such as filters and PNG encoding, and saving lands in on-device SQLite and OPFS.",
     ),
     layers: [
       {
@@ -44,7 +44,7 @@ export const BROWSER_STUDIO_SECTION: ArchitectureGuideSection = {
       {
         id: "document",
         label: t("문서와 명령", "Document and commands"),
-        sub: t("문서와 명령이 저장·되돌리기의 기준", "Work is saved as a serializable document plus commands, the basis for undo"),
+        sub: t("직렬화되는 문서로 저장, 되돌리기는 편집 기록(스냅샷)", "Saved as a serializable document; undo runs on edit-history snapshots"),
         tone: "local",
         chips: ["studio-project-model", "command-registry"],
       },
@@ -58,7 +58,7 @@ export const BROWSER_STUDIO_SECTION: ArchitectureGuideSection = {
       {
         id: "workers",
         label: t("일꾼 (Worker·WASM)", "Workers and WASM"),
-        sub: t("무거운 계산은 화면 밖에서 해 입력이 끊기지 않음", "Heavy math runs off-screen so input never stalls"),
+        sub: t("필터·PNG 같은 무거운 일은 화면 밖에서 처리", "Heavy jobs such as filters and PNG encoding run off-screen"),
         tone: "local",
         chips: ["Web Worker", "Rust/WASM"],
       },
@@ -79,39 +79,39 @@ export const BROWSER_STUDIO_SECTION: ArchitectureGuideSection = {
     ],
     brackets: [
       {
-        label: t("서버 없이 동작", "No server needed"),
+        label: t("한 번 연 뒤 서버 없이 동작", "No server after one visit"),
         layerIds: ["ui", "document", "engines", "workers", "storage", "shell"],
       },
     ],
   },
   steps: [
     t("주소를 열면 React 앱이 뜨고, /studio 에서 Konva 캔버스가 작품을 보여 줍니다.", "Opening the address starts the React app, and on /studio a Konva canvas shows the work."),
-    t("펜을 내리는 순간 그릴 표면을 한 번 고르고, 획 계산은 화면 밖의 일꾼(Worker·WASM)이 맡습니다.", "The moment the pen goes down, one drawing surface is chosen, and stroke math is done by workers (Worker and WASM) off-screen."),
-    t("작품은 직렬화되는 문서와 명령으로 저장되어 되돌리기와 복구의 기준이 됩니다.", "The work is stored as a serializable document plus commands, which is the basis for undo and recovery."),
+    t("펜을 내릴 때 그릴 표면을 한 번 고릅니다. 필터·PNG 같은 무거운 일만 일꾼(Worker·WASM)이 맡습니다.", "The moment the pen goes down, one drawing surface is chosen. Only heavy jobs such as filters and PNG encoding go to workers (Worker and WASM); default-brush stroke math stays on the main thread."),
+    t("작품은 직렬화되는 문서로 저장되고, 되돌리기는 편집 기록(스냅샷)으로 동작하며, 복구는 아래의 저널이 맡습니다.", "The work is stored as a serializable document, undo runs on edit-history snapshots, and recovery is handled by the journal below."),
     t("편집이 1.5초 멈추거나 펜을 뗄 때 OPFS 복구 저널에 자동 저장됩니다.", "When editing pauses for 1.5 seconds or the pen lifts, an autosave goes into the OPFS recovery journal."),
-    t("카탈로그·설정은 전용 Worker 한 개가 쥔 SQLite WASM 에 두고, 같은 문서는 탭 하나만 저자가 됩니다.", "Catalogs and settings live in SQLite WASM held by one dedicated worker, and only one tab can be the author of a document."),
+    t("카탈로그·설정은 전용 Worker 한 개가 쥔 SQLite WASM 에 두고, 같은 문서는 탭 하나만 저장을 맡습니다.", "Catalogs and settings live in SQLite WASM held by one dedicated worker, and only one tab saves a given document."),
     t("Service Worker 가 앱 셸을 보관해 한 번 열어 본 스튜디오는 오프라인에서도 열립니다.", "A Service Worker keeps the app shell, so a studio that was opened once can open offline."),
   ],
   background: [
     t(
-      "보통의 웹 서비스는 화면만 브라우저에 있고 계산과 저장은 서버가 합니다. 그러면 연결이 느리거나 서버가 잠들 때 그리는 손이 멈춥니다. ToonStudio 의 스튜디오는 반대로 그리기·계산·임시 저장을 내 기기 안에 두고, 서버는 계정·공유·결제처럼 '여럿이 함께 믿어야 하는 일'에만 부릅니다.",
-      "In a typical web service only the screen lives in the browser, while computing and saving happen on a server, so a slow connection or a sleeping server stops the drawing hand. The ToonStudio studio does the opposite: drawing, computing and temporary saving stay on your device, and the server is called only for things many people must trust together, such as accounts, sharing and payments.",
+      "보통의 웹 서비스는 화면만 브라우저에 있고 계산과 저장은 서버가 합니다. 그러면 연결이 느리거나 서버가 잠들 때 그리는 손이 멈춥니다. ToonStudio 의 스튜디오는 반대로 그리기·계산·임시 저장을 내 기기 안에 두고, 서버는 계정·공유·결제 같은 '여럿이 함께 믿어야 하는 일'을 주로 맡고, 상태 확인과 AI 호출 같은 일부 요청에도 쓰입니다.",
+      "In a typical web service only the screen lives in the browser, while computing and saving happen on a server, so a slow connection or a sleeping server stops the drawing hand. The ToonStudio studio does the opposite: drawing, computing and temporary saving stay on your device, and the server mainly handles things many people must trust together, such as accounts, sharing and payments, and is also used for a few requests such as status checks and AI calls.",
     ),
     t(
-      "구조는 여섯 층입니다. 화면은 React 와 Konva 가, 무거운 계산(필터 적용·PNG 만들기·붓 계산)은 화면 밖의 일꾼(Web Worker)과 미리 번역해 둔 WASM 이 맡습니다. 작품은 렌더러 객체가 아니라 문서와 명령으로 저장하고, 렌더러마다 '무엇을 단독으로 맡는가'를 코드 한 곳(원장)에 적어 어긋나면 테스트가 실패합니다. 저장은 전용 Worker 의 SQLite 와 OPFS 복구 저널이 맡습니다.",
-      "There are six layers. React and Konva handle the screen, while heavy work such as applying filters, encoding PNGs and brush math goes to off-screen workers (Web Workers) and pre-compiled WASM. The work is saved as a document plus commands rather than as renderer objects, and each renderer's sole responsibility is written in one code ledger, so a mismatch fails the tests. Saving is handled by SQLite in a dedicated worker and an OPFS recovery journal.",
+      "구조는 여섯 층입니다. 화면은 React 와 Konva 가, 무거운 작업(필터 적용·PNG 만들기)은 화면 밖의 일꾼(Web Worker)과 미리 번역해 둔 WASM 이 맡고, 기본 붓의 획 계산은 화면 스레드에서 돕니다. 작품은 렌더러 객체가 아니라 직렬화되는 문서로 저장하고, 렌더러마다 '무엇을 맡는가'를 코드 한 곳(원장)에 적어 어긋나면 테스트가 실패합니다. 저장은 전용 Worker 의 SQLite 와 OPFS 복구 저널이 맡습니다.",
+      "There are six layers. React and Konva handle the screen, while heavy jobs such as applying filters and encoding PNGs go to off-screen workers (Web Workers) and pre-compiled WASM, while stroke math for the default brush runs on the main thread. The work is saved as a serializable document rather than as renderer objects, and each renderer's responsibility is written in one code ledger, so a mismatch fails the tests. Saving is handled by SQLite in a dedicated worker and an OPFS recovery journal.",
     ),
     t(
-      "대가도 있습니다. 브라우저 저장소는 백업이 아니라서 사이트 데이터를 지우거나 기기를 잃으면 함께 사라지고, 같은 문서는 탭 하나만 저장합니다. 첫 방문은 온라인이어야 하고, 공유 메모리를 쓰는 기능은 /studio 에만 거는 격리(COOP·COEP)가 켜져야 한도가 높아집니다.",
-      "There are costs too. Browser storage is not a backup, so clearing site data or losing the device removes it, and only one tab saves a given document. The first visit needs the internet, and features that use shared memory get their higher limits only when the isolation headers (COOP and COEP) that /studio alone carries are active.",
+      "대가도 있습니다. 브라우저 저장소는 백업이 아니라서 사이트 데이터를 지우거나 기기를 잃으면 함께 사라지고, 같은 문서는 탭 하나만 저장합니다. 첫 방문은 온라인이어야 하고, 공유 메모리를 쓰는 기능은 /studio 에만 거는 격리(COOP·COEP)가 켜져야 동작합니다. 격리 여부에 따라 한도를 달리 잡는 표는 코드에 있지만 아직 제품에 연결되지 않았습니다.",
+      "There are costs too. Browser storage is not a backup, so clearing site data or losing the device removes it, and only one tab saves a given document. The first visit needs the internet, and features that use shared memory need the isolation headers (COOP and COEP) that /studio alone carries. A limits table that varies with isolation exists in code but is not yet wired into the product.",
     ),
   ],
   inService: [
     {
       what: t("캔버스·입력 (/studio)", "Canvas and input (/studio)"),
       role: t(
-        "Konva 가 문서 표시·펜 입력·선택 틀을, Canvas2D 가 래스터 획의 최종 커밋을 단독으로 맡음",
-        "Konva alone owns document display, pen input and selection chrome; Canvas2D alone owns the final commit of raster strokes",
+        "역할마다 소유자는 원장에 하나씩 적혀 있고, 문서 표시·펜 입력은 Konva, 래스터 획의 최종 커밋은 Canvas2D 가 맡음",
+        "Each role has one owner in the ledger: Konva for document display and pen input, Canvas2D for the final commit of raster strokes",
       ),
       paths: ["packages/studio-engine-registry/src/renderer-roles.ts", "apps/web/src/domains/creator/canvas/StudioCanvasViewport.tsx"],
     },
@@ -138,8 +138,8 @@ export const BROWSER_STUDIO_SECTION: ArchitectureGuideSection = {
     {
       what: t("Worker 일꾼 규약", "Worker conventions"),
       role: t(
-        "무거운 일을 화면 밖으로 보내고 요청 번호·취소·제한 시간·소유권 이전 규칙을 통일",
-        "Sends heavy work off-screen with one shared set of rules for request ids, cancellation, time limits and ownership transfer",
+        "무거운 일을 화면 밖으로 보내는 공통 규약(요청 번호·취소·제한 시간)이 있고 대부분의 일꾼이 따르며, 일부는 아직 제품에 연결되지 않음",
+        "A shared convention (request ids, cancellation, time limits) sends heavy work off-screen and most workers follow it; a few are not yet wired into the product",
       ),
       paths: ["apps/web/src/domains/creator/studio-crc32-worker-client.ts", "apps/web/vite.config.ts"],
     },
@@ -284,12 +284,12 @@ export const REQUEST_JOURNEY_SECTION: ArchitectureGuideSection = {
       "Typing a web address first fetches the files that make up the page. Built in advance, those files are identical for everyone, so a computing server need not produce them each time. ToonStudio uses this: Cloudflare hands out page files directly, and only person-specific work such as sign-in, saving and community goes to the server (the Core API).",
     ),
     t(
-      "Cloudflare 의 Static Assets 가 SPA 와 정적 카탈로그를 직접 응답하고, 얇은 Worker 는 지정한 26개 경로 패턴(API 4·링크 미리보기 16·대형 파일 6)만 먼저 받습니다. 동적 요청은 7갈래(코어·커뮤니티·플레이·관리자·실시간·공개 읽기·대형 파일) 중 한 곳으로만 전달하고, 설정이 틀리면 다른 곳으로 몰래 돌리지 않고 503 으로 닫습니다.",
-      "Cloudflare Static Assets answers the SPA and static catalogs itself, while a thin Worker takes only 26 listed path patterns first (4 API, 16 link-preview, 6 large-file). A dynamic request is forwarded to exactly one of seven routes (core, community, playground, admin, realtime, public read, large file), and a misconfiguration is closed with a 503 rather than rerouted quietly.",
+      "Cloudflare 의 Static Assets 가 SPA 와 정적 카탈로그를 직접 응답하고, 얇은 Worker 는 지정한 26개 경로 패턴(API 4·링크 미리보기 16·대형 파일 6)만 먼저 받습니다. 동적 요청은 7갈래(코어·커뮤니티·플레이·관리자·실시간·공개 읽기·대형 파일) 중 한 곳으로만 전달하고, 필수 원점이 없으면 503 으로 닫고, 전용 원점이 없는 일부 갈래는 코어 원점으로 대체합니다.",
+      "Cloudflare Static Assets answers the SPA and static catalogs itself, while a thin Worker takes only 26 listed path patterns first (4 API, 16 link-preview, 6 large-file). A dynamic request is forwarded to exactly one of seven routes (core, community, playground, admin, realtime, public read, large file), a missing required origin is closed with a 503, and some routes without a dedicated origin fall back to the core origin.",
     ),
     t(
-      "대가는 서버 쪽에 있습니다. Core API 는 무료 플랜의 Render 서비스라 쉬는 동안 잠들 수 있어 깨우는 첫 요청이 느립니다. 그래서 상태 확인(live)은 Cloudflare 가 직접 답해 서버를 깨우지 않습니다. 운영 대시보드의 실제 상태와 사용량은 이 페이지에서 확인하지 못했습니다.",
-      "The cost sits on the server side. The Core API runs on a free-plan Render service that can fall asleep, so the first request that wakes it is slow. That is why the live health check is answered by Cloudflare itself without waking the server. The real production dashboard state and usage were not verified for this page.",
+      "대가는 서버 쪽에 있습니다. Core API 는 무료 플랜의 Render 서비스라 쉬는 동안 잠들 수 있어 깨우는 첫 요청이 느립니다. 그래서 생존 점검(live)은 Cloudflare 가 직접 답해 서버를 깨우지 않습니다. 다만 앱 안의 기능 배지는 capabilities 를 부르므로 화면을 열면 서버와 DB 가 깨어날 수 있습니다. 운영 대시보드의 실제 상태와 사용량은 이 페이지에서 확인하지 못했습니다.",
+      "The cost sits on the server side. The Core API runs on a free-plan Render service that can fall asleep, so the first request that wakes it is slow. That is why the live health check is answered by Cloudflare itself without waking the server. The in-app feature badges call the capabilities endpoint, though, so opening a page can wake the server and the database. The real production dashboard state and usage were not verified for this page.",
     ),
   ],
   inService: [
@@ -304,8 +304,8 @@ export const REQUEST_JOURNEY_SECTION: ArchitectureGuideSection = {
     {
       what: t("동적 요청 7갈래", "Seven dynamic routes"),
       role: t(
-        "API·Socket.IO 요청을 7갈래로 나눠 허용된 원점으로만 전달하고, 설정 오류는 503 으로 닫음",
-        "Sorts API and Socket.IO requests into seven routes, forwards only to allowed origins, and closes misconfiguration with a 503",
+        "API·Socket.IO 요청을 7갈래로 나눠 허용된 원점으로만 전달하고, 필수 원점이 없으면 503 으로 닫음",
+        "Sorts API and Socket.IO requests into seven routes, forwards only to allowed origins, and closes a missing required origin with a 503",
       ),
       paths: ["deploy/cloudflare-static/src/index.ts#classifyDynamicRoute"],
     },
@@ -320,16 +320,16 @@ export const REQUEST_JOURNEY_SECTION: ArchitectureGuideSection = {
     {
       what: t("상태 확인 3단", "Three-level health checks"),
       role: t(
-        "live 는 DB 를 깨우지 않고, ready 는 배포 점검에, capabilities 는 기능별 상태 배지에 쓰임",
-        "live never wakes the database, ready serves release checks, and capabilities feeds per-feature status badges",
+        "live 는 DB 를 깨우지 않고, ready 는 배포 점검에 쓰이며, capabilities 는 기능별 상태 배지에 쓰이고 DB 를 확인하므로 화면을 열면 서버가 깨어날 수 있음",
+        "live never wakes the database and ready serves release checks, while capabilities feeds per-feature status badges and checks the database, so opening a page can wake the server",
       ),
       paths: ["apps/api/src/modules/health/health.service.ts", "apps/web/src/platform/service-capability-state.ts"],
     },
     {
       what: t("대형 파일 배달", "Large-file delivery"),
       role: t(
-        "25 MiB 를 넘는 WASM·모델은 압축본·R2 에서 받아 Core API 를 깨우지 않음",
-        "WASM and model files over 25 MiB come from compressed copies or R2 without waking the Core API",
+        "25 MiB 를 넘는 WASM·모델 등 대형 파일(영상·GLB 포함)은 압축본·R2 에서 받아 Core API 를 깨우지 않음",
+        "Large files over 25 MiB such as WASM and models (video and GLB included) come from compressed copies or R2 without waking the Core API",
       ),
       paths: ["deploy/cloudflare-static/src/large-static-assets.ts"],
     },
@@ -349,8 +349,8 @@ export const REQUEST_JOURNEY_SECTION: ArchitectureGuideSection = {
     {
       choice: t("동적 서버는 Render 무료 플랜에 둔다", "Run the dynamic server on a Render free plan"),
       because: t(
-        "비용 없이 동적 원장 서버를 운영하고, 정적 트래픽과 상태 확인은 서버를 깨우지 않게 분리했습니다.",
-        "A dynamic ledger server runs at no cost, and static traffic and liveness checks are separated so they never wake it.",
+        "비용 없이 동적 원장 서버를 운영하고, 정적 트래픽과 생존 점검(live)은 서버를 깨우지 않게 분리했습니다.",
+        "A dynamic ledger server runs at no cost, and static traffic and the liveness check are separated so they do not wake it.",
       ),
       cost: t(
         "쉬는 동안 잠들어 깨우는 첫 요청이 느리고 가용성 약속(SLA)이 없습니다.",

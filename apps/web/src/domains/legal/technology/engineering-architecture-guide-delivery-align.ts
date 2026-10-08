@@ -29,16 +29,16 @@ const FRONT_BACK_ALIGNMENT: ArchitectureGuideSection = {
     kind: "sequence",
     title: t("승인 SHA 하나가 서버와 화면을 맞추는 순서", "How one approved SHA lines up server and screen"),
     caption: t(
-      "단위마다 SHA 관문을 지나고, 도착한 번들은 내용 해시와 프로토콜 버전으로 서버와의 어긋남을 가립니다.",
-      "Each unit passes an SHA gate, and the arrived bundle sifts out a mismatch with the server by content hash and protocol version.",
+      "단위마다 SHA 관문을 지나고, 도착한 번들은 프리캐시 해시와 프로토콜 버전으로 서버와의 어긋남을 가립니다.",
+      "Each unit passes an SHA gate, and the arrived bundle sifts out a mismatch with the server by precache hash and protocol version.",
     ),
     alt: t(
-      "운영자가 승인한 SHA 를 먼저 DB 워크플로에 넣으면 main 의 조상인지 확인하고 원장에 체크섬과 SHA 를 남깁니다. 다음으로 Core API 를 손으로 올리고 origin 검증 스크립트가 live·ready 응답 계약을 확인합니다. 마지막으로 같은 SHA 로 정적 웹을 배포하면 스크립트가 규칙 검사와 빌드와 sw.js 점검을 하고 새 번들을 보냅니다. 번들의 새 버전 표지는 SHA 가 아니라 내용 해시이며, 서버는 다른 프로토콜 버전의 실시간 메시지를 거절합니다.",
-      "The operator enters the approved SHA into the DB workflow first, which checks that it is an ancestor of main and keeps the checksum and SHA in the ledger. Next the Core API is deployed by hand and an origin script checks the live and ready reply contract. Last, deploying the static site with the same SHA makes the script run the rules check, build and sw.js check, then ship the new bundle. The bundle's new-version marker is a content hash, not the SHA, and the server refuses realtime messages of another protocol version.",
+      "운영자가 승인한 SHA 를 먼저 DB 워크플로에 넣으면 main 의 조상인지 확인하고 원장에 체크섬과 SHA 를 남깁니다. 다음으로 Core API 를 손으로 올리고 origin 검증 스크립트가 live·ready 응답 계약을 확인합니다. 마지막으로 같은 SHA 로 정적 웹을 배포하면 스크립트가 규칙 검사와 빌드와 sw.js 점검을 하고 새 번들을 보냅니다. 번들의 새 버전 표지는 SHA 가 아니라 프리캐시 목록의 해시(buildId)이며, 서버는 다른 프로토콜 버전의 실시간 메시지를 거절합니다.",
+      "The operator enters the approved SHA into the DB workflow first, which checks that it is an ancestor of main and keeps the checksum and SHA in the ledger. Next the Core API is deployed by hand and an origin script checks the live and ready reply contract. Last, deploying the static site with the same SHA makes the script run the rules check, build and sw.js check, then ship the new bundle. The bundle's new-version marker is a hash of the precache list (buildId), not the SHA, and the server refuses realtime messages of another protocol version.",
     ),
     actors: [
       { id: "op", label: t("운영자", "Operator"), sub: t("승인한 main SHA", "approved main SHA"), tone: "warn" },
-      { id: "db", label: t("DB 워크플로", "DB workflow"), sub: t("GitHub Actions · 승인형", "GitHub Actions, gated"), tone: "server" },
+      { id: "db", label: t("DB 워크플로", "DB workflow"), sub: t("GitHub Actions · 수동 실행", "GitHub Actions, manual run"), tone: "server" },
       { id: "api", label: t("Core API", "Core API"), sub: t("Render · 수동 배포", "Render, manual deploy"), tone: "server" },
       { id: "web", label: t("정적 웹 배포", "Static deploy"), sub: t("스크립트 + Cloudflare", "script + Cloudflare"), tone: "edge" },
       { id: "tab", label: t("사용자 탭", "User's tab"), sub: t("브라우저의 번들", "the bundle in a browser"), tone: "local" },
@@ -70,7 +70,7 @@ const FRONT_BACK_ALIGNMENT: ArchitectureGuideSection = {
         to: "tab",
         label: t("새 HTML · sw.js", "new HTML + sw.js"),
         style: "dashed",
-        note: t("buildId 는 내용 해시, SHA 아님", "buildId is a content hash, not the SHA"),
+        note: t("buildId 는 프리캐시 목록 해시, SHA 아님", "buildId hashes the precache list, not the SHA"),
       },
       { from: "tab", to: "api", label: t("저장 요청 + CSRF 헤더", "save request + CSRF header"), note: t("헤더 이름은 contracts 한 파일", "header name from one contracts file") },
       {
@@ -106,8 +106,8 @@ const FRONT_BACK_ALIGNMENT: ArchitectureGuideSection = {
       "The static-site script runs the rules check, build, sw.js check and deploy only when HEAD equals the approved SHA.",
     ),
     t(
-      "브라우저에 도착한 번들은 SHA 대신 내용 해시(buildId)와 해시 이름 파일로 새 버전임을 알립니다.",
-      "A bundle that reaches the browser announces a new version through a content hash (buildId) and hashed file names, not the SHA.",
+      "브라우저에 도착한 번들은 SHA 대신 프리캐시 목록의 해시(buildId)와 해시 이름 파일로 새 버전임을 알립니다.",
+      "A bundle that reaches the browser announces a new version through a hash of the precache list (buildId) and hashed file names, not the SHA.",
     ),
     t(
       "서버는 다른 프로토콜 버전의 실시간 메시지를 거절해 어긋난 옛 탭이 조용히 섞이지 않게 합니다.",
@@ -120,8 +120,8 @@ const FRONT_BACK_ALIGNMENT: ArchitectureGuideSection = {
       "The screen (front end) and the server (back end) are built and shipped separately. If they see code from different moments, the screen may send a name the server no longer expects, or a file the screen looks for may be gone. So the promise of the same commit (the SHA) is the baseline, and code, not human memory, checks at each step that the promise holds.",
     ),
     t(
-      "SHA(커밋의 40자리 지문) 관문은 코드로 세 곳에 있습니다. 정적 웹 배포 스크립트는 승인 문구, 소문자 40자리 SHA, main 브랜치, 깨끗한 작업 트리, HEAD 일치를 모두 요구하고, DB 워크플로는 release_sha 가 main 의 조상인지 확인한 뒤 원장에 남기며, 수동 컨테이너 워크플로는 이미지 태그에 SHA 를 새깁니다. 서버와 화면 사이의 약속은 packages/contracts 와 프로토콜 버전 문이 맡고, 화면 쪽 새 버전 표지는 내용 해시 buildId 와 해시 이름 파일이 맡습니다.",
-      "The SHA (a 40-character fingerprint of a commit) gate sits in code in three places. The static deploy script demands the approval phrase, a lowercase 40-character SHA, the main branch, a clean worktree and HEAD equal to the SHA, the DB workflow checks that release_sha is an ancestor of main before keeping it in the ledger, and the manual container workflow stamps the SHA into the image tag. The promise between server and screen is carried by packages/contracts and a protocol-version gate, and the screen's new-version marker is carried by a content-hash buildId and hashed file names.",
+      "SHA(커밋의 40자리 지문) 관문은 코드로 세 곳에 있습니다. 정적 웹 배포 스크립트는 승인 문구, 소문자 40자리 SHA, main 브랜치, 깨끗한 작업 트리, HEAD 일치를 모두 요구하고, DB 워크플로는 release_sha 가 main 의 조상인지 확인한 뒤 원장에 남기며, 수동 컨테이너 워크플로는 이미지 태그에 SHA 를 새깁니다. 서버와 화면 사이의 약속은 packages/contracts 와 프로토콜 버전 문이 맡고, 화면 쪽 새 버전 표지는 프리캐시 목록 해시 buildId 와 해시 이름 파일이 맡습니다.",
+      "The SHA (a 40-character fingerprint of a commit) gate sits in code in three places. The static deploy script demands the approval phrase, a lowercase 40-character SHA, the main branch, a clean worktree and HEAD equal to the SHA, the DB workflow checks that release_sha is an ancestor of main before keeping it in the ledger, and the manual container workflow stamps the SHA into the image tag. The promise between server and screen is carried by packages/contracts and a protocol-version gate, and the screen's new-version marker is carried by a precache-list-hash buildId and hashed file names.",
     ),
     t(
       "다만 SHA 가 번들이나 서버 응답에 새겨져 있지는 않습니다. 운영 사이트에서 '지금 어느 커밋인가'는 코드로 읽을 수 없고 릴리스 기록과 대시보드로 확인해야 합니다. 배포 순서도 사람이 따르는 절차라 어기면 막는 코드는 없고, 정적 웹은 CI 의 dist 가 아니라 운영자 환경에서 다시 빌드합니다. 빌드 때 SHA 를 번들과 헬스 응답에 넣는 방법은 흔한 대안이지만 지금은 설계 후보일 뿐입니다.",
@@ -188,12 +188,12 @@ const FRONT_BACK_ALIGNMENT: ArchitectureGuideSection = {
     {
       choice: t("승인 SHA 로 관문을 열고 번들엔 새기지 않음", "Open gates with the approved SHA, not stamp it into the bundle"),
       because: t(
-        "내용이 같으면 buildId 도 같아서, 바뀐 것이 없는 재빌드가 같은 서비스 워커를 다시 설치시키지 않습니다.",
-        "Identical content gives an identical buildId, so a rebuild with no change does not make browsers reinstall the same service worker.",
+        "buildId 를 프리캐시 내용에서 뽑으므로 내용이 같으면 같고, 바뀐 것이 없는 재빌드가 같은 서비스 워커를 다시 설치시키지 않습니다.",
+        "The buildId comes from the precache content, so identical content gives an identical buildId and a rebuild with no change does not make browsers reinstall the same service worker.",
       ),
       cost: t(
-        "지금 운영이 어느 커밋인지 코드로 읽을 수 없고, 이렇게 정한 이유를 적은 문서는 찾지 못했습니다.",
-        "Which commit is live cannot be read from code, and no document explaining why it was chosen this way was found.",
+        "SHA 를 번들에 넣지 않은 이유를 적은 문서는 찾지 못했고, 지금 운영이 어느 커밋인지 코드로 읽을 수 없습니다.",
+        "No document explaining why the SHA is not stamped into the bundle was found, and which commit is live cannot be read from code.",
       ),
     },
     {
@@ -231,7 +231,7 @@ const FRONT_BACK_ALIGNMENT: ArchitectureGuideSection = {
     },
     {
       value: "12",
-      label: t("buildId 의 길이(내용 해시의 앞 12자리)", "Length of the buildId (first 12 characters of a content hash)"),
+      label: t("buildId 의 길이(프리캐시 계획 해시의 앞 12자리)", "Length of the buildId (first 12 characters of a hash of the precache plan)"),
       source: "apps/web/src/app/service-worker/studio-service-worker-precache-plan.ts",
     },
     {
