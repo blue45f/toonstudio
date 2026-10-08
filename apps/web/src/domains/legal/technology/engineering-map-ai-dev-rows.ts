@@ -106,8 +106,8 @@ export const AI_DEV_POLICY_ROWS: readonly EngineeringMapRow[] = [
     cells: cells({
       kind: AGENT,
       what: t(
-        "Codex는 어댑터 없이 AGENTS.md를 직접 읽습니다. 프로젝트 설정에는 OpenWiki 지식 베이스를 도구로 부르는 MCP 연결 블록 하나만 있습니다.",
-        "Codex reads AGENTS.md directly, with no adapter. Its project config holds a single block that exposes the OpenWiki knowledge base as an MCP tool.",
+        "Codex 공식 문서에 따르면 Codex는 어댑터 없이 AGENTS.md를 직접 읽습니다(저장소에 Codex용 어댑터 파일은 없습니다). 프로젝트 설정에는 OpenWiki 지식 베이스를 도구로 부르는 MCP 연결 블록 하나만 있습니다.",
+        "According to the Codex documentation, Codex reads AGENTS.md directly, with no adapter (the repository has no Codex adapter file). Its project config holds a single block that exposes the OpenWiki knowledge base as an MCP tool.",
       ),
       where: t(
         "코드 작성·수정 작업 · .codex/config.toml. Git 이력에 작성자 'OpenAI Codex'의 커밋이 남아 있습니다.",
@@ -188,8 +188,8 @@ export const AI_DEV_LOOP_ROWS: readonly EngineeringMapRow[] = [
         "Long-running development work: the loop-dev, loop-safe-dev, loop-progress and loop-testfix command files. The repo has no progress.md, so /loop-init must create one.",
       ),
       guard: t(
-        "testfix의 기본 검증은 npm test(루트 전체 테스트)입니다. 저장소 정책에 맞추려면 --verify 옵션으로 harness:verify를 직접 지정해야 합니다.",
-        "testfix defaults to npm test (the whole root suite). To match repository policy, harness:verify must be set explicitly with the --verify option.",
+        "플러그인 문서에 따르면(저장소·설치본에서는 확인 불가) testfix의 기본 검증은 npm test(루트 전체 테스트)이고 --verify 옵션으로 바꿀 수 있습니다. 저장소 정책에 맞추려면 harness:verify를 직접 지정해야 합니다.",
+        "Per the plugin documentation (not verifiable from the repository or an installed copy), testfix defaults to npm test (the whole root suite) and the --verify option can change it. To match repository policy, harness:verify must be set explicitly.",
       ),
     }),
   },
@@ -231,8 +231,8 @@ export const AI_DEV_LOOP_ROWS: readonly EngineeringMapRow[] = [
         "Long OpenCode tasks: the plugin declaration and the goal command in opencode.json (routed to the build agent).",
       ),
       guard: t(
-        "플러그인 문서상 턴 수·시간·토큰·무진행 한도로 멈춥니다. 버전을 고정하지 않아 업데이트의 영향을 받을 수 있고, 실행 기록은 확인하지 못했습니다.",
-        "Per the plugin docs it stops on turn, time, token and no-progress limits. The version is not pinned, so updates can change behavior, and no run history was found.",
+        "플러그인 문서상 턴 수·시간·토큰·무진행 한도로 멈춥니다(저장소·설치본에서는 확인 불가). 버전을 고정하지 않아 업데이트의 영향을 받을 수 있고, 실행 기록은 확인하지 못했습니다.",
+        "Per the plugin docs it stops on turn, time, token and no-progress limits (not verifiable from the repository or an installed copy). The version is not pinned, so updates can change behavior, and no run history was found.",
       ),
     }),
   },

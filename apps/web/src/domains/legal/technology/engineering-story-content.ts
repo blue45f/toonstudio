@@ -419,8 +419,8 @@ export const ENGINEERING_CHAPTERS = [
       en: "Users can see which components are provided under which rights conditions.",
     },
     tradeoff: {
-      ko: "새 패키지나 에셋을 도입할 때 기능 검토와 함께 라이선스 검토 시간이 필요합니다. 또한 저장소 루트의 손으로 쓴 THIRD_PARTY_NOTICES.md는 직접 의존성 117개 중 25개만 언급하므로 완전한 목록으로 읽지 않고, 전체 목록은 빌드가 생성하는 고지가 맡습니다.",
-      en: "Every new package or asset adds license review alongside feature review. The hand-written THIRD_PARTY_NOTICES.md at the repository root mentions only 25 of the 117 direct dependencies, so it is not read as a complete list; the full list belongs to the notice generated at build time.",
+      ko: "새 패키지나 에셋을 도입할 때 기능 검토와 함께 라이선스 검토 시간이 필요합니다. 또한 저장소 루트의 손으로 쓴 THIRD_PARTY_NOTICES.md는 직접 의존성 117개 중 22개만 싣고 95개는 빠져 있으므로 완전한 목록으로 읽지 않고, 전체 목록은 빌드가 생성하는 고지가 맡습니다.",
+      en: "Every new package or asset adds license review alongside feature review. The hand-written THIRD_PARTY_NOTICES.md at the repository root lists only 22 of the 117 direct dependencies and omits 95, so it is not read as a complete list; the full list belongs to the notice generated at build time.",
     },
     technologies: ["SPDX", "THIRD_PARTY_NOTICES", "License allowlist", "Asset provenance"],
     evidence: [
