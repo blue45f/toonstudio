@@ -504,8 +504,8 @@ export const WEB_LOCKS_BROADCASTCHANNEL_SINGLE_AUTHOR: EngineeringAtlasEntry = {
   ),
   background: [
     t(
-      "같은 원고를 탭 두 개로 열어 두고 양쪽에서 그리면, 나중에 저장한 탭이 다른 탭의 작업을 덮어 지울 수 있습니다. 탭마다 따로 도는 프로그램이라 서로의 존재를 모르기 때문입니다. 그래서 ‘문서의 저자는 한 번에 한 명’이라는 규칙을 브라우저가 보증하는 번호표(Web Locks)로 지킵니다. 먼저 번호표를 잡은 탭이 편집하고, 나머지는 읽기 전용으로 기다립니다.",
-      "If the same manuscript is open in two tabs and both draw, the tab that saves later can wipe out the other’s work, because each tab is a separate program that does not know the other exists. So the rule ‘one author per document at a time’ is enforced with a ticket the browser itself guarantees (Web Locks). The tab that grabbed the ticket first edits; the others wait in read-only mode.",
+      "같은 원고를 탭 두 개로 열어 두고 양쪽에서 그리면, 나중에 저장한 탭이 다른 탭의 작업을 덮어 지울 수 있습니다. 탭마다 따로 도는 프로그램이라 서로의 존재를 모르기 때문입니다. 그래서 ‘문서의 저자는 한 번에 한 명’이라는 규칙을 브라우저가 보증하는 번호표(Web Locks)로 지킵니다. 먼저 번호표를 잡은 탭이 저장을 맡고, 나머지는 그릴 수는 있지만 저장은 안 됩니다.",
+      "If the same manuscript is open in two tabs and both draw, the tab that saves later can wipe out the other’s work, because each tab is a separate program that does not know the other exists. So the rule ‘one author per document at a time’ is enforced with a ticket the browser itself guarantees (Web Locks). The tab that grabbed the ticket first does the saving; the others can still draw but their work is not saved.",
     ),
     t(
       "락은 세 층입니다. ① DB 소유 락: SQLite를 여는 Worker가 탭 수명 동안 하나만 잡습니다. ② 문서 리더 락: 원고마다 하나이고, 이름은 작품 ID가 드러나지 않게 SHA-256 앞 48자로 만듭니다. ③ 저널 락: 파일에 기록하는 짧은 순간에만 잡습니다. 락을 항상 ‘문서 → 저널’ 순서로 잡으니 서로 기다리다 멈추는 교착이 생기지 않습니다. 탭이 닫히거나 죽으면 브라우저가 락을 자동으로 풀어 줍니다.",
@@ -521,7 +521,7 @@ export const WEB_LOCKS_BROADCASTCHANNEL_SINGLE_AUTHOR: EngineeringAtlasEntry = {
     ),
   ],
   keyPoints: [
-    t("먼저 연 탭이 리더, 다른 탭은 읽기 전용 팔로워", "The first tab leads; other tabs follow read-only"),
+    t("먼저 연 탭이 리더, 다른 탭은 저장 안 되는 팔로워", "The first tab leads; other tabs follow without saving"),
     t("리더를 밀어내지 않고, 리더가 놓을 때만 승계", "Never preempt a live leader; take over only when it lets go"),
     t("락 순서는 항상 문서 → 저널(교착 방지)", "Lock order is always document, then journal (no deadlock)"),
     t("BroadcastChannel은 선출이 아니라 알림용", "BroadcastChannel carries notices, not the election"),
@@ -549,7 +549,7 @@ export const WEB_LOCKS_BROADCASTCHANNEL_SINGLE_AUTHOR: EngineeringAtlasEntry = {
       { from: "locks", to: "tabA", label: t("허가: 리더가 됨", "Granted: becomes leader"), style: "dashed", note: t("탭이 닫힐 때까지 락 유지", "Held until the tab goes away") },
       { from: "tabA", to: "journal", label: t("편집·저장 허용", "Editing and saving allowed") },
       { from: "tabB", to: "locks", label: t("같은 락 요청(ifAvailable)", "Request the same lock") },
-      { from: "locks", to: "tabB", label: t("거절: 팔로워가 됨", "Refused: becomes follower"), style: "dashed", note: t("읽기 전용 · 저장 안 됨 안내", "Read-only, with a ‘not saved’ notice") },
+      { from: "locks", to: "tabB", label: t("거절: 팔로워가 됨", "Refused: becomes follower"), style: "dashed", note: t("그릴 수 있음 · 저장 안 됨 안내", "Can draw, with a ‘not saved’ notice") },
       { from: "tabB", to: "locks", label: t("대기 요청을 줄 세움", "Queue a waiting request"), note: t("리더를 밀어내지 않음", "Does not preempt the leader") },
       { from: "tabA", to: "tabA", label: t("탭 닫기 또는 크래시", "Tab closes or crashes"), note: t("브라우저가 락을 자동 해제", "The browser releases the lock") },
       { from: "locks", to: "tabB", label: t("승계 허가", "Takeover granted"), style: "dashed" },
@@ -560,8 +560,8 @@ export const WEB_LOCKS_BROADCASTCHANNEL_SINGLE_AUTHOR: EngineeringAtlasEntry = {
     {
       feature: t("스튜디오 · 같은 원고를 두 탭으로 열었을 때", "Studio · the same manuscript in two tabs"),
       role: t(
-        "먼저 연 탭이 리더(저자)가 되고 다른 탭은 ‘다른 탭에서 편집 중’ 읽기 전용으로 물러납니다. 리더 탭이 닫히면 대기하던 탭이 승계합니다.",
-        "The first tab becomes the leader (author) and the others step back to a read-only ‘being edited in another tab’ state. When the leader closes, a waiting tab takes over.",
+        "먼저 연 탭이 리더(저자)가 되고 다른 탭은 그릴 수는 있어도 저장은 안 되는 상태로 물러납니다. 리더 탭이 닫히면 대기하던 탭이 승계합니다.",
+        "The first tab becomes the leader (author) and the others step back to a state where they can draw but nothing is saved. When the leader closes, a waiting tab takes over.",
       ),
       paths: [`${CREATOR}/studio-autosave-document-leader.ts`, `${CREATOR}/studio-autosave-opfs-session.ts#openStudioAutosaveDocumentSession`],
       route: "/studio",
@@ -601,7 +601,7 @@ export const WEB_LOCKS_BROADCASTCHANNEL_SINGLE_AUTHOR: EngineeringAtlasEntry = {
         "export function becomeLeader(documentKey: string): Promise<boolean> {",
         "  return new Promise((resolve) => {",
         '    void navigator.locks.request("autosave:" + documentKey, { ifAvailable: true }, (lock) => {',
-        ["      resolve(lock !== null); // null이면 이미 다른 탭이 리더 → 이 탭은 팔로워(읽기 전용)", "      resolve(lock !== null); // null means another tab leads, so this one follows (read-only)"],
+        ["      resolve(lock !== null); // null이면 이미 다른 탭이 리더 → 이 탭은 팔로워(저장 안 됨)", "      resolve(lock !== null); // null means another tab leads, so this one follows (not saved)"],
         ["      // 끝나지 않는 Promise를 돌려주면 탭 수명 동안 락이 유지된다.", "      // Returning a Promise that never settles keeps the lock for the tab's lifetime."],
         "      return lock === null ? undefined : new Promise<void>(() => undefined);",
         "    });",
@@ -647,8 +647,8 @@ export const WEB_LOCKS_BROADCASTCHANNEL_SINGLE_AUTHOR: EngineeringAtlasEntry = {
   chapterIds: ["storage", "browser-local-compute"],
   talk: {
     pitch: t(
-      "같은 원고를 탭 두 개로 열면 한쪽 저장이 다른 쪽을 덮어쓸 수 있습니다. 그래서 ‘문서의 저자는 한 번에 한 명’이라는 규칙을 브라우저가 보증하는 번호표, Web Locks로 지킵니다. 먼저 연 탭이 번호표를 쥐고 편집하고, 다른 탭은 읽기 전용으로 기다리다가 먼저 연 탭이 닫히면 이어받습니다. 탭이 죽으면 브라우저가 번호표를 거두니 만료를 청소하는 코드도 필요 없습니다.",
-      "With the same manuscript open in two tabs, one tab’s save can overwrite the other’s. So the rule ‘one author per document at a time’ is kept with Web Locks, a ticket the browser guarantees. The tab opened first holds the ticket and edits; the other waits read-only and takes over when the first closes. If a tab dies the browser takes the ticket back, so no expiry-cleanup code is needed.",
+      "같은 원고를 탭 두 개로 열면 한쪽 저장이 다른 쪽을 덮어쓸 수 있습니다. 그래서 ‘문서의 저자는 한 번에 한 명’이라는 규칙을 브라우저가 보증하는 번호표, Web Locks로 지킵니다. 먼저 연 탭이 번호표를 쥐고 편집하고, 다른 탭은 저장 없이 그리다가 먼저 연 탭이 닫히면 이어받습니다. 탭이 죽으면 브라우저가 번호표를 거두니 만료를 청소하는 코드도 필요 없습니다.",
+      "With the same manuscript open in two tabs, one tab’s save can overwrite the other’s. So the rule ‘one author per document at a time’ is kept with Web Locks, a ticket the browser guarantees. The tab opened first holds the ticket and edits; the other draws without saving and takes over when the first closes. If a tab dies the browser takes the ticket back, so no expiry-cleanup code is needed.",
     ),
     analogy: t(
       "공용 회의실에 열쇠가 단 하나뿐입니다. 열쇠를 가진 사람만 화이트보드에 쓸 수 있고 나머지는 문 앞에서 줄을 섭니다. 열쇠 주인이 건물을 나가면 열쇠는 자동으로 회수됩니다.",

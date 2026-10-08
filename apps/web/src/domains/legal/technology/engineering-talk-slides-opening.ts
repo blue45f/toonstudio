@@ -177,7 +177,7 @@ export const OPENING_SLIDES = [
       { id: "character", icon: "character", title: t("캐릭터 셰이퍼", "Character shaper"), body: t("3D 체형·포즈로 그리기 위한 밑그림", "3D body and pose as underdrawing"), href: "/studio/assets/characters/new", stack: ["three.js", "@pixiv/three-vrm"] },
       { id: "space", icon: "space", title: t("가상 스튜디오", "Virtual studio"), body: t("아바타로 걷고 만나는 2D 협업 공간", "A 2D space to walk and meet as avatars"), href: "/studio/space", stack: ["Phaser 3", "WebRTC"] },
       { id: "collab", icon: "collab", title: t("실시간 협업", "Realtime collaboration"), body: t("같은 문서 편집·접속 상태·근접 허들", "Shared editing, presence and huddles"), stack: ["Yjs", "Cloudflare Durable Objects"] },
-      { id: "ai", icon: "ai", title: t("AI 보조", "AI assistance"), body: t("제안은 AI, 확정은 사람", "AI proposes, people decide"), stack: ["onnxruntime-web", "MediaPipe"] },
+      { id: "ai", icon: "ai", title: t("AI 보조", "AI assistance"), body: t("글 도구는 제안, 확정은 사람", "Text tools propose, people decide"), stack: ["onnxruntime-web", "MediaPipe"] },
       { id: "publish", icon: "publish", title: t("발행·공유", "Publish and share"), body: t("내보내기·공유 링크·미리보기", "Export, share links and previews"), stack: ["WebCodecs"] },
     ],
     notes: t(

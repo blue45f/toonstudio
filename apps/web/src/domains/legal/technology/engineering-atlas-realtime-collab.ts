@@ -282,8 +282,8 @@ export class DeletionLedger {
     ),
     background: [
       t(
-        "공동 작업실은 오래 열려 있는 통화 같은 연결(WebSocket)입니다. 놀이공원에 비유하면 연간 회원증(로그인 쿠키)을 입구 직원에게 맡겨 두지 않고, 들어갈 때마다 60초만 유효한 일회용 입장권으로 바꿔서 냅니다. 입장권을 잃어버려도 1분 뒤에는 쓸 수 없고, 입장한 뒤에도 서버가 사람과 작품 권한을 계속 다시 확인합니다.",
-        "A shared workroom is a long-lived connection (a WebSocket), like a phone call left open. Think of a theme park: instead of leaving the annual pass (the login cookie) with the gate staff, you swap it for a one-use ticket valid for 60 seconds each time you enter. A lost ticket is useless after a minute, and even after entry the server keeps rechecking the person and the work's permissions.",
+        "공동 작업실은 오래 열려 있는 통화 같은 연결(WebSocket)입니다. 놀이공원에 비유하면 연간 회원증(로그인 쿠키)을 입구 직원에게 맡겨 두지 않고, 들어갈 때마다 60초만 유효한 입장권으로 바꿔서 냅니다(일회용을 보장하는 저장소는 없습니다). 입장권을 잃어버려도 1분 뒤에는 쓸 수 없고, 입장한 뒤에도 서버가 사람과 작품 권한을 계속 다시 확인합니다.",
+        "A shared workroom is a long-lived connection (a WebSocket), like a phone call left open. Think of a theme park: instead of leaving the annual pass (the login cookie) with the gate staff, you swap it for a ticket valid for 60 seconds each time you enter (no store guarantees it is single-use). A lost ticket is useless after a minute, and even after entry the server keeps rechecking the person and the work's permissions.",
       ),
       t(
         "순서는 이렇습니다. ① 브라우저가 로그인 쿠키로 API에 입장권을 요청합니다(쿠키 세션만 허용). ② 서버가 작품 입장 전용 JWT(유효 60초, 원래 세션 만료를 넘지 않음)를 서명해 줍니다. ③ 브라우저가 이 값을 Socket.IO 연결의 auth로 건네면 서버가 검증하고 곧바로 핸드셰이크에서 지웁니다. ④ 'studio:join'에서 작품 멤버 권한을 확인해 방에 넣습니다. ⑤ 이후 15초마다 모든 참가자의 권한을 다시 확인합니다.",

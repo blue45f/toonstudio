@@ -624,7 +624,7 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(ossSlide.lead.ko).toContain("117개");
     expect(ossSlide.lead.ko).toContain("2026-10-07");
     expect(ossSlide.table?.caption?.ko).toContain("117곳");
-    // Google Ink: 라이브 획의 "예측 꼬리 미리보기 섬"으로만 연결돼 있고 확정 픽셀의 주인은 Canvas2D(Perfect Freehand)다.
+    // Google Ink: 라이브 획의 "예측 꼬리 미리보기 섬"으로만 연결돼 있고 확정 픽셀의 주인은 Canvas2D 확정 경로다(코드 필드 canvas2d-perfect-freehand는 G펜·퍼펙트 계열 기준).
     // 코드가 바뀌어 확정 획에 쓰이거나 연결이 끊기면 표의 한 줄(Google Ink 행)을 다시 써야 한다.
     const inkPreview = read("apps/web/src/domains/creator/brush/studio-ink-mesh-live-preview.ts");
     expect(inkPreview).toContain("replaceable predicted tail");
