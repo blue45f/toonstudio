@@ -1,3 +1,4 @@
+import type { EngineeringDiagram } from "./engineering-diagram-types";
 import type { LocalizedText } from "./engineering-story-content";
 
 /**
@@ -38,7 +39,11 @@ export type TalkSlideLayout =
   | "tech"
   | "metrics"
   | "lessons"
-  | "qa";
+  | "qa"
+  /** 기술 도감 카드의 도식·코드·사용처를 그대로 보여주는 슬라이드(`atlas` 필드 필요). */
+  | "atlas"
+  /** 열 제목과 행으로 된 지도(오픈소스·무료 서비스·벤치마크 등, `table` 필드 필요). */
+  | "table";
 
 export type TalkModuleIcon = "canvas" | "character" | "space" | "collab" | "ai" | "publish";
 
@@ -48,6 +53,27 @@ export interface TalkModule {
   readonly title: LocalizedText;
   readonly body: LocalizedText;
   readonly href?: string;
+  /** 이 작업 공간을 떠받치는 기술 이름(칩, engineering-external-links 로 링크를 해결한다). */
+  readonly stack?: readonly string[];
+}
+
+/** 슬라이드가 도감 카드의 어느 면을 보여줄지. 도감이 정본이라 내용을 복제하지 않는다. */
+export interface TalkAtlasRef {
+  readonly id: string;
+  readonly view: "diagram" | "code" | "usage";
+  /** `code` 뷰에서 쓸 샘플 번호(0부터). 기본 0. */
+  readonly sample?: number;
+}
+
+export interface TalkTable {
+  readonly columns: readonly LocalizedText[];
+  readonly rows: readonly (readonly LocalizedText[])[];
+  readonly caption?: LocalizedText;
+}
+
+export interface TalkQrLink {
+  readonly href: string;
+  readonly label: LocalizedText;
 }
 
 export interface TalkDemoStep {
@@ -98,6 +124,16 @@ export interface TalkSlide {
   /** 슬라이드에 현재 상태 배지로 보여줄 기술 스토리 챕터. 상태 값은 챕터 데이터가 소유한다. */
   readonly statusChapterIds?: readonly string[];
   readonly evidence?: readonly string[];
+  /** `atlas` 레이아웃: 도감 카드의 도식·코드·사용처. 카드가 없으면 테스트가 실패한다. */
+  readonly atlas?: TalkAtlasRef;
+  /** `diagram` 레이아웃: 지정하면 기본 아키텍처 도식 대신 이 도식을 그린다. */
+  readonly diagram?: EngineeringDiagram;
+  /** `table` 레이아웃의 표. */
+  readonly table?: TalkTable;
+  /** `qa` 레이아웃: 링크 옆에 보여줄 QR 코드의 대상. */
+  readonly qr?: TalkQrLink;
+  /** 발표자 패널에 "이 슬라이드에서 질문이 나오면 열 도감 카드"로 보여줄 카드 id. */
+  readonly relatedAtlasIds?: readonly string[];
 }
 
 export const TALK_SECTIONS = [

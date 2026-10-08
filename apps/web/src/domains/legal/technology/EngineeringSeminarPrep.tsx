@@ -1,6 +1,7 @@
-import { CalendarCheck2, ChevronRight, ListOrdered, MessageCircleQuestionMark, Timer } from "lucide-react";
+import { CalendarCheck2, ChevronRight, ExternalLink, LibraryBig, ListOrdered, MessageCircleQuestionMark, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { findAtlasEntry } from "./engineering-atlas-content";
 import { formatClock, type DeckTrackModel } from "./engineering-deck-model";
 import { SEMINAR_PREP_CHECKLIST, SEMINAR_PREP_QUESTIONS } from "./engineering-seminar-prep-content";
 
@@ -38,9 +39,12 @@ function readChecklist(): readonly boolean[] {
 export function EngineeringSeminarPrep({
   model,
   onJump,
+  onOpenAtlas,
 }: {
   readonly model: DeckTrackModel;
   readonly onJump: (slideIndex: number) => void;
+  /** 질문에 연결된 도감 카드를 같은 탭의 부록 트랙에서 연다. 없으면 도감 페이지 링크만 보여준다. */
+  readonly onOpenAtlas?: (atlasId: string) => void;
 }) {
   useBilingualI18nRevision();
   const [checked, setChecked] = useState<readonly boolean[]>(readChecklist);
@@ -119,7 +123,10 @@ export function EngineeringSeminarPrep({
             {bi("모르는 질문에는 “기술 스토리의 근거를 확인하고 답변드리겠습니다.”", "For unknown questions: “Let me verify against the engineering story evidence and follow up.”")}
           </p>
           <div className="mt-3 grid gap-2">
-            {SEMINAR_PREP_QUESTIONS.map((item, index) => (
+            {SEMINAR_PREP_QUESTIONS.map((item, index) => {
+              // 없는 카드 id 는 단추만 생략한다(콘텐츠 테스트가 잡는다).
+              const atlasEntry = item.atlasId ? findAtlasEntry(item.atlasId) : undefined;
+              return (
               <details key={item.question.ko} className="group rounded-2xl border border-line bg-panel/70">
                 <summary className="flex min-h-11 cursor-pointer list-none items-start gap-2 rounded-2xl px-3 py-2.5 text-sm font-bold leading-6 text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
                   <span className="font-display text-accent">Q{index + 1}</span>
@@ -137,9 +144,35 @@ export function EngineeringSeminarPrep({
                       <ChevronRight size={13} aria-hidden="true" />
                     </Link>
                   ) : null}
+                  {atlasEntry ? (
+                    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+                      {onOpenAtlas ? (
+                        <button
+                          type="button"
+                          onClick={() => onOpenAtlas(atlasEntry.id)}
+                          className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                          aria-label={formatI18nTemplate(String(bi("도감 카드 열기: {value0}", "Open atlas card: {value0}")), { value0: atlasEntry.name })}
+                        >
+                          <LibraryBig size={13} aria-hidden="true" />
+                          {bi("도감 카드 열기", "Open atlas card")} · {atlasEntry.name}
+                        </button>
+                      ) : null}
+                      <a
+                        href={`/about/technology/atlas#${atlasEntry.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-11 items-center gap-1 text-xs font-bold text-fg-2 hover:text-accent hover:underline"
+                      >
+                        {bi("도감 페이지에서 읽기", "Read it on the atlas page")}
+                        <ExternalLink size={12} aria-hidden="true" />
+                        <span className="sr-only">{bi("(새 탭)", "(new tab)")}</span>
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
               </details>
-            ))}
+              );
+            })}
           </div>
         </article>
 

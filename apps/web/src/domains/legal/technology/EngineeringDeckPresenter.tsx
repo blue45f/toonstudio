@@ -1,8 +1,12 @@
-import { ChevronRight, ExternalLink, Pause, Play, RotateCcw, TimerReset } from "lucide-react";
+import { ChevronRight, ExternalLink, Layers, Pause, Play, RotateCcw, Undo2, TimerReset } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { EngineeringDeckSlide } from "./EngineeringDeckSlide";
 import {
+  deckCardIndexAt,
+  deckCardOptions,
   formatClock,
+  isTimedDeck,
   paceDeltaSeconds,
   type DeckSectionPlan,
   type DeckSlide,
@@ -40,7 +44,9 @@ export function DeckClock({
   useBilingualI18nRevision();
   const now = useNow(timer.running);
   const elapsed = elapsedDeckSeconds(timer, now);
-  const pace = paceDeltaSeconds(elapsed, slide);
+  // 시간 배정이 없는 트랙(도감 부록)은 페이스·구간 남은 시간 없이 경과 시간만 보여준다.
+  const timed = totalSeconds > 0;
+  const pace = timed ? paceDeltaSeconds(elapsed, slide) : 0;
   const sectionEnd = section ? section.startSeconds + section.seconds : totalSeconds;
   const sectionRemaining = sectionEnd - elapsed;
   const paceLabel = pace > 0
@@ -53,8 +59,17 @@ export function DeckClock({
     return (
       <span className="inline-flex items-center gap-2 font-display text-sm font-bold tabular-nums" data-pace={pace > 0 ? "behind" : "ok"}>
         <span>{formatClock(elapsed)}</span>
-        <span className="text-fg-3">/ {formatClock(totalSeconds)}</span>
+        {timed ? <span className="text-fg-3">/ {formatClock(totalSeconds)}</span> : null}
       </span>
+    );
+  }
+
+  if (!timed) {
+    return (
+      <div className="grid gap-1" role="timer" aria-live="off" aria-label={bi("발표 경과 시간", "Talk elapsed time")}>
+        <p className="font-display text-4xl font-black tabular-nums tracking-tight text-fg">{formatClock(elapsed)}</p>
+        <p className="text-xs font-bold text-fg-3">{bi("경과 시간 · 이 트랙에는 시간 배정이 없습니다", "Elapsed time · this track has no time budget")}</p>
+      </div>
     );
   }
 
@@ -122,6 +137,7 @@ export function DeckSectionStrip({
   const currentSection = model.slides[index]?.sectionId;
   const current = model.sections.find((section) => section.id === currentSection);
   if (model.sections.length < 2 || !current) return null;
+  const timed = isTimedDeck(model);
   return (
     <>
       <ol className="deck-sections" aria-hidden="true">
@@ -129,8 +145,9 @@ export function DeckSectionStrip({
           <li
             key={section.id}
             data-state={section.order < current.order ? "done" : section.order === current.order ? "current" : "upcoming"}
-            style={{ flexGrow: Math.max(1, section.seconds) }}
-            title={`${section.title} · ${formatClock(section.seconds)}`}
+            // 시간 배정이 없는 트랙은 슬라이드 수에 비례해 칸을 나눈다.
+            style={{ flexGrow: Math.max(1, timed ? section.seconds : section.slideCount) }}
+            title={`${section.title} · ${timed ? formatClock(section.seconds) : formatI18nTemplate(String(bi("{value0}장", "{value0} slides")), { value0: section.slideCount })}`}
           />
         ))}
       </ol>
@@ -141,6 +158,92 @@ export function DeckSectionStrip({
   );
 }
 
+/* ── 도감 카드 선택(부록 트랙) ─────────────────────────────── */
+
+/** 카테고리별 `optgroup` 으로 묶은 카드 선택. 카드 단위로 이동한다. */
+export function DeckCardSelect({
+  model,
+  index,
+  onGo,
+  className,
+}: {
+  readonly model: DeckTrackModel;
+  readonly index: number;
+  readonly onGo: (slideIndex: number) => void;
+  readonly className?: string;
+}) {
+  useBilingualI18nRevision();
+  const groups = deckCardOptions(model);
+  const currentCard = model.cards?.[deckCardIndexAt(model, index)];
+  return (
+    <select
+      aria-label={bi("도감 카드 선택", "Select atlas card")}
+      value={currentCard ? String(currentCard.firstSlideIndex) : ""}
+      onChange={(event) => onGo(Number(event.currentTarget.value))}
+      className={cx(
+        "min-h-11 w-full min-w-0 truncate rounded-xl border border-line bg-card px-3 text-sm font-bold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        className,
+      )}
+    >
+      {groups.map(({ section, cards }) => (
+        <optgroup key={section.id} label={`${section.title} (${cards.length})`}>
+          {cards.map((card) => (
+            <option key={card.id} value={card.firstSlideIndex}>
+              {card.name === card.title ? card.name : `${card.name} · ${card.title}`}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
+
+/** 현재 카드 안에서 도식·코드·사용처 슬라이드로 바로 이동하는 단추. */
+function DeckCardViews({
+  model,
+  index,
+  onGo,
+}: {
+  readonly model: DeckTrackModel;
+  readonly index: number;
+  readonly onGo: (slideIndex: number) => void;
+}) {
+  useBilingualI18nRevision();
+  const card = model.cards?.[deckCardIndexAt(model, index)];
+  if (!card || card.slideCount < 2) return null;
+  const views = model.slides.slice(card.firstSlideIndex, card.firstSlideIndex + card.slideCount);
+  const label = (slide: DeckSlide): string => {
+    const atlas = slide.atlas;
+    if (!atlas) return slide.title;
+    if (atlas.view === "diagram") return bi("도식", "Diagram");
+    if (atlas.view === "usage") return bi("쓰인 곳", "Usage");
+    return atlas.code && atlas.code.count > 1
+      ? formatI18nTemplate(String(bi("코드 {value0}", "Code {value0}")), { value0: atlas.code.index + 1 })
+      : bi("코드", "Code");
+  };
+  return (
+    <div role="group" aria-label={bi("카드 안에서 이동", "Move within the card")} className="flex flex-wrap gap-2">
+      {views.map((slide, offset) => {
+        const slideIndex = card.firstSlideIndex + offset;
+        return (
+          <button
+            key={slide.id}
+            type="button"
+            aria-pressed={slideIndex === index}
+            onClick={() => onGo(slideIndex)}
+            className={cx(
+              "inline-flex min-h-11 items-center rounded-xl border px-3 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              slideIndex === index ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-fg-2 hover:border-accent/45 hover:text-fg",
+            )}
+          >
+            {label(slide)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── 발표자 패널 ───────────────────────────────────────────── */
 
 export function DeckPresenterPanel({
@@ -148,6 +251,8 @@ export function DeckPresenterPanel({
   index,
   timer,
   onJump,
+  onOpenAtlas,
+  returnPoint,
   headingId,
   className,
 }: {
@@ -155,6 +260,10 @@ export function DeckPresenterPanel({
   readonly index: number;
   readonly timer: DeckTimer;
   readonly onJump: (slideIndex: number) => void;
+  /** 도감 카드를 부록 트랙에서 연다(같은 탭). 없으면 "도감 카드 열기" 단추를 숨긴다. */
+  readonly onOpenAtlas?: (atlasId: string) => void;
+  /** 부록에서 원래 발표 위치로 돌아가는 동작. */
+  readonly returnPoint?: { readonly label: string; readonly onReturn: () => void } | null;
   readonly headingId: string;
   readonly className?: string;
 }) {
@@ -163,6 +272,8 @@ export function DeckPresenterPanel({
   const next = model.slides[index + 1];
   const section = model.sections.find((item) => item.id === slide?.sectionId);
   if (!slide) return null;
+  const timed = isTimedDeck(model);
+  const isAtlasTrack = model.track === "atlas";
 
   return (
     <section aria-labelledby={headingId} className={cx("grid content-start gap-4", className)}>
@@ -173,7 +284,35 @@ export function DeckPresenterPanel({
         <DeckTimerControls timer={timer} />
       </div>
 
-      {section && model.sections.length > 1 ? (
+      {returnPoint ? (
+        <button
+          type="button"
+          onClick={returnPoint.onReturn}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-accent/45 bg-accent-soft/25 px-3 text-sm font-bold text-accent hover:bg-accent-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Undo2 size={15} aria-hidden="true" />
+          {returnPoint.label}
+        </button>
+      ) : null}
+
+      {isAtlasTrack ? (
+        <div className="grid gap-3 rounded-2xl border border-line bg-card/80 p-4">
+          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-fg-3">
+            <Layers size={14} aria-hidden="true" />
+            {bi("도감 카드", "Atlas card")}
+            <span className="ml-auto font-display tabular-nums">
+              {Math.max(0, deckCardIndexAt(model, index)) + 1} / {model.cards?.length ?? 0}
+            </span>
+          </p>
+          <DeckCardSelect model={model} index={index} onGo={onJump} />
+          <DeckCardViews model={model} index={index} onGo={onJump} />
+          <p className="text-xs leading-6 text-fg-3">
+            {bi("[ ] 키로 이전·다음 카드로 이동합니다.", "Use [ ] to move to the previous or next card.")}
+          </p>
+        </div>
+      ) : null}
+
+      {timed && section && model.sections.length > 1 ? (
         <div className="grid gap-2 rounded-2xl border border-line bg-card/80 p-4">
           <p className="flex items-center justify-between gap-3 text-xs font-bold text-fg-3">
             <span>
@@ -197,6 +336,27 @@ export function DeckPresenterPanel({
           </p>
         ) : null}
       </div>
+
+      {slide.relatedAtlas?.length && onOpenAtlas ? (
+        <div className="rounded-2xl border border-line bg-card/80 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.12em] text-fg-3">{bi("질문이 나오면 열 도감 카드", "Atlas cards for likely questions")}</p>
+          <ul className="mt-3 grid gap-2">
+            {slide.relatedAtlas.map((card) => (
+              <li key={card.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpenAtlas(card.id)}
+                  className="inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-line bg-panel/70 px-3 text-left text-sm font-bold text-accent hover:border-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  aria-label={formatI18nTemplate(String(bi("도감 카드 열기: {value0}", "Open atlas card: {value0}")), { value0: card.name })}
+                >
+                  <span>{bi("도감 카드 열기", "Open atlas card")} · {card.name}</span>
+                  <ChevronRight size={14} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {slide.demoSteps?.length ? (
         <div className="rounded-2xl border border-line bg-card/80 p-4">
@@ -239,7 +399,9 @@ export function DeckPresenterPanel({
         ) : (
           <p className="mt-2 flex items-center gap-2 text-sm text-fg-2">
             <TimerReset size={15} className="text-accent" aria-hidden="true" />
-            {bi("마지막 슬라이드입니다. 질의응답을 진행하세요.", "This is the last slide. Move to Q&A.")}
+            {isAtlasTrack
+              ? bi("부록의 마지막 슬라이드입니다.", "This is the last slide of the appendix.")
+              : bi("마지막 슬라이드입니다. 질의응답을 진행하세요.", "This is the last slide. Move to Q&A.")}
           </p>
         )}
       </div>
@@ -270,6 +432,50 @@ export function DeckPresenterPanel({
 
 /* ── 개요 그리드 ───────────────────────────────────────────── */
 
+/**
+ * 개요의 썸네일. 화면에 보일 때만 슬라이드를 그린다(부록 트랙은 수백 장일 수 있다).
+ * 자리는 16:9 로 미리 잡아 스크롤 위치가 흔들리지 않고, 한 번 그린 썸네일은 유지한다.
+ * IntersectionObserver 가 없는 환경(테스트·구형 브라우저)은 바로 그린다.
+ */
+function DeckOverviewThumb({
+  slide,
+  slideIndex,
+  total,
+  sections,
+}: {
+  readonly slide: DeckSlide;
+  readonly slideIndex: number;
+  readonly total: number;
+  readonly sections: readonly DeckSectionPlan[];
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [rendered, setRendered] = useState(() => typeof IntersectionObserver === "undefined");
+
+  useEffect(() => {
+    if (rendered) return;
+    const node = ref.current;
+    if (!node) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setRendered(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "480px 0px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [rendered]);
+
+  return (
+    <span ref={ref} className="deck-overview__thumb" data-rendered={rendered ? "true" : "false"}>
+      {rendered ? (
+        <EngineeringDeckSlide slide={slide} index={slideIndex} total={total} sections={sections} fixed decorative />
+      ) : (
+        <span className="deck-overview__placeholder" aria-hidden="true">{slide.title}</span>
+      )}
+    </span>
+  );
+}
+
 export function DeckOverview({
   model,
   index,
@@ -280,6 +486,7 @@ export function DeckOverview({
   readonly onSelect: (slideIndex: number) => void;
 }) {
   useBilingualI18nRevision();
+  const timed = isTimedDeck(model);
   return (
     <div className="grid gap-2">
       {model.sections.map((section) => (
@@ -288,7 +495,11 @@ export function DeckOverview({
             <h3 className="deck-section-title">
               <span className="font-display text-accent">{String(section.order).padStart(2, "0")}</span>
               {section.title}
-              <small>{formatClock(section.seconds)}</small>
+              <small>
+                {timed
+                  ? formatClock(section.seconds)
+                  : formatI18nTemplate(String(bi("{value0}장", "{value0} slides")), { value0: section.slideCount })}
+              </small>
             </h3>
           ) : null}
           <ol className="deck-overview">
@@ -302,7 +513,7 @@ export function DeckOverview({
                     aria-current={slideIndex === index ? "true" : undefined}
                     onClick={() => onSelect(slideIndex)}
                   >
-                    <EngineeringDeckSlide slide={slide} index={slideIndex} total={model.slides.length} sections={model.sections} fixed decorative />
+                    <DeckOverviewThumb slide={slide} slideIndex={slideIndex} total={model.slides.length} sections={model.sections} />
                     <span className="deck-overview__caption">
                       <span>{String(slideIndex + 1).padStart(2, "0")}</span>
                       <span>{slide.title}</span>
@@ -324,6 +535,7 @@ const DECK_SHORTCUTS = [
   { keys: ["←", "→"], ko: "이전·다음 슬라이드", en: "Previous / next slide" },
   { keys: ["Space", "PgDn"], ko: "다음 (Shift+Space는 이전)", en: "Next (Shift+Space for previous)" },
   { keys: ["Home", "End"], ko: "처음·마지막", en: "First / last" },
+  { keys: ["[", "]"], ko: "이전·다음 도감 카드 (부록 트랙)", en: "Previous / next atlas card (appendix track)" },
   { keys: ["F"], ko: "발표 시작·전체 화면", en: "Present / fullscreen" },
   { keys: ["N", "S"], ko: "발표자 노트", en: "Speaker notes" },
   { keys: ["O"], ko: "슬라이드 개요", en: "Slide overview" },

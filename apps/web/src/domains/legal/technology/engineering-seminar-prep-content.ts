@@ -7,6 +7,8 @@ export interface SeminarPrepQuestion {
   /** 2~3문장 답변 요지 — 코드에서 확인된 것만 */
   readonly answer: LocalizedText;
   readonly glossaryId?: string;
+  /** 이 질문에 답할 때 열 기술 도감 카드(발표자가 부록 트랙으로 바로 이동한다). */
+  readonly atlasId?: string;
 }
 
 export const SEMINAR_PREP_QUESTIONS: readonly SeminarPrepQuestion[] = [
