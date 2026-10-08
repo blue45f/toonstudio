@@ -26,6 +26,7 @@ import {
   type StudioVirtualGameFeelPreference,
 } from "./studio-virtual-space-game-feel-preference";
 import { collisionShake } from "./studio-virtual-space-locomotion-feel";
+import { studioLocomotionStyle, type StudioLocomotionStyle } from "./studio-virtual-space-locomotion-style";
 import type { StudioMiniGameTriggerZone } from "./studio-virtual-space-mini-games";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import { StudioStuckSampler } from "./studio-virtual-space-stuck-detector";
@@ -91,6 +92,12 @@ export class StudioWorldFeelController {
 
   /** 가속도·감속도 배율(0.5~2). */
   get accelerationFactor(): number { return studioAccelerationFactor(this.preference.accelerationScale); }
+
+  /**
+   * 이동 감각 스타일(즉응형/관성형). 설정과 같은 주기로 갱신되며 상수 객체를 돌려주므로 매 프레임 읽어도 할당이 없다.
+   * OS 모션 감소가 켜져 있으면 몸 찌그러짐·반동 같은 효과는 호출 측이 reducedMotion으로 따로 끈다.
+   */
+  get locomotion(): StudioLocomotionStyle { return studioLocomotionStyle(this.preference.moveFeel); }
 
   /** 입력 감도를 적용하고, 끼임 탈출 중이면 직각 방향으로 밀어 준다. 결과는 this.input에 쓴다. */
   shapeInput(x: number, y: number, time: number): { readonly x: number; readonly y: number } {

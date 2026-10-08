@@ -22,6 +22,7 @@ function summary(overrides: Partial<ProductionProjectSummary>): ProductionProjec
     projectId: "project-1",
     workId: "work-1",
     title: "별빛 항해자",
+    coverImageUrl: null,
     collaborationModel: "solo",
     revision: 1,
     updatedAt: "2026-10-06T00:00:00.000Z",

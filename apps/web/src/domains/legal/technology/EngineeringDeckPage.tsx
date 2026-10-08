@@ -60,8 +60,8 @@ import {
   type DeckTrackModel,
 } from "./engineering-deck-model";
 import { DECK_TRACKS, engineeringDeckHref, type DeckTrack } from "./engineering-deck-state";
-import { CONTROL_BUTTON, DECK_PAGE_I18N_SCOPE, deckPageBi as bi } from "./engineering-deck-ui";
 import { ENGINEERING_SEMINAR_MODULES } from "./engineering-playbook-content";
+import { CONTROL_BUTTON, DECK_PAGE_I18N_SCOPE, deckPageBi as bi } from "./engineering-deck-ui";
 import type { LocalizedText } from "./engineering-story-content";
 import {
   deckCommandForKey,
