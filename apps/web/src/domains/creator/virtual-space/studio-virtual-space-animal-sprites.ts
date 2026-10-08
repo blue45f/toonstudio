@@ -22,6 +22,9 @@ export const STUDIO_ANIMAL_SPRITE_KINDS: readonly StudioAnimalSpriteKind[] = Obj
 export const STUDIO_PET_ANIMAL_KINDS: readonly StudioAnimalSpriteKind[] = Object.freeze(["cat", "dog", "fox"]);
 
 export const STUDIO_ANIMAL_FRAME = 64;
+/** 텍스처 렌더 배율 — 캐릭터 시트와 같은 슈퍼샘플링 정책 (논리 64 → 물리 128). */
+export const STUDIO_ANIMAL_RENDER_SCALE = 2;
+export const STUDIO_ANIMAL_TEXTURE_FRAME = STUDIO_ANIMAL_FRAME * STUDIO_ANIMAL_RENDER_SCALE;
 export const STUDIO_ANIMAL_WALK_FRAMES = 4;
 export const STUDIO_ANIMAL_IDLE_FRAMES = 3;
 const COLUMNS = STUDIO_ANIMAL_WALK_FRAMES + STUDIO_ANIMAL_IDLE_FRAMES;
@@ -344,8 +347,8 @@ export function buildStudioAnimalSpriteSheet(
   deps: ProceduralSheetDeps = defaultProceduralSheetDeps(),
 ): StudioAnimalSpriteSheet {
   if (!PALETTES[kind]) throw new Error(`알 수 없는 동물 스프라이트: ${kind}`);
-  const width = STUDIO_ANIMAL_FRAME * COLUMNS;
-  const height = STUDIO_ANIMAL_FRAME * ROWS;
+  const width = STUDIO_ANIMAL_TEXTURE_FRAME * COLUMNS;
+  const height = STUDIO_ANIMAL_TEXTURE_FRAME * ROWS;
   const canvas = deps.createCanvas(width, height);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("2D 캔버스 컨텍스트를 만들지 못했습니다.");
@@ -354,13 +357,15 @@ export function buildStudioAnimalSpriteSheet(
   views.forEach((view, row) => {
     for (let frame = 0; frame < STUDIO_ANIMAL_WALK_FRAMES; frame += 1) {
       ctx.save();
-      ctx.translate(frame * STUDIO_ANIMAL_FRAME, row * STUDIO_ANIMAL_FRAME);
+      ctx.translate(frame * STUDIO_ANIMAL_TEXTURE_FRAME, row * STUDIO_ANIMAL_TEXTURE_FRAME);
+      ctx.scale(STUDIO_ANIMAL_RENDER_SCALE, STUDIO_ANIMAL_RENDER_SCALE);
       drawAnimalFrame(ctx, kind, view, frame, "walk", row * 7 + frame);
       ctx.restore();
     }
     for (let frame = 0; frame < STUDIO_ANIMAL_IDLE_FRAMES; frame += 1) {
       ctx.save();
-      ctx.translate((STUDIO_ANIMAL_WALK_FRAMES + frame) * STUDIO_ANIMAL_FRAME, row * STUDIO_ANIMAL_FRAME);
+      ctx.translate((STUDIO_ANIMAL_WALK_FRAMES + frame) * STUDIO_ANIMAL_TEXTURE_FRAME, row * STUDIO_ANIMAL_TEXTURE_FRAME);
+      ctx.scale(STUDIO_ANIMAL_RENDER_SCALE, STUDIO_ANIMAL_RENDER_SCALE);
       drawAnimalFrame(ctx, kind, view, frame, "idle", row * 7 + frame);
       ctx.restore();
     }
@@ -368,8 +373,8 @@ export function buildStudioAnimalSpriteSheet(
   return Object.freeze({
     kind,
     dataUrl: canvas.toDataURL("image/png"),
-    frameWidth: STUDIO_ANIMAL_FRAME,
-    frameHeight: STUDIO_ANIMAL_FRAME,
+    frameWidth: STUDIO_ANIMAL_TEXTURE_FRAME,
+    frameHeight: STUDIO_ANIMAL_TEXTURE_FRAME,
     width,
     height,
     walkFrames: STUDIO_ANIMAL_WALK_FRAMES,
@@ -384,10 +389,11 @@ export function renderStudioAnimalPreview(
   deps: ProceduralSheetDeps = defaultProceduralSheetDeps(),
 ): { readonly dataUrl: string; readonly width: number; readonly height: number } {
   if (!PALETTES[kind]) throw new Error(`알 수 없는 동물 스프라이트: ${kind}`);
-  const canvas = deps.createCanvas(STUDIO_ANIMAL_FRAME, STUDIO_ANIMAL_FRAME);
+  const canvas = deps.createCanvas(STUDIO_ANIMAL_TEXTURE_FRAME, STUDIO_ANIMAL_TEXTURE_FRAME);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("2D 캔버스 컨텍스트를 만들지 못했습니다.");
-  ctx.clearRect(0, 0, STUDIO_ANIMAL_FRAME, STUDIO_ANIMAL_FRAME);
+  ctx.clearRect(0, 0, STUDIO_ANIMAL_TEXTURE_FRAME, STUDIO_ANIMAL_TEXTURE_FRAME);
+  ctx.scale(STUDIO_ANIMAL_RENDER_SCALE, STUDIO_ANIMAL_RENDER_SCALE);
   drawAnimalFrame(ctx, kind, "front", 0, "idle", 0);
   return Object.freeze({ dataUrl: canvas.toDataURL("image/png"), width: STUDIO_ANIMAL_FRAME, height: STUDIO_ANIMAL_FRAME });
 }

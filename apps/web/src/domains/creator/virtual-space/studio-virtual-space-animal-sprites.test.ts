@@ -4,6 +4,7 @@ import {
   renderStudioAnimalPreview,
   STUDIO_ANIMAL_FRAME,
   STUDIO_ANIMAL_IDLE_FRAMES,
+  STUDIO_ANIMAL_TEXTURE_FRAME,
   STUDIO_ANIMAL_SPRITE_KINDS,
   STUDIO_ANIMAL_WALK_FRAMES,
   studioAnimalSpriteLabel,
@@ -37,10 +38,12 @@ describe("buildStudioAnimalSpriteSheet", () => {
       const sheet = buildStudioAnimalSpriteSheet(kind, deps);
       expect(sheet.kind).toBe(kind);
       expect(sheet.dataUrl.startsWith("data:image/png")).toBe(true);
-      expect(sheet.frameWidth).toBe(STUDIO_ANIMAL_FRAME);
-      expect(sheet.frameHeight).toBe(STUDIO_ANIMAL_FRAME);
-      expect(sheet.width).toBe(STUDIO_ANIMAL_FRAME * (STUDIO_ANIMAL_WALK_FRAMES + STUDIO_ANIMAL_IDLE_FRAMES));
-      expect(sheet.height).toBe(STUDIO_ANIMAL_FRAME * 3);
+      // 물리 프레임은 논리 프레임의 2배 (슈퍼샘플링), 종횡비는 그대로다.
+      expect(STUDIO_ANIMAL_TEXTURE_FRAME).toBe(STUDIO_ANIMAL_FRAME * 2);
+      expect(sheet.frameWidth).toBe(STUDIO_ANIMAL_TEXTURE_FRAME);
+      expect(sheet.frameHeight).toBe(STUDIO_ANIMAL_TEXTURE_FRAME);
+      expect(sheet.width).toBe(STUDIO_ANIMAL_TEXTURE_FRAME * (STUDIO_ANIMAL_WALK_FRAMES + STUDIO_ANIMAL_IDLE_FRAMES));
+      expect(sheet.height).toBe(STUDIO_ANIMAL_TEXTURE_FRAME * 3);
       expect(sheet.directions).toEqual({ down: 0, up: 1, side: 2 });
     }
   });
