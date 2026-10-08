@@ -1,4 +1,5 @@
 import { ENGINEERING_ATLAS_AI } from "./engineering-atlas-ai";
+import { ENGINEERING_ATLAS_AI_DEV } from "./engineering-atlas-ai-dev-cards";
 import { ENGINEERING_ATLAS_DRAWING } from "./engineering-atlas-drawing";
 import { ENGINEERING_ATLAS_INTERACTION } from "./engineering-atlas-interaction";
 import { ENGINEERING_ATLAS_LOCAL_FIRST } from "./engineering-atlas-local-first";
@@ -29,6 +30,8 @@ const UNSORTED_ENTRIES: readonly EngineeringAtlasEntry[] = [
   ...ENGINEERING_ATLAS_WEB_PLATFORM,
   ...ENGINEERING_ATLAS_OPEN_DATA,
   ...ENGINEERING_ATLAS_PLATFORM_OPS,
+  // AI 활용 개발(에이전트 하네스·OpenWiki·루프)은 platform-ops 분야이며 별도 파일에서 쓴다.
+  ...ENGINEERING_ATLAS_AI_DEV,
 ];
 
 const CATEGORY_ORDER = new Map<EngineeringAtlasCategoryId, number>(
