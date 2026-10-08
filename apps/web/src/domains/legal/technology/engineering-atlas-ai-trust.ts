@@ -16,44 +16,44 @@ const AI_PROPOSAL_NOT_COMMIT: EngineeringAtlasEntry = {
   title: t("제안은 AI가, 확정은 사람이", "AI proposes, people decide"),
   status: "live",
   tagline: t(
-    "AI의 결과는 늘 제안으로 돌아오고, 문서에 넣을지는 작가가 고르며 한 번에 되돌릴 수 있습니다.",
-    "AI results always come back as proposals; the artist decides what enters the document, and it can be undone in one step.",
+    "대사·팔레트·구도 제안과 이미지 후보는 작가가 고른 뒤에만 반영되고, 채색·생성은 예외입니다.",
+    "Dialogue, palette and composition suggestions and image candidates apply only after the artist picks; colorize and generation are exceptions.",
   ),
   background: [
     t(
-      "편집자가 원고에 교정 의견을 적을 때, 빨간 펜으로 원고를 직접 고쳐 버리면 작가는 무엇이 바뀌었는지 알 수 없습니다. 그래서 '제안 모드'로 따로 적어 주고 작가가 받아들이거나 버리게 하죠. ToonStudio의 AI도 같습니다. AI는 문서를 직접 바꾸지 않고 '제안'만 돌려주며, 작가가 마음에 드는 부분만 골라 적용합니다. 적용은 한 번의 되돌리기 단위라, 마음이 바뀌면 한 번에 지울 수 있습니다.",
-      "When an editor marks up a manuscript, correcting it directly in red pen leaves the author unable to see what changed. So editors use suggestion mode, and the author accepts or discards each change. ToonStudio's AI works the same way: it never changes the document itself, it only returns proposals, and the artist applies just the parts they like. An apply is one undo step, so a change of heart removes it in one go.",
+      "편집자가 원고에 교정 의견을 적을 때, 빨간 펜으로 원고를 직접 고쳐 버리면 작가는 무엇이 바뀌었는지 알 수 없습니다. 그래서 '제안 모드'로 따로 적어 주고 작가가 받아들이거나 버리게 하죠. ToonStudio의 대사·팔레트·구도 제안, 시나리오 이미지 후보, 코믹 디렉터가 이 방식입니다. 결과를 문서에 직접 넣지 않고 제안·후보로 돌려주며, 작가가 마음에 드는 부분만 골라 반영합니다. 되돌리기는 편집기의 일반 Undo에 맡깁니다.",
+      "When an editor marks up a manuscript, correcting it directly in red pen leaves the author unable to see what changed. So editors use suggestion mode, and the author accepts or discards each change. ToonStudio's dialogue, palette and composition suggestions, scenario image candidates and comic director work this way: they return proposals or candidates instead of writing into the document, and the artist applies only the parts they like. Undoing is left to the editor's ordinary Undo.",
     ),
     t(
-      "제안은 데이터로 정의되어 있습니다. 제안에는 변형(variant)이 최대 4개 있고, 각 변형은 내용 해시(contentId)와 출처(공급자·모델·시드·전송 방식·프롬프트 해시)를 가진 획 묶음입니다. 제안은 만들어질 때의 문서 세대 번호(documentGeneration)를 기억합니다. 작가가 적용하면 ① 아직 검토 중인 제안인지 ② 그리는 중이 아닌지 ③ 같은 문서인지 ④ 세대 번호가 그대로인지 확인하고, 하나라도 어긋나면 낡은 제안으로 거절합니다. 통과하면 선택한 획만 트랜잭션으로 추가되고 요소에 출처(aiProvenance)가 붙습니다.",
-      "A proposal is defined as data. It holds up to four variants, and each variant is a bundle of strokes with a content hash (contentId) and a provenance (provider, model, seed, transport, prompt hash). A proposal remembers the document generation number (documentGeneration) from when it was made. When the artist applies it, the app checks (1) it is still under review, (2) no stroke is being drawn, (3) it is the same document and (4) the generation number is unchanged; any mismatch rejects it as stale. If it passes, only the chosen strokes are added as one transaction and the element receives its provenance (aiProvenance).",
+      "획 제안 모듈은 제안을 데이터로 정의합니다. 제안에는 변형(variant)이 최대 4개 있고, 각 변형은 내용 해시(contentId)와 출처(공급자·모델·시드·전송 방식·프롬프트 해시)를 가진 획 묶음입니다. 제안은 만들어질 때의 문서 세대 번호(documentGeneration)를 기억합니다. 작가가 적용하면 ① 아직 검토 중인 제안인지 ② 그리는 중이 아닌지 ③ 같은 문서인지 ④ 세대 번호가 그대로인지 확인하고, 하나라도 어긋나면 낡은 제안으로 거절합니다. 통과하면 선택한 획만 적용 묶음(트랜잭션)에 담기고 새 요소에 출처(aiProvenance)가 붙습니다.",
+      "The stroke-proposal module defines a proposal as data. It holds up to four variants, and each variant is a bundle of strokes with a content hash (contentId) and a provenance (provider, model, seed, transport, prompt hash). A proposal remembers the document generation number (documentGeneration) from when it was made. When the artist applies it, the app checks (1) it is still under review, (2) no stroke is being drawn, (3) it is the same document and (4) the generation number is unchanged; any mismatch rejects it as stale. If it passes, only the chosen strokes go into an apply bundle (a transaction) and the new elements receive their provenance (aiProvenance).",
     ),
     t(
-      "같은 원칙이 여러 곳에 반복됩니다. 글·대사·팔레트 제안은 캔버스를 자동 변경하지 않고 적용 전에 검토할 제안만 줍니다. 이미지는 후보로 쌓이고 선택과 승인이 따로이며, 서버의 AI 코믹 디렉터는 승인을 세션 수정 번호와 후보 해시에 묶고 세션이 바뀌었으면 '검수 기준이 바뀌었다'며 거절합니다. 대안인 '결과를 바로 반영'은 빠르지만 되돌리기·비교·책임 소재가 흐려지고 사람이 확인했다는 흔적도 남지 않습니다.",
-      "The same principle repeats in several places. Text, dialogue and palette suggestions never change the canvas automatically and only offer proposals to review before applying. Images pile up as candidates with selecting and approving kept apart, and the server's AI comic director binds an approval to the session revision and the candidate hash, rejecting it with 'the review basis changed' if the session moved on. The alternative, applying results immediately, is faster but blurs undo, comparison and accountability and leaves no trace that a person checked.",
+      "같은 원칙이 여러 곳에 반복됩니다. 대사·팔레트·구도 제안은 캔버스를 자동 변경하지 않고 적용 전에 검토할 제안만 줍니다. 시나리오 이미지는 후보로 쌓이고 선택과 승인이 따로이며, 서버의 AI 코믹 디렉터는 승인을 세션 수정 번호와 후보 해시에 묶고 세션이 바뀌었으면 '검수 기준이 바뀌었다'며 거절합니다. 반대로 AI 자동 채색은 선택한 레이어 이미지를 결과로 바로 교체하고, 배경·캐릭터 생성은 새 이미지 요소를 바로 추가하며, 기기 안 ONNX 도구(채색·업스케일·애니풍)도 결과를 바로 교체하고 출처 기록 대상이 아닙니다. 이런 '바로 반영'은 빠르지만 비교·책임 소재가 흐려집니다.",
+      "The same principle repeats in several places. Dialogue, palette and composition suggestions never change the canvas automatically and only offer proposals to review before applying. Scenario images pile up as candidates with selecting and approving kept apart, and the server's AI comic director binds an approval to the session revision and the candidate hash, rejecting it with 'the review basis changed' if the session moved on. By contrast, AI colorize replaces the selected layer's image with the result at once, background and character generation add a new image element at once, and the on-device ONNX tools (colorize, upscale, anime style) also replace the image at once and are not recorded as provenance. Applying immediately is faster but blurs comparison and accountability.",
     ),
     t(
-      "정직한 한계: 지금 화면에 연결된 획 제안 생성기는 AI 모델이 아니라 최근 획을 1-2-1 가중 이동평균으로 다듬는 로컬 알고리즘 한 가지(moving-average-v1)입니다. 제안 프로토콜은 나중에 모델이 붙을 수 있게 먼저 만들어 둔 구조입니다. 그래서 'AI가 획을 제안한다'가 아니라 '제안-검토-적용 구조가 준비돼 있고 지금은 규칙 기반 보정이 쓰인다'고 말해야 정확합니다. '스마트 제작 도구'는 AI 모델을 부르지 않는 도구로 상태 보드에서도 따로 분류됩니다.",
-      "Honest limit: the stroke generator connected to the screen today is not an AI model but a single local algorithm (moving-average-v1) that smooths recent strokes with a 1-2-1 weighted moving average. The proposal protocol is the structure built first so that a model can be attached later. So the accurate statement is not 'AI proposes strokes' but 'the propose, review, apply structure is ready and rule-based smoothing uses it today'. 'Smart tools' are classed separately on the status board as tools that call no AI model.",
+      "정직한 한계: 획 제안 생성기는 AI 모델이 아니라 최근 획을 1-2-1 가중 이동평균으로 다듬는 로컬 알고리즘 한 가지(moving-average-v1)입니다. 이 생성기와 검토 패널은 코드와 단위 테스트가 있지만, 패널을 편집기와 이어 주는 훅(useStudioAiCanvasBridge)을 부르는 제품 코드가 없어 화면에는 '연결 대기' 안내만 보입니다(코드 검색 기준이며 브라우저에서 실행해 확인하지는 못했습니다). 그래서 'AI가 획을 제안한다'가 아니라 '제안-검토-적용 구조를 먼저 만들어 두었고 아직 화면에 이어지지 않았다'고 말해야 정확합니다. '스마트 제작 도구'는 AI 모델을 부르지 않는 도구로 상태 보드에서도 따로 분류됩니다.",
+      "Honest limit: the stroke generator is not an AI model but a single local algorithm (moving-average-v1) that smooths recent strokes with a 1-2-1 weighted moving average. The generator and its review panel have code and unit tests, but no product code calls the hook that connects the panel to the editor (useStudioAiCanvasBridge), so the screen shows only a 'waiting to connect' notice (based on a code search; it was not confirmed by running it in a browser). So the accurate statement is not 'AI proposes strokes' but 'the propose, review, apply structure was built first and is not yet connected to the screen'. 'Smart tools' are classed separately on the status board as tools that call no AI model.",
     ),
   ],
   keyPoints: [
-    t("AI는 문서를 직접 고치지 않고 제안만 돌려줍니다", "AI never edits the document; it only returns proposals"),
-    t("작가가 고른 획만 한 번의 되돌리기 단위로 적용됩니다", "Only the strokes the artist picks are applied, as one undo step"),
-    t("문서가 바뀐 뒤의 낡은 제안은 세대 번호로 거절합니다", "A stale proposal is rejected by its generation number"),
-    t("지금 연결된 획 제안 생성기는 AI 모델이 아닌 이동평균", "The connected stroke generator today is a moving average, not an AI model"),
+    t("대사·팔레트·구도 제안과 이미지 후보는 작가가 고른 뒤에 반영됩니다", "Dialogue, palette and composition suggestions and image candidates apply only after the artist picks"),
+    t("AI 자동 채색과 배경·캐릭터 생성은 결과를 바로 반영하는 예외입니다", "AI colorize and background or character generation are exceptions that apply results at once"),
+    t("획 제안 모듈은 낡은 제안을 세대 번호로 거절하도록 설계됐습니다", "The stroke-proposal module is designed to reject a stale proposal by its generation number"),
+    t("획 제안 생성기는 AI 모델이 아닌 이동평균이며 화면 연결은 대기 중", "The stroke generator is a moving average, not an AI model, and is not yet connected to the screen"),
   ],
   diagram: {
     id: "ai-proposal-not-commit-diagram",
     kind: "sequence",
-    title: t("제안에서 적용·되돌리기까지", "From proposal to apply and undo"),
+    title: t("제안에서 적용까지 (획 제안 모듈의 설계)", "From proposal to apply (stroke-proposal module design)"),
     caption: t(
-      "문서를 바꾸는 쪽은 언제나 작가의 선택입니다. AI는 제안을 만들 뿐이고, 낡은 제안은 문서가 거절합니다.",
-      "Changes to the document always come from the artist's choice. The generator only makes proposals, and the document rejects stale ones.",
+      "획 제안 모듈의 설계 흐름입니다. 생성기는 제안만 만들고 고른 획만 들어가며 낡은 제안은 거절됩니다. 화면 연결은 대기 중입니다.",
+      "The designed flow of the stroke-proposal module: the generator only proposes, only the picked strokes enter, and a stale proposal is rejected. Screen wiring is still pending.",
     ),
     alt: t(
-      "작가가 제안을 요청하면 패널이 최근 확정 획과 문서 세대 번호를 생성기에 보냅니다. 생성기는 출처가 붙은 제안을 돌려주고 패널은 문서를 바꾸지 않은 채 고스트 미리보기를 보여 줍니다. 작가가 고른 획을 적용하면 세대 번호가 같을 때만 문서에 들어가고, 낡았으면 거절됩니다. 작가는 한 번에 되돌릴 수 있습니다.",
-      "When the artist asks for a proposal, the panel sends recent committed strokes and the document generation number to the generator. The generator returns proposals with provenance and the panel shows a ghost preview without touching the document. Applying the chosen strokes enters the document only if the generation number matches, and a stale one is rejected. The artist can undo it in one step.",
+      "작가가 제안을 요청하면 패널이 최근 확정 획과 문서 세대 번호를 생성기에 보냅니다. 생성기는 출처가 붙은 제안을 돌려주고 패널은 문서를 바꾸지 않은 채 고스트 미리보기를 보여 줍니다. 작가가 고른 획을 적용하면 세대 번호가 같을 때만 문서에 들어가고, 낡았으면 거절됩니다. 되돌리기는 편집기의 일반 Undo에 맡기며, 이 흐름은 코드와 단위 테스트로 확인했고 화면 연결은 대기 중입니다.",
+      "When the artist asks for a proposal, the panel sends recent committed strokes and the document generation number to the generator. The generator returns proposals with provenance and the panel shows a ghost preview without touching the document. Applying the chosen strokes enters the document only if the generation number matches, and a stale one is rejected. Undo is left to the editor's ordinary Undo; this flow is confirmed by code and unit tests, and the screen wiring is still pending.",
     ),
     actors: [
       { id: "artist", label: t("작가", "Artist"), tone: "neutral" },
@@ -66,18 +66,18 @@ const AI_PROPOSAL_NOT_COMMIT: EngineeringAtlasEntry = {
       { from: "panel", to: "gen", label: t("획 + 문서 세대 번호 전달", "Send strokes + generation"), note: t("고정 한도로 잘라서", "Trimmed to fixed limits") },
       { from: "gen", to: "panel", label: t("제안 1~4개 + 출처", "1 to 4 variants + provenance"), style: "dashed", note: t("내용 해시·공급자·모델", "Content hash, provider, model") },
       { from: "panel", to: "artist", label: t("고스트 미리보기", "Ghost preview"), style: "dashed", note: t("문서는 그대로", "Document untouched") },
-      { from: "artist", to: "panel", label: t("고른 획만 적용", "Apply the picked strokes"), note: t("한 번의 되돌리기 단위", "One undo step") },
+      { from: "artist", to: "panel", label: t("고른 획만 적용", "Apply the picked strokes"), note: t("선택한 획만 담음", "Only the picked strokes") },
       { from: "panel", to: "doc", label: t("적용 트랜잭션", "Apply transaction"), note: t("세대 번호가 같을 때만", "Only if the generation matches") },
       { from: "doc", to: "panel", label: t("낡은 제안이면 거절", "Stale proposal rejected"), style: "dashed", note: t("그사이 문서가 바뀐 경우", "The document changed meanwhile") },
-      { from: "artist", to: "doc", label: t("되돌리기", "Undo"), note: t("추가된 획만 제거", "Removes only the added strokes") },
+      { from: "artist", to: "doc", label: t("되돌리기 (일반 Undo)", "Undo (ordinary)"), note: t("롤백 보조 함수는 미사용", "The rollback helper is unused") },
     ],
   },
   usage: [
     {
-      feature: t("스마트 획 보정 검토 (고급 AI 도구)", "Smart stroke review (advanced AI tools)"),
+      feature: t("스마트 획 보정 검토 (고급 AI 도구 · 연결 대기)", "Smart stroke review (advanced AI tools, awaiting wiring)"),
       role: t(
-        "최근 확정한 획을 읽어 후보를 제안하고, 고스트로 미리 보게 한 뒤, 고른 획만 한 번의 되돌리기 단위로 추가합니다. 원본 획은 자동으로 고치지 않습니다.",
-        "Reads recently committed strokes to propose candidates, shows them as a ghost preview, and adds only the chosen strokes as one undo step. The original strokes are never edited automatically.",
+        "획 제안 생성기(moving-average-v1)와 검토 패널은 코드와 단위 테스트가 있습니다. 설계는 최근 확정 획을 읽어 후보를 제안하고 고스트로 미리 보여 준 뒤 고른 획만 추가하는 것이지만, 편집기와 이어 주는 훅(useStudioAiCanvasBridge)을 부르는 제품 코드가 아직 없어 화면에는 '연결 대기' 안내만 보입니다. 되돌리기는 일반 Undo에 맡기며 롤백 보조 함수는 아직 호출되지 않습니다.",
+        "The stroke generator (moving-average-v1) and the review panel have code and unit tests. The design reads recently committed strokes, proposes candidates, previews them as a ghost and adds only the chosen strokes, but no product code calls the hook that connects it to the editor (useStudioAiCanvasBridge), so the screen shows only a 'waiting to connect' notice. Undo is left to the ordinary Undo, and the rollback helper is not called yet.",
       ),
       paths: [
         "apps/web/src/domains/creator/ai/StudioConnectedStrokeProposalPanel.tsx",
@@ -89,8 +89,8 @@ const AI_PROPOSAL_NOT_COMMIT: EngineeringAtlasEntry = {
     {
       feature: t("글·대사·팔레트·구도 제안 (Studio AI 어시스트)", "Text, dialogue, palette and composition suggestions (Studio AI assist)"),
       role: t(
-        "캔버스나 기존 대사·색을 자동으로 바꾸지 않고, 적용 전에 검토할 제안 한 세트만 줍니다. 실행 전 안내가 이 약속을 도구마다 문구로 고정합니다.",
-        "Nothing on the canvas, in existing dialogue or in colors changes automatically; only one set of proposals to review is offered. The pre-run notice fixes this promise in wording for each tool.",
+        "구도·대사·팔레트 도구는 캔버스나 기존 대사·색을 자동으로 바꾸지 않고, 적용 전에 검토할 제안 한 세트만 줍니다. 배경·캐릭터 도구는 새 이미지 요소를 바로 추가합니다. 실행 전 안내가 이 차이를 도구마다 문구로 고정합니다.",
+        "The composition, dialogue and palette tools never change the canvas, existing dialogue or colors automatically; they offer only one set of proposals to review. The background and character tools add a new image element at once. The pre-run notice fixes this difference in wording for each tool.",
       ),
       paths: [
         "apps/web/src/domains/creator/ai/studio-ai-execution-preflight.ts",
@@ -124,7 +124,7 @@ const AI_PROPOSAL_NOT_COMMIT: EngineeringAtlasEntry = {
   samples: [
     {
       kind: "simplified",
-      title: t("제안 적용 가드와 되돌리기", "Apply guard and rollback"),
+      title: t("제안 적용 가드와 롤백 보조 함수", "Apply guard and rollback helper"),
       language: "ts",
       code: [
         "// 제안 적용 가드(단순화): 낡은 제안은 문서에 들어가지 못한다.",
@@ -138,7 +138,7 @@ const AI_PROPOSAL_NOT_COMMIT: EngineeringAtlasEntry = {
         '  if (doc.generation !== review.generation) throw new Error("문서가 바뀌어 낡은 제안입니다");',
         "}",
         "",
-        "// 되돌리기: 이 트랜잭션이 추가한 획만 지운다.",
+        "// 롤백 보조 함수(아직 호출되지 않음): 이 트랜잭션이 추가한 획만 지운다.",
         "export const rollback = (strokeIds: string[], added: string[]): string[] =>",
         "  strokeIds.filter((id) => !added.includes(id));",
       ].join("\n"),
@@ -154,13 +154,13 @@ const AI_PROPOSAL_NOT_COMMIT: EngineeringAtlasEntry = {
         '  if (doc.generation !== review.generation) throw new Error("the document changed, so the proposal is stale");',
         "}",
         "",
-        "// Rollback: remove only the strokes this transaction added.",
+        "// Rollback helper (not called anywhere yet): remove only the strokes this transaction added.",
         "export const rollback = (strokeIds: string[], added: string[]): string[] =>",
         "  strokeIds.filter((id) => !added.includes(id));",
       ].join("\n"),
       explain: t(
-        "applyStudioStrokeProposalReview와 rollbackStudioStrokeProposalTransaction의 핵심 검사만 남긴 예제입니다. 네 검사 중 하나라도 어긋나면 적용 전에 예외가 나고, 문서는 바뀌지 않습니다. 실제 코드는 여기에 선택한 획 확인, 중복 획 제외, 내용 해시가 붙은 트랜잭션 생성을 더합니다.",
-        "Only the core checks of applyStudioStrokeProposalReview and rollbackStudioStrokeProposalTransaction. If any of the four checks fails an exception is thrown before applying, and the document is untouched. The real code adds checking the selected strokes, excluding duplicate strokes, and building a transaction with a content hash.",
+        "applyStudioStrokeProposalReview와 rollbackStudioStrokeProposalTransaction의 핵심 검사만 남긴 예제입니다. 네 검사 중 하나라도 어긋나면 적용 전에 예외가 나고, 문서는 바뀌지 않습니다. 실제 코드는 여기에 선택한 획 확인, 중복 획 제외, 내용 해시가 붙은 트랜잭션 생성을 더합니다. 롤백 함수는 정의만 있고 제품 코드와 테스트 어디에서도 아직 호출되지 않습니다.",
+        "Only the core checks of applyStudioStrokeProposalReview and rollbackStudioStrokeProposalTransaction. If any of the four checks fails an exception is thrown before applying, and the document is untouched. The real code adds checking the selected strokes, excluding duplicate strokes, and building a transaction with a content hash. The rollback function is only defined; no product code or test calls it yet.",
       ),
       source: "apps/web/src/domains/creator/ai/studio-stroke-proposal.ts",
       verify: "types",
@@ -227,8 +227,8 @@ const AI_PROPOSAL_NOT_COMMIT: EngineeringAtlasEntry = {
   chapterIds: ["ai-routing", "image-generation", "product-intent"],
   talk: {
     pitch: t(
-      "ToonStudio에서 AI는 문서를 직접 고치지 않고 제안만 돌려줍니다. 작가가 미리보기로 확인하고 마음에 드는 획만 골라 적용하면 한 번의 되돌리기 단위로 들어갑니다. 제안이 만들어진 뒤 문서가 바뀌었으면 세대 번호가 달라 적용을 거절합니다. 이미지는 후보로 쌓여 선택과 승인이 따로이고, 서버의 코믹 디렉터는 승인을 후보 해시에 묶습니다. 다만 지금 획 제안은 AI 모델이 아니라 규칙 기반 보정입니다.",
-      "In ToonStudio the AI never edits the document; it returns proposals. The artist previews them and applies only the strokes they like, which enter as one undo step. If the document changed after a proposal was made, the generation number differs and the apply is rejected. Images pile up as candidates with selecting and approving kept apart, and the server's comic director binds an approval to the candidate hash. One caveat: today's stroke proposals come from rule-based smoothing, not an AI model.",
+      "ToonStudio의 대사·팔레트·구도 제안은 문서를 직접 고치지 않고 제안만 돌려주고, 작가가 고른 것만 반영됩니다. 이미지는 후보로 쌓여 선택과 승인이 따로이고, 서버의 코믹 디렉터는 승인을 후보 해시에 묶습니다. 획 제안은 문서가 바뀌면 세대 번호가 달라 적용을 거절하도록 설계했지만, 규칙 기반 보정 1종이고 아직 화면에 이어지지 않았습니다. 그리고 AI 채색과 배경·캐릭터 생성은 예외로 결과를 바로 넣습니다.",
+      "ToonStudio's dialogue, palette and composition suggestions never edit the document; they return proposals, and only what the artist picks is applied. Images pile up as candidates with selecting and approving kept apart, and the server's comic director binds an approval to the candidate hash. Stroke proposals are designed to be rejected by a different generation number if the document changed, but they are one rule-based smoother and are not yet connected to the screen. And AI colorize and background or character generation are exceptions that put the result in at once.",
     ),
     analogy: t(
       "원고에 교정 의견을 직접 덮어쓰지 않고 '제안 모드'로 적어 주는 편집자와 같습니다. 받아들일지는 작가가 정합니다.",
@@ -238,28 +238,28 @@ const AI_PROPOSAL_NOT_COMMIT: EngineeringAtlasEntry = {
       {
         question: t("AI가 만든 결과를 믿어도 되나요?", "Can I trust what the AI produces?"),
         answer: t(
-          "믿는 구조가 아니라 확인하는 구조입니다. 모든 AI 결과는 제안이나 후보로 오고, 출처(공급자·모델)가 붙으며, 게시 전 점검에서 AI 사용 고지를 확인합니다.",
-          "It is a structure for checking, not for trusting. Every AI result arrives as a proposal or candidate, carries its provenance (provider and model), and AI-use disclosure is checked before publishing.",
+          "믿는 구조가 아니라 확인하는 구조입니다. 대사·팔레트·구도 제안과 이미지 후보는 제안·후보로 와서 사람이 고른 뒤에만 반영되고, 게시 전 점검에서 AI 사용 고지를 확인합니다. 다만 AI 채색은 선택한 레이어 이미지를 바로 교체하고, 기기 안 ONNX 결과는 출처 기록 대상이 아닙니다.",
+          "It is a structure for checking, not for trusting. Dialogue, palette and composition suggestions and image candidates arrive as proposals or candidates and are applied only after a person picks, and AI-use disclosure is checked before publishing. However, AI colorize replaces the selected layer's image at once, and on-device ONNX results are not recorded as provenance.",
         ),
       },
       {
         question: t("되돌릴 수 있나요?", "Can it be undone?"),
         answer: t(
-          "획 제안은 한 번의 되돌리기 단위로 들어가고, 롤백은 그 트랜잭션이 추가한 획만 지웁니다.",
-          "A stroke proposal enters as one undo step, and the rollback removes only the strokes that transaction added.",
+          "되돌리기는 편집기의 일반 Undo에 맡깁니다. 획 제안 모듈에 롤백 보조 함수가 있지만 아직 어디에서도 호출되지 않고, 제안 적용이 Undo 한 번으로 묶이는지도 확인하지 못했습니다.",
+          "Undo is left to the editor's ordinary Undo. The stroke-proposal module has a rollback helper, but nothing calls it yet, and whether an applied proposal collapses into a single Undo was not verified.",
         ),
       },
       {
         question: t("획 제안은 정말 AI인가요?", "Are stroke proposals really AI?"),
         answer: t(
-          "아직 아닙니다. 지금 연결된 생성기는 최근 획을 이동평균으로 다듬는 로컬 알고리즘 하나입니다. 모델이 붙을 수 있는 제안 프로토콜(출처·세대 번호·되돌리기)이 먼저 준비된 상태입니다.",
-          "Not yet. The generator connected today is one local algorithm that smooths recent strokes with a moving average. The proposal protocol (provenance, generation number, undo) that a model could plug into was built first.",
+          "아닙니다. 생성기는 최근 획을 이동평균으로 다듬는 로컬 알고리즘 하나이고, 그마저도 편집기와 이어 주는 훅을 부르는 곳이 없어 화면에는 '연결 대기'만 보입니다. 모델이 붙을 수 있는 제안 프로토콜(출처·세대 번호·적용 묶음)이 먼저 준비된 상태입니다.",
+          "No. The generator is one local algorithm that smooths recent strokes with a moving average, and nothing calls the hook that connects it to the editor, so the screen shows only 'waiting to connect'. The proposal protocol (provenance, generation number, apply bundle) that a model could plug into was built first.",
         ),
       },
     ],
     pitfall: t(
-      "'AI가 획을 제안한다'고 말하면 과장입니다(지금은 규칙 기반 보정 1종). 실행 전 안내(외부 전송·비용 범주)는 코드로 확인했지만, 모든 호출에 확인 창이 따로 뜬다는 것은 확인하지 못했습니다. 확인 단계는 제안 검토, 후보 승인, 설정의 유료 폴백 허락으로 나뉩니다.",
-      "Saying 'the AI proposes strokes' overstates it (today it is one rule-based smoother). The pre-run notice (external transfer and cost category) is confirmed in code, but a separate confirm dialog on every call was not verified. The confirmations are split across proposal review, candidate approval and the paid-fallback permission in settings.",
+      "'AI가 획을 제안한다'고 말하면 과장입니다. 획 제안은 규칙 기반 보정 1종이고 화면 연결도 대기 중입니다(코드 검색 기준, 브라우저 실행은 못 함). 'AI는 늘 제안만 한다'도 과장입니다. 채색·배경·캐릭터 생성은 결과를 바로 넣습니다. 실행 전 안내(외부 전송·비용 범주)는 코드로 확인했지만, 모든 호출에 확인 창이 따로 뜬다는 것은 확인하지 못했습니다.",
+      "Saying 'the AI proposes strokes' overstates it: stroke proposals are one rule-based smoother and the screen wiring is pending (based on a code search, not a browser run). 'The AI only ever proposes' is also an overstatement, because colorize and background or character generation put the result in at once. The pre-run notice (external transfer and cost category) is confirmed in code, but a separate confirm dialog on every call was not verified.",
     ),
   },
   technologies: ["Proposal protocol", "Content hash", "Optimistic concurrency", "Undo transaction"],
@@ -271,7 +271,7 @@ const AI_PROPOSAL_NOT_COMMIT: EngineeringAtlasEntry = {
     },
     {
       value: "moving-average-v1",
-      label: t("지금 연결된 획 제안 생성기(로컬 알고리즘, AI 모델 아님)", "The stroke generator connected today (a local algorithm, not an AI model)"),
+      label: t("획 제안 생성기(로컬 알고리즘, AI 모델 아님 · 화면 연결 대기)", "The stroke proposal generator (a local algorithm, not an AI model; screen wiring pending)"),
       source: "apps/web/src/domains/creator/ai/studio-stroke-proposal-bridge.ts",
     },
     {
@@ -303,8 +303,8 @@ const AI_PROVENANCE_RIGHTS: EngineeringAtlasEntry = {
       "The record has three layers. (1) The local work log: created as pending before the request and settled as succeeded, failed or cancelled afterward. Prompts keep only a SHA-256 hash and a content-free summary, and storing the raw text needs explicit consent. A job left pending because the browser closed is cancelled as SESSION_INTERRUPTED the next time it opens. (2) The public summary: only a de-identified projection without hashes, request IDs, seeds, internal IDs or provider error detail goes into the publish package. (3) The pre-publish check verifies that usage type, disclosure and log agree.",
     ),
     t(
-      "권리 쪽 규칙도 같은 곳에서 만납니다. 게시 점검은 AI 생성 이미지가 있는데 사용 유형이 generated가 아니거나, 이력이 있는데 사용 유형이 none이면 오류로, 고지가 비었거나 이력이 없으면 경고로 알립니다. tapas 프로필은 AI 생성 콘텐츠를 게시 오류로 처리합니다. 음악은 권리 확인이 없으면 생성 자체를 막고, 이미지 참조는 글자·로고·서명·워터마크를 따라 그리지 않도록 지시합니다. 번들한 ONNX 모델 5종은 모두 상용 사용이 가능한 허용형 라이선스(MIT·BSD-3-Clause·Apache-2.0)입니다.",
-      "Rights rules meet in the same place. The publish check raises an error when an AI-generated image exists but the usage type is not generated, or when a log exists but the usage type is none, and warnings when the disclosure is empty or the log is missing. The tapas profile treats AI-generated content as a publish error. Music generation is blocked outright without a rights confirmation, and image references are told not to copy text, logos, signatures or watermarks. The five bundled ONNX models all carry permissive licenses that allow commercial use (MIT, BSD-3-Clause, Apache-2.0).",
+      "권리 쪽 규칙도 같은 곳에서 만납니다. 게시 점검은 AI 생성 이미지가 있는데 사용 유형이 generated가 아니거나, 이력이 있는데 사용 유형이 none이면 오류로, 고지가 비었거나 이력이 없으면 경고로 알립니다. tapas 프로필은 AI 생성 콘텐츠를 게시 오류로 처리합니다. 음악은 권리 확인이 없으면 생성 자체를 막고, 이미지 참조는 글자·로고·서명·워터마크를 따라 그리지 않도록 지시합니다. 번들한 ONNX 모델 5종(가중치 파일은 6개, AnimeGAN2만 2개)은 모두 상용 사용이 가능한 허용형 라이선스(MIT·BSD-3-Clause·Apache-2.0)입니다.",
+      "Rights rules meet in the same place. The publish check raises an error when an AI-generated image exists but the usage type is not generated, or when a log exists but the usage type is none, and warnings when the disclosure is empty or the log is missing. The tapas profile treats AI-generated content as a publish error. Music generation is blocked outright without a rights confirmation, and image references are told not to copy text, logos, signatures or watermarks. The five bundled ONNX models (six weight files, two of them for AnimeGAN2 alone) all carry permissive licenses that allow commercial use (MIT, BSD-3-Clause, Apache-2.0).",
     ),
     t(
       "가장 중요한 한계는 이 기록이 서명이 아니라는 점입니다. 화면도 이 기록이 편집 가능한 로컬 작업 이력이며 제공자 서명·C2PA 콘텐츠 자격 증명·서버 검증 증명이 아니라고 밝힙니다. 제작 허브의 '해시·C2PA 초안' 내려받기도 위변조 확인용 해시일 뿐 신뢰 인증서가 붙은 공개 서명이 아닙니다. 코드에 'C2PA 호환'이라 적힌 모듈 둘은 어디에서도 불러 쓰지 않습니다. 음악 요청은 공급자에게 C2PA 서명을 요청하지만 검증하지 않고, 기기 안 ONNX 작업은 이 이력에 기록되지 않습니다.",

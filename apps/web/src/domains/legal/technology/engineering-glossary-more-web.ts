@@ -207,8 +207,8 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
       "Like a restaurant that sets water and cutlery before a regular sits down: wasted if they never come, instant if they do.",
     ),
     inToonstudio: t(
-      "shared/lib/speculation-rules.ts 가 스튜디오 진입처럼 ‘문서 이동’으로 넘어가는 목적지만 prerender(eagerness moderate, 마우스를 올린 동안)로 알립니다. 공개 페이지와 스튜디오는 COOP/COEP 경계 때문에 문서 이동으로 오가기 때문입니다. Chromium 전용이며, 운영 CSP 와의 궁합과 실제 효과는 브라우저에서 검증하지 못했습니다(미확인).",
-      "shared/lib/speculation-rules.ts prerenders only destinations reached by document navigation, such as entering the studio (eagerness moderate, i.e. while the pointer hovers), because public pages and the studio swap documents across the COOP/COEP boundary. Chromium only; how it behaves under the production CSP and its real benefit were not verified in a browser (unconfirmed).",
+      "shared/lib/speculation-rules.ts 가 스튜디오 진입처럼 ‘문서 이동’으로 넘어가는 목적지만 prerender(eagerness moderate, 마우스를 올린 동안)로 알립니다. 공개 페이지와 스튜디오는 COOP/COEP 경계 때문에 문서 이동으로 오가기 때문입니다. Chromium 전용이며, 로컬 Chromium 141 에서 운영 CSP 를 재현하면 규칙이 막혀 효과가 없을 가능성이 높습니다(운영 사이트는 측정하지 않음). 고치려면 규칙 JSON 의 해시를 CSP 에 더해야 하고 CSP 변경은 사용자가 정할 일입니다.",
+      "shared/lib/speculation-rules.ts prerenders only destinations reached by document navigation, such as entering the studio (eagerness moderate, i.e. while the pointer hovers), because public pages and the studio swap documents across the COOP/COEP boundary. Chromium only; reproducing the production CSP in a local Chromium 141 blocked the rule, so it most likely has no effect (the production site was not measured). Fixing it means adding the rule JSON's hash to the CSP, and changing the CSP is the owner's decision.",
     ),
     chapters: ["nextgen-web-experiments"],
     atlasIds: ["speculation-rules-prerender"],

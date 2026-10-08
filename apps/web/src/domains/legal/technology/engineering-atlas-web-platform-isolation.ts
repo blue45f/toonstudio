@@ -28,15 +28,15 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION: readonly EngineeringAtlas
         "Keeping the public site out of it is the core of the design. COOP same-origin cuts window.opener, which can break flows where a popup must return to the original window, such as Google sign-in or payments. So isolation sits only at the /studio boundary, and going from a public page to the studio loads a fresh document. For COEP it uses credentialless, which admits outside resources when fetched without cookies, instead of require-corp, which demands a permission header from every one of them.",
       ),
       t(
-        "지켜야 할 규칙도 있습니다. 전용 워커 스크립트 응답에도 같은 COEP 헤더가 있어야 하고, 서비스 워커가 캐시한 셸이 헤더를 잃으면 오프라인에서 격리가 사라지므로 헤더가 있는 셸만 폴백으로 씁니다. 격리가 끝내 켜지지 않아도 편집기는 열리며, 공유 메모리가 필요한 기능의 한도(예: 조각 정점 수)만 낮아집니다. COEP credentialless 를 지원하는 브라우저 범위는 코드로 알 수 없으니 MDN 호환성 표로 확인하세요.",
-        "There are rules to keep. Dedicated Worker script responses need the same COEP header, and a shell cached by the Service Worker loses isolation offline if it lost its headers, so only a shell that still carries them is used as the fallback. If isolation never turns on, the editor still opens and only the limits of shared-memory features (for example the sculpt vertex count) go down. Which browsers support COEP credentialless cannot be read from code, so check the MDN compatibility table.",
+        "지켜야 할 규칙도 있습니다. 전용 워커 스크립트 응답에도 같은 COEP 헤더가 있어야 하고, 서비스 워커가 캐시한 셸이 헤더를 잃으면 오프라인에서 격리가 사라지므로 헤더가 있는 셸만 폴백으로 씁니다. 격리가 끝내 켜지지 않아도 편집기는 그대로 열립니다. 기능별 한도를 낮추는 예산 사다리는 구현·시험만 있고 아직 화면에 연결되지 않았습니다. COEP credentialless 를 지원하는 브라우저 범위는 코드로 알 수 없으니 MDN 호환성 표로 확인하세요.",
+        "There are rules to keep. Dedicated Worker script responses need the same COEP header, and a shell cached by the Service Worker loses isolation offline if it lost its headers, so only a shell that still carries them is used as the fallback. If isolation never turns on, the editor still opens as is. The budget ladder that would lower per-feature limits is implemented and tested only, and is not wired to a screen yet. Which browsers support COEP credentialless cannot be read from code, so check the MDN compatibility table.",
       ),
     ],
     keyPoints: [
       t("격리는 /studio 경로에만 건다", "Isolation applies to /studio only"),
       t("비격리면 새로고침은 딱 1회", "At most one guarded reload"),
       t("실패해도 편집기는 열린다", "If isolation fails, the editor still opens"),
-      t("공유 메모리 기능의 한도만 내려간다", "Only shared-memory limits are lowered"),
+      t("한도를 낮추는 예산 사다리는 구현만, 화면에는 미연결", "The limit-lowering budget ladder is built but not wired to a screen"),
     ],
     diagram: {
       id: "cross-origin-isolation-studio-gate-diagram",
@@ -93,7 +93,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION: readonly EngineeringAtlas
           to: "studio",
           label: t("그래도 false 면 그대로 열기", "Still false? Open anyway"),
           style: "dashed",
-          note: t("재시도 없음 · 한도만 낮춤", "No retry; only limits are lowered"),
+          note: t("재시도 없음 · 한도 낮춤은 미연결", "No retry; limit lowering not wired"),
         },
       ],
     },
@@ -133,10 +133,10 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION: readonly EngineeringAtlas
         ],
       },
       {
-        feature: t("무거운 기능의 한도 (조각)", "Limits of heavy features (sculpt)"),
+        feature: t("무거운 기능의 한도 (조각) · 연결 대기", "Limits of heavy features (sculpt) · awaiting wiring"),
         role: t(
-          "공유 메모리가 없으면 조각 정점 상한을 2,097,152로 낮춰, 되돌리기 복제 비용이 편집 지연으로 드러나는 구간을 피합니다.",
-          "Without shared memory the sculpt vertex ceiling drops to 2,097,152, avoiding the range where undo-copy cost shows up as lag.",
+          "공유 메모리가 없으면 조각 정점 상한을 2,097,152로 낮추는 예산 사다리를 구현·시험해 두었습니다(되돌리기 복제 비용이 편집 지연으로 드러나는 구간을 피하려는 설계). 다만 제품 화면에는 아직 연결되지 않았습니다.",
+          "A budget ladder that lowers the sculpt vertex ceiling to 2,097,152 when shared memory is missing is implemented and tested (designed to avoid the range where undo-copy cost shows up as lag), but it is not wired into a product screen yet.",
         ),
         paths: [
           "apps/web/src/domains/creator/studio-capability-probe.ts",
@@ -225,8 +225,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION: readonly EngineeringAtlas
     chapterIds: ["pwa-continuity", "worker-architecture"],
     talk: {
       pitch: t(
-        "스튜디오는 큰 그림 데이터를 복사하지 않고 일꾼과 함께 만지고 싶습니다. 브라우저는 보안 때문에 그 공유 메모리를 기본으로 막아 두었고, 서버가 헤더 두 개로 이 문서는 격리된다고 약속해야 풀어 줍니다. 그래서 공개 사이트는 그대로 두고 작업실 문인 /studio 에만 그 약속을 겁니다. 격리가 안 켜지는 환경에서도 편집기는 열리고, 무거운 기능의 한도만 낮아집니다.",
-        "The studio wants to handle big image data together with its workers without copying. For security the browser keeps that shared memory off by default and releases it only when the server promises, with two headers, that the document is isolated. So the public site stays as it is and only /studio, the door to the workshop, gets the promise. Where isolation does not switch on, the editor still opens and only the limits of heavy features go down.",
+        "스튜디오는 큰 그림 데이터를 복사하지 않고 일꾼과 함께 만지고 싶습니다. 브라우저는 보안 때문에 그 공유 메모리를 기본으로 막아 두었고, 서버가 헤더 두 개로 이 문서는 격리된다고 약속해야 풀어 줍니다. 그래서 공개 사이트는 그대로 두고 작업실 문인 /studio 에만 그 약속을 겁니다. 격리가 안 켜지는 환경에서도 편집기는 그대로 열립니다. 무거운 기능의 한도를 낮추는 장치는 구현·시험만 있고 아직 화면에 연결되지 않았습니다.",
+        "The studio wants to handle big image data together with its workers without copying. For security the browser keeps that shared memory off by default and releases it only when the server promises, with two headers, that the document is isolated. So the public site stays as it is and only /studio, the door to the workshop, gets the promise. Where isolation does not switch on, the editor still opens as is. The mechanism that would lower the limits of heavy features is implemented and tested only and is not wired to a screen yet.",
       ),
       analogy: t(
         "공동 작업실에서 모두가 같은 열쇠를 쓰면 편하지만 위험합니다. 그래서 로비는 그대로 열어 두고 작업실 출입문에만 별도의 출입증 검사를 달았다고 생각하면 됩니다.",
@@ -243,8 +243,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION: readonly EngineeringAtlas
         {
           question: t("격리가 안 되는 브라우저에서는 어떻게 되나요?", "What happens in a browser where isolation does not work?"),
           answer: t(
-            "새로고침을 한 번만 시도하고, 그래도 안 되면 편집기를 그대로 엽니다. 공유 메모리를 쓰는 기능의 상한(예: 조각 정점 수)만 낮아집니다.",
-            "It tries one reload and, if that fails, opens the editor anyway. Only the ceilings of shared-memory features, such as the sculpt vertex count, go down.",
+            "새로고침을 한 번만 시도하고, 그래도 안 되면 편집기를 그대로 엽니다. 기능별 한도를 낮추는 예산 사다리는 구현·시험만 있고 아직 화면에 연결되지 않았습니다.",
+            "It tries one reload and, if that fails, opens the editor as is. The budget ladder that would lower per-feature limits is implemented and tested only and is not wired to a screen yet.",
           ),
         },
         {
@@ -269,7 +269,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION: readonly EngineeringAtlas
       },
       {
         value: "2,097,152",
-        label: t("공유 메모리가 없을 때 조각 정점 상한", "Sculpt vertex ceiling without shared memory"),
+        label: t("공유 메모리가 없을 때 조각 정점 상한 (상수만 있고 화면에는 미연결)", "Sculpt vertex ceiling without shared memory (constant only, not wired to a screen)"),
         source: "apps/web/src/domains/creator/studio-capability-budgets.ts",
       },
     ],

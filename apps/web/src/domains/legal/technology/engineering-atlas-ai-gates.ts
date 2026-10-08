@@ -389,7 +389,7 @@ const FREE_AI_PROVIDER_ALLOWLIST: EngineeringAtlasEntry = {
       {
         id: "settings",
         label: t("설정 화면", "Settings screen"),
-        sub: t("프리셋 11종 중 고르고 키를 넣음", "Pick one of 11 presets and add a key"),
+        sub: t("프리셋 11개(공급자 10+사용자 지정 1) 중 고름", "Pick one of 11 presets (10 providers + 1 custom)"),
         tone: "local",
         chips: ["11 presets", "API key"],
       },
@@ -424,10 +424,10 @@ const FREE_AI_PROVIDER_ALLOWLIST: EngineeringAtlasEntry = {
   },
   usage: [
     {
-      feature: t("AI 설정 · 공급자 프리셋 11종", "AI settings · 11 provider presets"),
+      feature: t("AI 설정 · 프리셋 11개 (공급자 10곳 + 사용자 지정 1개)", "AI settings · 11 presets (10 providers + 1 custom)"),
       role: t(
-        "프리셋마다 정확한 주소와 비용 정책이 정해져 있고, 키를 넣으면 호스트·경로·모델이 허용 목록과 같은지 먼저 확인합니다.",
-        "Each preset fixes an exact address and cost policy, and once a key is added the host, path and model are first checked against the allowlist.",
+        "프리셋마다 주소 형식과 비용 정책이 정해져 있고(사용자 지정 1개는 주소를 직접 넣고 비용도 본인 계정에 청구), 키를 넣으면 호스트·경로·모델이 허용 목록과 같은지 먼저 확인합니다.",
+        "Each preset fixes an address format and cost policy (the one custom preset takes an address you enter and bills your own account), and once a key is added the host, path and model are first checked against the allowlist.",
       ),
       paths: ["apps/web/src/shared/ai/free-ai-policy.ts#FREE_AI_PRESETS"],
       route: "/settings/ai",
