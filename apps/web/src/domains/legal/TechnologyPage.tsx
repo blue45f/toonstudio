@@ -14,6 +14,11 @@ import { EngineeringArchitectureDiagram } from "./technology/EngineeringArchitec
 import { BLUEPRINT_GRID_STYLE } from "./technology/engineering-blueprint";
 import { EngineeringChapterLibrary } from "./technology/EngineeringChapterLibrary";
 import { EngineeringHubStatusStrip } from "./technology/EngineeringHubStatusStrip";
+import {
+  EngineeringHubStart,
+  EngineeringReadingFlow,
+  EngineeringReadingRoutes,
+} from "./technology/EngineeringReadingRoutes";
 import { ENGINEERING_ATLAS_CATEGORIES } from "./technology/engineering-atlas-types";
 import { ENGINEERING_MAP_META } from "./technology/engineering-map-types";
 import {
@@ -22,10 +27,10 @@ import {
 } from "./technology/engineering-story-content";
 import { PUBLISHED_ENGINEERING_CHAPTERS as ENGINEERING_CHAPTERS } from "./technology/engineering-story-published-content";
 import {
-  ENGINEERING_PAGES,
   ENGINEERING_PATH_PAGES,
   findEngineeringPage,
   type EngineeringPageEntry,
+  type EngineeringPageId,
 } from "./technology/engineering-tech-pages";
 import {
   EngineeringStatusBadge,
@@ -48,9 +53,15 @@ const SHOWN_STATUSES = ["live", "configured", "experimental", "documented"] as c
 /** 도서관 머리말의 전체 읽기 시간. 제작 스토리 페이지 항목에 고정된 공표값을 그대로 쓴다. */
 const STORY_READING_MINUTES = findEngineeringPage("story").readingMinutes ?? 0;
 
-const RESOURCE_PAGES: readonly EngineeringPageEntry[] = ENGINEERING_PAGES.filter(
-  (page) => page.group === "resources" || page.id === "videos",
-);
+/** 발표 모드(5단계)의 기본 세미나 트랙 시간. 레지스트리 값이라 글에 숫자를 따로 적지 않는다. */
+const DECK_TALK_MINUTES = findEngineeringPage("deck").talkMinutes ?? 0;
+
+/**
+ * "찾아보기" 구역의 나머지 도구. 도감은 위쪽에 따로 크게 소개하므로 빼고, 낯선 말을 가장 먼저 찾는 용어집부터 놓는다.
+ * 발표 묶음에 속한 영상은 자료로 함께 보여준다. 자료 묶음에 페이지가 늘면 허브 테스트가 이 목록의 빠짐을 알려 준다.
+ */
+const RESOURCE_PAGE_IDS = ["glossary", "references", "licenses", "videos"] as const satisfies readonly EngineeringPageId[];
+const RESOURCE_PAGES: readonly EngineeringPageEntry[] = RESOURCE_PAGE_IDS.map((id) => findEngineeringPage(id));
 
 function pageMeta(page: EngineeringPageEntry): string {
   if (page.readingMinutes) {
@@ -126,7 +137,7 @@ export function TechnologyPage() {
   );
 
   useDocumentTitle(
-    bi("ToonStudio 기술 소개 · 발표 동선과 아키텍처", "ToonStudio engineering · Talk path and architecture"),
+    bi("ToonStudio 기술 소개 · 읽는 길과 발표 동선", "ToonStudio engineering · Reading routes and talk path"),
   );
 
   return (
@@ -134,18 +145,18 @@ export function TechnologyPage() {
       <header className="relative overflow-hidden rounded-[2rem] border border-line/70 bg-panel/65 shadow-sm">
         <div aria-hidden="true" className="absolute inset-0" style={BLUEPRINT_GRID_STYLE} />
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-panel via-panel/80 to-panel/20" />
-        <div className="relative px-6 py-8 sm:px-9 sm:py-10">
+        <div className="relative px-6 py-6 sm:px-9 sm:py-7">
           <p className="eyebrow text-accent">TOONSTUDIO ENGINEERING</p>
           <h1 className="mt-3 max-w-3xl text-balance break-keep text-3xl font-black tracking-tight text-fg sm:text-4xl">
             {bi("브라우저에서 웹툰 제작 스튜디오를 만들기까지.", "How we built a webtoon production studio in the browser.")}
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2 sm:text-base sm:leading-8">
             {bi(
-              "무엇을 썼는지보다 왜 선택했는지, 실제로 어디까지 동작하는지, 실패와 대체 경로는 무엇인지, 다른 서비스에는 어떻게 옮기는지를 챕터로 정리했습니다. 아래 도서관에서 챕터를 골라 바로 읽을 수 있습니다.",
-              "Not only what we used, but why, how far it really works, what fails, which fallback remains and how to reuse it elsewhere — organised as chapters you can open straight from the library below.",
+              "구조, 쓰인 재료, 선택의 이유, 실패했을 때의 대체 경로까지. ToonStudio를 어떻게 만들었는지 한곳에 모았습니다.",
+              "The structure, the materials, the reasons behind each choice and the fallbacks when something fails: how ToonStudio is built, in one place.",
             )}
           </p>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link
               href="/about/technology/deck"
               className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
@@ -170,14 +181,15 @@ export function TechnologyPage() {
         </div>
       </header>
 
-      <AboutSectionNav className="mt-8" />
+      <AboutSectionNav variant="compact" className="mt-5" />
 
-      <EngineeringChapterLibrary />
+      <EngineeringHubStart className="mt-6 sm:mt-7" />
+      <EngineeringReadingRoutes className="mt-12 sm:mt-14" />
+      <EngineeringReadingFlow className="mt-12 sm:mt-14" />
 
       <EngineeringTechNav className="mt-10" />
-      <EngineeringHubStatusStrip />
 
-      <section className="py-12 sm:py-16" aria-labelledby="engineering-path-title">
+      <section className="mt-12 sm:mt-14" aria-labelledby="engineering-path-title">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "TALK PATH · 5 STEPS")}</p>
@@ -185,10 +197,10 @@ export function TechnologyPage() {
               {bi("발표 동선: 이야기에서 발표까지 다섯 단계", "Talk path: five steps from story to presentation")}
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">
-              {bi(
-                "단계마다 목적이 겹치지 않습니다. 1~4단계는 발표의 근거이고, 5단계 발표 모드는 같은 사실을 30분으로 압축합니다.",
-                "Each step has its own purpose. Steps 1–4 are the evidence; step 5 compresses the same facts into a 30-minute talk.",
-              )}
+              {formatI18nTemplate(String(bi(
+                "큰 그림 두 해설(번호 없음)에서 구조와 재료를 본 뒤, 1~4단계에서 발표의 근거를 쌓고 5단계 발표 모드에서 같은 사실을 말로 풀어냅니다. 발표 모드는 세미나 {value0}분을 기본으로 요약·강의·도감 부록 트랙도 갖고 있습니다. 단계마다 목적이 겹치지 않습니다.",
+                "After the two big-picture guides (unnumbered), steps 1 to 4 build the evidence and step 5, presentation mode, tells the same facts aloud. Presentation mode defaults to a {value0}-minute seminar and also has brief, lecture and atlas-appendix tracks. Each step has its own purpose.",
+              )), { value0: DECK_TALK_MINUTES })}
             </p>
           </div>
         </div>
@@ -199,6 +211,60 @@ export function TechnologyPage() {
         </ol>
       </section>
 
+      <section className="mt-12 sm:mt-16" aria-labelledby="engineering-architecture-title">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div>
+            <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "ARCHITECTURE MAP")}</p>
+            <h2 id="engineering-architecture-title" className="mt-3 text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
+              {bi("원본은 기기에, 원장은 서버에, 실시간은 엣지에", "Sources on the device, ledgers on the server, realtime at the edge")}
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">
+              {bi(
+                "작업 종류마다 권위를 하나만 둡니다. 서버가 잠들어도 그림은 기기에 남고, 실시간 서버가 재시작돼도 원본은 잃지 않습니다.",
+                "Each workload has one authority. Drawings stay on the device while the server sleeps, and sources survive realtime restarts.",
+              )}
+            </p>
+          </div>
+          <Link
+            href={findEngineeringPage("architecture").href}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+          >
+            {bi("아키텍처 해설로 더 자세히", "More in the architecture guide")}
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
+        <div className="mt-7 rounded-[2rem] border border-line/70 bg-panel/65 p-4 shadow-sm sm:p-6">
+          <EngineeringArchitectureDiagram />
+        </div>
+        <p className="mt-3 text-xs leading-6 text-fg-3">
+          {bi(
+            "근거: DEPLOY.md · render.yaml · deploy/cloudflare-realtime/wrangler.jsonc. 구간별 풀이는 아키텍처 해설에서, 결정과 대가는 플레이북과 제작 스토리에서 이어집니다.",
+            "Sources: DEPLOY.md · render.yaml · deploy/cloudflare-realtime/wrangler.jsonc. Section-by-section explanations continue in the architecture guide; decisions and trade-offs in the playbook and story.",
+          )}
+        </p>
+      </section>
+
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-accent/35 bg-accent-soft/25 p-5 sm:p-6">
+        <div className="min-w-0 max-w-3xl">
+          <p className="text-sm font-black text-fg">{bi("구조를 봤다면 다음은 재료입니다.", "Structure seen? Materials come next.")}</p>
+          <p className="mt-1 text-sm leading-6 text-fg-2">
+            {bi(
+              "아래는 핵심 기술 네 가지의 요약입니다. 브러시 엔진·VRM·협업·저장·서버까지 쓰인 라이브러리를 영역별로, 고른 이유와 함께 보려면 라이브러리 해설을 여세요.",
+              "Below is a summary of four core technologies. For every library in use, from brush engines and VRM to collaboration, storage and the server, area by area with the reasons for each choice, open the library guide.",
+            )}
+          </p>
+        </div>
+        <Link
+          href={findEngineeringPage("libraries").href}
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+        >
+          {bi("라이브러리 해설 열기", "Open the library guide")}
+          <ArrowRight size={16} aria-hidden="true" />
+        </Link>
+      </div>
+
+      <TechnologyStackShowcase />
+
       <section className="pb-12 sm:pb-16" aria-labelledby="engineering-atlas-title">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
@@ -208,8 +274,8 @@ export function TechnologyPage() {
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">
               {bi(
-                "카드마다 도식으로 큰 그림을 보고, 배경 지식 → 서비스에서 쓰인 기능과 파일 → 샘플 코드 → 공식 참고 링크 → 발표 보조 순서로 내려갑니다. 발표 중 질문이 나오면 여기서 바로 찾으세요.",
-                "Each card starts with a diagram, then covers background, the features and files that use it, sample code, official references and talk aids. Open it straight from a question during the talk.",
+                "어느 단계에서든 꺼내 쓰는 찾아보기 도구의 중심입니다. 카드마다 도식으로 큰 그림을 보고, 배경 지식 → 서비스에서 쓰인 기능과 파일 → 샘플 코드 → 공식 참고 링크 → 발표 보조 순서로 내려갑니다. 발표 중 질문이 나오면 여기서 바로 찾으세요.",
+                "The centre of the look-up tools you can reach for at any step. Each card starts with a diagram, then covers background, the features and files that use it, sample code, official references and talk aids. Open it straight from a question during the talk.",
               )}
             </p>
           </div>
@@ -248,66 +314,8 @@ export function TechnologyPage() {
             </li>
           ))}
         </ul>
-      </section>
-
-      <section aria-labelledby="engineering-architecture-title">
-        <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "ARCHITECTURE MAP")}</p>
-        <h2 id="engineering-architecture-title" className="mt-3 text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
-          {bi("원본은 기기에, 원장은 서버에, 실시간은 엣지에", "Sources on the device, ledgers on the server, realtime at the edge")}
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">
-          {bi(
-            "작업 종류마다 권위를 하나만 둡니다. 서버가 잠들어도 그림은 기기에 남고, 실시간 서버가 재시작돼도 원본은 잃지 않습니다.",
-            "Each workload has one authority. Drawings stay on the device while the server sleeps, and sources survive realtime restarts.",
-          )}
-        </p>
-        <div className="mt-7 rounded-[2rem] border border-line/70 bg-panel/65 p-4 shadow-sm sm:p-6">
-          <EngineeringArchitectureDiagram />
-        </div>
-        <p className="mt-3 text-xs leading-6 text-fg-3">
-          {bi(
-            "근거: DEPLOY.md · render.yaml · deploy/cloudflare-realtime/wrangler.jsonc. 자세한 결정과 대가는 플레이북과 제작 스토리에서 이어집니다.",
-            "Sources: DEPLOY.md · render.yaml · deploy/cloudflare-realtime/wrangler.jsonc. Decisions and trade-offs continue in the playbook and story.",
-          )}
-        </p>
-      </section>
-
-      <section className="py-12 sm:py-16" aria-labelledby="engineering-status-title">
-        <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:gap-14">
-          <div>
-            <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "VERIFIED STATUS")}</p>
-            <h2 id="engineering-status-title" className="mt-4 max-w-lg text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
-              {bi("코드가 있다는 이유만으로 운영 기능이라고 부르지 않습니다.", "Code existence alone does not make a capability live.")}
-            </h2>
-            <p className="mt-4 max-w-lg text-sm leading-7 text-fg-2">
-              {formatI18nTemplate(String(bi(
-                "{value0}개 챕터를 운영 경로, 설정 필요, 실험, 문서화 단계로 나누고 코드·테스트·워크플로·문서를 근거로 연결합니다.",
-                "{value0} chapters are labelled live, setup required, experimental or documented and connected to code, tests, workflows or documents.",
-              )), { value0: ENGINEERING_CHAPTERS.length })}
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {SHOWN_STATUSES.map((status) => (
-              <article key={status} className="rounded-3xl border border-line/70 bg-card/65 p-5">
-                <EngineeringStatusBadge status={status} />
-                <p className="mt-5 font-display text-3xl font-black tracking-tight text-fg">{statusCounts[status] ?? 0}</p>
-                <p className="mt-2 text-xs leading-6 text-fg-3">
-                  {bi(ENGINEERING_STATUS_META[status].description.ko, ENGINEERING_STATUS_META[status].description.en)}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <TechnologyStackShowcase />
-
-      <section className="py-12 sm:py-16" aria-labelledby="engineering-resources-title">
-        <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "RESOURCES")}</p>
-        <h2 id="engineering-resources-title" className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">
-          {bi("발표를 돕는 자료실", "Resources for the talk")}
-        </h2>
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <h3 className="mt-8 text-sm font-black text-fg">{bi("용어·참고·권리·영상", "Terms, references, rights and film")}</h3>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {RESOURCE_PAGES.map((page) => {
             const Icon = page.icon;
             return (
@@ -330,8 +338,40 @@ export function TechnologyPage() {
         </ul>
       </section>
 
+      <EngineeringHubStatusStrip />
+
+      <section className="py-12 sm:py-16" aria-labelledby="engineering-status-title">
+        <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:gap-14">
+          <div>
+            <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "VERIFIED STATUS")}</p>
+            <h2 id="engineering-status-title" className="mt-4 max-w-lg text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
+              {bi("코드가 있다는 이유만으로 운영 기능이라고 부르지 않습니다.", "Code existence alone does not make a capability live.")}
+            </h2>
+            <p className="mt-4 max-w-lg text-sm leading-7 text-fg-2">
+              {formatI18nTemplate(String(bi(
+                "{value0}개 챕터를 운영 경로, 설정 필요, 실험, 문서화 단계로 나누고 코드·테스트·워크플로·문서를 근거로 연결합니다. 아래 챕터 카드의 상태 배지가 이 기준입니다.",
+                "{value0} chapters are labelled live, setup required, experimental or documented and connected to code, tests, workflows or documents. The status badges on the chapter cards below follow this rule.",
+              )), { value0: ENGINEERING_CHAPTERS.length })}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {SHOWN_STATUSES.map((status) => (
+              <article key={status} className="rounded-3xl border border-line/70 bg-card/65 p-5">
+                <EngineeringStatusBadge status={status} />
+                <p className="mt-5 font-display text-3xl font-black tracking-tight text-fg">{statusCounts[status] ?? 0}</p>
+                <p className="mt-2 text-xs leading-6 text-fg-3">
+                  {bi(ENGINEERING_STATUS_META[status].description.ko, ENGINEERING_STATUS_META[status].description.en)}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <EngineeringChapterLibrary />
+
       <section
-        className="rounded-[2rem] border border-line/70 bg-panel/70 p-6 shadow-sm sm:p-8 lg:p-10"
+        className="mt-14 rounded-[2rem] border border-line/70 bg-panel/70 p-6 shadow-sm sm:mt-16 sm:p-8 lg:p-10"
         aria-labelledby="engineering-transparency-title"
       >
         <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
