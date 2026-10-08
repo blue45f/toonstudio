@@ -127,6 +127,23 @@ describe("발표 모드 기본 화면", () => {
     expect(sessionStorage.getItem("toonstudio-engineering-deck-timer")).toContain("startedAt");
   });
 
+  it("핵심 요약과 구간별 슬라이드 목차가 있고, 목차에서 눌러 이동한다", () => {
+    Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
+    renderDeck();
+    // 핵심 요약 — 덱의 근거·동기화·내보내기 제약을 본문으로 읽을 수 있다.
+    expect(screen.getByRole("heading", { name: /핵심 요약|Key summary/u })).toBeTruthy();
+    expect(screen.getByText(/engineering-deck-model/u)).toBeTruthy();
+    // 슬라이드 목차 — 전체 슬라이드가 구간 그룹 아래 버튼으로 펼쳐진다.
+    const index = screen.getByRole("region", { name: /슬라이드 목차|Slide index/u });
+    const items = within(index).getAllByRole("button");
+    expect(items).toHaveLength(TALK_SLIDES.length);
+    const fifth = items[4];
+    if (!fifth) throw new Error("slide index item is missing");
+    fireEvent.click(fifth);
+    expect(stageSlideId()).toBe(TALK_SLIDES[4]?.id);
+    expect(fifth.getAttribute("aria-current")).toBe("true");
+  });
+
   it("개요(O)에서 슬라이드를 골라 이동한다", () => {
     Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
     renderDeck();
