@@ -7,6 +7,7 @@ import { presetById } from "../engine/presets/catalog";
 import { splitFrames } from "../engine/raster/reference-renderer";
 import { zigzagStroke } from "../engine/testing/synthetic-strokes";
 
+import { expectDabBufferColor } from "./testing/stroke-color-contract";
 import { createWebgpuComputeLane, WEBGPU_COMPUTE_LANE } from "./webgpu-compute-lane";
 
 import type { LaneEnvironment } from "./lane";
@@ -225,5 +226,34 @@ describe("webgpu-compute 레인", () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(() => lane.beginStroke(presetById("pencil-hb"), 1)).toThrow(LaneUnavailableError);
+  });
+
+  it("획 색: 색을 지정하면 dab 스토리지 버퍼가 그 색(선형 premultiplied)을 싣고, 없으면 검정이다(수채 습식도 같은 dab 경로)", async () => {
+    const run = async (presetId: string, options?: { color: readonly [number, number, number, number] }): Promise<{ floats: Float32Array; dabs: number }> => {
+      const { adapter, gpu } = createMockAdapter({ info: { vendor: "mock", description: "SwiftShader" } });
+      const lane = createWebgpuComputeLane();
+      await lane.init(fakeEnv(createMockGpuApi(adapter)), { width: 64, height: 64, dpr: 1, tileSize: 16, seed: 2 });
+      if (options) lane.beginStroke(presetById(presetId), 2, options);
+      else lane.beginStroke(presetById(presetId), 2);
+      // 입력 파이프라인이 첫 프레임을 보류할 수 있어 dab가 처음 나오는 프레임의 버퍼를 검사한다.
+      let dabs = 0;
+      let floats = new Float32Array(0);
+      for (const frame of splitFrames(zigzagStroke(48, { durationMs: 100 }))) {
+        dabs = lane.addSamples(frame).dabCount;
+        if (dabs > 0) {
+          floats = new Float32Array(gpu.bufferByLabel("sumi-dabs").data.slice(0));
+          break;
+        }
+      }
+      lane.abortStroke();
+      lane.dispose();
+      return { floats, dabs };
+    };
+    for (const presetId of ["pencil-hb", "watercolor-wet"] as const) {
+      const colored = await run(presetId, { color: [0.6, 0.1, 0.8, 1] });
+      expectDabBufferColor(colored.floats, colored.dabs, [0.6, 0.1, 0.8, 1]);
+      const plain = await run(presetId);
+      expectDabBufferColor(plain.floats, plain.dabs, [0, 0, 0, 1]);
+    }
   });
 });

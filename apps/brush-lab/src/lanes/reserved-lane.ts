@@ -13,6 +13,7 @@ import type {
   LaneKind,
   LaneStats,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "./lane";
 import type { LabImage, RawSample } from "../engine/core/types";
@@ -41,7 +42,8 @@ export class ReservedLane implements BrushEngineLane {
     throw new LaneUnavailableError("not-implemented", `${this.id}: 예약 레인(미구현)`, { laneId: this.id });
   }
 
-  beginStroke(_program: BrushProgram, _seed: number): void {
+  /** 예약 레인은 획을 받지 않으므로 색 옵션(`_options`)을 받되 무시하고 항상 거부한다(받아도 그릴 곳이 없다). */
+  beginStroke(_program: BrushProgram, _seed: number, _options?: StrokeOptions): void {
     throw new InvalidStateError(`${this.id}: 예약 레인은 beginStroke를 지원하지 않는다`);
   }
 

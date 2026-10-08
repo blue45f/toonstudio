@@ -1,5 +1,8 @@
+import { InvalidStateError } from "../engine/core/errors";
+
 import type { LaneReasonCode } from "../engine/core/errors";
 import type { Clock, GpuAdapterInfo, LabImage, RawSample, TimingSource } from "../engine/core/types";
+import type { DabEmitterOptions } from "../engine/dynamics/dab-emitter";
 import type { BrushProgram } from "../engine/presets/program-schema";
 
 /**
@@ -13,6 +16,31 @@ import type { BrushProgram } from "../engine/presets/program-schema";
  * unavailable 상태에서 init을 부르면 `LaneUnavailableError(code)`를 던진다.
  * 레인은 다른 레인으로 자동 전환하지 않는다.
  */
+
+/**
+ * 획의 입력 옵션. 색은 프로그램(브러시 정의)이 아니라 **획의 입력**이다: 같은 프로그램으로 색만 바꿔 여러 획을 그린다.
+ * - `color`: sRGB straight RGBA(각 0..1). 생략하면 검정 `[0, 0, 0, 1]`이며 이때 결과는 색 인자가 없던 시절과 비트 단위로 같다.
+ *   색 동역학(지터)과 습식 혼색은 프로그램 로직 그대로 이 기본색 위에 얹히고, 지우개·smudge는 색을 쓰지 않으므로 무시한다.
+ */
+export interface StrokeOptions {
+  readonly color?: readonly [number, number, number, number];
+}
+
+/** 획 색 검증: 길이 4의 유한한 0..1 값이 아니면 InvalidStateError(무음 보정 금지). 색이 없으면 undefined. */
+export function resolveStrokeColor(options?: StrokeOptions): readonly [number, number, number, number] | undefined {
+  const color = options?.color;
+  if (color === undefined) return undefined;
+  if (!Array.isArray(color) || color.length !== 4 || !color.every((c) => typeof c === "number" && Number.isFinite(c) && c >= 0 && c <= 1)) {
+    throw new InvalidStateError(`beginStroke: 획 색은 0..1 범위의 유한한 [r, g, b, a] 4개여야 한다(받은 값: ${JSON.stringify(color)})`);
+  }
+  return [color[0], color[1], color[2], color[3]];
+}
+
+/** StrokePipeline/DabEmitter에 넘길 옵션. 색이 없으면 빈 객체(기본 검정, 기존과 동일). */
+export function strokeEmitterOptions(options?: StrokeOptions): DabEmitterOptions {
+  const color = resolveStrokeColor(options);
+  return color === undefined ? {} : { color };
+}
 
 export type LaneId =
   | "canvas2d"
@@ -117,7 +145,8 @@ export interface BrushEngineLane {
   probe(env: LaneEnvironment): Promise<LaneCapabilityReport>;
   /** probe unavailable 상태에서 호출 시 LaneUnavailableError. */
   init(env: LaneEnvironment, config: LaneInit): Promise<void>;
-  beginStroke(program: BrushProgram, seed: number): void;
+  /** `options.color`(sRGB straight RGBA 0..1)는 이 획이 침착하는 기본색이다. 생략하면 검정이며 기존 동작과 같다. */
+  beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void;
   /** 프레임당 1회 호출 계약(스케줄러가 보장). */
   addSamples(samples: readonly RawSample[]): DabBatchReceipt;
   endStroke(): Promise<StrokeReceipt>;

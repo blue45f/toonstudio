@@ -101,6 +101,13 @@ scripts/                브라우저 프로브(browser-probe.mjs·browser-probe.
 획 도중(beginStroke 뒤 endStroke 전)에 오류(장치 손실·입력 오류)나 사용자 취소가 나면 `endStroke` 대신 **`abortStroke(): StrokeAbortReceipt`**
 (`{ discardedDabs, documentPreserved, reasonKo? }`)로 끝낸다: 진행 중인 획을 **문서에 합성하지 않고 버리고**, 그 전까지 `endStroke`된 결과(문서)는 되돌릴 수 있는 만큼 보존한다.
 
+- **획 색(`beginStroke(program, seed, options?: StrokeOptions)`, BL-1b)**: 색은 프로그램(브러시 정의)이 아니라 **획의 입력**이다. `StrokeOptions.color`는 sRGB straight RGBA(각 0..1, 길이 4)이며
+  범위 밖·NaN·길이 불일치는 `InvalidStateError`로 **획을 열기 전에** 거부한다(무음 보정 없음, 레인은 idle로 남는다). 생략하면 검정 `[0, 0, 0, 1]`이고 결과는 색 인자가 없던 시절과 비트 동일하다(레인별 픽셀 해시 스냅샷 불변).
+  적용 방식: cpu-reference·wasm-cpu·canvas2d·webgl2-instanced·webgpu-instanced·webgpu-compute·wasm-gpu-hybrid는 `StrokePipeline`의 `DabEmitter` 기본색(`opts.color`)으로 받아 색 동역학(지터)이 그 위에 얹히고
+  dab 인스턴스의 `color`(선형 premultiplied)로 래스터·셰이더에 실린다(**WGSL/GLSL·wasm 커널 변경 없음**). 수채·유화 같은 습식 매체의 안료 혼합은 프로그램 로직 그대로이며 색 인자는 그 획이 침착하는 색이다.
+  platform-baseline은 획 색을 외곽선 채움 색으로, libmypaint·Hokusai는 `color_h/s/v`로 매핑한다(영수증 `mapped`에 "획 색 옵션(sRGB) → color_h/s/v"). **Hokusai는 색 설정을 선형 광량으로 읽어** sRGB 값을 그대로 넣으면 같은 색이
+  γ만큼 밝고 옅게 나오므로(sRGB 0.7 → 0.855) 레인이 sRGB → 선형 변환 뒤 HSV로 넘긴다(`mapProgramToMypaint`의 `colorSpace: "linear"`, 영수증에 "선형 변환" 표기). 지우개·smudge는 색을 쓰지 않는다.
+  `reserved` 레인은 색 옵션을 받되 무시하고 어떤 호출이든 `beginStroke`를 거부한다(그릴 곳이 없다).
 - 동기 호출이고 **획 밖에서는 no-op(멱등, `documentPreserved: true`)**이다. 호출 뒤 레인은 다음 `beginStroke`를 받는 idle 상태다(`addSamples`·`endStroke`는 `InvalidStateError`).
   dispose된 레인은 `InvalidStateError`, 예약 레인(`reserved`)은 진행 중인 획이 있을 수 없으므로 no-op이다.
 - 레인은 보존하지 못한 것을 보존했다고 말하지 않는다(무음 대체 금지): 복원하지 못하면 `documentPreserved: false`와 한글 사유(`reasonKo`)를 돌려준다.
@@ -129,7 +136,7 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
   `readback`은 sRGB straight RGBA8, `readbackLinear`는 그 8비트에서 유도한 선형 premultiplied f32(정밀도 8비트)다. 그래서 `abortStroke`는 표면만 해제하면 문서가 항상 정확히 보존되고, 다획 겹침은 레인이 합성한다. 공통 뼈대는 `lanes/isolated-stroke-lane.ts`다.
 - **프로그램 → 설정(`lanes/mypaint-settings-map.ts`)**: Sumi 프로그램에서 `.myb` v3 설정을 계산한다. 두 엔진이 같은 설정 어휘를 평가하므로(Hokusai는 libmypaint v3 JSON을 파싱) **같은 프로그램이면 같은 문서**가 두 레인에 들어간다.
   옮기는 것: 지름 → `radius_logarithmic`(ln 반경), 경도 → `hardness`(반투명 반경 일치 등가 경도: 두 엔진의 dab 곡선이 달라 이름이 같은 수치를 그대로 쓰지 않는다), 흐름 → `opaque`, 간격 → `dabs_per_actual_radius`(1/spacing),
-  시간 dab → `dabs_per_second`, 크기·흐름의 압력/난수 동역학 → 입력 곡선(`radius_logarithmic`은 배율의 로그 9점, `opaque_multiply`), 색(레인 옵션, 기본 검정) → `color_h/s/v`, `opaque_linearize` 0(dab별 흐름이 그대로 누적되는 Sumi 규약),
+  시간 dab → `dabs_per_second`, 크기·흐름의 압력/난수 동역학 → 입력 곡선(`radius_logarithmic`은 배율의 로그 9점, `opaque_multiply`), 색(획 색 옵션 `StrokeOptions.color`, 없으면 레인 기본 검정) → `color_h/s/v`, `opaque_linearize` 0(dab별 흐름이 그대로 누적되는 Sumi 규약),
   불투명도·블렌드 → 엔진 밖 합성(지우개는 destination-out). 속도·기울기·방향·획 진행 입력, 타원 팁, 팁 종류, 접촉 물리, 종이, 테이퍼, 색 지터, 산포, 회전 추종, 이중 팁은 **옮기지 않는다**.
 - **무음 손실 없음**: 옮기지 못한 기능·근사 방식은 `mappingReceipt()`(`mapped`·`approximated`·`unmapped`, 한글 사유)로 레인 객체에서 읽을 수 있다(UI 노출은 후속 과제). 엔진에 대응 모델이 없는 매체 —
   습식(`wet-flow`·`program.wet`)·임파스토·smudge(격리 표면이라 문서 색을 집을 수 없다) — 는 근사하지 않고 `beginStroke`에서 `LaneUnavailableError("not-implemented")`로 거부한다(렌더 인스턴싱 레인과 같은 규약, 레인은 idle로 남는다).
@@ -152,7 +159,7 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
 
 | 탭 | 구성 | 상태 흐름 |
 | --- | --- | --- |
-| 그리기 | 큰 캔버스(`DrawCanvas`: 표시 캔버스 + 궤적 미리보기 + 입력 스테이지) + 접이식 사이드 패널: `DrawBrushPicker`(카탈로그 31종을 가족 칩·검색·최근 사용으로 고름, 항목마다 한글 이름 + 갤러리 Worker로 지연 생성·캐시하는 작은 미리보기), `DrawParamPanel`(크기·불투명도·흐름, 색 16진 입력·H/S/V 슬라이더·최근 색 8칸, 입력 보정 방식(Sumi 1€ 필터 / 끈 당김 lazy-brush)과 안정화 0~100, 종이 켜기/끄기·종이 종류, 마우스 압력 시뮬레이션), `DrawLaneSelect`(레지스트리 기반 엔진 선택, 미지원 레인 비활성 + 한글 사유, 소프트웨어 렌더러·`browser-verification-required` 배지), `DrawHud`(레인·브러시, 획당 addSamples p50/p95·endStroke·readback ms, dab 수, 소프트웨어 렌더러 경고, 습식 건조 상태). 캔버스 크기 1024×640(기본)·512²·1024²·화면 맞춤, `지우기`·`PNG 저장` | `draw-store`(브러시·파라미터·색·최근 목록·미리보기 캐시·HUD) + `LiveStrokeSession`(레인 하나, 프로그램은 파라미터 변경 시 `setProgram`으로 다음 획부터 반영); 레인·크기를 바꾸거나 지우면 새 세션(캔버스가 빈다) |
+| 그리기 | 큰 캔버스(`DrawCanvas`: 표시 캔버스 + 궤적 미리보기 + 입력 스테이지) + 접이식 사이드 패널: `DrawBrushPicker`(카탈로그 31종을 가족 칩·검색·최근 사용으로 고름, 항목마다 한글 이름 + 갤러리 Worker로 지연 생성·캐시하는 작은 미리보기), `DrawParamPanel`(크기·불투명도·흐름, 색 16진 입력·H/S/V 슬라이더·최근 색 8칸 — 고른 색은 다음 획부터 `beginStroke` 색 옵션으로 레인에 전달된다, 입력 보정 방식(Sumi 1€ 필터 / 끈 당김 lazy-brush)과 안정화 0~100, 종이 켜기/끄기·종이 종류, 마우스 압력 시뮬레이션), `DrawLaneSelect`(레지스트리 기반 엔진 선택, 미지원 레인 비활성 + 한글 사유, 소프트웨어 렌더러·`browser-verification-required` 배지), `DrawHud`(레인·브러시, 획당 addSamples p50/p95·endStroke·readback ms, dab 수, 소프트웨어 렌더러 경고, 습식 건조 상태). 캔버스 크기 1024×640(기본)·512²·1024²·화면 맞춤, `지우기`·`PNG 저장` | `draw-store`(브러시·파라미터·색·최근 목록·미리보기 캐시·HUD) + `LiveStrokeSession`(레인 하나, 프로그램은 파라미터 변경 시 `setProgram`, 색은 `setColor`로 다음 획부터 반영); 레인·크기를 바꾸거나 지우면 새 세션(캔버스가 빈다) |
 | 갤러리 | `FamilyGallery` → `PresetCard` × 31(스펙 30종 + 수묵 `sumi-ink-wet`): 같은 fixture(zigzag 256²)를 모든 프리셋으로 **Worker**(`cpu-reference` 경로)에서 렌더. 결정성 해시(fnv1a64, 리포트 `pixelHash`와 동일 함수)·렌더 시간·dab 수·가족 지표 PASS/FAIL/UNAVAILABLE | `gallery.entries[presetId]`; Worker 실패는 오류 카드(메인 스레드 대체 렌더 없음) |
 | A/B 비교 | `LaneSelector`(A/B, 레지스트리 기반, 미지원 레인 비활성 + 사유), `FixturePicker`(fixture 9종·캡처 획·캔버스 256/512/1024·시드·실시간 입력·결정성 재실행·캡처 JSON 저장/불러오기), `BrushParamPanel`(크기·경도·간격·불투명도·흐름·산포·안정화·팁 텍스처·샘플링 필터·그레인·습식 베타·KM 베타, configHash 즉시 표시), `LaneCanvas` A \| B \| `DiffHeatmap`(ΔE 램프), `MetricsTable`(지표·임계값·판정), `ReportPanel`(JSON/PNG 다운로드) | `runCompare`: A → B 순차 실행 → `compareLanes` → 리포트 2개(B는 A를 참조 레인으로 ΔE·IoU·퍼지 비교, 결정성 재실행 시 해시 동일 판정) → `results`·`reports` |
 | 리포트 | 세션 리포트 목록·정규 직렬화 원문·JSON 다운로드 | `reports[]`(세션 메모리에만) |
@@ -174,8 +181,10 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
   서비스 `applyStabilizer`는 경계 규칙(`@toonstudio/*`는 `platform-baseline-lane.ts`에서만)상 이 화면에서 쓰지 않는다.
 - **HUD**: 마지막 획의 addSamples 프레임별 p50/p95(ms)·endStroke·readback·dab 수. 습식 매체(수채·수묵·구아슈·유화)의 "마르는 중/건조" 상태는 **레인이 제공하지 않아 표시를 생략하고** 안내 문구만 둔다(레인 계약에 건조 상태 조회가 생기면 연결한다).
 - **한계(후속 과제)**:
-  ① 레인 계약 `beginStroke(program, seed)`에 **획 색 인자가 없어 모든 레인이 기본색(검정)으로 그린다**(색 선택·최근 색은 저장되며 패널에 안내가 있다).
-  ② **빠른 획의 `stroke-budget-exceeded`**: `StrokePipeline.emitSamples`의 dab 배치 용량 추정이 직전 프레임 끝에서 이번 프레임 첫 표본까지의 간격과 적응 간격(반경 급변 시 절반)을 세지 않아, 촘촘한 간격의 브러시(연필·G펜 등)를 대략 2000 px/s(프레임당 16 px) 이상으로 그으면 그 획이 버려진다(Node 재현: 연필 16 px/8 ms·G펜 16 px/8 ms 실패, 목탄 30 px/8 ms 실패). 앱은 레인을 바꾸거나 입력을 보정하지 않고 사유와 함께 획을 버린다(문서 보존). 엔진 수정은 이 랩의 요청 사항으로 올려 두었다.
+  ① (해결, 2026-10-08 BL-1b) 획 색: 레인 계약이 `beginStroke(program, seed, { color })`를 받아 모든 레인이 그림에 색을 적용한다(위 "레인 계약" 참고). 지우개·smudge 가족은 색을 쓰지 않는다. 색 알파 < 1은 dab 색의 알파로 들어가 획 안에서 겹친 곳이 더 진해진다.
+  ② (해결, 2026-10-08 BL-1b) 빠른 획: `StrokePipeline.emitSamples`의 dab 배치 용량 추정이 직전 프레임 마지막 위치에서 이번 프레임 첫 표본까지의 구간과 적응 간격(반경 10 % 초과 변화 시 간격 0.5배)을 세지 않아 프레임당 16 px 이상 움직이는 획이 `stroke-budget-exceeded`로 버려지던 문제를 고쳤다
+  (용량 추정만 바뀌며 dab 목록·출력 픽셀은 같다 — 레인별 해시 스냅샷 불변). 남은 거부는 한 프레임에 약 32,000 px 이상 건너뛰는 **비정상 입력**(용량 상한 `MAX_FRAME_DAB_CAPACITY` 262,144 dab 초과 추정)뿐이며,
+  dab를 만들기 전에 `StrokeBudgetExceededError`(`details.reasonKo`에 한글 사유)로 거부한다. 앱은 레인을 바꾸거나 입력을 보정하지 않고 사유와 함께 획을 버린다(문서 보존).
   ③ 실 GPU·실기기 펜 압력은 검증하지 못했다(헤드리스 Chromium + SwiftShader, CDP 합성 펜 이벤트).
 
 브라우저 실검증(2026-10-08, `BRUSH_LAB_BROWSER_PROBE=1 TMPDIR=/tmp node apps/brush-lab/scripts/browser-draw-probe.mjs [--lane <id>] [--presets a,b] [--skip-extras] [--verbose]`): Vite dev 서버와 헤드리스 Chromium 141(둘 다 detached 프로세스 그룹, 종료 시 그룹 kill)에서 마우스 곡선(속도 압력 시뮬레이션 켬)과 CDP 펜 지그재그(pointerType=pen, 압력 0.1→1→0.1·기울기)를 실제로 그리고 스크린샷·잉크 픽셀·HUD를 기록한다.

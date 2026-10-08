@@ -4,7 +4,7 @@ import { FrameScheduler } from "../../platform/raf-scheduler";
 
 import type { LabImage, RawSample } from "../../engine/core/types";
 import type { BrushProgram } from "../../engine/presets/program-schema";
-import type { BrushEngineLane, DabBatchReceipt, LaneEnvironment, StrokeAbortReceipt, StrokeReceipt } from "../../lanes/lane";
+import type { BrushEngineLane, DabBatchReceipt, LaneEnvironment, StrokeAbortReceipt, StrokeOptions, StrokeReceipt } from "../../lanes/lane";
 import type { PreviewPoint } from "../../platform/canvas-present";
 import type { PointerCaptureOptions } from "../../platform/pointer-capture";
 
@@ -19,6 +19,9 @@ import type { PointerCaptureOptions } from "../../platform/pointer-capture";
  *   endStroke 이후의 실패는 레인이 스스로 정리하므로 레인을 유지한다.
  * - 포인터 취소(`pointercancel`)는 오류가 아니라 사용자의 중단이다: 획을 문서에 합성하지 않고 같은 abort 경로로 버린다.
  * - 레인 init이 실패하면 방금 만든 레인을 해제한다(GPU 장치 누수 방지).
+ * - 획 색은 프로그램이 아니라 획의 입력이다: 세션이 가진 현재 색(`color`/`setColor`)을 획을 시작할 때 `beginStroke(program, seed, { color })`로
+ *   넘긴다. 색을 바꿔도 진행 중인 획은 시작할 때의 색을 끝까지 쓰고 다음 획부터 새 색이 적용된다(`setProgram`과 같은 규칙).
+ *   색을 한 번도 정하지 않으면 옵션 없이 `beginStroke`를 불러 기존(검정)과 같다.
  */
 
 export interface LiveStrokeResult {
@@ -61,6 +64,8 @@ export interface LiveSessionOptions {
   seed: number;
   width: number;
   height: number;
+  /** 획 색(sRGB straight RGBA, 0..1). 생략하면 `setColor` 전까지 레인 기본(검정). */
+  color?: NonNullable<StrokeOptions["color"]>;
   presentCanvas?: HTMLCanvasElement;
   /** 습식 풀 용량(타일). 16 px 타일 2048개(≈720²)를 넘는 문서에서 습식·유화 가족을 쓰려면 올려야 한다(README 습식 예산). */
   wetCapacityTiles?: number;
@@ -90,6 +95,8 @@ export class LiveStrokeSession {
   private readonly scheduler: FrameScheduler;
   /** 다음 `beginStroke`부터 쓸 프로그램(`setProgram`으로 바뀐다). */
   private program: BrushProgram;
+  /** 다음 `beginStroke`부터 쓸 획 색(`setColor`로 바뀐다). undefined면 옵션 없이 시작한다. */
+  private color: StrokeOptions["color"];
   private lane: BrushEngineLane;
   /** 진행 중인 획의 addSamples 소요(ms). */
   private addSamplesMs: number[] = [];
@@ -113,6 +120,7 @@ export class LiveStrokeSession {
   private constructor(opts: LiveSessionOptions, lane: BrushEngineLane) {
     this.opts = opts;
     this.program = opts.program;
+    this.color = opts.color;
     this.lane = lane;
     this.scheduler = opts.scheduler ?? new FrameScheduler(undefined, opts.env.clock);
     this.scheduler.onFrame((batch) => this.enqueueBatch(batch));
@@ -159,6 +167,14 @@ export class LiveStrokeSession {
    */
   setProgram(program: BrushProgram): void {
     this.program = program;
+  }
+
+  /**
+   * 다음 획부터 쓸 색(sRGB straight RGBA, 0..1)을 바꾼다. 진행 중인 획은 시작할 때의 색을 끝까지 쓰고 문서와 레인은 그대로 유지된다.
+   * 값 검증은 레인(`beginStroke`)이 한다: 잘못된 색이면 다음 획 시작이 InvalidStateError로 드러난다.
+   */
+  setColor(color: NonNullable<StrokeOptions["color"]>): void {
+    this.color = color;
   }
 
   /** 요소에 포인터 캡처를 붙인다. 반환 함수로 뗀다. */
@@ -379,7 +395,8 @@ export class LiveStrokeSession {
       this.strokeSeed = this.opts.seed + this.strokeCount;
       // beginStroke가 중간에 던져도 레인 상태는 알 수 없으므로 호출 전에 표시한다.
       this.laneMidStroke = true;
-      this.lane.beginStroke(this.program, this.strokeSeed);
+      if (this.color) this.lane.beginStroke(this.program, this.strokeSeed, { color: this.color });
+      else this.lane.beginStroke(this.program, this.strokeSeed);
       this.inStroke = true;
       this.strokeSamples = [];
       this.frames = [];

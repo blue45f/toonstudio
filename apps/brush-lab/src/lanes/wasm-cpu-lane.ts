@@ -6,7 +6,7 @@ import { SUMI_KERNEL_SHA256 } from "../engine/wasm/kernel-integrity";
 import { loadSumiKernel } from "../engine/wasm/loader";
 import { WasmSurface } from "../engine/wasm/wasm-surface";
 
-import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, unavailableReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions, unavailableReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -17,6 +17,7 @@ import type {
   LaneInit,
   LaneStats,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "./lane";
 import type { Clock, LabImage, RawSample } from "../engine/core/types";
@@ -122,11 +123,12 @@ export function createWasmCpuLane(): WasmCpuLane {
       clock = env.clock;
       pipeline = null;
     },
-    beginStroke(program: BrushProgram, seed: number): void {
+    beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
+      const emitterOptions = strokeEmitterOptions(options);
       const s = requireSurface("beginStroke");
       if (pipeline) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
       s.beginStroke(program, seed);
-      pipeline = new StrokePipeline(program, seed, undefined, s.paperField());
+      pipeline = new StrokePipeline(program, seed, undefined, s.paperField(), emitterOptions);
       frameIndex = 0;
       frameTimes = [];
       latency = [];

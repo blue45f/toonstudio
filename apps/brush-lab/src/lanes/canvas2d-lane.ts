@@ -4,7 +4,7 @@ import { SUMI_ENGINE_VERSION } from "../engine/core/version";
 import { StrokePipeline } from "../engine/dynamics/stroke-pipeline";
 import { paperFor } from "../engine/raster/reference-renderer";
 
-import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport, unavailableReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions, supportedReport, unavailableReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -18,6 +18,7 @@ import type {
   LaneStats,
   LaneStatus,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "./lane";
 import type { Clock, DabInstance, LabImage, RawSample } from "../engine/core/types";
@@ -182,11 +183,12 @@ export class Canvas2dLane implements BrushEngineLane {
     this.pipeline = null;
   }
 
-  beginStroke(program: BrushProgram, seed: number): void {
+  beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
+    const emitterOptions = strokeEmitterOptions(options);
     this.requireContexts("beginStroke");
     if (this.pipeline) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
     this.program = program;
-    this.pipeline = new StrokePipeline(program, seed, undefined, program.paper.enabled ? paperFor(program.paper) : null);
+    this.pipeline = new StrokePipeline(program, seed, undefined, program.paper.enabled ? paperFor(program.paper) : null, emitterOptions);
     this.pipelineFinished = false;
     this.frameIndex = 0;
     this.frameTimes = [];

@@ -16,7 +16,11 @@
 //   --presets a,b,c    : 그릴 프리셋(기본 9종)
 //   --out <dir>        : 스크린샷·summary.json 위치(기본 $TMPDIR/brush-draw-shots)
 //   --size <mode>      : 캔버스 크기 모드(1024x640 | 512 | 1024 | fit, 기본 1024x640)
+//   --colors a,b,c,d[,e]: 색 확인 단계(BL-1b). 프리셋마다 캔버스를 비우고 처음 4색(이름 red|blue|green|purple|orange|teal 또는 #rrggbb)으로 가로 획 4개를,
+//                          5번째 색이 있으면 세로 교차 획 1개를 그리고, 마지막에 빠른 획(이벤트당 40 px ≈ 5000 px/s)을 그린다.
+//                          띠별 평균 색이 지정색과 가까운지(색조 거리)와 빠른 획이 그려졌는지 객관 수치로 기록한다. 스크린샷 `<레인>-<프리셋>-colors.png`
 //   --skip-extras      : 우클릭·pointercancel·PNG 저장·모바일 레이아웃 점검을 건너뛴다
+//   --colors-only      : 기본 그리기(마우스 곡선·펜 지그재그)를 건너뛰고 색 확인 단계만 한다
 //   --verbose          : 페이지 콘솔 전체와 Chromium stderr를 stderr에 그대로 쓴다(진단용)
 // 종료 코드: 0 통과(또는 게이트 꺼짐), 1 점검 실패, 2 브라우저를 실행할 수 없음(구조적 skip).
 // 서버·브라우저는 detached 프로세스 그룹으로 띄우고 종료 시 그룹 전체를 kill한 뒤 process.exit한다.
@@ -55,6 +59,8 @@ function parseArgs(argv) {
     skipExtras: false,
     verbose: false,
     serve: false,
+    colors: [],
+    skipDefaultDraw: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
@@ -63,6 +69,8 @@ function parseArgs(argv) {
     else if (a === "--presets") opts.presets = String(next()).split(",").filter(Boolean);
     else if (a === "--out") opts.out = String(next());
     else if (a === "--size") opts.size = String(next());
+    else if (a === "--colors") opts.colors = String(next()).split(",").filter(Boolean);
+    else if (a === "--colors-only") opts.skipDefaultDraw = true;
     else if (a === "--skip-extras") opts.skipExtras = true;
     else if (a === "--verbose") opts.verbose = true;
     else if (a === "--serve-child") opts.serve = true;
@@ -229,6 +237,71 @@ function inkStats(png) {
     }
   }
   return { inkPixels: ink, total: png.width * png.height, bbox: ink > 0 ? [minX, minY, maxX, maxY] : null };
+}
+
+/* ------------------------------------------------------------------ */
+/* 색 확인 도우미(BL-1b)                                               */
+/* ------------------------------------------------------------------ */
+const NAMED_COLORS = {
+  red: "#d62828",
+  blue: "#1d4ed8",
+  green: "#16a34a",
+  purple: "#7e22ce",
+  orange: "#ea580c",
+  teal: "#0d9488",
+};
+
+function resolveColor(token) {
+  if (/^#[0-9a-fA-F]{6}$/u.test(token)) return { name: token, hex: token.toLowerCase() };
+  const hex = NAMED_COLORS[token];
+  if (!hex) throw new Error(`알 수 없는 색 이름: ${token} (red|blue|green|purple|orange|teal 또는 #rrggbb)`);
+  return { name: token, hex };
+}
+
+function hexToRgb(hex) {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+}
+
+/** RGB(0..255) → 색조(도, 0..360)와 채도 폭(max-min). */
+function hueOf([r, g, b]) {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  if (d === 0) return { hue: 0, chroma: 0 };
+  let h;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  return { hue: (h * 60 + 360) % 360, chroma: d };
+}
+
+function hueDistance(a, b) {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+/** 스크린샷의 영역(x0..x1, y0..y1 px) 안에서 흰 종이와 충분히 다른 픽셀의 평균 RGB. 잉크가 없으면 null. */
+function meanInkRgb(png, x0, x1, y0, y1) {
+  let sr = 0;
+  let sg = 0;
+  let sb = 0;
+  let n = 0;
+  for (let y = Math.max(0, Math.floor(y0)); y < Math.min(png.height, Math.ceil(y1)); y += 1) {
+    for (let x = Math.max(0, Math.floor(x0)); x < Math.min(png.width, Math.ceil(x1)); x += 1) {
+      const o = (y * png.width + x) * png.channels;
+      const r = png.data[o];
+      const g = png.data[o + 1];
+      const b = png.data[o + 2];
+      // 가장자리 반투명 픽셀은 흰 종이에 가까워 색을 흐리므로 충분히 진한 픽셀만 센다.
+      if (Math.abs(255 - r) + Math.abs(255 - g) + Math.abs(255 - b) > 120) {
+        sr += r;
+        sg += g;
+        sb += b;
+        n += 1;
+      }
+    }
+  }
+  return n > 0 ? { rgb: [sr / n, sg / n, sb / n].map((v) => Math.round(v)), pixels: n } : null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -437,7 +510,7 @@ async function main() {
     /**
      * 마우스 곡선(사인 곡선). 이벤트 간격 ~8 ms로 속도 기반 압력 시뮬레이션이 의미를 갖게 한다.
      * 이벤트당 `stepPx`(기본 6 px ≈ 750 px/s)씩 움직인다. 이 값이 클수록 빠른 획이다
-     * (프레임 사이 이동이 큰 빠른 획은 엔진의 dab 배치 용량 추정 한계로 stroke-budget-exceeded가 날 수 있다 — fastStroke 점검 참고).
+     * (BL-1b 이전에는 프레임 사이 이동이 큰 빠른 획이 dab 배치 용량 추정 한계로 stroke-budget-exceeded가 났다. 지금은 그려지며 fastStroke 점검이 이를 기록한다).
      */
     const drawMouseCurve = async (b, row, stepPx = 6) => {
       const x0 = b.x + b.width * 0.08;
@@ -508,7 +581,7 @@ async function main() {
     });
 
     // 브러시별 그리기
-    for (const presetId of opts.presets) {
+    for (const presetId of opts.skipDefaultDraw ? [] : opts.presets) {
       const entry = { presetId, laneId, ok: false };
       summary.presets.push(entry);
       try {
@@ -553,6 +626,99 @@ async function main() {
       } catch (error) {
         entry.error = String(error.message ?? error).split("\n")[0];
         fail(`${presetId}: ${entry.error}`);
+      }
+    }
+
+
+    // 색 확인 단계(BL-1b): 서로 다른 색으로 그려 색이 실제로 적용되는지, 습식 색 번짐·빠른 획을 본다.
+    if (opts.colors.length > 0) {
+      const palette = opts.colors.map(resolveColor);
+      if (palette.length < 2) throw new Error("--colors는 2개 이상이어야 한다");
+      const rows = [0.14, 0.32, 0.5, 0.68];
+      const bands = palette.slice(0, rows.length);
+      const crossColor = palette[rows.length] ?? null;
+      const FAST_ROW = 0.88;
+      summary.colorShots = [];
+      for (const presetId of opts.presets) {
+        const entry = { presetId, laneId, ok: false, bands: [] };
+        summary.colorShots.push(entry);
+        try {
+          await page.locator('[data-testid="lab-draw-chip-all"]').click();
+          await page.fill("#lab-draw-search", "");
+          const brush = page.locator(`[data-testid="lab-draw-brush-${presetId}"]`);
+          await brush.scrollIntoViewIfNeeded();
+          await brush.click();
+          await clearAndWait(`${presetId} 색 확인`);
+          const b = await box();
+          const setColor = async (c) => {
+            await page.fill("#lab-draw-hex", c.hex);
+            await page.press("#lab-draw-hex", "Enter");
+            await page.waitForSelector(`[aria-label="현재 색 ${c.hex}"]`, { timeout: 10_000 });
+          };
+          let count = await strokeCount();
+          for (let i = 0; i < bands.length; i += 1) {
+            await setColor(bands[i]);
+            await drawMouseCurve(b, rows[i]);
+            count += 1;
+            await waitStrokes(count, `${presetId} ${bands[i].name} 획`);
+          }
+          if (crossColor) {
+            await setColor(crossColor);
+            const xCross = b.x + b.width * 0.52;
+            await page.mouse.move(xCross, b.y + b.height * 0.06);
+            await page.mouse.down();
+            for (let y = b.y + b.height * 0.06; y < b.y + b.height * 0.8; y += 6) {
+              await page.mouse.move(xCross + Math.sin(y / 40) * 6, y);
+              await sleep(8);
+            }
+            await page.mouse.up();
+            count += 1;
+            await waitStrokes(count, `${presetId} ${crossColor.name} 교차 획`);
+          }
+          // 빠른 획: 이벤트당 40 px(≈ 5000 px/s). 마지막 띠 색을 쓴다.
+          const fastColor = bands[bands.length - 1];
+          await setColor(fastColor);
+          const noticeBefore = (await page.locator('[data-testid="lab-draw-notices"]').textContent().catch(() => "")) ?? "";
+          const fastBefore = count;
+          await drawMouseCurve(b, FAST_ROW, 40);
+          await sleep(1500);
+          const fastAfter = await strokeCount();
+          const noticeAfter = (await page.locator('[data-testid="lab-draw-notices"]').textContent().catch(() => "")) ?? "";
+          entry.fast = { stepPx: 40, completed: fastAfter === fastBefore + 1, newNotice: noticeAfter.length > noticeBefore.length ? noticeAfter.slice(noticeBefore.length, noticeBefore.length + 240) : null };
+          await sleep(400);
+          const file = path.join(opts.out, `${laneId}-${presetId}-colors.png`);
+          await page.screenshot({ path: file, clip: { x: b.x, y: b.y, width: b.width, height: b.height } });
+          entry.shot = file;
+          const png = decodePng(readFileSync(file));
+          const scale = png.width / b.width;
+          const amp = b.height * 0.08;
+          const analyze = (row, label, expected) => {
+            const yc = b.height * row;
+            const m = meanInkRgb(png, b.width * 0.08 * scale, b.width * 0.42 * scale, (yc - amp - 12) * scale, (yc + amp + 12) * scale);
+            if (!m) return { label, expected: expected?.hex ?? null, rgb: null, ok: false, note: "잉크 없음" };
+            const got = hueOf(m.rgb);
+            let ok = true;
+            let nearest = null;
+            if (expected) {
+              const want = hueOf(hexToRgb(expected.hex));
+              const ranked = palette
+                .map((c) => ({ name: c.name, d: hueDistance(got.hue, hueOf(hexToRgb(c.hex)).hue) }))
+                .sort((x, y) => x.d - y.d);
+              nearest = ranked[0].name;
+              ok = got.chroma >= 20 && nearest === expected.name && hueDistance(got.hue, want.hue) < 40;
+            }
+            return { label, expected: expected?.hex ?? null, rgb: m.rgb, hue: Math.round(got.hue), chroma: Math.round(got.chroma), nearestPalette: nearest, ok, pixels: m.pixels };
+          };
+          for (let i = 0; i < bands.length; i += 1) entry.bands.push(analyze(rows[i], bands[i].name, bands[i]));
+          const fastBand = analyze(FAST_ROW, `${fastColor.name}(빠른 획)`, fastColor);
+          entry.fast.band = fastBand;
+          entry.ok = entry.bands.every((x) => x.ok) && entry.fast.completed;
+          log(`${entry.ok ? "ok  " : "FAIL"} ${laneId} ${presetId} 색 확인: ${entry.bands.map((x) => `${x.label}→rgb(${x.rgb?.join(",") ?? "-"})${x.ok ? "" : "!"}`).join(" ")} | 빠른 획 ${entry.fast.completed ? "그려짐" : "버려짐"}${fastBand.rgb ? ` rgb(${fastBand.rgb.join(",")})` : ""}${entry.fast.newNotice ? ` 알림: ${entry.fast.newNotice.slice(0, 120)}` : ""}`);
+          if (!entry.ok) fail(`${presetId}: 색 확인 실패 ${JSON.stringify({ bands: entry.bands.filter((x) => !x.ok).map((x) => x.label), fast: entry.fast.completed })}`);
+        } catch (error) {
+          entry.error = String(error.message ?? error).split("\n")[0];
+          fail(`${presetId}(색 확인): ${entry.error}`);
+        }
       }
     }
 
@@ -626,7 +792,7 @@ async function main() {
       await drawMouseCurve(b, 0.12);
       await waitStrokes(strokesAfter + 1, "취소 뒤 새 획");
 
-      // 빠른 획(정보용): 프레임 사이 이동이 큰 획이 레인 오류로 드러나는지(무음 보정 없음)와 그 뒤 복구를 기록한다.
+      // 빠른 획(정보용): 프레임 사이 이동이 큰 획(≈ 5000 px/s)이 그려지는지, 레인 오류로 드러나면(무음 보정 없음) 그 사유와 그 뒤 복구를 기록한다.
       {
         const fastBefore = await strokeCount();
         const noticeBefore = (await page.locator('[data-testid="lab-draw-notices"]').textContent().catch(() => "")) ?? "";

@@ -5,7 +5,7 @@ import { probeWebGpuAdapter, requestSumiDevice } from "../engine/gpu/device";
 import { SumiInstancedRuntime } from "../engine/gpu/pipeline-instanced";
 import { paperFor } from "../engine/raster/reference-renderer";
 
-import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -16,6 +16,7 @@ import type {
   LaneInit,
   LaneStats,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "./lane";
 import type { LabImage, RawSample } from "../engine/core/types";
@@ -106,10 +107,11 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
         throw error;
       }
     },
-    beginStroke(program: BrushProgram, seed: number): void {
+    beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
+      const emitterOptions = strokeEmitterOptions(options);
       const rt = requireRuntime();
       rt.beginStroke(program, seed);
-      pipeline = new StrokePipeline(program, seed, undefined, program.paper.enabled ? paperFor(program.paper) : null);
+      pipeline = new StrokePipeline(program, seed, undefined, program.paper.enabled ? paperFor(program.paper) : null, emitterOptions);
     },
     addSamples(samples: readonly RawSample[]): DabBatchReceipt {
       const rt = requireRuntime();

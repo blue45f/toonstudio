@@ -1,3 +1,4 @@
+import { srgbToLinear } from "../engine/core/color";
 import { LaneUnavailableError } from "../engine/core/errors";
 
 import type { Rgba } from "../engine/core/types";
@@ -55,6 +56,12 @@ export interface MypaintMapping {
 export interface MypaintMapOptions {
   /** 획 색(sRGB straight). 기본 검정 불투명(Sumi 기본 획 색과 같다). */
   color?: Rgba;
+  /**
+   * 엔진이 색 설정(color_h/s/v)을 읽는 색 공간. libmypaint 1.6.1은 sRGB 값을 그대로 쓰고("srgb", 기본),
+   * Hokusai는 선형 광량으로 합성해 sRGB로 인코딩해 돌려주므로 색 설정도 선형이어야 한다("linear" — sRGB 색을 선형으로 바꾼 뒤 HSV로 넘긴다.
+   * 그렇지 않으면 같은 색이 γ만큼 밝고 옅게 나온다: sRGB 0.7 → 0.855).
+   */
+  colorSpace?: "srgb" | "linear";
 }
 
 /** 압력/난수 곡선을 옮길 때의 표본 수(크기는 로그 공간에서 구간 선형이라 조밀하게 잡는다). */
@@ -296,13 +303,18 @@ export function mapProgramToMypaint(program: BrushProgram, opts: MypaintMapOptio
   }
   put("anti_aliasing", 1);
 
-  // 색(HSV 0..1). Sumi 프로그램에는 기본 색이 없어 레인 옵션(기본 검정)을 쓴다.
+  // 색(HSV 0..1). Sumi 프로그램에는 기본 색이 없어 획 색 옵션(`StrokeOptions.color`, 없으면 레인 기본 검정)을 쓴다.
   const color = opts.color ?? [0, 0, 0, 1];
-  const [h, s, v] = rgbToHsv(clamp01(color[0]), clamp01(color[1]), clamp01(color[2]));
+  const toEngine = opts.colorSpace === "linear" ? (c: number): number => srgbToLinear(clamp01(c)) : clamp01;
+  const [h, s, v] = rgbToHsv(toEngine(color[0]), toEngine(color[1]), toEngine(color[2]));
   put("color_h", h);
   put("color_s", s);
   put("color_v", v);
-  mapped.push("레인 색 옵션(sRGB) → color_h/s/v");
+  mapped.push(
+    opts.colorSpace === "linear"
+      ? "획 색 옵션(sRGB) → 선형 변환 → color_h/s/v, 알파 → 획 레이어 불투명도에 곱"
+      : "획 색 옵션(sRGB) → color_h/s/v, 알파 → 획 레이어 불투명도에 곱",
+  );
 
   const blend = program.deposition.blend;
   const compose: MypaintCompose = { opacity: clamp01(program.deposition.opacity * clamp01(color[3])), blend };
