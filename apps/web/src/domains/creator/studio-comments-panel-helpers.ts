@@ -77,6 +77,11 @@ export function fallbackAnchorLabel(anchor: StudioCommentAnchor): string {
   if (anchor.type === "page") return `페이지 · ${shortId(anchor.pageId)}`;
   if (anchor.type === "frame") return `컷 · ${shortId(anchor.frameId)}`;
   if (anchor.type === "point") return `위치 · ${Math.round(anchor.x * 100)}%, ${Math.round(anchor.y * 100)}%`;
+  if (anchor.type === "pdf-page") {
+    return anchor.x !== undefined && anchor.y !== undefined
+      ? `PDF 위치 · 원본 ${anchor.sourcePageIndex + 1}페이지 ${Math.round(anchor.x * 100)}%, ${Math.round(anchor.y * 100)}%`
+      : `PDF 페이지 · 원본 ${anchor.sourcePageIndex + 1}페이지`;
+  }
   return `요소 · ${shortId(anchor.elementId)}`;
 }
 

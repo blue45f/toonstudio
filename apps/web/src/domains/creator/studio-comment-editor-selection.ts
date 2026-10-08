@@ -23,6 +23,9 @@ export interface StudioEditorCommentSelectionPort {
 }
 
 export function studioEditorTargetForComment(anchor: StudioCommentAnchor): StudioEditorCommentTarget {
+  // PDF 워크벤치 앵커는 스튜디오 편집기에서 갈 페이지가 없다 — 빈 pageId로 넘기면
+  // 선택 포트가 기존 "페이지 없음" 경로로 안내한다.
+  if (anchor.type === "pdf-page") return { pageId: "" };
   return { pageId: anchor.pageId,
     ...(anchor.type === "frame" ? { elementId: anchor.frameId, frame: true } : {}),
     ...(anchor.type === "element" ? { elementId: anchor.elementId } : {}),

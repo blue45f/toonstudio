@@ -547,3 +547,114 @@ describe("studio comments hard limits", () => {
     })).toThrow(/스레드는 최대/);
   });
 });
+
+describe("studio comment pdf-page anchors", () => {
+  const PDF_PAGE_ANCHOR: StudioCommentAnchor = {
+    type: "pdf-page",
+    documentId: "sha256-deadbeef",
+    sourcePageIndex: 2,
+  };
+  const PDF_PIN_ANCHOR: StudioCommentAnchor = {
+    type: "pdf-page",
+    documentId: "sha256-deadbeef",
+    sourcePageIndex: 2,
+    x: 0.25,
+    y: 0.75,
+  };
+
+  it("stores and selects threads anchored to an imported PDF page", () => {
+    const source = withThread(PDF_PAGE_ANCHOR, "pdf-thread");
+    expect(source.threads[0].anchor).toEqual(PDF_PAGE_ANCHOR);
+    expect(listStudioCommentThreadsForAnchor(source, PDF_PAGE_ANCHOR).map(({ id }) => id)).toEqual([
+      "pdf-thread",
+    ]);
+    expect(listStudioCommentThreadsForAnchor(source, PDF_PIN_ANCHOR)).toEqual([]);
+    expect(studioCommentAnchorsEqual(PDF_PAGE_ANCHOR, { ...PDF_PAGE_ANCHOR })).toBe(true);
+    expect(studioCommentAnchorsEqual(PDF_PAGE_ANCHOR, PDF_PIN_ANCHOR)).toBe(false);
+  });
+
+  it("keeps pdf-page anchors intact through serialize and normalize round trips", () => {
+    const source = withThread(PDF_PIN_ANCHOR, "pdf-thread");
+    const restored = normalizeStudioCommentsDocument(serializeStudioCommentsDocument(source));
+    expect(restored.threads).toHaveLength(1);
+    expect(restored.threads[0].anchor).toEqual(PDF_PIN_ANCHOR);
+
+    const legacy = normalizeStudioCommentsDocument({
+      threads: [{
+        id: "pdf-legacy",
+        anchor: { type: "pdf-page", documentId: "sha256-cafe", sourcePageIndex: 0 },
+        authorName: "편집자",
+        text: "원본 1페이지 확인",
+        createdAt: "2026-07-10T01:00:00+09:00",
+      }],
+    });
+    expect(legacy.threads).toHaveLength(1);
+    expect(legacy.threads[0].anchor).toEqual({
+      type: "pdf-page",
+      documentId: "sha256-cafe",
+      sourcePageIndex: 0,
+    });
+  });
+
+  it("drops pdf-page anchors whose fingerprint or page index is unusable", () => {
+    const restored = normalizeStudioCommentsDocument({
+      threads: [
+        {
+          id: "pdf-bad-index",
+          anchor: { type: "pdf-page", documentId: "sha256-cafe", sourcePageIndex: -1 },
+          authorName: "편집자",
+          text: "음수 페이지",
+          createdAt: "2026-07-10T01:00:00+09:00",
+        },
+        {
+          id: "pdf-bad-coordinate",
+          anchor: { type: "pdf-page", documentId: "sha256-cafe", sourcePageIndex: 0, x: 1.5, y: 0.5 },
+          authorName: "편집자",
+          text: "범위를 벗어난 핀",
+          createdAt: "2026-07-10T01:00:00+09:00",
+        },
+        {
+          id: "pdf-no-document",
+          anchor: { type: "pdf-page", sourcePageIndex: 0 },
+          authorName: "편집자",
+          text: "지문 없음",
+          createdAt: "2026-07-10T01:00:00+09:00",
+        },
+      ],
+    });
+    expect(restored.threads).toEqual([]);
+  });
+
+  it("gives pdf-page anchors collision-safe canonical keys in the point bucket", () => {
+    const nearbyPin: StudioCommentAnchor = {
+      type: "pdf-page",
+      documentId: "sha256-deadbeef",
+      sourcePageIndex: 2,
+      x: 0.25001,
+      y: 0.75001,
+    };
+    expect(canonicalStudioCommentAnchorKey(PDF_PIN_ANCHOR)).toBe(
+      canonicalStudioCommentAnchorKey(nearbyPin)
+    );
+    expect(canonicalStudioCommentAnchorKey(PDF_PAGE_ANCHOR)).toBe(
+      JSON.stringify(["pdf-page", "sha256-deadbeef", 2])
+    );
+    expect(canonicalStudioCommentAnchorKey(PDF_PIN_ANCHOR)).not.toBe(
+      canonicalStudioCommentAnchorKey(PDF_PAGE_ANCHOR)
+    );
+    expect(canonicalStudioCommentAnchorKey({
+      type: "pdf-page",
+      documentId: "sha256-other",
+      sourcePageIndex: 2,
+      x: 0.25,
+      y: 0.75,
+    })).not.toBe(canonicalStudioCommentAnchorKey(PDF_PIN_ANCHOR));
+    expect(canonicalStudioCommentAnchorKey({
+      type: "pdf-page",
+      documentId: "sha256-deadbeef",
+      sourcePageIndex: 3,
+      x: 0.25,
+      y: 0.75,
+    })).not.toBe(canonicalStudioCommentAnchorKey(PDF_PIN_ANCHOR));
+  });
+});

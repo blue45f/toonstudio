@@ -156,6 +156,32 @@ describe("Studio finish quality inspection", () => {
     );
   });
 
+  it("ignores pdf-page comment anchors that belong to the workbench scope", () => {
+    const result = inspectStudioFinishQuality({
+      documentTitle: "마감 원고",
+      pages: [page("page-1", [])],
+      comments: {
+        version: 1,
+        threads: [
+          {
+            id: "pdf-thread-1",
+            author: commentActor,
+            body: "PDF 원본 확인 필요",
+            mentions: [],
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            anchor: { type: "pdf-page", documentId: "sha256-deadbeef", sourcePageIndex: 0 },
+            replies: [],
+            resolved: false,
+          },
+        ],
+      },
+    });
+
+    expect(result.issues.map((issue) => issue.code)).not.toContain("COMMENT_PAGE_MISSING");
+    expect(result.issues.map((issue) => issue.code)).not.toContain("COMMENT_TARGET_MISSING");
+  });
+
   it("keeps ordering, fingerprints and score deterministic", () => {
     const input = {
       documentTitle: "마감 원고",
