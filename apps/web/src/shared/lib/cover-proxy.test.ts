@@ -11,14 +11,14 @@ describe("proxiedCoverSrc", () => {
     );
   });
 
-  it("KMAS 첨부 다운로드 URL(명시 포트 443 포함)을 프록시로 바꾼다", () => {
-    expect(
-      proxiedCoverSrc(
-        "https://www.kmas.or.kr:443/common/file/atchmnflDownload.ajax?fileImageId=58ff2761-4d22-40d6-9995-50fb9b437412"
-      )
-    ).toBe(
-      "/api/cover?u=https%3A%2F%2Fwww.kmas.or.kr%2Fcommon%2Ffile%2FatchmnflDownload.ajax%3FfileImageId%3D58ff2761-4d22-40d6-9995-50fb9b437412"
-    );
+  // KMAS는 통합 규약(docs/kmas-integration.md §3·§6)상 서버 프록시 중계 대상이 아니고,
+  // 서버 경유 fetch가 KMAS 포털에 닿지 않아 스포트라이트 표지가 전멸한 회귀(2026-10-08)가
+  // 있어 원본 URL을 그대로 둔다. 명시 포트(:443) 형태도 같은 취급이다.
+  it.each([
+    "https://www.kmas.or.kr:443/common/file/atchmnflDownload.ajax?fileImageId=58ff2761-4d22-40d6-9995-50fb9b437412",
+    "https://www.kmas.or.kr/common/file/atchmnflDownload.ajax?fileImageId=3000123139",
+  ])("KMAS 첨부 다운로드 URL은 프록시로 바꾸지 않는다: %s", (src) => {
+    expect(proxiedCoverSrc(src)).toBe(src);
   });
 
   it("쿼리가 있는 레진 표지도 통째로 인코딩한다", () => {
@@ -84,5 +84,11 @@ describe("proxiedCoverSrcSet", () => {
     expect(proxiedCoverSrcSet("/assets/a.png 1x, /assets/b.png 2x")).toBe(
       "/assets/a.png 1x, /assets/b.png 2x"
     );
+  });
+
+  it("KMAS 후보는 프록시로 바꾸지 않는다", () => {
+    const srcSet =
+      "https://www.kmas.or.kr/common/file/atchmnflDownload.ajax?fileImageId=1 480w, https://www.kmas.or.kr/common/file/atchmnflDownload.ajax?fileImageId=2 960w";
+    expect(proxiedCoverSrcSet(srcSet)).toBe(srcSet);
   });
 });
