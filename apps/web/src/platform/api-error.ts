@@ -1,4 +1,8 @@
 import { HTTPError, TimeoutError } from "ky";
+import {
+  getAuthSession,
+  getLastUnauthorizedDropHadSession,
+} from "@/domains/auth/public/session/auth-session-state";
 import { getLang, FALLBACK_CHAIN, resolveTranslationForDisplay } from "@/shared/lib/i18n-core";
 import { defineStaticSourceText, resolveUiLocale } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -128,6 +132,18 @@ function localizeAuthoredMessage(source: string): string {
   return resolveTranslationForDisplay(locale, key, FALLBACK_CHAIN, source);
 }
 
+/**
+ * 401 문구는 세션 유무로 가른다. 로그인한 적 없는 게스트에게 "만료"는 거짓말이고,
+ * 실제로 세션이 떨어진 사용자에게 "로그인 필요"만으로는 상태가 안 읽힌다.
+ * ky 경로는 후크가 세션을 먼저 폐기하므로, 폐기 직전 세션 존재 기록까지 함께 본다.
+ */
+function unauthorizedMessageSource(): string {
+  const hadSession = getAuthSession() !== null || getLastUnauthorizedDropHadSession();
+  return hadSession
+    ? "로그인이 만료되었습니다. 작성 중인 내용은 유지됩니다."
+    : "로그인이 필요합니다. 작성 중인 내용은 유지됩니다.";
+}
+
 function messageFor(
   kind: AppApiErrorKind,
   fallback: string,
@@ -143,7 +159,7 @@ function messageFor(
       ? localizeAuthoredMessage(`요청이 많아 잠시 제한되었습니다. 약 ${retrySeconds}초 후 다시 시도해 주세요.`)
       : localizeAuthoredMessage("요청이 많아 잠시 제한되었습니다. 잠시 후 다시 시도해 주세요.");
   }
-  if (kind === "unauthorized") return localizeAuthoredMessage("로그인이 만료되었습니다. 작성 중인 내용은 유지됩니다.");
+  if (kind === "unauthorized") return localizeAuthoredMessage(unauthorizedMessageSource());
   if (kind === "forbidden") return localizeAuthoredMessage("이 작업을 수행할 권한이 없습니다.");
   if (kind === "conflict") return localizeAuthoredMessage("다른 곳에서 내용이 변경되었습니다. 최신 상태를 확인해 주세요.");
   if (kind === "not_found") return serverMessage ?? localizeAuthoredMessage("요청한 항목을 찾을 수 없습니다.");
