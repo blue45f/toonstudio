@@ -49,9 +49,15 @@ describe("가상 스튜디오 컨트롤 크기 계약", () => {
     expect(hudCss).toContain(':root[data-design-theme="contrast"] :is(.space-minimap__gate-chip, .space-chat-input__hint, .space-chat__open-button) { min-height: var(--site-control-size, 44px); }');
   });
 
-  it("지도 구역 점프 마커는 22px 원을 유지하고 눌리는 영역만 44px로 넓힌다", () => {
-    expect(hudCss).toMatch(/\.space-minimap__zone-jump \{[^}]*width: 22px;[^}]*height: 22px;/u);
-    expect(hudCss).toMatch(/\.space-minimap__zone-jump::after \{ content: ""; position: absolute; inset: -11px;/u);
+  it("지도 구역 점프 마커는 22px 원을 유지하고 구역 버튼 모서리에 걸쳐 눌리는 영역을 30px까지만 넓힌다", () => {
+    expect(hudCss).toMatch(/\.space-minimap__zone-jump \{[^}]*top: -8px;[^}]*right: -6px;[^}]*width: 22px;[^}]*height: 22px;/u);
+    // 버튼 모서리에 걸쳐 있으므로 44px까지 넓히면 구역 버튼 모서리 클릭을 가로챈다.
+    expect(hudCss).toMatch(/\.space-minimap__zone-jump::after \{ content: ""; position: absolute; inset: -4px;/u);
+  });
+
+  it("지도 구역 버튼은 줄바꿈하지 않고 마커와 한 묶음의 중심이 구역 중심이다(가장자리 구역 라벨이 CA/FE로 끊기던 것)", () => {
+    expect(hudCss).toMatch(/\.space-minimap__zone-actions \{ position: absolute; transform: translate\(-50%, -50%\); \}/u);
+    expect(hudCss).toMatch(/\.space-minimap__zone-button \{[^}]*position: relative;[^}]*white-space: nowrap;/u);
   });
 
   it("바닥에 기대던 칩 컨트롤은 40px를 직접 선언하고 터치에서는 44px로 올린다", () => {

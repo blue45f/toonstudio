@@ -20,6 +20,23 @@ describe("SpaceMinimap quick travel", () => {
     expect(onMoveTo).toHaveBeenCalledOnce();
   });
 
+  it("큰 지도는 구역마다 걸어가기 버튼과 바로 가기 마커를 한 묶음으로 두고, 마커 콜백이 없으면 마커를 그리지 않는다", () => {
+    const { container, rerender } = render(<SpaceMinimap manifest={campus} self={{ x: 448, y: 540 }} people={[]}
+      currentRoomId={null} variant="full" onMoveTo={vi.fn()} onJumpTo={vi.fn()} />);
+    const groups = [...container.querySelectorAll(".space-minimap__zone-actions")];
+    // 캠퍼스 구역 10곳(공용 길 campus-commons는 지도 구역이 아니다)마다 한 묶음이다.
+    expect(groups).toHaveLength(10);
+    expect(container.querySelectorAll(".space-minimap__zone-button")).toHaveLength(10);
+    for (const group of groups) {
+      // 같은 묶음 안에서 버튼 다음에 마커가 오므로 탭 순서가 구역마다 이어지고, 마커는 자기 구역 버튼의 모서리에만 붙는다.
+      expect([...group.children].map((child) => child.className)).toEqual(["space-minimap__zone-button", "space-minimap__zone-jump"]);
+    }
+    rerender(<SpaceMinimap manifest={campus} self={{ x: 448, y: 540 }} people={[]}
+      currentRoomId={null} variant="full" onMoveTo={vi.fn()} />);
+    expect(container.querySelectorAll(".space-minimap__zone-actions")).toHaveLength(10);
+    expect(container.querySelector(".space-minimap__zone-jump")).toBeNull();
+  });
+
   it("게이트 칩은 바로 가기 콜백이 없으면 게이트까지 걷는다", () => {
     const onMoveTo = vi.fn();
     render(<SpaceMinimap manifest={campus} self={{ x: 448, y: 540 }} people={[]}
