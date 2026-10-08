@@ -1,11 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import {
-  drawCompatibility,
   drawPrescription,
-  drawSaju,
   drawTarot,
-  drawTodayFortune,
   drawZodiac,
   getCharacters,
   type FortuneCharacter,
@@ -31,46 +28,9 @@ export class FortuneService {
     return drawTarot(TITLES, characterId, cardIdx, spread);
   }
 
-  drawSaju(
-    birthDate: string,
-    birthTime?: string,
-    gender = "none",
-    characterId = "ara",
-  ) {
-    return drawSaju(TITLES, birthDate, birthTime, gender, characterId);
-  }
-
-  drawTodayFortune(
-    characterId: string,
-    birthDate?: string,
-    birthTime?: string,
-    gender = "none",
-  ) {
-    return drawTodayFortune(
-      TITLES,
-      characterId,
-      birthDate,
-      birthTime,
-      gender,
-    );
-  }
-
-  drawCompatibility(
-    myBirthDate: string,
-    myBirthTime: string | undefined,
-    partnerBirthDate: string,
-    partnerBirthTime: string | undefined,
-    characterId = "ara",
-  ) {
-    return drawCompatibility(
-      TITLES,
-      myBirthDate,
-      myBirthTime,
-      partnerBirthDate,
-      partnerBirthTime,
-      characterId,
-    );
-  }
+  // 오늘·사주·궁합은 웹이 @toonstudio/core 엔진으로 기기에서 직접 계산한다
+  // (2026-10-08, F-B10-1 — 생년월일 서버 전송 제거). 서버 계산 메서드는 두지 않는다.
+  // drawZodiac은 provenance 프로바이더의 내부 폴백 계산용으로만 남긴다.
 
   drawPrescription(query: string, characterId: string) {
     return drawPrescription(TITLES, query, characterId);
