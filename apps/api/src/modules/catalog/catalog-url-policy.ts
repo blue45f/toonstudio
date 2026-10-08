@@ -36,9 +36,11 @@ const COVER_ORIGINS = [
   "https://thumb.toomics.com",
   "https://contents.kyobobook.co.kr",
   "https://www.comico.kr",
-  // KMAS(한국만화영상진흥원) 첨부 다운로드 — 응답 오버레이(apps/api/src/server/kmas.ts)가
-  // 표지를 이 호스트의 원본 URL로 돌려주므로, 프록시를 거치지 않으면 방문자 브라우저가
-  // 직접 호출해 IP·리퍼러가 노출된다. 실측: UA만으로 200 JPEG(octet-stream) 응답 확인.
+  // KMAS(한국만화영상진흥원) 첨부 다운로드 — 허용 목록에는 남겨 두지만, 웹 클라이언트는
+  // KMAS 표지를 더 이상 프록시로 변환하지 않는다(cover-proxy.ts 머리말의 예외 근거:
+  // docs/kmas-integration.md §3·§6 규약 + 서버 경유 fetch 실패로 스포트라이트 표지가
+  // 전멸한 2026-10-08 회귀). 이 항목은 이미 프록시 형태로 저장·캐시된 KMAS URL이
+  // 계속 해석되도록 하는 호환용이다.
   "https://www.kmas.or.kr",
 ] as const;
 
