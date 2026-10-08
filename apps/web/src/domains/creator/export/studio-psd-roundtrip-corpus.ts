@@ -262,17 +262,24 @@ interface PixelContextLike {
  * Canvas 2D의 픽셀 저장·읽기·PNG 인코딩만 결정적으로 재현하는 표면.
  * 그리기 연산(도형·블러 등)은 재현하지 않는다 — 코퍼스 픽스처는 완성 픽셀만 다룬다.
  */
-export class PsdPixelCanvas {
+interface PixelCanvasState {
+  width: number;
+  height: number;
   pixels: Uint8ClampedArray;
-  private pixelWidth: number;
-  private pixelHeight: number;
+}
+
+export class PsdPixelCanvas {
+  private readonly state: PixelCanvasState;
   private readonly context: PixelContextLike;
 
   constructor(width = 300, height = 150) {
-    this.pixelWidth = Math.max(1, Math.round(width));
-    this.pixelHeight = Math.max(1, Math.round(height));
-    this.pixels = new Uint8ClampedArray(this.pixelWidth * this.pixelHeight * 4);
-    const self = this;
+    const state: PixelCanvasState = {
+      width: Math.max(1, Math.round(width)),
+      height: Math.max(1, Math.round(height)),
+      pixels: new Uint8ClampedArray(0),
+    };
+    state.pixels = new Uint8ClampedArray(state.width * state.height * 4);
+    this.state = state;
     this.context = {
       globalCompositeOperation: "source-over",
       fillStyle: "#000000",
@@ -280,15 +287,15 @@ export class PsdPixelCanvas {
       getImageData: (x, y, w, h) => {
         const out = new Uint8ClampedArray(w * h * 4);
         for (let row = 0; row < h; row += 1) {
-          const src = ((y + row) * self.pixelWidth + x) * 4;
-          out.set(self.pixels.subarray(src, src + w * 4), row * w * 4);
+          const src = ((y + row) * state.width + x) * 4;
+          out.set(state.pixels.subarray(src, src + w * 4), row * w * 4);
         }
         return { width: w, height: h, data: out };
       },
       putImageData: (imageData, dx, dy) => {
         for (let row = 0; row < imageData.height; row += 1) {
-          const dst = ((dy + row) * self.pixelWidth + dx) * 4;
-          self.pixels.set(
+          const dst = ((dy + row) * state.width + dx) * 4;
+          state.pixels.set(
             imageData.data.subarray(row * imageData.width * 4, (row + 1) * imageData.width * 4),
             dst,
           );
@@ -296,8 +303,8 @@ export class PsdPixelCanvas {
       },
       drawImage: (source, dx, dy) => {
         for (let row = 0; row < source.height; row += 1) {
-          const dst = ((dy + row) * self.pixelWidth + dx) * 4;
-          self.pixels.set(
+          const dst = ((dy + row) * state.width + dx) * 4;
+          state.pixels.set(
             source.pixels.subarray(row * source.width * 4, (row + 1) * source.width * 4),
             dst,
           );
@@ -308,22 +315,30 @@ export class PsdPixelCanvas {
     };
   }
 
+  get pixels(): Uint8ClampedArray {
+    return this.state.pixels;
+  }
+
+  set pixels(value: Uint8ClampedArray) {
+    this.state.pixels = value;
+  }
+
   get width(): number {
-    return this.pixelWidth;
+    return this.state.width;
   }
 
   set width(value: number) {
-    this.pixelWidth = Math.max(1, Math.round(value));
-    this.pixels = new Uint8ClampedArray(this.pixelWidth * this.pixelHeight * 4);
+    this.state.width = Math.max(1, Math.round(value));
+    this.state.pixels = new Uint8ClampedArray(this.state.width * this.state.height * 4);
   }
 
   get height(): number {
-    return this.pixelHeight;
+    return this.state.height;
   }
 
   set height(value: number) {
-    this.pixelHeight = Math.max(1, Math.round(value));
-    this.pixels = new Uint8ClampedArray(this.pixelWidth * this.pixelHeight * 4);
+    this.state.height = Math.max(1, Math.round(value));
+    this.state.pixels = new Uint8ClampedArray(this.state.width * this.state.height * 4);
   }
 
   getContext(kind: string): PixelContextLike | null {
@@ -332,12 +347,12 @@ export class PsdPixelCanvas {
 
   toDataURL(type = "image/png"): string {
     if (type !== "image/png") throw new Error("코퍼스 캔버스는 PNG만 인코딩해요.");
-    return encodePngDataUrl(this.pixelWidth, this.pixelHeight, this.pixels);
+    return encodePngDataUrl(this.state.width, this.state.height, this.state.pixels);
   }
 
   /** 검증용 — 현재 픽셀을 PixelData로 복사해 돌려준다. */
   snapshot(): PixelData {
-    return { width: this.pixelWidth, height: this.pixelHeight, data: new Uint8ClampedArray(this.pixels) };
+    return { width: this.state.width, height: this.state.height, data: new Uint8ClampedArray(this.state.pixels) };
   }
 }
 

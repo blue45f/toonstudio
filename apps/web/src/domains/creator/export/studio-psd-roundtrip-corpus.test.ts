@@ -42,8 +42,6 @@ beforeAll(() => {
 
 // ── 공통 헬퍼 ────────────────────────────────────────────────────────────────
 
-const OPACITY_BYTE = 1 / 255;
-
 function expectPixelsClose(actual: PixelData, expected: PixelData, tolerance: number, label: string): void {
   expect(actual.width, `${label}: 너비`).toBe(expected.width);
   expect(actual.height, `${label}: 높이`).toBe(expected.height);
