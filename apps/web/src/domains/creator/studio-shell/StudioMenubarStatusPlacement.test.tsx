@@ -192,4 +192,79 @@ describe("desktop menubar status placement", () => {
     expect(dialog.parentElement).toBe(document.body);
     await waitFor(() => expect(document.activeElement).toBe(dialog));
   });
+
+  it("keeps the operation sync chip in its slot at a fixed width after sync completes", async () => {
+    const baseSync = {
+      ...INITIAL_STUDIO_LIVE_SYNC_SNAPSHOT,
+      persistenceDurability: "durable" as const,
+      transportReady: true,
+      operationSyncReady: true,
+      editsDurablyProtected: true,
+      mode: "server" as const,
+    };
+    const syncingValue: StudioLiveCollaborationContextValue = {
+      ...EMPTY_STUDIO_LIVE_CONTEXT,
+      availability: "ready",
+      mode: "server",
+      serverAvailable: true,
+      sync: { ...baseSync, phase: "syncing", pendingCount: 2, message: "동기화 중" },
+    };
+    const syncedValue: StudioLiveCollaborationContextValue = {
+      ...syncingValue,
+      sync: { ...baseSync, phase: "synced", pendingCount: 0, message: "동기화됨" },
+    };
+    const assistant = (
+      <StudioDraftOperationSyncAssistant
+        serverRevision={7}
+        hasServerDocument
+        localCheckpointCount={3}
+        localRole="leader"
+        collaborationSyncPending={false}
+        hydrated
+        hydrationFailed={false}
+        saving={false}
+        onOpenVersions={vi.fn()}
+        onExportBackup={vi.fn(() => Promise.resolve())}
+      />
+    );
+    const view = render(
+      <StudioLiveCollaborationContext.Provider value={syncingValue}>
+        <MenubarSlots />
+        {assistant}
+      </StudioLiveCollaborationContext.Provider>,
+    );
+    const slot = screen.getByTestId("sync-slot");
+    expect(slot.contains(screen.getByRole("button", { name: /동기화 상태/ }))).toBe(true);
+
+    view.rerender(
+      <StudioLiveCollaborationContext.Provider value={syncedValue}>
+        <MenubarSlots />
+        {assistant}
+      </StudioLiveCollaborationContext.Provider>,
+    );
+
+    // 동기화가 끝나도 칩이 슬롯에서 사라지지 않는다 — 같은 자리에 완료 상태만 남아야
+    // 메뉴바 레이아웃이 동기화 사이클마다 밀리지 않는다.
+    const syncedTrigger = screen.getByRole("button", { name: "동기화 상태: 변경 동기화 완료" });
+    expect(slot.contains(syncedTrigger)).toBe(true);
+    // 고정 폭 계약: 라벨이 보이는 구간에서도 폭은 클래스 상수로 고정된다.
+    expect(syncedTrigger.className).toContain("w-11");
+    expect(syncedTrigger.className).toContain("2xl:w-44");
+    expect(syncedTrigger.className).not.toContain("max-w-");
+  });
+
+  it("gives the menubar save chip a fixed width that state labels cannot resize", () => {
+    setOnline(true);
+    render(
+      <>
+        <MenubarSlots />
+        <SaveCenter />
+      </>,
+    );
+
+    const trigger = screen.getByRole("button", { name: /저장 상태/ });
+    expect(trigger.className).toContain("max-2xl:w-11");
+    expect(trigger.className).toContain("2xl:w-48");
+    expect(trigger.className).not.toContain("max-w-[13rem]");
+  });
 });

@@ -231,8 +231,12 @@ export function resolveStudioDraftOperationSyncAssistant(
     headline = "기기에 보호한 변경을 서버에 순서대로 반영하고 있어요";
   } else if (input.syncPhase === "synced") {
     tone = "success";
-    compactLabel = "변경 동기화 완료";
-    headline = "기기와 서버의 변경 흐름이 최신 상태예요";
+    // 로컬 탭 전용 세션에는 서버가 없다 — 상시 표시되는 칩이 서버 동기화로 읽히지 않게
+    // 맞춘 대상을 그대로 적는다. 서버 확인이 끝난 경우에만 서버 동기화 완료라고 말한다.
+    compactLabel = input.mode === "local" ? "기기 탭 동기화 완료" : "변경 동기화 완료";
+    headline = input.mode === "local"
+      ? "이 기기의 열린 탭끼리 변경 흐름이 최신 상태예요"
+      : "기기와 서버의 변경 흐름이 최신 상태예요";
   }
 
   const model = {
