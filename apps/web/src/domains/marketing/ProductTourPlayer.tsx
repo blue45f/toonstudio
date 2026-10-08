@@ -22,7 +22,7 @@ import { flushSync } from "react-dom";
 import { parseProductTourLocation, productTourFrameForSeconds, updateProductTourLocation } from "./product-tour-location";
 import { creatorFilmChapterAt } from "./creator-film-playback";
 import { PRODUCT_TOUR_RUNTIME_AUDIO } from "./product-tour-audio.generated";
-import { PRODUCT_TOUR, PRODUCT_TOUR_COPY, formatProductTourTime, type ProductTourLocale } from "./product-tour-content";
+import { PRODUCT_TOUR, PRODUCT_TOUR_COPY, formatProductTourDuration, formatProductTourTime, type ProductTourLocale } from "./product-tour-content";
 import {
   ProductTourChapterRail,
   ProductTourKeyboardHint,
@@ -369,7 +369,7 @@ export function ProductTourPlayer({ locale, controllerRef }: {
                 >
                   <img src={PRODUCT_TOUR.poster} width={1280} height={720} alt="" decoding="async" />
                   <span className="product-tour-player__poster-disc"><Play size={26} fill="currentColor" aria-hidden="true" /></span>
-                  <strong>{initialRequest.seconds > 0 ? bi(`${formatProductTourTime(initialRequest.seconds)}부터 제품 투어 재생`, `Play the tour from ${formatProductTourTime(initialRequest.seconds)}`) : bi("소리와 함께 8분 제품 투어 재생", "Play the 8-minute tour with sound")}</strong>
+                  <strong>{initialRequest.seconds > 0 ? bi(`${formatProductTourTime(initialRequest.seconds)}부터 제품 투어 재생`, `Play the tour from ${formatProductTourTime(initialRequest.seconds)}`) : bi(`소리와 함께 ${formatProductTourDuration(PRODUCT_TOUR.duration, "ko")} 제품 투어 재생`, `Play the ${formatProductTourDuration(PRODUCT_TOUR.duration, "en")} tour with sound`)}</strong>
                   <small>{bi(
                     `재생을 누를 때만 약 ${audioDownloadSize}의 내레이션·BGM을 불러옵니다`,
                     `About ${audioDownloadSize} of narration and music loads only after you press play`,

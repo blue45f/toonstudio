@@ -28,6 +28,8 @@
 /* 영상 제작 방법(접힘)·마무리·돌아가기 */
 .brand-film-page__more { display: grid; gap: 14px; padding-block: clamp(16px, 3vw, 32px) 0; }
 .brand-film-page__production-body { max-width: 70ch; margin-top: 4px; }
+.brand-film-page__production-note { max-width: 70ch; margin-top: 8px; font-weight: 650; }
+.brand-film-page__production-links { display: flex; flex-wrap: wrap; gap: 0 20px; margin-top: 4px; }
 .brand-film-page__production-grid { display: grid; gap: 12px; padding-block: 12px 4px; }
 .brand-film-page__closing { margin-top: 6px; }
 .brand-film-page__journey { margin: 4px 12px 12px; }
