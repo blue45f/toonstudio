@@ -52,6 +52,7 @@ import {
   turnSlowdownFactor,
 } from "./studio-virtual-space-locomotion-feel";
 import { StudioMotionEaser } from "./studio-virtual-space-motion-easing";
+import { scaleAroundOne, stepCrispVelocity, studioCadenceLimitedStride } from "./studio-virtual-space-locomotion-style";
 import {
   advanceBreathPhase,
   advanceWalkPhase,
@@ -753,6 +754,7 @@ export function StudioVirtualSpacePhaserCanvas({
         fallbackAsset,
         identityRef,
         getSelfCustomSheetSkin: () => selfCustomSheetSkin,
+        frameRegistry,
       });
 
       const getPeerSnapshot = (id: string) =>
@@ -1546,6 +1548,8 @@ export function StudioVirtualSpacePhaserCanvas({
         if (!typing) { ix += gamepad.x; iy += gamepad.y; }
         // 게임필 설정(1초 캐시): 입력 감도, 끼임 탈출 밀기.
         worldFeel.refresh(time, reducedMotion.matches);
+        // 이동 감각(즉응형/관성형). 즉응형은 관성·반동·몸 찌그러짐 없이 입력에 바로 반응한다.
+        const locomotion = worldFeel.locomotion;
         const shapedInput = worldFeel.shapeInput(ix, iy, time);
         ix = shapedInput.x;
         iy = shapedInput.y;
@@ -1772,12 +1776,20 @@ export function StudioVirtualSpacePhaserCanvas({
           maxSpeed: config.maxSpeed,
         };
         const previousVelocity = motion.velocity;
-        // 출발 120ms ease-in 램프와 방향 반전 감속을 얹은 이징 스텝 (필 커브 자체는 easer가 위임)
-        motion = { velocity: motionEaser.step(previousVelocity, feelTarget, dt, feelConfig, reducedMotion.matches) };
-        // 급회전 감속: 몸이 돌아가는 동안 일시적으로 속도를 줄인다
+        if (locomotion.inertial) {
+          // 관성형: 출발 120ms ease-in 램프와 방향 반전 감속을 얹은 이징 스텝 (필 커브 자체는 easer가 위임)
+          motion = { velocity: motionEaser.step(previousVelocity, feelTarget, dt, feelConfig, reducedMotion.matches) };
+        } else {
+          // 즉응형: 정해진 시간(출발 50ms·정지 30ms·반전 60ms) 안에 목표 속도로 옮긴다. 지형 마찰은 응답 시간에 반영한다.
+          motion = {
+            velocity: stepCrispVelocity(previousVelocity, feelTarget, dt, config.maxSpeed, locomotion,
+              worldFeel.accelerationFactor / Math.max(0.5, terrain.dragMultiplier)),
+          };
+        }
+        // 급회전 감속: 몸이 돌아가는 동안 일시적으로 속도를 줄인다(관성형에서만).
         let turnFactor = 1;
         const feelSpeed = Math.hypot(motion.velocity.x, motion.velocity.y);
-        if (feelSpeed > 4 && inputMagnitude > 0.001) {
+        if (locomotion.inertial && feelSpeed > 4 && inputMagnitude > 0.001) {
           turnFactor = turnSlowdownFactor(shortestAngleDelta(
             Math.atan2(previousVelocity.y, previousVelocity.x),
             Math.atan2(feelTarget.y, feelTarget.x),
@@ -1788,11 +1800,12 @@ export function StudioVirtualSpacePhaserCanvas({
         const body = localBodyPhysics;
         // 충돌 반발: 벽에 처음 닿은 프레임이면 직전 적용 속도를 반사해 몸이 살짝 튀어 나오게 한다.
         // 반발을 이번 프레임 속도로 채택하면 이저가 그 속도에서 이어받아 자연스럽게 감속한다.
-        const bounce = collisionResponder.sample({
+        // 즉응형은 벽에서 튕기지 않고 벽을 따라 미끄러진다(반동 판정 자체를 건너뛴다).
+        const bounce = locomotion.collisionBounce ? collisionResponder.sample({
           velocity: lastAppliedVelocity, contact: studioCollisionContact(body.blocked, body.touching),
           maxSpeed: config.maxSpeed, reducedMotion: reducedMotion.matches,
           effectsSuppressed: experienceRef.current.effectLevel === "low",
-        }, time);
+        }, time) : null;
         if (bounce) {
           motion = { velocity: bounce };
           localBodyPhysics.setVelocity(bounce.x, bounce.y);
@@ -2124,7 +2137,7 @@ export function StudioVirtualSpacePhaserCanvas({
         const traveled = lastPosition ? Math.hypot(currentPoint.x - lastPosition.x, currentPoint.y - lastPosition.y) : 0;
         if (traveled > 0.015) lastMovedAt = time;
         // Render frames can outnumber fixed physics steps. Do not toggle idle/walk on zero-step frames.
-        const nextMoving = !blocked && speed > 5 && time - lastMovedAt < 100;
+        const nextMoving = !blocked && speed > 5 && time - lastMovedAt < locomotion.movingHoldMs;
         lastPosition = currentPoint;
         if (speed > 10) facing = studioStableFacing(motion.velocity, facing);
 
@@ -2174,15 +2187,23 @@ export function StudioVirtualSpacePhaserCanvas({
         localSprite.setData("walkDistance", localDistance).setData("actorReaction", shownLocalEmote).setData("actorUserStatus", snapshotRef.current.self.userStatus);
         localSprite.setData("seatAttached", Boolean(localSeat));
         const localEmoteFacing = localSeatRequested || localPoseOverride || nextMoving ? null : studioEmoteFacing(localEmotePose);
+        // 유효 보폭을 프레임 선택보다 먼저 한 번만 확정한다: 걷기 프레임(스프라이트 데이터)·몸 bob·그림자가 전부 같은 거리 위상을 써야
+        // 속도가 바뀌어도 발 접지와 몸 움직임이 어긋나지 않는다. 즉응형은 걸음 주기를 초당 상한 안으로 맞춰 다리가 허둥대지 않게 한다.
+        const localGaitStride = studioCadenceLimitedStride(
+          studioEffectiveGaitStride(playerLocomotion.gaitDistancePerCycle,
+            studioCharacterWalkClip(selfCustomSheetSkin ?? localSkin, facing)?.distancePerCycle),
+          playerLocomotion.walkSpeed, locomotion);
+        // 별도 키로 둬서 관성형으로 되돌리면 원래 클립 보폭이 그대로 살아난다(프레임 선택이 이 키를 우선한다).
+        localSprite.setData("gaitStrideOverride", locomotion.maxGaitCyclesPerSecond === null ? undefined : localGaitStride);
         spriteCrossfades?.capture(localSprite);
         applyAvatarVisual(localSprite, snapshotRef.current.self,
           localSeatRequested?.facing ?? poseFrame.anchor?.facing ?? localPoseOverride?.facing ?? localEmoteFacing ?? facing, localState, identityRef.current);
         spriteCrossfades?.commit(localSprite, time, crossfadeEnabled);
-        applyCameraMode();
+        applyCameraMode(locomotion.cameraDeadzoneScale);
         const cameraMode = experienceRef.current.cameraMode;
-        const lookAhead = reducedMotion.matches || cameraMode === "steady" ? 0
+        const lookAhead = (reducedMotion.matches || cameraMode === "steady" ? 0
           : cameraMode === "cinematic" ? sprint ? .32 : .24
-            : sprint ? .24 : .16;
+            : sprint ? .24 : .16) * locomotion.cameraLookAheadScale;
         // 카메라 디렉터: 이동 방향 룩어헤드·달리기 줌아웃·방 전환 패닝·충돌 흔들림·대화 포커스(HUD 브리지).
         const cameraInput = worldFeel.cameraInput;
         cameraInput.x = rendered.x;
@@ -2210,14 +2231,14 @@ export function StudioVirtualSpacePhaserCanvas({
           playerY: cameraVisualTarget.y,
           cameraTargetX: cameraBase.x,
           cameraTargetY: cameraBase.y,
-          deadzoneRadius: STUDIO_CAMERA_DEADZONE_RADIUS,
+          deadzoneRadius: STUDIO_CAMERA_DEADZONE_RADIUS * locomotion.cameraDeadzoneScale,
         });
         cameraBase.x = deadzonedTarget.x;
         cameraBase.y = deadzonedTarget.y;
         cameraTarget.x = cameraBase.x + directed.shakeX;
         cameraTarget.y = cameraBase.y + directed.shakeY;
         if (cameraFollows) this.cameras.main.setZoom(cameraBaseZoom * directed.zoomFactor);
-        const followBase = cameraMode === "steady" ? .075 : cameraMode === "cinematic" ? .16 : .12;
+        const followBase = Math.min(.6, (cameraMode === "steady" ? .075 : cameraMode === "cinematic" ? .16 : .12) * locomotion.cameraFollowScale);
         const followAmount = snapCamera || reducedMotion.matches ? 1
           : studioCameraLerp(dt, directed.roomTransitioning ? followBase * 2.2 : followBase);
         // 월드 경계 근처에서는 추종을 미리 늦춰 하드 클램프에서 화면이 튀지 않게 한다.
@@ -2232,12 +2253,11 @@ export function StudioVirtualSpacePhaserCanvas({
         if (snapCamera) this.cameras.main.centerOn(cameraVisualTarget.x, cameraVisualTarget.y);
 
         const hasWalkClip = scene.anims.exists(walkAnimationKey(localSkin, facing)) || reducedMotion.matches;
-        // 유효 보폭을 먼저 확정한다: 몸 bob·그림자·흔들림·스쿼시가 전부 같은 거리 위상을 써야
-        // 속도가 바뀌어도 발 접지와 몸 움직임이 어긋나지 않는다. (레거시 프로필도 시간 기반
-        // 사인 폴백 대신 이 보폭으로 잠근다.)
-        const localGaitStride = studioEffectiveGaitStride(playerLocomotion.gaitDistancePerCycle,
-          studioCharacterWalkClip(selfCustomSheetSkin ?? localSkin, facing)?.distancePerCycle);
-        const bodyOffset = studioGaitBodyOffset(localDistance, localGaitStride, nextMoving, reducedMotion.matches);
+        // 몸 bob·그림자·흔들림·스쿼시는 위에서 확정한 유효 보폭(localGaitStride)을 같은 거리 위상으로 쓴다.
+        // (레거시 프로필도 시간 기반 사인 폴백 대신 이 보폭으로 잠근다.) 즉응형은 좌우 스웨이를 끄고 위아래 bob만 미세하게 남긴다.
+        const gaitBody = studioGaitBodyOffset(localDistance, localGaitStride, nextMoving, reducedMotion.matches);
+        const bodyOffset = locomotion.inertial ? gaitBody
+          : { offsetX: gaitBody.offsetX * locomotion.gaitSwayScale, offsetY: gaitBody.offsetY * locomotion.gaitBobScale };
         const localGroundPoint = localSeat?.anchorPoint ?? rendered;
         const localVisualPoint = studioProjectTownPoint(manifest, localGroundPoint);
         // 표시 전용 지수 감쇠: 물리 스텝(60Hz)과 렌더 프레임이 어긋날 때 생기는 계단 이동과
@@ -2246,7 +2266,7 @@ export function StudioVirtualSpacePhaserCanvas({
         // 시간상수는 속도 적응형이다: 느릴 때는 기본 50ms, 빠를수록 줄여 표시가 뒤처지지 않게 한다.
         localDisplayPoint = dampStudioDisplayPoint(localDisplayPoint, localVisualPoint, dt, {
           enabled: !reducedMotion.matches,
-          tauSeconds: studioDisplayDampTauSeconds(speed),
+          tauSeconds: studioDisplayDampTauSeconds(speed) * locomotion.displayDampScale,
         });
         const localDisplay = localDisplayPoint;
         const localShadowPoint = localDisplay;
@@ -2269,9 +2289,9 @@ export function StudioVirtualSpacePhaserCanvas({
         const lieFallbackAngle = poseFrame.pose === "lie" && !poseTextureUsed ? 90 : 0;
         const turnTargetAngle = feelSpeed > 4 ? facingAngleFromVelocity(motion.velocity, turnState.angle) : turnState.angle;
         turnState = stepTurnAngleSmooth(turnState, turnTargetAngle, dt, feelSpeed, feelConfig);
-        const leanDegrees = turnLeanAngle(turnState.angularVelocity * 180 / Math.PI);
+        const leanDegrees = turnLeanAngle(turnState.angularVelocity * 180 / Math.PI) * locomotion.leanScale;
         // 걸음 위상 동기 흔들림: 프레임 전환 사이에 연속적인 2차 모션을 넣는다 (위에서 확정한 유효 보폭 기준).
-        const localRockAngle = studioGaitRockAngle(localDistance, localGaitStride, nextMoving, reducedMotion.matches);
+        const localRockAngle = studioGaitRockAngle(localDistance, localGaitStride, nextMoving, reducedMotion.matches) * locomotion.gaitRockScale;
         localSprite.setAngle((playerLocomotion.gaitDistancePerCycle ? 0 : nextMoving && !hasWalkClip ? Math.sin(time * 0.018) * 0.8 : 0)
           + localRockAngle
           + (localEmoteBody?.bodyAngle ?? 0) + lieFallbackAngle + leanDegrees + (localDoze?.angleDegrees ?? 0));
@@ -2295,8 +2315,13 @@ export function StudioVirtualSpacePhaserCanvas({
         localShadow.setAlpha(ghostActive ? 0.1 : 0.28);
         // 스쿼시 & 스트레치: 이동 방향 축을 따라 늘어나고 가감속이 변형에 실린다 (절차 근사).
         // 여기에 접지 스쿼시(걷기)와 절차적 깜빡임(대기)을 같은 위상 체계로 합성한다.
-        const squash = locomotionDirectionalSquashStretch(motion.velocity, previousVelocity, dt, config.maxSpeed, reducedMotion.matches);
-        const gaitSquash = studioGaitSquashScale(localDistance, localGaitStride, nextMoving, reducedMotion.matches);
+        // 즉응형(squashScale 0)은 몸을 찌그러뜨리지 않는다: 움직임은 걸음 프레임과 위아래 bob만으로 읽히게 한다.
+        const rawSquash = locomotionDirectionalSquashStretch(motion.velocity, previousVelocity, dt, config.maxSpeed, reducedMotion.matches);
+        const rawGaitSquash = studioGaitSquashScale(localDistance, localGaitStride, nextMoving, reducedMotion.matches);
+        const squash = locomotion.squashScale === 1 ? rawSquash
+          : { scaleX: scaleAroundOne(rawSquash.scaleX, locomotion.squashScale), scaleY: scaleAroundOne(rawSquash.scaleY, locomotion.squashScale) };
+        const gaitSquash = locomotion.squashScale === 1 ? rawGaitSquash
+          : { scaleX: scaleAroundOne(rawGaitSquash.scaleX, locomotion.squashScale), scaleY: scaleAroundOne(rawGaitSquash.scaleY, locomotion.squashScale) };
         const localBlinkY = !nextMoving && !localSeat
           ? studioBlinkScaleY(time, studioSmoothingPhaseSeed(identityRef.current), reducedMotion.matches) : 1;
         localSprite.setScale(localSprite.scaleX * squash.scaleX * gaitSquash.scaleX, localSprite.scaleY * squash.scaleY * gaitSquash.scaleY * localBlinkY);
@@ -2414,11 +2439,16 @@ export function StudioVirtualSpacePhaserCanvas({
           // 피어 위치 보간(타임라인·지터 감쇠)은 그대로 두고 표시 오프셋만 더한다.
           const peerWalkDistance = Number(visual.sprite.getData("walkDistance") ?? 0);
           // 프레임 선택과 같은 유효 보폭을 써야 bob과 발 접지의 위상이 어긋나지 않는다.
-          const peerGaitStride = studioEffectiveGaitStride(
-            visual.sprite.getData("gaitDistancePerCycle") as number | undefined,
-            studioCharacterWalkClip(peerSkin, target.facing)?.distancePerCycle);
-          const peerGait = studioGaitBodyOffset(peerWalkDistance, peerGaitStride,
+          const peerGaitStride = studioCadenceLimitedStride(
+            studioEffectiveGaitStride(
+              visual.sprite.getData("gaitDistancePerCycle") as number | undefined,
+              studioCharacterWalkClip(peerSkin, target.facing)?.distancePerCycle),
+            playerLocomotion.walkSpeed, locomotion);
+          visual.sprite.setData("gaitStrideOverride", locomotion.maxGaitCyclesPerSecond === null ? undefined : peerGaitStride);
+          const peerGaitRaw = studioGaitBodyOffset(peerWalkDistance, peerGaitStride,
             target.moving, reducedMotion.matches);
+          const peerGait = locomotion.inertial ? peerGaitRaw
+            : { offsetX: peerGaitRaw.offsetX * locomotion.gaitSwayScale, offsetY: peerGaitRaw.offsetY * locomotion.gaitBobScale };
           const peerBreathY = !target.moving && !peerSeatRequested && !peerEmotePose && presenceBob === 0
             ? breathOffset(studioBreathPhaseAt(time, studioSmoothingPhaseSeed(peerId)), "idle")
             : 0;
@@ -2439,10 +2469,10 @@ export function StudioVirtualSpacePhaserCanvas({
             // 텔레포트급 점프는 즉시 스냅
             visual.sprite.setPosition(peerTargetX, peerTargetY);
           } else {
-            // 피어 스냅샷 지터 감쇠: 작은 흔들림은 무시하고 큰 이동만 따라간다
+            // 피어 스냅샷 지터 감쇠: 작은 흔들림은 무시하고 큰 이동만 따라간다(즉응형은 데드존을 좁혀 느린 이동이 끊겨 보이지 않게 한다)
             visual.sprite.setPosition(
-              visual.sprite.x + dampPeerOffset(peerTargetX - visual.sprite.x),
-              visual.sprite.y + dampPeerOffset(peerTargetY - visual.sprite.y),
+              visual.sprite.x + dampPeerOffset(peerTargetX - visual.sprite.x, locomotion.peerDeadzonePx),
+              visual.sprite.y + dampPeerOffset(peerTargetY - visual.sprite.y, locomotion.peerDeadzonePx),
             );
           }
           // 게이트 위상은 목표점이 아니라 실제로 그려진 변위로 누적한다: 패킷 간격으로
@@ -2456,7 +2486,7 @@ export function StudioVirtualSpacePhaserCanvas({
           spriteCrossfades?.capture(visual.sprite);
           applyAvatarVisual(visual.sprite, visual, peerSeatRequested?.facing ?? studioEmoteFacing(peerEmotePose) ?? target.facing, peerState, peerId);
           spriteCrossfades?.commit(visual.sprite, time, crossfadeEnabled);
-          const peerRockAngle = studioGaitRockAngle(peerWalkDistance, peerGaitStride, target.moving, reducedMotion.matches);
+          const peerRockAngle = studioGaitRockAngle(peerWalkDistance, peerGaitStride, target.moving, reducedMotion.matches) * locomotion.gaitRockScale;
           if (target.moving && !reducedMotion.matches && !scene.anims.exists(walkAnimationKey(peerSkin, target.facing))) {
             visual.sprite.setAngle(Math.sin(time * 0.017 + visual.targetX * 0.01) * 0.65 + peerRockAngle);
           } else {
@@ -2464,7 +2494,9 @@ export function StudioVirtualSpacePhaserCanvas({
           }
           // 2차 모션 합성: 걷기는 접지 스쿼시, 대기는 절차적 깜빡임. 표시 스케일은 매 프레임
           // applyAvatarVisual이 되돌리므로 그 뒤에 곱해야 한다.
-          const peerSquash = studioGaitSquashScale(peerWalkDistance, peerGaitStride, target.moving, reducedMotion.matches);
+          const peerSquashRaw = studioGaitSquashScale(peerWalkDistance, peerGaitStride, target.moving, reducedMotion.matches);
+          const peerSquash = locomotion.squashScale === 1 ? peerSquashRaw
+            : { scaleX: scaleAroundOne(peerSquashRaw.scaleX, locomotion.squashScale), scaleY: scaleAroundOne(peerSquashRaw.scaleY, locomotion.squashScale) };
           const peerBlinkY = !target.moving && !peerSeat
             ? studioBlinkScaleY(time, studioSmoothingPhaseSeed(peerId), reducedMotion.matches) : 1;
           if (peerSquash.scaleX !== 1 || peerSquash.scaleY !== 1 || peerBlinkY !== 1) {
@@ -2836,6 +2868,19 @@ export function StudioVirtualSpacePhaserCanvas({
           lastPublishedFacing = facing;
           lastPublishedPose = poseFrame.pose;
         }
+        if (import.meta.env.DEV) {
+          // 하네스(Playwright)가 배열을 만들어 둔 경우에만 프레임별 이동 궤적을 쌓는다. 응답 시간·미끄러짐·보폭 검증용이다.
+          const trace = (globalThis as { __studioMotionTrace?: Array<Record<string, number | string>> }).__studioMotionTrace;
+          if (trace) {
+            trace.push({
+              t: time, x: currentPoint.x, y: currentPoint.y, vx: motion.velocity.x, vy: motion.velocity.y,
+              sx: localSprite.x, sy: localSprite.y, scaleX: localSprite.scaleX, scaleY: localSprite.scaleY, angle: localSprite.angle,
+              frame: String(localSprite.frame.name), texture: localSprite.texture.key, moving: nextMoving ? 1 : 0,
+              dist: localDistance, stride: localGaitStride, camX: this.cameras.main.scrollX, camY: this.cameras.main.scrollY,
+            });
+            if (trace.length > 2400) trace.splice(0, trace.length - 2400);
+          }
+        }
         if (import.meta.env.DEV && time - lastDiagnosticAt >= 250) {
           lastDiagnosticAt = time;
           parent.dataset.localX = currentPoint.x.toFixed(3);
@@ -2874,6 +2919,8 @@ export function StudioVirtualSpacePhaserCanvas({
           parent.dataset.maxParticles = String(Math.round(runtimeBudget.maxParticles * currentQualityProfile.particleRatio));
           parent.dataset.qualityTier = currentQualityProfile.tier;
           parent.dataset.controlMode = experienceRef.current.controlMode;
+          parent.dataset.moveFeel = locomotion.feel;
+          parent.dataset.gaitStride = String(Math.round(localGaitStride));
           parent.dataset.cameraPreference = experienceRef.current.cameraMode;
           parent.dataset.texture = localSprite.texture.key;
           parent.dataset.appearanceIssues = JSON.stringify(localSprite.getData("appearanceIssues") ?? []);

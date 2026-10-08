@@ -180,14 +180,17 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
           if (sprite.anims.isPlaying) sprite.stop();
           const frame = clip.start + (reducedMotion.matches ? 0 : studioGaitFrame(
             Number(sprite.getData("walkDistance") ?? 0), clip.end - clip.start + 1,
-            studioEffectiveGaitStride(sprite.getData("gaitDistancePerCycle") as number | undefined, clip.distancePerCycle),
+            // 걸음 주기 상한이 계산한 보폭(gaitStrideOverride)이 있으면 그것이 이긴다. 몸 bob·그림자와 같은 값이다.
+            studioEffectiveGaitStride(
+              (sprite.getData("gaitStrideOverride") ?? sprite.getData("gaitDistancePerCycle")) as number | undefined,
+              clip.distancePerCycle),
           ));
           const sheet = walkSheetKey(skin, nextFacing);
           if (sprite.texture.key !== sheet || String(sprite.frame.name) !== String(frame)) sprite.setTexture(sheet, frame);
-          sprite.setData("framePresentation", clip.frames?.[frame - clip.start]);
+          sprite.setData("framePresentation", clipPresentation(skin, clip, sheet, nextFacing, frame - clip.start));
         } else {
           sprite.play(animationKey, true);
-          sprite.setData("framePresentation", clip.frames?.[Number(sprite.frame.name) - clip.start]);
+          sprite.setData("framePresentation", clipPresentation(skin, clip, walkSheetKey(skin, nextFacing), nextFacing, Number(sprite.frame.name) - clip.start));
         }
         updateDisplaySize(sprite);
         return;

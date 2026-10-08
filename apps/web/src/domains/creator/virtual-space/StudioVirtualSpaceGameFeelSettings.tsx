@@ -19,6 +19,7 @@ import { cn } from "@/shared/lib/utils";
 import {
   resolveStudioGameFeel,
   type StudioVirtualGameFeelPreference,
+  type StudioVirtualMoveFeel,
 } from "./studio-virtual-space-game-feel-preference";
 import { useStudioPrefersReducedMotion } from "./studio-virtual-space-reduced-motion";
 
@@ -68,6 +69,43 @@ function GameFeelToggle({
         <span className="block text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</span>
         <span className="mt-0.5 block text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{hint}</span>
       </span>
+    </label>
+  );
+}
+
+/** 이동 감각 라디오 한 칸. 선택 상태를 색뿐 아니라 테두리·문구로도 알린다. */
+function MoveFeelOption({
+  value,
+  checked,
+  onSelect,
+  title,
+  hint,
+}: {
+  readonly value: StudioVirtualMoveFeel;
+  readonly checked: boolean;
+  readonly onSelect: (value: StudioVirtualMoveFeel) => void;
+  readonly title: string;
+  readonly hint: string;
+}) {
+  return (
+    <label
+      className={cn(
+        "grid min-h-11 cursor-pointer grid-cols-[auto_1fr] items-start gap-x-2.5 gap-y-0.5 rounded-xl border p-3",
+        "transition-colors motion-reduce:transition-none",
+        "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent",
+        checked ? "border-accent bg-accent-soft" : "border-line bg-card hover:border-fg-3",
+      )}
+    >
+      <input
+        type="radio"
+        name="studio-game-feel-move-feel"
+        value={value}
+        checked={checked}
+        onChange={() => onSelect(value)}
+        className="mt-1 size-4 accent-accent"
+      />
+      <span className="text-sm font-semibold text-fg">{title}</span>
+      <span className="col-start-2 text-xs leading-relaxed text-fg-3">{hint}</span>
     </label>
   );
 }
@@ -181,6 +219,32 @@ export function StudioVirtualSpaceGameFeelSettings({ value, onChange }: StudioVi
             )}
           </p>
         )}
+
+        <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
+          <legend className="mb-1 px-0 text-sm font-semibold text-fg">
+            {bt("이동 감각", "Movement feel")}
+          </legend>
+          <MoveFeelOption
+            value="crisp"
+            checked={value.moveFeel === "crisp"}
+            onSelect={(moveFeel) => patch({ moveFeel })}
+            title={bt("즉응형 (기본)", "Crisp (default)")}
+            hint={bt(
+              "키를 누르면 바로 걷고 떼면 바로 멈춥니다. 미끄러짐·튕김 없이 정확하게 움직여 좁은 자리에서도 편합니다.",
+              "Starts the moment you press and stops the moment you release. No sliding or bouncing, so tight spots stay easy.",
+            )}
+          />
+          <MoveFeelOption
+            value="classic"
+            checked={value.moveFeel === "classic"}
+            onSelect={(moveFeel) => patch({ moveFeel })}
+            title={bt("관성형", "Weighty")}
+            hint={bt(
+              "천천히 가속하고 미끄러지며 멈추고, 벽에서 살짝 튕깁니다. 몸이 늘어나고 줄어드는 효과도 함께 씁니다.",
+              "Accelerates gently, glides to a stop and bounces slightly off walls, with stretchy body effects.",
+            )}
+          />
+        </fieldset>
 
         <div className="flex flex-col gap-2">
           <GameFeelToggle

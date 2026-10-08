@@ -159,16 +159,24 @@ export function studioBlinkScaleY(timeMs: number, seed: number, reducedMotion: b
   return 1 - BLINK_DEPTH * smoothstep01(edge);
 }
 
-/** Phaser setDeadzone은 추적 위치도 재설정하므로 모드 변경 시에만 호출한다. */
+/**
+ * Phaser setDeadzone은 추적 위치도 재설정하므로 모드나 데드존 배율이 바뀔 때만 호출한다.
+ * 배율 0.2(즉응형)는 카메라가 거의 바로 따라붙게 하고, 1은 기존 데드존 그대로다.
+ */
 export class StudioCameraFollowModeController {
   private mode: StudioVirtualCameraMode | null = null;
+  private scale = Number.NaN;
 
   constructor(private readonly camera: { setDeadzone(width: number, height: number): unknown }) {}
 
-  update(mode: StudioVirtualCameraMode): void {
-    if (this.mode === mode) return;
-    this.camera.setDeadzone(mode === "steady" ? 200 : mode === "cinematic" ? 110 : 150,
-      mode === "steady" ? 135 : mode === "cinematic" ? 78 : 100);
+  update(mode: StudioVirtualCameraMode, deadzoneScale = 1): void {
+    const scale = Number.isFinite(deadzoneScale) ? Math.max(0, Math.min(1, deadzoneScale)) : 1;
+    if (this.mode === mode && this.scale === scale) return;
+    this.camera.setDeadzone(
+      Math.round((mode === "steady" ? 200 : mode === "cinematic" ? 110 : 150) * scale),
+      Math.round((mode === "steady" ? 135 : mode === "cinematic" ? 78 : 100) * scale),
+    );
     this.mode = mode;
+    this.scale = scale;
   }
 }
