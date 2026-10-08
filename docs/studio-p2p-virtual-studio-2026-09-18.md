@@ -42,6 +42,8 @@ nearby peers only
 
 미디어는 기존 Huddle의 STUN-only P2P RTP를 재사용한다. 근접 미디어가 활성화되면 동일 존이면서 거리 반경 안에 있는 사용자만 별도 미디어 PeerConnection 대상이 된다. 멀어지면 해당 RTP 연결을 닫되 DataChannel mesh와 텍스트 협업은 유지한다.
 
+> **2026-10-08 정정(current)**: 이 문서의 "STUN-only"와 "유료 TURN/SFU로 자동 전환하지 않는다"는 TURN 단기 자격이 없는 환경의 구성이다. 근접 미디어는 Huddle 컨트롤러가 쓰는 공유 ICE 구성(`studio-ice-configuration.ts`)을 그대로 쓰므로, 실시간 Worker가 TURN 단기 자격을 발급한 환경에서는 직접 연결이 막힐 때 중계(TURN) 경로가 생긴다. 운영 Worker의 TURN 키 등록 여부는 코드로 알 수 없어 미확인이다. 정본은 `docs/technology/toonstudio-webrtc-realtime-media-2026-09-25.md` 6절이다.
+
 ## 동작과 수명주기
 
 가상 공간은 사용자가 **P2P 채팅 참여**에 명시적으로 동의한 뒤에만 시작한다. 컴포넌트 mount만으로 카메라나 마이크 권한을 요청하지 않는다.
