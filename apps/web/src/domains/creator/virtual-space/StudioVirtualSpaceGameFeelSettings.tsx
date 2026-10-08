@@ -49,8 +49,8 @@ function GameFeelToggle({
         "flex cursor-pointer items-start gap-3 rounded-xl border p-3",
         "transition-colors motion-reduce:transition-none",
         checked
-          ? "border-violet-300 bg-violet-50/70 dark:border-violet-700 dark:bg-violet-950/40"
-          : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600",
+          ? "border-accent bg-accent-soft/70 dark:border-accent dark:bg-accent-soft/40"
+          : "border-line hover:border-line-strong dark:border-line dark:hover:border-line-strong",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
@@ -66,8 +66,8 @@ function GameFeelToggle({
         className="mt-0.5 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
       />
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{hint}</span>
+        <span className="block text-sm font-semibold text-fg">{title}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-fg-3">{hint}</span>
       </span>
     </label>
   );
@@ -131,20 +131,20 @@ function GameFeelSlider({
   return (
     <div
       className={cn(
-        "rounded-xl border border-neutral-200 bg-neutral-50/60 p-3",
-        "dark:border-neutral-700 dark:bg-neutral-800/40",
+        "rounded-xl border border-line bg-panel/60 p-3",
+        "dark:border-line dark:bg-panel/40",
         disabled && "opacity-60",
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={id} className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+        <label htmlFor={id} className="text-sm font-semibold text-fg">
           {label}
         </label>
         <output
           htmlFor={id}
           className={cn(
             "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
-            "bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-200",
+            "bg-accent-soft text-accent",
           )}
         >
           {percent}%
@@ -160,9 +160,9 @@ function GameFeelSlider({
         aria-label={label}
         disabled={disabled}
         onChange={(event) => onChange(Number(event.target.value) / 100)}
-        className="mt-1 w-full accent-violet-600"
+        className="mt-1 w-full accent-accent"
       />
-      <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{hint}</p>
+      <p className="text-xs leading-relaxed text-fg-3">{hint}</p>
     </div>
   );
 }
@@ -182,13 +182,13 @@ export function StudioVirtualSpaceGameFeelSettings({ value, onChange }: StudioVi
     <section
       aria-labelledby="studio-game-feel-title"
       className={cn(
-        "w-full overflow-hidden rounded-xl border border-neutral-200 bg-white",
-        "dark:border-neutral-800 dark:bg-neutral-900",
+        "w-full overflow-hidden rounded-xl border border-line bg-card",
+        "dark:border-line dark:bg-card",
       )}
     >
       <div
         className={cn(
-          "bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500",
+          "bg-gradient-to-r from-accent via-accent-2 to-accent",
           "px-4 py-3",
         )}
       >
@@ -209,8 +209,8 @@ export function StudioVirtualSpaceGameFeelSettings({ value, onChange }: StudioVi
           <p
             role="status"
             className={cn(
-              "rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800",
-              "dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200",
+              "rounded-xl border border-warn/35 bg-warn/10 px-3 py-2 text-xs leading-relaxed text-warn",
+              "dark:border-warn/35 dark:bg-warn/10 dark:text-warn",
             )}
           >
             {bt(
@@ -276,10 +276,10 @@ export function StudioVirtualSpaceGameFeelSettings({ value, onChange }: StudioVi
             onClick={() => setAdvancedOpen((open) => !open)}
             className={cn(
               "inline-flex w-full items-center justify-between gap-2 rounded-xl border border-dashed px-3 py-2.5 text-sm font-medium",
-              "border-neutral-300 text-neutral-700 hover:border-violet-400 hover:text-violet-700",
-              "dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-violet-600 dark:hover:text-violet-300",
+              "border-line-strong text-fg-2 hover:border-accent hover:text-accent",
+              "dark:border-line-strong dark:text-fg-2 dark:hover:border-accent dark:hover:text-accent",
               "transition-colors motion-reduce:transition-none",
-              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600",
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
             )}
           >
             <span className="inline-flex items-center gap-1.5">
