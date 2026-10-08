@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createResourceEngine } from "./resource-engine";
+import { UpstreamHttpError } from "./upstream-error";
 import {
   dplaUrl,
   europeanaUrl,
@@ -86,6 +87,49 @@ describe("international discovery providers", () => {
       { date: "2026-09-24", views: 180 },
     ]);
     expect(result.hasMore).toBe(false);
+  });
+
+  it("classifies a missing Wikimedia article (HTTP 404) as a successful empty result, not an outage (F-B14-2)", async () => {
+    const missing = vi.fn(async (_url: URL): Promise<{ value: unknown; fetchedAt: string }> => {
+      throw new UpstreamHttpError(404);
+    });
+    const result = await internationalDiscoverySearch("wikimedia", "없는문서", 1, "", missing, Date.parse(stamp));
+    expect(result.status).toBe("ready");
+    expect(result.items).toEqual([]);
+    expect(result.total).toBe(0);
+    expect(result.hasMore).toBe(false);
+    expect(result.message).toContain("찾지 못했습니다");
+  });
+
+  it("keeps other Wikimedia upstream HTTP errors on the failure path (F-B14-2)", async () => {
+    const failing = vi.fn(async (_url: URL): Promise<{ value: unknown; fetchedAt: string }> => {
+      throw new UpstreamHttpError(503);
+    });
+    await expect(
+      internationalDiscoverySearch("wikimedia", "경복궁", 1, "", failing, Date.parse(stamp)),
+    ).rejects.toThrow("upstream_response");
+  });
+
+  it("returns a ready empty result end-to-end when Pageviews answers 404 (F-B14-2)", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(
+      JSON.stringify({ detail: "The article you specified does not exist" }),
+      { status: 404, headers: { "content-type": "application/json" } },
+    ));
+    const engine = createResourceEngine({ fetch: fetcher, env: () => ({}), now: () => Date.parse(stamp) });
+    const result = await engine.search({ provider: "wikimedia", q: "없는문서제목" }, "wikimedia-404-client");
+    expect(result.status).toBe("ready");
+    expect(result.items).toEqual([]);
+    expect(result.message).toContain("찾지 못했습니다");
+  });
+
+  it("still reports unavailable when a keyless search provider answers 404 (F-B14-2 control)", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(
+      JSON.stringify({}),
+      { status: 404, headers: { "content-type": "application/json" } },
+    ));
+    const engine = createResourceEngine({ fetch: fetcher, env: () => ({}), now: () => Date.parse(stamp) });
+    const result = await engine.search({ provider: "gbif", q: "여우" }, "gbif-404-client");
+    expect(result.status).toBe("unavailable");
   });
 
   it("normalizes Europeana and DPLA as metadata-only records", async () => {

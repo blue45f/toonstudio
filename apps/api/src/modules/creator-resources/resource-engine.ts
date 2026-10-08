@@ -22,6 +22,7 @@ import { internationalDiscoverySearch, isInternationalDiscoveryProvider, validIn
 import { polyHavenSearch, validPolyHavenShape } from "./polyhaven-provider";
 import { isReferenceMediaProvider, referenceMediaSearch, validReferenceMediaShape } from "./reference-media-providers";
 import { rijksmuseumSearch, validRijksmuseumShape } from "./rijksmuseum-provider";
+import { UpstreamHttpError } from "./upstream-error";
 
 type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 export interface ResourceEngineOptions {
@@ -209,7 +210,13 @@ async function limitedBody(response: Response, bodyType: UpstreamBodyType): Prom
   const expectedContentType = bodyType === "json"
     ? contentType.includes("json")
     : contentType.includes("xml") || contentType.includes("text/plain");
-  if (!response.ok || response.redirected || !expectedContentType) {
+  if (!response.ok) {
+    await response.body?.cancel();
+    // 상태 코드를 실어 던져, "문서 없음"(404) 같은 영구 상태를 제공처가
+    // 일시 장애와 구분할 수 있게 한다 (F-B14-2). 본문·URL은 싣지 않는다.
+    throw new UpstreamHttpError(response.status);
+  }
+  if (response.redirected || !expectedContentType) {
     await response.body?.cancel();
     throw new Error("upstream_response");
   }
