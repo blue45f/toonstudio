@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { minimalHumanoidModelFixture } from "../testing/recipe-fixtures";
 
-import { PART_ROLES, allocatePartIds, allocatePartIdsByRole, countTriangles, rolePartId, validateMeshPartData, type MeshPartData } from "./mesh-data";
+import { PART_ROLES, PART_ROLE_LABELS_KO, allocatePartIds, allocatePartIdsByRole, countTriangles, rolePartId, validateMeshPartData, type MeshPartData } from "./mesh-data";
 
 function mutate(part: MeshPartData, patch: Partial<MeshPartData>): MeshPartData {
   return { ...part, ...patch };
@@ -48,6 +48,16 @@ describe("contracts/mesh-data", () => {
     expect(palette[2]?.labelKo).toBe("헤어");
     expect(palette[0]).toBeUndefined();
     expect(countTriangles(model.parts)).toBe(4);
+  });
+
+  it("underwear 역할은 기존 15역할 뒤(끝)에 추가되어 기존 partId가 밀리지 않는다", () => {
+    expect(PART_ROLES).toHaveLength(16);
+    expect(PART_ROLES[15]).toBe("underwear");
+    expect(PART_ROLES.slice(0, 15)).toEqual(["skin", "head", "eyeball", "iris", "pupil", "eye-highlight", "brow", "lash", "teeth", "tongue", "hair", "top", "bottom", "shoes", "accessory"]);
+    expect(rolePartId("accessory")).toBe(15);
+    expect(rolePartId("underwear")).toBe(16);
+    expect(PART_ROLE_LABELS_KO.underwear).toBe("속옷");
+    expect(Object.keys(PART_ROLE_LABELS_KO)).toHaveLength(16);
   });
 
   it("역할 고정 partId는 PART_ROLES 인덱스 + 1이고 결손 역할이 있어도 나머지가 밀리지 않는다", () => {

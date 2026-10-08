@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { createDrawStore } from "../state/draw-store";
 import { createLabStore } from "../state/lab-store";
 import { installCanvasStub } from "../testing/canvas-stub";
 import { mockDescriptor, mockEnvironment, unavailableDescriptor } from "../testing/mock-lane";
@@ -34,6 +35,7 @@ function renderApp(store: LabStore, extra: Partial<Parameters<typeof BrushLabApp
       env={mockEnvironment()}
       runner={createMockRunner()}
       store={store}
+      drawStore={createDrawStore()}
       gallery={null}
       galleryError="테스트 환경에는 Worker가 없다"
       {...extra}
@@ -43,14 +45,14 @@ function renderApp(store: LabStore, extra: Partial<Parameters<typeof BrushLabApp
 
 // jsdom 전체 앱 렌더는 CPU를 공유하는 환경(동시 vitest 다수)에서 수 초가 걸릴 수 있어 타임아웃을 넉넉히 둔다.
 describe("BrushLabApp", { timeout: 30_000 }, () => {
-  it("실험 앱 셸과 탭 3개를 렌더하고 클릭·키보드로 전환한다", () => {
+  it("실험 앱 셸과 탭 4개를 렌더하고 클릭·키보드로 전환한다", () => {
     const store = createLabStore({ tab: "gallery" });
     renderApp(store, { autoProbe: false });
     expect(screen.getByRole("heading", { level: 1, name: "ToonStudio Brush Lab" })).toBeTruthy();
     expect(screen.getByText("실험 앱 · 배포 대상 아님")).toBeTruthy();
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((t) => t.textContent)).toEqual(["갤러리", "A/B 비교", "리포트"]);
-    expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
+    expect(tabs.map((t) => t.textContent)).toEqual(["그리기", "갤러리", "A/B 비교", "리포트"]);
+    expect(tabs[1]?.getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe("lab-tab-gallery");
 
     fireEvent.click(screen.getByRole("tab", { name: "리포트" }));
@@ -59,19 +61,45 @@ describe("BrushLabApp", { timeout: 30_000 }, () => {
     expect(screen.getByText(/세션 리포트 \(0\)/u)).toBeTruthy();
 
     const tablist = screen.getByRole("tablist", { name: "브러시 랩 화면" });
+    // 리포트(끝) → 오른쪽: 맨 앞 탭(그리기)으로 순환
     fireEvent.keyDown(tablist, { key: "ArrowRight" });
-    expect(store.get().tab).toBe("gallery");
+    expect(store.get().tab).toBe("draw");
     fireEvent.keyDown(tablist, { key: "ArrowLeft" });
     expect(store.get().tab).toBe("report");
     fireEvent.keyDown(tablist, { key: "Home" });
+    expect(store.get().tab).toBe("draw");
+    expect(document.activeElement?.id).toBe("lab-tab-draw");
+    fireEvent.keyDown(tablist, { key: "ArrowRight" });
     expect(store.get().tab).toBe("gallery");
-    expect(document.activeElement?.id).toBe("lab-tab-gallery");
     fireEvent.keyDown(tablist, { key: "End" });
     expect(store.get().tab).toBe("report");
     expect(document.activeElement?.id).toBe("lab-tab-report");
     // 비활성 탭은 tabIndex -1(roving tabindex)
     expect(screen.getByRole("tab", { name: "갤러리" }).getAttribute("tabindex")).toBe("-1");
+    expect(screen.getByRole("tab", { name: "그리기" }).getAttribute("tabindex")).toBe("-1");
     expect(screen.getByRole("tab", { name: "리포트" }).getAttribute("tabindex")).toBe("0");
+  });
+
+  it("그리기가 첫 번째 탭이며 기본 선택이다(저장소 기본 상태)", () => {
+    const store = createLabStore();
+    renderApp(store, { autoProbe: false });
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs[0]?.textContent).toBe("그리기");
+    expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
+    expect(tabs[0]?.getAttribute("tabindex")).toBe("0");
+    expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe("lab-tab-draw");
+    expect(screen.getByTestId("lab-draw-view")).toBeTruthy();
+  });
+
+  it("다른 탭으로 갔다 와도 그리기 화면은 마운트된 채 숨겨질 뿐이다(문서 보존)", () => {
+    const store = createLabStore();
+    renderApp(store, { autoProbe: false });
+    const draw = screen.getByTestId("lab-draw-view");
+    fireEvent.click(screen.getByRole("tab", { name: "갤러리" }));
+    expect(screen.getByTestId("lab-draw-view")).toBe(draw);
+    expect(draw.closest("[role='tabpanel']")?.hasAttribute("hidden")).toBe(true);
+    fireEvent.click(screen.getByRole("tab", { name: "그리기" }));
+    expect(draw.closest("[role='tabpanel']")?.hasAttribute("hidden")).toBe(false);
   });
 
   it("배너는 레인별 probe 결과와 unavailable 사유 코드를 보여주고 자동 전환하지 않는다", async () => {

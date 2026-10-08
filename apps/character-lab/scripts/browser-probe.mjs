@@ -18,10 +18,28 @@
 //   CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/browser-probe.mjs --software --backends webgl2 --out /tmp/cl-probe.json --shots /tmp/cl-shots
 //   CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/browser-probe.mjs --url http://localhost:4176/   # 이미 떠 있는 dev/preview 서버
 // 옵션: --software(Linux SwiftShader 플래그) --backends webgpu,webgl2 --require-ready webgl2,... --out <json> --shots <dir> --url <주소> --timeout-sec <초>
+//       --dist <폴더>(vite preview가 서빙할 빌드 산출물, 기본 apps/character-lab/dist — 다른 작업이 dist를 만지는 중일 때 별도 outDir로 빌드해 쓴다)
 // 환경 변수: CHARACTER_LAB_CHROMIUM_PATH(Chrome for Testing 등 실행 파일 경로).
+//
+// 운영 규칙(스크립트가 스스로 지킨다):
+//   - 임시 경로: Chromium은 프로필 폴더 안에 유닉스 소켓(`SingletonSocket`)을 만들고 소켓 경로는 108바이트(macOS 104)를 넘으면 안 된다.
+//     그래서 `TMPDIR`(= `os.tmpdir()`)가 길면 브라우저를 띄우기 전에 `/tmp`로 바꾸고 경고를 출력한다(`guardTmpdir`). 호출자가 `TMPDIR=/tmp`를 붙일 필요는 없다.
+//   - 프로세스 정리: `vite preview`는 자기 프로세스 그룹(detached)으로 띄우고 그룹 전체에 SIGTERM을 보낸다(자식 프로세스 잔존 방지).
+//     정상 종료·예외·SIGINT/SIGTERM 어느 경우에도 브라우저를 닫고 서버 그룹을 정리하며, 마지막에 `process.exit(code)`로 열린 핸들과 상관없이 끝난다.
+//
+// 키트 소스와 프로브(2026-10-08 현재):
+//   - 앱의 부팅 기본 소스는 `app/composition.ts`의 `DEFAULT_BOOT_SOURCE`(현재 "procedural")이다. 이 프로브의 단계(슬롯 15·탭 9·썸네일·PBR/툰 PNG·history)는
+//     모두 **절차 소스 기준**이고 키트 에셋 없이 통과해야 한다. 키트는 프로브가 따로 고르지 않는다.
+//   - 부팅 기본 소스가 "kit"로 바뀐 뒤(KT-11, 에셋 안착 전제)에는 에셋이 있는 빌드에서 같은 단계가 통과해야 한다.
+//   - **키트 에셋이 없는 빌드에서 부팅 소스가 키트이면 엔진 선택 직후 `[kit-manifest-fetch-failed]` 실패 배너와 사유가 보이는 것이 정상**이다
+//     (무음 대체 금지: 절차 소스로 자동 전환하지 않는다). 이때 "백엔드 명시 선택" 단계는 사유 코드가 화면에 보이면 통과하지만, 그 뒤 ready를 전제로 한
+//     썸네일·PNG 단계와 '불러오기 뒤 실패 배너 없음' 검사는 실패하거나 건너뛴다 — 프로브 결함이 아니라 에셋 부재다. 이 경우 먼저
+//     `pnpm run verify:character-kit -- --root apps/character-lab/public/assets/characters/toonstudio-kit-v1`로 에셋을 확인한다.
+//   - 키트 렌더 자체(툰 외곽선 정책·정점색 AO·알파 컷오프·몸 가림)의 실브라우저(SwiftShader) 확인은 이 프로브가 아니라 `scripts/kit-preview.mjs`(docs/kit-preview.md)가 한다.
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { inflateSync } from "node:zlib";
@@ -31,12 +49,35 @@ const labRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 /** 캐릭터가 차지해야 하는 최소 불투명 면적 비율(전신 캡처 기준 보수적 하한). */
 const MIN_COVERAGE = 0.015;
 
+/** 아직 끝나지 않은 정리 함수(브라우저·서버). main이 예외로 끝나도 마지막에 모두 실행한다. */
+const pendingCleanups = new Set();
+
 function log(message) {
   console.log(`[character-lab-probe] ${message}`);
 }
 
+/** Chromium 프로필 안 소켓 경로(`<tmpdir>/playwright_chromiumdev_profile-XXXXXX/SingletonSocket`)가 소켓 경로 한도(108, macOS 104)를 넘지 않게 두는 여유 */
+const CHROMIUM_TMPDIR_RESERVE_BYTES = 64;
+const SOCKET_PATH_LIMIT_BYTES = 104;
+
+/**
+ * `TMPDIR`가 너무 길면 `/tmp`로 바꾼다(Chromium은 임시 경로가 길면 소켓을 만들지 못하고 죽는다). 바꿨는지와 이유를 돌려준다.
+ * 윈도우는 해당 없음. `/tmp`를 쓸 수 없는 환경이면 바꾸지 않고 경고만 한다.
+ */
+function guardTmpdir(env = process.env, platform = process.platform, tmpdirOf = () => os.tmpdir()) {
+  if (platform === "win32") return { changed: false, tmpdir: tmpdirOf(), warning: null };
+  const current = tmpdirOf();
+  const bytes = Buffer.byteLength(current);
+  if (bytes + CHROMIUM_TMPDIR_RESERVE_BYTES <= SOCKET_PATH_LIMIT_BYTES) return { changed: false, tmpdir: current, warning: null };
+  if (!existsSync("/tmp")) {
+    return { changed: false, tmpdir: current, warning: `TMPDIR(${bytes}바이트)가 길어 Chromium이 실패할 수 있지만 /tmp가 없어 바꾸지 못했다.` };
+  }
+  env.TMPDIR = "/tmp";
+  return { changed: true, tmpdir: "/tmp", warning: `TMPDIR가 ${bytes}바이트로 길어(Chromium 소켓 경로 한도 ${SOCKET_PATH_LIMIT_BYTES}바이트) 이 프로세스에서만 /tmp로 바꿨다. 원래 값: ${current}` };
+}
+
 function parseArgs(argv) {
-  const options = { software: false, backends: ["webgpu", "webgl2"], requireReady: [], out: null, shots: null, url: null, timeoutSec: 180 };
+  const options = { software: false, backends: ["webgpu", "webgl2"], requireReady: [], out: null, shots: null, url: null, dist: null, timeoutSec: 180 };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     const next = () => argv[(i += 1)];
@@ -46,6 +87,7 @@ function parseArgs(argv) {
     else if (arg === "--out") options.out = next();
     else if (arg === "--shots") options.shots = next();
     else if (arg === "--url") options.url = next();
+    else if (arg === "--dist") options.dist = next();
     else if (arg === "--timeout-sec") options.timeoutSec = Number(next());
     else throw new Error(`알 수 없는 옵션: ${arg}`);
   }
@@ -120,27 +162,46 @@ async function freePort() {
   });
 }
 
-async function startPreview() {
-  const distIndex = path.join(labRoot, "dist", "index.html");
-  if (!existsSync(distIndex)) throw new Error("dist/가 없습니다. 먼저 `pnpm --filter @toonstudio/character-lab build`를 실행하세요.");
+/** 서버 프로세스 그룹 전체를 종료한다(detached로 띄운 그룹). 이미 끝났으면 무시한다. */
+function killGroup(child, signal = "SIGTERM") {
+  if (child.pid === undefined) return;
+  try {
+    process.kill(-child.pid, signal);
+  } catch {
+    try {
+      child.kill(signal);
+    } catch {
+      // 이미 종료됨.
+    }
+  }
+}
+
+async function startPreview(options) {
+  const distDir = options.dist ? path.resolve(options.dist) : path.join(labRoot, "dist");
+  const distIndex = path.join(distDir, "index.html");
+  if (!existsSync(distIndex)) throw new Error(`${distDir}/index.html이 없습니다. 먼저 \`pnpm --filter @toonstudio/character-lab build\`를 실행하세요(--dist로 다른 빌드 폴더를 줄 수 있습니다).`);
   const viteBin = path.join(labRoot, "node_modules", "vite", "bin", "vite.js");
   if (!existsSync(viteBin)) throw new Error("apps/character-lab/node_modules/vite를 찾지 못했습니다(pnpm install 필요).");
   const port = await freePort();
-  const child = spawn(process.execPath, [viteBin, "preview", "--config", "vite.config.ts", "--host", "127.0.0.1", "--port", String(port), "--strictPort"], {
-    cwd: labRoot,
-    stdio: ["ignore", "pipe", "pipe"],
+  const args = [viteBin, "preview", "--config", "vite.config.ts", "--host", "127.0.0.1", "--port", String(port), "--strictPort"];
+  if (options.dist) args.push("--outDir", distDir);
+  const child = spawn(process.execPath, args, { cwd: labRoot, stdio: ["ignore", "ignore", "pipe"], detached: true });
+  let stderrTail = "";
+  child.stderr.on("data", (chunk) => {
+    stderrTail = `${stderrTail}${chunk}`.slice(-2000);
   });
+  const stop = () => killGroup(child);
   const url = `http://127.0.0.1:${port}/`;
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      if ((await fetch(url)).ok) return { url, stop: () => child.kill("SIGTERM") };
+      if ((await fetch(url)).ok) return { url, stop };
     } catch {
       // 서버가 아직 안 떴다.
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  child.kill("SIGTERM");
-  throw new Error("vite preview가 30초 안에 응답하지 않았습니다.");
+  stop();
+  throw new Error(`vite preview가 30초 안에 응답하지 않았습니다.${stderrTail ? ` stderr: ${stderrTail.trim().split("\n").slice(-3).join(" | ")}` : ""}`);
 }
 
 function chromiumArgs(options) {
@@ -155,6 +216,8 @@ async function main() {
     return 0;
   }
   const options = parseArgs(process.argv.slice(2));
+  const tmp = guardTmpdir();
+  if (tmp.warning) log(`경고: ${tmp.warning}`);
   let playwright;
   try {
     playwright = await import("playwright");
@@ -171,7 +234,29 @@ async function main() {
     return 2;
   }
 
-  const server = options.url ? { url: options.url, stop: () => undefined } : await startPreview();
+  // 서버(vite preview 그룹)와 브라우저는 어떤 경로로 끝나든(정상·예외·시그널) 정리한다.
+  let server = { url: options.url ?? "", stop: () => undefined };
+  let cleaned = false;
+  const cleanup = async () => {
+    if (cleaned) return;
+    cleaned = true;
+    pendingCleanups.delete(cleanup);
+    await browser.close().catch(() => undefined);
+    server.stop();
+  };
+  pendingCleanups.add(cleanup);
+  for (const signal of ["SIGINT", "SIGTERM"]) {
+    process.once(signal, () => {
+      log(`${signal} 수신 — 브라우저와 서버를 정리하고 종료합니다.`);
+      cleanup().finally(() => process.exit(signal === "SIGINT" ? 130 : 143));
+    });
+  }
+  try {
+    if (!options.url) server = await startPreview(options);
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
   const timeoutMs = options.timeoutSec * 1000;
   const steps = [];
   const consoleErrors = new Map();
@@ -363,8 +448,7 @@ async function main() {
     await step("페이지 오류(pageerror) 없음", async () => (pageErrors.length > 0 ? { fail: pageErrors.slice(0, 3).join(" | ") } : { detail: "0건" }));
   } finally {
     report.consoleErrors = [...consoleErrors.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([message, count]) => ({ count, message }));
-    await browser.close();
-    server.stop();
+    await cleanup();
   }
 
   const failed = steps.filter((entry) => entry.status === "fail").length;
@@ -382,8 +466,9 @@ async function main() {
 
 main().then(
   (code) => process.exit(code),
-  (error) => {
+  async (error) => {
     console.error(error);
+    await Promise.all([...pendingCleanups].map((cleanup) => cleanup().catch(() => undefined)));
     process.exit(1);
   },
 );

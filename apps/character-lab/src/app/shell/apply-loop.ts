@@ -10,7 +10,7 @@
  * device lost → 사용자가 엔진을 다시 선택하면 `ready`에서 같은 레시피로 소스·셰이딩·물리·플랜을 다시 올린다
  * (레시피 JSON이 복원 단일 소스, 연구 종합 §1.10 "device.lost → 레시피 복원").
  */
-import { failVisible, isLabFailure } from "../../contracts";
+import { KIT_DEFAULT_SLOTS, KIT_PART_SLOTS, failVisible, isLabFailure, isPresetId, kitGeometryKey } from "../../contracts";
 import { stableStringify } from "../../shared/stable-json";
 
 import type {
@@ -22,8 +22,11 @@ import type {
   CharacterSource,
   EngineSession,
   LabState,
+  KitPlan,
   LabStore,
   PresetCatalog,
+  PresetId,
+  SlotKind,
   SourceCapabilities,
 } from "../../contracts";
 
@@ -41,6 +44,11 @@ export interface ApplyLoopDeps {
    * 다시 만들어 올린다. 파라미터·색·표정·포즈 같은 나머지 변경은 플랜만 다시 적용한다. 없으면 절차 소스는 엔진당 한 번만 만든다.
    */
   readonly proceduralGeometryKey?: (recipe: CharacterRecipe) => string;
+  /**
+   * `retrySource()`가 소스를 다시 만들기 직전에 부르는 훅(예: 키트 `kit.json` 캐시 비우기).
+   * 이 훅이 던지면 failure 이벤트로 노출하고 재시도는 계속한다.
+   */
+  readonly beforeRetrySource?: () => void;
   readonly now?: () => number;
 }
 
@@ -72,6 +80,11 @@ export interface ApplyLoop {
    * 방금 올린 소스를 지우고 다시 만들지 않게 한다. 끝내 따라잡지 않으면 다음 입력 변경에서 레시피(단일 진실) 소스로 되돌린다.
    */
   markSourceLoaded(engine: CharacterEngine, source: CharacterSource): void;
+  /**
+   * 소스 로드를 다시 시도한다(키트 "다시 불러오기"). 실패 기억(`failedSource`)을 지우고 이미 올라간 소스도 버려 레시피 소스를
+   * `buildSource`부터 다시 만들어 올린다. 엔진이 없으면 다음에 엔진이 ready가 될 때 새로 올린다.
+   */
+  retrySource(): void;
   subscribe(listener: (snapshot: ApplyLoopSnapshot) => void): () => void;
 }
 
@@ -81,11 +94,32 @@ function sameCapabilities(a: LabState["capabilities"], b: LabState["capabilities
 }
 
 /**
+ * 키트 소스 키. 레시피 쪽(`recipeSourceKey`)과 플랜 쪽(`sourceKeyOf`)이 **같은 함수**로 만들어야 한다 — 둘이 다르면 패널이 올린 키트를
+ * 레시피가 따라잡았을 때도 키가 어긋나 같은 키트를 다시 올리거나, 실패 가드가 풀릴 때 로드가 잘못 반복된다.
+ * `manifestSha256`은 키에 넣지 않는다(플랜에 해시가 없다): kit.json 해시만 바뀐 레시피는 이미 올라간 키트를 그대로 둔다.
+ */
+function kitSourceKey(kitId: string, kitVersion: number, baseId: string, geometry: string): string {
+  return stableStringify({ kind: "kit", kitId, kitVersion, baseId, geometry });
+}
+
+/** 플랜이 담은 파츠 선택을 `kitGeometryKey`(레시피 쪽 지오메트리 키)와 같은 형식으로 되돌린다. */
+function kitPlanGeometryKey(plan: KitPlan): string {
+  const slots: Record<SlotKind, PresetId | null> = { ...KIT_DEFAULT_SLOTS };
+  for (const slot of KIT_PART_SLOTS) slots[slot] = null;
+  for (const part of plan.parts) {
+    if (part.slot !== null && isPresetId(part.id)) slots[part.slot] = part.id;
+  }
+  return kitGeometryKey({ source: { kind: "kit", kitId: plan.kitId, kitVersion: plan.kitVersion, baseId: plan.baseId }, slots });
+}
+
+/**
  * 엔진 소스를 레시피 `source` 필드와 같은 모양의 키로 만든다(두 쪽이 같은 소스인지 비교).
  * 절차 소스는 `geometryKey`(레시피의 지오메트리 재생성 키)를 주면 그 값까지 키에 넣는다.
+ * 키트 소스는 항상 지오메트리(베이스 + 파츠 선택)까지 키에 들어간다.
  */
 export function sourceKeyOf(source: CharacterSource, geometryKey?: string): string {
   if (source.kind === "procedural") return stableStringify(geometryKey === undefined ? { kind: "procedural" } : { kind: "procedural", geometry: geometryKey });
+  if (source.kind === "kit") return kitSourceKey(source.plan.kitId, source.plan.kitVersion, source.plan.baseId, kitPlanGeometryKey(source.plan));
   return stableStringify({ kind: "package", characterId: source.plan.manifest.characterId, sha256: source.plan.glbSha256 });
 }
 
@@ -110,12 +144,14 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
   /** 마지막으로 처리한 적용 입력(스토어 알림이 이 값을 바꾸지 않았다면 루프는 다시 돌지 않는다) */
   let observed: { readonly recipe: CharacterRecipe; readonly revision: number; readonly capabilities: LabState["capabilities"] } | null = null;
 
-  /** 레시피가 가리키는 엔진 소스의 키. 절차 소스는 지오메트리 슬롯까지 포함한다. */
+  /** 레시피가 가리키는 엔진 소스의 키. 절차·키트 소스는 지오메트리 슬롯까지 포함한다. */
   const recipeSourceKey = (recipe: CharacterRecipe): string => {
-    if (recipe.source.kind === "procedural" && deps.proceduralGeometryKey) {
+    const source = recipe.source;
+    if (source.kind === "procedural" && deps.proceduralGeometryKey) {
       return stableStringify({ kind: "procedural", geometry: deps.proceduralGeometryKey(recipe) });
     }
-    return stableStringify(recipe.source);
+    if (source.kind === "kit") return kitSourceKey(source.kitId, source.kitVersion, source.baseId, kitGeometryKey(recipe));
+    return stableStringify(source);
   };
 
   const report = (code: string, reasonKo: string, error: unknown): void => {
@@ -269,6 +305,18 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       lastPlan = null;
       lastReceipt = null;
       if (recipeSourceKey(recipe) === loadedSourceKey) schedule();
+    },
+    retrySource() {
+      try {
+        deps.beforeRetrySource?.();
+      } catch (error) {
+        report("source-retry-hook-failed", "소스 다시 불러오기 준비(캐시 비우기)에 실패했습니다.", error);
+      }
+      failedSource = null;
+      loadedSourceKey = null;
+      settledEngine = null;
+      publish();
+      schedule();
     },
     subscribe(listener) {
       listeners.add(listener);

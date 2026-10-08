@@ -9,7 +9,7 @@ import { HUMANOID_BONE_NAMES } from "./bones";
 import { failVisible } from "./errors";
 import { PART_ROLES } from "./mesh-data";
 import { BLENDER_HAIR_STYLE_IDS } from "./preset-vocabulary";
-import { CHARACTER_SLOT_KINDS } from "./slots";
+import { CHARACTER_SLOT_KINDS, isPresetId } from "./slots";
 
 import type { HumanoidBoneName } from "./bones";
 import type { LabFailure } from "./errors";
@@ -38,6 +38,13 @@ export const slotCapabilitySchema = z
   .object({
     status: z.enum(["available", "partial", "unavailable"]),
     reasonKo: z.string().optional(),
+    /** 프리셋 id → 한글 사유(프리셋 단위 미제공, 키트 계약 D10). 키는 `<슬롯>/<이름>` 형식이어야 한다. */
+    unavailablePresets: z
+      .record(
+        z.string().refine((key) => isPresetId(key), { message: "프리셋 id는 <슬롯>/<이름> 형식이어야 합니다." }),
+        z.string(),
+      )
+      .optional(),
   })
   .strict();
 

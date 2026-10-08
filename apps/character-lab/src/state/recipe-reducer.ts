@@ -11,6 +11,7 @@ import {
   PHYSICS_PROVIDER_LABELS_KO,
   RECIPE_COLOR_KEYS,
   SLOT_LABELS_KO,
+  applyKitToonDefaults,
   bonesInScope,
   clampExpression,
   clampParam,
@@ -27,6 +28,7 @@ import {
 } from "../contracts";
 import { normalizeHex } from "../shared/color";
 import { qNormalize } from "../shared/math";
+import { stableStringify } from "../shared/stable-json";
 
 import type {
   BodyParamKey,
@@ -34,6 +36,7 @@ import type {
   FaceParamKey,
   HandPosePair,
   HumanoidBoneName,
+  KitBaseId,
   LabCommand,
   Pose,
   PoseScope,
@@ -42,6 +45,7 @@ import type {
   RecipeColorKey,
   RecipeCommand,
   RecipePatch,
+  RecipeSource,
 } from "../contracts";
 
 /** reducer가 거부한 명령. `code`는 kebab-case, `message`는 사용자에게 보여줄 한글 사유다. */
@@ -218,9 +222,15 @@ export function reduceRecipe(recipe: CharacterRecipe, command: RecipeCommand, ca
     case "source/set": {
       const parsed = recipeSourceSchema.safeParse(command.source);
       if (!parsed.success) throw new RecipeCommandError("command-source-invalid", "캐릭터 소스 형식이 올바르지 않습니다.");
-      return { ...recipe, source: parsed.data };
+      // 같은 소스를 다시 고르면 같은 참조를 돌려준다(새 레시피·history 단계를 만들지 않는다).
+      if (stableStringify(parsed.data) === stableStringify(recipe.source)) return recipe;
+      // 절차·패키지 소스에서 키트로 처음 옮길 때만 키트 툰 기본값(램프 2단·림 끔, A-10)을 건다. 사용자가 이미 바꾼 값은 덮어쓰지 않고,
+      // 키트 안에서 베이스·버전만 바꾸는 전환은 셰이딩을 건드리지 않는다.
+      const shading = parsed.data.kind === "kit" && recipe.source.kind !== "kit" ? applyKitToonDefaults(recipe.shading) : recipe.shading;
+      return { ...recipe, source: parsed.data, shading };
     }
     case "recipe/load": {
+      // v1 레시피는 parseRecipe가 명시 마이그레이션(v1 → v2)으로 연다. 라벨은 describeCommandKo가 원래 버전을 보고 알린다.
       const parsed = parseRecipe(command.recipe);
       if (!parsed.ok) throw new RecipeCommandError(parsed.failure.code, parsed.failure.reasonKo);
       return parsed.recipe;
@@ -228,6 +238,23 @@ export function reduceRecipe(recipe: CharacterRecipe, command: RecipeCommand, ca
     default: {
       const exhaustive: never = command;
       throw new RecipeCommandError("command-unknown", `알 수 없는 명령입니다: ${String((exhaustive as { type?: unknown }).type)}`);
+    }
+  }
+}
+
+const KIT_BASE_LABELS_KO: Readonly<Record<KitBaseId, string>> = { female: "여성", male: "남성" };
+
+function describeSourceKo(source: RecipeSource): string {
+  switch (source.kind) {
+    case "package":
+      return `소스: 제작 패키지 ${source.characterId}`;
+    case "kit":
+      return `소스: 모듈식 키트 ${source.kitId} (${KIT_BASE_LABELS_KO[source.baseId]} 베이스)`;
+    case "procedural":
+      return "소스: 절차적";
+    default: {
+      const exhaustive: never = source;
+      return String((exhaustive as { kind?: unknown }).kind);
     }
   }
 }
@@ -256,9 +283,12 @@ export function describeCommandKo(command: RecipeCommand, catalog?: PresetCatalo
     case "physics/set-provider":
       return `물리 provider: ${PHYSICS_PROVIDER_LABELS_KO[command.provider] ?? command.provider}`;
     case "source/set":
-      return command.source.kind === "package" ? `소스: 제작 패키지 ${command.source.characterId}` : "소스: 절차적";
-    case "recipe/load":
-      return "레시피 불러오기";
+      return describeSourceKo(command.source);
+    case "recipe/load": {
+      // 호출자가 v1 파일의 JSON을 그대로 넘기면 `parseRecipe`가 v2로 명시 변환한다(reducer가 같은 변환을 한다). 타입은 v2지만 런타임 값은 1일 수 있다.
+      const version: unknown = command.recipe.version;
+      return version === 1 ? "레시피 불러오기(v1 → v2 변환)" : "레시피 불러오기";
+    }
     default: {
       const exhaustive: never = command;
       return String((exhaustive as { type?: unknown }).type);

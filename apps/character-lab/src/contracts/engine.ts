@@ -6,6 +6,7 @@ import type { ApplyPlan, ApplyReceipt } from "./apply-plan";
 import type { EngineBackend } from "./backend";
 import type { HumanoidBoneName } from "./bones";
 import type { CameraFraming, CaptureRequest, CaptureResult, CapturedRaster, ThumbnailRequest } from "./capture";
+import type { KitPlan } from "./character-kit";
 import type { LabFailure } from "./errors";
 import type { HumanoidModelData, PartIdPalette, PartRole } from "./mesh-data";
 import type { AuthoredPackagePlan } from "./package-manifest";
@@ -51,7 +52,8 @@ export type EngineStatus =
 
 export type CharacterSource =
   | { readonly kind: "procedural"; readonly model: HumanoidModelData }
-  | { readonly kind: "package"; readonly plan: AuthoredPackagePlan };
+  | { readonly kind: "package"; readonly plan: AuthoredPackagePlan }
+  | { readonly kind: "kit"; readonly plan: KitPlan };
 
 export interface SourceCapabilities {
   readonly capabilities: SlotCapabilityMap;

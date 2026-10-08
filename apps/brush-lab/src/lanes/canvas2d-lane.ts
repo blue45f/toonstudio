@@ -4,7 +4,7 @@ import { SUMI_ENGINE_VERSION } from "../engine/core/version";
 import { StrokePipeline } from "../engine/dynamics/stroke-pipeline";
 import { paperFor } from "../engine/raster/reference-renderer";
 
-import { emptyLaneStats, supportedReport, unavailableReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport, unavailableReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -17,6 +17,7 @@ import type {
   LaneKind,
   LaneStats,
   LaneStatus,
+  StrokeAbortReceipt,
   StrokeReceipt,
 } from "./lane";
 import type { Clock, DabInstance, LabImage, RawSample } from "../engine/core/types";
@@ -275,6 +276,24 @@ export class Canvas2dLane implements BrushEngineLane {
     this.lifetime.submits += receipt.submitCount;
     this.lifetime.lastReceipt = receipt;
     return receipt;
+  }
+
+  /**
+   * 진행 중인 획을 버린다: 획 캔버스만 비우고 상태를 idle로 되돌린다. 문서 캔버스는 endStroke의 drawImage에서만 바뀌므로 그대로다.
+   * 획 밖이면 no-op(멱등). 획 캔버스 비우기(clearRect)가 던져도 레인의 획 상태는 먼저 초기화해 다음 beginStroke를 막지 않는다.
+   */
+  abortStroke(): StrokeAbortReceipt {
+    this.assertAlive("abortStroke");
+    const pipeline = this.pipeline;
+    const strokeCtx = this.strokeCtx;
+    if (!pipeline || !strokeCtx) return noStrokeAbortReceipt();
+    const discarded = this.strokeDabs;
+    this.pipeline = null;
+    this.pipelineFinished = false;
+    this.program = null;
+    strokeCtx.clearRect(0, 0, this.width, this.height);
+    this.strokeDabs = 0;
+    return abortReceipt(discarded, true);
   }
 
   async readback(): Promise<LabImage> {

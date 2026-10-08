@@ -5,7 +5,7 @@ import { encodeLabImage, srgbToLinear } from "../engine/core/color";
 import { InvalidStateError } from "../engine/core/errors";
 import { SUMI_ENGINE_VERSION } from "../engine/core/version";
 
-import { emptyLaneStats, supportedReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -17,6 +17,7 @@ import type {
   LaneKind,
   LaneStats,
   LaneStatus,
+  StrokeAbortReceipt,
   StrokeReceipt,
 } from "./lane";
 import type { Clock, LabImage, RawSample, Rgba } from "../engine/core/types";
@@ -281,51 +282,65 @@ export class PlatformBaselineLane implements BrushEngineLane {
     const program = this.program;
     const ir = this.programIr;
     if (!program || !ir) throw new InvalidStateError("endStroke: beginStroke 전에 호출됐다");
-    const clock = this.clock;
-    const t0 = clock ? clock.now() : 0;
-    const modeled = applyStabilizer(modelRawInput(this.samples, this.calibration), ir.stabilizer);
-    const stroke: StrokeIR = {
-      id: `bench-${this.seed}`,
-      brushPresetId: program.id,
-      seed: this.seed,
-      color: { r: 0, g: 0, b: 0, a: 1 },
-      baseSizePx: program.tip.sizePx,
-      samples: modeled,
-    };
-    const outline = modeled.length > 0 ? strokeOutlinePath(ir, stroke) : { verbs: [] };
-    this.outline = outline;
-    const coverage = rasterizeEvenOdd(outline, this.width, this.height);
-    const [lr, lg, lb, la] = this.colorLinear;
-    const opacity = program.deposition.opacity * la;
-    for (let i = 0; i < coverage.length; i += 1) {
-      const a = (coverage[i] ?? 0) * opacity;
-      if (a <= 0) continue;
-      const o = i * 4;
-      const inv = 1 - a;
-      doc[o] = Math.fround(lr * a + (doc[o] ?? 0) * inv);
-      doc[o + 1] = Math.fround(lg * a + (doc[o + 1] ?? 0) * inv);
-      doc[o + 2] = Math.fround(lb * a + (doc[o + 2] ?? 0) * inv);
-      doc[o + 3] = Math.fround(a + (doc[o + 3] ?? 0) * inv);
+    try {
+      const clock = this.clock;
+      const t0 = clock ? clock.now() : 0;
+      const modeled = applyStabilizer(modelRawInput(this.samples, this.calibration), ir.stabilizer);
+      const stroke: StrokeIR = {
+        id: `bench-${this.seed}`,
+        brushPresetId: program.id,
+        seed: this.seed,
+        color: { r: 0, g: 0, b: 0, a: 1 },
+        baseSizePx: program.tip.sizePx,
+        samples: modeled,
+      };
+      const outline = modeled.length > 0 ? strokeOutlinePath(ir, stroke) : { verbs: [] };
+      this.outline = outline;
+      const coverage = rasterizeEvenOdd(outline, this.width, this.height);
+      const [lr, lg, lb, la] = this.colorLinear;
+      const opacity = program.deposition.opacity * la;
+      for (let i = 0; i < coverage.length; i += 1) {
+        const a = (coverage[i] ?? 0) * opacity;
+        if (a <= 0) continue;
+        const o = i * 4;
+        const inv = 1 - a;
+        doc[o] = Math.fround(lr * a + (doc[o] ?? 0) * inv);
+        doc[o + 1] = Math.fround(lg * a + (doc[o + 1] ?? 0) * inv);
+        doc[o + 2] = Math.fround(lb * a + (doc[o + 2] ?? 0) * inv);
+        doc[o + 3] = Math.fround(a + (doc[o + 3] ?? 0) * inv);
+      }
+      const dt = clock ? clock.now() - t0 : 0;
+      this.frameTimes.push(dt);
+      const receipt: StrokeReceipt = {
+        dabCount: modeled.length,
+        submitCount: 1,
+        gpuTimeMs: null,
+        timingSource: "unavailable",
+        frameTimesMs: [...this.frameTimes],
+        overflowDabs: 0,
+        poolTilesUsed: 0,
+      };
+      this.lifetime.strokes += 1;
+      this.lifetime.dabs += modeled.length;
+      this.lifetime.submits += 1;
+      this.lifetime.lastReceipt = receipt;
+      return receipt;
+    } finally {
+      // 마감이 어디서 실패해도 획 상태를 초기화한다: program이 남으면 다음 beginStroke가 '이전 획이 endStroke되지 않았다'로 영구히 막힌다.
+      this.resetStroke();
     }
-    const dt = clock ? clock.now() - t0 : 0;
-    this.frameTimes.push(dt);
-    const receipt: StrokeReceipt = {
-      dabCount: modeled.length,
-      submitCount: 1,
-      gpuTimeMs: null,
-      timingSource: "unavailable",
-      frameTimesMs: [...this.frameTimes],
-      overflowDabs: 0,
-      poolTilesUsed: 0,
-    };
-    this.program = null;
-    this.programIr = null;
-    this.samples = [];
-    this.lifetime.strokes += 1;
-    this.lifetime.dabs += modeled.length;
-    this.lifetime.submits += 1;
-    this.lifetime.lastReceipt = receipt;
-    return receipt;
+  }
+
+  /**
+   * 진행 중인 획을 버린다. 이 레인은 표본만 모아 두었다가 endStroke에서 문서에 한 번 래스터하므로, 모은 표본을 버리면 끝이다
+   * (문서는 endStroke 전에는 바뀌지 않는다). 획 밖이면 no-op(멱등).
+   */
+  abortStroke(): StrokeAbortReceipt {
+    this.assertAlive("abortStroke");
+    if (!this.program) return noStrokeAbortReceipt();
+    const discarded = this.samples.length;
+    this.resetStroke();
+    return abortReceipt(discarded, true);
   }
 
   async readback(): Promise<LabImage> {
@@ -335,6 +350,13 @@ export class PlatformBaselineLane implements BrushEngineLane {
 
   async readbackLinear(): Promise<Float32Array | null> {
     return new Float32Array(this.requireDocument("readbackLinear"));
+  }
+
+  /** 진행 중인 획의 상태(프로그램·표본·모델링 결과)를 비운다. 문서는 건드리지 않는다. */
+  private resetStroke(): void {
+    this.program = null;
+    this.programIr = null;
+    this.samples = [];
   }
 
   /** 마지막 획의 서비스 외곽선(테스트·시각화용). */

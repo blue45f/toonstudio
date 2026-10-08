@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultRecipe, createEmptyRaster, createPresetCatalog } from "../contracts";
+import { createDefaultRecipe, createEmptyRaster, createKitDefaultRecipe, createPresetCatalog } from "../contracts";
 import { presetEntryFixture, vocabularyCatalogEntries } from "../testing/recipe-fixtures";
 
 import { THUMBNAIL_CACHE_DEFAULT_LIMIT, createThumbnailCache, thumbnailCacheKey } from "./thumbnail-cache";
@@ -78,6 +78,51 @@ describe("state/thumbnail-cache", () => {
     expect(thumbnailCacheKey("pose/idle", posed, "pbr")).toBe(thumbnailCacheKey("pose/idle", base, "pbr"));
     const hand = { ...base, handPose: { left: { leftIndexDistal: [0, 0, 0, 1] as const }, right: {} } };
     expect(thumbnailCacheKey("hand-pose/fist", hand, "pbr")).toBe(thumbnailCacheKey("hand-pose/fist", base, "pbr"));
+  });
+
+  describe("키트 소스(키트 계약 4.11 썸네일)", () => {
+    it("키트 정체성(kitId·baseId·kitVersion·manifestSha256)이 바뀌면 키가 바뀐다 — 다른 베이스의 썸네일을 재사용하지 않는다", () => {
+      const female = createKitDefaultRecipe("female");
+      const key = thumbnailCacheKey("hair/soft-bob", female, "pbr", CATALOG);
+      const withSource = (patch: Record<string, unknown>) => ({ ...female, source: { ...female.source, ...patch } }) as typeof female;
+      expect(thumbnailCacheKey("hair/soft-bob", createKitDefaultRecipe("male"), "pbr", CATALOG)).not.toBe(key);
+      expect(thumbnailCacheKey("hair/soft-bob", withSource({ kitVersion: 2 }), "pbr", CATALOG)).not.toBe(key);
+      expect(thumbnailCacheKey("hair/soft-bob", withSource({ kitId: "toonstudio-kit-v2" }), "pbr", CATALOG)).not.toBe(key);
+      // 고정(manifestSha256)한 kit.json은 다른 에셋일 수 있으므로 별도 키다.
+      expect(thumbnailCacheKey("hair/soft-bob", withSource({ manifestSha256: "c".repeat(64) }), "pbr", CATALOG)).not.toBe(key);
+      // 같은 정체성이면 같은 키(결정적).
+      expect(thumbnailCacheKey("hair/soft-bob", createKitDefaultRecipe("female"), "pbr", CATALOG)).toBe(key);
+    });
+
+    it("키트와 절차 소스는 같은 슬롯 값이어도 키가 다르다", () => {
+      const kit = createKitDefaultRecipe();
+      const procedural = { ...kit, source: { kind: "procedural" as const } };
+      expect(thumbnailCacheKey("top/hoodie", kit, "pbr", CATALOG)).not.toBe(thumbnailCacheKey("top/hoodie", procedural, "pbr", CATALOG));
+    });
+
+    it("지오메트리 슬롯 카드: 자기 슬롯의 현재 선택은 키에 영향이 없고 다른 지오메트리 슬롯은 영향이 있다", () => {
+      const kit = createKitDefaultRecipe();
+      const key = thumbnailCacheKey("hair/twin-tail", kit, "toon", CATALOG);
+      expect(thumbnailCacheKey("hair/twin-tail", { ...kit, slots: { ...kit.slots, hair: "hair/hime-cut" } }, "toon", CATALOG)).toBe(key);
+      for (const [slot, presetId] of [
+        ["top", "top/hoodie"],
+        ["bottom", "bottom/shorts"],
+        ["shoes", "shoes/boots"],
+        ["accessory", "accessory/cap"],
+        ["irises", "irises/cat"],
+      ] as const) {
+        expect(thumbnailCacheKey("hair/twin-tail", { ...kit, slots: { ...kit.slots, [slot]: presetId } }, "toon", CATALOG), slot).not.toBe(key);
+      }
+      // 속옷 등 슬롯이 없는 파츠는 레시피 키에 없으므로 별도 입력이 없다. 페인트 레이어는 여전히 제외된다.
+      const painted = { ...kit, paint: { layers: [{ part: "skin" as const, width: 2, height: 2, pngBase64: "AAAA" }] } };
+      expect(thumbnailCacheKey("hair/twin-tail", painted, "toon", CATALOG)).toBe(key);
+    });
+
+    it("레시피 버전은 키에 들어가지 않는다 — v1에서 열어 v2로 변환한 레시피도 같은 캐시를 쓴다", () => {
+      const v2 = createDefaultRecipe();
+      const v1Like = { ...v2, version: 1 } as unknown as typeof v2;
+      expect(thumbnailCacheKey("hair/soft-bob", v1Like, "pbr", CATALOG)).toBe(thumbnailCacheKey("hair/soft-bob", v2, "pbr", CATALOG));
+    });
   });
 
   it("LRU: 한도를 넘으면 가장 오래 안 쓴 항목을 버리고 get이 항목을 최신으로 올린다", () => {

@@ -4,13 +4,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ALL_AVAILABLE_CAPABILITIES, SLOT_GROUPS, createDefaultRecipe, createInitialLabState, createPresetCatalog } from "../../../contracts";
 import { APPEARANCE_PRESETS } from "../../../presets";
+import { planApply } from "../../../state/apply-plan";
 import { createLabStore } from "../../../state/lab-store";
 import { MockLabProvider, createMockLabStore } from "../../../testing/mock-store";
 import { vocabularyCatalogEntries } from "../../../testing/recipe-fixtures";
 
 import { SlotPanel } from "./SlotPanel";
 
-import type { LabState, PresetCatalog, SlotCapabilityMap } from "../../../contracts";
+import type { LabState, PresetCatalog, SlotCapability, SlotCapabilityMap } from "../../../contracts";
+import type { ApplyLoop, ApplyLoopSnapshot } from "../apply-loop";
 
 afterEach(cleanup);
 
@@ -161,3 +163,140 @@ describe("SlotPanel", () => {
     expect(screen.getByText("슬롯 15개 · 프리셋 94개")).toBeTruthy();
   });
 });
+
+/** 남성 베이스처럼 일부 헤어만 제공하는 부분 지원 슬롯 */
+const MALE_HAIR: SlotCapability = {
+  status: "partial",
+  reasonKo: "제공 5/7종, 미제공: twin-tail, hime-cut",
+  unavailablePresets: { "hair/twin-tail": "남성 핏 미제작", "hair/hime-cut": "남성 핏 미제작(히메컷)" },
+};
+
+function openHair(): void {
+  fireEvent.click(screen.getByRole("tab", { name: /^헤어/u }));
+}
+
+describe("SlotPanel — 프리셋 단위 미제공(unavailablePresets)", () => {
+  it("미제공 프리셋 카드만 disabled이고 사유를 툴팁·카드 텍스트로 보이며 클릭해도 dispatch하지 않는다", () => {
+    const dispatchSpy = vi.fn();
+    render(
+      <MockLabProvider catalog={catalog()} dispatchSpy={dispatchSpy} initialState={{ capabilities: capabilities({ hair: MALE_HAIR }) }}>
+        <SlotPanel />
+      </MockLabProvider>,
+    );
+    openHair();
+    const twin = card("트윈테일");
+    expect(twin.disabled).toBe(true);
+    expect(twin.title).toContain("남성 핏 미제작");
+    expect(twin.getAttribute("data-preset-unavailable")).toBe("true");
+    expect(twin.className).toContain("cl-slot-card--preset-unavailable");
+    expect(within(twin).getByText("남성 핏 미제작")).toBeTruthy();
+    expect(within(twin).getByText("미제공", { selector: ".cl-slot-badge" })).toBeTruthy();
+    // 썸네일 자리는 "미제공"이다(썸네일 요청·표시 없음)
+    expect(within(twin).getByText("미제공", { selector: ".cl-slot-thumb" })).toBeTruthy();
+    expect(card("히메컷").disabled).toBe(true);
+    fireEvent.click(twin);
+    expect(dispatchSpy).not.toHaveBeenCalled();
+  });
+
+  it("제공되는 카드는 평소처럼 쓰고 카드마다 '부분 지원' 경고를 반복하지 않는다(탭 배지·캡션·툴팁으로만)", () => {
+    const dispatchSpy = vi.fn();
+    render(
+      <MockLabProvider catalog={catalog()} dispatchSpy={dispatchSpy} initialState={{ capabilities: capabilities({ hair: MALE_HAIR }) }}>
+        <SlotPanel />
+      </MockLabProvider>,
+    );
+    openHair();
+    const bob = card("소프트 보브");
+    expect(bob.disabled).toBe(false);
+    expect(within(bob).queryByText("부분 지원")).toBeNull();
+    expect(within(bob).queryByText(/제공 5\/7종/u)).toBeNull();
+    // 슬롯 수준 안내는 남는다: 탭 배지, 캡션, 카드 툴팁
+    expect(within(screen.getByRole("tab", { name: /^헤어/u })).getByText("부분 지원")).toBeTruthy();
+    expect(screen.getByText(/— 제공 5\/7종, 미제공: twin-tail, hime-cut/u)).toBeTruthy();
+    expect(bob.title).toContain("제공 5/7종");
+    fireEvent.click(bob);
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: "slot/apply", slot: "hair", presetId: "hair/soft-bob" });
+  });
+
+  it("카드 사유는 플래너가 그 프리셋을 unsupported로 계획하는 사유와 같은 문구다", () => {
+    const base = createDefaultRecipe();
+    const recipe = { ...base, slots: { ...base.slots, hair: "hair/hime-cut" as const } };
+    const caps = capabilities({ hair: MALE_HAIR });
+    const plan = planApply(recipe, caps, catalog());
+    const planned = plan.unsupported.find((item) => item.slot === "hair");
+    expect(planned?.presetId).toBe("hair/hime-cut");
+    render(
+      <MockLabProvider catalog={catalog()} initialState={{ capabilities: caps, recipe }}>
+        <SlotPanel />
+      </MockLabProvider>,
+    );
+    openHair();
+    const hime = card("히메컷");
+    expect(hime.title).toContain(planned?.reasonKo ?? "(플랜 사유 없음)");
+    expect(within(hime).getByText(planned?.reasonKo ?? "(플랜 사유 없음)")).toBeTruthy();
+  });
+
+  it("이미 선택된 프리셋이 미제공이면 선택 표시는 유지되고 다른 프리셋으로 대체되지 않으며 미적용 사유가 한 번만 보인다", () => {
+    const base = createDefaultRecipe();
+    const recipe = { ...base, slots: { ...base.slots, hair: "hair/twin-tail" as const } };
+    const caps = capabilities({ hair: MALE_HAIR });
+    const plan = planApply(recipe, caps, catalog());
+    const snapshot: ApplyLoopSnapshot = { plan, receipt: null, sequence: 1 };
+    const loop: ApplyLoop = {
+      start: () => () => undefined,
+      flush: async () => undefined,
+      lastPlan: () => snapshot.plan,
+      lastReceipt: () => snapshot.receipt,
+      snapshot: () => snapshot,
+      markSourceLoaded: () => undefined,
+      retrySource: () => undefined,
+      settled: () => true,
+      subscribe: () => () => undefined,
+    };
+    const dispatchSpy = vi.fn();
+    render(
+      <MockLabProvider catalog={catalog()} dispatchSpy={dispatchSpy} initialState={{ capabilities: caps, recipe }} shell={{ applyLoop: loop }}>
+        <SlotPanel />
+      </MockLabProvider>,
+    );
+    openHair();
+    const twin = card("트윈테일");
+    expect(twin.getAttribute("aria-pressed")).toBe("true");
+    expect(twin.disabled).toBe(true);
+    expect(within(twin).queryByText("미적용")).toBeNull();
+    expect(screen.getByText(/현재 선택이 적용되지 않았습니다: 남성 핏 미제작/u)).toBeTruthy();
+    expect(dispatchSpy).not.toHaveBeenCalled();
+  });
+
+  it("슬롯 전체가 미지원이면 슬롯 사유가 먼저이고 프리셋 단위 표시를 쓰지 않는다", () => {
+    const slotReason = "이 소스는 교체형 헤어를 제공하지 않습니다.";
+    render(
+      <MockLabProvider
+        catalog={catalog()}
+        initialState={{ capabilities: capabilities({ hair: { status: "unavailable", reasonKo: slotReason, unavailablePresets: { "hair/twin-tail": "프리셋 사유" } } }) }}
+      >
+        <SlotPanel />
+      </MockLabProvider>,
+    );
+    openHair();
+    const twin = card("트윈테일");
+    expect(twin.disabled).toBe(true);
+    expect(twin.title).toContain(slotReason);
+    expect(twin.title).not.toContain("프리셋 사유");
+    expect(twin.getAttribute("data-preset-unavailable")).toBeNull();
+    expect(within(twin).getByText("미지원")).toBeTruthy();
+  });
+
+  it("미제공 목록이 없는 부분 지원 슬롯은 기존처럼 카드마다 배지와 사유를 보인다", () => {
+    render(
+      <MockLabProvider catalog={catalog()} initialState={{ capabilities: capabilities({ hair: { status: "partial", reasonKo: "일부 스타일만 반영" } }) }}>
+        <SlotPanel />
+      </MockLabProvider>,
+    );
+    openHair();
+    expect(within(card("소프트 보브")).getByText("부분 지원")).toBeTruthy();
+    expect(within(card("소프트 보브")).getByText("일부 스타일만 반영")).toBeTruthy();
+    expect(card("소프트 보브").disabled).toBe(false);
+  });
+});
+

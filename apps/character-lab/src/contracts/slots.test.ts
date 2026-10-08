@@ -13,6 +13,8 @@ import {
   presetSlot,
 } from "./slots";
 
+import type { SlotCapability } from "./slots";
+
 describe("contracts/slots", () => {
   it("15슬롯 스냅샷이 SHAPER 구성과 같다", () => {
     expect(CHARACTER_SLOT_KINDS).toEqual([
@@ -57,6 +59,17 @@ describe("contracts/slots", () => {
     expect(isPresetId("hair/Soft Bob")).toBe(false);
     expect(isPresetId(42)).toBe(false);
     expect(() => presetSlot("nope/x" as never)).toThrow(/어휘 밖/u);
+  });
+
+  it("SlotCapability는 프리셋 단위 미제공 사유(unavailablePresets)를 선택 필드로 싣는다", () => {
+    const capability: SlotCapability = {
+      status: "partial",
+      reasonKo: "제공 6/7종, 미제공: twin-tail",
+      unavailablePresets: { "hair/twin-tail": "트윈테일 미제작" },
+    };
+    expect(capability.unavailablePresets?.["hair/twin-tail"]).toMatch(/[가-힣]/u);
+    // 기본 맵은 이 필드를 갖지 않는다(기존 소스의 동작이 바뀌지 않는다)
+    expect(ALL_AVAILABLE_CAPABILITIES.hair.unavailablePresets).toBeUndefined();
   });
 
   it("기본 능력 맵은 15슬롯을 모두 덮는다", () => {

@@ -6,6 +6,7 @@ import { failVisible } from "../../contracts";
 import { createMockRuntime } from "../../testing/mock-runtime";
 
 import { CharacterLabApp } from "./CharacterLabApp";
+import { useKitPlans } from "./lab-store-context";
 
 afterEach(cleanup);
 
@@ -20,6 +21,18 @@ describe("CharacterLabApp", () => {
     expect(engine.calls).toHaveLength(0);
     expect(screen.getByRole("navigation", { name: "슬롯 레일(15칸)" })).toBeTruthy();
     expect(screen.getByRole("tablist", { name: "인스펙터" })).toBeTruthy();
+  });
+
+  it("런타임의 키트 플랜 등록소를 컨텍스트로 넘긴다(패널이 useKitPlans로 닿는다)", () => {
+    let seen: unknown = null;
+    function Probe() {
+      seen = useKitPlans();
+      return null;
+    }
+    const { runtime } = createMockRuntime({ overrides: { panels: { ViewportPane: Probe } } });
+    render(<CharacterLabApp runtime={runtime} />);
+    expect(seen).toBe(runtime.kitPlans);
+    expect(seen).not.toBeNull();
   });
 
   it("실패 배너에 reasonKo를 보여주고 Undo/Redo 활성 상태를 반영한다", () => {

@@ -34,6 +34,7 @@ describe("app: 실제 영역 모듈 × NullEngine 통합", () => {
   beforeAll(async () => {
     harness = await createNullEngineHarness({ physicsProviders: createPhysicsProviderFactory() });
     runtime = composeCharacterLab({
+      defaultSource: "procedural",
       loadFactory: async () => async () => harness.engine,
       decideBackend: async (backend) => ({ ok: true, backend }),
       subdivisionLevels: 0,

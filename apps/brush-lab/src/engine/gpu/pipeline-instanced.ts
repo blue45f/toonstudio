@@ -76,6 +76,19 @@ export interface SumiInstancedStrokeReceipt {
   frames: number;
 }
 
+/** `abortStroke`의 결과(인스턴싱 런타임). */
+export interface SumiInstancedAbortReceipt {
+  /** 문서에 합성되지 않고 버려진 dab 수. 획 밖이면 0. */
+  discardedDabs: number;
+  /** 그 전까지 endStroke된 문서가 beginStroke 직전과 같은가(인스턴싱은 건식만 받으므로 장치가 살아 있으면 항상 true). */
+  documentPreserved: boolean;
+  reasonKo?: string;
+  /** abort가 낸 queue.submit 수(프레임을 내지 않은 획이면 0). */
+  submitCount: number;
+  /** abort가 낸 draw 호출 수(획 타깃 clear 패스는 draw가 아니다). */
+  drawCount: number;
+}
+
 export const STROKE_TARGET_FORMAT: GPUTextureFormat = "rgba16float";
 
 const VERTEX_LAYOUT: GPUVertexBufferLayout = {
@@ -448,6 +461,41 @@ export class SumiInstancedRuntime {
     const encodeMs = t0 !== null && this.clock ? this.clock.now() - t0 : null;
     this.frameTimes.push(encodeMs ?? 0);
     return { frameIndex, dabCount: total, submitCount: chunks, drawCount: draws, encodeMs };
+  }
+
+  /**
+   * 진행 중인 획을 문서에 합성하지 않고 버린다(동기). 획 밖이면 no-op이다.
+   * 문서 텍스처는 endStroke의 bake 패스에서만 바뀌므로 그대로다. 프레임을 낸 획이면 획 타깃을 clear하고 stroke_pass 0으로 encode를
+   * 다시 올려 present가 획 없는 문서를 보이게 한다(제출 1회, draw 1회). 프레임을 내지 않았다면 GPU 작업 없이 파라미터만 되돌린다.
+   * 장치가 손실됐다면 문서(GPU 메모리)를 잃었으므로 `documentPreserved: false`다.
+   */
+  abortStroke(): SumiInstancedAbortReceipt {
+    if (this.state === "disposed") throw new InvalidStateError("SumiInstancedRuntime: dispose 뒤에 호출됐다");
+    const program = this.program;
+    if (!program) return { discardedDabs: 0, documentPreserved: true, submitCount: 0, drawCount: 0 };
+    const discardedDabs = this.strokeDabs;
+    const framesSubmitted = this.frameIndex;
+    const lost = this.state === "device-lost" || this.lostInfo !== null;
+    this.program = null;
+    this.frameIndex = 0;
+    this.strokeDabs = 0;
+    this.strokeSubmits = 0;
+    this.frameTimes = [];
+    this.timer.abandon();
+    if (this.state === "in-stroke") this.state = "ready";
+    if (lost) {
+      return { discardedDabs, documentPreserved: false, reasonKo: "GPU 장치가 손실돼 문서(GPU 메모리)를 잃었다", submitCount: 0, drawCount: 0 };
+    }
+    // beginStroke가 stroke_pass 1로 올려 둔 파라미터를 되돌린다(큐 쓰기, 제출 아님).
+    this.device.queue.writeBuffer(this.res.params, 0, encodeInstParams(instParamsForProgram(program, this.width, this.height, 0)));
+    if (framesSubmitted === 0) return { discardedDabs, documentPreserved: true, submitCount: 0, drawCount: 0 };
+    const encoder = this.device.createCommandEncoder({ label: "inst-abort-stroke" });
+    encoder.beginRenderPass({ label: "inst-abort-stroke-clear", colorAttachments: [this.colorAttachment(this.res.strokeTex.createView(), "clear")] }).end();
+    this.encodeEncodePass(encoder);
+    this.encodePresentPass(encoder);
+    this.device.queue.submit([encoder.finish()]);
+    this.submits += 1;
+    return { discardedDabs, documentPreserved: true, submitCount: 1, drawCount: 1 };
   }
 
   /** bake(핑퐁) → 획 clear → encode(stroke_pass 0) → present. */

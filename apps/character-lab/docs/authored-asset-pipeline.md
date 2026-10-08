@@ -162,3 +162,9 @@ Blender 실행 없이 파이프라인 출력에서 패키지를 다시 조립하
   `VRM_Addon_for_Blender-Extension-4_5_0.zip` SHA-256 `e5e0f923…a35a` 일치), `--check` exit 0.
 - 파이프라인 두 건 모두 `TOONSTUDIO_CHARACTER_PIPELINE_COMPLETE … "passed": true, "score": 100`.
 - Babylon NullEngine 로드 대조와 저장소 검사(`pnpm harness:verify` 등) 결과는 작업 보고에 기록했다.
+
+## 모듈식 캐릭터 키트 (별도 레인)
+
+이 문서는 **제작 패키지**(Orion 등, 완성 GLB 한 벌) 레인이다. 베이스 바디 + 파츠별 GLB를 조립하는 **모듈식 키트** 레인은 계약 [`authored-kit-spec.md`](authored-kit-spec.md),
+사용 안내 [`../README.md`](../README.md) §9, 뷰어 [`kit-preview.md`](kit-preview.md), 구현 상태 [`parity/render.md`](parity/render.md) §10을 본다.
+

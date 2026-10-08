@@ -3,7 +3,18 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { installCanvasStub } from "../app/testing/canvas-stub";
 
-import { clearCanvas, configureWebGpuCanvas, presentLabImage, presentPreview } from "./canvas-present";
+import {
+  clearCanvas,
+  configureWebGpuCanvas,
+  displayScale,
+  documentTileCount,
+  fitDocumentSize,
+  flattenOnWhite,
+  MAX_DOCUMENT_SIDE_PX,
+  MAX_DOCUMENT_TILES,
+  presentLabImage,
+  presentPreview,
+} from "./canvas-present";
 
 import type { CanvasStubRecorder } from "../app/testing/canvas-stub";
 import type { LabImage } from "../engine/core/types";
@@ -82,5 +93,60 @@ describe("canvas-present", () => {
     const ctx = configureWebGpuCanvas(document.createElement("canvas"), device, "rgba8unorm");
     expect(typeof ctx.getCurrentTexture).toBe("function");
     expect(stub.configureCalls).toEqual([{ device, format: "rgba8unorm", alphaMode: "premultiplied" }]);
+  });
+});
+
+describe("그리기 화면: 문서 크기·표시 스케일", () => {
+  it("fitDocumentSize는 dpr 배율로 문서 px를 정하고 한도 안이면 줄이지 않는다", () => {
+    const r = fitDocumentSize(600, 400, 2);
+    expect(r.css).toEqual({ width: 600, height: 400 });
+    expect(r.document).toEqual({ width: 1200, height: 800 });
+    expect(r.reduced).toBe(false);
+    // 900×600 CSS px × dpr 2는 1800×1200 = 8475 타일이라 6000 타일 한도로 줄어든다.
+    const big = fitDocumentSize(900, 600, 2);
+    expect(big.css).toEqual({ width: 900, height: 600 });
+    expect(big.reduced).toBe(true);
+    expect(documentTileCount(big.document)).toBeLessThanOrEqual(MAX_DOCUMENT_TILES);
+    const small = fitDocumentSize(800, 500, 1);
+    expect(small.document).toEqual({ width: 800, height: 500 });
+    expect(small.reduced).toBe(false);
+  });
+
+  it("한 변 2048 px·6000 타일 한도를 넘으면 같은 종횡비로 줄이고 reduced로 알린다", () => {
+    const huge = fitDocumentSize(3000, 1000, 1);
+    expect(Math.max(huge.document.width, huge.document.height)).toBeLessThanOrEqual(MAX_DOCUMENT_SIDE_PX);
+    expect(documentTileCount(huge.document)).toBeLessThanOrEqual(MAX_DOCUMENT_TILES);
+    expect(huge.reduced).toBe(true);
+    expect(huge.document.width / huge.document.height).toBeCloseTo(3, 1);
+    const squareHuge = fitDocumentSize(2048, 2048, 1);
+    expect(documentTileCount(squareHuge.document)).toBeLessThanOrEqual(MAX_DOCUMENT_TILES);
+  });
+
+  it("dpr은 1..2로 클램프하고 작은 영역도 64 px 이상으로 맞춘다", () => {
+    expect(fitDocumentSize(400, 300, 5).document).toEqual({ width: 800, height: 600 });
+    expect(fitDocumentSize(400, 300, 0).document).toEqual({ width: 400, height: 300 });
+    expect(fitDocumentSize(400, 300, Number.NaN).document).toEqual({ width: 400, height: 300 });
+    expect(fitDocumentSize(10, 10, 1).document).toEqual({ width: 64, height: 64 });
+  });
+
+  it("documentTileCount는 16 px 타일을 올림으로 센다", () => {
+    expect(documentTileCount({ width: 1024, height: 640 })).toBe(64 * 40);
+    expect(documentTileCount({ width: 17, height: 1 })).toBe(2);
+  });
+
+  it("displayScale은 컨테이너에 맞추되 확대하지 않는다", () => {
+    expect(displayScale({ width: 1024, height: 640 }, 512)).toBe(0.5);
+    expect(displayScale({ width: 512, height: 512 }, 2000)).toBe(1);
+    expect(displayScale({ width: 512, height: 512 }, 0)).toBe(1);
+  });
+
+  it("flattenOnWhite는 투명 readback을 흰 종이 위에 합성한 불투명 이미지로 만들고 입력을 바꾸지 않는다", () => {
+    const data = new Uint8ClampedArray([0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 0, 128, 200, 100, 50, 255]);
+    const src: LabImage = { width: 4, height: 1, data };
+    const out = flattenOnWhite(src);
+    expect(Array.from(out.data)).toEqual([0, 0, 0, 255, 255, 255, 255, 255, 127, 127, 127, 255, 200, 100, 50, 255]);
+    expect(data[3]).toBe(255);
+    expect(data[7]).toBe(0);
+    expect(out.width).toBe(4);
   });
 });

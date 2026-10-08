@@ -6,6 +6,8 @@
  * - parts = 파츠 레이아웃(partId·역할·variant)별 가시성·재질 프리셋·색.
  * - 능력이 `unavailable`이거나 `requires`가 불충족이면 `unsupported`에 사유를 넣고 그 슬롯을 적용하지 않는다
  *   (프리셋 patch의 파라미터 morph 제외, 파츠는 소스 기본값 유지). 대체 프리셋은 고르지 않는다.
+ * - 슬롯 능력이 available/partial이어도 선택한 프리셋이 `SlotCapability.unavailablePresets`(프리셋 단위 미제공, 키트 계약 D10)에
+ *   있으면 그 슬롯을 같은 방식으로 `unsupported`(사유 = 맵의 한글 문구)로 계획한다. 다른 프리셋으로 바꾸지 않는다.
  * - `conflictsWith` 충돌과 `partial` 능력은 `partial` 사유로 노출한다(적용은 된다).
  *
  * 플래너 계약(`ApplyPlanner`)에는 파츠 레이아웃·소스 feature가 없으므로 `createApplyPlanner`로 주입한다.
@@ -43,6 +45,7 @@ import type {
   PresetId,
   Quat,
   RecipeColorKey,
+  SlotCapability,
   SlotCapabilityMap,
   SlotKind,
   UnsupportedSlot,
@@ -147,6 +150,7 @@ const ROLE_MATERIAL_DEFAULTS: Readonly<Record<PartRole, MaterialPresetId>> = {
   bottom: "cloth-denim",
   shoes: "leather",
   accessory: "plastic",
+  underwear: "cloth-cotton",
 };
 
 /** 프리셋별 재질 프리셋(의상·신발·액세서리). 없으면 역할 기본값. */
@@ -175,6 +179,19 @@ export const PRESET_MATERIALS: Readonly<Partial<Record<PresetId, MaterialPresetI
 
 export function materialPresetFor(role: PartRole, presetId: PresetId | null): MaterialPresetId {
   return (presetId !== null ? PRESET_MATERIALS[presetId] : undefined) ?? ROLE_MATERIAL_DEFAULTS[role];
+}
+
+/**
+ * 프리셋 단위 미제공 사유(`SlotCapability.unavailablePresets`). 제공되는 프리셋이면 null.
+ * 슬롯 상태(`unavailable`)와는 별개다: 슬롯 전체가 미지원이면 호출자가 슬롯 사유를 먼저 쓴다.
+ * 카드 비활성(SlotPanel)과 플래너가 같은 판정을 쓰도록 여기 한 곳에 둔다. 사유가 비어 있어도 한글 기본 문구를 돌려준다.
+ */
+export function presetUnavailableReasonKo(capability: SlotCapability, presetId: PresetId): string | null {
+  const table = capability.unavailablePresets;
+  if (!table || !Object.hasOwn(table, presetId)) return null;
+  const reason = table[presetId];
+  if (typeof reason === "string" && reason.trim() !== "") return reason;
+  return `${SLOT_LABELS_KO[presetSlot(presetId)]} 프리셋 ${presetName(presetId)}을(를) 이 소스가 제공하지 않습니다.`;
 }
 
 interface FeatureSets {
@@ -283,6 +300,13 @@ export function createApplyPlanner(options: ApplyPlannerOptions = {}): DetailedA
         continue;
       }
       if (presetId === null) continue;
+      // 프리셋 단위 미제공: 슬롯은 available/partial이어도 이 프리셋은 소스에 없다. 다른 프리셋으로 바꾸지 않고 미적용 사유만 노출한다.
+      const presetUnavailable = presetUnavailableReasonKo(capability, presetId);
+      if (presetUnavailable !== null) {
+        unsupportedSlots.add(slot);
+        unsupported.push({ slot, presetId, reasonKo: presetUnavailable });
+        continue;
+      }
       const entry = catalog.get(presetId);
       if (!entry) {
         unsupportedSlots.add(slot);

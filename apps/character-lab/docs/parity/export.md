@@ -82,3 +82,11 @@
 ## 6. 브라우저 미검증 항목(요약)
 
 실제 GPU readback 행 순서·premultiply 상수, 페인트 텍스처의 UV 방향·반영, `<a download>` 저장 동작, ag-psd 브라우저 캔버스 등록 후 PSD를 Photoshop/CLIP STUDIO PAINT에서 열기, PSD 레이어 재합성 MAE 실측, GLB 실파일 재import, 2048² PNG/PSD 처리 시간.
+
+## 7. 키트 소스 행 (KT-12, 2026-10-08)
+
+| 항목 | 구현 상태 | Node 검증(테스트 파일) | 브라우저 검증 | 비고 |
+| --- | --- | --- | --- | --- |
+| GLB 내보내기: 키트 조립 씬(스킨 1개·68 joint, 숨긴 몸 삼각형 제외, 현재 morph influence를 메시 `weights`로, recolor 파츠 `baseColorFactor` = 현재 색) | 구현됨 | `render/babylon-glb-sparse-export.test.ts`(키트 케이스 5, NullEngine) | **미검증**(외부 뷰어에서 열기) | 계약 8.2 '미검증' 문구가 이 테스트로 확정됨 |
+| PSD 마스크 레이어에 새 역할 `underwear`('속옷') 반영 | 구현됨 | `export/psd-plan.test.ts`(8), `export/export-session.test.ts`(10) | 미검증 | 마스크 단위는 역할이라 눈 L/R은 한 레이어 |
+| 페인트 키트 경고(`paint/paint-kit-warning.ts`): `skin`·`head` 외 역할은 의상 변형을 바꾸면 UV가 달라져 그림이 어긋남 → PaintPanel 경고, 레시피 불러온 직후 `kitPaintWarningsForLayers` | 구현됨 | `paint/paint-kit-warning.test.ts`(4), `app/shell/panels/PaintPanel.test.tsx`(8, 키트 경고 3) | 미검증 | 막지 않고 경고만 한다. 정식 해결(레이어를 변형 id로 키잉)은 레시피 v3 후보 |

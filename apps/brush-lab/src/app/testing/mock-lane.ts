@@ -1,5 +1,5 @@
 import { InvalidStateError, LaneUnavailableError } from "../../engine/core/errors";
-import { emptyLaneStats, supportedReport, unavailableReport } from "../../lanes/lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport, unavailableReport } from "../../lanes/lane";
 
 import type { LaneReasonCode } from "../../engine/core/errors";
 import type { LabImage, RawSample } from "../../engine/core/types";
@@ -15,6 +15,7 @@ import type {
   LaneKind,
   LaneStatus,
   LaneStats,
+  StrokeAbortReceipt,
   StrokeReceipt,
 } from "../../lanes/lane";
 
@@ -22,6 +23,11 @@ import type {
  * 테스트용 모의 레인. 표본 위치에 압력·팁 크기 비례 정사각형을 찍는 결정적 래스터라이저로,
  * 레인 호출 순서(probe → init → beginStroke → addSamples* → endStroke → readback)를 기록하고
  * 계약 위반(init 전 beginStroke 등)은 `InvalidStateError`로 던진다.
+ *
+ * `abortStroke`는 `abort` 옵션으로 세 가지 레인 유형을 흉내 낸다(실제 레인의 계약 변형):
+ * - `"restore"`(기본): 획 시작 시점 이미지로 되돌리고 `documentPreserved: true`(CPU 참조·WASM·건식 레인).
+ * - `"lossy"`: 상태는 idle로 돌리지만 문서는 복원하지 못해 `documentPreserved: false`와 사유를 돌려준다(GPU 습식 레인).
+ * - `"throw"`: 던지고 획 상태를 그대로 둔다(정리 자체가 실패하는 레인 — 세션은 레인을 교체해야 한다).
  */
 
 export interface MockLaneOptions {
@@ -37,6 +43,8 @@ export interface MockLaneOptions {
   color?: [number, number, number];
   /** 선형 버퍼를 제공하지 않는 레인(canvas2d 모의)이면 true. */
   noLinear?: boolean;
+  /** abortStroke 동작. 기본 "restore". */
+  abort?: "restore" | "lossy" | "throw";
 }
 
 export interface MockLane extends BrushEngineLane {
@@ -48,6 +56,8 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
   const color = opts.color ?? [0, 0, 0];
   let init: LaneInit | null = null;
   let image: Uint8ClampedArray | null = null;
+  /** beginStroke 시점 이미지(abortStroke가 되돌린다). 획 밖이면 null. */
+  let strokeStartImage: Uint8ClampedArray | null = null;
   let program: BrushProgram | null = null;
   let inStroke = false;
   let frameIndex = 0;
@@ -103,6 +113,7 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
       if (inStroke) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
       program = p;
       inStroke = true;
+      strokeStartImage = image ? image.slice() : null;
       frameIndex = 0;
       strokeDabs = 0;
       frameTimes = [];
@@ -131,6 +142,7 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
       calls.push("endStroke");
       if (!inStroke) throw new InvalidStateError("beginStroke 전에 endStroke를 호출했다");
       inStroke = false;
+      strokeStartImage = null;
       const receipt: StrokeReceipt = {
         dabCount: strokeDabs,
         submitCount: frameTimes.length,
@@ -145,6 +157,21 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
       stats.submits = submits;
       stats.lastReceipt = receipt;
       return receipt;
+    },
+    abortStroke(): StrokeAbortReceipt {
+      calls.push("abortStroke");
+      if (!inStroke) return noStrokeAbortReceipt();
+      const discarded = strokeDabs;
+      const mode = opts.abort ?? "restore";
+      if (mode === "throw") throw new Error("모의 레인 abortStroke 실패");
+      inStroke = false;
+      if (mode === "lossy") {
+        strokeStartImage = null;
+        return abortReceipt(discarded, false, "모의 레인은 획 도중 상태를 되돌릴 수 없다");
+      }
+      if (image && strokeStartImage) image.set(strokeStartImage);
+      strokeStartImage = null;
+      return abortReceipt(discarded, true);
     },
     async readback(): Promise<LabImage> {
       calls.push("readback");
@@ -181,6 +208,7 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
       calls.push("dispose");
       init = null;
       image = null;
+      strokeStartImage = null;
       inStroke = false;
     },
   };

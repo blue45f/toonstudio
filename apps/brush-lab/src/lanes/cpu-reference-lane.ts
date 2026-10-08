@@ -3,7 +3,7 @@ import { SUMI_ENGINE_VERSION } from "../engine/core/version";
 import { StrokePipeline } from "../engine/dynamics/stroke-pipeline";
 import { Surface } from "../engine/raster/reference-renderer";
 
-import { emptyLaneStats, supportedReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -15,6 +15,7 @@ import type {
   LaneKind,
   LaneStats,
   LaneStatus,
+  StrokeAbortReceipt,
   StrokeReceipt,
 } from "./lane";
 import type { Clock, LabImage, RawSample } from "../engine/core/types";
@@ -129,6 +130,22 @@ export class CpuReferenceLane implements BrushEngineLane {
     this.lifetime.submits += receipt.submitCount;
     this.lifetime.lastReceipt = receipt;
     return receipt;
+  }
+
+  /**
+   * 진행 중인 획을 버린다. 문서는 endStroke에서만 바뀌므로 건식은 획 레이어만 비우면 되고, 습식(수채·유화)·임파스토는
+   * `Surface`의 타일 단위 copy-on-write 저널로 beginStroke 직전 상태(습식 층·높이·픽업)까지 복원한다.
+   * 획 밖이면 no-op(멱등). 복원하지 못한 경우(endStroke 합성 도중 실패)에는 `documentPreserved: false`와 사유를 돌려준다.
+   */
+  abortStroke(): StrokeAbortReceipt {
+    this.assertAlive("abortStroke");
+    const surface = this.surface;
+    if (!surface) return noStrokeAbortReceipt();
+    const result = surface.abortStroke();
+    this.pipeline = null;
+    this.frameDabs = 0;
+    if (!result.aborted) return noStrokeAbortReceipt();
+    return abortReceipt(result.discardedDabs, result.restored, result.reasonKo);
   }
 
   async readback(): Promise<LabImage> {
