@@ -39,6 +39,18 @@ describe("real editor comment selection adapter", () => {
     expect(selectStudioEditorCommentTarget({ pageId: "second", elementId: "logo", master: true }, port)).toBe(true);
     expect(port.applySelection).toHaveBeenCalledWith({ elementId: "logo", master: true, point: null });
   });
+  it("routes pdf-page anchors to the missing-page path instead of a studio page", () => {
+    const { port } = fixture();
+    const target = studioEditorTargetForComment({
+      type: "pdf-page",
+      documentId: "sha256-deadbeef",
+      sourcePageIndex: 0,
+    });
+    expect(target).toEqual({ pageId: "" });
+    expect(selectStudioEditorCommentTarget(target, port)).toBe(false);
+    expect(port.onMissing).toHaveBeenCalledWith("page");
+    expect(port.applySelection).not.toHaveBeenCalled();
+  });
   it("retains normalized ordinary comment points and never applies late selection after an authority change", () => {
     const { port } = fixture();
     expect(selectStudioEditorCommentTarget(studioEditorTargetForComment({ type: "point", pageId: "second", x: 0.25, y: 0.5 }), port)).toBe(true);

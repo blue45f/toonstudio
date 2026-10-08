@@ -315,7 +315,11 @@ export function projectStudioCanvasCommentPins(options: {
   }>();
 
   for (const thread of options.threads) {
-    if (thread.resolved || thread.anchor.pageId !== options.pageId) continue;
+    if (
+      thread.resolved
+      || thread.anchor.type === "pdf-page"
+      || thread.anchor.pageId !== options.pageId
+    ) continue;
     const preview = studioCommentThreadPreview(thread);
     const key = canonicalStudioCommentAnchorKey(thread.anchor);
     const existing = grouped.get(key);

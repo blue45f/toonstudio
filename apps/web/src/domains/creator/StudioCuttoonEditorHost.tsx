@@ -13698,6 +13698,8 @@ export function StudioCuttoonEditor({
   }, [pages, masterEditMode, selected, pointCommentAnchor, activePage, activePageIndex]);
 
   const isStudioCommentAnchorValid = useCallback((anchor: StudioCommentAnchor): boolean => {
+    // PDF 워크벤치 앵커는 스튜디오 페이지에 속하지 않으므로 이 문서에서는 유효할 수 없다.
+    if (anchor.type === "pdf-page") return false;
     const page = pages.find((candidate) => candidate.id === anchor.pageId);
     if (!page) return false;
     if (anchor.type === "page") return true;
@@ -13743,7 +13745,9 @@ export function StudioCuttoonEditor({
       || masterEditMode
         ? []
         : studioCommentViewDocument.threads.filter(
-            (thread) => !thread.resolved && thread.anchor.pageId === activePage.id
+            (thread) => !thread.resolved
+              && thread.anchor.type !== "pdf-page"
+              && thread.anchor.pageId === activePage.id
           ),
     [studioCommentPinsHidden, studioTeamCommentsWorkId, studioTeamCommentCapabilities?.view, expectsSharedDocument, sharedDocument?.capabilities.view, masterEditMode, studioCommentViewDocument.threads, activePage.id]
   );
@@ -13785,7 +13789,9 @@ export function StudioCuttoonEditor({
               ? "컷 댓글"
               : anchor.type === "point"
                 ? "위치 댓글"
-                : "요소 댓글"),
+                : anchor.type === "pdf-page"
+                  ? "PDF 페이지 댓글"
+                  : "요소 댓글"),
       })
     : [], [studioOpenCanvasThreads, activePage.id, canvasH, studioCanvasCommentBounds, studioCommentAnchorOptions, studioTeamUnreadCommentIdSet]);
   const studioCommentPinReanchorableThreadIds = useMemo(() => {
