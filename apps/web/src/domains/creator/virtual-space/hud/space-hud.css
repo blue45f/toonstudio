@@ -117,6 +117,8 @@ body:has(.space-hud) nav[data-site-product] { display: none !important; }
   z-index: 14;
   flex-direction: column;
   align-items: center;
+  /* 패널·미니맵이 열리면 이 칸이 250px대까지 좁아진다. 안쪽 카드가 칸 너비에 맞춰 줄도록 컨테이너로 둔다. */
+  container: space-top / inline-size;
 }
 .space-hud__slot--top-right {
   top: calc(var(--space-gutter) + var(--space-safe-top));
@@ -481,7 +483,15 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   color: var(--color-fg);
   font-size: 13px;
   font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
+}
+/* 칸이 좁아져도 버튼 글자가 두 줄로 깨지지 않고, 줄어드는 쪽은 이름 칸이다. 배지는 이름이 잘리기 전에 먼저 접는다. */
+.space-proximity__talk { flex: none; }
+.space-proximity__text { flex: 1 1 auto; }
+@container space-top (max-width: 300px) {
+  .space-proximity__npc-badge { display: none; }
+  .space-proximity__text { max-width: none; }
 }
 
 /* ── 우상단 미니맵 ─────────────────────────────────────────── */

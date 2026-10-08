@@ -47,4 +47,10 @@ describe("가상 스튜디오 컨트롤 크기 계약", () => {
     expect(spaceCss).toMatch(/\.studio-vspace-character-picker__preview\{display:grid;grid-template:minmax\(0,1fr\)\/minmax\(0,1fr\);[^}]*height:100px/u);
     expect(spaceCss).toContain("min-height:140px");
   });
+
+  it("패널이 열려 상단 중앙 칸이 좁아져도 NPC 카드의 대화 버튼이 두 줄로 깨지지 않는다", () => {
+    expect(hudCss).toMatch(/\.space-hud__slot--top-center \{[^}]*container: space-top \/ inline-size;/u);
+    expect(hudCss).toMatch(/\.space-proximity__talk \{[^}]*white-space: nowrap;/u);
+    expect(hudCss).toMatch(/@container space-top \(max-width: 300px\) \{\s*\.space-proximity__npc-badge \{ display: none; \}/u);
+  });
 });
