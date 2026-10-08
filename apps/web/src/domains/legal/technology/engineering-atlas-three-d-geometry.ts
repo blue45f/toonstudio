@@ -39,14 +39,14 @@ export const OPENCASCADE_MANIFOLD_PRECISION: EngineeringAtlasEntry = {
       "All three are wrapped so that they say so when they cannot do the job. Before Manifold runs, inputs are checked for finite coordinates, no triangles with repeated vertex numbers or zero area, and a work estimate (the two meshes' triangle counts multiplied) of at most 2 billion, with each mesh capped at 250,000 vertices and 500,000 triangles; it accepts one at a time and refuses a second. OpenCascade runs only 19 fixed operations inside a Worker with a default 120-second limit. opencascade.js 1.1.1 corrupts an internal table when objects are deleted, so the 3 affected operations run in a disposable Worker that is discarded whole afterwards.",
     ),
     t(
-      "왜 하나로 합치지 않았을까요? OpenCascade는 약 63MB의 WebAssembly라 미리보기마다 불러올 수 없고, 메시 불리언은 필렛 같은 곡면 연산을 못 하며, BVH 방식은 속도 대신 보장을 내려놓기 때문입니다. 그래서 각자 필요한 순간에만 지연 로드합니다. 다만 상태는 실험입니다. Hybrid DCC 기능 목록 178개는 스스로 모두 '커널 출하' 단계로만 표시하고, 화면 연결·문서 통합·저장·협업·브라우저 검증·운영 활성화 여섯 단계는 미검증으로 둡니다. 속도 측정값은 이 카드에 없습니다.",
-      "Why not merge them? OpenCascade is about 63 MB of WebAssembly, too heavy to load for every preview; a mesh boolean cannot do curved operations such as fillets; and the BVH approach trades the guarantee for speed. So each loads only when it is needed. The status is experimental, though: the Hybrid DCC list marks all 178 of its features as merely 'kernel-shipped' and leaves six later stages unverified (UI wiring, document integration, persistence, collaboration, browser verification, production activation). This card has no speed measurements.",
+      "왜 하나로 합치지 않았을까요? OpenCascade는 약 63MiB의 WebAssembly라 미리보기마다 불러올 수 없고, 메시 불리언은 필렛 같은 곡면 연산을 못 하며, BVH 방식은 속도 대신 보장을 내려놓기 때문입니다. 그래서 각자 필요한 순간에만 지연 로드합니다. 다만 상태는 실험입니다. Hybrid DCC 기능 목록 178개는 스스로 모두 '커널 출하' 단계로만 표시하고, 화면 연결·문서 통합·저장·협업·브라우저 검증·운영 활성화 여섯 단계는 미검증으로 둡니다. 속도 측정값은 이 카드에 없습니다.",
+      "Why not merge them? OpenCascade is about 63 MiB of WebAssembly, too heavy to load for every preview; a mesh boolean cannot do curved operations such as fillets; and the BVH approach trades the guarantee for speed. So each loads only when it is needed. The status is experimental, though: the Hybrid DCC list marks all 178 of its features as merely 'kernel-shipped' and leaves six later stages unverified (UI wiring, document integration, persistence, collaboration, browser verification, production activation). This card has no speed measurements.",
     ),
   ],
   keyPoints: [
     t("미리보기·확정·정밀, 일이 다른 세 계산기를 따로 둡니다", "Three calculators for three jobs: preview, final and exact"),
     t("Manifold는 입력부터 검사하고 SHA-256 영수증을 남깁니다", "Manifold checks inputs first and leaves SHA-256 receipts"),
-    t("OpenCascade는 63MB라 필요할 때만 불러와 Worker에서 돌립니다", "OpenCascade is 63 MB, so it loads on demand inside a Worker"),
+    t("OpenCascade는 63MiB라 필요할 때만 불러와 Worker에서 돌립니다", "OpenCascade is 63 MiB, so it loads on demand inside a Worker"),
     t("실험 단계: 178개 기능 모두 '커널 출하'까지만 확인됩니다", "Experimental: all 178 features are confirmed only as kernel-shipped"),
   ],
   diagram: {
@@ -79,7 +79,7 @@ export const OPENCASCADE_MANIFOLD_PRECISION: EngineeringAtlasEntry = {
       {
         id: "cad",
         label: t("정밀한 칼 · 도면급", "Exact blade: drawing-grade"),
-        sub: t("곡면 수식 그대로 · 필렛·STEP · 63MB 지연 로드", "Keeps curve equations, fillets and STEP, 63 MB lazy load"),
+        sub: t("곡면 수식 그대로 · 필렛·STEP · 63MiB 지연 로드", "Keeps curve equations, fillets and STEP, 63 MiB lazy load"),
         tone: "local",
         chips: ["OpenCascade", "Web Worker"],
       },
@@ -138,10 +138,10 @@ export const OPENCASCADE_MANIFOLD_PRECISION: EngineeringAtlasEntry = {
     {
       feature: t("실브라우저 검사", "Real-browser check"),
       role: t(
-        "제품 화면에서 정밀 박스를 만든 뒤 구멍 빼기를 눌러 삼각형 수를 확인하는 E2E 명세가 있습니다. 이 카드는 실행 이력을 확인하지 못했습니다.",
-        "An E2E spec makes a precise box on the product screen, presses cut-a-hole and checks the triangle count. This card could not confirm a run history.",
+        "실제 Hybrid DCC 패널을 올린 브라우저 하네스 페이지(제품 화면 자체는 아님)에서 정밀 박스를 만들고 구멍 빼기를 눌러 삼각형 수를 확인하는 E2E 명세가 있습니다. 이 카드는 실행 이력을 확인하지 못했습니다.",
+        "An E2E spec, run on a browser harness page that mounts the real Hybrid DCC panel (not the product screen itself), makes a precise box, presses cut-a-hole and checks the triangle count. This card could not confirm a run history.",
       ),
-      paths: ["e2e/hybrid-dcc-industrial.spec.ts"],
+      paths: ["e2e/hybrid-dcc-industrial.spec.ts", "apps/web/tools/browser-harnesses/hybrid-dcc-e2e.html"],
     },
   ],
   samples: [
@@ -320,8 +320,8 @@ export const withinBudget = (leftTriangles: number, rightTriangles: number): boo
       {
         question: t("왜 계산기를 셋이나 쓰나요?", "Why use three calculators?"),
         answer: t(
-          "목적이 다르기 때문입니다. 빠른 미리보기는 보장을 내려놓고, 확정 결과는 닫힌 솔리드를 요구하고, 곡면과 치수는 삼각형이 아니라 곡면 수식으로 다뤄야 합니다. OpenCascade는 약 63MB라서 모든 미리보기에 쓸 수도 없습니다.",
-          "Their purposes differ. A fast preview gives up the guarantee, a final result demands a closed solid, and curves and dimensions must be handled as surface equations rather than triangles. At about 63 MB, OpenCascade cannot serve every preview either.",
+          "목적이 다르기 때문입니다. 빠른 미리보기는 보장을 내려놓고, 확정 결과는 닫힌 솔리드를 요구하고, 곡면과 치수는 삼각형이 아니라 곡면 수식으로 다뤄야 합니다. OpenCascade는 약 63MiB라서 모든 미리보기에 쓸 수도 없습니다.",
+          "Their purposes differ. A fast preview gives up the guarantee, a final result demands a closed solid, and curves and dimensions must be handled as surface equations rather than triangles. At about 63 MiB, OpenCascade cannot serve every preview either.",
         ),
       },
       {
@@ -349,7 +349,7 @@ export const withinBudget = (leftTriangles: number, rightTriangles: number): boo
     { value: "250,000 / 500,000", label: t("Manifold가 받는 메시 한 개의 정점 / 삼각형 상한", "Most vertices / triangles Manifold accepts per mesh"), source: `${CREATOR_DIR}/studio-manifold-mesh-provider.ts` },
     { value: "2,000,000,000", label: t("두 메시의 삼각형 수를 곱한 작업량 상한", "Cap on the work estimate, the two triangle counts multiplied"), source: `${CREATOR_DIR}/studio-manifold-mesh-provider.ts` },
     { value: "19", label: t("OpenCascade Worker가 받는 고정 연산 종류", "Fixed operation kinds the OpenCascade Worker accepts"), source: `${CREATOR_DIR}/studio-occt-worker-protocol.ts` },
-    { value: "≈63 MB", label: t("OpenCascade WebAssembly 파일 크기(E2E 명세의 주석)", "Size of the OpenCascade WebAssembly file (a comment in the E2E spec)"), source: "e2e/hybrid-dcc-industrial.spec.ts" },
+    { value: "≈63 MiB", label: t("OpenCascade WebAssembly 파일 크기(E2E 명세 주석은 ~63MB, 설치된 파일은 65,864,037바이트≈62.8MiB)", "Size of the OpenCascade WebAssembly file (the E2E spec comment says ~63MB; the installed file is 65,864,037 bytes, about 62.8 MiB)"), source: "e2e/hybrid-dcc-industrial.spec.ts" },
     { value: "178", label: t("Hybrid DCC 기능 목록 수, 전부 '커널 출하' 단계", "Features in the Hybrid DCC list, all at the 'kernel-shipped' stage"), source: `${DCC_DIR}/studio-dcc-section6-full-catalog.ts` },
   ],
   reviewedAt: "2026-10-07",
@@ -363,10 +363,10 @@ export const COORDINATE_UNIT_ROUNDTRIP: EngineeringAtlasEntry = {
     "프로그램마다 '위쪽'과 '1미터'가 달라서, 번역하고 되돌려 확인합니다",
     "Programs disagree on 'up' and 'one metre', so ToonStudio translates and converts back to check",
   ),
-  status: "experimental",
+  status: "live",
   tagline: t(
-    "경계마다 좌표·단위·각도를 번역하고, 되돌려 봐서 어긋나면 받지 않습니다.",
-    "It translates coordinates, units and angles at each border and rejects what does not convert back.",
+    "경계마다 좌표·단위·각도를 번역하고, 행렬은 되돌려 보아 어긋나면 받지 않습니다.",
+    "It translates coordinates, units and angles at each border and rejects a matrix that does not convert back.",
   ),
   background: [
     t(
@@ -378,12 +378,12 @@ export const COORDINATE_UNIT_ROUNDTRIP: EngineeringAtlasEntry = {
       "The inner rule is pinned down by the Scene3D document: metres, right-handed, Y up, −Z forward, and a document with other values is refused. The border translations are these. The Blender export turns on the Y-up option, Babylon.js is forced into right-handed mode (otherwise the capture camera throws), the webcam's screen coordinates get their y sign flipped and depth scaled by 0.85, and VRM 0.x is turned 180° about Y after loading. Old OBJ and FBX materials (Phong) are upgraded to PBR by turning the shininess exponent into roughness.",
     ),
     t(
-      "단위는 변환이 아니라 정규화로 다룹니다. 업로드한 모델은 가장 긴 변이 2m가 되도록 배율을 한 번 맞추는데, 코드 주석은 SketchUp이 대개 인치 단위 원본을 그대로 내보내 크기가 몇 mm에서 몇 km까지 널뛴다고 설명합니다. 직접 제작해 검수한 배경 세트는 미터 그대로 쓰도록 배율을 1로 두고, Hybrid DCC에서 보낼 때는 그 배율의 역수를 인스턴스에 미리 곱해 1m 큐브가 1m로 남게 합니다. 역수가 0.001~1000을 벗어나면 보내기를 거절합니다.",
-      "Units are handled by normalizing, not converting. An uploaded model gets one scale so its longest side becomes 2 m, and a code comment explains that SketchUp often exports inch-based originals as they are, so sizes can swing from a few millimetres to kilometres. Background sets that were built and audited in metres keep a scale of 1, and a hand-off from Hybrid DCC pre-multiplies the instance by the inverse of that scale so a 1 m cube stays 1 m. If the inverse falls outside 0.001 to 1000, the hand-off is refused.",
+      "단위는 변환이 아니라 정규화로 다룹니다. 업로드한 모델은 가장 긴 변이 2m가 되도록 배율을 한 번 맞추는데, 코드 주석은 SketchUp이 대개 인치 단위 원본을 그대로 내보내 크기가 몇 mm에서 몇 km까지 널뛴다고 설명합니다. 번들 배경 세트는 처음부터 미터 단위로 만든 것(authored-metres)이라 배율을 1로 두고, Hybrid DCC에서 보낼 때는 그 배율의 역수를 인스턴스에 미리 곱해 1m 큐브가 1m로 남게 합니다. 역수가 0.001~1000을 벗어나면 보내기를 거절합니다.",
+      "Units are handled by normalizing, not converting. An uploaded model gets one scale so its longest side becomes 2 m, and a code comment explains that SketchUp often exports inch-based originals as they are, so sizes can swing from a few millimetres to kilometres. The bundled background sets, authored in metres from the start, keep a scale of 1, and a hand-off from Hybrid DCC pre-multiplies the instance by the inverse of that scale so a 1 m cube stays 1 m. If the inverse falls outside 0.001 to 1000, the hand-off is refused.",
     ),
     t(
-      "번역이 맞았는지는 되돌려 보기로 확인합니다. 행렬을 위치·회전·크기로 풀었다가 다시 조립해 원래와 1e-6(상대) 안에서 같을 때만 받고, 기울임(shear)이 섞여 되돌릴 수 없으면 거절합니다. 카메라 기울기(±180°·−37°·0°·42°)는 8자리, 조명 방향은 11자리까지 왕복해도 같은지 테스트하고, 저장 문서는 직렬화→읽기→재직렬화가 글자 단위로 같아야 합니다. MToon 색 차이처럼 번역으로 메우지 못하는 격차도 있어 상태는 실험입니다.",
-      "Whether a translation was right is checked by converting back. A matrix is split into position, rotation and scale and rebuilt, and is accepted only if it matches the original within 1e-6 (relative); a matrix with shear that cannot be restored is refused. Camera roll (±180°, −37°, 0°, 42°) is tested to 8 digits and light direction to 11 digits after a round trip, and a saved document must serialize, parse and serialize again to identical text. Some gaps, such as the MToon colour difference, cannot be closed by translation, so the status is experimental.",
+      "번역이 맞았는지는 되돌려 보기로 확인합니다. 행렬을 위치·회전·크기로 풀었다가 다시 조립해 원래와 1e-6(상대) 안에서 같을 때만 받고, 기울임(shear)이 섞여 되돌릴 수 없으면 거절합니다. 카메라 기울기(±180°·−37°·0°·42°)는 8자리, 조명 방향은 11자리까지 왕복해도 같은지 테스트하고, 저장 문서는 직렬화→읽기→재직렬화가 글자 단위로 같아야 합니다. MToon 색 차이처럼 번역으로 메우지 못하는 격차는 이 규약의 범위 밖이고(WebGPU·WebGL2 엔진 카드 참고), 파일 단위 왕복 검증은 실행 이력을 확인하지 못했습니다.",
+      "Whether a translation was right is checked by converting back. A matrix is split into position, rotation and scale and rebuilt, and is accepted only if it matches the original within 1e-6 (relative); a matrix with shear that cannot be restored is refused. Camera roll (±180°, −37°, 0°, 42°) is tested to 8 digits and light direction to 11 digits after a round trip, and a saved document must serialize, parse and serialize again to identical text. Gaps that translation cannot close, such as the MToon colour difference, are outside this convention (see the WebGPU and WebGL2 engine card), and the file-level round-trip check has no confirmed run history.",
     ),
   ],
   keyPoints: [
@@ -486,8 +486,8 @@ export const COORDINATE_UNIT_ROUNDTRIP: EngineeringAtlasEntry = {
     {
       feature: t("캐릭터·엔진 경계 번역", "Character and engine border translation"),
       role: t(
-        "VRM 0.x는 불러온 뒤 180° 돌리고, 웹캠 랜드마크는 y를 뒤집으며, Blender는 Y-up으로 내보내고, Babylon.js 캡처는 오른손 장면과 세로 화각 고정만 받습니다.",
-        "VRM 0.x is turned 180° after loading, webcam landmarks get y flipped, Blender exports Y-up, and the Babylon.js capture accepts only a right-handed scene with a fixed vertical field of view.",
+        "VRM 0.x는 불러온 뒤 180° 돌리고, 웹캠 랜드마크는 y를 뒤집으며, Blender는 (브리지 도구를 설정했을 때) Y-up으로 내보내고, Babylon.js 캡처는 오른손 장면과 세로 화각 고정만 받습니다.",
+        "VRM 0.x is turned 180° after loading, webcam landmarks get y flipped, Blender exports Y-up (when the bridge tool is set up), and the Babylon.js capture accepts only a right-handed scene with a fixed vertical field of view.",
       ),
       paths: [
         `${CREATOR_DIR}/vrm/studio-vrm-asset-runtime.ts`,

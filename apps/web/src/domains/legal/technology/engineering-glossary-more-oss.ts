@@ -17,8 +17,8 @@ export const GLOSSARY_MORE_OSS: readonly GlossaryTerm[] = [
       "Like a standard ingredient-label format: once every product uses the same terms, they can be compared at a glance.",
     ),
     inToonstudio: t(
-      "라이선스 인벤토리(engineering-license-inventory.ts)는 직접 의존성 117개의 라이선스를 설치본 package.json 의 license 값으로 적습니다. 분포는 MIT 89·Apache-2.0 15·MPL-2.0 3·ISC 2·BSD-3 2·Remotion License 2 등이고, 고지 생성기의 표도 ‘SPDX/license expression’ 열을 둡니다. 이 표기는 사실의 기록이지 법률 의견이 아닙니다.",
-      "The license inventory (engineering-license-inventory.ts) records the license of 117 direct dependencies from each installed package.json. The spread is MIT 89, Apache-2.0 15, MPL-2.0 3, ISC 2, BSD-3 2, Remotion License 2 and a few others, and the notice generator's tables carry an ‘SPDX/license expression’ column. This is a factual record, not legal advice.",
+      "라이선스 인벤토리(engineering-license-inventory.ts)는 직접 의존성 117개의 라이선스를 설치본 package.json 의 license 값으로 적습니다(그대로 옮긴 것은 115개). remotion·@remotion/player 두 개는 설치본이 ‘SEE LICENSE IN LICENSE.md’라서 ‘Remotion License’ 로 옮겨 적었습니다. 분포는 MIT 89·Apache-2.0 15·MPL-2.0 3·ISC 2·BSD-3 2·Remotion License 2 등이고, 고지 생성기의 표도 ‘SPDX/license expression’ 열을 둡니다. 이 표기는 사실의 기록이지 법률 의견이 아닙니다.",
+      "The license inventory (engineering-license-inventory.ts) records the license of 117 direct dependencies from each installed package.json (115 of them copied as is). For remotion and @remotion/player the installed copy says ‘SEE LICENSE IN LICENSE.md’, so the inventory transcribes it as ‘Remotion License’. The spread is MIT 89, Apache-2.0 15, MPL-2.0 3, ISC 2, BSD-3 2, Remotion License 2 and a few others, and the notice generator's tables carry an ‘SPDX/license expression’ column. This is a factual record, not legal advice.",
     ),
     chapters: ["licenses", "open-source"],
   },
@@ -90,8 +90,8 @@ export const GLOSSARY_MORE_OSS: readonly GlossaryTerm[] = [
       "Like sewing on a new button (patch) versus tailoring a copy of the whole garment (fork): the more you remake, the more you must maintain.",
     ),
     inToonstudio: t(
-      "pnpm-workspace.yaml 의 patchedDependencies 에 패치 8개가 있습니다. 그중 manifold-3d·ktx2-encoder·@gltf-transform/functions 패치는 new Function/Function() 호출 경로를 걷어 unsafe-eval 없이 돌게 합니다. wgpu 는 crates/vendor/wgpu-toon 으로 포크하며 crates.io wgpu 29.0.4 를 바탕으로 6개 파일만 고치고, 어긋남을 vendor_patch_parity.rs 테스트가 잡습니다. 상류에 보낸 PR 근거는 저장소에서 찾지 못했습니다.",
-      "pnpm-workspace.yaml lists eight patches under patchedDependencies. The manifold-3d, ktx2-encoder and @gltf-transform/functions patches remove new Function / Function() paths so they run without unsafe-eval. wgpu is forked as crates/vendor/wgpu-toon, based on crates.io wgpu 29.0.4 with only six files changed, and the vendor_patch_parity.rs test catches any drift. No upstream PR evidence was found in the repository.",
+      "pnpm-workspace.yaml 의 patchedDependencies 에 패치 7개가 있습니다. manifold-3d·ktx2-encoder 패치는 new Function 호출을 정적 코드로 바꿔 unsafe-eval 없이 돌게 하고, @gltf-transform/functions 패치는 Function()을 쓰는 이미지 커널을 처음 필요할 때만 불러오도록 미룹니다. 포크는 둘입니다. wgpu-toon(crates/vendor/wgpu-toon, wgpu 29.0.4 기반 6개 파일 수정)과 braces(patches/braces, 중첩 깊이 100 상한)이고, 상류에 보낸 PR 근거는 찾지 못했습니다.",
+      "pnpm-workspace.yaml lists seven patches under patchedDependencies. The manifold-3d and ktx2-encoder patches turn new Function calls into static code so they run without unsafe-eval, while the @gltf-transform/functions patch postpones its Function()-using image kernels until they are first needed. There are two forks: wgpu-toon (crates/vendor/wgpu-toon, based on wgpu 29.0.4 with six files changed) and braces (patches/braces, nesting-depth cap of 100). No upstream PR evidence was found in the repository.",
     ),
     chapters: ["open-source", "licenses"],
     atlasIds: ["gpu-fabric-device-lease-vello", "oss-pnpm-patches-no-unsafe-eval", "oss-fork-wgpu-toon"],

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   FREE_AI_RUNTIME_BUDGET_STORAGE_KEY,
+  FreeAiRuntimeBudgetError,
   getFreeAiRuntimeBudgetSnapshot,
   guardFreeAiRuntimeRequest,
   MANAGED_FREE_DAILY_REQUEST_LIMIT,
@@ -191,6 +192,100 @@ describe("free AI runtime budget guard", () => {
       { messages: [{ role: "user", content: "second request" }] },
       NOW,
     )).rejects.toThrow(/토큰 예약 한도/u);
+  });
+
+  describe("하루 경계는 서버와 같은 UTC 자정이다(한국 시간 자정이 아니다)", () => {
+    // NOW = 2026-09-15T12:00Z = 한국 시간 21:00. 한국 시간 자정은 NOW + 3시간, UTC 자정은 NOW + 12시간이다.
+    const KST_OFFSET_MS = 9 * 60 * 60_000;
+    const KST_MIDNIGHT = NOW + 3 * 60 * 60_000;
+    const UTC_MIDNIGHT = Date.UTC(2026, 8, 16);
+    const KOREAN_MIDNIGHT_CLAIM = /오늘 자정\(한국 시간\)|한국 시간 자정/u;
+
+    async function exhaustRequestBudget(): Promise<void> {
+      for (let index = 0; index < MANAGED_FREE_DAILY_REQUEST_LIMIT; index += 1) {
+        await guardFreeAiRuntimeRequest(managedConnection, "text", "/models", "GET", undefined, NOW);
+      }
+    }
+
+    it("요청 한도 차단 문구가 UTC 자정과 한국 시간 오전 9시를 말하고, 실제 해제 시각과 일치한다", async () => {
+      await exhaustRequestBudget();
+
+      let message = "";
+      try {
+        await guardFreeAiRuntimeRequest(managedConnection, "text", "/models", "GET", undefined, NOW);
+      } catch (error) {
+        message = error instanceof Error ? error.message : String(error);
+      }
+      expect(message).toContain("안전 한도");
+      expect(message).toContain("UTC 자정");
+      expect(message).toContain("한국 시간 오전 9시");
+      expect(message).not.toMatch(KOREAN_MIDNIGHT_CLAIM);
+
+      const snapshot = getFreeAiRuntimeBudgetSnapshot(managedConnection, NOW);
+      expect(snapshot.blockedReason).toBe("daily-request-budget");
+      expect(snapshot.blockedUntil).toBe(UTC_MIDNIGHT);
+      expect(snapshot.resetsAt).toBe(UTC_MIDNIGHT);
+      // 문구가 말한 "한국 시간 오전 9시"가 계산된 해제 시각과 같은 순간인지 확인한다.
+      expect(new Date(UTC_MIDNIGHT + KST_OFFSET_MS).getUTCHours()).toBe(9);
+    });
+
+    it("토큰 예약 한도 차단 문구도 같은 경계를 말한다", async () => {
+      await guardFreeAiRuntimeRequest(
+        managedConnection,
+        "text",
+        "/chat/completions",
+        "POST",
+        { messages: [{ role: "user", content: "x".repeat(124_000) }], max_tokens: 1024 },
+        NOW,
+      );
+
+      let message = "";
+      try {
+        await guardFreeAiRuntimeRequest(
+          managedConnection,
+          "text",
+          "/chat/completions",
+          "POST",
+          { messages: [{ role: "user", content: "second request" }] },
+          NOW,
+        );
+      } catch (error) {
+        message = error instanceof Error ? error.message : String(error);
+      }
+      expect(message).toContain("토큰 예약 한도");
+      expect(message).toContain("UTC 자정");
+      expect(message).toContain("한국 시간 오전 9시");
+      expect(message).not.toMatch(KOREAN_MIDNIGHT_CLAIM);
+      expect(getFreeAiRuntimeBudgetSnapshot(managedConnection, NOW).blockedUntil).toBe(UTC_MIDNIGHT);
+    });
+
+    it("한국 시간 자정에는 아직 막혀 있고 UTC 자정에 풀린다", async () => {
+      await exhaustRequestBudget();
+      await expect(
+        guardFreeAiRuntimeRequest(managedConnection, "text", "/models", "GET", undefined, NOW),
+      ).rejects.toThrow(/안전 한도/u);
+
+      // 옛 문구("오늘 자정(한국 시간)")가 맞다면 이 시각에 풀려야 한다. 실제 동작은 계속 차단이다.
+      // 이어지는 차단 문구는 해제 시각(UTC 자정)을 브라우저 현지 시각으로 보여 준다.
+      const resetLabel = new Date(UTC_MIDNIGHT).toLocaleString("ko-KR");
+      for (const at of [KST_MIDNIGHT, UTC_MIDNIGHT - 1]) {
+        const rejection = await guardFreeAiRuntimeRequest(
+          managedConnection,
+          "text",
+          "/models",
+          "GET",
+          undefined,
+          at,
+        ).then(() => null, (error: unknown) => error);
+        expect(rejection).toBeInstanceOf(FreeAiRuntimeBudgetError);
+        expect((rejection as FreeAiRuntimeBudgetError).message).toContain(resetLabel);
+      }
+
+      await expect(
+        guardFreeAiRuntimeRequest(managedConnection, "text", "/models", "GET", undefined, UTC_MIDNIGHT),
+      ).resolves.toMatchObject({ guarded: true });
+      expect(getFreeAiRuntimeBudgetSnapshot(managedConnection, UTC_MIDNIGHT).requests).toBe(1);
+    });
   });
 
   it("opens a breaker on provider rate limits and escalates a repeated 429 until UTC reset", async () => {

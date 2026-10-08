@@ -10,7 +10,7 @@ import type { EngineeringMapRow } from "./engineering-map-types";
 
 /* ───────────── 웹툰 유통·생태계 ───────────── */
 
-const PUBLISHING: readonly EngineeringMapRow[] = [
+export const PUBLISHING: readonly EngineeringMapRow[] = [
   row({
     id: "webtoon-canvas",
     name: "WEBTOON CANVAS",
@@ -103,45 +103,6 @@ const PUBLISHING: readonly EngineeringMapRow[] = [
     ],
   }),
   row({
-    id: "clip-studio-assets",
-    name: "Clip Studio Assets",
-    domain: D.publishing,
-    url: "https://assets.clip-studio.com/",
-    what: t(
-      "Clip Studio용 소재(브러시·3D 등)를 받는 마켓입니다. 팔레트별 탐색과 다운로드·가져오기 분리가 비교 대상이었고, Unity Asset Store·Fab·3D Warehouse도 같은 문서에서 비교했습니다.",
-      "A marketplace for Clip Studio materials such as brushes and 3D assets. Palette-based browsing and splitting download from import were compared, alongside Unity Asset Store, Fab and 3D Warehouse in the same document.",
-    ),
-    learned: t(
-      "배움: 쓰는 환경(버전·렌더러)을 먼저 밝히고 카드와 상세에서 같은 판정을 재사용. 안 한 점: 패스포트가 설치 성공·적법성을 보증한다고 말하지 않고, 다운로드·변환·삽입 일괄 처리는 후속으로 남김.",
-      "Learned: declare the target Studio version and renderer first, and reuse one verdict on cards and detail pages. Not adopted: a passport is not a guarantee of installation or legality, and one-step download, convert and insert is left for later.",
-    ),
-    overlap: t("마켓의 제작 적합성 패스포트와 제작 적합성 랩.", "Market production-fit passport and fit lab."),
-    evidence: [
-      "docs/benchmarks/market-production-fit-2026-09-09.md",
-      "docs/benchmarks/marketplace-social-studio-integration-2026-09-04.md",
-      "apps/web/src/domains/market/models/market-production-fit.ts",
-    ],
-  }),
-  row({
-    id: "kaistory",
-    name: "KAISTORY",
-    domain: D.publishing,
-    url: "https://kaistory.net/",
-    what: t(
-      "웹툰 제작·유통 서비스입니다. 저장소 감시 목록은 오프라인 우선 콘티, 하나의 프로젝트 데이터 모델, 레이어 PSD, 다국어 번역에 주목했습니다.",
-      "A webtoon production and distribution service. The repository's watch list noted offline-first storyboards, one project data model, layered PSD and multi-language translation.",
-    ),
-    learned: t(
-      "미조사: 감시 목록(우선순위 P0)에만 있고 직접 비교한 기록은 없음. 레지스트리 구현 메모: 콘티부터 게시까지 버전 있는 프로젝트 하나로 잇고 로컬 복구를 정본으로 둘 것.",
-      "Not researched: it is only on the watch list (priority P0) with no direct comparison on record. Registry implementation note: link storyboard to publish in one versioned project and keep local-first recovery authoritative.",
-    ),
-    overlap: t(
-      "로컬 우선 저장·복구와 콘티~내보내기를 잇는 프로젝트 흐름(비교는 미조사).",
-      "Local-first save and recovery and the storyboard-to-export project flow (comparison not researched).",
-    ),
-    evidence: ["docs/benchmarks/studio-webtoon-ecosystem-registry.json"],
-  }),
-  row({
     id: "laftel",
     name: "Laftel",
     domain: D.publishing,
@@ -230,7 +191,7 @@ const PUBLISHING: readonly EngineeringMapRow[] = [
 
 /* ───────────── AI·에이전트 ───────────── */
 
-const AI: readonly EngineeringMapRow[] = [
+export const AI: readonly EngineeringMapRow[] = [
   row({
     id: "dia",
     name: "Dia",
@@ -350,7 +311,7 @@ const AI: readonly EngineeringMapRow[] = [
 
 /* ───────────── 엔진·표준 (오픈소스 지도와 겹치는 것은 ‘참고·대안으로 검토한 것’만) ───────────── */
 
-const ENGINES: readonly EngineeringMapRow[] = [
+export const ENGINES: readonly EngineeringMapRow[] = [
   row({
     id: "three-js",
     name: "Three.js",
@@ -478,8 +439,8 @@ const ENGINES: readonly EngineeringMapRow[] = [
       "CanvasKit, the web version of Skia, a 2D graphics engine that draws shapes, text and images. It is pinned as the 2D baseline and also fills in what Vello cannot yet do.",
     ),
     learned: t(
-      "결정: CanvasKit 0.41.1을 2D 기준선으로 고정(ADR 0004)하고 문서 화면 표시를 그 위로 옮김(ADR 0025, 에디터 전체 전환은 아님). Vello가 못 하는 5개 기능을 Skia가 맡는지 빌드로 검사(ADR 0017). Google Forma는 보관돼 불채택.",
-      "Decision: CanvasKit 0.41.1 is pinned as the 2D baseline (ADR 0004) and the document display now sits on it (ADR 0025, not a whole-editor switch). The build checks that Skia covers the five features Vello cannot (ADR 0017). Google Forma was rejected because it is archived.",
+      "결정: CanvasKit을 특정 버전에 고정해 2D 기준선으로 삼고(ADR 0004) 문서 화면 표시를 그 위로 옮김(ADR 0025, 에디터 전체 전환은 아님). Vello가 못 하는 5개 기능을 Skia가 맡는지 빌드로 검사(ADR 0017). Google Forma는 보관돼 불채택.",
+      "Decision: CanvasKit is pinned to one version as the 2D baseline (ADR 0004) and the document display now sits on it (ADR 0025, not a whole-editor switch). The build checks that Skia covers the five features Vello cannot (ADR 0017). Google Forma was rejected because it is archived.",
     ),
     overlap: t("2D 문서 화면 표시(CanvasKit 지속 표면)와 내보내기 기준 출력.", "The 2D document display (a persistent CanvasKit surface) and reference export output."),
     evidence: [
@@ -544,8 +505,8 @@ const ENGINES: readonly EngineeringMapRow[] = [
     domain: D.engines,
     url: "https://phaser.io/",
     what: t(
-      "웹용 2D 게임 엔진입니다. 가상 스튜디오 월드를 그리는 데 쓰며, 화면 표시만 맡고 제품 판단은 맡지 않습니다.",
-      "A 2D game engine for the web. It draws the Virtual Studio world and only displays; it makes no product decisions.",
+      "웹용 2D 게임 엔진입니다. 가상 스튜디오 월드를 그리는 데 쓰며, 플레이북은 이를 ‘화면 투영일 뿐 업무 권한이 아님’이라 적었습니다. 검토 어댑터에서는 표시만 맡고 검토 권한은 ADR-0022를 재사용합니다.",
+      "A 2D game engine for the web. It draws the Virtual Studio world, and the playbook calls it a projection, not business authority. In the review adapter it only displays, and review authority reuses ADR-0022.",
     ),
     learned: t(
       "결정: 가상 스튜디오는 2D/2.5D 제품으로 유지하고, 진짜 3D 공간으로 바꿀 때도 Phaser 위에 3D 엔진을 겹치지 않음. 새 3D 소셜 엔진으로 갈아타지도 않음.",
@@ -556,13 +517,8 @@ const ENGINES: readonly EngineeringMapRow[] = [
       "docs/studio/studio-3d-platform-evolution-2026-09-19.md",
       "docs/studio/virtual-studio-benchmark-20260920.md",
       "docs/technology/toonstudio-engineering-playbook-2026-09-23.md",
+      "docs/adr/0022-studio-authority-identity-production-modes.md",
       `${CREATOR}/virtual-space/StudioVirtualSpacePhaserCanvas.tsx`,
     ],
   }),
-];
-
-export const COMPETITOR_ROWS_MARKET: readonly EngineeringMapRow[] = [
-  ...PUBLISHING,
-  ...AI,
-  ...ENGINES,
 ];

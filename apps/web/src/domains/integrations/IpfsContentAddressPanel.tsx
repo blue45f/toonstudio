@@ -104,8 +104,8 @@ export function IpfsContentAddressPanel() {
       setFetchState({
         kind: "error",
         message: ko
-          ? `가져오지 못했습니다. 게이트웨이에 콘텐츠가 없거나 검증에 실패했습니다. (${error instanceof Error ? error.message : "unknown"})`
-          : `Fetch failed. The content may be unavailable on gateways or failed verification. (${error instanceof Error ? error.message : "unknown"})`,
+          ? `가져오지 못했습니다. 게이트웨이에 콘텐츠가 없거나, 검증에 실패했거나, 이 사이트의 보안 정책(CSP)이 게이트웨이 연결을 막았을 수 있습니다. (${error instanceof Error ? error.message : "unknown"})`
+          : `Fetch failed. The content may be unavailable on gateways, may have failed verification, or this site's security policy (CSP) may have blocked the gateway connection. (${error instanceof Error ? error.message : "unknown"})`,
       });
     }
   };
@@ -132,8 +132,8 @@ export function IpfsContentAddressPanel() {
           <h2 className="font-bold text-fg">{ko ? "콘텐츠 주소(IPFS)" : "Content addressing (IPFS)"}</h2>
           <p className="mt-1 text-sm leading-6 text-fg-2">
             {ko
-              ? "파일 위치(URL)가 아니라 내용 자체가 주소가 되는 CID를 만듭니다. 같은 파일은 언제나 같은 CID라, 에셋의 무결성을 확인하거나 공유 링크로 쓰는 데 적합합니다. 가져오기는 공개 게이트웨이에서 받은 바이트의 해시를 CID와 직접 대조하며, 브라우저가 네트워크에 파일을 제공하는 기능은 없습니다."
-              : "A CID addresses content itself, not a location. Identical files always produce the same CID, which suits asset integrity checks and share links. Fetches go through public gateways and compare the downloaded bytes' hash with the CID; the browser does not provide files to the network."}
+              ? "파일 위치(URL)가 아니라 내용 자체가 주소가 되는 CID를 만듭니다. 같은 파일은 언제나 같은 CID라, 에셋의 무결성을 확인하거나 공유 링크로 쓰는 데 적합합니다. 가져오기는 공개 게이트웨이에서 받은 바이트의 해시를 CID와 직접 대조하며, 브라우저가 네트워크에 파일을 제공하는 기능은 없습니다. 다만 이 사이트의 보안 정책(CSP)은 허용한 주소로만 연결을 열고, 현재 연결 허용 목록(connect-src)에 공개 게이트웨이 주소(ipfs.io·dweb.link·trustless-gateway.link)가 없어 운영 사이트에서는 가져오기가 브라우저에서 차단될 수 있습니다. 그 경우에도 CID 계산·복사·게이트웨이 링크 열기는 그대로 됩니다."
+              : "A CID addresses content itself, not a location. Identical files always produce the same CID, which suits asset integrity checks and share links. Fetches go through public gateways and compare the downloaded bytes' hash with the CID; the browser does not provide files to the network. However, this site's security policy (CSP) only opens connections to allowed addresses, and its current connect-src allow-list does not include the public gateways (ipfs.io, dweb.link, trustless-gateway.link), so fetching may be blocked by the browser on the production site. CID computation, copying and opening gateway links still work."}
           </p>
         </div>
       </div>

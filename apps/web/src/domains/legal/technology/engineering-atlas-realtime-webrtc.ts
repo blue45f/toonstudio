@@ -213,8 +213,8 @@ export function wireSignaling(channel: RTCDataChannel, media: RTCPeerConnection)
         },
       ],
       pitfall: t(
-        "'Socket.IO가 WebRTC 시그널링을 한다'고만 말하면 부정확합니다. 통화용 SDP/ICE는 직접 레인, 서버 경로는 입장·접속 상태·화면 공유 신호·데이터 통로 시작 신호입니다(옛 음성 작업실의 신호 중계 코드는 운영 설정에서 꺼져 있습니다). 코드 독해로 본 잠재 한계(미실증): 데이터 통로 시작 신호가 Durable Objects에서 거부돼 Socket.IO로 우회될 수 있고, 그 우회를 통합 테스트로 확인하지 못했습니다. 로컬 Chromium의 성공을 인터넷 환경의 성공으로 말하지 마세요.",
-        "Saying only 'Socket.IO does the WebRTC signaling' is inaccurate: call SDP/ICE use the direct lane, while the server path carries admission, presence, screen-share signals and the data-channel start signal (the signal-relay code of the older voice workroom is switched off in the production settings). A potential limit seen by code reading (unverified): the data-channel start signal may be rejected by Durable Objects and detour through Socket.IO, and no integration test confirms that detour. Do not present local Chromium success as success on the internet.",
+        "'Socket.IO가 WebRTC 시그널링을 한다'고만 말하면 부정확합니다. 통화용 SDP/ICE는 직접 레인, 서버 경로는 입장·접속 상태·화면 공유 신호·데이터 통로 시작 신호입니다(옛 음성 작업실의 신호 중계 코드는 운영 설정에서 꺼져 있습니다). 코드 독해로 본 잠재 한계(미실증): 데이터 통로 시작 신호가 Durable Objects에서 거부돼 Socket.IO로 우회될 수 있고, 그 우회를 통합 테스트로 확인하지 못했습니다. 로컬 Chromium의 성공을 인터넷 환경의 성공으로 말하지 마세요. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
+        "Saying only 'Socket.IO does the WebRTC signaling' is inaccurate: call SDP/ICE use the direct lane, while the server path carries admission, presence, screen-share signals and the data-channel start signal (the signal-relay code of the older voice workroom is switched off in the production settings). A potential limit seen by code reading (unverified): the data-channel start signal may be rejected by Durable Objects and detour through Socket.IO, and no integration test confirms that detour. Do not present local Chromium success as success on the internet. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
       ),
     },
     technologies: ["WebRTC", "RTCPeerConnection", "RTCDataChannel", "SDP", "ICE", "Socket.IO", "Durable Objects"],
@@ -391,8 +391,8 @@ console.log(meshCost(9, 400)); // 36 pairs, 3200 kbps upload`,
         },
       ],
       pitfall: t(
-        "3·4·8·24·30·64를 한꺼번에 '정원'이라고 부르지 마세요. 어느 층의 숫자인지 함께 말해야 합니다. 대역폭 예시는 일반적인 가정이며 저장소 측정값이 아닙니다. 가상 스튜디오 24명이 직통 레인 기준으로는 8명까지만 닿는다는 설명은 코드 독해이며 실기기 검증은 없습니다.",
-        "Do not call 3, 4, 8, 24, 30 and 64 'the capacity' in one breath; say which layer each belongs to. The bandwidth example is a generic assumption, not a measurement from this repository. That the virtual studio's 24 reaches only 8 over the direct lane comes from code reading, with no real-device verification.",
+        "3·4·8·24·30·64를 한꺼번에 '정원'이라고 부르지 마세요. 어느 층의 숫자인지 함께 말해야 합니다. 대역폭 예시는 일반적인 가정이며 저장소 측정값이 아닙니다. 가상 스튜디오 24명이 직통 레인 기준으로는 원격 8명까지만 닿는다는 설명은 코드 독해이며 실기기 검증은 없습니다. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
+        "Do not call 3, 4, 8, 24, 30 and 64 'the capacity' in one breath; say which layer each belongs to. The bandwidth example is a generic assumption, not a measurement from this repository. That the virtual studio's 24 reaches only 8 remote peers over the direct lane comes from code reading, with no real-device verification. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
       ),
     },
     technologies: ["WebRTC", "RTCDataChannel", "Socket.IO", "Durable Objects", "SFU"],
@@ -637,8 +637,8 @@ export function createIceCache(issue: () => Promise<Issued>) {
         {
           question: t("TURN을 붙였나요?", "Have you added TURN?"),
           answer: t(
-            "발급 코드와 정책 응답까지 구현했습니다. 운영 키가 등록됐는지는 코드로 확인할 수 없고 챕터 40은 미등록으로 기록합니다. 키가 없으면 STUN 전용으로 동작하며, 제한된 NAT에서 중계가 통과한 검증은 없습니다.",
-            "The issuance code and policy response are implemented. Whether a production key is registered cannot be confirmed from the code, and chapter 40 records it as unregistered. Without a key it runs STUN-only, and no relay has been verified through a restrictive NAT.",
+            "발급 코드와 정책 응답까지 구현했습니다. 운영 키가 등록됐는지는 코드로 확인할 수 없어 챕터 40도 '미확인'으로 기록합니다. 키가 없으면 STUN 전용으로 동작하며, 제한된 NAT에서 중계가 통과한 검증은 없습니다.",
+            "The issuance code and policy response are implemented. Whether a production key is registered cannot be confirmed from the code, so chapter 40 also records it as unverified. Without a key it runs STUN-only, and no relay has been verified through a restrictive NAT.",
           ),
         },
         {
@@ -657,8 +657,8 @@ export function createIceCache(issue: () => Promise<Issued>) {
         },
       ],
       pitfall: t(
-        "'TURN을 도입했다'고 말하지 마세요. 코드는 완성됐고 운영 키 등록과 중계 통과 검증은 미확인입니다. 코드 독해로 본 잠재 한계(미실증): ① 4시간 넘게 연 탭에서 새 연결이 STUN 전용으로 만들어질 수 있음 ② Cloudflare 문서의 발급 방식과 코드가 부르는 주소의 응답 모양이 다를 수 있어 키 등록 직후 실응답 확인이 필요함. 또 화면의 'TURN 중계는 사용하지 않습니다' 문구는 이 구성보다 낡은 표현입니다.",
-        "Do not say 'we adopted TURN'. The code is complete, while production key registration and relay verification are unconfirmed. Potential limits seen by code reading (unverified): 1) in a tab open longer than 4 hours, new connections may be built STUN-only; 2) the response shape of the address the code calls may differ from the issuance method in Cloudflare's current docs, so a real response must be checked right after a key is registered. The on-screen sentence 'TURN relay is not used' is also older than this setup.",
+        "'TURN을 도입했다'고 말하지 마세요. 코드는 완성됐고 운영 키 등록과 중계 통과 검증은 미확인입니다. 코드 독해로 본 잠재 한계(미실증): ① 4시간 넘게 연 탭에서 새 연결이 STUN 전용으로 만들어질 수 있음 ② Cloudflare 문서의 발급 방식과 코드가 부르는 주소의 응답 모양이 다를 수 있어 키 등록 직후 실응답 확인이 필요함. 또 3번 실패 뒤 안내와 근접 영상 안내는 '중계(TURN) 서버가 준비되지 않은 환경에서는 직접 연결만 시도합니다'처럼 조건부 문구로 이미 고쳤습니다.",
+        "Do not say 'we adopted TURN'. The code is complete, while production key registration and relay verification are unconfirmed. Potential limits seen by code reading (unverified): 1) in a tab open longer than 4 hours, new connections may be built STUN-only; 2) the response shape of the address the code calls may differ from the issuance method in Cloudflare's current docs, so a real response must be checked right after a key is registered. The notice after three failures and the proximity-video notes have also been reworded conditionally: where no relay (TURN) server is set up, only direct links are tried.",
       ),
     },
     technologies: ["WebRTC", "ICE", "STUN", "TURN", "Cloudflare Realtime TURN", "coturn", "HMAC"],

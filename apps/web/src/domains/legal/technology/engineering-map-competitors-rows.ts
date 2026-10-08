@@ -1,11 +1,23 @@
 import { CREATOR, D, FIELD_NOTES, PLAYBOOK, row, t } from "./engineering-map-competitors-kit";
-import { COMPETITOR_ROWS_MARKET } from "./engineering-map-competitors-rows-market";
+import { COMPETITOR_ROWS_3D } from "./engineering-map-competitors-rows-3d";
+import { COMPETITOR_ROWS_AI } from "./engineering-map-competitors-rows-ai";
+import { COMPETITOR_ROWS_ANIMATION } from "./engineering-map-competitors-rows-animation";
+import { COMPETITOR_ROWS_ASSETS } from "./engineering-map-competitors-rows-assets";
+import { COMPETITOR_ROWS_COLLAB, COMPETITOR_ROWS_DESIGN, COMPETITOR_ROWS_STORYBOARD } from "./engineering-map-competitors-rows-collab";
+import { COMPETITOR_ROWS_CREATOR_SUPPORT } from "./engineering-map-competitors-rows-creator-support";
+import { COMPETITOR_ROWS_DRAWING } from "./engineering-map-competitors-rows-drawing";
+import { COMPETITOR_ROWS_ENGINES } from "./engineering-map-competitors-rows-engines";
+import { COMPETITOR_ROWS_IDENTITY } from "./engineering-map-competitors-rows-identity";
+import { AI as AI_BASE, ENGINES as ENGINES_BASE, PUBLISHING as PUBLISHING_BASE } from "./engineering-map-competitors-rows-market";
+import { COMPETITOR_ROWS_PUBLISHING } from "./engineering-map-competitors-rows-publishing";
 
 import type { EngineeringMapRow } from "./engineering-map-types";
 
 /**
- * 경쟁·참고 제품 지도의 행 — 그림·페인팅, 협업·가상공간, 3D·캐릭터, 콘티·검토, 디자인·문서.
- * 나머지 영역(웹툰 유통, AI, 엔진)은 engineering-map-competitors-rows-market.ts 에 있다.
+ * 경쟁·참고 제품 지도의 행 — 영역별 대표 제품(그림·페인팅, 협업·가상공간, 3D·캐릭터, 콘티·검토, 디자인·문서)과 전체 조립.
+ * 웹툰 유통·AI·엔진의 대표 제품은 engineering-map-competitors-rows-market.ts 에 있고, 영역마다 보강한 행은
+ * engineering-map-competitors-rows-<영역>.ts 에 나뉘어 있다(한 파일이 1,000줄을 넘지 않게). 이 파일이 영역 순서대로 이어 붙인다.
+ * 영역 순서(= 표와 발표 덱에 처음 나타나는 순서)는 기존 여덟 영역을 지키고, 새 영역(2D 애니메이션·마켓·계정)은 그 뒤에 둔다.
  * 쓰는 규칙은 engineering-map-competitors-kit.ts 머리말을 따른다.
  */
 
@@ -26,14 +38,17 @@ const DRAWING: readonly EngineeringMapRow[] = [
       "Learned: the page window, speech balloons, and ruler and symmetry-ruler workflow. Done differently: a clean-room rule (redesign from public material only), so no names, screens or materials are copied. Not adopted: opening .clip files directly (proprietary format, server cost, browser security).",
     ),
     overlap: t(
-      "그리기 스튜디오의 페이지 정리 창, 자·대칭 자 도구, 말풍선.",
-      "Studio page organizer, ruler and symmetry tools, speech balloons.",
+      "그리기 스튜디오의 페이지 정리 창, 자·대칭 자, 말풍선, AI 음영 보조(Shading Assist 참고), 3D 편집기의 LT 변환 패널.",
+      "Studio page organizer, ruler and symmetry tools, speech balloons, the AI shading assist (modeled on Shading Assist) and the 3D editor's LT conversion panel.",
     ),
     evidence: [
       "docs/studio-clip-ex-benchmark-2026-07-22.md",
       "docs/studio-commercial-manual-benchmark-2026-07-10.md",
+      "docs/studio-3d-startup-comprehensive-benchmark-2026-09-03.md",
       `${CREATOR}/drawing/DRAWING-BENCHMARK.md`,
       `${CREATOR}/StudioPageOrganizerDialog.tsx`,
+      `${CREATOR}/ai/studio-ai-shading-assist.ts`,
+      `${CREATOR}/bg3d/StudioBg3dLtPanel.tsx`,
       FIELD_NOTES,
     ],
   }),
@@ -47,18 +62,19 @@ const DRAWING: readonly EngineeringMapRow[] = [
       "An open-source digital painting program. Its stroke stabilizer, selection tools and soft proofing (a print-color preview) were compared.",
     ),
     learned: t(
-      "배움: 손 떨림 보정 3가지 방식, 선택 영역 넓히기·줄이기·테두리, 소프트 프루핑. 안 한 점: 라이선스(GPL) 때문에 Krita 코어 코드는 참고만 하고 가져오지 않음(ADR 0008).",
-      "Learned: three stabilizer modes, grow/shrink/border selection, soft proofing. Not adopted: because of its GPL license, Krita's core code is reference only and nothing is copied (ADR 0008).",
+      "배움: 손 떨림 보정 3가지 방식, 선택 영역 넓히기·줄이기·테두리, 소프트 프루핑, 스프레이의 균등 분산 수식(수학만). 안 한 점: GPL이라 Krita 코어 코드는 가져오지 않음(ADR 0008).",
+      "Learned: three stabilizer modes, grow/shrink/border selection, soft proofing, and the spray's even-scatter formula (math only). Not adopted: because of its GPL license, Krita's core code is not copied (ADR 0008).",
     ),
     overlap: t(
-      "획 안정화(손 떨림 보정), 선택 영역 테두리, 소프트 프루핑.",
-      "Stroke stabilizer, selection border, soft proofing.",
+      "획 안정화(손 떨림 보정), 선택 영역 테두리, 소프트 프루핑, 자연 매체 커널 모음의 스프레이 분산.",
+      "Stroke stabilizer, selection border, soft proofing, and the spray scatter in the natural-media kernel set.",
     ),
     evidence: [
       "docs/studio-web-drawing-benchmark-2026-07-12.md",
       "docs/reports/studio-non3d-competitive-benchmark-2026-09-12.md",
       "docs/adr/0008-license-isolation-policy.md",
       `${CREATOR}/drawing/stroke-stabilizer.ts`,
+      `${CREATOR}/studio-oss-brush-kernels.ts`,
     ],
   }),
   row({
@@ -119,14 +135,22 @@ const DRAWING: readonly EngineeringMapRow[] = [
       "A drawing app used for comics. Its comic project and page management and cloud versioning were compared.",
     ),
     learned: t(
-      "배움: 만화 프로젝트·페이지 단위 관리, 모바일 명령 바, 톤·소재. 이 제품만의 반영 위치는 문서에 따로 없어 확인하지 못했습니다(미확인).",
-      "Learned: comic project and page management, a mobile command bar, tones and materials. No product-specific place of adoption is recorded, so it is unconfirmed.",
+      "배움: 만화 프로젝트·페이지 관리, 모바일 명령 바, 말풍선 문법의 다양성(한·영·일 용도 동의어 검색으로 반영), 초보자도 이해하는 짧은 안내와 즉시 실행 보정(적용 전 프리플라이트).",
+      "Learned: comic project and page management, a mobile command bar, variety in balloon grammar (reflected as Korean, English and Japanese synonym search), and short guidance with one-click fixes for beginners (the pre-apply preflight).",
     ),
     overlap: t(
-      "만화 페이지 관리와 삽입 허브(구체적 반영 위치는 미확인).",
-      "Comic page management and the insert hub (exact place of adoption unconfirmed).",
+      "만화 페이지 관리·삽입 허브, 말풍선 라이브러리 검색, 빠른 웹툰 조립 프리플라이트.",
+      "Comic page management and the insert hub, bubble-library search, and the quick-comic assembly preflight.",
     ),
-    evidence: ["docs/studio-commercial-manual-benchmark-2026-07-10.md", "docs/studio-insert-hub-benchmark-2026-09-09.md", PLAYBOOK],
+    evidence: [
+      "docs/studio-commercial-manual-benchmark-2026-07-10.md",
+      "docs/studio-insert-hub-benchmark-2026-09-09.md",
+      "docs/studio-bubble-library-benchmark-2026-09-09.md",
+      "docs/reports/studio-comic-preflight-pacing-benchmark-2026-09-09.md",
+      `${CREATOR}/lettering/studio-bubble-library.ts`,
+      `${CREATOR}/comic/studio-quick-comic-preflight.ts`,
+      PLAYBOOK,
+    ],
   }),
   row({
     id: "ibispaint",
@@ -405,12 +429,13 @@ const THREE_D: readonly EngineeringMapRow[] = [
       "A tool for building and editing 3D scenes together in the browser. Treating the camera as an animatable object with set transitions was the reference.",
     ),
     learned: t(
-      "배움: 카메라를 장면 속 객체로 다루기, 정해진 전환(감속·멈춤)과 발행 전 연속 미리보기. 이 제품만의 채택하지 않은 점은 문서에 없음.",
-      "Learned: treat the camera as a scene object, use deterministic transitions (easing, hold) and preview the sequence before publishing. No product-specific exclusion is recorded.",
+      "배움: 카메라를 장면 속 객체로 다루기, 정해진 전환(감속·멈춤)과 발행 전 연속 미리보기, 재질 라이브러리의 큐레이션 컬렉션과 재질·출처 구분. 이 제품만의 채택하지 않은 점은 문서에 없음.",
+      "Learned: treat the camera as a scene object, use deterministic transitions (easing, hold), preview the sequence before publishing, and curate material collections that separate material from source. No product-specific exclusion is recorded.",
     ),
     overlap: t("3D 시네마틱 카메라 디렉터와 컷 연속성 도구.", "3D cinematic camera director and shot-continuity tools."),
     evidence: [
       "docs/studio-3d-benchmark-productization-wave-2026-09-04.md",
+      "docs/studio-asset-library-upgrade-20260913.md",
       `${CREATOR}/scene-3d/studio-3d-camera-cinematic-director.ts`,
       `${CREATOR}/bg3d/studio-bg3d-shot-continuity.ts`,
     ],
@@ -509,8 +534,8 @@ const THREE_D: readonly EngineeringMapRow[] = [
     domain: D.threeD,
     url: "https://ablur.acon3d.com/",
     what: t(
-      "ACON3D 계열의 웹툰 배경용 3D 장면 도구입니다. SketchUp 장면 유지, 컷 단위 카메라, 멀티 패스(색·선·그림자) 출력이 참고 대상이며 공식 페이지는 ‘Not AI’라고 밝힙니다.",
-      "A 3D scene tool for webtoon backgrounds from the ACON3D family. Keeping SketchUp scenes, per-cut cameras and multi-pass output (color, line, shadow) were the reference; its official page states 'Not AI'.",
+      "웹툰 배경용 3D 장면 도구로 ablur.acon3d.com에서 제공됩니다(09-03 문서는 개발사를 ‘카툰텍’이라 적어 문서끼리 다름). SketchUp 장면 유지, 컷 단위 카메라, 멀티 패스 출력이 참고 대상이며 공식 페이지는 ‘Not AI’라고 밝힙니다.",
+      "A 3D scene tool for webtoon backgrounds served at ablur.acon3d.com (the 09-03 document names CartoonTech as the developer, so the documents disagree). Keeping SketchUp scenes, per-cut cameras and multi-pass output (color, line, shadow) were the reference; its official page states 'Not AI'.",
     ),
     learned: t(
       "배움: 컷 단위 카메라, 분위기 조명, 여러 패스(색·선·그림자·재질 ID) 일괄 렌더, 레이어 PSD. 다르게 한 점: AI 기능으로 소개하지 않음. 안 한 점: SKP 직접 해석 대신 공식 GLB 안내.",
@@ -519,6 +544,7 @@ const THREE_D: readonly EngineeringMapRow[] = [
     overlap: t("배경 3D 멀티 패스 내보내기와 컷 연속성 도구.", "Background 3D multi-pass exporter and shot-continuity tools."),
     evidence: [
       "docs/studio-3d-webtoon-tool-benchmark-2026-07-19.md",
+      "docs/studio-3d-startup-comprehensive-benchmark-2026-09-03.md",
       "docs/studio-3d-benchmark-productization-wave-2026-09-04.md",
       `${CREATOR}/scene-3d/studio-3d-webtoon-multipass-exporter.ts`,
       `${CREATOR}/bg3d/StudioBg3dMultiPassExporterPanel.tsx`,
@@ -731,9 +757,23 @@ const DESIGN: readonly EngineeringMapRow[] = [
 
 export const COMPETITOR_ROWS: readonly EngineeringMapRow[] = [
   ...DRAWING,
+  ...COMPETITOR_ROWS_DRAWING,
   ...THREE_D,
+  ...COMPETITOR_ROWS_3D,
   ...COLLAB,
+  ...COMPETITOR_ROWS_COLLAB,
   ...STORYBOARD,
+  ...COMPETITOR_ROWS_STORYBOARD,
   ...DESIGN,
-  ...COMPETITOR_ROWS_MARKET,
+  ...COMPETITOR_ROWS_DESIGN,
+  ...PUBLISHING_BASE,
+  ...COMPETITOR_ROWS_PUBLISHING,
+  ...AI_BASE,
+  ...COMPETITOR_ROWS_AI,
+  ...ENGINES_BASE,
+  ...COMPETITOR_ROWS_ENGINES,
+  ...COMPETITOR_ROWS_ANIMATION,
+  ...COMPETITOR_ROWS_ASSETS,
+  ...COMPETITOR_ROWS_CREATOR_SUPPORT,
+  ...COMPETITOR_ROWS_IDENTITY,
 ];

@@ -27,7 +27,13 @@ vi.mock("./engineering-atlas-content", () => ({
 // 3번째 발표 슬라이드에 "질문이 나오면 열 도감 카드"를 붙인다.
 vi.mock("./engineering-talk-deck", async (importOriginal) => {
   const original = await importOriginal<typeof import("./engineering-talk-deck")>();
-  const slides = original.TALK_SLIDES.map((slide) => (slide.id === "talk-problem" ? { ...slide, relatedAtlasIds: ["fixture-opfs", "no-such-card"] } : slide));
+  // 실제 발표 원본이 가리키는 도감 카드는 이 테스트의 예시 도감에 없으므로, 카드를 가리키는 필드(atlas·relatedAtlasIds)는 떼고
+  // 카드 면 슬라이드(atlas 레이아웃)는 일반 슬라이드로 바꾼다. 엔진 검사가 발표 콘텐츠의 도감 참조에 흔들리지 않게 한다.
+  const slides = original.TALK_SLIDES.map((slide) => {
+    const { atlas: _atlas, relatedAtlasIds: _related, ...rest } = slide as typeof slide & { atlas?: unknown; relatedAtlasIds?: unknown };
+    const plain = slide.layout === "atlas" ? { ...rest, layout: "statement" as const } : rest;
+    return slide.id === "talk-problem" ? { ...plain, relatedAtlasIds: ["fixture-opfs", "no-such-card"] } : plain;
+  });
   return { ...original, TALK_SLIDES: slides };
 });
 
@@ -305,7 +311,7 @@ describe("발표 슬라이드에서 도감 카드 열기", () => {
     expect(stageSlideId()).toBe("atlas-fixture-opfs-diagram");
     expect(window.location.search).toBe("?track=atlas");
     expect(window.location.hash).toBe("#slide-atlas-fixture-opfs-diagram");
-    const back = within(screen.getByRole("region", { name: /발표자 도구|Presenter tools/u })).getByRole("button", { name: /발표로 돌아가기 · 3\/19/u });
+    const back = within(screen.getByRole("region", { name: /발표자 도구|Presenter tools/u })).getByRole("button", { name: new RegExp(`발표로 돌아가기 · 3/${TALK_SLIDES.length}`, "u") });
     fireEvent.click(back);
     expect(stageSlideId()).toBe("talk-problem");
     expect(window.location.search).toBe("?track=talk");

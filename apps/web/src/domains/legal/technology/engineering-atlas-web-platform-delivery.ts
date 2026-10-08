@@ -289,12 +289,12 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_DELIVERY: readonly EngineeringAtlasE
         "There are three steps: detect (detectors wrapped in try/catch return true or false), mark (the experimental screen in settings shows all 27 as supported or unsupported) and switch off (three features that are really wired can be turned off by users, on by default). By operating policy an experimental feature may be quietly absent where unsupported, so no separate fallback is built.",
       ),
       t(
-        "정직하게 구분할 점이 많습니다. 27종 중 실제 기능에 이어진 것은 화면 꺼짐 방지, 스튜디오 미리 준비, 화면 전환, 스포이트 정도이고, 기기 압력(Compute Pressure)은 설정 화면에 현재 압력을 보여 주는 데서 끝나며 그 값을 읽는 소비처가 없습니다. 나머지 20여 종은 지원 여부만 보여 주는 후보입니다. 감지가 레지스트리와 각 기능 모듈에 중복돼 있어 레지스트리 결과는 설정 목록 표시에만 쓰입니다.",
-        "There is a lot to distinguish honestly. Of the 27, the ones wired to features are screen wake lock, studio prerender, view transitions and the eyedropper, while Compute Pressure ends at showing the current pressure in settings and has no consumer reading the value. The other twenty-odd are candidates that only show support. Detection exists both in the registry and in each feature module, so registry results feed only the settings list.",
+        "정직하게 구분할 점이 많습니다. 27종 중 실제 기능에 이어진 것은 화면 꺼짐 방지, 스튜디오 미리 준비, 화면 전환, 스포이트 정도이고(스튜디오 미리 준비는 운영 CSP 에 막혀 효과가 없을 가능성이 높습니다), 기기 압력(Compute Pressure)은 설정 화면에 현재 압력을 보여 주는 데서 끝나며 그 값을 읽는 소비처가 없습니다. 나머지 20여 종은 지원 여부만 보여 주는 후보입니다. 감지가 레지스트리와 각 기능 모듈에 중복돼 있어 레지스트리 결과는 설정 목록 표시에만 쓰입니다.",
+        "There is a lot to distinguish honestly. Of the 27, the ones wired to features are screen wake lock, studio prerender, view transitions and the eyedropper (studio prerender most likely has no effect because the production CSP blocks it), while Compute Pressure ends at showing the current pressure in settings and has no consumer reading the value. The other twenty-odd are candidates that only show support. Detection exists both in the registry and in each feature module, so registry results feed only the settings list.",
       ),
       t(
-        "한계: 지원 시점 같은 외부 사실(Compute Pressure 는 Chrome/Edge 125+ 데스크톱, Temporal 은 Chrome 144·Firefox 139 출시, 내장 Prompt API 는 Chrome 148부터)은 코드 주석에서 온 문장이라 발표 전에 MDN 으로 다시 확인해야 합니다. 설정 화면 문구 품질 조절에 씁니다도 현재 소비처가 없는 것과 어긋납니다.",
-        "Limits: external facts such as support dates (Compute Pressure on Chrome and Edge 125+ desktop, Temporal in Chrome 144 and Firefox 139, the built-in Prompt API from Chrome 148) come from code comments and must be rechecked on MDN before presenting. The settings wording that it adapts quality also disagrees with the fact that no consumer exists today.",
+        "한계: 지원 시점 같은 외부 사실(Compute Pressure 는 Chrome/Edge 125+ 데스크톱, Temporal 은 Chrome 144·Firefox 139 출시, 내장 Prompt API 는 Chrome 148부터)은 코드 주석에서 온 문장이라 발표 전에 MDN 으로 다시 확인해야 합니다. 설정 화면 문구는 이미 '관측용이며 품질을 자동으로 조절하는 기능은 아직 연결돼 있지 않다'로 고쳐 현재 소비처가 없는 사실과 맞춰 두었습니다.",
+        "Limits: external facts such as support dates (Compute Pressure on Chrome and Edge 125+ desktop, Temporal in Chrome 144 and Firefox 139, the built-in Prompt API from Chrome 148) come from code comments and must be rechecked on MDN before presenting. The settings wording has already been corrected to say it is observation-only and that automatic quality adjustment is not wired yet, matching the fact that no consumer exists today.",
       ),
     ],
     keyPoints: [
@@ -525,8 +525,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_DELIVERY: readonly EngineeringAtlasE
         {
           question: t("27개를 모두 쓰고 있나요?", "Are all 27 in use?"),
           answer: t(
-            "아닙니다. 연결된 것은 화면 꺼짐 방지·스튜디오 미리 준비·화면 전환·스포이트 정도이고, 나머지는 지원 여부만 보여 주는 후보입니다.",
-            "No. The wired ones are screen wake lock, studio prerender, view transitions and the eyedropper; the rest are candidates that only show support.",
+            "아닙니다. 연결된 것은 화면 꺼짐 방지·스튜디오 미리 준비·화면 전환·스포이트 정도이고(스튜디오 미리 준비는 운영 CSP 에 막힐 가능성이 높음), 나머지는 지원 여부만 보여 주는 후보입니다.",
+            "No. The wired ones are screen wake lock, studio prerender, view transitions and the eyedropper (studio prerender is most likely blocked by the production CSP); the rest are candidates that only show support.",
           ),
         },
         {
@@ -538,8 +538,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_DELIVERY: readonly EngineeringAtlasE
         },
       ],
       pitfall: t(
-        "설정 화면 문구는 기기 압력으로 무거운 기능의 품질을 조절한다고 적지만 현재는 표시뿐입니다. 레지스트리의 감지와 각 기능 모듈의 자체 감지가 이중으로 있고, 코드 주석의 지원 시점은 재확인 전에 단정하면 안 됩니다.",
-        "The settings wording says device pressure adjusts the quality of heavy features, but today it only displays. Detection exists twice, in the registry and in each feature module, and support dates from code comments must not be asserted before rechecking.",
+        "기기 압력은 현재 관측만 하고 품질 조절은 연결돼 있지 않습니다. 설정 화면 문구도 '관측용이며 품질 자동 조절은 아직 연결되지 않았다'로 맞춰 두었습니다. 레지스트리의 감지와 각 기능 모듈의 자체 감지가 이중으로 있고, 코드 주석의 지원 시점은 재확인 전에 단정하면 안 됩니다.",
+        "Device pressure is only observed today and no quality adjustment is wired. The settings wording has also been aligned to say it is observation-only and that automatic quality adjustment is not wired yet. Detection exists twice, in the registry and in each feature module, and support dates from code comments must not be asserted before rechecking.",
       ),
     },
     technologies: ["Compute Pressure", "Screen Wake Lock", "View Transitions", "Speculation Rules", "EyeDropper"],

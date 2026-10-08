@@ -188,6 +188,24 @@ export function studioCharacterVisualAssets(
   return assets;
 }
 
+const WARM_FACINGS: readonly StudioVirtualSpaceFacing[] = ["down", "left", "right", "up"];
+
+/**
+ * 내 캐릭터가 처음 움직이거나 처음 방향을 바꿀 때 에셋이 늦게 도착해 정지 그림이 미끄러지고
+ * 방향이 한 박자 늦는 일이 없도록 미리 받아 두는 에셋: 네 방향의 정지 그림과 걷기 시트.
+ * (예전에는 움직이는 순간에야 걷기 시트를 요청해 이동 시작 약 0.6초 동안 걷기 프레임 없이 미끄러졌다.)
+ * 대화·그리기·앉기 같은 상태 에셋은 그 상태가 될 때 기존처럼 필요한 만큼만 받는다.
+ */
+export function studioCharacterWarmAssets(skin: StudioCharacterSkin): readonly StudioCharacterTextureAsset[] {
+  const assets = new Map<string, StudioCharacterTextureAsset>();
+  for (const facing of WARM_FACINGS) {
+    for (const state of ["idle", "walk"] as const) {
+      for (const asset of studioCharacterVisualAssets(skin, facing, state)) assets.set(asset.key, asset);
+    }
+  }
+  return [...assets.values()];
+}
+
 interface TextureRecord {
   readonly asset: StudioCharacterTextureAsset;
   readonly owners: Set<string>;

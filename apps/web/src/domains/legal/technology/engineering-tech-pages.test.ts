@@ -2,6 +2,10 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { ARCHITECTURE_GUIDE_SECTIONS } from "./engineering-architecture-guide-content";
+import { ARCHITECTURE_GUIDE_OVERVIEW } from "./engineering-architecture-guide-overview";
+import { LIBRARY_GUIDE_AREAS } from "./engineering-library-guide-content";
+import { LIBRARY_GUIDE_OVERVIEW } from "./engineering-library-guide-overview";
 import {
   ENGINEERING_AI_WORKBENCH,
   ENGINEERING_BENCHMARK_GROUPS,
@@ -32,6 +36,27 @@ import {
 
 /** 페이지가 실제로 보여주는 본문(요약·접힘 포함)만 모아 읽기 시간을 다시 계산한다. */
 const PAGE_TEXTS = {
+  architecture: [
+    ...ARCHITECTURE_GUIDE_OVERVIEW.principles.flatMap((principle) => koreanTexts([principle.title, principle.body])),
+    ...koreanTexts([ARCHITECTURE_GUIDE_OVERVIEW.howToRead]),
+    ...ARCHITECTURE_GUIDE_SECTIONS.flatMap((section) =>
+      koreanTexts([
+        section.title, section.question, section.oneLine, section.easy, section.steps, section.background, section.pitfall,
+        ...section.inService.flatMap((use) => [use.what, use.role]),
+        ...section.decisions.flatMap((decision) => [decision.choice, decision.because, decision.cost]),
+        ...(section.facts ?? []).map((fact) => fact.label),
+      ])),
+  ],
+  libraries: [
+    ...LIBRARY_GUIDE_OVERVIEW.principles.flatMap((principle) => koreanTexts([principle.title, principle.body])),
+    ...koreanTexts([LIBRARY_GUIDE_OVERVIEW.howToRead]),
+    ...LIBRARY_GUIDE_AREAS.flatMap((area) =>
+      koreanTexts([
+        area.title, area.question, area.oneLine, area.easy, area.pitfall,
+        ...area.designWhy.flatMap((choice) => [choice.title, choice.body]),
+        ...area.libraries.flatMap((card) => [card.oneLine, card.usedFor, card.why, card.alternatives, card.cost]),
+      ])),
+  ],
   story: PUBLISHED_ENGINEERING_CHAPTERS.flatMap((chapter) =>
     koreanTexts([chapter.title, chapter.thesis, chapter.problem, chapter.decision, chapter.userValue, chapter.tradeoff, chapter.reuseSteps])),
   playbook: [

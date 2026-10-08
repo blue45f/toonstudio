@@ -48,12 +48,12 @@ const FREE_FIRST_AI_ROUTING: EngineeringAtlasEntry = {
     kind: "graph",
     title: t("AI 요청이 지나는 관문", "Gates an AI request passes"),
     caption: t(
-      "무료로 갈 수 없으면 길이 막힙니다. 유료로 몰래 넘어가지 않고, 결과는 늘 제안으로 돌아옵니다.",
-      "If the free path is closed, the request stops. It never slips into paid use, and the result always returns as a proposal.",
+      "무료로 갈 수 없으면 길이 막힙니다. 유료로 몰래 넘어가지 않고, 글 결과는 검토할 제안으로 돌아옵니다.",
+      "If the free path is closed, the request stops. It never slips into paid use, and text results return as proposals to review.",
     ),
     alt: t(
-      "AI 요청은 먼저 기기 안에서 처리할 수 있는지 판단합니다. 아니면 무료 허용 목록과 하루 예산을 차례로 확인하고, 통과하면 무료 공급자를 부릅니다. 허용 목록에 없으면 내 키로 명시 승인했는지 확인하고, 예산이 없으면 멈추며, 어느 길이든 결과는 제안으로 표시됩니다.",
-      "An AI request first checks whether it can run on the device. If not, it checks the free allowlist and then the daily budget, and calls a free provider when both pass. When the allowlist rejects it, the app asks whether you approved your own key; with no budget left it stops. Every route ends with the result shown as a proposal.",
+      "AI 요청은 먼저 기기 안에서 처리할 수 있는지 판단합니다. 아니면 무료 허용 목록과 하루 예산을 차례로 확인하고, 통과하면 무료 공급자를 부릅니다. 허용 목록에 없으면 내 키로 명시 승인했는지 확인하고, 예산이 없으면 멈춥니다. 글 결과(대사·팔레트·구도)는 검토할 제안으로 표시되고, 채색·배경·캐릭터 같은 이미지 결과는 바로 반영되는 경우가 있습니다.",
+      "An AI request first checks whether it can run on the device. If not, it checks the free allowlist and then the daily budget, and calls a free provider when both pass. When the allowlist rejects it, the app asks whether you approved your own key; with no budget left it stops. Text results (dialogue, palette, composition) are shown as proposals to review, while image results such as colorize, background and character may be applied at once.",
     ),
     nodes: [
       { id: "req", label: t("AI 요청", "AI request"), tone: "neutral", shape: "pill", at: [0, 1] },
@@ -65,7 +65,7 @@ const FREE_FIRST_AI_ROUTING: EngineeringAtlasEntry = {
       { id: "d-paid", label: t("내 키로 승인?", "Your key, approved?"), tone: "warn", shape: "diamond", at: [2, 2] },
       { id: "stop", label: t("멈추고 안내", "Stop and explain"), sub: t("유료 전환 없음", "No silent paid switch"), tone: "neutral", at: [3, 2] },
       { id: "paid", label: t("내 비용 경로", "Your own paid route"), sub: t("내 키 · 내 계정 과금", "Your key, your bill"), tone: "warn", at: [2, 3] },
-      { id: "proposal", label: t("제안으로 표시", "Shown as proposal"), tone: "good", shape: "pill", at: [5, 1] },
+      { id: "proposal", label: t("결과 도착", "Result arrives"), sub: t("글은 제안 · 이미지는 바로 반영", "Text: proposal · image: applied"), tone: "good", shape: "pill", at: [5, 1] },
     ],
     edges: [
       { from: "req", to: "d-local" },
@@ -86,8 +86,8 @@ const FREE_FIRST_AI_ROUTING: EngineeringAtlasEntry = {
     {
       feature: t("AI 설정 · 공급자 프리셋과 키 등록", "AI settings · provider presets and keys"),
       role: t(
-        "프리셋 11종을 고르고 키를 넣으면, 검토된 무료 주소·모델인지 코드가 먼저 확인합니다. 자동 후보에는 무료 정책이 늘 들어가고 유료 키는 허락해야 들어갑니다.",
-        "After you pick one of 11 presets and add a key, code first checks that the address and model are reviewed free ones. Free policies are always automatic candidates; paid keys join only when allowed.",
+        "프리셋 11개(공급자 10곳과 사용자 지정 1개) 중 하나를 고르고 키를 넣으면, 검토된 무료 주소·모델인지 코드가 먼저 확인합니다. 자동 후보에는 무료 정책이 늘 들어가고 유료 키는 허락해야 들어갑니다.",
+        "After you pick one of 11 presets (10 providers and 1 custom entry) and add a key, code first checks that the address and model are reviewed free ones. Free policies are always automatic candidates; paid keys join only when allowed.",
       ),
       paths: [
         "apps/web/src/shared/ai/free-ai-policy.ts#freeAiConnectionPolicyIssue",
@@ -251,8 +251,8 @@ const FREE_FIRST_AI_ROUTING: EngineeringAtlasEntry = {
   chapterIds: ["free-ai-routing", "ai-routing", "cost-engineering"],
   talk: {
     pitch: t(
-      "ToonStudio의 AI는 '공짜'가 아니라 '돈이 드는 지점을 숨기지 않는' 구조입니다. 무료로 확인된 주소와 모델만 자동 길에 올리고, 호출 직전에 하루 예산을 예약하며, 유료 키는 사용자가 설정에서 허락해야 순서에 들어옵니다. 결과는 늘 제안으로 보여 작가가 받아들이거나 버립니다. 다만 서버 공유 무료 풀의 운영 키는 아직 '설정 필요' 상태입니다.",
-      "ToonStudio's AI is not 'free'; it is built so cost boundaries stay visible. Only addresses and models verified as free join the automatic route, the daily budget is reserved right before each call, and a paid key enters the order only when the user allows it in settings. Results always arrive as proposals the artist accepts or discards. One honest caveat: the operator keys for the shared free pool are still in a 'setup required' state.",
+      "ToonStudio의 AI는 '공짜'가 아니라 '돈이 드는 지점을 숨기지 않는' 구조입니다. 무료로 확인된 주소와 모델만 자동 길에 올리고, 호출 직전에 하루 예산을 예약하며, 유료 키는 사용자가 설정에서 허락해야 순서에 들어옵니다. 글 결과는 제안으로 보여 작가가 받아들이거나 버리고, 이미지 채색·생성은 결과를 바로 반영합니다. 다만 서버 공유 무료 풀의 운영 키는 아직 '설정 필요' 상태입니다.",
+      "ToonStudio's AI is not 'free'; it is built so cost boundaries stay visible. Only addresses and models verified as free join the automatic route, the daily budget is reserved right before each call, and a paid key enters the order only when the user allows it in settings. Text results arrive as proposals the artist accepts or discards, while image colorize and generation apply their results at once. One honest caveat: the operator keys for the shared free pool are still in a 'setup required' state.",
     ),
     analogy: t(
       "대형마트의 시식 코너입니다. 줄을 서면 공짜로 맛볼 수 있지만, 계산대로 데려가는 건 손님이 직접 손을 들었을 때뿐입니다.",
@@ -350,13 +350,13 @@ const AMBIGUOUS_FAILURE_NO_RETRY: EngineeringAtlasEntry = {
       "Only a definite rejection before inference moves on; everything else stops where it is.",
     ),
     alt: t(
-      "공급자에 요청을 보내 성공하면 결과가 제안으로 쓰입니다. 실패하면 먼저 402·429 같은 확정 거절인지 보고, 맞으면 다음 무료 경로로 같은 요청을 보냅니다. 401·403 인증 실패는 서버 풀에서는 멈추고 내 키 체인에서는 다음 키를 씁니다. 시간 초과, 5xx, 네트워크 오류는 다시 보내지 않고 멈춥니다.",
-      "A request goes to the provider and, on success, the result is used as a proposal. On failure the app first checks for a definite rejection such as 402 or 429 and, if so, sends the same request on the next free route. A 401 or 403 stops on the server pool but moves to the next key in your own key chain. Timeouts, 5xx and network errors are not resent and simply stop.",
+      "공급자에 요청을 보내 성공하면 그 결과를 씁니다. 실패하면 먼저 402·429 같은 확정 거절인지 보고, 맞으면 다음 무료 경로로 같은 요청을 보냅니다. 401·403 인증 실패는 서버 풀에서는 멈추고 내 키 체인에서는 다음 키를 씁니다. 시간 초과, 5xx, 네트워크 오류는 다시 보내지 않고 멈춥니다.",
+      "A request goes to the provider and, on success, the result is used. On failure the app first checks for a definite rejection such as 402 or 429 and, if so, sends the same request on the next free route. A 401 or 403 stops on the server pool but moves to the next key in your own key chain. Timeouts, 5xx and network errors are not resent and simply stop.",
     ),
     nodes: [
       { id: "send", label: t("요청 전송", "Send request"), sub: t("무료 풀 또는 내 키", "Pool or your key"), tone: "external", shape: "pill", at: [0, 1] },
       { id: "d-ok", label: t("성공?", "Success?"), sub: t("2xx", "2xx"), tone: "neutral", shape: "diamond", at: [1, 1] },
-      { id: "ok", label: t("제안으로 사용", "Used as proposal"), tone: "good", shape: "pill", at: [1, 0] },
+      { id: "ok", label: t("결과 사용", "Use the result"), tone: "good", shape: "pill", at: [1, 0] },
       { id: "d-quota", label: t("확정 거절?", "Clear refusal?"), sub: t("402·429 등", "402 · 429"), tone: "neutral", shape: "diamond", at: [2, 1] },
       { id: "next", label: t("다음 무료 경로", "Next free route"), sub: t("추론 시작 전 거절만", "Pre-inference only"), tone: "external", at: [2, 2] },
       { id: "d-auth", label: t("인증 실패?", "Auth failed?"), sub: t("401·403", "401 · 403"), tone: "neutral", shape: "diamond", at: [3, 1] },
@@ -867,8 +867,8 @@ const QUOTA_LEDGER_BUDGET: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "브라우저 차단 문구는 '한국 시간 자정'이라고 하지만 코드는 UTC 자정(한국 시간 오전 9시)에 풉니다. 발표에서는 'UTC 기준 하루'라고 말하세요. 또 원장마다 운영 상태가 다릅니다: 브라우저는 동작 중, 서버 풀은 키·운영 확인 대기, 음악은 운영에서 꺼져 있습니다.",
-      "The browser's block message says 'midnight Korea time', but the code releases at UTC midnight (09:00 in Korea). Say 'a day in UTC' on stage. Operating states also differ per ledger: the browser one is running, the server pool awaits keys and sign-off, and music is off in production.",
+      "하루의 초기화는 UTC 자정(한국 시간 오전 9시)이고, 브라우저 차단 문구도 '다음 UTC 자정(한국 시간 오전 9시)'으로 맞춰 두었습니다. 발표에서는 'UTC 기준 하루'라고 말하세요. 또 원장마다 운영 상태가 다릅니다: 브라우저는 동작 중, 서버 풀은 키·운영 확인 대기, 음악은 저장소 설정상 꺼져 있습니다(운영 대시보드 값은 미확인).",
+      "The daily reset is at UTC midnight (09:00 in Korea), and the browser's block message has been aligned to say 'the next UTC midnight (09:00 Korea time)'. Say 'a day in UTC' on stage. Operating states also differ per ledger: the browser one is running, the server pool awaits keys and sign-off, and music is off in the repository settings (the production dashboard values were not checked).",
     ),
   },
   technologies: ["Web Locks", "PostgreSQL", "Redis Lua", "Upstash Redis"],

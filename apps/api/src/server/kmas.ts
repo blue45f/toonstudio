@@ -100,6 +100,8 @@ interface KmasResponseImageOptions {
 
 interface KmasFetchOptions {
   defaultPagination?: boolean;
+  /** 요청 전체(헤더+본문)의 제한 시간. 기본 8초, 신규 KMAS 프록시(kmas-reference.ts)와 같다. */
+  timeoutMs?: number;
 }
 
 export type KmasSiteAccessMergeResult = {
@@ -117,6 +119,10 @@ interface KmasSiteAccessMergeOptions {
 
 const DEFAULT_BASE_URL = "https://www.kmas.or.kr";
 const BOOK_AND_WEBTOON_PATH = "/openapi/search/bookAndWebtoonList";
+// 외부 호출 한도: 신규 KMAS 프록시(apps/api/src/server/kmas-reference.ts)와 같은 값·같은 방식이다.
+const KMAS_FETCH_TIMEOUT_MS = 8_000;
+const KMAS_MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+const KMAS_ALLOWED_HOSTNAMES: ReadonlySet<string> = new Set(["www.kmas.or.kr", "kmas.or.kr"]);
 const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_LOOKUP_LIMIT = 24;
 const DEFAULT_LOOKUP_CONCURRENCY = 3;
@@ -156,6 +162,55 @@ export function kmasResultOk(response: KmasBookAndWebtoonResponse): boolean {
   return response.result?.resultState === "success";
 }
 
+/** prvKey 를 쿼리에 싣기 전에 호스트를 확인한다. 신규 프록시와 같은 허용 목록(https, 기본 포트, 자격 정보 없음)이다. */
+function assertAllowedKmasBase(base: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(base);
+  } catch {
+    throw new Error("KMAS_BASE_URL is not a valid URL");
+  }
+  if (
+    parsed.protocol !== "https:"
+    || !KMAS_ALLOWED_HOSTNAMES.has(parsed.hostname)
+    || parsed.port !== ""
+    || parsed.username !== ""
+    || parsed.password !== ""
+  ) {
+    throw new Error("KMAS_BASE_URL must be https://www.kmas.or.kr or https://kmas.or.kr");
+  }
+}
+
+/** 응답 본문을 KMAS_MAX_RESPONSE_BYTES 까지만 읽어 JSON 으로 파싱한다. 초과하면 스트림을 취소하고 실패한다. */
+async function readBoundedKmasJson(response: Response): Promise<unknown> {
+  const declared = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > KMAS_MAX_RESPONSE_BYTES) {
+    await response.body?.cancel();
+    throw new Error(`KMAS response exceeds ${KMAS_MAX_RESPONSE_BYTES} bytes`);
+  }
+  if (!response.body) throw new Error("KMAS response had no body");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  let bytes = 0;
+  try {
+    for (;;) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > KMAS_MAX_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new Error(`KMAS response exceeds ${KMAS_MAX_RESPONSE_BYTES} bytes`);
+      }
+      text += decoder.decode(chunk.value, { stream: true });
+    }
+    text += decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
+  return JSON.parse(text) as unknown;
+}
+
 export async function fetchKmasBookAndWebtoon(
   query: KmasBookAndWebtoonQuery = {},
   env: EnvLike = process.env,
@@ -165,6 +220,7 @@ export async function fetchKmasBookAndWebtoon(
   if (!key) throw new Error("KMAS_PRV_KEY is not configured");
 
   const base = (env.KMAS_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  assertAllowedKmasBase(base);
   const url = new URL(`${base}${BOOK_AND_WEBTOON_PATH}`);
   url.searchParams.set("prvKey", key);
   setParam(url, "title", query.title);
@@ -183,13 +239,36 @@ export async function fetchKmasBookAndWebtoon(
     url.searchParams.set("viewItemCnt", String(boundInt(query.viewItemCnt, DEFAULT_PAGE_SIZE, 1, 100)));
   }
 
-  const response = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!response.ok) throw new Error(`KMAS ${response.status} ${response.statusText}`);
-  const json = (await response.json()) as Partial<KmasBookAndWebtoonResponse>;
-  if (!json || typeof json !== "object" || !json.result) {
-    throw new Error("KMAS response did not contain result envelope");
+  const timeoutMs = options.timeoutMs ?? KMAS_FETCH_TIMEOUT_MS;
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    // redirect: "error" — 허용 목록 밖 호스트로 prvKey 가 든 요청이 넘어가지 않게 한다.
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+      redirect: "error",
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new Error(`KMAS ${response.status} ${response.statusText}`);
+    }
+    const json = (await readBoundedKmasJson(response)) as Partial<KmasBookAndWebtoonResponse> | null;
+    if (!json || typeof json !== "object" || !json.result) {
+      throw new Error("KMAS response did not contain result envelope");
+    }
+    return json as KmasBookAndWebtoonResponse;
+  } catch (error) {
+    // 오류 메시지에 URL(prvKey 포함)을 싣지 않는다.
+    if (timedOut) throw new Error(`KMAS request timed out after ${timeoutMs}ms`, { cause: error });
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
-  return json as KmasBookAndWebtoonResponse;
 }
 
 export async function getKmasBookAndWebtoonProxyResponse(

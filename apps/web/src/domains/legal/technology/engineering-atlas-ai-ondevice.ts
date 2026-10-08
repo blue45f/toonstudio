@@ -51,8 +51,8 @@ const ONNX_RUNTIME_WEB_INFERENCE: EngineeringAtlasEntry = {
       "The drawing flows only inside the device, and a model runs only after its hash is verified.",
     ),
     alt: t(
-      "실행 버튼을 누르면 모델과 실행 엔진을 처음 한 번 받습니다. 받은 모델의 SHA-256이 등록값과 같아야 통과하고 다르면 거절합니다. 통과하면 WebGPU가 가능한지 보고, 가능하면 WebGPU로 아니면 WASM으로 추론합니다. 결과는 문서가 그대로일 때만 원본 크기로 합성되어 제안으로 쓰입니다.",
-      "Pressing the run button downloads the model and engine once. The model passes only if its SHA-256 equals the registered value and is rejected otherwise. If it passes, the app checks WebGPU and runs on WebGPU when possible or on WASM otherwise. The result is composited at full size only if the document is unchanged, and used as a proposal.",
+      "실행 버튼을 누르면 모델과 실행 엔진을 처음 한 번 받습니다. 받은 모델의 SHA-256이 등록값과 같아야 통과하고 다르면 거절합니다. 통과하면 WebGPU가 가능한지 보고, 가능하면 WebGPU로 아니면 WASM으로 추론합니다. 결과는 문서가 그대로일 때만 원본 크기로 합성되고, 선택한 레이어 이미지에 승인 단계 없이 바로 반영됩니다.",
+      "Pressing the run button downloads the model and engine once. The model passes only if its SHA-256 equals the registered value and is rejected otherwise. If it passes, the app checks WebGPU and runs on WebGPU when possible or on WASM otherwise. The result is composited at full size only if the document is unchanged, and is applied to the selected layer's image at once, without an approval step.",
     ),
     nodes: [
       { id: "btn", label: t("실행 버튼", "Run button"), sub: t("채색·배경 제거 등", "Colorize, cut-out, etc."), tone: "local", shape: "pill", at: [0, 1] },
@@ -63,7 +63,7 @@ const ONNX_RUNTIME_WEB_INFERENCE: EngineeringAtlasEntry = {
       { id: "gpu", label: t("WebGPU로 추론", "Run on WebGPU"), sub: t("그래픽 칩 사용", "Uses the GPU"), tone: "ai", at: [4, 1] },
       { id: "wasm", label: t("WASM으로 추론", "Run on WASM"), sub: t("CPU · 느리지만 어디서나", "CPU: slower, works anywhere"), tone: "ai", at: [3, 2] },
       { id: "compose", label: t("원본 크기로 합성", "Full-size composite"), sub: t("에포크가 같을 때만", "Only if the epoch matches"), tone: "local", at: [5, 1] },
-      { id: "result", label: t("결과를 제안으로", "Result as proposal"), tone: "good", shape: "pill", at: [5, 0] },
+      { id: "result", label: t("레이어에 바로 반영", "Applied to layer"), tone: "good", shape: "pill", at: [5, 0] },
     ],
     edges: [
       { from: "btn", to: "load" },
@@ -643,8 +643,8 @@ const CREATOR_INFERENCE_SERVICE: EngineeringAtlasEntry = {
       "services/creator-inference in the repository is the reference build (FastAPI) of that server. It runs Wan2.1 (picture to video), TripoSR (one picture to a 3D shape) and SDXL + ControlNet (3D to webtoon illustration), stores jobs in SQLite and runs one GPU job at a time. Uploads are verified in 1 MiB chunks with SHA-256, and result files are checked against SHA-256 too. The defaults are 2 concurrent jobs per user, 12 queued overall and 12 per day, and an unconfigured model returns 503 instead of a fake result.",
     ),
     t(
-      "운영 서버에서 GPU를 직접 돌리는 길은 2026-09-16 클라우드 전용 계약으로 대체되었습니다. 지금 API의 studio-ai/inference와 studio-ai/media 경로는 모두 503 PERSONAL_CREATOR_RUNTIME_REQUIRED를 돌려주는 스텁이고, 생성 실험실(/studio/generate)은 가짜 결과 대신 이유와 '추론 서버 없이도 같은 결과를 직접 만드는 도구'(모션 웹툰, 캐릭터 3D 셰이퍼, 3D 배경 스튜디오)를 안내합니다. 모델 파일은 저장소에 넣지 않고, 설치 스크립트는 40자리 revision과 라이선스 수락 없이는 받지 않으며 파일별 SHA-256 목록을 남깁니다.",
-      "Running GPUs directly on the production server was superseded by a cloud-only contract on 2026-09-16. Today the API's studio-ai/inference and studio-ai/media routes are stubs that all return 503 PERSONAL_CREATOR_RUNTIME_REQUIRED, and the generative lab (/studio/generate) shows the reason and tools that make the same result by hand without an inference server (Motion Webtoon, Character Shaper, 3D Background Studio) instead of a fake result. Model files stay out of the repository, and the install script refuses to download without a 40-character revision and a license acknowledgement, leaving a per-file SHA-256 list.",
+      "운영 서버에서 GPU를 직접 돌리는 길은 2026-09-16 클라우드 전용 계약으로 대체되었습니다. 지금 API의 studio-ai/inference와 studio-ai/media 경로 가운데 업로드·작업·결과 경로는 모두 503 PERSONAL_CREATOR_RUNTIME_REQUIRED를 돌려주는 스텁이고, 상태 조회는 200으로 꺼져 있음(enabled·configured: false)을 알려 줍니다. 생성 실험실(/studio/generate)은 이 상태를 읽어 가짜 결과 대신 이유와 '추론 서버 없이도 같은 결과를 직접 만드는 도구'(모션 웹툰, 캐릭터 3D 셰이퍼, 3D 배경 스튜디오)를 안내하고, AI Runtime 화면(/studio/ai-lab)은 등록한 내 Runtime에 직접 연결합니다. 모델 파일은 저장소에 넣지 않고, 설치 스크립트는 40자리 revision과 라이선스 수락 없이는 받지 않으며 파일별 SHA-256 목록을 남깁니다.",
+      "Running GPUs directly on the production server was superseded by a cloud-only contract on 2026-09-16. Of the API's studio-ai/inference and studio-ai/media routes today, the upload, job and result routes are stubs that all return 503 PERSONAL_CREATOR_RUNTIME_REQUIRED, while the status check answers 200 and reports that it is off (enabled and configured: false). The generative lab (/studio/generate) reads that status and, instead of a fake result, shows the reason and tools that make the same result by hand without an inference server (Motion Webtoon, Character Shaper, 3D Background Studio), and the AI Runtime screen (/studio/ai-lab) connects straight to the Runtime you registered. Model files stay out of the repository, and the install script refuses to download without a 40-character revision and a license acknowledgement, leaving a per-file SHA-256 list.",
     ),
     t(
       "정직한 상태: 이 서비스는 CPU 테스트(test-only runner)만 통과했고 CUDA GPU에서의 생성 품질·운영 검증은 하지 않았습니다. README가 말하는 CREATOR_INFERENCE_URL을 읽는 코드는 저장소에 없고, 브라우저가 등록된 Runtime에 직접 연결하는 클라이언트만 있습니다. 상태 보드에서는 '개발자 미리보기'입니다. 모델 라이선스(Wan Apache-2.0, TripoSR MIT, SDXL·ControlNet은 사용 제한이 있는 OpenRAIL++-M)는 공개 전에 검토해야 합니다.",
@@ -652,7 +652,7 @@ const CREATOR_INFERENCE_SERVICE: EngineeringAtlasEntry = {
     ),
   ],
   keyPoints: [
-    t("운영 서버의 GPU 추론 경로는 꺼져 있고 503을 돌려줍니다", "The server-side GPU routes are off and answer 503"),
+    t("운영 서버의 GPU 작업 경로는 꺼져 있고 503을 돌려줍니다", "The server-side GPU job routes are off and answer 503"),
     t("내 GPU 서버 주소·토큰을 등록하면 브라우저가 직접 연결합니다", "Register your own GPU server's address and token and the browser connects directly"),
     t("가짜 결과 대신 이유와 '직접 만드는 대안'을 보여 줍니다", "Instead of a fake result it shows the reason and a hands-on alternative"),
     t("참조 구현은 CPU 테스트만 통과, GPU 검증은 아직입니다", "The reference build passed CPU tests only; GPU validation is still pending"),
@@ -662,26 +662,26 @@ const CREATOR_INFERENCE_SERVICE: EngineeringAtlasEntry = {
     kind: "graph",
     title: t("영상·3D 요청이 가는 길", "Where a video or 3D request goes"),
     caption: t(
-      "운영 API는 꺼져 있고, 내 Runtime이 연결돼 준비됐을 때만 작업이 돕니다. 아니면 이유와 대안을 보여 줍니다.",
-      "The production API is off; a job runs only when your Runtime is connected and ready. Otherwise the reason and an alternative are shown.",
+      "운영 API의 작업 경로는 꺼져 있고, 내 Runtime이 연결돼 준비됐을 때만 작업이 돕니다. 아니면 이유와 안내만 보입니다.",
+      "The production API's job routes are off; a job runs only when your Runtime is connected and ready. Otherwise only the reason and guidance are shown.",
     ),
     alt: t(
-      "AI 실험실 화면은 ToonStudio API에 상태를 물으면 503으로 꺼져 있다는 답을 받습니다. 사용자가 자기 Runtime을 등록했는지 보고, 아니면 이유와 직접 만드는 도구를 안내합니다. 등록했다면 엔진이 준비됐는지 보고, 준비됐으면 작업 큐에서 모델이 돌고 결과의 SHA-256을 대조합니다.",
-      "The AI lab screen asks the ToonStudio API for status and gets a 503 saying it is off. It then checks whether the user registered a Runtime; if not, it explains why and points to hands-on tools. If registered, it checks whether the engine is ready and, when it is, a model runs from the job queue and the result's SHA-256 is verified.",
+      "생성 실험실(/studio/generate)은 ToonStudio API에 상태를 물어 200 응답으로 꺼져 있다는 답을 받고, 가짜 결과 대신 이유와 직접 만드는 도구를 안내합니다. AI Runtime 화면(/studio/ai-lab)은 API가 아니라 사용자가 등록한 Runtime에 직접 연결합니다. 등록이 없으면 연결이 필요하다고 안내하고, 등록했다면 엔진이 준비됐는지 보고, 준비됐으면 작업 큐에서 모델이 돌고 결과의 SHA-256을 대조합니다.",
+      "The generative lab (/studio/generate) asks the ToonStudio API for status, gets a 200 reply saying it is off, and shows the reason and hands-on tools instead of a fake result. The AI Runtime screen (/studio/ai-lab) connects straight to the Runtime the user registered, not to the API. Without one it says a connection is needed; with one, it checks whether the engine is ready and, when it is, a model runs from the job queue and the result's SHA-256 is verified.",
     ),
     nodes: [
-      { id: "lab", label: t("AI 실험실 화면", "AI lab screen"), sub: t("/studio/ai-lab", "/studio/ai-lab"), tone: "local", shape: "pill", at: [0, 1] },
-      { id: "api", label: t("ToonStudio API", "ToonStudio API"), sub: t("추론 경로는 모두 503", "Inference routes: 503"), tone: "warn", at: [0, 0] },
+      { id: "lab", label: t("AI Runtime 화면", "AI Runtime screen"), sub: t("/studio/ai-lab", "/studio/ai-lab"), tone: "local", shape: "pill", at: [0, 1] },
+      { id: "api", label: t("ToonStudio API", "ToonStudio API"), sub: t("상태 200 · 작업 경로 503", "Status 200 · job routes 503"), tone: "warn", at: [0, 0] },
       { id: "d-cfg", label: t("Runtime 등록?", "Runtime linked?"), tone: "neutral", shape: "diamond", at: [1, 1] },
-      { id: "help", label: t("이유와 대안 안내", "Reason + alternatives"), sub: t("모션 웹툰·3D 셰이퍼 등", "Motion Webtoon, 3D shaper"), tone: "neutral", at: [1, 0] },
+      { id: "help", label: t("이유와 대안 안내", "Reason + alternatives"), sub: t("연결 필요 · 직접 만드는 도구", "Connect a Runtime · hands-on tools"), tone: "neutral", at: [1, 0] },
       { id: "rt", label: t("내 Creator Runtime", "Your Creator Runtime"), sub: t("주소 + 토큰 · 직접 연결", "Address + token · direct"), tone: "external", at: [2, 1] },
       { id: "d-ready", label: t("엔진 준비됨?", "Engine ready?"), tone: "neutral", shape: "diamond", at: [3, 1] },
-      { id: "fail", label: t("503 응답", "503 reply"), sub: t("가짜 결과 없음", "No fake result"), tone: "warn", at: [3, 0] },
+      { id: "fail", label: t("503 응답", "503 reply"), sub: t("내 Runtime · 가짜 결과 없음", "Your Runtime · no fake result"), tone: "warn", at: [3, 0] },
       { id: "job", label: t("작업 큐 → 모델 추론", "Job queue → model run"), sub: t("GPU 작업은 한 번에 1개", "One GPU job at a time"), tone: "ai", at: [4, 1] },
       { id: "check", label: t("SHA-256 대조", "Verify SHA-256"), sub: t("결과 파일 확인", "Result file check"), tone: "good", at: [5, 1] },
     ],
     edges: [
-      { from: "lab", to: "api", label: t("상태 확인", "status"), style: "dashed" },
+      { from: "api", to: "help", label: t("실험실 조회", "lab asks"), style: "dashed" },
       { from: "lab", to: "d-cfg" },
       { from: "d-cfg", to: "help", label: t("아니오", "no") },
       { from: "d-cfg", to: "rt", label: t("예", "yes") },
@@ -720,8 +720,8 @@ const CREATOR_INFERENCE_SERVICE: EngineeringAtlasEntry = {
     {
       feature: t("ToonStudio API의 추론 경로 (꺼짐)", "Inference routes of the ToonStudio API (off)"),
       role: t(
-        "studio-ai/inference/*와 studio-ai/media/* 는 모두 503 PERSONAL_CREATOR_RUNTIME_REQUIRED를 돌려줍니다. 운영자 비용으로 돌리지 않는다는 뜻(operatorFunded: false)입니다.",
-        "studio-ai/inference/* and studio-ai/media/* all return 503 PERSONAL_CREATOR_RUNTIME_REQUIRED, meaning nothing runs on operator money (operatorFunded: false).",
+        "studio-ai/inference/*와 studio-ai/media/* 의 업로드·작업·결과 경로는 모두 503 PERSONAL_CREATOR_RUNTIME_REQUIRED를 돌려주고, 상태 조회(…/status)는 200으로 꺼져 있음을 알려 줍니다. 운영자 비용으로 돌리지 않는다는 뜻(operatorFunded: false)입니다.",
+        "The upload, job and result routes of studio-ai/inference/* and studio-ai/media/* all return 503 PERSONAL_CREATOR_RUNTIME_REQUIRED, while the status check (…/status) answers 200 and reports that it is off. Nothing runs on operator money (operatorFunded: false).",
       ),
       paths: [
         "apps/api/src/modules/studio-ai/creator-inference.controller.ts",
@@ -850,8 +850,8 @@ const CREATOR_INFERENCE_SERVICE: EngineeringAtlasEntry = {
   chapterIds: ["ai-routing", "cost-engineering", "infrastructure"],
   talk: {
     pitch: t(
-      "영상이나 3D를 AI로 만드는 일은 GPU가 필요합니다. 운영 서버가 대신 해 주면 비용이 사용자 수만큼 운영자에게 쌓이므로 그 경로는 꺼 두었고 503을 돌려줍니다. 대신 쓰고 싶은 사람이 자기 GPU 서버의 주소와 토큰을 등록하면 브라우저가 직접 연결합니다. 저장소의 Python 서비스는 그 서버의 참조 구현이며, CPU 테스트만 통과했고 GPU 검증은 아직입니다.",
-      "Making video or 3D with AI needs a GPU. If the production server did it, cost would pile up on the operator in proportion to users, so that route is off and answers 503. Instead, anyone who wants it registers their own GPU server's address and token, and the browser connects directly. The Python service in the repository is the reference build of that server; it has passed CPU tests only, and GPU validation is still to come.",
+      "영상이나 3D를 AI로 만드는 일은 GPU가 필요합니다. 운영 서버가 대신 해 주면 비용이 사용자 수만큼 운영자에게 쌓이므로 그 경로는 꺼 두었고 작업 요청에는 503을 돌려줍니다. 대신 쓰고 싶은 사람이 자기 GPU 서버의 주소와 토큰을 등록하면 브라우저가 직접 연결합니다. 저장소의 Python 서비스는 그 서버의 참조 구현이며, CPU 테스트만 통과했고 GPU 검증은 아직입니다.",
+      "Making video or 3D with AI needs a GPU. If the production server did it, cost would pile up on the operator in proportion to users, so that route is off and job requests answer 503. Instead, anyone who wants it registers their own GPU server's address and token, and the browser connects directly. The Python service in the repository is the reference build of that server; it has passed CPU tests only, and GPU validation is still to come.",
     ),
     analogy: t(
       "가게가 주방을 직접 운영하는 대신, 손님이 자기 주방을 가져와 연결하는 방식입니다. 가게는 주문서(작업 요청)만 정확히 주고받습니다.",
@@ -861,8 +861,8 @@ const CREATOR_INFERENCE_SERVICE: EngineeringAtlasEntry = {
       {
         question: t("영상·3D 기능은 지금 쓸 수 없나요?", "Can't I use the video and 3D features right now?"),
         answer: t(
-          "운영 서버 경로로는 쓸 수 없습니다. 내 Runtime을 연결하면 /studio/ai-lab에서 쓸 수 있고, 연결이 없으면 모션 웹툰·캐릭터 3D 셰이퍼·3D 배경 스튜디오 같은 직접 만드는 도구를 안내합니다.",
-          "Not through the production server. With your own Runtime connected you can use it at /studio/ai-lab, and without one the app points to hands-on tools such as Motion Webtoon, Character Shaper and 3D Background Studio.",
+          "운영 서버 경로로는 쓸 수 없습니다. 내 Runtime을 연결하면 /studio/ai-lab에서 쓸 수 있고, 생성 실험실(/studio/generate)은 모션 웹툰·캐릭터 3D 셰이퍼·3D 배경 스튜디오 같은 직접 만드는 도구를 안내합니다.",
+          "Not through the production server. With your own Runtime connected you can use it at /studio/ai-lab, and the generative lab (/studio/generate) points to hands-on tools such as Motion Webtoon, Character Shaper and 3D Background Studio.",
         ),
       },
       {
@@ -881,8 +881,8 @@ const CREATOR_INFERENCE_SERVICE: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "'영상·3D 생성이 된다'고 말하면 안 됩니다. 운영 API는 503이고 Python 서비스는 GPU 검증 전입니다. README의 CREATOR_INFERENCE_URL을 읽는 코드도 저장소에 없습니다. 지금 보여 줄 수 있는 것은 '정직하게 꺼 둔 상태'와 직접 연결 규약뿐입니다.",
-      "Do not say 'video and 3D generation work'. The production API answers 503 and the Python service has not been validated on a GPU. No code in the repository reads the README's CREATOR_INFERENCE_URL either. What can honestly be shown today is the deliberately-off state and the direct-connection contract.",
+      "'영상·3D 생성이 된다'고 말하면 안 됩니다. 운영 API의 작업 경로는 503이고 Python 서비스는 GPU 검증 전입니다. README의 CREATOR_INFERENCE_URL을 읽는 코드도 저장소에 없습니다. 지금 보여 줄 수 있는 것은 '정직하게 꺼 둔 상태'와 직접 연결 규약뿐입니다.",
+      "Do not say 'video and 3D generation work'. The production API's job routes answer 503 and the Python service has not been validated on a GPU. No code in the repository reads the README's CREATOR_INFERENCE_URL either. What can honestly be shown today is the deliberately-off state and the direct-connection contract.",
     ),
   },
   technologies: ["FastAPI", "Wan2.1", "TripoSR", "SDXL ControlNet"],
@@ -899,7 +899,7 @@ const CREATOR_INFERENCE_SERVICE: EngineeringAtlasEntry = {
     },
     {
       value: "503",
-      label: t("운영 API 추론 경로의 응답 코드(PERSONAL_CREATOR_RUNTIME_REQUIRED)", "Response code of the production API inference routes (PERSONAL_CREATOR_RUNTIME_REQUIRED)"),
+      label: t("운영 API 추론 작업 경로의 응답 코드(PERSONAL_CREATOR_RUNTIME_REQUIRED, 상태 조회는 200)", "Response code of the production API inference job routes (PERSONAL_CREATOR_RUNTIME_REQUIRED; the status check is 200)"),
       source: "apps/api/src/modules/studio-ai/creator-inference.controller.ts",
     },
   ],
