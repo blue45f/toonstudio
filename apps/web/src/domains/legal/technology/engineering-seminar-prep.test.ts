@@ -270,7 +270,10 @@ const PREP_FACTS: readonly PrepFact[] = [
       expect(protocol).toContain("z.literal(STUDIO_CRDT_PROTOCOL_VERSION)");
       expect(readText("apps", "web", "src", "app", "errors", "chunk-reload-guard.ts")).toContain("세션당 1회");
       const skew = cardText("version-skew-chunk-reload-recovery");
-      expect(skew).toContain("세션당 한 번만 자동 새로고침");
+      // 자동 새로고침은 오류 경계가 세션당 한 번, import 래퍼(lazyRetry 등)가 청크당 한 번이다(세션 전체 한 번이라고 일반화하지 않는다).
+      expect(skew).toContain("오류 경계가 세션당 한 번만 자동 새로고침");
+      expect(skew).toContain("lazyRetry");
+      expect(readText("apps", "web", "src", "shared", "lib", "lazy-retry.ts")).toContain("loadChunkWithReloadRecovery");
       expect(skew).toContain("정책과 리뷰에 의존");
       expect(cardText("build-fingerprint-map")).toContain("번들과 API 헬스 응답에는 커밋 SHA가 없음");
     },

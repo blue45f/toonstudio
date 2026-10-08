@@ -7,7 +7,7 @@ import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
  * 기술 도감 · platform-ops 카테고리 — 프런트엔드와 백엔드의 빌드·배포·버전을 맞추는 기술 6장.
  * 이 파일은 지문 지도·공유 계약·버전 고정 3장을 담고, 캐시 계약·버전 어긋남·릴리스 순서 3장은
  * engineering-atlas-platform-ops-build-release.ts 에 있다. 사실은 2026-10-08 기준 코드·시험·문서와 공식 문서로 확인했다.
- * 운영 대시보드(Cloudflare·Render·GitHub)의 실제 값과 운영 응답 헤더는 열람하지 않았다.
+ * Cloudflare·GitHub 대시보드의 실제 값과 운영 응답 헤더는 열람하지 않았고, Render는 2026-10-08 API로 배포 이력만 읽기 전용 조회했다.
  */
 
 const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
@@ -29,21 +29,21 @@ const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
       "To tell whether two pieces came from the same build, each needs a fingerprint, and ToonStudio's fingerprints are of different kinds. The front end's JS and CSS bundle carries neither a commit number (SHA) nor a date, only hashes in its file names and a 12-character content fingerprint (buildId) baked into the service worker, sw.js. The database migration ledger, on the other hand, records on every row the SHA-256 checksum of the SQL file and the commit SHA that applied it (releaseSha). In parcel terms, one side has a photo of the contents and the other a tracking number.",
     ),
     t(
-      "프런트 지문은 이렇게 만들어집니다. Vite가 빌드하며 파일 목록(manifest.json)을 남기면, 서비스 워커 플러그인이 앱 셸 파일의 SHA-256을 구합니다. 필수 JS·CSS와 고정 정적 파일 23개가 대상입니다. 이 목록과 지문, 예열할 번역 사전, 오프라인 그리기 팩 목록을 하나의 문자열로 이어 다시 해시해 앞 12자리를 buildId로 삼고 sw.js에 박습니다. 서비스 워커는 이 id로 precache 저장소 이름을 짓고 활성화 때 이름이 다른 옛 저장소를 지웁니다. 시계도 커밋도 넣지 않아 내용이 같으면 id도 같습니다.",
-      "The front-end fingerprint is made like this. While Vite builds it leaves a file list (manifest.json), and a service-worker plugin takes the SHA-256 of the app-shell files: the required JS and CSS plus 23 fixed static files. That list, the fingerprints, the translation dictionaries to warm and the offline-drawing pack list are joined into one string and hashed again, and the first 12 characters become the buildId baked into sw.js. The worker names its precache bucket with this id and on activation deletes older buckets with a different name. No clock and no commit go in, so identical content gives an identical id.",
+      "프런트 지문은 이렇게 만들어집니다. Vite가 빌드하며 파일 목록(manifest.json)을 남기면, 서비스 워커 플러그인이 앱 셸 파일의 SHA-256을 구합니다. 필수 JS·CSS와 고정 정적 파일 23개가 대상입니다. 이 목록과 지문, 예열할 번역 사전과 오프라인 그리기 팩의 파일 경로 목록(이 둘은 내용 해시 없이 경로만)을 하나의 문자열로 이어 다시 해시해 앞 12자리를 buildId로 삼고 sw.js에 박습니다. 서비스 워커는 이 id로 precache 저장소 이름을 짓고 활성화 때 이름이 다른 옛 저장소를 지웁니다. 시계도 커밋도 넣지 않아 내용이 같으면 id도 같습니다.",
+      "The front-end fingerprint is made like this. While Vite builds it leaves a file list (manifest.json), and a service-worker plugin takes the SHA-256 of the app-shell files: the required JS and CSS plus 23 fixed static files. That list, the fingerprints, and the file-path lists of the translation dictionaries to warm and of the offline-drawing pack (these two as paths only, with no content hash) are joined into one string and hashed again, and the first 12 characters become the buildId baked into sw.js. The worker names its precache bucket with this id and on activation deletes older buckets with a different name. No clock and no commit go in, so identical content gives an identical id.",
     ),
     t(
-      "SHA는 따로 쓰입니다. 정적 웹 배포 스크립트는 HEAD가 승인 SHA와 같은지 확인할 뿐 그 값을 번들에 넣지 않습니다. 마이그레이션 워크플로는 release_sha가 main의 조상일 때만 돌아 원장에 남기고, 수동 컨테이너 워크플로는 이미지에 :<SHA> 태그를 붙입니다. 트래픽 분석 Worker만 운영 배포 때 RELEASE_SHA 변수를 심지만 그 코드는 값을 읽지 않습니다. 프런트와 백엔드를 이어 주는 것은 같은 승인 SHA 하나와 사람이 적는 릴리스 기록이며, 번들이나 서버가 스스로 말하는 버전이 아닙니다.",
-      "SHAs are used separately. The static-site deploy script only checks that HEAD equals the approved SHA and does not put the value into the bundle. The migration workflow runs only when release_sha is an ancestor of main and keeps it in the ledger, and the manual container workflow tags an image with :<SHA>. Only the traffic-analytics Worker gets a RELEASE_SHA variable at a production deploy, and its code does not read it. What ties front and back together is one approved SHA plus a release record that people write, not a version that the bundle or the server states about itself.",
+      "SHA는 따로 쓰입니다. 정적 웹 배포 스크립트는 HEAD가 승인 SHA와 같은지 확인할 뿐 그 값을 번들에 넣지 않습니다. 마이그레이션 워크플로는 release_sha가 main의 조상일 때만 돌아 원장에 남기고, 수동 컨테이너 워크플로는 이미지에 :<SHA> 태그를 붙입니다. 운영 Core API는 이 이미지를 Render에 수동 배포 중입니다(2026-10-08 Render API 읽기 전용 조회). 트래픽 분석 Worker만 운영 배포 때 RELEASE_SHA 변수를 심지만 그 코드는 값을 읽지 않습니다. 프런트와 백엔드를 이어 주는 것은 같은 승인 SHA 하나와 사람이 적는 릴리스 기록이며, 번들이나 서버가 스스로 말하는 버전이 아닙니다.",
+      "SHAs are used separately. The static-site deploy script only checks that HEAD equals the approved SHA and does not put the value into the bundle. The migration workflow runs only when release_sha is an ancestor of main and keeps it in the ledger, and the manual container workflow tags an image with :<SHA>. The production Core API is deployed from that image by hand on Render (a read-only Render API query on 2026-10-08). Only the traffic-analytics Worker gets a RELEASE_SHA variable at a production deploy, and its code does not read it. What ties front and back together is one approved SHA plus a release record that people write, not a version that the bundle or the server states about itself.",
     ),
     t(
-      "그래서 운영 사이트에서 '떠 있는 번들이나 서버가 어느 커밋인가'를 읽어 낼 방법이 코드에는 없습니다. API 헬스 응답(ready는 status 하나, capabilities는 기능 11개의 상태)에도 버전 필드가 없고, Render가 주는 커밋 환경 변수(RENDER_GIT_COMMIT)도 저장소 코드가 읽지 않습니다. 빌드 때 SHA를 번들과 헬스 응답에 넣는 방법은 흔한 대안이지만 지금 코드에는 없는 설계 후보입니다.",
-      "So the code has no way to read from the production site which commit the running bundle or server comes from. The API health replies (ready carries just a status, capabilities carries the state of 11 features) have no version field either, and the commit variable Render provides (RENDER_GIT_COMMIT) is not read by any repository code. Stamping a SHA into the bundle and the health reply at build time is a common alternative, but it is only a design candidate, not in the code today.",
+      "그래서 운영 사이트에서 '떠 있는 번들이나 서버가 어느 커밋인가'를 읽어 낼 방법이 코드에는 없습니다. API 헬스 응답(ready는 status 하나, capabilities는 기능 11개의 상태)에도 버전 필드가 없고, Render가 주는 커밋 환경 변수(RENDER_GIT_COMMIT)도 저장소 코드가 읽지 않습니다. 다만 Core API는 Render 배포 이력의 이미지 태그가 곧 커밋 SHA라서 그 이력으로 확인할 수 있습니다(정적 웹은 Cloudflare 배포 이력). 빌드 때 SHA를 번들과 헬스 응답에 넣는 방법은 흔한 대안이지만 지금 코드에는 없는 설계 후보입니다.",
+      "So the code has no way to read from the production site which commit the running bundle or server comes from. The API health replies (ready carries just a status, capabilities carries the state of 11 features) have no version field either, and the commit variable Render provides (RENDER_GIT_COMMIT) is not read by any repository code. The Core API, though, can be checked from Render's deploy history, because its image tag is the commit SHA (for the static site, Cloudflare's deploy history). Stamping a SHA into the bundle and the health reply at build time is a common alternative, but it is only a design candidate, not in the code today.",
     ),
   ],
   keyPoints: [
     t("프런트: 파일 이름 해시와 sw.js buildId(내용 해시 12자)", "Front end: file-name hashes and an sw.js buildId (12-char content hash)"),
-    t("백엔드: SQL SHA-256 체크섬과 적용 커밋 releaseSha", "Back end: SQL SHA-256 checksums and the applying commit's releaseSha"),
+    t("백엔드: SQL 체크섬·releaseSha, 이미지 태그가 커밋 SHA", "Back end: SQL checksums, releaseSha, and an image tag that is the commit SHA"),
     t("번들과 API 헬스 응답에는 커밋 SHA가 없음(코드 기준)", "No commit SHA in the bundle or API health replies (per the code)"),
     t("둘을 잇는 것은 승인 SHA 하나와 릴리스 기록", "One approved SHA and a release record tie the two together"),
   ],
@@ -56,8 +56,8 @@ const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
       "The front end carries a content hash and the database a SHA and checksums; neither the bundle nor the API replies state a commit SHA.",
     ),
     alt: t(
-      "맨 위 정적 웹 번들은 파일 이름 해시와 sw.js의 12자리 buildId를 갖지만 커밋 SHA는 없습니다. 엣지 게이트웨이 Worker는 오리진 주소 변수만 갖고, Core API도 헬스 응답에 버전이 없습니다. 반면 DB 원장은 SQL 체크섬과 적용 커밋 SHA를 행마다 적고, 수동 컨테이너 워크플로는 이미지에 SHA 태그를 붙입니다. 이 지문들을 맞춰 보는 일은 사람이 적는 릴리스 기록이 맡습니다.",
-      "At the top, the static web bundle carries file-name hashes and a 12-character buildId in sw.js but no commit SHA. The edge gateway Worker holds only origin-address variables and the Core API has no version in its health replies. The database ledger, by contrast, records a SQL checksum and the applying commit SHA on every row, and the manual container workflow tags an image with the SHA. Matching these fingerprints against each other is left to a release record that people write.",
+      "맨 위 정적 웹 번들은 파일 이름 해시와 sw.js의 12자리 buildId를 갖지만 커밋 SHA는 없습니다. 엣지 게이트웨이 Worker에는 버전·SHA 변수가 없고(배포 때 넣는 변수는 오리진 주소뿐), Core API도 헬스 응답에 버전이 없습니다. 반면 DB 원장은 SQL 체크섬과 적용 커밋 SHA를 행마다 적고, 수동 컨테이너 워크플로는 이미지에 SHA 태그를 붙이며 운영 Core API는 그 이미지로 배포됩니다. 이 지문들을 맞춰 보는 일은 사람이 적는 릴리스 기록이 맡습니다.",
+      "At the top, the static web bundle carries file-name hashes and a 12-character buildId in sw.js but no commit SHA. The edge gateway Worker has no version or SHA variable (the variables set at deploy are origin addresses only), and the Core API has no version in its health replies. The database ledger, by contrast, records a SQL checksum and the applying commit SHA on every row, and the manual container workflow tags an image with the SHA, which the production Core API is deployed from. Matching these fingerprints against each other is left to a release record that people write.",
     ),
     layers: [
       {
@@ -70,14 +70,14 @@ const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
       {
         id: "gateway",
         label: t("엣지 게이트웨이 Worker", "Edge gateway Worker"),
-        sub: t("변수는 오리진 주소뿐 · Worker 이름 고정", "Only origin variables · Worker name frozen"),
+        sub: t("버전·SHA 변수 없음 · 배포 변수는 오리진 주소뿐 · Worker 이름 고정", "No version or SHA variable · deploy vars are origins only · Worker name frozen"),
         tone: "edge",
         chips: ["Cloudflare Workers"],
       },
       {
         id: "api",
         label: t("Core API", "Core API"),
-        sub: t("헬스 응답에 버전·SHA 없음 · Render 소스 빌드", "No version or SHA in health replies · Render source build"),
+        sub: t("헬스 응답에 버전·SHA 없음 · 운영은 이미지 배포(태그=SHA)", "No version or SHA in health replies · production runs an image tagged with the SHA"),
         tone: "server",
         chips: ["NestJS", "Render"],
       },
@@ -91,8 +91,8 @@ const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
       {
         id: "image",
         label: t("수동 컨테이너 이미지", "Manual container image"),
-        sub: t("이미지 태그가 SHA · 운영 사용 여부는 미확인", "Image tag is the SHA · production use unconfirmed"),
-        tone: "neutral",
+        sub: t("이미지 태그가 커밋 SHA · 운영 Render가 이 이미지를 배포", "Image tag is the commit SHA · production Render deploys it"),
+        tone: "server",
         chips: ["GitHub Actions"],
       },
       {
@@ -124,8 +124,8 @@ const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
     {
       feature: t("스튜디오 · 오프라인 도구 자동 준비", "Studio · automatic offline-tool preparation"),
       role: t(
-        "워커가 buildId를 담은 상태 보고({schema, buildId, ready})를 보내고, 페이지는 같은 빌드에 대해 자동 준비를 한 번만 시도합니다(재시도 허용 때 제외).",
-        "The worker reports its state with the buildId ({schema, buildId, ready}), and the page tries automatic preparation only once per build unless a retry is allowed.",
+        "워커가 buildId를 담은 상태 보고({schema, buildId, ready})를 보내고, 페이지는 같은 빌드에 자동 준비를 한 번 시도한 뒤 연결 복구·워커 교체·탭 복귀 때 다시 확인합니다(이미 준비됐으면 건너뜀).",
+        "The worker reports its state with the buildId ({schema, buildId, ready}); the page tries automatic preparation once per build, then checks again on reconnect, worker replacement or tab return (skipped if already ready).",
       ),
       paths: [
         "apps/web/src/domains/creator/offline/StudioOfflineRuntime.tsx",
@@ -143,15 +143,16 @@ const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
       paths: ["scripts/verify-static-service-worker.mjs", "scripts/deploy-cloudflare-static.mjs"],
     },
     {
-      feature: t("DB 마이그레이션 원장의 SHA 기록", "SHA records in the database migration ledger"),
+      feature: t("DB 원장과 컨테이너 이미지에 남는 SHA", "SHAs kept in the database ledger and the container image tag"),
       role: t(
-        "승인형 워크플로가 release_sha를 받아 러너에 넘기고, 원장 행마다 체크섬과 releaseSha를 남깁니다. 두 값 모두 형식 CHECK 제약이 있습니다.",
-        "The approval-gated workflow passes release_sha to the runner, which stores a checksum and the releaseSha on every ledger row. Both values have format CHECK constraints.",
+        "승인형 워크플로가 release_sha를 받아 러너에 넘기고, 원장 행마다 체크섬과 releaseSha를 남깁니다. 두 값 모두 형식 CHECK 제약이 있습니다. 컨테이너 릴리스 워크플로는 main의 정확한 SHA를 검증해 이미지 태그로 쓰고, 운영 Core API는 그 이미지를 배포합니다.",
+        "The approval-gated workflow passes release_sha to the runner, which stores a checksum and the releaseSha on every ledger row. Both values have format CHECK constraints. The container release workflow verifies the exact main SHA and uses it as the image tag, and the production Core API deploys that image.",
       ),
       paths: [
         ".github/workflows/production-database-migrations.yml",
         "apps/api/src/platform/database/migrations/0023_production_migration_ledger.sql",
         "scripts/run-production-database-migrations.mjs",
+        ".github/workflows/api-container-release.yml",
       ],
     },
   ],
@@ -287,8 +288,8 @@ export function staleCacheNames(existing: readonly string[], buildId: string): s
       },
     ],
     pitfall: t(
-      "'프런트와 백엔드가 같은 SHA로 묶여 있다'고 말하지 마세요. 같은 승인 SHA를 쓰는 것은 절차이고, 번들과 API 응답은 SHA를 말하지 않습니다. 이 카드는 코드와 시험을 읽어 확인했으며 운영 사이트의 sw.js, 응답 헤더, 대시보드는 열람하지 않았습니다.",
-      "Do not say that front and back are tied by the same SHA. Using the same approved SHA is a procedure, and neither the bundle nor the API replies state a SHA. This card was checked by reading code and tests; the production sw.js, response headers and dashboards were not inspected.",
+      "'프런트와 백엔드가 같은 SHA로 묶여 있다'고 말하지 마세요. 같은 승인 SHA를 쓰는 것은 절차이고, 번들과 API 응답은 SHA를 말하지 않습니다. 이 카드는 코드와 시험을 읽어 확인했으며 운영 사이트의 sw.js, 응답 헤더, Cloudflare 대시보드는 열람하지 않았고, Render는 2026-10-08 API로 배포 이력(이미지 태그)만 읽기 전용 조회했습니다(서비스 설정 전체를 본 것은 아닙니다).",
+      "Do not say that front and back are tied by the same SHA. Using the same approved SHA is a procedure, and neither the bundle nor the API replies state a SHA. This card was checked by reading code and tests; the production sw.js, response headers and Cloudflare dashboard were not inspected, and Render was queried read-only through its API on 2026-10-08 for the deploy history (image tags) only, not the full service settings.",
     ),
   },
   technologies: ["Vite", "Service Worker", "SHA-256", "PostgreSQL", "Cloudflare Workers"],
@@ -339,8 +340,8 @@ const SHARED_CONTRACT_PATTERNS: EngineeringAtlasEntry = {
       "Where a copy is unavoidable, tests bind it. The web and the API each declare realtime CRDT protocol version 8 as a constant, and an integration test in tests/integration/api-web asserts the two are equal (apps may not import each other, so tests that cross apps live only under tests/integration). A test reads three wrangler configs and two env examples to compare the realtime Worker's issuer and audience names as absolute values, and the web's Cloudflare adapter imports the Worker's own protocol.ts so two bundles use one file.",
     ),
     t(
-      "약한 곳도 있습니다. creator-analytics 응답은 API DTO 주석이 '웹에 동일 스키마의 복사본을 둔다'고 적었고, /api/health/capabilities의 모양도 API의 TS 타입과 웹의 Zod 스키마가 따로 있으며, 두 쪽을 묶는 교차 시험은 찾지 못했습니다. Pact 같은 소비자 주도 계약 시험 도구는 의존성에서 찾지 못했고, 공통 DTO를 contracts로 올리는 기준은 AGENTS.md가 '실제 두 번째 소비자가 생긴 범위만'으로 정합니다.",
-      "There are weak spots. The creator-analytics response has a comment in its API DTO saying the web keeps a copy of the same schema, and the shape of /api/health/capabilities exists separately as an API TS type and a web Zod schema; no cross test binding the two sides was found. A consumer-driven contract tool such as Pact was not found among the dependencies, and AGENTS.md sets the rule for promoting a shared DTO into contracts as 'only where a real second consumer exists'.",
+      "약한 곳도 있습니다. creator-analytics 응답은 API DTO 주석이 '웹에 동일 스키마의 복사본을 둔다'고 적었고, /api/health/capabilities의 모양도 API의 Zod 스키마(health.dto.ts)와 웹의 Zod 스키마(service-capability-state.ts)가 따로 있으며, 두 쪽을 묶는 교차 시험은 찾지 못했습니다. Pact 같은 소비자 주도 계약 시험 도구는 의존성에서 찾지 못했고, 공통 DTO를 contracts로 올리는 기준은 AGENTS.md가 '실제 두 번째 소비자가 생긴 범위만'으로 정합니다.",
+      "There are weak spots. The creator-analytics response has a comment in its API DTO saying the web keeps a copy of the same schema, and the shape of /api/health/capabilities exists separately as an API Zod schema (health.dto.ts) and a web Zod schema (service-capability-state.ts); no cross test binding the two sides was found. A consumer-driven contract tool such as Pact was not found among the dependencies, and AGENTS.md sets the rule for promoting a shared DTO into contracts as 'only where a real second consumer exists'.",
     ),
   ],
   keyPoints: [
@@ -457,14 +458,14 @@ export function withCsrfProtection(init: RequestInit): RequestInit {
   return { ...init, headers };
 }
 
-//~ 서버 쪽: 같은 상수로 확인한다 (헤더 이름은 소문자 키로 읽는다) ## Server side: check with the same constants (header names read as lowercase keys)
-export function passesCsrf(method: string, headers: Record<string, string | undefined>): boolean {
+//~ 서버 쪽: 같은 상수로 헤더 증명만 확인한다 (헤더 이름은 소문자 키로 읽는다). 실제 미들웨어는 쿠키 인증 요청 등에만 요구하고 Origin도 본다 ## Server side: check only the header proof with the same constants (header names read as lowercase keys). The real middleware demands it only for cookie-authenticated requests and the like, and also checks Origin
+export function hasCsrfProof(method: string, headers: Record<string, string | undefined>): boolean {
   return !isCsrfProtectedMethod(method) || headers[CSRF_HEADER] === CSRF_HEADER_VALUE;
 }
 `),
       explain: t(
-        "실제 API 미들웨어는 Origin·Sec-Fetch 검사와 인증 경로 예외까지 더합니다. 여기서는 '이름과 대상 메서드를 한 파일에서 정한다'만 남겼습니다. 같은 커밋 안에서는 웹과 API가 함께 바뀌어 소스상으로 어긋나지 않지만, 배포 시점이 다른 옛 탭과의 어긋남은 따로 다뤄야 합니다('옛 탭이 새 배포를 만났을 때' 카드).",
-        "The real API middleware adds Origin and Sec-Fetch checks and an exception for authentication paths. This keeps only 'the name and the protected methods are decided in one file'. Within one commit web and API change together, so they cannot drift in source; skew with an old tab deployed at another time has to be handled separately (the 'When an old tab meets a new deploy' card).",
+        "실제 API 미들웨어(csrf-middleware.ts)는 쿠키 인증 요청과 로그인 POST·실시간 티켓 발급에만 이 헤더와 Origin 증명(쿠키 요청은 Origin이 없으면 Sec-Fetch 정보로 대신)을 요구하고, 서명 헤더 인증 호출은 통과시킵니다. 경로 예외는 Apple form_post 콜백 하나뿐이며 인증 경로는 예외가 아니라 오히려 더 엄격합니다. 여기서는 '이름과 대상 메서드를 한 파일에서 정한다'만 남겼고 hasCsrfProof는 설명용 함수입니다. 같은 커밋 안에서는 웹과 API가 함께 바뀌어 소스상으로 어긋나지 않지만, 배포 시점이 다른 옛 탭과의 어긋남은 따로 다뤄야 합니다('옛 탭이 새 배포를 만났을 때' 카드).",
+        "The real API middleware (csrf-middleware.ts) demands this header plus an Origin proof (for cookie requests, Sec-Fetch metadata stands in when Origin is missing) only for cookie-authenticated requests and for login POSTs and realtime ticket issuance, and lets signed-header-authenticated calls through. The only path exception is the Apple form_post callback; authentication paths are stricter, not exempt. This keeps only 'the name and the protected methods are decided in one file', and hasCsrfProof is an illustrative function. Within one commit web and API change together, so they cannot drift in source; skew with an old tab deployed at another time has to be handled separately (the 'When an old tab meets a new deploy' card).",
       ),
       source: "packages/contracts/src/security/csrf.ts",
       verify: "types",
@@ -478,13 +479,18 @@ import { z } from "zod";
 
 const PROTOCOL_VERSION = 8 as const;
 
-//~ 서버 입구: 버전이 다른 메시지는 파싱 단계에서 걸러진다 ## Server entrance: messages with another version fail at parsing
-export const CrdtUpdateSchema = z.object({
-  protocolVersion: z.literal(PROTOCOL_VERSION),
-  updateId: z.uuid(),
-  payload: z.string().max(1_000_000),
-});
+//~ 서버 입구: 버전이 다른 메시지는 파싱 단계에서 걸러진다 (필드 이름은 원본 StudioLiveCrdtUpdateSchema 와 같다) ## Server entrance: messages with another version fail at parsing (field names follow the original StudioLiveCrdtUpdateSchema)
+export const CrdtUpdateSchema = z
+  .object({
+    protocolVersion: z.literal(PROTOCOL_VERSION),
+    workId: z.string().min(1).max(160),
+    updateId: z.uuid(),
+    clientSequence: z.number().int().min(1),
+    update: z.string().min(4), //~ 실제는 base64 형식과 크기 상한까지 검사한다 ## The real one also checks base64 form and a size ceiling
+  })
+  .strict();
 
+//~ 설명용 함수: 실제 게이트웨이는 파싱에 실패하면 invalid_payload 로 답한다 ## Illustrative: the real gateway answers invalid_payload when parsing fails
 export function acceptUpdate(raw: unknown) {
   const parsed = CrdtUpdateSchema.safeParse(raw);
   //~ 옛 탭이 재질 획을 조용히 빠뜨리지 않도록 받지 않고 이유만 돌려준다 ## Refuse an old tab instead of letting it silently drop material strokes
@@ -494,8 +500,8 @@ export function acceptUpdate(raw: unknown) {
 }
 `),
       explain: t(
-        "코드 주석은 v8이 stroke payload v6(엔진 프로그램)을 받는 첫 방 프로토콜이라 v1~v7을 거절해 옛 탭이 재질 획을 몰래 빠뜨리는 일을 막는다고 적습니다. 실제 스키마는 훨씬 많은 필드를 검사합니다.",
-        "A code comment says v8 is the first room protocol that accepts stroke payload v6 (engine programs), so v1 to v7 are rejected to stop old tabs from silently dropping material strokes. The real schema checks many more fields.",
+        "코드 주석은 v8이 stroke payload v6(엔진 프로그램)을 받는 첫 방 프로토콜이라 v1~v7을 거절해 옛 탭이 재질 획을 몰래 빠뜨리는 일을 막는다고 적습니다. 원본 StudioLiveCrdtUpdateSchema는 .strict() 객체로 protocolVersion·workId·updateId·clientSequence·update 다섯 필드를 검사합니다. 여기서는 workId와 update의 세부 검사를 줄였고, acceptUpdate는 설명용 함수입니다(실제 게이트웨이는 파싱에 실패하면 invalid_payload로 답합니다).",
+        "A code comment says v8 is the first room protocol that accepts stroke payload v6 (engine programs), so v1 to v7 are rejected to stop old tabs from silently dropping material strokes. The original StudioLiveCrdtUpdateSchema is a .strict() object that checks five fields: protocolVersion, workId, updateId, clientSequence and update. This sample trims the detailed checks on workId and update, and acceptUpdate is an illustrative function (the real gateway answers invalid_payload when parsing fails).",
       ),
       source: "apps/api/src/modules/creator/studio-live.protocol.ts",
       verify: "types",
@@ -597,29 +603,29 @@ const VERSION_PIN_LAYERS: EngineeringAtlasEntry = {
   ),
   status: "live",
   tagline: t(
-    "Node·pnpm·잠금 파일·Zod·기배포 SQL까지 빌드 앞에서 맞는지 확인하고, 어긋나면 멈춥니다.",
-    "Node, pnpm, lockfile, Zod and shipped SQL are checked in front of the build, and a mismatch stops it.",
+    "잠금 파일·Zod·기배포 SQL은 빌드 앞에서 확인해 어긋나면 멈추고, Node·pnpm은 파일에 적을 뿐 저장소의 빌드 앞 검사는 없습니다.",
+    "The lockfile, Zod and shipped SQL are checked in front of the build and a mismatch stops it; Node and pnpm are only written in files, with no pre-build check in the repository.",
   ),
   background: [
     t(
-      "'내 컴퓨터에서는 되는데 서버에서는 안 되는' 문제의 흔한 원인은 도구와 라이브러리 버전이 다른 것입니다. 프런트와 백엔드가 같은 코드 한 벌을 각자 따로 빌드하는 ToonStudio에서는 더 중요합니다. 같은 Zod(입력 검사 라이브러리)가 브라우저와 서버에서 다른 버전으로 돌면 같은 데이터를 한쪽은 통과시키고 다른 쪽은 거절할 수 있습니다. 그래서 '무엇을 같게 맞출지'를 층으로 나누어 각 층을 기계가 확인하게 합니다.",
-      "A common cause of 'works on my machine, not on the server' is different tool and library versions, and it matters more for ToonStudio, where front end and back end each build one set of code separately. If the same Zod (an input-validation library) runs in different versions in the browser and on the server, one side can accept data the other refuses. So 'what must be the same' is split into layers, each checked by a machine.",
+      "'내 컴퓨터에서는 되는데 서버에서는 안 되는' 문제의 흔한 원인은 도구와 라이브러리 버전이 다른 것입니다. 프런트와 백엔드가 같은 코드 한 벌을 각자 따로 빌드하는 ToonStudio에서는 더 중요합니다. 같은 Zod(입력 검사 라이브러리)가 브라우저와 서버에서 다른 버전으로 돌면 같은 데이터를 한쪽은 통과시키고 다른 쪽은 거절할 수 있습니다. 그래서 '무엇을 같게 맞출지'를 층으로 나누고, 가능한 층은 기계가 확인하게 합니다.",
+      "A common cause of 'works on my machine, not on the server' is different tool and library versions, and it matters more for ToonStudio, where front end and back end each build one set of code separately. If the same Zod (an input-validation library) runs in different versions in the browser and on the server, one side can accept data the other refuses. So 'what must be the same' is split into layers, and the layers that can be are checked by a machine.",
     ),
     t(
-      "① 도구: package.json이 pnpm@11.4.0(packageManager)과 Node >=24.16.0(engines)을 적고, .nvmrc는 24.16.0이며, Render 빌드는 corepack enable로 pnpm을 맞추고 API 컨테이너 워크플로는 node:24.16.0 이미지를 씁니다. ② 잠금 파일: CI·Render·컨테이너 빌드 모두 pnpm install --frozen-lockfile이라 잠금 파일과 다르면 설치가 멈추고, 커밋·푸시 훅의 verify-pnpm-lockfile이 잠금 파일의 패키지 목록이 실제 워크스페이스와 같은지 봅니다. ③ 공유 라이브러리: Zod는 8개 매니페스트에 4.4.3으로 선언돼 있고, 그중 6곳은 빌드 앞 검사가 선언값과 설치값이 모두 같은지 봅니다.",
-      "(1) Tools: package.json states pnpm@11.4.0 (packageManager) and Node >=24.16.0 (engines), .nvmrc says 24.16.0, the Render build aligns pnpm with corepack enable, and the API container workflow uses the node:24.16.0 image. (2) Lockfile: CI, Render and the container build all run pnpm install --frozen-lockfile, so an install stops if the lockfile disagrees, and the verify-pnpm-lockfile commit and push hooks check that the lockfile's package list equals the real workspace. (3) Shared library: Zod is declared as 4.4.3 in 8 manifests, and a pre-build check on 6 of them verifies that both the declared and the installed value agree.",
+      "① 도구: package.json이 pnpm@11.4.0(packageManager)과 Node >=24.16.0(engines)을 적고, .nvmrc는 24.16.0이며, render.yaml의 빌드 명령은 corepack enable로 pnpm을 맞추고 API 컨테이너 워크플로는 node:24.16.0 이미지를 씁니다(운영 Core API는 이 이미지로 배포 중). ② 잠금 파일: CI·render.yaml 빌드 명령·컨테이너 빌드 모두 pnpm install --frozen-lockfile이라 잠금 파일과 다르면 설치가 멈추고, 커밋·푸시 훅의 verify-pnpm-lockfile이 잠금 파일의 패키지 목록이 실제 워크스페이스와 같은지 봅니다. ③ 공유 라이브러리: Zod는 8개 매니페스트에 4.4.3으로 선언돼 있고, 그중 6곳은 빌드 앞 검사가 선언값과 설치값이 모두 같은지 봅니다.",
+      "(1) Tools: package.json states pnpm@11.4.0 (packageManager) and Node >=24.16.0 (engines), .nvmrc says 24.16.0, the build command in render.yaml aligns pnpm with corepack enable, and the API container workflow uses the node:24.16.0 image (the production Core API is deployed from that image). (2) Lockfile: CI, the render.yaml build command and the container build all run pnpm install --frozen-lockfile, so an install stops if the lockfile disagrees, and the verify-pnpm-lockfile commit and push hooks check that the lockfile's package list equals the real workspace. (3) Shared library: Zod is declared as 4.4.3 in 8 manifests, and a pre-build check on 6 of them verifies that both the declared and the installed value agree.",
     ),
     t(
-      "④ 이미 나간 것: 같은 검사가 운영에 나간 SQL 92개의 SHA-256, 운영 Worker 이름(toonspectrum-web), R2 버킷 바인딩이 바뀌지 않았는지도 봅니다. 이 검사는 웹 쪽 prebuild와 API 빌드 첫 단계에 똑같이 걸려 있어 두 빌드가 같은 기준을 씁니다. ⑤ 작업 폴더: 워크스페이스 링크가 다른 체크아웃을 가리키면 prebuild·predev·typecheck가 실패합니다. 대안인 Renovate·Dependabot 같은 자동 갱신은 설정 파일을 찾지 못했고, 올리는 시점은 사람이 정합니다.",
-      "(4) What already shipped: the same check also verifies that the SHA-256 of the 92 SQL files already in production, the production Worker name (toonspectrum-web) and the R2 bucket binding have not changed. It hangs identically on the web side's prebuild and at the start of the API build, so both builds use the same standard. (5) Working folder: if a workspace link points to another checkout, prebuild, predev and typecheck fail. Automatic updaters such as Renovate or Dependabot have no config file here, so people decide when to upgrade.",
+      "④ 이미 나간 것: 같은 검사가 운영에 나간 SQL 92개의 SHA-256, 운영 Worker 이름(toonspectrum-web), R2 버킷 바인딩이 바뀌지 않았는지도 봅니다. 이 검사는 웹 쪽 prebuild와 API 빌드 첫 단계에 똑같이 걸려 있어 두 빌드가 같은 기준을 씁니다. ⑤ 작업 폴더: 워크스페이스 링크가 다른 체크아웃을 가리키면 prebuild·predev·typecheck가 실패합니다. Renovate·Dependabot 같은 자동 갱신 설정 파일은 저장소에 없고(Dependabot 보안 알림을 처리한 기록은 있으나 갱신 PR 자동 생성은 파일로 확인되지 않음), 올리는 시점은 사람이 정합니다.",
+      "(4) What already shipped: the same check also verifies that the SHA-256 of the 92 SQL files already in production, the production Worker name (toonspectrum-web) and the R2 bucket binding have not changed. It hangs identically on the web side's prebuild and at the start of the API build, so both builds use the same standard. (5) Working folder: if a workspace link points to another checkout, prebuild, predev and typecheck fail. No config file for automatic updaters such as Renovate or Dependabot exists in the repository (a record of handling Dependabot security alerts exists, but automatic update PRs cannot be confirmed from files), so people decide when to upgrade.",
     ),
     t(
-      "빈틈도 있습니다. 워크플로 98개 파일에서 node-version은 24가 97줄, 24.16.0이 22줄, .nvmrc 참조가 4줄이고, CI 코어 잡 7개는 24(24.x 중 최신)를 씁니다. engines는 상한이 없는 >=24.16.0이며 engine-strict 설정은 찾지 못했습니다. Render 문서의 우선순위(NODE_VERSION, .node-version, .nvmrc, engines)대로면 .nvmrc가 적용되지만, 대시보드에 NODE_VERSION이 따로 있는지와 실제 값은 확인하지 못했습니다.",
-      "There are gaps. Across the 98 workflow files, node-version is 24 on 97 lines, 24.16.0 on 22 lines and a .nvmrc reference on 4 lines, and the 7 core CI jobs use 24 (the latest 24.x). engines is the unbounded >=24.16.0 and no engine-strict setting was found. By Render's documented precedence (NODE_VERSION, .node-version, .nvmrc, engines) the .nvmrc applies, but whether a NODE_VERSION is set on the dashboard, and the real value, was not checked.",
+      "빈틈도 있습니다. 워크플로 98개 파일에서 node-version은 24가 97줄, 24.16.0이 22줄, .nvmrc 참조가 4줄이고, CI 코어 잡 7개는 24(24.x 중 최신)를 씁니다. engines는 상한이 없는 >=24.16.0이며 engine-strict 설정은 찾지 못했고, 빌드 앞 검사 중에는 Node·pnpm 버전을 보는 것이 없습니다(agent-harness doctor는 개발자가 직접 돌리는 진단이고, pnpm 11 자체의 불일치 처리는 확인하지 못했습니다). 운영 Core API는 컨테이너 이미지로 배포 중이라(2026-10-08 Render API 조회) Node 버전은 이미지 베이스(현재 워크플로 기준 node:24.16.0)가 정하는 것으로 읽히고, render.yaml 소스 빌드 경로의 NODE_VERSION·.nvmrc 우선순위는 운영에서 쓰이지 않는 것으로 보입니다. 실행 중인 이미지의 Node 버전은 직접 확인하지 못했습니다.",
+      "There are gaps. Across the 98 workflow files, node-version is 24 on 97 lines, 24.16.0 on 22 lines and a .nvmrc reference on 4 lines, and the 7 core CI jobs use 24 (the latest 24.x). engines is the unbounded >=24.16.0 and no engine-strict setting was found, and none of the pre-build checks looks at the Node or pnpm version (the agent-harness doctor is a diagnostic developers run by hand, and how pnpm 11 itself treats a mismatch was not checked). The production Core API is deployed from a container image (a Render API query on 2026-10-08), so its Node version appears to come from the image base (node:24.16.0 in the current workflow), and the NODE_VERSION and .nvmrc precedence of the source-build path in render.yaml appears not to be used in production. The Node version inside the running image was not checked directly.",
     ),
   ],
   keyPoints: [
-    t("도구 → 잠금 파일 → 공유 라이브러리 → 기배포물, 네 층", "Four layers: tools, lockfile, shared library, shipped artifacts"),
+    t("다섯 층: 도구 → 잠금 파일 → 공유 라이브러리 → 기배포물 → 작업 폴더", "Five layers: tools, lockfile, shared library, shipped artifacts, working folder"),
     t("Zod 4.4.3은 정확 고정, ^4.4.3 같은 범위 표기는 거부", "Zod 4.4.3 is pinned exactly; a range like ^4.4.3 is refused"),
     t("같은 검사가 웹 prebuild와 API 빌드에 모두 들어 있음", "The same check sits in both the web prebuild and the API build"),
     t("CI는 Node 24(최신), .nvmrc·컨테이너는 24.16.0", "CI uses Node 24 (latest); .nvmrc and the container use 24.16.0"),
@@ -629,18 +635,18 @@ const VERSION_PIN_LAYERS: EngineeringAtlasEntry = {
     kind: "layers",
     title: t("무엇을 같게 맞추는가: 다섯 층과 빈틈", "What is kept the same: five layers and the gaps"),
     caption: t(
-      "도구에서 작업 폴더까지 층마다 기계가 확인하고, 맨 아래에 알려진 빈틈을 따로 적습니다.",
-      "A machine checks each layer from tools to the working folder, and the known gaps are listed separately at the bottom.",
+      "도구에서 작업 폴더까지 가능한 층은 기계가 확인하고, 맨 아래에 알려진 빈틈을 따로 적습니다.",
+      "From tools to the working folder, a machine checks the layers where it can, and the known gaps are listed separately at the bottom.",
     ),
     alt: t(
-      "첫째 층은 Node와 pnpm 같은 도구 버전을 package.json, .nvmrc, 컨테이너 이미지로 적습니다. 둘째는 잠금 파일로 설치를 고정합니다. 셋째는 웹과 API가 같이 쓰는 Zod를 정확한 버전으로 맞추고, 넷째는 이미 운영에 나간 SQL과 Worker 이름이 바뀌지 않았는지 봅니다. 다섯째는 워크스페이스 링크가 이 체크아웃을 가리키는지 봅니다. 마지막 칸에는 CI의 Node가 최신 24라는 점 등 알려진 빈틈을 적습니다.",
-      "The first layer states tool versions such as Node and pnpm in package.json, .nvmrc and the container image. The second fixes installs with the lockfile. The third pins Zod, shared by web and API, to an exact version, and the fourth checks that SQL and Worker names already in production have not changed. The fifth checks that workspace links point at this checkout. The last row lists known gaps such as CI using the latest Node 24.",
+      "첫째 층은 Node와 pnpm 같은 도구 버전을 package.json, .nvmrc, 컨테이너 이미지로 적을 뿐 어긋남을 막는 검사는 없습니다. 둘째는 잠금 파일로 설치를 고정합니다. 셋째는 웹과 API가 같이 쓰는 Zod를 정확한 버전으로 맞추고, 넷째는 이미 운영에 나간 SQL과 Worker 이름이 바뀌지 않았는지 봅니다. 다섯째는 워크스페이스 링크가 이 체크아웃을 가리키는지 봅니다. 마지막 칸에는 CI의 Node가 최신 24라는 점 등 알려진 빈틈을 적습니다.",
+      "The first layer states tool versions such as Node and pnpm in package.json, .nvmrc and the container image, but no check blocks a mismatch. The second fixes installs with the lockfile. The third pins Zod, shared by web and API, to an exact version, and the fourth checks that SQL and Worker names already in production have not changed. The fifth checks that workspace links point at this checkout. The last row lists known gaps such as CI using the latest Node 24.",
     ),
     layers: [
       {
         id: "tool",
         label: t("① 도구 · Node와 pnpm", "1 Tools: Node and pnpm"),
-        sub: t("pnpm@11.4.0 · Node >=24.16.0 · .nvmrc 24.16.0", "pnpm@11.4.0 · Node >=24.16.0 · .nvmrc 24.16.0"),
+        sub: t("pnpm@11.4.0 · Node >=24.16.0 · .nvmrc 24.16.0 · 검사 없음", "pnpm@11.4.0 · Node >=24.16.0 · .nvmrc 24.16.0 · no check"),
         tone: "neutral",
         chips: ["Node.js", "pnpm"],
       },
@@ -682,16 +688,17 @@ const VERSION_PIN_LAYERS: EngineeringAtlasEntry = {
   },
   usage: [
     {
-      feature: t("설치·CI·Render 빌드", "Install, CI and Render build"),
+      feature: t("설치·CI·API 빌드 설정", "Install, CI and API build settings"),
       role: t(
-        "세 곳 모두 frozen-lockfile로 설치합니다. 코어 CI(ci.yml)는 version 없이 pnpm/action-setup을 써서 packageManager의 pnpm 버전을 따르지만, 다른 워크플로 17개 파일의 18개 단계는 version: 11.4.0을 직접 적어서 pnpm을 올릴 때 고칠 곳이 더 있습니다. Render 빌드는 corepack enable로 pnpm을 맞춥니다.",
-        "All three install with frozen-lockfile. The core CI (ci.yml) uses pnpm/action-setup without a version and follows the pnpm version in packageManager, but 18 steps in 17 other workflow files write version: 11.4.0 themselves, so a pnpm upgrade has more places to edit. The Render build aligns pnpm with corepack enable.",
+        "CI·render.yaml 빌드 명령·컨테이너 워크플로 세 곳 모두 frozen-lockfile로 설치합니다. 코어 CI(ci.yml)는 version 없이 pnpm/action-setup을 써서 packageManager의 pnpm 버전을 따르지만, 다른 워크플로 17개 파일의 18개 단계는 version: 11.4.0을 직접 적어서 pnpm을 올릴 때 고칠 곳이 더 있습니다. render.yaml 빌드 명령은 corepack enable로 pnpm을 맞추지만, 운영 Core API는 이 소스 빌드가 아니라 컨테이너 워크플로가 만든 이미지로 배포 중입니다(2026-10-08 Render API 조회).",
+        "CI, the render.yaml build command and the container workflow all install with frozen-lockfile. The core CI (ci.yml) uses pnpm/action-setup without a version and follows the pnpm version in packageManager, but 18 steps in 17 other workflow files write version: 11.4.0 themselves, so a pnpm upgrade has more places to edit. The render.yaml build command aligns pnpm with corepack enable, but the production Core API is deployed from the image the container workflow builds, not from this source build (a Render API query on 2026-10-08).",
       ),
       paths: [
         "package.json",
         "render.yaml",
         ".github/workflows/ci.yml",
         ".github/workflows/studio-cc0-library.yml",
+        ".github/workflows/api-container-release.yml",
         ".nvmrc",
       ],
     },
@@ -820,8 +827,8 @@ export function compareExactVersions(consumers: readonly Consumer[]): string[] {
   chapterIds: ["delivery", "quality"],
   talk: {
     pitch: t(
-      "프런트와 백엔드가 같은 코드를 각자 빌드하니, 도구와 라이브러리 버전이 같아야 합니다. ToonStudio는 맞출 것을 층으로 나눕니다. Node와 pnpm 버전, 잠금 파일, 양쪽이 같이 쓰는 Zod 버전, 이미 운영에 나간 SQL과 Worker 이름입니다. 잠금 파일은 설치 단계에서, 나머지는 빌드 앞단 검사에서 어긋나면 멈춥니다. 다만 CI가 Node 24의 최신을, 컨테이너와 .nvmrc가 24.16.0을 쓰는 틈은 아직 남아 있습니다.",
-      "Front end and back end each build the same code, so tool and library versions must match. ToonStudio splits what must match into layers: Node and pnpm versions, the lockfile, the Zod version both sides share, and the SQL and Worker names already in production. The lockfile stops an install and the rest stop the build in a pre-build check when they disagree. A gap remains, though: CI uses the latest Node 24 while the container and .nvmrc use 24.16.0.",
+      "프런트와 백엔드가 같은 코드를 각자 빌드하니, 도구와 라이브러리 버전이 같아야 합니다. ToonStudio는 맞출 것을 층으로 나눕니다. Node와 pnpm 버전, 잠금 파일, 양쪽이 같이 쓰는 Zod 버전, 이미 운영에 나간 SQL과 Worker 이름입니다. 잠금 파일은 설치 단계에서, Zod·SQL·Worker 이름은 빌드 앞단 검사에서 어긋나면 멈춥니다. Node와 pnpm은 파일에 적어 둘 뿐 막는 검사가 없고, CI가 Node 24의 최신을, 컨테이너와 .nvmrc가 24.16.0을 쓰는 틈도 남아 있습니다.",
+      "Front end and back end each build the same code, so tool and library versions must match. ToonStudio splits what must match into layers: Node and pnpm versions, the lockfile, the Zod version both sides share, and the SQL and Worker names already in production. The lockfile stops an install, and Zod, the SQL and the Worker name stop the build in a pre-build check when they disagree. Node and pnpm are only written down in files, with no check that blocks a mismatch, and a gap remains: CI uses the latest Node 24 while the container and .nvmrc use 24.16.0.",
     ),
     analogy: t(
       "요리 전에 재료 규격표(잠금 파일)를 확인하고, 같은 레시피를 쓰는 주방 두 곳(웹·API)의 저울 눈금(Zod 버전)이 같은지 점검하는 일입니다.",
@@ -838,21 +845,21 @@ export function compareExactVersions(consumers: readonly Consumer[]): string[] {
       {
         question: t("의존성은 자동으로 올리나요?", "Are dependencies upgraded automatically?"),
         answer: t(
-          "Dependabot·Renovate 설정은 찾지 못했고 pnpm-workspace.yaml의 minimumReleaseAge도 0입니다. 올리는 시점은 사람이 정하며, 의존성 파일이 바뀐 푸시에는 보안·라이선스 감사가 붙습니다.",
-          "No Dependabot or Renovate config was found, and minimumReleaseAge in pnpm-workspace.yaml is 0. People decide when to upgrade, and a push that changes dependency files adds the security and license audits.",
+          "Dependabot·Renovate 갱신 설정 파일은 저장소에 없고(Dependabot 보안 알림을 처리한 기록은 있으나 갱신 PR 자동 생성은 파일로 확인되지 않음) pnpm-workspace.yaml의 minimumReleaseAge도 0입니다. 올리는 시점은 사람이 정하며, 의존성 파일이 바뀐 푸시에는 보안·라이선스 감사가 붙습니다.",
+          "No Dependabot or Renovate update config file is in the repository (a record of handling Dependabot security alerts exists, but automatic update PRs cannot be confirmed from files), and minimumReleaseAge in pnpm-workspace.yaml is 0. People decide when to upgrade, and a push that changes dependency files adds the security and license audits.",
         ),
       },
       {
-        question: t("Render는 어떤 Node를 쓰나요?", "Which Node does Render use?"),
+        question: t("운영 Core API는 어떤 Node를 쓰나요?", "Which Node does the production Core API use?"),
         answer: t(
-          "render.yaml에는 Node 버전이 없고, Render 문서의 우선순위대로면 .nvmrc(24.16.0)가 적용될 것으로 읽힙니다. 대시보드의 NODE_VERSION 유무와 실제 배포된 버전은 확인하지 못했습니다.",
-          "render.yaml names no Node version, and by Render's documented precedence the .nvmrc (24.16.0) should apply. Whether a NODE_VERSION exists on the dashboard, and the version actually deployed, was not checked.",
+          "2026-10-08 Render API 조회로 운영 서비스가 소스 빌드가 아니라 컨테이너 이미지를 배포 중임을 확인했으므로, 이미지 베이스인 node:24.16.0(api-container-release.yml)이 쓰일 것으로 읽힙니다. render.yaml은 소스 빌드로 선언하지만 Node 버전이 없고, 그 경로의 우선순위(NODE_VERSION, .node-version, .nvmrc, engines)는 운영에 적용되지 않는 것으로 보입니다. 실행 중인 이미지의 Node 버전을 직접 확인하지는 않았습니다.",
+          "A Render API query on 2026-10-08 showed that the production service deploys a container image rather than a source build, so the node:24.16.0 base image (api-container-release.yml) should be in use. render.yaml declares a source build but names no Node version, and the precedence of that path (NODE_VERSION, .node-version, .nvmrc, engines) appears not to apply in production. The Node version inside the running image was not checked directly.",
         ),
       },
     ],
     pitfall: t(
-      "'모든 환경이 같은 버전'이라고 말하지 마세요. CI는 24(최신 24.x), 컨테이너 릴리스와 .nvmrc는 24.16.0이고 engines는 상한이 없습니다. 이 검사들은 '버전 선언이 서로 같은가'를 볼 뿐 번들이 바이트까지 같다는 증명이 아니며, 정적 웹 배포 스크립트는 CI가 만든 dist를 올리지 않고 운영자 환경에서 다시 빌드합니다.",
-      "Do not say that every environment has the same version. CI uses 24 (the latest 24.x), the container release and .nvmrc use 24.16.0, and engines has no ceiling. These checks only see whether version declarations agree; they do not prove a byte-identical bundle, and the static-site deploy script does not upload CI's dist but rebuilds in the operator's environment.",
+      "'모든 환경이 같은 버전'이라고 말하지 마세요. CI는 24(최신 24.x), 컨테이너 릴리스와 .nvmrc는 24.16.0이고 engines는 상한이 없으며, Node·pnpm 버전을 확인해 빌드를 막는 저장소 검사는 없습니다. 있는 검사들도 '버전 선언이 서로 같은가'를 볼 뿐 번들이 바이트까지 같다는 증명이 아니며, 정적 웹 배포 스크립트는 CI가 만든 dist를 올리지 않고 운영자 환경에서 다시 빌드합니다.",
+      "Do not say that every environment has the same version. CI uses 24 (the latest 24.x), the container release and .nvmrc use 24.16.0, engines has no ceiling, and no repository check verifies the Node or pnpm version to block a build. The checks that do exist only see whether version declarations agree; they do not prove a byte-identical bundle, and the static-site deploy script does not upload CI's dist but rebuilds in the operator's environment.",
     ),
   },
   technologies: ["pnpm", "Node.js", "Zod", "GitHub Actions", "Render", "Corepack"],

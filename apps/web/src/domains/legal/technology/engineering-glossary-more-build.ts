@@ -20,8 +20,8 @@ export const GLOSSARY_MORE_BUILD: readonly GlossaryTerm[] = [
       "Like a barcode summarizing a book's content: if only the cover is reprinted, the barcode stays the same and the shop changes nothing.",
     ),
     inToonstudio: t(
-      "서비스 워커 플러그인(vite.config.ts)이 앱 셸 파일 목록과 각 파일의 SHA-256, 예열 사전, 오프라인 그리기 팩 목록을 이어 해시해 앞 12자리를 buildId로 sw.js에 박고, 이 id가 precache 저장소 이름에 들어갑니다. 커밋 SHA는 번들에도 API 헬스 응답에도 없습니다.",
-      "The service-worker plugin (vite.config.ts) chains the app-shell file list, each file's SHA-256, the warm dictionaries and the offline-drawing pack list into one hash and bakes its first 12 characters into sw.js as the buildId, which also goes into the precache bucket name. No commit SHA is in the bundle or in the API health replies.",
+      "서비스 워커 플러그인(vite.config.ts)이 앱 셸 파일 목록과 각 파일의 SHA-256, 예열 사전과 오프라인 그리기 팩의 경로 목록을 이어 해시해 앞 12자리를 buildId로 sw.js에 박고, 이 id가 precache 저장소 이름에 들어갑니다. 커밋 SHA는 번들에도 API 헬스 응답에도 없습니다.",
+      "The service-worker plugin (vite.config.ts) chains the app-shell file list, each file's SHA-256, and the path lists of the warm dictionaries and the offline-drawing pack into one hash and bakes its first 12 characters into sw.js as the buildId, which also goes into the precache bucket name. No commit SHA is in the bundle or in the API health replies.",
     ),
     chapters: ["pwa-continuity", "delivery"],
     atlasIds: ["build-fingerprint-map"],
@@ -39,8 +39,8 @@ export const GLOSSARY_MORE_BUILD: readonly GlossaryTerm[] = [
       "Like a guest holding last week's menu ordering from a kitchen that changed today.",
     ),
     inToonstudio: t(
-      "사라진 청크 오류(chunk_load)는 세션당 한 번만 새로고침해 복구하고, 실시간 CRDT 프로토콜은 버전 8이 아닌 메시지를 서버가 거절합니다. 서버를 먼저 바꿀 때의 expand/contract 순서는 문서 정책이며 코드가 강제하지는 않습니다.",
-      "A vanished-chunk error (chunk_load) is recovered by reloading once per session, and the server refuses realtime CRDT messages that are not protocol version 8. The expand/contract order for changing the server first is a documented policy that code does not enforce.",
+      "사라진 청크 오류(chunk_load)는 자동 새로고침을 한 번만 시도해 복구하고(오류 경계는 세션당, import 래퍼는 청크당), Socket.IO 실시간 서버는 CRDT 프로토콜 버전 8이 아닌 메시지를 거절합니다. 서버를 먼저 바꿀 때의 expand/contract 순서는 문서 정책이며 코드가 강제하지는 않습니다.",
+      "A vanished-chunk error (chunk_load) is recovered with a single automatic reload attempt (per session at the error boundary, per chunk at the import wrappers), and the Socket.IO realtime server refuses CRDT messages that are not protocol version 8. The expand/contract order for changing the server first is a documented policy that code does not enforce.",
     ),
     chapters: ["pwa-continuity", "delivery"],
     atlasIds: ["version-skew-chunk-reload-recovery"],

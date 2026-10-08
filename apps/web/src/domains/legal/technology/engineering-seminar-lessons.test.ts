@@ -624,7 +624,7 @@ const LESSON_FACTS: readonly LessonFact[] = [
       expect(readText("apps", "web", "src", "app", "service-worker", "studio-service-worker-precache-plan.ts")).toContain("return digest(fingerprint).slice(0, 12);");
       expect(readText("apps", "web", "vite.config.ts")).toContain('createHash("sha256")');
       expect(cardText("build-fingerprint-map")).toContain("번들과 API 헬스 응답에는 커밋 SHA가 없음");
-      // 실시간 프로토콜 버전 8 은 z.literal 로 강제하고, 사라진 청크는 세션당 한 번만 새로고침한다.
+      // 실시간 프로토콜 버전 8 은 z.literal 로 강제하고, 사라진 청크는 자동 새로고침을 한 번만 시도한다(오류 경계는 세션당, import 래퍼는 청크당).
       const protocol = readText("apps", "api", "src", "modules", "creator", "studio-live.protocol.ts");
       expect(protocol).toContain("STUDIO_CRDT_PROTOCOL_VERSION = 8 as const;");
       expect(protocol).toContain("z.literal(STUDIO_CRDT_PROTOCOL_VERSION)");
