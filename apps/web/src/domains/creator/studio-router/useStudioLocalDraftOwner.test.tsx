@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  holdStudioLocalDraftOwnership,
   STUDIO_LOCAL_DRAFT_OWNER_PREFIX,
   studioLocalDraftOwnerScope,
 } from "../live/studio-live-local-draft-owner";
@@ -25,24 +26,48 @@ const SCOPE = studioLocalDraftOwnerScope({
 });
 const RECEIPT_KEY = STUDIO_LOCAL_DRAFT_OWNER_PREFIX + encodeURIComponent(SCOPE);
 const LEASE_NAME = STUDIO_LOCAL_DRAFT_OWNER_PREFIX + JSON.stringify([SCOPE, PREVIOUS_ROOM]);
+const FRESH_LEASE_NAME = STUDIO_LOCAL_DRAFT_OWNER_PREFIX + JSON.stringify([SCOPE, FRESH_ROOM]);
 
+/**
+ * Web Locks 의미를 따른다: 점유 중이면 ifAvailable은 즉시 null, 대기 요청은 해제 시 원자적으로 넘겨받고
+ * signal이 중단되면 대기열에서 빠진다. 해제는 브라우저처럼 콜백의 promise가 끝난 뒤에 일어난다.
+ */
 class FakeLockManager {
   readonly held = new Set<string>();
+  private readonly waiting = new Map<string, (() => void)[]>();
 
   async request(
     name: string,
-    _options: { ifAvailable: true },
+    options: { ifAvailable: true } | { signal: AbortSignal },
     callback: (lock: unknown | null) => Promise<void>,
   ): Promise<void> {
-    if (this.held.has(name)) {
+    const signal = "signal" in options ? options.signal : null;
+    if (signal?.aborted) throw new DOMException("aborted", "AbortError");
+    if (!this.held.has(name)) {
+      this.held.add(name);
+    } else if (!signal) {
       await callback(null);
       return;
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        const grant = () => {
+          signal.removeEventListener("abort", cancel);
+          resolve();
+        };
+        const cancel = () => {
+          this.waiting.set(name, (this.waiting.get(name) ?? []).filter((entry) => entry !== grant));
+          reject(new DOMException("aborted", "AbortError"));
+        };
+        signal.addEventListener("abort", cancel, { once: true });
+        this.waiting.set(name, [...(this.waiting.get(name) ?? []), grant]);
+      });
     }
-    this.held.add(name);
     try {
       await callback({ name });
     } finally {
-      this.held.delete(name);
+      const next = this.waiting.get(name)?.shift();
+      if (next) next();
+      else this.held.delete(name);
     }
   }
 }
@@ -136,5 +161,86 @@ describe("useStudioLocalDraftOwner — 룸 없는 재진입의 직전 룸 해석
     const { result } = renderOwner({ documentId: "doc-2" });
     await waitFor(() => expect(readReceiptRoom()).toBe(PREVIOUS_ROOM));
     expect(result.current).toBe(FRESH_ROOM);
+  });
+});
+
+describe("useStudioLocalDraftOwner — 소유 탭 리스의 연속성", () => {
+  it("자기 룸을 ?room=으로 게시해 효과가 다시 돌아도 리스를 놓지 않아 복제 탭이 원점을 회복하지 못한다", async () => {
+    const { result, rerender } = renderHook(
+      ({ roomId }: { roomId: string | null }) => useStudioLocalDraftOwner({
+        initialInstantWorkId: FRESH_ROOM,
+        roomId,
+        workId: null,
+        remixId: null,
+        ownerId: "guest-user",
+        projectId: "project-1",
+        documentId: "doc-1",
+        draftId: null,
+      }),
+      { initialProps: { roomId: null as string | null } },
+    );
+    await waitFor(() => expect(locks.held.has(FRESH_LEASE_NAME)).toBe(true));
+    expect(readReceiptRoom()).toBe(FRESH_ROOM);
+
+    // StudioDocumentLayout이 이 탭의 instant id를 ?room=으로 게시한 직후의 재렌더.
+    rerender({ roomId: FRESH_ROOM });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(locks.held.has(FRESH_LEASE_NAME)).toBe(true);
+
+    // sessionStorage가 복제된 탭은 같은 원점 영수증을 보지만, 살아 있는 소유 탭의 리스를 얻지 못한다.
+    const onDuplicateRecovered = vi.fn();
+    const closeDuplicate = holdStudioLocalDraftOwnership({
+      scope: SCOPE,
+      room: FRESH_ROOM,
+      knownTabOwner: false,
+      workId: null,
+      remixId: null,
+      storage: window.localStorage,
+      locks,
+      onRecovered: onDuplicateRecovered,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(onDuplicateRecovered).not.toHaveBeenCalled();
+    expect(result.current).toBe(FRESH_ROOM);
+    closeDuplicate();
+  });
+
+  it("룸 없는 재진입으로 회복한 직전 룸도 ?room= 게시 뒤 리스를 놓지 않는다", async () => {
+    seedReceipt(PREVIOUS_ROOM);
+    const { result, rerender } = renderHook(
+      ({ roomId }: { roomId: string | null }) => useStudioLocalDraftOwner({
+        initialInstantWorkId: FRESH_ROOM,
+        roomId,
+        workId: null,
+        remixId: null,
+        ownerId: "guest-user",
+        projectId: "project-1",
+        documentId: "doc-1",
+        draftId: null,
+      }),
+      { initialProps: { roomId: null as string | null } },
+    );
+    await waitFor(() => expect(result.current).toBe(PREVIOUS_ROOM));
+
+    // StudioDocumentLayout이 회복한 룸을 ?room=으로 게시한 직후의 재렌더.
+    rerender({ roomId: PREVIOUS_ROOM });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(locks.held.has(LEASE_NAME)).toBe(true);
+    expect(result.current).toBe(PREVIOUS_ROOM);
+
+    const onDuplicateRecovered = vi.fn();
+    const closeDuplicate = holdStudioLocalDraftOwnership({
+      scope: SCOPE,
+      room: PREVIOUS_ROOM,
+      knownTabOwner: false,
+      workId: null,
+      remixId: null,
+      storage: window.localStorage,
+      locks,
+      onRecovered: onDuplicateRecovered,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(onDuplicateRecovered).not.toHaveBeenCalled();
+    closeDuplicate();
   });
 });

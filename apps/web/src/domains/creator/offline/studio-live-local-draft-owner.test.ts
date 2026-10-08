@@ -4,14 +4,34 @@ import { hasStudioLocalDraftOrigin, holdStudioLocalDraftOwnership, readStudioLoc
 
 const room = "work-instant-abc-1234";
 const scope = studioLocalDraftOwnerScope({ ownerId: "a", projectId: "p", documentId: "d", draftId: null });
+type LockRequestOptions = { ifAvailable: true } | { signal: AbortSignal };
 function fixture() {
   const rows = new Map<string, string>();
   const held = new Set<string>();
+  const waiting = new Map<string, (() => void)[]>();
   const storage = { getItem: (key: string) => rows.get(key) ?? null, setItem: (key: string, value: string) => { rows.set(key, value); } };
-  const locks = { request: vi.fn(async (name: string, _options: { ifAvailable: true }, callback: (lock: unknown | null) => Promise<void>) => {
-    if (held.has(name)) { await callback(null); return; }
-    held.add(name);
-    try { await callback({ name }); } finally { held.delete(name); }
+  // Web Locks 의미를 따른다: 점유 중이면 ifAvailable은 즉시 null, 대기 요청은 줄을 서고 해제 시 원자적으로
+  // 넘겨받으며 signal이 중단되면 대기열에서 빠진다. 해제는 브라우저처럼 콜백의 promise가 끝난 뒤에 일어난다.
+  const locks = { request: vi.fn(async (name: string, options: LockRequestOptions, callback: (lock: unknown | null) => Promise<void>) => {
+    const signal = "signal" in options ? options.signal : null;
+    if (signal?.aborted) throw new DOMException("aborted", "AbortError");
+    if (!held.has(name)) held.add(name);
+    else if (!signal) { await callback(null); return; }
+    else {
+      await new Promise<void>((resolve, reject) => {
+        const grant = () => { signal.removeEventListener("abort", cancel); resolve(); };
+        const cancel = () => {
+          waiting.set(name, (waiting.get(name) ?? []).filter((entry) => entry !== grant));
+          reject(new DOMException("aborted", "AbortError"));
+        };
+        signal.addEventListener("abort", cancel, { once: true });
+        waiting.set(name, [...(waiting.get(name) ?? []), grant]);
+      });
+    }
+    try { await callback({ name }); } finally {
+      const next = waiting.get(name)?.shift();
+      if (next) next(); else held.delete(name);
+    }
   }) };
   return { rows, storage, locks, held };
 }
@@ -26,7 +46,8 @@ describe("browser-local origin reclaim (not server authority)", () => {
     expect(hasStudioLocalDraftOrigin(f.storage, scope, room)).toBe(true);
     expect(f.held.size).toBe(1);
     expect(input.onRecovered).not.toHaveBeenCalled();
-    expect(f.locks.request.mock.calls[0]?.[1]).toEqual({ ifAvailable: true });
+    // 소유 탭은 빼앗지 않는(steal 없음) 대기 요청으로만 리스를 잡고, 해제 시 취소할 signal을 넘긴다.
+    expect(f.locks.request.mock.calls[0]?.[1]).toEqual({ signal: expect.any(AbortSignal) });
     close(); await settle(); expect(f.held.size).toBe(0);
   });
   it("does not promote a companion while the origin tab still exists", async () => {
@@ -34,7 +55,34 @@ describe("browser-local origin reclaim (not server authority)", () => {
     const join = { ...options(f), knownTabOwner: false };
     const closeJoin = holdStudioLocalDraftOwnership(join); await settle();
     expect(join.onRecovered).not.toHaveBeenCalled();
+    // 동행 탭은 기다리지 않는다. 살아 있는 원점이 닫힌 뒤 대기열에서 승격되는 일이 없어야 한다.
+    expect(f.locks.request.mock.calls[1]?.[1]).toEqual({ ifAvailable: true });
     closeJoin(); close(); await settle();
+  });
+  it("같은 탭이 리스를 곧바로 다시 잡아도 끊기지 않아 복제 탭이 살아 있는 원점을 회복하지 못한다", async () => {
+    // 소유 탭이 ?room=을 게시하며 효과가 재실행되는 순간(해제 직후 같은 리스 재요청)을 그대로 재현한다.
+    const f = fixture(); const first = holdStudioLocalDraftOwnership(options(f)); await settle();
+    first(); const second = holdStudioLocalDraftOwnership(options(f)); await settle(); await settle();
+    expect(f.held.size).toBe(1);
+    const duplicate = { ...options(f), knownTabOwner: false };
+    const closeDuplicate = holdStudioLocalDraftOwnership(duplicate); await settle();
+    expect(duplicate.onRecovered).not.toHaveBeenCalled();
+    closeDuplicate(); second(); await settle(); await settle();
+    expect(f.held.size).toBe(0);
+  });
+  it("해제된 소유 탭의 대기 요청은 대기열에서 곧바로 빠지고 나중에 리스를 얻지 않는다", async () => {
+    const f = fixture(); const owner = holdStudioLocalDraftOwnership(options(f)); await settle();
+    const queued = holdStudioLocalDraftOwnership(options(f)); await settle();
+    const queuedRequest = f.locks.request.mock.results[1]?.value as Promise<void>;
+    queued();
+    // 취소가 없으면 대기 요청은 원래 소유자가 놓을 때까지 대기열에 남는다("pending").
+    const outcome = await Promise.race([
+      queuedRequest.then(() => "granted", (error: unknown) => (error as DOMException).name),
+      settle().then(() => "pending"),
+    ]);
+    expect(outcome).toBe("AbortError");
+    owner(); await settle(); await settle();
+    expect(f.held.size).toBe(0);
   });
   it("reclaims the same local origin after the browser releases its old lease", async () => {
     const f = fixture(); const close = holdStudioLocalDraftOwnership(options(f)); await settle(); close(); await settle();
