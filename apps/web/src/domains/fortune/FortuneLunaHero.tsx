@@ -151,7 +151,7 @@ export function FortuneLunaHero({ onSaveTodayCards }: { onSaveTodayCards: (text:
               className="w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-fg focus:border-accent focus:outline-none"
             />
             <p className="mt-1.5 text-[11px] leading-relaxed text-fg-3">
-              생년월일은 이 기기에만 저장돼요. 서버에는 저장하지 않아요.
+              생년월일은 이 기기에만 저장돼요. 계산도 이 기기에서만 이뤄져 서버로 보내지 않아요.
             </p>
           </div>
           <button

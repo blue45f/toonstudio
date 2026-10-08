@@ -78,7 +78,7 @@ export function FortuneBirthProfileFields({
       </div>
       <div className="border-t border-line/50 pt-3 space-y-2">
         <p className="text-[11px] leading-relaxed text-fg-3">
-          {tx("입력한 생년월일·출생시간은 이 기기에만 저장돼 다음 방문에 다시 입력하지 않아도 돼요.")}
+          {tx("입력한 생년월일·출생시간은 이 기기에만 저장돼 다음 방문에 다시 입력하지 않아도 돼요. 운세 계산도 이 기기에서만 이뤄져 서버로 보내지 않아요.")}
         </p>
         {hasSavedBirthProfile && !confirming && (
           <button

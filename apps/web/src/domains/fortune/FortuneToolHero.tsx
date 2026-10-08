@@ -243,7 +243,7 @@ export function FortuneToolHero({ tab }: { tab: FortuneTab }) {
           </button>
           <p className="text-[11px] leading-relaxed text-fg-3">
             {content.needsBirth
-              ? "생년월일은 이 기기에만 저장돼요. 서버에는 저장하지 않아요. 운세는 재미와 참고용입니다."
+              ? "생년월일은 이 기기에만 저장돼요. 계산도 이 기기에서만 이뤄져 서버로 보내지 않아요. 운세는 재미와 참고용입니다."
               : "운세는 재미와 참고용입니다. 계산 기준과 한계는 결과 아래에 밝힙니다."}
           </p>
         </div>
