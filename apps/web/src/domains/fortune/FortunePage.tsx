@@ -1646,9 +1646,10 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                           <motion.button
                             key={idx}
                             type="button"
+                            aria-label={`${idx + 1}번 카드 뒤집기`}
                             whileHover={{ y: -10, scale: 1.03 }}
                             onClick={() => handleSelectTarotCard(idx)}
-                            className="w-28 cursor-pointer aspect-[2/3] rounded-xl border border-amber-500/20 bg-cover bg-center flex items-center justify-center relative overflow-hidden shadow-lg transition-all hover:border-amber-400 focus:outline-none"
+                            className="w-28 cursor-pointer aspect-[2/3] rounded-xl border border-amber-500/20 bg-cover bg-center flex items-center justify-center relative overflow-hidden shadow-lg transition-all hover:border-amber-400 focus-visible:border-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                             style={{ backgroundImage: `url('${resolveAssetUrl("/images/tarot/tarot-back.jpg")}')` }}
                           >
                             {/* 카드 뒷면에 호버 시 미세한 골드 이펙트 오버레이 */}
