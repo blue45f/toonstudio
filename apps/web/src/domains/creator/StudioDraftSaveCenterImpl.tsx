@@ -293,7 +293,8 @@ export function StudioDraftSaveCenter({
     sharedUpdatedAt: explicitServerSaveAt,
     observedAt: observedServerSaveAt,
   });
-  const serverSaveError = manualSaveError ?? extractStudioDraftSaveError(error);
+  const hostSaveError = extractStudioDraftSaveError(error);
+  const serverSaveError = manualSaveError ?? hostSaveError;
 
   const input = useMemo<StudioDraftSaveCenterInput>(() => ({
     isOnline,
@@ -512,7 +513,11 @@ export function StudioDraftSaveCenter({
       || !workHydrated
       || workHydrationFailed
       || pendingSaveIntent === "draft"
-      || serverSaveError !== null
+      // 재생 차단은 호스트가 보고한 오류(수정 충돌 등)만 근거로 한다. 저장 시도 실패가
+      // 스스로 세팅한 manualSaveError까지 가드에 넣으면, 서버 불가로 예약된 지연 저장이
+      // "연결이 복구되면 자동으로 다시 저장합니다"라는 안내와 달리 영원히 재생되지 않는
+      // 교착이 된다. 서버 불가 실패의 재시도 간격은 연결성 상태(isOnline 전이)가 담당한다.
+      || hostSaveError !== null
     ) return;
     replayInFlightRef.current = true;
     clearDeferredSave(false);
@@ -527,11 +532,11 @@ export function StudioDraftSaveCenter({
     collaborationDocumentLocked,
     collaborationOperationSyncPending,
     deferredSave,
+    hostSaveError,
     invokeSave,
     isOnline,
     pendingSaveIntent,
     saving,
-    serverSaveError,
     workHydrated,
     workHydrationFailed,
   ]);
