@@ -227,13 +227,13 @@ test("호환 MP4는 요청한 중간 위치·빠른 역방향 탐색·일시정�
 test("브랜드 필름도 최초 마지막 챕터와 역방향 탐색 후 다시 열 수 있다", async ({ page }) => {
   await serveCompleteMediaWithoutRanges(page);
   await page.goto("/brand-film", { waitUntil: "domcontentloaded" });
-  const chapters = page.locator(".ch-film-chapters button");
+  const chapters = page.locator(".mk-film__chapters li > button");
   await chapters.nth(3).click();
   const video = page.locator("#creator-brand-video");
   await expect.poll(async () => video.evaluate((media: HTMLVideoElement) => media.currentTime >= 18 && media.currentTime < 24 && media.readyState >= 3)).toBe(true);
   await chapters.nth(1).click();
   await expect.poll(async () => video.evaluate((media: HTMLVideoElement) => media.currentTime >= 6 && media.currentTime < 15 && !media.paused)).toBe(true);
-  await page.locator(".ch-film-details > button").click();
+  await page.getByRole("button", { name: "포스터로 돌아가기", exact: true }).click();
   await expect(video).toHaveCount(0);
   await chapters.nth(2).click();
   await expect.poll(async () => video.evaluate((media: HTMLVideoElement) => media.currentSrc.startsWith("blob:") && media.currentTime >= 12 && media.currentTime < 23 && !media.paused)).toBe(true);
