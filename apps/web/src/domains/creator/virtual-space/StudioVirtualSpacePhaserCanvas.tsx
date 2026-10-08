@@ -110,6 +110,7 @@ import {
   studioVirtualArtStyle,
   studioVirtualLivingTownAssetUrl,
 } from "./studio-virtual-space-art-style";
+import { StudioTextResolutionRuntime } from "./studio-virtual-space-text-resolution";
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
 import { drawStudioModularCampus } from "./studio-virtual-space-modular-campus";
 import { studioIllustratedPropFrame, studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
@@ -736,6 +737,8 @@ export function StudioVirtualSpacePhaserCanvas({
       const campusFloorMap = studioVirtualCampusScene(manifest) ? manifest.tilemap ?? null : null;
       const motionConfig: { acceleration: number; deceleration: number; maxSpeed: number } = { ...DEFAULT_STUDIO_MOTION_CONFIG };
       let cameraBaseZoom = 1;
+      /** 장면의 모든 Phaser Text를 화면 배율에 맞는 해상도로 그린다. 픽셀 아트 화풍에서는 거친 글자를 유지한다. */
+      let textResolution: StudioTextResolutionRuntime | null = null;
       let cameraFollows = true;
       let lastPromptNpcId: string | null = null;
       const npcNoticedAt = new Map<string, number>();
@@ -974,6 +977,9 @@ export function StudioVirtualSpacePhaserCanvas({
       scene.create = function create() {
         if (cancelled || engineFailed) return;
         parent.dataset.bootStage = "creating-scene";
+        // 이후 만들어지는 모든 Text(이름표·구역 이름·안내 글자)를 붙잡아 같은 해상도로 맞춘다.
+        textResolution = artProfile.pixelated ? null : new StudioTextResolutionRuntime(this.sys.events);
+        cleanup.push(() => textResolution?.dispose());
         for (const [key, atlas] of sceneArtAtlases) {
           if (this.textures.exists(key) && !registerStudioSceneAtlas(this.textures.get(key), atlas)) {
             failedTextures.add(key);
@@ -1462,6 +1468,7 @@ export function StudioVirtualSpacePhaserCanvas({
         // 스프라이트 크로스페이드는 모션 감소·저사양 효과 단계에서는 끈다 (즉시 교체가 기본 계약).
         const crossfadeEnabled = !reducedMotion.matches && experienceRef.current.effectLevel !== "low";
         if (!sceneReady || cancelled) return;
+        textResolution?.sync(Math.max(cameraBaseZoom, viewport.ratio));
         if (decorationsRef.current !== lastDecorationState || placedFixturesRef.current !== lastPlacedFixtures) {
           lastDecorationState = decorationsRef.current;
           lastPlacedFixtures = placedFixturesRef.current;
@@ -2903,6 +2910,7 @@ export function StudioVirtualSpacePhaserCanvas({
           parent.dataset.walkSpeed = String(playerLocomotion.walkSpeed);
           parent.dataset.gaitDistancePerCycle = String(playerLocomotion.gaitDistancePerCycle ?? "native");
           parent.dataset.pixelRatio = viewport.ratio.toFixed(2);
+          parent.dataset.textResolution = String(textResolution?.current ?? 1);
           parent.dataset.localMoving = String(nextMoving);
           parent.dataset.localFacing = facing;
           parent.dataset.terrain = terrain.kind;
