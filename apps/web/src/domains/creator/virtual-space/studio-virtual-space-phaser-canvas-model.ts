@@ -201,6 +201,29 @@ export function studioWorldMayTakeFocus(active: Element | null, stage: Element |
   return Boolean(stage?.contains(active));
 }
 
+/** 초점을 잃은 상태에서 눌러도 월드가 초점을 되찾아 받아 주는 이동 키. Shift·X·G는 다른 곳에서도 흔히 쓰여 뺀다. */
+export const WORLD_FOCUS_RECLAIM_CODES: ReadonlySet<string> = new Set([
+  "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD",
+]);
+
+/**
+ * 배너·토스트를 닫으면 초점이 있던 버튼이 사라져 초점이 <body>로 떨어진다. 월드는 캔버스에 초점이 있을 때만 키를 받으므로
+ * 그 뒤로 이동 키가 아무 반응 없이 먹히지 않는다. 아무 요소에도 초점이 없을 때 이동 키를 누르면 월드가 초점을 되찾아
+ * 그 키를 바로 받아도 되는지 판정한다. 입력 칸·대화상자·다른 패널에 초점이 있거나 입력이 막힌 상태면 건드리지 않는다.
+ */
+export function studioWorldShouldReclaimFocus(input: {
+  readonly active: unknown;
+  readonly root: { readonly body: unknown; readonly documentElement: unknown };
+  readonly code: string;
+  readonly modified: boolean;
+  readonly composing: boolean;
+  readonly blocked: boolean;
+}): boolean {
+  if (input.modified || input.composing || input.blocked) return false;
+  if (!WORLD_FOCUS_RECLAIM_CODES.has(input.code)) return false;
+  return !input.active || input.active === input.root.body || input.active === input.root.documentElement;
+}
+
 export function propTextureKey(prop: StudioWorldPropDefinition): string {
   return `studio-world-prop-${prop.assetKey ?? prop.id}`;
 }

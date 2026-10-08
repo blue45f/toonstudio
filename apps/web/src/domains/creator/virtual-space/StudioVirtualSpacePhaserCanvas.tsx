@@ -272,6 +272,7 @@ import {
   studioEmoteFacing,
   studioFacingToward,
   studioWorldMayTakeFocus,
+  studioWorldShouldReclaimFocus,
   EMPTY_DECORATIONS,
   NPC_LOOK_DISTANCE,
   NPC_NOTICE_COOLDOWN_MS,
@@ -1367,8 +1368,7 @@ export function StudioVirtualSpacePhaserCanvas({
         };
         // Capture only canvas-owned keys before preventing browser scrolling. Phaser's
         // window keyboard handler ignores defaultPrevented events from focused elements.
-        const preventGameScrolling = (event: KeyboardEvent) => {
-          if (event.target !== canvas) return;
+        const handleCanvasKey = (event: KeyboardEvent) => {
           if (event.key === "Escape") { if (buildPlacement?.handleEscape()) return; npcDirector.cancelGuideTour(); stopMovement(); return; }
           if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || runtimeInputBlocked()) return;
           if (!WORLD_KEY_CODES.has(event.code)) return;
@@ -1381,6 +1381,25 @@ export function StudioVirtualSpacePhaserCanvas({
             applyGhostMode(next);
           }
           event.preventDefault();
+        };
+        const preventGameScrolling = (event: KeyboardEvent) => {
+          if (event.target !== canvas) return;
+          handleCanvasKey(event);
+        };
+        // 닫은 배너·토스트처럼 초점이 있던 요소가 사라지면 초점이 <body>로 떨어지고, 캔버스가 초점을 가질 때만 키를 받는 월드는
+        // 이동 키에 아무 반응이 없다. 어디에도 초점이 없을 때 이동 키를 누르면 월드가 초점을 되찾아 그 키를 바로 받는다.
+        const reclaimFocusForMovement = (event: KeyboardEvent) => {
+          if (event.defaultPrevented || event.target === canvas || !sceneReady) return;
+          if (!studioWorldShouldReclaimFocus({
+            active: document.activeElement,
+            root: document,
+            code: event.code,
+            modified: event.metaKey || event.ctrlKey || event.altKey,
+            composing: event.isComposing,
+            blocked: runtimeInputBlocked(),
+          })) return;
+          focusCanvas();
+          handleCanvasKey(event);
         };
         const releaseKey = (event: KeyboardEvent) => { heldKeys.delete(event.code); };
         const promptHasFocus = () => document.activeElement?.matches('[data-interact-prompt="true"]') ?? false;
@@ -1398,6 +1417,7 @@ export function StudioVirtualSpacePhaserCanvas({
         };
         canvas.addEventListener("pointerdown", focusCanvas);
         canvas.addEventListener("keydown", preventGameScrolling);
+        globalThis.addEventListener("keydown", reclaimFocusForMovement, true);
         globalThis.addEventListener("keyup", releaseKey);
         document.addEventListener("focusin", refocus);
         document.addEventListener("visibilitychange", visibility);
@@ -1415,6 +1435,7 @@ export function StudioVirtualSpacePhaserCanvas({
         cleanup.push(() => {
           canvas.removeEventListener("pointerdown", focusCanvas);
           canvas.removeEventListener("keydown", preventGameScrolling);
+          globalThis.removeEventListener("keydown", reclaimFocusForMovement, true);
           globalThis.removeEventListener("keyup", releaseKey);
           document.removeEventListener("focusin", refocus);
           document.removeEventListener("visibilitychange", visibility);
