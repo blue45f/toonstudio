@@ -7,6 +7,9 @@
  * 미리 좋은 필터(lanczos3)로 줄인 128px 셀을 0.5배로만 표시한다.
  * 셀 경계의 이웃 재질·둥근 모서리가 섞이지 않게 각 셀을 안쪽으로 조금 잘라낸다.
  * 돌길(셀 4)은 원본 해상도에서 가장자리를 최소 오차 경로로 이어 가로·세로로 끊김 없이 이어지는 주기 타일로 만든 뒤 줄인다.
+ * 아틀라스는 near-lossless WebP로 인코딩한다. 일반 손실 인코딩은 색차 번짐과 블록 경계 필터 때문에 맞닿은 칸의 색을 서로 끌어와
+ * 칸의 가장자리 줄이 틀어지고(돌길 마지막 행 R+10 G-2.5 B-14, 품질 90~100에서도 동일), 타일 경계마다 옅은 황갈색 실선이 생긴다.
+ * 인코딩 뒤 복원해 가장자리 편향을 재고 한도를 넘으면 실패한다.
  *
  * 사용: node apps/web/scripts/build-virtual-studio-campus-atlas.mjs
  * 출력: apps/web/public/assets/virtual-studio/campus-v1/<style>/floor-atlas.webp (6종)
@@ -14,6 +17,7 @@
 import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { atlasEdgeBias } from "./lib/atlas-edge-bias.mjs";
 import { periodizeTile, seamRatio } from "./lib/seamless-tile.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -25,7 +29,11 @@ const SOURCE_SIZE = 1254;
 const GRID = 4;
 const CELL = 128;
 const INSET = 3;
-const MAX_BYTES = 150 * 1024;
+const MAX_BYTES = 250 * 1024;
+/** near-lossless 수준(1~100, 높을수록 원본에 가깝다). 40에서 가장자리 편향이 0이고 평균 오차가 기존 손실 q90의 절반이다. */
+const NEAR_LOSSLESS_LEVEL = 40;
+/** 칸 가장자리 줄의 평균 색 편향 한도(0~255). 기존 손실 인코딩은 10~14였다. */
+const MAX_EDGE_BIAS = 3;
 /**
  * 주기 타일로 만들 셀(아틀라스 인덱스 → 겹침 폭, 원본 px). 4 = CAMPUS_TERRAIN.cobble(돌길).
  * 원본 한 칸은 좌우·상하 가장자리가 이어지지 않아 그대로 이어 붙이면 칸마다 돌이 잘리고, 좌우 반전으로 섞어 가리면 접합부마다
@@ -79,19 +87,22 @@ async function buildStyle(sharp, style) {
   const folder = join(OUTPUT_DIR, style);
   mkdirSync(folder, { recursive: true });
   const output = join(folder, "floor-atlas.webp");
-  await sharp({ create: { width: CELL * GRID, height: CELL * GRID, channels: 3, background: { r: 0, g: 0, b: 0 } } })
-    .composite(cells)
-    .webp({ quality: 90, effort: 6 })
-    .toFile(output);
+  const size = CELL * GRID;
+  const atlas = sharp({ create: { width: size, height: size, channels: 3, background: { r: 0, g: 0, b: 0 } } }).composite(cells);
+  const truth = await atlas.clone().removeAlpha().raw().toBuffer();
+  await atlas.webp({ nearLossless: true, quality: NEAR_LOSSLESS_LEVEL, effort: 6 }).toFile(output);
   const bytes = statSync(output).size;
   if (bytes > MAX_BYTES) throw new Error(`${style} 아틀라스가 ${MAX_BYTES}바이트를 넘습니다: ${bytes}`);
-  return { style, bytes, seams };
+  const decoded = await sharp(output).removeAlpha().raw().toBuffer();
+  const edgeBias = atlasEdgeBias(new Uint8Array(truth), new Uint8Array(decoded), { width: size, height: size, cell: CELL, channels: 3 });
+  if (edgeBias > MAX_EDGE_BIAS) throw new Error(`${style} 아틀라스의 칸 가장자리 색 편향이 ${edgeBias.toFixed(1)}로 한도 ${MAX_EDGE_BIAS}를 넘습니다.`);
+  return { style, bytes, edgeBias, seams };
 }
 
 const sharp = await loadSharp();
 for (const style of STYLES) {
-  const { bytes, seams } = await buildStyle(sharp, style);
+  const { bytes, edgeBias, seams } = await buildStyle(sharp, style);
   const seam = seams.map(({ index, before, after }) =>
     ` · 셀 ${index} 이음비(1에 가까울수록 이음이 안 보임) 가로 ${before.horizontal.toFixed(2)}→${after.horizontal.toFixed(2)} 세로 ${before.vertical.toFixed(2)}→${after.vertical.toFixed(2)}`).join("");
-  console.log(`${style}: ${(bytes / 1024).toFixed(1)}KB${seam}`);
+  console.log(`${style}: ${(bytes / 1024).toFixed(1)}KB 가장자리 편향 ${edgeBias.toFixed(2)}${seam}`);
 }
