@@ -145,6 +145,20 @@ describe("SpaceProximityStrip", () => {
     expect(onNpcTalk).toHaveBeenCalledExactlyOnceWith("guide");
   });
 
+  it("대화 버튼이 없는 NPC 카드는 이름과 활동만 보여 준다(하단 프롬프트가 맡은 NPC)", () => {
+    const onNpcTalk = vi.fn();
+    render(<SpaceProximityStrip people={[]}
+      npcs={[{ id: "guide", labelKo: "NPC · 안내원", labelEn: "NPC · Guide", activityKo: "기다리는 중", activityEn: "Waiting", skinKey: "guide", canTalk: false }]}
+      artStyle="webtoon" socialDisabled={null} followingPeerId={null}
+      onWave={vi.fn()} onTalk={vi.fn()} onFollow={vi.fn()} onNpcTalk={onNpcTalk} />);
+    const npc = screen.getByRole("region", { name: "근처에 있는 사람과 NPC" }).querySelector<HTMLElement>('[data-kind="npc"]');
+    if (!npc) throw new Error("NPC 카드가 필요합니다.");
+    expect(within(npc).getByText("안내원")).toBeTruthy();
+    expect(within(npc).getByText("기다리는 중")).toBeTruthy();
+    expect(within(npc).queryByRole("button")).toBeNull();
+    expect(onNpcTalk).not.toHaveBeenCalled();
+  });
+
   it("요청을 보낼 수 없거나 상대가 집중 중이면 버튼을 비활성 사유와 함께 막는다", () => {
     const onTalk = vi.fn();
     const onFollow = vi.fn();

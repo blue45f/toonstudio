@@ -27,19 +27,40 @@ export function distanceBetween(left: StudioVirtualSpacePoint, right: StudioVirt
   return Math.hypot(left.x - right.x, left.y - right.y);
 }
 
-/** 근접 스트립이 그리는 사람·NPC 카드 파생. 개인 공간에서는 사람 카드를 비운다. */
+/** 근접 NPC 카드가 만드는 데 쓰는 최소 필드. 대화 가능 여부는 interaction이 있는지로만 본다. */
+type StudioNearbyNpcSource = Pick<StudioVirtualSpaceNearbyNpc, "id" | "labelKo" | "labelEn" | "activityKo" | "activityEn" | "skinKey"> & {
+  readonly interaction: unknown;
+};
+
+/**
+ * 하단 상호작용 프롬프트가 말을 거는 NPC. 가까운 오브젝트 상호작용이 있으면 프롬프트는 그쪽을 가리키므로 NPC는 없고,
+ * 아니면 가까운 NPC 중 대화할 수 있는 첫 NPC다.
+ */
+export function studioPromptNpc<Npc extends { readonly interaction: unknown }>(
+  nearbyNpcs: readonly Npc[],
+  hasObjectInteraction: boolean,
+): Npc | null {
+  return hasObjectInteraction ? null : nearbyNpcs.find((npc) => npc.interaction) ?? null;
+}
+
+/**
+ * 근접 스트립이 그리는 사람·NPC 카드 파생. 개인 공간에서는 사람 카드를 비운다.
+ * `promptNpcId`는 하단 프롬프트가 이미 말을 거는 NPC다. 같은 NPC 카드에 같은 동작의 대화 버튼을 또 두면 화면 위아래에 이름과 버튼이
+ * 겹쳐 보이므로, 그 카드는 이름·활동만 보여 준다.
+ */
 export function studioNearbyCards(input: {
   readonly personal: boolean;
   readonly snapshot: StudioVirtualSpaceSnapshot;
   readonly nearbyNpcs: readonly StudioVirtualSpaceNearbyNpc[];
   readonly conversationMemberIds: readonly string[];
+  readonly promptNpcId?: string | null;
 }): {
   readonly people: ReturnType<typeof studioNearbyPeopleCards>;
   readonly npcs: ReturnType<typeof studioNearbyNpcCards>;
 } {
   return Object.freeze({
     people: studioNearbyPeopleCards(input),
-    npcs: studioNearbyNpcCards(input.nearbyNpcs),
+    npcs: studioNearbyNpcCards(input.nearbyNpcs, input.promptNpcId ?? null),
   });
 }
 
@@ -56,10 +77,11 @@ function studioNearbyPeopleCards(input: {
   }));
 }
 
-function studioNearbyNpcCards(nearbyNpcs: readonly StudioVirtualSpaceNearbyNpc[]) {
+/** `canTalk`는 카드에 대화 버튼을 둘지다(대화할 수 있어도 하단 프롬프트가 맡은 NPC면 false). */
+export function studioNearbyNpcCards(nearbyNpcs: readonly StudioNearbyNpcSource[], promptNpcId: string | null = null) {
   return nearbyNpcs.map((npc) => ({
     id: npc.id, labelKo: npc.labelKo, labelEn: npc.labelEn, activityKo: npc.activityKo, activityEn: npc.activityEn,
-    skinKey: npc.skinKey, canTalk: Boolean(npc.interaction),
+    skinKey: npc.skinKey, canTalk: Boolean(npc.interaction) && npc.id !== promptNpcId,
   }));
 }
 

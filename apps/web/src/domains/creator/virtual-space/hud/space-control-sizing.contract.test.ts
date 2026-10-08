@@ -78,7 +78,13 @@ describe("가상 스튜디오 컨트롤 크기 계약", () => {
   });
 
   it("휴대폰에서는 미니 투어가 열려 있는 동안 환영 배너를 접는다", () => {
-    expect(pageSource).toContain('import { spaceHudShowsEventBanner } from "./hud/space-hud-priority";');
+    expect(pageSource).toMatch(/import \{[^}]*\bspaceHudShowsEventBanner\b[^}]*\} from "\.\/hud\/space-hud-priority";/u);
     expect(pageSource).toMatch(/spaceHudShowsEventBanner\(\{ desktop, coachOpen: coach !== null \}\) \? <SpaceEventBanner/u);
+  });
+
+  it("좁은 화면과 채팅 패널이 열린 동안에는 말풍선 채팅 힌트를 접고, 하단 프롬프트가 맡은 NPC 카드에는 대화 버튼을 두지 않는다", () => {
+    expect(pageSource).toMatch(/import \{[^}]*\bspaceHudChatHintBlocked\b[^}]*\} from "\.\/hud\/space-hud-priority";/u);
+    expect(pageSource).toMatch(/<SpaceChatInput blocked=\{spaceHudChatHintBlocked\(\{[^}]*chatPanelOpen: chatOpen, touch \}\)\}/u);
+    expect(pageSource).toMatch(/studioNearbyCards\(\{[^}]*promptNpcId: promptNpc\?\.id \?\? null \}\)/u);
   });
 });
