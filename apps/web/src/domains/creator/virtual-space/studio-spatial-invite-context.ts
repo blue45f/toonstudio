@@ -9,6 +9,11 @@ export interface ParsedStudioSpatialInvite {
 }
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/u;
+
+/** 저장된 게스트 세션의 자격이 초대 토큰인지 입장코드인지 가르는 형식 판정. */
+export function isStudioSpatialInviteToken(value: string): boolean {
+  return TOKEN.test(value);
+}
 const OPAQUE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/u;
 const ENTRY = new Set(["team-lobby", "project-space", "interview-waiting"]);
 

@@ -20,6 +20,7 @@ import {
   writeStudioVirtualSpaceEntryPreference,
 } from "./studio-virtual-space-entry-preference";
 import {
+  clearStudioGuestSession,
   createStudioGuestSession,
   parseStudioGuestInviteFragment,
   readStudioGuestSession,
@@ -41,7 +42,10 @@ import {
   studioVirtualSpacePositionScope,
   writeStudioVirtualSpaceSessionPoint,
 } from "./studio-virtual-space-session-position";
+import { isStudioSpatialInviteToken } from "./studio-spatial-invite-context";
+import { verifyStudioSpaceEntryCode, verifyStudioSpatialInvite } from "./studio-virtual-space-access-client";
 import { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
+import type { StudioEntryCodeEntryResult } from "./StudioVirtualSpaceEntryCodePanel";
 import { VirtualSpaceExperience } from "./StudioVirtualSpacePage";
 import { useStudioWorldPublication } from "./world-publication/use-studio-world-publication";
 
@@ -57,6 +61,41 @@ function validProjectId(projectId: string): boolean {
   return Boolean(projectId && projectId !== "." && projectId !== ".." && projectId.length <= 160 && !projectId.includes("\\"));
 }
 
+/** 게스트가 제시한 자격. 링크로 막 도착한 자격(fragment)과 이전에 검증돼 저장된 자격(stored)을 구분한다. */
+interface SpaceAccessCredential {
+  readonly source: "fragment" | "stored";
+  readonly kind: "invite" | "code";
+  readonly value: string;
+}
+
+/** 서버가 거절한 자격의 사유별 로비 안내(F-B06-1: 조용한 로비 착지 금지). */
+const ACCESS_DENIAL_COPY: Readonly<Record<string, { readonly ko: string; readonly en: string }>> = {
+  "not-found": {
+    ko: "확인할 수 없는 초대예요. 링크가 올바른지, 초대를 보낸 사람에게 다시 확인해 주세요.",
+    en: "We couldn't find this invitation. Check the link, or ask the sender to confirm it.",
+  },
+  expired: {
+    ko: "만료된 초대예요. 보낸 사람에게 새 초대를 요청해 주세요.",
+    en: "This invitation has expired. Ask the sender for a new one.",
+  },
+  revoked: {
+    ko: "취소된 초대예요. 보낸 사람에게 확인해 주세요.",
+    en: "This invitation was revoked. Please check with the sender.",
+  },
+  consumed: {
+    ko: "이미 사용된 초대예요. 이미 팀에 참여했다면 로그인하면 바로 입장할 수 있어요.",
+    en: "This invitation was already used. If you already joined the team, sign in to enter.",
+  },
+  "space-mismatch": {
+    ko: "이 공간에 대한 초대가 아니에요. 링크가 올바른지 확인해 주세요.",
+    en: "This invitation is for a different space. Please check the link.",
+  },
+  locked: {
+    ko: "시도가 너무 많아 이 공간이 잠시 잠겼어요. 잠시 후 다시 시도해 주세요.",
+    en: "Too many attempts — this space is briefly locked. Please try again shortly.",
+  },
+};
+
 export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal = false }: { readonly projectIdOverride?: string; readonly homeHeader?: ReactNode; readonly personal?: boolean } = {}) {
   const bt = useBilingual("StudioVirtualSpacePage");
   const { projectId = "" } = useParams<{ projectId: string }>();
@@ -71,12 +110,82 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
   );
   const session = useSession();
   const guestInvite = useMemo(() => parseStudioGuestInviteFragment(location.hash), [location.hash]);
-  // #code=XXXXXX 코드 초대도 같은 게스트 세션 흐름으로 태운다. 코드는 형식만
-  // 검사하고 서버 검증은 후속 작업이다(EntryCodePanel 문서와 동일 범위).
+  // #code=XXXXXX 코드 초대도 같은 게스트 세션 흐름으로 태우되, 초대 토큰과
+  // 마찬가지로 서버 검증(access 게이트)을 통과해야만 세션이 생긴다(F-B06-1).
   const codeInvite = useMemo(() => parseCodeInviteFragment(location.hash), [location.hash]);
   const [guestSession, setGuestSession] = useState<StudioGuestSession | null>(() => readStudioGuestSession());
+  // 저장된 게스트 세션은 그 공간의 세션일 때만 이 페이지의 자격이 된다.
+  const guestSessionForSpace = guestSession && guestSession.spaceId === decodedProjectId ? guestSession : null;
   const isGuest = !personal && session.ready && !session.data
-    && (guestInvite.token !== null || codeInvite !== null || guestSession !== null);
+    && (guestInvite.token !== null || codeInvite !== null || guestSessionForSpace !== null);
+  // 자격 기반 입장 게이트(F-B06-1): 자격이 제시된 경우에만 서버로 검증한다.
+  // 막 도착한 자격은 확인 불가(unavailable)여도 통과시키지 않고(fail-closed),
+  // 저장된 자격은 발급 시점에 이미 검증됐으므로 확인 불가만으로 내쫓지 않는다.
+  const accessCredential = useMemo<SpaceAccessCredential | null>(() => {
+    if (guestInvite.token) return { source: "fragment", kind: "invite", value: guestInvite.token };
+    if (codeInvite) return { source: "fragment", kind: "code", value: codeInvite };
+    if (guestSessionForSpace) {
+      return {
+        source: "stored",
+        kind: isStudioSpatialInviteToken(guestSessionForSpace.inviteToken) ? "invite" : "code",
+        value: guestSessionForSpace.inviteToken,
+      };
+    }
+    return null;
+  }, [guestInvite.token, codeInvite, guestSessionForSpace]);
+  const [accessGate, setAccessGate] = useState<"idle" | "checking" | "allowed" | "unavailable">("idle");
+  const [accessDenial, setAccessDenial] = useState<string | null>(null);
+  const [accessRetry, setAccessRetry] = useState(0);
+  useEffect(() => {
+    if (!entryOpen || personal || !session.ready || session.data || !accessCredential) {
+      setAccessGate("idle");
+      return;
+    }
+    let cancelled = false;
+    setAccessGate("checking");
+    setAccessDenial(null);
+    const verification = accessCredential.kind === "invite"
+      ? verifyStudioSpatialInvite(accessCredential.value, { kind: "project-space", projectId: decodedProjectId })
+      : verifyStudioSpaceEntryCode(decodedProjectId, accessCredential.value);
+    void verification.then((result) => {
+      if (cancelled) return;
+      if (result.status === "valid") {
+        setAccessGate("allowed");
+      } else if (result.status === "invalid") {
+        setAccessGate("idle");
+        setAccessDenial(result.reason);
+        if (accessCredential.source === "stored") {
+          // 서버가 거절한 저장 세션은 더 이상 자격이 아니다 — 지우되 사유는 로비에 남긴다.
+          clearStudioGuestSession();
+          setGuestSession(null);
+        }
+      } else {
+        setAccessGate("unavailable");
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [accessCredential, accessRetry, decodedProjectId, entryOpen, personal, session.data, session.ready]);
+  const accessBlocked = Boolean(isGuest && accessCredential && (
+    accessGate === "checking"
+    || accessGate === "idle"
+    || accessDenial !== null
+    || (accessGate === "unavailable" && accessCredential.source === "fragment")
+  ));
+  const accessNotice = !isGuest || !accessCredential
+    ? null
+    : accessDenial !== null
+      ? { tone: "error" as const, ...(ACCESS_DENIAL_COPY[accessDenial] ?? ACCESS_DENIAL_COPY["not-found"]) }
+      : accessGate === "checking" || accessGate === "idle"
+        ? { tone: "info" as const, ko: "초대 자격을 확인하고 있어요…", en: "Checking your invitation…" }
+        : accessGate === "unavailable" && accessCredential.source === "fragment"
+          ? {
+              tone: "error" as const,
+              ko: "초대 자격을 확인하지 못했어요. 연결 상태를 확인한 뒤 다시 확인해 주세요.",
+              en: "We couldn't verify your invitation. Check your connection and try again.",
+            }
+          : null;
   const userId = session.data?.user.id ?? null;
   const accountNickname = studioVirtualSpaceNicknameFromAccount(session.data?.user.name);
   useEffect(() => {
@@ -131,6 +240,8 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
   const completeEntry = (resume: boolean) => {
     const resolvedNickname = normalizeStudioVirtualSpaceNickname(entryNickname);
     if (!resolvedNickname) return;
+    // 자격이 제시된 게스트는 서버 검증을 통과하기 전에는 세션을 만들지 않는다(F-B06-1).
+    if (accessBlocked) return;
     const inviteToken = guestInvite.token ?? codeInvite;
     if (isGuest && inviteToken) {
       const guest = createStudioGuestSession({
@@ -207,7 +318,17 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
         ? { labelKo: studioVirtualPlaceById(resumeRecord.placeId).labelKo, labelEn: studioVirtualPlaceById(resumeRecord.placeId).labelEn }
         : null}
       onResume={() => completeEntry(true)}
-      onEnterWithCode={session.data ? undefined : (code) => {
+      accessNotice={accessNotice}
+      accessBlocked={accessBlocked}
+      onRetryAccess={accessGate === "unavailable" ? () => setAccessRetry((count) => count + 1) : undefined}
+      initialEntryCode={codeInvite}
+      onEnterWithCode={session.data ? undefined : async (code): Promise<StudioEntryCodeEntryResult> => {
+        // 코드는 서버 발급 기록과 대조한 뒤에만 세션을 만든다(F-B06-1).
+        const verification = await verifyStudioSpaceEntryCode(decodedProjectId, code);
+        if (verification.status === "unavailable") return { ok: false, reason: "unavailable" };
+        if (verification.status === "invalid") {
+          return { ok: false, reason: verification.reason, retryAfterSeconds: verification.retryAfterSeconds };
+        }
         const resolvedNickname = normalizeStudioVirtualSpaceNickname(entryNickname) ?? publicNickname;
         const guest = createStudioGuestSession({
           token: code,
@@ -218,7 +339,10 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
         writeStudioGuestSession(guest);
         setGuestSession(guest);
         setEntryNickname(resolvedNickname);
+        setAccessDenial(null);
+        setAccessGate("allowed");
         setEntryOpen(false);
+        return { ok: true };
       }}
       onEnter={() => completeEntry(false)}
     />;
@@ -256,7 +380,7 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
         preparing={!personal && (!session.ready || !transportFactory)}
         signedIn={!personal && Boolean(session.data)}
         isGuest={isGuest}
-        guestSpawn={guestSession?.spawn ?? guestInvite.spawn}
+        guestSpawn={guestSessionForSpace?.spawn ?? guestInvite.spawn}
         entryJustConfirmed={!initialEntryPreference.confirmed}
       />
     </StudioLiveCollaborationProvider>
