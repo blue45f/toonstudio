@@ -146,3 +146,12 @@ pnpm exec eslint --max-warnings=0 apps/character-lab/src/domains/authored apps/c
 | VRM 본 이름·확장 키 | VRM 1.0 humanoid/meta/expressions 키 이름(사실만, 본문 복제 없음) | 사양 저장소 LICENSE 미확인 → 사실만 사용 |
 | Mixamo·Rigify·VRoid 명명 규칙 | 리그 관례(사실) | — |
 | 실제 패키지 | `public/assets/characters/avatar-orion-authored`(primary), `reference-character`(baseline) — `index.json`·`manifest.json`의 `license` | CC0-1.0 |
+
+## 9. 키트 소스 행 (KT-12, 2026-10-08)
+
+모듈식 캐릭터 키트(`docs/authored-kit-spec.md`)의 순수 도메인 쪽이다. 테스트 수는 2026-10-08 실측이며 **브라우저 미검증**(GLB를 직접 받는 로더는 `kit-loader.browser.ts` 한 곳, Node 테스트가 없다)이다.
+
+| 항목 | 구현 상태 | Node 검증(테스트 파일) | 브라우저 검증 | 비고 |
+| --- | --- | --- | --- | --- |
+| `kit.json` → `KitPlan` 빌더(`domains/authored/kit-plan.ts`), 슬롯 능력 판정(`kit-capability.ts` `deriveKitCapabilities`), 로드 흐름(`kit-load-flow.ts`, fetch 포트 주입) | 구현됨 | `domains/authored/kit-plan.test.ts`(16), `kit-capability.test.ts`(13), `kit-load-flow.test.ts`(11) | 미검증(실제 `fetch`는 `kit-loader.browser.ts`) | 합성 `kit.json`만 검증했다. 실제 키트 에셋으로는 돌리지 않았다(에셋 미안착) |
+| 본 이름 매핑 55/55(`bone-name-mapping.ts`의 `tsjaw → jaw`), 메시 이름 → 역할 규칙(키트 접두 `ts_top`·`ts_bottom`·`ts_shoes`·`ts_accessory`·`ts_underwear`·`ts_iris`, `TS_Mouth` 프리미티브 번호) | 구현됨 | `domains/authored/kit-name-rules.test.ts`(5: 55/55 매핑, `jaw` 누락 없음, 미매핑은 끝 본 13개) | 미검증 | 쪼개지지 않은 `TS_Mouth`는 역할을 정할 수 없어 `kit.json`이 명시한다 |
