@@ -3,7 +3,7 @@ import type { ArchitectureGuideOverview } from "./engineering-architecture-guide
 
 /**
  * 아키텍처 해설 맨 위 "한 장으로 보기". 12개 구간 전체를 한 도식으로 엮고, 구조를 지탱하는 원칙과 읽는 법을 담는다.
- * 도식의 색(tone)은 "누가 소유하는가"를 뜻한다: local=사용자 기기, edge=Cloudflare, server=서버·원장, ai=AI, external=외부.
+ * 도식의 색(tone)은 대체로 "누가 맡는가"를 뜻한다(승인·주의 지점 warn, 작업이 남는 바닥 good 도 있다): local=사용자 기기, edge=Cloudflare, server=서버·원장, ai=AI, external=외부.
  * 모든 설명은 구간 본문(`engineering-architecture-guide-runtime*.ts`, `-delivery*.ts`)이 코드·설정으로 확인한 내용의 요약이다.
  */
 export const ARCHITECTURE_GUIDE_OVERVIEW: ArchitectureGuideOverview = {
@@ -16,12 +16,12 @@ export const ARCHITECTURE_GUIDE_OVERVIEW: ArchitectureGuideOverview = {
       "Sources live on your device, pages come straight from Cloudflare, records go to one server ledger: every kind of data has one owner.",
     ),
     alt: t(
-      "사용자 브라우저가 화면과 API 를 요청하면 Cloudflare 가 정적 화면은 바로 돌려주고, 로그인·저장 같은 동적 요청만 Core API 로 전달합니다. Core API 는 서버 원장(PostgreSQL)과 비공개 파일 저장소에 기록하고 AI 공급자를 부릅니다. 접속 상태는 Cloudflare 의 실시간 방이, 통화는 사람 사이의 직통 통로가 맡고, 코드는 승인한 커밋만 사람이 수동으로 배포합니다.",
-      "The browser asks Cloudflare for pages and API calls; static pages come straight back and only dynamic requests such as sign-in and saving are forwarded to the Core API. The Core API writes to the server ledger (PostgreSQL) and private file storage, and calls AI providers. Cloudflare realtime rooms carry presence, people call each other over a direct channel, and only approved commits are deployed, by hand.",
+      "사용자 브라우저가 화면과 API 를 요청하면 Cloudflare 가 정적 화면은 바로 돌려주고, 로그인·저장 같은 동적 요청만 Core API 로 전달합니다. Core API 는 서버 원장(PostgreSQL)과 비공개 파일 저장소에 기록하고 AI 공급자를 부릅니다. 접속 상태는 Cloudflare 의 실시간 방이, 통화는 사람 사이의 직통 통로가 맡지만 아직 실험 단계이고, 코드는 승인한 커밋만 사람이 수동으로 배포합니다.",
+      "The browser asks Cloudflare for pages and API calls; static pages come straight back and only dynamic requests such as sign-in and saving are forwarded to the Core API. The Core API writes to the server ledger (PostgreSQL) and private file storage, and calls AI providers. Cloudflare realtime rooms carry presence, people call each other over a direct channel (still experimental), and only approved commits are deployed, by hand.",
     ),
     nodes: [
       { id: "browser", label: t("브라우저 스튜디오", "Browser studio"), sub: t("그리기·3D·로컬 저장", "Drawing, 3D, local save"), tone: "local", at: [0, 1] },
-      { id: "peer", label: t("함께 작업하는 사람", "Collaborator"), sub: t("공동 편집 · 직통 통화", "Co-editing, direct calls"), tone: "local", at: [0, 3] },
+      { id: "peer", label: t("함께 작업하는 사람", "Collaborator"), sub: t("공동 편집 · 직통 통화(실험)", "Co-editing, direct calls (experimental)"), tone: "local", at: [0, 3] },
       { id: "edge", label: t("화면 배달", "Page delivery"), sub: t("Static Assets + Worker", "Static Assets + Worker"), tone: "edge", at: [1, 1] },
       { id: "rt", label: t("실시간 방", "Realtime rooms"), sub: t("Durable Objects", "Durable Objects"), tone: "edge", at: [1, 0] },
       { id: "api", label: t("Core API", "Core API"), sub: t("NestJS · 인증·권한", "NestJS, auth, permissions"), tone: "server", at: [2, 1] },
@@ -50,8 +50,8 @@ export const ARCHITECTURE_GUIDE_OVERVIEW: ArchitectureGuideOverview = {
     {
       title: t("원본은 내 기기, 서버는 원장만", "Sources on your device, a ledger on the server"),
       body: t(
-        "작업 원본은 OPFS·SQLite 에 두고, 서버는 계정·권한·거래처럼 여럿이 함께 믿어야 하는 기록만 맡습니다.",
-        "Working sources stay in OPFS and SQLite; the server keeps only what many people must trust together: accounts, permissions and transactions.",
+        "작업 원본은 OPFS·SQLite 에 두고, 서버는 계정·권한·거래, 함께 편집하고 게시한 작품처럼 여럿이 함께 믿어야 하는 기록을 맡습니다.",
+        "Working sources stay in OPFS and SQLite; the server keeps what many people must trust together: accounts, permissions, transactions and the shared works they co-edit and publish.",
       ),
     },
     {
@@ -71,8 +71,8 @@ export const ARCHITECTURE_GUIDE_OVERVIEW: ArchitectureGuideOverview = {
     {
       title: t("AI 는 제안만, 확정은 사람이", "AI proposes, people decide"),
       body: t(
-        "AI 결과는 제안으로 돌아오고, 호출 전에 예산을 예약하며, 유료 길은 사용자가 허락해야 열립니다.",
-        "AI results come back as proposals, budget is reserved before each call, and paid routes open only when the user allows them.",
+        "글 도구의 결과는 제안으로 돌아오고, 호출 전에 예산을 예약하며, 유료 길은 사용자가 허락해야 열립니다.",
+        "AI text-tool results come back as proposals, budget is reserved before each call, and paid routes open only when the user allows them.",
       ),
     },
     {
@@ -92,16 +92,16 @@ export const ARCHITECTURE_GUIDE_OVERVIEW: ArchitectureGuideOverview = {
   ],
   howToRead: [
     t(
-      "도식을 먼저 보고 → 한 줄 요약 → '쉽게 말해' → 흐름 단계 순으로 읽으면 비전문가도 구조가 그려집니다.",
-      "Read the diagram first, then the one-line summary, the plain-words box and the flow steps; the structure takes shape even without a technical background.",
+      "한 줄 요약 → '쉽게 말해' → 도식 → 흐름 단계 순으로 읽으면 비전문가도 구조가 그려집니다.",
+      "Read the one-line summary, the plain-words box, the diagram and then the flow steps; the structure takes shape even without a technical background.",
     ),
     t(
-      "도식의 색은 '누가 소유하는가'를 뜻합니다. 도식 바로 아래의 범례를 함께 보세요.",
-      "Diagram colors show who owns what. Keep the legend right below the diagram in view while you read.",
+      "도식의 색은 대체로 '누가 맡는가'를 뜻하고, '승인·주의 지점'과 '작업이 남는 바닥' 표시도 있습니다. 범례는 맨 위 한 장 지도 아래에 있습니다.",
+      "Diagram colors mostly show who is responsible, and two more mark approval or caution points and where work remains. The legend sits under the single map at the top.",
     ),
     t(
-      "개발자는 구간마다 '더 깊이'를 펼쳐 배경 지식, 쓰인 파일 경로, 선택과 대가를 확인하세요.",
-      "Developers can open 'Go deeper' in each section for background, the files that implement it, and the choices with their costs.",
+      "개발자는 구간마다 '배경 지식'·'서비스에서 쓰인 곳'·'선택과 대가'를 펼쳐 동작 원리, 실제 파일 경로, 선택의 대가를 확인하세요.",
+      "Developers can open 'Background', 'Where the service uses it' and 'Choices and their costs' in each section to see how it works, the real file paths and what each choice cost.",
     ),
     t(
       "더 깊은 근거는 구간 아래의 기술 도감 카드, 제작 스토리 챕터, 용어집 링크로 이어집니다.",

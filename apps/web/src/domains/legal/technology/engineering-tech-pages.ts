@@ -97,7 +97,7 @@ export const ENGINEERING_PAGES = [
     label: t("아키텍처", "Architecture"),
     purpose: t("전체 구조를 도식과 쉬운 해설로 한눈에", "The whole structure at a glance, with diagrams and plain explanations"),
     art: "collaborate",
-    readingMinutes: 40,
+    readingMinutes: 43,
     question: t("브라우저·엣지·서버·데이터는 어떻게 맞물려 돌아가나요?", "How do the browser, edge, server and data fit together?"),
     audience: t("처음 오신 모든 분: 투자자·개발자·스터디 참가자", "Everyone new here: investors, developers and study groups"),
   },
@@ -111,7 +111,7 @@ export const ENGINEERING_PAGES = [
     art: "create",
     question: t("무엇으로 만들었고, 왜 그것을 골랐나요?", "What is it built with, and why did we choose it?"),
     audience: t("개발자·스터디 참가자, 기술 선택의 이유가 궁금한 분", "Developers and study groups curious about the reasons behind each choice"),
-    readingMinutes: 47,
+    readingMinutes: 49,
   },
   {
     id: "story",

@@ -102,7 +102,7 @@ tests/benchmarks/results/filter-candidates.json, M4 Mac·Node 24 단일 스레�
 | | opencv(auto kernel) | 36.58dB | 0.970 | 42.1ms |
 
 판정(§3.2 visualQuality 축 반영):
-- **대형 다운스케일/최종 출력 = wasm-vips 우승**(품질 1위, 7.5× 느림) → E17 final 레인 배정이 실측으로
+- **대형 다운스케일/최종 출력 = wasm-vips 우승**(품질 1위, 7.5× 느림 — 콜드 1회 측정 기준이며, 워밍업 뒤 20회 측정에선 wasm-vips 축소가 p50 약 16.4ms였다) → E17 final 레인 배정이 실측으로
   확정. 인터랙티브 프리뷰는 canvaskit이 품질·속도 균형.
 - **가우시안 충실도 = canvaskit 우승**(47.9dB) → 심미 필터 레인은 canvaskit 우선. opencv는 분석
   마스크 레인 전용(블러 충실도 열위 36.6dB — 자동 커널 절단).

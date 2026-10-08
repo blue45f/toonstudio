@@ -239,8 +239,8 @@ export function wireSignaling(channel: RTCDataChannel, media: RTCPeerConnection)
     ),
     background: [
       t(
-        "풀메시는 모임의 모든 사람이 서로 한 명씩 직접 전화를 거는 방식입니다. 4명이면 통화 선이 6개이고, 각자는 3명에게 같은 말을 따로따로 해야 합니다. 서버가 한 번만 받아 나눠 주는 방식(SFU)과 달리 서버 비용이 들지 않지만, 사람이 늘수록 서버보다 먼저 각자의 인터넷 업로드와 컴퓨터가 버티지 못합니다.",
-        "A full mesh is like everyone at a gathering phoning everyone else one-to-one. With 4 people there are 6 lines, and each person must say the same thing separately to 3 others. Unlike a design where a server receives once and fans out (an SFU), it costs no media server, but as people join, each person's upload and computer give out before any server does.",
+        "풀메시는 모임의 모든 사람이 서로 한 명씩 직접 전화를 거는 방식입니다. 4명이면 통화 선이 6개이고, 각자는 3명에게 같은 말을 따로따로 해야 합니다. 서버가 한 번만 받아 나눠 주는 방식(SFU)과 달리 미디어 중계 비용이 없지만(사이트·신호 비용은 별도), 사람이 늘수록 서버보다 먼저 각자의 인터넷 업로드와 컴퓨터가 버티지 못합니다.",
+        "A full mesh is like everyone at a gathering phoning everyone else one-to-one. With 4 people there are 6 lines, and each person must say the same thing separately to 3 others. Unlike a design where a server receives once and fans out (an SFU), it needs no media relay cost (site and signalling costs are separate), but as people join, each person's upload and computer give out before any server does.",
       ),
       t(
         "n명이 서로 연결하면 연결은 n(n-1)/2개이고, 한 사람이 내보내는 영상은 (n-1)배가 됩니다. 4명은 6쌍·업로드 3배, 8명은 28쌍·7배, 9명은 36쌍·8배입니다. 그래서 ToonStudio는 '정원'이라는 한 단어 대신 층마다 다른 숫자를 둡니다. 허들 음성·영상은 원격 3명, 화면 공유 시청자는 4명, 직통 데이터 통로는 원격 8명, 문서 협업 방은 30명, 실시간 서버(Durable Objects)의 방 하나는 연결 64개입니다.",
@@ -360,8 +360,8 @@ console.log(meshCost(9, 400)); // 36 pairs, 3200 kbps upload`,
     chapterIds: ["webrtc-media-authority", "virtual-studio-world-authority"],
     talk: {
       pitch: t(
-        "서버 없이 서로 직접 연결하면 서버 비용이 들지 않지만, 4명이면 연결이 6쌍, 9명이면 36쌍으로 빠르게 늘어납니다. 그래서 허들 음성·영상은 원격 3명, 직통 데이터 통로는 원격 8명, 화면 공유는 시청자 4명으로 막아 두었습니다. 문서 방 30명과 실시간 서버의 64연결은 이것과 다른 층의 안전선입니다. 모두 설정 상수이고 부하 시험으로 보증한 수용량은 아닙니다.",
-        "Connecting directly without a media server costs no server, but links grow fast: 6 pairs for 4 people, 36 for 9. So huddle voice and video are capped at 3 remote peers, the direct data-channel mesh at 8, and screen sharing at 4 viewers. The 30-person document room and the server's 64 connections are safety lines of other layers. All are settings, not load-tested capacity.",
+        "서버 없이 서로 직접 연결하면 미디어 중계 비용이 없지만, 4명이면 연결이 6쌍, 9명이면 36쌍으로 빠르게 늘어납니다. 그래서 허들 음성·영상은 원격 3명, 직통 데이터 통로는 원격 8명, 화면 공유는 시청자 4명으로 막아 두었습니다. 문서 방 30명과 실시간 서버의 64연결은 이것과 다른 층의 안전선입니다. 모두 설정 상수이고 부하 시험으로 보증한 수용량은 아닙니다.",
+        "Connecting directly without a media server avoids relay cost, but links grow fast: 6 pairs for 4 people, 36 for 9. So huddle voice and video are capped at 3 remote peers, the direct data-channel mesh at 8, and screen sharing at 4 viewers. The 30-person document room and the server's 64 connections are safety lines of other layers. All are settings, not load-tested capacity.",
       ),
       analogy: t(
         "회식 자리에서 모든 사람이 모든 사람과 따로 통화한다고 상상해 보세요. 4명이면 괜찮지만 9명이면 통화 선이 36개입니다. 그럴 땐 사회자가 한 번 듣고 마이크로 다시 전해 주는 방식(SFU)이 필요해집니다.",

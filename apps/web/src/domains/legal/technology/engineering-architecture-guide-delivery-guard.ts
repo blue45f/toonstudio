@@ -27,8 +27,8 @@ const QUALITY_GATES: ArchitectureGuideSection = {
     kind: "layers",
     title: t("검사가 막는 일곱 개의 문", "Seven gates where checks block a change"),
     caption: t(
-      "위쪽일수록 빨리 걸리는 가벼운 검사이고, 맨 아래 수동 배포 관문만 사람이 엽니다.",
-      "Higher gates are lighter checks that catch problems sooner, and only the manual release gate at the bottom is opened by a person.",
+      "위쪽일수록 빨리 걸리는 가벼운 검사입니다. 훅은 내 컴퓨터에서 우회할 수 있어 마지막 보증은 CI 이고, 수동 배포 관문만 사람이 엽니다.",
+      "Higher gates are lighter checks that catch problems sooner. Hooks can be skipped on a machine, so CI is the last assurance, and only the manual release gate is opened by a person.",
     ),
     alt: t(
       "첫째 문은 내 컴퓨터의 커밋과 푸시 훅으로 하네스와 잠금 파일과 lint와 비밀값을 봅니다. 둘째는 PR 의 CI core 로 일곱 개 잡이 모두 실제로 성공해야 합니다. 셋째는 import 와 파일 수와 경고 수를 기록된 상한에 묶는 구조 래칫이고, 넷째는 접근성 스모크와 시험의 정직성 검사, 다섯째는 비밀값과 취약점과 코드 분석입니다. 여섯째는 빌드와 배포 스크립트 안에서 프리캐시 예산과 CSP 와 헤더 규칙을 보는 검사이고, 마지막 일곱째는 사람이 여는 수동 배포 관문입니다.",
@@ -45,14 +45,14 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       {
         id: "ci",
         label: t("② PR · CI core 7개 잡", "2 PR: the 7 jobs of CI core"),
-        sub: t("lint·타입·회귀 5샤드·성능·접근성·빌드·DB, 모두 실제 성공", "lint, types, 5 regression shards, perf, a11y, build, DB: all truly pass"),
+        sub: t("lint·타입·회귀 5샤드·성능·접근성·빌드·DB(스튜디오 검수), 모두 실제 성공", "lint, types, 5 regression shards, perf, a11y, build, DB (studio review): all truly pass"),
         tone: "external",
         chips: ["GitHub Actions", "Vitest", "Playwright"],
       },
       {
         id: "ratchet",
         label: t("③ 구조 래칫", "3 Structure ratchets"),
-        sub: t("import 17규칙 · 파일 수 · 경고 수 · 번들 크기 · 새 파일 1,000줄", "17 import rules, file counts, warnings, bundle size, 1,000-line new files"),
+        sub: t("import 17규칙 · 파일 수 · 경고 수 · 번들 크기 · 새 파일 1,000줄(전체 시험)", "17 import rules, file counts, warnings, bundle size, 1,000-line new files (full tests)"),
         tone: "good",
       },
       {
@@ -65,7 +65,7 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       {
         id: "security",
         label: t("⑤ 보안과 공급망", "5 Security and supply chain"),
-        sub: t("비밀값 스캔 · audit(푸시·야간) · CodeQL(주 1회)", "secret scan, audit (push, nightly), CodeQL (weekly)"),
+        sub: t("비밀값 스캔 · audit(야간·수동) · CodeQL(PR·주 1회)", "secret scan, audit (nightly, manual), CodeQL (PRs, weekly)"),
         tone: "neutral",
         chips: ["Secretlint", "pnpm audit", "CodeQL"],
       },
@@ -78,12 +78,12 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       {
         id: "manual",
         label: t("⑦ 수동 배포 관문", "7 The manual release gate"),
-        sub: t("승인 SHA · 승인형 DB 워크플로 · 배포 후 점검", "approved SHA, gated DB workflow, post-release checks"),
+        sub: t("승인 SHA · 수동 DB 워크플로 · 배포 후 점검", "approved SHA, manual DB workflow, post-release checks"),
         tone: "warn",
       },
     ],
     brackets: [
-      { label: t("기계가 막는 문", "Gates machines enforce"), layerIds: ["hooks", "ci", "ratchet", "tests", "security", "build"] },
+      { label: t("자동으로 돌아가는 문(막는 것과 알려 주기만 하는 것이 섞임)", "Automatic gates (some block, some only report)"), layerIds: ["hooks", "ci", "ratchet", "tests", "security", "build"] },
       { label: t("사람이 여는 문", "The gate a person opens"), layerIds: ["manual"] },
     ],
   },
@@ -97,8 +97,8 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       "On a PR, all 7 jobs of CI core (lint, types, regression, performance, accessibility, build, DB) must truly succeed.",
     ),
     t(
-      "구조 래칫이 나쁜 import·파일 수·경고 수·새 파일 크기·번들 크기를 기록된 값에 묶어 늘어나지 못하게 합니다.",
-      "Structure ratchets tie bad imports, file counts, warning counts, new-file sizes and bundle size to recorded values so they cannot grow.",
+      "구조 래칫이 나쁜 import·파일 수·경고 수·번들 크기를 기록된 값에 묶고, 새 파일 크기는 전체 시험이 지킵니다.",
+      "Structure ratchets tie bad imports, file counts, warning counts and bundle size to recorded values, and the full test run guards new-file size.",
     ),
     t(
       "접근성은 핵심 화면을 axe 로 검사하고, 시간을 재는 시험은 직렬 레인에서 돌며, 시험이 줄면 수집 하한이 막습니다.",
@@ -115,12 +115,12 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       "Quality is not kept by one big check. A check that comes too late makes fixing expensive, and one that is too heavy tempts people to skip it. So ToonStudio puts fast checks in the hooks on my machine, heavy checks in CI on a PR, and what needs human judgment in the manual release gate. Each gate looks at something different.",
     ),
     t(
-      "래칫(ratchet)은 한쪽으로만 도는 톱니입니다. 나쁜 import 개수, 폴더별 파일 수, 린트 경고 수, 웹의 새 파일 크기(1,000줄), 스튜디오 번들 크기(마지막으로 받아들인 측정값의 2%까지)를 지금 값에 못 박아 '더 나빠지지는 않게' 합니다. 접근성은 PR 마다 핵심 화면 시나리오를 열어 axe 로 검사하고 심각·치명 위반만 실패로 치며, 전체 화면 전수 감사는 수동입니다. 보안은 비밀값 스캔을 core 에 두고 취약점 감사(pnpm audit)는 푸시·야간·수동으로 돌리며, 서비스 워커 프리캐시가 예산을 넘으면 빌드가 실패합니다.",
-      "A ratchet is a gear that turns only one way. Bad import counts, files per folder, the lint warning count, the size of new web files (1,000 lines) and the Studio bundle size (within 2% of the last accepted measurement) are nailed to today's values so things cannot get worse. For accessibility, every PR opens key-screen scenarios and checks them with axe, failing only on serious and critical violations, while the exhaustive whole-site audit is manual. For security, the secret scan sits in core and the vulnerability audit (pnpm audit) runs on push, nightly and manually, and the build fails if the service-worker precache passes its budget.",
+      "래칫(ratchet)은 한쪽으로만 도는 톱니입니다. 나쁜 import 개수, 폴더별 파일 수, 린트 경고 수, 웹의 새 파일 크기(1,000줄), 스튜디오 번들 크기(마지막으로 받아들인 측정값의 2%까지)를 지금 값에 못 박아 '더 나빠지지는 않게' 합니다. 새 파일 크기는 core 가 아니라 PR 마다 도는 전체 시험(진단)과 로컬 pnpm test 가 지킵니다. 접근성은 PR 마다 핵심 화면 시나리오를 열어 axe 로 검사하고 심각·치명 위반만 실패로 치며, 전체 화면 전수 감사는 수동입니다. 보안은 비밀값 스캔을 core 에 두고 취약점 감사(pnpm audit)는 야간·수동(의존성이 바뀐 푸시는 훅)으로 돌리며, 서비스 워커 프리캐시가 예산을 넘으면 빌드가 실패합니다.",
+      "A ratchet is a gear that turns only one way. Bad import counts, files per folder, the lint warning count, the size of new web files (1,000 lines) and the Studio bundle size (within 2% of the last accepted measurement) are nailed to today's values so things cannot get worse. The new-file size is guarded not by core but by the full test run on PRs (a diagnostic) and by local pnpm test. For accessibility, every PR opens key-screen scenarios and checks them with axe, failing only on serious and critical violations, while the exhaustive whole-site audit is manual. For security, the secret scan sits in core and the vulnerability audit (pnpm audit) runs nightly and manually (and in the push hook when dependencies change), and the build fails if the service-worker precache passes its budget.",
     ),
     t(
-      "0건이 아니라 동결이라 위반이 남아 있고, 상한은 PR 로 올릴 수 있어 마지막 방어선은 사람의 리뷰입니다. 병합을 막는 것은 core 의 7개 잡이며, 취약점 감사·전수 접근성·CodeQL 같은 검사는 푸시·야간·주간·수동이라 매 PR 의 관문이 아닙니다. GitHub 브랜치 보호 설정은 저장소 파일로 확인할 수 없어, core 가 머지 조건이라는 DEPLOY.md 서술을 근거로 합니다.",
-      "These are freezes, not zeros, so violations remain, and since a PR can raise a ceiling the last line of defense is human review. What blocks a merge are the 7 jobs of core; checks such as the vulnerability audit, the exhaustive accessibility audit and CodeQL run on push, nightly, weekly or by hand, so they are not a gate on every PR. GitHub branch-protection settings cannot be confirmed from the repository, so this rests on DEPLOY.md saying core is a merge condition.",
+      "0건이 아니라 동결이라 위반이 남아 있고, 상한은 PR 로 올릴 수 있어 마지막 방어선은 사람의 리뷰입니다. 병합 조건에 들어 있는 것은 core 의 7개 잡뿐입니다. CodeQL 은 PR 과 main push 에서도 돌지만 core 에는 속하지 않고, 취약점 감사는 야간·수동으로, 전수 접근성 감사는 수동으로만 돕니다. GitHub 브랜치 보호 설정은 저장소 파일로 확인할 수 없어, core 가 머지 조건이라는 DEPLOY.md 서술을 근거로 합니다.",
+      "These are freezes, not zeros, so violations remain, and since a PR can raise a ceiling the last line of defense is human review. Only the 7 jobs of core are in the merge condition. CodeQL also runs on PRs and main pushes but is not part of core; the vulnerability audit runs only nightly or by hand, and the exhaustive accessibility audit only by hand. GitHub branch-protection settings cannot be confirmed from the repository, so this rests on DEPLOY.md saying core is a merge condition.",
     ),
   ],
   inService: [
@@ -166,8 +166,8 @@ const QUALITY_GATES: ArchitectureGuideSection = {
     {
       what: t("보안과 공급망 점검", "Security and supply-chain checks"),
       role: t(
-        "비밀값 스캔은 core 에서, 취약점 감사는 푸시·야간에, 코드 분석(CodeQL)은 PR·main push 와 주 1회 돕니다.",
-        "The secret scan runs in core, the vulnerability audit on push and nightly, and code analysis (CodeQL) on PRs, main pushes and weekly.",
+        "비밀값 스캔은 core 에서, 취약점 감사는 야간·수동과 의존성이 바뀐 푸시 훅에서, CodeQL 은 PR·main push 와 주 1회 돕니다.",
+        "The secret scan runs in core, the vulnerability audit nightly, manually and in the push hook when dependencies change, and CodeQL on PRs, main pushes and weekly.",
       ),
       paths: [
         "scripts/secretlint-files.mjs",
@@ -213,8 +213,8 @@ const QUALITY_GATES: ArchitectureGuideSection = {
     },
   ],
   pitfall: t(
-    "'모든 PR 이 취약점 감사와 전수 접근성 검사를 통과한다'고 말하면 틀립니다. pnpm audit 는 core 에 없고 푸시·야간·수동에서 돌며, 전수 접근성 감사는 수동입니다.",
-    "Saying every PR passes the vulnerability audit and the exhaustive accessibility check is wrong. pnpm audit is not in core and runs on push, nightly and manually, and the exhaustive accessibility audit is manual.",
+    "'모든 PR 이 취약점 감사와 전수 접근성 검사를 통과한다'고 말하면 틀립니다. pnpm audit 는 core 에 없고 야간·수동(의존성이 바뀐 푸시 훅 포함)에서 돌며, 전수 접근성 감사는 수동입니다.",
+    "Saying every PR passes the vulnerability audit and the exhaustive accessibility check is wrong. pnpm audit is not in core and runs nightly and manually (and in the push hook when dependencies change), and the exhaustive accessibility audit is manual.",
   ),
   facts: [
     { value: "7", label: t("CI core 가 요구하는 필수 잡 수", "Required jobs behind CI core"), source: ".github/workflows/ci.yml" },
@@ -229,12 +229,17 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       source: "scripts/ci-core-regression-shards-impl.mjs",
     },
     {
-      value: "2,421 / 16",
-      label: t(
-        "2026-10-08 기준: lint:strict 경고 상한 / PR 마다 도는 axe 스모크 시나리오 수(데스크톱 10 · 모바일 4 · 터치 2)",
-        "On 2026-10-08: the lint:strict warning ceiling / axe smoke scenarios per PR (10 desktop, 4 mobile, 2 touch)",
-      ),
+      value: "2,421",
+      label: t("2026-10-08 기준 lint:strict 경고 상한", "The lint:strict warning ceiling on 2026-10-08"),
       source: "config/architecture-source-ratchet.json",
+    },
+    {
+      value: "16",
+      label: t(
+        "PR 마다 도는 접근성 스모크 시험 수(데스크톱 10 · 모바일 4 · 터치 2, 그중 axe 15)",
+        "Accessibility smoke tests per PR (10 desktop, 4 mobile, 2 touch; 15 of them run axe)",
+      ),
+      source: "e2e/a11y-smoke.spec.ts",
     },
   ],
   status: "live",
@@ -258,24 +263,24 @@ const AI_ASSISTED_DEV: ArchitectureGuideSection = {
   title: t("AI와 함께 만드는 개발 방식", "Building with AI under rules"),
   question: t("AI 도구를 쓸 때 규칙과 검증은 어떻게 걸었나?", "How are rules and checks applied when AI tools help build?"),
   oneLine: t(
-    "규칙은 AGENTS.md 한 곳에 두고, AI 의 '다 했어요'도 같은 훅·CI 문을 지나며 운영 배포엔 사람의 승인이 필요합니다.",
-    "One AGENTS.md holds the rules, an AI's 'done' passes the same hooks and CI as anyone's, and a production release needs a person's approval.",
+    "규칙은 AGENTS.md 한 곳에 두고, AI 의 변경도 같은 하네스·CI 검사를 받으며 운영 배포엔 사람의 승인이 필요합니다.",
+    "One AGENTS.md holds the rules, an AI's change gets the same harness and CI checks as anyone's, and a production release needs a person's approval.",
   ),
   easy: t(
-    "조수가 여럿 와도 사무실 규칙은 벽에 붙은 한 장(AGENTS.md)뿐입니다. 조수가 '끝났어요'라고 해도 출입구 검사(훅·CI)를 지나야 하고, 건물 밖으로 내보내는 일(운영 배포)은 책임자 서명(사람의 승인)이 있어야 합니다.",
-    "However many assistants come, the office rules are one sheet on the wall (AGENTS.md). Even when an assistant says 'finished', it must pass the entrance check (hooks and CI), and sending anything out of the building (a production release) needs a manager's signature (a person's approval).",
+    "조수가 여럿 와도 사무실 규칙의 기준은 벽에 붙은 한 장(AGENTS.md)입니다. 조수가 '끝났어요'라고 해도 출입구 검사(훅·CI)를 지나야 하고, 건물 밖으로 내보내는 일(운영 배포)은 책임자 서명(사람의 승인)이 있어야 합니다.",
+    "However many assistants come, the office rules are set by one sheet on the wall (AGENTS.md). Even when an assistant says 'finished', it must pass the entrance check (hooks and CI), and sending anything out of the building (a production release) needs a manager's signature (a person's approval).",
   ),
   diagram: {
     id: "ai-assisted-dev-diagram",
     kind: "graph",
     title: t("AI 의 변경이 지나는 문", "The gates an AI's change passes"),
     caption: t(
-      "규칙은 한 곳에서 읽고, 결과는 사람의 변경과 같은 훅·CI 를 지나며, 운영 배포만 사람이 승인합니다.",
-      "Rules are read from one place, the result passes the same hooks and CI as a person's change, and only the production release is approved by a person.",
+      "규칙은 한 곳에서 읽고, 결과는 정책상 사람의 변경과 같은 훅·CI 를 지나며, 운영 배포만 사람이 승인합니다.",
+      "Rules are read from one place, by policy the result passes the same hooks and CI as a person's change, and only the production release is approved by a person.",
     ),
     alt: t(
-      "여러 AI 코딩 도구의 안내 파일은 AGENTS.md 한 곳의 규칙을 먼저 읽도록 가리킵니다. AI 는 그 규칙에 따라 변경을 제안하고, OpenWiki 는 코드를 찾는 길잡이로만 쓰입니다. 제안은 하네스와 훅, CI core 를 사람이 쓴 변경과 똑같이 통과해야 합니다. 그 뒤 사람의 리뷰가 강제되는지는 저장소로 확인하지 못했고, 운영 배포는 이 모든 것과 별개로 사용자의 명시적 승인이 있어야 합니다.",
-      "The guide files of several AI coding tools point them to read the rules in one AGENTS.md first. The AI proposes changes under those rules, and OpenWiki serves only as a guide to find code. The proposal must pass the harness, the hooks and CI core exactly like a change written by a person. Whether a person's review after that is enforced could not be confirmed from the repository, and a production release needs the user's explicit approval apart from all of this.",
+      "여러 AI 코딩 도구의 안내 파일은 AGENTS.md 한 곳의 규칙을 먼저 읽도록 가리킵니다. AI 는 그 규칙에 따라 변경을 제안하고, OpenWiki 는 코드를 찾는 길잡이로만 쓰입니다. 제안은 정책상 하네스와 훅, CI core 를 사람이 쓴 변경과 똑같이 통과해야 합니다(훅은 내 컴퓨터에서 우회할 수 있어 CI 가 마지막 보증). 그 뒤 사람의 리뷰가 강제되는지는 저장소로 확인하지 못했고, 운영 배포는 이 모든 것과 별개로 사용자의 명시적 승인이 있어야 합니다.",
+      "The guide files of several AI coding tools point them to read the rules in one AGENTS.md first. The AI proposes changes under those rules, and OpenWiki serves only as a guide to find code. By policy the proposal must pass the harness, the hooks and CI core exactly like a change written by a person (hooks can be skipped on a machine, so CI is the last assurance). Whether a person's review after that is enforced could not be confirmed from the repository, and a production release needs the user's explicit approval apart from all of this.",
     ),
     nodes: [
       { id: "wiki", label: t("OpenWiki", "OpenWiki"), sub: t("길잡이 · 설정 필요", "a guide, setup needed"), tone: "external", at: [2, 0] },
@@ -285,7 +290,7 @@ const AI_ASSISTED_DEV: ArchitectureGuideSection = {
       { id: "local", label: t("내 쪽 검증", "Checks on my side"), sub: t("harness:verify · 훅", "harness:verify, hooks"), tone: "local", at: [3, 1] },
       { id: "ci", label: t("CI core", "CI core"), sub: t("필수 7개 실제 성공", "7 required, truly passed"), tone: "external", at: [4, 1] },
       { id: "human", label: t("사람의 리뷰", "Human review"), sub: t("강제 여부는 미확인", "enforcement unconfirmed"), tone: "warn", at: [5, 1] },
-      { id: "release", label: t("수동 배포", "Manual release"), sub: t("별도 명시적 승인", "separate explicit approval"), tone: "edge", at: [5, 2] },
+      { id: "release", label: t("수동 배포", "Manual release"), sub: t("별도 명시적 승인", "separate explicit approval"), tone: "warn", at: [5, 2] },
     ],
     edges: [
       { from: "tools", to: "rules", label: t("읽도록 안내", "told to read") },
@@ -300,8 +305,8 @@ const AI_ASSISTED_DEV: ArchitectureGuideSection = {
   },
   steps: [
     t(
-      "도구마다 다른 안내 파일(CLAUDE.md 등)은 규칙을 베끼지 않고 AGENTS.md 를 먼저 읽으라고 가리킵니다.",
-      "Each tool's own guide file (CLAUDE.md and others) copies no rules and only points to AGENTS.md first.",
+      "도구별 안내 파일(CLAUDE.md 등)은 세부 규칙을 복사하지 않고 핵심만 요약해 AGENTS.md 를 먼저 읽으라고 가리킵니다.",
+      "Each tool's own guide file (CLAUDE.md and others) does not copy the detailed rules; it summarizes the essentials and points to AGENTS.md first.",
     ),
     t(
       "AI 는 근거 경로를 먼저 찾고, 한글 기록·증거 우선·비밀값 금지 규칙에 따라 작은 변경을 제안합니다.",
@@ -330,12 +335,12 @@ const AI_ASSISTED_DEV: ArchitectureGuideSection = {
       "An AI coding tool says 'done' with confidence, but you cannot tell whether it actually ran anything. So ToonStudio set the rules for using AI in files and scripts rather than in a person's reminders. However many tools there are, they read the same rules, and their output passes the same gates as a change made by a person.",
     ),
     t(
-      "규칙은 루트 AGENTS.md 한 곳(한글 기본, 증거 우선, 완료 전 검증, 비밀값 금지, 운영 배포는 별도 승인)에 두고, 영역별 규칙은 하위 AGENTS.md 가 더합니다. 도구별 파일은 그곳을 가리키는 얇은 포인터입니다. harness:check 는 필수 파일 19개와 정책 문장이 남아 있는지 보고, harness:verify 는 바뀐 범위에 맞는 검사를 고르며, 한글 커밋 제목은 commitlint 가 훅과 CI 에서 확인합니다. 사실이 충돌하면 소스·테스트, 승인된 ADR(결정 기록), 아키텍처 문서, OpenWiki 순으로 판정합니다.",
-      "The rules live in one root AGENTS.md (Korean by default, evidence first, verify before finishing, no secrets, production release only by separate approval), and nested AGENTS.md files add area rules. Each tool's file is a thin pointer to it. harness:check verifies that 19 required files and the policy passages remain, harness:verify picks the checks that fit the changed scope, and commitlint checks Korean commit subjects in the hooks and in CI. When facts conflict, they are judged in the order source and tests, accepted ADRs (decision records), architecture docs, then OpenWiki.",
+      "규칙은 루트 AGENTS.md 한 곳(한글 기본, 증거 우선, 완료 전 검증, 비밀값 금지, 운영 배포는 별도 승인)에 두고, 영역별 규칙은 하위 AGENTS.md 가 더합니다. 도구별 파일은 세부 규칙을 복사하지 않고 핵심만 요약해 그곳을 가리키는 얇은 파일입니다. harness:check 는 필수 파일 19개와 정책 문장이 남아 있는지 보고, harness:verify 는 바뀐 범위에 맞는 검사를 고르며, 한글 커밋 제목은 commitlint 가 훅과 CI 에서 확인합니다. 사실이 충돌하면 소스·테스트, 승인된 ADR(결정 기록), 아키텍처 문서, OpenWiki 순으로 판정합니다.",
+      "The rules live in one root AGENTS.md (Korean by default, evidence first, verify before finishing, no secrets, production release only by separate approval), and nested AGENTS.md files add area rules. Each tool's file is a thin file that summarizes the essentials and points to it. harness:check verifies that 19 required files and the policy passages remain, harness:verify picks the checks that fit the changed scope, and commitlint checks Korean commit subjects in the hooks and in CI. When facts conflict, they are judged in the order source and tests, accepted ADRs (decision records), architecture docs, then OpenWiki.",
     ),
     t(
-      "한계도 분명합니다. 하네스는 어댑터가 AGENTS.md 를 '언급하는지'만 볼 뿐 도구가 실제로 읽었다는 증명이 아니고, harness:verify 는 전체 테스트를 기본으로 돌리지 않아(--full 필요) 전체 보증은 CI 의 몫입니다. 상한 같은 숫자는 고치면 바뀌므로 사람의 리뷰가 필요합니다.",
-      "The limits are plain too. The harness only checks that an adapter mentions AGENTS.md, which does not prove a tool read it, and harness:verify does not run the full tests by default (--full is needed), so full assurance is CI's job. Numbers such as ceilings change when edited, so they need human review.",
+      "한계도 분명합니다. 하네스는 어댑터가 AGENTS.md 를 '언급하는지'만 볼 뿐 도구가 실제로 읽었다는 증명이 아니고, harness:verify 는 기본으로 시험을 돌리지 않고(--full 은 루트 단위 시험만 더함) 전체 보증은 CI 의 몫입니다. 상한 같은 숫자는 고치면 바뀌므로 사람의 리뷰가 필요합니다.",
+      "The limits are plain too. The harness only checks that an adapter mentions AGENTS.md, which does not prove a tool read it, and harness:verify runs no tests by default (--full adds only the root unit tests), so full assurance is CI's job. Numbers such as ceilings change when edited, so they need human review.",
     ),
   ],
   inService: [
@@ -350,8 +355,8 @@ const AI_ASSISTED_DEV: ArchitectureGuideSection = {
     {
       what: t("도구별 어댑터", "Tool adapters"),
       role: t(
-        "Claude·Gemini·Copilot·Cursor·OpenCode 가 AGENTS.md 를 읽도록 안내하는 짧은 포인터 파일입니다.",
-        "Short pointer files that send Claude, Gemini, Copilot, Cursor and OpenCode to AGENTS.md.",
+        "Claude·Gemini·Copilot·Cursor·OpenCode 가 AGENTS.md 를 읽도록 안내하는 짧은 요약 파일입니다.",
+        "Short summary files that send Claude, Gemini, Copilot, Cursor and OpenCode to AGENTS.md.",
       ),
       paths: ["CLAUDE.md", "GEMINI.md", ".github/copilot-instructions.md", ".cursor/rules/toonstudio.mdc", ".opencode/agent/toonstudio.md"],
     },

@@ -20,8 +20,8 @@ const AGENTS_MD_DIAGRAM: EngineeringDiagram = {
   kind: "graph",
   title: t("정책 한 곳, 어댑터는 포인터", "One policy, adapters as pointers"),
   caption: t(
-    "도구마다 규칙을 복사하지 않고, 모든 길이 AGENTS.md로 모입니다.",
-    "Rules are never copied per tool; every path leads to AGENTS.md.",
+    "도구마다 요약 파일을 두되 정책은 복사하지 않고, 모든 길이 AGENTS.md로 모입니다.",
+    "Each tool gets a summary file but policy is never copied; every path leads to AGENTS.md.",
   ),
   alt: t(
     "Claude Code, Gemini, Copilot, Cursor 같은 도구는 짧은 어댑터 파일을 읽고, 어댑터는 중앙의 AGENTS.md를 가리킵니다. 영역별 규칙은 하위 AGENTS.md가 더하고, Codex와 OpenCode는 AGENTS.md를 바로 읽습니다. 하네스가 연결과 정책 문장이 남아 있는지 검사합니다.",
@@ -87,8 +87,8 @@ const AGENTS_MD_SINGLE_POLICY: EngineeringAtlasEntry = {
   title: t("도구가 달라도 규칙은 한 곳", "Different tools, one rulebook"),
   status: "live",
   tagline: t(
-    "규칙은 AGENTS.md 한 곳에 두고, 도구별 파일은 그곳을 가리키기만 합니다.",
-    "Rules live in one AGENTS.md; each tool's file only points to it.",
+    "규칙은 AGENTS.md 한 곳에 두고, 도구별 파일은 핵심만 요약해 그곳을 가리킵니다.",
+    "Rules live in one AGENTS.md; each tool's file summarizes the essentials and points to it.",
   ),
   background: [
     t(
@@ -110,7 +110,7 @@ const AGENTS_MD_SINGLE_POLICY: EngineeringAtlasEntry = {
   ],
   keyPoints: [
     t("규칙은 AGENTS.md 한 곳, 영역 규칙은 하위 9곳", "Rules in one AGENTS.md, area rules in nine more"),
-    t("어댑터는 포인터만 두고 정책을 복사하지 않음", "Adapters only point; no policy is copied"),
+    t("어댑터는 요약과 포인터만 두고 정책 전문은 복사하지 않음", "Adapters hold a summary and a pointer; the full policy is not copied"),
     t("하네스가 어댑터 연결과 정책 문장을 매번 검사", "The harness checks adapter links and policy text every time"),
     t("읽도록 지시하는 것과 실제로 읽는 것은 다름", "Telling a tool to read is not proof it did"),
   ],
@@ -592,7 +592,7 @@ const HARNESS_GATES_DIAGRAM: EngineeringDiagram = {
     { id: "verify", label: t("harness:verify", "harness:verify"), sub: t("변경 범위별 점검", "Checks by scope"), tone: "good", at: [1, 0] },
     { id: "commit", label: t("커밋 훅", "Commit hook"), sub: t("하네스·lint·한글 제목", "Harness, lint, subject"), tone: "local", at: [2, 0] },
     { id: "push", label: t("푸시 훅", "Push hook"), sub: t("아키텍처·타입·lint", "Architecture, types, lint"), tone: "local", at: [3, 0] },
-    { id: "ci", label: t("CI core", "CI core"), sub: t("필수 7개 검사", "7 required checks"), tone: "server", at: [4, 0] },
+    { id: "ci", label: t("CI core", "CI core"), sub: t("정책상 필수 7개 검사", "7 checks required by policy"), tone: "server", at: [4, 0] },
     { id: "review", label: t("사람 리뷰", "Human review"), tone: "warn", shape: "diamond", at: [5, 0] },
     { id: "fix", label: t("실패 → 수정", "Fail → fix"), tone: "warn", at: [1, 1] },
     { id: "deploy", label: t("운영 배포", "Release"), sub: t("별도 명시 승인", "Separate approval"), tone: "warn", shape: "pill", at: [5, 1] },
@@ -641,7 +641,7 @@ const AGENT_HARNESS_VERIFY_GATES: EngineeringAtlasEntry = {
   keyPoints: [
     t("변경 범위에 맞춰 lint·비밀값·아키텍처·타입을 골라 검사", "Picks lint, secrets, architecture and types by change scope"),
     t("한글 제목 커밋 규칙을 훅과 CI가 두 번 확인", "Hooks and CI both enforce Korean commit subjects"),
-    t("CI core: 필수 7개가 모두 실제 성공해야 통과", "CI core passes only if all seven checks truly succeed"),
+    t("CI core: 정책상 필수 7개가 모두 실제 성공해야 통과", "CI core passes only if all seven policy-required checks truly succeed"),
     t("운영 배포는 이 문들과 별개로 사람의 승인", "Production release stays a separate human approval"),
   ],
   diagram: HARNESS_GATES_DIAGRAM,
@@ -665,8 +665,8 @@ const AGENT_HARNESS_VERIFY_GATES: EngineeringAtlasEntry = {
     {
       feature: t("PR 관문(CI core)", "PR gate (CI core)"),
       role: t(
-        "필수 7개 검사가 모두 실제로 성공해야 core가 통과합니다. 접근성(axe)과 비밀값 검사도 여기에 있습니다.",
-        "core passes only if all seven required checks truly succeed, including accessibility (axe) and the secret scan.",
+        "정책상 필수 7개 검사가 모두 실제로 성공해야 core가 통과합니다. 접근성(axe)과 비밀값 검사도 여기에 있습니다.",
+        "core passes only if all seven checks required by policy truly succeed, including accessibility (axe) and the secret scan.",
       ),
       paths: [".github/workflows/ci.yml", "e2e/a11y-smoke.spec.ts", ".github/pull_request_template.md"],
     },

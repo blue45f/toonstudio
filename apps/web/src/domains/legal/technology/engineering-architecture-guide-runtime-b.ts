@@ -15,8 +15,8 @@ export const DATA_AUTHORITY_SECTION: ArchitectureGuideSection = {
   title: t("내 작품은 어디에 저장될까", "Where does my work get saved?"),
   question: t("원본·원장·파일·실시간 상태의 주인은 누구인가?", "Who owns the sources, the ledger, the files and the live state?"),
   oneLine: t(
-    "원본은 내 기기에, 여럿이 함께 믿어야 하는 기록은 서버 원장 하나에 둡니다.",
-    "Sources stay on your device; records many people must trust live in one server ledger.",
+    "혼자 그릴 때의 원본은 내 기기에, 여럿이 함께 믿어야 하는 기록과 함께 그린 문서의 변경은 서버 원장 하나에 둡니다.",
+    "Solo sources stay on your device; records many people must trust, and changes drawn together, live in one server ledger.",
   ),
   easy: t(
     "집에는 내 작업 책상(내 기기)이 있고, 동네에는 공증 사무소(서버 원장)가 있고, 큰 짐은 창고(파일 저장소)에, 회의실 칠판(실시간 상태)은 회의가 끝나면 곧 지워집니다. 물건마다 주인이 정해져 있습니다.",
@@ -54,9 +54,9 @@ export const DATA_AUTHORITY_SECTION: ArchitectureGuideSection = {
   },
   steps: [
     t("그리는 동안의 작품 원본은 내 기기(OPFS·SQLite WASM)가 쥡니다.", "While you draw, the source of the work is held by your device (OPFS and SQLite WASM)."),
-    t("원하면 내보내기 파일이나 연결한 개인 클라우드에 사본을 둡니다. 이 사본이 백업입니다.", "If you wish, copies go to an export file or a connected personal cloud, and those copies are the backup."),
+    t("원하면 내보내기 파일이나 연결한 개인 클라우드(기본은 Google Drive)에 사본을 둡니다. 이 사본이 백업입니다.", "If you wish, copies go to an export file or a connected personal cloud (Google Drive by default), and those copies are the backup."),
     t("계정·권한·게시·결제 같은 기록은 Core API 를 거쳐 서버 원장(Supabase PostgreSQL)에만 씁니다.", "Records such as accounts, permissions, publishing and payments are written through the Core API to the server ledger (Supabase PostgreSQL) only."),
-    t("큰 파일은 용도별 비공개 저장소(R2·B2·Supabase)에 두고, 원장에는 그 참조를 남깁니다.", "Large files go to purpose-specific private storage (R2, B2, Supabase), and the ledger keeps a reference to them."),
+    t("큰 파일은 용도별 비공개 저장소(코드는 R2·B2·Supabase, 배포 설정은 Supabase)에 두고 참조만 원장에 남깁니다.", "Large files go to purpose-specific private storage (the code can route to R2, B2 or Supabase, and the deploy blueprint declares only Supabase), and the ledger keeps a reference to them."),
     t("접속 상태·커서 같은 잠깐의 정보는 Durable Objects 가 맡고, 이벤트는 15분만 보관하도록 설정돼 있습니다.", "Short-lived information such as presence and cursors belongs to Durable Objects, configured to keep events for only 15 minutes."),
     t("예전 Neon DB 는 legacy 로 보존만 하고, 새 운영 쓰기의 권위로 되돌리지 않습니다.", "The old Neon database is only kept as legacy and is not made the write authority again."),
   ],
@@ -66,8 +66,8 @@ export const DATA_AUTHORITY_SECTION: ArchitectureGuideSection = {
       "'Saving' can mean several places, each with its own owner, and when two owners hold different values nobody can say which is right. So ToonStudio gives each kind of data exactly one write authority: your device for working sources, the server ledger for accounts, permissions, payments and publishing records, purpose-specific storage for large files, and Cloudflare Durable Objects for short-lived realtime state.",
     ),
     t(
-      "서버 원장은 Render 의 Core API 를 거쳐 Supabase PostgreSQL 에 씁니다. 적용한 SQL 마이그레이션은 지문(체크섬)을 박아 두어 고치면 거부됩니다. 같은 데이터를 두 DB 에 동시에 쓰는 이중 쓰기와, 무료 한도에 닿았을 때의 자동 갈아타기는 하지 않습니다. 기존 Neon DB 는 legacy 로 보존하며, 무료 DB 후보 16곳은 계획 문서일 뿐 기본은 꺼져 있습니다.",
-      "The server ledger is written through the Core API on Render into Supabase PostgreSQL. Applied SQL migrations carry a checksum, so editing one is rejected. The app does not write the same data to two databases at once, and it does not switch automatically when a free limit is reached. The old Neon database is kept as legacy, and the 16 candidate free databases are only a plan that is off by default.",
+      "서버 원장은 Render 의 Core API 를 거쳐 Supabase PostgreSQL 에 씁니다. 적용한 SQL 마이그레이션은 지문(체크섬)을 박아 두어 고치면 거부됩니다. 같은 데이터를 두 DB 에 동시에 쓰는 이중 쓰기와, 무료 한도에 닿았을 때의 자동 갈아타기는 하지 않습니다. 기존 Neon DB 는 legacy 로 보존하며, 무료 DB 후보 16곳 중 일부는 이미 만들어졌거나 연결되어 있지만 연합 기능은 기본이 꺼져 있고, 쓰기 권위는 Supabase PostgreSQL 하나입니다.",
+      "The server ledger is written through the Core API on Render into Supabase PostgreSQL. Applied SQL migrations carry a checksum, so editing one is rejected. The app does not write the same data to two databases at once, and it does not switch automatically when a free limit is reached. The old Neon database is kept as legacy, and some of the 16 candidate free databases are already provisioned or connected, but the federation feature is off by default and Supabase PostgreSQL remains the single write authority.",
     ),
     t(
       "한계도 분명합니다. 브라우저 안의 원본은 백업이 아니라서 사이트 데이터를 지우거나 기기를 잃으면 사라집니다. 서버 원장이 '권위'라는 말은 서버가 모든 작품을 가진다는 뜻이 아니라, 여러 사람이 함께 믿어야 하는 기록의 최종 판정자라는 뜻입니다. 운영 DB 의 실제 연결 상태는 이 페이지에서 직접 확인하지 못했습니다.",
@@ -86,16 +86,16 @@ export const DATA_AUTHORITY_SECTION: ArchitectureGuideSection = {
     {
       what: t("서버 원장", "Server ledger"),
       role: t(
-        "Drizzle·pg 연결 풀로 하나의 PostgreSQL 에 기록하며 쓰기 권위는 하나",
+        "Drizzle·pg 연결 풀(database/index.ts)로 하나의 PostgreSQL 에 기록하며 쓰기 권위는 하나",
         "Writes to a single PostgreSQL through Drizzle and a pg pool, with one write authority",
       ),
-      paths: ["apps/api/src/platform/database/pg-connection.ts", "docs/operations/canonical-database-topology.md"],
+      paths: ["apps/api/src/platform/database/index.ts", "apps/api/src/platform/database/pg-connection.ts", "docs/operations/canonical-database-topology.md"],
     },
     {
       what: t("비공개 파일 저장소", "Private file storage"),
       role: t(
-        "source·derived·export 용도별로 R2·B2·Supabase 를 고정 라우팅하고, 원장에는 객체 참조를 남김",
-        "Routes source, derived and export files to R2, B2 or Supabase by purpose, while the ledger keeps the object reference",
+        "source·derived·export 용도별로 R2·B2·Supabase 로 보낼 수 있고(배포 블루프린트가 선언한 것은 Supabase 설정뿐이라 R2·B2 사용은 확인하지 못함), 원장에는 객체 참조를 남김",
+        "Can route source, derived and export files to R2, B2 or Supabase by purpose (the deploy blueprint declares only Supabase settings, so R2 and B2 use was not verified), while the ledger keeps the object reference",
       ),
       paths: [
         "apps/api/src/platform/adapters/private-object-storage/private-object-storage.config.ts",
@@ -113,8 +113,8 @@ export const DATA_AUTHORITY_SECTION: ArchitectureGuideSection = {
     {
       what: t("내보내기와 개인 클라우드", "Export and personal cloud"),
       role: t(
-        ".toonstudio 패키지 저장과 Google Drive·Dropbox·OneDrive 로 사본 올리기(연결한 경우)",
-        "Saving a .toonstudio package and uploading a copy to Google Drive, Dropbox or OneDrive when connected",
+        ".toonstudio 패키지 저장과 Google Drive 사본 올리기가 기본 경로이고, Dropbox·OneDrive 는 코드는 있으나 운영 보안 헤더와 인증 설정이 맞아야 하며 운영 동작은 확인하지 못함",
+        "Saving a .toonstudio package and uploading a copy to Google Drive are the default path; Dropbox and OneDrive have code but need matching production security headers and auth settings, and their production behavior was not verified",
       ),
       paths: [
         "apps/web/src/domains/creator/save-first/studio-project-package.ts",
@@ -147,8 +147,8 @@ export const DATA_AUTHORITY_SECTION: ArchitectureGuideSection = {
     },
   ],
   pitfall: t(
-    "기기 저장은 운영 경로이고, 서버 원장·파일 저장소·Durable Objects 는 설정 또는 운영 확인이 남은 상태입니다. 무료 DB 16곳은 계획이며, 오래된 문서의 Neon 서술은 legacy 보존 DB 이야기입니다.",
-    "On-device saving is a live path, while the server ledger, file storage and Durable Objects still depend on configuration or production checks. The 16 free databases are a plan, and older docs describing Neon refer to a legacy preserved database.",
+    "기기 저장은 운영 경로이고, 서버 원장·파일 저장소·Durable Objects 는 설정 또는 운영 확인이 남은 상태입니다. 무료 DB 16곳은 일부만 준비된 후보이며 연합 기능은 꺼져 있고, 오래된 문서의 Neon 서술은 legacy 보존 DB 이야기입니다.",
+    "On-device saving is a live path, while the server ledger, file storage and Durable Objects still depend on configuration or production checks. The 16 free databases are candidates only partly prepared with the federation off, and older docs describing Neon refer to a legacy preserved database.",
   ),
   facts: [
     {
@@ -228,7 +228,7 @@ export const REALTIME_COLLAB_SECTION: ArchitectureGuideSection = {
   },
   steps: [
     t("작업실에 들어갈 때 로그인 쿠키를 60초짜리 입장권으로 바꿔 Socket.IO 에 건넵니다.", "To enter the workroom, your sign-in cookie is swapped for a 60-second ticket handed to Socket.IO."),
-    t("서버는 입장권을 확인하는 즉시 지우고, 작품 멤버 권한을 본 뒤 방에 넣습니다(정원 30명).", "The server discards the ticket as soon as it is checked, verifies project membership and lets you into the room (up to 30 people)."),
+    t("서버는 입장권을 확인한 뒤 소켓 정보에서 지우고(한 번만 쓰게 막는 저장소는 없음), 작품 멤버 권한을 본 뒤 방에 넣습니다(정원 30명).", "The server removes the ticket from the socket data after checking it (no store enforces single use), verifies project membership and lets you into the room (up to 30 people)."),
     t("그림 변경은 의미 단위로 묶은 CRDT 업데이트로 보내고, 서버가 권한·속도·불변식을 먼저 검사합니다.", "Drawing changes go out as CRDT updates grouped by meaning, and the server first checks permission, rate and invariants."),
     t("검사를 통과한 변경만 PostgreSQL 에 한 번 기록하고 방 안의 다른 사람에게 전달합니다.", "Only updates that pass are recorded once in PostgreSQL and delivered to the others in the room."),
     t("같은 레이어를 동시에 건드리지 않도록 번호표(revision)가 붙은 15초짜리 잠금을 씁니다.", "To keep two people off the same layer, a 15-second lock carries a revision number."),
@@ -240,8 +240,8 @@ export const REALTIME_COLLAB_SECTION: ArchitectureGuideSection = {
       "When you draw alone your device is the source, but when several people draw one scene you must decide whose change comes first and who is allowed to edit. So merging changes (CRDT) and granting permission (the server's access check) are separated.",
     ),
     t(
-      "길은 셋으로 갈립니다. ① 문서·잠금·작업실 채팅은 Socket.IO → NestJS → PostgreSQL 이 권위 경로입니다. ② 접속 상태·커서·댓글 변경 알림·화면 공유 신호 같은 임시 정보는 Cloudflare Durable Objects 가 방 하나에 객체 하나로 순서를 잡습니다. ③ 허들(통화·채팅)은 서버가 첫 연결만 소개하고 이후는 브라우저끼리 WebRTC 직통 통로로 오갑니다.",
-      "Traffic takes three routes. (1) Documents, locks and workroom chat use Socket.IO to NestJS to PostgreSQL as the authority. (2) Temporary information such as presence, cursors, comment-change alerts and screen-share signals is ordered by Cloudflare Durable Objects, one object per room. (3) Huddle calls and chat are introduced by the server only for the first link and then flow browser to browser over a WebRTC direct channel.",
+      "길은 셋으로 갈립니다. ① 문서 변경과 잠금은 Socket.IO → NestJS → PostgreSQL 이 권위 경로이고, 작업실 채팅은 서버가 방에 전달만 하고 저장하지 않습니다. ② 접속 상태·커서·댓글 변경 알림·화면 공유 신호 같은 임시 정보는 Cloudflare Durable Objects 가 방 하나에 객체 하나로 순서를 잡습니다. ③ 허들(통화·채팅)은 서버가 첫 연결만 소개하고 이후는 브라우저끼리 WebRTC 직통 통로로 오갑니다.",
+      "Traffic takes three routes. (1) Document changes and locks use Socket.IO to NestJS to PostgreSQL as the authority, while workroom chat is only relayed to the room and not stored. (2) Temporary information such as presence, cursors, comment-change alerts and screen-share signals is ordered by Cloudflare Durable Objects, one object per room. (3) Huddle calls and chat are introduced by the server only for the first link and then flow browser to browser over a WebRTC direct channel.",
     ),
     t(
       "CRDT 라고 충돌이 없는 것은 아닙니다. 병합은 수렴하지만 권한·저장·큰 비트맵은 서버와 별도 경로가 맡습니다. 운영 API 는 무료 플랜 서버 한 대(메모리 어댑터)라 동시 접속 수를 부하 시험으로 보증한 적이 없고, 허들은 로컬 시험 단계라 서로 다른 네트워크의 통화는 검증하지 않았습니다.",
@@ -317,8 +317,8 @@ export const REALTIME_COLLAB_SECTION: ArchitectureGuideSection = {
     {
       choice: t("서버는 통화의 중계소가 아니라 소개소", "The server introduces calls instead of relaying them"),
       because: t(
-        "음성·영상이 서버를 지나지 않아 서버 비용이 들지 않고 서버에 저장되지도 않습니다.",
-        "Voice and video never pass through the server, so there is no server cost and nothing is stored there.",
+        "직접 연결이 되면 음성·영상은 서버를 지나지 않고 저장되지도 않습니다. 직접 연결이 막히면 중계(TURN)를 거칠 수 있습니다.",
+        "When a direct link works, voice and video do not pass through the server and are not stored; when it is blocked they may go through a relay (TURN).",
       ),
       cost: t(
         "직접 연결이 막힌 네트워크에서는 중계(TURN)가 필요하고, 서로 다른 네트워크의 통화는 검증하지 않았습니다.",
@@ -327,8 +327,8 @@ export const REALTIME_COLLAB_SECTION: ArchitectureGuideSection = {
     },
   ],
   pitfall: t(
-    "'Socket.IO 가 WebRTC 신호를 한다'는 부정확합니다. 서버를 지나는 WebRTC 신호는 데이터 통로 시작·화면 공유 신호뿐입니다. CRDT·Durable Objects·허들은 실험 또는 설정 단계이며 부하·다른 네트워크 통화는 검증하지 않았습니다.",
-    "'Socket.IO carries WebRTC signaling' is inaccurate: the only WebRTC signals passing the server are those that open the data channel and share screens. CRDT, Durable Objects and huddles are experimental or configured, with no load test or cross-network call verified.",
+    "'Socket.IO 가 WebRTC 신호를 한다'는 부정확합니다. 음성 신호 중계 코드는 있으나 운영 스위치(STUDIO_LIVE_VOICE_ENABLED)는 저장소 설정 기준으로 꺼져 있어, 서버를 지나는 WebRTC 신호는 데이터 통로 시작·화면 공유 신호 정도입니다. CRDT·Durable Objects·허들은 실험 또는 설정 단계이며 부하·다른 네트워크 통화는 검증하지 않았습니다.",
+    "'Socket.IO carries WebRTC signaling' is inaccurate: a voice-signal relay exists in code but its production switch (STUDIO_LIVE_VOICE_ENABLED) is off in the repository settings, so the WebRTC signals passing the server are roughly those that open the data channel and share screens. CRDT, Durable Objects and huddles are experimental or configured, with no load test or cross-network call verified.",
   ),
   facts: [
     {

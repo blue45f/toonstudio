@@ -406,8 +406,8 @@ export const AI_DEV_GATE_ROWS: readonly EngineeringMapRow[] = [
     cells: cells({
       kind: HARNESS,
       what: t(
-        "PR·main에서 lint·타입·회귀 분할·성능·접근성·빌드·DB 불변식 7개 검사가 모두 실제로 성공해야 통과하는 하나의 관문입니다. 건너뜀은 성공으로 치지 않습니다.",
-        "A single gate on PRs and main: lint, types, regression shards, performance, accessibility, build and DB invariants must all truly succeed. A skipped check does not count.",
+        "PR·main에서 lint·타입·회귀 분할·성능·접근성·빌드·스튜디오 검수 DB 불변식 7개 검사가 모두 실제로 성공해야 통과하는 하나의 관문입니다. 건너뜀은 성공으로 치지 않습니다.",
+        "A single gate on PRs and main: lint, types, regression shards, performance, accessibility, build and Studio-review DB invariants must all truly succeed. A skipped check does not count.",
       ),
       where: t(
         "모든 PR · .github/workflows/ci.yml의 core·verify 잡. PR에서는 커밋 메시지 규칙(commitlint)도 검사합니다.",

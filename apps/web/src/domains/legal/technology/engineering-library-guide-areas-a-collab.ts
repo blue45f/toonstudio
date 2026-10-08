@@ -43,15 +43,15 @@ export const LIBRARY_AREA_COLLAB_REALTIME: LibraryGuideArea = {
     {
       title: t("큰 미디어는 서버를 거치지 않는다", "Big media skips the server"),
       body: t(
-        "영상·음성·채팅은 브라우저끼리 직접(P2P) 보내고 서버는 통로를 여는 신호만 중계합니다. 유료 TURN·SFU 없이 공개 STUN으로 시작해 서버 비용을 늘리지 않았습니다.",
-        "Video, voice and chat travel directly between browsers (P2P) and the server relays only the signals that open the channel. Starting with public STUN and no paid TURN or SFU avoided adding server cost.",
+        "영상·음성·채팅은 브라우저끼리 직접(P2P) 보내고 서버는 통로를 여는 신호만 중계합니다. 유료 TURN·SFU 없이 공개 STUN으로 시작해 미디어 중계 비용을 들이지 않았습니다.",
+        "Video, voice and chat travel directly between browsers (P2P) and the server relays only the signals that open the channel. Starting with public STUN and no paid TURN or SFU avoided adding media relay cost.",
       ),
     },
     {
       title: t("작은 방은 풀메시, 큰 모임은 다른 길", "Full mesh for small rooms, another path for big ones"),
       body: t(
-        "지금 허들은 공개 STUN을 쓰는 작은 풀메시입니다. 소규모 성공이 큰 회의나 방송 품질을 증명하지 않으므로, 큰 모임은 별도 발표 경로나 SFU가 필요하다고 설계 문서가 적었습니다.",
-        "Today's huddle is a small full mesh on public STUN. Small-scale success does not prove large-meeting or broadcast quality, so the design document says big gatherings need a separate presenter path or an SFU.",
+        "지금 허들은 공개 STUN을 쓰는 작은 풀메시입니다. 소규모 성공이 큰 회의나 방송 품질을 증명하지 않으므로, 큰 회의·방송은 현재 범위가 아니며 SFU 구성과 운영 용량 검증이 필요하다고 설계 문서가 적었습니다.",
+        "Today's huddle is a small full mesh on public STUN. Small-scale success does not prove large-meeting or broadcast quality, so the design document says large meetings and broadcasts are out of scope and need an SFU setup and capacity checks.",
       ),
     },
   ],
@@ -125,8 +125,8 @@ export const LIBRARY_AREA_COLLAB_REALTIME: LibraryGuideArea = {
         "Merge rules alone give the same result after offline edits, duplicate delivery and reordering, which suits drawing. ADR-0025 fixes Yjs as the canonical copy.",
       ),
       alternatives: t(
-        "서버가 편집을 한 줄로 세우는 OT나, 한 사람이 쓰는 동안 나머지를 막는 잠금 대신 CRDT를 골랐습니다. 짧은 편집 잠금은 같은 레이어를 동시에 만지지 않도록 함께 씁니다.",
-        "A CRDT was chosen over OT, where a server lines up every edit, and over locks that block others while one person writes. Short edit locks are still used so two people do not touch one layer at once.",
+        "OT(서버가 편집을 한 줄로 세움)나 쓰는 동안 나머지를 막는 잠금과 견준 결정 기록은 찾지 못했습니다. 짧은 편집 잠금은 같은 레이어를 동시에 만지지 않도록 함께 씁니다.",
+        "We found no decision record comparing it with OT, where a server lines up every edit, or with locks that block others while one person writes. Short edit locks are still used so two people do not touch one layer at once.",
       ),
       cost: t(
         "CRDT는 누가 쓰는지 모릅니다. 서버가 권한·속도·불변식을 검사해야 하고, 큰 비트맵은 맞지 않아 따로 저장합니다. 기록이 쌓이면 압축과 스키마 이전이 운영 과제입니다.",
@@ -188,8 +188,8 @@ export const LIBRARY_AREA_COLLAB_REALTIME: LibraryGuideArea = {
         "Presence and screen-share signals go to Cloudflare Durable Objects when possible, and call signals and chat use the direct browser channel. WebTransport is only a candidate prepared in code.",
       ),
       cost: t(
-        "운영에서는 장기 연결 origin을 명시해야만 소켓을 만들고, 무료 플랜은 서버 한 대(메모리 어댑터)입니다. 늘리려면 PostgreSQL 어댑터 설정이 필요합니다.",
-        "In production the socket is created only when a long-running origin is set explicitly, and the free plan runs one server (memory adapter). Scaling out needs the PostgreSQL adapter configured.",
+        "운영에서는 장기 연결 origin이 있을 때만 소켓을 만듭니다(.env.production에 설정). 무료 core-api는 한 대·메모리 어댑터이고 PostgreSQL 어댑터는 선택형 studio-live 서비스에 있습니다.",
+        "In production the socket is created only when a long-running origin is set (in .env.production). The free core-api runs one server with the memory adapter, and the PostgreSQL adapter is configured on the optional studio-live service.",
       ),
       paths: [
         "apps/api/src/modules/creator/studio-live.gateway.ts",
@@ -211,8 +211,8 @@ export const LIBRARY_AREA_COLLAB_REALTIME: LibraryGuideArea = {
         "Sends huddle (nearby conversation) chat and calls between browsers over a direct channel (studio-direct-v1). The server relays only the signals that open the channel and screen-share signals.",
       ),
       why: t(
-        "유료 TURN·SFU를 두지 않고 브라우저끼리 직접 연결(P2P)하는 것을 기본 정책으로 삼았습니다. 큰 영상·음성이 서버를 거치지 않아 서버 비용이 늘지 않습니다.",
-        "The default policy is direct browser-to-browser (P2P) links with no paid TURN or SFU. Large video and voice never pass through the server, so server cost does not grow.",
+        "유료 TURN·SFU를 두지 않고 브라우저끼리 직접 연결(P2P)하는 것을 기본 정책으로 삼았습니다. 직접 연결된 영상·음성은 서버를 거치지 않아 미디어 중계 비용이 없습니다(사이트·신호 비용은 별도).",
+        "The default policy is direct browser-to-browser (P2P) links with no paid TURN or SFU. Direct video and voice never pass through the server, so no media relay cost is added (hosting and signaling cost remain).",
       ),
       alternatives: t(
         "SFU는 큰 회의에 유리하지만 서버가 영상을 받아야 해서 두지 않았습니다. 대신 풀메시의 한계를 정원 사다리로 다룹니다(도감 카드).",
@@ -223,8 +223,8 @@ export const LIBRARY_AREA_COLLAB_REALTIME: LibraryGuideArea = {
         "A strict NAT can block a direct link, so connection on every network is not guaranteed. Real-device and WAN checks are separate, and small-scale P2P success does not prove broadcast quality.",
       ),
       paths: [
+        `${LIVE}/huddle/studio-p2p-huddle-controller.ts`,
         `${LIVE}/studio-live-direct-port.ts`,
-        `${LIVE}/studio-ice-configuration.ts`,
         "docs/technology/toonstudio-webrtc-realtime-media-2026-09-25.md",
       ],
       license: "Web standard",

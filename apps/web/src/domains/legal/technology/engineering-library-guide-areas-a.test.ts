@@ -114,7 +114,7 @@ describe("라이브러리 해설 영역 1~4 · 숫자·상태 주장", () => {
     // 영역 2 가 CSP 때문에 얹었다고 말하는 패치 묶음 = glTF Transform · ktx2-encoder · manifold-3d.
     const csp = ["@gltf-transform/functions", "ktx2-encoder", "manifold-3d"].filter((name) => find(name)).length;
     expect(area("vrm-3d-characters")).toContain(`패치 ${csp}개를 얹었습니다`);
-    expect(area("vrm-3d-characters")).toContain(`${englishWord(csp)} patches adapt them`);
+    expect(area("vrm-3d-characters")).toContain(`${englishWord(csp)} patches were applied`);
     // 같은 묶음에서 glTF Transform 카드가 직접 세는 패치 = glTF Transform · ktx2-encoder.
     const gltf = ["@gltf-transform/functions", "ktx2-encoder"].filter((name) => find(name)).length;
     expect(card("vrm-3d-characters", "gltf-transform")).toContain(`pnpm 패치 ${gltf}개`);
@@ -173,8 +173,8 @@ describe("라이브러리 해설 영역 1~4 · 숫자·상태 주장", () => {
     const hokusai = card("brush-engines", "hokusai");
     expect(hokusai).toContain(`${low}~${high}배`);
     expect(hokusai).toContain(`${low} to ${high} times`);
-    expect(read("docs/adr/0011-v12-frontier-quarantine-ledger.md")).toContain("2026-08-08 실측");
-    expect(hokusai).toContain("2026-08-08");
+    expect(read("docs/adr/0011-v12-frontier-quarantine-ledger.md")).toContain("2026-08-09 KST 실제 풀사이즈 실측");
+    expect(hokusai).toContain("2026-08-09");
 
     expect(read("packages/studio-brush-platform/src/ink-mesh/README.md")).toContain("76 translation units");
     expect(card("brush-engines", "google-ink")).toContain("76개 소스");

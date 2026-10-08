@@ -37,7 +37,7 @@ const NESTJS_ROLE_FROZEN_RUNTIME: EngineeringAtlasEntry = {
     ),
   ],
   keyPoints: [
-    t("같은 빌드, 역할 3종: full · studio-live · capability-worker", "One build, three roles: full, studio-live, capability-worker"),
+    t("같은 빌드, 역할 3종: full · studio-live · 별도 루트 capability-worker", "One build, three roles: full, studio-live, capability-worker (own root)"),
     t("역할 밖의 길은 404, 일반 API가 두 번째 오리진에 새지 않음", "Paths outside a role return 404; the general API cannot leak"),
     t("헤더→원점 인증→CORS→역할→세션→CSRF→본문 순서를 테스트로 고정", "Headers, origin auth, CORS, role, session, CSRF, body: pinned by a test"),
     t("로그는 허용 목록: 메서드·경로·상태 코드만", "Logs are an allow list: method, path and status code only"),
@@ -51,8 +51,8 @@ const NESTJS_ROLE_FROZEN_RUNTIME: EngineeringAtlasEntry = {
       "The order is the policy: when an earlier gate rejects, later gates never run.",
     ),
     alt: t(
-      "요청은 보안 헤더, 엣지 원점 인증, CORS, 역할 가드를 차례로 지난 뒤 아래 줄에서 세션 검증, CSRF, 본문 파서, Zod 검증을 거쳐 컨트롤러에 도착합니다. CSRF는 세션 검증이 정한 인증 출처를 읽기 때문에 세션 뒤에 있어야 하며, 이 순서는 테스트가 고정합니다.",
-      "A request passes security headers, edge origin authentication, CORS and the role guard along the top row, then session verification, CSRF, the body parser and Zod validation along the bottom row before reaching a controller. CSRF reads the authentication source decided by the session step, so it must follow it, and a test pins this order.",
+      "요청은 보안 헤더, 엣지 원점 인증, CORS, 역할 가드를 차례로 지난 뒤 아래 줄에서 세션 검증, CSRF, 본문 파서를 거쳐 컨트롤러에 도착하고, Zod 검증은 createZodDto DTO에만 적용됩니다. CSRF는 세션 검증이 정한 인증 출처를 읽기 때문에 세션 뒤에 있어야 하며, 이 순서는 테스트가 고정합니다.",
+      "A request passes security headers, edge origin authentication, CORS and the role guard along the top row, then session verification, CSRF, and the body parser along the bottom row before reaching a controller, where Zod validation applies only to createZodDto DTOs. CSRF reads the authentication source decided by the session step, so it must follow it, and a test pins this order.",
     ),
     nodes: [
       { id: "req", label: t("요청", "Request"), tone: "neutral", shape: "pill", at: [0, 0] },
@@ -82,8 +82,8 @@ const NESTJS_ROLE_FROZEN_RUNTIME: EngineeringAtlasEntry = {
     {
       feature: t("모든 API 호출의 공통 관문 (full 역할)", "The common gate for every API call (full role)"),
       role: t(
-        "로그인·저장·커뮤니티·마켓·결제 요청은 모두 이 일곱 단계와 Zod 검증을 지나 기능 모듈 컨트롤러에 닿습니다.",
-        "Sign-in, saving, community, market and payment requests all pass these seven steps and Zod validation before reaching a feature-module controller.",
+        "로그인·저장·커뮤니티·마켓·결제 요청은 모두 이 일곱 단계를 지나 기능 모듈 컨트롤러에 닿고, DTO를 쓰는 곳에서는 Zod 검증도 받습니다.",
+        "Sign-in, saving, community, market and payment requests all pass these seven steps before reaching a feature-module controller, and Zod validation applies where a DTO is used.",
       ),
       paths: [
         "apps/api/src/main.ts",

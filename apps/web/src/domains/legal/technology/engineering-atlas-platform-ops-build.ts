@@ -15,13 +15,13 @@ const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
   category: "platform-ops",
   name: "Build fingerprints",
   title: t(
-    "빌드 지문 지도: 프런트는 내용 해시, 백엔드는 SHA와 체크섬",
-    "A map of build fingerprints: content hash on the front, SHA and checksums on the back",
+    "빌드 지문 지도: 프런트는 프리캐시 목록 해시, 백엔드는 SHA와 체크섬",
+    "A map of build fingerprints: precache-list hash on the front, SHA and checksums on the back",
   ),
   status: "live",
   tagline: t(
-    "프런트 번들은 커밋 SHA 없이 내용 해시로, DB 원장은 SHA와 체크섬으로 자기 정체를 남깁니다.",
-    "The front bundle identifies itself by content hash without a commit SHA; the database ledger records a SHA and checksums.",
+    "프런트 번들은 커밋 SHA 없이 프리캐시 목록 해시로, DB 원장은 SHA와 체크섬으로 자기 정체를 남깁니다.",
+    "The front bundle identifies itself by a precache-list hash without a commit SHA; the database ledger records a SHA and checksums.",
   ),
   background: [
     t(
@@ -42,7 +42,7 @@ const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
     ),
   ],
   keyPoints: [
-    t("프런트: 파일 이름 해시와 sw.js buildId(내용 해시 12자)", "Front end: file-name hashes and an sw.js buildId (12-char content hash)"),
+    t("프런트: 파일 이름 해시와 sw.js buildId(프리캐시 목록 해시 12자)", "Front end: file-name hashes and an sw.js buildId (12-char precache-list hash)"),
     t("백엔드: SQL 체크섬·releaseSha, 이미지 태그가 커밋 SHA", "Back end: SQL checksums, releaseSha, and an image tag that is the commit SHA"),
     t("번들과 API 헬스 응답에는 커밋 SHA가 없음(코드 기준)", "No commit SHA in the bundle or API health replies (per the code)"),
     t("둘을 잇는 것은 승인 SHA 하나와 릴리스 기록", "One approved SHA and a release record tie the two together"),
@@ -52,8 +52,8 @@ const BUILD_FINGERPRINT_MAP: EngineeringAtlasEntry = {
     kind: "layers",
     title: t("배포 단위마다 붙는 지문", "The fingerprint each deploy unit carries"),
     caption: t(
-      "프런트는 내용 해시, DB는 SHA와 체크섬을 갖고, 번들과 API 응답은 커밋 SHA를 말하지 않습니다.",
-      "The front end carries a content hash and the database a SHA and checksums; neither the bundle nor the API replies state a commit SHA.",
+      "프런트는 프리캐시 목록 해시, DB는 SHA와 체크섬을 갖고, 번들과 API 응답은 커밋 SHA를 말하지 않습니다.",
+      "The front end carries a precache-list hash and the database a SHA and checksums; neither the bundle nor the API replies state a commit SHA.",
     ),
     alt: t(
       "맨 위 정적 웹 번들은 파일 이름 해시와 sw.js의 12자리 buildId를 갖지만 커밋 SHA는 없습니다. 엣지 게이트웨이 Worker에는 버전·SHA 변수가 없고(배포 때 넣는 변수는 오리진 주소뿐), Core API도 헬스 응답에 버전이 없습니다. 반면 DB 원장은 SQL 체크섬과 적용 커밋 SHA를 행마다 적고, 수동 컨테이너 워크플로는 이미지에 SHA 태그를 붙이며 운영 Core API는 그 이미지로 배포됩니다. 이 지문들을 맞춰 보는 일은 사람이 적는 릴리스 기록이 맡습니다.",
@@ -257,8 +257,8 @@ export function staleCacheNames(existing: readonly string[], buildId: string): s
   chapterIds: ["pwa-continuity", "delivery"],
   talk: {
     pitch: t(
-      "프런트와 백엔드가 같은 빌드인지 묻는다면, 둘의 지문이 서로 다른 종류라고 먼저 답합니다. 프런트 번들은 커밋 번호 대신 파일 이름 해시와, 서비스 워커에 새긴 12자리 내용 해시 id를 가집니다. DB는 SQL 파일의 SHA-256 체크섬과 그것을 적용한 커밋 SHA를 원장에 적습니다. 둘을 잇는 것은 승인한 SHA 하나와 릴리스 기록이고, 번들이나 서버가 자기 버전을 말하는 장치는 아직 없습니다.",
-      "If you ask whether front and back are the same build, the first answer is that their fingerprints are of different kinds. The front bundle has file-name hashes and a 12-character content-hash id baked into the service worker, instead of a commit number. The database writes the SHA-256 checksum of each SQL file and the commit SHA that applied it into its ledger. One approved SHA and a release record tie them together; there is not yet any mechanism for the bundle or the server to state its own version.",
+      "프런트와 백엔드가 같은 빌드인지 묻는다면, 둘의 지문이 서로 다른 종류라고 먼저 답합니다. 프런트 번들은 커밋 번호 대신 파일 이름 해시와, 서비스 워커에 새긴 12자리 프리캐시 목록 해시 id를 가집니다. DB는 SQL 파일의 SHA-256 체크섬과 그것을 적용한 커밋 SHA를 원장에 적습니다. 둘을 잇는 것은 승인한 SHA 하나와 릴리스 기록이고, 번들이나 서버가 자기 버전을 말하는 장치는 아직 없습니다.",
+      "If you ask whether front and back are the same build, the first answer is that their fingerprints are of different kinds. The front bundle has file-name hashes and a 12-character precache-list hash id baked into the service worker, instead of a commit number. The database writes the SHA-256 checksum of each SQL file and the commit SHA that applied it into its ledger. One approved SHA and a release record tie them together; there is not yet any mechanism for the bundle or the server to state its own version.",
     ),
     analogy: t(
       "택배 상자에 내용물 사진(프런트)과 송장 번호(DB 원장)가 따로 붙어 있고, 둘을 맞춰 보는 일은 배송 기록부가 맡는 셈입니다.",
@@ -553,8 +553,8 @@ export function acceptUpdate(raw: unknown) {
       {
         question: t("왜 전부 공유 패키지로 합치지 않나요?", "Why not put everything into the shared package?"),
         answer: t(
-          "AGENTS.md는 공통 DTO·스키마를 실제로 두 번째 소비자가 생긴 범위만 contracts 후보로 올린다고 정합니다. 또 웹·관리자·API가 서로의 앱 소스를 직접 import하는 것은 경계 검사가 금지하고 위반 수를 0으로 동결합니다.",
-          "AGENTS.md says shared DTOs and schemas are promoted to contracts only where a real second consumer exists, and the boundary check forbids web, admin and API from importing each other's app source, with the violation count frozen at 0.",
+          "AGENTS.md는 공통 DTO·스키마는 실제로 두 번째 소비자가 생긴 범위만 contracts 후보로 올린다고 정합니다(승격 조건이며, 현재 스튜디오 패키지 6개는 웹 전용). 또 웹·관리자·API가 서로의 앱 소스를 직접 import하는 것은 경계 검사가 금지하고 위반 수를 0으로 동결합니다.",
+          "AGENTS.md says shared DTOs and schemas are promoted to contracts only where a real second consumer exists (a condition; the 6 studio packages are web-only today), and the boundary check forbids web, admin and API from importing each other's app source, with the violation count frozen at 0.",
         ),
       },
       {

@@ -336,10 +336,10 @@ export const COMPETITOR_ROWS_ENGINES: readonly EngineeringMapRow[] = [
       "A fast WebGL 2D library. The canvas-engine decision document classed it as suited to heavy particle and brush performance.",
     ),
     learned: t(
-      "결론: 편집기 몸체로는 쓰지 않고 ‘선택적 GPU 브러시 경로’ 용도로만 둠. 의존성으로 설치돼 있으나 Konva가 정본이라는 결정은 그대로.",
-      "Conclusion: not used as the editor body; kept only as an optional GPU brush path. It is installed as a dependency, but the decision that Konva is the authority stands.",
+      "결론: 편집기 몸체로는 쓰지 않음. 제품에서는 선택한 요소의 테두리·옅은 면 오버레이로만 쓰고(CanvasKit이 legacy로 판정할 때), Konva가 정본이라는 결정은 그대로.",
+      "Conclusion: not used as the editor body. The product uses it only for an outline and light-fill overlay of selected elements (when CanvasKit rates a page legacy), and the decision that Konva is the authority stands.",
     ),
-    overlap: t("GPU 브러시·효과 경로(선택).", "The optional GPU brush and effects path."),
+    overlap: t("선택 요소 오버레이(선택).", "The optional selected-element overlay."),
     evidence: [CANVAS_DECISION, "package.json", "docs/engines/renderer-roles.md"],
   }),
 

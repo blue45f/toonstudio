@@ -239,8 +239,8 @@ export const OPS_SLIDES = [
       "One rulebook in AGENTS.md; ‘done’ is judged by the harness, hooks, CI and a human approval, not by the AI's word.",
     ),
     points: [
-      t("규칙은 AGENTS.md 한 곳 — 도구별 파일은 가리키기만 하고 하네스가 연결을 검사", "One rulebook in AGENTS.md — tool files only point to it and the harness checks the links"),
-      t("harness:verify → 커밋·푸시 훅 → CI core 필수 7개 검사를 AI의 변경도 똑같이 통과", "harness:verify, then commit and push hooks, then the 7 required CI core checks — AI changes pass the same gates"),
+      t("규칙은 AGENTS.md 한 곳 — 도구별 파일은 핵심만 요약해 가리키고 하네스가 연결을 검사", "One rulebook in AGENTS.md — tool files summarize and point to it and the harness checks the links"),
+      t("harness:verify → 커밋·푸시 훅 → CI core 필수 7개 검사를 정책상 AI의 변경도 똑같이 통과", "harness:verify, then commit and push hooks, then the 7 required CI core checks — by policy AI changes pass the same gates"),
       t("OpenWiki는 길잡이일 뿐 — 사실은 소스·테스트가 먼저, 갱신은 주 1회 PR(자동 병합 없음)", "OpenWiki is a guide only — source and tests win; it updates weekly by PR with no auto-merge"),
       t("루프 명령 23개는 외부 플러그인의 이름표 — 실행 기록과 효과 수치는 확인 못 해 ‘설정 필요’", "The 23 loop commands are name tags for an external plugin — no run history or effect figures, so ‘setup required’"),
     ],
@@ -251,8 +251,8 @@ export const OPS_SLIDES = [
     ],
     atlas: { id: "agent-harness-verify-gates", view: "diagram" },
     notes: t(
-      "AI가 ‘다 했습니다’라고 해도 확인합니다. 규칙은 AGENTS.md 한 곳이고 도구별 파일은 가리키기만 합니다. 공항 검색대처럼 AI의 변경도 harness:verify와 훅, CI core 필수 7개 검사를 지나고, 운영 배포는 사람이 따로 승인합니다.\n정직하게, OpenWiki는 길잡이일 뿐 코드가 먼저이고, 루프 명령 23개는 외부 플러그인의 이름표라 실행 기록을 확인하지 못했으며 효과 수치도 없습니다. 근거는 agent-harness.mjs입니다. 다음은 운영입니다. 질문이 나오면 ‘AGENTS.md’ 카드를 엽니다.",
-      "We check an AI's ‘done’ rather than believe it. The rulebook is AGENTS.md and tool files only point to it. Like airport security, an AI's change goes through harness:verify, the hooks and the 7 required CI core checks, and a human approves any production release separately.\nBe honest: OpenWiki is only a guide and code comes first, and the 23 loop commands are name tags for an external plugin whose run history we could not confirm; there are no effect figures either. The basis is agent-harness.mjs. Next, operations. If asked, open the ‘AGENTS.md’ card.",
+      "AI가 ‘다 했습니다’라고 해도 확인합니다. 규칙은 AGENTS.md 한 곳이고 도구별 파일은 핵심만 요약해 가리킵니다. 공항 검색대처럼 정책상 AI의 변경도 harness:verify와 훅, CI core 필수 7개 검사를 지나고, 운영 배포는 사람이 따로 승인합니다.\n정직하게, OpenWiki는 길잡이일 뿐 코드가 먼저이고, 루프 명령 23개는 외부 플러그인의 이름표라 실행 기록을 확인하지 못했으며 효과 수치도 없습니다. 근거는 agent-harness.mjs입니다. 다음은 운영입니다. 질문이 나오면 ‘AGENTS.md’ 카드를 엽니다.",
+      "We check an AI's ‘done’ rather than believe it. The rulebook is AGENTS.md and tool files summarize and point to it. Like airport security, by policy an AI's change goes through harness:verify, the hooks and the 7 required CI core checks, and a human approves any production release separately.\nBe honest: OpenWiki is only a guide and code comes first, and the 23 loop commands are name tags for an external plugin whose run history we could not confirm; there are no effect figures either. The basis is agent-harness.mjs. Next, operations. If asked, open the ‘AGENTS.md’ card.",
     ),
     chapterId: "ai-assisted-engineering",
     evidence: [
@@ -325,8 +325,8 @@ export const OPS_SLIDES = [
       "Static SPA on Cloudflare, dynamic API on Render, ledger on Supabase PostgreSQL (Neon kept as legacy), realtime on Durable Objects — no automatic billing or deploys.",
     ),
     points: [
-      t("승인한 40자리 main SHA 하나만 손으로 배포 — 머지는 배포가 아니고, 실패하면 직전 검증 SHA로 되돌림", "Only one approved 40-character main SHA is deployed by hand — merging is not releasing, and a failure rolls back to the last verified SHA"),
-      t("Render Core API는 무료 플랜 · 자동 배포 꺼짐(autoDeployTrigger off) — 유휴 시 절전", "The Render Core API is on the free plan with auto-deploy off (autoDeployTrigger off) — it sleeps when idle"),
+      t("승인한 40자리 main SHA 하나만 손으로 배포 — 머지는 배포가 아니고, 실패하면 서버·화면만 직전 검증 SHA로 되돌림(DB 자동 복구 없음)", "Only one approved 40-character main SHA is deployed by hand — merging is not releasing, and a failure rolls the server and site back to the last verified SHA, not the DB"),
+      t("render.yaml 기준 Render Core API는 무료 플랜 · 자동 배포 꺼짐 — 유휴 시 절전", "Per render.yaml, the Render Core API is on the free plan with auto-deploy off — it sleeps when idle"),
       t("원장 DB의 쓰기 권위는 Supabase 하나 — Neon은 legacy 보존, 자동 이중 쓰기·failover 없음", "The ledger database has one writer, Supabase — Neon is kept as legacy with no automatic dual writes or failover"),
       t("대가: 무료 플랜은 콜드 스타트가 있고 SLA가 없음 — 필요하면 비용과 책임을 함께 승인해 올림", "Trade-off: free plans have cold starts and no SLA — when needed, cost and responsibility are upgraded together"),
     ],
@@ -337,8 +337,8 @@ export const OPS_SLIDES = [
     stack: ["Cloudflare Static Assets", "Workers", "Durable Objects", "Render", "Supabase PostgreSQL"],
     atlas: { id: "manual-sha-release-gate", view: "diagram" },
     notes: t(
-      "근거는 render.yaml입니다. Core API는 free 플랜이고 autoDeployTrigger가 꺼져 있어 push만으로는 운영이 바뀌지 않습니다.\n핵심은 ‘머지는 배포가 아니다’입니다. 원고를 합치는 일과 인쇄 승인이 다르듯, 사람이 승인한 40자리 main 커밋 하나만 손으로 올리고, CI가 워크플로 안의 배포 명령을 막으며, 실패하면 직전 검증 SHA로 되돌립니다.\n원장 DB의 쓰기 권위는 Supabase 하나이고 Neon은 legacy입니다. 대가는 콜드 스타트와 SLA 부재라, 필요하면 비용과 책임을 함께 승인해 올립니다. 다음은 배운 점입니다. 질문이 나오면 ‘Manual SHA release gate’ 카드를 엽니다.",
-      "The basis is render.yaml: the Core API is on the free plan and autoDeployTrigger is off, so a push alone changes nothing in production.\nThe key idea is that merging is not releasing. Just as merging a manuscript differs from approving the print run, only one human-approved 40-character main commit is deployed by hand, CI blocks deploy commands inside workflows, and a failure rolls back to the last verified SHA.\nThe ledger database has one writer, Supabase, and Neon is legacy. The price is cold starts and no SLA, so when needed cost and responsibility are upgraded together by approval. Next, lessons. If asked, open the ‘Manual SHA release gate’ card.",
+      "근거는 render.yaml입니다. Core API는 free 플랜이고 autoDeployTrigger가 꺼져 있어 push만으로는 운영이 바뀌지 않습니다.\n핵심은 ‘머지는 배포가 아니다’입니다. 원고를 합치는 일과 인쇄 승인이 다르듯, 사람이 승인한 40자리 main 커밋 하나만 손으로 올리고, core 밖의 배포 금지 검사가 워크플로 안의 배포 명령을 막고, 실패하면 서버·화면만 직전 SHA로 되돌리며 DB는 자동 복구가 없습니다.\n원장 DB의 쓰기 권위는 Supabase 하나이고 Neon은 legacy입니다. 대가는 콜드 스타트와 SLA 부재라, 필요하면 비용과 책임을 함께 승인해 올립니다. 다음은 배운 점입니다. 질문이 나오면 ‘Manual SHA release gate’ 카드를 엽니다.",
+      "The basis is render.yaml: the Core API is on the free plan and autoDeployTrigger is off, so a push alone changes nothing in production.\nThe key idea is that merging is not releasing. Just as merging a manuscript differs from approving the print run, only one human-approved 40-character main commit is deployed by hand, a deploy-ban check outside core blocks deploy commands inside workflows, and a failure rolls only the server and site back to the last SHA; the DB has no automatic undo.\nThe ledger database has one writer, Supabase, and Neon is legacy. The price is cold starts and no SLA, so when needed cost and responsibility are upgraded together by approval. Next, lessons. If asked, open the ‘Manual SHA release gate’ card.",
     ),
     chapterId: "cost-engineering",
     evidence: [

@@ -313,9 +313,9 @@ const LESSON_FACTS: readonly LessonFact[] = [
   {
     lesson: "seminar-brush-libraries", claim: "Hokusai = reearth/hokusai 0.3.0(MIT OR Apache-2.0)를 감싼 래퍼·승격 게이트 미통과, Google Ink 는 확정 획이 아니라 예측 꼬리 보조 미리보기에만 연결", needles: ["MIT OR Apache-2.0", "reearth/hokusai 0.3.0", "Google Ink는", "예측 꼬리"],
     check: () => {
-      // 기술 지도(ADR-0009 요약): 출하 잉킹 레인은 Perfect Freehand 쪽이고 Google Ink 는 후보다.
+      // 기술 지도(ADR-0009 요약): 출하 잉킹 레인은 Perfect Freehand(G펜·퍼펙트 계열 펜) 쪽이고 Google Ink 는 후보다. 일반 펜의 기본은 연속 잉크(webgpu-causal-ink) 경로다.
       expect(mapText("open-source")).toMatch(/Google Ink는 후보다/u);
-      // 생성기는 펜다운에서 시작하는 예측 꼬리 미리보기에만 연결된다(확정 획의 주인은 Canvas2D·Perfect Freehand).
+      // 생성기는 펜다운에서 시작하는 예측 꼬리 미리보기에만 연결된다(확정 획의 주인은 Canvas2D 확정 경로이고 Perfect Freehand는 G펜·퍼펙트 계열 펜의 윤곽).
       const inkPreview = readText("apps", "web", "src", "domains", "creator", "brush", "studio-ink-mesh-live-preview.ts");
       expect(inkPreview).toContain("loadInkMeshGenerator");
       expect(flat("THIRD_PARTY_NOTICES.md")).toMatch(/hokusai-tile-mem` \| 0\.3\.0 \| MIT OR Apache-2\.0 \| <https:\/\/github\.com\/reearth\/hokusai/u);

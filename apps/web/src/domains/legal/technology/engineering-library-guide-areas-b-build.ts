@@ -22,8 +22,8 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
     "Vite bundles, Vitest and Playwright guard, and on-device parts such as wasm-vips and ag-psd handle export.",
   ),
   easy: t(
-    "공장의 조립 라인과 검수대에 비유합니다. 부품을 조립하고(Vite) 검수대 세 곳(단위·브라우저·접근성)을 지나야 출고되며, 파일을 내보낼 때도 같은 공장 안의 포장 라인(wasm-vips·ag-psd·pdf-lib·Remotion)에서 포장합니다. 손본 부품은 수정 기록표(패치·override)로 남깁니다.",
-    "Think of an assembly line and inspection desks in a factory. Parts are assembled (Vite) and must pass three inspection desks (unit, browser, accessibility) before shipping, and exports are packed on a packing line inside the same factory (wasm-vips, ag-psd, pdf-lib, Remotion). Parts we modified stay on a change record (patches and overrides).",
+    "공장의 조립 라인과 검수대에 비유합니다. 부품을 조립하고(Vite) 검수대 세 곳(단위·브라우저·접근성)을 지나야 출고되며, 내보낼 때는 같은 공장의 포장 라인(wasm-vips·ag-psd)이 포장합니다. 손본 부품은 수정 기록표(패치·override)로 남깁니다.",
+    "Think of an assembly line and inspection desks in a factory. Parts are assembled (Vite) and must pass three inspection desks (unit, browser, accessibility) before shipping, and exports are packed on the packing line of the same factory (wasm-vips, ag-psd). Parts we modified stay on a change record (patches and overrides).",
   ),
   designWhy: [
     {
@@ -36,15 +36,15 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
     {
       title: t("검사는 층으로 나눠 서로 다른 실패를 잡는다", "Checks in layers catch different failures"),
       body: t(
-        "Vitest는 화면·API·Worker·스크립트 단위를, Playwright는 실제 브라우저의 접근성(axe)을, 정책 스크립트는 번들·라이선스·경계 규칙을 지킵니다. CI는 린트·타입 검사·정적 검사·접근성·빌드·DB 같은 작업으로 나뉘어 돕니다.",
-        "Vitest guards screen, API, Worker and script units, Playwright guards accessibility (axe) in a real browser, and policy scripts guard the bundle, license and boundary rules. CI runs as separate jobs such as lint, type check, static checks, accessibility, build and database.",
+        "Vitest는 화면·API·Worker·스크립트 단위를, Playwright는 개발 서버에서 접근성(axe)을, 정책 스크립트는 번들·라이선스·경계 규칙을 지킵니다. CI는 린트·타입 검사·회귀 샤드·성능·접근성·빌드·DB 작업으로 나뉘어 병렬로 돌고, PR 필수 Vitest 대상은 선별 목록이며 전체 스위트는 별도 진단 워크플로가 돌립니다.",
+        "Vitest guards screen, API, Worker and script units, Playwright guards accessibility (axe) against the dev server, and policy scripts guard the bundle, license and boundary rules. CI runs in parallel as lint, type check, regression shards, performance, accessibility, build and database jobs; the Vitest targets required on a PR are a curated list, and the full suite runs in a separate diagnostic workflow.",
       ),
     },
     {
       title: t("고쳐 쓴 곳은 기록으로 남긴다", "What we changed stays on record"),
       body: t(
-        "pnpm 패치 7개와 override 50개는 pnpm-workspace.yaml에 모았고, 포크 2개(braces·wgpu-toon)는 저장소 안 폴더로 둡니다. 설치 때 자동 적용되고, 빌드가 라이선스 고지를 만들며 허용 목록 밖 라이선스는 감사에서 실패합니다.",
-        "The 7 pnpm patches and 50 overrides are gathered in pnpm-workspace.yaml, and the 2 forks (braces and wgpu-toon) live in folders inside the repository. They apply automatically at install, the build generates license notices, and a license outside the allowlist fails the audit.",
+        "pnpm 패치 7개와 override 50개는 pnpm-workspace.yaml에 모았고, 포크 2개(braces·wgpu-toon)는 저장소 안 폴더로 둡니다. 설치 때 자동 적용되고, 빌드가 라이선스 고지를 만들며 허용 목록 밖 라이선스는 감사에서 실패합니다(wasm-vips 내장 LGPL은 생성 고지에 MIT로만 나옵니다).",
+        "The 7 pnpm patches and 50 overrides are gathered in pnpm-workspace.yaml, and the 2 forks (braces and wgpu-toon) live in folders inside the repository. They apply automatically at install, the build generates license notices, and a license outside the allowlist fails the audit (the LGPL parts bundled in wasm-vips appear in the generated notice only as MIT).",
       ),
     },
     {
@@ -64,34 +64,34 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
       "Source is installed with pnpm, bundled by Vite and passes the check gates to become a build, and exporting happens inside that app on the device itself.",
     ),
     alt: t(
-      "왼쪽에서 오른쪽으로 읽습니다. 소스 코드가 pnpm으로 설치되고(패치 7개와 override 50개 적용) Vite로 묶입니다. Vitest와 Playwright가 서로 다른 검사를 하고, 번들 검사와 라이선스 고지까지 통과해야 배포 파일이 됩니다. 사용자가 앱에서 작품을 내보낼 때는 서버 없이 기기에서 wasm-vips가 초대형 페이지를 줄이고, ag-psd가 PSD를, pdf-lib와 pdf.js가 PDF를, Remotion이 영상을 맡습니다.",
-      "Read from left to right. Source code is installed with pnpm (7 patches and 50 overrides applied) and bundled by Vite. Vitest and Playwright run different checks, and the build must also pass the bundle check and license notices to become a deployable build. When a user exports artwork in the app, on the device without a server wasm-vips shrinks huge pages, ag-psd handles PSD, pdf-lib and pdf.js handle PDF, and Remotion handles video.",
+      "왼쪽에서 오른쪽으로 읽습니다. 소스 코드가 pnpm으로 설치되고(패치 7개와 override 50개 적용) Vite로 묶입니다. 검사는 서로 다른 곳을 봅니다. Vitest는 소스를 직접 돌리고, Playwright(axe)는 개발 서버를 열고, 번들 검사와 라이선스 고지는 빌드 결과를 확인합니다. 이 작업들이 병렬로 모두 통과해야 배포 후보가 됩니다. 사용자가 앱에서 작품을 내보낼 때는 서버 없이 기기에서 wasm-vips가 초대형 페이지를 줄이고 ag-psd가 PSD를 만듭니다. 작품의 PDF 내보내기는 라이브러리 없이 직접 조립하고, pdf-lib와 pdf.js는 이미 있는 PDF를 합치고 나누는 작업대에서, Remotion은 홍보 영상 편집기의 렌더 키트(ZIP) 생성과 /product-tour 재생에서 씁니다.",
+      "Read from left to right. Source code is installed with pnpm (7 patches and 50 overrides applied) and bundled by Vite. The checks look at different things: Vitest runs the source directly, Playwright with axe opens the dev server, and the bundle check and license notices inspect the build output. All of these jobs run in parallel and must pass for a commit to become a release candidate. When a user exports artwork in the app, on the device without a server wasm-vips shrinks huge pages and ag-psd builds the PSD. Exporting artwork to PDF is assembled by hand with no library; pdf-lib and pdf.js are used in the workbench for existing PDFs, and Remotion for the promo editor's render kit (ZIP) and the /product-tour playback.",
     ),
     nodes: [
       { id: "source", label: t("소스 코드", "Source code"), sub: t("TypeScript · React", "TypeScript, React"), tone: "neutral", shape: "pill", at: [0, 1] },
       { id: "pnpm", label: t("pnpm 설치", "pnpm install"), sub: t("패치 7 · override 50", "7 patches, 50 overrides"), tone: "neutral", at: [1, 1] },
       { id: "vite", label: t("Vite 8 빌드", "Vite 8 build"), sub: t("청크 분리 · 지연 로드", "Chunk split, lazy load"), tone: "neutral", at: [2, 1] },
-      { id: "vitest", label: t("Vitest", "Vitest"), sub: t("단위·계약 테스트", "Unit, contract tests"), tone: "good", at: [3, 0] },
-      { id: "playwright", label: t("Playwright", "Playwright"), sub: t("실제 브라우저 · axe", "Real browser, axe"), tone: "good", at: [3, 1] },
+      { id: "vitest", label: t("Vitest", "Vitest"), sub: t("단위·계약 테스트", "Unit, contract tests"), tone: "good", at: [1, 0] },
+      { id: "playwright", label: t("Playwright", "Playwright"), sub: t("실제 브라우저 · axe", "Real browser, axe"), tone: "good", at: [1, 2] },
       { id: "dist", label: t("배포 파일", "Deployable build"), sub: t("번들 검사 · 고지문", "Bundle check, notices"), tone: "good", at: [4, 1] },
       { id: "export", label: t("작품 내보내기", "Export artwork"), sub: t("서버 없이 기기에서", "On the device"), tone: "local", shape: "pill", at: [4, 3] },
       { id: "vips", label: t("wasm-vips", "wasm-vips"), sub: t("초대형 페이지 축소", "Shrink huge pages"), tone: "local", at: [3, 3] },
       { id: "psd", label: t("ag-psd", "ag-psd"), sub: t("PSD 레이어", "PSD layers"), tone: "local", at: [3, 4] },
-      { id: "pdf", label: t("pdf-lib", "pdf-lib"), sub: t("PDF 합치기·분할", "Merge, split PDFs"), tone: "local", at: [4, 4] },
+      { id: "pdf", label: t("pdf-lib", "pdf-lib"), sub: t("기존 PDF 합치기·분할", "Merge, split existing PDFs"), tone: "local", at: [4, 4] },
       { id: "remotion", label: t("Remotion", "Remotion"), sub: t("영상 재생·렌더 키트", "Video player, render kit"), tone: "local", at: [5, 3] },
+      { id: "workbench", label: t("PDF 작업대·영상 편집", "PDF desk, video tool"), sub: t("앱 화면 안에서, 서버 없이", "In the app, no server"), tone: "local", at: [5, 4] },
     ],
     edges: [
       { from: "source", to: "pnpm" },
       { from: "pnpm", to: "vite" },
-      { from: "vite", to: "vitest" },
-      { from: "vite", to: "playwright" },
-      { from: "vitest", to: "dist" },
-      { from: "playwright", to: "dist" },
+      { from: "source", to: "vitest", label: t("소스 직접", "source directly") },
+      { from: "source", to: "playwright", label: t("개발 서버", "dev server") },
+      { from: "vite", to: "dist", label: t("번들 검사·고지문", "bundle check") },
       { from: "dist", to: "export", label: t("앱이 열린 뒤", "in the app") },
       { from: "export", to: "vips", label: t("큰 페이지", "big pages") },
       { from: "export", to: "psd", label: t("PSD", "PSD") },
-      { from: "export", to: "pdf", label: t("PDF", "PDF") },
-      { from: "export", to: "remotion", label: t("영상", "video") },
+      { from: "workbench", to: "pdf", label: t("기존 PDF", "existing PDFs") },
+      { from: "workbench", to: "remotion", label: t("렌더 키트", "render kit") },
     ],
   },
   libraries: [
@@ -110,8 +110,8 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
         "Large engines can be split into named chunks and lazy-load boundaries fixed in config, so the first-screen bundle check runs automatically on the build output (the manifest). The bundler is Rolldown 1.0.3, a transitive dependency.",
       ),
       cost: t(
-        "React Compiler 변환이 빌드 시간의 91%를 쓴 측정(2026-08-08)이 있고, 청크 이름을 잘못 붙이면 공유 코드가 한 덩어리가 되어 되돌린 적이 두 번 있습니다. Vite를 다른 번들러와 비교한 문서는 못 찾았습니다.",
-        "One measurement (2026-08-08) put 91% of build time in the React Compiler transform, and wrongly naming a chunk merged shared code into one lump and was reverted twice. We found no document comparing Vite with other bundlers.",
+        "React Compiler 변환이 빌드 시간의 91%를 쓴 측정(2026-08-08, 이후 StudioPage 분할 전)이 있고, 청크 이름을 잘못 붙이면 공유 코드가 한 덩어리가 되어 되돌린 적이 두 번 있습니다. Vite를 다른 번들러와 비교한 문서는 못 찾았습니다.",
+        "One measurement (2026-08-08, before the later StudioPage split) put 91% of build time in the React Compiler transform, and wrongly naming a chunk merged shared code into one lump and was reverted twice. We found no document comparing Vite with other bundlers.",
       ),
       paths: ["apps/web/vite.config.ts", "apps/web/config/vite-manual-chunks.ts", "scripts/check-studio-bundle.mjs"],
       license: "MIT",
@@ -126,8 +126,8 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
       package: "vitest",
       oneLine: t("코드가 약속대로 동작하는지 자동으로 확인하는 테스트 실행기", "A test runner that automatically checks code behaves as promised"),
       usedFor: t(
-        "화면·API·Worker·스크립트 테스트를 한 설정으로 돌립니다. API의 NestJS 데코레이터도 변환해 같은 실행기에서 검사합니다.",
-        "Runs screen, API, Worker and script tests from one config. The API's NestJS decorators are transformed too, so they are checked in the same runner.",
+        "화면·API·Worker·스크립트 단위 테스트를 한 설정으로 돌립니다(workerd 통합 테스트는 전용 설정). API의 NestJS 데코레이터도 변환해 같은 실행기에서 검사합니다.",
+        "Runs screen, API, Worker and script unit tests from one config (workerd integration tests use their own config). The API's NestJS decorators are transformed too, so they are checked in the same runner.",
       ),
       why: t(
         "수집 루트(apps·deploy·packages·scripts·tests)를 명시하고 루트별 파일 수 하한을 두어, 폴더가 옮겨져 테스트가 조용히 줄어도 CI가 알아챕니다. 운영 DB 주소는 테스트가 물려받지 않게 막았습니다.",
@@ -150,18 +150,18 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
       package: "@playwright/test",
       oneLine: t("진짜 브라우저를 자동으로 조작해 화면을 확인하는 테스트 도구", "A test tool that drives a real browser automatically to check screens"),
       usedFor: t(
-        "핵심 화면을 실제 Chromium으로 열어 동작을 확인하고, axe-core로 접근성(WCAG 2.2 AA까지) 심각·치명 위반을 PR마다 검사합니다.",
-        "Opens key screens in a real Chromium to check behavior, and runs axe-core on every PR for serious and critical accessibility violations (up to WCAG 2.2 AA).",
+        "핵심 화면을 실제 Chromium으로 열어 axe-core 규칙(WCAG 2.2 AA 태그까지)의 심각·치명 위반을 PR마다 검사합니다.",
+        "Opens key screens in a real Chromium and runs axe-core on every PR for serious and critical accessibility violations (axe rule sets up to WCAG 2.2 AA).",
       ),
       why: t(
         "접근성과 화면 깨짐은 단위 테스트로 잡히지 않아 실제 브라우저가 필요합니다. PR마다는 핵심 라우트(데스크톱 10·모바일 4)만 axe로 검사하고, 전수 감사는 수동으로 분리해 CI 시간을 지킵니다.",
         "Accessibility and broken layouts slip past unit tests, so a real browser is needed. Each PR checks only the key routes (10 desktop, 4 mobile) with axe, and the exhaustive audit is kept manual to protect CI time.",
       ),
       cost: t(
-        "자동 검사는 접근성의 일부만 잡습니다(키보드 순서·대체 텍스트의 뜻은 사람이 확인). 비로그인·개발 서버 기준이라 로그인 뒤 화면은 보증하지 않습니다. axe 검사기는 MPL-2.0(개발 전용)입니다.",
-        "Automated checks catch only part of accessibility (keyboard order and the meaning of alt text need people). They run signed out against the dev server, so screens after sign-in are not guaranteed. The axe checker is MPL-2.0 (dev only).",
+        "자동 검사는 접근성의 일부만 잡습니다. 비로그인·개발 서버에서 API를 모두 503으로 막은 상태라 데이터가 찬 화면과 로그인 뒤 화면은 보증하지 않습니다. axe 검사기는 MPL-2.0(개발 전용)입니다.",
+        "Automated checks catch only part of accessibility. They run signed out against the dev server with every API call answered 503, so data-filled screens and screens after sign-in are not guaranteed. The axe checker is MPL-2.0 (dev only).",
       ),
-      paths: ["playwright.a11y.config.ts", "e2e/a11y-smoke.spec.ts", "playwright.config.ts"],
+      paths: ["playwright.config.ts", "e2e/a11y-smoke.spec.ts"],
       license: "Apache-2.0",
       status: "live",
       mapRowId: "vite-vitest-playwright",
@@ -210,12 +210,12 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
         "In the Quality Lab measurement (2026-08-07, 2048 to 512 downscale) it scored PSNR 27.26 dB and SSIM 0.9887, above both CanvasKit methods (25.31/0.9834 and 23.78/0.9768). So it is used only for the final export of big pages.",
       ),
       alternatives: t(
-        "비교 후보는 CanvasKit 선형·cubic 축소입니다. 더 빠르지만(15~30ms 대 124ms, Apple M2 Max 1대) 화질 점수가 낮았고, 내보내기가 실패해도 다른 방식으로 몰래 대체하지 않습니다.",
-        "The comparison candidates were CanvasKit linear and cubic downscaling. They are faster (15 to 30 ms versus 124 ms on one Apple M2 Max) but scored lower, and a failed export is never quietly replaced by another method.",
+        "비교 후보는 CanvasKit 선형·cubic 축소입니다. Quality Lab 1회 측정은 15~30ms 대 124ms(Apple M2 Max 1대)였으나 워밍업 뒤 20회 측정에선 wasm-vips 축소가 p50 16.4ms였습니다. 실패해도 몰래 대체하지 않습니다.",
+        "The comparison candidates were CanvasKit linear and cubic downscaling. A single Quality Lab run took 15 to 30 ms versus 124 ms (one Apple M2 Max), but a warmed 20-run benchmark of the same resize put wasm-vips at a p50 of 16.4 ms. A failed export is never quietly replaced.",
       ),
       cost: t(
-        "래퍼만 MIT이고 내장 libvips·glib·libheif 등은 LGPLv3입니다(설치본 THIRD-PARTY-NOTICES.md). 레지스트리는 'dev-only 후보·LGPL 격리 배포 필요'라 적어, 상업 배포 조건은 별도 확인이 필요합니다.",
-        "Only the wrapper is MIT; the bundled libvips, glib, libheif and others are LGPLv3 (the installed THIRD-PARTY-NOTICES.md). The registry says 'dev-only candidate, LGPL isolated deployment required', so commercial distribution terms need separate review.",
+        "래퍼만 MIT이고 내장 libvips·glib·libheif 등은 LGPLv3이며 생성 고지에는 MIT로만 나옵니다. 레지스트리는 'dev-only 후보·LGPL 격리 배포 필요'라 적어, 상업 배포 조건은 별도 확인이 필요합니다.",
+        "Only the wrapper is MIT; the bundled libvips, glib, libheif and others are LGPLv3, and the generated notice shows only MIT. The registry says 'dev-only candidate, LGPL isolated deployment required', so commercial distribution terms need separate review.",
       ),
       paths: [
         `${EXPORT}/studio-vips-export.ts`,
