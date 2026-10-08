@@ -262,10 +262,7 @@ import {
   studioWorldCanOccupy,
   STUDIO_WORLD_PLAYER_RADIUS,
 } from "./studio-virtual-space-world-pathfinding";
-import {
-  createStudioInteractionMarkers, createStudioPortalGateways, drawStudioLocateOverlay, drawStudioPrivateZoneOverlay,
-  drawStudioRouteOverlay, drawStudioWorldDebugOverlay,
-} from "./studio-virtual-space-world-overlays";
+import { createStudioInteractionMarkers, createStudioPortalGateways, drawStudioLocateOverlay, drawStudioPrivateZoneOverlay, drawStudioRouteOverlay, drawStudioWorldDebugOverlay, createStudioRouteOverlayMemory } from "./studio-virtual-space-world-overlays";
 
 import {
   activityState,
@@ -648,6 +645,7 @@ export function StudioVirtualSpacePhaserCanvas({
       let turnState = createStudioFacingTurnState(0);
       /** 클릭 이동 목적지 마커 펄스 시작 시각. */
       let markerStartedAt = 0;
+      const routeOverlayMemory = createStudioRouteOverlayMemory();
       /** 트랙1 모션 렌더러 연결 지점: 매 프레임 조립되는 모션 요청. */
       // 트랙1 모션 렌더러 핸드오프용: 매 프레임 최신 요청을 보관한다 (트랙1 API 연결 시 소비).
       let _lastMotionRequest: StudioMotionRequest = neutralStudioMotionRequest();
@@ -1990,7 +1988,7 @@ export function StudioVirtualSpacePhaserCanvas({
           // 클릭 이동 경로 표시(목적지 마커·폴리라인)와 가장 가까운 포털의 바닥 펄스 링.
           drawStudioRouteOverlay(routeOverlay, {
             current: currentPoint, path, moving: feelSpeed > 5, now: time, wallNow: Date.now(),
-            markerStartedAt, reducedMotion: reducedMotion.matches, portals,
+            markerStartedAt, reducedMotion: reducedMotion.matches, portals, memory: routeOverlayMemory,
             projectPoint: (point) => studioProjectTownPoint(manifest, point),
           });
         }
