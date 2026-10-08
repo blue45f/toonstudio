@@ -391,11 +391,21 @@ export function rasterizePsdMasksForCorpus(
   let rasterizedCount = 0;
   for (const source of selected) {
     const plan = planPsdLayerMaskRaster({ ...input, mask: source.mask, parameterMask: source.parameterMask });
-    if (!plan || !source.mask.imageData) continue;
+    // 제품 readMaskPixels와 같은 순서 — imageData 우선, 없으면 캔버스에서 읽는다.
+    const maskPixels = source.mask.imageData
+      ?? (source.mask.canvas
+        ? source.mask.canvas.getContext("2d")?.getImageData(
+            0,
+            0,
+            source.mask.canvas.width,
+            source.mask.canvas.height,
+          ) ?? undefined
+        : undefined);
+    if (!plan || !maskPixels) continue;
     const converted = convertPsdMaskPixelsToStudioAlpha(
-      source.mask.imageData.data,
-      source.mask.imageData.width,
-      source.mask.imageData.height,
+      maskPixels.data,
+      maskPixels.width,
+      maskPixels.height,
       plan.density,
     );
     if (!converted) continue;

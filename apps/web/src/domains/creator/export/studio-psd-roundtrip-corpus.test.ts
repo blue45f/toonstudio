@@ -304,10 +304,11 @@ describe("B. 제품 가져오기 (importPsdFile)", () => {
     expect(decisionOf(result, "text", "rasterized")?.count).toBe(2);
   });
 
-  it("empty-doc — 가져올 레이어가 없다는 고지만 남는다", async () => {
+  it("empty-doc — 요소 없이 건너뜀 고지만 남는다", async () => {
     const result = await importFixture(fixtureById("empty-doc"));
     expect(result.elements).toEqual([]);
-    expect(result.skipped).toEqual(["PSD에서 가져올 레이어를 찾지 못했어요."]);
+    // 레이어 없는 문서를 ag-psd로 읽으면 크기 0인 빈 레이어 기록 1개가 잡혀 그 건너뜀만 고지된다.
+    expect(result.skipped).toEqual(["레이어 1: 크기가 0이라 건너뜀"]);
   });
 });
 
