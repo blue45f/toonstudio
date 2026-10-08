@@ -10,9 +10,9 @@ interface Rgb { readonly r: number; readonly g: number; readonly b: number }
 
 /** "#rgb" · "#rrggbb" · "#rrggbbaa"(알파는 무시)를 읽는다. 읽을 수 없으면 null. */
 function parseHexColor(value: string): Rgb | null {
-  const match = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/iu.exec(value.trim());
-  if (!match) return null;
-  const hex = match[1]!.length === 3 ? [...match[1]!].map((digit) => digit + digit).join("") : match[1]!.slice(0, 6);
+  const digits = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/iu.exec(value.trim())?.[1];
+  if (!digits) return null;
+  const hex = digits.length === 3 ? [...digits].map((digit) => digit + digit).join("") : digits.slice(0, 6);
   return { r: Number.parseInt(hex.slice(0, 2), 16), g: Number.parseInt(hex.slice(2, 4), 16), b: Number.parseInt(hex.slice(4, 6), 16) };
 }
 
