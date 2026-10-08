@@ -20,6 +20,7 @@ export function LessonDiagram({ kind, value, frame, view = "both" }: { kind: Lab
   const back = corners.map(([x, y]) => depthPoint(x, y, 460, parameter, 0.52));
   const polygon = (points: readonly (readonly number[])[]) => points.map((point) => point.join(",")).join(" ");
   const viewBox = selectedView === "reference" ? "0 0 320 360" : selectedView === "comparison" ? "320 0 320 360" : "0 0 640 360";
+  /* eslint-disable shadcn/no-raw-colors -- 학습 도식(기준·비교 SVG)의 고정 색 팔레트는 명암 구분 데이터라 토큰으로 바꾸면 도식 판독이 달라진다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
   return (
     <svg className="learn-diagram" data-view={selectedView} viewBox={viewBox} role="img" aria-labelledby={`${titleId} ${descriptionId}`}>
       <title id={titleId}>{config.title} · {selectedView === "both" ? "전체 보기" : selectedView === "reference" ? "기준만" : "비교만"}</title>
@@ -96,6 +97,7 @@ export function LessonDiagram({ kind, value, frame, view = "both" }: { kind: Lab
       ))}
     </svg>
   );
+  /* eslint-enable shadcn/no-raw-colors */
 }
 
 function compactViewport() {

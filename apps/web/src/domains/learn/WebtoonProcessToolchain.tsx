@@ -62,7 +62,7 @@ export function WebtoonProcessToolchain() {
         <h2 className="mt-2 text-2xl font-black leading-tight text-ink md:text-3xl" id="process-toolchain-title">
           {bt("공정별로 쓰이는 도구들", "The tools used at each stage")}
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-body">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
           {bt(
             "웹툰 한 편은 한 가지 프로그램으로 완성되지 않습니다. 기획부터 홍보까지, 각 공정에서 널리 쓰이는 외부 도구와 그 공정을 돕는 툰스튜디오 내장 기능을 함께 정리했습니다. 어떤 제작사가 어떤 도구를 쓰는지는 작품마다 다르므로, 아래 목록은 업계에서 일반적으로 알려진 공정별 도구 구성을 보여 주는 가이드입니다. 과금 형태는 확인된 도구에만 적었습니다.",
             "No webtoon is finished in a single program. These are the external tools commonly used at each stage, from planning to promotion, listed together with the ToonStudio features built in for the same stage. Lineups differ by studio and title, so treat this as a general guide to how the industry equips each stage. Pricing is shown only where it could be confirmed.",
@@ -97,7 +97,7 @@ export function WebtoonProcessToolchain() {
               </span>
               <h3 className="text-base font-black text-ink">{stage.title}</h3>
             </div>
-            <p className="mt-2 text-sm leading-6 text-body">{stage.summary}</p>
+            <p className="mt-2 text-sm leading-6 text-fg-2">{stage.summary}</p>
             <ul className="mt-3 space-y-2">
               {stage.tools.map((tool) => (
                 <li className="rounded-xl bg-accent-soft px-3 py-2" key={tool.name}>
@@ -116,12 +116,12 @@ export function WebtoonProcessToolchain() {
                       </span>
                     ) : null}
                     {tool.pricing ? (
-                      <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] font-bold text-body">
+                      <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] font-bold text-fg-2">
                         {localize(PRICING_LABELS[tool.pricing].ko, PRICING_LABELS[tool.pricing].en)}
                       </span>
                     ) : null}
                   </span>
-                  <span className="mt-0.5 block text-xs leading-5 text-body">{tool.role}</span>
+                  <span className="mt-0.5 block text-xs leading-5 text-fg-2">{tool.role}</span>
                 </li>
               ))}
             </ul>
@@ -133,7 +133,7 @@ export function WebtoonProcessToolchain() {
         <h3 className="text-base font-black text-ink">
           {bt("툰스튜디오는 이 도구들을 잇는 자리입니다", "Where ToonStudio fits")}
         </h3>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-body">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
           {bt(
             "툰스튜디오는 위 도구들을 대체하려는 제품이 아닙니다. 기획 문서, 콘티, 선화, 채색본이 도구마다 흩어질 때 생기는 버전 혼선과 피드백 누락을 줄이도록, 공정과 공정을 하나의 작품 흐름으로 이어 주는 역할을 합니다. 위에 배지로 표시한 내장 기능은 그 흐름을 툰스튜디오 안에서 바로 이어 주는 자리입니다.",
             "ToonStudio is not here to replace the tools above. When planning docs, boards, line art, and color files scatter across tools, versions tangle and feedback gets lost. ToonStudio connects the stages into one production flow for the title — and the badged built-in features above are where that flow continues without leaving ToonStudio.",
