@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
 // 헤더 폭 예산 — 제품 문맥별 핵심 목적지와 전체 메뉴, 검색, 생성·계정 동작을 한 줄에 유지한다.
-// 현재 헤더는 9개 고정 링크 대신 문맥별 핵심 목적지만 1180px부터 노출하므로, 작은
-// 목적 아이콘과 텍스트 내비, 검색 트리거의 단계별 폭을 계약으로 고정한다.
+// 현재 헤더는 9개 고정 링크 대신 문맥별 핵심 목적지만 1180px부터 노출하므로, 1차 링크는
+// 글자만 두고 드롭다운 목적 아이콘, 텍스트 내비, 검색 트리거의 단계별 폭을 계약으로 고정한다.
 describe("header width budget", () => {
   it("keeps the purpose navigation compact and gated to the measured desktop width", () => {
     const header = read("apps/web/src/shared/components/site-header.tsx");
@@ -36,11 +36,10 @@ describe("header width budget", () => {
     expect(linkRule).toContain("white-space: nowrap");
     expect(linkRule).toContain("padding: 8px 9px");
     expect(primaryNavigation).not.toContain("xl:grid");
-    expect(primaryNavigation).toContain("<Icon");
-    expect(primaryNavigation).toContain("size={15}");
+    expect(primaryNavigation).not.toContain("<Icon");
+    expect(primaryNavigation).toContain("size={13}");
     expect(primaryNavigation).toContain('aria-current={highlighted ? (isActive(item.href, true) ? "page" : "true") : undefined}');
     expect(primaryNavigation).toContain('data-navigation-entry={item.id}');
-    expect(primaryNavigation).toContain('strokeWidth={highlighted ? 2.35 : 1.9}');
     expect(primaryNavigation).not.toContain('data-navigation-entry="technology"');
   });
 
