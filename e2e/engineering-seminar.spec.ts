@@ -131,6 +131,8 @@ test("모바일 발표와 참고 자료는 가로 넘침 없이 탐색한다", a
     "/brand-film",
     "/product-tour",
     "/about/technology",
+    "/about/technology/architecture",
+    "/about/technology/libraries",
     "/about/technology/videos",
   ]) {
     await page.goto(route, { waitUntil: "domcontentloaded" }); await page.locator("main h1").first().waitFor();
