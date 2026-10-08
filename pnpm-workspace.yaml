@@ -68,7 +68,12 @@ overrides:
   'minimatch@3.1.5>brace-expansion': 5.0.12
   'brace-expansion@>=3.0.0 <5.0.12': 5.0.12
   'node-forge': '>=1.4.0'
-  'braces@>=3.0.0 <3.0.4': 3.0.3
+  # GHSA-vfj7-8cjw-p6xm(CVE-2026-93687): braces <=3.0.3의 재귀 AST 워커에 깊이 가드가 없고
+  # 업스트림 수정 릴리스가 없다(first_patched_version: null). 취약 3.x 범위만 저장소 포크
+  # patches/braces(3.0.3 + 업스트림 master 수정 + 중첩 깊이 가드)로 대체한다. 포크는 레지스트리
+  # 패키지가 아니므로 pnpm audit 대상이 아니며, 회귀는 scripts/braces-security-compat.test.mjs가 지킨다.
+  # 업스트림이 수정 릴리스를 내면 이 줄과 patches/braces를 지우고 레지스트리 버전으로 되돌린다.
+  'braces@>=3.0.0 <3.0.4': 'file:patches/braces'
   # Socket.IO Engine.IO 프로토콜 리비전 불일치 DoS(GHSA-2gc4-cqfq-p2gv): 취약 범위만 수정 릴리스로 올린다.
   'engine.io@>=6.6.0 <6.6.10': 6.6.10
   'js-yaml@>=4.0.0 <4.3.2': 4.3.2
@@ -126,7 +131,6 @@ peerDependencyRules:
 # moves v9's public clock shape onto THREE.Timer, and suppresses only the deliberate
 # unmount event. Remove it when a stable R3F release ships the Timer migration.
 patchedDependencies:
-  braces@3.0.3: patches/braces@3.0.3.patch
   '@gltf-transform/functions@4.4.2': patches/@gltf-transform__functions@4.4.2.patch
   '@react-three/fiber@9.6.1': patches/@react-three__fiber@9.6.1.patch
   ag-psd@31.0.1: patches/ag-psd@31.0.1.patch
