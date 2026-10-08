@@ -65,9 +65,15 @@ body:has(.space-hud) nav[data-site-product] { display: none !important; }
    터치 기기에서는 높이를 따로 선언하지 않은 컨트롤도 44px 아래로 내려가지 않게 바닥을 직접 둔다.
    :where()라 특이도가 0이어서 컴포넌트가 min-height를 선언하면 항상 그쪽이 이긴다. */
 @media (pointer: coarse) {
-  :where(.space-hud) :where(button, [role="button"], [role="tab"], [role="option"], select, textarea) {
+  :where(.space-hud) :where(button, [role="button"], [role="tab"], [role="option"], select, textarea):where(:not(.space-minimap__zone-jump)) {
     min-block-size: var(--site-control-size, 44px);
   }
+}
+/* 고대비 테마는 입력 장치와 무관하게 컨트롤을 44px 이상으로 요구한다(공통 규칙에서 면제됐으므로 여기서 직접). 역시 특이도 0.
+   지도 구역 점프 마커는 22px 원 + 44px 눌림 영역(::after)으로 설계돼 있어 두 바닥 모두에서 제외한다(바닥을 받으면 구역 이름을 가리는 알약이 된다). */
+:where(:root[data-design-theme="contrast"]) :where(.space-hud) :where(button, [role="button"], [role="tab"], [role="option"], select, textarea):where(:not(.space-minimap__zone-jump)) {
+  min-block-size: var(--site-control-size, 44px);
+  min-inline-size: var(--site-control-size, 44px);
 }
 
 /* ── 월드 스테이지 ─────────────────────────────────────────── */
@@ -1642,6 +1648,7 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
 @media (pointer: coarse) {
   .space-minimap__gate-chip, .space-chat-input__hint, .space-chat__open-button { min-height: var(--site-control-size, 44px); }
 }
+:root[data-design-theme="contrast"] :is(.space-minimap__gate-chip, .space-chat-input__hint, .space-chat__open-button) { min-height: var(--site-control-size, 44px); }
 .space-chat--open {
   padding: 10px;
   border: 1px solid var(--space-border);

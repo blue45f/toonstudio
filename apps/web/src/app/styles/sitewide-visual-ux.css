@@ -242,6 +242,8 @@ html {
   border-color: var(--color-line-strong);
 }
 
+/* 고대비 테마의 44px 바닥. [data-own-control-size] 화면(가상 스튜디오 HUD·입장 로비)은 위 높이 바닥과 같은 이유로 면제하고
+   그 안쪽의 44px 바닥은 해당 화면의 CSS가 직접 둔다. */
 :root[data-design-theme="contrast"] #main-content :is(
   button,
   [role="button"],
@@ -249,7 +251,7 @@ html {
   [role="option"],
   select,
   textarea
-) {
+):where(:not([data-own-control-size] *)) {
   min-inline-size: var(--site-control-size) !important;
   min-block-size: var(--site-control-size) !important;
 }

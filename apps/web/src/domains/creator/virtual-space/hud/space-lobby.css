@@ -31,6 +31,11 @@
     min-block-size: var(--site-control-size, 44px);
   }
 }
+/* 고대비 테마는 입력 장치와 무관하게 컨트롤을 44px 이상으로 요구한다(공통 규칙에서 면제됐으므로 여기서 직접). 역시 특이도 0. */
+:where(:root[data-design-theme="contrast"]) :where(.space-lobby) :where(button, [role="button"], [role="tab"], [role="option"], select, textarea) {
+  min-block-size: var(--site-control-size, 44px);
+  min-inline-size: var(--site-control-size, 44px);
+}
 .space-lobby__backdrop {
   position: absolute;
   inset: 0;

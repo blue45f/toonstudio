@@ -19,7 +19,9 @@ describe("가상 스튜디오 컨트롤 크기 계약", () => {
     const exempt = ':where(:not([data-own-control-size] *))';
     // 줄바꿈 규칙, 데스크톱 높이 바닥, 터치 높이 바닥 — 세 선언 모두 면제 조건을 갖는다.
     const guarded = sitewideCss.split(exempt).length - 1;
-    expect(guarded).toBeGreaterThanOrEqual(3);
+    expect(guarded).toBeGreaterThanOrEqual(4);
+    // 고대비 테마의 !important 바닥도 같은 면제를 갖는다(없으면 고대비에서 140px 카드가 44px로 눌린다).
+    expect(sitewideCss).toMatch(/:root\[data-design-theme="contrast"\] #main-content :is\(\s*button,[^)]*\):where\(:not\(\[data-own-control-size\] \*\)\) \{\s*min-inline-size: var\(--site-control-size\) !important;/u);
     expect(sitewideCss).toMatch(/#main-content :where\(button, \[role="button"\], \[role="tab"\], \[role="option"\]\):where\(:not\(\[data-own-control-size\] \*\)\) \{\s*max-inline-size: 100%;/u);
     expect(sitewideCss).toMatch(/@media \(min-width: 768px\) \{\s*#main-content :where\(button[^{]*\):where\(:not\(\[data-own-control-size\] \*\)\) \{\s*min-block-size: 2\.5rem;/u);
     expect(sitewideCss).toMatch(/@media \(pointer: coarse\) \{\s*#main-content :is\(button[^{]*\):where\(:not\(\[data-own-control-size\] \*\)\) \{\s*min-block-size: var\(--site-control-size\);/u);
@@ -27,8 +29,24 @@ describe("가상 스튜디오 컨트롤 크기 계약", () => {
 
   it("면제된 HUD·로비는 터치 기기의 44px 바닥을 특이도 0으로 직접 둔다", () => {
     for (const css of [hudCss, lobbyCss]) {
-      expect(css).toMatch(/@media \(pointer: coarse\) \{\s*:where\(\.space-(?:hud|lobby)\) :where\(button, \[role="button"\], \[role="tab"\], \[role="option"\], select, textarea\) \{\s*min-block-size: var\(--site-control-size, 44px\);/u);
+      expect(css).toMatch(/@media \(pointer: coarse\) \{\s*:where\(\.space-(?:hud|lobby)\) :where\(button, \[role="button"\], \[role="tab"\], \[role="option"\], select, textarea\)[^{]*\{\s*min-block-size: var\(--site-control-size, 44px\);/u);
     }
+  });
+
+  it("면제된 HUD·로비는 고대비 테마의 44px 바닥도 특이도 0으로 직접 둔다", () => {
+    for (const [css, root] of [[hudCss, "space-hud"], [lobbyCss, "space-lobby"]] as const) {
+      expect(css).toContain(`:where(:root[data-design-theme="contrast"]) :where(.${root}) :where(button, [role="button"], [role="tab"], [role="option"], select, textarea)`);
+      expect(css).toMatch(new RegExp(`:where\\(:root\\[data-design-theme="contrast"\\]\\) :where\\(\\.${root}\\) :where\\([^)]*\\)[^{]*\\{\\s*min-block-size: var\\(--site-control-size, 44px\\);\\s*min-inline-size: var\\(--site-control-size, 44px\\);`, "u"));
+    }
+  });
+
+  it("22px 원 + 44px 눌림 영역으로 설계된 지도 점프 마커는 터치·고대비 바닥에서 제외한다", () => {
+    expect(hudCss).toContain(':where(:not(.space-minimap__zone-jump))');
+    expect(hudCss.split(':where(:not(.space-minimap__zone-jump))').length - 1).toBe(2);
+  });
+
+  it("고대비에서는 칩 컨트롤도 44px가 된다", () => {
+    expect(hudCss).toContain(':root[data-design-theme="contrast"] :is(.space-minimap__gate-chip, .space-chat-input__hint, .space-chat__open-button) { min-height: var(--site-control-size, 44px); }');
   });
 
   it("지도 구역 점프 마커는 22px 원을 유지하고 눌리는 영역만 44px로 넓힌다", () => {
