@@ -92,7 +92,8 @@ export const STUDIO_ROUTE_REGISTRY: readonly StudioRouteRegistration[] = Object.
   route("new", "/studio/new", "studio", "none", "새로 만들기", "Create new", ["/make"]),
   route("import", "/studio/import", "studio", "none", "가져오기", "Import"),
   route("templates", "/studio/templates", "studio", "none", "템플릿", "Templates"),
-  route("assets", "/studio/assets", "asset", "none", "에셋", "Assets", ["/market/library"]),
+  // /market/library는 마켓 클라우드 보관함의 고유 라우트라 에셋 별칭으로 선언하지 않는다.
+  route("assets", "/studio/assets", "asset", "none", "에셋", "Assets"),
   route("generate", "/studio/generate", "studio", "none", "생성형 제작", "Generative creation"),
   route("ai-settings", "/studio/ai-settings", "studio", "none", "AI 설정", "AI settings"),
   route("ai-lab", "/studio/ai-lab", "studio", "none", "외부 AI Runtime", "External AI runtime"),

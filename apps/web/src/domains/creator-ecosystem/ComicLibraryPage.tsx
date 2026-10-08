@@ -169,7 +169,7 @@ export function ComicLibraryPage() {
       const result = await api.get<{ items: CollectionItem[] }>("/creator-ecosystem/library/me");
       setItems(result.items);
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, bt("내 서재를 불러오지 못했어요.", "Couldn't load your library.")));
+      setError(await getApiErrorMessage(cause, bt("내 책장을 불러오지 못했어요.", "Couldn't load your bookshelf.")));
     }
   }, [userId, bt]);
 
@@ -200,7 +200,7 @@ export function ComicLibraryPage() {
 
   async function addFromResource(resource: CreatorResource) {
     if (!userId) {
-      setError(bt("내 서재에 저장하려면 로그인해 주세요.", "Sign in to save to your library."));
+      setError(bt("내 책장에 저장하려면 로그인해 주세요.", "Sign in to save to your bookshelf."));
       return;
     }
     setBusy(resource.id);
@@ -221,10 +221,10 @@ export function ComicLibraryPage() {
         sourceProvider: resource.provider,
         sourceUrl: resource.sourceUrl,
       });
-      setNotice(bt(`「${resource.title}」을 내 서재에 저장했습니다.`, `Saved "${resource.title}" to your library.`));
+      setNotice(bt(`「${resource.title}」을 내 책장에 저장했습니다.`, `Saved "${resource.title}" to your bookshelf.`));
       await loadCollection();
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, bt("내 서재에 저장하지 못했어요.", "Couldn't save to your library.")));
+      setError(await getApiErrorMessage(cause, bt("내 책장에 저장하지 못했어요.", "Couldn't save to your bookshelf.")));
     } finally {
       setBusy("");
     }
@@ -257,9 +257,9 @@ export function ComicLibraryPage() {
         },
       );
       updateLocal(item.id, result.item);
-      setNotice(bt("서재 상태를 저장했습니다.", "Saved the library status."));
+      setNotice(bt("책장 상태를 저장했습니다.", "Saved the bookshelf status."));
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, bt("서재 상태를 저장하지 못했어요.", "Couldn't save the library status.")));
+      setError(await getApiErrorMessage(cause, bt("책장 상태를 저장하지 못했어요.", "Couldn't save the bookshelf status.")));
     } finally {
       setBusy("");
     }
@@ -270,9 +270,9 @@ export function ComicLibraryPage() {
     try {
       await api.delete(`/creator-ecosystem/library/me/items/${item.id}`);
       setItems((current) => current.filter((value) => value.id !== item.id));
-      setNotice(bt(`「${item.title}」을 서재에서 제거했습니다.`, `Removed "${item.title}" from your library.`));
+      setNotice(bt(`「${item.title}」을 책장에서 제거했습니다.`, `Removed "${item.title}" from your bookshelf.`));
     } catch (cause) {
-      setError(await getApiErrorMessage(cause, bt("서재에서 제거하지 못했어요.", "Couldn't remove from your library.")));
+      setError(await getApiErrorMessage(cause, bt("책장에서 제거하지 못했어요.", "Couldn't remove from your bookshelf.")));
     } finally {
       setBusy("");
     }
@@ -303,8 +303,8 @@ export function ComicLibraryPage() {
     <CreatorEcosystemLayout
       title={bt("만화 · 웹툰 라이브러리", "Comics · webtoon library")}
       intro={bt(
-        "글로벌·국내 도서 검색 결과를 개인 서재로 저장하고, 권차·읽음·대여·한정판 상태를 관리합니다. ISBN-13이 있으면 도서관 정보나루의 소장 도서관 조회로 연결합니다.",
-        "Save global and domestic book search results to a personal library and track volumes, reading, lending, and limited editions. With an ISBN-13 you can look up holdings via the national library data service.",
+        "글로벌·국내 도서 검색 결과를 개인 책장으로 저장하고, 권차·읽음·대여·한정판 상태를 관리합니다. ISBN-13이 있으면 도서관 정보나루의 소장 도서관 조회로 연결합니다.",
+        "Save global and domestic book search results to a personal bookshelf and track volumes, reading, lending, and limited editions. With an ISBN-13 you can look up holdings via the national library data service.",
       )}
     >
       {notice ? <p role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm">{notice}</p> : null}
@@ -350,7 +350,7 @@ export function ComicLibraryPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <a className={BUTTON} href={resource.sourceUrl} target="_blank" rel="noopener noreferrer">{bt("원문", "Source")}</a>
                   <button className={BUTTON} disabled={busy === resource.id} onClick={() => void addFromResource(resource)}>
-                    <BookMarked size={15} className="mr-1" aria-hidden="true" />{bt("내 서재", "My library")}
+                    <BookMarked size={15} className="mr-1" aria-hidden="true" />{bt("내 책장", "My bookshelf")}
                   </button>
                 </div>
               </div>
@@ -364,7 +364,7 @@ export function ComicLibraryPage() {
           <div>
             <div className="flex items-center gap-2">
               <LibraryBig size={20} className="text-accent" aria-hidden="true" />
-              <h2 className="text-xl font-black">{bt("내 서재", "My library")}</h2>
+              <h2 className="text-xl font-black">{bt("내 책장", "My bookshelf")}</h2>
             </div>
             <p className="mt-2 text-sm text-fg-2">{bt("소장·읽음·대여·판본 상태를 계정에 저장합니다.", "Ownership, reading, lending, and edition status saved to your account.")}</p>
           </div>
@@ -374,7 +374,7 @@ export function ComicLibraryPage() {
           </label>
         </div>
         {!userId ? (
-          <p className="mt-5 rounded-xl bg-raised p-4 text-sm text-fg-2">{bt("내 서재 저장은 로그인 후 사용할 수 있습니다.", "Saving to your library needs sign-in.")}</p>
+          <p className="mt-5 rounded-xl bg-raised p-4 text-sm text-fg-2">{bt("내 책장 저장은 로그인 후 사용할 수 있습니다.", "Saving to your bookshelf needs sign-in.")}</p>
         ) : null}
         <div className="mt-5 space-y-4">
           {items.map((item) => (
@@ -397,7 +397,7 @@ export function ComicLibraryPage() {
                     <p className="mt-1 text-xs text-fg-3">{item.creator || bt("저자 미입력", "No author")} · {item.publisher || bt("출판사 미입력", "No publisher")}</p>
                     {item.isbn13 ? <p className="mt-1 text-xs text-fg-3">ISBN-13 {item.isbn13}</p> : null}
                   </div>
-                  <button className={BUTTON} disabled={busy === item.id} onClick={() => void removeItem(item)} aria-label={bt("서재에서 제거", "Remove from library")}>
+                  <button className={BUTTON} disabled={busy === item.id} onClick={() => void removeItem(item)} aria-label={bt("책장에서 제거", "Remove from bookshelf")}>
                     <Trash2 size={15} aria-hidden="true" />
                   </button>
                 </div>
@@ -427,9 +427,9 @@ export function ComicLibraryPage() {
             <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-line bg-canvas/60 px-6 py-12 text-center">
               <EmptyShelfArt />
               <div>
-                <h3 className="text-lg font-black">{bt("저장한 만화·단행본이 없어요", "Your library is empty")}</h3>
+                <h3 className="text-lg font-black">{bt("저장한 만화·단행본이 없어요", "Your bookshelf is empty")}</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-fg-2">
-                  {bt("위 검색 결과에서 마음에 드는 작품을 내 서재에 추가해 보세요.", "Add books you like from the search results above.")}
+                  {bt("위 검색 결과에서 마음에 드는 작품을 내 책장에 추가해 보세요.", "Add books you like from the search results above to your bookshelf.")}
                 </p>
               </div>
               <a href="#comic-search" className={`${BUTTON} bg-accent text-on-accent`}>

@@ -53,26 +53,26 @@ afterEach(cleanup);
 describe("만화 라이브러리 페이지", () => {
   it("게스트에게는 로그인 후 저장할 수 있다고 안내한다", () => {
     renderPage();
-    expect(screen.getByText("내 서재 저장은 로그인 후 사용할 수 있습니다.")).toBeTruthy();
+    expect(screen.getByText("내 책장 저장은 로그인 후 사용할 수 있습니다.")).toBeTruthy();
     expect(mocks.apiGet).not.toHaveBeenCalled();
   });
 
-  it("로그인했고 서재가 비었으면 빈 상태와 다음 행동을 보여준다", async () => {
+  it("로그인했고 책장이 비었으면 빈 상태와 다음 행동을 보여준다", async () => {
     mocks.userId = "me";
     renderPage();
     expect(await screen.findByText("저장한 만화·단행본이 없어요")).toBeTruthy();
     expect(screen.getByRole("link", { name: /도서 검색하러 가기/ })).toBeTruthy();
   });
 
-  it("서재를 불러오지 못하면 오류를 알린다", async () => {
+  it("책장을 불러오지 못하면 오류를 알린다", async () => {
     mocks.userId = "me";
     mocks.apiGet.mockRejectedValue(new Error("network down"));
     renderPage();
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("내 서재를 불러오지 못했어요.");
+    expect(alert.textContent).toContain("내 책장을 불러오지 못했어요.");
   });
 
-  it("서재 행은 표지 타일 위에 소장·읽음 상태 배지를 겹쳐 보여준다", async () => {
+  it("책장 행은 표지 타일 위에 소장·읽음 상태 배지를 겹쳐 보여준다", async () => {
     mocks.userId = "me";
     mocks.apiGet.mockImplementation(async (url: string) => {
       if (url === "/creator-ecosystem/library/me") {

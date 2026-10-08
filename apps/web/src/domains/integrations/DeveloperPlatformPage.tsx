@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { getApiErrorMessage } from "@/platform/api";
 import { useI18n } from "@/shared/lib/i18n";
+import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 import { IntegrationError, IntegrationLoading, IntegrationPage } from "./IntegrationUi";
 import { integrationPlatformClient } from "./integration-platform-client";
@@ -104,6 +105,7 @@ function DeveloperStartGuide({ ko }: { ko: boolean }) {
 export function DeveloperPlatformPage() {
   const lang = useI18n((state) => state.lang);
   const ko = lang.startsWith("ko");
+  useDocumentTitle(ko ? "개발자 플랫폼 · ToonStudio" : "Developer platform · ToonStudio");
   const [manifest, setManifest] = useState<DeveloperManifestResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reloadCount, setReloadCount] = useState(0);
