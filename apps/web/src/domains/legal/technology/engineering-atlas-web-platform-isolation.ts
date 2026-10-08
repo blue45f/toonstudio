@@ -269,7 +269,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION: readonly EngineeringAtlas
       },
       {
         value: "2,097,152",
-        label: t("공유 메모리가 없을 때 조각 정점 상한 (상수만 있고 화면에는 미연결)", "Sculpt vertex ceiling without shared memory (constant only, not wired to a screen)"),
+        label: t("예산 사다리의 한 단: 공유 메모리가 없을 때 조각 정점 상한 (제품 화면 미연결, 실제 조각 메시 상한은 1,000,000)", "One rung of the budget ladder: sculpt vertex ceiling without shared memory (not wired to a product screen; the real sculpt mesh ceiling is 1,000,000)"),
         source: "apps/web/src/domains/creator/studio-capability-budgets.ts",
       },
     ],

@@ -28,8 +28,8 @@ export const OPEN_DATA_GATE_CARDS: readonly EngineeringAtlasEntry[] = [
         "The alternative is an SDK or schema library per provider. Here each provider file only builds the URL, checks the response shape and converts it, while the engine implements network, budget and cache once. The shape check is a hand-written type guard per host and path rather than a library: light because it only reads the fields it needs, but every new provider means writing one more guard.",
       ),
       t(
-        "한도와 캐시는 서버 프로세스 메모리 안에서만 셉니다. 서버가 여러 대로 늘면 한도도 그만큼 늘어나고, 재시작하면 캐시가 비워집니다. 여러 서버가 함께 지켜야 하는 분산 한도와 서킷은 운세·유료 승인 경로에만 따로 있고(Upstash), 이 엔진에는 연결돼 있지 않습니다.",
-        "Limits and cache count only inside one server process: with more servers the ceilings multiply, and a restart empties the cache. Distributed limits and circuit breakers that several servers must share exist only on the fortune and paid-approval paths (Upstash) and are not wired into this engine.",
+        "한도와 캐시는 서버 프로세스 메모리 안에서만 셉니다. 서버가 여러 대로 늘면 한도도 그만큼 늘어나고, 재시작하면 캐시가 비워집니다. 여러 서버가 함께 지켜야 하는 분산 한도와 서킷은 로그인 레이트리밋·운세·유료 승인·capability 게이트 경로에만 따로 있고(Upstash 조정), 이 엔진에는 연결돼 있지 않습니다.",
+        "Limits and cache count only inside one server process: with more servers the ceilings multiply, and a restart empties the cache. Distributed limits and circuit breakers that several servers must share exist only on the login rate-limit, fortune, paid-approval and capability-gate paths (Upstash coordination) and are not wired into this engine.",
       ),
     ],
     keyPoints: [

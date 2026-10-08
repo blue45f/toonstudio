@@ -20,8 +20,8 @@ export const OPEN_DATA_NETWORK_CARDS: readonly EngineeringAtlasEntry[] = [
         "When a user pastes an image address, our server opens it on their behalf. If someone enters an internal admin address, the server can end up opening its own back doors. That is SSRF (server-side request forgery). It is like a guard opening any room number a visitor writes down, so the server must be limited to publicly reachable places.",
       ),
       t(
-        "순서는 네 단계입니다. ① 주소 모양 검사(https, 표준 포트, 자격증명 없음, 내부 이름 거절) ② DNS 조회 결과 전체가 공개 주소인지 확인(사설·루프백·링크로컬 대역이 하나라도 있으면 전체 거절) ③ 검증한 바로 그 IP 로만 연결(lookup 함수를 고정하는 핀닝) ④ 리디렉션이 오면 처음부터 다시 검사(최대 3번). 핀닝은 검사할 때와 연결할 때 DNS 가 다른 답을 주는 DNS 리바인딩 수법을 막습니다.",
-        "It runs in four steps: 1 check the address shape (https, standard port, no credentials, no internal names); 2 verify that the whole DNS answer is public, rejecting everything if one private, loopback or link-local address appears; 3 connect only to that verified IP by fixing the lookup function (pinning); 4 on a redirect, start over with the checks (at most three times). Pinning defeats DNS rebinding, where DNS answers differently at check time and connect time.",
+        "순서는 네 단계입니다. ① 주소 모양 검사(http 80 또는 https 443 표준 포트만, 자격증명·#조각 없음, 내부 이름 거절, 리디렉션에서 https→http 강등 거절) ② DNS 조회 결과 전체가 공개 주소인지 확인(사설·루프백·링크로컬 대역이 하나라도 있으면 전체 거절) ③ 검증한 바로 그 IP 로만 연결(lookup 함수를 고정하는 핀닝) ④ 리디렉션이 오면 처음부터 다시 검사(최대 3번). 핀닝은 검사할 때와 연결할 때 DNS 가 다른 답을 주는 DNS 리바인딩 수법을 막습니다.",
+        "It runs in four steps: 1 check the address shape (http on 80 or https on 443 only, no credentials or #fragment, no internal names, and an https-to-http downgrade on redirect is refused); 2 verify that the whole DNS answer is public, rejecting everything if one private, loopback or link-local address appears; 3 connect only to that verified IP by fixing the lookup function (pinning); 4 on a redirect, start over with the checks (at most three times). Pinning defeats DNS rebinding, where DNS answers differently at check time and connect time.",
       ),
       t(
         "대안은 허용 목록(allowlist)입니다. 아는 호스트만 열어 주면 가장 안전하지만, 사용자가 임의의 이미지 주소를 넣는 기능에는 쓸 수 없습니다. 그래서 두 방식을 나눠 씁니다. 표지 프록시와 공급자 호출은 고정 허용 목록을, 사용자 URL 과 운영자 웹훅은 공개 주소 검사와 핀닝을 씁니다. 허용 목록은 단순하고 강하지만 목록 관리가 필요하고, 공개 주소 검사는 유연하지만 차단 대역 목록을 직접 유지해야 합니다.",
@@ -54,7 +54,7 @@ export const OPEN_DATA_NETWORK_CARDS: readonly EngineeringAtlasEntry[] = [
       ],
       messages: [
         { from: "web", to: "srv", label: t("이미지 주소 붙여넣기", "Paste an image address"), note: t("스튜디오 참고 이미지 가져오기", "studio reference-image import") },
-        { from: "srv", to: "srv", label: t("주소 모양 검사", "Address shape check"), note: t("https·표준 포트·자격증명 없음", "https, standard port, no credentials") },
+        { from: "srv", to: "srv", label: t("주소 모양 검사", "Address shape check"), note: t("http 80·https 443만·자격증명 없음", "http 80 or https 443 only, no credentials") },
         { from: "srv", to: "dns", label: t("호스트 이름 조회(전체)", "Resolve the host (all)"), note: t("응답의 모든 주소를 받는다", "take every address in the answer") },
         { from: "dns", to: "srv", label: t("주소 목록", "Address list"), style: "dashed" },
         { from: "srv", to: "srv", label: t("전부 공개 주소인가?", "Are all of them public?"), note: t("사설이 하나라도 있으면 전체 거절", "one private address rejects all") },
@@ -123,8 +123,8 @@ export async function getPublic(raw: string): Promise<Buffer> {
   });
 }`),
         explain: t(
-          "public-endpoint.ts 와 참조 이미지 가져오기 코드를 줄인 Node 전용 예제입니다(IPv6 대역 생략). 핵심은 두 가지입니다. DNS 응답을 전부 확인하고, 연결에는 확인한 주소를 lookup 으로 고정해 검사와 연결 사이의 틈을 없앱니다. Node 전용이라 구문만 검증합니다.",
-          "A Node-only reduction of public-endpoint.ts and the reference-image fetcher (IPv6 ranges omitted). Two things matter: check every DNS answer, and fix the verified address through lookup so there is no gap between check and connect. Because it is Node-only, only the syntax is verified.",
+          "public-endpoint.ts 와 참조 이미지 가져오기 코드를 줄인 Node 전용 예제입니다(IPv6 대역 생략). 핵심은 두 가지입니다. DNS 응답을 전부 확인하고, 연결에는 확인한 주소를 lookup 으로 고정해 검사와 연결 사이의 틈을 없앱니다. Node 전용이라 구문만 검증합니다. 실제 코드는 http(80)와 https(443)를 모두 허용하고 리디렉션에서 https→http 강등만 거절하는데, 예제는 https 만 허용하도록 단순화했습니다.",
+          "A Node-only reduction of public-endpoint.ts and the reference-image fetcher (IPv6 ranges omitted). Two things matter: check every DNS answer, and fix the verified address through lookup so there is no gap between check and connect. Because it is Node-only, only the syntax is verified. The real code allows both http (port 80) and https (port 443) and only refuses an https-to-http downgrade on redirect; the example is simplified to accept https only.",
         ),
         source: "apps/api/src/platform/adapters/network/public-endpoint.ts",
         verify: "syntax",
@@ -196,8 +196,8 @@ export async function getPublic(raw: string): Promise<Buffer> {
         "Webtoon cover images live on external servers such as Naver and Kakao. If a visitor's browser opens those addresses directly, the visitor's IP and the page they were viewing (the referrer, which tells where a request came from) become visible to the platform. So our server (/api/cover) fetches the cover and passes it on, like receiving mail on someone's behalf so that outsiders only see us.",
       ),
       t(
-        "프록시가 열린 문이 되면 안 되므로 네 겹으로 닫습니다. ① 킬스위치: 환경변수 COVER_IMAGE_POLICY=off 면 404 로 즉시 중계를 멈춥니다. ② 호스트는 사용자 입력이 아니라 서버 상수 33곳에서 새로 만들고, 사용자 입력에서는 경로와 쿼리만 가져옵니다. ③ 리디렉션은 따라가지 않고(manual) 매번 같은 목록으로 다시 검사하며 최대 4번 요청합니다. ④ 응답은 10MiB 상한과 이미지 매직바이트(파일 맨 앞 몇 바이트의 서명)로 확인한 뒤 전달합니다.",
-        "Because a proxy must not become an open door, four layers close it. 1 Kill switch: COVER_IMAGE_POLICY=off stops relaying at once with a 404. 2 The host is rebuilt from 33 server constants, never taken from user input, which supplies only path and query. 3 Redirects are not followed automatically (manual), are re-checked against the same list every time, and at most four requests are made. 4 The reply is checked against a 10 MiB cap and image magic bytes (the signature in the first bytes of a file) before it is passed on.",
+        "프록시가 열린 문이 되면 안 되므로 네 겹으로 닫습니다. ① 킬스위치: 환경변수 COVER_IMAGE_POLICY=off 면 404 로 즉시 중계를 멈춥니다. ② 호스트는 사용자 입력이 아니라 서버 상수 33곳에서 새로 만들고, 사용자 입력에서는 경로와 쿼리만 가져옵니다. ③ 리디렉션은 따라가지 않고(manual) 매번 같은 목록으로 다시 검사하며 최대 4번 요청합니다. ④ 응답은 10MiB 상한을 지키고, Content-Type 이 이미지이거나 첫 바이트(매직바이트, 파일 맨 앞 몇 바이트의 서명)가 이미지일 때만 전달합니다. 일부 CDN 이 이미지를 octet-stream 으로 주기 때문에 바이트도 함께 봅니다.",
+        "Because a proxy must not become an open door, four layers close it. 1 Kill switch: COVER_IMAGE_POLICY=off stops relaying at once with a 404. 2 The host is rebuilt from 33 server constants, never taken from user input, which supplies only path and query. 3 Redirects are not followed automatically (manual), are re-checked against the same list every time, and at most four requests are made. 4 The reply must stay under a 10 MiB cap and is passed on only if its Content-Type is an image or its first bytes (magic bytes, the signature at the start of a file) look like an image; some CDNs serve images as octet-stream, so the bytes are checked too.",
       ),
       t(
         "대안은 두 가지입니다. 브라우저가 직접 열게 두면 프라이버시가 샙니다. 이미지를 우리 저장소에 복사해 두면 저장 비용과 권리 관리 부담이 커집니다. 프록시는 복사하지 않고 지나가게만 하고, 캐시도 브라우저 1시간·엣지 1일로 짧게 두며 immutable 은 쓰지 않아, 정책이 바뀌면 빨리 빠지게 합니다. 허용 호스트인데 프록시가 실패하면 직접 연결로 되돌리지 않고 대체 표지로 갑니다.",
@@ -211,7 +211,7 @@ export async function getPublic(raw: string): Promise<Buffer> {
     keyPoints: [
       t("킬스위치: COVER_IMAGE_POLICY=off 면 즉시 404", "Kill switch: COVER_IMAGE_POLICY=off returns 404 at once"),
       t("호스트는 서버 상수 33곳에서 새로 만든다", "The host is rebuilt from 33 server constants"),
-      t("10MiB 상한, 헤더가 아닌 매직바이트로 이미지 판별", "10 MiB cap; images are identified by magic bytes, not headers"),
+      t("10MiB 상한, 헤더가 이미지이거나 첫 바이트가 이미지일 때만 전달", "10 MiB cap; relayed only if the header says image or the first bytes are an image"),
     ],
     diagram: {
       id: "cover-image-proxy-killswitch-diagram",
@@ -228,7 +228,7 @@ export async function getPublic(raw: string): Promise<Buffer> {
         { id: "allow", label: t("허용 오리진?", "Allowed origin?"), sub: t("서버 상수 33곳", "33 constants"), tone: "warn", shape: "diamond", at: [2, 0] },
         { id: "fetch", label: t("서버가 받기", "Server fetch"), sub: t("수동 리디렉션·최대 4회", "manual redirects, max 4"), tone: "server", at: [3, 0] },
         { id: "cdn", label: t("플랫폼 CDN", "Platform CDN"), sub: t("네이버·카카오 등", "Naver, Kakao and others"), tone: "external", shape: "cloud", at: [4, 0] },
-        { id: "check", label: t("크기·형식 검사", "Size and format"), sub: t("10MiB·매직바이트", "10 MiB, magic bytes"), tone: "server", at: [4, 1] },
+        { id: "check", label: t("크기·형식 검사", "Size and format"), sub: t("10MiB·헤더 또는 바이트", "10 MiB, header or bytes"), tone: "server", at: [4, 1] },
         { id: "out", label: t("브라우저로 전달", "To the browser"), sub: t("캐시 1시간·엣지 1일", "cache 1 h, edge 1 day"), tone: "local", shape: "pill", at: [5, 1] },
         { id: "deny", label: t("거절", "Refuse"), sub: t("404·403·415·502", "404, 403, 415, 502"), tone: "warn", at: [2, 1] },
       ],
@@ -265,7 +265,7 @@ export async function getPublic(raw: string): Promise<Buffer> {
     samples: [
       {
         kind: "simplified",
-        title: t("허용 목록으로 호스트를 새로 만들고 매직바이트로 판별", "Rebuild the host from an allowlist and sniff magic bytes"),
+        title: t("허용 목록으로 호스트를 새로 만들고 헤더 또는 바이트로 판별", "Rebuild the host from an allowlist and check header or bytes"),
         language: "ts",
         ...codePair(`
 const ALLOWED = ["https://img.cdn-a.test", "https://cover.cdn-b.test"]; //~ 서버 상수: 사용자 입력이 아니다 ## server constants, not user input
@@ -279,10 +279,9 @@ function allowedUrl(raw: string): URL | null {
   return Object.assign(new URL(origin), { pathname: url.pathname, search: url.search });
 }
 
-//~ 헤더가 아니라 파일 맨 앞 몇 바이트(매직바이트)로 이미지를 판별한다. ## Identify images by the first bytes (magic bytes), not by the header.
+//~ 헤더가 이미지이거나 파일 맨 앞 몇 바이트(매직바이트)가 이미지면 통과한다. ## Pass if the header says image or the first bytes (magic bytes) are an image.
 const SIGNATURES: [string, number[]][] = [["image/jpeg", [0xff, 0xd8, 0xff]], ["image/png", [0x89, 0x50, 0x4e, 0x47]]];
 const sniff = (b: Uint8Array) => SIGNATURES.find(([, sig]) => sig.every((v, i) => b[i] === v))?.[0] ?? null;
-
 async function relay(raw: string): Promise<Response> {
   let url = allowedUrl(raw);
   for (let hop = 0; url && hop < 4; hop += 1) {
@@ -292,15 +291,17 @@ async function relay(raw: string): Promise<Response> {
       continue;
     }
     const body = res.ok ? await readCapped(res, 10 * 1024 * 1024) : null;
-    const type = body ? sniff(body) : null;
-    return type ? new Response(body, { headers: { "Content-Type": type, "Cache-Control": "public, max-age=3600" } }) : new Response(null, { status: 502 });
+    const sniffed = body ? sniff(body) : null;
+    const type = sniffed ?? res.headers.get("content-type") ?? "";
+    if (!body || !type.startsWith("image/")) return new Response(null, { status: 502 });
+    return new Response(body, { headers: { "Content-Type": type, "Cache-Control": "public, max-age=3600" } });
   }
   return new Response(null, { status: 403 });
 }
 `),
         explain: t(
-          "catalog-url-policy.ts 의 resolveCoverFetchUrl 과 catalog.controller.ts 의 proxyCover 를 줄인 것입니다. 호스트(네트워크 권한)는 서버 상수에서만 만들고, 응답이 이미지인지는 Content-Type 이 아니라 첫 바이트로 판단합니다. 실제 코드는 JPEG·PNG 외에 GIF·WebP·AVIF 도 판별하고 상한을 넘으면 읽기를 중단합니다.",
-          "A reduction of resolveCoverFetchUrl in catalog-url-policy.ts and proxyCover in catalog.controller.ts. The host (network authority) is built only from server constants, and whether a reply is an image is judged from its first bytes rather than Content-Type. The real code also recognizes GIF, WebP and AVIF and stops reading when the cap is exceeded.",
+          "catalog-url-policy.ts 의 resolveCoverFetchUrl 과 catalog.controller.ts 의 proxyCover 를 줄인 것입니다. 호스트(네트워크 권한)는 서버 상수에서만 만들고, 응답은 Content-Type 이 이미지이거나 첫 바이트가 이미지일 때만 전달합니다. 실제 코드는 이미지가 아니면 415 를 돌려주고, JPEG·PNG 외에 GIF·WebP·AVIF 도 판별하고 상한을 넘으면 읽기를 중단합니다.",
+          "A reduction of resolveCoverFetchUrl in catalog-url-policy.ts and proxyCover in catalog.controller.ts. The host (network authority) is built only from server constants, and a reply is relayed only if its Content-Type is an image or its first bytes are an image. The real code answers 415 otherwise and also recognizes GIF, WebP and AVIF and stops reading when the cap is exceeded.",
         ),
         source: "apps/api/src/modules/catalog/catalog.controller.ts",
         verify: "types",
@@ -315,8 +316,8 @@ async function relay(raw: string): Promise<Response> {
     chapterIds: ["open-api-data", "infrastructure"],
     talk: {
       pitch: t(
-        "작품 표지는 외부 플랫폼에 있어서, 브라우저가 직접 열면 방문자 IP 가 그쪽에 알려집니다. 그래서 우리 서버가 대신 받아 전달합니다. 서버는 허용 목록에 있는 33곳만, 10MiB 이하의 진짜 이미지만 전달하고, 환경변수 하나로 중계 전체를 즉시 멈출 수 있습니다.",
-        "Covers live on external platforms, so a browser opening them directly would reveal the visitor's IP. Our server fetches them instead. It relays only the 33 allowlisted origins and only real images under 10 MiB, and one environment variable can stop the whole relay immediately.",
+        "작품 표지는 외부 플랫폼에 있어서, 브라우저가 직접 열면 방문자 IP 가 그쪽에 알려집니다. 그래서 우리 서버가 대신 받아 전달합니다. 서버는 허용 목록에 있는 33곳만, 10MiB 이하이면서 이미지로 보이는 응답만 전달하고, 환경변수 하나로 중계 전체를 즉시 멈출 수 있습니다.",
+        "Covers live on external platforms, so a browser opening them directly would reveal the visitor's IP. Our server fetches them instead. It relays only the 33 allowlisted origins and only replies under 10 MiB that look like images, and one environment variable can stop the whole relay immediately.",
       ),
       analogy: t(
         "우편물 대리 수령입니다. 집 주소(방문자 IP)를 발송인에게 알리지 않고, 대리인(우리 서버)이 받아 내용물이 우편물이 맞는지 확인한 뒤 전해 줍니다.",
@@ -338,10 +339,10 @@ async function relay(raw: string): Promise<Response> {
           ),
         },
         {
-          question: t("이미지 형식은 왜 헤더가 아니라 바이트로 보나요?", "Why judge the format from bytes, not headers?"),
+          question: t("이미지 형식은 왜 헤더만 보지 않고 바이트도 보나요?", "Why check the bytes and not only the header?"),
           answer: t(
-            "일부 CDN 은 실제 이미지를 application/octet-stream 으로 응답합니다. 헤더만 믿으면 정상 이미지를 막고, 헤더를 거짓으로 쓰는 응답도 못 거릅니다. 바이트가 이미지가 아니면 415 로 거절합니다.",
-            "Some CDNs answer real images as application/octet-stream. Trusting headers alone would block good images and let mislabeled replies through. If the bytes are not an image the response is rejected with 415.",
+            "일부 CDN 은 실제 이미지를 application/octet-stream 으로 응답합니다. 그래서 헤더가 이미지이거나 첫 바이트가 이미지일 때 통과시킵니다. 헤더만 이미지라고 주장하는 응답은 막지 못합니다. 헤더도 바이트도 이미지가 아니면 415 로 거절합니다.",
+            "Some CDNs answer real images as application/octet-stream. So a reply passes if the header says image or the first bytes are an image. A reply that only claims to be an image in its header is not caught. If neither the header nor the bytes say image, it is rejected with 415.",
           ),
         },
       ],
@@ -520,7 +521,7 @@ async function withFallback<T>(call: () => Promise<T>, local: T, dailyLimit = 10
     id: "browser-direct-calls-under-csp",
     category: "open-data",
     name: "CSP connect-src",
-    title: t("브라우저가 직접 부르는 5곳을 CSP 허용 목록이 강제한다", "A CSP allowlist enforces the five places the browser calls directly"),
+    title: t("직접 호출 5곳 중 3곳만 CSP 허용 목록에 있고 MyMemory·IPFS 는 밖", "Only three of five direct calls are on the CSP allowlist; MyMemory and IPFS are not"),
     status: "live",
     tagline: t("서버를 거치지 않는 호출은 코드의 약속이 아니라 브라우저 규칙(connect-src)이 지킵니다.", "Calls that skip the server are guarded by a browser rule (connect-src), not by a code promise."),
     background: [
@@ -542,7 +543,7 @@ async function withFallback<T>(call: () => Promise<T>, local: T, dailyLimit = 10
       ),
     ],
     keyPoints: [
-      t("직접 호출 5곳: 허용 여부는 코드가 아닌 CSP 가 강제", "Five direct calls: the CSP, not the code, enforces what is allowed"),
+      t("직접 호출 5곳 중 3곳만 허용 목록에 있고 나머지는 운영에서 막힐 수 있다(실브라우저 미확인)", "Only three of five direct calls are listed; the rest may be blocked in production (not checked in a real browser)"),
       t("connect-src 26항목 밖의 fetch 는 브라우저가 막는다", "The browser blocks fetches outside the 26 connect-src entries"),
       t("위치 날씨는 운영 geolocation=() 로 동작하지 않는다", "My-location weather cannot work under geolocation=() in production"),
     ],
@@ -641,8 +642,8 @@ console.log(directive(csp, "connect-src").includes("https://ipfs.io")); //~ fals
     chapterIds: ["open-api-data", "infrastructure"],
     talk: {
       pitch: t(
-        "서버가 대신 받아 오는 외부 데이터가 대부분이지만, 다섯 곳은 방문자 브라우저가 직접 부릅니다. 어디로 나갈 수 있는지는 코드의 약속이 아니라 운영 응답 헤더의 CSP connect-src 26항목이 강제하고, 목록 밖 주소로는 브라우저가 요청을 막습니다.",
-        "Most external data is fetched by the server, but five places are called by the visitor's browser itself. Where those calls may go is enforced not by a promise in code but by the 26 connect-src entries in the production response headers, and the browser blocks anything outside the list.",
+        "서버가 대신 받아 오는 외부 데이터가 대부분이지만, 다섯 곳은 방문자 브라우저가 직접 부릅니다. 어디로 나갈 수 있는지는 코드의 약속이 아니라 운영 응답 헤더의 CSP connect-src 26항목이 강제하고, 목록 밖 주소로는 브라우저가 요청을 막습니다. 다만 다섯 곳 중 MyMemory·IPFS 는 목록 밖이라 운영에서 막힐 수 있습니다(실브라우저 미확인).",
+        "Most external data is fetched by the server, but five places are called by the visitor's browser itself. Where those calls may go is enforced not by a promise in code but by the 26 connect-src entries in the production response headers, and the browser blocks anything outside the list. Of the five, though, MyMemory and IPFS are not on the list and may be blocked in production (not checked in a real browser).",
       ),
       analogy: t(
         "출입증에 갈 수 있는 층이 적혀 있는 것과 같습니다. 직원(코드)이 어디로 가려 해도, 문(브라우저)은 출입증 목록에 없는 층을 열어 주지 않습니다.",

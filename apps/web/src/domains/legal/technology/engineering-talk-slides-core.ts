@@ -23,7 +23,7 @@ const WEB_LIMITS = sourcedTable(
     [
       "wasm-self-built-fixed-simd",
       t("자바스크립트만으론 무거운 계산이 느림", "JavaScript alone is slow for heavy math"),
-      t("직접 빌드한 WASM 8개, 그중 6개 레인은 SIMD128 — 속도 향상은 아직 미측정", "8 in-house WASM binaries, 6 lanes on SIMD128 — speed-up not yet measured"),
+      t("커밋된 WASM 8개 중 7개 직접 빌드, 그중 6개 레인은 SIMD128 — 속도 향상은 아직 미측정", "7 of 8 committed WASM binaries built in-house, 6 lanes on SIMD128 — speed-up not yet measured"),
       statusCell("live"),
     ],
     [
@@ -417,8 +417,8 @@ export const CORE_SLIDES = [
     points: [],
     table: WEB_LIMITS.table,
     notes: t(
-      "표는 브라우저가 막은 것을 하나씩 넘은 방법입니다. 공유 메모리는 /studio 문서에만 격리를 걸어 풀었고, 무거운 계산은 직접 빌드한 WASM 8개와 워커 64개에 맡깁니다.\n정직하게, SIMD 속도 향상은 아직 재지 않았고 Memory64는 ZIP 검산에만 씁니다. 벽을 허무는 게 아니라 문을 하나씩 내는 일입니다. 근거는 http-response-headers.json입니다. 다음은 아직 이른 기능들입니다. 질문이 나오면 ‘Cross-Origin Isolation’ 카드를 엽니다.",
-      "The table shows how we got past what the browser blocks, one limit at a time. Shared memory is unlocked by isolating only /studio documents, and heavy computation goes to 8 in-house WASM binaries and 64 Workers.\nBe honest: the SIMD speed-up has not been measured yet and Memory64 is used only for ZIP checksums. It is not tearing down a wall but cutting one door at a time. The basis is http-response-headers.json. Next, the features that are still early. If asked, open the ‘Cross-Origin Isolation’ card.",
+      "표는 브라우저가 막은 것을 하나씩 넘은 방법입니다. 공유 메모리는 /studio 문서에만 격리를 걸어 풀었고, 무거운 계산은 직접 빌드한 WASM 7개와 워커 64개에 맡깁니다.\n정직하게, SIMD 속도 향상은 아직 재지 않았고 Memory64는 ZIP 검산에만 씁니다. 벽을 허무는 게 아니라 문을 하나씩 내는 일입니다. 근거는 http-response-headers.json입니다. 다음은 아직 이른 기능들입니다. 질문이 나오면 ‘Cross-Origin Isolation’ 카드를 엽니다.",
+      "The table shows how we got past what the browser blocks, one limit at a time. Shared memory is unlocked by isolating only /studio documents, and heavy computation goes to 7 in-house WASM binaries and 64 Workers.\nBe honest: the SIMD speed-up has not been measured yet and Memory64 is used only for ZIP checksums. It is not tearing down a wall but cutting one door at a time. The basis is http-response-headers.json. Next, the features that are still early. If asked, open the ‘Cross-Origin Isolation’ card.",
     ),
     chapterId: "worker-architecture",
     evidence: [

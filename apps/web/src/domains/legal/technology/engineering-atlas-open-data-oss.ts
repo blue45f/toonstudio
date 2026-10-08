@@ -506,8 +506,8 @@ try {
         {
           question: t("GPL 은 하나도 없나요?", "Is there no GPL at all?"),
           answer: t(
-            "npm 직접 의존성에는 GPL·AGPL 이 없고 허용 목록에도 단독으로 들어 있지 않습니다. 다만 wasm-vips 의 내장 LGPL 라이브러리, 외부 프로그램을 별도 프로세스로만 연결하는 ToonBridge 같은 맥락이 있어 전혀 없다고 말하지는 않습니다.",
-            "There is no GPL or AGPL among the direct npm dependencies, and neither appears alone in the allowlist. But with LGPL libraries inside wasm-vips and external programs linked only as separate processes through ToonBridge, we do not claim there is none anywhere.",
+            "npm 직접 의존성에는 GPL·AGPL 이 없고 허용 목록에도 단독으로 들어 있지 않습니다. 다만 직접 의존성 opencascade.js 1.1.1(LGPL-2.1-only, 고지 파일과 docs/third-party/opencascade-lgpl.md 에 기록), wasm-vips 의 내장 LGPL 라이브러리, 외부 프로그램을 별도 프로세스로만 연결하는 ToonBridge 같은 맥락이 있어 전혀 없다고 말하지는 않습니다.",
+            "There is no GPL or AGPL among the direct npm dependencies, and neither appears alone in the allowlist. But with the direct dependency opencascade.js 1.1.1 (LGPL-2.1-only, recorded in the notice file and docs/third-party/opencascade-lgpl.md), LGPL libraries inside wasm-vips and external programs linked only as separate processes through ToonBridge, we do not claim there is none anywhere.",
           ),
         },
         {

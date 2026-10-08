@@ -28,8 +28,8 @@ const MODULE_BOUNDARY_RATCHET: EngineeringAtlasEntry = {
       "The checker (scripts/validate-app-boundaries.mjs) walks the src of apps and packages, pulls import, export, dynamic import and require specifiers with regular expressions, converts aliases such as @/ into repository paths and counts which of 17 rules each one hits (the keys of config/architecture-boundary-ratchet.json). The rules cover six directions between web, admin and API, lab apps and packages referencing apps, forbidden imports in the contracts package, tests that point at another app's source, and, inside the web app, shared-to-domains and deep cross-domain imports. If a count exceeds the JSON ceiling it fails with examples.",
     ),
     t(
-      "같은 일을 의존성 그래프 도구(dependency-cruiser)나 ESLint 경계 플러그인으로도 할 수 있습니다. 이 저장소는 앱 사이 경계는 자체 검사기로, 웹 안의 4계층(app → domains → shared → infrastructure)은 ESLint boundaries 규칙으로 따로 지킵니다. 자체 검사기를 고른 문서상의 근거는 찾지 못했습니다. 상한을 JSON에 두고 PR로만 바꾸게 하면 레거시를 허용한 채 속도를 유지하면서 새 위반만 막습니다. 같은 발상이 폴더별 파일 수, 린트 경고 수(상한 2,421), 파일 크기에도 쓰입니다.",
-      "The same job can be done with a dependency-graph tool (dependency-cruiser) or an ESLint boundaries plugin. This repository guards the boundaries between apps with its own checker and the four layers inside the web app (app, domains, shared, infrastructure) separately with ESLint boundaries rules. No written rationale for choosing a custom checker was found. Keeping the ceiling in JSON and changing it only through a PR tolerates legacy code, keeps speed and still blocks only new violations. The same idea is used for file counts per folder, lint warnings (ceiling 2,421) and file sizes.",
+      "같은 일을 의존성 그래프 도구(dependency-cruiser)나 ESLint 경계 플러그인으로도 할 수 있습니다. 이 저장소는 앱 사이 경계는 자체 검사기로, 웹 안의 4계층은 ESLint boundaries 규칙으로 따로 지키는데, 허용 방향은 app → domains → infrastructure → shared 이고 shared 는 shared 끼리만 부를 수 있습니다. 다만 ESLint 가 shared 로 분류하는 폴더는 일부뿐이라 shared→domains 25건은 자체 검사기의 래칫에 남아 있습니다. 자체 검사기를 고른 문서상의 근거는 찾지 못했습니다. 상한을 JSON에 두고 PR로만 바꾸게 하면 레거시를 허용한 채 속도를 유지하면서 새 위반만 막습니다. 같은 발상이 폴더별 파일 수, 린트 경고 수(상한 2,421), 파일 크기에도 쓰입니다.",
+      "The same job can be done with a dependency-graph tool (dependency-cruiser) or an ESLint boundaries plugin. This repository guards the boundaries between apps with its own checker and the four layers inside the web app separately with ESLint boundaries rules, whose allowed direction is app, then domains, then infrastructure, then shared, with shared allowed to call only shared. Only some folders are classified as shared by ESLint, though, so the 25 shared-to-domains imports remain in the custom checker's ratchet. No written rationale for choosing a custom checker was found. Keeping the ceiling in JSON and changing it only through a PR tolerates legacy code, keeps speed and still blocks only new violations. The same idea is used for file counts per folder, lint warnings (ceiling 2,421) and file sizes.",
     ),
     t(
       "정직하게 말할 점: 0이 아니라 동결입니다. 웹 shared→domains 25건이 남아 있고, 도메인 간 깊은 import는 상한 58에 실측 49(2026-10-08 실행)이라 9칸 여유가 있어 그 안에서는 새 위반도 통과합니다. 상한은 PR로 올릴 수 있고(baseline 갱신 옵션은 방향을 검사하지 않음) 막는 것은 리뷰뿐인데 CODEOWNERS 파일은 없고 브랜치 보호 설정은 저장소로 확인할 수 없습니다. 정규식 방식이라 동적으로 만든 경로는 놓칩니다.",
@@ -324,8 +324,8 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
       "The smoke test that runs on every PR (e2e/a11y-smoke.spec.ts) opens 10 desktop routes and 4 mobile routes. It intercepts every /api call, answering only the session check as signed out with 200 and everything else with 503, so the outage-banner state is checked too. After the screen is ready and the fonts and finite animations have finished, it runs axe with the wcag2a, wcag2aa, wcag21aa and wcag22aa tags and fails only on serious and critical violations. On mobile it separately measures 44 px touch targets and whether the notice banner and the music player block each other's taps.",
     ),
     t(
-      "전체 화면은 별도의 사이트 전역 감사(scripts/audit-sitewide-visual-ux.mjs)가 맡습니다. 라우트를 코드에서 자동으로 모아(2026-10-08 목록 출력 382개) 테마 9종, 데스크톱·모바일 두 크기, 표준·고대비 선호·강제 색상(forced colors) 세 프로필로 열고 가로 넘침, 이름 없는 버튼, 깨진 이미지, 대비 부족을 셉니다. 이 감사는 수동 실행이거나 해당 워크플로 파일이 바뀐 PR에서만 자동으로 돕니다. 시간이 오래 걸리는 전수 검사를 매 PR에 얹지 않으려는 선택입니다.",
-      "A separate sitewide audit (scripts/audit-sitewide-visual-ux.mjs) covers the whole site. It collects routes from code (382 in the 2026-10-08 listing) and opens them in 9 themes, two sizes (desktop and mobile) and three profiles (standard, preferred high contrast, forced colors), counting horizontal overflow, nameless buttons, broken images and low contrast. It runs manually or automatically only on a PR that changes its workflow file, a choice that keeps a slow exhaustive check off every PR.",
+      "전체 화면은 별도의 사이트 전역 감사(scripts/audit-sitewide-visual-ux.mjs)가 맡습니다. 라우트를 코드에서 자동으로 모아(2026-10-08 목록 출력 385개) 테마 9종, 데스크톱·모바일 두 크기, 표준·고대비 선호·강제 색상(forced colors) 세 프로필로 열고 가로 넘침, 이름 없는 버튼, 깨진 이미지, 대비 부족을 셉니다. 이 감사는 수동 실행이거나 해당 워크플로 파일이 바뀐 PR에서만 자동으로 돕니다. 시간이 오래 걸리는 전수 검사를 매 PR에 얹지 않으려는 선택입니다.",
+      "A separate sitewide audit (scripts/audit-sitewide-visual-ux.mjs) covers the whole site. It collects routes from code (385 in the 2026-10-08 listing) and opens them in 9 themes, two sizes (desktop and mobile) and three profiles (standard, preferred high contrast, forced colors), counting horizontal overflow, nameless buttons, broken images and low contrast. It runs manually or automatically only on a PR that changes its workflow file, a choice that keeps a slow exhaustive check off every PR.",
     ),
     t(
       "자동 검사는 접근성 문제의 일부만 잡습니다. 키보드 순서, 대체 텍스트가 뜻하는 바, 스크린 리더로 들었을 때의 이해는 사람이 확인해야 하는데 저장소에서 그런 수동 점검의 근거는 찾지 못했습니다. 두 검사 모두 비로그인 상태에서 Vite 개발 서버로 돌고, 캔버스 안의 그림은 axe의 검사 대상이 아닙니다. 그래서 로그인 이후 화면과 프로덕션 번들의 접근성은 이 검사로 보증하지 않습니다.",
@@ -335,7 +335,7 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
   keyPoints: [
     t("코어 CI: 핵심 16개 시나리오를 axe로 검사, serious 이상만 실패", "Core CI: 16 key scenarios checked with axe, only serious or worse fails"),
     t("API는 일부러 503: 장애 배너가 떠도 접근성이 유지되는지 확인", "API returns 503 on purpose: checks access holds with the outage banner"),
-    t("382개 화면 × 9테마 전수 감사는 수동, PR 게이트가 아님", "The 382-route by 9-theme audit is manual, not a PR gate"),
+    t("385개 화면 × 9테마 전수 감사는 수동, PR 게이트가 아님", "The 385-route by 9-theme audit is manual, not a PR gate"),
     t("자동 검사는 일부만: 키보드·스크린 리더 수동 점검 근거는 없음", "Automation covers only part; no record of manual keyboard or screen-reader checks"),
   ],
   diagram: {
@@ -375,7 +375,7 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
         "홈·탐색·커뮤니티·마켓·스튜디오·제작·설정 등 핵심 화면이 심각한 접근성 위반 없이 열리는지 확인하며, 이 잡이 실패하면 core가 통과하지 못합니다.",
         "It checks that key screens such as Home, Discover, Community, Market, Studio, Production and Settings open without serious accessibility violations, and core cannot pass if this job fails.",
       ),
-      paths: ["e2e/a11y-smoke.spec.ts", "playwright.a11y.config.ts", ".github/workflows/ci.yml"],
+      paths: ["e2e/a11y-smoke.spec.ts", "package.json", ".github/workflows/ci.yml"],
       route: "/discover",
     },
     {
@@ -390,8 +390,8 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
     {
       feature: t("사이트 전역 시각·접근성 감사 (수동)", "Sitewide visual and accessibility audit (manual)"),
       role: t(
-        "라우트 382개를 테마 9종과 고대비·강제 색상 프로필로 열어 가로 넘침, 이름 없는 버튼, 대비 부족 같은 문제를 보고합니다. 강제 색상 프로필에서는 시스템 색이 저자 색을 덮어 대비 비율이 의미 없으므로 axe를 끕니다.",
-        "It opens 382 routes in 9 themes and the high-contrast and forced-colors profiles and reports horizontal overflow, nameless buttons and low contrast. In the forced-colors profile axe is switched off because system colors override authored colors and contrast ratios become meaningless.",
+        "라우트 385개를 테마 9종과 고대비·강제 색상 프로필로 열어 가로 넘침, 이름 없는 버튼, 대비 부족 같은 문제를 보고합니다. 강제 색상 프로필에서는 시스템 색이 저자 색을 덮어 대비 비율이 의미 없으므로 axe를 끕니다.",
+        "It opens 385 routes in 9 themes and the high-contrast and forced-colors profiles and reports horizontal overflow, nameless buttons and low contrast. In the forced-colors profile axe is switched off because system colors override authored colors and contrast ratios become meaningless.",
       ),
       paths: [
         "scripts/audit-sitewide-visual-ux.mjs",
@@ -548,8 +548,8 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
   chapterIds: ["quality"],
   talk: {
     pitch: t(
-      "접근성은 두 겹으로 점검합니다. 병합 전 필수 단계에서는 핵심 화면을 axe로 자동 검사하고 심각한 위반이 있으면 병합을 막습니다. 일부러 API를 503으로 만들어 장애 배너가 떠 있는 화면도 봅니다. 전체 382개 화면을 아홉 가지 테마와 고대비·강제 색상 모드로 훑는 감사는 시간이 오래 걸려 수동으로 돌립니다. 자동 검사가 접근성 전부를 보증하지는 않는다는 점도 함께 말씀드립니다.",
-      "Accessibility is checked in two layers. In the mandatory pre-merge step, key screens are checked automatically with axe, and serious violations block the merge. The API is deliberately set to 503 so that screens with the outage banner are inspected too. The audit that sweeps all 382 screens in nine themes and in high-contrast and forced-colors modes takes a long time and is run manually. I also want to say that automated checks do not guarantee all of accessibility.",
+      "접근성은 두 겹으로 점검합니다. 병합 전 필수 단계에서는 핵심 화면을 axe로 자동 검사하고 심각한 위반이 있으면 병합을 막습니다. 일부러 API를 503으로 만들어 장애 배너가 떠 있는 화면도 봅니다. 전체 385개 화면을 아홉 가지 테마와 고대비·강제 색상 모드로 훑는 감사는 시간이 오래 걸려 수동으로 돌립니다. 자동 검사가 접근성 전부를 보증하지는 않는다는 점도 함께 말씀드립니다.",
+      "Accessibility is checked in two layers. In the mandatory pre-merge step, key screens are checked automatically with axe, and serious violations block the merge. The API is deliberately set to 503 so that screens with the outage banner are inspected too. The audit that sweeps all 385 screens in nine themes and in high-contrast and forced-colors modes takes a long time and is run manually. I also want to say that automated checks do not guarantee all of accessibility.",
     ),
     analogy: t(
       "자동차로 치면 매번 하는 간이 점검(스모크)과 정기 종합검사(전수 매트릭스)의 차이입니다.",
@@ -571,16 +571,16 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
         ),
       },
       {
-        question: t("모든 PR이 382개 화면을 검사하나요?", "Does every PR check all 382 screens?"),
+        question: t("모든 PR이 385개 화면을 검사하나요?", "Does every PR check all 385 screens?"),
         answer: t(
-          "아니요. 코어 PR 게이트는 16개 시나리오이고, 382개 화면 매트릭스는 수동이거나 그 워크플로 파일이 바뀐 PR에서만 자동으로 돕니다.",
-          "No. The core PR gate runs 16 scenarios, and the 382-route matrix runs manually or automatically only on a PR that changes its workflow file.",
+          "아니요. 코어 PR 게이트는 16개 시나리오이고, 385개 화면 매트릭스는 수동이거나 그 워크플로 파일이 바뀐 PR에서만 자동으로 돕니다.",
+          "No. The core PR gate runs 16 scenarios, and the 385-route matrix runs manually or automatically only on a PR that changes its workflow file.",
         ),
       },
     ],
     pitfall: t(
-      "'키보드·모션 감소·강제 색상까지 PR마다 점검한다'고 말하면 과장입니다. 코어에서 매번 도는 것은 axe 스모크(모션 감소 설정 포함)이고, 강제 색상은 수동 매트릭스에 있으며, 키보드 조작 점검은 a11y-smoke 스펙에 없습니다. 검사는 개발 서버·비로그인 조건이고 moderate 이하 위반은 실패로 치지 않습니다.",
-      "Saying 'keyboard, reduced motion and forced colors are checked on every PR' is an overstatement. What runs every time in core is the axe smoke (with a reduced-motion setting), forced colors live in the manual matrix, and keyboard operation checks are not in the a11y-smoke spec. The checks run against a dev server while signed out, and moderate or lower violations do not count as failures.",
+      "'키보드·모션 감소·강제 색상까지 PR마다 점검한다'고 말하면 과장입니다. 코어에서 매번 도는 것은 axe 스모크(기본 Playwright 설정이라 모션 감소·강제 색상 에뮬레이션이 없음)이고, 모션 감소·강제 색상은 수동 매트릭스에 있으며, 키보드 조작 점검은 a11y-smoke 스펙에 없습니다. 검사는 개발 서버·비로그인 조건이고 moderate 이하 위반은 실패로 치지 않습니다.",
+      "Saying 'keyboard, reduced motion and forced colors are checked on every PR' is an overstatement. What runs every time in core is the axe smoke (default Playwright config, so no reduced-motion or forced-colors emulation), reduced motion and forced colors live in the manual matrix, and keyboard operation checks are not in the a11y-smoke spec. The checks run against a dev server while signed out, and moderate or lower violations do not count as failures.",
     ),
   },
   technologies: ["Playwright", "axe-core", "WCAG 2.2", "Vite", "GitHub Actions"],
@@ -591,7 +591,7 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
       source: "e2e/a11y-smoke.spec.ts",
     },
     {
-      value: "382",
+      value: "385",
       label: t("사이트 전역 감사가 코드에서 모은 라우트 수 (2026-10-08 목록 출력)", "Routes the sitewide audit collects from code (listing printed on 2026-10-08)"),
       source: "scripts/audit-sitewide-visual-ux.mjs",
     },
@@ -611,13 +611,13 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
   title: t("테스트 수는 정의와 함께, 시간을 재는 테스트는 혼자서", "Test counts with their definition, and timing tests run alone"),
   status: "live",
   tagline: t(
-    "병합을 막는 코어가 직접 지정한 테스트는 수집된 약 6,500개 중 약 17%입니다.",
-    "The merge-blocking core names about 17% of the roughly 6,500 collected tests.",
+    "병합을 막는 코어가 직접 지정한 테스트는 수집된 약 6,600개 중 약 17%입니다.",
+    "The merge-blocking core names about 17% of the roughly 6,600 collected tests.",
   ),
   background: [
     t(
-      "'테스트가 몇 개예요?'는 발표에서 가장 자주 나오는 질문인데, 답은 무엇을 세느냐에 따라 달라집니다. 테스트 파일 수, 테스트 케이스 수, 병합을 막는 테스트 수는 서로 다릅니다. ToonStudio는 수치를 부풀리지 않으려고 세 가지를 나눠 셉니다. Vitest가 수집하는 파일은 2026-10-08 추적 파일 기준 6,569개(apps·deploy·packages·scripts·tests 다섯 루트)이고, 병합을 막는 코어가 직접 지정한 파일은 약 1,144개(약 17%, 경로 부분 일치로 계산한 값)이며, 시간 예산 때문에 따로 도는 파일이 21개입니다.",
-      "'How many tests do you have?' is the question that comes up most in talks, and the answer depends on what you count. Test files, test cases and tests that block a merge are different numbers. To avoid inflating figures, ToonStudio counts three things separately. Vitest collects 6,569 files (tracked files on 2026-10-08, five roots: apps, deploy, packages, scripts and tests); the merge-blocking core names about 1,144 of them directly (about 17%, computed with substring path matching); and 21 files run apart because of time budgets.",
+      "'테스트가 몇 개예요?'는 발표에서 가장 자주 나오는 질문인데, 답은 무엇을 세느냐에 따라 달라집니다. 테스트 파일 수, 테스트 케이스 수, 병합을 막는 테스트 수는 서로 다릅니다. ToonStudio는 수치를 부풀리지 않으려고 세 가지를 나눠 셉니다. Vitest가 수집하는 파일은 2026-10-08 추적 파일 기준 약 6,600개(apps·deploy·packages·scripts·tests 다섯 루트)이고, 병합을 막는 코어가 직접 지정한 파일은 약 1,100여 개(약 17%, 경로 부분 일치로 계산한 값)이며, 시간 예산 때문에 따로 도는 파일이 21개입니다.",
+      "'How many tests do you have?' is the question that comes up most in talks, and the answer depends on what you count. Test files, test cases and tests that block a merge are different numbers. To avoid inflating figures, ToonStudio counts three things separately. Vitest collects about 6,600 files (tracked files on 2026-10-08, five roots: apps, deploy, packages, scripts and tests); the merge-blocking core names roughly 1,100 of them directly (about 17%, computed with substring path matching); and 21 files run apart because of time budgets.",
     ),
     t(
       "수를 조용히 잃지 않게 하는 장치도 있습니다. vitest.config.ts의 TEST_ROOTS가 수집 루트를 명시하고, verify-toolchain-coverage 스크립트는 루트별 테스트 파일 수와 tsc가 보는 파일 수가 기록된 하한 밑으로 줄면 실패합니다. 총합이 아니라 루트별로 보는 이유는 한 폴더가 통째로 비어도 다른 폴더의 증가분이 총합을 가려, 아무것도 검사하지 않은 채 초록이 되기 때문입니다. 단 하한 기준선은 2026-09-06 기록(3,367)이라 오늘 값보다 훨씬 낮아 대량 삭제는 잡지 못합니다.",
@@ -647,8 +647,8 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
       "core passes only when all 7 gates succeed, and the full test collection is diagnostics outside that aggregate.",
     ),
     alt: t(
-      "맨 위 verify는 core가 성공일 때만 통과합니다. core는 lint, typecheck, static, serial, a11y, build, database 일곱 게이트가 모두 실제로 성공해야 통과합니다. 그 아래 static은 코어가 직접 지정한 약 1,144개 테스트를 다섯 샤드로 돌리고, serial은 시간을 재는 21개 파일을 워커 한 개로 돌립니다. 수집 하한 검사는 루트별 파일 수가 줄면 실패시킵니다. 맨 아래 전체 진단은 수집된 6,569개 전체를 돌리지만 core 집계에는 들어가지 않습니다.",
-      "At the top, verify passes only when core succeeds. core passes only when all seven gates (lint, typecheck, static, serial, a11y, build and database) actually succeed. Below, static runs about 1,144 tests named directly by the core in five shards, and serial runs the 21 timing files with a single worker. The collection-floor check fails when a root's file count drops. At the bottom, the full diagnostic runs all 6,569 collected files but is not part of the core aggregate.",
+      "맨 위 verify는 core가 성공일 때만 통과합니다. core는 lint, typecheck, static, serial, a11y, build, database 일곱 게이트가 모두 실제로 성공해야 통과합니다. 그 아래 static은 코어가 직접 지정한 약 1,100여 개 테스트를 다섯 샤드로 돌리고, serial은 시간을 재는 21개 파일을 워커 한 개로 돌립니다. 수집 하한 검사는 루트별 파일 수가 줄면 실패시킵니다. 맨 아래 전체 진단은 수집된 6,569개 전체를 돌리지만 core 집계에는 들어가지 않습니다.",
+      "At the top, verify passes only when core succeeds. core passes only when all seven gates (lint, typecheck, static, serial, a11y, build and database) actually succeed. Below, static runs roughly 1,100 tests named directly by the core in five shards, and serial runs the 21 timing files with a single worker. The collection-floor check fails when a root's file count drops. At the bottom, the full diagnostic runs all 6,569 collected files but is not part of the core aggregate.",
     ),
     layers: [
       {
@@ -667,7 +667,7 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
       {
         id: "static",
         label: t("static · 코어 지정 테스트", "static · tests named by core"),
-        sub: t("394줄 목록 → 약 1,144개(약 17%), 5개 샤드", "394-line list, about 1,144 files (17%), 5 shards"),
+        sub: t("394줄 목록 → 약 1,100여 개(약 17%), 5개 샤드", "394-line list, roughly 1,100 files (17%), 5 shards"),
         tone: "neutral",
       },
       {
@@ -685,7 +685,7 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
       {
         id: "diagnostic",
         label: t("집계 밖 · 전체 진단", "Outside the aggregate · full run"),
-        sub: t("Full Test Diagnostic(PR)과 야간 진단이 6,569개 전부 실행", "Full Test Diagnostic (PR) and nightly runs cover all 6,569"),
+        sub: t("전체 수집은 PR의 Full Test Diagnostic, 야간 진단은 선별 실행", "Full collection in the PR Full Test Diagnostic; nightly runs a selection"),
         tone: "external",
       },
     ],
@@ -862,8 +862,8 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
   chapterIds: ["quality", "performance"],
   talk: {
     pitch: t(
-      "테스트가 몇 개냐는 질문에는 정의를 먼저 말합니다. 수집되는 테스트 파일은 약 6,500개이고, 병합을 막는 코어가 직접 지정한 것은 그중 약 17%입니다. 나머지는 PR의 전체 진단과 야간 점검에서 돕니다. 시간을 재는 21개 파일은 임계값을 풀지 않고 혼자 도는 직렬 레인으로 옮겨, 기계 부하 때문에 흔들리는 일을 줄였습니다.",
-      "When asked how many tests there are, start with the definition. About 6,500 test files are collected, and the merge-blocking core names about 17% of them directly. The rest run in the full diagnostic on PRs and in nightly checks. The 21 files that measure time were moved to a serial lane where they run alone, without loosening any threshold, to cut the flakiness caused by machine load.",
+      "테스트가 몇 개냐는 질문에는 정의를 먼저 말합니다. 수집되는 테스트 파일은 약 6,600개이고, 병합을 막는 코어가 직접 지정한 것은 그중 약 17%입니다. 전체 수집은 PR의 전체 진단(Full Test Diagnostic)이 맡고, 야간 진단(02:37 KST)은 선별한 정적 게이트·회귀·엔진/브라우저 시나리오만 돌립니다. 시간을 재는 21개 파일은 임계값을 풀지 않고 혼자 도는 직렬 레인으로 옮겨, 기계 부하 때문에 흔들리는 일을 줄였습니다.",
+      "When asked how many tests there are, start with the definition. About 6,600 test files are collected, and the merge-blocking core names about 17% of them directly. The full collection runs in the PR Full Test Diagnostic, while the nightly diagnostic (02:37 KST) runs only selected static gates, regressions and engine or browser scenarios. The 21 files that measure time were moved to a serial lane where they run alone, without loosening any threshold, to cut the flakiness caused by machine load.",
     ),
     analogy: t(
       "체중계 위에서 짐을 나르며 몸무게를 재면 값이 흔들립니다. 혼자 조용히 올라가 재야 정확한 것과 같습니다.",
@@ -873,8 +873,8 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
       {
         question: t("테스트가 몇 개인가요?", "How many tests are there?"),
         answer: t(
-          "정의에 따라 다릅니다. 수집 파일은 6,569개(2026-10-08 추적 파일 기준), 코어가 직접 지정한 파일은 약 1,144개(경로 부분 일치 계산), 직렬 레인은 21개입니다. 테스트 케이스(it) 수는 실행으로 확인하지 않았습니다.",
-          "It depends on the definition: 6,569 collected files (tracked files on 2026-10-08), about 1,144 named directly by core (substring path matching), and 21 in the serial lane. The number of test cases (it) was not confirmed by running.",
+          "정의에 따라 다릅니다. 수집 파일은 약 6,600개(2026-10-08 추적 파일 기준), 코어가 직접 지정한 파일은 약 1,100여 개(경로 부분 일치 계산), 직렬 레인은 21개입니다. 테스트 케이스(it) 수는 실행으로 확인하지 않았습니다.",
+          "It depends on the definition: about 6,600 collected files (tracked files on 2026-10-08), roughly 1,100 named directly by core (substring path matching), and 21 in the serial lane. The number of test cases (it) was not confirmed by running.",
         ),
       },
       {
@@ -893,14 +893,14 @@ const TEST_HONESTY_AND_TIME_BUDGET_ISOLATION: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "'테스트 6,500개가 매 PR을 막는다'는 틀린 말입니다. 병합을 막는 것은 큐레이션한 코어이고, 수집 하한 기준선(3,367, 2026-09-06 기록)이 낡아 대량 삭제는 못 잡습니다. 정적 선언 수(it 개수)는 실행된 케이스 수가 아니며, 전체 실행 시간은 현재 값을 이 저장소 기록으로 확인하지 못했으니 말하지 마세요.",
-      "'6,500 tests block every PR' is wrong. What blocks a merge is the curated core, and the collection-floor baseline (3,367, recorded 2026-09-06) is stale and cannot catch a mass deletion. The static count of declarations (it) is not the number of executed cases, and the current full-run time could not be confirmed from the repository, so do not quote one.",
+      "'테스트 6,600개가 매 PR을 막는다'는 틀린 말입니다. 병합을 막는 것은 큐레이션한 코어이고, 수집 하한 기준선(3,367, 2026-09-06 기록)이 낡아 대량 삭제는 못 잡습니다. 정적 선언 수(it 개수)는 실행된 케이스 수가 아니며, 전체 실행 시간은 현재 값을 이 저장소 기록으로 확인하지 못했으니 말하지 마세요.",
+      "'6,600 tests block every PR' is wrong. What blocks a merge is the curated core, and the collection-floor baseline (3,367, recorded 2026-09-06) is stale and cannot catch a mass deletion. The static count of declarations (it) is not the number of executed cases, and the current full-run time could not be confirmed from the repository, so do not quote one.",
     ),
   },
   technologies: ["Vitest", "GitHub Actions", "TypeScript", "Node.js"],
   facts: [
     {
-      value: "6,569",
+      value: "약 6,600",
       label: t("Vitest 수집 5개 루트의 테스트 파일 수 (2026-10-08, git 추적 파일 기준)", "Test files in the five Vitest roots (tracked files, 2026-10-08)"),
       source: "scripts/verify-toolchain-coverage.mjs",
     },

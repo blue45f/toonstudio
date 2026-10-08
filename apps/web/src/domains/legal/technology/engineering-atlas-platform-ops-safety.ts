@@ -435,10 +435,10 @@ const FAULT_INJECTION_AND_SOAK: EngineeringAtlasEntry = {
       ],
     },
     {
-      feature: t("5시간·10시간 소크 (야간·수동)", "5-hour and 10-hour soaks (nightly and manual)"),
+      feature: t("5시간 소크(야간·수동)와 10시간 소크(브랜치 push·수동)", "5-hour soak (nightly and manual) and 10-hour soak (branch push and manual)"),
       role: t(
-        "편집기 한 페이지를 켜 둔 채 그리기·브러시 전환·되돌리기를 반복하고, 데스크톱과 인앱 브라우저를 가정한 프로필 3종, WebGPU 옵션별로 산출물을 남깁니다. 10시간 워크플로는 310분짜리 두 단계를 순서대로 돌립니다.",
-        "One editor page stays open while drawing, brush switching and undo repeat, leaving artifacts per profile (desktop, three in-app-browser profiles) and WebGPU option. The 10-hour workflow runs two 310-minute phases in sequence.",
+        "편집기 한 페이지를 켜 둔 채 그리기·브러시 전환·되돌리기를 반복하고, 5시간 소크는 데스크톱(WebGPU 끔·켬)과 인앱 브라우저 프로필 3종(카카오톡·인스타그램·네이버), 모두 5건으로 나눠 산출물을 남깁니다. 10시간 워크플로는 야간이 아니라 전용 브랜치 push 나 수동 실행으로 310분짜리 두 단계를 순서대로 돌립니다.",
+        "One editor page stays open while drawing, brush switching and undo repeat, leaving artifacts for five runs: desktop with WebGPU off and on, plus three in-app-browser profiles (KakaoTalk, Instagram, Naver). The 5-hour soak is the nightly one; the 10-hour workflow is not nightly but runs on a push to its dedicated branch or manually, as two 310-minute phases in sequence.",
       ),
       paths: [
         "scripts/verify-studio-five-hour-soak.mts",

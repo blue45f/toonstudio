@@ -12,21 +12,21 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
     title: t("워커 64개가 따르는 공통 봉투 규약", "One envelope contract for 64 Workers"),
     status: "live",
     tagline: t(
-      "요청 번호·취소·소유권 이전·제한 시간, 워커 일감마다 같은 네 가지 약속을 둡니다.",
-      "Request id, abort, ownership transfer and timeouts: the same four promises for every Worker job.",
+      "요청 번호·취소·소유권 이전·제한 시간, 대부분의 워커 클라이언트가 같은 네 가지 약속을 따릅니다.",
+      "Request id, abort, ownership transfer and timeouts: the same four promises followed by most Worker clients.",
     ),
     background: [
       t(
-        "화면을 그리고 입력을 받는 메인 스레드는 한 줄로만 일합니다. 필터 적용, PNG 인코딩, ZIP 검산 같은 무거운 일을 여기서 하면 화면이 멈춥니다. 그래서 일꾼(Web Worker)에게 맡기는데, 일꾼은 다른 방에 있어 메시지로만 대화합니다. 이 저장소에는 워커 스크립트(*.worker.ts)가 64개 있고 packages 안에는 없습니다. 비테스트 코드가 이름을 참조하는 것은 63개이고, 저장 워커 하나는 아직 호출처가 없습니다.",
-        "The main thread, which draws the screen and takes input, works in a single line. Heavy jobs such as applying filters, encoding PNG or checking ZIP sums would freeze the screen there, so they go to Web Workers, which live in another room and talk only by messages. The repository has 64 Worker scripts (*.worker.ts) and none inside packages. Non-test code references 63 of them by name, and one storage Worker still has no caller.",
+        "화면을 그리고 입력을 받는 메인 스레드는 한 줄로만 일합니다. 필터 적용, PNG 인코딩, ZIP 검산 같은 무거운 일을 여기서 하면 화면이 멈춥니다. 그래서 일꾼(Web Worker)에게 맡기는데, 일꾼은 다른 방에 있어 메시지로만 대화합니다. 이 저장소에는 *.worker.ts 파일이 64개 있고(이름이 다른 진입 파일이 더 있음) packages 안에는 없습니다. 비테스트 코드가 이름을 참조하는 것은 63개이고, 저장 워커 하나는 아직 호출처가 없습니다.",
+        "The main thread, which draws the screen and takes input, works in a single line. Heavy jobs such as applying filters, encoding PNG or checking ZIP sums would freeze the screen there, so they go to Web Workers, which live in another room and talk only by messages. The repository has 64 *.worker.ts files (plus a few entry files with other names) and none inside packages. Non-test code references 63 of them by name, and one storage Worker still has no caller.",
       ),
       t(
-        "일감마다 같은 네 가지 약속을 지킵니다. 첫째, 요청마다 번호(requestId)를 붙이고 같은 번호의 응답만 받아 늦게 온 옛 응답을 버립니다. 둘째, 취소(AbortSignal)가 오면 워커를 통째로 끝냅니다. 데이터 소유권이 이미 넘어갔을 수 있어 일감만 멈추면 버퍼 상태를 알 수 없기 때문입니다. 셋째, 준비와 실행에 제한 시간을 둡니다(ZIP 검산은 3초와 30초). 넷째, 큰 바이트는 복사하지 않고 소유권을 넘기되(Transferable) 버퍼 전체를 쓰는 뷰일 때만 넘기고 아니면 복사합니다.",
-        "Every job keeps the same four promises. First, each request carries a number (requestId) and only the response with the same number is accepted, so a stale answer is dropped. Second, when an abort arrives the whole Worker is ended, because ownership may already have moved and stopping only the job would leave the buffer state unknown. Third, preparation and running have time limits (3 s and 30 s for the ZIP checksum). Fourth, big bytes are handed over instead of copied (Transferable), but only when the view covers the whole buffer; otherwise they are copied.",
+        "대부분의 워커 클라이언트가 같은 네 가지 약속을 지킵니다(취소 신호 경로가 없는 클라이언트가 일부 있습니다). 첫째, 요청마다 번호(requestId)를 붙이고 같은 번호의 응답만 받아 늦게 온 옛 응답을 버립니다. 둘째, 취소(AbortSignal)가 오면 워커를 통째로 끝냅니다. 데이터 소유권이 이미 넘어갔을 수 있어 일감만 멈추면 버퍼 상태를 알 수 없기 때문입니다. 셋째, 준비와 실행에 제한 시간을 둡니다(ZIP 검산은 3초와 30초). 넷째, 큰 바이트는 복사하지 않고 소유권을 넘기되(Transferable) 버퍼 전체를 쓰는 뷰일 때만 넘기고 아니면 복사합니다.",
+        "Most Worker clients keep the same four promises (a few clients have no abort-signal path). First, each request carries a number (requestId) and only the response with the same number is accepted, so a stale answer is dropped. Second, when an abort arrives the whole Worker is ended, because ownership may already have moved and stopping only the job would leave the buffer state unknown. Third, preparation and running have time limits (3 s and 30 s for the ZIP checksum). Fourth, big bytes are handed over instead of copied (Transferable), but only when the view covers the whole buffer; otherwise they are copied.",
       ),
       t(
-        "Comlink 같은 RPC 라이브러리나 고정 개수의 워커 풀은 쓰지 않고, 기능마다 타입이 있는 메시지 규약을 직접 정의합니다. SharedWorker 와 transferControlToOffscreen 도 쓰지 않습니다. 대신 네 가지 약속이 모든 워커에서 같아 어느 파일을 열어도 같은 방식으로 읽힙니다. 또 실행 모드를 시작 전에 고정해, 워커가 실패했다고 같은 일을 메인 스레드에서 몰래 다시 하지 않습니다. 결과가 두 번 만들어지는 사고를 막기 위해서입니다.",
-        "It uses no RPC library such as Comlink and no fixed-size Worker pool; each feature defines its own typed message protocol. SharedWorker and transferControlToOffscreen are not used either. Because the four promises are identical in every Worker, any file reads the same way. The execution mode is also fixed before the session starts, so a failed Worker never causes the same job to be quietly redone on the main thread, which prevents results from being produced twice.",
+        "Comlink 라이브러리를 직접 쓰지 않고 고정 개수의 워커 풀도 두지 않으며, 기능마다 타입이 있는 메시지 규약을 직접 정의합니다. 다만 xatlasjs 가 Comlink 방식이라 UV 워커 안에 그 규약을 받는 작은 어댑터가 있습니다. SharedWorker 와 transferControlToOffscreen 은 쓰지 않습니다. 네 가지 약속이 대부분의 워커 클라이언트에서 같아 파일을 열면 비슷한 방식으로 읽힙니다. 또 실행 모드를 시작 전에 고정해, 워커가 실패했다고 같은 일을 메인 스레드에서 몰래 다시 하지 않습니다. 결과가 두 번 만들어지는 사고를 막기 위해서입니다.",
+        "It does not use the Comlink library directly and has no fixed-size Worker pool; each feature defines its own typed message protocol. Because xatlasjs speaks Comlink, though, the UV Worker holds a small adapter that accepts that protocol. SharedWorker and transferControlToOffscreen are not used. Because the four promises are the same in most Worker clients, the files read in a similar way. The execution mode is also fixed before the session starts, so a failed Worker never causes the same job to be quietly redone on the main thread, which prevents results from being produced twice.",
       ),
       t(
         "한계도 있습니다. 기능별 워커가 많지만 동시에 몇 개가 뜰지 상한을 두는 풀은 아직 없습니다. SharedArrayBuffer 링 버퍼로 펜 입력을 흘리는 엔진 워커는 구현과 테스트만 있고 제품에 연결되지 않았습니다(메타 카드 참고).",
@@ -239,8 +239,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
     chapterIds: ["worker-architecture", "browser-local-compute"],
     talk: {
       pitch: t(
-        "무거운 일은 일꾼(워커)에게 맡기고, 일꾼과 주고받는 방식을 네 가지 약속으로 통일했습니다. 요청에 번호를 붙여 늦은 응답을 버리고, 취소하면 일꾼을 통째로 끝내며, 큰 데이터는 복사 대신 소유권을 넘기고, 제한 시간을 둡니다. 워커 스크립트는 64개지만 어느 것을 열어도 같은 방식으로 읽힙니다.",
-        "Heavy work goes to Workers, and the way we talk to them is unified into four promises: number each request and drop stale answers, end the whole Worker on cancel, move big data by ownership instead of copying, and set time limits. There are 64 Worker scripts, yet any of them reads the same way.",
+        "무거운 일은 일꾼(워커)에게 맡기고, 일꾼과 주고받는 방식을 네 가지 약속으로 통일했습니다. 요청에 번호를 붙여 늦은 응답을 버리고, 취소하면 일꾼을 통째로 끝내며, 큰 데이터는 복사 대신 소유권을 넘기고, 제한 시간을 둡니다. *.worker.ts 는 64개이고 대부분의 클라이언트가 같은 방식으로 읽힙니다.",
+        "Heavy work goes to Workers, and the way we talk to them is unified into four promises: number each request and drop stale answers, end the whole Worker on cancel, move big data by ownership instead of copying, and set time limits. There are 64 *.worker.ts files, and most clients read the same way.",
       ),
       analogy: t(
         "택배 송장 번호와 같습니다. 번호가 같은 상자만 받고, 취소하면 물류센터를 통째로 멈추고, 상자는 복사하지 않고 주인이 바뀝니다.",
@@ -250,8 +250,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
         {
           question: t("Comlink 나 워커 풀을 쓰나요?", "Do you use Comlink or a Worker pool?"),
           answer: t(
-            "아니요. 기능마다 타입이 있는 메시지를 직접 정의합니다. 풀은 도입 후보로만 검토 중입니다.",
-            "No. Each feature defines its own typed messages. A pool is only a candidate under consideration.",
+            "Comlink 라이브러리는 직접 쓰지 않고 기능마다 타입이 있는 메시지를 직접 정의합니다. 다만 xatlasjs 가 Comlink 방식이라 UV 워커 안에 그 규약을 받는 작은 어댑터가 있습니다. 풀은 도입 후보로만 검토 중입니다.",
+            "The Comlink library is not used directly; each feature defines its own typed messages. Because xatlasjs speaks Comlink, though, the UV Worker holds a small adapter for that protocol. A pool is only a candidate under consideration.",
           ),
         },
         {
@@ -270,8 +270,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
         },
       ],
       pitfall: t(
-        "SharedWorker, Comlink, transferControlToOffscreen 은 코드에 없습니다. 이름에 SharedWorker 가 붙은 타입이 있어도 SharedWorker API 가 아닙니다. 64개는 파일 수이지 동시에 도는 수가 아니며, SharedArrayBuffer 링 버퍼를 쓰는 엔진 워커는 제품에 연결되지 않았습니다.",
-        "SharedWorker, Comlink and transferControlToOffscreen are absent from the code. A type with SharedWorker in its name is not the SharedWorker API. 64 is a file count, not a count of Workers running at once, and the engine Worker that uses a SharedArrayBuffer ring is not connected to the product.",
+        "SharedWorker 와 transferControlToOffscreen 은 코드에 없고, Comlink 라이브러리는 직접 import 하지 않습니다(xatlasjs 의 Comlink 규약을 받는 어댑터만 UV 워커 안에 있음). 이름에 SharedWorker 가 붙은 타입이 있어도 SharedWorker API 가 아닙니다. 64개는 파일 수이지 동시에 도는 수가 아니며, SharedArrayBuffer 링 버퍼를 쓰는 엔진 워커는 제품에 연결되지 않았습니다.",
+        "SharedWorker and transferControlToOffscreen are absent from the code, and the Comlink library is not imported directly (only an adapter for the Comlink protocol of xatlasjs lives inside the UV Worker). A type with SharedWorker in its name is not the SharedWorker API. 64 is a file count, not a count of Workers running at once, and the engine Worker that uses a SharedArrayBuffer ring is not connected to the product.",
       ),
     },
     technologies: ["Dedicated Worker", "Transferable", "AbortController", "Web Workers", "Vite"],

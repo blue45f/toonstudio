@@ -131,8 +131,8 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
       "Like a supermarket that opens four checkout lanes at once: when many customers (numbers) need the same service, the queue shrinks fast.",
     ),
     inToonstudio: t(
-      "저장소에 커밋된 자체 .wasm 8개 중 6개 레인(Vello 2·Hokusai·먹물 커널은 +simd128, ink-mesh·ink-modeler 는 -msimd128)을 SIMD128 로 빌드합니다. 고정 SIMD128 은 널리 지원돼 ‘되는 브라우저/안 되는 브라우저’용 이중 빌드 없이 바이너리 하나로 배포하고, 산출물은 레인별 INTEGRITY.sha256 으로 고정합니다.",
-      "Six of the eight own .wasm files committed to the repository are built with SIMD128 (Vello's two lanes, Hokusai and the sumi kernel with +simd128; ink-mesh and ink-modeler with -msimd128). Fixed SIMD128 is widely supported, so one binary ships without a dual build, and each artifact is pinned by its lane's INTEGRITY.sha256.",
+      "저장소에 커밋된 .wasm 8개 중 직접 빌드한 7개(ThorVG 1개는 복사 후 해시 고정)에서 6개 레인(Vello 2·Hokusai·먹물 커널은 +simd128, ink-mesh·ink-modeler 는 -msimd128)을 SIMD128 로 빌드합니다. 고정 SIMD128 은 널리 지원돼 ‘되는 브라우저/안 되는 브라우저’용 이중 빌드 없이 바이너리 하나로 배포하고, 산출물은 레인별 INTEGRITY.sha256 으로 고정합니다.",
+      "Of the eight .wasm files committed to the repository, seven are built in-house (the ThorVG one is a hash-pinned copy), and six lanes are built with SIMD128 (Vello's two lanes, Hokusai and the sumi kernel with +simd128; ink-mesh and ink-modeler with -msimd128). Fixed SIMD128 is widely supported, so one binary ships without a dual build, and each artifact is pinned by its lane's INTEGRITY.sha256.",
     ),
     chapters: ["wasm-fixed-simd", "brush-engine"],
     atlasIds: ["wasm-self-built-fixed-simd"],

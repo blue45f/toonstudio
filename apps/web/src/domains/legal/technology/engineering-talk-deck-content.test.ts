@@ -514,10 +514,12 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     const required = /const required = \[([^\]]*)\];/u.exec(read(".github/workflows/ci.yml"))?.[1]?.split(",").length;
     expect(required).toBe(Number(factOf(slideOf("talk-ai-dev"), 1, "필수 검사")));
 
-    // 접근성: 코어 필수 게이트는 모션 감소를 켠 axe 스모크이고, 강제 색상·키보드 점검은 그 안에 없다.
-    expect(read("playwright.a11y.config.ts")).toContain('reducedMotion: "reduce"');
+    // 접근성: 코어 필수 게이트(pnpm run test:a11y)는 기본 Playwright 설정의 axe 스모크라 모션 감소·강제 색상·키보드 점검이 그 안에 없다.
+    expect(read("package.json")).toMatch(/"test:a11y": "[^"]*playwright test e2e\/a11y-smoke\.spec\.ts"/u);
+    expect(read("package.json")).not.toMatch(/"test:a11y": "[^"]*--config/u);
+    expect(read("playwright.config.ts")).not.toContain("reducedMotion");
     expect(read("e2e/a11y-smoke.spec.ts")).not.toMatch(/keyboard\.|\.press\(|forcedColors|forced-colors/u);
-    expect(slide.notes.ko).toMatch(/axe 스모크\(모션 감소 포함\)[^\n]*강제 색상은 수동[^\n]*키보드 점검은 스모크에 없습니다/u);
+    expect(slide.notes.ko).toMatch(/axe 스모크\(기본 설정, 모션 감소 없음\)[^\n]*모션 감소·강제 색상은 수동[^\n]*키보드 점검은 스모크에 없습니다/u);
   });
 
   it("성능: 번들 기준선과 참고 예산, +2% 래칫은 기준선·검사 스크립트와 같다", () => {
