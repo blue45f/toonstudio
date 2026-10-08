@@ -565,7 +565,7 @@ export const SEMINAR_LESSONS = [
   {
     id: "seminar-build-alignment", chapterId: "architecture", section: aiDev,
     title: t("프런트와 백엔드가 어긋나지 않게, 절차와 코드가 함께 막습니다", "Keeping front end and back end in step takes both procedure and code"),
-    takeaway: t("같은 SHA는 절차가 보증하고, 도구 버전·공유 계약·프로토콜 버전은 코드가 어긋남을 막습니다.", "A shared SHA is guaranteed by procedure; tool versions, shared contracts and protocol versions are guarded by code."),
+    takeaway: t("같은 SHA는 절차가 보증하고, 공유 계약·프로토콜 버전은 코드가 어긋남을 막으며 Node·pnpm 버전은 파일로 맞추되 막는 검사는 없습니다.", "A shared SHA is guaranteed by procedure; shared contracts and protocol versions are guarded by code, while Node and pnpm versions are pinned in files with no check that blocks a mismatch."),
     points: [t("승인 SHA 한 개만 배포(절차) — 번들·API 응답엔 SHA가 없음", "Only one approved SHA ships (procedure); bundles and API replies carry no SHA"), t("pnpm 11·Node 24.16+·--frozen-lockfile로 도구 고정", "pnpm 11, Node 24.16+ and --frozen-lockfile pin the tools"), t("공유 계약·프로토콜 버전 8, 어긋나면 거절", "Shared contracts and protocol version 8; mismatches are rejected")],
     flow: [t("SHA 승인(절차)", "Approve a SHA (procedure)"), t("도구·락파일 고정", "Pin tools and lockfile"), t("내용 해시 buildId", "Content-hash buildId"), t("어긋남은 거절·복구", "Reject or recover from skew")],
     script: t(

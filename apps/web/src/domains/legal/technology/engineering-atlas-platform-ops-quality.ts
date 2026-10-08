@@ -32,14 +32,14 @@ const MODULE_BOUNDARY_RATCHET: EngineeringAtlasEntry = {
       "The same job can be done with a dependency-graph tool (dependency-cruiser) or an ESLint boundaries plugin. This repository guards the boundaries between apps with its own checker and the four layers inside the web app (app, domains, shared, infrastructure) separately with ESLint boundaries rules. No written rationale for choosing a custom checker was found. Keeping the ceiling in JSON and changing it only through a PR tolerates legacy code, keeps speed and still blocks only new violations. The same idea is used for file counts per folder, lint warnings (ceiling 2,421) and file sizes.",
     ),
     t(
-      "정직하게 말할 점: 0이 아니라 동결입니다. 웹 shared→domains 25건이 남아 있고, 도메인 간 깊은 import는 상한 58에 실측 48(2026-10-08 실행)이라 10칸 여유가 있어 그 안에서는 새 위반도 통과합니다. 상한은 PR로 올릴 수 있고(baseline 갱신 옵션은 방향을 검사하지 않음) 막는 것은 리뷰뿐인데 CODEOWNERS 파일은 없고 브랜치 보호 설정은 저장소로 확인할 수 없습니다. 정규식 방식이라 동적으로 만든 경로는 놓칩니다.",
-      "To be honest: it is a freeze, not zero. 25 web shared-to-domains imports remain, and deep cross-domain imports have a ceiling of 58 against a measured 48 (run on 2026-10-08), so 10 slots of slack let new violations pass inside that margin. The ceiling can be raised in a PR (the baseline-update option does not check direction), and only review stands in the way; there is no CODEOWNERS file and branch protection settings cannot be confirmed from the repository. Being regex-based, it misses dynamically built paths.",
+      "정직하게 말할 점: 0이 아니라 동결입니다. 웹 shared→domains 25건이 남아 있고, 도메인 간 깊은 import는 상한 58에 실측 49(2026-10-08 실행)이라 9칸 여유가 있어 그 안에서는 새 위반도 통과합니다. 상한은 PR로 올릴 수 있고(baseline 갱신 옵션은 방향을 검사하지 않음) 막는 것은 리뷰뿐인데 CODEOWNERS 파일은 없고 브랜치 보호 설정은 저장소로 확인할 수 없습니다. 정규식 방식이라 동적으로 만든 경로는 놓칩니다.",
+      "To be honest: it is a freeze, not zero. 25 web shared-to-domains imports remain, and deep cross-domain imports have a ceiling of 58 against a measured 49 (run on 2026-10-08), so 9 slots of slack let new violations pass inside that margin. The ceiling can be raised in a PR (the baseline-update option does not check direction), and only review stands in the way; there is no CODEOWNERS file and branch protection settings cannot be confirmed from the repository. Being regex-based, it misses dynamically built paths.",
     ),
   ],
   keyPoints: [
     t("17개 규칙의 위반 수를 JSON 상한에 동결", "17 rules' violation counts frozen at a JSON ceiling"),
     t("상한을 넘으면 예시와 함께 CI 실패", "Exceeding the ceiling fails CI with examples"),
-    t("0이 아닌 동결: 깊은 import 실측 48, 상한 58", "A freeze, not zero: 48 deep imports measured, ceiling 58"),
+    t("0이 아닌 동결: 깊은 import 실측 49, 상한 58", "A freeze, not zero: 49 deep imports measured, ceiling 58"),
     t("상한은 PR로 오를 수 있어 리뷰가 마지막 방어선", "The ceiling can rise in a PR, so review is the last guard"),
   ],
   diagram: {
@@ -266,8 +266,8 @@ const MODULE_BOUNDARY_RATCHET: EngineeringAtlasEntry = {
       {
         question: t("실측과 상한이 다른 이유는요?", "Why do the measured count and the ceiling differ?"),
         answer: t(
-          "도메인 간 깊은 import는 상한 58, 실측 48입니다(2026-10-08 실행). 줄인 뒤 상한을 함께 내리지 않아 10칸 여유가 남은 상태이고, 조이려면 baseline을 갱신하는 PR이 필요합니다.",
-          "Deep cross-domain imports have a ceiling of 58 and a measured 48 (run on 2026-10-08). The ceiling was not lowered along with the reduction, leaving 10 slots of slack, and tightening it takes a PR that updates the baseline.",
+          "도메인 간 깊은 import는 상한 58, 실측 49입니다(2026-10-08 실행). 줄인 뒤 상한을 함께 내리지 않아 9칸 여유가 남은 상태이고, 조이려면 baseline을 갱신하는 PR이 필요합니다.",
+          "Deep cross-domain imports have a ceiling of 58 and a measured 49 (run on 2026-10-08). The ceiling was not lowered along with the reduction, leaving 9 slots of slack, and tightening it takes a PR that updates the baseline.",
         ),
       },
       {
@@ -296,7 +296,7 @@ const MODULE_BOUNDARY_RATCHET: EngineeringAtlasEntry = {
       source: "scripts/validate-app-boundaries.mjs",
     },
     {
-      value: "48 / 58",
+      value: "49 / 58",
       label: t("도메인 간 깊은 import: 실측 / 상한 (2026-10-08 스크립트 실행)", "Deep cross-domain imports: measured / ceiling (script run on 2026-10-08)"),
       source: "scripts/validate-app-boundaries.mjs",
     },

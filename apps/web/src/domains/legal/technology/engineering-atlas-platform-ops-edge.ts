@@ -563,8 +563,8 @@ const MANUAL_SHA_RELEASE_GATE: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "이 카드는 게이트 코드와 정책을 설명할 뿐, 운영 대시보드에 지금 올라가 있는 SHA는 확인하지 않았습니다. Render가 소스 빌드(render.yaml의 node 런타임)인지 SHA 태그 컨테이너 이미지(수동 워크플로 api-container-release.yml)인지도 저장소만으로는 확정할 수 없습니다.",
-      "This card explains the gate code and policy; it did not check which SHA is live on the dashboards. Whether Render runs a source build (the node runtime in render.yaml) or a SHA-tagged container image (the manual api-container-release.yml workflow) cannot be settled from the repository alone.",
+      "이 카드는 게이트 코드와 정책을 설명할 뿐, 운영 대시보드에 지금 올라가 있는 SHA는 확인하지 않았습니다. Render는 render.yaml 이 소스 빌드(node 런타임)로 선언돼 있지만, 2026-10-08 Render API 읽기 전용 조회에서 운영 서비스(toonspectrum-core-api)는 SHA 태그 컨테이너 이미지(수동 워크플로 api-container-release.yml)를 api 트리거로 배포 중임을 확인했습니다(서비스 설정 전체를 본 것은 아닙니다).",
+      "This card explains the gate code and policy; it did not check which SHA is live on the dashboards. render.yaml declares a source build (the node runtime), but a read-only Render API query on 2026-10-08 showed the production service (toonspectrum-core-api) running a SHA-tagged container image (the manual api-container-release.yml workflow) deployed via the api trigger; this is not a view of the full service settings.",
     ),
   },
   technologies: ["Cloudflare Workers", "Render", "GitHub Actions", "Wrangler"],
