@@ -206,6 +206,39 @@ export function studioCharacterWarmAssets(skin: StudioCharacterSkin): readonly S
   return [...assets.values()];
 }
 
+/** 선적재(warm) 에셋을 보유하는 소유자 이름의 접미사. `release(owner)`는 같은 소유자의 선적재분도 함께 반납한다. */
+const WARM_OWNER_SUFFIX = ":warm";
+export const studioCharacterWarmOwner = (owner: string): string => `${owner}${WARM_OWNER_SUFFIX}`;
+
+/** 선적재 대상 구분: 내 캐릭터는 항상, 다른 참가자는 예산 안에서만, 그 밖의 소유자(NPC·배경 배우)는 하지 않는다. */
+export type StudioCharacterWarmKind = "self" | "peer";
+export function studioCharacterWarmKind(owner: string): StudioCharacterWarmKind | null {
+  if (owner === "self") return "self";
+  return owner.startsWith("peer:") ? "peer" : null;
+}
+
+/** 크기를 모르는 정지 그림 한 장의 GPU 텍스처 추정치(실측: 스타일 팩 160px 0.1MB, 드로잉 원본 384×512 0.75MB). */
+const IMAGE_ESTIMATE_BYTES = 512 * 1024;
+/** 다른 참가자 한 명의 스킨을 선적재해도 되는 GPU 텍스처 추정 상한. 기본 스타일 팩(160px 정지 그림 3장 + 640×160 걷기 시트 4장 추가)은 약 3.1MB로 추정된다. */
+export const STUDIO_PEER_WARM_MAX_BYTES = 8 * 1024 * 1024;
+
+/**
+ * 선적재로 새로 올라올 텍스처의 GPU 크기 추정(바이트). 시트는 선언한 원본 크기(atlas)를 쓰고, 선언이 없으면 로더 검증과 같이 2×2 격자로 본다.
+ * 어느 방향·상태에서든 이미 올라와 있는 기준 에셋(아래를 보는 정지 그림, 표정 시트)은 선적재 때문에 늘어나지 않으므로 뺀다.
+ * 드로잉 원본(1122×1402 시트 약 6MB)이나 네이티브 시트(1254×1254)로 방향 네 장을 받으면 수십 MB라 이 값으로 걸러 낸다.
+ */
+export function studioCharacterWarmBytes(skin: StudioCharacterSkin): number {
+  const baseline = new Set(studioCharacterVisualAssets(skin, "down", "idle").map((asset) => asset.key));
+  let bytes = 0;
+  for (const asset of studioCharacterWarmAssets(skin)) {
+    if (baseline.has(asset.key)) continue;
+    if (asset.type === "image") bytes += IMAGE_ESTIMATE_BYTES;
+    else if (asset.atlas) bytes += asset.atlas.width * asset.atlas.height * 4;
+    else bytes += (asset.frameWidth ?? 0) * 2 * (asset.frameHeight ?? 0) * 2 * 4;
+  }
+  return bytes;
+}
+
 interface TextureRecord {
   readonly asset: StudioCharacterTextureAsset;
   readonly owners: Set<string>;
@@ -272,9 +305,12 @@ export class StudioCharacterAssetResidency {
     }
   }
 
+  /** 소유자가 쓰던 에셋과 그 소유자의 선적재분(`<owner>:warm`)을 함께 반납한다. */
   release(owner: string): void {
-    for (const key of this.owners.get(owner) ?? []) this.unref(owner, key);
-    this.owners.delete(owner);
+    for (const target of [owner, studioCharacterWarmOwner(owner)]) {
+      for (const key of this.owners.get(target) ?? []) this.unref(target, key);
+      this.owners.delete(target);
+    }
   }
 
   private unref(owner: string, key: string): void {
