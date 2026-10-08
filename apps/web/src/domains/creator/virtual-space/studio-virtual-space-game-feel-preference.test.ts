@@ -16,7 +16,7 @@ import {
 afterEach(() => window.localStorage.clear());
 
 describe("게임필 설정 파싱·저장", () => {
-  it("기본값은 화면 흔들림 켜짐·파티클 80%·모션 100%다", () => {
+  it("기본값은 화면 흔들림 켜짐·파티클 80%·모션 100%·즉응형 이동이다", () => {
     expect(DEFAULT_STUDIO_VIRTUAL_GAME_FEEL).toEqual({
       version: 1,
       screenShake: true,
@@ -25,7 +25,31 @@ describe("게임필 설정 파싱·저장", () => {
       followOsReducedMotion: true,
       inputSensitivity: 1,
       accelerationScale: 1,
+      moveFeel: "crisp",
     });
+  });
+
+  it("이동 감각이 없는 기존 저장값은 즉응형으로 읽는다", () => {
+    const parsed = parseStudioVirtualGameFeelPreference({
+      version: 1, screenShake: false, particleDensity: 0.5, motionIntensity: 0.5, followOsReducedMotion: true,
+      inputSensitivity: 1.2, accelerationScale: 1.5,
+    });
+    expect(parsed?.moveFeel).toBe("crisp");
+    expect(parsed?.screenShake).toBe(false);
+    expect(parsed?.accelerationScale).toBe(1.5);
+  });
+
+  it("관성형을 선택한 값은 그대로 저장하고 읽어온다", () => {
+    const value = { ...DEFAULT_STUDIO_VIRTUAL_GAME_FEEL, moveFeel: "classic" as const };
+    expect(writeStudioVirtualGameFeelPreference(value)).toBe(true);
+    expect(readStudioVirtualGameFeelPreference().moveFeel).toBe("classic");
+  });
+
+  it("알 수 없는 이동 감각 값은 기본(즉응형)으로 되돌린다", () => {
+    for (const moveFeel of ["floaty", "", 3, null, {}]) {
+      const parsed = parseStudioVirtualGameFeelPreference({ version: 1, moveFeel });
+      expect(parsed?.moveFeel).toBe("crisp");
+    }
   });
 
   it("localStorage에 저장하고 읽어온다", () => {

@@ -80,6 +80,35 @@ describe("StudioVirtualSpaceGameFeelSettings", () => {
     expect(follow.disabled).toBe(false);
   });
 
+  it("이동 감각은 즉응형이 기본이고 관성형으로 바꾸면 onChange가 호출된다", () => {
+    mockReducedMotion(false);
+    const onChange = vi.fn();
+    render(<StudioVirtualSpaceGameFeelSettings value={DEFAULT_STUDIO_VIRTUAL_GAME_FEEL} onChange={onChange} />);
+    expect(screen.getByRole("group", { name: "이동 감각" })).toBeTruthy();
+    const crisp = screen.getByRole("radio", { name: /즉응형/ }) as HTMLInputElement;
+    const classic = screen.getByRole("radio", { name: /관성형/ }) as HTMLInputElement;
+    expect(crisp.checked).toBe(true);
+    expect(classic.checked).toBe(false);
+    fireEvent.click(classic);
+    expect(onChange).toHaveBeenCalledWith({ ...DEFAULT_STUDIO_VIRTUAL_GAME_FEEL, version: 1, moveFeel: "classic" });
+  });
+
+  it("저장된 관성형 값은 선택된 상태로 보이고 즉응형으로 되돌릴 수 있다", () => {
+    mockReducedMotion(false);
+    const onChange = vi.fn();
+    render(<StudioVirtualSpaceGameFeelSettings value={{ ...DEFAULT_STUDIO_VIRTUAL_GAME_FEEL, moveFeel: "classic" }} onChange={onChange} />);
+    expect((screen.getByRole("radio", { name: /관성형/ }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: /즉응형/ }));
+    expect(onChange).toHaveBeenCalledWith({ ...DEFAULT_STUDIO_VIRTUAL_GAME_FEEL, version: 1, moveFeel: "crisp" });
+  });
+
+  it("OS 모션 감소가 켜져 있어도 이동 감각은 선택할 수 있다", () => {
+    mockReducedMotion(true);
+    render(<StudioVirtualSpaceGameFeelSettings value={DEFAULT_STUDIO_VIRTUAL_GAME_FEEL} onChange={() => {}} />);
+    expect((screen.getByRole("radio", { name: /즉응형/ }) as HTMLInputElement).disabled).toBe(false);
+    expect((screen.getByRole("radio", { name: /관성형/ }) as HTMLInputElement).disabled).toBe(false);
+  });
+
   it("matchMedia가 없어도 렌더링된다", () => {
     vi.stubGlobal("matchMedia", undefined);
     render(<StudioVirtualSpaceGameFeelSettings value={DEFAULT_STUDIO_VIRTUAL_GAME_FEEL} onChange={() => {}} />);

@@ -30,7 +30,16 @@ export interface StudioCharacterTextureAsset {
    * 렌더러는 이 값이 "nearest"면 텍스처 필터를 바꾼다(없으면 장면 기본 필터).
    */
   readonly textureFilter?: "nearest";
+  /**
+   * "feet"면 로드 직후 알파 외곽(발바닥·몸통 중심·키)을 재 frame registration에 쓴다. 정지 방향 그림은 기준으로,
+   * register 클립의 시트는 정렬 대상으로 측정한다.
+   */
+  readonly registration?: "feet";
 }
+
+/** 등록 대상 표시. 아니면 필드를 만들지 않는다(기존 자산 설명자는 그대로다). */
+const registrationMark = (enabled: boolean | undefined): Pick<StudioCharacterTextureAsset, "registration"> =>
+  enabled ? { registration: "feet" } : {};
 
 /** 픽셀 아트 스킨의 모든 텍스처 자산에 최근접 필터 힌트를 붙인다. */
 const pixelTextureFilter = (skin: StudioCharacterSkin): Pick<StudioCharacterTextureAsset, "textureFilter"> =>
@@ -139,7 +148,12 @@ export function studioCharacterStaticAsset(
     ...sharedAtlasAnimations(skin),
     ...pixelTextureFilter(skin),
   };
-  return { key: studioCharacterStaticTextureKey(skin, facing, state), url: stateUrl ?? skin.directional[facing], type: "image", ...pixelTextureFilter(skin) };
+  return {
+    key: studioCharacterStaticTextureKey(skin, facing, state), url: stateUrl ?? skin.directional[facing], type: "image",
+    ...pixelTextureFilter(skin),
+    // 상태 그림(대화·그리기·검토)은 기준이 아니다. 방향별 정지 그림만 측정한다.
+    ...registrationMark(skin.registerFrames && !stateUrl),
+  };
 }
 
 /** Only the displayed direction/state is needed. Never make unrelated skins block entry. */
@@ -154,10 +168,12 @@ export function studioCharacterVisualAssets(
   const clip = state === "walk" ? studioCharacterWalkClip(skin, facing) : undefined;
   if (clip && !assets.some((asset) => asset.key === studioCharacterWalkTextureKey(skin, facing))) assets.push({ key: studioCharacterWalkTextureKey(skin, facing), url: clip.textureUrl,
     type: "spritesheet", frameWidth: clip.frameWidth, frameHeight: clip.frameHeight,
-    animationKey: studioCharacterWalkAnimationKey(skin, facing), atlas: clip.atlas, ...sharedAtlasAnimations(skin), ...pixelTextureFilter(skin) });
+    animationKey: studioCharacterWalkAnimationKey(skin, facing), atlas: clip.atlas, ...sharedAtlasAnimations(skin), ...pixelTextureFilter(skin),
+    ...registrationMark(clip.register) });
   const action = studioCharacterActionClip(skin, facing, state);
   if (action && !assets.some((asset) => asset.key === studioCharacterActionTextureKey(skin, facing, state))) assets.push({ key: studioCharacterActionTextureKey(skin, facing, state), url: action.textureUrl,
-    type: "spritesheet", frameWidth: action.frameWidth, frameHeight: action.frameHeight, atlas: action.atlas, ...pixelTextureFilter(skin) });
+    type: "spritesheet", frameWidth: action.frameWidth, frameHeight: action.frameHeight, atlas: action.atlas, ...pixelTextureFilter(skin),
+    ...registrationMark(action.register) });
   const pose = state === "sit" || state === "wave" || state === "lie" ? skin.poses?.[state] : undefined;
   if (pose && (state === "sit" || state === "wave" || state === "lie") && !assets.some((asset) => asset.key === studioCharacterPoseTextureKey(skin, state))) assets.push({ key: studioCharacterPoseTextureKey(skin, state), url: pose.textureUrl,
     type: "spritesheet", frameWidth: pose.frameWidth, frameHeight: pose.frameHeight, atlas: pose.atlas, ...pixelTextureFilter(skin) });

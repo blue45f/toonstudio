@@ -8,6 +8,19 @@
 /** 파티클 밀도·모션 강도 값 범위. */
 export const STUDIO_GAME_FEEL_RANGE = Object.freeze({ min: 0, max: 1 });
 
+/**
+ * 이동 감각.
+ * - crisp(즉응형, 기본): 게더타운처럼 입력에 바로 반응한다. 관성·급회전 감속·충돌 반동·몸 찌그러짐을 쓰지 않는다.
+ * - classic(관성형): 기존의 무게감 있는 이동(가속 곡선·미끄러짐·반동·스쿼시)을 그대로 쓴다.
+ */
+export const STUDIO_VIRTUAL_MOVE_FEELS = Object.freeze(["crisp", "classic"] as const);
+export type StudioVirtualMoveFeel = (typeof STUDIO_VIRTUAL_MOVE_FEELS)[number];
+export const DEFAULT_STUDIO_VIRTUAL_MOVE_FEEL: StudioVirtualMoveFeel = "crisp";
+
+export function isStudioVirtualMoveFeel(value: unknown): value is StudioVirtualMoveFeel {
+  return typeof value === "string" && (STUDIO_VIRTUAL_MOVE_FEELS as readonly string[]).includes(value);
+}
+
 export interface StudioVirtualGameFeelPreference {
   readonly version: 1;
   /** 화면 흔들림 on/off. */
@@ -22,6 +35,8 @@ export interface StudioVirtualGameFeelPreference {
   readonly inputSensitivity: number;
   /** 가속 배율 0.5~2 (가속도·감속도 스케일). */
   readonly accelerationScale: number;
+  /** 이동 감각(즉응형/관성형). 저장값이 없으면 즉응형이다. */
+  readonly moveFeel: StudioVirtualMoveFeel;
 }
 
 export const STUDIO_VIRTUAL_GAME_FEEL_STORAGE_KEY = "toonspectrum:virtual-space-game-feel:v1";
@@ -34,6 +49,7 @@ export const DEFAULT_STUDIO_VIRTUAL_GAME_FEEL: StudioVirtualGameFeelPreference =
   followOsReducedMotion: true,
   inputSensitivity: 1,
   accelerationScale: 1,
+  moveFeel: DEFAULT_STUDIO_VIRTUAL_MOVE_FEEL,
 });
 
 /** 입력 감도 범위. */
@@ -69,6 +85,8 @@ export function parseStudioVirtualGameFeelPreference(value: unknown): StudioVirt
     // 구버전 저장값(필드 없음)과도 호환되도록 기본값으로 채운다.
     inputSensitivity: clampRange(candidate.inputSensitivity, STUDIO_GAME_FEEL_SENSITIVITY_RANGE.min, STUDIO_GAME_FEEL_SENSITIVITY_RANGE.max, 1),
     accelerationScale: clampRange(candidate.accelerationScale, STUDIO_GAME_FEEL_ACCELERATION_RANGE.min, STUDIO_GAME_FEEL_ACCELERATION_RANGE.max, 1),
+    // moveFeel이 없던 저장값은 새 기본(즉응형)으로 읽는다. 알 수 없는 값도 같은 기본으로 되돌린다.
+    moveFeel: isStudioVirtualMoveFeel(candidate.moveFeel) ? candidate.moveFeel : DEFAULT_STUDIO_VIRTUAL_MOVE_FEEL,
   });
 }
 
