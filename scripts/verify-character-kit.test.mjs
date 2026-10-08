@@ -979,10 +979,16 @@ it("V2: SHA-256·크기 불일치, 파일 없음, 모르는 파일, 대소문자
   assertError(result, "V2", "대소문자만 다른 중복 경로");
 });
 
-it("V3: 베이스 8 MiB·파츠 1.5 MiB 한도를 실제 바이트로 잰다", async () => {
+it("V3: 베이스 16 MiB·파츠 1.5 MiB 한도를 실제 바이트로 잰다", async () => {
   const kit = await newKit();
-  setFile(kit, "bases/male.glb", new Uint8Array(9 * 1024 * 1024));
+  setFile(kit, "bases/male.glb", new Uint8Array(16 * 1024 * 1024));
   setFile(kit, "parts/hair/soft-bob.glb", new Uint8Array(2 * 1024 * 1024));
+  const atLimit = await runVerify(kit, { only: ["V3"] });
+  assert.ok(
+    !errorsOf(atLimit, "V3").some((finding) => finding.message.includes("베이스 GLB")),
+    "베이스 16 MiB는 한도 안이라 위반이 아니어야 합니다.",
+  );
+  setFile(kit, "bases/male.glb", new Uint8Array(16 * 1024 * 1024 + 1));
   const result = await runVerify(kit, { only: ["V3"] });
   assertError(result, "V3", "베이스 GLB");
   assertError(result, "V3", "파츠 GLB");
