@@ -46,6 +46,23 @@ describe("StudioVirtualCharacterPreview", () => {
     expect(view.container.querySelector("img")).toBeNull();
   });
 
+  it("축소 미리보기 사본이 있으면 그 이미지를 원본과 같은 좌표계로 늘려 그리고 칸 좌표는 그대로 둔다", () => {
+    const withPreview = { ...theme, previewTextureUrl: "/assets/test/theme-preview.webp" };
+    render(<StudioVirtualCharacterPreview skin={withPreview} facing="right" alt="축소 사본" />);
+    const preview = screen.getByRole("img", { name: "축소 사본" });
+    const image = preview.querySelector("image");
+    expect(image?.getAttribute("href")).toBe("/assets/test/theme-preview.webp");
+    expect(preview.getAttribute("viewBox")).toBe("0 256 192 257");
+    expect(image?.getAttribute("width")).toBe("1537");
+    expect(image?.getAttribute("height")).toBe("1025");
+    // 사본의 비율이 원본과 반올림 오차만큼 달라도 칸 좌표가 밀리지 않게 상자에 정확히 맞춘다.
+    expect(image?.getAttribute("preserveAspectRatio")).toBe("none");
+    // 사본이 없는 스킨은 예전처럼 원본 URL을 쓴다.
+    cleanup();
+    render(<StudioVirtualCharacterPreview skin={theme} alt="원본" />);
+    expect(screen.getByRole("img", { name: "원본" }).querySelector("image")?.getAttribute("href")).toBe(theme.directional.down);
+  });
+
   it("홀수 원본의 마지막 셀도 원본 끝까지 보존하고 손상된 프레임은 전체 시트로 노출하지 않는다", () => {
     const asset = studioCharacterStaticAsset(theme, "up");
     expect(studioCharacterPreviewFrame({ ...asset, frame: 31 })).toEqual({ index: 31, x: 1345, y: 769, width: 192, height: 256 });
