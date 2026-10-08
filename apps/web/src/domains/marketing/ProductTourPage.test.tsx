@@ -203,6 +203,14 @@ describe("long-form product tour contracts", () => {
     expect(rootSource).toContain("PRODUCT_TOUR_DURATION_SECONDS * PRODUCT_TOUR_FPS");
   });
 
+  it("keeps the in-page film frame from adding a second page title or main landmark", () => {
+    // 같은 컴포지션이 페이지 안 플레이어에도 그려진다. 장면 제목이 h1이거나 본문이 main이면 재생을 시작하는 순간
+    // 페이지에 제목 1단계와 main 랜드마크가 둘씩 생겨 보조 기술의 제목·랜드마크 탐색이 어긋난다.
+    const filmSource = readFileSync(SHARED_REMOTION_SOURCE, "utf8");
+    expect(filmSource).not.toMatch(/<h1[\s>]/u);
+    expect(filmSource).not.toMatch(/<main[\s>]/u);
+  });
+
   it("ships the poster, bilingual captions and real-screen chapter media locally", () => {
     for (const asset of [
       "toonstudio-product-tour-poster.jpg",

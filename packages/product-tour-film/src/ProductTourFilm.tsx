@@ -406,7 +406,7 @@ export function ToonStudioProductTour() {
         </div>
       </header>
 
-      <main
+      <div
         style={{
           position: "absolute",
           inset: "72px 0 52px",
@@ -420,7 +420,7 @@ export function ToonStudioProductTour() {
       >
         <section style={{ transform: `translateY(${(1 - entry) * 26}px)` }}>
           <div style={{ color: accent, fontSize: 12, fontWeight: 800, letterSpacing: ".16em", marginBottom: 22 }}>{chapter.kicker}</div>
-          <h1
+          <h3
             style={{
               margin: 0,
               fontSize: 48,
@@ -431,7 +431,7 @@ export function ToonStudioProductTour() {
             }}
           >
             {chapter.title}
-          </h1>
+          </h3>
           <p style={{ margin: "24px 0 0", color: STARLIGHT.fg2, fontSize: 16, lineHeight: 1.78, wordBreak: "keep-all" }}>{chapter.body}</p>
 
           <div style={{ display: "grid", gap: 9, marginTop: 30 }}>
@@ -467,7 +467,7 @@ export function ToonStudioProductTour() {
         <div style={{ justifySelf: "end", transform: `translateX(${(1 - entry) * 34}px)` }}>
           <ProductSurface chapter={chapter} localFrame={localFrame} durationFrames={durationFrames} />
         </div>
-      </main>
+      </div>
 
       <footer
         style={{
