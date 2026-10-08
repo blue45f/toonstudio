@@ -5,6 +5,10 @@
  * 편집 1건마다 스냅샷을 쌓으면 undo 한 번에 한 글자씩만 되돌아가는 범람이 생기므로,
  * 같은 병합 키를 가진 연속 편집은 시간 창 안에서는 새 스냅샷을 쌓지 않는다.
  * 병합 키가 없는 편집(컷 추가·삭제·이동 같은 이산 조작)은 항상 스냅샷을 쌓는다.
+ *
+ * 병합 키는 컴포넌트·컷 단위가 아니라 연속 입력 컨트롤(글자·숫자·슬라이더) 단위로 준다.
+ * 컷 하나를 키 하나로 묶으면 1.2초 안에 누른 버튼(구도 맞바꾸기·기본값·추가·제거)과 선택 상자 변경까지
+ * 앞선 입력과 한 단계로 병합돼, 실행 취소 한 번이 마지막 조작보다 많이 되돌린다.
  */
 
 export interface PromoHistoryMeta {
@@ -34,6 +38,17 @@ export function nextPromoHistoryMeta(
   now: number,
 ): PromoHistoryMeta {
   return { key: coalesceKey ?? null, at: now };
+}
+
+/**
+ * 하위 편집기가 넘긴 필드 키에 편집 범위(컷·믹서·음성 항목 등)를 붙인다.
+ * 필드 키는 연속 입력 컨트롤만 넘긴다. 필드 키 없이 호출한 이산 조작은 병합 키도 없어 항상 새 스냅샷을 쌓는다.
+ */
+export function scopedPromoCoalesceKey(
+  scope: string,
+  field: string | undefined,
+): string | undefined {
+  return field ? `${scope}:${field}` : undefined;
 }
 
 /** 상한을 지키며 스냅샷을 쌓는다. */
