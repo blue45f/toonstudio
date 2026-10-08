@@ -60,6 +60,24 @@ export const fanPostReplies = pgTable(
 );
 
 
+// 글 좋아요 — 한 회원은 한 글에 한 번만. creator_promotion_comment_like·feedback_vote와 같은 복합 PK 패턴.
+export const fanPostLikes = pgTable(
+  "fan_post_like",
+  {
+    postId: text("postId")
+      .notNull()
+      .references(() => fanPosts.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.postId, t.userId] }),
+    index("idx_fan_post_like_user").on(t.userId, t.createdAt),
+  ],
+);
+
 // ── 회원 개설형 커뮤니티 ─────────────────────────────────────────────
 // 기존 community_cafe URL/행을 그대로 확장하고 게시글은 fan_post(scope='cafe')를 재사용한다.
 export const communityCafes = pgTable(

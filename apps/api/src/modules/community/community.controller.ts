@@ -376,6 +376,17 @@ export class CommunityController {
     return this.communityService.getPost(id, userId ?? null);
   }
 
+  @Post("/community/posts/:id/like")
+  async togglePostLike(
+    @Param("id") id: string,
+    @Headers("x-user-id") userId?: string,
+    @Req() req?: Request,
+  ) {
+    const uid = enforceUserOrError(userId);
+    this.checkRateLimit(`fan-like:${uid}:${parseIp(req ?? ({} as Request))}`, 120, 10 * 60_000);
+    return this.communityService.togglePostLike(id, uid);
+  }
+
   @Delete("/community/posts/:id")
   async deletePost(@Param("id") id: string, @Headers("x-user-id") userId?: string) {
     return this.communityService.deletePost(id, enforceUserOrError(userId));

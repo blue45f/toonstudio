@@ -25,6 +25,7 @@ import {
   parseCommunityScopeFilter,
   parsePostKindOrNull,
   parsePostSort,
+  toggleFanPostLike,
   validatePostInput,
   validateReplyPayload,
 } from "../../server/community";
@@ -316,9 +317,23 @@ export class CommunityService {
         () => assertCafePostAccess(postId, viewerId),
         "community.posts.read",
       );
-      const post = await getFanPost(postId);
+      const post = await getFanPost(postId, viewerId);
       if (!post) throw new NotFoundException("토론 글을 찾을 수 없어요.");
       return post;
+    });
+  }
+
+  async togglePostLike(postId: string, userId: string) {
+    return withDatabaseCapability("community.posts.write", async () => {
+      if (!postId) throw new BadRequestException("postId 필요");
+      // 댓글 작성과 같은 게이트 — 비공개 카페 글에는 회원만 반응할 수 있다.
+      await governed(
+        () => assertCafePostAccess(postId, userId),
+        "community.posts.write",
+      );
+      const result = await toggleFanPostLike(userId, postId);
+      if (!result) throw new NotFoundException("토론 글을 찾을 수 없어요.");
+      return result;
     });
   }
 
