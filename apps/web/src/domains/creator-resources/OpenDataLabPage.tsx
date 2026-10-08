@@ -7,7 +7,8 @@ import {
 import { RESOURCE_BUTTON } from "./navigation";
 import { researchSourceIdentity } from "./research-source-identity";
 import { ResourceLayout } from "./ResourceLayout";
-import { ResearchSourceMark } from "./ResearchSourceCover";
+import { ResearchSourceCardCover } from "./ResearchSourceCover";
+import { StaggerReveal } from "@/shared/components/stagger-reveal";
 
 import type { ResourceProvider } from "@/shared/lib/creator-resources";
 
@@ -92,23 +93,22 @@ export function OpenDataLabPage() {
         </div>
       </div>
     </section>
-    <section aria-labelledby="open-data-providers-title" className="grid gap-4 md:grid-cols-2">
+    <section aria-labelledby="open-data-providers-title">
       <h2 id="open-data-providers-title" className="sr-only">{tx("공개 데이터 제공처")}</h2>
+      <StaggerReveal className="grid gap-4 md:grid-cols-2" itemClassName="h-full">
       {OPEN_DATA_PROVIDERS.map((provider) => {
         const config = RESOURCE_SEARCH_CONFIG[provider];
         const keyless = KEYLESS.has(provider);
         const identity = researchSourceIdentity(provider);
-        return <article key={provider} className={`research-source research-source--${provider} flex flex-col gap-3 rounded-2xl border border-line bg-panel p-5`}>
+        return <article key={provider} className={`research-source research-source--${provider} flex h-full flex-col gap-3 rounded-2xl border border-line bg-panel p-5`}>
+          <ResearchSourceCardCover identity={identity} />
           <div className="flex flex-wrap items-center gap-2">
             <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${keyless ? "border-good/30 bg-good/10" : "border-accent/30 bg-accent-soft text-accent"}`}>
               {keyless ? tx("가입·키 없음") : tx("무료 서버 키 필요")}
             </span>
             <span className="text-xs text-fg-2">{tx(WORKFLOW[provider])}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <ResearchSourceMark identity={identity} />
-            <h3 className="text-lg font-bold">{RESOURCE_LABELS[provider]}</h3>
-          </div>
+          <h3 className="text-lg font-bold">{RESOURCE_LABELS[provider]}</h3>
           <p className="flex items-center gap-2 text-sm font-semibold text-fg-2">
             <span aria-hidden="true" className="resource-source-dot" />
             {identity.tagline}
@@ -119,6 +119,7 @@ export function OpenDataLabPage() {
           </Link>
         </article>;
       })}
+      </StaggerReveal>
     </section>
     <section className="flex flex-wrap gap-3 rounded-2xl border border-line bg-panel p-6">
       <Link className={RESOURCE_BUTTON} to="/research">{tx("전체 저장 보드")}</Link>
