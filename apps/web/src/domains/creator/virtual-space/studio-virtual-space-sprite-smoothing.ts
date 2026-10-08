@@ -299,6 +299,86 @@ export function studioPeerPresenceFade(input: {
   return smoothstepUnit(progress);
 }
 
+/** NPC 등장 페이드인 시간(ms). 동료 입장(260ms)보다 살짝 짧게 잡아 관심 경계를 자주 넘나드는 NPC가 무겁게 느껴지지 않게 한다. */
+export const STUDIO_ACTOR_VISIBILITY_FADE_IN_MS = 240;
+/** NPC 퇴장 페이드아웃 시간(ms). 이 구간 동안은 계속 그리되 관심 상한 카운트에서는 이미 빠져 있다. */
+export const STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS = 180;
+/**
+ * 동시에 페이드아웃을 허용하는 배우 수 상한.
+ * 카메라 점프·월드 경계 이동처럼 한꺼번에 많은 NPC가 관심에서 벗어날 때 초과분은
+ * 즉시 숨겨, 그리기 상한(래칫)을 페이드가 무너뜨리지 않게 한다.
+ */
+export const STUDIO_ACTOR_VISIBILITY_MAX_FADE_OUTS = 8;
+
+/**
+ * 배우 가시성 페이드 상태. 관심 판정(보일 자격)이 켜지고 꺼질 때 스프라이트가
+ * 툭 나타나고 사라지던 NPC 팝을 알파 전이로 바꾸는 표시 전용 상태 머신이다.
+ * 논리 존재·이동·충돌과 무관하며, `fromAlpha`에서 목표(보임 1·숨김 0)로
+ * smoothstep 전이한다. 전이 도중 판정이 뒤집히면 그 순간의 알파에서 이어 시작한다.
+ */
+export interface StudioActorVisibilityFadeState {
+  /** 전이가 시작된 순간의 알파(0~1). */
+  readonly fromAlpha: number;
+  /** 현재 목표: true면 등장 중/표시, false면 퇴장 중/숨김. */
+  readonly targetVisible: boolean;
+  /** 전이 시작 시각(ms, 씬 시간). */
+  readonly startedAt: number;
+}
+
+export function createStudioActorVisibilityFadeState(visible = true): StudioActorVisibilityFadeState {
+  return { fromAlpha: visible ? 1 : 0, targetVisible: visible, startedAt: 0 };
+}
+
+function visibilityFadeDurationMs(state: StudioActorVisibilityFadeState): number {
+  const fullMs = state.targetVisible ? STUDIO_ACTOR_VISIBILITY_FADE_IN_MS : STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS;
+  const distance = Math.abs((state.targetVisible ? 1 : 0) - finiteOr(state.fromAlpha, state.targetVisible ? 1 : 0));
+  return fullMs * distance;
+}
+
+/** 현재 시각의 가시성 알파(0~1). 전이 길이는 남은 거리에 비례해 도중 반전이 짧게 끝난다. */
+export function studioActorVisibilityFadeAlpha(state: StudioActorVisibilityFadeState, timeMs: number): number {
+  const target = state.targetVisible ? 1 : 0;
+  const from = Math.min(1, Math.max(0, finiteOr(state.fromAlpha, target)));
+  if (from === target) return target;
+  const durationMs = visibilityFadeDurationMs(state);
+  if (!(durationMs > 0)) return target;
+  const progress = Math.min(1, Math.max(0, (finiteOr(timeMs, state.startedAt) - state.startedAt) / durationMs));
+  return from + (target - from) * smoothstepUnit(progress);
+}
+
+/**
+ * 이 배우를 이번 프레임에 그려야 하는지.
+ * 페이드인 첫 프레임은 알파가 아직 0이라, 목표가 보임이면 알파와 무관하게 그리기 시작한다.
+ */
+export function studioActorVisibilityFadeRendering(state: StudioActorVisibilityFadeState, timeMs: number): boolean {
+  return state.targetVisible || studioActorVisibilityFadeAlpha(state, timeMs) > 0;
+}
+
+/**
+ * 관심 판정을 상태에 반영한다.
+ * - 상태가 없으면(첫 관측) 판정을 즉시 채택한다 — 씬이 열릴 때부터 페이드가 걸리지 않게.
+ * - 목표가 같으면 상태를 그대로 돌려준다(매 프레임 호출해도 전이가 재시작되지 않는다).
+ * - 모션 줄이기·효과 억제·즉시 처분(instant)이면 페이드 없이 갈린다(동료 프레즌스와 같은 게이트).
+ */
+export function transitionStudioActorVisibilityFade(
+  state: StudioActorVisibilityFadeState | null,
+  wantedVisible: boolean,
+  timeMs: number,
+  options: {
+    readonly reducedMotion?: boolean;
+    readonly effectsSuppressed?: boolean;
+    readonly instant?: boolean;
+  } = {},
+): StudioActorVisibilityFadeState {
+  const now = finiteOr(timeMs, 0);
+  if (!state) return { fromAlpha: wantedVisible ? 1 : 0, targetVisible: wantedVisible, startedAt: now };
+  if (state.targetVisible === wantedVisible) return state;
+  if (options.instant || options.reducedMotion || options.effectsSuppressed) {
+    return { fromAlpha: wantedVisible ? 1 : 0, targetVisible: wantedVisible, startedAt: now };
+  }
+  return { fromAlpha: studioActorVisibilityFadeAlpha(state, now), targetVisible: wantedVisible, startedAt: now };
+}
+
 /** 표시 감쇠 시간상수의 하한(초). 달리기처럼 빠를 때 위치 뒤처짐을 줄이는 바닥이다. */
 export const STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS = 0.03;
 /** 표시 감쇠 시간상수의 기준 속도(px/s). 이 속도까지는 기본 τ를 유지한다. */

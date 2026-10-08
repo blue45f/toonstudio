@@ -9,15 +9,21 @@ import {
   STUDIO_PEER_EXIT_FADE_MS,
   STUDIO_SPRITE_CROSSFADE_MS,
   STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS,
+  STUDIO_ACTOR_VISIBILITY_FADE_IN_MS,
+  STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS,
+  createStudioActorVisibilityFadeState,
   createStudioSpriteCrossfadeState,
   dampStudioDisplayPoint,
   finishStudioSpriteCrossfade,
+  studioActorVisibilityFadeAlpha,
+  studioActorVisibilityFadeRendering,
   studioBreathPhaseAt,
   studioDisplayDampTauSeconds,
   studioPeerPresenceFade,
   studioPoseSettleScaleY,
   studioSmoothingPhaseSeed,
   studioSpriteCrossfadeAlpha,
+  transitionStudioActorVisibilityFade,
   transitionStudioSpriteCrossfade,
   type StudioSpriteVisualIdentity,
 } from "./studio-virtual-space-sprite-smoothing";
@@ -336,5 +342,75 @@ describe("studioPoseSettleScaleY", () => {
     expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 190, reducedMotion: true })).toBe(1);
     expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: Number.NaN, reducedMotion: false })).toBe(1);
     expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: -5, reducedMotion: false })).toBe(1);
+  });
+});
+
+describe("배우 가시성 페이드 (NPC 등장·퇴장)", () => {
+  it("첫 관측은 판정을 즉시 채택해 씬 시작부터 페이드가 걸리지 않는다", () => {
+    const shown = transitionStudioActorVisibilityFade(null, true, 5_000);
+    expect(studioActorVisibilityFadeAlpha(shown, 5_000)).toBe(1);
+    expect(studioActorVisibilityFadeRendering(shown, 5_000)).toBe(true);
+    const hidden = transitionStudioActorVisibilityFade(null, false, 5_000);
+    expect(studioActorVisibilityFadeAlpha(hidden, 5_000)).toBe(0);
+    expect(studioActorVisibilityFadeRendering(hidden, 5_000)).toBe(false);
+  });
+
+  it("등장은 0에서 smoothstep으로 차오르고 구간이 끝나면 1에 고정된다", () => {
+    const hidden = createStudioActorVisibilityFadeState(false);
+    const entering = transitionStudioActorVisibilityFade(hidden, true, 1_000);
+    expect(studioActorVisibilityFadeAlpha(entering, 1_000)).toBe(0);
+    // 페이드인 첫 프레임은 알파 0이어도 그리기 시작한다.
+    expect(studioActorVisibilityFadeRendering(entering, 1_000)).toBe(true);
+    const mid = studioActorVisibilityFadeAlpha(entering, 1_000 + STUDIO_ACTOR_VISIBILITY_FADE_IN_MS / 2);
+    expect(mid).toBeCloseTo(0.5, 5);
+    expect(studioActorVisibilityFadeAlpha(entering, 1_000 + STUDIO_ACTOR_VISIBILITY_FADE_IN_MS)).toBe(1);
+    expect(studioActorVisibilityFadeAlpha(entering, 9_999)).toBe(1);
+  });
+
+  it("퇴장은 페이드아웃 구간 동안 계속 그려지고 끝나면 렌더링이 멈춘다", () => {
+    const shown = createStudioActorVisibilityFadeState(true);
+    const leaving = transitionStudioActorVisibilityFade(shown, false, 2_000);
+    expect(studioActorVisibilityFadeAlpha(leaving, 2_000)).toBe(1);
+    expect(studioActorVisibilityFadeRendering(leaving, 2_000 + STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS / 2)).toBe(true);
+    expect(studioActorVisibilityFadeAlpha(leaving, 2_000 + STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS)).toBe(0);
+    expect(studioActorVisibilityFadeRendering(leaving, 2_000 + STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS)).toBe(false);
+    expect(studioActorVisibilityFadeRendering(leaving, 9_999)).toBe(false);
+  });
+
+  it("목표가 같으면 같은 상태를 돌려줘 전이가 재시작되지 않는다", () => {
+    const shown = createStudioActorVisibilityFadeState(true);
+    expect(transitionStudioActorVisibilityFade(shown, true, 3_000)).toBe(shown);
+    const leaving = transitionStudioActorVisibilityFade(shown, false, 3_000);
+    expect(transitionStudioActorVisibilityFade(leaving, false, 3_050)).toBe(leaving);
+  });
+
+  it("퇴장 도중 다시 들어오면 그 순간의 알파에서 이어 오르고 남은 거리만큼 짧아진다", () => {
+    const shown = createStudioActorVisibilityFadeState(true);
+    const leaving = transitionStudioActorVisibilityFade(shown, false, 0);
+    const halfwayAt = STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS / 2;
+    expect(studioActorVisibilityFadeAlpha(leaving, halfwayAt)).toBeCloseTo(0.5, 5);
+    const returning = transitionStudioActorVisibilityFade(leaving, true, halfwayAt);
+    expect(studioActorVisibilityFadeAlpha(returning, halfwayAt)).toBeCloseTo(0.5, 5);
+    // 남은 거리가 절반이라 페이드인 전체 구간의 절반이면 1에 닿는다.
+    expect(studioActorVisibilityFadeAlpha(returning, halfwayAt + STUDIO_ACTOR_VISIBILITY_FADE_IN_MS / 2)).toBe(1);
+  });
+
+  it("모션 줄이기·효과 억제·즉시 처분에서는 페이드 없이 갈린다", () => {
+    const shown = createStudioActorVisibilityFadeState(true);
+    const hidden = createStudioActorVisibilityFadeState(false);
+    for (const options of [{ reducedMotion: true }, { effectsSuppressed: true }, { instant: true }]) {
+      const out = transitionStudioActorVisibilityFade(shown, false, 1_000, options);
+      expect(studioActorVisibilityFadeAlpha(out, 1_000)).toBe(0);
+      expect(studioActorVisibilityFadeRendering(out, 1_000)).toBe(false);
+      const back = transitionStudioActorVisibilityFade(hidden, true, 1_000, options);
+      expect(studioActorVisibilityFadeAlpha(back, 1_000)).toBe(1);
+    }
+  });
+
+  it("깨진 시각·알파에서도 알파는 0~1을 벗어나지 않는다", () => {
+    const broken = { fromAlpha: Number.NaN, targetVisible: true, startedAt: 100 };
+    expect(studioActorVisibilityFadeAlpha(broken, Number.NaN)).toBe(1);
+    const leaving = transitionStudioActorVisibilityFade(createStudioActorVisibilityFadeState(true), false, 0);
+    expect(studioActorVisibilityFadeAlpha(leaving, -50)).toBe(1);
   });
 });
