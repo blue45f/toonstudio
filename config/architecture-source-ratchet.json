@@ -2,7 +2,7 @@
   "lintStrictMaxWarnings": 2421,
   "creatorRootFiles": 3484,
   "webAdminFiles": 74,
-  "apiServerFiles": 67,
+  "apiServerFiles": 68,
   "packagesCoreFiles": 131,
   "desktopSyncAgentFiles": 0,
   "trackedQaFiles": 0,
@@ -26,5 +26,5 @@
   "rootDrizzleConfigFiles": 0,
   "apiHttpFiles": 13,
   "apiAdapterFiles": 78,
-  "apiDatabaseFiles": 151
+  "apiDatabaseFiles": 153
 }

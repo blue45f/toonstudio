@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StudioVirtualSpacePhaserCanvas, type StudioVirtualSpacePhaserCanvasProps } from "./StudioVirtualSpacePhaserCanvas";
+import { STUDIO_BOOT_STALL_MS } from "./experience/studio-visible-boot-deadline";
 import { StudioVirtualSpaceEngineBridge } from "./studio-virtual-space-engine-bridge";
 import { studioVirtualPlaceWorldManifest } from "./studio-virtual-space-place-world";
 
@@ -54,7 +55,7 @@ describe("Phaser 장면 초기화 진단과 재시도", () => {
     expect(host.dataset.engineError).toBeUndefined();
     expect(host.dataset.sceneArt).toBeUndefined();
     expect(host.dataset.tileError).toBeUndefined();
-    act(() => { vi.advanceTimersByTime(25_000); });
+    act(() => { vi.advanceTimersByTime(STUDIO_BOOT_STALL_MS); });
     expect(host.dataset.engineError).toBe("boot-timeout:waiting-frame");
   });
 
@@ -80,7 +81,7 @@ describe("Phaser 장면 초기화 진단과 재시도", () => {
     act(() => { vi.advanceTimersByTime(60_000); });
     expect(host?.dataset.studioEngineStatus).toBe("loading");
     expect(host?.dataset.engineError).toBeUndefined();
-    act(() => { visibility.mockReturnValue(false); document.dispatchEvent(new Event("visibilitychange")); vi.advanceTimersByTime(20_000); });
+    act(() => { visibility.mockReturnValue(false); document.dispatchEvent(new Event("visibilitychange")); vi.advanceTimersByTime(STUDIO_BOOT_STALL_MS - 5_000); });
     expect(host?.dataset.engineError).toBe("boot-timeout:waiting-frame");
   });
 
