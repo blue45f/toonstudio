@@ -98,6 +98,15 @@ describe("admin lazy i18n loader", () => {
     );
   });
 
+  it("권한 없음 게이트 문구에 내부 구성 힌트를 노출하지 않는다", () => {
+    // O-B20-1: 권한 없는 사용자에게 ADMIN_EMAILS·users.role 같은 내부 권한 구성 힌트가 보이면 안 된다.
+    const body = resolveI18nValue("ko-KR", "admin.gate.forbiddenBody");
+    expect(body).toBe(
+      "이 계정에는 관리자 권한이 없습니다. 권한이 필요하면 운영자에게 문의하세요.",
+    );
+    expect(body).not.toMatch(/ADMIN_EMAILS|users\.role/);
+  });
+
   it("constructs an asset URL without duplicating separators", () => {
     expect(adminI18nAssetUrl("zh-hant", "/preview")).toBe(
       "/preview/i18n/admin/dashboard/zh-hant.json",
