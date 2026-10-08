@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Завршена регистрација.",
   "auth.callback.message.doneDemo": "Демо пријавување завршено.",
   "auth.callback.demo.message": "Се пријавувате со демо сметка.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

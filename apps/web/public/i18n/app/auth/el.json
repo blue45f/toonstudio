@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Η εγγραφή ολοκληρώθηκε.",
   "auth.callback.message.doneDemo": "Η εγγραφή ολοκληρώθηκε.",
   "auth.callback.demo.message": "Μπορεί να έχετε συνδεθεί με demo λογαριασμό.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

@@ -18,5 +18,6 @@
   "auth.callback.message.done": "ምዝገባው ተጠናቅቋል በቅርቡ አቅጣጫውን ይቀይራል።",
   "auth.callback.message.doneDemo": "የዲሞ ምዝገባ ተጠናቅቋል በቅርቡ አቅጣጫውን ይቀይራል።",
   "auth.callback.demo.message": "በዴሞ መለያ ገብተሃል፤ አንዳንድ ባህሪያት ውስን ሊሆኑ ይችላሉ።",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

@@ -18,5 +18,6 @@
   "auth.callback.message.done": "ההשגחה הסתיימה, אני מחזירה בקרוב.",
   "auth.callback.message.doneDemo": "סיום הדמו שלם, מחזור בקרוב.",
   "auth.callback.demo.message": "אתה נכנס עם חשבון דמו. כמה תכונות עשויות להיות מוגבלות.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

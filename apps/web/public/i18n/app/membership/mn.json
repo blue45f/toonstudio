@@ -78,5 +78,6 @@
   "membership.tierEditor.priceHint": "Шүтэн бишрэгчид сар бүр төлөх дүн.",
   "membership.tierEditor.priceLabel": "Сарын үнэ (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Хадгалах"
+  "membership.tierEditor.save": "Хадгалах",
+  "membership.creatorPage.statusActive": "{count} tiers are live on the reader sign-up screen"
 }

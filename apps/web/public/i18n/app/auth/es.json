@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Se ha completado el inicio de sesión.",
   "auth.callback.message.doneDemo": "Se ha completado el registro de demostración.",
   "auth.callback.demo.message": "Usted ha iniciado sesión con una cuenta demo. Algunas características pueden ser limitadas.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

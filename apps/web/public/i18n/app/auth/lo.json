@@ -18,5 +18,6 @@
   "auth.callback.message.done": "ການລົງທະບຽນ ສໍາ ເລັດແລ້ວ, ຈະປ່ຽນເສັ້ນທາງໃນໄວໆນີ້.",
   "auth.callback.message.doneDemo": "ການລົງທະບຽນ Demo ສໍາ ເລັດແລ້ວ. ການປ່ຽນເສັ້ນທາງໃນໄວໆນີ້.",
   "auth.callback.demo.message": "ທ່ານໄດ້ເຂົ້າສູ່ລະບົບດ້ວຍບັນຊີ demo ບາງຄຸນສົມບັດອາດຈະ ຈໍາ ກັດ.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

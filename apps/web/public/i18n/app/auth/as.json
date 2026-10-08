@@ -18,5 +18,6 @@
   "auth.callback.message.done": "লগ-ইন সম্পূৰ্ণ কৰা হৈছে। শীঘ্ৰে পুনঃনিৰ্দেশিত হ'ব।",
   "auth.callback.message.doneDemo": "ডেমো সাইন ইন সম্পূৰ্ণ হৈছে। অতি সোনকালে পুনঃনিৰ্দেশিত হ'ব।",
   "auth.callback.demo.message": "আপুনি এটা ডেমো একাউণ্টৰ সৈতে লগ ইন হৈছে। কিছুমান বৈশিষ্ট্য সীমিত হ'ব পাৰে।",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

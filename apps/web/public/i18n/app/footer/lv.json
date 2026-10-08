@@ -48,5 +48,6 @@
   "footer.business.hosting": "Uzglabāšanas pakalpojums",
   "footer.business.serviceType": "Platformas veids",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Sīkāka informācija"
+  "footer.logoTag": "Sīkāka informācija",
+  "footer.link.features": "All features at a glance"
 }

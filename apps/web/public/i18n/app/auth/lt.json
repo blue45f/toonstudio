@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Pasirašymas baigtas.",
   "auth.callback.message.doneDemo": "Demos registracija baigta.",
   "auth.callback.demo.message": "Jūs užsiregistruojate demo paskyrą.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Ro'yxatdan o'tish tugallangan.",
   "auth.callback.message.doneDemo": "Demo-ilova tugallangan. Tez orada qayta yo'naltiriladi.",
   "auth.callback.demo.message": "Siz demo hisob qaydnomangiz bilan kirasiz. Ba'zi xususiyatlar cheklangan bo'lishi mumkin.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }
