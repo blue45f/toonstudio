@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { DECK_TRACKS } from "./technology/engineering-deck-state";
 import { ENGINEERING_CHAPTER_COUNT } from "./technology/engineering-tech-pages";
 
 import {
@@ -473,8 +474,8 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
         "/about/technology",
         "기술과 신뢰",
         "Technology & trust",
-        "웹·2D·3D·저장·협업 기술과 신뢰 원칙",
-        "See the web, 2D, 3D, storage, collaboration and trust foundations",
+        "기술 자료의 시작점: 읽는 길, 웹·2D·3D·저장·협업 기술과 신뢰 원칙",
+        "The engineering starting point: reading routes, plus the web, 2D, 3D, storage, collaboration and trust foundations",
       ),
       destination(
         "/about/technology/architecture",
@@ -529,8 +530,8 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
         "/about/technology/deck",
         "기술 발표 모드",
         "Engineering deck",
-        "약 11분·30분·45분 세 발표 트랙의 웹 슬라이드와 발표자 도구, 120분 워크숍 모듈",
-        "Web slides and presenter tools in three tracks of about 11, 30 and 45 minutes, plus 120-minute workshop modules",
+        `트랙 ${DECK_TRACKS.length}개(세미나 발표·핵심 요약·심화 강의·도감 부록)의 웹 슬라이드와 발표자 도구, 워크숍 모듈`,
+        `Web slides and presenter tools in ${DECK_TRACKS.length} tracks (seminar talk, brief, deep lecture, atlas appendix), plus workshop modules`,
       ),
       destination(
         "/about/technology/videos",
