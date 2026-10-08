@@ -6,9 +6,11 @@ import { describe, expect, it } from "vitest";
 import {
   RESEARCH_SOURCE_PROVIDERS,
   RESEARCH_SOURCE_ROUTE_PROVIDERS,
+  researchSourceArtSrc,
   researchSourceIdentity,
   researchSourceIdentityForRoute,
 } from "./research-source-identity";
+import { OPEN_DATA_PROVIDERS } from "./resource-search-config";
 import { RESOURCE_SOURCES } from "./sources";
 
 import { RESOURCE_LABELS } from "@/shared/lib/creator-resources";
@@ -47,6 +49,27 @@ describe("리서치 소스 정체성 키트", () => {
       usedArt.set(art, provider);
       const artPath = fileURLToPath(new URL(`../../../public/brand/illustrated-20260928/${art}.webp`, import.meta.url));
       expect(existsSync(artPath), `${provider}의 대표 비주얼 ${art}.webp 파일이 없다`).toBe(true);
+    }
+  });
+
+  it("장면 표지는 실재하는 전용 파일을 쓰고, 소스끼리 겹치지 않으며 브랜드 아트와 함께 쓰지 않는다", () => {
+    const usedScene = new Map<string, string>();
+    for (const provider of ALL_PROVIDERS) {
+      const { art, sceneArt } = researchSourceIdentity(provider);
+      if (!sceneArt) continue;
+      expect(art, `${provider}는 브랜드 아트와 장면 표지를 함께 쓴다`).toBeNull();
+      expect(usedScene.has(sceneArt), `${provider}의 장면 표지 ${sceneArt}가 ${usedScene.get(sceneArt)}와 겹친다`).toBe(false);
+      usedScene.set(sceneArt, provider);
+      const scenePath = fileURLToPath(new URL(`../../../public/brand/research-sources-20261008/${sceneArt}.webp`, import.meta.url));
+      expect(existsSync(scenePath), `${provider}의 장면 표지 ${sceneArt}.webp 파일이 없다`).toBe(true);
+    }
+  });
+
+  it("공개 데이터 허브 제공처는 전부 실물 아트(브랜드 일러스트 또는 장면 표지)를 갖는다", () => {
+    for (const provider of OPEN_DATA_PROVIDERS) {
+      const identity = researchSourceIdentity(provider);
+      expect(identity.art ?? identity.sceneArt, `${provider}에 실물 아트가 없다`).toBeTruthy();
+      expect(researchSourceArtSrc(identity)).toBeTruthy();
     }
   });
 

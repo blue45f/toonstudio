@@ -39,7 +39,8 @@ describe("resource source cost visibility", () => {
     // "Wikidata·Wikimedia" 행이 아니라 "Wikimedia Analytics" 행이다.
     const wikimedia = screen.getByRole("heading", { name: "Wikimedia Analytics" }).closest("article");
     expect(wikimedia?.classList.contains("research-source--wikimedia")).toBe(true);
-    expect(wikimedia?.querySelector(".resource-source-cover")).toBeTruthy();
+    // 위키미디어는 장면 표지를 마크로 쓴다(디자인 웨이브 8-A).
+    expect(wikimedia?.querySelector("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/wikimedia.webp");
     const ambient = container.querySelector("article.research-source--ambientcg");
     expect(ambient?.querySelector("img")?.getAttribute("src")).toBe("/brand/illustrated-20260928/materials.webp");
     // 경로가 없는 Google Books는 제공처가 실재해도 정체성을 추정해 붙이지 않는다.

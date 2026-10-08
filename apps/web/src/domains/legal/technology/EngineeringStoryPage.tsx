@@ -211,7 +211,7 @@ export function EngineeringStoryPage() {
         points={[
           bi("브라우저 한 곳에서 기획·드로잉·3D·협업·AI·발행이 이어지도록 제작 맥락을 연결했습니다.", "Planning, drawing, 3D, collaboration, AI and publishing stay connected in one browser workspace."),
           bi("원칙은 하나입니다. 데이터마다 권위를 하나로 둡니다(작품 원본은 기기, 원장은 서버, 실시간은 엣지).", "One principle: each kind of data has one authority (sources on the device, ledgers on the server, realtime at the edge)."),
-          bi("챕터는 주제별 여덟 묶음으로 정리했고, 왼쪽 목차가 지금 읽는 위치를 따라갑니다.", "Chapters are grouped into eight themes, and the table of contents follows your position."),
+          bi("챕터마다 주장의 근거를 함께 적습니다. 실제 파일 경로와 문서 위치를 근거로 붙여, 읽은 내용을 코드에서 바로 되짚을 수 있습니다.", "Every chapter states its evidence alongside its claims — real file paths and document locations, so what you read can be traced straight back to the code."),
           bi("상태 배지로 운영 중·설정 필요·실험·문서화를 구분하며, 실험을 운영 기능처럼 말하지 않습니다.", "Status badges separate live, configured, experimental and documented work; experiments are never presented as live."),
         ]}
         meta={(
@@ -221,6 +221,11 @@ export function EngineeringStoryPage() {
             ))}
             <EngineeringMetaChip>
               {formatI18nTemplate(String(bi("{value0}개 챕터", "{value0} chapters")), { value0: PUBLISHED_ENGINEERING_CHAPTERS.length })}
+            </EngineeringMetaChip>
+            <EngineeringMetaChip>
+              {formatI18nTemplate(String(bi("근거 {value0}건", "{value0} evidence items")), {
+                value0: PUBLISHED_ENGINEERING_CHAPTERS.reduce((sum, chapter) => sum + chapter.evidence.length, 0),
+              })}
             </EngineeringMetaChip>
           </>
         )}

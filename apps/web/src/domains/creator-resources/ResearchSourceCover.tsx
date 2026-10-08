@@ -1,20 +1,23 @@
+import { researchSourceArtSrc } from "./research-source-identity";
+
 import type { ResearchSourceIdentity } from "./research-source-identity";
 
 /**
  * 소스 대표 비주얼 — 마스트헤드 오른쪽 자리를 소스의 얼굴로 쓴다.
  *
- * 맞는 기존 브랜드 일러스트가 있는 소스는 그 아트를, 없는 소스는 소스 액센트
- * 그라디언트 + 큰 글리프 + 소스 이름의 타이포그래픽 표지를 쓴다. 둘 다 장식
- * 영역이다 — 소스 이름과 한 줄 정체성은 옆의 본문(칩·태그라인)이 텍스트로
- * 담당하므로, 표지는 aria-hidden으로 두고 이미지도 빈 alt를 유지한다
- * (기존 마스트헤드 아트의 접근성 계약과 동일).
+ * 실물 아트(브랜드 일러스트 또는 소스 장면 표지)가 있는 소스는 그 아트를,
+ * 없는 소스는 소스 액센트 그라디언트 + 큰 글리프 + 소스 이름의 타이포그래픽
+ * 표지를 쓴다. 둘 다 장식 영역이다 — 소스 이름과 한 줄 정체성은 옆의 본문
+ * (칩·태그라인)이 텍스트로 담당하므로, 표지는 aria-hidden으로 두고 이미지도
+ * 빈 alt를 유지한다 (기존 마스트헤드 아트의 접근성 계약과 동일).
  */
 export function ResearchSourceCover({ identity }: { identity: ResearchSourceIdentity }) {
-  if (identity.art) {
+  const src = researchSourceArtSrc(identity);
+  if (src) {
     return (
       <img
         className="resource-masthead-image"
-        src={`/brand/illustrated-20260928/${identity.art}.webp`}
+        src={src}
         alt=""
         aria-hidden="true"
         width={320}
@@ -47,10 +50,11 @@ export function ResearchSourceCover({ identity }: { identity: ResearchSourceIden
  * 이름·한 줄 정체성은 옆 본문이 텍스트로 담당하므로 마크는 장식으로 둔다.
  */
 export function ResearchSourceMark({ identity }: { identity: ResearchSourceIdentity }) {
-  if (identity.art) {
+  const src = researchSourceArtSrc(identity);
+  if (src) {
     return (
       <img
-        src={`/brand/illustrated-20260928/${identity.art}.webp`}
+        src={src}
         alt=""
         aria-hidden="true"
         width={44}
@@ -81,11 +85,12 @@ export function ResearchSourceMark({ identity }: { identity: ResearchSourceIdent
  * 패딩(p-5)만큼 음수 마진으로 밀어 넣어 카드 모서리에 붙는 전제다.
  */
 export function ResearchSourceCardCover({ identity }: { identity: ResearchSourceIdentity }) {
-  if (identity.art) {
+  const src = researchSourceArtSrc(identity);
+  if (src) {
     return (
       <div aria-hidden="true" className="relative -mx-5 -mt-5 overflow-hidden rounded-t-2xl">
         <img
-          src={`/brand/illustrated-20260928/${identity.art}.webp`}
+          src={src}
           alt=""
           loading="lazy"
           decoding="async"
