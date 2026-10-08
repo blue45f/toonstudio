@@ -3,8 +3,10 @@ import { Link, useSearchParams } from "react-router-dom";
 import { buildContentBrief, CONTENT_FORMATS, CONTENT_PACKS, findContentPack, isContentFormat, MAX_BRIEF_SOURCES } from "./content-packs";
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { researchSourceIdentity } from "./research-source-identity";
+import { ArtBand } from "./ArtBand";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
 import { ResourceCard } from "./ResourceSearchPage";
+import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { TranslatedQueryNotice } from "./TranslatedQueryNotice";
 import { useTranslatedResearchQuery } from "./use-translated-research-query";
 import { packProvider, usePackResourceSearch } from "./usePackResourceSearch";
@@ -21,6 +23,25 @@ import { resolveReferenceQuery } from "../../../../../packages/core/src/referenc
 
 const SCOPE = "domains.creator.resources.ContentPacksPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
+
+/**
+ * 장면 팩별 아트 배정 (디자인 웨이브 7) — 팩의 분위기를 브랜드 일러스트로 읽히게 한다.
+ * 일러스트는 장면의 무드 신호일 뿐 팩 데이터가 아니며, 카드 본문(제목·가정)이 내용을 담당한다.
+ */
+const PACK_ART: Readonly<Record<string, string>> = {
+  armor: "project-crimson",
+  costume: "character-pink",
+  tea: "materials",
+  mirror: "canvas-noir",
+  lantern: "luna",
+  bridge: "background-city",
+  garden: "hero",
+  wave: "character-blue",
+  snow: "blank-canvas",
+  pattern: "storyboard",
+  clay: "project-romance",
+  music: "background-classroom",
+};
 
 export function ContentPacksPage() {
   useBilingualI18nRevision();
@@ -66,10 +87,8 @@ export function ContentPacksPage() {
     catch { setNotice(tx("파일을 내보내지 못했습니다. 아래 미리보기의 내용을 복사해 보관하세요.")); }
   };
   return <ResourceLayout title={tx("오픈 콘텐츠 제작실")} intro={tx("무료 공개 자료를 내 장면의 근거로 바꾸세요. 12개 창작 팩에서 출발해 자료를 검색·저장하고, 출처를 붙인 콘티와 설정집을 만듭니다. 가입·유료 AI 호출은 필요하지 않습니다.")}>
-    <Link className={RESOURCE_BUTTON} to="/research/open-creation">{tx("주제를 직접 정해 캐릭터·홍보·연습 브리프 만들기")}</Link>
-    <section className="grid gap-3 sm:grid-cols-3" aria-label={tx("무료 제작 방식")}>
-      {[tx("장면 팩·브리프 조합은 브라우저에서 처리"), tx("공식 자료 검색은 선택한 제공처만 호출"), tx("메타데이터 저장과 이미지 재사용 권한은 별도")].map((text) => <p key={text} className="rounded-xl border border-line bg-panel p-4 text-sm leading-7">{text}</p>)}
-    </section>
+    {/* 첫 화면 주인공은 장면 팩 아트 그리드다 (디자인 웨이브 7 주인공 교체) —
+        안내 문구·외부 링크는 팩을 고른 뒤 읽는 정보라 그리드 아래로 내렸다. */}
     <section className="space-y-4" aria-labelledby="pack-heading">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="pack-heading" className="text-2xl font-bold">{tx("어떤 장면을 만들까요?")}</h2>
@@ -82,22 +101,27 @@ export function ContentPacksPage() {
           </select>
         </label>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <StaggerReveal className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" itemClassName="h-full">
         {CONTENT_PACKS.filter((item) => category === tx("전체") || item.category === category).map((item) => (
           <button
             key={item.id}
             type="button"
             aria-pressed={pack.id === item.id}
-            className={`${RESOURCE_BUTTON} flex-col items-start gap-2 p-5 text-left ${pack.id === item.id ? "bg-accent-soft" : "bg-panel"}`}
+            className={`${RESOURCE_BUTTON} h-full w-full flex-col items-start gap-2 overflow-hidden p-5 text-left ${pack.id === item.id ? "bg-accent-soft" : "bg-panel"}`}
             onClick={() => changeParams({ pack: item.id, q: null, page: null })}
           >
+            <ArtBand art={PACK_ART[item.id] ?? "materials"} glyph={tx(item.title).charAt(0)} className="-mx-5 -mt-5 mb-1 h-28 self-stretch rounded-t-2xl" />
             <span className="text-xs text-accent">{tx(item.category)}</span>
             <span className="text-lg">{tx(item.title)}</span>
             <span className="text-sm font-normal leading-7 text-fg-2">{tx(item.premise)}</span>
           </button>
         ))}
-      </div>
+      </StaggerReveal>
     </section>
+    <section className="grid gap-3 sm:grid-cols-3" aria-label={tx("무료 제작 방식")}>
+      {[tx("장면 팩·브리프 조합은 브라우저에서 처리"), tx("공식 자료 검색은 선택한 제공처만 호출"), tx("메타데이터 저장과 이미지 재사용 권한은 별도")].map((text) => <p key={text} className="rounded-xl border border-line bg-panel p-4 text-sm leading-7">{text}</p>)}
+    </section>
+    <Link className={RESOURCE_BUTTON} to="/research/open-creation">{tx("주제를 직접 정해 캐릭터·홍보·연습 브리프 만들기")}</Link>
     <section className="space-y-4 rounded-2xl border border-line bg-panel p-5" aria-labelledby="pack-search-heading">
       <h2 id="pack-search-heading" className="text-2xl font-bold">{tx("공식 자료 찾기")}</h2>
       <p className="text-sm leading-7 text-fg-2">{tx("공개 이용 표시가 확인된 자료만 보여줍니다. 한글 검색은 제한된 미술 용어 사전으로 확장하며, 일반 번역 서비스는 아닙니다.")}</p>
