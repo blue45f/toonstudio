@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { characterPackageManifestFixture } from "../testing/manifest-fixtures";
 
-import { characterPackageIndexSchema, parseAuthoredHairMeshName, parseCharacterPackageManifest } from "./package-manifest";
+import { characterPackageIndexSchema, parseAuthoredHairMeshName, parseCharacterPackageManifest, slotCapabilitySchema } from "./package-manifest";
 
 describe("contracts/package-manifest", () => {
   it("pipeline.py 형식 fixture를 수용하고 알 수 없는 상위 키를 보존한다", () => {
@@ -36,6 +36,25 @@ describe("contracts/package-manifest", () => {
     if (result.ok) expect(result.manifest.characterLab?.boneMap?.["mixamorig:Hips"]).toBe("hips");
     const bad = characterPackageManifestFixture({ characterLab: { boneMap: { X: "notABone" as never } } });
     expect(parseCharacterPackageManifest(bad).ok).toBe(false);
+  });
+
+  it("slotCapability는 프리셋 단위 unavailablePresets를 선택으로 받고 키 형식을 검사한다", () => {
+    expect(slotCapabilitySchema.safeParse({ status: "available" }).success).toBe(true);
+    expect(slotCapabilitySchema.safeParse({ status: "partial", reasonKo: "일부 미제작", unavailablePresets: { "hair/twin-tail": "트윈테일 미제작" } }).success).toBe(true);
+    expect(slotCapabilitySchema.safeParse({ status: "partial", unavailablePresets: { "twin-tail": "x" } }).success).toBe(false);
+    expect(slotCapabilitySchema.safeParse({ status: "partial", unavailablePresets: { "hair/twin-tail": 1 } }).success).toBe(false);
+    // 기존 manifest의 characterLab.slotCapabilities도 그대로 통과한다
+    const legacy = characterPackageManifestFixture({ characterLab: { slotCapabilities: { hair: { status: "partial", reasonKo: "일부" } } } });
+    expect(parseCharacterPackageManifest(legacy).ok).toBe(true);
+    const withPresets = characterPackageManifestFixture({
+      characterLab: { slotCapabilities: { hair: { status: "partial", unavailablePresets: { "hair/twin-tail": "미제작" } } } },
+    });
+    expect(parseCharacterPackageManifest(withPresets).ok).toBe(true);
+  });
+
+  it("meshRoles는 underwear 역할을 허용한다", () => {
+    const manifest = characterPackageManifestFixture({ characterLab: { meshRoles: { TS_Underwear: "underwear" } } });
+    expect(parseCharacterPackageManifest(manifest).ok).toBe(true);
   });
 
   it("헤어 메시 규약 파서", () => {
