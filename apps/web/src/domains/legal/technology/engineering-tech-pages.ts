@@ -1,6 +1,7 @@
 import {
   BookMarked,
   BookOpen,
+  Boxes,
   Film,
   GraduationCap,
   LayoutGrid,
@@ -21,6 +22,7 @@ import type { WorkflowVisual } from "@/shared/components/site-experience/workflo
  *
  * 페이지별 목적(중복 없이):
  * - 아키텍처: 전체 구조와 배경 지식을 도식으로 한눈에(발표 동선 앞의 "큰 그림", 단계 번호 없음)
+ * - 라이브러리: 쓰인 주요 라이브러리(브러시 엔진·VRM·3D·협업 등)와 그 라이브러리·설계를 고른 이유("큰 그림"의 재료 편)
  * - 제작 스토리: 왜·어떻게 만들었나(문제 → 선택 → 대가 서사)
  * - 플레이북: 재사용 가능한 설계 원칙과 아키텍처 결정
  * - 적용 가이드: 다른 서비스에 단계별로 옮기는 방법
@@ -33,6 +35,7 @@ import type { WorkflowVisual } from "@/shared/components/site-experience/workflo
 
 export type EngineeringPageId =
   | "architecture"
+  | "libraries"
   | "story"
   | "playbook"
   | "guides"
@@ -90,6 +93,15 @@ export const ENGINEERING_PAGES = [
     label: t("아키텍처", "Architecture"),
     purpose: t("전체 구조를 도식과 쉬운 해설로 한눈에", "The whole structure at a glance, with diagrams and plain explanations"),
     art: "collaborate",
+  },
+  {
+    id: "libraries",
+    href: "/about/technology/libraries",
+    group: "overview",
+    icon: Boxes,
+    label: t("라이브러리", "Libraries"),
+    purpose: t("쓰인 주요 라이브러리와 고른 이유를 영역별로", "Main libraries and why we chose them, by area"),
+    art: "create",
   },
   {
     id: "story",

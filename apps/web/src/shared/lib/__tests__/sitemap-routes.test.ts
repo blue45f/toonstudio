@@ -37,6 +37,7 @@ describe("sitemap static routes", () => {
     for (const route of [
       '"/about/technology"',
       '"/about/technology/architecture"',
+      '"/about/technology/libraries"',
       '"/about/technology/story"',
       '"/about/technology/guides"',
       '"/about/technology/references"',
