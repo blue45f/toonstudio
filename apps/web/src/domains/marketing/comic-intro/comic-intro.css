@@ -1,4 +1,4 @@
-/* 만화 인트로 — 컷이 넘어가듯 등장하는 2.4초(재방문 1초)짜리 오버레이.
+/* 만화 인트로 — 컷이 넘어가듯 등장하는 오버레이. 풀 버전 2.45초, 재방문용 짧은 버전 1.85초.
    색은 테마 토큰을 그대로 따라가 라이트/다크 모두에서 같은 톤으로 보인다. */
 .comic-intro {
   position: fixed;
@@ -16,12 +16,9 @@
      그 중간 프레임에서는 글자색이 뒤 배경과 합성돼 색상 대비가 기준 아래로 떨어진다.
      애니메이션으로 예약해 두면 getAnimations()가 처음부터 종료 모션을 관측할 수 있어
      자동 검사도 실제 종료 상태(opacity 0)를 기준으로 판정한다.
-     delay는 ComicIntro.tsx의 종료 시각과 짝이다: full 2180ms, short 820ms. */
-  animation: comic-intro-leave 180ms ease-out 2180ms forwards;
-}
-
-.comic-intro[data-comic-intro="short"] {
-  animation-delay: 820ms;
+     delay는 ComicIntro.tsx의 INTRO_TIMING.leaveAt이 CSS 변수로 주입하는 단일 출처다:
+     full 2200ms, short 1600ms. */
+  animation: comic-intro-leave 200ms ease-out var(--ci-leave-delay, 2200ms) forwards;
 }
 
 @keyframes comic-intro-leave {
@@ -35,18 +32,33 @@
   pointer-events: none;
 }
 
+/* 오버레이가 이미 그려진 페이지 위에 늦게 붙으므로, 스테이지가 통째로
+   부드럽게 차오르게 해 "덮개가 번쩍 나타났다 사라지는" 인상을 없앤다. */
 .comic-intro-stage {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
   width: min(56rem, 100%);
+  animation: comic-stage-in 280ms ease-out;
+}
+
+@keyframes comic-stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .comic-panel {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 11rem;
+  min-height: 13rem;
   overflow: hidden;
   border: 3px solid var(--color-fg);
   border-radius: 1rem;
@@ -71,16 +83,22 @@
   animation-delay: 1080ms;
 }
 
+/* 짧은 버전은 등장 간격·길이를 압축해 장면이 1.04초 안에 완성되게 한다.
+   (페이드 시작 1.6초 — 완성된 장면이 최소 0.5초는 유지된다.) */
+.comic-intro[data-comic-intro="short"] .comic-panel {
+  animation-duration: 380ms;
+}
+
 .comic-intro[data-comic-intro="short"] .comic-panel--one {
-  animation-delay: 20ms;
+  animation-delay: 0ms;
 }
 
 .comic-intro[data-comic-intro="short"] .comic-panel--two {
-  animation-delay: 180ms;
+  animation-delay: 120ms;
 }
 
 .comic-intro[data-comic-intro="short"] .comic-panel--three {
-  animation-delay: 380ms;
+  animation-delay: 240ms;
 }
 
 @keyframes comic-panel-in {
@@ -123,10 +141,35 @@
   fill: currentColor;
 }
 
+/* 가운데 컷은 키비주얼이 가득 채운다. 얼굴과 말풍선이 모인 위쪽 띠가
+   보이도록 크롭 기준점을 위로 잡았다. */
+.comic-panel-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 20%;
+  animation: comic-art-in 700ms ease-out both;
+}
+
+@keyframes comic-art-in {
+  from {
+    opacity: 0;
+    scale: 1.08;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
 .comic-intro-bubble {
   position: absolute;
   top: 0.9rem;
   left: 50%;
+  z-index: 1;
   padding: 0.55rem 0.95rem;
   border: 2.5px solid var(--color-fg);
   border-radius: 999px;
@@ -138,7 +181,8 @@
 }
 
 .comic-intro[data-comic-intro="short"] .comic-intro-bubble {
-  animation-delay: 420ms;
+  animation-delay: 520ms;
+  animation-duration: 360ms;
 }
 
 .comic-intro-bubble::after {
@@ -166,65 +210,6 @@
     opacity: 1;
     transform: translateX(-50%) scale(1);
   }
-}
-
-.comic-character {
-  width: 6.5rem;
-  margin-top: 2.6rem;
-  animation: comic-walk-bob 480ms ease-in-out 700ms 3;
-}
-
-.comic-intro[data-comic-intro="short"] .comic-character {
-  animation: comic-walk-bob 480ms ease-in-out 260ms 1;
-}
-
-@keyframes comic-walk-bob {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-1.5deg);
-  }
-
-  50% {
-    transform: translateY(-0.45rem) rotate(1.5deg);
-  }
-}
-
-.comic-char-skin {
-  fill: oklch(0.88 0.06 70);
-}
-
-.comic-char-hair {
-  fill: var(--color-accent);
-}
-
-.comic-char-shirt {
-  fill: var(--color-fg);
-}
-
-.comic-char-legs,
-.comic-char-arm {
-  fill: none;
-  stroke: var(--color-fg);
-  stroke-width: 5;
-  stroke-linecap: round;
-}
-
-.comic-char-pencil {
-  fill: var(--color-accent);
-  stroke: var(--color-fg);
-  stroke-width: 1.6;
-  stroke-linejoin: round;
-}
-
-.comic-char-eye {
-  fill: oklch(0.25 0.02 60);
-}
-
-.comic-char-mouth {
-  fill: none;
-  stroke: oklch(0.25 0.02 60);
-  stroke-width: 2.4;
-  stroke-linecap: round;
 }
 
 .comic-speedlines {
@@ -258,7 +243,8 @@
 }
 
 .comic-intro[data-comic-intro="short"] .comic-panel-logo {
-  animation-delay: 560ms;
+  animation-delay: 700ms;
+  animation-duration: 340ms;
 }
 
 .comic-panel-logo span {
@@ -314,13 +300,19 @@
   .comic-panel {
     min-height: 8.5rem;
   }
+
+  /* 모바일에서는 키비주얼 컷만 조금 더 높여 얼굴 띠가 눌리지 않게 한다. */
+  .comic-panel--two {
+    min-height: 12rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .comic-intro,
+  .comic-intro-stage,
   .comic-panel,
+  .comic-panel-art,
   .comic-intro-bubble,
-  .comic-character,
   .comic-panel-logo {
     animation: none;
     transition: none;
