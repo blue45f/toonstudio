@@ -10,15 +10,14 @@ import {
 } from "./engineering-free-ai-token-guide";
 import type { LocalizedText } from "./engineering-story-content";
 import {
-  resolveBilingualLocale,
   translateBilingualValueForActiveLocale,
-} from "@/shared/i18n/bilingual-fallback";
+  useBilingualI18nRevision,
+} from "@/shared/lib/i18n-bilingual-copy";
 
 const tr = (ko: string, en: string) =>
   translateBilingualValueForActiveLocale("free-ai-token-guide", ko, en);
 
-const pickLocalized = (value: LocalizedText) =>
-  resolveBilingualLocale() === "ko" ? value.ko : value.en;
+const pickLocalized = (value: LocalizedText) => tr(value.ko, value.en);
 
 const matchesQuery = (query: string, ...texts: readonly string[]) => {
   if (!query) return true;
@@ -43,6 +42,7 @@ const methodMatches = (
   );
 
 export function EngineeringFreeAiTokenGuide({ query = "" }: { query?: string }) {
+  useBilingualI18nRevision();
   const normalizedQuery = query.trim().toLowerCase();
   const visibleCategories = FREE_AI_TOKEN_CATEGORIES.map((category) => ({
     category,
