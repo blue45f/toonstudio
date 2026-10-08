@@ -226,6 +226,8 @@ export interface FanCafePost {
   createdAt: string;
   replyCount: number;
   replies?: FanCafeReply[];
+  likeCount?: number; // 좋아요 총개수 (상세 응답에서 채운다)
+  viewerLiked?: boolean; // 조회 회원의 좋아요 여부 (상세 응답, 게스트는 false)
 }
 
 // ── 회원 개설형 커뮤니티(기존 장르 카페 URL·게시글과 호환) ──
