@@ -95,6 +95,14 @@ export function StudioBrushLabPage() {
           </div>
         </div>
 
+        {/*
+          적용 범위 밴드는 리믹스 전용이다 (2026-10-08 소형 잔여 처분으로 재확인).
+          이 밴드는 현황 스트립이 아니라 "원본은 바뀌지 않는다"는 적용 범위 경고라서
+          그 오해가 생기는 리믹스에만 붙는다. 비-리믹스 컨텍스트의 상태 표시는 위쪽
+          헤더의 workspaceTitle·contextLabel이 담당한다. 제작 프로젝트 현황 스트립
+          (ProductionProjectStatusStrip)은 ProductionProjectAggregate가 전제라,
+          제작 프로젝트 종속이 없는 이 표면에는 해당하지 않는다.
+        */}
         {context.kind === "remix" ? (
           <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border border-accent/35 bg-accent/10 px-4 py-3" role="status">
             <span className="inline-flex items-center gap-1.5 text-xs font-black text-accent">
