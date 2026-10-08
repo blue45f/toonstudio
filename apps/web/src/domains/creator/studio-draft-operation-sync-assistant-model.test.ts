@@ -112,6 +112,9 @@ describe("resolveStudioDraftOperationSyncAssistant", () => {
 
     expect(model.serverSummary).toContain("서버 원고 저장도 완료");
     expect(model.operationSummary).toContain("이 기기 안의 열린 탭");
+    // 상시 표시 칩의 완료 라벨도 서버가 아닌 기기 탭을 대상으로 적는다.
+    expect(model.compactLabel).toBe("기기 탭 동기화 완료");
+    expect(model.headline).toContain("열린 탭끼리");
   });
 
   it("shows the host save barrier even before detailed live telemetry is available", () => {

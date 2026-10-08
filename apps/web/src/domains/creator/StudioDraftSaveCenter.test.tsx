@@ -194,6 +194,32 @@ describe("StudioDraftSaveCenter", () => {
     await waitFor(() => expect(actions.onSaveDraft).toHaveBeenCalledTimes(1));
   });
 
+  it("replays a save that failed mid-request once the server becomes reachable again", async () => {
+    setOnline(true);
+    const onSaveDraft = vi.fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValue(undefined);
+    renderCenter({ onSaveDraft });
+
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 r7 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "지금 서버에 저장" }));
+
+    // 실패는 숨지 않는다 — 기기 예약과 자동 재저장 약속이 그대로 보인다.
+    await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1));
+    expect(
+      (await screen.findAllByText(/연결이 복구되면 자동으로 다시 저장합니다/)).length,
+    ).toBeGreaterThan(0);
+    expect(onSaveDraft).toHaveBeenCalledTimes(1);
+
+    // 연결성 감지가 복구를 확인하면(online 전이) 클릭 없이 예약 저장이 자동 재생된다.
+    // 실패가 세팅한 오류 문구가 재생 가드를 막던 교착의 회귀 방지다.
+    act(() => {
+      window.dispatchEvent(new Event("online"));
+    });
+
+    await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(2));
+  });
+
   it("promotes durable storage failure instead of showing a false green state", () => {
     setOnline(true);
     act(() => {
