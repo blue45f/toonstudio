@@ -1428,7 +1428,8 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
 /* ── 모바일(1024px 미만) ───────────────────────────────────── */
 .space-mobile-dock {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* 가운데 '작업 시작'은 글자가 가장 길고(영어 "Start work"는 360폭에서 2px 모자라 말줄임이 됐다) 강조 칸이라 조금 넓힌다. */
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.3fr) repeat(2, minmax(0, 1fr));
   align-items: end;
   gap: 2px;
   width: 100%;
@@ -1462,7 +1463,8 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   scrollbar-width: none;
 }
 .space-emote-picker[data-variant="strip"]::-webkit-scrollbar { display: none; }
-.space-emote-picker[data-variant="strip"] .space-emote-picker__item { flex: 0 0 56px; min-height: 56px; scroll-snap-align: start; }
+/* 가로 한 줄은 어차피 스크롤되므로 칸 폭을 라벨 길이에 맞춘다(고정 56px에서는 "Thumbs up"·"Coffee break" 같은 영어 라벨이 잘렸다). */
+.space-emote-picker[data-variant="strip"] .space-emote-picker__item { flex: 0 0 auto; min-width: 56px; max-width: 104px; min-height: 56px; padding-inline: 8px; scroll-snap-align: start; }
 .space-emote-picker[data-variant="strip"] .space-emote-picker__key { display: none; }
 .space-mobile-dock__slot {
   position: relative;

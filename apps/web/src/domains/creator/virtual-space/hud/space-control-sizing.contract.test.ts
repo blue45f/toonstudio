@@ -64,6 +64,15 @@ describe("가상 스튜디오 컨트롤 크기 계약", () => {
     expect(hudCss).toMatch(/\.space-mobile-dock__work \.space-dock__primary\[data-workspace-primary-action\] \{ gap: 2px; padding: 6px 4px; font-size: 12px; \}/u);
   });
 
+  it("휴대폰 도크 가운데 칸은 다른 칸보다 넓다(영어 'Start work'가 360폭에서 말줄임이 되던 것)", () => {
+    expect(hudCss).toMatch(/\.space-mobile-dock \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) minmax\(0, 1\.3fr\) repeat\(2, minmax\(0, 1fr\)\);/u);
+  });
+
+  it("휴대폰 리액션 줄의 칸은 라벨 길이에 맞춰 넓어진다(고정 56px이면 영어 'Thumbs up'·'Coffee break'가 잘린다)", () => {
+    expect(hudCss).toMatch(/\.space-emote-picker\[data-variant="strip"\] \.space-emote-picker__item \{[^}]*flex: 0 0 auto;[^}]*min-width: 56px;[^}]*max-width: 104px;/u);
+    expect(hudCss).not.toMatch(/flex: 0 0 56px/u);
+  });
+
   it("지도 구역 버튼은 줄바꿈하지 않고 마커와 한 묶음의 중심이 구역 중심이다(가장자리 구역 라벨이 CA/FE로 끊기던 것)", () => {
     expect(hudCss).toMatch(/\.space-minimap__zone-actions \{ position: absolute; transform: translate\(-50%, -50%\); \}/u);
     expect(hudCss).toMatch(/\.space-minimap__zone-button \{[^}]*position: relative;[^}]*white-space: nowrap;/u);
