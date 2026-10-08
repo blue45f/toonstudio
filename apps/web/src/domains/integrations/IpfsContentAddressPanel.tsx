@@ -31,8 +31,9 @@ function formatBytes(bytes: number): string {
 
 /**
  * 콘텐츠 주소(IPFS) 도구 — 파일 내용 자체를 주소로 만드는 CID를 계산·검증하고,
- * CID로 게이트웨이에서 검증하며 가져온다. js-ipfs(개발 종료) 대신 후계 Helia
- * 생태계의 @helia/verified-fetch + multiformats를 쓴다. 브라우저 노드로
+ * CID로 게이트웨이에서 검증하며 가져온다. js-ipfs(개발 종료)도 @helia/verified-fetch도
+ * 쓰지 않고, multiformats로 CID를 만든 뒤 공개 게이트웨이 fetch로 받은 바이트의 해시를
+ * CID와 직접 대조한다(ipfs-content-address.ts 머리말 참조). 브라우저 노드로
  * 네트워크에 제공하는 기능은 없으며, CID는 무결성 주소·공유 링크로 쓴다.
  */
 export function IpfsContentAddressPanel() {
@@ -131,8 +132,8 @@ export function IpfsContentAddressPanel() {
           <h2 className="font-bold text-fg">{ko ? "콘텐츠 주소(IPFS)" : "Content addressing (IPFS)"}</h2>
           <p className="mt-1 text-sm leading-6 text-fg-2">
             {ko
-              ? "파일 위치(URL)가 아니라 내용 자체가 주소가 되는 CID를 만듭니다. 같은 파일은 언제나 같은 CID라, 에셋의 무결성을 확인하거나 공유 링크로 쓰는 데 적합합니다. 가져오기는 Helia 검증 가져오기로 블록 해시를 대조하며, 브라우저가 네트워크에 파일을 제공하는 기능은 없습니다."
-              : "A CID addresses content itself, not a location. Identical files always produce the same CID, which suits asset integrity checks and share links. Fetches use Helia verified fetch with block-hash checks; the browser does not provide files to the network."}
+              ? "파일 위치(URL)가 아니라 내용 자체가 주소가 되는 CID를 만듭니다. 같은 파일은 언제나 같은 CID라, 에셋의 무결성을 확인하거나 공유 링크로 쓰는 데 적합합니다. 가져오기는 공개 게이트웨이에서 받은 바이트의 해시를 CID와 직접 대조하며, 브라우저가 네트워크에 파일을 제공하는 기능은 없습니다."
+              : "A CID addresses content itself, not a location. Identical files always produce the same CID, which suits asset integrity checks and share links. Fetches go through public gateways and compare the downloaded bytes' hash with the CID; the browser does not provide files to the network."}
           </p>
         </div>
       </div>
