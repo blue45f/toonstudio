@@ -380,11 +380,12 @@ export const CAMPUS_OBJECTS: readonly StudioCampusObject[] = Object.freeze([
   O({ id: "game-neon-sign", kind: "neon-sign", x: 448, y: 1560, width: 220, height: 60, wallMounted: true, labelKo: "아케이드", labelEn: "ARCADE" }),
   // 사무실 확장: 자료실 표지판 (GALLERY)
   O({ id: "gallery-archive-sign", kind: "area-sign", x: 2560, y: 1660, width: 176, height: 100, collider: foot(2560, 1660, 160, 18), labelKo: "자료실", labelEn: "ARCHIVE" }),
-  // 게이트 이름판
-  O({ id: "gate-plate-tree-library", kind: "gate-plate", x: 206, y: 700, width: 124, height: 58, labelKo: "트리 라이브러리", labelEn: "TREE LIBRARY" }),
-  O({ id: "gate-plate-observatory", kind: "gate-plate", x: 2866, y: 700, width: 124, height: 58, labelKo: "스토리 관측소", labelEn: "OBSERVATORY" }),
-  O({ id: "gate-plate-garden", kind: "gate-plate", x: 206, y: 1340, width: 124, height: 58, labelKo: "창작 정원", labelEn: "GARDEN" }),
-  O({ id: "gate-plate-production-control", kind: "gate-plate", x: 2866, y: 1340, width: 124, height: 58, labelKo: "프로덕션 관제실", labelEn: "CONTROL ROOM" }),
+  // 게이트 이름판. 포털(폭 104, 중심 x 134·2938)이 y 정렬로 판 위에 그려지므로 판이 포털 옆으로 비껴 서야 글자가 가려지지 않는다.
+  // 판 폭 124의 안쪽 끝이 포털 바깥 가장자리(186·2886)에서 6px 떨어지게 둔다.
+  O({ id: "gate-plate-tree-library", kind: "gate-plate", x: 254, y: 700, width: 124, height: 58, labelKo: "트리 라이브러리", labelEn: "TREE LIBRARY" }),
+  O({ id: "gate-plate-observatory", kind: "gate-plate", x: 2818, y: 700, width: 124, height: 58, labelKo: "스토리 관측소", labelEn: "OBSERVATORY" }),
+  O({ id: "gate-plate-garden", kind: "gate-plate", x: 254, y: 1340, width: 124, height: 58, labelKo: "창작 정원", labelEn: "GARDEN" }),
+  O({ id: "gate-plate-production-control", kind: "gate-plate", x: 2818, y: 1340, width: 124, height: 58, labelKo: "프로덕션 관제실", labelEn: "CONTROL ROOM" }),
   // 전용 가로등(건물 생동감 트랙): 대로 가장자리에 세운다. 문·스폰·게이트와 겹치지 않는 좌표만
   // 골랐고, 무겹침은 building-life 테스트가 고정한다. 점등·빛 웅덩이는 런타임이 시간대와 잇는다.
   O({ id: "lamp-avenue1-lobby-east", kind: "street-lamp", x: 576, y: 720, width: 46, height: 96, collider: foot(576, 720, 26, 12) }),

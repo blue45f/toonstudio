@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   CAMPUS_DOOR_WIDTH,
+  CAMPUS_DRESSING,
   CAMPUS_HEIGHT,
+  CAMPUS_OBJECTS,
   CAMPUS_TERRAIN,
   CAMPUS_WIDTH,
   CAMPUS_ZONES,
@@ -179,6 +181,18 @@ describe("가상 스튜디오 공중섬 캠퍼스", () => {
       if (northDoor) expect(sign.x).toBe(northDoor.rect.x + northDoor.rect.width / 2);
       else expect(north.some((wall) => sign.x - sign.width / 2 >= wall.rect.x && sign.x + sign.width / 2 <= wall.rect.x + wall.rect.width)).toBe(true);
       expect(sign.signEn).toMatch(/^[A-Z-]+$/u);
+    }
+  });
+
+  it("게이트 이름판은 포털 옆에 서서 포털 그림(y 정렬로 판 위에 그려진다)에 가려지지 않는다", () => {
+    const plates = CAMPUS_OBJECTS.filter((object) => object.kind === "gate-plate");
+    expect(plates).toHaveLength(4);
+    for (const plate of plates) {
+      const portal = CAMPUS_DRESSING.find((item) => item.id === plate.id.replace("gate-plate-", "gate-portal-"));
+      if (!portal) throw new Error(`${plate.id}의 포털 장식이 필요하다`);
+      // 두 그림의 가로 범위 사이 간격(음수면 겹친다). 수정 전에는 이름판 폭의 3분의 1이 포털에 가려져 -42였다.
+      const gap = Math.abs(plate.x - portal.x) - (plate.width + portal.width) / 2;
+      expect(gap, plate.id).toBeGreaterThanOrEqual(0);
     }
   });
 
