@@ -39,3 +39,12 @@
 
 - Render `toonspectrum-core-api` 수동 release (대시보드)
 - DB migration workflow (`production-database-migrations.yml`, Environment reviewer 승인 필요)
+
+## 2차 배포 (2026-10-09, 같은 날 추가분)
+
+- 승인 SHA: `d336b8bd055a6431a67573f4cc3d55171ecde8e4` (main HEAD, clean worktree)
+- 포함: main-verify 4종 병합분 + heisenberg 이동감 6건 + 이전 배포 이후 main 전진분
+- 사전 검증: architecture/free-infra/cloudflare-static(83건)/dry-run/render-origin(live·ready 200)/CI verify 성공
+- Worker Version ID: `0c147959-0fcd-4b38-b0c4-e1633ce3b1ef`
+- 배포 후 점검: 홈 200, providers 200, ranking 200
+- 롤백 대상: 직전 버전 `2eb8c4d8-9884-423d-9321-e8117e10febc` (1차 배포분)
