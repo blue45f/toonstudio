@@ -22,10 +22,13 @@ import {
 vi.mock("@/shared/seo/use-document-title", () => ({ useDocumentTitle: vi.fn() }));
 // 도감 데이터는 용어집 화면이 렌더 뒤에 동적으로 불러온다. 화면 테스트에서는 카드 한 장짜리 픽스처로 바꾼다
 // (실제 카드와의 연결은 아래 ‘실제 도감 데이터’ describe 가 따로 확인한다).
-vi.mock("./engineering-atlas-content", async () => {
+vi.mock("./engineering-atlas-content", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./engineering-atlas-content")>();
   const { ENGINEERING_GLOSSARY: terms } = await import("./engineering-glossary-content");
   const firstAtlasId = terms.find((term) => (term.atlasIds?.length ?? 0) > 0)?.atlasIds?.[0];
-  return { ENGINEERING_ATLAS_ENTRIES: firstAtlasId ? [{ id: firstAtlasId, name: "Fixture atlas card" }] : [] };
+  // 용어집 화면이 읽는 카드 목록만 한 장짜리 픽스처로 바꾼다. 세미나 발표 모델이 슬라이드에 끼워 넣는 카드와
+  // 준비실의 질문별 카드 찾기(findAtlasEntry)는 실제 도감을 그대로 쓴다.
+  return { ...actual, ENGINEERING_ATLAS_ENTRIES: firstAtlasId ? [{ id: firstAtlasId, name: "Fixture atlas card" }] : [] };
 });
 
 afterEach(cleanup);
@@ -223,8 +226,8 @@ describe("glossary → atlas links against the real atlas data", () => {
 });
 
 describe("seminar prep content", () => {
-  it("answers ten anticipated questions with glossary links", () => {
-    expect(SEMINAR_PREP_QUESTIONS).toHaveLength(10);
+  it("answers the 23 anticipated questions with glossary links", () => {
+    expect(SEMINAR_PREP_QUESTIONS).toHaveLength(23);
     const glossaryIds = new Set(ENGINEERING_GLOSSARY.map((t) => t.id));
     for (const item of SEMINAR_PREP_QUESTIONS) {
       expect(item.answer.ko.length).toBeGreaterThan(20);
@@ -257,7 +260,7 @@ describe("EngineeringSeminarPrep", () => {
     fireEvent.click(coreButton);
     expect(onJump).toHaveBeenCalledWith(core.firstSlideIndex);
 
-    expect(screen.getByRole("heading", { level: 3, name: /예상 질문 10개/u })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 3, name: new RegExp(`예상 질문 ${SEMINAR_PREP_QUESTIONS.length}개`, "u") })).toBeTruthy();
     const checkboxes = screen.getAllByRole("checkbox");
     expect(checkboxes).toHaveLength(SEMINAR_PREP_CHECKLIST.length);
     const first = checkboxes[0];

@@ -459,6 +459,15 @@ function buildBriefTrack(localize: Localize): DeckTrackModel {
   };
 }
 
+/** 레슨의 `atlasIds`를 발표자 패널의 "도감 카드 열기" 단추 데이터로 바꾼다. 없는 카드는 단추만 건너뛴다(없는 id는 콘텐츠 테스트가 잡는다). */
+function relatedAtlasCards(ids: readonly string[] | undefined): readonly DeckRelatedAtlas[] | undefined {
+  const cards = ids?.flatMap((id) => {
+    const entry = findAtlasEntry(id);
+    return entry ? [{ id: entry.id, name: entry.name }] : [];
+  });
+  return cards?.length ? cards : undefined;
+}
+
 function buildLectureTrack(localize: Localize): DeckTrackModel {
   const titles = new Map<string, string>();
   const slides = withSchedule(SEMINAR_LESSONS.map((lesson): Omit<DeckSlide, "plannedStartSeconds"> => {
@@ -489,6 +498,7 @@ function buildLectureTrack(localize: Localize): DeckTrackModel {
           }]
         : undefined,
       evidence: findEngineeringChapter(lesson.chapterId)?.evidence.map((item) => item.path),
+      relatedAtlas: relatedAtlasCards("atlasIds" in lesson ? lesson.atlasIds : undefined),
     };
   }));
   return {
