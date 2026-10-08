@@ -107,10 +107,10 @@ export function ResendKeyConnectCard() {
         </div>
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-            configured ? "bg-success/12 text-success" : "bg-panel-2 text-fg-3"
+            configured ? "bg-success/12 text-success" : "bg-raised text-fg-3"
           }`}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${configured ? "bg-success" : "bg-fg-4"}`} />
+          <span className={`h-1.5 w-1.5 rounded-full ${configured ? "bg-success" : "bg-fg-3"}`} />
           {configured ? "연결됨" : "미설정"}
         </span>
       </div>
@@ -173,7 +173,7 @@ export function ResendKeyConnectCard() {
                 placeholder="re_…"
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full rounded-xl border border-line bg-panel-2 py-2.5 pl-3 pr-10 font-mono text-sm text-fg outline-none transition placeholder:text-fg-4 focus:border-accent focus:ring-2 focus:ring-accent/25"
+                className="w-full rounded-xl border border-line bg-panel py-2.5 pl-3 pr-10 font-mono text-sm text-fg outline-none transition placeholder:text-fg-3 focus:border-accent focus:ring-2 focus:ring-accent/25"
               />
               <button
                 type="button"
@@ -193,7 +193,7 @@ export function ResendKeyConnectCard() {
               type="button"
               onClick={registerKey}
               disabled={!input.trim()}
-              className="shrink-0 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-45"
+              className="shrink-0 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-45"
             >
               등록하기
             </button>
