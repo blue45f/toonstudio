@@ -59,3 +59,80 @@
 | 공유 계약 패키지 | `packages/contracts/` — web/api가 공유하는 DTO·schema | 스키마 코드화 시 배치 후보. 단 루트 `AGENTS.md` 규칙상 "실제 두 번째 소비자가 생긴 범위만" 승격한다 (§10) |
 
 부재 확인: 기준 커밋에 `webmcp`·`modelContext` 식별자와 에이전트 채널 관련 코드는 **없다** (git object store 전수 대조). WebMCP 관련 기존 작업은 repo 밖 설계 초안 단계에서만 논의됐고 병합된 적이 없으므로, 이 문서는 WebMCP를 실재 표면으로 취급하지 않는다 (§9).
+
+## 4. 채널 개요 `[제안]`
+
+- 배치: Core API(`apps/api`)에 신규 모듈 `agent-channel`을 둔다. 기존 40개 모듈과 같은 NestJS 경계 규칙(`apps/api/AGENTS.md` — controller 경계 검증, 인증/인가 분리)을 따른다.
+- 전송: HTTPS 요청-응답이 1차 계약이다. 스트리밍·서버 푸시가 필요한 도구(장시간 생성 등)는 동기 응답 대신 receipt 조회로 수렴시킨다 (§5.3). 양방향 전송 도입 여부는 `[미결정]`.
+- 진입점: `POST /agent-channel/messages` 단일 진입점으로 봉투를 받고, `GET /agent-channel/receipts/:mutationId`로 쓰기 결과를 조회한다. 경로는 제안이며 모듈 신설 시 확정한다.
+- 채널은 기존 REST 표면을 대체하지 않는다. 같은 기능의 정본은 기존 컨트롤러·서비스에 남고, 채널은 그 위의 에이전트용 어댑터다.
+
+## 5. 메시지 봉투 `[제안]`
+
+### 5.1 봉투 형식
+
+모든 채널 메시지는 아래 봉투 하나만 쓴다. 필드 추가는 `schemaVersion`을 올리지 않고 선택 필드로만 하며, 의미 변경은 버전 증가를 요구한다.
+
+```json
+{
+  "schemaVersion": 1,
+  "messageId": "01J…(UUID)",
+  "kind": "tool.invoke",
+  "sessionId": "acs_…",
+  "tool": "works.list",
+  "input": {},
+  "idempotencyKey": "클라이언트 생성 UUID (쓰기 필수)",
+  "approval": { "approvalId": "apv_…", "inputDigest": "sha256:…" },
+  "issuedAt": "2026-10-08T00:00:00.000Z",
+  "deadlineMs": 30000
+}
+```
+
+| 필드 | 규칙 |
+| --- | --- |
+| `kind` | `session.open` · `session.close` · `tool.invoke` · `tool.result` · `approval.request` · `approval.decision` · `error` 중 하나 |
+| `tool` | §5.2 카탈로그의 이름만 허용. 카탈로그에 없는 이름은 실행 전에 거절한다 |
+| `input` | 도구별 입력 스키마로 controller 경계에서 검증한다. 검증 실패는 §8 오류로 반환하고 실행하지 않는다 |
+| `idempotencyKey` | 쓰기 도구 필수. 같은 키+같은 입력 digest의 재요청은 새 실행이 아니라 기존 receipt를 반환한다 (creator-intelligence 계약 선례) |
+| `approval` | §6 게이트 대상 도구에서만. `inputDigest`가 승인 시점 입력과 다르면 승인은 무효다 |
+| `deadlineMs` | 초과 시 서버는 실행을 중단하거나, 이미 시작된 쓰기는 `uncertain` receipt로 남긴다 (§8.2) |
+
+결과 봉투는 `kind: "tool.result"`에 `mutationId`(쓰기만), `output`, `receipt` 요약을 싣는다. 큰 산출물(파일·이미지)은 본문에 넣지 않고 기존 표면의 단기 링크로 참조한다 (creator-intelligence의 "단기 아티팩트 링크" 선례).
+
+### 5.2 도구 카탈로그 초안
+
+명명은 integration catalog의 `domain.verb` 규칙을 계승하고, 읽기/쓰기를 이름이 아니라 카탈로그 메타데이터로 구분한다. 각 도구는 **기존 표면에 매핑되는 것만** 올린다. 매핑할 표면이 없으면 카탈로그에 넣지 않는다.
+
+읽기 도구 (승인 불요, §6 L0):
+
+| 도구 | 매핑 표면 `[실재]` | 비고 |
+| --- | --- | --- |
+| `me.profile.read` | `GET /me` (`apps/api/src/modules/me/me.controller.ts`) | 본인 정보만 |
+| `me.collections.read` | `me-collection.repository.ts` 기반 표면 | 본인 컬렉션만 |
+| `works.list` / `works.get` | creator 모듈 작품 표면 (`apps/api/src/modules/creator/`) | 소유·권한 검사는 기존 서비스 규칙 그대로 |
+| `catalog.search` / `catalog.get` | `apps/api/src/modules/catalog/` (`@Controller()` 루트 경로) | 공개 카탈로그. 외부 작품은 메타데이터만이라는 현행 사실 유지 |
+| `workspace.usage.read` | 팀 워크스페이스 사용량 표면 | 관리자 권한은 기존 규칙 그대로 |
+| `integrations.status.read` | `GET /integrations` (`integration-platform.controller.ts`) | 구성 여부만. 키 값은 어떤 경우에도 반환하지 않는다 |
+| `studio-ai.capabilities.read` | `apps/api/src/modules/studio-ai/studio-ai-capabilities.ts` | 사용 가능한 AI 능력 선언 조회 |
+
+쓰기 도구 (전부 receipt + 멱등 키 필수):
+
+| 도구 | 매핑 표면 `[실재]` | 등급 (§6) |
+| --- | --- | --- |
+| `works.create` | creator 모듈 작품 생성 표면 | L1 |
+| `production.operation.append` | ADR-0024 operation 계약 — 단, ADR이 **Proposed**라 표면 자체가 아직 없다. ADR accepted가 선행 조건 | L1 (선행 조건 충족 후) |
+| `integrations.runtime.execute` | `POST /integrations/runtime-connectors` (`integration-runtime.controller.ts`) — `writesExternalState`인 액션은 외부 상태를 바꾼다 | 읽기성 액션 L1 / 외부 쓰기 L2 |
+| `studio-ai.generate` | `apps/api/src/modules/studio-ai/` 생성 표면 (admission·작업 원장 존재) | 과금 가능 호출은 L2 + §6.3 |
+
+쓰기 도구의 공통 규칙:
+
+- 실행 전에 입력 검증을 통과해야 하고, 결과는 항상 receipt로 남는다.
+- 되돌릴 수 없는 도구는 카탈로그 메타데이터에 `reversible: false`를 명시한다. 이 표시가 없으면 L2로 올릴 수 없다.
+
+### 5.3 영수증(receipt) 계약
+
+integration runtime receipt(`integration-runtime.contract.ts`)의 상태 기계를 그대로 계승한다.
+
+- 상태: `pending → succeeded | failed | uncertain`. `uncertain`은 "실행됐는지 모르는" 상태이며 성공으로 위장하지 않는다.
+- 필드: `mutationId`, `tool`, `sessionId`, 실행 주체(userId + 에이전트 표기), `state`, `errorCode`, 입력 digest, 생성·갱신 시각, 승인 참조(있으면).
+- 보관: 만료되는 URL 같은 휘발 정보는 제거한 형태로 보관한다 (runtime receipt의 `receiptResponse` 선례).
