@@ -65,6 +65,8 @@ function Lines({ lines, x, top, lineHeight, fontSize, className, anchor = "middl
   );
 }
 
+const DECISION_TIP = 26;
+
 function blockHeight(label: number, sub: number, labelLine = 21, subLine = 17, gap = 5): number {
   return label * labelLine + (sub > 0 ? gap + sub * subLine : 0);
 }
@@ -85,11 +87,13 @@ function NodeShape({ rect, shape, tone }: { readonly rect: Rect; readonly shape:
     );
   }
   if (shape === "diamond") {
+    // 판단 노드: 마름모를 가로로 넓힌 육각형. 좌우 끝이 뾰족해 "분기"로 읽히면서 글이 들어갈 폭은 상자에 가깝다.
+    const tip = DECISION_TIP;
     return (
       <polygon
         className="eng-dia__shape"
         data-tone={tone}
-        points={`${x + w / 2},${y} ${x + w},${y + h / 2} ${x + w / 2},${y + h} ${x},${y + h / 2}`}
+        points={`${x + tip},${y} ${x + w - tip},${y} ${x + w},${y + h / 2} ${x + w - tip},${y + h} ${x + tip},${y + h} ${x},${y + h / 2}`}
       />
     );
   }

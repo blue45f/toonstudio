@@ -1,4 +1,4 @@
-import { layoutGraph, textUnits, type Rect } from "./engineering-diagram-layout";
+import { layoutGraph, layoutLayers, layoutSequence, textUnits, type Rect } from "./engineering-diagram-layout";
 import {
   ENGINEERING_DIAGRAM_LIMITS as LIMIT,
   type EngineeringDiagram,
@@ -25,6 +25,55 @@ function checkText(problems: string[], where: string, value: LocalizedText | und
   const enEm = textUnits(value.en);
   if (koEm > maxEm) problems.push(`${where}: 한국어 ${koEm.toFixed(1)}em > ${maxEm}em ("${value.ko}")`);
   if (enEm > maxEm) problems.push(`${where}: 영어 ${enEm.toFixed(1)}em > ${maxEm}em ("${value.en}")`);
+}
+
+/**
+ * 렌더러가 글을 상자에 맞추지 못해 말줄임표로 자르는 경우를 한국어·영어 두 화면 모두에서 찾는다.
+ * 잘린 글은 정보가 사라지므로 오류로 본다(작성자가 문구를 줄이거나 격자를 조정해야 한다).
+ */
+function truncationProblems(diagram: EngineeringDiagram): string[] {
+  const out: string[] = [];
+  const id = diagram.id;
+  const cut = (lines: readonly string[], source: string): boolean => {
+    const last = lines.at(-1);
+    return last !== undefined && last.endsWith("…") && !source.trim().endsWith("…");
+  };
+  for (const lang of ["ko", "en"] as const) {
+    const resolve = (value: LocalizedText): string => value[lang];
+    const tag = lang === "ko" ? "한국어" : "영어";
+    if (diagram.kind === "graph") {
+      const layout = layoutGraph(diagram, resolve);
+      for (const item of layout.nodes) {
+        if (cut(item.labelLines, resolve(item.node.label))) out.push(`${id}.${item.node.id}.label: ${tag} 글이 상자에 안 들어가 잘립니다("${resolve(item.node.label)}")`);
+        if (item.node.sub && cut(item.subLines, resolve(item.node.sub))) out.push(`${id}.${item.node.id}.sub: ${tag} 부제가 상자에 안 들어가 잘립니다("${resolve(item.node.sub)}") — diamond 는 더 짧게 쓰거나 span 을 늘리세요`);
+      }
+      for (const edge of layout.edges) {
+        if (edge.edge.label && cut(edge.labelLines, resolve(edge.edge.label))) out.push(`${id}.edge.${edge.edge.from}->${edge.edge.to}: ${tag} 간선 라벨이 잘립니다`);
+        if (edge.labelCollides) out.push(`${id}: 간선 ${edge.edge.from}->${edge.edge.to}의 라벨(${tag})을 노드·다른 라벨과 겹치지 않게 놓을 자리가 없습니다(격자를 조정하세요)`);
+      }
+    } else if (diagram.kind === "sequence") {
+      const layout = layoutSequence(diagram, resolve);
+      for (const item of layout.actors) {
+        if (cut(item.labelLines, resolve(item.actor.label))) out.push(`${id}.${item.actor.id}.label: ${tag} 참여자 이름이 잘립니다("${resolve(item.actor.label)}")`);
+        if (item.actor.sub && cut(item.subLines, resolve(item.actor.sub))) out.push(`${id}.${item.actor.id}.sub: ${tag} 참여자 부제가 상자에 안 들어가 잘립니다("${resolve(item.actor.sub)}" — 이름이 한 줄이면 부제 약 24em, 두 줄이면 약 12em 이내)`);
+      }
+      for (const item of layout.messages) {
+        if (cut(item.labelLines, `${item.index + 1}. ${resolve(item.message.label)}`)) out.push(`${id}.message.${item.index + 1}: ${tag} 메시지가 잘립니다("${resolve(item.message.label)}")`);
+        if (item.message.note && cut(item.noteLines, resolve(item.message.note))) out.push(`${id}.message.${item.index + 1}.note: ${tag} 메시지 설명이 잘립니다`);
+      }
+    } else {
+      const layout = layoutLayers(diagram, resolve);
+      for (const item of layout.layers) {
+        if (cut(item.labelLines, resolve(item.layer.label))) out.push(`${id}.${item.layer.id}.label: ${tag} 계층 이름이 잘립니다`);
+        if (item.layer.sub && cut(item.subLines, resolve(item.layer.sub))) out.push(`${id}.${item.layer.id}.sub: ${tag} 계층 부제가 잘립니다`);
+      }
+      (diagram.brackets ?? []).forEach((bracket, index) => {
+        const laid = layout.brackets[index];
+        if (laid && cut(laid.labelLines, resolve(bracket.label))) out.push(`${id}.bracket.${index + 1}: ${tag} 괄호 주석이 잘립니다`);
+      });
+    }
+  }
+  return out;
 }
 
 export function validateEngineeringDiagram(diagram: EngineeringDiagram): string[] {
@@ -130,5 +179,6 @@ export function validateEngineeringDiagram(diagram: EngineeringDiagram): string[
       for (const layerId of bracket.layerIds) if (!ids.has(layerId)) problems.push(`${id}: 괄호가 없는 계층 ${layerId}를 가리킵니다`);
     }
   }
+  if (problems.length === 0) problems.push(...truncationProblems(diagram));
   return problems;
 }

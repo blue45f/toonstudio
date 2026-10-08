@@ -132,6 +132,8 @@ export interface LaidOutEdge {
   readonly labelLines: readonly string[];
   /** 다른 노드의 내부를 지나는 경로를 피하지 못했는지. 도식 작성 시 격자를 고쳐야 한다. */
   readonly crossesNode: boolean;
+  /** 라벨을 노드·다른 라벨과 겹치지 않게 놓을 자리가 없었는지. 도식 작성 시 격자를 고쳐야 한다. */
+  readonly labelCollides: boolean;
 }
 
 export interface LaidOutGroup {
@@ -181,15 +183,65 @@ export function polylineHitsAny(points: readonly Point[], rects: readonly Rect[]
   return false;
 }
 
-function longestSegmentMid(points: readonly Point[]): Point | undefined {
-  let best: { length: number; mid: Point } | undefined;
+const LABEL_H = 20;
+
+function rectsOverlap(a: Rect, b: Rect, pad = 0): boolean {
+  return a.x < b.x + b.w + pad && a.x + a.w + pad > b.x && a.y < b.y + b.h + pad && a.y + a.h + pad > b.y;
+}
+
+function distanceToSegment(point: Point, a: Point, b: Point): number {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((point[0] - a[0]) * dx + (point[1] - a[1]) * dy) / lengthSquared));
+  return Math.hypot(point[0] - (a[0] + t * dx), point[1] - (a[1] + t * dy));
+}
+
+interface LabelPlacement {
+  readonly at: Point | undefined;
+  readonly rect: Rect | undefined;
+  /** 노드나 앞서 놓인 라벨과 겹치지 않는 자리를 찾지 못했는지. */
+  readonly collides: boolean;
+}
+
+/**
+ * 간선 라벨 자리를 고른다. 긴 구간부터 여러 위치를 시도해 노드·다른 라벨과 겹치지 않는 자리를 찾고,
+ * 가능하면 다른 간선과 공유하지 않는 구간(갈라진 뒤의 가지)을 우선해 라벨이 어느 간선의 것인지 헷갈리지 않게 한다.
+ */
+function placeEdgeLabel(
+  points: readonly Point[],
+  line: string,
+  nodeRects: readonly Rect[],
+  placed: readonly Rect[],
+  otherPaths: readonly (readonly Point[])[],
+): LabelPlacement {
+  if (!line || points.length < 2) return { at: undefined, rect: undefined, collides: false };
+  const width = Math.ceil(textUnits(line) * FONT.edgeLabel) + 14;
+  const segments: { a: Point; b: Point; length: number }[] = [];
   for (let index = 1; index < points.length; index += 1) {
     const a = points[index - 1] as Point;
     const b = points[index] as Point;
-    const length = Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
-    if (!best || length > best.length) best = { length, mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] };
+    segments.push({ a, b, length: Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) });
   }
-  return best?.mid;
+  segments.sort((left, right) => right.length - left.length);
+  const candidates: Point[] = [];
+  for (const segment of segments) {
+    if (segment.length < 24 && candidates.length > 0) continue;
+    for (const t of [0.5, 0.36, 0.64, 0.24, 0.76]) {
+      candidates.push([segment.a[0] + (segment.b[0] - segment.a[0]) * t, segment.a[1] + (segment.b[1] - segment.a[1]) * t]);
+    }
+  }
+  const rectAt = (at: Point): Rect => ({ x: at[0] - width / 2, y: at[1] - LABEL_H / 2, w: width, h: LABEL_H });
+  const free = (at: Point): boolean => {
+    const rect = rectAt(at);
+    return !nodeRects.some((node) => rectsOverlap(rect, node, 2)) && !placed.some((other) => rectsOverlap(rect, other, 2));
+  };
+  const shared = (at: Point): boolean =>
+    otherPaths.some((path) => path.some((point, index) => index > 0 && distanceToSegment(at, path[index - 1] as Point, point) < 3));
+  const chosen = candidates.find((at) => free(at) && !shared(at)) ?? candidates.find(free);
+  if (chosen) return { at: chosen, rect: rectAt(chosen), collides: false };
+  const fallback = candidates[0] as Point;
+  return { at: fallback, rect: rectAt(fallback), collides: true };
 }
 
 interface LaneState {
@@ -263,26 +315,37 @@ export function layoutGraph(diagram: EngineeringGraphDiagram, text: TextResolver
       h: m.rowH,
     };
     rects.set(node.id, rect);
-    const inner = (node.shape === "diamond" ? rect.w * 0.56 : rect.w - 26);
+    const inner = node.shape === "diamond" ? rect.w - 52 : rect.w - 26;
     const labelLines = wrapText(text(node.label), FONT.nodeLabel, inner, 2);
     const subLines = node.sub ? wrapText(text(node.sub), FONT.nodeSub, inner, node.shape === "diamond" ? 1 : 2) : [];
     return { node, rect, labelLines, subLines };
   });
 
   const lanes: LaneState = { counts: new Map() };
-  const edges: LaidOutEdge[] = diagram.edges.map((edge) => {
+  const routedEdges = diagram.edges.map((edge) => {
     const from = rects.get(edge.from);
     const to = rects.get(edge.to);
-    if (!from || !to) return { edge, points: [], labelAt: undefined, labelLines: [], crossesNode: false };
+    if (!from || !to) return { edge, points: [] as Point[], crosses: false };
     const obstacles = [...rects.entries()].filter(([id]) => id !== edge.from && id !== edge.to).map(([, rect]) => rect);
     const routed = routeEdge(from, to, obstacles, lanes);
-    const label = edge.label ? text(edge.label) : "";
+    return { edge, points: routed.points, crosses: routed.crosses };
+  });
+  // 간선 라벨은 노드의 글이 있는 안쪽 영역만 피하면 된다(칸 사이 틈보다 긴 라벨이 노드 가장자리를 살짝 덮는 것은 허용).
+  const nodeRects = nodes.map((item) => ({ x: item.rect.x + 16, y: item.rect.y + 8, w: item.rect.w - 32, h: item.rect.h - 16 }));
+  const placedLabels: Rect[] = [];
+  const edges: LaidOutEdge[] = routedEdges.map((routed, index) => {
+    const label = routed.edge.label ? text(routed.edge.label) : "";
+    const labelLines = label ? wrapText(label, FONT.edgeLabel, 150, 1) : [];
+    const otherPaths = routedEdges.filter((_, other) => other !== index).map((other) => other.points);
+    const placement = placeEdgeLabel(routed.points, labelLines[0] ?? "", nodeRects, placedLabels, otherPaths);
+    if (placement.rect) placedLabels.push(placement.rect);
     return {
-      edge,
+      edge: routed.edge,
       points: routed.points,
-      labelAt: label ? longestSegmentMid(routed.points) : undefined,
-      labelLines: label ? wrapText(label, FONT.edgeLabel, 150, 1) : [],
+      labelAt: placement.at,
+      labelLines,
       crossesNode: routed.crosses,
+      labelCollides: placement.collides,
     };
   });
 
@@ -319,7 +382,7 @@ export function layoutGraph(diagram: EngineeringGraphDiagram, text: TextResolver
 
 export const SEQUENCE_METRICS = {
   actorW: 188,
-  actorH: 66,
+  actorH: 78,
   actorGap: 62,
   pad: 28,
   firstRow: 52,
@@ -356,12 +419,14 @@ export function layoutSequence(diagram: EngineeringSequenceDiagram, text: TextRe
   const m = SEQUENCE_METRICS;
   const actors: LaidOutActor[] = diagram.actors.map((actor, index) => {
     const rect: Rect = { x: m.pad + index * (m.actorW + m.actorGap), y: m.pad, w: m.actorW, h: m.actorH };
+    const labelLines = wrapText(text(actor.label), FONT.actorLabel, rect.w - 22, 2);
     return {
       actor,
       rect,
       lineX: rect.x + rect.w / 2,
-      labelLines: wrapText(text(actor.label), FONT.actorLabel, rect.w - 22, 2),
-      subLines: actor.sub ? wrapText(text(actor.sub), FONT.actorSub, rect.w - 22, 1) : [],
+      labelLines,
+      // 이름이 한 줄이면 부제를 두 줄까지, 이름이 두 줄이면 부제는 한 줄만 둔다(상자 높이 안에 맞춘다).
+      subLines: actor.sub ? wrapText(text(actor.sub), FONT.actorSub, rect.w - 22, labelLines.length > 1 ? 1 : 2) : [],
     };
   });
   const lineX = new Map(actors.map((item) => [item.actor.id, item.lineX]));

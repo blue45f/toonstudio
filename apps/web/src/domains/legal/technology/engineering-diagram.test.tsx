@@ -102,6 +102,77 @@ describe("도식 명세 검증", () => {
   });
 });
 
+describe("도식 가독성 검증", () => {
+  const fork = (labels: { readonly up: string; readonly down: string }): GraphDiagram =>
+    graph({
+      nodes: [
+        { id: "src", label: { ko: "입력", en: "Input" }, at: [0, 1] },
+        { id: "up", label: { ko: "위쪽", en: "Upper" }, at: [2, 0] },
+        { id: "down", label: { ko: "아래쪽", en: "Lower" }, at: [2, 2] },
+      ],
+      edges: [
+        { from: "src", to: "up", label: { ko: labels.up, en: labels.up } },
+        { from: "src", to: "down", label: { ko: labels.down, en: labels.down } },
+      ],
+      groups: undefined,
+    });
+
+  it("같은 줄기에서 갈라지는 간선의 라벨은 서로 겹치지 않고 각자의 가지에 놓인다", () => {
+    const layout = layoutGraph(fork({ up: "묶인 점", down: "짐작한 점" }), ko);
+    const [first, second] = layout.edges;
+    expect(first?.labelAt).toBeDefined();
+    expect(second?.labelAt).toBeDefined();
+    expect(first?.labelCollides).toBe(false);
+    expect(second?.labelCollides).toBe(false);
+    const distance = Math.hypot((first?.labelAt?.[0] ?? 0) - (second?.labelAt?.[0] ?? 0), (first?.labelAt?.[1] ?? 0) - (second?.labelAt?.[1] ?? 0));
+    expect(distance).toBeGreaterThan(40);
+  });
+
+  it("글이 상자에 안 들어가 말줄임표로 잘리면 오류로 알려준다(한국어·영어 모두)", () => {
+    const cutNode = graph({
+      nodes: [
+        { id: "a", label: { ko: "시작", en: "Start" }, at: [0, 0], shape: "pill" },
+        {
+          id: "d",
+          label: { ko: "판단", en: "Decide" },
+          sub: { ko: "아주아주 긴 판단 부제 문장입니다", en: "A very very long decision subtitle sentence" },
+          at: [1, 0],
+          shape: "diamond",
+        },
+      ],
+      edges: [{ from: "a", to: "d" }],
+      groups: undefined,
+    });
+    const problems = validateEngineeringDiagram(cutNode);
+    expect(problems.some((problem) => problem.includes("부제가 상자에 안 들어가 잘립니다") && problem.includes("한국어"))).toBe(true);
+    expect(problems.some((problem) => problem.includes("부제가 상자에 안 들어가 잘립니다") && problem.includes("영어"))).toBe(true);
+  });
+
+  it("시퀀스 참여자 부제는 이름이 한 줄이면 두 줄까지 들어가고 한도를 넘으면 오류가 된다", () => {
+    const sequence = (sub: string): EngineeringDiagram => ({
+      ...(FIXTURE_SEQUENCE as Extract<EngineeringDiagram, { kind: "sequence" }>),
+      actors: [
+        { id: "a", label: { ko: "브라우저", en: "Browser" }, sub: { ko: sub, en: sub } },
+        { id: "b", label: { ko: "서버", en: "Server" } },
+      ],
+      messages: [
+        { from: "a", to: "b", label: { ko: "요청", en: "Request" } },
+        { from: "b", to: "a", label: { ko: "응답", en: "Response" }, style: "dashed" },
+      ],
+    });
+    expect(validateEngineeringDiagram(sequence("Socket.IO 와 방 서버 연결"))).toEqual([]);
+    // 이름이 한 줄이어도 24em 를 넘으면 두 줄에도 안 들어간다(글자 수 한도 검사가 먼저 알려준다).
+    expect(validateEngineeringDiagram(sequence("아주 긴 참여자 부제가 두 줄에도 다 들어가지 않는 경우 입니다 정말로")).length).toBeGreaterThan(0);
+    // 한도(25em) 안이지만 이름이 두 줄이면 부제는 한 줄만 허용되므로 잘림으로 알려준다.
+    const twoLineName = sequence("두 줄 이름과 함께 쓰는 긴 부제 문장");
+    const named = {
+      ...twoLineName,
+      actors: [{ id: "a", label: { ko: "모두 함께 쓰는 참여자", en: "Shared participant here" }, sub: { ko: "두 줄 이름과 함께 쓰는 긴 부제 문장", en: "A long subtitle sentence beside a two-line name" } }, ...(twoLineName as Extract<EngineeringDiagram, { kind: "sequence" }>).actors.slice(1)],
+    } as EngineeringDiagram;
+    expect(validateEngineeringDiagram(named).some((problem) => problem.includes("부제가 상자에 안 들어가"))).toBe(true);
+  });
+});
+
 describe("도식 레이아웃", () => {
   it("그래프는 격자 위치를 좌표로 바꾸고 그룹 프레임이 구성원을 감싼다", () => {
     const layout = layoutGraph(FIXTURE_GRAPH as GraphDiagram, ko);

@@ -42,7 +42,7 @@ export interface EngineeringDiagramNode {
   /** 기술 이름·수치 같은 작은 보조 문구. */
   readonly sub?: LocalizedText;
   readonly tone?: EngineeringDiagramTone;
-  /** 기본 `box`. 저장소는 `cylinder`, 판단은 `diamond`, 외부는 `cloud`, 시작·끝은 `pill`. */
+  /** 기본 `box`. 저장소는 `cylinder`, 판단(분기)은 `diamond`(좌우가 뾰족한 육각형으로 그려진다. 글은 상자보다 조금 좁게 들어간다), 외부는 `cloud`, 시작·끝은 `pill`. */
   readonly shape?: EngineeringDiagramShape;
   /** 격자 위치 `[열, 행]`(0부터). */
   readonly at: readonly [number, number];
