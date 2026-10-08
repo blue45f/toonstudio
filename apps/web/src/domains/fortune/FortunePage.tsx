@@ -969,20 +969,20 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
 
                   {/* 독서 처방전 전용 결과 디스플레이 */}
                   {activeTab === "prescription" && fortuneResult.query && (
-                    <div className="p-5 border border-amber-500/15 bg-gradient-to-br from-amber-500/5 to-card rounded-2xl relative overflow-hidden space-y-4 text-left">
+                    <div className="p-5 border border-warn/15 bg-gradient-to-br from-warn/5 to-card rounded-2xl relative overflow-hidden space-y-4 text-left">
                       {/* 고풍스러운 문양 장식 */}
-                      <div className="absolute top-2 right-4 text-[10px] font-bold text-amber-500/40 uppercase tracking-widest font-display">Prescribed by {selectedChar.name}</div>
+                      <div className="absolute top-2 right-4 text-[10px] font-bold text-warn/40 uppercase tracking-widest font-display">Prescribed by {selectedChar.name}</div>
 
                       <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-amber-500/70 uppercase tracking-wider">PRESCRIPTION SLIP</span>
+                        <span className="text-[10px] font-bold text-warn/70 uppercase tracking-wider">PRESCRIPTION SLIP</span>
                         <h4 className="text-sm font-semibold text-fg-2">분석된 고민: "{fortuneResult.query}"</h4>
                       </div>
 
-                      <div className="h-px bg-amber-500/10" />
+                      <div className="h-px bg-warn/10" />
 
                       {/* 독서 가이드 / 연출 문구 */}
                       <div className="space-y-2">
-                        <span className="text-[10px] font-bold text-amber-500/60 uppercase tracking-wider block">{tx("독서 처방 가이드")}</span>
+                        <span className="text-[10px] font-bold text-warn/60 uppercase tracking-wider block">{tx("독서 처방 가이드")}</span>
                         <p className="text-xs leading-relaxed text-fg-3 italic">
                           * 아래 추천된 책(웹툰)을 하루 1회, 3화 이상 읽으며 마음에 평온을 부어넣으세요. 부작용으로 몰입 과다에 따른 수면 부족이 생길 수 있으니 주의 바랍니다.
                         </p>
@@ -1514,7 +1514,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                       value={prescriptionQuery}
                       onChange={(e) => setPrescriptionQuery(e.target.value)}
                       placeholder={tx("예: 오늘 회사에서 너무 힘든 일이 있어서 완전 시원하고 통쾌한 사이다 웹툰을 읽으며 스트레스 날려버리고 싶어!")}
-                      className="w-full rounded-xl border border-line bg-card px-3 py-2.5 text-xs text-fg placeholder:text-fg-4 focus:border-accent focus:outline-none resize-none leading-relaxed"
+                      className="w-full rounded-xl border border-line bg-card px-3 py-2.5 text-xs text-fg placeholder:text-fg-3 focus:border-accent focus:outline-none resize-none leading-relaxed"
                     />
                   </div>
 
@@ -1719,7 +1719,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                               repeat: Infinity,
                               ease: "easeInOut"
                             }}
-                            className="w-24 aspect-[2/3] rounded-xl border border-amber-500/20 bg-cover bg-center shadow-md"
+                            className="w-24 aspect-[2/3] rounded-xl border border-warn/20 bg-cover bg-center shadow-md"
                             style={{ backgroundImage: `url('${resolveAssetUrl("/images/tarot/tarot-back.jpg")}')` }}
                           />
                         ))}
@@ -1740,7 +1740,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                             aria-label={`${idx + 1}번 카드 뒤집기`}
                             whileHover={{ y: -10, scale: 1.03 }}
                             onClick={() => handleSelectTarotCard(idx)}
-                            className="w-28 cursor-pointer aspect-[2/3] rounded-xl border border-amber-500/20 bg-cover bg-center flex items-center justify-center relative overflow-hidden shadow-lg transition-all hover:border-amber-400 focus-visible:border-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                            className="w-28 cursor-pointer aspect-[2/3] rounded-xl border border-warn/20 bg-cover bg-center flex items-center justify-center relative overflow-hidden shadow-lg transition-all hover:border-warn focus-visible:border-warn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warn"
                             style={{ backgroundImage: `url('${resolveAssetUrl("/images/tarot/tarot-back.jpg")}')` }}
                           >
                             {/* 카드 뒷면에 호버 시 미세한 골드 이펙트 오버레이 */}
