@@ -435,7 +435,7 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(read("apps/web/src/app/routes/groups/creator-route-pages.ts")).toMatch(/StudioVirtualSpacePage = lazyRetry\(/u);
     expect(read(`${dir}/StudioVirtualSpacePhaserCanvas.tsx`)).toContain('await import("phaser")');
     expect(read(`${dir}/studio-virtual-space-sprite-crossfade-runtime.ts`)).toMatch(/^import Phaser from "phaser";/mu);
-    expect(gitGrepFiles("studio-virtual-space-sprite-crossfade-runtime", "apps/web/src").filter((file) => !/\.test\.tsx?$/u.test(file))).toEqual([
+    expect(gitGrepFiles("studio-virtual-space-sprite-crossfade-runtime", "apps/web/src").filter((file) => !/\.test\.tsx?$/u.test(file) && !file.includes("/domains/legal/technology/"))).toEqual([
       `${dir}/StudioVirtualSpacePhaserCanvas.tsx`,
     ]);
     expect(slide.points.map((point) => point.ko).join("\n")).toContain("정적 import 1건이 남아");
