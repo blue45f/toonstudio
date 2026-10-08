@@ -180,6 +180,32 @@ export interface SumiStrokeReceipt {
 
 export type SumiRuntimeState = "ready" | "in-stroke" | "device-lost" | "disposed";
 
+/** `abortStroke`의 결과(GPU 런타임). */
+export interface SumiAbortReceipt {
+  /** 문서에 합성되지 않고 버려진 dab 수. 획 밖이면 0. */
+  discardedDabs: number;
+  /** 그 전까지 endStroke된 문서(습식 층·높이 포함)가 beginStroke 직전과 같은가. */
+  documentPreserved: boolean;
+  reasonKo?: string;
+  /** abort가 낸 queue.submit 수(제출할 GPU 작업이 없으면 0). */
+  submitCount: number;
+  /** abort가 낸 compute dispatch 수. */
+  dispatchCount: number;
+}
+
+/** 획 시작 직전(다른 매체 습식 층 플래튼 직후)의 런타임 플래그. abortStroke가 되돌린다. */
+interface ComputeStrokeCheckpoint {
+  waterLayer: boolean;
+  oilLayer: boolean;
+  hasHeight: boolean;
+  renderKm: boolean;
+  layerProgram: BrushProgram | null;
+  layerParams: ParamsValues | null;
+  baseParams: ParamsValues | null;
+  /** 이 획의 beginStroke가 다른 매체의 습식 층을 먼저 문서에 구웠는가(GPU에서는 되돌릴 수 없다). */
+  flattened: boolean;
+}
+
 /** 정착 루프 청크(프레임 수). 청크마다 `wet_settle_done`을 읽어 서 있으면 멈춘다. */
 export const WET_DRY_CHUNK_FRAMES = 16;
 
@@ -458,6 +484,8 @@ export class SumiComputeRuntime {
   private layerProgram: BrushProgram | null = null;
   private layerParams: ParamsValues | null = null;
   private substeps = 1;
+  /** 진행 중인 획의 시작 시점 플래그(획 밖이면 null). */
+  private strokeCheckpoint: ComputeStrokeCheckpoint | null = null;
   private frameIndex = 0;
   /** 외부 비닝을 쓴 획의 누적 overflow(GPU count_main 대신 호스트가 절대값을 table에 쓴다). */
   private externalDabOverflow = 0;
@@ -691,7 +719,18 @@ export class SumiComputeRuntime {
     const wetEnabled = params.wet_enabled === 1;
     const kind = wetEnabled ? wetLayerKindOf(program) : null;
     // 쌓는 순서 보존: 습식 층이 있는데 이번 획이 같은 종류의 습식 획이 아니면 먼저 굽는다(CPU Surface.beginStroke).
-    if ((this.waterLayer && kind !== "water") || (this.oilLayer && kind !== "oil")) this.flattenWet();
+    const willFlatten = (this.waterLayer && kind !== "water") || (this.oilLayer && kind !== "oil");
+    if (willFlatten) this.flattenWet();
+    this.strokeCheckpoint = {
+      waterLayer: this.waterLayer,
+      oilLayer: this.oilLayer,
+      hasHeight: this.hasHeight,
+      renderKm: this.renderKm,
+      layerProgram: this.layerProgram,
+      layerParams: this.layerParams,
+      baseParams: this.baseParams,
+      flattened: willFlatten,
+    };
     this.program = program;
     this.params = params;
     this.baseParams = params;
@@ -1078,6 +1117,96 @@ export class SumiComputeRuntime {
     this.submits += 1;
     this.waterLayer = false;
     this.oilLayer = false;
+  }
+
+  /**
+   * 진행 중인 획을 문서에 합성하지 않고 버린다(동기). 획 밖이면 no-op이다.
+   * - 아직 프레임을 내지 않았으면(GPU에 올라간 획 상태 없음) 제출 없이 JS 쪽 상태·플래그만 되돌린다(디스패치 0, 제출 0).
+   * - 프레임을 냈다면 획 풀과 표의 획 영역을 비우고 composite_all 1회(제출 1회)로 표시를 문서 상태로 되돌린다.
+   *   건식·smudge는 문서가 endStroke의 bake_stroke에서만 바뀌므로 `documentPreserved: true`다.
+   * - 습식·임파스토 획이 프레임을 냈다면 습식 풀·높이·픽업이 이미 직접 갱신돼 beginStroke 시점으로 되돌릴 수 없다:
+   *   획 영역은 정리하지만 `documentPreserved: false`와 사유를 돌려주고, 호출자(세션)가 레인을 교체한다(CPU 참조·WASM 레인만 타일 스냅샷으로 복원).
+   * - 장치가 손실됐다면 문서(GPU 메모리)도 잃었으므로 `documentPreserved: false`다.
+   */
+  abortStroke(): SumiAbortReceipt {
+    if (this.state === "disposed") throw new InvalidStateError("SumiComputeRuntime: dispose 뒤에 호출됐다");
+    const cp = this.strokeCheckpoint;
+    const program = this.program;
+    const params = this.params;
+    if (!cp || !program || !params) return { discardedDabs: 0, documentPreserved: true, submitCount: 0, dispatchCount: 0 };
+    const discardedDabs = this.strokeDabs;
+    const framesSubmitted = this.frameIndex;
+    const wetStroke = this.wetEnabled;
+    const lost = this.state === "device-lost" || this.lostInfo !== null;
+    // 어떤 경로에서도 레인이 다음 beginStroke를 받을 수 있도록 획 상태를 먼저 비운다.
+    this.program = null;
+    this.params = null;
+    this.strokeCheckpoint = null;
+    this.wetEnabled = false;
+    this.wetKind = null;
+    this.smudgeEnabled = false;
+    this.frameIndex = 0;
+    this.strokeDabs = 0;
+    this.strokeSubmits = 0;
+    this.frameTimes = [];
+    this.timer.abandon();
+    if (this.state === "in-stroke") this.state = "ready";
+    if (lost) {
+      return {
+        discardedDabs,
+        documentPreserved: false,
+        reasonKo: "GPU 장치가 손실돼 문서(GPU 메모리)를 잃었다",
+        submitCount: 0,
+        dispatchCount: 0,
+      };
+    }
+    const flattenNote = cp.flattened ? "다른 매체의 습식 층이 획 시작 때 이미 문서에 구워졌다(내용은 보존되지만 되돌릴 수 없다)" : undefined;
+    if (framesSubmitted === 0) {
+      // GPU에는 획 상태가 없다: 큐에 낸 것은 자산·상수 업로드뿐이므로 플래그와 습식 상수만 되돌린다.
+      this.waterLayer = cp.waterLayer;
+      this.oilLayer = cp.oilLayer;
+      this.hasHeight = cp.hasHeight;
+      this.renderKm = cp.renderKm;
+      this.layerProgram = cp.layerProgram;
+      this.layerParams = cp.layerParams;
+      this.baseParams = cp.baseParams;
+      if (wetStroke && cp.layerProgram && cp.layerProgram !== program) {
+        // wet_kernel·paper_wet은 마지막 습식 획의 상수여야 한다(flattenWet 전제). 이 획이 덮어썼으므로 이전 습식 획의 값으로 다시 올린다.
+        this.uploadWetKernel(cp.layerProgram);
+        this.paperWetKeyLoaded = null;
+        this.uploadPaperWet(cp.layerProgram);
+      }
+      const receipt: SumiAbortReceipt = { discardedDabs, documentPreserved: true, submitCount: 0, dispatchCount: 0 };
+      if (flattenNote) receipt.reasonKo = flattenNote;
+      return receipt;
+    }
+    // 프레임을 낸 획: 획 풀·표의 획 영역을 비우고 표시를 다시 합성한다(큐 순서상 표 리셋이 아래 제출보다 먼저 적용된다).
+    this.device.queue.writeBuffer(this.buffers.table, 0, new ArrayBuffer(TABLE_OFFSETS.strokeResetBytes));
+    this.device.queue.writeBuffer(this.buffers.table, TABLE_OFFSETS.slots, this.slotReset);
+    this.device.queue.writeBuffer(this.buffers.table, TABLE_OFFSETS.wetOverflow, new Uint32Array([0]));
+    this.writeParams(this.frameParams(params, { wet_settle: 0, dab_count: 0 }));
+    const encoder = this.device.createCommandEncoder({ label: "sumi-abort-stroke" });
+    encoder.clearBuffer(this.buffers.strokePool);
+    const pass = encoder.beginComputePass({ label: "sumi-abort-stroke-pass" });
+    const s = this.newStream(pass);
+    s.wet("compositeAll", this.tilesX, this.tilesY);
+    pass.end();
+    this.encodePresentPass(encoder);
+    this.device.queue.submit([encoder.finish()]);
+    this.submits += 1;
+    if (wetStroke) {
+      return {
+        discardedDabs,
+        documentPreserved: false,
+        reasonKo:
+          "GPU 습식·임파스토 층은 획 도중 풀이 직접 갱신돼 beginStroke 시점으로 되돌릴 수 없다(타일 스냅샷 복원은 CPU 참조·WASM 레인만 지원한다)",
+        submitCount: 1,
+        dispatchCount: s.count,
+      };
+    }
+    const receipt: SumiAbortReceipt = { discardedDabs, documentPreserved: true, submitCount: 1, dispatchCount: s.count };
+    if (flattenNote) receipt.reasonKo = flattenNote;
+    return receipt;
   }
 
   /**

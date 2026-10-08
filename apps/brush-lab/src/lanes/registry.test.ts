@@ -30,6 +30,8 @@ const NODE_UNAVAILABLE_REASON: Partial<Record<LaneId, LaneReasonCode>> = {
   "webgpu-compute": "webgpu-api-unavailable",
   "webgpu-instanced": "webgpu-api-unavailable",
   "wasm-gpu-hybrid": "webgpu-api-unavailable",
+  // Node에는 번들러 wasm URL fetch가 없어 Hokusai의 기본 로드 경로가 불가하다(바이트 주입 경로는 hokusai-lane.test.ts가 실제 wasm으로 검증).
+  hokusai: "wasm-artifact-missing",
 };
 
 /** 정적·동적 import 지정자(경계 테스트와 같은 규칙). 주석 속 패키지명은 import가 아니다. */
@@ -58,7 +60,7 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 describe("레인 레지스트리", () => {
-  it("id가 유일하고 LaneId 어휘 8개를 모두 덮으며 상태·종류 어휘를 지킨다", () => {
+  it("id가 유일하고 LaneId 어휘 10개를 모두 덮으며 상태·종류 어휘를 지킨다", () => {
     const ids = LANE_REGISTRY.map((d) => d.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect([...ids].sort()).toEqual([...LANE_ID_VALUES].sort());
@@ -78,6 +80,10 @@ describe("레인 레지스트리", () => {
     expect(laneById("webgl2-instanced").status).toBe("browser-verification-required");
     expect(laneById("wasm-cpu").status).toBe("implemented");
     expect(laneById("wasm-gpu-hybrid").status).toBe("browser-verification-required");
+    expect(laneById("libmypaint").status).toBe("implemented");
+    expect(laneById("libmypaint").kind).toBe("comparison");
+    expect(laneById("hokusai").status).toBe("browser-verification-required");
+    expect(laneById("hokusai").kind).toBe("comparison");
     expect(findLane("nope")).toBeNull();
     expect(() => laneById("nope" as "cpu-reference")).toThrow(RangeError);
   });
@@ -153,7 +159,7 @@ describe("레인 레지스트리", () => {
     expect(laneTableDrift(rows)).toEqual([]);
   });
 
-  it("서비스 패키지 import는 platform-baseline 레인(과 그 테스트)·registry 교차 검증 테스트에서만 한다", () => {
+  it("서비스 패키지 import는 platform-baseline 레인(과 그 테스트)·libmypaint 레인(과 그 테스트, 집중 진입점만)·registry 교차 검증 테스트에서만 한다", () => {
     const violations: string[] = [];
     const allowedUses: string[] = [];
     for (const full of walk(SRC_ROOT)) {
@@ -161,6 +167,8 @@ describe("레인 레지스트리", () => {
       for (const spec of importSpecifiers(readFileSync(full, "utf8"))) {
         if (/^@toonstudio\/studio-(brush-platform|project-model)(\/|$)/.test(spec)) {
           if (/^lanes\/platform-baseline-lane(\.test)?\.ts$/.test(rel)) allowedUses.push(`${rel}: ${spec}`);
+          // libmypaint 레인은 서비스 패키지의 집중 진입점(`/libmypaint`: 세션 API만, zod·레지스트리 import 경로 없음)만 쓴다.
+          else if (/^lanes\/libmypaint-lane(\.test)?\.ts$/.test(rel) && spec === "@toonstudio/studio-brush-platform/libmypaint") allowedUses.push(`${rel}: ${spec}`);
           else violations.push(`${rel}: ${spec}`);
         }
         if (/^@toonstudio\/studio-engine-registry(\/|$)/.test(spec)) {
@@ -173,6 +181,7 @@ describe("레인 레지스트리", () => {
     // 게이트가 살아 있는지: 허용 파일은 실제로 서비스 패키지를 import한다.
     expect(allowedUses).toContain("lanes/platform-baseline-lane.ts: @toonstudio/studio-brush-platform");
     expect(allowedUses).toContain("lanes/platform-baseline-lane.ts: @toonstudio/studio-project-model");
+    expect(allowedUses).toContain("lanes/libmypaint-lane.ts: @toonstudio/studio-brush-platform/libmypaint");
     expect(allowedUses).toContain("bench/metrics/render-metrics.test.ts: @toonstudio/studio-engine-registry");
   });
 });

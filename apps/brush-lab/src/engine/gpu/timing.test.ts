@@ -63,6 +63,50 @@ describe("gpu/timing GpuTimer", () => {
     expect(gpu.copies.filter((c) => c.to === "sumi-timestamp-staging").length).toBe(1);
   });
 
+  it("abandon: 버려진 획의 비동기 측정은 다음 획 합산에 섞이지 않고 링 슬롯도 경계로 건너뛴다", async () => {
+    const gpu = createMockGpu({ features: ["timestamp-query"], timestampsNs: [0n, 2_000_000n] });
+    const timer = new GpuTimer(gpu.device, true, null);
+    // 획 A: 3프레임을 내고 링이 가득 차기 전에 abort(= abandon). 슬롯 3개가 링에 남는다.
+    for (let f = 0; f < 3; f += 1) {
+      timer.passTimestamps();
+      const encoder = gpu.device.createCommandEncoder();
+      timer.endFrame(encoder);
+      gpu.device.queue.submit([encoder.finish()]);
+      timer.afterSubmit();
+    }
+    timer.abandon();
+    // 획 B: 2프레임. 다음 flushPartial은 슬롯 0부터 2개만 복사해야 한다(A의 3개가 섞이면 5가 된다).
+    expect(timer.passTimestamps()).toMatchObject({ beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 });
+    for (let f = 0; f < 2; f += 1) {
+      const encoder = gpu.device.createCommandEncoder();
+      timer.endFrame(encoder);
+      gpu.device.queue.submit([encoder.finish()]);
+      timer.afterSubmit();
+      timer.passTimestamps();
+    }
+    const flush = gpu.device.createCommandEncoder();
+    timer.flushPartial(flush);
+    gpu.device.queue.submit([flush.finish()]);
+    timer.startPendingMaps();
+    const result = await timer.resolve();
+    expect(result.framesMeasured).toBe(2);
+    expect(result.gpuTimeMs).toBeCloseTo(4, 6);
+    timer.dispose();
+  });
+
+  it("abandon: submitted-work-done 측정 중이던 획의 결과도 버린다", async () => {
+    const gpu = createMockGpu();
+    const timer = new GpuTimer(gpu.device, false, fakeClock(3));
+    const encoder = gpu.device.createCommandEncoder();
+    timer.endFrame(encoder);
+    gpu.device.queue.submit([encoder.finish()]);
+    timer.afterSubmit();
+    timer.abandon();
+    const result = await timer.resolve();
+    expect(result).toMatchObject({ gpuTimeMs: null, framesMeasured: 0 });
+    timer.dispose();
+  });
+
   it("timestamp 없음 + 시계 있음: submitted-work-done으로 시계 차이를 합산한다", async () => {
     const gpu = createMockGpu();
     const timer = new GpuTimer(gpu.device, false, fakeClock(3));

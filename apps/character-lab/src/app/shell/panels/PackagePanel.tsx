@@ -1,23 +1,51 @@
 /**
- * PackagePanel: 제작(authored) 패키지 레인 UI.
+ * PackagePanel: 캐릭터 소스 고르기(모듈식 키트 · 제작 패키지 · 절차 소스) UI.
+ *
+ * 모듈식 키트(기본 소스, 계약 문서 6절): 베이스(여성/남성) 선택, 키트 다시 불러오기, 출처·라이선스(provenance)와 베이스별 제공 파츠 표.
+ *  - 키트 정보는 셸이 주입하는 키트 플랜 등록소(`useKitPlans()`: `peek`·`ensure`·`subscribe`·`clear`)에서 읽는다. 패널이 따로 `kit.json`을 요청하지 않으므로
+ *    적용 루프와 같은 캐시(같은 요청은 한 번만 받는다)를 쓰고, 다시 불러오기는 등록소 캐시를 비운다. 등록소가 없으면(null) 정보 영역에 사유만 보인다.
+ *  - 베이스를 고르면 등록소로 `kit.json`을 검증해 받고 그 베이스의 능력 맵(`deriveKitCapabilities`)과 함께 `source/set`을 보낸다.
+ *    엔진에 올리는 일은 적용 루프가 레시피(`source`)를 보고 한다(패널이 reloadSource를 직접 부르지 않는다).
+ *  - 고르려는 베이스가 현재 선택(헤어·의상 등)을 제공하지 않으면 바꾸지 않고 사유를 보인다. 다른 프리셋으로 자동 대체하지 않는다.
+ *  - "키트 다시 불러오기"는 적용 루프의 `retrySource()`(실패 기억·kit.json 캐시를 비우고 다시 만든다)를 부르고 패널의 manifest도 다시 받는다.
+ *  - 키트 로드 실패(레시피 소스가 키트인데 `kit-*` 실패가 나고 아직 올라가지 않은 상태)는 사유와 함께 보이고, 절차 소스로 자동 전환하지 않는다.
+ *    절차 소스는 "키트가 아닌 대체 휴머노이드"로 명시하는 버튼으로만 전환한다.
+ *
+ * 제작(authored) 패키지 레인:
  * index.json → 목록 → 선택 → manifest·slot-mapping·GLB fetch + SHA-256 검증 → AuthoredPackagePlan
  * → packagePlans.register → (엔진이 있으면) engineSession.reloadSource → `source/set` dispatch.
  * 15슬롯 능력표(선언/규칙 출처·불일치)·격차·경고·헤어 LOD·본/shape key 커버리지·VRM 메타(베타 파서)를 보여 준다.
  * 실패는 LabFailure 사유 그대로 표시하고 다른 패키지·절차 소스로 바꿔치기하지 않는다(ADR-0018).
- * 네트워크는 loader prop(기본: *.browser 모듈 동적 import)으로 분리해 jsdom 테스트는 fs 기반 가짜 로더를 쓴다.
- * 스타일 클래스 접두는 `cl-package-`(core CSS).
+ *
+ * 제작 패키지 네트워크는 loader prop(기본: *.browser 모듈 동적 import)으로 분리해 jsdom 테스트는 가짜 로더를 쓴다.
+ * 키트의 `kit-loader.browser`는 `app/composition.ts`만 정적으로 import한다(여기서 동적 import하면 한 모듈이 정적·동적으로 섞여 청크가 갈라지지 않는다).
+ * 스타일 클래스 접두는 `cl-package-`(core CSS), 키트 영역은 `cl-package-kit-*`.
  */
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
-import { ALL_AVAILABLE_CAPABILITIES, CHARACTER_SLOT_KINDS, SLOT_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
+import {
+  ALL_AVAILABLE_CAPABILITIES,
+  CHARACTER_SLOT_KINDS,
+  KIT_BASE_IDS,
+  KIT_CURRENT_VERSION,
+  KIT_DEFAULT_ID,
+  KIT_PART_SLOTS,
+  SLOT_LABELS_KO,
+  SLOT_PRESET_IDS,
+  failVisible,
+  isLabFailure,
+} from "../../../contracts";
+import { deriveKitCapabilities } from "../../../domains/authored/kit-capability";
 import { compareCapabilities } from "../../../domains/authored/package-capability";
 import { parseVrmFromGlb } from "../../../domains/authored/vrm-extension-parser";
-import { useDispatch, useLabContext, useLabState } from "../lab-store-context";
+import { presetUnavailableReasonKo } from "../../../state/apply-plan";
+import { useApplyLoop, useApplyPlan, useCatalog, useDispatch, useKitPlans, useLabContext, useLabState } from "../lab-store-context";
 
-import type { LabFailure, SlotCapabilityStatus, SlotKind } from "../../../contracts";
+import type { KitBaseId, KitManifest, LabFailure, RecipeSource, SlotCapabilityStatus, SlotKind } from "../../../contracts";
 import type { AuthoredIndexEntry } from "../../../domains/authored/package-index";
 import type { AuthoredPackageLoadResult, PackageIndexLoadResult } from "../../../domains/authored/package-load-flow";
 import type { VrmcVrmInfo } from "../../../domains/authored/vrm-extension-parser";
+import type { KitPlanRegistry, KitRecipeSource } from "../kit-plan-registry";
 
 export interface PackagePanelLoader {
   loadIndex(): Promise<PackageIndexLoadResult>;
@@ -34,9 +62,56 @@ export interface PackagePanelProps {
   readonly loader?: PackagePanelLoader;
   /** 마운트 시 index.json 자동 로드(기본 true) */
   readonly autoLoadIndex?: boolean;
+  /** 현재 소스가 키트일 때 마운트 시 등록소로 kit.json 자동 로드(기본 true). 키트가 아닌 소스에서는 베이스를 고를 때 받는다. */
+  readonly autoLoadKit?: boolean;
   /** 헤어 LOD 선호(기본 0 = 가장 상세) */
   readonly preferredLod?: number;
   readonly now?: () => number;
+}
+
+/** 패널이 직접 시작한 `kit.json` 요청의 진행 상태. 받은 manifest 자체는 등록소(`peek`)가 가진다. */
+type KitFetchState = { readonly phase: "idle" } | { readonly phase: "loading" } | { readonly phase: "failed"; readonly failure: LabFailure };
+
+type KitFetchOutcome = { readonly ok: true; readonly manifest: KitManifest } | { readonly ok: false; readonly failure: LabFailure };
+
+const KIT_BASE_LABELS_KO: Readonly<Record<KitBaseId, string>> = { female: "여성", male: "남성" };
+
+/** 키트가 아닌 소스에서 키트 정보를 조회할 때 쓰는 기본 키트 요청(베이스는 캐시 키에 들어가지 않는다) */
+const DEFAULT_KIT_LOOKUP: KitRecipeSource = { kind: "kit", kitId: KIT_DEFAULT_ID, kitVersion: KIT_CURRENT_VERSION, baseId: "female" };
+
+const noopSubscribe = (): (() => void) => () => undefined;
+
+/** 등록소에 이미 받아 둔 manifest를 구독한다(받으면 다시 그린다). 등록소가 없거나 아직 안 받았으면 undefined. */
+function useKitManifest(kitPlans: KitPlanRegistry | null, source: KitRecipeSource): KitManifest | undefined {
+  const subscribe = useCallback((listener: () => void) => (kitPlans ? kitPlans.subscribe(listener) : noopSubscribe()), [kitPlans]);
+  const getSnapshot = useCallback(() => kitPlans?.peek(source), [kitPlans, source]);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/** 출처 목록의 라이선스 합집합(`KitPlan.licenseNote`와 같은 규칙: 요약 + 라이선스 목록). 플랜은 비동기라 패널은 manifest에서 같은 문장을 만든다. */
+function licenseNoteOf(manifest: KitManifest): string {
+  const licenses = [...new Set(manifest.provenance.sources.map((entry) => entry.license))];
+  return `${manifest.provenance.summaryKo} (라이선스: ${licenses.join(", ")})`;
+}
+
+/** 키트 로드 단계에서 나는 실패인지(코드 접두 `kit-`, 또는 키트 소스 로드가 만든 일반 소스 실패) */
+function isKitFailure(failure: LabFailure): boolean {
+  return failure.code.startsWith("kit-") || failure.code === "source-build-failed";
+}
+
+function describeSourceKo(source: RecipeSource): string {
+  switch (source.kind) {
+    case "kit":
+      return `모듈식 키트 ${source.kitId} v${source.kitVersion} (${KIT_BASE_LABELS_KO[source.baseId]} 베이스)`;
+    case "package":
+      return `제작 패키지 ${source.characterId} (SHA ${shortSha(source.sha256)})`;
+    case "procedural":
+      return "절차적 휴머노이드(키트가 아닌 대체 소스)";
+    default: {
+      const exhaustive: never = source;
+      return String((exhaustive as { kind?: unknown }).kind);
+    }
+  }
 }
 
 type IndexState =
@@ -186,15 +261,123 @@ function PackageDetail({ state }: PackageDetailProps) {
   );
 }
 
-export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = true, preferredLod = 0, now = () => Date.now() }: PackagePanelProps) {
+interface KitProvenanceProps {
+  readonly manifest: KitManifest;
+}
+
+/** 출처·라이선스(provenance)와 키트 메타. CC0 파생물인지 원본인지, 무엇을 가공했는지를 숨기지 않고 보인다. */
+function KitProvenance({ manifest }: KitProvenanceProps) {
+  const { provenance } = manifest;
+  return (
+    <div className="cl-package-kit-provenance">
+      <dl className="cl-package-facts">
+        <dt>키트</dt>
+        <dd>
+          {manifest.displayName} · {manifest.kitId} v{manifest.kitVersion} · 생성 {manifest.generatedAt}
+        </dd>
+        <dt>제작 도구</dt>
+        <dd>
+          {manifest.generator.tool} · Blender {manifest.generator.blender}
+        </dd>
+        <dt>스켈레톤</dt>
+        <dd>joint {manifest.skeleton.joints.length}개 (모든 GLB가 같은 순서)</dd>
+        <dt>출처 요약</dt>
+        <dd>{provenance.summaryKo}</dd>
+        <dt>라이선스</dt>
+        <dd>{licenseNoteOf(manifest)}</dd>
+      </dl>
+      <ul className="cl-package-kit-sources" aria-label="출처와 라이선스">
+        {provenance.sources.map((entry) => (
+          <li key={entry.id} data-source-id={entry.id}>
+            <strong>{entry.name}</strong>
+            {entry.version ? ` ${entry.version}` : ""} · 라이선스 {entry.license} · {entry.derivative ? "파생물" : "원본 디자인"}
+            <br />
+            변경 내용: {entry.changesKo}
+            {entry.url ? (
+              <>
+                <br />
+                내려받은 곳: {entry.url}
+              </>
+            ) : null}
+            {entry.zipSha256 ? (
+              <>
+                <br />
+                원본 SHA-256 {shortSha(entry.zipSha256)}
+              </>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <p className="cl-package-hint cl-package-kit-hint">출처 고지 파일: {provenance.noticeFile}</p>
+    </div>
+  );
+}
+
+interface KitPartsTableProps {
+  readonly manifest: KitManifest;
+}
+
+/** 베이스별 제공 파츠 수(어휘 대비)와 미제공 사유. 미제공은 선택할 수 없는 카드로 SlotPanel에 나타난다. */
+function KitPartsTable({ manifest }: KitPartsTableProps) {
+  const bases = KIT_BASE_IDS.filter((baseId) => manifest.bases[baseId] !== undefined);
+  return (
+    <table className="cl-package-kit-parts">
+      <caption>베이스별 제공 파츠(어휘 대비)</caption>
+      <thead>
+        <tr>
+          <th scope="col">슬롯</th>
+          {bases.map((baseId) => (
+            <th key={baseId} scope="col">
+              {KIT_BASE_LABELS_KO[baseId]}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {KIT_PART_SLOTS.map((slot) => {
+          const parts = manifest.parts.filter((part) => part.slot === slot);
+          const total = SLOT_PRESET_IDS[slot].length;
+          return (
+            <tr key={slot} data-slot={slot}>
+              <th scope="row">{SLOT_LABELS_KO[slot]}</th>
+              {bases.map((baseId) => {
+                const provided = parts.filter((part) => part.variants[baseId] !== undefined).length;
+                const missing = parts.filter((part) => part.variants[baseId] === undefined);
+                const title = missing.map((part) => `${part.id}: ${part.unavailable[baseId] ?? "미제공"}`).join(" / ");
+                return (
+                  <td key={baseId} data-base={baseId} title={title || undefined}>
+                    {provided}/{total}
+                  </td>
+                );
+              })}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = true, autoLoadKit = true, preferredLod = 0, now = () => Date.now() }: PackagePanelProps) {
   const state = useLabState();
   const dispatch = useDispatch();
   const { store, packagePlans, engineSession } = useLabContext();
+  const kitPlans = useKitPlans();
+  const applyLoop = useApplyLoop();
+  const catalog = useCatalog();
+  // 적용 루프가 게시할 때마다(소스 로드·실패·재시도) 다시 그려 "불러오는 중"/"올렸음" 표시를 맞춘다.
+  useApplyPlan();
   const ids = useId();
   const [index, setIndex] = useState<IndexState>({ phase: "idle" });
   const [packages, setPackages] = useState<Readonly<Record<string, PackageState>>>({});
+  const [kitFetch, setKitFetch] = useState<KitFetchState>({ phase: "idle" });
+  const [kitNotice, setKitNotice] = useState<string | null>(null);
+  /** 이 시각 이전의 키트 실패는 이미 사용자가 다시 시도한 것이라 숨긴다 */
+  const [kitFailuresHiddenBefore, setKitFailuresHiddenBefore] = useState(0);
   const mounted = useRef(true);
   const indexRequested = useRef(false);
+  const kitRequested = useRef<string | null>(null);
+  const kitFetchSeq = useRef(0);
 
   useEffect(() => {
     mounted.current = true;
@@ -202,6 +385,45 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
       mounted.current = false;
     };
   }, []);
+
+  /** 등록소로 `kit.json`을 받아 진행 상태에 반영한다(같은 요청은 등록소가 합친다). 더 늦게 시작한 요청이 있으면 이 결과는 상태에 반영하지 않는다. */
+  const fetchKit = useCallback(
+    async (request: KitRecipeSource): Promise<KitFetchOutcome> => {
+      if (kitPlans === null) {
+        const failure = failVisible("kit-loader-unavailable", "모듈식 키트 등록소가 조립되지 않아 kit.json을 불러올 수 없습니다. 절차 소스로 대체하지 않습니다.", undefined, now());
+        setKitFetch({ phase: "failed", failure });
+        return { ok: false, failure };
+      }
+      kitFetchSeq.current += 1;
+      const seq = kitFetchSeq.current;
+      setKitFetch({ phase: "loading" });
+      let outcome: KitFetchOutcome;
+      try {
+        outcome = { ok: true, manifest: await kitPlans.ensure(request) };
+      } catch (error) {
+        outcome = { ok: false, failure: isLabFailure(error) ? error : failVisible("kit-manifest-fetch-failed", "키트 manifest(kit.json)를 불러오는 중 예기치 않은 오류가 났습니다.", error, now()) };
+      }
+      if (mounted.current && seq === kitFetchSeq.current) setKitFetch(outcome.ok ? { phase: "idle" } : { phase: "failed", failure: outcome.failure });
+      return outcome;
+    },
+    [kitPlans, now],
+  );
+
+  const kitSource = state.recipe.source.kind === "kit" ? state.recipe.source : null;
+  const kitId = kitSource?.kitId ?? null;
+  const kitVersion = kitSource?.kitVersion ?? null;
+  const kitPin = kitSource?.manifestSha256;
+  // 현재 소스가 키트면 그 요청의, 아니면 기본 키트 요청의 manifest를 등록소에서 읽는다(받은 뒤 구독으로 다시 그린다).
+  const manifest = useKitManifest(kitPlans, kitSource ?? DEFAULT_KIT_LOOKUP);
+
+  // 현재 소스가 키트면 kit.json을 받아 출처·제공 파츠를 보인다(실패는 이 패널에만 보인다 — 적용 루프가 자기 실패를 따로 노출한다).
+  useEffect(() => {
+    if (!autoLoadKit || kitSource === null || kitId === null || kitVersion === null) return;
+    const key = `${kitId}@${kitVersion}#${kitPin ?? "-"}`;
+    if (kitRequested.current === key) return;
+    kitRequested.current = key;
+    void fetchKit(kitSource);
+  }, [autoLoadKit, fetchKit, kitId, kitPin, kitSource, kitVersion]);
 
   const reportFailure = useCallback(
     (failure: LabFailure): void => {
@@ -281,22 +503,176 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
   );
 
   const backToProcedural = useCallback((): void => {
+    setKitNotice(null);
+    setKitFailuresHiddenBefore(now());
     dispatch({ type: "source/set", source: { kind: "procedural" }, capabilities: ALL_AVAILABLE_CAPABILITIES });
-  }, [dispatch]);
+  }, [dispatch, now]);
+
+  /**
+   * 키트 베이스를 고른다. kit.json이 유효하고 그 베이스가 현재 선택(헤어·의상…)을 모두 제공할 때만 `source/set`을 보낸다.
+   * 제공하지 않는 선택이 있으면 바꾸지 않고 사유를 보인다 — 다른 프리셋으로 자동 대체하지 않는다(AGENTS 3절 9항).
+   */
+  const pickBase = useCallback(
+    async (baseId: KitBaseId): Promise<void> => {
+      setKitNotice(null);
+      const recipe = store.getState().recipe;
+      const current = recipe.source;
+      const request: KitRecipeSource = current.kind === "kit" ? { ...current, baseId } : { ...DEFAULT_KIT_LOOKUP, baseId };
+      let picked: KitManifest | undefined = kitPlans?.peek(request);
+      if (picked === undefined) {
+        const loaded = await fetchKit(request);
+        if (!loaded.ok) {
+          reportFailure(loaded.failure);
+          return;
+        }
+        picked = loaded.manifest;
+      }
+      if (picked.bases[baseId] === undefined) {
+        reportFailure(failVisible("kit-base-missing", `키트에 ${KIT_BASE_LABELS_KO[baseId]} 베이스가 없습니다.`, undefined, now()));
+        return;
+      }
+      const capabilities = deriveKitCapabilities(picked, baseId);
+      const blocked: string[] = [];
+      for (const slot of KIT_PART_SLOTS) {
+        const presetId = recipe.slots[slot];
+        if (presetId === null) continue;
+        const capability = capabilities[slot];
+        const reason = capability.status === "unavailable" ? (capability.reasonKo ?? "이 베이스가 제공하지 않습니다.") : presetUnavailableReasonKo(capability, presetId);
+        if (reason !== null) blocked.push(`${SLOT_LABELS_KO[slot]} ${catalog.get(presetId)?.labelKo ?? presetId}: ${reason}`);
+      }
+      if (blocked.length > 0) {
+        if (!mounted.current) return;
+        setKitNotice(`${KIT_BASE_LABELS_KO[baseId]} 베이스로 바꾸지 못했습니다. 현재 선택을 이 베이스가 제공하지 않습니다 — ${blocked.join(" / ")}. 다른 프리셋을 먼저 고르세요(자동으로 바꾸지 않습니다).`);
+        return;
+      }
+      setKitFailuresHiddenBefore(now());
+      dispatch({
+        type: "source/set",
+        source: { kind: "kit", kitId: picked.kitId, baseId, kitVersion: picked.kitVersion, ...(current.kind === "kit" && current.manifestSha256 !== undefined ? { manifestSha256: current.manifestSha256 } : {}) },
+        capabilities,
+      });
+    },
+    [catalog, dispatch, fetchKit, kitPlans, now, reportFailure, store],
+  );
+
+  /**
+   * 키트 다시 불러오기: 등록소의 kit.json 캐시를 비우고 적용 루프의 실패 기억을 지워 소스를 다시 만들며, 패널의 manifest도 다시 받는다.
+   * 런타임도 `retrySource` 직전에 캐시를 비우지만(`beforeRetrySource`) 패널이 먼저 비워 루프가 없는 조립에서도 재요청이 보장된다.
+   * 비운 직후 시작한 두 요청(루프·패널)은 등록소가 하나로 합친다.
+   */
+  const reloadKit = useCallback((): void => {
+    setKitNotice(null);
+    setKitFailuresHiddenBefore(now());
+    kitPlans?.clear();
+    applyLoop?.retrySource();
+    const current = store.getState().recipe.source;
+    if (current.kind === "kit") void fetchKit(current);
+  }, [applyLoop, fetchKit, kitPlans, now, store]);
 
   const source = state.recipe.source;
+  const kitFailures = kitSource === null ? [] : state.failures.filter((failure) => isKitFailure(failure) && failure.at > kitFailuresHiddenBefore);
+  const latestKitFailure = kitFailures.length > 0 ? kitFailures[kitFailures.length - 1] : undefined;
+  const engineReady = state.engine.phase === "ready";
+  const kitSettled = applyLoop !== null && applyLoop.settled();
+  // 올라간 키트에는 지난 실패를 보이지 않는다. 아직 올라가지 않았으면(실패했거나 받는 중) 마지막 실패를 보인다.
+  const shownKitFailure = latestKitFailure !== undefined && !kitSettled ? latestKitFailure : undefined;
+  const panelKitFailure =
+    kitFetch.phase === "failed" && kitSource !== null && !(shownKitFailure?.code === kitFetch.failure.code && shownKitFailure.reasonKo === kitFetch.failure.reasonKo) ? kitFetch.failure : undefined;
+  const kitLoading = kitSource !== null && engineReady && applyLoop !== null && !kitSettled && shownKitFailure === undefined;
 
   return (
     <section className="cl-package-panel" aria-labelledby={`${ids}-title`}>
       <h2 id={`${ids}-title`}>제작 패키지</h2>
       <p className="cl-package-source" role="status">
-        현재 소스: {source.kind === "package" ? `제작 패키지 ${source.characterId} (SHA ${shortSha(source.sha256)})` : "절차적 휴머노이드"}
+        현재 소스: {describeSourceKo(source)}
         {source.kind === "package" ? (
           <button type="button" className="cl-package-back" onClick={backToProcedural}>
             절차 소스로 돌아가기
           </button>
         ) : null}
       </p>
+      <section className="cl-package-kit" aria-labelledby={`${ids}-kit-title`}>
+        <h3 id={`${ids}-kit-title`}>모듈식 키트(기본 소스)</h3>
+        <div className="cl-package-kit-bases" role="group" aria-label="키트 베이스">
+          {KIT_BASE_IDS.map((baseId) => {
+            const selected = source.kind === "kit" && source.baseId === baseId;
+            const missing = manifest !== undefined && manifest.bases[baseId] === undefined;
+            return (
+              <button
+                key={baseId}
+                type="button"
+                className={`cl-package-kit-base${selected ? " cl-package-kit-base--selected" : ""}`}
+                aria-pressed={selected}
+                disabled={selected || missing || kitFetch.phase === "loading"}
+                title={missing ? "이 키트에는 해당 베이스가 없습니다." : undefined}
+                data-base={baseId}
+                onClick={() => void pickBase(baseId)}
+              >
+                {KIT_BASE_LABELS_KO[baseId]} 베이스
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            className="cl-package-kit-reload"
+            disabled={source.kind !== "kit" || applyLoop === null}
+            title={source.kind !== "kit" ? "현재 소스가 키트일 때만 다시 불러올 수 있습니다." : applyLoop === null ? "적용 루프가 연결되지 않아 다시 불러올 수 없습니다." : "실패 기억과 kit.json 캐시를 비우고 키트를 다시 받습니다."}
+            onClick={reloadKit}
+          >
+            키트 다시 불러오기
+          </button>
+        </div>
+        {kitPlans === null ? (
+          <p className="cl-package-hint cl-package-kit-hint">키트 등록소가 조립되지 않아 출처·제공 파츠 정보를 불러올 수 없습니다.</p>
+        ) : source.kind !== "kit" && manifest === undefined && kitFetch.phase === "idle" ? (
+          <p className="cl-package-hint cl-package-kit-hint">키트 정보(출처·제공 파츠)는 베이스를 고르면 불러옵니다.</p>
+        ) : null}
+        {kitNotice ? (
+          <p className="cl-package-kit-notice cl-package-reason" role="note">
+            {kitNotice}
+          </p>
+        ) : null}
+        {source.kind === "kit" && !engineReady && shownKitFailure === undefined ? (
+          <p className="cl-package-hint cl-package-kit-hint">엔진을 고르면 베이스·선택 파츠(GLB)를 받아 올립니다. 엔진 선택 전에는 파츠 파일을 받지 않습니다.</p>
+        ) : null}
+        {kitLoading ? (
+          <p className="cl-package-kit-loading" role="status">
+            키트를 불러오는 중… (베이스·선택 파츠 GLB 받기, 크기·SHA-256 검증, 스켈레톤 결합)
+          </p>
+        ) : null}
+        {source.kind === "kit" && engineReady && kitSettled && shownKitFailure === undefined ? <p className="cl-package-hint cl-package-kit-hint">키트를 엔진에 올렸습니다.</p> : null}
+        {shownKitFailure ? (
+          <p className="cl-package-failure cl-package-kit-failure" role="alert">
+            {describeFailure(shownKitFailure)}
+          </p>
+        ) : null}
+        {panelKitFailure ? (
+          <p className="cl-package-failure cl-package-kit-failure" role="alert">
+            {describeFailure(panelKitFailure)}
+          </p>
+        ) : null}
+        {kitFetch.phase === "failed" && kitSource === null ? (
+          <p className="cl-package-failure cl-package-kit-failure" role="alert">
+            {describeFailure(kitFetch.failure)}
+          </p>
+        ) : null}
+        {kitFetch.phase === "loading" ? <p className="cl-package-hint cl-package-kit-hint">kit.json을 받는 중…</p> : null}
+        {manifest !== undefined ? (
+          <>
+            <KitProvenance manifest={manifest} />
+            <KitPartsTable manifest={manifest} />
+          </>
+        ) : null}
+        {source.kind === "kit" ? (
+          <div className="cl-package-kit-procedural">
+            <button type="button" className="cl-package-kit-to-procedural" onClick={backToProcedural}>
+              절차 소스로 전환
+            </button>
+            <span className="cl-package-hint">절차 소스는 키트가 아닌 대체 휴머노이드입니다. 키트 로드가 실패해도 자동으로 바뀌지 않으며, 이 버튼으로만 전환합니다.</span>
+          </div>
+        ) : null}
+      </section>
+      <h3 className="cl-package-subtitle">제작(Blender) 패키지</h3>
       <div className="cl-package-toolbar">
         <button type="button" onClick={() => void loadIndex()} disabled={index.phase === "loading"}>
           {index.phase === "loading" ? "목록 불러오는 중…" : "목록 새로고침"}

@@ -67,6 +67,11 @@ export interface SlotCapability {
   readonly status: SlotCapabilityStatus;
   /** partial·unavailable일 때 카드에 표시하는 한글 사유 */
   readonly reasonKo?: string;
+  /**
+   * 프리셋 단위 미제공 사유(프리셋 id → 한글 사유). 슬롯이 available/partial이어도 이 맵에 있는 프리셋은 선택할 수 없다.
+   * 플래너는 그 슬롯을 unsupported로 계획하고 다른 프리셋으로 바꾸지 않는다(키트 계약 D10).
+   */
+  readonly unavailablePresets?: Readonly<Record<string, string>>;
 }
 
 export type SlotCapabilityMap = Readonly<Record<SlotKind, SlotCapability>>;

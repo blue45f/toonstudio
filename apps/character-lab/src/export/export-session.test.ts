@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { failVisible } from "../contracts";
+import { KIT_MORPH_NAMES, createDefaultRecipe, createKitDefaultRecipe, failVisible, recipeDigest } from "../contracts";
 import { fnv1a32 } from "../shared/hash";
+import { buildMinimalGlb, parseGlb } from "../testing/minimal-glb";
 import { createMockEngine, syntheticRaster } from "../testing/mock-engine";
 import { installPsdCanvasStub } from "../testing/psd-canvas-stub";
 import { rasterEquals } from "../testing/raster-fixtures";
@@ -114,5 +115,79 @@ describe("exportGlb / exportRecipe", () => {
     if (!parsed.ok) throw new Error(parsed.failure.reasonKo);
     expect(parsed.recipe.paint.layers).toHaveLength(1);
     expect(buildCaptureRequest({ width: 8, height: 8, settleSteps: 99999 }, ["lit"]).settleSteps).toBe(600);
+  });
+});
+
+describe("키트 소스 GLB·레시피 내보내기 (계약 문서 8.2절)", () => {
+  it("키트 레시피의 GLB 파일명은 v2 레시피 다이제스트이고 절차·성별에 따라 달라진다", async () => {
+    const engine = createMockEngine();
+    const female = createKitDefaultRecipe("female");
+    const male = createKitDefaultRecipe("male");
+    const results = await Promise.all([exportGlb(engine, female), exportGlb(engine, male), exportGlb(engine, createDefaultRecipe())]);
+    const names = results.map((r) => (r.ok ? r.receipt.fileName : r.failure.reasonKo));
+    expect(names[0]).toBe(`character-${recipeDigest(female).slice(0, 8)}.glb`);
+    expect(names[1]).toBe(`character-${recipeDigest(male).slice(0, 8)}.glb`);
+    expect(new Set(names).size).toBe(3);
+    expect(recipeDigest(createKitDefaultRecipe("female"))).toBe(recipeDigest(female));
+    expect(engine.calls.filter((c) => c.method === "exportGlb")).toHaveLength(3);
+  });
+
+  it("키트 morph 어휘 64개를 담은 GLB를 가공 없이 그대로 돌려준다(엔진이 내용을 책임진다)", async () => {
+    const kitGlb = buildMinimalGlb({ meshName: "TS_Body", morphTargetNames: KIT_MORPH_NAMES });
+    const engine = createMockEngine();
+    engine.exportGlb = async () => kitGlb;
+    const result = await exportGlb(engine, createKitDefaultRecipe());
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    expect(result.bytes).toBe(kitGlb);
+    expect(result.receipt).toMatchObject({ kind: "glb", mime: "model/gltf-binary", bytes: kitGlb.length });
+    const parsed = parseGlb(result.bytes);
+    expect(parsed.version).toBe(2);
+    expect(KIT_MORPH_NAMES).toHaveLength(64);
+    expect(JSON.stringify(parsed.json)).toContain("param:headSize:+");
+  });
+
+  it("GLB 매직 검사는 큰 버퍼의 일부(byteOffset)로 받은 바이트도 올바르게 읽고 버전 1·짧은 바이트·키트 로드 실패 사유를 거른다", async () => {
+    const glb = buildMinimalGlb();
+    const padded = new Uint8Array(glb.length + 8);
+    padded.set(glb, 8);
+    const view = padded.subarray(8);
+    expect(view.byteOffset).toBe(8);
+    expect(isGlb(view)).toBe(true);
+    const v1 = new Uint8Array(glb);
+    new DataView(v1.buffer).setUint32(4, 1, true);
+    expect(isGlb(v1)).toBe(false);
+    expect(isGlb(glb.subarray(0, 11))).toBe(false);
+
+    const engine = createMockEngine();
+    engine.exportGlb = async () => view;
+    const ok = await exportGlb(engine, createKitDefaultRecipe());
+    expect(ok.ok).toBe(true);
+    engine.exportGlb = async () => v1;
+    const invalid = await exportGlb(engine, createKitDefaultRecipe());
+    expect(!invalid.ok && invalid.failure.code).toBe("export-glb-invalid");
+  });
+
+  it("엔진이 던진 LabFailure(키트 로드 실패 등)는 코드를 바꾸지 않고 그대로 올린다(무음 대체 금지)", async () => {
+    const engine = createMockEngine();
+    engine.exportGlb = async () => {
+      throw failVisible("kit-source-unsupported", "이 엔진은 아직 모듈식 키트 소스를 불러오지 못합니다.", undefined, 1);
+    };
+    const result = await exportGlb(engine, createKitDefaultRecipe());
+    expect(!result.ok && result.failure.code).toBe("kit-source-unsupported");
+    expect(!result.ok && result.failure.reasonKo).toMatch(/키트/u);
+  });
+
+  it("키트 레시피 JSON은 v2·kit 소스를 보존하며 다시 파싱되고, 헤어 같은 변형 의존 페인트 레이어도 함께 실린다", async () => {
+    const recipe = createKitDefaultRecipe("male");
+    const hair = { part: "hair" as const, width: 4, height: 4, rgba: new Uint8ClampedArray(64).fill(200), revision: 1 };
+    const result = await exportRecipe(recipe, [hair], { now: () => Date.UTC(2026, 9, 8) });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    expect(result.receipt.fileName).toMatch(/^character-[0-9a-f]{8}-20261008\.character\.json$/u);
+    const parsed = parseRecipeFile(new TextDecoder().decode(result.bytes));
+    if (!parsed.ok) throw new Error(parsed.failure.reasonKo);
+    expect(parsed.recipe.version).toBe(2);
+    expect(parsed.recipe.source).toEqual(recipe.source);
+    expect(parsed.recipe.source.kind).toBe("kit");
+    expect(parsed.recipe.paint.layers.map((l) => l.part)).toEqual(["hair"]);
   });
 });

@@ -39,6 +39,8 @@ const CENTER_TOKENS: Readonly<Record<string, HumanoidBoneName>> = {
   head: "head",
   spine006: "head",
   jaw: "jaw",
+  // 키트 접두 TS_가 붙은 턱 본(TS_Jaw). 키트는 kit.json boneMap이 정본이지만 이름 추정만으로도 55본이 모두 잡히게 한다.
+  tsjaw: "jaw",
 };
 
 /** 좌우 본 토큰(정규화 후, 측면 제거) → 본 이름 접미(`left`/`right` + 접미) */

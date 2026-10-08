@@ -1,6 +1,6 @@
 import { InvalidStateError, LaneUnavailableError } from "../engine/core/errors";
 
-import { emptyLaneStats, unavailableReport } from "./lane";
+import { emptyLaneStats, noStrokeAbortReceipt, unavailableReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -12,6 +12,7 @@ import type {
   LaneInit,
   LaneKind,
   LaneStats,
+  StrokeAbortReceipt,
   StrokeReceipt,
 } from "./lane";
 import type { LabImage, RawSample } from "../engine/core/types";
@@ -50,6 +51,11 @@ export class ReservedLane implements BrushEngineLane {
 
   async endStroke(): Promise<StrokeReceipt> {
     throw new InvalidStateError(`${this.id}: 예약 레인은 endStroke를 지원하지 않는다`);
+  }
+
+  /** 예약 레인은 beginStroke가 항상 거부되어 진행 중인 획이 있을 수 없으므로 no-op이다(문서도 없다). */
+  abortStroke(): StrokeAbortReceipt {
+    return noStrokeAbortReceipt();
   }
 
   async readback(): Promise<LabImage> {

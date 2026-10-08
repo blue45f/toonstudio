@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CAMPUS_DOOR_WIDTH,
   CAMPUS_HEIGHT,
+  CAMPUS_TERRAIN,
   CAMPUS_WIDTH,
   CAMPUS_ZONES,
 } from "./studio-virtual-space-campus-blueprint";
@@ -121,6 +122,27 @@ describe("가상 스튜디오 공중섬 캠퍼스", () => {
     // 파일에서 불러온 같은 내용의 월드에는 힌트를 주입하지 않는다.
     expect(studioVirtualWorldKind({ ...project })).toBe("custom");
     expect(studioVirtualCampusScene({ ...project })).toBeNull();
+  });
+
+  it("돌길 칸은 뒤집지 않고 풀·모래 칸만 좌우 뒤집기를 섞는다", () => {
+    const horizontalFlip = 0x80000000, gidMask = 0x1fffffff;
+    const tally = new Map<number, { plain: number; flipped: number }>();
+    for (const layer of project.tilemap?.layers ?? []) {
+      for (const raw of layer.data) {
+        const value = raw >>> 0, gid = value & gidMask;
+        if (gid === 0) continue;
+        const entry = tally.get(gid) ?? { plain: 0, flipped: 0 };
+        if ((value & horizontalFlip) !== 0) entry.flipped += 1; else entry.plain += 1;
+        tally.set(gid, entry);
+      }
+    }
+    // 돌길은 아틀라스가 가로·세로로 이어지는 주기 타일이라 뒤집으면 접합부마다 거울 대칭 무늬만 생긴다.
+    expect(tally.get(CAMPUS_TERRAIN.cobble + 1)?.plain ?? 0).toBeGreaterThan(0);
+    expect(tally.get(CAMPUS_TERRAIN.cobble + 1)?.flipped ?? 0).toBe(0);
+    // 풀은 무작위 무늬라 뒤집어 섞어도 대칭이 보이지 않는다.
+    const grass = tally.get(CAMPUS_TERRAIN.grass + 1);
+    expect(grass?.plain ?? 0).toBeGreaterThan(0);
+    expect(grass?.flipped ?? 0).toBeGreaterThan(0);
   });
 
   it("벽 시각 구간과 콜라이더가 문 틈(128px)까지 일치한다", () => {

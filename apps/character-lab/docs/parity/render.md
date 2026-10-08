@@ -1,6 +1,6 @@
 # character-lab 패리티 — render 영역(Babylon 어댑터·장면·재질·캡처·pick·물리 다리·뷰포트/렌더 패널)
 
-상태: **current** (2026-10-02, render-beta 작업자 갱신). core가 `docs/shaper-parity-checklist.md`로 집계하기 전의 단일 소스이며 열 구조는 체크리스트와 같다.
+상태: **current** (2026-10-02, render-beta 작업자 갱신; **2026-10-08 KT-12가 §10 '키트 소스' 절을 추가**했다 — §1~§9는 키트 이전 기술이다). core가 `docs/shaper-parity-checklist.md`로 집계하기 전의 단일 소스이며 열 구조는 체크리스트와 같다.
 이 컨테이너에는 실GPU가 없다. **Node에서는 `NullEngine`까지** 검증했고, 이번 갱신부터 Chrome 151 + **SwiftShader(소프트웨어 렌더러) WebGL2**로 실브라우저 실측을 더했다
 ('브라우저 검증' 열의 "소프트웨어 렌더러(SwiftShader) 실측"). 이 실측은 셰이더 컴파일·픽셀 존재·상대 비교까지만 보증하며 **실GPU 품질·성능·WebGPU 경로의 증거가 아니다**
 (WebGPU는 소프트웨어 어댑터라 요청 시 실패하는 것이 정상). 실GPU·WebGPU로 확인하지 못한 항목은 '미검증', 모의로만 확인한 항목은 비고에 "모의"라고 적었다.
@@ -133,6 +133,7 @@
 - 셰이더(GLSL·WGSL)·후처리·IBL·SSS·CSM의 **실GPU 렌더 결과**: 검증 불가(실GPU 없음). SwiftShader 실측은 존재·상대 비교·콘솔 오류까지.
 - 관절 핸들의 키보드 조작: 없음(수치·IK 입력은 PosePanel).
 - 자동 대체 없음: 어떤 베타도 지원하지 않는 엔진에서 다른 경로로 바뀌지 않는다(능력 게이트 + 사유).
+- **키트 소스(2026-10-08 추가, §10)**: NodeMaterial 툰(베타)과 CPU 기준식 `toon-reference.ts`는 키트의 정점색 AO(`COLOR_0`)와 알파 컷오프(`alphaMode: MASK`)를 **구현하지 않았다**(기본 ShaderMaterial 툰만 지원). 법선·ID·깊이 패스도 알파를 읽지 않는다. 알파 BLEND는 어느 툰 경로도 지원하지 않는다.
 
 ## 7. 검증 기록(2026-10-02, render-beta 작업자 실측)
 
@@ -179,6 +180,7 @@ Orion GLB 내보내기(NullEngine): sparse 정리 전 12.36 MB → 후 3.61 MB(�
 - 체형 관절 오프셋: 본 텍스처·morph 텍스처 정점 셰이더로 그린 메시 자체의 직접 비교(UV 렌더러 투영의 간접 일치만 확인).
 - GLB sparse를 외부 뷰어(three.js·Blender)가 여는지. 입 안이 화면에서 실제로 어두운지의 시각 확인.
 - RenderPanel의 실제 키보드(Space)·스크린리더 조작(jsdom 단위만).
+- 키트 소스 전용 미검증 목록은 §10.2.
 
 ## 8. 브라우저 검증 절차(실GPU 환경, 통합 후)
 
@@ -217,3 +219,48 @@ Orion GLB 내보내기(NullEngine): sparse 정리 전 12.36 MB → 후 3.61 MB(�
 - 투영 페인트 드라이버는 `app/shell/panels/projection-paint-driver.ts`에 있고 `ViewportPane`은 드라이버 생성 한 곳만 바꿨다(`createSwitchingPaintDriver`). paint 도메인 코드는 수정하지 않았다 — `session.applyToken`이 돌려주는 역토큰을 `paint/stroke` 토큰으로 쓴다.
 - `render/testing/null-engine-harness.ts`에 능력 덧씌우기(`capabilities`)·가짜 IBL·베타 로더 주입 등을 더했다. 덧씌운 능력은 게이트·수명 검증용일 뿐 GPU 능력이 아니다.
 - 이전 렌더 커밋의 파일을 최소한으로 수정했다: `character-engine.ts`(베타 배선·IBL 소유권·준비 대기), `capture.ts`(준비 폴링·SSS 끈 lit), `mesh-binding.ts`(CCW·관절 오프셋), `character-rig.ts`(관절 오프셋 적용·스냅샷), `glb-exporter.ts`(sparse 정리), `pick-and-paint.ts`·`skinned-pick.ts`(삼각형 반환), `lighting/ibl.ts`(준비 확인), `material-presets.ts`(g==b), `rig-inspection.ts`(감김 방향). 기존 테스트는 모두 통과한다.
+
+## 10. 키트 소스(모듈식 캐릭터 키트) — KT-12, 2026-10-08
+
+계약 정본은 `docs/authored-kit-spec.md`이고 이 절은 그 구현·검증 상태 표다(열 구조는 §3과 같다). **현재 키트 에셋(`public/assets/characters/toonstudio-kit-v1/`)은 안착하지 않았고**
+부팅 기본 소스는 절차(`DEFAULT_BOOT_SOURCE = "procedural"`)다. 아래 Node 검증은 모두 **합성 키트 GLB·`NullEngine`** 이며 실제 키트 에셋으로 돌린 결과가 아니다. 테스트 수는 2026-10-08에
+`pnpm exec vitest run <파일>`로 센 값이다. "SwiftShader 확인"은 KT-04/KT-V가 `scripts/kit-preview.mjs`(소프트웨어 WebGL2)로 본 것을 보고받은 것이고, 이 문서 작성자가 다시 보지는 않았다.
+
+### 10.1 구현 상태 표
+
+| 항목 | 구현 상태 | Node 검증(테스트 파일) | 브라우저 검증 | 비고 |
+| --- | --- | --- | --- | --- |
+| 키트 로더(`render/babylon/kit-loader.ts`): 파일 병렬(최대 4) 수신 + `bytes`·SHA-256 대조, AssetContainer 로드, 플랜 선언과 메시·재질·morph 대조, 스켈레톤 재바인딩, 역할별 `RigPart` 그룹핑(`rolePartId`), morph 이름 수집, 관절 오프셋 연결, 실패 시 전체 해제 | 구현됨 | `render/babylon-kit-load.test.ts`(69, NullEngine·합성 키트 GLB: `kit-*` 실패 코드, 68 joint 불일치, 스킨·변환 검증, 증분 `update`) | **미검증**(실제 네트워크 fetch, 실제 텍스처 디코드, 2048² 베이스) | 반쯤 바뀐 리그를 남기지 않는다. 파츠 bind pose(IBM·rest)가 베이스와 같은지는 로더도 검증기도 비교하지 않는다(알려진 공백) |
+| 증분 교체(같은 키트·베이스에서 바뀐 파츠만 추가/해제) + 엔진 후속 정리(그림자 캐스터·패스 재질·베타 재질·페인트 데칼·물리 바인딩·프리셋/틴트·마지막 플랜) | 구현됨 | `render/babylon-kit-engine.test.ts`(38, NullEngine) | **미검증**(실GPU에서 교체 중 깜빡임·메모리) | 실패하면 키트 전체 해제 + `LabFailure` + 그 키트의 바이트 캐시 비움 |
+| 몸 가림(`hides`: `TS_Body` 서브메시를 `bodyRegions` 범위로 쪼개 합집합만 제외), 범위 불일치 시 숨김 없이 한글 `notes` | 구현됨 | `render/kit-region-mask.test.ts`(17, 순수 범위 계산), `render/babylon-kit-load.test.ts`(서브메시 생성), `render/babylon-kit-engine.test.ts`(pick이 숨긴 삼각형을 무시, `alwaysSelectAsActiveMesh` 유지), `render/babylon-glb-sparse-export.test.ts`(키트 케이스 5: 스킨 1개·숨긴 삼각형 제외·morph weights·현재 색 반영) | **미검증**(실제 의상에서 경계 삼각형이 반쯤 사라지는지·스킨이 비치는지) | 의상이 경계를 ≥ 1 cm 넘어 덮는 것은 에셋 규칙(계약 4.6) |
+| 외곽선 정책 A-5·A-9(키트는 `head`·`eyeball`·`iris`·`pupil`·`eye-highlight`·`lash`·`brow`·`teeth`·`tongue` 메시에 hull을 켜지 않음, 절차·패키지는 전부 유지) | 구현됨 | `render/outline-policy.test.ts`(3: 표를 바꾸면 알려 줌), `render/babylon-kit-engine.test.ts` | SwiftShader 뷰어에서 눈·눈썹이 가려지지 않음을 확인(KT-04/KT-V 보고). **앱 뷰포트에서의 머리 외곽선 소실·가림 해소는 미검증** | 머리 실루엣 선이 사라지는 것은 알려진 한계(후속: 엣지·후처리 방식). 이 항목은 **WebGPU(WGSL)에서 미검증** |
+| 정점색 AO(`COLOR_0` 회색, 툰·밑색 패스에 `TS_VERTEX_COLOR` define, 파츠의 모든 메시가 색 버퍼를 가질 때만) | 구현됨(기본 ShaderMaterial 툰만) | `render/shader-sources.test.ts`(10, 정적 검사), `render/babylon-kit-engine.test.ts` | GLSL: SwiftShader 뷰어에서 컴파일·동작(KT-04 보고). **WGSL 컴파일은 미검증** | **NodeMaterial 툰(베타)·`toon-reference.ts`(CPU 기준식)는 AO 미구현**. PBR은 Babylon이 `COLOR_0`을 알베도에 곱한다 |
+| 알파 컷오프(`alphaMode: MASK`, 눈썹·속눈썹: 툰·밑색 패스가 같은 `alphaCutoff`로 텍셀 폐기) | 구현됨(기본 ShaderMaterial 툰만) | `render/shader-sources.test.ts`, `render/babylon-kit-engine.test.ts` | GLSL: SwiftShader 뷰어에서 눈썹이 깃털진 획으로 그려짐(KT-04 보고). **WGSL 미검증** | **NodeMaterial 툰·법선/ID/깊이 패스는 알파를 읽지 않음. BLEND(안경 렌즈)는 미지원** → 안경은 프레임만(리드 결정 A-8) |
+| 키트 틴트(`RigPart.tint`: recolor/fixed), 키트일 때 얼굴 SDF 끔, 역할 기본 재질 프리셋 선적용 | 구현됨 | `render/babylon-kit-engine.test.ts`, `render/babylon-kit-load.test.ts` | SwiftShader 뷰어(툰 램프 2단·림 끔 기본, A-10). 실GPU 미검증 | 키트 기본 셰이딩은 `createKitDefaultRecipe()`/`source/set`이 정한다(레시피 쪽, `contracts/recipe.ts`) |
+| 썸네일 임시 리그(`ThumbnailRequest.source = { kind: "kit", plan }`, LOD1·그림자 없음, 끝나면 해제) + `thumbnailSources === true` + `plan.capabilities`를 `SourceCapabilities.capabilities`로 보고 | 구현됨 | `render/babylon-kit-engine.test.ts`(임시 키트 소스 5회 반복 누수 없음·주 리그/플랜/장면 불변·손상 시 `kit-sha-mismatch`), `app/shell/lab-runtime.test.ts`(18: 키트 지오메트리 슬롯 카드는 임시 키트 소스, 파라미터 슬롯은 소스 없음, 미제공 카드는 요청 안 함) | **미검증 — 비용 R5**(카드 32장 × 베이스 재파싱, 카드 1장 > 1.5 s이면 복제안 검토) | 실브라우저 측정 전까지 바이트 캐시 + LOD1이 기본안이다 |
+| `instantiateModelsToScene`로 베이스 컨테이너 복제(썸네일 비용 최적화안) | **구현하지 않음**(계약 4.11-③ 후보) | — | **미검증**(복제가 스킨·morph·재질을 올바르게 공유/독립하는지, 비용) | R5 측정 결과에 따라 결정 |
+| 바이트 캐시(`render/kit-bytes-cache.ts`: 키 `URL | 플랜 SHA-256`, 합계 64 MiB, 최근 사용 우선 유지, 상한보다 큰 항목은 캐시 안 함) | 구현됨 | `render/kit-bytes-cache.test.ts`(6), `render/babylon-kit-engine.test.ts` | 미검증(실브라우저 메모리) | 같은 URL의 파일이 키트 갱신으로 바뀌어도 옛 바이트를 돌려주지 않는다(키에 SHA) |
+| 슬롯 단위·프리셋 단위 미제공 처리: SlotPanel이 미제공 프리셋 카드만 비활성(툴팁·카드 텍스트에 사유, 플래너와 같은 문구), 슬롯 전체 미지원이면 슬롯 사유 우선, 썸네일 요청 차단 | 구현됨 | `app/shell/panels/SlotPanel.test.tsx`(14, jsdom), `app/shell/lab-runtime.test.ts`(미제공 프리셋·남성 액세서리 0/6 카드는 썸네일 미요청·캐시 항목 없음) | **미검증**(실제 레이아웃·키보드 포커스) | `plan.partial`('제공 6/7종')은 '부분 지원' 배지·툴팁으로만 쓰고 상태줄 경고로 올리지 않는다 |
+| PackagePanel 키트 UI(베이스 선택·출처·라이선스·베이스별 제공 파츠·재시도·절차 소스 전환·`manifestSha256` 유지) | 구현됨 | `app/shell/panels/PackagePanel.test.tsx`(18, 같은 날 두 번째 실행에서 통과 — 첫 실행의 일시 실패는 아래 §10.3), `app/shell/kit-plan-registry.test.ts`(14) | **미검증** | 실패 사유는 그대로 보이고 절차 소스로 자동 전환하지 않는다 |
+| PaintPanel 키트 페인트 경고(`paint/paint-kit-warning.ts`: skin·head 외 역할은 변형을 바꾸면 UV가 달라져 그림이 어긋남) 행, 레시피 불러온 직후 경고 | 구현됨 | `paint/paint-kit-warning.test.ts`(4), `app/shell/panels/PaintPanel.test.tsx`(8, 키트 소스 경고 3) | **미검증** | 막지는 않고 경고만 한다 |
+| ParamPanel 키트 표기(셰이프 키 안내·눈·코·입·귀 부분 지원 사유), ExportPanel 레시피 v1→v2 변환 안내 | 구현됨 | `app/shell/panels/ParamPanel.test.tsx`(17, 키트 2), `app/shell/panels/ExportPanel.test.tsx`(7) | **미검증** | ExportPanel의 `recipeMigrationNoticeKo` 표시는 FIX-A2 배선 범위 |
+| 키트 뷰어(`scripts/kit-preview.mjs`) 키트 소스 경로 | 구현됨(`docs/kit-preview.md`) | `render/kit-preview/*.test.ts`(16파일, `kit-plan-adapter`·`kit-shading` 포함) | SwiftShader 실렌더(KT-V 보고: 눈·눈썹 보임, 램프 2단, Orion 6장 화소 동일) | 뷰어는 개발 전용 도구이며 앱 빌드에 들어가지 않는다 |
+
+### 10.2 브라우저 미검증 목록(키트)
+
+실GPU·WebGPU뿐 아니라 **앱 뷰포트**에서 직접 확인하지 못한 것을 포함한다. SwiftShader 뷰어로 본 항목은 위 표에 따로 적었다.
+
+1. **WGSL 셰이더 컴파일**: 정점색 AO(`#ifdef TS_VERTEX_COLOR`의 `color` attribute)·알파 컷오프(`discard`)가 WebGPU 경로의 WGSL 소스에서 컴파일되는지. GLSL(WebGL2)만 SwiftShader에서 컴파일을 확인했다.
+2. **앱 뷰포트의 머리 외곽선·가림**: 머리 hull을 끈 상태에서 눈·눈썹·속눈썹·치아가 모든 시점·모든 셰이딩·모든 헤어 조합에서 보이는지, 머리 윤곽선 소실이 허용 범위인지. (A-9 근거 실험은 SwiftShader 뷰어다.)
+3. **썸네일 임시 리그 비용(위험 R5)**: 키트 지오메트리 슬롯 카드 32장의 임시 리그 생성 시간·메모리·뷰포트 깜빡임, 바이트 캐시 적중. 카드 1장 > 1.5 s이면 4번을 검토한다.
+4. **`instantiateModelsToScene` 복제**: 베이스 컨테이너를 복제해 썸네일 비용을 줄이는 안은 구현하지 않았다. 복제 시 스킨·morph·재질 독립성과 비용은 미검증이다.
+5. **NodeMaterial 툰(베타)/`toon-reference.ts`의 정점색 AO·알파 컷오프 미구현**: 베타 NodeMaterial 툰을 켠 키트 캐릭터는 AO 없이, 눈썹·속눈썹이 불투명 덩어리로 그려질 수 있다. 구현하지 않은 사실이며 사용자에게는 베타 한계로 고지한다.
+6. **알파 BLEND 미지원**: BLEND 재질(안경 렌즈)은 툰에서 불투명으로 그려진다 → 안경은 프레임만 만든다(A-8).
+7. 실제 키트 에셋(2048² 베이스 8 MiB 이하, 파츠 1.5 MiB 이하)의 로드 시간·VRAM, 몸 가림 경계의 시각 품질, 체형 morph에서 의상이 몸을 따라가는 정도(검증기 V9는 수치 검사일 뿐이다).
+8. SlotPanel 프리셋 단위 비활성·PackagePanel 키트 UI·PaintPanel 키트 경고 행의 실제 화면(레이아웃·포커스·툴팁). jsdom 단위만 있다.
+
+### 10.3 이 절을 쓸 때 관찰한 시험 상태(정직 기록)
+
+- 위 표의 수치는 2026-10-08 실제 실행값이다: 키트 렌더 5개 파일(`babylon-kit-load` 69 · `babylon-kit-engine` 38 · `kit-region-mask` 17 · `outline-policy` 3 · `kit-bytes-cache` 6 = 133) 통과.
+- `PackagePanel.test.tsx`(18)는 처음 실행했을 때(15:05 UTC) FIX-A2가 `PackagePanel.tsx`를 편집하는 도중이라 9건이 실패했고(소유 경로 밖이라 고치지 않았다), 그 뒤 다시 실행해 18건 모두 통과했다. 다른 작업자가 같은 파일을 계속 바꿀 수 있으므로 통합 시 다시 확인한다.
+- 패널 행(SlotPanel 14 · PaintPanel 8 · ExportPanel 7 · ParamPanel 17)과 `lab-runtime.test.ts` 18 · `apply-loop.test.ts` 19는 같은 실행에서 통과했다.

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import { createDefaultRecipe } from "../../../contracts";
+import { createDefaultRecipe, createKitDefaultRecipe } from "../../../contracts";
 import { isPng } from "../../../export/png-encoder";
 import { serializeRecipe } from "../../../export/recipe-file";
 import { createPaintSession } from "../../../paint/paint-session";
@@ -57,7 +57,7 @@ describe("ExportPanel", () => {
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]?.fileName).toMatch(/\.character\.json$/u);
     expect(calls[0]?.mime).toBe("application/json");
-    expect(JSON.parse(new TextDecoder().decode(calls[0]?.bytes)).version).toBe(1);
+    expect(JSON.parse(new TextDecoder().decode(calls[0]?.bytes)).version).toBe(2);
     expect(screen.getByText(/저장됨: character-/u)).toBeTruthy();
   });
 
@@ -202,6 +202,73 @@ describe("ExportPanel", () => {
     expect(top).toBeDefined();
     expect(top?.rgba.every((byte) => byte === 0)).toBe(true);
     expect(top?.width).toBe(8);
+  });
+
+  it("v1 레시피 파일을 불러오면 변환 안내를 상태 문구로 보이고, 다음 작업을 시작하면 지운다", async () => {
+    const dispatched: LabCommand[] = [];
+    const v1Text = JSON.stringify({ ...createDefaultRecipe(), version: 1, body: { height: 0.25 } });
+    const calls: SaveCall[] = [];
+    render(
+      <MockLabProvider dispatchSpy={(command) => dispatched.push(command)}>
+        <ExportPanel session={createPaintSession({ layerSize: 8 })} deps={{ save: fakeSave(calls), now: () => 1, readFile: async () => v1Text }} />
+      </MockLabProvider>,
+    );
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("레시피 불러오기"), { target: { files: [new File([v1Text], "old.character.json", { type: "application/json" })] } });
+    });
+    await waitFor(() => expect(dispatched).toHaveLength(1));
+    const list = screen.getByRole("list", { name: "레시피 불러오기 안내" });
+    expect(list.textContent).toBe("레시피 v1 파일을 현재 형식(v2)으로 변환해 열었습니다. 저장하면 v2 파일로 기록됩니다.");
+    expect(screen.queryByRole("alert")).toBeNull();
+    // 다른 작업(레시피 저장)을 시작하면 안내는 사라진다
+    fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(screen.queryByRole("list", { name: "레시피 불러오기 안내" })).toBeNull();
+  });
+
+  it("현재 형식 파일은 변환 안내가 없다", async () => {
+    const text = serializeRecipe(createDefaultRecipe());
+    render(
+      <MockLabProvider>
+        <ExportPanel session={createPaintSession({ layerSize: 8 })} deps={{ save: fakeSave([]), now: () => 1, readFile: async () => text }} />
+      </MockLabProvider>,
+    );
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("레시피 불러오기"), { target: { files: [new File([text], "cur.character.json", { type: "application/json" })] } });
+    });
+    await waitFor(() => expect(screen.getByText(/저장됨: cur\.character\.json/u)).toBeTruthy());
+    expect(screen.queryByRole("list", { name: "레시피 불러오기 안내" })).toBeNull();
+  });
+
+  it("키트 소스 파일: 칠한 레이어 중 변형을 바꾸면 어긋날 수 있는 것만 안내하고(피부·머리는 제외) 절차 소스 파일은 안내하지 않는다", async () => {
+    const painted = createPaintSession({ layerSize: 8, brush: { radiusPx: 2, hardness: 1, opacity: 1 } });
+    painted.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "top");
+    painted.endStroke();
+    painted.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "skin");
+    painted.endStroke();
+    const { embedPaintLayers } = await import("../../../export/recipe-file");
+    const kitText = serializeRecipe(await embedPaintLayers(createKitDefaultRecipe(), painted.layersForExport()));
+    const proceduralText = serializeRecipe(await embedPaintLayers(createDefaultRecipe(), painted.layersForExport()));
+    const dispatched: LabCommand[] = [];
+    let text = kitText;
+    render(
+      <MockLabProvider dispatchSpy={(command) => dispatched.push(command)}>
+        <ExportPanel session={createPaintSession({ layerSize: 8 })} deps={{ save: fakeSave([]), now: () => 1, readFile: async () => text }} />
+      </MockLabProvider>,
+    );
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("레시피 불러오기"), { target: { files: [new File([kitText], "kit.character.json", { type: "application/json" })] } });
+    });
+    await waitFor(() => expect(dispatched).toHaveLength(1));
+    const items = within(screen.getByRole("list", { name: "레시피 불러오기 안내" })).getAllByRole("listitem");
+    expect(items.map((node) => node.textContent)).toEqual(["이미 칠한 상의 레이어: 상의 변형을 바꾸면 UV가 달라져 그림이 어긋납니다. 변형을 확정한 뒤에 칠하세요."]);
+    // 절차 소스 파일은 같은 칠이 있어도 경고가 없다
+    text = proceduralText;
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("레시피 불러오기"), { target: { files: [new File([proceduralText], "proc.character.json", { type: "application/json" })] } });
+    });
+    await waitFor(() => expect(dispatched).toHaveLength(2));
+    expect(screen.queryByRole("list", { name: "레시피 불러오기 안내" })).toBeNull();
   });
 
   it("readTextFile은 File 내용을 읽는다", async () => {

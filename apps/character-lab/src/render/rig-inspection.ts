@@ -26,8 +26,14 @@ export interface RigPartInspection {
   readonly morphTargetCountsByMesh: readonly number[];
   /** 메시별로 influence > 0인 타깃 수(멀티 프리미티브에 morph가 모두 적용됐는지 확인) */
   readonly activeMorphTargetsByMesh: readonly number[];
-  /** 패키지 알베도 텍스처가 있는지(있으면 레시피 색 틴트를 적용하지 않는다) */
+  /** 알베도 텍스처가 있는지(키트 `tint`가 없으면 있을 때 레시피 색 틴트를 적용하지 않는다) */
   readonly hasAlbedoTexture: boolean;
+  /** 키트 파츠의 색 틴트 모드(절차·제작 패키지는 없음) */
+  readonly tintMode?: "recolor" | "fixed";
+  /** 메시별 SubMesh 수(키트 몸 가림이 만든 구간 수 확인). 스킨 메시는 하나가 기본이다. */
+  readonly subMeshCountsByMesh?: readonly number[];
+  /** 메시별 `alwaysSelectAsActiveMesh`(키트 로더가 둔 값을 엔진이 덮어쓰지 않는지 확인) */
+  readonly alwaysSelectAsActiveByMesh?: readonly boolean[];
   /** 메시별 `metadata.partId`(규약 밖 metadata면 -1) */
   readonly meshMetadataPartIds: readonly number[];
   /** `_Outline` 셸 메시별 `metadata.partId`·outline 플래그 */
@@ -38,6 +44,12 @@ export interface RigPartInspection {
   /** 현재 재질 클래스 이름(PBRMaterial·ShaderMaterial …) */
   readonly materialClass: string;
   readonly hasToonMaterial: boolean;
+  /** 툰 재질이 정점 색(`COLOR_0` AO) define으로 만들어졌는지(툰 재질이 있을 때만) */
+  readonly toonVertexColor?: boolean;
+  /** 툰 재질에 들어 있는 알파 컷오프(glTF MASK, 0 = 끔; 툰 재질이 있을 때만) */
+  readonly toonAlphaCutoff?: number;
+  /** 메시별 정점 색 버퍼 유무 */
+  readonly meshesHaveVertexColor?: readonly boolean[];
   /** 메시 `renderOutline`(툰 hull 모드) */
   readonly renderOutline: boolean;
   /** 엣지 렌더러가 붙어 있는지(툰 edge 모드) */
@@ -47,7 +59,7 @@ export interface RigPartInspection {
 }
 
 export interface RigInspection {
-  readonly kind: "procedural" | "package";
+  readonly kind: "procedural" | "package" | "kit";
   readonly poseConvention: "bone-local" | "model-space";
   readonly parts: readonly RigPartInspection[];
   readonly boneCount: number;

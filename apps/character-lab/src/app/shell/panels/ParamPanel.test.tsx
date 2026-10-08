@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -11,13 +11,17 @@ import {
   createDefaultRecipe,
   createPresetCatalog,
 } from "../../../contracts";
+import { buildKitPlanDetailed } from "../../../domains/authored/kit-plan";
 import { HAIR_COLORS, IRIS_COLORS, SKIN_TONES } from "../../../domains/humanoid/palette";
 import { createLabStore } from "../../../state/lab-store";
+import { kitManifestFixture } from "../../../testing/kit-fixtures";
 import { MockLabProvider } from "../../../testing/mock-store";
+import { createKitPlanRegistry } from "../kit-plan-registry";
 
 import { PARAM_POLES_KO, ParamPanel, describeParamValue, formatParam } from "./ParamPanel";
 
 import type { CharacterRecipe, LabCommand, SlotCapabilityMap } from "../../../contracts";
+import type { KitPlanRegistry } from "../kit-plan-registry";
 
 afterEach(cleanup);
 
@@ -30,10 +34,14 @@ function steadyClock(): () => number {
   };
 }
 
-function setup(options: { recipe?: CharacterRecipe; capabilities?: SlotCapabilityMap } = {}): LabCommand[] {
+function setup(options: { recipe?: CharacterRecipe; capabilities?: SlotCapabilityMap; kitPlans?: KitPlanRegistry } = {}): LabCommand[] {
   const dispatched: LabCommand[] = [];
   render(
-    <MockLabProvider initialState={{ capabilities: options.capabilities ?? ALL_AVAILABLE_CAPABILITIES, ...(options.recipe ? { recipe: options.recipe } : {}) }} dispatchSpy={(command) => dispatched.push(command)}>
+    <MockLabProvider
+      initialState={{ capabilities: options.capabilities ?? ALL_AVAILABLE_CAPABILITIES, ...(options.recipe ? { recipe: options.recipe } : {}) }}
+      dispatchSpy={(command) => dispatched.push(command)}
+      {...(options.kitPlans ? { shell: { kitPlans: options.kitPlans } } : {})}
+    >
       <ParamPanel />
     </MockLabProvider>,
   );
@@ -198,6 +206,51 @@ describe("ParamPanel — 요약·사유", () => {
     expect(screen.getByText(/체형 슬롯 부분 지원: 패키지에 체형 셰이프 키가 일부만 있습니다\./u)).toBeTruthy();
     expect(screen.getByText(/얼굴형 슬롯 미지원: 얼굴형 셰이프 키가 없습니다\./u)).toBeTruthy();
     expect(screen.getByText(/제작 패키지 소스에서는 패키지의 셰이프 키에 매핑된 파라미터만/u)).toBeTruthy();
+  });
+
+  it("키트 소스는 셰이프 키 안내와 눈·코·입·귀 슬롯의 부분 지원 사유를 보이고, 요약은 참고값임을 밝힌다", () => {
+    const capabilities: SlotCapabilityMap = {
+      ...ALL_AVAILABLE_CAPABILITIES,
+      ears: { status: "partial", reasonKo: "귀 축 earAngle의 음수 방향 키가 없습니다." },
+      nose: { status: "unavailable", reasonKo: "코 셰이프 키가 없습니다." },
+    };
+    setup({ capabilities, recipe: recipeWith({ source: { kind: "kit", kitId: "toonstudio-kit-v1", baseId: "female", kitVersion: 1 } }) });
+    expect(screen.getByText(/모듈식 키트 소스에서는 파라미터가 키트의 셰이프 키\(param:<키>:±\)로 반영/u)).toBeTruthy();
+    expect(screen.getByText(/귀 슬롯 부분 지원: 귀 축 earAngle의 음수 방향 키가 없습니다\./u)).toBeTruthy();
+    expect(screen.getByText(/코 슬롯 미지원: 코 셰이프 키가 없습니다\./u)).toBeTruthy();
+    expect(screen.queryByText(/제작 패키지 소스에서는/u)).toBeNull();
+    expect(screen.getByRole("status").textContent).toMatch(/^참고값\(절차 비례 계산, 키트 베이스 실측 아님\) · 키 \d\.\d\d m/u);
+  });
+
+  it("키트 manifest가 등록소에 있으면 요약 줄은 절차 비례 대신 베이스 heightM을 보이고 참고값 표기를 없앤다", async () => {
+    const kitPlans = createKitPlanRegistry({
+      loadManifest: async () => ({ ok: true, manifest: kitManifestFixture() }),
+      buildPlan: buildKitPlanDetailed,
+    });
+    const source = { kind: "kit", kitId: "toonstudio-kit-v1", baseId: "male", kitVersion: 1 } as const;
+    const arrived = kitPlans.ensure(source);
+    // 받기 전: 절차 비례 + 참고값
+    setup({ recipe: recipeWith({ source }), kitPlans });
+    expect(screen.getByRole("status").textContent).toMatch(/^참고값\(절차 비례 계산, 키트 베이스 실측 아님\) · 키 /u);
+    await act(async () => {
+      await arrived;
+    });
+    // 받은 뒤: 선택 베이스(남성 1.69 m)의 manifest 실측만 보인다
+    const text = screen.getByRole("status").textContent ?? "";
+    expect(text).toBe("키트 베이스 키 1.69 m(manifest 실측, 체형 슬라이더 반영 전 기준)");
+    expect(text).not.toMatch(/참고값|등신/u);
+  });
+
+  it("절차·패키지 소스에는 키트 안내와 눈·코·입·귀 사유 줄을 더하지 않는다", () => {
+    const capabilities: SlotCapabilityMap = { ...ALL_AVAILABLE_CAPABILITIES, ears: { status: "partial", reasonKo: "귀 부분 지원 사유" } };
+    setup({ capabilities });
+    expect(screen.queryByText(/모듈식 키트 소스에서는/u)).toBeNull();
+    expect(screen.queryByText(/귀 슬롯 부분 지원/u)).toBeNull();
+    expect(screen.getByRole("status").textContent).toMatch(/^키 \d\.\d\d m/u);
+    cleanup();
+    setup({ capabilities, recipe: recipeWith({ source: { kind: "package", characterId: "orion-cc0", sha256: "a".repeat(64) } }) });
+    expect(screen.queryByText(/모듈식 키트 소스에서는/u)).toBeNull();
+    expect(screen.queryByText(/귀 슬롯 부분 지원/u)).toBeNull();
   });
 
   it("formatParam·describeParamValue는 -0을 만들지 않고 부호를 붙인다", () => {

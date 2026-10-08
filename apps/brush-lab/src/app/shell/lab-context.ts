@@ -1,10 +1,12 @@
 import { createContext, useContext } from "react";
 
+import { useDrawState } from "../state/draw-store";
 import { useLabState } from "../state/lab-store";
 
 import type { LaneDescriptor, LaneEnvironment } from "../../lanes/lane";
 import type { GalleryRenderer } from "../../platform/worker-client";
 import type { BenchRunner } from "../state/bench-runner";
+import type { DrawActions, DrawState, DrawStore } from "../state/draw-store";
 import type { LabActions, LabState, LabStore } from "../state/lab-store";
 
 /**
@@ -19,6 +21,9 @@ export interface LabContextValue {
   /** 갤러리 렌더러(Worker 클라이언트). 만들 수 없으면 null이며 사유는 `galleryError`에 있다. */
   gallery: GalleryRenderer | null;
   galleryError: string | null;
+  /** "그리기" 화면 저장소·전이(A/B 비교용 `store`와 분리). */
+  drawStore: DrawStore;
+  drawActions: DrawActions;
 }
 
 export const LabContext = createContext<LabContextValue | null>(null);
@@ -35,4 +40,10 @@ export function useLab(): LabContextValue {
 export function useLabSelector<T>(selector: (s: LabState) => T): T {
   const { store } = useLab();
   return useLabState(selector, store);
+}
+
+/** 그리기 저장소에 대한 셀렉터 구독. */
+export function useDrawSelector<T>(selector: (s: DrawState) => T): T {
+  const { drawStore } = useLab();
+  return useDrawState(selector, drawStore);
 }

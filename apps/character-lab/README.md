@@ -1,6 +1,6 @@
 # ToonStudio Character Lab
 
-상태: current (2026-10-01). `apps/character-lab`은 네이버웹툰 SHAPER(설치형)와 같은 3D 캐릭터 제작 흐름을
+상태: current (2026-10-08, §9 키트 소스 절 추가; 나머지는 2026-10-01 기준). `apps/character-lab`은 네이버웹툰 SHAPER(설치형)와 같은 3D 캐릭터 제작 흐름을
 **웹에서** 재현하는 독립 정적 Vite 실험 앱이다(pnpm workspace `@toonstudio/character-lab`). 서버 기능이 없고
 운영 배포 대상이 아니며, 모든 입출력은 브라우저 로컬 파일(레시피 JSON·PNG·PSD·GLB)로만 한다.
 
@@ -70,8 +70,8 @@ Node 버전: 저장소 루트는 `engines.node >= 24.16`이고 CI는 Node 24로 
 **자동 프로브(`scripts/browser-probe.mjs`)**: 절차 중 셸 마운트·백엔드 명시 선택(ready 또는 `[코드]` 사유 failed, 자동 대체 없음)·투명 PNG 검사(PBR·툰 각각 모서리 알파 0,
 투명 픽셀 RGB 0, 캐릭터 면적 ≥ 1.5 % — 완전 투명 PBR 같은 회귀를 잡는다)·카드 클릭 1단계/실행 취소·썸네일 완료를 Playwright로 실행한다.
 `pnpm --filter @toonstudio/character-lab build` 뒤 `CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/browser-probe.mjs [--software] [--backends webgl2] [--require-ready webgl2] [--out <json>] [--shots <dir>] [--url <이미 뜬 서버>]`.
-게이트가 꺼져 있으면 0으로 끝나고, playwright·Chromium이 없으면 구조적 skip(종료 코드 2)이다(`CHARACTER_LAB_CHROMIUM_PATH`로 실행 파일 지정). 이 컨테이너 같은 소프트웨어 렌더러(SwiftShader)에서는
-`--software`를 주며 리포트에 그 사실이 남는다 — **성능·실 GPU 렌더 증거가 아니다**(WebGPU는 소프트웨어 폴백 어댑터라 의도대로 `webgpu-fallback-adapter`로 차단된다). 나머지 절차(관절 드래그·페인트·비전·PSD/GLB 열기·성능)는 수동이다.
+프로브는 `TMPDIR`가 길면(Chromium 소켓 경로 한도 때문에) 스스로 `/tmp`로 바꾸고 경고를 출력하며, 서버 프로세스 그룹과 브라우저를 어떤 종료 경로에서도 정리한다. 키트 소스 부팅과의 관계는 §9.4. 게이트가 꺼져 있으면 0으로 끝나고, playwright·Chromium이 없으면 구조적 skip(종료 코드 2)이다(`CHARACTER_LAB_CHROMIUM_PATH`로 실행 파일 지정). 이 컨테이너 같은 소프트웨어 렌더러(SwiftShader)에서는
+`--software`를 주며 리포트에 그 사실이 남는다(`--dist <폴더>`로 다른 빌드 산출물을 서빙할 수 있다) — **성능·실 GPU 렌더 증거가 아니다**(WebGPU는 소프트웨어 폴백 어댑터라 의도대로 `webgpu-fallback-adapter`로 차단된다). 나머지 절차(관절 드래그·페인트·비전·PSD/GLB 열기·성능)는 수동이다.
 
 1. `pnpm dev:character-lab` → `http://localhost:4176` → 상단 **[WebGPU]** 클릭. 배지가 `활성 엔진 … backend webgpu · <어댑터>`로 바뀌는지,
    실패 시 `[코드]: 사유`가 배너에 보이는지(자동으로 WebGL2가 만들어지지 않아야 한다). `chrome://gpu`의 어댑터와 대조.
@@ -111,6 +111,7 @@ rapier 브라우저 성능, GLB 실파일 재import·외부 뷰어 sparse morph,
 `files{role:{path,bytes,sha256}}`)과 `<id>/*.glb`, `slot-mapping.json`을 PackagePanel이 읽어 SHA-256을 검증하고 15슬롯 능력을
 판정한다(미지원 슬롯은 사유 표시, 대체 없음). 생성 절차·라이선스·검증 기록은 `docs/authored-asset-pipeline.md`.
 현재 패키지: `avatar-orion-authored`(CC0-1.0, primary), `reference-character`.
+모듈식 **키트** 소스(파츠별 GLB 조립)는 이 패키지 레인과 별개다 — §9.
 
 ## 7. 소유권·문서
 
@@ -131,3 +132,40 @@ rapier 브라우저 성능, GLB 실파일 재import·외부 뷰어 sparse morph,
 `@mediapipe/tasks-vision`(Apache-2.0, wasm은 번들·모델만 CDN 지연 로드), `@dimforge/rapier3d-deterministic-compat` 0.19.3(Apache-2.0, 동적 import),
 `zod` 4.4.3, React 19. PNG 인코더는 자체 구현(`CompressionStream`)이라 추가 의존성이 없다. WebGPU 타입은 TypeScript 6 DOM lib이 제공한다.
 의존성 변경은 통합 담당이 `pnpm install`로 lockfile과 함께 갱신한다.
+
+## 9. 모듈식 캐릭터 키트 소스 (2026-10-08)
+
+상태: **앱 통합 코드는 들어갔고 에셋은 아직 안착하지 않았다**(§9.5). 계약 정본은 [`docs/authored-kit-spec.md`](docs/authored-kit-spec.md)이며, 코드와 문서가 다르면 코드가 기준이다.
+
+### 9.1 무엇인가
+
+리깅된 **베이스 바디(여/남) + 교체 가능한 헤어·의상·신발·액세서리·홍채 파츠 + 셰이프 키(morph)** 로 캐릭터를 조립하는 소스 종류(`CharacterSource` / 레시피 `source.kind === "kit"`)다.
+절차 휴머노이드·제작 패키지(Orion 등, §6)와 나란히 있는 세 번째 소스이며, 한 번에 **선택한 프리셋의 GLB만** 받는다(파츠별 GLB, 같은 68 joint 스켈레톤에 로더가 재바인딩).
+morph는 계약 이름(`param:<키>:±`, `facs:<유닛>`)을 그대로 쓰므로 기존 슬라이더·프리셋·플래너가 바뀌지 않는다. 키트가 제공하지 않는 프리셋은 슬롯/프리셋 카드에 사유와 함께 비활성으로 보이고 다른 프리셋으로 대체하지 않는다.
+
+### 9.2 에셋 위치와 검증기
+
+- 에셋 루트(계약 상수 `KIT_ASSET_ROOT`): `public/assets/characters/toonstudio-kit-v1/` — `kit.json`(목록·SHA-256·출처·능력) + 베이스 GLB 2 + `parts/<베이스>/<슬롯>/<이름>.glb` + `NOTICE.md`.
+- 검증기(저장소 루트에서): `pnpm run verify:character-kit -- --root apps/character-lab/public/assets/characters/toonstudio-kit-v1` (V1~V20; 종료 코드 0 통과·1 오류·2 사용법).
+  경로는 위치 인자가 아니라 `--root <폴더>`로 준다. `tsx`로 실행되므로(`pnpm run`/`pnpm exec tsx`) `node scripts/verify-character-kit.mjs`로는 돌지 않는다. 옵션·검사 항목은 `docs/authored-kit-spec.md` 9절.
+  안착 전 필수 단계다: `--json <out.json>`으로 수치를 남기고, 따라가기(V9) 오탐이 의심되면 `--follow-quantile 0.995`로 확인한다.
+
+### 9.3 뷰어와 Blender 제작 도구
+
+- **뷰어** `apps/character-lab/scripts/kit-preview.mjs` — Blender GLB를 앱의 실제 렌더러(`BabylonCharacterEngine`)로 렌더해 PNG·접촉 시트·JSON 요약을 만든다(장당 1~4초, 소프트웨어 WebGL2).
+  베이스에 키트 이름 메시(`TS_Body`·`TS_Head`)가 있으면 **키트 소스 경로**(`loadSource({ kind: "kit" })`)로, 아니면 기존 병합 경로로 올린다. 사용법·옵션·종료 코드는 [`docs/kit-preview.md`](docs/kit-preview.md)를 본다(세부는 거기에만 둔다).
+- **Blender 제작 도구**: `tools/blender/character_kit/`(사용법은 그 안의 `README.md`)와 진입점 `scripts/blender/build_character_kit.py`는 **키트 에셋을 안착시키는 커밋에 함께 올라간다**
+  (독립 심사가 끝나지 않은 단계 모듈을 먼저 올리지 않는다). 이 커밋에는 앱 통합·뷰어·검증기·문서가 있고, 제작 도구가 올라오기 전에는 저장소에 없다.
+
+### 9.4 현재 상태와 프로브
+
+- **부팅 기본 소스는 절차(procedural)다.** `src/app/composition.ts`의 `DEFAULT_BOOT_SOURCE = "procedural"`이고, 키트 에셋이 안착하면(KT-11) 이 상수를 `"kit"`로 바꾼다.
+  키트는 PackagePanel에서 사용자가 명시적으로 고르거나 `composeCharacterLab({ defaultSource: "kit" })`로만 쓴다.
+- 키트 에셋이 없는 빌드에서 키트 소스를 고르면 `kit-manifest-fetch-failed` 한글 사유가 배너/PackagePanel에 보이고 재시도 버튼만 있다 — **정상 동작**이며 절차 소스로 자동 전환하지 않는다.
+- 브라우저 프로브(`scripts/browser-probe.mjs`)의 단계는 절차 소스 기준이라 키트 에셋 없이 통과해야 한다. 부팅 기본이 `"kit"`로 바뀐 뒤에는 에셋이 있는 빌드에서 통과해야 하며,
+  에셋이 없으면 엔진 선택 직후 `[kit-manifest-fetch-failed]` 배너가 보이는 것이 정상이고 그 뒤 ready를 전제로 한 단계는 실패/건너뜀이 된다(프로브 결함이 아니라 에셋 부재). 키트 렌더의 실브라우저 확인은 프로브가 아니라 뷰어가 한다.
+- 키트 항목별 구현·검증 상태와 **브라우저 미검증 목록**은 `docs/parity/render.md` §10에 있다.
+
+### 9.5 에셋 안착 상태 (2026-10-08 확인)
+
+`public/assets/characters/`에는 `avatar-orion-authored/`·`reference-character/`·`index.json`만 있고 `toonstudio-kit-v1/`은 **없다**(`ls`로 확인). 키트 제작(Blender)과 `kit.json` 조립·SHA/용량 기록은 리드 단계(KT-11)에서 한다.

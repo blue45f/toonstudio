@@ -1,11 +1,35 @@
 import { describe, expect, it } from "vitest";
 
-import { ALL_AVAILABLE_CAPABILITIES, PART_ROLES, createDefaultRecipe, createPresetCatalog, isUnitQuat } from "../contracts";
+import {
+  ALL_AVAILABLE_CAPABILITIES,
+  BODY_PARAM_KEYS,
+  FACE_PARAM_KEYS,
+  FACS_UNITS,
+  KIT_DEFAULT_SLOTS,
+  KIT_MORPH_NAMES,
+  PART_ROLES,
+  allocatePartIdsByRole,
+  createDefaultRecipe,
+  createKitDefaultRecipe,
+  createPresetCatalog,
+  isUnitQuat,
+  rolePartId,
+} from "../contracts";
 import { presetEntryFixture, samplePose, vocabularyCatalogEntries } from "../testing/recipe-fixtures";
 
-import { DEFAULT_PART_LAYOUT, createApplyPlanner, layoutFromPalette, materialPresetFor, planApply, planWithPreset, presetConflicts, unmetRequirement } from "./apply-plan";
+import {
+  DEFAULT_PART_LAYOUT,
+  createApplyPlanner,
+  layoutFromPalette,
+  materialPresetFor,
+  planApply,
+  planWithPreset,
+  presetConflicts,
+  presetUnavailableReasonKo,
+  unmetRequirement,
+} from "./apply-plan";
 
-import type { CharacterRecipe, PresetCatalog, SlotCapabilityMap } from "../contracts";
+import type { CharacterRecipe, ParamKey, PresetCatalog, SlotCapabilityMap } from "../contracts";
 
 function catalog(): PresetCatalog {
   const entries = vocabularyCatalogEntries().map((entry) => {
@@ -198,6 +222,156 @@ describe("state/apply-plan", () => {
     expect(materialPresetFor("accessory", "accessory/glasses")).toBe("metal");
     expect(materialPresetFor("accessory", null)).toBe("plastic");
     expect(materialPresetFor("hair", "hair/soft-bob")).toBe("hair-aniso");
+  });
+
+  describe("프리셋 단위 미제공(unavailablePresets, 키트 계약 D10)", () => {
+    const TWIN_TAIL_MISSING = "여성 핏 미제작";
+    const hairPartial = capabilitiesWith({
+      hair: { status: "partial", reasonKo: "제공 6/7종, 미제공: twin-tail", unavailablePresets: { "hair/twin-tail": TWIN_TAIL_MISSING } },
+    });
+
+    it("presetUnavailableReasonKo는 맵에 있는 프리셋만 사유를 돌려주고 빈 사유는 한글 기본 문구로 채운다", () => {
+      const capability = hairPartial.hair;
+      expect(presetUnavailableReasonKo(capability, "hair/twin-tail")).toBe(TWIN_TAIL_MISSING);
+      expect(presetUnavailableReasonKo(capability, "hair/soft-bob")).toBeNull();
+      expect(presetUnavailableReasonKo({ status: "available" }, "hair/twin-tail")).toBeNull();
+      expect(presetUnavailableReasonKo({ status: "partial", unavailablePresets: {} }, "hair/twin-tail")).toBeNull();
+      const blank = presetUnavailableReasonKo({ status: "partial", unavailablePresets: { "hair/twin-tail": "  " } }, "hair/twin-tail");
+      expect(blank).toMatch(/[가-힣]/u);
+      expect(blank).toContain("twin-tail");
+    });
+
+    it("슬롯이 partial이어도 선택한 프리셋이 맵에 있으면 unsupported(사유=맵 값)이고 다른 프리셋으로 바꾸지 않는다", () => {
+      const plan = createApplyPlanner()(recipeAllSlots(), hairPartial, CATALOG);
+      expect(plan.unsupported).toEqual([{ slot: "hair", presetId: "hair/twin-tail", reasonKo: TWIN_TAIL_MISSING }]);
+      // 미적용이므로 partial 목록에는 올리지 않는다(같은 슬롯이 두 목록에 중복되지 않는다).
+      expect(plan.partial.some((item) => item.slot === "hair")).toBe(false);
+      // 소스 기본 헤어를 그대로 둔다: 숨기지도, 다른 헤어 variant를 고르지도 않는다.
+      const hair = plan.parts.find((p) => p.partId === rolePartId("hair"));
+      expect(hair).toMatchObject({ visible: true, materialPreset: "hair-aniso" });
+    });
+
+    it("variant 레이아웃에서도 대체 variant를 고르지 않는다(모든 헤어 variant가 소스 기본 상태로 남는다)", () => {
+      const layout = [
+        { partId: 1, role: "hair" as const, variant: "soft-bob" },
+        { partId: 2, role: "hair" as const, variant: "twin-tail" },
+      ];
+      const plan = createApplyPlanner({ partLayout: layout })(recipeAllSlots(), hairPartial, CATALOG);
+      expect(plan.parts.map((p) => p.visible)).toEqual([true, true]);
+    });
+
+    it("맵에 없는 프리셋은 평소대로 적용되고 partial 능력 사유만 남는다", () => {
+      const recipe = { ...recipeAllSlots(), slots: { ...recipeAllSlots().slots, hair: "hair/soft-bob" as const } };
+      const plan = createApplyPlanner()(recipe, hairPartial, CATALOG);
+      expect(plan.unsupported).toEqual([]);
+      expect(plan.partial).toContainEqual({ slot: "hair", presetId: "hair/soft-bob", reasonKo: "제공 6/7종, 미제공: twin-tail" });
+    });
+
+    it("미제공 프리셋의 patch 파라미터 morph는 제외하고 다른 슬롯은 그대로 적용한다", () => {
+      const capabilities = capabilitiesWith({
+        "face-shape": { status: "partial", reasonKo: "일부만", unavailablePresets: { "face-shape/round": "둥근 얼굴형 미제작" } },
+      });
+      const plan = planApply(recipeAllSlots(), capabilities, CATALOG);
+      expect(plan.unsupported).toEqual([{ slot: "face-shape", presetId: "face-shape/round", reasonKo: "둥근 얼굴형 미제작" }]);
+      expect(plan.morphWeights["param:jawWidth:+"]).toBeUndefined();
+      expect(plan.morphWeights["param:chinLength:-"]).toBeUndefined();
+      expect(plan.morphWeights["param:eyeSize:+"]).toBe(0.2);
+      expect(plan.morphWeights["facs:mouthSmile"]).toBe(0.9);
+    });
+
+    it("슬롯 전체가 unavailable이면 슬롯 사유가 프리셋 사유보다 먼저다", () => {
+      const capabilities = capabilitiesWith({
+        hair: { status: "unavailable", reasonKo: "슬롯 전체 미지원", unavailablePresets: { "hair/twin-tail": TWIN_TAIL_MISSING } },
+      });
+      const plan = planApply(recipeAllSlots(), capabilities, CATALOG);
+      expect(plan.unsupported).toEqual([{ slot: "hair", presetId: "hair/twin-tail", reasonKo: "슬롯 전체 미지원" }]);
+    });
+
+    it("선택이 비어 있으면(null) 맵과 무관하게 숨김으로 계획한다", () => {
+      const recipe = { ...recipeAllSlots(), slots: { ...recipeAllSlots().slots, accessory: null } };
+      const capabilities = capabilitiesWith({
+        accessory: { status: "partial", reasonKo: "일부만", unavailablePresets: { "accessory/cap": "캡 미제작" } },
+      });
+      const plan = planApply(recipe, capabilities, CATALOG);
+      expect(plan.unsupported).toEqual([]);
+      expect(plan.parts.find((p) => p.partId === rolePartId("accessory"))?.visible).toBe(false);
+    });
+
+    it("planWithPreset(썸네일 플랜)도 미제공 프리셋을 unsupported로 보고하고 원 레시피를 바꾸지 않는다", () => {
+      const recipe = createKitDefaultRecipe();
+      const plan = planWithPreset(recipe, "hair/twin-tail", hairPartial, CATALOG);
+      expect(plan.unsupported).toEqual([{ slot: "hair", presetId: "hair/twin-tail", reasonKo: TWIN_TAIL_MISSING }]);
+      expect(recipe.slots.hair).toBe("hair/soft-bob");
+    });
+  });
+
+  describe("키트 소스와의 계약 정합(키트 계약 5절, D5, D11)", () => {
+    it("역할 고정 partId(rolePartId)는 기본 레이아웃과 같고 속옷 역할이 끝(16)에 추가돼 기존 partId가 밀리지 않는다", () => {
+      expect(DEFAULT_PART_LAYOUT.map((entry) => entry.partId)).toEqual(PART_ROLES.map((role) => rolePartId(role)));
+      expect(PART_ROLES.at(-1)).toBe("underwear");
+      expect(rolePartId("underwear")).toBe(16);
+      expect(DEFAULT_PART_LAYOUT).toHaveLength(16);
+      expect(rolePartId("skin")).toBe(1);
+      expect(rolePartId("accessory")).toBe(15);
+    });
+
+    it("키트 팔레트(allocatePartIdsByRole)에서 만든 레이아웃은 기본 레이아웃과 같다", () => {
+      const palette = allocatePartIdsByRole(PART_ROLES.map((role) => ({ role })));
+      expect(layoutFromPalette(palette)).toEqual(DEFAULT_PART_LAYOUT);
+    });
+
+    it("파츠가 없는 역할(accessory 미선택)이 있는 희소 팔레트에서도 나머지 partId가 밀리지 않는다", () => {
+      const roles = PART_ROLES.filter((role) => role !== "accessory");
+      const layout = layoutFromPalette(allocatePartIdsByRole(roles.map((role) => ({ role }))));
+      const plan = createApplyPlanner({ partLayout: layout })(createKitDefaultRecipe(), ALL_AVAILABLE_CAPABILITIES, CATALOG);
+      expect(plan.parts).toHaveLength(15);
+      expect(plan.parts.map((p) => p.partId)).toEqual(roles.map((role) => rolePartId(role)));
+      expect(plan.parts.find((p) => p.partId === rolePartId("hair"))?.visible).toBe(true);
+      expect(plan.parts.find((p) => p.partId === rolePartId("underwear"))?.visible).toBe(true);
+    });
+
+    it("속옷은 슬롯이 없어 항상 보이고 면 재질이며 레시피 색을 받지 않는다(상의·하의를 비워도 그대로)", () => {
+      const base = createKitDefaultRecipe();
+      const stripped = { ...base, slots: { ...base.slots, top: null, bottom: null, shoes: null, accessory: null } };
+      for (const recipe of [base, stripped]) {
+        const plan = planApply(recipe, ALL_AVAILABLE_CAPABILITIES, CATALOG);
+        const underwear = plan.parts.find((p) => p.partId === rolePartId("underwear"));
+        expect(underwear).toEqual({ partId: 16, visible: true, materialPreset: "cloth-cotton" });
+      }
+      expect(materialPresetFor("underwear", null)).toBe("cloth-cotton");
+    });
+
+    it("키트 기본 레시피의 슬롯은 KIT_DEFAULT_SLOTS이고 플래너가 전부 적용한다(미적용 없음)", () => {
+      const recipe = createKitDefaultRecipe();
+      expect(recipe.slots).toEqual(KIT_DEFAULT_SLOTS);
+      const plan = planApply(recipe, ALL_AVAILABLE_CAPABILITIES, CATALOG);
+      expect(plan.unsupported).toEqual([]);
+      const visibleRoles = DEFAULT_PART_LAYOUT.filter((_, index) => plan.parts[index]?.visible).map((entry) => entry.role);
+      expect(visibleRoles).toContain("hair");
+      expect(visibleRoles).toContain("top");
+      expect(visibleRoles).toContain("bottom");
+      expect(visibleRoles).toContain("shoes");
+      expect(visibleRoles).toContain("iris");
+      expect(visibleRoles).not.toContain("accessory");
+    });
+
+    it("플래너가 만드는 morph 이름은 키트 어휘 64개와 정확히 같은 집합이다(문서 5절 '한 줄도 바꾸지 않는다' 검증)", () => {
+      const allKeys = [...BODY_PARAM_KEYS, ...FACE_PARAM_KEYS] as readonly ParamKey[];
+      const emitted = new Set<string>();
+      for (const sign of [1, -1]) {
+        const recipe: CharacterRecipe = {
+          ...createKitDefaultRecipe(),
+          body: Object.fromEntries(BODY_PARAM_KEYS.map((key) => [key, sign])),
+          face: Object.fromEntries(FACE_PARAM_KEYS.map((key) => [key, sign])),
+          expression: Object.fromEntries(FACS_UNITS.map((unit) => [unit, 1])),
+        };
+        const plan = planApply(recipe, ALL_AVAILABLE_CAPABILITIES, CATALOG);
+        for (const name of Object.keys(plan.morphWeights)) emitted.add(name);
+      }
+      expect(allKeys).toHaveLength(24);
+      expect(KIT_MORPH_NAMES).toHaveLength(64);
+      expect([...emitted].sort()).toEqual([...KIT_MORPH_NAMES].sort());
+    });
   });
 
   it("planWithPreset은 프리셋을 임시 적용해 플랜을 만들고 원 레시피는 바꾸지 않는다", () => {

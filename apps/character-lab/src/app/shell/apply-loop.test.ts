@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { ALL_AVAILABLE_CAPABILITIES, ALL_UNAVAILABLE_CAPABILITIES, createDefaultRecipe, createPresetCatalog, failVisible } from "../../contracts";
+import { ALL_AVAILABLE_CAPABILITIES, ALL_UNAVAILABLE_CAPABILITIES, createDefaultRecipe, createKitDefaultRecipe, createPresetCatalog, failVisible } from "../../contracts";
+import { buildKitPlanDetailed } from "../../domains/authored/kit-plan";
+import { kitManifestFixture } from "../../testing/kit-fixtures";
 import { FIXTURE_GLB_SHA256, characterPackageManifestFixture } from "../../testing/manifest-fixtures";
 import { createMockEngine } from "../../testing/mock-engine";
 import { createMockEngineSession, createMockLabStore } from "../../testing/mock-store";
@@ -8,7 +10,7 @@ import { applyPlanFixture, minimalHumanoidModelFixture } from "../../testing/rec
 
 import { createApplyLoop, sourceKeyOf } from "./apply-loop";
 
-import type { ApplyPlanner, AuthoredPackagePlan, CharacterRecipe, CharacterSource } from "../../contracts";
+import type { ApplyPlanner, AuthoredPackagePlan, CharacterRecipe, CharacterSource, KitPlan } from "../../contracts";
 
 function packagePlanFixture(): AuthoredPackagePlan {
   return {
@@ -24,6 +26,15 @@ function packagePlanFixture(): AuthoredPackagePlan {
     capabilities: ALL_AVAILABLE_CAPABILITIES,
     licenseNote: "CC0",
   };
+}
+
+/** 레시피의 키트 소스와 슬롯 선택으로 만든 실제 키트 계획(합성 manifest) */
+function kitPlanOf(recipe: CharacterRecipe): KitPlan {
+  const source = recipe.source;
+  if (source.kind !== "kit") throw new Error("키트 소스 레시피여야 합니다.");
+  const built = buildKitPlanDetailed(kitManifestFixture(), source, recipe.slots);
+  if (!built.ok) throw new Error(built.failure.reasonKo);
+  return built.plan;
 }
 
 const planner: ApplyPlanner = (recipe) => applyPlanFixture({ revision: 0, colors: recipe.colors });
@@ -381,5 +392,130 @@ describe("app/shell/apply-loop", () => {
     const recipe = createDefaultRecipe();
     expect(sourceKeyOf({ kind: "procedural", model: minimalHumanoidModelFixture() })).toBe(JSON.stringify(recipe.source));
     expect(sourceKeyOf({ kind: "procedural", model: minimalHumanoidModelFixture() }, "hair/soft-bob")).toBe('{"geometry":"hair/soft-bob","kind":"procedural"}');
+  });
+
+  it("키트 sourceKeyOf는 베이스·키트 버전과 파츠 선택(kitGeometryKey와 같은 형식)을 키에 넣고, 파츠가 바뀌면 키가 바뀐다", () => {
+    const recipe = createKitDefaultRecipe();
+    const key = sourceKeyOf({ kind: "kit", plan: kitPlanOf(recipe) });
+    expect(JSON.parse(key)).toEqual({
+      kind: "kit",
+      kitId: "toonstudio-kit-v1",
+      kitVersion: 1,
+      baseId: "female",
+      geometry: "base=female;hair=hair/soft-bob;top=top/tee;bottom=bottom/jeans;shoes=shoes/sneakers;accessory=-;irises=irises/round-large",
+    });
+    const withAccessory = { ...recipe, slots: { ...recipe.slots, accessory: "accessory/glasses" as const } };
+    expect(JSON.parse(sourceKeyOf({ kind: "kit", plan: kitPlanOf(withAccessory) })).geometry).toContain("accessory=accessory/glasses");
+    expect(sourceKeyOf({ kind: "kit", plan: kitPlanOf(withAccessory) })).not.toBe(key);
+    expect(JSON.parse(sourceKeyOf({ kind: "kit", plan: kitPlanOf(createKitDefaultRecipe("male")) })).baseId).toBe("male");
+  });
+
+  it("키트 소스는 파츠 선택(지오메트리)이 바뀔 때만 다시 만들고, 색·셰이딩·morph 슬롯은 플랜만 다시 적용한다", async () => {
+    const store = createMockLabStore({ recipe: createKitDefaultRecipe() });
+    const session = createMockEngineSession();
+    const engine = createMockEngine();
+    const built: string[] = [];
+    const loop = createApplyLoop({
+      store,
+      catalog: createPresetCatalog([]),
+      planner,
+      engineSession: session,
+      buildSource: (recipe) => {
+        built.push(recipe.slots.hair ?? "-");
+        return { kind: "kit", plan: kitPlanOf(recipe) };
+      },
+      now: () => 1,
+    });
+    loop.start();
+    session.setEngine(engine);
+    session.setStatus({ phase: "ready", backend: "webgpu", diagnostics: engine.diagnostics });
+    await loop.flush();
+    expect(built).toEqual(["hair/soft-bob"]);
+    let recipe = store.getState().recipe;
+    store.setState({
+      recipe: { ...recipe, colors: { ...recipe.colors, hair: "#102030" }, shading: { ...recipe.shading, mode: "toon" }, slots: { ...recipe.slots, eyes: "eyes/round", expression: "expression/smile" } },
+      history: { ...store.getState().history, revision: 1 },
+    });
+    await loop.flush();
+    expect(built).toHaveLength(1);
+    recipe = store.getState().recipe;
+    store.setState({ recipe: { ...recipe, slots: { ...recipe.slots, hair: "hair/hime-cut" } }, history: { ...store.getState().history, revision: 2 } });
+    await loop.flush();
+    expect(built).toEqual(["hair/soft-bob", "hair/hime-cut"]);
+    // 베이스를 바꾸면 소스를 다시 만든다(남성 베이스는 필수 파츠만 제공하므로 헤어도 필수 파츠로 되돌린다)
+    recipe = store.getState().recipe;
+    store.setState({
+      recipe: { ...recipe, source: { kind: "kit", kitId: "toonstudio-kit-v1", baseId: "male", kitVersion: 1 }, slots: { ...recipe.slots, hair: "hair/soft-bob" } },
+      history: { ...store.getState().history, revision: 3 },
+    });
+    await loop.flush();
+    expect(built).toHaveLength(3);
+    expect(engine.loadedSources.map((source) => (source.kind === "kit" ? source.plan.baseId : source.kind))).toEqual(["female", "female", "male"]);
+    // 엔진이 보고한 키트 능력 맵(남성 = 미제작 프리셋 선언)이 스토어에 맞춰진다
+    expect(store.getState().capabilities.hair.unavailablePresets?.["hair/twin-tail"]).toBe("남성 핏 미제작");
+  });
+
+  it("retrySource: 실패한 소스의 가드를 풀어 다시 만들고, 준비 훅이 던져도 failure로 노출한 채 계속한다", async () => {
+    const store = createMockLabStore();
+    const session = createMockEngineSession();
+    const engine = createMockEngine();
+    let builds = 0;
+    let failBuild = true;
+    let hooks = 0;
+    let hookThrows = false;
+    const loop = createApplyLoop({
+      store,
+      catalog: createPresetCatalog([]),
+      planner,
+      engineSession: session,
+      buildSource: () => {
+        builds += 1;
+        if (failBuild) throw failVisible("kit-manifest-fetch-failed", "키트 manifest를 불러오지 못했습니다.", undefined, 1);
+        return { kind: "procedural", model: minimalHumanoidModelFixture() };
+      },
+      beforeRetrySource: () => {
+        hooks += 1;
+        if (hookThrows) throw new Error("캐시 비우기 실패");
+      },
+      now: () => 1,
+    });
+    loop.start();
+    session.setEngine(engine);
+    session.setStatus({ phase: "ready", backend: "webgpu", diagnostics: engine.diagnostics });
+    await loop.flush();
+    expect(builds).toBe(1);
+    // 재시도 전에는 같은 키를 다시 만들지 않는다
+    store.setState({ history: { ...store.getState().history, revision: 1 } });
+    await loop.flush();
+    expect(builds).toBe(1);
+    hookThrows = true;
+    failBuild = false;
+    loop.retrySource();
+    await loop.flush();
+    expect(hooks).toBe(1);
+    expect(builds).toBe(2);
+    expect(store.getState().failures.map((failure) => failure.code)).toEqual(["kit-manifest-fetch-failed", "source-retry-hook-failed"]);
+    expect(engine.loadedSources).toHaveLength(1);
+    expect(loop.settled()).toBe(true);
+  });
+
+  it("retrySource: 이미 올라간 소스도 버리고 다시 만들어 올린다(키트 다시 불러오기). 엔진이 없으면 다음 ready에서 올린다", async () => {
+    const { store, session, engine, loop } = setup();
+    // 엔진이 없을 때의 재시도는 예외 없이 다음 ready로 미뤄진다
+    loop.start();
+    loop.retrySource();
+    await loop.flush();
+    expect(engine.calls).toHaveLength(0);
+    session.setEngine(engine);
+    session.setStatus({ phase: "ready", backend: "webgpu", diagnostics: engine.diagnostics });
+    await loop.flush();
+    expect(engine.loadedSources).toHaveLength(1);
+    loop.retrySource();
+    // 다시 만드는 동안에는 settled가 아니다
+    expect(loop.settled()).toBe(false);
+    await loop.flush();
+    expect(engine.loadedSources).toHaveLength(2);
+    expect(loop.settled()).toBe(true);
+    expect(store.getState().failures).toEqual([]);
   });
 });

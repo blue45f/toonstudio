@@ -61,3 +61,15 @@ pnpm --filter @toonstudio/character-lab typecheck
 - 레시피 파일 모듈이 둘이다: `state/recipe-io.ts`(스펙 5.1, `character-<digest8>.json`)와 `export/recipe-file.ts`(`.character.json`, 페인트 레이어 PNG 포함). ExportPanel은 후자를 쓴다. 저장 포맷을 하나로 합칠지 core가 결정한다(둘 다 `parseRecipe` strict 스키마를 쓰므로 서로 읽을 수 있다).
 - 카탈로그 병합(`APPEARANCE_PRESETS` + `PERFORMANCE_PRESETS`)과 불변식 실행은 core `catalog-registry.ts`.
 - core `lab-runtime.ts`는 `thumbnailCacheKey(presetId, recipe, shadingMode)` 3인자 형태로 호출한다. 네 번째 인자로 카탈로그를 넘기면 그 프리셋 patch가 덮어쓰는 파라미터·색·연기 필드까지 키에서 빠져(슬라이더 드래그 중 불필요한 썸네일 재생성 감소) 더 정밀해진다 — core가 `cacheKey(presetId, recipe, recipe.shading.mode, catalog)`로 바꾸기를 권장.
+
+## 5. 키트 소스 행 (KT-12, 2026-10-08)
+
+계약은 `docs/authored-kit-spec.md`, 렌더·패널 상태는 `docs/parity/render.md` §10. 아래는 상태·레시피·셸 쪽 행이다. 테스트 수는 2026-10-08 `pnpm exec vitest run <파일>` 실측이다. 모두 합성 키트·모의 엔진 기준이며 **브라우저 미검증**이다.
+
+| 항목 | 구현 상태 | Node 검증(테스트 파일) | 브라우저 검증 | 비고 |
+| --- | --- | --- | --- | --- |
+| 레시피 v2(`source.kind === "kit"`), v1→v2 명시 마이그레이션(`migrateRecipeV1ToV2`), `createKitDefaultRecipe()` | 구현됨 | `contracts/recipe.test.ts`(15), `contracts/character-kit.test.ts`(37), `state/recipe-io.test.ts`(14) | 미검증 | 구버전 앱은 v2 파일을 '지원하지 않는 버전'으로 정직하게 거부 |
+| 키트 툰 기본값(A-10): `KIT_DEFAULT_TOON`(램프 2단·림 끔), `applyKitToonDefaults`, `source/set`이 절차·패키지 → 키트로 **처음** 옮길 때만 적용(사용자가 바꾼 값 유지, 키트 안 베이스 전환·같은 소스 재선택은 불변·같은 참조) | 구현됨 | `state/recipe-reducer.test.ts`(22), `contracts/recipe.test.ts`, `contracts/character-kit.test.ts` | SwiftShader 뷰어(램프 2단)만. 앱 뷰포트 미검증 | 절차 소스 기본값(`DEFAULT_SHADING`, 3단·림 켬)은 바꾸지 않음 |
+| 부팅 기본 소스 `DEFAULT_BOOT_SOURCE = "procedural"`(키트 에셋 안착 전까지), `composeCharacterLab({ defaultSource })` | 구현됨 | `app/composition.test.ts`(13). 상수를 임시로 `"kit"`로 바꿔 `src/app`·`src/state`·`babylon-character-engine.test.ts` 48파일 488 테스트 통과를 FIX-A1이 확인 | 미검증 | KT-11에서 `"kit"`로 전환하고 테스트 갱신 |
+| `describeCommandKo`의 kit 소스 문구('소스: 키트(<베이스>)'), 프리셋 단위 비활성(`unavailablePresets`)·`plan.partial` 표시 정책(슬롯 배지·툴팁에만) | 구현됨 | `state/recipe-reducer.test.ts`, `app/shell/panels/SlotPanel.test.tsx`(14) | 미검증 | 플래너 동작(partial 사유를 올림)은 테스트로 고정되어 있고 표시 정책만 바뀌었다 |
+| 키트 plan 레지스트리(`app/shell/kit-plan-registry.ts`)·`lab-runtime` 키트 분기(재시도·`kit-loader-unavailable`·임시 키트 썸네일 소스·적용 루프 소스 키 통일) | 구현됨 | `app/shell/kit-plan-registry.test.ts`(14), `app/shell/lab-runtime.test.ts`(18), `app/shell/apply-loop.test.ts`(19) | 미검증 | 실패 사유는 그대로 노출하고 절차 소스로 자동 전환하지 않는다 |

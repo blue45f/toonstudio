@@ -84,6 +84,7 @@ function fakeApplyLoop(plan: ApplyPlan | null): ApplyLoop {
     lastReceipt: () => null,
     snapshot: () => snapshot,
     markSourceLoaded: () => undefined,
+    retrySource: () => undefined,
     subscribe: () => () => undefined,
   };
 }

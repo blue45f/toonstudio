@@ -17,6 +17,14 @@ export const DEPTH_FRAGMENT_SHADER_NAME = "clDepth";
 
 /** 정점 attribute(ShaderMaterial options.attributes). 스키닝·morph attribute는 ShaderMaterial이 자동 추가한다. */
 export const CHARACTER_SHADER_ATTRIBUTES: readonly string[] = ["position", "normal", "uv"];
+/**
+ * glTF `COLOR_0`(키트의 회색 AO) attribute. 정점 셰이더가 `#ifdef TS_VERTEX_COLOR`일 때만 선언하고, 재질도 그때만 attribute 목록에 넣는다 —
+ * 메시에 색 버퍼가 없는데 attribute를 선언하면 빈 버퍼가 0으로 읽혀 알베도가 검게 곱해지고, 목록에 항상 넣으면 morph attribute 모드(NullEngine·WebGL1)의
+ * 동시 영향 타깃 수 예산을 쓸데없이 하나 줄이므로, 재질을 만들 때 메시가 색 버퍼를 가진 파츠에만 켠다(`createPassMaterial`).
+ */
+export const CHARACTER_SHADER_VERTEX_COLOR_ATTRIBUTE = "color";
+/** 메시의 정점 색(`COLOR_0` 회색 AO)을 알베도에 곱하는 define. 툰·밑색 패스만 곱하고 나머지 패스는 값을 쓰지 않는다. */
+export const CHARACTER_SHADER_VERTEX_COLOR_DEFINE = "#define TS_VERTEX_COLOR";
 /** ShaderMaterial이 자동 바인딩하는 행렬·카메라 uniform */
 export const CHARACTER_SHADER_BASE_UNIFORMS: readonly string[] = ["world", "view", "viewProjection", "cameraPosition"];
 /** WGSL 전용 UBO 이름 */
@@ -24,9 +32,9 @@ export const CHARACTER_SHADER_UNIFORM_BUFFERS: readonly string[] = ["Scene", "Me
 /** morph normal·uv 변형을 켜는 define */
 export const CHARACTER_SHADER_DEFINES: readonly string[] = ["#define NORMAL", "#define UV1"];
 
-export const TOON_UNIFORMS: readonly string[] = ["baseColor", "shadeTint", "lightColor", "ambientColor", "toLight", "rimColor", "toonParams", "faceParams"];
+export const TOON_UNIFORMS: readonly string[] = ["baseColor", "shadeTint", "lightColor", "ambientColor", "toLight", "rimColor", "toonParams", "faceParams", "alphaParams"];
 export const TOON_SAMPLERS: readonly string[] = ["albedoSampler", "paintSampler", "sdfSampler"];
-export const FLAT_UNIFORMS: readonly string[] = ["baseColor", "toonParams", "faceParams"];
+export const FLAT_UNIFORMS: readonly string[] = ["baseColor", "toonParams", "faceParams", "alphaParams"];
 export const FLAT_SAMPLERS: readonly string[] = ["albedoSampler", "paintSampler"];
 export const ID_UNIFORMS: readonly string[] = ["idColor"];
 /** depthRange: x=near, y=far(카메라 뷰 깊이, m), z·w 예비 */
@@ -36,6 +44,9 @@ export const CHARACTER_VERTEX_GLSL = `precision highp float;
 attribute vec3 position;
 attribute vec3 normal;
 attribute vec2 uv;
+#ifdef TS_VERTEX_COLOR
+attribute vec4 color;
+#endif
 #include<bonesDeclaration>
 #include<morphTargetsVertexGlobalDeclaration>
 #include<morphTargetsVertexDeclaration>[0..maxSimultaneousMorphTargets]
@@ -46,6 +57,7 @@ varying vec3 vPositionW;
 varying vec3 vNormalW;
 varying vec2 vUV;
 varying float vViewZ;
+varying vec4 vColor;
 void main(void) {
   vec3 positionUpdated = position;
   vec3 normalUpdated = normal;
@@ -59,6 +71,11 @@ void main(void) {
   vNormalW = normalize(mat3(finalWorld) * normalUpdated);
   vUV = uvUpdated;
   vViewZ = -(view * worldPos).z;
+#ifdef TS_VERTEX_COLOR
+  vColor = color;
+#else
+  vColor = vec4(1.0);
+#endif
   gl_Position = viewProjection * worldPos;
 }
 `;
@@ -68,6 +85,9 @@ export const CHARACTER_VERTEX_WGSL = `#include<sceneUboDeclaration>
 attribute position: vec3f;
 attribute normal: vec3f;
 attribute uv: vec2f;
+#ifdef TS_VERTEX_COLOR
+attribute color: vec4f;
+#endif
 #include<bonesDeclaration>
 #include<morphTargetsVertexGlobalDeclaration>
 #include<morphTargetsVertexDeclaration>[0..maxSimultaneousMorphTargets]
@@ -76,6 +96,7 @@ varying vPositionW: vec3f;
 varying vNormalW: vec3f;
 varying vUV: vec2f;
 varying vViewZ: f32;
+varying vColor: vec4f;
 @vertex
 fn main(input: VertexInputs) -> FragmentInputs {
   var positionUpdated: vec3f = vertexInputs.position;
@@ -90,6 +111,11 @@ fn main(input: VertexInputs) -> FragmentInputs {
   vertexOutputs.vNormalW = normalize(mat3x3f(finalWorld[0].xyz, finalWorld[1].xyz, finalWorld[2].xyz) * normalUpdated);
   vertexOutputs.vUV = uvUpdated;
   vertexOutputs.vViewZ = -(scene.view * worldPos).z;
+#ifdef TS_VERTEX_COLOR
+  vertexOutputs.vColor = vertexInputs.color;
+#else
+  vertexOutputs.vColor = vec4f(1.0);
+#endif
   vertexOutputs.position = scene.viewProjection * worldPos;
 }
 `;
@@ -97,6 +123,8 @@ fn main(input: VertexInputs) -> FragmentInputs {
 /**
  * toonParams: x=rampSteps(2..4), y=rim(0/1), z=faceSdf(0/1), w=hasPaint(0/1)
  * faceParams: x=threshold(0.5·(1−fdotl)), y=flipU(0/1), z=sdfOffset, w=hasAlbedo(0/1)
+ * alphaParams: x=alphaCutoff(알베도 텍스처 알파가 이 값보다 작은 텍셀을 버린다. 0 = 끔) — glTF `alphaMode: MASK`(키트의 눈썹·속눈썹 컷아웃)를 따른다. BLEND는 지원하지 않는다.
+ * vColor: 메시 `COLOR_0`(키트: 회색 AO, R=G=B). 알베도(밑색 × 알베도 텍스처, 페인트 합성)에 곱한다. 정점 색이 없는 메시는 1이다(PBR의 `surfaceAlbedo *= vColor.rgb`와 같은 자리).
  * 텍스처 샘플은 균일 제어 흐름을 위해 분기 밖에서 한 번만 읽는다(WGSL 규칙).
  */
 export const TOON_FRAGMENT_GLSL = `precision highp float;
@@ -104,6 +132,7 @@ varying vec3 vPositionW;
 varying vec3 vNormalW;
 varying vec2 vUV;
 varying float vViewZ;
+varying vec4 vColor;
 uniform vec3 cameraPosition;
 uniform vec3 baseColor;
 uniform vec3 shadeTint;
@@ -113,6 +142,7 @@ uniform vec3 toLight;
 uniform vec3 rimColor;
 uniform vec4 toonParams;
 uniform vec4 faceParams;
+uniform vec4 alphaParams;
 uniform sampler2D albedoSampler;
 uniform sampler2D paintSampler;
 uniform sampler2D sdfSampler;
@@ -122,8 +152,9 @@ void main(void) {
   vec4 paint = texture2D(paintSampler, vUV);
   float sdfU = mix(vUV.x, 1.0 - vUV.x, step(0.5, faceParams.y));
   float sdf = texture2D(sdfSampler, vec2(sdfU, vUV.y)).r;
+  if (alphaParams.x > 0.0 && albedoTex.a < alphaParams.x) discard;
   vec3 base = mix(baseColor, baseColor * albedoTex.rgb, step(0.5, faceParams.w));
-  vec3 albedo = mix(base, mix(base, paint.rgb, paint.a), step(0.5, toonParams.w));
+  vec3 albedo = mix(base, mix(base, paint.rgb, paint.a), step(0.5, toonParams.w)) * vColor.rgb;
   float lambert = dot(n, normalize(toLight)) * 0.5 + 0.5;
   float faceLit = step(faceParams.x, sdf + faceParams.z);
   float faceShading = mix(0.25, 0.85, faceLit);
@@ -153,6 +184,7 @@ export const TOON_FRAGMENT_WGSL = `varying vPositionW: vec3f;
 varying vNormalW: vec3f;
 varying vUV: vec2f;
 varying vViewZ: f32;
+varying vColor: vec4f;
 uniform cameraPosition: vec3f;
 uniform baseColor: vec3f;
 uniform shadeTint: vec3f;
@@ -162,6 +194,7 @@ uniform toLight: vec3f;
 uniform rimColor: vec3f;
 uniform toonParams: vec4f;
 uniform faceParams: vec4f;
+uniform alphaParams: vec4f;
 var albedoSampler: texture_2d<f32>;
 var albedoSamplerSampler: sampler;
 var paintSampler: texture_2d<f32>;
@@ -175,8 +208,11 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
   let paint: vec4f = textureSample(paintSampler, paintSamplerSampler, fragmentInputs.vUV);
   let sdfU: f32 = mix(fragmentInputs.vUV.x, 1.0 - fragmentInputs.vUV.x, step(0.5, uniforms.faceParams.y));
   let sdf: f32 = textureSample(sdfSampler, sdfSamplerSampler, vec2f(sdfU, fragmentInputs.vUV.y)).r;
+  if (uniforms.alphaParams.x > 0.0 && albedoTex.a < uniforms.alphaParams.x) {
+    discard;
+  }
   let base: vec3f = mix(uniforms.baseColor, uniforms.baseColor * albedoTex.rgb, step(0.5, uniforms.faceParams.w));
-  let albedo: vec3f = mix(base, mix(base, paint.rgb, paint.a), step(0.5, uniforms.toonParams.w));
+  let albedo: vec3f = mix(base, mix(base, paint.rgb, paint.a), step(0.5, uniforms.toonParams.w)) * fragmentInputs.vColor.rgb;
   let lambert: f32 = dot(n, normalize(uniforms.toLight)) * 0.5 + 0.5;
   let faceLit: f32 = step(uniforms.faceParams.x, sdf + uniforms.faceParams.z);
   let faceShading: f32 = mix(0.25, 0.85, faceLit);
@@ -208,16 +244,19 @@ varying vec3 vPositionW;
 varying vec3 vNormalW;
 varying vec2 vUV;
 varying float vViewZ;
+varying vec4 vColor;
 uniform vec3 baseColor;
 uniform vec4 toonParams;
 uniform vec4 faceParams;
+uniform vec4 alphaParams;
 uniform sampler2D albedoSampler;
 uniform sampler2D paintSampler;
 void main(void) {
   vec4 albedoTex = texture2D(albedoSampler, vUV);
   vec4 paint = texture2D(paintSampler, vUV);
+  if (alphaParams.x > 0.0 && albedoTex.a < alphaParams.x) discard;
   vec3 base = mix(baseColor, baseColor * albedoTex.rgb, step(0.5, faceParams.w));
-  vec3 albedo = mix(base, mix(base, paint.rgb, paint.a), step(0.5, toonParams.w));
+  vec3 albedo = mix(base, mix(base, paint.rgb, paint.a), step(0.5, toonParams.w)) * vColor.rgb;
   gl_FragColor = vec4(albedo, 1.0);
 }
 `;
@@ -226,9 +265,11 @@ export const FLAT_FRAGMENT_WGSL = `varying vPositionW: vec3f;
 varying vNormalW: vec3f;
 varying vUV: vec2f;
 varying vViewZ: f32;
+varying vColor: vec4f;
 uniform baseColor: vec3f;
 uniform toonParams: vec4f;
 uniform faceParams: vec4f;
+uniform alphaParams: vec4f;
 var albedoSampler: texture_2d<f32>;
 var albedoSamplerSampler: sampler;
 var paintSampler: texture_2d<f32>;
@@ -237,8 +278,11 @@ var paintSamplerSampler: sampler;
 fn main(input: FragmentInputs) -> FragmentOutputs {
   let albedoTex: vec4f = textureSample(albedoSampler, albedoSamplerSampler, fragmentInputs.vUV);
   let paint: vec4f = textureSample(paintSampler, paintSamplerSampler, fragmentInputs.vUV);
+  if (uniforms.alphaParams.x > 0.0 && albedoTex.a < uniforms.alphaParams.x) {
+    discard;
+  }
   let base: vec3f = mix(uniforms.baseColor, uniforms.baseColor * albedoTex.rgb, step(0.5, uniforms.faceParams.w));
-  let albedo: vec3f = mix(base, mix(base, paint.rgb, paint.a), step(0.5, uniforms.toonParams.w));
+  let albedo: vec3f = mix(base, mix(base, paint.rgb, paint.a), step(0.5, uniforms.toonParams.w)) * fragmentInputs.vColor.rgb;
   fragmentOutputs.color = vec4f(albedo, 1.0);
 }
 `;
@@ -249,6 +293,7 @@ varying vec3 vPositionW;
 varying vec3 vNormalW;
 varying vec2 vUV;
 varying float vViewZ;
+varying vec4 vColor;
 void main(void) {
   vec3 n = normalize(vNormalW) * 0.5 + 0.5;
   gl_FragColor = vec4(n, 1.0);
@@ -259,6 +304,7 @@ export const NORMAL_FRAGMENT_WGSL = `varying vPositionW: vec3f;
 varying vNormalW: vec3f;
 varying vUV: vec2f;
 varying vViewZ: f32;
+varying vColor: vec4f;
 @fragment
 fn main(input: FragmentInputs) -> FragmentOutputs {
   let n: vec3f = normalize(fragmentInputs.vNormalW) * 0.5 + 0.5;
@@ -272,6 +318,7 @@ varying vec3 vPositionW;
 varying vec3 vNormalW;
 varying vec2 vUV;
 varying float vViewZ;
+varying vec4 vColor;
 uniform vec4 idColor;
 void main(void) {
   gl_FragColor = idColor;
@@ -282,6 +329,7 @@ export const ID_FRAGMENT_WGSL = `varying vPositionW: vec3f;
 varying vNormalW: vec3f;
 varying vUV: vec2f;
 varying vViewZ: f32;
+varying vColor: vec4f;
 uniform idColor: vec4f;
 @fragment
 fn main(input: FragmentInputs) -> FragmentOutputs {
@@ -298,6 +346,7 @@ varying vec3 vPositionW;
 varying vec3 vNormalW;
 varying vec2 vUV;
 varying float vViewZ;
+varying vec4 vColor;
 uniform vec4 depthRange;
 void main(void) {
   float d = clamp((vViewZ - depthRange.x) / max(depthRange.y - depthRange.x, 1e-6), 0.0, 1.0);
@@ -317,6 +366,7 @@ export const DEPTH_FRAGMENT_WGSL = `varying vPositionW: vec3f;
 varying vNormalW: vec3f;
 varying vUV: vec2f;
 varying vViewZ: f32;
+varying vColor: vec4f;
 uniform depthRange: vec4f;
 @fragment
 fn main(input: FragmentInputs) -> FragmentOutputs {

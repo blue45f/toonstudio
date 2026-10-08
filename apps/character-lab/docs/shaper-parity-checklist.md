@@ -172,6 +172,12 @@
 | glTF 로더(.pure + 매핑 재지정·LOD/Outline 가시성) | 구현됨 | `render/babylon-package-load.test.ts`(31, NullEngine, 실제 패키지 GLB) | 미검증(실제 렌더·헤어 LOD 가시성) | render 원본 §3 |
 | PackagePanel(목록·라이선스·SHA·능력표·격차·헤어 LOD·로드) | 구현됨 | `app/shell/panels/PackagePanel.test.tsx`(jsdom + fs 로더, 실제 2종) | 미검증 | composition 조립 완료, `cl-package-*` 스타일은 core CSS |
 
+### 11.1 모듈식 키트 소스 (KT-12 집계, 2026-10-08)
+
+원본: [`parity/render.md`](parity/render.md) §10(로더·증분 교체·몸 가림·외곽선 정책·정점색 AO·알파 컷오프·썸네일 임시 리그·바이트 캐시·패널 행과 **브라우저 미검증 목록 §10.2**),
+[`parity/state.md`](parity/state.md) §5, [`parity/vision.md`](parity/vision.md) §9, [`parity/export.md`](parity/export.md) §7. 계약은 [`authored-kit-spec.md`](authored-kit-spec.md).
+**현재 키트 에셋은 안착하지 않았고 부팅 기본 소스는 절차다.** Node 검증은 합성 키트 GLB·NullEngine 기준이며 브라우저(실GPU·WebGPU·앱 뷰포트)는 전 항목 미검증이다(SwiftShader 뷰어 관찰은 원본 표에 구분해 적었다).
+
 ## 12. 셸 · 경계 · 결정성 (core 공통 품질)
 
 | 항목 | 구현 상태 | Node 검증 | 브라우저 검증 | 비고 |

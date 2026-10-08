@@ -197,7 +197,7 @@ describe("fixtures 패킷 파싱 경계", () => {
     expect(new TextEncoder().encode(oversized).byteLength).toBeLessThanOrEqual(STUDIO_VIRTUAL_SPACE_FIXTURES_PACKET_MAX_BYTES);
     expect(parseStudioVirtualSpacePacket(oversized)?.kind).toBe("fixtures");
     const tooBig = fixturesPacket(3, [["furniture:floor-lamp", 100, 100, 0]])
-      .replace("]", `${" ".repeat(STUDIO_VIRTUAL_SPACE_FIXTURES_PACKET_MAX_BYTES)}]`);
+      .replaceAll("]", `${" ".repeat(STUDIO_VIRTUAL_SPACE_FIXTURES_PACKET_MAX_BYTES)}]`);
     expect(parseStudioVirtualSpacePacket(tooBig)).toBeNull();
   });
 

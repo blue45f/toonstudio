@@ -10,14 +10,18 @@
  * - 숫자 입력은 입력 중 초안 문자열을 유지하고(파싱 가능한 값만 즉시 반영, 범위 밖은 클램프), 포커스를 잃으면 실제 값으로 되돌린다.
  * - 팔레트 견본 클릭 = `color/set` 1회. 지정색이 팔레트에 없으면(레시피 불러오기 등) "직접 지정"으로 표시한다.
  * - 요약 한 줄(키·등신·팔·다리 길이)은 `resolveProportions(recipe.body)` 실측이며 슬라이더와 함께 갱신된다.
+ *   키트 소스에서는 절차 비례 대신 키트 등록소가 받은 manifest의 베이스 `heightM`(Blender 제작 실측)을 보인다. manifest가 아직 없으면
+ *   (받는 중·실패·등록소 없음) 절차 비례 계산값에 "참고값" 표기를 단다.
+ * - 소스 안내: 제작 패키지는 매핑된 셰이프 키만 반영, 모듈식 키트는 계약 이름(`param:<키>:±`)의 키로 몸·머리·의상이 함께 움직인다.
+ *   키트에서는 눈·코·입·귀 슬롯이 부분 지원이면 그 사유(없는 축)도 이 패널에 보인다(해당 슬라이더가 형상에 안 닿을 수 있다).
  * - 스타일 접두 `cl-param-`(core의 character-lab.css가 정의; 추가 클래스는 docs/parity/humanoid.md §4 요청).
  */
-import { useId, useState } from "react";
+import { useCallback, useId, useState, useSyncExternalStore } from "react";
 
 import { BODY_PARAM_KEYS, BODY_PARAM_LABELS_KO, FACE_PARAM_KEYS, FACE_PARAM_LABELS_KO, PARAM_MAX, PARAM_MIN, clampParam } from "../../../contracts";
 import { HAIR_COLORS, IRIS_COLORS, SKIN_TONES, findPaletteEntry } from "../../../domains/humanoid/palette";
 import { resolveProportions } from "../../../domains/humanoid/proportions";
-import { useDispatch, useLabState } from "../lab-store-context";
+import { useDispatch, useKitPlans, useLabState } from "../lab-store-context";
 
 import type { BodyParamKey, FaceParamKey, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/humanoid/palette";
@@ -188,8 +192,31 @@ const CAPABILITY_SLOTS: readonly { readonly slot: SlotKind; readonly labelKo: st
   { slot: "face-shape", labelKo: "얼굴형" },
 ];
 
+/** 키트 소스에서만 더 보이는 얼굴 파라미터 슬롯(축 단위로 부분 제공될 수 있다) */
+const KIT_EXTRA_CAPABILITY_SLOTS: readonly { readonly slot: SlotKind; readonly labelKo: string }[] = [
+  { slot: "eyes", labelKo: "눈" },
+  { slot: "nose", labelKo: "코" },
+  { slot: "mouth", labelKo: "입" },
+  { slot: "ears", labelKo: "귀" },
+];
+
 function meters(value: number): string {
   return value.toFixed(2);
+}
+
+const noopSubscribe = (): (() => void) => () => undefined;
+
+/**
+ * 키트 소스일 때 등록소에 받아 둔 manifest의 현재 베이스 키(m). 받기 전·키트가 아님·등록소 없음·그 베이스 없음이면 null.
+ * 이 패널은 요청하지 않는다(PackagePanel·적용 루프가 받으면 구독으로 다시 그린다).
+ */
+function useKitBaseHeight(): number | null {
+  const kitPlans = useKitPlans();
+  const source = useLabState().recipe.source;
+  const subscribe = useCallback((listener: () => void): (() => void) => (kitPlans ? kitPlans.subscribe(listener) : noopSubscribe()), [kitPlans]);
+  const getSnapshot = useCallback(() => (kitPlans && source.kind === "kit" ? kitPlans.peek(source) : undefined), [kitPlans, source]);
+  const manifest = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return source.kind === "kit" ? (manifest?.bases[source.baseId]?.heightM ?? null) : null;
 }
 
 export function ParamPanel() {
@@ -215,7 +242,11 @@ export function ParamPanel() {
   const headCount = proportions.height / (proportions.head.scale * 2);
   const armLength = proportions.upperArmLength + proportions.lowerArmLength;
   const legLength = proportions.upperLegLength + proportions.lowerLegLength;
-  const limited = CAPABILITY_SLOTS.map((item) => ({ ...item, capability: capabilities[item.slot] })).filter((item) => item.capability.status !== "available");
+  const isKit = recipe.source.kind === "kit";
+  const kitBaseHeight = useKitBaseHeight();
+  const limited = (isKit ? [...CAPABILITY_SLOTS, ...KIT_EXTRA_CAPABILITY_SLOTS] : CAPABILITY_SLOTS)
+    .map((item) => ({ ...item, capability: capabilities[item.slot] }))
+    .filter((item) => item.capability.status !== "available");
 
   return (
     <section className="cl-param-panel" aria-label="체형·얼굴">
@@ -228,13 +259,20 @@ export function ParamPanel() {
           제작 패키지 소스에서는 패키지의 셰이프 키에 매핑된 파라미터만 형상에 반영됩니다(매핑이 없는 항목은 값만 기록됩니다).
         </p>
       ) : null}
+      {isKit ? (
+        <p className="cl-param-reason" role="note">
+          모듈식 키트 소스에서는 파라미터가 키트의 셰이프 키(param:&lt;키&gt;:±)로 반영되고, 헤어·의상도 같은 이름의 키로 몸을 따라갑니다. 키트가 제공하지 않는 키는 해당 슬롯 사유로 표시됩니다.
+        </p>
+      ) : null}
       {limited.map((item) => (
         <p key={item.slot} className="cl-param-reason" role="note">
           {item.labelKo} 슬롯 {item.capability.status === "partial" ? "부분 지원" : "미지원"}: {item.capability.reasonKo ?? "사유 없음"}
         </p>
       ))}
       <p className="cl-param-status" role="status">
-        키 {meters(proportions.height)} m · 약 {headCount.toFixed(1)}등신 · 팔 {meters(armLength)} m · 다리 {meters(legLength)} m
+        {kitBaseHeight !== null
+          ? `키트 베이스 키 ${meters(kitBaseHeight)} m(manifest 실측, 체형 슬라이더 반영 전 기준)`
+          : `${isKit ? "참고값(절차 비례 계산, 키트 베이스 실측 아님) · " : ""}키 ${meters(proportions.height)} m · 약 ${headCount.toFixed(1)}등신 · 팔 ${meters(armLength)} m · 다리 ${meters(legLength)} m`}
       </p>
 
       <div className="cl-param-actions">

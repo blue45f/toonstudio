@@ -6,6 +6,11 @@
  * - Babylon 로더가 멀티 프리미티브 메시를 `<node>_primitive<i>`로 나누므로 접미를 떼고 같은 역할로 본다.
  * - `Body|Face|Head|Bust|Neck` → skin/head, `Brow|Lash|Eye|Pupil|Iris|Teeth|Tongue` → 해당 역할.
  * - 규약 밖 이름은 unknown(role null)과 한글 사유로 남긴다(무음 대체 금지).
+ *
+ * 키트 규약(docs/authored-kit-spec.md 12.1 N7·N8): `TS_Top_*`·`TS_Bottom_*`·`TS_Shoes_*`·`TS_Accessory_*`·`TS_Underwear`·`TS_Iris_*` 접두는
+ * 키워드보다 먼저 역할을 정한다(`TS_Accessory_headphones`가 `head`로 잡히는 오분류 방지). `TS_Mouth`는 프리미티브 번호로 역할이 갈린다
+ * (`_primitive0` = teeth, `_primitive1` = tongue). 쪼개지지 않은 `TS_Mouth`는 역할을 정할 수 없으므로 unknown이고, 호출자는 kit.json의
+ * `primitiveRoles` 명시 선언(또는 override)을 써야 한다.
  */
 import { AUTHORED_HAIR_MESH_PATTERN, OUTLINE_MESH_SUFFIX, isPartRole, parseAuthoredHairMeshName } from "../../contracts";
 
@@ -26,6 +31,7 @@ export interface MeshRoleEntry {
 
 /** 키워드(소문자 포함 검사) → 역할. 순서가 우선순위다(brow를 eye보다 먼저). */
 const KEYWORD_ROLES: readonly (readonly [RegExp, PartRole])[] = [
+  [/underwear/u, "underwear"],
   [/eyebrow|brow/u, "brow"],
   [/eyelash|lash/u, "lash"],
   [/highlight/u, "eye-highlight"],
@@ -43,11 +49,26 @@ const KEYWORD_ROLES: readonly (readonly [RegExp, PartRole])[] = [
   [/accessor|glasses|ribbon|cap|earring|choker|headphone/u, "accessory"],
 ];
 
-const PRIMITIVE_SUFFIX = /_primitive\d+$/u;
+/** 키트 이름 접두 규칙(소문자 baseName에 적용, 키워드보다 우선). 접두 뒤는 `_`이거나 이름 끝이어야 한다. */
+const KIT_PREFIX_ROLES: readonly (readonly [RegExp, PartRole])[] = [
+  [/^ts_top(?:_|$)/u, "top"],
+  [/^ts_bottom(?:_|$)/u, "bottom"],
+  [/^ts_shoes(?:_|$)/u, "shoes"],
+  [/^ts_accessory(?:_|$)/u, "accessory"],
+  [/^ts_underwear(?:_|$)/u, "underwear"],
+  [/^ts_iris(?:_|$)/u, "iris"],
+];
+
+/** `TS_Mouth`의 프리미티브 번호 → 역할(계약 3.4: 치아+잇몸이 0번, 혀+구강 포켓이 1번) */
+const KIT_MOUTH_PRIMITIVE_ROLES: readonly PartRole[] = ["teeth", "tongue"];
+const KIT_MOUTH_BASE = "ts_mouth";
+
+const PRIMITIVE_SUFFIX = /_primitive(\d+)$/u;
 const MESH_SUFFIX = /Mesh$/u;
 
 /** 이름 하나를 분류한다. override(이름 → 역할)가 있으면 그 역할을 쓴다. */
 export function classifyMeshName(name: string, override?: Readonly<Record<string, string>>): MeshRoleEntry {
+  const primitiveIndex = PRIMITIVE_SUFFIX.exec(name)?.[1];
   let baseName = name.replace(PRIMITIVE_SUFFIX, "");
   const outline = baseName.endsWith(OUTLINE_MESH_SUFFIX);
   if (outline) baseName = baseName.slice(0, -OUTLINE_MESH_SUFFIX.length);
@@ -72,6 +93,22 @@ export function classifyMeshName(name: string, override?: Readonly<Record<string
   if (hair) return { name, role: "hair", lod: hair.lod, hairStyle: hair.style, outline, baseName };
 
   const lower = baseName.toLowerCase();
+  if (lower === KIT_MOUTH_BASE) {
+    const role = primitiveIndex === undefined ? undefined : KIT_MOUTH_PRIMITIVE_ROLES[Number.parseInt(primitiveIndex, 10)];
+    if (role !== undefined) return { name, role, lod: null, hairStyle: null, outline, baseName };
+    return {
+      name,
+      role: null,
+      lod: null,
+      hairStyle: null,
+      outline,
+      baseName,
+      reasonKo: `메시 '${name}'은(는) 프리미티브별 역할(0=치아 teeth, 1=혀 tongue)을 이름만으로 정할 수 없습니다. kit.json의 primitiveRoles 또는 override로 명시하세요.`,
+    };
+  }
+  for (const [pattern, role] of KIT_PREFIX_ROLES) {
+    if (pattern.test(lower)) return { name, role, lod: null, hairStyle: null, outline, baseName };
+  }
   for (const [pattern, role] of KEYWORD_ROLES) {
     if (pattern.test(lower)) return { name, role, lod: null, hairStyle: null, outline, baseName };
   }

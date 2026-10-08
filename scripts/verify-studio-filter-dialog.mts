@@ -990,8 +990,16 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
         await page.waitForTimeout(700);
         if (AUTHENTICATED) await selectCanonicalImage();
 
-        const after = await screenshotClipped(page, clip);
+        // 적용 직후 캔버스 반영은 러너 속도에 따라 늦을 수 있다. CI에서는 고정 700ms 뒤 캡처가 0px로 찍혀
+        // 뒤 케이스까지 연쇄 실패했다. 기준(0.5%)을 만족할 때까지 상한(15초) 안에서 다시 캡처한다.
+        const applyRenderDeadline = Date.now() + 15_000;
+        let after = await screenshotClipped(page, clip);
         result.diff = await compareScreenshotPixels(page, baseline, after);
+        while (result.diff.changedPixels <= result.diff.totalPixels * 0.005 && Date.now() < applyRenderDeadline) {
+          await page.waitForTimeout(300);
+          after = await screenshotClipped(page, clip);
+          result.diff = await compareScreenshotPixels(page, baseline, after);
+        }
         invariant(
           result.diff.changedPixels > result.diff.totalPixels * 0.005,
           `${filterCase.label}: 적용 후 픽셀이 유의미하게 변하지 않았습니다 `
@@ -1189,7 +1197,10 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
         const previousImageIds = new Set(canonicalImageElementIds(originalPages));
         const beforeInsertPixels = await screenshotClipped(page, clip);
         await placeTestImage(page, { clip, baseline: beforeInsertPixels });
-        const imageOriginalDocument = await waitForSavedPages(page, (document) => !isDeepStrictEqual(document.pagesList, originalPages),
+        // 아무 변화나 기다리면 새 이미지가 아직 저장되기 전 문서에서 통과해 "추가=0"으로 실패한다(CI 실측).
+        // 새로 추가된 이미지 식별자가 실제로 나타날 때까지 기다린다.
+        const imageOriginalDocument = await waitForSavedPages(page, (document) =>
+          canonicalImageElementIds(document.pagesList).some((id) => !previousImageIds.has(id)),
           "직접 이미지 원본이 영속 저장되지 않았습니다");
         if (AUTHENTICATED) {
           selectInsertedCanonicalImage(imageOriginalDocument, previousImageIds);

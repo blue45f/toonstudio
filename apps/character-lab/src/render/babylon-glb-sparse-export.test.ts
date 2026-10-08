@@ -9,9 +9,12 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { DEFAULT_SHADING, KIT_REQUIRED_PRESETS } from "../contracts";
 import { parseGlb } from "../testing/minimal-glb";
+import { applyPlanFixture } from "../testing/recipe-fixtures";
 
 import { sparsifyGlbMorphTargets } from "./glb-sparse-morph";
+import { buildKitFixture } from "./testing/kit-glb-fixture";
 import { createNullEngineHarness } from "./testing/null-engine-harness";
 import { createPackagePlanFixture } from "./testing/package-plan-fixture";
 
@@ -191,5 +194,95 @@ describe("GLB 내보내기: dense morph → sparse 정리(실제 제작 패키�
     const state = harness.engine.sceneFeatures().glbMorphSparse;
     expect(state.status).toBe("off");
     expect(state.reasonKo).toContain("morph target가 없어");
+  });
+});
+
+describe("GLB 내보내기: 키트 소스(조립된 장면 + morph weights + 몸 가림)", () => {
+  interface KitGltf {
+    readonly nodes: ReadonlyArray<{ readonly name?: string; readonly mesh?: number; readonly skin?: number }>;
+    readonly meshes: ReadonlyArray<{ readonly name?: string; readonly primitives: ReadonlyArray<{ readonly indices: number; readonly material?: number }>; readonly weights?: readonly number[]; readonly extras?: { readonly targetNames?: readonly string[] } }>;
+    readonly accessors: ReadonlyArray<{ readonly count: number }>;
+    readonly skins?: ReadonlyArray<{ readonly joints: readonly number[] }>;
+    readonly materials?: ReadonlyArray<{ readonly name?: string; readonly pbrMetallicRoughness?: { readonly baseColorFactor?: readonly number[] } }>;
+  }
+
+  async function exportKit(partIds: readonly (typeof KIT_REQUIRED_PRESETS)[number][], setup?: (h: NullEngineHarness) => void) {
+    const fixture = await buildKitFixture({ partIds });
+    harness = await createNullEngineHarness({ fetchBytes: async (url) => fixture.files.get(url) as Uint8Array, now: () => 7_000 });
+    await harness.engine.loadSource({ kind: "kit", plan: fixture.plan });
+    setup?.(harness);
+    const exported = await harness.engine.exportGlb();
+    return { exported, json: parseGlb(exported).json as unknown as KitGltf, harness: harness, fixture };
+  }
+
+  function bodyPrimitiveCounts(json: KitGltf): number[] {
+    const node = json.nodes.find((candidate) => candidate.name === "TS_Body" && candidate.mesh !== undefined);
+    const mesh = node?.mesh === undefined ? undefined : json.meshes[node.mesh];
+    return (mesh?.primitives ?? []).map((primitive) => json.accessors[primitive.indices]?.count ?? -1);
+  }
+
+  it("스켈레톤 하나(68 joint)만 내보내고 파츠 컨테이너의 스켈레톤·본 노드가 중복되지 않는다", async () => {
+    const { json } = await exportKit(KIT_REQUIRED_PRESETS);
+    expect(json.skins).toHaveLength(1);
+    expect(json.skins?.[0]?.joints).toHaveLength(68);
+    expect(json.nodes.filter((node) => node.name === "mixamorig:Hips")).toHaveLength(1);
+    // 스킨 메시는 모두 같은 skin을 참조한다
+    const skinned = json.nodes.filter((node) => node.mesh !== undefined && node.skin !== undefined);
+    expect(skinned.length).toBeGreaterThanOrEqual(10);
+    expect(new Set(skinned.map((node) => node.skin))).toEqual(new Set([0]));
+  });
+
+  it("SubMesh로 숨긴 몸 삼각형은 내보낸 GLB에서 빠진다(구간 = glTF 프리미티브), 가림이 없으면 몸 전체가 나온다", async () => {
+    const dressed = await exportKit(KIT_REQUIRED_PRESETS);
+    // 합성 몸은 영역당 삼각형 2개(인덱스 6): neck / forearm.L~hand.R / calf.L·R 세 구간
+    expect(bodyPrimitiveCounts(dressed.json)).toEqual([6, 24, 12]);
+    const bare = await exportKit([]);
+    expect(bodyPrimitiveCounts(bare.json)).toEqual([90]);
+  });
+
+  it("현재 morph influence가 메시 weights로 나간다(targetNames 순서와 같은 인덱스)", async () => {
+    const { json } = await exportKit(KIT_REQUIRED_PRESETS, (h) => {
+      const rig = h.engine.inspectRig();
+      h.engine.applyPlan(
+        applyPlanFixture({
+          morphWeights: { "param:height:+": 0.5, "param:legLength:-": 0.25 },
+          parts: (rig?.parts ?? []).map((part) => ({ partId: part.partId, visible: true, materialPreset: part.materialPreset })),
+        }),
+      );
+    });
+    const node = json.nodes.find((candidate) => candidate.name === "TS_Body" && candidate.mesh !== undefined);
+    const mesh = node?.mesh === undefined ? undefined : json.meshes[node.mesh];
+    const names = mesh?.extras?.targetNames ?? [];
+    expect(names).toContain("param:height:+");
+    expect(mesh?.weights?.[names.indexOf("param:height:+")]).toBeCloseTo(0.5, 6);
+    expect(mesh?.weights?.[names.indexOf("param:legLength:-")]).toBeCloseTo(0.25, 6);
+    expect(mesh?.weights?.[names.indexOf("param:height:-")]).toBe(0);
+  });
+
+  it("내보낸 재질은 현재 색을 반영한다: recolor 파츠(텍스처 있음)의 baseColorFactor = 레시피 색(선형), 툰 모드에서 내보내도 같고 내보낸 뒤 툰 재질로 되돌아온다", async () => {
+    const { json, harness: h } = await exportKit(KIT_REQUIRED_PRESETS, (target) => {
+      target.engine.setShading({ ...DEFAULT_SHADING, mode: "toon" });
+      const rig = target.engine.inspectRig();
+      target.engine.applyPlan(
+        applyPlanFixture({
+          colors: { ...applyPlanFixture().colors, skin: "#c08040" },
+          parts: (rig?.parts ?? []).map((part) => ({ partId: part.partId, visible: true, materialPreset: part.materialPreset })),
+        }),
+      );
+    });
+    const skin = json.materials?.find((material) => material.name === "ts_skin_body");
+    const factor = skin?.pbrMetallicRoughness?.baseColorFactor ?? [];
+    expect(factor[0]).toBeCloseTo(0.527, 2);
+    expect(factor[1]).toBeCloseTo(0.216, 2);
+    expect(factor[2]).toBeCloseTo(0.051, 2);
+    // 내보내기가 끝나면 보던 셰이딩(툰)으로 되돌린다
+    expect(h.engine.inspectRig()?.parts.every((part) => part.materialClass === "ShaderMaterial")).toBe(true);
+  });
+
+  it("sparse 정리 보고가 키트 내보내기에도 남는다(합성 morph는 모든 정점이 변해 dense가 유지되므로 용량은 크게 줄지 않는다)", async () => {
+    const { harness: h, exported } = await exportKit(KIT_REQUIRED_PRESETS);
+    const state = h.engine.sceneFeatures().glbMorphSparse;
+    expect(state.detail ?? state.reasonKo).toMatch(/마지막 내보내기/u);
+    expect(parseGlb(exported).version).toBe(2);
   });
 });

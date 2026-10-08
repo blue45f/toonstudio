@@ -18,7 +18,7 @@ import {
   type CanonSheetDraft,
   type CharacterCanonSheet,
 } from "./studio-character-canon";
-import { isSafeReferenceImageUrl, safeReferenceImageSrc } from "./reference-image-src";
+import { toRenderableReferenceImageSrc } from "./reference-image-src";
 
 /**
  * 번들 샘플 아바타 썸네일 — domains/creator/vrm/vrm-library.ts의
@@ -95,9 +95,7 @@ export function StudioCharacterCanonEditor({
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const referenceImageSrc = safeReferenceImageSrc(referenceImage);
-  const renderableReferenceImageSrc =
-    referenceImageSrc !== null && isSafeReferenceImageUrl(referenceImageSrc) ? referenceImageSrc : null;
+  const renderableReferenceImageSrc = toRenderableReferenceImageSrc(referenceImage, document.baseURI);
 
   const pickReference = (image: string | null, source: CanonReferenceSource | null, label: string | null) => {
     setReferenceImage(image);

@@ -12,6 +12,7 @@
  * HUD `adapterLabel = "NullEngine"`로 표시한다. 브라우저 레인(WebGPU/WebGL2)은 이 컨테이너에서 실행하지 못했다(docs/parity/render.md).
  */
 import { Constants } from "@babylonjs/core/Engines/constants.js";
+import { Material } from "@babylonjs/core/Materials/material.js";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture.js";
 import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
@@ -26,23 +27,26 @@ import { faceSdfUniforms, generateFaceSdf } from "../face-sdf";
 import { createFrameStats } from "../frame-stats";
 import { describeSparseMorphReport } from "../glb-sparse-morph";
 import { summarizeJointOffsets } from "../joint-offsets";
+import { createKitBytesCache } from "../kit-bytes-cache";
 import { MATERIAL_PRESETS, hexToLinear, toonShadeTint } from "../material-presets";
 import { describeMorphTextureMode } from "../morph-limits";
 import { generateMouthMask, MOUTH_MASK_SIZE } from "../mouth-shade";
 import { mapPresetToOpenPbr } from "../openpbr-mapping";
+import { hullOutlineAllowed } from "../outline-policy";
 import { createFeatureReport, featureActive, featureOff, featureUnavailable } from "../scene-features";
 import { normalizeToonLighting } from "../toon-reference";
 
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
-import { applyRigPlan, computeRigBounds, inspectRig, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
+import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
 import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { createHudProbe } from "./hud";
+import { loadKitRig } from "./kit-loader";
 import { createProceduralIbl } from "./lighting/ibl";
 import { adaptLoadedMaterial, applyPresetParams, createPresetMaterial, setMaterialAlbedo } from "./materials/material-factory";
-import { createPassMaterial, setDepthUniform, setFlatTextures, setFlatUniforms, setIdUniform, setToonTextures, setToonUniforms, shaderLanguageFor } from "./materials/toon-shader";
+import { createPassMaterial, setAlphaCutoff, setDepthUniform, setFlatTextures, setFlatUniforms, setIdUniform, setToonTextures, setToonUniforms, shaderLanguageFor } from "./materials/toon-shader";
 import { bindProceduralModel, RigBindError } from "./mesh-binding";
 import { loadPackageRig } from "./package-loader";
 import { createPhysicsBridge } from "./physics-bridge";
@@ -52,6 +56,7 @@ import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
+import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
   ApplyReceipt,
@@ -66,6 +71,7 @@ import type {
   EngineDiagnostics,
   HudSample,
   JointDragHandle,
+  KitPlan,
   LabFailure,
   PaintLayer,
   PartRole,
@@ -169,8 +175,20 @@ async function fetchBytesDefault(url: string): Promise<Uint8Array> {
   return new Uint8Array(await response.arrayBuffer());
 }
 
+/** 키트 파일 기본 로더. 실패는 키트 로더가 `kit-file-fetch-failed`로 감싸므로 HTTP 상태만 원인(detail)으로 남긴다. */
+async function fetchKitBytesDefault(url: string): Promise<Uint8Array> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return new Uint8Array(await response.arrayBuffer());
+}
+
 function srgb(hex: string): readonly [number, number, number] {
   return hexToSrgb01(hex) ?? [0.5, 0.5, 0.5];
+}
+
+/** 베타 컨트롤러의 `releaseRig`는 `rig.parts`만 읽는다. 일부 파츠만 놓을 때 그 파츠만 가진 리그 모양을 만든다. */
+function rigWithParts(rig: CharacterRig, parts: readonly RigPart[]): CharacterRig {
+  return { ...rig, parts };
 }
 
 function toFailure(error: unknown, code: string, reasonKo: string, now: number): never {
@@ -216,6 +234,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private normalMaterial: ShaderMaterial | null = null;
   private depthMaterial: ShaderMaterial | null = null;
   private rig: CharacterRig | null = null;
+  /** 주 리그가 키트일 때의 로더 핸들(같은 베이스에서 파츠만 바뀌면 `update`로 증분 교체한다, 계약 4.11) */
+  private kit: KitRigHandle | null = null;
+  /** 키트 GLB 바이트 캐시(합계 64 MiB, 최근 사용 우선). 파츠 교체·지오메트리 썸네일이 같은 파일을 다시 받지 않게 한다. */
+  private readonly kitBytes = createKitBytesCache();
+  /** 키트 파일 URL → 플랜이 선언한 SHA-256. 바이트 캐시 키에 넣어, 같은 URL의 파일이 키트 갱신으로 바뀌었을 때 옛 바이트를 돌려주지 않는다. */
+  private readonly kitShaByUrl = new Map<string, string>();
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
   private lastPlan: ApplyPlan | null = null;
@@ -338,10 +362,20 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private async loadSourceExclusive(source: CharacterSource): Promise<SourceCapabilities> {
     // 큐에서 기다리는 동안 엔진이 해제됐을 수 있다.
     this.assertAlive();
+    if (source.kind === "kit") this.rememberKitPlan(source.plan);
+    // 같은 키트·베이스·베이스 파일이면 리그를 부수지 않고 바뀐 파츠만 교체한다(8 MiB 베이스를 다시 파싱하지 않는다).
+    if (source.kind === "kit" && this.kit !== null && this.rig === this.kit.rig && this.kit.compatible(source.plan)) return this.updateKitExclusive(this.kit, source.plan);
     this.unloadRig();
+    const hooks = this.materialHooks(() => this.rig, true);
     let rig: CharacterRig;
+    let kit: KitRigHandle | null = null;
     try {
-      rig = await this.buildRig(source, this.materialHooks(() => this.rig, true));
+      if (source.kind === "kit") {
+        kit = await this.buildKit(source.plan, hooks);
+        rig = kit.rig;
+      } else {
+        rig = await this.buildRig(source, hooks);
+      }
     } catch (error) {
       return toFailure(error, "source-load-failed", "캐릭터 소스를 엔진에 바인딩하지 못했습니다.", this.now());
     }
@@ -351,6 +385,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       throw failVisible("engine-disposed", "소스를 올리는 도중 엔진이 해제됐습니다. 엔진을 다시 선택하세요.", undefined, this.now());
     }
     this.rig = rig;
+    this.kit = kit;
     this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
     try {
       this.physics.bindRig(rig);
@@ -365,6 +400,10 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.applyMaterialsForMode(rig);
     this.beta.syncIblShadows();
     this.setCamera(this.framing);
+    return this.sourceCapabilities(rig);
+  }
+
+  private sourceCapabilities(rig: CharacterRig): SourceCapabilities {
     return {
       capabilities: rig.capabilities,
       morphNames: rig.morphNames,
@@ -373,7 +412,122 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     };
   }
 
-  /** 소스(절차·패키지)에서 리그를 만든다. 주 리그와 썸네일 임시 리그가 공유한다. */
+  /**
+   * 키트 증분 교체(계약 4.11): 로더가 바뀐 파츠만 받아 합치고 빠진 파츠만 해제한다. 엔진은 자기 쪽 참조(그림자 캐스터·패스 재질·베타 재질·
+   * 페인트 데칼·물리 바인딩·재질 프리셋/틴트·마지막 플랜)를 새 파츠 구성에 맞춘다. 어느 단계든 실패하면 반쯤 바뀐 리그를 남기지 않고
+   * 키트 전체를 해제한 뒤 실패를 던진다(앱 루프가 같은 소스를 값이 바뀔 때까지 다시 시도하지 않는다).
+   */
+  private async updateKitExclusive(kit: KitRigHandle, plan: KitPlan): Promise<SourceCapabilities> {
+    const rig = kit.rig as CharacterRig;
+    const before = [...rig.parts];
+    let report: KitUpdateReport;
+    try {
+      report = await kit.update(plan);
+    } catch (error) {
+      // 로더가 이미 키트를 해제했다. 엔진 쪽 참조(베타 재질·패스 재질·캐스터·물리)를 정리한다.
+      this.beta.releaseRig(rigWithParts(rig, before));
+      this.unloadRig();
+      for (const part of plan.parts) this.kitBytes.delete(this.kitCacheKey(part.url));
+      return toFailure(error, "source-load-failed", "캐릭터 소스를 엔진에 바인딩하지 못했습니다.", this.now());
+    }
+    if (this.disposed) {
+      // 교체를 기다리는 동안 엔진이 해제됐다: 장면은 이미 정리됐으므로 키트 객체만 해제하고 실패로 알린다.
+      kit.dispose();
+      throw failVisible("engine-disposed", "소스를 올리는 도중 엔진이 해제됐습니다. 엔진을 다시 선택하세요.", undefined, this.now());
+    }
+    try {
+      if (report.removedRigParts.length > 0) {
+        this.beta.releaseRig(rigWithParts(rig, report.removedRigParts));
+        // 패스 재질은 partId 키라 같은 역할의 새 파츠(정점 색 유무가 다를 수 있다)가 옛 재질을 물려받지 않도록 버린다(다음 캡처에서 다시 만든다).
+        for (const part of report.removedRigParts) this.disposePassMaterials(part.partId);
+      }
+      for (const part of report.addedRigParts) this.disposePassMaterials(part.partId);
+      this.initializeKitParts(report.addedRigParts, rig.materials);
+      this.character.clearShadowCasters();
+      this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
+      try {
+        this.physics.bindRig(rig);
+      } catch (error) {
+        this.reportFailure(error, "physics-chains-rejected", "물리 provider가 체인·캡슐 설정을 거부했습니다.");
+      }
+      this.reattachPaint(rig);
+      // 새 타깃은 influence 0으로 시작하므로 마지막 플랜(morph·본 회전·색)을 다시 적용한다. 플랜이 아직 없으면 앱 루프가 곧 적용한다.
+      if (report.needsPlanReapply && this.lastPlan) applyRigPlan(rig, this.lastPlan, { outlinesVisible: this.outlinesVisible() });
+      await this.beta.reconcile();
+      this.applyMaterialsForMode(rig);
+      this.refreshToonUniforms(rig);
+      this.beta.syncIblShadows();
+      this.beta.markPoseChanged();
+      this.setCamera(this.framing);
+    } catch (error) {
+      this.unloadRig();
+      return toFailure(error, "source-load-failed", "키트 파츠를 엔진에 합치지 못했습니다.", this.now());
+    }
+    return this.sourceCapabilities(rig);
+  }
+
+  /** partId를 키로 캐시한 밑색·ID 패스 재질을 해제한다(다음 캡처에서 파츠에 맞게 다시 만든다). */
+  private disposePassMaterials(partId: number): void {
+    this.flatMaterials.get(partId)?.dispose(true, false);
+    this.flatMaterials.delete(partId);
+    this.idMaterials.get(partId)?.dispose(true, false);
+    this.idMaterials.delete(partId);
+  }
+
+  /**
+   * 키트 파츠가 올라온 직후 재질을 맞춘다. 로더가 만든 PBR의 metallic·roughness는 GLB 값이므로 재질 프리셋(역할 기본)을 즉시 적용해 첫 플랜 전에도
+   * 프리셋 값이 되게 하고, 틴트 파츠는 알베도 색(= 틴트 색)을 PBR에도 곱해 둔다. 플랜이 프리셋·색을 바꾸지 않아도 PBR이 흰색으로 남지 않는다.
+   */
+  private initializeKitParts(parts: readonly RigPart[], hooks: RigMaterialHooks): void {
+    for (const part of parts) hooks.applyPreset(part, part.materialPreset);
+  }
+
+  /** 키트 로더로 리그를 만든다. 주 리그(핸들 보관)와 썸네일 임시 리그(리그만 쓴다)가 공유한다. */
+  private async buildKit(plan: KitPlan, hooks: RigMaterialHooks): Promise<KitRigHandle> {
+    const materialOptions = this.materialOptions();
+    let handle: KitRigHandle;
+    try {
+      handle = await loadKitRig(plan, {
+        scene: this.character.scene,
+        fetchBytes: (url) => this.fetchKitFile(url),
+        adaptMaterial: (role, mesh) => adaptLoadedMaterial(materialOptions, mesh.material, role, `mat:${mesh.name}`).material,
+        materials: hooks,
+        verifyIntegrity: this.deps.verifyPackageSha ?? true,
+        now: this.now(),
+      });
+    } catch (error) {
+      // 받은 바이트가 손상됐을 수 있으므로 이 키트의 캐시를 비운다(다음 시도가 다시 받는다).
+      for (const part of plan.parts) this.kitBytes.delete(this.kitCacheKey(part.url));
+      throw error;
+    }
+    try {
+      this.initializeKitParts(handle.rig.parts, hooks);
+    } catch (error) {
+      handle.dispose();
+      throw error;
+    }
+    return handle;
+  }
+
+  private rememberKitPlan(plan: KitPlan): void {
+    for (const part of plan.parts) this.kitShaByUrl.set(part.url, part.sha256);
+  }
+
+  private kitCacheKey(url: string): string {
+    return `${url}|${this.kitShaByUrl.get(url) ?? ""}`;
+  }
+
+  /** 키트 파일 바이트(캐시 우선, 키 = URL + 플랜 SHA-256). 검증은 키트 로더가 플랜의 bytes·SHA-256으로 한다. */
+  private async fetchKitFile(url: string): Promise<Uint8Array> {
+    const key = this.kitCacheKey(url);
+    const cached = this.kitBytes.get(key);
+    if (cached) return cached;
+    const bytes = await (this.deps.fetchBytes ?? fetchKitBytesDefault)(url);
+    this.kitBytes.set(key, bytes);
+    return bytes;
+  }
+
+  /** 소스(절차·패키지·썸네일용 키트)에서 리그를 만든다. 주 리그와 썸네일 임시 리그가 공유한다. */
   private async buildRig(source: CharacterSource, hooks: RigMaterialHooks): Promise<CharacterRig> {
     const materialOptions = this.materialOptions();
     if (source.kind === "procedural") {
@@ -385,6 +539,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       });
       this.applyMouthMask(rig);
       return rig;
+    }
+    // 썸네일 임시 리그 경로(주 리그의 키트는 `loadSourceExclusive`가 핸들을 보관하며 직접 만든다). 리그를 해제하면 키트 전체가 해제된다.
+    if (source.kind === "kit") {
+      this.rememberKitPlan(source.plan);
+      return (await this.buildKit(source.plan, hooks)).rig as CharacterRig;
     }
     return this.loadPackage(source.plan, materialOptions, hooks);
   }
@@ -419,6 +578,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const rig = this.rig;
     if (!rig) return;
     this.rig = null;
+    this.kit = null;
     this.lastPlan = null;
     this.physics.bindRig(null);
     this.character.clearShadowCasters();
@@ -493,10 +653,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       const material = toon ? (nodeToon ?? this.ensureToonMaterial(part, rig)) : (openPbr ?? part.pbr);
       // 기본 ShaderMaterial 툰은 `ensureToonMaterial`이 값을 넣지만 NodeMaterial 툰은 따로 넣어야 한다(램프 단계·림·얼굴 SDF 변경이 반영되도록).
       if (nodeToon) this.beta.updateNodeToon(part, this.toonValues(part, rig), this.toonTextures(part));
+      // 키트의 눈·입 안 계열 역할은 hull 외곽선을 켜지 않는다(A-5: 12 mm 눈에 4 mm hull이 붙으면 눈이 검은 고리로 덮인다). 절차 소스는 모든 파츠에 켠다.
+      const hull = outline === "hull" && hullOutlineAllowed(rig.kind, part.role);
       for (const mesh of part.meshes) {
         mesh.material = material;
-        mesh.renderOutline = outline === "hull";
-        if (outline === "hull") {
+        mesh.renderOutline = hull;
+        if (hull) {
           mesh.outlineWidth = TOON_OUTLINE_WIDTH;
           mesh.outlineColor.set(0.05, 0.04, 0.06);
         }
@@ -514,10 +676,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   private ensureToonMaterial(part: RigPart, rig: CharacterRig): ShaderMaterial {
     if (!part.toon) {
-      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`);
+      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`, { vertexColor: this.usesVertexColor(part, rig) });
       part.toon.backFaceCulling = part.pbr.backFaceCulling;
     }
     setToonUniforms(part.toon, this.toonValues(part, rig));
+    setAlphaCutoff(part.toon, this.alphaCutoffOf(part));
     setToonTextures(part.toon, this.toonTextures(part));
     return part.toon;
   }
@@ -532,6 +695,22 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private refreshToonUniforms(rig: CharacterRig | null): void {
     if (!rig || this.shading.mode !== "toon") return;
     for (const part of rig.parts) this.pushToon(part, rig);
+  }
+
+  /**
+   * 툰·밑색 패스가 메시의 정점 색(`COLOR_0`)을 알베도에 곱할지. 키트 파츠만이다: 키트의 `COLOR_0`은 계약상 회색 AO(R=G=B)다.
+   * 제작 패키지(Orion: 채널마다 다른 v0 의미)와 절차 소스는 툰이 정점 색을 읽지 않던 기존 거동을 그대로 둔다(PBR은 이미 곱한다).
+   */
+  private usesVertexColor(part: RigPart, rig: CharacterRig | null): boolean {
+    return isKitPart(rig, part) && partHasVertexColors(part);
+  }
+
+  /**
+   * 알베도 텍스처 알파 컷오프. glTF `alphaMode: MASK`(키트의 눈썹·속눈썹)로 올라온 재질은 로더가 PBR을 알파 테스트(`alphaCutOff`)로 둔다 —
+   * 툰·밑색 ShaderMaterial은 알파를 쓰지 않아 컷아웃 카드가 불투명하게 그려지므로 같은 컷오프로 버린다. 알베도 텍스처가 없거나 알파 테스트가 아니면 0(끔)이다.
+   */
+  private alphaCutoffOf(part: RigPart): number {
+    return part.hasAlbedoTexture && part.pbr.transparencyMode === Material.MATERIAL_ALPHATEST ? part.pbr.alphaCutOff : 0;
   }
 
   private toonTextures(part: RigPart): NodeToonTextures {
@@ -562,7 +741,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   }
 
   private openPbrParams(part: RigPart): OpenPbrParams {
-    const albedo: readonly [number, number, number] = part.hasAlbedoTexture ? [1, 1, 1] : hexToLinear(part.colorHex);
+    // 키트 틴트 파츠는 텍스처가 있어도 색(= 틴트)을 곱한다.
+    const albedo: readonly [number, number, number] = part.hasAlbedoTexture && part.tint === undefined ? [1, 1, 1] : hexToLinear(part.colorHex);
     return mapPresetToOpenPbr(MATERIAL_PRESETS[part.materialPreset], albedo, { sssAvailable: this.character.sssAvailable });
   }
 
@@ -583,7 +763,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const average = this.ibl.averageColor;
     const axes = this.headAxes(rig);
     const face = faceSdfUniforms(axes.forward, axes.right, this.character.sunDirection);
-    const useFaceSdf = toon.faceSdfShadow && part.role === "head";
+    // 얼굴 SDF 그림자는 절차 머리의 정면 대칭 UV를 전제로 한 해석 맵이다. 키트 머리 UV(HBM 재전개)에는 맞지 않아 키트(v1)는 N·L 램프로 음영한다.
+    const useFaceSdf = toon.faceSdfShadow && part.role === "head" && !isKitPart(rig, part);
     // 광원 + 환경의 합이 1을 넘으면 밝은 알베도가 흰색으로 날아가므로 같은 비율로 정규화한다(툰 색에는 톤맵이 없다).
     const lighting = normalizeToonLighting(
       [key.diffuse.r * lightScale, key.diffuse.g * lightScale, key.diffuse.b * lightScale],
@@ -620,13 +801,14 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const options = this.materialOptions();
     return {
       applyPreset: (part, preset) => {
-        applyPresetParams(options, part.pbr, preset, part.hasAlbedoTexture ? null : part.colorHex);
+        applyPresetParams(options, part.pbr, preset, part.hasAlbedoTexture && part.tint === undefined ? null : part.colorHex);
         if (part.toon) part.toon.backFaceCulling = part.pbr.backFaceCulling;
         this.pushToon(part, rigOf());
         this.beta.updateOpenPbr(part);
       },
       applyColor: (part, hex) => {
-        if (!part.hasAlbedoTexture) setMaterialAlbedo(part.pbr, part.materialPreset, hex);
+        // 알베도 텍스처가 있는 파츠는 보통 레시피 색을 곱하지 않지만, 키트 틴트 파츠(recolor·fixed)는 텍스처 × 색을 PBR에도 곱한다(툰의 baseColor × 알베도와 같다).
+        if (!part.hasAlbedoTexture || part.tint !== undefined) setMaterialAlbedo(part.pbr, part.materialPreset, hex);
         this.pushToon(part, rigOf());
         this.beta.updateOpenPbr(part);
         if (!trackFlatPass) return;
@@ -780,11 +962,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       flat: (part) => {
         let material = this.flatMaterials.get(part.partId);
         if (!material) {
-          material = createPassMaterial(deps, "flat", `flat:${part.id}`);
+          material = createPassMaterial(deps, "flat", `flat:${part.id}`, { vertexColor: this.usesVertexColor(part, this.rig) });
           this.flatMaterials.set(part.partId, material);
         }
         material.backFaceCulling = part.pbr.backFaceCulling;
         setFlatUniforms(material, { baseColor: srgb(part.colorHex), hasPaint: this.paintTextures.get(part.role) !== null, hasAlbedo: this.usesAlbedoTexture(part) });
+        setAlphaCutoff(material, this.alphaCutoffOf(part));
         setFlatTextures(material, { albedo: this.albedoTexture(part), paint: this.paintTextures.get(part.role) ?? this.clearTexture });
         return material;
       },

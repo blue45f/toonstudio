@@ -7,6 +7,7 @@ export * from "./backend";
 export * from "./bones";
 export * from "./capture";
 export * from "./catalog";
+export * from "./character-kit";
 export * from "./engine";
 export * from "./errors";
 export * from "./events";

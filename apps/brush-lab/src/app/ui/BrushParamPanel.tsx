@@ -12,7 +12,7 @@ import type { BrushProgram } from "../../engine/presets/program-schema";
 import type { SamplingFilter } from "../../engine/texture/sampling";
 import type { LabOverrides } from "../state/lab-store";
 
-type NumericKey =
+export type NumericKey =
   | "sizePx"
   | "hardness"
   | "spacing"
@@ -54,35 +54,57 @@ function isSamplingFilter(v: string): v is SamplingFilter {
 }
 
 /**
+ * 파라미터 패널이 읽고 쓰는 값. A/B 비교는 `lab-store`에, 그리기 화면은 `draw-store`에 연결한다
+ * (두 화면이 서로의 프리셋·오버라이드를 건드리지 않는다).
+ */
+export interface BrushParamBinding {
+  presetId: string;
+  overrides: LabOverrides;
+  /** 실행 중 등으로 편집을 잠글 때 true. */
+  disabled: boolean;
+  /** 없으면 프리셋 선택기를 그리지 않는다(그리기 화면은 별도 브러시 선택기를 쓴다). */
+  setPreset?: (presetId: string) => void;
+  setOverride: (patch: LabOverrides) => void;
+  resetOverrides: () => void;
+}
+
+export interface BrushParamFieldsProps {
+  binding: BrushParamBinding;
+  /** DOM id·data-testid 접두사. 같은 문서에 두 패널이 있어도 id가 겹치지 않게 한다. 기본 "lab". */
+  idPrefix?: string;
+  /** 숨길 숫자 슬라이더(다른 곳에서 편집하는 값). */
+  hideKeys?: readonly NumericKey[];
+}
+
+/**
  * 최소 브러시 파라미터 패널. 값은 프리셋 위에 오버라이드로 얹히고 `normalizeProgram`으로 재검증된다.
  * 범위 밖 값은 해시 대신 오류로 표시한다(무음 보정 없음).
  */
-export function BrushParamPanel() {
-  const { actions } = useLab();
-  const presetId = useLabSelector((s) => s.presetId);
-  const overrides = useLabSelector((s) => s.overrides);
-  const running = useLabSelector((s) => s.running);
+export function BrushParamFields({ binding, idPrefix = "lab", hideKeys = [] }: BrushParamFieldsProps) {
+  const { presetId, overrides, disabled: running, setPreset } = binding;
   const base = useMemo(() => resolveProgram({ presetId, overrides: {} }).program, [presetId]);
   const resolved = useMemo(() => resolveProgram({ presetId, overrides }), [presetId, overrides]);
-  const set = (patch: LabOverrides): void => actions.setOverride(patch);
+  const set = (patch: LabOverrides): void => binding.setOverride(patch);
   const stabilizer = overrides.stabilizer;
   return (
-    <div className="lab-form-grid" data-testid="lab-param-panel">
-      <div className="lab-field">
-        <label htmlFor="lab-preset">
-          <span>프리셋</span>
-        </label>
-        <select id="lab-preset" value={presetId} disabled={running} onChange={(e) => actions.setPreset(e.target.value)}>
-          {PRESET_CATALOG.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} ({p.family})
-            </option>
-          ))}
-        </select>
-      </div>
-      {NUMERIC_FIELDS.map((f) => {
+    <div className="lab-form-grid" data-testid={`${idPrefix}-param-panel`}>
+      {setPreset ? (
+        <div className="lab-field">
+          <label htmlFor={`${idPrefix}-preset`}>
+            <span>프리셋</span>
+          </label>
+          <select id={`${idPrefix}-preset`} value={presetId} disabled={running} onChange={(e) => setPreset(e.target.value)}>
+            {PRESET_CATALOG.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.family})
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+      {NUMERIC_FIELDS.filter((f) => !hideKeys.includes(f.key)).map((f) => {
         const current = overrides[f.key] ?? (base ? f.base(base) : f.min);
-        const id = `lab-param-${f.key}`;
+        const id = `${idPrefix}-param-${f.key}`;
         return (
           <div className="lab-field" key={f.key}>
             <label htmlFor={id}>
@@ -105,18 +127,18 @@ export function BrushParamPanel() {
           </div>
         );
       })}
-      {stabilizer !== undefined && stabilizer > STABILIZER_BACKEND_LIMIT ? (
+      {!hideKeys.includes("stabilizer") && stabilizer !== undefined && stabilizer > STABILIZER_BACKEND_LIMIT ? (
         <p className="lab-muted">
           안정화 {STABILIZER_BACKEND_LIMIT} 초과 구간은 설계상 spring 팔로워 백엔드 대상이며 이 랩에서는 같은 1€ 매핑을
           쓴다.
         </p>
       ) : null}
       <div className="lab-field">
-        <label htmlFor="lab-param-kind">
+        <label htmlFor={`${idPrefix}-param-kind`}>
           <span>팁 텍스처</span>
         </label>
         <select
-          id="lab-param-kind"
+          id={`${idPrefix}-param-kind`}
           value={overrides.kind ?? base?.tip.kind ?? "round"}
           disabled={running}
           onChange={(e) => {
@@ -131,11 +153,11 @@ export function BrushParamPanel() {
         </select>
       </div>
       <div className="lab-field">
-        <label htmlFor="lab-param-filter">
+        <label htmlFor={`${idPrefix}-param-filter`}>
           <span>샘플링 필터</span>
         </label>
         <select
-          id="lab-param-filter"
+          id={`${idPrefix}-param-filter`}
           value={overrides.filter ?? base?.paper.filter ?? "trilinear"}
           disabled={running}
           onChange={(e) => {
@@ -177,14 +199,31 @@ export function BrushParamPanel() {
         Kubelka-Munk 혼색 베타
       </label>
       <div className="lab-button-row">
-        <button type="button" className="lab-button" disabled={running} onClick={() => actions.resetOverrides()}>
+        <button type="button" className="lab-button" disabled={running} onClick={() => binding.resetOverrides()}>
           오버라이드 초기화
         </button>
-        <span className="lab-muted" data-testid="lab-config-hash">
+        <span className="lab-muted" data-testid={`${idPrefix}-config-hash`}>
           configHash(fnv1a64):{" "}
           {resolved.hash ? <span className="lab-mono">{resolved.hash}</span> : <span role="alert">{resolved.error}</span>}
         </span>
       </div>
     </div>
   );
+}
+
+/** A/B 비교 탭용: `lab-store`에 연결한 패널(프리셋 선택기 포함). */
+export function BrushParamPanel() {
+  const { actions } = useLab();
+  const presetId = useLabSelector((s) => s.presetId);
+  const overrides = useLabSelector((s) => s.overrides);
+  const running = useLabSelector((s) => s.running);
+  const binding: BrushParamBinding = {
+    presetId,
+    overrides,
+    disabled: running,
+    setPreset: (id) => actions.setPreset(id),
+    setOverride: (patch) => actions.setOverride(patch),
+    resetOverrides: () => actions.resetOverrides(),
+  };
+  return <BrushParamFields binding={binding} />;
 }

@@ -284,9 +284,13 @@ function fillTiles(layer: number[], rect: StudioCampusTileRect, terrain: StudioC
   }
 }
 
-/** 같은 풀·돌·모래 셀이 격자로 반복돼 보이지 않게 좌우 뒤집기를 섞는다(결정적 해시). */
+/**
+ * 같은 풀·모래 셀이 격자로 반복돼 보이지 않게 좌우 뒤집기를 섞는다(결정적 해시).
+ * 돌길은 섞지 않는다: 아틀라스가 이미 가로·세로로 이어지는 주기 타일이라 이음새를 가릴 필요가 없고,
+ * 뒤집으면 접합부마다 좌우 대칭 무늬(나비 모양)가 생긴다(scripts/build-virtual-studio-campus-atlas.mjs).
+ */
 function variedGid(gid: number, column: number, row: number): number {
-  if (gid !== CAMPUS_TERRAIN.grass + 1 && gid !== CAMPUS_TERRAIN.cobble + 1 && gid !== CAMPUS_TERRAIN.sand + 1) return gid;
+  if (gid !== CAMPUS_TERRAIN.grass + 1 && gid !== CAMPUS_TERRAIN.sand + 1) return gid;
   const hash = (Math.imul(column + 1, 73_856_093) ^ Math.imul(row + 1, 19_349_663)) >>> 0;
   return hash % 2 === 0 ? gid : (gid | HORIZONTAL_FLIP) >>> 0;
 }
