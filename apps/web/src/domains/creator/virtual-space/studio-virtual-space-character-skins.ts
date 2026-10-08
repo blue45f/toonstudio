@@ -87,6 +87,11 @@ export interface StudioCharacterSkin {
   readonly nativeArtStyle?: StudioVirtualArtStyleKey;
   /** 모든 방향·행동이 같은 원본을 사용하는 스킨은 GPU 텍스처를 한 번만 보유한다. */
   readonly sharedAtlas?: boolean;
+  /**
+   * 로비·꾸미기 카드 같은 작은 미리보기 전용 축소 사본(원본과 같은 격자·비율의 WebP). 월드는 항상 원본을 쓴다.
+   * 카드 한 칸만 보이는 미리보기가 원본 시트(1~2MB) 6장을 모두 내려받지 않게 한다.
+   */
+  readonly previewTextureUrl?: string;
   /** 동작(걷기·대화)마다 네 방향이 시트 하나를 공유한다. 방향마다 같은 원본을 따로 올리지 않는다. */
   readonly sharedMotionSheets?: boolean;
   /** 외부 픽셀 아트 계열(LPC). 테마와 무관하게 원본을 유지하고 미리보기에서 픽셀 경계를 보존한다. */

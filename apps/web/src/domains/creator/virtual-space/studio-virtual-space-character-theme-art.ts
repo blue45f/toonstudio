@@ -10,6 +10,8 @@ export interface StudioThemeCharacterSource {
   readonly labelKo: string;
   readonly labelEn: string;
   readonly textureUrl: string;
+  /** 미리보기 전용 축소 사본(같은 비율). 없으면 미리보기도 원본을 쓴다. */
+  readonly previewUrl?: string;
   readonly width: number;
   readonly height: number;
   readonly atlas?: StudioCharacterAtlasLayout;
@@ -48,6 +50,7 @@ export function createStudioThemeCharacterSkin(source: StudioThemeCharacterSourc
   return Object.freeze({
     key: `theme-avatar-${source.artStyle}`, labelKo: source.labelKo, labelEn: source.labelEn,
     nativeArtStyle: source.artStyle, selectionOnly: true, sharedAtlas: true,
+    ...(source.previewUrl ? { previewTextureUrl: source.previewUrl } : {}),
     directional: Object.freeze({ down: source.textureUrl, right: source.textureUrl, left: source.textureUrl, up: source.textureUrl }),
     clips: Object.freeze({ "walk-down": walk("down"), "walk-right": walk("right"), "walk-left": walk("left"), "walk-up": walk("up") }),
     idleFrames: Object.freeze({ down: 0, right: 8, left: 16, up: 24 }),
