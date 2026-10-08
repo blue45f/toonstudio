@@ -1,4 +1,5 @@
 import { defineAppRoutes } from "../app-route-definition";
+import { TitleEpisodesRedirect } from "./catalog-title-redirects";
 
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
@@ -92,6 +93,7 @@ export const catalogRoutes = defineAppRoutes([
   { id: "catalog-news", path: "/news", element: <NewsPage /> },
   { id: "catalog-guide", path: "/guide", element: <GuidePage /> },
   { id: "catalog-title", path: "/title/:slug", element: <TitleDetailPage /> },
+  { id: "catalog-title-episodes", path: "/title/:slug/episodes", element: <TitleEpisodesRedirect /> },
   { id: "catalog-title-read", path: "/title/:slug/read/:episode", element: <TitleReaderPage /> },
   { id: "catalog-author", path: "/author/:name", element: <AuthorPage /> },
 ]);
