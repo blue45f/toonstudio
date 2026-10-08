@@ -12,6 +12,11 @@ import type { PointerKind, RawSample } from "../engine/core/types";
  *   공급하고 `pointermove`는 예측 표본만 공급한다(중복 누적 금지).
  * - 팜 리젝션: pen 이벤트 후 500 ms 이내 touch 무시, touch 접촉폭 ≥ 20 px 무시.
  * - primary 포인터 하나만 획을 소유하며 호버(버튼 없음)는 `onHover` 콜백으로만 전달한다.
+ * - `pointercancel`과 **`lostpointercapture`**(캡처를 뺏기거나 요소가 사라져 `pointerup` 없이 캡처가 풀린 경우)는 둘 다
+ *   소유 포인터의 획을 `up` 표본으로 끝낸다. 세션은 이 두 이벤트를 합성 대신 중단(abort)으로 해석한다(`LiveStrokeSession.attach`).
+ *   정상 `pointerup` 뒤에 따라오는 `lostpointercapture`는 이미 소유자가 없어 무시된다.
+ * - `blockContextMenu`: 그리기 표면에서 우클릭·길게 누르기 메뉴(`contextmenu`)를 막는다.
+ * - `primaryButtonOnly`: 마우스는 주 버튼(왼쪽)으로만 획을 시작한다(우클릭·가운데 버튼이 점을 찍지 않는다).
  */
 
 export interface PointerCaptureOptions {
@@ -25,6 +30,10 @@ export interface PointerCaptureOptions {
   palmRejectMs?: number;
   /** 이 접촉폭(px) 이상 touch는 손바닥으로 보고 무시. */
   palmContactWidthPx?: number;
+  /** 요소 위 `contextmenu`(우클릭·터치 길게 누르기)를 막는다. 기본 false(기존 동작 유지). */
+  blockContextMenu?: boolean;
+  /** 마우스의 보조 버튼(우클릭·가운데)으로는 획을 시작하지 않는다. 펜·터치는 영향 없음. 기본 false(기존 동작 유지). */
+  primaryButtonOnly?: boolean;
 }
 
 export const DEFAULT_PALM_REJECT_MS = 500;
@@ -145,6 +154,7 @@ export function attachPointerCapture(
     notePen(ev);
     if (ownerId !== null) return;
     if (!ev.isPrimary) return;
+    if (opts.primaryButtonOnly === true && ev.pointerType === "mouse" && ev.button !== 0) return;
     if (isPalm(ev)) return;
     ownerId = ev.pointerId;
     lastPressure = ev.pressure;
@@ -207,10 +217,21 @@ export function attachPointerCapture(
     onSamples([sample]);
   };
 
+  // 캡처가 풀렸는데 소유 포인터가 아직 눌려 있으면(pointerup/pointercancel 없이) 획을 끝낸다. 정상 종료 뒤에는 ownerId가 null이다.
+  const onLostCapture = (ev: PointerEvent): void => {
+    finish(ev);
+  };
+  const onContextMenu = (ev: Event): void => {
+    ev.preventDefault();
+  };
+  const blockMenu = opts.blockContextMenu === true;
+
   el.addEventListener("pointerdown", onDown);
   el.addEventListener("pointermove", onMove);
   el.addEventListener("pointerup", finish);
   el.addEventListener("pointercancel", finish);
+  el.addEventListener("lostpointercapture", onLostCapture);
+  if (blockMenu) el.addEventListener("contextmenu", onContextMenu);
   if (useRaw) el.addEventListener("pointerrawupdate", onRawUpdate);
 
   return () => {
@@ -218,6 +239,8 @@ export function attachPointerCapture(
     el.removeEventListener("pointermove", onMove);
     el.removeEventListener("pointerup", finish);
     el.removeEventListener("pointercancel", finish);
+    el.removeEventListener("lostpointercapture", onLostCapture);
+    if (blockMenu) el.removeEventListener("contextmenu", onContextMenu);
     if (useRaw) el.removeEventListener("pointerrawupdate", onRawUpdate);
     el.style.touchAction = previousTouchAction;
     ownerId = null;
