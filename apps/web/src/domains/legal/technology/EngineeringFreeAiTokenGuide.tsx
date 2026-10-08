@@ -107,7 +107,7 @@ export function EngineeringFreeAiTokenGuide({ query = "" }: { query?: string }) 
             </p>
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
               {methods.map((method) => {
-                const external = method.linkName
+                const externalUrl = method.linkName
                   ? externalLinkForName(method.linkName)
                   : undefined;
                 return (
@@ -146,10 +146,10 @@ export function EngineeringFreeAiTokenGuide({ query = "" }: { query?: string }) 
                       </div>
                     </dl>
                     <div className="mt-4 pt-1">
-                      {external ? (
+                      {externalUrl ? (
                         <a
                           className="inline-flex items-center gap-1.5 text-sm font-bold text-[#8a4b12] underline decoration-[#e9c48f] underline-offset-4 hover:text-[#6f3a0c]"
-                          href={external.url}
+                          href={externalUrl}
                           rel="noreferrer"
                           target="_blank"
                         >
