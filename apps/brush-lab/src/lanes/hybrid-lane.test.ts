@@ -9,6 +9,7 @@ import { zigzagStroke } from "../engine/testing/synthetic-strokes";
 import { embeddedKernelBytes } from "../engine/wasm/embedded";
 
 import { createHybridLane, HYBRID_LANE } from "./hybrid-lane";
+import { expectDabBufferColor } from "./testing/stroke-color-contract";
 
 import type { LaneEnvironment } from "./lane";
 
@@ -105,6 +106,25 @@ describe("wasm-gpu-hybrid 레인", () => {
     expect(gpu.dispatches.filter((d) => BINNING_ENTRIES.includes(d.entryPoint))).toEqual([]);
     expect(count(ENTRY_POINTS.wetStepWater)).toBeGreaterThan(0);
     expect(count(ENTRY_POINTS.bakeWet)).toBe(0);
+    lane.dispose();
+  });
+
+  it("획 색: webgpu-compute와 같은 dab 경로라 지정한 색이 dab 스토리지 버퍼에 실린다", async () => {
+    const { adapter, gpu } = createMockAdapter({ info: { vendor: "mock", description: "SwiftShader" } });
+    const lane = createHybridLane();
+    await lane.init(fakeEnv(createMockGpuApi(adapter), { wasmBytes: embeddedKernelBytes() }), { width: 64, height: 64, dpr: 1, tileSize: 16, seed: 2 });
+    lane.beginStroke(presetById("pencil-hb"), 2, { color: [0.25, 0.5, 0.75, 1] });
+    let dabs = 0;
+    let floats = new Float32Array(0);
+    for (const frame of splitFrames(zigzagStroke(48, { durationMs: 100 }))) {
+      dabs = lane.addSamples(frame).dabCount;
+      if (dabs > 0) {
+        floats = new Float32Array(gpu.bufferByLabel("sumi-dabs").data.slice(0));
+        break;
+      }
+    }
+    expectDabBufferColor(floats, dabs, [0.25, 0.5, 0.75, 1]);
+    lane.abortStroke();
     lane.dispose();
   });
 });

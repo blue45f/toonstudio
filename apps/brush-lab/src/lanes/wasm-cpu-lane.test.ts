@@ -10,6 +10,7 @@ import { presetById } from "../engine/presets/catalog";
 import { embeddedKernelBytes } from "../engine/wasm/embedded";
 
 import { createCpuReferenceLane } from "./cpu-reference-lane";
+import { drawLine, expectStrokeColorContract, meanInkColor } from "./testing/stroke-color-contract";
 import { createWasmCpuLane, WASM_CPU_LANE } from "./wasm-cpu-lane";
 
 import type { LaneEnvironment } from "./lane";
@@ -132,4 +133,42 @@ describe("wasm-cpu 레인", () => {
     await expect(lane.readback()).rejects.toBeInstanceOf(InvalidStateError);
     await expect(lane.init(fakeEnv(), { width: 16, height: 16, dpr: 1, tileSize: 16, seed: 1 })).rejects.toBeInstanceOf(InvalidStateError);
   });
+});
+
+describe("wasm-cpu 레인: 획 색 계약(beginStroke options.color)", () => {
+  const make = createWasmCpuLane;
+
+  it.each(["ink-g-pen", "pencil-hb", "airbrush"] as const)("%s: 색을 지정하면 평균 색이 지정색 근처이고 색 없는 결과와 해시가 다르다", async (presetId) => {
+    await expectStrokeColorContract({ make, presetId });
+  });
+
+  it("같은 색이면 cpu-reference와 픽셀이 같고(건식·수채·유화), 색이 없는 호출은 검정 지정과 비트 동일하다", async () => {
+    const color = [0.2, 0.55, 0.3, 1] as const;
+    for (const presetId of ["ink-g-pen", "watercolor-wet", "oil-impasto"] as const) {
+      const size = presetId === "ink-g-pen" ? 96 : 64;
+      const wasm = await drawLine({ make, presetId, size, options: { color } });
+      const cpu = await drawLine({ make: createCpuReferenceLane, presetId, size, options: { color } });
+      expect(pixelHash(wasm), `${presetId} 색 지정 해시 동일`).toBe(pixelHash(cpu));
+      const mean = meanInkColor(wasm);
+      expect(mean?.g ?? 0, presetId).toBeGreaterThan(mean?.r ?? 1);
+    }
+    const plain = await drawLine({ make });
+    const black = await drawLine({ make, options: { color: [0, 0, 0, 1] } });
+    expect(pixelHash(black)).toBe(pixelHash(plain));
+  }, 120000);
+
+  it("프레임당 표본 1개씩 16~60 px 도약하는 빠른 획이 stroke-budget-exceeded 없이 끝난다", async () => {
+    for (const [presetId, stepPx] of [["pencil-hb", 16], ["ink-g-pen", 16], ["charcoal", 30], ["airbrush", 60]] as const) {
+      const lane = createWasmCpuLane();
+      await lane.init(fakeEnv(), { width: 512, height: 128, dpr: 1, tileSize: 16, seed: 1 });
+      lane.beginStroke(presetById(presetId), 1);
+      for (let i = 0; i < 24; i += 1) {
+        lane.addSamples([
+          { x: 20 + i * stepPx, y: 64, tMs: i * 12, pressure: 0.6, tiltXDeg: 0, tiltYDeg: 0, twistDeg: 0, pointerType: "pen", phase: i === 0 ? "down" : "move", source: "raw" },
+        ]);
+      }
+      expect((await lane.endStroke()).dabCount, presetId).toBeGreaterThan(0);
+      lane.dispose();
+    }
+  }, 60000);
 });

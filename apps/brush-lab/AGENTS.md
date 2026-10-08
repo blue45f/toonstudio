@@ -26,6 +26,9 @@
 - 오류는 `SumiError` 하위 클래스 + `code`. 측정 불가 값은 `null` + 사유 필드(`metricNotes`).
 - 무음 대체 금지(ADR-0018): capability 불일치·초기화 실패·device loss는 `LaneUnavailableError(code)`로 드러내고 다른 레인으로
   자동 전환하지 않는다. UI는 사유 코드를 배너·셀렉터에 표시한다.
+- 획 색은 프로그램이 아니라 **획의 입력**이다: `BrushEngineLane.beginStroke(program, seed, options?: StrokeOptions)`의 `options.color`(sRGB straight RGBA 0..1)로만 받고
+  잘못된 값은 `resolveStrokeColor`가 `InvalidStateError`로 거부한다. 새 레인은 색을 적용하거나(받되 무시하면 README에 근거를 적는다) `lanes/testing/stroke-color-contract.ts`로 시험하고,
+  색이 없을 때의 결과는 기존과 비트 동일해야 한다(해시 스냅샷 불변). 색 때문에 WGSL/GLSL·wasm 커널을 바꾸지 않는다(dab 인스턴스의 `color`로 이미 전달된다).
 - 결정성: 엔진 안의 모든 난수는 `Pcg32`/`hashU32`(시드 전달), 부동소수는 `Math.fround`로 f32 미러.
 - WGSL은 `src/engine/gpu/wgsl/*.wgsl.ts`에서 `export const <NAME>_WGSL: string`으로 내보내고 워크그룹·바인딩·타일 상수는
   `gpu/layout.ts` 상수를 템플릿 리터럴로 삽입한다. WGSL 식별자로 `meta`·`active`를 쓰지 않으며 진입점 이름은 `snake_case`다.

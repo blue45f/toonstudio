@@ -14,6 +14,7 @@ import { downloadPng } from "../../platform/download";
 import { createLazyBrush } from "../../platform/lazy-brush";
 import { createSpeedPressureSimulator } from "../../platform/pressure-sim";
 import { useDrawSelector, useLab, useLabSelector } from "../shell/lab-context";
+import { hexToStrokeColor } from "../state/color-utils";
 import { describeLaneError } from "../state/draw-error-text";
 import {
   decideInitialLane,
@@ -130,6 +131,18 @@ export function DrawView() {
   lazy.current.setRadius(lazyRadiusPx(stabilizerPct));
   const colorRef = useRef(color);
   colorRef.current = color;
+  // 획 색은 프로그램이 아니라 획의 입력이다: 레인 `beginStroke(program, seed, { color })`로 넘기며 다음 획부터 적용된다.
+  const strokeColor = useMemo(() => hexToStrokeColor(color), [color]);
+  const strokeColorRef = useRef(strokeColor);
+  strokeColorRef.current = strokeColor;
+  useEffect(() => {
+    if (strokeColor === null) {
+      // 저장소에는 검증된 16진만 들어오지만, 해석 실패를 검정으로 몰래 바꾸지 않고 알린다(직전 색이 유지된다).
+      drawActions.pushNotice("color-invalid", `색 '${color}'을(를) 해석하지 못해 직전 색으로 계속 그린다`);
+      return;
+    }
+    sessionRef.current?.setColor(strokeColor);
+  }, [strokeColor, color, drawActions]);
   const transform = useCallback((raw: RawSample[]): RawSample[] => {
     let out = raw;
     if (mouseSimRef.current) out = pressureSim.current.apply(out);
@@ -276,6 +289,7 @@ export function DrawView() {
         seed: DRAW_SEED,
         width,
         height,
+        ...(strokeColorRef.current ? { color: strokeColorRef.current } : {}),
         ...(live ? { presentCanvas: surface.present } : {}),
         wetCapacityTiles: Math.min(MAX_DOCUMENT_TILES, Math.max(2048, documentTileCount({ width, height }))),
         skipLinear: true,
@@ -301,6 +315,8 @@ export function DrawView() {
       // 사이에 바뀐 프로그램이 있으면 반영한다.
       const latest = programRef.current;
       if (latest) created.setProgram(latest);
+      const latestColor = strokeColorRef.current;
+      if (latestColor) created.setColor(latestColor);
       detach = created.attach(surface.stage, { blockContextMenu: true, primaryButtonOnly: true });
       drawActions.setSessionStatus("ready");
     };

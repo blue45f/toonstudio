@@ -1,7 +1,7 @@
 import { encodeLabImage } from "../engine/core/color";
 import { InvalidStateError } from "../engine/core/errors";
 
-import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, resolveStrokeColor } from "./lane";
 import { assertProgramSupported, mapProgramToMypaint } from "./mypaint-settings-map";
 import { compositeStraightFrame } from "./straight-frame-composite";
 
@@ -16,6 +16,7 @@ import type {
   LaneStats,
   LaneStatus,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "./lane";
 import type { MypaintMapping, MypaintMappingReceipt } from "./mypaint-settings-map";
@@ -86,6 +87,11 @@ export abstract class IsolatedStrokeLane implements BrushEngineLane {
 
   protected constructor(private readonly color: Rgba) {}
 
+  /** 엔진이 색 설정을 읽는 색 공간(`mapProgramToMypaint`의 colorSpace). 기본 sRGB, 선형 합성 엔진(Hokusai)은 "linear"로 덮는다. */
+  protected get colorSpace(): "srgb" | "linear" {
+    return "srgb";
+  }
+
   abstract probe(env: LaneEnvironment): Promise<LaneCapabilityReport>;
 
   /** 엔진 로드와 캔버스 한도 검사. 실패는 `LaneUnavailableError`로 던진다. */
@@ -114,11 +120,13 @@ export abstract class IsolatedStrokeLane implements BrushEngineLane {
     this.clock = env.clock;
   }
 
-  beginStroke(program: BrushProgram, seed: number): void {
+  /** 획 색은 `options.color`가 우선하고, 없으면 레인 생성 시 기본색(기본 검정)을 쓴다. */
+  beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
+    const strokeColor = resolveStrokeColor(options) ?? this.color;
     this.requireDocument("beginStroke");
     if (this.active) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
     assertProgramSupported(this.id, program);
-    const mapping = mapProgramToMypaint(program, { color: this.color });
+    const mapping = mapProgramToMypaint(program, { color: strokeColor, colorSpace: this.colorSpace });
     this.openStroke(mapping, seed >>> 0);
     this.mapping = mapping;
     this.lastReceipt = mapping.receipt;

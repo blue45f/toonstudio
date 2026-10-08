@@ -351,6 +351,55 @@ describe("generated third-party notice inventory", () => {
     }
   });
 
+  it("fails when the NOTICE artifact hash table disagrees with the inventory", () => {
+    // 인벤토리와 무결성 파일만 갱신하고 NOTICE 를 다시 만들지 않은 wasm 재빌드를 흉내 낸다.
+    // NOTICE 자체의 잠금(THIRD_PARTY_NOTICES.sha256)은 새 NOTICE 로 맞춰 두어, 해시 표 검사만 실패하게 한다.
+    for (const policy of OPAQUE_WASM_POLICIES) {
+      const directory = mkdtempSync(
+        join(tmpdir(), "toonstudio-opaque-notice-hash-test-"),
+      );
+      try {
+        for (const path of [
+          ...policy.requiredNoticeFiles,
+          "THIRD_PARTY_NOTICES.sha256",
+          ...policy.artifactFiles,
+        ]) {
+          copyFileSync(join(policy.directory, path), join(directory, path));
+        }
+        const inventory = JSON.parse(
+          readFileSync(join(directory, "THIRD_PARTY_INVENTORY.json"), "utf8"),
+        );
+        expect(() =>
+          validateOpaqueWasmThirdPartyInventory(policy, { directory, inventory }),
+        ).not.toThrow();
+
+        const target = inventory.artifacts[0];
+        const staleNotice = readFileSync(join(directory, "NOTICE"), "utf8").replace(
+          target.sha256,
+          "0".repeat(64),
+        );
+        writeFileSync(join(directory, "NOTICE"), staleNotice, "utf8");
+        const lines = [
+          "# ToonStudio shipped third-party notice lock v1",
+          ...[...policy.requiredNoticeFiles]
+            .sort()
+            .map((path) => `${sha256(readFileSync(join(directory, path)))}  ${path}`),
+          "",
+        ];
+        writeFileSync(
+          join(directory, "THIRD_PARTY_NOTICES.sha256"),
+          lines.join("\n"),
+          "utf8",
+        );
+        expect(() =>
+          validateOpaqueWasmThirdPartyInventory(policy, { directory, inventory }),
+        ).toThrow(`NOTICE lists a stale SHA-256 for ${target.path}`);
+      } finally {
+        rmSync(directory, { recursive: true, force: true });
+      }
+    }
+  });
+
   it("fails when a hash-locked shipped license copy is omitted or changed", () => {
     const directory = mkdtempSync(
       join(tmpdir(), "toonstudio-engine-notice-lock-test-"),

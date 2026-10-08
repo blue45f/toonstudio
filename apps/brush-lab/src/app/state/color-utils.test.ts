@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { hsvToRgb, normalizeHex, parseHex, pushRecentColor, rgbToHsv, toHex } from "./color-utils";
+import { hexToStrokeColor, hsvToRgb, normalizeHex, parseHex, pushRecentColor, rgbToHsv, toHex } from "./color-utils";
 
 describe("color-utils", () => {
   it("parseHex는 #rrggbb·#rgb·# 생략을 읽고 잘못된 입력은 null을 돌려준다", () => {
@@ -48,5 +48,12 @@ describe("color-utils", () => {
     expect(recent[0]).toBe("#000005");
     expect(recent.filter((c) => c === "#000005")).toHaveLength(1);
     expect(recent).toHaveLength(8);
+  });
+
+  it("hexToStrokeColor는 16진을 레인 획 색(sRGB straight 0..1, 알파 1)으로 바꾸고 잘못된 입력은 null이다", () => {
+    expect(hexToStrokeColor("#000000")).toEqual([0, 0, 0, 1]);
+    expect(hexToStrokeColor("#ff8000")).toEqual([1, 128 / 255, 0, 1]);
+    expect(hexToStrokeColor("f80")).toEqual([1, 136 / 255, 0, 1]);
+    expect(hexToStrokeColor("#zzz")).toBeNull();
   });
 });

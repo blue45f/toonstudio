@@ -1,0 +1,133 @@
+{
+  "cases": [
+    {
+      "fixture": "fast-flick",
+      "size": 512,
+      "presets": 31,
+      "baseErr": 4,
+      "fixErr": 0,
+      "hashDiffWhereBothOk": 0
+    },
+    {
+      "fixture": "fast-flick",
+      "size": 1024,
+      "presets": 31,
+      "baseErr": 6,
+      "fixErr": 0,
+      "hashDiffWhereBothOk": 0
+    },
+    {
+      "fixture": "zigzag",
+      "size": 512,
+      "presets": 31,
+      "baseErr": 0,
+      "fixErr": 0,
+      "hashDiffWhereBothOk": 0
+    },
+    {
+      "fixture": "line",
+      "size": 512,
+      "presets": 31,
+      "baseErr": 0,
+      "fixErr": 0,
+      "hashDiffWhereBothOk": 0
+    },
+    {
+      "fixture": "curve",
+      "size": 512,
+      "presets": 31,
+      "baseErr": 0,
+      "fixErr": 0,
+      "hashDiffWhereBothOk": 0
+    },
+    {
+      "fixture": "corner-square",
+      "size": 512,
+      "presets": 31,
+      "baseErr": 0,
+      "fixErr": 0,
+      "hashDiffWhereBothOk": 0
+    },
+    {
+      "fixture": "spiral",
+      "size": 512,
+      "presets": 31,
+      "baseErr": 0,
+      "fixErr": 0,
+      "hashDiffWhereBothOk": 0
+    },
+    {
+      "fixture": "tremor",
+      "size": 512,
+      "presets": 31,
+      "baseErr": 0,
+      "fixErr": 0,
+      "hashDiffWhereBothOk": 0
+    }
+  ],
+  "mouse": [
+    {
+      "px": 1.5,
+      "hz": 60,
+      "preset": "pencil-hb",
+      "base": "ERR:stroke-budget-exceeded",
+      "fix": "22e53bae0b8d"
+    },
+    {
+      "px": 1.5,
+      "hz": 60,
+      "preset": "ink-maru-pen",
+      "base": "ERR:stroke-budget-exceeded",
+      "fix": "6efa2ac2b841"
+    },
+    {
+      "px": 1.5,
+      "hz": 60,
+      "preset": "ballpoint",
+      "base": "ERR:stroke-budget-exceeded",
+      "fix": "9c53e1f46cae"
+    },
+    {
+      "px": 3,
+      "hz": 60,
+      "preset": "pencil-hb",
+      "base": "ERR:stroke-budget-exceeded",
+      "fix": "336014ca4471"
+    },
+    {
+      "px": 3,
+      "hz": 60,
+      "preset": "ink-maru-pen",
+      "base": "ERR:stroke-budget-exceeded",
+      "fix": "4cfad3b37fcf"
+    },
+    {
+      "px": 3,
+      "hz": 60,
+      "preset": "ballpoint",
+      "base": "ERR:stroke-budget-exceeded",
+      "fix": "fc2fdc7163f5"
+    },
+    {
+      "px": 1,
+      "hz": 30,
+      "preset": "pencil-hb",
+      "base": "ERR:stroke-budget-exceeded",
+      "fix": "4b2455e01d88"
+    },
+    {
+      "px": 1,
+      "hz": 30,
+      "preset": "ink-maru-pen",
+      "base": "ERR:stroke-budget-exceeded",
+      "fix": "5e49b64d06b0"
+    },
+    {
+      "px": 1,
+      "hz": 30,
+      "preset": "ballpoint",
+      "base": "ERR:stroke-budget-exceeded",
+      "fix": "bb6919cf5dfa"
+    }
+  ]
+}

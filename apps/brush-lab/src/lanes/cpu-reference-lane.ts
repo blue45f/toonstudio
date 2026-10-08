@@ -3,7 +3,7 @@ import { SUMI_ENGINE_VERSION } from "../engine/core/version";
 import { StrokePipeline } from "../engine/dynamics/stroke-pipeline";
 import { Surface } from "../engine/raster/reference-renderer";
 
-import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions, supportedReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -16,6 +16,7 @@ import type {
   LaneStats,
   LaneStatus,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "./lane";
 import type { Clock, LabImage, RawSample } from "../engine/core/types";
@@ -62,11 +63,12 @@ export class CpuReferenceLane implements BrushEngineLane {
     this.pipeline = null;
   }
 
-  beginStroke(program: BrushProgram, seed: number): void {
+  beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
+    const emitterOptions = strokeEmitterOptions(options);
     const surface = this.requireSurface("beginStroke");
     if (this.pipeline) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
     surface.beginStroke(program, seed);
-    this.pipeline = new StrokePipeline(program, seed, undefined, surface.paperField());
+    this.pipeline = new StrokePipeline(program, seed, undefined, surface.paperField(), emitterOptions);
     this.frameIndex = 0;
     this.frameTimes = [];
     this.frameDabs = 0;

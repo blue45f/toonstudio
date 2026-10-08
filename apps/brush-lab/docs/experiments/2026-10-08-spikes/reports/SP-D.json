@@ -1,0 +1,261 @@
+{
+  "id": "SP-D",
+  "summary": "3D 붓털(캡슐 체인 K=24 x S=4, 구형 조인트+각 스프링, kinematic 핸들 높이=압력, 종이 평면)을 Rapier3D 일반/deterministic, Jolt(wasm-compat), cannon-es로 구현해 Node 22에서 측정했다. 가설은 조건부로만 성립한다. 휴지 굽힘 14도·벌어짐 8도·6Hz 구성(A-curved)에서 Rapier는 압력 0.05~0.7에서 힘 가중 RMS 반경이 5.69->9.46 u로 단조 증가(0.2->0.7: +23%, 볼록껍질 +50%)했고 0.9 이상은 가닥 좌굴로 7.1로 꺾인다. 곧은 가닥(B)은 2.4~2.9 u로 압력에 거의 무반응. Rapier 90개 격자 중 단조 46개(퇴화 5 포함), 굽힘 격자에서 반경-압력 Spearman>=0.9는 Rapier 9/32, Jolt 3/32로 파라미터 지옥이 실재한다(A·C 구성은 격자에서 골라낸 것이라 선택 편향). 단조 구간은 2D 거듭제곱 곡선 r=10.17 p^0.188로 RMSE 0.108 u(약 0.43 px) 재현된다. 끌림은 느린 획(100~200 px/s)에서 뒤로 3~11 px 쏠리나 553 px/s에서는 접촉 틱 79%, 가닥 뭉침·부호 뒤집힘으로 불안정했다(Jolt는 이탈 maxRel 47 u). 비용(틱 1/240s, 48/200/400 바디): Rapier 0.22/0.91/1.83 ms, Jolt 0.45/2.04/3.20, cannon 1.88/9.01/23.5. dt 1/30에서 Rapier 양호, Jolt 관통 11틱, cannon 폭주(5.5e8 u). 같은 기계 결정성은 4종 모두 main/worker/자식프로세스 일치(Rapier 일반=det 해시 동일). 번들 gzip: Rapier3D 1.64 MB, Jolt wasm-compat 948 KB(분리형 JS 134 KB + wasm 748 KB), cannon 36 KB. 초기화 Rapier 약 170 ms, Jolt 100~150 ms. 추천은 2D 상면 + 압력->반경 곡선(또는 SP-A Rapier2D 다발)이 가성비이고 3D는 연구용이다. 시각 증거 PNG 4장을 직접 열어 확인했다. report.md는 하네스가 보고서 .md Write를 거부해 작성하지 못했고(내용은 이 출력으로 대체), metrics.json과 PROGRESS.md는 샌드박스에 있다.",
+  "libraries": [
+    {
+      "name": "@dimforge/rapier3d-compat",
+      "version": "0.21.0",
+      "licenseSpdx": "Apache-2.0",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "npm 전이 의존성 없음",
+        "wasm 내장 Rust crate(wasm 3,082,103 B를 JS의 base64에서 복호화해 경로 문자열로 추출, crates.io API 조회): nalgebra 0.35.0 (Apache-2.0), parry3d 0.31.1 (Apache-2.0), glam 0.33.10, glamx 0.3.1, hashbrown 0.17.1, ena 0.14.4, smallvec 1.16.2, once_cell 1.21.4, web-time 1.1.0, js-sys 0.3.106 (모두 MIT OR Apache-2.0)"
+      ],
+      "bundleBytesGzip": 1644031,
+      "noteKo": "설치본 package.json(license Apache-2.0)과 LICENSE(Apache-2.0 전문)를 직접 확인. Apache-2.0은 특허 허여(3항)가 LICENSE에 있고 NOTICE 유지 의무가 있으나 저장소 NOTICE 파일은 SP-A에서 없음을 확인했다. rapier3d crate 자체는 crates.io에서 Apache-2.0(0.36.0·0.35.x)으로 확인했으나 설치 wasm이 정확히 어느 버전인지는 문자열로 확정하지 못했다. wasm 내부 crate별 저작권 고지와 wasm-bindgen 글루 고지는 패키지에 없으므로 배포 시 THIRD-PARTY 고지(cargo-about 등) 필요. 번들 JS 4.34 MB(wasm base64 내장), brotli 1.20 MB. 초기화 약 172 ms(import 36 + init 143)."
+    },
+    {
+      "name": "@dimforge/rapier3d-deterministic-compat",
+      "version": "0.21.0",
+      "licenseSpdx": "Apache-2.0",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "npm 전이 의존성 없음",
+        "wasm 내장 crate는 일반 빌드와 같은 계열(Apache-2.0 / MIT OR Apache-2.0), 일반 빌드 대비 wasm 3,105,893 B(+23,790 B)"
+      ],
+      "bundleBytesGzip": 1650831,
+      "noteKo": "일반 빌드와 같은 LICENSE(Apache-2.0)와 API. 같은 기계에서 일반 빌드와 해시가 동일(44ac97cbe8f37f8f)해 교차 기계 차이는 이 환경에서 측정할 수 없다(unverified). 고지 주의사항은 일반 빌드와 같다. 초기화 약 161 ms."
+    },
+    {
+      "name": "jolt-physics",
+      "version": "1.1.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "review",
+      "transitive": [
+        "npm 전이 의존성 없음",
+        "wasm 안 emscripten 런타임 경로 확인: /emsdk/emscripten/system/lib/libcxxabi/src/private_typeinfo.cpp (LLVM libc++abi, Apache-2.0 WITH LLVM-exception)"
+      ],
+      "bundleBytesGzip": 948292,
+      "noteKo": "설치본 LICENSE는 MIT(Copyright 2022-2024 Jorrit Rouwe), JS 헤더에 SPDX-License-Identifier MIT, README에 'distributed under the MIT license'. 원 엔진 JoltPhysics(jrouwe)도 MIT. 다만 wasm 바이너리에 libc++abi 소스 경로가 있어 래퍼 LICENSE에 없는 Apache-2.0 WITH LLVM-exception 코드가 링크돼 있고 THIRD-PARTY 고지가 패키지에 없어 보수적으로 review로 분류했다(구성 요소가 모두 허용 SPDX라 고지 보완 시 ok 승격 가능). 선택 변형은 wasm-compat(기본 진입점) JS 3.999 MB, gzip 948 KB, brotli 650 KB. 비교: wasm(js+wasm 분리) JS 931 KB(gzip 134 KB) + wasm 2,021,569 B(gzip 748 KB), asm.js 5.37 MB(gzip 1.21 MB). 초기화 wasm-compat 약 150 ms, 분리형 약 102 ms. Jolt.js 1.1.0은 FixedConstraint 바인딩이 없어 SixDOF로 대체했고 접촉점별 법선력을 노출하지 않는다."
+    },
+    {
+      "name": "cannon-es",
+      "version": "0.20.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "npm 전이 의존성 없음"
+      ],
+      "bundleBytesGzip": 36084,
+      "noteKo": "설치본 LICENSE는 MIT(Copyright 2015 cannon.js Authors), package.json license MIT, 저장소 pmndrs/cannon-es. 순수 JS. 라이선스는 문제없으나 400 바디에서 틱당 23.5 ms로 프레임 예산 초과, dt 1/30에서 폭주, 드래그 중 접촉 소실이 심해 성능·안정성 사유로 기각."
+    },
+    {
+      "name": "@babylonjs/havok",
+      "version": "미설치(npm 레지스트리 최신 1.3.14, 최종 수정 2026-09-07)",
+      "licenseSpdx": "MIT (npm 메타데이터 표기, 설치본 미확인)",
+      "licenseFileVerified": false,
+      "commercialVerdict": "review",
+      "transitive": [
+        "확인 못 함(설치하지 않음)"
+      ],
+      "bundleBytesGzip": 0,
+      "noteKo": "지시에 따라 설치·실행하지 않았다. npm 메타는 license=MIT, 설명 'The Havok physics engine for the web', unpackedSize 약 4.37 MB. 저장소 README는 라이선스 절 없이 질문을 Babylon 포럼으로 안내하고, BabylonJS/havok main·master의 LICENSE 원문 URL은 404였다(GitHub API는 세션에서 접근 불가). Babylon.js 문서·포럼 답변은 '무료(MIT)'라고 하나 포럼 답은 비공식이며 Havok 바이너리 엔진 자체의 약관이 래퍼 MIT와 같은지 확인하지 못했다. 래퍼 MIT와 바이너리 약관이 다를 수 있으므로 법무 검토 전 채택 금지."
+    }
+  ],
+  "experiments": [
+    {
+      "name": "정적 발자국 스윕(압력 0.05~1.0, 3구성 x 4엔진)",
+      "result": "A-curved Rapier 반경 5.69->9.46 u(p<=0.7 단조), p0.9 7.10으로 꺾임. C-soft-flare Rapier는 전 구간 단조 4.20->9.96. B-straight는 무반응. Jolt는 A만 유사, C·B는 퍼지지 않음. cannon-es는 비단조.",
+      "metrics": "A-curved Rapier rmsRw(u) p0.05/0.1/0.2/0.35/0.5/0.7/0.9/1.0 = 5.69/6.71/7.70/8.24/8.92/9.46/7.10/7.46, hull 130/175/207/246/278/310/237/242; Jolt 6.04/6.90/8.02/8.29/9.00/9.05/7.15/6.06; cannon 6.73/6.71/7.23/7.70/6.83/5.49/3.42/3.59; B-straight Rapier 2.90~2.41~2.72; C-soft-flare Rapier 4.20->9.96. Rapier 일반=det 값 동일.",
+      "evidence": [
+        "out/static-sweep.json",
+        "out/static-sweep.log",
+        "out/scatter-pressure.png를 Read로 열어 확인: A-curved Rapier 0.2·0.5는 약 24점의 털끝 고리(0.5에서 더 큼), 0.9는 90여 점이 고리 안쪽까지 채워지고 대부분 빨강(큰 힘). B-straight는 반경 약 2.5 u 작은 덩어리, 0.9에서 바깥 점이 몇 개 튐. C-soft-flare는 R5.2->8.2->9.6으로 고리가 계속 커짐"
+      ]
+    },
+    {
+      "name": "파라미터 격자 탐색(실현 난이도)",
+      "result": "Rapier 정적 90조합 중 단조 46(퇴화 5 포함, 실질 41), NaN 0, 관통 0. 굽힘 격자 엔진당 32조합에서 반경-압력 Spearman>=0.9는 Rapier 9, Jolt 3, 반경·총 법선력 모두는 Rapier 0, Jolt 2. 총 법선력은 좌굴 때 급증해 압력에 비단조.",
+      "metrics": "격자1: S{3,4,5} x 주파수{1,2,4,8,16}Hz x splay{-10,0,5,12,20,30}도 x 압력 0.2/0.5/0.9; 격자2: curve{0,4,8,14}도 x freq{3,4,6,8}Hz x splay{0,8}도 x 압력 6점; 마디 좌표 최대 14.9 u",
+      "evidence": [
+        "out/grid-rapier.json",
+        "out/grid2.json",
+        "metrics.json grid 항목"
+      ]
+    },
+    {
+      "name": "2D 곡선 피팅(압력->반경)",
+      "result": "단조 구간(p<=0.7)에서 거듭제곱 r=10.17 p^0.188 RMSE 0.108 u(약 0.43 px), 헤르츠형 0.156, 제곱근형 0.220, 선형 0.404. 전체 구간은 모든 곡선이 0.89~1.04 u(3.6~4.2 px) 어긋남(좌굴 구간 때문).",
+      "metrics": "최대 오차(단조): 거듭제곱 0.177 u, 헤르츠 0.257, 제곱근 0.345, 선형 0.676",
+      "evidence": [
+        "out/viz.json fit 항목",
+        "run-viz.ts"
+      ]
+    },
+    {
+      "name": "압력별 짧은 획 렌더(저장소 CPU 참조 래스터러, fixture curve/slow-pressure-ramp/fast-flick)",
+      "result": "3D 접촉 dab는 550 px/s 이상에서 S곡선을 따르지 못하고(Rapier 접촉 틱 79%, 45%) 끊긴 덩어리로 나온다. slow-pressure-ramp(3 s)는 가닥별 가는 선이 엇갈리며 압력에 따라 폭이 변하나 중간 압력에서 짙은 덩어리가 생긴다. 2D 상면 모델(곡선 피팅 반경, 같은 슬롯)은 매끄러운 평행 선과 방추형을 만든다.",
+      "metrics": "curve: Rapier dab 9341(접촉 0.79, maxRel 10.4, 관통 0), Jolt 8362(관통 12틱); slow-pressure-ramp: Rapier 55026, Jolt 24055; fast-flick: Rapier 1332(접촉 0.45), Jolt 172(접촉 0.30, maxRel 47.4 u, 관통 3틱); 2D dab 11712/17304/6804. flow=0.22*min(1,f/p90), dab 반지름 1.7 px",
+      "evidence": [
+        "out/strokes-sheet.png를 Read로 열어 확인: curve 3D 열은 시작점에 털끝 고리와 세로 짧은 획, 곡선 왼쪽 절반 근처에만 짧게 끊긴 선·덩어리가 있고 오른쪽 S 꼬리는 거의 없음; 2D 열은 S곡선을 따라 24가닥 평행 선이 매끄럽게 퍼짐. slow-pressure-ramp 3D는 가닥 선이 엇갈리고 중간에 짙은 덩어리, 2D는 고른 방추형. fast-flick 3D는 작은 덩어리와 희미한 꼬리뿐(Jolt는 점 몇 개)",
+        "out/stroke-*.png 개별 이미지"
+      ]
+    },
+    {
+      "name": "속도 의존 끌림(curve 시간축 x1/x3/x6, 직선 정속 0~600 px/s)",
+      "result": "느린 획에서 접촉 중심이 손잡이 뒤로 쏠림(Rapier 202 px/s 중앙값 -6.4 px, Jolt -8.9 px)이나 553 px/s에서는 접촉 틱 79%로 줄고 부호가 뒤집힘(Rapier 중앙값 +7.2 px). 직선 정속 A-curved Rapier 마찰 0.6 오프셋은 v=0/60/150/300/600에서 +0.6/+1.9/+1.9/-11.2/-10.1 px로 비단조. cannon-es는 v>=60에서 접촉이 거의 끊겨 측정 불가.",
+      "metrics": "속도 553/202/103 px/s에서 Rapier 평균 lag +5.0/-6.4/-3.1 px, 접촉 틱 0.79/0.95/1.00; Jolt -1.1/-11.2/-1.1 px, 관통 12/0/0틱",
+      "evidence": [
+        "out/slow.json",
+        "out/drag.json",
+        "out/strokes-slow.png를 Read로 열어 확인: x1은 끊긴 모양, x3·x6은 S곡선을 따라가며 가닥별 줄무늬와 끝 갈라짐이 보이고 x3 시작부에서 가닥이 뒤로 끌려 늘어짐. x6은 줄이 격자처럼 교차하고 짙은 덩어리가 많아 지저분(x3·x6은 flow 감쇠 표시 설정 적용)"
+      ]
+    },
+    {
+      "name": "틱당 비용·확장성(바디 48/200/400, 틱 1/240 s)",
+      "result": "Rapier가 가장 빠르고 cannon-es는 400 바디에서 프레임 예산(틱 4개)을 크게 초과.",
+      "metrics": "step 중앙값 ms: Rapier 0.22/0.91/1.83, Jolt 0.45/2.04/3.20, cannon 1.88/9.01/23.48. S=5(200/400): Rapier 0.88/2.13, Jolt 1.56/2.97, cannon 8.08/25.59. 접촉 읽기 400 바디: Rapier 0.107 ms, Jolt 0.017, cannon 0.002. 400 바디 p95: Rapier 2.33, Jolt 4.21, cannon 38.3 ms",
+      "evidence": [
+        "out/scale.json"
+      ]
+    },
+    {
+      "name": "안정성(dt 변경·스파이크)",
+      "result": "Rapier는 dt 1/30까지 관통·폭주 없음. Jolt는 1/30에서 관통 11틱. cannon-es는 1/30에서 폭주. 50 ms 스파이크는 3종 모두 생존(cannon 관통 1틱). NaN은 없음. 정적 떨림은 좌굴 전이 구간(p0.05, 0.9~1.0)에서 6e-3~9e-3 u로 커짐.",
+      "metrics": "최대 반경 u: Rapier 9.5/9.5/9.7/10.3/9.6, Jolt 9.5/9.5/9.9/11.6/9.5, cannon 9.7/9.8/10.0/5.5e8/12.4 (dt 1/240,1/120,1/60,1/30,스파이크)",
+      "evidence": [
+        "out/dt.json",
+        "out/static-sweep.json jitter 필드"
+      ]
+    },
+    {
+      "name": "결정성(main/worker_threads/자식 프로세스, 일반 vs deterministic)",
+      "result": "4종 모두 같은 기계에서 세 실행 컨텍스트와 재실행에서 해시 일치. Rapier 일반과 deterministic 해시 동일.",
+      "metrics": "zigzag 해시: rapier 44ac97cbe8f37f8f (일반=det), jolt d6f0a503c005ac18, cannon-es a601c1f4f2e862cc; curve: rapier e290b706b8a580d7, jolt 67b5737962cc3004, cannon d2b61d9611022edd",
+      "evidence": [
+        "out/determinism.json"
+      ]
+    },
+    {
+      "name": "번들 크기·초기화 시간",
+      "result": "Rapier3D는 SP-A의 2D(gzip 1.28 MB)보다 큼. Jolt는 분리형이 가장 작은 wasm 경로.",
+      "metrics": "gzip: rapier3d 1,644,031, rapier3d-det 1,650,831, jolt wasm-compat 948,292, jolt wasm 분리 JS 133,721 + wasm 747,582, jolt asm.js 1,209,158, cannon 36,084. 초기화(총 ms): rapier 172, rapier-det 161, jolt 150, jolt-wasm 102, cannon 49(import만)",
+      "evidence": [
+        "out/bundle-size.json",
+        "out/init-times.json"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "item": "2D 상면 모델 + 압력->반경 곡선(룩업 테이블, 거듭제곱 r=10.17 p^0.188 등)",
+      "decision": "adopt-engine-module",
+      "rationaleKo": "단조 구간에서 3D 결과를 RMSE 0.108 u(약 0.43 px)로 재현하고 wasm 번들 1.6 MB·초기화 170 ms를 쓰지 않는다. 가닥 퍼짐·끌림이 필요하면 SP-A의 Rapier2D 다발(N=128 틱당 0.58 ms)을 같이 쓴다. 3D가 주는 추가분(좌굴 구간 비단조 꺾임)은 룩업 테이블로 흉내 낼 수 있다."
+    },
+    {
+      "item": "Rapier3D(일반/deterministic) 3D 붓털",
+      "decision": "experiment-only",
+      "rationaleKo": "라이선스 ok, 비용 낮음(400 바디 1.83 ms), dt 내성 좋음, 느린 획(200 px/s 이하)에서 가닥별 줄무늬·끝 갈라짐이 매력적이다. 그러나 550 px/s 획에서 접촉이 끊기고 압력 0.9 이상은 좌굴, 곧은 가닥은 압력에 무반응이며 구성마다 파라미터 재탐색이 필요하다(격자 단조 46/90). 번들 gzip 1.64 MB. 실험 배지 레인 연구용으로만."
+    },
+    {
+      "item": "하이브리드: 2D 물리 + 오프라인 3D 베이크 압력->반경·flow 룩업",
+      "decision": "experiment-only",
+      "rationaleKo": "런타임 wasm 3D 없이 3D의 비단조 특성을 프리셋별로 구워 쓰는 안. 이번 스파이크에서는 곡선 피팅과 2D 상면 렌더만 검증했고 베이크 도구의 실제 품질은 unverified다."
+    },
+    {
+      "item": "jolt-physics 1.1.0 (wasm-compat 계열)",
+      "decision": "defer",
+      "rationaleKo": "MIT이나 wasm에 libc++abi(Apache-2.0 WITH LLVM-exception) 흔적이 있고 THIRD-PARTY 고지가 없어 review. 접촉점별 법선력 미노출·FixedConstraint 바인딩 없음, dt 1/30 관통, 빠른 획 이탈(maxRel 47 u). 분리형 wasm은 gzip 약 880 KB로 작으나 Rapier 대비 이점이 없다."
+    },
+    {
+      "item": "cannon-es 0.20.0",
+      "decision": "reject",
+      "rationaleKo": "MIT로 라이선스는 ok이나 400 바디 틱당 23.5 ms, dt 1/30 폭주, 드래그 중 접촉 소실(v>=60에서 틱당 0~5점)로 성능·안정성 사유 기각(라이선스 사유 아님)."
+    },
+    {
+      "item": "@babylonjs/havok",
+      "decision": "defer",
+      "rationaleKo": "설치·사용하지 않음. npm 메타는 MIT이나 GitHub LICENSE 원문 확인 실패(404)와 Havok 바이너리 엔진 약관 불명확으로 commercialVerdict=review. 법무 검토 전 채택 금지."
+    }
+  ],
+  "blockers": [
+    "report.md를 작성하지 못했다: 하네스가 'Subagents should return findings as text, not write report files'로 Write를 거부해 Bash 우회 없이 보고 내용을 이 StructuredOutput으로 대체했다. 표 중심 보고서가 필요하면 상위에서 이 출력과 metrics.json으로 생성해야 한다.",
+    "@babylonjs/havok의 LICENSE 원문과 바이너리 약관을 확인하지 못했다(설치 금지 지시, GitHub LICENSE 원문 URL 404, GitHub API 세션 접근 불가). 따라서 review로만 판정했다."
+  ],
+  "filesWritten": [
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/metrics.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/PROGRESS.md",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/make-metrics.mjs",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/run-viz.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/run-viz-slow.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/run-slow.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/out/scatter-pressure.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/out/strokes-sheet.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/out/strokes-slow.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/out/viz.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-D/out/slow.json"
+  ],
+  "commandsRun": [
+    {
+      "command": "/home/user/toonstudio/node_modules/.bin/tsx run-viz.ts",
+      "result": "성공(12.7 s). 산점도·획 시트 PNG와 viz.json 생성, 2D 곡선 피팅 출력"
+    },
+    {
+      "command": "/home/user/toonstudio/node_modules/.bin/tsx run-slow.ts",
+      "result": "성공. 속도 x1/x3/x6 lag 측정, out/slow.json"
+    },
+    {
+      "command": "VIZ_NO_MAIN=1 tsx run-viz-slow.ts",
+      "result": "성공. out/strokes-slow.png"
+    },
+    {
+      "command": "node make-metrics.mjs",
+      "result": "성공. metrics.json 96,996 B"
+    },
+    {
+      "command": "curl crates.io API (nalgebra, parry3d, glam, glamx, hashbrown, ena, smallvec, once_cell, web-time, js-sys, rapier3d)",
+      "result": "전 crate 라이선스 확인(Apache-2.0 또는 MIT OR Apache-2.0)"
+    },
+    {
+      "command": "npm view / curl raw.githubusercontent / WebSearch for @babylonjs/havok (설치 없음)",
+      "result": "npm 메타 MIT 1.3.14, GitHub LICENSE 원문 404, 바이너리 약관 확인 불가"
+    },
+    {
+      "command": "strings jolt-physics.wasm.wasm | grep emsdk",
+      "result": "libcxxabi/private_typeinfo.cpp 경로 확인"
+    },
+    {
+      "command": "이전 세션에서 완료된 측정(재실행 안 함): run-static, run-grid, run-grid2, run-drag, run-scale, run-dt, run-determinism, bundle-size, run-init, license-audit",
+      "result": "out/*.json 결과를 읽어 사용(PROGRESS.md 기준 완료분)"
+    }
+  ],
+  "risks": [
+    "A-curved·C-soft-flare 구성은 격자 탐색에서 단조 증가하는 것을 골라 쓴 것이라 선택 편향이 있다(실질 단조 41/90).",
+    "Jolt 접촉력은 뿌리 람다 대용이라 flow 정규화가 부정확하며 Rapier와 같은 정확도의 비교가 아니다.",
+    "strokes-slow.png의 x3·x6 flow 감쇠는 표시 설정이며 물리 결과가 아니다. dab 반지름 1.7 px, flow=0.22*min(1,f/p90)도 제품 값이 아니다.",
+    "Rapier wasm 내부 crate 목록은 경로 문자열 추출 기반이라 누락 가능성이 있다. 설치 wasm의 rapier3d crate 정확한 버전은 확정하지 못했다.",
+    "Jolt를 review로 분류한 것은 libc++abi 흔적 기반의 보수적 판정이다(고지 보완 시 ok 승격 가능)."
+  ],
+  "unverified": [
+    "브라우저(wasm 실행 속도, 워커, 저사양 모바일, WebGPU 연동 비용): 이 환경에서 측정하지 못했다. 모든 ms는 Node 22 단일 스레드 값이다.",
+    "교차 기계·브라우저 결정성: 같은 기계 Node main/worker/자식 프로세스 일치만 확인했다. Rapier deterministic 빌드의 교차 플랫폼 이점은 측정할 수 없다.",
+    "Havok 바이너리 약관과 설치본 LICENSE: 설치하지 않았고 원문 확인 실패.",
+    "소프트바디(Jolt SoftBody 등)와 Rapier 다중체(reduced-coordinate) 조인트 변형: 시도하지 못했다(Rapier 어댑터의 수동 스프링 경로 미구현).",
+    "빠른 획(약 550 px/s)에서 접촉을 유지하는 파라미터 구성: 마찰·주파수·밀도 일부를 바꿔 봤으나 찾지 못했고, 더 넓은 탐색(질량 밀도, 하위 스텝, 가닥 수 증가)은 하지 않았다.",
+    "오프라인 3D 베이크 하이브리드의 실제 품질: 구현하지 않았다(곡선 피팅과 2D 상면 렌더만 검증).",
+    "Jolt asm.js 변형의 초기화 시간: 측정하지 않았다.",
+    "Apache-2.0 NOTICE 파일 유무는 SP-A 확인(저장소 NOTICE 404)에 의존했고 이번 세션에 재조회하지 않았다."
+  ],
+  "followUps": [
+    "2D 상면 모델에 비단조 룩업(좌굴 구간 반경 감소, flow 증가)을 넣어 곡선 기반 하이브리드를 구현하고 3D 결과와 픽셀 단위로 비교한다.",
+    "Jolt wasm 배포 시 libc++abi·emscripten 런타임 THIRD-PARTY 고지를 만들어 review->ok 재판정한다.",
+    "Havok은 법무에서 바이너리 약관(Microsoft/Havok) 문서를 확보한 뒤 재판정한다.",
+    "Rapier 3D를 쓰기로 한다면 THIRD-PARTY 고지(cargo-about)와 번들 분리 로딩(gzip 1.64 MB)을 레인 지연 로딩으로 설계한다.",
+    "빠른 획 대응: 하위 스텝 증가, 가닥 질량·마찰 재탐색, 핸들 속도 기반 가닥 사전 기울임 등을 별도 스파이크로 시험한다.",
+    "보고서 .md 생성이 필요하면 상위에서 이 출력과 metrics.json으로 작성한다."
+  ]
+}

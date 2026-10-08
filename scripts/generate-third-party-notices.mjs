@@ -936,6 +936,14 @@ export function validateOpaqueWasmThirdPartyInventory(
         throw new Error(`${policy.id}/NOTICE omitted ${component.name} provenance.`);
       }
     }
+    // NOTICE 의 '출하 산출물' 해시 표는 인벤토리(위에서 실파일과 대조됨)와 같아야 한다. wasm 을 다시 빌드하고
+    // 인벤토리·무결성 파일만 갱신하면 NOTICE 가 이미 없는 바이너리의 해시를 주장하게 되는데, 이 표는 이전에
+    // 아무도 검증하지 않아 세 디렉터리에서 낡은 채로 남아 있었다.
+    for (const artifact of inventory.artifacts) {
+      if (!notice.includes(`| ${artifact.path} | ${artifact.sha256} |`)) {
+        throw new Error(`${policy.id}/NOTICE lists a stale SHA-256 for ${artifact.path}.`);
+      }
+    }
   }
   return { inventory, documents };
 }

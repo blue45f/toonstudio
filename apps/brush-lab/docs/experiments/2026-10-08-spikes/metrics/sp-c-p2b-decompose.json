@@ -1,0 +1,312 @@
+{
+  "raster": [
+    {
+      "tag": "기본",
+      "preset": "pencil-hb",
+      "size": 128,
+      "devRepo": 2.546,
+      "wMeanRepo": 3.88,
+      "wMedian": 3.49,
+      "devMedianHalf": 2.351
+    },
+    {
+      "tag": "통과",
+      "preset": "pencil-hb",
+      "size": 128,
+      "devRepo": 1.251,
+      "wMeanRepo": 3.66,
+      "wMedian": 3.36,
+      "devMedianHalf": 1.104
+    },
+    {
+      "tag": "1€만(CP끔)",
+      "preset": "pencil-hb",
+      "size": 128,
+      "devRepo": 4.651,
+      "wMeanRepo": 3.63,
+      "wMedian": 3.36,
+      "devMedianHalf": 4.514
+    },
+    {
+      "tag": "기본",
+      "preset": "ink-maru-pen",
+      "size": 128,
+      "devRepo": 1.824,
+      "wMeanRepo": 2.38,
+      "wMedian": 2.13,
+      "devMedianHalf": 1.695
+    },
+    {
+      "tag": "통과",
+      "preset": "ink-maru-pen",
+      "size": 128,
+      "devRepo": 0.797,
+      "wMeanRepo": 2.65,
+      "wMedian": 2.19,
+      "devMedianHalf": 0.57
+    },
+    {
+      "tag": "1€만(CP끔)",
+      "preset": "ink-maru-pen",
+      "size": 128,
+      "devRepo": 4.521,
+      "wMeanRepo": 2.53,
+      "wMedian": 2.23,
+      "devMedianHalf": 4.373
+    },
+    {
+      "tag": "기본",
+      "preset": "ballpoint",
+      "size": 128,
+      "devRepo": 2.064,
+      "wMeanRepo": 3.04,
+      "wMedian": 2.85,
+      "devMedianHalf": 1.966
+    },
+    {
+      "tag": "통과",
+      "preset": "ballpoint",
+      "size": 128,
+      "devRepo": 0.544,
+      "wMeanRepo": 3.16,
+      "wMedian": 2.87,
+      "devMedianHalf": 0.402
+    },
+    {
+      "tag": "1€만(CP끔)",
+      "preset": "ballpoint",
+      "size": 128,
+      "devRepo": 4.277,
+      "wMeanRepo": 3.01,
+      "wMedian": 2.88,
+      "devMedianHalf": 4.215
+    },
+    {
+      "tag": "기본",
+      "preset": "pencil-hb",
+      "size": 256,
+      "devRepo": 3.647,
+      "wMeanRepo": 3.35,
+      "wMedian": 3.29,
+      "devMedianHalf": 3.614
+    },
+    {
+      "tag": "통과",
+      "preset": "pencil-hb",
+      "size": 256,
+      "devRepo": 1.12,
+      "wMeanRepo": 3.39,
+      "wMedian": 3.23,
+      "devMedianHalf": 1.042
+    },
+    {
+      "tag": "1€만(CP끔)",
+      "preset": "pencil-hb",
+      "size": 256,
+      "devRepo": 5.927,
+      "wMeanRepo": 3.42,
+      "wMedian": 3.24,
+      "devMedianHalf": 5.835
+    },
+    {
+      "tag": "기본",
+      "preset": "ink-maru-pen",
+      "size": 256,
+      "devRepo": 3.403,
+      "wMeanRepo": 2.38,
+      "wMedian": 2.13,
+      "devMedianHalf": 3.279
+    },
+    {
+      "tag": "통과",
+      "preset": "ink-maru-pen",
+      "size": 256,
+      "devRepo": 0.401,
+      "wMeanRepo": 2.33,
+      "wMedian": 2.1,
+      "devMedianHalf": 0.287
+    },
+    {
+      "tag": "1€만(CP끔)",
+      "preset": "ink-maru-pen",
+      "size": 256,
+      "devRepo": 6.015,
+      "wMeanRepo": 2.22,
+      "wMedian": 2.15,
+      "devMedianHalf": 5.983
+    },
+    {
+      "tag": "기본",
+      "preset": "ballpoint",
+      "size": 256,
+      "devRepo": 3.535,
+      "wMeanRepo": 2.97,
+      "wMedian": 2.85,
+      "devMedianHalf": 3.477
+    },
+    {
+      "tag": "통과",
+      "preset": "ballpoint",
+      "size": 256,
+      "devRepo": 0.557,
+      "wMeanRepo": 2.8,
+      "wMedian": 2.73,
+      "devMedianHalf": 0.523
+    },
+    {
+      "tag": "1€만(CP끔)",
+      "preset": "ballpoint",
+      "size": 256,
+      "devRepo": 5.739,
+      "wMeanRepo": 2.9,
+      "wMedian": 2.86,
+      "devMedianHalf": 5.72
+    },
+    {
+      "tag": "기본",
+      "preset": "pencil-hb",
+      "size": 512,
+      "devRepo": 6.157,
+      "wMeanRepo": 3.36,
+      "wMedian": 3.32,
+      "devMedianHalf": 6.135
+    },
+    {
+      "tag": "통과",
+      "preset": "pencil-hb",
+      "size": 512,
+      "devRepo": 1.098,
+      "wMeanRepo": 3.23,
+      "wMedian": 3.07,
+      "devMedianHalf": 1.017
+    },
+    {
+      "tag": "1€만(CP끔)",
+      "preset": "pencil-hb",
+      "size": 512,
+      "devRepo": 8.148,
+      "wMeanRepo": 3.32,
+      "wMedian": 3.29,
+      "devMedianHalf": 8.135
+    },
+    {
+      "tag": "기본",
+      "preset": "ink-maru-pen",
+      "size": 512,
+      "devRepo": 5.941,
+      "wMeanRepo": 2.33,
+      "wMedian": 2.11,
+      "devMedianHalf": 5.832
+    },
+    {
+      "tag": "통과",
+      "preset": "ink-maru-pen",
+      "size": 512,
+      "devRepo": 0.464,
+      "wMeanRepo": 2.14,
+      "wMedian": 2.13,
+      "devMedianHalf": 0.456
+    },
+    {
+      "tag": "1€만(CP끔)",
+      "preset": "ink-maru-pen",
+      "size": 512,
+      "devRepo": 8.429,
+      "wMeanRepo": 2.3,
+      "wMedian": 2.11,
+      "devMedianHalf": 8.335
+    },
+    {
+      "tag": "기본",
+      "preset": "ballpoint",
+      "size": 512,
+      "devRepo": 5.965,
+      "wMeanRepo": 2.94,
+      "wMedian": 2.73,
+      "devMedianHalf": 5.857
+    },
+    {
+      "tag": "통과",
+      "preset": "ballpoint",
+      "size": 512,
+      "devRepo": 0.471,
+      "wMeanRepo": 2.7,
+      "wMedian": 2.79,
+      "devMedianHalf": 0.515
+    },
+    {
+      "tag": "1€만(CP끔)",
+      "preset": "ballpoint",
+      "size": 512,
+      "devRepo": 8.385,
+      "wMeanRepo": 2.89,
+      "wMedian": 2.75,
+      "devMedianHalf": 8.311
+    }
+  ],
+  "path": [
+    {
+      "size": 128,
+      "stage": "raw",
+      "maxPx": 0,
+      "overshootPx": 0,
+      "points": 217
+    },
+    {
+      "size": 128,
+      "stage": "sumi 기본",
+      "maxPx": 1.481,
+      "overshootPx": 0,
+      "points": 219
+    },
+    {
+      "size": 128,
+      "stage": "sumi CP끔",
+      "maxPx": 3.858,
+      "overshootPx": 0,
+      "points": 219
+    },
+    {
+      "size": 256,
+      "stage": "raw",
+      "maxPx": 0,
+      "overshootPx": 0,
+      "points": 217
+    },
+    {
+      "size": 256,
+      "stage": "sumi 기본",
+      "maxPx": 2.963,
+      "overshootPx": 0,
+      "points": 219
+    },
+    {
+      "size": 256,
+      "stage": "sumi CP끔",
+      "maxPx": 5.159,
+      "overshootPx": 0,
+      "points": 219
+    },
+    {
+      "size": 512,
+      "stage": "raw",
+      "maxPx": 0,
+      "overshootPx": 0,
+      "points": 217
+    },
+    {
+      "size": 512,
+      "stage": "sumi 기본",
+      "maxPx": 5.869,
+      "overshootPx": 0,
+      "points": 219
+    },
+    {
+      "size": 512,
+      "stage": "sumi CP끔",
+      "maxPx": 7.002,
+      "overshootPx": 0,
+      "points": 219
+    }
+  ]
+}

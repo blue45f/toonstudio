@@ -1,0 +1,50 @@
+{
+  "fast-flick@128": {
+    "failCount": "0/31",
+    "failed": ""
+  },
+  "zigzag@128": {
+    "failCount": "0/31",
+    "failed": ""
+  },
+  "line@128": {
+    "failCount": "0/31",
+    "failed": ""
+  },
+  "fast-flick@256": {
+    "failCount": "0/31",
+    "failed": ""
+  },
+  "zigzag@256": {
+    "failCount": "0/31",
+    "failed": ""
+  },
+  "line@256": {
+    "failCount": "0/31",
+    "failed": ""
+  },
+  "fast-flick@512": {
+    "failCount": "4/31",
+    "failed": "pencil-hb,pencil-mechanical,ink-g-pen,ink-maru-pen"
+  },
+  "zigzag@512": {
+    "failCount": "0/31",
+    "failed": ""
+  },
+  "line@512": {
+    "failCount": "0/31",
+    "failed": ""
+  },
+  "fast-flick@1024": {
+    "failCount": "6/31",
+    "failed": "pencil-hb,pencil-6b,pencil-mechanical,ink-g-pen,ink-maru-pen,hatch-pen"
+  },
+  "zigzag@1024": {
+    "failCount": "0/31",
+    "failed": ""
+  },
+  "line@1024": {
+    "failCount": "0/31",
+    "failed": ""
+  }
+}

@@ -117,6 +117,11 @@ export class HokusaiLane extends IsolatedStrokeLane {
     return report;
   }
 
+  /** Hokusai는 선형 광량으로 합성하고 sRGB로 인코딩해 돌려주므로 색 설정(color_h/s/v)도 선형이어야 sRGB 색이 그대로 나온다. */
+  protected override get colorSpace(): "srgb" | "linear" {
+    return "linear";
+  }
+
   protected async prepareEngine(_env: LaneEnvironment, _config: LaneInit): Promise<void> {
     if (typeof WebAssembly !== "object") {
       throw new LaneUnavailableError("wasm-artifact-missing", "WebAssembly 전역이 없어 Hokusai를 로드할 수 없다");
