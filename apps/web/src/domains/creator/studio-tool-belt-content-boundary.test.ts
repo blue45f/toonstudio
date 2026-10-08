@@ -264,6 +264,22 @@ describe("Studio ToolBelt content module boundary", () => {
     expect(wiredPropNames).toEqual(propNames);
   });
 
+  // 호출 지점(StudioCuttoonEditorChrome)은 @ts-nocheck라 props 누락을 타입이 잡지 못한다.
+  // 2026-10-06 a0dd23315는 AI 팝업의 타입 오류를 addRenderedImage props 선언으로 덮었지만
+  // 호출 지점은 그 prop을 넘기지 않아 LoRA 생성 이미지 캔버스 삽입이 런타임에 실패했다.
+  // 호스트 동작은 안정 핸들러 묶음 한 곳으로만 흐른다.
+  it("keeps stable handlers out of the per-render props contract", () => {
+    const toolBelt = moduleShape("./StudioToolBeltContent.tsx");
+    const handlerNames = new Set(
+      propertyNames(findInterface(toolBelt, "StudioToolBeltContentHandlers").members)
+    );
+    const propNames = propertyNames(
+      findInterface(toolBelt, "StudioToolBeltContentProps").members
+    );
+
+    expect(propNames.filter((name) => handlerNames.has(name))).toEqual([]);
+  });
+
   it("keeps menu ownership and the body-portal dismissal contract in StudioPage", () => {
     const page = moduleShape("./StudioCuttoonEditorHost.tsx").source;
     const toolBelt = moduleShape("./StudioToolBeltContent.tsx").source;

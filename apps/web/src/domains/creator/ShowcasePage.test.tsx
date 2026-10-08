@@ -104,7 +104,7 @@ describe("ShowcasePage", () => {
     expect(article).not.toBeNull();
     const scope = within(article as HTMLElement);
     // 표지 이미지 링크와 CTA 모두 작품 상세(정식 경로)로 이어진다.
-    const workLinks = scope.getAllByRole("link").filter((link) => link.getAttribute("href") === "/create/w2");
+    const workLinks = scope.getAllByRole("link").filter((link) => link.getAttribute("href") === "/showcase/work/w2");
     expect(workLinks.length).toBeGreaterThanOrEqual(2);
     expect(scope.getByRole("link", { name: /작가 프로필/u }).getAttribute("href")).toBe("/u/author-1");
     expect(scope.getByText("빛나 작가")).toBeTruthy();

@@ -22,18 +22,33 @@ describe("service-owned collaboration reconnection", () => {
     expect(options.retry).toHaveBeenCalledOnce();
     expect(result.current).toBe("retrying");
   });
-  it("bounds retries and does not multiply timers on visibility or online events", () => {
+  it("does not exhaust: keeps retrying at the capped interval and restarts the ladder on online", () => {
     const options = input();
     const { result, rerender } = renderHook(props => useStudioLiveAutoReconnect(props), { initialProps: options });
     for (const delay of STUDIO_LIVE_AUTO_RECONNECT_DELAYS) {
-      act(() => { window.dispatchEvent(new Event("online")); document.dispatchEvent(new Event("visibilitychange")); });
       act(() => vi.advanceTimersByTime(delay));
       rerender({ ...options, failed: false });
       rerender(options);
     }
-    expect(result.current).toBe("exhausted");
-    act(() => { window.dispatchEvent(new Event("online")); vi.advanceTimersByTime(60_000); });
-    expect(options.retry).toHaveBeenCalledTimes(3);
+    // 사다리(2+5+10+30초)를 다 쓴 뒤에도 멈추지 않고 마지막 간격으로 계속 시도한다.
+    expect(options.retry).toHaveBeenCalledTimes(STUDIO_LIVE_AUTO_RECONNECT_DELAYS.length);
+    expect(result.current).toBe("waiting");
+    act(() => vi.advanceTimersByTime(29_999));
+    expect(options.retry).toHaveBeenCalledTimes(STUDIO_LIVE_AUTO_RECONNECT_DELAYS.length);
+    act(() => vi.advanceTimersByTime(1));
+    expect(options.retry).toHaveBeenCalledTimes(STUDIO_LIVE_AUTO_RECONNECT_DELAYS.length + 1);
+    // 타이머가 중복되지 않는다 — 가시성 이벤트가 와도 예약은 하나만 유지된다.
+    act(() => { document.dispatchEvent(new Event("visibilitychange")); });
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(options.retry).toHaveBeenCalledTimes(STUDIO_LIVE_AUTO_RECONNECT_DELAYS.length + 2);
+    // 네트워크가 돌아오면 긴 백오프를 버리고 첫 간격(2초)부터 다시 시작한다.
+    rerender({ ...options, failed: false });
+    rerender(options);
+    act(() => { window.dispatchEvent(new Event("online")); });
+    act(() => vi.advanceTimersByTime(1_999));
+    expect(options.retry).toHaveBeenCalledTimes(STUDIO_LIVE_AUTO_RECONNECT_DELAYS.length + 2);
+    act(() => vi.advanceTimersByTime(1));
+    expect(options.retry).toHaveBeenCalledTimes(STUDIO_LIVE_AUTO_RECONNECT_DELAYS.length + 3);
   });
   it.each(["offline", "hidden"] as const)("pauses while %s and resumes automatically", reason => {
     const options = input();

@@ -211,7 +211,7 @@ export function StudioAiProductionLaunchpad({
         <ArrowRight size={14} className="text-accent" aria-hidden />
       </a>
       <a
-        href="/create/promo"
+        href="/showcase/promo"
         target="_blank"
         rel="noopener noreferrer"
         className={cn(

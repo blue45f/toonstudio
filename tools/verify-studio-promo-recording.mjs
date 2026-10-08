@@ -249,9 +249,10 @@ test("audio ends at the timeline boundary while the browser flushes the final vi
   context.tick(15_000);
   assert.equal(context.audioStoppedAt(), 15_000, "video flushing must not append an extra quarter-second of audio");
   assert.equal(context.recorder.state, "recording", "preserve the final video paint/encoder opportunity");
-  context.runTimers(15_249);
-  assert.equal(context.recorder.state, "recording");
-  context.runTimers(15_250);
+  // 끝 프레임은 페인트 두 번 뒤에 트랙에서 빠진다. 한 번의 페인트로는 아직 멈추지 않는다.
+  context.tick(15_020);
+  assert.equal(context.recorder.state, "recording", "one paint must not stop the recorder before the final frame is captured");
+  context.tick(15_040);
   assert.equal(context.recorder.state, "inactive");
   context.stopEvent();
   assert.ok((await context.result()).blob.size > 0);

@@ -33,9 +33,14 @@ describe("OpenDataLabPage", () => {
     // 아트가 맞는 소스(ambientCG)는 실제 일러스트를 마크로 쓴다.
     const ambient = container.querySelector("article.research-source--ambientcg");
     expect(ambient?.querySelector("img")?.getAttribute("src")).toBe("/brand/illustrated-20260928/materials.webp");
-    // 아트가 없는 소스(NASA)는 타이포 표지 마크와 한 줄 정체성을 단다.
+    // 브랜드 일러스트가 없는 소스(NASA)는 소스 성격이 읽히는 장면 표지를 쓴다.
     const nasa = container.querySelector("article.research-source--nasa");
-    expect(nasa?.querySelector(".resource-source-cover")).toBeTruthy();
+    expect(nasa?.querySelector("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/nasa.webp");
+    // 허브 카드 14곳 전부 실물 아트 표지다 — 타이포 표지는 한 곳도 남지 않는다.
+    for (const card of container.querySelectorAll("article.research-source")) {
+      expect(card.querySelector("img")).toBeTruthy();
+      expect(card.querySelector(".resource-source-cover")).toBeNull();
+    }
     expect(screen.getByText(/NASA가 공개한 행성·성운·우주선 이미지 자료실입니다/u)).toBeTruthy();
     expect(screen.getByText(/국가유산청이 공개하는 문화유산 지정·관리 기록을 찾습니다/u)).toBeTruthy();
   });

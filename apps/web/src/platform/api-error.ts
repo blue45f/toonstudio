@@ -5,6 +5,20 @@ import { defineStaticSourceText, resolveUiLocale } from "@/shared/lib/i18n-bilin
 export const SERVICE_CAPABILITY_ERROR_EVENT =
   "toonspectrum:service-capability-error";
 
+/**
+ * 401 문구를 세션 유무로 가르는 판정. 플랫폼 오류 모듈은 도메인 인증 상태를 import하지 않고, 앱 진입점이
+ * registerUnauthorizedSessionProbe로 등록한다. 등록 전에는 게스트로 본다.
+ */
+export type UnauthorizedSessionProbe = () => boolean;
+let unauthorizedSessionProbe: UnauthorizedSessionProbe = () => false;
+
+export function registerUnauthorizedSessionProbe(probe: UnauthorizedSessionProbe): () => void {
+  unauthorizedSessionProbe = probe;
+  return () => {
+    if (unauthorizedSessionProbe === probe) unauthorizedSessionProbe = () => false;
+  };
+}
+
 export type AppApiErrorKind =
   | "offline"
   | "timeout"
@@ -128,6 +142,18 @@ function localizeAuthoredMessage(source: string): string {
   return resolveTranslationForDisplay(locale, key, FALLBACK_CHAIN, source);
 }
 
+/**
+ * 401 문구는 세션 유무로 가른다. 로그인한 적 없는 게스트에게 "만료"는 거짓말이고,
+ * 실제로 세션이 떨어진 사용자에게 "로그인 필요"만으로는 상태가 안 읽힌다.
+ * ky 경로는 후크가 세션을 먼저 폐기하므로, 폐기 직전 세션 존재 기록까지 함께 본다.
+ */
+function unauthorizedMessageSource(): string {
+  const hadSession = unauthorizedSessionProbe();
+  return hadSession
+    ? "로그인이 만료되었습니다. 작성 중인 내용은 유지됩니다."
+    : "로그인이 필요합니다. 작성 중인 내용은 유지됩니다.";
+}
+
 function messageFor(
   kind: AppApiErrorKind,
   fallback: string,
@@ -143,7 +169,7 @@ function messageFor(
       ? localizeAuthoredMessage(`요청이 많아 잠시 제한되었습니다. 약 ${retrySeconds}초 후 다시 시도해 주세요.`)
       : localizeAuthoredMessage("요청이 많아 잠시 제한되었습니다. 잠시 후 다시 시도해 주세요.");
   }
-  if (kind === "unauthorized") return localizeAuthoredMessage("로그인이 만료되었습니다. 작성 중인 내용은 유지됩니다.");
+  if (kind === "unauthorized") return localizeAuthoredMessage(unauthorizedMessageSource());
   if (kind === "forbidden") return localizeAuthoredMessage("이 작업을 수행할 권한이 없습니다.");
   if (kind === "conflict") return localizeAuthoredMessage("다른 곳에서 내용이 변경되었습니다. 최신 상태를 확인해 주세요.");
   if (kind === "not_found") return serverMessage ?? localizeAuthoredMessage("요청한 항목을 찾을 수 없습니다.");

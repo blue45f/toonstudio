@@ -95,6 +95,14 @@ export function StudioBrushLabPage() {
           </div>
         </div>
 
+        {/*
+          적용 범위 밴드는 리믹스 전용이다 (2026-10-08 소형 잔여 처분으로 재확인).
+          이 밴드는 현황 스트립이 아니라 "원본은 바뀌지 않는다"는 적용 범위 경고라서
+          그 오해가 생기는 리믹스에만 붙는다. 비-리믹스 컨텍스트의 상태 표시는 위쪽
+          헤더의 workspaceTitle·contextLabel이 담당한다. 제작 프로젝트 현황 스트립
+          (ProductionProjectStatusStrip)은 ProductionProjectAggregate가 전제라,
+          제작 프로젝트 종속이 없는 이 표면에는 해당하지 않는다.
+        */}
         {context.kind === "remix" ? (
           <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border border-accent/35 bg-accent/10 px-4 py-3" role="status">
             <span className="inline-flex items-center gap-1.5 text-xs font-black text-accent">
@@ -108,7 +116,7 @@ export function StudioBrushLabPage() {
         ) : null}
 
         <section className="mt-6 grid gap-2 md:grid-cols-2" aria-label="브러시 스튜디오 편집 깊이">
-          <article className="rounded-2xl border border-line bg-bg-2/45 p-4">
+          <article className="rounded-2xl border border-line bg-panel/45 p-4">
             <span className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-fg-3">QUICK</span>
             <h2 className="mt-1 text-sm font-black text-fg">{STUDIO_BRUSH_LABELS.editCurrent}</h2>
             <p className="mt-1 text-xs leading-5 text-fg-3">
@@ -126,7 +134,7 @@ export function StudioBrushLabPage() {
 
         <ol className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4" aria-label="브러시 전체 편집 단계">
           {STEPS.map(({ icon: Icon, number, title, description }) => (
-            <li key={number} className="rounded-2xl border border-line bg-bg-2/55 p-3.5">
+            <li key={number} className="rounded-2xl border border-line bg-panel/55 p-3.5">
               <div className="flex items-center gap-2">
                 <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
                   <Icon size={15} aria-hidden />
@@ -139,7 +147,7 @@ export function StudioBrushLabPage() {
           ))}
         </ol>
 
-        <details className="mt-4 rounded-2xl border border-line bg-bg-2/35 p-3.5">
+        <details className="mt-4 rounded-2xl border border-line bg-panel/35 p-3.5">
           <summary className={`flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold text-fg-2 ${STUDIO_FOCUS_RING}`}>
             <Gauge size={15} className="text-accent" aria-hidden />
             전문가 설정은 필요할 때만 표시됩니다

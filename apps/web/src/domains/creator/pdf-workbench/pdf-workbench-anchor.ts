@@ -1,22 +1,22 @@
 /**
- * PDF 페이지 앵커 — 워크벤치 페이지에 댓글을 붙이기 위한 연결 지점 설계 (cat7 T3 1차).
+ * PDF 페이지 앵커 — 워크벤치 페이지에 댓글을 붙이기 위한 연결 지점 (cat7 T3).
  *
- * 현재 상태: **모델·식별자만 구현**하고, 댓글 저장 통합은 하지 않는다. 이유:
- * 기존 댓글 계약(`domains/creator/studio-comments.ts`)의 앵커는 discriminated union
- * (page/frame/element/point)이고 네 종류 모두 스튜디오 문서의 `pageId`를 키로 삼으며,
- * 스레드는 스튜디오 문서 단위(`StudioCommentsDocument`)로 저장된다. 가져온 PDF는
- * 스튜디오 문서가 아니므로, 이 저장 구조는 PDF 페이지를 받을 자리가 아직 없다.
- * 억지로 끼워 넣으면 문서 스코프가 깨진 댓글 데이터가 생긴다.
+ * 현재 상태 (2026-10-08, 저장 통합 완료): 1차에서는 모델·식별자만 두고 저장 통합을
+ * 미뤘다 — 기존 댓글 앵커 union(page/frame/element/point)이 모두 스튜디오 문서의
+ * `pageId`를 키로 삼아, 스튜디오 문서가 아닌 가져온 PDF가 들어갈 자리가 없었기
+ * 때문이다. 2차에서 아래 계약 변경을 모두 수행했다.
  *
- * 통합에 필요한 계약 변경 (후속 트랙에서 수행):
  * 1. `StudioCommentAnchorSchema`에 pdf-page variant 추가 —
  *    `{ type: "pdf-page", documentId, sourcePageIndex, x?, y? }` (이 파일의
- *    `PdfPageCommentAnchor`와 같은 모양으로 설계했다. x·y는 0..1 정규화 좌표).
+ *    `PdfPageCommentAnchor`와 같은 모양. x·y는 0..1 정규화 좌표).
  * 2. `canonicalStudioCommentAnchorKey`에 pdf-page 분기 추가 —
- *    키 형식은 이 파일의 `canonicalPdfPageAnchorKey`를 그대로 이식하면 된다.
- * 3. 댓글 문서 스코프 확장 — 워크벤치 문서를 담을 문서 id 네임스페이스
- *    (예: `pdf:<documentId>`)와 그 문서를 여는 저장 어댑터. 회차 검수 댓글과 같은
- *    스레드 UI(`StudioCommentsPanel`)를 재사용할지는 그때 판정한다.
+ *    이 파일에 있던 키 형식을 그대로 이식했고, `canonicalPdfPageAnchorKey`는
+ *    이제 그 함수로 위임해 두 키 공간이 어긋날 수 없다.
+ * 3. 댓글 문서 스코프 확장 — `pdf-workbench-comments.ts`가 워크벤치 문서를 담는
+ *    스코프 id 네임스페이스(`pdf:<documentId>`)와, 그 스코프로 댓글 문서를 여는
+ *    저장 어댑터를 제공한다. 스튜디오 문서 댓글과 저장 슬롯이 분리돼 스코프가
+ *    깨진 댓글이 생기지 않는다. 스레드 UI(`StudioCommentsPanel`) 재사용 여부는
+ *    아직 판정하지 않았다 — 저장 계약만 먼저 고정했다.
  *
  * 식별자 설계 원칙:
  * - `documentId`는 파일 내용 지문(SHA-256)이다. 파일 이름은 바뀌어도 내용이 같으면
@@ -27,6 +27,7 @@
  *   현재 상태의 페이지 항목과 대조해 역으로 찾는다 — 앵커 자체에 순서를 넣지 않는다.
  */
 
+import { canonicalStudioCommentAnchorKey } from "../studio-comments";
 import type { PdfWorkbenchPageEntry } from "./pdf-workbench-model";
 
 /** PDF 한 페이지(원본 기준)를 가리키는 댓글 앵커. 좌표는 선택 — 없으면 페이지 전체 앵커. */
@@ -41,9 +42,6 @@ export interface PdfPageCommentAnchor {
   /** 0..1 정규화 세로 위치 (페이지 핀일 때만). */
   readonly y?: number;
 }
-
-/** studio-comments의 point 앵커와 같은 소수 자릿수 — 좌표 키 버킷을 제품 전체에서 통일한다. */
-export const PDF_PAGE_ANCHOR_KEY_DECIMALS = 4;
 
 function clampUnit(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -79,14 +77,9 @@ export function pdfPageAnchorForEntry(
 
 /**
  * 앵커의 정규 식별 키 — 같은 페이지의 앵커는 재배열·세션과 무관하게 같은 키를 갖는다.
- * 형식은 `canonicalStudioCommentAnchorKey`의 JSON 튜플 관례를 따른다.
+ * 저장 통합(2026-10-08) 이후 키의 정본은 `canonicalStudioCommentAnchorKey`의 pdf-page
+ * 분기다. 이 함수는 그 함수로 위임해 두 키 공간이 영원히 바이트 단위로 같게 유지한다.
  */
 export function canonicalPdfPageAnchorKey(anchor: PdfPageCommentAnchor): string {
-  const base = ["pdf-page", anchor.documentId, anchor.sourcePageIndex];
-  if (anchor.x === undefined || anchor.y === undefined) return JSON.stringify(base);
-  return JSON.stringify([
-    ...base,
-    anchor.x.toFixed(PDF_PAGE_ANCHOR_KEY_DECIMALS),
-    anchor.y.toFixed(PDF_PAGE_ANCHOR_KEY_DECIMALS),
-  ]);
+  return canonicalStudioCommentAnchorKey(anchor);
 }

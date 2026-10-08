@@ -9,21 +9,22 @@ import {
   ProductionProjectPage,
   OrganizationHomePage,
   TeamPeoplePage,
-  TeamWorkspacePage,
   TeamWorkspaceJoinPage,
+  TeamWorkspaceUsagePage,
   VersionSharePage,
 } from "./production-route-pages";
+import { TeamPeopleRedirect, TeamPeopleWorkspaceRedirect } from "./team-people-redirects";
 
 export const productionRoutes = defineAppRoutes([
   { id: "team-people", path: "/team/people", element: <TeamPeoplePage /> },
   { id: "team-organization", path: "/team/organization", element: <OrganizationHomePage /> },
   { id: "team-people-join", path: "/team/people/join", element: <TeamWorkspaceJoinPage /> },
   { id: "team-people-detail", path: "/team/people/:workspaceId", element: <TeamPeoplePage /> },
-  { id: "team-people-usage", path: "/team/people/:workspaceId/usage", element: <TeamPeoplePage /> },
-  { id: "production-workspaces", path: "/production/workspaces", element: <TeamWorkspacePage /> },
-  { id: "production-workspace-join", path: "/production/workspaces/join", element: <TeamWorkspaceJoinPage /> },
-  { id: "production-workspace-detail", path: "/production/workspaces/:workspaceId", element: <TeamWorkspacePage /> },
-  { id: "production-workspace-usage", path: "/production/workspaces/:workspaceId/usage", element: <TeamWorkspacePage /> },
+  { id: "team-people-usage", path: "/team/people/:workspaceId/usage", element: <TeamWorkspaceUsagePage /> },
+  { id: "production-workspaces", path: "/production/workspaces", element: <TeamPeopleRedirect to="/team/people" /> },
+  { id: "production-workspace-join", path: "/production/workspaces/join", element: <TeamPeopleRedirect to="/team/people/join" /> },
+  { id: "production-workspace-detail", path: "/production/workspaces/:workspaceId", element: <TeamPeopleWorkspaceRedirect /> },
+  { id: "production-workspace-usage", path: "/production/workspaces/:workspaceId/usage", element: <TeamPeopleWorkspaceRedirect suffix="/usage" /> },
   { id: "production-home", path: "/production", element: <ProductionLandingPage /> },
   { id: "production-external-review", path: "/production/review/:projectId/:reviewId", element: <ProductionExternalReviewPage /> },
   { id: "production-pinned-review", path: "/production/pinned-review", element: <StudioPinnedReviewSharePage /> },

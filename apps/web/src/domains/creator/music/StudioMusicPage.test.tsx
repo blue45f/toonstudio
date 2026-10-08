@@ -53,7 +53,7 @@ function Harness({ initial = "/music?workId=work-a" }: { initial?: string }) {
   return <StrictMode><MemoryRouter initialEntries={[initial]}><Navigation /><Routes>
     <Route path="/music" element={<StudioMusicPage />} />
     <Route path="/studio" element={<p>스튜디오로 이동함</p>} />
-    <Route path="/create/:id" element={<p>작품으로 이동함</p>} />
+    <Route path="/showcase/work/:id" element={<p>작품으로 이동함</p>} />
   </Routes></MemoryRouter></StrictMode>;
 }
 const consent = () => screen.getByRole("checkbox", { name: /입력한 장면·가사를 사용할 권한/ });

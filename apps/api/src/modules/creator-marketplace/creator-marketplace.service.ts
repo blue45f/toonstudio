@@ -31,7 +31,10 @@ import {
   canonicalizeCreatorMarketplaceJson,
   creatorMarketplaceJsonByteSize,
 } from "@toonstudio/contracts/creator-marketplace-resource-contract";
-import { findStarterMarketplaceResourceById } from "@toonstudio/contracts/creator-marketplace-starter-catalog";
+import {
+  CREATOR_MARKETPLACE_STARTER_RECORDS,
+  findStarterMarketplaceResourceById,
+} from "@toonstudio/contracts/creator-marketplace-starter-catalog";
 
 import {
   CREATOR_MARKETPLACE_PUBLISH_GATE,
@@ -230,6 +233,136 @@ function encodeCursor(
   return Buffer.from(JSON.stringify(envelope), "utf8").toString("base64url");
 }
 
+interface CreatorMarketplaceListCandidate {
+  readonly record: CreatorMarketplaceResourceRecord;
+  readonly createdAtMs: number;
+  readonly idKey: string;
+  readonly relevanceScore: number;
+}
+
+/**
+ * 공식 스타터 레코드의 검색 점수 — 레포지토리의 relevance SQL과 같은 가중을 쓴다.
+ * 공개 목록 병합에서 DB 행과 스타터를 한 축으로 정렬하기 위한 것이다.
+ */
+function starterRelevanceScore(
+  record: CreatorMarketplaceResourceRecord,
+  search: string
+): number {
+  const needle = search.toLowerCase();
+  const name = record.name.toLowerCase();
+  const packageId = record.packageId.toLowerCase();
+  let score = 0;
+  if (name === needle) score += 1200;
+  if (packageId === needle) score += 1000;
+  if (record.tags.some((tag) => tag.toLowerCase() === needle)) score += 800;
+  if (name.startsWith(needle)) score += 600;
+  if (packageId.startsWith(needle)) score += 500;
+  if (name.includes(needle)) score += 400;
+  if (packageId.includes(needle)) score += 300;
+  if (record.description.toLowerCase().includes(needle)) score += 160;
+  if (JSON.stringify(record.tags).toLowerCase().includes(needle)) score += 80;
+  return score;
+}
+
+/**
+ * 공개 목록 필터와 같은 규칙으로 스타터 카탈로그를 후보로 만든다.
+ * 필터 의미는 contracts의 filterStarterMarketplaceResources와 맞춘다.
+ */
+function starterListCandidates(input: {
+  publisherId?: string;
+  search?: string;
+  tag?: string;
+  kind?: string;
+  license?: string;
+  sort: "newest" | "relevance";
+}): CreatorMarketplaceListCandidate[] {
+  let records = CREATOR_MARKETPLACE_STARTER_RECORDS;
+  if (input.kind) {
+    records = records.filter((record) => record.kind === input.kind);
+  }
+  if (input.license) {
+    records = records.filter((record) => record.license === input.license);
+  }
+  if (input.tag) {
+    const tag = input.tag.toLowerCase();
+    records = records.filter((record) =>
+      record.tags.some((value) => value.toLowerCase() === tag)
+    );
+  }
+  if (input.publisherId) {
+    records = records.filter((record) => record.publisher.id === input.publisherId);
+  }
+  if (input.search) {
+    const needle = input.search.toLowerCase().trim();
+    records = records.filter((record) =>
+      record.name.toLowerCase().includes(needle)
+      || record.description.toLowerCase().includes(needle)
+      || record.packageId.toLowerCase().includes(needle)
+      || record.tags.some((value) => value.toLowerCase().includes(needle))
+    );
+  }
+  return records.map((record) => ({
+    record,
+    createdAtMs: Date.parse(record.createdAt),
+    idKey: record.id.toLowerCase(),
+    relevanceScore: input.sort === "relevance" && input.search
+      ? starterRelevanceScore(record, input.search)
+      : 0,
+  }));
+}
+
+function compareListCandidates(
+  a: CreatorMarketplaceListCandidate,
+  b: CreatorMarketplaceListCandidate,
+  sort: "newest" | "relevance"
+): number {
+  if (sort === "relevance" && a.relevanceScore !== b.relevanceScore) {
+    return b.relevanceScore - a.relevanceScore;
+  }
+  if (a.createdAtMs !== b.createdAtMs) return b.createdAtMs - a.createdAtMs;
+  if (a.idKey === b.idKey) return 0;
+  return a.idKey < b.idKey ? 1 : -1;
+}
+
+/** 키셋 커서 경계 — 레포지토리의 newest/relevance 경계와 같은 의미다. */
+function isAfterListCursor(
+  candidate: CreatorMarketplaceListCandidate,
+  cursor: CreatorMarketplaceResourceCursor | null
+): boolean {
+  if (!cursor) return true;
+  const cursorMs = cursor.createdAt.getTime();
+  const afterNewestBoundary = candidate.createdAtMs < cursorMs
+    || (candidate.createdAtMs === cursorMs
+      && candidate.idKey < cursor.id.toLowerCase());
+  if (cursor.sort === "relevance") {
+    return candidate.relevanceScore < cursor.relevanceScore
+      || (candidate.relevanceScore === cursor.relevanceScore && afterNewestBoundary);
+  }
+  return afterNewestBoundary;
+}
+
+function encodeListCursor(
+  candidate: CreatorMarketplaceListCandidate,
+  sort: "newest" | "relevance",
+  queryHash: string
+): string {
+  if (
+    sort === "relevance"
+    && (!Number.isSafeInteger(candidate.relevanceScore) || candidate.relevanceScore < 0)
+  ) {
+    throw new Error("creator_marketplace_relevance_score_missing");
+  }
+  const envelope: CreatorMarketplaceCursorEnvelope = {
+    version: 3,
+    sort,
+    queryHash,
+    createdAt: new Date(candidate.createdAtMs).toISOString(),
+    id: candidate.record.id,
+    ...(sort === "relevance" ? { relevanceScore: candidate.relevanceScore } : {}),
+  };
+  return Buffer.from(JSON.stringify(envelope), "utf8").toString("base64url");
+}
+
 function findEntryHashMismatch(
   manifest: CreatorMarketplaceResourceManifest
 ): number | null {
@@ -341,11 +474,25 @@ export class CreatorMarketplaceService {
       license: query.license,
     });
     const cursor = parseCursor(query.cursor, sort, queryHash);
+    // 공식 스타터 카탈로그는 DB가 아니라 contracts 정적 데이터가 정본이다.
+    // 상세(getById)와 결제 정책은 이미 스타터를 실물 리소스로 취급하므로,
+    // 공개 목록도 같은 필터·정렬·키셋 경계로 스타터를 병합한다.
+    // (브라우저 QA R1 실측: 목록만 스타터가 빠져 상세와 비대칭이었다.)
+    const starters = starterListCandidates({
+      publisherId,
+      search: query.search,
+      tag: query.tag,
+      kind: query.kind,
+      license: query.license,
+      sort,
+    });
     try {
       const rows = await this.repository.list({
         publisherId,
         viewerId: options.viewerId,
-        limit: query.limit,
+        // 병합 정렬의 첫 페이지를 정확히 구성하려면 커서 이후 DB 행을
+        // 스타터 후보 수만큼 더 읽어야 한다. 초과분은 hasMore 판정에 쓴다.
+        limit: query.limit + starters.length,
         cursor,
         sort,
         search: query.search,
@@ -353,14 +500,34 @@ export class CreatorMarketplaceService {
         kind: query.kind,
         license: query.license,
       });
-      const hasMore = rows.length > query.limit;
-      const pageRows = hasMore ? rows.slice(0, query.limit) : rows;
+      // 같은 id가 공개 목록에 실릴 수 있는 DB 행으로 있으면 DB 행이 정본이다
+      // (getById와 같은 우선순위). 조회 창이 아니라 존재 기준으로 가려야
+      // 페이지가 넘어간 뒤 스타터가 되살아나 중복되지 않는다.
+      const listedDbIds = new Set(
+        (await this.repository.findListedIds(
+          starters.map((candidate) => candidate.record.id)
+        )).map((id) => id.toLowerCase())
+      );
+      const candidates = [
+        ...rows.map((row) => ({
+          record: projectRecord(row, options.viewerId),
+          createdAtMs: row.createdAt.getTime(),
+          idKey: row.id.toLowerCase(),
+          relevanceScore: row.relevanceScore ?? 0,
+        })),
+        ...starters.filter((candidate) => !listedDbIds.has(candidate.idKey)),
+      ]
+        .filter((candidate) => isAfterListCursor(candidate, cursor))
+        .sort((a, b) => compareListCandidates(a, b, sort));
+      const pageCandidates = candidates.slice(0, query.limit);
+      const hasMore = candidates.length > query.limit
+        || rows.length > query.limit + starters.length;
       return CreatorMarketplaceResourceListPageSchema.parse({
-        items: pageRows.map((row) => projectRecord(row, options.viewerId)),
+        items: pageCandidates.map((candidate) => candidate.record),
         limit: query.limit,
         hasMore,
-        nextCursor: hasMore && pageRows.length > 0
-          ? encodeCursor(pageRows[pageRows.length - 1]!, sort, queryHash)
+        nextCursor: hasMore && pageCandidates.length > 0
+          ? encodeListCursor(pageCandidates[pageCandidates.length - 1]!, sort, queryHash)
           : null,
       });
     } catch (error) {

@@ -36,7 +36,9 @@ import {
 } from "./EngineeringDeckPresenter";
 import { PresentationLayer, PresenterWindow } from "./EngineeringDeckStages";
 import { WorkshopModules } from "./EngineeringDeckWorkshop";
+import { EngineeringKeySummary, EngineeringMetaChip } from "./EngineeringLongform";
 import { EngineeringSeminarPrep } from "./EngineeringSeminarPrep";
+import { EngineeringFreeAiTokenGuide } from "./EngineeringFreeAiTokenGuide";
 import { EngineeringSeminarResources } from "./EngineeringSeminarResources";
 import { EngineeringPageFrame, EngineeringPageIntro } from "./EngineeringStoryUi";
 import { architectureOutline } from "./engineering-architecture-data";
@@ -55,9 +57,11 @@ import {
   isTimedDeck,
   type DeckSectionPlan,
   type DeckSlide,
+  type DeckTrackModel,
 } from "./engineering-deck-model";
 import { DECK_TRACKS, engineeringDeckHref, type DeckTrack } from "./engineering-deck-state";
 import { CONTROL_BUTTON, DECK_PAGE_I18N_SCOPE, deckPageBi as bi } from "./engineering-deck-ui";
+import { ENGINEERING_SEMINAR_MODULES } from "./engineering-playbook-content";
 import type { LocalizedText } from "./engineering-story-content";
 import {
   deckCommandForKey,
@@ -145,6 +149,85 @@ function EmptyAtlasState({ onShowTalk }: { readonly onShowTalk: () => void }) {
   );
 }
 
+/* ── 슬라이드 목차 ─────────────────────────────────────────── */
+
+/**
+ * 구간별 슬라이드 목차 — 개요(썸네일)가 발표 중의 일시 도구라면, 목차는
+ * 발표 전에 전체 흐름과 구간별 시간을 읽고 원하는 슬라이드로 바로 가는
+ * 상시 색인이다. 슬라이드·구간·시간은 전부 덱 모델에서 그대로 읽는다.
+ */
+function DeckSlideIndex({
+  model,
+  index,
+  onJump,
+}: {
+  readonly model: DeckTrackModel;
+  readonly index: number;
+  readonly onJump: (index: number) => void;
+}) {
+  useBilingualI18nRevision();
+  return (
+    <section aria-labelledby="deck-slide-index-title" className="mt-8 rounded-3xl border border-line/70 bg-panel/60 p-5 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 id="deck-slide-index-title" className="text-lg font-black text-fg">{bi("슬라이드 목차", "Slide index")}</h2>
+          <p className="mt-1 text-sm leading-6 text-fg-2">
+            {bi("구간별로 묶은 전체 슬라이드입니다. 누르면 그 슬라이드로 이동합니다.", "Every slide grouped by section. Select one to jump straight to it.")}
+          </p>
+        </div>
+        <p className="font-display text-sm font-bold tabular-nums text-fg-3">
+          {formatI18nTemplate(String(bi("{value0}개 구간 · {value1}장 · {value2}", "{value0} sections · {value1} slides · {value2}")), {
+            value0: model.sections.length,
+            value1: model.slides.length,
+            value2: formatClock(model.totalSeconds),
+          })}
+        </p>
+      </div>
+      <div className="mt-5 grid gap-x-8 gap-y-5 lg:grid-cols-2">
+        {model.sections.map((sectionPlan) => (
+          <div key={sectionPlan.id}>
+            <p className="flex items-baseline justify-between gap-3 text-sm font-black text-fg">
+              <span>
+                <span className="mr-2 font-display text-accent">{String(sectionPlan.order).padStart(2, "0")}</span>
+                {sectionPlan.title}
+              </span>
+              <span className="shrink-0 font-display text-xs font-bold tabular-nums text-fg-3">
+                {formatI18nTemplate(String(bi("{value0}장 · {value1}", "{value0} slides · {value1}")), {
+                  value0: sectionPlan.slideCount,
+                  value1: formatClock(sectionPlan.seconds),
+                })}
+              </span>
+            </p>
+            <ol className="mt-2 grid gap-1">
+              {model.slides.slice(sectionPlan.firstSlideIndex, sectionPlan.firstSlideIndex + sectionPlan.slideCount).map((slide, offset) => {
+                const slideIndex = sectionPlan.firstSlideIndex + offset;
+                const current = slideIndex === index;
+                return (
+                  <li key={slide.id}>
+                    <button
+                      type="button"
+                      aria-current={current || undefined}
+                      onClick={() => onJump(slideIndex)}
+                      className={cx(
+                        "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                        current ? "bg-accent-soft font-black text-accent" : "text-fg-2 hover:bg-raised hover:text-fg",
+                      )}
+                    >
+                      <span className="w-6 shrink-0 font-display tabular-nums">{slideIndex + 1}</span>
+                      <span className="min-w-0 flex-1 truncate">{slide.title}</span>
+                      <span className="shrink-0 font-display text-xs tabular-nums text-fg-3">{formatClock(slide.plannedSeconds)}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ── 페이지 ────────────────────────────────────────────────── */
 
 export function EngineeringDeckPage() {
@@ -174,6 +257,7 @@ export function EngineeringDeckPage() {
   const [returnTo, setReturnTo] = useState<{ readonly track: DeckTrack; readonly index: number } | null>(null);
   const keepPresentingOnFullscreenExit = useRef(false);
   const overviewRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const isPresenterView = position.view === "presenter";
 
   const index = position.index;
@@ -465,6 +549,40 @@ export function EngineeringDeckPage() {
         }
       />
 
+      <EngineeringKeySummary
+        className="mb-6"
+        points={[
+          bi(
+            "슬라이드는 기술 문서 챕터와 연결돼 있습니다. engineering-deck-model이 챕터 id와 근거 목록을 슬라이드에 함께 실어, 발표 중 질문이 나와도 원문 위치로 되짚을 수 있습니다.",
+            "Slides stay linked to the engineering chapters. engineering-deck-model carries each slide's chapter id and evidence list, so a question mid-talk can be traced back to the source text.",
+          ),
+          bi(
+            "발표자 창은 BroadcastChannel로 청중 화면과 같은 슬라이드를 유지합니다. 타이머는 슬라이드별 계획 시간과 실제 경과를 비교해 구간 예산 대비 페이스를 알려 줍니다.",
+            "The presenter window keeps the same slide as the audience screen over BroadcastChannel. The timer compares each slide's planned time with the actual pace against the section budget.",
+          ),
+          bi(
+            "오프라인 발표본과 인쇄 덱은 영상·외부 링크·서비스 기능을 빼고 내보냅니다. 네트워크가 없는 발표장에서도 같은 슬라이드를 보여 주기 위한 제약입니다.",
+            "The offline deck and the print deck are exported without videos, external links or service capabilities — a deliberate constraint so the same slides work in a venue with no network.",
+          ),
+        ]}
+        meta={(
+          <>
+            <EngineeringMetaChip>
+              {formatI18nTemplate(String(bi("트랙 {value0}종", "{value0} tracks")), { value0: DECK_TRACKS.length })}
+            </EngineeringMetaChip>
+            <EngineeringMetaChip>
+              {formatI18nTemplate(String(bi("현재 트랙 {value0}장 · {value1}", "Current track: {value0} slides · {value1}")), {
+                value0: model.slides.length,
+                value1: formatClock(model.totalSeconds),
+              })}
+            </EngineeringMetaChip>
+            <EngineeringMetaChip>
+              {formatI18nTemplate(String(bi("워크숍 모듈 {value0}개", "{value0} workshop modules")), { value0: ENGINEERING_SEMINAR_MODULES.length })}
+            </EngineeringMetaChip>
+          </>
+        )}
+      />
+
       <section data-engineering-deck-shell="true" aria-labelledby="deck-preview-title" className="grid gap-4">
         <h2 id="deck-preview-title" className="sr-only">{bi("발표 미리보기와 조작", "Presentation preview and controls")}</h2>
 
@@ -569,7 +687,7 @@ export function EngineeringDeckPage() {
           <EmptyAtlasState onShowTalk={() => position.setTrack("talk")} />
         ) : (
           <div className={cx("grid gap-4", sidePanelOpen && "xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-start")}>
-            <div data-deck-stage="true" className="grid min-w-0 gap-3">
+            <div ref={stageRef} data-deck-stage="true" className="grid min-w-0 scroll-mt-28 gap-3">
               {presenting ? (
                 <div className="grid aspect-video place-items-center rounded-3xl border border-dashed border-line-strong bg-card/50 p-6 text-center">
                   <p className="text-sm font-bold text-fg-2">{bi("발표 화면이 열려 있습니다. Esc로 돌아옵니다.", "The presentation is open. Press Esc to return.")}</p>
@@ -637,11 +755,23 @@ export function EngineeringDeckPage() {
         ) : null}
       </section>
 
+      {timed ? (
+        <DeckSlideIndex
+          model={model}
+          index={index}
+          onJump={(slideIndex) => {
+            goTo(slideIndex);
+            stageRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+          }}
+        />
+      ) : null}
+
       <ServiceStoryJourney current="deck" className="mt-8" />
 
       {position.track === "talk" ? <EngineeringSeminarPrep model={model} onJump={goTo} onOpenAtlas={openAtlasCard} /> : null}
       <WorkshopModules />
       <EngineeringSeminarResources />
+      <EngineeringFreeAiTokenGuide />
 
       <PrintDeck slides={scope.slides} firstIndex={scope.firstIndex} total={model.slides.length} sections={model.sections} />
 

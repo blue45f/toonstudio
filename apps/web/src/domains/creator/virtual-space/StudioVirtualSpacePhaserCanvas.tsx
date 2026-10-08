@@ -218,7 +218,10 @@ import {
 } from "./studio-virtual-space-motion-feel-runtime";
 import { StudioSpriteCrossfadeRuntime } from "./studio-virtual-space-sprite-crossfade-runtime";
 import {
-  dampStudioDisplayPoint, studioBreathPhaseAt, studioDisplayDampTauSeconds, studioPeerPresenceFade, studioSmoothingPhaseSeed,
+  STUDIO_ACTOR_VISIBILITY_MAX_FADE_OUTS,
+  dampStudioDisplayPoint, studioActorVisibilityFadeAlpha, studioActorVisibilityFadeRendering, studioBreathPhaseAt,
+  studioDisplayDampTauSeconds, studioPeerPresenceFade, studioSmoothingPhaseSeed, transitionStudioActorVisibilityFade,
+  type StudioActorVisibilityFadeState,
   type StudioDisplayPoint,
 } from "./studio-virtual-space-sprite-smoothing";
 import { StudioCollisionResponder, studioCollisionContact } from "./studio-virtual-space-collision-response";
@@ -713,6 +716,10 @@ export function StudioVirtualSpacePhaserCanvas({
       let spriteCrossfades: StudioSpriteCrossfadeRuntime | null = null;
       let localDisplayPoint: StudioDisplayPoint | null = null;
       const npcDisplayPoints = new Map<string, StudioDisplayPoint>();
+      /** NPC 가시성 페이드 상태: 관심 경계에서 툭 나타나고 사라지던 팝을 알파 전이로 바꾼다. */
+      const npcVisibilityFades = new Map<string, StudioActorVisibilityFadeState>();
+      /** 동료 가시성 페이드 상태: 관심 컬링 토글에도 같은 전이를 적용한다 (입·퇴장 페이드와 별개 층). */
+      const peerVisibilityFades = new Map<string, StudioActorVisibilityFadeState>();
       /** UI 이벤트는 이벤트 피드와 fx 알림이 같은 출구로 낸다. */
       const emitSpaceUiEvent = (event: StudioSpaceUiEvent) => {
         if (import.meta.env.DEV) parent.dataset.spaceUiEvent = `${event.kind}:${event.titleKo}`.slice(0, 120);
@@ -763,14 +770,17 @@ export function StudioVirtualSpacePhaserCanvas({
       };
 
       /** 동료 비주얼의 완전한 파괴: 스프라이트·이름표·상태 점·이모트·말풍선·장식·에셋 거주를 한곳에서 해제한다. */
-      const destroyPeerVisual = (id: string, visual: PeerVisual) => destroyStudioPeerVisual({
+      const destroyPeerVisual = (id: string, visual: PeerVisual) => {
+        peerVisibilityFades.delete(id);
+        return destroyStudioPeerVisual({
         releaseCrossfade: (sprite) => spriteCrossfades?.release(sprite),
         destroyStatusDot: (dotId) => { statusDots.get(dotId)?.destroy(); statusDots.delete(dotId); },
         removeEmote: (key) => emotes?.remove(key),
         removeSpeech: (key) => speech?.remove(key),
         removeDecoration: (actorId) => decorationRuntime?.removeActor(actorId),
         releaseAsset: (owner) => characterAssets.release(owner),
-      }, peers, id, visual);
+        }, peers, id, visual);
+      };
 
       /** 월드 충돌기(벽·장애물) 활성/비활성. 고스트 모드와 따라가기 벽 통과가 공유한다. */
       const { setWorldCollidersActive, applyGhostMode } = createStudioGhostModeApplier({
@@ -2478,29 +2488,38 @@ export function StudioVirtualSpacePhaserCanvas({
           visual.label.setText(nameplate.text).setScale(Math.max(actorVisualScale < 1 ? 1 : 0, nameplate.scale) * overlayScale);
           const peerLabelOffset = visual.label.displayHeight + 6 * overlayScale;
           const peerLabelY = peerSeat || actorVisualScale < 1 ? peerHeadY - peerLabelOffset : visual.sprite.y + 18;
+          const peerVisible = peerInterest.activeIds.has("peer:" + peerId);
+          // 관심 컬링도 즉시 토글이 아니라 가시성 페이드를 거친다 (NPC와 같은 상태 머신).
+          // 논리 판정(peerVisible)은 그대로 두고, 그리기·말풍선·이름표는 페이드가 끝날 때까지 유지한다.
+          const peerFade = transitionStudioActorVisibilityFade(peerVisibilityFades.get(peerId) ?? null, peerVisible, time, {
+            reducedMotion: reducedMotion.matches,
+            effectsSuppressed: experienceRef.current.effectLevel === "low",
+          });
+          peerVisibilityFades.set(peerId, peerFade);
+          const peerFadeAlpha = studioActorVisibilityFadeAlpha(peerFade, time);
+          const peerRendered = studioActorVisibilityFadeRendering(peerFade, time);
           visual.label.setPosition(visual.sprite.x, peerLabelY)
             .setDepth(peerSeat ? 160_000 : Math.round(visual.sprite.y) + 1_002)
-            .setAlpha(nameplate.alpha * presenceFade);
-          const peerVisible = peerInterest.activeIds.has("peer:" + peerId);
+            .setAlpha(nameplate.alpha * presenceFade * peerFadeAlpha);
           const peerBubbleBase = peerHeadY - (peerSeat || actorVisualScale < 1 ? peerLabelOffset + 4 * overlayScale : 4);
-          const peerEmoteHeight = emotes?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase, overlayScale, time, reducedMotion.matches, peerVisible) ?? 0;
+          const peerEmoteHeight = emotes?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase, overlayScale, time, reducedMotion.matches, peerRendered) ?? 0;
           // 말풍선 우선순위: 채팅 말풍선 → 프레즌스 말풍선 → 입력 중(···) 표시.
           // 프레즌스 말풍선은 표시 시간을 송신 측 TTL과 같게 잡아 끝에서 함께 페이드 아웃한다.
-          if (visual.chatBubble && peerVisible) {
+          if (visual.chatBubble && peerRendered) {
             speech?.show(`peer:${peerId}`, visual.chatBubble, "person");
             speech?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase - peerEmoteHeight, overlayScale);
-          } else if (visual.bubble && peerVisible) {
+          } else if (visual.bubble && peerRendered) {
             speech?.showTimed(`peer:${peerId}`, visual.bubble, "person", STUDIO_PRESENCE_BUBBLE_TTL_MS, time);
             speech?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase - peerEmoteHeight, overlayScale, true, time);
-          } else if (visual.typing && peerVisible) {
+          } else if (visual.typing && peerRendered) {
             // 입력 중에는 "···" 말풍선으로 바꾼다. 타이핑이 끝나면 다음 상태로 넘어간다.
             speech?.show(`peer:${peerId}`, "···", "person");
             speech?.place(`peer:${peerId}`, visual.sprite.x, peerBubbleBase - peerEmoteHeight, overlayScale);
           } else speech?.hide(`peer:${peerId}`);
-          const labelVisible = peerVisible && nameplate.visible;
-          visual.sprite.setVisible(peerVisible);
-          // 자리 비움 0.62에 입·퇴장 페이드를 곱한다 (동기화 시점 고정값에서 매 프레임 합성으로 이관).
-          visual.sprite.setAlpha((visual.activity === "away" ? 0.62 : 1) * presenceFade);
+          const labelVisible = peerRendered && nameplate.visible;
+          visual.sprite.setVisible(peerRendered);
+          // 자리 비움 0.62에 입·퇴장 페이드와 관심 가시성 페이드를 곱한다 (동기화 시점 고정값에서 매 프레임 합성으로 이관).
+          visual.sprite.setAlpha((visual.activity === "away" ? 0.62 : 1) * presenceFade * peerFadeAlpha);
           visual.label.setVisible(labelVisible);
           if (labelVisible) {
             nameplateCandidates.push({ id: peerId, x: visual.label.x, y: visual.label.y, width: visual.label.displayWidth, height: visual.label.displayHeight, priority: visual.nearby ? 30 : 10 });
@@ -2510,7 +2529,7 @@ export function StudioVirtualSpacePhaserCanvas({
             peerId, visual.sprite, visual.label, peerVisualPoint,
             peerSeatRequested?.facing ?? target.facing, target.moving, peerResolved, time,
           );
-          interactionFx?.trackActor(peerId, visual.sprite, target.x, target.y, target.facing, peerEmote, peerVisible);
+          interactionFx?.trackActor(peerId, visual.sprite, target.x, target.y, target.facing, peerEmote, peerRendered);
         }
         const tourRequest = guideTourRef.current;
         if ((tourRequest?.id ?? null) !== lastGuideRequestId) {
@@ -2586,15 +2605,33 @@ export function StudioVirtualSpacePhaserCanvas({
         const tourKey = tourState
           ? `${tourState.requestId}|${tourState.guideId}|${tourState.status}|${tourState.stopIndex}|${tourState.stopCount}|${tourState.stopAction ?? ""}` : "";
         if (tourState && tourKey !== lastGuideState) { lastGuideState = tourKey; callbacksRef.current.onGuideTourChange?.(tourState); }
+        // 페이드아웃 동시 상한: 이미 퇴장 중인 NPC가 상한에 닿아 있으면 새 퇴장은 즉시 숨김으로
+        // 처리해 그리기 상한(래칫)을 지킨다. 퇴장 중인 NPC는 아래 상한 카운트에 이미 빠져 있다.
+        let npcFadeOutsInFlight = 0;
+        for (const fadeState of npcVisibilityFades.values()) {
+          if (!fadeState.targetVisible && studioActorVisibilityFadeAlpha(fadeState, time) > 0) npcFadeOutsInFlight += 1;
+        }
         for (const view of npcViews) {
           const npc = npcs.get(view.id);
           if (!npc) continue;
           const importantNpc = view.id === tourState?.guideId;
           const npcVisible = importantNpc || (npcInterest.activeIds.has("npc:" + view.id) && visibleNpcCount < maxActiveNpcs);
           if (npcVisible) visibleNpcCount += 1;
-          npc.sprite.setVisible(npcVisible);
-          npc.shadow.setVisible(npcVisible);
-          if (!npcVisible) {
+          // 관심 경계 팝 방지: 자격이 바뀌면 즉시 토글 대신 알파 페이드로 등장·퇴장한다.
+          // 퇴장이 끝날 때까지 몸은 계속 그리되 상한 카운트에는 넣지 않아 래칫은 그대로 유지된다.
+          const previousNpcFade = npcVisibilityFades.get(view.id) ?? null;
+          const npcFade = transitionStudioActorVisibilityFade(previousNpcFade, npcVisible, time, {
+            reducedMotion: reducedMotion.matches,
+            effectsSuppressed: experienceRef.current.effectLevel === "low",
+            instant: !npcVisible && npcFadeOutsInFlight >= STUDIO_ACTOR_VISIBILITY_MAX_FADE_OUTS,
+          });
+          if (previousNpcFade?.targetVisible && !npcFade.targetVisible && npcFade.fromAlpha > 0) npcFadeOutsInFlight += 1;
+          npcVisibilityFades.set(view.id, npcFade);
+          const npcFadeAlpha = studioActorVisibilityFadeAlpha(npcFade, time);
+          const npcRendered = studioActorVisibilityFadeRendering(npcFade, time);
+          npc.sprite.setVisible(npcRendered);
+          npc.shadow.setVisible(npcRendered);
+          if (!npcRendered) {
             npc.label.setVisible(false);
             emotes?.place(`npc:${view.id}`, 0, 0, 1, time, reducedMotion.matches, false);
             speech?.hide(`npc:${view.id}`);
@@ -2634,6 +2671,8 @@ export function StudioVirtualSpacePhaserCanvas({
           const lookAtPlayer = !view.moving && !attached && !blocked && npcGap < NPC_LOOK_DISTANCE;
           const talking = lookAtPlayer && conversationFocus !== null
             && Math.hypot(conversationFocus.x - view.point.x, conversationFocus.y - view.point.y) < 32;
+          // 가시성 페이드 알파: 크로스페이드 런타임이 소유자 알파를 곱하므로 상태 전이 페이드와 함께 실린다.
+          npc.sprite.setAlpha(npcFadeAlpha);
           spriteCrossfades?.capture(npc.sprite);
           applySpriteVisual(npc.sprite, npc.skin,
             studioEmoteFacing(npcEmotePose) ?? (lookAtPlayer ? studioFacingToward(currentPoint.x - view.point.x, currentPoint.y - view.point.y) : view.facing),
@@ -2646,7 +2685,8 @@ export function StudioVirtualSpacePhaserCanvas({
           if (npcSquash.scaleX !== 1 || npcSquash.scaleY !== 1 || npcBlinkY !== 1) {
             npc.sprite.setScale(npc.sprite.scaleX * npcSquash.scaleX, npc.sprite.scaleY * npcSquash.scaleY * npcBlinkY);
           }
-          npc.shadow.setPosition(npcDisplay.x, npcDisplay.y + 1).setDepth(studioTownDepthForPoint(manifest, view.point, 990)).setVisible(!attached);
+          npc.shadow.setPosition(npcDisplay.x, npcDisplay.y + 1).setDepth(studioTownDepthForPoint(manifest, view.point, 990)).setVisible(!attached)
+            .setAlpha(npcFadeAlpha);
           const headY = npc.sprite.y - npc.sprite.displayHeight * npc.sprite.originY;
           const identity = studioNpcLabel(npc.definition);
           const npcName = btRef.current(identity.ko, identity.en);
@@ -2668,7 +2708,7 @@ export function StudioVirtualSpacePhaserCanvas({
             && (!mobileNameplates || importantNpc || Boolean(view.greeting) || view.id === nearestMobileNpcId);
           npc.label.setPosition(npcDisplay.x, npcLabelY)
             .setDepth(attached ? 160_000 : studioTownDepthForPoint(manifest, groundPoint, 1_002))
-            .setAlpha(npcNameplate.alpha).setVisible(npcLabelVisible);
+            .setAlpha(npcNameplate.alpha * npcFadeAlpha).setVisible(npcLabelVisible);
           if (npcLabelVisible) {
             const id = `npc:${view.id}`;
             nameplateCandidates.push({

@@ -49,7 +49,7 @@ describe("createCreatorPublicationPageMetaModel", () => {
     const model = createCreatorPublicationPageMetaModel(input());
 
     expect(model).toMatchObject({
-      canonicalPath: "/create/episode-1",
+      canonicalPath: "/showcase/work/episode-1",
       title: "공유 제목",
       description: "공유 설명",
       indexable: true,
@@ -69,7 +69,7 @@ describe("createCreatorPublicationPageMetaModel", () => {
       canonicalSlug: "private-slug",
     };
     expect(createCreatorPublicationPageMetaModel(input({ directive }))?.canonicalPath)
-      .toBe("/create/work%2F1");
+      .toBe("/showcase/work/work%2F1");
   });
 
   it("forces private, unlisted and draft owner views out of search indexing", () => {

@@ -7,8 +7,8 @@ import type { StudioCharacterAtlasClip, StudioCharacterSkin } from "./studio-vir
 import {
   buildProceduralCharacterSheet,
   defaultProceduralSheetDeps,
-  PROCEDURAL_FRAME_HEIGHT,
-  PROCEDURAL_FRAME_WIDTH,
+  PROCEDURAL_TEXTURE_FRAME_HEIGHT,
+  PROCEDURAL_TEXTURE_FRAME_WIDTH,
   type ProceduralCharacterPalette,
   type ProceduralCharacterParts,
   type ProceduralSheetDeps,
@@ -227,12 +227,13 @@ export function studioSpriteSheetPreset(key: string): StudioSpriteSheetPreset | 
   return STUDIO_SPRITE_SHEET_PRESETS.find((preset) => preset.key === key);
 }
 
-/** 프리셋의 기본 설정 (이미지는 `preset:<키>` 참조로, data URL은 런타임에 생성). */
+/** 프리셋의 기본 설정 (이미지는 `preset:<키>` 참조로, data URL은 런타임에 생성).
+ * 프레임 크기는 프로시저럴 시트의 물리 텍스처 치수(렌더 배율 적용)와 일치해야 한다. */
 export function studioSpriteSheetPresetConfig(preset: StudioSpriteSheetPreset): StudioSpriteSheetConfig {
   return spriteSheetConfigSchema.parse({
     image: `preset:${preset.key}`,
-    frameWidth: PROCEDURAL_FRAME_WIDTH,
-    frameHeight: PROCEDURAL_FRAME_HEIGHT,
+    frameWidth: PROCEDURAL_TEXTURE_FRAME_WIDTH,
+    frameHeight: PROCEDURAL_TEXTURE_FRAME_HEIGHT,
     framesPerDirection: 10,
     walkFrames: 6,
     directionCount: 8,

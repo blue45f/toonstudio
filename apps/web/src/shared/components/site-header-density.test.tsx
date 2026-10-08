@@ -63,7 +63,7 @@ describe("단일 창작 헤더", () => {
     expect(within(header).queryByRole("navigation", { name: "제작 기능 바로가기" })).toBeNull();
     expect(within(navigation).getAllByRole("link").map((link) => link.getAttribute("href")))
       .toEqual([
-        "/studio", "/studio", "/studio/new", "/studio/comic", "/studio/assets/characters/new", "/studio/bg3d",
+        "/studio", "/studio", "/create", "/studio/comic", "/studio/assets/characters/new", "/studio/bg3d",
         "/studio/space",
         "/production", "/production", "/team/people", "/collaborate",
         "/discover", "/explore", "/ranking", "/calendar",
@@ -77,8 +77,8 @@ describe("단일 창작 헤더", () => {
     expect(within(navigation).getByRole("link", { name: "협업" }).getAttribute("href")).toBe("/production");
     // 가벼운 즐길 거리(운세)는 주 메뉴가 아니라 전체 메뉴·푸터에서 찾는다.
     expect(within(navigation).queryByRole("link", { name: "운세" })).toBeNull();
-    expect(within(header).getByRole("link", { name: "새 작품" }).getAttribute("href"))
-      .toBe("/studio/new");
+    expect(within(header).getByRole("link", { name: "작품 시작하기" }).getAttribute("href"))
+      .toBe("/create");
   });
 
   it("주 메뉴 1차 표시는 글자 링크만 두고 브랜드에 BETA 배지를 얹지 않는다", () => {

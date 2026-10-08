@@ -9,7 +9,9 @@ import {
 } from "./open-creation";
 import type { KitFormat, OpenProvider, OpenReference } from "./open-creation";
 import { readOpenJson } from "./open-creation-transport";
+import { ArtBand } from "./ArtBand";
 import { ResourceLayout } from "./ResourceLayout";
+import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { TranslatedQueryNotice } from "./TranslatedQueryNotice";
 import { useTranslatedResearchQuery } from "./use-translated-research-query";
 import { downloadText, useCreatorWorkspace } from "./workspace";
@@ -31,6 +33,16 @@ const PACKS: { title: string; query: string; format: KitFormat; description: str
   { title: "하루 한 장 관찰 드로잉", query: "꽃", format: "study", description: "20분 관찰·형태·명암·변형 과제" },
   { title: "작가의 자료 노트", query: "가구", format: "article", description: "비교 포인트와 출처가 있는 큐레이션 초안" },
 ];
+
+/** 시작 기획별 아트 배정 (디자인 웨이브 7) — 검색어(소재) 기준. 무드 신호일 뿐 자료 데이터가 아니다. */
+const PACK_ART: Readonly<Record<string, string>> = {
+  "한복": "character-pink",
+  "갑옷": "project-crimson",
+  "도자기": "materials",
+  "풍경": "background-city",
+  "꽃": "luna",
+  "가구": "canvas-noir",
+};
 
 function ReferenceTile({ item, saved, disabled, toggle, order }: { item: OpenReference; saved: boolean; disabled: boolean; toggle: () => void; order?: number }) {
   const [failed, setFailed] = useState(false);
@@ -163,7 +175,7 @@ export function OpenCreationPage() {
       <div className="mt-3 flex flex-wrap gap-2"><Link className={RESOURCE_BUTTON} to="/research/packs">{tx("12개 장면 팩으로 연습하기")}</Link><Link className={RESOURCE_BUTTON} to="/insights/resources">{tx("API·출처 안내")}</Link><Link className={RESOURCE_BUTTON} to="/research/assets">{tx("기존 Met 자료 검색")}</Link><Link className={RESOURCE_BUTTON} to="/research/books">{tx("도서·판본 검색")}</Link><Link className={RESOURCE_BUTTON} to="/research/3d-assets">{tx("CC0 3D·HDRI 검색")}</Link><Link className={RESOURCE_BUTTON} to="/research/material-assets">{tx("PBR·3D 소재")}</Link><Link className={RESOURCE_BUTTON} to="/research/space-assets">{tx("우주·과학 자료")}</Link><Link className={RESOURCE_BUTTON} to="/research/vam">{tx("복식·디자인 고증")}</Link><Link className={RESOURCE_BUTTON} to="/research/fonts">{tx("폰트 매처")}</Link><Link className={RESOURCE_BUTTON} to="/opportunities">{tx("지원사업 찾기")}</Link></div>
     </section>
     <section aria-labelledby="open-pack-title" className="space-y-3"><h2 id="open-pack-title" className="text-xl font-bold">{tx("바로 시작하는 콘텐츠 기획")}</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{PACKS.map((pack) => <button key={pack.title} className="rounded-2xl border border-line bg-panel p-4 text-left hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => { invalidateSearch(); setQuery(pack.query); setSubject(pack.title); setFormat(pack.format); setTab("results"); }}><span className="block font-bold">{tx(pack.title)}</span><span className="mt-2 block text-sm leading-6 text-fg-2">{tx(pack.description)}</span></button>)}</div>
+      <StaggerReveal className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" itemClassName="h-full">{PACKS.map((pack) => <button key={pack.title} className="h-full w-full overflow-hidden rounded-2xl border border-line bg-panel p-4 text-left hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => { invalidateSearch(); setQuery(pack.query); setSubject(pack.title); setFormat(pack.format); setTab("results"); }}><ArtBand art={PACK_ART[pack.query] ?? "materials"} glyph={tx(pack.title).charAt(0)} className="-mx-4 -mt-4 mb-3 h-24 rounded-t-2xl" /><span className="block font-bold">{tx(pack.title)}</span><span className="mt-2 block text-sm leading-6 text-fg-2">{tx(pack.description)}</span></button>)}</StaggerReveal>
     </section>
     <section aria-labelledby="open-creation-search-title">
     <h2 id="open-creation-search-title" className="sr-only">{tx("무료 자료 검색")}</h2>

@@ -261,7 +261,7 @@ describe("CreateGalleryPage", () => {
     expect(creatorClient.createSeries).toHaveBeenCalledTimes(1);
     expect(within(notice).getByRole("link", { name: "첫 회차 만들기" }).getAttribute("href")).toBe("/studio?seriesId=s99");
     expect(within(notice).getByRole("link", { name: "이미지 올려 발행" }).getAttribute("href")).toBe("/studio?seriesId=s99&mode=upload");
-    expect(within(notice).getByRole("link", { name: "시리즈 페이지 보기" }).getAttribute("href")).toBe("/create/series/s99");
+    expect(within(notice).getByRole("link", { name: "시리즈 페이지 보기" }).getAttribute("href")).toBe("/showcase/series/s99");
     // 방금 만든 시리즈가 목록 맨 앞에 보인다.
     expect(screen.getByRole("heading", { level: 3, name: "옥상 방과후" })).toBeTruthy();
 

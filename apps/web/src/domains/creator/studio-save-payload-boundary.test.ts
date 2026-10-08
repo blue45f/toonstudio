@@ -110,7 +110,7 @@ describe("studio save payload ownership boundary", () => {
     expectTokenOrder(save, [
       "if (!canApplyStudioMutation(saveMutationTicket, { allowDuringSave: true })) {",
       "localStorage.removeItem(autosaveKey)",
-      "navigate(`/create/${savedWorkId}`)",
+      "navigate(creatorWorkHref(savedWorkId))",
       "catch (err)",
       "finally {",
       "documentSaveInFlightRef.current = false",

@@ -191,6 +191,12 @@ export interface CreatorMarketplaceResourceRepository {
     input: CreatorMarketplaceResourceListInput
   ): Promise<readonly CreatorMarketplaceResourceStoredRow[]>;
   findById(id: string): Promise<CreatorMarketplaceResourceStoredRow | null>;
+  /**
+   * 주어진 id들 중 공개 목록에 실제로 실릴 수 있는 DB 행의 id만 돌려준다.
+   * 목록 가시성 조건(모더레이션 active·게시자 active·미폐지·최신 릴리스 head)과
+   * 같은 기준으로 판정한다 — 스타터 병합 시 DB 행이 정본인 id를 가리는 용도다.
+   */
+  findListedIds(ids: readonly string[]): Promise<readonly string[]>;
   findIdentityById(
     id: string
   ): Promise<CreatorMarketplaceResourceIdentityStoredRow | null>;

@@ -3,6 +3,8 @@ import "../platform/browser/storage-migrate"; // 스토어 hydrate 전에 레거
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
+import { getAuthSession, getLastUnauthorizedDropHadSession } from "../domains/auth/public/session/auth-session-state";
+import { registerUnauthorizedSessionProbe } from "../platform/api-error";
 import { installStaticCatalog } from "../shared/catalog/catalog-static";
 import { getNextgenLabSettingsSnapshot } from "../shared/lib/nextgen-lab-settings";
 import { installSpeculationRules } from "../shared/lib/speculation-rules";
@@ -20,6 +22,10 @@ import "./styles/sitewide-visual-ux.css";
 import "./styles/unified-theme-contract.css";
 import "./styles/product-journey-readability.css";
 import "./styles/reference-visual-system.css";
+
+// 401 문구의 게스트·세션 구분은 도메인 인증 상태를 읽는다. 플랫폼 오류 모듈은 도메인을 import하지 않으므로
+// 앱 진입점에서 판정 함수를 등록한다.
+registerUnauthorizedSessionProbe(() => getAuthSession() !== null || getLastUnauthorizedDropHadSession());
 
 const STUDIO_BG3D_MAGIC_PRODUCTION_PROOF_QUERY =
   "__studioBg3dMagicProductionProof";

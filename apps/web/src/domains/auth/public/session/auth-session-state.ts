@@ -11,6 +11,12 @@ export type { Session } from "./auth-session-storage";
 
 let currentSession: Session = readClientSession();
 let sessionRevision = 0;
+/**
+ * 가장 최근의 401 세션 폐기가 실제 로그인 세션을 떨어뜨린 것인지 기록한다.
+ * API 오류 문구가 "로그인 만료"(세션이 있었다)와 "로그인 필요"(애초에 게스트)를
+ * 구분하는 근거로만 쓴다 — 인증 판단 자체는 여전히 서버 쿠키가 정본이다.
+ */
+let lastUnauthorizedDropHadSession = false;
 export const listeners = new Set<(session: Session) => void>();
 export type SessionSyncReason = "startup" | "focus" | "unauthorized" | "manual";
 const sessionSyncListeners = new Set<(reason: SessionSyncReason) => void>();
@@ -80,6 +86,7 @@ function transitionSession(
   const previousSession = currentSession;
   const normalized = persist ? persistClientSession(session) : normalizeClientSession(session);
   currentSession = normalized;
+  if (normalized !== null) lastUnauthorizedDropHadSession = false;
   sessionRevision += 1;
   scheduleSessionExpiry();
   listeners.forEach((listener) => listener(currentSession)); // NOSONAR S4158
@@ -213,6 +220,16 @@ export function requestSessionSync(reason: SessionSyncReason): void {
  * then asks the provider to confirm the current cookie state with /auth/session.
  */
 export function handleUnauthorizedSession(): void {
+  const hadSession = currentSession !== null;
   transitionSession(null, true, true);
+  lastUnauthorizedDropHadSession = hadSession;
   requestSessionSync("unauthorized");
+}
+
+/**
+ * 가장 최근 401 폐기가 로그인 세션을 떨어뜨린 것인지 반환한다.
+ * 게스트(세션 없음)의 401과 실제 만료를 오류 문구에서 구분하기 위한 신호다.
+ */
+export function getLastUnauthorizedDropHadSession(): boolean {
+  return lastUnauthorizedDropHadSession;
 }

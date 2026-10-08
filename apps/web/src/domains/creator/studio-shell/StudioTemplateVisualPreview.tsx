@@ -55,6 +55,12 @@ function PlaceholderImage({ accent }: { readonly accent: string }) {
   );
 }
 
+/*
+ * 템플릿 미니어처는 새 문서의 흰 원고 종이(bg-white)를 그대로 축소한 것이라 UI 테마를 따르지 않는다.
+ * 종이 위 칸·글줄·인물 자리는 검은 잉크의 투명도(black/N)로만 그려 어떤 테마에서도 같은 무채색 명도로
+ * 보이게 한다(design-themes.css의 .appearance-preview-paper와 같은 원칙). 의미 토큰(panel·raised 등)은
+ * 다크 테마에서 어두운 값으로 바뀌어 흰 종이 위 칸이 검게 반전되므로 여기서는 쓰지 않는다.
+ */
 function TextLines({ count = 3 }: { readonly count?: number }) {
   useBilingualI18nRevision();
   return (
@@ -62,7 +68,7 @@ function TextLines({ count = 3 }: { readonly count?: number }) {
       {Array.from({ length: count }, (_, index) => (
         <span
           key={index}
-          className="block h-1.5 rounded-full bg-slate-300/85"
+          className="block h-1.5 rounded-full bg-black/15"
           style={{ width: `${Math.max(42, 100 - index * 17)}%` }}
         />
       ))}
@@ -83,7 +89,7 @@ function VerticalStrip({
       {Array.from({ length: count }, (_, index) => (
         <div
           key={index}
-          className="relative min-h-0 flex-1 overflow-hidden rounded-sm border border-slate-300 bg-slate-100"
+          className="relative min-h-0 flex-1 overflow-hidden rounded-sm border border-black/15 bg-black/5"
           style={{ flexGrow: index % 3 === 0 ? 1.45 : 1 }}
         >
           <span
@@ -110,11 +116,11 @@ function PanelGrid({
       {Array.from({ length: count }, (_, index) => (
         <div
           key={index}
-          className="relative min-h-0 overflow-hidden rounded-sm border border-slate-300 bg-slate-100"
+          className="relative min-h-0 overflow-hidden rounded-sm border border-black/15 bg-black/5"
           style={index === 0 && count % 2 === 1 ? { gridColumn: "1 / -1" } : undefined}
         >
           <span className="absolute left-2 top-2 size-3 rounded-full" style={{ backgroundColor: tone(accent, "66") }} />
-          <span className="absolute inset-x-2 bottom-2 h-1 rounded-full bg-slate-300" />
+          <span className="absolute inset-x-2 bottom-2 h-1 rounded-full bg-black/15" />
         </div>
       ))}
     </div>
@@ -125,10 +131,10 @@ function CharacterSheet({ accent }: { readonly accent: string }) {
   return (
     <div className="grid size-full grid-cols-[1fr_1fr_1fr_.7fr] gap-2 rounded-md bg-white p-3 shadow-sm">
       {[0, 1, 2].map((index) => (
-        <div key={index} className="flex min-h-0 flex-col items-center justify-end rounded border border-slate-200 bg-slate-50 p-1">
+        <div key={index} className="flex min-h-0 flex-col items-center justify-end rounded border border-black/10 bg-black/3 p-1">
           <span className="mb-1 size-7 rounded-full" style={{ backgroundColor: tone(accent, "44") }} />
           <span className="h-[62%] w-8 rounded-t-full" style={{ backgroundColor: tone(accent, index === 1 ? "88" : "66") }} />
-          <span className="mt-1 h-1 w-10 rounded-full bg-slate-300" />
+          <span className="mt-1 h-1 w-10 rounded-full bg-black/15" />
         </div>
       ))}
       <div className="grid content-start gap-2">
@@ -155,10 +161,10 @@ function ExpressionGrid({
   return (
     <div className="grid size-full grid-cols-4 gap-2 rounded-md bg-white p-3 shadow-sm">
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="grid min-h-0 place-items-center rounded border border-slate-200 bg-slate-50 p-1">
+        <div key={index} className="grid min-h-0 place-items-center rounded border border-black/10 bg-black/3 p-1">
           <span className="relative block aspect-square w-[60%] rounded-full" style={{ backgroundColor: tone(accent, "33") }}>
-            <span className="absolute left-[24%] top-[36%] size-1 rounded-full bg-slate-600" />
-            <span className="absolute right-[24%] top-[36%] size-1 rounded-full bg-slate-600" />
+            <span className="absolute left-[24%] top-[36%] size-1 rounded-full bg-black/65" />
+            <span className="absolute right-[24%] top-[36%] size-1 rounded-full bg-black/65" />
             <span className="absolute bottom-[24%] left-1/2 h-1 w-4 -translate-x-1/2 rounded-full" style={{ backgroundColor: tone(accent, index % 2 ? "aa" : "66") }} />
           </span>
         </div>
@@ -174,11 +180,11 @@ function EnvironmentBoard({ accent }: { readonly accent: string }) {
         <PlaceholderImage accent={accent} />
         <div className="grid grid-cols-3 gap-2">
           {[0, 1, 2].map((index) => (
-            <div key={index} className="rounded border border-slate-200 bg-slate-100" />
+            <div key={index} className="rounded border border-black/10 bg-black/5" />
           ))}
         </div>
       </div>
-      <div className="space-y-3 rounded border border-slate-200 bg-slate-50 p-2">
+      <div className="space-y-3 rounded border border-black/10 bg-black/3 p-2">
         <TextLines count={4} />
         <div className="grid grid-cols-3 gap-1">
           {["ff", "cc", "99", "77", "55", "33"].map((alpha) => (
@@ -202,7 +208,7 @@ function Poster({ accent }: { readonly accent: string }) {
         <PlaceholderImage accent={accent} />
         <div>
           <span className="block h-3 w-3/4 rounded-full" style={{ backgroundColor: accent }} />
-          <span className="mt-2 block h-1.5 w-1/2 rounded-full bg-slate-400" />
+          <span className="mt-2 block h-1.5 w-1/2 rounded-full bg-black/35" />
           <span
             className="mt-3 inline-block rounded-full px-3 py-1 text-[0.45rem] font-black text-white"
             style={{ backgroundColor: accent }}
@@ -243,11 +249,11 @@ function Slide({
     <div className="grid size-full grid-rows-[auto_1fr_auto] gap-3 rounded-md bg-white p-4 shadow-sm">
       <div>
         <span className="block h-3 w-2/3 rounded-full" style={{ backgroundColor: accent }} />
-        <span className="mt-2 block h-1.5 w-1/3 rounded-full bg-slate-300" />
+        <span className="mt-2 block h-1.5 w-1/3 rounded-full bg-black/15" />
       </div>
       <div className="grid min-h-0 gap-2" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
         {Array.from({ length: columns }, (_, index) => (
-          <div key={index} className="rounded border border-slate-200 bg-slate-50 p-2">
+          <div key={index} className="rounded border border-black/10 bg-black/3 p-2">
             {index === 0 ? <PlaceholderImage accent={accent} /> : <TextLines count={4} />}
           </div>
         ))}
@@ -269,8 +275,8 @@ function Storyboard({
   return (
     <div className="grid size-full grid-cols-2 gap-2 rounded-md bg-white p-3 shadow-sm">
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="grid min-h-0 grid-rows-[1fr_auto] overflow-hidden rounded border border-slate-300">
-          <div className="relative bg-slate-100">
+        <div key={index} className="grid min-h-0 grid-rows-[1fr_auto] overflow-hidden rounded border border-black/15">
+          <div className="relative bg-black/5">
             <span className="absolute left-2 top-2 grid size-4 place-items-center rounded-full text-[0.45rem] font-black text-white" style={{ backgroundColor: accent }}>{index + 1}</span>
           </div>
           <div className="space-y-1 bg-white p-1.5"><TextLines count={2} /></div>

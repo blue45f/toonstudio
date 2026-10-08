@@ -17,6 +17,7 @@ import { getEffectiveOperationPolicy, commandTeamWorkspace, createTeamWorkspace,
 import { parseProductionRolePresetId, PRODUCTION_ROLE_PRESETS, productionRolePreset, type ProductionRolePreset } from "./production-manuscript-competitive-model";
 import { TeamAccessGuide } from "./TeamAccessGuide";
 import { TeamPeopleOverviewSkeleton, TeamPeopleOverviewStrip } from "./TeamPeopleOverview";
+import { TeamSceneArt } from "./TeamSceneArt";
 import { ProductionAvatar } from "./production-ui";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
@@ -109,17 +110,6 @@ const fieldClass = "min-h-11 rounded-lg border border-line bg-canvas px-3 text-f
 function Card({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return <section id={id} className="creator-workflow-panel scroll-mt-6 rounded-2xl border border-line bg-card p-5"><h2 className="mb-4 text-lg font-bold">{title}</h2>{children}</section>;
 }
-/** 사람·권한 화면 첫 화면의 장면 아트. 제작 워크스페이스 전용으로 만들어 둔 기존
- *  자산(creator-workspace.webp — 원고 책상과 떠 있는 컷·말풍선 장면)이 미사용
- *  상태로 남아 있어 이를 재사용한다. 왼쪽 어두운 여백은 원본의 텍스트 자리라
- *  초점은 오른쪽 장면(object-position)으로 잡는다. */
-function TeamSceneArt() {
-  const bt = useBilingual("TeamWorkspacePage");
-  return <div data-testid="team-scene-art" className="relative overflow-hidden rounded-3xl border border-line">
-    <img src="/assets/production-workspace/creator-workspace.webp" alt="" loading="lazy" decoding="async" className="h-44 w-full object-cover object-[72%_50%] sm:h-56" />
-    <p className="absolute bottom-3 left-3 rounded-full bg-canvas/70 px-3 py-1 text-xs font-semibold text-fg backdrop-blur-sm">{bt("함께 만드는 작업실", "A studio you build together")}</p>
-  </div>;
-}
 /** 목록 로딩 스켈레톤 한 장. 실제 워크스페이스 카드(Link)와 같은 테두리·여백에
  *  아바타 원 + 이름·메타 두 줄의 실루엣을 그대로 채운다.
  *  로딩 안내는 role="status" 문구가 맡으므로 이 블록은 장식으로 숨긴다. */
@@ -130,19 +120,6 @@ function WorkspaceListSkeletonCard() {
       <div className="h-5 w-1/2 rounded bg-raised" />
       <div className="mt-2 h-4 w-3/4 rounded bg-raised" />
     </div>
-  </div>;
-}
-/** 사용량 로딩 스켈레톤. 사용량 카드(제목 + 지표 3열 + 안내문)와 같은 자리·크기를 채운다. */
-function WorkspaceUsageSkeleton() {
-  return <div aria-hidden="true" data-testid="workspace-usage-skeleton" className="creator-workflow-panel animate-pulse rounded-2xl border border-line bg-card p-5 motion-reduce:animate-none">
-    <div className="mb-4 h-7 w-56 rounded bg-raised" />
-    <div className="grid gap-3 sm:grid-cols-3">
-      {[0, 1, 2].map((index) => <div key={index}>
-        <div className="h-4 w-24 rounded bg-raised" />
-        <div className="mt-2 h-6 w-16 rounded bg-raised" />
-      </div>)}
-    </div>
-    <div className="mt-4 h-4 w-2/3 rounded bg-raised" />
   </div>;
 }
 /** 상세 로딩 스켈레톤. 이름·연결 프로젝트·구성원 카드가 앉을 자리와 크기를 그대로 채운다. */
@@ -301,8 +278,6 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
     if (input.type === "remove-member" && input.userId === userId) navigate("/team/people");
   }
   const manager = detail && isWorkspaceManager(detail.workspace.role);
-  /** /usage 라우트에서는 사용량 카드를 상세 첫 화면으로 끌어올린다. */
-  const usageFocused = location.pathname.replace(/\/+$/u, "").endsWith("/usage");
   const inviteTier = workspaceRoleTier(inviteTierId);
   const onboardingProject = detail?.projects.find((project) => project.workId === inviteProjectId) ?? null;
   async function inviteOnboardingProjectAccess() {
@@ -358,7 +333,6 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
       <summary className="flex min-h-12 cursor-pointer list-none items-center px-5 text-sm font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">{bt("역할과 초대 방법 알아보기", "Learn about roles and invites")}</summary>
       <div className="border-t border-line p-5"><TeamAccessGuide /></div>
     </details>}
-    {usageFocused && loading && workspaceId && !usage && <WorkspaceUsageSkeleton />}
     {loading && workspaceId && !detail && <WorkspaceDetailSkeleton />}
     {detail && <><Card title={detail.workspace.name}><p className="text-sm text-fg-2">{bt("현재 역할:", "Current role:")} {bt(ROLE_LABELS[detail.workspace.role].ko, ROLE_LABELS[detail.workspace.role].en)}</p>
       <ul aria-label={bt("팀 요약", "Team summary")} className="mt-3 flex flex-wrap gap-2 text-sm">
@@ -394,7 +368,6 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
       {!onboarding.email && <p className="mt-3 text-xs text-warn">{bt("지원 연락처가 이메일 형식이 아닙니다. 팀 초대 이메일을 확인해 입력해 주세요. 작품 권한 초대는 계정 ID로 보낼 수 있습니다.", "The applicant contact isn't an email address. Enter a team invite email. Project-permission invites can use the account ID.")}</p>}
       <p className="mt-3 text-xs leading-6 text-fg-3">{bt("팀 소속만으로 원고 접근 권한이 생기지 않습니다. 작품 권한 초대를 수락한 뒤 제작 보드에서 실제 담당 역할과 작업을 배정하세요.", "Team membership alone doesn't grant manuscript access. After the project-permission invite is accepted, assign real roles and tasks on the production board.")}</p>
     </Card>}
-    {usageFocused && usage && <UsageCard usage={usage} />}
     {detail.workspace.role !== "guest" && <Card id="team-people-members" title={bt("구성원", "Members")}><ul className="space-y-3">{detail.members.map((member) => <li key={member.userId} className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3">
       <ProductionAvatar name={member.displayName} imageUrl={member.userId === userId ? selfImageUrl : null} /><strong className="mr-auto">{member.displayName}</strong><span>{bt(ROLE_LABELS[member.role].ko, ROLE_LABELS[member.role].en)}</span>
       {manager && member.role !== "owner" && (detail.workspace.role === "owner" || member.role !== "admin") && <>
@@ -455,7 +428,7 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
       {manager && <div className="mt-4"><label className="flex flex-col gap-2">{bt("소유한 프로젝트 연결", "Link an owned project")}<select aria-label={bt("연결할 프로젝트", "Project to link")} className={fieldClass} disabled={busy} value="" onChange={(event) => { const projectId = event.target.value; if (projectId) void run(() => command({ type: "attach-project", projectId })); }}>
         <option value="">{bt("기존 프로젝트 선택", "Choose an existing project")}</option>{available.filter((item) => !detail.projects.some((project) => project.id === item.projectId)).map((project) => <option key={project.projectId} value={project.projectId}>{project.title}</option>)}</select></label>
         <Link to="/studio" className="mt-3 inline-block underline">{bt("작품 라이브러리·작품별 권한 관리", "Project library & per-project permissions")}</Link></div>}</Card>
-    {!usageFocused && usage && <UsageCard usage={usage} />}
+    {usage && <UsageCard usage={usage} />}
     {detail.workspace.role !== "owner" && <button disabled={busy} className={buttonClass({ variant: "outline" })} onClick={() => { if (window.confirm(bt("이 워크스페이스에서 나갈까요? 별도의 작품 접근 권한은 유지됩니다.", "Leave this workspace? Your separate project access stays."))) void run(() => command({ type: "remove-member", userId })); }}>{bt("워크스페이스 나가기", "Leave workspace")}</button>}
     </>}</>}
     </div></div>;

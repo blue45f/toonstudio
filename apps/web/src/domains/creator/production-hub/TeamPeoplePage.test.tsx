@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { initialOperationPolicy, resolveOperationPolicy } from "@toonstudio/contracts/operation-policy";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FREE_USAGE_POLICY } from "@toonstudio/contracts/production-workspace";
@@ -21,7 +21,6 @@ function App({ path = "/team/people" }: { path?: string }) {
   return <MemoryRouter initialEntries={[path]}><Routes>
     <Route path="/team/people" element={<TeamPeoplePage />} />
     <Route path="/team/people/:workspaceId" element={<TeamPeoplePage />} />
-    <Route path="/team/people/:workspaceId/usage" element={<TeamPeoplePage />} />
   </Routes></MemoryRouter>;
 }
 beforeEach(() => {
@@ -72,18 +71,17 @@ describe("people & access surface (wave 5 T2)", () => {
     expect(screen.getByText(/만든 초대 링크는 합류 시트로 연결됩니다/)).toBeTruthy();
   });
 
-  it("leads with the usage card on the usage route", async () => {
-    render(<App path="/team/people/team-a/usage" />);
-    const usageHeading = await screen.findByRole("heading", { name: "사용량과 공통 이용 한도" });
-    const membersHeading = screen.getByRole("heading", { name: "구성원" });
-    expect(usageHeading.compareDocumentPosition(membersHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  it("links from the detail shortcuts to the dedicated usage route", async () => {
+    render(<App path="/team/people/team-a" />);
+    await screen.findByRole("heading", { name: "구성원" });
     expect(screen.getAllByRole("link", { name: "사용량 확인" })).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "사용량 확인" }).getAttribute("href")).toBe("/team/people/team-a/usage");
   });
 });
 
 describe("people & access surface (wave 6 T1)", () => {
-  it("shows the team scene art on all three people routes", async () => {
-    for (const path of ["/team/people", "/team/people/team-a", "/team/people/team-a/usage"]) {
+  it("shows the team scene art on the people list and detail routes", async () => {
+    for (const path of ["/team/people", "/team/people/team-a"]) {
       const view = render(<App path={path} />);
       const banner = screen.getByTestId("team-scene-art");
       expect(banner.querySelector("img")?.getAttribute("src")).toBe("/assets/production-workspace/creator-workspace.webp");
@@ -113,18 +111,6 @@ describe("people & access surface (wave 6 T1)", () => {
     expect(screen.getByRole("link", { name: "새 팀 만들기" }).getAttribute("href")).toBe("#team-create-workspace");
     expect(screen.getByRole("link", { name: "초대 코드로 참여" }).getAttribute("href")).toBe("/team/people/join");
     expect(screen.queryByRole("alert")).toBeNull();
-  });
-
-  it("leads the usage route loading state with a usage-shaped skeleton", async () => {
-    let resolveDetail!: (value: unknown) => void;
-    mocks.detail.mockImplementation(() => new Promise((resolve) => { resolveDetail = resolve; }));
-    render(<App path="/team/people/team-a/usage" />);
-    await waitFor(() => expect(screen.getByTestId("workspace-usage-skeleton")).toBeTruthy());
-    expect(screen.queryByRole("heading", { name: "사용량과 공통 이용 한도" })).toBeNull();
-    resolveDetail({ workspace, projects: [{ id: "project-a", workId: "work-a", title: "검수 원고" }],
-      members: [{ userId: "owner", displayName: "소유자", role: "owner", joinedAt: workspace.createdAt }], invites: [] });
-    await screen.findByRole("heading", { name: "사용량과 공통 이용 한도" });
-    expect(screen.queryByTestId("workspace-usage-skeleton")).toBeNull();
   });
 
   it("shows an empty state for pending invites instead of a blank list", async () => {

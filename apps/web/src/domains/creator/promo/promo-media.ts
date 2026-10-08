@@ -190,9 +190,18 @@ export async function recordPromoVideo(project: PromoProject, { signal, onProgre
                 raf = requestAnimationFrame(() => finish());
               });
             } else {
+              // 고정 250ms 대기는 메인 스레드가 밀리는 환경에서 끝 프레임의 페인트보다 먼저 끝나,
+              // 마지막 프레임이 빠진 채 영상이 잘렸다(CI에서 14초대 종료). 페인트 두 번을 기다려
+              // 끝 프레임이 트랙에 실린 뒤 멈춘다. 페인트가 오지 않는 환경을 위해 상한 시간도 둔다.
+              raf = requestAnimationFrame(() => {
+                if (finished) return;
+                raf = requestAnimationFrame(() => {
+                  if (!finished) finish();
+                });
+              });
               finishTimer = setTimeout(() => {
                 if (!finished) finish();
-              }, 250);
+              }, 3_000);
             }
             return;
           }

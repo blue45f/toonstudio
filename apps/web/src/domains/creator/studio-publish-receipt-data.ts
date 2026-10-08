@@ -1,5 +1,7 @@
 import type { CreatorPublicationSourceLink } from "@toonstudio/contracts/creator-publication-integrity";
 
+import { buildCreatorPublicReaderPreviewHref } from "./creator-public-reader-preview";
+import { creatorWorkHref } from "./publishing/showcase-links";
 import type { StudioPublishEnvironment } from "./studio-publish-review-safety";
 import type { StudioPublishResultKind } from "./studio-publish-result";
 
@@ -69,7 +71,6 @@ export function createStudioPublishReceipt(
   input: StudioPublishReceiptInput,
 ): StudioPublishReceiptDocument {
   const visible = readerVisible(input.kind);
-  const encodedWorkId = encodeURIComponent(input.workId);
   return {
     schema: "toonstudio.publish-receipt.v1",
     generatedAt: input.generatedAt ?? new Date().toISOString(),
@@ -77,9 +78,9 @@ export function createStudioPublishReceipt(
     result: input.kind,
     workId: input.workId,
     revision: Number.isSafeInteger(input.revision) ? input.revision ?? null : null,
-    publicPath: visible ? `/create/${encodedWorkId}` : null,
+    publicPath: visible ? creatorWorkHref(input.workId) : null,
     anonymousPreviewPath: visible
-      ? `/create/${encodedWorkId}?view=reader&publicPreview=1`
+      ? buildCreatorPublicReaderPreviewHref(input.workId)
       : null,
     details: input.details ?? null,
   };

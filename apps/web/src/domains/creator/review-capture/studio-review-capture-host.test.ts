@@ -50,17 +50,17 @@ describe("review capture save navigation", () => {
   it("retains only the current-work success route while preserving options and history navigation", () => {
     const navigate = vi.fn();
     const preserving = studioReviewCaptureSaveNavigation(navigate, "work", true);
-    preserving("/create/work");
+    preserving("/showcase/work/work");
     expect(navigate).not.toHaveBeenCalled();
-    preserving("/create/new-work", { replace: true, state: { saved: true } });
-    expect(navigate).toHaveBeenLastCalledWith("/create/new-work", { replace: true, state: { saved: true } });
+    preserving("/showcase/work/new-work", { replace: true, state: { saved: true } });
+    expect(navigate).toHaveBeenLastCalledWith("/showcase/work/new-work", { replace: true, state: { saved: true } });
     preserving({ pathname: "/recover" }, { preventScrollReset: true });
     expect(navigate).toHaveBeenLastCalledWith({ pathname: "/recover" }, { preventScrollReset: true });
     preserving(-1);
     expect(navigate).toHaveBeenLastCalledWith(-1);
-    studioReviewCaptureSaveNavigation(navigate, "work")("/create/work");
-    expect(navigate).toHaveBeenLastCalledWith("/create/work", undefined);
-    studioReviewCaptureSaveNavigation(navigate, null, true)("/create/new-work");
-    expect(navigate).toHaveBeenLastCalledWith("/create/new-work", undefined);
+    studioReviewCaptureSaveNavigation(navigate, "work")("/showcase/work/work");
+    expect(navigate).toHaveBeenLastCalledWith("/showcase/work/work", undefined);
+    studioReviewCaptureSaveNavigation(navigate, null, true)("/showcase/work/new-work");
+    expect(navigate).toHaveBeenLastCalledWith("/showcase/work/new-work", undefined);
   });
 });

@@ -70,6 +70,13 @@ describe("StudioVirtualSpaceEntryLobby", () => {
     fireEvent.click(screen.getByRole("button", { name: "선택하고 입장" }));
     expect(enter).toHaveBeenCalledTimes(1);
   });
+  it("공백만 입력한 닉네임은 유효하지 않다고 안내하고 입장을 막는다 (F-B06-2)", () => {
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="   " returning={false}
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()} /></MemoryRouter>);
+    expect(screen.getByRole("button", { name: "선택하고 입장" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByLabelText(/공개 닉네임/u).getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByText("공개 닉네임을 확인하면 입장할 수 있어요.")).toBeTruthy();
+  });
   it("입장코드 콜백이 있으면 코드 패널을 보여 주고 유효한 코드로 입장 의도를 전한다", () => {
     const enterWithCode = vi.fn();
     render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}
@@ -256,5 +263,34 @@ describe("입장 로비 조작법 미리보기", () => {
     expect(within(preview).getByText("상호작용")).toBeTruthy();
     expect(within(preview).getByText("리액션")).toBeTruthy();
     expect(within(preview).getByText(/3단계 미니 투어가 나타나요/)).toBeTruthy();
+  });
+});
+
+describe("StudioVirtualSpaceEntryLobby access gate (F-B06-1)", () => {
+  it("자격 거절 안내는 alert로 명시하고 입장을 막는다", () => {
+    const enter = vi.fn();
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="게스트" returning={false} guestMode
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={enter}
+      accessBlocked
+      accessNotice={{ tone: "error", ko: "만료된 초대예요. 보낸 사람에게 새 초대를 요청해 주세요.", en: "This invitation has expired." }} /></MemoryRouter>);
+    expect(screen.getByRole("alert").textContent).toContain("만료된 초대예요");
+    expect(screen.getByRole("button", { name: "게스트로 입장" }).hasAttribute("disabled")).toBe(true);
+  });
+
+  it("확인 불가 안내는 재시도 버튼으로 검증을 다시 시도하게 한다", () => {
+    const retry = vi.fn();
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="게스트" returning={false} guestMode
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()}
+      accessBlocked onRetryAccess={retry}
+      accessNotice={{ tone: "error", ko: "초대 자격을 확인하지 못했어요.", en: "We couldn't verify your invitation." }} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "다시 확인" }));
+    expect(retry).toHaveBeenCalledOnce();
+  });
+
+  it("안내가 없으면 기존 입장 버튼 상태를 그대로 둔다", () => {
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="게스트" returning={false} guestMode
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()} /></MemoryRouter>);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "게스트로 입장" }).hasAttribute("disabled")).toBe(false);
   });
 });

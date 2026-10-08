@@ -824,6 +824,8 @@ function inspectComments(
 
   for (const thread of comments.threads) {
     const anchor = thread.anchor;
+    // PDF 워크벤치 앵커는 스튜디오 페이지가 아니라 별도 댓글 스코프에서 검사한다.
+    if (anchor.type === "pdf-page") continue;
     const owner = pageById.get(anchor.pageId);
     if (!owner) {
       add({

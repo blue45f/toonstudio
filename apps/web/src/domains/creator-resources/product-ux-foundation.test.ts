@@ -80,9 +80,12 @@ describe("purpose-first product UX foundation", () => {
 
   it("indexes the new purpose hubs in the global command palette", () => {
     const palette = readFileSync(COMMAND_PALETTE, "utf8");
-    for (const href of ["/discover", "/make", "/my", "/help"]) {
+    // 만들기 허브의 정문은 /create 시작 시트다. /make는 /studio/new로 넘기는 별칭이라
+    // 팔레트가 가리키면 시작 시트를 건너뛰어 진입점이 다시 둘로 갈라진다.
+    for (const href of ["/discover", "/create", "/my", "/help"]) {
       expect(palette).toContain(`href: "${href}"`);
     }
+    expect(palette).not.toContain('href: "/make"');
   });
 
   it("exposes searchable help and accessibility destinations", () => {

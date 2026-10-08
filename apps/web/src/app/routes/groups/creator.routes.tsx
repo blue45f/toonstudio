@@ -19,6 +19,7 @@ import {
   StudioTemplatesPage, StudioRouter, CreatorAnalyticsPage, StudioPoserPage,
   PdfWorkbenchPage,
 } from "./creator-route-pages";
+import { ShowcaseDetailRedirect, ShowcaseRedirect } from "./creator-showcase-redirects";
 
 export const creatorRoutes = defineAppRoutes([
   { id: "creator-character-onboarding", path: "/onboarding/character", element: <StudioCharacterOnboardingPage /> },
@@ -82,13 +83,13 @@ export const creatorRoutes = defineAppRoutes([
   { id: "creator-brush-lab", path: "/brush-lab", element: <Navigate to={studioRoutePath("asset-brush-new")} replace /> },
   { id: "creator-studio-brush-lab", path: "/studio/brush-lab", element: <Navigate to={studioRoutePath("asset-brush-new")} replace /> },
 
-  // /create는 작품 시작 시트가 정본이다. 갤러리 본문은 /showcase로 일원화됐고,
-  // 갤러리 보기 조건을 단 옛 /create 주소는 시작 시트가 /showcase로 넘긴다.
+  // /create는 작품 시작 시트가 정본이다. 갤러리 본문은 /showcase로 일원화됐으므로
+  // 상세 4경로(챌린지·홍보·시리즈·작품)는 정식 /showcase 주소로 리다이렉트해 호환을 유지한다.
   { id: "creator-gallery", path: "/create", element: <CreateStartPage /> },
-  { id: "creator-challenges", path: "/create/challenges", element: <CreateChallengesPage /> },
-  { id: "creator-promo", path: "/create/promo", element: <StudioPromoPage /> },
-  { id: "creator-series", path: "/create/series/:id", element: <CreateSeriesPage /> },
-  { id: "creator-work", path: "/create/:id", element: <CreateWorkPage /> },
+  { id: "creator-challenges", path: "/create/challenges", element: <ShowcaseRedirect to="/showcase/challenges" /> },
+  { id: "creator-promo", path: "/create/promo", element: <ShowcaseRedirect to="/showcase/promo" /> },
+  { id: "creator-series", path: "/create/series/:id", element: <ShowcaseDetailRedirect base="/showcase/series" /> },
+  { id: "creator-work", path: "/create/:id", element: <ShowcaseDetailRedirect base="/showcase/work" /> },
 
   // Work/remix brush-lab URLs keep their scoped editor state until document-id migration lands.
   { id: "creator-studio-work-brush-lab", path: "/studio/work/:workId/brush-lab", element: <StudioBrushLabPage /> },

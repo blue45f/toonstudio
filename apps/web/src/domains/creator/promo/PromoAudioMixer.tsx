@@ -9,10 +9,11 @@ export function PromoAudioMixer({
 }: {
   project: PromoProject;
   disabled: boolean;
-  onChange: (mixer: PromoMixer) => void;
+  /** field는 슬라이더 연속 입력만 넘긴다. 기본값 버튼은 생략해 실행 취소 한 단계로 남긴다. */
+  onChange: (mixer: PromoMixer, field?: keyof PromoMixer) => void;
 }) {
   const mixer = promoMixer(project);
-  const patch = (value: Partial<PromoMixer>) => onChange({ ...mixer, ...value });
+  const patch = (value: Partial<PromoMixer>, field: keyof PromoMixer) => onChange({ ...mixer, ...value }, field);
 
   return (
     <section className="promo-audio-mixer" aria-labelledby="promo-audio-mixer-title">
@@ -33,7 +34,7 @@ export function PromoAudioMixer({
             disabled={disabled}
             onChange={(event) => patch({
               masterVolume: Number(event.target.value),
-            })}
+            }, "masterVolume")}
           />
         </label>
         <label htmlFor="promo-ducking">
@@ -46,7 +47,7 @@ export function PromoAudioMixer({
             step={0.05}
             value={mixer.ducking}
             disabled={disabled}
-            onChange={(event) => patch({ ducking: Number(event.target.value) })}
+            onChange={(event) => patch({ ducking: Number(event.target.value) }, "ducking")}
           />
         </label>
       </div>
@@ -61,7 +62,7 @@ export function PromoAudioMixer({
             step={0.05}
             value={mixer.attackSec}
             disabled={disabled}
-            onChange={(event) => patch({ attackSec: Number(event.target.value) })}
+            onChange={(event) => patch({ attackSec: Number(event.target.value) }, "attackSec")}
           />
         </label>
         <label htmlFor="promo-duck-release">
@@ -74,7 +75,7 @@ export function PromoAudioMixer({
             step={0.05}
             value={mixer.releaseSec}
             disabled={disabled}
-            onChange={(event) => patch({ releaseSec: Number(event.target.value) })}
+            onChange={(event) => patch({ releaseSec: Number(event.target.value) }, "releaseSec")}
           />
         </label>
         <button

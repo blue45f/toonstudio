@@ -99,6 +99,23 @@
   font-weight: 700;
   line-height: 1.5;
 }
+/* 초대 자격 검증 안내(F-B06-1): 무효·확인 불가 자격을 조용히 넘기지 않고 폼 카드 안에 명시한다. */
+.space-lobby__access-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--color-warn) 45%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-warn) 10%, transparent);
+}
+.space-lobby__access-notice[data-tone="error"] {
+  border-color: color-mix(in srgb, var(--color-danger, #e5484d) 45%, transparent);
+  background: color-mix(in srgb, var(--color-danger, #e5484d) 9%, transparent);
+}
+.space-lobby__access-notice p { margin: 0; flex: 1 1 220px; font-size: 13px; font-weight: 600; line-height: 1.55; }
 /* 상단 제목·하단 칩 행의 가독성을 위한 무대 안쪽 국소 그라디언트 (화면 전체 워시가 아니다). */
 .space-lobby__scene::before {
   content: "";

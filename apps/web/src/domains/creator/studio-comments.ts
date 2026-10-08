@@ -102,11 +102,28 @@ const PointCommentAnchorSchema = z
   })
   .strict();
 
+/**
+ * 가져온 PDF의 원본 페이지를 가리키는 앵커 (cat7 T3 저장 통합, 2026-10-08).
+ * 스튜디오 페이지가 아니라 파일 내용 지문(SHA-256)이 문서 스코프이고, 페이지 번호는
+ * 원본 기준이라 워크벤치에서 재배열·삭제해도 따라 움직이지 않는다. 좌표는 선택 —
+ * 둘 다 없으면 페이지 전체 앵커, 있으면 페이지 위 핀이다.
+ */
+const PdfPageCommentAnchorSchema = z
+  .object({
+    type: z.literal("pdf-page"),
+    documentId: IdSchema,
+    sourcePageIndex: z.number().int().min(0),
+    x: z.number().finite().min(0).max(1).optional(),
+    y: z.number().finite().min(0).max(1).optional(),
+  })
+  .strict();
+
 export const StudioCommentAnchorSchema = z.discriminatedUnion("type", [
   PageCommentAnchorSchema,
   FrameCommentAnchorSchema,
   ElementCommentAnchorSchema,
   PointCommentAnchorSchema,
+  PdfPageCommentAnchorSchema,
 ]);
 
 export type StudioCommentAnchor = z.infer<typeof StudioCommentAnchorSchema>;
@@ -131,6 +148,19 @@ export function canonicalStudioCommentAnchorKey(value: StudioCommentAnchor): str
     // Studio element IDs are page-global. A legacy frameId is descriptive metadata, not a
     // second identity axis; treating it as identity would render duplicate pins for one element.
     return JSON.stringify(["element", anchor.pageId, anchor.elementId]);
+  }
+  if (anchor.type === "pdf-page") {
+    // Ported verbatim from the workbench's canonicalPdfPageAnchorKey so both key spaces stay
+    // byte-identical: page-only anchors omit the coordinate pair entirely, and pins share the
+    // point four-decimal bucket. The document fingerprint keeps PDFs collision-safe even when
+    // two files share a page number.
+    const base = ["pdf-page", anchor.documentId, anchor.sourcePageIndex];
+    if (anchor.x === undefined || anchor.y === undefined) return JSON.stringify(base);
+    return JSON.stringify([
+      ...base,
+      anchor.x.toFixed(STUDIO_COMMENT_POINT_KEY_DECIMALS),
+      anchor.y.toFixed(STUDIO_COMMENT_POINT_KEY_DECIMALS),
+    ]);
   }
   return JSON.stringify([
     "point",
@@ -370,14 +400,46 @@ function normalizeAnchor(value: unknown): StudioCommentAnchor | null {
   if (!isRecord(value)) return null;
   const nestedAnchor = firstValue(value, ["anchor", "target"]);
   const source = isRecord(nestedAnchor) ? nestedAnchor : value;
+  const rawType = firstValue(source, ["type", "kind", "anchorType", "targetType"]);
+  const type = typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
+
+  if (["pdf-page", "pdfpage", "pdf"].includes(type)) {
+    // PDF anchors key on the file fingerprint instead of a studio pageId, so they must be
+    // resolved before the pageId requirement below. Coordinates stay independently optional
+    // to match the persisted shape: a pin needs both, a page anchor needs neither.
+    const documentId = normalizeId(
+      firstValue(source, ["documentId", "document", "fingerprint"])
+    );
+    const rawPageIndex = firstValue(source, ["sourcePageIndex", "pageIndex", "sourcePage"]);
+    if (
+      !documentId
+      || typeof rawPageIndex !== "number"
+      || !Number.isInteger(rawPageIndex)
+      || rawPageIndex < 0
+    ) {
+      return null;
+    }
+    const x = firstValue(source, ["x", "nx"]);
+    const y = firstValue(source, ["y", "ny"]);
+    const isValidCoordinate = (coordinate: unknown): boolean =>
+      coordinate === undefined
+      || (typeof coordinate === "number" && Number.isFinite(coordinate) && coordinate >= 0 && coordinate <= 1);
+    if (!isValidCoordinate(x) || !isValidCoordinate(y)) return null;
+    return {
+      type: "pdf-page",
+      documentId,
+      sourcePageIndex: rawPageIndex,
+      ...(typeof x === "number" ? { x } : {}),
+      ...(typeof y === "number" ? { y } : {}),
+    };
+  }
+
   const pageId = normalizeId(firstValue(source, ["pageId", "page"]));
   if (!pageId) return null;
   const frameId = normalizeId(firstValue(source, ["frameId", "panelId", "frame"]));
   const elementId = normalizeId(
     firstValue(source, ["elementId", "layerId", "nodeId", "objectId", "element"])
   );
-  const rawType = firstValue(source, ["type", "kind", "anchorType", "targetType"]);
-  const type = typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
 
   if (["point", "position", "pin"].includes(type)) {
     const x = firstValue(source, ["x", "nx"]);

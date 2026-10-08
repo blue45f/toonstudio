@@ -24,8 +24,8 @@ describe("creator public reader preview", () => {
 
   it("builds canonical management and anonymous preview paths", () => {
     expect(buildCreatorPublicReaderPreviewHref("work / 1")).toBe(
-      "/create/work%20%2F%201?view=reader&publicPreview=1",
+      "/showcase/work/work%20%2F%201?view=reader&publicPreview=1",
     );
-    expect(buildCreatorReaderManagementHref("work / 1")).toBe("/create/work%20%2F%201");
+    expect(buildCreatorReaderManagementHref("work / 1")).toBe("/showcase/work/work%20%2F%201");
   });
 });

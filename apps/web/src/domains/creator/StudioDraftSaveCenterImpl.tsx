@@ -127,11 +127,13 @@ const FLOATING_TRIGGER_CLASS = "max-w-[min(17rem,calc(100vw-1.5rem))] px-3 py-2 
  * 데스크톱 상단 바 칩. 경고·위험 상태는 xl부터, 정상·진행 상태는 2xl부터 문구를 보이고
  * 그보다 좁으면 아이콘만 남겨 메뉴 레인 폭을 지킨다. 상태 문구는 접근 이름(`저장 상태: …`)·
  * 툴팁·대화상자에 그대로 남고, 아이콘 모양도 상태마다 달라 색에만 의존하지 않는다.
+ * 문구가 보이는 구간에서는 고정 너비(w-48)라 라벨 길이·서버 저장 시각 배지의 등장으로
+ * 칩 폭이 변하지 않는다 — 동기화·저장 전이 때마다 메뉴바가 밀리는 흔들림을 막기 위함이다.
  */
-const INLINE_TRIGGER_CLASS = "min-w-11 max-w-[13rem] shrink-0 justify-center px-2.5 hover:brightness-110";
+const INLINE_TRIGGER_CLASS = "shrink-0 justify-center px-2.5 hover:brightness-110";
 const INLINE_COMPACT_CLASS = {
-  urgent: { trigger: "max-xl:w-11 max-xl:px-0", label: "max-xl:sr-only" },
-  calm: { trigger: "max-2xl:w-11 max-2xl:px-0", label: "max-2xl:sr-only" },
+  urgent: { trigger: "max-xl:w-11 max-xl:px-0 xl:w-48", label: "max-xl:sr-only" },
+  calm: { trigger: "max-2xl:w-11 max-2xl:px-0 2xl:w-48", label: "max-2xl:sr-only" },
 } as const;
 const DIALOG_CLASS = "w-[min(26rem,calc(100vw-1rem))] max-h-[min(76dvh,46rem)] overflow-y-auto overscroll-contain rounded-2xl border border-line bg-panel/95 p-4 text-fg shadow-2xl backdrop-blur-xl [scrollbar-gutter:stable]";
 
@@ -293,7 +295,8 @@ export function StudioDraftSaveCenter({
     sharedUpdatedAt: explicitServerSaveAt,
     observedAt: observedServerSaveAt,
   });
-  const serverSaveError = manualSaveError ?? extractStudioDraftSaveError(error);
+  const hostSaveError = extractStudioDraftSaveError(error);
+  const serverSaveError = manualSaveError ?? hostSaveError;
 
   const input = useMemo<StudioDraftSaveCenterInput>(() => ({
     isOnline,
@@ -512,7 +515,11 @@ export function StudioDraftSaveCenter({
       || !workHydrated
       || workHydrationFailed
       || pendingSaveIntent === "draft"
-      || serverSaveError !== null
+      // 재생 차단은 호스트가 보고한 오류(수정 충돌 등)만 근거로 한다. 저장 시도 실패가
+      // 스스로 세팅한 manualSaveError까지 가드에 넣으면, 서버 불가로 예약된 지연 저장이
+      // "연결이 복구되면 자동으로 다시 저장합니다"라는 안내와 달리 영원히 재생되지 않는
+      // 교착이 된다. 서버 불가 실패의 재시도 간격은 연결성 상태(isOnline 전이)가 담당한다.
+      || hostSaveError !== null
     ) return;
     replayInFlightRef.current = true;
     clearDeferredSave(false);
@@ -527,11 +534,11 @@ export function StudioDraftSaveCenter({
     collaborationDocumentLocked,
     collaborationOperationSyncPending,
     deferredSave,
+    hostSaveError,
     invokeSave,
     isOnline,
     pendingSaveIntent,
     saving,
-    serverSaveError,
     workHydrated,
     workHydrationFailed,
   ]);
@@ -774,7 +781,7 @@ export function StudioDraftSaveCenter({
               type="button"
               onClick={handlePrimaryAction}
               disabled={model.saveActionDisabled}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-black text-accent-foreground shadow-sm hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-black text-on-accent shadow-sm hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               {model.primaryAction === "versions" ? (
                 <History className="h-4 w-4" aria-hidden />

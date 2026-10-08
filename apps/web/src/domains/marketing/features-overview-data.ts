@@ -242,7 +242,7 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
       {
         name: { ko: "팀 워크스페이스", en: "Team workspaces" },
         description: { ko: "팀 단위 작업 공간과 사용량 관리", en: "Team workspaces and usage management" },
-        href: "/production/workspaces",
+        href: "/team/people",
       },
       {
         name: { ko: "연재 센터", en: "Serialization center" },

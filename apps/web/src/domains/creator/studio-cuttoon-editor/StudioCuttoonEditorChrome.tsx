@@ -547,7 +547,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
               className="-mr-1 grid size-11 shrink-0 place-items-center rounded transition hover:bg-bad/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
               onClick={() => setError(null)}
             >
-              <X size={12} strokeWidth={2.5} aria-hidden="true" />
+              <X size={STUDIO_ICON_SIZE.subtab} strokeWidth={2.5} aria-hidden="true" />
             </button>
           </div>
         ) : null}
@@ -566,7 +566,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
               className="-mr-1 shrink-0 rounded p-0.5 transition hover:bg-accent-soft/60"
               onClick={() => setStudioStatusNotice(null)}
             >
-              <X size={12} strokeWidth={2.5} aria-hidden="true" />
+              <X size={STUDIO_ICON_SIZE.subtab} strokeWidth={2.5} aria-hidden="true" />
             </button>
           </div>
         ) : null}
@@ -601,7 +601,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
               className="grid size-11 shrink-0 place-items-center rounded transition hover:bg-warn/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warn"
               onClick={dismissStudioMarketplaceCloudSyncRetry}
             >
-              <X size={12} strokeWidth={2.5} aria-hidden="true" />
+              <X size={STUDIO_ICON_SIZE.subtab} strokeWidth={2.5} aria-hidden="true" />
             </button>
           </div>
         ) : null}

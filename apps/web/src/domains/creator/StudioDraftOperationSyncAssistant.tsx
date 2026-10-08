@@ -59,8 +59,17 @@ const TONE_CLASS: Readonly<Record<StudioDraftOperationSyncTone, string>> = {
 
 const TRIGGER_CLASS = "flex min-h-11 items-center gap-2 rounded-full border text-xs font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const FLOATING_TRIGGER_CLASS = "max-w-[min(19rem,calc(100vw-1.5rem))] px-3 py-2 shadow-lg backdrop-blur-xl hover:-translate-y-0.5 hover:shadow-xl motion-reduce:hover:translate-y-0";
-/** 상단 바 칩: 진행·정상 상태는 아이콘만(2xl 미만), 경고·위험은 xl부터 문구까지 보인다. */
-const INLINE_TRIGGER_CLASS = "min-w-11 max-w-[12rem] shrink-0 justify-center px-2.5 hover:brightness-110";
+/** 상단 바 칩: 폭은 상태가 아니라 자리 규칙이 정한다(아래 INLINE_WIDE_CLASS와 함께 고정 폭). */
+const INLINE_TRIGGER_CLASS = "relative w-11 shrink-0 justify-center px-2.5 hover:brightness-110";
+/**
+ * 라벨이 보이는 폭 구간에서의 고정 너비. 진행·정상 상태는 2xl부터, 경고·위험은 xl부터
+ * 문구가 보이므로(라벨 sr-only 규칙과 같은 경계) 그 구간에서는 내용 길이가 아니라
+ * 이 너비가 칩 폭을 정한다 — 동기화 전이로 메뉴바가 밀리지 않게 하기 위함이다.
+ */
+const INLINE_WIDE_CLASS = {
+  urgent: "xl:w-44",
+  calm: "2xl:w-44",
+} as const;
 const DIALOG_CLASS = "w-[min(34rem,calc(100vw-1rem))] overflow-y-auto overscroll-contain rounded-2xl border border-line bg-panel/95 p-4 text-fg shadow-2xl backdrop-blur-xl [scrollbar-gutter:stable]";
 
 function errorMessage(error: unknown): string {
@@ -241,7 +250,12 @@ export function StudioDraftOperationSyncAssistant({
     };
   }, [open]);
 
-  if (!model.visible) return null;
+  // 메뉴바 배치에서는 동기화가 끝난 차분한 상태에서도 칩이 같은 자리에 남는다. 동기화
+  // 사이클마다 칩이 나타났다 사라지면 그 폭만큼 메뉴바 전체가 밀리는 레이아웃 시프트가
+  // 된다. 부유 배치는 기존처럼 주의를 끌 일이 있을 때만 나타나고, 라이브 맥락이 아예
+  // 없으면(연결 전) 보여줄 동기화 상태 자체가 없다.
+  const showInlineCalm = inline && liveContextAvailable;
+  if (!model.visible && !showInlineCalm) return null;
 
   const liveRegion = (
     <span
@@ -263,14 +277,24 @@ export function StudioDraftOperationSyncAssistant({
       title={inline ? model.compactLabel : undefined}
       onClick={() => setOpen((current) => !current)}
       data-studio-operation-sync-trigger={inline ? "menubar" : "floating"}
-      className={cn(TRIGGER_CLASS, inline ? INLINE_TRIGGER_CLASS : FLOATING_TRIGGER_CLASS, TONE_CLASS[model.tone])}
+      className={cn(
+        TRIGGER_CLASS,
+        inline ? cn(INLINE_TRIGGER_CLASS, INLINE_WIDE_CLASS[urgent ? "urgent" : "calm"]) : FLOATING_TRIGGER_CLASS,
+        TONE_CLASS[model.tone],
+      )}
     >
       <StatusIcon tone={model.tone} className="h-4 w-4 shrink-0" />
       <span className={cn("truncate", inline && (urgent ? "max-xl:sr-only" : "max-2xl:sr-only"))}>
         {model.compactLabel}
       </span>
       {pendingCount > 0 ? (
-        <span className="rounded-full border border-current/20 px-1.5 py-0.5 text-[0.62rem] tabular-nums opacity-85">
+        <span
+          className={cn(
+            "rounded-full border border-current/20 px-1.5 py-0.5 text-[0.62rem] tabular-nums opacity-85",
+            // 상단 바에서는 개수 배지가 폭을 바꾸지 않게 칩 모서리에 겹쳐 얹는다.
+            inline && "absolute -right-1.5 -top-1.5 z-10 bg-panel px-1 py-0 text-[0.58rem] leading-4 opacity-100 shadow-sm",
+          )}
+        >
           {pendingCount.toLocaleString("ko-KR")}
         </span>
       ) : null}

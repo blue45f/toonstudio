@@ -52,7 +52,7 @@ export function TitleFanWorks({ titleId }: { titleId: string }) {
           {works.map((work) => (
             <Link
               key={work.id}
-              href={`/create/${work.id}`}
+              href={`/showcase/work/${work.id}`}
               className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-panel/30 transition-colors hover:border-line-strong"
             >
               <div className="relative aspect-[3/4] overflow-hidden bg-raised/40">

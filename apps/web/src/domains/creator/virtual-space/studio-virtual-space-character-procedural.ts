@@ -7,7 +7,9 @@
  * 네트워크 의존성 없는 폴백/주력 생성 경로를 제공한다.
  *
  * 시트 레이아웃 (B 트랙 렌더러·이 파일의 계약):
- * - 8행 × 10열, 셀 96×112px (전체 960×896)
+ * - 8행 × 10열, 논리 셀 96×112px (논리 전체 960×896)
+ * - 실제 텍스처는 `PROCEDURAL_SHEET_RENDER_SCALE`(2배)로 구워 물리 셀 192×224px
+ *   (전체 1920×1792)다. 드로잉 좌표계와 표시 기하는 논리 크기를 유지한다.
  * - 행 순서: down, down-left, left, up-left, up, up-right, right, down-right
  *   (`studio-virtual-space-sprite.ts`의 DIRECTION_ROW과 동일)
  * - 열 0~5: 걷기 6프레임, 열 6~9: idle 호흡/눈깜빡임 4프레임
@@ -68,6 +70,22 @@ export const PROCEDURAL_SHEET_COLUMNS = PROCEDURAL_WALK_FRAME_COUNT + PROCEDURAL
 export const PROCEDURAL_SHEET_ROWS = 8;
 export const PROCEDURAL_SHEET_WIDTH = PROCEDURAL_FRAME_WIDTH * PROCEDURAL_SHEET_COLUMNS;
 export const PROCEDURAL_SHEET_HEIGHT = PROCEDURAL_FRAME_HEIGHT * PROCEDURAL_SHEET_ROWS;
+
+/**
+ * 텍스처 렌더 배율 (슈퍼샘플링).
+ *
+ * 논리 셀(96×112)과 드로잉 좌표계는 그대로 두고, 실제 캔버스 픽셀만 2배로
+ * 그린다. 캐릭터 표시 높이(약 131 CSS px)는 프레임 종횡비로만 정해지므로
+ * 표시 크기는 변하지 않고, DPR 2 화면에서 필요한 소스 해상도(262 device px)에
+ * 논리 해상도(112)가 모자라 생기던 흐림이 224px 소스로 대폭 줄어든다.
+ * 벡터 드로잉이라 확대해도 도형이 깨지지 않는다.
+ */
+export const PROCEDURAL_SHEET_RENDER_SCALE = 2;
+/** 텍스처 기준 물리 프레임 크기 (렌더러·아틀라스가 실제로 자르는 픽셀). */
+export const PROCEDURAL_TEXTURE_FRAME_WIDTH = PROCEDURAL_FRAME_WIDTH * PROCEDURAL_SHEET_RENDER_SCALE;
+export const PROCEDURAL_TEXTURE_FRAME_HEIGHT = PROCEDURAL_FRAME_HEIGHT * PROCEDURAL_SHEET_RENDER_SCALE;
+export const PROCEDURAL_TEXTURE_SHEET_WIDTH = PROCEDURAL_SHEET_WIDTH * PROCEDURAL_SHEET_RENDER_SCALE;
+export const PROCEDURAL_TEXTURE_SHEET_HEIGHT = PROCEDURAL_SHEET_HEIGHT * PROCEDURAL_SHEET_RENDER_SCALE;
 
 /** 방향 → 시트 행. sprite.ts의 DIRECTION_ROW과 동일한 순서다. */
 export const PROCEDURAL_DIRECTION_ROWS: Readonly<Record<StudioSpriteDirection, number>> = Object.freeze({
@@ -354,7 +372,15 @@ function drawFigure(ctx: CanvasRenderingContext2D, options: ProceduralCharacterF
   // 몸통 (레이어: torso + outfit-detail)
   ctx.fillStyle = palette.outfit;
   roundRect(ctx, 33, 58 + torsoBob, 30, 32, 10);
+  // 셀 셰이딩: 어깨 쪽 옅은 광택과 아랫단 음영으로 평면감을 줄인다 (팔레트 무관 알파).
+  ctx.fillStyle = "rgba(255,255,255,0.05)";
+  roundRect(ctx, 36, 60 + torsoBob, 24, 5, 2.5);
+  ctx.fillStyle = "rgba(0,0,0,0.07)";
+  roundRect(ctx, 36, 80 + torsoBob, 24, 8, 4);
   drawOutfitDetail(ctx, parts.outfitStyle, palette.accent, bob + seatDrop * 2);
+  // 턱 아래 그림자: 머리가 몸통 위에 앉는 접지감을 만든다 (머리보다 먼저 그린다).
+  ctx.fillStyle = "rgba(0,0,0,0.10)";
+  ellipse(ctx, 48, 60 + torsoBob, 10, 3.5);
 
   // 머리 (레이어: head → hair → face → accessory)
   const headY = 38 + bob + seatDrop;
@@ -365,6 +391,9 @@ function drawFigure(ctx: CanvasRenderingContext2D, options: ProceduralCharacterF
     circle(ctx, 31.5, headY, 3.2);
     circle(ctx, 64.5, headY, 3.2);
     circle(ctx, 48, headY, 17);
+    // 얼굴 하단 음영: 턱선 쪽에 옅은 그늘을 넣어 얼굴의 볼륨을 만든다 (표정보다 먼저 그린다).
+    ctx.fillStyle = "rgba(0,0,0,0.045)";
+    ellipse(ctx, 48, headY + 12.5, 10.5, 4);
     drawHairFront(ctx, parts.hairStyle, palette.hair, palette.hairHighlight, headY);
     if (view === "front") drawFaceFront(ctx, blink, headY, options.emotion ?? "neutral");
     else drawFaceSide(ctx, headY, options.emotion ?? "neutral");
@@ -540,6 +569,10 @@ function hairShine(ctx: CanvasRenderingContext2D, highlight: string): void {
   ctx.lineCap = "round";
   ctx.globalAlpha = 0.75;
   strokePath(ctx, () => { ctx.moveTo(38, 22); ctx.quadraticCurveTo(44, 18, 51, 20); });
+  // 보조 광택: 본 광택 아래에 짧고 옅은 결을 한 줄 더 넣어 머리 볼륨을 만든다.
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.4;
+  strokePath(ctx, () => { ctx.moveTo(37, 27); ctx.quadraticCurveTo(43, 24, 49, 25.5); });
   ctx.globalAlpha = 1;
 }
 
@@ -1264,16 +1297,17 @@ export function buildProceduralCharacterSheet(
   deps: ProceduralSheetDeps = defaultProceduralSheetDeps(),
 ): ProceduralCharacterSheet {
   assertPalette(palette);
-  const canvas = deps.createCanvas(PROCEDURAL_SHEET_WIDTH, PROCEDURAL_SHEET_HEIGHT);
+  const canvas = deps.createCanvas(PROCEDURAL_TEXTURE_SHEET_WIDTH, PROCEDURAL_TEXTURE_SHEET_HEIGHT);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("2D 캔버스 컨텍스트를 만들지 못했습니다.");
-  ctx.clearRect(0, 0, PROCEDURAL_SHEET_WIDTH, PROCEDURAL_SHEET_HEIGHT);
+  ctx.clearRect(0, 0, PROCEDURAL_TEXTURE_SHEET_WIDTH, PROCEDURAL_TEXTURE_SHEET_HEIGHT);
   for (const direction of PROCEDURAL_SPRITE_DIRECTIONS) {
     const row = PROCEDURAL_DIRECTION_ROWS[direction] ?? 0;
     for (let frame = 0; frame < PROCEDURAL_WALK_FRAME_COUNT; frame++) {
       const spec = cellSpec(direction, frame, "walk");
       ctx.save();
-      ctx.translate(frame * PROCEDURAL_FRAME_WIDTH, row * PROCEDURAL_FRAME_HEIGHT);
+      ctx.translate(frame * PROCEDURAL_TEXTURE_FRAME_WIDTH, row * PROCEDURAL_TEXTURE_FRAME_HEIGHT);
+      ctx.scale(PROCEDURAL_SHEET_RENDER_SCALE, PROCEDURAL_SHEET_RENDER_SCALE);
       drawProceduralCharacterFrame(ctx, { palette, parts, view: spec.view, walkPhase: spec.walkPhase,
         bobY: spec.bobY, blink: spec.blink, mirror: spec.mirror, tilt: spec.tilt });
       ctx.restore();
@@ -1281,7 +1315,8 @@ export function buildProceduralCharacterSheet(
     for (let frame = 0; frame < PROCEDURAL_IDLE_FRAME_COUNT; frame++) {
       const spec = cellSpec(direction, frame, "idle");
       ctx.save();
-      ctx.translate((PROCEDURAL_WALK_FRAME_COUNT + frame) * PROCEDURAL_FRAME_WIDTH, row * PROCEDURAL_FRAME_HEIGHT);
+      ctx.translate((PROCEDURAL_WALK_FRAME_COUNT + frame) * PROCEDURAL_TEXTURE_FRAME_WIDTH, row * PROCEDURAL_TEXTURE_FRAME_HEIGHT);
+      ctx.scale(PROCEDURAL_SHEET_RENDER_SCALE, PROCEDURAL_SHEET_RENDER_SCALE);
       drawProceduralCharacterFrame(ctx, { palette, parts, view: spec.view, walkPhase: spec.walkPhase,
         bobY: spec.bobY, blink: spec.blink, mirror: spec.mirror, tilt: spec.tilt });
       ctx.restore();
@@ -1290,10 +1325,10 @@ export function buildProceduralCharacterSheet(
   return Object.freeze({
     canvas,
     dataUrl: canvas.toDataURL("image/png"),
-    frameWidth: PROCEDURAL_FRAME_WIDTH,
-    frameHeight: PROCEDURAL_FRAME_HEIGHT,
-    width: PROCEDURAL_SHEET_WIDTH,
-    height: PROCEDURAL_SHEET_HEIGHT,
+    frameWidth: PROCEDURAL_TEXTURE_FRAME_WIDTH,
+    frameHeight: PROCEDURAL_TEXTURE_FRAME_HEIGHT,
+    width: PROCEDURAL_TEXTURE_SHEET_WIDTH,
+    height: PROCEDURAL_TEXTURE_SHEET_HEIGHT,
     directions: PROCEDURAL_DIRECTION_ROWS,
   });
 }
@@ -1303,6 +1338,9 @@ export function buildProceduralCharacterSheet(
 /** 포즈 시트 크기. 방향 프레임 4개를 2×2로 배치한다 (포즈 시트 공통 규격). */
 export const PROCEDURAL_POSE_SHEET_WIDTH = PROCEDURAL_FRAME_WIDTH * 2;
 export const PROCEDURAL_POSE_SHEET_HEIGHT = PROCEDURAL_FRAME_HEIGHT * 2;
+/** 포즈 시트 텍스처 물리 크기 (본 시트와 같은 렌더 배율). */
+export const PROCEDURAL_TEXTURE_POSE_SHEET_WIDTH = PROCEDURAL_POSE_SHEET_WIDTH * PROCEDURAL_SHEET_RENDER_SCALE;
+export const PROCEDURAL_TEXTURE_POSE_SHEET_HEIGHT = PROCEDURAL_POSE_SHEET_HEIGHT * PROCEDURAL_SHEET_RENDER_SCALE;
 
 /** 포즈 시트 방향 프레임 배치 (작화 포즈 시트와 같은 down·right·left·up 순서). */
 export const PROCEDURAL_POSE_DIRECTION_FRAMES: Readonly<Record<StudioVirtualSpaceFacing, number>> = Object.freeze({
@@ -1327,15 +1365,16 @@ export function buildProceduralPoseSheet(
   deps: ProceduralSheetDeps = defaultProceduralSheetDeps(),
 ): StudioCharacterPoseSheet {
   assertPalette(palette);
-  const canvas = deps.createCanvas(PROCEDURAL_POSE_SHEET_WIDTH, PROCEDURAL_POSE_SHEET_HEIGHT);
+  const canvas = deps.createCanvas(PROCEDURAL_TEXTURE_POSE_SHEET_WIDTH, PROCEDURAL_TEXTURE_POSE_SHEET_HEIGHT);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("2D 캔버스 컨텍스트를 만들지 못했습니다.");
-  ctx.clearRect(0, 0, PROCEDURAL_POSE_SHEET_WIDTH, PROCEDURAL_POSE_SHEET_HEIGHT);
+  ctx.clearRect(0, 0, PROCEDURAL_TEXTURE_POSE_SHEET_WIDTH, PROCEDURAL_TEXTURE_POSE_SHEET_HEIGHT);
   for (const facing of POSE_FACINGS) {
     const frame = PROCEDURAL_POSE_DIRECTION_FRAMES[facing] ?? 0;
     const view: FigureView = facing === "down" ? "front" : facing === "up" ? "back" : "side";
     ctx.save();
-    ctx.translate((frame % 2) * PROCEDURAL_FRAME_WIDTH, Math.floor(frame / 2) * PROCEDURAL_FRAME_HEIGHT);
+    ctx.translate((frame % 2) * PROCEDURAL_TEXTURE_FRAME_WIDTH, Math.floor(frame / 2) * PROCEDURAL_TEXTURE_FRAME_HEIGHT);
+    ctx.scale(PROCEDURAL_SHEET_RENDER_SCALE, PROCEDURAL_SHEET_RENDER_SCALE);
     drawProceduralCharacterFrame(ctx, {
       palette, parts, view, walkPhase: null, bobY: 0, blink: false,
       mirror: facing === "left", tilt: 0, pose,
@@ -1344,8 +1383,8 @@ export function buildProceduralPoseSheet(
   }
   return Object.freeze({
     textureUrl: canvas.toDataURL("image/png"),
-    frameWidth: PROCEDURAL_FRAME_WIDTH,
-    frameHeight: PROCEDURAL_FRAME_HEIGHT,
+    frameWidth: PROCEDURAL_TEXTURE_FRAME_WIDTH,
+    frameHeight: PROCEDURAL_TEXTURE_FRAME_HEIGHT,
     directionFrames: PROCEDURAL_POSE_DIRECTION_FRAMES,
     frames: Object.freeze(Array.from({ length: 4 }, () => PROCEDURAL_PRESENTATION)),
   });
@@ -1358,10 +1397,12 @@ export function buildProceduralPoseSheet(
   emotion: StudioEmotionKind = "neutral",
 ): { readonly dataUrl: string; readonly width: number; readonly height: number } {
   assertPalette(palette);
-  const canvas = deps.createCanvas(PROCEDURAL_FRAME_WIDTH, PROCEDURAL_FRAME_HEIGHT);
+  const canvas = deps.createCanvas(PROCEDURAL_TEXTURE_FRAME_WIDTH, PROCEDURAL_TEXTURE_FRAME_HEIGHT);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("2D 캔버스 컨텍스트를 만들지 못했습니다.");
-  ctx.clearRect(0, 0, PROCEDURAL_FRAME_WIDTH, PROCEDURAL_FRAME_HEIGHT);
+  ctx.clearRect(0, 0, PROCEDURAL_TEXTURE_FRAME_WIDTH, PROCEDURAL_TEXTURE_FRAME_HEIGHT);
+  // 미리보기 이미지는 물리 2배 해상도로 굽고, 보고 크기는 논리 크기(표시 힌트)를 유지한다.
+  ctx.scale(PROCEDURAL_SHEET_RENDER_SCALE, PROCEDURAL_SHEET_RENDER_SCALE);
   const spec = cellSpec("down", 0, "idle");
   drawProceduralCharacterFrame(ctx, { palette, parts, view: spec.view, walkPhase: spec.walkPhase,
     bobY: 0, blink: false, mirror: spec.mirror, tilt: spec.tilt, emotion });
@@ -1389,8 +1430,8 @@ const PROCEDURAL_PRESENTATION: StudioCharacterFramePresentation = Object.freeze(
 });
 
 const PROCEDURAL_ATLAS: StudioCharacterAtlasLayout = Object.freeze({
-  width: PROCEDURAL_SHEET_WIDTH,
-  height: PROCEDURAL_SHEET_HEIGHT,
+  width: PROCEDURAL_TEXTURE_SHEET_WIDTH,
+  height: PROCEDURAL_TEXTURE_SHEET_HEIGHT,
   columns: PROCEDURAL_SHEET_COLUMNS,
   rows: PROCEDURAL_SHEET_ROWS,
   slicing: "rounded-grid",
@@ -1421,8 +1462,8 @@ export function createProceduralCharacterSkin(
     const start = (PROCEDURAL_FACING_ROWS[facing] ?? 0) * PROCEDURAL_SHEET_COLUMNS;
     return Object.freeze({
       textureUrl: url,
-      frameWidth: PROCEDURAL_FRAME_WIDTH,
-      frameHeight: PROCEDURAL_FRAME_HEIGHT,
+      frameWidth: PROCEDURAL_TEXTURE_FRAME_WIDTH,
+      frameHeight: PROCEDURAL_TEXTURE_FRAME_HEIGHT,
       atlas: PROCEDURAL_ATLAS,
       start,
       end: start + PROCEDURAL_WALK_FRAME_COUNT - 1,
@@ -1437,8 +1478,8 @@ export function createProceduralCharacterSkin(
     const index = (PROCEDURAL_FACING_ROWS[facing] ?? 0) * PROCEDURAL_SHEET_COLUMNS + PROCEDURAL_WALK_FRAME_COUNT;
     return Object.freeze({
       textureUrl: url,
-      frameWidth: PROCEDURAL_FRAME_WIDTH,
-      frameHeight: PROCEDURAL_FRAME_HEIGHT,
+      frameWidth: PROCEDURAL_TEXTURE_FRAME_WIDTH,
+      frameHeight: PROCEDURAL_TEXTURE_FRAME_HEIGHT,
       atlas: PROCEDURAL_ATLAS,
       start: index,
       end: index,

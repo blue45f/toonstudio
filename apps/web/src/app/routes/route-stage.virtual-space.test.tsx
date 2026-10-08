@@ -97,6 +97,7 @@ vi.mock("@/domains/creator/virtual-space/studio-virtual-space-presence", async (
       this.real = f.realPresence ? new actual.StudioVirtualSpacePresenceController(participant, port, self, dependencies) : null;
     }
     setAvatarIndex(index: number) { this.real?.setAvatarIndex(index); }
+    setPlacedFixtures(...args: Parameters<InstanceType<typeof actual.StudioVirtualSpacePresenceController>["setPlacedFixtures"]>) { this.real?.setPlacedFixtures(...args); }
     start() { this.real?.start(); }
     close() { this.real?.close(); }
     setActivity(activity: StudioVirtualSpacePresenceState["activity"]) { this.real?.setActivity(activity); }

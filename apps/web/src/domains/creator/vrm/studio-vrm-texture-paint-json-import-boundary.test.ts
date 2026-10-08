@@ -97,21 +97,27 @@ describe("Studio JSON VRM surface-paint availability boundary", () => {
       "await applyStudioProjectSnapshot(loaded.project)",
       postAuditMutationGate,
     );
+    // 2026-09-30 7b35887f9: 차단형 alert(완료 문구 + alertSuffix)를 논블로킹 인라인 상태로
+    // 바꿨다. 표면 페인팅 경고 notice는 적용이 끝난 뒤 완료 상태 한 건에 톤·문구로 합쳐진다.
     const notice = jsonImportSource.indexOf(
-      "if (texturePaintPresentation.notice)",
+      "const importNotice = texturePaintPresentation.notice",
       apply,
     );
-    const alertSuffix = jsonImportSource.indexOf(
-      "texturePaintPresentation.alertSuffix",
+    const completionStatus = jsonImportSource.indexOf(
+      "setProjectArchiveStatus({",
       notice,
     );
+    const completion = jsonImportSource.slice(completionStatus);
 
     expect(parse).toBeGreaterThanOrEqual(0);
     expect(audit).toBeGreaterThan(parse);
     expect(postAuditMutationGate).toBeGreaterThan(audit);
     expect(apply).toBeGreaterThan(postAuditMutationGate);
     expect(notice).toBeGreaterThan(apply);
-    expect(alertSuffix).toBeGreaterThan(notice);
+    expect(completionStatus).toBeGreaterThan(notice);
+    expect(completion).toContain('tone: importNotice?.tone ?? "good"');
+    expect(completion).toMatch(/\$\{importCompletionMessage\} \$\{importNotice\.text\}/u);
+    expect(jsonImportSource).not.toContain("globalThis.alert(");
   });
 
   it("passes the mobile archive budget into the paint bridge before archive building", () => {

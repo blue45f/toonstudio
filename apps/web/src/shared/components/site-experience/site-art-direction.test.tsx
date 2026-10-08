@@ -23,7 +23,7 @@ describe("public creative art direction", () => {
   it.each(["/discover", "/explore", "/ranking", "/search", "/calendar", "/library", "/compare", "/research", "/references", "/insights/resources", "/learn", "/help", "/market", "/make", "/showcase", "/community", "/reviews", "/create", "/about", "/support", "/contact", "/sitemap"])("connects %s to a supported next action", (path) => {
     const direction = siteArtDirection(path);
     expect(direction).not.toBeNull();
-    expect(direction?.href).toMatch(/^\/(?:studio(?:\?uiMode=simple)?|research|create\/promo)$/u);
+    expect(direction?.href).toMatch(/^\/(?:studio(?:\?uiMode=simple)?|research|showcase\/promo)$/u);
     expect(direction?.ko.every(Boolean)).toBe(true);
     expect(direction?.en.every(Boolean)).toBe(true);
   });

@@ -48,6 +48,18 @@ describe("웹툰 제작 레시피", () => {
     expect(screen.getByLabelText(new RegExp(camera.control, "u"))).toBeTruthy();
   });
 
+  it("본문 프리뷰는 도형이 아닌 실물 장면 3컷으로 보여준다", () => {
+    const { container } = renderRecipes();
+    const previewImages = container.querySelectorAll('[aria-label="실습 예시"] img');
+    expect([...previewImages].map((img) => img.getAttribute("src"))).toEqual([
+      "/brand/recipe-scenes-20261008/door-closed.webp",
+      "/brand/recipe-scenes-20261008/door-opening.webp",
+      "/brand/recipe-scenes-20261008/door-reunion.webp",
+    ]);
+    // 기본 실습(스크롤)에서는 도형 SVG 프리뷰가 남지 않는다.
+    expect(container.querySelector('[aria-label="실습 예시"] svg')).toBeNull();
+  });
+
   it("딥링크(?lesson=)로 들어오면 그 실습이 열린 채로 시작한다", () => {
     const beats = RECIPES.find((recipe) => recipe.id === "beats") ?? RECIPES[5];
     renderRecipes(`/learn/recipes?lesson=${beats.id}`);

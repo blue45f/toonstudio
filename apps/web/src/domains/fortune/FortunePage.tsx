@@ -34,6 +34,14 @@ import { TarotCardFace } from "./TarotCardFace";
 import { useFortunePlayback } from "./useFortunePlayback";
 import { WebtoonStrip } from "./WebtoonStrip";
 import { FortunePeriodPanel } from "./FortunePeriodPanel";
+import {
+  drawCompatibilityLocal,
+  drawSajuLocal,
+  drawTodayLocal,
+  drawZodiacLocal,
+  reportFortuneUse,
+  type FortuneLocalMode,
+} from "./fortune-client-draw";
 import { FortuneBirthGate } from "./FortuneBirthGate";
 import { FortuneBirthProfileFields } from "./FortuneBirthProfileFields";
 import { FortuneGlobalHoroscope } from "./FortuneGlobalHoroscope";
@@ -148,6 +156,23 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
     });
   };
 
+  // 월간/연간 게이트 입력 — 제출 버튼 없이 입력 즉시 계산하는 흐름이라, 제출형
+  // 도구들의 callFortune/computeFortuneLocally가 하던 로컬 프로필 저장을 입력
+  // 시점에 대신 한다. 저장은 LOW-2 정책대로 이 기기(localStorage)에만 하고
+  // 서버로는 보내지 않는다 — 그래야 리로드 후에도 재입력 없이 패널이 열린다.
+  const handlePeriodBirthDateChange = (v: string) => {
+    setBirthDate(v);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      setProfile({ birthDate: v, birthTime, lastCharacterId: selectedChar?.id ?? null });
+    }
+  };
+  const handlePeriodBirthTimeChange = (v: string) => {
+    setBirthTime(v);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+      setProfile({ birthDate, birthTime: v, lastCharacterId: selectedChar?.id ?? null });
+    }
+  };
+
   // 운세 {tx("웹툰 재생")} 오케스트레이터 — 음성(Web Speech) + 컷 애니메이션 동기
   const playback = useFortunePlayback(fortuneResult?.panels);
 
@@ -202,23 +227,68 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
         return null;
       }
       const data: FortuneResult = await response.json();
-      setActiveTabResult(activeTab, data);
-      onSuccess?.(data);
-      recordView(); // 출석(스트릭)은 실제 새 조회에서만
-      if (selectedChar) {
-        addToHistory({
-          tab: activeTab,
-          characterId: selectedChar.id,
-          characterName: selectedChar.name,
-          characterAvatar: selectedChar.avatarUrl,
-          summary: fortuneSummary(activeTab, data),
-          result: data,
-        });
-      }
-      return data;
+      return applyDrawnFortune(data, onSuccess);
     } catch (error) {
       console.error("운세 호출 실패:", error);
       setErrorMsg("네트워크 오류로 운세를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 계산된 운세 결과 반영 — 결과 캐시·후처리·출석·보관함 기록을 서버/로컬 계산이 공유한다.
+  const applyDrawnFortune = (
+    data: FortuneResult,
+    onSuccess?: (data: FortuneResult) => void
+  ): FortuneResult => {
+    setActiveTabResult(activeTab, data);
+    onSuccess?.(data);
+    recordView(); // 출석(스트릭)은 실제 새 조회에서만
+    if (selectedChar) {
+      addToHistory({
+        tab: activeTab,
+        characterId: selectedChar.id,
+        characterName: selectedChar.name,
+        characterAvatar: selectedChar.avatarUrl,
+        summary: fortuneSummary(activeTab, data),
+        result: data,
+      });
+    }
+    return data;
+  };
+
+  // 로컬 계산 공용 처리 — 생년월일이 필요한 도구는 서버로 보내지 않고 기기에서 계산한다.
+  // (프로필 저장·로딩·에러·재시도·결과 반영은 callFortune과 같은 수명주기를 따른다.)
+  const computeFortuneLocally = async (
+    mode: FortuneLocalMode,
+    compute: () => Promise<FortuneResult>,
+    retry: () => void,
+    onSuccess?: (data: FortuneResult) => void
+  ): Promise<FortuneResult | null> => {
+    playback.stop();
+    // 입력 프로필 영속화 — 다음 방문 시 재입력 제거 (이 기기에만 저장)
+    setProfile({
+      birthDate,
+      birthTime,
+      gender,
+      partnerBirthDate,
+      partnerBirthTime,
+      lastCharacterId: selectedChar?.id ?? null,
+    });
+    setErrorMsg(null);
+    setLiveMsg("");
+    setIsLoading(true);
+    setActiveTabResult(activeTab, null);
+    retryRef.current = retry;
+    try {
+      const data = await compute();
+      const applied = applyDrawnFortune(data, onSuccess);
+      reportFortuneUse(mode); // 리워드 기록은 mode만 보낸다 — 생년월일은 어떤 필드에도 없다.
+      return applied;
+    } catch (error) {
+      console.error("운세 계산 실패:", error);
+      setErrorMsg("운세를 계산하지 못했어요. 생년월일을 확인하고 다시 시도해 주세요.");
       return null;
     } finally {
       setIsLoading(false);
@@ -282,23 +352,30 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
     else playback.play();
   };
 
-  // 오늘의 운세 — 생년월일 입력 시 사주 오행으로 개인화(같은 날·같은 사람은 항상 동일)
+  // 오늘의 운세 — 생년월일 입력 시 사주 오행으로 개인화(같은 날·같은 사람은 항상 동일).
+  // 생년월일은 서버로 보내지 않고 이 기기에서 계산한다(F-B10-1).
   const handleAnalyzeToday = () => {
     if (!selectedChar) return;
-    callFortune(
-      "/api/fortune/today",
-      { characterId: selectedChar.id, birthDate: birthDate || undefined, birthTime: birthTime || undefined, gender },
+    computeFortuneLocally(
+      "today",
+      () =>
+        drawTodayLocal({
+          characterId: selectedChar.id,
+          birthDate: birthDate || undefined,
+          birthTime: birthTime || undefined,
+          gender,
+        }),
       handleAnalyzeToday
     );
   };
 
-  // 별자리(서양 점성) — 생년월일의 월/일만 사용
+  // 별자리(서양 점성) — 생년월일의 월/일만 사용. 역시 기기에서 계산한다.
   const handleAnalyzeZodiac = () => {
     if (!selectedChar || !birthDate) return;
     const [, m, d] = birthDate.split("-").map(Number);
-    callFortune(
-      "/api/fortune/zodiac",
-      { characterId: selectedChar.id, month: m, day: d },
+    computeFortuneLocally(
+      "zodiac",
+      () => drawZodiacLocal({ characterId: selectedChar.id, month: m, day: d }),
       handleAnalyzeZodiac
     );
   };
@@ -307,15 +384,16 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
   const handleAnalyzeCompatibility = (e: React.FormEvent) => {
     e.preventDefault();
     if (!birthDate || !partnerBirthDate || !selectedChar) return;
-    callFortune(
-      "/api/fortune/compatibility",
-      {
-        myBirthDate: birthDate,
-        myBirthTime: birthTime || undefined,
-        partnerBirthDate,
-        partnerBirthTime: partnerBirthTime || undefined,
-        characterId: selectedChar.id,
-      },
+    computeFortuneLocally(
+      "compatibility",
+      () =>
+        drawCompatibilityLocal({
+          myBirthDate: birthDate,
+          myBirthTime: birthTime || undefined,
+          partnerBirthDate,
+          partnerBirthTime: partnerBirthTime || undefined,
+          characterId: selectedChar.id,
+        }),
       () => handleAnalyzeCompatibility(e)
     );
   };
@@ -335,9 +413,15 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
   const handleAnalyzeSaju = (e: React.FormEvent) => {
     e.preventDefault();
     if (!birthDate || !selectedChar) return;
-    callFortune(
-      "/api/fortune/saju",
-      { birthDate, birthTime: birthTime || undefined, gender, characterId: selectedChar.id },
+    computeFortuneLocally(
+      "saju",
+      () =>
+        drawSajuLocal({
+          birthDate,
+          birthTime: birthTime || undefined,
+          gender,
+          characterId: selectedChar.id,
+        }),
       () => handleAnalyzeSaju(e)
     );
   };
@@ -830,15 +914,9 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                   )}
 
                   {/* 별자리 전용 결과 디스플레이 */}
-                  {/* 월간 운세 — 클라이언트에서 명리 월운으로 직접 계산 */}
-                  {activeTab === "monthly" && birthDate && (
-                    <FortunePeriodPanel kind="monthly" birthDate={birthDate} birthTime={birthTime} characterId={selectedChar?.id} />
-                  )}
-
-                  {/* 연간 운세 — 클라이언트에서 세운+12개월 월운으로 직접 계산 */}
-                  {activeTab === "yearly" && birthDate && (
-                    <FortunePeriodPanel kind="yearly" birthDate={birthDate} birthTime={birthTime} characterId={selectedChar?.id} />
-                  )}
+                  {/* 월간/연간 패널은 이 결과 컨테이너 밖에 있다 — 기간 운세는 제출형
+                      결과(resultsByTab)를 만들지 않고 클라이언트에서 즉시 계산하므로,
+                      fortuneResult 조건 안에 두면 영원히 마운트되지 않는다 (F-B10-2). */}
 
                   {activeTab === "zodiac" && fortuneResult.zodiac && (
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -891,20 +969,20 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
 
                   {/* 독서 처방전 전용 결과 디스플레이 */}
                   {activeTab === "prescription" && fortuneResult.query && (
-                    <div className="p-5 border border-amber-500/15 bg-gradient-to-br from-amber-500/5 to-card rounded-2xl relative overflow-hidden space-y-4 text-left">
+                    <div className="p-5 border border-warn/15 bg-gradient-to-br from-warn/5 to-card rounded-2xl relative overflow-hidden space-y-4 text-left">
                       {/* 고풍스러운 문양 장식 */}
-                      <div className="absolute top-2 right-4 text-[10px] font-bold text-amber-500/40 uppercase tracking-widest font-display">Prescribed by {selectedChar.name}</div>
+                      <div className="absolute top-2 right-4 text-[10px] font-bold text-warn/40 uppercase tracking-widest font-display">Prescribed by {selectedChar.name}</div>
 
                       <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-amber-500/70 uppercase tracking-wider">PRESCRIPTION SLIP</span>
+                        <span className="text-[10px] font-bold text-warn/70 uppercase tracking-wider">PRESCRIPTION SLIP</span>
                         <h4 className="text-sm font-semibold text-fg-2">분석된 고민: "{fortuneResult.query}"</h4>
                       </div>
 
-                      <div className="h-px bg-amber-500/10" />
+                      <div className="h-px bg-warn/10" />
 
                       {/* 독서 가이드 / 연출 문구 */}
                       <div className="space-y-2">
-                        <span className="text-[10px] font-bold text-amber-500/60 uppercase tracking-wider block">{tx("독서 처방 가이드")}</span>
+                        <span className="text-[10px] font-bold text-warn/60 uppercase tracking-wider block">{tx("독서 처방 가이드")}</span>
                         <p className="text-xs leading-relaxed text-fg-3 italic">
                           * 아래 추천된 책(웹툰)을 하루 1회, 3화 이상 읽으며 마음에 평온을 부어넣으세요. 부작용으로 몰입 과다에 따른 수면 부족이 생길 수 있으니 주의 바랍니다.
                         </p>
@@ -1299,18 +1377,21 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                     </div>
                   )}
 
-                  {/* 행운의 웹툰/웹소설 추천 영역 */}
-                  <div className="border-t border-line/80 pt-6">
-                    <h4 className="text-xs font-bold text-fg-3 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5 text-accent" />
-                      <span>{tx("행운의 타이틀")} · {selectedChar.name}</span>
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                      {fortuneResult.recommendations.map((title) => (
-                        <TitleCard key={title.id} title={title} size="sm" />
-                      ))}
+                  {/* 행운의 웹툰/웹소설 추천 영역 — 추천이 있을 때만 표시한다.
+                      로컬 계산에서 카탈로그 스토어가 아직 비어 있으면 추천이 없을 수 있다. */}
+                  {fortuneResult.recommendations.length > 0 && (
+                    <div className="border-t border-line/80 pt-6">
+                      <h4 className="text-xs font-bold text-fg-3 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <Sparkles className="h-3.5 w-3.5 text-accent" />
+                        <span>{tx("행운의 타이틀")} · {selectedChar.name}</span>
+                      </h4>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        {fortuneResult.recommendations.map((title) => (
+                          <TitleCard key={title.id} title={title} size="sm" />
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                 </div>
               )}
@@ -1349,14 +1430,24 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                 </div>
               )}
 
+              {/* 월간 운세 결과 — 생년월일이 있으면 명리 월운으로 클라이언트에서 직접 계산 */}
+              {!isLoading && activeTab === "monthly" && birthDate && (
+                <FortunePeriodPanel kind="monthly" birthDate={birthDate} birthTime={birthTime} characterId={selectedChar?.id} />
+              )}
+
+              {/* 연간 운세 결과 — 생년월일이 있으면 세운+12개월 월운으로 클라이언트에서 직접 계산 */}
+              {!isLoading && activeTab === "yearly" && birthDate && (
+                <FortunePeriodPanel kind="yearly" birthDate={birthDate} birthTime={birthTime} characterId={selectedChar?.id} />
+              )}
+
               {/* 빈 상태: 월간 운세 — 일러스트 + 단계 안내 + 생년월일 입력 */}
               {!isLoading && activeTab === "monthly" && !birthDate && (
                 <FortuneBirthGate
                   kind="monthly"
                   birthDate={birthDate}
                   birthTime={birthTime}
-                  onBirthDateChange={setBirthDate}
-                  onBirthTimeChange={setBirthTime}
+                  onBirthDateChange={handlePeriodBirthDateChange}
+                  onBirthTimeChange={handlePeriodBirthTimeChange}
                 />
               )}
 
@@ -1366,8 +1457,8 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                   kind="yearly"
                   birthDate={birthDate}
                   birthTime={birthTime}
-                  onBirthDateChange={setBirthDate}
-                  onBirthTimeChange={setBirthTime}
+                  onBirthDateChange={handlePeriodBirthDateChange}
+                  onBirthTimeChange={handlePeriodBirthTimeChange}
                 />
               )}
 
@@ -1423,7 +1514,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                       value={prescriptionQuery}
                       onChange={(e) => setPrescriptionQuery(e.target.value)}
                       placeholder={tx("예: 오늘 회사에서 너무 힘든 일이 있어서 완전 시원하고 통쾌한 사이다 웹툰을 읽으며 스트레스 날려버리고 싶어!")}
-                      className="w-full rounded-xl border border-line bg-card px-3 py-2.5 text-xs text-fg placeholder:text-fg-4 focus:border-accent focus:outline-none resize-none leading-relaxed"
+                      className="w-full rounded-xl border border-line bg-card px-3 py-2.5 text-xs text-fg placeholder:text-fg-3 focus:border-accent focus:outline-none resize-none leading-relaxed"
                     />
                   </div>
 
@@ -1517,6 +1608,17 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                   <div className="text-center mb-6">
                     <h3 className="text-lg font-bold text-fg">{tx("사주팔자 분석 정보 입력")}</h3>
                     <p className="text-xs text-fg-3 mt-1">정확한 연산을 위해 생년월일시를 입력하세요.</p>
+                    <p className="text-[11px] leading-relaxed text-fg-3 mt-2">
+                      {tx("이 화면의 사주는 입력한 날짜를 양력으로 해석해요. 음력 생일이거나 윤달·자시(23:00) 경계로 계산하려면 ")}
+                      <button
+                        type="button"
+                        onClick={() => navigate("/fortune?content=saju")}
+                        className="font-semibold text-accent underline underline-offset-2 hover:text-accent-2"
+                      >
+                        {tx("관측소 사주")}
+                      </button>
+                      {tx("를 이용해 주세요.")}
+                    </p>
                   </div>
 
                   <div className="space-y-1.5">
@@ -1617,7 +1719,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                               repeat: Infinity,
                               ease: "easeInOut"
                             }}
-                            className="w-24 aspect-[2/3] rounded-xl border border-amber-500/20 bg-cover bg-center shadow-md"
+                            className="w-24 aspect-[2/3] rounded-xl border border-warn/20 bg-cover bg-center shadow-md"
                             style={{ backgroundImage: `url('${resolveAssetUrl("/images/tarot/tarot-back.jpg")}')` }}
                           />
                         ))}
@@ -1635,9 +1737,10 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                           <motion.button
                             key={idx}
                             type="button"
+                            aria-label={`${idx + 1}번 카드 뒤집기`}
                             whileHover={{ y: -10, scale: 1.03 }}
                             onClick={() => handleSelectTarotCard(idx)}
-                            className="w-28 cursor-pointer aspect-[2/3] rounded-xl border border-amber-500/20 bg-cover bg-center flex items-center justify-center relative overflow-hidden shadow-lg transition-all hover:border-amber-400 focus:outline-none"
+                            className="w-28 cursor-pointer aspect-[2/3] rounded-xl border border-warn/20 bg-cover bg-center flex items-center justify-center relative overflow-hidden shadow-lg transition-all hover:border-warn focus-visible:border-warn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warn"
                             style={{ backgroundImage: `url('${resolveAssetUrl("/images/tarot/tarot-back.jpg")}')` }}
                           >
                             {/* 카드 뒷면에 호버 시 미세한 골드 이펙트 오버레이 */}

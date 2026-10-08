@@ -16,7 +16,7 @@ import {
 } from "./studio-virtual-space-art-style";
 import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
 import { STUDIO_ENTRY_CODE_PANEL_ID } from "./studio-virtual-space-entry-code";
-import { StudioVirtualSpaceEntryCodePanel } from "./StudioVirtualSpaceEntryCodePanel";
+import { StudioVirtualSpaceEntryCodePanel, type StudioEntryCodeEntryResult } from "./StudioVirtualSpaceEntryCodePanel";
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
 import { STUDIO_CHARACTER_SKINS, studioCharacterSkinForArtStyle } from "./studio-virtual-space-character-skins";
@@ -61,6 +61,10 @@ export function StudioVirtualSpaceEntryLobby({
   resumePlace = null,
   onResume,
   onEnterWithCode,
+  initialEntryCode = null,
+  accessNotice = null,
+  accessBlocked = false,
+  onRetryAccess,
 }: {
   readonly avatarIndex: number;
   readonly artStyle?: StudioVirtualArtStyleKey;
@@ -70,8 +74,16 @@ export function StudioVirtualSpaceEntryLobby({
   readonly personal?: boolean;
   /** Invite-link guest entry: nickname only, no character/art/RTC setup. */
   readonly guestMode?: boolean;
-  /** 입장코드 패널 콜백. 없으면 패널 자체를 렌더하지 않는다(로그인 사용자 등). */
-  readonly onEnterWithCode?: (code: string) => void;
+  /** 입장코드 패널 콜백. 없으면 패널 자체를 렌더하지 않는다(로그인 사용자 등). 서버 검증 결과를 돌려준다. */
+  readonly onEnterWithCode?: (code: string) => Promise<StudioEntryCodeEntryResult | void> | StudioEntryCodeEntryResult | void;
+  /** `#code=` 프래그먼트로 도착한 코드의 초기값. 코드 패널에 미리 채운다. */
+  readonly initialEntryCode?: string | null;
+  /** 초대 자격 검증 상태 안내(F-B06-1). 무효·확인 불가인 자격을 조용히 넘기지 않고 로비에 명시한다. */
+  readonly accessNotice?: { readonly tone: "info" | "error"; readonly ko: string; readonly en: string } | null;
+  /** 자격 검증이 끝나지 않았거나 거절돼 기본 입장을 막아야 할 때 true. */
+  readonly accessBlocked?: boolean;
+  /** 확인 불가 상태에서 검증을 다시 시도하는 콜백. 있으면 안내 옆에 재시도 버튼을 단다. */
+  readonly onRetryAccess?: () => void;
   readonly variant?: StudioVirtualSpaceEntryVariant;
   readonly backHref?: string;
   readonly backLabel?: string;
@@ -91,7 +103,7 @@ export function StudioVirtualSpaceEntryLobby({
   const normalizedNickname = normalizeStudioVirtualSpaceNickname(nickname);
   const selectedCharacter = characterSelected && sourceCharacter ? studioCharacterSkinForArtStyle(sourceCharacter, artStyle) : null;
   const nicknameInvalid = nickname.length > 0 && !normalizedNickname;
-  const canEnter = characterSelected && Boolean(normalizedNickname);
+  const canEnter = characterSelected && Boolean(normalizedNickname) && !accessBlocked;
   const [advancedOpen, setAdvancedOpen] = useState(false);
   // 월드 미리보기 텍스처의 도착 상태. 스타일별로 마지막 결과만 들고 있어,
   // 스타일을 바꾸면 새 텍스처가 도착할 때까지 다시 로딩으로 판정한다.
@@ -219,6 +231,14 @@ export function StudioVirtualSpaceEntryLobby({
           </button> : null}
         </header>
 
+        {accessNotice ? <div className="space-lobby__access-notice" role={accessNotice.tone === "error" ? "alert" : "status"}
+          data-tone={accessNotice.tone}>
+          <p>{bt(accessNotice.ko, accessNotice.en)}</p>
+          {onRetryAccess ? <button type="button" className={buttonClass({ variant: "outline" })} onClick={onRetryAccess}>
+            {bt("다시 확인", "Check again")}
+          </button> : null}
+        </div> : null}
+
         {onboarding ? <ol className="space-lobby__onboarding-steps" aria-label={bt("시작 준비 상태", "Getting-ready status")}>
           {[
             { done: Boolean(normalizedNickname), label: bt("공개 닉네임", "Public nickname"), detail: normalizedNickname ?? bt("아직 입력 전", "Not entered yet") },
@@ -314,7 +334,7 @@ export function StudioVirtualSpaceEntryLobby({
 
         {/* 입장코드는 닉네임 입장의 대체 경로라 기본 행동 아래에 둔다. 첫 화면의 주인공은 닉네임+입장 버튼이다. */}
         {onEnterWithCode ? <div className="space-lobby__entry-code">
-          <StudioVirtualSpaceEntryCodePanel onEnterWithCode={onEnterWithCode} />
+          <StudioVirtualSpaceEntryCodePanel onEnterWithCode={onEnterWithCode} initialCode={initialEntryCode} />
         </div> : null}
       </RevealOnScroll>
     </div>
