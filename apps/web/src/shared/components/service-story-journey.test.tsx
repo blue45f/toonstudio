@@ -26,7 +26,7 @@ describe("ServiceStoryJourney", () => {
       "/brand-film",
       "/about/technology/story",
       "/about/technology/playbook#benchmarks",
-      "/about/technology/deck?audience=seminar&duration=30",
+      "/about/technology/deck?track=talk",
       "/about/technology/videos",
     ]);
     expect(
@@ -35,9 +35,21 @@ describe("ServiceStoryJourney", () => {
     ).toBe("/about/technology/videos");
   });
 
-  it.each([15, 30, 45])("%i분 발표에서도 기본 세미나 링크와 현재 위치를 유지한다", (duration) => {
+  it("links the presentation to the canonical talk track instead of the legacy audience/duration query", () => {
     render(
-      <MemoryRouter initialEntries={[`/about/technology/deck?audience=seminar&duration=${duration}#slide-3`]}>
+      <MemoryRouter initialEntries={["/about/technology/story"]}>
+        <ServiceStoryJourney current="story" />
+      </MemoryRouter>,
+    );
+
+    const presentation = screen.getByRole("link", { name: /웹 발표 자료|Web presentation/u });
+    expect(presentation.getAttribute("href")).toBe("/about/technology/deck?track=talk");
+    expect(presentation.getAttribute("href")).not.toMatch(/audience=|duration=/u);
+  });
+
+  it.each(["talk", "brief", "lecture"])("%s 트랙 슬라이드를 보고 있어도 기본 세미나 링크와 현재 위치를 유지한다", (track) => {
+    render(
+      <MemoryRouter initialEntries={[`/about/technology/deck?track=${track}#slide-3`]}>
         <ServiceStoryJourney current="deck" />
       </MemoryRouter>,
     );
@@ -45,7 +57,7 @@ describe("ServiceStoryJourney", () => {
     const presentation = screen.getByRole("link", {
       name: /웹 발표 자료|Web presentation/u,
     });
-    expect(presentation.getAttribute("href")).toBe("/about/technology/deck?audience=seminar&duration=30");
+    expect(presentation.getAttribute("href")).toBe("/about/technology/deck?track=talk");
     expect(presentation.getAttribute("aria-current")).toBe("page");
     expect(
       screen.getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page"),
