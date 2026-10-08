@@ -64,7 +64,8 @@ function readRgba(pixels) {
 
 describe("ndarray-pixels with the security-patched sharp runtime", () => {
   it("resolves the reviewed sharp version through the real glTF dependency path", () => {
-    expect(sharpPackage.version).toBe("0.35.4");
+    // pnpm-workspace.yaml의 override(sharp@<0.35.5 → 0.35.5)는 전이 의존성 취약점 패치로 고정된 값이다(497b19b83).
+    expect(sharpPackage.version).toBe("0.35.5");
   });
 
   it("round-trips odd-width RGBA pixels through lossless PNG", async () => {

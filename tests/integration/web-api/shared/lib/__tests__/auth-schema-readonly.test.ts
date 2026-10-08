@@ -106,6 +106,6 @@ describe("authentication runtime schema assertions", () => {
       "insertedUser && authoritativeUserId !== insertedUser.id",
     );
     expect(upsertSource).toContain("transaction.delete(users)");
-    expect(upsertSource).toContain("return authoritativeUserId");
+    expect(upsertSource).toContain("userId: authoritativeUserId");
   });
 });

@@ -132,11 +132,12 @@ describe("usePageSocialMeta", () => {
 
   it("canonicalizes historical aliases in social metadata", () => {
     installHeadFixtures();
-    render(<MetaProbe path="/create" title="창작자 쇼케이스" />);
+    // /create는 자체 정본 경로(시작 시트)라 별칭이 아니다. 살아 있는 별칭 /shaper로 정규화를 검증한다.
+    render(<MetaProbe path="/shaper" title="창작자 쇼케이스" />);
     expect(document.querySelector('link[rel="canonical"]')?.getAttribute("href"))
-      .toBe("https://www.toonstudio.cloud/showcase");
+      .toBe("https://www.toonstudio.cloud/studio/assets/characters/new");
     expect(document.querySelector('meta[property="og:url"]')?.getAttribute("content"))
-      .toBe("https://www.toonstudio.cloud/showcase");
+      .toBe("https://www.toonstudio.cloud/studio/assets/characters/new");
   });
 
   it("restores the previous route metadata on unmount", () => {

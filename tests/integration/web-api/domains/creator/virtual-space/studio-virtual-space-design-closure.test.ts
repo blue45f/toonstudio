@@ -12,7 +12,7 @@ describe("Virtual Studio all-pages design closure", () => {
     required("apps/web/src/app/spatial-campus/campus-route-coverage.test.ts");
     required("apps/web/src/domains/fortune/fortune-campus-map.ts");
     const coverage = text("apps/web/src/app/spatial-campus/campus-route-coverage.test.ts");
-    expect(coverage).toContain('expect(market).toHaveLength(10)');
+    expect(coverage).toContain('expect(market).toHaveLength(11)');
     expect(coverage).toContain("explicitly classifies every registered top-level route");
     expect(text("apps/web/src/domains/fortune/fortune-campus-map.ts")).toContain("FORTUNE_EXPERIENCES");
   });
