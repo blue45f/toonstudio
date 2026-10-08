@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { STUDIO_CHARACTER_SKINS, studioCharacterAppearanceForAvatarIndex, resolveStudioCharacterAppearance, studioCharacterActionClip } from "./studio-virtual-space-character-skins";
+import { STUDIO_CHARACTER_SKINS, studioCharacterAppearanceForAvatarIndex, resolveStudioCharacterAppearance, studioCharacterActionClip, studioCharacterSkinForArtStyle, studioCharacterWalkClip } from "./studio-virtual-space-character-skins";
+import { STUDIO_VIRTUAL_ART_STYLE_KEYS } from "./studio-virtual-space-art-style";
 import {
-  StudioCharacterAssetResidency, studioCharacterStaticAsset, studioCharacterVisualAssets,
+  StudioCharacterAssetResidency, studioCharacterStaticAsset, studioCharacterVisualAssets, studioCharacterWalkTextureKey, studioCharacterWarmAssets,
   studioCharacterFrameGeometry,
   studioCharacterActionFrame,
   studioCharacterActionSheetMatches,
@@ -254,5 +255,40 @@ describe("Virtual Studio character texture residency", () => {
     h.residency.use("next", [standing]); h.residency.collect();
     expect(h.load).toHaveBeenCalledTimes(walking.length); expect(h.remove).not.toHaveBeenCalled();
     expect(h.disposers.every((dispose) => dispose.mock.calls.length === 1)).toBe(true);
+  });
+});
+
+describe("내 캐릭터 선적재 에셋", () => {
+  const FACINGS = ["down", "left", "right", "up"] as const;
+
+  it("네이티브 스킨은 네 방향 시트를 중복 없이 한 번씩만 요청한다", () => {
+    const native = STUDIO_CHARACTER_SKINS.find((item) => item.key === "imagegen25")!;
+    const warm = studioCharacterWarmAssets(native);
+    expect(warm).toHaveLength(4);
+    expect(new Set(warm.map((asset) => asset.key)).size).toBe(4);
+  });
+
+  it.each(STUDIO_VIRTUAL_ART_STYLE_KEYS)("%s 스타일 팩은 네 방향의 정지 그림과 걷기 시트를 모두 포함한다", (artStyle) => {
+    const styled = studioCharacterSkinForArtStyle(STUDIO_CHARACTER_SKINS.find((item) => item.key !== "imagegen25" && !item.pixelArt && !item.nativeArtStyle)!, artStyle);
+    const warm = studioCharacterWarmAssets(styled);
+    const keys = warm.map((asset) => asset.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const facing of FACINGS) {
+      expect(keys).toContain(studioCharacterStaticAsset(styled, facing).key);
+      if (studioCharacterWalkClip(styled, facing)) expect(keys).toContain(studioCharacterWalkTextureKey(styled, facing));
+    }
+    // 걷기 시트는 방향마다 따로이므로 네 장이 모두 들어 있다.
+    expect(keys.filter((key) => key.includes("walk-sheet"))).toHaveLength(4);
+  });
+
+  it("어느 방향으로 걷기 시작해도 필요한 에셋이 이미 선적재 목록에 있다(첫 걸음에 정지 그림이 미끄러지지 않는다)", () => {
+    for (const skin of STUDIO_CHARACTER_SKINS) {
+      const warm = new Set(studioCharacterWarmAssets(skin).map((asset) => asset.key));
+      for (const facing of FACINGS) {
+        for (const state of ["idle", "walk"] as const) {
+          for (const asset of studioCharacterVisualAssets(skin, facing, state)) expect(warm.has(asset.key), `${skin.key} ${facing} ${state} ${asset.key}`).toBe(true);
+        }
+      }
+    }
   });
 });

@@ -114,3 +114,96 @@ export function buildMovePathDisplay(input: {
     remainingDistance: Math.round(movePathLength(polyline) * 10) / 10,
   };
 }
+
+/* ---------------------------------------------------------------------------------------------- */
+/* 길 안내 점·클릭 파문·도착 페이드                                                                      */
+/* ---------------------------------------------------------------------------------------------- */
+
+/** 경로 위 안내 점 간격(px). */
+export const STUDIO_ROUTE_DOT_SPACING = 18;
+/** 안내 점이 목적지 쪽으로 흘러가는 속도(px/s). 흐름이 방향을 알려 준다. */
+export const STUDIO_ROUTE_DOT_FLOW_SPEED = 42;
+/** 한 번에 그리는 안내 점 상한. 긴 경로에서도 프레임당 그리기 호출이 일정하다. */
+export const STUDIO_ROUTE_DOT_MAX = 48;
+/** 플레이어 발밑에서 점이 서서히 나타나는 거리(px). 캐릭터 몸에 점이 겹쳐 지저분해지지 않는다. */
+export const STUDIO_ROUTE_DOT_EMERGE_DISTANCE = 30;
+/** 목적지 마커 근처에서 점을 멈추는 거리(px). */
+export const STUDIO_ROUTE_DOT_MARKER_CLEARANCE = 15;
+/** 클릭을 받았다는 파문이 퍼지는 시간(ms). */
+export const STUDIO_ROUTE_RIPPLE_MS = 340;
+/** 도착한 목적지 마커가 사라지는 시간(ms). */
+export const STUDIO_ROUTE_FADE_MS = 380;
+
+export interface StudioRouteDot {
+  readonly x: number;
+  readonly y: number;
+  /** 0~1. 발밑에서 멀어질수록 1에 가까워진다. */
+  readonly alpha: number;
+}
+
+/**
+ * 폴리라인 위의 안내 점을 `spacing`px 간격으로 뽑는다. 첫 점은 `phase`px 지점에서 시작하므로
+ * phase를 시간에 따라 키우면 점들이 목적지 쪽으로 흘러간다. 발밑 근처는 옅게, 마커 직전은 건너뛴다.
+ */
+export function sampleRouteDots(
+  polyline: readonly StudioVirtualSpacePoint[],
+  options: { readonly phase?: number; readonly spacing?: number; readonly maxDots?: number } = {},
+): readonly StudioRouteDot[] {
+  const spacing = Number.isFinite(options.spacing) && (options.spacing ?? 0) > 1 ? (options.spacing as number) : STUDIO_ROUTE_DOT_SPACING;
+  const maxDots = Number.isFinite(options.maxDots) && (options.maxDots ?? 0) > 0 ? Math.floor(options.maxDots as number) : STUDIO_ROUTE_DOT_MAX;
+  const rawPhase = Number.isFinite(options.phase) ? (options.phase as number) : 0;
+  const phase = ((rawPhase % spacing) + spacing) % spacing;
+  const total = movePathLength(polyline);
+  if (polyline.length < 2 || !(total > STUDIO_ROUTE_DOT_MARKER_CLEARANCE)) return [];
+  const dots: StudioRouteDot[] = [];
+  let walked = 0;
+  let nextAt = phase;
+  for (let index = 1; index < polyline.length && dots.length < maxDots; index += 1) {
+    const from = polyline[index - 1]!;
+    const to = polyline[index]!;
+    const length = Math.hypot(to.x - from.x, to.y - from.y);
+    if (length <= 0) continue;
+    while (nextAt <= walked + length && dots.length < maxDots) {
+      const along = nextAt - walked;
+      const distance = nextAt;
+      if (total - distance >= STUDIO_ROUTE_DOT_MARKER_CLEARANCE) {
+        const t = along / length;
+        dots.push(Object.freeze({
+          x: from.x + (to.x - from.x) * t,
+          y: from.y + (to.y - from.y) * t,
+          alpha: Math.min(1, Math.max(0, distance / STUDIO_ROUTE_DOT_EMERGE_DISTANCE)),
+        }));
+      }
+      nextAt += spacing;
+    }
+    walked += length;
+  }
+  return Object.freeze(dots);
+}
+
+/** 안내 점의 흐름 위상(px). reducedMotion이면 흐르지 않고 제자리에 둔다. */
+export function movePathDotPhase(wallNow: number, reducedMotion: boolean): number {
+  if (reducedMotion || !Number.isFinite(wallNow)) return 0;
+  return (wallNow / 1000) * STUDIO_ROUTE_DOT_FLOW_SPEED;
+}
+
+/**
+ * 클릭 파문 진행도. 클릭 직후 0에서 시작해 `STUDIO_ROUTE_RIPPLE_MS`에 1이 된다.
+ * 진행 중이 아니면(이미 끝났거나 모션 줄이기) null이라 호출 측은 아무것도 그리지 않는다.
+ */
+export function movePathRippleProgress(wallNow: number, startedAt: number, reducedMotion: boolean): number | null {
+  if (reducedMotion || !Number.isFinite(wallNow) || !Number.isFinite(startedAt)) return null;
+  const age = wallNow - startedAt;
+  if (age < 0 || age >= STUDIO_ROUTE_RIPPLE_MS) return null;
+  return age / STUDIO_ROUTE_RIPPLE_MS;
+}
+
+/**
+ * 도착 후 마커 페이드 진행도(0 시작 → 1 끝). 끝났거나 모션 줄이기면 null이라 즉시 사라진다.
+ */
+export function movePathFadeProgress(wallNow: number, fadeStartedAt: number | null, reducedMotion: boolean): number | null {
+  if (reducedMotion || fadeStartedAt === null || !Number.isFinite(wallNow) || !Number.isFinite(fadeStartedAt)) return null;
+  const age = wallNow - fadeStartedAt;
+  if (age < 0 || age >= STUDIO_ROUTE_FADE_MS) return null;
+  return age / STUDIO_ROUTE_FADE_MS;
+}

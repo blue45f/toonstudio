@@ -184,3 +184,60 @@ describe("custom furniture rendering", () => {
     expect(sprite.setTexture).not.toHaveBeenCalled();
   });
 });
+
+describe("actor nameplate colors", () => {
+  /** syncActor가 만지는 만큼만 흉내 낸 장면·스프라이트·이름표. */
+  function actorHarness() {
+    const scene = {
+      textures: { exists: () => true },
+      add: {
+        sprite: () => ({ setFrame: vi.fn().mockReturnThis(), setPosition: vi.fn().mockReturnThis(), setDisplaySize: vi.fn().mockReturnThis(),
+          setDepth: vi.fn().mockReturnThis(), setVisible: vi.fn().mockReturnThis(), destroy: vi.fn() }),
+        ellipse: () => ({ setBlendMode: vi.fn().mockReturnThis(), setPosition: vi.fn().mockReturnThis(), setDepth: vi.fn().mockReturnThis(),
+          setFillStyle: vi.fn().mockReturnThis(), setStrokeStyle: vi.fn().mockReturnThis(), setScale: vi.fn().mockReturnThis(), destroy: vi.fn() }),
+      },
+    };
+    const runtime = new StudioVirtualDecorationRuntime(scene as never, player as never, { decor: DECOR_KEY, accessory: "accessory" });
+    const sprite = { displayHeight: 100, originY: 1, depth: 10 };
+    const label = (plate: string, color: string) => {
+      const data = new Map<string, unknown>();
+      return {
+        style: { backgroundColor: plate, color },
+        data,
+        getData: (key: string) => data.get(key),
+        setData(key: string, value: unknown) { data.set(key, value); return this; },
+        setColor(value: string) { this.style.color = value; return this; },
+      };
+    };
+    const sync = (id: string, text: ReturnType<typeof label>, nameplateKey: "violet" | "rose" | "sky" | "amber") =>
+      runtime.syncActor(id, sprite as never, text as never, { x: 0, y: 0 }, "down", false,
+        { accessoryKey: "none", auraKey: "none", trailKey: "none", nameplateKey }, 0);
+    return { label, sync };
+  }
+
+  it("어두운 판의 다른 참가자 이름표는 꾸민 파스텔 색을 그대로 쓴다", () => {
+    const { label, sync } = actorHarness();
+    const peer = label("#0b101de6", "#f1f4ff");
+    sync("peer-1", peer, "rose");
+    expect(peer.style.color).toBe("#ffc2db");
+  });
+
+  it("밝은 강조색 판의 내 이름표는 파스텔이 묻히지 않도록 본래 글자색을 지킨다", () => {
+    const { label, sync } = actorHarness();
+    const self = label("#b39bfff0", "#121226");
+    for (const key of ["violet", "rose", "sky", "amber"] as const) {
+      sync("self", self, key);
+      expect(self.style.color).toBe("#121226");
+    }
+  });
+
+  it("꾸밈을 바꿔도 본래 글자색을 기억해 다시 복원할 수 있다", () => {
+    const { label, sync } = actorHarness();
+    const peer = label("#0b101de6", "#f1f4ff");
+    sync("peer-1", peer, "sky");
+    expect(peer.style.color).toBe("#bde8ff");
+    peer.style.backgroundColor = "#b39bfff0"; // 판이 밝게 바뀐 경우(예: 테마 전환)
+    sync("peer-1", peer, "sky");
+    expect(peer.style.color).toBe("#f1f4ff");
+  });
+});

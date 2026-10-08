@@ -9,7 +9,13 @@ import type * as Phaser from "phaser";
 import type { StudioVirtualArtStyle } from "./studio-virtual-space-art-style";
 import type { StudioLocateGuide } from "./studio-virtual-space-locate-guide";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
-import { buildMovePathDisplay } from "./studio-virtual-space-move-path-display";
+import {
+  buildMovePathDisplay,
+  movePathDotPhase,
+  movePathFadeProgress,
+  movePathRippleProgress,
+  sampleRouteDots,
+} from "./studio-virtual-space-move-path-display";
 import { strokeStudioDashedRect, studioPrivateZoneOverlayShapes } from "./studio-virtual-space-private-zone-overlay";
 import {
   studioWorldCollisionRects,
@@ -153,8 +159,40 @@ export function drawStudioWorldDebugOverlay(
   }
 }
 
-type RouteGraphics = Pick<Phaser.GameObjects.Graphics,
-  "clear" | "lineStyle" | "beginPath" | "moveTo" | "lineTo" | "strokePath" | "strokeEllipse">;
+/** 길 안내가 쓰는 Graphics의 최소 구조. Phaser Graphics를 그대로 받고, 테스트는 호출을 기록하는 가짜를 넘긴다. */
+interface RouteGraphics {
+  clear(): unknown;
+  lineStyle(width: number, color: number, alpha?: number): unknown;
+  fillStyle(color: number, alpha?: number): unknown;
+  fillEllipse(x: number, y: number, width: number, height: number): unknown;
+  strokeEllipse(x: number, y: number, width: number, height: number): unknown;
+}
+
+/**
+ * 길 안내 색. 후광은 어둡고 심은 밝아서 밝은 타일 바닥과 어두운 야간 바닥 어디서든 보인다
+ * (예전의 옅은 라벤더 선은 밝은 바닥에서 거의 보이지 않았다). 색은 캔버스 숫자 색이라 CSS 토큰 대상이 아니다.
+ */
+const ROUTE_HALO = 0x1d1438;
+const ROUTE_CORE = 0xffffff;
+const ROUTE_ACCENT = 0xb79bff;
+
+/** 목적지 마커의 바닥 타원 크기(px). 3/4 시점의 바닥이라 가로:세로를 2:1로 눌러 그린다. */
+const MARKER_WIDTH = 24;
+const MARKER_HEIGHT = 12;
+
+/**
+ * 프레임 사이에 이어져야 하는 길 안내 상태: 마지막 목적지와 도착 페이드 시작 시각.
+ * 캔버스가 장면당 하나를 만들어 매 프레임 같은 객체를 넘긴다.
+ */
+export interface StudioRouteOverlayMemory {
+  destination: StudioVirtualSpacePoint | null;
+  visible: boolean;
+  fadeStartedAt: number | null;
+}
+
+export function createStudioRouteOverlayMemory(): StudioRouteOverlayMemory {
+  return { destination: null, visible: false, fadeStartedAt: null };
+}
 
 export interface StudioRouteOverlayFrame {
   readonly current: StudioVirtualSpacePoint;
@@ -168,13 +206,36 @@ export interface StudioRouteOverlayFrame {
   readonly markerStartedAt: number;
   readonly reducedMotion: boolean;
   readonly portals: readonly StudioWorldPortalDefinition[];
-  /** 월드 좌표 → 그리기 좌표 투영(캔버스가 매니페스트 투영을 감싸 넘긴다). */
+  /** 월드 좌표 → 그리기 좌표 투영(캔버스가 매니페스트 투영을 감싸 넘긴다). 경로·마커·포털 링 모두 이 투영을 따른다. */
   readonly projectPoint: (point: StudioVirtualSpacePoint) => StudioVirtualSpacePoint;
+  readonly memory: StudioRouteOverlayMemory;
 }
 
-/** 클릭 이동 경로 표시(폴리라인·목적지 마커)와 가장 가까운 포털의 바닥 펄스 링. */
+function drawRouteMarker(
+  graphics: RouteGraphics,
+  ground: StudioVirtualSpacePoint,
+  options: { readonly scale: number; readonly alpha: number },
+): void {
+  const width = MARKER_WIDTH * options.scale;
+  const height = MARKER_HEIGHT * options.scale;
+  graphics.lineStyle(4.5, ROUTE_HALO, 0.4 * options.alpha);
+  graphics.strokeEllipse(ground.x, ground.y, width, height);
+  graphics.lineStyle(2, ROUTE_CORE, 0.96 * options.alpha);
+  graphics.strokeEllipse(ground.x, ground.y, width, height);
+  graphics.fillStyle(ROUTE_ACCENT, 0.95 * options.alpha);
+  graphics.fillEllipse(ground.x, ground.y, 8 * options.scale, 4 * options.scale);
+}
+
+/**
+ * 클릭 이동 길 안내와 가장 가까운 포털의 바닥 펄스 링.
+ *
+ * - 안내 점: 발밑에서 목적지까지 일정 간격으로 찍힌 점이 목적지 쪽으로 흐른다(모션 줄이기에서는 정지).
+ * - 목적지 마커: 바닥 타원 + 중심점이 숨 쉬듯 커졌다 작아진다. 클릭한 순간에는 파문이 한 번 퍼져 "받았다"를 알린다.
+ * - 도착하면 마커가 갑자기 꺼지지 않고 조금 커지면서 옅어진다.
+ */
 export function drawStudioRouteOverlay(graphics: RouteGraphics, frame: StudioRouteOverlayFrame): void {
   graphics.clear();
+  const memory = frame.memory;
   const pathDisplay = buildMovePathDisplay({
     current: frame.current,
     path: frame.path,
@@ -184,20 +245,41 @@ export function drawStudioRouteOverlay(graphics: RouteGraphics, frame: StudioRou
     markerStartedAt: frame.markerStartedAt,
     reducedMotion: frame.reducedMotion,
   });
-  if (pathDisplay.visible) {
-    graphics.lineStyle(1.5, 0xc8b8ff, 0.42);
-    graphics.beginPath();
-    const [firstPoint, ...restPoints] = pathDisplay.polyline;
-    if (firstPoint) {
-      graphics.moveTo(firstPoint.x, firstPoint.y);
-      for (const waypoint of restPoints) graphics.lineTo(waypoint.x, waypoint.y);
+  const marker = pathDisplay.visible ? pathDisplay.marker : null;
+  if (marker) {
+    memory.destination = marker.point;
+    memory.visible = true;
+    memory.fadeStartedAt = null;
+    const dots = sampleRouteDots(
+      pathDisplay.polyline.map((point) => frame.projectPoint(point)),
+      { phase: movePathDotPhase(frame.wallNow, frame.reducedMotion) },
+    );
+    for (const dot of dots) {
+      graphics.fillStyle(ROUTE_HALO, 0.32 * dot.alpha);
+      graphics.fillEllipse(dot.x, dot.y, 9, 5.6);
+      graphics.fillStyle(ROUTE_CORE, 0.94 * dot.alpha);
+      graphics.fillEllipse(dot.x, dot.y, 5.6, 3.4);
     }
-    graphics.strokePath();
-    const marker = pathDisplay.marker;
-    if (marker) {
-      const pulseScale = frame.reducedMotion ? 1 : 1 + marker.pulse * 0.35;
-      graphics.lineStyle(2, 0xe8ddff, 0.8);
-      graphics.strokeEllipse(marker.point.x, marker.point.y, 20 * pulseScale, 10 * pulseScale);
+    const ground = frame.projectPoint(marker.point);
+    drawRouteMarker(graphics, ground, { scale: frame.reducedMotion ? 1 : 1 + marker.pulse * 0.2, alpha: 1 });
+    const ripple = movePathRippleProgress(frame.wallNow, frame.markerStartedAt, frame.reducedMotion);
+    if (ripple !== null) {
+      const spread = 0.5 + ripple * 1.7;
+      graphics.lineStyle(2.5, ROUTE_CORE, 0.85 * (1 - ripple));
+      graphics.strokeEllipse(ground.x, ground.y, MARKER_WIDTH * spread, MARKER_HEIGHT * spread);
+    }
+  } else if (memory.destination) {
+    if (memory.visible) {
+      // 방금 도착(또는 취소)했다: 페이드를 시작한다. 모션 줄이기에서는 바로 지운다.
+      memory.visible = false;
+      memory.fadeStartedAt = frame.reducedMotion ? null : frame.wallNow;
+    }
+    const fade = movePathFadeProgress(frame.wallNow, memory.fadeStartedAt, frame.reducedMotion);
+    if (fade === null) {
+      memory.destination = null;
+      memory.fadeStartedAt = null;
+    } else {
+      drawRouteMarker(graphics, frame.projectPoint(memory.destination), { scale: 1 + fade * 0.55, alpha: 1 - fade });
     }
   }
   // 가장 가까운 포털에는 바닥 펄스 링을 그려 "여기로 가면 이동한다"를 알린다.

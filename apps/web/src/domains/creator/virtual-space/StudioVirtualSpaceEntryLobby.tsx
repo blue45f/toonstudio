@@ -162,7 +162,7 @@ export function StudioVirtualSpaceEntryLobby({
     panel.focus({ preventScroll: true });
   };
 
-  return <div className="studio-vspace-entry space-lobby" data-route-ready={onboarding ? "studio-character-onboarding" : "studio-virtual-entry"}
+  return <div className="studio-vspace-entry space-lobby" data-own-control-size="true" data-route-ready={onboarding ? "studio-character-onboarding" : "studio-virtual-entry"}
     data-art-style={artStyle} data-entry-variant={variant}>
     <div className="space-lobby__backdrop" aria-hidden>
       {onboarding

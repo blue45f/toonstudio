@@ -1,7 +1,10 @@
 import { studioTileViewportChunkKey, studioVisibleTileChunks, type StudioTileChunk, type StudioTileset, type StudioTileViewport, type StudioTileWorld } from "./studio-virtual-space-tile-chunks";
+import { extrudeStudioTilesetTexture } from "./studio-virtual-space-tileset-extrusion";
 
 interface TileRuntimeOptions {
   readonly resolveUrl?: (url: string) => string;
+  /** 칸 가장자리 확장에 쓸 캔버스 팩토리. 없으면(브라우저 밖) 원본 타일셋을 그대로 쓴다. */
+  readonly createCanvas?: (width: number, height: number) => HTMLCanvasElement;
   readonly parseGid: (gid: number) => { gid: number; rotation: number; flipped: boolean };
   readonly onError: (message: string) => void;
 }
@@ -125,6 +128,8 @@ export interface StudioTileScenePort {
     exists(key: string): boolean;
     get(key: string): { getSourceImage(): { width: number; height: number } };
     remove(key: string): unknown;
+    /** 있으면 타일셋 칸 가장자리를 확장한 캔버스 텍스처로 바꿔 칸 사이 실선을 없앤다. */
+    addCanvas?(key: string, canvas: HTMLCanvasElement): unknown;
   };
   readonly load: {
     once(event: string, listener: () => void): unknown;
@@ -146,9 +151,28 @@ export function createStudioWorldTileRuntime(scene: StudioTileScenePort, world: 
   const ownedNamespace = `${namespace}:${++nextRuntimeId}`;
   const keyFor = (tileset: StudioTileset) => `${ownedNamespace}:tiles:${tileset.firstGid}`;
   const pending = new Map<() => void, () => void>();
+  /** 칸 가장자리를 확장한 텍스처로 바꾼 타일셋(firstGid → 쓸 키·여백·간격). 확장하지 못한 타일셋은 원본 값을 담는다. */
+  const prepared = new Map<number, { key: string; margin: number; spacing: number }>();
   let closed = false;
   const detach = () => { scene.events.off("shutdown", shutdown); scene.events.off("destroy", destroyScene); };
-  const remove = (tileset: StudioTileset) => { const key = keyFor(tileset); if (scene.textures.exists(key)) scene.textures.remove(key); };
+  const remove = (tileset: StudioTileset) => {
+    const key = keyFor(tileset);
+    for (const owned of [key, prepared.get(tileset.firstGid)?.key]) if (owned && scene.textures.exists(owned)) scene.textures.remove(owned);
+    prepared.delete(tileset.firstGid);
+  };
+  const createCanvas = options.createCanvas ?? (typeof document === "undefined" ? undefined : (width: number, height: number) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = width; canvas.height = height;
+    return canvas;
+  });
+  const prepare = (tileset: StudioTileset) => {
+    const known = prepared.get(tileset.firstGid);
+    if (known) return known;
+    const extruded = extrudeStudioTilesetTexture(scene.textures, keyFor(tileset), tileset, createCanvas);
+    const result = extruded ?? { key: keyFor(tileset), margin: tileset.margin, spacing: tileset.spacing };
+    prepared.set(tileset.firstGid, result);
+    return result;
+  };
   const runtime = new StudioWorldTileRuntime(world, {
     onError: options.onError,
     close: () => { closed = true; if (pending.size === 0) detach(); },
@@ -190,7 +214,8 @@ export function createStudioWorldTileRuntime(scene: StudioTileScenePort, world: 
       const map = scene.make.tilemap({ width: chunk.width, height: chunk.height, tileWidth: first.tileWidth, tileHeight: first.tileHeight });
       try {
         for (const tileset of chunk.tilesets) {
-          if (!map.addTilesetImage(tileset.name, keyFor(tileset), tileset.tileWidth, tileset.tileHeight, tileset.margin, tileset.spacing, tileset.firstGid)) {
+          const { key, margin, spacing } = prepare(tileset);
+          if (!map.addTilesetImage(tileset.name, key, tileset.tileWidth, tileset.tileHeight, margin, spacing, tileset.firstGid)) {
             throw new Error(`타일셋을 만들지 못했습니다: ${tileset.name}`);
           }
         }
