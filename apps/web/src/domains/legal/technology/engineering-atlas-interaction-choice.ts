@@ -2,7 +2,7 @@ import { INTERACTION_REVIEWED_AT, t } from "./engineering-atlas-interaction-kit"
 
 import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
-/** interaction · 선택 기준과 접근성 카드: 끌기 구현 방식 고르기, 끌기마다 짝으로 두는 대체 경로(WCAG 2.5.7). */
+/** interaction · 선택 기준과 접근성 카드: 끌기 구현 방식 고르기, 대부분의 끌기에 짝으로 두는 대체 경로(WCAG 2.5.7). */
 
 const CREATOR = "apps/web/src/domains/creator";
 const HUB = `${CREATOR}/production-hub`;
@@ -251,11 +251,11 @@ const KEYBOARD_ALTERNATIVES_FOR_DRAG: EngineeringAtlasEntry = {
   id: "keyboard-alternatives-for-drag",
   category: "interaction",
   name: "WCAG 2.5.7",
-  title: t("끌기마다 짝으로 두는 대체 경로", "A paired alternative for every drag"),
+  title: t("대부분의 끌기에 짝으로 두는 대체 경로", "A paired alternative for most drags"),
   status: "live",
   tagline: t(
-    "끌어서 되는 일은 키보드·클릭·말로도 되게 하고, 아직 비어 있는 곳은 숨기지 않고 적어 둡니다.",
-    "Anything done by dragging also works by keyboard, click and speech, and the gaps that remain are listed openly.",
+    "대부분의 끌기는 키보드·클릭·말로도 같은 일을 하게 짝을 두고, 키프레임 이동처럼 빈 곳은 숨기지 않고 적습니다.",
+    "Most drags are paired with a keyboard, click or spoken way to do the same job, and gaps like moving keyframes are listed openly.",
   ),
   background: [
     t(
@@ -263,8 +263,8 @@ const KEYBOARD_ALTERNATIVES_FOR_DRAG: EngineeringAtlasEntry = {
       "Dragging feels natural when your hands are free, but not for everyone. People with tremors, people who use a keyboard or switch instead of a mouse, and people who listen to the screen cannot use features that work only by dragging. Just as a building with only stairs shuts out wheelchairs, dragging needs a ramp (an alternative path), and WCAG 2.2's 2.5.7 (Dragging Movements) and 2.1.1 (Keyboard) set that standard.",
     ),
     t(
-      "ToonStudio 의 끌기에는 같은 일을 하는 다른 길이 있습니다. 레이어는 Alt+↑/↓ 와 일괄 맨 앞/뒤 버튼, 페이지는 Alt+←/→ 와 ↑/↓ 버튼, 칸반은 Space→방향키→Enter 와 상태 선택 메뉴, 떠 있는 패널은 Alt+방향키와 창 배치 메뉴, 스플리터는 role=separator 와 화살표·Home·End, 가구 배치 지도는 화살표 16px(Shift 1px), VRM 관절은 화살표·PageUp/Down 으로 4°(Shift 1°)입니다. 결과는 aria-live·role=status 문구로 읽어 줍니다.",
-      "ToonStudio's drags each have another path to the same job. Layers use Alt+Up/Down and bulk bring-to-front and send-to-back buttons, pages use Alt+Left/Right and up and down buttons, the kanban uses Space, arrows and Enter plus a status menu, floating panels use Alt+arrows and a window layout menu, splitters use role=separator with arrows, Home and End, the furniture map moves 16 px per arrow (1 px with Shift), and VRM joints rotate 4 degrees (1 with Shift) by arrows and PageUp or PageDown. Results are read out through aria-live or role=status text.",
+      "ToonStudio 의 끌기 대부분에는 같은 일을 하는 다른 길이 있습니다. 레이어는 Alt+↑/↓ 와 일괄 맨 앞/뒤 버튼, 페이지는 Alt+←/→ 와 ↑/↓ 버튼, 칸반은 Space→방향키→Enter 와 상태 선택 메뉴, 떠 있는 패널은 Alt+방향키와 창 배치 메뉴, 스플리터는 role=separator 와 화살표·Home·End, 가구 배치 지도는 화살표 16px(Shift 1px), VRM 관절은 화살표·PageUp/Down 으로 4°(Shift 1°)입니다. 결과는 aria-live·role=status 문구로 읽어 줍니다.",
+      "Most of ToonStudio's drags have another path to the same job. Layers use Alt+Up/Down and bulk bring-to-front and send-to-back buttons, pages use Alt+Left/Right and up and down buttons, the kanban uses Space, arrows and Enter plus a status menu, floating panels use Alt+arrows and a window layout menu, splitters use role=separator with arrows, Home and End, the furniture map moves 16 px per arrow (1 px with Shift), and VRM joints rotate 4 degrees (1 with Shift) by arrows and PageUp or PageDown. Results are read out through aria-live or role=status text.",
     ),
     t(
       "접근성 전용 끌기 라이브러리는 쓰지 않고 화면마다 직접 구현했습니다. 장점은 화면에 맞는 키 규칙(레이어와 페이지가 같은 Alt+방향키)을 맞출 수 있다는 것이고, 단점은 화면마다 따로 검증해야 한다는 것입니다. 공통 패턴은 ① 키 해석을 순수 함수로 분리 ② 이동 결과를 live region 으로 안내 ③ 끌기와 키보드가 같은 커밋 경로 공유 ④ 잠금 상태에서는 두 경로를 함께 끔입니다.",
@@ -276,7 +276,7 @@ const KEYBOARD_ALTERNATIVES_FOR_DRAG: EngineeringAtlasEntry = {
     ),
   ],
   keyPoints: [
-    t("끌기마다 키보드·클릭·말(aria-live)로 같은 일을 하는 길을 짝으로 둠", "Every drag has keyboard, click and spoken (aria-live) paths for the same job"),
+    t("대부분의 끌기에 키보드·클릭·말(aria-live)로 같은 일을 하는 길을 짝으로 둠", "Most drags have keyboard, click and spoken (aria-live) paths for the same job"),
     t("키 해석은 순수 함수, 끌기와 같은 커밋 경로, 잠금이면 함께 끔", "Key rules are pure functions sharing the drag's commit path, both off when locked"),
     t("비어 있는 곳(키프레임 이동)은 숨기지 않고 표시", "Gaps such as keyframe moving are shown, not hidden"),
   ],
@@ -285,8 +285,8 @@ const KEYBOARD_ALTERNATIVES_FOR_DRAG: EngineeringAtlasEntry = {
     kind: "layers",
     title: t("끌기 하나를 받치는 층", "The layers behind each drag"),
     caption: t(
-      "끌어서 되는 일은 키보드·클릭·말로도 되게 하고, 비어 있는 곳은 솔직히 표시합니다.",
-      "Whatever works by dragging also works by keyboard, click and speech, and the gaps are shown honestly.",
+      "끌어서 되는 일은 대부분 키보드·클릭·말로도 되게 하고, 비어 있는 곳은 솔직히 표시합니다.",
+      "Most things that work by dragging also work by keyboard, click and speech, and the gaps are shown honestly.",
     ),
     alt: t(
       "맨 위에는 마우스와 펜으로 하는 직접 조작이 있고, 그 아래에 같은 일을 하는 키보드 경로, 클릭·탭 경로, 보조기기에 결과를 알리는 층이 차례로 있습니다. 모든 경로 아래에는 Esc 취소, 한 번의 커밋, 잠금 시 비활성이라는 공통 안전장치가 있습니다. 맨 아래에는 아직 비어 있는 곳으로 타임라인 키프레임 이동이 표시됩니다.",
@@ -476,8 +476,8 @@ export function nextWidth(
   chapterIds: ["quality", "virtual-studio-world-authority"],
   talk: {
     pitch: t(
-      "끌어서 하는 일에는 반드시 끌지 않고도 되는 길을 짝으로 둡니다. 레이어와 페이지는 Alt+방향키, 칸반은 Space·방향키·Enter, 패널은 Alt+방향키, 스플리터는 화살표 키로 같은 일을 하고, 결과는 화면 읽기 프로그램이 말로 알려 줍니다. 아직 키프레임 이동처럼 끌기뿐인 곳도 있어서 그 목록도 솔직히 관리합니다.",
-      "Every dragging task is paired with a way to do it without dragging. Layers and pages use Alt plus arrows, the kanban uses Space, arrows and Enter, panels use Alt plus arrows and splitters use the arrow keys, and screen readers speak the result. Some places, such as moving keyframes, are still drag-only, so that list is kept honestly too.",
+      "끌어서 하는 일에는 가능한 한 끌지 않고도 되는 길을 짝으로 둡니다. 레이어와 페이지는 Alt+방향키, 칸반은 Space·방향키·Enter, 패널은 Alt+방향키, 스플리터는 화살표 키로 같은 일을 하고, 결과는 화면 읽기 프로그램이 말로 알려 줍니다. 아직 키프레임 이동처럼 끌기뿐인 곳도 있어서 그 목록도 솔직히 관리합니다.",
+      "Wherever possible, a dragging task is paired with a way to do it without dragging. Layers and pages use Alt plus arrows, the kanban uses Space, arrows and Enter, panels use Alt plus arrows and splitters use the arrow keys, and screen readers speak the result. Some places, such as moving keyframes, are still drag-only, so that list is kept honestly too.",
     ),
     analogy: t(
       "계단 옆의 경사로와 엘리베이터 같습니다. 같은 층으로 가는 길이 여러 개여야 누구나 갈 수 있습니다.",

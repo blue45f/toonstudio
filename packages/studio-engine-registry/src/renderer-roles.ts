@@ -195,9 +195,11 @@ export const STUDIO_RENDERER_ROLE_LEDGER: readonly RendererRoleEntry[] =
       productSymbols: Object.freeze(["loadLibMypaint"]),
       candidateId: "E11",
       note:
-        "Hokusai 자연매체 dab 수학의 parity/golden 기준. `apps/web/src/` 에서 "
-        + "`loadLibMypaint` 호출부는 0건이고, src 의 libmypaint 언급은 커널 출처 "
-        + "문자열(.myb 레시피 attribution)뿐이다.",
+        "Hokusai 자연매체 dab 수학의 parity/golden 기준이며 Hokusai 의 제품 폴백은 "
+        + "아니다. 다만 `apps/web/src/` 에서 `loadLibMypaint` 는 선택 획 네이티브 엔진 "
+        + "변환 워커(studio-native-brush-probe.worker.ts)가 호출하며, 사용자가 인스펙터에서 "
+        + "고르는 엔진(기본 선택)으로 쓰인다. reference 역할이 이 사용을 반영하는지는 "
+        + "재검토 대상이다.",
     }),
     Object.freeze({
       id: "canvaskit",

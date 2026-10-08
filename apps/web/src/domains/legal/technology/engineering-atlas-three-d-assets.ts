@@ -296,8 +296,8 @@ export const GLB_OPTIMIZATION_PIPELINE: EngineeringAtlasEntry = {
       "The order is: (1) resolve the chosen file and its companions (.bin, .mtl, textures) only through safe relative paths, rejecting parent paths and external addresses; (2) check declared node, mesh, vertex and triangle counts before handing to a parser; (3) parse in a Worker, then check the limits again (2,048 nodes, 4,000,000 vertices, 2,000,000 triangles and so on); (4) write the GLB; (5) a separate validator checks 100 MiB, 4 MiB of JSON, the mobile or desktop budget and the required-extension allowlist. A .skp is converted to GLB in the browser with openskp (MIT) and joins the same path.",
     ),
     t(
-      "압축은 '지원'과 '실제 출하'를 구분해야 합니다. 메시 압축(meshopt)은 디코더를 지연 로드해 읽을 수 있고, 저장소에 실린 환경 GLB 10개는 glTF-Transform으로 meshopt와 WebP 텍스처를 쓴 것입니다. KTX2(GPU용 압축 텍스처)는 읽는 런타임(변환기 실행 코드를 SHA-256으로 고정·증명)과 만드는 도구(ktx2-encoder)까지 있지만, apps/web/public 아래 독립 .ktx2 파일은 0개입니다. Draco는 지원하지 않고 가져올 때 거부합니다.",
-      "Compression needs 'supported' kept apart from 'actually shipped'. Mesh compression (meshopt) can be read through a lazily loaded decoder, and the 10 environment GLBs in the repository were optimized with glTF-Transform using meshopt and WebP textures. KTX2 (a GPU-compressed texture) has a reading runtime (the transcoder's executable code pinned and attested by SHA-256) and a writing tool (ktx2-encoder), yet there are 0 standalone .ktx2 files under apps/web/public. Draco is not supported and is rejected on import.",
+      "압축은 '지원'과 '실제 출하'를 구분해야 합니다. 메시 압축(meshopt)은 디코더를 지연 로드해 읽을 수 있고, 번들 환경 GLB 31개 중 Tripo로 만든 10개는 glTF-Transform으로 meshopt와 WebP 텍스처를 적용했으며 나머지 21개는 PNG 텍스처에 meshopt를 쓰지 않습니다. KTX2(GPU용 압축 텍스처)는 읽는 런타임(변환기 실행 코드를 SHA-256으로 고정·증명)과 만드는 도구(ktx2-encoder)까지 있지만, apps/web/public 아래 독립 .ktx2 파일은 0개입니다. Draco는 지원하지 않고 가져올 때 거부합니다.",
+      "Compression needs 'supported' kept apart from 'actually shipped'. Mesh compression (meshopt) can be read through a lazily loaded decoder; of the 31 bundled environment GLBs, the 10 made with Tripo were optimized with glTF-Transform using meshopt and WebP textures, while the other 21 use PNG textures without meshopt. KTX2 (a GPU-compressed texture) has a reading runtime (the transcoder's executable code pinned and attested by SHA-256) and a writing tool (ktx2-encoder), yet there are 0 standalone .ktx2 files under apps/web/public. Draco is not supported and is rejected on import.",
     ),
     t(
       "내보내는 쪽은 Scene3D 전문가 도구가 맡습니다. GLB 한 개를 받아 압축·LOD 3단계·탄젠트·KTX2 변환 같은 파생물을 만들되 원본은 건드리지 않고, 만든 파일을 다시 열어 검증한 뒤 SHA-256 영수증과 함께 돌려줍니다. 작업 1건당 Worker 1개를 띄우고 취소나 120초 시간 초과면 Worker를 종료합니다. KTX2는 손실 압축이라 화질을 확인해야 하고, 압축률 같은 수치는 합성 샘플 기준입니다.",
@@ -525,8 +525,8 @@ export function checkRequiredExtensions(
   chapterIds: ["web-3d-engine", "skp-model-import", "worker-architecture"],
   talk: {
     pitch: t(
-      "3D 파일 업로드는 입력이 아니라 공격 표면이라고 봅니다. 그래서 아홉 가지 형식을 GLB 한 가지로 바꾸고, 렌더러가 보기 전에 크기·구조·확장 목록을 검사합니다. 압축은 meshopt를 쓰고, KTX2는 읽는 런타임과 만드는 도구까지 있지만 저장소에 실린 KTX2 파일은 아직 없습니다. 내보낼 때는 원본을 두고 파생물과 SHA-256 영수증을 만듭니다.",
-      "We treat a 3D upload as an attack surface, not just input. So nine formats become one GLB, and size, structure and extensions are checked before the renderer sees anything. Compression uses meshopt; KTX2 has a reading runtime and a writing tool, but no KTX2 file ships in the repository yet. When exporting, the original is kept and a derivative with a SHA-256 receipt is produced.",
+      "3D 파일 업로드는 입력이 아니라 공격 표면이라고 봅니다. 그래서 아홉 가지 형식을 GLB 한 가지로 바꾸고, 렌더러가 보기 전에 크기·구조·확장 목록을 검사합니다. 압축은 meshopt를 읽을 수 있고 번들 환경 31개 중 10개에 적용돼 있으며, KTX2는 읽는 런타임과 만드는 도구까지 있지만 저장소에 실린 KTX2 파일은 아직 없습니다. 내보낼 때는 원본을 두고 파생물과 SHA-256 영수증을 만듭니다.",
+      "We treat a 3D upload as an attack surface, not just input. So nine formats become one GLB, and size, structure and extensions are checked before the renderer sees anything. Meshopt compression can be read and is applied to 10 of the 31 bundled environments; KTX2 has a reading runtime and a writing tool, but no KTX2 file ships in the repository yet. When exporting, the original is kept and a derivative with a SHA-256 receipt is produced.",
     ),
     analogy: t(
       "이삿짐센터가 모든 짐을 규격 상자 하나로 다시 포장하고, 집에 들이기 전에 현관에서 무게와 내용물 목록부터 확인하는 것과 같습니다.",
@@ -550,8 +550,8 @@ export function checkRequiredExtensions(
       {
         question: t("KTX2를 쓰나요?", "Do you use KTX2?"),
         answer: t(
-          "읽는 런타임(실행 코드 해시 증명)과 만드는 도구는 있지만, 현재 apps/web/public에는 독립 .ktx2 파일이 없습니다. 번들 환경 GLB 10개는 meshopt와 WebP 텍스처입니다. GLB 안에 KTX2가 들어 있는지는 전수 조사하지 않았습니다.",
-          "There is a reading runtime (with hash attestation of executable code) and a writing tool, but no standalone .ktx2 file is in apps/web/public today. The 10 bundled environment GLBs use meshopt and WebP textures. I did not audit every GLB for embedded KTX2.",
+          "읽는 런타임(실행 코드 해시 증명)과 만드는 도구는 있지만, 현재 apps/web/public에는 독립 .ktx2 파일이 없습니다. 번들 환경 GLB 31개 중 Tripo로 만든 10개는 meshopt와 WebP 텍스처이고 나머지 21개는 PNG 텍스처입니다. GLB 안에 KTX2가 들어 있는지는 전수 조사하지 않았습니다.",
+          "There is a reading runtime (with hash attestation of executable code) and a writing tool, but no standalone .ktx2 file is in apps/web/public today. Of the 31 bundled environment GLBs, the 10 made with Tripo use meshopt and WebP textures and the other 21 use PNG textures. I did not audit every GLB for embedded KTX2.",
         ),
       },
     ],
@@ -594,12 +594,12 @@ export const BG3D_BACKGROUND_CATALOG: EngineeringAtlasEntry = {
       "The alternatives are fetching assets from a server API or allowing only user uploads. A server breaks offline use and costs money, and uploads alone leave you starting from a blank screen. So the sets ship as static files with fingerprints and origin pinned in code, and the model panel still shows the bundled list when local storage (SQLite/OPFS) is blocked, with only saving and uploading failing closed.",
     ),
     t(
-      "예산은 이렇습니다. 모델 하나는 100MiB 이하이고, 모바일 프로파일은 삼각형 500,000·노드 256·텍스처 64장·텍스처 합계 128MiB, 데스크톱은 삼각형 2,000,000·노드 1,024·텍스처 256장입니다. 출처는 정직하게 갈립니다. 31개 중 21개는 Blender 스크립트로 만든 CC0 원본이고, 10개는 Tripo 무료 API 지갑으로 생성한 AI 생성물(비독점, 공급자가 권리 보유)입니다. 실제 기기에서의 로딩 시간과 메모리는 이 카드에서 측정하지 못했습니다.",
-      "The budgets are: one model up to 100 MiB; the mobile profile allows 500,000 triangles, 256 nodes, 64 textures and 128 MiB of textures in total; desktop allows 2,000,000 triangles, 1,024 nodes and 256 textures. Origins split honestly: 21 of the 31 are CC0 originals made with Blender scripts, and 10 are AI-generated through Tripo's free API wallet (non-exclusive, with the provider retaining rights). Loading time and memory on real devices were not measured for this card.",
+      "예산은 이렇습니다. 모델 하나는 데스크톱 100MiB(모바일 64MiB) 이하이고, 모바일 프로파일은 삼각형 500,000·노드 256·텍스처 64장·텍스처 합계 128MiB, 데스크톱은 삼각형 2,000,000·노드 1,024·텍스처 256장입니다. 출처는 정직하게 갈립니다. 31개 중 21개는 Blender 스크립트로 만든 CC0 세트(그중 18개는 Poly Haven의 CC0 모델·재질을 소스로 합성, 3개는 순수 절차 생성)이고, 10개는 Tripo 무료 API 지갑으로 생성한 AI 생성물(비독점, 공급자가 권리 보유)입니다. 실제 기기에서의 로딩 시간과 메모리는 이 카드에서 측정하지 못했습니다.",
+      "The budgets are: one model up to 100 MiB on desktop (64 MiB on mobile); the mobile profile allows 500,000 triangles, 256 nodes, 64 textures and 128 MiB of textures in total; desktop allows 2,000,000 triangles, 1,024 nodes and 256 textures. Origins split honestly: 21 of the 31 are CC0 sets made with Blender scripts (18 of them composed from Poly Haven CC0 models and materials, 3 purely procedural), and 10 are AI-generated through Tripo's free API wallet (non-exclusive, with the provider retaining rights). Loading time and memory on real devices were not measured for this card.",
     ),
   ],
   keyPoints: [
-    t("배경 31개: 21개는 CC0 직접 제작, 10개는 AI 생성(Tripo)", "31 sets: 21 CC0 made in-house, 10 AI-generated (Tripo)"),
+    t("배경 31개: 21개는 Blender로 만든 CC0 세트, 10개는 AI 생성(Tripo)", "31 sets: 21 CC0 built with Blender, 10 AI-generated (Tripo)"),
     t("항목마다 SHA-256·크기·출처·추천 카메라를 코드에 박았습니다", "Each item pins SHA-256, size, origin and a suggested camera in code"),
     t("받은 바이트는 사용자 업로드와 같은 검증 경로를 지납니다", "Fetched bytes take the same validation path as a user upload"),
     t("저장소가 막혀도 번들 목록은 보이고 저장·업로드만 닫힙니다", "If storage is blocked the bundled list still shows; only save and upload close"),
@@ -788,7 +788,7 @@ export function statusText(asset: EnvironmentAsset): string {
       title: "Creative Commons · CC0 1.0 Universal",
       url: "https://creativecommons.org/publicdomain/zero/1.0/",
       kind: "spec",
-      note: t("CC0 원본 21개에 선언된 라이선스", "The license declared for the 21 CC0 originals"),
+      note: t("CC0 세트 21개에 선언된 라이선스", "The license declared for the 21 CC0 sets"),
     },
     {
       title: "Tripo · Terms of Service",
@@ -812,8 +812,8 @@ export function statusText(asset: EnvironmentAsset): string {
   chapterIds: ["web-3d-engine", "content-addressing", "storage"],
   talk: {
     pitch: t(
-      "배경 3D 카탈로그는 세트장 창고입니다. 교실·카페·골목 등 31개 세트가 들어 있고, 21개는 Blender 스크립트로 직접 만든 CC0, 10개는 Tripo 무료 API로 생성한 AI 세트입니다. 세트마다 지문, 크기, 출처, 추천 카메라가 코드에 박혀 있고, 받은 파일은 사용자가 올린 파일과 똑같은 안전 검사를 거쳐야 장면에 놓입니다.",
-      "The 3D background catalog is a set warehouse. It holds 31 sets such as classrooms, cafes and alleys: 21 are CC0 sets made in-house with Blender scripts and 10 are AI sets generated through Tripo's free API. Each set has its fingerprint, size, origin and suggested camera pinned in code, and a fetched file must pass the same safety checks as a user upload before it enters a scene.",
+      "배경 3D 카탈로그는 세트장 창고입니다. 교실·카페·골목 등 31개 세트가 들어 있고, 21개는 Blender 스크립트로 만든 CC0 세트(대부분 Poly Haven의 CC0 모델·재질을 소스로 합성), 10개는 Tripo 무료 API로 생성한 AI 세트입니다. 세트마다 지문, 크기, 출처, 추천 카메라가 코드에 박혀 있고, 받은 파일은 사용자가 올린 파일과 똑같은 안전 검사를 거쳐야 장면에 놓입니다.",
+      "The 3D background catalog is a set warehouse. It holds 31 sets such as classrooms, cafes and alleys: 21 are CC0 sets built with Blender scripts (most composed from Poly Haven's CC0 models and materials) and 10 are AI sets generated through Tripo's free API. Each set has its fingerprint, size, origin and suggested camera pinned in code, and a fetched file must pass the same safety checks as a user upload before it enters a scene.",
     ),
     analogy: t(
       "영화 세트장 창고의 재고 장부입니다. 장부에는 세트마다 크기·출처·검수 지문이 적혀 있고, 꺼낼 때도 입구에서 같은 검수를 거칩니다.",
@@ -843,14 +843,14 @@ export function statusText(asset: EnvironmentAsset): string {
       },
     ],
     pitfall: t(
-      "'31개 모두 직접 제작'이라고 말하지 마세요. 10개는 AI 생성물입니다. 31이라는 숫자는 현재 코드와 테스트 기준이며, 라이선스 문구는 법률 자문이 아닙니다. 기기별 로딩 시간·메모리 측정값은 이 카드에서 제시하지 못합니다.",
-      "Do not say all 31 were made in-house: 10 are AI-generated. The number 31 reflects the current code and tests, and the license wording is not legal advice. This card has no per-device loading time or memory measurements.",
+      "'31개 모두 직접 제작'이라고 말하지 마세요. 10개는 AI 생성물이고, 나머지 21개도 18개는 Poly Haven CC0 모델·재질을 소스로 합성한 세트입니다. 31이라는 숫자는 현재 코드와 테스트 기준이며, 라이선스 문구는 법률 자문이 아닙니다. 기기별 로딩 시간·메모리 측정값은 이 카드에서 제시하지 못합니다.",
+      "Do not say all 31 were made in-house: 10 are AI-generated, and 18 of the other 21 are sets composed from Poly Haven CC0 models and materials. The number 31 reflects the current code and tests, and the license wording is not legal advice. This card has no per-device loading time or memory measurements.",
     ),
   },
   technologies: ["GLB / glTF", "Three.js", "OPFS", "SQLite WASM", "SHA-256", "Blender bpy"],
   facts: [
     { value: "31", label: t("번들 환경 세트 수(테스트가 단언)", "Bundled environment sets (asserted by a test)"), source: `${BG3D_DIR}/studio-bg3d-environment-mcp-free-v1.test.ts` },
-    { value: "21 / 10", label: t("CC0 직접 제작 / Tripo AI 생성 세트 수", "CC0 in-house / Tripo AI-generated sets"), source: `${BG3D_DIR}/studio-bg3d-environment-catalog.ts` },
+    { value: "21 / 10", label: t("Blender 스크립트로 만든 CC0 세트(18개는 Poly Haven CC0 소스 합성) / Tripo AI 생성 세트 수", "CC0 sets built with Blender scripts (18 composed from Poly Haven CC0 sources) / Tripo AI-generated sets"), source: `${BG3D_DIR}/studio-bg3d-environment-catalog.ts` },
     { value: "500,000 / 2,000,000", label: t("삼각형 예산: 모바일 / 데스크톱", "Triangle budget: mobile / desktop"), source: `${BG3D_DIR}/studio-bg3d-glb-validation.ts` },
   ],
   reviewedAt: "2026-10-07",
