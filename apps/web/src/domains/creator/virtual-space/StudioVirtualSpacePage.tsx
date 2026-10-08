@@ -1978,7 +1978,7 @@ export function VirtualSpaceExperience({
       onTogglePeople={() => togglePanel("people")} onToggleMap={toggleMap} />;
 
   return (
-    <div className="space-hud" data-studio-live-shell="true" data-studio-personal-space={personal || undefined}
+    <div className="space-hud" data-own-control-size="true" data-studio-live-shell="true" data-studio-personal-space={personal || undefined}
       data-route-ready="studio-live-space" data-hud-layout={desktop ? "desktop" : "mobile"} data-panel-open={panel ? "true" : undefined}
       data-world-kind={builtin?.kind ?? "custom"} data-engine-status={engineStatus} data-handedness={experiencePreference.handedness}>
       <h1 className="sr-only">{spaceName} · {bt("가상 스튜디오", "Virtual studio")}</h1>

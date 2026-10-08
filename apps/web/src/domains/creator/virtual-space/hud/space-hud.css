@@ -60,6 +60,15 @@ body:has(.space-hud) nav[data-site-product] { display: none !important; }
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
+/* 컨트롤 크기는 HUD가 스스로 정한다: 루트의 data-own-control-size로 사이트 공통 높이 바닥(sitewide-visual-ux.css)에서
+   빠졌다. 그 바닥은 아이디 특이도라 여기서 선언한 44·48px 터치 타깃을 40px로 눌러 버렸다.
+   터치 기기에서는 높이를 따로 선언하지 않은 컨트롤도 44px 아래로 내려가지 않게 바닥을 직접 둔다.
+   :where()라 특이도가 0이어서 컴포넌트가 min-height를 선언하면 항상 그쪽이 이긴다. */
+@media (pointer: coarse) {
+  :where(.space-hud) :where(button, [role="button"], [role="tab"], [role="option"], select, textarea) {
+    min-block-size: var(--site-control-size, 44px);
+  }
+}
 
 /* ── 월드 스테이지 ─────────────────────────────────────────── */
 .space-hud__stage {
@@ -611,13 +620,15 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   color: var(--color-accent);
   cursor: pointer;
 }
+/* 눈에 보이는 22px 원은 그대로 두고, 눌리는 영역만 44px로 넓힌다(구역 모서리마다 하나씩이라 이웃과 겹치지 않는다). */
+.space-minimap__zone-jump::after { content: ""; position: absolute; inset: -11px; border-radius: 50%; }
 .space-minimap__zone-jump:hover, .space-minimap__zone-jump:focus-visible { background: var(--color-accent); color: var(--color-panel); }
 .space-minimap__gates { display: flex; flex-wrap: wrap; gap: 6px; }
 .space-minimap__gate-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 32px;
+  min-height: 40px;
   padding: 4px 10px;
   border: 1px solid var(--color-line);
   border-radius: 999px;
@@ -684,7 +695,7 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
+  min-height: 40px;
   padding: 4px 14px 4px 10px;
   border: 1px solid var(--space-border, color-mix(in srgb, var(--color-fg) 18%, transparent));
   border-radius: 999px;
@@ -1615,6 +1626,10 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
 }
 .space-chat__open-button > svg { color: var(--color-accent); }
 .space-chat__open-button:hover { border-color: var(--color-accent); }
+/* 위에서 40px로 선언한 칩들도 터치 기기에서는 44px 이상으로(위 선언들과 특이도가 같아 뒤에 둔다). */
+@media (pointer: coarse) {
+  .space-minimap__gate-chip, .space-chat-input__hint, .space-chat__open-button { min-height: var(--site-control-size, 44px); }
+}
 .space-chat--open {
   padding: 10px;
   border: 1px solid var(--space-border);

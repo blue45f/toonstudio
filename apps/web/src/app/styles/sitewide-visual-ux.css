@@ -137,16 +137,22 @@ html {
 }
 
 /* Long localized labels must wrap instead of colliding with adjacent controls.
-   Keep this at the shared page shell so individual pages do not need ad-hoc fixes. */
-#main-content :where(button, [role="button"], [role="tab"], [role="option"]) {
+   Keep this at the shared page shell so individual pages do not need ad-hoc fixes.
+   컨트롤 크기와 줄바꿈을 스스로 정하는 몰입형 화면(가상 스튜디오 HUD·입장 로비)은 루트에 [data-own-control-size]를
+   달아 이 규칙과 아래 높이 바닥에서 뺀다. 이 규칙들은 #main-content 아이디 특이도라 안쪽 컴포넌트의 선언을 모두 이긴다:
+   ① min-height(44·48px 터치 타깃, 140px 캐릭터 카드)가 40px로 눌리고 ② white-space: nowrap이 무시되며
+   ③ overflow-wrap: anywhere가 좁은 라벨(오른쪽 가장자리 지도 구역 이름 등)을 단어 중간에서 끊었다.
+   :where()로 감싸 특이도는 그대로라 다른 화면의 우선순위는 달라지지 않는다. */
+#main-content :where(button, [role="button"], [role="tab"], [role="option"]):where(:not([data-own-control-size] *)) {
   max-inline-size: 100%;
   white-space: normal;
   overflow-wrap: anywhere;
   line-height: 1.35;
 }
 
+/* 데스크톱 높이 바닥(2.5rem). 면제 범위는 위 설명과 같다. */
 @media (min-width: 768px) {
-  #main-content :where(button, [role="button"], [role="tab"], [role="option"]) {
+  #main-content :where(button, [role="button"], [role="tab"], [role="option"]):where(:not([data-own-control-size] *)) {
     min-block-size: 2.5rem;
   }
 }
@@ -170,7 +176,7 @@ html {
 }
 
 @media (pointer: coarse) {
-  #main-content :is(button, [role="button"], [role="tab"], [role="option"], select, textarea) {
+  #main-content :is(button, [role="button"], [role="tab"], [role="option"], select, textarea):where(:not([data-own-control-size] *)) {
     min-block-size: var(--site-control-size);
   }
   :root[data-route-purpose-scene="true"] #main-content .route-stage :is(
