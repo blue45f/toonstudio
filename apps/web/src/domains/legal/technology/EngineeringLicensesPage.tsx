@@ -199,7 +199,7 @@ export function EngineeringLicensesPage() {
         meta={(
           <>
             <EngineeringMetaChip>{formatI18nTemplate(String(bi("라이브러리 {value0}종", "{value0} libraries")), { value0: ENGINEERING_LIBRARY_LICENSES.length })}</EngineeringMetaChip>
-            <EngineeringMetaChip>{formatI18nTemplate(String(bi("모델·자산 {value0}종", "{value0} models & assets")), { value0: ENGINEERING_MODEL_ASSET_LICENSES.length })}</EngineeringMetaChip>
+            <EngineeringMetaChip>{formatI18nTemplate(String(bi("모델 파일 {value0}개", "{value0} model files")), { value0: ENGINEERING_MODEL_ASSET_LICENSES.length })}</EngineeringMetaChip>
             <EngineeringMetaChip>{formatI18nTemplate(String(bi("검토일 {value0}", "Reviewed {value0}")), { value0: ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT })}</EngineeringMetaChip>
           </>
         )}

@@ -12,8 +12,8 @@ describe("라이브러리 라이선스 현황 데이터", () => {
     for (const library of ENGINEERING_LIBRARY_LICENSES) {
       bySurface.set(library.surface, (bySurface.get(library.surface) ?? 0) + 1);
     }
-    expect(bySurface.get("web")).toBe(84);
-    expect(bySurface.get("api")).toBe(23);
+    expect(bySurface.get("web")).toBe(85);
+    expect(bySurface.get("api")).toBe(22);
     expect(bySurface.get("mobile")).toBe(8);
     expect(bySurface.get("labs")).toBe(2);
   });

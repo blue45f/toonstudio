@@ -44,6 +44,11 @@ describe("기술 자료 외부 링크 레지스트리", () => {
   it("내부 개념과 확정하지 못한 항목은 링크 없이 남는다", () => {
     expect(externalLinkForName("Document authority")).toBeUndefined();
     expect(externalLinkForName("KMAS")).toBeUndefined();
-    expect(externalLinkForName("Hokusai")).toBeUndefined();
+    // 2026-10-07에 의존성에서 제거돼 더 이상 쓰지 않는 라이브러리는 링크 행도 두지 않는다.
+    expect(externalLinkForName("@helia/verified-fetch")).toBeUndefined();
+  });
+
+  it("Hokusai는 자체 제작물이 아니라 외부 crate이므로 업스트림 저장소로 연결한다", () => {
+    expect(externalLinkForName("Hokusai")).toBe("https://github.com/reearth/hokusai");
   });
 });
