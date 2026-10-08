@@ -271,10 +271,10 @@ pnpm run cloudflare:static:deploy
 
 승인 문구와 승인 SHA를 비롯한 스크립트의 production 요구 조건은 위 "2. 정적 웹과 Core API 배포"에 정리했습니다.
 
-`main`은 브랜치 보호로 PR 전용이며 CI의 `core` 체크(lint·typecheck·마이그레이션 채택·전체
-Vitest·빌드 게이트) 성공이 머지 조건입니다. `core`는 병렬 잡 `lint`·`typecheck`·`build`·
-`test (1/3..3/3)`·`test (serial lane)`의 결과를 합칩니다. 릴리스 체크 `verify`는 같은 잡들과
-`studio-3d-runtime`을 합칩니다. 관리자 우회는 배포 우회가 아니며, 우회 커밋 역시 별도 수동
+`main`은 브랜치 보호로 PR 전용이며 CI의 `core` 체크(lint·typecheck·회귀 5샤드·직렬 성능
+회귀·접근성 스모크·빌드·DB 검수 불변식) 성공이 머지 조건입니다. `core`는 병렬 잡 `lint`·
+`typecheck`·`static`(회귀 샤드)·`serial`·`a11y`·`build`·`database`의 결과를 합칩니다. 릴리스
+체크 `verify`는 `core` 성공만 요구합니다. 관리자 우회는 배포 우회가 아니며, 우회 커밋 역시 별도 수동
 릴리스 전에는 운영에 반영되지 않습니다. 우회 이유는 PR이나 커밋 본문에 기록하고 다음 PR에서
 필수 검증을 다시 녹색으로 돌립니다.
 

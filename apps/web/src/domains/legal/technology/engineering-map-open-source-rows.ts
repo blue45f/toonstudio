@@ -18,8 +18,8 @@ const APP_AND_STORAGE_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "모든 화면을 그리는 UI 뼈대(React 19), 주소에 따라 화면을 바꾸는 라우터(React Router), 빌드할 때 불필요한 다시 그리기를 자동으로 줄여 주는 변환(React Compiler).",
-        "The UI skeleton that draws every screen (React 19), the router that swaps screens by address (React Router), and a build-time transform that trims needless re-rendering (React Compiler).",
+        "모든 화면을 그리는 UI 뼈대(React 19), 주소에 따라 화면을 바꾸는 라우터(React Router), 빌드할 때 불필요한 다시 그리기를 자동으로 줄여 주는 변환(React Compiler, 편집기 본체 등 일부는 'use no memo'로 제외).",
+        "The UI skeleton that draws every screen (React 19), the router that swaps screens by address (React Router), and a build-time transform that trims needless re-rendering (React Compiler; the editor body and some other files opt out with 'use no memo').",
       ),
       license: same("MIT"),
       mode: t("런타임 · 정적", "Runtime · static"),
@@ -44,8 +44,8 @@ const APP_AND_STORAGE_ROWS: readonly EngineeringMapRow[] = [
       license: same("MIT · ISC"),
       mode: t("런타임 · 빌드(CSS)", "Runtime · build (CSS)"),
       note: t(
-        "Tailwind 4.3.0은 PostCSS 플러그인으로 빌드할 때만 돈다. lucide-react만 ISC이고 나머지는 MIT다. 연령 확인 창은 Radix Dialog 위에 만들었다.",
-        "Tailwind 4.3.0 runs only at build time, as a PostCSS plugin. Only lucide-react is ISC; the rest are MIT. The age-gate window is built on Radix Dialog.",
+        "Tailwind 4.3.0은 PostCSS 플러그인으로 빌드할 때만 돌아 코드는 없고 생성 CSS만 담긴다. lucide-react만 ISC이고 나머지는 MIT다. 연령 확인 창은 Radix Dialog 위에 만들었다.",
+        "Tailwind 4.3.0 runs only at build time, as a PostCSS plugin, so its code is absent and only the generated CSS ships. Only lucide-react is ISC; the rest are MIT. The age-gate window is built on Radix Dialog.",
       ),
     },
     evidence: ["package.json", "postcss.config.mjs", "apps/web/src/shared/components/age-gate-modal.tsx", "apps/web/src/shared/components/command-palette.tsx"],
@@ -58,8 +58,8 @@ const APP_AND_STORAGE_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "여러 화면이 함께 쓰는 작은 상태(컷 목록·평점·참여·언어와 모드 등)를 담는 가벼운 저장소. 일부는 IndexedDB(브라우저 안 데이터베이스)에 이어 저장한다.",
-        "A lightweight store for small bits of state that several screens share (cuts, ratings, engagement, language and mode). Some of it is persisted to IndexedDB, the browser's built-in database.",
+        "여러 화면이 함께 쓰는 작은 상태(컷츠 피드(조회·좋아요)·평점·참여·언어와 모드 등)를 담는 가벼운 저장소. 일부는 IndexedDB(브라우저 안 데이터베이스)에 이어 저장한다.",
+        "A lightweight store for small bits of state that several screens share (Cuts feed views and likes, ratings, engagement, language and mode). Some of it is persisted to IndexedDB, the browser's built-in database.",
       ),
       license: same("MIT"),
       mode: t("런타임 · 정적", "Runtime · static"),
@@ -241,8 +241,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "편집 캔버스의 '무대'. 레이어·말풍선·텍스트를 고르고 옮기고 변형하는 화면과 포인터 입력을 맡는다(문서 표시·입력·선택 크롬의 단독 소유자).",
-        "The stage of the editing canvas. It handles the view where layers, speech bubbles and text are picked, moved and transformed, plus pointer input (sole owner of document display, input and selection chrome).",
+        "편집 캔버스의 '무대'. 레이어·말풍선·텍스트를 고르고 옮기고 변형하는 화면과 포인터 입력을 맡는다(입력·선택 크롬의 소유자. 문서 표시는 승인된 요소에 한해 CanvasKit 섬과 나눈다).",
+        "The stage of the editing canvas. It handles the view where layers, speech bubbles and text are picked, moved and transformed, plus pointer input (owner of input and selection chrome; document display is shared with the CanvasKit island for approved elements).",
       ),
       license: same("MIT"),
       mode: t("런타임 · 정적(전용 청크)", "Runtime · static (own chunk)"),
@@ -291,8 +291,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "Konva 위에 투명 캔버스를 겹쳐, 선택 영역 오버레이(마우스 올림 강조·클릭 영역·변형 핸들)를 GPU로 그린다.",
-        "A transparent canvas layered over Konva that draws the selection overlay (hover highlight, hit areas, transform handles) on the GPU.",
+        "Konva 위에 투명 캔버스를 겹쳐, 선택한 요소의 테두리와 옅은 면만 GPU로 그린다(마우스 올림 강조·클릭 판정·변형 핸들은 Konva). CanvasKit 섬이 페이지를 legacy로 판정할 때만 켜진다.",
+        "A transparent canvas layered over Konva that draws only the outline and a light fill of the selected elements on the GPU (hover highlights, hit-testing and transform handles stay with Konva). It is mounted only when the CanvasKit island rates the page as legacy.",
       ),
       license: same("MIT"),
       mode: t("런타임 · 지연 로드", "Runtime · lazy"),
@@ -322,8 +322,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
       license: same("MIT"),
       mode: t("런타임 · 정적", "Runtime · static"),
       note: t(
-        "ADR-0009: 출하 잉킹 레인은 Perfect Freehand + Kurbo 프록시이고 Google Ink는 후보다. 연필·수채 같은 자연매체나 복합 브러시를 대신하지는 못한다(조사 문서 E10). lazy-brush는 마우스·펜·터치별로 켜고 끈다.",
-        "ADR-0009: the shipping inking lane is Perfect Freehand plus a Kurbo proxy, with Google Ink as a candidate. It cannot replace natural media such as pencil or watercolor, or compound brushes (survey E10). lazy-brush can be toggled per mouse, pen or touch.",
+        "ADR-0009: 출하 잉킹 레인은 Perfect Freehand + Kurbo 프록시이고 Google Ink는 후보다. 일반 펜의 기본은 연속 잉크(webgpu-causal-ink) 경로이고 perfect-freehand는 G펜·퍼펙트 계열 펜이다. 연필·수채 같은 자연매체나 복합 브러시를 대신하지는 못한다(조사 문서 E10). lazy-brush는 마우스·펜·터치별로 켜고 끈다.",
+        "ADR-0009: the shipping inking lane is Perfect Freehand plus a Kurbo proxy, with Google Ink as a candidate. The ordinary pen defaults to the continuous-ink (webgpu-causal-ink) path, and perfect-freehand serves the G-pen and perfect-ink families. It cannot replace natural media such as pencil or watercolor, or compound brushes (survey E10). lazy-brush can be toggled per mouse, pen or touch.",
       ),
     },
     evidence: [
@@ -336,7 +336,7 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
   {
     id: "hokusai",
     name: "Hokusai",
-    status: "live",
+    status: "experimental",
     link: { title: "Hokusai (reearth)", url: "https://github.com/reearth/hokusai" },
     asOf: AS_OF,
     cells: {
@@ -367,14 +367,14 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "오래 쓰여 온 오픈소스 브러시 엔진(MyPaint). 편집기의 기본 그리기 엔진이 아니라, Hokusai 결과를 견주는 '기준선'(parity·golden)과 브러시 스튜디오의 엔진 시험 패널에서만 쓴다.",
-        "A long-established open-source brush engine (MyPaint). It is not the editor's default drawing engine; it is the baseline (parity and golden images) for judging Hokusai output and runs in the Brush Studio engine-test panel.",
+        "오래 쓰여 온 오픈소스 브러시 엔진(MyPaint). 펜의 기본 그리기 엔진은 아니다. Hokusai 결과를 견주는 '기준선'(parity·golden)이자, 인스펙터의 '선택 획 네이티브 변환'에서 고르는 기본 엔진(결과가 문서에 들어간다)이다.",
+        "A long-established open-source brush engine (MyPaint). It is not the pen's default drawing engine; it is the baseline (parity and golden images) for judging Hokusai output and the default engine of the Inspector's native stroke conversion, whose result goes into the document.",
       ),
       license: same("ISC"),
-      mode: t("WASM · 비교·시험 전용", "WASM · comparison and test only"),
+      mode: t("WASM · 비교 기준선·선택 획 변환", "WASM · comparison baseline and stroke conversion"),
       note: t(
-        "v1.6.1을 직접 컴파일한 약 83KB wasm이다. 렌더러 역할 원장은 '비교 전용'으로 분류하고 호출부 0건이라 적지만, 엔진 시험 패널의 Worker가 loadLibMypaint를 기본 선택값으로 불러 그 비고와 어긋난다.",
-        "A wasm of about 83 KB compiled directly from v1.6.1. The renderer role ledger classes it as comparison-only and notes zero call sites, but the engine-test panel's Worker calls loadLibMypaint for its default choice, which contradicts that note.",
+        "v1.6.1을 직접 컴파일한 약 83KB wasm이다. 렌더러 역할 원장은 '비교 전용'으로 분류하고 호출부 0건이라 적지만, 선택 획 변환 Worker가 loadLibMypaint를 기본 선택값으로 불러 그 비고와 어긋난다.",
+        "A wasm of about 83 KB compiled directly from v1.6.1. The renderer role ledger classes it as comparison-only and notes zero call sites, but the stroke-conversion Worker calls loadLibMypaint for its default choice, which contradicts that note.",
       ),
     },
     evidence: [
@@ -399,8 +399,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
       license: same("Apache-2.0 OR MIT · MIT"),
       mode: t("Rust·C++ → WASM · 지연 로드", "Rust and C++ to WASM · lazy"),
       note: t(
-        "Vello는 알파 단계라 '명시 선택형' provider이고 /studio의 문서 표시는 Skia WebGL2가 맡는다. Velato(Lottie)는 제품 호출부 0건인 lab이다. ThorVG wasm은 npm 바이트를 그대로 복사해 INTEGRITY.sha256로 고정했다.",
-        "Vello is alpha-stage, so it is an explicit-choice provider, and Skia WebGL2 owns document display in /studio. Velato (Lottie) is a lab with zero product call sites. The ThorVG wasm is a byte copy of the npm package, pinned by INTEGRITY.sha256.",
+        "Vello는 알파 단계라 '명시 선택형' provider이고 /studio의 문서 표시는 Skia WebGL2가 맡는다. SVG 미리보기의 Vello 쪽은 CPU판(vello_cpu)이 실제 픽셀을 그린다. GPU판과 Velato(Lottie)·ThorVG의 Lottie는 제품 호출부 0건이다. ThorVG wasm은 npm 바이트를 그대로 복사해 INTEGRITY.sha256로 고정했다.",
+        "Vello is alpha-stage, so it is an explicit-choice provider, and Skia WebGL2 owns document display in /studio. In the SVG preview the Vello side draws real pixels through the CPU build (vello_cpu). The GPU build, Velato (Lottie) and ThorVG's Lottie have zero product call sites. The ThorVG wasm is a byte copy of the npm package, pinned by INTEGRITY.sha256.",
       ),
     },
     evidence: [
@@ -497,8 +497,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "벡터 도형을 계산하는 수학 도구 모음: 경로 합치기·평탄화(Paper.js), 도형 겹침 연산(polygon-clipping), 손으로 그린 듯한 도형(Rough.js). 곡선 맞춤·단순화용 bezier-js·fit-curve·simplify-js는 코드와 테스트까지만 있고 제품 화면에는 연결하지 않았다.",
-        "A kit of vector math: merging and flattening paths (Paper.js), shape overlap operations (polygon-clipping) and hand-drawn-looking shapes (Rough.js). bezier-js, fit-curve and simplify-js, meant for curve fitting and simplification, exist in code and tests only and are not wired to a product screen.",
+        "벡터 도형을 계산하는 수학 도구 모음: 경로 정리·평탄화(Paper.js), 말풍선 등 다각형 합치기(polygon-clipping). 도형 합치기·빼기 자체는 CanvasKit PathOps(Worker)가 맡는다, 손으로 그린 듯한 도형(Rough.js). 곡선 맞춤용 bezier-js·fit-curve·simplify-js는 코드와 테스트뿐 제품 화면에 연결하지 않았다.",
+        "A kit of vector math: tidying and flattening paths (Paper.js), polygon merging for speech bubbles and the like (polygon-clipping); merging and subtracting shapes themselves is done by CanvasKit PathOps (in a Worker) and hand-drawn-looking shapes (Rough.js). bezier-js, fit-curve and simplify-js, meant for curve fitting and simplification, exist in code and tests only and are not wired to a product screen.",
       ),
       license: same("MIT"),
       mode: t("런타임 · 지연 로드", "Runtime · lazy"),
@@ -635,8 +635,8 @@ const THREE_D_ROWS: readonly EngineeringMapRow[] = [
       license: same("Apache-2.0 · MIT"),
       mode: t("WASM · Worker", "WASM · Worker"),
       note: t(
-        "manifold-3d는 pnpm 패치로 new Function 2곳을 정적 코드로 바꿔(패치 전 2건, 후 0건) unsafe-eval 없이 돈다. 운영 CSP가 허용하는 것은 wasm-unsafe-eval뿐이기 때문이다.",
-        "A pnpm patch replaces two new Function sites in manifold-3d with static code (2 before, 0 after), so it runs without unsafe-eval. The production CSP allows only wasm-unsafe-eval.",
+        "Worker는 에셋 도구에서만 쓰고 하이브리드 DCC 불리언은 화면 스레드에서 돈다. manifold-3d는 pnpm 패치로 new Function 2곳을 정적 코드로 바꿔(패치 전 2건, 후 0건) unsafe-eval 없이 돈다. 운영 CSP가 허용하는 것은 wasm-unsafe-eval뿐이기 때문이다.",
+        "Workers are used only by the asset tools; the Hybrid DCC boolean runs on the main thread. A pnpm patch replaces two new Function sites in manifold-3d with static code (2 before, 0 after), so it runs without unsafe-eval. The production CSP allows only wasm-unsafe-eval.",
       ),
     },
     evidence: [
@@ -654,8 +654,8 @@ const THREE_D_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "3D 속 움직임 계산: 충돌·중력 같은 물리(Rapier), 걸어 다닐 수 있는 길 만들기(recast-navigation), 관절을 자연스럽게 구부려 자세를 맞추는 IK 풀이(closed-chain-ik).",
-        "Motion math in 3D: physics such as collisions and gravity (Rapier), generating walkable paths (recast-navigation) and IK solving that bends joints naturally to reach a pose (closed-chain-ik).",
+        "3D 속 움직임 계산: 충돌·중력 같은 물리(Rapier), 걸어 다닐 수 있는 길 만들기(recast-navigation), 리깅된 GLB의 관절 체인을 목표점에 맞추는 IK 풀이(closed-chain-ik, 에셋 도구용이며 VRM 손발 IK는 아님).",
+        "Motion math in 3D: physics such as collisions and gravity (Rapier), generating walkable paths (recast-navigation) and IK solving that fits a rigged GLB's joint chain to a target (closed-chain-ik; an asset-tool feature, not VRM hand and foot IK).",
       ),
       license: same("Apache-2.0 · MIT"),
       mode: t("WASM · Worker", "WASM · Worker"),

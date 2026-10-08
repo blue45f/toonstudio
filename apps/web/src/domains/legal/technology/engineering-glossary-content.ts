@@ -164,8 +164,8 @@ const BASE_GLOSSARY: readonly GlossaryTerm[] = [
       "Not one brush but a brush factory — feed the same engine a different numeric recipe (.myb) and you get a different brush.",
     ),
     inToonstudio: t(
-      "libmypaint v1.6.1을 WASM으로 컴파일해 두었지만, 렌더러 역할 원장에서는 비교 전용 reference이고 제품 fallback이 아닙니다(ADR-0011). .myb 문서를 파싱해 주입(injection) 방식으로만 세팅을 넣고, 문서가 가진 값은 하나도 조용히 버리지 않는다는 '정직 계약'을 벤치마크 하니스가 검사합니다.",
-      "Compiled to WASM as libmypaint v1.6.1, but it is a comparison-only reference in the renderer role ledger and not a product fallback (ADR-0011). Settings go in only through injection from parsed .myb documents, and the benchmark harness checks the honesty contract: no document value is silently dropped.",
+      "libmypaint v1.6.1을 WASM으로 컴파일해 두었고, 렌더러 역할 원장에서는 reference(비교 기준선)이며 제품 fallback이 아닙니다. 다만 Studio 인스펙터의 '선택 획 네이티브 변환'에서는 기본 엔진으로 불려 그 결과가 문서에 들어갑니다(ADR-0011). .myb 문서를 파싱해 주입(injection) 방식으로만 세팅을 넣고, 문서가 가진 값은 하나도 조용히 버리지 않는다는 '정직 계약'을 벤치마크 하니스가 검사합니다.",
+      "Compiled to WASM as libmypaint v1.6.1, and in the renderer role ledger it is a reference (comparison baseline), not a product fallback. The Studio Inspector's native stroke conversion does call it as the default engine, though, and its result goes into the document (ADR-0011). Settings go in only through injection from parsed .myb documents, and the benchmark harness checks the honesty contract: no document value is silently dropped.",
     ),
     chapters: ["brush-engine"],
   },

@@ -27,8 +27,8 @@ export const LIBRARY_AREA_AI_ON_DEVICE: LibraryGuideArea = {
     {
       title: t("기기에서 끝낼 수 있는 일은 기기에서", "Do on the device what the device can finish"),
       body: t(
-        "그림 한 장을 받아 한 장을 돌려주는 작은 모델(채색·배경 제거·선 추출·업스케일·애니풍)만 기기에서 돌립니다. 서버 GPU 비용과 업로드가 사라지고, 큰 언어·확산 모델은 클라우드 경로(내 키·무료 공급자)에 맡깁니다.",
-        "Only small models that take one image and return one (colorizing, cutout, line extraction, upscaling, anime style) run on the device. That removes server GPU cost and uploads, while large language and diffusion models go to cloud routes (your own key or free providers).",
+        "그림 한 장을 받아 한 장을 돌려주는 작은 모델(채색·배경 제거·선 추출·업스케일·애니풍)과 웹캠 자세·윤곽선 같은 가벼운 일은 기기에서 돌립니다. 서버 GPU 비용과 업로드가 사라지고, 큰 언어·확산 모델은 클라우드 경로(내 키·무료 공급자)에 맡깁니다.",
+        "Small models that take one image and return one (colorizing, cutout, line extraction, upscaling, anime style) and light jobs such as webcam pose or contour tracing run on the device. That removes server GPU cost and uploads, while large language and diffusion models go to cloud routes (your own key or free providers).",
       ),
     },
     {
@@ -62,12 +62,12 @@ export const LIBRARY_AREA_AI_ON_DEVICE: LibraryGuideArea = {
       "Small image models finish on the device, while large text models pass an allowlist and a budget on the way to free providers.",
     ),
     alt: t(
-      "AI 요청이 먼저 기기에서 끝낼 수 있는지 가려집니다. 가능하면 ONNX Runtime Web, MediaPipe, OpenCV.js, Transformers.js 중 하나가 이 기기에서 계산해 서버 비용이 들지 않습니다. 글이나 대사 같은 요청은 무료 AI 공급자 길로 가며, 허용 목록과 하루 예산을 거치고, 유료 키는 사용자가 허락한 뒤에만 이 길에 들어옵니다.",
-      "An AI request is first sorted by whether the device can finish it. If so, one of ONNX Runtime Web, MediaPipe, OpenCV.js or Transformers.js computes it on this device with no server cost. Requests such as text or dialogue take the free-provider route through an allowlist and a daily budget, and a paid key joins this route only after the user allows it.",
+      "AI 기능마다 정해진 길로 갑니다. 사용자가 기기 안 패널(채색·배경 제거 등)을 고르면 ONNX Runtime Web, MediaPipe, OpenCV.js, Transformers.js 중 하나가 이 기기에서 계산해 서버 비용이 들지 않습니다(채색은 클라우드 경로가 있으면 그쪽이 우선). 글이나 대사 같은 요청은 무료 AI 공급자 길로 가며, 허용 목록과 하루 예산을 거치고, 유료 키는 사용자가 허락한 뒤에만 이 길에 들어옵니다.",
+      "Each AI feature goes down a fixed route. When the user picks an on-device panel (colorizing, cutout and so on), ONNX Runtime Web, MediaPipe, OpenCV.js or Transformers.js computes on this device with no server cost (colorizing prefers a cloud route when one is available). Requests such as text or dialogue take the free-provider route through an allowlist and a daily budget, and a paid key joins this route only after the user allows it.",
     ),
     nodes: [
       { id: "request", label: t("AI 기능 요청", "AI request"), sub: t("채색·번역·대사 도움 등", "Colorize, translate, dialogue"), tone: "neutral", shape: "pill", at: [0, 2] },
-      { id: "decide", label: t("기기 안에서?", "On-device?"), tone: "warn", shape: "diamond", at: [1, 2] },
+      { id: "decide", label: t("기기 안 기능?", "On-device feature?"), tone: "warn", shape: "diamond", at: [1, 2] },
       { id: "onnx", label: t("ONNX Runtime", "ONNX Runtime"), sub: t("채색·배경·선·업스케일", "Color, cutout, upscale"), tone: "ai", at: [2, 0] },
       { id: "mediapipe", label: t("MediaPipe", "MediaPipe"), sub: t("웹캠 자세·배경 분리", "Webcam pose, cutout"), tone: "ai", at: [2, 1] },
       { id: "opencv", label: t("OpenCV.js", "OpenCV.js"), sub: t("윤곽선 → 벡터 변환", "Contours to vectors"), tone: "ai", at: [2, 2] },
@@ -104,12 +104,12 @@ export const LIBRARY_AREA_AI_ON_DEVICE: LibraryGuideArea = {
         "Handles colorizing, cutout, line extraction from photos, 4x upscaling and anime-style conversion with six on-device models. The drawing never goes to a server.",
       ),
       why: t(
-        "그림 한 장을 받아 한 장을 돌려주는 작은 모델은 기기에서 돌려 서버 GPU 비용과 업로드를 없앴습니다. 모델은 라이선스를 먼저 확인해 MIT·BSD-3-Clause·Apache-2.0만 골랐고, 크기·속도·품질 한계는 받아들여도 이 기준은 양보하지 않았습니다.",
-        "Small models that take one picture and return one run on the device, which removes server GPU cost and uploads. Each model's license was checked first and only MIT, BSD-3-Clause and Apache-2.0 were chosen; size, speed and quality limits are accepted, this bar is not.",
+        "그림 한 장을 받아 한 장을 돌려주는 작은 모델은 기기에서 돌려 서버 GPU 비용과 업로드를 없앴습니다. 배포본 라이선스가 MIT·BSD-3-Clause·Apache-2.0인 모델을 골랐고(학습 데이터 출처는 모델별 LICENSE.md에 기록), 크기·속도·품질 한계는 받아들였습니다.",
+        "Small models that take one picture and return one run on the device, which removes server GPU cost and uploads. We chose models whose published license is MIT, BSD-3-Clause or Apache-2.0 (training-data provenance is recorded per model in its LICENSE.md); size, speed and quality limits are accepted.",
       ),
       alternatives: t(
-        "서버 GPU 추론은 빠르고 큰 모델도 쓸 수 있지만 그림이 서버로 가고 GPU 비용이 운영자에게 남습니다. 그래서 큰 언어·확산 모델은 클라우드 경로(내 키)에 맡깁니다.",
-        "Server GPU inference is fast and handles big models, but the drawing goes to a server and the GPU bill stays with the operator. So large language and diffusion models are left to the cloud route (your own key).",
+        "서버 GPU 추론은 그림이 서버로 가고 GPU 비용이 운영자에게 남습니다(속도는 이 저장소에서 비교하지 않았습니다). 그래서 큰 언어·확산 모델은 클라우드 경로(내 키)에 맡깁니다.",
+        "Server GPU inference sends the drawing to a server and leaves the GPU bill with the operator (speed was not compared in this repository). So large language and diffusion models are left to the cloud route (your own key).",
       ),
       cost: t(
         "첫 사용 때 런타임 WASM 약 26.8MB와 모델(채색은 79.3MB)을 내려받습니다. WebGPU가 안 되면 느린 WASM(CPU)으로 넘어가고, 채색은 512×512 고정에 색이 옅어 클라우드 채색이 있으면 그쪽이 우선입니다.",

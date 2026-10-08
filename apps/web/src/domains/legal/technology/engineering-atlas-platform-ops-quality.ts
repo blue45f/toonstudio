@@ -101,16 +101,16 @@ const MODULE_BOUNDARY_RATCHET: EngineeringAtlasEntry = {
     {
       feature: t("웹 도메인 응집 (shared → domains, 도메인 간 깊은 import)", "Web domain cohesion (shared to domains, deep cross-domain imports)"),
       role: t(
-        "공유 코드가 특정 도메인을 거꾸로 가져오거나 한 도메인이 다른 도메인의 속을 깊이 들여다보는 일을 새로 늘리지 못합니다. 공개 진입점(public*)과 integrations 경로는 허용합니다.",
-        "Shared code can no longer newly pull from a specific domain, and one domain cannot newly reach deep into another. Public entry points (public*) and integrations paths are allowed.",
+        "공유 코드가 도메인을 거꾸로 가져오거나(기존 25건은 상한에 동결) 한 도메인이 다른 도메인의 속을 깊이 들여다보는 일을 새로 늘리지 못합니다. 플랫폼 계층은 ESLint가 도메인 import를 막고 기존 6개 파일만 예외입니다.",
+        "Shared code cannot add new imports of domains (the existing 25 are frozen at a ceiling), and one domain cannot newly reach deep into another. ESLint blocks the platform layer from importing domains, with 6 existing files as exceptions.",
       ),
       paths: ["apps/web/src/domains", "eslint.config.mjs"],
     },
     {
       feature: t("같은 발상의 다른 래칫 (폴더별 파일 수 · 경고 수 · 파일 크기)", "Sibling ratchets (files per folder, warnings, file size)"),
       role: t(
-        "소스 레이아웃 래칫은 폴더별 파일 수와 린트 경고 상한을, 파일 크기 테스트는 신규 파일 1,000줄과 기존 거대 파일 327개의 기록 줄 수를 천장으로 삼습니다.",
-        "The source-layout ratchet caps files per folder and lint warnings, and the file-size test caps new files at 1,000 lines and 327 existing giants at their recorded line counts.",
+        "소스 레이아웃 래칫은 폴더별 파일 수와 린트 경고 상한을, 파일 크기 테스트(전체 시험·로컬 pnpm test, core 필수 대상 아님)는 신규 파일 1,000줄과 기존 거대 파일 327개의 기록 줄 수를 천장으로 삼습니다.",
+        "The source-layout ratchet caps files per folder and lint warnings, and the file-size test (full tests and local pnpm test, not required by core) caps new files at 1,000 lines and 327 existing giants at their recorded line counts.",
       ),
       paths: [
         "config/architecture-source-ratchet.json",

@@ -334,8 +334,8 @@ const MANUAL_SHA_RELEASE_GATE: EngineeringAtlasEntry = {
   ),
   background: [
     t(
-      "코드를 합치는 일(머지)과 사용자에게 내보내는 일(배포)을 한 버튼에 묶으면, 검토가 덜 끝난 코드나 유료 자원을 켜는 설정이 한꺼번에 나갈 수 있습니다. ToonStudio는 둘을 떼어 놓았습니다. Render 서비스는 autoDeployTrigger를 끈 상태라 push만으로는 운영이 바뀌지 않고, Cloudflare 정적 웹은 사람이 승인한 커밋 번호(SHA, 코드 버전의 40자리 지문) 하나만 배포 스크립트가 받아 줍니다.",
-      "Tying merging code (merge) and shipping it to users (release) to one button can send half-reviewed code or a paid-resource setting out together. ToonStudio keeps them apart. The Render services have autoDeployTrigger turned off, so a push alone changes nothing in production, and the Cloudflare static site accepts only one human-approved commit number (a SHA, a 40-character fingerprint of a code version) in the release script.",
+      "코드를 합치는 일(머지)과 사용자에게 내보내는 일(배포)을 한 버튼에 묶으면, 검토가 덜 끝난 코드나 유료 자원을 켜는 설정이 한꺼번에 나갈 수 있습니다. ToonStudio는 둘을 떼어 놓았습니다. Render 서비스는 저장소 설정(render.yaml)에서 autoDeployTrigger를 끈 상태라 push만으로는 운영이 바뀌지 않고, Cloudflare 정적 웹은 사람이 승인한 커밋 번호(SHA, 코드 버전의 40자리 지문) 하나만 배포 스크립트가 받아 줍니다.",
+      "Tying merging code (merge) and shipping it to users (release) to one button can send half-reviewed code or a paid-resource setting out together. ToonStudio keeps them apart. The Render services have autoDeployTrigger turned off in the repository config (render.yaml), so a push alone changes nothing in production, and the Cloudflare static site accepts only one human-approved commit number (a SHA, a 40-character fingerprint of a code version) in the release script.",
     ),
     t(
       "프로덕션 모드의 배포 스크립트는 다섯 문턱을 모두 넘어야 wrangler 배포까지 갑니다. ① 승인 문구 환경변수가 정해진 값인가 ② 승인 SHA가 소문자 40자리인가 ③ 현재 브랜치가 main인가 ④ 작업 폴더에 커밋되지 않은 변경이 없는가 ⑤ 지금 HEAD가 승인 SHA와 정확히 같은가. 원격에 쓰지 않는 dry-run 모드는 번들과 설정만 검사합니다.",
@@ -398,8 +398,8 @@ const MANUAL_SHA_RELEASE_GATE: EngineeringAtlasEntry = {
     {
       feature: t("Core API 수동 릴리스 (Render)", "Manual Core API release (Render)"),
       role: t(
-        "render.yaml에서 autoDeployTrigger를 끄고 플랫폼 헬스체크를 /api/health/live로 고정해 push가 곧 권위 전환이 되지 않게 합니다.",
-        "render.yaml turns autoDeployTrigger off and pins the platform health check to /api/health/live, so a push never switches authority.",
+        "render.yaml(저장소 설정 기준)에서 autoDeployTrigger를 끄고 플랫폼 헬스체크를 /api/health/live로 고정해 push가 곧 권위 전환이 되지 않게 합니다.",
+        "render.yaml (repository config) turns autoDeployTrigger off and pins the platform health check to /api/health/live, so a push never switches authority.",
       ),
       paths: ["render.yaml", "AGENTS.md"],
     },

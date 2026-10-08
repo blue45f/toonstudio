@@ -35,7 +35,7 @@ const WEB_LIMITS = sourcedTable(
     [
       "worker-envelope-64-workers",
       t("무거운 일이 화면(메인 스레드)을 멈춤", "Heavy work freezes the main thread"),
-      t("워커 64개가 공통 봉투 규약을 따름 — 요청 번호·취소·소유권 이전·제한 시간", "64 Workers share one envelope contract — request id, cancel, ownership transfer, time limit"),
+      t("워커 64개 대부분이 공통 봉투 규약을 따름(일부는 미연결) — 요청 번호·취소·소유권 이전·제한 시간", "Most of the 64 Workers follow one envelope contract (a few are not wired) — request id, cancel, ownership transfer, time limit"),
       statusCell("live"),
     ],
     [

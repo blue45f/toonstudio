@@ -19,8 +19,8 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
     "One library, three.js, owns the scene, characters move on the VRM standard, and specialist math is loaded separately only when needed.",
   ),
   easy: t(
-    "촬영장과 같습니다. 감독(three.js)은 한 명이고, 배우는 같은 이름표(VRM의 표준 뼈 이름)를 달고 있어 어느 배우에게든 같은 연기 지시가 통합니다. 소품 가공이나 정밀 도면은 필요할 때만 전문 업체에 맡깁니다.",
-    "It is like a film set. There is one director (three.js), every actor wears the same name tags (VRM's standard bone names) so the same direction works for anyone, and prop workshops or precise drafting are outsourced to specialists only when needed.",
+    "촬영장과 같습니다. 감독(three.js)은 한 명이고, 배우는 같은 이름표(VRM의 표준 뼈 이름)를 달고 있어 이름표를 단 배우라면 누구에게든 같은 연기 지시가 통합니다. 소품 가공이나 정밀 도면은 필요할 때만 전문 업체에 맡깁니다.",
+    "It is like a film set. There is one director (three.js), every actor wears the same name tags (VRM's standard bone names) so the same direction works for any actor who wears them, and prop workshops or precise drafting are outsourced to specialists only when needed.",
   ),
   designWhy: [
     {
@@ -40,15 +40,15 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
     {
       title: t("엔진은 폴백이 아니라 선택", "Engines are chosen, not fallen back to"),
       body: t(
-        "WebGPU냐 WebGL2냐는 사용자가 고르고, 안 되면 이유를 보여 줍니다. 같은 VRM이 두 엔진에서 색이 최대 169/255 달랐던 실측 뒤, 캐릭터가 있는 장면은 WebGL2로 고정했습니다.",
-        "The user picks WebGPU or WebGL2, and if it cannot run the screen says why. After the same VRM measured up to 169/255 apart in color on the two engines, scenes with a character were fixed to WebGL2.",
+        "WebGPU냐 WebGL2냐는 사용자가 고르고, 안 되면 이유를 보여 줍니다. 같은 VRM이 두 엔진에서 색이 최대 169/255(번들 모델 1개, 2026-08-29) 달랐던 실측 뒤, 캐릭터가 있는 장면은 WebGL2로 고정했습니다.",
+        "The user picks WebGPU or WebGL2, and if it cannot run the screen says why. After the same VRM measured up to 169/255 apart in color on the two engines (one bundled model, 2026-08-29), scenes with a character were fixed to WebGL2.",
       ),
     },
     {
       title: t("전문 계산은 필요할 때만, Worker에서", "Specialist math on demand, in Workers"),
       body: t(
-        "Manifold·OpenCascade·glTF Transform 같은 계산은 사용자가 동작한 뒤에 불러와 Worker와 WASM에서 돌려 화면이 멈추지 않게 합니다. 운영 CSP(unsafe-eval 금지)에 맞추려 패치 3개를 얹었습니다.",
-        "Manifold, OpenCascade and glTF Transform are loaded after the user acts and run in Workers and WASM so the screen never freezes. Three patches adapt them to the production CSP, which forbids unsafe-eval.",
+        "Manifold·OpenCascade·glTF Transform 같은 계산은 사용자가 동작한 뒤에 불러오고, 에셋 도구에서는 Worker와 WASM으로 돌려 화면 멈춤을 줄입니다. 운영 CSP(unsafe-eval 금지)에 맞추려 Manifold·glTF Transform·ktx2-encoder에 패치 3개를 얹었습니다. OpenCascade는 그대로 씁니다.",
+        "Manifold, OpenCascade and glTF Transform are loaded after the user acts, and the asset tools run them in Workers and WASM to reduce screen freezes. The production CSP forbids unsafe-eval. Three patches were applied to Manifold, glTF Transform and ktx2-encoder; OpenCascade is used unmodified.",
       ),
     },
   ],
@@ -61,8 +61,8 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
       "The three family owns the scene and characters; computation, model processing and specialist engines load separately only when needed.",
     ),
     alt: t(
-      "위에서 아래로 다섯 층입니다. 첫째는 three.js와 R3F로 장면을 그리는 층이고, 둘째는 VRM 표준 뼈 이름 위에서 three-vrm이 포즈와 표정을 맡는 캐릭터 층입니다. 셋째는 Rapier, recast-navigation, Manifold가 움직임과 형태를 계산하는 층, 넷째는 glTF Transform이 모델 파일을 가공하는 층입니다. 맨 아래는 Babylon.js와 OpenCascade.js처럼 따로 격리한 전문 엔진입니다. 위 두 층은 장면의 주인이고 아래 세 층은 필요할 때만 불러옵니다.",
-      "Five layers from top to bottom. First is the layer that draws the scene with three.js and R3F; second is the character layer where three-vrm handles poses and expressions on VRM's standard bone names. Third is where Rapier, recast-navigation and Manifold compute motion and shape; fourth is where glTF Transform processes model files. At the bottom sit specialist engines kept apart, such as Babylon.js and OpenCascade.js. The top two layers own the scene, and the bottom three load only when needed.",
+      "위에서 아래로 다섯 층입니다. 첫째는 three.js와 R3F로 장면을 그리는 층이고, 둘째는 VRM 표준 뼈 이름 위에서 three-vrm이 포즈와 표정을 맡는 캐릭터 층입니다. 셋째는 Rapier, recast-navigation, closed-chain-ik, Manifold가 움직임과 형태를 계산하는 층, 넷째는 glTF Transform이 모델 파일을 가공하는 층입니다. 맨 아래는 Babylon.js와 OpenCascade.js처럼 따로 격리한 전문 엔진입니다. 위 두 층은 장면의 주인이고 아래 세 층은 필요할 때만 불러옵니다.",
+      "Five layers from top to bottom. First is the layer that draws the scene with three.js and R3F; second is the character layer where three-vrm handles poses and expressions on VRM's standard bone names. Third is where Rapier, recast-navigation, closed-chain-ik and Manifold compute motion and shape; fourth is where glTF Transform processes model files. At the bottom sit specialist engines kept apart, such as Babylon.js and OpenCascade.js. The top two layers own the scene, and the bottom three load only when needed.",
     ),
     layers: [
       {
@@ -75,16 +75,16 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
       {
         id: "character",
         label: t("캐릭터 층 (VRM)", "Character layer (VRM)"),
-        sub: t("표준 뼈 이름 위에서 포즈·IK·웹캠이 함께 돕니다", "Poses, IK and webcam tracking share the standard bone names"),
+        sub: t("표준 뼈 이름 위에서 포즈·손발 IK(자체 솔버)·웹캠이 함께 돕니다", "Poses, own-solver IK and webcam share the standard bone names"),
         tone: "local",
-        chips: ["VRM", "three-vrm", "MediaPipe", "closed-chain-ik"],
+        chips: ["VRM", "three-vrm", "MediaPipe"],
       },
       {
         id: "compute",
         label: t("움직임·형태 계산", "Motion and shape math"),
         sub: t("Worker와 WASM에서 필요할 때만 불러옵니다", "Loaded only when needed, in Workers and WASM"),
         tone: "local",
-        chips: ["Rapier", "recast-navigation", "Manifold", "three-bvh-csg"],
+        chips: ["Rapier", "recast-navigation", "closed-chain-ik", "Manifold", "three-bvh-csg"],
       },
       {
         id: "assets",
@@ -164,7 +164,7 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
       paths: [
         `${CREATOR}/vrm/StudioVrmActor.tsx`,
         `${CREATOR}/bg3d/studio-bg3d-shared-vrm-runtime.ts`,
-        `${CREATOR}/vrm/studio-vrm-pose-solver.ts`,
+        `${CREATOR}/vrm/StudioVrmPoserViewport.tsx`,
       ],
       license: "MIT",
       status: "live",
@@ -181,8 +181,8 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
         "Reads the bundled characters and exports new ones as VRM 1.0. The pose tool, IK and webcam tracking all use the same bone names.",
       ),
       why: t(
-        "뼈 이름이 표준이라 한 번 만든 포즈를 어느 캐릭터에든 입힐 수 있습니다. 55개 이름 허용 목록으로 낯선 파일이 엉뚱한 노드를 건드리는 일도 막습니다.",
-        "Because bone names are standard, a pose made once fits any character, and an allowlist of 55 names stops an unknown file from touching unrelated nodes.",
+        "뼈 이름이 표준이라 한 번 만든 포즈를 필수 뼈 15개를 갖춘 어느 VRM 캐릭터에든 입힐 수 있습니다. 55개 이름 허용 목록으로 낯선 파일이 엉뚱한 노드를 건드리는 일도 막습니다.",
+        "Because bone names are standard, a pose made once fits any VRM character that has the 15 required bones, and an allowlist of 55 names stops an unknown file from touching unrelated nodes.",
       ),
       alternatives: t(
         "모델마다 뼈 이름을 번역하거나 특정 엔진 전용 리그를 쓰면 캐릭터가 늘수록 번역표도 늘어납니다.",
@@ -214,12 +214,12 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
         "Builds the 3D viewport as React components and cuts GPU waste with frame loops (always, demand, never) and a resolution scale.",
       ),
       why: t(
-        "화면 전체가 React라 3D 뷰포트도 같은 방식으로 상태와 이어집니다. 정지 구도는 demand 루프로 바뀔 때만 그려 전기와 배터리를 아낍니다.",
-        "The whole UI is React, so the 3D viewport connects to state the same way. A still scene uses the demand loop and draws only on change, saving power and battery.",
+        "화면 전체가 React라 3D 뷰포트도 같은 방식으로 상태와 이어집니다. 정지 구도는 demand 루프로 바뀔 때만 그려, 같은 자세를 계속 다시 그리다 느린 GPU 큐가 밀리는 일을 줄입니다.",
+        "The whole UI is React, so the 3D viewport connects to state the same way. A still scene uses the demand loop and draws only on change, so a slow GPU queue is not backed up by redrawing an unchanged pose.",
       ),
       cost: t(
-        "R3F 9.6.1이 폐기된 THREE.Clock을 써서 pnpm 패치로 Timer 기반으로 바꿨습니다. Hybrid DCC 뷰포트는 별도 적응 정책을 써서 두 뷰포트 정책이 둘로 나뉩니다.",
-        "R3F 9.6.1 uses the deprecated THREE.Clock, so a pnpm patch moved it to a Timer. The Hybrid DCC viewport adapts by its own policy, so two viewports follow two policies.",
+        "R3F 9.6.1이 폐기된 THREE.Clock을 써서 pnpm 패치로 Timer 기반으로 바꾸고 정리 때의 'Context Lost' 경고도 막았습니다. Hybrid DCC 뷰포트는 별도 적응 정책을 씁니다.",
+        "R3F 9.6.1 uses the deprecated THREE.Clock, so a pnpm patch moved it to a Timer and also silences the planned-teardown Context Lost warning. The Hybrid DCC viewport adapts by its own policy.",
       ),
       paths: [
         `${CREATOR}/bg3d/StudioBg3dEditorViewport.tsx`,
@@ -242,12 +242,12 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
         "Used only for specialist passes that extract normal maps (surface direction) and artifacts for the 3D background; in the experimental character-lab app it is the main engine.",
       ),
       why: t(
-        "PBR·IBL·그림자·후처리·glTF 내보내기가 한 패키지(Apache-2.0)에 있어 캐릭터 실험의 주 엔진으로 골랐습니다(ADR-0026). 제품에서는 장면 소유자인 three와 겹치지 않게 전문 작업에만 씁니다.",
-        "PBR, IBL, shadows, post-processing and glTF export come in one Apache-2.0 package, so it was chosen as the main engine for the character experiment (ADR-0026). In the product it stays on specialist jobs so it never overlaps three, the scene owner.",
+        "PBR·IBL·그림자·후처리는 core에, glTF 내보내기는 serializers 패키지에 있어(모두 Apache-2.0) 캐릭터 실험의 주 엔진으로 골랐습니다(ADR-0026). 제품에서는 장면 소유자인 three와 겹치지 않게 전문 작업에만 씁니다.",
+        "PBR, IBL, shadows and post-processing live in core and glTF export in the serializers package (all Apache-2.0), so it was chosen as the main engine for the character experiment (ADR-0026). In the product it stays on specialist jobs so it never overlaps three, the scene owner.",
       ),
       alternatives: t(
-        "Three WebGPURenderer(실험적)·PlayCanvas·Bevy 등은 문서 비교 전용이거나 기각됐습니다(ADR-0026 대안 표).",
-        "Three's WebGPURenderer (experimental), PlayCanvas and Bevy were kept as document comparisons or rejected (ADR-0026 alternatives table).",
+        "character-lab 엔진 비교에서 Three WebGPURenderer(실험적)·PlayCanvas·Bevy 등은 문서 비교 전용이거나 기각됐습니다(ADR-0026). 제품 BG3D에서 Three WebGPU는 사용자가 고르는 엔진입니다.",
+        "In the character-lab engine comparison, Three's WebGPURenderer (experimental), PlayCanvas and Bevy were kept as document comparisons or rejected (ADR-0026). In the product's BG3D editor, Three WebGPU is an engine the user can choose.",
       ),
       cost: t(
         "번들 검사가 Babylon이 앱 진입점·Studio 경로에 정적으로 들어오는 것을 막습니다. ADR-0026은 아직 Proposed이고 실험 앱은 운영 배포 대상이 아닙니다.",
@@ -277,8 +277,8 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
         "Bringing odd 3D files in as one GLB and exporting them light needs structure editing, compression, LOD and texture compression, and these permissive (MIT) tools offer them as one flow.",
       ),
       cost: t(
-        "운영 CSP에 unsafe-eval이 없어 pnpm 패치 2개(glTF Transform의 Function() 이미지 커널 지연, ktx2-encoder의 new Function 제거)를 적용했습니다. 실측은 합성 샘플 기준입니다.",
-        "The production CSP has no unsafe-eval, so two pnpm patches defer glTF Transform's Function()-based image kernel and remove ktx2-encoder's new Function calls. Measurements use synthetic samples.",
+        "운영 CSP에 unsafe-eval이 없어 pnpm 패치 2개(glTF Transform의 Function() 이미지 커널 지연, ktx2-encoder의 new Function 제거와 mip 옵션 추가)를 적용했습니다. 실측은 합성 샘플 기준입니다.",
+        "The production CSP has no unsafe-eval, so two pnpm patches defer glTF Transform's Function()-based image kernel and remove ktx2-encoder's new Function calls while adding mip options. Measurements use synthetic samples.",
       ),
       paths: [
         `${CREATOR}/scene3d/specialists/specialist-assets.ts`,
@@ -297,16 +297,16 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
       package: "manifold-3d",
       oneLine: t("3D 도형을 합치고 빼고 겹친 부분만 남기는 불리언 연산 부품", "Parts that merge, subtract or intersect 3D shapes (boolean operations)"),
       usedFor: t(
-        "빠른 미리보기는 three-bvh-csg로, 구멍 없이 단단한 결과가 필요하면 Manifold(WASM, Worker)로 계산합니다.",
-        "A fast preview uses three-bvh-csg, and when a watertight solid result is needed, Manifold (WASM in a Worker) does the calculation.",
+        "빠른 미리보기는 three-bvh-csg로, 구멍 없이 단단한 결과가 필요하면 Manifold(WASM)로 계산합니다. 에셋 도구는 Worker, 하이브리드 DCC 불리언은 화면 스레드입니다.",
+        "A fast preview uses three-bvh-csg, and when a watertight solid result is needed, Manifold (WASM) does the calculation: in a Worker for the asset tools, on the main thread for the Hybrid DCC boolean.",
       ),
       why: t(
         "미리보기는 빨라야 하고 최종 결과는 새지 않아야 해서 '빠른 칼'과 '단단한 칼'을 나눠 씁니다. 더 정밀한 CAD 계산은 따로 OpenCascade.js에 맡깁니다.",
         "A preview must be fast and the final result must be watertight, so a quick tool and a solid tool are used separately. Finer CAD calculation is handed to OpenCascade.js.",
       ),
       alternatives: t(
-        "OpenCascade.js(LGPL-2.1)는 정밀하지만 wasm이 약 65.9MB라 선택형으로만 불러오고, 문서에 법무 최종 확인 대기로 적혀 있습니다.",
-        "OpenCascade.js (LGPL-2.1) is precise but its wasm is about 65.9 MB, so it loads only by choice, and its document records legal review as pending.",
+        "OpenCascade.js(LGPL-2.1-only)는 정밀하지만 wasm이 약 65.9MB라 선택형으로만 불러오고, 문서에 법무 최종 확인 대기로 적혀 있습니다.",
+        "OpenCascade.js (LGPL-2.1-only) is precise but its wasm is about 65.9 MB, so it loads only by choice, and its document records legal review as pending.",
       ),
       cost: t(
         "manifold-3d는 pnpm 패치로 new Function 2곳을 정적 코드로 바꿔야 운영 CSP(wasm-unsafe-eval만 허용)에서 돕니다.",
@@ -329,16 +329,16 @@ export const LIBRARY_AREA_VRM_3D: LibraryGuideArea = {
       package: "@dimforge/rapier3d-deterministic-compat",
       oneLine: t("3D 속 움직임 계산: 충돌·중력, 걸을 수 있는 길, 관절 IK", "Motion math in 3D: collisions and gravity, walkable paths and joint IK"),
       usedFor: t(
-        "소품 충돌·접지(Rapier), 걸어 다닐 길 만들기(recast-navigation), 손발 핸들로 자세 맞추기(closed-chain-ik)를 Worker에서 계산합니다.",
-        "Computes prop collisions and ground contact (Rapier), walkable-path generation (recast-navigation) and pose fitting with hand and foot handles (closed-chain-ik) in Workers.",
+        "소품 충돌·접지(Rapier), 걸어 다닐 길 만들기(recast-navigation), 리깅된 GLB의 관절 체인을 목표점에 맞추기(closed-chain-ik)를 Worker에서 계산합니다.",
+        "Computes prop collisions and ground contact (Rapier), walkable-path generation (recast-navigation) and fitting a joint chain of a rigged GLB to a target point (closed-chain-ik) in Workers.",
       ),
       why: t(
         "결정성과 WASM 내장을 갖춘 deterministic-compat 변형이라 같은 입력이 같은 결과를 내고 별도 파일 없이 불러옵니다. 실험 앱은 캐릭터 물리를 자체 솔버로 두고 Rapier를 보조로 씁니다(ADR-0026).",
         "The deterministic-compat variant gives the same output for the same input and embeds its WASM, so no extra file is fetched. The experimental app keeps its own solver for character physics and uses Rapier as support (ADR-0026).",
       ),
       alternatives: t(
-        "Havok은 cloth가 없고 결정성 보장이 없으며 wasm이 커서 주 물리로 쓰지 않았습니다(ADR-0026 대안 표).",
-        "Havok has no cloth, no determinism guarantee and a large wasm, so it was not made the main physics (ADR-0026 alternatives table).",
+        "Havok은 cloth가 없고 결정성 보장이 없으며 wasm이 약 4.4MB라 주 물리로 쓰지 않았습니다(ADR-0026 대안 표).",
+        "Havok has no cloth, no determinism guarantee and a wasm of about 4.4 MB, so it was not made the main physics (ADR-0026 alternatives table).",
       ),
       cost: t(
         "ADR-0026이 아직 Proposed라 '캐릭터 물리는 자체 솔버, Rapier는 보조'는 확정 방침이 아닙니다. closed-chain-ik는 버전이 0.0.3입니다.",

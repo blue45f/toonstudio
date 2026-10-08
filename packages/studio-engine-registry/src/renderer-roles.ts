@@ -234,8 +234,9 @@ export const STUDIO_RENDERER_ROLE_LEDGER: readonly RendererRoleEntry[] =
       candidateId: "E04",
       note:
         "결정적 벡터 기준. cross-renderer diff, golden image, 명시 선택 CPU "
-        + "reference 로만 쓰인다. ADR-0018 §13 에 따라 GPU 실패 뒤 자동으로 호출되지 "
-        + "않는다.",
+        + "reference 로 쓰이며, SVG 미리보기(studio-svg-vello-product-router)에서는 "
+        + "vello_cpu 가 실제 픽셀도 그린다. ADR-0018 §13 에 따라 GPU 실패 뒤 자동으로 "
+        + "호출되지 않는다.",
     }),
     Object.freeze({
       id: "vello-classic-gpu",

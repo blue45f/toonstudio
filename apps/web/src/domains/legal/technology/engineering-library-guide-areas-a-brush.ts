@@ -15,19 +15,19 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
   title: t("브러시 엔진", "Brush engines"),
   question: t("펜 한 획은 어떤 엔진을 거쳐 화면에 닿나?", "Which engines does one pen stroke pass through to reach the screen?"),
   oneLine: t(
-    "획은 입력 보정 → 선 모양 → 붓 종류 → 화면 표시로 나뉘고, 일마다 맡은 엔진이 하나씩 있습니다.",
-    "A stroke is split into input smoothing, line shape, brush type and display, and each job has exactly one engine in charge.",
+    "획은 입력 보정 → 선 모양 → 붓 종류 → 화면 표시로 나뉘고, 소유 영역마다 책임 엔진을 하나씩 정해 둡니다.",
+    "A stroke is split into input smoothing, line shape, brush type and display, and each area of ownership has one designated engine in a role ledger.",
   ),
   easy: t(
-    "인쇄소의 분업과 같습니다. 밑그림을 다듬는 사람, 윤곽을 따는 사람, 잉크를 입히는 사람이 따로 있고 한 공정을 두 사람이 겹쳐 맡지 않습니다. 다음 사람에게는 완성품이 아니라 중간 결과만 넘깁니다.",
-    "It works like a print shop with a division of labor: one person cleans up the sketch, one traces the outline and one applies the ink, and no step is shared by two people. Each hands the next only an intermediate result, not a finished product.",
+    "인쇄소의 분업과 같습니다. 밑그림을 다듬는 사람, 윤곽을 따는 사람, 잉크를 입히는 사람이 따로 있고 공정마다 책임자는 한 명으로 정해 둡니다. 다음 사람에게는 완성품이 아니라 중간 결과만 넘깁니다.",
+    "It works like a print shop with a division of labor: one person cleans up the sketch, one traces the outline and one applies the ink, and each step has a single person in charge. Each hands the next only an intermediate result, not a finished product.",
   ),
   designWhy: [
     {
       title: t("획을 단계로 쪼개 주인을 하나씩", "Split the stroke into steps with one owner each"),
       body: t(
-        "입력 보정·선 윤곽·자연 재료·합성·문서 확정·내보내기의 권위를 나눕니다. 그래서 빠른 미리보기와 다시 만들 수 있는 최종 결과가 함께 가능합니다. 대가는 어댑터와 패리티 테스트를 따로 유지해야 한다는 점입니다.",
-        "Authority is split among input smoothing, line outline, natural media, compositing, document commit and export. That keeps a fast preview and a reproducible final result at the same time. The cost is that adapters and parity tests must be maintained separately.",
+        "문서 표시·포인터 입력·선 윤곽·자연매체·벡터 표시·래스터 확정 같은 권위마다 소유 엔진을 하나씩 정합니다(역할 원장). 그래서 빠른 미리보기와 다시 만들 수 있는 최종 결과가 함께 가능합니다. 대가는 어댑터와 패리티 테스트를 따로 유지하는 일입니다.",
+        "Each area of authority, such as document display, pointer input, line outline, natural media, vector display and raster commit, gets one owning engine in the renderer role ledger. That keeps a fast preview and a reproducible final result at the same time. The cost is that adapters and parity tests must be maintained separately.",
       ),
     },
     {
@@ -47,8 +47,8 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
     {
       title: t("기준선을 먼저 두고 새 엔진은 겨룬다", "Fix a baseline first, make newcomers compete"),
       body: t(
-        "CanvasKit(생산 기준선)과 vello_cpu(결정적 CPU 기준선)처럼 비교할 기준을 정해 둡니다. 새 엔진은 같은 입력으로 겨루는 승격 게이트를 통과해야 기본 경로에 오릅니다(ADR-0004·0005·0006).",
-        "Baselines such as CanvasKit (production) and vello_cpu (deterministic CPU) are fixed up front. A new engine reaches the default path only by passing a promotion gate that runs it on the same input (ADR-0004, 0005, 0006).",
+        "CanvasKit(생산 기준선)과 vello_cpu(결정적 CPU 기준선)처럼 비교할 기준을 정해 둡니다(vello_cpu는 SVG 미리보기도 그립니다). 새 엔진은 같은 입력으로 겨루는 승격 게이트를 통과해야 기본 경로에 오릅니다(ADR-0004·0005·0006).",
+        "Baselines such as CanvasKit (production) and vello_cpu (deterministic CPU) are fixed up front (vello_cpu also draws the SVG preview). A new engine reaches the default path only by passing a promotion gate that runs it on the same input (ADR-0004, 0005, 0006).",
       ),
     },
   ],
@@ -61,14 +61,14 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
       "A stroke picks one engine when the pen goes down and stays on that path; comparison and candidate engines stay off the product path.",
     ),
     alt: t(
-      "왼쪽의 펜 입력이 손떨림 보정을 지나 엔진 고르기에 닿습니다. 여기서 기본 펜은 perfect-freehand 잉크 선으로, 명시 선택한 경우 Hokusai 자연매체 붓이나 p5.brush 절차적 붓으로 갈라지고 모두 획 확정으로 모입니다. 획 확정은 Konva 무대와 CanvasKit 섬으로 화면에 표시됩니다. 점선으로 이어진 libmypaint와 vello_cpu는 결과를 견주는 기준선이고, Google Ink는 PoC 게이트 뒤의 후보입니다.",
-      "Pen input on the left passes through smoothing and reaches the engine pick. The default pen goes to a perfect-freehand ink line; when chosen explicitly it branches to the Hokusai natural-media brush or the p5.brush procedural brush, and all converge on the stroke commit. The commit is shown on the Konva stage and the CanvasKit island. The dashed libmypaint and vello_cpu are comparison baselines, and Google Ink is a candidate behind a PoC gate.",
+      "왼쪽의 펜 입력이 손떨림 보정을 지나 엔진 고르기에 닿습니다. 여기서 일반 펜은 연속 잉크로, G펜·퍼펙트 잉크 계열은 perfect-freehand 윤곽 선으로 이어지고, Hokusai 자연매체 붓은 완성된 획을 골라 바꾸는 실험적 변환이며 p5.brush 절차적 붓은 질감 레이어를 만들어 넣는 선택형입니다. 결과는 모두 문서로 모입니다. 획 확정은 Konva 무대와 CanvasKit 섬으로 화면에 표시됩니다. 점선으로 이어진 libmypaint와 vello_cpu는 결과를 견주는 기준선(둘 다 제품 일부 화면에도 쓰임)이고, Google Ink는 PoC 게이트 뒤의 후보입니다.",
+      "Pen input on the left passes through smoothing and reaches the engine pick. Ordinary pens follow the continuous ink path, and the G-pen and perfect-ink families follow a perfect-freehand outline; the Hokusai natural-media brush is an experimental conversion of a finished stroke, the p5.brush procedural brush is an opt-in texture layer, and all results gather in the document. The commit is shown on the Konva stage and the CanvasKit island. The dashed libmypaint and vello_cpu are comparison baselines (both also serve parts of the product), and Google Ink is a candidate behind a PoC gate.",
     ),
     nodes: [
       { id: "pen", label: t("펜 입력", "Pen input"), sub: t("압력·기울기·속도", "Pressure, tilt, speed"), tone: "local", shape: "pill", at: [0, 1] },
-      { id: "smooth", label: t("손떨림 보정", "Smoothing"), sub: t("lazy-brush + 자체 보정", "lazy-brush + our own smoothing"), tone: "local", at: [1, 1] },
+      { id: "smooth", label: t("손떨림 보정", "Smoothing"), sub: t("자체 보정(기본) · 정밀 모드는 lazy-brush", "Own smoothing; lazy-brush if precise"), tone: "local", at: [1, 1] },
       { id: "pick", label: t("엔진 한 번 고르기", "Pick one engine"), sub: t("펜을 내릴 때 1회", "Once, at pen-down"), tone: "warn", at: [2, 1] },
-      { id: "ink", label: t("잉크 선", "Ink line"), sub: t("perfect-freehand", "perfect-freehand"), tone: "local", at: [3, 0] },
+      { id: "ink", label: t("잉크 선", "Ink line"), sub: t("perfect-freehand · 연속 잉크", "perfect-freehand, continuous ink"), tone: "local", at: [3, 0] },
       { id: "natural", label: t("자연매체 붓", "Natural media"), sub: t("Hokusai · Rust → WASM", "Hokusai, Rust to WASM"), tone: "local", at: [3, 1] },
       { id: "proc", label: t("절차적 붓", "Procedural brush"), sub: t("p5.brush · Worker", "p5.brush, Worker"), tone: "local", at: [3, 2] },
       { id: "commit", label: t("획 확정", "Stroke commit"), sub: t("문서에 기록 · 래스터는 Canvas2D", "Recorded; raster via Canvas2D"), tone: "good", at: [4, 1] },
@@ -79,9 +79,9 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
     edges: [
       { from: "pen", to: "smooth", label: t("입력점", "points") },
       { from: "smooth", to: "pick", label: t("보정된 점", "smoothed") },
-      { from: "pick", to: "ink", label: t("기본 펜", "default") },
-      { from: "pick", to: "natural", style: "dashed", label: t("명시 선택", "explicit") },
-      { from: "pick", to: "proc", style: "dashed", label: t("선택형", "opt-in") },
+      { from: "pick", to: "ink", label: t("펜 종류별", "per pen") },
+      { from: "pick", to: "natural", style: "dashed", label: t("획 변환(실험)", "convert") },
+      { from: "pick", to: "proc", style: "dashed", label: t("질감 레이어", "texture layer") },
       { from: "ink", to: "commit", label: t("윤곽 선", "outline") },
       { from: "natural", to: "commit", label: t("투명 래스터", "raster") },
       { from: "proc", to: "commit", label: t("결과 이미지", "image") },
@@ -95,22 +95,22 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
       id: "hokusai",
       name: "Hokusai",
       kind: "engine",
-      oneLine: t("연필·목탄·수채·유화처럼 번지는 붓을 계산하는 Rust 엔진", "A Rust engine that computes brushes that blend like pencil, charcoal, watercolor and oil"),
+      oneLine: t("연필·목탄·유화처럼 번지는 붓을 계산하는 Rust 엔진(수채는 품질 게이트 미통과)", "A Rust engine that computes blending brushes such as pencil, charcoal and oil (watercolor has not cleared the quality gate)"),
       usedFor: t(
         "선택한 획을 연필·목탄·유화 같은 자연매체 붓으로 바꿔 투명한 래스터로 문서에 넣습니다(WASM, Worker에서 실행).",
         "Turns a selected stroke into a natural-media brush such as pencil, charcoal or oil and inserts it into the document as a transparent raster (WASM in a Worker).",
       ),
       why: t(
-        "순수 Rust라 WASM 한 가지 도구체인에 맞고 libmypaint(C)의 포팅·메모리 경계 위험을 피합니다. 저장소가 이미 갖춘 결정성 계약과 품질 검증 스크립트도 이어 쓸 수 있었습니다(ADR-0006).",
-        "It is pure Rust, so it fits a single WASM toolchain and avoids the porting and memory-boundary risks of libmypaint (C). The repository's existing determinism contract and quality scripts could also be carried over (ADR-0006).",
+        "순수 Rust라 Rust 어댑터 계층과 정합하고 libmypaint(C)의 포팅·메모리 경계 위험을 피합니다. 저장소가 이미 갖춘 결정성 계약과 품질 검증 스크립트도 이어 쓸 수 있었습니다(ADR-0006).",
+        "It is pure Rust, so it fits the Rust adapter layer and avoids the porting and memory-boundary risks of libmypaint (C). The repository's existing determinism contract and quality scripts could also be carried over (ADR-0006).",
       ),
       alternatives: t(
         "libmypaint(C→WASM)는 .myb 정답지이자 비교 기준으로 남겼습니다. 상류 hokusai-wasm 래퍼는 타일을 흰 바탕에 합성해 쓰지 않고, 같은 0.3.0 크레이트를 직접 감쌌습니다.",
         "libmypaint (C to WASM) stays as the .myb answer key and comparison baseline. The upstream hokusai-wasm wrapper composites tiles over white, so we wrapped the same 0.3.0 crates ourselves.",
       ),
       cost: t(
-        "자동 라우트에 오른 프리셋은 0개입니다. 2026-08-08 한 기기 측정에서 처리량이 libmypaint의 0.097~0.318배(요구 1.2배)라 '선택한 획 변환'으로만 씁니다.",
-        "No preset is on the automatic route. In one measurement on one device (2026-08-08), throughput was 0.097 to 0.318 times libmypaint's (1.2x required), so it is used only to convert a selected stroke.",
+        "자동 라우트에 오른 프리셋은 0개이고 화면에도 '실험적'으로 표시됩니다. 2026-08-09(KST) 한 기기 측정에서 처리량이 libmypaint의 0.097~0.318배(요구 1.2배)라 '선택한 획 변환'으로만 씁니다.",
+        "No preset is on the automatic route, and the screen labels it experimental. In one measurement on one device (2026-08-09 KST), throughput was 0.097 to 0.318 times libmypaint's (1.2x required), so it is used only to convert a selected stroke.",
       ),
       paths: [
         `${DRAWING}/render/studio-hokusai-natural-media.worker.ts`,
@@ -119,7 +119,7 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
       ],
       license: "MIT OR Apache-2.0",
       licenseSource: "packages/studio-hokusai-wasm/Cargo.toml",
-      status: "live",
+      status: "experimental",
       mapRowId: "hokusai",
       atlasIds: ["hokusai-wasm-natural-media"],
     },
@@ -138,12 +138,12 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
         "Its outline math is light and deterministic, so it also serves export geometry, and its permissive MIT license allows bundling as is. Pinning 1.2.3 keeps the golden-master strokes stable as a feel regression baseline (ADR-0005).",
       ),
       alternatives: t(
-        "Google Ink는 입력 모델링이 풍부하지만 공식 웹 SDK가 아니고 Bazel 전용이라 PoC 게이트 뒤 후보로 두었습니다(ADR-0009).",
-        "Google Ink has richer input modeling but is not an official web SDK and is Bazel-only, so it stays a candidate behind a PoC gate (ADR-0009).",
+        "Google Ink는 입력 모델링이 풍부하지만 공식 웹 SDK가 아니고 Bazel 전용이라(2026-08 조사) PoC 게이트 뒤 후보로 두었습니다(ADR-0009).",
+        "Google Ink has richer input modeling but is not an official web SDK and is Bazel-only (as surveyed in 2026-08), so it stays a candidate behind a PoC gate (ADR-0009).",
       ),
       cost: t(
-        "연필·수채 같은 자연매체나 복합 브러시는 대신하지 못합니다(조사 문서 E10). lazy-brush는 마우스·펜·터치별로 켜고 끕니다.",
-        "It cannot replace natural media such as pencil or watercolor, or compound brushes (survey item E10). lazy-brush can be switched on or off per mouse, pen or touch.",
+        "연필·수채 같은 자연매체나 복합 브러시는 대신하지 못합니다(조사 문서 E10). lazy-brush는 '정밀' 보정 모드에서만 켜지고, 제품 호출부는 모든 입력 장치에 적용합니다.",
+        "It cannot replace natural media such as pencil or watercolor, or compound brushes (survey item E10). lazy-brush runs only in the precision smoothing mode, and the product applies it to every input device.",
       ),
       paths: [
         `${DRAWING}/studio-perfect-freehand.ts`,
@@ -193,24 +193,25 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
       kind: "engine",
       oneLine: t("GPU 벡터 그래픽 엔진 Vello와 SVG·Lottie 전문 엔진 ThorVG", "Vello, a GPU vector engine, and ThorVG, a specialist for SVG and Lottie"),
       usedFor: t(
-        "SVG는 그리기 전에 Vello와 ThorVG 중 한쪽을 골라 맡깁니다. 결정적 CPU판(vello_cpu)은 비교·골든 기준으로만 씁니다.",
-        "An SVG is assigned to either Vello or ThorVG before drawing. The deterministic CPU build (vello_cpu) is used only as a comparison and golden baseline.",
+        "SVG는 그리기 전에 Vello와 ThorVG 중 한쪽을 골라 맡깁니다. 미리보기의 Vello 쪽은 CPU판(vello_cpu)이 그리고, 비교·골든 기준으로도 씁니다.",
+        "An SVG is assigned to either Vello or ThorVG before drawing. In the SVG asset preview the Vello side renders on the CPU through vello_cpu, which also serves as a comparison and golden baseline.",
       ),
       why: t(
-        "Rust GPU 렌더러가 페이지의 GPU 장치를 그대로 받아 써서 그림을 CPU로 되읽지 않고 같은 장치 안에서 씁니다(이득은 그림 크기에 따라 다릅니다). ThorVG는 Vello가 못 그리는 필터·마스크·글자가 든 SVG와 Lottie를 맡습니다.",
-        "The Rust GPU renderer adopts the page's own GPU device, so images stay on that device instead of being read back to the CPU (the gain varies with image size). ThorVG covers SVG and Lottie with filters, masks and text that Vello cannot draw.",
+        "Rust GPU 렌더러가 페이지의 GPU 장치를 그대로 받아 써서 그림을 CPU로 되읽지 않고 같은 장치 안에서 씁니다(이득은 그림 크기에 따라 다릅니다). ThorVG는 Vello가 못 그리는 필터·마스크·글자가 든 SVG를 맡고, Lottie는 패키지만 있고 제품 호출부가 없습니다.",
+        "The Rust GPU renderer adopts the page's own GPU device, so images stay on that device instead of being read back to the CPU (the gain varies with image size). ThorVG covers SVG with filters, masks and text that Vello cannot draw; Lottie support exists in the package but has no product call site yet.",
       ),
       alternatives: t(
         "resvg는 시각 비교용 QA 기준일 뿐 제품 경로에 연결하지 않았고, Google Forma는 상류가 보관돼 채택하지 않았습니다(지도, ADR-0017).",
         "resvg is only a visual-comparison QA reference and is not wired into the product, and Google Forma is archived upstream, so it was not adopted (map, ADR-0017).",
       ),
       cost: t(
-        "Vello는 알파 단계라 '명시 선택'으로만 쓰고 문서 표시는 Skia WebGL2가 맡습니다. 실패해도 다른 엔진으로 자동 전환하지 않습니다.",
-        "Vello is alpha-stage, so it is used only by explicit choice and Skia WebGL2 owns document display. A failure never triggers an automatic switch to another engine.",
+        "Vello는 알파 단계라 '명시 선택'으로만 쓰고 문서 표시는 Skia WebGL2가 맡습니다. 장치 공유는 wgpu 벤더 포크(crates/vendor/wgpu-toon)에 기대며, 실패해도 자동 전환은 없습니다.",
+        "Vello is alpha-stage, so it is used only by explicit choice and Skia WebGL2 owns document display. Device sharing relies on a vendored wgpu fork (crates/vendor/wgpu-toon), and a failure never triggers an automatic switch to another engine.",
       ),
       paths: [
         `${DRAWING}/render/studio-vello-hub.ts`,
         `${DRAWING}/studio-svg-product-provider-plan.ts`,
+        `${DRAWING}/studio-svg-vello-product-router.ts`,
         "crates/studio-engine-vello/Cargo.toml",
       ],
       license: "Apache-2.0 OR MIT",
@@ -234,8 +235,8 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
         "Procedural textures such as watercolor fills and flow fields are borrowed instead of built from scratch. The p5 core (LGPL-2.1) is not bundled; only the standalone build is used, which lightens the license burden.",
       ),
       cost: t(
-        "pnpm 패치 1개로 같은 시드인데 픽셀이 달라지던 비결정성을 없앴습니다. 모듈 전역 상태 때문에 모든 호출을 한 줄로 세워야 합니다.",
-        "One pnpm patch removed nondeterminism that made pixels differ with the same seed. Module-level global state forces every call into a single queue.",
+        "pnpm 패치 1개로 소프트웨어 WebGL에서 같은 시드인데 픽셀이 달라지던 비결정성을 없앴습니다. 모듈 전역 상태 때문에 모든 호출을 한 줄로 세워야 합니다.",
+        "One pnpm patch removed nondeterminism that made pixels differ in software WebGL with the same seed. Module-level global state forces every call into a single queue.",
       ),
       paths: [
         `${DRAWING}/brush/studio-p5-brush-standalone-runtime-adapter.ts`,
@@ -261,8 +262,8 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
         "Averaging RGB turns blue and yellow dull, while a pigment model gives green. It sits behind the same contract as the MIT alternatives (spectral.js, colormix) so it can be swapped.",
       ),
       alternatives: t(
-        "제품의 라이브 혼색은 libmypaint에서 옮겨 온 분광 혼색(ISC)입니다. 실험 앱 brush-lab은 경계 테스트로 Mixbox 유입을 막습니다(ADR-0026).",
-        "Live mixing in the product is a spectral mix ported from libmypaint (ISC). The experimental brush-lab app blocks Mixbox with a boundary test (ADR-0026).",
+        "제품의 라이브 혼색은 libmypaint에서 옮겨 온 분광 혼색(ISC)이며 유화 리본과 옵트인 핀이 있는 레인에만 쓰고 나머지는 선형 혼합입니다. 실험 앱 brush-lab은 경계 테스트로 Mixbox 유입을 막습니다(ADR-0026).",
+        "Live mixing in the product uses a spectral mix ported from libmypaint (ISC) only in the oil ribbon and in lanes with the opt-in pin; other lanes keep a linear blend. The experimental brush-lab app blocks Mixbox with a boundary test (ADR-0026).",
       ),
       cost: t(
         "비상업(NC) 라이선스입니다. 상업 이용 조건은 별도 확인이 필요하며, 저장소는 권리 라벨·noncommercial-full 프로필·2.0.0 감사 핀으로 다룹니다.",
@@ -282,23 +283,24 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
       id: "libmypaint",
       name: "libmypaint",
       kind: "engine",
-      oneLine: t("오래 쓰여 온 오픈소스 브러시 엔진(MyPaint). 비교 기준선과 엔진 시험 패널에서만 씁니다", "A long-established open-source brush engine (MyPaint), used only as a baseline and in the engine-test panel"),
+      oneLine: t("오래 쓰여 온 오픈소스 브러시 엔진(MyPaint). 비교 기준선이자 선택 획 변환 엔진으로 씁니다", "A long-established open-source brush engine (MyPaint), used as a comparison baseline and as a selectable engine for converting a stroke"),
       usedFor: t(
-        "Hokusai 결과를 견주는 정답지(패리티·골든)와 브러시 스튜디오의 엔진 시험 패널에서 쓰입니다.",
-        "Serves as the answer key for judging Hokusai output (parity and golden images) and in the engine-test panel of Brush Studio.",
+        "Hokusai 결과를 견주는 정답지(패리티·골든)로 쓰이고, 선택한 획을 문서에 변환하는 인스펙터에서 고르는 엔진(기본값)이기도 합니다.",
+        "Serves as the answer key for judging Hokusai output (parity and golden images) and as a selectable engine, preselected by default, in the Inspector tool that converts a selected stroke.",
       ),
       why: t(
         ".myb 브러시 생태계의 사실상 기준 구현이라, 새 Rust 엔진이 같은 입력에서 같은 결과를 내는지 가늠할 때 비교 기준이 됩니다(ADR-0006).",
         "As the de facto reference implementation of the .myb brush ecosystem, it is the yardstick for whether the new Rust engine gives the same result on the same input (ADR-0006).",
       ),
       cost: t(
-        "C를 직접 컴파일한 약 83KB wasm이며 기본 그리기 엔진이 아닙니다. ADR-0006은 C 포팅·메모리 경계·업데이트 정체를 관리해야 할 위험으로 적었습니다.",
-        "A wasm of about 83 KB compiled directly from C, and not the default drawing engine. ADR-0006 lists C porting, the memory boundary and upstream stagnation as risks to manage.",
+        "C를 직접 컴파일한 약 83KB wasm이며 펜 기본 그리기 엔진은 아닙니다. ADR-0006은 C 포팅·메모리 경계·업데이트 정체를 관리해야 할 위험으로 적었습니다.",
+        "A wasm of about 83 KB compiled directly from C, and not the default pen drawing engine. ADR-0006 lists C porting, the memory boundary and upstream stagnation as risks to manage.",
       ),
       paths: [
         "packages/studio-brush-platform/src/libmypaint/index.ts",
         `${DRAWING}/brush/studio-native-brush-probe.worker.ts`,
         `${DRAWING}/brush/StudioNativeBrushEngineProbe.tsx`,
+        `${DRAWING}/brush/StudioNativeBrushDocumentInspector.tsx`,
       ],
       license: "ISC",
       licenseSource: "packages/studio-brush-platform/src/libmypaint/COPYING",
@@ -311,16 +313,16 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
       kind: "engine",
       oneLine: t("구글의 잉크 브러시 라이브러리. 입력 보정과 획 메시를 직접 WASM으로 빌드했습니다", "Google's ink-brush library; we build its input modeler and stroke mesh to WASM ourselves"),
       usedFor: t(
-        "획 끝의 '예측 꼬리'를 보여 주는 보조 미리보기에만 연결돼 있고 입력 보정은 관측용 접점뿐입니다. 최종 획과 출하 잉킹은 perfect-freehand·Canvas 경로입니다.",
-        "It is connected only to an auxiliary preview of the stroke's predicted tail, and input modeling has an observation-only seam. The final stroke and shipping ink stay on the perfect-freehand and Canvas path.",
+        "획 끝의 '예측 꼬리'를 보여 주는 보조 미리보기에만 연결돼 있고 입력 보정은 관측용 접점뿐입니다. 확정 획은 Canvas2D 경로(펜에 따라 연속 잉크 또는 perfect-freehand 윤곽)입니다.",
+        "It is connected only to an auxiliary preview of the stroke's predicted tail, and input modeling has an observation-only seam. Committed strokes stay on the Canvas2D path (continuous ink or a perfect-freehand outline, depending on the pen).",
       ),
       why: t(
         "압력·기울기·속도의 풍부한 동역학과 부분 획 편집에 유리해 전문 잉킹의 주력 후보로 봤습니다. 다만 PoC 게이트를 통과하기 전에는 출하 경로에 올리지 않습니다(ADR-0005·0009).",
         "Its rich pressure, tilt and speed dynamics and partial-stroke editing made it the main candidate for professional inking, but it stays off the shipping path until it clears the PoC gate (ADR-0005, 0009).",
       ),
       cost: t(
-        "공식 웹 배포가 없고 Bazel 전용이라 76개 소스를 em++로 직접 빌드합니다. 재빌드에 저장소 밖 ~/toolchains/ink 클론이 필요해 저장소만으로는 재현되지 않습니다.",
-        "There is no official web distribution and upstream is Bazel-only, so 76 translation units are built directly with em++. A rebuild needs a clone at ~/toolchains/ink outside the repository, so it is not reproducible from the repo alone.",
+        "공식 웹 배포가 없고 상류 google/ink는 Bazel 전용이라 76개 소스를 em++로 직접 빌드합니다(입력 보정은 CMake 별도 빌드). 재빌드에 저장소 밖 ~/toolchains 클론이 필요합니다.",
+        "There is no official web distribution and the upstream google/ink repository is Bazel-only, so 76 translation units are built directly with em++ (input modeling is a separate CMake build). A rebuild needs clones under ~/toolchains outside the repository.",
       ),
       paths: [
         "packages/studio-brush-platform/src/ink-mesh.ts",
@@ -334,8 +336,8 @@ export const LIBRARY_AREA_BRUSH_ENGINES: LibraryGuideArea = {
     },
   ],
   pitfall: t(
-    "'엔진이 많다'와 '전부 쓴다'는 다릅니다. 일상 경로는 perfect-freehand와 CanvasKit이고, Hokusai는 명시 변환, Vello·p5.brush는 선택형, Mixbox는 제작 도구 한 곳, libmypaint는 비교·시험용, Google Ink는 후보입니다.",
-    "'Many engines' does not mean 'all in use'. The everyday path is perfect-freehand and CanvasKit; Hokusai is an explicit conversion, Vello and p5.brush are opt-in, Mixbox sits in one authoring tool, libmypaint is for comparison and testing, and Google Ink is a candidate.",
+    "'엔진이 많다'와 '전부 쓴다'는 다릅니다. 펜 종류에 따라 연속 잉크나 perfect-freehand 윤곽을 Konva·Canvas2D로 확정하고 CanvasKit이 벡터 영역을 표시합니다. Hokusai는 명시 변환, Vello·p5.brush는 선택형, Mixbox는 제작 도구 한 곳, libmypaint는 기준선·변환 선택지, Google Ink는 후보입니다.",
+    "'Many engines' does not mean 'all in use'. Depending on the pen, strokes are drawn as continuous ink or a perfect-freehand outline and committed on Konva and Canvas2D, with CanvasKit showing the vector island. Hokusai is an explicit conversion, Vello and p5.brush are opt-in, Mixbox sits in one authoring tool, libmypaint is a baseline and conversion option, and Google Ink is a candidate.",
   ),
   status: "live",
   atlasIds: [

@@ -51,7 +51,7 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
   },
   steps: [
     t("공간에 들어갈 때 Phaser 엔진을 받도록 설계돼 있습니다(/studio/space, 협업은 /studio/p/…/space).", "Entering a space is designed to load the Phaser engine then (/studio/space, or /studio/p/…/space for collaboration)."),
-    t("방(월드)은 서버가 확정한 발행본이고, 브라우저는 해시를 다시 계산해 맞을 때만 채택합니다.", "The room (world) is a server-confirmed publication, and the browser adopts it only after recomputing and matching its hash."),
+    t("방(월드)은 서버가 확정한 발행본이고(발행본이 없으면 내장 월드가 열립니다), 브라우저는 해시를 다시 계산해 맞을 때만 채택합니다.", "The room (world) is a server-confirmed publication (a built-in world opens when none is published), and the browser adopts it only after recomputing and matching its hash."),
     t("문·구역·NPC 는 '어디로 갈지'만 정하고, 쓸 자격은 도착한 기능이 따로 판단합니다.", "Doors, zones and NPCs only decide where to go; the feature you arrive at judges whether you may use it."),
     t("3D 는 별도 화면(/studio/bg3d, /studio/poser)에서 three.js 가 그리며 Phaser 를 쓰지 않습니다.", "3D is drawn by three.js on separate screens (/studio/bg3d, /studio/poser) and does not use Phaser."),
     t("그림 한 장은 규칙으로 GLB 가 되고, 가져온 3D 파일 9형식은 검증된 GLB 하나로 정규화됩니다.", "One image becomes a GLB by rules, and the nine importable 3D formats are normalized into one verified GLB."),
@@ -63,12 +63,12 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
       "'Virtual studio' and '3D' sound like one thing but do different jobs. The virtual studio is a place where teammates walk around 2D rooms to meet and talk, while 3D is a tool for making characters and backgrounds. They are handled by different engines (Phaser and three.js), and no place was found where the 2D space imports a 3D module.",
     ),
     t(
-      "2D 쪽은 Phaser 가 그림을 그리고 충돌·근접·길 찾기 규칙은 순수 모듈로 나눴으며, 월드는 서버가 한 번에 한 버전만 확정합니다(기대 버전이 최신일 때만 기록). 3D 쪽은 three.js 와 React Three Fiber 가 뷰포트를 맡고, VRM 표준 뼈 이름 55개가 포즈·손발 IK·웹캠 추적의 공통 언어이며, 낯선 3D 파일은 검증된 GLB 하나로 정규화한 뒤 씁니다.",
-      "On the 2D side Phaser draws while collision, proximity and pathfinding rules live in pure modules, and the server confirms one world version at a time (it writes only when the expected version is the latest). On the 3D side three.js and React Three Fiber run the viewport, 55 standard VRM bone names are the common language for poses, limb IK and webcam tracking, and unfamiliar 3D files are normalized into one verified GLB before use.",
+      "2D 쪽은 Phaser 가 그림을 그리고 충돌·근접·길 찾기 규칙은 순수 모듈로 나눴으며, 월드는 서버가 한 번에 한 버전만 확정합니다(기대 버전이 최신일 때만 기록). 3D 쪽은 three.js 와 React Three Fiber 가 뷰포트를 맡고, VRM 표준 뼈 이름(포즈 저장은 55개 허용 목록)이 포즈·손발 IK·웹캠 추적의 공통 언어이며, 낯선 3D 파일은 검증된 GLB 하나로 정규화한 뒤 씁니다.",
+      "On the 2D side Phaser draws while collision, proximity and pathfinding rules live in pure modules, and the server confirms one world version at a time (it writes only when the expected version is the latest). On the 3D side three.js and React Three Fiber run the viewport, standard VRM bone names (a 55-name allowlist for pose saving) are the common language for poses, limb IK and webcam tracking, and unfamiliar 3D files are normalized into one verified GLB before use.",
     ),
     t(
-      "한계: 2D 공간 안에서 3D 장면을 보여 주는 기능은 없습니다. Phaser 는 입장 때 불러오도록 설계했지만 정적 import 한 곳이 남아 있어 실제 청크 분리는 단정하지 않습니다. 3D 엔진은 몰래 바꾸지 않고 사용자가 WebGPU 와 WebGL2 중에서 고르며, VRM 캐릭터가 있는 장면에서는 WebGPU 가 막혀 WebGL2 를 씁니다.",
-      "Limits: no feature shows a 3D scene inside the 2D space. Phaser is designed to load on entry, but one static import remains, so real chunk separation is not claimed. The 3D engine is never swapped silently: users choose between WebGPU and WebGL2, and in scenes with a VRM character WebGPU is blocked so WebGL2 is used.",
+      "한계: 2D 공간 안에서 3D 장면을 보여 주는 기능은 없습니다. Phaser 는 입장 때 불러오도록 설계했지만 정적 import 한 곳이 남아 있어 실제 청크 분리는 단정하지 않습니다. 3D 엔진은 몰래 바꾸지 않고 사용자가 WebGPU 와 WebGL2 중에서 고르며, VRM 캐릭터가 있는 장면에서는 WebGPU 를 쓸 수 없게 되고, 그때 사용자가 WebGL2 를 직접 골라야 합니다. 자동으로 바뀌지 않습니다.",
+      "Limits: no feature shows a 3D scene inside the 2D space. Phaser is designed to load on entry, but one static import remains, so real chunk separation is not claimed. The 3D engine is never swapped silently: users choose between WebGPU and WebGL2, and in scenes with a VRM character WebGPU becomes unavailable and the user must pick WebGL2 manually; the app does not switch on its own.",
     ),
   ],
   inService: [
@@ -109,8 +109,8 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
     {
       what: t("VRM 캐릭터 포즈", "VRM character poses"),
       role: t(
-        "표준 뼈 이름 55개를 공통 언어로 삼아 포즈·손발 IK·웹캠 추적이 어떤 캐릭터에도 적용",
-        "Uses 55 standard bone names as a common language so poses, limb IK and webcam tracking apply to any character",
+        "포즈 저장은 표준 뼈 이름 55개 허용 목록을 쓰고, 손발 IK·웹캠 추적은 VRM 라이브러리의 같은 표준 뼈 이름을 써서 표준 뼈를 갖춘 VRM 캐릭터에 적용",
+        "Pose saving uses an allowlist of 55 standard bone names, and limb IK and webcam tracking use the same standard names from the VRM library, applying to VRM characters that provide the standard bones",
       ),
       paths: ["apps/web/src/domains/creator/studio-humanoid-bones.ts"],
     },
@@ -145,8 +145,8 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
         "It prevents two people seeing different maps, and the browser recomputes the hash and turns sharing off on a mismatch.",
       ),
       cost: t(
-        "발행은 관리자만 하고 충돌하면 거절됩니다. 운영 DB 의 실제 발행·다중 사용자 실측은 확인하지 못했습니다.",
-        "Only administrators publish and conflicts are rejected; real publications and multi-user behavior in the production database were not verified.",
+        "발행은 작품 소유자와 관리 권한 멤버만 하고 충돌하면 거절됩니다. 운영 DB 의 실제 발행·다중 사용자 실측은 확인하지 못했습니다.",
+        "Only the project owner and members with manage rights publish, and conflicts are rejected; real publications and multi-user behavior in the production database were not verified.",
       ),
     },
     {
@@ -204,8 +204,8 @@ export const AI_PATH_SECTION: ArchitectureGuideSection = {
   title: t("AI가 끼어드는 길", "How AI joins in"),
   question: t("AI 요청은 어디를 거쳐 누가 승인하나?", "Where does an AI request go, and who approves the result?"),
   oneLine: t(
-    "AI는 예산을 먼저 예약하고 무료 길부터 시도하며, 결과는 제안으로만 돌아옵니다.",
-    "AI reserves its budget first, tries free routes first, and only returns proposals.",
+    "AI는 예산을 먼저 예약하고 무료 길부터 시도하며, 글 도구의 결과는 검토할 제안으로 돌아옵니다.",
+    "AI reserves its budget first, tries free routes first, and text-tool results come back as proposals to review.",
   ),
   easy: t(
     "AI 는 택시와 비슷합니다. 타기 전에 미터기 한도를 먼저 정하고(예산 예약), 요금이 안 드는 노선부터 알아보고, 유료 택시는 내가 손을 들어야만 탑니다. 도착한 결과는 짐이 아니라 제안서라서, 내가 받아들일 때만 작품에 들어옵니다.",
@@ -216,20 +216,21 @@ export const AI_PATH_SECTION: ArchitectureGuideSection = {
     kind: "graph",
     title: t("AI 요청이 지나는 문", "The gates an AI request passes"),
     caption: t(
-      "기기 안 → 무료 → (허락한 경우) 유료 순으로 열고, 결과는 제안으로만 돌아와 작가가 승인합니다.",
-      "Routes open from on-device to free to (if allowed) paid, and results return only as proposals for the author to approve.",
+      "기기 안 → 무료 → (허락한 경우) 유료 순으로 열고, 글 도구 결과는 제안으로 돌아와 작가가 승인하며 이미지 도구는 바로 반영됩니다.",
+      "Routes open from on-device to free to (if allowed) paid; text-tool results return as proposals for the author to approve, while image tools apply at once.",
     ),
     alt: t(
-      "AI 요청은 먼저 처리 위치를 고릅니다. 기기 안 모델은 서버 없이 처리하고, 무료 공급자는 호출 전에 예산을 예약한 뒤 부르며, 유료 키는 사용자가 허락해야 쓰입니다. 어느 길이든 결과는 문서를 바로 고치지 않는 제안으로 돌아오고 작가가 승인한 것만 적용됩니다.",
-      "An AI request first chooses where to run. On-device models work without a server, free providers are called only after the budget is reserved, and a paid key is used only when the user allows it. Whichever route is taken, the result returns as a proposal that does not edit the document, and only what the author approves is applied.",
+      "처리 위치는 사용자가 연 도구에 따라 정해집니다. 기기 안 모델은 서버 없이 처리하고, 무료 공급자는 호출 전에 예산을 예약한 뒤 부르며, 유료 키는 사용자가 허락해야 쓰입니다. 글 도구의 결과는 문서를 바로 고치지 않는 제안으로 돌아오고 작가가 승인한 것만 적용됩니다. 이미지 도구는 새 이미지 요소로 추가되고, 기기 안 이미지 도구는 선택한 이미지를 바로 바꿉니다.",
+      "Where a request runs is decided by the tool the user opens. On-device models work without a server, free providers are called only after the budget is reserved, and a paid key is used only when the user allows it. Text-tool results return as proposals that do not edit the document, and only what the author approves is applied. Image tools add a new image element, and on-device image tools replace the selected image at once.",
     ),
     nodes: [
       { id: "ask", label: t("AI 요청", "AI request"), tone: "local", shape: "pill", at: [0, 1] },
-      { id: "route", label: t("어디서 처리?", "Where to run?"), tone: "neutral", shape: "diamond", at: [1, 1] },
+      { id: "route", label: t("도구별 처리 위치", "Where it runs"), tone: "neutral", shape: "diamond", at: [1, 1] },
       { id: "device", label: t("기기 안 모델", "On-device model"), sub: t("ONNX · MediaPipe", "ONNX, MediaPipe"), tone: "ai", at: [2, 0] },
       { id: "free", label: t("무료 공급자", "Free providers"), sub: t("먼저 예산을 예약", "Budget reserved first"), tone: "external", shape: "cloud", at: [2, 1] },
       { id: "paid", label: t("내 유료 키", "Your paid key"), sub: t("허락해야 사용", "Only if allowed"), tone: "warn", at: [2, 2] },
-      { id: "proposal", label: t("제안으로 반환", "Returned as proposal"), sub: t("문서는 그대로", "Document untouched"), tone: "ai", at: [3, 1] },
+      { id: "direct", label: t("바로 반영", "Applied at once"), sub: t("이미지 도구 · 되돌리기가 안전망", "Image tools; undo is the net"), tone: "warn", at: [3, 0] },
+      { id: "proposal", label: t("글은 제안으로", "Text as proposal"), sub: t("문서는 그대로", "Document untouched"), tone: "ai", at: [3, 1] },
       { id: "author", label: t("작가의 승인", "Author approval"), sub: t("고른 것만 적용", "Only chosen parts apply"), tone: "warn", shape: "pill", at: [4, 1] },
     ],
     edges: [
@@ -237,40 +238,41 @@ export const AI_PATH_SECTION: ArchitectureGuideSection = {
       { from: "route", to: "device", label: t("기기 안에서", "On device") },
       { from: "route", to: "free", label: t("무료 먼저", "Free first") },
       { from: "route", to: "paid", label: t("허락할 때만", "If allowed") },
-      { from: "device", to: "proposal" },
+      { from: "device", to: "direct" },
       { from: "free", to: "proposal" },
       { from: "paid", to: "proposal" },
+      { from: "paid", to: "direct" },
       { from: "proposal", to: "author", label: t("검토", "Review") },
     ],
   },
   steps: [
-    t("먼저 어디서 처리할지 고릅니다: 기기 안 모델, 검토된 무료 공급자, (허락한 경우만) 내 유료 키 순입니다.", "First it picks where to run: an on-device model, a reviewed free provider, then (only if allowed) your paid key."),
+    t("처리 위치는 라우터 한 곳이 아니라 사용자가 연 도구가 정하고, 무료 길의 순서만 코드가 정합니다.", "No single router picks where a request runs: the tool the user opens decides (on-device model, reviewed free provider, or, only if allowed, your paid key), and only the order among free routes is fixed by code."),
     t("기기 안 모델(ONNX·MediaPipe)은 그림이 서버로 나가지 않아 키도 한도도 필요 없습니다.", "On-device models (ONNX, MediaPipe) never send the image to a server, so no key or quota is needed."),
     t("무료 길은 호출 전에 하루 한도를 먼저 예약하고, 한도에 닿으면 공급자를 부르지 않고 멈춥니다.", "Free routes reserve the daily limit before calling, and at the limit they stop without calling the provider."),
     t("확실히 거절된 경우만 다음 무료 공급자로 넘기고, 시간 초과·5xx 같은 애매한 실패는 다시 보내지 않습니다.", "Only a definite rejection moves on to the next free provider; ambiguous failures such as timeouts and 5xx are not sent again."),
     t("유료 키는 설정에서 허락해야 자동 순서에 들어오며, 내 키는 기본적으로 이 탭의 메모리에만 둡니다.", "A paid key enters the automatic order only when allowed in settings, and by default your key stays in this tab's memory."),
-    t("결과는 문서를 바로 고치지 않고 제안으로 돌아오며, 작가가 고른 것만 한 번의 되돌리기 단위로 적용됩니다.", "Results come back as proposals instead of editing the document, and only what the author picks is applied as one undo step."),
+    t("글 도구 결과는 제안으로 돌아와 고른 것만 적용되고, 이미지 도구는 새 요소 추가·ONNX 는 바로 교체입니다.", "Text-tool results come back as proposals instead of editing the document, and only what the author picks is applied as one undo step. Image tools add a new image element, and on-device image tools (ONNX) replace the selected image at once."),
   ],
   background: [
     t(
-      "AI 는 부르는 만큼 돈이 들고, 같은 요청을 두 번 보내면 요금도 두 번 나갑니다. 결과가 마음에 안 들 수도 있어서 작품을 AI 가 직접 고치게 두면 되돌리기도 어렵습니다. 그래서 AI 길 곳곳에 '멈추는 문'을 세웠습니다: 예산 예약, 무료 허용 목록, 애매한 실패는 재시도 금지, 유료는 내 허락, 결과는 제안.",
-      "AI costs money for every call, and sending the same request twice bills twice. Results may also disappoint, and letting AI edit the work directly makes undoing hard. So gates that stop things are placed along the AI route: budget reservation, a free allowlist, no retry on ambiguous failure, paid use only with your consent, and results as proposals.",
+      "AI 는 부르는 만큼 돈이 들고, 같은 요청을 두 번 보내면 요금도 두 번 나갑니다. 결과가 마음에 안 들 수도 있어서 작품을 AI 가 직접 고치게 두면 되돌리기도 어렵습니다. 그래서 AI 길 곳곳에 '멈추는 문'을 세웠습니다: 예산 예약, 무료 허용 목록, 애매한 실패는 재시도 금지, 유료는 내 허락, 글 도구의 결과는 제안.",
+      "AI costs money for every call, and sending the same request twice bills twice. Results may also disappoint, and letting AI edit the work directly makes undoing hard. So gates that stop things are placed along the AI route: budget reservation, a free allowlist, no retry on ambiguous failure, paid use only with your consent, and text-tool results as proposals.",
     ),
     t(
-      "브라우저에는 하루 25회·예약 토큰 64,000의 안전 한도가, 서버 자동 무료 AI 에는 사용자당 하루 200회·토큰 1,000,000(코드 기본값)의 원장이 있고, 날짜 경계는 UTC 자정입니다. 서버 공유 풀은 공급자 9곳을 기본 순서로 시도하지만 스위치·키·운영자 확인이 갖춰져야 준비됨이 되며, 저장소 기준으로 지금은 설정 필요 상태입니다.",
-      "The browser has a safety limit of 25 calls a day and 64,000 reserved tokens, and the server's automatic free AI has a ledger of 200 calls and 1,000,000 tokens per user per day (code defaults), with the day boundary at UTC midnight. The shared server pool tries nine providers in a default order, but it counts as ready only when the switch, keys and operator confirmation are all in place, and by the repository it currently needs setup.",
+      "브라우저에는 무료 경로마다 하루 25회·예약 토큰 64,000의 안전 한도가, 서버 자동 무료 AI 에는 사용자당 하루 200회·토큰 1,000,000(코드 기본값)의 원장과 전체 합계 상한(500회·2,000,000 토큰)이 있고, 날짜 경계는 UTC 자정입니다. 서버 공유 풀은 공급자 9곳을 기본 순서로 시도하지만 스위치·키·운영자 확인이 갖춰져야 준비됨이 되며, 저장소 기준으로 지금은 설정 필요 상태입니다.",
+      "The browser has a safety limit of 25 calls a day and 64,000 reserved tokens per free route, and the server's automatic free AI has a ledger of 200 calls and 1,000,000 tokens per user per day (code defaults) plus a global cap of 500 calls and 2,000,000 tokens, with the day boundary at UTC midnight. The shared server pool tries nine providers in a default order, but it counts as ready only when the switch, keys and operator confirmation are all in place, and by the repository it currently needs setup.",
     ),
     t(
-      "한계: '무료 우선'은 '공짜'가 아닙니다. 계정이 결제 없는 무료 계정인지는 코드가 아니라 사용자 확인 사항입니다. 이미지·3D 는 자동 무료 길이 없어 내 키를 명시해야 하고 3D 키만 ToonStudio API 를 거칩니다. 지금 연결된 획 제안 생성기는 AI 모델이 아니라 이동평균 규칙입니다.",
-      "Limits: 'free first' does not mean free of charge. Whether an account is a no-billing free account is for the user to confirm, not something code can tell. Images and 3D have no automatic free route and need your own key, and only the 3D key passes through the ToonStudio API. The stroke-proposal generator wired in today is a moving-average rule, not an AI model.",
+      "한계: '무료 우선'은 '공짜'가 아닙니다. 계정이 결제 없는 무료 계정인지는 코드가 아니라 사용자 확인 사항입니다. 이미지·3D 는 자동 무료 길이 없어 내 키를 명시해야 하고 3D 키만 ToonStudio API 를 거칩니다. 획 제안 생성기는 AI 모델이 아니라 이동평균 규칙이며, 아직 화면에 연결되어 있지 않고 테스트에서만 돕니다.",
+      "Limits: 'free first' does not mean free of charge. Whether an account is a no-billing free account is for the user to confirm, not something code can tell. Images and 3D have no automatic free route and need your own key, and only the 3D key passes through the ToonStudio API. The stroke-proposal generator is a moving-average rule, not an AI model, and it is not yet wired into the product UI; only tests exercise it.",
     ),
   ],
   inService: [
     {
       what: t("AI 설정 · 무료 길 고르기", "AI settings and free-route choice"),
       role: t(
-        "프리셋은 공급자 10곳과 사용자 지정 1개이며, 공급자는 주소·경로(일부는 모델까지)가 검토된 무료 허용 목록과 같을 때만 무료로 보고 사용자 지정은 내 계정에 청구될 수 있는 BYOK 로 따로 다룸",
-        "The presets are 10 providers and 1 user-defined entry; a provider counts as free only when its address and path (for some, the model too) match the reviewed free allowlist, and the user-defined one is handled separately as BYOK that can be billed to your account",
+        "프리셋은 공급자 10곳과 사용자 지정 1개(운영 CSP 허용은 OpenRouter·Z.ai 2곳뿐)이며, 검토된 허용 목록과 같을 때만 무료로 보고 사용자 지정은 청구될 수 있는 BYOK 로 따로 다룸",
+        "The presets are 10 providers and 1 user-defined entry (the production CSP allows only 2 of the 10, OpenRouter and Z.ai); one counts as free only when it matches the reviewed free allowlist, and the user-defined one is handled separately as BYOK that can be billed to you",
       ),
       paths: ["apps/web/src/shared/ai/free-ai-policy.ts", "apps/web/src/shared/ai/user-ai-store.ts"],
     },
@@ -293,16 +295,16 @@ export const AI_PATH_SECTION: ArchitectureGuideSection = {
     {
       what: t("내 키 (BYOK) 호출", "Calls with your own key (BYOK)"),
       role: t(
-        "키는 기본적으로 탭 메모리에만 두고 쿠키 없이 공급자로 직접 전송, 유료 키는 허락 스위치(기본 꺼짐)",
-        "By default the key stays in tab memory and goes straight to the provider without cookies; paid keys sit behind an allow switch that is off by default",
+        "키는 기본적으로 탭 메모리에만 두고 쿠키 없이 공급자로 직접 전송(운영 CSP 가 허용하지 않는 호스트는 브라우저가 차단), 유료 키는 허락 스위치(기본 꺼짐)",
+        "By default the key stays in tab memory and goes straight to the provider without cookies (the browser blocks hosts the production CSP does not allow); paid keys sit behind an allow switch that is off by default",
       ),
       paths: ["apps/web/src/shared/ai/user-ai-transport.ts", "apps/web/src/shared/ai/user-ai-types.ts"],
     },
     {
       what: t("기기 안 AI와 제안 검토", "On-device AI and proposal review"),
       role: t(
-        "ONNX 모델이 그림 처리를 기기에서 하고, AI 결과는 제안으로만 돌아와 작가가 골라 적용",
-        "ONNX models process images on the device, and AI results come back only as proposals for the author to pick and apply",
+        "ONNX 모델이 그림 처리를 기기에서 하되 선택한 이미지를 바로 바꾸고, 글 도구의 결과는 제안으로 돌아와 작가가 골라 적용",
+        "ONNX models process images on the device and replace the selected image at once, while text-tool results come back as proposals for the author to pick and apply",
       ),
       paths: [
         "apps/web/src/domains/creator/studio-onnx-inference-provider.ts",
@@ -334,20 +336,20 @@ export const AI_PATH_SECTION: ArchitectureGuideSection = {
       ),
     },
     {
-      choice: t("AI 는 제안만, 확정은 사람이", "AI proposes, people decide"),
+      choice: t("글 도구는 제안만, 확정은 사람이", "Text tools propose, people decide"),
       because: t(
         "되돌리기 단위를 하나로 묶고 낡은 제안은 세대 번호로 거절해, 작품이 AI 때문에 망가지지 않게 합니다.",
         "Bundling the undo step and rejecting stale proposals by generation number keeps the work from being damaged by AI.",
       ),
       cost: t(
-        "확인 단계가 하나 늘고, 지금 연결된 획 제안은 AI 모델이 아닌 규칙 기반 보정입니다.",
-        "It adds a confirmation step, and today's stroke proposal is rule-based correction rather than an AI model.",
+        "확인 단계가 하나 늘고, 이미지 도구는 새 요소 추가·기기 안 ONNX 도구는 바로 교체라 이 보호가 닿지 않습니다. 획 제안 생성기는 AI 모델이 아닌 규칙 기반이며 아직 화면에 연결되지 않았습니다.",
+        "It adds a confirmation step, and image tools add a new element while on-device ONNX tools replace at once, so this protection does not reach them. The stroke-proposal generator is rule-based rather than an AI model and is not yet wired to the screen.",
       ),
     },
   ],
   pitfall: t(
-    "'무료 우선 = 공짜'가 아니며 서버 공유 무료 풀은 키·운영 확인 대기('설정 필요')입니다. 한도 날짜 경계는 UTC 자정입니다. 모든 AI 가 기기 안에서 도는 것도 아니고, 글·이미지 생성은 클라우드입니다.",
-    "'Free first' does not mean free of charge, and the shared free pool is waiting on keys and operator confirmation ('setup needed'). The daily limit resets at UTC midnight. Not all AI runs on the device; text and image generation are cloud-based.",
+    "'무료 우선 = 공짜'가 아니며 서버 공유 무료 풀은 키·운영 확인 대기('설정 필요')입니다. 한도 날짜 경계는 UTC 자정입니다. 모든 AI 가 기기 안에서 도는 것도 아니고, 글·이미지 생성은 클라우드입니다. 결과가 모두 제안으로 돌아오는 것도 아닙니다.",
+    "'Free first' does not mean free of charge, and the shared free pool is waiting on keys and operator confirmation ('setup needed'). The daily limit resets at UTC midnight. Not all AI runs on the device; text and image generation are cloud-based. Not every result returns as a proposal, either.",
   ),
   facts: [
     {
@@ -393,8 +395,8 @@ export const RESILIENCE_SECTION: ArchitectureGuideSection = {
   title: t("실패해도 작업이 남는 이유", "Why work survives failures"),
   question: t("서버·네트워크·GPU·AI 한도가 막히면?", "What happens when the server, network, GPU or AI limit is blocked?"),
   oneLine: t(
-    "실패는 숨기지 않고 알리되, 작업이 놓일 바닥(기기 저장)은 끝까지 남겨 둡니다.",
-    "Failures are announced rather than hidden, and the floor the work rests on, on-device saving, stays to the end.",
+    "실패는 숨기지 않고 알리되, 작업이 놓일 바닥은 기기 저장입니다. 기기 저장이 막히면 그 사실을 알립니다.",
+    "Failures are announced rather than hidden, and device saving is the floor the work rests on; if that saving is blocked, the app says so.",
   ),
   easy: t(
     "배의 격벽과 비슷합니다. 한 칸에 물이 새도 다른 칸이 막아 주도록 칸을 나눴습니다. 서버가 멈추면 기기 안 저장이, 저장이 막히면 알림과 복구가, GPU 가 끊기면 마지막 정상 화면이 작품을 지킵니다.",
@@ -437,14 +439,14 @@ export const RESILIENCE_SECTION: ArchitectureGuideSection = {
       {
         id: "gpu",
         label: t("GPU 장치 끊김", "GPU device loss"),
-        sub: t("엔진을 몰래 바꾸지 않고 같은 GPU 재연결, 마지막 정상 프레임 보존", "Reconnects the same GPU and keeps the last good frame"),
+        sub: t("엔진을 몰래 바꾸지 않고 같은 GPU 재연결, 3회 끊기면 이번 세션은 GPU 포기", "Reconnects the same GPU; after 3 losses the session gives up on the GPU"),
         tone: "warn",
         chips: ["GPU fabric", "Loss recovery"],
       },
       {
         id: "tabs",
         label: t("탭·저장 공간 문제", "Tab and storage-space problems"),
-        sub: t("먼저 연 탭만 저자, 공간이 모자라면 알리고 회수", "One author tab; low space is announced and reclaimed"),
+        sub: t("먼저 연 탭만 저장(둘째 탭은 저장 안 됨), 공간 부족은 알리고 회수", "First tab saves, others do not; low space is reclaimed"),
         tone: "local",
         chips: ["Web Locks", "Safe mode"],
       },
@@ -463,7 +465,7 @@ export const RESILIENCE_SECTION: ArchitectureGuideSection = {
   },
   steps: [
     t("편집이 1.5초 멈추거나 펜을 뗄 때 복구 저널에 기록해, 브라우저가 꺼져도 마지막 상태로 돌아옵니다.", "When editing pauses for 1.5 seconds or the pen lifts, the journal records it, so the last state returns even if the browser closes."),
-    t("같은 문서를 탭 두 개로 열면 먼저 연 탭만 저자가 되고, 나머지는 읽기 전용으로 물러납니다.", "If a document is open in two tabs, only the first tab becomes the author and the other steps back to read-only."),
+    t("같은 문서를 탭 두 개로 열면 먼저 연 탭만 저장합니다. 나머지 탭도 그릴 수는 있지만 그린 내용은 저장되지 않으며, 화면에 그렇게 안내합니다.", "If a document is open in two tabs, only the first tab saves. The other tab can still draw, but what it draws is not saved, and the screen says so."),
     t("저장 공간이 모자라면 조용히 실패하지 않고 알린 뒤, 안전 모드에서 복구 기록을 정리합니다.", "When storage runs short it does not fail silently: it announces the problem, then tidies recovery records in safe mode."),
     t("서버가 4초 안에 답하지 않거나 5xx 를 주면 기기에 준비해 둔 같은 스튜디오 화면을 대신 엽니다.", "If the server does not answer within 4 seconds or returns 5xx, the same studio screen prepared on the device opens instead."),
     t("GPU 가 끊기면 다른 엔진으로 몰래 바꾸지 않고 같은 GPU 재연결을 시도하며 마지막 정상 프레임을 지킵니다.", "When the GPU drops, it retries the same GPU instead of switching engines silently and keeps the last good frame."),
@@ -496,10 +498,10 @@ export const RESILIENCE_SECTION: ArchitectureGuideSection = {
       ],
     },
     {
-      what: t("탭 하나만 저자", "One author tab"),
+      what: t("탭 하나만 저장", "One saving tab"),
       role: t(
-        "Web Locks 로 먼저 연 탭만 편집·저장하고, 그 탭이 닫히면 기다리던 탭이 이어받음",
-        "Web Locks let only the first tab edit and save, and a waiting tab takes over when it closes",
+        "Web Locks 로 먼저 연 탭만 저장을 맡고(다른 탭은 그릴 수 있으나 저장되지 않음), 그 탭이 닫히면 기다리던 탭이 이어받음",
+        "Web Locks let only the first tab save (other tabs can draw but are not saved), and a waiting tab takes over when it closes",
       ),
       paths: ["apps/web/src/domains/creator/studio-autosave-document-leader.ts"],
     },
@@ -517,8 +519,8 @@ export const RESILIENCE_SECTION: ArchitectureGuideSection = {
     {
       what: t("GPU 끊김 복구", "GPU loss recovery"),
       role: t(
-        "GPU 장치를 하나만 빌려 쓰고, 끊기면 같은 GPU 재연결을 시도하며 3회에 닿으면 이번 세션의 GPU 를 포기",
-        "Shares a single GPU device, retries the same GPU after a loss, and gives up on the GPU for the session after 3 losses",
+        "끊기면 같은 GPU 재연결을 시도하며 3회에 닿으면 이번 세션의 GPU 를 포기(장치는 한 곳에서 빌려 쓰는 것이 원칙이나 일부 모듈은 자기 장치를 직접 요청)",
+        "Retries the same GPU after a loss and gives up on the GPU for the session after 3 losses (sharing one device is the intent, but some modules request their own)",
       ),
       paths: [
         "apps/web/src/domains/creator/studio-device-loss-recovery.ts",

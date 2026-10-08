@@ -47,8 +47,8 @@ export const SEMINAR_PREP_QUESTIONS: readonly SeminarPrepQuestion[] = [
   {
     question: t("AI는 어디까지 쓰고, 사람은 뭘 하나요?", "Where does AI stop and humans take over?"),
     answer: t(
-      "AI는 제안, 사람은 확정입니다. 결과는 문서를 직접 고치지 않고 제안·후보로만 돌아오며 작가가 고른 것만 적용되고, 지금 연결된 획 제안 생성기는 AI 모델이 아닌 이동평균입니다. 무료 경로는 시작 전에 확실히 거절된 한도 소진(402·429 등)일 때만 다음으로 넘기고, 시간 초과·5xx는 다시 보내지 않으며 유료 경로는 사용자가 허락해야만 씁니다.",
-      "AI proposes, humans decide. Results never edit the document directly but come back as proposals or candidates and only what the artist picks is applied, and the stroke-proposal generator wired today is a moving average, not an AI model. The free route advances only on a clear refusal before the work starts, such as quota exhaustion (402, 429 and similar); timeouts and 5xx are never resent, and a paid route runs only with the user's approval.",
+      "AI는 제안, 사람은 확정입니다. 글 도구 결과는 제안·후보로 돌아와 작가가 고른 것만 적용되고(이미지 도구는 새 요소로 추가하거나 바로 교체), 획 제안 생성기는 이동평균일 뿐 제품에 연결되지 않았습니다. 무료 경로는 시작 전에 확실히 거절된 한도 소진(402·429 등)일 때만 다음으로 넘기고, 시간 초과·5xx는 다시 보내지 않으며 유료 경로는 사용자가 허락해야만 씁니다.",
+      "AI proposes, humans decide. Text-tool results come back as proposals or candidates and only what the artist picks is applied (image tools add a new element or replace in place), and the stroke-proposal generator is only a moving average and not wired into the product. The free route advances only on a clear refusal before the work starts, such as quota exhaustion (402, 429 and similar); timeouts and 5xx are never resent, and a paid route runs only with the user's approval.",
     ),
     glossaryId: "ai-routing",
     atlasId: "ai-proposal-not-commit",
@@ -179,8 +179,8 @@ export const SEMINAR_PREP_QUESTIONS: readonly SeminarPrepQuestion[] = [
   {
     question: t("AI 에이전트로 개발할 때 품질은 어떻게 지키나요?", "How is quality protected when developing with AI agents?"),
     answer: t(
-      "규칙은 AGENTS.md 한 곳에 두고 도구별 파일은 그곳을 가리키기만 하며, AI가 만든 변경도 사람의 변경과 같은 harness:verify·훅·CI core를 지나고 운영 배포는 사람이 승인한 40자리 SHA만 반영합니다. 사실이 충돌하면 코드와 테스트가 먼저이고 OpenWiki는 길잡이입니다. 개발 속도나 결함률 같은 정량 효과는 측정하지 않았고, loop 명령 파일 23개의 실제 실행 기록도 확인하지 못했습니다(미확인).",
-      "The rules live in one AGENTS.md and tool files only point to it; a change made by AI passes the same harness:verify, hooks and CI core as a person's change, and production deployment applies only a 40-character SHA that a person approved. When facts conflict, code and tests win and OpenWiki is a guide. The quantitative effect on speed or defect rate was not measured, and no execution record was found for the 23 loop command files (unconfirmed).",
+      "규칙은 AGENTS.md 한 곳에 두고 도구별 파일은 핵심만 요약해 그곳을 가리키고, AI가 만든 변경도 정책상 사람의 변경과 같은 harness:verify·훅·CI core를 지나고 운영 배포는 사람이 승인한 40자리 SHA만 반영합니다. 사실이 충돌하면 코드와 테스트가 먼저이고 OpenWiki는 길잡이입니다. 개발 속도나 결함률 같은 정량 효과는 측정하지 않았고, loop 명령 파일 23개의 실제 실행 기록도 확인하지 못했습니다(미확인).",
+      "The rules live in one AGENTS.md and tool files summarize the essentials and point to it, and by policy a change made by AI passes the same harness:verify, hooks and CI core as a person's change, and production deployment applies only a 40-character SHA that a person approved. When facts conflict, code and tests win and OpenWiki is a guide. The quantitative effect on speed or defect rate was not measured, and no execution record was found for the 23 loop command files (unconfirmed).",
     ),
     glossaryId: "agent-harness",
     atlasId: "agent-harness-verify-gates",

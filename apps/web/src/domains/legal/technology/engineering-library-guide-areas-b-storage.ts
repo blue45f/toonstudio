@@ -34,8 +34,8 @@ export const LIBRARY_AREA_LOCAL_STORAGE_PWA: LibraryGuideArea = {
     {
       title: t("저장소마다 맡은 일을 나눈다", "Each store has its own job"),
       body: t(
-        "찾고 정렬할 데이터는 SQLite, 큰 파일과 복구 기록은 OPFS 파일, 작은 앱 상태는 IndexedDB가 맡습니다. 창작 데이터가 localStorage·IndexedDB로 되돌아가면 정적 검사(ADR-0014)가 같은 PR에서 실패합니다.",
-        "SQLite holds data to search and sort, OPFS files hold big files and recovery records, and IndexedDB holds small app state. If creative data drifts back to localStorage or IndexedDB, a static check (ADR-0014) fails the same PR.",
+        "찾고 정렬할 데이터는 SQLite, 큰 파일과 복구 기록은 OPFS 파일, 커지는 앱 상태와 보조 자료는 IndexedDB가 맡습니다. 핵심 창작 데이터가 되돌아가면 정적 검사(ADR-0014)가 같은 PR에서 실패합니다.",
+        "SQLite holds data to search and sort, OPFS files hold big files and recovery records, and IndexedDB holds growing app state and side material. If core creative data drifts back, a static check (ADR-0014) fails the same PR.",
       ),
     },
     {
@@ -97,7 +97,7 @@ export const LIBRARY_AREA_LOCAL_STORAGE_PWA: LibraryGuideArea = {
       {
         id: "small",
         label: t("작은 앱 상태", "Small app state"),
-        sub: t("컷 목록·참여 같은 상태를 IndexedDB에 이어 저장", "Cut lists and engagement persist in IndexedDB"),
+        sub: t("컷츠 피드·참여 같은 상태를 IndexedDB에 이어 저장", "Cuts feed and engagement persist in IndexedDB"),
         tone: "local",
         chips: ["IndexedDB", "Zustand"],
       },
@@ -186,8 +186,8 @@ export const LIBRARY_AREA_LOCAL_STORAGE_PWA: LibraryGuideArea = {
         "Serves the app shell and hashed files from cache, and applies a new version only after a save-safety check and a user click. It never touches artwork data.",
       ),
       why: t(
-        "서버가 잠들거나 끊겨도 스튜디오가 열려야 해서 앱 셸을 Cache API로 기기에 둡니다. 라우팅·버전 판단을 순수 함수로 두어 브라우저 없이 단위 테스트하고, 프리캐시는 하나라도 실패하면 새 워커를 켜지 않습니다.",
-        "The studio must open even when the server sleeps or is unreachable, so the app shell lives on the device in the Cache API. Routing and versioning are pure functions tested without a browser, and one failed precache file stops the new worker from activating.",
+        "서버가 잠들거나 끊겨도 스튜디오가 열려야 해서 앱 셸을 Cache API로 기기에 둡니다. 라우팅·버전 판단을 순수 함수로 두어 브라우저 없이 테스트하고, 설치 때 필수 프리캐시가 하나라도 실패하면 새 워커를 켜지 않습니다.",
+        "The studio must open even when the server sleeps or is unreachable, so the app shell lives on the device in the Cache API. Routing and versioning are pure functions tested without a browser, and one failed required precache file at install stops the new worker from activating.",
       ),
       alternatives: t(
         "Workbox 같은 라이브러리 없이 직접 구현했습니다. 라이브러리를 고르지 않은 이유를 적은 문서는 저장소에서 찾지 못했습니다.",
@@ -212,16 +212,16 @@ export const LIBRARY_AREA_LOCAL_STORAGE_PWA: LibraryGuideArea = {
       kind: "format",
       oneLine: t("브라우저 안에 큰 데이터를 비동기로 쌓는 기본 저장소", "The browser's built-in store for larger data, used asynchronously"),
       usedFor: t(
-        "컷 목록·참여·뉴스레터 같은 앱 상태(Zustand)를 이어 저장합니다. 창작 문서의 원본 저장소로는 쓰지 않습니다.",
-        "Persists app state (Zustand) such as cut lists, engagement and newsletter data. It is not the home of the original creative documents.",
+        "컷츠 피드·참여·뉴스레터 같은 앱 상태(Zustand)와 캐릭터 캐논 시트·작품별 용어집을 이어 저장합니다. 프로젝트 원고의 저장소는 아닙니다.",
+        "Persists app state such as the Cuts feed, engagement and newsletter data (Zustand), plus character canon sheets and per-work dialogue glossaries. It is not the home of project manuscripts.",
       ),
       why: t(
         "localStorage는 작고 동기식이라 커지는 상태에서 막혔고, IndexedDB는 크고 비동기라 맞습니다. 옮길 때는 읽고·쓰고·다시 읽어 같을 때만 옛 키를 지워 사고가 나도 옛 사본이 남게 했습니다.",
         "localStorage is small and synchronous and ran into limits as state grew, while IndexedDB is large and asynchronous. A move reads, writes and reads back, and deletes the old key only if they match, so a mishap leaves the old copy.",
       ),
       alternatives: t(
-        "창작 데이터는 SQLite·OPFS로 통일하고 IndexedDB는 UI 상태용으로 한정했습니다. 정적 검사(ADR-0014)가 제품 경로로 되돌아오는 것을 막습니다.",
-        "Creative data is unified on SQLite and OPFS, and IndexedDB is limited to UI state. A static check (ADR-0014) blocks it from returning to the product path.",
+        "프로젝트 원고·자동저장·브러시·필터 같은 핵심 창작 데이터는 SQLite·OPFS로 통일했고, IndexedDB는 앱 상태와 보조 자료에 씁니다. ADR-0014 검사는 직접 쓴 localStorage·IndexedDB 호출만 잡습니다.",
+        "Core creative data such as project manuscripts, autosave, brushes and filters is unified on SQLite and OPFS, while IndexedDB holds app state and side material. The ADR-0014 check catches only direct localStorage and IndexedDB calls.",
       ),
       cost: t(
         "정렬·검색·여러 표의 규칙을 직접 짜야 합니다. 비동기라 첫 화면에 바로 필요한 값(로그인 세션 등)은 localStorage에 남겼습니다. 브라우저 저장소라 백업은 아닙니다.",
@@ -242,12 +242,12 @@ export const LIBRARY_AREA_LOCAL_STORAGE_PWA: LibraryGuideArea = {
       kind: "format",
       oneLine: t("탭이 여러 개여도 '지금 쓰는 사람은 한 명'을 지키는 번호표", "A ticket that keeps 'only one writer at a time' across many tabs"),
       usedFor: t(
-        "SQLite를 여는 Worker와 문서별 편집 탭을 하나로 정합니다. 탭이 닫히거나 죽으면 브라우저가 락을 풀어 다음 탭이 이어받습니다.",
-        "Picks one Worker to open SQLite and one editing tab per document. When a tab closes or crashes the browser releases its lock and the next tab takes over.",
+        "SQLite를 여는 Worker 하나와 문서별 편집 탭 하나를 정합니다. 탭이 닫히거나 죽으면 브라우저가 락을 풀고, 기다리던 문서 탭이 이어받습니다.",
+        "Picks one Worker to open SQLite and one editing tab per document. When a tab closes or crashes the browser releases the lock, and a document tab that was waiting takes over.",
       ),
       why: t(
-        "같은 원고를 탭 둘로 열면 나중 저장이 앞선 작업을 덮을 수 있습니다. 시각을 적는 방식은 시계 오차에, 메시지 선출은 유실에 약해서 소유권을 브라우저가 보장하는 락으로 정했습니다.",
-        "With one manuscript open in two tabs, the later save can erase the earlier work. Timestamps suffer from clock skew and message elections from lost messages, so ownership is decided by a lock the browser guarantees.",
+        "같은 원고를 탭 둘로 열면 나중 저장이 앞선 작업을 덮을 수 있습니다. 시각 기록은 시계 오차에, 메시지 선출은 유실에 약하다는 일반론에 따라 브라우저가 보장하는 락으로 정했습니다(견준 기록은 찾지 못함).",
+        "With one manuscript open in two tabs, the later save can erase the earlier work. As a general rule, timestamps suffer from clock skew and message elections from lost messages, so ownership is decided by a lock the browser guarantees (no comparison record was found).",
       ),
       alternatives: t(
         "localStorage에 리더 시각을 적는 방식과 BroadcastChannel 선출은 쓰지 않고, BroadcastChannel은 '작업공간이 바뀌었다' 같은 알림에만 씁니다.",
@@ -273,8 +273,8 @@ export const LIBRARY_AREA_LOCAL_STORAGE_PWA: LibraryGuideArea = {
       package: "multiformats",
       oneLine: t("파일의 '내용 지문'(CID)을 만들고 대조하는 작은 도구", "A small tool that makes and checks a file's content fingerprint (CID)"),
       usedFor: t(
-        "통합 센터의 IPFS 패널에서 공개 게이트웨이가 준 바이트가 약속한 지문과 같은지 직접 대조합니다. 작품 저장 경로와는 별개입니다.",
-        "In the integration center's IPFS panel it checks that bytes from a public gateway match the promised fingerprint. It is separate from the artwork save path.",
+        "파일의 CID를 기기 안에서 계산하고, 공개 게이트웨이가 준 바이트가 지문과 같은지 대조합니다(게이트웨이 접속은 운영 CSP에 막힐 수 있음). 저장 경로와는 별개입니다.",
+        "Computes a file's CID on the device and checks that bytes from a public gateway match the fingerprint (the gateway request may be blocked by the production CSP). It is separate from the artwork save path.",
       ),
       why: t(
         "Helia(@helia/verified-fetch)는 전이 의존성 보안 권고가 풀리지 않아 쓰지 않고, CID 계산·검증만 하는 multiformats와 게이트웨이 fetch로 닫히는 범위를 구현했습니다(코드 주석, 2026-10-06 실측).",
