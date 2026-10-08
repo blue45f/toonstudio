@@ -185,7 +185,7 @@ export function EngineeringVideosPage() {
               </div>
               <h3 className="mt-5 text-lg font-black text-fg">{bi((format.title).ko, (format.title).en)}</h3>
               <p className="mt-2 text-sm leading-7 text-fg-3">{bi((format.purpose).ko, (format.purpose).en)}</p>
-              <code className="mt-4 block overflow-x-auto whitespace-nowrap rounded-xl bg-panel px-3 py-2 text-[0.66rem] text-fg-2">
+              <code className="mt-4 block max-w-full whitespace-pre-wrap break-words rounded-xl bg-panel px-3 py-2 text-[0.66rem] text-fg-2">
                 {format.composition}
               </code>
             </article>
