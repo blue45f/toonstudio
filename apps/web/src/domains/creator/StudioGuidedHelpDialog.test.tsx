@@ -50,7 +50,7 @@ describe("StudioGuidedHelpDialog", () => {
 
     expect(screen.getByRole("heading", { name: "닫힌 영역 색 채우기" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "30초 시작" })).toBeTruthy();
-    expect(screen.getByText("페이지 전체가 칠해졌어요")).toBeTruthy();
+    expect(screen.getByText("페이지 전체가 칠해졌습니다")).toBeTruthy();
     expect(screen.getByText("단축키 G")).toBeTruthy();
   });
 
@@ -65,7 +65,7 @@ describe("StudioGuidedHelpDialog", () => {
     );
 
     expect(screen.getByRole("heading", { name: "스마트 도형으로 선 정리하기" })).toBeTruthy();
-    expect(screen.getByText("그냥 자유선으로 남아요")).toBeTruthy();
+    expect(screen.getByText("그냥 자유선으로 남습니다")).toBeTruthy();
   });
 
   it("검색 실패는 빈 막다른 길 대신 전체 F1 검색으로 복구한다", () => {
