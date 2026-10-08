@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, 
 
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 import { LoadingState } from "@/shared/components/LoadingState";
+import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
@@ -461,6 +462,8 @@ export function PwaInstallShowcase({
 
 /** /install 라우트용 페이지 래퍼. 본문 랜드마크(main)는 AppShell 하나만 소유한다. */
 export function PwaInstallShowcasePage() {
+  useBilingualI18nRevision();
+  useDocumentTitle(bi("앱 설치 · ToonStudio", "Install the app · ToonStudio"));
   const handleClose = useCallback(() => {
     window.history.back();
   }, []);
