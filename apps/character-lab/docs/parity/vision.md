@@ -24,7 +24,7 @@
 
 | SHAPER 항목 | 세부 요구 | 구현 상태 | Node 검증(테스트 파일) | 브라우저 검증 | 비고(베타·사유) |
 | --- | --- | --- | --- | --- | --- |
-| 참고 이미지 추천 | MediaPipe 지연 로더: `@mediapipe/tasks-vision` 동적 import, wasm은 패키지 서브패스 `?url` 번들, 모델 파일만 계약 `MEDIAPIPE_MODELS` CDN URL, byteLength·SHA-256 검증(고정 모델)/관측 SHA(미고정), 15 s timeout, 실패는 `VisionStatus.failed` + 사유 | 구현됨(순수 부분 Node 검증) | `model-assets.test.ts`(고정/미고정·404·네트워크·타임아웃·SHA 계산 불가·`withDeadline`) | 미검증(CDN 다운로드·wasm 초기화·추론) | `mediapipe-loader.browser.ts`는 테스트 import 금지. 델리게이트는 생성 전 고정(CPU 기본), 실패 시 다른 델리게이트 자동 시도 없음 |
+| 참고 이미지 추천 | MediaPipe 지연 로더: `@mediapipe/tasks-vision` 동적 import, wasm은 패키지 서브패스 `?url` 번들, 모델 파일만 계약 `MEDIAPIPE_MODELS` CDN URL, byteLength·SHA-256 검증(세 모델 모두 고정; 값이 빠진 모델은 관측 SHA만 기록), 15 s timeout, 실패는 `VisionStatus.failed` + 사유 | 구현됨(순수 부분 Node 검증) | `model-assets.test.ts`(고정 3종 형식·고정 포즈/손의 크기·SHA 불일치 실패·미고정 경로·배지 문구·404·네트워크·타임아웃·SHA 계산 불가·`withDeadline`) | 미검증(CDN 다운로드·wasm 초기화·추론) | `mediapipe-loader.browser.ts`는 테스트 import 금지. 델리게이트는 생성 전 고정(CPU 기본), 실패 시 다른 델리게이트 자동 시도 없음 |
 | 참고 이미지 추천 | 모델 세션: 모델별 idle/loading/ready/failed, 한 번만 시도·자동 재시도 없음·`retry`만 재시도, 동시 요청 공유, `useSyncExternalStore` 구독 | 구현됨 | `vision-session.test.ts` | 미검증 | imageEmbedder·poseLandmarker 상태는 계약 `vision/status` 이벤트, 손 모델은 패널 내부 추적(§5 계약 변경 요청) |
 | 참고 이미지 추천 | 코사인 유사도·L2 정규화·안정 정렬 Top-K | 구현됨 | `similarity.test.ts` | — | 길이 불일치는 throw(무음 0 금지), 영벡터는 0 |
 | 참고 이미지 추천 | 프리셋 썸네일 임베딩(LabState.thumbnails ready 래스터, cacheKey LRU 캐시, 투명 썸네일 제외) vs 참고 이미지 임베딩 → 슬롯별 상위 3 추천 + coverage(후보/전체/제외 사유) | 구현됨 | `recommend.test.ts`, `reference-recommender.test.ts` | 미검증(실 임베딩 품질) | 썸네일이 없는 프리셋은 추천 불가 사유로 노출, 빈 슬롯은 빈 배열 |
@@ -34,7 +34,7 @@
 | 사진 포즈 인식 | 랜드마크 공간 변환(월드 m / 이미지 정규화+비율 보정, y·z 반전, 거울 = 좌우 교환 + x 반전) | 구현됨 | `landmark-space.test.ts` | — | `POSE_MIRROR_INDEX` |
 | 사진 포즈 인식 | 21 손 랜드마크 → 손가락 15본 굴곡(측면 축 투영으로 벌림 분리, 엄지 원시 각, 95° 클램프) — **베타(굴곡만)** | 구현됨 | `hand-landmarks-to-pose.test.ts`(펼침 0°, 주먹 90°, DSL 축 일치, 클램프, 거울·NaN) | 미검증 | 벌림·엄지 대립은 2D 사진에서 신뢰할 수 없어 미적용(결과 `notesKo`) |
 | 사진 포즈 인식 | 원본 사진 위 오버레이 계획(정규화→픽셀, MediaPipe 공개 토폴로지 연결선 33/21점, contain 맞춤) | 구현됨 | `landmark-overlay.test.ts` | 미검증(SVG 실제 배치) | 오버레이는 항상 원본 기준(거울 무관) |
-| 사진 포즈 인식 | VisionPanel: 모델 상태 행(SHA 고정/미고정·베타 배지, 다시 시도), 참고 이미지 파일 → 추천 카드(`slot/apply` 1회)·팔레트 칩(`color/set`)·1순위 전체 적용, 사진 파일/카메라(getUserMedia) → 오버레이 → 범위·거울·셀피·가시성·좌표계 → `pose/set`, 손별 측 선택 → 손 `pose/set` | 구현됨 | `app/shell/panels/VisionPanel.test.tsx`(jsdom, 가짜 로더·디코더 5케이스) | 미검증(파일 디코드·카메라·실 모델) | 브라우저 API는 `VisionPanelDeps`로 분리. 카메라 미지원·실패는 정직 표시 |
+| 사진 포즈 인식 | VisionPanel: 모델 상태 행(SHA 고정 배지(값이 빠진 모델이면 미고정·베타), 다시 시도), 참고 이미지 파일 → 추천 카드(`slot/apply` 1회)·팔레트 칩(`color/set`)·1순위 전체 적용, 사진 파일/카메라(getUserMedia) → 오버레이 → 범위·거울·셀피·가시성·좌표계 → `pose/set`, 손별 측 선택 → 손 `pose/set` | 구현됨 | `app/shell/panels/VisionPanel.test.tsx`(jsdom, 가짜 로더·디코더 5케이스) | 미검증(파일 디코드·카메라·실 모델) | 브라우저 API는 `VisionPanelDeps`로 분리. 카메라 미지원·실패는 정직 표시 |
 
 ## 2. 공개 API 요약
 
@@ -109,7 +109,7 @@
 
 1. **core(`app/composition.ts`)**: `COMPOSED_PANELS`에 `VisionPanel`·`PackagePanel`을 추가한다(`LabPanels`에 슬롯은 이미 있다). 두 패널 모두 props 없이 마운트 가능하며 브라우저 의존성(`createBrowserVisionDeps`, `browserPackageLoader`)은 내부 기본값이다.
 2. **core(CSS)**: `cl-vision-*`·`cl-package-*` 공통 클래스는 있으나 패널이 쓰는 세부 클래스(`cl-vision-model-list`, `cl-vision-badge--pinned/--beta/--partial/--unavailable`, `cl-vision-swatches`, `cl-vision-overlay`, `cl-package-capabilities`, `cl-package-badge--available/--partial/--unavailable/--primary`, `cl-package-facts`)는 기본 스타일만 받는다. 오버레이 배치(`position: relative/absolute`)만 인라인 스타일이다.
-3. **계약 변경 요청(core, 추가만)**: `contracts/vision.ts`의 `MEDIAPIPE_MODELS`에 `handLandmarker`(`HAND_LANDMARKER_MODEL`과 같은 URL·Apache-2.0·bytes/sha256 null) 추가 → `VisionModelId`가 손 모델을 포함하면 `vision-ports.ts`의 `VisionModelKey` 확장과 `toContractVisionStatus`의 null 분기를 제거할 수 있다. 첫 브라우저 검증 시 pose·hand 모델의 bytes·sha256을 고정한다(현재 UI에 "SHA 미고정·베타").
+3. **계약 변경 요청(core, 추가만)**: `contracts/vision.ts`의 `MEDIAPIPE_MODELS`에 `handLandmarker`(`HAND_LANDMARKER_MODEL`과 같은 URL·Apache-2.0·bytes/sha256 null) 추가 → `VisionModelId`가 손 모델을 포함하면 `vision-ports.ts`의 `VisionModelKey` 확장과 `toContractVisionStatus`의 null 분기를 제거할 수 있다. pose·hand 모델의 bytes·sha256은 2026-10-08에 고정했다(공식 CDN에서 받아 SHA-256 계산, Cloud Storage `x-goog-hash` MD5·크기와 대조).
 4. **render(`render/babylon/package-loader.ts`)**: `AuthoredPackagePlan.meshRoles`(Babylon `_primitive<i>` 분할 이름 포함)·`hairLodPolicy.preferredLod`·`shapeKeyMap`(`<mesh>:<key>`와 bare 키 모두)·`boneMap`을 그대로 쓴다. 헤어 LOD 가시성은 `selectHairLod(meshNames, preferredLod).visible/hidden`으로 다시 계산할 수 있다.
 5. **animation**: 손가락 굴곡 축 규약(`fingerCurlQuat`·`thumbCurlQuat`)은 `animation/presets/rotation-dsl.ts`와 같은 식이며 테스트로 고정했다(`hand-landmarks-to-pose.test.ts`). 손목·발목 IkGoal 생성은 `ik-apply` 입력 형식이 확정되면 `landmarks-to-pose`에 추가한다.
 6. **통합 담당(빌드)**: `vite build` 시 `dist/assets`에 `vision_wasm_internal-*.wasm`·`vision_wasm_internal-*.js`가 별도 파일로 나오고 `@mediapipe/tasks-vision` 청크가 패널 청크와 분리되는지 확인(브라우저 검증 항목).
@@ -117,7 +117,7 @@
 ## 6. 브라우저 미검증 항목(정직 표기)
 
 - `@mediapipe/tasks-vision` 동적 import·wasm `?url` 번들 해석·`FilesetResolver` 없이 `{ wasmLoaderPath, wasmBinaryPath }` 직접 지정 동작.
-- 모델 CDN 다운로드(CORS·크기·SHA 일치), `imageEmbedder` 고정 SHA `bbbb4c51…` 실측, pose·hand 모델 관측 SHA.
+- 모델 CDN 다운로드(CORS·크기·SHA 일치), `imageEmbedder` 고정 SHA `bbbb4c51…` 실측, pose·hand 모델은 고정한 SHA와 브라우저에서 받은 바이트가 일치하는지.
 - ImageEmbedder/PoseLandmarker/HandLandmarker 실제 추론 품질(랜드마크 좌표계·가시성 분포·손 handedness 보고), GPU 델리게이트.
 - `createImageBitmap`·canvas 디코드, `getUserMedia` 카메라·`<video>` 캡처, Blob URL 미리보기.
 - SVG 오버레이가 `<img>` 위에 정확히 겹치는지(`preserveAspectRatio` + contain).

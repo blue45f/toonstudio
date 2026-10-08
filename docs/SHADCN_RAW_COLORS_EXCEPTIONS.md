@@ -40,6 +40,7 @@
 | `apps/web/src/shared/pwa/PwaInstallShowcase.tsx` (히어로 SVG 구간) | 3 | 설치 안내 히어로 아트워크(브랜드 그라디언트 마크 포함) |
 | `apps/web/src/shared/pwa/PwaInstallWelcome.tsx` ("home" 아트 SVG 구간) | 2 | 웰컴 투어 아트워크 — 그라디언트 원 위 흰 체크는 그림 데이터 |
 | `apps/web/src/shared/spectacle/SpectacleShowcase.tsx` (핑크 글로우 버튼 1줄) | 1 | 글로우 연출 데모의 핑크 샘플 버튼 — 색 자체가 시연 콘텐츠 |
+| `apps/web/src/domains/learn/LessonLab.tsx` (도식 SVG 반환 구간) | 15 | 학습 도식(기준·비교 SVG)의 고정 색 팔레트 — 명암 구분 데이터라 토큰으로 바꾸면 도식 판독이 달라진다 |
 | `apps/web/src/domains/creator-resources/RecipesPage.tsx` (RecipePreview SVG 구간) | 4 | 연출 실습 미리보기 아트워크 — 고정 회색 종이(#eeeeee) 위 인물·효과선 명도(#555·#606060)는 명암 대비 실습 데이터라 테마 토큰으로 바꾸면 인물 대비가 6.43:1에서 1.28~1.83:1로 무너진다 |
 
 ## 오탐 (규칙이 색이 아닌 것을 색으로 오인)

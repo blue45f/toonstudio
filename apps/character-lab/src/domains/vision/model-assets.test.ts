@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 
 import { MEDIAPIPE_MODELS } from "../../contracts";
 
-import { HAND_LANDMARKER_MODEL, VISION_MODEL_SPECS, createFetchModelPort, createModelWithDeadline, fetchModelAsset, isModelSpecPinned, verifyModelBytes, withDeadline } from "./model-assets";
+import { HAND_LANDMARKER_MODEL, VISION_MODEL_SPECS, createFetchModelPort, createModelWithDeadline, describeModelPinKo, fetchModelAsset, isModelSpecPinned, verifyModelBytes, withDeadline } from "./model-assets";
 
-import type { ModelBytesPort } from "./model-assets";
+import type { ModelBytesPort, VisionModelSpec } from "./model-assets";
 
 const sha256 = async (bytes: Uint8Array): Promise<string> => createHash("sha256").update(bytes).digest("hex");
 
@@ -15,10 +15,13 @@ function portOf(bytes: Uint8Array | null, status = 404): ModelBytesPort {
 }
 
 describe("vision/model-assets", () => {
-  it("계약 모델 표: 임베더는 고정, 포즈·손은 미고정(베타)", () => {
-    expect(isModelSpecPinned(VISION_MODEL_SPECS.imageEmbedder)).toBe(true);
-    expect(isModelSpecPinned(VISION_MODEL_SPECS.poseLandmarker)).toBe(false);
-    expect(isModelSpecPinned(VISION_MODEL_SPECS.handLandmarker)).toBe(false);
+  it("계약 모델 표: 임베더·포즈·손 세 모델 모두 크기와 SHA-256이 고정되어 있다", () => {
+    for (const spec of Object.values(VISION_MODEL_SPECS)) {
+      expect(isModelSpecPinned(spec), `${spec.key} 고정 여부`).toBe(true);
+      expect(Number.isInteger(spec.bytes) && (spec.bytes ?? 0) > 1_000_000, `${spec.key} bytes`).toBe(true);
+      expect(spec.sha256, `${spec.key} sha256 형식(소문자 hex 64자)`).toMatch(/^[0-9a-f]{64}$/u);
+      expect(spec.url, `${spec.key} URL은 공식 mediapipe-models 버킷`).toMatch(/^https:\/\/storage\.googleapis\.com\/mediapipe-models\//u);
+    }
     expect(VISION_MODEL_SPECS.imageEmbedder.url).toBe(MEDIAPIPE_MODELS.imageEmbedder.url);
     expect(HAND_LANDMARKER_MODEL.url).toMatch(/hand_landmarker\.task$/u);
     expect(HAND_LANDMARKER_MODEL.license).toBe("Apache-2.0");
@@ -43,14 +46,34 @@ describe("vision/model-assets", () => {
     expect(empty.ok === false && empty.failure.code).toBe("vision-model-empty");
   });
 
-  it("미고정 모델은 관측 SHA를 기록하고 pinned=false로 통과한다", async () => {
+  it("계약에서 크기·SHA가 빠진(미고정) 모델은 관측 SHA를 기록하고 pinned=false로 통과한다", async () => {
+    const unpinned: VisionModelSpec = { ...VISION_MODEL_SPECS.poseLandmarker, bytes: null, sha256: null };
+    expect(isModelSpecPinned(unpinned)).toBe(false);
     const bytes = new Uint8Array([9, 9, 9]);
-    const result = await fetchModelAsset(portOf(bytes), VISION_MODEL_SPECS.poseLandmarker, { sha256, now: 1 });
+    const result = await fetchModelAsset(portOf(bytes), unpinned, { sha256, now: 1 });
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.model.pinned).toBe(false);
       expect(result.model.observedSha256).toBe(await sha256(bytes));
     }
+  });
+
+  it("고정된 포즈·손 모델은 내용이 다르면 크기 또는 SHA 불일치로 실패한다", async () => {
+    for (const key of ["poseLandmarker", "handLandmarker"] as const) {
+      const spec = VISION_MODEL_SPECS[key];
+      const wrong = new Uint8Array([1, 2, 3]);
+      const sizeMismatch = await fetchModelAsset(portOf(wrong), spec, { sha256, now: 1 });
+      expect(sizeMismatch.ok === false && sizeMismatch.failure.code, key).toBe("vision-model-bytes-mismatch");
+      const sameSizeWrongContent = new Uint8Array(spec.bytes ?? 0);
+      const shaMismatch = await fetchModelAsset(portOf(sameSizeWrongContent), spec, { sha256, now: 1 });
+      expect(shaMismatch.ok === false && shaMismatch.failure.code, key).toBe("vision-model-sha-mismatch");
+    }
+  });
+
+  it("배지 문구: 고정이면 'SHA 고정', 크기나 SHA 하나라도 비면 'SHA 미고정·베타'", () => {
+    expect(describeModelPinKo(VISION_MODEL_SPECS.imageEmbedder)).toBe("SHA 고정");
+    expect(describeModelPinKo({ ...VISION_MODEL_SPECS.handLandmarker, sha256: null })).toBe("SHA 미고정·베타");
+    expect(describeModelPinKo({ ...VISION_MODEL_SPECS.handLandmarker, bytes: null })).toBe("SHA 미고정·베타");
   });
 
   it("404·네트워크 실패·시간 초과·SHA 계산 불가는 모두 LabFailure로 돌려준다", async () => {

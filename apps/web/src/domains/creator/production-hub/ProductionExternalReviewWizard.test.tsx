@@ -36,8 +36,8 @@ describe("ProductionExternalReviewWizard", () => {
       expiresInDays: 3,
     }));
 
-    // 3단계: 공유 링크 표시
-    expect(screen.getByRole("heading", { name: "공유" })).toBeTruthy();
+    // 3단계: 공유 링크 표시. 단계 전환은 onCreate 응답을 받은 뒤(비동기)에 일어나므로 기다린다.
+    expect(await screen.findByRole("heading", { name: "공유" })).toBeTruthy();
     expect(screen.getByLabelText("외부 검수 링크")).toHaveProperty("value", expect.stringContaining("token=abc"));
   });
 

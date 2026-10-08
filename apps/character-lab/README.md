@@ -93,7 +93,7 @@ Node 버전: 저장소 루트는 `engines.node >= 24.16`이고 CI는 Node 24로 
 **베타 토글 4종**(RenderPanel '베타 기능', 기본 꺼짐): NodeMaterial 툰(기본은 ShaderMaterial 툰 GLSL/WGSL + OutlineRenderer), IBL Shadows, OpenPBR, MeshUVSpaceRenderer 투영 페인트.
 켜기 전에 엔진 능력을 확인하고 지원하지 않으면 한글 사유와 함께 켜지지 않는다(다른 경로로 자동 대체하지 않는다). 토글은 엔진 세션 상태라 레시피(`ShadingProfile`)에 저장되지 않으며 엔진을 다시 고르면 꺼진다.
 한계는 UI에 고지한다: OpenPBR은 페인트 데칼이 보이지 않고, IBL Shadows는 툰 재질에 적용되지 않으며, OpenPBR·IBL Shadows는 청색 노이즈 PNG 1장을 `assets.babylonjs.com`에서 받는다(외부 요청).
-TAA·SSAO2도 베타(기본 꺼짐)이며 Havok provider는 미설치, VRM 부분 파서(VRMC_vrm meta/humanoid만), MediaPipe 모델 SHA 미고정은 그대로다.
+TAA·SSAO2도 베타(기본 꺼짐)이며 Havok provider는 미설치, VRM 부분 파서(VRMC_vrm meta/humanoid만), MediaPipe 모델 세 종의 bytes·SHA-256은 2026-10-08에 고정했다(공식 CDN 객체 MD5와 대조, 브라우저 CDN 다운로드는 여전히 미검증).
 
 **실제로 확인한 범위**: 2026-10-02 소프트웨어 렌더러(SwiftShader) WebGL2에서 PBR·툰 렌더의 가시성·투명 PNG 알파 규약·썸네일·셸 흐름을 프로브로 확인했다(`docs/shaper-parity-checklist.md` §13).
 **확인하지 못한 범위**: WebGPU 경로, WGSL 셰이더 실제 컴파일, 실GPU 렌더 품질·성능, 투명 RTT readback 행 순서/premultiply 상수(`RTT_READBACK_*` 가정값), 그림자·후처리 품질, 페인트 텍스처 반영과 투영 페인트 포인터 흐름,

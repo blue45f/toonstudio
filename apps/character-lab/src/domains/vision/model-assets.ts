@@ -1,7 +1,7 @@
 /**
  * MediaPipe 모델 파일(.tflite/.task) 받기·검증(순수, fetch 포트 주입).
  * - 계약 `MEDIAPIPE_MODELS`의 URL을 쓰고, bytes·sha256이 고정된 모델은 둘 다 일치해야 통과한다.
- * - 고정되지 않은 모델(pose·hand)은 관측 SHA를 기록하고 `pinned:false`로 돌려준다(UI에 '미고정·베타' 표시).
+ * - 계약에서 bytes·sha256이 null인 모델(현재는 없음)은 관측 SHA를 기록하고 `pinned:false`로 돌려준다(UI에 '미고정·베타' 표시).
  * - 시간 제한(VISION_LOAD_TIMEOUT_MS)·네트워크 실패·크기/SHA 불일치는 모두 LabFailure(한글 사유)로 노출한다.
  */
 import { MEDIAPIPE_MODELS, VISION_LOAD_TIMEOUT_MS, failVisible, isLabFailure } from "../../contracts";
@@ -17,7 +17,7 @@ export interface VisionModelSpec {
   readonly license: string;
 }
 
-/** 손 랜드마커 모델(계약 `MEDIAPIPE_MODELS.handLandmarker`와 동일, 미고정·베타). 첫 브라우저 검증 시 통합 담당이 bytes·sha256을 고정한다. */
+/** 손 랜드마커 모델(계약 `MEDIAPIPE_MODELS.handLandmarker`와 동일, bytes·sha256 고정). */
 export const HAND_LANDMARKER_MODEL = MEDIAPIPE_MODELS.handLandmarker;
 
 export const VISION_MODEL_SPECS: Readonly<Record<VisionModelKey, VisionModelSpec>> = {
@@ -28,6 +28,11 @@ export const VISION_MODEL_SPECS: Readonly<Record<VisionModelKey, VisionModelSpec
 
 export function isModelSpecPinned(spec: VisionModelSpec): boolean {
   return spec.sha256 !== null && spec.bytes !== null;
+}
+
+/** 모델 상태 행의 배지 문구: 크기·SHA가 모두 고정이면 'SHA 고정', 하나라도 비면 'SHA 미고정·베타'. */
+export function describeModelPinKo(spec: VisionModelSpec): string {
+  return isModelSpecPinned(spec) ? "SHA 고정" : "SHA 미고정·베타";
 }
 
 export type ModelBytesResponse = { readonly ok: true; readonly bytes: Uint8Array } | { readonly ok: false; readonly status: number | null; readonly message: string };

@@ -404,6 +404,66 @@ async function waitForSettledDocumentLane(
   throw new Error(`${label}: collaboration phase did not settle; latest=${latest}`);
 }
 
+interface CanvasPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * 캔버스 뷰포트 위에는 플로팅 크롬(캔버스 상태 막대·프레즌스 독·복구 안내)이 겹쳐 있고, 탭마다 상단 안내
+ * 높이가 달라 같은 뷰포트 비율이 서로 다른 화면 위치가 된다. 뷰포트 경계 비율만으로 고른 획은 크롬 위에
+ * 떨어져 캔버스에 닿지 않고 조용히 사라지므로, 실제로 펜 입력을 받는 가장 긴 캔버스 띠를 찾는다.
+ */
+async function drawableCanvasBand(
+  page: Page,
+  bounds: { readonly y: number; readonly height: number },
+  columns: readonly number[],
+): Promise<{ readonly top: number; readonly bottom: number }> {
+  const band = await page.evaluate(({ top, bottom, xs }) => {
+    let best = { top: 0, bottom: -1 };
+    let runTop = -1;
+    let lastOpen = -1;
+    for (let y = Math.ceil(top) + 1; y < bottom; y += 2) {
+      const open = xs.every((x) => {
+        const hit = document.elementFromPoint(x, y);
+        return hit instanceof HTMLCanvasElement
+          && hit.closest('[data-studio-canvas-viewport="true"]') !== null;
+      });
+      if (open) {
+        if (runTop < 0) runTop = y;
+        lastOpen = y;
+      } else if (runTop >= 0) {
+        if (lastOpen - runTop > best.bottom - best.top) best = { top: runTop, bottom: lastOpen };
+        runTop = -1;
+      }
+    }
+    if (runTop >= 0 && lastOpen - runTop > best.bottom - best.top) best = { top: runTop, bottom: lastOpen };
+    return best;
+  }, { top: bounds.y, bottom: bounds.y + bounds.height, xs: [...columns] });
+  assert.ok(
+    band.bottom - band.top >= bounds.height * 0.4,
+    `drawable canvas band is too small: ${JSON.stringify({ band, bounds })}`,
+  );
+  return band;
+}
+
+async function strokePathObstructions(
+  page: Page,
+  path: readonly CanvasPoint[],
+): Promise<string[]> {
+  return page.evaluate((points) => points.flatMap(({ x, y }) => {
+    const hit = document.elementFromPoint(x, y);
+    if (
+      hit instanceof HTMLCanvasElement
+      && hit.closest('[data-studio-canvas-viewport="true"]') !== null
+    ) return [];
+    const label = hit?.closest("[aria-label]")?.getAttribute("aria-label")
+      ?? hit?.tagName.toLowerCase()
+      ?? "nothing";
+    return [`(${Math.round(x)},${Math.round(y)}) ${label.slice(0, 60)}`];
+  }), [...path]);
+}
+
 async function drawStroke(
   page: Page,
   verticalFraction: number,
@@ -415,16 +475,32 @@ async function drawStroke(
   assert.ok(bounds, "canvas viewport has no bounds");
   const startX = bounds.x + bounds.width * (reverse ? 0.68 : 0.28);
   const endX = bounds.x + bounds.width * (reverse ? 0.32 : 0.64);
-  const y = bounds.y + bounds.height * verticalFraction;
-  await page.mouse.move(startX, y);
-  await page.mouse.down();
-  for (let step = 1; step <= 48; step += 1) {
+  const amplitude = bounds.height * 0.025;
+  const band = await drawableCanvasBand(
+    page,
+    bounds,
+    Array.from({ length: 9 }, (_, index) => startX + (endX - startX) * (index / 8)),
+  );
+  const y = band.top + amplitude + (band.bottom - band.top - amplitude * 2) * verticalFraction;
+  const path = Array.from({ length: 49 }, (_, step) => {
     const progress = step / 48;
-    await page.mouse.move(
-      startX + (endX - startX) * progress,
-      y + Math.sin(progress * Math.PI * 2) * bounds.height * 0.025,
-      { steps: 1 },
-    );
+    return {
+      x: startX + (endX - startX) * progress,
+      y: y + Math.sin(progress * Math.PI * 2) * amplitude,
+    };
+  });
+  // 크롬에 가린 획은 캔버스 결과로 판정하지 않고 하네스 입력 오류로 즉시 드러낸다.
+  const obstructions = await strokePathObstructions(page, path);
+  assert.deepEqual(
+    obstructions,
+    [],
+    `stroke path at ${verticalFraction} does not reach the drawing canvas`,
+  );
+  const [start, ...rest] = path;
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  for (const point of rest) {
+    await page.mouse.move(point.x, point.y, { steps: 1 });
   }
   await page.mouse.up();
   await page.mouse.move(8, 8);

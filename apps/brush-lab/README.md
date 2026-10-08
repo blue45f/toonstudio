@@ -28,6 +28,8 @@ pnpm --filter @toonstudio/brush-lab preview    # http://localhost:4179
 # wasm 커널 재현 빌드(rustc/cargo + wasm32-unknown-unknown 필요). --check는 산출물·INTEGRITY·내장 TS 일치 검증
 bash apps/brush-lab/wasm/sumi-kernel/build.sh
 bash apps/brush-lab/wasm/sumi-kernel/build.sh --check
+# 같은 --check를 CI(`.github/workflows/architecture-boundaries.yml`)가 푸시마다 GitHub 러너에서 Rust 1.97.0으로 돌린다. 2026-10-07 main 최신 커밋의
+# 실행(run 37647426952)에서 재빌드 바이트가 봉인과 동일했다(33,946 B). 커널은 fixed SIMD(+simd128)로 빌드한다(`build.sh`의 RUSTFLAGS).
 
 # 브라우저 프로브(게이트가 꺼져 있으면 즉시 0으로 종료). Playwright·Chromium이 필요하다. BRUSH_LAB_CHROMIUM_PATH가 없고 기본 Chromium을 실행할 수 없으면
 # PLAYWRIGHT_BROWSERS_PATH(없으면 ~/.cache/ms-playwright)에 설치된 chromium-<rev>를 찾아 쓴다. Linux는 --use-webgpu-adapter=swiftshader(소프트웨어 WebGPU)로 띄운다

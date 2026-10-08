@@ -83,7 +83,7 @@ describe("PDF 인쇄 스펙 연결", () => {
     render(<StudioExportMenuPanel {...panelProps()} />);
     clickPdf();
     await waitFor(() => expect(encoders.pdf).toHaveBeenCalledOnce());
-    const arg = encoders.pdf.mock.calls[0]?.[0] as Record<string, unknown>;
+    const arg = (encoders.pdf.mock.calls as unknown as Array<[Record<string, unknown>]>)[0]?.[0] as Record<string, unknown>;
     expect(arg).not.toHaveProperty("print");
     expect(screen.queryByText(/인쇄 스펙 적용/u)).toBeNull();
   });

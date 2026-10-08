@@ -159,6 +159,12 @@ const OPTIONAL_STATIC_PREVIEW_API_PATHS = [
   "/api/kmas/merge-on-access",
   "/api/studio-ai/status",
   "/api/analytics/traffic/page-view",
+  // 앱 셸이 읽는 런타임 설정(useAppConfig). 정적 preview에는 API가 없어 502가 난다.
+  // 로컬 origin의 정확한 경로만 면제하며, 실배포 origin의 5xx는 여전히 실패한다.
+  "/api/config",
+  // 카탈로그 표지 프록시(48dd2cf5d). 정적 preview에는 중계 API가 없어 표지마다 502가 난다.
+  // 면제 범위는 위와 같다(로컬 origin + 정확한 pathname). 쿼리의 원본 URL은 검사하지 않는다.
+  "/api/cover",
 ] as const;
 /**
  * Durability timing, both tied to the product's deferred-commit idle flush
@@ -5060,7 +5066,7 @@ async function runDeferredDurabilityAudit(
     await page.screenshot({ path: screenshot, animations: "disabled" });
 
     reportBrowserErrors(errors);
-    invariant(errors.messages.length === 0, "durability browser emitted console/page errors");
+    invariant(errors.messages.length === 0, `durability browser emitted console/page errors: ${errors.messages.slice(0, 3).map((m) => m.slice(0, 300)).join(" | ")}`);
     invariant(errors.failedResponses.length === 0, "durability browser received unexpected 5xx responses");
     return {
       ok: true,

@@ -1,0 +1,28 @@
+{
+  "name": "braces",
+  "description": "ToonStudio 보안 포크: braces 3.0.3 + 업스트림 master(e53730e6f9) 수정 + 중첩 깊이 가드(GHSA-vfj7-8cjw-p6xm). 사유와 제거 조건은 README.md 참고.",
+  "version": "3.0.3+toonstudio.1",
+  "private": true,
+  "homepage": "https://github.com/micromatch/braces",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "contributors": [
+    "Brian Woodward (https://twitter.com/doowb)",
+    "Elan Shanker (https://github.com/es128)",
+    "Eugene Sharygin (https://github.com/eush77)",
+    "hemanth.hm (http://h3manth.com)",
+    "Jon Schlinkert (http://twitter.com/jonschlinkert)"
+  ],
+  "repository": "micromatch/braces",
+  "license": "MIT",
+  "files": [
+    "index.js",
+    "lib"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=8"
+  },
+  "dependencies": {
+    "fill-range": "^7.1.1"
+  }
+}

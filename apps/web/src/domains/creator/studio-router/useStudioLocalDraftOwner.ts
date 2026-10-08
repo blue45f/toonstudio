@@ -16,6 +16,9 @@ export function useStudioLocalDraftOwner(input: {
   const scope = studioLocalDraftOwnerScope(input);
   const room = input.roomId ?? initialInstantWorkId;
   const [recovered, setRecovered] = useState<{ scope: string; room: string } | null>(null);
+  // 이 탭이 회복해 소유자가 된 룸은 처음 연 탭의 룸과 같은 소유 리스다. 회복 직후나 ?room= 게시로 효과가
+  // 다시 돌 때 동행 후보처럼 ifAvailable로 다시 잡으면 자기 리스와 경합해 놓치고, 복제 탭이 그 룸을 가져간다.
+  const recoveredRoom = recovered?.scope === scope ? recovered.room : null;
   useEffect(() => {
     let storage: Storage | null = null;
     let locks: LockManager | null = null;
@@ -35,17 +38,17 @@ export function useStudioLocalDraftOwner(input: {
       const receiptRoom = readStudioLocalDraftOriginRoom(storage, scope);
       if (receiptRoom && receiptRoom !== initialInstantWorkId) {
         return holdStudioLocalDraftOwnership({
-          scope, room: receiptRoom, knownTabOwner: false, workId, remixId, storage, locks,
+          scope, room: receiptRoom, knownTabOwner: receiptRoom === recoveredRoom, workId, remixId, storage, locks,
           onRecovered: () => adopt(receiptRoom),
         });
       }
     }
     return holdStudioLocalDraftOwnership({
       scope, room, workId, remixId, storage, locks,
-      knownTabOwner: room === initialInstantWorkId,
+      knownTabOwner: room === initialInstantWorkId || room === recoveredRoom,
       onRecovered: () => adopt(room),
     });
-  }, [initialInstantWorkId, input.roomId, remixId, room, scope, workId]);
+  }, [initialInstantWorkId, input.roomId, recoveredRoom, remixId, room, scope, workId]);
   return !workId && !remixId && recovered?.scope === scope
     && (input.roomId === null || recovered.room === input.roomId)
     ? recovered.room : initialInstantWorkId;

@@ -24,7 +24,7 @@ overrides:
   minimatch@3.1.5>brace-expansion: 5.0.12
   brace-expansion@>=3.0.0 <5.0.12: 5.0.12
   node-forge: '>=1.4.0'
-  braces@>=3.0.0 <3.0.4: 3.0.3
+  braces@>=3.0.0 <3.0.4: file:patches/braces
   engine.io@>=6.6.0 <6.6.10: 6.6.10
   js-yaml@>=4.0.0 <4.3.2: 4.3.2
   postcss@>=8.0.0 <8.5.23: 8.5.23
@@ -60,7 +60,6 @@ patchedDependencies:
   '@gltf-transform/functions@4.4.2': 6e750bb844d4b21f5b7ead6ab2063a25ce63953173b1553355c0ad6b2682fe69
   '@react-three/fiber@9.6.1': 68f1cb873dce662afa8148b10c5896d9e74acdcf70313881d944c1588be4c222
   ag-psd@31.0.1: 45b44b0b2c25317b0030248e3145d7abfd4e40c1620b98fc4a211b45341e6d2c
-  braces@3.0.3: 4af2cbb97902ea7fc89a0f50e912380139e59b26c3830244686ff584eee358b5
   ktx2-encoder@0.6.0: 20ab5cce62142bddaf85f69af8a41633b64f264f931b3ef71c8a57c3e0de5c74
   manifold-3d@3.5.1: 53990fc6cbf1cc1a3839a32a88a8a1d4b76e28d2699332b21e2afeca78e466ad
   minimatch@3.1.5: fe761a9f2ee67f36ecef95437aff71cccde54f98d08053c41eb3f815a907be71
@@ -204,7 +203,7 @@ importers:
         version: 4.0.2
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.2(@types/pg@8.20.0)(pg@8.21.0)
+        version: 0.45.2(@libsql/client@0.17.3)(@types/pg@8.20.0)(pg@8.21.0)
       embla-carousel-autoplay:
         specifier: ^8.6.0
         version: 8.6.0(embla-carousel@8.6.0)
@@ -493,7 +492,7 @@ importers:
         version: 1.62.1
       puppeteer-core:
         specifier: ^25.3.0
-        version: 25.3.0
+        version: 25.3.0(yauzl@2.10.0)
       redis:
         specifier: ^5.12.1
         version: 5.12.1
@@ -975,7 +974,7 @@ importers:
         version: link:../../../packages/core
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.2(@types/pg@8.20.0)(pg@8.21.0)
+        version: 0.45.2(@libsql/client@0.17.3)(@types/pg@8.20.0)(pg@8.21.0)
       image-js:
         specifier: ^1.7.0
         version: 1.7.0
@@ -4415,8 +4414,8 @@ packages:
     resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
     engines: {node: 20 || >=22}
 
-  braces@3.0.3:
-    resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
+  braces@file:patches/braces:
+    resolution: {directory: patches/braces, type: directory}
     engines: {node: '>=8'}
 
   bresenham-zingl@0.2.5:
@@ -9952,10 +9951,12 @@ snapshots:
 
   '@protobufjs/utf8@1.1.2': {}
 
-  '@puppeteer/browsers@3.0.6':
+  '@puppeteer/browsers@3.0.6(yauzl@2.10.0)':
     dependencies:
       modern-tar: 0.7.7
       yargs: 18.0.0
+    optionalDependencies:
+      yauzl: 2.10.0
 
   '@radix-ui/number@1.1.2': {}
 
@@ -11522,7 +11523,7 @@ snapshots:
     dependencies:
       balanced-match: 4.0.4
 
-  braces@3.0.3(patch_hash=4af2cbb97902ea7fc89a0f50e912380139e59b26c3830244686ff584eee358b5):
+  braces@file:patches/braces:
     dependencies:
       fill-range: 7.1.1
 
@@ -11927,11 +11928,6 @@ snapshots:
   drizzle-orm@0.45.2(@libsql/client@0.17.3)(@types/pg@8.20.0)(pg@8.21.0):
     optionalDependencies:
       '@libsql/client': 0.17.3
-      '@types/pg': 8.20.0
-      pg: 8.21.0
-
-  drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.21.0):
-    optionalDependencies:
       '@types/pg': 8.20.0
       pg: 8.21.0
 
@@ -13522,7 +13518,7 @@ snapshots:
 
   micromatch@4.0.8:
     dependencies:
-      braces: 3.0.3(patch_hash=4af2cbb97902ea7fc89a0f50e912380139e59b26c3830244686ff584eee358b5)
+      braces: file:patches/braces
       picomatch: 2.3.2
 
   mikktspace@1.1.1: {}
@@ -14269,9 +14265,9 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  puppeteer-core@25.3.0:
+  puppeteer-core@25.3.0(yauzl@2.10.0):
     dependencies:
-      '@puppeteer/browsers': 3.0.6
+      '@puppeteer/browsers': 3.0.6(yauzl@2.10.0)
       chromium-bidi: 16.0.1(devtools-protocol@0.0.1638949)
       devtools-protocol: 0.0.1638949
       typed-query-selector: 2.12.2

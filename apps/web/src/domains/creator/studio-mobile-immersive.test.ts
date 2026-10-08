@@ -90,7 +90,7 @@ describe("Studio mobile immersive preference", () => {
       'className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-full px-1.5',
     );
     expect(studioCanvasStageHudSource).toContain(
-      'localizeText(t, "` · 캔버스만 보기", "studio.canvas.canvasOnlyModeShowCanvasOnly")',
+      'localizeText(t, "캔버스만 보기", "studio.canvas.canvasOnlyModeShowCanvasOnly")',
     );
     expect(studioCanvasStageHudSource).toContain(
       "min-h-11 min-w-11",

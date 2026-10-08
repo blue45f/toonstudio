@@ -269,7 +269,7 @@ describe("입장 로비 조작법 미리보기", () => {
 describe("StudioVirtualSpaceEntryLobby access gate (F-B06-1)", () => {
   it("자격 거절 안내는 alert로 명시하고 입장을 막는다", () => {
     const enter = vi.fn();
-    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="게스트" guestMode
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="게스트" returning={false} guestMode
       projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={enter}
       accessBlocked
       accessNotice={{ tone: "error", ko: "만료된 초대예요. 보낸 사람에게 새 초대를 요청해 주세요.", en: "This invitation has expired." }} /></MemoryRouter>);
@@ -279,7 +279,7 @@ describe("StudioVirtualSpaceEntryLobby access gate (F-B06-1)", () => {
 
   it("확인 불가 안내는 재시도 버튼으로 검증을 다시 시도하게 한다", () => {
     const retry = vi.fn();
-    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="게스트" guestMode
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="게스트" returning={false} guestMode
       projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()}
       accessBlocked onRetryAccess={retry}
       accessNotice={{ tone: "error", ko: "초대 자격을 확인하지 못했어요.", en: "We couldn't verify your invitation." }} /></MemoryRouter>);
@@ -288,7 +288,7 @@ describe("StudioVirtualSpaceEntryLobby access gate (F-B06-1)", () => {
   });
 
   it("안내가 없으면 기존 입장 버튼 상태를 그대로 둔다", () => {
-    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="게스트" guestMode
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="게스트" returning={false} guestMode
       projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()} /></MemoryRouter>);
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByRole("button", { name: "게스트로 입장" }).hasAttribute("disabled")).toBe(false);
