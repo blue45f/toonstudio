@@ -113,8 +113,7 @@ import {
 import { StudioTextResolutionRuntime } from "./studio-virtual-space-text-resolution";
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
 import { drawStudioModularCampus } from "./studio-virtual-space-modular-campus";
-import { studioIllustratedPropFrame, studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
-import { studioExperienceFrameGeometry } from "./studio-virtual-space-experience-art";
+import { studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
 import { registerStudioSceneAtlas,
   StudioVirtualSetDressingRuntime, studioSceneActorScale, studioSceneOverlayScale } from "./studio-virtual-space-scene-art-runtime";
 import { studioVirtualWorldSetDressing } from "./studio-virtual-space-world-set-dressing";
@@ -194,7 +193,6 @@ import {
   studioTownEnvironmentInteractions,
 } from "./studio-virtual-space-town-layout";
 import {
-  StudioCharacterAssetResidency,
   studioCharacterPoseTextureKey,
   studioCharacterStaticAsset,
   studioCharacterWalkAnimationKey as walkAnimationKey,
@@ -277,7 +275,6 @@ import {
   NPC_NOTICE_COOLDOWN_MS,
   STUDIO_EMOTE_DEDUPE_MS,
   WORLD_KEY_CODES,
-  type InputEventLike,
   type NpcVisual,
   type OcclusionVisual,
   type PeerVisual,
@@ -286,6 +283,9 @@ import {
 import { createStudioSpriteVisualApplier } from "./studio-virtual-space-sprite-visual";
 import { createStudioNameplateRenderer } from "./studio-virtual-space-nameplate-renderer";
 import { createStudioCharacterTexturePreparer } from "./studio-virtual-space-character-texture-preparer";
+import { createStudioSceneCharacterAssetResidency } from "./studio-virtual-space-phaser-canvas-character-residency";
+import { drawStudioOcclusionLayers, placeStudioWorldPropImages } from "./studio-virtual-space-phaser-canvas-world-layers";
+import { drawStudioProximityOverlay } from "./studio-virtual-space-phaser-canvas-proximity-overlay";
 import { studioCharacterBootAssets, studioSceneArtKeys } from "./studio-virtual-space-boot-assets";
 
 export type {
@@ -549,29 +549,7 @@ export function StudioVirtualSpacePhaserCanvas({
       // 프레임마다 따로 그려진 걷기·행동 시트의 발 기준선·몸통 중심·크기를 정지 그림에 맞추는 보정(로드 직후 한 번 측정).
       const frameRegistry = new StudioFrameRegistry();
       const { prepareCharacterTexture, queueCharacterTexture } = createStudioCharacterTexturePreparer({ scene, failedTextures, frameRegistry });
-      const characterAssets = new StudioCharacterAssetResidency({
-        has: prepareCharacterTexture,
-        load: (asset, complete) => {
-          const loaderType = asset.atlas?.slicing ? "image" : asset.type;
-          const event = `filecomplete-${loaderType}-${asset.key}`;
-          const loaded = () => complete(prepareCharacterTexture(asset));
-          const failed = (file: import("phaser").Loader.File) => {
-            if (file.key === asset.key) complete(false);
-          };
-          scene.load.once(event, loaded);
-          scene.load.on("loaderror", failed);
-          queueCharacterTexture(asset);
-          scene.load.start();
-          return () => { scene.load.off(event, loaded); scene.load.off("loaderror", failed); };
-        },
-        remove: (asset) => {
-          for (const key of asset.animationKeys ?? (asset.animationKey ? [asset.animationKey] : [])) {
-            if (scene.anims.exists(key)) scene.anims.remove(key);
-          }
-          if (scene.textures.exists(asset.key)) scene.textures.remove(asset.key);
-          frameRegistry.forget(asset.key);
-        },
-      });
+      const characterAssets = createStudioSceneCharacterAssetResidency({ scene, prepareCharacterTexture, queueCharacterTexture, frameRegistry });
       cleanup.push(() => characterAssets.close());
       const interactionById = new Map(interactions.map((interaction) => [interaction.id, interaction] as const));
 
@@ -1081,30 +1059,9 @@ export function StudioVirtualSpacePhaserCanvas({
         }, artProfile.palette);
         cleanup.push(() => { setDressingRuntime?.destroy(); setDressingRuntime = null; });
 
-        for (const layer of worldSetDressing.length > 0 ? [] : manifest.occlusionLayers ?? []) {
-          if (manifest.tilemap) {
-            const foreground = this.add.graphics().setDepth(layer.depth);
-            foreground.fillStyle(artProfile.palette.room, 1).fillPoints([...layer.polygon], true);
-            foreground.lineStyle(4, artProfile.palette.wall, 0.86).strokePoints([...layer.polygon], true);
-            const minX = Math.min(...layer.polygon.map((point) => point.x));
-            const maxX = Math.max(...layer.polygon.map((point) => point.x));
-            const minY = Math.min(...layer.polygon.map((point) => point.y));
-            const maxY = Math.max(...layer.polygon.map((point) => point.y));
-            foreground.lineStyle(2, artProfile.palette.line, 0.42)
-              .lineBetween(minX + 18, (minY + maxY) / 2, maxX - 18, (minY + maxY) / 2);
-            foreground.setAlpha(0.9);
-            occlusionVisuals.push({ polygon: layer.polygon, object: foreground, outsideAlpha: 0.9 });
-            cleanup.push(() => foreground.destroy());
-            continue;
-          }
-          const maskGraphics = this.add.graphics().fillStyle(0xffffff).fillPoints([...layer.polygon], true).setVisible(false);
-          const mask = maskGraphics.createGeometryMask();
-          const foreground = this.add.image(backgroundRect.x, backgroundRect.y, backgroundTextureKey)
-            .setOrigin(0).setDisplaySize(backgroundRect.width, backgroundRect.height)
-            .setDepth(layer.depth).setMask(mask);
-          occlusionVisuals.push({ polygon: layer.polygon, object: foreground, outsideAlpha: 1 });
-          cleanup.push(() => { foreground.clearMask(true); foreground.destroy(); maskGraphics.destroy(); });
-        }
+        drawStudioOcclusionLayers(this, manifest, worldSetDressing.length > 0 ? [] : manifest.occlusionLayers ?? [], {
+          artProfile, backgroundRect, backgroundTextureKey, occlusionVisuals, onCleanup: (dispose) => cleanup.push(dispose),
+        });
 
         routeOverlay = this.add.graphics().setDepth(650);
         locateOverlay = this.add.graphics().setDepth(60_001);
@@ -1127,48 +1084,10 @@ export function StudioVirtualSpacePhaserCanvas({
           delete parent.dataset.authoringOverlay;
         }
 
-        for (const prop of manifest.props) {
-          if (!prop.assetUrl || !this.textures.exists(propTextureKey(prop))) continue;
-          const illustratedFrame = worldAssetUrls?.has(prop.assetUrl) || !this.textures.exists(decorationTextureKeys.furniture)
-            ? undefined : studioIllustratedPropFrame(prop.assetUrl, artStyle);
-          const image = this.add.image(prop.x, prop.y,
-            illustratedFrame === undefined ? propTextureKey(prop) : decorationTextureKeys.furniture, illustratedFrame)
-            .setOrigin(prop.originX ?? 0.5, prop.originY ?? 1)
-            .setAngle(prop.rotation ?? 0)
-            .setAlpha(Math.max(0, Math.min(1, prop.alpha ?? 1)))
-            .setDepth(studioWorldPropDepth(prop));
-          if (prop.width && prop.height) {
-            image.setDisplaySize(prop.width, prop.height);
-          } else {
-            image.setScale(prop.scale ?? 1);
-          }
-          const replacementFrame = worldAssetUrls?.has(prop.assetUrl) ? undefined : studioIllustratedPropFrame(prop.assetUrl, artStyle);
-          if (replacementFrame !== undefined) {
-            const info = { image, frame: replacementFrame, width: image.displayWidth, height: image.displayHeight,
-              originX: prop.originX ?? .5, originY: prop.originY ?? 1 };
-            illustratedProps.push(info);
-            if (illustratedFrame !== undefined) {
-              const geometry = studioExperienceFrameGeometry("furniture", artStyle, replacementFrame, info.width, info.height, info.originX, info.originY);
-              image.setDisplaySize(geometry.width, geometry.height).setOrigin(geometry.originX, geometry.originY);
-            }
-          }
-          const interaction = interactionById.get(prop.id);
-          if (interaction) {
-            image.setInteractive({ useHandCursor: true });
-            image.on(
-              "pointerdown",
-              (
-                _pointer: import("phaser").Input.Pointer,
-                _localX: number,
-                _localY: number,
-                event: InputEventLike,
-              ) => {
-                event.stopPropagation();
-                queuedInteraction = interaction;
-              },
-            );
-          }
-        }
+        placeStudioWorldPropImages(this, manifest, {
+          worldAssetUrls, artStyle, decorationTextureKeys, illustratedProps, interactionById,
+          onSelect: (interaction) => { queuedInteraction = interaction; },
+        });
 
         const self = snapshotRef.current.self;
         const spawn = studioWorldSpawn(manifest);
@@ -2055,25 +1974,7 @@ export function StudioVirtualSpacePhaserCanvas({
         })), currentQualityProfile.interestRadius);
         proximityOverlay?.clear();
         if (proximityOverlay && atmosphereRef.current !== "focus" && activity !== "focused" && activity !== "away") {
-          // 대화 거리(게더타운식 근접 버블): 기본은 120px 안 동료가 있을 때만 발밑 버블과 연결선을 보이고,
-          // '모든 표식 보기'면 190px 안까지 넓은 링도 함께 그린다. 배열을 만들지 않고 한 번 순회한다.
-          const showAll = experienceRef.current.interactionRings;
-          const reach = showAll ? 190 : 120;
-          const origin = studioProjectTownPoint(manifest, currentPoint);
-          let inRange = 0;
-          for (const peer of peers.values()) {
-            const distance = Math.hypot(peer.targetX - currentPoint.x, peer.targetY - currentPoint.y);
-            if (distance > reach) continue;
-            inRange += 1;
-            const strength = Math.max(.08, .36 * (1 - distance / reach));
-            proximityOverlay.lineStyle(distance < 80 ? 2 : 1, peer.activity === "focused" ? 0xf9b95d : 0x82e6ff, strength)
-              .lineBetween(origin.x, origin.y - 6, peer.sprite.x, peer.sprite.y - 6);
-          }
-          if (inRange > 0) {
-            proximityOverlay.fillStyle(0x8fdcff, .07).fillEllipse(origin.x, origin.y, 150, 70);
-            proximityOverlay.lineStyle(2, 0xc5f4ff, .26).strokeEllipse(origin.x, origin.y, 150, 70);
-            if (showAll) proximityOverlay.lineStyle(1.5, 0x8fdcff, .13).strokeCircle(origin.x, origin.y, 140);
-          }
+          drawStudioProximityOverlay(proximityOverlay, manifest, currentPoint, peers, experienceRef.current.interactionRings);
         }
         objectRuntime?.update(time, currentPoint);
         deskPodRuntime?.update([
