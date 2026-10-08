@@ -136,6 +136,8 @@ describe("CreatorMarketplaceService", () => {
     listOwnedPackageHistory:
       vi.fn<CreatorMarketplaceResourceRepository["listOwnedPackageHistory"]>(),
     findById: vi.fn<CreatorMarketplaceResourceRepository["findById"]>(),
+    // 공개 목록의 스타터 중복 제거용 조회. 이 픽스처에는 DB 행으로 실린 스타터가 없다.
+    findListedIds: vi.fn<CreatorMarketplaceResourceRepository["findListedIds"]>(async () => []),
     findIdentityById:
       vi.fn<CreatorMarketplaceResourceRepository["findIdentityById"]>(),
     publish: vi.fn<CreatorMarketplaceResourceRepository["publish"]>(),
@@ -416,6 +418,9 @@ describe("CreatorMarketplaceService", () => {
   });
 
   it("keyset cursor를 발급하고 다음 요청에서 정확한 createdAt/id 경계로 복원한다", async () => {
+    // 공식 스타터 카탈로그는 검색어가 맞을 때만 병합된다. 이 테스트는 DB 행의 키셋 경계만 보므로
+    // 스타터가 끼지 않는 검색어로 두 요청을 같은 질의에 묶는다(스타터 병합은 list-starters 테스트가 검증).
+    const NO_STARTER_QUERY = "zz-keyset-no-starter-match";
     const first = storedRow(manifest(), {
       id: "123e4567-e89b-42d3-a456-426614174001",
       createdAt: new Date("2026-07-27T03:00:00.000Z"),
@@ -430,14 +435,14 @@ describe("CreatorMarketplaceService", () => {
     });
     repository.list.mockResolvedValueOnce([first, second, sentinel]);
 
-    const page = await service.list({ limit: 2 });
+    const page = await service.list({ limit: 2, search: NO_STARTER_QUERY, sort: "newest" });
 
     expect(page.items).toHaveLength(2);
     expect(page.hasMore).toBe(true);
     expect(page.nextCursor).toMatch(/^[A-Za-z0-9_-]+$/u);
 
     repository.list.mockResolvedValueOnce([]);
-    await service.list({ limit: 2, cursor: page.nextCursor! });
+    await service.list({ limit: 2, search: NO_STARTER_QUERY, sort: "newest", cursor: page.nextCursor! });
 
     expect(repository.list).toHaveBeenLastCalledWith(
       expect.objectContaining({

@@ -39,11 +39,13 @@ const ANIMATION_UTILS: Readonly<Record<string, string>> = {
 
 /**
  * `fade-in` 단독 문자열은 가상스튜디오 구역 전환 상태 기계의 phase 식별자로도 쓰인다
- * (클래스가 아니라 코드 상수). 그 두 파일만 bare fade-in 검사에서 제외한다.
+ * (클래스가 아니라 코드 상수). 기술 도감 평면 라벨의 영어 문구("Fade-out and fade-in")도
+ * 클래스가 아니라 UI 카피다. 그 파일들만 bare fade-in 검사에서 제외한다.
  */
 const BARE_FADE_IN_EXCLUDED = new Set([
   "domains/creator/virtual-space/studio-virtual-space-zone-transition.ts",
   "domains/creator/virtual-space/studio-virtual-space-zone-transition.test.ts",
+  "domains/legal/technology/engineering-atlas-web-platform-surface.ts",
 ]);
 
 function listSourceFiles(directory: string): string[] {
