@@ -52,7 +52,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
       <div className="hidden min-w-0 flex-1 items-center gap-1.5 md:flex" aria-label={tx("현재 드로잉 설정")}>
         <button
           type="button"
-          className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-1 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-line bg-card px-2.5 min-h-9 py-1.5 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           aria-label={`${tx("브러시 라이브러리 열기, 현재")} ${brushName}`}
           title={tx("브러시 라이브러리")}
           onClick={(event) => {
