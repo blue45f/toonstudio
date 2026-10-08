@@ -1,4 +1,4 @@
-import { studioVisibleBootDeadline } from "./experience/studio-visible-boot-deadline";
+import { STUDIO_BOOT_MAX_MS, STUDIO_BOOT_STALL_MS, studioVisibleBootDeadline } from "./experience/studio-visible-boot-deadline";
 import {
   useEffect,
   useRef,
@@ -344,6 +344,8 @@ export function StudioVirtualSpacePhaserCanvas({
   const [failure, setFailure] = useState(false);
   const [ready, setReady] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [loadProgress, setLoadProgress] = useState<number | null>(null);
+  const [slowLoad, setSlowLoad] = useState(false);
   const atmosphereRef = useRef(atmosphere);
   atmosphereRef.current = atmosphere;
   const poseRef = useRef({ selfPose, waveActorIds, seatedActors });
@@ -459,10 +461,15 @@ export function StudioVirtualSpacePhaserCanvas({
     parent.append(mount);
     setFailure(false);
     setReady(false);
+    setLoadProgress(null);
+    setSlowLoad(false);
     let cancelled = false;
     let sceneReady = false;
     let engineFailed = false;
     const cleanup: (() => void)[] = [];
+    // 8초가 지나도 안 열리면 느린 연결 안내를 보인다(로딩 화면에서만 보이고 준비되면 사라진다).
+    const slowLoadTimer = globalThis.setTimeout(() => setSlowLoad(true), 8_000);
+    cleanup.push(() => globalThis.clearTimeout(slowLoadTimer));
     const fail = (reason?: unknown) => {
       if (cancelled) return;
       if (!engineFailed) parent.dataset.engineError = reason instanceof Error ? reason.message : "runtime-failure";
@@ -471,7 +478,10 @@ export function StudioVirtualSpacePhaserCanvas({
       setFailure(true);
       setReady(false);
     };
-    const cancelBootDeadline = studioVisibleBootDeadline(document, () => fail(new Error(`boot-timeout:${parent.dataset.bootStage}`)));
+    // 고정 25초 대신 "진행이 45초(STUDIO_BOOT_STALL_MS) 멈추면" 실패로 본다. 느린 회선(약 3Mbps 이하)에서는 정상적으로 내려받는 중에도 총 시간이 25초를 넘어
+    // 월드가 영영 열리지 않았다. 내려받기가 진행되는 동안은 touch로 예산을 되돌리고, 전체 상한(5분)은 그대로 둔다.
+    const bootDeadline = studioVisibleBootDeadline(document, () => fail(new Error(`boot-timeout:${parent.dataset.bootStage}`)), STUDIO_BOOT_STALL_MS, STUDIO_BOOT_MAX_MS);
+    const cancelBootDeadline = () => bootDeadline();
     cleanup.push(() => cancelBootDeadline());
     let game: import("phaser").Game | null = null;
 
@@ -677,6 +687,7 @@ export function StudioVirtualSpacePhaserCanvas({
       let lightRender: StudioVirtualLightRenderRuntime | null = null;
       let tileWorld: StudioWorldTileRuntime | null = null;
       let initialTilesReady = false;
+      let lastTileProgress = { chunks: -1, textures: -1 };
       const runtimeInputBlocked = () => engineFailed || (manifest.tilemap !== undefined && !initialTilesReady)
         || studioWorldInputBlocked(document, modalInputBlocked);
       let objectRuntime: StudioWorldObjectRuntime | null = null;
@@ -948,6 +959,20 @@ export function StudioVirtualSpacePhaserCanvas({
       scene.preload = function preload() {
         parent.dataset.bootStage = "loading-textures";
         this.load.on("loaderror", (file: import("phaser").Loader.File) => failedTextures.add(file.key));
+        // 내려받기가 조금이라도 진행되면 부팅 제한을 늘리고, 로딩 화면의 진행 막대를 갱신한다. 막대는 끝난 파일 수에 내려받는 중인
+        // 파일의 진행률을 더해 큰 파일이 받아지는 동안에도 움직인다(파일 수만 세면 3MB 파일 하나에 막대가 수십 초 멈춰 보인다).
+        const loader = this.load;
+        const noteLoadProgress = () => {
+          bootDeadline.touch();
+          const total = loader.totalToLoad;
+          if (total <= 0) return;
+          let partial = 0;
+          for (const file of loader.inflight.entries) partial += Math.min(1, Math.max(0, file.percentComplete || 0));
+          setLoadProgress(Math.round(Math.min(1, (loader.totalComplete + loader.totalFailed + partial) / total) * 100));
+        };
+        loader.on("fileprogress", noteLoadProgress);
+        loader.on("filecomplete", noteLoadProgress);
+        loader.on("progress", noteLoadProgress);
         this.load.image(backgroundTextureKey, backgroundUrl);
         this.load.image(horizonTextureKey, horizonUrl);
         queueStudioLivingWorldTextures(this.load, livingTextureKeys, artStyle);
@@ -2108,6 +2133,10 @@ export function StudioVirtualSpacePhaserCanvas({
           const tileMetrics = tileWorld.diagnostics;
           parent.dataset.tileChunks = String(tileMetrics.chunks);
           parent.dataset.tileTextures = String(tileMetrics.textures);
+          if (!initialTilesReady && (tileMetrics.chunks !== lastTileProgress.chunks || tileMetrics.textures !== lastTileProgress.textures)) {
+            lastTileProgress = { chunks: tileMetrics.chunks, textures: tileMetrics.textures };
+            bootDeadline.touch();
+          }
           if (!engineFailed && !initialTilesReady && tileMetrics.ready) {
             initialTilesReady = true;
             startOptionalSceneArt?.(); startOptionalSceneArt = null;
@@ -2992,7 +3021,7 @@ export function StudioVirtualSpacePhaserCanvas({
         type: rendererType,
         ...(powerPreference ? { render: { powerPreference } } : {}),
         parent: mount,
-        loader: { timeout: 15000, maxParallelDownloads: 6 },
+        loader: { timeout: 180_000, maxParallelDownloads: 6 },
         // Phaser는 시작과 탭 복귀 직후 120프레임(기본 panicMax) 동안 프레임 간격을 16.7ms로 잘라 물리를 한 프레임에 한 걸음만
         // 돌린다. 60fps에서는 티가 안 나지만 그보다 느린 기기에서는 그동안 아바타가 실제보다 느리게 걷는다(14fps에서 처음 약 8초는
         // 속도의 4분의 1, 30fps면 4초 동안 절반). 10프레임으로 줄여 첫 걸음부터 실제 시간을 따라가게 한다.
@@ -3067,11 +3096,19 @@ export function StudioVirtualSpacePhaserCanvas({
     >
       {failure ? (
         <div className="studio-vspace-engine-message" role="alert">
-          <p>{bt("공간을 불러오지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.", "The studio could not load. Check the connection and retry.")}</p>
-          <button type="button" onClick={() => setAttempt((value) => value + 1)}>{bt("다시 시도", "Retry")}</button>
+          <div className="studio-vspace-engine-card">
+            <p>{bt("공간을 불러오지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.", "The studio could not load. Check the connection and retry.")}</p>
+            <button type="button" onClick={() => setAttempt((value) => value + 1)}>{bt("다시 시도", "Retry")}</button>
+          </div>
         </div>
       ) : !ready ? (
-        <div className="studio-vspace-engine-message" role="status">{bt("스튜디오 불러오는 중…", "Loading studio…")}</div>
+        <div className="studio-vspace-engine-message" role="status" aria-busy="true">
+          <div className="studio-vspace-engine-card">
+            <p>{bt("스튜디오 불러오는 중…", "Loading studio…")}</p>
+            {loadProgress !== null ? <progress className="studio-vspace-engine-progress" max={100} value={loadProgress} aria-hidden="true" /> : null}
+            {slowLoad ? <p className="studio-vspace-engine-slow">{bt("연결이 느려 조금 더 걸리고 있어요.", "The connection is slow, so this is taking a little longer.")}</p> : null}
+          </div>
+        </div>
       ) : null}
     </div>
   );

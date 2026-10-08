@@ -44,3 +44,75 @@ describe("화면에 보이는 동안의 초기화 시간 제한", () => {
     expect(remove).toHaveBeenCalledOnce();
   });
 });
+
+describe("내려받기 진행에 따라 연장되는 초기화 시간 제한", () => {
+  it("진행 신호가 이어지는 동안은 멈춤 예산을 되돌려 총 시간이 길어도 실패하지 않는다", () => {
+    const visibility = new Visibility(); const timeout = vi.fn();
+    const deadline = studioVisibleBootDeadline(visibility, timeout, 25_000, 300_000);
+    for (let i = 0; i < 6; i += 1) { vi.advanceTimersByTime(20_000); deadline.touch(); }
+    expect(timeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(24_999); expect(timeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1); expect(timeout).toHaveBeenCalledOnce();
+  });
+
+  it("진행 신호가 멈추면 마지막 신호로부터 멈춤 예산만큼 뒤에 실패한다", () => {
+    const visibility = new Visibility(); const timeout = vi.fn();
+    const deadline = studioVisibleBootDeadline(visibility, timeout, 25_000, 300_000);
+    vi.advanceTimersByTime(24_000); deadline.touch(); // 마지막 신호
+    vi.advanceTimersByTime(10_000); expect(timeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(14_999); expect(timeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1); expect(timeout).toHaveBeenCalledOnce();
+  });
+
+  it("이미 실패 처리한 뒤의 진행 신호는 무시한다", () => {
+    const visibility = new Visibility(); const timeout = vi.fn();
+    const deadline = studioVisibleBootDeadline(visibility, timeout, 25_000, 300_000);
+    vi.advanceTimersByTime(25_000); expect(timeout).toHaveBeenCalledOnce();
+    deadline.touch(); vi.advanceTimersByTime(100_000);
+    expect(timeout).toHaveBeenCalledOnce(); expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("전체 상한을 넘으면 진행 신호가 계속 와도 실패한다", () => {
+    const visibility = new Visibility(); const timeout = vi.fn();
+    const deadline = studioVisibleBootDeadline(visibility, timeout, 25_000, 60_000);
+    for (let i = 0; i < 5; i += 1) { vi.advanceTimersByTime(10_000); deadline.touch(); }
+    expect(timeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(9_999); expect(timeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1); expect(timeout).toHaveBeenCalledOnce();
+  });
+
+  it("전체 상한은 멈춤 예산보다 작게 줄 수 없다", () => {
+    const visibility = new Visibility(); const timeout = vi.fn();
+    studioVisibleBootDeadline(visibility, timeout, 25_000, 1_000);
+    vi.advanceTimersByTime(24_999); expect(timeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1); expect(timeout).toHaveBeenCalledOnce();
+  });
+
+  it("숨긴 탭에서 온 진행 신호는 예산만 되돌리고 타이머를 만들지 않으며, 다시 보이면 되돌린 예산으로 센다", () => {
+    const visibility = new Visibility(); const timeout = vi.fn();
+    const deadline = studioVisibleBootDeadline(visibility, timeout, 25_000, 300_000);
+    vi.advanceTimersByTime(20_000); visibility.setHidden(true);
+    vi.advanceTimersByTime(500); deadline.touch();
+    expect(vi.getTimerCount()).toBe(0);
+    visibility.setHidden(false);
+    vi.advanceTimersByTime(24_999); expect(timeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1); expect(timeout).toHaveBeenCalledOnce();
+  });
+
+  it("250ms보다 촘촘한 진행 신호는 무시해 타이머를 매번 다시 만들지 않는다", () => {
+    const visibility = new Visibility(); const timeout = vi.fn();
+    const deadline = studioVisibleBootDeadline(visibility, timeout, 25_000, 300_000);
+    vi.advanceTimersByTime(100); deadline.touch();
+    vi.advanceTimersByTime(10); deadline.touch(); // 무시: 마지막으로 받아들인 신호는 100ms 시점이다
+    vi.advanceTimersByTime(24_989); expect(timeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1); expect(timeout).toHaveBeenCalledOnce();
+  });
+
+  it("해제한 뒤의 진행 신호와 해제는 아무 일도 하지 않는다", () => {
+    const visibility = new Visibility(); const timeout = vi.fn();
+    const deadline = studioVisibleBootDeadline(visibility, timeout);
+    deadline(); deadline.touch();
+    expect(vi.getTimerCount()).toBe(0); vi.advanceTimersByTime(300_000);
+    expect(timeout).not.toHaveBeenCalled();
+  });
+});
