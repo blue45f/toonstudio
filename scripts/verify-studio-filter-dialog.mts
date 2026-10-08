@@ -290,6 +290,27 @@ async function screenshotClipped(
   return page.screenshot({ clip, animations: "disabled" });
 }
 
+/**
+ * 문서 픽셀만 비교하기 위한 캡처. 캔버스 상태 바(확대율·페이지·작업 버튼)는 뷰포트에 고정된 크롬이라
+ * 오류 안내 행 때문에 캔버스가 내려가면 제자리에 남고, 정렬된 클립의 아래쪽에 들어온다. 그 픽셀은 문서가
+ * 아니므로 이 캡처 동안만 숨기고 레이아웃은 그대로 둔다(visibility 는 자리를 차지하므로 배치가 바뀌지 않는다).
+ */
+async function screenshotDocumentPixels(
+  page: Page,
+  clip: { x: number; y: number; width: number; height: number },
+): Promise<Buffer> {
+  const setStatusBarVisibility = (value: string) => page.evaluate((visibility) => {
+    document.querySelectorAll<HTMLElement>('[data-studio-status-bar="true"]')
+      .forEach((element) => { element.style.visibility = visibility; });
+  }, value);
+  await setStatusBarVisibility("hidden");
+  try {
+    return await screenshotClipped(page, clip);
+  } finally {
+    await setStatusBarVisibility("");
+  }
+}
+
 /** Read the shipped recovery authorities, and reject stale pre-operation snapshots. */
 async function waitForSavedPages(
   page: Page,
@@ -873,7 +894,7 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
           y: clip.y + deniedStage.y - baselineStage.y };
         const restoredDeadline = Date.now() + 10_000;
         do {
-          result.undoDiff = await compareScreenshotPixels(page, baseline, await screenshotClipped(page, alignedClip));
+          result.undoDiff = await compareScreenshotPixels(page, baseline, await screenshotDocumentPixels(page, alignedClip));
           if (result.undoDiff.changedPixels <= result.undoDiff.totalPixels * 0.002) break;
           await page.waitForTimeout(150);
         } while (Date.now() < restoredDeadline);
