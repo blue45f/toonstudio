@@ -1,6 +1,6 @@
 # ToonStudio Engineering Playbook
 
-- 기준일: **2026-09-23**
+- 기준일: **2026-09-23** (2026-10-07 정정: 기술 chapter 수 40, 공유 payload·채널 13종·분석 필드, 렌더러 역할 원장 용어, Automerge, 인용 링크를 코드·현행 문서 기준으로 바로잡음)
 - 목적: 서비스 소개, 기술 백서, 홍보영상 제작, 기술 세미나, 신규 웹서비스 설계 참고
 - 공개 페이지: `/about/technology/playbook`
 - 사실 원본: `apps/web/src/domains/legal/technology/*`
@@ -81,7 +81,7 @@ ToonStudio는 페이지보다 `Workspace → Project → Episode → Cut → Ass
 
 | 제품군 | 참고 제품 | 배우는 것 | ToonStudio 적용 | 주장하지 않는 것 |
 | --- | --- | --- | --- | --- |
-| 전문 드로잉·만화 | Clip Studio Paint, Krita, Photoshop, Procreate, MediBang | 브러시 피드백, layer/page/project, 파일 round trip | preview/commit 역할, brush lab, revision, long-stroke 품질 | 동일 brush/file benchmark 없는 parity |
+| 전문 드로잉·만화 | Clip Studio Paint, Krita, Photoshop, Procreate, MediBang | 브러시 피드백, layer/page/project, 파일 round trip | 렌더러 역할 원장(primary·provider·reference·lab), brush lab, revision, long-stroke 품질 | 동일 brush/file benchmark 없는 parity |
 | 협업 캔버스 | Figma, tldraw, Magma, Excalidraw | room authority, presence, share, migration | Yjs semantic operation, awareness·asset 분리 | CRDT만으로 Figma 수준 운영 달성 |
 | 웹 3D·DCC·자산 | Spline, Blender, SketchUp, ACON3D, VRoid | browser viewport, DCC QA, interchange, marketplace rights | Three.js·VRM·WASM geometry·Blender QA | browser가 DCC 전체 대체 |
 | 가상 업무공간 | Gather 2.0, WorkAdventure, Kumospace | 사람·방·도구 discovery, consent, world authoring | world manifest, action registry, social adapter | 시각적 거리만으로 media privacy 보장 |
@@ -201,21 +201,22 @@ sequenceDiagram
 공유 화면마다 문자열을 직접 조립하지 않고 다음 payload를 정본으로 둔다.
 
 ```ts
+// apps/web/src/shared/lib/share.ts 의 실제 형태
 interface SharePayload {
-  canonicalUrl: string;
-  contentId?: string;
   title: string;
+  url: string;
   text?: string;
   imageUrl?: string;
-  locale: string;
+  buttonLabel?: string;
 }
 ```
 
-이 payload에서 다음 adapter를 파생한다.
+ToonStudio의 `SharePayload`에는 content ID·locale이 없다. 서비스에 필요하면 직접 더한다. 이 payload에서 다음 adapter를 파생한다(채널은 `native`·`kakao`·`naver`·`line`·`x`·`facebook`·`linkedin`·`instagram`·`tiktok`·`telegram`·`email`·`copy`·`qr` 13종).
 
 - 기기 공유: Web Share API
 - 카카오톡: Kakao JavaScript SDK, 필요 시점 지연 로드, SRI·CSP
-- 네이버·LINE·X·Facebook·Telegram: 공식 share URL
+- 네이버·LINE·X·Facebook·LinkedIn·Telegram: 공식 share URL
+- Instagram·TikTok: 전용 share URL 없이 Web Share API를 쓰고 채널 표기만 구분
 - 이메일: `mailto:`
 - 링크 복사: Clipboard API + 제한 환경 fallback
 - QR: 패널을 열 때만 모듈 지연 로드
@@ -225,7 +226,7 @@ Web Share API는 secure context와 사용자 activation이 필요하고 모든 �
 
 ### 5.2 분석과 개인정보
 
-공유 URL에는 기존 query·hash를 보존하며 UTM을 추가한다. 내부 event에는 전체 URL·제목을 보내지 않고 `channel`, `result`, `route`만 기록한다. `share()` 성공은 사용자가 share target을 선택했다는 뜻이지 실제 수신·열람·전환을 증명하지 않는다.
+공유 URL에는 기존 query·hash를 보존하며 UTM을 추가한다. 내부 event에는 전체 URL·제목을 보내지 않고 `channel`, `outcome`, `path`(pathname)만 기록한다. `share()` 성공은 사용자가 share target을 선택했다는 뜻이지 실제 수신·열람·전환을 증명하지 않는다.
 
 ### 5.3 배포 전 검사
 
@@ -350,13 +351,15 @@ flowchart LR
 
 ### 7.3 renderer role
 
+실제 정본은 `packages/studio-engine-registry/src/renderer-roles.ts`의 렌더러 역할 원장이다(생성 문서 `docs/engines/renderer-roles.md`). 역할은 `primary`(authority마다 소유자 하나)·`provider`(작업 전에 명시 선택)·`reference`(비교 전용)·`lab`(제품 호출부 없음)으로 나뉜다. 아래 `preview`·`live`·`commit`·`export`는 이 원장의 역할 이름이 아니라 한 획이 거치는 단계를 설명하는 개념어다.
+
 - `preview`: pointer movement 중 즉시 피드백
 - `live`: 재료 simulation과 고품질 진행 상태
 - `commit`: 최종 문서와 history를 소유
 - `export`: 저장·인쇄·공유 파일 생성
 - `reference`: 비교용 CPU·alternate implementation
 
-두 engine이 같은 역할의 최종 권위를 동시에 가지지 않는다. preview가 빠르더라도 pointer-up 뒤 commit 결과가 크게 달라지면 제품 품질이 아니다.
+두 engine이 같은 authority의 primary를 동시에 가지지 않는다. preview가 빠르더라도 pointer-up 뒤 commit 결과가 크게 달라지면 제품 품질이 아니다.
 
 ### 7.4 기술 조합
 
@@ -376,7 +379,7 @@ flowchart LR
 | committed parity | preview와 저장 결과의 형태·재료 차이는? |
 | long stroke | 긴 획의 memory·queue·tile 증가는 bounded인가? |
 | device loss | GPU device/context loss 뒤 같은 document를 복구하는가? |
-| fallback | Canvas/WASM 경로에서도 receipt·Undo·export 의미가 유지되는가? |
+| backend 선택 | 사용자가 고른 다른 backend(Canvas/WASM 등)에서도 receipt·Undo·export 의미가 유지되는가? 실패 뒤 자동 fallback은 ADR-0018이 금지한다. |
 | color | premultiply, color space와 alpha blend가 경로별로 일치하는가? |
 | determinism | seed·preset revision으로 replay 가능한가? |
 
@@ -396,7 +399,7 @@ flowchart LR
 | bounded metadata·content hash | durable backup·object storage |
 | ephemeral awareness는 별도 channel | large raster checkpoint bytes |
 
-Yjs는 shared type의 update를 병합하는 CRDT framework이며 network provider와 persistence를 강제하지 않는다. Automerge도 local-first·offline merge의 대표 대안이지만 현재 ToonStudio의 구현 정본은 Yjs다. 대안을 문서에 적는 것은 실제 도입을 뜻하지 않는다.
+Yjs는 shared type의 update를 병합하는 CRDT framework이며 network provider와 persistence를 강제하지 않는다. Automerge도 local-first·offline merge의 대표 라이브러리이며, ToonStudio에서는 `@automerge/automerge`가 직접 의존성으로 오프라인 작업 브랜치(`apps/web/src/domains/creator/offline-branch/studio-offline-branch-automerge.ts`)의 문서 병합에 쓰인다. 기능 플래그(`VITE_STUDIO_AUTOMERGE_OFFLINE_BRANCH`)로 켜며, 실시간 룸의 구현 정본은 Yjs다.
 
 ### 8.2 권위 분리
 
@@ -647,9 +650,9 @@ AI RAG도 같은 원칙을 적용한다. URL만 남기지 말고 retrievedAt, so
 
 ### 13.1 자랑할 수 있는 것
 
-- 30개 기술 chapter를 문제·결정·사용자 가치·tradeoff·evidence·재사용 순서로 공개
+- 40개 기술 chapter를 문제·결정·사용자 가치·tradeoff·evidence·재사용 순서로 공개
 - Worker·WASM·WebGPU·OPFS·SQLite를 목적별 권위와 실패 계약으로 연결
-- brush preview/live/commit/export role과 document authority registry
+- 렌더러 역할 원장(primary·provider·reference·lab)과 획 phase(preview·live·commit·export)·document authority
 - Yjs semantic collaboration과 대형 binary storage 분리
 - Service Worker의 user-approved update와 emergency reset
 - virtual studio world manifest·action registry·social adapter 분리
@@ -681,7 +684,7 @@ AI RAG도 같은 원칙을 적용한다. URL만 남기지 말고 retrievedAt, so
 
 | 기능 | 모험적인 이유 | 안전 경계 | 다른 서비스에서의 학습 |
 | --- | --- | --- | --- |
-| 자연 재료 GPU brush | 실시간·결정성·색·기기 편차가 동시에 존재 | renderer role, commit parity, fallback | preview와 durable output 분리 |
+| 자연 재료 GPU brush | 실시간·결정성·색·기기 편차가 동시에 존재 | renderer role, commit parity, 사용자 선택 backend | preview와 durable output 분리 |
 | CRDT raster pilot | update 크기·replay·삭제·room resource 복잡 | semantic log, Worker checkpoint, asset 분리 | CRDT 범위를 좁게 시작 |
 | virtual living world | UX·realtime·media privacy·접근성 결합 | spatial projection, action allowlist, list path | 공간 UI와 업무 원장 분리 |
 | browser CAD/geometry | 대형 WASM, topology 폭증, memory | lazy load, input budget, Worker disposal | 전문 계산을 bounded job으로 |

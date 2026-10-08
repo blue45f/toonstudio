@@ -1,6 +1,6 @@
 # ToonStudio WebRTC 실시간 미디어 설계와 벤치마크
 
-- 기준일: 2026-09-25
+- 기준일: 2026-09-25 (2026-10-07 정정: 시그널링 3겹, TURN 자격 세 갈래, 벤치마크 제품 서술과 깨진 인용 링크 8곳)
 - 범위: Virtual Studio huddle, 음성·카메라·화면 공유, ICE 정책, 권한·수신자 표시
 - 상태: 소규모 P2P 경로는 구현·브라우저 검증, WAN·대규모 방송은 별도 검증 필요
 
@@ -22,9 +22,9 @@ ToonStudio는 이를 하나의 `realtime=true` 상태로 묶지 않는다. 각 �
 | 관심사 | 권위 | 주요 기술 | 내구성 |
 |---|---|---|---|
 | 작품 문서 | Studio document / CRDT | Yjs, command journal | 영속 |
-| room admission | 서버 membership | Socket.IO, ACL | 세션·원장 |
-| presence | room awareness | Socket.IO/direct port | 일시적 |
-| WebRTC signaling | 대상 지정 envelope | offer, answer, ICE | 일시적 |
+| room admission | 서버 membership | 방 서버(기본 Cloudflare Durable Objects, 선택형 Socket.IO 폴백), ACL | 세션·원장 |
+| presence | room awareness | 방 서버 / direct port | 일시적 |
+| WebRTC signaling | 대상 지정 envelope | 허들 SDP·ICE는 DataChannel `studio-direct-v1` 직접 레인, 메시 부트스트랩·화면 공유 신호는 방 서버 | 일시적 |
 | 직접 chat·reaction | P2P direct port | bounded JSON packet | 메모리 |
 | 음성·영상·화면 | peer connection | RTP media tracks | 일시적 |
 | TURN credential | 인증된 ICE policy lease | short-lived username/credential | TTL |
@@ -75,7 +75,7 @@ P2P huddle은 perfect-negotiation 계열 규칙을 사용한다.
 - 원격 peer 최대 3명
 - `bundlePolicy: max-bundle`
 - `rtcpMuxPolicy: require`
-- 자동 TURN 또는 유료 fallback 없음
+- TURN은 Worker가 발급한 단기 자격이 있을 때만 쓰고(아래 ICE 서버 정보 세 갈래 참고), 없으면 STUN 전용으로 시작한다. 유료 fallback을 자동으로 켜지 않는다.
 
 따라서 이 경로는 제한 NAT와 기업망에서 항상 성공한다고 주장하지 않는다.
 
@@ -88,6 +88,14 @@ P2P huddle은 perfect-negotiation 계열 규칙을 사용한다.
 - 갱신 실패는 exponential backoff와 jitter를 사용한다.
 - 만료된 TURN credential로 새 peer를 만들지 않는다.
 - 구성 변경을 기존 peer에도 반영한다.
+
+현재 ICE 서버 정보는 세 갈래로 받는다.
+
+- 허들·직통 데이터: 브라우저의 공유 캐시가 실시간 Worker의 `POST /v1/turn/credentials`에서 Cloudflare TURN 단기 자격증명(TTL 4시간)을 받는다. 없거나 실패하면 STUN 전용으로 시작한다.
+- 화면 공유: Nest API의 `GET /creator/works/:id/screen-share/ice`가 coturn REST 방식(HMAC-SHA1) 자격증명을 발급한다(기본 TTL 900초, 설정 범위 300–86,400초). TURN 설정이 없으면 STUN 또는 direct 정책을 돌려준다.
+- 로컬 모드: ICE 서버 없이 같은 브라우저 안에서만 동작한다.
+
+TURN 자격이 만료된 뒤의 갱신과 메시 신호가 방 서버의 접근 규칙(ACL)을 통과하는지는 운영 환경에서 확인한 증거가 아직 없다(미확인).
 
 STUN은 연결 후보를 찾는 보조 서버이며 media relay가 아니다. TURN은 직접 연결이 실패할 때 media를 중계하므로 대역폭 비용과 자격 증명 운영이 필요하다.
 
@@ -111,20 +119,20 @@ host가 화면 capture 시작
 - 브라우저의 native sharing 종료 버튼도 track cleanup으로 연결한다.
 ## 8. 벤치마크에서 확인한 제품 패턴
 
-공식 도움말과 제품 문서를 2026-09-25에 다시 확인했다. 이 표는 기능과 UX 패턴을 비교한 것이며, 독립 성능 시험이나 보안 인증 결과가 아니다.
+공식 도움말과 제품 문서를 2026-10-07에 다시 열어 확인했고 깨진 인용 주소 8곳을 바로잡았다. 이 표는 기능과 UX 패턴을 비교한 것이며, 독립 성능 시험이나 보안 인증 결과가 아니다.
 
 | 제품 | 공식 자료에서 확인한 패턴 | ToonStudio에 적용한 원칙 |
 |---|---|---|
-| Gather | 근접·private area 화면 공유와 room-wide Spotlight를 구분하며 Spotlight 모드별 권장 규모를 별도로 안내 | 근접 UI와 broadcast transport를 하나로 취급하지 않음 |
+| Gather 2.0 | 근처 사람과의 대화, 잠글 수 있는 미팅룸, 여러 명이 동시에 올릴 수 있는 화면 공유를 구분해 안내(room-wide Spotlight는 이전 Classic 도움말 주소에서만 인용됐고 현행 2.0 도움말에서는 찾지 못함) | 근접 UI와 broadcast transport를 하나로 취급하지 않음 |
 | WorkAdventure | meeting, silent, restricted, personal, lockable, max-user area와 room/world megaphone를 map contract로 제공 | 공간 metadata와 실제 media·access policy를 분리 |
 | Kumospace | audio range, room audio, closed room, floor/all-floor broadcast와 recording scope를 구분 | recipient와 recording 범위를 화면에 명시 |
-| Magma | 캔버스 안의 voice/video/screenshare를 창작 흐름에 연결하고 일부 media capability는 plan 경계로 운영 | 문서 collaboration과 media 비용·권한을 별도 capability로 모델링 |
+| Magma | 캔버스 안의 voice/video/screenshare를 창작 흐름에 연결하고, 캔버스 소유자·관리자가 Admin 메뉴의 Listen·Talk 권한으로 음성 통화를 제한 | 문서 collaboration과 media 권한을 별도 capability로 모델링 |
 
 ### Gather
 
-- Spotlight는 room 전체 발표에 사용하고, proximity 기반 일반 대화와 구분한다.
-- 화면 공유는 private area·근접 상태에 따라 보이는 범위가 달라질 수 있다.
-- Mini Mode와 annotation처럼 통화 자체보다 제작 중 방해를 줄이는 UI가 중요하다.
+- 현행 Gather 2.0 도움말(Meeting Overview)은 근처 사람과의 즉석 대화, Lock으로 잠그는 미팅룸, 여러 명이 동시에 올리는 화면 공유를 구분한다.
+- room 전체 발표용 Spotlight는 이전(Classic) 도움말 주소에서만 인용됐고 현행 2.0 도움말에서는 찾지 못했다(미확인). Classic과 2.0의 동작을 섞어 쓰지 않는다.
+- 이전 문서에 있던 Mini Mode·annotation 서술은 현행 2.0 도움말에서 확인하지 못해 비교 근거에서 뺐다.
 
 ### WorkAdventure
 
@@ -141,7 +149,7 @@ host가 화면 capture 시작
 ### Magma
 
 - 문서 캔버스와 통화·화면 공유가 같은 작업 표면에 있다.
-- 미디어 기능의 availability와 요금제 경계가 문서 협업 capability와 같지 않다.
+- 음성 통화 권한(Admin 메뉴의 Listen·Talk)은 캔버스 소유자·관리자가 따로 조절하며 문서 협업 권한과 같지 않다. 요금제별 미디어 제한은 공식 도움말에서 확인하지 못했다(미확인).
 - 화면 안에 미디어가 있다는 사실만으로 내구 문서·권한·복구 parity를 의미하지 않는다.
 ## 9. 비교에서 가져오지 않는 주장
 
@@ -193,13 +201,14 @@ host가 화면 capture 시작
 
 ### 제품 공식 문서
 
-- Gather Spotlight: <https://support.gather.town/hc/en-us/articles/15910325136340-Spotlight>
-- Gather screen sharing: <https://support.gather.town/hc/en-us/articles/15910276650260-Screen-sharing>
-- WorkAdventure areas: <https://docs.workadventu.re/map-building/area-editor/>
-- WorkAdventure megaphone: <https://docs.workadventu.re/user/megaphone/>
-- Kumospace spatial and room audio: <https://www.kumospace.com/help/spatial-audio>
-- Kumospace presenting and screen sharing: <https://www.kumospace.com/help/presenting>
+- Gather 2.0 Meeting Overview(Screen Sharing 절 포함): <https://support.help.gather.town/articles/4462418552-meeting-overview>
+- WorkAdventure areas: <https://docs.workadventu.re/map-building/inline-editor/area-editor/>
+- WorkAdventure megaphone: <https://docs.workadventu.re/map-building/inline-editor/megaphone>
+- Kumospace spatial and room audio: <https://www.kumospace.com/help/spatial-and-room-audio>
+- Kumospace presenting and broadcast: <https://www.kumospace.com/help/present-views>, <https://www.kumospace.com/help/broadcast>
 - Kumospace recording: <https://www.kumospace.com/help/recording>
-- Magma audio and video: <https://help.magma.com/en/articles/6712005-audio-video>
+- Magma voice and video call permissions: <https://help.magma.com/en/articles/9479415-voice-and-video-call-permissions>
+- Magma camera and screenshare: <https://help.magma.com/en/articles/8601241-camera-and-screenshare>
+- (삭제) 이전 Gather Spotlight·Screen sharing, WorkAdventure 구 경로, Kumospace 구 경로, Magma `6712005-audio-video` 주소는 모두 404라 더 이상 인용하지 않는다.
 
 외부 제품의 UI와 정책은 변경될 수 있다. 발표나 의사결정에 다시 사용할 때는 열람 날짜, 요금제와 공식 문서의 최신 상태를 다시 확인한다.
