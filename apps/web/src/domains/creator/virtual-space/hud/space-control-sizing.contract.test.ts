@@ -49,10 +49,19 @@ describe("가상 스튜디오 컨트롤 크기 계약", () => {
     expect(hudCss).toContain(':root[data-design-theme="contrast"] :is(.space-minimap__gate-chip, .space-chat-input__hint, .space-chat__open-button) { min-height: var(--site-control-size, 44px); }');
   });
 
-  it("지도 구역 점프 마커는 22px 원을 유지하고 구역 버튼 모서리에 걸쳐 눌리는 영역을 30px까지만 넓힌다", () => {
-    expect(hudCss).toMatch(/\.space-minimap__zone-jump \{[^}]*top: -8px;[^}]*right: -6px;[^}]*width: 22px;[^}]*height: 22px;/u);
+  it("지도 구역 점프 마커는 24px 원(WCAG 2.2 최소 대상 크기)이고 구역 버튼 모서리에 걸쳐 눌리는 영역을 32px까지만 넓힌다", () => {
+    expect(hudCss).toMatch(/\.space-minimap__zone-jump \{[^}]*top: -8px;[^}]*right: -6px;[^}]*width: 24px;[^}]*height: 24px;/u);
     // 버튼 모서리에 걸쳐 있으므로 44px까지 넓히면 구역 버튼 모서리 클릭을 가로챈다.
     expect(hudCss).toMatch(/\.space-minimap__zone-jump::after \{ content: ""; position: absolute; inset: -4px;/u);
+  });
+
+  it("좁은 도크에서 작업 시작 글자는 접근성 트리에 남기고, 휴대폰 도크 가운데 버튼은 글자를 보여 준다", () => {
+    // display:none이면 아이콘만 있는 버튼이 이름을 잃는다(axe button-name critical).
+    expect(hudCss).not.toMatch(/\.space-dock__primary > span \{ display: none; \}/u);
+    expect(hudCss).toMatch(/@container space-dock \(max-width: 640px\) \{[^}]*\.space-dock__primary > span \{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset\(50%\);/u);
+    expect(hudCss).toMatch(/\.space-mobile-dock__work \.space-dock__primary > span \{ position: static; width: auto; height: auto; clip-path: none;/u);
+    // 주 버튼 공통 규칙(0,2,1)이 패딩·글자 크기를 덮어 글자가 잘리지 않도록 속성 선택자로 특이도를 올린다.
+    expect(hudCss).toMatch(/\.space-mobile-dock__work \.space-dock__primary\[data-workspace-primary-action\] \{ gap: 2px; padding: 6px 4px; font-size: 12px; \}/u);
   });
 
   it("지도 구역 버튼은 줄바꿈하지 않고 마커와 한 묶음의 중심이 구역 중심이다(가장자리 구역 라벨이 CA/FE로 끊기던 것)", () => {
