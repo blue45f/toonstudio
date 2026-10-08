@@ -73,7 +73,8 @@ describe("buildHumanoidModel — 기본 레시피(세분 1, 기본 레시피는 
   });
 
   it("역할 순서로 파츠 14개를 내고 모든 파츠가 validateMeshPartData를 통과한다", () => {
-    expect(model.parts.map((part) => part.role)).toEqual(PART_ROLES.filter((role) => role !== "accessory"));
+    // underwear는 키트 v1에서 추가된 역할이며 절차 소스에는 속옷 파츠가 없다(키트 소스 전용).
+    expect(model.parts.map((part) => part.role)).toEqual(PART_ROLES.filter((role) => role !== "accessory" && role !== "underwear"));
     expect(model.parts.every((part) => validateMeshPartData(part) === null)).toBe(true);
     expect(model.stats.partCount).toBe(14);
   });

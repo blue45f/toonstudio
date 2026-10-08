@@ -20,6 +20,8 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import type { Node } from "@babylonjs/core/node.js";
 
 interface MeshPickCache {
+  /** 이 캐시의 인덱스가 만들어진 SubMesh 구간 배치(`start:count` 나열). 바뀌면(키트 몸 가림) 인덱스·묶음 AABB를 다시 만든다. */
+  readonly subMeshLayout: string;
   /** 스킨 행렬 스냅샷(스킨이 없으면 null) */
   skeletonMatrices: Float32Array | null;
   morphInfluences: number[];
@@ -67,23 +69,54 @@ function toIndexArray(source: ArrayLike<number> | null): IndexArray {
   return Array.from(source);
 }
 
+function subMeshLayoutOf(mesh: Mesh): string {
+  return mesh.subMeshes.map((subMesh) => `${subMesh.indexStart}:${subMesh.indexCount}`).join("|");
+}
+
+/**
+ * pick 후보 인덱스. 메시의 SubMesh가 인덱스 버퍼 전체를 덮으면 인덱스 그대로이고, 일부만 덮으면(키트 몸 가림: 의상이 가린 영역의 SubMesh를 뺀다)
+ * 덮인 구간의 삼각형만 모은다 — 렌더되지 않는 삼각형이 pick에 걸려 의상 뒤 몸이 먼저 맞는 일을 막는다.
+ * SubMesh가 하나도 없으면(전부 숨김) 후보가 없다.
+ */
+function pickableIndices(mesh: Mesh): IndexArray {
+  const all = mesh.getIndices();
+  if (all === null) return [];
+  const subMeshes = mesh.subMeshes;
+  const first = subMeshes[0];
+  if (subMeshes.length === 1 && first !== undefined && first.indexStart === 0 && first.indexCount >= all.length) return toIndexArray(all);
+  let covered = 0;
+  for (const subMesh of subMeshes) covered += Math.max(0, Math.min(subMesh.indexCount, all.length - subMesh.indexStart));
+  const out = new Uint32Array(covered - (covered % 3));
+  let cursor = 0;
+  for (const subMesh of subMeshes) {
+    const end = Math.min(all.length, subMesh.indexStart + subMesh.indexCount);
+    for (let i = subMesh.indexStart; i < end && cursor < out.length; i += 1) {
+      out[cursor] = all[i] ?? 0;
+      cursor += 1;
+    }
+  }
+  return out;
+}
+
 /** 캐시를 현재 포즈에 맞춘다. 스냅샷이 같으면 재사용, 메시에 위치 데이터가 없으면 null. */
 function ensureCache(mesh: Mesh): MeshPickCache | null {
   const skeleton = mesh.skeleton;
   const matrices = skeleton ? skeleton.getTransformMatrices(mesh) : null;
   const influences = morphSnapshot(mesh);
+  const layout = subMeshLayoutOf(mesh);
   const cached = caches.get(mesh);
-  if (cached && sameNumbers(cached.morphInfluences, influences) && (matrices === null ? cached.skeletonMatrices === null : cached.skeletonMatrices !== null && sameNumbers(cached.skeletonMatrices, matrices))) {
+  if (cached && cached.subMeshLayout === layout && sameNumbers(cached.morphInfluences, influences) && (matrices === null ? cached.skeletonMatrices === null : cached.skeletonMatrices !== null && sameNumbers(cached.skeletonMatrices, matrices))) {
     return cached;
   }
   const posed = mesh.getPositionData(Boolean(skeleton), Boolean(mesh.morphTargetManager));
   if (!posed) return null;
   const positions = posed instanceof Float32Array ? posed : Float32Array.from(posed);
-  const indices = cached?.indices ?? toIndexArray(mesh.getIndices());
+  const indices = cached && cached.subMeshLayout === layout ? cached.indices : pickableIndices(mesh);
   const uvData = cached ? cached.uvs : mesh.getVerticesData("uv");
   const uvs = uvData ? (uvData instanceof Float32Array ? uvData : Float32Array.from(uvData)) : null;
   const groupBoxes = computeGroupBoxes(positions, indices);
   const next: MeshPickCache = {
+    subMeshLayout: layout,
     skeletonMatrices: matrices ? Float32Array.from(matrices) : null,
     morphInfluences: influences,
     positions,

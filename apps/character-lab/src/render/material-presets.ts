@@ -78,6 +78,7 @@ export const ROLE_DEFAULT_PRESET: Readonly<Record<PartRole, MaterialPresetId>> =
   bottom: "cloth-denim",
   shoes: "leather",
   accessory: "plastic",
+  underwear: "cloth-cotton",
 });
 
 /** 역할별 레시피 색 키(없으면 undefined = 프리셋 기본색) */
