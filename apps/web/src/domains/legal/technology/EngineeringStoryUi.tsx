@@ -108,7 +108,7 @@ function StepMark({ step, active }: { readonly step: number; readonly active: bo
 }
 
 /**
- * 기술 소개 하위 메뉴. 핵심(발표 동선 1~4)·발표·자료로 묶고, 라벨은 항상 한 줄로 유지한다.
+ * 기술 소개 하위 메뉴. 큰 그림(번호 없음)·핵심(발표 동선 1~4)·발표(5)·자료로 묶고, 라벨은 항상 한 줄로 유지한다.
  * 좁은 화면에서는 가로로 넘겨 보며, 현재 항목이 보이도록 가로 위치만 맞춘다(세로 스크롤은 건드리지 않음).
  */
 export function EngineeringTechNav({ className }: { readonly className?: string }) {
@@ -198,6 +198,49 @@ function PageMeta({ page }: { readonly page: EngineeringPageEntry }) {
   return null;
 }
 
+/** 레지스트리 순서 기준 다음 페이지. 마지막 페이지에는 없다(그때는 기술 허브로 이어진다). */
+function nextEngineeringPage(id: EngineeringPageId): EngineeringPageEntry | undefined {
+  const index = ENGINEERING_PAGES.findIndex((page) => page.id === id);
+  return index >= 0 ? ENGINEERING_PAGES[index + 1] : undefined;
+}
+
+/**
+ * 머리말 안내 줄: 이 페이지가 답하는 질문 · 이런 분께 · 다음에 읽을 것.
+ * 질문과 대상은 레지스트리의 선택 필드에서 오고, 다음 페이지는 하단 이어보기와 같은 순서(레지스트리 순서)를 따른다.
+ */
+function PageGuide({ page }: { readonly page: EngineeringPageEntry }) {
+  const next = nextEngineeringPage(page.id);
+  if (!page.question && !page.audience) return null;
+  const labelClass = "text-[0.7rem] font-black uppercase tracking-[0.06em] text-fg-3";
+  return (
+    <dl className="mt-6 grid max-w-3xl gap-x-6 gap-y-2 rounded-2xl border border-line/70 bg-panel/55 px-4 py-3.5 text-sm sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-y-3">
+      {page.question ? (
+        <>
+          <dt className={labelClass}>{bi("이 페이지가 답하는 질문", "Question this page answers")}</dt>
+          <dd className="font-bold leading-6 text-fg">{bi(page.question.ko, page.question.en)}</dd>
+        </>
+      ) : null}
+      {page.audience ? (
+        <>
+          <dt className={labelClass}>{bi("이런 분께", "Who it is for")}</dt>
+          <dd className="leading-6 text-fg-2">{bi(page.audience.ko, page.audience.en)}</dd>
+        </>
+      ) : null}
+      <dt className={labelClass}>{bi("다음에 읽을 것", "Read next")}</dt>
+      <dd className="leading-6 text-fg-2">
+        <Link
+          href={next ? next.href : "/about/technology"}
+          className="inline-flex items-center gap-1.5 font-black text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          {next ? bi(next.label.ko, next.label.en) : bi("기술 허브로 돌아가 다른 길 고르기", "Back to the hub to pick another route")}
+          <ArrowRight size={14} aria-hidden="true" />
+        </Link>
+        {next ? <span className="ml-2 text-xs text-fg-3">{bi(next.purpose.ko, next.purpose.en)}</span> : null}
+      </dd>
+    </dl>
+  );
+}
+
 /**
  * 머리말 아래 페이지 대표 이미지. 레지스트리에 매핑된 기존 브랜드 아트(workflow-20260928)를 쓴다.
  * 원본 아트 로드가 실패하면 같은 세트의 대체 아트(illustrated-20260928)로 바꾸고,
@@ -239,7 +282,10 @@ export function EngineeringPageIntro({
   readonly title: string;
   readonly description: string;
   readonly aside?: ReactNode;
-  /** 지정하면 발표 동선 단계와 읽기 시간을 함께 보여준다. */
+  /**
+   * 지정하면 레지스트리 항목에서 발표 동선 단계·읽기 시간과 함께
+   * "이 페이지가 답하는 질문 · 이런 분께 · 다음에 읽을 것" 안내 줄을 보여준다.
+   */
   readonly pageId?: EngineeringPageId;
 }) {
   useBilingualI18nRevision();
@@ -264,6 +310,7 @@ export function EngineeringPageIntro({
           {title}
         </h1>
         <p className="mt-5 max-w-3xl text-sm leading-7 text-fg-2 sm:text-base sm:leading-8">{description}</p>
+        {page ? <PageGuide page={page} /> : null}
         {page ? (
           <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold text-fg-3">
             <PageMeta page={page} />
@@ -344,8 +391,8 @@ function HubCard({ alignEnd = false }: { readonly alignEnd?: boolean }) {
         <LayoutGrid size={14} aria-hidden="true" />
         {bi("기술 허브", "Engineering hub")}
       </span>
-      <span className="text-lg font-black text-fg group-hover:text-accent">{bi("발표 동선 한눈에 보기", "See the whole talk path")}</span>
-      <span className="text-sm leading-6 text-fg-2">{bi("다섯 단계와 자료실을 한 화면에서 고릅니다.", "Pick any of the five steps and resources on one screen.")}</span>
+      <span className="text-lg font-black text-fg group-hover:text-accent">{bi("읽는 길 한눈에 보기", "See every reading route")}</span>
+      <span className="text-sm leading-6 text-fg-2">{bi("큰 그림 두 해설, 발표 동선 다섯 단계, 찾아보기 도구를 한 화면에서 고릅니다.", "Pick a big-picture guide, one of the five talk-path steps or a look-up tool on one screen.")}</span>
     </Link>
   );
 }

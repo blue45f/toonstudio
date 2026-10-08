@@ -25,8 +25,8 @@ const CHECKSUM_MIGRATION_LEDGER: EngineeringAtlasEntry = {
       "A migration is an SQL file that changes the shape of a database (tables and columns). If a file already applied in production is quietly edited, some databases hold the old version and some the new one. So ToonStudio records a SHA-256 fingerprint (a value that changes if a single character changes) for every applied SQL file in a ledger table and stops with 'add a new numbered file' when the fingerprint differs. It is a ledger written in ink with correction fluid banned.",
     ),
     t(
-      "원장은 앱이 접근하지 못하는 toonspectrum_ops 스키마에 있고, 상태는 applying·applied·failed, 출처는 executed·adopted·bootstrap입니다. 승인형 수동 워크플로의 러너는 ① 파일마다 지문을 계산해 원장과 비교하고 ② 아직 없으면 applying 행을 먼저 선점한 뒤 SQL을 실행하고 ③ 끝나면 applied로 바꿉니다. 중간에 끊기면 applying이 남아 다음 실행이 거부되고, 사람이 repair 모드를 골라야 합니다. 같은 지문 검사가 API 빌드의 첫 단계에도 있어 적용한 SQL을 고친 커밋은 CI와 배포 빌드에서 모두 막힙니다.",
-      "The ledger lives in a toonspectrum_ops schema the app cannot reach, with states applying, applied and failed and provenance executed, adopted and bootstrap. The runner of an approval-gated manual workflow (1) hashes each file and compares it with the ledger, (2) claims an applying row first if none exists and then runs the SQL, and (3) flips it to applied. If it is cut off midway, the applying row remains and the next run refuses, so a person must choose repair mode. The same fingerprint check is the first step of the API build, so a commit that edits applied SQL is blocked in CI and in the release build.",
+      "원장은 앱이 접근하지 못하는 toonspectrum_ops 스키마에 있고, 상태는 applying·applied·failed, 출처는 executed·adopted·bootstrap입니다. 승인형 수동 워크플로의 러너는 ① 파일마다 지문을 계산해 원장과 비교하고 ② 아직 없으면 applying 행을 먼저 선점한 뒤 SQL을 실행하고 ③ 끝나면 applied로 바꿉니다. SQL 이 실패하면 failed 로 기록되고, 결과를 알 수 없게 끊기면(연결 유실 등) applying 이 남습니다. 둘 다 다음 실행이 거부되고 repair 모드에서만 다시 시도합니다. 같은 지문 검사가 API 빌드의 첫 단계에도 있어 적용한 SQL을 고친 커밋은 CI와 배포 빌드에서 모두 막힙니다.",
+      "The ledger lives in a toonspectrum_ops schema the app cannot reach, with states applying, applied and failed and provenance executed, adopted and bootstrap. The runner of an approval-gated manual workflow (1) hashes each file and compares it with the ledger, (2) claims an applying row first if none exists and then runs the SQL, and (3) flips it to applied. If the SQL fails, the row is recorded as failed, and if the outcome is unknown (for example a lost connection) applying remains. Either way the next run refuses and only repair mode retries. The same fingerprint check is the first step of the API build, so a commit that edits applied SQL is blocked in CI and in the release build.",
     ),
     t(
       "빈 DB를 처음 세울 때는 drizzle-kit push 대신 generate로 DDL을 두 번 만들어 완전히 같은지 비교한 뒤 단일 트랜잭션(BEGIN~COMMIT)으로 적용합니다. push는 대상 DB를 들여다보고 차이만큼 SQL을 만들어서 대상의 상태에 따라 문장이 달라지고, 적용이 원자적이지 않으며 일부 실패가 종료 코드 0으로 묻힐 수 있습니다. 입력(스키마 파일)이 같으면 출력(DDL)도 같아야 재현하고 감사할 수 있습니다.",
@@ -39,7 +39,7 @@ const CHECKSUM_MIGRATION_LEDGER: EngineeringAtlasEntry = {
   ],
   keyPoints: [
     t("적용한 SQL은 SHA-256 지문 고정, 고치면 즉시 거부", "Applied SQL is pinned by SHA-256; edits are refused at once"),
-    t("끊긴 적용은 applying으로 남아 사람이 repair를 골라야 함", "An interrupted apply stays applying until a person picks repair"),
+    t("실패는 failed, 결과 불명은 applying으로 남아 repair 모드에서만 재시도", "Failure is recorded as failed and an unknown outcome stays applying; only repair mode retries"),
     t("같은 검사가 PR CI와 API 배포 빌드의 첫 단계에도 있음", "The same check is the first step of PR CI and the API build"),
     t("빈 DB는 generate 두 번 비교 후 단일 트랜잭션으로 적용", "An empty DB is built from two generate runs in one transaction"),
   ],
@@ -67,7 +67,7 @@ const CHECKSUM_MIGRATION_LEDGER: EngineeringAtlasEntry = {
       { from: "flow", to: "runner", label: t("mode 선택: apply", "Mode: apply"), note: t("adopt와 repair 모드도 있음", "adopt and repair also exist") },
       { from: "runner", to: "ledger", label: t("파일 지문 ↔ 원장 checksum 비교", "File hash vs ledger checksum"), note: t("다르면 중단: 새 번호로 추가하라", "If different, stop: add a new numbered file") },
       { from: "ledger", to: "runner", label: t("적용됨 · 없음 · 중단됨", "applied, none or interrupted"), style: "dashed" },
-      { from: "runner", to: "ledger", label: t("applying 선점 뒤 SQL 실행", "Claim applying, then run SQL"), note: t("끊기면 applying이 남아 다음 실행 거부", "If cut off, applying stays and blocks the next run") },
+      { from: "runner", to: "ledger", label: t("applying 선점 뒤 SQL 실행", "Claim applying, then run SQL"), note: t("실패는 failed, 결과 불명은 applying — 다음 실행 거부", "failed on error, applying if unknown: the next run is refused") },
       { from: "runner", to: "ledger", label: t("applied로 갱신", "Mark applied") },
       { from: "runner", to: "flow", label: t("구조·권한 검증 결과", "Structure and ACL check"), style: "dashed", note: t("런타임 역할의 ops 권한 없음 확인", "Runtime role has no ops access") },
       { from: "flow", to: "human", label: t("성공 · 실패 보고", "Success or failure report"), style: "dashed" },
@@ -262,8 +262,8 @@ const CHECKSUM_MIGRATION_LEDGER: EngineeringAtlasEntry = {
       {
         question: t("적용 도중 실패하면 어떻게 되나요?", "What happens if an apply fails midway?"),
         answer: t(
-          "실행 전에 applying 행을 선점해 두므로, 끊기면 그 행이 남아 다음 실행이 거부됩니다. 자동으로 다시 시도하지 않고 사람이 원인을 확인한 뒤 repair 모드를 골라야 합니다.",
-          "Because an applying row is claimed before running, an interruption leaves that row and the next run refuses. It never retries automatically; a person checks the cause and then chooses repair mode.",
+          "실행 전에 applying 행을 선점해 두므로, SQL 이 실패하면 그 행이 failed 로 바뀌고 결과를 알 수 없게 끊기면 applying 으로 남아, 어느 쪽이든 다음 실행이 거부됩니다. 자동으로 다시 시도하지 않고 사람이 원인을 확인한 뒤 repair 모드를 골라야 합니다.",
+          "Because an applying row is claimed before running, a failed SQL flips that row to failed and an unknown outcome leaves it applying; either way the next run refuses. It never retries automatically; a person checks the cause and then chooses repair mode.",
         ),
       },
       {
@@ -289,7 +289,7 @@ const CHECKSUM_MIGRATION_LEDGER: EngineeringAtlasEntry = {
   technologies: ["PostgreSQL", "Supabase PostgreSQL", "Drizzle Kit", "GitHub Actions", "SHA-256"],
   facts: [
     {
-      value: "102",
+      value: "103",
       label: t("저장소의 번호 붙은 마이그레이션 SQL 파일(작성 시점)", "Numbered migration SQL files in the repository (at writing time)"),
       source: "scripts/production-database-migrations.manifest",
     },
@@ -617,14 +617,14 @@ const FEDERATED_FREE_DATA_PLANE: EngineeringAtlasEntry = {
       "The 'free policy' is verified by code, not by documents. pnpm verify:free-infrastructure checks the policy mode (free-strict), the bans on automatic deploys and automatic paid failover, and whether a forbidden provider reappears, and it fails if a retired infrastructure file comes back or an active document mentions retired infrastructure. Each provider gets an application cap ratio (for example 0.8) so the app stops before the provider reports the limit. If a quota snapshot is older than 900 seconds the router refuses with QUOTA_SNAPSHOT_REQUIRED.",
     ),
     t(
-      "한계도 분명합니다. D1처럼 계정 단위로 공유되는 한도는 DB를 여럿 만들어도 합계가 늘지 않고, 후보·샤드·라우트의 개수는 처리량이 아닙니다. 한도 수치는 파일 단위 확인일(2026-09-26)과 함께 읽어야 하며 공급자 요금은 바뀔 수 있습니다. 문서도 광고된 무료 quota를 코드에 고정하지 않는다는 방침을 적습니다. 60·70·80·85·95% 임계를 코드가 집행하는 곳은 객체 저장소 쓰기 admission 하나만 확인했습니다.",
-      "The limits are clear. An account-wide allowance such as D1's does not grow by creating more databases, and the number of candidates, shards and routes is not throughput. The limit numbers must be read with the file-level verification date (2026-09-26), and provider pricing can change; the docs also state a policy of not hard-coding advertised free quotas. Of the 60, 70, 80, 85 and 95 percent thresholds, only the object-storage write admission was confirmed as enforced by code.",
+      "한계도 분명합니다. D1처럼 계정 단위로 공유되는 한도는 DB를 여럿 만들어도 합계가 늘지 않고, 후보·샤드·라우트의 개수는 처리량이 아닙니다. 한도 수치는 파일 단위 확인일(2026-09-26)과 함께 읽어야 하며 공급자 요금은 바뀔 수 있습니다. 문서도 광고된 무료 quota를 코드에 고정하지 않는다는 방침을 적습니다. 60·70·80·85·95% 단계 임계는 정책 파일(config/free-infrastructure-policy.json)과 검증 스크립트에만 있고, 런타임이 집행하는 것은 공급자별 앱 상한 비율(예: 0.8) 하나입니다.",
+      "The limits are clear. An account-wide allowance such as D1's does not grow by creating more databases, and the number of candidates, shards and routes is not throughput. The limit numbers must be read with the file-level verification date (2026-09-26), and provider pricing can change; the docs also state a policy of not hard-coding advertised free quotas. The 60, 70, 80, 85 and 95 percent stage thresholds exist only in the policy file (config/free-infrastructure-policy.json) and its verification script; what the runtime enforces is a single per-provider application cap ratio (for example 0.8).",
     ),
   ],
   keyPoints: [
     t("후보 16곳 · 샤드 21 · 라우트 36: 계획이지 처리량이 아님", "16 candidates, 21 shards, 36 routes: a plan, not throughput"),
     t("라우터는 기본 비활성, 쿼터 스냅샷이 낡으면 거절", "The router is off by default and refuses stale quota snapshots"),
-    t("정책 검증기가 자동 유료 전환·금지 공급자를 CI에서 차단", "A policy verifier blocks paid overflow and banned providers in CI"),
+    t("정책 검증기가 유료 전환·금지 공급자를 막되 전체 검사는 수동·로컬", "The policy verifier blocks paid overflow and banned providers; full check is manual or local"),
     t("한도 수치는 날짜와 함께: 파일 단위 확인일 2026-09-26", "Read limit numbers with their date: file-level check on 2026-09-26"),
   ],
   diagram: {
@@ -669,7 +669,7 @@ const FEDERATED_FREE_DATA_PLANE: EngineeringAtlasEntry = {
       {
         id: "verifier",
         label: t("정책 검증기 (CI)", "Policy verifier (CI)"),
-        sub: t("금지 공급자·자동 배포·자동 유료 전환이 되살아나면 실패", "Fails if banned providers, auto deploys or paid failover return"),
+        sub: t("정책 파일이 어긋나면 정책 단위 테스트가 실패, 전체 검사는 수동·로컬", "Policy unit test fails on a drifted policy file; full check is manual or local"),
         tone: "edge",
       },
     ],
@@ -704,8 +704,8 @@ const FEDERATED_FREE_DATA_PLANE: EngineeringAtlasEntry = {
     {
       feature: t("무료 정책 검증 (verify:free-infrastructure)", "Free-policy verification (verify:free-infrastructure)"),
       role: t(
-        "정책 JSON의 필수 규칙과 퇴역 인프라 부활 여부를 검사해 CI에서 실패시킵니다.",
-        "It checks the mandatory rules of the policy JSON and any revival of retired infrastructure, failing CI on a violation.",
+        "정책 JSON의 필수 규칙과 퇴역 인프라 부활 여부를 검사해 실패시킵니다(전체 검사는 수동 워크플로·로컬 ci, 코어 CI는 정책 단위 테스트).",
+        "It checks the mandatory rules of the policy JSON and any revival of retired infrastructure, failing on a violation (the full check runs in a manual workflow and local ci; core CI runs the policy unit test).",
       ),
       paths: [
         "scripts/free-infrastructure-policy.mjs#validateFreeInfrastructureRepository",
@@ -782,7 +782,7 @@ const FEDERATED_FREE_DATA_PLANE: EngineeringAtlasEntry = {
         "  providers: Record<string, { applicationHardCapRatio: number }>;",
         "}",
         "",
-        "// 문서의 약속을 코드가 검사한다: 하나라도 어기면 CI가 실패한다(단순화)",
+        "// 문서의 약속을 코드가 검사한다: 하나라도 어기면 이슈가 나온다(단순화; 실제 검사는 정책 단위 테스트·수동 워크플로·로컬 ci)",
         "export function policyIssues(policy: Policy): string[] {",
         "  const issues: string[] = [];",
         '  if (policy.mode !== "free-strict") issues.push("mode는 free-strict여야 한다");',
@@ -805,7 +805,7 @@ const FEDERATED_FREE_DATA_PLANE: EngineeringAtlasEntry = {
         "  providers: Record<string, { applicationHardCapRatio: number }>;",
         "}",
         "",
-        "// Code checks what the documents promise: any breach fails CI (simplified)",
+        "// Code checks what the documents promise: any breach yields an issue (simplified; the real check is the policy unit test, a manual workflow and local ci)",
         "export function policyIssues(policy: Policy): string[] {",
         "  const issues: string[] = [];",
         '  if (policy.mode !== "free-strict") issues.push("mode must be free-strict");',
@@ -855,8 +855,8 @@ const FEDERATED_FREE_DATA_PLANE: EngineeringAtlasEntry = {
   chapterIds: ["cost-engineering", "infrastructure"],
   talk: {
     pitch: t(
-      "무료 서비스 여러 곳의 한도를 합치면 더 많은 사용자를 감당할 수 있겠다는 생각으로, 후보 16곳을 정책 파일에 정리했습니다. 하지만 지금은 계획 단계이고 라우터는 기본으로 꺼져 있으며, 실제 운영 권위는 Supabase PostgreSQL 원장과 Cloudflare, Render, Upstash입니다. 대신 '무료 정책'은 코드가 검사합니다. 자동 유료 전환이나 금지 공급자가 되살아나면 CI가 실패합니다.",
-      "The idea was that combining the limits of several free services could serve more users, so 16 candidates were organized in a policy file. For now it is a plan: the router is off by default, and the real operating authorities are the Supabase PostgreSQL ledger, Cloudflare, Render and Upstash. What code does check is the free policy: if automatic paid overflow or a banned provider returns, CI fails.",
+      "무료 서비스 여러 곳의 한도를 합치면 더 많은 사용자를 감당할 수 있겠다는 생각으로, 후보 16곳을 정책 파일에 정리했습니다. 하지만 지금은 계획 단계이고 라우터는 기본으로 꺼져 있으며, 실제 운영 권위는 Supabase PostgreSQL 원장과 Cloudflare, Render, Upstash입니다. 대신 '무료 정책'은 코드가 검사합니다. 정책 파일이 어긋나면 코어 정책 단위 테스트가 실패하고, 전체 검사(verify:free-infrastructure)는 수동 워크플로와 로컬 pnpm run ci 에서 돕니다.",
+      "The idea was that combining the limits of several free services could serve more users, so 16 candidates were organized in a policy file. For now it is a plan: the router is off by default, and the real operating authorities are the Supabase PostgreSQL ledger, Cloudflare, Render and Upstash. What code does check is the free policy: if the policy file drifts, the core policy unit test fails, and the full check (verify:free-infrastructure) runs in a manual workflow and in local pnpm run ci.",
     ),
     analogy: t(
       "놀이공원 자유이용권을 여러 장 모아 두었지만, 아직 입장은 한 장으로만 하고 나머지는 사용 계획표에만 적혀 있는 상태입니다.",
@@ -880,8 +880,8 @@ const FEDERATED_FREE_DATA_PLANE: EngineeringAtlasEntry = {
       {
         question: t("한도를 넘기면 자동으로 유료로 넘어가나요?", "Does it roll into paid usage when a limit is exceeded?"),
         answer: t(
-          "아니요. 정책이 자동 유료 전환을 금지하고, 검증기가 그 설정을 CI에서 확인합니다. 한도 알림은 과금 차단이 아니므로 앱이 더 낮은 상한에서 먼저 멈춥니다.",
-          "No. The policy forbids automatic paid overflow and the verifier checks that setting in CI. Provider alerts do not block billing, so the app stops first at a lower cap.",
+          "아니요. 정책이 자동 유료 전환을 금지하고, 검증기가 그 설정을 확인합니다(코어 CI는 정책 단위 테스트, 전체 검사는 수동 워크플로·로컬 ci). 한도 알림은 과금 차단이 아니므로 앱이 더 낮은 상한에서 먼저 멈춥니다.",
+          "No. The policy forbids automatic paid overflow and the verifier checks that setting (core CI runs the policy unit test; the full check runs in a manual workflow and local ci). Provider alerts do not block billing, so the app stops first at a lower cap.",
         ),
       },
     ],

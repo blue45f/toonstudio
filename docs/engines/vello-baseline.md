@@ -189,29 +189,41 @@ Track B  toon-vello — `toon-fabric` ON
 트랙 전환은 **Cargo 피처 하나**다(`[patch]` 토글이나 `--config` 곡예 없음). 커밋된 `pkg-gpu/`
 산출물은 Track B다 — Track A는 `cargo check`로 상시 검증한다.
 
-### 3.5 zero-copy 실증 (2026-08-08)
+### 3.5 zero-copy 실증 (최초 2026-08-08, 현재 정본 JSON은 2026-09-23 재측정)
 
 `tests/benchmarks/results/toon-vello-fork.json`, 하니스
 `packages/studio-engine-vello/src/__tests__/toon-vello-fork-browser-probe.test.ts`
-(`TOON_VELLO_FORK_PROBE=1`), Chromium 140.0.7339.186 headless metal:
+(`TOON_VELLO_FORK_PROBE=1`). **현재 JSON은 `measuredAt` 2026-09-23T19:07:29Z 실행 결과**다:
+시스템 Chrome 153.0.8010.53 headless(`--enable-unsafe-webgpu --use-angle=metal` 인자), wgpu `BrowserWebGpu`.
+JSON의 어댑터 이름·드라이버 필드가 비어 있어 하드웨어는 확인할 수 없다(미확인). 하니스는 같은 파일을 덮어쓰므로
+2026-08-08 최초 실행(Chromium 140.0.7339.186)의 JSON은 남아 있지 않고, 그 수치는 아래 "이전 기록"으로만 남는다.
 
 - **채택 성립**: `adopt_gpu_device(fabricDevice)` 후 `fabric_device_handle() === fabricDevice`
   (플래그가 아니라 **JS 객체 참조 동일성**으로 판별).
 - **L4 성립**: `render_scene_gpu_texture_json`이 돌려준 `GPUTexture`를 fabric 디바이스가
   바인드그룹에 직접 넣어 컴퓨트 패스에서 소비 — 검증 오류 0. 같은 디바이스 GPU copy(L3)도 통과.
 - **픽셀 동등**: 공유 텍스처에서 읽은 바이트가 기존 L0 경로(`render_scene_gpu_json`) 결과와
-  **바이트 일치** — 패치가 렌더 결과를 바꾸지 않는다.
-- **교환 비용** (p50, 같은 실행에서 L0 기준선 동시 측정):
+  **바이트 일치** — 패치가 렌더 결과를 바꾸지 않는다. Hybrid sparse-strip 경로도 바인딩이 통과하고
+  퍼지 불일치는 0%다(JSON `pixelParityVsL0Lane.equal`·`hybridSparseStrip`).
+- **교환 비용** (p50, 크기마다 워밍업 2회 뒤 9회 측정(`TIMED_SAMPLES`), `performance.now()` 차이,
+  같은 실행에서 L0 기준선 동시 측정. 2026-09-23 JSON의 `exchangeCost`):
 
   | 크기 | L0 교환(렌더+readback+업로드) | adopted 렌더→공유 텍스처 | 배속 |
   | --- | --- | --- | --- |
-  | 256² | 5.10ms | 2.70ms | 1.89× |
-  | 512² | 5.50ms | 2.60ms | 2.12× |
-  | 1024² | 7.30ms | 3.00ms | 2.43× |
+  | 256² | 1.30ms | 1.40ms | 0.93× |
+  | 512² | 2.30ms | 0.70ms | 3.29× |
+  | 1024² | 5.00ms | 1.60ms | 3.12× |
 
-  adopted 경로는 submit→완료 왕복 플로어(≈2.4ms, 같은 표에서 `sameDeviceCopyP50Ms`로 관측)에
-  거의 붙는다 — 즉 **readback 성분이 사라진 것**이 배속의 실체다. 1024²에서 L0가 지불하던
-  4.4ms readback + 2.9ms 업로드가 0이 됐다.
+  읽는 법: 값이 0.1ms 단위로만 나오는 것은 브라우저 타이머 해상도 때문이다. 256²의 0.93×는 "이득이
+  측정되지 않음"(L0의 readback 1.0ms + 업로드 0.3ms가 이미 작다)으로 읽는다. 512²·1024²에서는 L0가
+  지불한 readback(1.6ms·3.6ms)과 업로드(0.7ms·1.4ms)가 adopted 경로에는 없고, 이 **readback 성분이
+  사라진 것**이 배속(약 3.1~3.3배)의 실체다. 한 번의 실행·표본 9회·기기 미확인의 값이므로 제품 성능으로
+  일반화하지 않는다.
+- **이전 기록**(2026-08-08, Chromium 140.0.7339.186 headless metal, 현재 JSON에는 없음): 256² 5.10→2.70ms
+  (1.89×), 512² 5.50→2.60ms(2.12×), 1024² 7.30→3.00ms(2.43×). 당시에는 adopted 경로가 submit→완료 왕복
+  플로어(≈2.4ms)에 붙는다고 풀이했지만, 2026-09-23 JSON의 같은 디바이스 복사(`sameDeviceCopyP50Ms`)는
+  0.2~0.3ms라 이 풀이는 현재 값으로 확인되지 않는다. 두 측정은 브라우저 버전·실행 시점·기기가 달라 서로
+  바꿔 인용하지 않는다. 다른 문서가 1.89~2.43×를 인용하면 위 날짜와 조건을 함께 적는다.
 
 - JS 경계: `packages/studio-engine-vello/src/gpu-browser.ts`
   (`adoptGpuDevice`·`isGpuDeviceAdopted`·`gpuDeviceHandle`·`renderSceneToTextureGpu`).

@@ -114,8 +114,14 @@ Render 검증 후에만 다음 origin으로 수동 배포한다.
 ```bash
 export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-core-api.onrender.com
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
+export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 pnpm run cloudflare:static:deploy
 ```
+
+production 모드(`scripts/deploy-cloudflare-static.mjs --production`)는 승인 문구와 함께 소문자 40자리
+`TOONSPECTRUM_APPROVED_MAIN_SHA`, 현재 브랜치 `main`, 깨끗한 작업 트리, `HEAD`와 승인 SHA의 일치를 모두
+요구하며 하나라도 어긋나면 빌드 전에 중단한다. SHA 값은 비밀이 아니지만 승인 기록이므로 `HEAD`에서 자동으로
+채우지 않고 승인된 값을 입력한다.
 
 `/api/health`와 `/api/health/live`는 Cloudflare edge에서 응답하고 `/api/health/ready`만 Render의 DB·schema
 readiness를 확인한다. 대형 파일은 Static Assets sidecar와 R2가 담당하며 Core API를 파일 fallback으로

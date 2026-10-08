@@ -288,6 +288,23 @@
   letter-spacing: 0.04em;
 }
 
+/* 링크 옆 사용 조건 배지(베타·실험·로그인·프로젝트·데스크톱): 라우트 메타데이터에서 읽고, 색이 아니라 글자로 알린다. */
+.mk-condition-list { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.mk-condition {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--mk-line-strong);
+  border-radius: 999px;
+  color: var(--mk-fg-2);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1;
+}
+.mk-condition[data-condition="beta"] { border-color: color-mix(in srgb, var(--mk-accent) 60%, transparent); color: var(--mk-fg); }
+.mk-condition:is([data-condition="experimental"], [data-condition="project"]) { border-color: color-mix(in srgb, var(--mk-warn) 65%, transparent); color: var(--mk-fg); }
+
 /* 접어 두는 보조 안내(<details>): 제목 줄 하나만 보이고, 펼치면 본문이 열린다. */
 .mk-fold {
   border: 1px solid var(--mk-line);
@@ -356,6 +373,7 @@
 @media (prefers-contrast: more), (forced-colors: active) {
   .mk-page { background: Canvas; color: CanvasText; }
   .mk-title :is(em, span) { background: none; color: CanvasText; }
+  .mk-page .mk-condition { border: 1px solid CanvasText; color: CanvasText; }
   .mk-page :is(.mk-button, .mk-card, .mk-chip, .mk-closing, .mk-badge, .mk-fold) {
     border: 2px solid CanvasText;
     background: Canvas;

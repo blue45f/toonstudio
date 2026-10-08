@@ -4,6 +4,7 @@ import {
   Cpu,
   Film,
   LibraryBig,
+  Network,
   Presentation,
   type LucideIcon,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 export type ServiceStoryJourneyId =
   | "tour"
   | "brand"
+  | "architecture"
   | "story"
   | "playbook"
   | "deck"
@@ -55,10 +57,19 @@ const JOURNEY_ITEMS: readonly JourneyItem[] = [
     enDescription: "A 24-second view of the creative direction",
   },
   {
+    id: "architecture",
+    href: "/about/technology/architecture",
+    icon: Network,
+    ko: "아키텍처 해설",
+    en: "Architecture guide",
+    koDescription: "구조와 재료를 도식과 쉬운 말로",
+    enDescription: "Structure and materials in diagrams and plain words",
+  },
+  {
     id: "story",
     href: "/about/technology/story",
     icon: Cpu,
-    ko: "기술 스토리",
+    ko: "제작 스토리",
     en: "Engineering story",
     koDescription: "아키텍처 결정과 실제 근거",
     enDescription: "Architecture decisions and evidence",
@@ -71,14 +82,15 @@ const JOURNEY_ITEMS: readonly JourneyItem[] = [
     en: "Benchmarks · reuse",
     koDescription: "배운 점, 적용과 주장하지 않는 범위",
     enDescription: "Lessons, application and claim boundaries",
-  },  {
+  },
+  {
     id: "deck",
     href: "/about/technology/deck?track=talk",
     icon: Presentation,
-    ko: "웹 발표 자료",
-    en: "Web presentation",
-    koDescription: "필요한 깊이만 선택하는 발표 모드",
-    enDescription: "Presentation modes at the needed depth",
+    ko: "발표 모드",
+    en: "Presentation mode",
+    koDescription: "필요한 깊이의 트랙을 골라 발표",
+    enDescription: "Pick the track at the depth you need",
   },
   {
     id: "film",
@@ -107,7 +119,8 @@ export function ServiceStoryJourney({
         className,
       )}
       aria-label={bi("서비스 소개와 기술 스토리 흐름", "Service and engineering story journey")}
-    >      <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+    >
+      <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {JOURNEY_ITEMS.map((item, index) => {
           const Icon = item.icon;
           const active = item.id === current;

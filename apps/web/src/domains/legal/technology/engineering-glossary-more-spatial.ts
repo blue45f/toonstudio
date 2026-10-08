@@ -36,8 +36,8 @@ export const GLOSSARY_MORE_SPATIAL: readonly GlossaryTerm[] = [
       "Like narrowing down a library by floor, then shelf, then slot instead of checking every book.",
     ),
     inToonstudio: t(
-      "three-mesh-bvh 0.9.13 위에 예산이 있는 공급자 모듈(studio-three-mesh-bvh-provider.ts: 삼각형 2,000,000·깊이 48·동시 작업 4 등)을 만들어 두었지만, 앱 코드에서 이 모듈을 부르는 곳은 테스트 밖에서 찾지 못했습니다(구현됨·미연결). LT 변환의 1차 경로는 BVH 가 아니라 이미지 기반 Sobel 이며, BVH 는 향후 숨은선 제거 가속 후보로만 기록돼 있습니다.",
-      "A budgeted provider module (studio-three-mesh-bvh-provider.ts: 2,000,000 triangles, depth 48, 4 concurrent operations and so on) exists on top of three-mesh-bvh 0.9.13, but no caller outside tests was found (implemented, not wired). LT conversion's primary path is image-based Sobel, not BVH; BVH is only noted as a future hidden-line speed-up.",
+      "three-mesh-bvh 0.9.13 위에 예산이 있는 공급자 모듈(studio-three-mesh-bvh-provider.ts: 삼각형 2,000,000·깊이 48·동시 작업 4 등)을 만들어 두었지만, 앱 코드에서 이 모듈을 부르는 곳은 테스트 밖에서 찾지 못했습니다(구현됨·미연결). 다만 불리언 연산 라이브러리 three-bvh-csg 가 three-mesh-bvh 를 안에서 쓰므로 패키지는 CSG Worker 에 들어 있습니다. LT 변환의 1차 경로는 BVH 가 아니라 이미지 기반 Sobel 이며, BVH 는 향후 숨은선 제거 가속 후보로만 기록돼 있습니다.",
+      "A budgeted provider module (studio-three-mesh-bvh-provider.ts: 2,000,000 triangles, depth 48, 4 concurrent operations and so on) exists on top of three-mesh-bvh 0.9.13, but no caller outside tests was found (implemented, not wired). The package itself does ship in the CSG Worker, because the boolean library three-bvh-csg uses it internally. LT conversion's primary path is image-based Sobel, not BVH; BVH is only noted as a future hidden-line speed-up.",
     ),
     chapters: ["web-3d-engine", "web-3d-dcc-pipeline"],
     atlasIds: ["implemented-not-wired-modules"],
@@ -244,8 +244,8 @@ export const GLOSSARY_MORE_SPATIAL: readonly GlossaryTerm[] = [
       "Like an air-conditioner thermostat: on at 26 and off at 24 means it does not click on and off around 25.",
     ),
     inToonstudio: t(
-      "가상 스튜디오의 근처 대화는 120px 안에 300ms 머물러야 들어가고(STUDIO_ACOUSTIC_ENTER_RADIUS/ENTER_MS), 156px 밖에 800ms 있어야 나갑니다(EXIT_RADIUS/EXIT_MS). 경계에서 어정쩡하게 서 있어도 대화가 켜졌다 꺼지지 않습니다(virtual-space/studio-virtual-space-acoustics.ts). 이 숫자는 설계값이며 부하·체감 시험 결과가 아닙니다.",
-      "Nearby conversation in the virtual studio starts only after staying within 120 px for 300 ms (STUDIO_ACOUSTIC_ENTER_RADIUS/ENTER_MS) and ends only after being beyond 156 px for 800 ms (EXIT_RADIUS/EXIT_MS), so standing on the edge does not toggle the call on and off (virtual-space/studio-virtual-space-acoustics.ts). The numbers are design values, not measured results.",
+      "가상 스튜디오의 근처 대화는 120px 안에 300ms 머물러야 들어가고(STUDIO_ACOUSTIC_ENTER_RADIUS/ENTER_MS), 156px 밖에 800ms 있어야 나갑니다(EXIT_RADIUS/EXIT_MS). 경계에서 어정쩡하게 서 있어도 대화가 켜졌다 꺼지지 않습니다(virtual-space/studio-virtual-space-acoustics.ts). 이 숫자는 설계값이며 부하·체감 시험 결과가 아닙니다. 도감 카드 proximity-hysteresis-160-220 의 160/220px 는 화면에 연결되지 않은 별도 설계 상수입니다.",
+      "Nearby conversation in the virtual studio starts only after staying within 120 px for 300 ms (STUDIO_ACOUSTIC_ENTER_RADIUS/ENTER_MS) and ends only after being beyond 156 px for 800 ms (EXIT_RADIUS/EXIT_MS), so standing on the edge does not toggle the call on and off (virtual-space/studio-virtual-space-acoustics.ts). The numbers are design values, not measured results. The 160/220 px of the atlas card proximity-hysteresis-160-220 is a separate design constant that is not wired to the screen.",
     ),
     chapters: ["virtual-studio-world-authority", "webrtc-media-authority"],
     atlasIds: ["space-is-not-permission", "proximity-hysteresis-160-220"],

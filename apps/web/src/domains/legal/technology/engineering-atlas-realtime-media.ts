@@ -253,8 +253,8 @@ export function parseDirect(value: unknown, workId: string): string | null {
         },
       ],
       pitfall: t(
-        "15가지 패브릭 기능이 모두 쓰이는 것처럼 말하지 마세요. 제품 연결을 확인한 것은 화면 공유 신호와 오프라인 변경 동기화뿐입니다. 통로는 순서·신뢰 모드 하나뿐이라 '손실 허용 레인'은 없습니다. 속도·지연 수치는 측정한 적이 없으므로 말하지 않습니다.",
-        "Do not imply all 15 fabric capabilities are in use; only screen-share signaling and offline-change sync were confirmed as wired. The channel has just the ordered, reliable mode, so there is no lossy lane. No speed or latency figures have been measured, so none are quoted.",
+        "15가지 패브릭 기능이 모두 쓰이는 것처럼 말하지 마세요. 제품 연결을 확인한 것은 화면 공유 신호와 오프라인 변경 동기화뿐입니다. 통로는 순서·신뢰 모드 하나뿐이라 '손실 허용 레인'은 없습니다. 속도·지연 수치는 측정한 적이 없으므로 말하지 않습니다. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
+        "Do not imply all 15 fabric capabilities are in use; only screen-share signaling and offline-change sync were confirmed as wired. The channel has just the ordered, reliable mode, so there is no lossy lane. No speed or latency figures have been measured, so none are quoted. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
       ),
     },
     technologies: ["RTCDataChannel", "WebRTC", "SCTP", "DTLS", "SHA-256", "backpressure"],
@@ -473,8 +473,8 @@ export class ScreenShareHost {
         },
       ],
       pitfall: t(
-        "서버가 화면을 중계한다고 오해하지 않게 하세요. 서버는 SDP/ICE 신호와 승인 상태만 다룹니다. 제한된 네트워크의 시청자는 TURN이 없으면 연결에 실패할 수 있고, 운영 TURN 키 등록 여부는 확인하지 못했습니다. 서로 다른 네트워크에서의 성공은 검증한 적이 없으므로 보장처럼 말하지 마세요.",
-        "Do not let people think the server relays the screen; it handles only SDP/ICE signals and approval state. A viewer on a restrictive network may fail without TURN, and whether a production TURN key is registered was not confirmed. Success across different networks has never been verified, so do not present it as guaranteed.",
+        "서버가 화면을 중계한다고 오해하지 않게 하세요. 서버는 SDP/ICE 신호와 승인 상태만 다룹니다. 제한된 네트워크의 시청자는 TURN이 없으면 연결에 실패할 수 있고, 운영 TURN 키 등록 여부는 확인하지 못했습니다. 서로 다른 네트워크에서의 성공은 검증한 적이 없으므로 보장처럼 말하지 마세요. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
+        "Do not let people think the server relays the screen; it handles only SDP/ICE signals and approval state. A viewer on a restrictive network may fail without TURN, and whether a production TURN key is registered was not confirmed. Success across different networks has never been verified, so do not present it as guaranteed. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
       ),
     },
     technologies: ["getDisplayMedia", "WebRTC", "RTCPeerConnection", "Durable Objects", "Socket.IO", "ICE restart"],
@@ -703,8 +703,8 @@ Permissions-Policy: camera=(self), microphone=(self), geolocation=(), cross-orig
         },
       ],
       pitfall: t(
-        "'도청이 불가능하다' 같은 표현은 쓰지 마세요. 상대방 쪽 녹화·캡처는 막지 못하고, P2P 특성상 네트워크 주소가 상대에게 보일 수 있습니다. 화면 안내 문구 '유료 중계 서버는 쓰지 않아요'는 TURN 키를 등록하면 사실과 어긋납니다(ICE 카드 참조). 전·후면 카메라 전환과 인앱 브라우저는 실기기로 검증하지 않았습니다.",
-        "Do not claim eavesdropping is impossible: a peer's own recording cannot be prevented and, being P2P, peers may see your network address. The on-screen sentence 'no paid relay server is used' would stop being true once a TURN key is registered (see the ICE card). Front and rear camera switching and in-app browsers were not verified on real devices.",
+        "'도청이 불가능하다' 같은 표현은 쓰지 마세요. 상대방 쪽 녹화·캡처는 막지 못하고, P2P 특성상 네트워크 주소가 상대에게 보일 수 있습니다. 근접 영상 동의 카드의 안내 문구는 '직접 연결이 막히면 중계(TURN) 서버가 준비된 환경에서만 그 서버를 거쳐요'처럼 조건부로 고쳤고, 운영 TURN 키 등록 여부는 저장소로 확인할 수 없습니다(ICE 카드 참조). 전·후면 카메라 전환과 인앱 브라우저는 실기기로 검증하지 않았습니다. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
+        "Do not claim eavesdropping is impossible: a peer's own recording cannot be prevented and, being P2P, peers may see your network address. The proximity-video consent card now words its notice conditionally (if a direct link is blocked, traffic goes through a relay (TURN) server only where one is set up), and whether a production TURN key is registered cannot be confirmed from the repository (see the ICE card). Front and rear camera switching and in-app browsers were not verified on real devices. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
       ),
     },
     technologies: ["getUserMedia", "getDisplayMedia", "Permissions-Policy", "Permissions API", "WebRTC"],

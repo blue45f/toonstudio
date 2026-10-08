@@ -29,7 +29,7 @@ const MIN_ROWS: Readonly<Record<string, number>> = {
   "free-tier": 12,
   "open-source": 24,
   "open-api": 14,
-  competitors: 10,
+  competitors: 289,
   "ai-dev": 8,
 };
 const MAX_CELL_KO = 220;

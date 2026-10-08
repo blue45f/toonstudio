@@ -88,13 +88,17 @@ function ChapterCard({
         href={`/about/technology/story#${chapter.id}`}
         className="group flex w-full flex-col overflow-hidden rounded-3xl border border-line/70 bg-panel/55 shadow-sm transition-colors hover:border-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
-        <span aria-hidden="true" className="relative block h-24 shrink-0 border-b border-line/60 bg-panel" style={BLUEPRINT_GRID_STYLE}>
+        <span aria-hidden="true" className="relative hidden h-24 shrink-0 border-b border-line/60 bg-panel sm:block" style={BLUEPRINT_GRID_STYLE}>
           <span className="absolute bottom-1.5 left-4 font-display text-4xl font-black tracking-tight text-accent/40">{marker}</span>
           <span className="absolute bottom-3 right-4 max-w-[55%] text-right font-display text-[0.62rem] font-black uppercase leading-4 tracking-[0.16em] text-accent-2">
             {stripOrder(chapter.eyebrow)}
           </span>
         </span>
         <span className="flex flex-1 flex-col p-5">
+          {/* 좁은 화면에서는 40개 카드가 길게 이어지므로 표지 대신 번호와 분야를 한 줄로 줄여 보여준다. */}
+          <span aria-hidden="true" className="mb-2.5 block font-display text-[0.62rem] font-black uppercase leading-4 tracking-[0.16em] text-accent-2 sm:hidden">
+            {marker} · {stripOrder(chapter.eyebrow)}
+          </span>
           <span className="flex flex-wrap items-center justify-between gap-2">
             <EngineeringStatusBadge status={chapter.status} />
             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-fg-3">

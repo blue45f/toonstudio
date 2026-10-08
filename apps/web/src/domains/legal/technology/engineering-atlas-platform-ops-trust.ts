@@ -20,8 +20,8 @@ const EDGE_ORIGIN_AUTH_TRUSTED_PROXY: EngineeringAtlasEntry = {
   ),
   background: [
     t(
-      "무료 서버(Render)에는 누구나 직접 접속할 수 있는 onrender.com 주소가 따로 있습니다. 그대로 두면 Cloudflare가 걸어 둔 보호를 건너뛰고 서버를 직접 두드릴 수 있습니다. 그래서 Worker는 Core API로 보내는 요청에만 32바이트 이상의 비밀 헤더를 붙이고, API는 이 헤더가 맞지 않으면 403 'Trusted edge origin is required'로 돌려보냅니다. 예외는 헬스체크 경로(GET/HEAD) 몇 개뿐입니다. 정문 대신 뒷문으로 들어오는 사람을 출입증으로 걸러 내는 것과 같습니다.",
-      "The free server (Render) also has its own onrender.com address that anyone can reach directly. Left alone, someone could skip Cloudflare's protection and knock on the server directly. So the Worker adds a secret header of at least 32 bytes only to requests sent to the Core API, and the API answers 403 'Trusted edge origin is required' when it does not match. The only exceptions are a few health-check paths (GET/HEAD). It is like checking a pass for anyone who walks in the back door instead of the front.",
+      "무료 서버(Render)에는 누구나 직접 접속할 수 있는 onrender.com 주소가 따로 있습니다. 그대로 두면 Cloudflare가 걸어 둔 보호를 건너뛰고 서버를 직접 두드릴 수 있습니다. 그래서 Worker는 Core API로 보내는 요청에만 32바이트 이상의 비밀 헤더를 붙이고, API는 비밀이 설정된 환경에서 이 헤더가 맞지 않으면 403 'Trusted edge origin is required'로 돌려보냅니다(비밀이 설정되지 않으면 검사를 건너뜁니다). 예외는 헬스체크 경로(GET/HEAD) 몇 개뿐입니다. 정문 대신 뒷문으로 들어오는 사람을 출입증으로 걸러 내는 것과 같습니다.",
+      "The free server (Render) also has its own onrender.com address that anyone can reach directly. Left alone, someone could skip Cloudflare's protection and knock on the server directly. So the Worker adds a secret header of at least 32 bytes only to requests sent to the Core API, and in an environment where the secret is configured the API answers 403 'Trusted edge origin is required' when it does not match (without a configured secret the check is skipped). The only exceptions are a few health-check paths (GET/HEAD). It is like checking a pass for anyone who walks in the back door instead of the front.",
     ),
     t(
       "로그인 시도를 IP별로 세려면 방문자의 진짜 IP를 알아야 합니다. 그런데 X-Forwarded-For 같은 헤더는 방문자가 마음대로 써서 보낼 수 있습니다. 규칙은 '헤더가 있으니 믿는다'가 아니라 '바로 연결된 상대가 내가 아는 프록시일 때만 믿는다'입니다. 허용 목록(정확한 IP)에 있는 프록시가 보낸 경우에만 헤더를 읽고, 오른쪽(프록시 쪽)에서 왼쪽으로 걸으며 처음 만나는 비신뢰 주소를 방문자로 봅니다. 그래서 방문자가 왼쪽에 끼워 넣은 가짜 주소가 이기지 못합니다.",
@@ -554,8 +554,8 @@ const READ_REPLICA_HRW_POOL: EngineeringAtlasEntry = {
       {
         question: t("서버가 둘 다 죽으면요?", "What if every replica is down?"),
         answer: t(
-          "줄의 끝까지 시도해도 안 되면 명시적인 오류(502)로 끝납니다. 읽기 요청이라도 헬스·설정·관리자 경로는 풀에 넣지 않고 Core가 직접 받습니다.",
-          "If the whole line fails, it ends with an explicit error (502). Even among reads, health, config and admin paths stay out of the pool and are served by Core directly.",
+          "재시도는 줄에 다음 서버가 남아 있을 때만 합니다. 마지막 서버가 502·503·504를 내면 그 응답이 그대로 전달되고, Worker 자신의 오류(502, CORE_API_UPSTREAM_FAILED)는 모든 시도가 예외로 끝났을 때만 나옵니다. 읽기 요청이라도 헬스·설정·관리자 경로는 풀에 넣지 않고 Core가 직접 받습니다.",
+          "A retry happens only while another server remains in the line. If the last server returns 502, 503 or 504 that response is passed through as is, and the Worker's own error (502, CORE_API_UPSTREAM_FAILED) appears only when every attempt ended in an exception. Even among reads, health, config and admin paths stay out of the pool and are served by Core directly.",
         ),
       },
     ],

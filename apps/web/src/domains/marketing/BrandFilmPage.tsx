@@ -1,12 +1,13 @@
 import { defineBilingualText, translateParallelBilingualCopy, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { SITE_URL } from "@toonstudio/core/business";
-import { ArrowLeft, ArrowRight, ChevronDown, Clapperboard, MonitorPlay, Ratio, Subtitles } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, ChevronDown, Clapperboard, MonitorPlay, Ratio, Subtitles } from "lucide-react";
 import { useRef, type MouseEvent } from "react";
 
 import { BrandFilmStoryboard } from "./BrandFilmStoryboard";
 import { CreatorBrandFilm } from "./CreatorBrandFilm";
 import { CREATOR_FILM, HOME_COPY, creatorHomeLocale } from "./creator-home-content";
 import type { CreatorBrandFilmController } from "./creator-film-playback";
+import { PRODUCT_TOUR, formatProductTourDuration } from "./product-tour-content";
 
 import Link from "@/shared/navigation/router-link";
 import {
@@ -40,6 +41,9 @@ const PAGE_COPY = {
     productionTitle: "한 번의 구성으로, 모든 화면에 맞게.",
     productionBody:
       "React 기반 Remotion 컴포지션에서 장면, 타이포그래피와 전환을 프레임 단위로 구성하고 웹에 최적화된 영상으로 렌더링했습니다.",
+    productionNote: `이 영상은 미리 렌더한 MP4 파일입니다. 웹에서 실시간으로 합성하는 것은 ${formatProductTourDuration(PRODUCT_TOUR.duration, "ko")} 제품 투어뿐입니다.`,
+    productionLinkVideos: "기술 영상 페이지: Remotion 제작 구조",
+    productionLinkAtlas: "기술 도감: Remotion 카드",
     productionCards: [
       ["프레임 단위 모션", "30fps, 720프레임의 동일한 타임라인으로 네 장면의 움직임과 전환을 제어합니다."],
       ["세 가지 배포 비율", "가로형, 세로형, 정사각형 영상을 각각 렌더링해 웹과 소셜 채널에 바로 활용할 수 있습니다."],
@@ -69,6 +73,9 @@ const PAGE_COPY = {
     productionTitle: "One composition, ready for every screen.",
     productionBody:
       "Scenes, typography and transitions are composed frame by frame in React-based Remotion, then rendered into web-ready video.",
+    productionNote: `This film is a pre-rendered MP4 file. Only the ${formatProductTourDuration(PRODUCT_TOUR.duration, "en")} product tour is composed live on the web.`,
+    productionLinkVideos: "Engineering film page: Remotion production",
+    productionLinkAtlas: "Tech atlas: Remotion card",
     productionCards: [
       ["Frame-accurate motion", "One 30fps, 720-frame timeline controls the motion and transitions across all four scenes."],
       ["Three delivery ratios", "Landscape, portrait and square editions are rendered for the web and social channels."],
@@ -127,7 +134,7 @@ export function BrandFilmPage() {
     thumbnailUrl: BRAND_FILM_POSTER,
     contentUrl: `${SITE_URL}${CREATOR_FILM.src}`,
     embedUrl: `${SITE_URL}/brand-film#creator-film`,
-    duration: "PT24S",
+    duration: `PT${CREATOR_FILM.duration}S`,
     inLanguage: documentLocale,
     isFamilyFriendly: true,
   });
@@ -174,6 +181,17 @@ export function BrandFilmPage() {
             <ChevronDown size={18} aria-hidden="true" />
           </summary>
           <p className="mk-body brand-film-page__production-body">{copy.productionBody}</p>
+          <p className="mk-body brand-film-page__production-note">{copy.productionNote}</p>
+          <div className="brand-film-page__production-links">
+            <Link href="/about/technology/videos" className="mk-link">
+              {copy.productionLinkVideos}
+              <ArrowUpRight size={14} aria-hidden="true" />
+            </Link>
+            <Link href="/about/technology/atlas#remotion-composition-player" className="mk-link">
+              {copy.productionLinkAtlas}
+              <ArrowUpRight size={14} aria-hidden="true" />
+            </Link>
+          </div>
           <div className="brand-film-page__production-grid">
             {copy.productionCards.map(([title, body], index) => {
               const Icon = PRODUCTION_ICONS[index] ?? Clapperboard;

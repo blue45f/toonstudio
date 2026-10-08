@@ -84,8 +84,8 @@ export const BLENDER_MCP_TOONBRIDGE: EngineeringAtlasEntry = {
     {
       feature: t("설치·라이선스 · 로컬 실행기 연결", "Engines and licenses · local runner connection"),
       role: t(
-        "주소와 토큰을 넣어 ToonBridge에 연결하고, 설치된 외부 도구를 점검해 사용 가능·수동·연결 필요·없음으로 보여 줍니다. 토큰은 현재 탭의 sessionStorage에만 둡니다.",
-        "Connects to ToonBridge with an address and a token and shows each installed external tool as available, manual, needs a connector, or missing. The token is kept only in the current tab's sessionStorage.",
+        "주소와 토큰을 넣어 ToonBridge에 연결하고, 설치된 외부 도구를 점검해 사용 가능·수동·연결 필요·없음·차단(별도 라이선스 프로필에서만 활성화)의 다섯 상태로 보여 줍니다. 토큰은 현재 탭의 sessionStorage에만 둡니다.",
+        "Connects to ToonBridge with an address and a token and shows each external tool in one of five states: available, manual, needs a connector, missing, or blocked (activated only under a separate license profile). The token is kept only in the current tab's sessionStorage.",
       ),
       paths: [
         `${CREATOR_DIR}/toolchain/StudioToonBridgeConnectionCard.tsx`,

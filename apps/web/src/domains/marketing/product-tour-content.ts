@@ -218,21 +218,58 @@ export function formatProductTourTime(seconds: number): string {
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
+/** 영상 길이를 말로 읽히는 형태로: ko "8분 24초", en "8m 24s". 스크린 리더는 "8:24" 같은 시계 표기를 길이로 읽지 못한다. */
+export function formatProductTourDuration(
+  seconds: number,
+  locale: ProductTourLocale,
+  style: "short" | "long" = "short",
+): string {
+  const total = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 0;
+  const minutes = Math.floor(total / 60);
+  const remainder = total % 60;
+  const showSeconds = remainder > 0 || minutes === 0;
+  if (locale === "ko") {
+    return [minutes > 0 ? `${minutes}분` : "", showSeconds ? `${remainder}초` : ""].filter(Boolean).join(" ");
+  }
+  if (style === "long") {
+    const unit = (value: number, word: string) => `${value} ${word}${value === 1 ? "" : "s"}`;
+    return [minutes > 0 ? unit(minutes, "minute") : "", showSeconds ? unit(remainder, "second") : ""].filter(Boolean).join(" ");
+  }
+  return [minutes > 0 ? `${minutes}m` : "", showSeconds ? `${remainder}s` : ""].filter(Boolean).join(" ");
+}
+
+/** schema.org VideoObject.duration 용 ISO 8601 기간: 504초 → "PT8M24S". */
+export function productTourIsoDuration(seconds: number): string {
+  const total = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 0;
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remainder = total % 60;
+  const clock = `${hours > 0 ? `${hours}H` : ""}${minutes > 0 ? `${minutes}M` : ""}`;
+  return `PT${clock}${remainder > 0 || clock === "" ? `${remainder}S` : ""}`;
+}
+
+/** 영상 길이·챕터 수는 PRODUCT_TOUR 에서 계산한다. 영상을 다시 렌더해 값이 바뀌면 화면 문구가 함께 바뀐다. */
+const TOUR_DURATION_KO = formatProductTourDuration(PRODUCT_TOUR.duration, "ko");
+const TOUR_DURATION_EN = formatProductTourDuration(PRODUCT_TOUR.duration, "en");
+const TOUR_DURATION_EN_LONG = formatProductTourDuration(PRODUCT_TOUR.duration, "en", "long");
+const TOUR_CHAPTER_COUNT = PRODUCT_TOUR.chapters.length;
+
 export const PRODUCT_TOUR_COPY = {
   ko: {
     pageTitle: "툰스튜디오 전체 제품 투어",
-    metaDescription: "기획, 드로잉, 컷 연출, 3D, AI 보조, 협업, 학습과 게시 준비까지 툰스튜디오 전체 창작 흐름을 8분대 Remotion 제품 투어와 실제 제품 화면으로 살펴보세요.",
-    eyebrow: "PRODUCT TOUR · 8:24",
+    metaDescription: `기획, 드로잉, 컷 연출, 3D, AI 보조, 협업, 학습과 게시 준비까지 툰스튜디오 전체 창작 흐름을 ${TOUR_DURATION_KO} Remotion 제품 투어로 살펴보세요. 제품 화면 캡처와 개념 도해로 구성했습니다.`,
+    eyebrow: `PRODUCT TOUR · ${formatProductTourTime(PRODUCT_TOUR.duration)}`,
+    eyebrowSr: `제품 투어, 재생 시간 ${TOUR_DURATION_KO}`,
     title: ["아이디어에서 연재 준비까지,", "8분 안에 한눈에."],
-    intro: "실제 제작 순서대로 기획·드로잉·컷 연출·3D·AI 보조·협업·게시 준비를 9개 챕터로 보여 드립니다. 챕터마다 해당 기능을 바로 열 수 있어요.",
+    intro: `실제 제작 순서대로 기획·드로잉·컷 연출·3D·AI 보조·협업·게시 준비를 ${TOUR_CHAPTER_COUNT}개 챕터로 보여 드립니다. 챕터마다 해당 기능을 바로 열 수 있어요.`,
     watch: "제품 투어 재생",
     start: "새 작품 시작하기",
-    facts: ["8분 24초", "9개 제작 챕터", "한국어 내레이션 · 오리지널 OST", "한·영 자막"],
+    facts: [TOUR_DURATION_KO, `${TOUR_CHAPTER_COUNT}개 제작 챕터`, "한국어 합성 내레이션 · AI 생성 오리지널 OST", "한·영 자막"],
     factsLabel: "제품 투어 정보",
     videoEyebrow: "WATCH THE TOUR",
     videoTitle: "보고 싶은 장면부터, 바로 그 기능까지.",
     videoBody: "챕터를 누르면 그 장면부터 재생되고, 지금 보는 장면의 기능을 곧바로 열 수 있습니다.",
-    audioNote: "합성 음성으로 제작한 한국어 내레이션과 툰스튜디오 오리지널 BGM이 포함되어 있습니다. 한·영 자막을 선택할 수 있습니다.",
+    audioNote: "합성 음성으로 제작한 한국어 내레이션과, AI로 생성한 툰스튜디오 오리지널 BGM 2곡이 포함되어 있습니다. 한·영 자막을 선택할 수 있습니다.",
     transcript: "챕터별 전체 내용 읽기",
     visualOpen: "이 기능 열기",
     watchScene: "이 장면부터 보기",
@@ -253,21 +290,25 @@ export const PRODUCT_TOUR_COPY = {
     closingTitle: "이제 한 장면을 직접 만들어 보세요.",
     closingBody: "빈 프로젝트에서 시작해도 되고, 스토리·드로잉·3D·협업 중 지금 필요한 곳부터 들어가도 됩니다.",
     brandFilm: "24초 브랜드 필름",
+    nextFeatures: "전체 기능 한눈에",
+    nextWorkflow: "웹툰 제작 과정",
+    nextTechnology: "기술과 신뢰",
   },
   en: {
     pageTitle: "ToonStudio full product tour",
-    metaDescription: "Explore ToonStudio's complete creative flow—from planning and drawing to panels, 3D, AI assistance, production, learning and publishing—in an 8-minute Remotion product tour using real product screens.",
-    eyebrow: "PRODUCT TOUR · 8:24",
+    metaDescription: `Explore ToonStudio's whole creative flow, from planning and drawing to 3D, AI help, teamwork and publishing prep, in an ${TOUR_DURATION_EN} Remotion tour of product captures and concept illustrations.`,
+    eyebrow: `PRODUCT TOUR · ${formatProductTourTime(PRODUCT_TOUR.duration)}`,
+    eyebrowSr: `Product tour, running time ${TOUR_DURATION_EN_LONG}`,
     title: ["From the first idea to publishing,", "the whole studio in 8 minutes."],
-    intro: "Follow the real production order—planning, drawing, panels, 3D, AI assistance, collaboration and publishing—across nine chapters. Every chapter opens the matching workspace.",
+    intro: `Follow the real production order—planning, drawing, panels, 3D, AI assistance, collaboration and publishing—across ${TOUR_CHAPTER_COUNT} chapters. Every chapter opens the matching workspace.`,
     watch: "Play the product tour",
     start: "Start a new work",
-    facts: ["8m 24s", "9 production chapters", "Korean narration · original OST", "KO · EN captions"],
+    facts: [TOUR_DURATION_EN, `${TOUR_CHAPTER_COUNT} production chapters`, "Synthesized Korean narration · AI-generated original OST", "KO · EN captions"],
     factsLabel: "Product tour facts",
     videoEyebrow: "WATCH THE TOUR",
     videoTitle: "Start from any scene, then open that feature.",
     videoBody: "Choose a chapter to play from that scene, and open the workspace you are watching right away.",
-    audioNote: "Includes synthesized Korean narration and ToonStudio original background music. Korean and English captions are available.",
+    audioNote: "Includes Korean narration made with a synthesized voice and two original ToonStudio music tracks generated with AI. Korean and English captions are available.",
     transcript: "Read the chapter-by-chapter outline",
     visualOpen: "Open this feature",
     watchScene: "Watch this scene",
@@ -288,6 +329,9 @@ export const PRODUCT_TOUR_COPY = {
     closingTitle: "Now make one scene yourself.",
     closingBody: "Start with a blank project or jump directly into story, drawing, 3D or collaboration—wherever your current work begins.",
     brandFilm: "24-second brand film",
+    nextFeatures: "All features at a glance",
+    nextWorkflow: "Webtoon workflow",
+    nextTechnology: "Technology & trust",
   },
 } as const;
 

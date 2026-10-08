@@ -1,28 +1,46 @@
 # 2026-09-29 기술 세미나 진행 가이드
 
-상태: current — 발표용 작업 브랜치의 기능과 검증 절차. 운영 배포 완료를 의미하지 않는다.
+상태: current (2026-10-08 갱신) — 발표용 작업 브랜치의 기능과 검증 절차. 운영 배포 완료를 의미하지 않는다.
+
+갱신 이력: 2026-09-29 판은 15분 12장·30분 25장·45분 30장과 `?audience=seminar&duration=30` 주소를 설명했다. 발표 모드가 트랙 4종(세미나 발표·핵심 요약·심화 강의·기술 도감)으로 바뀌면서 그 구성과 `duration` 매개변수는 없어졌고, 이 문서는 2026-10-08의 현재 구성(트랙 4종·`?track=…#slide-N` 주소)을 코드로 확인해 고쳤다. 슬라이드 수와 길이는 `engineering-deck-model.ts`가 정본이고 발표 모드 화면의 트랙 버튼이 같은 값을 보여 준다.
 
 ## 발표 시작
 
-`/about/technology/deck?audience=seminar&duration=30`에서 시작한다. 15분은 12장, 30분은 25장, 45분은 30장이다. 분량 선택은 자동 재생 시간이 아니라 권장 범위이며 영상과 질문 시간을 포함해 리허설한다.
+`/about/technology/deck?track=talk`(세미나 발표)에서 시작한다. 특정 슬라이드는 `?track=talk#slide-3`처럼 번호를 붙여 연다(슬라이드 번호는 1부터). 트랙은 네 가지다.
+
+| 트랙 | 주소 | 길이 | 슬라이드 | 구성 |
+| --- | --- | --- | --- | --- |
+| 세미나 발표(기본) | `?track=talk` | 30분(1,800초, 슬라이드별 시간의 합) | 28장 | 문제 정의 3:00 → 제품·데모 3:50 → 전체 아키텍처 3:20 → 핵심 기술 10:25(10장) → 품질·AI 개발 3:25 → 운영·비용 3:20 → 배운 점·한계 1:40 → 질의응답 1:00 |
+| 핵심 요약 | `?track=brief` | 약 11분(660초, 장당 60초 균등 배분 추정) | 11장 | 한 구간(핵심 챕터 9개 + 열기·닫기) |
+| 심화 강의 | `?track=lecture` | 약 63분(3,780초, 장당 90초 균등 배분 추정) | 42장 | 9개 구간(아래 표) |
+| 기술 도감 | `?track=atlas` | 시간 없음(찾아보며 설명) | 카드 수에 따라 달라짐(트랙 버튼의 'N장'이 정본) | 도감 카드마다 도식 → 핵심 → 샘플 슬라이드 |
+
+세미나 발표 28장 중 도감 카드 면 10장(드로잉·로컬 저장·끌어 놓기·협업·가상 스튜디오·WebRTC·3D·AI·AI 개발·운영), 지도 표 6장(벤치마크·오픈소스·웹의 한계·차세대 웹·무료 인프라·Open API), 직접 그린 도식 2장(아키텍처·책임 분담), 질의응답의 QR(`/about/technology/atlas`)이 들어 있다. 표지·순서를 뺀 모든 슬라이드에는 질문이 나올 때 열 도감 카드 2~4개가 연결되어 있고 발표자 노트는 근거 파일과 숫자가 든 대본이다. 벤치마크 표는 기술 지도(경쟁·벤치마크 제품)의 영역별 제품 수를 코드로 계산해 보여 주며, 지도가 자라면 숫자도 따라 바뀐다.
+
+핵심 요약과 심화 강의의 길이는 슬라이드별 시간이 없어 장수에 일정한 시간을 곱한 추정치다. 예전에 공유한 `?audience=seminar&duration=30#deck=seminar:9` 주소는 같은 위치(seminar→talk, investor→brief, study→lecture)로 열리고 새 형식으로 바뀐다. `duration`은 더 이상 쓰지 않으며 15분 12장·30분 25장 같은 구성은 없다. 분량 선택은 자동 재생 시간이 아니라 권장 범위이며 영상과 질문 시간을 포함해 리허설한다.
 
 발표자 노트에는 슬라이드 요약과 별도로 설명 대본, 청중 질문, 데모에서 관찰할 결과와 실패 시 대안이 있다. 데모는 새 탭에서 열어 발표 위치를 유지한다. 청중 화면에는 노트를 노출하지 않는다.
 
-| 구간 | 설명의 중심 | 자료 |
-| --- | --- | --- |
-| 창작자의 문제 | 한 컷의 기획·작업·검수 맥락이 왜 끊기는가 | 서비스 소개, 24초 브랜드 필름 |
-| 드로잉 | 입력 샘플, 선의 형상, 재료 표현, 미리보기와 확정 | 제품투어 1:48, 브러시 구현 근거 |
-| 브라우저 한계 | Worker와 WASM, 로컬 저장과 동기화, 오프라인 준비 | 저장·Worker·PWA 기술 스토리 |
-| 3D | 장면 문서, 모델·카메라·조명·포즈, 2D 연결 | 제품투어 3:48, Three.js·VRM·Blender 자료 |
-| AI와 협업 | 도구의 역할, 실행 경계, 권한, 사람의 결과 검수 | 제품투어 5:00, CRDT·로컬 추론·MCP 자료 |
-| 검증과 재사용 | 실제 성공 기준, 실패 복구와 다른 제품에 적용할 원칙 | 코드·테스트 링크, 용어 사전, 공식 자료 |
+아래 표는 심화 강의 트랙(약 63분·42장)의 9개 구간을 기준으로 한 설명 중심이다. 세미나 발표 트랙의 구간은 위 표의 8개 구간을 따른다. 레슨마다 연결된 도감 카드는 발표자 패널의 "도감 카드 열기"로 이어진다.
+
+| 구간 | 장 | 설명의 중심 | 자료 |
+| --- | --- | --- | --- |
+| 01 창작자의 문제 | 4 | 한 컷의 기획·작업·검수 맥락이 왜 끊기는가, 화면·작업 엔진·서버의 책임 분리 | 서비스 소개, 24초 브랜드 필름 |
+| 02 입력에서 한 장의 그림까지 | 6 | 입력 샘플, 선의 형상, 재료 표현, 렌더러 20개와 권위 13종, 끌어 놓기 | 제품투어 1:48, 브러시 구현 근거 |
+| 03 브라우저의 한계 넘기 | 5 | Worker와 WASM, 로컬 저장과 동기화, 오프라인 준비, 새 웹 기능은 감지·표지·끄기 | 저장·Worker·PWA 기술 스토리 |
+| 04 3D를 작품의 일부로 | 6 | 장면 문서, 모델·카메라·조명·포즈, 3D 성능, Blender 출입구, WebXR | 제품투어 3:48, Three.js·VRM·Blender 자료 |
+| 05 협업과 AI의 역할 | 7 | 함께 보임과 같은 문서, WebRTC, 서버 권위의 가상 스튜디오, AI 도구의 역할·실행 경계, 기기 안 AI | 제품투어 5:00, CRDT·로컬 추론·MCP 자료 |
+| 06 시연·검증·재사용 | 7 | 무료 우선 설계와 한도, 로그인·권한, 영상 동기화, 데모의 복귀 경로, 반복 확인 가능한 증거 | 코드·테스트 링크, 용어 사전, 공식 자료 |
+| 07 오픈소스·벤치마크·Open API | 3 | 가져다 쓰고 고쳐 쓰고 기록하기, 벤치마크는 배운 점의 기록, 외부 API는 한 관문으로 | 오픈소스·경쟁/참고·Open API 지도 |
+| 08 AI와 함께 만드는 방법 | 3 | 작업 절차·하네스, 규칙은 한 곳에, 프런트·백엔드 빌드 정렬 | AI 지원 개발 지도, 빌드 정렬 도감 카드 6장 |
+| 09 마무리 | 1 | 경계를 나누는 방법 | 도감·용어집 |
 
 ## 발표 조작과 비상 경로
 
-- 방향키·Page Up/Down·Space·Home·End로 이동한다. 버튼·입력·선택 요소를 조작할 때는 해당 컨트롤의 키보드 동작을 유지한다.
-- 슬라이드 선택 메뉴로 중간에 이동하고 현재 슬라이드 링크를 복사할 수 있다. 기존 `#deck=seminar:9` 형태도 지원한다.
+- 방향키·Page Up/Down·Space·Home·End로 이동한다. 숫자 뒤 Enter는 번호 이동, F는 발표 시작·전체 화면, N/S는 노트, O는 개요, B는 블랙아웃, T는 타이머, ?는 도움말이다. 발표 화면 밖에서는 버튼·링크·입력·선택 상자에 초점이 있으면 단축키를 쓰지 않고 그 컨트롤의 동작을 유지한다. 발표 화면 안에서는 방향키를 넘기기에 쓰되 Space·Enter는 버튼에 맡긴다.
+- 슬라이드 선택 메뉴로 중간에 이동하고 현재 슬라이드 링크를 복사할 수 있다. 기존 `#deck=seminar:9` 형태도 지원한다. 발표자 창(`&view=presenter`)은 같은 브라우저의 청중 화면과 슬라이드가 맞춰진다.
 - 집중 화면은 일반 브라우저에서도 작동한다. 브라우저 전체 화면 API가 허용되지 않으면 집중 화면을 유지한다.
-- 오프라인 발표본 버튼은 외부 폰트·영상·스크립트 요청이 없는 HTML을 만든다. 외부 서비스, 동영상, 새 AI 생성까지 오프라인으로 제공하는 것은 아니다.
+- 오프라인 발표본 버튼은 외부 폰트·영상·스크립트 요청이 없는 HTML을 만든다. 현재 트랙의 슬라이드만 담고 파일 이름은 `toonstudio-talk-deck.html`처럼 트랙 이름을 따른다. 외부 서비스, 동영상, 새 AI 생성까지 오프라인으로 제공하는 것은 아니다.
 - 네트워크 실패 시 읽을 수 있는 설명과 스토리보드로 전환한다. 로컬 편집의 오프라인 시연은 별도 샘플 문서·브러시·모델을 사전에 준비한 경우에만 진행한다.
 
 ## 영상 리허설
@@ -39,10 +57,14 @@ Remotion에서는 최초 요청 프레임을 마운트에 전달하고 오디오
 
 ## 구현과 검증 근거
 
-- [발표 콘텐츠](../../apps/web/src/domains/legal/technology/engineering-seminar-curriculum.ts)
+- [세미나 발표(talk) 슬라이드: 열기·핵심·운영](../../apps/web/src/domains/legal/technology/engineering-talk-slides-opening.ts)
+- [심화 강의 레슨 42개](../../apps/web/src/domains/legal/technology/engineering-seminar-curriculum.ts)
+- [예상 질문 23개와 준비실](../../apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts)
+- [발표 콘텐츠 검증 시험(수치·근거 경로·도감 id)](../../apps/web/src/domains/legal/technology/engineering-talk-deck-content.test.ts)
 - [발표 상태와 기존 링크 처리](../../apps/web/src/domains/legal/technology/engineering-deck-state.ts)
 - [오프라인 발표 출력](../../apps/web/src/domains/legal/technology/engineering-deck-export.ts)
 - [공개 미디어 파일 준비](../../apps/web/src/domains/marketing/seekable-media-asset.ts)
+- [트랙 모델(길이·장수·구간)](../../apps/web/src/domains/legal/technology/engineering-deck-model.ts)
 - [브라우저 시나리오](../../e2e/engineering-seminar.spec.ts)
 
 저장소 루트에서 다음 명령으로 검증한다. 운영 DB나 공급자 설정을 변경하지 않는다. 브라우저 시나리오의 API는 제한된 응답으로 대체하며 운영 인증·결제·외부 AI 성공을 검증하는 테스트가 아니다.
@@ -55,7 +77,7 @@ pnpm exec playwright test --config playwright.seminar.config.ts
 
 ## 공식 배경 자료
 
-[Remotion 버퍼 상태](https://www.remotion.dev/docs/use-buffer-state), [Player API](https://www.remotion.dev/docs/player/player), [React의 외부 시스템 연동과 flushSync](https://react.dev/reference/react-dom/flushSync), [HTTP Range 요청](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests)을 참고한다. 발표 페이지에는 3D·드로잉·저장·AI·생성 도구·자산 사이트의 공식 자료 26개와 용어 설명이 추가로 연결되어 있다.
+[Remotion 버퍼 상태](https://www.remotion.dev/docs/use-buffer-state), [Player API](https://www.remotion.dev/docs/player/player), [React의 외부 시스템 연동과 flushSync](https://react.dev/reference/react-dom/flushSync), [HTTP Range 요청](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests)을 참고한다. 발표 페이지에는 3D·드로잉·저장·AI·생성 도구·자산 사이트·API·인증·오픈소스·플랫폼의 공식 문서·참고 링크 58개(`EngineeringSeminarResources.tsx`의 목록, 2026-10-08 기준이며 화면의 '공식 문서·생성 도구·자산 사이트 · N' 표기를 따른다)와 용어집 168개, 예상 질문 23개가 추가로 연결되어 있다. 이 중 일부는 외부 참고 사이트라 내장 연동을 뜻하지 않는다.
 
 ## 운영 반영
 

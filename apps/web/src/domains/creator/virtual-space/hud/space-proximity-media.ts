@@ -6,7 +6,9 @@ import type { StudioWorldRect } from "../studio-virtual-space-world-manifest";
 
 /**
  * 가까이 가면 영상(근접 영상)의 순수 규칙과 전송 채널.
- * - 미디어는 기존 무료 WebRTC P2P(Huddle 컨트롤러 + 무료 STUN)만 쓴다. 유료 TURN·미디어 서버는 쓰지 않는다.
+ * - 미디어는 기존 WebRTC P2P(Huddle 컨트롤러)만 쓴다. ICE 서버는 허들과 같은 공유 구성(studio-ice-configuration)이라
+ *   STUN 전용으로 시작하고, 실시간 Worker가 TURN 단기 자격을 발급한 환경에서만 중계 경로가 생긴다.
+ *   이 모듈은 별도 TURN 계정이나 미디어 서버(SFU)를 추가하지 않는다.
  * - 같은 direct 포트를 쓰는 대화방(Huddle)과 신호가 섞이지 않게 전용 채널로 감싼다.
  */
 export const SPACE_PROXIMITY_MEDIA_CHANNEL = "space-proximity-media-v1";

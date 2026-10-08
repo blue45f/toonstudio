@@ -1,5 +1,5 @@
 import { translateCurrentStaticSourceText, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowLeft, ArrowRight, Boxes, Check, ClipboardCheck, Cpu, FileText, LayoutGrid, Palette, PanelsTopLeft, Presentation, Save, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, Boxes, Check, ClipboardCheck, Cpu, FileText, LayoutGrid, Network, Palette, PanelsTopLeft, Presentation, Save, type LucideIcon } from "lucide-react";
 
 import { AboutSectionNav } from "./AboutSectionNav";
 
@@ -36,11 +36,12 @@ const HANDOFF_ICONS: Readonly<Record<(typeof WORKFLOW_HANDOFFS)[number]["id"], L
   edit: ClipboardCheck,
 };
 
-/** 제작 과정을 읽은 뒤 이어 볼 곳: 전체 기능 지도와, 이 흐름을 만든 기술 자료(제작 스토리·발표 자료·도감). */
+/** 제작 과정을 읽은 뒤 이어 볼 곳: 전체 기능 지도와, 이 흐름을 만든 기술 자료(아키텍처 해설·제작 스토리·발표 모드·도감). */
 const MORE_LINKS = [
   { href: "/features", icon: LayoutGrid, ko: "전체 기능 한눈에", en: "All features at a glance" },
+  { href: "/about/technology/architecture", icon: Network, ko: "기술 아키텍처 해설", en: "Architecture guide" },
   { href: "/about/technology/story", icon: Cpu, ko: "기술 제작 스토리", en: "Engineering story" },
-  { href: "/about/technology/deck", icon: Presentation, ko: "기술 발표 자료", en: "Engineering presentation" },
+  { href: "/about/technology/deck", icon: Presentation, ko: "기술 발표 모드", en: "Engineering presentation mode" },
   { href: "/about/technology/atlas", icon: Boxes, ko: "기술 도감", en: "Technology atlas" },
 ] as const;
 
