@@ -1,0 +1,54 @@
+[
+ {
+  "name": "@dimforge/rapier3d-compat",
+  "version": "0.21.0",
+  "license": "Apache-2.0",
+  "licenseFiles": [
+   "LICENSE"
+  ],
+  "dir": "@dimforge/rapier3d-compat"
+ },
+ {
+  "name": "@dimforge/rapier3d-deterministic-compat",
+  "version": "0.21.0",
+  "license": "Apache-2.0",
+  "licenseFiles": [
+   "LICENSE"
+  ],
+  "dir": "@dimforge/rapier3d-deterministic-compat"
+ },
+ {
+  "name": "@esbuild/linux-x64",
+  "version": "0.28.2",
+  "license": "MIT",
+  "licenseFiles": [],
+  "dir": "@esbuild/linux-x64"
+ },
+ {
+  "name": "cannon-es",
+  "version": "0.20.0",
+  "license": "MIT",
+  "licenseFiles": [
+   "LICENSE"
+  ],
+  "dir": "cannon-es"
+ },
+ {
+  "name": "esbuild",
+  "version": "0.28.2",
+  "license": "MIT",
+  "licenseFiles": [
+   "LICENSE.md"
+  ],
+  "dir": "esbuild"
+ },
+ {
+  "name": "jolt-physics",
+  "version": "1.1.0",
+  "license": "MIT",
+  "licenseFiles": [
+   "LICENSE"
+  ],
+  "dir": "jolt-physics"
+ }
+]

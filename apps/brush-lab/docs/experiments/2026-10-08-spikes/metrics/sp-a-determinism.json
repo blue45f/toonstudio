@@ -1,0 +1,154 @@
+{
+ "native": {
+  "main": {
+   "pen": "116e49e973c3b0e4",
+   "bundle32": "329ce3be672107ca"
+  },
+  "worker": {
+   "pen": "116e49e973c3b0e4",
+   "bundle32": "329ce3be672107ca"
+  },
+  "childProcess": {
+   "pen": "116e49e973c3b0e4",
+   "bundle32": "329ce3be672107ca"
+  },
+  "penSame": true,
+  "bundleSame": true
+ },
+ "p2-es": {
+  "main": {
+   "pen": "4a33deadb9642794",
+   "bundle32": "e1defb48f44d1f9f"
+  },
+  "worker": {
+   "pen": "4a33deadb9642794",
+   "bundle32": "e1defb48f44d1f9f"
+  },
+  "childProcess": {
+   "pen": "4a33deadb9642794",
+   "bundle32": "e1defb48f44d1f9f"
+  },
+  "penSame": true,
+  "bundleSame": true
+ },
+ "planck": {
+  "main": {
+   "pen": "ac63a372678a7cbe",
+   "bundle32": "3f68f2152fe2887e"
+  },
+  "worker": {
+   "pen": "ac63a372678a7cbe",
+   "bundle32": "3f68f2152fe2887e"
+  },
+  "childProcess": {
+   "pen": "ac63a372678a7cbe",
+   "bundle32": "3f68f2152fe2887e"
+  },
+  "penSame": true,
+  "bundleSame": true
+ },
+ "matter-js": {
+  "main": {
+   "pen": "f3c1dfa4f0cbf113",
+   "bundle32": "a9ad68fb810e548a"
+  },
+  "worker": {
+   "pen": "f3c1dfa4f0cbf113",
+   "bundle32": "a9ad68fb810e548a"
+  },
+  "childProcess": {
+   "pen": "f3c1dfa4f0cbf113",
+   "bundle32": "a9ad68fb810e548a"
+  },
+  "penSame": true,
+  "bundleSame": true
+ },
+ "rapier": {
+  "main": {
+   "pen": "53a2fb24260133b1",
+   "bundle32": "fa3a7ebd86ad35e2"
+  },
+  "worker": {
+   "pen": "53a2fb24260133b1",
+   "bundle32": "fa3a7ebd86ad35e2"
+  },
+  "childProcess": {
+   "pen": "53a2fb24260133b1",
+   "bundle32": "fa3a7ebd86ad35e2"
+  },
+  "penSame": true,
+  "bundleSame": true
+ },
+ "rapier-det": {
+  "main": {
+   "pen": "53a2fb24260133b1",
+   "bundle32": "fa3a7ebd86ad35e2"
+  },
+  "worker": {
+   "pen": "53a2fb24260133b1",
+   "bundle32": "fa3a7ebd86ad35e2"
+  },
+  "childProcess": {
+   "pen": "53a2fb24260133b1",
+   "bundle32": "fa3a7ebd86ad35e2"
+  },
+  "penSame": true,
+  "bundleSame": true
+ },
+ "box2d-wasm": {
+  "main": {
+   "pen": "38add1889bf28eef",
+   "bundle32": "ffa4855ab506125e"
+  },
+  "worker": {
+   "pen": "38add1889bf28eef",
+   "bundle32": "ffa4855ab506125e"
+  },
+  "childProcess": {
+   "pen": "38add1889bf28eef",
+   "bundle32": "ffa4855ab506125e"
+  },
+  "penSame": true,
+  "bundleSame": true
+ },
+ "box2d3": {
+  "main": {
+   "pen": "1f51103d264f566a",
+   "bundle32": "d8807ed1153b903c"
+  },
+  "worker": {
+   "pen": "1f51103d264f566a",
+   "bundle32": "d8807ed1153b903c"
+  },
+  "childProcess": {
+   "pen": "1f51103d264f566a",
+   "bundle32": "d8807ed1153b903c"
+  },
+  "penSame": true,
+  "bundleSame": true
+ },
+ "samePenHashGroups": [
+  [
+   "native"
+  ],
+  [
+   "p2-es"
+  ],
+  [
+   "planck"
+  ],
+  [
+   "matter-js"
+  ],
+  [
+   "rapier",
+   "rapier-det"
+  ],
+  [
+   "box2d-wasm"
+  ],
+  [
+   "box2d3"
+  ]
+ ]
+}

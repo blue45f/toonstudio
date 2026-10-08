@@ -1,0 +1,92 @@
+{
+ "kappaSweep": {
+  "kappa_0": [
+   {
+    "tS": 0,
+    "mixedPct": 0,
+    "meanAbsDevFromPure": 0
+   },
+   {
+    "tS": 0.5,
+    "mixedPct": 0,
+    "meanAbsDevFromPure": 0
+   },
+   {
+    "tS": 1,
+    "mixedPct": 0,
+    "meanAbsDevFromPure": 0
+   },
+   {
+    "tS": 2,
+    "mixedPct": 0,
+    "meanAbsDevFromPure": 0
+   }
+  ],
+  "kappa_4": [
+   {
+    "tS": 0,
+    "mixedPct": 56.94,
+    "meanAbsDevFromPure": 0.203
+   },
+   {
+    "tS": 0.5,
+    "mixedPct": 61.89,
+    "meanAbsDevFromPure": 0.2452
+   },
+   {
+    "tS": 1,
+    "mixedPct": 64.72,
+    "meanAbsDevFromPure": 0.2543
+   },
+   {
+    "tS": 2,
+    "mixedPct": 68.55,
+    "meanAbsDevFromPure": 0.2681
+   }
+  ],
+  "kappa_16": [
+   {
+    "tS": 0,
+    "mixedPct": 65.11,
+    "meanAbsDevFromPure": 0.2565
+   },
+   {
+    "tS": 0.5,
+    "mixedPct": 72.72,
+    "meanAbsDevFromPure": 0.2825
+   },
+   {
+    "tS": 1,
+    "mixedPct": 78.77,
+    "meanAbsDevFromPure": 0.3012
+   },
+   {
+    "tS": 2,
+    "mixedPct": 83.42,
+    "meanAbsDevFromPure": 0.3271
+   }
+  ],
+  "kappa_64": [
+   {
+    "tS": 0,
+    "mixedPct": 78.99,
+    "meanAbsDevFromPure": 0.3051
+   },
+   {
+    "tS": 0.5,
+    "mixedPct": 85.92,
+    "meanAbsDevFromPure": 0.3462
+   },
+   {
+    "tS": 1,
+    "mixedPct": 89.19,
+    "meanAbsDevFromPure": 0.3648
+   },
+   {
+    "tS": 2,
+    "mixedPct": 92,
+    "meanAbsDevFromPure": 0.3824
+   }
+  ]
+ }
+}

@@ -1,0 +1,37 @@
+{
+ "spectral.js (esbuild minify, mix+Color 전체)": {
+  "minBytes": 12348,
+  "gzipBytes": 6209,
+  "brotliBytes": 5172
+ },
+ "culori 전체 import (트리셰이킹)": {
+  "minBytes": 45302,
+  "gzipBytes": 16046,
+  "brotliBytes": 13607
+ },
+ "culori/fn + oklab·lrgb 모드만": {
+  "minBytes": 16170,
+  "gzipBytes": 6618,
+  "brotliBytes": 5773
+ },
+ "엔진 km-mix + TABLE_8": {
+  "minBytes": 3311,
+  "gzipBytes": 1728,
+  "brotliBytes": 1478
+ },
+ "엔진 km-mix + TABLE_6": {
+  "minBytes": 3311,
+  "gzipBytes": 1728,
+  "brotliBytes": 1478,
+  "note": "tables.ts의 두 표가 함께 번들됨(트리셰이킹 안 됨); 한 표만 쓰면 더 작음(미측정)"
+ },
+ "엔진 mixKm3Tuned만": {
+  "minBytes": 376,
+  "gzipBytes": 286,
+  "brotliBytes": 263
+ },
+ "spectral.min.js(패키지 동봉본)": {
+  "minBytes": 11798,
+  "gzipBytes": 5802
+ }
+}

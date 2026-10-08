@@ -1,0 +1,49 @@
+[
+ {
+  "name": "@box2d/core",
+  "version": "0.11.0",
+  "licenseField": "MIT",
+  "licenseFiles": [
+   {
+    "file": "LICENSE",
+    "sha256": "9b77e0763d3e1f5b",
+    "classified": "MIT",
+    "firstLine": "MIT License"
+   }
+  ],
+  "dependencies": [],
+  "installScripts": [],
+  "binaryFiles": [],
+  "fileCount": 162,
+  "jsHeaderClasses": {
+   "MIT": 37,
+   "noHeader": 16
+  },
+  "allowedSpdx": true
+ },
+ {
+  "name": "@box2d/particles",
+  "version": "0.11.0",
+  "licenseField": "MIT",
+  "licenseFiles": [
+   {
+    "file": "LICENSE",
+    "sha256": "9b77e0763d3e1f5b",
+    "classified": "MIT",
+    "firstLine": "MIT License"
+   }
+  ],
+  "dependencies": [
+   "@box2d/core"
+  ],
+  "installScripts": [],
+  "binaryFiles": [],
+  "fileCount": 204,
+  "jsHeaderClasses": {
+   "MIT": 37,
+   "noHeader": 17,
+   "Zlib": 13
+  },
+  "allowedSpdx": true
+ }
+]

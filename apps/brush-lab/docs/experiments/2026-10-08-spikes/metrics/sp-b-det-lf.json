@@ -1,0 +1,38 @@
+{
+ "unseeded": {
+  "sameProcess": [
+   "0aff16acf30517f4",
+   "dabd9344a0b08a98",
+   "bfe11bb564def443",
+   "d6e93819224d380f",
+   "85b223801c6ec6da"
+  ],
+  "separateProcesses": [
+   "71f20e2acd2fbc59",
+   "7f51ce85ac17ab3f",
+   "6e4755d82688282d",
+   "1b6de67a17065dfc",
+   "7cc88e93d09025dd"
+  ],
+  "sameProcessUnique": 5,
+  "separateUnique": 5
+ },
+ "seeded": {
+  "sameProcess": [
+   "257550f5a0cb7e68",
+   "257550f5a0cb7e68",
+   "257550f5a0cb7e68",
+   "257550f5a0cb7e68",
+   "257550f5a0cb7e68"
+  ],
+  "separateProcesses": [
+   "257550f5a0cb7e68",
+   "257550f5a0cb7e68",
+   "257550f5a0cb7e68",
+   "257550f5a0cb7e68",
+   "257550f5a0cb7e68"
+  ],
+  "sameProcessUnique": 1,
+  "separateUnique": 1
+ }
+}

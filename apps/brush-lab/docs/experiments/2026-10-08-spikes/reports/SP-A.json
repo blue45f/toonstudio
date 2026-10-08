@@ -1,0 +1,339 @@
+{
+  "id": "SP-A",
+  "summary": "2D 물리엔진 8종(Rapier 일반/deterministic, planck, matter-js, p2-es, box2d3-wasm, box2d-wasm, 자체 오일러+PBD)과 저장소 nib-flex 직접 호출을 공통 어댑터 PhysicsWorld2D 뒤에서 물리 펜과 붓털 다발(N=8/32/128) 시나리오로 측정했다. 핵심 발견은 다음과 같다. (1) 스프링 감쇠를 포인터와 펜의 상대 속도에만 걸면 추적 지연이 0.7~1.1 ms로 사라져 끌림이 안 생기고, 지면 항력(선형 감쇠)이 지연 약 15 ms를 만든다. (2) 영 길이 스프링은 Box2D 계열 거리 조인트로 못 만든다(box2d-wasm 실측: 목표 앞 0.16 px에서 정지). 어댑터가 힘으로 대체하면 자체 구현과 같은 수치가 나온다. (3) 붓털 N=128에서 Rapier가 퍼짐 일관성(반경비 표준편차 0.018 대 자체 PBD 0.263)과 큰 dt 스파이크 내성이 가장 좋지만 번들이 gzip 1.28 MB이고 초기화가 약 150 ms다. (4) p2-es는 전역 id 카운터 때문에 첫 월드 결과가 달라지며(카운터 리셋 시 일치), 연속 50 ms 틱에서 matter와 함께 폭주한다. (5) 라이선스는 8개 모두 허용 SPDX이나 box2d-wasm·box2d3-wasm은 번들된 Box2D(MIT, Erin Catto) 고지가 패키지에 없어 review로 분류했다. 모든 수치는 Node 22 단일 스레드 값이며 브라우저·GPU·교차 기계 결정성은 측정하지 못했다. 시각 비교 시트 PNG 2장(N=32, N=128)을 직접 열어 확인했고, 보고서와 metrics.json은 샌드박스에 있다.",
+  "libraries": [
+    {
+      "name": "@dimforge/rapier2d-compat",
+      "version": "0.21.0",
+      "licenseSpdx": "Apache-2.0",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "wasm 내장 Rust crate: nalgebra 0.35.0 (Apache-2.0), parry2d 0.31.1 (Apache-2.0), glam, arrayvec, ena, hashbrown, js-sys, once_cell, robust, smallvec, spade, web-time (모두 MIT OR Apache-2.0, crates.io API 조회)"
+      ],
+      "bundleBytesGzip": 1282042,
+      "noteKo": "설치본 package.json과 LICENSE(Apache-2.0 전문)를 직접 확인했다. LICENSE에 명시적 특허 허여(3항)가 있고 dimforge/rapier·rapier.js 저장소에 NOTICE 파일은 없다(원격 404). wasm 2.4 MB가 base64로 JS에 내장돼 JS 3.4 MB(gzip 1.28 MB). wasm 안 Rust crate 라이선스는 설치본이 아니라 crates.io API로 확인했고, crate별 저작권 고지와 wasm-bindgen 글루 라이선스는 패키지에 동봉돼 있지 않아 배포 시 cargo-about 등으로 THIRD-PARTY 고지를 만들 것을 권장한다. 초기화 약 150~160 ms."
+    },
+    {
+      "name": "@dimforge/rapier2d-deterministic-compat",
+      "version": "0.21.0",
+      "licenseSpdx": "Apache-2.0",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "wasm 내장 crate는 일반 빌드와 같고 indexmap 2.14.2 (Apache-2.0 OR MIT) 추가"
+      ],
+      "bundleBytesGzip": 1294207,
+      "noteKo": "일반 빌드와 동일한 LICENSE(Apache-2.0)와 API이며 wasm이 약 31 KB 더 크다(2,436,321 B). 같은 머신에서 일반 빌드와 해시가 동일했으므로 교차 기계 차이는 이 환경에서 측정할 수 없다(unverified). 고지 주의사항은 일반 빌드와 같다."
+    },
+    {
+      "name": "planck",
+      "version": "1.5.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "stage-js@1.0.1 (MIT, LICENSE.md 확인)"
+      ],
+      "bundleBytesGzip": 47934,
+      "noteKo": "LICENSE.txt는 MIT(Erin Catto, Ali Shakiba)다. package.json engines가 node>=24라 Node 22에서 경고만 나오고 동작한다. 거리 조인트는 최소 길이 0.005 m라 영 길이 스프링이 불가능해 어댑터가 applyForceToCenter로 대체했다. 붓털 N=128에서 틱당 16.5 ms로 가장 느렸다(접촉 생성이 CPU 프로파일의 47%)."
+    },
+    {
+      "name": "matter-js",
+      "version": "0.20.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [],
+      "bundleBytesGzip": 27731,
+      "noteKo": "MIT LICENSE를 확인했다. 라이선스는 문제없지만 물리 단위 스프링이 없어(무차원 stiffness/damping) 격자탐색 보정이 필요하고, kinematic·로프가 없으며, 오차가 크고(해석 대비 평균 1.56 px), 연속 50 ms 틱에서 폭주(7.7e4 px)한다. 설계상 부적합하다고 판단했다(라이선스 사유 아님)."
+    },
+    {
+      "name": "p2-es",
+      "version": "1.2.3",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "poly-decomp-es@0.4.2 (MIT, LICENSE 확인)"
+      ],
+      "bundleBytesGzip": 27119,
+      "noteKo": "MIT LICENSE를 확인했다. 스프링은 힘 기반 (k,c)라 어댑터 변환이 거의 없고 해석 오차 0.53 px로 우수하다. 선형 감쇠 율 30/s 초과에서 1-damping이 double 정밀도 한계로 0이 되어 어댑터가 힘으로 대체했다. 전역 정적 id 카운터에 결과가 의존해 카운터를 리셋해야 재현된다. 연속 50 ms 틱에서 폭주(1e12 px)했다가 복귀한다."
+    },
+    {
+      "name": "box2d3-wasm",
+      "version": "5.2.0",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "review",
+      "transitive": [
+        "wasm 안: Box2D v3 (erincatto/box2d main LICENSE = MIT, Copyright 2022 Erin Catto, 원격 raw 조회), enkiTS (zlib 계열, Copyright 2013 Doug Binks, 원격 조회), box2cpp (서브모듈, 라이선스 원격 404로 확인 못함), emscripten 런타임 JS, wasm-feature-detect (Apache-2.0, entry.mjs에 고지 인라인)"
+      ],
+      "bundleBytesGzip": 26491,
+      "noteKo": "패키지 LICENSE는 MIT(Alex Birch & Erik Sombroek)만 담고 번들된 Box2D(Erin Catto)·enkiTS(Doug Binks) 저작권 고지가 없어 법무 검토 전 채택 금지(review)다. 실효 라이선스는 모두 permissive로 보이나 box2cpp 라이선스는 확인하지 못했다. wasm은 compat 417 KB(gzip 155 KB)/deluxe 428 KB다. Node 기본 진입점은 deluxe(스레드) 빌드를 골라 초기화 386~750 ms, compat 직접 로드는 42~75 ms다. 거리 조인트가 영 길이 스프링을 못 만들어 어댑터가 힘으로 대체했다. embind 값 객체를 delete()해야 한다."
+    },
+    {
+      "name": "box2d-wasm",
+      "version": "7.0.0",
+      "licenseSpdx": "Zlib",
+      "licenseFileVerified": true,
+      "commercialVerdict": "review",
+      "transitive": [
+        "@types/emscripten@1.41.6 (MIT, 타입만)",
+        "wasm 안: Box2D 2.4.x (erincatto/box2d v2.4.1 LICENSE = MIT, Copyright 2019 Erin Catto, 원격 조회)",
+        "wasm-feature-detect (Apache-2.0, 전문이 LICENSE.wasm-feature-detect.Apache.txt로 동봉)"
+      ],
+      "bundleBytesGzip": 77348,
+      "noteKo": "래퍼는 Zlib(LICENSE.zlib.txt 확인)이고 Apache-2.0 전문이 동봉됐으나 번들된 Box2D 2.4의 MIT 고지(Erin Catto)가 패키지에 없어 review다. JS는 SIMD/비SIMD 두 청크(각 317 KB, gzip 38 KB) 중 하나를 로드하고 wasm은 162 KB(gzip 75 KB)다. Node에서는 fetch(경로) 실패로 wasmBinary를 직접 주입해야 한다. 휴지 길이 0 거리 조인트는 목표 앞 0.16 px에서 정지해 어댑터가 힘으로 대체했다. 붓털 N=128에서 틱당 3.5 ms다."
+    },
+    {
+      "name": "esbuild",
+      "version": "0.28.2",
+      "licenseSpdx": "MIT",
+      "licenseFileVerified": true,
+      "commercialVerdict": "ok",
+      "transitive": [
+        "@esbuild/linux-x64@0.28.2 (MIT)"
+      ],
+      "noteKo": "번들 크기 측정용 빌드 도구이며 제품 번들에 포함되지 않는다. LICENSE.md(MIT)를 확인했다."
+    }
+  ],
+  "experiments": [
+    {
+      "name": "펜 스프링 계단(램프) 응답: 감쇠 모델 비교(상대 감쇠만 vs 지면 항력)",
+      "result": "상대 감쇠(스프링 댐퍼)만 쓴 첫 실험은 8개 엔진 모두 추적 지연 평균 0.7~1.1 ms로 관성감이 없었다(matter 9.3 ms와 nib-flex 12.4 ms만 지연 존재). 지면 항력 λ=2ζωn(≈83/s)으로 바꾸자 해석 기준해(15.1 ms)에 맞는 지연 11.5~15.4 ms가 나왔다. 주 설정으로 채택했다.",
+      "metrics": "원자료 out/pen-relative-damper-only.json, 주 설정 out/pen.json (SP-A 샌드박스)",
+      "evidence": [
+        "out/pen-relative-damper-only.json",
+        "out/pen.json"
+      ]
+    },
+    {
+      "name": "물리 펜: 6개 fixture 추적 지연·오버슈트·코너·지터·해석 오차",
+      "result": "자체·planck·box2d-wasm은 해석 대비 평균 오차 0.56 px, 지연 15.4 ms로 같은 수치(영 길이 스프링을 어댑터 힘으로 대체). p2 0.53 px/15.0 ms, box2d3(서브스텝 4) 1.17 px/14.2 ms, matter 1.56 px/13.4 ms, rapier 2.14 px/12.6 ms, nib-flex 직접 호출 2.26 px/12.4 ms. 계단 오버슈트는 해석 11.3%에 대해 p2 8.2, matter 7.7, rapier 14.4, 자체 14.5, box2d3 18.2%. zigzag 코너 편차는 해석 5.40 px에 대해 자체 4.29, rapier 3.65, matter 7.21. tremor 지터 RMS는 입력 1.24 px, 해석 0.67 px에 대해 엔진 0.67~0.80 px.",
+      "metrics": "틱 비용(µs, 중앙값): native 0.28, nib-flex 0.39, p2 1.78, matter 2.32, box2d-wasm 2.15, planck 4.55, rapier 20.2, rapier-det 25.7, box2d3 35.5(실행마다 ±50%)",
+      "evidence": [
+        "out/pen.json",
+        "report.md 4절"
+      ]
+    },
+    {
+      "name": "로프(최대 거리 24 px) 제약: fast-flick 최대 지연 거리",
+      "result": "무제한 61.9~76.7 px가 로프 적용 시 자체·planck·box2d-wasm·matter 24.0, rapier 23.9, box2d3 25.2, p2 32.4 px로 줄었다. p2는 소프트 구속이라 초과한다.",
+      "metrics": "fast-flick 80 ms 입력",
+      "evidence": [
+        "out/pen.json (rope 필드)"
+      ]
+    },
+    {
+      "name": "dt 스파이크 폭주/NaN 시험(zigzag 중 33 ms×1, 100 ms×1, 50 ms×10)",
+      "result": "NaN은 어떤 엔진에서도 없었다. rapier는 27.7 px 이내로 가장 안정, 자체 524 px, planck 105 px, box2d3 458 px, box2d3 서브스텝1 942 px, matter 7.7e4 px, p2 2.95e12 px(폭주 후 복귀).",
+      "metrics": "최대 포인터 거리 px",
+      "evidence": [
+        "out/pen.json (spikes 필드)"
+      ]
+    },
+    {
+      "name": "결정성 해시: 같은 입력 5회, 메인↔worker_threads↔자식 프로세스",
+      "result": "펜·붓털 N=32 모두 8개 엔진이 메인·worker_threads·프로세스 간 동일 해시였다(Node worker_threads이며 브라우저 Web Worker 아님). rapier와 rapier-deterministic은 같은 머신에서 해시가 같았다. p2-es는 기본 상태에서 첫 월드가 다른 해시(0cdb122e… 대 1431b95f…)였고 Body._idCounter·Shape.idCounter 리셋 후 5회 모두 일치했다.",
+      "metrics": "해시 sha256 앞 16자리",
+      "evidence": [
+        "out/determinism.json",
+        "probe-p2det.ts 출력"
+      ]
+    },
+    {
+      "name": "붓털 다발 틱 비용(N=8/32/128)과 프레임당 허용 N",
+      "result": "N=128 틱당 µs: native 168, p2 401, matter 411, rapier 575, rapier-det 592, box2d3 1817, box2d3 서브스텝1 1600, box2d-wasm 3507, planck 16461. 16.7 ms 프레임(240 Hz 틱 4개) 예산 100% 최대 N: native 832, p2 576, matter 512, rapier 448, rapier-det 416, box2d3-sub1 240, box2d3 208, box2d-wasm 112, planck 88. 25% 예산: native 384, p2 240, matter 224, rapier 120, box2d3 64, box2d-wasm 64, planck 52. 데스크톱 Node 기준이며 ±20%.",
+      "metrics": "zigzag 0.5~1.1 s, 5~7회 중앙값 및 N 배증 스캔 + 이분 탐색 3회",
+      "evidence": [
+        "out/bundle.json",
+        "out/scale.json"
+      ]
+    },
+    {
+      "name": "붓털 퍼짐 일관성·끌림·안정성(N=128)",
+      "result": "정지 p=0.2 반경비 표준편차: rapier·rapier-det 0.018, box2d3 0.019, matter 0.032, planck 0.045, box2d-wasm 0.049, p2 0.062, 자체 PBD 0.263(평균 반경비 1.04~1.16, 겹침 밀림). 일정 속도 끌림 오프셋은 이론 λv/ωn²(−3.41 px)와 자체·p2·planck·matter·box2d-wasm이 일치, rapier −3.02·box2d3 −3.26. fast-flick 최대 늘어남은 2.6~3.3×R로 엔진 간 비슷. 100 ms 스파이크(N=32) 최대 늘어남: rapier 1.2×R, planck/box2d-wasm 5.0, 자체 5.3, box2d3 7.9, p2 15.7, matter 18.4.",
+      "metrics": "반경비=붓털 반경/슬롯 반경",
+      "evidence": [
+        "out/bundle.json"
+      ]
+    },
+    {
+      "name": "CPU 참조 래스터러 시각 비교 시트(zigzag·spiral·fast-flick × 10열, N=32·N=128)",
+      "result": "시트 PNG를 Read로 직접 열어 확인했다. 물리 열은 붓털 한 올의 세로 줄무늬가 보이고 꺾이는 지점마다 붓털이 뭉친 진한 덩어리, 시작·끝 단의 털끝 갈라짐이 있다. RIGID(슬롯, 물리 없음) 열은 균일한 옅은 회색 띠로 뭉침·갈라짐이 없다. spiral은 압력 상승에 따라 굵어지며 끝에서 털이 벌어진다. REPO-SCALAR(저장소 스칼라 붓털)는 균일한 얇은 외곽선으로 털 질감이 없다. 엔진 간 차이는 256 px 시트에서 육안 구분이 거의 어렵고 자체 대비 평균 휘도 절대차는 planck·box2d-wasm 0.3~1.7, p2·matter·rapier·box2d3 0.9~2.0, REPO-SCALAR 5~17(0~255). 정지 이미지라 시간축 손맛은 평가하지 못했다.",
+      "metrics": "평균 절대 휘도 차(0~255), 잉크 커버리지: rapier가 자체 대비 2~5% 낮음",
+      "evidence": [
+        "out/sheet-N32.png (열어서 확인함)",
+        "out/sheet-N128.png (열어서 확인함)",
+        "out/img/N128-zigzag-rapier.png (열어서 확인함)",
+        "out/render-stats-N32.json",
+        "out/render-stats-N128.json"
+      ]
+    },
+    {
+      "name": "번들 크기(esbuild minify, 라이브러리만)와 초기화 시간(새 프로세스 7회 중앙값)",
+      "result": "JS gzip: planck 48 KB, matter 27.7 KB, p2 27.1 KB, rapier 1.28 MB(wasm 2.4 MB가 base64), rapier-det 1.29 MB, box2d-wasm 한 청크 38 KB, box2d3 청크 11~15 KB. 별도 wasm gzip: box2d-wasm 75 KB, box2d3 compat 155 KB/deluxe 159 KB. 초기화: matter 12 ms, planck 21 ms, box2d-wasm 37 ms, p2 62 ms, rapier 152 ms, rapier-det 160 ms, box2d3(Node 기본 deluxe) 390 ms(compat 직접 로드 42~75 ms).",
+      "metrics": "esbuild 0.28.2, gzip level 9",
+      "evidence": [
+        "out/bundle-size.json",
+        "out/wasm-sizes.json",
+        "out/init-times.json"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "item": "자체 2차 계 펜 스프링(지면 항력 모델, PenSpring2D 또는 nib-flex 확장)",
+      "decision": "adopt-input-stage",
+      "rationaleKo": "외부 의존 0, 해석 오차 평균 0.56 px, 지연 15 ms, 틱당 0.28 µs. 손맛(끌림)은 상대 감쇠가 아니라 지면 항력으로 만들어야 한다는 실측 근거가 있다. 저장소 nib-flex 직접 호출도 같은 종류의 응답(지연 12.4 ms, 오차 2.26 px)이라 engine/physics에서 순수 TS로 확장 가능하다."
+    },
+    {
+      "item": "Rapier 2D compat (붓털 다발 레인)",
+      "decision": "adopt-lane",
+      "rationaleKo": "N=128 퍼짐 일관성(반경비 표준편차 0.018)과 큰 dt 스파이크 내성(1.2×R)이 가장 좋고 프레임 예산 100%에서 448개까지 허용된다. 단 JS gzip 1.28 MB와 초기화 약 150 ms라 동적 import 지연 로딩과 실험 배지가 필수다. 라이선스 ok이나 wasm 안 Rust crate 고지(THIRD-PARTY)를 배포 전에 생성해야 한다. 브라우저 측정은 미실시."
+    },
+    {
+      "item": "Rapier 2D deterministic compat",
+      "decision": "experiment-only",
+      "rationaleKo": "같은 머신에서 일반 빌드와 해시·성능이 같았고(wasm +31 KB), 교차 기계·브라우저 차이는 이 환경에서 측정 불가(unverified)다. 재생·골든 이미지가 교차 기계에서 필요해질 때 브라우저 실측 후 재평가한다."
+    },
+    {
+      "item": "자체 PBD 붓털(오일러 스프링 + PBD 접촉)",
+      "decision": "adopt-engine-module",
+      "rationaleKo": "외부 의존 0, N=128에서 틱당 168 µs로 가장 빠르고 프레임 예산 100% 최대 N 832. 다만 PBD 3회 반복의 밀집 N=128 퍼짐이 불균일(표준편차 0.263)해 N≤32 또는 외부 엔진 로딩 실패 시 폴백용으로 쓴다. 이전 시 f32 미러(Math.fround)로 재측정해야 한다."
+    },
+    {
+      "item": "p2-es",
+      "decision": "experiment-only",
+      "rationaleKo": "27 KB gzip, 힘 기반 스프링이라 해석 오차 0.53 px로 정확하고 라이선스 ok. 그러나 선형 감쇠 30/s 초과 한계, 전역 id 카운터 결정성 문제(리셋 필요), 연속 50 ms 틱 폭주로 어댑터 보정이 많다. wasm 없는 경량 폴백 후보로만 둔다."
+    },
+    {
+      "item": "planck",
+      "decision": "defer",
+      "rationaleKo": "단일 펜에서는 자체 구현과 같은 수식(영 길이 스프링을 힘으로 대체)이라 이점이 없고, 붓털 N=128은 틱당 16.5 ms로 최악이다(접촉 생성 47%). engines node>=24 선언 경고도 있다."
+    },
+    {
+      "item": "matter-js",
+      "decision": "reject",
+      "rationaleKo": "라이선스(MIT) 사유가 아니라 기술적 사유다. 물리 단위 스프링이 없어 보정이 필요하고 kinematic·로프가 없으며 오차가 크고 연속 dt 스파이크에서 폭주한다."
+    },
+    {
+      "item": "box2d3-wasm",
+      "decision": "defer",
+      "rationaleKo": "라이선스 review(번들 Box2D·enkiTS 고지 누락, box2cpp 미확인) 해소 전 채택 금지. 서브스텝을 늘리면 해석 오차가 줄지만 자체보다 크고 Node 기본(deluxe) 초기화 386~750 ms, 틱 비용 N=128 1.8 ms. 영 길이 스프링은 어댑터 힘 대체가 필요하다."
+    },
+    {
+      "item": "box2d-wasm (Box2D 2.4)",
+      "decision": "defer",
+      "rationaleKo": "라이선스 review(번들 Box2D 2.4 MIT 고지 누락). 영 길이 거리 조인트 불가, N=128 틱당 3.5 ms, Node에서 wasmBinary 주입 우회 필요."
+    },
+    {
+      "item": "모듈 배치: 순수 TS는 src/engine/physics/world2d/, 외부 패키지 어댑터는 src/lanes/physics/, 시나리오·지표는 src/bench/physics/",
+      "decision": "adopt-lane",
+      "rationaleKo": "engine/**는 승격 단위(@toonstudio·react·DOM·performance·node: 금지, wasm 바이트 인자 주입)라 외부 엔진 어댑터를 둘 수 없고 lanes에는 제한이 없다. boundary.test.ts에 engine/**의 bare specifier 금지와 외부 물리 패키지 import는 lanes/physics/**만 허용하는 규칙을 추가 제안한다. 의존성 추가·pnpm install은 통합 담당이 수행한다."
+    }
+  ],
+  "blockers": [],
+  "filesWritten": [
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/report.md",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/metrics.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/PROGRESS.md",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/world.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/adapters/native.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/adapters/p2.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/adapters/planck.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/adapters/matter.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/adapters/rapier.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/adapters/box2d2.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/adapters/box2d3.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/scenarios/pen.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/scenarios/bundle.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/src/scenarios/repo-nibflex.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/run-pen.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/run-bundle.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/run-scale.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/run-determinism.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/render-sheet.ts",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/bundle-size.mjs",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/make-report.mjs",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/license-audit.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/pen.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/pen-relative-damper-only.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/bundle.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/scale.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/determinism.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/sheet-N32.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/sheet-N128.png",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/bundle-size.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/wasm-sizes.json",
+    "/tmp/claude-0/-home-user-toonstudio/9a8b0315-b5c1-5bfd-ae73-7831a13ea1db/scratchpad/brush/spikes/SP-A/out/init-times.json"
+  ],
+  "commandsRun": [
+    {
+      "command": "npm install --ignore-scripts --no-audit --no-fund @dimforge/rapier2d-compat @dimforge/rapier2d-deterministic-compat planck matter-js p2-es box2d3-wasm box2d-wasm esbuild (샌드박스)",
+      "result": "설치 성공(버전 0.21.0/0.21.0/1.5.0/0.20.0/1.2.3/5.2.0/7.0.0/0.28.2). planck은 engines node>=24 경고만"
+    },
+    {
+      "command": "node license-audit.mjs; strings rapier_wasm2d_bg.wasm | grep registry/src; curl crates.io API; curl raw.githubusercontent.com (Box2D/enkiTS/rapier LICENSE)",
+      "result": "전이 포함 12개 패키지 모두 허용 SPDX, rapier wasm crate 12~13개 확인, box2cpp LICENSE는 404"
+    },
+    {
+      "command": "tsx run-pen.ts",
+      "result": "8엔진+box2d3-sub1+repo-nibflex 펜 시나리오 완료, out/pen.json"
+    },
+    {
+      "command": "tsx run-bundle.ts",
+      "result": "N=8/32/128 붓털 시나리오 완료(약 2분 20초), out/bundle.json"
+    },
+    {
+      "command": "tsx run-scale.ts",
+      "result": "프레임 예산별 최대 N 스캔 완료, out/scale.json"
+    },
+    {
+      "command": "tsx render-sheet.ts 32 / 128",
+      "result": "비교 시트 PNG 2장 생성, Read로 열어 확인"
+    },
+    {
+      "command": "tsx run-determinism.ts",
+      "result": "메인·worker_threads·자식 프로세스 해시 모두 동일(8엔진), out/determinism.json"
+    },
+    {
+      "command": "node bundle-size.mjs; node init-one.mjs (7회/패키지)",
+      "result": "번들 크기·wasm 크기·초기화 시간 측정, out/*.json"
+    },
+    {
+      "command": "node make-report.mjs",
+      "result": "report.md, metrics.json 생성"
+    }
+  ],
+  "unverified": [
+    "브라우저(Chromium·Safari·Firefox)·모바일·GPU 경로의 모든 비용·결정성 수치(Node 22 단일 스레드 값만 측정)",
+    "Rapier 일반 대 deterministic 빌드의 교차 기계·교차 브라우저·wasm SIMD 결정성 차이(같은 머신에서는 해시 동일)",
+    "브라우저 Web Worker 대 메인 결정성(Node worker_threads만 측정)",
+    "box2d3-wasm이 컴파일한 box2cpp의 라이선스와 wasm 포함 여부(원격 raw 404)",
+    "rapier wasm의 wasm-bindgen 글루 라이선스와 crate별 저작권 고지 동봉 여부, crate 라이선스는 설치본이 아니라 crates.io API로 확인",
+    "사람이 직접 그릴 때의 시간축 손맛(이미지는 정지 결과만 확인), 건조(dry-stamp) 프로그램 외 습식·유화 프로그램에서의 외형",
+    "Box2D v3 서브스텝 수 변화의 원인 분리, Rapier·box2d3의 끌림이 이론보다 작은 이유(암시적 적분 추정)",
+    "프레임당 허용 N은 워밍업이 짧은 스캔이라 ±20%이고 펜 틱 비용(µs 단위)은 실행마다 ±50% 흔들림",
+    "engine/** 이전 시 f32(Math.fround) 미러 적용 후의 수치(샌드박스 자체 구현은 f64)"
+  ],
+  "risks": [
+    "영 길이 스프링을 Box2D 계열 조인트로 만들 수 없어 어댑터가 힘 대체 경로를 쓴다. 이 경로는 사실상 자체 구현이라 'Box2D 조인트의 품질'을 대표하지 않는다.",
+    "Rapier 일반/deterministic 번들이 gzip 1.28 MB로 크다. 메인 번들에 넣으면 초기 로딩 예산을 해친다(지연 로딩 필수).",
+    "box2d-wasm·box2d3-wasm은 법무 검토 전 채택 금지(번들된 Box2D·enkiTS 저작권 고지가 패키지에 없음). box2cpp는 미확인.",
+    "Rapier wasm에 내장된 Rust crate들의 고지를 배포물에 별도로 생성·동봉해야 한다(패키지에는 없음).",
+    "p2-es는 전역 id 카운터를 리셋하는 내부 필드 접근(타입 우회)에 결정성이 의존한다. 패키지 업데이트 시 깨질 수 있다.",
+    "planck은 engines가 node>=24라 CI Node 버전에 따라 경고·실패 가능.",
+    "samples 사이 선형 보간 입력과 240 Hz 고정 틱을 전제로 한 측정이다. 누산기 없는 가변 dt 호출은 matter·p2·자체 구현에서 폭주할 수 있다.",
+    "붓털 레이아웃·파라미터(fn 14 Hz, 항력 45/s 등)는 임의 설정이라 시각 품질은 튜닝 여지가 있고 손맛 평가는 사람 확인이 필요하다."
+  ],
+  "followUps": [
+    "브라우저(Playwright Chromium)에서 Rapier·box2d3 compat의 초기화·틱 비용·Worker 결정성을 같은 시나리오로 재측정",
+    "Rapier 레인 프로토타입을 lanes/physics/에 두고 동적 import와 wasm 로딩 경로(Vite 에셋)를 검증, boundary.test.ts에 외부 물리 패키지 허용 범위 규칙 추가",
+    "Rust crate THIRD-PARTY 고지 자동 생성(cargo-about 등)과 box2d 계열 법무 검토 요청, 허용 SPDX 자동 검사에 wasm 내장 라이선스 원장 추가",
+    "자체 PenSpring2D를 engine/physics에 f32 미러로 이식하고 lazy-brush·입력 단계(platform)와의 중복 정리",
+    "붓털 접촉 압력 → dab flow 매핑과 습식 프로그램(wet-flow·impasto) 렌더로 시각 비교 확장, 실제 펜 입력으로 손맛 사용자 평가",
+    "붓털 PBD 반복 수·서브스텝 수 스윕으로 퍼짐 균일성과 끌림 오차의 원인 분리"
+  ]
+}

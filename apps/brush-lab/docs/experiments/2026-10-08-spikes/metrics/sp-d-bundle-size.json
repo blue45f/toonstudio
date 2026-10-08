@@ -1,0 +1,113 @@
+{
+ "rapier3d-compat": {
+  "jsBytes": 4337194,
+  "jsGzip": 1644031,
+  "jsBrotli": 1196215,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 4337194,
+    "gzip": 1644031,
+    "brotli": 1196215
+   }
+  ]
+ },
+ "rapier3d-deterministic-compat": {
+  "jsBytes": 4368914,
+  "jsGzip": 1650831,
+  "jsBrotli": 1202116,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 4368914,
+    "gzip": 1650831,
+    "brotli": 1202116
+   }
+  ]
+ },
+ "jolt wasm-compat (기본)": {
+  "jsBytes": 3998850,
+  "jsGzip": 948292,
+  "jsBrotli": 649921,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 3998850,
+    "gzip": 948292,
+    "brotli": 649921
+   }
+  ]
+ },
+ "jolt wasm (js+wasm 분리)": {
+  "jsBytes": 930546,
+  "jsGzip": 133721,
+  "jsBrotli": 89795,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 930546,
+    "gzip": 133721,
+    "brotli": 89795
+   }
+  ]
+ },
+ "jolt asm.js": {
+  "jsBytes": 5368267,
+  "jsGzip": 1209158,
+  "jsBrotli": 777605,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 5368267,
+    "gzip": 1209158,
+    "brotli": 777605
+   }
+  ]
+ },
+ "cannon-es": {
+  "jsBytes": 123584,
+  "jsGzip": 36084,
+  "jsBrotli": 30700,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 123584,
+    "gzip": 36084,
+    "brotli": 30700
+   }
+  ]
+ },
+ "jolt wasm 원본 파일": {
+  "bytes": 2021569,
+  "gzip": 747582,
+  "brotli": 507336
+ },
+ "@dimforge/rapier3d-compat 원본 wasm": {
+  "bytes": 3082103,
+  "gzip": 1175669,
+  "brotli": 852125
+ },
+ "@dimforge/rapier3d-deterministic-compat 원본 wasm": {
+  "bytes": 3105893,
+  "gzip": 1179524,
+  "brotli": 855167
+ }
+}

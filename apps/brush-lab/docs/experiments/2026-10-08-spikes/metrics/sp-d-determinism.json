@@ -1,0 +1,94 @@
+{
+ "rapier3d": {
+  "main": {
+   "zigzag": "44ac97cbe8f37f8f",
+   "zigzag2": "44ac97cbe8f37f8f",
+   "curve": "e290b706b8a580d7"
+  },
+  "worker": {
+   "zigzag": "44ac97cbe8f37f8f",
+   "zigzag2": "44ac97cbe8f37f8f",
+   "curve": "e290b706b8a580d7"
+  },
+  "childProcess": {
+   "zigzag": "44ac97cbe8f37f8f",
+   "zigzag2": "44ac97cbe8f37f8f",
+   "curve": "e290b706b8a580d7"
+  },
+  "sameWorld2": true,
+  "sameWorker": true,
+  "sameChild": true
+ },
+ "rapier3d-det": {
+  "main": {
+   "zigzag": "44ac97cbe8f37f8f",
+   "zigzag2": "44ac97cbe8f37f8f",
+   "curve": "e290b706b8a580d7"
+  },
+  "worker": {
+   "zigzag": "44ac97cbe8f37f8f",
+   "zigzag2": "44ac97cbe8f37f8f",
+   "curve": "e290b706b8a580d7"
+  },
+  "childProcess": {
+   "zigzag": "44ac97cbe8f37f8f",
+   "zigzag2": "44ac97cbe8f37f8f",
+   "curve": "e290b706b8a580d7"
+  },
+  "sameWorld2": true,
+  "sameWorker": true,
+  "sameChild": true
+ },
+ "jolt": {
+  "main": {
+   "zigzag": "d6f0a503c005ac18",
+   "zigzag2": "d6f0a503c005ac18",
+   "curve": "67b5737962cc3004"
+  },
+  "worker": {
+   "zigzag": "d6f0a503c005ac18",
+   "zigzag2": "d6f0a503c005ac18",
+   "curve": "67b5737962cc3004"
+  },
+  "childProcess": {
+   "zigzag": "d6f0a503c005ac18",
+   "zigzag2": "d6f0a503c005ac18",
+   "curve": "67b5737962cc3004"
+  },
+  "sameWorld2": true,
+  "sameWorker": true,
+  "sameChild": true
+ },
+ "cannon-es": {
+  "main": {
+   "zigzag": "a601c1f4f2e862cc",
+   "zigzag2": "a601c1f4f2e862cc",
+   "curve": "d2b61d9611022edd"
+  },
+  "worker": {
+   "zigzag": "a601c1f4f2e862cc",
+   "zigzag2": "a601c1f4f2e862cc",
+   "curve": "d2b61d9611022edd"
+  },
+  "childProcess": {
+   "zigzag": "a601c1f4f2e862cc",
+   "zigzag2": "a601c1f4f2e862cc",
+   "curve": "d2b61d9611022edd"
+  },
+  "sameWorld2": true,
+  "sameWorker": true,
+  "sameChild": true
+ },
+ "sameZigzagHashGroups": [
+  [
+   "rapier3d",
+   "rapier3d-det"
+  ],
+  [
+   "jolt"
+  ],
+  [
+   "cannon-es"
+  ]
+ ]
+}

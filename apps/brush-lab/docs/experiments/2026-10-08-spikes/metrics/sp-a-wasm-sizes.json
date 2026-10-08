@@ -1,0 +1,32 @@
+{
+ "rapier wasm": {
+  "bytes": 2404467,
+  "gzip": 911281,
+  "brotli": 673073
+ },
+ "rapier-det wasm": {
+  "bytes": 2436321,
+  "gzip": 923731,
+  "brotli": 681486
+ },
+ "box2d-wasm simd": {
+  "bytes": 162582,
+  "gzip": 75506,
+  "brotli": 62127
+ },
+ "box2d-wasm plain": {
+  "bytes": 161347,
+  "gzip": 74779,
+  "brotli": 61360
+ },
+ "box2d3 compat": {
+  "bytes": 417253,
+  "gzip": 154917,
+  "brotli": 121424
+ },
+ "box2d3 deluxe": {
+  "bytes": 427805,
+  "gzip": 158818,
+  "brotli": 125920
+ }
+}
