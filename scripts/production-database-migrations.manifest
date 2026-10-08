@@ -100,3 +100,4 @@ apps/api/src/platform/database/migrations/0099_studio_manuscript_version_share.s
 apps/api/src/platform/database/migrations/0100_creator_work_team_comment_mentions.sql
 apps/api/src/platform/database/migrations/0101_studio_virtual_space_booking_likes.sql
 apps/api/src/platform/database/migrations/0102_studio_recording_booth_asset.sql
+apps/api/src/platform/database/migrations/0103_studio_virtual_space_entry_code.sql
