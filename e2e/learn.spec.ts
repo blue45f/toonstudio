@@ -1,9 +1,12 @@
 import { LESSONS, TERMS } from "../apps/web/src/domains/learn/learning-content";
-import { STORAGE_KEY } from "../apps/web/src/domains/learn/learning-model";
+import { learningProgressStorageKey } from "../apps/web/src/domains/learn/learning-storage";
 
 import { expect, test } from "./fixtures/non-studio-test";
 
 import type { Page } from "@playwright/test";
+
+// 로그인하지 않은 학습자의 진도는 게스트 파티션 키에 저장된다(learning-storage의 소유자별 키).
+const GUEST_STORAGE_KEY = learningProgressStorageKey("guest");
 
 /**
  * 학습 홈은 탭 허브(?view=today|paths|library|skills)이고 강좌 카드는 '전체 강좌' 탭에만 있다.
@@ -103,17 +106,17 @@ test("reduced motion remains step-readable and mobile has no document overflow",
 
 test("malformed storage and unavailable persistent writes do not crash learning", async ({ page }) => {
   await page.goto("/learn?view=library");
-  await page.evaluate((key) => localStorage.setItem(key, "{invalid-json"), STORAGE_KEY);
+  await page.evaluate((key) => localStorage.setItem(key, "{invalid-json"), GUEST_STORAGE_KEY);
   await page.reload();
   await showEveryLesson(page);
   await expect(page.locator(".learn-card")).toHaveCount(LESSONS.length);
-  await page.addInitScript(() => {
+  await page.addInitScript((guestKey: string) => {
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key: string, value: string) {
-      if (key === "toonstudio:learning:v1") throw new DOMException("full", "QuotaExceededError");
+      if (key === guestKey) throw new DOMException("full", "QuotaExceededError");
       return original.call(this, key, value);
     };
-  });
+  }, GUEST_STORAGE_KEY);
   await page.goto("/learn/lessons/story-board");
   await page.getByLabel("나의 실습 메모", { exact: true }).fill("저장 실패 중에도 유지할 메모");
   await page.getByRole("checkbox").first().check();

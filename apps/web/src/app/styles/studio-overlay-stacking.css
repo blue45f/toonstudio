@@ -61,3 +61,11 @@ html:has([data-studio-beta-notice-host="true"]) [data-site-ost="mounted"] {
 html:has([data-service-degraded-banner="degraded"]) [data-studio-status-bar="true"] {
   bottom: max(0.875rem, var(--service-status-overlay-clearance, 0px)) !important;
 }
+
+/* 모달이 열려 있으면 우하단의 동기화·저장 상태 칩은 모달 아래로 내린다(숨기지 않는다).
+ * 칩이 모달 푸터의 취소·적용을 덮으면 휴대폰 폭에서 그 동작을 누를 수 없고, 칩의 경고는
+ * 모달 뒤에 흐리게 남아 계속 보인다. 서비스 배너는 확인 계층이라 모달 위에 그대로 둔다. */
+html:has([role="dialog"][aria-modal="true"]) [data-studio-operation-sync-assistant][data-studio-operation-sync-placement="floating"],
+html:has([role="dialog"][aria-modal="true"]) [data-studio-draft-save-center][data-studio-draft-save-placement="floating"] {
+  z-index: 0 !important;
+}
