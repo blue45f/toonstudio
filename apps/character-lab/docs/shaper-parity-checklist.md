@@ -152,7 +152,7 @@
 
 | 항목 | 구현 상태 | Node 검증 | 브라우저 검증 | 비고 |
 | --- | --- | --- | --- | --- |
-| 비전 계약(모델 id 3종·SHA 고정 여부·상태·추천 타입) | 구현됨 | `contracts/*` | — | core. `MEDIAPIPE_MODELS`에 `handLandmarker`를 추가(2026-10-01). 세 모델 모두 bytes·sha256 미고정이면 UI에 "SHA 미고정·베타" |
+| 비전 계약(모델 id 3종·SHA 고정 여부·상태·추천 타입) | 구현됨 | `contracts/*` | — | core. `MEDIAPIPE_MODELS`에 `handLandmarker`를 추가(2026-10-01). 세 모델 모두 bytes·sha256 고정(2026-10-08); 값이 빠진 모델이 생기면 UI에 "SHA 미고정·베타" |
 | 코사인 Top-K·OKLab k-means(고정 시드)·슬롯별 Top-3 추천·색 추천 | 구현됨 | `domains/vision/{similarity,kmeans-palette,recommend,reference-recommender,image-sampling}.test.ts` | 미검증(실 임베딩 품질) | 썸네일이 없는 프리셋은 추천 불가 사유 표시 |
 | 33 랜드마크→본 회전(스코프·미러·가시성)·손 21점 굴곡·오버레이 좌표 | 구현됨 | `domains/vision/{landmarks-to-pose,hand-landmarks-to-pose,landmark-space,landmark-overlay}.test.ts` | 미검증(실 사진) | 손은 굴곡만(벌림·엄지 대립은 2D에서 신뢰 불가해 미적용·베타) |
 | MediaPipe 지연 로더(wasm 번들·모델 CDN·SHA·15 s timeout·fail-visible)·세션 | 구현됨 | `domains/vision/{model-assets,vision-session}.test.ts` | 미검증(CDN 로드·추론 품질) | `mediapipe-loader.browser.ts` |
@@ -244,7 +244,7 @@
 | FACS 52(ARKit) 확장·corrective shape·morph 100+ 연구 목표 | contracts(core)+animation+state | 계약 FACS 16 동결로 미구현 |
 | WebGPU compute 체인 커널(입자 > 2,048) | outfit-physics | 설계만, 현재 예산은 CPU로 충분 |
 | `@babylonjs/havok` provider | 통합 담당 | 미설치(라이선스·lockfile 승인 필요) → unavailable 사유만 표시 |
-| MediaPipe 모델(pose·hand·embedder) bytes·sha256 고정 | 통합 담당 | 첫 실기기 검증에서 관측 SHA를 기록해 `contracts/vision.ts MEDIAPIPE_MODELS`에 고정 |
+| ~~MediaPipe 모델(pose·hand·embedder) bytes·sha256 고정~~ | 해소(2026-10-08) | 공식 CDN 객체를 받아 SHA-256을 계산하고 Cloud Storage `x-goog-hash` MD5·크기와 대조해 `contracts/vision.ts MEDIAPIPE_MODELS`에 고정. 남은 것은 실브라우저에서 CDN 다운로드(CORS)·추론 확인 |
 | 루트 배선 | 통합 담당 | **완료**(커밋 13ef44e9, 아래 참고) — 더는 미해결 항목이 아니다 |
 
 **루트 배선(완료, 사실 기준 2026-10-02)** — 이 문서가 처음 쓰일 때는 루트 파일이라 core가 건드리지 못해 미해결로 적었으나 이후 통합 담당이 반영했다.

@@ -3,8 +3,8 @@
  *
  * - `@mediapipe/tasks-vision`은 동적 import(별도 청크). wasm 로더·바이너리는 패키지 export 서브패스를 Vite `?url`로
  *   번들해 `{ wasmLoaderPath, wasmBinaryPath }`를 직접 구성한다(CDN wasm 없음).
- * - 모델 파일만 공식 CDN(계약 MEDIAPIPE_MODELS·HAND_LANDMARKER_MODEL)에서 fetch → byteLength·SHA-256 검증(고정된 모델) 또는
- *   관측 SHA 기록(미고정·베타) → `modelAssetBuffer`로 생성. runningMode "IMAGE".
+ * - 모델 파일만 공식 CDN(계약 MEDIAPIPE_MODELS·HAND_LANDMARKER_MODEL)에서 fetch → byteLength·SHA-256 검증(세 모델 모두 고정)
+ *   → `modelAssetBuffer`로 생성(계약에서 값이 빠진 모델이 생기면 관측 SHA만 기록하는 미고정·베타 경로). runningMode "IMAGE".
  * - 델리게이트는 생성 전에 하나로 고정하고(기본 CPU) 실패 시 다른 델리게이트를 자동으로 시도하지 않는다(ADR-0018).
  * - 15 s(VISION_LOAD_TIMEOUT_MS) 안에 끝나지 않으면 LabFailure. 모든 실패는 throw(LabFailure)로 세션이 failed 상태로 만든다.
  *   제한 시간 뒤 늦게 만들어진 인스턴스는 close()로 해제한다(`createModelWithDeadline`).

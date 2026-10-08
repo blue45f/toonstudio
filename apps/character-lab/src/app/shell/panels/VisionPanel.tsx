@@ -16,7 +16,7 @@ import { downsampleRgba } from "../../../domains/vision/image-sampling";
 import { extractPalette } from "../../../domains/vision/kmeans-palette";
 import { handOverlayPlan, poseOverlayPlan } from "../../../domains/vision/landmark-overlay";
 import { controllableBones, landmarksToPose } from "../../../domains/vision/landmarks-to-pose";
-import { VISION_MODEL_SPECS, isModelSpecPinned } from "../../../domains/vision/model-assets";
+import { VISION_MODEL_SPECS, describeModelPinKo, isModelSpecPinned } from "../../../domains/vision/model-assets";
 import { recommendColors } from "../../../domains/vision/recommend";
 import { createThumbnailEmbeddingCache, recommendFromReference } from "../../../domains/vision/reference-recommender";
 import { VISION_MODEL_KEYS, VISION_MODEL_LABELS_KO, resolveHandSide, toContractVisionStatus } from "../../../domains/vision/vision-ports";
@@ -242,7 +242,7 @@ function ModelStatusList({ session, delegate, onDelegateChange }: ModelStatusLis
           return (
             <li key={key} className="cl-vision-model" data-model={key} data-phase={status.phase}>
               <span className="cl-vision-model-name">{VISION_MODEL_LABELS_KO[key]}</span>
-              <span className={`cl-vision-badge ${pinned ? "cl-vision-badge--pinned" : "cl-vision-badge--beta"}`}>{pinned ? "SHA 고정" : "SHA 미고정·베타"}</span>
+              <span className={`cl-vision-badge ${pinned ? "cl-vision-badge--pinned" : "cl-vision-badge--beta"}`}>{describeModelPinKo(spec)}</span>
               <span className="cl-vision-model-status">{describeStatus(status)}</span>
               {status.phase === "idle" ? (
                 <button type="button" onClick={() => void session.retry(key)}>
