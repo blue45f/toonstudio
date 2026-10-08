@@ -43,18 +43,17 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("소스 정체성 마스트헤드", () => {
-  it("NASA는 아트가 없어 타이포그래픽 표지·칩·한 줄 정체성을 단다", () => {
+  it("NASA는 우주 장면 표지·칩·한 줄 정체성을 단다", () => {
     const { container } = mount("nasa", "/research/space-assets");
     const section = container.querySelector(".research-source--nasa");
     expect(section).toBeTruthy();
     // 칩·태그라인: 소스 이름과 한 줄 정체성이 제목 아래에 읽힌다.
     expect(screen.getByText(/NASA가 공개한 행성·성운·우주선 이미지 자료실입니다/u)).toBeTruthy();
-    // 타이포그래픽 표지 — 글리프와 소스 이름이 표지에 있고, 사진인 척하는 img는 없다.
-    const cover = container.querySelector(".resource-source-cover");
-    expect(cover).toBeTruthy();
-    expect(cover?.textContent).toContain("NASA Images");
-    expect(cover?.textContent).toContain("N");
-    expect(container.querySelector(".resource-masthead img")).toBeNull();
+    // 장면 표지 — 소스 성격(행성·성운·우주선)이 읽히는 실물 아트가 마스트헤드에 실린다.
+    const art = container.querySelector<HTMLImageElement>(".resource-masthead img");
+    expect(art?.getAttribute("src")).toBe("/brand/research-sources-20261008/nasa.webp");
+    expect(art?.getAttribute("alt")).toBe("");
+    expect(container.querySelector(".resource-source-cover")).toBeNull();
     // 기존 기능: 페이지 제목과 검색 폼·추천 키워드는 그대로다.
     expect(screen.getByRole("heading", { name: "NASA 우주·과학 레퍼런스" })).toBeTruthy();
     expect(screen.getByText("NASA Images · 우주·과학 이미지 검색")).toBeTruthy();
@@ -64,7 +63,7 @@ describe("소스 정체성 마스트헤드", () => {
   it("같은 제공처는 오픈데이터 경로에 실려도 같은 얼굴이다", () => {
     const { container } = mount("nasa", "/research/open-data/nasa");
     expect(container.querySelector(".research-source--nasa")).toBeTruthy();
-    expect(container.querySelector(".resource-source-cover")).toBeTruthy();
+    expect(container.querySelector<HTMLImageElement>(".resource-masthead img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/nasa.webp");
     expect(screen.getByText(/NASA가 공개한 행성·성운·우주선 이미지 자료실입니다/u)).toBeTruthy();
   });
 
@@ -78,12 +77,12 @@ describe("소스 정체성 마스트헤드", () => {
     expect(screen.getByText(/CC0 PBR 재질과 3D 소재를 공개하는 라이브러리입니다/u)).toBeTruthy();
   });
 
-  it("GBIF는 타이포그래픽 표지에 생물 소스의 글리프를 쓴다", () => {
+  it("GBIF는 생물 표본 장면 표지를 대표 비주얼로 쓴다", () => {
     const { container } = mount("gbif", "/research/creatures");
     expect(container.querySelector(".research-source--gbif")).toBeTruthy();
-    const cover = container.querySelector(".resource-source-cover");
-    expect(cover?.textContent).toContain("GBIF");
-    expect(cover?.textContent).toContain("G");
+    const art = container.querySelector<HTMLImageElement>(".resource-masthead img");
+    expect(art?.getAttribute("src")).toBe("/brand/research-sources-20261008/gbif.webp");
+    expect(container.querySelector(".resource-source-cover")).toBeNull();
     expect(screen.getByText(/전 세계 생물종 관찰 기록과 사진으로 크리처의 근거를 찾습니다/u)).toBeTruthy();
   });
 });
