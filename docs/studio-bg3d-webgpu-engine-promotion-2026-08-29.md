@@ -97,7 +97,7 @@ re-export하는 승인된 WebGPU entry)를 import하면 **포저의 청크까지
 `three/webgpu`를 정적으로 import하므로 별도 청크를 주면 Three의 WebGPU 빌드에 두 번째 정적 소유자가
 생겨 번들 경계가 깨진다. 실제 비용은 minify 기준 약 12 KiB이고, 정책이 WebGPU를 고른 뒤에만 받는다.
 
-그 결과 승인된 entry의 동적 import 지점이 하나에서 셋(뷰포트·공유 캐릭터·모델 썸네일)으로 늘었다.
+그 결과 승인된 entry의 동적 import 지점이 하나에서 늘었다. 이 문서를 쓸 때는 셋(뷰포트·공유 캐릭터·모델 썸네일)이라고 적었고, 2026-10-08 코드 기준으로는 넷이다: 뷰포트 `useStudioBg3dEngineRuntime.ts`, 캡처 브리지 `StudioBg3dCaptureBridge.tsx`, 모델 썸네일 `studio-bg3d-model-thumbnail-three-capture.ts`, 공유 캐릭터 `studio-bg3d-shared-vrm-runtime.ts`.
 번들 검사는 "동적 import가 정확히 하나"를 요구했지만, 그 숫자는 지키려던 성질을 대신 세지 못한다 —
 편집기 안의 두 번째 정당한 호출 지점과, 무관한 기능이 두 번째 렌더러 그래프를 통째로 끌어오는 경우가
 숫자로는 똑같이 보인다. 그래서 규칙을 **도달 가능성**으로 바꿨다: 승인된 부모에서 한 홉으로 닿아야

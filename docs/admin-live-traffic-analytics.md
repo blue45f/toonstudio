@@ -106,15 +106,16 @@
 
 ## 저장 구조
 
-별도 DDL 없이 기존 `app_setting`의 JSONB 키 네임스페이스를 사용한다.
+저장소는 `TRAFFIC_ANALYTICS_STORE`로 고른다. 값이 없으면 `postgres`이고 `d1`도 고를 수 있으며, 그 밖의 값이면 시작할 때 오류가 난다(`traffic-analytics-repository.provider.ts`).
 
-- 페이지뷰: `traffic:pv:<UTC sortable timestamp>:<uuid>`
-- 세션: `traffic:ss:<HMAC session id>`
-- 보존 정리 lease: `traffic:maintenance:retention`
+- `postgres`(기본): 전용 테이블에 저장한다. 페이지뷰는 `public.traffic_page_view`, 세션 누적은 `public.traffic_session`, 공유 이벤트는 `public.traffic_share_event`이며 마이그레이션은 `0036_traffic_analytics_relations.sql`, `0066_share_analytics_events.sql`이다. `app_setting`의 JSONB 키 네임스페이스는 쓰지 않는다(2026-10-08 코드 대조. `traffic-analytics-store.test.ts`가 저장 코드에 `app_setting`이 없음을 단언한다).
+- `d1`: Cloudflare D1을 HTTP RPC로 호출하는 별도 구현(`traffic-analytics-d1.*`)이며 `TRAFFIC_ANALYTICS_D1_RPC_URL`·`TRAFFIC_ANALYTICS_D1_RPC_TOKEN`이 필요하다. 운영 전환 상태는 `docs/operations/federated-free-database-data-plane.md`를 따른다.
 
-페이지뷰 저장과 세션 누적은 하나의 PostgreSQL 문장으로 원자적으로 처리한다. 페이지뷰 키는 시간순으로 정렬되므로 기본 키 B-tree 범위 조회가 가능하다.
+Postgres 경로의 페이지뷰 저장은 트랜잭션 하나(`BEGIN`, 실패하면 `ROLLBACK`) 안의 두 명령이다. 먼저 세션을 upsert하고, 같은 방문자·세션이 확인될 때만 페이지뷰를 `ON CONFLICT (id) DO NOTHING`으로 넣으며, 새로 들어간 경우에만 세션의 `page_views`를 1 올린다. 같은 페이지뷰 ID를 다시 보내도 중복 집계되지 않는다. 한 명령의 CTE에서 같은 행을 두 번 수정할 수 없어 명령을 나눴다(코드 주석).
 
-보존 정리는 기본 90일이며 여러 서버리스 인스턴스가 동시에 전체 삭제를 실행하지 않도록 DB의 lease 키를 경쟁적으로 갱신한 인스턴스 하나만 정리한다.
+조회용 인덱스는 `occurred_at` 내림차순과 `(session_hash, occurred_at)`, `(visitor_hash, occurred_at)`, `(path, occurred_at)` 기준이다(마이그레이션 0036).
+
+보존 정리는 기본 90일(`TRAFFIC_DEFAULT_RETENTION_DAYS`)이다. 페이지뷰·공유 이벤트는 `occurred_at`, 세션은 `last_seen_at`이 보존 기한보다 오래되면 지운다. 여러 서버리스 인스턴스가 동시에 지우지 않도록 `postgres`는 트랜잭션 수준 advisory lock(`pg_try_advisory_xact_lock`)을 얻은 인스턴스 하나만 지우고, `d1`은 `traffic_analytics_maintenance` 행의 lease 토큰을 얻은 인스턴스 하나만 지운다(6시간 간격, 보존일은 7~365일만 허용).
 
 ## 환경 변수
 

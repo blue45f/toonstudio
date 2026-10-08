@@ -7,6 +7,8 @@ Focus, three-window arc and wall layouts; overlapping long-page reading windows;
 
 XR is progressively enhanced. The Three.js runtime loads only when the browser exposes secure WebXR. Mode requests occur in the explicit click turn through the existing Studio session authority. AR hit testing is optional and falls back to view-relative positioning. World-space controls remain usable without DOM overlays; transient-pointer select events use their own source, not a fixed input-array index. Head-direction dwell is opt-in, not eye tracking. There is no forced camera travel or automatic reading motion.
 
+범위 메모 (2026-10-08 코드 대조): 이 문서가 설명하는 리더는 `apps/web/src/domains/creator/spatial/`(`SpatialWebtoonReader` — 게시 작품 리더와 공간 스토리보드 패널에서 열림)이며, 위의 "기존 Studio 세션 권위를 통해 클릭 턴에서 모드를 요청한다"는 서술은 이 리더에만 해당한다(`createStudioWebXrSessionController`). 코드에는 공간 리더가 두 개 더 있고 서술이 다르다. `/read/spatial`(`StudioSpatialReaderPage`, `domains/creator/spatial-reader/`)은 별도 구현으로 `navigator.xr.requestSession`을 클릭 처리 안에서 직접 호출하고(VR은 `local-floor` 필수, `hit-test`·`hand-tracking`·`dom-overlay`는 선택), `toonstudio-spatial-book` v1 형식에 컷당 앞 레이어 최대 3개를 쓴다. 휴대용 독립 리더(`apps/web/public/spatial-reader/`)는 `docs/creator-runtime/README.md`가 다룬다.
+
 ## Benchmarks and primary references
 - ShapesXR frames: manual storyboard/frame navigation and controller-driven step-through. https://learn.shapesxr.com/basics/scenes
 - ShapesXR presentation: desktop and immersive paths rather than headset-only access. https://www.shapesxr.com/product/present

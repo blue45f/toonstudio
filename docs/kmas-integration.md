@@ -49,7 +49,7 @@ KMAS 승인 계정의 실응답 item → `Title`(packages/core/src/types.ts):
 | `title` | `prdctNm`, 폴백 `title` | |
 | `author` / `artist` | `sntncWritrNm`·`writrNm`·`storyWritrNm` / `pictrWritrNm` | |
 | `synopsis` | `outline` | **공식 시놉시스 → 크롤 원문 대체**(COMPLIANCE §2 갭 해소) |
-| `coverImage` | `imageDownloadUrl` | 기존 크롤 썸네일 URL과 같은 메타데이터로 저장. 이미지 바이너리 저장·서버 프록시 중계 금지 |
+| `coverImage` | `imageDownloadUrl` | 기존 크롤 썸네일 URL과 같은 메타데이터로 저장. 이미지 바이너리 저장 금지. 표시할 때는 표지 프록시(`/api/cover`)가 중계한다(§6 ⚠️) |
 | `genres` | `mainGenreCdNm` | 기존 taxonomy로 매핑 |
 | `type` | `listSeCd`·`listSeCdNm` | webtoon/webnovel |
 | `availability` | (KMAS는 유통 아님) | 기존 크롤 availability 유지, KMAS는 미설정 |
@@ -86,6 +86,13 @@ GitHub Actions나 주기 작업은 두지 않는다. `/api/kmas/references` 런�
 ## 6. 컴플라이언스 효과
 
 - KMAS 소스 작품은 **시놉시스가 공식 API 응답** → 크롤 시놉시스의 저작권 리스크 완화.
-- `imageDownloadUrl`은 URL 문자열만 `coverImage` 메타데이터로 저장하고, 이미지 바이너리는 저장하지 않으며 서버 프록시로도 중계하지 않는다.
+- `imageDownloadUrl`은 URL 문자열만 `coverImage` 메타데이터로 저장하고, 이미지 바이너리는 저장하지 않는다.
+- ⚠️ **서버 프록시 중계(2026-10-08 코드 확인):** 이 문서의 이전 판은 "서버 프록시로도 중계하지 않는다"고 적었으나, 2026-10-07 커밋
+  (c4e69dd9·48dd2cf5)부터 표지 프록시 허용 목록(`apps/api/src/modules/catalog/catalog-url-policy.ts`의 `COVER_ORIGINS`)에
+  `https://www.kmas.or.kr`가 있고 웹 클라이언트(`apps/web/src/shared/lib/cover-proxy.ts`)도 KMAS 표지를 `/api/cover?u=…`로 바꿔
+  받는다. 이유는 코드 주석대로 방문자 브라우저가 KMAS를 직접 호출하면 IP·리퍼러가 노출되기 때문이다. 프록시는 Referer를 만들지 않고
+  (핫링크 보호를 우회하지 않음) 응답을 10MiB까지만 중계하며 브라우저 1시간·엣지 1일 캐시를 허용한다. 이 중계가 KMAS 승인 범위와
+  맞는지는 저장소로 확인할 수 없으므로 유지·제외는 운영자가 결정한다(COMPLIANCE §2). 이 문서는 정책 결정이 날 때까지 코드의 현재
+  동작만 기록한다.
 - 데이터 출처가 정당(공식 오픈API) → DB제작자권리·성과도용 리스크의 근본 완화(COMPLIANCE §2 ③).
 - 커버리지: KMAS로 채운 작품은 공식, 미커버 작품은 기존 크롤(점진 대체). 출처 표기 유지.

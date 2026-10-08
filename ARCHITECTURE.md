@@ -259,20 +259,20 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 
 ## 9. 현재 마이그레이션 부채
 
-수치는 2026-09-27의 ratchet 기준이며 설정 파일이 최종 권위다. 미스테이징 이동과 신규 소스도 현재 작업트리에서 검사한다.
+수치는 2026-10-08에 `config/architecture-source-ratchet.json`·`config/architecture-boundary-ratchet.json`의 상한을 읽고 `node scripts/validate-source-layout.mjs`·`node scripts/validate-app-boundaries.mjs`로 다시 확인한 값이며 설정 파일이 최종 권위다. 미스테이징 이동과 신규 소스도 현재 작업트리에서 검사한다.
 
 | 항목 | 현재 상한 |
 | --- | ---: |
 | API -> Web 직접 소스 참조 | 0 |
 | Web `shared -> domains` | 25 |
-| Web cross-domain deep import | 53 |
-| Creator domain 최상위 직접 파일 | 3,436 |
-| Web에 남은 Admin 파일 | 69 |
-| API `server` 파일 | 65 |
+| Web cross-domain deep import | 58 (실측 48) |
+| Creator domain 최상위 직접 파일 | 3,484 |
+| Web에 남은 Admin 파일 | 74 |
+| API `server` 파일 | 67 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 139 |
-| `packages/core` 파일 | 124 |
+| API `platform/database` 파일 | 150 |
+| `packages/core` 파일 | 131 |
 
 다음 항목은 0으로 고정한다.
 
