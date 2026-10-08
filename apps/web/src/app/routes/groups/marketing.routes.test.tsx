@@ -56,4 +56,12 @@ describe("marketing film routes", () => {
     expect(isPublicCreativeRoute("/pricing")).toBe(true);
     expect(isPublicCreativeRoute("/pricing/")).toBe(true);
   });
+
+  it("keeps the three workspace surfaces as separate destinations (O-01)", () => {
+    // 세 주소는 같은 셸을 쓰지만 surface 본문이 달라 별도 목적지로 남는다.
+    // 하나로 합치는 변경은 marketing.routes.tsx의 O-01 명문화 근거를 먼저 뒤집어야 한다.
+    expect(marketingRoutes).toContainEqual(expect.objectContaining({ id: "workspace-home", path: "/home" }));
+    expect(marketingRoutes).toContainEqual(expect.objectContaining({ id: "workspace-team", path: "/team" }));
+    expect(marketingRoutes).toContainEqual(expect.objectContaining({ id: "workspace-hub", path: "/hub" }));
+  });
 });
