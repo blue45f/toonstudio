@@ -78,7 +78,6 @@ export function StudioAiToolPopoverBody({
   const {
     activePage,
     activeServerAiProviderLabel,
-    addRenderedImage,
     aiAssistTool,
     aiBgBusy,
     aiBgError,
@@ -123,8 +122,11 @@ export function StudioAiToolPopoverBody({
     textAiConfigured,
     textAiTransport,
   } = toolBelt;
+  // 캔버스 삽입 같은 호스트 동작은 렌더마다 새로 만들어지므로 props가 아니라 안정 핸들러
+  // 묶음으로만 전달된다(@ts-nocheck 호출 지점은 props 누락을 타입으로 잡지 못한다).
   const {
     addDialogueSuggestionToScript,
+    addRenderedImage,
     announceDrawingShortcut,
     applyAiAssistPresetPrompt,
     beginTrackedStudioAiOperation,
