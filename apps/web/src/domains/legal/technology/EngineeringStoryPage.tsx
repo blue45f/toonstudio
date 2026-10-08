@@ -207,7 +207,7 @@ function StoryChapter({
                     </span>
                     <span className="min-w-0">
                       <span className="block text-xs font-bold text-fg">{bi(item.label.ko, item.label.en)}</span>
-                      <code className="eng-code mt-1.5 block overflow-x-auto whitespace-nowrap rounded-lg px-2 py-1 font-mono text-[0.68rem]">{item.path}</code>
+                      <code className="eng-code mt-1.5 block max-w-full break-all rounded-lg px-2 py-1 font-mono text-[0.68rem]">{item.path}</code>
                     </span>
                   </li>
                 );

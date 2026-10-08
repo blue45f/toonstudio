@@ -272,7 +272,7 @@ export class PeerTimeline {
     category: "virtual-space",
     name: "Proximity hysteresis",
     title: t("들어올 때와 나갈 때 기준을 다르게 둔 근접 규칙", "A proximity rule with different thresholds for entering and leaving"),
-    status: "documented",
+    status: "experimental",
     tagline: t(
       "인사 160px·작별 220px 규칙은 코드와 테스트가 있지만 화면에는 연결되지 않았습니다.",
       "The 160 px greeting and 220 px farewell rule has code and tests but is not wired to the screen.",
@@ -291,8 +291,8 @@ export class PeerTimeline {
         "However, no product code uses the values of this module (studio-virtual-space-proximity.ts); only three imports take a type (StudioBilingualCopy). The sibling modules proximity-circles (a 170 px circle and distance-based volume curve) and proximity-triggers (enter, stay and exit events) are also used only by tests. So 'greeting 160/220 px' is a design constant, not a description of what happens on screen.",
       ),
       t(
-        "화면에 연결된 근접 값은 따로 있습니다. 근접 영상 168/216px(옵트인)와 근처 대화 120/156px(+300/800ms)는 같은 히스테리시스 발상이고, 채팅 200px · NPC 인사 130px · 가까운 동료 알림 150px 는 단일 반경에 쿨다운을 두는 방식입니다. 발표에서는 연결된 값을 쓰거나, 160/220 을 '설계 기준'이라고 밝히세요.",
-        "The proximity values that are wired are different ones. Proximity video at 168/216 px (opt-in) and nearby conversation at 120/156 px (+300/800 ms) use the same hysteresis idea, while chat at 200 px, NPC greeting at 130 px and the nearby-teammate notice at 150 px use a single radius with a cooldown. In a talk, use the wired values or call 160/220 a 'design baseline'.",
+        "화면에 연결된 근접 값은 따로 있습니다. 근접 영상 168/216px(기본 범위 모드, 옵트인)와 근처 대화 120/156px(+300/800ms)는 같은 히스테리시스 발상이고, NPC 인사 130px(90초 쿨다운)와 가까운 동료 알림 150px(120초 쿨다운)는 단일 반경에 쿨다운을 두는 방식이며, 근처 채팅 200px는 쿨다운 없이 받는 쪽이 거리로 거르는 수신 범위입니다. 발표에서는 연결된 값을 쓰거나, 160/220 을 '설계 기준'이라고 밝히세요.",
+        "The proximity values that are wired are different ones. Proximity video at 168/216 px (default range mode, opt-in) and nearby conversation at 120/156 px (+300/800 ms) use the same hysteresis idea, NPC greeting at 130 px (90 s cooldown) and the nearby-teammate notice at 150 px (120 s cooldown) use a single radius with a cooldown, and nearby chat at 200 px is a reception range that the receiver filters by distance, with no cooldown. In a talk, use the wired values or call 160/220 a 'design baseline'.",
       ),
     ],
     keyPoints: [
@@ -483,8 +483,8 @@ export class StableProximity {
         },
       ],
       pitfall: t(
-        "기존 발표 덱 슬라이드('160 / 220px 인사 진입/이탈 반경', '200px 대화 힌트')와 세미나 테스트는 코드 상수 값만 대조하고 화면 연결은 확인하지 않습니다. 이 수치를 '현재 동작'으로 말하지 마세요.",
-        "The existing deck slide ('160 / 220 px greeting enter/leave radius', '200 px chat hint') and the seminar test only compare constant values and do not check screen wiring. Do not present these figures as current behavior.",
+        "160/220px 와 200px 대화 힌트를 '현재 동작'으로 말하지 마세요. 발표 덱과 세미나는 이 규칙을 '화면에는 아직 연결 전인 설계 기준'으로 적고, 테스트가 제품 코드의 호출부가 없음을 확인합니다. 연결되면 이 카드와 슬라이드 문구를 함께 고쳐야 합니다.",
+        "Do not present the 160/220 px rule and the 200 px chat hint as current behavior. The deck and seminar describe this rule as a design baseline not yet wired to the screen, and tests confirm that no product code calls it. Once it is wired, this card and the slide wording must be fixed together.",
       ),
     },
     technologies: ["Hysteresis", "TypeScript"],
@@ -503,21 +503,21 @@ export class StableProximity {
     title: t("가까이 가면 영상이 붙는 구조와 정원의 사다리", "Video that attaches when you walk close, and the capacity ladder"),
     status: "configured",
     tagline: t(
-      "동의한 사람끼리 168px 안에서 영상이 붙고, 정원은 24 → 8 → 3 사다리로 줄어듭니다.",
-      "Consenting people get video within 168 px, and capacity narrows down a 24 → 8 → 3 ladder.",
+      "동의한 사람끼리 기본 168px 안에서 영상이 붙고, 정원은 나 포함 24 → 9 → 4명 사다리입니다.",
+      "Consenting people get video within the default 168 px, and capacity narrows down a ladder of 24 → 9 → 4 people including you.",
     ),
     background: [
       t(
-        "가까이 다가가면 그 사람과 화면이 연결되는 기능입니다. 단, 켜는 것은 사용자의 선택입니다. 동의 버튼을 누를 때에만 카메라와 마이크 권한을 요청하고, 켜 두면 가까운 팀원과 자동으로 연결되고 멀어지면 자동으로 끊깁니다. 연결할 때는 168px, 끊을 때는 216px 로 기준을 달리해 경계에서 깜빡이지 않게 합니다.",
-        "This feature connects your screen with someone as you walk up to them, but turning it on is the user's choice. Camera and microphone permission is requested only when the consent button is pressed; once on, you connect automatically to nearby teammates and disconnect as you move away. It connects at 168 px and releases at 216 px so the boundary does not flicker.",
+        "가까이 다가가면 그 사람과 화면이 연결되는 기능입니다. 단, 켜는 것은 사용자의 선택입니다. 동의 버튼을 누를 때에만 카메라와 마이크 권한을 요청하고, 켜 두면 가까운 팀원과 자동으로 연결되고 멀어지면 자동으로 끊깁니다. 기본 범위 모드에서는 연결할 때 168px, 끊을 때 216px 로 기준을 달리해 경계에서 깜빡이지 않게 합니다(조용히 모드는 80/112px, 끔은 근접 연결 없음).",
+        "This feature connects your screen with someone as you walk up to them, but turning it on is the user's choice. Camera and microphone permission is requested only when the consent button is pressed; once on, you connect automatically to nearby teammates and disconnect as you move away. In the default range mode it connects at 168 px and releases at 216 px so the boundary does not flicker (quiet mode uses 80/112 px, and off never connects).",
       ),
       t(
         "거리 규칙(순수 함수)이 '지금 연결할 사람'을 고릅니다. 나와 같은 비공개 구역끼리만, 자리 비움이거나 내가 차단한 사람은 빼고, 내가 집중·자리 비움이면 아무도 연결하지 않으며, 가까운 순 최대 3명입니다. 목록이 바뀔 때만 기존 허들(P2P 영상통화) 컨트롤러에 '미디어 상대 범위'로 넘깁니다. 같은 직접 연결 포트를 쓰는 다른 기능과 섞이지 않도록 메시지를 space-proximity-media-v1 채널 봉투로 감쌉니다.",
         "A distance rule (a pure function) picks whom to connect right now: only people in the same private zone as me, excluding those away or blocked, nobody at all when I am focused or away, and at most three people nearest first. Only when the list changes is it passed to the existing huddle (P2P video call) controller as the media peer scope. Messages are wrapped in a space-proximity-media-v1 channel envelope so they do not mix with other features on the same direct port.",
       ),
       t(
-        "'몇 명까지?'의 답은 하나가 아닙니다. 공간 코드의 상수는 24명이지만, 직접 연결 메시는 8명에서 막히고(코드 주석: 이보다 큰 전원 메시는 서버 한 곳이 나눠 보내는 것보다 비싸다), 허들 영상은 원격 3명(나 포함 4명)까지입니다. 가장 작은 수가 실제 영상 정원이며, 24는 검증된 수용량이 아닙니다.",
-        "'How many people?' has more than one answer. The space code constant says 24, but the direct mesh stops at 8 (a code comment says a full mesh larger than that costs more than one server fanning out), and huddle video allows 3 remote peers (4 with you). The smallest number is the real video capacity, and 24 is not a verified capacity.",
+        "'몇 명까지?'의 답은 하나가 아닙니다. 나를 포함해 세면 공간 코드의 상수는 24명이지만, 직접 연결 메시는 원격 8명(나 포함 9명)에서 막히고(코드 주석: 이보다 큰 전원 메시는 서버 한 곳이 나눠 보내는 것보다 비싸다), 허들 영상은 원격 3명(나 포함 4명)까지입니다. 세는 단위를 나 포함으로 맞추면 24 → 9 → 4명이고, 가장 작은 수가 실제 영상 정원이며, 24는 검증된 수용량이 아닙니다.",
+        "'How many people?' has more than one answer. Counting yourself, the space code constant says 24, but the direct mesh stops at 8 remote peers (9 with you; a code comment says a full mesh larger than that costs more than one server fanning out), and huddle video allows 3 remote peers (4 with you). Counted the same way, including you, the ladder is 24 → 9 → 4; the smallest number is the real video capacity, and 24 is not a verified capacity.",
       ),
       t(
         "대안인 SFU(중간 서버가 영상을 나눠 주는 방식)는 큰 방에 맞지만 서버 비용과 운영이 필요합니다. 이 기능은 기존 허들의 P2P 를 재사용하므로 소규모에 맞습니다. 허들·메시 정원 자체는 WebRTC 카테고리 카드가 다룹니다. 실제 네트워크(NAT) 환경별 연결 성공률과 영상 품질은 이 카드에서 확인하지 못했습니다.",
@@ -526,8 +526,8 @@ export class StableProximity {
     ],
     keyPoints: [
       t("동의 버튼을 눌러야 켜지고 그때 카메라를 요청합니다", "It starts only after consent, when the camera is requested"),
-      t("168px 안에서 연결, 216px 밖에서 해제", "Connect within 168 px, release beyond 216 px"),
-      t("정원은 24가 아니라 가장 작은 3입니다", "Capacity is the smallest rung, 3, not 24"),
+      t("기본 범위 모드: 168px 안에서 연결, 216px 밖에서 해제", "Default range mode: connect within 168 px, release beyond 216 px"),
+      t("정원은 24가 아니라 가장 작은 원격 3명(나 포함 4명)입니다", "Capacity is the smallest rung, 3 remote peers (4 with you), not 24"),
     ],
     diagram: {
       id: "proximity-video-capacity-chain-diagram",
@@ -538,14 +538,14 @@ export class StableProximity {
         "Numbers shrink from top to bottom, and the smallest one is the real video capacity.",
       ),
       alt: t(
-        "정원 사다리는 공간 상수 24명, 직접 메시 8명, 허들 영상 원격 3명 순으로 줄어듭니다. 그 아래에 연결 조건이 두 겹 있습니다. 거리 규칙은 168px 안에서 연결하고 216px 밖에서 해제하며, 사용자 동의는 버튼을 누를 때만 카메라와 마이크를 요청합니다.",
-        "The capacity ladder narrows from the space constant of 24, to a direct mesh of 8, to huddle video with 3 remote peers. Below it are two layers of connection conditions: the distance rule connects within 168 px and releases beyond 216 px, and user consent requests camera and microphone only on a button press.",
+        "정원 사다리는 나를 포함해 공간 상수 24명, 직접 메시 9명(원격 8), 허들 영상 4명(원격 3) 순으로 줄어듭니다. 그 아래에 연결 조건이 두 겹 있습니다. 거리 규칙은 기본 범위 모드에서 168px 안에서 연결하고 216px 밖에서 해제하며(조용히 모드는 80/112px), 사용자 동의는 버튼을 누를 때만 카메라와 마이크를 요청합니다.",
+        "Counting you, the capacity ladder narrows from the space constant of 24, to a direct mesh of 9 (8 remote), to huddle video with 4 (3 remote). Below it are two layers of connection conditions: in the default range mode the distance rule connects within 168 px and releases beyond 216 px (quiet mode uses 80/112 px), and user consent requests camera and microphone only on a button press.",
       ),
       layers: [
-        { id: "space", label: t("공간 상수 24명", "Space constant: 24"), sub: t("프레즌스가 다루는 최대 참가자 · 검증된 수용량 아님", "Max participants presence handles · not a verified capacity"), tone: "neutral" },
-        { id: "mesh", label: t("직접 메시 8명", "Direct mesh: 8"), sub: t("전원 연결(메시)은 8명까지", "A full mesh stops at 8 peers"), tone: "edge", chips: ["RTCDataChannel"] },
-        { id: "huddle", label: t("허들 영상 원격 3명", "Huddle video: 3 remote"), sub: t("나 포함 4명 · 실제 영상 정원", "4 with you · the real video capacity"), tone: "good", chips: ["WebRTC"] },
-        { id: "distance", label: t("거리 규칙", "Distance rule"), sub: t("168px 안에서 연결 · 216px 밖에서 해제", "Connect within 168 px · release beyond 216 px"), tone: "local" },
+        { id: "space", label: t("공간 상수 24명 (나 포함)", "Space constant: 24 with you"), sub: t("프레즌스가 다루는 최대 참가자 · 검증된 수용량 아님", "Max participants presence handles · not a verified capacity"), tone: "neutral" },
+        { id: "mesh", label: t("직접 메시 9명 (원격 8)", "Direct mesh: 9 (8 remote)"), sub: t("전원 연결(메시)은 원격 8명까지", "A full mesh stops at 8 remote peers"), tone: "edge", chips: ["RTCDataChannel"] },
+        { id: "huddle", label: t("허들 영상 4명 (원격 3)", "Huddle video: 4 (3 remote)"), sub: t("나 포함 4명 · 실제 영상 정원", "4 with you · the real video capacity"), tone: "good", chips: ["WebRTC"] },
+        { id: "distance", label: t("거리 규칙", "Distance rule"), sub: t("기본 범위 모드 168px 안에서 연결 · 216px 밖에서 해제", "Default range mode: connect within 168 px · release beyond 216 px"), tone: "local", chips: ["standard 168/216px", "quiet 80/112px"] },
         { id: "consent", label: t("사용자 동의", "User consent"), sub: t("버튼을 누를 때만 카메라·마이크 요청", "Camera and mic asked only on a button press"), tone: "warn" },
       ],
       brackets: [
@@ -581,8 +581,8 @@ export class StableProximity {
       {
         feature: t("직접 메시 전송", "Direct mesh transport"),
         role: t(
-          "프레즌스·채팅 패킷이 오가는 직접 연결 메시의 기본 상한은 8명입니다.",
-          "The default cap of the direct mesh that carries presence and chat packets is 8 peers.",
+          "프레즌스·채팅 패킷이 오가는 직접 연결 메시의 기본 상한은 원격 8명(나 포함 9명)입니다.",
+          "The default cap of the direct mesh that carries presence and chat packets is 8 remote peers (9 with you).",
         ),
         paths: [`${L}/studio-live-p2p-overlay-transport.ts`, `${V}/studio-virtual-space-model.ts`],
       },
@@ -592,7 +592,7 @@ export class StableProximity {
         kind: "simplified",
         title: t("들어올 때 168px, 유지할 때 216px로 고르기", "Picking peers at 168 px to join and 216 px to keep"),
         language: "ts",
-        code: `// 들어올 때(168px)와 유지할 때(216px)의 기준을 달리해, 가까운 순 최대 3명을 고른다(space-proximity-media 의 단순화).
+        code: `// 기본 범위 모드에서 들어올 때(168px)와 유지할 때(216px)의 기준을 달리해, 가까운 순 최대 3명을 고른다(space-proximity-media 의 단순화).
 const ENTER = 168;
 const LEAVE = 216;
 const LIMIT = 3;
@@ -607,7 +607,7 @@ export function connectedPeers(peers: readonly Peer[], previous: ReadonlySet<str
     .slice(0, LIMIT) // 원격 최대 3명(나 포함 4명)
     .map((p) => p.id);
 }`,
-        codeEn: `// Use different thresholds to join (168 px) and to stay (216 px), picking up to 3 nearest peers (simplified from space-proximity-media).
+        codeEn: `// In the default range mode, use different thresholds to join (168 px) and to stay (216 px), picking up to 3 nearest peers (simplified from space-proximity-media).
 const ENTER = 168;
 const LEAVE = 216;
 const LIMIT = 3;
@@ -684,8 +684,8 @@ export function withChannel(port: Port, channel: string): Port {
     chapterIds: ["webrtc-media-authority", "virtual-studio-world-authority"],
     talk: {
       pitch: t(
-        "가까이 가면 화면이 붙는 기능은 사용자가 동의 버튼을 눌러야 켜집니다. 168px 안에 들어온 팀원과 연결하고 216px 밖으로 나가면 끊으며, 가까운 순으로 원격 최대 3명입니다. 정원은 숫자 하나가 아니라 사다리입니다. 공간 상수 24, 직접 메시 8, 영상 3 중 가장 작은 수가 실제 영상 정원입니다.",
-        "The feature that attaches video as you get close starts only after the user presses a consent button. It connects teammates within 168 px, disconnects beyond 216 px, and handles at most 3 remote peers, nearest first. Capacity is a ladder, not one number: of 24 for the space constant, 8 for the direct mesh and 3 for video, the smallest is the real video capacity.",
+        "가까이 가면 화면이 붙는 기능은 사용자가 동의 버튼을 눌러야 켜집니다. 기본 범위 모드에서 168px 안에 들어온 팀원과 연결하고 216px 밖으로 나가면 끊으며, 가까운 순으로 원격 최대 3명입니다. 정원은 숫자 하나가 아니라 사다리입니다. 나를 포함해 공간 상수 24명, 직접 메시 9명, 영상 4명 중 가장 작은 수가 실제 영상 정원입니다.",
+        "The feature that attaches video as you get close starts only after the user presses a consent button. In the default range mode it connects teammates within 168 px, disconnects beyond 216 px, and handles at most 3 remote peers, nearest first. Capacity is a ladder, not one number: counting you, of 24 for the space constant, 9 for the direct mesh and 4 for video, the smallest is the real video capacity.",
       ),
       analogy: t(
         "회식 자리에서 옆자리 사람들과만 이야기하는 것과 비슷합니다. 자리를 옮기면 대화 상대가 자연스럽게 바뀌지만, 한 테이블에 앉을 수 있는 인원은 정해져 있습니다.",
@@ -695,8 +695,8 @@ export function withChannel(port: Port, channel: string): Port {
         {
           question: t("최대 몇 명까지 가능한가요?", "What is the maximum number of people?"),
           answer: t(
-            "영상은 원격 3명(나 포함 4명)입니다. 24는 코드 상수일 뿐 검증된 수용량이 아니고, 직접 메시는 8명에서 막힙니다.",
-            "Video allows 3 remote peers (4 with you). 24 is only a code constant, not a verified capacity, and the direct mesh stops at 8.",
+            "영상은 원격 3명(나 포함 4명)입니다. 24는 코드 상수일 뿐 검증된 수용량이 아니고, 직접 메시는 원격 8명(나 포함 9명)에서 막힙니다.",
+            "Video allows 3 remote peers (4 with you). 24 is only a code constant, not a verified capacity, and the direct mesh stops at 8 remote peers (9 with you).",
           ),
         },
         {
@@ -715,16 +715,16 @@ export function withChannel(port: Port, channel: string): Port {
         },
       ],
       pitfall: t(
-        "'24명 지원'이라고 말하지 마세요. 정원 사다리의 가장 작은 값(3)이 영상 한도입니다. 이 기능은 사용자 동의가 필요한 옵트인이며, 모든 수치는 설계값이고 네트워크 환경별 연결 성공률은 확인하지 못했습니다.",
-        "Do not say '24 people supported'. The smallest rung of the ladder (3) is the video limit. This is an opt-in feature needing user consent, every figure is a design value, and connection success rates across network conditions were not verified.",
+        "'24명 지원'이라고 말하지 마세요. 정원 사다리의 가장 작은 값(원격 3명, 나 포함 4명)이 영상 한도입니다. 이 기능은 사용자 동의가 필요한 옵트인이며, 모든 수치는 설계값이고 네트워크 환경별 연결 성공률은 확인하지 못했습니다. 168/216px 는 기본 범위 모드 값이고 조용히 모드는 80/112px 입니다.",
+        "Do not say '24 people supported'. The smallest rung of the ladder (3 remote peers, 4 with you) is the video limit. This is an opt-in feature needing user consent, every figure is a design value, and connection success rates across network conditions were not verified. 168/216 px are the default range mode values; quiet mode uses 80/112 px.",
       ),
     },
     technologies: ["WebRTC", "RTCDataChannel"],
     facts: [
-      { value: "168 / 216px", label: t("근접 영상 연결 / 해제 반경(설계값)", "Proximity video connect / release radius (design value)"), source: `${V}/hud/space-proximity-media.ts` },
+      { value: "168 / 216px", label: t("근접 영상 연결 / 해제 반경(기본 범위 모드, 설계값)", "Proximity video connect / release radius (default range mode, design value)"), source: `${V}/hud/space-proximity-media.ts` },
       { value: "3명", label: t("허들 영상 원격 참가자 상한(나 포함 4명)", "Huddle video remote-peer cap (4 including you)"), source: `${L}/huddle/studio-p2p-huddle-protocol.ts` },
-      { value: "8명", label: t("직접 메시 기본 상한(설계값)", "Default direct-mesh cap (design value)"), source: `${L}/studio-live-p2p-overlay-transport.ts` },
-      { value: "24명", label: t("공간 상수(검증된 수용량 아님)", "Space constant (not a verified capacity)"), source: `${V}/studio-virtual-space-model.ts` },
+      { value: "8명", label: t("직접 메시 원격 기본 상한(나 포함 9명, 설계값)", "Default direct-mesh remote cap (9 including you, design value)"), source: `${L}/studio-live-p2p-overlay-transport.ts` },
+      { value: "24명", label: t("공간 상수(나 포함, 검증된 수용량 아님)", "Space constant (including you, not a verified capacity)"), source: `${V}/studio-virtual-space-model.ts` },
     ],
     reviewedAt: VIRTUAL_SPACE_REVIEWED_AT,
   },
@@ -748,8 +748,8 @@ export function withChannel(port: Port, channel: string): Port {
         "Chat sends a chat packet over the same direct port as presence. With the nearby scope, the receiver measures the distance between the sender's last position and its own and drops the packet beyond 200 px (if the position is unknown it cannot judge and drops it). Text is trimmed to 140 characters and profanity stems are masked twice, before sending and on receipt. A bubble shows for 4 seconds plus 40 ms per character, up to 10 seconds, and the typing indicator disappears by itself if not refreshed within 3.5 seconds.",
       ),
       t(
-        "리액션(이모트)은 연타를 막으려고 같은 사용자의 패킷을 250ms 에 한 번만 보내고, 받는 쪽은 이모트마다 정해진 표시 시간(1.2~4초)이 지나면 거둡니다. 벽에 비비는 충돌 반발 패킷도 250ms 쓰로틀입니다. NPC 는 130px 안에 들어오면 인사말을 띄우고 같은 NPC 는 90초 쿨다운이 있으며, 가까운 동료가 150px 안에 처음 들어오면 알림 토스트가 뜹니다(120초 쿨다운). 이 규칙은 이벤트 디렉터가 프레임마다 모읍니다.",
-        "To stop mashing, reactions (emotes) send a given user's packet at most once per 250 ms, and the receiver removes each after the emote's own display time (1.2 to 4 seconds). The wall-rubbing rebound packet is throttled to 250 ms too. An NPC shows a greeting within 130 px with a 90-second cooldown per NPC, and a teammate first coming within 150 px triggers a notice toast (120-second cooldown). An event director collects these rules every frame.",
+        "리액션(이모트)은 연타를 막으려고 같은 사용자의 패킷을 250ms 에 한 번만 보내고, 받는 쪽은 이모트마다 정해진 표시 시간(1.8~4초, 허용 범위는 1.2~4초)이 지나면 거둡니다. 벽에 비비는 충돌 반발 패킷도 250ms 쓰로틀입니다. NPC 는 130px 안에 들어오면 인사말을 띄우고 같은 NPC 는 90초 쿨다운이 있으며, 가까운 동료가 150px 안에 처음 들어오면 알림 토스트가 뜹니다(120초 쿨다운). 이 규칙은 이벤트 디렉터가 프레임마다 모읍니다.",
+        "To stop mashing, reactions (emotes) send a given user's packet at most once per 250 ms, and the receiver removes each after the emote's own display time (1.8 to 4 seconds, within an allowed range of 1.2 to 4 seconds). The wall-rubbing rebound packet is throttled to 250 ms too. An NPC shows a greeting within 130 px with a 90-second cooldown per NPC, and a teammate first coming within 150 px triggers a notice toast (120-second cooldown). An event director collects these rules every frame.",
       ),
       t(
         "입력 폭주는 보내는 쪽 쓰로틀과 받는 쪽 만료(TTL)의 이중 방어가 흔합니다. 직접 연결이라 서버가 걸러 줄 수 없어서 수신 쪽 검증이 필수입니다. 한계: 말풍선 렌더링과 채팅 UI 의 세부는 이 카드에서 모두 확인하지는 않았습니다. 욕설 마스킹은 '최소 집합'이라고 코드가 밝히고 있어 완전한 필터가 아닙니다.",
@@ -933,7 +933,7 @@ export function createThrottle(intervalMs = 250, now: () => number = () => perfo
     facts: [
       { value: "200px", label: t("'근처' 채팅 범위(설계값)", "'Nearby' chat range (design value)"), source: `${V}/studio-virtual-space-chat.ts` },
       { value: "250ms", label: t("리액션·반발 패킷 송신 간격 하한(설계값)", "Minimum send interval for reaction and rebound packets (design value)"), source: `${V}/studio-virtual-space-presence-protocol.ts` },
-      { value: "16종", label: t("이모트 종류(표시 시간 1.2~4초)", "Number of emotes (display time 1.2 to 4 s)"), source: `${V}/studio-virtual-space-emote-catalog.ts` },
+      { value: "16종", label: t("이모트 종류(표시 시간은 이모트마다 1.8~4초)", "Number of emotes (display time 1.8 to 4 s per emote)"), source: `${V}/studio-virtual-space-emote-catalog.ts` },
       { value: "130px · 90초", label: t("NPC 인사 반경 · 같은 NPC 쿨다운(설계값)", "NPC greeting radius and per-NPC cooldown (design values)"), source: `${V}/studio-virtual-space-npc.ts` },
     ],
     reviewedAt: VIRTUAL_SPACE_REVIEWED_AT,

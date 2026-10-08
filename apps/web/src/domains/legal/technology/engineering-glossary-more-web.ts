@@ -36,8 +36,8 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
       "Like one shared whiteboard instead of mailing copies back and forth. Writing at the same moment would tangle the ink, so you need a one-at-a-time rule (Atomics).",
     ),
     inToonstudio: t(
-      "격리가 켜져 공유 메모리가 있으면 조각(스컬프트) 메시 한도를 높게 쓰고, 없으면 STUDIO_SCULPT_NO_SHARED_MEMORY_MAX_VERTICES = 2,097,152 정점으로 낮춥니다(studio-capability-budgets.ts). Atomics 로 펜 입력을 주고받는 링 버퍼(studio-shared-pointer-ring-buffer.ts)는 구현·테스트가 있지만 제품 화면에서 부르는 곳은 코드에서 찾지 못했습니다.",
-      "With isolation on, shared memory lets the sculpt mesh budget rise; without it the limit drops to STUDIO_SCULPT_NO_SHARED_MEMORY_MAX_VERTICES = 2,097,152 vertices (studio-capability-budgets.ts). A ring buffer that passes pen input through Atomics (studio-shared-pointer-ring-buffer.ts) is implemented and tested, but no product call site was found in the code.",
+      "공유 메모리 유무에 따라 조각(스컬프트) 메시 상한을 달리 잡는 예산 사다리(STUDIO_SCULPT_NO_SHARED_MEMORY_MAX_VERTICES = 2,097,152 정점, studio-capability-budgets.ts)를 구현·시험해 두었지만 제품 화면에는 아직 연결되지 않았습니다. Atomics 로 펜 입력을 주고받는 링 버퍼(studio-shared-pointer-ring-buffer.ts)도 구현·테스트만 있고 제품 화면에서 부르는 곳은 코드에서 찾지 못했습니다.",
+      "A budget ladder that sets the sculpt mesh ceiling according to whether shared memory exists (STUDIO_SCULPT_NO_SHARED_MEMORY_MAX_VERTICES = 2,097,152 vertices, studio-capability-budgets.ts) is implemented and tested, but it is not yet wired into a product screen. A ring buffer that passes pen input through Atomics (studio-shared-pointer-ring-buffer.ts) is also implemented and tested only, and no product call site was found in the code.",
     ),
     chapters: ["worker-architecture", "wasm-fixed-simd"],
     atlasIds: ["cross-origin-isolation-studio-gate", "implemented-not-wired-modules"],
@@ -66,8 +66,8 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
     category: "web",
     term: t("BroadcastChannel", "BroadcastChannel"),
     definition: t(
-      "같은 사이트의 탭·창·Worker 끼리 서버 없이 메시지를 주고받는 방송 채널입니다.",
-      "A broadcast channel through which tabs, windows and Workers of one site exchange messages without any server.",
+      "같은 출처(origin)의 탭·창·Worker 끼리 서버 없이 메시지를 주고받는 방송 채널입니다.",
+      "A broadcast channel through which tabs, windows and Workers of the same origin exchange messages without any server.",
     ),
     analogy: t(
       "한 건물 안의 안내방송과 같습니다. 채널 이름(방송실)을 아는 모든 층이 듣지만 건물 밖으로는 새지 않습니다.",
@@ -131,8 +131,8 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
       "Like a supermarket that opens four checkout lanes at once: when many customers (numbers) need the same service, the queue shrinks fast.",
     ),
     inToonstudio: t(
-      "저장소에 커밋된 자체 .wasm 8개 중 6개 레인(Vello 2·Hokusai·먹물 커널은 +simd128, ink-mesh·ink-modeler 는 -msimd128)을 SIMD128 로 빌드합니다. 고정 SIMD128 은 널리 지원돼 ‘되는 브라우저/안 되는 브라우저’용 이중 빌드 없이 바이너리 하나로 배포하고, 산출물은 레인별 INTEGRITY.sha256 으로 고정합니다.",
-      "Six of the eight own .wasm files committed to the repository are built with SIMD128 (Vello's two lanes, Hokusai and the sumi kernel with +simd128; ink-mesh and ink-modeler with -msimd128). Fixed SIMD128 is widely supported, so one binary ships without a dual build, and each artifact is pinned by its lane's INTEGRITY.sha256.",
+      "저장소에 커밋된 .wasm 8개 중 직접 빌드한 7개(ThorVG 1개는 복사 후 해시 고정)에서 6개 레인(Vello 2·Hokusai·먹물 커널은 +simd128, ink-mesh·ink-modeler 는 -msimd128)을 SIMD128 로 빌드합니다. 고정 SIMD128 은 널리 지원돼 ‘되는 브라우저/안 되는 브라우저’용 이중 빌드 없이 바이너리 하나로 배포하고, 산출물은 레인별 INTEGRITY.sha256 으로 고정합니다.",
+      "Of the eight .wasm files committed to the repository, seven are built in-house (the ThorVG one is a hash-pinned copy), and six lanes are built with SIMD128 (Vello's two lanes, Hokusai and the sumi kernel with +simd128; ink-mesh and ink-modeler with -msimd128). Fixed SIMD128 is widely supported, so one binary ships without a dual build, and each artifact is pinned by its lane's INTEGRITY.sha256.",
     ),
     chapters: ["wasm-fixed-simd", "brush-engine"],
     atlasIds: ["wasm-self-built-fixed-simd"],
@@ -207,8 +207,8 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
       "Like a restaurant that sets water and cutlery before a regular sits down: wasted if they never come, instant if they do.",
     ),
     inToonstudio: t(
-      "shared/lib/speculation-rules.ts 가 스튜디오 진입처럼 ‘문서 이동’으로 넘어가는 목적지만 prerender(eagerness moderate, 마우스를 올린 동안)로 알립니다. 공개 페이지와 스튜디오는 COOP/COEP 경계 때문에 문서 이동으로 오가기 때문입니다. Chromium 전용이며, 운영 CSP 와의 궁합과 실제 효과는 브라우저에서 검증하지 못했습니다(미확인).",
-      "shared/lib/speculation-rules.ts prerenders only destinations reached by document navigation, such as entering the studio (eagerness moderate, i.e. while the pointer hovers), because public pages and the studio swap documents across the COOP/COEP boundary. Chromium only; how it behaves under the production CSP and its real benefit were not verified in a browser (unconfirmed).",
+      "shared/lib/speculation-rules.ts 가 스튜디오 진입처럼 ‘문서 이동’으로 넘어가는 목적지만 prerender(eagerness moderate, 마우스를 올린 동안)로 알립니다. 공개 페이지와 스튜디오는 COOP/COEP 경계 때문에 문서 이동으로 오가기 때문입니다. Chromium 전용이며, 로컬 Chromium 141 에서 운영 CSP 를 재현하면 규칙이 막혀 효과가 없을 가능성이 높습니다(운영 사이트는 측정하지 않음). 고치려면 규칙 JSON 의 해시를 CSP 에 더해야 하고 CSP 변경은 사용자가 정할 일입니다.",
+      "shared/lib/speculation-rules.ts prerenders only destinations reached by document navigation, such as entering the studio (eagerness moderate, i.e. while the pointer hovers), because public pages and the studio swap documents across the COOP/COEP boundary. Chromium only; reproducing the production CSP in a local Chromium 141 blocked the rule, so it most likely has no effect (the production site was not measured). Fixing it means adding the rule JSON's hash to the CSP, and changing the CSP is the owner's decision.",
     ),
     chapters: ["nextgen-web-experiments"],
     atlasIds: ["speculation-rules-prerender"],

@@ -79,8 +79,9 @@ export function EngineeringSeminarPrep({
         </p>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_1fr_0.9fr]">
-        <article className="rounded-3xl border border-line/70 bg-card/65 p-5">
+      {/* 예상 질문이 길어도 시간표·체크리스트 카드가 빈 칸으로 늘어나지 않게, 넓은 화면에서는 왼쪽 열에 두 카드를 쌓고 질문 목록을 오른쪽 열에 둔다. */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)] xl:grid-rows-[auto_1fr] xl:items-start">
+        <article className="rounded-3xl border border-line/70 bg-card/65 p-5 xl:col-start-1 xl:row-start-1">
           <h3 className="flex items-center gap-2 text-base font-black text-fg">
             <Timer size={17} className="text-accent" aria-hidden="true" />
             {formatI18nTemplate(String(bi("구간 시간표 · 총 {value0}", "Section schedule · {value0} total")), { value0: formatClock(model.totalSeconds) })}
@@ -114,7 +115,7 @@ export function EngineeringSeminarPrep({
           </ol>
         </article>
 
-        <article className="rounded-3xl border border-line/70 bg-card/65 p-5">
+        <article className="rounded-3xl border border-line/70 bg-card/65 p-5 xl:col-start-2 xl:row-span-2 xl:row-start-1">
           <h3 className="flex items-center gap-2 text-base font-black text-fg">
             <MessageCircleQuestionMark size={17} className="text-accent" aria-hidden="true" />
             {formatI18nTemplate(String(bi("예상 질문 {value0}개", "{value0} anticipated questions")), { value0: SEMINAR_PREP_QUESTIONS.length })}
@@ -176,7 +177,7 @@ export function EngineeringSeminarPrep({
           </div>
         </article>
 
-        <article className="rounded-3xl border border-line/70 bg-card/65 p-5">
+        <article className="rounded-3xl border border-line/70 bg-card/65 p-5 xl:col-start-1 xl:row-start-2">
           <h3 className="flex items-center gap-2 text-base font-black text-fg">
             <ListOrdered size={17} className="text-accent" aria-hidden="true" />
             {bi("리허설 체크리스트", "Rehearsal checklist")}

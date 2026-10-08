@@ -106,8 +106,8 @@ const OPENCODE_LOOP_COMMANDS: EngineeringAtlasEntry = {
       "The commands fall into three groups: seven scheduling commands (loop, ask, prompt, command, cmd, shell, compact), four development presets (dev, safe-dev, progress, testfix) and twelve inspection and control commands. Presets continue a progress.md to-do list or run tests and fix failures. The plugin's limit options (--max-runs, --max-runtime, --max-failures) cap runs, time and failures.",
     ),
     t(
-      "이 저장소 정책과 맞출 때 주의할 점이 있습니다. testfix의 기본 검증 명령은 npm test(루트 전체 테스트)라 AGENTS.md의 harness:verify로 바꿔 지정해야 하고, progress.md는 저장소에 없어 /loop-init으로 만들어야 합니다. 플러그인 버전을 올리면 명령 이름이 달라질 수 있고(0.6.6 문서 표에는 6개 이름이 없음), 실제로 루프를 돌린 기록은 저장소에서 확인하지 못했습니다.",
-      "Aligning it with repository policy needs care. The testfix preset defaults to npm test (the whole root suite), so harness:verify from AGENTS.md must be set explicitly, and progress.md does not exist in the repo and must be created with /loop-init. Upgrading the plugin may rename commands (six names are absent from the 0.6.6 docs table), and no record of actual loop runs was found.",
+      "이 저장소 정책과 맞출 때 주의할 점이 있습니다. 플러그인 문서에 따르면(저장소·설치본에서 확인 불가) testfix의 기본 검증 명령은 npm test(루트 전체 테스트)라 AGENTS.md의 harness:verify로 바꿔 지정해야 하고, progress.md는 저장소에 없어 /loop-init으로 만들어야 합니다. 플러그인 버전을 올리면 명령 이름이 달라질 수 있고(0.6.6 문서 표에는 6개 이름이 없음), 실제로 루프를 돌린 기록은 저장소에서 확인하지 못했습니다.",
+      "Aligning it with repository policy needs care. According to the plugin's documentation (not verifiable from the repository or an installed copy), the testfix preset defaults to npm test (the whole root suite), so harness:verify from AGENTS.md must be set explicitly, and progress.md does not exist in the repo and must be created with /loop-init. Upgrading the plugin may rename commands (six names are absent from the 0.6.6 docs table), and no record of actual loop runs was found.",
     ),
   ],
   keyPoints: [
@@ -243,8 +243,8 @@ const OPENCODE_LOOP_COMMANDS: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "'루프 25개로 업무를 자동화한다'고 말하지 않습니다. 파일은 23개이고 업무 내용이 없는 이름표이며, 실제 실행 기록과 .opencode.jsonc(Cloudflare MCP 연결)의 로드 여부는 확인하지 못했습니다. testfix의 기본 검증은 npm test라 정책의 harness:verify와 다릅니다.",
-      "Do not say 25 loops automate the work. There are 23 files, they are name tags without business logic, and neither actual runs nor whether .opencode.jsonc (the Cloudflare MCP connection) is loaded could be confirmed. The testfix default check is npm test, not the policy's harness:verify.",
+      "'루프 25개로 업무를 자동화한다'고 말하지 않습니다. 파일은 23개이고 업무 내용이 없는 이름표이며, 실제 실행 기록과 .opencode.jsonc(Cloudflare MCP 연결)의 로드 여부는 확인하지 못했습니다. 플러그인 문서 기준으로 testfix의 기본 검증은 npm test라(저장소·설치본에서 확인 불가) 정책의 harness:verify와 다릅니다.",
+      "Do not say 25 loops automate the work. There are 23 files, they are name tags without business logic, and neither actual runs nor whether .opencode.jsonc (the Cloudflare MCP connection) is loaded could be confirmed. Per the plugin's documentation (not verifiable from the repository or an installed copy), the testfix default check is npm test, not the policy's harness:verify.",
     ),
   },
   technologies: ["OpenCode", "opencode-loop", "opencode-goal-plugin", "AGENTS.md"],

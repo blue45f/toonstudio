@@ -90,8 +90,8 @@ export const FREE_TIER_INFRA_ROWS: readonly EngineeringMapRow[] = [
         "Holds short-lived realtime state for each room during collaboration: who is present and where their cursor is, comment refresh alerts and screen-share connection signals. It never stores the artwork itself.",
       ),
       limit: t(
-        `${NO_RECORD_KO}. 우리 상한(코드 설정): 방당 연결 64개·사용자당 4개, 정책 비율 0.8.`,
-        `${NO_RECORD_EN}. Our caps (code settings): 64 connections per room, 4 per user, policy ratio 0.8.`,
+        `${NO_RECORD_KO}. 우리 상한(wrangler.jsonc 설정, 날짜 없는 값이라 2026-10-07 저장소 확인 기준): 방당 연결 64개·사용자당 4개, 정책 비율 0.8.`,
+        `${NO_RECORD_EN}. Our caps (wrangler.jsonc settings, undated values, so as checked in the repository on 2026-10-07): 64 connections per room, 4 per user, policy ratio 0.8.`,
       ),
       "on-exceed": t(
         "공급자가 막히면 그 기능만 멈추고 더 약한 대체 구현으로 자동 전환하지 않습니다. 작품 저장의 원장은 Core API와 PostgreSQL이라 영향받지 않습니다.",
@@ -262,8 +262,8 @@ export const FREE_TIER_INFRA_ROWS: readonly EngineeringMapRow[] = [
         "Holds small, fast notes: sign-in attempt limits, receipts so the same request is never processed twice, and short locks. It never stores artwork content or prompts.",
       ),
       limit: t(
-        "공급자 한도(연합 JSON 기록): 저장 256 MiB·명령 500,000회/월·대역폭 10 GiB/월. 우리 상한: 정책 비율 0.75.",
-        "Provider limits recorded in the federation JSON: 256 MiB storage, 500,000 commands per month and 10 GiB of bandwidth per month. Our cap: policy ratio 0.75.",
+        "공급자 한도(연합 JSON 기록): 저장 256 MiB·명령 500,000회/월·대역폭 10 GiB/월. 우리 상한: 연합 JSON 기준 정책 비율 0.75(인프라 정책 JSON은 0.8로 달라 한쪽 정리가 필요).",
+        "Provider limits recorded in the federation JSON: 256 MiB storage, 500,000 commands per month and 10 GiB of bandwidth per month. Our cap: policy ratio 0.75 in the federation JSON (the infrastructure policy JSON says 0.8, so one side needs reconciling).",
       ),
       "on-exceed": t(
         "켜는 스위치(UPSTASH_COORDINATION_ENABLED)가 꺼져 있으면 이 기능은 빠지고 메모리 대체물이 없습니다. 분산 로그인 제한 모드에서 Upstash가 꺼져 있으면 설정 오류로 막힙니다. 월 명령 소진 때 동작은 미확인.",

@@ -219,8 +219,8 @@ const APP_AND_STORAGE_ROWS: readonly EngineeringMapRow[] = [
       license: same("Apache-2.0 OR MIT"),
       mode: t("런타임 · 브라우저", "Runtime · browser"),
       note: t(
-        "Helia(@helia/verified-fetch)는 전이 의존성 보안 권고가 풀리지 않아 쓰지 않는다 — 지금은 multiformats + 게이트웨이 fetch + 해시 대조다. CID는 raw 단일 블록 주소라 UnixFS 주소와 호환되지 않는다. 게이트웨이가 운영 CSP에서 허용되는지는 확인하지 못했다.",
-        "Helia (@helia/verified-fetch) is not used: its transitive security advisories were unresolved. Today it is multiformats plus a gateway fetch plus a hash check. The CID is a raw single-block address and is not compatible with UnixFS addresses. Whether the production CSP allows the gateways is unverified.",
+        "Helia(@helia/verified-fetch)는 전이 의존성 보안 권고가 풀리지 않아 쓰지 않는다 — 지금은 multiformats + 게이트웨이 fetch + 해시 대조다. CID는 raw 단일 블록 주소라 UnixFS 주소와 호환되지 않는다. 게이트웨이 3곳은 운영 CSP connect-src 목록에 없어 운영 브라우저에서 막힐 가능성이 크다(실브라우저 미검증).",
+        "Helia (@helia/verified-fetch) is not used: its transitive security advisories were unresolved. Today it is multiformats plus a gateway fetch plus a hash check. The CID is a raw single-block address and is not compatible with UnixFS addresses. The three gateways are absent from the production CSP connect-src list, so a production browser will probably block them (not verified in a real browser).",
       ),
     },
     evidence: [
@@ -470,14 +470,14 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "구글의 잉크 브러시 라이브러리. 입력 점을 매끈하게 다듬는 모델러와, 획을 삼각형 메시로 만드는 부분을 WASM으로 직접 빌드해 라이브 잉크 미리보기 코드에 연결했다.",
-        "Google's ink-brush library. We build its input modeler, which smooths input points, and its mesh generator, which turns strokes into triangle meshes, to WASM ourselves and wire them into the live ink preview code.",
+        "구글의 잉크 브러시 라이브러리. 입력 점을 다듬는 모델러와 획을 삼각형 메시로 만드는 생성기를 WASM으로 직접 빌드했다. 생성기는 확정 획이 아니라 획 끝 '예측 꼬리'를 보여 주는 보조 미리보기에만 연결했고, 모델러는 로더·시험·벤치와 관측용 접점까지다.",
+        "Google's ink-brush library. We build its input modeler, which smooths input points, and its mesh generator, which turns strokes into triangle meshes, to WASM ourselves. The generator is wired only into an auxiliary preview of the stroke's predicted tail, not into committed strokes; the modeler stops at a loader, tests, benchmarks and an observation-only seam.",
       ),
       license: same("Apache-2.0"),
       mode: t("C++ → WASM · 자체 빌드", "C++ to WASM · self-built"),
       note: t(
-        "레지스트리 판정은 'PoC 후 주력 후보'이고 ADR-0009도 PoC 게이트 뒤 후보로 둔다. 업스트림이 Bazel 전용이라 76개 소스를 em++로 직접 빌드하며, 재빌드에는 저장소 밖 ~/toolchains/ink 클론이 필요해 저장소만으로는 재현되지 않는다.",
-        "The registry verdict is 'main candidate after PoC', and ADR-0009 also keeps it a candidate behind a PoC gate. Upstream is Bazel-only, so 76 translation units are built directly with em++, and a rebuild needs a clone at ~/toolchains/ink outside the repository, so it is not reproducible from the repo alone.",
+        "레지스트리 판정은 'PoC 후 주력 후보'이고 ADR-0009도 PoC 게이트 뒤 후보로 둔다. 제품 승격은 실기기 블라인드 품질 게이트가 남았다. Bazel 전용이라 76개 소스를 em++로 직접 빌드하며 재빌드에는 저장소 밖 ~/toolchains/ink 클론이 필요하다.",
+        "The registry verdict is 'main candidate after PoC', and ADR-0009 also keeps it a candidate behind a PoC gate. Product promotion still waits for a real-device blind quality gate. Upstream is Bazel-only, so 76 translation units are built directly with em++, and a rebuild needs a clone at ~/toolchains/ink outside the repository.",
       ),
     },
     evidence: [
@@ -485,6 +485,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
       "packages/studio-brush-platform/src/ink-modeler/README.md",
       "docs/adr/0009-google-ink-poc-gate-and-fallback.md",
       "packages/studio-engine-registry/src/manifest/providers.json",
+      "apps/web/src/domains/creator/brush/studio-ink-mesh-live-preview.ts",
+      "apps/web/src/domains/creator/live/studio-live-ink-stabilizer-plan.ts",
     ],
   },
   {
@@ -495,14 +497,14 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "벡터 도형을 계산하는 수학 도구 모음: 경로 합치기·평탄화(Paper.js), 도형 겹침 연산(polygon-clipping), 곡선 맞춤·단순화(bezier-js·fit-curve·simplify-js), 손으로 그린 듯한 도형(Rough.js).",
-        "A kit of vector math: merging and flattening paths (Paper.js), shape overlap operations (polygon-clipping), curve fitting and simplification (bezier-js, fit-curve, simplify-js) and hand-drawn-looking shapes (Rough.js).",
+        "벡터 도형을 계산하는 수학 도구 모음: 경로 합치기·평탄화(Paper.js), 도형 겹침 연산(polygon-clipping), 손으로 그린 듯한 도형(Rough.js). 곡선 맞춤·단순화용 bezier-js·fit-curve·simplify-js는 코드와 테스트까지만 있고 제품 화면에는 연결하지 않았다.",
+        "A kit of vector math: merging and flattening paths (Paper.js), shape overlap operations (polygon-clipping) and hand-drawn-looking shapes (Rough.js). bezier-js, fit-curve and simplify-js, meant for curve fitting and simplification, exist in code and tests only and are not wired to a product screen.",
       ),
-      license: same("MIT · BSD-2-Clause"),
+      license: same("MIT"),
       mode: t("런타임 · 지연 로드", "Runtime · lazy"),
       note: t(
-        "Paper.js는 PaperScope 하나에 가두고 작업마다 Project를 만들어 끝나면 지워, 라이브러리 객체가 경계 밖으로 나가지 않는다. Rough.js는 도형의 '스케치 표현'을 단독으로 맡는다(원장).",
-        "Paper.js is confined to one PaperScope, and each job creates and then removes a Project, so library objects never cross the boundary. Rough.js solely owns the sketch presentation of shapes (ledger).",
+        "Paper.js는 PaperScope 하나에 가두고 작업마다 Project를 만들어 끝나면 지워, 라이브러리 객체가 경계 밖으로 나가지 않는다. Rough.js는 도형의 '스케치 표현'을 단독으로 맡는다(원장). 곡선 맞춤 3종은 studio-vector-ink-geometry.ts에 있고 값으로 import하는 곳은 테스트뿐이다.",
+        "Paper.js is confined to one PaperScope, and each job creates and then removes a Project, so library objects never cross the boundary. Rough.js solely owns the sketch presentation of shapes (ledger). The three curve-fitting packages sit in studio-vector-ink-geometry.ts, and only tests import it as values.",
       ),
     },
     evidence: [
@@ -526,8 +528,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
       license: same("MIT"),
       mode: t("런타임 · 동적 import", "Runtime · dynamic import"),
       note: t(
-        "문서는 'Phaser는 표시만' 맡는다고 못 박고 권한·승인은 별도 시스템(ADR-0022)이 가진다. 렌더러 역할 원장의 범위 밖이다.",
-        "The docs state that Phaser only displays; permissions and approvals belong to a separate system (ADR-0022). It sits outside the renderer role ledger.",
+        "리뷰·권한·승인의 권위는 Phaser가 아니라 ADR-0022의 별도 시스템이 가진다(문서의 'Phaser는 표시만'은 리뷰 어댑터 한정). 렌더러 역할 원장의 범위 밖이다.",
+        "Authority over review, permissions and approvals belongs to a separate system (ADR-0022), not to Phaser (the docs' 'Phaser only displays' is limited to the review adapter). It sits outside the renderer role ledger.",
       ),
     },
     evidence: [
@@ -727,20 +729,21 @@ const THREE_D_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "3D 광선 맞추기 가속(three-mesh-bvh)과 UV 자동 펼치기(xatlas — 3D 표면을 2D 그림판 위로 펴는 일). 둘 다 provider와 테스트까지 만들었지만 제품 화면에는 아직 연결하지 않았다.",
-        "Ray-casting acceleration for 3D (three-mesh-bvh) and automatic UV unwrapping (xatlas, which flattens a 3D surface onto a 2D sheet). Both have providers and tests, but neither is wired into a product screen yet.",
+        "3D 광선 맞추기 가속(three-mesh-bvh)과 UV 자동 펼치기(xatlas — 3D 표면을 2D 그림판 위로 펴는 일). 우리가 만든 두 provider는 테스트까지만 만들었고 제품 화면에는 아직 연결하지 않았다.",
+        "Ray-casting acceleration for 3D (three-mesh-bvh) and automatic UV unwrapping (xatlas, which flattens a 3D surface onto a 2D sheet). Our two providers were built with tests but are not wired into a product screen yet.",
       ),
       license: same("MIT"),
-      mode: t("Worker · 제품 미연결", "Worker · not wired in"),
+      mode: t("Worker · provider 미연결", "Worker · providers not wired in"),
       note: t(
-        "앱 진입점에서 import를 따라가도 닿지 않는다(2026-10-07 스캔). three-mesh-bvh는 테스트·벤치마크 하니스만, xatlas는 자기 폴더 안에서만 쓰인다. 그래서 '쓰고 있다'고 말하지 않는다.",
-        "Following imports from the app entry never reaches them (scan of 2026-10-07). three-mesh-bvh appears only in tests and a benchmark harness, and xatlas only inside its own folder. So we do not say they are in use.",
+        "xatlasjs는 provider와 테스트만 있고 제품에 연결하지 않았다. three-mesh-bvh도 우리가 만든 가속 provider는 연결하지 않았지만, 불리언 연산 라이브러리 three-bvh-csg가 내부에서 쓰므로 CSG Worker 번들에는 들어 있다.",
+        "xatlasjs has a provider and tests only and is not wired into the product. We did not wire our own three-mesh-bvh acceleration provider either, but the boolean library three-bvh-csg uses the package internally, so it ships in the CSG Worker bundle.",
       ),
     },
     evidence: [
       "apps/web/src/domains/creator/studio-three-mesh-bvh-provider.ts",
       "apps/web/src/domains/creator/xatlas-uv/studio-xatlas-uv-provider.ts",
       "apps/web/src/domains/creator/xatlas-uv/studio-xatlas-uv-provider.worker.ts",
+      "apps/web/src/domains/creator/scene3d/specialists/specialist-csg.ts",
     ],
   },
 ];

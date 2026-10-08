@@ -28,6 +28,8 @@ Excalidraw의 암호화 협업은 서버가 암호문을 전달하는 방식도 
 
 구현은 STUN-only이며, 일부 NAT·방화벽·회사망에서는 연결할 수 없다. HTTPS 또는 localhost와 WebRTC 지원 브라우저가 필요하다. 인앱 브라우저·Safari·물리 장치·서로 다른 실제 통신사 망을 전부 검증했다는 주장을 하지 않는다. 화면 공유는 브라우저 지원 및 매번 사용자 선택에 따른다.
 
+> **2026-10-08 정정(current)**: 위 "STUN-only"는 검토일(2026-09-13) 시점의 구현 서술이다. 지금의 허들·근접 영상·직통 데이터 레인은 공유 ICE 구성(`apps/web/src/domains/creator/live/studio-ice-configuration.ts`)을 쓴다. 실시간 Worker(`deploy/cloudflare-realtime/src/turn.ts`)가 Cloudflare TURN 단기 자격을 발급한 환경에서는 직접 연결이 막힐 때 중계(TURN) 경로가 생기고, 발급이 없거나 실패하면 STUN 전용으로 시작한다. 운영 Worker에 TURN 키(`REALTIME_TURN_KEY_ID`, `REALTIME_TURN_API_TOKEN`)가 등록됐는지는 코드로 알 수 없어 운영 확인 전까지 미확인이다. 그래서 화면 문구도 "TURN을 쓰지 않는다"고 단정하지 않고 "중계 서버가 준비된 환경에서만 거친다"고 조건을 말한다. 현재 상태의 정본은 `docs/technology/toonstudio-webrtc-realtime-media-2026-09-25.md` 6절이다.
+
 2–4인 작업팀을 권장하고 세션당 원격 참여자를 최대 3명으로 제한한다. 이는 각 클라이언트의 미디어 연결 상한이지 서버가 보장하는 전역 회의 정원은 아니다. 대규모 회의·웨비나 기능은 제공하지 않는다. 카메라는 기본 640×360/15fps를 요청하며 최대 1280×720/24fps, 화면 공유는 최대 15fps를 요청한다. 실제 해상도는 브라우저·장치 협상에 따른다.
 
 ## 개인정보·방어 경계

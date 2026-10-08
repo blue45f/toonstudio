@@ -20,7 +20,7 @@ describe("route breadcrumb trails", () => {
 
   it("normalizes trailing slashes before lookup", () => {
     expect(resolveBreadcrumbTrail("/about/technology/guides/").map((item) => item.ko))
-      .toEqual(["홈", "소개", "기술", "가이드"]);
+      .toEqual(["홈", "소개", "기술", "적용 가이드"]);
   });
 
   it("returns an empty trail for uncurated paths instead of guessing labels", () => {

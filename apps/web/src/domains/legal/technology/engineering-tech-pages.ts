@@ -62,6 +62,10 @@ export interface EngineeringPageEntry {
   readonly purpose: LocalizedText;
   /** 머리말 대표 이미지. 기존 브랜드 아트(workflow-20260928) 중 페이지 주제와 맞는 종류. */
   readonly art: WorkflowVisual;
+  /** 이 페이지가 답하는 질문 한 문장. 머리말의 "이 페이지가 답하는 질문" 줄에 보인다. */
+  readonly question?: LocalizedText;
+  /** 누구를 위한 페이지인가. 머리말의 "이런 분께" 줄에 보인다. */
+  readonly audience?: LocalizedText;
   /** 한국어 기준 예상 읽기 시간(분). */
   readonly readingMinutes?: number;
   /** 발표 시간(분). */
@@ -93,6 +97,9 @@ export const ENGINEERING_PAGES = [
     label: t("아키텍처", "Architecture"),
     purpose: t("전체 구조를 도식과 쉬운 해설로 한눈에", "The whole structure at a glance, with diagrams and plain explanations"),
     art: "collaborate",
+    readingMinutes: 40,
+    question: t("브라우저·엣지·서버·데이터는 어떻게 맞물려 돌아가나요?", "How do the browser, edge, server and data fit together?"),
+    audience: t("처음 오신 모든 분: 투자자·개발자·스터디 참가자", "Everyone new here: investors, developers and study groups"),
   },
   {
     id: "libraries",
@@ -102,6 +109,9 @@ export const ENGINEERING_PAGES = [
     label: t("라이브러리", "Libraries"),
     purpose: t("쓰인 주요 라이브러리와 고른 이유를 영역별로", "Main libraries and why we chose them, by area"),
     art: "create",
+    question: t("무엇으로 만들었고, 왜 그것을 골랐나요?", "What is it built with, and why did we choose it?"),
+    audience: t("개발자·스터디 참가자, 기술 선택의 이유가 궁금한 분", "Developers and study groups curious about the reasons behind each choice"),
+    readingMinutes: 47,
   },
   {
     id: "story",
@@ -112,6 +122,8 @@ export const ENGINEERING_PAGES = [
     label: t("제작 스토리", "Story"),
     purpose: t("왜·어떻게 만들었나: 문제, 선택, 대가와 근거", "Why and how it was built: problems, choices, trade-offs, evidence"),
     art: "create",
+    question: t("왜 이렇게 만들었고, 무엇을 포기했나요?", "Why was it built this way, and what was given up?"),
+    audience: t("배경을 순서대로 이해하고 싶은 분", "Readers who want the background in order"),
     readingMinutes: 51,
   },
   {
@@ -123,6 +135,8 @@ export const ENGINEERING_PAGES = [
     label: t("플레이북", "Playbook"),
     purpose: t("재사용할 설계 원칙과 아키텍처 결정", "Reusable design principles and architecture decisions"),
     art: "plan",
+    question: t("다른 서비스에도 쓸 설계 원칙은 무엇인가요?", "Which design principles carry over to other products?"),
+    audience: t("설계를 맡는 개발자·기획자", "Engineers and planners who own design decisions"),
     readingMinutes: 25,
   },
   {
@@ -134,6 +148,8 @@ export const ENGINEERING_PAGES = [
     label: t("적용 가이드", "Guides"),
     purpose: t("다른 서비스에 단계별로 옮기는 방법", "Step-by-step adoption in another product"),
     art: "learn",
+    question: t("내 서비스에 옮기려면 어디서 시작하나요?", "Where do I start if I adopt this in my own product?"),
+    audience: t("적용을 검토하는 개발자", "Engineers evaluating adoption"),
     readingMinutes: 27,
   },
   {
@@ -145,6 +161,8 @@ export const ENGINEERING_PAGES = [
     label: t("심화 노트", "Field notes"),
     purpose: t("깊은 기술 노트와 장애·교훈 기록", "Deep technical notes, incidents and lessons"),
     art: "recovery",
+    question: t("실제 구현에서 무엇이 깨졌고 어떻게 고쳤나요?", "What actually broke during implementation, and how was it fixed?"),
+    audience: t("깊은 구현 판단과 장애 사례가 궁금한 개발자", "Engineers who want deep implementation calls and incident cases"),
     readingMinutes: 32,
   },
   {
@@ -156,6 +174,8 @@ export const ENGINEERING_PAGES = [
     label: t("발표 모드", "Deck"),
     purpose: t("세미나·요약·강의 슬라이드, 도감 부록과 발표자 도구", "Seminar, brief and lecture slides, a tech-atlas appendix and presenter tools"),
     art: "publish",
+    question: t("발표 시간에 맞춰 같은 내용을 어떻게 말하나요?", "How do I present the same story for a given time slot?"),
+    audience: t("발표자와 발표를 듣는 분", "Presenters and their audience"),
     talkMinutes: 30,
   },
   {
@@ -166,6 +186,8 @@ export const ENGINEERING_PAGES = [
     label: t("영상", "Video"),
     purpose: t("같은 원본으로 만드는 기술 소개 영상", "Engineering film rendered from the same source"),
     art: "storyboard",
+    question: t("같은 원본으로 영상을 어떻게 만들고 검수하나요?", "How is a film built and reviewed from the same source?"),
+    audience: t("소개·교육 영상을 만드는 분", "People producing intro or training films"),
   },
   {
     id: "atlas",
@@ -175,6 +197,8 @@ export const ENGINEERING_PAGES = [
     label: t("기술 도감", "Tech atlas"),
     purpose: t("배경·도식·샘플 코드·쓰인 기능을 기술별로", "Background, diagrams, code and where each technology is used"),
     art: "assets",
+    question: t("이 기술은 무엇이고 서비스 어디에 쓰였나요?", "What is this technology, and where does the service use it?"),
+    audience: t("질문에 바로 답하거나 기술 하나를 깊이 보려는 분", "Anyone answering a question on the spot or studying one technology"),
   },
   {
     id: "references",
@@ -184,6 +208,8 @@ export const ENGINEERING_PAGES = [
     label: t("참고 자료", "References"),
     purpose: t("사용·평가·참고한 기술과 제품 구분", "Used, evaluated and referenced technology and products"),
     art: "review",
+    question: t("무엇을 쓰고, 무엇은 검토만 하고 참고했나요?", "What is used, what was only evaluated, and what was just inspiration?"),
+    audience: t("기술 선택과 비교의 근거를 보려는 분", "Readers checking the evidence behind choices and comparisons"),
   },
   {
     id: "glossary",
@@ -193,6 +219,8 @@ export const ENGINEERING_PAGES = [
     label: t("용어집", "Glossary"),
     purpose: t("발표 용어를 쉬운 비유로 설명", "Talk terms explained with plain analogies"),
     art: "learn",
+    question: t("발표에 나온 낯선 말은 무슨 뜻인가요?", "What do the unfamiliar terms in the talk mean?"),
+    audience: t("비전문가와 처음 듣는 분", "Non-specialists and first-time listeners"),
   },
   {
     id: "licenses",
@@ -202,6 +230,8 @@ export const ENGINEERING_PAGES = [
     label: t("라이선스", "Licenses"),
     purpose: t("코드·폰트·에셋·AI 결과물의 권리", "Rights for code, fonts, assets and AI output"),
     art: "rights",
+    question: t("쓰인 코드·에셋·AI 결과물의 권리는 어떻게 다루나요?", "How are rights for code, assets and AI output handled?"),
+    audience: t("배포와 권리를 검토하는 분", "People reviewing distribution and rights"),
   },
 ] as const satisfies readonly EngineeringPageEntry[];
 

@@ -222,14 +222,14 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 8개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 50개 — 대부분 보안 권고 대응, 일부는 도구 버전 통일). 설치할 때 pnpm이 자동으로 적용한다.",
-        "Records of installed libraries edited at exact versions (8 patches) and rules that force sub-dependency versions (50 overrides, mostly answering security advisories and some aligning tool versions). pnpm applies both automatically at install time.",
+        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 50개 — 대부분 보안 권고 대응, 일부는 도구 버전 통일, braces 한 줄은 저장소 포크로 대체). 설치할 때 pnpm이 자동으로 적용한다.",
+        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (50 overrides, mostly answering security advisories, some aligning tool versions, and one swapping braces for a repository fork). pnpm applies both automatically at install time.",
       ),
       license: t("원본 라이선스를 따름", "Follows each original"),
       mode: t("설치 단계(pnpm)", "Install step (pnpm)"),
       note: t(
-        "패치 8개: 운영 CSP 호환 3(glTF Transform·manifold-3d·ktx2-encoder), 브라우저 호환 1(ag-psd), R3F 1, 결정성 1(p5.brush), 보안 호환 2(braces·minimatch). 상류에 낸 PR은 저장소에서 찾지 못했다.",
-        "The 8 patches: production-CSP compatibility 3 (glTF Transform, manifold-3d, ktx2-encoder), browser compatibility 1 (ag-psd), R3F 1, determinism 1 (p5.brush) and security compatibility 2 (braces, minimatch). We found no upstream PR in the repository.",
+        "패치 7개: 운영 CSP 호환 3(manifold-3d·ktx2-encoder는 new Function 제거, glTF Transform은 지연 로드), 브라우저 호환 1(ag-psd), R3F 1, 결정성 1(p5.brush), 보안 호환 1(minimatch). braces는 수정 릴리스가 없어 패치 대신 저장소 포크(깊이 100 상한)로 대체. 상류 PR은 못 찾았다.",
+        "The 7 patches: production-CSP compatibility 3 (manifold-3d and ktx2-encoder drop new Function, glTF Transform defers loading), browser compatibility 1 (ag-psd), R3F 1, determinism 1 (p5.brush) and security compatibility 1 (minimatch). braces has no upstream fix, so a repository fork (depth cap 100) replaces it instead of a patch. No upstream PR found.",
       ),
     },
     evidence: [
@@ -237,6 +237,8 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
       "patches/@react-three__fiber@9.6.1.patch",
       "patches/minimatch@3.1.5.patch",
       "scripts/minimatch-security-compat.test.mjs",
+      "patches/braces/README.md",
+      "scripts/braces-security-compat.test.mjs",
     ],
   },
   {
@@ -253,8 +255,8 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
       license: same("MIT OR Apache-2.0"),
       mode: t("Rust · 벤더 포크 · 피처 뒤", "Rust · vendored fork · behind a feature"),
       note: t(
-        "변경은 모두 toon-fabric 피처 뒤에 있다. 실측(2026-08-08, Chromium 140 headless): 교환 비용 1.89~2.43배 개선, 읽은 바이트는 기존 경로와 일치. 상류 PR 후보로만 기록했고 실제 제출 근거는 못 찾았다.",
-        "Every change sits behind the toon-fabric feature. Measured on 2026-08-08 in Chromium 140 headless: exchange cost improved 1.89x to 2.43x and the bytes read matched the old path. It is recorded only as an upstream PR candidate; we found no evidence it was submitted.",
+        "변경은 모두 toon-fabric 피처 뒤에 있다. 같은 장치 안에서 쓰는 경로가 열렸고 읽은 바이트는 기존 경로와 일치한다. 속도 이득은 크기마다 달라 정본 측정(2026-09-23, Chrome 153)에서 256px 0.93배(이득 없음)·512px 3.29배·1024px 3.12배다. 옛 1.89~2.43배(2026-08-08)는 이전 기록이다. 상류 PR 근거는 못 찾았다.",
+        "Every change sits behind the toon-fabric feature. A path that uses the adopted device in place is open, and the bytes read match the old path. The speed-up varies with size: the canonical run (2026-09-23, Chrome 153) gives 0.93x at 256px (no gain), 3.29x at 512px and 3.12x at 1024px; the older 1.89x-2.43x (2026-08-08) is a prior record. We found no evidence of an upstream PR.",
       ),
     },
     evidence: [
@@ -324,14 +326,14 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "G'MIC·GEGL·Blender·Inkscape·FFmpeg 같은 외부 프로그램 25종을 서비스에 넣지 않고, 사용자가 자기 PC에 설치한 것을 로컬 브리지로만 호출하는 연결 장치.",
-        "A connector that never ships 25 external programs such as G'MIC, GEGL, Blender, Inkscape and FFmpeg; it only calls the copies users installed on their own PC through a local bridge.",
+        "검토한 카탈로그 25종 중 G'MIC·GEGL·Blender·Inkscape·FFmpeg 같은 19종은 서비스에 넣지 않고 사용자가 자기 PC에 설치한 것을 로컬 브리지로만 호출하고, 5종은 서비스 커넥터, 1종(Mixbox)은 선택 모듈이다.",
+        "Of 25 catalogued tools, 19 such as G'MIC, GEGL, Blender, Inkscape and FFmpeg are never shipped in the service; only the copies users installed on their own PC are called through a local bridge. Five are service connectors and one (Mixbox) is an optional module.",
       ),
       license: t("혼합(GPL·AGPL·LGPL 등)", "Mixed (GPL, AGPL, LGPL, ...)"),
       mode: t("별도 프로세스 · 로컬 브리지", "Separate process · local bridge"),
       note: t(
-        "설치·재배포하지 않고 shell:false와 허용된 작업 목록으로만 실행한다. 문서는 이것이 '기술적 격리 경계이지 법적 결론이 아님'이라 밝힌다. 사용자가 프로그램을 설치해야 동작한다.",
-        "Nothing is installed or redistributed; programs run only with shell:false and an allowlist of operations. The docs say this is a technical isolation boundary, not a legal conclusion. It works only if the user installs the programs.",
+        "설치·재배포하지 않고 shell:false와 허용된 작업 목록으로만 실행한다. 문서는 이것이 '기술적 격리 경계이지 법적 결론이 아님'이라 밝힌다. 로컬 19종은 사용자가 설치해야, 커넥터 5종은 사용자 소유 서비스 URL·자격증명이 있어야 동작한다.",
+        "Nothing is installed or redistributed; programs run only with shell:false and an allowlist of operations. The docs say this is a technical isolation boundary, not a legal conclusion. The 19 local tools need the user to install them, and the 5 connectors need a user-owned service URL and credentials.",
       ),
     },
     evidence: ["tools/toonbridge/README.md", "config/studio-production-toolchain.json", "docs/studio/production-toolchain.md"],

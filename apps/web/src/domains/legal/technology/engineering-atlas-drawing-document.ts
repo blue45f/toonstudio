@@ -206,8 +206,8 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
     tagline: t("페이지를 1 MiB 타일로 나누고, 스냅샷은 포인터만 복사하다 쓸 때만 타일을 복제합니다.", "Pages are split into 1 MiB tiles; snapshots copy pointers and clone a tile only when written."),
     background: [
       t(
-        "큰 웹툰 페이지(예: 4000×6000px)를 레이어마다, 되돌리기 단계마다 비트맵 한 장씩 통째로 들고 있으면 한 장이 약 91.5 MiB 라 금방 메모리가 바닥납니다. 타일 방식은 페이지를 512×512px 조각(RGBA 8비트라 정확히 1 MiB)으로 나눠, 그림이 있는 조각만 메모리를 씁니다. 40px 짜리 선 하나는 타일 하나(1 MiB)만 차지합니다.",
-        "Keeping a whole bitmap for every layer and every undo step of a large webtoon page (say 4000 x 6000 px) costs about 91.5 MiB each and exhausts memory fast. A tiled design splits the page into 512 x 512 px pieces (exactly 1 MiB at 8-bit RGBA) and only pieces with artwork use memory: one 40 px line occupies a single 1 MiB tile.",
+        "큰 웹툰 페이지(예: 4000×6000px)를 레이어마다, 되돌리기 단계마다 비트맵 한 장씩 통째로 들고 있으면 한 장이 약 91.5 MiB 라 금방 메모리가 바닥납니다. 타일 방식은 페이지를 512×512px 조각(RGBA 8비트라 정확히 1 MiB)으로 나눠, 그림이 있는 조각만 메모리를 씁니다. 40px 짜리 선이 한 타일 안에 들어가면 타일 하나(1 MiB)만, 경계를 넘으면 닿은 타일 수만큼 차지합니다.",
+        "Keeping a whole bitmap for every layer and every undo step of a large webtoon page (say 4000 x 6000 px) costs about 91.5 MiB each and exhausts memory fast. A tiled design splits the page into 512 x 512 px pieces (exactly 1 MiB at 8-bit RGBA) and only pieces with artwork use memory: a 40 px line that fits inside one tile occupies a single 1 MiB tile, and one that crosses tile borders occupies as many tiles as it touches.",
       ),
       t(
         "되돌리기용 스냅샷은 픽셀을 복사하지 않고 '타일 목록의 포인터'만 복사합니다(레이어 수에 비례). 스냅샷 뒤 처음 쓰는 타일이 다른 곳과 공유 중일 때만 그 타일 1 MiB 를 복제합니다(복사-후-쓰기, copy-on-write). 그래서 N단계에 매번 타일 k개를 고치면 비용은 타일 '기본량 + N×k'개이지 '기본량 × (N+1)'이 아닙니다. 바뀐 사각형은 타일 단위로 합쳐 GPU 에는 바뀐 타일만 올립니다.",
@@ -218,8 +218,8 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
         "A safety rule: when evicting tiles to free memory, only persisted ones may go. An unpersisted buffer is the only copy of those pixels, so dropping it would delete an undo step. If memory is still short, the planner reports the shortfall instead of over-evicting; the order is history-only tiles, then off-screen tiles, and pinned tiles are never touched.",
       ),
       t(
-        "현재 범위: 이 타일 저장소는 협업(CRDT) 래스터 표면의 WebGPU 표시에 연결돼 있습니다. 편집기 문서 전체의 소유자는 아직 샘플 기반 획(DrawEl)이고, 타일 단위 권위(RGBA16F 워커 타일)는 vNext 목표입니다. 영속·퇴출 계획기는 순수 계획 코드와 테스트로 있으나 이 체크아웃에서 제품 코드의 호출부는 확인하지 못했습니다.",
-        "Current scope: this tile store is connected to the WebGPU display of the collaborative (CRDT) raster surface. The owner of the whole editor document is still sample-based strokes (DrawEl), and tile-level authority (RGBA16F worker tiles) is a vNext goal. The persistence and eviction planners exist as pure planning code with tests, but no product call site was found in this checkout.",
+        "현재 범위: 이 타일 저장소는 협업(CRDT) 래스터 표면의 WebGPU 표시에 연결돼 있고, 그 표면은 프런트 빌드 토큰(VITE_STUDIO_RASTER_CRDT_AUTO_PUBLICATION)과 서버 admission 토큰(STUDIO_RASTER_ASSET_ADMISSION)을 같은 릴리스에서 함께 설정해야 켜지는 옵트인 파일럿이라 상태가 '설정 필요'입니다. 편집기 문서 전체의 소유자는 아직 샘플 기반 획(DrawEl)이고, 타일 단위 권위(RGBA16F 워커 타일)는 vNext 목표입니다. 영속·퇴출 계획기는 순수 계획 코드와 테스트로 있으나 이 체크아웃에서 제품 코드의 호출부는 확인하지 못했습니다.",
+        "Current scope: this tile store is connected to the WebGPU display of the collaborative (CRDT) raster surface, and that surface is an opt-in pilot that turns on only when the front-end build token (VITE_STUDIO_RASTER_CRDT_AUTO_PUBLICATION) and the server admission token (STUDIO_RASTER_ASSET_ADMISSION) are set together in the same release, hence the status 'setup required'. The owner of the whole editor document is still sample-based strokes (DrawEl), and tile-level authority (RGBA16F worker tiles) is a vNext goal. The persistence and eviction planners exist as pure planning code with tests, but no product call site was found in this checkout.",
       ),
     ],
     keyPoints: [
@@ -359,8 +359,8 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
     chapterIds: ["storage", "performance"],
     talk: {
       pitch: t(
-        "큰 웹툰 페이지를 통째로 비트맵으로 들고 있지 않고 1MiB 타일로 쪼갭니다. 되돌리기 스냅샷은 포인터만 복사하고, 같은 타일을 실제로 고칠 때만 그 타일을 복제합니다. 지금은 협업 래스터 표면에 연결돼 있고, 편집기 전체를 타일로 바꾼 것은 아닙니다.",
-        "Instead of holding a big webtoon page as one bitmap, we split it into 1 MiB tiles. Undo snapshots copy only pointers, and a tile is cloned only when that very tile is edited. It is connected to the collaborative raster surface today; the whole editor has not been converted to tiles.",
+        "큰 웹툰 페이지를 통째로 비트맵으로 들고 있지 않고 1MiB 타일로 쪼갭니다. 되돌리기 스냅샷은 포인터만 복사하고, 같은 타일을 실제로 고칠 때만 그 타일을 복제합니다. 지금은 배포 옵트인을 켠 협업 래스터 표면에만 연결돼 있고, 편집기 전체를 타일로 바꾼 것은 아닙니다.",
+        "Instead of holding a big webtoon page as one bitmap, we split it into 1 MiB tiles. Undo snapshots copy only pointers, and a tile is cloned only when that very tile is edited. Today it is connected only to the collaborative raster surface once the deployment opt-in is switched on; the whole editor has not been converted to tiles.",
       ),
       analogy: t(
         "공유 문서를 '복사본 만들기' 대신 '북마크'로 저장했다가, 누군가 한 쪽을 고칠 때 그 쪽만 복사해 두는 것과 같습니다.",
@@ -390,8 +390,8 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
         },
       ],
       pitfall: t(
-        "이 저장소는 협업 래스터 표면에만 연결돼 있습니다. '영속된 뒤에만 퇴출' 규칙은 설계와 테스트로 확인했지만 호출부가 없는 계획기라, 실제 메모리 부족 상황에서의 동작은 확인하지 못했습니다. '입력이 타일 커밋 단계로 나뉜다'는 기존 표현은 이 구분이 없습니다.",
-        "The store is connected only to the collaborative raster surface. The 'evict only after persisting' rule is confirmed by design and tests, but since the planner has no call site, behavior under real memory pressure was not verified. The older phrase that input is split into tile-commit stages lacks this distinction.",
+        "이 저장소는 배포 옵트인(위 두 토큰)이 켜진 협업 래스터 표면에만 연결돼 있고, 운영에서 그 토큰이 켜져 있는지는 저장소로 확인하지 못했습니다. '영속된 뒤에만 퇴출' 규칙은 설계와 테스트로 확인했지만 호출부가 없는 계획기라, 실제 메모리 부족 상황에서의 동작은 확인하지 못했습니다. '입력이 타일 커밋 단계로 나뉜다'는 기존 표현은 이 구분이 없습니다.",
+        "The store is connected only to the collaborative raster surface once the deployment opt-in (the two tokens above) is on, and whether production has those tokens on could not be confirmed from the repository. The 'evict only after persisting' rule is confirmed by design and tests, but since the planner has no call site, behavior under real memory pressure was not verified. The older phrase that input is split into tile-commit stages lacks this distinction.",
       ),
     },
     technologies: ["WebGPU", "Copy-on-write"],
@@ -415,8 +415,8 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
         "Like Photoshop's magic wand, it selects the connected area whose color is close to the clicked point. Where the paint bucket fills that area with color, the magic wand turns it into a selection that can be moved, feathered, inverted and undone. The core is a connected-region search (flood fill), done non-recursively with a stack so large images cannot overflow the call stack.",
       ),
       t(
-        "찾은 0/1 마스크의 윤곽선(바깥 하나와 구멍들)을 추적해 선택 모델에 더하거나 뺍니다. 성능을 위해 긴 변 640px 로 줄여 스캔·추적하고 윤곽 루프는 48개까지만 유지하므로 마술봉 경계는 근사입니다(좌표는 0~1 정규화라 해상도와 호환). 반대로 알파·색 범위 선택에는 정확한 경로가 따로 있어, 원본 픽셀 경계를 해상도를 낮추지 않고 추적하고 모서리만 닿는 픽셀과 구멍도 그대로 둡니다.",
-        "The outline of the resulting 0/1 mask (one outer loop plus holes) is traced and added to or subtracted from the selection model. For speed it scans and traces at a long side of 640 px and keeps at most 48 loops, so the magic wand's edge is approximate (coordinates are normalized 0 to 1 and thus resolution-independent). Alpha and color-range selections instead have an exact path that traces original pixel boundaries without lowering resolution, keeping pixels that only touch at corners and holes as they are.",
+        "찾은 0/1 마스크의 윤곽선(바깥 하나와 구멍들)을 추적해 선택 모델에 더하거나 뺍니다. 성능을 위해 긴 변 640px 로 줄여 스캔·추적하고 윤곽 루프는 48개까지만 유지하므로 마술봉 경계는 근사입니다(좌표는 0~1 정규화라 해상도와 호환). 반대로 색 범위 선택에는 정확한 경로가 따로 있어, 원본 픽셀 경계를 해상도를 낮추지 않고 추적하고 모서리만 닿는 픽셀과 구멍도 그대로 둡니다. 레이어 알파를 선택으로 바꾸는 모듈(studio-layer-alpha-selection.ts)도 같은 방식으로 구현·시험돼 있지만 제품 호출처는 아직 없습니다.",
+        "The outline of the resulting 0/1 mask (one outer loop plus holes) is traced and added to or subtracted from the selection model. For speed it scans and traces at a long side of 640 px and keeps at most 48 loops, so the magic wand's edge is approximate (coordinates are normalized 0 to 1 and thus resolution-independent). Color-range selection instead has an exact path that traces original pixel boundaries without lowering resolution, keeping pixels that only touch at corners and holes as they are. A module that turns layer alpha into a selection (studio-layer-alpha-selection.ts) is built and tested the same way, but no product code calls it yet.",
       ),
       t(
         "OpenCV.js(브라우저용 WebAssembly 컴퓨터 비전)는 마스크를 벡터 경로로 바꾸는 윤곽선 추출에 쓰입니다. 같은 모듈에는 grabCut(사각형 안의 전경을 색 모델과 그래프 컷으로 분리하는 대화형 알고리즘)·플러드 마스크·가장자리 다듬기도 구현돼 있고 입력은 한 변 8,192px, 33.5MP 로 제한되지만, 이 함수들을 부르는 제품 코드는 아직 없습니다. 모든 OpenCV 객체를 만든 순서의 역순으로 해제해야 WASM 힙이 새지 않는다는 규율이 코드에 있습니다.",
@@ -438,8 +438,8 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
       title: t("클릭 한 번이 선택 영역이 되기까지", "From one click to a selection"),
       caption: t("마술봉 경로는 연결되어 있고, 정확 외곽선은 별도 경로이며, grabCut 은 아직 연결되지 않았습니다.", "The wand path is connected, exact outlines are a separate path, and grabCut is not yet connected."),
       alt: t(
-        "마술봉은 클릭한 점에서 비슷한 색으로 이어진 영역을 퍼뜨려 0/1 마스크를 만들고, 외곽선을 추적해 선택 영역에 더합니다. 알파나 색 범위 같은 원본 해상도 마스크는 픽셀 경계를 그대로 추적하는 정확 외곽선 경로를 거칩니다. OpenCV grabCut 은 점선으로 표시했듯 아직 마스크 단계에 연결되지 않았습니다.",
-        "The magic wand spreads over similar connected color from the clicked point to make a 0/1 mask, traces its outline and adds it to the selection. Full-resolution masks such as alpha or color range go through an exact-outline path that traces pixel boundaries as they are. OpenCV grabCut, drawn dashed, is not yet connected to the mask stage.",
+        "마술봉은 클릭한 점에서 비슷한 색으로 이어진 영역을 퍼뜨려 0/1 마스크를 만들고, 외곽선을 추적해 선택 영역에 더합니다. 색 범위 같은 원본 해상도 마스크는 픽셀 경계를 그대로 추적하는 정확 외곽선 경로를 거칩니다(레이어 알파 선택 모듈은 아직 미연결). OpenCV grabCut 은 점선으로 표시했듯 아직 마스크 단계에 연결되지 않았습니다.",
+        "The magic wand spreads over similar connected color from the clicked point to make a 0/1 mask, traces its outline and adds it to the selection. Full-resolution masks such as color range go through an exact-outline path that traces pixel boundaries as they are (the layer-alpha selection module is not yet wired). OpenCV grabCut, drawn dashed, is not yet connected to the mask stage.",
       ),
       nodes: [
         { id: "click", label: t("클릭 한 점", "A clicked point"), tone: "local", shape: "pill", at: [0, 1] },
@@ -448,7 +448,7 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
         { id: "trace", label: t("외곽선 추적", "Trace outline"), sub: t("바깥 1 + 구멍 · 48 루프", "Outer 1 + holes, 48 loops"), tone: "local", at: [3, 1] },
         { id: "sel", label: t("선택 영역", "Selection"), sub: t("추가·빼기·이동·되돌리기", "Add, subtract, move, undo"), tone: "good", shape: "pill", at: [4, 1] },
         { id: "cv", label: t("OpenCV grabCut", "OpenCV grabCut"), sub: t("구현·테스트만, UI 미연결", "Code and tests only"), tone: "warn", at: [2, 0] },
-        { id: "src", label: t("원본 해상도 마스크", "Full-resolution mask"), sub: t("알파·색 범위", "Alpha, color range"), tone: "local", at: [2, 2] },
+        { id: "src", label: t("원본 해상도 마스크", "Full-resolution mask"), sub: t("색 범위 (알파는 미연결)", "Color range (alpha not wired)"), tone: "local", at: [2, 2] },
         { id: "exact", label: t("정확 외곽선", "Exact outline"), sub: t("픽셀 경계 그대로", "Pixel edges as they are"), tone: "good", at: [3, 2] },
       ],
       edges: [
@@ -476,10 +476,10 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
         route: "/studio",
       },
       {
-        feature: t("선택 작업대 · 알파/색 범위 선택", "Selection workbench · alpha and color-range selection"),
+        feature: t("선택 작업대 · 색 범위 선택 (알파 선택은 미연결)", "Selection workbench · color-range selection (alpha selection not wired)"),
         role: t(
-          "원본 픽셀 경계를 해상도를 낮추지 않고 추적하고, 처리 예산을 넘으면 낮추는 대신 기존 선택을 유지합니다.",
-          "Traces original pixel boundaries without lowering resolution, and when the processing budget is exceeded it keeps the existing selection instead of degrading.",
+          "색 범위 선택은 원본 픽셀 경계를 해상도를 낮추지 않고 추적하고, 처리 예산을 넘으면 낮추는 대신 기존 선택을 유지합니다. 레이어 알파 선택 모듈(studio-layer-alpha-selection.ts)은 구현·시험만 있고 제품 호출처가 없습니다.",
+          "Color-range selection traces original pixel boundaries without lowering resolution, and when the processing budget is exceeded it keeps the existing selection instead of degrading. The layer-alpha selection module (studio-layer-alpha-selection.ts) is implemented and tested only and has no product caller.",
         ),
         paths: [
           "apps/web/src/domains/creator/selection/studio-selection-exact-mask.ts#exactSelectionFromMask",
@@ -567,8 +567,8 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
     chapterIds: ["worker-architecture", "browser-local-compute"],
     talk: {
       pitch: t(
-        "마술봉은 클릭한 색과 비슷하게 이어진 영역만 찾아 선택으로 만듭니다. 화면용 외곽선은 작게 줄여 빠르게 추적하고, 정확한 경계가 필요한 알파·색 범위 선택은 원본 픽셀 그대로 따로 추적합니다. OpenCV grabCut 은 구현돼 있지만 아직 화면 기능에 연결하지 않았습니다.",
-        "The magic wand finds only the area connected to the clicked point in a similar color and makes it a selection. Outlines for display are traced quickly at reduced size, while alpha and color-range selections that need exact edges are traced separately on the original pixels. OpenCV grabCut is implemented but not yet wired to a user feature.",
+        "마술봉은 클릭한 색과 비슷하게 이어진 영역만 찾아 선택으로 만듭니다. 화면용 외곽선은 작게 줄여 빠르게 추적하고, 정확한 경계가 필요한 색 범위 선택은 원본 픽셀 그대로 따로 추적합니다(레이어 알파 선택 모듈은 구현만 있고 아직 연결 전). OpenCV grabCut 은 구현돼 있지만 아직 화면 기능에 연결하지 않았습니다.",
+        "The magic wand finds only the area connected to the clicked point in a similar color and makes it a selection. Outlines for display are traced quickly at reduced size, while color-range selection, which needs exact edges, is traced separately on the original pixels (the layer-alpha selection module is built but not yet wired). OpenCV grabCut is implemented but not yet wired to a user feature.",
       ),
       analogy: t(
         "페인트 통으로 칠하는 대신 '칠해질 영역'에만 점선 울타리를 치는 것과 같습니다. 울타리는 옮기고 뒤집고 되돌릴 수 있습니다.",
@@ -631,8 +631,8 @@ export const ENGINEERING_ATLAS_DRAWING_DOCUMENT: readonly EngineeringAtlasEntry[
         "Vertical writing is handled by a separate pure layout engine. Neither canvas nor SVG can switch on the OpenType vert feature, so glyphs that must change shape are made by a 90 degree rotation instead of a substitution table (a deterministic geometric fallback), and short numbers are set sideways in one cell (tate-chu-yoko). Konva and SVG draw from the same coordinates, so canvas and export match.",
       ),
       t(
-        "정직한 현재 상태: 금칙·랙 균형 모듈은 번역 QA(현지화 오버플로 보고서)에서 위반을 세는 데 연결돼 있지만, 가로 말풍선의 실제 줄바꿈 함수(wrapBubbleTextLines)는 공백 단위 그리디 워드랩이고 이 모듈을 호출하지 않습니다. HarfBuzz 셰이핑 provider(합자·커닝용)도 구현돼 있지만 제품 코드에서 import 하는 곳이 없습니다.",
-        "The honest current state: the kinsoku and rag-balancing module is wired into translation QA (the localization overflow report) to count violations, but the real horizontal wrap function (wrapBubbleTextLines) is a space-based greedy wrap that does not call it. A HarfBuzz shaping provider (for ligatures and kerning) is also implemented but nothing in product code imports it.",
+        "정직한 현재 상태(여기서 '설정 필요'는 환경 설정이 아니라 가로 줄바꿈에 연결하는 작업이 남았다는 뜻입니다): 금칙·랙 균형 모듈은 번역 QA(현지화 오버플로 보고서)에서 위반을 세는 데 연결돼 있지만, 가로 말풍선의 실제 줄바꿈 함수(wrapBubbleTextLines)는 공백 단위 그리디 워드랩이고 이 모듈을 호출하지 않습니다. HarfBuzz 셰이핑 provider(합자·커닝용)도 구현돼 있지만 제품 코드에서 import 하는 곳이 없습니다.",
+        "The honest current state ('setup required' here means the wiring into horizontal wrapping is still to do, not an environment setting): the kinsoku and rag-balancing module is wired into translation QA (the localization overflow report) to count violations, but the real horizontal wrap function (wrapBubbleTextLines) is a space-based greedy wrap that does not call it. A HarfBuzz shaping provider (for ligatures and kerning) is also implemented but nothing in product code imports it.",
       ),
     ],
     keyPoints: [

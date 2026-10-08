@@ -1,7 +1,7 @@
 # ToonStudio 아키텍처
 
 - 상태: **현재 구조 + 진행 중인 마이그레이션**
-- 최종 갱신: **2026-09-27**
+- 최종 갱신: **2026-10-08**
 - 적용 범위: 저장소 구조, 애플리케이션 경계, 공유 패키지, 테스트·도구·문서 소유권
 
 ## 1. 권위 순서
@@ -109,17 +109,18 @@ apps/admin-web/src/
 apps/api/
   drizzle.config.ts
   src/
+    app.module.ts·main.ts  Nest 모듈 조립과 운영 진입점
     modules/          기능 모듈과 HTTP/WebSocket 경계
-    infrastructure/   외부 서비스·DB·object storage adapter
-    platform/         신규 federation 연결 정책(현재 기본 비활성)
-    db/               schema, migration, seed
+    platform/         http(요청 경계)·adapters(외부 서비스·object storage)·database(schema·migration·seed)·federated-data-plane(현재 기본 비활성)
+    realtime/         실시간 전송(Socket.IO 어댑터)
+    runtime/          서버 실행 수명주기와 역할(role) 조립
     server/           modules/platform으로 이전 중인 레거시 유스케이스
-    common/           축소 중인 레거시 공용 계층
     config/           서버 설정과 보안 정책
-    runtime/          서버 실행 수명주기
+    logging/          허용 목록 로그 직렬화
 ```
 
-운영 진입점은 `apps/api/src/main.ts`다. API의 교차 앱 계약은 공용 package가 소유하며,
+운영 진입점은 `apps/api/src/main.ts`다. `src/common`·`src/infrastructure`·`src/db` 루트는 새로 만들지 않는다
+(근거: `docs/architecture/api-current-boundaries.md`). API의 교차 앱 계약은 공용 package가 소유하며,
 Web 소스 직접 참조는 0으로 고정한다.
 
 ### 3.4 Mobile

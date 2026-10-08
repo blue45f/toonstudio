@@ -33,12 +33,12 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
         "On the selection side there is a ProviderDescriptor (zod strict), a registry and a planner. A stale field such as fallbackProviderId is rejected instead of silently vanishing; the planner picks a renderer per island (unit of work), never per object, and forbids GPU-to-CPU readback during interaction. Instead of auto-switching to a benchmark winner, evidence (tournament) and authority (ledger) are kept separate.",
       ),
       t(
-        "한계: 원장의 설명(note)과 근거(evidence)는 사람이 쓰므로 사실 오류가 남을 수 있습니다. 예를 들어 libmypaint 항목은 '호출부 0건'이라고 적혀 있지만, 선택 획 네이티브 변환 워커가 loadLibMypaint 를 호출합니다. 기계가 지키는 것은 구조(소유자 수, 경로 실재, 문서 일치)이고, 문장의 정확성은 여전히 사람의 검토 몫입니다.",
-        "A limit: the ledger's notes and evidence are written by people, so factual errors can remain. For example the libmypaint entry says it has zero call sites, yet a native-conversion worker for selected strokes calls loadLibMypaint. Machines guard the structure (owner counts, path existence, document match); the accuracy of the prose still needs human review.",
+        "한계: 원장의 설명(note)과 근거(evidence)는 사람이 쓰므로 사실 오류가 남을 수 있습니다. 실제로 libmypaint 항목은 한동안 '호출부 0건'이라고 적혀 있었지만 선택 획 네이티브 변환 워커가 loadLibMypaint 를 호출하고 있었고, 발표 전 검증에서 찾아 문장을 고쳤습니다. 다만 역할 칸(reference, 비교 전용)이 이 사용을 반영하는지는 아직 검토 대상입니다. 기계가 지키는 것은 구조(소유자 수, 경로 실재, 문서 일치)이고, 문장의 정확성은 여전히 사람의 검토 몫입니다.",
+        "A limit: the ledger's notes and evidence are written by people, so factual errors can remain. In fact the libmypaint entry used to say it had zero call sites while a native-conversion worker for selected strokes was calling loadLibMypaint; a pre-talk check found it and the sentence was fixed. Whether the role column (reference, comparison only) reflects that use is still open for review. Machines guard the structure (owner counts, path existence, document match); the accuracy of the prose still needs human review.",
       ),
     ],
     keyPoints: [
-      t("권위 13종마다 primary 1명 — 테스트가 강제", "One primary per authority (13), enforced by tests"),
+      t("권위 13종 중 12종은 primary 1명, 1종은 소유자 없음 선언(테스트 강제)", "12 of 13 authorities have one primary, 1 is declared ownerless (test-enforced)"),
       t("문서는 원장에서 생성, 손으로 고치면 테스트 실패", "Docs are generated; hand edits fail the test"),
       t("lab 엔진은 제품 import 0건을 스캐너가 증명", "A scanner proves lab engines have zero product imports"),
     ],
@@ -46,7 +46,7 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
       id: "renderer-role-ledger-diagram",
       kind: "layers",
       title: t("권위별 소유자 지도", "Who owns which authority"),
-      caption: t("권위마다 소유자는 정확히 한 엔진이고, 소유자 없음도 이유와 함께 선언합니다.", "Each authority has exactly one owning engine, and 'no owner' is declared with a reason."),
+      caption: t("권위 12종은 소유자가 정확히 한 엔진이고, 나머지 1종은 '소유자 없음'을 이유와 함께 선언합니다.", "Twelve authorities each have exactly one owning engine, and the remaining one is declared 'no owner' with a reason."),
       alt: t(
         "위에서 아래로 화면·입력·선택은 Konva와 Pixi, 획 확정은 Canvas2D, 문서 벡터 표시는 Skia CanvasKit, 자연매체는 Hokusai, 선 기하·스케치·3D는 각 전용 라이브러리가 소유합니다. 이미지 필터는 소유자 없음으로 선언되고, 맨 아래의 제공자·참조·실험 엔진은 권위를 갖지 않습니다.",
         "From top to bottom: Konva and Pixi own display, input and selection; Canvas2D owns stroke commits; Skia CanvasKit owns the document vector island; Hokusai owns natural media; dedicated libraries own stroke geometry, sketch and 3D. Image filters are declared ownerless, and the providers, references and labs at the bottom hold no authority.",
@@ -61,7 +61,7 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
         { id: "others", label: t("제공자·참조·실험", "Providers, references, labs"), sub: t("권위 없음: 선택형 provider, 비교용 reference, 호출 0건 lab", "No authority: opt-in providers, references, labs with zero callers"), tone: "neutral", chips: ["Vello", "ThorVG", "libmypaint", "Velato", "WESL"] },
       ],
       brackets: [
-        { label: t("primary: 권위마다 정확히 1명", "primary: exactly one per authority"), layerIds: ["display", "commit", "island", "media", "geometry"] },
+        { label: t("primary: 12종은 권위마다 정확히 1명", "primary: exactly 1 for each of 12"), layerIds: ["display", "commit", "island", "media", "geometry"] },
         { label: t("권위를 갖지 않는 쪽", "Holds no authority"), layerIds: ["filter", "others"] },
       ],
     },
@@ -150,8 +150,8 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
     chapterIds: ["brush-render-authority", "architecture"],
     talk: {
       pitch: t(
-        "렌더러가 열 개 넘게 공존해도 누가 무엇을 맡는지는 문서가 아니라 코드 한 곳에 적고, 어긋나면 테스트가 깨지게 했습니다. 권위마다 책임자는 정확히 한 명이고, 실험 엔진은 제품에서 호출되지 않는다는 것을 스캐너가 증명합니다.",
-        "Even with a dozen renderers, who owns what is written in one place in code rather than in prose, and drift breaks a test. Every authority has exactly one owner, and a scanner proves experimental engines are never called by the product.",
+        "렌더러가 열 개 넘게 공존해도 누가 무엇을 맡는지는 문서가 아니라 코드 한 곳에 적고, 어긋나면 테스트가 깨지게 했습니다. 권위 13종 중 12종은 책임자가 정확히 한 명이고 나머지 1종(이미지 필터)은 '소유자 없음'을 이유와 함께 선언하며, 실험 엔진은 제품에서 호출되지 않는다는 것을 스캐너가 증명합니다.",
+        "Even with a dozen renderers, who owns what is written in one place in code rather than in prose, and drift breaks a test. Of 13 authorities, 12 have exactly one owner and the remaining one (image filters) is declared ownerless with a reason, and a scanner proves experimental engines are never called by the product.",
       ),
       analogy: t(
         "건물의 열쇠 담당자 명부입니다. 방마다 열쇠 책임자는 딱 한 명이어야 하고, 명부와 실제 열쇠가 다르면 경비 시스템이 경보를 울립니다.",
@@ -181,8 +181,8 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
         },
       ],
       pitfall: t(
-        "원장의 libmypaint 항목은 'loadLibMypaint 호출부 0건'이라고 적혀 있지만 워커(studio-native-brush-probe.worker.ts)에 호출이 있어 낡은 문장으로 보입니다. 발표에서는 구조 검사까지만 보증한다고 말하세요.",
-        "The ledger's libmypaint entry claims zero loadLibMypaint call sites, but a worker (studio-native-brush-probe.worker.ts) calls it, so the sentence looks stale. In a talk, vouch only for the structural checks.",
+        "원장의 libmypaint 항목은 한때 'loadLibMypaint 호출부 0건'이라고 적혀 있었으나 워커(studio-native-brush-probe.worker.ts)가 호출하고 있어 문장을 고쳤습니다. 역할 칸(reference)이 이 사용과 맞는지는 아직 검토 중이니, 발표에서는 구조 검사까지만 보증한다고 말하세요.",
+        "The ledger's libmypaint entry used to claim zero loadLibMypaint call sites, but a worker (studio-native-brush-probe.worker.ts) calls it, so the sentence was fixed. Whether the role column (reference) fits that use is still under review, so in a talk vouch only for the structural checks.",
       ),
     },
     technologies: ["Konva", "Canvas2D", "CanvasKit", "Vello", "WebGPU"],
@@ -601,8 +601,8 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
         "The honest result: it failed the promotion gate. In a 2026-08-08 run on an Apple M2 Max at 1792x1536 with 32 samples, throughput versus the libmypaint WASM was 0.097x for the crisp-ink brush (ink-crisp) and 0.318x for the soft-wash brush (wash-soft) (1.2x required), and the soft-wash brush also failed quality parity. So zero presets are promoted to an automatic route, and today users reach it only through the explicit flow of selecting a finished stroke and converting it.",
       ),
       t(
-        "이 숫자는 한 코퍼스·한 날짜·한 기기의 측정이라 어느 쪽이 더 낫다는 결론은 아닙니다. 결정성·압력 충실도·무손실 설정 반영·메모리 한도는 통과했고, 측정 당시 WASM(186,189바이트)과 지금 체크인된 산출물(187,243바이트)은 달라서 재측정 값은 저장소에 없습니다. libmypaint(C→WASM)는 비교 기준일 뿐 제품 폴백이 아닙니다.",
-        "These figures come from one corpus, one date and one machine, so they do not prove either side is better. Determinism, pressure fidelity, lossless setting mapping and the memory bound all passed; the WASM at measurement time (186,189 bytes) differs from the checked-in artifact (187,243 bytes), and no re-measurement exists in the repository. libmypaint (C compiled to WASM) is only a comparison reference, not a product fallback.",
+        "이 숫자는 한 코퍼스·한 날짜·한 기기의 측정이라 어느 쪽이 더 낫다는 결론은 아닙니다. 결정성·압력 충실도·무손실 설정 반영·메모리 한도는 통과했고, 측정 당시 WASM(186,189바이트)과 지금 체크인된 산출물(187,243바이트)은 달라서 재측정 값은 저장소에 없습니다. libmypaint(C→WASM)는 Hokusai 의 자동 대체(폴백)가 아니라 성능·품질 비교 기준입니다. 다만 별개 기능인 '선택 획 네이티브 엔진 변환'에서는 사용자가 직접 고르는 엔진(기본 선택)으로도 쓰입니다.",
+        "These figures come from one corpus, one date and one machine, so they do not prove either side is better. Determinism, pressure fidelity, lossless setting mapping and the memory bound all passed; the WASM at measurement time (186,189 bytes) differs from the checked-in artifact (187,243 bytes), and no re-measurement exists in the repository. libmypaint (C compiled to WASM) is a performance and quality comparison reference, not an automatic replacement (fallback) for Hokusai. Separately, the 'selected stroke native-engine conversion' feature also uses it as an engine the user picks (the default choice).",
       ),
     ],
     keyPoints: [
@@ -667,8 +667,8 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
       {
         feature: t("자동 라우트 승격 게이트(품질 정책)", "Automatic-route promotion gate (quality policy)"),
         role: t(
-          "커밋된 비교 결과가 통과하기 전에는 어떤 프리셋도 자동 제품 경로에 오르지 못하게 코드로 잠그고, 라이브 브러시는 명시적 옵트인으로만 허용합니다.",
-          "Locks the code so no preset reaches the automatic product route until committed evidence passes; the live brush is allowed only with an explicit opt-in.",
+          "커밋된 비교 결과가 통과하기 전에는 어떤 프리셋도 자동 제품 경로에 오르지 못하게 코드로 잠급니다. 라이브 브러시를 허용하는 옵트인 입구는 코드에 있지만 이를 켜는 제품 코드가 없어, 일반 붓 선반에서는 시작되지 않습니다.",
+          "Locks the code so no preset reaches the automatic product route until committed evidence passes. The code has an opt-in entry that would allow the live brush, but no product code turns it on, so the normal brush shelf never starts it.",
         ),
         paths: [`${HOKUSAI_POLICY}#STUDIO_HOKUSAI_FULLSIZE_PROMOTION_GATE`, "tests/benchmarks/results/libmypaint-fullsize.json"],
       },
@@ -791,21 +791,21 @@ export const ENGINEERING_ATLAS_DRAWING_ENGINES: readonly EngineeringAtlasEntry[]
         {
           question: t("libmypaint 를 폴백으로 쓰나요?", "Is libmypaint used as a fallback?"),
           answer: t(
-            "아닙니다. 비교 기준(reference)일 뿐이고, 정책 파일에도 '벤치마크 전용, 제품 폴백 아님'으로 적혀 있습니다. 엔진 간 자동 대체는 ADR-0018 로 금지돼 있습니다.",
-            "No. It is a comparison reference only; the policy file records it as benchmark-only, not a product fallback, and automatic substitution between engines is forbidden by ADR-0018.",
+            "아닙니다. Hokusai 의 대체(폴백)가 아니라 비교 기준(reference)이고, 정책 파일도 이 라이브 경로에서는 '벤치마크 기준, 제품 폴백 아님'으로 적고 있습니다. 엔진 간 자동 대체는 ADR-0018 로 금지돼 있습니다. 다만 별개 기능인 '선택 획 · 네이티브 엔진 변환'에서는 사용자가 인스펙터에서 libmypaint 를 직접 고를 수 있고, 그쪽의 기본 선택입니다.",
+            "No. It is a comparison reference, not a replacement (fallback) for Hokusai, and for this live path the policy file records it as a benchmark reference, not a product fallback. Automatic substitution between engines is forbidden by ADR-0018. Separately, in the 'selected stroke / native-engine conversion' feature the user can pick libmypaint in the inspector, and it is that feature's default choice.",
           ),
         },
         {
           question: t("라이브로 그릴 때도 Hokusai 가 쓰이나요?", "Is Hokusai used while drawing live?"),
           answer: t(
-            "기본은 아닙니다. 현재 사용자 동선은 완성된 획을 골라 변환하는 것이고, 라이브 레인은 사용자가 명시적으로 켜야 하는 실험입니다.",
-            "Not by default. Today's user flow is converting a finished stroke; the live lane is an experiment that users must switch on explicitly.",
+            "아니요. 현재 사용자 동선은 완성된 획을 골라 변환하는 것뿐입니다. 라이브 레인은 코드에 옵트인 입구만 있고 지금은 제품 어디에서도 켜지지 않으며, 일반 붓 선반에서는 시작되지 않습니다.",
+            "No. Today's user flow is only converting a finished stroke. The live lane has just an opt-in entry in code and is not switched on anywhere in the product today; the normal brush shelf never starts it.",
           ),
         },
       ],
       pitfall: t(
-        "수치를 말할 때는 반드시 '2026-08-08, Apple M2 Max, 1792×1536, 32샘플'을 함께 말하고, 어느 엔진이 더 낫다고 단정하지 마세요. 현재 빌드의 재측정값과 실사용 체감 속도는 이 카드에서 확인하지 못했습니다.",
-        "Always quote the figures with '2026-08-08, Apple M2 Max, 1792x1536, 32 samples', and do not declare either engine better. Re-measurements of the current build and real-world perceived speed were not verified for this card.",
+        "수치를 말할 때는 반드시 '2026-08-08, Apple M2 Max, 1792×1536, 32샘플'을 함께 말하고, 어느 엔진이 더 낫다고 단정하지 마세요. 현재 빌드의 재측정값과 실사용 체감 속도는 이 카드에서 확인하지 못했습니다. 역할 원장이 Hokusai 를 자연매체 권위의 primary 로 지정한 것은 역할 지정이고, 라이브 붓을 자동 경로로 올리는 승격(프리셋 0개)과는 별개의 게이트입니다.",
+        "Always quote the figures with '2026-08-08, Apple M2 Max, 1792x1536, 32 samples', and do not declare either engine better. Re-measurements of the current build and real-world perceived speed were not verified for this card. The role ledger naming Hokusai the primary of the natural-media authority is a role assignment, separate from the promotion gate that would put the live brush on an automatic route (zero presets).",
       ),
     },
     technologies: ["Rust / WASM", "wasm-bindgen", "libmypaint", "Dedicated Worker"],

@@ -1,3 +1,7 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 interface FakeRecord {
@@ -84,5 +88,32 @@ describe("compute-pressure", () => {
     ]);
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(mod.getLatestComputePressure()?.state).toBe("critical");
+  });
+});
+
+describe("compute-pressure 소비처 가드", () => {
+  const webSrcDir = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+  const IMPORT_PATTERN = /(?:from\s+|import\s*\(\s*)["'][^"']*compute-pressure["']/u;
+
+  function collectSourceFiles(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) return entry.name === "node_modules" ? [] : collectSourceFiles(path);
+      if (!entry.isFile() || !/\.tsx?$/u.test(entry.name)) return [];
+      if (/\.(?:test|spec)\.tsx?$/u.test(entry.name)) return [];
+      return [path];
+    });
+  }
+
+  it("설정 화면 말고는 이 모듈을 읽는 코드가 없다 (소비처가 생기면 설정 문구와 기술 자료를 함께 고친다)", () => {
+    const consumers = collectSourceFiles(webSrcDir)
+      .filter((file) => IMPORT_PATTERN.test(readFileSync(file, "utf8")))
+      .map((file) => relative(webSrcDir, file).split("\\").join("/"))
+      .sort();
+
+    // 지금은 현재 압력을 보여 주는 설정 화면만 읽는다. 품질을 조절하는 소비처는 없다.
+    // 새 소비처를 붙이면 NextgenLabSettingsSection.tsx 의 "compute-pressure" 설명(관측용)과
+    // domains/legal/technology 의 Compute Pressure 서술을 실제 동작에 맞게 바꾼 뒤 이 목록을 갱신한다.
+    expect(consumers).toEqual(["domains/account/NextgenLabSettingsSection.tsx"]);
   });
 });
