@@ -511,8 +511,12 @@ async function clickEnabledMenuItem(page: Page, label: string): Promise<void> {
   );
 }
 
-/** Minimal dependency-free PNG encoder — a blue field with a hard red square (blur-sensitive edges). */
-function buildTestPng(width: number, height: number): Buffer {
+/**
+ * Minimal dependency-free PNG encoder. The default palette is a blue field with a hard red square
+ * (blur-sensitive edges). "green-yellow" is a different field with the same square geometry, for
+ * placements whose pixels must be told apart from content already on the canonical canvas.
+ */
+function buildTestPng(width: number, height: number, palette: "blue-red" | "green-yellow" = "blue-red"): Buffer {
   const raw = Buffer.alloc(height * (1 + width * 4));
   for (let y = 0; y < height; y += 1) {
     const rowStart = y * (1 + width * 4);
@@ -520,9 +524,15 @@ function buildTestPng(width: number, height: number): Buffer {
     for (let x = 0; x < width; x += 1) {
       const px = rowStart + 1 + x * 4;
       const inSquare = x > width * 0.25 && x < width * 0.75 && y > height * 0.25 && y < height * 0.75;
-      raw[px] = inSquare ? 220 : 40;
-      raw[px + 1] = 30;
-      raw[px + 2] = inSquare ? 40 : 160;
+      if (palette === "green-yellow") {
+        raw[px] = inSquare ? 250 : 25;
+        raw[px + 1] = inSquare ? 205 : 165;
+        raw[px + 2] = inSquare ? 35 : 95;
+      } else {
+        raw[px] = inSquare ? 220 : 40;
+        raw[px + 1] = 30;
+        raw[px + 2] = inSquare ? 40 : 160;
+      }
       raw[px + 3] = 255;
     }
   }
@@ -573,10 +583,12 @@ async function placeTestImage(
   await openMainMenuGroup(page, "레이어");
   await clickEnabledMenuItem(page, "이미지…");
   const chooser = await chooserPromise;
+  // 인증 정본 문서의 캔버스에는 같은 파랑·빨강 이미지가 이미 있을 수 있다. 그 위에 같은 픽셀을 넣으면
+  // 삽입 전후 변화가 0이 되어 "그려지지 않음"으로 잘못 판정한다. 삽입 검증은 구별되는 색을 쓴다.
   await chooser.setFiles({
     name: "filter-e2e-image.png",
     mimeType: "image/png",
-    buffer: buildTestPng(800, 500),
+    buffer: buildTestPng(800, 500, painted ? "green-yellow" : "blue-red"),
   });
   if (painted) {
     await waitForPaintedEvidenceRegion(page, painted.clip, painted.baseline,
@@ -1171,10 +1183,10 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
       results.push(result);
       try {
         // 1) Place a fresh image via the file chooser; it becomes the selected element.
-        // 페이지 합성 필터가 남긴 합성 레이어도 image 타입이므로, 삽입 직전 문서에서
-        // 기준 식별자를 읽어야 새로 추가된 이미지를 정확히 하나만 가려낼 수 있다.
-        const beforeInsert = await readDurableStudioAutosaveDocument(page, autosaveKey);
-        const previousImageIds = new Set(canonicalImageElementIds(beforeInsert?.pagesList));
+        // 페이지 합성 필터가 남긴 합성 레이어도 image 타입이므로, 새로 추가된 이미지는 검증된 정본 상태
+        // (originalPages: 저장 확인과 체크포인트로 확인된 상태)의 식별자와 비교해 정확히 하나만 가려낸다.
+        // 삽입 직전 로컬 자동저장 읽기는 시점에 따라 비어 있을 수 있어 기준으로 쓰지 않는다.
+        const previousImageIds = new Set(canonicalImageElementIds(originalPages));
         const beforeInsertPixels = await screenshotClipped(page, clip);
         await placeTestImage(page, { clip, baseline: beforeInsertPixels });
         const imageOriginalDocument = await waitForSavedPages(page, (document) => !isDeepStrictEqual(document.pagesList, originalPages),
