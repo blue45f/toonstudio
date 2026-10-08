@@ -38,6 +38,33 @@ function SaveStatus({ saveState, revision, isDemo }: { readonly saveState: Produ
   );
 }
 
+/**
+ * 프로젝트 표지 타일 — 16개 제작 표면이 공유하는 공통 헤더의 첫 화면 주인공.
+ * aggregate.coverImageUrl이 채워졌을 때만 실물 이미지를 쓰고, 없으면 제목 이니셜
+ * 타이포 폴백을 같은 크기로 유지해 레이아웃이 흔들리지 않는다.
+ */
+function ProductionProjectCoverTile({ aggregate }: { readonly aggregate: ProductionProjectAggregate }) {
+  const coverImageUrl = aggregate.coverImageUrl ?? null;
+  if (coverImageUrl) {
+    return (
+      <img
+        src={coverImageUrl}
+        alt=""
+        className="h-16 w-12 shrink-0 rounded-lg border border-line object-cover shadow-sm sm:h-[4.5rem] sm:w-[3.375rem]"
+        loading="lazy"
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className="studio-texture-paper flex h-16 w-12 shrink-0 select-none items-center justify-center rounded-lg border border-line bg-[linear-gradient(150deg,var(--color-accent-soft),var(--color-panel)_58%,var(--color-raised))] text-xl font-black text-accent sm:h-[4.5rem] sm:w-[3.375rem]"
+    >
+      {aggregate.title.trim().charAt(0) || "?"}
+    </span>
+  );
+}
+
 export function ProductionProjectHeader({
   aggregate,
   access,
@@ -57,7 +84,9 @@ export function ProductionProjectHeader({
   return (
     <header className="creator-workflow-topbar border-b border-line bg-panel px-4 py-3 sm:px-6">
       <div className="mx-auto flex max-w-[100rem] flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-start gap-3">
+          <ProductionProjectCoverTile aggregate={aggregate} />
+          <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <Link className="inline-flex min-h-6 items-center font-bold tracking-[0.04em] text-accent hover:underline" to="/production">
               {bt("제작 관리", "Production")}
@@ -69,6 +98,7 @@ export function ProductionProjectHeader({
             </ProductionPill>
           </div>
           <h1 className="mt-1 truncate text-xl font-black tracking-tight text-fg sm:text-2xl">{aggregate.title}</h1>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ProductionCommandPalette aggregate={aggregate} />

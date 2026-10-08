@@ -225,6 +225,8 @@ export function reduceProductionDemoCommand(
       return base;
     case "set-board-order":
       return { ...base, boardOrder: { columns: command.columns } };
+    case "set-project-cover":
+      return { ...base, coverImageUrl: command.coverImageUrl };
     case "rebaseline-task":
       return { ...base, tasks: aggregate.tasks.map((task) => task.id === command.taskId ? { ...task, baselineDueAt: command.newDueAt, dueAt: command.newDueAt, statusChangedAt: new Date().toISOString() } : task) };
     case "upsert-review-policy":

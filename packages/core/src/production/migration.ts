@@ -215,6 +215,8 @@ export function migrateProductionProjectAggregate(
   return Object.freeze({
     ...(aggregate as unknown as ProductionProjectAggregate),
     modelVersion: 2,
+    // 표지 필드가 없던 구 aggregate는 null로 정규화한다 (값이 문자열이면 그대로 유지).
+    coverImageUrl: typeof aggregate.coverImageUrl === "string" ? aggregate.coverImageUrl : null,
     tasks: Object.freeze(tasks),
     riskPolicy: migrateProductionRiskPolicy(aggregate.riskPolicy, projectId, updatedAt),
     riskSignals: Object.freeze([...arrayValue<ProductionRiskSignal>(aggregate.riskSignals)]),

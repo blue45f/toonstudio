@@ -273,6 +273,8 @@ function eventTarget(command: ProductionCommand): { type: string; id: string } {
       return { type: "task-baseline", id: command.taskId };
     case "set-board-order":
       return { type: "board-order", id: "board-order" };
+    case "set-project-cover":
+      return { type: "project-cover", id: "project-cover" };
   }
 }
 
@@ -1615,6 +1617,11 @@ function applyCommand(
         },
       };
     }
+    case "set-project-cover": {
+      // 표지는 표시 전용 메타데이터라 작업 상태·승인 규칙을 건드리지 않는다.
+      // capability는 기본값 "edit"을 그대로 쓴다 (commandCapability 무변경).
+      return { aggregate: { ...aggregate, coverImageUrl: command.coverImageUrl } };
+    }
     case "rebaseline-task": {
       const task = aggregate.tasks.find((entry) => entry.id === command.taskId);
       if (!task) throw new BadRequestException("재기준화할 작업을 찾을 수 없습니다.");
@@ -1761,6 +1768,7 @@ export class ProductionCollaborationService {
         projectId: aggregate.projectId,
         workId: aggregate.workId,
         title: aggregate.title,
+        coverImageUrl: aggregate.coverImageUrl ?? null,
         collaborationModel: aggregate.collaborationModel,
         revision: aggregate.revision,
         updatedAt: aggregate.updatedAt,
@@ -1954,11 +1962,18 @@ export class ProductionCollaborationService {
   ): Promise<ProductionMutationResponse> {
     const input = CreateProductionProjectSchema.parse(body);
     const now = new Date().toISOString();
+    // 표지를 직접 지정하지 않았으면 연결된 작품의 대표 표지(creator_work.cover)를 시드한다.
+    // 작품이 없거나 표지가 비어 있으면 null — 표지를 지어내지 않는다.
+    // 소유권 검사는 저장소 생성 트랜잭션이 그대로 담당한다(여기서는 값만 읽는다).
+    const seededCoverImageUrl = input.coverImageUrl !== undefined
+      ? input.coverImageUrl
+      : await this.run(() => this.repository.findWorkCoverImageUrl(input.workId));
     const initial = createProductionProjectAggregate({
       projectId: input.projectId,
       workId: input.workId,
       organizationId: input.organizationId ?? null,
       title: input.title,
+      coverImageUrl: seededCoverImageUrl,
       collaborationModel: input.collaborationModel,
       ownerPartyId: input.ownerPartyId,
       ownerUserId: actorUserId,

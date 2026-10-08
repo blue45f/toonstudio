@@ -227,6 +227,7 @@ export const PRODUCTION_ACTIVITY_LABELS: Readonly<Record<ProductionActivityActio
   "rebaseline-task": { ko: "작업 일정 다시 잡기", en: "Task rescheduled" },
   "record-review-decision": { ko: "검수 결정 기록", en: "Review decision recorded" },
   "set-board-order": { ko: "카드 순서 변경", en: "Card order changed" },
+  "set-project-cover": { ko: "프로젝트 표지 변경", en: "Project cover changed" },
   "suppress-risk-signal": { ko: "위험 신호 숨김", en: "Risk signal suppressed" },
   "transition-risk": { ko: "위험 상태 변경", en: "Risk status changed" },
   "transition-risk-response": { ko: "위험 대응 상태 변경", en: "Risk response status changed" },

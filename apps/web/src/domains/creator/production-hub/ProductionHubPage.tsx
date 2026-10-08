@@ -156,7 +156,7 @@ function SurfaceContent({ surface, ...props }: SurfaceProps & { readonly surface
     case "activity": return <ProductionActivityWorkspace aggregate={aggregate} viewerUserId={props.viewerUserId} viewerAssignmentIds={props.viewerAssignmentIds} versionActivityEnabled={!isDemo} />;
     case "procurement": return <ProductionProcurementSurface aggregate={aggregate} />;
     case "rights": return <ProductionRightsSurface aggregate={aggregate} />;
-    case "settings": return <ProductionTeamSurface aggregate={aggregate} access={access} />;
+    case "settings": return <ProductionTeamSurface aggregate={aggregate} access={access} execute={execute} />;
   }
 }
 
