@@ -343,21 +343,29 @@ cureFraction 2/3, capacityBase 0.4, capacitySpan 0.6
 4. 유화: 점도별 밀기 거리 단조, 부피 보존, KM 혼색, 시임(타일 경계) 회귀(`oil-layer.test.ts`).
 5. 프리셋 픽셀 해시: GPU 해시는 CPU와 달라도 된다. CPU 해시와의 차이를 `≤ 1/255`(p99)로 본다.
 
-### 9.3 기준값 (CPU 참조, 2026-10-02 실측)
+### 9.3 기준값 (CPU 참조, 2026-10-02 실측 · 2026-10-08 입력 정점 재방출로 해시 갱신)
 
-**프리셋 픽셀 해시**(fnv1a64, sRGB RGBA8, `zigzagStroke(size, {durationMs: 600})`, seed 1, 빈 문서; `raster/wet-presets.snapshot.test.ts`, `raster/surface.test.ts`):
+**프리셋 픽셀 해시**(fnv1a64, sRGB RGBA8, `zigzagStroke(size, {durationMs: 600})`, seed 1, 빈 문서; `raster/wet-presets.snapshot.test.ts`, `raster/wet-presets-large.snapshot.test.ts`, `raster/surface.test.ts`):
 
-| 프리셋 | 크기 | 새 해시 | 이전(HEAD) |
-| --- | --- | --- | --- |
-| watercolor-wet | 256² | `e2eeedfaad6bccd9` | `9ad1211d759334e5` |
-| watercolor-wet | 512² | `21d19d4a9bb0d714` | `45b7061a83d36c41` |
-| watercolor-dry | 256² | `b6d335e0fe02b6c1` | (스냅샷 없음) |
-| sumi-ink-wet | 256² | `24da89b5d863913d` | (신설 프리셋) |
-| gouache | 256² | `70fcf8e9c1dedaec` | (스냅샷 없음) |
-| oil-impasto | 256² | `1d1437eb6d4ebc42` | `1dcf7d4244c5b6a8` |
-| oil-impasto | 512² | `b4f8ae7943dbd81f` | `75860a06df6f470d` |
+2026-10-08에 입력 단계 수정 #9(수정안 A: 모서리 정점 재방출, `engine/input/corner-preserve.ts`·`input-pipeline.ts`)로 지그재그의 모서리 정점이 출력 경로에 들어가 아래 **현재 해시가 모두 바뀌었다**(습식 물리·프리셋 파라미터는 변경 없음, 원인 격리는 이전 해시와 같은 코드에서 입력 단계만 되돌려 렌더해 확인).
+GPU 레인도 같은 `StrokePipeline`(CPU에서 도는 입력 단계)을 거치므로 GPU/CPU 대조의 구조는 같지만, 아래 현재 해시에 대한 **GPU 대조는 재측정하지 않았다**(unverified, 이 환경에서 WebGPU 표시 불가). 2026-10-02의 GPU 측정값은 '2026-10-02 해시' 열 기준이다.
 
-**비습식 프리셋은 변하지 않았다**: ink-g-pen 256² `3e66c6a4278fa07a`/512² `03435916d2ffa584`, pencil-hb `0de059d99a399575`/`eb724959d583f0b2`, marker-alcohol `c7a58dfe8d0e9d04`/`d1f86555b1222d52`, airbrush `73cb000b3ed8e29e`/`bb52144130033daf`.
+| 프리셋 | 크기 | 현재 해시(2026-10-08) | 2026-10-02 해시 | 그 이전(HEAD) |
+| --- | --- | --- | --- | --- |
+| watercolor-wet | 256² | `2ca89c15e81abfc6` | `e2eeedfaad6bccd9` | `9ad1211d759334e5` |
+| watercolor-wet | 512² | `93574dffe653e968` | `21d19d4a9bb0d714` | `45b7061a83d36c41` |
+| watercolor-dry | 256² | `faebfb7d0eb47759` | `b6d335e0fe02b6c1` | (스냅샷 없음) |
+| sumi-ink-wet | 256² | `9a964948faee2932` | `24da89b5d863913d` | (신설 프리셋) |
+| gouache | 256² | `e575a8334ebc8cbe` | `70fcf8e9c1dedaec` | (스냅샷 없음) |
+| oil-impasto | 256² | `034beb3bf6c4f868` | `1d1437eb6d4ebc42` | `1dcf7d4244c5b6a8` |
+| oil-impasto | 512² | `556fd7d568b63d56` | `b4f8ae7943dbd81f` | `75860a06df6f470d` |
+
+**비습식 프리셋도 같은 이유로 바뀌었다**(`surface.test.ts` 8건; 같은 지그재그에서 모서리가 있다). 현재 해시(2026-10-08) ← 2026-10-02 해시:
+ink-g-pen 256² `ac1589bfdd7e06e5` ← `3e66c6a4278fa07a`·512² `3225675a6cf04326` ← `03435916d2ffa584`,
+pencil-hb `cf83cd31b4a73242` ← `0de059d99a399575`·`50af171db778b523` ← `eb724959d583f0b2`,
+marker-alcohol `361a124b8bbb8a27` ← `c7a58dfe8d0e9d04`·`12c85d69504cb39a` ← `d1f86555b1222d52`,
+airbrush `b4ff0236d47f15f3` ← `73cb000b3ed8e29e`·`02ef1c0a90988054` ← `bb52144130033daf`.
+`cpu-reference-lane.test.ts` 스냅샷 36건 중 지그재그 4건만 변경됐다. 불변인 나머지 32건은 **모서리 없는 획 28건**(직선·곡선·나선·고속 획·압력 램프·기울기 스윕·손떨림 × 4프리셋)과, 모서리는 있지만 128²에서 0.16 px/ms로 속도 가드(0.2 px/ms, 정점 직전 40 ms 창의 속도)에 걸려 재방출이 일어나지 않은 **corner-square 4건**이다(256²/512² corner-square는 재방출 2건이 생기지만 그 크기의 스냅샷이 없어 해시로는 드러나지 않는다).
 
 **시간축 지표 실측 / 임계(설계 §4, 완화하지 않음)**:
 

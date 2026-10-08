@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cornerStroke, lineStroke, tremorStroke, withPredicted } from "../testing/synthetic-strokes";
+import { cornerStroke, lineStroke, polylineStroke, tremorStroke, withPredicted } from "../testing/synthetic-strokes";
 
 import { calibratePressure, DEVICE_PROFILES, tiltToSpherical } from "./calibration";
 import { adaptiveCutoff, estimateCurvature, shouldSuppressPrediction } from "./corner-preserve";
@@ -137,6 +137,49 @@ describe("InputPipeline", () => {
     // 정점 근처 표본이 raw 좌표에 고정된다(모서리 둥글림 없음).
     const nearVertex = out.filter((s) => Math.abs(s.x - (size - m)) < 1e-6 && Math.abs(s.y - m) < 3);
     expect(nearVertex.length).toBeGreaterThan(0);
+  });
+
+  it("정점 재방출: 출력 폴리라인이 모든 꼭짓점을 지난다(지그재그, 캔버스가 커져 속도가 빨라져도)", () => {
+    for (const size of [128, 512]) {
+      const m = size * 0.15;
+      const verts: [number, number][] = [
+        [m, size - m],
+        [size * 0.35, m],
+        [size * 0.5, size - m],
+        [size * 0.7, m],
+        [size - m, size - m],
+      ];
+      const { out } = runAll(polylineStroke(verts, () => 0.6, { durationMs: 900 }));
+      for (let k = 1; k + 1 < verts.length; k += 1) {
+        const v = verts[k];
+        if (!v) continue;
+        let dmin = Number.POSITIVE_INFINITY;
+        for (let i = 1; i < out.length; i += 1) {
+          const a = out[i - 1];
+          const b = out[i];
+          if (a && b) dmin = Math.min(dmin, distanceToSegment(v[0], v[1], a.x, a.y, b.x, b.y));
+        }
+        expect(dmin).toBeLessThanOrEqual(0.05);
+      }
+    }
+  });
+
+  it("정점 재방출: 시각은 비감소이고 꼭짓점마다 표본이 1개 늘며 phase는 move다", () => {
+    const raw = polylineStroke([[20, 20], [100, 160], [180, 20], [260, 160]], () => 0.6, { durationMs: 700 });
+    const base = raw.length - 1 + DEFAULT_INPUT_CONFIG.endpointTailSamples;
+    const { out } = runAll(raw);
+    expect(out.length).toBe(base + 2);
+    for (let i = 1; i < out.length; i += 1) expect(out[i]?.tMs).toBeGreaterThanOrEqual(out[i - 1]?.tMs ?? 0);
+    expect(out.filter((s) => s.phase === "down").length).toBe(1);
+    expect(out.filter((s) => s.phase === "up").length).toBe(1);
+  });
+
+  it("모서리가 없는 획(직선·손떨림)은 정점 재방출로 표본이 늘지 않는다(오탐 회귀)", () => {
+    const strokes = [lineStroke(0, 0, 200, 120, 0.6, { durationMs: 600 }), tremorStroke(10, 10, 110, 12, 0.4, 1, { durationMs: 2000, sampleRateHz: 120 })];
+    for (const raw of strokes) {
+      const { out } = runAll(raw);
+      expect(out.length).toBe(raw.length - 1 + DEFAULT_INPUT_CONFIG.endpointTailSamples);
+    }
   });
 
   it("endpoint tail: 마지막 표본 좌표 = raw up, phase up, 압력 0으로 수렴", () => {
