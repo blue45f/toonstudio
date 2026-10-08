@@ -34,7 +34,14 @@ describe("production route ownership", () => {
     const typeById = new Map(productionRoutes.map((route) => [route.id, route.element.type]));
     // F-R1-B08-1: /usage가 상세와 같은 컴포넌트를 렌더하면 사용량 전용 화면이 없는 것과 같다.
     expect(typeById.get("team-people-usage")).not.toBe(typeById.get("team-people-detail"));
-    expect(typeById.get("production-workspace-usage")).not.toBe(typeById.get("production-workspace-detail"));
-    expect(typeById.get("team-people-usage")).toBe(typeById.get("production-workspace-usage"));
+  });
+
+  it("keeps the legacy production workspace family as redirects, not page renders", () => {
+    const typeById = new Map(productionRoutes.map((route) => [route.id, route.element.type]));
+    // O-03 일원화: 옛 패밀리는 페이지를 직접 렌더하지 않고 정식 /team/people로 넘긴다.
+    // 실제 도착 경로는 production-workspace-redirect.test.tsx가 렌더링으로 고정한다.
+    expect(typeById.get("production-workspace-detail")).not.toBe(typeById.get("team-people-detail"));
+    expect(typeById.get("production-workspace-usage")).not.toBe(typeById.get("team-people-usage"));
+    expect(typeById.get("production-workspace-join")).not.toBe(typeById.get("team-people-join"));
   });
 });
