@@ -45,6 +45,18 @@ describe("collaboration browser entry contract", () => {
     expect(source).not.toContain("documentSurface.screenshot({");
   });
 
+  it("획을 플로팅 크롬이 아닌 실제 캔버스 띠에 그리고, 가린 경로는 캔버스 판정 전에 실패시킨다", () => {
+    const stroke = source.slice(
+      source.indexOf("async function drawableCanvasBand("),
+      source.indexOf("async function peerCount("),
+    );
+    expect(stroke).toContain("hit instanceof HTMLCanvasElement");
+    expect(stroke).toContain("const band = await drawableCanvasBand(");
+    expect(stroke).toContain("const obstructions = await strokePathObstructions(page, path);");
+    expect(stroke).toContain("does not reach the drawing canvas");
+    expect(stroke).not.toContain("const y = bounds.y + bounds.height * verticalFraction;");
+  });
+
   it("acknowledges the current beta notice before collaboration input begins", () => {
     expect(source).toContain("STUDIO_BETA_NOTICE_STORAGE_KEY");
     expect(source).toContain("STUDIO_BETA_NOTICE_REVISION");
