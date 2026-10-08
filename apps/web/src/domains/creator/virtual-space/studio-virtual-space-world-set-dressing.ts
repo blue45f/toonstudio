@@ -107,10 +107,31 @@ export function studioVirtualSetDressingPlacement(
   return placement(id, atlas, landmark(frame, x, y, width, height), depth);
 }
 
+/**
+ * 높이가 없는 바닥 장식의 깊이. 지형(−1000대)보다 위, 모든 캐릭터·가구(y 정렬 1000 이상)보다 아래다.
+ * 월드 소품의 "fixed" 기본 깊이(500)와 같은 층이라 경로 표시(650)·근접 표시(780)는 러그 위에 그려진다.
+ */
+export const STUDIO_FLOOR_DECAL_DEPTH = 500;
+
+/** 가구 아틀라스에서 바닥에 깔리는 장식 프레임: 8 러그. */
+const FLAT_FURNITURE_FRAMES: ReadonlySet<StudioVirtualLandmarkFrame> = new Set<StudioVirtualLandmarkFrame>([8]);
+
+/**
+ * 러그를 y 정렬하면 밑변보다 위쪽(y가 작은 쪽)에 선 캐릭터는 러그 뒤로 정렬돼 몸통이 러그에 덮인다.
+ * 러그는 키가 없는 바닥 장식이므로 y 정렬을 요청받아도 항상 캐릭터 아래에 둔다.
+ */
+function resolvedDepth(
+  atlas: StudioVirtualSetDressingPlacement["atlas"],
+  frame: StudioVirtualLandmarkFrame,
+  depth: StudioVirtualSetDressingPlacement["depth"],
+): StudioVirtualSetDressingPlacement["depth"] {
+  return depth === "y-sort" && atlas === "furniture" && FLAT_FURNITURE_FRAMES.has(frame) ? STUDIO_FLOOR_DECAL_DEPTH : depth;
+}
+
 function placement(id: string, atlas: StudioVirtualSetDressingPlacement["atlas"], spec: LandmarkSpec, depth: StudioVirtualSetDressingPlacement["depth"] = "y-sort"): StudioVirtualSetDressingPlacement {
   const { x, y, width, height, frame } = spec;
   return Object.freeze({
-    id, atlas, frame, x, y, width, height, originX: .5, originY: 1, depth,
+    id, atlas, frame, x, y, width, height, originX: .5, originY: 1, depth: resolvedDepth(atlas, frame, depth),
     renderBounds: rect(x - width / 2, y - height, width, height),
     colliders: Object.freeze(atlas === "landmarks"
       ? landmarkColliders(frame, x, y, width, height)

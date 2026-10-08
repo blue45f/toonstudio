@@ -5,7 +5,8 @@ import { StudioWorldConnectivityIndex } from "./studio-virtual-space-world-conne
 import { studioWorldCanOccupy } from "./studio-virtual-space-world-pathfinding";
 import { studioWorldCollisionRects } from "./studio-virtual-space-world-manifest";
 import { createOfficeZone } from "./studio-virtual-space-office-zones";
-import { STUDIO_OFFICE_ZONE_LANDMARKS, studioVirtualOfficeZoneLandmarks, studioVirtualPlaceSetDressing, studioVirtualSetDressingBounds, studioVirtualSetDressingColliders, studioVirtualWorldSetDressing } from "./studio-virtual-space-world-set-dressing";
+import { resolveStudioVirtualBuiltinWorld } from "./studio-virtual-space-campus-world";
+import { STUDIO_FLOOR_DECAL_DEPTH, STUDIO_OFFICE_ZONE_LANDMARKS, studioVirtualOfficeZoneLandmarks, studioVirtualPlaceSetDressing, studioVirtualSetDressingBounds, studioVirtualSetDressingColliders, studioVirtualSetDressingPlacement, studioVirtualWorldSetDressing } from "./studio-virtual-space-world-set-dressing";
 
 describe("장소별 랜드마크와 바닥 충돌 계약", () => {
   it.each(STUDIO_VIRTUAL_PLACES.map((place) => place.id))("%s의 건축물·식생·업무 가구가 월드 안에 있고 렌더링과 물리가 같은 배치를 쓴다", (placeId) => {
@@ -108,5 +109,34 @@ describe("오피스 존 랜드마크 (Track D)", () => {
   it("존이 없으면 빈 배치를 반환한다", () => {
     expect(studioVirtualOfficeZoneLandmarks(undefined)).toEqual([]);
     expect(studioVirtualOfficeZoneLandmarks([])).toEqual([]);
+  });
+});
+
+describe("바닥 장식(러그) 깊이 계약", () => {
+  it("캠퍼스 러그는 어떤 캐릭터보다도 아래에 그려져 지나가는 캐릭터를 덮지 않는다", () => {
+    const campus = resolveStudioVirtualBuiltinWorld("skyport", true).manifest;
+    const items = studioVirtualWorldSetDressing(campus);
+    const rugs = items.filter((item) => item.atlas === "furniture" && item.frame === 8);
+    // 로비·카페 라운지·팀 미팅·게임 구역의 러그 4개가 바닥 깊이를 받는다.
+    expect(rugs.map((rug) => rug.id).sort()).toEqual(["campus-cafe-lounge-rug", "campus-game-rug", "campus-lobby-rug", "campus-talk-rug"]);
+    for (const rug of rugs) {
+      expect(rug.depth, rug.id).toBe(STUDIO_FLOOR_DECAL_DEPTH);
+      // 러그 윗변(가장 먼 쪽)에 선 캐릭터의 깊이(y + 1001)도 러그보다 위다. 예전에는 러그가 y+1000이라 캐릭터를 덮었다.
+      expect(Math.round(rug.y - rug.height) + 1_001, rug.id).toBeGreaterThan(rug.depth as number);
+    }
+    // 러그가 아닌 가구와 건물은 그대로 y 정렬이다(가구 뒤로 걷는 가려짐은 유지).
+    const sorted = items.filter((item) => !(item.atlas === "furniture" && item.frame === 8));
+    expect(sorted.length).toBeGreaterThan(20);
+    expect(sorted.every((item) => item.depth === "y-sort" || typeof item.depth === "number")).toBe(true);
+    expect(sorted.filter((item) => item.depth === "y-sort").length).toBeGreaterThan(20);
+  });
+
+  it("러그만 바닥 깊이가 되고 명시한 깊이와 다른 가구·랜드마크의 y 정렬은 바뀌지 않는다", () => {
+    expect(studioVirtualSetDressingPlacement("rug", "furniture", 8, 100, 100, 200, 90).depth).toBe(STUDIO_FLOOR_DECAL_DEPTH);
+    // 같은 프레임 번호라도 랜드마크 아틀라스의 8(나무)은 키가 있는 물체라 y 정렬이다.
+    expect(studioVirtualSetDressingPlacement("tree", "landmarks", 8, 100, 100, 160, 200).depth).toBe("y-sort");
+    expect(studioVirtualSetDressingPlacement("sofa", "furniture", 15, 100, 100, 118, 88).depth).toBe("y-sort");
+    // 호출 측이 숫자 깊이를 명시하면 존중한다.
+    expect(studioVirtualSetDressingPlacement("rug-custom", "furniture", 8, 100, 100, 200, 90, -50).depth).toBe(-50);
   });
 });
