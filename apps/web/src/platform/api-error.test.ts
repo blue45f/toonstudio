@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import {
+  handleUnauthorizedSession,
+  persistSession,
+} from "@/domains/auth/public/session/auth-session-state";
+
 import { api, apiFetch, isAppApiError } from "./api";
 import { SERVICE_CAPABILITY_ERROR_EVENT, isNotFoundError } from "./api-error";
 
@@ -137,6 +142,42 @@ describe("application API error contract", () => {
       retryable: true,
       message: expect.stringContaining("서버에 연결할 수 없습니다"),
     });
+  });
+});
+
+describe("unauthorized copy (F-B09-1)", () => {
+  afterEach(() => {
+    // 세션 상태를 게스트로 되돌리고 만료 기록까지 비워 다음 테스트와 격리한다.
+    persistSession(null);
+    handleUnauthorizedSession();
+  });
+
+  it("tells guests sign-in is required instead of claiming an expiry", async () => {
+    persistSession(null);
+    handleUnauthorizedSession();
+    globalThis.fetch = vi.fn(async () => jsonResponse(
+      { statusCode: 401, message: "unauthorized" },
+      401,
+    )) as unknown as typeof fetch;
+
+    const caught = await api.get("/protected", { retry: 0 }).catch((error: unknown) => error);
+    expect(isAppApiError(caught)).toBe(true);
+    expect(caught).toMatchObject({ kind: "unauthorized", status: 401 });
+    expect((caught as Error).message).toContain("로그인이 필요합니다");
+    expect((caught as Error).message).not.toContain("만료");
+  });
+
+  it("reports expiry when a signed-in session is dropped by the 401", async () => {
+    persistSession({ user: { id: "user-qa-1" } });
+    globalThis.fetch = vi.fn(async () => jsonResponse(
+      { statusCode: 401, message: "unauthorized" },
+      401,
+    )) as unknown as typeof fetch;
+
+    const caught = await api.get("/protected", { retry: 0 }).catch((error: unknown) => error);
+    expect(isAppApiError(caught)).toBe(true);
+    expect(caught).toMatchObject({ kind: "unauthorized", status: 401 });
+    expect((caught as Error).message).toContain("로그인이 만료되었습니다");
   });
 });
 

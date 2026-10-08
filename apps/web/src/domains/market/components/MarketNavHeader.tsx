@@ -79,7 +79,6 @@ export function MarketNavHeader({ className }: MarketNavHeaderProps) {
   const bt = useBilingual("MarketNavHeader");
   const { pathname } = useLocation();
   const findingAsset = isFindingAsset(pathname);
-  const toolOpen = SELECTION_TOOLS.some((tool) => tool.href === pathname);
 
   return (
     <nav aria-label={bt("마켓 주요 내비게이션", "Market navigation")} className={cn("mb-6 border-b border-line/70 pb-4 pt-1", className)}>
@@ -135,7 +134,8 @@ export function MarketNavHeader({ className }: MarketNavHeaderProps) {
             </div>
           ) : null}
           {findingAsset ? (
-            <details className="group relative hidden sm:block" open={toolOpen ? true : undefined}>
+            <details className="group relative hidden sm:block">
+              {/* 진입 시점에는 항상 닫아 둔다 — 현재 도구 페이지에서도 강제로 펼치지 않는다. */}
               <summary
                 className={cn(
                   buttonClass({ variant: "ghost", size: "sm" }),

@@ -70,6 +70,13 @@ describe("StudioVirtualSpaceEntryLobby", () => {
     fireEvent.click(screen.getByRole("button", { name: "선택하고 입장" }));
     expect(enter).toHaveBeenCalledTimes(1);
   });
+  it("공백만 입력한 닉네임은 유효하지 않다고 안내하고 입장을 막는다 (F-B06-2)", () => {
+    render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="   " returning={false}
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()} /></MemoryRouter>);
+    expect(screen.getByRole("button", { name: "선택하고 입장" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByLabelText(/공개 닉네임/u).getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByText("공개 닉네임을 확인하면 입장할 수 있어요.")).toBeTruthy();
+  });
   it("입장코드 콜백이 있으면 코드 패널을 보여 주고 유효한 코드로 입장 의도를 전한다", () => {
     const enterWithCode = vi.fn();
     render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}

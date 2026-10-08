@@ -1517,6 +1517,17 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                   <div className="text-center mb-6">
                     <h3 className="text-lg font-bold text-fg">{tx("사주팔자 분석 정보 입력")}</h3>
                     <p className="text-xs text-fg-3 mt-1">정확한 연산을 위해 생년월일시를 입력하세요.</p>
+                    <p className="text-[11px] leading-relaxed text-fg-3 mt-2">
+                      {tx("이 화면의 사주는 입력한 날짜를 양력으로 해석해요. 음력 생일이거나 윤달·자시(23:00) 경계로 계산하려면 ")}
+                      <button
+                        type="button"
+                        onClick={() => navigate("/fortune?content=saju")}
+                        className="font-semibold text-accent underline underline-offset-2 hover:text-accent-2"
+                      >
+                        {tx("관측소 사주")}
+                      </button>
+                      {tx("를 이용해 주세요.")}
+                    </p>
                   </div>
 
                   <div className="space-y-1.5">
@@ -1635,9 +1646,10 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                           <motion.button
                             key={idx}
                             type="button"
+                            aria-label={`${idx + 1}번 카드 뒤집기`}
                             whileHover={{ y: -10, scale: 1.03 }}
                             onClick={() => handleSelectTarotCard(idx)}
-                            className="w-28 cursor-pointer aspect-[2/3] rounded-xl border border-amber-500/20 bg-cover bg-center flex items-center justify-center relative overflow-hidden shadow-lg transition-all hover:border-amber-400 focus:outline-none"
+                            className="w-28 cursor-pointer aspect-[2/3] rounded-xl border border-amber-500/20 bg-cover bg-center flex items-center justify-center relative overflow-hidden shadow-lg transition-all hover:border-amber-400 focus-visible:border-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
                             style={{ backgroundImage: `url('${resolveAssetUrl("/images/tarot/tarot-back.jpg")}')` }}
                           >
                             {/* 카드 뒷면에 호버 시 미세한 골드 이펙트 오버레이 */}
