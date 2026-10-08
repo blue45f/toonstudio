@@ -23,7 +23,11 @@ export interface EngineeringLibraryLicense {
   readonly name: string;
   readonly version: string;
   readonly license: string;
-  /** 설치본 package.json의 homepage(없으면 repository)에서 확인한 공식 링크. 자체 패키지 등 출처가 없는 항목만 비운다. */
+  /**
+   * 설치본 package.json의 homepage(없으면 repository)에서 확인한 공식 링크. 자체 패키지 등 출처가 없는 항목과,
+   * 홈페이지 도메인이 사라져(DNS 실패, 2026-10-07 확인) 대체 주소를 확정하지 못한 colormix만 비운다.
+   * 평문 http와 이동·변경된 주소(simplify-js, reflect-metadata 등)는 2026-10-07에 최종 https 주소로 바꿨다.
+   */
   readonly url?: string;
   readonly surface: EngineeringLicenseSurface;
   readonly flag?: EngineeringLicenseFlag;
@@ -77,7 +81,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "@gltf-transform/extensions",
     version: "4.4.2",
     license: "MIT",
-    url: "https://gltf-transform.dev/extensions.html",
+    url: "https://gltf-transform.dev/extensions",
     surface: "web",
     role: { ko: "glTF 확장(KHR 등) 처리", en: "Handling glTF extensions such as KHR" },
   },
@@ -85,7 +89,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "@gltf-transform/functions",
     version: "4.4.2",
     license: "MIT",
-    url: "https://gltf-transform.dev/functions.html",
+    url: "https://gltf-transform.dev/functions",
     surface: "web",
     role: { ko: "glTF 최적화·변환 함수군", en: "glTF optimization and transform functions" },
   },
@@ -95,14 +99,6 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     license: "MIT",
     surface: "web",
     role: { ko: "자체 데스크 클라우드 연동", en: "First-party desk-cloud integration" },
-  },
-  {
-    name: "@helia/verified-fetch",
-    version: "8.1.2",
-    license: "Apache-2.0 OR MIT",
-    url: "https://github.com/ipfs/helia-verified-fetch/tree/main/packages/verified-fetch#readme",
-    surface: "web",
-    role: { ko: "IPFS 콘텐츠 주소의 검증 가져오기(Helia 경량축)", en: "Verified fetching for IPFS content addresses (Helia, lightweight axis)" },
   },
   {
     name: "@hookform/resolvers",
@@ -124,7 +120,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "@mediapipe/tasks-vision",
     version: "0.10.35",
     license: "Apache-2.0",
-    url: "http://mediapipe.dev",
+    url: "https://mediapipe.dev/",
     surface: "web",
     role: { ko: "웹캠 포즈·손·얼굴 추적", en: "Webcam pose, hand and face tracking" },
   },
@@ -140,7 +136,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "@radix-ui/react-dialog",
     version: "1.1.16",
     license: "MIT",
-    url: "https://radix-ui.com/primitives",
+    url: "https://www.radix-ui.com/primitives",
     surface: "web",
     role: { ko: "다이얼로그 UI 프리미티브", en: "Dialog UI primitive" },
   },
@@ -148,7 +144,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "@radix-ui/react-dropdown-menu",
     version: "2.1.17",
     license: "MIT",
-    url: "https://radix-ui.com/primitives",
+    url: "https://www.radix-ui.com/primitives",
     surface: "web",
     role: { ko: "드롭다운 메뉴 UI 프리미티브", en: "Dropdown menu UI primitive" },
   },
@@ -156,7 +152,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "@radix-ui/react-select",
     version: "2.3.0",
     license: "MIT",
-    url: "https://radix-ui.com/primitives",
+    url: "https://www.radix-ui.com/primitives",
     surface: "web",
     role: { ko: "셀렉트 UI 프리미티브", en: "Select UI primitive" },
   },
@@ -214,7 +210,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "@tanstack/react-virtual",
     version: "3.14.13",
     license: "MIT",
-    url: "https://tanstack.com/virtual",
+    url: "https://tanstack.com/virtual/latest",
     surface: "web",
     role: { ko: "긴 목록의 가상 스크롤", en: "Virtual scrolling for long lists" },
   },
@@ -230,7 +226,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "@thorvg/webcanvas",
     version: "1.1.2",
     license: "MIT",
-    url: "https://thorvg.org",
+    url: "https://www.thorvg.org/",
     surface: "web",
     role: { ko: "ThorVG 벡터 렌더러 엔진 패키지", en: "ThorVG vector renderer engine package" },
   },
@@ -294,7 +290,6 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "colormix",
     version: "3.2.0",
     license: "MIT",
-    url: "http://color-mix.it/",
     surface: "web",
     role: { ko: "브러시 안료 혼합 계산", en: "Pigment mixing math for brushes" },
   },
@@ -350,7 +345,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "konva",
     version: "10.3.0",
     license: "MIT",
-    url: "http://konvajs.org/",
+    url: "https://konvajs.org/",
     surface: "web",
     role: { ko: "2D 캔버스 편집 표면", en: "2D canvas editing surface" },
   },
@@ -425,7 +420,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     url: "https://scrtwpns.com/mixbox",
     surface: "web",
     flag: "noncommercial",
-    role: { ko: "안료 스펙트럴 혼합(무료·비상업 프로필 전용)", en: "Spectral pigment mixing (free, non-commercial profile only)" },
+    role: { ko: "안료 스펙트럴 혼합 — 브러시 V6 안료 provider가 정적으로 import하고, 라이선스 프로필이 비상업 조건을 게이트합니다(기본값 noncommercial-full)", en: "Spectral pigment mixing — statically imported by the Brush V6 pigment provider, with the license profile gating the non-commercial terms (default noncommercial-full)" },
   },
   {
     name: "motion",
@@ -480,9 +475,25 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "paper",
     version: "0.12.18",
     license: "MIT",
-    url: "http://paperjs.org",
+    url: "https://paperjs.org/",
     surface: "web",
     role: { ko: "벡터 경로와 기하 연산", en: "Vector path and geometry operations" },
+  },
+  {
+    name: "pdf-lib",
+    version: "1.17.1",
+    license: "MIT",
+    url: "https://pdf-lib.js.org",
+    surface: "web",
+    role: { ko: "PDF 워크벤치의 병합·재배열·회전·분할(브라우저 안 실행)", en: "Merge, reorder, rotate and split in the PDF workbench (runs in the browser)" },
+  },
+  {
+    name: "pdfjs-dist",
+    version: "6.4.299",
+    license: "Apache-2.0",
+    url: "https://mozilla.github.io/pdf.js/",
+    surface: "web",
+    role: { ko: "PDF 워크벤치의 페이지 썸네일 렌더링(지연 로드)", en: "Page thumbnail rendering for the PDF workbench (lazy-loaded)" },
   },
   {
     name: "perfect-freehand",
@@ -504,7 +515,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "pixi.js",
     version: "8.19.0",
     license: "MIT",
-    url: "http://pixijs.com/",
+    url: "https://pixijs.com/",
     surface: "web",
     role: { ko: "2D 렌더링 표면", en: "2D rendering surface" },
   },
@@ -520,7 +531,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "qrcode",
     version: "1.5.4",
     license: "MIT",
-    url: "http://github.com/soldair/node-qrcode",
+    url: "https://github.com/soldair/node-qrcode",
     surface: "web",
     role: { ko: "공유 링크 QR 코드 생성", en: "QR code generation for share links" },
   },
@@ -609,7 +620,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "simplify-js",
     version: "1.2.4",
     license: "BSD-2-Clause",
-    url: "http://mourner.github.com/simplify-js/",
+    url: "https://mourner.github.io/simplify-js/",
     surface: "web",
     role: { ko: "경로 단순화", en: "Path simplification" },
   },
@@ -667,7 +678,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     license: "MIT",
     url: "https://github.com/kleisauke/wasm-vips",
     surface: "web",
-    role: { ko: "대형 이미지 내보내기 처리(libvips WASM)", en: "Large-image export processing (libvips WASM)" },
+    role: { ko: "대형 이미지 내보내기 처리(libvips WASM) — 래퍼는 MIT, 번들된 libvips·libheif 등은 LGPL이며 엔진 레지스트리는 'LGPL 격리 배포가 필요한 후보'로 기록합니다", en: "Large-image export processing (libvips WASM) — the wrapper is MIT while bundled libvips, libheif and others are LGPL; the engine registry records it as a candidate requiring LGPL-isolated deployment" },
   },
   {
     name: "web-ifc",
@@ -786,7 +797,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     name: "express",
     version: "4.22.2",
     license: "MIT",
-    url: "http://expressjs.com/",
+    url: "https://expressjs.com/",
     surface: "api",
     role: { ko: "API HTTP 서버(Nest 플랫폼)", en: "API HTTP server (Nest platform)" },
   },
@@ -855,18 +866,10 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     role: { ko: "API HTTP 요청 로깅", en: "HTTP request logging for the API" },
   },
   {
-    name: "pino-pretty",
-    version: "13.1.3",
-    license: "MIT",
-    url: "https://github.com/pinojs/pino-pretty#readme",
-    surface: "api",
-    role: { ko: "로그 포맷터", en: "Log formatter" },
-  },
-  {
     name: "reflect-metadata",
     version: "0.2.2",
     license: "Apache-2.0",
-    url: "http://rbuckton.github.io/reflect-metadata",
+    url: "https://github.com/microsoft/reflect-metadata",
     surface: "api",
     role: { ko: "Nest 데코레이터 메타데이터 폴리필", en: "Decorator metadata polyfill for Nest" },
   },
@@ -977,56 +980,8 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
   },
 ];
 
-export interface EngineeringModelAssetLicense {
-  readonly file: string;
-  readonly license: string;
-  readonly bytes: number;
-  readonly role: LocalizedText;
-  readonly note?: LocalizedText;
-}
-
-/**
- * 브라우저에서 실행하는 ONNX 모델 자산. 각 항목은 자산 옆의 .LICENSE.md 고지를
- * 근거로 하며, 고지가 없는 모델은 이 표에 넣지 않는다. 모델 파일은
- * apps/web/src/domains/creator/assets/에 있고 SHA-256 다이제스트로 검증한다.
- */
-export const ENGINEERING_MODEL_ASSET_LICENSES: readonly EngineeringModelAssetLicense[] = [
-  {
-    file: "u2netp.onnx",
-    license: "Apache-2.0",
-    bytes: 4574861,
-    role: { ko: "일반 피사체 분리와 배경 제거", en: "General subject separation and background removal" },
-  },
-  {
-    file: "tag2pix.onnx",
-    license: "MIT",
-    bytes: 79269994,
-    role: { ko: "선화에 색 태그를 조건으로 채색", en: "Colorizing line art conditioned on color tags" },
-  },
-  {
-    file: "teed.onnx",
-    license: "MIT",
-    bytes: 248429,
-    role: { ko: "사진과 참조 이미지에서 선(엣지) 추출", en: "Extracting edges (line art) from photos and references" },
-  },
-  {
-    file: "realesrgan-anime-6b.onnx",
-    license: "BSD-3-Clause",
-    bytes: 17939941,
-    role: { ko: "일러스트·애니메이션 4배 업스케일", en: "4x upscaling for illustrations and animation" },
-  },
-  {
-    file: "animegan2-paprika.onnx",
-    license: "MIT",
-    bytes: 8702673,
-    role: { ko: "풍경·컷 전반의 애니메이션풍 변환", en: "Anime-style conversion for scenery and whole cuts" },
-    note: { ko: "가중치는 MIT 라이선스 배포본(bryandlee/animegan2-pytorch)을 직접 변환했다. 원본 TensorFlow 저장소에는 라이선스 파일이 없어, 권리 근거는 채택한 배포본의 MIT로 한정한다.", en: "Weights were converted directly from the MIT-licensed distribution (bryandlee/animegan2-pytorch). The original TensorFlow repository ships no license file, so the rights basis is limited to the adopted distribution's MIT license." },
-  },
-  {
-    file: "animegan2-face-paint-512-v2.onnx",
-    license: "MIT",
-    bytes: 8702673,
-    role: { ko: "인물 사진의 애니메이션풍 얼굴 변환", en: "Anime-style face conversion for portraits" },
-    note: { ko: "가중치는 MIT 라이선스 배포본(bryandlee/animegan2-pytorch)을 직접 변환했다. 원본 TensorFlow 저장소에는 라이선스 파일이 없어, 권리 근거는 채택한 배포본의 MIT로 한정한다.", en: "Weights were converted directly from the MIT-licensed distribution (bryandlee/animegan2-pytorch). The original TensorFlow repository ships no license file, so the rights basis is limited to the adopted distribution's MIT license." },
-  },
-];
+// 모델 자산 라이선스는 engineering-license-model-assets.ts에 있고 기존 import 경로를 위해 재수출한다.
+export {
+  ENGINEERING_MODEL_ASSET_LICENSES,
+  type EngineeringModelAssetLicense,
+} from "./engineering-license-model-assets";

@@ -1,5 +1,5 @@
-import { BookMarked, Lightbulb, Search, Wrench } from "lucide-react";
-import { useMemo, useState } from "react";
+import { BookMarked, BookOpen, Lightbulb, Search, Wrench } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   ENGINEERING_GLOSSARY,
@@ -37,19 +37,41 @@ const LINKS_BY_TERM = new Map(ENGINEERING_GLOSSARY.map((term) => [
   }),
 ]));
 
+/**
+ * 기술 도감 카드 id → 카드 이름. 도감 데이터(수백 KB)를 용어집 첫 화면 번들에 넣지 않으려고
+ * 렌더 뒤에 동적으로 불러오며, 불러오기 전·실패 시에는 ‘기술 도감 카드’ 줄만 생략된다.
+ */
+function useAtlasCardNames(): ReadonlyMap<string, string> | null {
+  const [names, setNames] = useState<ReadonlyMap<string, string> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void import("./engineering-atlas-content")
+      .then(({ ENGINEERING_ATLAS_ENTRIES }) => {
+        if (cancelled) return;
+        setNames(new Map(ENGINEERING_ATLAS_ENTRIES.map((entry) => [entry.id, entry.name])));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return names;
+}
+
 export function EngineeringGlossaryPage() {
   useBilingualI18nRevision();
   useDocumentTitle(bi("기술 용어집 · ToonStudio", "Technology glossary · ToonStudio"));
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | GlossaryCategoryId>("all");
+  const atlasNames = useAtlasCardNames();
 
   const terms = useMemo(() => {
     const normalized = query.normalize("NFKC").trim().toLocaleLowerCase();
     return ENGINEERING_GLOSSARY.filter((term) => {
       if (category !== "all" && term.category !== category) return false;
       if (!normalized) return true;
-      return [term.term.ko, term.term.en, term.definition.ko, term.definition.en, term.analogy.ko, term.inToonstudio.ko]
+      return [term.term.ko, term.term.en, term.definition.ko, term.definition.en, term.analogy.ko, term.analogy.en, term.inToonstudio.ko, term.inToonstudio.en]
         .join(" ")
         .toLocaleLowerCase()
         .includes(normalized);
@@ -77,7 +99,7 @@ export function EngineeringGlossaryPage() {
         className="mb-8"
         points={[
           bi("용어마다 정의는 한 줄로, 비유는 일상 사물로, ‘툰스튜디오에서는’에 실제 적용 위치와 선택 이유를 적었습니다.", "Each term gets a one-line definition, an everyday analogy and, under ‘In ToonStudio’, where it is actually used and why."),
-          bi("검색과 분야 필터로 발표 중에도 바로 찾을 수 있고, 용어마다 관련 챕터로 이어지는 ‘더 읽기’가 붙어 있습니다.", "Search and area filters find a term mid-talk, and every term links onward to the chapter that uses it."),
+          bi("검색과 분야 필터로 발표 중에도 바로 찾을 수 있고, 용어마다 관련 챕터로 이어지는 ‘더 읽기’가 붙어 있습니다. 더 깊은 설명이 있는 용어에는 ‘기술 도감 카드’ 링크도 있습니다.", "Search and area filters find a term mid-talk, and every term links onward to the chapter that uses it. Terms with a deeper write-up also link to a tech atlas card."),
         ]}
         meta={(
           <>
@@ -149,6 +171,11 @@ export function EngineeringGlossaryPage() {
             {terms.map((term) => {
               const termCategory = CATEGORY_BY_ID.get(term.category);
               const links = LINKS_BY_TERM.get(term.id) ?? [];
+              // 도감에 실제로 있는 카드만 칩으로 만든다(없는 id 는 조용히 생략 — 테스트가 전부 풀리는지 확인).
+              const atlasCards = (term.atlasIds ?? []).flatMap((id) => {
+                const name = atlasNames?.get(id);
+                return name ? [{ id, name }] : [];
+              });
               return (
                 <article key={term.id} id={`glossary-${term.id}`} className="flex scroll-mt-32 flex-col rounded-3xl border border-line/70 bg-card/70 p-5 shadow-sm sm:p-6">
                   <div className="flex flex-wrap items-center gap-2">
@@ -174,22 +201,42 @@ export function EngineeringGlossaryPage() {
                     </p>
                     <p className="mt-2 text-sm leading-7 text-fg-2">{bi(term.inToonstudio.ko, term.inToonstudio.en)}</p>
                   </div>
-                  {links.length > 0 ? (
-                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-bold text-fg-3">{bi("더 읽기:", "Read more:")}</span>
-                      {links.map((target) => (
-                        <Link
-                          key={target.id}
-                          href={target.href}
-                          data-chapter-id={target.id}
-                          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 py-1.5 font-bold text-accent transition-colors hover:border-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                        >
-                          <span className="font-display text-[0.62rem] font-black uppercase tracking-[0.08em] text-fg-3">
-                            {bi(GLOSSARY_LINK_PAGE_LABELS[target.page].ko, GLOSSARY_LINK_PAGE_LABELS[target.page].en)}
-                          </span>
-                          {bi(target.title.ko, target.title.en)}
-                        </Link>
-                      ))}
+                  {links.length > 0 || atlasCards.length > 0 ? (
+                    <div className="mt-4 grid gap-2 text-xs">
+                      {atlasCards.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold text-fg-3">{bi("기술 도감 카드:", "Tech atlas cards:")}</span>
+                          {atlasCards.map((card) => (
+                            <Link
+                              key={card.id}
+                              href={`/about/technology/atlas#${card.id}`}
+                              data-atlas-id={card.id}
+                              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/35 bg-accent-soft px-3 py-1.5 font-bold text-accent transition-colors hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                            >
+                              <BookOpen size={12} aria-hidden="true" className="shrink-0" />
+                              {card.name}
+                            </Link>
+                          ))}
+                        </div>
+                      ) : null}
+                      {links.length > 0 ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold text-fg-3">{bi("더 읽기:", "Read more:")}</span>
+                          {links.map((target) => (
+                            <Link
+                              key={target.id}
+                              href={target.href}
+                              data-chapter-id={target.id}
+                              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 py-1.5 font-bold text-accent transition-colors hover:border-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                            >
+                              <span className="font-display text-[0.62rem] font-black uppercase tracking-[0.08em] text-fg-3">
+                                {bi(GLOSSARY_LINK_PAGE_LABELS[target.page].ko, GLOSSARY_LINK_PAGE_LABELS[target.page].en)}
+                              </span>
+                              {bi(target.title.ko, target.title.en)}
+                            </Link>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </article>

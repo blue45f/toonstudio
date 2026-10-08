@@ -55,17 +55,22 @@ ToonStudio Studio의 3D DCC 엔진은 단순히 외부 3D 파일을 불러와 �
 
 ## 2. 다중 기하 커널과 Authority 구조
 
-3D 오브젝트의 표현 목적에 따라 7가지 권한(Geometry Authority)이 독립 관리됩니다:
+3D 오브젝트의 표현 목적에 따라 7가지 권한(Geometry Authority) 분류로 나눕니다. 아래 이름은 웹 저작 프로젝트 V3의 리소스 분류(`StudioWebGeometryAuthority`, `studio-web-runtime/studio-web-authoring-project-v3.ts`)를 따릅니다:
 
 | Authority 명칭 | 설명 및 사용 분야 | 대표 연동 포맷 | 편집 모드 |
 |---|---|---|---|
 | `editable-mesh` | 버텍스·엣지·페이스 직접 편집 폴리곤 메시 | glTF / GLB / OBJ | Model |
-| `brep-feature` | OpenCascade 기반 정밀 곡면 및 B-Rep CAD 모델 | STEP / IGES / BREP | CAD |
-| `parametric-generator` | 타입별 파라미터와 노드/레시피 그래프 기반 자동 생성 | Build/Procedural | Build |
-| `manifold-solid` | 구멍 없는 견고한 3D 불리언(Boolean) 연산 | CSG / Manifold Solid | Model |
+| `brep-feature-graph` | OpenCascade 기반 정밀 곡면 및 B-Rep CAD 모델의 피처 그래프 | STEP / IGES / BREP | CAD |
+| `procedural-graph` | 타입별 파라미터와 노드/레시피 그래프 기반 자동 생성 | Build/Procedural | Build |
 | `sculpt-volume` | Voxel/SDF 기반 자유 조형 스컬프팅 | Dynamic Voxel Mesh | Sculpt |
+| `rigged-character` | 리깅된 캐릭터(프로젝트의 캐릭터 문서 V3와 함께 저장) | 캐릭터 문서 V3 | — |
 | `garment-pattern` | 2D 패턴 및 봉제선 기반 의상 물리 커널 | XPBD Cloth / DXF | Garment |
 | `external-reference` | 외부 3D 앱 원본 에셋 주소 연동 | Blender / SketchUp Bridge | Reference |
+
+> **코드와 맞춰 둔 점 (2026-10-08 확인)**
+> - 런타임이 실제로 강제하는 기하 커널은 위 7종이 아니라 `half-edge | manifold-solid | render-cache` 3종입니다(`StudioGeometryAuthorityRecord.kernel`, `studio-geometry-authority.ts`). 구멍 없는 견고한 3D 불리언(Boolean) 연산은 `manifold-solid` 커널이 맡습니다. 이전 표에 권한처럼 적혀 있던 `manifold-solid`는 이 커널 이름입니다.
+> - 같은 "7종 분류"가 코드에 한 벌 더 있습니다(`scene-3d/studio-3d-geometry-authority-manifest.ts`: `editable-mesh | brep-cad | manifold-solid | sculpt-volume | garment-pattern | curve-network | external-reference`). 두 목록은 이름이 일치하지 않고 하나로 통합되어 있지 않으므로, 이름을 인용할 때는 어느 쪽인지 밝혀 주세요.
+> - 편집 모드 열의 Garment·Reference는 하이브리드 DCC 작업대 모드(`model | build | cad | sculpt | material | shot`)에 없는 값입니다.
 
 ### 변환 규칙 (주의사항)
 
@@ -142,7 +147,7 @@ ToonStudio Studio의 3D DCC 엔진은 단순히 외부 3D 파일을 불러와 �
 ### 단계별 사용법
 
 1. `파일 → 3D CAD 모델 삽입` 클릭 후 `.step` 또는 `.iges` 파일 선택
-2. OpenCascade.js WASM 엔진이 B-Rep 곡면을 분석하고 Tessellation 수행
+2. 하이브리드 DCC의 가져오기 어댑터가 파일 텍스트에서 `CARTESIAN_POINT`·`PRODUCT` 등을 읽어 경계 상자(AABB) 껍데기와 점 팬(point-fan) 메시를 만듭니다(등급 B, `importStudioStepShell`). **이 가져오기 경로에서는 B-Rep 곡면 분석이나 OpenCascade Tessellation을 하지 않습니다.** OpenCascade.js(WASM)는 박스·불리언·회전체·구 같은 OCCT 연산과 STEP 쓰기·읽기 왕복 검증에서 메시를 만들 때 쓰입니다.
 3. `Line Art Extractor` 패널에서 파라미터 조정:
 
 | 파라미터 | 설명 | 기본값 |
@@ -219,12 +224,12 @@ ToonStudio Studio의 3D DCC 엔진은 단순히 외부 3D 파일을 불러와 �
 | glTF 2.0 | `.gltf` | A | scene, mesh, skin, morph, animation, PBR |
 | GLB | `.glb` | A | binary self-contained runtime |
 | VRM 1.0 | `.vrm` | A | humanoid, expression, MToon, spring bone |
-| STEP | `.step/.stp` | A/B | B-Rep surface, assembly, name, color |
-| IGES | `.igs/.iges` | B | surface, curve, name |
+| STEP | `.step/.stp` | B | 가져오기는 텍스트 어댑터(`importStudioStepShell`): 꼭짓점(CARTESIAN_POINT)·제품 이름으로 경계 상자 껍데기와 점 팬 메시를 만듭니다. B-Rep 곡면·어셈블리·색은 가져오지 않습니다 |
+| IGES | `.igs/.iges` | B (등급표 기준) | STEP과 같은 텍스트 어댑터 경로이며 STEP 엔티티 이름만 찾습니다. IGES 고유 레코드(곡면·곡선)는 읽지 않아 `IGES shell without mapped entities`로 보고되고 메시는 만들어지지 않습니다 |
 | OBJ | `.obj/.mtl` | A | mesh, UV, normals, basic material |
 | FBX | `.fbx` | B/C | mesh, skin, animation, material subset |
 | DXF | `.dxf` | B | 2D plan, layer, block, polyline |
-| SketchUp | `.skp` | C | bridge plugin 필요 |
+| SketchUp | `.skp` | C (등급표 기준) | 배경 3D 에셋 라이브러리는 OpenSKP(MIT)로 브라우저 안에서 GLB로 변환해 가져오며(레거시 파일 일부는 변환에 실패할 수 있어, 그때는 SketchUp에서 DAE·GLB로 내보내 가져옵니다), 변환된 모델은 기존 GLB 경로로 합류합니다. 하이브리드 DCC 가져오기와 등급표(`studio-dcc-format-matrix.ts`·`studio-3d-geometry-authority-manifest.ts`)는 아직 "bridge 필요"로 적혀 있어 코드 안에서도 서로 어긋납니다 |
 | Blender | `.blend` | C | bridge plugin 필요 |
 | IFC (BIM) | `.ifc` | B | wall, door, window, space semantic |
 | 3MF | `.3mf` | B | mesh, color, 3D print properties |
@@ -456,7 +461,7 @@ WebGPU와 WebGL2를 동일 기능으로 가장하지 않고, `RenderCapabilityPr
 **A:** 대용량 모델(>100MB)은 Web Worker에서 비동기 파싱됩니다. 메인 스레드 차단이 발생하면 `설정 → 성능 → Worker 파싱 강제 활성화`를 확인하세요.
 
 ### Q: STEP 파일을 열 수 없습니다
-**A:** OpenCascade.js WASM 모듈은 최초 사용 시 약 15MB를 다운로드합니다. 네트워크 연결을 확인하고, 브라우저 캐시가 충분한지 확인하세요.
+**A:** 하이브리드 DCC의 STEP·IGES 가져오기는 파일 텍스트에서 `CARTESIAN_POINT`·`PRODUCT` 등을 읽는 경량 어댑터라 WASM을 내려받지 않습니다. 읽을 수 있는 항목이 하나도 없으면 가져오기 보고서에 "지원 안 됨"(`no STEP cartesian/product entities`)이 남습니다. 파일이 텍스트 형식(STEP은 ISO-10303-21)인지 확인하세요. OpenCascade.js WASM(파일 크기 약 63MB, 65,864,037 바이트)은 OCCT 연산(박스·불리언·회전체 등)을 처음 실행할 때 불러옵니다. 네트워크 연결과 브라우저 캐시 여유를 확인하세요.
 
 ### Q: VRM 캐릭터의 Spring Bone이 동작하지 않습니다
 **A:** VRM 0.x 모델의 경우 자동으로 1.0 semantic으로 정규화됩니다. 정규화 과정에서 일부 Spring Bone 설정이 손실될 수 있으며, Inspector에서 수동 보정 가능합니다.

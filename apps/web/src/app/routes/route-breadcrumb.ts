@@ -49,6 +49,8 @@ const CURATED_TRAILS: Record<string, AppBreadcrumbItem[]> = {
   "/about/technology/videos": [HOME, ABOUT, TECHNOLOGY, { ko: "영상", en: "Videos" }],
   "/about/technology/licenses": [HOME, ABOUT, TECHNOLOGY, { ko: "라이선스", en: "Licenses" }],
   "/about/technology/glossary": [HOME, ABOUT, TECHNOLOGY, { ko: "기술 용어집", en: "Glossary" }],
+  "/about/technology/atlas": [HOME, ABOUT, TECHNOLOGY, { ko: "기술 도감", en: "Tech atlas" }],
+  "/about/technology/playbook": [HOME, ABOUT, TECHNOLOGY, { ko: "플레이북", en: "Playbook" }],
   "/product-tour": [HOME, { ko: "제품 투어", en: "Product tour" }],
   "/brand-film": [HOME, { ko: "브랜드 필름", en: "Brand film" }],
   "/membership": [HOME, { ko: "멤버십", en: "Membership" }],

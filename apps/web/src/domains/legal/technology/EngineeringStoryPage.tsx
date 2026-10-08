@@ -9,6 +9,7 @@ import {
   TestTube2,
   Workflow,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { externalLinkForName } from "./engineering-external-links";
 import { PUBLISHED_ENGINEERING_CHAPTERS } from "./engineering-story-published-content";
@@ -32,6 +33,7 @@ import {
   EngineeringStatusBadge,
 } from "./EngineeringStoryUi";
 
+import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import {
   formatI18nTemplate,
@@ -75,7 +77,47 @@ function stripOrder(eyebrow: string): string {
   return eyebrow.replace(/^\d+\s·\s/u, "");
 }
 
-function StoryChapter({ chapter, position }: { readonly chapter: EngineeringChapter; readonly position: number }) {
+interface AtlasCardRef {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * 챕터 → 기술 도감 카드 역참조. 도감 데이터(수백 KB)를 이 페이지의 첫 화면 번들에 넣지 않으려고
+ * 렌더 뒤에 동적으로 불러오며, 불러오기 전·실패 시에는 링크 줄만 생략된다.
+ */
+function useAtlasCardsByChapter(): ReadonlyMap<string, readonly AtlasCardRef[]> | null {
+  const [index, setIndex] = useState<ReadonlyMap<string, readonly AtlasCardRef[]> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void import("./engineering-atlas-content")
+      .then(({ ENGINEERING_ATLAS_ENTRIES }) => {
+        if (cancelled) return;
+        const next = new Map<string, AtlasCardRef[]>();
+        for (const entry of ENGINEERING_ATLAS_ENTRIES) {
+          for (const chapterId of entry.chapterIds) {
+            next.set(chapterId, [...(next.get(chapterId) ?? []), { id: entry.id, name: entry.name }]);
+          }
+        }
+        setIndex(next);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return index;
+}
+
+function StoryChapter({
+  chapter,
+  position,
+  atlasCards,
+}: {
+  readonly chapter: EngineeringChapter;
+  readonly position: number;
+  readonly atlasCards: readonly AtlasCardRef[];
+}) {
   useBilingualI18nRevision();
   const marker = String(position).padStart(2, "0");
   return (
@@ -112,6 +154,20 @@ function StoryChapter({ chapter, position }: { readonly chapter: EngineeringChap
           );
         })}
       </ul>
+      {atlasCards.length > 0 ? (
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-xs text-fg-3">
+          <span className="font-bold">{bi("기술 도감에서 더 보기", "More in the tech atlas")}</span>
+          {atlasCards.map((card) => (
+            <Link
+              key={card.id}
+              href={`/about/technology/atlas#${card.id}`}
+              className="rounded-full border border-accent/35 bg-accent-soft px-3 py-1 font-bold text-accent transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {card.name}
+            </Link>
+          ))}
+        </p>
+      ) : null}
 
       <EngineeringDisclosure
         className="mt-6"
@@ -180,6 +236,7 @@ function StoryChapter({ chapter, position }: { readonly chapter: EngineeringChap
 
 export function EngineeringStoryPage() {
   useBilingualI18nRevision();
+  const atlasByChapter = useAtlasCardsByChapter();
 
   useDocumentTitle(
     bi("ToonStudio 제작 스토리 · 왜·어떻게 만들었나", "ToonStudio engineering story · Why and how it was built"),
@@ -242,7 +299,7 @@ export function EngineeringStoryPage() {
                 <p className="text-sm text-fg-3">{bi(group.intro.ko, group.intro.en)}</p>
               </header>
               {chapters.map(({ chapter, position }) => (
-                <StoryChapter key={chapter.id} chapter={chapter} position={position} />
+                <StoryChapter key={chapter.id} chapter={chapter} position={position} atlasCards={atlasByChapter?.get(chapter.id) ?? []} />
               ))}
             </section>
           ))}

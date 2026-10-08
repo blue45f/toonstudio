@@ -35,12 +35,12 @@ const FLAG_NOTES: Record<EngineeringLicenseFlag, LocalizedText> = {
     en: "Copyleft applies at file or library scope. Modifying and redistributing that component can trigger source-disclosure duties for that part, so modification and combination are rechecked before release.",
   },
   "noncommercial": {
-    ko: "상업 이용이 허용되지 않습니다. 무료·비상업 배포 프로필에서만 켜고, 상용 빌드에서는 비활성화하거나 별도 상업 라이선스를 받아야 합니다.",
-    en: "Commercial use is not permitted. It is enabled only in the free, non-commercial distribution profile; a commercial build must disable it or obtain a separate commercial license.",
+    ko: "상업 이용이 허용되지 않는 조건입니다. 저장소는 이 구성 요소를 라이선스 프로필(기본값 noncommercial-full)로 게이트하고, 상업 배포 전에는 제거·비활성화하거나 별도 상업 라이선스가 필요하다고 third_party/mixbox/README.md에 적어 둡니다. 이 페이지는 저장소의 처리 방식만 적으며 법률 판단이 아닙니다.",
+    en: "Commercial use is not permitted under these terms. The repository gates this component through the license profile (default noncommercial-full) and records in third_party/mixbox/README.md that a commercial deployment must remove or disable it or obtain a separate commercial license. This page only records how the repository handles it and is not a legal judgment.",
   },
   "custom-license": {
-    ko: "표준 오픈소스 라이선스가 아닌 자체 라이선스입니다. 조직 규모와 사용량에 따라 무료 사용 가능 여부와 회사 라이선스 필요 여부가 달라져, 출시 전에 공식 정책을 다시 확인합니다.",
-    en: "This is a custom license, not a standard open-source one. Free eligibility and company-license requirements depend on organization size and usage, so the official policy is rechecked before release.",
+    ko: "표준 오픈소스 라이선스가 아닌 자체 라이선스입니다. 조직 규모와 사용량에 따라 무료 사용 가능 여부와 회사 라이선스 필요 여부가 달라지며, 저장소 기록만으로는 자격 여부를 확인할 수 없어 출시 전에 공식 정책을 다시 확인합니다.",
+    en: "This is a custom license, not a standard open-source one. Free eligibility and company-license requirements depend on organization size and usage; eligibility cannot be confirmed from the repository alone, so the official policy is rechecked before release.",
   },
 };
 

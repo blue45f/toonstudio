@@ -140,7 +140,7 @@ const ref = (
   url,
   kind,
   note: { ko, en },
-  reviewedAt: "2026-09-17",
+  reviewedAt: "2026-10-07",
 });
 
 export const ENGINEERING_FIELD_NOTES = [
@@ -248,8 +248,8 @@ export const ENGINEERING_FIELD_NOTES = [
       en: "Free models still change limits and identifiers; retrying another provider after a timeout can duplicate inference or charge a personal paid key.",
     },
     pattern: {
-      ko: "정확한 free allowlist와 운영자의 CONFIRMED 설정이 있는 공급자만 자동 풀에 참여합니다. HTTP 402·429처럼 추론 전 거절이 기계적으로 확인될 때만 다음 무료 공급자로 이동하며, timeout·5xx·형식 오류는 결과가 불명확하므로 자동 재시도하지 않습니다. BYOK는 현재 탭과 명시적 작업 배정에 한정합니다.",
-      en: "Only exact free allowlists with operator confirmation join the automatic pool. Routing advances only after machine-verifiable pre-inference rejection such as 402/429; timeouts, 5xx and malformed success remain ambiguous and are not retried. BYOK is tab-scoped and explicitly assigned.",
+      ko: "정확한 free allowlist와 운영자의 CONFIRMED 설정이 있는 공급자만 자동 풀에 참여합니다. HTTP 402·429(와 공급자별로 확인된 quota 코드)처럼 추론 전 거절이 기계적으로 확인될 때만 다음 무료 공급자로 이동하며, 서버 공용 풀에서는 401/403 인증 오류와 timeout·5xx·형식 오류가 전환 조건이 아니고 결과가 불명확한 경우 자동 재시도하지 않습니다. BYOK는 현재 탭과 명시적 작업 배정에 한정하며, 개인 키 경로는 그 키의 401/403도 다음 무료 경로로 넘깁니다.",
+      en: "Only exact free allowlists with operator confirmation join the automatic pool. Routing advances only after machine-verifiable pre-inference rejection such as 402/429 (plus provider-verified quota codes); in the server shared pool 401/403 authentication errors are not a switching condition, and timeouts, 5xx and malformed success remain ambiguous and are not retried. BYOK is tab-scoped and explicitly assigned, and personal-key routes also pass that key's 401/403 on to the next free route.",
     },
     boundary: {
       ko: "무료 한도 때문에 입력·모델·해상도·결과 품질을 몰래 낮추지 않습니다. 이미지·영상·3D처럼 비용과 권리 영향이 큰 작업은 명시적 사용자 키와 확인을 요구합니다.",
@@ -314,9 +314,9 @@ export const ENGINEERING_FIELD_NOTES = [
       { ko: "개인 runtime은 HTTPS·exact-origin CORS·bounded upload·result digest와 취소를 요구합니다.", en: "Require HTTPS, exact-origin CORS, bounded upload, result digests and cancellation for personal runtimes." },
     ],
     references: [
-      ref("openai-images", "OpenAI Images API guide", "https://platform.openai.com/docs/guides/images", "official-doc", "이미지 generation·edit의 provider capability 차이를 적용 시점에 확인합니다.", "Recheck generation/edit capability differences at adoption time."),
+      ref("openai-images", "OpenAI Images API guide", "https://developers.openai.com/api/docs/guides/images-vision", "official-doc", "이미지 generation·edit의 provider capability 차이를 적용 시점에 확인합니다.", "Recheck generation/edit capability differences at adoption time."),
       ref("onnx-web", "ONNX Runtime Web", "https://onnxruntime.ai/docs/tutorials/web/", "official-doc", "브라우저 로컬 추론 후보의 backend·모델·성능 제약을 검토합니다.", "Reference for backend, model and performance constraints of browser-local inference."),
-      ref("mediapipe-tasks", "MediaPipe Tasks", "https://ai.google.dev/edge/mediapipe/solutions/guide", "official-doc", "포즈·분할·랜드마크처럼 브라우저에서 가능한 결정론적 보조 기능을 검토합니다.", "Reference for deterministic browser-side helpers such as pose, segmentation and landmarks."),
+      ref("mediapipe-tasks", "MediaPipe Tasks", "https://developers.google.com/edge/mediapipe/solutions/guide", "official-doc", "포즈·분할·랜드마크처럼 브라우저에서 가능한 결정론적 보조 기능을 검토합니다.", "Reference for deterministic browser-side helpers such as pose, segmentation and landmarks."),
     ],
   },
   {
@@ -337,8 +337,8 @@ export const ENGINEERING_FIELD_NOTES = [
       en: "Local inference can still involve large models, GPU/WASM memory, webcam permission, stale results and global task-factory state, causing UI stalls, privacy misconceptions and initialization races.",
     },
     pattern: {
-      ko: "모델 ID·버전·SHA-256·입출력 schema를 registry에 고정하고 byte·tensor 상한을 로드 전에 검사합니다. WebGPU 또는 WASM provider를 작업 단위로 명시해 한 번만 실행하며 자동 backend fallback을 금지합니다. request·stroke·document epoch가 달라진 결과는 폐기하고 MediaPipe task 생성은 process-wide FIFO로 직렬화합니다.",
-      en: "Model ID, version, SHA-256 and I/O schemas are pinned in a registry, with byte and tensor budgets checked before load. Each job explicitly selects WebGPU or WASM for one attempt with no automatic backend fallback. Results with stale request, stroke or document epochs are discarded, and MediaPipe task creation is serialized through a process-wide FIFO.",
+      ko: "모델 ID·버전·SHA-256·입출력 schema를 registry에 고정하고 byte·tensor 상한을 로드 전에 검사합니다. 범용 provider(studio-onnx-inference-provider.ts)는 WebGPU 또는 WASM 실행 제공자를 작업 단위로 하나만 명시해 한 번 실행하고 경계 테스트가 자동 backend fallback을 막지만, 기능 5종의 모델 모듈(tag2pix 등)은 WebGPU 우선·WASM 차선의 실행 경로 사다리로 같은 모델을 다시 돌립니다. ADR-0018 §12(실행 제공자 하나 고정)와 이 사다리의 정합은 열린 확인 항목입니다. request·stroke·document epoch가 달라진 결과는 폐기하고 MediaPipe task 생성은 process-wide FIFO로 직렬화합니다.",
+      en: "Model ID, version, SHA-256 and I/O schemas are pinned in a registry, with byte and tensor budgets checked before load. The generic provider (studio-onnx-inference-provider.ts) selects a single WebGPU or WASM execution provider per job and a boundary test blocks automatic backend fallback, but the modules for the five features (tag2pix and others) keep a WebGPU-first, WASM-second route ladder that reruns the same model; its consistency with ADR-0018 §12 (pin one execution provider) remains an open check. Results with stale request, stroke or document epochs are discarded, and MediaPipe task creation is serialized through a process-wide FIFO.",
     },
     boundary: {
       ko: "브라우저에서 실행된다고 무료·오프라인·비공개가 자동 보장되지는 않습니다. 모델 다운로드 출처, webcam 동의, device capability, 메모리와 배터리 비용을 표시하고 결과는 사용자 승인 전 문서에 commit하지 않습니다.",
@@ -347,7 +347,7 @@ export const ENGINEERING_FIELD_NOTES = [
     technologies: ["ONNX Runtime Web", "WebGPU execution provider", "WASM execution provider", "MediaPipe Tasks Vision", "model SHA-256", "tensor byte budget", "epoch fencing", "FIFO task arbiter"],
     evidence: [
       { kind: "code", path: "apps/web/src/domains/creator/studio-onnx-inference-provider.ts", label: { ko: "ONNX 모델·provider·budget·epoch 계약", en: "ONNX model, provider, budget and epoch contract" } },
-      { kind: "test", path: "apps/web/src/domains/creator/studio-onnx-inference-provider-boundary.test.ts", label: { ko: "backend 자동 fallback 금지와 경계 회귀", en: "No-auto-fallback and boundary regressions" } },
+      { kind: "test", path: "apps/web/src/domains/creator/studio-onnx-inference-provider-boundary.test.ts", label: { ko: "범용 provider의 backend 자동 fallback 금지와 경계 회귀", en: "Generic-provider no-auto-fallback and boundary regressions" } },
       { kind: "code", path: "apps/web/src/domains/creator/studio-mediapipe-vision-init-arbiter.ts", label: { ko: "MediaPipe process-wide 초기화 arbiter", en: "Process-wide MediaPipe initialization arbiter" } },
       { kind: "test", path: "apps/web/src/domains/creator/studio-mediapipe-vision-init-arbiter.test.ts", label: { ko: "FIFO·abort·module retry 회귀", en: "FIFO, abort and module-retry regressions" } },
     ],
@@ -360,7 +360,7 @@ export const ENGINEERING_FIELD_NOTES = [
     ],
     references: [
       ref("onnxruntime-web", "ONNX Runtime Web", "https://onnxruntime.ai/docs/get-started/with-javascript/web.html", "official-doc", "WebGPU·WASM backend와 브라우저 지원 범위를 적용 시점에 확인합니다.", "Recheck WebGPU/WASM backends and browser support at adoption time."),
-      ref("mediapipe-vision", "MediaPipe Tasks Vision", "https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/web_js", "official-doc", "브라우저 vision task의 모델·실행 모드·입력 계약을 확인합니다.", "Reference for browser vision-task models, running modes and input contracts."),
+      ref("mediapipe-vision", "MediaPipe Tasks Vision", "https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/web_js", "official-doc", "브라우저 vision task의 모델·실행 모드·입력 계약을 확인합니다.", "Reference for browser vision-task models, running modes and input contracts."),
       ref("mdn-webgpu", "MDN WebGPU API", "https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API", "official-doc", "device capability와 secure-context 요구사항을 확인합니다.", "Reference for device capability and secure-context requirements."),
     ],
   },
@@ -406,7 +406,7 @@ export const ENGINEERING_FIELD_NOTES = [
     ],
     references: [
       ref("mcp-spec", "Model Context Protocol specification", "https://modelcontextprotocol.io/specification/latest", "standard", "도구·리소스·transport의 권한 경계를 검토합니다.", "Reference for tool, resource and transport permission boundaries."),
-      ref("github-actions", "GitHub Actions documentation", "https://docs.github.com/actions", "official-doc", "AI 제안과 분리된 결정론적 검증·artifact 실행 기반입니다.", "Reference for deterministic validation and artifacts independent of AI suggestions."),
+      ref("github-actions", "GitHub Actions documentation", "https://docs.github.com/en/actions", "official-doc", "AI 제안과 분리된 결정론적 검증·artifact 실행 기반입니다.", "Reference for deterministic validation and artifacts independent of AI suggestions."),
       ref("coderabbit-docs", "CodeRabbit documentation", "https://docs.coderabbit.ai/", "official-doc", "자동 리뷰 조건과 설정은 실제 계정·저장소 동작과 함께 확인합니다.", "Review automated-review conditions together with actual account and repository behavior."),
     ],
   },
@@ -420,8 +420,8 @@ export const ENGINEERING_FIELD_NOTES = [
       en: "Free-first infrastructure uses static-first delivery, scale-to-zero and no automatic paid promotion.",
     },
     summary: {
-      ko: "정적 요청은 Cloudflare Static Assets, 대형 불변 파일은 R2, 임시 실시간은 Durable Objects, API는 Render scale-to-zero, 영속 원장은 Neon 호환 PostgreSQL로 역할을 분리합니다.",
-      en: "Static requests use Cloudflare Static Assets, large immutable files use R2, ephemeral realtime uses Durable Objects, the API scales to zero on Render, and Neon-compatible PostgreSQL owns the ledger.",
+      ko: "정적 요청은 Cloudflare Static Assets, 대형 불변 파일은 R2, 임시 실시간은 Durable Objects, API는 Render scale-to-zero, 영속 원장은 Supabase PostgreSQL(현재 권위, Neon은 legacy 보존)로 역할을 분리합니다.",
+      en: "Static requests use Cloudflare Static Assets, large immutable files use R2, ephemeral realtime uses Durable Objects, the API scales to zero on Render, and Supabase PostgreSQL owns the ledger (current authority; Neon is preserved as legacy).",
     },
     problem: {
       ko: "모든 요청을 API나 Worker로 통과시키면 무료 호출량과 cold start가 동시에 증가하고, 자동 배포·자동 failover는 검토되지 않은 SHA나 유료 자원을 활성화할 수 있습니다.",
@@ -435,7 +435,7 @@ export const ENGINEERING_FIELD_NOTES = [
       ko: "‘무료 우선’은 무제한 무료·무중단·SLA 보장이 아닙니다. cold start와 quota 실패를 보이는 상태로 유지하고, 유료 승격은 별도 승인과 비용 근거가 있어야 합니다.",
       en: "Free-first does not promise unlimited service, zero downtime or an SLA. Cold starts and quota failure remain visible; paid promotion requires separate approval and evidence.",
     },
-    technologies: ["Cloudflare Static Assets", "Cloudflare Worker", "R2", "Durable Objects", "Render scale-to-zero", "Neon PostgreSQL", "manual SHA release", "hard budget gateway"],
+    technologies: ["Cloudflare Static Assets", "Cloudflare Worker", "R2", "Durable Objects", "Render scale-to-zero", "Supabase PostgreSQL", "manual SHA release", "hard budget gateway"],
     evidence: [
       { kind: "document", path: "docs/operations/minimum-cost-deployment-policy.md", label: { ko: "최소 비용 배포 권위와 수동 릴리스", en: "Minimum-cost deployment authority and manual release" } },
       { kind: "document", path: "docs/operations/quality-preserving-cost-policy.md", label: { ko: "비용 절감 시 품질 불변 정책", en: "Quality-preserving cost policy" } },
@@ -453,7 +453,7 @@ export const ENGINEERING_FIELD_NOTES = [
       ref("cloudflare-r2", "Cloudflare R2", "https://developers.cloudflare.com/r2/", "official-doc", "대형 불변 객체와 Range 제공의 공식 기준입니다.", "Official reference for large immutable objects and range delivery."),
       ref("cloudflare-do", "Cloudflare Durable Objects", "https://developers.cloudflare.com/durable-objects/", "official-doc", "room 단위 임시 실시간 상태의 단일 조정 지점으로 검토합니다.", "Reference for a single coordination point for room-scoped realtime state."),
       ref("render-free", "Render free instances", "https://render.com/docs/free", "official-doc", "무료 인스턴스의 sleep·cold start 제약을 적용 시점에 확인합니다.", "Recheck free-instance sleep and cold-start constraints at adoption time."),
-      ref("neon-scale-zero", "Neon scale to zero", "https://neon.com/docs/manage/endpoints/", "official-doc", "유휴 compute 중지와 재개 특성을 확인합니다.", "Reference for idle compute suspension and resume behavior."),
+      ref("supabase-database", "Supabase Database overview", "https://supabase.com/docs/guides/database/overview", "official-doc", "현재 원장 PostgreSQL 공급자의 데이터베이스 기능과 연결 방식을 확인합니다.", "Reference for the current ledger provider's database features and connection options."),
     ],
   },
   {
@@ -509,8 +509,8 @@ export const ENGINEERING_FIELD_NOTES = [
       en: "Specialist engines sit under one scene document instead of replacing the product with an engine.",
     },
     summary: {
-      ko: "Three WebGPU/TSL과 WebGL2 경로를 주 runtime으로, Babylon을 CAD/BIM·진단용 지연 로드 specialist로 두고, Rapier·BVH·Manifold·OpenCascade·rhino3dm·web-ifc를 역할별 kernel로 분리합니다.",
-      en: "Three WebGPU/TSL with WebGL2 compatibility is the primary runtime, Babylon is a lazy CAD/BIM and diagnostic specialist, and Rapier, BVH, Manifold, OpenCascade, rhino3dm and web-ifc are role-specific kernels.",
+      ko: "Three WebGPU/TSL과 WebGL2 경로를 주 runtime으로, Babylon을 CAD/BIM·진단용 지연 로드 specialist로 두고, Rapier·Manifold·OpenCascade·rhino3dm·web-ifc를 역할별 kernel로 분리합니다. three-mesh-bvh는 provider와 테스트까지 구현돼 있지만 제품 호출처는 아직 없습니다.",
+      en: "Three WebGPU/TSL with WebGL2 compatibility is the primary runtime, Babylon is a lazy CAD/BIM and diagnostic specialist, and Rapier, Manifold, OpenCascade, rhino3dm and web-ifc are role-specific kernels. three-mesh-bvh has a provider and tests but no product call site yet.",
     },
     problem: {
       ko: "여러 엔진이 scene, camera, material, undo와 파일 저장을 각각 소유하면 같은 프로젝트가 엔진마다 다른 상태가 되고 복구·내보내기 결과도 달라집니다.",
@@ -685,7 +685,7 @@ export const ENGINEERING_OPEN_APIS = [
     purpose: { ko: "공개 미술 작품을 캐릭터·의상·소품 참고 자료로 검색", en: "Search public artworks for character, costume and prop reference" },
     access: { ko: "키 없는 공식 검색 API, provider rate와 pagination을 준수", en: "Official keyless search API with bounded pagination and provider limits" },
     rightsGate: { ko: "is_public_domain=true, copyright notice 없음, image_id·host 검증", en: "Requires is_public_domain=true, no copyright notice, and validated image IDs/hosts" },
-    resilience: { ko: "schema drift·429·unsafe image는 항목 단위로 제외하고 로컬 연구 노트는 유지", en: "Schema drift, 429 and unsafe images fail per item while local research notes remain available" },
+    resilience: { ko: "권리·이미지 조건을 어긴 항목만 하나씩 제외하고, 응답 schema 변경·429·시간 초과는 요청 전체를 이용 불가로 돌려주며 로컬 연구 노트는 유지", en: "Only items that break the rights or image rules are dropped one by one; a schema change, 429 or timeout makes the whole request unavailable, and local research notes remain available" },
     evidence: [{ kind: "code", path: "apps/api/src/modules/creator-resources/open-art-providers.ts", label: { ko: "AIC adapter", en: "AIC adapter" } }],
     officialUrl: "https://api.artic.edu/docs/",
   },
@@ -727,7 +727,7 @@ export const ENGINEERING_OPEN_APIS = [
     provider: "KMAS · 한국만화영상진흥원",
     status: "configured",
     purpose: { ko: "웹툰·만화 제목, 작가, 장르, 플랫폼, ISBN과 작품 설명 조회", en: "Retrieve webtoon/comic titles, creators, genres, platforms, ISBNs and descriptions" },
-    access: { ko: "승인된 서버 키 필요, HTTPS host allowlist와 bounded concurrency 적용", en: "Requires an approved server key with HTTPS host allowlist and bounded concurrency" },
+    access: { ko: "승인된 서버 키 필요. kmas-reference.ts 어댑터는 https·KMAS 호스트만 허용하고 동시 4건·8초 제한을 두며, 레거시 server/kmas.ts 경로에는 같은 제한이 없음", en: "Requires an approved server key. The kmas-reference.ts adapter allows only https KMAS hosts with four concurrent calls and an 8-second limit, while the legacy server/kmas.ts path has no such limits" },
     rightsGate: { ko: "공식 메타데이터 출처를 표시하고 원문·표지 재사용 권리와 분리", en: "Attributes official metadata while separating it from cover and full-text reuse rights" },
     resilience: { ko: "NOT_CONFIGURED·RATE_LIMITED·TIMEOUT·UNAVAILABLE을 분리하고 가짜 결과 금지", en: "Separates NOT_CONFIGURED, RATE_LIMITED, TIMEOUT and UNAVAILABLE with no fabricated results" },
     evidence: [{ kind: "code", path: "apps/api/src/server/kmas-reference.ts", label: { ko: "KMAS 검색 adapter", en: "KMAS search adapter" } }],
@@ -746,13 +746,13 @@ export const ENGINEERING_OPEN_APIS = [
   },
   {
     id: "wikimedia",
-    provider: "Wikimedia Commons · Wikipedia",
+    provider: "Wikimedia Commons · 한국어 Wikipedia (브라우저 MediaWiki API)",
     status: "live",
     purpose: { ko: "역사·문화 키워드와 원문 링크를 연구 참고로 제공", en: "Provide historical/cultural keywords and source links for research" },
-    access: { ko: "공개 MediaWiki API, 검색 metadata 중심", en: "Public MediaWiki API used primarily for search metadata" },
+    access: { ko: "브라우저가 commons.wikimedia.org·ko.wikipedia.org의 공개 MediaWiki API를 직접 호출, 검색 metadata 중심. 서버의 Pageviews REST와 Wikidata 조회는 별도 어댑터", en: "The browser calls the public MediaWiki APIs of commons.wikimedia.org and ko.wikipedia.org directly, mainly for search metadata. The server-side Pageviews REST and Wikidata lookups are separate adapters" },
     rightsGate: { ko: "본문·이미지를 자동 재배포하지 않고 항목별 원문 라이선스 확인", en: "Does not automatically republish article text or images; item licenses require source review" },
     resilience: { ko: "검색 snippet을 창작 원문이나 사실 판정으로 취급하지 않음", en: "Never treats search snippets as reusable source text or definitive fact judgment" },
-    evidence: [{ kind: "test", path: "e2e/open-creation.spec.ts", label: { ko: "Wikipedia 본문·이미지 미복제 회귀", en: "Regression preventing Wikipedia text/image replication" } }],
+    evidence: [{ kind: "code", path: "apps/web/src/domains/creator-resources/open-creation.ts", label: { ko: "Commons·한국어 Wikipedia 브라우저 어댑터", en: "Browser adapter for Commons and Korean Wikipedia" } }, { kind: "test", path: "e2e/open-creation.spec.ts", label: { ko: "Wikipedia 본문·이미지 미복제 회귀", en: "Regression preventing Wikipedia text/image replication" } }],
     officialUrl: "https://www.mediawiki.org/wiki/API:Main_page",
   },
   {
@@ -760,10 +760,10 @@ export const ENGINEERING_OPEN_APIS = [
     provider: "Unsplash",
     status: "configured",
     purpose: { ko: "사용자 키가 있을 때 사진 reference 탐색", en: "Search photographic references when a user key is configured" },
-    access: { ko: "BYOK와 공식 endpoint만 허용", en: "Allows BYOK and official endpoints only" },
-    rightsGate: { ko: "API terms·attribution·download tracking 조건을 코드 라이선스와 별도 관리", en: "Tracks API terms, attribution and download-tracking obligations separately from code licensing" },
+    access: { ko: "BYOK Access Key(현재 탭 sessionStorage)로 브라우저에서 고정된 https://api.unsplash.com을 직접 호출하며 서버를 거치지 않음. 운영 CSP connect-src에도 이 호스트가 등록됨", en: "Calls the fixed https://api.unsplash.com directly from the browser with a BYOK access key held in the current tab's sessionStorage, with no server hop; the production CSP connect-src also registers this host" },
+    rightsGate: { ko: "API terms·attribution·download tracking 조건을 코드 라이선스와 별도로 다루며, 클라이언트가 사진마다 크레딧(UTM 포함)을 만들고 사용 시 download_location을 호출", en: "Handles API terms, attribution and download-tracking obligations separately from code licensing; the client builds a credit with UTM parameters per photo and calls download_location on use" },
     resilience: { ko: "키가 없으면 기능을 비활성으로 표시하고 다른 유료 키로 자동 fallback하지 않음", en: "Shows the feature as unavailable without a key and never falls back to another paid credential" },
-    evidence: [{ kind: "code", path: "apps/web/src/shared/ai/free-ai-policy.ts", label: { ko: "외부 endpoint·BYOK 보안 정책의 공통 경계", en: "Shared external-endpoint and BYOK security boundary" } }],
+    evidence: [{ kind: "code", path: "apps/web/src/domains/creator/studio-stock-image-client.ts", label: { ko: "BYOK Unsplash 클라이언트(고정 baseURL·크레딧·download_location)", en: "BYOK Unsplash client (fixed baseURL, credits, download_location)" } }],
     officialUrl: "https://unsplash.com/developers",
   },
 ] as const satisfies readonly EngineeringOpenApiNote[];
@@ -869,7 +869,7 @@ export const ENGINEERING_TROUBLESHOOTING_CASES = [
     title: { ko: "AI timeout 뒤 자동 fallback이 중복 추론·과금 위험을 만듦", en: "AI fallback after timeout created duplicate inference and billing risk" },
     symptom: { ko: "사용자는 실패로 보지만 첫 공급자가 이미 작업을 수락했을 수 있어 다음 공급자 재전송 시 두 결과와 두 비용이 생길 수 있습니다.", en: "The user saw failure although the first provider may have accepted the job, so retrying elsewhere could produce two results and two charges." },
     rootCause: { ko: "모든 네트워크 오류를 ‘추론 전 실패’로 가정하고 fallback 가능한 오류 목록에 포함했습니다.", en: "All network errors were assumed to occur before inference and were treated as safe fallback signals." },
-    fix: { ko: "HTTP 402·429 등 명확한 pre-inference 거절만 다음 무료 공급자로 이동하고 timeout·5xx·malformed success는 ambiguous로 종료합니다. 요청 fingerprint와 idempotency receipt를 저장합니다.", en: "Only clear pre-inference rejection such as 402/429 advances to another free provider; timeout, 5xx and malformed success end as ambiguous. Request fingerprints and idempotency receipts are retained." },
+    fix: { ko: "HTTP 402·429(와 공급자별로 확인된 quota 코드) 등 명확한 pre-inference 거절만 다음 무료 공급자로 이동하고 timeout·5xx·malformed success는 ambiguous로 종료합니다. 요청 fingerprint와 idempotency receipt를 저장합니다.", en: "Only clear pre-inference rejection such as 402/429 (plus provider-verified quota codes) advances to another free provider; timeout, 5xx and malformed success end as ambiguous. Request fingerprints and idempotency receipts are retained." },
     prevention: { ko: "provider accepted 후 connection drop, timeout race, receipt replay, 다른 payload로 같은 key 재사용을 테스트합니다.", en: "Tests cover connection drop after acceptance, timeout races, receipt replay and reuse of a key with a different payload." },
     evidence: [
       { kind: "document", path: "apps/api/src/modules/studio-ai/README.md", label: { ko: "안전한 advance 규칙", en: "Safe provider-advance rules" } },
@@ -972,7 +972,7 @@ export const ENGINEERING_REFERENCE_PRODUCTS = [
     lesson: { ko: "고품질 face topology, material, LOD, corrective deformation과 품질 검수 기준", en: "Quality bar for face topology, materials, LODs, corrective deformation and review" },
     applied: { ko: "캐릭터 asset admission과 golden view·silhouette·material·deformation 점수 기준 참고", en: "Reference for character asset admission and golden-view, silhouette, material and deformation scores" },
     boundary: { ko: "MetaHuman runtime·asset을 포함하거나 동등 품질을 주장하지 않음", en: "Does not embed MetaHuman runtime/assets or claim equivalent quality" },
-    url: "https://www.metahuman.com/en-US",
+    url: "https://www.metahuman.com/",
   },
   {
     id: "character-creator",
@@ -990,7 +990,7 @@ export const ENGINEERING_REFERENCE_PRODUCTS = [
     lesson: { ko: "건축 배경 모델링, scene/camera, component와 대규모 3D 자산 탐색", en: "Architectural background modeling, scenes/cameras, components and large 3D asset discovery" },
     applied: { ko: "BG3D scene preset, reusable shot, asset catalog과 명시적 import preflight에 반영", en: "Informed BG3D scene presets, reusable shots, asset catalog and explicit import preflight" },
     boundary: { ko: "CAD/BIM 정밀도를 일반 scene editor에 섞지 않고 OpenCascade·web-ifc specialist로 격리", en: "CAD/BIM precision is isolated in OpenCascade/web-ifc specialists rather than mixed into the normal scene editor" },
-    url: "https://www.sketchup.com/",
+    url: "https://sketchup.trimble.com/en",
   },
   {
     id: "acon3d",
@@ -1008,7 +1008,7 @@ export const ENGINEERING_REFERENCE_PRODUCTS = [
     lesson: { ko: "사용자 소유 파일, app-created file scope, resumable upload와 변경 revision", en: "User-owned files, app-created-file scope, resumable uploads and change revisions" },
     applied: { ko: "drive.file 최소 권한, 사용자 선택 백업과 source revision·digest 연결에 반영", en: "Informed drive.file least privilege, user-selected backups and source revision/digest binding" },
     boundary: { ko: "Drive를 Studio DB나 자동 동기화 권위로 사용하지 않고 provider token·오류·충돌을 별도 계약으로 관리", en: "Drive is not the Studio database or implicit sync authority; provider tokens, failures and conflicts remain separate contracts" },
-    url: "https://developers.google.com/drive/api/guides/about-sdk",
+    url: "https://developers.google.com/workspace/drive/api/guides/about-sdk",
   },
   {
     id: "dropbox",
@@ -1026,15 +1026,15 @@ export const ENGINEERING_REFERENCE_PRODUCTS = [
     lesson: { ko: "App Folder, upload session, eTag와 Graph 기반 파일 revision", en: "App Folder, upload sessions, eTags and Graph-backed file revisions" },
     applied: { ko: "Files.ReadWrite.AppFolder 최소 권한과 expected-version 동기화 계약에 반영", en: "Informed Files.ReadWrite.AppFolder least privilege and expected-version synchronization" },
     boundary: { ko: "Microsoft 계정 연결이 없거나 consent가 철회되면 로컬 정본을 유지하고 cloud 기능만 비활성화", en: "Local authority remains intact when Microsoft consent is absent or revoked; only cloud features disable" },
-    url: "https://learn.microsoft.com/graph/onedrive-concept-overview",
+    url: "https://learn.microsoft.com/en-us/graph/onedrive-concept-overview",
   },
   {
     id: "remotion",
     name: "Remotion",
     role: "specialist",
     lesson: { ko: "React 기반 결정론적 영상 composition, frame 단위 재현과 코드 리뷰 가능한 발표 자산", en: "React-based deterministic compositions, frame-level reproducibility and reviewable presentation assets" },
-    applied: { ko: "웹 runtime과 분리된 brand/technology film 패키지, 수동 render artifact와 manifest에 사용", en: "Used for isolated brand/technology-film packages, manual render artifacts and manifests" },
-    boundary: { ko: "웹 앱 번들에 포함하지 않고 자동 게시하지 않으며 조직·렌더 방식별 라이선스를 별도 확인", en: "Excluded from the web bundle and automatic publishing, with licensing rechecked by organization and render mode" },
+    applied: { ko: "웹 runtime과 분리된 brand/technology film 패키지, 수동 render artifact와 manifest, 그리고 제품 투어(/product-tour) 재생기에 사용", en: "Used for isolated brand/technology-film packages, manual render artifacts and manifests, and for the product-tour (/product-tour) player" },
+    boundary: { ko: "영상 패키지는 자동 게시하지 않고, 웹 앱은 제품 투어 재생기에만 remotion·@remotion/player runtime을 씁니다. 조직·렌더 방식별 라이선스 자격은 저장소로 확인할 수 없어 별도 확인이 필요", en: "Film packages are never published automatically, and the web app uses the remotion and @remotion/player runtime only for the product-tour player. License eligibility by organization and render mode cannot be confirmed from the repository and needs a separate check" },
     url: "https://www.remotion.dev/",
   },
   {
@@ -1067,7 +1067,7 @@ export const ENGINEERING_REFERENCE_PRODUCTS = [
 ] as const satisfies readonly EngineeringReferenceProduct[];
 
 export const ENGINEERING_IMPLEMENTATION_INVENTORY: EngineeringImplementationInventory = Object.freeze({
-  reviewedAt: "2026-09-25",
+  reviewedAt: "2026-10-07",
   workerEntries: 64,
   workerClients: 58,
   serviceWorkerRuntimeFiles: 9,

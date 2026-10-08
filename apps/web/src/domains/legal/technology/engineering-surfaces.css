@@ -41,6 +41,70 @@
 }
 .eng-code__header { border-bottom: 1px solid var(--color-line); }
 .eng-code__label { color: var(--color-fg-2); }
+.eng-code__lang { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-fg-3); }
+.eng-code__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-card);
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-fg-2);
+  cursor: pointer;
+}
+.eng-code__copy:hover { border-color: var(--color-line-strong); color: var(--color-fg); }
+.eng-code__copy:focus-visible,
+.eng-code__scroll:focus-visible { outline: 2px solid var(--color-focus-ring, var(--color-accent)); outline-offset: 2px; }
+.eng-code__scroll { overflow-x: auto; }
+.eng-code__pre {
+  margin: 0;
+  padding: 14px 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono CJK KR", "D2Coding", monospace;
+  font-size: 0.78rem;
+  line-height: 1.75;
+  tab-size: 2;
+}
+.eng-code__line { display: flex; min-width: max-content; padding-right: 16px; }
+.eng-code__no {
+  flex: none;
+  min-width: 3.2ch;
+  padding: 0 12px 0 14px;
+  text-align: right;
+  color: var(--color-fg-3);
+  user-select: none;
+}
+.eng-code__line:not(:has(.eng-code__no)) .eng-code__text { padding-left: 16px; }
+.eng-code__text { white-space: pre; }
+.eng-code__source { margin: 0; border-top: 1px solid var(--color-line); padding: 8px 16px; font-size: 0.72rem; color: var(--color-fg-3); }
+.eng-code__source code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--color-fg-2); }
+/* 구문 강조: 테마 색을 전경색 쪽으로 섞어 라이트·다크 모두에서 대비를 확보한다. */
+.eng-code .tok-comment { color: var(--color-fg-3); font-style: italic; }
+.eng-code .tok-string { color: color-mix(in oklab, var(--color-good) 58%, var(--color-fg)); }
+.eng-code .tok-number { color: color-mix(in oklab, var(--color-warn) 55%, var(--color-fg)); }
+.eng-code .tok-keyword { color: color-mix(in oklab, var(--color-accent) 70%, var(--color-fg)); font-weight: 700; }
+.eng-code .tok-type { color: color-mix(in oklab, var(--color-accent-2) 60%, var(--color-fg)); }
+.eng-code .tok-function { color: color-mix(in oklab, var(--color-cool) 62%, var(--color-fg)); }
+.eng-code .tok-property { color: var(--color-fg); }
+.eng-code .tok-punct { color: var(--color-fg-2); }
+/* 발표 슬라이드: 컨테이너 폭(cqw)에 비례해 키운다. */
+.eng-code[data-variant="slide"] { border-radius: 1.1cqw; }
+.eng-code[data-variant="slide"] .eng-code__header { padding: 0.7cqw 1.4cqw; }
+.eng-code[data-variant="slide"] .eng-code__label { font-size: 0.95cqw; }
+.eng-code[data-variant="slide"] .eng-code__lang { font-size: 0.9cqw; }
+.eng-code[data-variant="slide"] .eng-code__pre { padding: 1.1cqw 0; font-size: 1.32cqw; line-height: 1.62; }
+.eng-code[data-variant="slide"] .eng-code__source { padding: 0.6cqw 1.4cqw; font-size: 0.95cqw; }
+@media print {
+  .eng-code__scroll { overflow: visible; }
+  .eng-code__text { white-space: pre-wrap; }
+  .eng-code__copy { display: none; }
+}
+@media (forced-colors: active) {
+  .eng-code .tok { color: CanvasText; }
+  .eng-code__copy { border-color: ButtonText; }
+}
 
 /* ── 아키텍처 도식 (허브·발표 공용) ──
    색은 테마 토큰만 사용한다. 로컬 권위=accent(보라), 엣지=accent-2(청록), 서버 원장=중립.
@@ -103,4 +167,209 @@
   .eng-arch__zone-title, .eng-arch__zone-caption, .eng-arch__box-title, .eng-arch__box-line, .eng-arch__link-label { fill: CanvasText; }
   .eng-arch__link { stroke: CanvasText; }
   .eng-arch__arrowhead { fill: CanvasText; }
+}
+
+/* ── 데이터 기반 도식 (기술 도감·발표 공용) ──
+   EngineeringDiagramView 가 도식 명세(engineering-diagram-types.ts)를 그린다.
+   색은 테마 토큰만 쓴다: 로컬=accent, 엣지=accent-2, 서버=fg-3, AI=cool, 외부=점선.
+   폭이 좁으면 SVG 대신 같은 내용을 목록으로 보여준다(글자 크기 보장). */
+.eng-dia {
+  container: eng-dia / inline-size;
+  position: relative;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+  font-family: inherit;
+}
+.eng-dia__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.eng-dia[data-fit="contain"] { height: 100%; grid-template-rows: minmax(0, 1fr) auto; }
+.eng-dia[data-fit="contain"] .eng-dia__svg { height: 100%; min-height: 0; }
+
+.eng-dia__shape {
+  --eng-dia-tone: var(--color-line-strong);
+  fill: color-mix(in oklab, var(--eng-dia-tone) 9%, var(--color-card));
+  stroke: color-mix(in oklab, var(--eng-dia-tone) 70%, var(--color-line));
+  stroke-width: 1.6;
+}
+.eng-dia__shape[data-tone="local"] { --eng-dia-tone: var(--color-accent); }
+.eng-dia__shape[data-tone="edge"] { --eng-dia-tone: var(--color-accent-2); }
+.eng-dia__shape[data-tone="server"] { --eng-dia-tone: var(--color-fg-3); }
+.eng-dia__shape[data-tone="external"] { --eng-dia-tone: var(--color-fg-3); stroke-dasharray: 6 5; }
+.eng-dia__shape[data-tone="ai"] { --eng-dia-tone: var(--color-cool); }
+.eng-dia__shape[data-tone="good"] { --eng-dia-tone: var(--color-good); }
+.eng-dia__shape[data-tone="warn"] { --eng-dia-tone: var(--color-warn); }
+.eng-dia__shape[data-shape="cloud"] { stroke-dasharray: 6 5; }
+.eng-dia__shape-rim { fill: none; }
+
+.eng-dia__node-label { fill: var(--color-fg); font-weight: 800; letter-spacing: -0.01em; }
+.eng-dia__node-sub { fill: var(--color-fg-2); font-weight: 500; }
+
+.eng-dia__edge { fill: none; stroke: var(--color-fg-3); stroke-width: 2; stroke-linejoin: round; }
+.eng-dia__edge[data-style="dashed"] { stroke-dasharray: 7 6; }
+.eng-dia__arrowhead { fill: var(--color-fg-3); }
+.eng-dia__edge-label,
+.eng-dia__msg-label {
+  fill: var(--color-fg);
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--color-card);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+.eng-dia__msg-note {
+  fill: var(--color-fg-2);
+  font-weight: 500;
+  paint-order: stroke;
+  stroke: var(--color-card);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.eng-dia__group { --eng-dia-gtone: var(--color-line-strong); }
+.eng-dia__group[data-tone="local"] { --eng-dia-gtone: var(--color-accent); }
+.eng-dia__group[data-tone="edge"] { --eng-dia-gtone: var(--color-accent-2); }
+.eng-dia__group[data-tone="server"] { --eng-dia-gtone: var(--color-fg-3); }
+.eng-dia__group[data-tone="ai"] { --eng-dia-gtone: var(--color-cool); }
+.eng-dia__group[data-tone="good"] { --eng-dia-gtone: var(--color-good); }
+.eng-dia__group[data-tone="warn"] { --eng-dia-gtone: var(--color-warn); }
+.eng-dia__group-frame {
+  fill: color-mix(in oklab, var(--eng-dia-gtone) 5%, transparent);
+  stroke: color-mix(in oklab, var(--eng-dia-gtone) 55%, var(--color-line));
+  stroke-width: 1.5;
+  stroke-dasharray: 7 6;
+}
+.eng-dia__group-label { fill: var(--color-fg-2); font-weight: 800; letter-spacing: 0.02em; }
+
+.eng-dia__lifeline { stroke: var(--color-line-strong); stroke-width: 1.4; stroke-dasharray: 3 7; }
+
+.eng-dia__chip {
+  fill: color-mix(in oklab, var(--color-accent) 10%, var(--color-card));
+  stroke: color-mix(in oklab, var(--color-accent) 40%, var(--color-line));
+  stroke-width: 1;
+}
+.eng-dia__chip-text { fill: var(--color-fg); font-weight: 700; }
+.eng-dia__flow-arrow { fill: none; stroke: var(--color-fg-3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.eng-dia__bracket path { fill: none; stroke: var(--color-fg-3); stroke-width: 2; stroke-linecap: round; }
+.eng-dia__bracket-label { fill: var(--color-fg-2); font-weight: 700; }
+
+.eng-dia__caption { display: grid; gap: 2px; font-size: 0.8125rem; line-height: 1.6; color: var(--color-fg-2); }
+.eng-dia__caption strong { color: var(--color-fg); font-weight: 800; }
+
+/* 스크린 리더용 텍스트 대체. 넓을 때는 화면에서 숨기고, 좁은 폭에서는 도식 대신 보여준다. */
+.eng-dia__list {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.eng-dia__list-alt { margin: 0; }
+.eng-dia__list ol,
+.eng-dia__list ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.eng-dia__list li { display: grid; gap: 1px; font-size: 0.8125rem; line-height: 1.55; color: var(--color-fg-2); }
+.eng-dia__list li strong { color: var(--color-fg); font-weight: 700; }
+.eng-dia__list-edges li { display: block; }
+@container eng-dia (width < 560px) {
+  .eng-dia:not([data-fixed]) .eng-dia__svg { display: none; }
+  .eng-dia:not([data-fixed]) .eng-dia__list {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    display: grid;
+    gap: 10px;
+  }
+  .eng-dia:not([data-fixed]) .eng-dia__list-alt { font-size: 0.8125rem; line-height: 1.6; color: var(--color-fg-2); }
+}
+
+@media print {
+  .eng-dia__svg { display: block !important; }
+  .eng-dia:not([data-fixed]) .eng-dia__list { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+
+@media (forced-colors: active) {
+  .eng-dia__shape, .eng-dia__group-frame, .eng-dia__chip { fill: Canvas; stroke: CanvasText; }
+  .eng-dia__node-label, .eng-dia__node-sub, .eng-dia__group-label, .eng-dia__chip-text, .eng-dia__bracket-label { fill: CanvasText; }
+  .eng-dia__edge-label, .eng-dia__msg-label, .eng-dia__msg-note { fill: CanvasText; stroke: Canvas; }
+  .eng-dia__edge, .eng-dia__lifeline, .eng-dia__flow-arrow, .eng-dia__bracket path { stroke: CanvasText; }
+  .eng-dia__arrowhead { fill: CanvasText; }
+}
+
+/* ── 도식 "크게 보기" ─────────────────────────────────────────────
+   본문 폭에서 작아지는 넓은 도식을 대화상자로 키워 본다(EngineeringDiagramFrame). */
+.eng-dia-frame { position: relative; container: eng-dia-frame / inline-size; }
+.eng-dia-frame__zoom {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-card) 90%, transparent);
+  color: var(--color-fg-2);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.eng-dia-frame__zoom:hover {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-line));
+}
+/* 좁은 화면에서는 도식이 목록으로 바뀌므로(위 eng-dia 컨테이너 규칙과 같은 기준) 확대 버튼도 감춘다. */
+@container eng-dia-frame (width < 560px) {
+  .eng-dia-frame__zoom { display: none; }
+}
+.eng-dia-frame__zoom:focus-visible,
+.eng-dia-zoom__close:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.eng-dia-zoom {
+  width: min(96vw, 1680px);
+  max-width: none;
+  max-height: 94dvh;
+  margin: auto;
+  padding: 1rem 1.25rem 1.25rem;
+  overflow: auto;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 1.5rem;
+  background: var(--color-card);
+  color: var(--color-fg);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+}
+.eng-dia-zoom::backdrop {
+  background: rgb(5 5 16 / 0.72);
+  backdrop-filter: blur(3px);
+}
+.eng-dia-zoom__close {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  margin: 0 0 0.75rem auto;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-raised);
+  color: var(--color-fg);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+@media print {
+  .eng-dia-frame__zoom { display: none; }
+}
+@media (forced-colors: active) {
+  .eng-dia-frame__zoom, .eng-dia-zoom__close { border-color: ButtonText; background: ButtonFace; color: ButtonText; }
+  .eng-dia-zoom { border-color: CanvasText; }
 }

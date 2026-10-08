@@ -64,6 +64,7 @@ export const STATIC_TITLES: Record<string, string> = {
   "/about/technology/videos": "route.about",
   "/about/technology/licenses": "route.about",
   "/about/technology/glossary": "route.about",
+  "/about/technology/atlas": "route.about",
   "/about/principles": "route.about",
   "/about/technology/playbook": "route.about",
   "*": "page.notFound.title",

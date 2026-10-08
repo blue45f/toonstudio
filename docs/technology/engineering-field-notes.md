@@ -20,12 +20,12 @@ The route is:
 
 The page publishes review-date-bound implementation counts and tests them against the repository:
 
-- 59 dedicated `*.worker.ts` entries;
-- 56 `*worker-client.ts` boundaries;
+- 64 dedicated `*.worker.ts` entries;
+- 58 `*worker-client.ts` boundaries;
 - 9 non-test service-worker runtime modules;
 - 2 browser-local inference runtimes: ONNX Runtime Web and MediaPipe Tasks Vision;
 - 8 allowlisted Blender MCP commands;
-- 8 reviewed Open API adapters.
+- 8 documented Open API entries (the page documents eight providers in detail; the server resource engine registers more, 26 provider ids in `packages/core/src/creator-resources.ts`).
 
 The counts are evidence, not a feature-quality score. They exist to make architecture claims auditable and to fail tests when the implementation drifts.
 
@@ -62,7 +62,7 @@ ONNX Runtime Web and MediaPipe Tasks Vision are treated as capability-bound loca
 
 - model ID, version, SHA-256 and input/output schema;
 - model and tensor byte budgets before allocation;
-- explicit WebGPU or WASM provider selection with no silent backend retry;
+- explicit WebGPU or WASM provider selection in the generic provider with no silent backend retry (the modules for the five ONNX features, e.g. tag2pix, keep a WebGPU-first, WASM-second route ladder whose consistency with ADR-0018 §12 is an open check);
 - request, stroke and document epoch fencing;
 - webcam and model-origin consent boundaries;
 - process-wide FIFO initialization for MediaPipe task factories that share ambient module state.
@@ -80,14 +80,14 @@ Free-first AI is an operating policy:
 - exact provider/model allowlists;
 - explicit operator confirmation;
 - durable quota and idempotency records;
-- safe advance only after machine-verifiable pre-inference rejection;
+- safe advance only after machine-verifiable pre-inference rejection (402/429 and provider-verified quota codes; in the server shared pool 401/403 authentication errors do not advance, while personal-key routes pass that key's 401/403 on to the next free route);
 - no retry after ambiguous timeout, 5xx or malformed success;
 - BYOK credentials scoped to explicit work and never used as a silent fallback;
 - no hidden model, resolution or output-quality downgrade.
 
 ### Minimum-cost infrastructure
 
-The infrastructure note separates static delivery, edge liveness, dynamic API, realtime rooms, large immutable objects and the durable ledger. It also documents cold starts, free-tier ceilings and the absence of automatic paid promotion.
+The infrastructure note separates static delivery, edge liveness, dynamic API, realtime rooms, large immutable objects and the durable ledger. Supabase PostgreSQL is the current ledger authority and Neon is preserved as legacy (see `docs/operations/canonical-database-topology.md`). It also documents cold starts, free-tier ceilings and the absence of automatic paid promotion.
 
 A reviewed immutable commit SHA and release receipt are required for production changes.
 
@@ -136,7 +136,7 @@ Do not copy commercial assets, private APIs, protected UI or non-public implemen
 
 ## Review rules
 
-Official documentation links carry a review date. Recheck provider pricing, free tiers, browser support, API terms, model identifiers and engine support before implementation or publication.
+Official documentation links carry a review date (2026-10-07 for the current set, after every link was reopened). Recheck provider pricing, free tiers, browser support, API terms, model identifiers and engine support before implementation or publication.
 
 Public field-note content must never include:
 

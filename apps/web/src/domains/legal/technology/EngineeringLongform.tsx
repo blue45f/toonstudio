@@ -77,17 +77,21 @@ export function EngineeringDisclosure({
   defaultOpen = false,
   className,
   bodyClassName,
+  onToggle,
 }: {
   readonly summary: ReactNode;
   readonly children: ReactNode;
   readonly defaultOpen?: boolean;
   readonly className?: string;
   readonly bodyClassName?: string;
+  /** 열림·닫힘이 바뀔 때(사용자가 누르거나 "모두 펼치기"·주소 앵커가 열 때도) 호출된다. 큰 본문을 처음 열 때 그리는 곳에서 쓴다. */
+  readonly onToggle?: (open: boolean) => void;
 }) {
   return (
     <details
       data-eng-disclosure=""
       open={defaultOpen || undefined}
+      onToggle={onToggle ? (event) => onToggle(event.currentTarget.open) : undefined}
       className={cx("group/disclosure rounded-3xl border border-line/70 bg-card/45 open:bg-card/70", className)}
     >
       <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 rounded-3xl px-5 py-3 text-sm font-bold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">

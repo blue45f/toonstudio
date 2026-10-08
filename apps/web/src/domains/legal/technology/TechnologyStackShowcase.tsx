@@ -64,8 +64,11 @@ const RENDER_STAGES = [
     body: { ko: "물감·연필 질감은 뒤에서 따로 계산합니다.", en: "Compute paint and pencil texture separately behind the scene." },
   },
   {
-    step: { ko: "타일 커밋", en: "Tile commit" },
-    body: { ko: "확정된 획을 저장용 조각에 기록합니다.", en: "Record the finalized stroke into storage tiles." },
+    step: { ko: "획 확정 기록", en: "Commit the stroke" },
+    body: {
+      ko: "확정된 획은 점·필압·붓 정보로 문서에 기록돼 필요할 때 다시 그려집니다.",
+      en: "A finished stroke is stored as points, pressure and brush data, and redrawn whenever it is needed.",
+    },
   },
   {
     step: { ko: "저장·내보내기", en: "Save and export" },
@@ -73,32 +76,93 @@ const RENDER_STAGES = [
   },
 ] as const;
 
+type StatusTone = "stable" | "caution" | "neutral";
+
+const STATUS_TONE_CLASS: Readonly<Record<StatusTone, string>> = {
+  stable: "border-accent/30 bg-accent-soft text-accent",
+  caution: "border-warn/40 bg-warning-soft text-fg",
+  neutral: "border-line bg-panel text-fg-2",
+};
+
+/**
+ * 성숙도는 엔진 레지스트리 descriptor(packages/studio-engine-skia·vello)의 선언이고,
+ * 적용 범위는 렌더러 역할 원장(packages/studio-engine-registry/src/renderer-roles.ts,
+ * docs/engines/renderer-roles.md)과 ADR-0018·ADR-0025 기준이다. 일반 설명(explain·strength·fit)과
+ * 제품에서 실제로 맡는 범위(status)를 분리해, 엔진 소개가 제품 역할처럼 읽히지 않게 한다.
+ */
 const RENDERER_ROWS = [
   {
     name: "CanvasKit (Skia)",
     explain: { ko: "전문 그래픽 엔진 Skia를 브라우저에서 돌리는 방식", en: "Run the professional graphics engine Skia inside the browser" },
-    strength: { ko: "데스크톱 앱 수준의 정밀한 붓 표현", en: "Desktop-grade precise brush rendering" },
+    strength: { ko: "정밀한 경로 연산과 획 윤곽 계산", en: "Precise path operations and stroke-outline computation" },
     fit: { ko: "성능이 충분한 데스크톱·태블릿", en: "Capable desktops and tablets" },
+    status: {
+      tone: "stable",
+      level: { ko: "운영 기준선", en: "Production baseline" },
+      registry: "production-baseline",
+      scope: {
+        ko: "경로 연산·획 확장 품질 엔진이고, 승인된 일반 선화·마커·지우개와 지원 벡터 문서를 WebGL2로 표시합니다. 입력과 Undo 권위는 바꾸지 않으며, 문자·이미지·자연매체 등 아직 옮기지 않은 조합은 기존 경계를 유지합니다.",
+        en: "A quality engine for path operations and stroke expansion, and the WebGL2 display for approved line art, markers, erasers and supported vector documents. It does not take over input or undo authority, and cases not yet migrated, such as text, images and natural media, keep their existing boundaries.",
+      },
+    },
   },
   {
     name: "Vello",
     explain: { ko: "GPU로 2D 그림을 그리는 차세대 렌더러", en: "A next-generation 2D renderer that draws with the GPU" },
     strength: { ko: "많은 도형도 부드럽게", en: "Smooth with many shapes" },
     fit: { ko: "WebGPU를 지원하는 최신 브라우저", en: "Recent browsers with WebGPU" },
+    status: {
+      tone: "caution",
+      level: { ko: "실험·조건부", en: "Experimental · conditional" },
+      registry: "experimental · conditional",
+      scope: {
+        ko: "명시적으로 고를 때만 쓰는 보조 엔진이며 전체 캔버스를 맡지 않습니다. WebGPU가 없으면 쓸 수 없고, 실패해도 다른 엔진으로 조용히 넘기지 않습니다. CPU판은 비교·기준 이미지용입니다.",
+        en: "A supporting engine used only when explicitly selected; it does not own the whole canvas. It needs WebGPU and never silently hands a failure to another engine. The CPU build is for comparison and reference images.",
+      },
+    },
   },
   {
     name: "ThorVG",
     explain: { ko: "가볍고 작은 2D 벡터 그래픽 엔진", en: "A light, compact 2D vector graphics engine" },
-    strength: { ko: "용량이 작아 저사양 기기·모바일에 유리", en: "Small footprint, kind to low-end devices and mobile" },
-    fit: { ko: "저사양 기기·임베디드 환경", en: "Low-end devices and embedded environments" },
+    strength: { ko: "Vello가 그리지 못하는 필터·마스크·문자가 든 SVG를 안전한 범위에서 처리", en: "Handles SVG with filters, masks and text that Vello cannot draw, within safe limits" },
+    fit: { ko: "필터·마스크·문자가 든 SVG 에셋 미리보기", en: "Previewing SVG assets that use filters, masks or text" },
+    status: {
+      tone: "neutral",
+      level: { ko: "전문 경로", en: "Specialist path" },
+      registry: null,
+      scope: {
+        ko: "Studio 요소 패널의 SVG 에셋 미리보기에만 연결된 전문 경로입니다. 렌더 전에 필요한 에셋에만 골라 쓰고, 실패해도 다른 엔진으로 다시 그리지 않습니다. 엔진 레지스트리에는 성숙도 선언이 없습니다.",
+        en: "A specialist path wired only into SVG asset previews in the Studio elements panel. It is chosen before rendering and only for assets that need it, and a failure is never re-run on another engine. The engine registry declares no maturity for it.",
+      },
+    },
   },
   {
     name: "Canvas2D",
     explain: { ko: "브라우저에 기본 내장된 2D 그리기", en: "Built-in 2D drawing in every browser" },
     strength: { ko: "별도 설치 없이 어디서든 동작", en: "Works anywhere with no setup" },
-    fit: { ko: "모든 브라우저의 안전 모드", en: "Safe mode on every browser" },
+    fit: { ko: "모든 브라우저에서 동작하는 기본 경로", en: "The default path that works in every browser" },
+    status: {
+      tone: "stable",
+      level: { ko: "기본 경로", en: "Default path" },
+      registry: null,
+      scope: {
+        ko: "래스터 획을 확정(커밋)하는 종단 경로입니다. 획을 시작할 때 레인 하나를 고르고, 실패해도 다른 레인으로 넘기지 않습니다.",
+        en: "The terminal path that commits raster strokes. One lane is chosen when a stroke starts, and a failure is never handed to another lane.",
+      },
+    },
   },
-] as const;
+] as const satisfies ReadonlyArray<{
+  readonly name: string;
+  readonly explain: { readonly ko: string; readonly en: string };
+  readonly strength: { readonly ko: string; readonly en: string };
+  readonly fit: { readonly ko: string; readonly en: string };
+  readonly status: {
+    readonly tone: StatusTone;
+    readonly level: { readonly ko: string; readonly en: string };
+    readonly registry: string | null;
+    readonly scope: { readonly ko: string; readonly en: string };
+  };
+}>;
 
 const BACKENDS = ["WebGPU", "CanvasKit (Skia)", "Canvas2D"] as const;
 
@@ -204,7 +268,7 @@ function RendererPanel() {
         )}
       </p>
 
-      <div className="mt-7 rounded-[1.75rem] border border-line/70 bg-panel/65 p-4 sm:p-6" aria-label={bi("렌더링 파이프라인", "Rendering pipeline")}>
+      <div role="group" className="mt-7 rounded-[1.75rem] border border-line/70 bg-panel/65 p-4 sm:p-6" aria-label={bi("렌더링 파이프라인", "Rendering pipeline")}>
         <ol className="flex flex-col gap-2 lg:flex-row lg:items-stretch">
           {RENDER_STAGES.map((stage, index) => (
             <li key={stage.step.ko} className="flex flex-1 flex-col">
@@ -226,24 +290,24 @@ function RendererPanel() {
           ))}
         </ol>
         <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line/60 pt-5">
-          <span className="text-xs font-bold text-fg-3">{bi("뒷쪽 엔진은 교체 가능:", "Backends stay replaceable:")}</span>
+          <span className="text-xs font-bold text-fg-3">{bi("뒤쪽 엔진은 교체 가능:", "Backends stay replaceable:")}</span>
           {BACKENDS.map((backend) => (
             <span key={backend} className="rounded-full border border-accent/25 bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent">
               <StackName name={backend} />
             </span>
           ))}
           <span className="w-full text-xs leading-5 text-fg-3 sm:w-auto">
-            {bi("저사양 기기에서는 안전한 경로로 낮추고, 대체 경로가 결과를 바꾸면 사용자에게 알립니다.", "Constrained devices fall back to a safe path, and users are told when a fallback changes the output.")}
+            {bi("저사양 기기에서는 시작 전에 더 안전한 경로를 고르고, 선택한 경로가 실패하면 다른 엔진으로 조용히 넘기지 않고 실패를 그대로 보여 줍니다.", "On constrained devices a safer path is chosen before the stroke starts, and if the chosen path fails the failure is shown instead of silently switching engines.")}
           </span>
         </div>
       </div>
 
       <div className="mt-7 overflow-x-auto rounded-[1.75rem] border border-line/70">
-        <table className="w-full min-w-[38rem] border-collapse bg-card/60 text-left">
+        <table className="w-full min-w-[52rem] border-collapse bg-card/60 text-left">
           <caption className="sr-only">{bi("렌더러 비교표", "Renderer comparison")}</caption>
           <thead>
             <tr className="border-b border-line/70 bg-panel/80">
-              {[bi("기술", "Technology"), bi("쉬운 설명", "In plain words"), bi("강점", "Strength"), bi("잘 맞는 경우", "Good fit")].map(
+              {[bi("기술", "Technology"), bi("쉬운 설명", "In plain words"), bi("강점", "Strength"), bi("잘 맞는 경우", "Good fit"), bi("성숙도·적용 범위", "Maturity and scope")].map(
                 (header) => (
                   <th key={header} scope="col" className="px-4 py-3.5 text-xs font-black tracking-wide text-fg-2">
                     {header}
@@ -255,12 +319,23 @@ function RendererPanel() {
           <tbody>
             {RENDERER_ROWS.map((row) => (
               <tr key={row.name} className="border-b border-line/50 last:border-0">
-                <th scope="row" className="whitespace-nowrap px-4 py-3.5 text-sm font-bold text-fg">
+                <th scope="row" className="whitespace-nowrap px-4 py-3.5 align-top text-sm font-bold text-fg">
                   <StackName name={row.name} />
                 </th>
-                <td className="px-4 py-3.5 text-xs leading-6 text-fg-2">{bi(row.explain.ko, row.explain.en)}</td>
-                <td className="px-4 py-3.5 text-xs leading-6 text-fg-2">{bi(row.strength.ko, row.strength.en)}</td>
-                <td className="px-4 py-3.5 text-xs leading-6 text-fg-3">{bi(row.fit.ko, row.fit.en)}</td>
+                <td className="px-4 py-3.5 align-top text-xs leading-6 text-fg-2">{bi(row.explain.ko, row.explain.en)}</td>
+                <td className="px-4 py-3.5 align-top text-xs leading-6 text-fg-2">{bi(row.strength.ko, row.strength.en)}</td>
+                <td className="px-4 py-3.5 align-top text-xs leading-6 text-fg-3">{bi(row.fit.ko, row.fit.en)}</td>
+                <td className="min-w-[16rem] px-4 py-3.5 align-top text-xs leading-6 text-fg-2">
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <span className={cx("inline-flex min-h-6 items-center rounded-full border px-2.5 text-[0.7rem] font-black", STATUS_TONE_CLASS[row.status.tone])}>
+                      {bi(row.status.level.ko, row.status.level.en)}
+                    </span>
+                    {row.status.registry ? (
+                      <code className="rounded bg-raised px-1.5 py-0.5 font-mono text-[0.66rem] text-fg-3">{row.status.registry}</code>
+                    ) : null}
+                  </span>
+                  <span className="mt-2 block">{bi(row.status.scope.ko, row.status.scope.en)}</span>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -268,8 +343,8 @@ function RendererPanel() {
       </div>
       <p className="mt-3 text-xs leading-6 text-fg-3">
         {bi(
-          "각 렌더러의 역할은 등록부에서 관리하며 장치 지원과 출력 특성에 맞춰 경로를 선택합니다. 검증 상태와 한계는 엔지니어링 스토리 챕터에서 공개합니다.",
-          "Each renderer role is managed in the registry, with paths chosen by device support and output characteristics. Verification status and limits are published in the engineering story chapters.",
+          "각 렌더러의 역할은 등록부에서 관리하며, 한 작업은 시작 전에 장치 지원과 출력 특성에 맞는 엔진 하나를 고릅니다. 실패해도 다른 엔진으로 자동 전환하지 않습니다(ADR-0018). 성숙도는 엔진 레지스트리의 선언이며 같은 엔진도 실행 레인마다 다릅니다(예: Skia의 CPU 기준 레인은 production-baseline, GPU 레인은 conditional, Graphite WebGPU는 experimental). 적용 범위는 렌더러 역할 원장(docs/engines/renderer-roles.md) 기준이고, 검증 상태와 한계는 엔지니어링 스토리 챕터에서 공개합니다.",
+          "Each renderer role is managed in the registry, and a job picks exactly one engine before it starts, based on device support and output characteristics. A failure never switches automatically to another engine (ADR-0018). Maturity is the engine registry's declaration and differs per execution lane (for example Skia's CPU baseline lane is production-baseline, its GPU lane is conditional and Graphite WebGPU is experimental). Scope follows the renderer role ledger (docs/engines/renderer-roles.md), and verification status and limits are published in the engineering story chapters.",
         )}
       </p>
     </div>
@@ -510,7 +585,13 @@ export function TechnologyStackShowcase() {
           href="/about/technology/references"
           className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong px-4 py-2.5 text-sm font-bold text-fg-2 transition-colors hover:text-accent"
         >
-          {bi("참고 자료와 장애 기록", "References and incident records")}
+          {bi("참고 자료", "References")}
+        </Link>
+        <Link
+          href="/about/technology/field-notes#incidents"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong px-4 py-2.5 text-sm font-bold text-fg-2 transition-colors hover:text-accent"
+        >
+          {bi("장애 기록과 교훈", "Incidents and lessons")}
         </Link>
       </div>
     </section>

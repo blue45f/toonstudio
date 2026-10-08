@@ -278,7 +278,7 @@ export function EngineeringFieldNotesPage() {
     { icon: RefreshCw, value: ENGINEERING_IMPLEMENTATION_INVENTORY.serviceWorkerRuntimeFiles, label: bi("Service Worker 런타임 모듈", "Service-worker runtime modules") },
     { icon: Bot, value: ENGINEERING_IMPLEMENTATION_INVENTORY.localInferenceRuntimes.length, label: bi("브라우저 로컬 AI 런타임", "Browser-local AI runtimes") },
     { icon: Boxes, value: ENGINEERING_IMPLEMENTATION_INVENTORY.blenderMcpCommands, label: bi("Blender MCP 허용 명령", "Allowlisted Blender MCP commands") },
-    { icon: PlugZap, value: ENGINEERING_IMPLEMENTATION_INVENTORY.openApiProviders, label: bi("검증된 Open API adapter", "Reviewed Open API adapters") },
+    { icon: PlugZap, value: ENGINEERING_IMPLEMENTATION_INVENTORY.openApiProviders, label: bi("문서화된 Open API 공급자", "Documented Open API providers") },
   ] as const;
 
   useDocumentTitle(

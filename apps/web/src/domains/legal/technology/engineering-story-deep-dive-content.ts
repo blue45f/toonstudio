@@ -70,8 +70,8 @@ export const ENGINEERING_DEEP_DIVE_CHAPTERS = [
       en: "Immediate Service Worker activation or mixed HTML, JS and WASM versions can interrupt a stroke, cause chunk 404s and break isolation headers.",
     },
     decision: {
-      ko: "경로별 cache strategy, 원자적 core precache, 대형 WASM 제외, 사용자 승인형 skipWaiting, COOP/COEP 보존과 긴급 reset kill switch를 구현했습니다.",
-      en: "The implementation uses route-specific caching, atomic core precache, large-WASM exclusion, user-approved skipWaiting, COOP/COEP preservation and an emergency reset kill switch.",
+      ko: "경로별 cache strategy, 원자적 core precache, 대형 WASM·ONNX의 프리캐시 제외(쓰는 순간 런타임 heavy 버킷에 cache-first로 보관), 사용자 승인형 skipWaiting, COOP/COEP 보존과 긴급 reset kill switch를 구현했습니다.",
+      en: "The implementation uses route-specific caching, atomic core precache, large WASM and ONNX files kept out of the precache (stored cache-first in a runtime heavy bucket when first used), user-approved skipWaiting, COOP/COEP preservation and an emergency reset kill switch.",
     },
     userValue: {
       ko: "한 번 준비된 작업실은 네트워크가 불안해도 열리며 새 버전 때문에 현재 편집 세션이 갑자기 교체되지 않습니다.",
@@ -310,8 +310,8 @@ export const ENGINEERING_DEEP_DIVE_CHAPTERS = [
       en: "Routing every request through Workers and APIs and centralizing every file makes free-tier limits the first scaling bottleneck.",
     },
     decision: {
-      ko: "Static Assets 우선, 동적 경로만 Worker, Render scale-to-zero Core API, Durable Objects 실시간 조정, R2 불변 공개 파일, PostgreSQL 단일 원장과 OPFS/BYOS 개인 원본을 사용합니다.",
-      en: "Static Assets lead; only dynamic paths use Workers, with a scale-to-zero Core API, Durable Objects coordination, immutable R2 assets, one PostgreSQL ledger and OPFS/BYOS private sources.",
+      ko: "Static Assets 우선, 동적 경로만 Worker, Render scale-to-zero Core API, Durable Objects 임시 실시간 조정, Upstash Redis 분산 제한, R2 불변 공개 파일, Supabase PostgreSQL 단일 원장(기존 Neon은 legacy 보존, 자동 dual-write·failover 없음)과 OPFS/BYOS 개인 원본을 사용합니다.",
+      en: "Static Assets lead; only dynamic paths use Workers, with a scale-to-zero Core API, Durable Objects for ephemeral coordination, Upstash Redis for distributed limits, immutable R2 assets, one Supabase PostgreSQL ledger (the earlier Neon database is a legacy resource with no automatic dual-write or failover) and OPFS/BYOS private sources.",
     },
     userValue: {
       ko: "비용 한도에 도달해도 편집·읽기·내보내기 같은 핵심 로컬 기능은 유지되고 몰래 저화질로 바뀌지 않습니다.",
@@ -321,7 +321,7 @@ export const ENGINEERING_DEEP_DIVE_CHAPTERS = [
       ko: "cold start, 공급자별 quota 관찰과 수동 release가 필요하며 무료는 SLA나 영구 0원을 의미하지 않습니다.",
       en: "Cold starts, provider-specific quota observation and manual release remain, and free-first does not promise an SLA or permanent zero cost.",
     },
-    technologies: ["Cloudflare Static Assets", "Workers", "R2", "Durable Objects", "Render", "Neon", "BYOS"],
+    technologies: ["Cloudflare Static Assets", "Workers", "R2", "Durable Objects", "Render", "Supabase PostgreSQL", "BYOS"],
     evidence: [
       evidence("document", "docs/FREE_INFRASTRUCTURE.md", "무료 우선 인프라 운영 기준", "Free-first infrastructure operating policy"),
       evidence("code", "config/free-infrastructure-policy.json", "기계 검증 가능한 비용 정책", "Machine-verifiable cost policy"),
@@ -458,7 +458,7 @@ worker.postMessage(request, [request.bytes]);`,
       { ko: "core precache는 원자적으로 설치하고 대형 WASM은 사용자 동작 뒤 warm합니다.", en: "Install core precache atomically and warm large WASM only after user intent." },
       { ko: "새 Worker는 waiting 상태로 두고 안전한 시점에 사용자가 적용하게 합니다.", en: "Keep new Workers waiting and let users apply them at a safe moment." },
       { ko: "COOP/COEP/CORP와 CSP를 네트워크·캐시 응답 모두에 보존합니다.", en: "Preserve COOP, COEP, CORP and CSP on network and cached responses." },
-      { ko: "query kill switch, cache reset, tombstone Worker와 rollback을 준비합니다.", en: "Prepare query kill switches, cache reset, tombstone Workers and rollback." },
+      { ko: "query kill switch와 cache reset은 코드에 두고, tombstone Worker 배포와 rollback은 운영 절차(docs/studio-service-worker.md §4)로 준비합니다.", en: "Keep the query kill switch and cache reset in code, and prepare the tombstone Worker deployment and rollback as an operations procedure (docs/studio-service-worker.md §4)." },
     ],
     checklist: [
       { ko: "작업 중 자동 reload 없음", en: "No automatic reload during active work" },
@@ -519,7 +519,7 @@ worker.postMessage(request, [request.bytes]);`,
       { ko: "공급자 endpoint, 모델, 무료 상태와 지역을 allowlist합니다.", en: "Allowlist provider endpoints, models, free state and region." },
       { ko: "공용 key는 서버 전용, 개인 key는 메모리 기본·선택형 암호화 vault로 분리합니다.", en: "Keep shared keys server-only and personal keys memory-first with an optional encrypted vault." },
       { ko: "요청·토큰·본문·응답 크기와 일일 UTC budget을 요청 전에 예약합니다.", en: "Reserve request, token, body, response and UTC-day budgets before sending." },
-      { ko: "401/403/402/429와 검증된 quota code만 다음 무료 경로로 넘깁니다.", en: "Advance only on 401/403/402/429 and verified quota codes." },
+      { ko: "공용 풀은 402·429와 허용 목록의 쿼터 코드(Cloudflare 403/5035, Qwen 403 AllocationQuota.FreeTierOnly)만, 개인 키 경로는 401/403(그 키의 인증 실패)·402·429와 앱 자체 예산 소진만 다음 무료 경로로 넘깁니다.", en: "The shared pool advances only on 402, 429 and allowlisted quota codes (Cloudflare 403/5035, Qwen 403 AllocationQuota.FreeTierOnly); personal-key routes advance only on 401/403 (that key's authentication failure), 402, 429 and the app's own budget exhaustion." },
       { ko: "timeout·network·5xx·잘못된 성공 응답은 재전송하지 않습니다.", en: "Do not replay timeouts, network failures, 5xx or malformed success responses." },
     ],
     checklist: [
@@ -680,7 +680,7 @@ export const ENGINEERING_REFERENCES = [
     linkNames: ["OpenCascade.js", "Manifold", "Rhino3dm", "xatlas"],
     summary: { ko: "정밀 solid, bounded boolean, CAD 교환과 UV 후보를 뷰포트 엔진 밖의 전문 계산 계층으로 둡니다.", en: "Precision solids, bounded booleans, CAD interchange and UV candidates live outside the viewport engine as specialist computation." },
     applied: { ko: "WASM 지연 로드, topology budget, backpressure, 명시적 handle 삭제와 결과 hash를 사용합니다.", en: "WASM is lazy-loaded with topology budgets, backpressure, explicit handle deletion and output hashes." },
-    caution: { ko: "대형 WASM과 복잡도 폭증 때문에 입력 제한 없이 범용 CAD처럼 노출하지 않습니다.", en: "Large WASM and complexity blow-ups prevent exposing it as unrestricted general-purpose CAD." },
+    caution: { ko: "대형 WASM과 복잡도 폭증 때문에 입력 제한 없이 범용 CAD처럼 노출하지 않습니다. xatlas UV provider는 구현과 테스트만 있고 제품 호출처가 아직 연결되지 않았습니다.", en: "Large WASM and complexity blow-ups prevent exposing it as unrestricted general-purpose CAD. The xatlas UV provider is implemented and tested but not yet wired to a product call site." },
     evidence: [
       evidence("code", "apps/web/src/domains/creator/studio-occt.worker.ts", "OpenCascade Worker", "OpenCascade Worker"),
       evidence("code", "apps/web/src/domains/creator/studio-manifold-mesh-provider.ts", "Manifold mesh provider", "Manifold mesh provider"),
@@ -709,7 +709,7 @@ export const ENGINEERING_REFERENCES = [
     title: "WebRTC · W3C · MDN",
     linkNames: ["WebRTC"],
     summary: { ko: "RTCPeerConnection, RTCDataChannel, ICE restart와 getUserMedia/getDisplayMedia를 사용하는 실시간 미디어 표준 경계입니다.", en: "The realtime-media standards boundary for RTCPeerConnection, RTCDataChannel, ICE restart and media capture." },
-    applied: { ko: "Socket.IO admission·signaling, direct data와 RTP media를 분리하고 권한 응답 뒤 recipient revision을 다시 검증합니다.", en: "Socket.IO admission and signaling, direct data and RTP media stay separate, with recipient revision rechecked after permission responses." },
+    applied: { ko: "방 서버(기본 Durable Objects, 선택형 Socket.IO 폴백)의 admission·presence, DataChannel 직접 레인의 허들 신호·채팅과 RTP media를 분리하고 권한 응답 뒤 recipient revision을 다시 검증합니다.", en: "The room server (Durable Objects by default, optional Socket.IO fallback) owns admission and presence, the DataChannel direct lane carries huddle signals and chat, and RTP carries media, all kept separate, with recipient revision rechecked after permission responses." },
     caution: { ko: "loopback 성공, STUN-only 연결과 소규모 P2P mesh를 WAN·TURN·SFU 대규모 품질로 해석하지 않습니다.", en: "Loopback success, STUN-only connectivity and a small P2P mesh are not treated as WAN, TURN or SFU-scale quality proof." },
     evidence: [
       evidence("code", "apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-controller.ts", "WebRTC huddle controller", "WebRTC huddle controller"),
@@ -725,7 +725,7 @@ export const ENGINEERING_REFERENCES = [
     linkNames: ["Gather", "WorkAdventure", "Kumospace", "Magma"],
     summary: { ko: "근접 대화, 방·영역 policy, broadcast, recording과 창작 캔버스 안 미디어 UX를 비교한 제품 참고군입니다.", en: "A product reference set for proximity conversation, room and area policy, broadcast, recording and media inside creative canvases." },
     applied: { ko: "공간상 proximity를 recipient 힌트로만 사용하고 실제 peer scope, screen-share consent, TURN 정책과 목록 대체 경로를 별도 권위로 둡니다.", en: "Spatial proximity remains a recipient hint while peer scope, screen-share consent, TURN policy and list alternatives keep separate authority." },
-    caution: { ko: "공식 도움말은 기능 신호이며 독립적인 지연·암호화·접근성·동시 사용자 성능 검증이 아닙니다.", en: "Official help material is a capability signal, not independent latency, encryption, accessibility or concurrency evidence." },
+    caution: { ko: "공식 도움말은 기능 신호이며 독립적인 지연·암호화·접근성·동시 사용자 성능 검증이 아닙니다. Gather는 최신 2.0과 Classic 문서를 구분해 읽습니다.", en: "Official help material is a capability signal, not independent latency, encryption, accessibility or concurrency evidence. Gather is read with the current 2.0 and Classic documents kept apart." },
     evidence: [
       evidence("document", "docs/technology/toonstudio-webrtc-realtime-media-2026-09-25.md", "제품 공식 자료 벤치마크", "Official-product-material benchmark"),
       evidence("document", "docs/studio/virtual-studio-benchmark-20260920.md", "Virtual Studio 상세 비교", "Detailed Virtual Studio comparison"),
@@ -785,7 +785,7 @@ export const ENGINEERING_REFERENCES = [
     linkNames: ["Google Books", "Wikimedia Commons"],
     summary: { ko: "판본 발견, CC0 이미지와 만화·웹툰 메타데이터를 공급자별 권리 경계로 제공합니다.", en: "Edition discovery, CC0 imagery and comics/webtoon metadata through provider-specific rights boundaries." },
     applied: { ko: "검색·메타데이터만 가져오고 본문·유료 미리보기·권리 불명 파일은 수집하지 않습니다.", en: "Only search metadata is ingested; full text, paid previews and unclear-rights files are excluded." },
-    caution: { ko: "검색 결과는 재배포나 각색 권한을 자동으로 부여하지 않습니다.", en: "Search results never automatically grant redistribution or adaptation rights." },
+    caution: { ko: "검색 결과는 재배포나 각색 권한을 자동으로 부여하지 않습니다. Google Books와 KMAS는 서버 키가 필요하고 운영 비밀 저장소 연결은 별도 배포 절차라, 운영 연결 여부는 이 저장소만으로 확인할 수 없습니다(미확인).", en: "Search results never automatically grant redistribution or adaptation rights. Google Books and KMAS need server keys and connecting them to the production secret store is a separate deployment procedure, so whether they are connected in production cannot be confirmed from this repository (unverified)." },
     evidence: [
       evidence("code", "apps/api/src/modules/creator-resources/google-books-provider.ts", "Google Books adapter", "Google Books adapter"),
       evidence("document", "docs/operations/free-api-access-register-2026-09-15.md", "Open API 운영 대장", "Open API operations register"),
@@ -800,7 +800,7 @@ export const ENGINEERING_REFERENCES = [
     linkNames: ["Dia", "Browser Use Cloud", "Vercel AI Gateway", "OpenRouter"],
     summary: { ko: "공급자 순서, fallback, BYOK, 비용 budget와 브라우저 AI 개인정보 제어를 비교한 참고군입니다.", en: "References for provider order, fallback, BYOK, cost budgets and browser-AI privacy controls." },
     applied: { ko: "ToonStudio는 자동·우선순위·수동 고정 모드를 분리하고 모호한 실패를 재전송하지 않는 더 보수적인 경계를 선택했습니다.", en: "ToonStudio separates automatic, priority and exact-manual modes and adopts a stricter no-replay rule for ambiguous failures." },
-    caution: { ko: "외부 제품의 동작을 동일한 API나 보안 보장으로 표현하지 않습니다.", en: "External product behavior is not presented as an identical API or security guarantee." },
+    caution: { ko: "외부 제품의 동작을 동일한 API나 보안 보장으로 표현하지 않습니다. OpenRouter는 비교 대상이면서 공용 무료 풀과 개인 키 경로의 실제 공급자 중 하나이고, 나머지 세 제품은 평가만 했습니다.", en: "External product behavior is not presented as an identical API or security guarantee. OpenRouter is both a comparison subject and one of the actual providers in the shared free pool and personal-key routes; the other three products were only evaluated." },
     evidence: [
       evidence("document", "docs/operations/cloud-ai-routing-benchmark-2026-09-16.md", "AI 라우팅 제품 비교와 결정", "AI routing product comparison and decisions"),
       evidence("code", "apps/web/src/shared/ai/user-ai-transport.ts", "실제 보수적 fallback", "Implemented conservative fallback"),
@@ -826,13 +826,13 @@ export const ENGINEERING_REFERENCES = [
     relation: "used",
     status: "live",
     category: { ko: "콘텐츠 주소", en: "Content addressing" },
-    title: "Helia · IPFS CID",
-    linkNames: ["Helia", "IPFS"],
-    summary: { ko: "내용 해시(CID)로 파일을 주소화하고, trustless 게이트웨이에서 받은 바이트를 해시와 대조해 검증하며 가져오는 경량 IPFS 표면입니다.", en: "A lightweight IPFS surface that addresses files by content hash (CID) and fetches from trustless gateways, verifying received bytes against the hash." },
-    applied: { ko: "풀 노드 대신 @helia/verified-fetch와 multiformats로 CID 생성·검증·검증 가져오기만 구현하고, 개발이 종료된 js-ipfs는 쓰지 않습니다.", en: "Instead of a full node, only CID creation, verification and verified fetching are implemented with @helia/verified-fetch and multiformats; the discontinued js-ipfs is not used." },
-    caution: { ko: "브라우저는 네트워크에 콘텐츠를 제공하지 않습니다. CID는 무결성 주소일 뿐이고 바이트 배포는 게이트웨이가 맡습니다.", en: "The browser does not provide content to the network. A CID is an integrity address; byte distribution belongs to gateways." },
+    title: "IPFS CID · multiformats",
+    linkNames: ["IPFS CID", "multiformats", "Helia"],
+    summary: { ko: "내용 해시(CID)로 파일을 주소화하고, 공개 게이트웨이에서 받은 바이트의 SHA-256을 CID와 직접 대조해 검증하며 가져오는 경량 IPFS 표면입니다.", en: "A lightweight IPFS surface that addresses files by content hash (CID) and fetches from public gateways, comparing the received bytes' SHA-256 directly with the CID." },
+    applied: { ko: "풀 노드나 Helia 패키지 대신 multiformats로 CID를 만들고 파싱하며, 게이트웨이(trustless-gateway.link·ipfs.io·dweb.link)에서 fetch한 바이트를 raw 코덱·sha2-256 범위에서 CID와 대조합니다. 개발이 종료된 js-ipfs는 쓰지 않습니다.", en: "Instead of a full node or Helia packages, multiformats creates and parses CIDs, and bytes fetched from gateways (trustless-gateway.link, ipfs.io, dweb.link) are compared with the CID within the raw codec and sha2-256 scope. The discontinued js-ipfs is not used." },
+    caution: { ko: "@helia/verified-fetch는 전이 의존성 보안 권고가 해소되지 않아 채택하지 않았고(2026-10-07 의존성에서 제거) 필요해지면 다시 검토합니다. 브라우저는 네트워크에 콘텐츠를 제공하지 않습니다. CID는 무결성 주소일 뿐이고 바이트 배포는 게이트웨이가 맡습니다.", en: "@helia/verified-fetch was not adopted because transitive-dependency security advisories remain unresolved (removed from the dependencies on 2026-10-07) and will be reconsidered if needed. The browser does not provide content to the network. A CID is an integrity address; byte distribution belongs to gateways." },
     evidence: [
-      evidence("code", "apps/web/src/domains/integrations/ipfs-content-address.ts", "CID 생성·검증·검증 가져오기", "CID creation, verification and verified fetching"),
+      evidence("code", "apps/web/src/domains/integrations/ipfs-content-address.ts", "CID 생성·파싱·검증과 게이트웨이 직접 검증 가져오기", "CID creation, parsing and verification plus direct-verification gateway fetch"),
       evidence("test", "apps/web/src/domains/integrations/ipfs-content-address.test.ts", "공개 CID 벡터 검사", "Public CID vector tests"),
     ],
   },
@@ -957,7 +957,7 @@ export const ENGINEERING_TROUBLESHOOTING_CASES = [
     symptom: { ko: "첫 공급자는 작업을 수락했지만 응답 전에 연결이 끊겨 두 번째 공급자에도 같은 프롬프트가 전송됩니다.", en: "The first provider accepted work but the connection dropped before response, so the same prompt reaches a second provider." },
     wrongTurn: { ko: "모든 오류를 quota 소진으로 간주하고 다음 무료 또는 유료 공급자로 넘겼습니다.", en: "Treating every error as quota exhaustion and advancing to the next free or paid provider." },
     rootCause: { ko: "추론 전 확정 거절과 추론 여부를 알 수 없는 네트워크 실패를 같은 failure class로 묶었습니다.", en: "Definitive pre-inference rejection and ambiguous network failure shared one failure class." },
-    resolution: { ko: "401/403/402/429와 allowlist quota code만 안전한 advance로 분류하고 network, timeout, 5xx와 malformed success는 즉시 반환합니다.", en: "Only 401/403/402/429 and allowlisted quota codes permit safe advance; network, timeout, 5xx and malformed success return immediately." },
+    resolution: { ko: "공용 풀은 402·429와 allowlist 쿼터 코드(Cloudflare 403/5035, Qwen 403 AllocationQuota.FreeTierOnly)만, 개인 키 경로는 401/403·402·429만 안전한 advance로 분류하고 network, timeout, 5xx와 malformed success는 즉시 반환합니다.", en: "The shared pool classifies only 402, 429 and allowlisted quota codes (Cloudflare 403/5035, Qwen 403 AllocationQuota.FreeTierOnly) as safe advances, personal-key routes only 401/403, 402 and 429; network, timeout, 5xx and malformed success return immediately." },
     regression: { ko: "공급자별 HTTP·business code와 attempted route 수, Retry-After cooldown을 검사합니다.", en: "Tests cover provider HTTP/business codes, attempted-route counts and Retry-After cooldowns." },
     lesson: { ko: "AI 라우팅에서 고가용성보다 중복 추론·과금·개인정보 재전송 방지가 먼저입니다.", en: "In AI routing, preventing duplicate inference, charges and data retransmission precedes availability." },
     evidence: [

@@ -18,13 +18,14 @@ The same story is reused for:
 | Route | Responsibility |
 | --- | --- |
 | `/about/technology` | hub: talk path (1 story → 2 playbook → 3 guides → 4 field notes → 5 deck) with a one-line purpose and reading time, architecture map, status counts |
-| `/about/technology/story` | why and how it was built: 31 chapters in eight themes, problem → decision → value → trade-off → evidence |
+| `/about/technology/story` | why and how it was built: every published chapter (40 at the time of writing, `PUBLISHED_ENGINEERING_CHAPTERS.length`) in eight themes, problem → decision → value → trade-off → evidence |
 | `/about/technology/playbook` | reusable design principles and ten architecture decisions, with the benchmarks and AI workbench behind them |
 | `/about/technology/guides` | step-by-step adoption: reuse blueprints (`#blueprints`), guides with steps and completion checks |
 | `/about/technology/field-notes` | deep notes (workers, PWA, free-first AI/infrastructure, Blender/3D, Open APIs) and incidents and lessons (`#incidents`) |
-| `/about/technology/deck` | presenter tool: 30-minute seminar talk (default), executive brief and deep lecture tracks |
+| `/about/technology/deck` | presenter tool with three tracks: seminar talk (default, 30 minutes, 19 slides), executive brief (about 11 minutes, 11 slides) and deep lecture (about 45 minutes, 30 slides); the 120-minute workshop modules are listed on the same page |
 | `/about/technology/videos` | Remotion storyboard, film treatments (`#film-treatments`) and review workflow |
 | `/about/technology/references` | used, evaluated and inspiring technology plus reference products (`#reference-products`) |
+| `/about/technology/atlas` | technology atlas: per-technology background, diagram, sample code, where it is used in the product and official references |
 | `/about/technology/glossary` | plain-language glossary linked to story chapters, guides and references |
 | `/about/technology/licenses` | code, asset, provider and AI rights layers |
 
@@ -48,21 +49,28 @@ Each chapter must contain at least one evidence path and at least two reuse step
 
 ## Content ownership
 
-The typed sources of truth are:
+The typed sources of truth are split across several modules in `apps/web/src/domains/legal/technology/`. The published chapters come from four of them plus one aggregate, and the field notes have their own module:
 
 ```text
-apps/web/src/domains/legal/technology/engineering-story-content.ts
-apps/web/src/domains/legal/technology/engineering-field-notes-content.ts
+engineering-story-content.ts            # types, status metadata, chapters 1-15, their guides, license families, video format identifiers
+engineering-story-deep-dive-content.ts  # chapters 16-25, their guides, ENGINEERING_REFERENCES, the troubleshooting archive
+engineering-story-advanced-content.ts   # chapters 26-37 and their guides
+engineering-story-followup-content.ts   # chapters 38-40
+engineering-story-published-content.ts  # the public aggregate: PUBLISHED_ENGINEERING_CHAPTERS / PUBLISHED_ENGINEERING_GUIDES
+engineering-field-notes-content.ts      # field notes, Open API adapters, troubleshooting cases, official references, reference-product adoption boundaries
 ```
 
-The first owns chapters, implementation guides, status metadata, license families and video format identifiers. The second owns field notes, Open API adapters, troubleshooting cases, official references and reference-product adoption boundaries. Pages render from those records instead of maintaining separate claims.
+`engineering-story-content.ts` stays the type and status authority; its `ALL_ENGINEERING_CHAPTERS` combines chapters 1-25, and the published aggregate adds chapters 26-40. Surfaces that show chapters or guides (hub, story, guides, deck, glossary links) read `PUBLISHED_ENGINEERING_*`, not the individual modules. Pages render from those records instead of maintaining separate claims.
 
 Supporting sources:
 
 - `engineering-talk-deck.ts` — the 30-minute talk: sections, per-slide seconds (section budgets are sums), speaker notes and the repository evidence behind every number;
+- `engineering-seminar-curriculum.ts` — the lesson sequence behind the deep lecture track, and `engineering-playbook-content.ts` — principles, architecture decisions, benchmarks, the AI workbench and the 120-minute workshop modules;
+- `engineering-tech-pages.ts` — the page list, one-line purposes, reading times and `ENGINEERING_CHAPTER_COUNT`, a fixed chapter count that lightweight surfaces such as the sitemap use so they do not import the chapter modules (`engineering-tech-pages.test.ts` compares it with `PUBLISHED_ENGINEERING_CHAPTERS.length`);
 - `engineering-deck-model.ts` — one slide model for the screen, print/PDF and the offline HTML backup;
 - `engineering-story-groups.ts` — the eight reading themes of the story (every chapter belongs to exactly one);
-- `engineering-glossary-links.ts` — resolves glossary "read more" ids to story, guide or reference anchors.
+- `engineering-glossary-links.ts` — resolves glossary "read more" ids to story, guide or reference anchors;
+- `engineering-deck-state.ts` — the presenter URL contract (`?track=talk#slide-3`; the older `?audience=seminar&duration=30#deck=seminar:9` still opens the same slide).
 
 When adding a chapter:
 
@@ -72,11 +80,11 @@ When adding a chapter:
 4. attach code, test, workflow or document evidence;
 5. give a reuse sequence that works without ToonStudio-specific secrets;
 6. select the least promotional accurate status;
-7. update tests if the chapter count or video contract changes.
+7. update tests if the chapter count or video contract changes: `ENGINEERING_CHAPTER_COUNT` in `engineering-tech-pages.ts` and the count pinned in `engineering-story-content.test.ts` move together, and pages that need a number should derive it from `PUBLISHED_ENGINEERING_CHAPTERS.length` instead of writing it by hand.
 
 ## Engineering field notes
 
-`/about/technology/field-notes` captures implementation lessons that are useful beyond ToonStudio but too detailed for the 31-chapter public narrative.
+`/about/technology/field-notes` captures implementation lessons that are useful beyond ToonStudio but too detailed for the chapter-level public narrative.
 
 It currently covers:
 
@@ -112,7 +120,12 @@ Vitest, Playwright and repository verification scripts remain the source of trut
 
 ## Remotion workflow
 
-The engineering film extends the isolated `tools/media/brand-film` package. The website never imports Remotion.
+Remotion is used in two different ways. Do not describe them as one:
+
+- **Pre-rendered files.** The 24-second brand film (`/brand-film`) is rendered offline by the isolated `tools/media/brand-film` package, and the website serves the finished MP4, poster and VTT files. The engineering films (`TechnologyStory*`) come from the same package as manual review artifacts and are not published by the pipeline (see below).
+- **Runtime composition.** The 8-minute product tour (`/product-tour`, 504 seconds, nine chapters) is composed live in the browser. The web app depends on `remotion`, `@remotion/player` and the workspace package `@toonstudio/product-tour-film` and plays the shared composition with `<Player>` (`ProductTourPlayer.tsx`, `ProductTourRemotionComposition.tsx`). A compatibility MP4 player (`ProductTourMp4Player.tsx`) remains available through the compatibility-playback button or `?player=mp4`. The same composition is rendered to MP4 by `tools/media/brand-film`.
+
+So the website does import Remotion for the product tour only; it does not import the `tools/media/brand-film` package. Remotion has its own license terms by organization size; the repository does not show whether the operating organization is eligible, so check the official licensing page before relying on either path commercially.
 
 ```bash
 npm --prefix tools/media/brand-film ci
@@ -174,3 +187,10 @@ The full repository CI remains authoritative before merge.
 - 단축키: ←/→·Space·PageUp/PageDown·Home/End 이동, 숫자+Enter 번호 이동, F 발표·전체 화면, N/S 노트, O 개요, B/. 블랙아웃, T 타이머, ? 도움말, Esc 닫기.
 - 슬라이드의 설정 수치(방당 연결 64, 재개 창 10초, 근접 반경 160/220/200px, 허들 원격 3명, Render free·자동 배포 꺼짐, 앱 간 import 0)는 테스트가 실제 설정 파일과 대조합니다. 저장소 규모 수치(웹 테스트 파일 4,808개·E2E 49개·워크플로 97개)는 2026-09-30 git 집계값이며 자동 검증하지 않습니다.
 - 한계: E2E 스펙(`e2e/engineering-seminar.spec.ts`, `e2e/engineering-story.spec.ts`)은 새 주소·단추 이름·페이지 이동에 맞춰 수정이 필요합니다. 운영 배포는 이 변경에 포함되지 않았고 `DEPLOY.md`의 별도 승인 절차를 따릅니다.
+
+## 2026-10-08 변경 기록 — 발표 전 사실 정정
+
+- 챕터 수 표기를 정정했습니다: 문서의 "31"을 현재 공개 챕터 수(40, `PUBLISHED_ENGINEERING_CHAPTERS.length`)로 바꾸고, 숫자가 꼭 필요한 화면은 데이터에서 파생하도록 했습니다. 가벼운 화면(사이트맵)은 `ENGINEERING_CHAPTER_COUNT`를 쓰고 테스트가 공개 챕터 수와 같은지 확인합니다.
+- "웹사이트는 Remotion을 import하지 않는다"는 서술은 사실과 달라 고쳤습니다. 8분 제품 투어는 `@remotion/player`로 브라우저에서 실시간 합성하고 호환 MP4 재생을 곁들이며, 24초 브랜드 필름과 기술 영상만 사전 렌더 MP4입니다(위 Remotion workflow 참고).
+- 챕터 정본 위치를 모듈 5개 구조(코어·심층·고급·후속·공개 집계)로 다시 적었습니다.
+- E2E 스펙 두 개를 현재 UI에 맞췄습니다: 발표 모드는 트랙 3종(세미나 발표 30분·19장, 핵심 요약 11분·11장, 심화 강의 45분·30장)과 `?track=…#slide-N` 주소를 쓰고, 챕터·참고 카드·노트 개수는 화면이 말하는 수와 비교합니다.

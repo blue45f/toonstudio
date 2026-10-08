@@ -19,6 +19,9 @@ import type { Availability, RelatedInfoItem, Title, TitleCard, TitleStats } from
 export const SYNOPSIS_CARD_MAX = 160;
 
 // 상세 샤드 버킷 수 — 24k 작품 기준 버킷당 ~190편, 원시 ~30KB(전송 시 압축 ~7KB).
+// 위 수치는 24k 시점에 잰 값이다. 2026-10-08에 확인한 커밋된 카탈로그 스냅샷
+// (apps/api/data/catalog.json.gz)은 60,234편이라 버킷당 평균 약 470편(60,234 / 128)이고,
+// 이때의 샤드 크기는 다시 재지 않았다.
 export const DETAIL_SHARD_COUNT = 128;
 
 // 목록 카탈로그는 source order를 보존하는 연속 샤드로 분리한다. 16개면 현재 약 47MiB

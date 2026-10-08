@@ -68,6 +68,7 @@
 - “Blender 대체”: 금지. 실제 캔버스 편집, 저장/재로드, 대형 장면, 포맷 왕복, 브라우저 매트릭스가 통과해야 한다.
 - “STEP/IFC/FBX 완전 지원”: 금지. 파일을 읽는 것, 편집 가능한 구조를 보존하는 것, 원본 앱과 왕복하는 것은 서로 다른 약속이다.
 - “WebGPU 엔진”: 기본 3D 제품 렌더러가 WebGPU로 활성화됐다는 의미로 쓰지 않는다. 현재 Three WebGPU 경로는 lab/capability 경로이며, 기본 제품 장면 소유자는 기존 Three/R3F 경로다.
+  - **2026-10-08 코드 기준 갱신**: 위 문장은 이 문서를 쓴 2026-08-02 시점의 서술이고, 배경 3D 편집기(BG3D)에 대해서는 [승격 문서](./studio-bg3d-webgpu-engine-promotion-2026-08-29.md)가 이 항목을 대체했다. 지금 BG3D의 기본 선택은 WebGPU다(`studio-bg3d-engine-selection.ts`의 `normalizeStudioBg3dEnginePreference`가 저장값이 없거나 `auto`·알 수 없는 값이면 `webgpu`로 정규화한다). WebGPU를 쓸 수 없으면(미지원·런타임 실패·WebXR·VRM 캐릭터 등) 자동으로 WebGL2로 바꾸지 않고 "사용 불가"로 두며, 사용자가 WebGL2를 직접 골라야 WebGL2 렌더러가 올라온다. 이 문서가 다루는 하이브리드 DCC 작업대 뷰포트(`StudioHybridDccViewportCore.tsx`)는 R3F `<Canvas>` 위의 `THREE.WebGLRenderer` 프로필로 그려지며, 이 갱신은 그쪽의 렌더러 소유자를 바꾸지 않는다.
 - “협업 지원”: Yjs 타입이나 합성 fixture의 존재만으로 geometry 협업을 뜻하지 않는다.
 
 ---

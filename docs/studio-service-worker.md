@@ -11,26 +11,32 @@
 
 | 클래스 | 경로 | 전략 | 버킷 | 근거 |
 | --- | --- | --- | --- | --- |
-| `immutable-asset` | `/assets/*` (JS·CSS·WASM) | cache-first | `immutable` (600) | 콘텐츠 해시 URL = 자기 무효화. 재검증 불필요 |
-| `static-media` | `/vrm/` `/audio/` `/images/` | cache-first | `media` (120) | 대용량·불변. VRM 1개가 최대 19 MB라 별도 상한 |
-| `catalog-data` | `/data/` `/i18n/` `/catalog/` | stale-while-revalidate | `data` (80) | 신선도는 필요하지만 대기시키면 안 됨 |
-| `cover-image` | `/api/cover` | cache-first | `cover` (300) | 업스트림이 `immutable`. 표지 바이트가 앱 셸을 밀어내지 않게 분리 |
+| `immutable-asset` | `/assets/*` (JS·CSS 등. `.onnx`·`.wasm` 제외) | cache-first | `immutable` (600) | 콘텐츠 해시 URL = 자기 무효화. 재검증 불필요 |
+| `heavy-asset` | `/assets/*.onnx` `/assets/*.wasm` | cache-first | `heavy` (64) | 같은 해시·불변 계약이지만 파일 하나가 수십 MB다(코드 주석 기준 tag2pix ≈ 76 MB, dist WASM 합계 ≈ 123 MB). 작은 청크가 쌓여 개수 상한에 걸릴 때 가장 먼저 밀려나지 않도록 별도 버킷에 둔다. 프리캐시에 고정한 항목은 먼저 거기서 읽는다 |
+| `static-media` | `/vrm/` `/audio/` `/images/` `/assets/media/` | cache-first | `media` (120) | 대용량·불변. VRM 1개가 최대 19 MB라 별도 상한. `/audio/playlist.json`은 바뀌는 목록이라 캐시하지 않는다 |
+| `catalog-data` | `/data/` `/i18n/` `/catalog/` (+ `/assets/studio/cc0-20260906/manifest.json`) | stale-while-revalidate | `data` (80) | 신선도는 필요하지만 대기시키면 안 됨 |
+| `cover-image` | `/api/cover` | cache-first | `cover` (300) | 표지 바이트가 앱 셸을 밀어내지 않게 분리. 프록시 응답은 `immutable`이 아니라 재검증 가능한 캐시(`max-age=3600, s-maxage=86400`)로 내려가지만, Service Worker는 신선도를 보지 않고 cache-first로 담아 개수 상한으로만 정리한다 |
 | `navigation` / `studio-navigation` | HTML 문서 | network-first | `precache` | **배포 수정본이 다음 온라인 내비게이션에 바로 도달하는 1차 복구 경로** |
 | `api` | 그 외 `/api/*` | network-only | — | 데이터 신선도 |
-| `sw-runtime` | `/sw.js` `/manifest.webmanifest` `/bootstrap-*.js` | network-only | — | 워커 스크립트를 캐시하면 나쁜 워커가 복구 불가능해진다 |
+| `sw-runtime` | `/sw.js` `/manifest.webmanifest` `/bootstrap-compat.js` `/bootstrap-theme.js` | network-only | — | 워커 스크립트를 캐시하면 나쁜 워커가 복구 불가능해진다 |
 | `passthrough` | 교차 출처 · 비 GET · Range | 미개입 | — | **쓰기 경로는 절대 건드리지 않는다** |
 
 ### 프리캐시 2단
 
-- **critical (install, 원자적)** — 앱 셸 JS/CSS 클로저 + 셸 문서 `/` 와 `/studio`.
-  현재 10 URL / 975 KiB. `addAll` 이 원자적인 것은 의도적이다: 하나라도 404 면 install 이
+- **critical (install, 원자적)** — 앱 셸 JS/CSS 클로저 + 셸 문서 `/` 와 `/studio` + 고정 정적
+  critical URL 23개(`STUDIO_SERVICE_WORKER_STATIC_CRITICAL_URLS`: 부트스트랩 스크립트, 비상 드로잉
+  `/offline-draw/*`, 브랜드 아이콘·SVG). 예산은 `STUDIO_PRECACHE_BUDGET.criticalBytes` =
+  2.25 MiB(9 × 256 KiB)이고, 2026-10-01 실측에서 entry 문서 closure는 2,099,509 bytes(약 2.0 MiB)였다
+  (`studio-service-worker-precache-plan.ts` 주석). 이 문서의 이전 판이 적은 "현재 10 URL / 975 KiB"는
+  낡은 값이며, 빌드마다 달라지는 정확한 URL 수·바이트는 `dist/`가 있어야 재현된다(이번 갱신에서는
+  빌드 산출물이 없어 다시 재지 못했다). `addAll` 이 원자적인 것은 의도적이다: 하나라도 404 면 install 이
   거부되고 **새 워커는 활성화되지 않으며 기존 워커가 계속 서빙한다.** 깨진 배포가 정상 캐시를
   대체할 수 없다.
 - **warm (첫 `/studio` 내비게이션, best-effort)** — `/i18n/studio/{ko,en}.json` 2개 / 182 KiB.
   `AppRouter` 가 이 둘을 라우트 청크와 `Promise.all` 하므로 없으면 오프라인 Studio 부팅이
   거기서 죽는다. 카탈로그만 보는 방문자는 이 바이트를 내지 않는다.
 
-Studio 라우트 클로저(5.4 MB / 194 청크)는 **의도적으로 프리캐시하지 않는다.** 워밍을 유발하는
+Studio 라우트 클로저(precache-plan 주석의 과거 실측으로 5.4 MB / 194 청크, 이번에는 재현하지 않았다)는 **의도적으로 프리캐시하지 않는다.** 워밍을 유발하는
 바로 그 내비게이션에서 브라우저가 어차피 전부 받고, cache-first 가 그것을 `immutable` 버킷에
 담는다. 즉 **온라인으로 Studio 를 한 번 열면 그 뒤로는 오프라인으로 동작한다.**
 `planStudioServiceWorkerPrecache` 의 warm 예산(512 KiB)이 이 결정을 빌드 실패로 고정한다.
@@ -72,7 +78,11 @@ Studio 워커 스크립트에 CORP 헤더가 없으면 miss 로 처리하고 지
 2. 작업자에게 프롬프트로 알린다(Shadow DOM, 닫기 가능). 강제하지 않는다.
 3. 적용은 사용자 제스처에서 나온 평범한 `location.reload()` 다. 따라서 Studio 자신의
    `beforeunload` 가드가 그대로 발동해 브라우저가 미저장 작업을 묻는다.
-   **에디터 상태에 별도 결합이 없고, 새로고침이 작업자를 이길 수 있는 경로가 없다.**
+   적용 버튼은 먼저 Studio 의 업데이트 안전 레지스트리(`getStudioUpdateSafetySnapshot()`,
+   `studio-update-safety`)를 읽는다. 저장되지 않은 잉크, 진행 중인 저장 영수증, 대기 중인 협업 경계가
+   있으면 새로고침을 시도하기 전에 적용이 막힌다. `beforeunload` 는 그 뒤의 마지막 브라우저 수준
+   안전망이고, 새로고침이 작업자를 이길 수 있는 경로는 없다. (이전 판은 "에디터 상태에 별도 결합이
+   없다"고 적었으나 지금은 이 레지스트리 결합이 있다.)
 
 `activate` 의 캐시 정리는 `skipWaiting` 이후(=사용자 동의) 또는 모든 탭이 닫힌 뒤에만 돈다.
 
@@ -112,7 +122,17 @@ Studio 워커 스크립트에 CORP 헤더가 없으면 miss 로 처리하고 지
 가용성을 조금 얻자고 데이터 무결성을 거는 거래이므로 채택하지 않았다. 탭이 닫힌 뒤 outbox 를
 비우려면 먼저 SQLite 소유권을 Worker 하나로 조정하는 작업이 선행되어야 하며, 그건 별도 과제다.
 
-## 6. 회귀 방지
+## 6. 브라우저 기준 — 서로 다른 값 두 가지 (2026-10-08 코드 확인)
+
+- Service Worker·Cache Storage 는 주요 엔진이 공통으로 지원하지만, 앱 번들은 Vite 8.0.16 의 기본 빌드
+  타깃(`chrome111` `edge111` `firefox114` `safari16.4` `ios16.4`, `apps/web/vite.config.ts` 에서
+  `build.target` 을 따로 정하지 않음)으로 만들어진다.
+- 앱 안 호환성 점검(`apps/web/src/platform/browser/browser-check.ts`)이 "레거시"로 보는 기준은 Chrome·Edge 90
+  미만, Safari 14 미만, Firefox 88 미만이며 UA 문자열 파싱에 의존한다. 이 값은 위 빌드 타깃보다 낮다. 따라서
+  그 사이 버전(예: Chrome 90~110)은 레거시 경고 없이 열리지만 빌드 산출물이 지원 범위 밖일 수 있다.
+  이 차이가 실제로 어떤 오류로 나타나는지는 실브라우저로 확인하지 않았다.
+
+## 7. 회귀 방지
 
 - `studio-service-worker-policy.test.ts` — 라우팅·전략·캐시명·무효화·자가치유 순수 함수
 - `studio-service-worker-precache-plan.test.ts` — 프리캐시 선택·예산·buildId 안정성

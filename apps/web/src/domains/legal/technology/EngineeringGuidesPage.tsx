@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { EngineeringCodeBlock } from "./EngineeringCodeBlock";
+import type { EngineeringCodeLanguage } from "./engineering-atlas-types";
 import { ENGINEERING_REUSE_BLUEPRINTS } from "./engineering-playbook-content";
 import { PUBLISHED_ENGINEERING_GUIDES as ENGINEERING_GUIDES } from "./engineering-story-published-content";
 import type { EngineeringGuide, EngineeringStatus } from "./engineering-story-content";
@@ -40,12 +42,17 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 
 const BODY_ID = "engineering-guides-body";
 
+/** 가이드 `code`는 대부분 구조 예시(화살표 흐름)다. 타입·함수 선언처럼 보이는 것만 TypeScript 로 강조한다. */
+function guideCodeLanguage(code: string): EngineeringCodeLanguage {
+  return /(?:^|\n)\s*(?:type|interface|const|let|function|export)\s/u.test(code) ? "ts" : "text";
+}
+
 type GuideFilter = "all" | EngineeringStatus;
 
 const FILTERS: readonly { readonly id: GuideFilter; readonly ko: string; readonly en: string }[] = [
   { id: "all", ko: "전체", en: "All" },
   { id: "live", ko: "운영", en: "Live" },
-  { id: "configured", ko: "설정", en: "Configured" },
+  { id: "configured", ko: "설정 필요", en: "Setup required" },
   { id: "experimental", ko: "실험", en: "Experimental" },
   { id: "documented", ko: "문서", en: "Documented" },
 ];
@@ -105,13 +112,12 @@ function GuideArticle({ guide }: { readonly guide: EngineeringGuide }) {
               ))}
             </ul>
             {guide.code ? (
-              <figure className="eng-code mt-4 overflow-hidden rounded-2xl">
-                <figcaption className="eng-code__header flex items-center justify-between px-4 py-2.5">
-                  <span className="eng-code__label font-display text-[0.64rem] font-bold uppercase tracking-[0.15em]">{bi("구조 예시", "Structure example")}</span>
-                  <Code2 size={14} aria-hidden="true" />
-                </figcaption>
-                <pre className="overflow-x-auto p-4 text-xs leading-6"><code>{guide.code}</code></pre>
-              </figure>
+              <EngineeringCodeBlock
+                className="mt-4"
+                code={guide.code}
+                language={guideCodeLanguage(guide.code)}
+                title={bi("구조 예시", "Structure example")}
+              />
             ) : null}
           </section>
         </div>

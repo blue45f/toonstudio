@@ -1,7 +1,7 @@
 # ToonStudio Remotion 브랜드 영상
 
 - 상태: **결정적 media authoring project**
-- 최종 갱신: **2026-09-26**
+- 최종 갱신: **2026-10-08**
 
 저장소의 오리지널 artwork로 만드는 무음 24초 브랜드 영상이다. 6초 chapter 4개로 구성하며 live editor
 화면 녹화가 아니라 설명용 연출이다.
@@ -34,8 +34,23 @@ npm --prefix tools/media/brand-film run render -- all
 npm --prefix tools/media/brand-film run studio
 ```
 
-Remotion editing preview를 연다. Website는 이 package나 Remotion runtime을 import하지 않는다. system
-font는 build dependency이며 font file을 repository 산출물로 공유하지 않는다.
+Remotion editing preview를 연다. system font는 build dependency이며 font file을 repository 산출물로
+공유하지 않는다.
+
+## 웹사이트와의 관계
+
+Remotion은 두 가지 방식으로 쓰이며 하나로 말하지 않는다.
+
+- **사전 렌더 산출물**: 24초 브랜드 필름(`/brand-film`)은 이 package가 렌더한 MP4·poster·VTT를
+  `apps/web/public/brand`에서 그대로 서빙한다. Website는 이 package(`tools/media/brand-film`)를 import하지 않는다.
+  기술 영상(`render:technology`)도 같은 package의 수동 검토 산출물이며 파이프라인이 게시하지 않는다.
+- **브라우저 실시간 합성**: 8분 24초 제품 투어(`/product-tour`)는 웹앱이 `remotion`·`@remotion/player`와
+  공유 composition `@toonstudio/product-tour-film`(`packages/product-tour-film`)을 직접 import해 `<Player>`로
+  합성한다. 같은 composition을 이 package의 `render:product-tour`가 MP4로도 렌더하고, 웹앱은 그 MP4를
+  "호환 재생"(`?player=mp4`)으로 제공한다.
+
+따라서 "웹사이트는 Remotion을 쓰지 않는다"가 아니라 "웹사이트는 제품 투어 재생기에만 Remotion runtime을 쓰고,
+이 authoring package는 import하지 않는다"가 정확하다.
 
 ## 권리와 검토
 

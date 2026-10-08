@@ -3,6 +3,7 @@ import {
   BookOpen,
   Film,
   GraduationCap,
+  LayoutGrid,
   LibraryBig,
   NotebookTabs,
   Presentation,
@@ -22,7 +23,7 @@ import type { WorkflowVisual } from "@/shared/components/site-experience/workflo
  * - 플레이북: 재사용 가능한 설계 원칙과 아키텍처 결정
  * - 적용 가이드: 다른 서비스에 단계별로 옮기는 방법
  * - 심화 노트: 깊은 기술 노트와 장애·교훈
- * - 발표 모드: 30분 세미나 슬라이드와 발표자 도구
+ * - 발표 모드: 세미나(30분)·요약·강의 슬라이드, 도감 부록과 발표자 도구
  *
  * 읽기 시간은 콘텐츠 원본으로 계산한 값을 고정해 두고, 테스트가 실제 콘텐츠와 일치하는지 확인한다
  * (허브가 대형 콘텐츠 모듈을 불러오지 않게 하기 위함).
@@ -36,6 +37,7 @@ export type EngineeringPageId =
   | "deck"
   | "videos"
   | "references"
+  | "atlas"
   | "glossary"
   | "licenses";
 
@@ -62,6 +64,13 @@ export interface EngineeringPageEntry {
 
 const t = (ko: string, en: string): LocalizedText => ({ ko, en });
 
+/**
+ * 공개 제작 스토리의 챕터 수. 사이트맵처럼 가벼워야 하는 곳이 챕터 콘텐츠 모듈(소스 합계 약 270KB)을
+ * 불러오지 않고도 같은 수를 쓰도록 값을 고정해 둔다. `engineering-tech-pages.test.ts`가
+ * `PUBLISHED_ENGINEERING_CHAPTERS.length`와 같은지 확인하므로 챕터를 더하거나 빼면 테스트가 먼저 실패한다.
+ */
+export const ENGINEERING_CHAPTER_COUNT = 40;
+
 export const ENGINEERING_PAGE_GROUPS: readonly { readonly id: EngineeringPageGroup; readonly label: LocalizedText }[] = [
   { id: "path", label: t("핵심", "Core") },
   { id: "present", label: t("발표", "Present") },
@@ -78,7 +87,7 @@ export const ENGINEERING_PAGES = [
     label: t("제작 스토리", "Story"),
     purpose: t("왜·어떻게 만들었나: 문제, 선택, 대가와 근거", "Why and how it was built: problems, choices, trade-offs, evidence"),
     art: "create",
-    readingMinutes: 44,
+    readingMinutes: 51,
   },
   {
     id: "playbook",
@@ -89,7 +98,7 @@ export const ENGINEERING_PAGES = [
     label: t("플레이북", "Playbook"),
     purpose: t("재사용할 설계 원칙과 아키텍처 결정", "Reusable design principles and architecture decisions"),
     art: "plan",
-    readingMinutes: 24,
+    readingMinutes: 25,
   },
   {
     id: "guides",
@@ -100,7 +109,7 @@ export const ENGINEERING_PAGES = [
     label: t("적용 가이드", "Guides"),
     purpose: t("다른 서비스에 단계별로 옮기는 방법", "Step-by-step adoption in another product"),
     art: "learn",
-    readingMinutes: 26,
+    readingMinutes: 27,
   },
   {
     id: "field-notes",
@@ -111,7 +120,7 @@ export const ENGINEERING_PAGES = [
     label: t("심화 노트", "Field notes"),
     purpose: t("깊은 기술 노트와 장애·교훈 기록", "Deep technical notes, incidents and lessons"),
     art: "recovery",
-    readingMinutes: 31,
+    readingMinutes: 32,
   },
   {
     id: "deck",
@@ -120,7 +129,7 @@ export const ENGINEERING_PAGES = [
     step: 5,
     icon: Presentation,
     label: t("발표 모드", "Deck"),
-    purpose: t("30분 세미나 슬라이드와 발표자 도구", "30-minute seminar slides and presenter tools"),
+    purpose: t("세미나·요약·강의 슬라이드, 도감 부록과 발표자 도구", "Seminar, brief and lecture slides, a tech-atlas appendix and presenter tools"),
     art: "publish",
     talkMinutes: 30,
   },
@@ -132,6 +141,15 @@ export const ENGINEERING_PAGES = [
     label: t("영상", "Video"),
     purpose: t("같은 원본으로 만드는 기술 소개 영상", "Engineering film rendered from the same source"),
     art: "storyboard",
+  },
+  {
+    id: "atlas",
+    href: "/about/technology/atlas",
+    group: "resources",
+    icon: LayoutGrid,
+    label: t("기술 도감", "Tech atlas"),
+    purpose: t("배경·도식·샘플 코드·쓰인 기능을 기술별로", "Background, diagrams, code and where each technology is used"),
+    art: "assets",
   },
   {
     id: "references",

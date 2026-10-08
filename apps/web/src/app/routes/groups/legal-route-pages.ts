@@ -48,6 +48,10 @@ export const EngineeringGlossaryPage = lazyRetry(
   () => import("@/domains/legal/technology/EngineeringGlossaryPage").then((module) => ({ default: module.EngineeringGlossaryPage })),
   "EngineeringGlossaryPage",
 );
+export const EngineeringAtlasPage = lazyRetry(
+  () => import("@/domains/legal/technology/EngineeringAtlasPage").then((module) => ({ default: module.EngineeringAtlasPage })),
+  "EngineeringAtlasPage",
+);
 export const ProductPrinciplesPage = lazyRetry(
   () => import("@/domains/legal/ProductPrinciplesPage").then((module) => ({ default: module.ProductPrinciplesPage })),
   "ProductPrinciplesPage",

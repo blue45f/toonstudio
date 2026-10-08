@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -9,8 +9,10 @@ import {
   ENGINEERING_GLOSSARY,
   GLOSSARY_CATEGORIES,
   GLOSSARY_TERM_COUNT,
+  type GlossaryCategoryId,
 } from "./engineering-glossary-content";
 import { buildDeckTrack } from "./engineering-deck-model";
+import { ENGINEERING_GLOSSARY_MORE } from "./engineering-glossary-more";
 import { resolveGlossaryLink } from "./engineering-glossary-links";
 import {
   SEMINAR_PREP_CHECKLIST,
@@ -18,6 +20,13 @@ import {
 } from "./engineering-seminar-prep-content";
 
 vi.mock("@/shared/seo/use-document-title", () => ({ useDocumentTitle: vi.fn() }));
+// 도감 데이터는 용어집 화면이 렌더 뒤에 동적으로 불러온다. 화면 테스트에서는 카드 한 장짜리 픽스처로 바꾼다
+// (실제 카드와의 연결은 아래 ‘실제 도감 데이터’ describe 가 따로 확인한다).
+vi.mock("./engineering-atlas-content", async () => {
+  const { ENGINEERING_GLOSSARY: terms } = await import("./engineering-glossary-content");
+  const firstAtlasId = terms.find((term) => (term.atlasIds?.length ?? 0) > 0)?.atlasIds?.[0];
+  return { ENGINEERING_ATLAS_ENTRIES: firstAtlasId ? [{ id: firstAtlasId, name: "Fixture atlas card" }] : [] };
+});
 
 afterEach(cleanup);
 
@@ -56,6 +65,54 @@ describe("engineering glossary content", () => {
     for (const category of GLOSSARY_CATEGORIES) {
       const count = ENGINEERING_GLOSSARY.filter((t) => t.category === category.id).length;
       expect(count).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("extended glossary terms", () => {
+  const HANGUL = /[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7A3]/u;
+  const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+  const NEW_AREAS: readonly GlossaryCategoryId[] = ["web", "collab", "brush", "input", "spatial", "ai", "data", "oss", "craft"];
+
+  it("adds a broad set of terms on top of the base glossary", () => {
+    expect(ENGINEERING_GLOSSARY_MORE.length).toBeGreaterThanOrEqual(70);
+    expect(GLOSSARY_TERM_COUNT).toBeGreaterThanOrEqual(110);
+    for (const area of NEW_AREAS) {
+      const count = ENGINEERING_GLOSSARY_MORE.filter((term) => term.category === area).length;
+      expect(count, `${area} needs at least five extended terms`).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  it("keeps every extended term complete, bilingual and short enough to read aloud", () => {
+    const categoryIds = new Set<string>(GLOSSARY_CATEGORIES.map((category) => category.id));
+    for (const term of ENGINEERING_GLOSSARY_MORE) {
+      expect(KEBAB.test(term.id), `${term.id} should be kebab-case`).toBe(true);
+      expect(categoryIds.has(term.category), `${term.id} category`).toBe(true);
+      for (const field of ["term", "definition", "analogy", "inToonstudio"] as const) {
+        const text = term[field];
+        expect(text.ko.trim(), `${term.id}.${field}.ko`).toBe(text.ko);
+        expect(text.en.trim(), `${term.id}.${field}.en`).toBe(text.en);
+        expect(text.ko.length, `${term.id}.${field}.ko is empty`).toBeGreaterThan(1);
+        expect(text.en.length, `${term.id}.${field}.en is empty`).toBeGreaterThan(1);
+        // 영어 칸에는 한글이 없어야 한다(고유명사·코드 식별자는 영문 그대로).
+        expect(HANGUL.test(text.en), `${term.id}.${field}.en contains Hangul`).toBe(false);
+      }
+      expect(term.definition.ko.length, `${term.id} definition is a one-liner`).toBeLessThanOrEqual(200);
+      expect(term.analogy.ko.length, `${term.id} analogy`).toBeLessThanOrEqual(400);
+      expect(term.inToonstudio.ko.length, `${term.id} inToonstudio (ko 400 chars)`).toBeLessThanOrEqual(400);
+      expect(term.chapters.length, `${term.id} chapters`).toBeGreaterThanOrEqual(1);
+      expect(term.chapters.length, `${term.id} chapters`).toBeLessThanOrEqual(3);
+      expect(new Set(term.chapters).size, `${term.id} duplicate chapter`).toBe(term.chapters.length);
+      expect(new Set(term.atlasIds ?? []).size, `${term.id} duplicate atlas id`).toBe((term.atlasIds ?? []).length);
+    }
+  });
+
+  it("avoids superlative claims the project rules forbid", () => {
+    for (const term of ENGINEERING_GLOSSARY_MORE) {
+      const ko = [term.definition.ko, term.analogy.ko, term.inToonstudio.ko].join("\n");
+      const en = [term.definition.en, term.analogy.en, term.inToonstudio.en].join("\n");
+      expect(/최고|최초|완벽|무제한/u.test(ko), `${term.id} ko`).toBe(false);
+      expect(/\b(?:best-in-class|world-class|perfect(?:ly)?|flawless|unlimited|first-ever|industry-first)\b/iu.test(en), `${term.id} en`).toBe(false);
     }
   });
 });
@@ -120,6 +177,48 @@ describe("EngineeringGlossaryPage", () => {
     expect(chapterLink?.getAttribute("href")).toBe("/about/technology/story#brush-engine");
     // 링크 이름은 챕터 id가 아니라 사람이 읽는 챕터 제목이다.
     expect(within(wasmCard).getAllByRole("link").every((link) => !/^[a-z0-9-]+$/u.test(link.textContent ?? ""))).toBe(true);
+  });
+
+  it("shows a ‘Tech atlas cards’ chip only for atlas ids that resolve (atlas loaded lazily)", async () => {
+    const withAtlas = ENGINEERING_GLOSSARY.flatMap((term) => (term.atlasIds && term.atlasIds.length > 0 ? [{ term, atlasIds: term.atlasIds }] : []));
+    const [first] = withAtlas;
+    if (!first) throw new Error("at least one glossary term should link an atlas card");
+    const resolvedId = first.atlasIds[0];
+    if (!resolvedId) throw new Error("first atlas id is missing");
+
+    render(
+      <MemoryRouter initialEntries={["/about/technology/glossary"]}>
+        <EngineeringGlossaryPage />
+      </MemoryRouter>,
+    );
+
+    // 도감 데이터는 렌더 뒤에 동적으로 불러온다 → 처음에는 줄이 없고, 불러온 뒤 칩이 생긴다.
+    await waitFor(() => expect(document.querySelector(`#glossary-${first.term.id} a[data-atlas-id="${resolvedId}"]`)).toBeTruthy());
+    const chip = document.querySelector(`#glossary-${first.term.id} a[data-atlas-id="${resolvedId}"]`);
+    expect(chip?.getAttribute("href")).toBe(`/about/technology/atlas#${resolvedId}`);
+    expect(chip?.textContent).toContain("Fixture atlas card");
+
+    // 픽스처에 없는 카드 id 만 가진 용어에는 칩이 없다(없는 카드로 가는 링크를 만들지 않는다).
+    const unresolved = withAtlas.find((item) => !item.atlasIds.includes(resolvedId));
+    if (unresolved) {
+      expect(document.querySelector(`#glossary-${unresolved.term.id} a[data-atlas-id]`)).toBeNull();
+    }
+    // atlasIds 가 없는 용어에도 칩이 없다.
+    const plain = ENGINEERING_GLOSSARY.find((term) => !term.atlasIds || term.atlasIds.length === 0);
+    if (!plain) throw new Error("a term without atlas ids is expected");
+    expect(document.querySelector(`#glossary-${plain.id} a[data-atlas-id]`)).toBeNull();
+  });
+});
+
+describe("glossary → atlas links against the real atlas data", () => {
+  it("resolves every atlasIds entry to an actual atlas card", async () => {
+    // 위 vi.mock 은 화면 테스트용이므로, 여기서는 실제 도감 모듈을 직접 불러온다.
+    const actual = await vi.importActual<{ readonly ENGINEERING_ATLAS_ENTRIES: readonly { readonly id: string }[] }>("./engineering-atlas-content");
+    const cardIds = new Set(actual.ENGINEERING_ATLAS_ENTRIES.map((entry) => entry.id));
+    // 도감을 다른 작성자가 채우는 동안(카드가 한 장도 없을 때)에는 연결을 검사하지 않는다.
+    if (cardIds.size === 0) return;
+    const missing = ENGINEERING_GLOSSARY.flatMap((term) => (term.atlasIds ?? []).filter((id) => !cardIds.has(id)).map((id) => `${term.id} -> ${id}`));
+    expect(missing).toEqual([]);
   });
 });
 
