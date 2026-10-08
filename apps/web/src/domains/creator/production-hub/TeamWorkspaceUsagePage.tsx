@@ -11,6 +11,7 @@ import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-i
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { getApiErrorMessage, httpStatus } from "@/platform/api";
 import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
+import { TeamSceneArt } from "./TeamSceneArt";
 import { getTeamUsage, getTeamWorkspace } from "./team-workspace-api";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -144,6 +145,7 @@ function TeamWorkspaceUsageConsole({ userId, workspaceId }: { userId: string | n
 
   return <div data-creator-workflow="team" data-route-ready="team-workspace-usage" className="min-h-dvh bg-canvas px-4 py-6 text-fg">
     <div className="mx-auto max-w-6xl space-y-5"><TeamAreaNavigation />
+    <TeamSceneArt />
     <header className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-panel p-5 sm:p-6">
       <div>
         <p className="eyebrow text-accent">TEAM · USAGE</p>
