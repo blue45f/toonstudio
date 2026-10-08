@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -17,6 +17,7 @@ import {
   engineeringDeckHref,
   parseEngineeringDeckState,
 } from "./engineering-deck-state";
+import { repoPathExists } from "./engineering-repo-paths-test-kit";
 import { SEMINAR_LESSONS } from "./engineering-seminar-curriculum";
 import { PUBLISHED_ENGINEERING_CHAPTERS } from "./engineering-story-published-content";
 import {
@@ -58,15 +59,21 @@ describe("세미나 발표(30분) 원본", () => {
     expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
-  it("핵심 기술 구간은 드로잉·로컬 저장·협업·가상 스튜디오·3D·AI를 모두 다룬다", () => {
+  it("핵심 기술 구간은 드로잉·로컬 저장·끌어 놓기·협업·가상 스튜디오·WebRTC·3D·AI·웹의 한계·차세대 웹을 이 순서로 다룬다", () => {
+    // 의도적 변경: 핵심 구간을 6장에서 10장으로 넓혔다(끌어 놓기·WebRTC·웹의 한계 넘기·차세대 웹 추가 — 사용자가 요청한 주제).
+    // 슬라이드별 상세(레이아웃·표 근거·수치)는 engineering-talk-deck-content.test.ts 가 확인한다.
     const core = TALK_SLIDES.filter((slide) => slide.section === "core").map((slide) => slide.chapterId);
     expect(core).toEqual([
       "brush-engine",
       "browser-local-compute",
+      "architecture",
       "collaborative-crdt-boundary",
       "virtual-studio-world-authority",
+      "webrtc-media-authority",
       "web-3d-engine",
       "free-ai-routing",
+      "worker-architecture",
+      "nextgen-web-experiments",
     ]);
   });
 
@@ -80,8 +87,9 @@ describe("세미나 발표(30분) 원본", () => {
       }
       if (slide.chapterId) expect(chapterIds.has(slide.chapterId), slide.id).toBe(true);
       for (const id of slide.statusChapterIds ?? []) expect(chapterIds.has(id), id).toBe(true);
-      for (const path of slide.evidence ?? []) expect(existsSync(path), `${slide.id}: ${path}`).toBe(true);
-      if (slide.art) expect(existsSync(`apps/web/public${slide.art.src}`), slide.art.src).toBe(true);
+      // 부분 체크아웃(CI)에는 큰 자산·문서 폴더가 없을 수 있어, 작업 트리에 없어도 git 이 추적하면 통과시키는 도우미를 쓴다.
+      for (const path of slide.evidence ?? []) expect(repoPathExists(path), `${slide.id}: ${path}`).toBe(true);
+      if (slide.art) expect(repoPathExists(`apps/web/public${slide.art.src}`), slide.art.src).toBe(true);
     }
   });
 
@@ -91,19 +99,23 @@ describe("세미나 발표(30분) 원본", () => {
       typeof fact.value === "string" ? fact.value : koOnly(fact.value),
     ] as const));
     const wrangler = source("deploy/cloudflare-realtime/wrangler.jsonc");
-    expect(facts.get("방당 최대 동시 연결(설정값)")).toBe("64");
+    // "64 / 10s" 는 Durable Objects 방당 연결 상한과 재개 요청 측정 창(그 창 안의 요청 64건·8 MiB)이다. 부하 시험 결과가 아니다.
+    expect(facts.get("방당 최대 연결(Durable Objects 설정값)")).toBe("64");
     expect(wrangler).toContain('"REALTIME_MAX_CONNECTIONS_PER_ROOM": "64"');
-    expect(facts.get("재접속 재개 허용 창(설정값)")).toBe("10s");
+    expect(facts.get("재개 요청 측정 창(설정값)")).toBe("10s");
     expect(wrangler).toContain('"REALTIME_RESUME_WINDOW_MS": "10000"');
 
-    const proximity = source("apps/web/src/domains/creator/virtual-space/studio-virtual-space-proximity.ts");
-    expect(proximity).toMatch(/STUDIO_PROXIMITY_GREET_RADIUS = 160;/u);
-    expect(proximity).toMatch(/STUDIO_PROXIMITY_FAREWELL_RADIUS = 220;/u);
-    expect(proximity).toMatch(/STUDIO_PROXIMITY_CHAT_RADIUS = 200;/u);
-    expect(facts.get("인사 진입 / 이탈 반경")).toBe("160 / 220px");
-    expect(facts.get("대화 힌트 반경")).toBe("200px");
+    // 화면에 실제로 연결된 근접 반경만 슬라이드 수치로 쓴다. 인사 160/220px 규칙은 제품 코드가 쓰지 않는 설계 기준이다
+    // (연결 여부와 나머지 정원 사다리는 engineering-talk-deck-content.test.ts 가 확인한다).
+    const dir = "apps/web/src/domains/creator/virtual-space";
+    expect(source(`${dir}/hud/space-proximity-media.ts`)).toMatch(/SPACE_PROXIMITY_MEDIA_RADIUS = 168;[\s\S]*SPACE_PROXIMITY_MEDIA_LEAVE_RADIUS = 216;/u);
+    expect(facts.get("근접 영상 연결 / 해제 반경(동의 후)")).toBe("168 / 216px");
+    expect(source(`${dir}/studio-virtual-space-page-helpers.ts`)).toMatch(/TALK_DISTANCE = 120;[\s\S]*SHARED_ACTIVITY_DISTANCE = 156;/u);
+    expect(facts.get("근처 대화 입장 / 퇴장 반경")).toBe("120 / 156px");
+    expect(source(`${dir}/studio-virtual-space-chat.ts`)).toMatch(/STUDIO_CHAT_NEARBY_RADIUS_PX = 200;/u);
+    expect(facts.get("근처 채팅이 닿는 거리")).toBe("200px");
     expect(source("apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-protocol.ts")).toContain("HUDDLE_MAX_REMOTE_PEERS = 3;");
-    expect(facts.get("허들 원격 참가자 상한")).toBe("3");
+    expect(facts.get("허들 원격 참가자 상한(음성·영상)")).toBe("3");
 
     const render = source("render.yaml");
     expect(render).toMatch(/plan: free/u);
@@ -120,7 +132,12 @@ describe("세미나 발표(30분) 원본", () => {
       expect(quality?.notes.ko, key).toContain(`(${value ?? ""})`);
       expect(quality?.notes.en, key).toContain(`(${value ?? ""})`);
     }
+    // 수치를 코드·설정으로 다시 확인한 날짜. 오늘(2026-10-08) 발표를 위해 다시 센 값이라 그보다 이를 수 없다.
     expect(TALK_FACTS_REVIEWED_AT).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
+    expect(TALK_FACTS_REVIEWED_AT >= "2026-10-08").toBe(true);
+    // 슬라이드의 팩트 라벨은 서로 달라야 한다(같은 라벨이면 위의 대조가 한쪽만 확인한다).
+    const labels = talkSlides.flatMap((slide) => slide.facts ?? []).map((fact) => koOnly(fact.label));
+    expect(new Set(labels).size).toBe(labels.length);
   });
 
   it("슬라이드 시작 시각은 앞선 슬라이드 시간의 누적이다", () => {
@@ -145,7 +162,7 @@ describe("발표 트랙 모델", () => {
     }
   });
 
-  it("세미나 발표는 19장·30분, 심화 강의는 기존 30개 레슨을 모두 쓴다", () => {
+  it("세미나 발표는 원본 장수·30분, 심화 강의는 레슨 원본을 모두 쓴다", () => {
     expect(buildDeckTrack("talk", koOnly).slides).toHaveLength(TALK_SLIDES.length);
     expect(deckTrackTotalSeconds("talk")).toBe(1800);
     const lecture = buildDeckTrack("lecture", koOnly);
@@ -174,7 +191,7 @@ describe("발표 트랙 모델", () => {
 
 describe("레슨 원본(심화 강의 트랙)", () => {
   it("모든 레슨에 번역·대본·질문·구현 챕터 근거가 있다", () => {
-    expect(new Set(SEMINAR_LESSONS.map((lesson) => lesson.id)).size).toBe(30);
+    expect(new Set(SEMINAR_LESSONS.map((lesson) => lesson.id)).size).toBe(SEMINAR_LESSONS.length);
     for (const lesson of SEMINAR_LESSONS) {
       expect(chapterIds.has(lesson.chapterId)).toBe(true);
       expect(lesson.points).toHaveLength(3);
