@@ -2993,6 +2993,10 @@ export function StudioVirtualSpacePhaserCanvas({
         ...(powerPreference ? { render: { powerPreference } } : {}),
         parent: mount,
         loader: { timeout: 15000, maxParallelDownloads: 6 },
+        // Phaser는 시작과 탭 복귀 직후 120프레임(기본 panicMax) 동안 프레임 간격을 16.7ms로 잘라 물리를 한 프레임에 한 걸음만
+        // 돌린다. 60fps에서는 티가 안 나지만 그보다 느린 기기에서는 그동안 아바타가 실제보다 느리게 걷는다(14fps에서 처음 약 8초는
+        // 속도의 4분의 1, 30fps면 4초 동안 절반). 10프레임으로 줄여 첫 걸음부터 실제 시간을 따라가게 한다.
+        fps: { panicMax: 10 },
         transparent: false,
         backgroundColor: spaceThemeDef ? studioColorHex(spaceThemeDef.backgroundColor) : "#17181b",
         antialias: !artProfile.pixelated,
