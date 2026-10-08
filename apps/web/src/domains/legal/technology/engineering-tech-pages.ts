@@ -23,7 +23,7 @@ import type { WorkflowVisual } from "@/shared/components/site-experience/workflo
  * - 플레이북: 재사용 가능한 설계 원칙과 아키텍처 결정
  * - 적용 가이드: 다른 서비스에 단계별로 옮기는 방법
  * - 심화 노트: 깊은 기술 노트와 장애·교훈
- * - 발표 모드: 30분 세미나 슬라이드와 발표자 도구
+ * - 발표 모드: 세미나(30분)·요약·강의 슬라이드, 도감 부록과 발표자 도구
  *
  * 읽기 시간은 콘텐츠 원본으로 계산한 값을 고정해 두고, 테스트가 실제 콘텐츠와 일치하는지 확인한다
  * (허브가 대형 콘텐츠 모듈을 불러오지 않게 하기 위함).
@@ -129,7 +129,7 @@ export const ENGINEERING_PAGES = [
     step: 5,
     icon: Presentation,
     label: t("발표 모드", "Deck"),
-    purpose: t("30분 세미나 슬라이드와 발표자 도구", "30-minute seminar slides and presenter tools"),
+    purpose: t("세미나·요약·강의 슬라이드, 도감 부록과 발표자 도구", "Seminar, brief and lecture slides, a tech-atlas appendix and presenter tools"),
     art: "publish",
     talkMinutes: 30,
   },
