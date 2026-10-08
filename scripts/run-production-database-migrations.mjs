@@ -100,6 +100,8 @@ const HISTORICAL_BASELINE_RELATIONS = Object.freeze([
   "verificationToken",
 ]);
 export const POST_BASELINE_RELATIONS = Object.freeze([
+  "fan_post_like",
+  "fan_post_report",
   "account_merge",
   "admin_announcements",
   "admin_audit_logs",
