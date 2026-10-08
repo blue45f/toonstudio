@@ -453,7 +453,7 @@ function ThreePreview({
     <div
       ref={hostRef}
       className={cn(
-        "relative grid size-full min-h-32 place-items-center overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 dark:from-neutral-800 dark:via-neutral-900 dark:to-neutral-900",
+        "relative grid size-full min-h-32 place-items-center overflow-hidden bg-gradient-to-br from-raised via-panel to-canvas",
         className,
       )}
       role={mode === "thumbnail" ? "img" : "group"}
@@ -478,8 +478,8 @@ function ThreePreview({
         <img src={poster} alt="" className="size-full object-contain" draggable={false} />
       ) : null}
       {state === "idle" || state === "loading" ? (
-        <div className="absolute inset-0 grid place-items-center text-slate-500" aria-hidden>
-          <span className="grid size-14 place-items-center rounded-2xl border border-white/70 bg-white/70 shadow-sm backdrop-blur dark:border-white/10 dark:bg-black/25">
+        <div className="absolute inset-0 grid place-items-center text-fg-3" aria-hidden>
+          <span className="grid size-14 place-items-center rounded-2xl border border-line bg-panel/70 shadow-sm backdrop-blur">
             {state === "loading"
               ? <LoaderCircle size={24} className="animate-spin" />
               : <Box size={24} />}
@@ -497,7 +497,7 @@ function ThreePreview({
       ) : null}
       {mode === "thumbnail" && poster && state === "ready" ? (
         <span
-          className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1 text-[0.62rem] font-bold text-slate-700 shadow-sm backdrop-blur dark:border-white/10 dark:bg-black/55 dark:text-white"
+          className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full border border-line bg-panel/80 px-2 py-1 text-[0.62rem] font-bold text-fg-2 shadow-sm backdrop-blur"
           aria-hidden
         >
           <Rotate3d size={12} />
@@ -514,7 +514,7 @@ function ThreePreview({
             wakeRendererRef.current?.();
           }}
           aria-pressed={autoRotate}
-          className="absolute bottom-3 right-3 inline-flex min-h-10 items-center gap-1.5 rounded-full border border-white/70 bg-white/85 px-3 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:border-white/10 dark:bg-black/55 dark:text-white"
+          className="absolute bottom-3 right-3 inline-flex min-h-10 items-center gap-1.5 rounded-full border border-line bg-panel/85 px-3 text-xs font-semibold text-fg shadow-sm backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <Rotate3d size={15} aria-hidden />
           {autoRotate ? "자동 회전 끄기" : "자동 회전"}
@@ -573,7 +573,7 @@ export function StudioUnifiedAssetPreviewSurface({
   }
   if (preview.kind === "image") {
     return (
-      <div className={cn("size-full overflow-hidden bg-slate-100 dark:bg-neutral-900", className)}>
+      <div className={cn("size-full overflow-hidden bg-canvas", className)}>
         <img
           src={preview.src}
           alt={preview.alt}
@@ -586,8 +586,10 @@ export function StudioUnifiedAssetPreviewSurface({
     );
   }
   if (preview.kind === "svg") {
+    // 벡터 요소는 원고 종이 위 잉크(#16100c) 선화라 어두운 바탕에서는 선이 사라진다.
+    // 장면 템플릿 미리보기와 같이 테마와 무관한 흰 종이로 고정한다.
     return (
-      <div className={cn("size-full overflow-hidden bg-white p-2 dark:bg-neutral-900", className)}>
+      <div className={cn("size-full overflow-hidden bg-white p-2", className)}>
         <img
           src={svgToDataUrl(preview.svg)}
           alt={preview.alt}
