@@ -693,6 +693,9 @@ importers:
 
   apps/brush-lab:
     dependencies:
+      '@dimforge/rapier2d-compat':
+        specifier: 0.21.0
+        version: 0.21.0
       '@toonstudio/studio-brush-platform':
         specifier: workspace:*
         version: link:../../packages/studio-brush-platform
@@ -1398,6 +1401,9 @@ packages:
 
   '@davepagurek/bezier-path@0.0.7':
     resolution: {integrity: sha512-CVlnCOrV1iy4Z12T756i9l4G6kF7r8uhlnb+xqDemAMmWQB+8Q0b+8VEqIiUfywgZDSiDr18Rm7pZlnA69rE8Q==}
+
+  '@dimforge/rapier2d-compat@0.21.0':
+    resolution: {integrity: sha512-cMStLQZbY5D/ajAPjOwTwoYuAJAungTYB45MNFEa5B+LGaMiZfxLwjHsfpxH5B0sDa+gkmcQFJJKiHNKnlpMnA==}
 
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
@@ -8853,6 +8859,8 @@ snapshots:
   '@csstools/css-tokenizer@4.0.0': {}
 
   '@davepagurek/bezier-path@0.0.7': {}
+
+  '@dimforge/rapier2d-compat@0.21.0': {}
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 

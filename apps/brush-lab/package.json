@@ -11,6 +11,7 @@
     "test": "vitest run src"
   },
   "dependencies": {
+    "@dimforge/rapier2d-compat": "0.21.0",
     "@toonstudio/studio-brush-platform": "workspace:*",
     "@toonstudio/studio-engine-registry": "workspace:*",
     "@toonstudio/studio-project-model": "workspace:*",
