@@ -281,8 +281,8 @@ export function TechnologyPage() {
             </h2>
             <p className="mt-4 max-w-lg text-sm leading-7 text-fg-2">
               {formatI18nTemplate(String(bi(
-                "{value0}개 챕터를 운영 경로, 설정 완료, 실험, 문서화 단계로 나누고 코드·테스트·워크플로·문서를 근거로 연결합니다.",
-                "{value0} chapters are labelled live, configured, experimental or documented and connected to code, tests, workflows or documents.",
+                "{value0}개 챕터를 운영 경로, 설정 필요, 실험, 문서화 단계로 나누고 코드·테스트·워크플로·문서를 근거로 연결합니다.",
+                "{value0} chapters are labelled live, setup required, experimental or documented and connected to code, tests, workflows or documents.",
               )), { value0: ENGINEERING_CHAPTERS.length })}
             </p>
           </div>

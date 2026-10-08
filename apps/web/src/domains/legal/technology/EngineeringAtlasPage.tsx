@@ -75,7 +75,7 @@ type StatusFilter = "all" | EngineeringStatus;
 const STATUS_FILTERS: readonly { readonly id: StatusFilter; readonly ko: string; readonly en: string }[] = [
   { id: "all", ko: "모든 상태", en: "Any status" },
   { id: "live", ko: "운영 경로", en: "Live" },
-  { id: "configured", ko: "설정 완료", en: "Configured" },
+  { id: "configured", ko: "설정 필요", en: "Setup required" },
   { id: "experimental", ko: "실험 기능", en: "Experimental" },
   { id: "documented", ko: "문서화", en: "Documented" },
   { id: "planned", ko: "설계 단계", en: "Planned" },

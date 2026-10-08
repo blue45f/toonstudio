@@ -658,7 +658,7 @@ export const FREE_TIER_DEVICE_AND_TOOL_ROWS: readonly EngineeringMapRow[] = [
         "Runs the studio image tools on the user's own computer: on-device colorizing, AI upscaling, anime-style conversion, line extraction from photos and background removal for general subjects. Images are not sent to a server and no AI tokens are used.",
       ),
       limit: t(
-        "서버 AI 비용 0(기기가 계산). 처음 쓸 때 모델 6개 파일 합계 119,438,571 B(채색 79,269,994 B 포함, 코드 기록)와 런타임 WASM 26,827,543 B(설치 패키지 실측)를 내려받습니다. 우리 안전 한도: 모델 1 GiB·텐서 512 MiB.",
+        "서버 AI 비용 0(기기가 계산). 처음 쓸 때 모델 파일 6개 합계 119,438,571 B(채색 79,269,994 B 포함, 코드 기록)와 런타임 WASM 26,827,543 B(설치 패키지 실측)를 내려받습니다. 우리 안전 한도: 모델 1 GiB·텐서 512 MiB.",
         "No server AI cost (the device computes). On first use it downloads six model files totalling 119,438,571 B (79,269,994 B for colorizing, recorded in code) plus 26,827,543 B of runtime WASM (measured from the installed package). Our safety limits: 1 GiB per model, 512 MiB per tensor.",
       ),
       "on-exceed": t(

@@ -28,7 +28,7 @@ const ONNX_RUNTIME_WEB_INFERENCE: EngineeringAtlasEntry = {
       "ONNX is a common file format for AI models, and ONNX Runtime Web is the engine that runs such a file in the browser. It has two execution providers. WebGPU uses the graphics chip directly and is fast, but support varies by device and browser; WASM runs anywhere but on the CPU, so it is slower. The flow is the same for every model: shrink the image to the model's size, run the model, and composite the result back at the original resolution. Downloaded model bytes are rejected if their SHA-256 differs from the registered value, and if the document changed by the time inference ends (a different epoch number), the result is thrown away.",
     ),
     t(
-      "서버 GPU로 돌리는 대안은 빠르고 큰 모델도 쓸 수 있지만, 그림이 서버로 가고 GPU 비용이 운영자에게 남습니다. 그래서 이미지 한 장으로 끝나는 작은 모델만 기기에서 돌리고, 큰 언어·확산 모델은 클라우드 경로(내 키)에 맡깁니다. 고른 모델 6개 파일(합계 119,438,571바이트)은 모두 상업 사용이 가능한 허용형 라이선스(MIT·BSD-3-Clause·Apache-2.0)입니다. 코드 주석은 크기·속도·품질의 한계는 받아들여도 라이선스 기준은 양보하지 않는다고 적고 있습니다.",
+      "서버 GPU로 돌리는 대안은 빠르고 큰 모델도 쓸 수 있지만, 그림이 서버로 가고 GPU 비용이 운영자에게 남습니다. 그래서 이미지 한 장으로 끝나는 작은 모델만 기기에서 돌리고, 큰 언어·확산 모델은 클라우드 경로(내 키)에 맡깁니다. 고른 모델 파일 6개(합계 119,438,571바이트)은 모두 상업 사용이 가능한 허용형 라이선스(MIT·BSD-3-Clause·Apache-2.0)입니다. 코드 주석은 크기·속도·품질의 한계는 받아들여도 라이선스 기준은 양보하지 않는다고 적고 있습니다.",
       "Running on a server GPU is the alternative: fast, and big models are possible, but the drawing goes to a server and the GPU bill stays with the operator. So only small models that finish with a single image run on the device, while large language and diffusion models are left to the cloud route (your own key). The six chosen model files (119,438,571 bytes in total) all carry permissive, commercially usable licenses (MIT, BSD-3-Clause, Apache-2.0). A code comment says size, speed and quality limits are accepted but the license standard is not given up.",
     ),
     t(
@@ -38,7 +38,7 @@ const ONNX_RUNTIME_WEB_INFERENCE: EngineeringAtlasEntry = {
   ],
   keyPoints: [
     t("그림은 기기를 떠나지 않고, 모델·엔진만 내려받습니다", "Pixels never leave the device; only the model and engine are downloaded"),
-    t("모델 6개 파일 합계 119,438,571바이트, 허용형 라이선스만", "Six model files, 119,438,571 bytes in total, permissive licenses only"),
+    t("모델 파일 6개 합계 119,438,571바이트, 허용형 라이선스만", "Six model files, 119,438,571 bytes in total, permissive licenses only"),
     t("WebGPU가 안 되면 WASM으로, 받은 모델은 SHA-256 검증", "No WebGPU means WASM, and every model is checked by SHA-256"),
     t("추론 중 문서가 바뀌면 에포크 번호로 결과를 버립니다", "If the document changes mid-run, the epoch number discards the result"),
   ],
@@ -272,7 +272,7 @@ const ONNX_RUNTIME_WEB_INFERENCE: EngineeringAtlasEntry = {
   chapterIds: ["on-device-inference", "browser-local-compute", "cost-engineering"],
   talk: {
     pitch: t(
-      "채색, 배경 제거, 사진에서 선 추출, 4배 업스케일, 애니풍 변환은 사용자의 브라우저 안에서 ONNX 모델이 처리합니다. 그림은 서버로 나가지 않고 키도 한도도 필요 없습니다. 모델 6개 파일은 합쳐서 약 119MB이고 모두 상업 사용이 가능한 허용형 라이선스입니다. 처음 쓸 때 모델과 엔진을 한 번 내려받아야 하고, WebGPU가 안 되는 기기에서는 느린 WASM으로 동작합니다.",
+      "채색, 배경 제거, 사진에서 선 추출, 4배 업스케일, 애니풍 변환은 사용자의 브라우저 안에서 ONNX 모델이 처리합니다. 그림은 서버로 나가지 않고 키도 한도도 필요 없습니다. 모델 파일 6개는 합쳐서 약 119MB이고 모두 상업 사용이 가능한 허용형 라이선스입니다. 처음 쓸 때 모델과 엔진을 한 번 내려받아야 하고, WebGPU가 안 되는 기기에서는 느린 WASM으로 동작합니다.",
       "Colorizing, background removal, line extraction from photos, 4x upscaling and anime restyling all run as ONNX models inside the user's browser. The drawing never goes to a server, and no key or quota is needed. The six model files total about 119 MB and all carry permissive, commercially usable licenses. The first use downloads the models and engine once, and on devices without WebGPU it falls back to the slower WASM.",
     ),
     analogy: t(

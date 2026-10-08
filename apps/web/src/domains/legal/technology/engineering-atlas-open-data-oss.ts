@@ -549,8 +549,8 @@ try {
         "1 Version pinning: core libraries are tied to exact versions (zod 4.4.3, three 0.184.0, vitest 4.1.11), transitive ones are corrected by 50 pnpm overrides, and CI stops on pnpm install --frozen-lockfile when the lockfile disagrees. 2 Install-script blocking: only six packages may run build scripts at install time, and sharp, onnxruntime-node and others are explicitly denied. 3 Audits: audit:security allows no advisory exceptions, followed by the license audit and the bundle-boundary check.",
       ),
       t(
-        "④ 실행 때는 출처와 해시를 고정합니다. 운영 CSP 가 외부 스크립트·WASM 실행을 막으므로 ONNX Runtime·MediaPipe 의 WASM 은 빌드 해시가 붙은 same-origin 자산으로 싣고, ONNX 모델 6개(합계 119,438,571 바이트)는 저장소 안에 두고 길이와 SHA-256 을 확인한 뒤에야 세션을 만듭니다. 무거운 엔진은 동적 import 로만 불러오고, 정적 그래프에 돌아오면 번들 검사가 실패합니다.",
-        "4 At run time, origin and hash are pinned. Because the production CSP blocks external script and WASM execution, the WASM of ONNX Runtime and MediaPipe ships as same-origin assets with build hashes, and the six ONNX models (119,438,571 bytes in total) live in the repository and are checked for length and SHA-256 before a session is created. Heavy engines load only through dynamic import, and the bundle check fails if one returns to the static graph.",
+        "④ 실행 때는 출처와 해시를 고정합니다. 운영 CSP 가 외부 스크립트·WASM 실행을 막으므로 ONNX Runtime·MediaPipe 의 WASM 은 빌드 해시가 붙은 same-origin 자산으로 싣고, ONNX 모델 파일 6개(합계 119,438,571 바이트)는 저장소 안에 두고 길이와 SHA-256 을 확인한 뒤에야 세션을 만듭니다. 무거운 엔진은 동적 import 로만 불러오고, 정적 그래프에 돌아오면 번들 검사가 실패합니다.",
+        "4 At run time, origin and hash are pinned. Because the production CSP blocks external script and WASM execution, the WASM of ONNX Runtime and MediaPipe ships as same-origin assets with build hashes, and the six ONNX model files (119,438,571 bytes in total) live in the repository and are checked for length and SHA-256 before a session is created. Heavy engines load only through dynamic import, and the bundle check fails if one returns to the static graph.",
       ),
       t(
         "예외도 있습니다. MediaPipe 모델은 storage.googleapis.com 에서 런타임에 내려받고, 배경 제거(selfie segmenter)는 latest 리비전이라 해시가 고정돼 있지 않습니다(아바타 임베더만 길이와 SHA-256 고정). GitHub Actions 는 471건 중 40자리 SHA 고정이 25건이고 나머지는 태그 고정이며, Dependabot·Renovate 설정은 찾지 못했습니다. 새 릴리스 숙성 대기(minimumReleaseAge)도 0 입니다.",
@@ -559,7 +559,7 @@ try {
     ],
     keyPoints: [
       t("방어선 4겹: 버전 고정 → 스크립트 차단 → 감사 → 해시·출처", "Four layers: pins, script blocking, audits, hashes and origin"),
-      t("ONNX 모델 6개는 길이와 SHA-256 을 확인한 뒤에만 쓴다", "The six ONNX models are used only after length and SHA-256 checks"),
+      t("ONNX 모델 파일 6개는 길이와 SHA-256 을 확인한 뒤에만 쓴다", "The six ONNX model files are used only after length and SHA-256 checks"),
       t("예외: MediaPipe 모델은 런타임 다운로드, 일부는 latest", "Exceptions: MediaPipe models download at run time, some as latest"),
     ],
     diagram: {
@@ -588,7 +588,7 @@ try {
       },
       {
         feature: t("기기 안 AI · 배경 제거·채색·업스케일", "On-device AI · background removal, colorization, upscaling"),
-        role: t("ONNX 모델 6개와 WASM 을 저장소 안에 두고 same-origin 으로 서빙하며, 모델은 길이와 SHA-256 을 확인한 뒤 실행합니다.", "Keeps six ONNX models and the WASM in the repository, serves them same-origin and runs a model only after checking its length and SHA-256."),
+        role: t("ONNX 모델 파일 6개와 WASM 을 저장소 안에 두고 same-origin 으로 서빙하며, 모델은 길이와 SHA-256 을 확인한 뒤 실행합니다.", "Keeps six ONNX model files and the WASM in the repository, serves them same-origin and runs a model only after checking its length and SHA-256."),
         paths: ["apps/web/src/domains/creator/studio-onnx-runtime-assets.ts", "apps/web/src/domains/creator/studio-onnx-inference-provider.ts", "apps/web/src/domains/creator/assets/u2netp.LICENSE.md"],
         route: "/studio",
       },
@@ -686,8 +686,8 @@ export async function loadVerifiedModel(url: string, expected: { bytes: number; 
         {
           question: t("모델이 바뀌면 알 수 있나요?", "Would we notice if a model changed?"),
           answer: t(
-            "ONNX 모델 6개는 저장소 안에 있고 길이나 SHA-256 이 등록 값과 다르면 세션을 만들지 않습니다. 반면 MediaPipe 모델은 외부 스토리지에서 받고, 배경 제거 모델은 latest 라 바뀌어도 알 수 없습니다.",
-            "The six ONNX models are in the repository and no session is created if length or SHA-256 differ from the registered values. MediaPipe models, however, come from external storage, and the background-removal model is latest, so a change would go unnoticed.",
+            "ONNX 모델 파일 6개는 저장소 안에 있고 길이나 SHA-256 이 등록 값과 다르면 세션을 만들지 않습니다. 반면 MediaPipe 모델은 외부 스토리지에서 받고, 배경 제거 모델은 latest 라 바뀌어도 알 수 없습니다.",
+            "The six ONNX model files are in the repository and no session is created if length or SHA-256 differ from the registered values. MediaPipe models, however, come from external storage, and the background-removal model is latest, so a change would go unnoticed.",
           ),
         },
         {
@@ -707,7 +707,7 @@ export async function loadVerifiedModel(url: string, expected: { bytes: number; 
     facts: [
       { value: "50", label: t("pnpm overrides 수", "pnpm overrides"), source: "pnpm-workspace.yaml" },
       { value: "6", label: t("설치 때 빌드 스크립트를 허용한 패키지 수", "Packages allowed to run build scripts at install"), source: "pnpm-workspace.yaml" },
-      { value: "119,438,571 B", label: t("저장소 안 ONNX 모델 6개의 합계 크기", "Total size of the six ONNX models in the repo"), source: "apps/web/src/domains/creator/assets/u2netp.LICENSE.md" },
+      { value: "119,438,571 B", label: t("저장소 안 ONNX 모델 파일 6개의 합계 크기", "Total size of the six ONNX model files in the repo"), source: "apps/web/src/domains/creator/assets/u2netp.LICENSE.md" },
       { value: "25 / 471", label: t("SHA 로 고정한 GitHub Actions 사용 수 / 전체", "GitHub Actions uses pinned to a SHA / total"), source: ".github/workflows/architecture-boundaries.yml" },
     ],
     reviewedAt: "2026-10-07",
