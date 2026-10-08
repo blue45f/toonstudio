@@ -41,6 +41,22 @@ describe("mypaint-settings-map: 프로그램 → .myb 설정", () => {
     expect(rgbToHsv(0.5, 0.5, 0.5)).toEqual([0, 0, 0.5]);
   });
 
+  it("선형 색 공간(Hokusai)은 sRGB 색을 선형으로 바꿔 HSV로 넣고, 기본(sRGB)과 순수 원색·검정·흰색은 같다", () => {
+    const program = presetById("pencil-hb");
+    const srgb = mapProgramToMypaint(program, { color: [0, 0.7, 0, 1] });
+    const linear = mapProgramToMypaint(program, { color: [0, 0.7, 0, 1], colorSpace: "linear" });
+    expect(srgb.document.settings["color_v"]?.base_value).toBeCloseTo(0.7, 6);
+    // sRGB 0.7 → 선형 0.448
+    expect(linear.document.settings["color_v"]?.base_value).toBeCloseTo(0.448, 3);
+    expect(linear.receipt.mapped.join("\n")).toContain("선형 변환");
+    expect(srgb.receipt.mapped.join("\n")).not.toContain("선형 변환");
+    for (const c of [[0, 0, 0, 1], [1, 1, 1, 1], [1, 0, 0, 1]] as const) {
+      expect(mapProgramToMypaint(program, { color: c, colorSpace: "linear" }).document.settings).toEqual(
+        mapProgramToMypaint(program, { color: c }).document.settings,
+      );
+    }
+  });
+
   it("압력 크기 동역학은 radius_logarithmic 입력 곡선(배율의 로그)이 되고 압력 1에서 0이다", () => {
     const program = structuredClone(presetById("marker-alcohol"));
     program.strokeDynamics.size = [{ input: "pressure", curve: [0.25, 1], min: 0, max: 1 }];

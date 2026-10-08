@@ -5,7 +5,7 @@ import { detectSoftwareRenderer } from "../engine/gpu/device";
 import { paperFor } from "../engine/raster/reference-renderer";
 import { WEBGL2_REQUIRED_EXTENSION, Webgl2InstancedRuntime } from "../engine/webgl2/instanced-dab";
 
-import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport, unavailableReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions, supportedReport, unavailableReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -17,6 +17,7 @@ import type {
   LaneInit,
   LaneStats,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "./lane";
 import type { GpuAdapterInfo, LabImage, RawSample } from "../engine/core/types";
@@ -113,10 +114,11 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
         presentToCanvas: Boolean(config.presentCanvas),
       });
     },
-    beginStroke(program: BrushProgram, seed: number): void {
+    beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
+      const emitterOptions = strokeEmitterOptions(options);
       const rt = requireRuntime();
       rt.beginStroke(program);
-      pipeline = new StrokePipeline(program, seed, undefined, program.paper.enabled ? paperFor(program.paper) : null);
+      pipeline = new StrokePipeline(program, seed, undefined, program.paper.enabled ? paperFor(program.paper) : null, emitterOptions);
     },
     addSamples(samples: readonly RawSample[]): DabBatchReceipt {
       const rt = requireRuntime();

@@ -43,9 +43,9 @@ function recordingDescriptor(h: Pick<Harness, "lanes" | "programs" | "added" | "
     create: () => {
       const lane = createMockLane(opts);
       const begin = lane.beginStroke.bind(lane);
-      lane.beginStroke = (program, seed) => {
+      lane.beginStroke = (program, seed, options) => {
         h.programs.push(program);
-        begin(program, seed);
+        begin(program, seed, options);
       };
       const add = lane.addSamples.bind(lane);
       lane.addSamples = (samples) => {
@@ -396,11 +396,12 @@ describe("DrawView", { timeout: 30_000 }, () => {
     expect(pen.every((p) => Math.abs(p - 0.5) < 1e-6)).toBe(true);
   });
 
-  it("색: 16진 입력·H/S/V·최근 색 8칸. 잘못된 입력은 오류를 표시하고 색을 바꾸지 않으며, 레인이 색을 받지 못한다는 사실을 알린다", async () => {
+  it("색: 16진 입력·H/S/V·최근 색 8칸. 잘못된 입력은 오류를 표시하고 색을 바꾸지 않으며, '색은 검정' 안내는 더 이상 없다", async () => {
     const h = makeHarness(defaultDescriptors);
     renderDraw(h, { autoProbe: false });
     const stage = await ready(h);
-    expect(screen.getByTestId("lab-draw-color-note").textContent).toContain("획 색 인자가 없어");
+    expect(screen.queryByTestId("lab-draw-color-note")).toBeNull();
+    expect(screen.queryByText(/기본색\(검정\)으로 그린다/u)).toBeNull();
     const hex = screen.getByLabelText("16진 색") as HTMLInputElement;
     fireEvent.change(hex, { target: { value: "#336699" } });
     expect(h.drawStore.get().color).toBe("#336699");
@@ -429,6 +430,42 @@ describe("DrawView", { timeout: 30_000 }, () => {
     fireEvent.click(screen.getByTestId("lab-draw-recent-1"));
     expect(h.drawStore.get().color).toBe("#808080");
     expect(screen.getByRole("group", { name: "최근 색 8칸" })).toBeTruthy();
+  });
+
+  it("색이 레인에 전달된다: 처음 색은 검정, 색을 바꾸면 다음 획부터 beginStroke options.color로 넘어가고 문서·레인은 유지된다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    renderDraw(h, { autoProbe: false });
+    const stage = await ready(h);
+    await drawStroke(h, stage, 1);
+    const hex = screen.getByLabelText("16진 색") as HTMLInputElement;
+    fireEvent.change(hex, { target: { value: "#ff0000" } });
+    await drawStroke(h, stage, 200);
+    fireEvent.change(hex, { target: { value: "#0000ff" } });
+    await drawStroke(h, stage, 400);
+    const lanes = sessionLanes(h);
+    expect(lanes).toHaveLength(1);
+    // 첫 획은 처음 색(#000000 = 검정), 이후 획은 바뀐 색이다. 색 변경은 레인을 다시 만들지 않는다.
+    expect(lanes[0]?.strokeOptions).toEqual([
+      { color: [0, 0, 0, 1] },
+      { color: [1, 0, 0, 1] },
+      { color: [0, 0, 1, 1] },
+    ]);
+    expect(lanes[0]?.calls).not.toContain("dispose");
+    expect(h.drawStore.get().strokes).toBe(3);
+  });
+
+  it("고른 색은 새 세션(지우기·레인 변경)에도 유지돼 첫 획부터 그 색으로 시작한다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    h.drawStore.set({ color: "#336699" });
+    renderDraw(h, { autoProbe: false });
+    const stage = await ready(h);
+    await drawStroke(h, stage, 1);
+    expect(sessionLanes(h)[0]?.strokeOptions).toEqual([{ color: [0x33 / 255, 0x66 / 255, 0x99 / 255, 1] }]);
+    fireEvent.click(screen.getByTestId("lab-draw-clear"));
+    await waitFor(() => expect(sessionLanes(h)).toHaveLength(2));
+    const stage2 = await ready(h);
+    await drawStroke(h, stage2, 500);
+    expect(sessionLanes(h)[1]?.strokeOptions).toEqual([{ color: [0x33 / 255, 0x66 / 255, 0x99 / 255, 1] }]);
   });
 
   it("입력 표면: touch-action none, 우클릭 메뉴 차단, 캔버스 밖으로 나가도 획 유지", async () => {

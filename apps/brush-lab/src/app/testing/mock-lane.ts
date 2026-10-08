@@ -1,5 +1,5 @@
 import { InvalidStateError, LaneUnavailableError } from "../../engine/core/errors";
-import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport, unavailableReport } from "../../lanes/lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, resolveStrokeColor, supportedReport, unavailableReport } from "../../lanes/lane";
 
 import type { LaneReasonCode } from "../../engine/core/errors";
 import type { LabImage, RawSample } from "../../engine/core/types";
@@ -16,6 +16,7 @@ import type {
   LaneStatus,
   LaneStats,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "../../lanes/lane";
 
@@ -49,11 +50,16 @@ export interface MockLaneOptions {
 
 export interface MockLane extends BrushEngineLane {
   calls: string[];
+  /** beginStroke마다 받은 StrokeOptions(생략하면 undefined). 색이 레인까지 전달되는지 테스트가 확인한다. */
+  strokeOptions: Array<StrokeOptions | undefined>;
 }
 
 export function createMockLane(opts: MockLaneOptions = {}): MockLane {
   const id = opts.id ?? "cpu-reference";
-  const color = opts.color ?? [0, 0, 0];
+  const defaultColor = opts.color ?? [0, 0, 0];
+  /** 진행 중인 획의 색(sRGB 0..255)과 알파(0..1). beginStroke의 options.color가 우선한다. */
+  let color: [number, number, number] = [...defaultColor];
+  let colorAlpha = 1;
   let init: LaneInit | null = null;
   let image: Uint8ClampedArray | null = null;
   /** beginStroke 시점 이미지(abortStroke가 되돌린다). 획 밖이면 null. */
@@ -66,6 +72,7 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
   let submits = 0;
   const stats: LaneStats = emptyLaneStats();
   const calls: string[] = [];
+  const strokeOptions: Array<StrokeOptions | undefined> = [];
 
   const paint = (s: RawSample): void => {
     if (!init || !image || !program) return;
@@ -74,7 +81,7 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
     const y0 = Math.max(0, Math.floor(s.y - r));
     const x1 = Math.min(init.width - 1, Math.ceil(s.x + r));
     const y1 = Math.min(init.height - 1, Math.ceil(s.y + r));
-    const alpha = Math.round(255 * program.deposition.flow);
+    const alpha = Math.round(255 * program.deposition.flow * colorAlpha);
     for (let y = y0; y <= y1; y += 1) {
       for (let x = x0; x <= x1; x += 1) {
         const o = (y * init.width + x) * 4;
@@ -94,6 +101,7 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
     status: opts.status ?? "implemented",
     engineVersion: "mock-0.0.1",
     calls,
+    strokeOptions,
     async probe(): Promise<LaneCapabilityReport> {
       calls.push("probe");
       return opts.probe ?? supportedReport(id);
@@ -106,11 +114,15 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
       init = config;
       image = new Uint8ClampedArray(config.width * config.height * 4);
     },
-    beginStroke(p: BrushProgram, _seed: number): void {
+    beginStroke(p: BrushProgram, _seed: number, options?: StrokeOptions): void {
       calls.push("beginStroke");
+      strokeOptions.push(options);
       if (!init) throw new InvalidStateError("init 전에 beginStroke를 호출했다");
       // 실제 레인(cpu-reference·wasm-cpu·canvas2d·webgpu-compute)과 같은 계약: 이전 획을 endStroke하지 않고는 새 획을 시작할 수 없다.
       if (inStroke) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
+      const strokeColor = resolveStrokeColor(options);
+      color = strokeColor ? [Math.round(strokeColor[0] * 255), Math.round(strokeColor[1] * 255), Math.round(strokeColor[2] * 255)] : [...defaultColor];
+      colorAlpha = strokeColor ? strokeColor[3] : 1;
       program = p;
       inStroke = true;
       strokeStartImage = image ? image.slice() : null;

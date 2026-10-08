@@ -1,0 +1,150 @@
+{
+ "planck": {
+  "jsBytes": 214150,
+  "jsGzip": 47934,
+  "jsBrotli": 39621,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 214150,
+    "gzip": 47934,
+    "brotli": 39621
+   }
+  ]
+ },
+ "matter-js": {
+  "jsBytes": 86361,
+  "jsGzip": 27731,
+  "jsBrotli": 24227,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 86361,
+    "gzip": 27731,
+    "brotli": 24227
+   }
+  ]
+ },
+ "p2-es": {
+  "jsBytes": 89627,
+  "jsGzip": 27119,
+  "jsBrotli": 23340,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 89627,
+    "gzip": 27119,
+    "brotli": 23340
+   }
+  ]
+ },
+ "rapier2d-compat": {
+  "jsBytes": 3407240,
+  "jsGzip": 1282042,
+  "jsBrotli": 944811,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 3407240,
+    "gzip": 1282042,
+    "brotli": 944811
+   }
+  ]
+ },
+ "rapier2d-deterministic-compat": {
+  "jsBytes": 3449712,
+  "jsGzip": 1294207,
+  "jsBrotli": 955488,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 3449712,
+    "gzip": 1294207,
+    "brotli": 955488
+   }
+  ]
+ },
+ "box2d-wasm (es)": {
+  "jsBytes": 634897,
+  "jsGzip": 77348,
+  "jsBrotli": 57056,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 371,
+    "gzip": 296,
+    "brotli": 253
+   },
+   {
+    "file": "dist/Box2D.simd-WBNXQJ47.js",
+    "bytes": 317087,
+    "gzip": 38402,
+    "brotli": 28304
+   },
+   {
+    "file": "dist/Box2D-TLBS5EOP.js",
+    "bytes": 317077,
+    "gzip": 38397,
+    "brotli": 28293
+   },
+   {
+    "file": "dist/chunk-476ZUILE.js",
+    "bytes": 362,
+    "gzip": 253,
+    "brotli": 206
+   }
+  ]
+ },
+ "box2d3-wasm": {
+  "jsBytes": 68892,
+  "jsGzip": 26491,
+  "jsBrotli": 23871,
+  "wasmBytes": 0,
+  "wasmGzip": 0,
+  "wasmBrotli": 0,
+  "files": [
+   {
+    "file": "dist/entry.js",
+    "bytes": 438,
+    "gzip": 344,
+    "brotli": 296
+   },
+   {
+    "file": "dist/Box2D.deluxe-LLYOP73V.js",
+    "bytes": 38336,
+    "gzip": 14594,
+    "brotli": 13155
+   },
+   {
+    "file": "dist/Box2D.compat-4HBFNGOL.js",
+    "bytes": 30012,
+    "gzip": 11433,
+    "brotli": 10329
+   },
+   {
+    "file": "dist/chunk-WOT6VMZA.js",
+    "bytes": 106,
+    "gzip": 120,
+    "brotli": 91
+   }
+  ]
+ }
+}

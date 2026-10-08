@@ -1,0 +1,146 @@
+[
+ {
+  "tag": "설정만(재방출 없음)",
+  "minCutoff": 30,
+  "beta": 0.12,
+  "jitterTremor": 0.738,
+  "zz128": 1.88,
+  "zz512": 2.52,
+  "zzPath512": 1.61
+ },
+ {
+  "tag": "설정만(재방출 없음)",
+  "minCutoff": 19.48,
+  "beta": 0.0889,
+  "jitterTremor": 0.646,
+  "zz128": 2.03,
+  "zz512": 2.98,
+  "zzPath512": 2.09
+ },
+ {
+  "tag": "설정만(재방출 없음)",
+  "minCutoff": 10.19,
+  "beta": 0.0567,
+  "jitterTremor": 0.512,
+  "zz128": 2.25,
+  "zz512": 3.87,
+  "zzPath512": 3.01
+ },
+ {
+  "tag": "설정만(재방출 없음)",
+  "minCutoff": 5.33,
+  "beta": 0.0362,
+  "jitterTremor": 0.397,
+  "zz128": 2.39,
+  "zz512": 4.68,
+  "zzPath512": 4.2
+ },
+ {
+  "tag": "설정만(재방출 없음)",
+  "minCutoff": 3.46,
+  "beta": 0.0268,
+  "jitterTremor": 0.333,
+  "zz128": 2.45,
+  "zz512": 5.32,
+  "zzPath512": 5
+ },
+ {
+  "tag": "설정만(재방출 없음)",
+  "minCutoff": 2.25,
+  "beta": 0.0199,
+  "jitterTremor": 0.277,
+  "zz128": 2.5,
+  "zz512": 5.84,
+  "zzPath512": 5.58
+ },
+ {
+  "tag": "설정만(재방출 없음)",
+  "minCutoff": 1.18,
+  "beta": 0.0127,
+  "jitterTremor": 0.208,
+  "zz128": 2.58,
+  "zz512": 6.41,
+  "zzPath512": 5.92
+ },
+ {
+  "tag": "설정만(재방출 없음)",
+  "minCutoff": 0.4,
+  "beta": 0.006,
+  "jitterTremor": 0.112,
+  "zz128": 2.49,
+  "zz512": 6.87,
+  "zzPath512": 5.93
+ },
+ {
+  "tag": "재방출 포함",
+  "minCutoff": 30,
+  "beta": 0.12,
+  "jitterTremor": 0.738,
+  "zz128": 1.24,
+  "zz512": 1.04,
+  "zzPath512": 0
+ },
+ {
+  "tag": "재방출 포함",
+  "minCutoff": 19.48,
+  "beta": 0.0889,
+  "jitterTremor": 0.646,
+  "zz128": 1.22,
+  "zz512": 1.03,
+  "zzPath512": 0
+ },
+ {
+  "tag": "재방출 포함",
+  "minCutoff": 10.19,
+  "beta": 0.0567,
+  "jitterTremor": 0.512,
+  "zz128": 1.23,
+  "zz512": 0.94,
+  "zzPath512": 0
+ },
+ {
+  "tag": "재방출 포함",
+  "minCutoff": 5.33,
+  "beta": 0.0362,
+  "jitterTremor": 0.397,
+  "zz128": 1.24,
+  "zz512": 0.92,
+  "zzPath512": 0
+ },
+ {
+  "tag": "재방출 포함",
+  "minCutoff": 3.46,
+  "beta": 0.0268,
+  "jitterTremor": 0.333,
+  "zz128": 1.25,
+  "zz512": 0.93,
+  "zzPath512": 0
+ },
+ {
+  "tag": "재방출 포함",
+  "minCutoff": 2.25,
+  "beta": 0.0199,
+  "jitterTremor": 0.277,
+  "zz128": 1.19,
+  "zz512": 0.95,
+  "zzPath512": 0
+ },
+ {
+  "tag": "재방출 포함",
+  "minCutoff": 1.18,
+  "beta": 0.0127,
+  "jitterTremor": 0.208,
+  "zz128": 1.24,
+  "zz512": 0.96,
+  "zzPath512": 0
+ },
+ {
+  "tag": "재방출 포함",
+  "minCutoff": 0.4,
+  "beta": 0.006,
+  "jitterTremor": 0.112,
+  "zz128": 1.23,
+  "zz512": 0.99,
+  "zzPath512": 0
+ }
+]

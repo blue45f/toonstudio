@@ -1,0 +1,65 @@
+[
+  {
+    "name": "A 기본(1€+corner-preserve+예측, pencil-hb)",
+    "dev": 2.546,
+    "over": 0,
+    "wMean": 3.88,
+    "wMin": 2.13,
+    "wMax": 8.7,
+    "devTrueHalf": null
+  },
+  {
+    "name": "B 입력 통과(1€ 끔)",
+    "dev": 1.251,
+    "over": 0,
+    "wMean": 3.66,
+    "wMin": 2,
+    "wMax": 8.39,
+    "devTrueHalf": null
+  },
+  {
+    "name": "C 1€ 유지 + corner-preserve 끔",
+    "dev": 4.651,
+    "over": 0,
+    "wMean": 3.63,
+    "wMin": 2.12,
+    "wMax": 8.13,
+    "devTrueHalf": null
+  },
+  {
+    "name": "D 통과 + 정점을 정확히 지나는 표본",
+    "dev": 1.237,
+    "over": 0,
+    "wMean": 3.95,
+    "wMin": 2.09,
+    "wMax": 8.08,
+    "devTrueHalf": null
+  },
+  {
+    "name": "E D + dab 간격 0.02(촘촘)",
+    "dev": 1.171,
+    "over": 0,
+    "wMean": 4.05,
+    "wMin": 2.16,
+    "wMax": 8.15,
+    "devTrueHalf": null
+  },
+  {
+    "name": "F E + 종이 그레인 끔",
+    "dev": 1.093,
+    "over": 0,
+    "wMean": 4.21,
+    "wMin": 2.18,
+    "wMax": 8.24,
+    "devTrueHalf": null
+  },
+  {
+    "name": "G F + 테이퍼 끔",
+    "dev": 1.089,
+    "over": 0,
+    "wMean": 4.2,
+    "wMin": 2.64,
+    "wMax": 8.24,
+    "devTrueHalf": null
+  }
+]

@@ -1,0 +1,204 @@
+{
+  "zigzag": [
+    {
+      "size": 128,
+      "trueW": 1.5,
+      "measuredWmean": 1.83,
+      "devRepoMetric": 0.559,
+      "devWithTrueHalf": 0.394,
+      "wMax": 3.89
+    },
+    {
+      "size": 128,
+      "trueW": 2.5,
+      "measuredWmean": 2.93,
+      "devRepoMetric": 0.282,
+      "devWithTrueHalf": 0.067,
+      "wMax": 6.03
+    },
+    {
+      "size": 128,
+      "trueW": 3.5,
+      "measuredWmean": 4.27,
+      "devRepoMetric": 0.568,
+      "devWithTrueHalf": 0.182,
+      "wMax": 8.2
+    },
+    {
+      "size": 128,
+      "trueW": 4.2,
+      "measuredWmean": 5.35,
+      "devRepoMetric": 0.59,
+      "devWithTrueHalf": 0.017,
+      "wMax": 10.07
+    },
+    {
+      "size": 128,
+      "trueW": 6,
+      "measuredWmean": 7.23,
+      "devRepoMetric": 0.635,
+      "devWithTrueHalf": 0.019,
+      "wMax": 11.93
+    },
+    {
+      "size": 128,
+      "trueW": 8,
+      "measuredWmean": 10.39,
+      "devRepoMetric": 1.194,
+      "devWithTrueHalf": 0,
+      "wMax": 17.53
+    },
+    {
+      "size": 256,
+      "trueW": 1.5,
+      "measuredWmean": 1.72,
+      "devRepoMetric": 0.38,
+      "devWithTrueHalf": 0.268,
+      "wMax": 3.71
+    },
+    {
+      "size": 256,
+      "trueW": 2.5,
+      "measuredWmean": 2.65,
+      "devRepoMetric": 0.304,
+      "devWithTrueHalf": 0.23,
+      "wMax": 5.03
+    },
+    {
+      "size": 256,
+      "trueW": 3.5,
+      "measuredWmean": 3.94,
+      "devRepoMetric": 0.249,
+      "devWithTrueHalf": 0.03,
+      "wMax": 8.14
+    },
+    {
+      "size": 256,
+      "trueW": 4.2,
+      "measuredWmean": 4.69,
+      "devRepoMetric": 0.383,
+      "devWithTrueHalf": 0.137,
+      "wMax": 9.13
+    },
+    {
+      "size": 256,
+      "trueW": 6,
+      "measuredWmean": 6.94,
+      "devRepoMetric": 0.591,
+      "devWithTrueHalf": 0.12,
+      "wMax": 13.29
+    },
+    {
+      "size": 256,
+      "trueW": 8,
+      "measuredWmean": 9.57,
+      "devRepoMetric": 0.893,
+      "devWithTrueHalf": 0.108,
+      "wMax": 17.6
+    },
+    {
+      "size": 512,
+      "trueW": 1.5,
+      "measuredWmean": 1.6,
+      "devRepoMetric": 0.369,
+      "devWithTrueHalf": 0.318,
+      "wMax": 1.89
+    },
+    {
+      "size": 512,
+      "trueW": 2.5,
+      "measuredWmean": 2.49,
+      "devRepoMetric": 0.198,
+      "devWithTrueHalf": 0.202,
+      "wMax": 2.67
+    },
+    {
+      "size": 512,
+      "trueW": 3.5,
+      "measuredWmean": 3.66,
+      "devRepoMetric": 0.197,
+      "devWithTrueHalf": 0.119,
+      "wMax": 8.25
+    },
+    {
+      "size": 512,
+      "trueW": 4.2,
+      "measuredWmean": 4.49,
+      "devRepoMetric": 0.256,
+      "devWithTrueHalf": 0.109,
+      "wMax": 8.86
+    },
+    {
+      "size": 512,
+      "trueW": 6,
+      "measuredWmean": 6.3,
+      "devRepoMetric": 0.315,
+      "devWithTrueHalf": 0.164,
+      "wMax": 10.77
+    },
+    {
+      "size": 512,
+      "trueW": 8,
+      "measuredWmean": 8.91,
+      "devRepoMetric": 0.614,
+      "devWithTrueHalf": 0.157,
+      "wMax": 17.37
+    }
+  ],
+  "cornerSquare": [
+    {
+      "size": 128,
+      "fixture": "corner-square",
+      "trueW": 2.5,
+      "measuredWmean": 2.49,
+      "devRepoMetric": 0.084,
+      "devWithTrueHalf": 0.087,
+      "over": 0
+    },
+    {
+      "size": 128,
+      "fixture": "corner-square",
+      "trueW": 4.2,
+      "measuredWmean": 6.07,
+      "devRepoMetric": 1.022,
+      "devWithTrueHalf": 0.089,
+      "over": 0
+    },
+    {
+      "size": 128,
+      "fixture": "corner-square",
+      "trueW": 6,
+      "measuredWmean": 7.81,
+      "devRepoMetric": 1.008,
+      "devWithTrueHalf": 0.102,
+      "over": 0
+    },
+    {
+      "size": 512,
+      "fixture": "corner-square",
+      "trueW": 2.5,
+      "measuredWmean": 2.49,
+      "devRepoMetric": 0.08,
+      "devWithTrueHalf": 0.087,
+      "over": 0
+    },
+    {
+      "size": 512,
+      "fixture": "corner-square",
+      "trueW": 4.2,
+      "measuredWmean": 4.2,
+      "devRepoMetric": 0.087,
+      "devWithTrueHalf": 0.089,
+      "over": 0
+    },
+    {
+      "size": 512,
+      "fixture": "corner-square",
+      "trueW": 6,
+      "measuredWmean": 6,
+      "devRepoMetric": 0.101,
+      "devWithTrueHalf": 0.102,
+      "over": 0.011308579054447598
+    }
+  ]
+}

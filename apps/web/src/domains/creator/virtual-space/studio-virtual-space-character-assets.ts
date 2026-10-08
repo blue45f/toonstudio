@@ -76,8 +76,26 @@ export const studioCharacterWalkAnimationKey = (skin: StudioCharacterSkin, facin
   `studio-player-${skin.key}-walk-animation-${facing}`;
 export const studioCharacterPoseTextureKey = (skin: StudioCharacterSkin, state: "sit" | "wave" | "lie") =>
   skin.sharedAtlas ? `studio-player-${skin.key}-atlas` : `studio-player-${skin.key}-pose-sheet-${state}`;
-export const studioCharacterFaceTextureKey = (skin: StudioCharacterSkin, name: StudioFaceSetName) =>
-  skin.sharedAtlas ? `studio-player-${skin.key}-atlas` : `studio-player-${skin.key}-${name}-sheet`;
+/**
+ * 표정 시트는 스킨마다 같은 1254px 원본(actor-emotions.png)에서 행만 달리 고른다. 키를 스킨·감정마다 따로 두면 같은 이미지를
+ * 스킨 수 × 감정 수만큼 내려받아 GPU에도 그만큼 올리게 된다(기본 스킨 하나가 6MB 시트 3장 = 약 19MB). 원본 이미지와 격자가 같은
+ * 시트는 텍스처 하나를 나눠 쓰고, 표시할 칸은 감정별 프레임 번호(directionFrames)가 고른다.
+ */
+export const studioCharacterFaceTextureKey = (skin: StudioCharacterSkin, name: StudioFaceSetName) => {
+  if (skin.sharedAtlas) return `studio-player-${skin.key}-atlas`;
+  const sheet = skin.faces?.[name];
+  if (!sheet) return `studio-player-${skin.key}-${name}-sheet`;
+  return `studio-face-sheet:${sheet.textureUrl}@${faceSheetGridId(sheet)}${skin.pixelArt ? ":nearest" : ""}`;
+};
+
+/** 같은 원본이라도 격자 선언이 다르면 같은 프레임 번호가 다른 칸을 가리키므로, 공유 키에는 원본 크기와 격자까지 넣는다. */
+function faceSheetGridId({ atlas, frameWidth, frameHeight }: StudioCharacterPoseSheet): string {
+  if (!atlas) return `${frameWidth}x${frameHeight}`;
+  const size = `${atlas.width}x${atlas.height}`;
+  if (atlas.slicing === "explicit-frames") return `${size}/${atlas.columns}x${atlas.rows}/${atlas.frames.map((cell) => `${cell.x},${cell.y},${cell.width},${cell.height}`).join(";")}`;
+  if (atlas.slicing === "rounded-grid") return `${size}/${atlas.columns}x${atlas.rows}`;
+  return `${size}/${frameWidth}x${frameHeight}`;
+}
 export const studioCharacterActionTextureKey = (skin: StudioCharacterSkin, facing: StudioVirtualSpaceFacing, state: StudioCharacterMotionState) =>
   skin.sharedAtlas ? `studio-player-${skin.key}-atlas` : `studio-player-${skin.key}-${state}-sheet${motionSheetSuffix(skin, facing)}`;
 

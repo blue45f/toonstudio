@@ -5,7 +5,7 @@ import { encodeLabImage, srgbToLinear } from "../engine/core/color";
 import { InvalidStateError } from "../engine/core/errors";
 import { SUMI_ENGINE_VERSION } from "../engine/core/version";
 
-import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, supportedReport } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, resolveStrokeColor, supportedReport } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -18,6 +18,7 @@ import type {
   LaneStats,
   LaneStatus,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "./lane";
 import type { Clock, LabImage, RawSample, Rgba } from "../engine/core/types";
@@ -202,7 +203,10 @@ export class PlatformBaselineLane implements BrushEngineLane {
 
   private readonly opts: PlatformBaselineOptions;
   private readonly calibration: DeviceCalibrationIR;
+  /** 레인 기본 획 색(선형, straight 알파). `beginStroke`에 색이 없을 때 쓴다. */
   private readonly colorLinear: [number, number, number, number];
+  /** 진행 중인 획의 색(선형, straight 알파). */
+  private strokeColorLinear: [number, number, number, number];
   private width = 0;
   private height = 0;
   private document: Float32Array | null = null;
@@ -222,6 +226,7 @@ export class PlatformBaselineLane implements BrushEngineLane {
     this.calibration = opts.calibration ?? defaultCalibration();
     const c = opts.color ?? [0, 0, 0, 1];
     this.colorLinear = [srgbToLinear(c[0]), srgbToLinear(c[1]), srgbToLinear(c[2]), c[3]];
+    this.strokeColorLinear = this.colorLinear;
   }
 
   async probe(_env: LaneEnvironment): Promise<LaneCapabilityReport> {
@@ -241,11 +246,14 @@ export class PlatformBaselineLane implements BrushEngineLane {
     this.programIr = null;
   }
 
-  beginStroke(program: BrushProgram, seed: number): void {
+  /** 획 색은 `options.color`가 우선하고, 없으면 레인 생성 시 기본색(기본 검정)을 쓴다. */
+  beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
+    const color = resolveStrokeColor(options);
     this.requireDocument("beginStroke");
     if (this.program) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
     this.program = program;
     this.programIr = platformProgramOf(program, this.opts);
+    this.strokeColorLinear = color ? [srgbToLinear(color[0]), srgbToLinear(color[1]), srgbToLinear(color[2]), color[3]] : this.colorLinear;
     this.seed = seed;
     this.samples = [];
     this.frameIndex = 0;
@@ -297,7 +305,7 @@ export class PlatformBaselineLane implements BrushEngineLane {
       const outline = modeled.length > 0 ? strokeOutlinePath(ir, stroke) : { verbs: [] };
       this.outline = outline;
       const coverage = rasterizeEvenOdd(outline, this.width, this.height);
-      const [lr, lg, lb, la] = this.colorLinear;
+      const [lr, lg, lb, la] = this.strokeColorLinear;
       const opacity = program.deposition.opacity * la;
       for (let i = 0; i < coverage.length; i += 1) {
         const a = (coverage[i] ?? 0) * opacity;

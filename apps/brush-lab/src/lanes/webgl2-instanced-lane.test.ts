@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { LaneUnavailableError } from "../engine/core/errors";
+import { InvalidStateError, LaneUnavailableError } from "../engine/core/errors";
 import { presetById } from "../engine/presets/catalog";
 import { splitFrames } from "../engine/raster/reference-renderer";
 import { lineStroke } from "../engine/testing/synthetic-strokes";
 import { createMockWebgl2, createMockWebgl2Canvas } from "../engine/webgl2/testing/mock-webgl2";
 
+import { expectDabBufferColor } from "./testing/stroke-color-contract";
 import { createWebgl2InstancedLane, WEBGL2_INSTANCED_LANE } from "./webgl2-instanced-lane";
 
 import type { LaneEnvironment } from "./lane";
@@ -81,5 +82,38 @@ describe("webgl2-instanced 레인", () => {
     const env = envWith(mock);
     await lane.init(env, { width: 16, height: 16, dpr: 1, tileSize: 16, seed: 1 });
     expect(() => lane.beginStroke(presetById("smudge-blend"), 1)).toThrow(LaneUnavailableError);
+  });
+
+  it("획 색: 색을 지정하면 첫 프레임 dab 인스턴스 버퍼가 그 색(선형 premultiplied)을 싣고, 없으면 검정이다", async () => {
+    const run = async (options?: { color: readonly [number, number, number, number] }): Promise<MockWebgl2> => {
+      const mock = createMockWebgl2();
+      const lane = createWebgl2InstancedLane();
+      const env = envWith(mock);
+      await lane.init(env, { width: 64, height: 64, dpr: 1, tileSize: 16, seed: 2 });
+      if (options) lane.beginStroke(presetById("ink-g-pen"), 2, options);
+      else lane.beginStroke(presetById("ink-g-pen"), 2);
+      const frames = splitFrames(lineStroke(4, 4, 60, 60, 0.6, { durationMs: 100 }));
+      const receipts = frames.map((f) => lane.addSamples(f));
+      expect(receipts.some((r) => r.dabCount > 0)).toBe(true);
+      await lane.endStroke();
+      lane.dispose();
+      return mock;
+    };
+    const colored = await run({ color: [0.9, 0.2, 0.1, 1] });
+    const uploads = colored.bufferSubData.filter((u) => u.floats !== null);
+    expect(uploads.length).toBeGreaterThan(0);
+    for (const upload of uploads) expectDabBufferColor(upload.floats ?? new Float32Array(), upload.bytes / 64, [0.9, 0.2, 0.1, 1]);
+    const plain = await run();
+    for (const upload of plain.bufferSubData.filter((u) => u.floats !== null)) {
+      expectDabBufferColor(upload.floats ?? new Float32Array(), upload.bytes / 64, [0, 0, 0, 1]);
+    }
+  });
+
+  it("잘못된 색은 GL 호출 전에 InvalidStateError로 거부한다", async () => {
+    const mock = createMockWebgl2();
+    const lane = createWebgl2InstancedLane();
+    await lane.init(envWith(mock), { width: 32, height: 32, dpr: 1, tileSize: 16, seed: 1 });
+    expect(() => lane.beginStroke(presetById("ink-g-pen"), 1, { color: [0, 0, 0, Number.NaN] })).toThrow(InvalidStateError);
+    lane.dispose();
   });
 });

@@ -1,0 +1,594 @@
+[
+ {
+  "cfg": "water",
+  "nTarget": 1000,
+  "n": 1024,
+  "createMs": 21,
+  "p50": 0.829,
+  "p95": 5.18,
+  "max": 11.14,
+  "heapMB": 1.3,
+  "bytesPerParticle": 1312,
+  "maxSpeed": 16.2,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 11.4,
+  "p50All": [
+   0.829,
+   0.9,
+   0.998
+  ],
+  "load1All": [
+   11.4,
+   11.4,
+   11.4
+  ]
+ },
+ {
+  "cfg": "water",
+  "nTarget": 5000,
+  "n": 5041,
+  "createMs": 76.9,
+  "p50": 4.668,
+  "p95": 7.723,
+  "max": 11.167,
+  "heapMB": 5.8,
+  "bytesPerParticle": 1208,
+  "maxSpeed": 36.3,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 11,
+  "p50All": [
+   4.668,
+   5.691,
+   5.896
+  ],
+  "load1All": [
+   11,
+   11,
+   11.4
+  ]
+ },
+ {
+  "cfg": "water",
+  "nTarget": 20000,
+  "n": 20164,
+  "createMs": 128.2,
+  "p50": 18.182,
+  "p95": 23.771,
+  "max": 24.734,
+  "heapMB": 22.5,
+  "bytesPerParticle": 1169,
+  "maxSpeed": 75.2,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.3,
+  "p50All": [
+   18.182,
+   18.714,
+   30.14
+  ],
+  "load1All": [
+   10.3,
+   11,
+   11
+  ]
+ },
+ {
+  "cfg": "viscous",
+  "nTarget": 1000,
+  "n": 1024,
+  "createMs": 21.9,
+  "p50": 0.885,
+  "p95": 9.188,
+  "max": 17.316,
+  "heapMB": 1.3,
+  "bytesPerParticle": 1288,
+  "maxSpeed": 16,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.3,
+  "p50All": [
+   0.885,
+   0.912,
+   1.35
+  ],
+  "load1All": [
+   10.3,
+   10.3,
+   10.3
+  ]
+ },
+ {
+  "cfg": "viscous",
+  "nTarget": 5000,
+  "n": 5041,
+  "createMs": 141.2,
+  "p50": 5.224,
+  "p95": 11.13,
+  "max": 12.135,
+  "heapMB": 5.8,
+  "bytesPerParticle": 1199,
+  "maxSpeed": 32.7,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.2,
+  "p50All": [
+   5.224,
+   5.954,
+   7.062
+  ],
+  "load1All": [
+   10.2,
+   10.3,
+   10.2
+  ]
+ },
+ {
+  "cfg": "viscous",
+  "nTarget": 20000,
+  "n": 20164,
+  "createMs": 130.8,
+  "p50": 20.797,
+  "p95": 35.308,
+  "max": 37.164,
+  "heapMB": 22.4,
+  "bytesPerParticle": 1166,
+  "maxSpeed": 57.2,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 9.7,
+  "p50All": [
+   20.797,
+   22.851,
+   30.725
+  ],
+  "load1All": [
+   9.7,
+   10.2,
+   9.7
+  ]
+ },
+ {
+  "cfg": "elastic(group)",
+  "nTarget": 1000,
+  "n": 1024,
+  "createMs": 175.2,
+  "p50": 1.493,
+  "p95": 1.961,
+  "max": 2.396,
+  "heapMB": 2.1,
+  "bytesPerParticle": 2119,
+  "maxSpeed": 6,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 9.4,
+  "p50All": [
+   1.493,
+   2.12,
+   2.194
+  ],
+  "load1All": [
+   9.4,
+   9.4,
+   9.4
+  ]
+ },
+ {
+  "cfg": "elastic(group)",
+  "nTarget": 5000,
+  "n": 5041,
+  "createMs": 2035.8,
+  "p50": 7.813,
+  "p95": 12.13,
+  "max": 15.335,
+  "heapMB": 12.2,
+  "bytesPerParticle": 2528,
+  "maxSpeed": 9,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 9.4,
+  "p50All": [
+   7.813
+  ],
+  "load1All": [
+   9.4
+  ]
+ },
+ {
+  "cfg": "elastic(group)",
+  "nTarget": 20000,
+  "n": 20164,
+  "createMs": 45134.6,
+  "p50": 30.203,
+  "p95": 56.172,
+  "max": 79.101,
+  "heapMB": 46.8,
+  "bytesPerParticle": 2434,
+  "maxSpeed": 12.6,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 8.9,
+  "p50All": [
+   30.203
+  ],
+  "load1All": [
+   8.9
+  ]
+ },
+ {
+  "cfg": "powder",
+  "nTarget": 1000,
+  "n": 1024,
+  "createMs": 16.5,
+  "p50": 0.771,
+  "p95": 8.859,
+  "max": 13.196,
+  "heapMB": 1.2,
+  "bytesPerParticle": 1276,
+  "maxSpeed": 18.5,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.4,
+  "p50All": [
+   0.771,
+   0.773,
+   0.792
+  ],
+  "load1All": [
+   10.4,
+   10.4,
+   10.6
+  ]
+ },
+ {
+  "cfg": "powder",
+  "nTarget": 5000,
+  "n": 5041,
+  "createMs": 76.9,
+  "p50": 4.3,
+  "p95": 8.655,
+  "max": 21.505,
+  "heapMB": 5.7,
+  "bytesPerParticle": 1180,
+  "maxSpeed": 36.8,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.6,
+  "p50All": [
+   4.3,
+   4.47,
+   4.615
+  ],
+  "load1All": [
+   10.6,
+   10.6,
+   10.6
+  ]
+ },
+ {
+  "cfg": "powder",
+  "nTarget": 20000,
+  "n": 20164,
+  "createMs": 144.2,
+  "p50": 20.721,
+  "p95": 36.567,
+  "max": 37.068,
+  "heapMB": 22.5,
+  "bytesPerParticle": 1169,
+  "maxSpeed": 79.1,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.8,
+  "p50All": [
+   20.721,
+   21.788,
+   24.337
+  ],
+  "load1All": [
+   10.8,
+   10.6,
+   10.8
+  ]
+ },
+ {
+  "cfg": "tensile",
+  "nTarget": 1000,
+  "n": 1024,
+  "createMs": 13.2,
+  "p50": 1.13,
+  "p95": 5.433,
+  "max": 7.644,
+  "heapMB": 1.3,
+  "bytesPerParticle": 1375,
+  "maxSpeed": 24.4,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.9,
+  "p50All": [
+   1.13,
+   1.144,
+   1.155
+  ],
+  "load1All": [
+   10.9,
+   10.9,
+   10.9
+  ]
+ },
+ {
+  "cfg": "tensile",
+  "nTarget": 5000,
+  "n": 5041,
+  "createMs": 60.9,
+  "p50": 6.577,
+  "p95": 18.474,
+  "max": 34.77,
+  "heapMB": 6.1,
+  "bytesPerParticle": 1270,
+  "maxSpeed": 39.7,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.9,
+  "p50All": [
+   6.577,
+   6.707,
+   10.03
+  ],
+  "load1All": [
+   10.9,
+   10.9,
+   10.9
+  ]
+ },
+ {
+  "cfg": "tensile",
+  "nTarget": 20000,
+  "n": 20164,
+  "createMs": 212.2,
+  "p50": 25.042,
+  "p95": 38.31,
+  "max": 39.897,
+  "heapMB": 23.8,
+  "bytesPerParticle": 1240,
+  "maxSpeed": 66.1,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.3,
+  "p50All": [
+   25.042,
+   29.849,
+   45.572
+  ],
+  "load1All": [
+   10.3,
+   10.6,
+   10.6
+  ]
+ },
+ {
+  "cfg": "colorMixing",
+  "nTarget": 1000,
+  "n": 1024,
+  "createMs": 30.7,
+  "p50": 0.878,
+  "p95": 5.466,
+  "max": 21.14,
+  "heapMB": 1.3,
+  "bytesPerParticle": 1305,
+  "maxSpeed": 16.2,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.3,
+  "p50All": [
+   0.878,
+   0.937,
+   0.985
+  ],
+  "load1All": [
+   10.3,
+   10.3,
+   10.3
+  ]
+ },
+ {
+  "cfg": "colorMixing",
+  "nTarget": 5000,
+  "n": 5041,
+  "createMs": 56.7,
+  "p50": 5.274,
+  "p95": 13.643,
+  "max": 23.338,
+  "heapMB": 5.9,
+  "bytesPerParticle": 1219,
+  "maxSpeed": 36.3,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.3,
+  "p50All": [
+   5.274,
+   5.786,
+   8.289
+  ],
+  "load1All": [
+   10.3,
+   10.3,
+   10.3
+  ]
+ },
+ {
+  "cfg": "colorMixing",
+  "nTarget": 20000,
+  "n": 20164,
+  "createMs": 138.1,
+  "p50": 23.168,
+  "p95": 36.809,
+  "max": 41.845,
+  "heapMB": 22.8,
+  "bytesPerParticle": 1183,
+  "maxSpeed": 75.2,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.6,
+  "p50All": [
+   23.168,
+   23.385,
+   25.111
+  ],
+  "load1All": [
+   10.6,
+   10.6,
+   10.9
+  ]
+ },
+ {
+  "cfg": "viscous+tensile+colorMixing",
+  "nTarget": 1000,
+  "n": 1024,
+  "createMs": 26,
+  "p50": 1.172,
+  "p95": 6.414,
+  "max": 10.677,
+  "heapMB": 1.3,
+  "bytesPerParticle": 1349,
+  "maxSpeed": 9.6,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.9,
+  "p50All": [
+   1.172,
+   1.198,
+   1.452
+  ],
+  "load1All": [
+   10.9,
+   10.9,
+   10.9
+  ]
+ },
+ {
+  "cfg": "viscous+tensile+colorMixing",
+  "nTarget": 5000,
+  "n": 5041,
+  "createMs": 94.6,
+  "p50": 6.914,
+  "p95": 14.25,
+  "max": 35.558,
+  "heapMB": 6.1,
+  "bytesPerParticle": 1276,
+  "maxSpeed": 20.2,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.9,
+  "p50All": [
+   6.914,
+   7.374,
+   8.9
+  ],
+  "load1All": [
+   10.9,
+   10.9,
+   10.9
+  ]
+ },
+ {
+  "cfg": "viscous+tensile+colorMixing",
+  "nTarget": 20000,
+  "n": 20164,
+  "createMs": 118,
+  "p50": 27.44,
+  "p95": 38.322,
+  "max": 48.226,
+  "heapMB": 24.1,
+  "bytesPerParticle": 1255,
+  "maxSpeed": 43.2,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.6,
+  "p50All": [
+   27.44,
+   30.303,
+   32.965
+  ],
+  "load1All": [
+   10.6,
+   10.6,
+   10.9
+  ]
+ },
+ {
+  "cfg": "water(particleIterations=2)",
+  "nTarget": 1000,
+  "n": 1024,
+  "createMs": 27.3,
+  "p50": 1.472,
+  "p95": 6.727,
+  "max": 14.502,
+  "heapMB": 1.3,
+  "bytesPerParticle": 1285,
+  "maxSpeed": 21.2,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 11,
+  "p50All": [
+   1.472,
+   1.509,
+   1.589
+  ],
+  "load1All": [
+   11,
+   11,
+   11
+  ]
+ },
+ {
+  "cfg": "water(particleIterations=2)",
+  "nTarget": 5000,
+  "n": 5041,
+  "createMs": 86.3,
+  "p50": 9.286,
+  "p95": 15.727,
+  "max": 21.406,
+  "heapMB": 5.7,
+  "bytesPerParticle": 1191,
+  "maxSpeed": 38.8,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.9,
+  "p50All": [
+   9.286,
+   10.58,
+   11.974
+  ],
+  "load1All": [
+   10.9,
+   11,
+   10.9
+  ]
+ },
+ {
+  "cfg": "water(particleIterations=2)",
+  "nTarget": 20000,
+  "n": 20164,
+  "createMs": 115.2,
+  "p50": 35.554,
+  "p95": 57.889,
+  "max": 63.644,
+  "heapMB": 22.4,
+  "bytesPerParticle": 1166,
+  "maxSpeed": 76.5,
+  "nan": 0,
+  "outOfPaper": 0,
+  "load1": 10.9,
+  "p50All": [
+   35.554,
+   38.971,
+   39.218
+  ],
+  "load1All": [
+   10.9,
+   10.7,
+   10.9
+  ]
+ }
+]

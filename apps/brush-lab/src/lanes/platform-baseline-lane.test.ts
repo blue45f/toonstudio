@@ -18,6 +18,7 @@ import {
   platformProgramOf,
   rasterizeEvenOdd,
 } from "./platform-baseline-lane";
+import { drawLine, expectStrokeColorContract } from "./testing/stroke-color-contract";
 
 import type { PathIR } from "@toonstudio/studio-project-model";
 
@@ -138,5 +139,39 @@ describe("platform-baseline 레인", () => {
     lane.dispose();
     await expect(lane.readback()).rejects.toBeInstanceOf(InvalidStateError);
     expect(lane.stats().strokes).toBe(1);
+  });
+});
+
+describe("platform-baseline 레인: 획 색 계약(beginStroke options.color)", () => {
+  const make = (): PlatformBaselineLane => new PlatformBaselineLane();
+
+  it("색을 지정하면 평균 색이 지정색 근처이고 색 없는 결과와 해시가 다르다", async () => {
+    await expectStrokeColorContract({ make, presetId: "ink-g-pen", tolerance: 0.1 });
+  });
+
+  it("획마다 색이 정해진다: 지정한 획 뒤의 색 없는 획은 레인 기본(검정)으로 돌아가고, 색 없는 호출은 기존과 같다", async () => {
+    const lane = new PlatformBaselineLane();
+    await lane.init(fakeEnv(), { width: 96, height: 96, dpr: 1, tileSize: 16, seed: 1 });
+    const fixture = buildFixture("line", { width: 96, height: 96 });
+    const program = presetById("ink-g-pen");
+    lane.beginStroke(program, 1, { color: [0, 0.8, 0, 1] });
+    lane.addSamples(fixture.samples);
+    await lane.endStroke();
+    const green = await lane.readback();
+    lane.beginStroke(program, 2);
+    lane.addSamples(fixture.samples.map((s) => ({ ...s, y: s.y + 20 })));
+    await lane.endStroke();
+    const both = await lane.readback();
+    lane.dispose();
+    // 두 번째 획은 검정이므로 문서에 검정 잉크가 늘고(초록 잉크는 유지), 첫 결과의 초록은 그대로다.
+    let darkened = 0;
+    for (let i = 0; i < both.width * both.height; i += 1) {
+      if ((both.data[i * 4 + 3] ?? 0) > 200 && (both.data[i * 4 + 1] ?? 255) < 30) darkened += 1;
+    }
+    expect(darkened).toBeGreaterThan(0);
+    expect(alphaSum(both)).toBeGreaterThan(alphaSum(green));
+    const plain = await drawLine({ make });
+    const black = await drawLine({ make, options: { color: [0, 0, 0, 1] } });
+    expect(pixelHash(black)).toBe(pixelHash(plain));
   });
 });

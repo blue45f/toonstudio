@@ -277,3 +277,42 @@ describe("canvas2d 레인(Node 계약)", () => {
     expect(lane.stats().strokes).toBe(1);
   });
 });
+
+describe("canvas2d 레인: 획 색 계약(beginStroke options.color, 모의 2D 컨텍스트)", () => {
+  /** 한 획을 그린 뒤 획 캔버스 컨텍스트가 그라디언트 스톱에 쓴 rgb 색들(중복 제거)을 돌려준다. */
+  async function strokeStopColors(options?: { color: readonly [number, number, number, number] }): Promise<string[]> {
+    const contexts: RecordingContext[] = [];
+    const lane = createCanvas2dLane();
+    const env = mockCanvasEnv(contexts);
+    await lane.init(env, { width: 64, height: 64, dpr: 1, tileSize: 16, seed: 1 });
+    const stroke = contexts[contexts.length - 1];
+    if (!stroke) throw new Error("획 컨텍스트가 없다");
+    const fixture = buildFixture("line", { width: 64, height: 64 });
+    if (options) lane.beginStroke(presetById("ink-g-pen"), 1, options);
+    else lane.beginStroke(presetById("ink-g-pen"), 1);
+    lane.addSamples(fixture.samples);
+    await lane.endStroke();
+    lane.dispose();
+    return [...new Set(stroke.stops.map(([, color]) => color.replace(/,[0-9.]+\)$/, ")")))];
+  }
+
+  it("색이 없으면 기존처럼 검정, 지정하면 그라디언트 스톱 색이 지정색(sRGB)이다", async () => {
+    expect(await strokeStopColors()).toEqual(["rgba(0,0,0)"]);
+    const colors = await strokeStopColors({ color: [0.8, 0.2, 0.1, 1] });
+    expect(colors).toHaveLength(1);
+    const m = /^rgba\((\d+),(\d+),(\d+)\)$/.exec(colors[0] ?? "");
+    expect(m).not.toBeNull();
+    expect(Math.abs(Number(m?.[1]) - 204)).toBeLessThanOrEqual(2);
+    expect(Math.abs(Number(m?.[2]) - 51)).toBeLessThanOrEqual(2);
+    expect(Math.abs(Number(m?.[3]) - 26)).toBeLessThanOrEqual(2);
+  });
+
+  it("잘못된 색은 획을 열기 전에 InvalidStateError로 거부하고 다음 획은 받을 수 있다", async () => {
+    const lane = createCanvas2dLane();
+    await lane.init(mockCanvasEnv([]), { width: 32, height: 32, dpr: 1, tileSize: 16, seed: 1 });
+    expect(() => lane.beginStroke(presetById("ink-g-pen"), 1, { color: [1, 0, 0, 3] })).toThrow(InvalidStateError);
+    expect(() => lane.beginStroke(presetById("ink-g-pen"), 1, { color: [0.5, 0.5, 0.5, 1] })).not.toThrow();
+    await lane.endStroke();
+    lane.dispose();
+  });
+});

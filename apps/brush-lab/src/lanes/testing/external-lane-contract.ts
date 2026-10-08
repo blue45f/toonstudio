@@ -8,6 +8,8 @@ import { InvalidStateError, LaneUnavailableError } from "../../engine/core/error
 import { PRESET_IDS, presetById } from "../../engine/presets/catalog";
 import { splitFrames } from "../../engine/raster/reference-renderer";
 
+import { expectStrokeColorContract, drawLine, meanInkColor } from "./stroke-color-contract";
+
 import type { LabImage, RawSample } from "../../engine/core/types";
 import type { BrushProgram } from "../../engine/presets/program-schema";
 import type { BrushEngineLane } from "../lane";
@@ -286,6 +288,43 @@ export function describeExternalLaneContract(name: string, make: () => ExternalT
       expect(joined).toContain("physics.contact=graphite");
       expect(joined).toContain("edge.taper");
       expect(receipt?.approximated.join("\n")).toContain("tip.kind=noise");
+      lane.dispose();
+    });
+  });
+
+  describe(`${name}: 획 색 계약(beginStroke options.color)`, () => {
+    it.each(["ink-g-pen", "marker-alcohol"] as const)("%s: 색을 지정하면 평균 색이 지정색 근처이고 색 없는 결과와 해시가 다르다", async (presetId) => {
+      await expectStrokeColorContract({ make, presetId, size: 128, color: [0.85, 0.12, 0.1, 1], tolerance: 0.15 });
+      await expectStrokeColorContract({ make, presetId, size: 128, color: [0.1, 0.3, 0.9, 1], tolerance: 0.15 });
+    });
+
+    it("획 색은 레인 생성 시 기본색보다 우선하고, 지정하지 않은 다음 획은 레인 기본색(검정)으로 돌아간다", async () => {
+      const lane = await newLane(make);
+      const program = presetById("ink-g-pen");
+      lane.beginStroke(program, 1, { color: [0, 0.7, 0, 1] });
+      feedFrames(lane, line.samples);
+      await lane.endStroke();
+      const green = meanInkColor(await lane.readback());
+      expect(green?.g ?? 0).toBeGreaterThan(0.5);
+      expect(green?.r ?? 1).toBeLessThan(0.2);
+      lane.beginStroke(program, 2);
+      feedFrames(lane, line.samples.map((s) => ({ ...s, y: Math.min(SIZE - 8, s.y + 30) })));
+      await lane.endStroke();
+      const mixed = meanInkColor(await lane.readback());
+      // 두 번째(검정) 획이 더해져 평균 초록이 줄어든다.
+      expect(mixed?.g ?? 1).toBeLessThan(green?.g ?? 0);
+      lane.dispose();
+    });
+
+    it("색 매핑을 영수증 mapped에 적고, 잘못된 색은 획을 열기 전에 InvalidStateError로 거부한다", async () => {
+      const lane = await newLane(make);
+      const program = presetById("ink-g-pen");
+      expect(() => lane.beginStroke(program, 1, { color: [0, 0, 0, 2] })).toThrow(InvalidStateError);
+      lane.beginStroke(program, 1, { color: [0.2, 0.4, 0.8, 1] });
+      expect(lane.mappingReceipt()?.mapped.join("\n")).toContain("획 색 옵션(sRGB)");
+      lane.abortStroke();
+      const again = await drawLine({ make, presetId: "ink-g-pen", size: 128, options: { color: [0.2, 0.4, 0.8, 1] } });
+      expect(meanInkColor(again)?.b ?? 0).toBeGreaterThan(0.6);
       lane.dispose();
     });
   });

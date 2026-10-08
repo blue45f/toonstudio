@@ -1,0 +1,71 @@
+{
+ "det": {
+  "srgbGamma": {
+   "hash": "7d59df37",
+   "sameProcessRepeat": true,
+   "reversedOrder": true,
+   "separateProcessesEqual": true
+  },
+  "linear": {
+   "hash": "1c6f8c6b",
+   "sameProcessRepeat": true,
+   "reversedOrder": true,
+   "separateProcessesEqual": true
+  },
+  "oklab": {
+   "hash": "31279602",
+   "sameProcessRepeat": true,
+   "reversedOrder": true,
+   "separateProcessesEqual": true
+  },
+  "km3Repo": {
+   "hash": "b9b967c1",
+   "sameProcessRepeat": true,
+   "reversedOrder": true,
+   "separateProcessesEqual": true
+  },
+  "km3Tuned": {
+   "hash": "66e7660b",
+   "sameProcessRepeat": true,
+   "reversedOrder": true,
+   "separateProcessesEqual": true
+  },
+  "kmBand6": {
+   "hash": "907fb020",
+   "sameProcessRepeat": true,
+   "reversedOrder": true,
+   "separateProcessesEqual": true
+  },
+  "kmBand8": {
+   "hash": "ea4e7b05",
+   "sameProcessRepeat": true,
+   "reversedOrder": true,
+   "separateProcessesEqual": true
+  },
+  "spectralJs": {
+   "hash": "e0b0d6bf",
+   "sameProcessRepeat": true,
+   "reversedOrder": true,
+   "separateProcessesEqual": true
+  }
+ },
+ "premulTest": {
+  "alpha": 0.5,
+  "outAlpha": 0.75,
+  "correctStraightHex": "#82b630",
+  "wrongPremulAsStraightHex": "#42913e",
+  "dE00_wrong_vs_correct": 15.55,
+  "note": "배치 API는 α가중 t' = tαb/(tαb+(1-t)αa)로 색 가중을 바꾼다. 투명 픽셀(α=0)은 NaN 없이 브러시색, 브러시 α=0이면 원색 유지."
+ },
+ "edgeNaN": false,
+ "nanZeroT": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}

@@ -7,6 +7,7 @@ import { presetById } from "../engine/presets/catalog";
 import { splitFrames } from "../engine/raster/reference-renderer";
 import { zigzagStroke } from "../engine/testing/synthetic-strokes";
 
+import { expectDabBufferColor } from "./testing/stroke-color-contract";
 import { createWebgpuInstancedLane, WEBGPU_INSTANCED_LANE, WEBGPU_INSTANCED_LANE_ID } from "./webgpu-instanced-lane";
 
 import type { LaneEnvironment } from "./lane";
@@ -160,5 +161,32 @@ describe("webgpu-instanced 레인", () => {
     expect((err as StrokeBudgetExceededError).details).toMatchObject({ buffer: "staging" });
     // init이 장치를 만든 뒤 실패하면 장치를 destroy한다(호출자가 dispose하지 않아도 누수 없음).
     expect(gpu.destroyed).toBe(true);
+  });
+
+  it("획 색: 색을 지정하면 정점(dab 인스턴스) 버퍼가 그 색(선형 premultiplied)을 싣고, 없으면 검정이다", async () => {
+    const run = async (options?: { color: readonly [number, number, number, number] }): Promise<{ floats: Float32Array; dabs: number }> => {
+      const { adapter, gpu } = createMockAdapter({ info: { vendor: "mock", description: "SwiftShader" } });
+      const lane = createWebgpuInstancedLane();
+      await lane.init(fakeEnv(createMockGpuApi(adapter)), { width: 96, height: 64, dpr: 1, tileSize: 16, seed: 3 });
+      if (options) lane.beginStroke(presetById("ink-g-pen"), 3, options);
+      else lane.beginStroke(presetById("ink-g-pen"), 3);
+      // 입력 파이프라인이 첫 프레임을 보류할 수 있어 dab가 처음 나오는 프레임의 버퍼를 검사한다.
+      let dabs = 0;
+      let floats = new Float32Array(0);
+      for (const frame of splitFrames(zigzagStroke(64, { durationMs: 120 }))) {
+        dabs = lane.addSamples(frame).dabCount;
+        if (dabs > 0) {
+          floats = new Float32Array(gpu.bufferByLabel("inst-dabs").data.slice(0));
+          break;
+        }
+      }
+      lane.abortStroke();
+      lane.dispose();
+      return { floats, dabs };
+    };
+    const colored = await run({ color: [0.15, 0.7, 0.3, 1] });
+    expectDabBufferColor(colored.floats, colored.dabs, [0.15, 0.7, 0.3, 1]);
+    const plain = await run();
+    expectDabBufferColor(plain.floats, plain.dabs, [0, 0, 0, 1]);
   });
 });

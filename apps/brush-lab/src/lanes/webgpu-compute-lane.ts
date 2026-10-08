@@ -6,7 +6,7 @@ import { probeWebGpuAdapter, requestSumiDevice, SUMI_REQUIRED_LIMITS } from "../
 import { SumiComputeRuntime } from "../engine/gpu/pipeline-compute";
 import { paperFor } from "../engine/raster/reference-renderer";
 
-import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -20,6 +20,7 @@ import type {
   LaneStats,
   LaneStatus,
   StrokeAbortReceipt,
+  StrokeOptions,
   StrokeReceipt,
 } from "./lane";
 import type { LaneReasonCode } from "../engine/core/errors";
@@ -187,11 +188,12 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
         throw error;
       }
     },
-    beginStroke(program: BrushProgram, seed: number): void {
+    beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
+      const emitterOptions = strokeEmitterOptions(options);
       const rt = requireRuntime();
       rt.beginStroke(program, seed);
       const paper = program.paper.enabled ? paperFor(program.paper) : null;
-      pipeline = new StrokePipeline(program, seed, undefined, paper);
+      pipeline = new StrokePipeline(program, seed, undefined, paper, emitterOptions);
       latency = [];
     },
     addSamples(samples: readonly RawSample[]): DabBatchReceipt {
