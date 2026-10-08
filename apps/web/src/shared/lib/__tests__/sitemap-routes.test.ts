@@ -36,6 +36,7 @@ describe("sitemap static routes", () => {
   it("keeps the engineering story hub and reusable formats indexable", () => {
     for (const route of [
       '"/about/technology"',
+      '"/about/technology/architecture"',
       '"/about/technology/story"',
       '"/about/technology/guides"',
       '"/about/technology/references"',

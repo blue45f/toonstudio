@@ -10,6 +10,7 @@ import {
   CrawlerPolicyPage,
   DataSourcesPage,
   DesignSystemPage,
+  EngineeringArchitecturePage,
   EngineeringAtlasPage,
   EngineeringDeckPage,
   EngineeringFieldNotesPage,
@@ -37,6 +38,7 @@ export const legalRoutes = defineAppRoutes([
   { id: "legal-about", path: "/about", element: <AboutPage /> },
   { id: "legal-about-workflow", path: "/about/workflow", element: <WebtoonWorkflowPage /> },
   { id: "legal-about-technology", path: "/about/technology", element: <TechnologyPage /> },
+  { id: "legal-about-technology-architecture", path: "/about/technology/architecture", element: <EngineeringArchitecturePage /> },
   { id: "legal-about-technology-story", path: "/about/technology/story", element: <EngineeringStoryPage /> },
   { id: "legal-about-technology-playbook", path: "/about/technology/playbook", element: <EngineeringPlaybookPage /> },
   // 기술 하위 페이지는 소개 메뉴 + 기술 문서 메뉴로 위치를 보여주므로 가이드만 따로 브레드크럼을 두지 않는다.

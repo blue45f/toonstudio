@@ -477,6 +477,13 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
         "See the web, 2D, 3D, storage, collaboration and trust foundations",
       ),
       destination(
+        "/about/technology/architecture",
+        "기술 아키텍처 해설",
+        "Architecture guide",
+        "브라우저·엣지·서버·데이터·AI가 맞물리는 구조를 도식과 쉬운 배경 지식으로",
+        "How the browser, edge, server, data and AI fit together, with diagrams and plain background",
+      ),
+      destination(
         "/about/technology/story",
         "기술 제작 스토리",
         "Engineering story",

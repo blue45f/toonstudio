@@ -9,6 +9,7 @@ const ABOUT_ROUTE_FAMILY = [
   { id: "legal-about", path: "/about" },
   { id: "legal-about-workflow", path: "/about/workflow" },
   { id: "legal-about-technology", path: "/about/technology" },
+  { id: "legal-about-technology-architecture", path: "/about/technology/architecture" },
   { id: "legal-about-technology-story", path: "/about/technology/story" },
   { id: "legal-about-technology-guides", path: "/about/technology/guides" },
   { id: "legal-about-technology-references", path: "/about/technology/references" },

@@ -5,6 +5,7 @@ import {
   GraduationCap,
   LayoutGrid,
   LibraryBig,
+  Network,
   NotebookTabs,
   Presentation,
   Scale,
@@ -19,6 +20,7 @@ import type { WorkflowVisual } from "@/shared/components/site-experience/workflo
  * 기술 소개 하위 페이지의 단일 목록. 탭 메뉴·허브의 발표 동선·하단 이어보기가 모두 이 목록을 쓴다.
  *
  * 페이지별 목적(중복 없이):
+ * - 아키텍처: 전체 구조와 배경 지식을 도식으로 한눈에(발표 동선 앞의 "큰 그림", 단계 번호 없음)
  * - 제작 스토리: 왜·어떻게 만들었나(문제 → 선택 → 대가 서사)
  * - 플레이북: 재사용 가능한 설계 원칙과 아키텍처 결정
  * - 적용 가이드: 다른 서비스에 단계별로 옮기는 방법
@@ -30,6 +32,7 @@ import type { WorkflowVisual } from "@/shared/components/site-experience/workflo
  */
 
 export type EngineeringPageId =
+  | "architecture"
   | "story"
   | "playbook"
   | "guides"
@@ -41,7 +44,7 @@ export type EngineeringPageId =
   | "glossary"
   | "licenses";
 
-export type EngineeringPageGroup = "path" | "present" | "resources";
+export type EngineeringPageGroup = "overview" | "path" | "present" | "resources";
 
 export interface EngineeringPageEntry {
   readonly id: EngineeringPageId;
@@ -72,12 +75,22 @@ const t = (ko: string, en: string): LocalizedText => ({ ko, en });
 export const ENGINEERING_CHAPTER_COUNT = 40;
 
 export const ENGINEERING_PAGE_GROUPS: readonly { readonly id: EngineeringPageGroup; readonly label: LocalizedText }[] = [
+  { id: "overview", label: t("큰 그림", "Big picture") },
   { id: "path", label: t("핵심", "Core") },
   { id: "present", label: t("발표", "Present") },
   { id: "resources", label: t("자료", "Resources") },
 ];
 
 export const ENGINEERING_PAGES = [
+  {
+    id: "architecture",
+    href: "/about/technology/architecture",
+    group: "overview",
+    icon: Network,
+    label: t("아키텍처", "Architecture"),
+    purpose: t("전체 구조를 도식과 쉬운 해설로 한눈에", "The whole structure at a glance, with diagrams and plain explanations"),
+    art: "collaborate",
+  },
   {
     id: "story",
     href: "/about/technology/story",

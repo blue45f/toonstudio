@@ -41,6 +41,7 @@ const CURATED_TRAILS: Record<string, AppBreadcrumbItem[]> = {
   "/about/workflow": trail(ABOUT, "제작 과정", "Workflow"),
   "/about/principles": trail(ABOUT, "제품 원칙", "Principles"),
   "/about/technology": [HOME, ABOUT, { ko: "기술", en: "Technology" }],
+  "/about/technology/architecture": [HOME, ABOUT, TECHNOLOGY, { ko: "아키텍처", en: "Architecture" }],
   "/about/technology/story": [HOME, ABOUT, TECHNOLOGY, { ko: "개발 스토리", en: "Story" }],
   "/about/technology/guides": [HOME, ABOUT, TECHNOLOGY, { ko: "가이드", en: "Guides" }],
   "/about/technology/references": [HOME, ABOUT, TECHNOLOGY, { ko: "레퍼런스", en: "References" }],
