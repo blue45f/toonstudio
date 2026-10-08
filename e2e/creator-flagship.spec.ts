@@ -95,7 +95,7 @@ for (const width of [320, 390, 820, 1440]) {
 
     await expect(home).toBeVisible();
     await expect(page.locator("h1")).toHaveCount(1);
-    await expect(page.locator("h1")).toContainText("작업실을 눌러서 둘러보세요");
+    await expect(page.locator("h1")).toContainText("기획부터 연재까지, 웹툰 제작의 모든 것을 한곳에서.");
     await expect(home.locator('.cf-hero a[href="/studio"]')).toBeVisible();
     await expect(primaryAction).toBeVisible();
     // 둘러보기는 세 탭으로 나뉘고 기본은 '화면 구성'(번호를 눌러 보는 예시 편집기)이다.
