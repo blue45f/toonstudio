@@ -1,11 +1,13 @@
 # 보안 advisory 예외 정책
 
 - 상태: **현재 보안 정책**
-- 최종 갱신: **2026-09-26**
+- 최종 갱신: **2026-10-08**
 
-`pnpm run audit:security`는 production·development dependency를 모든 severity에서 검사하며 필수 CI core
-lint gate에 포함된다. `scripts/verify-security-advisory-exceptions.mjs`는 registry audit 전에 비어 있지
-않거나 잘못된 advisory exclusion list를 거부한다.
+`pnpm run audit:security`는 production·development dependency를 모든 severity에서 검사한다. 의존성 파일이
+바뀐 푸시의 pre-push 훅, 야간 진단(`main-full-qa-fast-diagnostics.yml`), `pnpm run verify:push`와 수동
+실행에서 돌며, 필수 CI core(`ci.yml`)의 잡에는 포함되지 않는다(2026-10-08 확인: core lint 잡은
+`quality:imports`와 `quality:secrets`만 실행한다). `scripts/verify-security-advisory-exceptions.mjs`는
+registry audit 전에 비어 있지 않거나 잘못된 advisory exclusion list를 거부한다.
 
 **현재 dependency advisory 예외는 없다.**
 
