@@ -25,8 +25,8 @@ const SECURITY_SUPPLY_CHAIN_CHAIN: EngineeringAtlasEntry = {
       "Supply-chain security is about risk that comes not from the code we wrote but from the hundreds of open-source parts we use. Typical cases are a part with a known flaw, a package that quietly runs a program at install time, and a developer who pushes a password by mistake. No single tool stops all of these, so ToonStudio stacks devices that each catch something different.",
     ),
     t(
-      "비밀값은 Secretlint가 텍스트 파일을 검사합니다(코어의 lint 잡은 저장소 전체, pre-push 훅은 바뀐 파일). 알려진 취약점은 audit:security가 맡는데, 먼저 pnpm-workspace.yaml에 audit 예외(ignore*)가 하나라도 있으면 실패시키고 이어 pnpm audit --audit-level low로 개발 의존성과 낮은 심각도까지 봅니다. 설치 스크립트는 allowBuilds에 적은 패키지만 실행하고 7개는 명시적으로 거부합니다. 버전은 frozen-lockfile과 overrides 50개, 패치 8개로 고정하고, 코드 자체는 CodeQL이 5개 언어를 분석합니다.",
-      "Secrets are checked by Secretlint over text files (the core lint job scans the whole repository, the pre-push hook only changed files). Known vulnerabilities belong to audit:security, which first fails if pnpm-workspace.yaml has any audit exception (ignore*) and then runs pnpm audit --audit-level low, which covers dev dependencies and low severities. Install scripts run only for packages listed in allowBuilds, with 7 explicitly denied. Versions are pinned by frozen-lockfile, 50 overrides and 8 patches, and CodeQL analyzes the code itself in 5 languages.",
+      "비밀값은 Secretlint가 텍스트 파일을 검사합니다(코어의 lint 잡은 저장소 전체, pre-push 훅은 바뀐 파일). 알려진 취약점은 audit:security가 맡는데, 먼저 pnpm-workspace.yaml에 audit 예외(ignore*)가 하나라도 있으면 실패시키고 이어 pnpm audit --audit-level low로 개발 의존성과 낮은 심각도까지 봅니다. 설치 스크립트는 allowBuilds에 적은 패키지만 실행하고 7개는 명시적으로 거부합니다. 버전은 frozen-lockfile과 overrides 50개, 패치 7개로 고정하고(braces는 패치 대신 저장소 포크라 audit 대상이 아닙니다), 코드 자체는 CodeQL이 5개 언어를 분석합니다.",
+      "Secrets are checked by Secretlint over text files (the core lint job scans the whole repository, the pre-push hook only changed files). Known vulnerabilities belong to audit:security, which first fails if pnpm-workspace.yaml has any audit exception (ignore*) and then runs pnpm audit --audit-level low, which covers dev dependencies and low severities. Install scripts run only for packages listed in allowBuilds, with 7 explicitly denied. Versions are pinned by frozen-lockfile, 50 overrides and 7 patches (braces is a repository fork instead of a patch, so audit does not cover it), and CodeQL analyzes the code itself in 5 languages.",
     ),
     t(
       "어디서 도는지가 중요합니다. Secretlint는 병합을 막는 코어의 lint 잡에 있고, 설치 단계(pnpm install --frozen-lockfile)는 모든 코어 잡에 있습니다. CodeQL은 PR과 main push와 매주 목요일에 돕니다. 반면 audit:security는 코어 ci.yml에 없고 야간 진단(매일 02:37 KST), 의존성 파일이 바뀐 push의 pre-push 훅, 수동 검증에서 돕니다. 즉 취약한 의존성이 PR 병합을 자동으로 막는 구조는 아닙니다.",
@@ -73,7 +73,7 @@ const SECURITY_SUPPLY_CHAIN_CHAIN: EngineeringAtlasEntry = {
       {
         id: "pin",
         label: t("버전 고정과 패치", "Version pinning and patches"),
-        sub: t("frozen-lockfile · overrides 50 · patches 8", "frozen-lockfile, 50 overrides, 8 patches"),
+        sub: t("frozen-lockfile · overrides 50 · 패치 7 · braces 포크", "frozen-lockfile, 50 overrides, 7 patches, braces fork"),
         tone: "good",
         chips: ["frozen-lockfile", "overrides", "patches"],
       },

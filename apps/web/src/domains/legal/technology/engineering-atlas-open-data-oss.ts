@@ -12,29 +12,29 @@ export const OPEN_DATA_OSS_CARDS: readonly EngineeringAtlasEntry[] = [
     id: "oss-pnpm-patches-no-unsafe-eval",
     category: "open-data",
     name: "pnpm patch",
-    title: t("고쳐서 쓰는 오픈소스: pnpm 패치 8개와 unsafe-eval 없는 실행", "Open source we patch: eight pnpm patches and running without unsafe-eval"),
+    title: t("고쳐서 쓰는 오픈소스: pnpm 패치 7개와 unsafe-eval 없는 실행", "Open source we patch: seven pnpm patches and running without unsafe-eval"),
     status: "live",
-    tagline: t("패치 8개 중 3개는 new Function 을 걷어 CSP 를 풀지 않고도 동작하게 합니다.", "Three of eight patches remove dynamic code generation so libraries run without relaxing the CSP."),
+    tagline: t("패치 7개 중 3개는 new Function 문제를 풀어 CSP 를 풀지 않고도 동작하게 합니다.", "Three of seven patches tackle new Function so libraries run without relaxing the CSP."),
     background: [
       t(
-        "오픈소스는 가져다 쓰는 것이 기본이지만, 우리 사정에 맞지 않는 곳이 생기면 둘 중 하나를 고릅니다. 원본 프로젝트가 고쳐 주기를 기다리거나, 우리 쪽에서 작게 고쳐 쓰는 것입니다. pnpm 패치는 설치된 패키지의 특정 버전 위에 작은 수정 파일(diff)을 얹는 방법이라, 원본을 통째로 복사하는 포크보다 변경 범위가 작고 눈에 잘 띕니다. 지금 8개를 씁니다.",
-        "Open source is normally used as it comes, but when something does not fit, there are two choices: wait for the original project to fix it, or patch it a little ourselves. A pnpm patch lays a small diff over one exact version of an installed package, so the change is smaller and easier to see than a fork that copies the whole source. Eight patches are in use today.",
+        "오픈소스는 가져다 쓰는 것이 기본이지만, 우리 사정에 맞지 않는 곳이 생기면 둘 중 하나를 고릅니다. 원본 프로젝트가 고쳐 주기를 기다리거나, 우리 쪽에서 작게 고쳐 쓰는 것입니다. pnpm 패치는 설치된 패키지의 특정 버전 위에 작은 수정 파일(diff)을 얹는 방법이라, 원본을 통째로 복사하는 포크보다 변경 범위가 작고 눈에 잘 띕니다. 지금 패치 7개를 쓰고, 소스를 통째로 저장소에 두고 고친 포크는 wgpu-toon 과 braces 둘입니다.",
+        "Open source is normally used as it comes, but when something does not fit, there are two choices: wait for the original project to fix it, or patch it a little ourselves. A pnpm patch lays a small diff over one exact version of an installed package, so the change is smaller and easier to see than a fork that copies the whole source. Seven patches are in use today, plus two forks that keep the whole source in the repository: wgpu-toon and braces.",
       ),
       t(
-        "가장 중요한 이유는 보안 설정입니다. 운영 CSP 의 script-src 는 'wasm-unsafe-eval' 만 열고 'unsafe-eval' 은 열지 않습니다. 그런데 일부 라이브러리는 문자열로 코드를 만드는 new Function 을 씁니다. 세 패치가 이를 해결합니다. manifold-3d 와 ktx2-encoder 는 패치한 파일의 new Function 2곳을 정적 코드로 바꿔 0곳이 됐고(설치본 검색으로 확인), @gltf-transform/functions 는 Function 을 쓰는 이미지 커널을 처음 필요할 때만 불러오게 미뤘습니다. CSP 를 풀지 않고 라이브러리를 고친 것입니다.",
-        "The main reason is a security setting. The production CSP script-src opens only 'wasm-unsafe-eval' and not 'unsafe-eval', yet some libraries use new Function, which builds code from strings. Three patches solve this. In manifold-3d and ktx2-encoder the two new Function sites in the patched files became static code and now number zero (checked by searching the installed copies); @gltf-transform/functions now loads its Function-using image kernels only when first needed. The libraries were fixed instead of loosening the CSP.",
+        "가장 중요한 이유는 보안 설정입니다. 운영 CSP 의 script-src 는 'wasm-unsafe-eval' 만 열고 'unsafe-eval' 은 열지 않습니다. 그런데 일부 라이브러리는 문자열로 코드를 만드는 new Function 을 씁니다. 세 패치가 이를 다루는 방식은 둘입니다. manifold-3d 와 ktx2-encoder 는 패치한 파일의 new Function 2곳을 정적 코드로 바꿔 0곳이 됐고(설치본 검색으로 확인), @gltf-transform/functions 는 호출을 없앤 것이 아니라 Function() 을 쓰는 이미지 커널(ndarray 계열)을 처음 필요할 때만 불러오게 미뤘습니다. CSP 를 풀지 않고 라이브러리를 고친 것입니다.",
+        "The main reason is a security setting. The production CSP script-src opens only 'wasm-unsafe-eval' and not 'unsafe-eval', yet some libraries use new Function, which builds code from strings. Three patches address this in two ways. In manifold-3d and ktx2-encoder the two new Function sites in the patched files became static code and now number zero (checked by searching the installed copies); @gltf-transform/functions does not remove a call but loads its Function-using image kernels (the ndarray family) only when first needed. The libraries were fixed instead of loosening the CSP.",
       ),
       t(
-        "나머지 다섯은 이유가 다릅니다. React Three Fiber 는 폐기된 THREE.Clock 경고를 피하고, p5.brush 는 소프트웨어 WebGL 에서 같은 seed 도 픽셀이 달라지던 셰이더 미분을 유한 차분으로 바꾸고, ag-psd 는 브라우저에 없는 Node util 호출을 없애며, braces 는 보안 override 와 함께 고정한 보정이고, minimatch 는 brace-expansion 5 에 맞춘 호환 어댑터입니다. 관리 원칙은 정확한 버전에만 묶고, 업그레이드 때마다 다시 검토하고, 검증 장치를 두는 것입니다.",
-        "The other five have different reasons. React Three Fiber avoids the deprecated THREE.Clock warning; p5.brush swaps shader derivatives that gave different pixels for the same seed on software WebGL for finite differences; ag-psd drops a Node util call that browsers lack; braces is a correction pinned together with a security override; and minimatch is a compatibility adapter for brace-expansion 5. The management rules are to pin to an exact version, to review at every upgrade and to keep a verification mechanism.",
+        "나머지 네 패치는 이유가 다릅니다. React Three Fiber 는 폐기된 THREE.Clock 경고를 피하고, p5.brush 는 소프트웨어 WebGL 에서 같은 seed 도 픽셀이 달라지던 셰이더 미분을 유한 차분으로 바꾸고, ag-psd 는 브라우저에 없는 Node util 호출을 없애며, minimatch 는 brace-expansion 5 에 맞춘 호환 어댑터입니다. braces 는 패치가 아니라 저장소 포크입니다. 수정 릴리스가 나오지 않은 취약점 때문에, 3.0.3 에 미배포 수정과 중첩 깊이 100 상한을 더한 사본(patches/braces)으로 취약 범위를 대체했습니다. 관리 원칙은 정확한 버전에만 묶고, 업그레이드 때마다 다시 검토하고, 검증 장치를 두는 것입니다.",
+        "The other four patches have different reasons. React Three Fiber avoids the deprecated THREE.Clock warning; p5.brush swaps shader derivatives that gave different pixels for the same seed on software WebGL for finite differences; ag-psd drops a Node util call that browsers lack; and minimatch is a compatibility adapter for brace-expansion 5. braces is a repository fork, not a patch: because the vulnerability has no upstream fix, the vulnerable range is replaced by a copy of 3.0.3 plus unreleased upstream fixes and a nesting-depth cap of 100 (patches/braces). The management rules are to pin to an exact version, to review at every upgrade and to keep a verification mechanism.",
       ),
       t(
-        "한계도 말해야 합니다. 상류에 반영된 근거(PR·이슈)를 저장소에서 찾지 못했고, 패치는 정확한 버전에 묶여 있어 라이브러리를 올릴 때마다 다시 써야 합니다. 또 CSP 호환은 라이브러리 전체가 아니라 검증한 작업 9개 기준이며, 선택적 이미지 API 전부가 호환된 것은 아닙니다.",
-        "The limits must be stated too. No evidence of upstream acceptance (PRs or issues) was found in the repository, and because patches are tied to an exact version, each library upgrade means rewriting them. CSP compatibility also holds for the nine verified jobs, not for whole libraries, and not every optional image API became compatible.",
+        "한계도 말해야 합니다. 상류에 반영된 근거(PR·이슈)를 저장소에서 찾지 못했고, 패치는 정확한 버전에 묶여 있어 라이브러리를 올릴 때마다 다시 써야 합니다. 또 CSP 호환은 라이브러리 전체가 아니라 검증한 작업 9개 기준이며, 선택적 이미지 API 전부가 호환된 것은 아닙니다. braces 포크는 레지스트리 패키지가 아니라 pnpm audit 대상에서 빠지므로 이후 권고는 직접 확인해야 합니다.",
+        "The limits must be stated too. No evidence of upstream acceptance (PRs or issues) was found in the repository, and because patches are tied to an exact version, each library upgrade means rewriting them. CSP compatibility also holds for the nine verified jobs, not for whole libraries, and not every optional image API became compatible. The braces fork is not a registry package, so pnpm audit skips it and later advisories must be checked by hand.",
       ),
     ],
     keyPoints: [
-      t("패치 8개 중 3개는 new Function 을 걷어 CSP 를 풀지 않는다", "Three of eight patches drop new Function, no CSP relaxation"),
+      t("패치 7개 중 3개는 new Function 문제를 풀어 CSP 를 풀지 않는다", "Three of seven patches address new Function, no CSP relaxation"),
       t("정확한 버전에 묶고, 업그레이드 때마다 다시 검토한다", "Pinned to exact versions and reviewed at every upgrade"),
       t("문자열 코드 생성을 금지한 Node 와 실제 CSP 로 확인한다", "Verified in Node with code generation off and under the real CSP"),
     ],
@@ -50,7 +50,7 @@ export const OPEN_DATA_OSS_CARDS: readonly EngineeringAtlasEntry[] = [
       nodes: [
         { id: "orig", label: t("원본 패키지", "Original package"), sub: t("내부에 new Function", "uses new Function inside"), tone: "warn", at: [0, 0] },
         { id: "patch", label: t("pnpm 패치", "pnpm patch"), sub: t("정확한 버전에만 적용", "pinned to one version"), tone: "server", at: [1, 0] },
-        { id: "fixed", label: t("패치된 설치본", "Patched install"), sub: t("new Function 0곳", "no new Function left"), tone: "good", at: [2, 0] },
+        { id: "fixed", label: t("패치된 설치본", "Patched install"), sub: t("new Function 제거·지연", "new Function removed or deferred"), tone: "good", at: [2, 0] },
         { id: "browser", label: t("운영 브라우저", "Production browser"), sub: t("CSP 에 unsafe-eval 없음", "CSP without unsafe-eval"), tone: "local", shape: "pill", at: [3, 0] },
         { id: "node", label: t("Node 시험", "Node test"), sub: t("문자열 코드 생성 금지", "string code generation off"), tone: "good", at: [2, 1] },
         { id: "ver", label: t("빌드 Worker 검증", "Built-worker check"), sub: t("실제 CSP 로 9개 작업", "9 jobs under the real CSP"), tone: "good", at: [3, 1] },
@@ -80,6 +80,11 @@ export const OPEN_DATA_OSS_CARDS: readonly EngineeringAtlasEntry[] = [
         feature: t("붓·3D 화면·PSD 가져오기의 보정", "Fixes for brushes, the 3D view and PSD import"),
         role: t("R3F 는 폐기 경고, p5.brush 는 셰이더 결정성, ag-psd 는 브라우저 호환을 위해 고쳐 씁니다.", "R3F is patched for a deprecation warning, p5.brush for shader determinism and ag-psd for browser compatibility."),
         paths: ["patches/@react-three__fiber@9.6.1.patch", "patches/p5.brush@2.2.1.patch", "patches/ag-psd@31.0.1.patch"],
+      },
+      {
+        feature: t("개발 도구 · braces 보안 포크", "Dev tooling · the braces security fork"),
+        role: t("ESLint 경계 검사가 쓰는 micromatch 가 braces 취약 범위를 거쳐, 패치 대신 중첩 깊이 100 상한을 더한 저장소 사본으로 대체했고 회귀 시험이 낡은 사본을 잡습니다.", "The micromatch behind the ESLint boundary check pulls in the vulnerable braces range, so a repository copy with a nesting-depth cap of 100 replaces it instead of a patch, and a regression test catches a stale copy."),
+        paths: ["patches/braces/README.md", "scripts/braces-security-compat.test.mjs", "pnpm-workspace.yaml"],
       },
     ],
     samples: [
@@ -145,8 +150,8 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
     chapterIds: ["open-source", "infrastructure"],
     talk: {
       pitch: t(
-        "오픈소스는 가져다 쓰는 것만이 아니라 필요하면 작게 고쳐 씁니다. pnpm 패치 8개를 쓰고, 그중 3개는 라이브러리 안의 new Function 을 걷어 내서 운영 보안 정책(CSP)을 풀지 않고도 3D 불리언과 압축이 돌아가게 했습니다. 패치마다 정확한 버전에 묶고 검증 장치를 둡니다.",
-        "We do not only consume open source; we patch it a little when needed. Eight pnpm patches are in use, and three of them remove new Function from libraries so 3D booleans and compression run without relaxing the production security policy (CSP). Each patch is tied to an exact version and backed by a verification mechanism.",
+        "오픈소스는 가져다 쓰는 것만이 아니라 필요하면 작게 고쳐 씁니다. pnpm 패치 7개를 쓰고, 그중 3개는 라이브러리 안의 new Function 을 걷어 내거나(2개) 필요할 때까지 미뤄서(1개) 운영 보안 정책(CSP)을 풀지 않고도 3D 불리언과 압축이 돌아가게 했습니다. 통째로 복사해 고친 포크는 wgpu-toon 과 braces 둘입니다. 패치마다 정확한 버전에 묶고 검증 장치를 둡니다.",
+        "We do not only consume open source; we patch it a little when needed. Seven pnpm patches are in use, and three of them either remove new Function from libraries (two) or postpone loading it until needed (one), so 3D booleans and compression run without relaxing the production security policy (CSP). The two forks that copy the whole source are wgpu-toon and braces. Each patch is tied to an exact version and backed by a verification mechanism.",
       ),
       analogy: t(
         "가전제품을 통째로 새로 사는 대신 맞지 않는 플러그에 어댑터를 하나 끼워 쓰는 것과 같습니다. 어댑터 규격이 바뀌면(라이브러리 업그레이드) 다시 맞춰야 합니다.",
@@ -176,14 +181,15 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
         },
       ],
       pitfall: t(
-        "CSP 를 모두 통과한다고 말하지 마세요. 확인된 범위는 라이브러리 3개에서 new Function 을 걷어내 unsafe-eval 없이 동작한다는 것(검증 작업 9개 기준)이며 선택적 이미지 API 전부가 호환인 것은 아닙니다. 상류 반영 근거는 찾지 못했고, braces 패치의 전용 시험도 찾지 못했습니다(검색 기준).",
-        "Do not say everything passes the CSP. What is confirmed is that three libraries no longer use new Function and work without unsafe-eval (for the nine verified jobs); not every optional image API is compatible. No upstream-acceptance evidence was found, and no dedicated test for the braces patch was found (by search).",
+        "CSP 를 모두 통과한다고 말하지 마세요. 확인된 범위는 라이브러리 3개가 unsafe-eval 없이 동작한다는 것(검증 작업 9개 기준)입니다. 2개는 new Function 을 정적 코드로 바꿨고 @gltf-transform/functions 는 Function() 을 쓰는 이미지 커널을 필요할 때까지 미룬 것이라 선택적 이미지 API 전부가 호환인 것은 아닙니다. 상류 반영 근거는 찾지 못했습니다. braces 는 패치가 아니라 포크이고 pnpm audit 대상이 아니어서 이후 권고는 직접 확인해야 합니다.",
+        "Do not say everything passes the CSP. What is confirmed is that three libraries work without unsafe-eval (for the nine verified jobs). Two replaced new Function with static code, while @gltf-transform/functions only postpones its Function-using image kernels until needed, so not every optional image API is compatible. No upstream-acceptance evidence was found. braces is a fork, not a patch, and pnpm audit skips it, so later advisories must be checked by hand.",
       ),
     },
     technologies: ["pnpm", "CSP", "WebAssembly", "glTF Transform", "Manifold"],
     facts: [
-      { value: "8", label: t("pnpm 패치 수", "pnpm patches"), source: "pnpm-workspace.yaml" },
+      { value: "7", label: t("pnpm 패치 수(braces 는 패치가 아니라 포크)", "pnpm patches (braces is a fork, not a patch)"), source: "pnpm-workspace.yaml" },
       { value: "2 → 0", label: t("manifold-3d 패치 파일의 new Function 수", "new Function sites in the patched manifold-3d file"), source: "patches/manifold-3d@3.5.1.patch" },
+      { value: "100", label: t("braces 포크의 중첩 깊이 상한(MAX_DEPTH)", "Nesting-depth cap in the braces fork (MAX_DEPTH)"), source: "patches/braces/lib/constants.js" },
       { value: "9", label: t("실제 CSP 로 돌린 검증 작업 수", "Jobs run under the real CSP"), source: "docs/reports/studio-scene3d-specialist-toolchain-2026-09-19.md" },
     ],
     reviewedAt: "2026-10-07",
@@ -205,8 +211,8 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
         "wgpu 29 had no way to take a GPUDevice the page already owns and treat it as a wgpu::Device. So the filter WGSL (GPU shader language) and Vello (a vector renderer) used different workbenches and had to read results down to the CPU (readback) and upload them again at every hand-off. The fork adopts the same GPUDevice and removes that round trip. The patch is six hunks (by its own comments) across six files, all behind the toon-fabric feature, so with it off the API equals upstream wgpu.",
       ),
       t(
-        "측정 기록은 둘이고 서로 다릅니다. 문서(2026-08-08, Chromium 140 헤드리스)는 256²·512²·1024² 교환 비용이 1.89·2.12·2.43배 줄었다고 쓰고, 읽은 바이트가 기존 경로와 일치했다고 합니다. 저장소의 결과 파일(2026-09-23 재측정, Chrome 153)은 0.93·3.29·3.12배입니다. 한 번의 측정으로 배속을 단정하지 말고, 구조적 이유(readback 제거)와 픽셀 일치를 근거로 말하는 편이 안전합니다.",
-        "There are two measurement records, and they differ. The document (2026-08-08, headless Chromium 140) says the exchange cost fell 1.89x, 2.12x and 2.43x at 256², 512² and 1024² and that the bytes read matched the old path. The result file in the repo (re-measured 2026-09-23, Chrome 153) gives 0.93x, 3.29x and 3.12x. It is safer to rest on the structural reason (readback removed) and the pixel match than on one speed-up number.",
+        "속도 이득은 크기마다 다르고, 정본은 결과 파일 하나입니다. 2026-09-23 측정(Chrome 153, 표본 9개)은 256²·512²·1024² 에서 0.93·3.29·3.12배로, 256² 는 이득이 측정되지 않았습니다. 문서에 이전 기록(2026-08-08, Chromium 140)으로 남은 1.89·2.12·2.43배는 덮어써진 옛 결과의 수치이고, 그때 붙인 ‘왕복 하한’ 풀이도 현재 값으로는 확인되지 않습니다. 읽은 바이트가 기존 경로와 일치한다는 점은 어느 쪽이나 같습니다. 배속을 단정하지 말고 구조적 이유(readback 제거)와 픽셀 일치를 근거로 말하는 편이 안전합니다.",
+        "The speed-up varies with size, and the canonical record is one result file. The 2026-09-23 run (Chrome 153, 9 samples) gives 0.93x, 3.29x and 3.12x at 256², 512² and 1024², with no gain measured at 256². The 1.89x, 2.12x and 2.43x that the document keeps as a prior record (2026-08-08, Chromium 140) are numbers from an overwritten earlier result, and the round-trip-floor explanation attached to them is not confirmed by the current values. Both agree that the bytes read matched the old path. It is safer to rest on the structural reason (readback removed) and the pixel match than on any speed-up number.",
       ),
       t(
         "한계를 그대로 적습니다. 상류에 반영을 시도한 근거(PR·이슈)를 저장소에서 찾지 못했고 문서에는 PR 후보로만 적혀 있습니다. 복사본의 드리프트를 막는 UPSTREAM.sha256 은 189개 파일을 고정하는데 그중 Cargo.toml.orig 가 트리에 없어 vendor_patch_parity 시험이 실패할 것으로 보입니다(정적 추정, 실행하지 않음). 이 시험을 호출하는 CI 워크플로도 찾지 못했습니다.",
@@ -216,7 +222,7 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
     keyPoints: [
       t("wgpu 29.0.4 복사본 + 패치 1개, 모두 toon-fabric 피처 뒤", "A wgpu 29.0.4 copy plus one patch, all behind toon-fabric"),
       t("같은 GPUDevice 를 공유해 CPU 왕복(readback)을 없앤다", "Sharing one GPUDevice removes the CPU round trip (readback)"),
-      t("배속은 기록마다 다르다: 1.89~2.43배(문서) vs 0.93~3.29배", "Speed-ups differ per record: 1.89-2.43x (doc) vs 0.93-3.29x"),
+      t("배속은 크기마다 다르다: 0.93~3.29배(2026-09-23 정본)", "Speed-up varies by size: 0.93-3.29x (canonical, 2026-09-23)"),
     ],
     diagram: {
       id: "oss-fork-wgpu-toon-diagram",
@@ -329,8 +335,8 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
         {
           question: t("얼마나 빨라졌나요?", "How much faster is it?"),
           answer: t(
-            "문서(2026-08-08, Chromium 140 헤드리스)는 교환 비용이 256²·512²·1024² 에서 1.89·2.12·2.43배 줄었다고 적습니다. 저장소의 재측정 결과(2026-09-23, Chrome 153)는 0.93·3.29·3.12배로 다릅니다. 숫자 하나로 단정하지 않고 CPU 왕복이 사라진다는 구조와 픽셀 일치를 근거로 말합니다.",
-            "The document (2026-08-08, headless Chromium 140) records 1.89x, 2.12x and 2.43x lower exchange cost at 256², 512² and 1024². The repository's re-measurement (2026-09-23, Chrome 153) says 0.93x, 3.29x and 3.12x. We rest on the structure (the CPU round trip disappears) and the pixel match, not on one number.",
+            "정본 결과 파일(2026-09-23, Chrome 153, 표본 9개)은 교환 비용이 256²·512²·1024² 에서 0.93·3.29·3.12배이고 256² 는 이득이 없습니다. 문서에 이전 기록(2026-08-08, Chromium 140)으로 남은 1.89·2.12·2.43배는 덮어써진 옛 결과라 지금은 인용하지 않습니다. 숫자 하나로 단정하지 않고 CPU 왕복이 사라진다는 구조와 픽셀 일치를 근거로 말합니다.",
+            "The canonical result file (2026-09-23, Chrome 153, 9 samples) gives 0.93x, 3.29x and 3.12x on exchange cost at 256², 512² and 1024², with no gain at 256². The 1.89x, 2.12x and 2.43x kept in the document as a prior record (2026-08-08, Chromium 140) come from an overwritten result, so we no longer quote them. We rest on the structure (the CPU round trip disappears) and the pixel match, not on one number.",
           ),
         },
         {
@@ -349,15 +355,15 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
         },
       ],
       pitfall: t(
-        "상류에 반영됐다거나 항상 몇 배 빨라졌다고 말하지 마세요. 반영 근거는 없고 배속은 측정마다 다릅니다(헤드리스 Chrome, 어댑터 이름 비어 있음). Vello GPU 는 명시적으로 고르는 provider 이며 기본 렌더 경로가 아닙니다. 드리프트 시험 결과는 실행하지 않은 정적 추정입니다. 측정이 헤드리스 Chrome 한 환경뿐이라 상태를 experimental 로 표시했습니다.",
-        "Do not say it was accepted upstream or that it is always some number of times faster. There is no acceptance evidence and the speed-up differs per measurement (headless Chrome, empty adapter name). Vello GPU is a provider chosen explicitly, not the default render path. The drift-test outcome is a static inference, not an executed result. Measurements exist only for headless Chrome, hence the experimental status.",
+        "상류에 반영됐다거나 항상 몇 배 빨라졌다고 말하지 마세요. 반영 근거는 없고 배속은 크기마다 다릅니다(256² 는 이득 없음, 정본은 헤드리스 Chrome 한 번의 측정이고 어댑터 이름이 비어 있음). Vello GPU 는 명시적으로 고르는 provider 이며 기본 렌더 경로가 아닙니다. 드리프트 시험 결과는 실행하지 않은 정적 추정입니다. 측정이 헤드리스 Chrome 한 환경뿐이라 상태를 experimental 로 표시했습니다.",
+        "Do not say it was accepted upstream or that it is always some number of times faster. There is no acceptance evidence and the speed-up differs by size (no gain at 256²; the canonical record is one headless Chrome run with an empty adapter name). Vello GPU is a provider chosen explicitly, not the default render path. The drift-test outcome is a static inference, not an executed result. Measurements exist only for headless Chrome, hence the experimental status.",
       ),
     },
     technologies: ["wgpu", "WebGPU", "Vello", "Rust / WASM"],
     facts: [
       { value: "189", label: t("UPSTREAM.sha256 이 고정한 파일 수(정적 대조: 188 일치, Cargo.toml.orig 부재)", "Files pinned by UPSTREAM.sha256 (static check: 188 match, Cargo.toml.orig missing)"), source: "crates/vendor/wgpu-toon/UPSTREAM.sha256" },
-      { value: "1.89x · 2.12x · 2.43x", label: t("문서가 기록한 교환 비용 개선(256²·512²·1024², 2026-08-08)", "Exchange-cost gain recorded in the doc (256², 512², 1024², 2026-08-08)"), source: "docs/engines/vello-baseline.md" },
-      { value: "0.93x · 3.29x · 3.12x", label: t("결과 파일의 재측정 값(2026-09-23, 같은 크기 순서)", "Re-measured values in the result file (2026-09-23, same size order)"), source: "tests/benchmarks/results/toon-vello-fork.json" },
+      { value: "0.93x · 3.29x · 3.12x", label: t("정본 결과 파일의 교환 비용 배속(256²·512²·1024², 2026-09-23, Chrome 153, 표본 9개)", "Exchange-cost speed-up in the canonical result file (256², 512², 1024², 2026-09-23, Chrome 153, 9 samples)"), source: "tests/benchmarks/results/toon-vello-fork.json" },
+      { value: "1.89x · 2.12x · 2.43x", label: t("덮어써진 옛 결과로 문서에 이전 기록만 남은 값(같은 크기 순서, 2026-08-08)", "Values of an overwritten earlier result, kept in the doc only as a prior record (same size order, 2026-08-08)"), source: "docs/engines/vello-baseline.md" },
     ],
     reviewedAt: "2026-10-07",
   },
@@ -382,14 +388,14 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
         "Restricted dependencies are pinned by name, version and license. mixbox 2.0.0 (CC-BY-NC-4.0) and remotion and @remotion/player 4.0.514 (Remotion License, not a standard SPDX id) pass only in exactly that combination, and the build fails if the version or label changes. A new CC-BY-NC package outside that list also fails. This card describes only how the repository handles them and makes no legal judgment.",
       ),
       t(
-        "빈틈 셋을 적습니다. ① 손으로 쓴 루트 THIRD_PARTY_NOTICES.md 는 일부 목록이라 직접 의존성 117개 중 92개를 언급하지 않습니다. 완전한 목록은 빌드 산출 고지입니다. ② wasm-vips 패키지는 자체 THIRD-PARTY-NOTICES.md 에 LGPL 라이브러리를 적지만, 생성기는 LICENSE·COPYING·NOTICE 로 시작하는 파일만 모아 생성 고지에는 MIT 로만 나옵니다. ③ mixbox 는 브러시 코드가 정적 import 하고 허용 여부는 런타임 라이선스 프로필이 판정하는데, 툴체인 문서는 같은 mixbox 를 연구 전용·비실행으로 적습니다.",
-        "Three gaps are noted. 1 The hand-written root THIRD_PARTY_NOTICES.md is a partial list and does not mention 92 of the 117 direct dependencies; the full list is the build output. 2 The wasm-vips package lists LGPL libraries in its own THIRD-PARTY-NOTICES.md, but the generator only collects files named like LICENSE, COPYING or NOTICE, so the generated notice shows only MIT. 3 The brush code imports mixbox statically and a runtime license profile decides its use, while the toolchain document calls the same mixbox research-only and non-executable.",
+        "빈틈 셋을 적습니다. ① 손으로 쓴 루트 THIRD_PARTY_NOTICES.md 는 일부 목록이라 직접 의존성 117개 중 22개만 싣고 95개는 빠져 있습니다. 완전한 목록은 빌드 산출 고지입니다. ② wasm-vips 패키지는 자체 THIRD-PARTY-NOTICES.md 에 LGPL 라이브러리를 적지만, 생성기는 LICENSE·COPYING·NOTICE 로 시작하는 파일만 모아 생성 고지에는 MIT 로만 나옵니다. ③ mixbox 는 브러시 코드가 정적 import 하고 허용 여부는 런타임 라이선스 프로필이 판정하는데, 툴체인 문서는 같은 mixbox 를 연구 전용·비실행으로 적습니다.",
+        "Three gaps are noted. 1 The hand-written root THIRD_PARTY_NOTICES.md is a partial list that carries only 22 of the 117 direct dependencies and omits 95; the full list is the build output. 2 The wasm-vips package lists LGPL libraries in its own THIRD-PARTY-NOTICES.md, but the generator only collects files named like LICENSE, COPYING or NOTICE, so the generated notice shows only MIT. 3 The brush code imports mixbox statically and a runtime license profile decides its use, while the toolchain document calls the same mixbox research-only and non-executable.",
       ),
     ],
     keyPoints: [
       t("빌드가 고지를 만들고 허용 목록 밖이면 실패한다", "The build writes the notice and fails outside the allowlist"),
       t("제한 의존성(mixbox·Remotion)은 이름·버전·라이선스를 고정", "Restricted deps (mixbox, Remotion) are pinned by name, version, license"),
-      t("손으로 쓴 고지는 일부 목록: 직접 의존성 92/117 누락", "The hand-written notice is partial: 92 of 117 direct deps absent"),
+      t("손으로 쓴 고지는 일부 목록: 직접 의존성 95/117 누락", "The hand-written notice is partial: 95 of 117 direct deps absent"),
     ],
     diagram: {
       id: "oss-license-notice-pipeline-diagram",
@@ -514,8 +520,8 @@ try {
         {
           question: t("루트의 THIRD_PARTY_NOTICES.md 에 전부 있나요?", "Is everything in the root THIRD_PARTY_NOTICES.md?"),
           answer: t(
-            "아니요. 일부 목록이라 직접 의존성 117개 중 92개가 없습니다. 완전한 목록은 빌드가 만드는 THIRD_PARTY_NOTICES.generated.md 입니다.",
-            "No. It is a partial list and 92 of the 117 direct dependencies are absent. The complete list is THIRD_PARTY_NOTICES.generated.md, written by the build.",
+            "아니요. 일부 목록이라 직접 의존성 117개 중 22개만 실려 있고 95개가 없습니다. 완전한 목록은 빌드가 만드는 THIRD_PARTY_NOTICES.generated.md 입니다.",
+            "No. It is a partial list: only 22 of the 117 direct dependencies appear and 95 are absent. The complete list is THIRD_PARTY_NOTICES.generated.md, written by the build.",
           ),
         },
       ],
@@ -528,7 +534,7 @@ try {
     facts: [
       { value: "584", label: t("2026-10-08 audit:licenses 가 통과한 pnpm 항목 수", "pnpm entries passed by audit:licenses on 2026-10-08"), source: "scripts/generate-third-party-notices.mjs" },
       { value: "117", label: t("직접 런타임 의존성 수", "Direct runtime dependencies"), source: "scripts/collect-engineering-licenses.mjs" },
-      { value: "92 / 117", label: t("손으로 쓴 고지에 언급되지 않은 직접 의존성(이름 대조, 2026-10-08)", "Direct dependencies absent from the hand-written notice (name match, 2026-10-08)"), source: "THIRD_PARTY_NOTICES.md" },
+      { value: "95 / 117", label: t("손으로 쓴 고지 표에 실리지 않은 직접 의존성(표의 백틱 패키지명 대조, 2026-10-08)", "Direct dependencies missing from the hand-written notice table (backticked package-name match, 2026-10-08)"), source: "THIRD_PARTY_NOTICES.md" },
     ],
     reviewedAt: "2026-10-07",
   },
@@ -553,8 +559,8 @@ try {
         "4 At run time, origin and hash are pinned. Because the production CSP blocks external script and WASM execution, the WASM of ONNX Runtime and MediaPipe ships as same-origin assets with build hashes, and the six ONNX model files (119,438,571 bytes in total) live in the repository and are checked for length and SHA-256 before a session is created. Heavy engines load only through dynamic import, and the bundle check fails if one returns to the static graph.",
       ),
       t(
-        "예외도 있습니다. MediaPipe 모델은 storage.googleapis.com 에서 런타임에 내려받고, 배경 제거(selfie segmenter)는 latest 리비전이라 해시가 고정돼 있지 않습니다(아바타 임베더만 길이와 SHA-256 고정). GitHub Actions 는 471건 중 40자리 SHA 고정이 25건이고 나머지는 태그 고정이며, Dependabot·Renovate 설정은 찾지 못했습니다. 새 릴리스 숙성 대기(minimumReleaseAge)도 0 입니다.",
-        "There are exceptions. MediaPipe models are downloaded at run time from storage.googleapis.com, and the background-removal selfie segmenter uses the latest revision with no pinned hash (only the avatar embedder has a pinned length and SHA-256). Of 471 GitHub Actions uses, 25 are pinned to a 40-character SHA and the rest to tags, and no Dependabot or Renovate config was found. minimumReleaseAge is also 0.",
+        "예외도 있습니다. MediaPipe 모델은 storage.googleapis.com 에서 런타임에 내려받고, 배경 제거(selfie segmenter)는 latest 리비전이라 해시가 고정돼 있지 않습니다(아바타 임베더만 길이와 SHA-256 고정). GitHub Actions 는 471건 중 40자리 SHA 고정이 25건이고 나머지는 태그 고정이며, Dependabot·Renovate 설정은 찾지 못했습니다. 새 릴리스 숙성 대기(minimumReleaseAge)도 0 이고, braces 는 저장소 포크라 pnpm audit 대상이 아닙니다.",
+        "There are exceptions. MediaPipe models are downloaded at run time from storage.googleapis.com, and the background-removal selfie segmenter uses the latest revision with no pinned hash (only the avatar embedder has a pinned length and SHA-256). Of 471 GitHub Actions uses, 25 are pinned to a 40-character SHA and the rest to tags, and no Dependabot or Renovate config was found. minimumReleaseAge is also 0, and braces is a repository fork that pnpm audit does not cover.",
       ),
     ],
     keyPoints: [
