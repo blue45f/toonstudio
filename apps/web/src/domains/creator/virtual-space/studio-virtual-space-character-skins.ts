@@ -117,6 +117,16 @@ function directionUrls(skin: string): Readonly<Record<StudioVirtualSpaceFacing, 
   };
 }
 
+/**
+ * 160px 프레임 4개를 가로로 이은 640×160 스트립(v5 스타일 팩·imagegen25 행동/포즈 시트의 실제 격자).
+ * 격자를 선언하지 않으면 로더 검증이 "선언 없는 시트 = 2×2(320×320)"로 보고 시트를 거부해,
+ * 걷기·앉기·손인사·행동이 전부 정지 이미지로 대체되어 캐릭터가 미끄러지듯 움직인다.
+ */
+const STRIP_FRAME = 160;
+const STRIP_4X1_ATLAS: StudioCharacterAtlasLayout = Object.freeze({
+  width: STRIP_FRAME * 4, height: STRIP_FRAME, slicing: "rounded-grid", columns: 4, rows: 1,
+});
+
 const IMAGEGEN25_CHARACTER_ROOT = "/assets/virtual-studio/living-town-v6/imagegen25-character";
 const IMAGEGEN25_PRESENTATION: StudioCharacterFramePresentation = Object.freeze({
   originX: 0.5,
@@ -137,8 +147,9 @@ function imagegen25DirectionUrls(): Readonly<Record<StudioVirtualSpaceFacing, st
 function imagegen25Clip(action: StudioCharacterAction, facing: StudioVirtualSpaceFacing): StudioCharacterAtlasClip {
   return Object.freeze({
     textureUrl: `${IMAGEGEN25_CHARACTER_ROOT}/player-imagegen25-${action}-${facing}.webp`,
-    frameWidth: 160,
-    frameHeight: 160,
+    frameWidth: STRIP_FRAME,
+    frameHeight: STRIP_FRAME,
+    atlas: STRIP_4X1_ATLAS,
     start: 0,
     end: 3,
     frameRate: 7,
@@ -163,8 +174,9 @@ function imagegen25Skin(): StudioCharacterSkin {
   ])) as NonNullable<StudioCharacterSkin["actions"]>);
   const pose = (name: "wave" | "sit"): StudioCharacterPoseSheet => Object.freeze({
     textureUrl: `${IMAGEGEN25_CHARACTER_ROOT}/player-imagegen25-${name}.webp`,
-    frameWidth: 160,
-    frameHeight: 160,
+    frameWidth: STRIP_FRAME,
+    frameHeight: STRIP_FRAME,
+    atlas: STRIP_4X1_ATLAS,
     directionFrames: Object.freeze({ down: 0, right: 1, left: 2, up: 3 }),
     frames: IMAGEGEN25_FRAMES,
   });
@@ -304,7 +316,9 @@ export function studioCharacterTextureUrlForSkin(
 
 
 const STYLED_SKIN_CACHE = new Map<string, StudioCharacterSkin>();
-const V5_FRAME = 160;
+const V5_FRAME = STRIP_FRAME;
+/** v5 걷기·행동·포즈 시트는 640×160 스트립이다(정지 방향·상태 그림은 160×160 단일 이미지). */
+const V5_STRIP_ATLAS = STRIP_4X1_ATLAS;
 const V5_PRESENTATION: StudioCharacterFramePresentation = Object.freeze({
   originX: 0.5,
   originY: 0.95,
@@ -332,6 +346,7 @@ function v5Clip(source: StudioCharacterSkin, style: StudioVirtualArtStyleKey, mo
     textureUrl: v5ActorUrl(source, style, motion, facing),
     frameWidth: V5_FRAME,
     frameHeight: V5_FRAME,
+    atlas: V5_STRIP_ATLAS,
     start: 0,
     end: 3,
     frameRate: motion === "walk" ? 8 : 7,
@@ -347,6 +362,7 @@ function v5Pose(source: StudioCharacterSkin, style: StudioVirtualArtStyleKey, po
     textureUrl: v5ActorUrl(source, style, pose),
     frameWidth: V5_FRAME,
     frameHeight: V5_FRAME,
+    atlas: V5_STRIP_ATLAS,
     directionFrames: Object.freeze({ down: 0, right: 1, left: 2, up: 3 }),
     frames: V5_FRAMES,
   });
