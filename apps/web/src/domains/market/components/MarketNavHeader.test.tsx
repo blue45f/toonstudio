@@ -54,6 +54,16 @@ describe("MarketNavHeader", () => {
     expect(fit.getAttribute("aria-current")).toBe("page");
   });
 
+  it.each(["/market/fit", "/market/compare"])(
+    "keeps the selection tools panel closed on entry to %s (F-B09-2)",
+    (route) => {
+      render(<MemoryRouter initialEntries={[route]}><MarketNavHeader /></MemoryRouter>);
+      const details = screen.getByText("선택 도구").closest("details");
+      expect(details).not.toBeNull();
+      expect(details?.hasAttribute("open")).toBe(false);
+    },
+  );
+
   it.each([
     ["/market/library", "내 에셋"],
     ["/market/wishlist", "찜 목록"],
