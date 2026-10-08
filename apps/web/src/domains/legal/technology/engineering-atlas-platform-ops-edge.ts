@@ -329,8 +329,8 @@ const MANUAL_SHA_RELEASE_GATE: EngineeringAtlasEntry = {
   title: t("머지는 배포가 아니다: 승인한 커밋 하나만 손으로 올립니다", "Merging is not releasing: one approved commit, shipped by hand"),
   status: "live",
   tagline: t(
-    "배포는 사람이 승인한 40자리 커밋 하나만, 그리고 CI가 배포 명령 자체를 막습니다.",
-    "Only one human-approved 40-character commit ships, and CI blocks deploy commands outright.",
+    "배포는 사람이 승인한 40자리 커밋 하나만, 워크플로의 배포 명령은 코드로 검사합니다.",
+    "Only one human-approved 40-character commit ships, and workflow deploy commands are flagged by a code check.",
   ),
   background: [
     t(
@@ -353,7 +353,7 @@ const MANUAL_SHA_RELEASE_GATE: EngineeringAtlasEntry = {
   keyPoints: [
     t("머지와 배포를 분리: push로는 운영이 바뀌지 않음", "Merge and release are separate: a push changes nothing live"),
     t("승인 SHA 40자리 · main · 깨끗한 작업 폴더 · HEAD 일치", "Approved 40-char SHA, main, clean tree, HEAD must match"),
-    t("CI 정책 스캐너가 워크플로 안의 배포 명령을 실패 처리", "A CI policy scanner fails any deploy command in a workflow"),
+    t("정책 스캐너가 워크플로 안의 배포 명령을 실패 처리(배포 전 점검)", "A policy scanner fails any deploy command in a workflow (pre-release check)"),
     t("롤백은 직전 검증 SHA를 다시 수동 배포", "Rollback means redeploying the previous verified SHA by hand"),
   ],
   diagram: {
@@ -365,11 +365,11 @@ const MANUAL_SHA_RELEASE_GATE: EngineeringAtlasEntry = {
       "Merging is not releasing; the script writes remotely only after HEAD matches the approved SHA.",
     ),
     alt: t(
-      "사람이 검토한 커밋을 main에 병합하는 것까지는 배포가 아닙니다. CI 스캐너는 워크플로 안에 배포 명령이 있는지 따로 검사합니다. 배포할 때는 사람이 승인 문구와 40자리 SHA를 스크립트에 주고, 스크립트가 브랜치와 작업 폴더와 HEAD를 확인한 뒤 Cloudflare에 그 SHA만 배포합니다. 문제가 생기면 직전 검증 SHA로 다시 수동 배포합니다.",
-      "Merging a reviewed commit into main is not a release. A CI scanner separately checks that no workflow contains a deploy command. To release, a person gives the script the approval phrase and a 40-character SHA, the script checks the branch, working folder and HEAD, and only then deploys that SHA to Cloudflare. If something goes wrong, the previous verified SHA is redeployed by hand.",
+      "사람이 검토한 커밋을 main에 병합하는 것까지는 배포가 아닙니다. 정책 스캐너는 워크플로 안에 배포 명령이 있는지 따로 검사합니다(배포 전 점검과 수동 readiness 워크플로에서 실행). 배포할 때는 사람이 승인 문구와 40자리 SHA를 스크립트에 주고, 스크립트가 브랜치와 작업 폴더와 HEAD를 확인한 뒤 Cloudflare에 그 SHA만 배포합니다. 문제가 생기면 직전 검증 SHA로 다시 수동 배포합니다.",
+      "Merging a reviewed commit into main is not a release. A policy scanner, run by the pre-release check and the manual readiness workflow, separately checks that no workflow contains a deploy command. To release, a person gives the script the approval phrase and a 40-character SHA, the script checks the branch, working folder and HEAD, and only then deploys that SHA to Cloudflare. If something goes wrong, the previous verified SHA is redeployed by hand.",
     ),
     actors: [
-      { id: "ci", label: t("CI 스캐너", "CI scanner"), sub: t("워크플로 전체 검사", "Scans every workflow"), tone: "good" },
+      { id: "ci", label: t("정책 스캐너", "Policy scanner"), sub: t("워크플로 전체 검사", "Scans every workflow"), tone: "good" },
       { id: "git", label: t("Git 저장소", "Git repo"), sub: t("main · HEAD", "main, HEAD"), tone: "neutral" },
       { id: "human", label: t("승인자(사람)", "Approver"), sub: t("검토·SHA 지정", "Reviews, names the SHA"), tone: "warn" },
       { id: "script", label: t("배포 스크립트", "Release script"), sub: t("5중 문턱", "Five hurdles"), tone: "neutral" },
@@ -377,7 +377,7 @@ const MANUAL_SHA_RELEASE_GATE: EngineeringAtlasEntry = {
     ],
     messages: [
       { from: "human", to: "git", label: t("검토한 커밋을 main에 병합", "Merge the reviewed commit"), note: t("여기까지는 배포가 아님", "Not a release yet") },
-      { from: "ci", to: "git", label: t("워크플로 명령을 정적 검사", "Scan workflow commands"), note: t("배포 명령이 있으면 CI 실패", "Any deploy command fails CI") },
+      { from: "ci", to: "git", label: t("워크플로 명령을 정적 검사", "Scan workflow commands"), note: t("배포 명령이 있으면 검사 실패", "Any deploy command fails the check") },
       { from: "human", to: "script", label: t("승인 문구 + 40자리 SHA", "Approval phrase + 40-char SHA"), note: t("환경변수로 전달", "Passed as environment variables") },
       { from: "script", to: "git", label: t("main? 변경 없음? HEAD?", "main? clean? HEAD?"), note: t("문턱 3~5번을 확인", "Checks hurdles 3 to 5") },
       { from: "git", to: "script", label: t("현재 HEAD 값", "Current HEAD value"), style: "dashed", note: t("승인 SHA와 같아야 통과", "Must equal the approved SHA") },
@@ -404,10 +404,10 @@ const MANUAL_SHA_RELEASE_GATE: EngineeringAtlasEntry = {
       paths: ["render.yaml", "AGENTS.md"],
     },
     {
-      feature: t("CI의 배포 금지 정책 검사 (verify:free-infrastructure)", "CI's deploy-ban policy check (verify:free-infrastructure)"),
+      feature: t("배포 금지 정책 검사 (verify:free-infrastructure)", "Deploy-ban policy check (verify:free-infrastructure)"),
       role: t(
-        "워크플로를 정적으로 읽어 CI에서 wrangler 배포나 Render 배포 요청이 나오면 실패시키고, 되살아난 퇴역 인프라 파일도 막습니다.",
-        "It reads workflows statically, fails CI on any wrangler deploy or Render deploy request, and also blocks retired infrastructure files that come back.",
+        "워크플로를 정적으로 읽어 wrangler 배포나 Render 배포 요청이 나오면 실패시키고, 되살아난 퇴역 인프라 파일도 막습니다. 배포 전 점검과 수동 readiness 워크플로가 실행하며 코어 CI 잡에는 없습니다.",
+        "It reads workflows statically, fails on any wrangler deploy or Render deploy request, and also blocks retired infrastructure files that come back. The pre-release check and the manual readiness workflow run it; the core CI jobs do not.",
       ),
       paths: [
         "scripts/release-workflow-policy.mjs#validateReleaseWorkflows",
@@ -532,8 +532,8 @@ const MANUAL_SHA_RELEASE_GATE: EngineeringAtlasEntry = {
   chapterIds: ["delivery", "cost-engineering"],
   talk: {
     pitch: t(
-      "ToonStudio에서는 코드를 합치는 일과 서비스에 올리는 일이 다릅니다. 올릴 때는 사람이 승인한 커밋 번호 하나만 배포 스크립트에 넘기고, 스크립트는 main 브랜치인지, 작업 폴더가 깨끗한지, 지금 코드가 그 번호와 같은지를 모두 확인합니다. 그리고 CI는 워크플로 안에 배포 명령이 숨어 있으면 실패시켜서, '자동 배포 금지'를 약속이 아니라 코드로 지킵니다.",
-      "At ToonStudio, merging code and shipping it are different acts. To ship, a person passes one approved commit number to the release script, which checks that the branch is main, the working folder is clean and the code equals that number. CI also fails any workflow that hides a deploy command, so 'no automatic deploys' is kept by code, not by promise.",
+      "ToonStudio에서는 코드를 합치는 일과 서비스에 올리는 일이 다릅니다. 올릴 때는 사람이 승인한 커밋 번호 하나만 배포 스크립트에 넘기고, 스크립트는 main 브랜치인지, 작업 폴더가 깨끗한지, 지금 코드가 그 번호와 같은지를 모두 확인합니다. 그리고 정책 스캐너가 워크플로 안에 배포 명령이 숨어 있으면 실패시켜서, '자동 배포 금지'를 약속이 아니라 코드로 점검합니다. 이 스캐너는 배포 전 점검(verify:free-infrastructure)과 수동 readiness 워크플로에서 돕니다.",
+      "At ToonStudio, merging code and shipping it are different acts. To ship, a person passes one approved commit number to the release script, which checks that the branch is main, the working folder is clean and the code equals that number. A policy scanner also fails any workflow that hides a deploy command, so 'no automatic deploys' is checked by code, not by promise; it runs in the pre-release check (verify:free-infrastructure) and the manual readiness workflow.",
     ),
     analogy: t(
       "비행기 출발 직전 체크리스트와 같습니다. 기장이 서명한 승인서(SHA)와 실제 기체(HEAD)가 일치해야만 활주로로 나갑니다.",

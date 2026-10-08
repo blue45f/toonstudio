@@ -317,8 +317,8 @@ const SECURITY_SUPPLY_CHAIN_CHAIN: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "'모든 PR이 취약점 감사를 통과한다'고 말하지 마세요. audit:security는 코어 ci.yml에 없고 야간·훅·수동에서만 돌며, 문서(docs/SECURITY_ADVISORY_EXCEPTIONS.md)는 코어 게이트에 포함된다고 적어 코드와 어긋납니다. '예외 0건'은 '취약점 0건'과 다른 말이고 감사 결과는 매일 바뀌므로 발표 직전에 pnpm audit를 다시 실행해 보세요. GitHub 쪽 설정과 자동 업데이트 도구는 확인하지 못했습니다.",
-      "Do not say 'every PR passes the vulnerability audit'. audit:security is not in the core ci.yml and runs only nightly, in a hook and manually, while the documentation (docs/SECURITY_ADVISORY_EXCEPTIONS.md) says it is part of the core gate, which disagrees with the code. 'Zero exceptions' is not 'zero vulnerabilities' and audit results change daily, so rerun pnpm audit just before the talk. GitHub-side settings and any auto-update tool were not confirmed.",
+      "'모든 PR이 취약점 감사를 통과한다'고 말하지 마세요. audit:security는 코어 ci.yml에 없고 야간·훅·수동에서만 돌며, 문서(docs/SECURITY_ADVISORY_EXCEPTIONS.md)도 같은 내용으로 맞춰 두었습니다. '예외 0건'은 '취약점 0건'과 다른 말이고 감사 결과는 매일 바뀌므로 발표 직전에 pnpm audit를 다시 실행해 보세요. GitHub 쪽 설정과 자동 업데이트 도구는 확인하지 못했습니다.",
+      "Do not say 'every PR passes the vulnerability audit'. audit:security is not in the core ci.yml and runs only nightly, in a hook and manually, and the documentation (docs/SECURITY_ADVISORY_EXCEPTIONS.md) now says the same. 'Zero exceptions' is not 'zero vulnerabilities' and audit results change daily, so rerun pnpm audit just before the talk. GitHub-side settings and any auto-update tool were not confirmed.",
     ),
   },
   technologies: ["pnpm", "Secretlint", "CodeQL", "GitHub Actions", "Node.js"],
