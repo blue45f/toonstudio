@@ -42,6 +42,8 @@ import {
 } from "./creator-resource-pages";
 
 export const creatorResourcesRoutes = defineAppRoutes([
+  // 별칭 정책 (2026-10-08 확정): /make는 북마크·구버전 유입 전용 별칭으로 유지하고,
+  // 내부 링크는 canonical인 /studio/new만 쓴다. 근거는 legacy.routes.tsx 주석 참조.
   { id: "resources-make", path: "/make", element: <Navigate to="/studio/new" replace /> },
   { id: "resources-hub", path: "/creator-hub", element: <Navigate to="/studio" replace /> },
   { id: "resources-publishing", path: "/publishing", element: <Navigate to="/studio/publish" replace /> },
