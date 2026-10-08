@@ -21,7 +21,8 @@ vi.mock("@/platform/api", () => ({
 vi.mock("@/shared/lib/i18n", () => ({
   useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: "ko" }),
   // 공용 LoadingState가 useT를 쓴다 — 라벨을 명시 전달하므로 키 반환 스텁으로 충분하다.
-  useT: () => (key: string) => key,
+  // app.name만 실제 브랜드명으로 돌려줘 문서 제목 정규화를 검증할 수 있게 한다.
+  useT: () => (key: string) => (key === "app.name" ? "툰스튜디오" : key),
 }));
 
 const manifestFixture = {
@@ -76,6 +77,20 @@ describe("DeveloperPlatformPage", () => {
     expect(screen.getByRole("link", { name: "기술 참고 자료" }).getAttribute("href")).toBe("/about/technology/references");
     expect(screen.getByRole("link", { name: "API 키 화면" }).getAttribute("href")).toBe("/settings/api-keys");
     await screen.findByRole("button", { name: "다시 확인" });
+  });
+
+  it("페이지 고유 문서 제목을 설정한다", async () => {
+    mocks.developerManifest.mockResolvedValueOnce(manifestFixture);
+
+    render(
+      <MemoryRouter>
+        <DeveloperPlatformPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(document.title).toBe("개발자 플랫폼 · 툰스튜디오");
+    });
   });
 
   it("웹훅 계약을 헤더가 있는 코드 카드로 보여준다", async () => {
