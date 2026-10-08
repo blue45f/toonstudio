@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createProductionManuscriptSnapshot,
@@ -78,7 +78,16 @@ const createShare = vi.mocked(serverApi.createServerVersionShare);
 const revokeShare = vi.mocked(serverApi.revokeServerVersionShare);
 const updateMemo = vi.mocked(serverApi.updateServerManuscriptSnapshotMemo);
 
+/**
+ * 만료 판정은 `Date.now()`를 쓴다. 공유 링크 픽스처는 2026-10-01에 7일 만료로 만들어지므로
+ * 실시간 시계에 맡기면 2026-10-08T00:00Z 이후 "만료된 링크는 올리지 않는다" 분기로 빠져
+ * 업로드 단언이 날짜가 지나면 깨진다. Date만 고정해 Promise·타이머 동작은 그대로 둔다.
+ */
+const FIXED_NOW = new Date("2026-10-02T00:00:00.000Z");
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(FIXED_NOW);
   window.localStorage.clear();
   vi.clearAllMocks();
   fetchSnapshots.mockResolvedValue([]);
@@ -101,6 +110,10 @@ beforeEach(() => {
     serverShare({ id: linkId, revokedAt: "2026-10-02T00:00:00.000Z" }));
   updateMemo.mockImplementation(async (_artifactId, snapshotId, memo) =>
     serverSnapshot({ id: snapshotId, memo }));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("서버 → 로컬 매핑", () => {
