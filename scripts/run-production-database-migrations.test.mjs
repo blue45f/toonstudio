@@ -1417,6 +1417,8 @@ test("historical adoption and post-baseline relations exactly partition runtime 
     "creator_work_report",
     "creator_work_review_feedback",
     "creator_work_review_link",
+    "fan_post_like",
+    "fan_post_report",
     "member_level",
     "member_message",
     "member_message_block",
