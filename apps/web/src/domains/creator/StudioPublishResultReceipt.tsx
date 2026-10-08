@@ -25,6 +25,8 @@ import {
   type StudioPublishResultKind,
 } from "./studio-publish-result";
 
+import { creatorWorkHref } from "./publishing/showcase-links";
+
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
@@ -237,7 +239,7 @@ export function StudioPublishResultReceipt({
         ) : null}
         {copy.readerActionLabel ? (
           <Link
-            href={`/create/${encodeURIComponent(workId)}`}
+            href={creatorWorkHref(workId)}
             className={buttonClass({
               size: "sm",
               variant: "solid",

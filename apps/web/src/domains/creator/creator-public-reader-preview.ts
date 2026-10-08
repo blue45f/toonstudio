@@ -1,3 +1,5 @@
+import { creatorWorkHref } from "./publishing/showcase-links";
+
 export interface CreatorReaderPreviewMode {
   readonly readerView: boolean;
   readonly publicPreview: boolean;
@@ -18,9 +20,9 @@ export function resolveCreatorReaderPreviewMode(
 }
 
 export function buildCreatorPublicReaderPreviewHref(workId: string): string {
-  return `/create/${encodeURIComponent(workId)}?view=reader&publicPreview=1`;
+  return `${creatorWorkHref(workId)}?view=reader&publicPreview=1`;
 }
 
 export function buildCreatorReaderManagementHref(workId: string): string {
-  return `/create/${encodeURIComponent(workId)}`;
+  return creatorWorkHref(workId);
 }

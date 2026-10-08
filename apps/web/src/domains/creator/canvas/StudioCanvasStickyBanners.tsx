@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { StudioLiveCollaborationQuickControls } from "../live/StudioLiveCollaborationQuickControls";
+import { creatorWorkHref } from "../publishing/showcase-links";
 import { StudioLivePresenceDockConnected } from "../studio-page-lazy-ui";
 import { adoptMissingPage } from "../studio-pages";
 import {
@@ -322,7 +323,7 @@ export function renderStudioCanvasStickyBanners({
                       return;
                     }
                     if (workHydrationUnsupportedFormat && remixId) {
-                      navigate(`/create/${encodeURIComponent(remixId)}`);
+                      navigate(creatorWorkHref(remixId));
                       return;
                     }
                     if (onRetrySourceHydration) {

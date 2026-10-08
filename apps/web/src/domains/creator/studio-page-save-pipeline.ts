@@ -25,6 +25,7 @@ import {
   preloadStudioSavePayloadRuntime,
 } from "./studio-page-lazy-ui";
 import { normalizePageReviewState } from "./studio-page-review";
+import { creatorWorkHref } from "./publishing/showcase-links";
 import { withStudioLinked3dCloudSaveRecoveryState } from "./studio-page-shell-runtime";
 import { validateStudioPublishPreflight } from "./studio-publish-preflight";
 import { validateStudioWorkMetadata } from "./studio-work-metadata";
@@ -841,7 +842,7 @@ export async function runStudioPageSavePipeline(
       // The promoted-room receipt identifies a prior successful save, but there is no exact
       // payload fingerprint proving that it contains this tab's current draft. Keep every local
       // autosave authority intact and open the existing work with an explicit recovery notice.
-      navigate(`/create/${stagedLinkedNewWork.workId}`, {
+      navigate(creatorWorkHref(stagedLinkedNewWork.workId), {
         state: withStudioLinked3dCloudSaveRecoveryState(
           location.state,
           stagedLinkedNewWork.workId,
@@ -888,7 +889,7 @@ export async function runStudioPageSavePipeline(
       // 무시
     }
 
-    if (!keepSharedEditorOpen) navigate(`/create/${savedWorkId}`);
+    if (!keepSharedEditorOpen) navigate(creatorWorkHref(savedWorkId));
   } catch (err) {
     if (saveScopeStillCurrent()) {
       let message = err instanceof Error ? err.message : "저장에 실패했어요.";

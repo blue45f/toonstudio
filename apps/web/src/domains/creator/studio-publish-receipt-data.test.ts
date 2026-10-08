@@ -49,8 +49,8 @@ describe("studio publish receipt data", () => {
     expect(receipt).toMatchObject({
       schema: "toonstudio.publish-receipt.v1",
       revision: 7,
-      publicPath: "/create/work%20%2F%201",
-      anonymousPreviewPath: "/create/work%20%2F%201?view=reader&publicPreview=1",
+      publicPath: "/showcase/work/work%20%2F%201",
+      anonymousPreviewPath: "/showcase/work/work%20%2F%201?view=reader&publicPreview=1",
       details: {
         source: { contentChecksum: "a".repeat(64) },
         community: {

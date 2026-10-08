@@ -102,7 +102,7 @@ function SignInPrompt() {
 function PostCard({ work }: { work: WorkSummary }) {
   return (
     <Link
-      href={formatI18nTemplate(translateCurrentStaticSourceText("domains.account.AccountPage", "en", "/create/{v0}"), { v0: String(work.id) })}
+      href={formatI18nTemplate(translateCurrentStaticSourceText("domains.account.AccountPage", "en", "/showcase/work/{v0}"), { v0: String(work.id) })}
       className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-panel/30 transition-colors hover:border-line-strong"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-raised/40">

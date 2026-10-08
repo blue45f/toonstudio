@@ -1,8 +1,9 @@
 /**
  * 창작 갤러리 링크의 단일 출처.
  *
- * - 허브(갤러리·챌린지·홍보영상)는 사이트 별칭 정책(`SITE_ROUTE_ALIASES`)의 정식 경로 `/showcase/*`를 쓴다.
- * - 작품·시리즈 상세는 공유 링크, 리더 포커스(`/create/…?view=reader`)가 기대하는 `/create/*` 정식 경로를 유지한다.
+ * - 갤러리 전체(허브·챌린지·홍보영상·작품·시리즈 상세)는 정식 경로 `/showcase/*`를 쓴다.
+ * - 옛 `/create/*` 상세 주소는 라우터가 `/showcase/*`로 리다이렉트하는 호환 전용이며,
+ *   새 링크는 만들지 않는다. 리더 포커스도 `/showcase/work/…?view=reader`가 정식 형태다.
  * 문자열을 화면마다 조립하지 않고 이 헬퍼를 거쳐, 인코딩 누락과 레거시 경로 혼용을 막는다.
  */
 import type { WorkSort } from "@/platform/creator-client";
@@ -46,11 +47,11 @@ export function showcaseChallengeHref(slug: string): string {
 }
 
 export function creatorWorkHref(workId: string): string {
-  return `/create/${encodeURIComponent(workId)}`;
+  return `/showcase/work/${encodeURIComponent(workId)}`;
 }
 
 export function creatorSeriesHref(seriesId: string): string {
-  return `/create/series/${encodeURIComponent(seriesId)}`;
+  return `/showcase/series/${encodeURIComponent(seriesId)}`;
 }
 
 export function creatorProfileHref(userId: string): string {

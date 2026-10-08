@@ -45,13 +45,10 @@ const INTENTIONAL_NON_DIRECTORY_ROUTES = new Set([
   "/studio/brush-lab",
 ]);
 
-const LEGACY_SHARED_PAGE_ALIASES = new Map([
-  ["/create/challenges", "/showcase/challenges"],
-  ["/create/promo", "/showcase/promo"],
-]);
-
 const LEGACY_REDIRECT_ALIASES = new Map([
   ["/brush-lab", "/studio/assets/brushes/new"],
+  ["/create/challenges", "/showcase/challenges"],
+  ["/create/promo", "/showcase/promo"],
   ["/music", "/studio/assets/audio"],
   ["/publishing", "/studio/publish"],
 ]);
@@ -109,8 +106,7 @@ const extendedDestinationHrefs = SITEMAP_EXTENDED_DESTINATION_GROUPS
   .map((item) => item.href);
 
 const canonicalDirectoryPath = (href: string) => (
-  LEGACY_SHARED_PAGE_ALIASES.get(href)
-  ?? LEGACY_REDIRECT_ALIASES.get(href)
+  LEGACY_REDIRECT_ALIASES.get(href)
   ?? LEGACY_CROSS_DOMAIN_ALIASES.get(href)
   ?? canonicalSitePath(href)
 );
@@ -188,14 +184,15 @@ describe("site directory experience contracts", () => {
     expect(directoryPaths).toContain("/brand-film");
   });
 
-  it("keeps canonical directory links equivalent to compatible legacy pages", () => {
+  it("redirects legacy create detail pages to their canonical showcase pages", () => {
+    // O-04 일원화: /create 상세는 페이지를 공유하지 않고 정식 /showcase 주소로 리다이렉트한다.
     const routes = readFileSync("apps/web/src/app/routes/groups/creator.routes.tsx", "utf8");
-    const pageByPath = new Map([...routes.matchAll(/path: "([^"]+)", element: <(\w+) \/>/gu)]
-      .map((match) => [match[1], match[2]]));
 
-    for (const [legacy, canonical] of LEGACY_SHARED_PAGE_ALIASES) {
-      expect(pageByPath.get(legacy)).toBeTruthy();
-      expect(pageByPath.get(legacy)).toBe(pageByPath.get(canonical));
+    for (const [legacy, canonical] of [
+      ["/create/challenges", "/showcase/challenges"],
+      ["/create/promo", "/showcase/promo"],
+    ] as const) {
+      expect(routes).toContain(`path: "${legacy}", element: <ShowcaseRedirect to="${canonical}" />`);
       expect(directoryPaths).toContain(canonical);
       expect(extendedDestinationHrefs).not.toContain(legacy);
     }

@@ -22,7 +22,7 @@ export const ATELIER_SCENES = {
   motion: {
     ko: ["움직이는 컷", "완성한 장면에, 다음 리듬.", "정지 이미지의 이동과 확대를 조합한 카메라 연출 예시입니다. 캐릭터 자체를 생성하거나 움직이는 영상은 아닙니다.", "홍보 영상 만들기"],
     en: ["Motion comic", "Give still artwork a new rhythm.", "A camera-motion example using a still image. This does not generate video or animate the character itself.", "Create a promo film"],
-    href: "/create/promo", image: "world", tag: "STILL ART / CAMERA / TIMELINE",
+    href: "/showcase/promo", image: "world", tag: "STILL ART / CAMERA / TIMELINE",
   },
   materials: {
     ko: ["창작 재료", "다음 표현을 여는 재료.", "붓의 질감, 장면의 색과 공간의 디테일. 목적에 맞는 자료와 리소스를 찾아 작업으로 이어가세요.", "리소스 찾아보기"],

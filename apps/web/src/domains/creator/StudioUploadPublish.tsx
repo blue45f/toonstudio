@@ -14,6 +14,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { buildStudioHref } from "./creator-studio-links";
+import { creatorWorkHref } from "./publishing/showcase-links";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDiscardLocalChangesRequest } from "./studio-destructive-command-catalog";
 import { downscaleDataUrl, downscaleImageFile } from "./studio-image-utils";
@@ -674,14 +675,14 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
         setSharedMeta(nextMeta);
         setDirty(false);
         if (sharedMetaSnapshot.role === "owner" && status === "published") {
-          navigate(`/create/${saved.workId}`);
+          navigate(creatorWorkHref(saved.workId));
         } else {
           setSuccessMessage(
             `공동 변경사항을 revision ${saved.revision ?? sharedMetaSnapshot.revision}로 저장했습니다.`
           );
         }
       } else {
-        navigate(`/create/${saved.workId}`);
+        navigate(creatorWorkHref(saved.workId));
       }
     } catch (cause) {
       if (

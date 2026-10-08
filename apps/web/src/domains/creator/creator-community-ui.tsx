@@ -8,6 +8,7 @@ import {
   CREATOR_COMMUNITY_PROVENANCE_LABEL,
 } from "./creator-community-labels";
 import { FORMAT_LABEL, SERIES_STATUS_CLASS, SERIES_STATUS_LABEL } from "./creator-community-utils";
+import { creatorSeriesHref, creatorWorkHref } from "./publishing/showcase-links";
 
 import { CoverImage } from "@/shared/components/cover-image";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -58,7 +59,7 @@ export function AuthorAvatar({
 export function WorkCard({ work, showAuthor = true }: { work: WorkSummary; showAuthor?: boolean }) {
   return (
     <Link
-      href={`/create/${work.id}`}
+      href={creatorWorkHref(work.id)}
       className="sheen-sweep group flex flex-col overflow-hidden rounded-2xl border border-line bg-panel/30 transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg hover:shadow-black/25 active:scale-[0.98]"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-raised/40">
@@ -163,7 +164,7 @@ export function WorkGridSkeleton({ count = 10 }: { count?: number }) {
 export function SeriesCard({ series }: { series: SeriesSummary }) {
   return (
     <Link
-      href={`/create/series/${series.id}`}
+      href={creatorSeriesHref(series.id)}
       className="group flex gap-3.5 overflow-hidden rounded-2xl border border-line bg-panel/30 p-3 transition-colors hover:border-line-strong"
     >
       <div className="relative aspect-[3/4] w-24 shrink-0 overflow-hidden rounded-xl bg-raised/40 sm:w-28">
