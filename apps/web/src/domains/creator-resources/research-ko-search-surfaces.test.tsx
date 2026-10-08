@@ -14,7 +14,7 @@ import { ContentPacksPage } from "./ContentPacksPage";
 import { GlobalBooksPage } from "./GlobalBooksPage";
 import { OpenCreationPage } from "./OpenCreationPage";
 import { ReferenceAssetsPage } from "./ReferenceAssetsPage";
-import { PolyHavenPage, WorksPage } from "./ResourceSearchPage";
+import { AmbientCgPage, GbifPage, PolyHavenPage, WorksPage } from "./ResourceSearchPage";
 
 vi.mock("./ProviderStatus", () => ({ ProviderStatus: () => null }));
 
@@ -82,6 +82,47 @@ describe("ResourceSearchPage 계열 — 한글 네이티브 제공처 (변환 �
     });
     expect(screen.queryByText(/검색 중입니다/)).toBeNull();
     expect(screen.queryByLabelText("실제로 검색할 영문 검색어")).toBeNull();
+  });
+});
+
+describe("GbifPage — 서버 별칭표 우선 (F-B14-1)", () => {
+  // GBIF는 서버에 한글 종명 별칭표(여우→Vulpes vulpes)가 있어, 질의 전체가 별칭
+  // 키와 일치하면 클라이언트 사전이 영문 일반명(fox)으로 먼저 바꾸면 안 된다 —
+  // 영문 일반명은 GBIF 분류군 매칭에서 확정되지 않아 정당한 한글 검색이 0건이 된다.
+  it("여우: 사전 변환 없이 원문 그대로 보내 서버 별칭 해석 경로에 도달한다", async () => {
+    render(<MemoryRouter initialEntries={["/research/creatures?q=여우"]}><GbifPage /></MemoryRouter>);
+    await waitFor(() => {
+      expect(searchCalls().some((url) => url.searchParams.get("provider") === "gbif" && url.searchParams.get("q") === "여우")).toBe(true);
+    });
+    expect(searchCalls().every((url) => url.searchParams.get("q") !== "fox")).toBe(true);
+    expect(screen.queryByText(/검색 중입니다/)).toBeNull();
+    expect(screen.queryByLabelText("실제로 검색할 영문 검색어")).toBeNull();
+  });
+
+  it("호랑이: 별칭 질의는 원문 그대로 보낸다", async () => {
+    render(<MemoryRouter initialEntries={["/research/creatures?q=호랑이"]}><GbifPage /></MemoryRouter>);
+    await waitFor(() => {
+      expect(searchCalls().some((url) => url.searchParams.get("provider") === "gbif" && url.searchParams.get("q") === "호랑이")).toBe(true);
+    });
+    expect(searchCalls().every((url) => url.searchParams.get("q") !== "tiger")).toBe(true);
+  });
+
+  it("별칭 범위 밖의 사슴은 종전대로 클라이언트 사전이 영문으로 보강한다", async () => {
+    render(<MemoryRouter initialEntries={["/research/creatures?q=사슴"]}><GbifPage /></MemoryRouter>);
+    await waitFor(() => {
+      expect(searchCalls().some((url) => url.searchParams.get("provider") === "gbif" && url.searchParams.get("q") === "deer")).toBe(true);
+    });
+    expect(screen.getByText(/‘사슴’ →/)).toBeTruthy();
+  });
+});
+
+describe("AmbientCgPage — 한글 사전 변환 유지 (F-B14-1 대조군)", () => {
+  it("나무: 서버 별칭표가 없는 제공처는 종전대로 사전 변환해 보낸다", async () => {
+    render(<MemoryRouter initialEntries={["/research/material-assets?q=나무"]}><AmbientCgPage /></MemoryRouter>);
+    await waitFor(() => {
+      expect(searchCalls().some((url) => url.searchParams.get("provider") === "ambientcg" && url.searchParams.get("q") === "tree")).toBe(true);
+    });
+    expect(screen.getByText(/‘나무’ →/)).toBeTruthy();
   });
 });
 

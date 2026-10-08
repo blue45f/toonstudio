@@ -15,7 +15,7 @@ import { attributionMarkdown, deadlineCalendar, deadlineLabel, parseSearchResult
 import { apiFetch, apiPath } from "@/platform/api";
 
 import { researchSourceIdentity } from "./research-source-identity";
-import { RESOURCE_SEARCH_CONFIG, RESOURCE_SEARCH_TRANSLATED_PROVIDERS } from "./resource-search-config";
+import { RESOURCE_SEARCH_CONFIG, RESOURCE_SEARCH_TRANSLATED_PROVIDERS, isServerAliasResolvedQuery } from "./resource-search-config";
 
 import type { ResourceSearchProvider } from "./resource-search-config";
 
@@ -267,7 +267,9 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
   const query = params.get("q") ?? "";
   // 영문 인덱스 제공처는 한글 검색어를 공용 변환 계층으로 영문 변환해 보낸다.
   // URL에는 사용자 원문을 유지하고, 변환은 표시·수정 가능한 상태로만 얹는다.
-  const translationEnabled = RESOURCE_SEARCH_TRANSLATED_PROVIDERS.has(provider);
+  // 단, 질의 전체를 서버 별칭표가 해석하는 경우(gbif 종명)는 서버 해석이 우선이라
+  // 사전 변환을 건너뛰고 원문을 그대로 보낸다 (F-B14-1).
+  const translationEnabled = RESOURCE_SEARCH_TRANSLATED_PROVIDERS.has(provider) && !isServerAliasResolvedQuery(provider, query);
   const translated = useTranslatedResearchQuery(query, { enabled: translationEnabled });
   const effectiveQuery = translationEnabled ? translated.effectiveQuery : query;
   const pageValue = Number(params.get("page") ?? 1);
