@@ -7,6 +7,9 @@ import {
   laneAvailability,
   STATUS_LABELS,
 } from "../state/lane-helpers";
+import { laneOptionLabel } from "../state/lane-maturity";
+
+import { ExperimentalBadge, ExperimentalNote } from "./ExperimentalBadge";
 
 export interface LaneSelectorProps {
   slot: "a" | "b";
@@ -41,15 +44,16 @@ export function LaneSelector({ slot }: LaneSelectorProps) {
           const { enabled, reason } = laneAvailability(d, capability[d.id]);
           return (
             <option key={d.id} value={d.id} disabled={!enabled}>
-              {d.label} ({d.id}){reason ? ` — ${reason}` : ""}
+              {laneOptionLabel(d, reason)}
             </option>
           );
         })}
       </select>
       <p className="lab-muted" data-testid={`lab-lane-badge-${slot}`}>
-        <span className={badgeClass}>{capabilityBadge(cap)}</span>{" "}
+        <span className={badgeClass}>{capabilityBadge(cap)}</span> <ExperimentalBadge desc={desc} />{" "}
         {desc ? `${KIND_LABELS[desc.kind]} · ${STATUS_LABELS[desc.status]} · 엔진 ${desc.id}` : "레지스트리에 없는 레인"}
       </p>
+      <ExperimentalNote desc={desc} />
     </div>
   );
 }

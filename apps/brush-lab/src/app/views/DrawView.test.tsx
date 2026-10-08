@@ -23,7 +23,7 @@ interface Harness {
   /** `desc.create()`가 만든 모든 레인(능력 탐지용 probe 인스턴스 포함). 세션이 쓴 레인은 `sessionLanes`. */
   lanes: MockLane[];
   programs: BrushProgram[];
-  added: { pressure: number; pointerType: string; x: number }[][];
+  added: { pressure: number; pointerType: string; x: number; y: number; phase: string; tMs: number }[][];
   /** 세션이 레인 init에 넘긴 설정. */
   inits: { laneId: LaneId; presentCanvas: boolean; wetCapacityTiles: number | undefined; width: number; height: number }[];
   renders: string[];
@@ -49,7 +49,7 @@ function recordingDescriptor(h: Pick<Harness, "lanes" | "programs" | "added" | "
       };
       const add = lane.addSamples.bind(lane);
       lane.addSamples = (samples) => {
-        h.added.push(samples.map((s) => ({ pressure: s.pressure, pointerType: s.pointerType, x: s.x })));
+        h.added.push(samples.map((s) => ({ pressure: s.pressure, pointerType: s.pointerType, x: s.x, y: s.y, phase: s.phase, tMs: s.tMs })));
         return add(samples);
       };
       const init = lane.init.bind(lane);
@@ -332,8 +332,9 @@ describe("DrawView", { timeout: 30_000 }, () => {
     expect(program?.tip.sizePx).toBe(42);
     expect(program?.deposition.opacity).toBeCloseTo(0.35, 12);
     expect(program?.deposition.flow).toBeCloseTo(0.6, 12);
-    // 안정화 80 → s = 0.8 → minCutoff = lerp(3.0, 0.5, 0.8) = 1.0
-    expect(program?.input.oneEuro?.position.minCutoff).toBeCloseTo(1.0, 12);
+    // 안정화 80 → u = 0.8 → minCutoff = 30·(0.4/30)^0.8 (로그 매핑), β = 0.12·(0.006/0.12)^0.8
+    expect(program?.input.oneEuro?.position.minCutoff).toBeCloseTo(30 * Math.pow(0.4 / 30, 0.8), 10);
+    expect(program?.input.oneEuro?.position.beta).toBeCloseTo(0.12 * Math.pow(0.006 / 0.12, 0.8), 10);
     expect(program?.paper.roughness).toBe(0.85);
     expect(program?.paper.scale).toBe(0.8);
     // 파라미터를 바꿔도 문서(레인)는 그대로다.
@@ -343,7 +344,7 @@ describe("DrawView", { timeout: 30_000 }, () => {
     expect(screen.getByTestId("lab-draw-config-hash").textContent).toMatch(/[0-9a-f]{16}/u);
   });
 
-  it("종이 질감 켜기/끄기와 끈 당김(lazy-brush) 방식이 반영된다", async () => {
+  it("종이 질감 켜기/끄기가 반영된다", async () => {
     const h = makeHarness(defaultDescriptors);
     renderDraw(h, { autoProbe: false });
     const stage = await ready(h);
@@ -352,22 +353,233 @@ describe("DrawView", { timeout: 30_000 }, () => {
     fireEvent.click(paper);
     await drawStroke(h, stage, 1);
     expect(h.programs.at(-1)?.paper.enabled).toBe(false);
+  });
+
+  it("입력 보정 선택기: 방식 4종(1€ 기본·끈 당김·물리 펜·끔)과 방식별 슬라이더 문구, 코너 게이트 토글은 끈 당김·물리 펜에서만 보인다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    renderDraw(h, { autoProbe: false });
+    await ready(h);
+    const mode = screen.getByLabelText("보정 방식") as HTMLSelectElement;
+    expect(Array.from(mode.options).map((o) => o.value)).toEqual(["one-euro", "lazy-brush", "pen-spring", "off"]);
+    expect(mode.value).toBe("one-euro");
+    expect(screen.queryByTestId("lab-draw-corner-gate")).toBeNull();
+    expect(screen.getByLabelText(/^안정화\(0~100\)/u).getAttribute("aria-valuetext")).toBe("브러시 기본");
+
+    fireEvent.change(mode, { target: { value: "lazy-brush" } });
+    expect(h.drawStore.get().stabilizerMode).toBe("lazy-brush");
+    expect((screen.getByTestId("lab-draw-corner-gate") as HTMLInputElement).checked).toBe(true);
+    // 방식 기본 40 → 끈 0.5·96^0.4 ≈ 3.1 px (로그 매핑)
+    expect(screen.getByLabelText(/^안정화\(0~100\)/u).getAttribute("aria-valuetext")).toContain("끈 3.1 px");
+    fireEvent.change(screen.getByLabelText(/^안정화\(0~100\)/u), { target: { value: "100" } });
+    expect(screen.getByTestId("lab-draw-stab-help").textContent).toContain("끈 길이 48 px");
+
+    fireEvent.change(mode, { target: { value: "pen-spring" } });
+    // 방식을 바꾸면 슬라이더는 그 방식의 기본값으로 돌아간다(척도가 다르다).
+    expect(h.drawStore.get().stabilizerPct).toBeNull();
+    expect(screen.getByLabelText(/^안정화\(0~100\)/u).getAttribute("aria-valuetext")).toMatch(/지연 \d+\.\d ms/u);
+    expect(screen.getByTestId("lab-draw-corner-gate")).toBeTruthy();
+
+    fireEvent.change(mode, { target: { value: "off" } });
+    expect(screen.queryByTestId("lab-draw-corner-gate")).toBeNull();
+    expect((screen.getByLabelText(/^안정화\(0~100\)/u) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByText(/applyStabilizer/u)).toBeTruthy();
+
+    fireEvent.change(mode, { target: { value: "one-euro" } });
+    expect((screen.getByLabelText(/^안정화\(0~100\)/u) as HTMLInputElement).disabled).toBe(false);
+  });
+
+  it("끈 당김: 선택에 따라 체인이 바뀌고(붓이 늦다), 획 끝 따라잡기로 끝점이 포인터 업 위치에 닿으며, 엔진 1€는 0(raw)이다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    renderDraw(h, { autoProbe: false });
+    const stage = await ready(h);
+    h.added.length = 0;
+    await drawStroke(h, stage, 1); // 1€ 기본 경로(단계 없음): 포인터 표본이 그대로 간다
+    const plain = h.added.flat();
+    expect(plain.map((s) => s.x)).toEqual([20, 60, 120, 130]);
+    expect(h.programs.at(-1)?.input.oneEuro).toBeUndefined();
 
     fireEvent.change(screen.getByLabelText("보정 방식"), { target: { value: "lazy-brush" } });
-    fireEvent.change(screen.getByLabelText(/^안정화\(0~100\)/u), { target: { value: "50" } });
-    expect(screen.getByTestId("lab-draw-stab-help").textContent).toContain("끈 길이 30 px");
-    expect(screen.getByText(/applyStabilizer/u)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/^안정화\(0~100\)/u), { target: { value: "100" } }); // 끈 48 px
     h.added.length = 0;
     await drawStroke(h, stage, 200);
-    // 끈 길이 30 px: 포인터가 끈 길이보다 멀어지면 붓이 끌려오므로 끝점(클라이언트 x 130)보다 늦다.
-    const xs = h.added.flat().map((s) => s.x);
-    expect(xs.length).toBeGreaterThan(2);
-    expect(xs[0]).toBe(20);
-    expect(Math.max(...xs)).toBeLessThan(130 - 29);
-    expect(Math.max(...xs)).toBeGreaterThan(20);
-    // 끈 당김 모드에서는 엔진 1€ 필터 오버라이드를 걸지 않는다(브러시 기본값).
-    expect(h.programs.at(-1)?.input.oneEuro).toBeUndefined();
+    const lazy = h.added.flat();
+    // 끈 길이 48 px: 진행 중에는 붓이 포인터보다 늦다(마지막 move의 포인터 x 120보다 한참 뒤).
+    const live = lazy.slice(0, 3); // 포인터 이벤트와 같은 시각의 표본(그 뒤는 획 끝 따라잡기 표본)
+    expect(live.map((s) => s.phase)).toEqual(["down", "move", "move"]);
+    expect(live[0]?.x).toBe(20);
+    expect(live[1]?.x).toBe(20); // 포인터가 끈 안쪽(44.7 px < 48 px)에 있으면 붓은 움직이지 않는다
+    expect(live[2]?.x).toBeLessThan(120 - 40);
+    // 획 끝 따라잡기: 끝점은 정확히 포인터 업 위치(130, 52)이고 up은 하나다.
+    expect(lazy[lazy.length - 1]).toMatchObject({ x: 130, y: 52, phase: "up" });
+    expect(lazy.filter((s) => s.phase === "up")).toHaveLength(1);
+    expect(lazy.length).toBeGreaterThan(plain.length);
+    // 단계가 평활을 맡으므로 엔진 1€는 0(raw 수준)이다.
+    expect(h.programs.at(-1)?.input.oneEuro?.position).toEqual({ minCutoff: 30, beta: 0.12, dCutoff: 1 });
     expect(h.drawStore.get().strokes).toBe(2);
+  });
+
+  it("물리 펜: 끌리지만(지연) 획 끝에서 포인터 업 위치에 정확히 닿고 목표를 넘지 않는다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    renderDraw(h, { autoProbe: false });
+    const stage = await ready(h);
+    fireEvent.change(screen.getByLabelText("보정 방식"), { target: { value: "pen-spring" } });
+    fireEvent.change(screen.getByLabelText(/^안정화\(0~100\)/u), { target: { value: "100" } }); // 지연 60 ms
+    h.added.length = 0;
+    await drawStroke(h, stage, 1);
+    const samples = h.added.flat();
+    expect(samples[0]).toMatchObject({ x: 20, y: 20, phase: "down" });
+    expect(samples[samples.length - 1]).toMatchObject({ x: 130, y: 52, phase: "up" });
+    expect(samples.filter((s) => s.phase === "up")).toHaveLength(1);
+    expect(Math.max(...samples.map((s) => s.x))).toBeLessThanOrEqual(130 + 1e-6);
+    const mid = samples.find((s) => s.tMs >= 33 && s.phase === "move");
+    expect(mid?.x ?? 0).toBeLessThan(120); // 포인터(120)보다 끌린다
+    for (let i = 1; i < samples.length; i += 1) expect(samples[i]?.tMs).toBeGreaterThanOrEqual(samples[i - 1]?.tMs ?? 0);
+  });
+
+  it("끈 당김 중 pointercancel로 획을 버리면 abortStroke와 함께 체인이 초기화돼 다음 획은 이전 붓 위치를 끌고 오지 않는다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    renderDraw(h, { autoProbe: false });
+    const stage = await ready(h);
+    fireEvent.change(screen.getByLabelText("보정 방식"), { target: { value: "lazy-brush" } });
+    fireEvent.change(screen.getByLabelText(/^안정화\(0~100\)/u), { target: { value: "100" } });
+    act(() => {
+      stage.dispatchEvent(pointerEvent("pointerdown", { clientX: 20, clientY: 20, timeStamp: 100 }));
+      stage.dispatchEvent(pointerEvent("pointermove", { clientX: 200, clientY: 120, timeStamp: 116 }));
+    });
+    const lane = sessionLanes(h)[0];
+    await waitFor(() => expect(lane?.calls.filter((c) => c === "beginStroke")).toHaveLength(1));
+    act(() => {
+      stage.dispatchEvent(pointerEvent("pointercancel", { clientX: 200, clientY: 120, timeStamp: 132 }));
+    });
+    await waitFor(() => expect(lane?.calls.filter((c) => c === "abortStroke")).toHaveLength(1));
+    expect(lane?.calls).not.toContain("endStroke");
+    h.added.length = 0;
+    await drawStroke(h, stage, 400);
+    const next = h.added.flat();
+    expect(next[0]).toMatchObject({ x: 20, y: 20, phase: "down" });
+    expect(next[next.length - 1]).toMatchObject({ x: 130, y: 52, phase: "up" });
+  });
+
+  it("끔: 보정 없이 포인터 표본이 그대로 가고 엔진 1€도 0이다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    renderDraw(h, { autoProbe: false });
+    const stage = await ready(h);
+    fireEvent.change(screen.getByLabelText("보정 방식"), { target: { value: "off" } });
+    h.added.length = 0;
+    await drawStroke(h, stage, 1);
+    expect(h.added.flat().map((s) => [s.x, s.y])).toEqual([[20, 20], [60, 40], [120, 50], [130, 52]]);
+    expect(h.programs.at(-1)?.input.oneEuro?.position).toEqual({ minCutoff: 30, beta: 0.12, dCutoff: 1 });
+  });
+
+  it("R-A-4 세션 생성(레인 init) 도중 바꾼 입력 방식도 생성 직후 세션에 반영된다(끈 당김으로 바꿔도, 1€로 되돌려도)", async () => {
+    // 레인 init을 시험이 풀어 줄 때까지 붙잡는다: 이 사이가 `LiveStrokeSession.create`가 끝나지 않은 구간이다.
+    let hold: Promise<void> | null = null;
+    let release: () => void = () => undefined;
+    const entered: LaneId[] = []; // lane.init에 들어온 레인(붙잡기 전에 기록한다)
+    const holdInit = (): void => {
+      hold = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+    const h = makeHarness((base) => {
+      const make = (id: LaneId, label: string, kind: "baseline" | "candidate"): LaneDescriptor => {
+        const d = recordingDescriptor(base, { id, label, kind });
+        return {
+          ...d,
+          create: () => {
+            const lane = d.create();
+            const init = lane.init.bind(lane);
+            lane.init = async (env, config) => {
+              entered.push(id);
+              if (hold) await hold;
+              return init(env, config);
+            };
+            return lane;
+          },
+        };
+      };
+      return [make("cpu-reference", "CPU 참조", "baseline"), make("wasm-cpu", "wasm CPU", "candidate")];
+    });
+
+    // (1) 첫 세션: 생성 도중 1€ → 끈 당김(48 px 끈)으로 바꾼다.
+    holdInit();
+    renderDraw(h, { autoProbe: false });
+    await waitFor(() => expect(entered).toEqual(["wasm-cpu"])); // 레인 init 진입 = 세션 생성 중
+    expect(h.drawStore.get().sessionStatus).not.toBe("ready");
+    fireEvent.change(screen.getByLabelText("보정 방식"), { target: { value: "lazy-brush" } });
+    fireEvent.change(screen.getByLabelText(/^안정화\(0~100\)/u), { target: { value: "100" } });
+    hold = null;
+    release();
+    const stage = await ready(h);
+    h.added.length = 0;
+    await drawStroke(h, stage, 1);
+    const lazy = h.added.flat();
+    // 끈 안쪽(44.7 px < 48 px)의 첫 move에서 붓이 움직이지 않는다 = 끈 당김 단계가 세션에 걸려 있다(결함 시 raw 표본 [20, 60, 120, 130]).
+    expect(lazy.slice(0, 2).map((s) => s.x)).toEqual([20, 20]);
+    expect(lazy[lazy.length - 1]).toMatchObject({ x: 130, y: 52, phase: "up" });
+    expect(h.programs.at(-1)?.input.oneEuro?.position).toEqual({ minCutoff: 30, beta: 0.12, dCutoff: 1 }); // 엔진 1€는 raw(0)
+
+    // (2) 레인을 바꿔 세션을 다시 만드는 도중 끈 당김 → 1€로 되돌린다: 옛 단계가 남으면 끈 당김 + 1€ 이중 평활이 된다.
+    holdInit();
+    fireEvent.change(screen.getByLabelText("레인"), { target: { value: "cpu-reference" } });
+    await waitFor(() => expect(entered).toEqual(["wasm-cpu", "cpu-reference"]));
+    fireEvent.change(screen.getByLabelText("보정 방식"), { target: { value: "one-euro" } });
+    hold = null;
+    release();
+    const stage2 = await ready(h);
+    h.added.length = 0;
+    await drawStroke(h, stage2, 1000);
+    expect(h.added.flat().map((s) => s.x)).toEqual([20, 60, 120, 130]); // 단계 없음: 포인터 표본 그대로
+  });
+
+  it("코너 게이트: 끄면 끈 당김이 모서리를 깎고 켜면 정점을 지난다(토글이 체인을 바꾼다)", async () => {
+    const h = makeHarness(defaultDescriptors);
+    renderDraw(h, { autoProbe: false });
+    const stage = await ready(h);
+    fireEvent.change(screen.getByLabelText("보정 방식"), { target: { value: "lazy-brush" } });
+    fireEvent.change(screen.getByLabelText(/^안정화\(0~100\)/u), { target: { value: "90" } });
+    // 속도 1.2 px/ms 지그재그: (20,120) → (80,20) → (140,120) → (200,20)
+    const verts: [number, number][] = [[20, 120], [80, 20], [140, 120], [200, 20]];
+    const strokeThrough = async (t0: number): Promise<{ x: number; y: number }[]> => {
+      const before = h.drawStore.get().strokes;
+      h.added.length = 0;
+      act(() => {
+        let t = t0;
+        stage.dispatchEvent(pointerEvent("pointerdown", { clientX: verts[0]![0], clientY: verts[0]![1], timeStamp: t }));
+        for (let k = 1; k < verts.length; k += 1) {
+          const a = verts[k - 1]!;
+          const b = verts[k]!;
+          const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+          const n = Math.round(len / 5);
+          for (let i = 1; i <= n; i += 1) {
+            t += len / n / 1.2;
+            const type = k === verts.length - 1 && i === n ? "pointerup" : "pointermove";
+            stage.dispatchEvent(pointerEvent(type, { clientX: a[0] + ((b[0] - a[0]) * i) / n, clientY: a[1] + ((b[1] - a[1]) * i) / n, timeStamp: t }));
+          }
+        }
+      });
+      await waitFor(() => expect(h.drawStore.get().strokes).toBe(before + 1));
+      return h.added.flat();
+    };
+    const minDist = (path: { x: number; y: number }[], vx: number, vy: number): number => {
+      let d = Number.POSITIVE_INFINITY;
+      for (let i = 1; i < path.length; i += 1) {
+        const a = path[i - 1]!;
+        const b = path[i]!;
+        const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+        const u = l2 > 0 ? Math.max(0, Math.min(1, ((vx - a.x) * (b.x - a.x) + (vy - a.y) * (b.y - a.y)) / l2)) : 0;
+        d = Math.min(d, Math.hypot(vx - (a.x + (b.x - a.x) * u), vy - (a.y + (b.y - a.y) * u)));
+      }
+      return d;
+    };
+    const gated = await strokeThrough(1);
+    for (const [vx, vy] of verts.slice(1, -1)) expect(minDist(gated, vx, vy)).toBeLessThanOrEqual(0.5);
+    fireEvent.click(screen.getByTestId("lab-draw-corner-gate"));
+    expect(h.drawStore.get().cornerGate).toBe(false);
+    const rounded = await strokeThrough(2000);
+    for (const [vx, vy] of verts.slice(1, -1)) expect(minDist(rounded, vx, vy)).toBeGreaterThan(3);
+    // 끝점은 둘 다 포인터 업 위치다.
+    expect(rounded[rounded.length - 1]).toMatchObject({ x: 200, y: 20 });
   });
 
   it("마우스 압력 시뮬레이션: 켜면 속도 기반 압력이 레인에 가고, 끄면 브라우저 압력(0.5)이 간다. 펜은 항상 실제 압력", async () => {
@@ -653,6 +865,16 @@ describe("DrawView", { timeout: 30_000 }, () => {
     expect(Number(screen.getByTestId("lab-draw-hud-dabs").textContent)).toBeGreaterThan(0);
     expect(screen.getByTestId("lab-draw-badge-software").textContent).toContain("소프트웨어 렌더러");
     expect(screen.getByTestId("lab-draw-badge-unverified")).toBeTruthy();
+  });
+
+  it("HUD: 레인 영수증이 한글 사유(notesKo)를 달면 그대로 보여 준다 — 예산 가드로 건너뛴 일을 숨기지 않는다(MP-2)", async () => {
+    const note = "입자가 많아 호출당 작업 예산에 걸렸다 — 서브스텝 12개를 건너뛰었다";
+    const h = makeHarness((base) => [recordingDescriptor(base, { id: "cpu-reference", label: "CPU 참조", receiptNotesKo: [note] })]);
+    renderDraw(h);
+    const stage = await ready(h);
+    expect(screen.queryByTestId("lab-draw-hud-lane-notes")).toBeNull();
+    await drawStroke(h, stage, 1);
+    expect(screen.getByTestId("lab-draw-hud-lane-notes").textContent).toContain(note);
   });
 
   it("HUD: 습식 매체는 건조 상태를 레인이 제공하지 않아 표시를 생략한다는 안내만 보인다", async () => {

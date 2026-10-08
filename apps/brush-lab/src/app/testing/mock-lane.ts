@@ -46,6 +46,8 @@ export interface MockLaneOptions {
   noLinear?: boolean;
   /** abortStroke 동작. 기본 "restore". */
   abort?: "restore" | "lossy" | "throw";
+  /** endStroke 영수증에 실을 레인 전용 한글 사유(`notesKo`, MPM 레인처럼 예산·한도로 일부를 하지 않았을 때). 생략하면 영수증에 필드가 없다. */
+  receiptNotesKo?: readonly string[];
 }
 
 export interface MockLane extends BrushEngineLane {
@@ -155,7 +157,7 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
       if (!inStroke) throw new InvalidStateError("beginStroke 전에 endStroke를 호출했다");
       inStroke = false;
       strokeStartImage = null;
-      const receipt: StrokeReceipt = {
+      const base: StrokeReceipt = {
         dabCount: strokeDabs,
         submitCount: frameTimes.length,
         gpuTimeMs: null,
@@ -164,6 +166,8 @@ export function createMockLane(opts: MockLaneOptions = {}): MockLane {
         overflowDabs: 0,
         poolTilesUsed: 0,
       };
+      // 공통 영수증에는 없는 레인 전용 필드(MPM `notesKo`)는 구조를 덧붙여 흉내 낸다(UI는 구조를 확인하고 읽는다).
+      const receipt: StrokeReceipt = opts.receiptNotesKo ? Object.assign(base, { notesKo: [...opts.receiptNotesKo] }) : base;
       stats.strokes += 1;
       stats.dabs += strokeDabs;
       stats.submits = submits;

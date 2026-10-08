@@ -11,20 +11,19 @@ import {
   presentPreview,
 } from "../../platform/canvas-present";
 import { downloadPng } from "../../platform/download";
-import { createLazyBrush } from "../../platform/lazy-brush";
 import { createSpeedPressureSimulator } from "../../platform/pressure-sim";
 import { useDrawSelector, useLab, useLabSelector } from "../shell/lab-context";
 import { hexToStrokeColor } from "../state/color-utils";
-import { describeLaneError } from "../state/draw-error-text";
+import { describeLaneError, describeSessionStartFailure } from "../state/draw-error-text";
 import {
   decideInitialLane,
   INITIAL_LANE_PRIORITY,
   lanePresentsLive,
-  lazyRadiusPx,
   nearestRankPercentile,
   resolveDrawProgram,
 } from "../state/draw-program";
 import { DRAW_CANVAS_MODES } from "../state/draw-store";
+import { buildInputStage } from "../state/input-chain";
 import { findDescriptor } from "../state/lane-helpers";
 import { LiveStrokeSession } from "../state/live-session";
 import { codeOf, messageOf, probeLane } from "../state/run-compare";
@@ -83,6 +82,7 @@ export function DrawView() {
   const paperKind = useDrawSelector((s) => s.paperKind);
   const stabilizerMode = useDrawSelector((s) => s.stabilizerMode);
   const stabilizerPct = useDrawSelector((s) => s.stabilizerPct);
+  const cornerGate = useDrawSelector((s) => s.cornerGate);
   const mouseSim = useDrawSelector((s) => s.mousePressureSim);
   const color = useDrawSelector((s) => s.color);
   const notices = useDrawSelector((s) => s.notices);
@@ -121,14 +121,20 @@ export function DrawView() {
     if (resolved.program && sessionRef.current) sessionRef.current.setProgram(resolved.program);
   }, [resolved.program]);
 
-  // ---- 입력 보정(마우스 압력 시뮬레이션 → 끈 당김) ----
+  // ---- 입력 보정: 마우스 압력 시뮬레이션 → 입력 단계 체인(끈 당김·물리 펜·코너 게이트) → 레인(안쪽 Sumi 1€ 기본 경로) ----
+  // 체인은 방식·슬라이더·코너 게이트가 바뀔 때 새로 만들고, 실행 중인 세션에는 다음 획부터 적용한다(`setInputStage`).
   const pressureSim = useRef(createSpeedPressureSimulator());
-  const lazy = useRef(createLazyBrush(0));
   const mouseSimRef = useRef(mouseSim);
   mouseSimRef.current = mouseSim;
-  const lazyOnRef = useRef(false);
-  lazyOnRef.current = stabilizerMode === "lazy-brush";
-  lazy.current.setRadius(lazyRadiusPx(stabilizerPct));
+  const inputStage = useMemo(
+    () => buildInputStage({ stabilizerMode, stabilizerPct, cornerGate }),
+    [stabilizerMode, stabilizerPct, cornerGate],
+  );
+  const inputStageRef = useRef(inputStage);
+  inputStageRef.current = inputStage;
+  useEffect(() => {
+    sessionRef.current?.setInputStage(inputStage);
+  }, [inputStage]);
   const colorRef = useRef(color);
   colorRef.current = color;
   // 획 색은 프로그램이 아니라 획의 입력이다: 레인 `beginStroke(program, seed, { color })`로 넘기며 다음 획부터 적용된다.
@@ -144,10 +150,7 @@ export function DrawView() {
     sessionRef.current?.setColor(strokeColor);
   }, [strokeColor, color, drawActions]);
   const transform = useCallback((raw: RawSample[]): RawSample[] => {
-    let out = raw;
-    if (mouseSimRef.current) out = pressureSim.current.apply(out);
-    if (lazyOnRef.current) out = lazy.current.apply(out);
-    return out;
+    return mouseSimRef.current ? pressureSim.current.apply(raw) : raw;
   }, []);
 
   // ---- 표면(캔버스 요소)과 세션 키 ----
@@ -202,8 +205,9 @@ export function DrawView() {
     let detach: (() => void) | null = null;
     trailRef.current = [];
     pressureSim.current.reset();
-    lazy.current.reset();
+    inputStageRef.current?.reset();
     drawActions.setSessionStatus("starting");
+    drawActions.setSessionError(null);
     drawActions.resetDocumentStats();
     drawActions.setDocumentSize({ width, height });
 
@@ -294,6 +298,7 @@ export function DrawView() {
         wetCapacityTiles: Math.min(MAX_DOCUMENT_TILES, Math.max(2048, documentTileCount({ width, height }))),
         skipLinear: true,
         transformSamples: transform,
+        inputStage: inputStageRef.current,
         onCanonical: (samples) => {
           if (live) return;
           for (const s of samples) {
@@ -317,6 +322,9 @@ export function DrawView() {
       if (latest) created.setProgram(latest);
       const latestColor = strokeColorRef.current;
       if (latestColor) created.setColor(latestColor);
+      // 입력 단계도 같다: 생성 중 방식·슬라이더·코너 게이트를 바꿨으면 effect의 setInputStage는 세션이 아직 없어 건너뛰었다.
+      // 따라잡지 않으면 UI는 '끈 당김'인데 입력은 raw로 그려지거나(엔진 1€는 새 방식 기준 raw), 반대로 옛 단계 + 1€ 이중 평활이 남는다.
+      created.setInputStage(inputStageRef.current);
       detach = created.attach(surface.stage, { blockContextMenu: true, primaryButtonOnly: true });
       drawActions.setSessionStatus("ready");
     };
@@ -326,6 +334,7 @@ export function DrawView() {
       start().catch((error: unknown) => {
         if (cancelled) return;
         drawActions.setSessionStatus("error");
+        drawActions.setSessionError(describeSessionStartFailure(desc.label, error));
         drawActions.pushNotice(codeOf(error), `레인 시작 실패: ${messageOf(error)}`);
       });
     }, 0);

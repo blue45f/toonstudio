@@ -13,7 +13,7 @@ export const REASON_LABELS: Record<LaneReasonCode, string> = {
   "webgpu-api-unavailable": "이 브라우저에 navigator.gpu(WebGPU API)가 없음",
   "adapter-unavailable": "WebGPU 어댑터를 얻지 못함",
   "device-request-failed": "GPUDevice 요청 실패",
-  "feature-missing": "필요한 GPU feature 누락",
+  "feature-missing": "필요한 기능 누락(GPU feature 또는 WebAssembly)",
   "limit-exceeded": "GPU 한도(limits) 부족",
   "dom-unavailable": "DOM/캔버스를 쓸 수 없는 환경",
   "webgl2-unavailable": "WebGL2 컨텍스트를 만들 수 없음",

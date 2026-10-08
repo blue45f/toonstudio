@@ -184,6 +184,18 @@ code,
   border-color: var(--lab-warn);
 }
 
+/* 실험 레인 배지: 합격/불합격/경고와 구분되는 점선 테두리 + 굵은 글씨(색에만 의존하지 않는다) */
+.lab-badge--experimental {
+  color: var(--lab-warn);
+  border: 1px dashed var(--lab-warn);
+  font-weight: 700;
+}
+
+.lab-experimental-note {
+  border-left: 3px dashed var(--lab-warn);
+  padding-left: 8px;
+}
+
 /* 폼 */
 .lab-field {
   display: grid;
@@ -354,6 +366,19 @@ code,
   font-weight: 700;
 }
 
+/* 실험 레인: 인증 집계 제외 표시(합격/불합격 색을 쓰지 않는다) */
+.lab-verdict-EXCLUDED {
+  color: var(--lab-muted);
+  font-weight: 700;
+  font-style: italic;
+}
+
+/* 실험·미등록 레인의 지표별 판정 셀: 참고용(합격/불합격 색을 쓰지 않고 "(참고)"를 붙인다) */
+.lab-verdict-REFERENCE {
+  color: var(--lab-muted);
+  font-style: italic;
+}
+
 /* 갤러리 */
 .lab-gallery {
   display: grid;
@@ -409,6 +434,11 @@ code,
   color: var(--lab-fail);
 }
 
+.lab-draw-side p,
+.lab-draw-side li {
+  overflow-wrap: anywhere;
+}
+
 .lab-visually-hidden {
   position: absolute;
   width: 1px;
@@ -455,7 +485,9 @@ code,
 
   .lab-verdict-PASS,
   .lab-verdict-FAIL,
-  .lab-verdict-UNAVAILABLE {
+  .lab-verdict-UNAVAILABLE,
+  .lab-verdict-REFERENCE,
+  .lab-verdict-EXCLUDED {
     color: CanvasText;
     text-decoration: underline;
   }
@@ -537,6 +569,8 @@ code,
 
 .lab-draw-side {
   display: grid;
+  /* 긴 사유 문구(오류 URL 등)가 암묵 열을 넓혀 패널 밖으로 밀어내지 않게 열 폭을 패널에 고정한다 */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   min-width: 0;
   padding: 12px;

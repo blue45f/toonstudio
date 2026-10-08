@@ -25,3 +25,11 @@ function reasonKoOf(error: unknown): string | null {
   const reason = (details as { reasonKo?: unknown }).reasonKo;
   return typeof reason === "string" && reason.length > 0 ? reason : null;
 }
+
+/**
+ * 레인 세션 시작(probe·init) 실패를 선택기 아래에 보일 한글 문구로 만든다. 사유 코드와 원문 메시지를 모두 남기고,
+ * 다른 레인으로 자동 전환하지 않는다는 사실(ADR-0018)을 함께 알려 몰래 대체된 것으로 오해하지 않게 한다.
+ */
+export function describeSessionStartFailure(laneLabel: string, error: unknown): string {
+  return `${laneLabel} 시작에 실패했다 [${codeOf(error)}] ${messageOf(error)} — 다른 레인으로 자동 전환하지 않는다. 엔진 목록에서 직접 고른다.`;
+}

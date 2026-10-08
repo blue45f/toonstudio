@@ -1,6 +1,10 @@
 import { flattenMetrics } from "../../bench/report/report-schema";
+import { useLab } from "../shell/lab-context";
+import { findDescriptor } from "../state/lane-helpers";
+import { metricVerdictDisplay, verdictDisplay } from "../state/lane-maturity";
 
 import type { BrushCertificationReport, ThresholdRule, Verdict } from "../../bench/report/report-schema";
+import type { LaneDescriptor } from "../../lanes/lane";
 import type { AbComparison } from "../state/bench-types";
 
 export interface MetricsTableProps {
@@ -22,12 +26,31 @@ function thresholdText(rule: ThresholdRule | undefined): string {
   return rule ? `${rule.op} ${rule.threshold}` : "—";
 }
 
-function VerdictCell({ verdict }: { verdict: Verdict | undefined }) {
-  return <td className={verdict ? `lab-verdict-${verdict}` : undefined}>{verdict ?? "—"}</td>;
+function verdictClass(verdict: Verdict | undefined, excluded: boolean): string | undefined {
+  if (excluded) return "lab-verdict-EXCLUDED";
+  return verdict ? `lab-verdict-${verdict}` : undefined;
+}
+
+/**
+ * 지표별 판정 셀. 실험·미등록 레인은 합격/불합격 색 대신 참고용 스타일과 "(참고)" 문구로 그린다(인증 집계에서 제외된 레인의 PASS/FAIL이 인증처럼 읽히지 않게).
+ * `desc`가 null이어도 리포트가 있으면 레지스트리에 없는 레인이다(안전한 쪽으로 참고 처리).
+ */
+function VerdictCell({ verdict, desc, hasReport }: { verdict: Verdict | undefined; desc: LaneDescriptor | null; hasReport: boolean }) {
+  if (!hasReport) return <td>—</td>;
+  const shown = metricVerdictDisplay(verdict, desc);
+  const className = shown.reference ? "lab-verdict-REFERENCE" : verdict ? `lab-verdict-${verdict}` : undefined;
+  return <td className={className}>{shown.text}</td>;
 }
 
 /** 지표·임계값·판정 표. 지표 키는 리포트의 `<group>.<key>` 평탄화 키를 그대로 쓴다. */
 export function MetricsTable({ reportA, reportB, comparison, laneA, laneB }: MetricsTableProps) {
+  const { registry } = useLab();
+  // 실험 레인은 인증 판정(PASS/FAIL) 집계에서 제외한다: 종합 판정을 "인증 제외"로 바꾸고 원래 판정은 참고로만 남긴다.
+  // 리포트가 있는데 레지스트리에 없는 레인이면 성숙도를 알 수 없으므로 안전한 쪽(인증 제외·"레인 미등록")으로 표시한다.
+  const descA = reportA ? findDescriptor(registry, reportA.laneId) : null;
+  const descB = reportB ? findDescriptor(registry, reportB.laneId) : null;
+  const shownA = verdictDisplay(reportA?.verdict ?? null, reportA ? descA : undefined);
+  const shownB = verdictDisplay(reportB?.verdict ?? null, reportB ? descB : undefined);
   const flatA = reportA ? flattenMetrics(reportA.metrics) : null;
   const flatB = reportB ? flattenMetrics(reportB.metrics) : null;
   const keys = Array.from(new Set([...Object.keys(flatA ?? {}), ...Object.keys(flatB ?? {})]));
@@ -82,8 +105,8 @@ export function MetricsTable({ reportA, reportB, comparison, laneA, laneB }: Met
                   <td>{formatMetric(flatA?.[key])}</td>
                   <td>{formatMetric(flatB?.[key])}</td>
                   <td>{thresholdText(rule)}</td>
-                  <VerdictCell verdict={reportA?.verdicts[key]} />
-                  <VerdictCell verdict={reportB?.verdicts[key]} />
+                  <VerdictCell verdict={reportA?.verdicts[key]} desc={descA} hasReport={reportA !== null} />
+                  <VerdictCell verdict={reportB?.verdicts[key]} desc={descB} hasReport={reportB !== null} />
                 </tr>
               );
             })}
@@ -139,15 +162,33 @@ export function MetricsTable({ reportA, reportB, comparison, laneA, laneB }: Met
       ) : null}
       <p>
         <strong>종합 판정</strong> — A:{" "}
-        <span className={reportA ? `lab-verdict-${reportA.verdict}` : undefined} data-testid="lab-verdict-a">
-          {reportA?.verdict ?? "—"}
+        <span className={verdictClass(reportA?.verdict, shownA.excluded)} data-testid="lab-verdict-a">
+          {shownA.text}
         </span>{" "}
         · B:{" "}
-        <span className={reportB ? `lab-verdict-${reportB.verdict}` : undefined} data-testid="lab-verdict-b">
-          {reportB?.verdict ?? "—"}
+        <span className={verdictClass(reportB?.verdict, shownB.excluded)} data-testid="lab-verdict-b">
+          {shownB.text}
         </span>
         <span className="lab-muted"> (FAIL이 하나라도 있으면 FAIL, 측정 불가는 UNAVAILABLE)</span>
       </p>
+      {shownA.excluded || shownB.excluded ? (
+        <p className="lab-muted" role="note" data-testid="lab-verdict-excluded-note">
+          {[shownA, shownB].some((v) => v.excluded && !v.unregistered) ? (
+            <>
+              실험 레인({[shownA.excluded && !shownA.unregistered ? "A" : null, shownB.excluded && !shownB.unregistered ? "B" : null].filter((s) => s !== null).join("·")})은 인증
+              판정(PASS/FAIL) 집계에서 제외한다.{" "}
+            </>
+          ) : null}
+          {[shownA, shownB].some((v) => v.unregistered) ? (
+            <span data-testid="lab-verdict-unregistered-note">
+              레지스트리에 없는 레인({[shownA.unregistered ? "A" : null, shownB.unregistered ? "B" : null].filter((s) => s !== null).join("·")})은 성숙도를 알 수 없어 안전하게 인증
+              집계에서 제외하고 &quot;레인 미등록&quot;으로 표시한다.{" "}
+            </span>
+          ) : null}
+          위 표의 지표·임계값 판정은 참고용이며 원래 종합 판정은{" "}
+          {[shownA.excluded ? `A ${shownA.reference}` : null, shownB.excluded ? `B ${shownB.reference}` : null].filter((s) => s !== null).join(", ")}였다.
+        </p>
+      ) : null}
       {notes.length > 0 ? (
         <details>
           <summary>측정 불가 지표 사유 {notes.length}건</summary>
