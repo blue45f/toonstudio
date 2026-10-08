@@ -700,7 +700,7 @@ describe("StudioLiveCollaborationProvider lifecycle", () => {
     } finally { hooks.unmount(); vi.useRealTimers(); }
   });
 
-  it("does not reset the retry budget when a ready socket fails initial document sync", async () => {
+  it("does not reset the retry ladder when a ready socket fails initial document sync, and never exhausts", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("navigator", { onLine: true });
     vi.stubGlobal("window", new EventTarget());
@@ -715,11 +715,16 @@ describe("StudioLiveCollaborationProvider lifecycle", () => {
         await vi.advanceTimersByTimeAsync(delay);
         failed = await renderProvider(options);
       }
-      expect(failed.connectionRecovery).toBe("exhausted");
       expect(rooms.instances).toHaveLength(4);
-      await vi.advanceTimersByTimeAsync(60000);
+      // 소켓이 준비됐던 실패도 사다리를 리셋하지 않는다 — 다음 시도는 마지막 간격(30초)을
+      // 채운 뒤에야 일어나고, 예전처럼 영구 정지하지도 않는다.
+      await vi.advanceTimersByTimeAsync(29_999);
       await renderProvider(options);
       expect(rooms.instances).toHaveLength(4);
+      await vi.advanceTimersByTimeAsync(30_001);
+      failed = await renderProvider(options);
+      expect(rooms.instances).toHaveLength(5);
+      expect(failed.connectionRecovery).toBe("waiting");
     } finally { hooks.unmount(); vi.useRealTimers(); }
   });
 
