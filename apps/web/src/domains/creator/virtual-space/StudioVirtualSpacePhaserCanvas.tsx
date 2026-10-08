@@ -228,6 +228,7 @@ import {
 import { StudioCollisionResponder, studioCollisionContact } from "./studio-virtual-space-collision-response";
 import { applyStudioPeerImpact, createStudioPeerVisual, destroyStudioPeerVisual } from "./studio-virtual-space-peer-visual";
 import { peerImpactOffsetAt } from "./studio-virtual-space-peer-motion";
+import { StudioFrameRegistry } from "./studio-virtual-space-frame-registration";
 import { StudioInteractionFxRuntime } from "./studio-virtual-space-interaction-fx";
 import {
   createStudioInteractionFxLiveWiring, type StudioInteractionFxLiveWiring,
@@ -547,7 +548,9 @@ export function StudioVirtualSpacePhaserCanvas({
       const bootAssets = studioCharacterBootAssets({ manifest, artStyle, self: snapshotRef.current.self, identity: identityRef.current });
       const { fallbackAsset, npcFallbackAsset, npcBootAssets, bootSelfAsset } = bootAssets;
       let selfCustomSheetSkin = bootAssets.selfCustomSheetSkin;
-      const { prepareCharacterTexture, queueCharacterTexture } = createStudioCharacterTexturePreparer({ scene, failedTextures });
+      // 프레임마다 따로 그려진 걷기·행동 시트의 발 기준선·몸통 중심·크기를 정지 그림에 맞추는 보정(로드 직후 한 번 측정).
+      const frameRegistry = new StudioFrameRegistry();
+      const { prepareCharacterTexture, queueCharacterTexture } = createStudioCharacterTexturePreparer({ scene, failedTextures, frameRegistry });
       const characterAssets = new StudioCharacterAssetResidency({
         has: prepareCharacterTexture,
         load: (asset, complete) => {
@@ -568,12 +571,13 @@ export function StudioVirtualSpacePhaserCanvas({
             if (scene.anims.exists(key)) scene.anims.remove(key);
           }
           if (scene.textures.exists(asset.key)) scene.textures.remove(asset.key);
+          frameRegistry.forget(asset.key);
         },
       });
       cleanup.push(() => characterAssets.close());
       const interactionById = new Map(interactions.map((interaction) => [interaction.id, interaction] as const));
 
-      let applyCameraMode: () => void = () => undefined;
+      let applyCameraMode: (deadzoneScale?: number) => void = () => undefined;
       let focusWorldOnReady: () => void = () => undefined;
       let localPose = new StudioFixedStepPose(snapshotRef.current.self);
       const fixedStepClock = new StudioFixedStepClock();
@@ -1311,7 +1315,7 @@ export function StudioVirtualSpacePhaserCanvas({
         camera.setBounds(0, 0, manifest.width, manifest.height);
         camera.startFollow(cameraTarget, false, reducedMotion.matches ? 1 : 0.12, reducedMotion.matches ? 1 : 0.12);
         const cameraModeController = new StudioCameraFollowModeController(camera);
-        applyCameraMode = () => cameraModeController.update(experienceRef.current.cameraMode);
+        applyCameraMode = (deadzoneScale = 1) => cameraModeController.update(experienceRef.current.cameraMode, deadzoneScale);
         applyCameraMode();
         const resizeCamera = (gameSize: { width: number; height: number }) => {
           parent.dataset.cameraMode = applyStudioWorldCamera(camera, manifest, gameSize.width / viewport.ratio, gameSize.height / viewport.ratio, viewport.ratio);

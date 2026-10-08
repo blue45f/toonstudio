@@ -70,6 +70,11 @@ export interface StudioCharacterAtlasClip {
   readonly distancePerCycle?: number;
   readonly technique?: "cutout-rig" | "drawn" | "translated-still";
   readonly frames?: readonly StudioCharacterFramePresentation[];
+  /**
+   * 프레임마다 따로 그려진 시트라 발 기준선·몸통 중심·크기가 흔들린다. true면 텍스처 로드 직후 각 프레임의 알파 외곽을 재
+   * 같은 방향 정지 그림에 맞춘 표시 좌표(frame registration)를 쓴다. 측정 전이거나 실패하면 `frames`를 그대로 쓴다.
+   */
+  readonly register?: boolean;
 }
 
 export interface StudioCharacterSkin {
@@ -86,6 +91,8 @@ export interface StudioCharacterSkin {
   readonly sharedMotionSheets?: boolean;
   /** 외부 픽셀 아트 계열(LPC). 테마와 무관하게 원본을 유지하고 미리보기에서 픽셀 경계를 보존한다. */
   readonly pixelArt?: "lpc";
+  /** 정지 방향 그림을 frame registration의 기준(발바닥·몸통 중심·키)으로 측정한다. register 클립이 있는 스킨이 켠다. */
+  readonly registerFrames?: boolean;
   readonly directional: Readonly<Record<StudioVirtualSpaceFacing, string>>;
   readonly state?: Readonly<Partial<Record<"talk" | "draw" | "review", string>>>;
   readonly clips?: Readonly<Partial<Record<StudioCharacterWalkClipKey, StudioCharacterAtlasClip>>>;
@@ -354,6 +361,7 @@ function v5Clip(source: StudioCharacterSkin, style: StudioVirtualArtStyleKey, mo
     distancePerCycle: motion === "walk" ? 82 : undefined,
     technique: "drawn",
     frames: V5_FRAMES,
+    register: true,
   });
 }
 
@@ -397,6 +405,7 @@ export function studioCharacterSkinForArtStyle(
     key: source.key,
     labelKo: source.labelKo,
     labelEn: source.labelEn,
+    registerFrames: true,
     directional,
     state: Object.freeze({
       talk: v5ActorUrl(source, artStyle, "state", "talk"),

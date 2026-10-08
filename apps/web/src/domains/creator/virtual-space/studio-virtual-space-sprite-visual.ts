@@ -9,6 +9,7 @@ import {
   studioCharacterPoseTextureKey,
   studioCharacterStaticAsset,
   studioCharacterStaticSheetMatches,
+  studioCharacterStaticTextureKey,
   studioCharacterVisualAssets,
   studioCharacterWalkAnimationKey as walkAnimationKey,
   studioCharacterWalkTextureKey as walkSheetKey,
@@ -32,6 +33,7 @@ import {
 import { studioCharacterExpressionFrame } from "./studio-virtual-space-expressions";
 import { studioPoseSettleScaleY } from "./studio-virtual-space-sprite-smoothing";
 import { STUDIO_ACTOR_EXPRESSION_PRESENTATION } from "./studio-virtual-space-scene-art-runtime";
+import type { StudioFrameRegistry } from "./studio-virtual-space-frame-registration";
 import { studioEffectiveGaitStride } from "./studio-virtual-space-locomotion-presentation";
 import { studioGaitFrame } from "./studio-virtual-space-presentation";
 import type { StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
@@ -56,6 +58,8 @@ export interface StudioSpriteVisualApplierDeps {
   readonly fallbackAsset: ReturnType<typeof studioCharacterStaticAsset>;
   readonly identityRef: { readonly current: string | undefined };
   readonly getSelfCustomSheetSkin: () => StudioCharacterSkin | null;
+  /** 있으면 register 클립의 프레임을 같은 방향 정지 그림에 맞춘 표시 좌표로 그린다(발 기준선·몸통 중심·크기). */
+  readonly frameRegistry?: StudioFrameRegistry;
 }
 
 export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierDeps) {
@@ -78,6 +82,22 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
     if (!Number.isSafeInteger(clip.start) || !Number.isSafeInteger(clip.end)
       || clip.end < clip.start || clip.start < 0 || clip.end >= texture.frameTotal - 1) return;
     scene.anims.create({ key: walkAnimationKey(skin, direction), frames: scene.anims.generateFrameNumbers(key, { start: clip.start, end: clip.end }), frameRate: clip.frameRate, repeat: clip.repeat ?? -1 });
+  };
+
+  /**
+   * 클립 프레임의 표시 좌표. register 클립은 로드 직후 측정한 알파 외곽으로 정지 그림에 맞춘 값을 쓰고,
+   * 측정 전이거나 실패하면 클립이 선언한 좌표(frames)를 그대로 쓴다.
+   */
+  const clipPresentation = (
+    skin: StudioCharacterSkin,
+    clip: NonNullable<ReturnType<typeof studioCharacterWalkClip>>,
+    sheetKey: string,
+    facing: StudioVirtualSpaceFacing,
+    index: number,
+  ) => {
+    const declared = clip.frames?.[index];
+    if (!clip.register || !deps.frameRegistry) return declared;
+    return deps.frameRegistry.presentation(sheetKey, studioCharacterStaticTextureKey(skin, facing), clip)?.[index] ?? declared;
   };
 
   const updateDisplaySize = (sprite: import("phaser").GameObjects.Sprite) => {
@@ -115,7 +135,7 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
         sprite.setData("actionKey", actionKey).setData("actionStartedAt", scene.time.now);
       }
       const frame = studioCharacterActionFrame(action, scene.time.now - Number(sprite.getData("actionStartedAt")), reducedMotion.matches);
-      sprite.setTexture(actionKey, frame).setData("framePresentation", action.frames?.[frame - action.start]);
+      sprite.setTexture(actionKey, frame).setData("framePresentation", clipPresentation(skin, action, actionKey, nextFacing, frame - action.start));
       updateDisplaySize(sprite);
       return;
     }
