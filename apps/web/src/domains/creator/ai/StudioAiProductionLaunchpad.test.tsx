@@ -42,7 +42,7 @@ describe("StudioAiProductionLaunchpad", () => {
       screen
         .getByRole("link", { name: /홍보영상·모션툰 만들기/u })
         .getAttribute("href"),
-    ).toBe("/create/promo");
+    ).toBe("/showcase/promo");
   });
 
   it("explains why the director is unavailable without disabling local recipes", () => {

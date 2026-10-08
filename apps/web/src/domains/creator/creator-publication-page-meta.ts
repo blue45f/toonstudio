@@ -10,6 +10,8 @@ import {
 
 import type { CreatorPublicationDirective } from "@/shared/lib/creator-publication-contract";
 
+import { creatorWorkHref } from "./publishing/showcase-links";
+
 export interface CreatorPublicationPageMetaInput {
   workId: string | null;
   title: string | null;
@@ -60,7 +62,7 @@ export function createCreatorPublicationPageMetaModel(
     input.directive.visibility === "public" && input.directive.canonicalSlug.trim()
       ? input.directive.canonicalSlug.trim()
       : workId;
-  const canonicalPath = `/create/${encodeURIComponent(canonicalReference)}`;
+  const canonicalPath = creatorWorkHref(canonicalReference);
   const image = publicImage(input.cover);
   const publishedAt =
     validIsoDate(input.directive.publishedAt) ?? validIsoDate(input.createdAt);

@@ -426,7 +426,7 @@ function StudioMusicWorkspace({ ownerId }: { readonly ownerId: string }) {
     <div className="mx-auto w-full max-w-[92rem] space-y-7 break-keep px-4 py-6 text-fg sm:px-6 lg:py-10" data-testid="studio-music-page">
       <header className="relative overflow-hidden rounded-[2rem] border border-line bg-[radial-gradient(circle_at_0%_0%,color-mix(in_oklch,var(--color-accent)_20%,transparent),transparent_46%),radial-gradient(circle_at_100%_0%,color-mix(in_oklch,var(--color-accent-2)_14%,transparent),transparent_40%),var(--color-card)] p-5 sm:p-8">
         <Link
-          to={workId ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.music.StudioMusicPage", "en", "/create/{v0}"), { v0: String(encodeURIComponent(workId)) }) : "/studio"}
+          to={workId ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.music.StudioMusicPage", "en", "/showcase/work/{v0}"), { v0: String(encodeURIComponent(workId)) }) : "/studio"}
           reloadDocument={!workId}
           onClick={(event) => {
             if (needsLeaveWarning && !window.confirm(bt("생성·저장이 진행 중이거나 저장 확인이 필요한 음원이 있습니다. MP3를 먼저 보관해 주세요. 그래도 나갈까요?", "Audio is still generating or waiting for save confirmation. Keep your MP3 first. Leave anyway?"))) {

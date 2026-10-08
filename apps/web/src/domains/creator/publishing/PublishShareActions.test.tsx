@@ -59,7 +59,7 @@ describe("PublishShareActions", () => {
     expect(address).toHaveProperty("readOnly", true);
     // 보이는 주소와 클립보드에 들어가는 주소가 같다.
     const shown = (address as HTMLInputElement).value;
-    expect(shown).toContain("/create/work-1");
+    expect(shown).toContain("/showcase/work/work-1");
     expect(shown).toContain("utm_source=copy");
 
     fireEvent.click(within(section).getByRole("button", { name: "링크 복사" }));
@@ -90,7 +90,7 @@ describe("PublishShareActions", () => {
     render(<PublishShareActions kind="published" {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "카카오톡" }));
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("카카오톡 공유를 열지 못했어요"));
-    expect(kakao.share).toHaveBeenCalledWith(expect.objectContaining({ title: "가을밤 산책", url: "/create/work-1" }));
+    expect(kakao.share).toHaveBeenCalledWith(expect.objectContaining({ title: "가을밤 산책", url: "/showcase/work/work-1" }));
 
     kakao.share.mockResolvedValueOnce(undefined);
     fireEvent.click(screen.getByRole("button", { name: "카카오톡" }));
@@ -107,7 +107,7 @@ describe("PublishShareActions", () => {
     render(<PublishShareActions kind="published" {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "기기 공유" }));
     await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
-    expect(share).toHaveBeenCalledWith(expect.objectContaining({ title: "가을밤 산책", url: expect.stringContaining("/create/work-1") }));
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ title: "가을밤 산책", url: expect.stringContaining("/showcase/work/work-1") }));
     expect(screen.getByRole("status").textContent).toBe("");
     // 취소로 끝나면 보내는 중 표시가 풀려 다시 누를 수 있다.
     await waitFor(() => expect(screen.getByRole("button", { name: "기기 공유" })).toHaveProperty("disabled", false));
@@ -139,6 +139,6 @@ describe("PublishShareActions", () => {
     kakao.configured = true;
     render(<PublishShareActions kind="published" workId="a/b" title="  " />);
     fireEvent.click(screen.getByRole("button", { name: "카카오톡" }));
-    expect(kakao.share).toHaveBeenCalledWith(expect.objectContaining({ title: "창작 작품", url: "/create/a%2Fb" }));
+    expect(kakao.share).toHaveBeenCalledWith(expect.objectContaining({ title: "창작 작품", url: "/showcase/work/a%2Fb" }));
   });
 });

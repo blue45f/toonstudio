@@ -26,8 +26,8 @@ describe("showcase-links", () => {
 
   it("상세·챌린지 링크의 식별자를 인코딩한다", () => {
     expect(showcaseChallengeHref("autumn night")).toBe("/showcase/challenges?c=autumn%20night");
-    expect(creatorWorkHref("work/1")).toBe("/create/work%2F1");
-    expect(creatorSeriesHref("s 1")).toBe("/create/series/s%201");
+    expect(creatorWorkHref("work/1")).toBe("/showcase/work/work%2F1");
+    expect(creatorSeriesHref("s 1")).toBe("/showcase/series/s%201");
     expect(creatorProfileHref("user#1")).toBe("/u/user%231");
   });
 });

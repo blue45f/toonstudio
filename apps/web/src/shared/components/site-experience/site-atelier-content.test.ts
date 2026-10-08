@@ -18,7 +18,7 @@ describe("public atelier route contracts", () => {
   it("keeps every preview actionable and every card on a first-party asset", () => {
     expect(ATELIER_SCENE_IDS.length).toBe(5);
     for (const scene of Object.values(ATELIER_SCENES)) {
-      expect(scene.href).toMatch(/^\/(studio(?:\/comic)?|create\/promo|market\/browse)$/u);
+      expect(scene.href).toMatch(/^\/(studio(?:\/comic)?|showcase\/promo|market\/browse)$/u);
       expect(scene.ko).toHaveLength(4);
       expect(scene.en).toHaveLength(4);
     }

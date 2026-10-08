@@ -59,13 +59,13 @@ describe("StudioPublishResultReceipt", () => {
     expect(screen.getByText("7")).toBeTruthy();
     expect(screen.getByText("운영 환경")).toBeTruthy();
     expect(screen.getByRole("link", { name: "독자 화면 열기" }).getAttribute("href")).toBe(
-      "/create/work-1",
+      "/showcase/work/work-1",
     );
     expect(screen.getByText("studio-generation:7:history:12")).toBeTruthy();
     expect(screen.getByText("a".repeat(64))).toBeTruthy();
     expect(screen.getByRole("button", { name: "게시 영수증 JSON" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "비로그인 독자 보기" }).getAttribute("href")).toBe(
-      "/create/work-1?view=reader&publicPreview=1",
+      "/showcase/work/work-1?view=reader&publicPreview=1",
     );
   });
 

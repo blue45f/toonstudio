@@ -36,7 +36,7 @@ export function SpatialCampusFrame({ binding, route, children }: {
   const [privacyMode, setPrivacyMode] = useState(false);
   const protectedRoute = binding?.surface === "protected";
   const districtId = binding?.districtId ?? null;
-  const readerFocus = pathname.startsWith("/create/")
+  const readerFocus = (pathname.startsWith("/create/") || pathname.startsWith("/showcase/work/"))
     && new URLSearchParams(search).get("view") === "reader";
   const privacySensitive = binding?.surface === "room" && binding.private;
   const privacyActive = Boolean(privacySensitive && privacyMode);
