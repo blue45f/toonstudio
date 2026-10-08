@@ -10,11 +10,11 @@
   "integrity": {
     "cpu": {
       "files": 5,
-      "manifestSha256": "89258671005db514d281a471834133618ea0ae36aa896e98fa7a43abc058b957"
+      "manifestSha256": "6bc25c06f1717540a8e39e922def59fe19e384fe1ddaad4057401f5a2e3c5ef5"
     },
     "gpu": {
       "files": 5,
-      "manifestSha256": "a1b0e86da94318d0f29b3cd7e7514d28d684833be155c6f216f3d8d95efe9adb"
+      "manifestSha256": "11008e8ef392ad4c7ac573040d370a93f08f02606b6217b40351a58bef759a84"
     }
   },
   "fonts": {
