@@ -23,6 +23,7 @@ export interface ProductionProjectSummary {
   readonly projectId: string;
   readonly workId: string;
   readonly title: string;
+  readonly coverImageUrl: string | null;
   readonly collaborationModel: ProductionCollaborationModel;
   readonly revision: number;
   readonly updatedAt: string;

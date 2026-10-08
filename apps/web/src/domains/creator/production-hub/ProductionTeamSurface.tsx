@@ -3,6 +3,8 @@ import { ArrowRight, Eye, MessageSquare, PenLine, Settings2, ShieldCheck } from 
 import { Link } from "react-router-dom";
 
 import { ProductionIntegrationsPanel } from "./ProductionIntegrationsPanel";
+import type { ProductionClientCommand } from "./production-api";
+import { ProductionProjectCoverSettings } from "./ProductionProjectCoverSettings";
 import { ProductionCrewCoverage } from "./ProductionRoleWorkspace";
 import type { ProductionProjectAccess } from "./production-dashboard-api";
 import { assignmentStatusLabel, projectAccessRoleLabel, roleTypeLabel, type BilingualLabel } from "./production-labels";
@@ -34,13 +36,16 @@ const SAFETY_RULES: readonly BilingualLabel[] = [
 export function ProductionTeamSurface({
   aggregate,
   access,
+  execute,
 }: {
   readonly aggregate: ProductionProjectAggregate;
   readonly access: ProductionProjectAccess;
+  readonly execute?: (command: ProductionClientCommand, message: string) => Promise<void>;
 }) {
   const bt = useBilingual("ProductionTeamSurface");
   return (
     <div className="space-y-4">
+      <ProductionProjectCoverSettings aggregate={aggregate} execute={execute} canEdit={access.edit} />
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <ProductionSectionCard
           title={bt("참여자와 담당 역할", "Members and assigned roles")}

@@ -89,6 +89,7 @@ const repository = {
   listProjects: vi.fn(),
   getPublicProject: vi.fn(),
   getProjectByWork: vi.fn(),
+  findWorkCoverImageUrl: vi.fn(),
   createProject: vi.fn(),
   mutatePublicReview: vi.fn(),
   mutateProject: vi.fn(),
@@ -123,6 +124,76 @@ describe("ProductionCollaborationService", () => {
       targetType: "project",
       targetId: "project-1",
     });
+  });
+
+  it("seeds the project cover from the linked work when not specified", async () => {
+    repository.findWorkCoverImageUrl.mockResolvedValue("https://example.test/work-cover.png");
+    repository.createProject.mockImplementation(async (input) => ({ aggregate: input.aggregate }));
+    const result = await service().createProject("owner-1", {
+      projectId: "project-1",
+      workId: "work-1",
+      title: "표지 시드 테스트",
+      collaborationModel: "co-creator",
+      ownerPartyId: "party-owner",
+      ownerDisplayName: "제작자",
+      clientMutationId: "11111111-1111-4111-8111-111111111111",
+    });
+    expect(repository.findWorkCoverImageUrl).toHaveBeenCalledWith("work-1");
+    expect(result.aggregate.coverImageUrl).toBe("https://example.test/work-cover.png");
+  });
+
+  it("keeps an explicit null cover instead of seeding from the work", async () => {
+    repository.createProject.mockImplementation(async (input) => ({ aggregate: input.aggregate }));
+    const result = await service().createProject("owner-1", {
+      projectId: "project-1",
+      workId: "work-1",
+      title: "표지 없음 테스트",
+      collaborationModel: "co-creator",
+      ownerPartyId: "party-owner",
+      ownerDisplayName: "제작자",
+      coverImageUrl: null,
+      clientMutationId: "11111111-1111-4111-8111-111111111111",
+    });
+    expect(repository.findWorkCoverImageUrl).not.toHaveBeenCalled();
+    expect(result.aggregate.coverImageUrl).toBeNull();
+  });
+
+  it("sets the project cover through a revisioned command", async () => {
+    const current = aggregate();
+    repository.mutateProject.mockImplementation(async (input) => input.mutate(current, {
+      view: true,
+      comment: true,
+      edit: true,
+      manage: true,
+      owner: true,
+      role: "owner",
+    }));
+    const result = await service().executeCommand("owner-1", "project-1", {
+      expectedRevision: 0,
+      mutationId: "33333333-3333-4333-8333-333333333333",
+      command: { type: "set-project-cover", coverImageUrl: "https://example.test/cover.png" },
+    });
+    expect(result.aggregate.coverImageUrl).toBe("https://example.test/cover.png");
+    expect(result.aggregate.revision).toBe(1);
+    expect(result.aggregate.auditEvents.at(-1)).toMatchObject({
+      action: "set-project-cover",
+      targetType: "project-cover",
+    });
+  });
+
+  it("rejects a cover that is not an https or data:image URL", () => {
+    expect(() => ProductionCommandSchema.parse({
+      type: "set-project-cover",
+      coverImageUrl: "http://example.test/cover.png",
+    })).toThrow();
+    expect(ProductionCommandSchema.parse({
+      type: "set-project-cover",
+      coverImageUrl: null,
+    })).toMatchObject({ type: "set-project-cover", coverImageUrl: null });
+    expect(ProductionCommandSchema.parse({
+      type: "set-project-cover",
+      coverImageUrl: "data:image/png;base64,iVBORw0KGgo=",
+    })).toMatchObject({ type: "set-project-cover" });
   });
 
   it("executes a late story change as a revisioned command with impact analysis", async () => {

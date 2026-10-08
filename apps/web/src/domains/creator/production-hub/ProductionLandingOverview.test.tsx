@@ -12,6 +12,7 @@ function project(overrides: Partial<ProductionProjectSummary>): ProductionProjec
     projectId: "project-a",
     workId: "work-a",
     title: "작품 A",
+    coverImageUrl: null,
     collaborationModel: "studio-production",
     revision: 1,
     updatedAt: "2026-09-17T00:00:00.000Z",

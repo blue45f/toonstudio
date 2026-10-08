@@ -1692,6 +1692,13 @@ export interface ProductionProjectAggregate {
   readonly workflowProfile?: ProductionWorkflowProfile | null;
   /** 열별 카드 순서. 없으면 서버에 아직 순서가 없는 프로젝트 (로컬 이전 전). */
   readonly boardOrder?: ProductionBoardOrder;
+  /**
+   * 프로젝트 대표 표지 이미지 (https URL 또는 data:image URL).
+   * 생성 시 연결된 작품의 표지(creator_work.cover)로 시드되고, 이후에는
+   * set-project-cover 명령으로만 바뀐다. null이면 표지가 없는 프로젝트 —
+   * 표면을 지어내지 않고 타이포그래픽 폴백을 유지한다.
+   */
+  readonly coverImageUrl?: string | null;
   readonly auditEvents: readonly ProductionAuditEvent[];
   readonly createdAt: string;
   readonly updatedAt: string;
