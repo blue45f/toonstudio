@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { validateEngineeringDiagram } from "./engineering-diagram-validate";
 import { ENGINEERING_MAPS } from "./engineering-map-content";
-import { ENGINEERING_MAP_IDS, type EngineeringMap } from "./engineering-map-types";
+import { ENGINEERING_MAP_IDS, ENGINEERING_MAP_META, type EngineeringMap } from "./engineering-map-types";
 
 /**
  * 기술 지도(표) 계약 검사. 같은 검사를 실제 지도와 의도적으로 망가뜨린 지도에 적용해,
@@ -169,4 +169,13 @@ describe("게시된 기술 지도", () => {
     const ids = ENGINEERING_MAPS.flatMap((map) => (map.diagram ? [map.diagram.id] : []));
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("허브용 지도 메타는 지도 id 목록과 정확히 같다", () => {
+    expect(ENGINEERING_MAP_META.map((meta) => meta.id)).toEqual([...ENGINEERING_MAP_IDS]);
+    for (const meta of ENGINEERING_MAP_META) {
+      expect(meta.label.ko.trim() && meta.label.en.trim() && meta.question.ko.trim() && meta.question.en.trim()).toBeTruthy();
+      expect(HANGUL.test(meta.label.en) || HANGUL.test(meta.question.en)).toBe(false);
+    }
+  });
 });
+

@@ -538,6 +538,13 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
         "Talk terminology with plain analogies and real cases",
       ),
       destination(
+        "/about/technology/atlas",
+        "기술 도감",
+        "Technology atlas",
+        "쓰인 기술별 배경·도식·샘플 코드·적용 기능·참고 링크",
+        "Per-technology background, diagrams, sample code, where it is used and references",
+      ),
+      destination(
         "/about/principles",
         "제품 원칙",
         "Product principles",

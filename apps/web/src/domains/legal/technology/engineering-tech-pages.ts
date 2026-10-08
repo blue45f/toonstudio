@@ -3,6 +3,7 @@ import {
   BookOpen,
   Film,
   GraduationCap,
+  LayoutGrid,
   LibraryBig,
   NotebookTabs,
   Presentation,
@@ -36,6 +37,7 @@ export type EngineeringPageId =
   | "deck"
   | "videos"
   | "references"
+  | "atlas"
   | "glossary"
   | "licenses";
 
@@ -132,6 +134,15 @@ export const ENGINEERING_PAGES = [
     label: t("영상", "Video"),
     purpose: t("같은 원본으로 만드는 기술 소개 영상", "Engineering film rendered from the same source"),
     art: "storyboard",
+  },
+  {
+    id: "atlas",
+    href: "/about/technology/atlas",
+    group: "resources",
+    icon: LayoutGrid,
+    label: t("기술 도감", "Tech atlas"),
+    purpose: t("배경·도식·샘플 코드·쓰인 기능을 기술별로", "Background, diagrams, code and where each technology is used"),
+    art: "assets",
   },
   {
     id: "references",

@@ -14,6 +14,8 @@ import { EngineeringArchitectureDiagram } from "./technology/EngineeringArchitec
 import { BLUEPRINT_GRID_STYLE } from "./technology/engineering-blueprint";
 import { EngineeringChapterLibrary } from "./technology/EngineeringChapterLibrary";
 import { EngineeringHubStatusStrip } from "./technology/EngineeringHubStatusStrip";
+import { ENGINEERING_ATLAS_CATEGORIES } from "./technology/engineering-atlas-types";
+import { ENGINEERING_MAP_META } from "./technology/engineering-map-types";
 import {
   ENGINEERING_STATUS_META,
   type EngineeringStatus,
@@ -195,6 +197,57 @@ export function TechnologyPage() {
             <PathCard key={page.id} page={page} last={index === ENGINEERING_PATH_PAGES.length - 1} />
           ))}
         </ol>
+      </section>
+
+      <section className="pb-12 sm:pb-16" aria-labelledby="engineering-atlas-title">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div>
+            <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "TECH ATLAS")}</p>
+            <h2 id="engineering-atlas-title" className="mt-3 text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
+              {bi("쓰인 기술을 한 장씩: 기술 도감", "One card per technology: the tech atlas")}
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">
+              {bi(
+                "카드마다 도식으로 큰 그림을 보고, 배경 지식 → 서비스에서 쓰인 기능과 파일 → 샘플 코드 → 공식 참고 링크 → 발표 보조 순서로 내려갑니다. 발표 중 질문이 나오면 여기서 바로 찾으세요.",
+                "Each card starts with a diagram, then covers background, the features and files that use it, sample code, official references and talk aids. Open it straight from a question during the talk.",
+              )}
+            </p>
+          </div>
+          <Link
+            href="/about/technology/atlas"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+          >
+            {bi("도감 전체 열기", "Open the whole atlas")}
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
+        <ul className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {ENGINEERING_ATLAS_CATEGORIES.map((category) => (
+            <li key={category.id}>
+              <Link
+                href={`/about/technology/atlas?category=${category.id}`}
+                className="group flex h-full flex-col gap-1.5 rounded-2xl border border-line/70 bg-card/60 p-4 transition-colors hover:border-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <span className="text-sm font-black text-fg group-hover:text-accent">{bi(category.label.ko, category.label.en)}</span>
+                <span className="text-xs leading-5 text-fg-3">{bi(category.description.ko, category.description.en)}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <h3 className="mt-8 text-sm font-black text-fg">{bi("지도로 한눈에 비교", "Compare at a glance with maps")}</h3>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {ENGINEERING_MAP_META.map((map) => (
+            <li key={map.id}>
+              <Link
+                href={`/about/technology/atlas#map-${map.id}`}
+                className="group flex h-full flex-col gap-1.5 rounded-2xl border border-accent-2/35 bg-accent-2/10 p-4 transition-colors hover:border-accent-2/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <span className="text-sm font-black text-fg group-hover:text-accent">{bi(map.label.ko, map.label.en)}</span>
+                <span className="text-xs leading-5 text-fg-2">{bi(map.question.ko, map.question.en)}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section aria-labelledby="engineering-architecture-title">

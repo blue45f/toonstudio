@@ -65,3 +65,39 @@ export interface EngineeringMap {
 }
 
 export const ENGINEERING_MAP_IDS: readonly EngineeringMapId[] = ["free-tier", "open-source", "open-api", "competitors", "ai-dev"];
+
+/** 허브 타일처럼 가벼워야 하는 곳이 지도 행(수백 KB)을 불러오지 않고 쓰는 요약. `engineering-map-content.test.ts` 가 실제 지도와 일치하는지 확인한다. */
+export interface EngineeringMapMeta {
+  readonly id: EngineeringMapId;
+  readonly label: LocalizedText;
+  /** 이 지도가 답하는 질문(쉬운 말). */
+  readonly question: LocalizedText;
+}
+
+export const ENGINEERING_MAP_META: readonly EngineeringMapMeta[] = [
+  {
+    id: "free-tier",
+    label: { ko: "무료로 세운 방법", en: "Built on free tiers" },
+    question: { ko: "무료 토큰과 무료 인프라를 어디에 썼나?", en: "Where did free tokens and free infrastructure go?" },
+  },
+  {
+    id: "open-source",
+    label: { ko: "오픈소스 지도", en: "Open-source map" },
+    question: { ko: "어떤 오픈소스 위에 서 있고, 라이선스는?", en: "Which open source does it stand on, and under what licenses?" },
+  },
+  {
+    id: "open-api",
+    label: { ko: "Open API 지도", en: "Open API map" },
+    question: { ko: "외부 API를 어떻게 안전하게 빌려 쓰나?", en: "How are external APIs borrowed safely?" },
+  },
+  {
+    id: "competitors",
+    label: { ko: "경쟁·참고 제품", en: "Competitors and references" },
+    question: { ko: "비슷한 제품은 무엇이고 무엇을 배웠나?", en: "What are the similar products and what was learned?" },
+  },
+  {
+    id: "ai-dev",
+    label: { ko: "AI 개발 도구", en: "AI development tools" },
+    question: { ko: "AI 도구를 우리 개발 방식에 어떻게 맞췄나?", en: "How were AI tools fitted to our way of building?" },
+  },
+];

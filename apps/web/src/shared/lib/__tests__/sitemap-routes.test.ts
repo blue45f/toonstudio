@@ -44,6 +44,8 @@ describe("sitemap static routes", () => {
       '"/about/technology/videos"',
       '"/about/technology/licenses"',
       '"/about/technology/glossary"',
+      '"/about/technology/atlas"',
+      '"/about/technology/playbook"',
     ]) {
       expect(staticRoutes).toContain(route);
     }

@@ -17,6 +17,7 @@ const ABOUT_ROUTE_FAMILY = [
   { id: "legal-about-technology-videos", path: "/about/technology/videos" },
   { id: "legal-about-technology-licenses", path: "/about/technology/licenses" },
   { id: "legal-about-technology-glossary", path: "/about/technology/glossary" },
+  { id: "legal-about-technology-atlas", path: "/about/technology/atlas" },
   { id: "legal-about-principles", path: "/about/principles" },
 ] as const;
 
