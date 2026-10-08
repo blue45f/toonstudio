@@ -17,6 +17,7 @@ import { getEffectiveOperationPolicy, commandTeamWorkspace, createTeamWorkspace,
 import { parseProductionRolePresetId, PRODUCTION_ROLE_PRESETS, productionRolePreset, type ProductionRolePreset } from "./production-manuscript-competitive-model";
 import { TeamAccessGuide } from "./TeamAccessGuide";
 import { TeamPeopleOverviewSkeleton, TeamPeopleOverviewStrip } from "./TeamPeopleOverview";
+import { TeamSceneArt } from "./TeamSceneArt";
 import { ProductionAvatar } from "./production-ui";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
@@ -108,17 +109,6 @@ function TierEnforcementNote({ tier }: { tier: WorkspaceRoleTier }) {
 const fieldClass = "min-h-11 rounded-lg border border-line bg-canvas px-3 text-fg";
 function Card({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return <section id={id} className="creator-workflow-panel scroll-mt-6 rounded-2xl border border-line bg-card p-5"><h2 className="mb-4 text-lg font-bold">{title}</h2>{children}</section>;
-}
-/** 사람·권한 화면 첫 화면의 장면 아트. 제작 워크스페이스 전용으로 만들어 둔 기존
- *  자산(creator-workspace.webp — 원고 책상과 떠 있는 컷·말풍선 장면)이 미사용
- *  상태로 남아 있어 이를 재사용한다. 왼쪽 어두운 여백은 원본의 텍스트 자리라
- *  초점은 오른쪽 장면(object-position)으로 잡는다. */
-function TeamSceneArt() {
-  const bt = useBilingual("TeamWorkspacePage");
-  return <div data-testid="team-scene-art" className="relative overflow-hidden rounded-3xl border border-line">
-    <img src="/assets/production-workspace/creator-workspace.webp" alt="" loading="lazy" decoding="async" className="h-44 w-full object-cover object-[72%_50%] sm:h-56" />
-    <p className="absolute bottom-3 left-3 rounded-full bg-canvas/70 px-3 py-1 text-xs font-semibold text-fg backdrop-blur-sm">{bt("함께 만드는 작업실", "A studio you build together")}</p>
-  </div>;
 }
 /** 목록 로딩 스켈레톤 한 장. 실제 워크스페이스 카드(Link)와 같은 테두리·여백에
  *  아바타 원 + 이름·메타 두 줄의 실루엣을 그대로 채운다.

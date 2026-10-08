@@ -114,4 +114,33 @@ describe("workspace usage screen (F-R1-B08-1)", () => {
     expect(mocks.detail).not.toHaveBeenCalled();
     expect(mocks.usage).not.toHaveBeenCalled();
   });
+
+  it("shows the shared team scene art band above the header", async () => {
+    render(<App path="/team/people/qa-team-ws-1/usage" />);
+    const heading = await screen.findByRole("heading", { name: "QA 제작팀 사용량" });
+    const banner = screen.getByTestId("team-scene-art");
+    // 사람·권한 화면과 같은 자산·캡션의 장면 띠가 헤더보다 먼저 온다.
+    expect(banner.querySelector("img")?.getAttribute("src")).toBe("/assets/production-workspace/creator-workspace.webp");
+    expect(banner.querySelector("img")?.getAttribute("alt")).toBe("");
+    expect(banner.textContent).toContain("함께 만드는 작업실");
+    expect(banner.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("keeps the scene art band while usage is loading", async () => {
+    let resolveDetail!: (value: unknown) => void;
+    mocks.detail.mockImplementation(() => new Promise((resolve) => { resolveDetail = resolve; }));
+    render(<App path="/team/people/qa-team-ws-1/usage" />);
+    await waitFor(() => expect(screen.getByTestId("workspace-usage-page-skeleton")).toBeTruthy());
+    expect(screen.getByTestId("team-scene-art")).toBeTruthy();
+    resolveDetail(detail);
+    await screen.findByRole("heading", { name: "현재 사용량" });
+    expect(screen.getByTestId("team-scene-art")).toBeTruthy();
+  });
+
+  it("keeps the scene art band for signed-out guests", async () => {
+    mocks.userId = null;
+    render(<App path="/team/people/qa-team-ws-1/usage" />);
+    expect(await screen.findByRole("heading", { name: "로그인하면 사용량을 확인할 수 있어요" })).toBeTruthy();
+    expect(screen.getByTestId("team-scene-art")).toBeTruthy();
+  });
 });
