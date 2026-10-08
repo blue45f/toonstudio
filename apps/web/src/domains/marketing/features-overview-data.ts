@@ -15,16 +15,21 @@ import {
 /**
  * `/features` 전체 기능·콘텐츠 요약 페이지의 정적 카탈로그.
  *
- * 수록 원칙 (2026-10-06 코드 실측 기준):
+ * 수록 원칙 (2026-10-08 코드 실측 기준):
  * - 항목은 실제로 등록된 라우트가 있는 기능만 싣는다. 에디터 안 패널처럼
  *   독립 화면이 없는 기능은 싣지 않는다 — 전체 디렉터리는 `/sitemap`이 소유한다.
- * - href는 전부 내부 경로 리터럴이며, 무결성 테스트(features-overview-data.test)가
- *   등록 라우트 표와 대조해 고정한다.
- * - 수치는 코드·데이터로 정적 확인한 것만 쓴다:
- *   - 작품 정보 60,234건 — `apps/api/data/catalog.json.gz`의 titles 배열 길이
- *     (git HEAD blob을 직접 세어 확인, 2026-10-06). 외부 플랫폼 작품의
- *     메타데이터이며 자체 연재작 수가 아니다 — 페이지 문구도 그렇게 밝힌다.
- *   - 플랫폼 20종 — `packages/core/src/platforms.ts`의 PLATFORMS 키 수.
+ * - href는 정본 경로를 쓴다. 리다이렉트 별칭(`/shaper`·`/brush-lab`·`/challenges`·`/creator-hub`)은
+ *   싣지 않는다 — 별칭은 동작하지만 화면 이름과 현재 위치가 목적지와 어긋난다.
+ * - href는 전부 내부 경로 리터럴이며, 무결성 테스트(features-overview-data.test,
+ *   app/routes/features-overview-links.test)가 등록 라우트 표와 대조해 고정한다.
+ * - 실험·베타·데스크톱 권장·로그인 필요 표시는 이 파일에 따로 적지 않는다. 페이지가 렌더할 때
+ *   `resolveSiteRouteMetadata(href)`의 maturity·access·device를 읽어 붙인다(정본은 한 곳).
+ * - 수치는 코드·데이터로 정적 확인한 것만 쓰고, 테스트가 카탈로그 파일과 직접 대조한다:
+ *   - 작품 정보 60,234건 — `apps/api/data/catalog.json.gz`의 titles 배열 길이. 외부 플랫폼
+ *     작품의 메타데이터이며 자체 연재작 수가 아니다. 구성은 웹툰 11,914 + 웹소설 48,320(type 필드),
+ *     수집 스냅샷 기준일은 `crawledAt` 2026-06-27이다 — 페이지 문구도 그렇게 밝힌다.
+ *   - 플랫폼 20종 — `packages/core/src/platforms.ts`의 PLATFORMS 키 수(서비스에 정의된 플랫폼).
+ *     그러나 위 카탈로그 availability에 실제로 나타나는 플랫폼은 18곳이다(comico·kmas 없음).
  */
 
 export interface FeatureOverviewText {
@@ -49,8 +54,20 @@ export interface FeatureOverviewCategory {
 /** 외부 플랫폼 작품 메타데이터 건수 (근거는 파일 머리말 참조). */
 export const FEATURE_OVERVIEW_CATALOG_TITLES = 60_234;
 
-/** 작품 정보를 모으는 외부 플랫폼 수 (근거는 파일 머리말 참조). */
+/** 위 건수 중 웹툰(type: webtoon) 수. */
+export const FEATURE_OVERVIEW_CATALOG_WEBTOON_TITLES = 11_914;
+
+/** 위 건수 중 웹소설(type: webnovel) 수. 전체의 약 80%라 "웹툰 6만 건"으로 읽히면 안 된다. */
+export const FEATURE_OVERVIEW_CATALOG_WEBNOVEL_TITLES = 48_320;
+
+/** 카탈로그 수집 스냅샷 기준일 (catalog.json.gz의 crawledAt). */
+export const FEATURE_OVERVIEW_CATALOG_SNAPSHOT_DATE = "2026-06-27";
+
+/** 서비스에 정의된 외부 플랫폼 수 (packages/core PLATFORMS). */
 export const FEATURE_OVERVIEW_PLATFORM_COUNT = 20;
+
+/** 위 스냅샷 카탈로그의 availability에 실제로 나타나는 플랫폼 수 (정의된 20곳 중 comico·kmas 제외). */
+export const FEATURE_OVERVIEW_CATALOG_PLATFORM_COUNT = 18;
 
 export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
   {
@@ -106,11 +123,14 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
       {
         name: { ko: "브러시 랩", en: "Brush lab" },
         description: { ko: "브러시를 만들고 실험하는 공간", en: "Create and experiment with brushes" },
-        href: "/brush-lab",
+        href: "/studio/assets/brushes/new",
       },
       {
         name: { ko: "모션 웹툰", en: "Motion webtoon" },
-        description: { ko: "컷에 움직임·자막을 입히는 무빙툰 제작", en: "Add motion and captions to panels" },
+        description: {
+          ko: "컷에 키프레임·이징·카메라 무브와 자막을 입히고 GIF·MP4·WebM으로 내보내기(브라우저 안에서 인코딩)",
+          en: "Add keyframes, easing, camera moves and captions to panels, then export GIF, MP4 or WebM (encoded in your browser)",
+        },
         href: "/studio/motion-webtoon",
       },
       {
@@ -130,13 +150,12 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
     },
     items: [
       {
-        name: { ko: "캐릭터 셰이퍼", en: "Character shaper" },
-        description: { ko: "3D 프리셋으로 체형·표정·포즈 설계", en: "Design body, face and pose from 3D presets" },
-        href: "/shaper",
-      },
-      {
+        // `/shaper`는 이 화면으로 되돌리는 별칭이라 카드를 하나로 합쳤다.
         name: { ko: "캐릭터 만들기", en: "Create a character" },
-        description: { ko: "프리셋 캐릭터를 만들고 보관함에 저장", en: "Create preset characters and keep them in your library" },
+        description: {
+          ko: "3D 프리셋으로 체형·표정·포즈를 설계하고 보관함에 저장",
+          en: "Design body, face and pose from 3D presets and keep the character in your library",
+        },
         href: "/studio/assets/characters/new",
       },
       {
@@ -171,8 +190,8 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
     icon: Sparkles,
     title: { ko: "AI 도구", en: "AI tools" },
     summary: {
-      ko: "생성과 보조를 맡는 AI. 서버 무료 풀이 기본이고, 내 키를 등록하면(BYOK) 유료 제공자도 내 키로 씁니다.",
-      en: "AI for generation and assistance. A free server pool is the default; register your own key (BYOK) to use paid providers.",
+      ko: "생성과 보조를 맡는 AI. 무료 한도를 먼저 쓰는 것이 기본이고(서버 공유 무료 풀은 운영 설정이 반영된 공급자에서만 동작), 유료 제공자는 내 키(BYOK)를 등록해 허용할 때만 씁니다. 실험 단계 도구에는 표시가 붙습니다.",
+      en: "AI for generation and assistance. Free quota comes first (the shared server pool works only for providers whose operating settings are in place); paid providers are used only with your own key (BYOK) once you allow it. Experimental tools are labelled.",
     },
     items: [
       {
@@ -181,8 +200,12 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
         href: "/studio/generate",
       },
       {
-        name: { ko: "개인 AI 런타임", en: "Personal AI runtime" },
-        description: { ko: "브라우저 기기에서 도는 ONNX 모델 실험", en: "Experiment with ONNX models running on your device" },
+        // 이 화면은 기기 안 ONNX 실험실이 아니다. 기기 안 ONNX 모델(화풍 변환·채색)은 에디터의 AI 패널에 있다.
+        name: { ko: "AI 크리에이티브 디렉터", en: "AI creative director" },
+        description: {
+          ko: "루나에게 스토리·구도 아이디어를 제안받고 AI 화면별 비용·키·데이터 조건을 비교. 고급: 내가 연결한 클라우드 런타임으로 영상·3D 변환",
+          en: "Get story and framing ideas from Luna and compare each AI tool's cost, key and data conditions. Advanced: connect your own cloud runtime for video and 3D conversion",
+        },
         href: "/studio/ai-lab",
       },
       {
@@ -227,6 +250,14 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
         href: "/publish",
       },
       {
+        name: { ko: "PDF 워크벤치", en: "PDF workbench" },
+        description: {
+          ko: "PDF를 합치고 페이지를 재배열·회전·삭제·분할해 내려받기(이 기기 안에서 처리)",
+          en: "Merge PDFs, then reorder, rotate, remove and split pages and download them (processed on your device)",
+        },
+        href: "/studio/pdf-workbench",
+      },
+      {
         name: { ko: "협업 보드", en: "Collaboration board" },
         description: { ko: "함께할 사람과 프로젝트를 찾고 연결", en: "Find people and projects to work with" },
         href: "/collaborate",
@@ -266,11 +297,6 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
         name: { ko: "창작 레시피", en: "Creation recipes" },
         description: { ko: "짧게 따라 하는 제작 레시피 모음", en: "Short, follow-along creation recipes" },
         href: "/learn/recipes",
-      },
-      {
-        name: { ko: "창작자 허브", en: "Creator hub" },
-        description: { ko: "창작자 리소스와 연결의 중심", en: "The hub for creator resources and connections" },
-        href: "/creator-hub",
       },
     ],
   },
@@ -315,8 +341,8 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
     icon: Compass,
     title: { ko: "읽고 발견하기", en: "Read & discover" },
     summary: {
-      ko: `외부 ${FEATURE_OVERVIEW_PLATFORM_COUNT}개 플랫폼에서 모은 작품 정보 ${FEATURE_OVERVIEW_CATALOG_TITLES.toLocaleString("ko-KR")}건을 검색·랭킹·캘린더로 탐색합니다.`,
-      en: `Browse ${FEATURE_OVERVIEW_CATALOG_TITLES.toLocaleString("en-US")} catalog entries collected from ${FEATURE_OVERVIEW_PLATFORM_COUNT} external platforms, through search, rankings and a release calendar.`,
+      ko: `외부 플랫폼 ${FEATURE_OVERVIEW_CATALOG_PLATFORM_COUNT}곳의 연재처가 기록된 작품 정보 ${FEATURE_OVERVIEW_CATALOG_TITLES.toLocaleString("ko-KR")}건(웹툰 ${FEATURE_OVERVIEW_CATALOG_WEBTOON_TITLES.toLocaleString("ko-KR")} · 웹소설 ${FEATURE_OVERVIEW_CATALOG_WEBNOVEL_TITLES.toLocaleString("ko-KR")}, ${FEATURE_OVERVIEW_CATALOG_SNAPSHOT_DATE} 수집 스냅샷)을 검색·랭킹·캘린더로 탐색합니다.`,
+      en: `Browse ${FEATURE_OVERVIEW_CATALOG_TITLES.toLocaleString("en-US")} catalog entries (${FEATURE_OVERVIEW_CATALOG_WEBTOON_TITLES.toLocaleString("en-US")} webtoons and ${FEATURE_OVERVIEW_CATALOG_WEBNOVEL_TITLES.toLocaleString("en-US")} web novels, collected ${FEATURE_OVERVIEW_CATALOG_SNAPSHOT_DATE}) that record availability on ${FEATURE_OVERVIEW_CATALOG_PLATFORM_COUNT} external platforms, through search, rankings and a release calendar.`,
     },
     items: [
       {
@@ -331,7 +357,7 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
       },
       {
         name: { ko: "랭킹", en: "Rankings" },
-        description: { ko: "플랫폼을 가로지르는 인기 작품 순위", en: "Popular works ranked across platforms" },
+        description: { ko: "플랫폼을 가로지르는 인기 작품 순위(추정 지표 포함)", en: "Popular works ranked across platforms (includes estimated metrics)" },
         href: "/ranking",
       },
       {
@@ -393,7 +419,7 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
       {
         name: { ko: "창작 챌린지", en: "Creative challenges" },
         description: { ko: "주제가 있는 창작 이벤트", en: "Themed creative events" },
-        href: "/challenges",
+        href: "/showcase/challenges",
       },
       {
         name: { ko: "오늘의 운세", en: "Daily fortune" },
@@ -418,8 +444,34 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
       },
       {
         name: { ko: "제품 투어", en: "Product tour" },
-        description: { ko: "실제 화면으로 따라가는 8분 전체 투어", en: "An 8-minute tour through real product screens" },
+        description: {
+          ko: "제품 화면 캡처와 개념 도해로 따라가는 8분 전체 투어",
+          en: "An 8-minute tour through product captures and concept illustrations",
+        },
         href: "/product-tour",
+      },
+      {
+        name: { ko: "홍보영상", en: "Brand film" },
+        description: { ko: "24초로 보는 창작 흐름(무음 브랜드 필름)", en: "The creative flow in 24 seconds (a silent brand film)" },
+        href: "/brand-film",
+      },
+      {
+        name: { ko: "웹툰 제작 과정", en: "Webtoon workflow" },
+        description: { ko: "기획에서 연재 운영까지 단계별 제작 흐름과 결과물", en: "The production flow from planning to release, stage by stage, with outputs" },
+        href: "/about/workflow",
+      },
+      {
+        name: { ko: "기술과 신뢰", en: "Technology & trust" },
+        description: {
+          ko: "브라우저에서 스튜디오를 만든 과정: 제작 스토리·발표 모드·기술 도감",
+          en: "How the studio was built in the browser: engineering story, presentation mode and technology atlas",
+        },
+        href: "/about/technology",
+      },
+      {
+        name: { ko: "제품 원칙", en: "Product principles" },
+        description: { ko: "창작 흐름·권리·AI·협업·접근성 의사결정 기준", en: "Decision standards for creative flow, rights, AI, collaboration and accessibility" },
+        href: "/about/principles",
       },
       {
         name: { ko: "요금제", en: "Pricing" },
