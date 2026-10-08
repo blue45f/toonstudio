@@ -297,6 +297,7 @@ export const ENGINEERING_EXTERNAL_LINKS: readonly EngineeringExternalLink[] = [
   { name: "Zod", url: "https://zod.dev/" },
   { name: "Node.js", url: "https://nodejs.org/" },
   { name: "pnpm", url: "https://pnpm.io/" },
+  { name: "Corepack", url: "https://github.com/nodejs/corepack" },
   { name: "Tailwind CSS", url: "https://tailwindcss.com/" },
   { name: "Drizzle ORM", url: "https://orm.drizzle.team/" },
   { name: "SQLite", url: "https://www.sqlite.org/" },

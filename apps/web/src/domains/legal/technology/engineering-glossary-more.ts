@@ -1,5 +1,6 @@
 import { GLOSSARY_MORE_AI } from "./engineering-glossary-more-ai";
 import { GLOSSARY_MORE_BRUSH } from "./engineering-glossary-more-brush";
+import { GLOSSARY_MORE_BUILD } from "./engineering-glossary-more-build";
 import { GLOSSARY_MORE_COLLAB } from "./engineering-glossary-more-collab";
 import { GLOSSARY_MORE_CRAFT } from "./engineering-glossary-more-craft";
 import { GLOSSARY_MORE_DATA } from "./engineering-glossary-more-data";
@@ -25,4 +26,5 @@ export const ENGINEERING_GLOSSARY_MORE: readonly GlossaryTerm[] = [
   ...GLOSSARY_MORE_DATA,
   ...GLOSSARY_MORE_OSS,
   ...GLOSSARY_MORE_CRAFT,
+  ...GLOSSARY_MORE_BUILD,
 ];
