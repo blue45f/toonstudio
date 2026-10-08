@@ -98,6 +98,11 @@ const reviews = {
   }],
   "artifact-story": [],
 };
+// CT-1 서버 정본 목록: 버전·비교 탭의 스냅샷·원클릭 공유 패널은 마운트할 때 이 목록을 GET으로 동기화한다.
+// 서버는 view 권한이 있는 아티팩트에만 목록을 주고 없는 아티팩트는 404로 거절하므로 프로젝트 아티팩트만 둔다.
+// 아직 만든 스냅샷·공유 링크가 없는 상태라 모두 빈 목록이다.
+const manuscriptSnapshots = { "artifact-image": [], "artifact-story": [] };
+const versionShares = { "artifact-image": [], "artifact-story": [] };
 const reviewSubject = {
   schemaVersion: 1,
   projectId: project.id,
@@ -158,6 +163,18 @@ async function installRoutes(page, label) {
     if (revisionMatch) return route.fulfill({ json: revisions[decodeURIComponent(revisionMatch[1])] ?? [] });
     const reviewMatch = url.pathname.match(/^\/api\/studio-project-graph\/artifacts\/([^/]+)\/reviews$/u);
     if (reviewMatch) return route.fulfill({ json: reviews[decodeURIComponent(reviewMatch[1])] ?? [] });
+    // 읽기 흐름이라 GET만 응답한다. 로컬 기록 업로드(POST·PATCH)나 프로젝트 밖 아티팩트 조회는
+    // 맨 아래 예상 밖 요청 404로 남아 failedResponses에서 드러난다.
+    const snapshotMatch = url.pathname.match(/^\/api\/studio-project-graph\/artifacts\/([^/]+)\/manuscript-snapshots$/u);
+    const snapshots = snapshotMatch && request.method() === "GET"
+      ? manuscriptSnapshots[decodeURIComponent(snapshotMatch[1])]
+      : undefined;
+    if (snapshots) return route.fulfill({ json: snapshots });
+    const shareMatch = url.pathname.match(/^\/api\/studio-project-graph\/artifacts\/([^/]+)\/version-shares$/u);
+    const shares = shareMatch && request.method() === "GET"
+      ? versionShares[decodeURIComponent(shareMatch[1])]
+      : undefined;
+    if (shares) return route.fulfill({ json: shares });
     if (url.pathname === "/api/studio-project-graph/reviews/review-image") {
       return route.fulfill({ json: { ...reviews["artifact-image"][0], comments: [] } });
     }

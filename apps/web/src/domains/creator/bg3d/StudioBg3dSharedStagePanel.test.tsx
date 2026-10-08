@@ -71,7 +71,7 @@ describe("StudioBg3dSharedStagePanel", () => {
 
     const relationshipStatus = screen.getByRole("status");
     expect(within(relationshipStatus).getByText("연결 예정")).toBeTruthy();
-    expect(relationshipStatus.textContent).toContain("아래 적용을 누르기 전에는 저장되지 않아요");
+    expect(relationshipStatus.textContent).toContain("아래 적용을 누르기 전에는 저장되지 않습니다");
     expect(within(relationshipStatus).queryByText("연결 안 됨")).toBeNull();
     expect(within(relationshipStatus).queryByText("연결됨")).toBeNull();
 
@@ -100,7 +100,7 @@ describe("StudioBg3dSharedStagePanel", () => {
 
     const relationshipStatus = screen.getByRole("status");
     expect(within(relationshipStatus).getByText("배경만 추가 예정")).toBeTruthy();
-    expect(relationshipStatus.textContent).toContain("아래 적용을 누르기 전에는 저장되지 않아요");
+    expect(relationshipStatus.textContent).toContain("아래 적용을 누르기 전에는 저장되지 않습니다");
     expect(within(relationshipStatus).queryByText("배경만 연결됨")).toBeNull();
     expect(screen.getByRole("button", { name: "배경만 추가" }).getAttribute("aria-pressed"))
       .toBe("true");
@@ -128,7 +128,7 @@ describe("StudioBg3dSharedStagePanel", () => {
       />,
     );
     expect(screen.getByText("캐릭터 확인 필요")).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toContain("렌더 인스턴스를 준비하지 못했어요");
+    expect(screen.getByRole("status").textContent).toContain("렌더 인스턴스를 준비하지 못했습니다");
 
     view.rerender(
       <StudioBg3dSharedStagePanel

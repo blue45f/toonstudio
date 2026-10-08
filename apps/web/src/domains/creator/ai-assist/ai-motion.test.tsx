@@ -69,16 +69,21 @@ describe("useCountUp", () => {
     window.requestAnimationFrame = (cb: FrameRequestCallback) =>
       window.setTimeout(() => cb(performance.now()), 16);
     window.cancelAnimationFrame = (id: number) => window.clearTimeout(id);
+    let unmount: (() => void) | undefined;
     try {
       function Counter() {
         const value = useCountUp(8, 60);
         return <span data-testid="count">{value}</span>;
       }
-      render(<Counter />);
+      ({ unmount } = render(<Counter />));
       await waitFor(() => {
         expect(screen.getByTestId("count").textContent).toBe("8");
       });
     } finally {
+      // 스텁을 되돌리기 전에 언마운트해야 훅 cleanup이 스텁 cancelAnimationFrame(clearTimeout)으로
+      // 대기 중인 마지막 tick을 취소한다. 순서가 뒤집히면 그 타이머가 jsdom 해체 뒤 setState를
+      // 불러 `ReferenceError: window is not defined` 미처리 오류로 실행 전체를 실패시킨다.
+      unmount?.();
       restore();
       window.requestAnimationFrame = originalRaf;
       window.cancelAnimationFrame = originalCaf;

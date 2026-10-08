@@ -5,6 +5,7 @@ import {
   createPromoHistoryTracker,
   nextPromoHistoryMeta,
   pushPromoSnapshot,
+  scopedPromoCoalesceKey,
   shouldPushPromoUndo,
 } from "./promo-history";
 
@@ -55,6 +56,44 @@ describe("promo-history 병합 판정", () => {
       expect(tracker.shouldPush("field:title")).toBe(true);
       nowSpy.mockReturnValue(3_000);
       expect(tracker.shouldPush("field:title")).toBe(true);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+});
+
+describe("promo-history 하위 편집기 병합 키", () => {
+  it("연속 입력 필드에만 범위를 붙이고, 필드 없는 이산 조작은 병합 키를 만들지 않는다", () => {
+    expect(scopedPromoCoalesceKey("panel:a", "camera.from.x")).toBe("panel:a:camera.from.x");
+    expect(scopedPromoCoalesceKey("panel:a", undefined)).toBeUndefined();
+  });
+
+  // 회귀: 컷 전체를 키 하나("panel:<id>")로 묶으면 1.2초 안의 맞바꾸기 버튼이 앞선 슬라이더 입력과
+  // 키프레임 모드 전환까지 한 단계로 병합돼, 실행 취소 한 번에 직접 지정 카메라가 통째로 사라졌다.
+  it("1.2초 창 안에서도 이산 조작은 직전 연속 입력과 병합하지 않아 실행 취소가 그 조작만 되돌린다", () => {
+    const nowSpy = vi.spyOn(Date, "now");
+    try {
+      const tracker = createPromoHistoryTracker();
+      let undo: string[] = [];
+      let current = "카메라 프리셋";
+      const edit = (next: string, at: number, field?: string) => {
+        nowSpy.mockReturnValue(at);
+        if (tracker.shouldPush(scopedPromoCoalesceKey("panel:a", field))) undo = pushPromoSnapshot(undo, current);
+        current = next;
+      };
+      edit("직접 지정 카메라", 1_000);
+      edit("시작 가로 10%", 1_030, "camera.from.x");
+      edit("시작 가로 12%", 1_060, "camera.from.x");
+      edit("끝 가로 90%", 1_090, "camera.to.x");
+      edit("끝 확대 200%", 1_120, "camera.to.zoom");
+      edit("시작·끝 맞바꿈", 1_300);
+      expect(undo).toEqual([
+        "카메라 프리셋",
+        "직접 지정 카메라",
+        "시작 가로 12%",
+        "끝 가로 90%",
+        "끝 확대 200%",
+      ]);
     } finally {
       nowSpy.mockRestore();
     }

@@ -33,7 +33,9 @@ function ChangeBadge({ changePct, halfDays }: { changePct: number | null; halfDa
     );
   }
   const direction = changePct > 0 ? "▲" : changePct < 0 ? "▼" : "—";
-  const tone = changePct > 0 ? "text-emerald-600 dark:text-emerald-400" : changePct < 0 ? "text-rose-600 dark:text-rose-400" : "text-fg-2";
+  // 상승·하락은 DESIGN.md 시맨틱 토큰(good=상승, bad=하락)이 맡는다. 토큰이 테마마다 명도를 바꾸므로
+  // OS 색 구성표만 따르던 dark: 변형 없이도 밝은·어두운 테마 양쪽에서 대비가 유지된다.
+  const tone = changePct > 0 ? "text-good" : changePct < 0 ? "text-bad" : "text-fg-2";
   return (
     <div>
       <dt className="text-xs font-semibold text-fg-3">전반 {halfDays}일 대비 최근 {halfDays}일</dt>

@@ -3,14 +3,16 @@ import { PROMO_CAMERA_EASINGS } from "./promo-model";
 import type { PromoCamera, PromoCameraPose, PromoPanel, PromoScene } from "./promo-model";
 
 export function PromoCameraEditor({ scene, onChange, onSeek }: {
-  scene: PromoScene; onChange: (patch: Partial<PromoPanel>) => void; onSeek?: (frame: number) => void;
+  scene: PromoScene; onSeek?: (frame: number) => void;
+  /** field는 구도 슬라이더만 넘긴다. 모드 전환·속도 변화·맞바꾸기는 생략해 실행 취소 한 단계로 남긴다. */
+  onChange: (patch: Partial<PromoPanel>, field?: string) => void;
 }) {
   const { panel } = scene;
   const camera = panel.camera;
   const enable = () => onChange({ camera: { from: { x: panel.focusX ?? 0.5, y: panel.focusY ?? 0.5, zoom: 1 },
     to: { x: panel.focusX ?? 0.5, y: panel.focusY ?? 0.5, zoom: 1.2 }, easing: "smooth" } });
   const changePose = (endpoint: "from" | "to", axis: keyof PromoCameraPose, value: number) => {
-    if (camera) onChange({ camera: { ...camera, [endpoint]: { ...camera[endpoint], [axis]: value } } });
+    if (camera) onChange({ camera: { ...camera, [endpoint]: { ...camera[endpoint], [axis]: value } } }, `camera.${endpoint}.${axis}`);
   };
   return <div className="promo-camera-editor">
     <label htmlFor={`camera-mode-${panel.id}`}>카메라 제어 방식<select id={`camera-mode-${panel.id}`} value={camera ? "custom" : "preset"} onChange={(event) => { if (event.target.value === "custom") enable(); else onChange({ camera: undefined }); }}><option value="preset">카메라 모션 프리셋</option><option value="custom">시작·끝 키프레임 직접 지정</option></select></label>

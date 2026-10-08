@@ -78,11 +78,16 @@ describe("Studio BG3D template organizer integration boundary", () => {
   });
 
   it("keeps hierarchy transforms and duplicates root-driven with remapped provenance", () => {
-    const duplicate = sceneOpsSource.slice(
-      sceneOpsSource.indexOf("const duplicateSelected = () =>"),
-      sceneOpsSource.indexOf("h.duplicateSelected = duplicateSelected"),
-    );
+    // 2026-10-05 51b98af9a(연결 복제): 일반·연결 복제가 같은 구현을 공유하고 linked 플래그는
+    // linkedSourceId만 가른다. 템플릿 식별자 재할당·계층 패치는 두 진입점 모두에 적용돼야 한다.
+    const duplicateStart = sceneOpsSource.indexOf("const duplicateSelectedImpl = (linked: boolean) =>");
+    const duplicateEnd = sceneOpsSource.indexOf("h.duplicateSelected = duplicateSelected", duplicateStart);
+    const duplicate = sceneOpsSource.slice(duplicateStart, duplicateEnd);
 
+    expect(duplicateStart).toBeGreaterThanOrEqual(0);
+    expect(duplicateEnd).toBeGreaterThan(duplicateStart);
+    expect(duplicate).toContain("const duplicateSelected = () => duplicateSelectedImpl(false);");
+    expect(sceneOpsSource).toContain("const duplicateSelectedLinked = () => duplicateSelectedImpl(true);");
     expect(placementSource).toContain("orderStudioBg3dHierarchySelectionRootsFirst(insertedEntities)");
     expect(transformSource).toContain("hasStudioBg3dSelectedAncestor(");
     expect(transformSource).toContain("(ancestor) => !isBgObjectTransformBlocked(ancestor)");

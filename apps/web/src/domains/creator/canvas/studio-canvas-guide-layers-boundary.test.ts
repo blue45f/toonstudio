@@ -147,7 +147,7 @@ const OVERLAY_PROPS = [
   "onBeginSharedGutterDrag",
   "onPreviewSharedGutterDrag",
   "onCommitSharedGutterDrag",
-  // 2026-10-05 4f9936b10: 세로 간격 드래그(가로 거터의 공백 자체를 드래그) 계약 추가분.
+  // 2026-10-05 4f9936b10·7b236bfaf: CSP식 세로 공백 패널링(가로 거터의 공백 자체를 드래그) 계약 추가분.
   "onBeginVerticalGapDrag",
   "onPreviewVerticalGapDrag",
   "onCommitVerticalGapDrag",
