@@ -62,6 +62,14 @@ import {
   type PresetSliceExportOptions,
 } from "./studio-export-presets";
 import { exportPagesToPdf, pdfExportResultMessage } from "./studio-pdf-export";
+import {
+  DEFAULT_STUDIO_PDF_PRINT_SPEC,
+  describePdfPrintSpec,
+  readStudioPdfPrintSpecDraft,
+  resolvePdfPrintOptions,
+  writeStudioPdfPrintSpecDraft,
+  type StudioPdfPrintSpecState,
+} from "./studio-export-print-spec";
 
 import type {
   StudioRasterEncoded,
@@ -283,6 +291,14 @@ export function StudioExportMenuPanel({
   const [geometryPresetId, setGeometryPresetId] = useState<StudioExportGeometryPresetId | null>(
     geometryDraft?.presetId ?? null
   );
+  // 단행본 인쇄 스펙(PDF 전용) — 지오메트리와 달리 래스터 메타데이터가 아니라 인쇄용
+  // 빌더(studio-pdf-print-export)의 실제 옵션이며, 초안으로 메뉴 개폐를 넘어 유지한다.
+  const printSpecDraft = readStudioPdfPrintSpecDraft();
+  const [pdfPrintSpec, setPdfPrintSpec] = useState<StudioPdfPrintSpecState>(
+    printSpecDraft ?? DEFAULT_STUDIO_PDF_PRINT_SPEC
+  );
+  // 비활성이면 undefined — runPdfExport가 print 키 자체를 생략해 기본 경로를 그대로 탄다.
+  const pdfPrintOptions = resolvePdfPrintOptions(pdfPrintSpec);
   // 페이지당 요소 수만큼 순차 캡처라 다른 내보내기보다 오래 걸린다 — 진행 중 패널이 닫히거나
   // 언마운트되면(다른 내보내기 형식으로 전환 등) 뒤늦게 도착한 결과가 상태를 덮어쓰지 않게 막는다.
   const mountedRef = useRef(true);
@@ -369,6 +385,10 @@ export function StudioExportMenuPanel({
       presetId: geometryPresetId,
     });
   }, [geometryDpi, geometryTrimW, geometryTrimH, geometryBleed, geometryPresetId]);
+
+  useEffect(() => {
+    writeStudioPdfPrintSpecDraft(pdfPrintSpec);
+  }, [pdfPrintSpec]);
 
   function applyGeometryPreset(id: StudioExportGeometryPresetId) {
     const preset = studioExportGeometryPreset(id);
@@ -740,6 +760,7 @@ export function StudioExportMenuPanel({
         pages: captured.pages,
         title: exportTitle,
         watermark,
+        ...(pdfPrintOptions ? { print: pdfPrintOptions } : {}),
         onProgress: (done, total) =>
           setPdfStatus({
             tone: "info",
@@ -748,7 +769,9 @@ export function StudioExportMenuPanel({
       });
       setPdfStatus({
         tone: "good",
-        text: `${pdfExportResultMessage(result)} (${captured.rangeLabel})`,
+        text:
+          `${pdfExportResultMessage(result)} (${captured.rangeLabel})` +
+          (pdfPrintOptions ? ` 인쇄 스펙 적용: ${describePdfPrintSpec(pdfPrintSpec)}.` : ""),
       });
     } catch (err) {
       setPdfStatus({
@@ -1595,7 +1618,7 @@ export function StudioExportMenuPanel({
             <FileImage size={13} aria-hidden />
             {openRasterBusy ? "픽셀 인코딩 중" : `${openRasterFormat.toUpperCase()} 저장`}
           </button>
-          <p className="mt-1 text-[0.6rem] leading-relaxed text-fg-4">
+          <p className="mt-1 text-[0.6rem] leading-relaxed text-fg-3">
             QOI·TGA·PAM·TIFF는 투명도를 보존합니다. BMP·PPM은 호환성을 위해 흰색 배경에 합성합니다.
           </p>
           <p
@@ -1685,7 +1708,7 @@ export function StudioExportMenuPanel({
             </button>
           )}
         </div>
-        <p className="mt-1 text-[0.6rem] leading-relaxed text-fg-4">
+        <p className="mt-1 text-[0.6rem] leading-relaxed text-fg-3">
           CBZ는 선택 범위와 ComicInfo.xml, ORA는 현재 화면의 합성을 보존합니다.
           {exportCurrentPageToInkMl ? " InkML은 펜 자유곡선의 입력 채널을 검증해 교환합니다." : null}
           {exportCurrentPageToWillV1
@@ -1704,6 +1727,154 @@ export function StudioExportMenuPanel({
           {archiveStatus?.text}
         </p>
       </section>
+
+      {/* 단행본 인쇄 스펙 — 켤 때만 PDF가 인쇄용 빌더(도련·재단 마크·CMYK·중철 스프레드)를 탄다. */}
+      <div className="mt-2.5 border-t border-line pt-2.5">
+        <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-fg-2">
+          <input
+            type="checkbox"
+            data-testid="export-print-spec-enabled"
+            checked={pdfPrintSpec.enabled}
+            onChange={(event) =>
+              setPdfPrintSpec((current) => ({ ...current, enabled: event.target.checked }))
+            }
+            className="size-3.5 cursor-pointer accent-[var(--color-accent)]"
+          />
+          단행본 인쇄 스펙 (PDF)
+        </label>
+        {pdfPrintSpec.enabled ? (
+          <div className="mt-1.5">
+            <div className="grid grid-cols-2 items-end gap-1.5">
+              <label className="text-[0.62rem] font-medium text-fg-3">
+                도련 (mm)
+                <input
+                  type="number"
+                  data-testid="export-print-spec-bleed"
+                  min={STUDIO_EXPORT_BLEED_MM_RANGE.min}
+                  max={STUDIO_EXPORT_BLEED_MM_RANGE.max}
+                  step={0.5}
+                  value={pdfPrintSpec.bleedMm === 0 ? "" : pdfPrintSpec.bleedMm}
+                  placeholder="0 (없음)"
+                  onChange={(event) => {
+                    const raw = event.target.value;
+                    const parsed = raw === "" ? 0 : Number(raw);
+                    if (!Number.isFinite(parsed)) return;
+                    setPdfPrintSpec((current) => ({
+                      ...current,
+                      bleedMm: Math.min(
+                        STUDIO_EXPORT_BLEED_MM_RANGE.max,
+                        Math.max(STUDIO_EXPORT_BLEED_MM_RANGE.min, parsed)
+                      ),
+                    }));
+                  }}
+                  className="mt-0.5 h-9 w-full rounded-lg border border-line bg-card px-2 text-xs text-fg outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                  aria-label="인쇄 스펙 도련 밀리미터"
+                />
+              </label>
+              <label className="flex cursor-pointer items-center gap-1.5 pb-2.5 text-[0.62rem] font-medium text-fg-3">
+                <input
+                  type="checkbox"
+                  data-testid="export-print-spec-crop-marks"
+                  checked={pdfPrintSpec.cropMarks}
+                  onChange={(event) =>
+                    setPdfPrintSpec((current) => ({ ...current, cropMarks: event.target.checked }))
+                  }
+                  className="size-3.5 cursor-pointer accent-[var(--color-accent)]"
+                />
+                재단 마크
+              </label>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-fg-2">색상</span>
+              <div className="flex items-center gap-1" role="group" aria-label="인쇄 스펙 색상 모드">
+                <button
+                  type="button"
+                  data-testid="export-print-spec-color-rgb"
+                  aria-pressed={pdfPrintSpec.colorMode === "rgb"}
+                  onClick={() =>
+                    setPdfPrintSpec((current) => ({ ...current, colorMode: "rgb" }))
+                  }
+                  className={cx(
+                    "h-7 rounded-lg border px-2.5 text-xs font-semibold transition-colors",
+                    pdfPrintSpec.colorMode === "rgb"
+                      ? "border-accent bg-accent-soft text-fg"
+                      : "border-line bg-card text-fg-2 hover:bg-raised"
+                  )}
+                >
+                  RGB
+                </button>
+                <button
+                  type="button"
+                  data-testid="export-print-spec-color-cmyk"
+                  aria-pressed={pdfPrintSpec.colorMode === "cmyk"}
+                  onClick={() =>
+                    setPdfPrintSpec((current) => ({ ...current, colorMode: "cmyk" }))
+                  }
+                  className={cx(
+                    "h-7 rounded-lg border px-2.5 text-xs font-semibold transition-colors",
+                    pdfPrintSpec.colorMode === "cmyk"
+                      ? "border-accent bg-accent-soft text-fg"
+                      : "border-line bg-card text-fg-2 hover:bg-raised"
+                  )}
+                >
+                  CMYK
+                </button>
+              </div>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-fg-2">페이지 배열</span>
+              <div className="flex items-center gap-1" role="group" aria-label="인쇄 스펙 페이지 배열">
+                <button
+                  type="button"
+                  data-testid="export-print-spec-imposition-none"
+                  aria-pressed={pdfPrintSpec.imposition === "none"}
+                  onClick={() =>
+                    setPdfPrintSpec((current) => ({ ...current, imposition: "none" }))
+                  }
+                  className={cx(
+                    "h-7 rounded-lg border px-2.5 text-xs font-semibold transition-colors",
+                    pdfPrintSpec.imposition === "none"
+                      ? "border-accent bg-accent-soft text-fg"
+                      : "border-line bg-card text-fg-2 hover:bg-raised"
+                  )}
+                >
+                  읽기 순서
+                </button>
+                <button
+                  type="button"
+                  data-testid="export-print-spec-imposition-booklet"
+                  aria-pressed={pdfPrintSpec.imposition === "booklet"}
+                  onClick={() =>
+                    setPdfPrintSpec((current) => ({ ...current, imposition: "booklet" }))
+                  }
+                  className={cx(
+                    "h-7 rounded-lg border px-2.5 text-xs font-semibold transition-colors",
+                    pdfPrintSpec.imposition === "booklet"
+                      ? "border-accent bg-accent-soft text-fg"
+                      : "border-line bg-card text-fg-2 hover:bg-raised"
+                  )}
+                >
+                  중철 스프레드
+                </button>
+              </div>
+            </div>
+            <p className="mt-1.5 text-[0.6rem] leading-relaxed text-fg-3">
+              도련 영역은 이미지를 균일 확대해 채웁니다 — 재단보다 큰 원본이 없으면 진짜 도련이
+              되지 않습니다.
+            </p>
+            <p className="mt-1 text-[0.6rem] leading-relaxed text-fg-3">
+              CMYK 변환은 ICC 프로파일 기반 색관리가 아닙니다 — 렌더링 인텐트·총잉크량(TAC)
+              제한·도트 게인 보정이 없어 인쇄소 프로파일 변환과 색이 다를 수 있고, JPEG 대신
+              픽셀 그대로 담아 파일이 커질 수 있습니다. PDF/X 같은 규격 적합이 필요한 발행은
+              적합성 검사를 거치는 별도 경로를 사용하세요.
+            </p>
+            <p className="mt-1 text-[0.6rem] leading-relaxed text-fg-3">
+              중철 스프레드는 모든 페이지 크기가 같아야 하며, 양면 인쇄를 전제로 펼침면을
+              배열합니다.
+            </p>
+          </div>
+        ) : null}
+      </div>
 
       {/* 선택 범위 페이지 → PDF 한 파일 — JPG(품질 92%)로 담는 규격 무관 백업·제출·공유용. */}
       <button
