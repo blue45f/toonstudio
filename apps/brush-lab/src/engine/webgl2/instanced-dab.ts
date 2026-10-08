@@ -80,6 +80,16 @@ export interface Webgl2BatchReceipt {
   encodeMs: number | null;
 }
 
+/** `abortStroke`의 결과(WebGL2 런타임). */
+export interface Webgl2AbortReceipt {
+  /** 문서에 합성되지 않고 버려진 dab 수. 획 밖이면 0. */
+  discardedDabs: number;
+  /** 그 전까지 endStroke된 문서가 beginStroke 직전과 같은가(건식만 받으므로 항상 true). */
+  documentPreserved: boolean;
+  /** abort가 낸 draw 호출 수(프레임을 내지 않았다면 0). */
+  drawCount: number;
+}
+
 export interface Webgl2StrokeReceipt {
   dabCount: number;
   submitCount: number;
@@ -426,6 +436,37 @@ export class Webgl2InstancedRuntime {
     const encodeMs = t0 !== null && this.clock ? this.clock.now() - t0 : null;
     this.frameTimes.push(encodeMs ?? 0);
     return { frameIndex, dabCount: total, submitCount: Math.max(1, instancedDraws), drawCount: this.draws - drawsBefore, encodeMs };
+  }
+
+  /**
+   * 진행 중인 획을 문서에 합성하지 않고 버린다(동기). 획 밖이면 no-op이다.
+   * 문서 텍스처는 endStroke의 bake 패스에서만 바뀌므로 그대로다. 프레임을 낸 획이면 획 타깃을 clear하고 stroke_pass 0으로 encode를
+   * 다시 올려 present가 획 없는 문서를 보이게 한다. 프레임을 내지 않았다면(beginStroke가 이미 획 타깃을 비웠다) GL 호출이 없다.
+   * WebGL2 컨텍스트 손실은 이 런타임이 감지하지 않으므로(드로우가 조용히 무시된다) 손실 시의 보존 여부는 다루지 않는다.
+   */
+  abortStroke(): Webgl2AbortReceipt {
+    if (this.state === "disposed") throw new InvalidStateError("Webgl2InstancedRuntime: dispose 뒤에 호출됐다");
+    const program = this.program;
+    if (!program) return { discardedDabs: 0, documentPreserved: true, drawCount: 0 };
+    const discardedDabs = this.strokeDabs;
+    const framesSubmitted = this.frameIndex;
+    const drawsBefore = this.draws;
+    // blitPass가 program의 opacity·blend를 읽으므로 encode가 끝난 뒤에 비운다.
+    try {
+      if (framesSubmitted > 0) {
+        this.clearTarget(this.strokeFbo);
+        this.encodeAndPresent(0);
+      }
+    } finally {
+      this.gl.bindFramebuffer(GL.FRAMEBUFFER, null);
+      this.program = null;
+      this.state = "ready";
+      this.frameIndex = 0;
+      this.strokeDabs = 0;
+      this.strokeSubmits = 0;
+      this.frameTimes = [];
+    }
+    return { discardedDabs, documentPreserved: true, drawCount: this.draws - drawsBefore };
   }
 
   /** bake(핑퐁) → 획 clear → encode(stroke_pass 0) → gl.finish(). */

@@ -61,11 +61,17 @@ export class StrokeLayer {
   /** 할당된 타일(타일 번호 오름차순). */
   *tiles(): Iterable<[tile: number, data: Float32Array]> {
     for (const [tile, slot] of this.pool.entries()) {
-      yield [tile, this.pool.view(slot)];
+      // 합성 입력은 읽기 전용이다.
+      yield [tile, this.pool.peek(slot)];
     }
   }
 
   clear(): void {
     this.pool.clear();
+  }
+
+  /** 아직 합성하지 않은 획 타일 수(획 밖이면 0). */
+  usedTiles(): number {
+    return this.pool.used();
   }
 }

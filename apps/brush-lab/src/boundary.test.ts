@@ -89,6 +89,9 @@ const BANNED_NAMES: readonly { name: string; raw: (rel: string) => boolean }[] =
   { name: "lygia", raw: () => true },
 ];
 
+/** 금지 이름을 표본(탐지기 자체 검증)·금지 패키지 목록(라이선스 게이트)으로 담는 테스트 파일 — 이름 문자열 검사에서 제외한다. */
+const BANNED_NAME_LIST_FILES = new Set(["boundary.test.ts", "license-policy.test.ts"]);
+
 /** 파일 하나가 쓴 금지 이름 목록(대소문자 무시). */
 function bannedNameUses(rel: string, source: string): string[] {
   const code = stripComments(source);
@@ -109,11 +112,37 @@ describe("src 경계", () => {
         if (spec.startsWith("@/")) violations.push(`${f.rel}: ${spec}`);
         if (/mixbox|canvaskit/i.test(spec)) violations.push(`${f.rel}: ${spec}`);
       }
-      // 이 파일은 금지 이름을 표본으로 담고 있어 제외한다.
-      if (f.rel === "boundary.test.ts") continue;
+      // 이 파일들은 금지 이름을 표본·금지 목록으로 담고 있어 제외한다.
+      if (BANNED_NAME_LIST_FILES.has(f.rel)) continue;
       for (const name of bannedNameUses(f.rel, f.source)) violations.push(`${f.rel}: ${name} 문자열`);
     }
     expect(violations).toEqual([]);
+  });
+
+  it("저장소 packages/ 디렉터리로 나가는 상대 import는 외부 엔진 래퍼 레인 파일(과 그 테스트)의 지정 모듈만 쓴다", () => {
+    // libmypaint 로더는 패키지 exports에 없어 apps/web 네이티브 프로브 워커와 같은 상대 경로로 가져오고,
+    // Hokusai는 pkg 디렉터리에 package.json이 없는 web-target 산출물이라 워크스페이스 의존이 아니라 상대 경로로 가져온다(apps/web 워커와 같다).
+    const ALLOWED: Record<string, readonly RegExp[]> = {
+      "lanes/libmypaint-lane.ts": [/^(\.\.\/)+packages\/studio-brush-platform\/src\/libmypaint\/index$/],
+      "lanes/libmypaint-lane.test.ts": [/^(\.\.\/)+packages\/studio-brush-platform\/src\/libmypaint\/index$/],
+      "lanes/hokusai-lane.ts": [/^(\.\.\/)+packages\/studio-hokusai-wasm\/pkg\/studio_hokusai_wasm\.js$/],
+      "lanes/hokusai-lane.test.ts": [/^(\.\.\/)+packages\/studio-hokusai-wasm\/pkg\/studio_hokusai_wasm\.js$/],
+    };
+    const violations: string[] = [];
+    const allowedUses: string[] = [];
+    for (const f of files) {
+      // 이 파일은 탐지기 표본 문자열(가짜 import 구문)을 담고 있어 제외한다.
+      if (f.rel === "boundary.test.ts") continue;
+      for (const spec of importSpecifiers(f.source)) {
+        if (!spec.startsWith(".") || !/(^|\/)packages\//.test(spec)) continue;
+        if ((ALLOWED[f.rel] ?? []).some((re) => re.test(spec))) allowedUses.push(`${f.rel}: ${spec.replace(/^(\.\.\/)+/, "")}`);
+        else violations.push(`${f.rel}: ${spec}`);
+      }
+    }
+    expect(violations).toEqual([]);
+    // 게이트가 살아 있는지: 지정 파일은 실제로 그 모듈을 import한다.
+    expect(allowedUses).toContain("lanes/libmypaint-lane.ts: packages/studio-brush-platform/src/libmypaint/index");
+    expect(allowedUses).toContain("lanes/hokusai-lane.ts: packages/studio-hokusai-wasm/pkg/studio_hokusai_wasm.js");
   });
 
   it("테스트가 아닌 소스는 node: 모듈을 import하지 않는다", () => {
@@ -169,6 +198,15 @@ describe("src 경계", () => {
 });
 
 describe("경계 탐지기 자체 검증(구멍 방지)", () => {
+  it("importSpecifiers는 동적 import()와 type import의 상대 경로도 모두 수집한다", () => {
+    const source = [
+      'import type { A } from "../../../../packages/x/src/a";',
+      'const m = await import("../../../../packages/y/pkg/y.js");',
+      'export { b } from "../../../packages/z/b";',
+    ].join("\n");
+    expect(importSpecifiers(source)).toEqual(["../../../../packages/x/src/a", "../../../../packages/y/pkg/y.js", "../../../packages/z/b"]);
+  });
+
   it.each([
     ["performance.now() 호출", "export const t = () => performance.now();", ["performance"]],
     ["typeof performance", 'const ok = typeof performance !== "undefined";', ["performance"]],

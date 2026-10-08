@@ -5,7 +5,7 @@ import { probeWebGpuAdapter, requestSumiDevice } from "../engine/gpu/device";
 import { SumiInstancedRuntime } from "../engine/gpu/pipeline-instanced";
 import { paperFor } from "../engine/raster/reference-renderer";
 
-import { emptyLaneStats } from "./lane";
+import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt } from "./lane";
 
 import type {
   BrushEngineLane,
@@ -15,6 +15,7 @@ import type {
   LaneEnvironment,
   LaneInit,
   LaneStats,
+  StrokeAbortReceipt,
   StrokeReceipt,
 } from "./lane";
 import type { LabImage, RawSample } from "../engine/core/types";
@@ -143,6 +144,17 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
       stats.submits += receipt.submitCount;
       stats.lastReceipt = receipt;
       return receipt;
+    },
+    /**
+     * 진행 중인 획을 문서에 합성하지 않고 버린다. 문서 텍스처는 endStroke의 bake에서만 바뀌므로 보존되고, 프레임을 냈다면 획 타깃을 비우고
+     * present를 다시 올린다(제출 1회). 프레임을 내지 않았다면 GPU 작업이 없다. 장치 손실이면 `documentPreserved: false`. 획 밖이면 no-op(멱등).
+     */
+    abortStroke(): StrokeAbortReceipt {
+      if (disposed) throw new InvalidStateError("webgpu-instanced 레인은 dispose됐다");
+      if (!runtime) return noStrokeAbortReceipt();
+      const result = runtime.abortStroke();
+      pipeline = null;
+      return abortReceipt(result.discardedDabs, result.documentPreserved, result.reasonKo);
     },
     // async: dispose·init 전 호출도 계약대로 rejection으로 드러난다(동기 throw 아님).
     async readback(): Promise<LabImage> {
