@@ -6,7 +6,9 @@ import {
   communityCafeMembers,
   communityCafes,
   db,
+  fanPostLikes,
   fanPostReplies,
+  fanPostReports,
   fanPosts,
   reviewReplies,
   users,
@@ -60,6 +62,9 @@ export const ensureCommunityTables = createSchemaReadinessCheck([
    FROM "fan_post" WHERE FALSE`,
   `SELECT "id", "postId", "parentId", "userId", "text", "deletedAt", "createdAt"
    FROM "fan_post_reply" WHERE FALSE`,
+  `SELECT "postId", "userId", "createdAt" FROM "fan_post_like" WHERE FALSE`,
+  `SELECT "postId", "userId", "reason", "status", "resolvedBy", "resolvedAt",
+          "resolutionNote", "createdAt" FROM "fan_post_report" WHERE FALSE`,
   `SELECT "id", "slug", "name", "description", "genre", "kind", "tags",
           "visibility", "joinPolicy", "postingPolicy", "rules", "status",
           "createdBy", "hidden", "createdAt", "updatedAt"
@@ -751,8 +756,102 @@ export async function createFanPost(userId: string, input: ValidatedFanPostInput
   };
 }
 
+// 글 좋아요 집계 — 상세 응답이 보여줄 총개수와 조회 회원의 좋아요 여부.
+export async function getFanPostLikeState(
+  postId: string,
+  viewerId?: string | null,
+): Promise<{ likeCount: number; viewerLiked: boolean }> {
+  await ensureCommunityTables();
+  const [count] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(fanPostLikes)
+    .where(eq(fanPostLikes.postId, postId));
+  let viewerLiked = false;
+  if (viewerId) {
+    const [mine] = await db
+      .select({ postId: fanPostLikes.postId })
+      .from(fanPostLikes)
+      .where(and(eq(fanPostLikes.postId, postId), eq(fanPostLikes.userId, viewerId)))
+      .limit(1);
+    viewerLiked = Boolean(mine);
+  }
+  return { likeCount: Number(count?.count ?? 0), viewerLiked };
+}
+
+// 글 좋아요 토글 — creator work-social.toggleLike와 같은 방식(기존 행이 있으면 취소,
+// 없으면 onConflictDoNothing으로 삽입)이라 중복 요청·중복 클릭에도 상태가 어긋나지 않는다.
+// 숨김·없는 글이면 null을 돌려주고 호출자가 404로 변환한다.
+export async function toggleFanPostLike(
+  userId: string,
+  postId: string,
+): Promise<{ liked: boolean; likeCount: number } | null> {
+  await ensureCommunityTables();
+  const [post] = await db
+    .select({ id: fanPosts.id })
+    .from(fanPosts)
+    .where(and(eq(fanPosts.id, postId), eq(fanPosts.hidden, false)))
+    .limit(1);
+  if (!post) return null;
+
+  const [existing] = await db
+    .select({ postId: fanPostLikes.postId })
+    .from(fanPostLikes)
+    .where(and(eq(fanPostLikes.postId, postId), eq(fanPostLikes.userId, userId)))
+    .limit(1);
+
+  const liked = !existing;
+  if (existing) {
+    await db
+      .delete(fanPostLikes)
+      .where(and(eq(fanPostLikes.postId, postId), eq(fanPostLikes.userId, userId)));
+  } else {
+    await db.insert(fanPostLikes).values({ postId, userId }).onConflictDoNothing();
+  }
+
+  const state = await getFanPostLikeState(postId, userId);
+  return { liked, likeCount: state.likeCount };
+}
+
+// 글 신고 사유 검증 — 홍보 신고와 같은 기준(10~1000자, 개행 정규화 후 trim).
+export function validateFanPostReport(input: unknown): { reason?: string; error?: string } {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { error: "신고 사유는 10~1000자로 입력해 주세요." };
+  }
+  const rawReason = (input as Record<string, unknown>).reason;
+  const reason = typeof rawReason === "string" ? normalizeMultiline(rawReason) : "";
+  if (reason.length < 10 || reason.length > 1000) {
+    return { error: "신고 사유는 10~1000자로 입력해 주세요." };
+  }
+  return { reason };
+}
+
+// 글 신고 접수 — (postId, userId) 복합 PK + onConflictDoNothing이라 같은 회원의
+// 중복 신고는 첫 신고 하나로 합쳐진다(홍보 신고와 같은 멱등 계약).
+// 숨김·없는 글이면 null을 돌려주고 호출자가 404로 변환한다.
+export async function reportFanPost(
+  userId: string,
+  postId: string,
+  reason: string,
+): Promise<{ reported: true } | null> {
+  await ensureCommunityTables();
+  const [post] = await db
+    .select({ id: fanPosts.id })
+    .from(fanPosts)
+    .where(and(eq(fanPosts.id, postId), eq(fanPosts.hidden, false)))
+    .limit(1);
+  if (!post) return null;
+  await db
+    .insert(fanPostReports)
+    .values({ postId, userId, reason })
+    .onConflictDoNothing();
+  return { reported: true };
+}
+
 // 토론 스레드 상세 — 단일 게시글(숨김 제외) + 답글 트리.
-export async function getFanPost(postId: string): Promise<FanCafePost | null> {
+export async function getFanPost(
+  postId: string,
+  viewerId?: string | null,
+): Promise<FanCafePost | null> {
   await ensureCommunityTables();
   const [row] = await db
     .select({
@@ -776,6 +875,7 @@ export async function getFanPost(postId: string): Promise<FanCafePost | null> {
     .limit(1);
   if (!row) return null;
   const replies = await listFanPostReplies(postId);
+  const likeState = await getFanPostLikeState(postId, viewerId);
   return {
     id: row.id,
     scope: row.scope as FanCafeScope,
@@ -790,6 +890,8 @@ export async function getFanPost(postId: string): Promise<FanCafePost | null> {
     createdAt: safeDate(row.createdAt),
     replyCount: countReplyTree(replies),
     replies,
+    likeCount: likeState.likeCount,
+    viewerLiked: likeState.viewerLiked,
   };
 }
 
