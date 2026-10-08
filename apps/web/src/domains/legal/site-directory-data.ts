@@ -13,6 +13,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { ENGINEERING_CHAPTER_COUNT } from "./technology/engineering-tech-pages";
+
 import {
   SITE_NAVIGATION_ITEMS,
   SITE_UTILITY_NAVIGATION,
@@ -456,10 +458,10 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       en: "Understand ToonStudio through its film, workflow and engineering story",
     },
     items: [
-      destination("/product-tour", "툰스튜디오 전체 제품 투어", "ToonStudio full product tour", "8분 24초 장편 영상과 실제 제품 화면으로 전체 제작 흐름 이해", "Understand the full production journey through an 8m 24s tour and real product screens"),
+      destination("/product-tour", "툰스튜디오 전체 제품 투어", "ToonStudio full product tour", "8분 24초 장편 영상으로 제품 화면 캡처와 개념 도해를 따라가며 전체 제작 흐름 이해", "Understand the full production journey through an 8m 24s tour of product captures and concept illustrations"),
       destination("/brand-film", "툰스튜디오 홍보영상", "ToonStudio brand film", "24초 브랜드 필름으로 핵심 제작 경험 빠르게 보기", "Watch the 24-second brand film for a quick product overview"),
       destination("/features", "기능 한눈에 보기", "Features at a glance", "툰스튜디오의 모든 기능을 카테고리별로 한눈에 확인", "Browse every ToonStudio feature by category at a glance"),
-      destination("/about", "서비스 소개", "About ToonStudio", "기능과 운영 원칙", "Features and operating principles"),
+      destination("/about", "서비스 소개", "About ToonStudio", "핵심 기능·제작 흐름·역할별 시작점과 소개 영상을 한눈에", "Core features, the production flow, starting points by role and intro films at a glance"),
       destination(
         "/about/workflow",
         "웹툰 제작 과정",
@@ -478,15 +480,15 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
         "/about/technology/story",
         "기술 제작 스토리",
         "Engineering story",
-        "문제 정의부터 검증까지 30개 기술 챕터",
-        "Follow 30 engineering chapters from problem definition to verification",
+        `문제 정의부터 검증까지 ${ENGINEERING_CHAPTER_COUNT}개 기술 챕터`,
+        `Follow ${ENGINEERING_CHAPTER_COUNT} engineering chapters from problem definition to verification`,
       ),
       destination(
         "/about/technology/playbook",
         "서비스·기술 플레이북",
         "Service & engineering playbook",
-        "시장 벤치마크·기술 도시어·홍보영상·120분 세미나",
-        "Market benchmarks, technical dossiers, promotional film and a 120-minute seminar",
+        "설계 원칙·아키텍처 결정 10가지·시장 벤치마크·AI 작업 방식",
+        "Design principles, ten architecture decisions, market benchmarks and the AI workbench",
       ),
       destination(
         "/about/technology/guides",
@@ -497,24 +499,24 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       ),
       destination(
         "/about/technology/references",
-        "기술 참고·장애 기록",
-        "Technical references & troubleshooting",
-        "사용·평가·참고 기술과 재현 가능한 장애 해결 기록",
-        "Used, evaluated and reference technologies with reproducible incident records",
+        "기술 참고 자료",
+        "Technical references",
+        "사용·평가·참고 기술과 제품 구분",
+        "Used, evaluated and referenced technology and products",
       ),
       destination(
         "/about/technology/field-notes",
         "기술 심화 노트",
         "Engineering field notes",
-        "Worker·PWA·무료 AI·Blender·3D·Open API와 트러블슈팅",
-        "Workers, PWA, free AI, Blender, 3D, Open APIs and troubleshooting",
+        "Worker·PWA·무료 AI·Blender·3D·Open API 심화 노트와 장애 기록",
+        "Deep notes on Workers, PWA, free AI, Blender, 3D and Open APIs, plus incident records",
       ),
       destination(
         "/about/technology/deck",
         "기술 발표 모드",
         "Engineering deck",
-        "투자·세미나·스터디용 웹 프레젠테이션",
-        "A web presentation for investor, seminar and study audiences",
+        "약 11분·30분·45분 세 발표 트랙의 웹 슬라이드와 발표자 도구, 120분 워크숍 모듈",
+        "Web slides and presenter tools in three tracks of about 11, 30 and 45 minutes, plus 120-minute workshop modules",
       ),
       destination(
         "/about/technology/videos",

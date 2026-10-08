@@ -2,13 +2,17 @@ import { translateCurrentStaticSourceText, useBilingualLocalizer } from "@/share
 import {
   ArrowRight,
   BookOpen,
+  Boxes,
   CirclePlay,
+  Cpu,
   Database,
   FileOutput,
   Layers,
+  LayoutGrid,
   LifeBuoy,
   PanelsTopLeft,
   Play,
+  Presentation,
   Save,
   Sparkles,
   UsersRound,
@@ -107,8 +111,15 @@ const EXPLORE_FILMS = [
   { href: "/brand-film", poster: "/brand/toonstudio-film-poster.jpg", time: "0:24", ko: { title: "24초 브랜드 필름", meta: "창작 흐름을 짧게" }, en: { title: "24-second brand film", meta: "The creative flow, in brief" } },
 ] as const;
 
-/** 읽을거리: 작품을 지키는 습관, 출처 안내. */
+/**
+ * 읽을거리: 전체 기능 지도, 만든 기술(제작 스토리·발표 자료·도감), 작품을 지키는 습관, 출처 안내.
+ * 기술 자료로 이어지는 본문 링크는 여기뿐이라(소개 메뉴의 '기술과 신뢰' 탭 제외) 섹션을 늘리지 않고 이 줄에 둔다.
+ */
 const MORE_LINKS = [
+  { href: "/features", icon: LayoutGrid, ko: "전체 기능 한눈에", en: "All features at a glance" },
+  { href: "/about/technology/story", icon: Cpu, ko: "기술 제작 스토리", en: "Engineering story" },
+  { href: "/about/technology/deck", icon: Presentation, ko: "기술 발표 자료", en: "Engineering presentation" },
+  { href: "/about/technology/atlas", icon: Boxes, ko: "기술 도감", en: "Technology atlas" },
   { href: "/help", icon: LifeBuoy, ko: "저장·복구 도움말", en: "Saving and recovery help" },
   { href: "/about/data", icon: Database, ko: "데이터 출처", en: "Data sources" },
 ] as const;

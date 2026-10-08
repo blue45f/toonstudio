@@ -1,5 +1,5 @@
 import { translateCurrentStaticSourceText, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowLeft, ArrowRight, Check, ClipboardCheck, FileText, Palette, PanelsTopLeft, Save, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, Boxes, Check, ClipboardCheck, Cpu, FileText, LayoutGrid, Palette, PanelsTopLeft, Presentation, Save, type LucideIcon } from "lucide-react";
 
 import { AboutSectionNav } from "./AboutSectionNav";
 
@@ -35,6 +35,14 @@ const HANDOFF_ICONS: Readonly<Record<(typeof WORKFLOW_HANDOFFS)[number]["id"], L
   art: Palette,
   edit: ClipboardCheck,
 };
+
+/** 제작 과정을 읽은 뒤 이어 볼 곳: 전체 기능 지도와, 이 흐름을 만든 기술 자료(제작 스토리·발표 자료·도감). */
+const MORE_LINKS = [
+  { href: "/features", icon: LayoutGrid, ko: "전체 기능 한눈에", en: "All features at a glance" },
+  { href: "/about/technology/story", icon: Cpu, ko: "기술 제작 스토리", en: "Engineering story" },
+  { href: "/about/technology/deck", icon: Presentation, ko: "기술 발표 자료", en: "Engineering presentation" },
+  { href: "/about/technology/atlas", icon: Boxes, ko: "기술 도감", en: "Technology atlas" },
+] as const;
 
 /** 단계 제목에 초점을 옮긴다 — '다음 단계' 버튼을 누른 키보드·스크린 리더 사용자가 새 단계의 시작으로 이어지게 한다. */
 function focusStageTitle(id: WorkflowStageId) {
@@ -171,6 +179,18 @@ export function WebtoonWorkflowPage() {
         >
           {bi("마지막 행동은 '게시'가 아니라 '안전하게 남기기'입니다. 저장이 기본, 공개는 선택하는 다음 단계예요.", "The last action is safe keeping, not mandatory publishing. Saving is the default; publishing is an optional next step.")}
         </IntroNote>
+        <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1" aria-label={bi("더 알아보기", "Learn more")}>
+          {MORE_LINKS.map((link) => {
+            const Icon = link.icon;
+            return (
+              <li key={link.href}>
+                <Link href={link.href} className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-fg-2 hover:text-fg">
+                  <Icon size={15} className="text-accent" aria-hidden="true" />{bi(link.ko, link.en)}<ArrowRight size={13} aria-hidden="true" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       <AboutJourneyPager current="/about/workflow" className="mt-2" />
