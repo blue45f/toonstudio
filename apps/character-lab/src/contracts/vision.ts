@@ -1,6 +1,7 @@
 /**
  * 비전 계약: 참고 이미지 임베딩(추천)·사진 포즈 랜드마크. 모델은 온디바이스(MediaPipe).
- * pose 모델 SHA는 첫 브라우저 검증 전까지 미고정(베타)이며 HUD에 그 사실을 표시한다.
+ * 세 모델(임베더·포즈·손)은 모두 bytes·sha256이 고정되어 있다(2026-10-08 고정, 아래 `MEDIAPIPE_MODELS` 주석). 로더는 크기·SHA-256이 다르면
+ * 실패(fail-visible)로 노출한다. 고정되지 않은 모델 항목(null)은 계약상 허용되며 그때만 HUD가 '미고정·베타'를 표시한다.
  */
 import type { PoseScope } from "./bones";
 import type { LabFailure } from "./errors";
@@ -115,18 +116,24 @@ export const MEDIAPIPE_MODELS = {
     sha256: "bbbb4c51a55a53905af1daec995ca1aae355046f8839bb8c9f5ce9271394bc40",
     license: "Apache-2.0",
   },
-  /** bytes·sha256은 첫 브라우저 검증 시 통합 담당이 고정한다(그 전까지 '미고정·베타'). */
+  /**
+   * 2026-10-08 고정: 공식 CDN 객체를 받아 SHA-256을 계산하고, Cloud Storage가 돌려준 객체 MD5(`x-goog-hash`, BKdd33yBGsehpFIyZt19iA==)·크기와 대조했다.
+   * 객체 generation 1682624736756847(2023-04-27 게시). 업스트림이 같은 URL의 내용을 바꾸면 로더가 SHA 불일치 실패로 알린다.
+   */
   poseLandmarker: {
     url: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-    bytes: null,
-    sha256: null,
+    bytes: 5_777_746,
+    sha256: "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a",
     license: "Apache-2.0",
   },
-  /** 손 21점 랜드마커(손가락 포즈 적용용). pose와 같은 이유로 bytes·sha256은 첫 브라우저 검증 시 고정한다('미고정·베타'). */
+  /**
+   * 손 21점 랜드마커(손가락 포즈 적용용). 2026-10-08 고정: pose와 같은 방법으로 SHA-256을 계산하고 객체 MD5(FTGEMOo4UWcP6ZFBFqnPrQ==)·크기와 대조했다.
+   * 객체 generation 1682480004222387(2023-04-26 게시).
+   */
   handLandmarker: {
     url: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-    bytes: null,
-    sha256: null,
+    bytes: 7_819_105,
+    sha256: "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1",
     license: "Apache-2.0",
   },
 } as const;

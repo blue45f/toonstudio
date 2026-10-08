@@ -92,7 +92,7 @@ afterEach(() => {
 describe("VisionPanel", () => {
   const catalog = createPresetCatalog(vocabularyCatalogEntries());
 
-  it("모델 상태 행은 SHA 고정/미고정·베타를 구분하고 카메라 미지원을 정직하게 표시한다", () => {
+  it("모델 상태 행은 세 모델 모두 SHA 고정으로 표시하고 카메라 미지원을 정직하게 표시한다", () => {
     render(
       <MockLabProvider catalog={catalog}>
         <VisionPanel deps={fakeDeps(fakeLoaders())} />
@@ -101,8 +101,9 @@ describe("VisionPanel", () => {
     const rows = screen.getAllByRole("listitem").filter((node) => node.className === "cl-vision-model");
     expect(rows.length).toBe(3);
     expect(rows[0]?.textContent).toMatch(/이미지 임베더.*SHA 고정.*대기/u);
-    expect(rows[1]?.textContent).toMatch(/포즈 랜드마커.*SHA 미고정·베타/u);
-    expect(rows[2]?.textContent).toMatch(/손 랜드마커.*SHA 미고정·베타/u);
+    expect(rows[1]?.textContent).toMatch(/포즈 랜드마커.*SHA 고정/u);
+    expect(rows[2]?.textContent).toMatch(/손 랜드마커.*SHA 고정/u);
+    expect(rows.map((row) => row.textContent).join("|")).not.toMatch(/미고정/u);
     expect((screen.getByRole("button", { name: "카메라 열기" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(/카메라\(getUserMedia\)를 지원하지 않습니다/u)).toBeTruthy();
   });
