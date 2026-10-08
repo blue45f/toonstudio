@@ -246,8 +246,14 @@ git status --short
 RENDER_CORE_API_ORIGIN=https://toonstudio-core-api.onrender.com pnpm run verify:render-core-origin
 export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-core-api.onrender.com
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
+export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 pnpm run cloudflare:static:deploy
 ```
+
+배포 스크립트(`scripts/deploy-cloudflare-static.mjs --production`)는 승인 문구와 함께 소문자 40자리
+`TOONSPECTRUM_APPROVED_MAIN_SHA`, 현재 브랜치 `main`, 깨끗한 작업 트리, `HEAD`와 승인 SHA의 일치를
+모두 요구하며 하나라도 어긋나면 빌드 전에 중단한다. SHA는 `HEAD`에서 자동으로 채우지 않고 승인된 값을
+입력한다. `git pull --ff-only` 뒤 `HEAD`가 승인 SHA와 달라졌다면 배포하지 않고 승인을 다시 받는다.
 
 운영 배포 전에는 커스텀 도메인, CSP, 로그인 cookie, OAuth callback, Render 직접
 `/api/health/ready`, edge `/api/health/live`, Socket.IO upgrade, OG crawler HTML, Studio WASM/WebGPU
