@@ -27,6 +27,7 @@ import {
 } from "./free-ai-policy";
 import { AiCapabilityStatusBoard } from "./AiCapabilityStatusBoard";
 import { getFreeAiPoolStatus, type FreeAiPoolStatus } from "./free-ai-pool-status";
+import { SERVER_PROVIDER_LABELS } from "./unified-ai-provider-labels";
 import {
   getUserAiSnapshot,
   setUserAiConfiguration,
@@ -159,18 +160,6 @@ const PRESET_DISPLAY: Readonly<Record<PresetId, {
     description: "공개 HTTPS API 주소, 모델과 내 키를 직접 입력해요.",
     badge: "고급",
   },
-});
-
-const SERVER_PROVIDER_LABELS: Readonly<Record<UserAiServerProviderId, string>> = Object.freeze({
-  gemini: "Google Gemini",
-  qwen: "Qwen",
-  groq: "Groq",
-  sambanova: "SambaNova",
-  zai: "Z.AI",
-  mistral: "Mistral",
-  cloudflare: "Cloudflare AI",
-  openrouter: "OpenRouter",
-  siliconflow: "SiliconFlow",
 });
 
 function useFreeAiPoolState(): PoolState {

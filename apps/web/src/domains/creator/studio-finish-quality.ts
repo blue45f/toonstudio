@@ -19,6 +19,7 @@ import {
   resolveBubbleFontStyle,
   resolveBubbleLineHeight,
 } from "./lettering/studio-bubble-text-fit";
+import { hasControlCharacter, PLACEHOLDER_PATTERNS } from "./lettering/studio-dialogue-finish-rules";
 import { hasContiguousLayerGroups, missingLayerGroupIds } from "./studio-layers";
 import { normalizePageReviewState } from "./studio-page-review";
 
@@ -197,22 +198,8 @@ const SEVERITY_ORDER: Readonly<Record<StudioFinishQualitySeverity, number>> = {
   info: 3,
 };
 
-const PLACEHOLDER_PATTERNS: readonly RegExp[] = [
-  /\{\{[^{}]+\}\}/u,
-  /\$\{[^{}]+\}/u,
-  /%(?:[A-Z][A-Z0-9_]*|\d+\$?[a-z])%/iu,
-  /\b(?:TODO|TBD|FIXME|LOREM\s+IPSUM)\b/iu,
-  /(?:대사|텍스트|문구)\s*(?:입력|예정|작성)/u,
-];
-
 const TEMPORARY_LAYER_PATTERN =
   /(?:^|[\s_[\]().-])(?:guide|reference|rough|draft|temp|note|가이드|참고|러프|임시|메모)(?:$|[\s_[\]().-])/iu;
-function hasControlCharacter(text: string): boolean {
-  return Array.from(text).some((character) => {
-    const code = character.charCodeAt(0);
-    return code <= 8 || code === 11 || code === 12 || (code >= 14 && code <= 31) || code === 127;
-  });
-}
 
 function finitePositive(value: number | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;

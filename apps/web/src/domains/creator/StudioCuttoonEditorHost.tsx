@@ -272,6 +272,7 @@ import { StudioFormalSaveDialogMount as StudioFormalSaveDialog } from "./save-fi
 import { studioReviewCaptureSaveNavigation } from "./review-capture/studio-review-capture-navigation";
 import { useStudioReviewCaptureHost } from "./review-capture/useStudioReviewCaptureHost";
 import { selectStudioEditorCommentTarget, studioEditorTargetForComment, type StudioEditorCommentTarget } from "./studio-comment-editor-selection";
+import { isStudioCommentAnchorValidInPages } from "./studio-cuttoon-editor/studio-comment-anchor-validity";
 import { resolveStudioEditorExplicitSaveAction } from "./save-first/studio-editor-save-policy";
 import {
   chooseStudioProjectPackageSaveTarget,
@@ -13697,24 +13698,10 @@ export function StudioCuttoonEditor({
     return all;
   }, [pages, masterEditMode, selected, pointCommentAnchor, activePage, activePageIndex]);
 
-  const isStudioCommentAnchorValid = useCallback((anchor: StudioCommentAnchor): boolean => {
-    // PDF 워크벤치 앵커는 스튜디오 페이지에 속하지 않으므로 이 문서에서는 유효할 수 없다.
-    if (anchor.type === "pdf-page") return false;
-    const page = pages.find((candidate) => candidate.id === anchor.pageId);
-    if (!page) return false;
-    if (anchor.type === "page") return true;
-    if (anchor.type === "point") {
-      return Number.isFinite(anchor.x)
-        && Number.isFinite(anchor.y)
-        && anchor.x >= 0
-        && anchor.x <= 1
-        && anchor.y >= 0
-        && anchor.y <= 1;
-    }
-    const targetId = anchor.type === "frame" ? anchor.frameId : anchor.elementId;
-    const target = page.elements.find((element) => element.id === targetId);
-    return Boolean(target) && (anchor.type !== "frame" || target?.type === "frame");
-  }, [pages]);
+  const isStudioCommentAnchorValid = useCallback(
+    (anchor: StudioCommentAnchor): boolean => isStudioCommentAnchorValidInPages(anchor, pages),
+    [pages]
+  );
 
   function selectCommentEditorTarget(target: StudioEditorCommentTarget, current?: () => boolean) {
     return selectStudioEditorCommentTarget(target, {

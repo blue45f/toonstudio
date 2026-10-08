@@ -66,7 +66,7 @@ import { useStudioWorldRuleGate } from "./StudioWorldRuleGate";
 import { readStudioOfficeDeskPreference, studioOfficeDeskPreferenceStorageKey, writeStudioOfficeDeskPreference } from "./office-desk-preference";
 import { useStudioPrivateRoom } from "./private-room/use-studio-private-room";
 import { studioPrivateRoomWalkTarget } from "./private-room/studio-private-room-walk";
-import { STUDIO_VIRTUAL_ART_STYLES, type StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
+import { STUDIO_VIRTUAL_ART_STYLES } from "./studio-virtual-space-art-style";
 import {
   isStudioVirtualCampusRoom,
   resolveStudioVirtualBuiltinWorld,
@@ -197,7 +197,6 @@ import { useStudioVirtualSpaceOperations } from "./use-studio-virtual-space-oper
 import { useStudioVirtualSpaceP2pBoard } from "./use-studio-virtual-space-p2p-board";
 import { useStudioVirtualSpaceSlots } from "./use-studio-virtual-space-slots";
 import { useStudioVirtualSpaceSocial } from "./use-studio-virtual-space-social";
-import { useStudioWorldPublication } from "./world-publication/use-studio-world-publication";
 import { SpaceAtmosphereSettings, type SpaceAtmosphere } from "./hud/SpaceAtmosphereSettings";
 import { SpaceAvatar } from "./hud/SpaceAvatar";
 import { SpaceAvatarDetailSection } from "./hud/SpaceAvatarDetailSection";
@@ -249,6 +248,7 @@ import {
   TALK_DISTANCE,
   writeStudioVirtualSpacePositionRecords,
 } from "./studio-virtual-space-page-helpers";
+import type { VirtualSpaceExperienceProps } from "./studio-virtual-space-page-props";
 import { SPACE_PROXIMITY_MEDIA_RADIUS, spacePrivateZoneAt, spaceProximityMediaScopePeers, type SpaceProximityRangeMode } from "./hud/space-proximity-media";
 import { spaceZoneWorkItems, spaceZoneWorkKind } from "./hud/space-zone-workflow";
 import { useSpaceProximityMedia } from "./hud/use-space-proximity-media";
@@ -307,23 +307,7 @@ export function VirtualSpaceExperience({
   isGuest = false,
   guestSpawn = null,
   entryJustConfirmed = false,
-}: {
-  readonly homeHeader?: ReactNode;
-  readonly personal?: boolean;
-  readonly initialAvatarIndexOverride?: number;
-  readonly initialArtStyleOverride?: StudioVirtualArtStyleKey;
-  readonly nickname: string;
-  readonly onNicknameChange: (nickname: string) => void;
-  readonly publication: ReturnType<typeof useStudioWorldPublication>;
-  readonly projectId: string;
-  readonly preparing: boolean;
-  readonly signedIn: boolean;
-  /** Invite-link guest: no authoring, spawn at the inviter-chosen point. */
-  readonly isGuest?: boolean;
-  readonly guestSpawn?: { readonly x: number; readonly y: number } | null;
-  /** 이번 세션에서 입장 로비를 처음 통과했으면 3단계 미니 투어를 띄운다. */
-  readonly entryJustConfirmed?: boolean;
-}) {
+}: VirtualSpaceExperienceProps) {
   const bt = useBilingual("StudioVirtualSpaceExperience");
   const location = useLocation();
   const navigate = useNavigate();
