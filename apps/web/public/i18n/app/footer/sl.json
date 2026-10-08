@@ -48,5 +48,6 @@
   "footer.business.hosting": "Storitev gostovanja",
   "footer.business.serviceType": "Vrsta platforme",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Ustvari svojo naslednjo zgodbo"
+  "footer.logoTag": "Ustvari svojo naslednjo zgodbo",
+  "footer.link.features": "All features at a glance"
 }

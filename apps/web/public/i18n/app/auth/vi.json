@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Đăng nhập hoàn tất, sắp chuyển hướng.",
   "auth.callback.message.doneDemo": "Đăng ký demo hoàn tất, sắp chuyển hướng.",
   "auth.callback.demo.message": "Bạn đã đăng nhập với tài khoản demo.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

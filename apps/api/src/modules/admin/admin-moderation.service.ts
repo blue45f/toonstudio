@@ -338,6 +338,58 @@ async testBannedWords(userId: string, text: string) {
       if (code !== "42P01") throw error;
     }
 
+    try {
+      // 커뮤니티 글 신고(fan_post_report)도 같은 큐에 합류시킨다 — 회원 메시지 신고와
+      // 같은 접두사 식별자 방식을 써서 처리(resolve) 경로가 소스를 구분할 수 있게 한다.
+      let sqlQuery = `
+        SELECT
+          r."postId",
+          r."userId" AS "reporterId",
+          reporter.name AS "reporterName",
+          reporter.email AS "reporterEmail",
+          p.title AS "postTitle",
+          p."targetLabel" AS "postTargetLabel",
+          r.reason,
+          r.status,
+          r."resolutionNote",
+          r."createdAt"
+        FROM public."fan_post_report" AS r
+        LEFT JOIN public."user" AS reporter ON reporter.id = r."userId"
+        LEFT JOIN public."fan_post" AS p ON p.id = r."postId"
+        WHERE 1 = 1
+      `;
+      const args: unknown[] = [];
+      if (statusFilter !== "all") {
+        sqlQuery += ` AND r.status = ?`;
+        args.push(statusFilter);
+      }
+      sqlQuery += ` ORDER BY r."createdAt" DESC LIMIT ${limit}`;
+      const result = await dbClient.execute({ sql: sqlQuery, args });
+      items.push(
+        ...result.rows.map((row) => ({
+          id: `fanpost:${String(row.postId ?? "")}:${String(row.reporterId ?? "")}`,
+          reporterId: row.reporterId,
+          reporterName: row.reporterName,
+          reporterEmail: row.reporterEmail,
+          targetType: "fan_post",
+          targetId: row.postId,
+          reason: row.reason,
+          details: [row.postTitle, row.postTargetLabel]
+            .filter((value) => typeof value === "string" && value.length > 0)
+            .join(" · ") || null,
+          status: row.status,
+          resolutionNote: row.resolutionNote,
+          createdAt: row.createdAt,
+        })),
+      );
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? String(error.code)
+          : "";
+      if (code !== "42P01") throw error;
+    }
+
     items.sort(
       (left, right) =>
         new Date(String(right.createdAt ?? 0)).getTime() -
@@ -356,6 +408,32 @@ async testBannedWords(userId: string, text: string) {
     await ensureAdminSchema();
     const status = action === "resolve" ? "resolved" : "dismissed";
     const normalizedNote = String(note ?? "").trim().slice(0, 500);
+
+    if (reportId.startsWith("fanpost:")) {
+      // 식별자는 fanpost:<postId>:<reporterId> — 신고의 복합 PK를 그대로 인코딩한다.
+      const rest = reportId.slice("fanpost:".length);
+      const separator = rest.lastIndexOf(":");
+      const postId = separator > 0 ? rest.slice(0, separator) : "";
+      const reporterId = separator > 0 ? rest.slice(separator + 1) : "";
+      if (!postId || !reporterId) {
+        throw new BadRequestException({ error: "신고 식별자가 올바르지 않습니다." });
+      }
+      const result = await dbClient.execute({
+        sql: `UPDATE public."fan_post_report" SET status = ?, "resolvedBy" = ?, "resolvedAt" = now(), "resolutionNote" = ? WHERE "postId" = ? AND "userId" = ?`,
+        args: [status, admin.id, normalizedNote, postId, reporterId],
+      });
+      if (result.rowsAffected === 0) {
+        throw new BadRequestException({ error: "게시글 신고를 찾을 수 없습니다." });
+      }
+      void logAuditAction(
+        userId,
+        "FAN_POST_REPORT_RESOLVE",
+        "fan_post_report",
+        `${postId}:${reporterId}`,
+        { status, note: normalizedNote },
+      );
+      return { ok: true, reportId, status };
+    }
 
     if (reportId.startsWith("message:")) {
       const messageReportId = reportId.slice("message:".length).trim();

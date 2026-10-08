@@ -18,5 +18,6 @@
   "auth.callback.message.done": "साइन इन पूरा भयो, चाँडै पुनःनिर्देशित हुँदैछ।",
   "auth.callback.message.doneDemo": "डेमो साइन-इन पूरा भयो, चाँडै पुनःनिर्देशन गर्दैछौं।",
   "auth.callback.demo.message": "तपाईँ डेमो खाताको साथ लग इन हुनुहुन्छ। केही सुविधाहरू सीमित हुन सक्छन्।",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

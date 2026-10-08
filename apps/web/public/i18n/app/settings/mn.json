@@ -1,6 +1,6 @@
 {
   "settings.eyebrow": "SETTINGS",
-  "settings.title": "Settings",
+  "settings.title": "Тохиргоо",
   "settings.subtitle": "Save display and filter preferences or reset them.All settings are saved only in this browser.",
   "settings.section.display": "Display",
   "settings.section.filters": "Filter",
@@ -44,7 +44,7 @@
   "settings.data.clear": "Cleared",
   "settings.data.cleared": "Reset",
   "settings.data.confirmReset": "Confirm reset",
-  "settings.data.cancel": "Cancel",
+  "settings.data.cancel": "Цуцлах",
   "settings.data.confirmed": "Done",
   "settings.data.confirmDelete": "Reset all",
   "settings.data.statsDesc": "Visit statistics.",

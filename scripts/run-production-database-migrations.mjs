@@ -100,6 +100,8 @@ const HISTORICAL_BASELINE_RELATIONS = Object.freeze([
   "verificationToken",
 ]);
 export const POST_BASELINE_RELATIONS = Object.freeze([
+  "fan_post_like",
+  "fan_post_report",
   "account_merge",
   "admin_announcements",
   "admin_audit_logs",
@@ -218,6 +220,7 @@ export const POST_BASELINE_RELATIONS = Object.freeze([
   "studio_pinned_review_share",
   "studio_pinned_review_feedback",
   "studio_project_graph",
+  "studio_recording_booth_asset",
   "studio_review",
   "studio_review_comment",
   "studio_review_comment_assignee",
@@ -230,8 +233,11 @@ export const POST_BASELINE_RELATIONS = Object.freeze([
   "studio_revision",
   "studio_revision_blob",
   "studio_revision_parent",
+  "studio_virtual_space_booking",
   "studio_virtual_space_custom_furniture",
   "studio_virtual_space_decoration_layout",
+  "studio_virtual_space_gallery_like",
+  "studio_virtual_space_waitlist_entry",
   "supporter_funding_setting",
   "supporter_payment",
   "traffic_page_view",

@@ -18,5 +18,6 @@
   "auth.callback.message.done": "İmzalanma bitdi, qısa müddətdə yönləndiriləcək.",
   "auth.callback.message.doneDemo": "Demo qeydiyyatı tamamlandı.",
   "auth.callback.demo.message": "Siz demo hesabı ilə daxil olmusunuz.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

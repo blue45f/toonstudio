@@ -18,5 +18,6 @@
   "auth.callback.message.done": "L'enregistrement est terminé.",
   "auth.callback.message.doneDemo": "La démo est terminée.",
   "auth.callback.demo.message": "Vous êtes connecté avec un compte démo, certaines fonctionnalités peuvent être limitées.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

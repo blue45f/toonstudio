@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Nakatapos ang pag-sign-in.",
   "auth.callback.message.doneDemo": "Nakumpleto ang demo sign-in.",
   "auth.callback.demo.message": "Ikaw ay naka-log in na may isang demo account.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

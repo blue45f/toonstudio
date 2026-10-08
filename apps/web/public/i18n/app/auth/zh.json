@@ -18,5 +18,6 @@
   "auth.callback.error.unsupported": "不支持的登录提供商。",
   "auth.callback.demo.message": "您已使用模拟帐户登录。某些功能可能会受到限制。",
   "auth.callback.message.doneDemo": "演示登录完成。很快就会重定向。",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

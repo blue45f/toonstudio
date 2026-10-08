@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Ingelogd, overgeleid.",
   "auth.callback.message.doneDemo": "Demo-aanmelding voltooid.",
   "auth.callback.demo.message": "U bent aangemeld met een demo-account.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

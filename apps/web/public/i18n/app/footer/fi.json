@@ -48,5 +48,6 @@
   "footer.business.hosting": "Huoltopalvelu",
   "footer.business.serviceType": "Alustan tyyppi",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Luota seuraava tarina"
+  "footer.logoTag": "Luota seuraava tarina",
+  "footer.link.features": "All features at a glance"
 }

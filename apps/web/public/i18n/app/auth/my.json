@@ -18,5 +18,6 @@
   "auth.callback.message.done": "လက်မှတ်ထိုးပြီးစီးပြီး မကြာခင် ပြန်ညွှန်းပေးနေတာပါ။",
   "auth.callback.message.doneDemo": "Demo sign-in ပြီးစီးပြီး မကြာခင် ပြန်ညွှန်းပေးနေပါတယ်",
   "auth.callback.demo.message": "သင်ဟာ demo account နဲ့ ဝင်ရောက်ရှိထားပြီး တချို့ features တွေက ကန့်သတ်ထားနိုင်ပါတယ်။",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }
