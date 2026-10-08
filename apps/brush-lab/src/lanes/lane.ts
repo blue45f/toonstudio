@@ -52,9 +52,18 @@ export type LaneId =
   | "wasm-cpu"
   | "wasm-gpu-hybrid"
   | "libmypaint"
-  | "hokusai";
+  | "hokusai"
+  | "mpm-paint"
+  | "bristle-pbd"
+  | "bristle-rapier";
 
 export type LaneKind = "baseline" | "candidate" | "comparison";
+
+/**
+ * 레인 성숙도. 생략하면 `stable`이다. `experimental`은 검증이 덜 된 실험 레인이라 인증 판정(PASS/FAIL)과 기본 경로에서 제외하고
+ * UI는 이 값으로 배지를 보인다(`docs/license-policy.md` 3절 6항).
+ */
+export type LaneMaturity = "stable" | "experimental";
 
 /** README 레인 상태 표의 어휘. */
 export type LaneStatus = "implemented" | "browser-verification-required" | "reserved";
@@ -169,6 +178,8 @@ export interface LaneDescriptor {
   label: string;
   kind: LaneKind;
   status: LaneStatus;
+  /** 성숙도. 생략 = `stable`(기존 레인 전부). */
+  maturity?: LaneMaturity;
   /** Node에서 검증되는 범위(한글 요약). */
   nodeVerification: string;
   /** 브라우저에서 검증해야 하는 범위(한글 요약). */

@@ -3,6 +3,9 @@ import { createCpuReferenceLane } from "./cpu-reference-lane";
 import { HOKUSAI_LANE } from "./hokusai-lane";
 import { HYBRID_LANE } from "./hybrid-lane";
 import { LIBMYPAINT_LANE } from "./libmypaint-lane";
+import { BRISTLE_PBD_LANE } from "./physics/bristle-pbd-lane";
+import { MPM_PAINT_LANE } from "./physics/mpm-paint-lane";
+import { BRISTLE_RAPIER_LANE } from "./physics/rapier-bristle-lane";
 import { createPlatformBaselineLane } from "./platform-baseline-lane";
 import { WASM_CPU_LANE } from "./wasm-cpu-lane";
 import { WEBGL2_INSTANCED_LANE } from "./webgl2-instanced-lane";
@@ -16,9 +19,10 @@ import type { LaneDescriptor, LaneId, LaneKind, LaneStatus } from "./lane";
  * 상태 어휘: implemented | browser-verification-required | reserved.
  *
  * 기준선 3종(cpu-reference·platform-baseline은 bench, canvas2d는 engine-gpu)과 GPU·wasm 레인(engine-gpu)의
- * 디스크립터를 한 배열로 모은다. 외부 엔진 비교 레인 libmypaint·Hokusai(`libmypaint-lane.ts`·`hokusai-lane.ts`, 격리 표면 + 문서 합성)가 뒤에 붙는다.
+ * 디스크립터를 한 배열로 모은다. 외부 엔진 비교 레인 libmypaint·Hokusai(`libmypaint-lane.ts`·`hokusai-lane.ts`, 격리 표면 + 문서 합성)가 붙고, 실험 레인 mpm-paint(`physics/mpm-paint-lane.ts`, `maturity: "experimental"`)와 물리 붓털 레인 bristle-pbd(자체 PBD, `physics/bristle-pbd-lane.ts`)·bristle-rapier(Rapier 2D 동적 import, `physics/rapier-bristle-lane.ts`, 둘 다 `maturity: "experimental"`)가 마지막이다.
+ * `maturity`를 생략한 레인은 stable이다.
  * 구현 파일이 아직 없는 레인은 `reservedDescriptor`(reserved-lane.ts)로 등록해 probe가
- * `not-implemented`를 돌려주게 한다(현재 10개 레인 모두 구현돼 예약 항목은 없다). 구현이 올라오면 해당 항목만 그 파일의
+ * `not-implemented`를 돌려주게 한다(현재 13개 레인 모두 구현돼 예약 항목은 없다). 구현이 올라오면 해당 항목만 그 파일의
  * 디스크립터로 바꾼다(ID·순서 유지). webgl2-instanced는 2026-10-01 engine-gpu 구현(`webgl2-instanced-lane.ts`)의 디스크립터로,
  * wasm-cpu(`wasm-cpu-lane.ts`)와 wasm-gpu-hybrid(`hybrid-lane.ts`)도 같은 날 구현으로 교체했다.
  * 표 열(Node·브라우저 검증)을 바꾸면 README 표를 `laneStatusTableMarkdown()`으로 다시 만든다.
@@ -50,6 +54,9 @@ export const LANE_REGISTRY: readonly LaneDescriptor[] = [
   HYBRID_LANE,
   LIBMYPAINT_LANE,
   HOKUSAI_LANE,
+  MPM_PAINT_LANE,
+  BRISTLE_PBD_LANE,
+  BRISTLE_RAPIER_LANE,
 ];
 
 export const LANE_IDS_ORDERED: readonly LaneId[] = LANE_REGISTRY.map((d) => d.id);
