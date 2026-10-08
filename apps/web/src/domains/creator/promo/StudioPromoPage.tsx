@@ -14,6 +14,7 @@ import { PromoAudioMixer } from "./PromoAudioMixer";
 import {
   createPromoHistoryTracker,
   pushPromoSnapshot,
+  scopedPromoCoalesceKey,
   type PromoHistoryTracker,
 } from "./promo-history";
 import { PromoDirectorControls } from "./PromoDirectorControls";
@@ -302,7 +303,7 @@ export function StudioPromoPage() {
               <label htmlFor="promo-style">연출 분위기<select id="promo-style" value={project.style} onChange={(event) => patch({ style: event.target.value as PromoProject["style"] })}>{PROMO_STYLES.map((style) => <option key={style} value={style}>{PROMO_STYLE_LABELS[style]}</option>)}</select></label>
             </div>
           </fieldset>
-          <PromoDirectorControls project={project} disabled={busy} onApply={(next) => { apply(next); setError(""); setMessage("연출 프리셋을 적용했어요. 컷별 카메라·자막·효과를 추가로 조절할 수 있어요."); }} onPatch={patch} />
+          <PromoDirectorControls project={project} disabled={busy} onApply={(next) => { apply(next); setError(""); setMessage("연출 프리셋을 적용했어요. 컷별 카메라·자막·효과를 추가로 조절할 수 있어요."); }} onPatch={(value, field) => patch(value, scopedPromoCoalesceKey("presentation", field))} />
           <section className="promo-card" id={PROMO_STEP_ANCHOR.cuts} aria-labelledby="promo-cuts-title">
             <div className="promo-section-head"><h2 id="promo-cuts-title">02 · 컷과 장면 구성</h2><span>{project.panels.length} / {PROMO_MAX_PANELS}컷</span></div>
             <label htmlFor="promo-split">세로 원고 분할<select id="promo-split" value={splitParts} disabled={busy} onChange={(event) => setSplitParts(event.target.value === "auto" ? "auto" : Number(event.target.value))}><option value="auto">흰 여백 자동 감지 · 원본 보존</option>{[1, 2, 3, 4, 6, 12].map((parts) => <option value={parts} key={parts}>{parts === 1 ? "파일 1개 = 컷 1개" : `파일마다 세로 ${parts}등분`}</option>)}</select></label>
@@ -326,7 +327,7 @@ export function StudioPromoPage() {
             <div className="promo-shots">{promoTimeline(project).map((scene, index) => <PromoPanelEditor key={scene.panel.id} scene={scene} index={index} count={project.panels.length} disabled={busy} onSeekFrame={(frame) => setSeekRequest({ frame, token: Date.now() })} onSeek={() => setSeekRequest({ frame: scene.from + Math.floor(scene.duration / 2), token: Date.now() })} onForeground={(file) => { void uploadForeground(scene.panel.id, file); }} onDuplicate={() => {
               if (project.panels.length >= PROMO_MAX_PANELS) return;
               const panels = [...project.panels]; panels.splice(index + 1, 0, { ...scene.panel, id: crypto.randomUUID() }); patch({ panels });
-            }} onChange={(value) => patch({ panels: project.panels.map((panel) => panel.id === scene.panel.id ? { ...panel, ...value } : panel) }, `panel:${scene.panel.id}`)} onMove={(direction) => movePanel(index, direction)} onRemove={() => patch({ panels: project.panels.filter((panel) => panel.id !== scene.panel.id) })} />)}</div>
+            }} onChange={(value, field) => patch({ panels: project.panels.map((panel) => panel.id === scene.panel.id ? { ...panel, ...value } : panel) }, scopedPromoCoalesceKey(`panel:${scene.panel.id}`, field))} onMove={(direction) => movePanel(index, direction)} onRemove={() => patch({ panels: project.panels.filter((panel) => panel.id !== scene.panel.id) })} />)}</div>
           </section>
           <fieldset className="promo-card" id={PROMO_STEP_ANCHOR.sound} disabled={busy}>
             <legend>03 · 배경음악과 내레이션</legend>
@@ -337,12 +338,12 @@ export function StudioPromoPage() {
             <PromoAudioMixer
               project={project}
               disabled={busy}
-              onChange={(mixer) => patch({ mixer }, "mixer")}
+              onChange={(mixer, field) => patch({ mixer }, scopedPromoCoalesceKey("mixer", field))}
             />
             <PromoVoiceDirector
               project={project}
               disabled={busy}
-              onChange={(voiceStudio) => patch({ voiceStudio }, "voice-studio")}
+              onChange={(voiceStudio, field) => patch({ voiceStudio }, scopedPromoCoalesceKey("voice-studio", field))}
               onGenerate={(request) => { void generateFreeVoice(request); }}
               onGenerateCloud={(request) => { void generateCloudVoice(request); }}
             />

@@ -18,6 +18,7 @@ import {
   type CreatorIntelligenceVoiceProvider,
 } from "../creator-intelligence/studio-creator-intelligence-client";
 import type { PromoCloudVoiceClipInput } from "./promo-cloud-voice";
+import { scopedPromoCoalesceKey } from "./promo-history";
 import { downloadPromoBlob } from "./promo-media";
 import { PROMO_VOICE_PRESETS } from "./promo-voice-director";
 import {
@@ -111,7 +112,8 @@ export function PromoVoiceDirector({
 }: {
   project: PromoProject;
   disabled: boolean;
-  onChange: (studio: PromoVoiceStudio) => void;
+  /** field는 항목별 글자·숫자·슬라이더 입력만 넘긴다. 추가·제거·선택은 생략해 실행 취소 한 단계로 남긴다. */
+  onChange: (studio: PromoVoiceStudio, field?: string) => void;
   onGenerate: (request: PromoVoiceGenerationRequest) => void;
   onGenerateCloud: (request: PromoCloudVoiceGenerationRequest) => void;
 }) {
@@ -257,13 +259,14 @@ export function PromoVoiceDirector({
   const updateSpeaker = (
     speakerId: string,
     patch: Partial<PromoVoiceSpeaker>,
+    field?: keyof PromoVoiceSpeaker,
   ) => {
     onChange({
       ...studio,
       speakers: studio.speakers.map((speaker) => (
         speaker.id === speakerId ? { ...speaker, ...patch } : speaker
       )),
-    });
+    }, scopedPromoCoalesceKey(`speaker:${speakerId}`, field));
   };
 
   const addSpeaker = () => {
@@ -301,6 +304,7 @@ export function PromoVoiceDirector({
   const updateClip = (
     clipId: string,
     patch: Partial<Omit<PromoVoiceClip, "panelId">> & { panelId?: string | null },
+    field?: keyof PromoVoiceClip,
   ) => {
     onChange({
       ...studio,
@@ -324,7 +328,7 @@ export function PromoVoiceDirector({
         const { panelId: _removed, ...unlinked } = next;
         return unlinked as PromoVoiceClip;
       }),
-    });
+    }, scopedPromoCoalesceKey(`clip:${clipId}`, field));
   };
 
   const addClip = () => {
@@ -381,13 +385,14 @@ export function PromoVoiceDirector({
   const updatePronunciation = (
     id: string,
     patch: Partial<PromoPronunciation>,
+    field?: keyof PromoPronunciation,
   ) => {
     onChange({
       ...studio,
       pronunciations: studio.pronunciations.map((entry) => (
         entry.id === id ? { ...entry, ...patch } : entry
       )),
-    });
+    }, scopedPromoCoalesceKey(`pronunciation:${id}`, field));
   };
 
   const downloadTranscript = () => {
@@ -506,7 +511,7 @@ export function PromoVoiceDirector({
                   maxLength={50}
                   onChange={(event) => updateSpeaker(speaker.id, {
                     name: event.target.value,
-                  })}
+                  }, "name")}
                 />
               </label>
               <label htmlFor={`promo-speaker-gender-${speaker.id}`}>
@@ -572,7 +577,7 @@ export function PromoVoiceDirector({
                   value={speaker.rate}
                   onChange={(event) => updateSpeaker(speaker.id, {
                     rate: Number(event.target.value),
-                  })}
+                  }, "rate")}
                 />
               </label>
               <label htmlFor={`promo-speaker-pitch-${speaker.id}`}>
@@ -586,7 +591,7 @@ export function PromoVoiceDirector({
                   value={speaker.pitch}
                   onChange={(event) => updateSpeaker(speaker.id, {
                     pitch: Number(event.target.value),
-                  })}
+                  }, "pitch")}
                 />
               </label>
               <label htmlFor={`promo-speaker-volume-${speaker.id}`}>
@@ -600,7 +605,7 @@ export function PromoVoiceDirector({
                   value={speaker.volume}
                   onChange={(event) => updateSpeaker(speaker.id, {
                     volume: Number(event.target.value),
-                  })}
+                  }, "volume")}
                 />
               </label>
             </div>
@@ -676,7 +681,7 @@ export function PromoVoiceDirector({
                     onChange={(event) => updateClip(clip.id, {
                       startSec: Number(event.target.value),
                       ...(clip.panelId ? { panelId: null } : {}),
-                    })}
+                    }, "startSec")}
                   />
                 </label>
                 <label htmlFor={`promo-clip-duration-${clip.id}`}>
@@ -690,7 +695,7 @@ export function PromoVoiceDirector({
                     value={clip.durationSec}
                     onChange={(event) => updateClip(clip.id, {
                       durationSec: Number(event.target.value),
-                    })}
+                    }, "durationSec")}
                   />
                 </label>
               </div>
@@ -704,7 +709,7 @@ export function PromoVoiceDirector({
                   value={clip.text}
                   onChange={(event) => updateClip(clip.id, {
                     text: event.target.value,
-                  })}
+                  }, "text")}
                 />
               </label>
 
@@ -774,7 +779,7 @@ export function PromoVoiceDirector({
                 placeholder="예: Liora"
                 onChange={(event) => updatePronunciation(entry.id, {
                   source: event.target.value,
-                })}
+                }, "source")}
               />
             </label>
             <label htmlFor={`promo-pronunciation-spoken-${entry.id}`}>
@@ -787,7 +792,7 @@ export function PromoVoiceDirector({
                 placeholder="예: 리오라"
                 onChange={(event) => updatePronunciation(entry.id, {
                   spoken: event.target.value,
-                })}
+                }, "spoken")}
               />
             </label>
             <button
