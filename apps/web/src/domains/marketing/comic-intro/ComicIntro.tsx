@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
+import { COMIC_INTRO_ART_URL } from "./comic-intro-art";
 import "./comic-intro.css";
 
 export type ComicIntroVariant = "full" | "short";
@@ -9,17 +10,26 @@ export interface ComicIntroProps {
   readonly onDone: () => void;
 }
 
-/** 풀 버전 2.4초, 재방문용 짧은 버전 1초. 끝나기 직전의 페이드아웃은 CSS 애니메이션
- * (comic-intro-leave)이 맡는다 — full은 2180ms, short는 820ms부터 (comic-intro.css). */
-const INTRO_TIMING: Record<ComicIntroVariant, { total: number }> = {
-  full: { total: 2400 },
-  short: { total: 1000 },
+/**
+ * 인트로 타이밍의 단일 출처. `leaveAt`은 페이드아웃이 시작되는 시각으로
+ * CSS 변수(--ci-leave-delay)로 그대로 전달된다 — CSS에 숫자를 따로 적으면
+ * 둘 중 하나만 바뀔 때 장면이 다 차오르기 전에 사라지는 깜빡임이 재발한다.
+ *
+ * 두 변형 모두 컷·말풍선·로고가 전부 등장한 뒤 최소 0.5초 이상 완성된
+ * 장면이 유지되도록 잡았다. 짧은 버전은 재방문용이라 등장 간격을 압축했을 뿐,
+ * 예전처럼 장면이 완성되기도 전에 사라지지 않는다.
+ * - full: 장면 완성 ≈1.88초 → 페이드 2.2초 → 종료 2.45초
+ * - short: 장면 완성 ≈1.04초 → 페이드 1.6초 → 종료 1.85초
+ */
+const INTRO_TIMING: Record<ComicIntroVariant, { total: number; leaveAt: number }> = {
+  full: { total: 2450, leaveAt: 2200 },
+  short: { total: 1850, leaveAt: 1600 },
 };
 
 /**
  * 만화 컷이 넘어가듯 등장하는 짧은 인트로 오버레이.
  *
- * - 컷 3개가 차례로 미끄러져 들어오고, 걷는 캐릭터와 말풍선이 이야기를 완성한다.
+ * - 컷 3개가 차례로 미끄러져 들어오고, 가운데 컷의 키비주얼과 말풍선이 이야기를 완성한다.
  * - 스킵 버튼이나 ESC로 언제든 바로 끝낼 수 있다.
  * - 사운드나 별도 재생 UI는 붙이지 않는다 — 소리는 기존 배경음악 기능을 그대로 쓴다.
  */
@@ -73,6 +83,7 @@ export function ComicIntro({ variant, onDone }: ComicIntroProps) {
       role="dialog"
       aria-modal="true"
       aria-label="인트로"
+      style={{ "--ci-leave-delay": `${INTRO_TIMING[variant].leaveAt}ms` } as CSSProperties}
     >
       <div className="comic-intro-stage" aria-hidden="true">
         <div className="comic-panel comic-panel--one">
@@ -83,22 +94,10 @@ export function ComicIntro({ variant, onDone }: ComicIntroProps) {
           </svg>
         </div>
         <div className="comic-panel comic-panel--two">
+          <img className="comic-panel-art" src={COMIC_INTRO_ART_URL} alt="" draggable={false} />
           <div className="comic-intro-bubble">
             <p>만들까요?</p>
           </div>
-          <svg className="comic-character" viewBox="0 0 120 120" focusable="false">
-            <g className="comic-character-body">
-              <circle cx="60" cy="34" r="20" className="comic-char-skin" />
-              <path d="M40 32 a20 20 0 0 1 40 0 l0 -6 a20 14 0 0 0 -40 0 z" className="comic-char-hair" />
-              <rect x="52" y="50" width="16" height="26" rx="7" className="comic-char-shirt" />
-              <path d="M46 76 l6 22 M74 76 l-6 22" className="comic-char-legs" />
-              <path d="M68 56 l16 -8" className="comic-char-arm" />
-              <path d="M84 48 l10 -12 M94 36 l3 3 -12 4 z" className="comic-char-pencil" />
-              <circle cx="53" cy="34" r="2.4" className="comic-char-eye" />
-              <circle cx="67" cy="34" r="2.4" className="comic-char-eye" />
-              <path d="M55 42 q5 4 10 0" className="comic-char-mouth" />
-            </g>
-          </svg>
         </div>
         <div className="comic-panel comic-panel--three">
           <svg className="comic-speedlines" viewBox="0 0 200 120" focusable="false">
