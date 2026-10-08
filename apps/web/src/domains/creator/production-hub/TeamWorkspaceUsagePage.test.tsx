@@ -24,9 +24,10 @@ const usage = { policy: FREE_USAGE_POLICY, workspaceId: workspace.id, operationM
 const httpError = (status: number): Error => Object.assign(new Error(`http ${status}`), { status });
 
 function App({ path }: { path: string }) {
+  // 사용량 화면의 실사용 마운트는 정식 /team/people 패밀리뿐이다. 옛 /production/workspaces
+  // 주소는 라우트 층에서 이쪽으로 리다이렉트되며, 그 계약은 production-workspace-redirect.test.tsx가 고정한다.
   return <MemoryRouter initialEntries={[path]}><Routes>
     <Route path="/team/people/:workspaceId/usage" element={<TeamWorkspaceUsagePage />} />
-    <Route path="/production/workspaces/:workspaceId/usage" element={<TeamWorkspaceUsagePage />} />
   </Routes></MemoryRouter>;
 }
 beforeEach(() => {
@@ -57,12 +58,6 @@ describe("workspace usage screen (F-R1-B08-1)", () => {
     expect(screen.queryByRole("heading", { name: "구성원" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "구성원 초대" })).toBeNull();
     expect(screen.getByRole("link", { name: "워크스페이스 상세" }).getAttribute("href")).toBe("/team/people/qa-team-ws-1");
-  });
-
-  it("renders on the production usage route with a surface-matching back link", async () => {
-    render(<App path="/production/workspaces/qa-team-ws-1/usage" />);
-    expect(await screen.findByRole("heading", { name: "QA 제작팀 사용량" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "워크스페이스 상세" }).getAttribute("href")).toBe("/production/workspaces/qa-team-ws-1");
   });
 
   it("shows zero counters as a normal empty state, not an error", async () => {

@@ -1,6 +1,6 @@
 import "../studio-shell/creator-workflow-surfaces.css";
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import type {
   TeamWorkspaceDetail,
   TeamWorkspaceRole,
@@ -102,13 +102,12 @@ export function TeamWorkspaceUsagePage() {
 
 function TeamWorkspaceUsageConsole({ userId, workspaceId }: { userId: string | null; workspaceId: string }) {
   const bt = useBilingual("TeamWorkspaceUsagePage");
-  const { pathname } = useLocation();
   const [state, setState] = useState<UsagePageState>({ kind: "loading" });
   const [refresh, setRefresh] = useState(0);
 
-  const detailPath = pathname.startsWith("/production/workspaces/")
-    ? `/production/workspaces/${workspaceId}`
-    : `/team/people/${workspaceId}`;
+  // 사용량 화면은 정식 /team/people 패밀리 아래에만 있고, 상세 복귀도 같은 패밀리로 고정한다.
+  // (옛 /production/workspaces 주소는 라우트에서 이쪽으로 리다이렉트된다.)
+  const detailPath = `/team/people/${workspaceId}`;
 
   useEffect(() => {
     if (!userId) return;

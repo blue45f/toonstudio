@@ -421,7 +421,7 @@ export const TOOLCHAIN_STAGES_FRONT: readonly ProcessToolchainStage[] = [
           en: "Manages team spaces, members, and permissions",
         },
         kind: "builtin",
-        href: "/production/workspaces",
+        href: "/team/people",
       },
       {
         name: { ko: "가상 스튜디오", en: "Virtual Studio" },

@@ -460,7 +460,7 @@ function CapabilityGrid({ aggregate, setView }: {
   readonly setView: (view: ManuscriptView) => void;
 }) {
   const hrefFor = (destination: (typeof CAPABILITIES)[number]["destination"]): string | null => {
-    if (destination === "workspace") return "/production/workspaces";
+    if (destination === "workspace") return "/team/people";
     if (destination === "production") return `/studio/p/${encodeURIComponent(aggregate.workId)}/production?view=documents`;
     return null;
   };
