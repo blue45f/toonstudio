@@ -53,4 +53,14 @@ describe("가상 스튜디오 컨트롤 크기 계약", () => {
     expect(hudCss).toMatch(/\.space-proximity__talk \{[^}]*white-space: nowrap;/u);
     expect(hudCss).toMatch(/@container space-top \(max-width: 300px\) \{\s*\.space-proximity__npc-badge \{ display: none; \}/u);
   });
+
+  it("휴대폰에서 리액션 줄이 열리면 같은 자리의 말 걸기 버튼을 숨기고, 루트가 열린 팝오버를 속성으로 알린다", () => {
+    expect(pageSource).toMatch(/data-dock-popover=\{dockPopover \?\? undefined\}/u);
+    expect(hudCss).toMatch(/\.space-hud\[data-hud-layout="mobile"\]\[data-dock-popover="react"\] \.space-chat--closed \{ visibility: hidden; \}/u);
+  });
+
+  it("휴대폰에서는 미니 투어가 열려 있는 동안 환영 배너를 접는다", () => {
+    expect(pageSource).toContain('import { spaceHudShowsEventBanner } from "./hud/space-hud-priority";');
+    expect(pageSource).toMatch(/spaceHudShowsEventBanner\(\{ desktop, coachOpen: coach !== null \}\) \? <SpaceEventBanner/u);
+  });
 });

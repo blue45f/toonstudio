@@ -1602,6 +1602,8 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   line-height: 1.45;
 }
 .space-chat--closed { pointer-events: none; }
+/* 휴대폰에서 리액션 줄이 열리면 같은 자리의 "말 걸기" 버튼이 줄의 첫 칸(손 흔들기)을 가린다. 줄이 열려 있는 동안만 숨긴다. */
+.space-hud[data-hud-layout="mobile"][data-dock-popover="react"] .space-chat--closed { visibility: hidden; }
 .space-chat__preview { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
 .space-chat__preview-line {
   margin: 0;
