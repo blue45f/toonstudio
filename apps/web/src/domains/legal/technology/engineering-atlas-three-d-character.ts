@@ -23,8 +23,8 @@ export const VRM_HUMANOID_RIG: EngineeringAtlasEntry = {
   ),
   background: [
     t(
-      "사람마다 키와 몸집이 달라도 '팔꿈치'와 '무릎'이라는 이름은 같습니다. VRM은 3D 캐릭터의 뼈에 이 같은 이름표를 붙이기로 한 약속입니다. 뼈 이름이 캐릭터마다 제각각이면 동작 하나를 만들 때마다 캐릭터별 번역표가 필요하지만, 표준 이름이 있으면 한 번 만든 포즈를 어느 캐릭터에든 입힐 수 있습니다. 저장소에는 번들된 VRM 파일이 113개 있습니다.",
-      "People differ in height and build, yet everyone's elbow and knee have the same names. VRM is the agreement to put those same labels on the bones of 3D characters. If every character named its bones differently, each motion would need its own translation table; with standard names, a pose made once can be put on any character. The repository bundles 113 VRM files.",
+      "사람마다 키와 몸집이 달라도 '팔꿈치'와 '무릎'이라는 이름은 같습니다. VRM은 3D 캐릭터의 뼈에 이 같은 이름표를 붙이기로 한 약속입니다. 뼈 이름이 캐릭터마다 제각각이면 동작 하나를 만들 때마다 캐릭터별 번역표가 필요하지만, 표준 이름이 있으면 한 번 만든 포즈를 어느 캐릭터에든 입힐 수 있습니다. 앱에 번들된(apps/web/public/vrm) VRM 파일은 113개입니다.",
+      "People differ in height and build, yet everyone's elbow and knee have the same names. VRM is the agreement to put those same labels on the bones of 3D characters. If every character named its bones differently, each motion would need its own translation table; with standard names, a pose made once can be put on any character. 113 VRM files are bundled with the app (apps/web/public/vrm).",
     ),
     t(
       "VRM은 glTF 파일에 휴머노이드 확장을 얹은 형식입니다. 필수 뼈 15개(엉덩이·척추·머리·팔다리 관절)와 선택 뼈(목·가슴·어깨·손가락 등)를 '이름 → 모델 안의 뼈 노드'로 이어 둡니다. three-vrm은 이를 '정규화 뼈'로 한 겹 더 감싸 기본 자세가 다른 모델도 같은 기준(회전 0)에서 다루게 해 줍니다. 포즈 소재는 이 정규화 뼈의 회전(기준 자세 대비 변화량)만 저장하고 이동·크기·임의 노드 경로는 담지 않습니다.",
@@ -222,8 +222,8 @@ export function assertCompleteHumanoid(humanBones: Readonly<Record<string, numbe
   chapterIds: ["web-3d-engine"],
   talk: {
     pitch: t(
-      "VRM은 3D 캐릭터의 뼈에 '팔꿈치', '무릎' 같은 표준 이름표를 붙이는 약속입니다. ToonStudio의 포즈 도구, 손발 IK, 웹캠 추적이 모두 이 이름표를 공통 언어로 써서, 캐릭터를 바꿔도 같은 동작이 그대로 적용됩니다. 번들된 VRM은 113개이고, 파일을 쓸 때도 필수 뼈 15개가 갖춰졌는지 먼저 검사합니다.",
-      "VRM is an agreement to put standard labels like elbow and knee on the bones of 3D characters. ToonStudio's pose tool, hand-and-foot IK and webcam tracking all use those labels as a common language, so the same motion applies when the character changes. 113 VRMs are bundled, and when writing a file the app first checks that all 15 required bones are present.",
+      "VRM은 3D 캐릭터의 뼈에 '팔꿈치', '무릎' 같은 표준 이름표를 붙이는 약속입니다. ToonStudio의 포즈 도구, 손발 IK, 웹캠 추적이 모두 이 이름표를 공통 언어로 써서, 캐릭터를 바꿔도 같은 동작이 그대로 적용됩니다. 앱에 번들된(apps/web/public/vrm) VRM은 113개이고, 파일을 쓸 때도 필수 뼈 15개가 갖춰졌는지 먼저 검사합니다.",
+      "VRM is an agreement to put standard labels like elbow and knee on the bones of 3D characters. ToonStudio's pose tool, hand-and-foot IK and webcam tracking all use those labels as a common language, so the same motion applies when the character changes. 113 VRMs are bundled with the app (apps/web/public/vrm), and when writing a file the app first checks that all 15 required bones are present.",
     ),
     analogy: t(
       "누구에게나 '오른팔'은 오른팔인 것처럼, 모든 캐릭터에 같은 부위 이름표를 붙인 지도입니다.",
@@ -262,7 +262,7 @@ export function assertCompleteHumanoid(humanBones: Readonly<Record<string, numbe
     { value: "55", label: t("허용 목록의 휴머노이드 뼈 이름 수", "Humanoid bone names in the allowlist"), source: `${CREATOR_DIR}/studio-humanoid-bones.ts` },
     { value: "15", label: t("VRM 필수 뼈 수", "Required VRM bones"), source: `${VRM_DIR}/studio-vrm-export-vrm-extension.ts` },
     { value: "45", label: t("생성형 리그의 뼈 수(필수 15 + 손가락 30)", "Bones in the generated rig (15 required + 30 finger)"), source: `${VRM_DIR}/studio-vrm-humanoid-rig.ts` },
-    { value: "113", label: t("저장소에 번들된 VRM 파일 수", "VRM files bundled in the repository"), source: "apps/web/public/vrm" },
+    { value: "113", label: t("앱에 번들된(apps/web/public/vrm) VRM 파일 수", "VRM files bundled with the app (apps/web/public/vrm)"), source: "apps/web/public/vrm" },
   ],
   reviewedAt: "2026-10-07",
 };
@@ -571,7 +571,7 @@ export async function trackFace(video: HTMLVideoElement, onScores: (scores: Map<
   facts: [
     { value: "34 ms", label: t("추론 시간 중앙값이 이를 넘으면 품질을 한 단계 낮춤", "Median inference time above which quality drops one tier"), source: `${VRM_DIR}/studio-vrm-tracking-quality.ts` },
     { value: "20 frames", label: t("중립 자세 보정에 쓰는 프레임 수", "Frames measured for neutral-pose calibration"), source: `${VRM_DIR}/studio-vrm-tracking-calibration.ts` },
-    { value: "0.10.35", label: t("설치된 @mediapipe/tasks-vision 버전", "Installed @mediapipe/tasks-vision version"), source: "package.json" },
+    { value: "0.10.35", label: t("앱이 직접 쓰는 @mediapipe/tasks-vision 설치 버전(lock 파일 기준, drei 가 끌어오는 0.10.17 은 별도)", "Installed @mediapipe/tasks-vision version the app uses directly (per the lockfile; the 0.10.17 pulled in by drei is separate)"), source: "pnpm-lock.yaml" },
   ],
   reviewedAt: "2026-10-07",
 };

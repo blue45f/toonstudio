@@ -289,7 +289,7 @@ export function EngineeringPlaybookPage() {
                     </h4>
                     <ul className="mt-3 grid gap-2 md:grid-cols-2">
                       {dossier.evidence.map((path) => (
-                        <li key={path}><code className="eng-code block overflow-x-auto whitespace-nowrap rounded-xl px-3 py-2 font-mono text-[0.68rem]">{path}</code></li>
+                        <li key={path}><code className="eng-code block max-w-full break-all rounded-xl px-3 py-2 font-mono text-[0.68rem]">{path}</code></li>
                       ))}
                     </ul>
                   </EngineeringDisclosure>

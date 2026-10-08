@@ -119,10 +119,20 @@ export CLOUDFLARE_REALTIME_API_ORIGIN=https://<realtime-origin>
 export CLOUDFLARE_LARGE_ASSET_ORIGIN=https://<immutable-origin>
 export VITE_CATALOG_SOURCE=static
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
+export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 # 최초 등록·교체 때만 대화형 입력으로 저장한다. 값은 shell history에 쓰지 않는다.
 pnpm exec wrangler secret put NEIS_API_KEY --config deploy/cloudflare-static/wrangler.jsonc
 pnpm run cloudflare:static:deploy
 ```
+
+production 모드(`scripts/deploy-cloudflare-static.mjs --production`)는 빌드와 배포를 시작하기 전에 다음을 모두 요구하고 하나라도 어긋나면 중단한다.
+
+- `TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production` (사용자의 별도 명시적 승인 뒤에만 설정)
+- `TOONSPECTRUM_APPROVED_MAIN_SHA`: 사용자가 승인한 `main` 커밋의 소문자 40자리 16진수 SHA. `HEAD`에서 자동으로 채우지 않고 승인된 값을 그대로 입력한다.
+- 현재 브랜치가 `main`이고 `git status --porcelain`이 비어 있다.
+- `git rev-parse HEAD`가 `TOONSPECTRUM_APPROVED_MAIN_SHA`와 같다.
+
+`dry-run`은 이 승인 조건을 요구하지 않는다.
 
 `VITE_CATALOG_SOURCE`를 생략해도 `static`이 기본이다. `api`는 정적 카탈로그에 문제가 발생했을 때 검토자가 선택하는 호환 롤백 모드이며, 다른 값은 배포 전에 거부된다.
 

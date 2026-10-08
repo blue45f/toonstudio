@@ -3,11 +3,26 @@ import { existsSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { PRODUCT_TOUR_FILM_CHAPTERS } from "@toonstudio/product-tour-film";
+import {
+  PRODUCT_TOUR_DURATION_SECONDS,
+  PRODUCT_TOUR_FILM_CHAPTERS,
+  PRODUCT_TOUR_FPS,
+} from "@toonstudio/product-tour-film";
 
 import { PRODUCT_TOUR_ADDITIONS } from "./product-tour-additions";
 import { PRODUCT_TOUR_RUNTIME_AUDIO } from "./product-tour-audio.generated";
-import { PRODUCT_TOUR, PRODUCT_TOUR_COPY } from "./product-tour-content";
+import {
+  PRODUCT_TOUR,
+  PRODUCT_TOUR_COPY,
+  formatProductTourDuration,
+  formatProductTourTime,
+  productTourIsoDuration,
+} from "./product-tour-content";
+import {
+  PRODUCT_TOUR_MEDIA_ATLAS_LINKS,
+  PRODUCT_TOUR_TECH_LINKS,
+  PRODUCT_TOUR_TECH_STATUS_LABEL,
+} from "./public/product-tour-tech-links";
 
 const PUBLIC_BRAND = "apps/web/public/brand";
 const PAGE_SOURCE = "apps/web/src/domains/marketing/ProductTourPage.tsx";
@@ -21,6 +36,8 @@ const FALLBACK_PLAYER_SOURCE = "apps/web/src/domains/marketing/ProductTourMp4Pla
 const RUNTIME_AUDIO_MANIFEST = `${PUBLIC_BRAND}/product-tour/product-tour-audio.json`;
 const REMOTION_ROOT = "tools/media/brand-film/src/index.tsx";
 const ADDITIONS_SOURCE = "apps/web/src/domains/marketing/ProductTourAdditions.tsx";
+const MADE_NOTE_SOURCE = "apps/web/src/domains/marketing/ProductTourMadeNote.tsx";
+const HANGUL = /[ㄱ-ㆎ가-힣]/u;
 
 /** 영상 제작 시점의 실제 제품 화면 캡처만 capture로 부를 수 있다. 그 밖의 그림·SVG 도해는 concept이다. */
 function isProductCapture(src: string): boolean {
@@ -72,7 +89,10 @@ describe("long-form product tour contracts", () => {
     const playerSource = readFileSync(PLAYER_SOURCE, "utf8");
 
     expect(pageSource).toContain('"@type": "VideoObject"');
-    expect(pageSource).toContain('duration: "PT8M24S"');
+    // 재생 시간(PT8M24S)은 문자열을 손으로 적지 않고 PRODUCT_TOUR.duration(504초)에서 계산한다 — 영상을 다시 렌더하면 함께 바뀐다.
+    expect(pageSource).toContain("duration: productTourIsoDuration(PRODUCT_TOUR.duration)");
+    expect(pageSource).not.toContain('"PT8M24S"');
+    expect(productTourIsoDuration(PRODUCT_TOUR.duration)).toBe("PT8M24S");
     expect(pageSource).toContain("product-tour-page__journey-grid");
     expect(pageSource).toContain("controllerRef={playerController}");
     expect(pageSource).toContain("chapter.feature.href");
@@ -256,3 +276,136 @@ describe("long-form product tour contracts", () => {
   });
 
 });
+
+describe("product tour: lengths are derived and the copy stays honest", () => {
+  it("keeps the page data, the shared Remotion package and the runtime audio on one length and frame rate", () => {
+    expect(PRODUCT_TOUR.duration).toBe(PRODUCT_TOUR_DURATION_SECONDS);
+    expect(PRODUCT_TOUR.fps).toBe(PRODUCT_TOUR_FPS);
+    expect(PRODUCT_TOUR_RUNTIME_AUDIO.duration).toBe(PRODUCT_TOUR.duration);
+    expect(PRODUCT_TOUR_RUNTIME_AUDIO.fps).toBe(PRODUCT_TOUR.fps);
+  });
+
+  it("formats the running time for people (ko/en, short/long) and for schema.org", () => {
+    expect(formatProductTourDuration(504, "ko")).toBe("8분 24초");
+    expect(formatProductTourDuration(504, "en")).toBe("8m 24s");
+    expect(formatProductTourDuration(504, "en", "long")).toBe("8 minutes 24 seconds");
+    expect(formatProductTourDuration(480, "ko")).toBe("8분");
+    expect(formatProductTourDuration(61, "en", "long")).toBe("1 minute 1 second");
+    expect(formatProductTourDuration(0, "ko")).toBe("0초");
+    expect(productTourIsoDuration(504)).toBe("PT8M24S");
+    expect(productTourIsoDuration(24)).toBe("PT24S");
+    expect(productTourIsoDuration(480)).toBe("PT8M");
+    expect(productTourIsoDuration(3605)).toBe("PT1H5S");
+    expect(productTourIsoDuration(0)).toBe("PT0S");
+  });
+
+  it("derives the chips, eyebrow, intro and meta description from PRODUCT_TOUR instead of retyping them", () => {
+    const { ko, en } = PRODUCT_TOUR_COPY;
+    const chapterCount = PRODUCT_TOUR.chapters.length;
+    expect(ko.facts[0]).toBe(formatProductTourDuration(PRODUCT_TOUR.duration, "ko"));
+    expect(en.facts[0]).toBe(formatProductTourDuration(PRODUCT_TOUR.duration, "en"));
+    expect(ko.facts[1]).toBe(`${chapterCount}개 제작 챕터`);
+    expect(en.facts[1]).toBe(`${chapterCount} production chapters`);
+    expect(ko.intro).toContain(`${chapterCount}개 챕터`);
+    expect(en.intro).toContain(`${chapterCount} chapters`);
+    expect(ko.eyebrow).toBe(`PRODUCT TOUR · ${formatProductTourTime(PRODUCT_TOUR.duration)}`);
+    expect(ko.metaDescription).toContain(formatProductTourDuration(PRODUCT_TOUR.duration, "ko"));
+    expect(en.metaDescription).toContain(formatProductTourDuration(PRODUCT_TOUR.duration, "en"));
+    // 스크린 리더는 "8:24" 를 길이로 읽지 못하므로 말로 읽히는 길이를 따로 둔다.
+    expect(ko.eyebrowSr).toContain("8분 24초");
+    expect(en.eyebrowSr).toContain("8 minutes 24 seconds");
+    // 제목의 "8분 안에" 는 반올림한 표현이다. 영상 길이가 바뀌어 분이 달라지면 이 문구를 다시 검토하도록 잠근다.
+    expect(ko.title[1]).toContain(`${Math.floor(PRODUCT_TOUR.duration / 60)}분`);
+    expect(en.title[1]).toContain(`${Math.floor(PRODUCT_TOUR.duration / 60)} minutes`);
+  });
+
+  it("calls the film product captures plus concept illustrations in the meta description, never real product screens", () => {
+    for (const locale of ["ko", "en"] as const) {
+      const meta = PRODUCT_TOUR_COPY[locale].metaDescription;
+      expect(meta, locale).not.toMatch(/실제 제품 화면|real product screens/iu);
+      // useMetaDescription 은 200자에서 자른다.
+      expect(meta.length, locale).toBeLessThanOrEqual(200);
+    }
+    expect(PRODUCT_TOUR_COPY.ko.metaDescription).toContain("제품 화면 캡처와 개념 도해");
+    expect(PRODUCT_TOUR_COPY.en.metaDescription).toContain("product captures and concept illustrations");
+  });
+
+  it("says the narration is synthesized and the music is AI-generated, and ties that to the audio pipeline", () => {
+    expect(PRODUCT_TOUR_COPY.ko.facts[2]).toContain("합성");
+    expect(PRODUCT_TOUR_COPY.ko.facts[2]).toContain("AI 생성");
+    expect(PRODUCT_TOUR_COPY.en.facts[2]).toContain("Synthesized");
+    expect(PRODUCT_TOUR_COPY.en.facts[2]).toContain("AI-generated");
+    expect(PRODUCT_TOUR_RUNTIME_AUDIO.narration.voice.provider).toBe("macOS speech synthesis");
+    expect(PRODUCT_TOUR_RUNTIME_AUDIO.narration.disclosure.ko).toContain("합성 음성");
+    // 배경음은 사이트 오리지널 OST 15곡 중 2곡이다. 믹스 스크립트가 읽는 곡이 정확히 둘이어야 화면의 "2곡" 이 맞다.
+    const mix = readFileSync("tools/media/brand-film/mix-product-tour-audio.mjs", "utf8");
+    expect([...mix.matchAll(/audio\/original\/([a-z-]+)\.mp3/gu)].map((match) => match[1])).toEqual([
+      "ink-and-starlight-instrumental",
+      "atlas-of-starlight-instrumental",
+    ]);
+    expect(PRODUCT_TOUR_COPY.ko.audioNote).toContain("2곡");
+    expect(PRODUCT_TOUR_COPY.en.audioNote).toContain("two");
+    // OST 파이프라인은 AI 생성기(ElevenLabs·ACE-Step)의 출처 기록이 있는 곡만 게시 목록에 올린다.
+    const generator = readFileSync("scripts/generate-site-original-ost.mjs", "utf8");
+    expect(generator).toContain('metadata.provider === "elevenlabs"');
+    expect(generator).toContain('metadata.provider === "ace-step"');
+  });
+});
+
+describe("product tour: technology links and the 'how it was made' note", () => {
+  it("shows route conditions and the chapter's technology under each chapter card, and extends the next links", () => {
+    const page = readFileSync(PAGE_SOURCE, "utf8");
+    expect(page).toContain("<ProductTourTechLinks chapterId={chapter.id} />");
+    expect(page).toContain("<RouteConditionBadges href={chapter.feature.href} />");
+    for (const href of ["/brand-film", "/features", "/about/workflow", "/about/technology"]) {
+      expect(page, href).toContain(`href="${href}"`);
+    }
+    // 노트는 다음 단계 버튼 뒤, 기술·발표 자료 이어 보기 앞에 둔다. 읽기 순서: 다음 → 만든 방법 → 더 깊은 자료.
+    expect(page.indexOf("<ServiceFlowNext")).toBeLessThan(page.indexOf("<ProductTourMadeNote />"));
+    expect(page.indexOf("<ProductTourMadeNote />")).toBeLessThan(page.indexOf("<ServiceStoryJourney"));
+    expect(page).toContain('<span className="sr-only">{copy.eyebrowSr}</span>');
+  });
+
+  it("gives every tour chapter one to three technology cards and exactly one story chapter", () => {
+    expect(Object.keys(PRODUCT_TOUR_TECH_LINKS).sort()).toEqual(PRODUCT_TOUR.chapters.map((chapter) => chapter.id).sort());
+    for (const chapter of PRODUCT_TOUR.chapters) {
+      const tech = PRODUCT_TOUR_TECH_LINKS[chapter.id];
+      expect(tech.atlas.length, chapter.id).toBeGreaterThanOrEqual(1);
+      expect(tech.atlas.length, chapter.id).toBeLessThanOrEqual(3);
+      expect(new Set(tech.atlas.map((link) => link.atlasId)).size, chapter.id).toBe(tech.atlas.length);
+      for (const text of [...tech.atlas.map((link) => link.label), tech.story.label]) {
+        expect(text.ko.trim(), chapter.id).toBe(text.ko);
+        expect(text.en.trim(), chapter.id).toBe(text.en);
+        expect(text.ko.length, chapter.id).toBeGreaterThan(0);
+        expect(HANGUL.test(text.en), `${chapter.id}: ${text.en}`).toBe(false);
+      }
+      expect(PRODUCT_TOUR_TECH_STATUS_LABEL[tech.story.status], chapter.id).toBeDefined();
+    }
+  });
+
+  it("explains the film in four lines whose claims match the code", () => {
+    const note = readFileSync(MADE_NOTE_SOURCE, "utf8");
+    for (const needle of ["<details", "@remotion/player", "@toonstudio/product-tour-film", "?player=mp4", "Range", "Blob", "WebVTT", "PRODUCT_TOUR_MEDIA_ATLAS_LINKS", "/about/technology/videos"]) {
+      expect(note, needle).toContain(needle);
+    }
+    // 라이선스는 "저장소로 확인할 수 없다" 까지만 말한다(법률 판단 금지).
+    expect(note).toContain("확인할 수 없습니다");
+    expect(note).not.toMatch(/무료로 (?:사용|이용)|라이선스를 (?:구매|취득)|사용 자격이 있/u);
+    expect(PRODUCT_TOUR_MEDIA_ATLAS_LINKS.map((link) => link.atlasId)).toEqual([
+      "remotion-composition-player",
+      "webvtt-caption-tracks",
+      "http-range-blob-seekable-media",
+      "video-object-json-ld",
+      "aria-tabs-site-section-tabs",
+    ]);
+
+    // 웹앱이 Remotion 을 실행 코드로 가져오는 곳은 투어 재생기뿐이고, 브랜드 필름은 파일로만 서빙한다.
+    const dependencies = (JSON.parse(readFileSync("package.json", "utf8")) as { dependencies: Record<string, string> }).dependencies;
+    expect(Object.keys(dependencies)).toEqual(expect.arrayContaining(["remotion", "@remotion/player", "@toonstudio/product-tour-film"]));
+    expect(readFileSync(PLAYER_SOURCE, "utf8")).toContain('from "@remotion/player"');
+    for (const file of ["BrandFilmPage.tsx", "CreatorBrandFilm.tsx", "BrandFilmStoryboard.tsx"]) {
+      expect(readFileSync(`apps/web/src/domains/marketing/${file}`, "utf8"), file).not.toMatch(/from "(?:remotion|@remotion\/player|@toonstudio\/product-tour-film)"/u);
+    }
+  });
+});
+

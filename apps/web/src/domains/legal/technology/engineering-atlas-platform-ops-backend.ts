@@ -332,8 +332,8 @@ const SESSION_TOKEN_CSRF_OAUTH_COOKIE: EngineeringAtlasEntry = {
       "CSRF (another site secretly sending requests with your browser's sign-in cookie) is blocked in three layers. (1) A write request (POST, PUT, PATCH, DELETE) must carry the header x-toonstudio-csrf: 1, which a plain form on another site cannot attach. (2) The Origin must be the same origin or on an allow list. (3) If there is no Origin, the request passes only with Fetch Metadata (Sec-Fetch-Site is same-origin and Sec-Fetch-Mode is cors or same-origin). CLI and server calls authenticated by a signed header are not ambient credentials sent automatically by a browser, so they are exempt, while cookie requests and POSTs to authentication endpoints (login CSRF included) are always checked.",
     ),
     t(
-      "소셜 로그인 왕복(Google·Kakao·Naver·GitHub·Apple) 중에는 state·PKCE verifier·링크 세션을 쿠키에 잠시 맡깁니다. 이 쿠키는 Path를 /api/auth/oauth/<공급자>로 좁히고 HttpOnly·Secure·10분 만료로 둬서 다른 공급자나 다른 요청에는 따라붙지 않습니다. Apple만 교차 사이트 form_post 콜백을 받아야 해서 SameSite=None이며, 이 콜백은 CSRF 검사의 유일한 예외로 서명된 state 쿠키와 ID 토큰 nonce로 따로 보호합니다.",
-      "During a social sign-in round trip (Google, Kakao, Naver, GitHub, Apple), the state, the PKCE verifier and the link session are briefly kept in cookies. Those cookies are narrowed to Path /api/auth/oauth/<provider> and set HttpOnly, Secure and 10-minute expiry, so they do not ride along to other providers or other requests. Only Apple must accept a cross-site form_post callback, so it uses SameSite=None, and that callback is the single exception to the CSRF check, protected separately by a signed state cookie and the ID-token nonce.",
+      "소셜 로그인 왕복(Google·Kakao·Naver·GitHub·Apple) 중에는 state와 링크 세션을(GitHub 는 PKCE verifier 도) 쿠키에 잠시 맡깁니다. 이 쿠키는 Path를 /api/auth/oauth/<공급자>로 좁히고 HttpOnly·Secure·10분 만료로 둬서 다른 공급자나 다른 요청에는 따라붙지 않습니다. Apple만 교차 사이트 form_post 콜백을 받아야 해서 SameSite=None이며, 이 콜백은 CSRF 검사의 유일한 예외로 서명된 state 쿠키와 ID 토큰 nonce로 따로 보호합니다.",
+      "During a social sign-in round trip (Google, Kakao, Naver, GitHub, Apple), the state and the link session (plus the PKCE verifier for GitHub only) are briefly kept in cookies. Those cookies are narrowed to Path /api/auth/oauth/<provider> and set HttpOnly, Secure and 10-minute expiry, so they do not ride along to other providers or other requests. Only Apple must accept a cross-site form_post callback, so it uses SameSite=None, and that callback is the single exception to the CSRF check, protected separately by a signed state cookie and the ID-token nonce.",
     ),
     t(
       "대안은 서버 세션 저장소(Redis 등)나 짧은 JWT와 refresh 토큰입니다. 이 설계는 단일 정수 비교로 철회를 얻는 반(半) stateless 방식이라 요청마다 사용자 조회가 필요하고, 30초 캐시(최대 500건)로 줄입니다. 캐시가 프로세스 안에 있어 인스턴스가 여러 개면 다른 인스턴스에는 최대 30초 늦게 반영될 수 있습니다(코드 기준 추론). 서명 키 회전(kid)은 코드에서 확인하지 못했습니다.",
@@ -408,8 +408,8 @@ const SESSION_TOKEN_CSRF_OAUTH_COOKIE: EngineeringAtlasEntry = {
     {
       feature: t("소셜 로그인 왕복 (Google·Kakao·Naver·GitHub·Apple)", "Social sign-in round trips (Google, Kakao, Naver, GitHub, Apple)"),
       role: t(
-        "state·PKCE·링크 세션 쿠키를 공급자별 경로로 좁혀 10분만 맡기고, Apple만 교차 사이트 POST 콜백을 위해 SameSite=None을 씁니다.",
-        "State, PKCE and link-session cookies are narrowed to per-provider paths for 10 minutes, and only Apple uses SameSite=None for its cross-site POST callback.",
+        "state·링크 세션(GitHub 는 PKCE 도) 쿠키를 공급자별 경로로 좁혀 10분만 맡기고, Apple만 교차 사이트 POST 콜백을 위해 SameSite=None을 씁니다.",
+        "State and link-session cookies (plus PKCE for GitHub) are narrowed to per-provider paths for 10 minutes, and only Apple uses SameSite=None for its cross-site POST callback.",
       ),
       paths: ["apps/api/src/oauth-state-cookie.ts"],
     },
@@ -569,8 +569,8 @@ const SESSION_TOKEN_CSRF_OAUTH_COOKIE: EngineeringAtlasEntry = {
       {
         question: t("JWT를 왜 직접 구현했나요?", "Why was JWT implemented in-house?"),
         answer: t(
-          "외부 라이브러리 없이 node:crypto로 HS256만 씁니다. 알고리즘 협상이 없고 발급자·대상이 고정되며, 운영 비밀 길이를 강제합니다. 검토할 점으로, 키 회전 절차(kid)는 코드에서 확인하지 못했습니다.",
-          "It uses only HS256 through node:crypto with no external library: there is no algorithm negotiation, the issuer and audience are fixed and the production secret length is enforced. One thing to review: a key-rotation procedure (kid) was not found in the code.",
+          "외부 라이브러리 없이 node:crypto로 새 토큰은 HS256 JWT 로만 발급합니다. 이전에 발급된 레거시 v2 HMAC 토큰도 만료(최대 30일)까지는 계속 검증합니다. 알고리즘 협상이 없고 발급자·대상이 고정되며, 운영 비밀 길이를 강제합니다. 검토할 점으로, 키 회전 절차(kid)는 코드에서 확인하지 못했습니다.",
+          "New tokens are issued only as HS256 JWTs through node:crypto with no external library, while legacy v2 HMAC tokens issued earlier still verify until they expire (up to 30 days): there is no algorithm negotiation, the issuer and audience are fixed and the production secret length is enforced. One thing to review: a key-rotation procedure (kid) was not found in the code.",
         ),
       },
       {
@@ -612,7 +612,7 @@ const SESSION_TOKEN_CSRF_OAUTH_COOKIE: EngineeringAtlasEntry = {
     },
     {
       value: "10 minutes",
-      label: t("OAuth state·PKCE 쿠키의 유효 시간", "Lifetime of the OAuth state and PKCE cookies"),
+      label: t("OAuth state·링크 세션·PKCE(GitHub) 쿠키의 유효 시간", "Lifetime of the OAuth state, link-session and PKCE (GitHub) cookies"),
       source: "apps/api/src/oauth-state-cookie.ts",
     },
   ],

@@ -470,6 +470,7 @@ export function stripKeyAction(
     if (target < 0 || target >= count || target === index) return { kind: "edge", edge: forward ? "end" : "start" };
     return { kind: "reorder", index: target };
   }
+  if (e.shiftKey) return null; // Alt 없이 Shift 만 누른 조합은 건드리지 않는다
   if (horizontal) return { kind: "focus", index: Math.max(0, Math.min(count - 1, index + (forward ? 1 : -1))) };
   return null;
 }`,
@@ -494,6 +495,7 @@ export function stripKeyAction(
     if (target < 0 || target >= count || target === index) return { kind: "edge", edge: forward ? "end" : "start" };
     return { kind: "reorder", index: target };
   }
+  if (e.shiftKey) return null; // Shift without Alt is left alone
   if (horizontal) return { kind: "focus", index: Math.max(0, Math.min(count - 1, index + (forward ? 1 : -1))) };
   return null;
 }`,

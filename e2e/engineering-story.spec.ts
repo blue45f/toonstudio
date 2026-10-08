@@ -52,6 +52,36 @@ test("mobile engineering hub leads to every evidence-backed chapter", async ({ p
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
 });
 
+test("engineering hub shows where to start and three reading routes before the long chapter library", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/about/technology");
+
+  // 처음이라면: 구조(아키텍처 해설)와 재료(라이브러리 해설) 두 해설이 첫 구역이다.
+  const start = page.getByRole("region", { name: /처음이라면 여기서 시작/u });
+  await expect(start.getByRole("link")).toHaveCount(2);
+  await expect(start.getByRole("link").first()).toHaveAttribute("href", "/about/technology/architecture");
+  await expect(start.getByRole("link").nth(1)).toHaveAttribute("href", "/about/technology/libraries");
+
+  // 읽는 길은 세 가지다. 길마다 대상·단계 링크·시작 단추가 있다.
+  const routes = page.getByRole("region", { name: /길을 고르세요/u });
+  await expect(routes.getByRole("article")).toHaveCount(3);
+  await expect(routes.getByRole("heading", { level: 3 })).toHaveText(["훑어보기", "이해하기", "깊이 파고들기"]);
+
+  // 챕터 도서관(카드가 길게 이어진다)은 시작점과 읽는 길 뒤에 온다.
+  const startTop = await start.evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
+  const libraryTop = await page.locator("#engineering-library-title").evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
+  expect(libraryTop).toBeGreaterThan(startTop);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
+
+  // 시작점에서 아키텍처 해설로 들어가면 머리말이 질문·대상·다음에 읽을 것을 말하고, 다음은 라이브러리 해설이다.
+  await start.getByRole("link").first().click();
+  await expect(page).toHaveURL(/\/about\/technology\/architecture$/u);
+  const guide = page.locator("dl").filter({ hasText: "이 페이지가 답하는 질문" });
+  await expect(guide).toContainText("이런 분께");
+  await expect(guide.getByRole("link", { name: /라이브러리/u })).toHaveAttribute("href", "/about/technology/libraries");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
+});
+
 test("guide filters and deck shortcuts preserve control keyboard behavior", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/about/technology/guides");

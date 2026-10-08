@@ -12,6 +12,9 @@ import { ServiceStoryJourney } from "@/shared/components/service-story-journey";
 import { creatorHomeLocale } from "./creator-home-content";
 import { ProductTourPlayer } from "./ProductTourPlayer";
 import { ProductTourAdditions } from "./ProductTourAdditions";
+import { ProductTourMadeNote } from "./ProductTourMadeNote";
+import { ProductTourTechLinks } from "./ProductTourTechLinks";
+import { RouteConditionBadges } from "./RouteConditionBadges";
 import { ServiceFlowNext } from "./public/intro-primitives";
 import { IntroTabs, type IntroTab } from "./public/intro-tabs";
 import { parseProductTourLocation } from "./product-tour-location";
@@ -22,6 +25,7 @@ import {
   PRODUCT_TOUR_COPY,
   formatProductTourTime,
   productTourChapterHref,
+  productTourIsoDuration,
 } from "./product-tour-content";
 
 import "./marketing-page.css";
@@ -59,7 +63,7 @@ export function ProductTourPage() {
     thumbnailUrl: POSTER_URL,
     contentUrl: `${SITE_URL}${PRODUCT_TOUR.src}`,
     embedUrl: `${SITE_URL}/product-tour#product-tour-video`,
-    duration: "PT8M24S",
+    duration: productTourIsoDuration(PRODUCT_TOUR.duration),
     inLanguage: getActiveI18nLocale(),
     isFamilyFriendly: true,
     hasPart: PRODUCT_TOUR.chapters.map((chapter) => ({
@@ -93,7 +97,11 @@ export function ProductTourPage() {
     <div className="mk-page product-tour" lang={locale}>
       <header className="mk-shell product-tour__hero">
         <div className="product-tour__hero-copy">
-          <p className="mk-eyebrow"><Clapperboard size={15} aria-hidden="true" />{copy.eyebrow}</p>
+          <p className="mk-eyebrow">
+            <Clapperboard size={15} aria-hidden="true" />
+            <span aria-hidden="true">{copy.eyebrow}</span>
+            <span className="sr-only">{copy.eyebrowSr}</span>
+          </p>
           <h1 className="mk-title">{copy.title[0]} <em>{copy.title[1]}</em></h1>
           <p className="mk-lead">{copy.intro}</p>
           <div className="mk-actions">
@@ -145,13 +153,17 @@ export function ProductTourPage() {
                         <h3>{title}</h3>
                         <p>{bi(chapter.summary.ko, chapter.summary.en)}</p>
                         <div className="product-tour__feature-actions">
-                          <Link className="mk-link" href={chapter.feature.href}>
-                            {copy.visualOpen}<span className="product-tour__feature-name">· {bi(chapter.feature.ko, chapter.feature.en)}</span><ArrowUpRight size={15} aria-hidden="true" />
-                          </Link>
+                          <span className="product-tour__feature-open">
+                            <Link className="mk-link" href={chapter.feature.href}>
+                              {copy.visualOpen}<span className="product-tour__feature-name">· {bi(chapter.feature.ko, chapter.feature.en)}</span><ArrowUpRight size={15} aria-hidden="true" />
+                            </Link>
+                            <RouteConditionBadges href={chapter.feature.href} />
+                          </span>
                           <a className="product-tour__scene-link" href={productTourChapterHref(chapter.start)} onClick={watchScene(chapter.start)}>
                             <CirclePlay size={15} aria-hidden="true" />{copy.watchScene}
                           </a>
                         </div>
+                        <ProductTourTechLinks chapterId={chapter.id} />
                       </div>
                     </li>
                   );
@@ -185,7 +197,11 @@ export function ProductTourPage() {
         <ServiceFlowNext current="tour" />
         <div className="product-tour__next-links">
           <Link className="mk-link" href="/brand-film">{copy.brandFilm}<ArrowRight size={14} aria-hidden="true" /></Link>
+          <Link className="mk-link" href="/features">{copy.nextFeatures}<ArrowRight size={14} aria-hidden="true" /></Link>
+          <Link className="mk-link" href="/about/workflow">{copy.nextWorkflow}<ArrowRight size={14} aria-hidden="true" /></Link>
+          <Link className="mk-link" href="/about/technology">{copy.nextTechnology}<ArrowRight size={14} aria-hidden="true" /></Link>
         </div>
+        <ProductTourMadeNote />
         <details className="mk-fold">
           <summary>
             <span className="mk-fold__text"><span className="mk-fold__title">{bi("기술·발표 자료 이어 보기", "Continue with the engineering and presentation material")}</span></span>

@@ -32,7 +32,10 @@ interface CapabilityCopy {
 const CAPABILITY_COPY: Readonly<Record<NextgenCapabilityId, () => CapabilityCopy>> = {
   "compute-pressure": () => ({
     name: bi("기기 압력 감지", "Compute Pressure"),
-    purpose: bi("CPU 압력을 읽어 무거운 기능의 품질 조절에 씁니다.", "Reads CPU pressure to adapt heavy-feature quality."),
+    purpose: bi(
+      "CPU 압력을 읽어 아래에 보여 주는 관측용입니다 — 품질을 자동으로 조절하는 기능은 아직 연결돼 있지 않습니다.",
+      "Observation only: reads CPU pressure and shows it below. No feature adjusts quality from it yet.",
+    ),
   }),
   "idle-detection": () => ({
     name: bi("자리비움 감지", "Idle Detection"),

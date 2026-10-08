@@ -34,8 +34,12 @@ export const DEFAULT_IPFS_GATEWAYS: readonly string[] = [
   "https://dweb.link",
 ];
 
-/** verified-fetch가 블록을 받는 trustless 게이트웨이 목록 (링크용과 별개). */
-const VERIFIED_FETCH_GATEWAYS: readonly string[] = [
+/**
+ * 검증 가져오기가 브라우저 fetch로 접속하는 게이트웨이 목록 (링크용과 별개).
+ * 운영 CSP(config/http-response-headers.json)의 connect-src에 없으면 브라우저가 연결을 막으므로,
+ * 화면 안내(IpfsContentAddressPanel)와 CSP 설정이 어긋나지 않는지 테스트가 이 목록을 대조한다.
+ */
+export const VERIFIED_FETCH_GATEWAYS: readonly string[] = [
   "https://trustless-gateway.link",
   ...DEFAULT_IPFS_GATEWAYS,
 ];

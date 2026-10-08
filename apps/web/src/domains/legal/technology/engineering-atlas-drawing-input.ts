@@ -26,12 +26,12 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
         "From each pointermove the code takes the hardware samples via getCoalescedEvents() and keeps the browser's delivery order. It does not re-sort by time, because low-precision timers often produce equal timestamps and sorting would kink the line. The prefix that overlaps the previous delivery is removed with the KMP string-matching algorithm so no point enters twice, and pressure, tilt, rotation and contact size are range-checked, with bad values rejected and a reason recorded.",
       ),
       t(
-        "대안과 선택: pointerrawupdate(묶기 전 이벤트)는 더 일찍 오지만 처리된 스트림과 주기가 달라 두 경로가 같은 픽셀을 소유하게 될 수 있어 영구 잉크에는 쓰지 않습니다. 예측은 펜에서만, 브라우저가 getPredictedEvents 를 지원하고 '움직임 줄이기' 설정이 꺼져 있을 때만 켭니다(마우스·터치는 손바닥·스크롤 동작을 검증하기 전까지 제외). 예측이 틀려도 영구 표면은 추가만 되므로 이미 확정된 픽셀은 지워지지 않습니다.",
-        "Alternatives and choices: pointerrawupdate (events before batching) arrives earlier, but its cadence differs from the processed stream and two paths could end up owning the same pixels, so it is not used for permanent ink. Prediction is enabled only for pens, only when the browser supports getPredictedEvents and the reduced-motion preference is off (mouse and touch are excluded until palm and scroll behavior is verified). If a guess is wrong, the permanent surface only ever grows, so no confirmed pixel is erased.",
+        "대안과 선택: pointerrawupdate(묶기 전 이벤트)는 더 일찍 오지만 처리된 스트림과 주기가 달라 두 경로가 같은 픽셀을 소유하게 될 수 있어 영구 잉크에는 쓰지 않고, 펜이 닿아 있는 동안 커서·가이드·임시 잉크 미리보기 같은 화면 전용 표시에만 씁니다. 예측은 펜에서만, 브라우저가 getPredictedEvents 를 지원하고 '움직임 줄이기' 설정이 꺼져 있을 때만 켭니다(마우스·터치는 손바닥·스크롤 동작을 검증하기 전까지 제외). 예측이 틀려도 영구 표면은 추가만 되므로 이미 확정된 픽셀은 지워지지 않습니다.",
+        "Alternatives and choices: pointerrawupdate (events before batching) arrives earlier, but its cadence differs from the processed stream and two paths could end up owning the same pixels, so it is not used for permanent ink; while the pen is in contact it only drives screen-only visuals such as the cursor, the guide and a temporary ink preview. Prediction is enabled only for pens, only when the browser supports getPredictedEvents and the reduced-motion preference is off (mouse and touch are excluded until palm and scroll behavior is verified). If a guess is wrong, the permanent surface only ever grows, so no confirmed pixel is erased.",
       ),
       t(
-        "저지연 한 단락: 임시 잉크를 그리는 캔버스는 desynchronized 힌트(브라우저의 일반 합성 절차를 건너뛰고 화면에 더 빨리 올리는 모드)를 요청합니다. 확정된 문서 레이어는 화면 찢김과 읽기 비용 때문에 요청하지 않는다는 근거가 코드 주석에 정리돼 있습니다. 요청이 실제로 받아들여졌는지는 브라우저와 기기마다 달라서, 이 카드는 지연 수치를 약속하지 않습니다.",
-        "A word on low latency: canvases that draw temporary ink request the desynchronized hint, a mode that skips the browser's usual compositing step to put pixels on screen sooner. Code comments explain why committed document layers do not request it (page tearing and readback cost). Whether the request is honored differs per browser and device, so this card promises no latency figure.",
+        "저지연 한 단락: 임시 잉크를 그리는 캔버스는 desynchronized 힌트(브라우저의 일반 합성 절차를 건너뛰고 화면에 더 빨리 올리는 모드)를 요청하고, 요청이 예외를 일으키는 구형 WebView에서는 일반 2D 컨텍스트로 돌아갑니다. 확정된 문서 레이어는 요청하지 않으며, 그 이유(화면 찢김과 읽기 비용)는 아직 제품에 연결되지 않은 정책 모듈(studio-lowlatency-surface-policy.ts)의 주석에 정리돼 있습니다. 요청이 실제로 받아들여졌는지는 브라우저와 기기마다 달라서, 이 카드는 지연 수치를 약속하지 않습니다.",
+        "A word on low latency: canvases that draw temporary ink request the desynchronized hint, a mode that skips the browser's usual compositing step to put pixels on screen sooner, and fall back to a plain 2D context in older WebViews where the request throws. Committed document layers do not request it; the reasons (page tearing and readback cost) are written in the comments of a policy module (studio-lowlatency-surface-policy.ts) that is not yet wired into the product. Whether the request is honored differs per browser and device, so this card promises no latency figure.",
       ),
     ],
     keyPoints: [
@@ -94,12 +94,13 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
       {
         feature: t("캔버스 편집기 · 저지연 잉크 표면", "Canvas editor · low-latency ink surface"),
         role: t(
-          "임시 잉크·스탬프 오버레이 캔버스에만 desynchronized 힌트를 요청해 화면 반영을 앞당깁니다.",
-          "Requests the desynchronized hint only for the temporary ink and stamp overlay canvases to put pixels on screen sooner.",
+          "임시 라이브 오버레이(잉크·스탬프 등) 캔버스에만 desynchronized 힌트를 요청해 화면 반영을 앞당기고, 실패하면 일반 2D 컨텍스트를 씁니다. 역할별 정책 표(studio-lowlatency-surface-policy.ts)는 시험에서만 쓰이는 미연결 모듈입니다.",
+          "Requests the desynchronized hint only for temporary live overlay canvases (ink, stamp and similar) to put pixels on screen sooner, and uses a plain 2D context if that fails. The per-role policy table (studio-lowlatency-surface-policy.ts) is an unwired module used only in tests.",
         ),
         paths: [
           "apps/web/src/domains/creator/studio-low-latency-canvas.ts#acquireStudioLowLatencyCanvas2dContext",
-          "apps/web/src/domains/creator/studio-lowlatency-surface-policy.ts",
+          "apps/web/src/domains/creator/live/studio-live-ink-overlay.ts",
+          "apps/web/src/domains/creator/live/studio-live-stamp-overlay.ts",
         ],
         route: "/studio",
       },
@@ -175,8 +176,8 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
         {
           question: t("pointerrawupdate 를 쓰면 더 빠르지 않나요?", "Wouldn't pointerrawupdate be faster?"),
           answer: t(
-            "처리된 pointermove 와 주기가 달라 같은 픽셀을 두 경로가 소유하게 될 수 있어서, 영구 잉크에서는 거절합니다. 미리보기용 계측에만 나중에 쓸 수 있도록 남겨 둔 상태입니다.",
-            "Its cadence differs from the processed pointermove stream, so two paths could own the same pixels; permanent ink therefore rejects it. It is kept available only for future preview-only telemetry.",
+            "처리된 pointermove 와 주기가 달라 같은 픽셀을 두 경로가 소유하게 될 수 있어서, 영구 잉크에는 쓰지 않습니다. 대신 펜이 닿아 있는 동안만 커서·가이드와 임시 잉크 미리보기처럼 화면 전용 표시에 씁니다. 잉크의 권위는 처리된 pointermove(묶음을 푼 샘플) 쪽에만 있습니다.",
+            "Its cadence differs from the processed pointermove stream, so two paths could own the same pixels; it is not used for permanent ink. Instead, only while the pen is touching the screen, it drives screen-only visuals such as the cursor, the guide and a temporary ink preview. Ink authority lies solely with the processed pointermove stream (the unpacked batch).",
           ),
         },
         {
@@ -219,12 +220,12 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
         "Hand-shake correction trades smoothness against responsiveness. Averaging points removes shake but makes the line trail the pen tip like a rubber band, and when samples arrive irregularly the same setting gives a different lag on each device. ToonStudio designs its filters around time, so the lag stays the same whatever the sample interval.",
       ),
       t(
-        "보정 강도(0~10)에는 세 가지 모드가 있습니다. 고정 주기(standard)는 5ms 마다 여러 단의 필터를 돌리고, 속도 적응(adaptive, 알 수 없는 값일 때의 기본)은 느린 선은 더 안정시키고 빠른 플릭은 지연을 줄이며, 정밀 추적(precision)은 펜 끝을 가상의 끈이 따라오게 합니다. 시간 상수는 8 + 4.8×강도(ms)로 강도 10이면 56ms 이고, 샘플 사이를 직선으로 보고 1차 저역통과 필터의 해를 정확히 적분해 60·120·240Hz 에서도 같은 지연이 나옵니다.",
-        "Correction strength (0 to 10) has three modes. Fixed-rate (standard) runs a multi-stage filter every 5 ms; speed-adaptive (adaptive, the default for unknown values) stabilizes slow lines more and cuts lag for fast flicks; precision lets a virtual string trail the pen tip. The time constant is 8 + 4.8 x strength ms, 56 ms at strength 10, and treating input between samples as a straight line and integrating the first-order low-pass exactly gives the same lag at 60, 120 and 240 Hz.",
+        "보정 강도(0~10)에는 세 가지 모드가 있습니다. 고정 주기(standard)는 적격 브러시에서 강도가 0보다 크면 5ms 마다 여러 단의 필터를 돌리고(0이면 보정 없이 받습니다), 속도 적응(adaptive, 알 수 없는 값일 때의 기본)은 느린 선은 더 안정시키고 빠른 플릭은 지연을 줄이며, 정밀 추적(precision)은 펜 끝을 가상의 끈이 따라오게 합니다. 시간 상수 8 + 4.8×강도(ms)(강도 10이면 56ms)는 속도 적응 등이 쓰는 시간 정규화 지수평활의 곡선이고, 5ms 캐스케이드는 이 곡선에 가깝게 맞춘 별도 필터입니다. 지수평활은 샘플 사이를 직선으로 보고 1차 저역통과 필터의 해를 정확히 적분해 60·120·240Hz 에서도 같은 지연이 나옵니다.",
+        "Correction strength (0 to 10) has three modes. Fixed-rate (standard) runs a multi-stage filter every 5 ms on eligible brushes when strength is above 0 (at 0 input is taken as is); speed-adaptive (adaptive, the default for unknown values) stabilizes slow lines more and cuts lag for fast flicks; precision lets a virtual string trail the pen tip. The time constant 8 + 4.8 x strength ms (56 ms at strength 10) is the curve of the time-normalized exponential smoothing used by speed-adaptive and similar paths, and the 5 ms cascade is a separate filter tuned to track that curve closely. The smoothing treats input between samples as a straight line and integrates the first-order low-pass exactly, giving the same lag at 60, 120 and 240 Hz.",
       ),
       t(
-        "가는 펜(라이너·G펜 등 9종)에는 One Euro 필터를 씁니다. 천천히 그을 때는 컷오프 주파수를 낮춰 떨림을 없애고, 속도가 붙으면 컷오프를 올려 지연을 없애는 속도 적응 필터입니다. 펜을 뗄 때는 출력이 실제 끝 점까지 따라잡도록 끝점을 flush 해서 저장된 획이 펜보다 짧게 끝나지 않게 합니다.",
-        "Thin pens (nine brushes such as liner and G-pen) use a One Euro filter. When you draw slowly it lowers the cutoff frequency to remove shake, and as speed rises it raises the cutoff to remove lag. When the pen lifts, the endpoint is flushed so the output catches up to the real last point and the saved stroke never ends shorter than the pen.",
+        "가는 펜 목록(코드에 등록된 라이너·테크니컬 펜 등 9종)은 보정 모드가 고정 주기(standard)이고 강도가 0일 때 One Euro 필터를 거칩니다. 천천히 그을 때는 컷오프 주파수를 낮춰 떨림을 없애고, 속도가 붙으면 컷오프를 올려 지연을 없애는 속도 적응 필터입니다. 강도가 0보다 크거나 기본값(속도 적응, 강도 3)이면 이 필터 대신 5ms 캐스케이드나 속도 적응 지수평활이 쓰입니다. 펜을 뗄 때는 출력이 실제 끝 점까지 따라잡도록 끝점을 flush 해서 저장된 획이 펜보다 짧게 끝나지 않게 합니다.",
+        "The thin-pen list (nine brush ids registered in code, such as liner and technical pen) goes through a One Euro filter when the mode is fixed-rate (standard) and strength is 0. When you draw slowly it lowers the cutoff frequency to remove shake, and as speed rises it raises the cutoff to remove lag. At strength above 0, or with the default (speed-adaptive, strength 3), a 5 ms cascade or speed-adaptive smoothing is used instead. When the pen lifts, the endpoint is flushed so the output catches up to the real last point and the saved stroke never ends shorter than the pen.",
       ),
       t(
         "이미 내보낸 구간은 새 샘플이 와도 고쳐 쓰지 않는 append-only 구조라 선이 뒤늦게 출렁이지 않습니다. 한계는 분명합니다. 보정이 셀수록 선은 펜을 늦게 따라옵니다. 옛 캐스케이드(20단, 90% 응답 약 535ms)는 '고무줄 느낌'이어서 단계당 응답 하한을 두어 최악 응답을 약 125ms 로 제한했습니다(코드 주석 기준).",
@@ -232,9 +233,9 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
       ),
     ],
     keyPoints: [
-      t("시정수 8+4.8×강도 ms, 주사율이 달라도 같은 지연", "Time constant 8 + 4.8 x strength ms, same lag at any rate"),
+      t("지수평활 시정수 8+4.8×강도 ms, 주사율이 달라도 같은 지연", "Smoothing time constant 8 + 4.8 x strength ms, same lag at any rate"),
       t("5ms 고정 주기로 필터, 낸 구간은 고쳐 쓰지 않음", "5 ms fixed ticks; emitted output is never rewritten"),
-      t("가는 펜은 One Euro: 느리면 부드럽게, 빠르면 가볍게", "Thin pens use One Euro: smooth when slow, light when fast"),
+      t("가는 펜 목록은 강도 0에서 One Euro: 느리면 부드럽게, 빠르면 가볍게", "Thin-pen list uses One Euro at strength 0: smooth when slow, light when fast"),
     ],
     diagram: {
       id: "stroke-smoothing-one-euro-diagram",
@@ -242,14 +243,14 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
       title: t("입력에서 저장까지의 보정 경로", "From raw input to the saved stroke"),
       caption: t("브러시와 모드에 따라 필터 하나를 거쳐, 펜을 뗄 때 끝점을 맞추고 저장합니다.", "Brush and mode pick one filter; at pen-up the endpoint is aligned and the stroke saved."),
       alt: t(
-        "원시 입력이 필터 선택 지점에서 네 갈래로 나뉩니다. 가는 펜은 One Euro, 고정 주기는 5ms 캐스케이드, 속도 적응은 시간 정규화 지수평활, 정밀 추적은 가상 끈 데드존을 거칩니다. 모두 보정된 점으로 모인 뒤 끝점을 맞추어 저장됩니다.",
-        "Raw input reaches a filter selection point that splits four ways: One Euro for thin pens, a 5 ms cascade for fixed-rate, time-normalized smoothing for speed-adaptive, and a virtual-string dead zone for precision. All merge into the corrected point, whose endpoint is aligned before saving.",
+        "원시 입력이 필터 선택 지점에서 네 갈래로 나뉩니다. 고정 주기에서 강도가 0이고 가는 펜 목록의 브러시이면 One Euro, 강도가 0보다 크면 5ms 캐스케이드를 거칩니다. 속도 적응은 시간 정규화 지수평활, 정밀 추적은 가상 끈 데드존을 거칩니다. 모두 보정된 점으로 모인 뒤 끝점을 맞추어 저장됩니다.",
+        "Raw input reaches a filter selection point that splits four ways. In fixed-rate mode, a brush on the thin-pen list at strength 0 goes through One Euro, and a strength above 0 goes through a 5 ms cascade. Speed-adaptive uses time-normalized smoothing and precision uses a virtual-string dead zone. All merge into the corrected point, whose endpoint is aligned before saving.",
       ),
       nodes: [
         { id: "raw", label: t("원시 입력", "Raw input"), sub: t("pointermove 샘플", "pointermove samples"), tone: "local", shape: "pill", at: [0, 1] },
         { id: "pick", label: t("필터 선택", "Pick filter"), sub: t("브러시·보정 모드", "Brush and mode"), tone: "neutral", shape: "diamond", at: [1, 1] },
-        { id: "euro", label: t("One Euro", "One Euro"), sub: t("가는 펜 9종 전용", "Nine thin-pen brushes"), tone: "local", at: [2, 0] },
-        { id: "std", label: t("5ms 캐스케이드", "5 ms cascade"), sub: t("고정 주기 · 여러 단", "Fixed rate, several stages"), tone: "local", at: [2, 1] },
+        { id: "euro", label: t("One Euro", "One Euro"), sub: t("고정 주기 · 가는 펜 목록", "Fixed rate, thin-pen list"), tone: "local", at: [2, 0] },
+        { id: "std", label: t("5ms 캐스케이드", "5 ms cascade"), sub: t("고정 주기 · 강도>0 · 여러 단", "Fixed rate, strength > 0, stages"), tone: "local", at: [2, 1] },
         { id: "ada", label: t("속도 적응", "Speed-adaptive"), sub: t("시정수 8+4.8×강도 ms", "tau = 8 + 4.8 x strength ms"), tone: "local", at: [2, 2] },
         { id: "pre", label: t("정밀 추적", "Precision"), sub: t("가상 끈 데드존", "Virtual-string dead zone"), tone: "local", at: [2, 3] },
         { id: "out", label: t("보정된 점", "Corrected point"), sub: t("주사율과 무관한 지연", "Rate-independent lag"), tone: "good", at: [3, 1] },
@@ -257,7 +258,7 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
       ],
       edges: [
         { from: "raw", to: "pick" },
-        { from: "pick", to: "euro", label: t("가는 펜", "thin pen") },
+        { from: "pick", to: "euro", label: t("강도 0", "strength 0") },
         { from: "pick", to: "std" },
         { from: "pick", to: "ada" },
         { from: "pick", to: "pre" },
@@ -291,10 +292,10 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
         route: "/studio",
       },
       {
-        feature: t("가는 펜(라이너·G펜 등) · One Euro", "Thin pens (liner, G-pen) · One Euro"),
+        feature: t("가는 펜 목록(라이너 등) · One Euro", "Thin-pen list (liner and others) · One Euro"),
         role: t(
-          "가는 펜 9종에서만 One Euro 필터를 먼저 적용하고, 펜을 뗄 때 끝점을 맞춥니다.",
-          "Applies a One Euro filter first for nine thin-pen brushes only, and aligns the endpoint at pen-up.",
+          "보정 모드가 고정 주기이고 강도가 0일 때, 코드에 등록된 가는 펜 9종에만 One Euro 필터를 먼저 적용하고 펜을 뗄 때 끝점을 맞춥니다. 그중 7종은 지금 브러시 선택기에서 격리돼 있습니다.",
+          "When the mode is fixed-rate and strength is 0, applies a One Euro filter first to only the nine thin-pen brush ids registered in code, and aligns the endpoint at pen-up. Seven of them are currently quarantined out of the brush picker.",
         ),
         paths: [
           "apps/web/src/domains/creator/studio-thin-line-ink-input-v1.ts",
@@ -408,8 +409,8 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
     chapterIds: ["brush-engine"],
     talk: {
       pitch: t(
-        "손떨림 보정은 부드러움과 반응 속도를 맞바꾸는 거래입니다. 우리는 그 거래를 숫자로 약속합니다. 보정 강도 10의 시간 상수는 56밀리초이고, 모니터가 60Hz 든 240Hz 든 같은 지연이 나오게 만들었습니다. 가는 펜은 느리면 부드럽게, 빠르면 가볍게 따라오는 One Euro 필터를 씁니다.",
-        "Hand-shake correction trades smoothness for responsiveness, and we state the trade in numbers. At strength 10 the time constant is 56 milliseconds, and the lag is the same on a 60 Hz or a 240 Hz display. Thin pens use a One Euro filter that is smooth when you go slowly and light when you go fast.",
+        "손떨림 보정은 부드러움과 반응 속도를 맞바꾸는 거래입니다. 우리는 그 거래를 숫자로 약속합니다. 보정 강도 10의 시간 상수는 56밀리초이고, 모니터가 60Hz 든 240Hz 든 같은 지연이 나오게 만들었습니다. 보정 강도 0에서 가는 펜 목록의 브러시는 느리면 부드럽게, 빠르면 가볍게 따라오는 One Euro 필터를 거칩니다.",
+        "Hand-shake correction trades smoothness for responsiveness, and we state the trade in numbers. At strength 10 the time constant is 56 milliseconds, and the lag is the same on a 60 Hz or a 240 Hz display. At strength 0, brushes on the thin-pen list go through a One Euro filter that is smooth when you go slowly and light when you go fast.",
       ),
       analogy: t(
         "펜 끝에 고무줄로 매단 추를 끌고 가는 것과 같습니다. 줄이 길수록 흔들림은 줄지만 추가 늦게 따라옵니다. 그 줄의 길이를 우리는 밀리초로 재어 약속합니다.",
@@ -439,13 +440,13 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
         },
       ],
       pitfall: t(
-        "용어집의 'ema/spring 두 모드'는 2D 편집기가 아니라 브러시 플랫폼 패키지의 배치 커널 이야기입니다. 편집기 라이브 경로의 모드는 세 개입니다. 다른 앱과의 지연 비교 수치는 이 카드에서 확인하지 못했습니다.",
-        "The glossary's 'ema/spring modes' refer to a batch kernel in the brush-platform package, not the 2D editor; the editor's live path has three modes. No latency comparison with other apps was verified for this card.",
+        "용어집의 'ema/spring 두 모드'는 2D 편집기가 아니라 브러시 플랫폼 패키지의 배치 커널 이야기입니다. 편집기 라이브 경로의 모드는 세 개입니다. 코드의 가는 펜 목록 9종 중 7종(fineliner·ballpoint·liner·gel-pen·glass-pen·technical-pen·mapping-pen)은 브러시 격리 원장에 올라 지금 선택기에 보이지 않고, g-pen·dip-pen 은 현재 프리셋 id 와 일치하지 않습니다(G펜 프리셋의 id 는 gpen). 'G펜에 One Euro 를 쓴다'고 말하지 마세요. 다른 앱과의 지연 비교 수치는 이 카드에서 확인하지 못했습니다.",
+        "The glossary's 'ema/spring modes' refer to a batch kernel in the brush-platform package, not the 2D editor; the editor's live path has three modes. Of the nine ids on the code's thin-pen list, seven (fineliner, ballpoint, liner, gel-pen, glass-pen, technical-pen, mapping-pen) are in the brush quarantine ledger and not shown in the picker today, and g-pen and dip-pen match no current preset id (the G-pen preset's id is gpen). Do not say One Euro is used for the G-pen. No latency comparison with other apps was verified for this card.",
       ),
     },
     technologies: ["One Euro filter", "lazy-brush", "Pointer Events"],
     facts: [
-      { value: "8 + 4.8 × 강도 ms", label: t("보정 시간 상수(강도 10이면 56ms)", "Correction time constant (56 ms at strength 10)"), source: "apps/web/src/domains/creator/brush/studio-stroke-stabilizer.ts" },
+      { value: "8 + 4.8 × 강도 ms", label: t("지수평활의 시간 상수(강도 10이면 56ms)", "Exponential-smoothing time constant (56 ms at strength 10)"), source: "apps/web/src/domains/creator/brush/studio-stroke-stabilizer.ts" },
       { value: "5 ms", label: t("고정 주기 필터의 논리 시계 간격", "Logical clock tick of the fixed-rate filter"), source: "apps/web/src/domains/creator/studio-fixed-rate-stroke-filter.ts" },
       { value: "0.95 Hz · 0.02", label: t("가는 펜 One Euro 최소 컷오프 · beta", "Thin-pen One Euro minimum cutoff and beta"), source: "apps/web/src/domains/creator/studio-thin-line-ink-input-v1.ts" },
     ],
@@ -464,8 +465,8 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
         "Raster apps such as Photoshop bake a stroke into pixels the moment it is drawn. ToonStudio does not. The document keeps the points the pen visited (position, pressure, tilt, time) plus a snapshot of the brush settings at that moment, and re-plans the dabs and outlines from that input every time the stroke is shown. In bank terms, the transaction list (input) is the truth and the balance (pixels) is derived from it, a structure close to event sourcing.",
       ),
       t(
-        "그래서 모든 '무작위'(붓 자국의 흩어짐, 연필 질감의 변형)는 Math.random 이 아니라 (획 시드나 자국 번호, salt)로 만든 해시에서 나옵니다. 같은 입력이면 그리는 도중의 미리보기, 저장 후 다시 열기, 협업 상대의 화면, 내보내기가 같은 픽셀을 냅니다. 이미 받아들인 앞부분은 새 샘플이 와도 바뀌지 않게(접두 안정성) 설계돼 있습니다.",
-        "So every bit of randomness (dab scatter, pencil texture variants) comes from a hash of (stroke seed or dab index, salt) rather than Math.random. The same input then gives the same pixels in the live preview, after reopening, on a collaborator's screen and in export. The already accepted prefix is designed not to change when new samples arrive (prefix stability).",
+        "그래서 모든 '무작위'(붓 자국의 흩어짐, 연필 질감의 변형)는 Math.random 이 아니라 (획 시드나 자국 번호, salt)로 만든 해시에서 나옵니다. 같은 입력이면 붓 자국 계획(위치·크기·무작위)은 그리는 도중의 미리보기, 저장 후 다시 열기, 협업 상대의 화면, 내보내기에서 같고, 최종 픽셀은 렌더러(Canvas2D·GPU)마다 허용오차 안에서 같습니다. 이미 받아들인 앞부분은 새 샘플이 와도 바뀌지 않게(접두 안정성) 설계돼 있습니다.",
+        "So every bit of randomness (dab scatter, pencil texture variants) comes from a hash of (stroke seed or dab index, salt) rather than Math.random. The same input then gives the same dab plan (positions, sizes, randomness) in the live preview, after reopening, on a collaborator's screen and in export, and the final pixels agree within a tolerance on each renderer (Canvas2D, GPU). The already accepted prefix is designed not to change when new samples arrive (prefix stability).",
       ),
       t(
         "대가도 있습니다. 렌더 규칙을 고치면 이미 그린 작품이 소급해서 바뀝니다. 그래서 규칙이 바뀔 때는 키가 있는 새 모델(예: paperModel 의 contact-tooth-v2, stampPipeline 의 causal-walker-v2)을 새 획에만 붙이고, 키가 없는 옛 획은 옛 규칙을 바이트 단위로 유지합니다. 긴 획을 보일 때마다 다시 계획하는 비용, 그리고 부동소수 결과가 렌더러마다 다를 수 있다는 점(결정성은 JS 엔진 단위의 보장)도 한계입니다.",
@@ -478,17 +479,17 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
     ],
     keyPoints: [
       t("저장하는 것: 점 + 채널 배열 + 설정 스냅샷", "Saved: points, channel arrays and a settings snapshot"),
-      t("무작위는 해시로: 같은 입력이면 같은 픽셀", "Randomness comes from a hash: same input, same pixels"),
+      t("무작위는 해시로: 같은 입력이면 같은 붓 자국 계획", "Randomness comes from a hash: same input, same dab plan"),
       t("규칙을 바꾸면 새 버전 키를 새 획에만 붙임", "Rule changes ship as version keys on new strokes only"),
     ],
     diagram: {
       id: "stroke-replay-deterministic-diagram",
       kind: "graph",
       title: t("저장은 입력, 픽셀은 파생물", "Input is stored; pixels are derived"),
-      caption: t("점과 버전 스냅샷만 저장하고, 해시로 만든 무작위를 더해 보일 때마다 같은 그림을 다시 계획합니다.", "Only points and a version snapshot are stored; hash-based randomness is added and the same picture is re-planned each time."),
+      caption: t("점과 버전 스냅샷만 저장하고, 해시로 만든 무작위를 더해 보일 때마다 같은 붓 자국 계획을 다시 세웁니다.", "Only points and a version snapshot are stored; hash-based randomness is added and the same dab plan is re-made each time."),
       alt: t(
-        "입력 샘플과 버전 스냅샷이 DrawEl 이라는 문서 요소로 저장됩니다. 보일 때마다 DrawEl 에서 붓 자국과 외곽선을 재계획하고, 획 시드와 번호의 해시가 무작위를 공급해 같은 픽셀이 화면과 내보내기로 나옵니다.",
-        "Input samples and a version snapshot are stored as a document element called DrawEl. Every time it is shown, dabs and outlines are re-planned from it, a hash of the stroke seed and index supplies the randomness, and the same pixels come out on screen and in export.",
+        "입력 샘플과 버전 스냅샷이 DrawEl 이라는 문서 요소로 저장됩니다. 보일 때마다 DrawEl 에서 붓 자국과 외곽선을 재계획하고, 획 시드와 번호의 해시가 무작위를 공급해 같은 계획이 화면과 내보내기로 이어지며 최종 픽셀은 렌더러마다 허용오차 안에서 같습니다.",
+        "Input samples and a version snapshot are stored as a document element called DrawEl. Every time it is shown, dabs and outlines are re-planned from it, a hash of the stroke seed and index supplies the randomness, and the same plan carries through to screen and export, with final pixels agreeing within a tolerance on each renderer.",
       ),
       nodes: [
         { id: "samples", label: t("입력 샘플", "Input samples"), sub: t("점·압력·기울기·시각", "Points, pressure, tilt, time"), tone: "local", shape: "pill", at: [0, 0] },
@@ -503,7 +504,7 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
         { from: "snap", to: "draw", label: t("저장", "save") },
         { from: "draw", to: "plan", label: t("읽기", "read") },
         { from: "hash", to: "plan", label: t("무작위", "random") },
-        { from: "plan", to: "pixels", label: t("같은 결과", "same result") },
+        { from: "plan", to: "pixels", label: t("오차 내 일치", "in tolerance") },
       ],
     },
     usage: [
@@ -516,7 +517,6 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
         paths: [
           "apps/web/src/domains/creator/studio-element-model.ts#DrawEl",
           "apps/web/src/domains/creator/brush/studio-brush-stamp-engine.ts#stampJitter",
-          "apps/web/src/domains/creator/brush/studio-brush-dab-batch.ts#studioDabBatchHash",
         ],
         route: "/studio",
       },
@@ -578,8 +578,8 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
           ],
         ),
         explain: t(
-          "해시 함수는 저장소의 studioDabBatchHash 와 같은 식입니다. 번호와 salt 만 같으면 언제 어떤 순서로 계산해도 같은 값이 나오므로, 라이브 미리보기와 저장 후 재생이 같은 붓 자국을 만듭니다.",
-          "The hash is the same formula as studioDabBatchHash in the repository. With the same index and salt the value is identical whenever and in whatever order it is computed, so live preview and replay after saving place the same dabs.",
+          "이 해시는 studio-brush-dab-batch.ts 의 studioDabBatchHash 와 같은 식이지만 그 모듈은 아직 제품에 연결되지 않았고, 제품 스탬프 엔진이 쓰는 해시는 같은 발상의 stampJitter(다른 상수)입니다. 번호와 salt 만 같으면 언제 어떤 순서로 계산해도 같은 값이 나오므로, 라이브 미리보기와 저장 후 재생이 같은 붓 자국을 만듭니다.",
+          "This hash has the same formula as studioDabBatchHash in studio-brush-dab-batch.ts, but that module is not yet wired into the product; the stamp engine uses stampJitter, the same idea with different constants. With the same index and salt the value is identical whenever and in whatever order it is computed, so live preview and replay after saving place the same dabs.",
         ),
         verify: "types",
       },
@@ -592,8 +592,8 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
     chapterIds: ["brush-engine", "brush-render-authority"],
     talk: {
       pitch: t(
-        "우리는 그림을 저장하지 않고 손의 움직임과 규칙의 버전을 저장합니다. 그래서 같은 획이 미리보기에서도, 저장 후에도, 협업 상대 화면에서도 똑같이 나옵니다. 렌더 규칙을 고칠 때는 새 버전 키를 새 획에만 붙여서 옛 작품이 바뀌지 않게 합니다.",
-        "We do not store the picture; we store the hand's movement and the version of the rules. The same stroke therefore looks identical in the preview, after saving and on a collaborator's screen. When a render rule changes, a new version key goes on new strokes only, so old artwork never changes.",
+        "우리는 그림을 저장하지 않고 손의 움직임과 규칙의 버전을 저장합니다. 그래서 같은 획의 붓 자국 계획은 미리보기에서도, 저장 후에도, 협업 상대 화면에서도 똑같고, 최종 픽셀은 렌더러마다 허용오차 안에서 같습니다. 렌더 규칙을 고칠 때는 새 버전 키를 새 획에만 붙여서 옛 작품이 바뀌지 않게 합니다.",
+        "We do not store the picture; we store the hand's movement and the version of the rules. The dab plan for the same stroke is therefore identical in the preview, after saving and on a collaborator's screen, and the final pixels agree within a tolerance on each renderer. When a render rule changes, a new version key goes on new strokes only, so old artwork never changes.",
       ),
       analogy: t(
         "악보와 연주의 관계입니다. 악보(입력 샘플과 설정)만 있으면 언제든 같은 곡을 다시 연주할 수 있고, 녹음 파일(픽셀)은 그 결과물일 뿐입니다.",
@@ -623,8 +623,8 @@ export const ENGINEERING_ATLAS_DRAWING_INPUT: readonly EngineeringAtlasEntry[] =
         },
       ],
       pitfall: t(
-        "'입력이 합성·타일 커밋 단계로 나뉜다'는 기존 표현은 정확하지 않습니다. 라이브 문서의 소유자는 Konva/DrawEl 이고, 타일 영속은 협업 래스터 표면 한정이며 타일 단위 권위는 vNext 목표입니다.",
-        "The older phrasing that input is split into compositing and tile-commit stages is inaccurate. The live document is owned by Konva/DrawEl; tile persistence is limited to the collaborative raster surface, and tile-level authority is a vNext goal.",
+        "'입력이 합성·타일 커밋 단계로 나뉜다'는 기존 표현은 정확하지 않습니다. 라이브 문서의 소유자는 Konva/DrawEl 이고, 타일 영속은 협업 래스터 표면 한정이며 타일 단위 권위는 vNext 목표입니다. 렌더러 사이의 최종 픽셀을 '비트까지 같다'고 말하지 마세요. Canvas2D 와 GPU 는 품질 게이트의 허용오차 예산 안에서 일치합니다(scripts/verify-studio-gpu-committed-parity.mts).",
+        "The older phrasing that input is split into compositing and tile-commit stages is inaccurate. The live document is owned by Konva/DrawEl; tile persistence is limited to the collaborative raster surface, and tile-level authority is a vNext goal. Do not say final pixels are bit-identical across renderers: Canvas2D and the GPU agree within the tolerance budgets of a quality gate (scripts/verify-studio-gpu-committed-parity.mts).",
       ),
     },
     technologies: ["Konva", "Canvas2D", "Math.imul"],

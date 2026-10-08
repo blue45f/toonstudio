@@ -17,8 +17,8 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
       "Like an autocomplete that has read countless books: it extends a sentence with the most plausible ending, and plausible is not always correct.",
     ),
     inToonstudio: t(
-      "캐릭터 채팅(character-chat-engine.ts)과 홈 화면 Luna 패널 같은 글 대화에서 LLM 공급자를 부릅니다(shared/ai/user-ai-transport.ts). 공급자 이름을 코드에 흩어 두지 않고 ‘작업 의도’와 ‘공급자 API’를 분리해, 허용 목록의 무료 경로부터 시도합니다(shared/ai/free-ai-policy.ts 의 공급자 프리셋 11개). 결과는 제안이고 확정은 사람이 합니다.",
-      "LLM providers are called for text conversations such as character chat (character-chat-engine.ts) and the home Luna panel (shared/ai/user-ai-transport.ts). Rather than scattering provider names through the code, task intent is separated from the provider API and allowlisted free paths are tried first (11 provider presets in shared/ai/free-ai-policy.ts). The output is a proposal; a person confirms.",
+      "캐릭터 채팅(character-chat-engine.ts)과 홈 화면 Luna 패널 같은 글 대화에서 LLM 공급자를 부릅니다(shared/ai/user-ai-transport.ts). 공급자 이름을 코드에 흩어 두지 않고 ‘작업 의도’와 ‘공급자 API’를 분리해, 허용 목록의 무료 경로부터 시도합니다(shared/ai/free-ai-policy.ts 의 프리셋 11개: 공급자 10곳과 사용자 지정 1개). 결과는 제안이고 확정은 사람이 합니다.",
+      "LLM providers are called for text conversations such as character chat (character-chat-engine.ts) and the home Luna panel (shared/ai/user-ai-transport.ts). Rather than scattering provider names through the code, task intent is separated from the provider API and allowlisted free paths are tried first (11 presets in shared/ai/free-ai-policy.ts: 10 providers plus one user-defined endpoint). The output is a proposal; a person confirms.",
     ),
     chapters: ["ai-routing", "free-ai-routing"],
     atlasIds: ["free-first-ai-routing"],
@@ -112,8 +112,8 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
       "Like not wiring the money a second time from another account when the screen froze after sending: it may already have gone, so check first.",
     ),
     inToonstudio: t(
-      "classifyStudioAiProviderFailure 는 무료 풀 공급자의 한도 소진·결제 필요 신호(402, 무료 한도 429 등)만 billingFailoverEligible 로 보고 다음 공급자로 넘기며, 일반 429·401/403·5xx 는 넘기지 않습니다(apps/api/src/modules/studio-ai/studio-ai-provider.ts). 서버 호출 기본 제한은 45,000ms, 브라우저 개인 키 호출은 180,000ms 이고, 요청 영수증을 30분 보관해(studio-ai-idempotency.ts) 이중 실행을 막습니다.",
-      "classifyStudioAiProviderFailure marks only a free-pool provider's quota-exhausted or payment-required signals (402, a free-quota 429 and similar) as billingFailoverEligible and moves those to the next provider; a generic 429, 401/403 and 5xx are not passed on (apps/api/src/modules/studio-ai/studio-ai-provider.ts). The default server call limit is 45,000 ms and a browser personal-key call 180,000 ms, and request receipts are kept for 30 minutes (studio-ai-idempotency.ts) to prevent double execution.",
+      "classifyStudioAiProviderFailure 는 무료 풀 공급자의 402·429(와 Cloudflare 5035·Qwen 무료 한도 403)만 billingFailoverEligible 로 보고 다음 공급자로 넘깁니다. 비무료 공급자의 429, 그 밖의 401/403, 5xx 는 넘기지 않습니다(apps/api/src/modules/studio-ai/studio-ai-provider.ts). 서버 호출 기본 제한은 45,000ms, 브라우저 개인 키 호출은 180,000ms 이고, 요청 영수증을 30분 보관해(studio-ai-idempotency.ts) 이중 실행을 막습니다.",
+      "classifyStudioAiProviderFailure treats only a free-pool provider's 402 and 429 (plus Cloudflare 5035 and Qwen's free-quota 403) as billingFailoverEligible and moves them to the next provider. A 429 from a non-free provider, other 401/403 responses and 5xx are not passed on (apps/api/src/modules/studio-ai/studio-ai-provider.ts). The default server call limit is 45,000 ms and a browser personal-key call 180,000 ms, and request receipts are kept for 30 minutes (studio-ai-idempotency.ts) to prevent double execution.",
     ),
     chapters: ["free-ai-routing", "cost-engineering"],
     atlasIds: ["ambiguous-failure-no-retry"],
@@ -188,8 +188,8 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
       "Like choosing whether to cook one recipe on a gas stove (GPU) or an electric kettle (CPU): same dish, different time.",
     ),
     inToonstudio: t(
-      "StudioOnnxExecutionProvider 는 ‘webgpu’ | ‘wasm’ 두 가지이고 기본은 webgpu 입니다(studio-onnx-inference-provider.ts). WebGPU 가 안 되는 기기는 wasm 으로 돌립니다. 이것은 ‘렌더 엔진 사이의 자동 전환 금지’(ADR-0018)와 다른 이야기입니다. 모델 추론의 실행 장치 선택이지 그리기 엔진을 몰래 바꾸는 것이 아닙니다.",
-      "StudioOnnxExecutionProvider is ‘webgpu’ or ‘wasm’, defaulting to webgpu (studio-onnx-inference-provider.ts); devices without WebGPU run on wasm. This is a different matter from ‘no automatic switching between render engines’ (ADR-0018): it picks the device for model inference and does not secretly change the drawing engine.",
+      "StudioOnnxExecutionProvider 는 ‘webgpu’ | ‘wasm’ 두 가지이고 기본은 webgpu 입니다(studio-onnx-inference-provider.ts). 세션 하나는 provider 하나만 쓰고 실패하면 닫습니다(fail-closed). 다만 5개 기능 래퍼(예: studio-onnx-teed.ts)는 webgpu 가 실패하면 그 경로를 접고 wasm 으로 다시 시도하는데, 이는 ADR-0018 §12(실패 뒤 두 번째 provider 금지)와 어긋나는 현재 구현이며 도감 카드가 그 사실을 적어 둡니다.",
+      "StudioOnnxExecutionProvider is ‘webgpu’ or ‘wasm’, defaulting to webgpu (studio-onnx-inference-provider.ts). One session uses a single provider and closes on failure (fail-closed). However, the five feature wrappers (for example studio-onnx-teed.ts) retire the webgpu route when it fails and retry on wasm, which conflicts with ADR-0018 section 12 (no second provider after a failure); this is the current implementation, and the atlas card records that fact.",
     ),
     chapters: ["on-device-inference", "browser-local-compute"],
     atlasIds: ["onnx-runtime-web-inference"],
@@ -226,8 +226,8 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
       "Like the standard socket of a universal remote: plug in any device and send commands such as on and off the same way.",
     ),
     inToonstudio: t(
-      "VRM 캐릭터 생성에서 로컬 Blender 와 blender-mcp 를 부릅니다(studio-vrm-generate-blender-mcp.ts). 먼저 두 명령이 있는지 --version 으로 점검하고(제한 4초), 없으면 ‘vrm_generate_mcp_unavailable’ 로 정직하게 알릴 뿐 가짜 VRM 바이트를 만들지 않습니다. 개발자용 MCP 외부 공개는 운영자 활성화 단계라 아직 계약 공개가 출발점입니다.",
-      "VRM character generation calls a local Blender and blender-mcp (studio-vrm-generate-blender-mcp.ts). It first probes for both commands with --version (4-second limit) and, when absent, honestly reports ‘vrm_generate_mcp_unavailable’ without fabricating VRM bytes. Public MCP exposure for developers is an operator-activation step, so publishing the contract is the starting point.",
+      "VRM 생성 경로에는 Blender·blender-mcp 가 설치돼 있는지 --version(제한 4초)으로 점검하는 코드만 있고(studio-vrm-generate-blender-mcp.ts), blender-mcp 는 VRM 바이트를 만들 수 없어 이 경로는 늘 ‘사용 불가’로 닫히며 가짜 VRM 도 만들지 않습니다. 실제 VRM 생성은 Blender 를 거치지 않는 toonstudio-vrm-generate 호스트가 맡고, Blender 연결은 ToonBridge+MCP 어댑터입니다(도감 blender-mcp-toonbridge, 상태 ‘설정됨’). 개발자용 MCP 외부 공개는 운영자 활성화 단계라 아직 계약 공개가 출발점입니다.",
+      "The VRM generation path only has code that probes whether Blender and blender-mcp are installed with --version (4-second limit) (studio-vrm-generate-blender-mcp.ts). blender-mcp cannot produce VRM bytes, so this path always closes as ‘unavailable’ and never fabricates a VRM. Real VRM generation is done by the toonstudio-vrm-generate host, which does not go through Blender; the Blender connection is the ToonBridge plus MCP adapter (atlas card blender-mcp-toonbridge, status configured). Public MCP exposure for developers is an operator-activation step, so publishing the contract is the starting point.",
     ),
     chapters: ["blender-mcp", "blender-mcp-boundary"],
     atlasIds: ["blender-mcp-toonbridge"],

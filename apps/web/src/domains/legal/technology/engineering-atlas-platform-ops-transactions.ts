@@ -28,8 +28,8 @@ const PAYMENT_IDEMPOTENCY_WEBHOOK_RECONCILE: EngineeringAtlasEntry = {
       "The support-payment flow: (1) createOrder stores the order ID and amount as READY and issues an approval idempotency key (a UUID) in advance. (2) confirm compares the amount in the browser's {paymentKey, orderId, amount} with the database amount and returns an already-approved order as is. (3) When calling the provider's approval API it sends the stored key as an Idempotency-Key header. (4) For a failure that might have succeeded, such as a timeout, network error, 5xx or 429 (uncertain), it checks the final state by querying instead of re-approving, and if even the query fails it answers 503 with a 'checking' notice. (5) reconcile applies the result only after matching order ID, total, currency (KRW) and status against the server's order.",
     ),
     t(
-      "웹훅은 사실이 아니라 단서입니다. 본문에서 orderId와 paymentKey만 꺼내 서버 주문을 찾고, 결제사에 다시 조회한 결과만 반영합니다. 위조한 웹훅은 서버가 한 번 더 조회하게 만들 뿐 상태를 바꾸지 못합니다. 마켓 구매는 같은 패턴에 클라이언트의 requestId(UUID)를 주문 생성 멱등 키로 쓰고, 검증된 결제에서만 구매 권한(entitlement)을 부여하거나 회수하며, 웹훅 이벤트는 본문 해시의 unique 제약으로 중복을 거릅니다.",
-      "A webhook is a hint, not a fact. Only orderId and paymentKey are taken from the body to find the server's order, and only what the provider returns when queried again is applied. A forged webhook merely makes the server query once more and cannot change any state. Market purchases follow the same pattern, using the client's requestId (a UUID) as the order-creation idempotency key, granting or revoking the purchase right (entitlement) only from a verified payment, and filtering duplicate webhook events with a unique constraint on a body hash.",
+      "웹훅은 사실이 아니라 단서입니다. 본문에서 orderId와 paymentKey만 꺼내 서버 주문을 찾고, 결제사에 다시 조회한 결과만 반영합니다. 위조한 웹훅은 서버가 한 번 더 조회하게 만들 뿐 상태를 바꾸지 못합니다. 마켓 구매는 같은 패턴에 클라이언트의 requestId(UUID)를 주문 생성 멱등 키로 쓰고, 검증된 결제에서만 구매 권한(entitlement)을 부여하거나 회수하며, 같은 웹훅이 다시 와도 결제사에 다시 조회해 상태를 반영하는 과정이 멱등이라 결과가 달라지지 않고, 본문 해시 unique 제약은 이벤트 기록 한 줄만 중복 없이 남깁니다.",
+      "A webhook is a hint, not a fact. Only orderId and paymentKey are taken from the body to find the server's order, and only what the provider returns when queried again is applied. A forged webhook merely makes the server query once more and cannot change any state. Market purchases follow the same pattern, using the client's requestId (a UUID) as the order-creation idempotency key, granting or revoking the purchase right (entitlement) only from a verified payment, while a repeated webhook changes nothing because applying the re-queried state is idempotent, and the unique constraint on a body hash only keeps the event record from being duplicated.",
     ),
     t(
       "키 모드도 맞춰야 합니다. 클라이언트 키와 시크릿 키의 test_/live_ 접두사가 같아야 하고, live는 별도 허용 스위치가 켜져야 서버가 준비된 것으로 봅니다. 결제는 스위치와 키 쌍이 모두 있어야 열리는 기본 비활성(fail-closed)입니다. 한계: 이 코드는 요청 시점 재조정과 관리자 재동기화에 기대고, 별도의 정기 재조정 배치는 확인하지 못했습니다.",
@@ -90,8 +90,8 @@ const PAYMENT_IDEMPOTENCY_WEBHOOK_RECONCILE: EngineeringAtlasEntry = {
     {
       feature: t("마켓 유료 리소스 구매와 구매 권한", "Paid market resources and purchase rights"),
       role: t(
-        "requestId로 주문 생성을 멱등하게 만들고, 검증된 결제에서만 구매 권한을 부여하며 취소되면 회수합니다. 웹훅 이벤트는 본문 해시로 중복을 거릅니다.",
-        "A requestId makes order creation idempotent, purchase rights are granted only from verified payments and revoked on cancellation, and webhook events are de-duplicated by body hash.",
+        "requestId로 주문 생성을 멱등하게 만들고, 검증된 결제에서만 구매 권한을 부여하며 취소되면 회수합니다. 상태 반영이 멱등이라 중복 웹훅이 와도 결과가 같습니다.",
+        "A requestId makes order creation idempotent, purchase rights are granted only from verified payments and revoked on cancellation, and repeated webhooks are harmless because applying state is idempotent.",
       ),
       paths: [
         "apps/api/src/modules/commerce/commerce.service.ts",
@@ -214,8 +214,8 @@ const PAYMENT_IDEMPOTENCY_WEBHOOK_RECONCILE: EngineeringAtlasEntry = {
         "}",
       ].join("\n"),
       explain: t(
-        "웹훅 서명을 직접 검증하는 대신 '다시 물어보기'로 신뢰를 얻는 방식입니다. 실제 서비스는 결제 키 모드와 영수증 URL(https만 허용) 검사를 더하고, 마켓은 본문 해시로 중복 이벤트를 거릅니다.",
-        "Instead of verifying a webhook signature itself, trust comes from asking again. The real service adds payment key-mode and receipt-URL checks (https only), and the market side filters duplicate events by body hash.",
+        "웹훅 서명을 직접 검증하는 대신 '다시 물어보기'로 신뢰를 얻는 방식입니다. 실제 서비스는 결제 키 모드와 영수증 URL 검사(https만 허용, 후원 결제에 한함)를 더하고, 마켓은 상태 반영이 멱등이며 본문 해시 unique 는 이벤트 기록의 중복만 막습니다.",
+        "Instead of verifying a webhook signature itself, trust comes from asking again. The real service adds payment key-mode and a receipt-URL check (https only, supporter payments only), and on the market side applying state is idempotent while the body-hash unique only prevents duplicate event records.",
       ),
       source: "apps/api/src/modules/supporter-payment/supporter-payment.service.ts",
       verify: "types",
@@ -261,8 +261,8 @@ const PAYMENT_IDEMPOTENCY_WEBHOOK_RECONCILE: EngineeringAtlasEntry = {
       {
         question: t("웹훅 서명 검증은 하나요?", "Is the webhook signature verified?"),
         answer: t(
-          "이 코드는 서명 대신 '재조회'로 검증합니다. 웹훅 본문에서 식별자만 꺼내 결제사에 다시 묻고, 그 결과만 반영합니다. 중복 웹훅은 마켓에서 본문 해시 unique로 거릅니다.",
-          "This code verifies by re-querying instead of a signature: it takes identifiers from the body, asks the provider again and applies only that result. In the market, duplicate webhooks are filtered by a unique body hash.",
+          "이 코드는 서명 대신 '재조회'로 검증합니다. 웹훅 본문에서 식별자만 꺼내 결제사에 다시 묻고, 그 결과만 반영합니다. 중복 웹훅은 상태 반영이 멱등이라 결과가 같고, 마켓의 본문 해시 unique 는 이벤트 기록의 중복만 막습니다.",
+          "This code verifies by re-querying instead of a signature: it takes identifiers from the body, asks the provider again and applies only that result. A duplicate webhook gives the same result because applying state is idempotent, and in the market the unique body hash only prevents duplicate event records.",
         ),
       },
       {

@@ -89,7 +89,7 @@ function peerState(peer: HuddlePeer): { readonly ko: string; readonly en: string
 
 /**
  * 가까이 가면 영상: 근처 팀원과의 영상 버블(나 포함 최대 4)과 내 장치 조작.
- * 연결 실패는 숨기지 않고 이유(회사망·일부 모바일망의 P2P 차단, 유료 중계 서버 미사용)를 그대로 알린다.
+ * 연결 실패는 숨기지 않고 이유(회사망·일부 모바일망의 P2P 차단, 중계(TURN) 서버는 준비된 환경에서만 거침)를 그대로 알린다.
  */
 export const SpaceProximityVideo = memo(function SpaceProximityVideo({ phase, snapshot, busy, scopeNames, selfName, waitingReason,
   onToggleCamera, onToggleMic, onToggleScreen, onStop }: {
@@ -181,8 +181,8 @@ export const SpaceProximityVideo = memo(function SpaceProximityVideo({ phase, sn
       </div>
     </div>
     {failed || snapshot?.error ? <p className="space-proximity-video__warn" role="alert">{snapshot?.error ?? bt(
-      "일부 팀원과 직접 연결하지 못했어요. 회사망·일부 모바일망은 브라우저 간 직접 연결(P2P)을 막을 수 있고, 이 기능은 유료 중계 서버를 쓰지 않아요. 같은 와이파이나 다른 네트워크에서 다시 시도해 주세요.",
-      "Some direct links failed. Company or some mobile networks block browser-to-browser (P2P) links, and this feature uses no paid relay server. Try again on the same Wi-Fi or another network.",
+      "일부 팀원과 직접 연결하지 못했어요. 회사망·일부 모바일망은 브라우저 간 직접 연결(P2P)을 막을 수 있고, 중계(TURN) 서버가 준비되지 않은 환경에서는 직접 연결만 시도해요. 같은 와이파이나 다른 네트워크에서 다시 시도해 주세요.",
+      "Some direct links failed. Company or some mobile networks block browser-to-browser (P2P) links, and where no relay (TURN) server is set up only direct links are tried. Try again on the same Wi-Fi or another network.",
     )}</p> : null}
   </section>;
 });
@@ -205,7 +205,7 @@ export function SpaceProximityConsent({ radiusTiles, onStart, onCancel, unavaila
       <li>{bt("내 카메라·마이크는 지금 버튼을 눌렀을 때만 직접 켜요(브라우저 권한 요청).", "Your camera and mic turn on only when you press a button now (browser permission prompt).")}</li>
       <li>{bt(`그 뒤에는 약 ${radiusTiles}칸 안으로 다가온 팀원(최대 3명)과 자동으로 영상이 연결되고, 멀어지면 자동으로 끊겨요.`, `After that, teammates within about ${radiusTiles} tiles (up to 3) connect automatically and disconnect when you walk away.`)}</li>
       <li>{bt("프라이빗 구역 안에서는 같은 구역에 있는 사람끼리만 연결돼요. 상대도 이 기능을 켜야 서로 보여요.", "Inside a private zone you only connect with people in the same zone. Both sides must turn this on to see each other.")}</li>
-      <li>{bt("브라우저 간 직접(P2P) 연결이라 상대에게 네트워크 주소가 보일 수 있어요. 회사망·일부 모바일망에서는 연결되지 않을 수 있고, 유료 중계 서버는 쓰지 않아요.", "Links are direct browser-to-browser (P2P), so your network address may be visible to peers. Some company or mobile networks may block them; no paid relay server is used.")}</li>
+      <li>{bt("브라우저 간 직접(P2P) 연결이라 상대에게 네트워크 주소가 보일 수 있어요. 회사망·일부 모바일망에서는 연결되지 않을 수 있어요. 직접 연결이 막히면 중계(TURN) 서버가 준비된 환경에서만 그 서버를 거쳐요.", "Links are direct browser-to-browser (P2P), so your network address may be visible to peers. Some company or mobile networks may block them. If a direct link is blocked, traffic goes through a relay (TURN) server only where one is set up.")}</li>
     </ul>
     {reason ? <p className="space-proximity-consent__reason" role="status">{reason}</p> : null}
     <div className="space-proximity-consent__actions">
