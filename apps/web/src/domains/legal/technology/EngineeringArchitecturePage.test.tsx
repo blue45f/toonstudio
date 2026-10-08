@@ -151,6 +151,16 @@ describe("EngineeringArchitecturePage", () => {
     expect(all().every((item) => !item.open)).toBe(true);
   });
 
+  it("구간마다 있는 '더 깊이 보기' 내비게이션은 이름이 서로 달라 랜드마크 목록에서 구분된다", () => {
+    const { container } = renderPage();
+    const names = [...container.querySelectorAll("nav[aria-label$='더 깊이 보기']")].map((nav) => nav.getAttribute("aria-label"));
+    expect(names).toHaveLength(ARCHITECTURE_GUIDE_SECTIONS.length);
+    expect(new Set(names).size).toBe(names.length);
+    for (const section of ARCHITECTURE_GUIDE_SECTIONS) {
+      expect(container.querySelector(`#${section.id} nav[aria-label="${section.title.ko} — 더 깊이 보기"]`), section.id).toBeTruthy();
+    }
+  });
+
   it("구간 바로가기 목록은 묶음 이름과 구간의 질문을 보여 준다", () => {
     renderPage();
     const map = screen.getAllByRole("navigation", { name: "구간 바로가기" })[0] as HTMLElement;

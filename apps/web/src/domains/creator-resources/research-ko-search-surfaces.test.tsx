@@ -141,7 +141,13 @@ describe("OpenCreationPage — 무료 자료 탐색", () => {
     await waitFor(() => {
       const articQueries = request.mock.calls
         .map((call) => String(call[0]))
-        .filter((url) => url.includes("api.artic.edu"))
+        .filter((url) => {
+          try {
+            return new URL(url).hostname === "api.artic.edu";
+          } catch {
+            return false;
+          }
+        })
         .map((url) => new URL(url).searchParams.get("q"));
       expect(articQueries).toContain("dense jungle");
     });

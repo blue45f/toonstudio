@@ -77,3 +77,21 @@ export function isSafeReferenceImageUrl(value: string): boolean {
     schemeFolded.startsWith("../")
   );
 }
+
+const RASTER_DATA_IMAGE_URL_PATTERN =
+  /^data:image\/(?:apng|avif|bmp|gif|jpeg|png|webp)[;,][^<>"'`()]*$/iu;
+
+export function toRenderableReferenceImageSrc(value: string | null, base: string): string | null {
+  const cleaned = safeReferenceImageSrc(value);
+  if (cleaned === null) return null;
+  if (RASTER_DATA_IMAGE_URL_PATTERN.test(cleaned)) return cleaned;
+  try {
+    const url = new URL(cleaned, base);
+    if (url.protocol === "https:" || url.protocol === "http:" || url.protocol === "blob:") {
+      return url.href;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

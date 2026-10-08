@@ -23,13 +23,12 @@ describe("database outage response contracts", () => {
   it("names partial review data instead of rendering an empty-state lie", () => {
     const titleServer = source("apps/api/src/server/title.ts");
     const titlePage = source("apps/web/src/domains/catalog/TitleDetailPage.tsx");
-    const homePage = source("apps/web/src/domains/catalog/HomePage.tsx");
 
+    // 부분 리뷰 안내는 작품 상세 화면이 담당한다(홈 화면 파일은 더 이상 없다).
     expect(titleServer).toContain("reviewsStatus: reviewLoad.status");
     expect(titleServer).toContain("isDatabaseAvailabilityError(error)");
     expect(titlePage).toContain('data.reviewsStatus !== "unavailable"');
     expect(titlePage).toContain("리뷰 목록이 비어 있다는 뜻은 아닙니다");
-    expect(homePage).toContain('data.reviewsStatus === "unavailable"');
   });
 
   it("does not turn creator directory or schema-dependent filters into empty success", () => {

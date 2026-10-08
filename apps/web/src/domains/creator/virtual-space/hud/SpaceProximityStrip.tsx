@@ -29,6 +29,7 @@ export interface SpaceNearbyNpcCard {
   readonly activityKo: string;
   readonly activityEn: string;
   readonly skinKey: string;
+  /** 카드에 대화 버튼을 둘지. 하단 상호작용 프롬프트가 같은 NPC에게 말을 걸면 그 동작이 겹치므로 false로 두어 이름·활동만 보인다. */
   readonly canTalk: boolean;
 }
 

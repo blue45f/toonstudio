@@ -43,7 +43,7 @@ if [ ! -f "$BUILT" ]; then
 fi
 RUSTC_VERSION="$(rustc --version)"
 WASM_SHA="$(sha256sum "$BUILT" | cut -d' ' -f1)"
-WASM_BYTES="$(stat -c %s "$BUILT")"
+WASM_BYTES="$(wc -c < "$BUILT" | tr -d " ")"  # POSIX: stat -c은 GNU 전용이라 macOS에서 실패한다.
 
 # TS가 기대하는 해시 모듈(생성 파일). 레인·로더는 이 상수와 주입된 바이트의 SHA-256을 대조한다.
 render_integrity_ts() {
@@ -61,7 +61,9 @@ render_embedded_ts() {
   echo "// 생성 파일 — wasm/sumi-kernel/build.sh가 만든다. 직접 고치지 않는다(loader.test.ts가 pkg/sumi_kernel.wasm과 대조한다)."
   echo "// ${RUSTC_VERSION} / target wasm32-unknown-unknown / ${WASM_BYTES} B / sha256 ${WASM_SHA}"
   echo 'export const SUMI_KERNEL_BASE64 = `'
-  base64 -w 120 "$BUILT"
+  # POSIX 호환: GNU의 base64 -w는 macOS에 없다. 같은 120열 줄바꿈을 파이프라인으로 만든다.
+  base64 < "$BUILT" | tr -d "\n" | fold -w 120
+  echo
   echo '`;'
 }
 

@@ -8,3 +8,18 @@
 export function spaceHudShowsEventBanner(input: { readonly desktop: boolean; readonly coachOpen: boolean }): boolean {
   return input.desktop || !input.coachOpen;
 }
+
+/**
+ * 가벼운 말풍선 입력("Enter 채팅하기" 힌트)을 열 수 없는 상황.
+ * - 대화·패널 같은 다른 표면이 열려 있을 때.
+ * - 채팅 패널이 이미 열려 있을 때: 입력이 둘 겹치고, 힌트는 같은 입구를 한 번 더 보여 주는 것뿐이다.
+ * - 좁은 화면(터치 배치): 같은 자리에 "말 걸기" 버튼이 있어 힌트가 그 밑에 가려진다(실측 390·820 폭 모두 겹침, 눌림은 말 걸기 버튼이 받는다).
+ *   보이지 않는데 탭 순서에만 남는 버튼을 없애고, Enter는 채팅 패널을 연다.
+ */
+export function spaceHudChatHintBlocked(input: {
+  readonly surfaceOpen: boolean;
+  readonly chatPanelOpen: boolean;
+  readonly touch: boolean;
+}): boolean {
+  return input.surfaceOpen || input.chatPanelOpen || input.touch;
+}
