@@ -218,7 +218,7 @@ describe("A. ag-psd 직렬화 왕복 (파서·직렬화기 대칭성)", () => {
     const caption = psd.children![0]!;
     expect(caption.text?.text.replace(/\r\n?/gu, "\n")).toBe("안녕\n세계");
     expect(caption.text?.style?.fontSize).toBe(18);
-    const fill = caption.text?.style?.fillColor;
+    const fill = caption.text?.style?.fillColor as { r: number; g: number; b: number } | undefined;
     expect(Math.abs((fill?.r ?? 0) - 12)).toBeLessThanOrEqual(1);
     expect(Math.abs((fill?.g ?? 0) - 34)).toBeLessThanOrEqual(1);
     expect(Math.abs((fill?.b ?? 0) - 56)).toBeLessThanOrEqual(1);
