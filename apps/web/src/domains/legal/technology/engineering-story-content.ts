@@ -80,7 +80,7 @@ export const ENGINEERING_STATUS_META: Record<
     },
   },
   configured: {
-    label: { ko: "설정 완료", en: "Configured" },
+    label: { ko: "설정 필요", en: "Setup required" },
     description: {
       ko: "코드와 운영 계약이 있으며 공급자 등록이나 환경 설정이 필요합니다.",
       en: "Code and operating contracts exist, with provider or environment setup still required.",
@@ -89,8 +89,8 @@ export const ENGINEERING_STATUS_META: Record<
   experimental: {
     label: { ko: "실험 기능", en: "Experimental" },
     description: {
-      ko: "품질과 호환성을 검증 중이며 대체 경로를 유지합니다.",
-      en: "Quality and compatibility are still being validated with a fallback retained.",
+      ko: "품질과 호환성을 검증 중이며 기본 경로를 바꾸지 않습니다.",
+      en: "Quality and compatibility are still being validated, and the default path is left unchanged.",
     },
   },
   documented: {
@@ -159,8 +159,8 @@ export const ENGINEERING_CHAPTERS = [
     },
     technologies: ["React", "TypeScript", "Route registry", "Domain contracts"],
     evidence: [
-      evidence("code", "apps/web/src/app/routes", "기능 경계를 드러내는 라우트 레지스트리", "Route registry exposing product boundaries"),
-      evidence("document", "docs", "제품 원칙과 운영 문서", "Product principles and operations documentation"),
+      evidence("code", "apps/web/src/app/routes/route-manifest.ts", "공개 내비게이션·사이트맵이 가리키는 정식 라우트 목록", "Canonical route list behind public navigation and the sitemap"),
+      evidence("document", "PRODUCT.md", "제품 체계·사용자·목적의 정본 문서", "Canonical product structure, users and purpose"),
     ],
     reuseSteps: [
       { ko: "사용자가 실제로 끝내려는 한 가지 여정을 먼저 정의합니다.", en: "Define one journey the user must actually finish." },
@@ -183,8 +183,8 @@ export const ENGINEERING_CHAPTERS = [
       en: "As features grow, direct page coupling and an unbounded shared folder make every change more expensive.",
     },
     decision: {
-      ko: "apps/web, apps/api, packages, scripts와 도메인별 디렉터리를 분리하고 아키텍처 검증 스크립트로 의존 방향을 확인합니다.",
-      en: "apps/web, apps/api, packages, scripts and domain directories stay separate, with architecture scripts checking dependency direction.",
+      ko: "apps(web·admin-web·api·mobile·desktop-sync·brush-lab·character-lab), packages, crates, deploy, scripts와 도메인별 디렉터리를 분리하고 아키텍처 검증 스크립트로 의존 방향을 확인합니다.",
+      en: "apps (web, admin-web, api, mobile, desktop-sync, brush-lab, character-lab), packages, crates, deploy, scripts and domain directories stay separate, with architecture scripts checking dependency direction.",
     },
     userValue: {
       ko: "한 작업공간의 변경이 다른 작업공간을 예기치 않게 망가뜨릴 가능성을 낮춥니다.",
@@ -196,8 +196,8 @@ export const ENGINEERING_CHAPTERS = [
     },
     technologies: ["Domain modules", "Lazy routes", "ESLint boundaries", "Architecture validation"],
     evidence: [
-      evidence("code", "apps/web/src/domains", "웹 도메인 모듈", "Web domain modules"),
-      evidence("code", "apps/api/src", "서버 애플리케이션 경계", "Server application boundary"),
+      evidence("code", "eslint.config.mjs", "ESLint boundaries로 적용하는 의존 방향 규칙", "Dependency-direction rules enforced through ESLint boundaries"),
+      evidence("code", "config/architecture-boundary-ratchet.json", "경계 위반 상한(래칫)", "Boundary-violation ceilings (ratchet)"),
       evidence("test", "scripts/validate-architecture.mjs", "아키텍처 규칙 검증", "Architecture rule verification"),
     ],
     reuseSteps: [
@@ -232,14 +232,14 @@ export const ENGINEERING_CHAPTERS = [
       ko: "어댑터와 패리티 테스트가 필요하고 각 라이브러리의 라이선스와 배포 형태를 별도로 관리해야 합니다.",
       en: "Adapters, parity tests and separate license and distribution review are required.",
     },
-    technologies: ["CanvasKit / Skia", "WebGPU", "Three.js", "Babylon.js", "Yjs", "perfect-freehand"],
+    technologies: ["Konva", "CanvasKit / Skia", "Hokusai", "WebGPU", "Three.js", "Babylon.js", "Yjs", "perfect-freehand"],
     evidence: [
-      evidence("test", "scripts/generate-studio-renderer-roles.mts", "렌더러 역할 검증", "Renderer responsibility verification"),
-      evidence("test", "scripts/verify-studio-brushes.mts", "브러시 통합 검증", "Brush integration verification"),
+      evidence("code", "packages/studio-engine-registry/src/renderer-roles.ts", "렌더러 역할·권위 원장(primary/provider/reference/lab)", "Renderer role and authority ledger (primary/provider/reference/lab)"),
+      evidence("test", "apps/web/src/domains/creator/studio-renderer-role-boundary.test.ts", "lab 엔진의 제품 호출부 0건 경계 테스트", "Boundary test: lab engines have zero product call sites"),
       evidence("workflow", "scripts/generate-third-party-notices.mjs", "서드파티 고지 생성", "Third-party notice generation"),
     ],
     reuseSteps: [
-      { ko: "각 라이브러리의 입력, 출력, 권위와 대체 경로를 표로 만듭니다.", en: "Map every library's inputs, outputs, authority and fallback." },
+      { ko: "각 라이브러리의 입력, 출력, 권위와 실패 시 동작을 표로 만듭니다.", en: "Map every library's inputs, outputs, authority and failure behavior." },
       { ko: "동일 역할을 두 엔진이 최종 소유하지 않게 합니다.", en: "Do not let two engines finally own the same responsibility." },
       { ko: "버전, 라이선스와 실제 번들 포함 여부를 자동 수집합니다.", en: "Automatically collect versions, licenses and bundle inclusion." },
     ],
@@ -267,14 +267,14 @@ export const ENGINEERING_CHAPTERS = [
       en: "Users can understand connected accounts, unlinking and deletion scope.",
     },
     tradeoff: {
-      ko: "공급자 콘솔 등록과 검수가 필요하며 Toss 인증은 일반 웹 OAuth와 다른 제품·보안 범위로 현재 허용 목록에서 제외합니다.",
-      en: "Provider registration and review are required; Toss authentication remains outside the allowlist because its product and security scope differs from general web OAuth.",
+      ko: "공급자 콘솔 등록과 검수가 필요하며 Toss 인증은 일반 웹 OAuth와 다른 제품·보안 범위로 현재 허용 목록에서 제외합니다. Apple은 코드로 구현돼 있지만 설정 문서는 유료 개발자 프로그램 때문에 제외로 판단하고 운영 환경 문서의 선택 공급자 목록에도 APPLE_* 변수가 없어, 운영 활성 여부는 저장소로 확인할 수 없습니다(미확인).",
+      en: "Provider registration and review are required; Toss authentication remains outside the allowlist because its product and security scope differs from general web OAuth. Apple is implemented in code, but the setup document judges it excluded because of the paid developer program and the production environment document lists no APPLE_* variables among optional providers, so whether it is active in production cannot be confirmed from the repository (unverified).",
     },
     technologies: ["OAuth 2.0", "OpenID Connect", "Authorization Code", "PKCE", "nonce", "HttpOnly session", "CSRF state"],
     evidence: [
-      evidence("code", "apps/web/src/domains/auth", "로그인 UI와 공급자 경계", "Login UI and provider boundary"),
-      evidence("code", "apps/api/src", "서버 callback과 세션 소유", "Server callback and session ownership"),
-      evidence("test", "apps/api", "허용 공급자와 실패 흐름 테스트", "Allowlisted provider and failure-path tests"),
+      evidence("code", "apps/api/src/server/oauth.ts", "허용 공급자·authorize URL·GitHub PKCE·Apple nonce·Google ID token 검증", "Allowed providers, authorize URLs, GitHub PKCE, Apple nonce and Google ID-token verification"),
+      evidence("code", "apps/api/src/modules/auth/auth.controller.ts", "서버 callback과 HttpOnly 세션 발급", "Server callbacks and HttpOnly session issuance"),
+      evidence("test", "apps/api/src/modules/auth/auth.controller.oauth-google.test.ts", "Google·Naver 중복 callback과 거절 회귀", "Google and Naver duplicate-callback and rejection regressions"),
     ],
     reuseSteps: [
       { ko: "Redirect URI와 최소 scope를 공급자별로 문서화합니다.", en: "Document redirect URIs and minimal scopes per provider." },
@@ -305,14 +305,14 @@ export const ENGINEERING_CHAPTERS = [
       en: "Work can continue across unstable connections with a visible recoverable state.",
     },
     tradeoff: {
-      ko: "브라우저 용량, 기기 교체와 저장소 권한 만료를 별도로 안내하고 중요한 원고의 내보내기를 권장해야 합니다.",
-      en: "Browser quota, device changes and expired storage access need explicit guidance, with export recommended for important work.",
+      ko: "브라우저 용량, 기기 교체와 저장소 권한 만료를 별도로 안내하고 중요한 원고의 내보내기를 권장해야 합니다. 로컬 저장은 운영 경로이고, Drive·Dropbox·OneDrive 연결은 운영자가 공급자별 OAuth 클라이언트를 등록해야 켜지는 설정 필요 경로입니다.",
+      en: "Browser quota, device changes and expired storage access need explicit guidance, with export recommended for important work. Local storage is the live path, while the Drive, Dropbox and OneDrive connections need the operator to register a provider OAuth client first.",
     },
     technologies: ["OPFS", "IndexedDB", "SQLite WASM", "Google Drive", "Dropbox", "OneDrive"],
     evidence: [
       evidence("test", "scripts/verify-studio-autosave-opfs-session.mts", "OPFS 자동 저장 검증", "OPFS autosave verification"),
       evidence("test", "scripts/verify-studio-autosave-two-tab-leader.mts", "다중 탭 저장 리더 검증", "Multi-tab save-leader verification"),
-      evidence("code", "apps/web/src/domains/creator", "프로젝트 저장과 복구 UI", "Project storage and recovery UI"),
+      evidence("document", "docs/adr/0012-v12-sqlite-opfs-local-authority.md", "SQLite·OPFS 로컬 데이터 권위(Accepted ADR)", "SQLite and OPFS local data authority (accepted ADR)"),
     ],
     reuseSteps: [
       { ko: "binary, metadata, journal과 backup의 저장 책임을 분리합니다.", en: "Separate binary, metadata, journal and backup responsibilities." },
@@ -335,16 +335,16 @@ export const ENGINEERING_CHAPTERS = [
       en: "A fast preview is insufficient if saved output diverges or long strokes accumulate latency.",
     },
     decision: {
-      ko: "실시간 표시와 최종 committed 결과를 비교하고 GPU, Canvas와 WASM 경로에 동일한 역할 계약을 적용합니다.",
-      en: "Realtime display is compared with committed output, and GPU, Canvas and WASM paths share the same responsibility contract.",
+      ko: "실시간 표시와 최종 committed 결과를 비교하고 GPU, Canvas와 WASM 경로에 같은 역할 계약을 적용하되, 작업마다 시작 전에 엔진 하나만 고르고 실패해도 다른 엔진으로 자동 전환하지 않습니다(ADR-0018).",
+      en: "Realtime display is compared with committed output, and GPU, Canvas and WASM paths share one responsibility contract, but each job picks exactly one engine before it starts and never switches engines automatically on failure (ADR-0018).",
     },
     userValue: {
       ko: "브러시가 즉시 반응하면서 Undo, 재생, 내보내기에서도 같은 획을 재현할 수 있습니다.",
       en: "Brushes remain responsive while undo, replay and export reproduce the same stroke.",
     },
     tradeoff: {
-      ko: "고급 자연 재료는 기기별 편차가 있어 단계적 활성화와 안전한 폴백이 필요합니다.",
-      en: "Advanced natural media varies by device and needs staged enablement with a safe fallback.",
+      ko: "고급 자연 재료는 기기별 편차가 있어 단계적 활성화가 필요합니다. 실패는 다른 엔진의 성공으로 가리지 않고 unavailable로 드러내며, CPU·Canvas2D는 사용자가 직접 고르거나 reference·export에서만 씁니다.",
+      en: "Advanced natural media varies by device and needs staged enablement. Failure is surfaced as unavailable rather than masked by another engine's success, and CPU or Canvas2D run only when the user chooses them or for reference and export.",
     },
     technologies: ["Pointer Events", "perfect-freehand", "CanvasKit", "WebGPU", "Rust / WASM", "Tile rendering"],
     evidence: [
@@ -355,7 +355,7 @@ export const ENGINEERING_CHAPTERS = [
     reuseSteps: [
       { ko: "입력 보정과 최종 문서 기록을 별도 인터페이스로 만듭니다.", en: "Give input smoothing and final document recording separate interfaces." },
       { ko: "짧은 데모가 아니라 긴 획과 고밀도 포인터를 측정합니다.", en: "Measure long strokes and dense pointer streams, not only short demos." },
-      { ko: "하드웨어 기능 감지와 폴백 결과 패리티를 함께 검증합니다.", en: "Verify capability detection and fallback result parity together." },
+      { ko: "하드웨어 기능 감지와 사용자가 고른 reference 경로의 결과 패리티를 함께 검증합니다.", en: "Verify capability detection and the result parity of the reference path the user selects together." },
     ],
   },
   {
@@ -387,7 +387,7 @@ export const ENGINEERING_CHAPTERS = [
     technologies: ["Lazy loading", "Web Workers", "WASM", "WebGPU", "Performance budgets", "Range requests"],
     evidence: [
       evidence("test", "scripts/check-studio-bundle.mjs", "스튜디오 번들 예산", "Studio bundle budget"),
-      evidence("test", "tests/benchmarks", "엔진 벤치마크 하네스", "Engine benchmark harness"),
+      evidence("test", "tests/benchmarks/harness/libmypaint-fullsize.ts", "풀사이즈 처리량 벤치마크 하니스", "Full-size throughput benchmark harness"),
       evidence("test", "scripts/verify-studio-ux-task-benchmark.mts", "사용자 작업 지연 검증", "User-task latency verification"),
     ],
     reuseSteps: [
@@ -419,14 +419,14 @@ export const ENGINEERING_CHAPTERS = [
       en: "Users can see which components are provided under which rights conditions.",
     },
     tradeoff: {
-      ko: "새 패키지나 에셋을 도입할 때 기능 검토와 함께 라이선스 검토 시간이 필요합니다.",
-      en: "Every new package or asset adds license review alongside feature review.",
+      ko: "새 패키지나 에셋을 도입할 때 기능 검토와 함께 라이선스 검토 시간이 필요합니다. 또한 저장소 루트의 손으로 쓴 THIRD_PARTY_NOTICES.md는 직접 의존성 117개 중 25개만 언급하므로 완전한 목록으로 읽지 않고, 전체 목록은 빌드가 생성하는 고지가 맡습니다.",
+      en: "Every new package or asset adds license review alongside feature review. The hand-written THIRD_PARTY_NOTICES.md at the repository root mentions only 25 of the 117 direct dependencies, so it is not read as a complete list; the full list belongs to the notice generated at build time.",
     },
     technologies: ["SPDX", "THIRD_PARTY_NOTICES", "License allowlist", "Asset provenance"],
     evidence: [
       evidence("workflow", "scripts/generate-third-party-notices.mjs", "고지 자동 생성", "Automated notice generation"),
       evidence("workflow", "package.json#audit:licenses", "CI 라이선스 검사", "CI license audit"),
-      evidence("code", "apps/web/public", "배포 자산 경계", "Distributed asset boundary"),
+      evidence("document", "docs/adr/0008-license-isolation-policy.md", "라이선스 격리 정책(승인된 ADR)", "License isolation policy (approved ADR)"),
     ],
     reuseSteps: [
       { ko: "코드, 데이터, 미디어, 모델과 출력물 권리를 구분합니다.", en: "Separate rights for code, data, media, models and output." },
@@ -449,8 +449,8 @@ export const ENGINEERING_CHAPTERS = [
       en: "robots permission does not itself grant redistribution rights or a legal basis for personal-data processing.",
     },
     decision: {
-      ko: "로그인, CAPTCHA, 성인 인증과 유료 본문 우회를 금지하고 제한된 수집, 정규화, 출처 기록과 사람 승인을 거칩니다.",
-      en: "Login, CAPTCHA, age-gate and paid-content bypass are prohibited; limited collection, normalization, provenance and human approval are required.",
+      ko: "공개 수집 정책은 로그인·개인 쿠키가 필요한 정보와 성인인증·CAPTCHA를 우회한 정보를 수집하지 않는다고 선언합니다. 코드로 확인되는 범위는 이렇습니다. 수집기(scripts/crawl.mjs)는 배포 런타임이 아닌 로컬 수동 도구이고 요청 사이 최소 지연(기본 90ms)을 두며, 여러 중소 플랫폼 수집기는 공개 목록 메타데이터만 읽고 로그인·성인 벽을 우회하지 않는다고 머리말에 적습니다. 다만 네이버 경로에는 NAVER_COOKIE를 설정하면 로그인 쿠키로 19금 표지까지 받는 선택적 인증 모드가 있어(기본은 익명) 정책 문구와 별도로 확인할 항목으로 남깁니다. 결과는 정규화와 출처 기록 뒤 사람이 승인합니다.",
+      en: "The public crawler policy declares that information requiring login or personal cookies, and information obtained by bypassing age verification or CAPTCHA, is not collected. The code confirms a narrower scope. The collector (scripts/crawl.mjs) is a local, manually run tool rather than part of the deployed runtime and keeps a minimum delay between requests (90 ms by default), and several smaller-platform collectors state in their headers that they read public list metadata only and do not bypass login or age gates. The Naver path, however, has an optional authenticated mode: setting NAVER_COOKIE attaches a login cookie so adult covers are returned (anonymous by default), which stays an item to review separately from the policy wording. Results are normalized, recorded with provenance and approved by a person.",
     },
     userValue: {
       ko: "추천과 자료 페이지에서 정보의 출처와 최신성을 확인할 수 있습니다.",
@@ -479,8 +479,8 @@ export const ENGINEERING_CHAPTERS = [
     eyebrow: "10 · QUALITY",
     title: { ko: "테스트를 사용자 여정과 연결", en: "Connecting tests to user journeys" },
     thesis: {
-      ko: "Vitest, Playwright와 도메인 전용 검증을 계층화하고 외부 QA 도구는 사람이 읽기 쉬운 보조 포털로만 연결합니다.",
-      en: "Vitest, Playwright and domain-specific checks are layered, while external QA tools remain a human-readable companion portal.",
+      ko: "Vitest, Playwright와 도메인 전용 검증을 계층화하고, 외부 QA 도구를 쓰더라도 사람이 읽기 쉬운 보조 포털로만 한정합니다.",
+      en: "Vitest, Playwright and domain-specific checks are layered, and any external QA tool is limited to a human-readable companion portal.",
     },
     problem: {
       ko: "단위 테스트가 통과해도 브라우저 저장 권한, GPU 기능, 실제 라우팅과 복구 흐름은 실패할 수 있습니다.",
@@ -495,13 +495,13 @@ export const ENGINEERING_CHAPTERS = [
       en: "Unsupported states are not disguised as success; causes and fallback paths can be explained.",
     },
     tradeoff: {
-      ko: "Testifly 같은 외부 도구는 선택형 가시화 계층이며 CI 통과 여부의 정본으로 사용하지 않습니다.",
-      en: "External tools such as Testifly are optional visibility layers, not the source of truth for CI pass or failure.",
+      ko: "Testifly 같은 외부 도구는 저장소에 연동 코드가 없는 선택형 가시화 계층(참고 연동)이며 CI 통과 여부의 정본으로 사용하지 않습니다.",
+      en: "External tools such as Testifly are an optional visibility layer (reference integration) with no integration code in the repository, and are not the source of truth for CI pass or failure.",
     },
-    technologies: ["Vitest", "Testing Library", "Playwright", "CSP checks", "Testifly optional portal"],
+    technologies: ["Vitest", "Testing Library", "Playwright", "CSP checks", "Testifly (reference-only)"],
     evidence: [
-      evidence("test", "apps/web/src", "컴포넌트와 도메인 테스트", "Component and domain tests"),
-      evidence("test", "e2e", "실제 브라우저 검증", "Real-browser verification"),
+      evidence("test", "apps/web/src/domains/legal/technology/EngineeringStoryPage.test.tsx", "컴포넌트 테스트(Testing Library)", "Component tests (Testing Library)"),
+      evidence("test", "e2e/engineering-story.spec.ts", "실제 브라우저 검증(Playwright)", "Real-browser verification (Playwright)"),
       evidence("workflow", "package.json#ci", "통합 품질 게이트", "Integrated quality gate"),
     ],
     reuseSteps: [
@@ -525,8 +525,8 @@ export const ENGINEERING_CHAPTERS = [
       en: "Putting every capability on one server makes traffic shape, cold starts and cost difficult to control independently.",
     },
     decision: {
-      ko: "Cloudflare 정적·edge 경로, R2 대형 자산, Render API, Durable Objects 실시간 상태와 PostgreSQL 원장을 역할별로 둡니다.",
-      en: "Cloudflare static and edge paths, R2 large assets, Render APIs, Durable Objects realtime state and PostgreSQL records have distinct roles.",
+      ko: "Cloudflare 정적·edge 경로, R2 대형 자산, Render API, Durable Objects 임시 실시간 상태, Upstash Redis 분산 제한, Supabase PostgreSQL 영속 원장(기존 Neon은 legacy 보존이며 자동 dual-write·failover 없음)을 역할별로 둡니다.",
+      en: "Cloudflare static and edge paths, R2 large assets, Render APIs, Durable Objects for ephemeral realtime state, Upstash Redis for distributed limits and Supabase PostgreSQL as the durable ledger (the earlier Neon database is kept as a legacy resource, with no automatic dual-write or failover) have distinct roles.",
     },
     userValue: {
       ko: "초기 비용을 낮추면서도 서비스별 병목과 장애 범위를 명확히 파악할 수 있습니다.",
@@ -536,11 +536,11 @@ export const ENGINEERING_CHAPTERS = [
       ko: "무료 티어에는 cold start와 한도가 있으며 SLA가 필요할 때는 비용과 운영 책임을 함께 승격해야 합니다.",
       en: "Free tiers include cold starts and limits; SLA upgrades must promote both cost and operational responsibility.",
     },
-    technologies: ["Cloudflare", "R2", "Render", "Durable Objects", "PostgreSQL / Neon"],
+    technologies: ["Cloudflare", "R2", "Render", "Durable Objects", "Upstash Redis", "Supabase PostgreSQL"],
     evidence: [
-      evidence("code", "deploy", "edge와 배포 구성", "Edge and deployment configuration"),
+      evidence("code", "deploy/cloudflare-static/wrangler.jsonc", "Static Assets와 동적 경로 Worker 설정", "Static Assets and dynamic-path Worker configuration"),
       evidence("test", "scripts/verify-free-infrastructure-policy.mjs", "무료 우선 구성 검증", "Free-first configuration verification"),
-      evidence("workflow", ".github/workflows", "검토 가능한 배포·렌더 워크플로", "Reviewable deployment and render workflows"),
+      evidence("document", "docs/operations/canonical-database-topology.md", "운영 DB·데이터 플레인 정본(Supabase 현재 권위, Neon legacy)", "Canonical production database and data plane (Supabase current authority, Neon legacy)"),
     ],
     reuseSteps: [
       { ko: "정적, 동적, 실시간, 대형 파일과 원장 데이터를 먼저 분류합니다.", en: "Classify static, dynamic, realtime, large-file and ledger data first." },
@@ -576,8 +576,8 @@ export const ENGINEERING_CHAPTERS = [
     },
     technologies: ["Provider adapters", "BYOK", "Capability registry", "Consent", "Budget guard"],
     evidence: [
-      evidence("code", "apps/web/src/domains/creator", "AI 작업 의도와 승인 UI", "AI intent and approval UI"),
-      evidence("code", "apps/api/src", "서버 공급자 어댑터", "Server provider adapters"),
+      evidence("code", "apps/web/src/shared/ai/ai-capability-registry.ts", "모델 능력 레지스트리", "Model capability registry"),
+      evidence("code", "apps/api/src/modules/studio-ai/studio-ai-provider.ts", "서버 무료 풀 공급자 설정과 실패 분류", "Server free-pool provider configuration and failure classification"),
       evidence("test", "scripts/verify-studio-ai-quality.mts", "AI 품질 경계 검증", "AI quality-boundary verification"),
     ],
     reuseSteps: [
@@ -615,7 +615,7 @@ export const ENGINEERING_CHAPTERS = [
     technologies: ["Asset provenance", "SHA-256", "Reference roles", "Candidate review", "Revision history"],
     evidence: [
       evidence("test", "scripts/verify-studio-ai-image-references.mts", "AI 이미지 참조 계약 검증", "AI image-reference contract verification"),
-      evidence("code", "apps/web/src/domains/creator", "후보 비교와 승인 흐름", "Candidate comparison and approval flow"),
+      evidence("code", "apps/web/src/domains/creator/studio-workflow/studio-generation-candidate.ts", "후보 비교와 승인 흐름", "Candidate comparison and approval flow"),
     ],
     reuseSteps: [
       { ko: "업로드 파일에 reference role과 권리 메모를 저장합니다.", en: "Store reference role and rights notes with uploads." },
@@ -626,7 +626,7 @@ export const ENGINEERING_CHAPTERS = [
   {
     id: "sound-generation",
     order: 14,
-    status: "experimental",
+    status: "configured",
     eyebrow: "14 · SOUND",
     title: { ko: "사운드 생성과 권리 정보를 같은 흐름에", en: "Keeping generated sound and rights in one flow" },
     thesis: {
@@ -638,8 +638,8 @@ export const ENGINEERING_CHAPTERS = [
       en: "Treating text as successful music generation or omitting usage scope creates risk during editing.",
     },
     decision: {
-      ko: "서버 전용 키, 중복 호출 방지, 일일 예산, 로컬 라이브러리와 명시적 승인 후 사용을 기본으로 둡니다.",
-      en: "Server-only keys, deduplication, daily budget, a local library and explicit approval are the defaults.",
+      ko: "서버 전용 키, 중복 호출 방지, 일일 예산, 로컬 라이브러리와 명시적 승인 후 사용을 기본으로 두며, 기능 코드는 완성됐지만 운영에서는 STUDIO_MUSIC_ENABLED를 켜기 전까지 꺼져 있습니다.",
+      en: "Server-only keys, deduplication, daily budget, a local library and explicit approval are the defaults; the feature code is complete, but in operation it stays off until STUDIO_MUSIC_ENABLED is turned on.",
     },
     userValue: {
       ko: "사용자는 실제 재생 가능한 파일과 권리 상태를 함께 확인할 수 있습니다.",
@@ -651,8 +651,8 @@ export const ENGINEERING_CHAPTERS = [
     },
     technologies: ["Audio provider adapters", "Budget limits", "Deduplication", "OPFS library", "Rights metadata"],
     evidence: [
-      evidence("code", "apps/web/src/domains/creator", "오디오 결과와 로컬 라이브러리", "Audio results and local library"),
-      evidence("code", "apps/api/src", "서버 전용 공급자 호출", "Server-only provider invocation"),
+      evidence("code", "apps/web/src/domains/creator/music/StudioMusicPage.tsx", "오디오 결과와 로컬 라이브러리 화면", "Audio results and local library screen"),
+      evidence("code", "apps/api/src/server/studio-music-core.ts", "서버 전용 공급자 호출·일일 예산·중복 호출 방지", "Server-only provider invocation, daily budget and duplicate-call protection"),
     ],
     reuseSteps: [
       { ko: "성공 조건을 실제 media artifact 생성으로 정의합니다.", en: "Define success as creation of a real media artifact." },
@@ -688,7 +688,7 @@ export const ENGINEERING_CHAPTERS = [
     },
     technologies: ["Structured content", "React presentation", "Remotion", "VTT captions", "Review artifacts"],
     evidence: [
-      evidence("code", "apps/web/src/domains/legal/technology", "공용 기술 스토리 콘텐츠", "Shared engineering-story content"),
+      evidence("code", "apps/web/src/domains/legal/technology/engineering-story-published-content.ts", "공용 기술 스토리 콘텐츠 집계", "Shared engineering-story content aggregate"),
       evidence("code", "tools/media/brand-film/src/TechnologyStoryFilm.tsx", "Remotion 기술 필름", "Remotion engineering film"),
       evidence("workflow", ".github/workflows/technology-story-film.yml", "검토용 영상 artifact", "Reviewable film artifacts"),
     ],
@@ -722,7 +722,7 @@ export const ENGINEERING_GUIDES = [
       { ko: "최소 scope와 callback allowlist", en: "Minimal scopes and callback allowlist" },
       { ko: "실패 callback과 중복 계정 처리", en: "Failure callbacks and duplicate-account handling" },
     ],
-    code: "GET /api/auth/oauth/:provider/start\nGET|POST /api/auth/oauth/:provider/callback\nPOST /api/auth/logout\nDELETE /api/auth/accounts/:provider",
+    code: "GET  /api/auth/oauth/:provider/start\nGET  /api/auth/oauth/:provider/callback   (Apple only: POST .../oauth/apple/callback)\nPOST /api/auth/oauth/google/id-token      (Google Identity Services)\nPOST /api/auth/logout\nDELETE /api/auth/accounts/:provider",
   },
   {
     id: "cloud-storage",
@@ -735,7 +735,7 @@ export const ENGINEERING_GUIDES = [
     outcome: { ko: "Google Drive·Dropbox·OneDrive 최소 권한 연결", en: "Minimal-access Google Drive, Dropbox and OneDrive connections" },
     steps: [
       { ko: "로컬 원본, 메타데이터와 백업 archive 형식을 분리합니다.", en: "Separate local source, metadata and backup archive formats." },
-      { ko: "공급자별 앱 전용 폴더 권한을 우선합니다.", en: "Prefer app-folder permissions for each provider." },
+      { ko: "공급자별 최소 범위를 우선합니다(Google은 drive.file, OneDrive는 AppFolder, Dropbox는 files.content 읽기·쓰기).", en: "Prefer the narrowest scope per provider (Google drive.file, OneDrive AppFolder, Dropbox files.content read/write)." },
       { ko: "access token은 짧게 유지하고 refresh token은 서버에서 암호화합니다.", en: "Keep access tokens short-lived and encrypt refresh tokens server-side." },
       { ko: "업로드 전 checksum과 충돌 정책을 결정합니다.", en: "Decide checksum and conflict policy before upload." },
       { ko: "권한 만료와 공급자 장애에서 로컬 작업을 보존합니다.", en: "Preserve local work when access expires or the provider fails." },
@@ -754,12 +754,12 @@ export const ENGINEERING_GUIDES = [
       ko: "입력, 표시와 최종 문서 commit을 분리해 빠른 피드백과 재현성을 함께 확보합니다.",
       en: "Separate input, presentation and final document commit to preserve responsiveness and reproducibility.",
     },
-    outcome: { ko: "긴 획과 폴백에서도 동일한 저장 결과", en: "Equivalent saved output across long strokes and fallbacks" },
+    outcome: { ko: "긴 획과 사용자가 고른 reference 경로에서도 동일한 저장 결과", en: "Equivalent saved output across long strokes and user-selected reference paths" },
     steps: [
       { ko: "Pointer event를 시간·압력·기울기 샘플로 정규화합니다.", en: "Normalize pointer events into time, pressure and tilt samples." },
       { ko: "입력 보정과 outline 또는 tip 생성을 분리합니다.", en: "Separate input smoothing from outline or tip generation." },
       { ko: "실시간 GPU 표시와 문서 command 기록을 병렬로 수행합니다.", en: "Run realtime GPU presentation and document command recording in parallel." },
-      { ko: "Canvas 또는 CPU 폴백에 같은 command를 재생합니다.", en: "Replay the same commands through Canvas or CPU fallback." },
+      { ko: "사용자가 직접 고른 Canvas·CPU reference 경로에도 같은 command를 재생하되, 실패 뒤 자동으로 넘기지는 않습니다.", en: "Replay the same commands through a Canvas or CPU reference path the user selects, never switching to it automatically after a failure." },
       { ko: "긴 획 지연과 committed parity를 CI에서 검증합니다.", en: "Verify long-stroke latency and committed parity in CI." },
     ],
     checklist: [
@@ -817,14 +817,14 @@ export const ENGINEERING_GUIDES = [
     status: "live",
     title: { ko: "CI와 선택형 Testifly 포털", en: "CI with an optional Testifly portal" },
     summary: {
-      ko: "코드 품질의 정본은 저장소 CI에 두고 Testifly는 이해관계자가 읽기 쉬운 테스트 카탈로그로만 사용합니다.",
-      en: "Keep repository CI as the source of truth and use Testifly only as a stakeholder-readable test catalogue.",
+      ko: "코드 품질의 정본은 저장소 CI에 두고 Testifly는 연결하더라도 이해관계자가 읽기 쉬운 테스트 카탈로그로만 한정합니다.",
+      en: "Keep repository CI as the source of truth and, if Testifly is connected, limit it to a stakeholder-readable test catalogue.",
     },
     outcome: { ko: "자동 품질 게이트와 수동 피드백의 명확한 역할 분리", en: "Clear roles for automated gates and manual feedback" },
     steps: [
       { ko: "타입·lint·단위·브라우저·성능·라이선스 검사를 독립 job으로 둡니다.", en: "Keep type, lint, unit, browser, performance and license checks independent." },
       { ko: "사용자 여정마다 소유 테스트와 실패 시 대응자를 기록합니다.", en: "Record an owning test and failure responder per user journey." },
-      { ko: "Testifly에는 시나리오 설명과 CI 링크만 동기화합니다.", en: "Sync scenario descriptions and CI links to Testifly." },
+      { ko: "Testifly를 연결하는 경우(저장소에는 아직 연동 코드가 없습니다) 시나리오 설명과 CI 링크만 동기화합니다.", en: "If Testifly is connected (the repository has no integration code yet), sync only scenario descriptions and CI links." },
       { ko: "외부 포털 장애가 merge 판단을 바꾸지 않게 합니다.", en: "Do not let external portal outages change merge decisions." },
     ],
     checklist: [
@@ -924,7 +924,7 @@ export const ENGINEERING_GUIDES = [
   },
   {
     id: "blender-mcp",
-    status: "configured",
+    status: "experimental",
     title: { ko: "Blender MCP 안전한 제작 자동화", en: "Safe Blender MCP production automation" },
     summary: {
       ko: "LLM에 임의 Python을 주지 않고 결과 중심 allowlist 명령과 검증 receipt를 제공합니다.",

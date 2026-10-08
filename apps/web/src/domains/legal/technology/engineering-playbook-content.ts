@@ -125,7 +125,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       en: "Webtoon production is a handoff problem across works, episodes, cuts, assets, revisions, approvals and publishing—not a single editor-screen problem. ToonStudio prioritizes reducing the cost of reconstructing current state and intent.",
     },
     architecture: [
-      { ko: "Workspace → Project → Episode → Cut → Asset → Revision → Approval을 명시적 도메인 계약으로 둡니다.", en: "Model Workspace, Project, Episode, Cut, Asset, Revision and Approval as explicit domain contracts." },
+      { ko: "Workspace → Project → Episode → Cut → Asset → Revision → Approval을 개념 계약으로 두며, 코드의 식별자는 Season·Sequence·Panel(컷)·Artifact·Revision·Review(승인)처럼 더 잘게 나뉩니다.", en: "Keep Workspace, Project, Episode, Cut, Asset, Revision and Approval as the conceptual contract; code identifiers are finer-grained, such as Season, Sequence, Panel (the cut), Artifact, Revision and Review (approval)." },
       { ko: "작업실·목록·가상 공간·공개 페이지는 같은 도메인의 서로 다른 projection으로 만듭니다.", en: "Treat studio, list, virtual-space and public pages as projections of the same domain." },
       { ko: "전문 엔진은 capability adapter 뒤에 두고 프로젝트 원장을 직접 소유하지 않게 합니다.", en: "Keep specialist engines behind capability adapters and away from direct project-ledger ownership." },
       { ko: "모든 외부 작업은 input, output, revision, provenance와 verification receipt를 남깁니다.", en: "Every external job records input, output, revision, provenance and a verification receipt." },
@@ -159,14 +159,14 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       en: "Login and sharing look like small buttons but are operating systems spanning provider registration, redirects, sessions, account linking, Open Graph crawlers, app switching, CSP and analytics.",
     },
     architecture: [
-      { ko: "Google·Apple·Kakao·Naver·GitHub의 인증 결과를 제품 HttpOnly 세션으로 교환합니다.", en: "Exchange Google, Apple, Kakao, Naver and GitHub authentication for a first-party HttpOnly session." },
+      { ko: "Google·Apple·Kakao·Naver·GitHub의 인증 결과를 제품 HttpOnly 세션으로 교환합니다(Apple은 코드로 구현돼 있으나 운영 등록 여부는 확인하지 못했습니다).", en: "Exchange Google, Apple, Kakao, Naver and GitHub authentication for a first-party HttpOnly session (Apple is implemented in code, but whether it is registered in production was not confirmed)." },
       { ko: "state·PKCE·nonce, 최소 scope, verified contact와 provider subject를 공급자별로 검증합니다.", en: "Validate state, PKCE, nonce, minimal scopes, verified contacts and provider subjects per provider." },
       { ko: "공유는 canonical payload에서 native share, channel URL, copy, QR과 OG를 파생합니다.", en: "Derive native share, channel URLs, copy, QR and Open Graph from one canonical payload." },
-      { ko: "analytics에는 전체 URL·제목 대신 channel·result·route만 기록합니다.", en: "Record channel, result and route—not full URLs or titles—in analytics." },
+      { ko: "analytics에는 전체 URL·제목 대신 channel·outcome·path(pathname)만 기록합니다.", en: "Record channel, outcome and path (the pathname)—not full URLs or titles—in analytics." },
     ],
     achievements: [
       { ko: "공급자 token을 제품 session으로 사용하지 않는 server callback 경계를 마련했습니다.", en: "Server callbacks prevent provider tokens from becoming product sessions." },
-      { ko: "native share·카카오·네이버·LINE·X·Facebook·Telegram·이메일·copy·QR의 fallback 계층을 구현했습니다.", en: "A fallback stack covers native share, Kakao, Naver, LINE, X, Facebook, Telegram, email, copy and QR." },
+      { ko: "native share·카카오·네이버·LINE·X·Facebook·LinkedIn·Instagram·TikTok·Telegram·이메일·copy·QR 13개 채널의 fallback 계층을 구현했습니다.", en: "A fallback stack covers 13 channels: native share, Kakao, Naver, LINE, X, Facebook, LinkedIn, Instagram, TikTok, Telegram, email, copy and QR." },
       { ko: "UTM, canonical과 OG metadata를 공유 구현과 함께 검증할 수 있는 운영 문서를 갖췄습니다.", en: "Operating documentation connects UTM, canonical and Open Graph verification to sharing implementation." },
     ],
     portability: [
@@ -177,7 +177,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       { ko: "공급자 등록·검수·secret 설정이 끝나지 않은 기능은 configured로 표시하며 성공 데모와 운영 준비를 구분합니다.", en: "Capabilities awaiting provider registration, review or secrets remain configured, separating demos from operations." },
       { ko: "share API 성공은 실제 열람이나 전환을 증명하지 않습니다.", en: "A successful share API call does not prove viewing or conversion." },
     ],
-    evidence: ["docs/social-login-provider-setup.md", "docs/social-sharing.md", "apps/web/src/shared/lib/share.ts", "apps/api/src/modules/auth"],
+    evidence: ["docs/social-login-provider-setup.md", "docs/social-sharing.md", "apps/web/src/shared/lib/share.ts", "apps/api/src/modules/auth/auth.controller.ts"],
   },
   {
     id: "brush-rendering-system",
@@ -194,12 +194,12 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
     },
     architecture: [
       { ko: "raw PointerEvent를 normalized sample stream과 stroke receipt로 바꿉니다.", en: "Convert raw PointerEvents into normalized sample streams and stroke receipts." },
-      { ko: "preview·live simulation·commit·export renderer 역할과 document authority를 registry에 선언합니다.", en: "Declare preview, live simulation, commit and export renderer roles plus document authority in a registry." },
+      { ko: "렌더러 역할 원장(primary·provider·reference·lab)이 authority마다 primary 소유자 하나를 선언하고, preview·live·commit·export는 획 phase 계약으로 나눕니다.", en: "A renderer role ledger (primary, provider, reference, lab) declares one primary owner per authority, while preview, live, commit and export are phases of the stroke contract." },
       { ko: "Worker·WASM·GPU backend는 typed protocol과 capability probe 뒤에서 선택합니다.", en: "Select Worker, WASM and GPU backends behind typed protocols and capability probes." },
       { ko: "dirty tile, long-stroke memory, color space와 committed parity를 별도 품질 예산으로 측정합니다.", en: "Measure dirty tiles, long-stroke memory, color space and committed parity as separate quality budgets." },
     ],
     achievements: [
-      { ko: "CanvasKit, WebGPU, Rust/WASM과 Canvas fallback을 역할별로 비교 가능한 구조로 만들었습니다.", en: "CanvasKit, WebGPU, Rust/WASM and Canvas fallbacks are comparable by declared role." },
+      { ko: "CanvasKit, WebGPU, Rust/WASM과 Canvas2D를 선언된 역할별로 비교 가능한 구조로 만들었습니다.", en: "CanvasKit, WebGPU, Rust/WASM and Canvas2D are comparable by declared role." },
       { ko: "긴 획·GPU commit parity·natural media·bundle activation을 전용 검증 스크립트로 다룹니다.", en: "Dedicated verification covers long strokes, GPU commit parity, natural media and bundle activation." },
       { ko: "전문 브러시 연구실과 실제 문서 engine 사이에 preset·revision·renderer capability 계약을 둡니다.", en: "Preset, revision and renderer-capability contracts separate the brush lab from document engines." },
     ],
@@ -208,7 +208,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       { ko: "영상·오디오 editor도 scrub preview와 durable render의 권위를 같은 방식으로 나눌 수 있습니다.", en: "Video and audio editors can similarly separate scrub preview from durable render authority." },
     ],
     limits: [
-      { ko: "모든 기기에서 동일 backend를 강제하지 않으며 quality tier와 fallback 차이를 공개합니다.", en: "Do not force one backend on every device; expose quality tiers and fallback differences." },
+      { ko: "모든 기기에서 동일 backend를 강제하지 않으며, 작업 전에 고른 backend의 quality tier 차이를 공개하고 실패 뒤 자동 fallback은 하지 않습니다.", en: "Do not force one backend on every device; expose quality-tier differences of the backend chosen before the job, and never fall back automatically after a failure." },
       { ko: "benchmark 숫자는 장비·브라우저·data set·commit과 함께만 사용합니다.", en: "Use benchmark numbers only with device, browser, dataset and commit." },
     ],
     evidence: ["packages/studio-engine-registry/src/renderer-roles.ts", "scripts/verify-studio-brush-latency.mts", "scripts/verify-studio-gpu-committed-parity.mts", "docs/engines/native-brush-benchmark-optimization-2026-09-19.md"],
@@ -227,7 +227,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       en: "CRDT is not conflict-removal magic. It models which operations commute and which order, deletion and authorization semantics matter. Pixels, PSD, GLB and media streams are different problems.",
     },
     architecture: [
-      { ko: "Yjs document에는 vector·stylus·layer semantic operation과 bounded metadata를 둡니다.", en: "Keep vector, stylus and layer semantic operations plus bounded metadata in the Yjs document." },
+      { ko: "Yjs document에는 vector·stylus·layer semantic operation과 bounded metadata를 두고, 오프라인 작업 브랜치의 문서 병합은 플래그로 켜는 Automerge가 맡습니다.", en: "Keep vector, stylus and layer semantic operations plus bounded metadata in the Yjs document, while merging offline work-branch documents is Automerge's job behind a feature flag." },
       { ko: "asset bytes는 content hash, revision과 durable receipt로 외부 저장소를 참조합니다.", en: "Reference external asset storage through content hashes, revisions and durable receipts." },
       { ko: "room transport, awareness, persistence snapshot, compaction과 authorization을 서로 다른 계약으로 둡니다.", en: "Separate room transport, awareness, persistence snapshots, compaction and authorization." },
       { ko: "래스터 replay·checkpoint는 Worker로 보내 UI와 room sync를 분리합니다.", en: "Move raster replay and checkpoints to Workers, separating UI and room synchronization." },
@@ -279,7 +279,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       { ko: "Worker 직렬화와 duplicate memory도 비용이므로 작은 작업까지 무조건 이동하지 않습니다.", en: "Worker serialization and duplicate memory cost matter, so small jobs do not move automatically." },
       { ko: "Service Worker offline 준비와 사용자 문서 backup을 같은 기능으로 홍보하지 않습니다.", en: "Service Worker offline readiness is never marketed as user-document backup." },
     ],
-    evidence: ["apps/web/src/domains/creator/render/studio-engine-worker-client.ts", "apps/web/src/domains/creator/studio-local-database.worker.ts", "apps/web/src/app/service-worker/studio-service-worker-registration.ts", "docs/studio-service-worker.md"],
+    evidence: ["apps/web/src/domains/creator/bg3d/studio-bg3d-glb-validation-worker-client.ts", "apps/web/src/domains/creator/studio-local-database.worker.ts", "apps/web/src/app/service-worker/studio-service-worker-registration.ts", "docs/studio-service-worker.md"],
   },
   {
     id: "virtual-studio-living-world",
@@ -298,12 +298,12 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       { ko: "versioned world manifest와 compiler가 collision, spawn, object action, art provenance를 검증합니다.", en: "A versioned world manifest and compiler validate collision, spawn, object actions and art provenance." },
       { ko: "actor locomotion·animation·NPC·interaction·conversation policy를 Phaser/DOM 밖의 순수 module로 둡니다.", en: "Actor locomotion, animation, NPC, interaction and conversation policy live in pure modules outside Phaser and the DOM." },
       { ko: "프로젝트·멤버십·review·live/huddle는 기존 도메인 API를 adapter로 사용합니다.", en: "Projects, membership, review and live/huddle use existing domain APIs through adapters." },
-      { ko: "Socket.IO admission·signaling, RTCDataChannel 제어와 RTP media를 분리하고 실제 수신자 scope 뒤에서 연결합니다.", en: "Socket.IO admission and signaling, RTCDataChannel control and RTP media stay separate behind actual recipient scope." },
+      { ko: "방 서버(기본 Durable Objects, 선택형 Socket.IO 폴백)의 admission·presence, RTCDataChannel 직접 레인의 허들 SDP·ICE·채팅, RTP media를 분리하고 실제 수신자 scope 뒤에서 연결합니다.", en: "The room server (Durable Objects by default, optional Socket.IO fallback) owns admission and presence, the RTCDataChannel direct lane carries huddle SDP, ICE and chat, and RTP carries media, all kept separate behind actual recipient scope." },
       { ko: "목록·검색·키보드·reduced motion·low-power mode를 공간 화면과 동등한 진입점으로 유지합니다.", en: "List, search, keyboard, reduced-motion and low-power modes remain equivalent entry paths." },
     ],
     achievements: [
       { ko: "공간 page, social panel, world authoring, manifest와 living-world art pipeline을 별도 모듈로 구성했습니다.", en: "Spatial page, social panel, world authoring, manifest and living-world art pipeline are separate modules." },
-      { ko: "Gather 2.0, WorkAdventure와 Kumospace의 최신 공식 동작을 기능·privacy·접근성 관점에서 비교했습니다.", en: "Current official Gather 2.0, WorkAdventure and Kumospace behavior was compared across capability, privacy and accessibility." },
+      { ko: "Gather(2.0과 Classic을 구분), WorkAdventure와 Kumospace의 공개 도움말을 기능·privacy·접근성 관점에서 비교했습니다.", en: "The public help documentation of Gather (kept distinct between 2.0 and Classic), WorkAdventure and Kumospace was compared across capability, privacy and accessibility." },
       { ko: "소규모 P2P huddle, 양방향 동의형 화면 공유와 short-lived TURN policy 갱신 경계를 구현했습니다.", en: "Small P2P huddles, two-sided-consent screen sharing and short-lived TURN-policy refresh boundaries are implemented." },
       { ko: "공간 object가 임의 script 대신 allowlisted action registry를 사용하도록 설계했습니다.", en: "Spatial objects use an allowlisted action registry instead of arbitrary scripts." },
     ],
@@ -316,7 +316,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       { ko: "현재 P2P 경로는 세 명의 원격 peer와 일부 단일 Chromium loopback 증거이므로 WAN·제한 NAT·대규모 broadcast parity를 주장하지 않습니다.", en: "The current P2P path caps remote peers at three and includes some single-Chromium loopback evidence, so it does not claim WAN, restrictive-NAT or large-broadcast parity." },
       { ko: "벤치마크 문서의 target 항목은 source 존재나 시각적 유사성만으로 완료 처리하지 않습니다.", en: "Target benchmark items are not marked complete from source existence or visual similarity alone." },
     ],
-    evidence: ["apps/web/src/domains/creator/virtual-space", "apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-controller.ts", "apps/web/src/domains/creator/studio-screen-share.ts", "docs/technology/toonstudio-webrtc-realtime-media-2026-09-25.md"],
+    evidence: ["apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-manifest.ts", "apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-controller.ts", "apps/web/src/domains/creator/studio-screen-share.ts", "docs/technology/toonstudio-webrtc-realtime-media-2026-09-25.md"],
   },
   {
     id: "multi-engine-3d-dcc",
@@ -350,7 +350,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       { ko: "브라우저에서 범용 Blender·CAD 전체 기능을 재현한다고 주장하지 않습니다.", en: "The browser product does not claim to reproduce all of Blender or general-purpose CAD." },
       { ko: "대형 WASM, GPU memory와 mobile compatibility 때문에 전문 기능은 지연 로드·입력 budget·fallback이 필요합니다.", en: "Large WASM, GPU memory and mobile compatibility require lazy loading, input budgets and fallbacks." },
     ],
-    evidence: ["apps/web/src/domains/creator/hybrid-dcc", "apps/web/src/domains/creator/vrm", "apps/web/src/domains/creator/studio-occt.worker.ts", "scripts/blender"],
+    evidence: ["apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-glb-export-worker-client.ts", "apps/web/src/domains/creator/vrm/studio-vrm-blender-package-import.ts", "apps/web/src/domains/creator/studio-occt.worker.ts", "tools/blender/toonstudio_blender_kit/mcp.py"],
   },
   {
     id: "ai-assisted-product-engineering",
@@ -384,7 +384,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       { ko: "모델·공급자 가용성, 약관과 가격은 변하므로 public 문구와 allowlist를 정기 재검증해야 합니다.", en: "Model and provider availability, terms and pricing change, so public copy and allowlists need periodic revalidation." },
       { ko: "AI가 생성했다는 이유만으로 코드·미디어의 정확성·안전·권리를 보장하지 않습니다.", en: "AI generation alone guarantees neither correctness, safety nor rights for code or media." },
     ],
-    evidence: ["apps/web/src/domains/creator/ai", "apps/api/src/modules/studio-ai", "docs/operations/quality-preserving-cost-policy.md", ".github"],
+    evidence: ["apps/web/src/domains/creator/ai/studio-ai-provenance.ts", "apps/api/src/modules/studio-ai/studio-ai-provider.ts", "docs/operations/quality-preserving-cost-policy.md", ".github/workflows/non-studio-experience-quality.yml"],
   },
   {
     id: "data-crawling-provenance",
@@ -400,7 +400,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       en: "A public URL is not blanket reuse permission. HTML selectors and API schemas drift, while image hosts, license flags and attribution requirements vary by response.",
     },
     architecture: [
-      { ko: "robots·이용 약관·API 정책·rate limit과 허용 데이터 범위를 source registry에 둡니다.", en: "Record robots, terms, API policy, rate limits and permitted data scope in a source registry." },
+      { ko: "API 정책·rate limit·권리와 허용 데이터 범위를 source registry에 둡니다. 수집기(scripts/crawl.mjs)는 로컬 수동 도구이고 robots.txt를 런타임에 읽는 코드는 없으며, 일부 수집기는 소스 주석에 허용 경로만 쓴다고 적어 두었습니다.", en: "Record API policy, rate limits, rights and permitted data scope in a source registry. The crawler (scripts/crawl.mjs) is a local manual tool with no code that reads robots.txt at runtime, and some crawlers state in source comments that they use only allowed paths." },
       { ko: "provider adapter가 raw response를 schema 검증한 뒤 provenance·license·fetchedAt과 함께 내부 모델로 정규화합니다.", en: "Provider adapters schema-validate raw responses and normalize them with provenance, license and fetchedAt." },
       { ko: "원본 HTML·API payload, 파생 metadata와 서비스 노출 copy의 보존 기간을 나눕니다.", en: "Separate retention for source HTML or API payloads, derived metadata and public copy." },
       { ko: "schema·rights drift와 image host 변경을 계약 테스트와 운영 alert로 감지합니다.", en: "Detect schema, rights and image-host drift through contract tests and operating alerts." },
@@ -415,10 +415,10 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       { ko: "AI RAG pipeline도 retrievedAt·source URL·license·chunk hash를 같은 원칙으로 보존할 수 있습니다.", en: "AI retrieval pipelines can preserve retrievedAt, source URL, license and chunk hashes by the same principle." },
     ],
     limits: [
-      { ko: "기술적으로 접근 가능해도 정책·권리 근거가 없으면 수집·노출하지 않습니다.", en: "Technical accessibility alone is insufficient without policy and rights basis." },
+      { ko: "기술적으로 접근 가능하다는 사실만으로는 수집·노출의 근거가 되지 않으며, 정책·권리 근거는 수집 전에 사람이 확인해야 합니다(수집기가 이를 자동으로 강제하지는 않습니다).", en: "Technical accessibility alone is not a basis for collecting or exposing data; people must confirm the policy and rights basis before collection (the crawler does not enforce this automatically)." },
       { ko: "공개 API의 현재 schema와 quota는 배포 전 공식 문서·실응답으로 다시 검증합니다.", en: "Current public-API schemas and quotas are revalidated against official docs and live responses before release." },
     ],
-    evidence: ["apps/web/src/domains/legal/CrawlerPolicyPage.tsx", "scripts/crawl.mjs", "apps/api/src/modules/creator-resources", "apps/web/src/domains/creator-resources"],
+    evidence: ["apps/web/src/domains/legal/CrawlerPolicyPage.tsx", "scripts/crawl.mjs", "apps/api/src/modules/creator-resources/resource-engine.ts", "apps/web/src/domains/creator-resources/open-creation.ts"],
   },
   {
     id: "quality-delivery-promotion",
@@ -452,7 +452,7 @@ export const ENGINEERING_PLAYBOOK_DOSSIERS = [
       { ko: "저장소 path는 구현 존재를 보여 줄 뿐 운영 성공·시장 성과를 자동 증명하지 않습니다.", en: "Repository paths show implementation existence, not operating success or market outcome." },
       { ko: "고객·투자자용 정량 수치는 독립적으로 측정하고 시점·표본·환경을 함께 공개해야 합니다.", en: "Customer and investor metrics require independent measurement with time, sample and environment disclosed." },
     ],
-    evidence: ["apps/web/src/domains/legal/technology", "tools/media/brand-film/src/TechnologyStoryFilm.tsx", "docs/marketing/creator-first-home.md", "docs/marketing/creator-film-playback-hardening.md"],
+    evidence: ["apps/web/src/domains/legal/technology/engineering-story-published-content.ts", "tools/media/brand-film/src/TechnologyStoryFilm.tsx", "docs/marketing/creator-first-home.md", "docs/marketing/creator-film-playback-hardening.md"],
   },
 ] as const satisfies readonly EngineeringPlaybookDossier[];
 
@@ -476,7 +476,7 @@ export const ENGINEERING_BENCHMARK_GROUPS = [
       { ko: "PSD·image·3D reference round trip의 중요성", en: "Importance of PSD, image and 3D-reference round trips" },
     ],
     applied: [
-      { ko: "preview/commit renderer 역할, brush lab와 project revision을 분리했습니다.", en: "Preview and commit roles, the brush lab and project revisions remain separate." },
+      { ko: "렌더러 역할 원장(primary·provider·reference·lab), brush lab와 project revision을 분리했습니다.", en: "The renderer role ledger (primary, provider, reference, lab), the brush lab and project revisions remain separate." },
       { ko: "기능 수 복제보다 긴 획·복구·파일 왕복을 검증 기준으로 사용합니다.", en: "Long strokes, recovery and file round trips matter more than feature-count copying." },
     ],
     doNotClaim: [
@@ -494,7 +494,7 @@ export const ENGINEERING_BENCHMARK_GROUPS = [
     },
     observedPatterns: [
       { ko: "Figma·tldraw·Excalidraw 계열은 공유 가능한 문서 room과 ephemeral presence를 분리하는 패턴을 보여 줍니다.", en: "Figma, tldraw and Excalidraw show the value of separating shareable document rooms from ephemeral presence." },
-      { ko: "Magma는 캔버스 안의 대화·영상·화면 공유를 창작 흐름에 붙이되 일부 미디어 capability를 요금제 경계로 운영합니다.", en: "Magma brings conversation, video and screen sharing into the canvas while placing some media capabilities behind plan boundaries." },
+      { ko: "Magma는 캔버스 안의 대화·통화·화면 공유를 창작 흐름에 붙이고, 공식 도움말은 캔버스 소유자와 관리자가 Admin 메뉴의 Listen·Talk 권한으로 음성 통화를 제한할 수 있다고 설명합니다.", en: "Magma brings conversation, calls and screen sharing into the canvas, and its help documentation says canvas owners and admins can limit voice calls through the Listen and Talk permissions in the Admin menu." },
       { ko: "문서 동기화와 음성·영상 transport는 사용자 경험상 가까워도 내구성·권한·비용 면에서는 별도 시스템입니다.", en: "Document synchronization and audio or video transport may feel adjacent, but differ in durability, authority and cost." },
     ],
     evidenceNote: { ko: "공식 기능 문서는 workflow 신호이며 동시 사용자 수·지연·복구 parity의 독립 benchmark는 아닙니다.", en: "Official feature documentation is a workflow signal, not an independent concurrency, latency or recovery benchmark." },
@@ -548,12 +548,12 @@ export const ENGINEERING_BENCHMARK_GROUPS = [
       en: "Space improves discovery of people, rooms and tools, but becomes decorative and exclusionary without conversation consent, real media-recipient disclosure and list alternatives.",
     },
     observedPatterns: [
-      { ko: "Gather는 근접·private area 공유와 room-wide Spotlight를 구분하고, 모드별 권장 규모를 별도로 안내합니다.", en: "Gather distinguishes proximity or private-area sharing from room-wide Spotlight and publishes separate scale guidance by mode." },
+      { ko: "Gather 2.0 도움말은 근처 사람과의 대화, 잠글 수 있는 미팅룸, 여러 명이 동시에 올릴 수 있는 화면 공유를 구분해 설명합니다. room 전체 Spotlight는 이전(Classic) 도움말 주소에서 인용됐던 기능이며 현행 2.0 도움말에서는 찾지 못했습니다(미확인).", en: "Gather 2.0 help distinguishes talking to people nearby, lockable meeting rooms and screen sharing that several people can start at once. Room-wide Spotlight was cited from an older (Classic) help address and was not found in the current 2.0 help (unverified)." },
       { ko: "WorkAdventure는 meeting·silent·restricted·personal·lockable area와 room/world megaphone를 map authoring 계약으로 제공합니다.", en: "WorkAdventure models meeting, silent, restricted, personal and lockable areas plus room or world megaphone as map-authoring contracts." },
       { ko: "Kumospace는 audio range, room audio, closed room, floor broadcast와 recording 범위를 서로 다른 UX로 노출합니다.", en: "Kumospace exposes audio range, room audio, closed rooms, floor broadcast and recording scope as distinct experiences." },
-      { ko: "세 제품 모두 공간상 거리와 대규모 broadcast를 같은 transport로 취급하지 않으며 수신 범위를 사용자가 이해할 수 있게 표시합니다.", en: "These products do not treat proximity and large broadcast as one transport and make recipient scope legible to users." },
+      { ko: "세 제품 모두 공간상 거리 기반 대화와 room 전체 전달(화면 공유·megaphone·broadcast)을 서로 다른 기능으로 안내하며 수신 범위를 사용자가 이해할 수 있게 설명합니다.", en: "All three products document distance-based conversation and room-wide delivery (screen sharing, megaphone, broadcast) as different features and explain recipient scope to users." },
     ],
-    evidenceNote: { ko: "공식 도움말을 2026-09-25에 재확인했습니다. 이는 제품 기능 신호이며 WAN 품질·암호화·접근성의 독립 검증은 아닙니다.", en: "Official help material was rechecked on 2026-09-25. It is a product signal, not independent proof of WAN quality, encryption or accessibility." },
+    evidenceNote: { ko: "공식 도움말을 2026-10-07에 다시 열어 확인했고 깨진 인용 주소 7개를 바로잡았습니다. 이는 제품 기능 신호이며 WAN 품질·암호화·접근성의 독립 검증은 아닙니다.", en: "Official help material was reopened on 2026-10-07 and seven broken citation addresses were corrected. It is a product signal, not independent proof of WAN quality, encryption or accessibility." },
     learned: [
       { ko: "사람 찾기·목적지 이동·회의 요청을 하나의 흐름으로 연결", en: "Connect people search, navigation and meeting requests" },
       { ko: "시각적 방, 음향 범위, 출입 권한과 media 전송 규칙 분리", en: "Separate visual rooms, audio range, access rights and media-routing rules" },
@@ -611,8 +611,8 @@ export const ENGINEERING_AI_WORKBENCH = [
     layer: { ko: "브라우저 로컬 추론", en: "Browser-local inference" },
     tools: ["ONNX Runtime Web", "WebGPU/WASM", "MediaPipe", "Worker"],
     use: { ko: "가능한 보조 계산과 vision task를 기기 안에서 실행해 업로드 지연과 개인정보 전송을 줄입니다.", en: "Run eligible assistance and vision tasks on-device to reduce upload latency and private-data transfer." },
-    artifact: { ko: "capability probe, model revision, memory budget, fallback reason", en: "Capability probe, model revision, memory budget and fallback reason" },
-    guardrail: { ko: "모델 다운로드·메모리·발열을 감추지 않고 저사양 기기에는 명시적 fallback을 제공합니다.", en: "Model download, memory and thermal cost stay visible with explicit low-end fallbacks." },
+    artifact: { ko: "capability probe, model revision, memory budget, 선택·시도한 provider identity", en: "Capability probe, model revision, memory budget and selected or attempted provider identity" },
+    guardrail: { ko: "모델 다운로드·메모리·발열을 감추지 않고 저사양 기기에는 사용자가 고를 수 있는 명시적 대안을 둡니다.", en: "Model download, memory and thermal cost stay visible, with explicit alternatives that users can choose on low-end devices." },
   },
   {
     id: "coding-agents",
@@ -773,7 +773,7 @@ export const ENGINEERING_SEMINAR_MODULES = [
     title: { ko: "브러시 입력에서 문서 commit까지", en: "From brush input to document commit" },
     learning: [
       { ko: "sample normalization, prediction, material simulation과 tile commit", en: "Sample normalization, prediction, media simulation and tile commit" },
-      { ko: "preview/commit parity, long stroke와 fallback 품질", en: "Preview/commit parity, long strokes and fallback quality" },
+      { ko: "preview/commit parity, long stroke와 사용자가 고른 backend의 품질 차이", en: "Preview/commit parity, long strokes and quality differences of the backend a user chooses" },
     ],
     demo: { ko: "pointer sample이 Worker·renderer registry·history receipt로 흐르는 sequence", en: "Trace a pointer sample through Worker, renderer registry and history receipt" },
     discussion: { ko: "우리 UI에서 빠르게 보이지만 저장 결과가 달라질 수 있는 경로는 무엇인가?", en: "Which UI path can look fast yet persist a different result?" },

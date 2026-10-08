@@ -20,6 +20,7 @@ import {
   PUBLISHED_ENGINEERING_GUIDES,
 } from "./engineering-story-published-content";
 import {
+  ENGINEERING_CHAPTER_COUNT,
   ENGINEERING_PAGES,
   ENGINEERING_PAGE_GROUPS,
   ENGINEERING_PATH_PAGES,
@@ -95,6 +96,12 @@ describe("기술 문서 페이지 목록", () => {
     expect(engineeringPageForPath("/about/technology/storyline")).toBeUndefined();
     expect(engineeringPageForPath("/about/technology")).toBeUndefined();
     expect(findEngineeringPage("glossary").href).toBe("/about/technology/glossary");
+  });
+});
+
+describe("챕터 수", () => {
+  it("사이트맵 등이 가볍게 가져다 쓰는 고정 챕터 수는 공개 챕터 수와 같다", () => {
+    expect(ENGINEERING_CHAPTER_COUNT).toBe(PUBLISHED_ENGINEERING_CHAPTERS.length);
   });
 });
 

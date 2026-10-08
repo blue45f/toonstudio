@@ -35,8 +35,8 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "Implementing only the happy authorization-code path leaves duplicate callbacks, state reuse, unverified email merges, provider unlinking and deletion webhooks inconsistent.",
     },
     decision: {
-      ko: "공급자별 redirect와 최소 scope를 고정하고 state·PKCE·nonce를 서버에서 검증한 뒤 HttpOnly 자체 세션을 발급합니다. provider subject를 정본으로 삼고 계정 병합은 명시적 재인증 흐름으로 제한합니다.",
-      en: "Provider redirects and minimal scopes are fixed, state, PKCE and nonce are verified server-side, and only then is a first-party HttpOnly session issued. Provider subjects remain authoritative and account merges require explicit reauthentication.",
+      ko: "공급자별 redirect와 최소 scope를 고정하고, 서버가 state는 모든 코드 흐름에서, PKCE(S256)는 GitHub에서, nonce는 Apple에서 검증하며(Google은 GIS ID token 검증 경로도 둠) 그다음에야 HttpOnly 자체 세션을 발급합니다. provider subject를 정본으로 삼고 계정 병합은 명시적 재인증 흐름으로 제한합니다.",
+      en: "Provider redirects and minimal scopes are fixed; the server verifies state on every code flow, PKCE (S256) for GitHub and nonce for Apple (Google also has a GIS ID-token verification path), and only then issues a first-party HttpOnly session. Provider subjects remain authoritative and account merges require explicit reauthentication.",
     },
     userValue: {
       ko: "사용자는 어떤 계정이 연결됐는지, 무엇을 해제하면 어떤 세션이 종료되는지, 마지막 로그인 수단을 제거하면 어떻게 되는지 예측할 수 있습니다.",
@@ -46,11 +46,11 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       ko: "공급자 콘솔, 검수, secret 회전, unlink webhook과 장애 대응을 지속 운영해야 하며 모든 공급자를 한 번에 노출하면 선택 피로와 개인정보 범위가 커집니다.",
       en: "Provider consoles, review, secret rotation, unlink webhooks and incident response require ongoing operations; exposing every provider at once increases choice fatigue and data scope.",
     },
-    technologies: ["OAuth 2.0", "OpenID Connect", "PKCE S256", "nonce", "HttpOnly", "SameSite", "unlink webhook"],
+    technologies: ["OAuth 2.0", "OpenID Connect", "PKCE S256", "nonce", "HttpOnly", "SameSite", "Kakao·Naver unlink webhook"],
     evidence: [
       evidence("document", "docs/social-login-provider-setup.md", "공급자 신청·scope·운영 절차", "Provider registration, scopes and operations"),
-      evidence("code", "apps/api/src/modules/auth", "서버 callback과 제품 세션 경계", "Server callbacks and product-session boundary"),
-      evidence("code", "apps/web/src/domains/auth", "공급자 상태와 오류를 드러내는 로그인 UI", "Login UI exposing provider status and failures"),
+      evidence("code", "apps/api/src/modules/auth/auth.controller.ts", "서버 callback과 제품 세션 경계", "Server callbacks and product-session boundary"),
+      evidence("code", "apps/api/src/modules/auth/kakao-unlink-webhook.controller.ts", "카카오 연결 해제 웹훅(네이버는 별도 컨트롤러)", "Kakao unlink webhook (Naver has its own controller)"),
       evidence("test", "scripts/verify-social-login-production.test.mjs", "운영 소셜 로그인 검증 계약", "Production social-login verification contract"),
     ],
     reuseSteps: [
@@ -78,8 +78,8 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "Hand-building platform URLs in each screen drifts canonical URL, UTM, title and cover data, while mobile cancellation may look like an error and analytics may leak sensitive full URLs.",
     },
     decision: {
-      ko: "정규화된 share payload와 capability detection을 두고 Web Share API를 우선 사용합니다. 카카오 SDK는 필요할 때 SRI로 로드하고 나머지는 공식 share URL·Clipboard·QR fallback으로 분리합니다.",
-      en: "A normalized share payload and capability detection prefer the Web Share API. The Kakao SDK is lazily loaded with SRI, while official share URLs, Clipboard and QR remain independent fallbacks.",
+      ko: "정규화된 share payload(title·url·text·imageUrl·buttonLabel)와 capability detection을 두고 Web Share API를 우선 사용합니다. 카카오 SDK는 필요할 때 SRI로 로드하고 나머지는 공식 share URL·Clipboard·QR fallback으로 분리하며, 채널은 13종(native·kakao·naver·line·x·facebook·linkedin·instagram·tiktok·telegram·email·copy·qr)입니다.",
+      en: "A normalized share payload (title, url, text, imageUrl, buttonLabel) and capability detection prefer the Web Share API. The Kakao SDK is lazily loaded with SRI, while official share URLs, Clipboard and QR remain independent fallbacks, across 13 channels (native, kakao, naver, line, x, facebook, linkedin, instagram, tiktok, telegram, email, copy, qr).",
     },
     userValue: {
       ko: "사용자는 설치 앱과 브라우저 환경에 맞는 공유 방식을 선택하고 취소해도 작업 흐름을 잃지 않으며, 공유된 작품은 일관된 미리보기로 열립니다.",
@@ -97,9 +97,9 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       evidence("document", "docs/social-sharing.md", "공유 채널·보안·배포 점검", "Share channels, security and release checks"),
     ],
     reuseSteps: [
-      { ko: "화면별 문자열 대신 canonical URL, title, text, image와 content ID를 가진 payload를 정의합니다.", en: "Define a payload containing canonical URL, title, text, image and content ID instead of screen-specific strings." },
+      { ko: "화면별 문자열 대신 canonical URL, title, text, image를 가진 payload 하나를 정의합니다(ToonStudio의 SharePayload는 title·url·text·imageUrl·buttonLabel 다섯 필드).", en: "Define one payload containing canonical URL, title, text and image instead of screen-specific strings (ToonStudio's SharePayload has five fields: title, url, text, imageUrl, buttonLabel)." },
       { ko: "native share, 공식 URL, copy와 QR을 capability와 실패 유형별 독립 adapter로 만듭니다.", en: "Build native share, official URLs, copy and QR as independent adapters by capability and failure type." },
-      { ko: "UTM은 기존 query와 hash를 보존하고 내부 이벤트에는 channel·result·route만 기록합니다.", en: "Preserve existing query and hash when adding UTM, and record only channel, result and route internally." },
+      { ko: "UTM은 기존 query와 hash를 보존하고 내부 이벤트에는 channel·outcome·path(pathname만)를 기록합니다.", en: "Preserve existing query and hash when adding UTM, and record only channel, outcome and path (pathname only) internally." },
       { ko: "실제 crawler user agent로 canonical·OG image·description을 검증하고 모바일 취소를 정상 상태로 처리합니다.", en: "Validate canonical and Open Graph data with real crawler user agents and treat mobile cancellation as a normal outcome." },
     ],
   },
@@ -121,8 +121,8 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "Putting canvas pixels or large files directly in CRDT updates explodes room memory, sync latency and compaction cost while burying undo, deletion and reconnect semantics inside raw data.",
     },
     decision: {
-      ko: "버전된 semantic operation과 bounded binary envelope를 사용하고 room authority, durable receipt와 asset storage를 분리합니다. 래스터는 immutable log와 Worker checkpoint로 재생·복구합니다.",
-      en: "Versioned semantic operations and bounded binary envelopes separate room authority, durable receipts and asset storage. Raster work replays and recovers through an immutable log and Worker checkpoints.",
+      ko: "버전된 semantic operation과 bounded binary envelope를 사용하고 room authority, durable receipt와 asset storage를 분리합니다. 래스터는 immutable log와 Worker checkpoint로 재생·복구합니다. 실시간 룸의 정본은 Yjs이고, 오프라인 작업 브랜치의 문서 병합은 플래그(VITE_STUDIO_AUTOMERGE_OFFLINE_BRANCH)로 켜는 Automerge가 따로 맡습니다.",
+      en: "Versioned semantic operations and bounded binary envelopes separate room authority, durable receipts and asset storage. Raster work replays and recovers through an immutable log and Worker checkpoints. Yjs is the authority for realtime rooms, while merging offline work-branch documents is handled separately by Automerge behind a feature flag (VITE_STUDIO_AUTOMERGE_OFFLINE_BRANCH).",
     },
     userValue: {
       ko: "오프라인·재접속·동시 편집에서도 레이어와 획의 의도가 수렴하고, 대형 원본 때문에 전체 협업 세션이 멈추지 않습니다.",
@@ -132,7 +132,7 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       ko: "CRDT가 권한·저장·미디어 전송을 자동 해결하지 않습니다. schema migration, tombstone·삭제 승인, snapshot compaction과 room resource limit을 별도로 운영해야 합니다.",
       en: "CRDT does not automatically solve authorization, persistence or media transport. Schema migration, deletion acknowledgement, snapshot compaction and room resource limits remain explicit operations.",
     },
-    technologies: ["Yjs", "CRDT", "Socket.IO", "binary envelope", "state vector", "Worker checkpoint", "PostgreSQL receipt"],
+    technologies: ["Yjs", "Automerge", "CRDT", "Socket.IO", "binary envelope", "state vector", "Worker checkpoint", "PostgreSQL receipt"],
     evidence: [
       evidence("code", "apps/web/src/domains/creator/live/studio-crdt-document.ts", "Yjs 문서와 semantic operation 권위", "Yjs document and semantic-operation authority"),
       evidence("code", "apps/web/src/domains/creator/contracts/studio-crdt-binary-envelope.ts", "bounded binary transport envelope", "Bounded binary transport envelope"),
@@ -164,12 +164,12 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "When preview and document engines diverge implicitly, a fast line changes after pointer-up and cannot be reproduced by undo, replay, collaboration or export.",
     },
     decision: {
-      ko: "renderer registry에 preview·live·commit·export 역할과 document authority를 선언하고, normalized samples·brush revision·seed·material parameters를 commit receipt로 남깁니다. Worker와 GPU backend는 이 계약 뒤에서 교체합니다.",
-      en: "The renderer registry declares preview, live, commit and export roles plus document authority. Normalized samples, brush revision, seed and material parameters form the commit receipt while Worker and GPU backends remain replaceable behind it.",
+      ko: "렌더러 역할 원장(primary·provider·reference·lab)이 authority마다 primary 소유자 하나를 선언하고, preview·live·commit·export는 획의 phase 계약(brush-studio-v5-runtime-types.ts)으로 나눕니다. normalized samples·brush revision·seed·material parameters를 commit receipt로 남기며, Worker와 GPU backend는 작업 전에 하나를 골라 이 계약 뒤에서 교체합니다.",
+      en: "The renderer role ledger (primary, provider, reference, lab) declares exactly one primary owner per authority, while preview, live, commit and export are phases of the stroke contract (brush-studio-v5-runtime-types.ts). Normalized samples, brush revision, seed and material parameters form the commit receipt, and a Worker or GPU backend is chosen before the job and stays replaceable behind that contract.",
     },
     userValue: {
-      ko: "획은 즉시 반응하면서도 저장·Undo·재생·내보내기에서 형태와 재료 특성이 유지되고, 저사양 기기에서는 안전한 backend로 낮출 수 있습니다.",
-      en: "Strokes respond immediately yet preserve shape and media behavior through save, undo, replay and export, with a safe backend available on constrained devices.",
+      ko: "획은 즉시 반응하면서도 저장·Undo·재생·내보내기에서 형태와 재료 특성이 유지되고, 저사양 기기에서는 사용자가 안전한 backend를 직접 고를 수 있습니다.",
+      en: "Strokes respond immediately yet preserve shape and media behavior through save, undo, replay and export, and users can pick a safe backend themselves on constrained devices.",
     },
     tradeoff: {
       ko: "완전한 픽셀 동일성과 지각 품질은 다른 목표입니다. GPU·WASM·Canvas 경로마다 결정성, 색공간, precision과 긴 획 메모리 예산을 따로 측정해야 합니다.",
@@ -186,7 +186,7 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       { ko: "포인터 sample schema와 좌표·압력·tilt·time 보정 위치를 먼저 고정합니다.", en: "Freeze the pointer-sample schema and where coordinate, pressure, tilt and time normalization occurs." },
       { ko: "preview, live simulation, document commit, history와 export의 입출력·권위를 표로 만듭니다.", en: "Map inputs, outputs and authority for preview, live simulation, document commit, history and export." },
       { ko: "짧은 선뿐 아니라 긴 획, 빠른 방향 전환, 저속 압력 변화와 device loss를 검증합니다.", en: "Verify long strokes, rapid turns, slow pressure changes and device loss—not only short lines." },
-      { ko: "fallback이 켜져도 문서 receipt와 재생 의미가 바뀌지 않게 하고 품질 차이는 사용자에게 설명합니다.", en: "Keep document receipts and replay meaning stable across fallbacks and explain quality differences to users." },
+      { ko: "사용자가 다른 backend를 고르더라도 문서 receipt와 재생 의미가 바뀌지 않게 하고 품질 차이는 사용자에게 설명합니다.", en: "Keep document receipts and replay meaning stable even when the user selects another backend, and explain quality differences to users." },
     ],
   },
   {
@@ -199,30 +199,30 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "Operating document collaboration and realtime media as separate authorities",
     },
     thesis: {
-      ko: "Socket.IO는 참가 승인과 시그널링을, RTCDataChannel은 직접 제어 메시지를, RTP는 음성·영상·화면 공유를 맡고 프로젝트 문서와 미디어 수신자 권위는 서로 섞지 않습니다.",
-      en: "Socket.IO owns admission and signaling, RTCDataChannel direct control messages and RTP voice, video and screen media, without mixing document or recipient authority.",
+      ko: "방 서버(기본은 Cloudflare Durable Objects, 선택형 Socket.IO 폴백)는 참가 승인·presence·화면 공유 신호를, RTCDataChannel 직접 레인은 허들의 SDP·ICE와 채팅을, RTP는 음성·영상·화면 공유를 맡고 프로젝트 문서와 미디어 수신자 권위는 서로 섞지 않습니다.",
+      en: "The room server (Cloudflare Durable Objects by default, optional Socket.IO fallback) owns admission, presence and screen-share signals, the RTCDataChannel direct lane carries huddle SDP, ICE and chat, and RTP carries voice, video and screen media, without mixing document or recipient authority.",
     },
     problem: {
       ko: "시그널링 서버, STUN·TURN, 문서 동기화와 실제 미디어 경로를 하나의 ‘실시간 연결’로 취급하면 거리 UI와 실제 수신자가 어긋나고 권한 취소·네트워크 변경·늦은 SDP가 개인정보와 자원 누수로 이어집니다.",
       en: "Treating signaling, STUN or TURN, document sync and media routes as one realtime connection lets spatial UI drift from actual recipients and turns revoked authority, network changes and late SDP into privacy and resource leaks.",
     },
     decision: {
-      ko: "room membership과 immutable conversation scope로 peer를 제한하고, 권한 프롬프트 뒤 revision을 다시 확인한 다음에만 track을 연결합니다. perfect negotiation, bounded ICE queue, restartIce, short-lived TURN policy refresh와 명시적 track·peer teardown을 각각 운영합니다. 라이브 룸의 데이터 경로도 같은 원칙으로 나눠 둡니다. 시그널링(WebSocket) 위에 RTCDataChannel 풀메시를 얹어 잉크 프레임과 CRDT diff를 서버 중계 없이 주고받고, 메시 피어는 8명으로 상한을 둡니다. 큰 파일은 24KB 청크로 나눠 sha256으로 무결성을 확인하는 벌크 전송으로 보내며, 한 번의 전송은 최대 256MB로 제한합니다.",
-      en: "Room membership and immutable conversation scope bound peers, and authority revision is rechecked after every permission prompt before tracks attach. Perfect negotiation, bounded ICE queues, restartIce, short-lived TURN refresh and explicit track and peer teardown remain separate controls. The live room's data path follows the same separation: a full-mesh RTCDataChannel overlay on WebSocket signaling carries ink frames and CRDT diffs without a server relay, capped at eight peers, and large files move through a bulk-transfer protocol split into 24KB chunks with sha256 integrity checks, limited to 256MB per transfer.",
+      ko: "room membership과 immutable conversation scope로 peer를 제한하고, 권한 프롬프트 뒤 revision을 다시 확인한 다음에만 track을 연결합니다. perfect negotiation, bounded ICE queue, restartIce, short-lived TURN policy refresh와 명시적 track·peer teardown을 각각 운영합니다. 신호도 세 겹으로 나눕니다. 방 서버는 입장·presence를 맡고 그곳을 지나는 WebRTC 신호는 데이터 통로(메시) 시작 신호와 화면 공유 신호뿐이며(서버 음성 경로 STUDIO_LIVE_VOICE_ENABLED는 render.yaml에서 꺼져 있습니다), 허들의 SDP·ICE와 채팅 본문은 DataChannel의 studio-direct-v1 직접 레인으로만 오가고 서버 중계로 바뀌지 않습니다. 라이브 룸의 풀메시 RTCDataChannel은 잉크 프레임과 CRDT diff를 서버 중계 없이 주고받고 메시 피어는 8명으로 상한을 둡니다. 큰 파일은 24KiB 청크로 나눠 sha256으로 무결성을 확인하는 벌크 전송으로 보내며 한 번의 전송은 최대 256MiB로 제한합니다. TURN 자격은 허들·직통 데이터가 Worker 발급 Cloudflare TURN(4시간), 화면 공유가 API의 coturn REST(HMAC-SHA1, 기본 900초)로 서로 다른 길에서 오고, 자격이 없으면 STUN 전용으로 시작합니다.",
+      en: "Room membership and immutable conversation scope bound peers, and authority revision is rechecked after every permission prompt before tracks attach. Perfect negotiation, bounded ICE queues, restartIce, short-lived TURN refresh and explicit track and peer teardown remain separate controls. Signaling is split into three layers: the room server owns admission and presence, and the only WebRTC signals passing through it are data-channel (mesh) start signals and screen-share signals (the server voice path, STUDIO_LIVE_VOICE_ENABLED, is off in render.yaml), while huddle SDP, ICE and chat bodies travel only over the studio-direct-v1 direct lane of the DataChannel and never switch to a server relay. The live room's full-mesh RTCDataChannel carries ink frames and CRDT diffs without a server relay, capped at eight peers, and large files move through a bulk-transfer protocol split into 24 KiB chunks with sha256 integrity checks, limited to 256 MiB per transfer. TURN credentials come by separate routes, a Worker-issued Cloudflare TURN credential (4 hours) for huddle and direct data and an API coturn REST credential (HMAC-SHA1, 900 seconds by default) for screen sharing, and without credentials the client starts STUN-only.",
     },
     userValue: {
       ko: "사용자는 누가 실제 음성·영상·화면을 받는지 확인하고 권한 요청 전에도 공간을 탐색할 수 있으며, 네트워크가 바뀌거나 방을 나가면 연결과 장치가 예측 가능하게 복구·종료됩니다.",
       en: "Users can see actual media recipients, explore before granting device access and rely on predictable recovery or teardown when networks change or they leave a room.",
     },
     tradeoff: {
-      ko: "현재 소규모 P2P huddle은 원격 peer를 세 명으로 제한하고 STUN-only 경로가 있으며, 실제 검증 일부는 단일 Chromium loopback입니다. WAN·제한 NAT·물리 장치·대규모 방송은 TURN과 SFU를 포함한 별도 증거가 필요합니다.",
-      en: "The small P2P huddle caps remote peers at three and includes a STUN-only path, while some evidence uses one Chromium loopback. WAN, restrictive NAT, physical devices and large broadcast require separate TURN and SFU evidence.",
+      ko: "현재 소규모 P2P huddle은 원격 peer를 세 명으로 제한하고 STUN-only 경로가 있으며, 실제 검증 일부는 단일 Chromium loopback입니다. WAN·제한 NAT·물리 장치·대규모 방송은 TURN과 SFU를 포함한 별도 증거가 필요하고, TURN 자격 만료 뒤 갱신과 메시 신호의 방 서버 접근 규칙(ACL) 통과를 운영 환경에서 확인한 증거는 아직 없습니다(미확인).",
+      en: "The small P2P huddle caps remote peers at three and includes a STUN-only path, while some evidence uses one Chromium loopback. WAN, restrictive NAT, physical devices and large broadcast require separate TURN and SFU evidence, and no production evidence yet confirms credential renewal after TURN expiry or mesh signals passing the room server's access rules (unverified).",
     },
-    technologies: ["WebRTC", "RTCPeerConnection", "RTCDataChannel", "ICE", "STUN/TURN", "getUserMedia", "getDisplayMedia", "Socket.IO signaling"],
+    technologies: ["WebRTC", "RTCPeerConnection", "RTCDataChannel", "ICE", "STUN/TURN", "getUserMedia", "getDisplayMedia", "Durable Objects", "Socket.IO"],
     evidence: [
       evidence("code", "apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-controller.ts", "P2P 협상·미디어·ICE 복구 controller", "P2P negotiation, media and ICE recovery controller"),
       evidence("code", "apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport.ts", "라이브 룸 DataChannel 풀메시 오버레이(상한 8피어)", "Live-room DataChannel full-mesh overlay (eight-peer cap)"),
-      evidence("code", "apps/web/src/domains/creator/live/studio-peer-bulk-transfer.ts", "24KB 청크·sha256·최대 256MB 벌크 전송 프로토콜", "Bulk-transfer protocol: 24KB chunks, sha256, 256MB cap"),
+      evidence("code", "apps/web/src/domains/creator/live/studio-peer-bulk-transfer.ts", "24KiB 청크·sha256·최대 256MiB 벌크 전송 프로토콜", "Bulk-transfer protocol: 24 KiB chunks, sha256, 256 MiB cap"),
       evidence("code", "apps/web/src/domains/creator/studio-screen-share.ts", "양방향 동의형 화면 공유", "Two-sided-consent screen sharing"),
       evidence("code", "apps/web/src/domains/creator/studio-voice-ice-policy.ts", "단기 TURN 정책과 기존 peer 갱신", "Short-lived TURN policy and existing-peer refresh"),
       evidence("document", "docs/studio-p2p-huddle.md", "시그널링·데이터·미디어 권위 경계", "Signaling, data and media authority boundary"),
@@ -297,16 +297,16 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "Sending every image inference to a server stacks GPU cost and upload latency per call, and the feature simply turns off without an API key or a network. Putting models in the browser carelessly instead blocks users with tens of megabytes of downloads and wide device-performance variance.",
     },
     decision: {
-      ko: "모델 레지스트리에 파일 크기, SHA-256 다이제스트와 텐서 계약을 등록한 모델만 기능이 켜지는 순간에 지연 로드하고, 받은 바이트의 다이제스트가 등록값과 같을 때만 세션을 엽니다. 실행 제공자는 WebGPU를 먼저 고르고, 쓸 수 없는 브라우저에서는 WASM 실행 제공자로 같은 모델을 돌립니다. 원본 픽셀은 기기를 떠나지 않습니다. WebGPU를 고르기 전에는 어댑터가 실제로 잡히는지도 확인합니다. 페이지 전역에서 한 번만 도는 프로브가 requestAdapter로 어댑터를 확인하고, 없으면 ORT 세션을 만들 시도 자체를 하지 않은 채 WASM 경로로 떨어집니다. 가상머신이나 GPU 블록리스트 환경에서 모델마다 세션 생성 실패를 반복해서 치르지 않기 위해서입니다.",
-      en: "Only models registered with a byte size, SHA-256 digest and tensor contract lazy-load when a feature is invoked, and a session opens only after the received bytes match the registered digest. The execution provider prefers WebGPU and runs the same model on the WASM provider where WebGPU is unavailable. Source pixels never leave the device. Before WebGPU is chosen, a page-wide probe that runs once calls requestAdapter to confirm an adapter can actually be obtained; when none exists, the code falls to the WASM path without attempting an ORT session at all, instead of paying a failed session creation per model in virtual machines or on GPU blocklists.",
+      ko: "ONNX 기능은 5종이고 모델 파일은 6개(AnimeGAN만 파일 2개)이며 파일은 모두 SHA-256이 고정돼 있습니다. 모델 레지스트리에 파일 크기, SHA-256 다이제스트와 텐서 계약을 등록한 모델만 기능이 켜지는 순간에 지연 로드하고, 받은 바이트의 다이제스트가 등록값과 같을 때만 세션을 엽니다. 실행 제공자는 WebGPU를 먼저 고르고, 쓸 수 없는 브라우저에서는 WASM 실행 제공자로 같은 모델을 돌립니다. 원본 픽셀은 기기를 떠나지 않습니다. WebGPU를 고르기 전에는 어댑터가 실제로 잡히는지도 확인합니다. 페이지 전역에서 한 번만 도는 프로브가 requestAdapter로 어댑터를 확인하고, 없으면 ORT 세션을 만들 시도 자체를 하지 않은 채 WASM 경로로 떨어집니다. 가상머신이나 GPU 블록리스트 환경에서 모델마다 세션 생성 실패를 반복해서 치르지 않기 위해서입니다.",
+      en: "There are five ONNX features and six model files (only AnimeGAN has two files), and every file has its SHA-256 pinned. Only models registered with a byte size, SHA-256 digest and tensor contract lazy-load when a feature is invoked, and a session opens only after the received bytes match the registered digest. The execution provider prefers WebGPU and runs the same model on the WASM provider where WebGPU is unavailable. Source pixels never leave the device. Before WebGPU is chosen, a page-wide probe that runs once calls requestAdapter to confirm an adapter can actually be obtained; when none exists, the code falls to the WASM path without attempting an ORT session at all, instead of paying a failed session creation per model in virtual machines or on GPU blocklists.",
     },
     userValue: {
       ko: "키가 없어도, 네트워크가 끊겨도 채색·배경 제거·업스케일이 동작하고, 결과가 서버 왕복 없이 바로 캔버스로 돌아옵니다.",
       en: "Colorization, background removal and upscaling work without a key and without a network, and results return straight to the canvas with no server round trip.",
     },
     tradeoff: {
-      ko: "모델 크기와 기기 성능이 그대로 제약이 됩니다. 선화 채색 모델은 약 79MB라 처음 켤 때 내려받는 대가가 크고, 저사양 기기에서는 추론이 느립니다. 그래서 모델마다 켜는 자리, 진행 표시와 취소 경로를 따로 둡니다.",
-      en: "Model size and device performance remain hard constraints. The line-art colorizer is about 79MB, so first use carries a real download cost, and inference is slow on low-end devices. Each model therefore gets its own entry point, progress surface and cancellation path.",
+      ko: "모델 크기와 기기 성능이 그대로 제약이 됩니다. 선화 채색 모델은 약 79MB라 처음 켤 때 내려받는 대가가 크고, 저사양 기기에서는 추론이 느립니다. 그래서 모델마다 켜는 자리, 진행 표시와 취소 경로를 따로 둡니다. 또한 기능 5종의 모델 모듈은 WebGPU 우선·WASM 차선의 실행 경로 사다리를 두고 실패한 경로를 퇴역시킨 뒤 다음 경로로 같은 모델을 다시 돌립니다. 이는 렌더 엔진 간 자동 전환을 금지한 ADR-0018과 구분해 읽어야 하며, 같은 ADR의 §12(실행 제공자 하나 고정)와의 정합은 별도 확인 대상입니다.",
+      en: "Model size and device performance remain hard constraints. The line-art colorizer is about 79MB, so first use carries a real download cost, and inference is slow on low-end devices. Each model therefore gets its own entry point, progress surface and cancellation path. The modules for the five features also keep a WebGPU-first, WASM-second route ladder, retiring a failed route and rerunning the same model on the next one. Read this apart from ADR-0018's ban on automatic switching between render engines; its consistency with §12 of the same ADR (pin one execution provider) remains an open check.",
     },
     technologies: ["ONNX Runtime Web", "WebGPU execution provider", "WASM execution provider", "SHA-256 digest", "lazy loading"],
     evidence: [
@@ -339,8 +339,8 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "localStorage is synchronous and small, so data where images and documents grow together hits the wall first. Growing documents move to IndexedDB, and migration never deletes the old copy until verification completes.",
     },
     problem: {
-      ko: "캐릭터 캐논 문서는 시트 이미지가 포함돼 localStorage 상한에 걸렸고 한동안 이미지를 512px로 줄이는 우회로 버텼습니다. 큰 JSON을 저장할 때마다 UI 스레드가 멈추고, 이전 도중 실패하면 유일한 사본을 잃을 수 있습니다.",
-      en: "Character canon documents carry sheet images and hit the localStorage ceiling; for a while the workaround was shrinking images to 512px. Saving large JSON stalls the UI thread, and a failed migration can lose the only copy.",
+      ko: "캐릭터 캐논 문서는 시트 이미지가 포함돼 localStorage 상한에 걸렸고 한동안 이미지를 512px로 줄이는 우회로 버텼습니다. 참조 이미지의 512px 규격은 IndexedDB 이전 뒤에도 코드에 남아 있습니다. 큰 JSON을 저장할 때마다 UI 스레드가 멈추고, 이전 도중 실패하면 유일한 사본을 잃을 수 있습니다.",
+      en: "Character canon documents carry sheet images and hit the localStorage ceiling; for a while the workaround was shrinking images to 512px, and the 512px reference-image size still remains in code after the IndexedDB migration. Saving large JSON stalls the UI thread, and a failed migration can lose the only copy.",
     },
     decision: {
       ko: "공용 이전 도구가 기존 키를 읽어 IndexedDB에 쓰고, 다시 읽어 같은 값인지 확인한 뒤에만 기존 키를 지웁니다. 화면은 하이드레이션이 끝나기 전에 저장을 시작하지 않고, 읽는 동안 도착한 편집은 병합해 잃지 않습니다. IndexedDB를 쓸 수 없는 환경에서는 localStorage가 폴백으로 남고, 인증과 부팅 초기값처럼 동기 읽기가 필요한 작은 값은 옮기지 않습니다.",
@@ -375,12 +375,12 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
     status: "configured",
     eyebrow: "34 · WEBTRANSPORT TRANSPORT",
     title: {
-      ko: "WebTransport 클라이언트는 완성, 켜는 스위치는 서버에 있습니다",
-      en: "The WebTransport client is done; the switch lives on the server",
+      ko: "WebTransport 클라이언트 소켓은 구현됐고, 켜는 배선과 서버 종단은 아직 없습니다",
+      en: "The WebTransport client socket is built; the wiring and the server termination are not there yet",
     },
     thesis: {
-      ko: "실시간 전송 추상화에 WebTransport 소켓을 기존 WebSocket과 같은 계약으로 구현해 두었습니다. 엔드포인트가 설정되면 시도 순서가 WebTransport → WebSocket이 되고, 설정이 없으면 지금과 완전히 동일하게 WebSocket만으로 동작합니다.",
-      en: "A WebTransport socket now implements the same contract as the existing WebSocket inside the realtime transport abstraction. With an endpoint configured, attempts run WebTransport first, then WebSocket; without one, behavior is exactly today's WebSocket only.",
+      ko: "실시간 전송 추상화에 WebTransport 소켓을 기존 WebSocket과 같은 계약으로 구현해 두었습니다. 어댑터에 엔드포인트가 주어지면 시도 순서가 WebTransport → WebSocket이 되지만, 이 체인은 문서 협업이 아니라 Cloudflare 휘발성 경로(presence·comments·screen-signaling) 안에서만 쓰이고, 현재 브라우저 설정에는 엔드포인트를 넘기는 배선이 없어 운영은 WebSocket만으로 동작합니다.",
+      en: "A WebTransport socket now implements the same contract as the existing WebSocket inside the realtime transport abstraction. When the adapter is given an endpoint, attempts run WebTransport first, then WebSocket, but that chain exists only inside the Cloudflare ephemeral route (presence, comments, screen-signaling), not document collaboration, and the browser configuration has no wiring that passes an endpoint, so production runs on WebSocket alone.",
     },
     problem: {
       ko: "WebSocket은 TCP라서 패킷 하나가 재전송을 기다리는 동안 뒤의 메시지가 전부 함께 막힙니다(head-of-line blocking). 커서 위치처럼 낡으면 버려도 되는 갱신까지, 순서가 생명인 메시지 뒤에 줄 서서 늦게 도착합니다.",
@@ -391,18 +391,18 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "The socket contract the Cloudflare adapter consumes is implemented over WebTransport (studio-realtime-webtransport-socket.ts) without changing the wire protocol: reliable streams reproduce WebSocket message boundaries with a 4-byte length prefix plus JSON. Capability detection finishes at factory creation, so browsers without the API fall through to the WebSocket factory at zero network cost. A cursor-only datagram lane is implemented, including coalescing that keeps one in-flight and one latest pending frame, but it ships off until the server's ack policy is decided.",
     },
     userValue: {
-      ko: "지금 당장 사용자의 화면이 달라지지는 않습니다. 그게 정직한 상태입니다. 대신 서버 종단이 붙는 날에는 코드가 아니라 엔드포인트 설정 한 줄로, 휘발성 갱신이 TCP 줄서기에서 빠져나갈 길이 열립니다.",
-      en: "Nothing changes on user screens today, and that is the honest state. What is ready is the path: when a server endpoint lands, one endpoint setting—not new client code—lets volatile updates escape the TCP queue.",
+      ko: "지금 당장 사용자의 화면이 달라지지는 않습니다. 그게 정직한 상태입니다. 준비된 것은 클라이언트 소켓이며, 서버 종단이 생기고 브라우저 설정에서 어댑터로 엔드포인트를 넘기는 배선이 더해지면 소켓 코드를 새로 쓰지 않고도 휘발성 갱신이 TCP 줄서기에서 빠져나갈 길이 열립니다.",
+      en: "Nothing changes on user screens today, and that is the honest state. What is ready is the client socket: once a server termination exists and the browser configuration is wired to hand an endpoint to the adapter, volatile updates can escape the TCP queue without new socket code.",
     },
     tradeoff: {
-      ko: "Cloudflare Workers(workerd)는 WebTransport 서버를 종단할 수 없고, Cloudflare 프록시는 QUIC를 오리진으로 넘기지 못합니다. 별도 QUIC 서버나 브리지가 필요해서, 클라이언트만으로 '도입 완료'라고 말하지 않고 상태를 '설정 완료'로 둡니다. UDP가 막힌 네트워크에서는 WebSocket이 호환 하한으로 남습니다.",
-      en: "Cloudflare Workers (workerd) cannot terminate a WebTransport server, and the Cloudflare proxy does not pass QUIC through to origins. A separate QUIC server or bridge is required, so the client alone is not called 'shipped'—the status stays 'configured'. On networks where UDP is blocked, WebSocket remains the compatibility floor.",
+      ko: "어댑터 주석은 현행 서버(Cloudflare Workers·Durable Objects)가 WebTransport를 종단할 수 없다고 적고(서버 계약 대기), 그래서 별도 서버 종단이 필요합니다. 클라이언트만으로 '도입 완료'라고 말하지 않고 상태를 '설정 필요'로 둡니다. UDP가 막힌 네트워크에서는 WebSocket이 호환 하한으로 남습니다.",
+      en: "The adapter's own comment records that the current server (Cloudflare Workers and Durable Objects) cannot terminate WebTransport (server contract pending), so a separate server termination is required. The client alone is not called 'shipped'—the status reads 'setup required'. On networks where UDP is blocked, WebSocket remains the compatibility floor.",
     },
     technologies: ["WebTransport", "HTTP/3 (QUIC)", "WebSocket fallback", "datagrams", "capability detection"],
     evidence: [
       evidence("code", "apps/web/src/domains/creator/studio-realtime-webtransport-socket.ts", "WebSocket 계약을 WebTransport로 구현한 소켓", "Socket implementing the WebSocket contract over WebTransport"),
       evidence("code", "apps/web/src/domains/creator/studio-realtime-webtransport-adapter.ts", "WebTransport 어댑터 팩토리와 체인 합성", "WebTransport adapter factory and chain composition"),
-      evidence("code", "apps/web/src/domains/creator/live/studio-live-purpose-routed-transport.ts", "엔드포인트가 설정될 때만 체인에 WebTransport를 넣는 배선", "Wiring that adds WebTransport to the chain only when an endpoint is set"),
+      evidence("code", "apps/web/src/domains/creator/live/studio-live-purpose-routed-transport.ts", "엔드포인트 옵션이 있을 때만 Cloudflare 휘발성 경로 체인에 WebTransport를 넣는 배선(운영 호출부는 아직 옵션을 넘기지 않음)", "Wiring that adds WebTransport to the Cloudflare ephemeral-route chain only when the endpoint option is present (the production caller does not pass it yet)"),
       evidence("test", "apps/web/src/domains/creator/studio-realtime-webtransport-adapter.test.ts", "프레이밍·레인 구분·핸드셰이크 왕복 검사", "Framing, lane separation and handshake round-trip tests"),
     ],
     reuseSteps: [
@@ -438,8 +438,8 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "Korean input now reaches the English index, and English input behaves exactly as before. If the model is absent or fails, the ladder quietly falls back to dictionary conversion and the original text—search itself is never blocked.",
     },
     tradeoff: {
-      ko: "모델 파일 약 123MB(양자화 인코더 52.9MB, 디코더 60.2MB, 토크나이저 등 약 10MB)는 저장소에 넣지 않습니다. 배포할 때 dist/models/Xenova/opus-mt-ko-en/에 파일을 배치해야 켜지고, 배치 전 환경에서는 모델 층이 없는 것과 같아 종전 동작과 동일합니다. 번역 품질은 검색 질의 수준에서만 다룹니다. 긴 문장을 번역하는 도구가 아닙니다.",
-      en: "The roughly 123MB of model files (52.9MB quantized encoder, 60.2MB decoder, about 10MB of tokenizer files) are not committed to the repository. They must be placed under dist/models/Xenova/opus-mt-ko-en/ at deploy time; until then the model rung is simply absent and behavior matches the previous release. Translation quality is scoped to search queries—this is not a long-sentence translation tool.",
+      ko: "모델 파일 약 123MB(양자화 인코더 52.9MB, 디코더 60.2MB, 토크나이저 등 약 10MB)는 저장소에 넣지 않습니다. 배포할 때 dist/models/Xenova/opus-mt-ko-en/에 파일을 배치해야 켜지고, 배치 전 환경에서는 모델 층이 없는 것과 같아 종전 동작과 동일합니다. 번역 품질은 검색 질의 수준에서만 다룹니다. 긴 문장을 번역하는 도구가 아닙니다. 확인하지 못한 잠재 한계도 있습니다. Transformers.js의 기본 설정은 ONNX Runtime WASM 파일을 공개 CDN(jsDelivr) 경로에서 받도록 되어 있는데 코드가 이 경로를 따로 지정하지 않고 운영 CSP에도 jsDelivr가 없어, 실제 브라우저에서 이 경로가 쓰이는지와 충돌 여부는 미확인입니다. 직접 의존성 onnxruntime-web 1.27.0과 다른 버전도 함께 설치돼 있습니다.",
+      en: "The roughly 123MB of model files (52.9MB quantized encoder, 60.2MB decoder, about 10MB of tokenizer files) are not committed to the repository. They must be placed under dist/models/Xenova/opus-mt-ko-en/ at deploy time; until then the model rung is simply absent and behavior matches the previous release. Translation quality is scoped to search queries—this is not a long-sentence translation tool. There is also an unverified potential limit: Transformers.js by default fetches the ONNX Runtime WASM files from a public CDN (jsDelivr) path, yet the code does not set this path and the production CSP does not list jsDelivr, so whether that path is used in real browsers and whether it conflicts is unconfirmed. Another onnxruntime-web version is also installed alongside the direct 1.27.0 dependency.",
     },
     technologies: ["Transformers.js", "@huggingface/transformers 4.3.0", "OPUS-MT ko→en", "ONNX Runtime Web", "self-hosted model files"],
     evidence: [
@@ -473,20 +473,21 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "URLs are locations: move or delete the origin and the link dies, and confirming a received file equals the original takes a separate procedure. Pretending the browser is a full IPFS node is the opposite failure—it promises network roles a browser cannot perform, such as acting as a DHT provider.",
     },
     decision: {
-      ko: "개발이 끝난 js-ipfs는 어떤 경우에도 쓰지 않고, 후계인 Helia의 경량 패키지 @helia/verified-fetch 8.1.2와 multiformats 14.0.5로 '검증하며 가져오기'만 구현했습니다(ipfs-content-address.ts). CID 생성·파싱·바이트 단위 검증은 raw 코덱과 sha2-256 범위에서 하고, dag-pb 같은 범위 밖 코덱은 조용히 넘기지 않고 unsupported-codec으로 구분해 답합니다. 가져오기는 trustless 게이트웨이 규격으로 받고, 받은 바이트를 CID와 대조한 뒤에만 건넵니다.",
-      en: "The discontinued js-ipfs is not used under any circumstances. The implementation uses only Helia's lightweight packages—@helia/verified-fetch 8.1.2 and multiformats 14.0.5—to do verified fetching (ipfs-content-address.ts). CID creation, parsing and byte-level verification cover the raw codec and sha2-256; out-of-scope codecs such as dag-pb are answered distinctly as unsupported-codec instead of being silently passed over. Fetches use the trustless gateway spec, and bytes are handed over only after matching the CID.",
+      ko: "개발이 끝난 js-ipfs는 어떤 경우에도 쓰지 않습니다. 후계인 Helia의 @helia/verified-fetch는 전이 의존성 보안 권고가 해소되지 않아 채택하지 않고(2026-10-07 의존성에서 제거), multiformats 14.0.5로 CID를 만들고 공개 게이트웨이(trustless-gateway.link·ipfs.io·dweb.link)에서 fetch한 바이트의 SHA-256을 CID와 직접 대조하는 '검증하며 가져오기'만 구현했습니다(ipfs-content-address.ts). CID 생성·파싱·바이트 단위 검증은 raw 코덱과 sha2-256 범위에서 하고, dag-pb 같은 범위 밖 코덱은 조용히 넘기지 않고 unsupported-codec으로 구분해 답합니다. 가져오기는 /ipfs/<cid> 경로로 게이트웨이를 차례로 시도하며(게이트웨이마다 15초 제한) 받은 바이트가 CID와 일치할 때만 건넵니다.",
+      en: "The discontinued js-ipfs is not used under any circumstances. Helia's @helia/verified-fetch is not adopted because its transitive-dependency security advisories remain unresolved (removed from the dependencies on 2026-10-07); multiformats 14.0.5 creates CIDs, and only 'verified fetching' is implemented by comparing the SHA-256 of bytes fetched from public gateways (trustless-gateway.link, ipfs.io, dweb.link) directly with the CID (ipfs-content-address.ts). CID creation, parsing and byte-level verification cover the raw codec and sha2-256; out-of-scope codecs such as dag-pb are answered distinctly as unsupported-codec instead of being silently passed over. Fetches try the gateways in order through /ipfs/<cid> paths with a 15-second limit each, and bytes are handed over only when they match the CID.",
     },
     userValue: {
-      ko: "파일에서 CID를 만들어 공유 링크로 쓸 수 있고, CID로 받은 파일이 변조되지 않았음을 도구가 확인해 줍니다. 동작은 공개 테스트 벡터(빈 바이트와 'hello world'의 CID)와 실제 게이트웨이에서 검증하며 가져오는 방식으로 확인했습니다.",
-      en: "Users can mint a CID from a file to use as a share link, and the tool confirms that bytes fetched by CID are untampered. Behavior was checked against public test vectors—the CIDs of empty bytes and of 'hello world'—and by verified fetching from a live gateway.",
+      ko: "파일에서 CID를 만들어 공유 링크로 쓸 수 있고, CID로 받은 파일이 변조되지 않았음을 도구가 확인해 줍니다. 동작은 공개 테스트 벡터(빈 바이트와 'hello world'의 CID)와 fetcher를 주입한 단위 테스트로 확인했습니다. 실제 공개 게이트웨이에서의 가져오기는 현재 구현으로 다시 검증한 기록이 없습니다.",
+      en: "Users can mint a CID from a file to use as a share link, and the tool confirms that bytes fetched by CID are untampered. Behavior was checked against public test vectors—the CIDs of empty bytes and of 'hello world'—and unit tests that inject the fetcher. Fetching from a live public gateway has not been re-verified with the current implementation.",
     },
     tradeoff: {
-      ko: "브라우저에서 네트워크에 콘텐츠를 제공하는 기능은 없습니다. CID는 무결성 주소이자 공유 링크일 뿐, 바이트의 배포는 게이트웨이와 기존 서버 표면이 맡습니다. raw CID와 UnixFS(dag-pb) CID는 같은 파일이어도 서로 호환되지 않고, 풀 노드 도입은 파일 CID 호환이나 제공 역할이 실제로 필요해질 때의 후속으로 남겼습니다.",
-      en: "The browser does not provide content to the network. A CID here is an integrity address and share link; byte distribution stays with gateways and the existing server surfaces. Raw CIDs and UnixFS (dag-pb) CIDs are not interchangeable even for the same file, and a full node remains follow-up work for when file-CID compatibility or a provider role is actually needed.",
+      ko: "브라우저에서 네트워크에 콘텐츠를 제공하는 기능은 없습니다. CID는 무결성 주소이자 공유 링크일 뿐, 바이트의 배포는 게이트웨이와 기존 서버 표면이 맡습니다. 운영 CSP의 connect-src 허용 목록에는 세 게이트웨이 호스트가 없어 운영 브라우저에서 가져오기가 통과하는지는 확인되지 않았습니다. raw CID와 UnixFS(dag-pb) CID는 같은 파일이어도 서로 호환되지 않고, 풀 노드 도입은 파일 CID 호환이나 제공 역할이 실제로 필요해질 때의 후속으로 남겼습니다.",
+      en: "The browser does not provide content to the network. A CID here is an integrity address and share link; byte distribution stays with gateways and the existing server surfaces. The production CSP connect-src allowlist does not list the three gateway hosts, so whether fetching passes in a production browser is unconfirmed. Raw CIDs and UnixFS (dag-pb) CIDs are not interchangeable even for the same file, and a full node remains follow-up work for when file-CID compatibility or a provider role is actually needed.",
     },
-    technologies: ["IPFS CID", "@helia/verified-fetch 8.1.2", "multiformats 14.0.5", "SHA-256", "trustless gateway"],
+    technologies: ["IPFS CID", "multiformats 14.0.5", "SHA-256", "raw codec + sha2-256", "public IPFS gateway"],
     evidence: [
-      evidence("code", "apps/web/src/domains/integrations/ipfs-content-address.ts", "CID 생성·검증·검증 가져오기 모듈", "CID creation, verification and verified-fetch module"),
+      evidence("code", "apps/web/src/domains/integrations/ipfs-content-address.ts", "CID 생성·파싱·검증과 게이트웨이 직접 검증 가져오기", "CID creation, parsing and verification plus direct-verification gateway fetch"),
+      evidence("code", "config/http-response-headers.json", "운영 CSP connect-src 허용 목록(게이트웨이 호스트 없음)", "Production CSP connect-src allowlist (no gateway hosts)"),
       evidence("code", "apps/web/src/domains/integrations/IpfsContentAddressPanel.tsx", "연동 센터의 콘텐츠 주소 도구 패널", "Content-addressing tool panel in the integration center"),
       evidence("test", "apps/web/src/domains/integrations/ipfs-content-address.test.ts", "공개 CID 벡터와 코덱 경계 검사", "Public CID vectors and codec-boundary tests"),
     ],
@@ -507,32 +508,34 @@ export const ENGINEERING_ADVANCED_CHAPTERS = [
       en: "Experimental APIs go in detected, labeled and switchable",
     },
     thesis: {
-      ko: "아직 표준이 굳지 않은 웹 API를 제품에 넣는 규칙을 하나로 정했습니다. 능력 감지는 한곳에서, 화면에는 실험 표지를, 설정에는 끄는 토글을. 이 세 가지가 갖춰진 실험만 사용자 화면에 닿습니다.",
-      en: "One rule now governs putting not-yet-settled web APIs into the product: capability detection in a single place, an experiment label on the surface, and an off switch in settings. Only experiments with all three reach user screens.",
+      ko: "아직 표준이 굳지 않은 웹 API를 제품에 넣는 규칙을 세웠습니다. 능력 감지로 1차 게이트를 걸고, 설정의 실험 기능 섹션에 실험 표지와 끄는 토글을 둡니다. 화면 유지·프리렌더·읽기 전환은 세 가지를 모두 갖췄고, 스포이트는 아직 감지만으로 켜져 있어 규칙을 완전히 따르지는 않습니다.",
+      en: "One rule now governs putting not-yet-settled web APIs into the product: capability detection as the first gate, and an experiment label plus an off switch in the settings experiment section. Wake lock, prerender and the reading transition meet all three, while the eyedropper is on by detection alone, so the rule is not yet fully applied.",
     },
     problem: {
       ko: "실험 API를 화면마다 제멋대로 감지하면 지원 판정이 어긋나고, 끌 방법이 없는 실험은 문제가 생겼을 때 사용자가 피할 길이 없습니다. 반대로 전부 막아 두면 화면 유지, 문서 미리 불러오기, CPU 압력 신호처럼 이미 쓸 수 있는 이득을 영영 못 씁니다.",
       en: "Letting each screen detect experimental APIs on its own makes support verdicts disagree, and an experiment with no off switch leaves users no escape when something misbehaves. Blocking everything instead forfeits gains that are already usable—keeping the screen awake, prerendering document navigations, CPU pressure signals.",
     },
     decision: {
-      ko: "차세대 API 27종의 감지를 nextgen-web-capabilities.ts 한 모듈에 모았습니다. 감지는 절대 예외를 던지지 않고 미지원은 그냥 false입니다. 실험 설정(nextgen-lab-settings.ts)은 토글 3종(리더 화면 유지, 스튜디오 프리렌더, 읽기 전환)을 정본으로 관리하고, 설정 화면의 실험 기능 섹션이 실험 배지와 함께 이 기기의 지원 여부를 그대로 보여줍니다. 실제로 켠 것은 Screen Wake Lock(작품 리더), Speculation Rules(공개 페이지에서 스튜디오로 넘어가는 문서 이동의 프리렌더), View Transitions(작품 상세에서 읽기 시작할 때의 전환), Compute Pressure(관찰 모듈과 최신 판정 지점까지)입니다.",
-      en: "Detection for 27 next-generation APIs lives in one module, nextgen-web-capabilities.ts. Detection never throws; unsupported simply means false. Lab settings (nextgen-lab-settings.ts) own three toggles—reader wake lock, studio prerender, reading transition—and the settings screen's experiment section shows this device's support next to an experiment badge. What is actually switched on: Screen Wake Lock in the title reader, Speculation Rules prerendering document navigations from public pages into the studio, View Transitions when starting to read from a title page, and Compute Pressure up to the observation module and its latest-verdict seam.",
+      ko: "차세대 API 27종의 지원 판정 레지스트리(nextgen-web-capabilities.ts)는 감지가 절대 예외를 던지지 않고 미지원은 그냥 false입니다. 다만 이 레지스트리는 설정 화면의 표시에만 쓰이고, 기능을 켜는 모듈(화면 유지·프리렌더·스포이트·압력 관찰)은 각자 같은 방식으로 감지하므로 감지를 한곳으로 모으는 일은 남은 정리입니다. 실험 설정(nextgen-lab-settings.ts)은 토글 3종(리더 화면 유지, 스튜디오 프리렌더, 읽기 전환)을 정본으로 관리하고, 설정 화면의 실험 기능 섹션이 실험 배지와 함께 이 기기의 지원 여부를 그대로 보여줍니다. 실제로 켠 것은 Screen Wake Lock(작품 리더), Speculation Rules(공개 페이지에서 스튜디오로 넘어가는 문서 이동에 프리렌더 규칙 주입), View Transitions(작품 상세에서 읽기 시작할 때의 전환), EyeDropper(색상 투명화 패널의 키 색 추출)이며, Compute Pressure는 관찰 모듈과 설정 화면 표시까지만 연결돼 있습니다.",
+      en: "The 27-API support registry (nextgen-web-capabilities.ts) never throws on detection; unsupported simply means false. But the registry only feeds the settings screen's display: the modules that actually switch features on (wake lock, prerender, eyedropper, pressure observation) each detect on their own in the same style, so consolidating detection into one place is cleanup that remains. Lab settings (nextgen-lab-settings.ts) own three toggles—reader wake lock, studio prerender, reading transition—and the settings screen's experiment section shows this device's support next to an experiment badge. What is actually switched on: Screen Wake Lock in the title reader, Speculation Rules (prerender rules injected for document navigations from public pages into the studio), View Transitions when starting to read from a title page, and EyeDropper for picking the key color in the Color to Alpha panel; Compute Pressure is connected only up to the observation module and the settings display.",
     },
     userValue: {
-      ko: "작품을 읽는 동안 화면이 꺼지지 않고, 스튜디오로 넘어가는 이동이 미리 준비되며, 읽기를 시작하는 전환이 부드럽습니다. 전부 이 기기가 지원할 때만 동작하고, 실험 기능 섹션에서 언제든 끌 수 있습니다.",
-      en: "The screen stays awake while reading, navigations into the studio are prepared ahead of time, and starting to read transitions smoothly. All of it runs only where the device supports it, and all of it can be switched off in the experiment section at any time.",
+      ko: "작품을 읽는 동안 화면이 꺼지지 않고, 읽기를 시작하는 전환이 부드러우며, 스튜디오로 넘어가는 문서 이동에는 미리 렌더링할 규칙을 심어 둡니다(운영 CSP에서의 실제 동작은 확인하지 못했습니다). 이 세 가지는 이 기기가 지원할 때만 동작하고 실험 기능 섹션에서 끌 수 있으며, 스포이트는 지원하는 브라우저에서 감지만으로 나타납니다.",
+      en: "The screen stays awake while reading and starting to read transitions smoothly, and prerender rules are planted for document navigations into the studio (whether they actually run under the production CSP is unconfirmed). Those three run only where the device supports them and can be switched off in the experiment section, while the eyedropper appears wherever detection passes.",
     },
     tradeoff: {
-      ko: "실험 기능에는 폴백을 만들지 않는 것이 이 축의 운용 방침이라, 미지원 브라우저에서는 기능이 조용히 없을 뿐입니다. 기존 제품 표면의 폴백 원칙(ONNX 제공자 사다리 같은)은 그대로 유지합니다. Compute Pressure는 신호만 열어 뒀고 실제 품질 적응은 가상 스튜디오와 추론 표면이 각자 붙입니다. 필기 인식과 가상 키보드처럼 접점이 없거나 지원이 끝난 API는 감지만 넣어 두고 켜지 않습니다.",
-      en: "The operating policy for this axis is that experimental features get no fallback: on unsupported browsers the feature is simply, quietly absent. Established fallback principles on product surfaces—such as the ONNX provider ladder—remain untouched. Compute Pressure is opened as a signal only; actual quality adaptation is wired by the virtual studio and inference surfaces themselves. APIs with no contact point or ended support, such as handwriting recognition and the virtual keyboard API, are detection-only and never switched on.",
+      ko: "실험 기능에는 폴백을 만들지 않는 것이 이 축의 운용 방침이라, 미지원 브라우저에서는 기능이 조용히 없을 뿐입니다. 기존 제품 표면의 폴백 원칙(ONNX 제공자 사다리 같은)은 그대로 유지합니다. Speculation Rules는 운영 CSP의 script-src에 'inline-speculation-rules'가 없고 허용된 해시도 주입하는 JSON의 해시와 달라, 운영에서 실제로 프리렌더되는지는 실브라우저 검증이 없습니다(막혀도 원래의 문서 이동은 그대로 동작합니다). Compute Pressure는 관찰 모듈과 설정 화면 표시까지만 연결돼 있고 품질을 조절하는 소비처는 아직 없습니다. 필기 인식과 가상 키보드처럼 접점이 없거나 지원이 끝난 API는 감지만 넣어 두고 켜지 않습니다.",
+      en: "The operating policy for this axis is that experimental features get no fallback: on unsupported browsers the feature is simply, quietly absent. Established fallback principles on product surfaces—such as the ONNX provider ladder—remain untouched. For Speculation Rules, the production CSP script-src lacks 'inline-speculation-rules' and the allowed hash differs from the hash of the injected JSON, so there is no real-browser evidence that prerendering actually happens in production (if blocked, the original document navigation still works). Compute Pressure is connected only up to the observation module and the settings display; no consumer adapts quality yet. APIs with no contact point or ended support, such as handwriting recognition and the virtual keyboard API, are detection-only and never switched on.",
     },
-    technologies: ["capability registry (27 APIs)", "Screen Wake Lock", "Speculation Rules", "View Transitions", "Compute Pressure"],
+    technologies: ["capability registry (27 APIs)", "Screen Wake Lock", "Speculation Rules", "View Transitions", "EyeDropper", "Compute Pressure"],
     evidence: [
-      evidence("code", "apps/web/src/shared/lib/nextgen-web-capabilities.ts", "차세대 API 27종의 능력 감지 레지스트리", "Capability-detection registry for 27 next-generation APIs"),
+      evidence("code", "apps/web/src/shared/lib/nextgen-web-capabilities.ts", "차세대 API 27종의 지원 판정 레지스트리(설정 화면 표시용)", "Support-detection registry for 27 next-generation APIs (feeds the settings display)"),
       evidence("code", "apps/web/src/shared/lib/nextgen-lab-settings.ts", "실험 토글의 정본과 구독", "Canonical lab toggles with subscription"),
       evidence("code", "apps/web/src/domains/account/NextgenLabSettingsSection.tsx", "설정 화면의 실험 기능 섹션", "Experiment section on the settings screen"),
       evidence("code", "apps/web/src/shared/lib/screen-wake-lock.ts", "리더 화면 유지 모듈", "Reader wake-lock module"),
-      evidence("code", "apps/web/src/shared/lib/speculation-rules.ts", "문서 이동 프리렌더 규칙 모듈", "Document-navigation prerender rules module"),
+      evidence("code", "apps/web/src/shared/lib/speculation-rules.ts", "문서 이동 프리렌더 규칙 모듈(운영 CSP 동작은 미검증)", "Document-navigation prerender rules module (behavior under the production CSP unverified)"),
+      evidence("code", "apps/web/src/shared/lib/compute-pressure.ts", "Compute Pressure 관찰 모듈(소비처는 설정 화면 표시뿐)", "Compute Pressure observation module (its only consumer is the settings display)"),
+      evidence("code", "apps/web/src/domains/creator/StudioColorToAlphaPanel.tsx", "토글 없이 감지만으로 켜지는 EyeDropper 키 색 추출", "EyeDropper key-color picking enabled by detection alone, with no toggle"),
       evidence("test", "apps/web/src/shared/lib/nextgen-web-capabilities.test.ts", "감지 경계와 never-throw 검사", "Detection boundary and never-throw tests"),
     ],
     reuseSteps: [
@@ -584,7 +587,7 @@ export const ENGINEERING_ADVANCED_GUIDES = [
       en: "Consistent links, previews and measurement rules with channel capability and failure isolated.",
     },
     steps: [
-      { ko: "canonical URL, content ID, locale, title, text와 image를 가진 immutable payload를 만듭니다.", en: "Create an immutable payload containing canonical URL, content ID, locale, title, text and image." },
+      { ko: "canonical URL, title, text, image를 가진 immutable payload를 만듭니다(ToonStudio의 SharePayload에는 content ID·locale이 없고, 필요한 서비스가 더합니다).", en: "Create an immutable payload containing canonical URL, title, text and image (ToonStudio's SharePayload has no content ID or locale; add them if your service needs them)." },
       { ko: "native share 가능 여부와 canShare payload를 사용자 동작 시점에 검사합니다.", en: "Check native-share support and canShare payload at the time of user activation." },
       { ko: "각 공식 share URL과 SDK adapter가 URL encoding·popup·app switch를 독립 처리하게 합니다.", en: "Let every official share URL and SDK adapter independently handle encoding, popups and app switching." },
       { ko: "Clipboard 실패에는 selection 기반 copy fallback을 두고 QR 모듈은 패널을 열 때만 로드합니다.", en: "Add a selection-based copy fallback for Clipboard failures and lazy-load QR only when the panel opens." },
@@ -640,12 +643,12 @@ export const ENGINEERING_ADVANCED_GUIDES = [
       { ko: "stroke ID, brush revision, seed, material parameters와 layer transform을 immutable receipt로 만듭니다.", en: "Create an immutable receipt containing stroke ID, brush revision, seed, material parameters and layer transform." },
       { ko: "preview, simulation, composite, tile commit와 history append의 deadline·cancellation·authority를 선언합니다.", en: "Declare deadlines, cancellation and authority for preview, simulation, compositing, tile commit and history append." },
       { ko: "Worker에는 transferable sample buffer를 보내고 늦은 응답이 다음 stroke를 덮어쓰지 못하게 generation을 검사합니다.", en: "Send transferable sample buffers to Workers and use generations so late responses cannot overwrite newer strokes." },
-      { ko: "committed parity, 긴 획 memory, device loss와 fallback 품질을 실제 browser에서 측정합니다.", en: "Measure committed parity, long-stroke memory, device loss and fallback quality in real browsers." },
+      { ko: "committed parity, 긴 획 memory, device loss와 사용자가 고른 reference 경로의 품질을 실제 browser에서 측정합니다.", en: "Measure committed parity, long-stroke memory, device loss and the quality of the reference path the user selects in real browsers." },
     ],
     checklist: [
       { ko: "preview와 commit이 동일 stroke identity·brush revision을 사용", en: "Preview and commit use the same stroke identity and brush revision" },
       { ko: "pointer-up·cancel·device loss 뒤 자원·history 상태가 결정적", en: "Resources and history are deterministic after pointer-up, cancellation and device loss" },
-      { ko: "backend fallback에서 receipt·Undo·export 의미 유지", en: "Receipts, undo and export semantics survive backend fallback" },
+      { ko: "사용자가 고른 다른 backend에서도 receipt·Undo·export 의미 유지", en: "Receipts, undo and export semantics survive a backend the user selects instead" },
       { ko: "latency뿐 아니라 perceptual quality·memory·committed parity 검증", en: "Perceptual quality, memory and committed parity verified alongside latency" },
     ],
   },
@@ -706,12 +709,12 @@ export const ENGINEERING_ADVANCED_GUIDES = [
     status: "configured",
     title: { ko: "WebTransport 전송 계층 붙이기", en: "Adding a WebTransport transport layer" },
     summary: {
-      ko: "기존 소켓 계약을 그대로 구현하는 WebTransport 소켓을 만들고, 엔드포인트 설정이 있을 때만 시도 체인 앞에 둡니다.",
-      en: "Build a WebTransport socket that implements the existing socket contract unchanged, and place it at the head of the attempt chain only when an endpoint is configured.",
+      ko: "기존 소켓 계약을 그대로 구현하는 WebTransport 소켓을 만들고, 엔드포인트 옵션이 있을 때만 시도 체인 앞에 둡니다. 옵션을 브라우저 설정에서 넘기는 배선은 서버 종단이 준비된 뒤에 잇습니다.",
+      en: "Build a WebTransport socket that implements the existing socket contract unchanged, and place it at the head of the attempt chain only when an endpoint option is present. Wire that option from browser configuration once a server termination is ready.",
     },
     outcome: {
-      ko: "서버 종단이 붙기 전에도 클라이언트는 완성돼 있고, 동작은 WebSocket과 동일함이 테스트로 고정됩니다.",
-      en: "The client is complete before any server endpoint exists, with behavior identical to WebSocket pinned by tests.",
+      ko: "서버 종단이 붙기 전에도 클라이언트 소켓은 구현돼 있고, 동작은 WebSocket과 동일함이 테스트로 고정됩니다.",
+      en: "The client socket exists before any server endpoint does, with behavior identical to WebSocket pinned by tests.",
     },
     steps: [
       { ko: "현재 소켓 계약(연결·메시지·종료 의미)을 먼저 명세로 고정하고 어댑터가 그 계약만 보게 합니다.", en: "Freeze the current socket contract—connect, message and close semantics—as a spec first, and let adapters see only that contract." },
@@ -758,8 +761,8 @@ export const ENGINEERING_ADVANCED_GUIDES = [
     status: "live",
     title: { ko: "콘텐츠 주소 도구 붙이기", en: "Adding a content-addressing tool" },
     summary: {
-      ko: "파일의 CID를 만들고 trustless 게이트웨이에서 검증하며 가져오는 도구를, 제공 역할 없이 무결성 표면부터 붙입니다.",
-      en: "Attach a tool that mints file CIDs and fetches them verified from trustless gateways, starting at the integrity surface with no provider role.",
+      ko: "파일의 CID를 만들고 공개 게이트웨이에서 받은 바이트를 CID와 직접 대조해 가져오는 도구를, 제공 역할 없이 무결성 표면부터 붙입니다.",
+      en: "Attach a tool that mints file CIDs and fetches bytes from public gateways, comparing them directly with the CID, starting at the integrity surface with no provider role.",
     },
     outcome: {
       ko: "공유 링크가 곧 무결성 검사가 되고, 브라우저가 할 수 없는 일은 처음부터 약속하지 않습니다.",
@@ -768,8 +771,8 @@ export const ENGINEERING_ADVANCED_GUIDES = [
     steps: [
       { ko: "지원 코덱과 해시 범위를 코드에 명시하고, 범위 밖 코덱은 구분된 답으로 돌려줍니다.", en: "Declare the supported codec and hash scope in code, and answer out-of-scope codecs distinctly." },
       { ko: "CID 생성·파싱은 공개 테스트 벡터로 먼저 고정하고 구현을 맞춥니다.", en: "Pin CID creation and parsing against public test vectors first, then match the implementation." },
-      { ko: "가져오기는 trustless 게이트웨이 규격으로 받고, 받은 바이트를 CID와 대조한 뒤에만 성공으로 칩니다.", en: "Fetch through the trustless gateway spec and count success only after the received bytes match the CID." },
-      { ko: "무거운 검증 라이브러리는 사용 시점에만 지연 로드해 초기 번들과 분리합니다.", en: "Lazy-load the heavy verification library at use time, keeping it out of the initial bundle." },
+      { ko: "가져오기는 게이트웨이 후보 순서와 시간 제한을 코드에 고정하고, 받은 바이트를 CID와 직접 대조한 뒤에만 성공으로 칩니다. 내용이 어긋나면 다른 게이트웨이로 넘기지 않고 바로 실패시킵니다.", en: "Fix the gateway order and time limit in code, and count success only after the received bytes are compared directly with the CID. On a content mismatch, fail immediately instead of trying another gateway." },
+      { ko: "게이트웨이 호스트가 운영 CSP connect-src 허용 목록에 있는지 배포 전에 확인합니다(현재 목록에는 없습니다).", en: "Check before release that the gateway hosts are in the production CSP connect-src allowlist (they are not in the current list)." },
       { ko: "패널은 로딩·오류·빈 상태를 구분하고, 제공 기능이 없다는 경계를 문구에 그대로 적습니다.", en: "The panel separates loading, error and empty states, and its copy states the no-providing boundary as-is." },
     ],
     checklist: [
@@ -792,7 +795,7 @@ export const ENGINEERING_ADVANCED_GUIDES = [
       en: "New API gains are usable immediately on supporting devices, and a misbehaving experiment can be switched off by the user.",
     },
     steps: [
-      { ko: "API를 감지 레지스트리에 등록합니다. 감지는 던지지 않고 미지원은 false로만 답합니다.", en: "Register the API in the detection registry; detection never throws and unsupported answers false." },
+      { ko: "API를 감지 레지스트리에 등록하고 기능 모듈도 같은 레지스트리를 쓰게 합니다. 감지는 던지지 않고 미지원은 false로만 답합니다.", en: "Register the API in the detection registry and have the feature module use that same registry; detection never throws and unsupported answers false." },
       { ko: "실험 토글의 기본값과 이유를 정하고, 설정의 실험 섹션에 지원 여부와 함께 노출합니다.", en: "Decide the lab toggle's default and rationale, and expose it in the settings experiment section alongside support state." },
       { ko: "표면에는 실험 표지를 달고, 미지원 환경에서는 기능이 조용히 없게 합니다(가짜 폴백 금지).", en: "Label the surface as experimental, and let the feature be quietly absent on unsupported devices—no fake fallbacks." },
       { ko: "실제 소비 지점(품질 적응 같은)은 신호를 읽는 seam만 열고, 소비 배선은 그 표면의 소관으로 남깁니다.", en: "For real consumption points such as quality adaptation, open only a seam that reads the signal and leave consumption wiring to the owning surface." },

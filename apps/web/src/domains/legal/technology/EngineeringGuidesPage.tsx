@@ -52,7 +52,7 @@ type GuideFilter = "all" | EngineeringStatus;
 const FILTERS: readonly { readonly id: GuideFilter; readonly ko: string; readonly en: string }[] = [
   { id: "all", ko: "전체", en: "All" },
   { id: "live", ko: "운영", en: "Live" },
-  { id: "configured", ko: "설정", en: "Configured" },
+  { id: "configured", ko: "설정 필요", en: "Setup required" },
   { id: "experimental", ko: "실험", en: "Experimental" },
   { id: "documented", ko: "문서", en: "Documented" },
 ];

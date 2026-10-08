@@ -53,7 +53,7 @@ function expectCurrentTechPage(label: RegExp): void {
 }
 
 describe("제작 스토리", () => {
-  it("31개 챕터를 주제 그룹과 스크롤 목차로 보여주고 다음 글로 이어진다", () => {
+  it("공개된 모든 챕터를 주제 그룹과 스크롤 목차로 보여주고 다음 글로 이어진다", () => {
     renderAt("/about/technology/story", <EngineeringStoryPage />);
 
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
