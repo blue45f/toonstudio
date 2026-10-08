@@ -9,10 +9,11 @@
 
 기본 운영 권위는 무료 우선으로 분리합니다. Cloudflare Static Assets가 SPA와 정적 카탈로그를
 직접 제공하고, 최소 Worker gateway는 API·Socket.IO·OG crawler 경로만 검토된 Core API origin으로
-전달합니다. Neon/호환 PostgreSQL은 동적 원장, Cloudflare Durable Objects는 Studio의 임시 실시간
-상태, Upstash는 선택형 분산 제한·조정, 목적별 R2/B2/Supabase private storage는 파일 data plane을
-담당합니다. Core API의 기본 origin은 Render `toonspectrum-core-api`이며 배포와 롤백은 각
-Cloudflare/Render 배포 단위의 검증된 version으로 수행합니다.
+전달합니다. Supabase PostgreSQL이 동적 원장의 현재 권위이고(기존 Neon `neondb`는 legacy로 보존),
+Cloudflare Durable Objects는 Studio의 임시 실시간 상태, Upstash는 선택형 분산 제한·조정,
+목적별 R2/B2/Supabase private storage는 파일 data plane을 담당합니다. Core API의 기본 origin은
+Render `toonspectrum-core-api`이며 배포와 롤백은 각 Cloudflare/Render 배포 단위의 검증된
+version으로 수행합니다.
 
 한 제공자가 다른 제공자의 전체 폴백이 되지는 않습니다. 각 workload는 하나의 authority를 가지며,
 동등 계약·quota snapshot·복구 절차가 검증되지 않은 공급자에는 자동으로 쓰지 않습니다.
@@ -23,7 +24,7 @@ Cloudflare/Render 배포 단위의 검증된 version으로 수행합니다.
 | 카탈로그 | 정적 스냅샷 | Cloudflare Static Assets | `apps/web/public/data/*.json` |
 | Edge gateway | Cloudflare Worker | Cloudflare | 동적 경로만 Core API로 전달 |
 | Core API | NestJS | Render `toonspectrum-core-api` | 인증·ACL·거래·원장 transaction |
-| DB | PostgreSQL | Neon/호환 Postgres | 동적 데이터 + checksum migration 원장 |
+| DB | PostgreSQL | Supabase PostgreSQL (현재 권위, Neon은 legacy 보존) | 동적 데이터 + checksum migration 원장 |
 | Studio realtime | Durable Objects | Cloudflare | presence·comment invalidation·screen-share signaling |
 | 분산 제한/조정 | Redis | Upstash(선택) | auth rate-limit·lease·coordination |
 | private object storage | 목적별 private buckets | Supabase/R2/B2 | source·derived·export 고정 라우팅 |
@@ -47,7 +48,7 @@ Cloudflare/Render 배포 단위의 검증된 version으로 수행합니다.
 - Node 24.16+와 pnpm 11 (`corepack enable` 권장)
 - Cloudflare 계정과 수동 배포 권한
 - Render Core API 서비스와 수동 배포 권한
-- Neon 또는 호환 PostgreSQL `DATABASE_URL`
+- 현재 권위인 Supabase PostgreSQL의 `DATABASE_URL` (Neon `neondb`는 legacy 보존이며 새 운영 쓰기 권위로 쓰지 않습니다)
 - 소셜 로그인 실연동 시 Google Cloud / Kakao Developers / Naver Developers / GitHub OAuth App
 
 ## 1. 로컬 검증
@@ -73,15 +74,27 @@ pnpm run cloudflare:static:dry-run
 RENDER_CORE_API_ORIGIN=https://toonspectrum-core-api.onrender.com pnpm run verify:render-core-origin
 export CLOUDFLARE_CORE_API_ORIGIN=https://toonspectrum-core-api.onrender.com
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
+export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 pnpm run cloudflare:static:deploy
 ```
+
+`pnpm run cloudflare:static:deploy`(`scripts/deploy-cloudflare-static.mjs --production`)는 빌드·R2 동기화·Worker 배포를
+시작하기 전에 아래를 모두 요구하고, 하나라도 어긋나면 중단합니다.
+
+- `TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production` — 사용자의 별도 명시적 승인 뒤에만 설정합니다.
+- `TOONSPECTRUM_APPROVED_MAIN_SHA` — 사용자가 승인한 `main` 커밋의 **소문자 40자리 16진수** SHA입니다.
+  `$(git rev-parse HEAD)`로 자동 채우면 승인 절차가 의미를 잃으므로 승인된 값을 그대로 입력합니다.
+- 현재 브랜치가 `main`입니다.
+- 작업 트리가 깨끗합니다(`git status --porcelain`이 비어 있음).
+- `git rev-parse HEAD`가 `TOONSPECTRUM_APPROVED_MAIN_SHA`와 같습니다.
 
 Core API에는 `.env.production.example`의 PostgreSQL·인증·CORS·목적별 object storage 설정을
 Render encrypted environment 또는 root `.env.local` Secret File로 주입합니다. `CORE_API_ORIGIN`은
 credential, path, query가 없는 별도 HTTPS origin이어야 하며 readiness와 origin provenance 검사를 통과해야 합니다.
 Render의 상시 플랫폼 헬스체크는 DB를 깨우지 않는 `/api/health/live`만 사용합니다. DB·스키마를 확인하는
-`/api/health/ready`는 수동 릴리스 게이트와 배포 후 점검에서만 호출하여 Neon Free의 scale-to-zero와
-월간 CU-hour 한도를 불필요하게 소모하지 않습니다.
+`/api/health/ready`는 수동 릴리스 게이트와 배포 후 점검에서만 호출하여 DB를 불필요하게 깨우거나 무료 한도를
+소모하지 않습니다. 이 규칙은 과거 Neon Free의 scale-to-zero와 월간 CU-hour 한도를 기준으로 정했고, 현재
+`render.yaml`도 같은 정책으로 `/api/health/live`만 상시 probe로 씁니다.
 프런트의 상대경로 `/api/...`는 Cloudflare gateway를 통해 동일 origin 경험을 유지합니다.
 `/market/library`, `/market/publish` 같은 SPA 화면은 Worker를 실행하지 않고 Static Assets가
 처리하며, `/market`, `/market/browse`, `/market/resource/:id`의 crawler HTML만 OG endpoint로 갑니다.
@@ -252,8 +265,11 @@ pnpm run cloudflare:static:dry-run
 
 export CLOUDFLARE_CORE_API_ORIGIN=https://<reviewed-core-api-origin>
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
+export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 pnpm run cloudflare:static:deploy
 ```
+
+승인 문구와 승인 SHA를 비롯한 스크립트의 production 요구 조건은 위 "2. 정적 웹과 Core API 배포"에 정리했습니다.
 
 `main`은 브랜치 보호로 PR 전용이며 CI의 `core` 체크(lint·typecheck·마이그레이션 채택·전체
 Vitest·빌드 게이트) 성공이 머지 조건입니다. `core`는 병렬 잡 `lint`·`typecheck`·`build`·

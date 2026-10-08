@@ -15,6 +15,12 @@ export const MANAGED_FREE_MAX_OUTPUT_TOKENS = 1_024;
 export const MANAGED_FREE_MAX_REQUEST_BYTES = 256 * 1024;
 export const MANAGED_FREE_MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
+/**
+ * 하루 경계는 서버(`utcUsageDay`)와 같은 UTC 자정이다. 한국 시간(UTC+9, 서머타임 없음)으로는
+ * 오전 9시이므로 사용자 문구에 "한국 시간 자정"이라고 쓰지 않는다.
+ */
+const DAILY_RESET_NOTICE = "다음 UTC 자정(한국 시간 오전 9시)";
+
 const FIRST_RATE_LIMIT_COOLDOWN_MS = 15 * 60 * 1_000;
 const AUTH_FAILURE_COOLDOWN_MS = 10 * 60 * 1_000;
 const MAX_RETRY_AFTER_MS = 24 * 60 * 60 * 1_000;
@@ -391,7 +397,7 @@ export async function guardFreeAiRuntimeRequest(
       entry.updatedAt = now;
       ledger.entries[key] = entry;
       writeLedger(ledger);
-      throw new FreeAiRuntimeBudgetError("오늘의 앱 무료 요청 안전 한도에 도달했습니다. 오늘 자정(한국 시간)까지 차단하며 유료 모델로 전환하지 않습니다.");
+      throw new FreeAiRuntimeBudgetError(`오늘의 앱 무료 요청 안전 한도에 도달했습니다. ${DAILY_RESET_NOTICE}까지 차단하며 유료 모델로 전환하지 않습니다.`);
     }
     if (
       entry.reservedTokens + prepared.reservedTokens
@@ -402,7 +408,7 @@ export async function guardFreeAiRuntimeRequest(
       entry.updatedAt = now;
       ledger.entries[key] = entry;
       writeLedger(ledger);
-      throw new FreeAiRuntimeBudgetError("오늘의 앱 무료 토큰 예약 한도에 도달했습니다. 오늘 자정(한국 시간)까지 차단하며 유료 모델로 전환하지 않습니다.");
+      throw new FreeAiRuntimeBudgetError(`오늘의 앱 무료 토큰 예약 한도에 도달했습니다. ${DAILY_RESET_NOTICE}까지 차단하며 유료 모델로 전환하지 않습니다.`);
     }
 
     entry.requests += 1;

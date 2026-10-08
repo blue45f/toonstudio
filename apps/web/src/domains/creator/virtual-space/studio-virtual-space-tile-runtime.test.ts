@@ -40,7 +40,13 @@ class Layer implements LayerPort {
     const tile = { gid, x, y, rotation: 0, flipX: false }; this.tiles.push(tile); return tile;
   });
 }
-function harness(mapWorld = world()) {
+/** 칸 가장자리 확장에 쓰는 가짜 캔버스. 그리기 호출만 받아 준다. */
+const fakeCanvas = (width: number, height: number) => (
+  { width, height, getContext: () => ({ imageSmoothingEnabled: true, drawImage: vi.fn() }) }
+) as unknown as HTMLCanvasElement;
+
+/** extrusion: 확장 캔버스를 받아 주는 장면("ok") 또는 거부하는 장면("rejected"). 생략하면 확장을 지원하지 않는 장면이다. */
+function harness(mapWorld = world(), extrusion?: "ok" | "rejected") {
   const textures = new Map<string, { width: number; height: number }>();
   const calls: string[] = [];
   type FakeMap = {
@@ -73,13 +79,21 @@ function harness(mapWorld = world()) {
         const image = textures.get(key); if (!image) throw new Error(`Missing fake texture: ${key}`); return image;
       } }),
       remove: vi.fn((key: string) => { calls.push(`texture-remove:${key}`); textures.delete(key); }),
+      ...(extrusion ? {
+        addCanvas: vi.fn((key: string, canvas: HTMLCanvasElement) => {
+          if (extrusion === "rejected") return null;
+          textures.set(key, { width: canvas.width, height: canvas.height }); return {};
+        }),
+      } : {}),
     },
     make: { tilemap: vi.fn((_config: Parameters<StudioTileScenePort["make"]["tilemap"]>[0]) => makeMap()) },
     load, events,
   } satisfies StudioTileScenePort;
   const onError = vi.fn();
   const resolveUrl = vi.fn((url: string) => `blob:owned${url}`);
-  const runtime = createStudioWorldTileRuntime(scene, mapWorld, "studio-world", { parseGid, onError, resolveUrl });
+  const runtime = createStudioWorldTileRuntime(scene, mapWorld, "studio-world", {
+    parseGid, onError, resolveUrl, ...(extrusion ? { createCanvas: fakeCanvas } : {}),
+  });
   const key = (id: number, occurrence = 0) => {
     const match = load.image.mock.calls.filter(([value]) => value.endsWith(`:tiles:${id}`))[occurrence];
     if (!match) throw new Error(`No texture request for ${id}`); return match[0];
@@ -285,5 +299,53 @@ describe("타일 runtime 순수 자원 소유", () => {
     runtime.update({ ...start, x: 32.6, width: 128 });
     expect(dataRead.mock.calls.length).toBeGreaterThan(initial);
     expect(backend.requestTexture).toHaveBeenCalledTimes(1); runtime.destroy();
+  });
+});
+
+describe("타일 칸 가장자리 확장", () => {
+  it("확장할 수 있으면 확장한 텍스처와 여백·간격으로 tileset을 만들고 원본 텍스처는 지운다", () => {
+    const h = harness(world([[0, 1], [1, 17]]), "ok");
+    h.runtime.update(start);
+    const floor = h.key(1), props = h.key(17);
+    h.complete(floor); h.complete(props);
+    const map = required(h.maps[0]);
+    expect(map.addTilesetImage.mock.calls).toEqual([
+      ["floor", `${floor}:extruded`, 8, 12, 1, 2, 1], ["props", `${props}:extruded`, 8, 12, 1, 2, 17],
+    ]);
+    expect(h.textures.has(floor)).toBe(false); expect(h.textures.has(props)).toBe(false);
+    expect(h.textures.get(`${floor}:extruded`)).toEqual({ width: 20, height: 28 });
+    expect(h.runtime.diagnostics).toEqual({ chunks: 1, textures: 2, pending: 0, failures: 0, ready: true });
+    h.runtime.destroy();
+    expect([...h.textures.keys()]).toEqual([]);
+  });
+
+  it("화면을 벗어나 회수할 때는 확장한 텍스처도 함께 지우고, 돌아오면 다시 확장한다", () => {
+    const h = harness(world([[0, 1], [24 * 48 + 40, 17]]), "ok");
+    h.runtime.update(start);
+    const floor = h.key(1);
+    h.complete(floor);
+    expect(h.textures.has(`${floor}:extruded`)).toBe(true);
+    h.runtime.update(far);
+    expect(h.calls).toContain(`texture-remove:${floor}:extruded`);
+    expect(h.textures.has(`${floor}:extruded`)).toBe(false);
+    h.runtime.update(start);
+    h.complete(h.key(1, 1));
+    expect(h.textures.has(`${floor}:extruded`)).toBe(true);
+    const remounted = required(h.maps.at(-1));
+    expect(remounted.addTilesetImage.mock.calls).toEqual([["floor", `${floor}:extruded`, 8, 12, 1, 2, 1]]);
+    h.runtime.destroy();
+    expect([...h.textures.keys()].filter((key) => key.includes(":tiles:"))).toEqual([]);
+  });
+
+  it("장면이 확장 캔버스를 받아 주지 않으면 원본 텍스처와 여백·간격 그대로 쓴다", () => {
+    const h = harness(world([[0, 1], [1, 17]]), "rejected");
+    h.runtime.update(start);
+    const floor = h.key(1), props = h.key(17);
+    h.complete(floor); h.complete(props);
+    expect(required(h.maps[0]).addTilesetImage.mock.calls).toEqual([
+      ["floor", floor, 8, 12, 0, 0, 1], ["props", props, 8, 12, 0, 0, 17],
+    ]);
+    expect(h.textures.has(floor)).toBe(true);
+    h.runtime.destroy();
   });
 });

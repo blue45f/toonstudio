@@ -294,8 +294,8 @@ export const OPEN_API_BROWSER_ROWS: readonly EngineeringMapRow[] = [
       "Interface text without a translation when the visitor switches language (runtime translation)",
     ),
     guard: t(
-      "8초 중단·24시간 캐시·동시 8건. {개수} 같은 자리표시자가 사라진 번역은 버린다. 이 호스트는 CSP 허용 목록에 없어 운영 브라우저에서 막힐 수 있다(미확인).",
-      "8-second abort, 24-hour cache and 8 requests at once. A translation that loses a {placeholder} is discarded. This host is not in the CSP allowlist, so a production browser may block it (unverified).",
+      "8초 중단·24시간 캐시·동시 8건. {개수} 같은 자리표시자가 사라진 번역은 버린다. 이 호스트는 운영 CSP connect-src 목록에 없어 운영 브라우저에서 막힐 가능성이 크다(실브라우저 미검증).",
+      "8-second abort, 24-hour cache and 8 requests at once. A translation that loses a {placeholder} is discarded. This host is absent from the production CSP connect-src list, so a production browser will probably block it (not verified in a real browser).",
     ),
     status: "configured",
     link: { title: "MyMemory API specification", url: "https://mymemory.translated.net/doc/spec.php" },
@@ -314,8 +314,8 @@ export const OPEN_API_BROWSER_ROWS: readonly EngineeringMapRow[] = [
       "The IPFS content-address panel in the integration center (/settings/integrations)",
     ),
     guard: t(
-      "받은 바이트를 CID 해시와 대조해 다르면 거부한다(raw·sha2-256만). 15초 타임아웃은 있으나 응답 크기 상한은 없다. CSP 허용 목록에 없어 운영 브라우저에서 막힐 수 있다(미확인). @helia/verified-fetch는 쓰지 않는다.",
-      "Downloaded bytes are hashed and compared with the CID, and a mismatch is rejected (raw codec and sha2-256 only). There is a 15-second timeout but no response size cap. The gateways are not in the CSP allowlist, so a production browser may block them (unverified). @helia/verified-fetch is not used.",
+      "받은 바이트를 CID 해시와 대조해 다르면 거부한다(raw·sha2-256만). 15초 타임아웃은 있으나 응답 크기 상한은 없다. 게이트웨이 3곳은 운영 CSP connect-src 목록에 없어 운영 브라우저에서 막힐 가능성이 크다(실브라우저 미검증). @helia/verified-fetch는 쓰지 않는다.",
+      "Downloaded bytes are hashed and compared with the CID, and a mismatch is rejected (raw codec and sha2-256 only). There is a 15-second timeout but no response size cap. The three gateways are absent from the production CSP connect-src list, so a production browser will probably block them (not verified in a real browser). @helia/verified-fetch is not used.",
     ),
     status: "configured",
     link: { title: "IPFS gateways", url: "https://docs.ipfs.tech/concepts/ipfs-gateway/" },

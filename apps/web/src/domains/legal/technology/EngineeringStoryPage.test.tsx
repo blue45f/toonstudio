@@ -69,9 +69,11 @@ describe("제작 스토리", () => {
     const pager = screen.getByRole("navigation", { name: /기술 문서 이어보기|Continue through/u });
     expect(within(pager).getByRole("link", { name: /다음 글.*플레이북|Next article.*Playbook/u }).getAttribute("href"))
       .toBe("/about/technology/playbook");
-    // 읽기 순서의 첫 글이라 이전 글 자리에는 기술 허브 카드가 온다.
-    expect(within(pager).getByRole("link", { name: /기술 허브|Engineering hub/u }).getAttribute("href"))
-      .toBe("/about/technology");
+    // 큰 그림 두 해설(아키텍처·라이브러리)이 읽기 순서의 앞이라 제작 스토리의 이전 글은 라이브러리 해설이다.
+    // 기술 허브 카드는 읽기 순서의 맨 앞(아키텍처 해설)과 맨 끝(라이선스)에만 온다.
+    expect(within(pager).getByRole("link", { name: /이전 글.*라이브러리|Previous article.*Libraries/u }).getAttribute("href"))
+      .toBe("/about/technology/libraries");
+    expect(within(pager).queryByRole("link", { name: /기술 허브|Engineering hub/u })).toBeNull();
   });
 
   it("세부 내용은 접혀 있고 모두 펼치기·모두 접기로 한 번에 바꾼다", () => {

@@ -13,6 +13,7 @@ import { studioVirtualDecorCollider } from "./studio-virtual-space-decoration-la
 import { stepStudioCatExpression, type StudioCatExpressionState } from "./studio-virtual-space-expressions";
 import { studioExperienceFrameGeometry } from "./studio-virtual-space-experience-art";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
+import { studioReadableNameplateColor } from "./studio-virtual-space-nameplate-contrast";
 
 export interface StudioDecorationTextureKeys {
   readonly decor: string;
@@ -197,7 +198,10 @@ export class StudioVirtualDecorationRuntime {
       .setFillStyle(auraColor || 0xffffff, auraColor ? .2 : 0)
       .setStrokeStyle(auraColor ? 2 : 0, auraColor || 0xffffff, auraColor ? .65 : 0)
       .setScale(customization.auraKey === "focus" ? .84 : customization.auraKey === "neon" ? 1.15 : 1);
-    label.setColor(NAMEPLATE_COLOR[customization.nameplateKey]);
+    // 꾸민 이름표 색은 어두운 판 기준의 파스텔이다. 내 이름표처럼 밝은 판 위에서는 묻히므로(실측 1.46:1) 읽힐 때만 쓴다.
+    if (label.getData("nameplateBaseColor") === undefined) label.setData("nameplateBaseColor", label.style.color);
+    label.setColor(studioReadableNameplateColor(
+      NAMEPLATE_COLOR[customization.nameplateKey], label.style.backgroundColor, label.getData("nameplateBaseColor") as string));
     if (moving && customization.trailKey !== "none" && time - visual.lastTrailAt > 135) {
       visual.lastTrailAt = time;
       this.spawnTrail(visual, point, customization.trailKey, sprite.depth - 3, time);

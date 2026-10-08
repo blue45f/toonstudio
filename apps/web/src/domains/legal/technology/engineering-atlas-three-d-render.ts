@@ -28,8 +28,8 @@ export const THREE_R3F_VIEWPORT: EngineeringAtlasEntry = {
       "A 3D view redraws dozens of frames a second, like film. In an editor, though, the picture sits still most of the time, and redrawing the same scene only burns power and battery. ToonStudio's 3D viewport sits on React Three Fiber (R3F), which lets three.js (the web 3D library) live inside React, and for a still composition it draws one frame only when something changes.",
     ),
     t(
-      "R3F의 프레임 루프는 세 가지입니다. always는 쉬지 않고, demand는 invalidate()가 불릴 때만 한 장, never는 멈춤입니다. 배경 3D 편집기는 모델 애니메이션·물리·캡처·일괄 렌더 중 하나라도 있을 때만 always로 두고, 기즈모를 잡고 끄는 동안을 포함한 나머지는 demand입니다. 느려지면 거버너가 프레임 시간의 평활 평균(EMA)을 재서, 프레임 예산(1초를 목표 fps로 나눈 시간, 60fps면 약 16.7ms)의 1.15배를 45샘플 연속 넘을 때 해상도 배율(DPR)을 1 → 0.85 → 0.7 → 0.55로 한 단계씩 낮춥니다. 0.78배 미만이 300샘플 이어지면 한 단계 올립니다.",
-      "R3F has three frame loops: always draws constantly, demand draws one frame only when invalidate() is called, and never stops. The background 3D editor uses always only while a model animation, physics, a capture or a batch render is active; everything else, including while a gizmo is held and dragged, is demand. When it slows down, a governor measures a smoothed average (EMA) of frame time and, after 45 consecutive samples above 1.15 times the frame budget (one second divided by the target fps, about 16.7 ms at 60 fps), lowers the resolution scale (DPR) one step along 1, 0.85, 0.7, 0.55. It steps back up after 300 samples below 0.78 times.",
+      "R3F의 프레임 루프는 세 가지입니다. always는 쉬지 않고, demand는 invalidate()가 불릴 때만 한 장, never는 멈춤입니다. 배경 3D 편집기는 모델 애니메이션·물리·캡처·일괄 렌더 중 하나라도 있거나 몰입(XR) 스테이지가 활성일 때만 always로 두고, 기즈모를 잡고 끄는 동안을 포함한 나머지는 demand입니다. 느려지면 거버너가 프레임 시간의 평활 평균(EMA)을 재서, 프레임 예산(1초를 목표 fps로 나눈 시간, 60fps면 약 16.7ms)의 1.15배를 넘는 표본을 세어(정상 표본이 오면 2씩 줄어듭니다) 45에 닿으면 해상도 배율(DPR)을 1 → 0.85 → 0.7 → 0.55로 한 단계씩 낮춥니다. 0.78배 미만 표본이 300에 닿으면 한 단계 올립니다.",
+      "R3F has three frame loops: always draws constantly, demand draws one frame only when invalidate() is called, and never stops. The background 3D editor uses always only while a model animation, physics, a capture or a batch render is active, or while an immersive (XR) stage is active; everything else, including while a gizmo is held and dragged, is demand. When it slows down, a governor measures a smoothed average (EMA) of frame time and counts samples above 1.15 times the frame budget (one second divided by the target fps, about 16.7 ms at 60 fps); a normal sample subtracts 2 from that count, and when it reaches 45 the resolution scale (DPR) is lowered one step along 1, 0.85, 0.7, 0.55. It steps back up when the count of samples below 0.78 times reaches 300.",
     ),
     t(
       "대안은 Babylon.js 같은 별도 엔진이지만, 같은 장면을 엔진 둘이 함께 소유하면 선택·기즈모·GPU 자원·캡처 시점이 충돌합니다. 그래서 대화형 편집 장면의 소유자는 Three/R3F 하나로 두고, 영속 상태는 엔진 객체가 아니라 문서(StudioBg3dSceneDocument)에 저장합니다. 다른 엔진은 격리된 전문 작업에만 씁니다. 패치도 하나 있습니다. R3F 9.6.1이 three r183에서 폐기된 THREE.Clock을 쓰므로, 경고 없이 Canvas가 마운트되도록 Timer 기반 어댑터로 바꿨습니다.",
@@ -55,8 +55,8 @@ export const THREE_R3F_VIEWPORT: EngineeringAtlasEntry = {
       "Only time-based work draws constantly, and when frames run late the resolution scale drops to get back within budget.",
     ),
     alt: t(
-      "재생·물리·캡처는 always 모드로, 편집 변경과 기즈모 조작은 demand 모드로 한 프레임 그리기에 들어갑니다. 그린 뒤 프레임 시간을 재고, 예산의 1.15배를 넘는 상태가 이어지면 해상도 배율을 낮추며, 낮춘 배율은 다시 그리기에 반영됩니다.",
-      "Playback, physics and capture feed one frame of drawing in always mode, while edits and gizmo moves feed it in demand mode. After drawing, frame time is measured; if it stays above 1.15 times the budget, the resolution scale is lowered, and the lowered scale applies to the next drawing.",
+      "재생·물리·캡처는 always 모드로, 편집 변경과 기즈모 조작은 demand 모드로 한 프레임 그리기에 들어갑니다. 그린 뒤 프레임 시간을 재고, 예산의 1.15배를 넘는 표본이 45까지 쌓이면 해상도 배율을 낮추며, 낮춘 배율은 다시 그리기에 반영됩니다.",
+      "Playback, physics and capture feed one frame of drawing in always mode, while edits and gizmo moves feed it in demand mode. After drawing, frame time is measured; once samples above 1.15 times the budget accumulate to 45, the resolution scale is lowered, and the lowered scale applies to the next drawing.",
     ),
     nodes: [
       { id: "work", label: t("재생·물리·캡처", "Play, physics, capture"), sub: t("시간이 흐르는 작업", "Time-based work"), tone: "local", shape: "pill", at: [0, 0] },
@@ -71,7 +71,7 @@ export const THREE_R3F_VIEWPORT: EngineeringAtlasEntry = {
       { from: "edit", to: "draw", label: t("demand: 한 장", "demand: one frame") },
       { from: "draw", to: "meter", label: t("프레임 시간", "frame time") },
       { from: "meter", to: "gov", label: t("평활 평균", "smoothed") },
-      { from: "gov", to: "dpr", label: t("45샘플 연속", "45 in a row") },
+      { from: "gov", to: "dpr", label: t("45샘플 누적", "45 samples") },
       { from: "dpr", to: "draw", label: t("배율 반영", "apply scale"), style: "dashed" },
     ],
   },
@@ -283,7 +283,7 @@ export function Viewport({ animating, pose }: { animating: boolean; pose: number
   technologies: ["Three.js", "React Three Fiber", "Drei", "WebGL2", "WebGPU"],
   facts: [
     { value: "1 / 0.85 / 0.7 / 0.55", label: t("거버너가 쓰는 해상도 배율 4단계", "The four resolution-scale steps the governor uses"), source: `${BG3D_DIR}/studio-bg3d-frame-quality-governor.ts` },
-    { value: "45 / 300", label: t("배율을 낮추는 데 필요한 연속 샘플 / 되돌리는 데 필요한 연속 샘플", "Consecutive samples needed to lower the scale / to restore it"), source: `${BG3D_DIR}/studio-bg3d-frame-quality-governor.ts` },
+    { value: "45 / 300", label: t("배율을 낮추는 데 필요한 누적 표본 수 / 되돌리는 데 필요한 누적 표본 수(조건에 안 맞는 표본은 2씩 감소)", "Accumulated samples needed to lower the scale / to restore it (a sample that misses the condition subtracts 2)"), source: `${BG3D_DIR}/studio-bg3d-frame-quality-governor.ts` },
     { value: "250 ms", label: t("이 간격을 넘는 프레임은 GPU 성능이 아닌 것으로 보고 제외", "Frame gaps beyond this are excluded as not GPU performance"), source: `${BG3D_DIR}/studio-bg3d-frame-quality-governor.ts` },
   ],
   reviewedAt: "2026-10-07",
@@ -309,12 +309,12 @@ export const WEBGPU_EXPLICIT_ENGINE: EngineeringAtlasEntry = {
       "The implementation is a single pure function. Its inputs are the artist's choice (WebGPU or WebGL2), the GPU adapter probe (secure context, buffer limit 128 MiB, storage-buffer limit 32 MiB), in-app browser trust, and whether a VRM character or WebXR is in use. Its output is the backend, a status (available, unavailable, failed), a reason code and a Korean notice. Even when blocked, the backend value stays and only the status changes. WebGPU code is gathered in one entry that loads lazily only after the policy picks WebGPU.",
     ),
     t(
-      "이 정책을 굳힌 사건이 있습니다. 같은 VRM 캐릭터를 두 엔진으로 그려 실루엣 픽셀 수를 비교하는 검사는 계속 통과했는데, 색을 처음 비교해 보니 합성 최대 차이가 255 중 164~169나 났습니다(번들 VRM 한 개, 한 장면 기준). 같은 엔진으로 두 번 그리면 차이가 0이라 원인은 툰 셰이더(MToon) 자체였습니다. three-vrm이 같은 규격을 두 번 따로 구현했기 때문입니다. 그래서 캐릭터가 있는 장면은 WebGL2로 고정하고, 격차를 상수로 박은 검사(합성 최대 200, 초과 채널 25%)를 만들었습니다.",
-      "One incident hardened this policy. A check comparing silhouette pixel counts for the same VRM character on both engines kept passing, but the first color comparison showed a composited maximum difference of 164 to 169 out of 255 (one bundled VRM, one scene). Rendering twice on the same engine gave a difference of 0, so the cause was the toon shader (MToon) itself, which three-vrm implements twice independently. So scenes with a character are fixed to WebGL2, and a check was added with the gap pinned as constants (composited maximum 200, over-tolerance channels 25%).",
+      "이 정책을 굳힌 사건이 있습니다. 같은 VRM 캐릭터를 두 엔진으로 그려 실루엣 픽셀 수를 비교하는 검사는 계속 통과했는데, 색을 처음 비교해 보니 합성 최대 차이가 255 중 164~169나 났습니다(번들 VRM 한 개, 한 장면 기준). 같은 엔진으로 두 번 그리면 차이가 0이라 원인은 툰 셰이더(MToon) 자체였습니다. three-vrm이 같은 규격을 두 번 따로 구현했기 때문입니다. 그래서 캐릭터가 있는 장면에서는 WebGPU를 '사용 불가'로 표시하되 자동으로 WebGL2로 바꾸지는 않고, 색을 유지하려면 WebGL2를 직접 고르라고 안내합니다. 두 엔진의 색 격차는 검사 상수(합성 최대 200, 초과 채널 25%)로 박아 두었습니다.",
+      "One incident hardened this policy. A check comparing silhouette pixel counts for the same VRM character on both engines kept passing, but the first color comparison showed a composited maximum difference of 164 to 169 out of 255 (one bundled VRM, one scene). Rendering twice on the same engine gave a difference of 0, so the cause was the toon shader (MToon) itself, which three-vrm implements twice independently. So for scenes with a character, WebGPU is shown as unavailable, but the app never switches to WebGL2 on its own; to keep the colors, it tells the artist to pick WebGL2 directly. The color gap between the two engines is pinned as check constants (composited maximum 200, over-tolerance channels 25%).",
     ),
     t(
-      "대가도 있습니다. 캐릭터가 있는 장면에서는 WebGPU의 이점을 쓰지 못하고, 실행 중에 캐릭터를 넣으면 캔버스가 다시 마운트됩니다. three의 WebGPURenderer는 장치 생성에 실패하면 내부에서 WebGL2로 내려가는 비공개 훅(_getFallback)이 있는데 ToonStudio는 이를 끊어 둡니다. 비공개 필드에 기대는 방식이라, 함수가 아니면 버전 계약 위반으로 초기화를 거부합니다.",
-      "There are costs. A scene with a character cannot use WebGPU's benefits, and adding a character mid-session remounts the canvas. three's WebGPURenderer has a private hook (_getFallback) that silently drops to WebGL2 when device creation fails, and ToonStudio cuts it. Because this relies on a private field, initialization is refused as a version-contract violation if it is not a function.",
+      "대가도 있습니다. 캐릭터가 있는 장면에서는 WebGPU의 이점을 쓰지 못하고, WebGPU로 작업하다 캐릭터를 넣으면 WebGPU가 사용 불가로 바뀌어 WebGL2를 직접 고를 때 캔버스가 다시 마운트됩니다. three의 WebGPURenderer는 장치 생성에 실패하면 내부에서 WebGL2로 내려가는 비공개 훅(_getFallback)이 있는데 ToonStudio는 이를 끊어 둡니다. 비공개 필드에 기대는 방식이라, 함수가 아니면 버전 계약 위반으로 초기화를 거부합니다.",
+      "There are costs. A scene with a character cannot use WebGPU's benefits, and if a character is added while working on WebGPU, WebGPU becomes unavailable and the canvas remounts when the artist picks WebGL2. three's WebGPURenderer has a private hook (_getFallback) that silently drops to WebGL2 when device creation fails, and ToonStudio cuts it. Because this relies on a private field, initialization is refused as a version-contract violation if it is not a function.",
     ),
   ],
   keyPoints: [
@@ -521,8 +521,8 @@ export async function createStrictWebGpuRenderer(canvas: HTMLCanvasElement, time
   chapterIds: ["web-3d-engine", "quality"],
   talk: {
     pitch: t(
-      "많은 앱은 새 그래픽 엔진이 안 되면 몰래 옛 엔진으로 바꿉니다. 우리는 반대로 고른 엔진이 안 되면 안 된다고 말하고 이유를 보여 주는 정책입니다. 이유는 실측에서 나왔습니다. 같은 캐릭터가 두 엔진에서 실루엣은 같았지만 색은 최대 169/255나 달랐습니다. 그래서 캐릭터가 있는 장면은 WebGL2로 고정하고 그 격차를 검사 상수로 박아 두었습니다.",
-      "Many apps quietly switch to the old graphics engine when the new one fails. We do the opposite: if the chosen engine cannot run, we say so and show why. The reason came from measurement. The same character had identical silhouettes on both engines but colors differing by up to 169 out of 255. So scenes with a character are fixed to WebGL2, and that gap is pinned as test constants.",
+      "많은 앱은 새 그래픽 엔진이 안 되면 몰래 옛 엔진으로 바꿉니다. 우리는 반대로 고른 엔진이 안 되면 안 된다고 말하고 이유를 보여 주는 정책입니다. 이유는 실측에서 나왔습니다. 같은 캐릭터가 두 엔진에서 실루엣은 같았지만 색은 최대 169/255나 달랐습니다. 그래서 캐릭터가 있는 장면에서는 WebGPU를 사용 불가로 표시하고, 색을 지키려면 WebGL2를 직접 고르도록 안내하며, 그 격차는 검사 상수로 박아 두었습니다.",
+      "Many apps quietly switch to the old graphics engine when the new one fails. We do the opposite: if the chosen engine cannot run, we say so and show why. The reason came from measurement. The same character had identical silhouettes on both engines but colors differing by up to 169 out of 255. So for scenes with a character, WebGPU is shown as unavailable, the artist is told to pick WebGL2 directly to keep the colors, and that gap is pinned as test constants.",
     ),
     analogy: t(
       "원고를 인쇄소에 넘겼는데 인쇄 방식이 몰래 바뀌어 색이 달라진 것과 같습니다. 방식이 바뀌면 반드시 알려 줘야 합니다.",

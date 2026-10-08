@@ -297,6 +297,8 @@ export const ENGINEERING_EXTERNAL_LINKS: readonly EngineeringExternalLink[] = [
   { name: "Zod", url: "https://zod.dev/" },
   { name: "Node.js", url: "https://nodejs.org/" },
   { name: "pnpm", url: "https://pnpm.io/" },
+  { name: "pnpm patch", url: "https://pnpm.io/cli/patch" },
+  { name: "Corepack", url: "https://github.com/nodejs/corepack" },
   { name: "Tailwind CSS", url: "https://tailwindcss.com/" },
   { name: "Drizzle ORM", url: "https://orm.drizzle.team/" },
   { name: "SQLite", url: "https://www.sqlite.org/" },
@@ -316,6 +318,8 @@ export const ENGINEERING_EXTERNAL_LINKS: readonly EngineeringExternalLink[] = [
   { name: "libmypaint", url: "https://github.com/mypaint/libmypaint" },
   { name: "HarfBuzz", url: "https://harfbuzz.github.io/" },
   { name: "ag-psd", url: "https://github.com/Agamnentzar/ag-psd" },
+  { name: "pdf-lib", url: "https://pdf-lib.js.org/" },
+  { name: "wasm-vips", url: "https://github.com/kleisauke/wasm-vips" },
   { name: "Tiled", url: "https://www.mapeditor.org/" },
   { name: "Pillow", url: "https://python-pillow.org/" },
   { name: "Redis Lua", url: "https://redis.io/docs/latest/develop/programmability/eval-intro/" },
@@ -338,6 +342,15 @@ export const ENGINEERING_EXTERNAL_LINKS: readonly EngineeringExternalLink[] = [
   { name: "nestjs-zod", url: "https://github.com/BenLorantfy/nestjs-zod" },
   { name: "Wrangler", url: "https://developers.cloudflare.com/workers/wrangler/commands/" },
   { name: "Drizzle Kit", url: "https://orm.drizzle.team/docs/drizzle-kit-generate" },
+  // 라이브러리 해설(영역 1~4) 카드용 — 설치본 package.json 의 homepage·repository, 2026-10-08 check-links 로 확인.
+  { name: "three-vrm", url: "https://github.com/pixiv/three-vrm" },
+  { name: "recast-navigation", url: "https://github.com/isaac-mason/recast-navigation-js" },
+  { name: "PixiJS", url: "https://pixijs.com/" },
+  { name: "Rough.js", url: "https://roughjs.com/" },
+  { name: "Radix UI", url: "https://www.radix-ui.com/primitives" },
+  { name: "cmdk", url: "https://github.com/dip/cmdk" },
+  { name: "polygon-clipping", url: "https://github.com/mfogel/polygon-clipping" },
+  { name: "closed-chain-ik", url: "https://github.com/gkjohnson/closed-chain-ik-js" },
 ];
 
 const BY_EXACT_NAME = new Map(ENGINEERING_EXTERNAL_LINKS.map((link) => [link.name, link.url]));

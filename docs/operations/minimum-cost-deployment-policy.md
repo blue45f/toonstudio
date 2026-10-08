@@ -12,7 +12,7 @@
 | 대형 불변 파일 | 압축 Static Assets + R2 | Range 요청만 R2 원본을 사용한다. |
 | Core API | Render `toonspectrum-core-api` | `API_RUNTIME_ROLE=full`, 수동 release, scale-to-zero. |
 | 임시 실시간 조정 | Cloudflare Durable Objects | presence·cursor·comment·signaling. |
-| PostgreSQL 원장 | Neon/호환 PostgreSQL | migration은 별도 승인형 single writer. |
+| PostgreSQL 원장 | Supabase PostgreSQL (현재 권위, Neon은 legacy 보존) | migration은 별도 승인형 single writer. 정본은 [`canonical-database-topology.md`](./canonical-database-topology.md). |
 
 ## 변하지 않는 기본 원칙
 
@@ -47,8 +47,14 @@ pnpm run cloudflare:static:dry-run
 
 export CLOUDFLARE_CORE_API_ORIGIN=https://toonspectrum-core-api.onrender.com
 export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
+export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
 pnpm run cloudflare:static:deploy
 ```
+
+   production 모드(`scripts/deploy-cloudflare-static.mjs --production`)는 승인 문구와 함께 소문자 40자리
+   `TOONSPECTRUM_APPROVED_MAIN_SHA`, 현재 브랜치 `main`, 깨끗한 작업 트리, `HEAD`와 승인 SHA의 일치를
+   모두 요구한다. 하나라도 어긋나면 빌드 전에 중단하며, SHA는 `HEAD`에서 자동으로 채우지 않고 승인된
+   값을 입력한다.
 
 7. 루트, Studio SPA, 정적 카탈로그, edge liveness, Core readiness, 로그인·OAuth callback,
    권한이 필요한 API, R2 Range, realtime reconnect를 검사한다.

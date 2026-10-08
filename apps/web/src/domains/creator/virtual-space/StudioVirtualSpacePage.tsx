@@ -216,6 +216,7 @@ import { SpaceSelfCard } from "./hud/SpaceSelfCard";
 import { SpaceShortcutsHelp } from "./hud/SpaceShortcutsHelp";
 import { SpaceSidePanel } from "./hud/SpaceSidePanel";
 import { SpaceEventBanner } from "./hud/SpaceEventBanner";
+import { spaceHudShowsEventBanner } from "./hud/space-hud-priority";
 import { SpaceContextSuggestion } from "./hud/SpaceContextSuggestion";
 import { SpaceFocusChip } from "./hud/SpaceFocusChip";
 import { SpaceToasts } from "./hud/SpaceToasts";
@@ -1978,8 +1979,9 @@ export function VirtualSpaceExperience({
       onTogglePeople={() => togglePanel("people")} onToggleMap={toggleMap} />;
 
   return (
-    <div className="space-hud" data-studio-live-shell="true" data-studio-personal-space={personal || undefined}
+    <div className="space-hud" data-own-control-size="true" data-studio-live-shell="true" data-studio-personal-space={personal || undefined}
       data-route-ready="studio-live-space" data-hud-layout={desktop ? "desktop" : "mobile"} data-panel-open={panel ? "true" : undefined}
+      data-dock-popover={dockPopover ?? undefined}
       data-world-kind={builtin?.kind ?? "custom"} data-engine-status={engineStatus} data-handedness={experiencePreference.handedness}>
       <h1 className="sr-only">{spaceName} · {bt("가상 스튜디오", "Virtual studio")}</h1>
       <div className="space-hud__stage" data-studio-virtual-space="true"
@@ -2040,7 +2042,7 @@ export function VirtualSpaceExperience({
           {desktop ? null : coach}
           {worldRuleGate.element}
           <SpaceTownBanner personal={personal} spotlightActive={Boolean(spotlightEventId)} onStopSpotlight={stopSpotlight} onViewTown={() => setPanel("town")} />
-          <SpaceEventBanner banner={spaceUi.banner} onDismiss={spaceUi.dismissBanner} />
+          {spaceHudShowsEventBanner({ desktop, coachOpen: coach !== null }) ? <SpaceEventBanner banner={spaceUi.banner} onDismiss={spaceUi.dismissBanner} /> : null}
           {!personal ? <SpaceRequestToast requests={incomingRequests} acceptDisabledReason={socialFocused ? bt("집중·자리 비움 중에는 수락할 수 없어요", "You can't accept while focusing or away") : null}
             onRespond={respondToRequest} onOpenPeople={() => setPanel("people")} /> : null}
           <SpaceProximityVideo phase={proximity.phase} snapshot={proximity.snapshot} busy={proximity.busy} scopeNames={proximityScopeNames}

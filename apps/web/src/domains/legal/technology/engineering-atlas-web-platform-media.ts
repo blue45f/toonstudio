@@ -1,0 +1,962 @@
+import { sampleSource, t } from "./engineering-atlas-web-platform-helpers";
+
+import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
+
+/**
+ * 기술 도감 · web-platform · 영상·미디어 전달(Remotion, WebVTT, HTTP Range+Blob, VideoObject JSON-LD, ARIA 탭).
+ * 8분 제품 투어(/product-tour)와 24초 브랜드 필름(/brand-film)을 만든 기술이다. 계약과 작성 규칙은 engineering-atlas-types.ts 를 따른다.
+ */
+const MARKETING = "apps/web/src/domains/marketing";
+const FILM_TOOLS = "tools/media/brand-film";
+
+export const ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA: readonly EngineeringAtlasEntry[] = [
+  {
+    id: "remotion-composition-player",
+    category: "web-platform",
+    name: "Remotion",
+    title: t(
+      "영상을 '프레임 번호의 함수'로 만들어 브라우저에서 재생하고 MP4로도 굽기",
+      "Video as a function of the frame number: play it in the browser and bake it to MP4",
+    ),
+    status: "live",
+    tagline: t(
+      "Remotion 으로 8분 투어는 브라우저에서 실시간 합성하고, 24초 필름은 MP4로 미리 굽습니다.",
+      "With Remotion the 8-minute tour is composed live in the browser and the 24-second film is pre-rendered to MP4.",
+    ),
+    background: [
+      t(
+        "보통 영상은 편집 프로그램에서 만들어 MP4 파일로 내보내면 끝입니다. 자막 한 줄만 고쳐도 다시 내보내야 하고, 영상 속 장면과 웹페이지의 챕터 목록이 따로 관리되어 어긋나기 쉽습니다. Remotion 은 영상을 React 컴포넌트로 만드는 라이브러리입니다. 컴포넌트가 '지금 몇 번째 프레임인가'(useCurrentFrame)를 받아 위치·투명도 같은 값을 계산식(interpolate)으로 정하므로, 영상이 곧 코드가 됩니다.",
+        "Normally a video is made in an editor and exported as an MP4, so even a one-line caption fix means exporting again, and the scenes in the video drift away from the chapter list on the web page. Remotion builds video from React components. A component receives 'which frame is this' (useCurrentFrame) and sets values such as position and opacity with a formula (interpolate), so the video itself becomes code.",
+      ),
+      t(
+        "같은 컴포지션을 두 가지로 씁니다. 하나는 브라우저 안에서 <Player> 가 프레임을 실시간으로 그려 주는 방식으로, /product-tour 의 8분 24초(504초 × 30fps = 15,120프레임) 투어가 이렇게 재생됩니다. 다른 하나는 Remotion CLI 가 프레임을 한 장씩 그려 H.264 MP4 로 굽는 방식입니다. 투어 컴포지션은 두 방식이 함께 쓰는 워크스페이스 패키지(@toonstudio/product-tour-film)에 있어 호환 재생용 MP4 도 같은 장면입니다. 24초 브랜드 필름과 기술 영상은 자기 컴포지션을 CLI 로만 렌더한 MP4 이고, 웹앱은 그 파일을 서빙할 뿐입니다.",
+        "One composition is used two ways. In the first, <Player> draws the frames live inside the browser, which is how the 8m 24s tour on /product-tour (504 s × 30 fps = 15,120 frames) plays. In the second, the Remotion CLI draws frames one by one and bakes an H.264 MP4. The tour composition lives in a workspace package both ways share (@toonstudio/product-tour-film), so the compatibility MP4 shows the same scenes. The 24-second brand film and the engineering films are MP4s rendered only through the CLI from their own compositions, and the web app just serves those files.",
+      ),
+      t(
+        "대안은 편집 프로그램에서 한 번 내보낸 MP4 만 두는 것입니다. MP4 는 가볍고 어디서나 재생되지만 챕터 이동·자막 언어 전환·내레이션과 배경음 믹스 조절을 영상 밖 화면에서 따로 만들어야 하고, 장면 구성은 파일 안에 갇힙니다. Remotion 은 장면·자막 큐·챕터를 코드 한 곳에서 관리하게 해 주는 대신, 브라우저가 프레임을 실시간으로 그려야 하고 remotion·@remotion/player 가 웹앱 의존성에 더해집니다. 그래서 오디오를 불러오지 못하는 등 재생이 막히면 MP4 호환 재생으로 넘어가는 안전장치를 함께 둡니다.",
+        "The alternative is to keep only an MP4 exported once from an editor. An MP4 is light and plays anywhere, but chapter jumps, caption language switching and the narration and music mix would have to be built separately outside the video, and the scene layout stays locked inside the file. Remotion lets scenes, caption cues and chapters be managed in one place of code, at the price of the browser drawing frames live and remotion and @remotion/player joining the web app's dependencies. So when playback is blocked, for example the audio cannot load, a safety net switches to compatibility MP4 playback.",
+      ),
+      t(
+        "지켜야 할 점도 있습니다. Remotion 은 개인·소규모 팀과 대규모 조직의 라이선스 조건이 다르고 표준 SPDX 라이선스가 아닙니다. 저장소는 패키지 이름·버전·라이선스 문서의 해시를 고정해 바뀌면 빌드를 멈출 뿐, 운영 조직이 사용 자격을 갖췄는지는 확인할 수 없습니다. 이 카드는 법률 판단을 하지 않습니다. 웹앱이 remotion 을 실행 코드로 가져오는 곳은 투어 재생기뿐이며, 홍보 영상 만들기는 사용자가 내려받는 Remotion 프로젝트의 소스 파일만 만들어 줍니다.",
+        "There are points to keep in mind. Remotion has different license terms for individuals and small teams versus large organizations, and it is not a standard SPDX license. The repository pins the package names, versions and license-text hash and stops the build if they change, but it cannot show whether the operating organization is eligible. This card makes no legal judgment. The only place the web app imports remotion as running code is the tour player; the promo maker just writes the source files of a Remotion project for the user to download.",
+      ),
+    ],
+    keyPoints: [
+      t("영상은 프레임 번호를 받는 React 컴포넌트", "A video is a React component that receives the frame number"),
+      t("투어 컴포지션을 <Player> 와 CLI MP4 가 함께 쓴다", "One tour composition feeds both <Player> and the CLI MP4"),
+      t("실시간 합성은 8분 투어뿐, 24초 필름은 사전 렌더", "Only the 8-minute tour is live; the 24-second film is pre-rendered"),
+      t("재생이 막히면 MP4 호환 재생으로 전환", "If playback is blocked, switch to compatibility MP4"),
+    ],
+    diagram: {
+      id: "remotion-composition-player-diagram",
+      kind: "graph",
+      title: t("컴포지션 하나, 출력 두 갈래", "One composition, two kinds of output"),
+      caption: t(
+        "투어 컴포지션은 브라우저 재생과 MP4 렌더가 함께 쓰고, 24초 필름은 MP4로만 나갑니다.",
+        "The tour composition feeds both browser playback and the MP4 render; the 24-second film ships only as MP4.",
+      ),
+      alt: t(
+        "왼쪽 위의 투어 컴포지션은 브라우저 Player 의 실시간 합성과 Remotion CLI 렌더로 갈라집니다. 왼쪽 아래의 필름 컴포지션은 CLI 렌더로만 이어지고, CLI 는 투어 MP4 와 24초 필름 MP4 를 만듭니다. Player 가 막히면 점선을 따라 투어 MP4 호환 재생으로 넘어갑니다.",
+        "At top left the tour composition splits into live composition in the browser Player and the Remotion CLI render. The film composition at bottom left goes only through the CLI, which produces the tour MP4 and the 24-second film MP4s. If the Player is blocked, playback follows the dashed line to the compatibility tour MP4.",
+      ),
+      nodes: [
+        { id: "tour", label: t("투어 컴포지션", "Tour composition"), sub: t("공유 패키지 product-tour-film", "shared package product-tour-film"), tone: "neutral", at: [0, 0] },
+        { id: "film", label: t("필름 컴포지션", "Film composition"), sub: t("tools/media/brand-film", "tools/media/brand-film"), tone: "neutral", at: [0, 2] },
+        { id: "player", label: t("브라우저 <Player>", "Browser <Player>"), sub: t("/product-tour 실시간 합성", "live on /product-tour"), tone: "local", at: [2, 0] },
+        { id: "cli", label: t("Remotion CLI 렌더", "Remotion CLI render"), sub: t("H.264 MP4 로 굽기", "bakes H.264 MP4"), tone: "neutral", at: [2, 2] },
+        { id: "tourMp4", label: t("투어 MP4", "Tour MP4"), sub: t("호환 재생 · ?player=mp4", "compat playback · ?player=mp4"), tone: "edge", at: [4, 0] },
+        { id: "filmMp4", label: t("24초 필름 MP4", "24-second film MP4"), sub: t("가로·세로·정사각 3편", "landscape, portrait, square"), tone: "edge", at: [4, 2] },
+      ],
+      edges: [
+        { from: "tour", to: "player", label: t("실시간", "live") },
+        { from: "tour", to: "cli", label: t("굽기", "bake") },
+        { from: "film", to: "cli", label: t("굽기", "bake") },
+        { from: "cli", to: "tourMp4" },
+        { from: "cli", to: "filmMp4" },
+        { from: "player", to: "tourMp4", label: t("막히면 전환", "if blocked"), style: "dashed" },
+      ],
+    },
+    usage: [
+      {
+        feature: t("제품 투어 · 브라우저 실시간 재생", "Product tour · live playback in the browser"),
+        role: t("웹앱이 remotion·@remotion/player 와 공유 컴포지션을 직접 가져와 <Player> 로 15,120프레임을 합성합니다. 재생 버튼을 누른 뒤에야 마운트하고, ?t= 로 시작 프레임을 정하며, 오디오가 막히거나 Player 가 오류를 내면 MP4 호환 재생으로 바꿉니다.", "The web app imports remotion, @remotion/player and the shared composition and composes 15,120 frames with <Player>. It mounts only after the play button is pressed, takes the start frame from ?t=, and switches to compatibility MP4 playback if audio is blocked or the Player errors."),
+        paths: [`${MARKETING}/ProductTourPlayer.tsx#ProductTourPlayer`, `${MARKETING}/ProductTourRemotionComposition.tsx`, "packages/product-tour-film/src/ProductTourFilm.tsx"],
+        route: "/product-tour",
+      },
+      {
+        feature: t("브랜드 필름·투어 MP4 제작 (사전 렌더)", "Brand film and tour MP4 production (pre-rendered)"),
+        role: t("tools/media/brand-film 이 컴포지션을 등록하고 CLI 로 H.264 MP4·포스터를 굽습니다. 24초 필름은 가로·세로·정사각 세 편, 8분 투어는 내레이션·배경음을 ffmpeg 로 섞은 한 편입니다. 결과는 apps/web/public/brand 에 두고 웹앱은 파일로 서빙합니다.", "tools/media/brand-film registers the compositions and bakes H.264 MP4s and posters with the CLI. The 24-second film comes as landscape, portrait and square editions; the 8-minute tour mixes narration and music with ffmpeg into one file. The results sit in apps/web/public/brand and the web app serves them as plain files."),
+        paths: [`${FILM_TOOLS}/src/index.tsx`, `${FILM_TOOLS}/render.mjs`, `${FILM_TOOLS}/render-product-tour.mjs`, `${FILM_TOOLS}/mix-product-tour-audio.mjs`],
+        route: "/brand-film",
+      },
+      {
+        feature: t("홍보 영상 만들기 (베타) · Remotion 프로젝트 내보내기", "Promo maker (beta) · Remotion project export"),
+        role: t("사용자의 컷으로 컴포지션·미디어·자막을 담은 Remotion 프로젝트 ZIP 을 만들어 줍니다. 웹앱은 이 용도로 remotion 을 실행하지 않고 파일만 생성하며, 렌더는 내려받아 로컬에서 합니다.", "Builds a Remotion project ZIP with the composition, media and captions from the user's panels. The web app does not run remotion for this; it only writes files, and rendering happens locally after download."),
+        paths: ["apps/web/src/domains/creator/promo/promo-remotion.ts", "apps/web/src/domains/creator/promo/promo-downloads.ts", "apps/web/src/domains/creator/promo/StudioPromoPage.tsx"],
+        route: "/showcase/promo",
+      },
+    ],
+    samples: [
+      {
+        kind: "teaching",
+        title: t("프레임 번호로 그리는 컴포넌트와 Player", "A component drawn from the frame number, and the Player"),
+        language: "tsx",
+        ...sampleSource([
+          ['import { Player } from "@remotion/player";'],
+          ['import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";'],
+          [""],
+          ["function Title() {"],
+          ["  const frame = useCurrentFrame();", "지금이 몇 번째 프레임인가", "which frame are we on"],
+          ["  const { fps } = useVideoConfig();"],
+          ["  ", "처음 1초 동안 0 → 1 로 나타나고 그 뒤에는 1 에 머문다", "fades 0 → 1 over the first second, then stays at 1"],
+          ['  const opacity = interpolate(frame, [0, fps], [0, 1], { extrapolateRight: "clamp" });'],
+          ['  return <AbsoluteFill style={{ opacity, alignItems: "center", justifyContent: "center", fontSize: 72 }}>ToonStudio</AbsoluteFill>;'],
+          ["}"],
+          [""],
+          ["export function Preview() {"],
+          ["  return ("],
+          ["    <Player"],
+          ["      component={Title}", "같은 Title 을 브라우저에서 재생한다 (MP4 굽기는 CLI 의 몫)", "plays the same Title in the browser (baking MP4 is the CLI's job)"],
+          ["      durationInFrames={504 * 30}", "8분 24초 = 504초 × 30fps", "8m 24s = 504 s × 30 fps"],
+          ["      fps={30}"],
+          ["      compositionWidth={1280}"],
+          ["      compositionHeight={720}"],
+          ["      controls"],
+          ["      acknowledgeRemotionLicense", "라이선스 조건을 읽었다는 표시 (자격 증명이 아니다)", "marks that the license terms were read (not proof of eligibility)"],
+          ["    />"],
+          ["  );"],
+          ["}"],
+        ]),
+        explain: t("Title 은 props 가 아니라 현재 프레임에서 투명도를 계산하므로 같은 입력이면 항상 같은 그림이 나옵니다. 실제 투어는 Title 대신 공유 컴포지션과 오디오·자막 층을 올리고, 재생을 누른 뒤에야 Player 를 마운트합니다.", "Title computes opacity from the current frame rather than from props, so the same input always gives the same picture. The real tour mounts the shared composition plus audio and caption layers instead of Title, and only after play is pressed."),
+        verify: "types",
+      },
+      {
+        kind: "simplified",
+        title: t("컴포지션 등록과 MP4 굽기", "Registering compositions and baking MP4"),
+        language: "tsx",
+        ...sampleSource([
+          ['import { Composition, registerRoot } from "remotion";'],
+          [""],
+          ["const FPS = 30;"],
+          ["const TOUR_SECONDS = 504;"],
+          ["const Film = () => null;", "실제로는 @toonstudio/product-tour-film 등의 컴포지션", "really the compositions of @toonstudio/product-tour-film and others"],
+          [""],
+          ["function Root() {"],
+          ["  return ("],
+          ["    <>"],
+          ['      <Composition id="ToonStudioProductTour" component={Film} width={1280} height={720} fps={FPS} durationInFrames={TOUR_SECONDS * FPS} />'],
+          ['      <Composition id="ToonStudioLandscape" component={Film} width={1280} height={720} fps={FPS} durationInFrames={720} />'],
+          ["    </>"],
+          ["  );"],
+          ["}"],
+          [""],
+          ["registerRoot(Root);"],
+          ["  ", "굽기: npx remotion render src/index.tsx ToonStudioProductTour out.mp4 --codec=h264 --crf=28", "bake: npx remotion render src/index.tsx ToonStudioProductTour out.mp4 --codec=h264 --crf=28"],
+        ]),
+        explain: t("id·크기·fps·길이로 컴포지션을 등록하면 CLI 가 id 로 찾아 프레임을 한 장씩 그려 MP4 를 만듭니다. 실제 index.tsx 는 브랜드 필름 3종·헤더·공유 이미지·기술 영상 3종까지 모두 한 파일에서 등록합니다.", "Once a composition is registered with id, size, fps and length, the CLI finds it by id and draws frames one by one into an MP4. The real index.tsx registers the three brand-film editions, the header, the share image and three engineering films in one file."),
+        source: `${FILM_TOOLS}/src/index.tsx`,
+        verify: "types",
+      },
+    ],
+    links: [
+      { title: "Remotion · Player", url: "https://www.remotion.dev/docs/player", kind: "docs", note: t("<Player> 로 컴포지션을 웹페이지에 올리는 법", "Putting a composition on a web page with <Player>") },
+      { title: "Remotion · <Composition>", url: "https://www.remotion.dev/docs/composition", kind: "docs", note: t("id·크기·fps·길이로 컴포지션 등록", "Registering a composition by id, size, fps and length") },
+      { title: "Remotion · useCurrentFrame()", url: "https://www.remotion.dev/docs/use-current-frame", kind: "docs" },
+      { title: "Remotion · interpolate()", url: "https://www.remotion.dev/docs/interpolate", kind: "docs" },
+      { title: "Remotion · License", url: "https://www.remotion.dev/docs/license", kind: "docs", note: t("규모별 조건 — 직접 검토 필요", "Terms by organization size: review directly") },
+    ],
+    chapterIds: ["delivery", "licenses"],
+    talk: {
+      pitch: t(
+        "Remotion 은 영상을 React 코드로 만드는 도구입니다. 8분 제품 투어는 컴포지션 하나를 두 가지로 씁니다. 브라우저에서는 Player 가 장면을 실시간으로 그려 챕터 이동과 자막 전환을 코드로 다루고, 같은 컴포지션을 CLI 로 MP4 로도 구워 두어 재생이 막히면 그 파일로 넘어갑니다. 24초 브랜드 필름은 미리 구운 MP4 파일입니다. 라이선스 자격은 저장소로 확인할 수 없어 공식 문서를 직접 검토해야 합니다.",
+        "Remotion builds video from React code. The 8-minute product tour uses one composition two ways. In the browser the Player draws the scenes live, so chapter jumps and caption switching are handled in code, and the same composition is also baked to MP4 with the CLI so playback can fall back to that file. The 24-second brand film is a pre-rendered MP4. Eligibility under the license cannot be confirmed from the repository, so the official terms must be reviewed directly.",
+      ),
+      analogy: t(
+        "악보와 연주입니다. 컴포지션은 악보이고, 브라우저 Player 는 그 자리의 생연주, CLI 렌더는 스튜디오 녹음(MP4)입니다. 같은 악보라 두 결과는 같은 곡입니다.",
+        "Think of sheet music and performance. The composition is the score, the browser Player is a live performance, and the CLI render is a studio recording (the MP4). It is the same score, so both are the same piece.",
+      ),
+      questions: [
+        {
+          question: t("Remotion 을 쓰려면 라이선스를 사야 하나요?", "Do we have to buy a license to use Remotion?"),
+          answer: t(
+            "조직 규모에 따라 조건이 다릅니다. 저장소는 패키지 이름·버전·라이선스 문서의 해시를 고정할 뿐 운영 조직의 자격은 확인할 수 없습니다. 공식 라이선스 문서를 직접 검토해야 하며, 이 카드는 법률 판단을 하지 않습니다.",
+            "The terms depend on the size of the organization. The repository only pins the package names, versions and license-text hash; it cannot show whether the operating organization is eligible. The official license page must be reviewed directly, and this card makes no legal judgment.",
+          ),
+        },
+        {
+          question: t("왜 투어를 그냥 MP4 한 편으로 두지 않았나요?", "Why not ship the tour as a single MP4?"),
+          answer: t(
+            "챕터 이동, 자막 언어 전환, 내레이션과 배경음 음량 조절을 같은 장면·큐 데이터로 다루기 위해서입니다. 대신 기기 성능의 영향을 받아서, 막히면 MP4 호환 재생으로 넘어가게 해 두었습니다.",
+            "So that chapter jumps, caption language and the narration and music mix all work from the same scene and cue data. The price is dependence on device performance, which is why playback can fall back to the MP4.",
+          ),
+        },
+        {
+          question: t("24초 브랜드 필름도 실시간으로 그리나요?", "Is the 24-second brand film also drawn live?"),
+          answer: t(
+            "아니요. 가로·세로·정사각 MP4 세 편을 미리 구워 파일로 서빙합니다. 웹앱은 그 컴포지션 코드를 가져오지 않습니다.",
+            "No. Three MP4s (landscape, portrait, square) are pre-rendered and served as files, and the web app does not import that composition code.",
+          ),
+        },
+      ],
+      pitfall: t(
+        "'웹사이트는 Remotion 을 쓰지 않는다'도, '전부 실시간 합성이다'도 틀립니다. 실시간은 8분 투어 재생기뿐입니다. 실기기의 프레임 성능과 오디오 동기는 이 카드에서 측정하지 않았고, 저장소 단위 테스트는 Player 를 모의 객체로 대체합니다(실브라우저 e2e 는 수동 실행용입니다). 라이선스 자격은 저장소로 확인할 수 없습니다.",
+        "Both 'the website does not use Remotion' and 'everything is composed live' are wrong: only the 8-minute tour player composes live. Frame performance and audio sync on real devices were not measured for this card, and the repository's unit tests replace the Player with a mock (the real-browser e2e is run manually). License eligibility cannot be confirmed from the repository.",
+      ),
+    },
+    technologies: ["Remotion", "Remotion Player", "React", "H.264", "ffmpeg"],
+    facts: [
+      { value: "504 s × 30 fps", label: t("8분 24초 투어의 길이와 프레임률 (= 15,120프레임)", "Length and frame rate of the 8m 24s tour (= 15,120 frames)"), source: "packages/product-tour-film/src/ProductTourFilm.tsx" },
+      { value: "720", label: t("24초 브랜드 필름 한 편의 프레임 수 (30fps)", "Frames in one 24-second brand film (30 fps)"), source: `${FILM_TOOLS}/src/index.tsx` },
+      { value: "4.0.514", label: t("remotion·@remotion/player 고정 버전", "Pinned remotion and @remotion/player version"), source: "package.json" },
+    ],
+    reviewedAt: "2026-10-08",
+  },
+  {
+    id: "webvtt-caption-tracks",
+    category: "web-platform",
+    name: "WebVTT",
+    title: t(
+      "대본 한 벌에서 자막 파일을 뽑아 <track>으로 거는 법",
+      "Cutting caption files from one script and attaching them with <track>",
+    ),
+    status: "live",
+    tagline: t(
+      "내레이션 큐 한 벌에서 한·영 WebVTT 와 재생 중 자막을 함께 만들어 서로 어긋나지 않게 합니다.",
+      "One set of narration cues yields the Korean and English WebVTT files and the in-player captions, so they cannot drift.",
+    ),
+    background: [
+      t(
+        "자막이 영상 속 그림으로 박혀 있으면 끄거나 언어를 바꿀 수 없고, 글자로 검색하거나 스크린 리더로 읽을 수도 없습니다. WebVTT 는 '몇 초부터 몇 초까지 어떤 글'을 적어 둔 평범한 텍스트 형식입니다. HTML 의 <video> 안에 <track kind=captions> 로 연결하면 브라우저가 자막 켜기·끄기·언어 선택 메뉴와 화면 표시를 맡아 줍니다.",
+        "If captions are baked into the picture, viewers cannot turn them off or switch language, and neither search nor a screen reader can read them. WebVTT is a plain text format that lists 'from second A to second B, this text'. Attach it inside an HTML <video> with <track kind=captions> and the browser handles the on/off and language menu and draws the text.",
+      ),
+      t(
+        "이 서비스는 자막을 손으로 따로 쓰지 않습니다. 내레이션 큐 스펙(product-tour-narration.json: 큐 27개의 시작 시각과 한·영 문장) 하나에서 큐마다 합성 음성을 만들고, 실제 음성 길이를 재서 끝나는 시각을 정해 한국어·영어 VTT 를 함께 씁니다. 끝 시각은 다음 큐보다 0.35초 먼저를 넘지 않게 닫습니다. 같은 큐는 재생기용 모듈(product-tour-audio.generated.ts)로도 나가 Remotion 재생 중 자막을 그립니다. 생성기의 --check 는 VTT 가 스펙과 어긋나면 실패해 낡은 자막을 잡아 줍니다.",
+        "Captions are never written separately by hand. From one narration cue spec (product-tour-narration.json: the start time and the Korean and English sentence of each of 27 cues) a synthesized voice is made per cue, the real speech length is measured to set each end time, and the Korean and English VTT files are written together. An end time never passes 0.35 seconds before the next cue. The same cues also go out as a player module (product-tour-audio.generated.ts) that draws captions while Remotion plays. The generator's --check fails when a VTT no longer matches the spec, which catches stale captions.",
+      ),
+      t(
+        "재생 경로마다 자막이 나오는 방식이 다릅니다. MP4 호환 재생기(한·영 두 트랙)와 24초 브랜드 필름(4큐)은 <track> 과 textTracks 로 브라우저 자막을 쓰고, 8분 투어의 기본 Remotion 재생기는 영상 위에 글자를 직접 그리는 방식이라 <track> 을 쓰지 않습니다. 영상 밖에서 읽을 수 있는 것은 챕터별 요약 대본입니다.",
+        "Each playback path shows captions differently. The compatibility MP4 player (two tracks) and the 24-second brand film (four cues) use <track> and textTracks for browser captions, while the default Remotion player of the 8-minute tour draws the text onto the picture itself and does not use <track>. What can be read outside the video is a chapter-by-chapter outline.",
+      ),
+      t(
+        "한계가 둘 있습니다. 첫째, Remotion 경로의 자막은 aria-hidden 으로 화면에만 그려져 스크린 리더에는 읽히지 않고, 챕터 요약 대본이 있을 뿐 내레이션 전문을 글로 제공하지는 않습니다. 둘째, 합성 음성은 macOS 의 say 로만 다시 만들 수 있어 다른 환경에서는 --check 로 확인만 되고, 자막과 소리의 싱크는 생성 때 잰 길이에 의존하며 사람이 끝까지 시청해 확인한 기록은 이 카드에 없습니다.",
+        "There are two limits. First, captions on the Remotion path are drawn on screen only with aria-hidden, so screen readers do not read them, and the chapter outline is a summary rather than the full narration as text. Second, the synthesized voice can be regenerated only with macOS say, so elsewhere --check can only verify; caption and sound sync relies on lengths measured at generation, and this card has no record of a person watching it through.",
+      ),
+    ],
+    keyPoints: [
+      t("큐 스펙 한 벌에서 한·영 VTT 와 재생 중 자막을 생성", "One cue spec generates the KO/EN VTT and the in-player captions"),
+      t("VTT 는 <track kind=captions> 로 연결 (MP4·브랜드 필름)", "VTT attaches via <track kind=captions> (MP4 and brand film)"),
+      t("Remotion 재생기는 자막을 영상 위에 직접 그린다", "The Remotion player draws captions onto the picture itself"),
+      t("생성기 --check 가 낡은 자막을 잡는다", "The generator's --check catches stale captions"),
+    ],
+    diagram: {
+      id: "webvtt-caption-tracks-diagram",
+      kind: "graph",
+      title: t("큐 한 벌, 자막 두 가지 표면", "One set of cues, two caption surfaces"),
+      caption: t(
+        "스펙 한 곳에서 VTT 파일과 재생기 큐 모듈이 함께 나와 자막이 어긋나지 않습니다.",
+        "VTT files and the player cue module both come from one spec, so captions stay in step.",
+      ),
+      alt: t(
+        "내레이션 큐 스펙을 생성기 스크립트가 읽어 음성 길이를 재고, 한·영 VTT 파일과 재생기 큐 모듈을 함께 만듭니다. VTT 파일은 MP4 호환 재생과 브랜드 필름의 track 자막이 되고, 큐 모듈은 Remotion 재생기가 영상 위에 그리는 자막이 됩니다.",
+        "A generator script reads the narration cue spec, measures the speech lengths, and writes the Korean and English VTT files and the player cue module together. The VTT files become the track captions of compatibility MP4 playback and the brand film, and the cue module becomes the captions the Remotion player draws on the picture.",
+      ),
+      nodes: [
+        { id: "spec", label: t("내레이션 큐 스펙", "Narration cue spec"), sub: t("27큐 · 시각 + 한·영 문장", "27 cues: time + KO/EN text"), tone: "neutral", at: [0, 1] },
+        { id: "gen", label: t("생성기 스크립트", "Generator script"), sub: t("음성 길이를 재서 끝 시각 계산", "measures speech to set end times"), tone: "neutral", at: [1, 1] },
+        { id: "vtt", label: t("한·영 VTT 파일", "KO and EN VTT files"), sub: t("toonstudio-product-tour.{ko,en}.vtt", "toonstudio-product-tour.{ko,en}.vtt"), tone: "edge", at: [2, 0] },
+        { id: "cues", label: t("재생기 큐 모듈", "Player cue module"), sub: t("product-tour-audio.generated.ts", "product-tour-audio.generated.ts"), tone: "neutral", at: [2, 2] },
+        { id: "track", label: t("<track> 브라우저 자막", "<track> captions"), sub: t("MP4 호환 재생 · 브랜드 필름", "compat MP4 and brand film"), tone: "local", at: [3, 0] },
+        { id: "overlay", label: t("영상 위에 그린 자막", "Captions drawn on video"), sub: t("Remotion 재생기 · aria-hidden", "Remotion player, aria-hidden"), tone: "local", at: [3, 2] },
+      ],
+      edges: [
+        { from: "spec", to: "gen" },
+        { from: "gen", to: "vtt", label: t("VTT 쓰기", "write VTT") },
+        { from: "gen", to: "cues", label: t("모듈 쓰기", "write module") },
+        { from: "vtt", to: "track" },
+        { from: "cues", to: "overlay" },
+      ],
+    },
+    usage: [
+      {
+        feature: t("제품 투어 · 자막 생성과 검증", "Product tour · caption generation and checks"),
+        role: t("큐 스펙에서 합성 음성과 한·영 VTT 를 만들고, 재생기 큐 모듈도 같은 큐로 생성합니다. --check 는 VTT 가 스펙과 다르면 실패하고, 테스트는 두 VTT 의 큐 수(27)와 마지막 큐 시각을 고정합니다.", "Builds the synthesized voice and the KO/EN VTT from the cue spec, and generates the player cue module from the same cues. --check fails when a VTT differs from the spec, and tests pin the cue count (27) and the last cue time of both VTT files."),
+        paths: [`${FILM_TOOLS}/audio/product-tour-narration.json`, `${FILM_TOOLS}/generate-product-tour-narration.mjs`, `${FILM_TOOLS}/generate-product-tour-runtime-audio.mjs`, "apps/web/public/brand/toonstudio-product-tour.ko.vtt"],
+        route: "/product-tour",
+      },
+      {
+        feature: t("제품 투어 · 호환 MP4 재생의 자막 트랙", "Product tour · caption tracks in compatibility MP4 playback"),
+        role: t("<video> 에 ko·en <track> 을 달고, 자막 버튼은 textTracks 의 mode 를 켜거나 꺼서 브라우저 자막을 제어합니다.", "Attaches ko and en <track> elements to the <video>, and the caption button turns textTracks modes on and off to control the browser captions."),
+        paths: [`${MARKETING}/ProductTourMp4Player.tsx#toggleCaptions`],
+        route: "/product-tour",
+      },
+      {
+        feature: t("제품 투어 · Remotion 재생 중 자막", "Product tour · captions while Remotion plays"),
+        role: t("현재 프레임에 해당하는 큐를 찾아 컴포지션 안에 글자로 그립니다. 브라우저 자막 메뉴가 아니라 자막 버튼(C 키)으로 켜고 끕니다.", "Finds the cue for the current frame and draws it as text inside the composition. It is toggled with the caption button (C key), not the browser caption menu."),
+        paths: [`${MARKETING}/product-tour-remotion-timeline.ts#productTourCaptionAtFrame`, `${MARKETING}/ProductTourRemotionComposition.tsx#ProductTourCaption`, `${MARKETING}/product-tour-audio.generated.ts`],
+      },
+      {
+        feature: t("24초 브랜드 필름 자막", "24-second brand film captions"),
+        role: t("4큐(0·6·12·18초) 한·영 VTT 를 <track> 으로 걸고, 자막 토글이 textTracks 모드를 바꿉니다.", "Attaches the four-cue (0, 6, 12, 18 s) KO/EN VTT files with <track>, and the caption toggle changes textTracks modes."),
+        paths: [`${MARKETING}/CreatorBrandFilm.tsx`, "apps/web/public/brand/toonstudio-intro.ko.vtt"],
+        route: "/brand-film",
+      },
+    ],
+    samples: [
+      {
+        kind: "simplified",
+        title: t("큐 목록에서 VTT 문자열 만들기", "Building a VTT string from a cue list"),
+        language: "ts",
+        ...sampleSource([
+          ["interface Cue { readonly start: number; readonly ko: string; readonly en: string }"],
+          [""],
+          ["const pad = (value: number, width = 2): string => String(value).padStart(width, \"0\");"],
+          [""],
+          ["function vttTime(seconds: number): string {"],
+          ["  const ms = Math.round(seconds * 1000);"],
+          ['  return pad(Math.floor(ms / 3_600_000)) + ":" + pad(Math.floor((ms % 3_600_000) / 60_000)) + ":" + pad(Math.floor((ms % 60_000) / 1000)) + "." + pad(ms % 1000, 3);'],
+          ["}"],
+          [""],
+          ["/** spoken[i] 는 합성 음성이 실제로 걸린 길이(초) */"],
+          ['export function buildVtt(cues: readonly Cue[], spoken: readonly number[], locale: "ko" | "en", total: number): string {'],
+          ["  const body = cues.map((cue, index) => {"],
+          ["    const nextStart = cues[index + 1]?.start ?? total;"],
+          ["    const end = Math.min(nextStart - 0.35, cue.start + Math.max((spoken[index] ?? 0) + 0.8, 2.5));", "다음 큐와 겹치지 않게 먼저 닫는다", "close early so it never overlaps the next cue"],
+          ['    return String(index + 1) + "\\n" + vttTime(cue.start) + " --> " + vttTime(end) + "\\n" + cue[locale];'],
+          ["  });"],
+          ['  return "WEBVTT\\n\\n" + body.join("\\n\\n") + "\\n";'],
+          ["}"],
+        ]),
+        explain: t("생성기 generate-product-tour-narration.mjs 의 buildVtt 를 줄인 것입니다. 실제 코드는 읽는 데 걸리는 시간(한국어 7자/초, 영어 16자/초)도 끝 시각에 반영하고, 한 줄이 길면 34자(영어 48자)로 줄바꿈하며 NOTE 줄을 덧붙입니다.", "A reduction of buildVtt in generate-product-tour-narration.mjs. The real code also factors reading time (7 Korean or 16 English characters per second) into the end time, wraps lines at 34 characters (48 in English) and adds a NOTE line."),
+        source: `${FILM_TOOLS}/generate-product-tour-narration.mjs`,
+        verify: "types",
+      },
+      {
+        kind: "simplified",
+        title: t("자막 버튼: 켜진 게 있으면 끄고, 없으면 현재 언어를 켠다", "Caption button: turn all off if one is on, else turn on the current language"),
+        language: "ts",
+        ...sampleSource([
+          ["", '<video> 안에 <track kind="captions" srclang="ko"> 와 srclang="en" 두 개를 달아 둔다', '<video> holds two tracks: <track kind="captions" srclang="ko"> and srclang="en"'],
+          ["export function toggleCaptions(video: HTMLVideoElement, locale: string): void {"],
+          ["  const tracks = Array.from(video.textTracks);"],
+          ['  const showing = tracks.some((track) => track.mode === "showing");'],
+          ["  for (const track of tracks) {"],
+          ['    track.mode = !showing && track.language === locale ? "showing" : "disabled";'],
+          ["  }"],
+          ["}"],
+        ]),
+        explain: t("ProductTourMp4Player 의 toggleCaptions 입니다. 사용자가 브라우저 컨트롤로 켠 자막이 있으면 모두 끄고, 없으면 화면 언어에 맞는 트랙 하나만 켭니다.", "This is toggleCaptions in ProductTourMp4Player. If the user has turned a caption on through the browser controls, all are turned off; otherwise only the track matching the UI language is turned on."),
+        source: `${MARKETING}/ProductTourMp4Player.tsx`,
+        verify: "types",
+      },
+    ],
+    links: [
+      { title: "MDN · WebVTT API", url: "https://developer.mozilla.org/en-US/docs/Web/API/WebVTT_API", kind: "docs" },
+      { title: "W3C · WebVTT: The Web Video Text Tracks Format", url: "https://www.w3.org/TR/webvtt1/", kind: "spec" },
+      { title: "MDN · <track>", url: "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/track", kind: "docs", note: t("kind·srclang·default 속성", "The kind, srclang and default attributes") },
+      { title: "MDN · TextTrack", url: "https://developer.mozilla.org/en-US/docs/Web/API/TextTrack", kind: "docs", note: t("mode 로 자막 켜기·끄기", "Turning captions on and off with mode") },
+      { title: "WCAG 2.2 · Captions (Prerecorded)", url: "https://www.w3.org/WAI/WCAG22/Understanding/captions-prerecorded.html", kind: "guide" },
+    ],
+    chapterIds: ["delivery", "quality"],
+    talk: {
+      pitch: t(
+        "자막을 영상에 박아 넣지 않고 WebVTT 라는 텍스트 파일로 둡니다. 투어의 자막은 내레이션 큐 스펙 한 벌에서 한국어·영어 VTT 와 재생기용 큐 모듈이 함께 만들어지고, 생성기 검사가 낡은 자막을 잡아 줍니다. MP4 호환 재생과 브랜드 필름은 브라우저의 자막 기능(track)을 쓰고, 기본 Remotion 재생기는 영상 위에 직접 그립니다. 스크린 리더용 대안은 아직 챕터 요약 수준입니다.",
+        "Captions are not baked into the video; they live in a text file format called WebVTT. For the tour, the Korean and English VTT files and the player's cue module are built together from one narration cue spec, and a generator check catches stale captions. Compatibility MP4 playback and the brand film use the browser's caption feature (track), while the default Remotion player draws them on the picture. The screen-reader alternative is still at the level of a chapter summary.",
+      ),
+      analogy: t(
+        "필름에 인쇄된 자막과 DVD 의 자막 파일의 차이입니다. 파일은 따로 꺼내 언어를 바꾸거나 끌 수 있는 대본표입니다.",
+        "It is the difference between subtitles printed on film and a subtitle file on a DVD: the file is a script sheet you can pull out, switch language on or turn off.",
+      ),
+      questions: [
+        {
+          question: t("자막과 내레이션이 어긋나지 않나요?", "Do the captions and narration drift apart?"),
+          answer: t(
+            "자막 끝 시각은 합성 음성의 실제 길이를 재서 정하고, 생성기 --check 는 VTT 가 스펙과 다르면 실패합니다. 다만 사람이 끝까지 시청해 싱크를 확인한 기록은 이 카드에 없습니다.",
+            "End times come from the measured length of the synthesized speech, and the generator's --check fails if a VTT differs from the spec. This card has no record of a person watching it through to confirm sync.",
+          ),
+        },
+        {
+          question: t("왜 Remotion 재생기는 <track> 을 안 쓰나요?", "Why doesn't the Remotion player use <track>?"),
+          answer: t(
+            "Player 가 영상을 직접 합성하는 화면이라 자막도 같은 컴포지션 안에서 그립니다. 그래서 브라우저 자막 메뉴는 없고 자막 버튼(C 키)이 켜고 끕니다. 접근성 대안은 챕터 요약 읽기입니다.",
+            "The Player composes the video itself, so captions are drawn inside the same composition. That means no browser caption menu; the caption button (C key) toggles them. The accessibility alternative is the chapter outline.",
+          ),
+        },
+      ],
+      pitfall: t(
+        "Remotion 재생 경로의 자막은 aria-hidden 이라 스크린 리더가 읽지 못합니다. 내레이션 전문을 글로 제공하는 화면은 확인하지 못했고, 싱크를 사람이 전 구간 시청해 확인한 기록도 없습니다. 합성 음성 재생성은 macOS 에서만 가능합니다.",
+        "Captions on the Remotion path are aria-hidden, so screen readers cannot read them. No screen provides the full narration as text, and there is no record of a person checking sync across the whole film. Regenerating the synthesized voice works only on macOS.",
+      ),
+    },
+    technologies: ["WebVTT", "HTMLMediaElement", "TextTrack"],
+    facts: [
+      { value: "27", label: t("투어 한·영 VTT 각각의 큐 수", "Cues in each tour VTT (KO and EN)"), source: "apps/web/public/brand/toonstudio-product-tour.ko.vtt" },
+      { value: "4", label: t("24초 브랜드 필름 VTT 의 큐 수 (0·6·12·18초)", "Cues in the 24-second brand film VTT (0, 6, 12, 18 s)"), source: "apps/web/public/brand/toonstudio-intro.ko.vtt" },
+      { value: "0.35 s", label: t("다음 큐보다 먼저 닫는 여유", "Margin by which a cue closes before the next"), source: `${FILM_TOOLS}/generate-product-tour-narration.mjs` },
+    ],
+    reviewedAt: "2026-10-08",
+  },
+  {
+    id: "http-range-blob-seekable-media",
+    category: "web-platform",
+    name: "HTTP Range",
+    title: t(
+      "서버가 Range 를 무시해도 탐색되도록, 검증한 파일을 통째로 받아 재생하기",
+      "Seeking that survives servers which ignore Range: download a verified file whole and play it from a Blob",
+    ),
+    status: "live",
+    tagline: t(
+      "Range 지원 여부에 기대지 않고, 형식·크기를 검사한 완전한 파일을 Blob 주소로 재생합니다.",
+      "It does not depend on Range support: a fully downloaded, checked file is played from a Blob URL.",
+    ),
+    background: [
+      t(
+        "영상 중간으로 건너뛰려면 브라우저가 서버에 '파일의 이 부분만 주세요'(HTTP Range 요청)라고 묻고, 서버가 '여기 있어요'(206 부분 응답)라고 답해야 합니다. 서버나 CDN 이 요청을 무시하고 파일 전체(200)를 보내면 챕터 이동이 느려지거나 실패할 수 있습니다. 챕터 버튼이 어떤 환경에서나 동작해야 하는 제품 투어에는 이 불확실성이 문제가 됩니다.",
+        "To jump to the middle of a video, the browser asks the server for 'just this part of the file' (an HTTP Range request), and the server must answer 'here it is' (a 206 partial response). If the server or CDN ignores the request and sends the whole file (200), chapter jumps can become slow or fail. For a product tour whose chapter buttons must work in any environment, that uncertainty is a problem.",
+      ),
+      t(
+        "그래서 이 서비스는 Range 지원 여부를 감지해 나누지 않고 처음부터 같은 길로 갑니다. 재생을 누르면 fetchSeekableMediaAsset 이 /brand/ 아래 공개 경로만 허용해 파일 전체를 받고, 응답이 200 이며 형식이 video/ 또는 audio/ 인지, 크기가 한도(영상 32MiB·오디오 12MiB)를 넘지 않는지(헤더로도, 받는 도중에도), 비거나 잘리지 않았는지 확인합니다. 통과한 바이트만 Blob 으로 묶어 blob: 주소를 <video> 와 Remotion 오디오의 src 로 쓰고, 다 쓰면 revokeObjectURL 로 풀어 메모리를 돌려줍니다.",
+        "So the service does not branch on Range support; it takes the same path from the start. When play is pressed, fetchSeekableMediaAsset allows only public paths under /brand/ and downloads the whole file, then checks that the response is 200 with a video/ or audio/ type, that the size stays within the limit (32 MiB for video, 12 MiB for audio) by header and while streaming, and that the file is neither empty nor cut short. Only bytes that pass are wrapped in a Blob, and the blob: URL becomes the src of the <video> and the Remotion audio; when done, revokeObjectURL releases the memory.",
+      ),
+      t(
+        "대가는 분명합니다. 파일 전체를 받은 뒤에야 재생이 시작되고, 받은 바이트가 메모리에 남습니다. 투어 MP4 는 약 22.4MiB 라 호환 재생에서 이 비용을 치르고, 기본 Remotion 재생은 영상 대신 내레이션·배경음 오디오 둘(합계 약 7.5MiB)만 이렇게 받으며 준비되기 전에는 재생을 붙잡아 둡니다. 30초 안에 받지 못하면 실패로 처리해, 기본 재생은 MP4 호환 재생으로, 브랜드 필름은 오류 안내와 다시 재생 버튼으로 넘어갑니다. 조각 단위 스트리밍(HLS·MediaSource)은 서버 쪽 준비가 필요한데, 이 저장소에는 그 구현이 없습니다.",
+        "The price is clear. Playback starts only after the whole file arrives, and the received bytes stay in memory. The tour MP4 is about 22.4 MiB, so compatibility playback pays that cost, while the default Remotion playback fetches only the two audio files, narration and music (about 7.5 MiB together), this way and holds playback until they are ready. If a file does not arrive within 30 seconds it counts as a failure: default playback switches to compatibility MP4 and the brand film shows an error notice with a replay button. Segment streaming (HLS, MediaSource) needs server-side preparation, and this repository has no such implementation.",
+      ),
+      t(
+        "한계와 확인 방법. 영상 한도(32MiB)가 있어, 투어 MP4 가 한도를 넘게 다시 렌더되면 호환 재생이 막힙니다(현재 22.4MiB). 서버가 Range 를 지원하는지는 요청해 보면 압니다. 2026-10-08 측정에서 운영 도메인의 투어 MP4 는 Range 요청에 206 을, 24초 브랜드 필름 MP4 는 200(전체 파일)을 돌려줬습니다. 같은 도메인에서도 파일마다 다르고 호스팅 설정에 따라 바뀔 수 있는 값입니다.",
+        "Limits and how to check. With a video limit of 32 MiB, a re-rendered tour MP4 above it would block compatibility playback (it is 22.4 MiB now). Whether a server supports Range can be found by asking it. In a 2026-10-08 measurement the production domain answered a Range request for the tour MP4 with 206 and for the 24-second brand film MP4 with 200 (the whole file). The answer differs per file even on one domain and can change with hosting settings.",
+      ),
+    ],
+    keyPoints: [
+      t("Range 를 감지하지 않고 처음부터 통째로 받는다", "No Range detection: always download the whole file"),
+      t("200·형식·크기(영상 32MiB·오디오 12MiB)를 검사", "Checks 200, type and size (32 MiB video, 12 MiB audio)"),
+      t("blob: 주소로 재생하고 끝나면 revoke", "Plays from a blob: URL and revokes it afterwards"),
+      t("대가는 시작 전 다운로드와 메모리", "The price is the upfront download and memory"),
+    ],
+    diagram: {
+      id: "http-range-blob-seekable-media-diagram",
+      kind: "sequence",
+      title: t("통째로 받아 Blob 으로 탐색하는 흐름", "Download whole, then seek inside a Blob"),
+      caption: t(
+        "Range 헤더 없이 한 번 받아 검사한 뒤, 이동은 메모리 속 Blob 에서 즉시 처리합니다.",
+        "Fetch once without a Range header and check it; seeking is then handled instantly inside the Blob.",
+      ),
+      alt: t(
+        "재생기가 재생 클릭 뒤 파일 준비기에 파일을 요청하면, 준비기는 Range 헤더 없이 호스팅에서 파일 전체를 받습니다. 준비기는 상태 200, 형식, 크기, 완전성을 검사하고 통과하면 blob 주소를 재생기에 넘깁니다. 이후 시간 이동은 메모리 속 Blob 에서 바로 처리되고, 30초 안에 받지 못하면 실패로 처리하며 화면을 떠나면 주소를 해제합니다.",
+        "After a play click the player asks the file preparer for the file, and the preparer downloads the whole file from the host without a Range header. It checks status 200, type, size and completeness, and passes a blob URL to the player when all pass. Seeking afterwards is handled directly inside the in-memory Blob; if the file does not arrive within 30 seconds it counts as a failure, and leaving the page releases the URL.",
+      ),
+      actors: [
+        { id: "player", label: t("재생기", "Player"), sub: t("<video> · Remotion 오디오", "<video> and Remotion audio"), tone: "local" },
+        { id: "loader", label: t("파일 준비기", "File preparer"), sub: t("fetchSeekableMediaAsset", "fetchSeekableMediaAsset"), tone: "local" },
+        { id: "host", label: t("정적 호스팅", "Static hosting"), sub: t("/brand/ 아래 파일", "files under /brand/"), tone: "edge" },
+      ],
+      messages: [
+        { from: "player", to: "loader", label: t("재생 클릭 → 파일 준비 요청", "Play click: request the file"), note: t("클릭 전에는 받지 않음", "Nothing is fetched before the click") },
+        { from: "loader", to: "host", label: t("GET /brand/… (Range 헤더 없음)", "GET /brand/… (no Range header)") },
+        { from: "host", to: "loader", label: t("200 + 파일 전체", "200 + the whole file"), style: "dashed" },
+        { from: "loader", to: "loader", label: t("200·형식·크기·완전성 검사", "Check 200, type, size, completeness"), note: t("video/ · 32MiB · 잘린 파일 거부", "video/ type, 32 MiB, cut files rejected") },
+        { from: "loader", to: "player", label: t("blob: 주소 전달", "Hand over a blob: URL"), style: "dashed" },
+        { from: "player", to: "player", label: t("currentTime 이동 = 즉시 탐색", "currentTime jump = instant seek"), note: t("메모리 속 Blob 에서 처리", "handled inside the in-memory Blob") },
+        { from: "loader", to: "loader", label: t("30초 안에 못 받으면 실패", "Not received in 30 s: failure"), style: "dashed", note: t("기본 재생은 MP4 호환 재생으로", "default playback falls back to MP4") },
+        { from: "player", to: "loader", label: t("화면을 떠나면 revokeObjectURL", "Leaving the page: revokeObjectURL"), style: "dashed" },
+      ],
+    },
+    usage: [
+      {
+        feature: t("제품 투어 · 내레이션·배경음 (Remotion 재생)", "Product tour · narration and music (Remotion playback)"),
+        role: t("오디오 두 개를 Blob 으로 준비해 Html5Audio 에 넘기고, 준비되기 전에는 재생을 붙잡아 둡니다. 준비에 실패하면 MP4 호환 재생으로 바꿉니다.", "Prepares the two audio files as Blobs and hands them to Html5Audio, holding playback until they are ready. If preparation fails, playback switches to compatibility MP4."),
+        paths: [`${MARKETING}/ProductTourRemotionComposition.tsx#ProductTourRemotionComposition`, `${MARKETING}/use-seekable-media-asset.ts`, `${MARKETING}/seekable-media-asset.ts#fetchSeekableMediaAsset`],
+        route: "/product-tour",
+      },
+      {
+        feature: t("제품 투어 · 호환 MP4 재생", "Product tour · compatibility MP4 playback"),
+        role: t("약 22.4MiB 의 MP4 를 통째로 받아 blob: 주소로 재생하고, 8초 넘게 멈추면 현재 위치에서 복구를 시도합니다(자동 최대 2회).", "Downloads the roughly 22.4 MiB MP4 whole and plays it from a blob: URL; if it stalls for more than 8 seconds it tries to recover from the current position (automatically up to twice)."),
+        paths: [`${MARKETING}/ProductTourMp4Player.tsx`, `${MARKETING}/product-tour-media-recovery.ts`],
+        route: "/product-tour",
+      },
+      {
+        feature: t("24초 브랜드 필름", "24-second brand film"),
+        role: t("재생을 누르면 화면 폭에 맞는 가로·세로 MP4 를 준비해 blob: 주소로 재생하고, 실패하면 오류 안내와 다시 재생 버튼을 보여 줍니다.", "On play it prepares the landscape or portrait MP4 that fits the screen width and plays it from a blob: URL; on failure it shows an error notice and a replay button."),
+        paths: [`${MARKETING}/CreatorBrandFilm.tsx`, `${MARKETING}/creator-film-playback.ts`],
+        route: "/brand-film",
+      },
+    ],
+    samples: [
+      {
+        kind: "simplified",
+        title: t("검사하고 통째로 받아 Blob 으로 만들기", "Download whole, check, and wrap in a Blob"),
+        language: "ts",
+        ...sampleSource([
+          ["const MAX_BYTES = 32 * 1024 * 1024;", "영상 한도 (TOUR_VIDEO_MAX_BYTES)", "video limit (TOUR_VIDEO_MAX_BYTES)"],
+          [""],
+          ["export async function fetchWholeVideo(path: string, signal: AbortSignal): Promise<Blob> {"],
+          ['  if (!path.startsWith("/brand/") || path.startsWith("//")) throw new Error("public media paths only");'],
+          ['  const response = await fetch(path, { signal, credentials: "same-origin" });'],
+          ['  const mime = response.headers.get("content-type")?.split(";")[0]?.trim() ?? "";'],
+          ["  ", "206(부분 응답)이나 HTML 오류 페이지를 영상으로 착각하지 않는다", "never mistake a 206 or an HTML error page for a video"],
+          ['  if (response.status !== 200 || !mime.startsWith("video/") || !response.body) throw new Error("not a whole video");'],
+          ['  if (Number(response.headers.get("content-length")) > MAX_BYTES) throw new Error("too large");'],
+          ["  const reader = response.body.getReader();"],
+          ["  const parts: ArrayBuffer[] = [];"],
+          ["  let bytes = 0;"],
+          ["  for (;;) {"],
+          ["    const chunk = await reader.read();"],
+          ["    if (chunk.done) break;"],
+          ["    bytes += chunk.value.byteLength;"],
+          ['    if (bytes > MAX_BYTES) throw new Error("stream too large");', "헤더가 거짓이어도 받는 도중에 막는다", "stops it mid-stream even if the header lied"],
+          ["    parts.push(new Uint8Array(chunk.value).buffer);"],
+          ["  }"],
+          ["  return new Blob(parts, { type: mime });"],
+          ["}"],
+        ]),
+        explain: t("seekable-media-asset.ts 의 fetchSeekableMediaAsset 을 줄인 것입니다. 실제 코드는 오디오/영상 구분, 빈 파일·잘린 파일(content-length 불일치) 거부, 취소 신호 확인, reader 정리까지 하고, 쓰는 쪽(useSeekableMediaAsset)이 30초 제한과 revokeObjectURL 을 맡습니다.", "A reduction of fetchSeekableMediaAsset in seekable-media-asset.ts. The real code also separates audio from video, rejects empty or cut-short files (content-length mismatch), checks the abort signal and cleans up the reader, while the caller (useSeekableMediaAsset) owns the 30-second limit and revokeObjectURL."),
+        source: `${MARKETING}/seekable-media-asset.ts`,
+        verify: "types",
+      },
+      {
+        kind: "teaching",
+        title: t("서버가 Range 를 지원하는지 직접 물어보기", "Ask a server directly whether it supports Range"),
+        language: "bash",
+        ...sampleSource([
+          ["", "206 이면 Range 지원, 200 이면 무시(전체 파일이 내려온다) — 2026-10-08 측정", "206 means Range works, 200 means it is ignored (the whole file comes back); measured 2026-10-08"],
+          ['curl -s -o /dev/null -D - -H "Range: bytes=1000-1099" https://www.toonstudio.cloud/brand/toonstudio-product-tour.mp4 | head -n 5'],
+          ["", "→ HTTP/2 206 · content-range: bytes 1000-1099/23469745", "→ HTTP/2 206, content-range: bytes 1000-1099/23469745"],
+          ['curl -s -o /dev/null -D - -H "Range: bytes=1000-1099" https://www.toonstudio.cloud/brand/toonstudio-intro.mp4 | head -n 5'],
+          ["", "→ HTTP/2 200 · content-length: 3180063 (전체 파일, accept-ranges 없음)", "→ HTTP/2 200, content-length: 3180063 (whole file, no accept-ranges)"],
+        ], "#"),
+        explain: t("-H 로 Range 헤더를 붙이고 응답 헤더만 봅니다(-D - 는 헤더 출력, -o /dev/null 은 본문 버림). 첫 줄이 206 이면 부분 응답이 되는 서버이고, 200 이면 전체가 내려옵니다. 이 값은 한 시점의 관찰이라 호스팅 설정에 따라 바뀔 수 있습니다.", "-H adds the Range header and only the response headers are read (-D - prints headers, -o /dev/null drops the body). A first line of 206 means the server answers partially; 200 means the whole file comes back. These values are a single observation and can change with hosting settings."),
+      },
+    ],
+    links: [
+      { title: "MDN · HTTP range requests", url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests", kind: "docs" },
+      { title: "MDN · 206 Partial Content", url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/206", kind: "docs" },
+      { title: "MDN · URL.createObjectURL()", url: "https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL_static", kind: "docs", note: t("Blob 을 src 로 쓰는 blob: 주소 만들기", "Making a blob: URL to use a Blob as src") },
+      { title: "MDN · URL.revokeObjectURL()", url: "https://developer.mozilla.org/en-US/docs/Web/API/URL/revokeObjectURL_static", kind: "docs", note: t("다 쓴 주소를 풀어 메모리 돌려주기", "Releasing a finished URL to return memory") },
+      { title: "MDN · ReadableStreamDefaultReader", url: "https://developer.mozilla.org/en-US/docs/Web/API/ReadableStreamDefaultReader", kind: "docs", note: t("받는 도중 바이트 수를 세는 reader", "The reader used to count bytes while streaming") },
+      { title: "RFC 9110 · HTTP Semantics (Range)", url: "https://httpwg.org/specs/rfc9110.html#field.range", kind: "spec" },
+    ],
+    chapterIds: ["delivery", "performance"],
+    talk: {
+      pitch: t(
+        "영상 중간으로 건너뛰려면 서버가 파일 일부만 보내는 Range 응답을 지원해야 하는데, 호스팅마다 다릅니다. 그래서 투어와 브랜드 필름은 Range 에 기대지 않고, 형식과 크기를 검사한 파일을 통째로 받아 Blob 주소로 재생합니다. 덕분에 어느 서버에서든 챕터 이동이 되고, 대가는 시작 전 다운로드와 메모리입니다. 2026-10-08 측정에서는 같은 도메인에서도 투어 MP4 는 206, 브랜드 필름 MP4 는 200 으로 달랐습니다.",
+        "Jumping into the middle of a video needs a server that answers Range requests with part of the file, and hosting differs. So the tour and the brand film do not rely on Range: they download a file that passed type and size checks whole and play it from a Blob URL. Chapter jumps then work on any server, at the price of an upfront download and memory. In a 2026-10-08 measurement even one domain differed: the tour MP4 answered 206 and the brand film MP4 answered 200.",
+      ),
+      analogy: t(
+        "책의 중간 쪽만 복사해 달라고 부탁하는 대신, 처음부터 책 한 권을 빌려 와서 책상 위에서 마음대로 넘겨 보는 것과 같습니다. 빌려 오는 시간이 들지만 어디서든 펼칠 수 있습니다.",
+        "Instead of asking someone to photocopy a few pages from the middle of a book, you borrow the whole book and leaf through it at your desk. Borrowing takes time, but you can open it anywhere.",
+      ),
+      questions: [
+        {
+          question: t("그냥 <video src> 에 주소를 주면 안 되나요?", "Why not just give <video src> the URL?"),
+          answer: t(
+            "서버가 Range 를 지원하면 됩니다. 하지만 지원 여부는 호스팅에 달려 있고 같은 도메인에서도 파일마다 달랐습니다. 이 구조는 그 불확실성을 없애는 대신 다운로드를 앞당깁니다.",
+            "It works if the server supports Range. But support depends on hosting and differed per file even on one domain. This design removes that uncertainty by moving the download forward.",
+          ),
+        },
+        {
+          question: t("영상이 아주 크면 어떻게 되나요?", "What happens if the video is very large?"),
+          answer: t(
+            "영상 32MiB, 오디오 12MiB 한도를 넘으면 준비를 거부합니다. 현재 투어 MP4 는 22.4MiB 라 여유가 약 9.6MiB 입니다. 더 커지면 조각 스트리밍(HLS 등)을 검토해야 하지만 이 저장소에는 구현이 없습니다.",
+            "Preparation is refused above the 32 MiB video and 12 MiB audio limits. The tour MP4 is 22.4 MiB now, leaving about 9.6 MiB of headroom. Beyond that, segment streaming (such as HLS) would need to be considered, but this repository has no implementation.",
+          ),
+        },
+        {
+          question: t("운영 서버가 Range 를 지원하나요?", "Does the production server support Range?"),
+          answer: t(
+            "샘플의 curl 로 직접 확인할 수 있습니다. 2026-10-08 측정에서 투어 MP4 는 206, 브랜드 필름 MP4 는 200 이었고, 호스팅 설정에 따라 바뀔 수 있습니다.",
+            "You can check it yourself with the curl in the sample. In the 2026-10-08 measurement the tour MP4 gave 206 and the brand film MP4 gave 200, which can change with hosting settings.",
+          ),
+        },
+      ],
+      pitfall: t(
+        "'Range 가 안 되는 서버를 감지해 우회한다'가 아니라 항상 통째로 받는 구조입니다. 모바일 데이터에서의 시작 지연과 메모리 사용은 측정하지 않았습니다. Range 를 무시하는 서버를 흉내 내는 e2e 는 수동 실행용이고, 206/200 값은 한 시점의 관찰입니다.",
+        "It is not 'detect a server without Range and work around it'; it always downloads the whole file. Start-up delay and memory use on mobile data were not measured. The e2e that imitates a server ignoring Range is run manually, and the 206/200 values are a single-point observation.",
+      ),
+    },
+    technologies: ["HTTP Range", "Blob URL", "Fetch API", "HTMLMediaElement"],
+    facts: [
+      { value: "32 MiB", label: t("영상 준비 한도 (TOUR_VIDEO_MAX_BYTES)", "Video preparation limit (TOUR_VIDEO_MAX_BYTES)"), source: `${MARKETING}/seekable-media-asset.ts` },
+      { value: "12 MiB", label: t("오디오 준비 한도 (TOUR_AUDIO_MAX_BYTES)", "Audio preparation limit (TOUR_AUDIO_MAX_BYTES)"), source: `${MARKETING}/seekable-media-asset.ts` },
+      { value: "23,469,745 B", label: t("8분 투어 MP4 크기 (약 22.4MiB)", "Size of the 8-minute tour MP4 (about 22.4 MiB)"), source: `${MARKETING}/product-tour-asset.generated.ts` },
+    ],
+    reviewedAt: "2026-10-08",
+  },
+  {
+    id: "video-object-json-ld",
+    category: "web-platform",
+    name: "JSON-LD",
+    title: t(
+      "검색엔진에게 영상의 길이와 챕터를 알리는 JSON-LD 명찰",
+      "A JSON-LD name tag that tells search engines a video's length and chapters",
+    ),
+    status: "live",
+    tagline: t(
+      "영상 페이지가 길이·썸네일·챕터를 JSON-LD 로 선언합니다. 정적 HTML 이 아니라 JS 실행 뒤에 생깁니다.",
+      "Video pages declare length, thumbnail and chapters in JSON-LD, added after JavaScript runs rather than in static HTML.",
+    ),
+    background: [
+      t(
+        "검색엔진은 페이지 안의 영상이 얼마나 긴지, 어떤 장면이 있는지 글자만 보고는 알기 어렵습니다. JSON-LD 는 '이 페이지에는 8분 24초짜리 영상이 있고 챕터는 이렇습니다'를 schema.org 어휘로 적어 두는 JSON 형식의 명찰입니다. 검색엔진이 영상 결과에 길이·썸네일·주요 장면을 보여 주도록 돕지만, 실제로 보여 줄지는 검색엔진이 정합니다.",
+        "Search engines can hardly tell from the text alone how long a video on a page is or what scenes it has. JSON-LD is a name tag in JSON that states, in the schema.org vocabulary, 'this page has an 8m 24s video with these chapters'. It helps search engines show length, thumbnail and key moments in video results, but whether they actually do is up to them.",
+      ),
+      t(
+        "투어 페이지는 VideoObject 하나에 이름·설명·썸네일·MP4 주소·재생 시간·언어를 담고, 챕터 9개를 hasPart 의 Clip(시작·끝 초와 ?t= 딥링크)으로 적습니다. 재생 시간은 영상 길이(504초)에서 계산한 PT8M24S 라 영상이 바뀌면 함께 바뀝니다. 브랜드 필름 페이지는 챕터 없이 VideoObject 만 넣습니다. useJsonLd 훅이 <script type=application/ld+json> 을 <head> 에 넣고 화면을 떠나면 지우며, 문자열 속 '<' 는 \\u003c 로 바꿔 </script> 로 태그가 일찍 닫히는 일을 막습니다.",
+        "The tour page puts the name, description, thumbnail, MP4 address, duration and language in one VideoObject, and lists the nine chapters as Clip entries of hasPart (start and end seconds plus a ?t= deep link). The duration PT8M24S is computed from the video length (504 seconds), so it changes with the video. The brand film page adds a VideoObject without chapters. The useJsonLd hook adds <script type=application/ld+json> to <head> and removes it when the page is left; a '<' inside the string is turned into \\u003c so </script> cannot close the tag early.",
+      ),
+      t(
+        "중요한 한계가 있습니다. 이 JSON-LD 는 서버가 내려 주는 HTML 에 없고, 브라우저가 앱을 실행한 뒤에야 생깁니다. 2026-10-08 운영 /product-tour 의 정적 HTML(11,820바이트)에는 사이트 공통 그래프(WebSite·SoftwareApplication·Organization)만 있고 VideoObject 는 없었습니다. JS 를 실행하지 않는 크롤러는 이 정보를 못 보며, 같은 이유로 메신저 링크 미리보기(OG)도 홈 카드로 나올 수 있습니다. 엣지 Worker 가 크롤러에게 경로별 메타를 주는 목록(isOgPagePath)에도 두 영상 경로는 없습니다.",
+        "There is an important limit. This JSON-LD is not in the HTML the server sends; it appears only after the browser runs the app. The static HTML of production /product-tour on 2026-10-08 (11,820 bytes) held only the site-wide graph (WebSite, SoftwareApplication, Organization) and no VideoObject. A crawler that does not run JavaScript cannot see it, and for the same reason messenger link previews (OG) may show the home card. The edge Worker's list of paths that get per-route meta for crawlers (isOgPagePath) does not include the two video paths either.",
+      ),
+      t(
+        "대안은 서버나 엣지가 경로별 HTML 에 JSON-LD 를 직접 넣는 것입니다. 그러면 JS 없이도 읽히지만 엣지 정책을 바꿔야 하고 배포 승인이 필요합니다. 구글 등이 이 데이터로 리치 결과를 실제로 보여 주는지는 이 저장소로 확인할 수 없고, 검색 콘솔이나 리치 결과 테스트로 측정한 기록도 없습니다.",
+        "The alternative is for the server or edge to put the JSON-LD directly into per-route HTML. It could then be read without JavaScript, but it requires changing the edge policy and a release approval. Whether Google and others actually show rich results from this data cannot be confirmed from the repository, and there is no record of measuring it with Search Console or the Rich Results Test.",
+      ),
+    ],
+    keyPoints: [
+      t("VideoObject 와 챕터 Clip 9개를 JSON-LD 로 선언", "VideoObject plus nine chapter Clips declared in JSON-LD"),
+      t("재생 시간 PT8M24S 는 영상 길이(504초)에서 계산", "The duration PT8M24S is computed from the 504-second length"),
+      t("정적 HTML 이 아니라 JS 실행 뒤 <head> 에 주입", "Added to <head> after JS runs, not present in static HTML"),
+      t("검색 노출 효과는 검증하지 못했다", "The effect on search results was not verified"),
+    ],
+    diagram: {
+      id: "video-object-json-ld-diagram",
+      kind: "sequence",
+      title: t("JSON-LD 가 크롤러에게 닿는 길", "How the JSON-LD reaches a crawler"),
+      caption: t(
+        "정적 HTML 에는 영상 정보가 없고, 앱이 실행된 뒤에야 head 에 생기므로 JS 를 실행하는 크롤러만 읽습니다.",
+        "Static HTML has no video data; it appears in head only once the app runs, so only crawlers that execute JavaScript read it.",
+      ),
+      alt: t(
+        "크롤러가 호스팅에서 공통 HTML 셸을 받으면 VideoObject 는 없고 사이트 공통 그래프만 있습니다. 크롤러가 JS 를 실행해 앱을 그리면 useJsonLd 가 투어 데이터로 JSON 을 조립해 head 에 script 로 넣고, 크롤러는 그제야 VideoObject 를 읽을 수 있습니다. 화면을 떠나면 스크립트는 제거됩니다.",
+        "When the crawler gets the shared HTML shell from the host it contains only the site-wide graph and no VideoObject. When the crawler runs JavaScript and the app renders, useJsonLd assembles JSON from the tour data and adds it to head as a script, and only then can the crawler read the VideoObject. The script is removed when the page is left.",
+      ),
+      actors: [
+        { id: "crawler", label: t("검색 크롤러", "Search crawler"), tone: "external" },
+        { id: "host", label: t("정적 호스팅", "Static hosting"), sub: t("공통 HTML 셸", "shared HTML shell"), tone: "edge" },
+        { id: "app", label: t("React 앱", "React app"), sub: t("useJsonLd 훅", "useJsonLd hook"), tone: "local" },
+        { id: "head", label: t("<head>", "<head>"), sub: t("ld+json 스크립트", "ld+json script"), tone: "good" },
+      ],
+      messages: [
+        { from: "crawler", to: "host", label: t("GET /product-tour", "GET /product-tour") },
+        { from: "host", to: "crawler", label: t("공통 HTML 셸 (VideoObject 없음)", "Shared HTML shell (no VideoObject)"), style: "dashed", note: t("WebSite·Organization 그래프만", "only the WebSite and Organization graph") },
+        { from: "crawler", to: "app", label: t("JS 를 실행해 화면을 그림", "Run JS and render the page"), note: t("JS 를 실행하는 크롤러만 도달", "only crawlers that execute JS get here") },
+        { from: "app", to: "app", label: t("투어 데이터로 JSON 조립", "Assemble JSON from tour data"), note: t("PT8M24S · Clip 9개", "PT8M24S and nine Clips") },
+        { from: "app", to: "head", label: t("script type=ld+json 추가", "Add script type=ld+json") },
+        { from: "head", to: "crawler", label: t("VideoObject 읽기", "Read the VideoObject"), style: "dashed" },
+        { from: "app", to: "head", label: t("화면을 떠나면 제거", "Removed when the page is left"), style: "dashed" },
+      ],
+    },
+    usage: [
+      {
+        feature: t("제품 투어 페이지의 영상 정보", "Video data of the product tour page"),
+        role: t("VideoObject 에 이름·설명·썸네일·MP4 주소·재생 시간을 넣고 챕터 9개를 Clip 으로 적습니다. 재생 시간은 PRODUCT_TOUR.duration 에서 ISO 8601 로 계산합니다.", "Puts name, description, thumbnail, MP4 address and duration in a VideoObject and lists the nine chapters as Clips. The duration is computed from PRODUCT_TOUR.duration as ISO 8601."),
+        paths: [`${MARKETING}/ProductTourPage.tsx`, `${MARKETING}/product-tour-content.ts#productTourIsoDuration`, "apps/web/src/shared/seo/use-document-title.ts#useJsonLd"],
+        route: "/product-tour",
+      },
+      {
+        feature: t("브랜드 필름 페이지의 영상 정보", "Video data of the brand film page"),
+        role: t("챕터 없이 VideoObject(이름·설명·썸네일·MP4 주소·재생 시간)만 넣고, 재생 시간은 CREATOR_FILM.duration 에서 만듭니다.", "Adds only a VideoObject (name, description, thumbnail, MP4 address, duration) without chapters, building the duration from CREATOR_FILM.duration."),
+        paths: [`${MARKETING}/BrandFilmPage.tsx`, `${MARKETING}/creator-home-content.ts#CREATOR_FILM`],
+        route: "/brand-film",
+      },
+      {
+        feature: t("작품·랭킹·마켓 등 다른 공개 페이지", "Other public pages such as titles, rankings and the market"),
+        role: t("같은 훅으로 작품 상세, 랭킹 목록, 마켓 홈 등의 구조화 데이터를 head 에 넣습니다.", "The same hook adds structured data for title details, ranking lists, the market home and more to head."),
+        paths: ["apps/web/src/domains/catalog/TitleDetailPage.tsx", "apps/web/src/shared/components/ranking-board.tsx", "apps/web/src/domains/market/pages/MarketHomePage.tsx"],
+      },
+    ],
+    samples: [
+      {
+        kind: "simplified",
+        title: t("영상 길이로 ISO 기간과 VideoObject 만들기", "Building an ISO duration and a VideoObject from the video length"),
+        language: "ts",
+        ...sampleSource([
+          ["interface Chapter { readonly start: number; readonly end: number; readonly name: string }"],
+          [""],
+          ["/** 504 → PT8M24S, 24 → PT24S (ISO 8601 기간) */"],
+          ["export function isoDuration(totalSeconds: number): string {"],
+          ["  const hours = Math.floor(totalSeconds / 3600);"],
+          ["  const minutes = Math.floor((totalSeconds % 3600) / 60);"],
+          ["  const seconds = totalSeconds % 60;"],
+          ['  return "PT" + (hours ? hours + "H" : "") + (minutes ? minutes + "M" : "") + (seconds || !(hours || minutes) ? seconds + "S" : "");'],
+          ["}"],
+          [""],
+          ["export function videoJsonLd(page: string, seconds: number, chapters: readonly Chapter[]) {"],
+          ["  return {"],
+          ['    "@context": "https://schema.org",'],
+          ['    "@type": "VideoObject",'],
+          ['    name: "Full product tour",'],
+          ["    duration: isoDuration(seconds),", "길이는 하드코딩하지 않고 영상 길이에서 계산한다", "computed from the video length, never hard-coded"],
+          ["    hasPart: chapters.map((chapter) => ({"],
+          ['      "@type": "Clip",'],
+          ['      name: chapter.name, startOffset: chapter.start, endOffset: chapter.end, url: page + "?t=" + chapter.start,'],
+          ["    })),"],
+          ["  };"],
+          ["}"],
+        ]),
+        explain: t("ProductTourPage 의 useJsonLd 인자와 product-tour-content.ts 의 productTourIsoDuration 을 합쳐 줄인 것입니다. 실제 객체에는 설명·썸네일·MP4 주소·embedUrl·언어·isFamilyFriendly 도 들어갑니다.", "A reduction that merges the useJsonLd argument of ProductTourPage with productTourIsoDuration in product-tour-content.ts. The real object also carries description, thumbnail, MP4 address, embedUrl, language and isFamilyFriendly."),
+        source: `${MARKETING}/ProductTourPage.tsx`,
+        verify: "types",
+      },
+      {
+        kind: "simplified",
+        title: t("<head> 에 넣고, 떠날 때 지우기", "Add to <head> and remove on leave"),
+        language: "ts",
+        ...sampleSource([
+          ["export function injectJsonLd(data: object): () => void {"],
+          ['  const script = document.createElement("script");'],
+          ['  script.type = "application/ld+json";'],
+          ['  script.text = JSON.stringify(data).replace(/</g, "\\\\u003c");', "</script> 로 태그가 일찍 닫히는 일을 막는다", "stops </script> from closing the tag early"],
+          ["  document.head.appendChild(script);"],
+          ["  return () => script.remove();", "화면을 떠나면 제거 (React 훅의 정리 함수)", "removed when leaving (the cleanup of a React hook)"],
+          ["}"],
+        ]),
+        explain: t("shared/seo/use-document-title.ts 의 useJsonLd 가 effect 안에서 하는 일입니다. 내용이 같으면 다시 넣지 않도록 직렬화한 문자열을 의존성으로 씁니다.", "This is what useJsonLd in shared/seo/use-document-title.ts does inside an effect. It uses the serialized string as the dependency so identical content is not re-added."),
+        source: "apps/web/src/shared/seo/use-document-title.ts",
+        verify: "types",
+      },
+    ],
+    links: [
+      { title: "schema.org · VideoObject", url: "https://schema.org/VideoObject", kind: "spec" },
+      { title: "schema.org · Clip", url: "https://schema.org/Clip", kind: "spec", note: t("hasPart 로 챕터를 적는 타입", "The type used for chapters in hasPart") },
+      { title: "Google Search Central · Video structured data", url: "https://developers.google.com/search/docs/appearance/structured-data/video", kind: "docs", note: t("검색엔진이 요구하는 속성과 챕터(Clip)", "Properties and chapters (Clip) the search engine expects") },
+      { title: "W3C · JSON-LD 1.1", url: "https://www.w3.org/TR/json-ld11/", kind: "spec" },
+      { title: "Google · Rich Results Test", url: "https://search.google.com/test/rich-results", kind: "guide", note: t("실제 노출 가능성을 점검하는 도구 (이 저장소에는 측정 기록 없음)", "A tool to check eligibility (no measurement is recorded in this repository)") },
+    ],
+    chapterIds: ["delivery", "share-distribution-boundary"],
+    talk: {
+      pitch: t(
+        "영상 페이지는 길이, 썸네일, 챕터를 JSON-LD 라는 명찰로 선언합니다. 투어는 재생 시간을 영상 길이 504초에서 계산해 PT8M24S 로 적고, 챕터 9개를 Clip 으로 붙입니다. 다만 이 명찰은 서버가 주는 HTML 이 아니라 앱이 실행된 뒤 head 에 생기므로 JS 를 실행하는 크롤러만 읽을 수 있고, 검색 결과에 실제로 반영되는지는 확인하지 못했습니다.",
+        "Video pages declare length, thumbnail and chapters in a name tag called JSON-LD. The tour computes the duration from the 504-second video length and writes it as PT8M24S, and attaches the nine chapters as Clips. But this tag appears in head after the app runs rather than in the HTML the server sends, so only crawlers that execute JavaScript can read it, and whether it shows up in search results was not verified.",
+      ),
+      analogy: t(
+        "택배 상자에 붙인 송장입니다. 상자를 열지 않고도 내용물(영상 길이·챕터)을 읽을 수 있게 겉에 적어 두지만, 송장을 읽을지는 택배 기사(검색엔진)에게 달려 있습니다.",
+        "It is the label on a parcel. It lets anyone read the contents (video length and chapters) without opening the box, but whether the courier (the search engine) reads it is up to them.",
+      ),
+      questions: [
+        {
+          question: t("검색 결과에 영상 정보가 실제로 뜨나요?", "Does video data actually show up in search results?"),
+          answer: t(
+            "보장할 수 없습니다. 구조화 데이터는 검색엔진이 읽도록 돕는 신호일 뿐이고, 이 저장소에는 검색 콘솔이나 리치 결과 테스트로 확인한 기록이 없습니다.",
+            "It cannot be guaranteed. Structured data is only a signal that helps search engines read the page, and this repository has no record of checking it with Search Console or the Rich Results Test.",
+          ),
+        },
+        {
+          question: t("왜 서버가 HTML 에 직접 넣지 않나요?", "Why doesn't the server put it into the HTML directly?"),
+          answer: t(
+            "화면은 하나의 정적 셸을 쓰는 앱이고, 경로별 HTML 을 만드는 엣지 Worker 목록에 두 영상 경로는 없습니다. 넣으려면 엣지 정책을 바꿔야 하며 배포 승인이 필요합니다.",
+            "The pages are an app on one static shell, and the edge Worker's list for per-route HTML does not include the two video paths. Adding them means changing the edge policy, which needs a release approval.",
+          ),
+        },
+        {
+          question: t("PT8M24S 는 무슨 뜻인가요?", "What does PT8M24S mean?"),
+          answer: t(
+            "ISO 8601 기간 표기로 8분 24초입니다(P=기간, T=시간 부분 시작, M=분, S=초). 504초에서 계산해 영상 길이가 바뀌면 같이 바뀝니다.",
+            "It is the ISO 8601 duration notation for 8 minutes 24 seconds (P = period, T = start of the time part, M = minutes, S = seconds). It is computed from 504 seconds and changes with the video length.",
+          ),
+        },
+      ],
+      pitfall: t(
+        "정적 HTML 에는 이 데이터가 없습니다(2026-10-08 운영 확인). 구글의 리치 결과 노출은 확인하지 못했고, 링크 미리보기(OG)도 클라이언트에서 바꾸는 메타라 메신저에는 홈 카드가 나올 수 있습니다. 데이터 정확성(챕터 시간·길이)은 테스트로 고정되지만 검색엔진 수용 여부는 별개입니다.",
+        "This data is not in the static HTML (checked in production on 2026-10-08). Google rich-result display was not verified, and link previews (OG) are meta changed on the client, so messengers may show the home card. The data's accuracy (chapter times, length) is pinned by tests, but whether search engines accept it is a separate matter.",
+      ),
+    },
+    technologies: ["JSON-LD", "schema.org", "VideoObject"],
+    facts: [
+      { value: "9", label: t("JSON-LD 로 선언하는 투어 챕터(Clip) 수", "Tour chapters declared as Clips in JSON-LD"), source: `${MARKETING}/product-tour-content.ts` },
+      { value: "504 s", label: t("투어 길이 — PT8M24S 의 계산 원본", "Tour length, the source of PT8M24S"), source: `${MARKETING}/product-tour-content.ts` },
+    ],
+    reviewedAt: "2026-10-08",
+  },
+  {
+    id: "aria-tabs-site-section-tabs",
+    category: "web-platform",
+    name: "WAI-ARIA Tabs",
+    title: t(
+      "긴 페이지를 '한 번에 한 묶음'으로 접는 접근 가능한 탭",
+      "Accessible tabs that fold a long page into one section at a time",
+    ),
+    status: "live",
+    tagline: t(
+      "tablist·tab·tabpanel 역할과 ←/→/Home/End 키로 공개 페이지의 긴 목록을 탭으로 묶습니다.",
+      "The tablist, tab and tabpanel roles plus the arrow, Home and End keys fold long public pages into tabs.",
+    ),
+    background: [
+      t(
+        "기능이 많은 페이지를 세로로 길게 나열하면 휴대폰에서 스무 화면이 넘고 원하는 곳을 찾기 어렵습니다. 탭으로 묶어 한 번에 한 묶음만 보이게 하면 짧아집니다. 하지만 div 에 onClick 만 달면 스크린 리더는 '탭'이라는 것을 모르고 키보드로는 이동할 수도 없습니다. WAI-ARIA 는 이 위젯의 역할 이름(tablist, tab, tabpanel)과 상태 속성(aria-selected, aria-controls)을 표준으로 정해 둔 약속입니다.",
+        "A long vertical list of features can run past twenty screens on a phone and is hard to scan. Grouping it into tabs that show one section at a time makes it short. But a div with only an onClick tells a screen reader nothing about being a tab and cannot be reached by keyboard. WAI-ARIA is the standard agreement on this widget's role names (tablist, tab, tabpanel) and state attributes (aria-selected, aria-controls).",
+      ),
+      t(
+        "SiteSectionTabs 는 그 약속을 따릅니다. 탭 줄에 role=tablist 와 접근 가능한 이름, 각 탭에 role=tab·aria-selected·aria-controls, 선택된 탭만 tabIndex=0 인 '로빙 탭인덱스'를 두어 Tab 키가 탭 줄에서 한 번만 멈춥니다. ←/→ 는 이웃 탭(끝에서는 반대편으로 순환), Home/End 는 처음/끝 탭으로 옮기면서 곧바로 선택합니다(자동 활성화). 패널은 role=tabpanel 과 aria-labelledby 로 탭에 이어지고, 선택되지 않은 패널은 hidden 입니다.",
+        "SiteSectionTabs follows that agreement. The tab row has role=tablist and an accessible name; each tab has role=tab, aria-selected and aria-controls; and a roving tabindex gives tabIndex=0 only to the selected tab so the Tab key stops once in the row. Left and right arrows move to the neighbouring tab (wrapping at the ends) and Home and End jump to the first and last, selecting at once (automatic activation). A panel is tied to its tab by role=tabpanel and aria-labelledby, and unselected panels are hidden.",
+      ),
+      t(
+        "주소 공유까지 한 묶음입니다. IntroTabs 가 useSiteTabs 로 ?view=·?stage=·?group= 같은 쿼리를 선택 상태에 이어 새로고침·공유·뒤로 가기에서도 같은 탭이 열리고, 예전 #앵커 링크는 해당 탭을 열고 스크롤합니다. 탭이 4개 이하이면 좁은 화면에서도 한 줄 분할 버튼, 더 많으면 가로로 넘기는 줄이 됩니다. mount=all 이면 모든 패널을 DOM 에 두고 숨겨 검색·인쇄에 쓸 수 있습니다.",
+        "Address sharing comes in the same bundle. IntroTabs ties queries such as ?view=, ?stage= and ?group= to the selection through useSiteTabs, so the same tab opens on reload, share and back, and old #anchor links open the right tab and scroll. With four tabs or fewer the row is a single line of split buttons even on narrow screens; with more it becomes a swipeable row. With mount=all every panel stays in the DOM, hidden, for search and print.",
+      ),
+      t(
+        "한계가 있습니다. 이 컴포넌트는 공개 페이지(소개·투어·학습·리서치 등)용이고, 2026-10-08 검색에서 role=tablist 는 .tsx 85개 파일(101곳)에 있으며 스튜디오 편집기에는 직접 구현한 탭이 훨씬 많아 키보드 규칙이 모두 같다고 말할 수 없습니다. 이 컴포넌트의 키보드 동작을 직접 겨냥한 단위 테스트와 실제 스크린 리더(NVDA·VoiceOver) 점검 기록은 확인하지 못했습니다.",
+        "There are limits. This component is for public pages (about, tour, learn, research and so on); a 2026-10-08 search finds role=tablist in 85 .tsx files (101 places), with many hand-built tabs in the studio editor, so the keyboard rules cannot all be called identical. A unit test aimed at this component's keyboard behavior and a real screen-reader check (NVDA, VoiceOver) could not be found.",
+      ),
+    ],
+    keyPoints: [
+      t("tablist · tab · tabpanel 역할과 aria-selected/controls", "tablist, tab, tabpanel roles with aria-selected and controls"),
+      t("선택 탭만 tabIndex 0, ←/→/Home/End 로 이동", "Only the selected tab has tabIndex 0; arrows, Home and End move"),
+      t("?view= 같은 쿼리로 탭 상태를 주소에 담는다", "Tab state lives in the address through queries like ?view="),
+      t("키보드 단위 테스트·스크린 리더 실측은 미확인", "No keyboard unit test or screen-reader run was found"),
+    ],
+    diagram: {
+      id: "aria-tabs-site-section-tabs-diagram",
+      kind: "layers",
+      title: t("탭 한 벌을 이루는 네 층", "The four layers of one tab set"),
+      caption: t(
+        "역할 세 층이 WAI-ARIA 탭 패턴을 이루고, 맨 아래 층이 선택 상태를 주소에 담습니다.",
+        "Three role layers make up the WAI-ARIA tab pattern, and the bottom layer keeps the selection in the address.",
+      ),
+      alt: t(
+        "맨 위의 tablist 는 탭 줄에 이름을 붙이고 방향키 이동을 맡습니다. 그 아래 tab 들은 aria-selected 와 aria-controls 를 가지며 선택된 탭만 tabIndex 0 입니다. 다음 층의 tabpanel 은 aria-labelledby 로 탭과 이어지고 선택되지 않으면 hidden 입니다. 맨 아래의 주소 상태 층은 쿼리와 앵커로 선택된 탭을 공유합니다.",
+        "At the top, the tablist names the tab row and handles arrow-key movement. The tabs below carry aria-selected and aria-controls, and only the selected tab has tabIndex 0. The tabpanel in the next layer is tied to its tab by aria-labelledby and is hidden when not selected. The address-state layer at the bottom shares the selected tab through a query and anchors.",
+      ),
+      layers: [
+        { id: "list", label: t("tablist", "tablist"), sub: t("role=tablist · aria-label · ←/→/Home/End 키", "role=tablist, aria-label, arrow/Home/End keys"), tone: "local", chips: ["SiteSectionTabs"] },
+        { id: "tab", label: t("tab × N", "tab × N"), sub: t("role=tab · aria-selected · aria-controls · 선택 탭만 tabIndex 0", "role=tab, aria-selected, aria-controls, tabIndex 0 only when selected"), tone: "local" },
+        { id: "panel", label: t("tabpanel", "tabpanel"), sub: t("role=tabpanel · aria-labelledby · 선택 안 된 패널은 hidden", "role=tabpanel, aria-labelledby, hidden when not selected"), tone: "good" },
+        { id: "url", label: t("주소 상태 (IntroTabs)", "Address state (IntroTabs)"), sub: t("?view=… · #앵커 → 해당 탭 열기, 새로고침·공유 유지", "?view=… and #anchor open the tab; survives reload and share"), tone: "edge", chips: ["React Router"] },
+      ],
+      brackets: [
+        { label: t("WAI-ARIA 탭 패턴", "WAI-ARIA tabs pattern"), layerIds: ["list", "tab", "panel"] },
+        { label: t("주소로 공유", "Shared by address"), layerIds: ["url"] },
+      ],
+    },
+    usage: [
+      {
+        feature: t("서비스 소개 · 핵심 기능 5탭", "About page · five core-feature tabs"),
+        role: t("드로잉·3D·협업·가상 스튜디오·AI 다섯 기능을 한 번에 하나씩 보여 줍니다.", "Shows the five features, drawing, 3D, collaboration, virtual studio and AI, one at a time."),
+        paths: ["apps/web/src/domains/legal/public/site-section-tabs.tsx#SiteSectionTabs", "apps/web/src/domains/marketing/public/about-feature-showcase.tsx"],
+        route: "/about",
+      },
+      {
+        feature: t("제품 투어 · 영상 아래 3탭 (?view=)", "Product tour · three tabs below the film (?view=)"),
+        role: t("챕터별 기능·역할별 시작·새로 더해진 기능을 탭으로 나누고, 선택을 ?view= 로 공유합니다. 세 패널을 모두 DOM 에 둡니다(mount=all).", "Splits chapter features, starting points by role and new features into tabs and shares the selection through ?view=. All three panels stay in the DOM (mount=all)."),
+        paths: [`${MARKETING}/ProductTourPage.tsx`, `${MARKETING}/public/intro-tabs.tsx#IntroTabs`, "apps/web/src/domains/legal/public/site-tabs.ts#useSiteTabs"],
+        route: "/product-tour",
+      },
+      {
+        feature: t("제작 과정 7단계 (?stage=) · 제품 원칙 4묶음 (?group=)", "Workflow in seven stages (?stage=) and principles in four groups (?group=)"),
+        role: t("단계·묶음을 탭으로 나누어 모바일 길이를 줄이고, 단계 이름으로 직접 링크할 수 있게 합니다.", "Splits stages and groups into tabs to shorten the mobile page and makes each one directly linkable by name."),
+        paths: ["apps/web/src/domains/legal/WebtoonWorkflowPage.tsx", "apps/web/src/domains/legal/ProductPrinciplesPage.tsx"],
+        route: "/about/workflow",
+      },
+      {
+        feature: t("학습 허브 · 리서치 데스크 · 오늘의 영감", "Learning hub, research desk and today's inspiration"),
+        role: t("많은 섹션을 가진 허브 화면을 같은 탭 컴포넌트로 묶습니다. 휴대폰에서 모든 섹션이 이름 붙은 조작부로 닿는지는 모바일 밀도 계약 테스트가 소스 수준으로 확인합니다.", "Groups hub screens with many sections using the same tab component. A mobile-density contract test checks at source level that every section stays reachable through a named control on a phone."),
+        paths: ["apps/web/src/domains/learn/LearningHome.tsx", "apps/web/src/domains/creator-resources/CreatorHubPage.tsx", "apps/web/src/domains/creator-resources/NowPage.tsx", "apps/web/src/shared/components/mobile-route-density-contract.test.ts"],
+        route: "/learn",
+      },
+    ],
+    samples: [
+      {
+        kind: "simplified",
+        title: t("로빙 탭인덱스와 방향키 이동", "Roving tabindex and arrow-key movement"),
+        language: "tsx",
+        ...sampleSource([
+          ['import { useRef, useState, type KeyboardEvent } from "react";'],
+          [""],
+          ['const TABS = [{ id: "chapters", label: "Chapters" }, { id: "roles", label: "Roles" }, { id: "new", label: "New" }] as const;'],
+          [""],
+          ["export function Tabs() {"],
+          ["  const [active, setActive] = useState<string>(TABS[0].id);"],
+          ["  const list = useRef<HTMLDivElement>(null);"],
+          ["  const move = (event: KeyboardEvent, index: number) => {"],
+          ["    const last = TABS.length - 1;"],
+          ['    const next = event.key === "ArrowRight" ? (index + 1) % TABS.length : event.key === "ArrowLeft" ? (index + last) % TABS.length'],
+          ['      : event.key === "Home" ? 0 : event.key === "End" ? last : -1;'],
+          ["    const target = TABS[next];"],
+          ["    if (!target) return;"],
+          ["    event.preventDefault();"],
+          ["    setActive(target.id);", "이동과 동시에 선택한다 (자동 활성화)", "selects while moving (automatic activation)"],
+          ["    list.current?.querySelectorAll<HTMLElement>('[role=\"tab\"]')[next]?.focus();"],
+          ["  };"],
+          ["  return ("],
+          ["    <>"],
+          ['      <div ref={list} role="tablist" aria-label="After the film">'],
+          ["        {TABS.map((tab, index) => ("],
+          ['          <button key={tab.id} id={"tab-" + tab.id} type="button" role="tab" aria-selected={tab.id === active} aria-controls={"panel-" + tab.id}'],
+          ["            tabIndex={tab.id === active ? 0 : -1} onClick={() => setActive(tab.id)} onKeyDown={(event) => move(event, index)}>{tab.label}</button>", "선택된 탭만 Tab 키로 들어온다", "only the selected tab is reachable with the Tab key"],
+          ["        ))}"],
+          ["      </div>"],
+          ['      {TABS.map((tab) => <div key={tab.id} id={"panel-" + tab.id} role="tabpanel" aria-labelledby={"tab-" + tab.id} hidden={tab.id !== active}>{tab.label}</div>)}'],
+          ["    </>"],
+          ["  );"],
+          ["}"],
+        ]),
+        explain: t("legal/public/site-section-tabs.tsx 의 구조를 줄인 것입니다. 실제 컴포넌트는 탭 수에 따라 분할 버튼/스크롤 줄을 고르고, 긴 패널 아래에서 탭을 바꾸면 탭 줄을 다시 보여 주며, 아이콘·배지·터치 대상 44px 를 갖춥니다.", "A reduction of the structure in legal/public/site-section-tabs.tsx. The real component picks split buttons or a scroll row by tab count, scrolls the tab row back into view when switching below a long panel, and adds icons, badges and 44px touch targets."),
+        source: "apps/web/src/domains/legal/public/site-section-tabs.tsx",
+        verify: "types",
+      },
+      {
+        kind: "simplified",
+        title: t("선택한 탭을 주소에 담기", "Keeping the selected tab in the address"),
+        language: "ts",
+        ...sampleSource([
+          ["export function withTab(search: string, param: string, next: string, fallback: string): string {"],
+          ["  const params = new URLSearchParams(search);"],
+          ["  if (next === fallback) params.delete(param);", "기본 탭은 주소에 남기지 않는다", "the default tab is left out of the address"],
+          ["  else params.set(param, next);"],
+          ['  return params.toString() ? "?" + params.toString() : "";'],
+          ["}"],
+          [""],
+          ["export function selectTab(param: string, next: string, fallback: string): void {"],
+          ["  ", "pushState 가 아니라 replaceState: 뒤로 가기가 탭이 아니라 페이지 단위로 동작한다", "replaceState, not pushState: Back moves by page, not by tab"],
+          ['  history.replaceState(history.state, "", location.pathname + withTab(location.search, param, next, fallback) + location.hash);'],
+          ["}"],
+        ]),
+        explain: t("site-tabs.ts 의 useSiteTabs 가 react-router 의 setSearchParams(replace)로 하는 일을 브라우저 API 로 풀어 쓴 것입니다. 이 덕분에 ?view=roles 링크를 공유하면 같은 탭이 열립니다.", "This spells out, with browser APIs, what useSiteTabs in site-tabs.ts does through react-router's setSearchParams (replace). That is why sharing a ?view=roles link opens the same tab."),
+        source: "apps/web/src/domains/legal/public/site-tabs.ts",
+        verify: "types",
+      },
+    ],
+    links: [
+      { title: "W3C APG · Tabs pattern", url: "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/", kind: "guide", note: t("역할·속성·키보드 규칙의 기준", "The reference for roles, attributes and keyboard rules") },
+      { title: "W3C APG · Tabs with automatic activation", url: "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/examples/tabs-automatic/", kind: "guide", note: t("이동과 동시에 선택하는 예제", "An example that selects while moving") },
+      { title: "W3C APG · Developing a keyboard interface", url: "https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/", kind: "guide", note: t("로빙 tabindex 설명", "Explains the roving tabindex") },
+      { title: "MDN · ARIA tab role", url: "https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/tab_role", kind: "docs" },
+      { title: "MDN · ARIA tablist role", url: "https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/tablist_role", kind: "docs" },
+    ],
+    chapterIds: ["quality"],
+    talk: {
+      pitch: t(
+        "소개·투어·학습 같은 공개 페이지는 기능이 많아 길어지기 쉬워서, 한 번에 한 묶음만 보이는 탭으로 접었습니다. 탭은 WAI-ARIA 패턴대로 역할과 선택 상태를 표시하고, 선택된 탭만 Tab 키로 들어오며 방향키로 옮깁니다. 선택은 주소에 담겨 링크로 공유됩니다. 다만 키보드 동작의 직접 테스트와 스크린 리더 실측은 확인하지 못했고, 스튜디오 안의 탭은 따로 구현한 것이 많습니다.",
+        "Public pages such as about, tour and learn have many features and grow long, so they are folded into tabs that show one section at a time. The tabs mark roles and selection state per the WAI-ARIA pattern, only the selected tab is reached with the Tab key, and arrow keys move between tabs. The selection lives in the address, so links can be shared. Direct tests of keyboard behavior and real screen-reader runs could not be found, and many tabs inside the studio are built separately.",
+      ),
+      analogy: t(
+        "서류함의 색인 탭입니다. 한 번에 한 칸만 열리고, 이름표가 붙어 있어 손(키보드)으로도 눈(스크린 리더)으로도 어느 칸인지 알 수 있습니다.",
+        "It is the index tab on a filing cabinet: one drawer open at a time, with a label so that both hands (keyboard) and eyes (screen reader) can tell which drawer it is.",
+      ),
+      questions: [
+        {
+          question: t("그냥 버튼 여러 개로 만들면 안 되나요?", "Why not just use several buttons?"),
+          answer: t(
+            "버튼만 있으면 스크린 리더가 '탭 3개 중 2번째, 선택됨'이라고 알려 주지 못하고, 패널과의 관계도 전달되지 않습니다. 역할과 상태 속성을 붙이는 것이 표준 약속입니다.",
+            "With plain buttons a screen reader cannot announce 'tab 2 of 3, selected', and the relation to the panel is not conveyed. Adding the role and state attributes is the standard agreement.",
+          ),
+        },
+        {
+          question: t("서비스의 모든 탭이 이 컴포넌트인가요?", "Are all tabs in the service this component?"),
+          answer: t(
+            "아닙니다. 공개 페이지 일부가 쓰고, 스튜디오 편집기 패널의 탭은 따로 구현한 곳이 많습니다(2026-10-08 검색: role=tablist 가 85개 파일). 키보드 규칙이 모두 같다고 말할 수 없습니다.",
+            "No. Some public pages use it, while many studio editor panels have separately built tabs (2026-10-08 search: role=tablist in 85 files). The keyboard rules cannot all be called identical.",
+          ),
+        },
+      ],
+      pitfall: t(
+        "'접근성을 갖췄다'고 말하기 전에 범위를 밝히세요. 이 컴포넌트의 역할·속성은 코드로 확인했지만, 키보드 동작을 직접 겨냥한 단위 테스트와 NVDA·VoiceOver 같은 실제 스크린 리더 점검은 확인하지 못했습니다. 다른 탭 구현은 이 카드의 범위 밖입니다.",
+        "State the scope before saying 'it is accessible'. The roles and attributes of this component were checked in code, but a unit test aimed at keyboard behavior and real screen-reader runs such as NVDA or VoiceOver could not be found. Other tab implementations are outside this card.",
+      ),
+    },
+    technologies: ["WAI-ARIA", "React Router"],
+    facts: [
+      { value: "4", label: t("한 줄 분할 버튼으로 보이는 최대 탭 수 (MAX_SEGMENTED_TABS)", "Most tabs shown as one line of split buttons (MAX_SEGMENTED_TABS)"), source: "apps/web/src/domains/legal/public/site-section-tabs.tsx" },
+    ],
+    reviewedAt: "2026-10-08",
+  },
+];

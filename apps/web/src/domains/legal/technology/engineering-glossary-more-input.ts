@@ -188,8 +188,8 @@ export const GLOSSARY_MORE_INPUT: readonly GlossaryTerm[] = [
       "Like laying see-through graph paper over a photo with each square labelled by its owner: read the pressed square's label and you know who it is.",
     ),
     inToonstudio: t(
-      "Konva 가 입력(pointer-input)과 히트 테스트를 맡고(docs/engines/renderer-roles.md), 눈에 보이지 않는 별도 ‘hit-test 캔버스’를 따로 둡니다. 이 캔버스는 픽셀을 자주 되읽으므로 willReadFrequently: true, 라이브 잉크 캔버스는 반대 힌트 desynchronized 라서 둘을 한 캔버스에 섞지 않고 표로 정해 둡니다(studio-lowlatency-surface-policy.ts).",
-      "Konva owns pointer input and hit testing (docs/engines/renderer-roles.md) and keeps a separate invisible ‘hit-test’ canvas. That canvas reads pixels back often, so it is willReadFrequently: true, while live-ink canvases use the opposite hint, desynchronized; the policy table keeps the two from being mixed on one canvas (studio-lowlatency-surface-policy.ts).",
+      "Konva 가 입력(pointer-input)과 히트 테스트를 맡고(docs/engines/renderer-roles.md), 눈에 보이지 않는 별도 ‘hit-test 캔버스’를 따로 둡니다. 이 캔버스는 픽셀을 자주 되읽으므로 willReadFrequently: true, 라이브 잉크 캔버스는 반대 힌트 desynchronized 라서 둘을 한 캔버스에 섞지 않는 것이 원칙입니다. 역할별 규칙은 정책 모듈(studio-lowlatency-surface-policy.ts)에 있으나 아직 제품에 연결되지 않았습니다.",
+      "Konva owns pointer input and hit testing (docs/engines/renderer-roles.md) and keeps a separate invisible ‘hit-test’ canvas. That canvas reads pixels back often, so it is willReadFrequently: true, while live-ink canvases use the opposite hint, desynchronized, so the two are not meant to be mixed on one canvas. The per-role rules live in a policy module (studio-lowlatency-surface-policy.ts) that is not yet wired into the product.",
     ),
     chapters: ["brush-render-authority", "performance"],
     atlasIds: ["konva-transform-snap"],

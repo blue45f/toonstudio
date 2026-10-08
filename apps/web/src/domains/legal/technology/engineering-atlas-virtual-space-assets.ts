@@ -17,8 +17,8 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
     title: t("그림 에셋을 만들고 해시로 지키는 파이프라인(v3~v9)", "A pipeline that builds art assets and guards them by hash (v3 to v9)"),
     status: "live",
     tagline: t(
-      "원본을 결정적으로 가공하고, 해시 매니페스트를 CI 가 검증합니다. v8·v9 는 일부만 덮습니다.",
-      "Sources are processed deterministically and CI checks hash manifests; v8 and v9 are only partly covered.",
+      "원본을 결정적으로 가공하고 해시 매니페스트를 CI 가 검증합니다. v8·v9 는 단위 테스트가 대조합니다.",
+      "Sources are processed deterministically and CI checks hash manifests; v8 and v9 are compared by unit tests.",
     ),
     background: [
       t(
@@ -34,14 +34,14 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
         "The scripts are designed not to claim a recolored copy is new art. v4 says it only slices frames and packages styles, v5 says no source pixels are reused across styles, v6 and v7 say they use no CSS recolouring, and the v7 verifier even checks the C2PA provenance marks inside the source files and the number of generation IDs. The v8 and v9 manifests state themselves that they do not certify a model version.",
       ),
       t(
-        "한계: v3~v7 과 world-v2 는 CI 에서 해시까지 검증하지만, v8(experience-v8)은 v7 검증기가 런타임 배경 24종의 해시·크기를 보는 범위에서만, v9(cinematic-v9)는 8개 자산의 sha256 이 매니페스트에 있어도 이를 대조하는 검증 스크립트를 찾지 못했습니다. 매니페스트가 있다는 것과 검증된다는 것은 다릅니다. 이 파이프라인은 그림의 품질이나 저작권을 판단하지 않습니다.",
-        "Limits: v3 to v7 and world-v2 are verified down to hashes in CI, but v8 (experience-v8) is covered only where the v7 verifier checks the hash and size of 24 runtime backdrops, and for v9 (cinematic-v9) no script was found that compares the sha256 values listed for its 8 assets. Having a manifest is not the same as being verified. This pipeline does not judge art quality or copyright.",
+        "한계: v3~v7 과 world-v2 는 CI 의 아트 게이트(verify:studio-virtual-art)가 해시까지 검증합니다. v8(experience-v8)과 v9(cinematic-v9)는 전용 검증 스크립트가 없습니다(게이트는 v7 검증기가 v8 런타임 배경 24종의 해시·크기를 보는 범위뿐). 대신 단위 테스트가 매니페스트의 바이트 수와 SHA-256 을 파일과 대조하며(v8 은 50개, v9 는 8개), 이 테스트는 CI 필수 vitest 대상(studio-foundation 샤드)에 속합니다. 즉 게이트 목록 7종에는 보이지 않을 뿐 테스트 단계에서 돕니다. 이 파이프라인은 그림의 품질이나 저작권을 판단하지 않습니다.",
+        "Limits: v3 to v7 and world-v2 are verified down to hashes by the CI art gate (verify:studio-virtual-art). v8 (experience-v8) and v9 (cinematic-v9) have no dedicated verifier script (the gate reaches only the 24 v8 runtime backdrops, whose hash and size the v7 verifier checks). Instead, unit tests compare the byte counts and SHA-256 values in each manifest with the files (50 assets for v8, 8 for v9), and those tests belong to the CI required vitest targets (the studio-foundation shard). So they are missing from the gate's list of seven only; they run in the test stage. This pipeline does not judge art quality or copyright.",
       ),
     ],
     keyPoints: [
       t("그림마다 바이트 수와 SHA-256 을 매니페스트에 적습니다", "Every file's size and SHA-256 go in a manifest"),
       t("CI 가 폴더와 매니페스트가 정확히 맞는지 대조합니다", "CI checks that the folder matches the manifest exactly"),
-      t("v8 은 일부, v9 는 검증 스크립트를 찾지 못했습니다", "v8 is partly covered; no verifier found for v9"),
+      t("v8·v9 는 게이트가 아닌 단위 테스트가 해시를 대조합니다", "v8 and v9 are hash-checked by unit tests, not by the art gate"),
     ],
     diagram: {
       id: "art-asset-pipeline-v3-v9-ci-gate-diagram",
@@ -52,8 +52,8 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
         "Processing scripts produce packs and manifests, and verifier scripts and CI compare the two.",
       ),
       alt: t(
-        "원본(이미지 생성 도구의 시트나 스크립트 렌더)을 Python 가공 스크립트가 자르고 묶어 에셋 팩과 매니페스트를 만듭니다. Node 검증 스크립트가 둘을 대조하고 결과를 CI 게이트가 판정하며, 통과해야 공간 화면이 그 에셋을 씁니다. v8·v9 는 검증이 일부만 닿아 점선으로 표시했습니다.",
-        "A Python processing script slices and bundles the sources (sheets from image generation tools or scripted renders) into asset packs and a manifest. Node verification scripts compare the two, the CI gate judges the result, and only then does the spatial screen use the assets. v8 and v9 are only partly reached by verification and are shown with a dashed line.",
+        "원본(이미지 생성 도구의 시트나 스크립트 렌더)을 Python 가공 스크립트가 자르고 묶어 에셋 팩과 매니페스트를 만듭니다. Node 검증 스크립트가 둘을 대조하고 결과를 CI 게이트가 판정하며, 통과해야 공간 화면이 그 에셋을 씁니다. v8·v9 는 게이트의 검증 스크립트가 일부만 닿아 점선으로 표시했고, 나머지는 단위 테스트가 대조합니다.",
+        "A Python processing script slices and bundles the sources (sheets from image generation tools or scripted renders) into asset packs and a manifest. Node verification scripts compare the two, the CI gate judges the result, and only then does the spatial screen use the assets. The gate's verifier scripts reach v8 and v9 only partly, so they are shown with a dashed line; unit tests compare the rest.",
       ),
       nodes: [
         { id: "source", label: t("원본", "Source"), sub: t("생성 도구 시트 · 렌더", "Tool sheets, renders"), tone: "external", shape: "cloud", at: [0, 0] },
@@ -63,7 +63,7 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
         { id: "verify", label: t("검증 스크립트", "Verifiers"), sub: t("Node · 해시 대조", "Node, hash check"), tone: "good", at: [3, 0] },
         { id: "gate", label: t("CI 게이트", "CI gate"), sub: t("어긋나면 중단", "Stops on mismatch"), tone: "warn", shape: "diamond", at: [4, 0] },
         { id: "runtime", label: t("공간 화면", "Spatial screen"), sub: t("Phaser 가 불러옴", "Loaded by Phaser"), tone: "local", shape: "pill", at: [5, 0] },
-        { id: "gap", label: t("v8 · v9", "v8 and v9"), sub: t("일부만 검증", "Only partly verified"), tone: "warn", at: [3, 1] },
+        { id: "gap", label: t("v8 · v9", "v8 and v9"), sub: t("게이트 일부 + 단위 테스트", "Partly gate + unit tests"), tone: "warn", at: [3, 1] },
       ],
       edges: [
         { from: "source", to: "build", label: t("원본", "source") },
@@ -110,10 +110,15 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
       {
         feature: t("v8 · v9 매니페스트", "v8 and v9 manifests"),
         role: t(
-          "최근 팩은 파일별 sha256 과 생성 ID 를 기록하지만 검증 범위가 좁습니다. v9 매니페스트는 모델 버전을 인증하지 않는다고(modelVersionVerified: false) 밝힙니다.",
-          "The recent packs record per-file sha256 values and generation IDs, but verification coverage is narrow. The v9 manifest says it does not certify a model version (modelVersionVerified: false).",
+          "최근 팩은 파일별 바이트 수와 sha256 을 기록합니다(v9 는 생성 ID 도). 아트 게이트 밖에서 단위 테스트가 이 값을 파일과 대조하며(v8: studio-virtual-space-experience-art.test.ts, v9: studio-cinematic-art.test.ts), v9 테스트는 폴더의 파일 집합과 WEBP 헤더도 봅니다. v9 매니페스트는 모델 버전을 인증하지 않는다고(modelVersionVerified: false) 밝힙니다.",
+          "The recent packs record per-file byte counts and sha256 values (v9 also generation IDs). Outside the art gate, unit tests compare these values with the files (v8: studio-virtual-space-experience-art.test.ts, v9: studio-cinematic-art.test.ts), and the v9 test also checks the folder's file set and the WEBP header. The v9 manifest says it does not certify a model version (modelVersionVerified: false).",
         ),
-        paths: [`${ASSETS}/experience-v8/art-manifest.json`, `${ASSETS}/cinematic-v9/art-manifest.json`],
+        paths: [
+          `${ASSETS}/experience-v8/art-manifest.json`,
+          `${ASSETS}/cinematic-v9/art-manifest.json`,
+          `${V}/studio-virtual-space-experience-art.test.ts`,
+          `${V}/experience/studio-cinematic-art.test.ts`,
+        ],
       },
     ],
     samples: [
@@ -199,8 +204,8 @@ pnpm run verify:studio-virtual-art  # compare manifests with real files (v3 to v
     chapterIds: ["quality"],
     talk: {
       pitch: t(
-        "가상 스튜디오의 그림은 3,553개 파일입니다. 그림마다 크기와 SHA-256 지문을 명세서에 적어 두고, 빌드할 때마다 기계가 명세서와 실제 파일을 대조해 어긋나면 빌드를 멈춥니다. 단, 모든 버전이 같은 수준으로 지켜지는 것은 아닙니다. v3~v7 은 해시까지 검증하지만 v8 은 일부, v9 는 검증 스크립트를 찾지 못했습니다.",
-        "The studio's art is 3,553 files. Each file's size and SHA-256 fingerprint are written in a manifest, and on every build a machine compares the manifest with the real files and stops the build on a mismatch. Not every version is guarded equally, though: v3 to v7 are verified down to hashes, v8 only partly, and no verifier was found for v9.",
+        "가상 스튜디오의 그림은 3,553개 파일입니다. 그림마다 크기와 SHA-256 지문을 명세서에 적어 두고, 빌드할 때마다 기계가 명세서와 실제 파일을 대조해 어긋나면 빌드를 멈춥니다. 단, 모든 버전이 같은 방식으로 지켜지는 것은 아닙니다. v3~v7 은 아트 게이트가 해시까지 검증하고, v8·v9 는 전용 검증 스크립트 대신 단위 테스트가 바이트 수와 해시를 대조합니다.",
+        "The studio's art is 3,553 files. Each file's size and SHA-256 fingerprint are written in a manifest, and on every build a machine compares the manifest with the real files and stops the build on a mismatch. Not every version is guarded the same way, though: the art gate verifies v3 to v7 down to hashes, while v8 and v9 have no dedicated verifier script and are compared for byte counts and hashes by unit tests instead.",
       ),
       analogy: t(
         "택배 창고의 입고 검수입니다. 상자마다 송장(매니페스트)에 무게와 도장이 적혀 있고, 입고 담당(검증기)이 실제 상자와 하나씩 맞춰 보며, 하나라도 다르면 문을 열어 주지 않습니다.",
@@ -224,14 +229,14 @@ pnpm run verify:studio-virtual-art  # compare manifests with real files (v3 to v
         {
           question: t("v8·v9 는 왜 검증이 약한가요?", "Why is verification weaker for v8 and v9?"),
           answer: t(
-            "최근에 추가된 팩이라 전용 검증 스크립트가 아직 없는 것으로 보입니다(추정). 매니페스트에 해시는 있으므로 검증기를 더하는 것은 어렵지 않지만, 현재는 일부 배경만 v7 검증기가 봅니다.",
-            "They appear to be recent packs without a dedicated verifier yet (an inference). The manifests already hold hashes, so adding a verifier looks straightforward, but today only some backdrops are checked, by the v7 verifier.",
+            "아트 게이트(verify:studio-virtual-art)에는 v8·v9 전용 검증 스크립트가 없어 게이트만 보면 약해 보입니다(v8 은 배경 24종만 v7 검증기가 봄). 하지만 단위 테스트가 v8(50개)·v9(8개) 매니페스트의 바이트 수와 SHA-256 을 파일과 대조합니다. 이 테스트가 CI 에서 실제로 돈 결과는 이 저장소만으로는 확인하지 못했습니다.",
+            "The art gate (verify:studio-virtual-art) has no dedicated v8 or v9 verifier script, so the gate alone looks weak (the v7 verifier covers only the 24 v8 backdrops). But unit tests compare the byte counts and SHA-256 values of the v8 (50) and v9 (8) manifests with the files. The actual CI run results of those tests could not be confirmed from this repository alone.",
           ),
         },
       ],
       pitfall: t(
-        "'모든 에셋이 CI 에서 검증된다'고 말하지 마세요. v8 은 런타임 배경 24종만, v9 는 검증 스크립트를 찾지 못했습니다. 원본이 AI 생성이라는 서술도 매니페스트가 밝힌 범위에서만 말하고, 모델 버전은 인증된 바 없습니다.",
-        "Do not say 'every asset is verified in CI'. v8 covers only 24 runtime backdrops and no verifier was found for v9. Describe the AI-generated origin only to the extent the manifests state it; no model version is certified.",
+        "'모든 에셋이 아트 게이트에서 검증된다'고 말하지 마세요. 게이트는 v3~v7·world-v2 와 v8 런타임 배경 24종까지이고, v8·v9 의 나머지는 단위 테스트가 대조합니다. 원본이 AI 생성이라는 서술도 매니페스트가 밝힌 범위에서만 말하고, 모델 버전은 인증된 바 없습니다.",
+        "Do not say 'every asset is verified by the art gate'. The gate covers v3 to v7, world-v2 and the 24 v8 runtime backdrops, and unit tests compare the rest of v8 and v9. Describe the AI-generated origin only to the extent the manifests state it; no model version is certified.",
       ),
     },
     technologies: ["GitHub Actions", "Pillow", "WebP", "SHA-256"],

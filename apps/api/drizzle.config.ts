@@ -8,7 +8,8 @@ if (!databaseUrl) {
 }
 const normalizedDatabaseUrl = normalizePgConnectionStringForTls(databaseUrl);
 
-// PostgreSQL(Neon). 로컬 검증은 docker postgres(:55432), 원격은 Neon(DATABASE_URL, sslmode=verify-full).
+// PostgreSQL. 로컬 검증은 docker postgres(:55432), 원격은 DATABASE_URL(sslmode=verify-full). 운영 원장은 Supabase PostgreSQL 이
+// 현재 권위이고 Neon 은 legacy 로 보존한다(docs/operations/canonical-database-topology.md).
 export default defineConfig({
   schema: [
     "./apps/api/src/platform/database/schema/index.ts",

@@ -23,6 +23,17 @@ vi.mock("./engineering-atlas-content", () => ({
   atlasEntriesForChapter: () => [],
 }));
 
+// 실제 발표 원본이 가리키는 도감 카드는 이 테스트의 예시 도감에 없으므로, 카드를 가리키는 필드(atlas·relatedAtlasIds)는 떼고
+// 카드 면 슬라이드(atlas 레이아웃)는 일반 슬라이드로 바꾼다. 엔진 검사가 발표 콘텐츠의 도감 참조에 흔들리지 않게 한다.
+vi.mock("./engineering-talk-deck", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./engineering-talk-deck")>();
+  const slides = original.TALK_SLIDES.map((slide) => {
+    const { atlas: _atlas, relatedAtlasIds: _related, ...rest } = slide as typeof slide & { atlas?: unknown; relatedAtlasIds?: unknown };
+    return slide.layout === "atlas" ? { ...rest, layout: "statement" as const } : rest;
+  });
+  return { ...original, TALK_SLIDES: slides };
+});
+
 const ko = (text: { readonly ko: string }): string => text.ko;
 const en = (text: { readonly en: string }): string => text.en;
 

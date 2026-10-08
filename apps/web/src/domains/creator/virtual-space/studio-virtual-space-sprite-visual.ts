@@ -14,6 +14,7 @@ import {
   studioCharacterWalkAnimationKey as walkAnimationKey,
   studioCharacterWalkTextureKey as walkSheetKey,
 } from "./studio-virtual-space-character-assets";
+import { StudioCharacterWarmup } from "./studio-virtual-space-character-warmup";
 import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
 import {
   resolveStudioFaceSheet,
@@ -72,6 +73,9 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
     fallbackAsset,
   } = deps;
 
+  /** 내 캐릭터와(예산 안의) 다른 참가자의 방향별 정지 그림·걷기 시트를 미리 받아 둔다. 프레임마다 갱신되는 소유 목록과 분리한다. */
+  const warmup = new StudioCharacterWarmup(characterAssets);
+
   const ensureWalkAnimation = (skin: StudioCharacterSkin, direction: StudioVirtualSpaceFacing) => {
     const clip = studioCharacterWalkClip(skin, direction);
     const key = walkSheetKey(skin, direction);
@@ -119,6 +123,11 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
   ) => {
     const owner = sprite.getData("assetOwner") as string;
     if (deps.isSceneReady() && owner) characterAssets.use(owner, studioCharacterVisualAssets(skin, nextFacing, nextState), sprite.texture.key);
+    // 첫 걸음·첫 방향 전환 전에 네 방향의 정지 그림과 걷기 시트를 받아 둔다(스킨이 바뀔 때만 다시 요청).
+    if (deps.isSceneReady() && owner) {
+      const warmed = warmup.request(owner, skin, sprite.getData("warmSkinKey") as string | undefined, scene.time.now);
+      if (warmed !== undefined) sprite.setData("warmSkinKey", warmed);
+    }
     if (sprite.getData("visualMotionState") !== nextState) {
       sprite.setData("visualPreviousMotionState", (sprite.getData("visualMotionState") as StudioCharacterMotionState | undefined) ?? null)
         .setData("visualMotionState", nextState).setData("visualStateStartedAt", scene.time.now);

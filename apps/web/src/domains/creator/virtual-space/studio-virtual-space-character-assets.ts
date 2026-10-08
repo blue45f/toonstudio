@@ -188,6 +188,57 @@ export function studioCharacterVisualAssets(
   return assets;
 }
 
+const WARM_FACINGS: readonly StudioVirtualSpaceFacing[] = ["down", "left", "right", "up"];
+
+/**
+ * 내 캐릭터가 처음 움직이거나 처음 방향을 바꿀 때 에셋이 늦게 도착해 정지 그림이 미끄러지고
+ * 방향이 한 박자 늦는 일이 없도록 미리 받아 두는 에셋: 네 방향의 정지 그림과 걷기 시트.
+ * (예전에는 움직이는 순간에야 걷기 시트를 요청해 이동 시작 약 0.6초 동안 걷기 프레임 없이 미끄러졌다.)
+ * 대화·그리기·앉기 같은 상태 에셋은 그 상태가 될 때 기존처럼 필요한 만큼만 받는다.
+ */
+export function studioCharacterWarmAssets(skin: StudioCharacterSkin): readonly StudioCharacterTextureAsset[] {
+  const assets = new Map<string, StudioCharacterTextureAsset>();
+  for (const facing of WARM_FACINGS) {
+    for (const state of ["idle", "walk"] as const) {
+      for (const asset of studioCharacterVisualAssets(skin, facing, state)) assets.set(asset.key, asset);
+    }
+  }
+  return [...assets.values()];
+}
+
+/** 선적재(warm) 에셋을 보유하는 소유자 이름의 접미사. `release(owner)`는 같은 소유자의 선적재분도 함께 반납한다. */
+const WARM_OWNER_SUFFIX = ":warm";
+export const studioCharacterWarmOwner = (owner: string): string => `${owner}${WARM_OWNER_SUFFIX}`;
+
+/** 선적재 대상 구분: 내 캐릭터는 항상, 다른 참가자는 예산 안에서만, 그 밖의 소유자(NPC·배경 배우)는 하지 않는다. */
+export type StudioCharacterWarmKind = "self" | "peer";
+export function studioCharacterWarmKind(owner: string): StudioCharacterWarmKind | null {
+  if (owner === "self") return "self";
+  return owner.startsWith("peer:") ? "peer" : null;
+}
+
+/** 크기를 모르는 정지 그림 한 장의 GPU 텍스처 추정치(실측: 스타일 팩 160px 0.1MB, 드로잉 원본 384×512 0.75MB). */
+const IMAGE_ESTIMATE_BYTES = 512 * 1024;
+/** 다른 참가자 한 명의 스킨을 선적재해도 되는 GPU 텍스처 추정 상한. 기본 스타일 팩(160px 정지 그림 3장 + 640×160 걷기 시트 4장 추가)은 약 3.1MB로 추정된다. */
+export const STUDIO_PEER_WARM_MAX_BYTES = 8 * 1024 * 1024;
+
+/**
+ * 선적재로 새로 올라올 텍스처의 GPU 크기 추정(바이트). 시트는 선언한 원본 크기(atlas)를 쓰고, 선언이 없으면 로더 검증과 같이 2×2 격자로 본다.
+ * 어느 방향·상태에서든 이미 올라와 있는 기준 에셋(아래를 보는 정지 그림, 표정 시트)은 선적재 때문에 늘어나지 않으므로 뺀다.
+ * 드로잉 원본(1122×1402 시트 약 6MB)이나 네이티브 시트(1254×1254)로 방향 네 장을 받으면 수십 MB라 이 값으로 걸러 낸다.
+ */
+export function studioCharacterWarmBytes(skin: StudioCharacterSkin): number {
+  const baseline = new Set(studioCharacterVisualAssets(skin, "down", "idle").map((asset) => asset.key));
+  let bytes = 0;
+  for (const asset of studioCharacterWarmAssets(skin)) {
+    if (baseline.has(asset.key)) continue;
+    if (asset.type === "image") bytes += IMAGE_ESTIMATE_BYTES;
+    else if (asset.atlas) bytes += asset.atlas.width * asset.atlas.height * 4;
+    else bytes += (asset.frameWidth ?? 0) * 2 * (asset.frameHeight ?? 0) * 2 * 4;
+  }
+  return bytes;
+}
+
 interface TextureRecord {
   readonly asset: StudioCharacterTextureAsset;
   readonly owners: Set<string>;
@@ -254,9 +305,12 @@ export class StudioCharacterAssetResidency {
     }
   }
 
+  /** 소유자가 쓰던 에셋과 그 소유자의 선적재분(`<owner>:warm`)을 함께 반납한다. */
   release(owner: string): void {
-    for (const key of this.owners.get(owner) ?? []) this.unref(owner, key);
-    this.owners.delete(owner);
+    for (const target of [owner, studioCharacterWarmOwner(owner)]) {
+      for (const key of this.owners.get(target) ?? []) this.unref(target, key);
+      this.owners.delete(target);
+    }
   }
 
   private unref(owner: string, key: string): void {

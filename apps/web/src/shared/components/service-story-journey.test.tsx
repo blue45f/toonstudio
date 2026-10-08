@@ -8,7 +8,7 @@ import { ServiceStoryJourney } from "./service-story-journey";
 afterEach(cleanup);
 
 describe("ServiceStoryJourney", () => {
-  it("connects service, benchmark, presentation and film surfaces in one ordered journey", () => {
+  it("connects service, big picture, story, benchmark, presentation and film surfaces in one ordered journey", () => {
     render(
       <MemoryRouter initialEntries={["/about/technology/videos"]}>
         <ServiceStoryJourney current="film" />
@@ -20,10 +20,11 @@ describe("ServiceStoryJourney", () => {
     });
     const links = Array.from(navigation.querySelectorAll("a"));
 
-    expect(links).toHaveLength(6);
+    expect(links).toHaveLength(7);
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/product-tour",
       "/brand-film",
+      "/about/technology/architecture",
       "/about/technology/story",
       "/about/technology/playbook#benchmarks",
       "/about/technology/deck?track=talk",
@@ -42,7 +43,7 @@ describe("ServiceStoryJourney", () => {
       </MemoryRouter>,
     );
 
-    const presentation = screen.getByRole("link", { name: /웹 발표 자료|Web presentation/u });
+    const presentation = screen.getByRole("link", { name: /발표 모드|Presentation mode/u });
     expect(presentation.getAttribute("href")).toBe("/about/technology/deck?track=talk");
     expect(presentation.getAttribute("href")).not.toMatch(/audience=|duration=/u);
   });
@@ -55,7 +56,7 @@ describe("ServiceStoryJourney", () => {
     );
 
     const presentation = screen.getByRole("link", {
-      name: /웹 발표 자료|Web presentation/u,
+      name: /발표 모드|Presentation mode/u,
     });
     expect(presentation.getAttribute("href")).toBe("/about/technology/deck?track=talk");
     expect(presentation.getAttribute("aria-current")).toBe("page");

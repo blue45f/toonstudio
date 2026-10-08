@@ -322,7 +322,9 @@ export class StudioP2pHuddleController {
     const now = this.now();
     if (now - link.lastIceRestartAt < 4_000) return false;
     if (link.iceRestartAttempts >= 3) {
-      this.error = "직접 통화 연결을 자동 복구하지 못했습니다. 네트워크를 확인하거나 P2P 대화에 다시 참여해 주세요. TURN 중계는 사용하지 않습니다.";
+      // ICE 서버는 공유 구성(getStudioIceServers)이라 Worker가 TURN 단기 자격을 발급한 환경에서는 중계 후보도
+      // 이미 시도했을 수 있다. 그래서 "TURN을 쓰지 않는다"고 단정하지 않고 조건을 말한다.
+      this.error = "직접 통화 연결을 자동 복구하지 못했습니다. 네트워크를 확인하거나 P2P 대화에 다시 참여해 주세요. 중계(TURN) 서버가 준비되지 않은 환경에서는 직접 연결만 시도합니다.";
       return false;
     }
     link.lastIceRestartAt = now;

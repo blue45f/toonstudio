@@ -727,7 +727,10 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     license: "MIT",
     url: "https://github.com/tursodatabase/libsql-client-ts",
     surface: "api",
-    role: { ko: "API의 libSQL 데이터베이스 클라이언트", en: "libSQL database client for the API" },
+    role: {
+      ko: "API 의존성으로 선언돼 있으나 현재 소스에서 import하지 않는 libSQL 클라이언트(DB 계층은 pg와 Drizzle ORM)",
+      en: "A libSQL client declared as an API dependency but not imported by current source (the database layer is pg plus Drizzle ORM)",
+    },
   },
   {
     name: "@msgpack/msgpack",

@@ -373,3 +373,27 @@
   .eng-dia-frame__zoom, .eng-dia-zoom__close { border-color: ButtonText; background: ButtonFace; color: ButtonText; }
   .eng-dia-zoom { border-color: CanvasText; }
 }
+
+/* ── 도식 색 범례 (아키텍처·라이브러리 해설 공용) ──
+   도식 노드와 같은 색 공식(.eng-dia__shape)으로 칠한 작은 견본. 색만으로 뜻을 전하지 않도록 글자 설명을 함께 둔다. */
+.eng-legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; margin: 0; padding: 0; list-style: none; }
+.eng-legend__item { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; font-weight: 700; line-height: 1.4; color: var(--color-fg-2); }
+.eng-legend__swatch {
+  --eng-legend-tone: var(--color-line-strong);
+  flex: none;
+  inline-size: 1.4rem;
+  block-size: 1rem;
+  border-radius: 0.35rem;
+  border: 1.6px solid color-mix(in oklab, var(--eng-legend-tone) 70%, var(--color-line));
+  background: color-mix(in oklab, var(--eng-legend-tone) 9%, var(--color-card));
+}
+.eng-legend__swatch[data-tone="local"] { --eng-legend-tone: var(--color-accent); }
+.eng-legend__swatch[data-tone="edge"] { --eng-legend-tone: var(--color-accent-2); }
+.eng-legend__swatch[data-tone="server"] { --eng-legend-tone: var(--color-fg-3); }
+.eng-legend__swatch[data-tone="external"] { --eng-legend-tone: var(--color-fg-3); border-style: dashed; }
+.eng-legend__swatch[data-tone="ai"] { --eng-legend-tone: var(--color-cool); }
+.eng-legend__swatch[data-tone="good"] { --eng-legend-tone: var(--color-good); }
+.eng-legend__swatch[data-tone="warn"] { --eng-legend-tone: var(--color-warn); }
+@media (forced-colors: active) {
+  .eng-legend__swatch { border-color: CanvasText; background: Canvas; }
+}

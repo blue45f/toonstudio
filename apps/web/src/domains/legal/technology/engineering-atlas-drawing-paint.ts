@@ -226,8 +226,8 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
         "The paper surface is a function of document coordinates (x, y, seed) only, so zoom and stroke order do not affect it, and a second lookup offset by the golden ratio (0.618...) and rotated is added with weight 0.38 to hide tiling. Watercolor edge bloom (coffee ring), grain that spreads along paper fibers, and oil bristles (a 2D simulation on a fixed 8 ms step) are also pure functions of input, seed and settings, keeping the determinism described in the replay card.",
       ),
       t(
-        "재료 모델은 모두 키가 있는 옵트인 프로그램입니다. 종이 모델 contact-tooth-v2 는 새 획에만 붙고, 키 없는 옛 획은 옛 규칙(모든 매체가 골짜기에 쌓이고 128텍셀마다 반복)을 바이트 단위로 유지합니다. 수채 번짐은 Curtis 등의 얕은 물 모델, 유화는 WetBrush 의 강모 단위 시뮬레이션을 단순화한 계열이며, 전면 유체 시뮬레이션은 아닙니다.",
-        "Every material model is a keyed, opt-in program. The paper model contact-tooth-v2 is attached to new strokes only, and keyless old strokes keep the old rule (all media pile into the valleys, with a 128-texel repeat) byte for byte. Watercolor bleeding follows a simplification of Curtis et al.'s shallow-water model and oil of WetBrush's bristle-level simulation; neither is a full fluid simulation.",
+        "재료 모델은 모두 키가 있는 옵트인 프로그램입니다. 종이 모델 contact-tooth-v2 는 새 획에만 붙고, 키 없는 옛 획은 옛 규칙(모든 매체가 골짜기에 쌓이고 128텍셀마다 반복)을 바이트 단위로 유지합니다. 수채 번짐은 붓 자국 단위의 결정적 후처리(가장자리 어두워짐·입자)로, Curtis 등의 수채 모델은 설계 참고일 뿐 얕은 물 방정식을 푸는 시뮬레이션이 아닙니다. 유화는 WetBrush 강모 시뮬레이션의 2D 축소판입니다. 다만 수묵 계열 붓(inkwash-pen 등)은 별도의 유체 워시 런타임(Stam 방식)을 씁니다.",
+        "Every material model is a keyed, opt-in program. The paper model contact-tooth-v2 is attached to new strokes only, and keyless old strokes keep the old rule (all media pile into the valleys, with a 128-texel repeat) byte for byte. Watercolor bleeding is a deterministic per-dab post effect (edge darkening, grain); Curtis et al.'s watercolor model is a design reference, not a simulation that solves shallow-water equations. Oil is a 2D reduction of WetBrush's bristle simulation. Ink-wash brushes (such as inkwash-pen), however, use a separate fluid wash runtime (Stam-style).",
       ),
       t(
         "한계: 완전한 유체 시뮬레이션(Living Ink)은 비용이 커서 긴 웹툰 캔버스에서 품질 하한을 지키지 못해, 새 물리 획은 지금 꺼져 있습니다(STUDIO_LIVING_INK_NEW_PHYSICAL_STROKES_ENABLED 가 false). 12개 표면과 48개 시그니처 레시피를 담은 V7 표면 라이브러리는 브러시 스튜디오(제작 도구)용입니다.",
@@ -359,7 +359,7 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
       },
     ],
     links: [
-      { title: "Curtis et al. · Computer-Generated Watercolor (SIGGRAPH 1997)", url: "https://doi.org/10.1145/258734.258896", kind: "article", note: t("수채 번짐의 얕은 물 모델", "The shallow-water model behind watercolor bleeding") },
+      { title: "Curtis et al. · Computer-Generated Watercolor (SIGGRAPH 1997)", url: "https://doi.org/10.1145/258734.258896", kind: "article", note: t("수채 모델의 고전 논문(입자 침착·가장자리 어두워짐 설계 참고)", "The classic watercolor paper (design reference for granulation and edge darkening)") },
       { title: "Chen et al. · WetBrush (ACM TOG 2015)", url: "https://doi.org/10.1145/2816795.2818066", kind: "article", note: t("강모 단위 유화 시뮬레이션", "Bristle-level oil painting simulation") },
       { title: "GPU Gems · Fast Fluid Dynamics Simulation on the GPU", url: "https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu", kind: "guide", note: t("Living Ink 같은 유체 방식의 배경", "Background for fluid approaches such as Living Ink") },
     ],
@@ -377,8 +377,8 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
         {
           question: t("수채가 진짜 물 시뮬레이션인가요?", "Is watercolor a real water simulation?"),
           answer: t(
-            "아닙니다. 가장자리 번짐은 붓 자국 단위의 결정적 후처리(커피링·입자·색 번짐)입니다. 전면 유체 시뮬레이션인 Living Ink 는 새 획에서 현재 꺼져 있고, 기존 문서의 Living Ink 레이어만 읽기 전용으로 남습니다.",
-            "No. Edge bleeding is a deterministic per-dab post effect (coffee ring, grain, color bleed). Living Ink, the full fluid simulation, is currently off for new strokes, and only existing Living Ink layers in old documents remain read-only.",
+            "아닙니다. 수채 가장자리 번짐은 붓 자국 단위의 결정적 후처리(커피링·입자·색 번짐)입니다. 전면 유체 시뮬레이션인 Living Ink 는 새 획에서 현재 꺼져 있고, 기존 문서의 Living Ink 레이어만 읽기 전용으로 남습니다. 다만 수묵 계열 붓(inkwash-pen·inkwash-water-brush 등)은 별도의 유체 워시 런타임(Stam 방식)을 씁니다.",
+            "No. Watercolor edge bleeding is a deterministic per-dab post effect (coffee ring, grain, color bleed). Living Ink, the full fluid simulation, is currently off for new strokes, and only existing Living Ink layers in old documents remain read-only. Ink-wash brushes (inkwash-pen, inkwash-water-brush and others), however, use a separate fluid wash runtime (Stam-style).",
           ),
         },
         {
@@ -397,8 +397,8 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
         },
       ],
       pitfall: t(
-        "'물리 시뮬레이션'이라고 크게 말하지 마세요. 접촉 평면, 번짐, 붓털은 단순화한 모델이고 Living Ink 는 꺼져 있습니다. V7 표면 라이브러리의 처리량 수치는 문서에만 있고 현재 빌드에서 재측정한 값을 확인하지 못해 인용하지 않았습니다.",
-        "Do not call it a 'physics simulation' loudly. The contact plane, bleeding and bristles are simplified models and Living Ink is off. Throughput figures for the V7 surface library exist only in a document and were not re-measured on the current build, so they are not quoted.",
+        "'물리 시뮬레이션'이라고 크게 말하지 마세요. 접촉 평면, 번짐, 붓털은 단순화한 모델이고 Living Ink 는 꺼져 있습니다. 반대로 수묵 계열 붓은 유체 워시 런타임을 쓰므로 '유체 계산이 전혀 없다'고도 말하지 마세요. V7 표면 라이브러리의 처리량 수치는 문서에만 있고 현재 빌드에서 재측정한 값을 확인하지 못해 인용하지 않았습니다.",
+        "Do not call it a 'physics simulation' loudly. The contact plane, bleeding and bristles are simplified models and Living Ink is off. Conversely, ink-wash brushes use a fluid wash runtime, so do not say there is no fluid computation at all either. Throughput figures for the V7 surface library exist only in a document and were not re-measured on the current build, so they are not quoted.",
       ),
     },
     technologies: ["Canvas2D", "Height field", "WetBrush"],
@@ -626,8 +626,8 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
         "Hue/saturation and color balance cannot be a table, so their coefficients are computed in advance with the same 64-bit formulas as the CPU and loaded into a uniform, and only the per-pixel remainder runs on the GPU in f32, so the code comment says results can differ by about 1 at rounding boundaries. Stating the boundary between the bit-identical part and the plus-or-minus-1 part honestly is what builds trust.",
       ),
       t(
-        "필터 계획은 작업마다 provider 를 하나만 고릅니다(지원하는 5가지 필드 체인이면 WebGPU, 아니면 전용 Worker). 실패해도 다른 provider 로 다시 실행하지 않고 마지막으로 보인 프레임을 유지하며, 상호작용 중 GPU→CPU 읽기는 없고 최종 내보내기에서만 한 번 읽습니다. 지금 CPU/GPU 속도 비교 수치는 이 카드에 없습니다.",
-        "Filter planning picks exactly one provider per job (WebGPU for a supported chain of the five adjustment fields, otherwise the dedicated Worker). On failure it does not rerun on another provider and keeps the last presented frame; there is no GPU-to-CPU readback during interaction, only one at final export. This card has no CPU-versus-GPU speed figures.",
+        "필터 계획은 작업마다 provider 를 하나만 고릅니다(지원하는 5가지 필드 체인이면 WebGPU, 아니면 전용 Worker). 실패해도 다른 provider 로 다시 실행하지 않고 마지막으로 보인 프레임을 유지하며, 슬라이더를 끄는 동안에는 GPU→CPU 읽기가 없고 값이 멈춘 뒤(정착)나 내보낼 때 확정 결과를 한 번만 읽습니다. 지금 CPU/GPU 속도 비교 수치는 이 카드에 없습니다.",
+        "Filter planning picks exactly one provider per job (WebGPU for a supported chain of the five adjustment fields, otherwise the dedicated Worker). On failure it does not rerun on another provider and keeps the last presented frame; while a slider is being dragged there is no GPU-to-CPU readback, and the final result is read back only once, after the value settles or at export. This card has no CPU-versus-GPU speed figures.",
       ),
     ],
     keyPoints: [

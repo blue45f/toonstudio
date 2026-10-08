@@ -23,6 +23,19 @@
 .space-lobby *,
 .space-lobby *::before,
 .space-lobby *::after { box-sizing: border-box; }
+/* 로비도 컨트롤 크기를 스스로 정한다(data-own-control-size로 사이트 공통 높이 바닥에서 면제 — 그 바닥은 아이디 특이도라
+   캐릭터 카드의 140px·입장 버튼의 48px를 40px로 눌렀다). 터치 기기의 44px 바닥은 직접 둔다. :where()라 특이도 0이므로
+   컴포넌트의 min-height 선언이 항상 이긴다. */
+@media (pointer: coarse) {
+  :where(.space-lobby) :where(button, [role="button"], [role="tab"], [role="option"], select, textarea) {
+    min-block-size: var(--site-control-size, 44px);
+  }
+}
+/* 고대비 테마는 입력 장치와 무관하게 컨트롤을 44px 이상으로 요구한다(공통 규칙에서 면제됐으므로 여기서 직접). 역시 특이도 0. */
+:where(:root[data-design-theme="contrast"]) :where(.space-lobby) :where(button, [role="button"], [role="tab"], [role="option"], select, textarea) {
+  min-block-size: var(--site-control-size, 44px);
+  min-inline-size: var(--site-control-size, 44px);
+}
 .space-lobby__backdrop {
   position: absolute;
   inset: 0;

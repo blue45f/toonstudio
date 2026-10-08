@@ -9,7 +9,8 @@ import {
 } from "./pg-connection";
 import * as schema from "./schema/index";
 
-// PostgreSQL(Neon) — node-postgres 드라이버. 로컬 검증은 docker postgres(:55432), 운영/원격은 Neon.
+// PostgreSQL — node-postgres 드라이버. 로컬 검증은 docker postgres(:55432). 운영 원장은 Supabase PostgreSQL 이 현재 권위이고
+// Neon 은 legacy 로 보존한다(docs/operations/canonical-database-topology.md).
 // pg v9의 sslmode=require 의미 변경에 기대지 않고 원격은 verify-full로 정규화한다.
 const rawConnectionString = process.env.DATABASE_URL;
 if (!rawConnectionString) {

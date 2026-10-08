@@ -138,6 +138,85 @@
 
 .product-tour__scene-link:hover { color: var(--mk-fg); }
 
+/* 챕터 카드의 기능 링크와 사용 조건 배지(베타·실험·프로젝트 필요 등) */
+.product-tour__feature-open { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0 10px; min-width: 0; }
+
+/* 이 장면에 쓰인 기술: 도감 카드 칩 + 제작 스토리 링크(상태 배지는 색이 아니라 글자로 알린다) */
+.product-tour__tech {
+  display: grid;
+  gap: 6px;
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--mk-line);
+}
+
+.product-tour__tech-title {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  color: var(--mk-fg-2);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.product-tour__tech-title > svg { flex: none; color: var(--mk-accent); }
+.product-tour__tech-title small { color: var(--mk-fg-3); font-size: 12px; font-weight: 650; }
+.product-tour__tech-chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.product-tour__tech-chips .mk-chip { max-width: 100%; }
+
+.product-tour__tech-story {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-height: 44px;
+  color: var(--mk-fg-2);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.product-tour__tech-story > svg { flex: none; color: var(--mk-accent); }
+.product-tour__tech-story > span { min-width: 0; text-wrap: balance; }
+.product-tour__tech-story:hover { color: var(--mk-fg); }
+
+.product-tour__tech-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--mk-line-strong);
+  border-radius: 999px;
+  color: var(--mk-fg);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.product-tour__tech-status[data-status="live"] { border-color: color-mix(in srgb, var(--mk-accent) 65%, transparent); }
+.product-tour__tech-status[data-status="configured"] { border-color: color-mix(in srgb, var(--mk-accent-2) 65%, transparent); }
+.product-tour__tech-status[data-status="experimental"] { border-color: color-mix(in srgb, var(--mk-warn) 70%, transparent); }
+
+/* 이 영상은 어떻게 만들었나(접힌 기술 노트) */
+.product-tour__made { margin-top: 10px; }
+.product-tour__made-body { display: grid; gap: 14px; padding-top: 4px; }
+
+.product-tour__made-list {
+  display: grid;
+  gap: 8px;
+  max-width: 78ch;
+  padding-left: 1.25em;
+  list-style: disc;
+  color: var(--mk-fg-2);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.product-tour__made-links { display: grid; gap: 4px; justify-items: start; }
+.product-tour__made-links > p { color: var(--mk-fg-3); font-size: 12px; font-weight: 800; }
+
 /* 영상 제작 이후 더해진 기능 */
 .product-tour__after { padding-top: 0; }
 

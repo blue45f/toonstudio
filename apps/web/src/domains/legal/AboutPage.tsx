@@ -10,6 +10,7 @@ import {
   Layers,
   LayoutGrid,
   LifeBuoy,
+  Network,
   PanelsTopLeft,
   Play,
   Presentation,
@@ -112,13 +113,14 @@ const EXPLORE_FILMS = [
 ] as const;
 
 /**
- * 읽을거리: 전체 기능 지도, 만든 기술(제작 스토리·발표 자료·도감), 작품을 지키는 습관, 출처 안내.
+ * 읽을거리: 전체 기능 지도, 만든 기술(아키텍처 해설·제작 스토리·발표 모드·도감), 작품을 지키는 습관, 출처 안내.
  * 기술 자료로 이어지는 본문 링크는 여기뿐이라(소개 메뉴의 '기술과 신뢰' 탭 제외) 섹션을 늘리지 않고 이 줄에 둔다.
  */
 const MORE_LINKS = [
   { href: "/features", icon: LayoutGrid, ko: "전체 기능 한눈에", en: "All features at a glance" },
+  { href: "/about/technology/architecture", icon: Network, ko: "기술 아키텍처 해설", en: "Architecture guide" },
   { href: "/about/technology/story", icon: Cpu, ko: "기술 제작 스토리", en: "Engineering story" },
-  { href: "/about/technology/deck", icon: Presentation, ko: "기술 발표 자료", en: "Engineering presentation" },
+  { href: "/about/technology/deck", icon: Presentation, ko: "기술 발표 모드", en: "Engineering presentation mode" },
   { href: "/about/technology/atlas", icon: Boxes, ko: "기술 도감", en: "Technology atlas" },
   { href: "/help", icon: LifeBuoy, ko: "저장·복구 도움말", en: "Saving and recovery help" },
   { href: "/about/data", icon: Database, ko: "데이터 출처", en: "Data sources" },

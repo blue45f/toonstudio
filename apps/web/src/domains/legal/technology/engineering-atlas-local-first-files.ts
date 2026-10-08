@@ -541,12 +541,12 @@ export const FILE_SYSTEM_ACCESS_RESAVE: EngineeringAtlasEntry = {
       route: "/studio",
     },
     {
-      feature: t("스튜디오 · 내보내기", "Studio · exports"),
+      feature: t("스튜디오 · 내보내기 (일부만 연결)", "Studio · exports (partly wired)"),
       role: t(
-        "내보내기 Blob을 고른(또는 기억한) 파일에 저장하고, 취소는 취소로 돌려주며, 실패하거나 지원하지 않을 때만 다운로드로 폴백합니다.",
-        "Saves an export blob to the chosen (or remembered) file, reports cancel as cancel, and falls back to a download only on failure or lack of support.",
+        "내보내기용 저장 도우미(saveExportBlob, chooseExportSaveTarget·writeExportBlobToTarget)는 취소를 취소로 돌려주고 실패하거나 지원하지 않을 때만 다운로드로 폴백합니다. 제품에서 이 경로를 쓰는 곳은 기기 안 채색의 레이어 PSD 저장(StudioOnnxColorizePanel)뿐이고, 일반 내보내기 메뉴는 아직 downloadBlob 다운로드를 씁니다(saveExportBlob 은 테스트에서만 호출).",
+        "The export save helpers (saveExportBlob, chooseExportSaveTarget and writeExportBlobToTarget) report cancel as cancel and fall back to a download only on failure or lack of support. The only product use of this path is saving the layered PSD of on-device colorizing (StudioOnnxColorizePanel); the regular export menus still use downloadBlob downloads (saveExportBlob is called only in tests).",
       ),
-      paths: [`${CREATOR}/export/studio-export.ts#saveExportBlob`],
+      paths: [`${CREATOR}/export/studio-export.ts#chooseExportSaveTarget`, `${CREATOR}/ai/StudioOnnxColorizePanel.tsx`],
       route: "/studio",
     },
     {

@@ -8,16 +8,16 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_WASM: readonly EngineeringAtlasEntry
     id: "wasm-self-built-fixed-simd",
     category: "web-platform",
     name: "WebAssembly",
-    title: t("직접 빌드한 WASM 8개와 SIMD", "Eight in-house WASM binaries with SIMD"),
+    title: t("직접 빌드한 WASM 7개와 SIMD", "Seven in-house WASM binaries with SIMD"),
     status: "live",
     tagline: t(
-      "커밋된 자체 .wasm 8개 중 6개 레인을 SIMD128 단일 바이너리로 빌드합니다.",
-      "Six lanes among the eight committed .wasm files are built as single SIMD128 binaries.",
+      "커밋된 .wasm 8개 중 7개는 직접 빌드하고(그중 6개 레인은 SIMD128 단일 바이너리), ThorVG 1개는 복사해 해시로 고정합니다.",
+      "Of the eight committed .wasm files, seven are built in-house (six of those lanes as single SIMD128 binaries) and the ThorVG one is a copy pinned by hash.",
     ),
     background: [
       t(
-        "WebAssembly(WASM)는 C++·Rust 같은 언어로 짠 계산 코드를 미리 컴파일해 브라우저 안에서 빠르게 돌리는 규격입니다. 자바스크립트로는 오래 걸리는 붓 시뮬레이션, 벡터 렌더링, 마스크 연산을 작은 바이너리에 맡기는 셈입니다. 이 저장소에는 직접 빌드해 커밋한 .wasm 이 8개 있고, 크기는 33,946바이트(먹물 커널)부터 7,871,358바이트(Vello GPU 레인)까지 다양합니다.",
-        "WebAssembly (WASM) is a format for running compute code written in languages like C++ or Rust, precompiled, fast inside the browser. It hands brush simulation, vector rendering and mask math, which take long in JavaScript, to small binaries. The repository has eight .wasm files that were built in-house and committed, from 33,946 bytes (the sumi kernel) to 7,871,358 bytes (the Vello GPU lane).",
+        "WebAssembly(WASM)는 C++·Rust 같은 언어로 짠 계산 코드를 미리 컴파일해 브라우저 안에서 빠르게 돌리는 규격입니다. 자바스크립트로는 오래 걸리는 붓 시뮬레이션, 벡터 렌더링, 마스크 연산을 작은 바이너리에 맡기는 셈입니다. 이 저장소에 커밋된 .wasm 8개 중 7개는 직접 빌드한 것이고(Vello CPU·GPU, Hokusai, ink-mesh, ink-modeler, 먹물 커널, libmypaint), ThorVG 1개는 @thorvg/webcanvas 1.1.2 의 바이트를 복사해 INTEGRITY.sha256 으로 고정한 것입니다. 크기는 33,946바이트(먹물 커널)부터 7,871,358바이트(Vello GPU 레인)까지 다양합니다.",
+        "WebAssembly (WASM) is a format for running compute code written in languages like C++ or Rust, precompiled, fast inside the browser. It hands brush simulation, vector rendering and mask math, which take long in JavaScript, to small binaries. Of the eight .wasm files committed to the repository, seven are built in-house (Vello CPU and GPU, Hokusai, ink-mesh, ink-modeler, the sumi kernel and libmypaint) and the ThorVG one is a byte copy of @thorvg/webcanvas 1.1.2 pinned by INTEGRITY.sha256. Sizes run from 33,946 bytes (the sumi kernel) to 7,871,358 bytes (the Vello GPU lane).",
       ),
       t(
         "SIMD128은 한 명령으로 128비트 묶음(숫자 4개 안팎)을 한꺼번에 계산하는 벡터 명령입니다. 그런데 Rust 의 wasm32 기본 설정에는 simd128 이 꺼져 있어, 플래그를 주지 않으면 벡터로 풀 수 있는 커널도 하나씩 계산하는 코드로만 만들어집니다. 그래서 빌드에 -C target-feature=+simd128(Rust)과 -msimd128(C++)을 명시했습니다. 내려받을 때는 instantiateStreaming 으로 다운로드와 컴파일을 겹치고, 서버가 application/wasm 을 보내지 않으면 느린 일반 instantiate 로 물러납니다.",
@@ -28,12 +28,12 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_WASM: readonly EngineeringAtlasEntry
         "A dual build, with and without SIMD, is possible, but fixed-width SIMD is known to be supported by the major browsers, so a single binary ships (recheck the dates at webassembly.org/features). The cost is that in an environment without SIMD that lane does not load at all. The project keeps Vite 8's default build target (Chrome 111, Firefox 114, Safari 16.4 or newer), which fits that assumption.",
       ),
       t(
-        "한계: SIMD 로 실제 속도가 얼마나 올랐는지는 아직 측정하지 않았습니다. 확인된 것은 산출물에 벡터 명령이 들어갔다는 사실뿐입니다. 기존 챕터의 '자체 Wasm 다섯 레인'은 Hokusai 까지 합쳐 여섯 레인이 맞습니다. 커밋된 8개 중 ThorVG 와 libmypaint 는 SIMD 빌드 기록을 찾지 못했습니다.",
-        "Limits: how much faster SIMD made things has not been measured yet. All that is confirmed is that the artifacts contain vector instructions. The earlier chapter's five in-house lanes are really six once Hokusai is counted. Of the eight committed files, no SIMD build record was found for ThorVG and libmypaint.",
+        "한계: SIMD 로 실제 속도가 얼마나 올랐는지는 아직 측정하지 않았습니다. 확인된 것은 산출물에 벡터 명령이 들어갔다는 사실뿐입니다. 기존 챕터의 '자체 Wasm 다섯 레인'은 Hokusai 까지 합쳐 여섯 레인이 맞습니다. 커밋된 8개 중 ThorVG(직접 빌드가 아닌 복사본)와 libmypaint 는 SIMD 빌드 기록을 찾지 못했습니다.",
+        "Limits: how much faster SIMD made things has not been measured yet. All that is confirmed is that the artifacts contain vector instructions. The earlier chapter's five in-house lanes are really six once Hokusai is counted. Of the eight committed files, no SIMD build record was found for ThorVG (a copy, not an in-house build) and libmypaint.",
       ),
     ],
     keyPoints: [
-      t("자체 .wasm 8개, 그중 6개 레인이 SIMD128", "Eight in-house .wasm files, six lanes with SIMD128"),
+      t("커밋된 .wasm 8개 중 직접 빌드 7개, 그중 6개 레인이 SIMD128", "Seven of eight committed .wasm files built in-house, six lanes with SIMD128"),
       t("단일 바이너리: SIMD 없는 환경은 그 레인 미로드", "One binary: no SIMD means that lane never loads"),
       t("스트리밍 컴파일, MIME 이 틀리면 느린 폴백", "Streaming compile; wrong MIME falls back slowly"),
       t("속도 향상은 아직 측정하지 않았다", "The speedup has not been measured yet"),
@@ -222,8 +222,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_WASM: readonly EngineeringAtlasEntry
     chapterIds: ["wasm-fixed-simd", "browser-local-compute"],
     talk: {
       pitch: t(
-        "무거운 계산은 미리 컴파일한 작은 프로그램, 즉 WASM 에 맡깁니다. 직접 빌드한 .wasm 이 8개이고, 그중 6개 레인은 한 번에 여러 숫자를 계산하는 SIMD 옵션을 켜고 다시 빌드했습니다. 다만 실제로 몇 배 빨라졌는지는 아직 측정하지 않았다는 점을 먼저 말씀드립니다.",
-        "Heavy math goes to small precompiled programs, that is, WASM. There are eight in-house .wasm files, and six lanes were rebuilt with the SIMD option that computes several numbers at once. I should say up front that how many times faster this made things has not been measured yet.",
+        "무거운 계산은 미리 컴파일한 작은 프로그램, 즉 WASM 에 맡깁니다. 커밋된 .wasm 은 8개이고 그중 7개를 직접 빌드하며(ThorVG 1개는 복사해 해시로 고정), 직접 빌드한 것 중 6개 레인은 한 번에 여러 숫자를 계산하는 SIMD 옵션을 켜고 다시 빌드했습니다. 다만 실제로 몇 배 빨라졌는지는 아직 측정하지 않았다는 점을 먼저 말씀드립니다.",
+        "Heavy math goes to small precompiled programs, that is, WASM. Eight .wasm files are committed, seven of them built in-house (the ThorVG one is a copy pinned by hash), and six lanes were rebuilt with the SIMD option that computes several numbers at once. I should say up front that how many times faster this made things has not been measured yet.",
       ),
       analogy: t(
         "계산기로 숫자를 하나씩 두드리는 것과, 한 번에 네 칸을 채워 주는 계산 틀을 쓰는 것의 차이입니다. 다만 틀을 쓴다고 항상 네 배 빨라지지는 않습니다.",
@@ -253,15 +253,15 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_WASM: readonly EngineeringAtlasEntry
         },
       ],
       pitfall: t(
-        "'SIMD 로 빨라졌다'는 말은 아직 근거가 없습니다(실험 상태, 미측정). 기존 챕터의 '다섯 레인'은 여섯 레인이며, 먹물 커널은 별도 앱(brush-lab) 소속입니다. ThorVG·libmypaint 는 SIMD 빌드 기록을 확인하지 못했습니다.",
-        "Saying SIMD made it faster has no evidence yet (experimental, unmeasured). The earlier chapter's five lanes are really six, and the sumi kernel belongs to a separate app (brush-lab). No SIMD build record was confirmed for ThorVG and libmypaint.",
+        "'SIMD 로 빨라졌다'는 말은 아직 근거가 없습니다(속도 효과는 미측정이라 제작 스토리 챕터는 experimental, 이 카드의 live 는 SIMD 빌드가 제품 경로에서 쓰인다는 뜻). 기존 챕터의 '다섯 레인'은 여섯 레인이며, 먹물 커널은 별도 앱(brush-lab) 소속입니다. ThorVG·libmypaint 는 SIMD 빌드 기록을 확인하지 못했습니다.",
+        "Saying SIMD made it faster has no evidence yet (the speed effect is unmeasured, so the story chapter is experimental; this card is live because the SIMD builds are used in the product path). The earlier chapter's five lanes are really six, and the sumi kernel belongs to a separate app (brush-lab). No SIMD build record was confirmed for ThorVG and libmypaint.",
       ),
     },
     technologies: ["WebAssembly", "Rust / WASM", "C++ / Emscripten", "fixed SIMD128", "CSP wasm-unsafe-eval"],
     facts: [
       {
         value: "8",
-        label: t("저장소에 커밋된 자체 .wasm 파일 수", "In-house .wasm files committed in the repository"),
+        label: t("저장소에 커밋된 .wasm 파일 수(직접 빌드 7 + ThorVG 복사 1)", ".wasm files committed in the repository (7 built in-house + 1 ThorVG copy)"),
         source: "crates/studio-engine-vello/pkg-gpu/studio_engine_vello_bg.wasm",
       },
       {

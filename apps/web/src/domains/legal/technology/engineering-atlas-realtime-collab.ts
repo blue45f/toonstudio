@@ -255,8 +255,8 @@ export class DeletionLedger {
         },
       ],
       pitfall: t(
-        "'CRDT라서 충돌이 없다'고만 말하지 마세요. 병합은 수렴하지만 권한·저장·큰 파일은 해결하지 않고 서버가 따로 막습니다. 획당 샘플 10만 개 같은 상수는 설계 한도이지 성능 측정값이 아닙니다. 속성 테스트는 고정 시드 5개로 재현하는 검증이며 부하 시험이 아닙니다.",
-        "Do not say only 'CRDTs have no conflicts'. Merging converges, but permissions, storage and large files are not solved and the server blocks them separately. Constants such as 100,000 samples per stroke are design limits, not performance measurements. The property test replays 5 fixed seeds; it is not a load test.",
+        "'CRDT라서 충돌이 없다'고만 말하지 마세요. 병합은 수렴하지만 권한·저장·큰 파일은 해결하지 않고 서버가 따로 막습니다. 획당 샘플 10만 개 같은 상수는 설계 한도이지 성능 측정값이 아닙니다. 속성 테스트는 고정 시드 5개로 재현하는 검증이며 부하 시험이 아닙니다. 실험으로 표시한 이유: 설계 문서(docs/studio-crdt-webgpu-architecture-2026-07-16.md)는 벡터 슬라이스는 출하, 래스터는 옵트인 파일럿이라고 적고 공동 작업실도 이 문서를 실제로 만들어 쓰지만, 운영에서 켜져 있는지와 실기기·부하 검증은 저장소로 확인하지 못했고 챕터 28도 '실험'으로 표시합니다.",
+        "Do not say only 'CRDTs have no conflicts'. Merging converges, but permissions, storage and large files are not solved and the server blocks them separately. Constants such as 100,000 samples per stroke are design limits, not performance measurements. The property test replays 5 fixed seeds; it is not a load test. Why it is marked experimental: the design document (docs/studio-crdt-webgpu-architecture-2026-07-16.md) calls the vector slice shipped and the raster path an opt-in pilot, and the shared workroom does create and use this document, but whether it is switched on in production and any real-device or load verification could not be confirmed from the repository, and chapter 28 is marked experimental too.",
       ),
     },
     technologies: ["Yjs", "CRDT", "state vector", "Socket.IO", "PostgreSQL"],

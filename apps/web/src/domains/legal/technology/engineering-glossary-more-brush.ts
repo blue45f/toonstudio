@@ -74,8 +74,8 @@ export const GLOSSARY_MORE_BRUSH: readonly GlossaryTerm[] = [
       "Like pressing a rubber stamp at regular spacing to form a line: tight spacing looks smooth, wide spacing looks dotted.",
     ),
     inToonstudio: t(
-      "스탬프 브러시 한 획의 붓 자국은 STUDIO_STAMP_BRUSH_MAX_DABS = 100,000 개가 상한입니다(brush/studio-brush-stamp-engine.ts). 번짐·혼색 같은 효과도 붓 자국 하나마다 ‘바닥색을 묻히고 얹는’ 모델로 계산합니다(brush/studio-wet-mix.ts). 질감 변형은 붓 자국 번호에서 만든 결정적 해시(studioDabBatchHash)로 골라, 같은 번호는 늘 같은 변형입니다.",
-      "A stamp-brush stroke is capped at STUDIO_STAMP_BRUSH_MAX_DABS = 100,000 dabs (brush/studio-brush-stamp-engine.ts). Effects such as smudge and colour mixing are modelled per dab: pick up the colour underneath, then deposit (brush/studio-wet-mix.ts). Texture variants are chosen by a deterministic hash of the dab index (studioDabBatchHash), so the same index always gets the same variant.",
+      "스탬프 브러시 한 획의 붓 자국은 STUDIO_STAMP_BRUSH_MAX_DABS = 100,000 개가 상한입니다(brush/studio-brush-stamp-engine.ts). 번짐·혼색 같은 효과도 붓 자국 하나마다 ‘바닥색을 묻히고 얹는’ 모델로 계산합니다(brush/studio-wet-mix.ts). 질감 지터는 Math.random 이 아니라 씨앗과 붓 자국 번호로 만드는 결정적 해시(stampJitter, studio-brush-stamp-engine.ts)로 정해, 같은 번호는 늘 같은 값입니다.",
+      "A stamp-brush stroke is capped at STUDIO_STAMP_BRUSH_MAX_DABS = 100,000 dabs (brush/studio-brush-stamp-engine.ts). Effects such as smudge and colour mixing are modelled per dab: pick up the colour underneath, then deposit (brush/studio-wet-mix.ts). Texture jitter does not use Math.random; it comes from a deterministic hash of the seed and dab index (stampJitter, studio-brush-stamp-engine.ts), so the same index always gets the same value.",
     ),
     chapters: ["brush-engine", "brush-pipeline"],
     atlasIds: ["stroke-replay-deterministic"],
@@ -131,8 +131,8 @@ export const GLOSSARY_MORE_BRUSH: readonly GlossaryTerm[] = [
       "Like a kitchen that sends each finished plate straight out instead of waiting for the whole course; the table setting may briefly look out of step.",
     ),
     inToonstudio: t(
-      "한 프레임 가까이를 줄이는 대신 페이지와 정확히 같은 순간에 표시된다는 보장이 사라집니다. 그래서 쓰고 곧 버리는 라이브 잉크 오버레이에만 켜고, 되읽기(getImageData)·내보내기를 하는 확정 레이어는 동기 상태로 둡니다(studio-lowlatency-surface-policy.ts). 브라우저가 요청을 실제로 들어줬는지 확인하는 점검도 있고, willReadFrequently 와 함께 쓰는 조합은 거절합니다.",
-      "It can remove nearly a frame of latency but loses the guarantee of appearing atomically with the page. So it is enabled only on live ink overlays that are written and discarded, while committed layers that are read back (getImageData) or exported stay synchronized (studio-lowlatency-surface-policy.ts). A probe checks whether the browser actually granted it, and combining it with willReadFrequently is rejected.",
+      "한 프레임 가까이를 줄이는 대신 페이지와 정확히 같은 순간에 표시된다는 보장이 사라집니다. 그래서 지연을 줄이려고 쓰고 곧 버리는 라이브 잉크 오버레이 캔버스에만 desynchronized 를 요청하고(studio-low-latency-canvas.ts, 실패하면 일반 2D 컨텍스트), 되읽기가 잦은 캔버스는 willReadFrequently 를 씁니다. 역할별 표·점검·모순 거절(studio-lowlatency-surface-policy.ts)은 구현·시험만 있고 아직 제품에 연결되지 않았습니다.",
+      "It can remove nearly a frame of latency but loses the guarantee of appearing atomically with the page. So desynchronized is requested only for live-ink overlay canvases that are written and discarded (studio-low-latency-canvas.ts, falling back to a plain 2D context if refused), while canvases that are read back often use willReadFrequently. The per-role table, the probe and the rejection of contradictory combinations (studio-lowlatency-surface-policy.ts) are implemented and tested only, and not yet wired into the product.",
     ),
     chapters: ["brush-render-authority", "performance"],
     atlasIds: ["pointer-input-contract"],
@@ -226,8 +226,8 @@ export const GLOSSARY_MORE_BRUSH: readonly GlossaryTerm[] = [
       "Like sprinkling sand on the edge of a stair so the step looks like a gentle slope: no new information, but it reads as smooth.",
     ),
     inToonstudio: t(
-      "고비트로 합성해도 화면과 PNG 는 8비트라서, 마지막 양자화 직전에 1 LSB 미만의 결정적 잡음을 더합니다(studio-highbit-dither.ts). 모드는 ordered(Bayer 8×8)·blue-noise·triangular 세 가지이고, 결과는 (seed, x, y, channel) 의 순수 함수입니다. Math.random 을 금지해 같은 문서를 다시 내보내면 바이트까지 같습니다.",
-      "Compositing may run at high bit depth, but screen and PNG are 8-bit, so a deterministic sub-1-LSB noise is added just before final quantization (studio-highbit-dither.ts). Modes are ordered (Bayer 8x8), blue-noise and triangular, and the output is a pure function of (seed, x, y, channel). Math.random is banned, so re-exporting the same document gives identical bytes.",
+      "고비트로 합성해도 화면과 PNG 는 8비트라서, 양자화 직전에 1 LSB 미만의 결정적 디더(ordered Bayer 8×8·blue-noise·triangular, (seed, x, y, channel) 의 순수 함수, Math.random 금지)를 더하도록 구현·시험해 두었지만(studio-highbit-dither.ts), 제품 내보내기 경로에는 아직 연결되지 않았습니다. ‘다시 내보내면 바이트까지 같다’는 코드 주석의 설계 요건이며 제품에서 확인한 사실이 아닙니다.",
+      "Compositing may run at high bit depth, but screen and PNG are 8-bit, so a deterministic sub-1-LSB dither (ordered Bayer 8x8, blue-noise and triangular, a pure function of (seed, x, y, channel), Math.random banned) was implemented and tested for use just before quantization (studio-highbit-dither.ts), but it is not yet wired into the product export path. That re-exporting gives identical bytes is a design requirement stated in a code comment, not a fact verified in the product.",
     ),
     chapters: ["brush-engine", "brush-pipeline"],
   },

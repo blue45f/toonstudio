@@ -13,8 +13,8 @@ export const ENGINEERING_MAP_OPEN_SOURCE: EngineeringMap = {
     en: "ToonStudio stands on 117 open-source packages (software published for anyone to inspect) that it uses directly, as installed on 2026-10-07. This table groups the ones with the biggest roles and shows what each does, its license (terms of use), how it is wired in and what we changed. Small parts such as QR codes or the mobile shell are in the complete list the build generates.",
   },
   takeaway: {
-    ko: "오픈소스를 쓰기만 하지 않고 지연 로드·Worker로 격리하고, 버전과 해시로 고정하고, 필요한 곳은 패치 8개와 포크 1개로 고쳐 쓰며, 아직 확인하지 못한 라이선스 지점은 숨기지 않고 표시합니다.",
-    en: "We do not just consume open source: we isolate it with lazy loading and Workers, pin it by version and hash, adapt it with 8 patches and one fork where needed, and mark license points we have not verified instead of hiding them.",
+    ko: "오픈소스를 쓰기만 하지 않고 지연 로드·Worker로 격리하고, 버전과 해시로 고정하고, 필요한 곳은 패치 7개와 포크 2개(wgpu-toon·braces)로 고쳐 쓰며, 아직 확인하지 못한 라이선스 지점은 숨기지 않고 표시합니다.",
+    en: "We do not just consume open source: we isolate it with lazy loading and Workers, pin it by version and hash, adapt it with 7 patches and two forks (wgpu-toon and braces) where needed, and mark license points we have not verified instead of hiding them.",
   },
   columns: [
     { id: "role", label: { ko: "무엇을 하나 · 쓰인 곳", en: "What it does · where it is used" } },
@@ -90,8 +90,8 @@ export const ENGINEERING_MAP_OPEN_SOURCE: EngineeringMap = {
       en: "Three caution points. Mixbox (CC-BY-NC-4.0) is statically imported by the brush engine; the repository handles it with a provider rights label, the default profile noncommercial-full and an audit pin, yet the toolchain catalog lists the same package as research-only and non-executable, so the two descriptions disagree. wasm-vips is MIT only for its wrapper while the bundled libvips and others are LGPL, and the notice generator does not collect THIRD-PARTY-NOTICES.md. Remotion has its own license, and whether the distributing entity qualifies cannot be verified from the repository.",
     },
     {
-      ko: "손으로 쓴 THIRD_PARTY_NOTICES.md는 직접 의존성 117개 중 92개가 빠진 부분 목록입니다. 완전한 목록은 빌드가 만드는 고지(dist/legal/THIRD_PARTY_NOTICES.generated.md, scripts/generate-third-party-notices.mjs)입니다.",
-      en: "The hand-written THIRD_PARTY_NOTICES.md is a partial list that misses 92 of the 117 direct dependencies. The complete list is the notice the build generates (dist/legal/THIRD_PARTY_NOTICES.generated.md, scripts/generate-third-party-notices.mjs).",
+      ko: "손으로 쓴 THIRD_PARTY_NOTICES.md는 직접 의존성 117개 중 22개만 실린 부분 목록입니다(95개 누락). 완전한 목록은 빌드가 만드는 고지(dist/legal/THIRD_PARTY_NOTICES.generated.md, scripts/generate-third-party-notices.mjs)입니다.",
+      en: "The hand-written THIRD_PARTY_NOTICES.md is a partial list that carries only 22 of the 117 direct dependencies (95 are missing). The complete list is the notice the build generates (dist/legal/THIRD_PARTY_NOTICES.generated.md, scripts/generate-third-party-notices.mjs).",
     },
     {
       ko: "'전부 로컬, 전부 고지'는 사실이 아닙니다. MediaPipe 모델은 Google 스토리지에서 런타임에 내려받고(SHA-256 고정은 임베더 1개뿐), 번역 모델(약 123MB)은 배포 때 따로 놓아야 켜지며, Python 추론 서비스의 모델 가중치는 저장소에 없고 라이선스를 수락한 뒤 직접 받습니다.",

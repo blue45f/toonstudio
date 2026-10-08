@@ -6,6 +6,7 @@ import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import {
   PRODUCT_TOUR,
   PRODUCT_TOUR_COPY,
+  formatProductTourDuration,
   formatProductTourTime,
   type ProductTourChapter,
 } from "./product-tour-content";
@@ -42,7 +43,13 @@ export function ProductTourChapterRail({ activeChapter, onSeek }: {
     <nav className="product-tour-player__rail" aria-label={copy.chaptersLabel}>
       <p className="product-tour-player__rail-title">
         <span>{copy.chaptersLabel}</span>
-        <small>{CHAPTERS.length} · {formatProductTourTime(PRODUCT_TOUR.duration)}</small>
+        <small>
+          <span aria-hidden="true">{CHAPTERS.length} · {formatProductTourTime(PRODUCT_TOUR.duration)}</span>
+          <span className="sr-only">{bi(
+            `${CHAPTERS.length}개 챕터, 재생 시간 ${formatProductTourDuration(PRODUCT_TOUR.duration, "ko")}`,
+            `${CHAPTERS.length} chapters, running time ${formatProductTourDuration(PRODUCT_TOUR.duration, "en", "long")}`,
+          )}</span>
+        </small>
       </p>
       <ol className="product-tour-player__chapters">
         {CHAPTERS.map((chapter, index) => {
