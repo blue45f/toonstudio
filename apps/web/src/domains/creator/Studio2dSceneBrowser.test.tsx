@@ -48,10 +48,15 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("2D scene browser", () => {
   it("pages the complete production catalog without counting any scene twice", () => {
+    // 페이지 넘김 경로가 실제로 실행되는 카탈로그 크기인지 먼저 확인한다.
+    expect(allScenes.length).toBeGreaterThan(PAGE_SIZE);
     render(<Harness />);
     expect(screen.getByRole("status").textContent).toBe(`${allScenes.length}개 장면`);
-    expect(document.querySelectorAll("[data-studio-2d-asset]")).toHaveLength(Math.min(PAGE_SIZE, allScenes.length));
-    fireEvent.click(screen.getByRole("button", { name: `장면 더 보기 (${allScenes.length - PAGE_SIZE}개 남음)` }));
+    // 카탈로그가 PAGE_SIZE 배수를 넘어 늘어나도 끝 페이지까지 넘겨 전체를 확인한다.
+    for (let shown = PAGE_SIZE; shown < allScenes.length; shown += PAGE_SIZE) {
+      expect(document.querySelectorAll("[data-studio-2d-asset]")).toHaveLength(shown);
+      fireEvent.click(screen.getByRole("button", { name: `장면 더 보기 (${allScenes.length - shown}개 남음)` }));
+    }
     const ids = [...document.querySelectorAll("[data-studio-2d-asset]")].map((node) => node.getAttribute("data-studio-2d-asset"));
     expect(ids).toHaveLength(allScenes.length);
     expect(new Set(ids).size).toBe(allScenes.length);
@@ -86,10 +91,16 @@ describe("2D scene browser", () => {
     expect(document.querySelectorAll("[data-studio-2d-asset]").length).toBeGreaterThan(0);
   });
   it("does not silently relax incompatible filters and provides a reset", () => {
+    // 데이터가 늘면 우연히 결과가 생기는 조합 대신, 검수 원본 크기가 없는 벡터라 비율을
+    // 확정할 수 없어 구조적으로 결과가 없는 조합을 쓴다. 어느 한 조건만 빼도 결과가 생기므로
+    // 어떤 조건을 몰래 완화하든 빈 상태가 사라져 드러난다.
+    const incompatible = { quality: "vector", orientation: "square" } as const;
+    expect(filterStudio2dScenes(groups, { quality: incompatible.quality }).length).toBeGreaterThan(0);
+    expect(filterStudio2dScenes(groups, { orientation: incompatible.orientation }).length).toBeGreaterThan(0);
+    expect(filterStudio2dScenes(groups, incompatible)).toEqual([]);
     render(<Harness />);
-    fireEvent.change(screen.getByLabelText("소재 구분"), { target: { value: "large" } });
-    fireEvent.change(screen.getByLabelText("원본 비율"), { target: { value: "square" } });
-    fireEvent.change(screen.getByLabelText("장소"), { target: { value: "실외" } });
+    fireEvent.change(screen.getByLabelText("소재 구분"), { target: { value: incompatible.quality } });
+    fireEvent.change(screen.getByLabelText("원본 비율"), { target: { value: incompatible.orientation } });
     expect(screen.getByText(/조건에 맞는 배경이 없습니다/u)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "필터 초기화" }));
     expect(document.querySelectorAll("[data-studio-2d-asset]").length).toBeGreaterThan(0);

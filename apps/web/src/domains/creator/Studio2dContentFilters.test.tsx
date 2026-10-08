@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { studio2dDisplayName } from "./studio-2d-asset-quality";
+import { filterStudio2dScenes, studio2dDisplayName } from "./studio-2d-asset-quality";
 import { BG_SCENES, groupBgScenes } from "./studio-bg-scenes";
 import { BG_SCENES_EXTRA } from "./studio-bg-scenes-extra";
 import { Studio2dSceneBrowser } from "./Studio2dSceneBrowser";
@@ -11,6 +11,12 @@ import { Studio2dSceneBrowser } from "./Studio2dSceneBrowser";
 import type { Studio2dScene } from "./studio-2d-asset-quality";
 
 const groups = groupBgScenes([...BG_SCENES, ...BG_SCENES_EXTRA]);
+// 카탈로그 큐레이션(추천 승격 등)마다 깨지던 고정 개수 대신 원장에서 기대값을 파생한다.
+// 필터 의미론 자체는 studio-2d-content-discovery.test.ts가 메타데이터와 대조해 고정한다.
+const catalogSceneCount = new Set([...BG_SCENES, ...BG_SCENES_EXTRA].map((scene) => scene.id)).size;
+const combinedDetailSceneCount = filterStudio2dScenes(groups, {
+  environment: "실내", timeOfDay: "밤", textFreeOnly: true, quality: "large",
+}).length;
 const rooftop = BG_SCENES.find((scene) => scene.id === "webtoon-rooftop-sunset")!;
 const title = studio2dDisplayName(rooftop);
 
@@ -29,16 +35,19 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("2D content discovery and source replacement", () => {
   it("exposes combined detail filters and resets all of them", () => {
+    // 결합 필터가 실제로 범위를 좁혀야 초기화 전후 개수 비교가 의미를 가진다.
+    expect(combinedDetailSceneCount).toBeGreaterThan(0);
+    expect(combinedDetailSceneCount).toBeLessThan(catalogSceneCount);
     render(<Harness />);
     fireEvent.click(screen.getByText("장소·시간·문자 필터"));
     fireEvent.change(screen.getByLabelText("장소"), { target: { value: "실내" } });
     fireEvent.change(screen.getByLabelText("시간대"), { target: { value: "밤" } });
     fireEvent.click(screen.getByLabelText("문자 형태 없는 이미지 배경만"));
     fireEvent.change(screen.getByLabelText("소재 구분"), { target: { value: "large" } });
-    expect(screen.getByRole("status").textContent).toBe("7개 장면");
+    expect(screen.getByRole("status").textContent).toBe(`${combinedDetailSceneCount}개 장면`);
     expect(screen.getByText("장소·시간·문자 필터 · 3개 적용")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "필터 초기화" }));
-    expect(screen.getByRole("status").textContent).toBe("96개 장면");
+    expect(screen.getByRole("status").textContent).toBe(`${catalogSceneCount}개 장면`);
     expect((screen.getByLabelText("장소") as HTMLSelectElement).value).toBe("all");
     expect((screen.getByLabelText("시간대") as HTMLSelectElement).value).toBe("all");
     expect((screen.getByLabelText("문자 형태 없는 이미지 배경만") as HTMLInputElement).checked).toBe(false);
