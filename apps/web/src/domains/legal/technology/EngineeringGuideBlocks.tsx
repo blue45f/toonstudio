@@ -365,11 +365,14 @@ export function GuideLinkRow({
   atlasIds,
   chapterIds,
   glossaryIds,
+  contextLabel,
   className,
 }: {
   readonly atlasIds: readonly string[];
   readonly chapterIds: readonly string[];
   readonly glossaryIds: readonly string[];
+  /** 한 페이지에 이 줄이 여럿이라(구간마다 하나) 이름이 겹치지 않도록 이 줄이 속한 구간 이름을 앞에 붙인다. */
+  readonly contextLabel?: string;
   readonly className?: string;
 }) {
   useBilingualI18nRevision();
@@ -403,7 +406,7 @@ export function GuideLinkRow({
   ].filter((group) => group.items.length > 0);
 
   return (
-    <nav aria-label={bi("더 깊이 보기", "Go deeper")} aria-busy={groups.some((group) => group.loading) || undefined} className={cx("grid gap-3", className)}>
+    <nav aria-label={contextLabel ? `${contextLabel} — ${bi("더 깊이 보기", "Go deeper")}` : bi("더 깊이 보기", "Go deeper")} aria-busy={groups.some((group) => group.loading) || undefined} className={cx("grid gap-3", className)}>
       {groups.map((group) => (
         <div key={group.key} className="grid gap-1.5 sm:grid-cols-[9.5rem_minmax(0,1fr)] sm:items-start sm:gap-3">
           <p className="pt-2 text-xs font-black text-fg-3">{group.label}</p>

@@ -138,7 +138,7 @@ export function EngineeringLibraryArea({
 
         <div className="grid gap-3 rounded-3xl border border-line/65 bg-card/50 p-4 sm:p-5">
           <p className="text-sm font-black text-fg">{bi("더 깊이 보기", "Go deeper")}</p>
-          <GuideLinkRow atlasIds={area.atlasIds} chapterIds={area.chapterIds} glossaryIds={area.glossaryIds} />
+          <GuideLinkRow atlasIds={area.atlasIds} chapterIds={area.chapterIds} glossaryIds={area.glossaryIds} contextLabel={text(area.title)} />
         </div>
       </div>
     </GuideSectionShell>
