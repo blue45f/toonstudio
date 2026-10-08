@@ -129,12 +129,20 @@ describe("studio main-menu catalogue ownership boundary", () => {
 
   it("leaves only state projection and browser command composition in StudioPage", () => {
     const page = source("./StudioCuttoonEditorHost.tsx");
-    const companion = source("./studio-tools-companion.ts");
+    // 2026-10-02 aab57e89c: window 열기·재사용·복구 정책 구현은 primary 모듈로 옮겨졌고
+    // 프로토콜 파사드(studio-tools-companion.ts)는 같은 이름으로 재수출만 한다.
+    const companionFacade = source("./studio-tools-companion.ts");
+    const companion = source("./studio-tools-companion-primary.ts");
     const companionRuntime = source("./studio-tools-companion-runtime.ts");
     const start = page.indexOf("const studioMainMenuGroups = useMemo(");
-    const end = page.indexOf("// 모바일 하단 보조 막대 버튼", start);
+    // 메뉴 조합 useMemo 바로 다음 문장이 끝 표지다. 예전 표지(모바일 하단 막대 주석)는
+    // 2026-10-03 7d0554d11에서 헬퍼 모듈로 옮겨졌다. 표지가 사라지면 slice가 파일 끝까지
+    // 늘어나 아래 단언이 엉뚱한 범위를 보게 되므로 위치부터 고정한다.
+    const end = page.indexOf("const quickActionsDisabledActions = useMemo(", start);
     const composition = page.slice(start, end);
 
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
     expect(page).toContain('from "./studio-main-menu-groups"');
     expect(composition).toContain("buildStudioMainMenuGroups({");
     // Root import inputs: null-guard then click (optional chaining removed for explicit UX).
@@ -151,6 +159,7 @@ describe("studio main-menu catalogue ownership boundary", () => {
       "runtime.protocol.completeReservedStudioToolsCompanionWindow({",
     );
     expect(companionRuntime).toContain("}, 8_000)");
+    expect(companionFacade).toContain('} from "./studio-tools-companion-primary";');
     expect(companion).toContain("openStudioToolsCompanionWindow(");
     expect(companion).toContain("isStudioToolsCompanionWindowReusable(");
     expect(companion).toContain('const surface = input.surface ?? "workspace"');

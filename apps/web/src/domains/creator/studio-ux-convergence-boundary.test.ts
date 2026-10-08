@@ -22,6 +22,8 @@ describe("Studio UX convergence boundary", () => {
 
   it("gives every major workspace region a stable focus landmark", () => {
     const chrome = source("apps/web/src/domains/creator/studio-chrome-ui.tsx");
+    // 상태 바는 2026-10-02 c984f3de6에서 전용 모듈로 옮겨졌고 chrome 모듈이 재수출한다.
+    const statusBar = source("apps/web/src/domains/creator/studio-chrome-status-ui.tsx");
     const workspace = source(
       "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorWorkspace.tsx",
     );
@@ -35,7 +37,10 @@ describe("Studio UX convergence boundary", () => {
     expect(chrome).toContain('id = "studio-menubar"');
     expect(chrome).toContain('id = "studio-tool-belt"');
     expect(chrome).toContain('id = "studio-tool-rail"');
-    expect(chrome).toContain('id = "studio-status-bar"');
+    expect(chrome).toMatch(
+      /export \{[^}]*\bStudioStatusBar\b[^}]*\} from "\.\/studio-chrome-status-ui";/u,
+    );
+    expect(statusBar).toContain('id = "studio-status-bar"');
     expect(workspace).toContain('id="studio-workspace"');
     expect(canvas).toContain('id="studio-canvas-workspace"');
     expect(inspector).toContain('id="studio-inspector"');
