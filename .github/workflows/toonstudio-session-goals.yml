@@ -156,7 +156,10 @@ jobs:
             echo "No changed ToonStudio source files require related tests."
             exit 0
           fi
-          pnpm exec vitest related "${files[@]}" --run --pool=forks --maxWorkers=2
+          # 이 focused 체크아웃은 대용량 자산(studio/cc0-20260906, 약 1.7GB)을 내려받지 않는다.
+          # 이 테스트는 전체 체크아웃을 쓰는 market-cc0-delivery.yml이 계속 실행하므로 여기서만 뺀다.
+          pnpm exec vitest related "${files[@]}" --run --pool=forks --maxWorkers=2 \
+            --exclude '**/studio-marketplace-cc0-catalog.test.ts'
 
       - name: Run manual focused smoke suite
         if: github.event_name == 'workflow_dispatch'
