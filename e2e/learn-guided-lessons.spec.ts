@@ -1,8 +1,11 @@
 import { LESSONS } from "../apps/web/src/domains/learn/learning-content";
-import { STORAGE_KEY } from "../apps/web/src/domains/learn/learning-model";
 import { LEARNING_PATHS, getPathLessons } from "../apps/web/src/domains/learn/learning-paths";
+import { learningProgressStorageKey } from "../apps/web/src/domains/learn/learning-storage";
 
 import { expect, test } from "./fixtures/non-studio-test";
+
+// 로그인하지 않은 학습자의 진도는 게스트 파티션 키에 저장된다(learning-storage의 소유자별 키).
+const GUEST_STORAGE_KEY = learningProgressStorageKey("guest");
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem("toonstudio-compat-dismissed", "true"));
@@ -76,7 +79,7 @@ test("the learning hub resumes a later active lesson before untouched earlier st
       },
       bookmarks: [],
     }));
-  }, { key: STORAGE_KEY, lessonId: active.id });
+  }, { key: GUEST_STORAGE_KEY, lessonId: active.id });
 
   await page.goto("/learn");
   await expect(page.locator(".learn-dashboard-next").getByRole("link")).toHaveText(`${active.title} →`);

@@ -1,10 +1,14 @@
 import { readFile } from "node:fs/promises";
 
-import { EMPTY_LESSON, STORAGE_KEY } from "../apps/web/src/domains/learn/learning-model";
+import { EMPTY_LESSON } from "../apps/web/src/domains/learn/learning-model";
+import { learningProgressStorageKey } from "../apps/web/src/domains/learn/learning-storage";
 
 import { expect, test, installBetaEventDismissal } from "./fixtures/non-studio-test";
 
 import type { Page } from "@playwright/test";
+
+// 로그인하지 않은 학습자의 진도는 게스트 파티션 키에 저장된다(learning-storage의 소유자별 키).
+const GUEST_STORAGE_KEY = learningProgressStorageKey("guest");
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem("toonstudio-compat-dismissed", "true"));
@@ -52,7 +56,7 @@ test("exports a real file and restores only after preview and explicit confirmat
     await destination.getByText("백업 파일에서 복원", { exact: true }).click();
     await destination.getByLabel("학습 백업 파일 선택 (.json, 최대 512 KiB)", { exact: true }).setInputFiles({ name: "my-learning.json", mimeType: "application/json", buffer: Buffer.from(raw) });
     await expect(destination.getByRole("heading", { name: "복원 전 확인", exact: true })).toBeVisible();
-    expect(await destination.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).toBeNull();
+    expect(await destination.evaluate((key) => localStorage.getItem(key), GUEST_STORAGE_KEY)).toBeNull();
     await destination.getByRole("button", { name: "기존 기록 유지하고 복원", exact: true }).click();
     await destination.getByRole("navigation", { name: "배우기 영역", exact: true }).getByRole("link", { name: "학습 홈", exact: true }).click();
     await openStoryBoardFromHub(destination);
@@ -69,13 +73,13 @@ test("restoring keeps existing notes and reports invalid files without changing 
   await input.setInputFiles({ name: "valid.json", mimeType: "application/json", buffer: Buffer.from(backup("외부 메모")) });
   await expect(page.getByRole("heading", { name: "복원 전 확인", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "기존 기록 유지하고 복원", exact: true }).click();
-  const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), STORAGE_KEY);
+  const saved = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), GUEST_STORAGE_KEY);
   expect(saved.lessons["story-board"].notes).toBe("덮어쓰면 안 되는 메모");
   expect(saved.lessons["color-layers"].notes).toBe("새 채색 메모");
   await input.setInputFiles({ name: "invalid.json", mimeType: "application/json", buffer: Buffer.from('{"version":999}') });
   await expect(page.locator(".learn-backup-preview")).toHaveCount(0);
   await expect(page.locator(".learn-record-tools [role=status]")).toContainText("버전 1 백업");
-  expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), STORAGE_KEY)).toEqual(saved);
+  expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), GUEST_STORAGE_KEY)).toEqual(saved);
 });
 
 test("cancelling a preview does not import and oversized files are rejected", async ({ page }) => {
@@ -85,7 +89,7 @@ test("cancelling a preview does not import and oversized files are rejected", as
   await input.setInputFiles({ name: "valid.json", mimeType: "application/json", buffer: Buffer.from(backup("메모")) });
   await expect(page.getByRole("heading", { name: "복원 전 확인", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "복원 취소", exact: true }).click();
-  expect(await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).toBeNull();
+  expect(await page.evaluate((key) => localStorage.getItem(key), GUEST_STORAGE_KEY)).toBeNull();
   await input.setInputFiles({ name: "oversize.json", mimeType: "application/json", buffer: Buffer.alloc(512 * 1024 + 1, "x") });
   await expect(page.locator(".learn-record-tools [role=status]")).toContainText("512 KiB");
   await expect(page.locator(".learn-backup-preview")).toHaveCount(0);
@@ -135,13 +139,13 @@ test("failed writes survive real other-tab edits and SPA navigation to record ma
   try {
     await other.addInitScript(() => sessionStorage.setItem("toonstudio-compat-dismissed", "true"));
     await other.goto(new URL("/learn/lessons/story-board", page.url()).href);
-    await page.evaluate(() => {
+    await page.evaluate((guestKey) => {
       const original = Storage.prototype.setItem;
       Storage.prototype.setItem = function (key: string, value: string) {
-        if (key === "toonstudio:learning:v1") throw new DOMException("full", "QuotaExceededError");
+        if (key === guestKey) throw new DOMException("full", "QuotaExceededError");
         return original.call(this, key, value);
       };
-    });
+    }, GUEST_STORAGE_KEY);
     await page.getByLabel("나의 실습 메모", { exact: true }).fill("반드시 보존할 미저장 메모");
     await other.getByLabel("나의 실습 메모", { exact: true }).fill("다른 탭 메모");
     await expect(page.locator(".learn-page > [role=status]")).toContainText("다른 탭");
@@ -151,6 +155,6 @@ test("failed writes survive real other-tab edits and SPA navigation to record ma
     await page.getByRole("navigation", { name: "배우기 영역", exact: true }).getByRole("link", { name: "학습 홈", exact: true }).click();
     await openStoryBoardFromHub(page);
     await expect(page.getByLabel("나의 실습 메모", { exact: true })).toHaveValue("반드시 보존할 미저장 메모");
-    expect(await other.evaluate((key) => JSON.parse(localStorage.getItem(key)!).lessons["story-board"].notes, STORAGE_KEY)).toBe("다른 탭 메모");
+    expect(await other.evaluate((key) => JSON.parse(localStorage.getItem(key)!).lessons["story-board"].notes, GUEST_STORAGE_KEY)).toBe("다른 탭 메모");
   } finally { await other.close(); }
 });
