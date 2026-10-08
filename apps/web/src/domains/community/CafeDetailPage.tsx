@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   UserPlus,
 } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
 import {
@@ -66,6 +66,7 @@ export function CafeDetailPage() {
   const [membershipBusy, setMembershipBusy] = useState(false);
   const [membershipError, setMembershipError] = useState<string | null>(null);
   const [membershipNotice, setMembershipNotice] = useState<string | null>(null);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [joinMessage, setJoinMessage] = useState("");
   const [inviteCode, setInviteCode] = useState(() => searchParams.get("invite") ?? "");
   const [refreshTick, setRefreshTick] = useState(0);
@@ -131,7 +132,6 @@ export function CafeDetailPage() {
 
   async function changeMembership(action: "join" | "leave") {
     if (!userId || membershipBusy) return;
-    if (action === "leave" && cafe?.viewerIsMember && !globalThis.confirm(translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "이 커뮤니티에서 탈퇴할까요?"))) return;
     setMembershipBusy(true);
     setMembershipError(null);
     setMembershipNotice(null);
@@ -162,6 +162,11 @@ export function CafeDetailPage() {
     } finally {
       setMembershipBusy(false);
     }
+  }
+
+  async function confirmLeave() {
+    await changeMembership("leave");
+    setLeaveConfirmOpen(false);
   }
 
   if (loading && !cafe) {
@@ -271,7 +276,7 @@ export function CafeDetailPage() {
             {userId ? (
               isMember ? (
                 isOwner ? <p className="rounded-lg border border-line bg-canvas/45 px-3 py-2 text-center text-xs text-fg-3">{translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "소유권 이전 후 탈퇴할 수 있어요.")}</p> : (
-                  <button type="button" onClick={() => void changeMembership("leave")} disabled={membershipBusy} className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs font-medium text-fg-3 hover:border-bad/45 hover:text-bad disabled:opacity-45"><DoorOpen size={14} />{membershipBusy ? translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "처리 중...") : translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "탈퇴하기")}</button>
+                  <button type="button" onClick={() => setLeaveConfirmOpen(true)} disabled={membershipBusy} className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs font-medium text-fg-3 hover:border-bad/45 hover:text-bad disabled:opacity-45"><DoorOpen size={14} />{membershipBusy ? translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "처리 중...") : translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "탈퇴하기")}</button>
                 )
               ) : isPending ? (
                 <button type="button" onClick={() => void changeMembership("leave")} disabled={membershipBusy} className="min-h-11 w-full rounded-lg border border-line px-3 py-2 text-xs font-medium text-fg-2 disabled:opacity-45">{membershipBusy ? translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "처리 중...") : translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "가입 요청 취소")}</button>
@@ -313,6 +318,125 @@ export function CafeDetailPage() {
           </div>
         )}
       </section>
+
+      <LeaveCafeConfirmDialog
+        open={leaveConfirmOpen}
+        busy={membershipBusy}
+        onCancel={() => setLeaveConfirmOpen(false)}
+        onConfirm={() => void confirmLeave()}
+      />
     </Container>
+  );
+}
+
+// ── 카페 탈퇴 확인 다이얼로그 ──────────────────────
+// window.confirm 대신 포커스 관리가 되는 인페이지 모달을 사용한다.
+// 네이티브 confirm은 자동화된 브라우저·일부 임베드 환경에서 사용자도 모르게
+// 해제(dismiss)돼 탈퇴 요청 자체가 나가지 않는 문제가 있었다 (F-B15-1).
+function LeaveCafeConfirmDialog({
+  open,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    cancelRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCancelRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusables = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => !el.hasAttribute("disabled"));
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [open ]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label={translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "취소")}
+        onClick={onCancel}
+        className="absolute inset-0 cursor-default bg-canvas/80 backdrop-blur-sm"
+      />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cafe-leave-title"
+        aria-describedby="cafe-leave-desc"
+        className="relative w-full max-w-md rounded-2xl border border-bad/30 bg-panel p-6 shadow-2xl"
+      >
+        <span className="grid size-11 place-items-center rounded-2xl bg-bad/10 text-bad">
+          <DoorOpen size={20} aria-hidden />
+        </span>
+        <h2 id="cafe-leave-title" className="mt-4 text-lg font-bold text-fg">
+          {translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "이 커뮤니티에서 탈퇴할까요?")}
+        </h2>
+        <p id="cafe-leave-desc" className="mt-2 text-sm leading-6 text-fg-2">
+          {translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "탈퇴하면 멤버 자격이 사라져 멤버 전용 글쓰기와 댓글을 이용할 수 없어요. 나중에 다시 가입할 수 있습니다.")}
+        </p>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            ref={cancelRef}
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold text-fg-2 transition-colors hover:bg-raised disabled:opacity-50"
+          >
+            {translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "취소")}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-bad px-4 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <DoorOpen size={16} aria-hidden />
+            {busy
+              ? translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "처리 중...")
+              : translateCurrentStaticSourceText("domains.community.CafeDetailPage", "ko", "탈퇴하기")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
