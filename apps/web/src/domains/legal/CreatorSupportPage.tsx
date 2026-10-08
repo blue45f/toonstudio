@@ -3,6 +3,7 @@ import {
   GraduationCap,
   HandHeart,
   Lightbulb,
+  LogIn,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -12,6 +13,7 @@ import {
   CREATOR_SUPPORT_CATEGORIES,
   CREATOR_SUPPORT_NEEDS,
   CREATOR_SUPPORT_OFFER_TYPES,
+  validateCreatorSupportApplication,
   type CreatorSupportAgeBand,
   type CreatorSupportCategory,
   type CreatorSupportNeed,
@@ -30,6 +32,7 @@ import {
   type CreatorSupportReceivedOffer,
 } from "./creator-support-api";
 
+import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -201,10 +204,17 @@ export function CreatorSupportPage() {
   const submitApplication = async (event: FormEvent) => {
     event.preventDefault();
     if (applicationBusy) return;
+    // 서버와 같은 계약(코어 검증기)으로 제출 전에 막는다. 빈 신청·동의 미체크가
+    // 네트워크를 타면 사용자는 사유를 늦게, 그것도 뭉개진 문구로 보게 된다.
+    const parsed = validateCreatorSupportApplication(application);
+    if (!parsed.ok) {
+      setApplicationStatus({ kind: "error", message: parsed.error });
+      return;
+    }
     setApplicationBusy(true);
     setApplicationStatus(null);
     try {
-      await submitCreatorSupportApplication(application);
+      await submitCreatorSupportApplication(parsed.value);
       setApplicationStatus({
         kind: "success",
         message: t("creatorSupport.apply.success"),
@@ -641,193 +651,222 @@ export function CreatorSupportPage() {
           {t("creatorSupport.apply.description")}
         </p>
 
-        <form onSubmit={submitApplication} className="mt-6 grid gap-4 sm:grid-cols-2">
-          <label className="text-sm font-semibold text-fg">
-            {t("creatorSupport.apply.category")}
-            <select
-              value={application.category}
-              onChange={(event) =>
-                setApplication((current) => ({
-                  ...current,
-                  category: event.target.value as CreatorSupportCategory,
-                }))
-              }
-              className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
-            >
-              {CREATOR_SUPPORT_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {t(`creatorSupport.filters.${category}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm font-semibold text-fg">
-            {t("creatorSupport.apply.ageBand")}
-            <select
-              value={application.ageBand}
-              onChange={(event) => {
-                const ageBand = event.target.value as CreatorSupportAgeBand;
-                setApplication((current) => ({
-                  ...current,
-                  ageBand,
-                  applicantRole: ageBand === "under14_guardian" ? "guardian" : current.applicantRole,
-                  guardianConfirmed: ageBand === "adult" ? false : current.guardianConfirmed,
-                }));
-              }}
-              className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
-            >
-              <option value="adult">{t("creatorSupport.apply.ageAdult")}</option>
-              <option value="youth_14_18">{t("creatorSupport.apply.ageYouth")}</option>
-              <option value="under14_guardian">{t("creatorSupport.apply.ageUnder14")}</option>
-            </select>
-          </label>
-          <label className="text-sm font-semibold text-fg">
-            {t("creatorSupport.apply.applicantRole")}
-            <select
-              value={application.applicantRole}
-              disabled={application.ageBand === "under14_guardian"}
-              onChange={(event) =>
-                setApplication((current) => ({
-                  ...current,
-                  applicantRole: event.target.value as "self" | "guardian",
-                }))
-              }
-              className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3 disabled:opacity-60"
-            >
-              <option value="self">{t("creatorSupport.apply.self")}</option>
-              <option value="guardian">{t("creatorSupport.apply.guardian")}</option>
-            </select>
-          </label>
-          <label className="text-sm font-semibold text-fg">
-            {t("creatorSupport.apply.budget")}
-            <input
-              type="number"
-              min={0}
-              max={100000000}
-              step={10000}
-              value={application.estimatedBudgetWon}
-              onChange={(event) =>
-                setApplication((current) => ({
-                  ...current,
-                  estimatedBudgetWon: Number(event.target.value),
-                }))
-              }
-              className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
-            />
-          </label>
-          <label className="sm:col-span-2 text-sm font-semibold text-fg">
-            {t("creatorSupport.apply.projectTitle")}
-            <input
-              maxLength={120}
-              value={application.title}
-              onChange={(event) =>
-                setApplication((current) => ({ ...current, title: event.target.value }))
-              }
-              className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
-            />
-          </label>
-          <label className="sm:col-span-2 text-sm font-semibold text-fg">
-            {t("creatorSupport.apply.story")}
-            <textarea
-              rows={5}
-              maxLength={3000}
-              value={application.story}
-              onChange={(event) =>
-                setApplication((current) => ({ ...current, story: event.target.value }))
-              }
-              className="mt-2 w-full rounded-xl border border-line bg-panel px-3 py-2"
-            />
-          </label>
-          <label className="sm:col-span-2 text-sm font-semibold text-fg">
-            {t("creatorSupport.apply.intendedUse")}
-            <textarea
-              rows={4}
-              maxLength={2000}
-              value={application.intendedUse}
-              onChange={(event) =>
-                setApplication((current) => ({ ...current, intendedUse: event.target.value }))
-              }
-              className="mt-2 w-full rounded-xl border border-line bg-panel px-3 py-2"
-            />
-          </label>
-          <label className="sm:col-span-2 text-sm font-semibold text-fg">
-            {t("creatorSupport.apply.portfolio")}
-            <input
-              type="url"
-              maxLength={500}
-              value={application.portfolioUrl}
-              onChange={(event) =>
-                setApplication((current) => ({ ...current, portfolioUrl: event.target.value }))
-              }
-              className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
-            />
-          </label>
+        {sessionStatus === "authenticated" ? (
+          <form onSubmit={submitApplication} className="mt-6 grid gap-4 sm:grid-cols-2">
+            <label className="text-sm font-semibold text-fg">
+              {t("creatorSupport.apply.category")}
+              <select
+                value={application.category}
+                onChange={(event) =>
+                  setApplication((current) => ({
+                    ...current,
+                    category: event.target.value as CreatorSupportCategory,
+                  }))
+                }
+                className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
+              >
+                {CREATOR_SUPPORT_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {t(`creatorSupport.filters.${category}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-fg">
+              {t("creatorSupport.apply.ageBand")}
+              <select
+                value={application.ageBand}
+                onChange={(event) => {
+                  const ageBand = event.target.value as CreatorSupportAgeBand;
+                  setApplication((current) => ({
+                    ...current,
+                    ageBand,
+                    applicantRole: ageBand === "under14_guardian" ? "guardian" : current.applicantRole,
+                    guardianConfirmed: ageBand === "adult" ? false : current.guardianConfirmed,
+                  }));
+                }}
+                className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
+              >
+                <option value="adult">{t("creatorSupport.apply.ageAdult")}</option>
+                <option value="youth_14_18">{t("creatorSupport.apply.ageYouth")}</option>
+                <option value="under14_guardian">{t("creatorSupport.apply.ageUnder14")}</option>
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-fg">
+              {t("creatorSupport.apply.applicantRole")}
+              <select
+                value={application.applicantRole}
+                disabled={application.ageBand === "under14_guardian"}
+                onChange={(event) =>
+                  setApplication((current) => ({
+                    ...current,
+                    applicantRole: event.target.value as "self" | "guardian",
+                  }))
+                }
+                className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3 disabled:opacity-60"
+              >
+                <option value="self">{t("creatorSupport.apply.self")}</option>
+                <option value="guardian">{t("creatorSupport.apply.guardian")}</option>
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-fg">
+              {t("creatorSupport.apply.budget")}
+              <input
+                type="number"
+                min={0}
+                max={100000000}
+                step={10000}
+                value={application.estimatedBudgetWon}
+                onChange={(event) =>
+                  setApplication((current) => ({
+                    ...current,
+                    estimatedBudgetWon: Number(event.target.value),
+                  }))
+                }
+                className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-semibold text-fg">
+              {t("creatorSupport.apply.projectTitle")}
+              <input
+                maxLength={120}
+                value={application.title}
+                onChange={(event) =>
+                  setApplication((current) => ({ ...current, title: event.target.value }))
+                }
+                className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-semibold text-fg">
+              {t("creatorSupport.apply.story")}
+              <textarea
+                rows={5}
+                maxLength={3000}
+                value={application.story}
+                onChange={(event) =>
+                  setApplication((current) => ({ ...current, story: event.target.value }))
+                }
+                className="mt-2 w-full rounded-xl border border-line bg-panel px-3 py-2"
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-semibold text-fg">
+              {t("creatorSupport.apply.intendedUse")}
+              <textarea
+                rows={4}
+                maxLength={2000}
+                value={application.intendedUse}
+                onChange={(event) =>
+                  setApplication((current) => ({ ...current, intendedUse: event.target.value }))
+                }
+                className="mt-2 w-full rounded-xl border border-line bg-panel px-3 py-2"
+              />
+            </label>
+            <label className="sm:col-span-2 text-sm font-semibold text-fg">
+              {t("creatorSupport.apply.portfolio")}
+              <input
+                type="url"
+                maxLength={500}
+                value={application.portfolioUrl}
+                onChange={(event) =>
+                  setApplication((current) => ({ ...current, portfolioUrl: event.target.value }))
+                }
+                className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3"
+              />
+            </label>
 
-          <fieldset className="sm:col-span-2">
-            <legend className="text-sm font-semibold text-fg">
-              {t("creatorSupport.apply.needs")}
-            </legend>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {CREATOR_SUPPORT_NEEDS.map((need) => (
-                <label key={need} className="flex items-center gap-2 rounded-xl border border-line bg-panel/60 px-3 py-2 text-sm text-fg-2">
-                  <input
-                    type="checkbox"
-                    checked={application.supportNeeds.includes(need)}
-                    onChange={() => toggleNeed(need)}
-                  />
-                  {t(NEED_KEY(need))}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          {application.ageBand !== "adult" ? (
+            <fieldset className="sm:col-span-2">
+              <legend className="text-sm font-semibold text-fg">
+                {t("creatorSupport.apply.needs")}
+              </legend>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {CREATOR_SUPPORT_NEEDS.map((need) => (
+                  <label key={need} className="flex items-center gap-2 rounded-xl border border-line bg-panel/60 px-3 py-2 text-sm text-fg-2">
+                    <input
+                      type="checkbox"
+                      checked={application.supportNeeds.includes(need)}
+                      onChange={() => toggleNeed(need)}
+                    />
+                    {t(NEED_KEY(need))}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {application.ageBand !== "adult" ? (
+              <label className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-line bg-panel/60 p-3 text-sm leading-6 text-fg-2">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={application.guardianConfirmed}
+                  onChange={(event) =>
+                    setApplication((current) => ({
+                      ...current,
+                      guardianConfirmed: event.target.checked,
+                    }))
+                  }
+                />
+                <span>{t("creatorSupport.apply.guardianConfirm")}</span>
+              </label>
+            ) : null}
             <label className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-line bg-panel/60 p-3 text-sm leading-6 text-fg-2">
               <input
                 type="checkbox"
                 className="mt-1"
-                checked={application.guardianConfirmed}
+                checked={application.consentAccepted}
                 onChange={(event) =>
                   setApplication((current) => ({
                     ...current,
-                    guardianConfirmed: event.target.checked,
+                    consentAccepted: event.target.checked,
                   }))
                 }
               />
-              <span>{t("creatorSupport.apply.guardianConfirm")}</span>
+              <span>{t("creatorSupport.apply.consent")}</span>
             </label>
-          ) : null}
-          <label className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-line bg-panel/60 p-3 text-sm leading-6 text-fg-2">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={application.consentAccepted}
-              onChange={(event) =>
-                setApplication((current) => ({
-                  ...current,
-                  consentAccepted: event.target.checked,
-                }))
-              }
-            />
-            <span>{t("creatorSupport.apply.consent")}</span>
-          </label>
-          <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
-            <button
-              type="submit"
-              disabled={applicationBusy}
-              className="min-h-11 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent disabled:opacity-60"
-            >
-              {t("creatorSupport.apply.submit")}
-            </button>
-            {applicationStatus ? (
-              <p
-                role={applicationStatus.kind === "error" ? "alert" : "status"}
-                className="text-sm text-fg-2"
+            <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                disabled={applicationBusy}
+                className="min-h-11 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent disabled:opacity-60"
               >
-                {applicationStatus.message}
-              </p>
-            ) : null}
+                {t("creatorSupport.apply.submit")}
+              </button>
+              {applicationStatus ? (
+                <p
+                  role={applicationStatus.kind === "error" ? "alert" : "status"}
+                  className="text-sm text-fg-2"
+                >
+                  {applicationStatus.message}
+                </p>
+              ) : null}
+            </div>
+          </form>
+        ) : sessionStatus === "unauthenticated" ? (
+          <div className="mt-6 rounded-2xl border border-line bg-panel/60 p-6">
+            <LogIn className="size-6 text-accent" aria-hidden="true" />
+            <h3 className="mt-3 text-lg font-bold text-fg">
+              {t("creatorSupport.apply.guestTitle")}
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-fg-2">
+              {t("creatorSupport.apply.guestBody")}
+            </p>
+            <button
+              type="button"
+              onClick={() =>
+                requestAuthModalOpen({
+                  reason: "protected-action",
+                  source: "creator-support-apply",
+                })
+              }
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent"
+            >
+              <LogIn size={16} aria-hidden="true" />
+              {t("creatorSupport.apply.guestAction")}
+            </button>
           </div>
-        </form>
+        ) : (
+          <p className="mt-6 text-sm text-fg-3" role="status">
+            {t("creatorSupport.apply.sessionChecking")}
+          </p>
+        )}
       </section>
 
       <section className="mt-6 rounded-3xl border border-line bg-panel/55 p-6 sm:p-7">

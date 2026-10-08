@@ -190,6 +190,34 @@ describe("unauthorized copy (F-B09-1)", () => {
   });
 });
 
+describe("forbidden copy (F-B17-1)", () => {
+  it("keeps the server's stated reason instead of a generic permission line", async () => {
+    globalThis.fetch = vi.fn(async () => jsonResponse(
+      { statusCode: 403, message: "로그인이 필요해요." },
+      403,
+    )) as unknown as typeof fetch;
+
+    const caught = await api.post("/creator-support/applications", {}, { retry: 0 })
+      .catch((error: unknown) => error);
+    expect(isAppApiError(caught)).toBe(true);
+    expect(caught).toMatchObject({ kind: "forbidden", status: 403 });
+    expect((caught as Error).message).toBe("로그인이 필요해요.");
+  });
+
+  it("falls back to the generic permission line when the server gives no reason", async () => {
+    globalThis.fetch = vi.fn(async () => jsonResponse(
+      { statusCode: 403 },
+      403,
+    )) as unknown as typeof fetch;
+
+    const caught = await api.post("/creator-support/applications", {}, { retry: 0 })
+      .catch((error: unknown) => error);
+    expect(isAppApiError(caught)).toBe(true);
+    expect(caught).toMatchObject({ kind: "forbidden", status: 403 });
+    expect((caught as Error).message).toContain("이 작업을 수행할 권한이 없습니다");
+  });
+});
+
 describe("isNotFoundError", () => {
   it("treats kind not_found as not found", async () => {
     globalThis.fetch = vi.fn(async () => jsonResponse({ message: "missing" }, 404)) as unknown as typeof fetch;
