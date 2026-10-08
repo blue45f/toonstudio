@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canonicalStudioCommentAnchorKey,
+  StudioCommentAnchorSchema,
+  type StudioCommentAnchor,
+} from "../studio-comments";
+import {
   addPdfSource,
   createPdfWorkbenchState,
   movePdfPageTo,
@@ -10,6 +15,7 @@ import {
   canonicalPdfPageAnchorKey,
   createPdfPageAnchor,
   pdfPageAnchorForEntry,
+  type PdfPageCommentAnchor,
 } from "./pdf-workbench-anchor";
 
 const sourceA: PdfWorkbenchSource = { id: "src-a", name: "a.pdf", sizeBytes: 100, pageCount: 3 };
@@ -67,5 +73,22 @@ describe("PDF 페이지 앵커", () => {
     const page = createPdfPageAnchor({ documentId: "d1", sourcePageIndex: 0 });
     const pin = createPdfPageAnchor({ documentId: "d1", sourcePageIndex: 0, x: 0.5, y: 0.5 });
     expect(canonicalPdfPageAnchorKey(page)).not.toBe(canonicalPdfPageAnchorKey(pin));
+  });
+
+  it("스튜디오 댓글 union의 pdf-page variant와 모양·키가 정확히 일치한다", () => {
+    const page: PdfPageCommentAnchor = createPdfPageAnchor({ documentId: "d1", sourcePageIndex: 3 });
+    const pin: PdfPageCommentAnchor = createPdfPageAnchor({
+      documentId: "d1",
+      sourcePageIndex: 3,
+      x: 0.5,
+      y: 0.25,
+    });
+    // 모양이 어긋나면 이 대입과 스키마 파싱이 깨진다 — 두 모델의 단일 진실을 테스트로 고정한다.
+    const pageAsStudioAnchor: StudioCommentAnchor = page;
+    const pinAsStudioAnchor: StudioCommentAnchor = pin;
+    expect(StudioCommentAnchorSchema.parse(pageAsStudioAnchor)).toEqual(page);
+    expect(StudioCommentAnchorSchema.parse(pinAsStudioAnchor)).toEqual(pin);
+    expect(canonicalPdfPageAnchorKey(page)).toBe(canonicalStudioCommentAnchorKey(pageAsStudioAnchor));
+    expect(canonicalPdfPageAnchorKey(pin)).toBe(canonicalStudioCommentAnchorKey(pinAsStudioAnchor));
   });
 });

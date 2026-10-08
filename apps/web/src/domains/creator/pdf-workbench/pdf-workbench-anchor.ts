@@ -27,6 +27,7 @@
  *   현재 상태의 페이지 항목과 대조해 역으로 찾는다 — 앵커 자체에 순서를 넣지 않는다.
  */
 
+import { canonicalStudioCommentAnchorKey } from "../studio-comments";
 import type { PdfWorkbenchPageEntry } from "./pdf-workbench-model";
 
 /** PDF 한 페이지(원본 기준)를 가리키는 댓글 앵커. 좌표는 선택 — 없으면 페이지 전체 앵커. */
@@ -41,9 +42,6 @@ export interface PdfPageCommentAnchor {
   /** 0..1 정규화 세로 위치 (페이지 핀일 때만). */
   readonly y?: number;
 }
-
-/** studio-comments의 point 앵커와 같은 소수 자릿수 — 좌표 키 버킷을 제품 전체에서 통일한다. */
-export const PDF_PAGE_ANCHOR_KEY_DECIMALS = 4;
 
 function clampUnit(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -79,14 +77,9 @@ export function pdfPageAnchorForEntry(
 
 /**
  * 앵커의 정규 식별 키 — 같은 페이지의 앵커는 재배열·세션과 무관하게 같은 키를 갖는다.
- * 형식은 `canonicalStudioCommentAnchorKey`의 JSON 튜플 관례를 따른다.
+ * 저장 통합(2026-10-08) 이후 키의 정본은 `canonicalStudioCommentAnchorKey`의 pdf-page
+ * 분기다. 이 함수는 그 함수로 위임해 두 키 공간이 영원히 바이트 단위로 같게 유지한다.
  */
 export function canonicalPdfPageAnchorKey(anchor: PdfPageCommentAnchor): string {
-  const base = ["pdf-page", anchor.documentId, anchor.sourcePageIndex];
-  if (anchor.x === undefined || anchor.y === undefined) return JSON.stringify(base);
-  return JSON.stringify([
-    ...base,
-    anchor.x.toFixed(PDF_PAGE_ANCHOR_KEY_DECIMALS),
-    anchor.y.toFixed(PDF_PAGE_ANCHOR_KEY_DECIMALS),
-  ]);
+  return canonicalStudioCommentAnchorKey(anchor);
 }
