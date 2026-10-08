@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 
-import { isSafeReferenceImageUrl, safeReferenceImageSrc } from "./reference-image-src";
+import { isSafeReferenceImageUrl, safeReferenceImageSrc, toRenderableReferenceImageSrc } from "./reference-image-src";
 
 const NUL = String.fromCharCode(0);
 const TAB = String.fromCharCode(9);
@@ -93,6 +93,37 @@ describe("sink 직전 스킴 재검증", () => {
       const sanitized = safeReferenceImageSrc(value);
       expect(sanitized, value).not.toBeNull();
       expect(isSafeReferenceImageUrl(sanitized as string), value).toBe(true);
+    }
+  });
+});
+
+describe("sink 전달값 재조립", () => {
+  const base = "https://app.example/studio/canon";
+
+  it("절대·상대는 파서 재조립 href로, 래스터 data URL은 원문으로 전달한다", () => {
+    expect(toRenderableReferenceImageSrc("https://cdn.example.com/a.png", base)).toBe(
+      "https://cdn.example.com/a.png",
+    );
+    expect(toRenderableReferenceImageSrc("/avatars/placeholder.png", base)).toBe(
+      "https://app.example/avatars/placeholder.png",
+    );
+    expect(toRenderableReferenceImageSrc("data:image/png;base64,iVBORw0KGgo=", base)).toBe(
+      "data:image/png;base64,iVBORw0KGgo=",
+    );
+  });
+
+  it("스크립트 스킴·프로토콜 상대·비래스터 data URL은 버린다", () => {
+    for (const hostile of [
+      "javascript:alert(1)",
+      "JaVaScRiPt:alert(1)",
+      "//evil.example/a.png",
+      "data:image/svg+xml,<svg onload=alert(1)>",
+      "data:text/html,<script>alert(1)</script>",
+      "vbscript:msgbox(1)",
+      null,
+      "",
+    ]) {
+      expect(toRenderableReferenceImageSrc(hostile, base), String(hostile)).toBeNull();
     }
   });
 });
