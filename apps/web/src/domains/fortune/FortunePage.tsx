@@ -156,6 +156,23 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
     });
   };
 
+  // 월간/연간 게이트 입력 — 제출 버튼 없이 입력 즉시 계산하는 흐름이라, 제출형
+  // 도구들의 callFortune/computeFortuneLocally가 하던 로컬 프로필 저장을 입력
+  // 시점에 대신 한다. 저장은 LOW-2 정책대로 이 기기(localStorage)에만 하고
+  // 서버로는 보내지 않는다 — 그래야 리로드 후에도 재입력 없이 패널이 열린다.
+  const handlePeriodBirthDateChange = (v: string) => {
+    setBirthDate(v);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      setProfile({ birthDate: v, birthTime, lastCharacterId: selectedChar?.id ?? null });
+    }
+  };
+  const handlePeriodBirthTimeChange = (v: string) => {
+    setBirthTime(v);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+      setProfile({ birthDate, birthTime: v, lastCharacterId: selectedChar?.id ?? null });
+    }
+  };
+
   // 운세 {tx("웹툰 재생")} 오케스트레이터 — 음성(Web Speech) + 컷 애니메이션 동기
   const playback = useFortunePlayback(fortuneResult?.panels);
 
@@ -897,15 +914,9 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                   )}
 
                   {/* 별자리 전용 결과 디스플레이 */}
-                  {/* 월간 운세 — 클라이언트에서 명리 월운으로 직접 계산 */}
-                  {activeTab === "monthly" && birthDate && (
-                    <FortunePeriodPanel kind="monthly" birthDate={birthDate} birthTime={birthTime} characterId={selectedChar?.id} />
-                  )}
-
-                  {/* 연간 운세 — 클라이언트에서 세운+12개월 월운으로 직접 계산 */}
-                  {activeTab === "yearly" && birthDate && (
-                    <FortunePeriodPanel kind="yearly" birthDate={birthDate} birthTime={birthTime} characterId={selectedChar?.id} />
-                  )}
+                  {/* 월간/연간 패널은 이 결과 컨테이너 밖에 있다 — 기간 운세는 제출형
+                      결과(resultsByTab)를 만들지 않고 클라이언트에서 즉시 계산하므로,
+                      fortuneResult 조건 안에 두면 영원히 마운트되지 않는다 (F-B10-2). */}
 
                   {activeTab === "zodiac" && fortuneResult.zodiac && (
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -1419,14 +1430,24 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                 </div>
               )}
 
+              {/* 월간 운세 결과 — 생년월일이 있으면 명리 월운으로 클라이언트에서 직접 계산 */}
+              {!isLoading && activeTab === "monthly" && birthDate && (
+                <FortunePeriodPanel kind="monthly" birthDate={birthDate} birthTime={birthTime} characterId={selectedChar?.id} />
+              )}
+
+              {/* 연간 운세 결과 — 생년월일이 있으면 세운+12개월 월운으로 클라이언트에서 직접 계산 */}
+              {!isLoading && activeTab === "yearly" && birthDate && (
+                <FortunePeriodPanel kind="yearly" birthDate={birthDate} birthTime={birthTime} characterId={selectedChar?.id} />
+              )}
+
               {/* 빈 상태: 월간 운세 — 일러스트 + 단계 안내 + 생년월일 입력 */}
               {!isLoading && activeTab === "monthly" && !birthDate && (
                 <FortuneBirthGate
                   kind="monthly"
                   birthDate={birthDate}
                   birthTime={birthTime}
-                  onBirthDateChange={setBirthDate}
-                  onBirthTimeChange={setBirthTime}
+                  onBirthDateChange={handlePeriodBirthDateChange}
+                  onBirthTimeChange={handlePeriodBirthTimeChange}
                 />
               )}
 
@@ -1436,8 +1457,8 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                   kind="yearly"
                   birthDate={birthDate}
                   birthTime={birthTime}
-                  onBirthDateChange={setBirthDate}
-                  onBirthTimeChange={setBirthTime}
+                  onBirthDateChange={handlePeriodBirthDateChange}
+                  onBirthTimeChange={handlePeriodBirthTimeChange}
                 />
               )}
 
