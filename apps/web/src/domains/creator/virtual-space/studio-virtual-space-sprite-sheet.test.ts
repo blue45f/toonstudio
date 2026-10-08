@@ -274,8 +274,8 @@ describe("customSpriteSheetSkin", () => {
     const preset = studioSpriteSheetPreset("chibi-mage")!;
     const skin = customSpriteSheetSkin(studioSpriteSheetPresetConfig(preset), createMockDeps());
     const down = skin.clips?.["walk-down"];
-    expect(down).toMatchObject({ start: 0, end: 5, frameWidth: 96, frameHeight: 112 });
-    expect(down?.atlas).toMatchObject({ width: 960, height: 896, slicing: "rounded-grid", columns: 10, rows: 8 });
+    expect(down).toMatchObject({ start: 0, end: 5, frameWidth: 192, frameHeight: 224 });
+    expect(down?.atlas).toMatchObject({ width: 1920, height: 1792, slicing: "rounded-grid", columns: 10, rows: 8 });
     // 정지 프레임은 6열(첫 idle 열)
     expect(skin.idleFrames?.down).toBe(6);
   });

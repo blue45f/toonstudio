@@ -15,9 +15,16 @@ import {
   PROCEDURAL_POSE_SHEET_WIDTH,
   PROCEDURAL_SHEET_COLUMNS,
   PROCEDURAL_SHEET_HEIGHT,
+  PROCEDURAL_SHEET_RENDER_SCALE,
   PROCEDURAL_SHEET_ROWS,
   PROCEDURAL_SHEET_WIDTH,
   PROCEDURAL_SPRITE_DIRECTIONS,
+  PROCEDURAL_TEXTURE_FRAME_HEIGHT,
+  PROCEDURAL_TEXTURE_FRAME_WIDTH,
+  PROCEDURAL_TEXTURE_POSE_SHEET_HEIGHT,
+  PROCEDURAL_TEXTURE_POSE_SHEET_WIDTH,
+  PROCEDURAL_TEXTURE_SHEET_HEIGHT,
+  PROCEDURAL_TEXTURE_SHEET_WIDTH,
   PROCEDURAL_WALK_FRAME_COUNT,
   proceduralIdleBlink,
   proceduralIdleBobY,
@@ -107,6 +114,17 @@ describe("프로시저럴 시트 기하", () => {
     expect(PROCEDURAL_SPRITE_DIRECTIONS).toHaveLength(8);
   });
 
+  it("텍스처는 논리 크기의 2배로 구워 물리 프레임 192×224를 만든다", () => {
+    expect(PROCEDURAL_SHEET_RENDER_SCALE).toBe(2);
+    expect(PROCEDURAL_TEXTURE_FRAME_WIDTH).toBe(192);
+    expect(PROCEDURAL_TEXTURE_FRAME_HEIGHT).toBe(224);
+    expect(PROCEDURAL_TEXTURE_SHEET_WIDTH).toBe(1920);
+    expect(PROCEDURAL_TEXTURE_SHEET_HEIGHT).toBe(1792);
+    // 종횡비가 논리와 같아야 표시 기하(프레임 종횡비 기반)가 변하지 않는다.
+    expect(PROCEDURAL_TEXTURE_FRAME_WIDTH / PROCEDURAL_TEXTURE_FRAME_HEIGHT)
+      .toBe(PROCEDURAL_FRAME_WIDTH / PROCEDURAL_FRAME_HEIGHT);
+  });
+
   it("방향 행이 sprite.ts의 DIRECTION_ROW 순서와 같다", () => {
     expect(PROCEDURAL_DIRECTION_ROWS).toEqual({
       "down": 0, "down-left": 1, "left": 2, "up-left": 3,
@@ -188,15 +206,29 @@ describe("buildProceduralCharacterSheet", () => {
   it("B 트랙 계약 { canvas, frameWidth, frameHeight, directions }을 반환한다", () => {
     const { deps, created } = createMockDeps();
     const sheet = buildProceduralCharacterSheet(PALETTE, PARTS, deps);
-    expect(sheet.frameWidth).toBe(96);
-    expect(sheet.frameHeight).toBe(112);
-    expect(sheet.width).toBe(960);
-    expect(sheet.height).toBe(896);
+    // 프레임·시트 크기는 물리 텍스처 치수(2배 슈퍼샘플링)를 보고한다.
+    expect(sheet.frameWidth).toBe(192);
+    expect(sheet.frameHeight).toBe(224);
+    expect(sheet.width).toBe(1920);
+    expect(sheet.height).toBe(1792);
     expect(sheet.dataUrl).toBe("data:image/png;base64,PROCEDURAL-TEST");
     expect(sheet.directions).toEqual(PROCEDURAL_DIRECTION_ROWS);
     expect(created).toHaveLength(1);
-    expect(created[0]?.width).toBe(960);
-    expect(created[0]?.height).toBe(896);
+    expect(created[0]?.width).toBe(1920);
+    expect(created[0]?.height).toBe(1792);
+  });
+
+  it("셀마다 렌더 배율 스케일을 걸어 논리 좌표로 그린다", () => {
+    const { deps, created } = createMockDeps();
+    buildProceduralCharacterSheet(PALETTE, PARTS, deps);
+    const calls = created[0]?.calls ?? [];
+    // 셀당 1회 렌더 배율 스케일 (좌우 반전용 scale(-1,1)과 구분해 센다).
+    const scales = calls.filter((call) => call.name === "scale"
+      && call.args[0] === PROCEDURAL_SHEET_RENDER_SCALE && call.args[1] === PROCEDURAL_SHEET_RENDER_SCALE);
+    expect(scales).toHaveLength(80);
+    // 셀 원점은 물리 프레임 단위로 이동한다 (2행 3열 셀 = 576, 448).
+    const translates = calls.filter((call) => call.name === "translate");
+    expect(translates.some((call) => call.args[0] === 576 && call.args[1] === 448)).toBe(true);
   });
 
   it("80개 셀을 모두 그리고 팔레트 색상을 사용한다", () => {
@@ -261,6 +293,19 @@ describe("drawProceduralCharacterFrame", () => {
     expect(arcs(closed.calls)).toBeLessThan(arcs(open.calls));
   });
 
+  it("셀 셰이딩(몸통 음영·턱 그림자·얼굴 하단 음영)을 팔레트 무관 알파로 그린다", () => {
+    const { ctx, calls } = createMockContext();
+    drawProceduralCharacterFrame(ctx, {
+      palette: PALETTE, parts: PARTS, view: "front", walkPhase: null, bobY: 0, blink: false,
+      mirror: false, tilt: 0,
+    });
+    const styles = paintedStyles(calls);
+    expect(styles).toContain("rgba(0,0,0,0.07)");
+    expect(styles).toContain("rgba(0,0,0,0.10)");
+    expect(styles).toContain("rgba(0,0,0,0.045)");
+    expect(styles).toContain("rgba(255,255,255,0.05)");
+  });
+
   it("18종 헤어·18종 의상·16종 액세서리가 모두 그려진다", () => {
     const hairs = ["bob", "long", "short", "twin", "wave", "crop", "ponytail", "bun", "curly", "braid", "pigtails", "mohawk", "hime", "side-part", "shaggy", "undercut", "double-bun", "wolf"] as const;
     const outfits = ["hoodie", "tee", "jacket", "dress", "suit", "sweater", "uniform", "apron", "coat", "sportswear", "cardigan", "overalls", "blazer", "turtleneck", "denim", "polo", "hanbok", "sailor"] as const;
@@ -296,11 +341,12 @@ describe("renderProceduralCharacterPreview", () => {
   it("96×112 단일 셀 dataURL을 만든다", () => {
     const { deps, created } = createMockDeps("data:image/png;base64,PREVIEW");
     const preview = renderProceduralCharacterPreview(PALETTE, PARTS, deps);
+    // 보고 크기는 논리 크기(표시 힌트), 실제 캔버스는 2배 해상도로 굽는다.
     expect(preview.width).toBe(96);
     expect(preview.height).toBe(112);
     expect(preview.dataUrl).toBe("data:image/png;base64,PREVIEW");
-    expect(created[0]?.width).toBe(96);
-    expect(created[0]?.height).toBe(112);
+    expect(created[0]?.width).toBe(192);
+    expect(created[0]?.height).toBe(224);
     expect(paintedStyles(created[0]?.calls ?? [])).toContain(PALETTE.skin);
   });
 });
@@ -324,9 +370,9 @@ describe("createProceduralCharacterSkin", () => {
     const down = skin.clips?.["walk-down"];
     expect(down?.start).toBe(0);
     expect(down?.end).toBe(5);
-    expect(down?.frameWidth).toBe(96);
-    expect(down?.frameHeight).toBe(112);
-    expect(down?.atlas).toMatchObject({ width: 960, height: 896, columns: 10, rows: 8 });
+    expect(down?.frameWidth).toBe(192);
+    expect(down?.frameHeight).toBe(224);
+    expect(down?.atlas).toMatchObject({ width: 1920, height: 1792, columns: 10, rows: 8 });
     expect(skin.clips?.["walk-right"]?.start).toBe(60);
     expect(skin.clips?.["walk-left"]?.start).toBe(20);
     expect(skin.clips?.["walk-up"]?.start).toBe(40);
@@ -465,18 +511,21 @@ describe("페인트 레이어 순서", () => {
 });
 
 describe("포즈 시트 (wave·sit)", () => {
-  it("192×224 2×2 시트와 방향 프레임 계약을 만족한다", () => {
+  it("논리 192×224 2×2 시트와 방향 프레임 계약을 만족한다", () => {
     const { deps, created } = createMockDeps();
     const pose = buildProceduralPoseSheet(PALETTE, PARTS, "wave", deps);
     expect(PROCEDURAL_POSE_SHEET_WIDTH).toBe(192);
     expect(PROCEDURAL_POSE_SHEET_HEIGHT).toBe(224);
-    expect(created[0]?.width).toBe(192);
-    expect(created[0]?.height).toBe(224);
-    expect(pose.frameWidth).toBe(96);
-    expect(pose.frameHeight).toBe(112);
+    // 텍스처는 본 시트와 같은 2배 배율로 굽는다.
+    expect(PROCEDURAL_TEXTURE_POSE_SHEET_WIDTH).toBe(384);
+    expect(PROCEDURAL_TEXTURE_POSE_SHEET_HEIGHT).toBe(448);
+    expect(created[0]?.width).toBe(384);
+    expect(created[0]?.height).toBe(448);
+    expect(pose.frameWidth).toBe(192);
+    expect(pose.frameHeight).toBe(224);
     expect(pose.directionFrames).toEqual({ down: 0, right: 1, left: 2, up: 3 });
     expect(pose.frames).toHaveLength(4);
-    expect(studioCharacterPoseSheetMatches(pose, 192, 224)).toBe(true);
+    expect(studioCharacterPoseSheetMatches(pose, 384, 448)).toBe(true);
     expect(studioCharacterPoseSheetMatches(pose, 960, 896)).toBe(false);
   });
 
@@ -505,7 +554,7 @@ describe("포즈 시트 (wave·sit)", () => {
     );
     expect(skin.poses?.wave).toBeDefined();
     expect(skin.poses?.sit).toBeDefined();
-    if (skin.poses?.wave) expect(studioCharacterPoseSheetMatches(skin.poses.wave, 192, 224)).toBe(true);
-    if (skin.poses?.sit) expect(studioCharacterPoseSheetMatches(skin.poses.sit, 192, 224)).toBe(true);
+    if (skin.poses?.wave) expect(studioCharacterPoseSheetMatches(skin.poses.wave, 384, 448)).toBe(true);
+    if (skin.poses?.sit) expect(studioCharacterPoseSheetMatches(skin.poses.sit, 384, 448)).toBe(true);
   });
 });
