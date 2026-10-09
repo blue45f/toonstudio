@@ -76,6 +76,8 @@ export const STUDIO_ROUTE_MANIFEST = Object.freeze([
     pattern: "/studio/remix/:sourceWorkId/compose/:sessionId",
   },
   {
+    // 스튜디오 문서(workId·초안 범위)에 결박된 검수·게시 명령 센터.
+    // 외부 채널 배포 패키지 센터인 /publish와는 본문이 다른 분화 표면이다 (O-06, 2026-10-09).
     id: "studio-publish",
     kind: "publish",
     ownsDocumentTitle: true,
