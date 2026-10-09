@@ -57,3 +57,13 @@
 - Worker Version ID: `61eead80-1b89-4cc0-8cf3-3bd9ceeea065`
 - 배포 후 점검: 홈 200, providers 200, ranking 200
 - 롤백 대상: 직전 버전 `0c147959-0fcd-4b38-b0c4-e1633ce3b1ef` (2차 배포분)
+
+## 4차 배포 (2026-10-09, 같은 날 추가분)
+
+- 승인 SHA: `ca94aab4abacd489fdb1109b238d75457bc364bf` (main HEAD, clean worktree)
+- 포함: 디자인 웨이브 11·12 + realtime-ticket capabilities 수정 + motion-webtoon-alias + 빨간 main 복구핀 2건 + 이전 배포 이후 main 전진분
+- 배포 전 복구: DB bootstrap 원장 핀 104→106, 크리에이터 홈 서사 핀 웨이브11 반영 (CI 적색 원인 제거)
+- 사전 검증: architecture/free-infra/cloudflare-static(83건)/dry-run/render-origin(live·ready 200)/CI verify 성공
+- Worker Version ID: `dda82ca9-f9bd-484b-89cc-318470d98462`
+- 배포 후 점검: 홈 200, providers 200, ranking 200
+- 롤백 대상: 직전 버전 `61eead80-1b89-4cc0-8cf3-3bd9ceeea065` (3차 배포분)
