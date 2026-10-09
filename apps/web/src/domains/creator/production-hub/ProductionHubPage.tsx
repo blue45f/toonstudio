@@ -63,16 +63,16 @@ function viewerAssignmentIdsFor(aggregate: ProductionProjectAggregate, userId: s
 }
 
 /**
- * 개요: 표지가 있으면 첫 화면 맨 위에 표지 무대를 세우고, 이어서 네 가지 판단
- * (진행률·마감 임박 회차·내 할 일·최근 피드백)을 보여 준다. 위험 미리 보기·복구
- * 계획·담당자 추천 같은 운영 상세는 펼칠 때만 계산해 그린다.
+ * 개요: 네 가지 판단(진행률·마감 임박 회차·내 할 일·최근 피드백)을 보여 준다.
+ * 표지 무대는 여기 두지 않고 페이지 컬럼 맨 위(가이드·표면 헤더보다 앞)에
+ * 세운다 — 이 안에 두면 무대가 첫 화면 폴드 아래로 밀려 표지가 잘렸다.
+ * 위험 미리 보기·복구 계획·담당자 추천 같은 운영 상세는 펼칠 때만 계산해 그린다.
  */
 function OverviewSurface({ aggregate, access, roleLens, execute, executeStrict, isDemo, viewerAssignmentIds }: SurfaceProps) {
   const bt = useBilingual("ProductionOverviewSurface");
   const [detailOpen, setDetailOpen] = useState(false);
   return (
     <div className="space-y-4">
-      <ProductionOverviewCoverStage aggregate={aggregate} />
       <ProductionProjectDashboard aggregate={aggregate} roleLens={roleLens} viewerAssignmentIds={viewerAssignmentIds} />
       <details
         className="group rounded-2xl border border-line bg-card"
@@ -235,6 +235,11 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
           {project.notice ? (
             <div className={cn("mb-4 rounded-xl border px-3 py-2 text-xs", project.saveState === "error" ? "border-bad/30 bg-bad/10 text-fg" : "border-good/30 bg-good/10 text-fg")} role="status">
               {project.notice}
+            </div>
+          ) : null}
+          {surface === "overview" && aggregate.coverImageUrl ? (
+            <div className="mb-4">
+              <ProductionOverviewCoverStage aggregate={aggregate} />
             </div>
           ) : null}
           {project.isDemo ? <ProductionSampleJourneyGuide location={surface} /> : null}
