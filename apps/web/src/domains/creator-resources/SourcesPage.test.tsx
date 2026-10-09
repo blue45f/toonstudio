@@ -121,6 +121,39 @@ describe("resource source cost visibility", () => {
     expect(container.querySelector("figure img")).toBeNull();
   });
 
+  it("리서치 데스크 변형에서는 마스트헤드에 연결된 제공처의 키트 표지 그리드를 보여 준다 (디자인 웨이브 13)", () => {
+    const { container } = renderPage();
+    const masthead = container.querySelector(".resource-masthead");
+    const gridSrcs = [...(masthead?.querySelectorAll("img") ?? [])].map((img) => img.getAttribute("src"));
+    // 범용 일러스트가 아니라 실제 연결된 소스들의 표지(장면·브랜드 아트)가 첫 화면에 닿는다.
+    expect(gridSrcs).toContain("/brand/research-sources-20261008/nasa.webp");
+    expect(gridSrcs).toContain("/brand/illustrated-20260928/materials.webp");
+    expect(gridSrcs).not.toContain("/brand/illustrated-20260928/storyboard.webp");
+    expect(gridSrcs.length).toBe(6);
+  });
+
+  it("/about/data에서는 키트 표지 그리드를 보여 주지 않는다 (전용 마스트헤드 유지)", () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={["/about/data"]}>
+        <SourcesPage />
+      </MemoryRouter>,
+    );
+    const masthead = container.querySelector(".resource-masthead");
+    const mastheadSrcs = [...(masthead?.querySelectorAll("img") ?? [])].map((img) => img.getAttribute("src"));
+    expect(mastheadSrcs).not.toContain("/brand/research-sources-20261008/nasa.webp");
+  });
+
+  it("바인딩된 디렉터리 카드는 키트 커버 밴드를 달고, 미연결 행은 달지 않는다 (디자인 웨이브 13)", () => {
+    renderPage();
+    const nasa = screen.getByRole("heading", { name: "NASA Images" }).closest("article");
+    const cover = nasa?.querySelector("img");
+    expect(cover?.getAttribute("src")).toBe("/brand/research-sources-20261008/nasa.webp");
+    expect(cover?.className).toContain("h-32");
+    // 경로가 없는 Google Books는 표지를 추정해 붙이지 않는다.
+    const google = screen.getByRole("heading", { name: "Google Books" }).closest("article");
+    expect(google?.querySelector("img")).toBeNull();
+  });
+
   it("필터와 결과 목록이 설명 섹션보다 먼저 나온다", () => {
     renderPage();
     const filter = screen.getByRole("searchbox", { name: "제공처·분야·비용·상업 준비 상태 필터" });
