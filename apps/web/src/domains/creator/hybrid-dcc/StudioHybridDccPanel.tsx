@@ -825,6 +825,7 @@ export function StudioHybridDccPanel({
         <StudioHybridDccIntro
           id={introId}
           busy={busy}
+          layout="stage"
           onStart={startFromIntro}
           onDismiss={() => setIntroPreference(false)}
         />
@@ -849,9 +850,20 @@ export function StudioHybridDccPanel({
         }}
       />
 
-      <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,21rem)] xl:grid-cols-[minmax(10.5rem,12.5rem)_minmax(0,1fr)_minmax(19rem,22rem)]">
-        <div className="order-1 min-w-0 lg:col-start-1 xl:col-start-2 xl:row-start-1">
+      <div
+        className={cn(
+          "grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,21rem)]",
+          // 안내가 열린 첫 화면(무대 모드)에서는 아웃라이너를 뷰포트 아래로 내리고 뷰포트를
+          // 전폭 주인공으로 넓힌다. 오브젝트가 생겨 안내가 물러나면 기존 3열 작업대 배치로 돌아간다.
+          introVisible
+            ? "xl:grid-cols-[minmax(0,1fr)_minmax(19rem,22rem)]"
+            : "xl:grid-cols-[minmax(10.5rem,12.5rem)_minmax(0,1fr)_minmax(19rem,22rem)]",
+        )}
+        data-studio-hybrid-dcc-stage={introVisible ? "true" : undefined}
+      >
+        <div className={cn("order-1 min-w-0 lg:col-start-1 xl:row-start-1", introVisible ? "xl:col-start-1" : "xl:col-start-2")}>
           <StudioHybridDccViewport
+            stage={introVisible}
             workspace={ws}
             webglAvailable={webglSupported ?? undefined}
             componentSelection={componentSelection}
@@ -888,7 +900,7 @@ export function StudioHybridDccPanel({
           />
         </div>
 
-        <div className="order-2 min-w-0 space-y-3 lg:col-start-2 lg:row-span-2 lg:row-start-1 xl:col-start-3">
+        <div className={cn("order-2 min-w-0 space-y-3 lg:col-start-2 lg:row-span-2 lg:row-start-1", introVisible ? "xl:col-start-2" : "xl:col-start-3")}>
           <section
             className="rounded-2xl border border-line bg-panel p-3"
             aria-labelledby="studio-dcc-quick-tools-title"
@@ -1089,7 +1101,10 @@ export function StudioHybridDccPanel({
         </div>
 
         <aside
-          className="order-3 min-w-0 rounded-2xl border border-line bg-panel p-2 lg:col-start-1 lg:row-start-2 xl:col-start-1 xl:row-start-1"
+          className={cn(
+            "order-3 min-w-0 rounded-2xl border border-line bg-panel p-2 lg:col-start-1 lg:row-start-2 xl:col-start-1",
+            introVisible ? "xl:row-start-2" : "xl:row-start-1",
+          )}
           aria-label={bt("장면 오브젝트 목록", "Scene object list")}
           data-studio-hybrid-dcc-outliner="true"
         >
@@ -1097,7 +1112,7 @@ export function StudioHybridDccPanel({
             <h3 className="text-xs font-semibold text-fg-2">{bt("장면 오브젝트", "Scene objects")}</h3>
             <span className="text-[0.6875rem] tabular-nums text-fg-3">{authorityRecords.length}</span>
           </div>
-          <div className="space-y-1 xl:max-h-[31rem] xl:overflow-y-auto">
+          <div className={cn("space-y-1 xl:overflow-y-auto", introVisible ? "xl:max-h-44" : "xl:max-h-[31rem]")}>
             {authorityRecords.length > 0 ? authorityRecords.map((record, recordIndex) => {
               const selected = record.assetId === ws.activeAssetId;
               const sharedObject = ws.bridge.set.objects.find(({ id }) => id === record.assetId);

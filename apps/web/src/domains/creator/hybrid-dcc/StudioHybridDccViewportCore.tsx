@@ -131,6 +131,11 @@ export interface StudioHybridDccViewportProps {
   /** Test/embedding override. `undefined` performs a browser WebGL capability probe after mount. */
   readonly webglAvailable?: boolean;
   readonly className?: string;
+  /**
+   * 첫 화면 무대 모드(빈 장면 안내가 함께 보일 때). 뷰포트를 더 크고 넓게 잡아
+   * 조작 패널보다 3D 프리뷰가 첫 화면의 주인공이 되게 한다.
+   */
+  readonly stage?: boolean;
 }
 
 export interface StudioHybridDccViewportAssetSnapshot {
@@ -1347,6 +1352,7 @@ export function StudioHybridDccViewport({
   defaultTransformSpace = "world",
   webglAvailable,
   className,
+  stage = false,
 }: StudioHybridDccViewportProps) {
   const [uncontrolledProjection, setUncontrolledProjection] =
     useState<StudioHybridDccViewportProjection>(defaultProjection);
@@ -1547,11 +1553,14 @@ export function StudioHybridDccViewport({
       aria-label="Hybrid DCC 3D 작업 뷰포트"
       aria-describedby={descriptionId}
       className={classes(
-        "relative isolate h-[clamp(20rem,58dvh,42rem)] min-h-80 w-full overflow-hidden rounded-2xl border border-line bg-canvas text-fg",
+        stage
+          ? "relative isolate h-[clamp(26rem,64dvh,46rem)] min-h-80 w-full overflow-hidden rounded-2xl border border-line bg-canvas text-fg"
+          : "relative isolate h-[clamp(20rem,58dvh,42rem)] min-h-80 w-full overflow-hidden rounded-2xl border border-line bg-canvas text-fg",
         "shadow-[0_18px_48px_oklch(0.08_0.008_70/0.34)]",
         className,
       )}
       data-studio-hybrid-dcc-viewport="true"
+      data-stage={stage ? "true" : undefined}
       data-projection={effectiveProjection}
       data-overlay={effectiveOverlay}
       data-context-lost={contextLost ? "true" : "false"}

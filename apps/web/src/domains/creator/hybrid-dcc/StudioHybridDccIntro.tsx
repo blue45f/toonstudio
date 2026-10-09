@@ -33,6 +33,12 @@ export interface StudioHybridDccIntroProps {
   readonly onStart?: (kind: StudioHybridDccStartKind) => void;
   /** 없으면 닫기 버튼을 그리지 않는다(로딩 화면처럼 닫을 대상이 없는 곳). */
   readonly onDismiss?: () => void;
+  /**
+   * "stage"는 작업대 첫 화면용 압축 배치다. 목적·단계·시작·환경 안내의 내용은 전부
+   * 유지하되 높이를 줄여, 아래 3D 뷰포트가 첫 화면(폴드) 안에 들어오게 한다.
+   * 게이트처럼 스크롤 영역이 따로 있는 곳은 기본값 "full"을 쓴다.
+   */
+  readonly layout?: "full" | "stage";
 }
 
 const FOCUS_RING =
@@ -61,7 +67,7 @@ interface EnvironmentNote {
   readonly body: string;
 }
 
-export function StudioHybridDccIntro({ id, busy = false, onStart, onDismiss }: StudioHybridDccIntroProps) {
+export function StudioHybridDccIntro({ id, busy = false, onStart, onDismiss, layout = "full" }: StudioHybridDccIntroProps) {
   const bt = useBilingual("StudioHybridDccIntro");
   const titleId = id ? `${id}-title` : "studio-hybrid-dcc-intro-title";
 
@@ -146,11 +152,154 @@ export function StudioHybridDccIntro({ id, busy = false, onStart, onDismiss }: S
     },
   ];
 
+  if (layout === "stage") {
+    // 작업대 첫 화면용 압축 배치 — 내용은 전량 유지하고 높이만 줄여 뷰포트를 폴드 안으로 끌어올린다.
+    return (
+      <section
+        id={id}
+        aria-labelledby={titleId}
+        data-studio-hybrid-dcc-intro="true"
+        data-studio-hybrid-dcc-intro-layout="stage"
+        className="relative overflow-hidden rounded-2xl border border-accent/30 bg-panel p-4"
+      >
+        {onDismiss ? (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label={bt("안내 닫기", "Close guide")}
+            className={cn(
+              "absolute right-2 top-2 grid size-11 place-items-center rounded-xl text-fg-3 hover:bg-raised hover:text-fg",
+              FOCUS_RING,
+            )}
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        ) : null}
+
+        <div className="flex gap-5">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+              {bt("처음이라면 여기서 시작", "Start here")}
+            </p>
+            <h3
+              id={titleId}
+              className="mt-1 pr-10 text-lg font-bold leading-snug text-fg [text-wrap:balance] [word-break:keep-all]"
+            >
+              {bt(
+                "웹툰 배경·소품을 3D로 한 번 만들고, 여러 컷에서 다시 쓰세요",
+                "Build a set or prop in 3D once, then reuse it across panels",
+              )}
+            </h3>
+
+            <dl className="mt-3 grid gap-2 sm:grid-cols-3" data-studio-hybrid-dcc-intro-purpose="true">
+              {purpose.map((row) => (
+                <div key={row.term} className="rounded-lg border border-line bg-card/60 px-2.5 py-2">
+                  <dt className="text-[0.7rem] font-bold text-accent">{row.term}</dt>
+                  <dd className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">{row.body}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <ol className="mt-2 grid gap-2 sm:grid-cols-3" aria-label={bt("세 단계 사용법", "Three-step guide")}>
+              {steps.map((step, index) => {
+                const Icon = step.icon;
+                return (
+                  <li key={step.title} className="flex gap-2 rounded-lg border border-line bg-canvas/40 px-2.5 py-2">
+                    <span
+                      aria-hidden="true"
+                      className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-bold text-on-accent"
+                    >
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1 text-xs font-semibold text-fg">
+                        <Icon size={13} aria-hidden="true" className="shrink-0 text-accent" />
+                        {step.title}
+                      </p>
+                      <p className="mt-0.5 line-clamp-2 text-[0.7rem] leading-snug text-fg-2 [word-break:keep-all]">{step.body}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+
+            {onStart ? (
+              <div className="mt-3 flex flex-wrap gap-2" data-studio-hybrid-dcc-intro-actions="true">
+                {actions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.kind}
+                      type="button"
+                      disabled={busy}
+                      data-studio-hybrid-dcc-start={action.kind}
+                      onClick={() => onStart(action.kind)}
+                      className={cn(
+                        "inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50",
+                        action.primary
+                          ? "bg-accent text-on-accent shadow-sm hover:bg-accent-2"
+                          : "border border-line-strong bg-card text-fg hover:bg-raised",
+                        FOCUS_RING,
+                      )}
+                    >
+                      <Icon size={16} aria-hidden="true" />
+                      {action.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="mt-3 rounded-xl border border-dashed border-line-strong px-3 py-2.5 text-sm text-fg-2 [word-break:keep-all]">
+                {bt(
+                  "3D 작업대를 준비하고 있습니다. 준비가 끝나면 이 자리에 시작 버튼이 나타납니다.",
+                  "The 3D workbench is getting ready. Start buttons appear here once it loads.",
+                )}
+              </p>
+            )}
+          </div>
+
+          <figure className="mt-10 hidden w-60 min-w-0 shrink-0 lg:block xl:w-72">
+            <StudioHybridDccExampleArt
+              title={bt(
+                "예시 그림: 3D 교실 장면을 카메라 컷에서 본 선화로 바꾼 모습",
+                "Example: a 3D classroom turned into line art seen from a camera shot",
+              )}
+              className="h-auto w-full rounded-xl border border-line"
+            />
+            <figcaption className="mt-1.5 text-[0.7rem] leading-relaxed text-fg-3">
+              {bt(
+                "예시 그림입니다. 실제 결과는 장면과 카메라 설정에 따라 달라집니다.",
+                "Illustration only. Real results depend on your scene and camera.",
+              )}
+            </figcaption>
+          </figure>
+        </div>
+
+        <ul
+          className="mt-3 grid gap-1.5 border-t border-line pt-2.5 md:grid-cols-3"
+          aria-label={bt("사용 환경과 저장", "Requirements and saving")}
+          data-studio-hybrid-dcc-intro-environment="true"
+        >
+          {environment.map((note) => {
+            const Icon = note.icon;
+            return (
+              <li key={note.body} className="flex gap-2 text-[0.7rem] leading-relaxed text-fg-2 [word-break:keep-all]">
+                <Icon size={13} aria-hidden="true" className="mt-0.5 shrink-0 text-fg-3" />
+                <span className="line-clamp-2">{note.body}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
+  }
+
   return (
     <section
       id={id}
       aria-labelledby={titleId}
       data-studio-hybrid-dcc-intro="true"
+      data-studio-hybrid-dcc-intro-layout="full"
       className="relative overflow-hidden rounded-2xl border border-accent/30 bg-panel p-4 sm:p-5"
     >
       {onDismiss ? (
