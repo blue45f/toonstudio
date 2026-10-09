@@ -48,3 +48,12 @@
 - Worker Version ID: `0c147959-0fcd-4b38-b0c4-e1633ce3b1ef`
 - 배포 후 점검: 홈 200, providers 200, ranking 200
 - 롤백 대상: 직전 버전 `2eb8c4d8-9884-423d-9321-e8117e10febc` (1차 배포분)
+
+## 3차 배포 (2026-10-09, 같은 날 추가분)
+
+- 승인 SHA: `da200748e8e990c39869b6dbe2ea50c6a89d24d0` (main HEAD, clean worktree)
+- 포함: PR #2276-2280 병합분(bright-lab 실험레인·heisenberg 스프라이트 고도화 등) + production-cover-fill 병합분 + 이전 배포 이후 main 전진분
+- 사전 검증: architecture/free-infra/cloudflare-static(83건)/dry-run/render-origin(live·ready 200)/CI verify 성공
+- Worker Version ID: `61eead80-1b89-4cc0-8cf3-3bd9ceeea065`
+- 배포 후 점검: 홈 200, providers 200, ranking 200
+- 롤백 대상: 직전 버전 `0c147959-0fcd-4b38-b0c4-e1633ce3b1ef` (2차 배포분)
