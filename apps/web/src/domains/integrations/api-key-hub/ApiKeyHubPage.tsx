@@ -11,7 +11,6 @@ import {
   isStudioFalConfigured,
   loadStudioFalApiKey,
 } from "@/domains/creator/public/studio-lora-fal-key";
-import { SitePageArt } from "@/domains/legal/public/site-page-art";
 import {
   browserNewsletterSessionStorage,
   isNewsletterResendConfigured,
@@ -162,8 +161,23 @@ export function ApiKeyHubPage() {
       </Link>
 
       <header className="mb-7 mt-3">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
+        <figure className="relative mb-6 overflow-hidden rounded-[1.75rem] border border-line">
+          <img
+            src="/brand/hero-20261009/api-keys-hero.webp"
+            srcSet="/brand/hero-20261009/api-keys-hero-960.webp 960w, /brand/hero-20261009/api-keys-hero.webp 1680w"
+            sizes="(max-width: 1280px) 100vw, 1216px"
+            width={1680}
+            height={560}
+            alt="어두운 보드 위에 놓인 황금 열쇠 고리에서 각 서비스 아이콘으로 빛줄기가 이어지는 모습"
+            fetchPriority="high"
+            decoding="async"
+            className="block aspect-[3/1] w-full object-cover motion-safe:animate-fade-up"
+          />
+          <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
+            {ko ? "브랜드 콘셉트 아트 · 실제 화면이 아닙니다" : "Brand concept art · not a product screen"}
+          </figcaption>
+        </figure>
+        <div className="max-w-3xl">
             <p className="eyebrow flex items-center gap-1.5 text-accent">
               <KeyRound size={14} aria-hidden /> API KEY HUB
             </p>
@@ -180,13 +194,6 @@ export function ApiKeyHubPage() {
                 ? "외부 서비스에서 직접 발급한 키를 연결하는 개발자·파워유저용 화면입니다. 대부분의 창작 기능은 키 없이도 동작해요. 키를 연결하면 그 서비스의 고급 기능이 내 계정으로 켜지고, 비용도 내 계정으로 청구됩니다. 키는 마스킹해서 보여주고, 원문은 화면에도 로그에도 남기지 않습니다."
                 : "An advanced screen for connecting keys you issued yourself at external services. Most creation features work without keys; connecting a key turns that service's advanced features on under your account and your billing. Keys are always masked and never rendered or logged in plain text."}
             </p>
-          </div>
-          <div className="hidden w-full max-w-sm shrink-0 lg:block">
-            <SitePageArt
-              kind="ai"
-              caption={ko ? "브랜드 콘셉트 아트 · 실제 화면이 아닙니다" : "Brand concept art · not a product screen"}
-            />
-          </div>
         </div>
       </header>
 

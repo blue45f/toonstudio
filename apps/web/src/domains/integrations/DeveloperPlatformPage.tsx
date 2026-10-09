@@ -132,8 +132,23 @@ export function DeveloperPlatformPage() {
       description={ko
         ? "공개 카탈로그와 사용자 승인 프로젝트 기능을 REST API·서명 Webhook·MCP 도구로 확장하기 위한 권한 계약입니다. 원본 파일 접근은 별도 강한 권한으로 분리됩니다."
         : "A scoped contract for public catalog, user-authorized project APIs, signed webhooks and MCP tools. Raw project files require a separate strong grant."}
-      art={{ kind: "ai", caption: ko ? "브랜드 콘셉트 아트 · 실제 화면이 아닙니다" : "Brand concept art · not a product screen" }}
     >
+      <figure className="relative mb-6 overflow-hidden rounded-[1.75rem] border border-line">
+        <img
+          src="/brand/hero-20261009/developers-hero.webp"
+          srcSet="/brand/hero-20261009/developers-hero-960.webp 960w, /brand/hero-20261009/developers-hero.webp 1680w"
+          sizes="(max-width: 1280px) 100vw, 1216px"
+          width={1680}
+          height={560}
+          alt="만화 칸으로 나뉜 개발자 작업실 — 모니터 속 노드 그래프와 벨·플러그 홀로그램"
+          fetchPriority="high"
+          decoding="async"
+          className="block aspect-[3/1] w-full object-cover motion-safe:animate-fade-up"
+        />
+        <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
+          {ko ? "브랜드 콘셉트 아트 · 실제 화면이 아닙니다" : "Brand concept art · not a product screen"}
+        </figcaption>
+      </figure>
       <DeveloperStartGuide ko={ko} />
       {!manifest && !error ? <IntegrationLoading message={ko ? "개발자 계약을 불러오고 있습니다." : "Loading developer contract."} /> : null}
       {error ? <IntegrationError message={error} onRetry={retry} /> : null}
