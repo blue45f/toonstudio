@@ -1,4 +1,4 @@
-import { STUDIO_BOOT_MAX_MS, STUDIO_BOOT_STALL_MS, studioVisibleBootDeadline } from "./experience/studio-visible-boot-deadline";
+import { createStudioBootProgress } from "./studio-virtual-space-phaser-canvas-boot-progress";
 import {
   useEffect,
   useRef,
@@ -76,7 +76,6 @@ import {
   studioGhostCollisionOverrides,
   studioGhostSeekInput,
   STUDIO_GHOST_SPRITE_ALPHA,
-  STUDIO_GHOST_TOGGLE_KEY,
 } from "./studio-virtual-space-ghost-mode";
 import { buildStudioLocateGuide } from "./studio-virtual-space-locate-guide";
 import {
@@ -270,12 +269,10 @@ import {
   studioEmoteFacing,
   studioFacingToward,
   studioWorldMayTakeFocus,
-  studioWorldShouldReclaimFocus,
   EMPTY_DECORATIONS,
   NPC_LOOK_DISTANCE,
   NPC_NOTICE_COOLDOWN_MS,
   STUDIO_EMOTE_DEDUPE_MS,
-  WORLD_KEY_CODES,
   type NpcVisual,
   type OcclusionVisual,
   type PeerVisual,
@@ -287,6 +284,8 @@ import { createStudioCharacterTexturePreparer } from "./studio-virtual-space-cha
 import { createStudioSceneCharacterAssetResidency } from "./studio-virtual-space-phaser-canvas-character-residency";
 import { drawStudioOcclusionLayers, placeStudioWorldPropImages } from "./studio-virtual-space-phaser-canvas-world-layers";
 import { drawStudioProximityOverlay } from "./studio-virtual-space-phaser-canvas-proximity-overlay";
+import { bindStudioCanvasInput } from "./studio-virtual-space-phaser-canvas-input";
+import { StudioVirtualSpaceEngineMessage } from "./StudioVirtualSpaceEngineMessage";
 import { studioCharacterBootAssets, studioSceneArtKeys } from "./studio-virtual-space-boot-assets";
 
 export type {
@@ -467,9 +466,6 @@ export function StudioVirtualSpacePhaserCanvas({
     let sceneReady = false;
     let engineFailed = false;
     const cleanup: (() => void)[] = [];
-    // 8초가 지나도 안 열리면 느린 연결 안내를 보인다(로딩 화면에서만 보이고 준비되면 사라진다).
-    const slowLoadTimer = globalThis.setTimeout(() => setSlowLoad(true), 8_000);
-    cleanup.push(() => globalThis.clearTimeout(slowLoadTimer));
     const fail = (reason?: unknown) => {
       if (cancelled) return;
       if (!engineFailed) parent.dataset.engineError = reason instanceof Error ? reason.message : "runtime-failure";
@@ -478,11 +474,14 @@ export function StudioVirtualSpacePhaserCanvas({
       setFailure(true);
       setReady(false);
     };
-    // 고정 25초 대신 "진행이 45초(STUDIO_BOOT_STALL_MS) 멈추면" 실패로 본다. 느린 회선(약 3Mbps 이하)에서는 정상적으로 내려받는 중에도 총 시간이 25초를 넘어
-    // 월드가 영영 열리지 않았다. 내려받기가 진행되는 동안은 touch로 예산을 되돌리고, 전체 상한(5분)은 그대로 둔다.
-    const bootDeadline = studioVisibleBootDeadline(document, () => fail(new Error(`boot-timeout:${parent.dataset.bootStage}`)), STUDIO_BOOT_STALL_MS, STUDIO_BOOT_MAX_MS);
-    const cancelBootDeadline = () => bootDeadline();
-    cleanup.push(() => cancelBootDeadline());
+    // 부팅 제한(진행이 멈추면 실패)과 로딩 화면의 진행 막대·느린 연결 안내는 한 묶음이 맡는다.
+    const boot = createStudioBootProgress({
+      visibility: document,
+      onTimeout: () => fail(new Error(`boot-timeout:${parent.dataset.bootStage}`)),
+      onProgress: setLoadProgress,
+      onSlow: () => setSlowLoad(true),
+    });
+    cleanup.push(boot.dispose);
     let game: import("phaser").Game | null = null;
 
     void (async () => {
@@ -665,7 +664,6 @@ export function StudioVirtualSpacePhaserCanvas({
       let lightRender: StudioVirtualLightRenderRuntime | null = null;
       let tileWorld: StudioWorldTileRuntime | null = null;
       let initialTilesReady = false;
-      let lastTileProgress = { chunks: -1, textures: -1 };
       const runtimeInputBlocked = () => engineFailed || (manifest.tilemap !== undefined && !initialTilesReady)
         || studioWorldInputBlocked(document, modalInputBlocked);
       let objectRuntime: StudioWorldObjectRuntime | null = null;
@@ -937,20 +935,7 @@ export function StudioVirtualSpacePhaserCanvas({
       scene.preload = function preload() {
         parent.dataset.bootStage = "loading-textures";
         this.load.on("loaderror", (file: import("phaser").Loader.File) => failedTextures.add(file.key));
-        // 내려받기가 조금이라도 진행되면 부팅 제한을 늘리고, 로딩 화면의 진행 막대를 갱신한다. 막대는 끝난 파일 수에 내려받는 중인
-        // 파일의 진행률을 더해 큰 파일이 받아지는 동안에도 움직인다(파일 수만 세면 3MB 파일 하나에 막대가 수십 초 멈춰 보인다).
-        const loader = this.load;
-        const noteLoadProgress = () => {
-          bootDeadline.touch();
-          const total = loader.totalToLoad;
-          if (total <= 0) return;
-          let partial = 0;
-          for (const file of loader.inflight.entries) partial += Math.min(1, Math.max(0, file.percentComplete || 0));
-          setLoadProgress(Math.round(Math.min(1, (loader.totalComplete + loader.totalFailed + partial) / total) * 100));
-        };
-        loader.on("fileprogress", noteLoadProgress);
-        loader.on("filecomplete", noteLoadProgress);
-        loader.on("progress", noteLoadProgress);
+        boot.watchLoader(this.load);
         this.load.image(backgroundTextureKey, backgroundUrl);
         this.load.image(horizonTextureKey, horizonUrl);
         queueStudioLivingWorldTextures(this.load, livingTextureKeys, artStyle);
@@ -1310,48 +1295,6 @@ export function StudioVirtualSpacePhaserCanvas({
           }
           callbacksRef.current.onCancelFollow();
         };
-        // Capture only canvas-owned keys before preventing browser scrolling. Phaser's
-        // window keyboard handler ignores defaultPrevented events from focused elements.
-        const handleCanvasKey = (event: KeyboardEvent) => {
-          if (event.key === "Escape") { if (buildPlacement?.handleEscape()) return; npcDirector.cancelGuideTour(); stopMovement(); return; }
-          if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || runtimeInputBlocked()) return;
-          if (!WORLD_KEY_CODES.has(event.code)) return;
-          heldKeys.add(event.code);
-          if (event.code === "KeyX" && !event.repeat && !buildPlacement?.active) queueKeyboardInteraction();
-          // 고스트 모드 토글: 반투명 + 장애물 통과 이동 (대규모 이벤트 끼임 해소)
-          if (event.code === STUDIO_GHOST_TOGGLE_KEY && !event.repeat) {
-            const next = !bridge.isGhostMode();
-            bridge.setGhostMode(next);
-            applyGhostMode(next);
-          }
-          event.preventDefault();
-        };
-        const preventGameScrolling = (event: KeyboardEvent) => {
-          if (event.target !== canvas) return;
-          handleCanvasKey(event);
-        };
-        // 닫은 배너·토스트처럼 초점이 있던 요소가 사라지면 초점이 <body>로 떨어지고, 캔버스가 초점을 가질 때만 키를 받는 월드는
-        // 이동 키에 아무 반응이 없다. 어디에도 초점이 없을 때 이동 키를 누르면 월드가 초점을 되찾아 그 키를 바로 받는다.
-        const reclaimFocusForMovement = (event: KeyboardEvent) => {
-          if (event.defaultPrevented || event.target === canvas || !sceneReady) return;
-          if (!studioWorldShouldReclaimFocus({
-            active: document.activeElement,
-            root: document,
-            code: event.code,
-            modified: event.metaKey || event.ctrlKey || event.altKey,
-            composing: event.isComposing,
-            blocked: runtimeInputBlocked(),
-          })) return;
-          focusCanvas();
-          handleCanvasKey(event);
-        };
-        const releaseKey = (event: KeyboardEvent) => { heldKeys.delete(event.code); };
-        const promptHasFocus = () => document.activeElement?.matches('[data-interact-prompt="true"]') ?? false;
-        const refocus = () => {
-          if (this.input.keyboard) this.input.keyboard.enabled = document.activeElement === canvas;
-          if (document.activeElement !== canvas && !promptHasFocus()) stopMovement();
-        };
-        const visibility = () => { if (document.hidden) { npcDirector.cancelGuideTour(); stopMovement(); } };
         const reduceMotionChanged = () => {
           camera.setLerp(reducedMotion.matches ? 1 : 0.12, reducedMotion.matches ? 1 : 0.12);
           currentQualityProfile = studioVirtualQualityProfile(experienceRef.current.qualityPreset, qualityEnvironment());
@@ -1359,34 +1302,16 @@ export function StudioVirtualSpacePhaserCanvas({
           lastQualityTier = currentQualityProfile.tier;
           resizeRuntime();
         };
-        canvas.addEventListener("pointerdown", focusCanvas);
-        canvas.addEventListener("keydown", preventGameScrolling);
-        globalThis.addEventListener("keydown", reclaimFocusForMovement, true);
-        globalThis.addEventListener("keyup", releaseKey);
-        document.addEventListener("focusin", refocus);
-        document.addEventListener("visibilitychange", visibility);
-        globalThis.addEventListener("blur", stopMovement);
-        reducedMotion.addEventListener("change", reduceMotionChanged);
-        const modalObserver = new MutationObserver(() => {
-          modalInputBlocked = studioWorldHasModalBlocker(document);
-        });
-        modalObserver.observe(document.body, {
-          subtree: true,
-          childList: true,
-          attributes: true,
-          attributeFilter: ["open", "role", "aria-modal", "aria-hidden", "hidden", "data-state", "data-presentation", "data-studio-input-blocker"],
-        });
-        cleanup.push(() => {
-          canvas.removeEventListener("pointerdown", focusCanvas);
-          canvas.removeEventListener("keydown", preventGameScrolling);
-          globalThis.removeEventListener("keydown", reclaimFocusForMovement, true);
-          globalThis.removeEventListener("keyup", releaseKey);
-          document.removeEventListener("focusin", refocus);
-          document.removeEventListener("visibilitychange", visibility);
-          globalThis.removeEventListener("blur", stopMovement);
-          reducedMotion.removeEventListener("change", reduceMotionChanged);
-          modalObserver.disconnect();
-        });
+        cleanup.push(bindStudioCanvasInput({
+          canvas, keyboard: () => this.input.keyboard, heldKeys, reducedMotion, focusCanvas, stopMovement,
+          isSceneReady: () => sceneReady, isInputBlocked: runtimeInputBlocked,
+          onEscape: () => { if (buildPlacement?.handleEscape()) return; npcDirector.cancelGuideTour(); stopMovement(); },
+          onInteractKey: () => { if (!buildPlacement?.active) queueKeyboardInteraction(); },
+          onGhostToggle: () => { const next = !bridge.isGhostMode(); bridge.setGhostMode(next); applyGhostMode(next); },
+          onHidden: () => { npcDirector.cancelGuideTour(); stopMovement(); },
+          onReducedMotionChange: reduceMotionChanged,
+          onModalBlockerChange: (blocked) => { modalInputBlocked = blocked; },
+        }));
         portalTracker.seed(portals, initialPoint);
         zoneTracker.seed(studioWorldPresenceZone(manifest, initialPoint)?.id ?? null);
         // 스폰 시퀀스 시작: 월드 준비 완료(setReady 지점) 신호가 올 때까지 베일이 덮는다.
@@ -1401,7 +1326,7 @@ export function StudioVirtualSpacePhaserCanvas({
         parent.dataset.bootStage = manifest.tilemap ? "loading-tiles" : "ready";
         setFailure(false);
         if (!manifest.tilemap) {
-          cancelBootDeadline();
+          boot.settle();
           setReady(true);
           zoneTransition = markStudioZoneTransitionReady(zoneTransition, this.game.loop.time);
         }
@@ -2034,14 +1959,11 @@ export function StudioVirtualSpacePhaserCanvas({
           const tileMetrics = tileWorld.diagnostics;
           parent.dataset.tileChunks = String(tileMetrics.chunks);
           parent.dataset.tileTextures = String(tileMetrics.textures);
-          if (!initialTilesReady && (tileMetrics.chunks !== lastTileProgress.chunks || tileMetrics.textures !== lastTileProgress.textures)) {
-            lastTileProgress = { chunks: tileMetrics.chunks, textures: tileMetrics.textures };
-            bootDeadline.touch();
-          }
+          if (!initialTilesReady) boot.noteTiles(tileMetrics);
           if (!engineFailed && !initialTilesReady && tileMetrics.ready) {
             initialTilesReady = true;
             startOptionalSceneArt?.(); startOptionalSceneArt = null;
-            cancelBootDeadline();
+            boot.settle();
             parent.dataset.bootStage = "ready";
             setReady(true);
             zoneTransition = markStudioZoneTransitionReady(zoneTransition, time);
@@ -2995,22 +2917,7 @@ export function StudioVirtualSpacePhaserCanvas({
       data-art-style={artStyle}
       data-backdrop={environmentPreference.backdrop}
     >
-      {failure ? (
-        <div className="studio-vspace-engine-message" role="alert">
-          <div className="studio-vspace-engine-card">
-            <p>{bt("공간을 불러오지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.", "The studio could not load. Check the connection and retry.")}</p>
-            <button type="button" onClick={() => setAttempt((value) => value + 1)}>{bt("다시 시도", "Retry")}</button>
-          </div>
-        </div>
-      ) : !ready ? (
-        <div className="studio-vspace-engine-message" role="status" aria-busy="true">
-          <div className="studio-vspace-engine-card">
-            <p>{bt("스튜디오 불러오는 중…", "Loading studio…")}</p>
-            {loadProgress !== null ? <progress className="studio-vspace-engine-progress" max={100} value={loadProgress} aria-hidden="true" /> : null}
-            {slowLoad ? <p className="studio-vspace-engine-slow">{bt("연결이 느려 조금 더 걸리고 있어요.", "The connection is slow, so this is taking a little longer.")}</p> : null}
-          </div>
-        </div>
-      ) : null}
+      <StudioVirtualSpaceEngineMessage failure={failure} ready={ready} loadProgress={loadProgress} slowLoad={slowLoad} onRetry={() => setAttempt((value) => value + 1)} />
     </div>
   );
 }
