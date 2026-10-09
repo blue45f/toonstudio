@@ -107,6 +107,20 @@ describe("월드 캔버스의 키 입력", () => {
     expect([...heldKeys].sort()).toEqual(["KeyG", "KeyX"]);
   });
 
+  it("화면 안내가 보여 주는 E도 상호작용으로 받는다(전에는 X만 받아 안내대로 E를 눌러도 아무 일이 없었다)", () => {
+    const { canvas, heldKeys, options } = bind();
+    const first = press(canvas, "KeyE");
+    press(canvas, "KeyE", { repeat: true });
+    expect(options.onInteractKey).toHaveBeenCalledOnce();
+    expect(first.defaultPrevented).toBe(true);
+    expect(heldKeys.has("KeyE")).toBe(true);
+    press(canvas, "KeyE", { ctrlKey: true });
+    press(canvas, "KeyE", { isComposing: true });
+    expect(options.onInteractKey, "보조키·IME 조합 중에는 받지 않는다").toHaveBeenCalledOnce();
+    press(canvas, "KeyX");
+    expect(options.onInteractKey, "별칭 X도 그대로 동작한다").toHaveBeenCalledTimes(2);
+  });
+
   it("캔버스가 아닌 요소에서 온 키는 캔버스 처리기가 받지 않는다", () => {
     const { heldKeys } = bind();
     const button = document.createElement("button");

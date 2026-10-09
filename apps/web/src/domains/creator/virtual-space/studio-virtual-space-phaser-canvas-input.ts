@@ -5,6 +5,7 @@
  * 부르는지만 정한다. 이벤트 등록과 해제를 한 쌍으로 묶어 정리 누락이 생기지 않게 한다.
  */
 import { STUDIO_GHOST_TOGGLE_KEY } from "./studio-virtual-space-ghost-mode";
+import { STUDIO_INTERACT_KEY_CODES } from "./studio-virtual-space-interact-prompt";
 import { WORLD_KEY_CODES, studioWorldShouldReclaimFocus } from "./studio-virtual-space-phaser-canvas-model";
 import { studioWorldHasModalBlocker } from "./studio-virtual-space-runtime-policy";
 
@@ -20,7 +21,7 @@ export interface StudioCanvasInputOptions {
   readonly stopMovement: () => void;
   /** Escape: 배치 모드가 먼저 받고, 아니면 안내 투어를 끊고 이동을 멈춘다. */
   readonly onEscape: () => void;
-  /** 상호작용 키(X)를 처음 눌렀다(자동 반복 제외). */
+  /** 상호작용 키(화면 안내의 E, 별칭 X)를 처음 눌렀다(자동 반복 제외). */
   readonly onInteractKey: () => void;
   /** 고스트 모드 토글 키를 처음 눌렀다(자동 반복 제외). */
   readonly onGhostToggle: () => void;
@@ -41,7 +42,7 @@ export function bindStudioCanvasInput(options: StudioCanvasInputOptions): () => 
     if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || isInputBlocked()) return;
     if (!WORLD_KEY_CODES.has(event.code)) return;
     heldKeys.add(event.code);
-    if (event.code === "KeyX" && !event.repeat) options.onInteractKey();
+    if (STUDIO_INTERACT_KEY_CODES.has(event.code) && !event.repeat) options.onInteractKey();
     // 고스트 모드 토글: 반투명 + 장애물 통과 이동 (대규모 이벤트 끼임 해소)
     if (event.code === STUDIO_GHOST_TOGGLE_KEY && !event.repeat) options.onGhostToggle();
     event.preventDefault();

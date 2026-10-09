@@ -1,3 +1,4 @@
+import { STUDIO_INTERACT_KEY_CODES } from "./studio-virtual-space-interact-prompt";
 import type { StudioPeerTimeline } from "./studio-virtual-space-presentation";
 import type { StudioNpcAtmosphere, StudioNpcPhase } from "./studio-virtual-space-npc-director";
 import type { StudioVirtualNpcGuideTourRequest, StudioVirtualNpcGuideTourState } from "./studio-virtual-space-npc-guide";
@@ -191,7 +192,7 @@ export function studioEmoteFacing(pose: StudioEmotePose | null): StudioVirtualSp
 
 /** 캔버스 포커스에서 월드가 소유하는 키. 1~9·Z·M·P 등 HUD 단축키는 여기에 넣지 않는다. */
 export const WORLD_KEY_CODES: ReadonlySet<string> = new Set([
-  "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight", "KeyX", "KeyG",
+  "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight", ...STUDIO_INTERACT_KEY_CODES, "KeyG",
 ]);
 
 /** 입력 요소나 편집 가능한 요소에 포커스가 있으면 월드가 포커스를 빼앗지 않는다. */

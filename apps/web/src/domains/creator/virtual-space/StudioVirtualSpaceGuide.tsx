@@ -105,7 +105,7 @@ export function StudioVirtualSpaceGuide({ manifest, onMove, onOpen, onStop, onFo
         <ul>
           <li><span><kbd>WASD</kbd> · <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></span><span>{bt("이동", "Move")}</span></li>
           <li><span><kbd>Shift</kbd></span><span>{bt("누른 채 이동하면 달리기", "Hold to run")}</span></li>
-          <li><span><kbd>X</kbd></span><span>{bt("가까운 대상과 상호작용", "Interact with what is nearby")}</span></li>
+          <li><span><kbd>E</kbd> · <kbd>X</kbd></span><span>{bt("가까운 대상과 상호작용", "Interact with what is nearby")}</span></li>
           <li><span><kbd>1</kbd>–<kbd>9</kbd> · <kbd>Z</kbd></span><span>{bt("리액션 보내기", "Send a reaction")}</span></li>
           <li><span><kbd>⌘</kbd>/<kbd>Ctrl</kbd> + <kbd>K</kbd></span><span>{bt("방·팀원 찾기", "Find rooms & people")}</span></li>
           <li><span><kbd>Esc</kbd></span><span>{bt("열린 패널 닫기", "Close the open panel")}</span></li>
