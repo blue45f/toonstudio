@@ -12,6 +12,7 @@ import { ProductionHandoffSurface } from "./ProductionHandoffSurface";
 import { ProductionManagementWorkspace } from "./ProductionManagementWorkspace";
 import { ProductionManuscriptWorkspace } from "./ProductionManuscriptWorkspace";
 import { ProductionOperationsControlWorkspace } from "./ProductionOperationsControlWorkspace";
+import { ProductionOverviewCoverStage } from "./ProductionOverviewCoverStage";
 import { ProductionPlanningSurface } from "./ProductionPlanningSurface";
 import { ProductionProjectDashboard } from "./ProductionProjectDashboard";
 import { ProductionProjectHeader } from "./ProductionProjectHeader";
@@ -62,14 +63,16 @@ function viewerAssignmentIdsFor(aggregate: ProductionProjectAggregate, userId: s
 }
 
 /**
- * 개요: 첫 화면은 네 가지 판단(진행률·마감 임박 회차·내 할 일·최근 피드백)만 보여 주고,
- * 위험 미리 보기·복구 계획·담당자 추천 같은 운영 상세는 펼칠 때만 계산해 그린다.
+ * 개요: 표지가 있으면 첫 화면 맨 위에 표지 무대를 세우고, 이어서 네 가지 판단
+ * (진행률·마감 임박 회차·내 할 일·최근 피드백)을 보여 준다. 위험 미리 보기·복구
+ * 계획·담당자 추천 같은 운영 상세는 펼칠 때만 계산해 그린다.
  */
 function OverviewSurface({ aggregate, access, roleLens, execute, executeStrict, isDemo, viewerAssignmentIds }: SurfaceProps) {
   const bt = useBilingual("ProductionOverviewSurface");
   const [detailOpen, setDetailOpen] = useState(false);
   return (
     <div className="space-y-4">
+      <ProductionOverviewCoverStage aggregate={aggregate} />
       <ProductionProjectDashboard aggregate={aggregate} roleLens={roleLens} viewerAssignmentIds={viewerAssignmentIds} />
       <details
         className="group rounded-2xl border border-line bg-card"
