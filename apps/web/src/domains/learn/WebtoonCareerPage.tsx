@@ -12,7 +12,8 @@ import {
   processStepTitle,
 } from "./learning-reference-data";
 
-const secondaryLinkClass = "inline-flex min-h-11 items-center justify-center rounded-xl border border-line px-4 py-2 text-sm font-bold text-fg hover:bg-raised";
+/** 히어로 무대(어두운 아트 위) 전용 보조 링크 — 본문 패널 위가 아니라 스크림 위에서 읽혀야 한다. */
+const heroSecondaryLinkClass = "inline-flex min-h-11 items-center justify-center rounded-xl border border-white/40 px-4 py-2 text-sm font-bold text-white hover:bg-white/10";
 
 /** 직무별 대표 일러스트 — 카드 상단의 역할 비주얼로 사용한다. */
 const ROLE_ILLUSTRATIONS: Readonly<Record<string, MotionIllustrationName>> = {
@@ -41,10 +42,19 @@ export function WebtoonCareerPage() {
           <a className="inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-4 py-2 text-sm font-bold text-on-accent hover:bg-accent-2" href="#career-roles">
             직무 살펴보기
           </a>
-          <Link className={secondaryLinkClass} to="/learn/process">제작 과정 보기</Link>
-          <Link className={secondaryLinkClass} to="/learn/education">관련 교육 찾기</Link>
+          <Link className={heroSecondaryLinkClass} to="/learn/process">제작 과정 보기</Link>
+          <Link className={heroSecondaryLinkClass} to="/learn/education">관련 교육 찾기</Link>
         </>
       )}
+      heroArt={{
+        src: "/brand/hero-20261009-wave11/careers-studio-team.webp",
+        srcSet: "/brand/hero-20261009-wave11/careers-studio-team-800.webp 800w, /brand/hero-20261009-wave11/careers-studio-team-1280.webp 1280w, /brand/hero-20261009-wave11/careers-studio-team.webp 1920w",
+        sizes: "(min-width: 80rem) 76rem, 100vw",
+        alt: "노을 지는 작업실에서 글·콘티·선화·배경·채색을 나눠 맡은 창작자들이 한 편을 함께 만드는 콘셉트 아트",
+        width: 1920,
+        height: 1280,
+        caption: "한 편은 글·연출·선화·배경·채색·운영, 여러 역할의 손을 거쳐 완성됩니다.",
+      }}
     >
       <section className="rounded-3xl border border-line bg-panel p-6 sm:p-8" aria-labelledby="career-use-title">
         <p className="text-xs font-bold tracking-[.14em] text-accent">HOW TO USE</p>
