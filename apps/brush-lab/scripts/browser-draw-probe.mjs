@@ -19,6 +19,17 @@
 //   --colors a,b,c,d[,e]: 색 확인 단계(BL-1b). 프리셋마다 캔버스를 비우고 처음 4색(이름 red|blue|green|purple|orange|teal 또는 #rrggbb)으로 가로 획 4개를,
 //                          5번째 색이 있으면 세로 교차 획 1개를 그리고, 마지막에 빠른 획(이벤트당 40 px ≈ 5000 px/s)을 그린다.
 //                          띠별 평균 색이 지정색과 가까운지(색조 거리)와 빠른 획이 그려졌는지 객관 수치로 기록한다. 스크린샷 `<레인>-<프리셋>-colors.png`
+//   --input-modes a,b,c: 입력 방식 확인 단계(IN-1). 첫 번째 프리셋(기본 pencil-hb)으로 방식마다 캔버스를 비우고 같은 세 획(지그재그·스파이럴·필기체 고리)을 그린 뒤
+//                          스크린샷 `<레인>-<프리셋>-input-<방식>.png`을 남긴다. 방식: one-euro(기본) | one-euro-max(슬라이더 100) | lazy-brush(끈 48 px+코너 게이트) |
+//                          lazy-brush-nogate | pen-spring(지연 약 33 ms+코너 게이트) | pen-spring-nogate | off. 획 끝이 포인터 업 위치에 닿았는지(잉크 경계 상자)를 기록한다.
+//   --input-only       : 기본 그리기·색 확인을 건너뛰고 입력 방식 확인 단계만 한다(`--skip-extras` 포함)
+//   --rapier-fail-check: 실험 레인 실패 경로 확인(Z-1). Rapier 모듈 요청(`*rapier2d-compat*`)을 브라우저 네트워크 계층에서 차단한 채 bristle-rapier 를 고르고
+//                          한글 사유(`lab-draw-lane-error`)가 나오는지, 다른 레인으로 자동 전환하지 않는지 본다. 로더 스텁이 아니라 실제 import() 실패다. 이 단계만 하고 끝낸다
+//   --rapier-delay-ms N: Rapier 모듈 요청을 N ms 늦춘다(로컬 서버라 너무 빨리 끝나 "초기화 중" 표시를 못 잡는 것을 막는 지연 주입). 늦춘 동안 `lab-draw-lane-starting` 문구를 기록한다
+//   --compare-check <레인>: 마지막에 "A/B 비교" 탭에서 레인 A=cpu-reference, 레인 B=<레인>을 실제로 실행해 실험 레인의 종합 판정이 "인증 제외(실험)"인지 확인한다
+//   --mouse-gap-ms N   : 마우스 곡선의 이벤트 사이 대기(기본 8 ms). 크게 주면(예: 250) 표본 시각이 크게 벌어지는 병적 입력을 브라우저에서 재현한다(MP-2)
+//   --max-stroke-ms N  : 마우스 곡선 한 획이 입력부터 합성(획 수 증가)까지 N ms 안에 끝나지 않으면 실패로 보고 즉시 중단한다(회귀 가드, MP-2: mpm-paint 1024×640 정지).
+//                          값이 없으면 한도 없음(바깥 timeout 에 맡긴다). 마우스·펜 획마다 소요(ms)와 직후 HUD 값을 요약(`strokes`)에 기록한다
 //   --skip-extras      : 우클릭·pointercancel·PNG 저장·모바일 레이아웃 점검을 건너뛴다
 //   --colors-only      : 기본 그리기(마우스 곡선·펜 지그재그)를 건너뛰고 색 확인 단계만 한다
 //   --verbose          : 페이지 콘솔 전체와 Chromium stderr를 stderr에 그대로 쓴다(진단용)
@@ -61,6 +72,13 @@ function parseArgs(argv) {
     serve: false,
     colors: [],
     skipDefaultDraw: false,
+    inputModes: [],
+    inputOnly: false,
+    rapierFail: false,
+    rapierDelayMs: 0,
+    compareLane: null,
+    mouseGapMs: 8,
+    maxStrokeMs: 0,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
@@ -71,6 +89,17 @@ function parseArgs(argv) {
     else if (a === "--size") opts.size = String(next());
     else if (a === "--colors") opts.colors = String(next()).split(",").filter(Boolean);
     else if (a === "--colors-only") opts.skipDefaultDraw = true;
+    else if (a === "--input-modes") opts.inputModes = String(next()).split(",").filter(Boolean);
+    else if (a === "--input-only") {
+      opts.inputOnly = true;
+      opts.skipDefaultDraw = true;
+      opts.skipExtras = true;
+    }
+    else if (a === "--rapier-fail-check") opts.rapierFail = true;
+    else if (a === "--rapier-delay-ms") opts.rapierDelayMs = Number(next());
+    else if (a === "--compare-check") opts.compareLane = String(next());
+    else if (a === "--mouse-gap-ms") opts.mouseGapMs = Number(next());
+    else if (a === "--max-stroke-ms") opts.maxStrokeMs = Number(next());
     else if (a === "--skip-extras") opts.skipExtras = true;
     else if (a === "--verbose") opts.verbose = true;
     else if (a === "--serve-child") opts.serve = true;
@@ -90,7 +119,8 @@ async function serveChild() {
     logLevel: "error",
     server: { host: "127.0.0.1", port: 0, strictPort: false, hmr: false, watch: null },
     // React(CJS)는 사전 번들이 필요하다. 첫 로드 도중 새 의존성 발견으로 페이지가 다시 로드되지 않게 목록을 미리 준다.
-    optimizeDeps: { include: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime", "zod"] },
+    // Rapier 도 미리 번들해 레인을 처음 고를 때(동적 import) 새 의존성 발견으로 페이지가 다시 로드되지 않게 한다.
+    optimizeDeps: { include: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime", "zod", "@dimforge/rapier2d-compat"] },
   });
   await server.listen();
   const address = server.httpServer?.address();
@@ -240,6 +270,74 @@ function inkStats(png) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 입력 방식 확인 도우미(IN-1)                                          */
+/* ------------------------------------------------------------------ */
+/** 방식 id → 선택기 값·슬라이더(null이면 건드리지 않음)·코너 게이트. */
+const INPUT_MODES = {
+  "one-euro": { mode: "one-euro", pct: null, gate: null },
+  "one-euro-max": { mode: "one-euro", pct: 100, gate: null },
+  "lazy-brush": { mode: "lazy-brush", pct: 100, gate: true },
+  "lazy-brush-nogate": { mode: "lazy-brush", pct: 100, gate: false },
+  "pen-spring": { mode: "pen-spring", pct: 70, gate: true },
+  "pen-spring-nogate": { mode: "pen-spring", pct: 70, gate: false },
+  off: { mode: "off", pct: null, gate: null },
+};
+
+/**
+ * 입력 확인용 세 획의 경로(캔버스 비율 좌표 0..1). 이벤트 간격은 호출자가 정한다.
+ * - zigzag: 6세그먼트 지그재그(모서리 정확도: 끈 당김이 모서리를 깎는가)
+ * - spiral: 아르키메데스 소용돌이 2회전(곡선 형상: 물리 펜이 곡선을 부풀리거나 깎는가)
+ * - script: 필기체 모양의 고리(트로코이드 4고리, 곡률이 큰 구간: 지연·오버슈트)
+ */
+function inputStrokePath(kind, n) {
+  const pts = [];
+  if (kind === "zigzag") {
+    const v = [0, 1, 2, 3, 4, 5, 6].map((i) => [0.08 + (0.36 * i) / 6, i % 2 === 0 ? 0.3 : 0.62]);
+    for (let k = 1; k < v.length; k += 1) {
+      for (let i = 0; i < n; i += 1) {
+        const u = i / n;
+        pts.push([v[k - 1][0] + (v[k][0] - v[k - 1][0]) * u, v[k - 1][1] + (v[k][1] - v[k - 1][1]) * u]);
+      }
+    }
+    pts.push(v[v.length - 1]);
+  } else if (kind === "spiral") {
+    for (let i = 0; i <= n * 6; i += 1) {
+      const t = i / (n * 6);
+      const th = 4 * Math.PI * t;
+      const r = 0.02 + 0.2 * t;
+      pts.push([0.73 + r * 0.62 * Math.cos(th), 0.46 + r * Math.sin(th)]);
+    }
+  } else {
+    for (let i = 0; i <= n * 8; i += 1) {
+      const t = i / (n * 8);
+      pts.push([0.08 + 0.84 * t + 0.045 * Math.cos(2 * Math.PI * 4 * t), 0.84 + 0.09 * Math.sin(2 * Math.PI * 4 * t)]);
+    }
+  }
+  return pts;
+}
+
+/** 폴리라인(px)을 호 길이 `stepPx` 간격으로 재표본한다(첫 점·끝 점 포함). 이벤트당 이동거리를 일정하게 만든다. */
+function resampleByArc(points, stepPx) {
+  const out = [points[0]];
+  let carry = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    const [ax, ay] = points[i - 1];
+    const [bx, by] = points[i];
+    const len = Math.hypot(bx - ax, by - ay);
+    let at = stepPx - carry;
+    while (at <= len) {
+      out.push([ax + ((bx - ax) * at) / len, ay + ((by - ay) * at) / len]);
+      at += stepPx;
+    }
+    carry = len - (at - stepPx);
+  }
+  const last = points[points.length - 1];
+  const tail = out[out.length - 1];
+  if (Math.hypot(last[0] - tail[0], last[1] - tail[1]) > 1e-6) out.push(last);
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
 /* 색 확인 도우미(BL-1b)                                               */
 /* ------------------------------------------------------------------ */
 const NAMED_COLORS = {
@@ -339,7 +437,7 @@ async function main() {
     failures.push(message);
     log(`FAIL ${message}`);
   };
-  const summary = { chrome, userAgent: null, lane: opts.lane, size: opts.size, presets: [], extras: {}, failures, pageErrors: [], consoleErrors: [] };
+  const summary = { chrome, userAgent: null, lane: opts.lane, size: opts.size, presets: [], extras: {}, failures, pageErrors: [], consoleErrors: [], inputShots: [] };
 
   // 1) Vite dev 서버(detached 그룹)
   const server = spawnGroup(process.execPath, [SELF, "--serve-child"], { stdio: ["ignore", "pipe", "pipe"], cwd: labRoot });
@@ -401,7 +499,7 @@ async function main() {
       "pointermove",
       (e) => {
         if (e.buttons === 0) return;
-        window.__drawProbe.pointer.push({ t: e.pointerType, p: Number(e.pressure.toFixed(3)), tx: e.tiltX, ty: e.tiltY });
+        window.__drawProbe.pointer.push({ t: e.pointerType, p: Number(e.pressure.toFixed(3)), tx: e.tiltX, ty: e.tiltY, ts: e.timeStamp });
         if (window.__drawProbe.pointer.length > 5000) window.__drawProbe.pointer.shift();
       },
       true,
@@ -412,6 +510,23 @@ async function main() {
   const stageSel = '[data-testid="lab-draw-stage"]';
   const statusSel = '[data-testid="lab-draw-status"]';
   const cdp = await context.newCDPSession(page);
+
+  // Rapier 모듈 요청을 브라우저 네트워크 계층에서 막거나 늦춘다(실제 동적 import 경로를 그대로 쓰고 로더를 스텁으로 바꾸지 않는다).
+  const rapierRequests = [];
+  if (opts.rapierFail || opts.rapierDelayMs > 0) {
+    await context.route(/rapier2d-compat/u, async (route) => {
+      rapierRequests.push({ url: route.request().url().slice(0, 140), blocked: opts.rapierFail });
+      if (opts.rapierFail) {
+        await route.abort("failed");
+        return;
+      }
+      await sleep(opts.rapierDelayMs);
+      await route.continue();
+    });
+  }
+  summary.extras.rapierRequests = rapierRequests;
+  summary.extras.laneUi = [];
+  const EXPERIMENTAL_LANES = new Set(["mpm-paint", "bristle-pbd", "bristle-rapier"]);
 
   const waitReady = async (label) => {
     await page.waitForFunction(
@@ -453,6 +568,76 @@ async function main() {
     await waitReady(label);
   };
 
+  /** 엔진 선택 영역의 실험 배지·설명·옵션 문구를 기록하고 영역 스크린샷을 남긴다. 실험 레인이면 배지가 있어야 하고 아니면 없어야 한다. */
+  const captureLaneUi = async (id, tag = "") => {
+    const panel = page.locator('[data-testid="lab-draw-lane"]');
+    const badge = panel.locator('[data-testid="lab-experimental-badge"]');
+    const hasBadge = (await badge.count()) > 0;
+    const info = {
+      laneId: id,
+      hasBadge,
+      badgeText: hasBadge ? await badge.first().textContent() : null,
+      note: hasBadge ? await panel.locator('[data-testid="lab-experimental-note"]').textContent() : null,
+      optionText: await page.locator(`#lab-draw-lane-select option[value="${id}"]`).textContent(),
+      hudBadge: (await page.locator('[data-testid="lab-draw-hud"] [data-testid="lab-experimental-badge"]').count()) > 0,
+    };
+    info.shot = path.join(opts.out, `${id}-lane-panel${tag}.png`);
+    await panel.screenshot({ path: info.shot });
+    summary.extras.laneUi.push(info);
+    log(`레인 UI ${id}: 배지 ${hasBadge ? `'${info.badgeText}'` : "없음"}, HUD 배지 ${info.hudBadge ? "있음" : "없음"}, 옵션 '${info.optionText}'`);
+    if (EXPERIMENTAL_LANES.has(id) !== hasBadge) fail(`${id}: 실험 배지 ${hasBadge ? "가 안정 레인에 붙었다" : "가 실험 레인에 없다"}`);
+    if (hasBadge && !(info.note ?? "").includes("Node 22 단일 스레드")) fail(`${id}: 검증 범위 설명에 'Node 22 단일 스레드'가 없다`);
+    return info;
+  };
+
+  /**
+   * Rapier 경로 확인(Z-1). 차단 모드: 모듈 요청이 실패하면 선택기 아래에 한글 사유가 나오고 다른 레인으로 바뀌지 않는지.
+   * 지연 모드: 모듈이 늦게 오는 동안 "초기화 중" 문구가 보이고 끝나면 사라지는지.
+   */
+  const rapierPathCheck = async () => {
+    const sel = page.locator("#lab-draw-lane-select");
+    const entry = { mode: opts.rapierFail ? "blocked" : "delayed", delayMs: opts.rapierDelayMs, ok: false };
+    summary.extras.rapierPath = entry;
+    await sel.selectOption("bristle-rapier");
+    if (opts.rapierFail) {
+      await page.waitForFunction((s) => document.querySelector(s)?.textContent === "레인 시작 실패", statusSel, { timeout: 90_000 });
+      const alert = page.locator('[data-testid="lab-draw-lane-error"]');
+      await alert.waitFor({ timeout: 10_000 });
+      entry.errorText = await alert.textContent();
+      entry.statusText = await page.locator(statusSel).textContent();
+      entry.selectedLane = await sel.inputValue();
+      entry.notices = await page.locator('[data-testid="lab-draw-notices"]').textContent().catch(() => null);
+      entry.requests = rapierRequests.length;
+      entry.panelShot = path.join(opts.out, "bristle-rapier-init-failure-panel.png");
+      await page.locator('[data-testid="lab-draw-lane"]').screenshot({ path: entry.panelShot });
+      entry.pageShot = path.join(opts.out, "bristle-rapier-init-failure-page.png");
+      await page.screenshot({ path: entry.pageShot, fullPage: true });
+      const text = entry.errorText ?? "";
+      entry.ok =
+        text.includes("wasm-artifact-missing") &&
+        text.includes("Rapier 물리 모듈(@dimforge/rapier2d-compat)을 불러오지 못했다") &&
+        text.includes("다른 레인으로 자동 전환하지 않는다") &&
+        entry.selectedLane === "bristle-rapier" &&
+        entry.requests > 0;
+      log(`${entry.ok ? "ok  " : "FAIL"} Rapier 차단: 상태 '${entry.statusText}', 선택 레인 ${entry.selectedLane}, 사유: ${text.slice(0, 260)}`);
+      if (!entry.ok) fail(`Rapier 초기화 실패 경로가 기대와 다르다: ${JSON.stringify({ text: text.slice(0, 200), lane: entry.selectedLane, requests: entry.requests })}`);
+      await captureLaneUi("bristle-rapier", "-failed");
+    } else {
+      const starting = page.locator('[data-testid="lab-draw-lane-starting"]');
+      await starting.waitFor({ timeout: 30_000 });
+      entry.startingText = await starting.textContent();
+      entry.startingShot = path.join(opts.out, "bristle-rapier-init-starting-panel.png");
+      await page.locator('[data-testid="lab-draw-lane"]').screenshot({ path: entry.startingShot });
+      entry.hudStatusWhileStarting = await page.locator(statusSel).textContent();
+      await waitReady("Rapier 지연 로드");
+      entry.startingGone = (await starting.count()) === 0;
+      entry.requests = rapierRequests.length;
+      entry.ok = (entry.startingText ?? "").includes("Rapier 물리 엔진(wasm)을 불러와 초기화하는 중") && entry.startingGone && entry.requests > 0;
+      log(`${entry.ok ? "ok  " : "FAIL"} Rapier 지연 ${opts.rapierDelayMs} ms: 초기화 중 문구 '${(entry.startingText ?? "").slice(0, 80)}', 끝난 뒤 사라짐 ${entry.startingGone}`);
+      if (!entry.ok) fail(`Rapier 초기화 중 표시가 기대와 다르다: ${JSON.stringify(entry)}`);
+    }
+  };
+
   try {
     await page.goto(url, { timeout: 120_000, waitUntil: "domcontentloaded" });
     await page.waitForSelector('[data-testid="lab-draw-view"]', { timeout: 120_000 });
@@ -468,14 +653,22 @@ async function main() {
     const initialOrigin = await page.locator('[data-testid="lab-draw-lane-origin"]').textContent();
     summary.extras.initialLane = { laneId: initialLane, origin: initialOrigin };
     log(`시작 레인(능력 탐지): ${initialLane} — ${initialOrigin}`);
-    if (opts.lane !== "auto" && opts.lane !== initialLane) {
-      await page.evaluate((sel) => document.querySelector(sel)?.setAttribute("data-old", "1"), stageSel);
-      await page.locator("#lab-draw-lane-select").selectOption(opts.lane);
-      await page.waitForFunction((sel) => {
-        const el = document.querySelector(sel);
-        return el !== null && !el.hasAttribute("data-old");
-      }, stageSel, { timeout: 60_000 });
-      await waitReady(`레인 ${opts.lane}`);
+    if (opts.rapierFail) {
+      // 실패 경로 확인만 하고 끝낸다(다른 단계는 모두 끈다).
+      await rapierPathCheck();
+      Object.assign(opts, { presets: [], skipDefaultDraw: true, inputModes: [], colors: [], skipExtras: true, compareLane: null });
+    } else if (opts.lane !== "auto" && opts.lane !== initialLane) {
+      if (opts.lane === "bristle-rapier" && opts.rapierDelayMs > 0) {
+        await rapierPathCheck();
+      } else {
+        await page.evaluate((sel) => document.querySelector(sel)?.setAttribute("data-old", "1"), stageSel);
+        await page.locator("#lab-draw-lane-select").selectOption(opts.lane);
+        await page.waitForFunction((sel) => {
+          const el = document.querySelector(sel);
+          return el !== null && !el.hasAttribute("data-old");
+        }, stageSel, { timeout: 60_000 });
+        await waitReady(`레인 ${opts.lane}`);
+      }
     }
     const laneId = await page.locator("#lab-draw-lane-select").inputValue();
     summary.lane = laneId;
@@ -487,6 +680,7 @@ async function main() {
     const badges = await page.locator('[data-testid="lab-draw-hud"] .lab-badge').allTextContents();
     summary.extras.hudBadges = badges;
     log(`HUD 배지: ${badges.join(" | ") || "(없음)"}`);
+    if (!opts.rapierFail) await captureLaneUi(laneId);
 
     if (opts.size !== "1024x640") {
       await page.locator("#lab-draw-canvas-size").selectOption(opts.size);
@@ -523,7 +717,7 @@ async function main() {
       for (let i = 1; i <= steps; i += 1) {
         const t = i / steps;
         await page.mouse.move(x0 + (x1 - x0) * t, cy + Math.sin(t * Math.PI * 2) * amp);
-        await sleep(8);
+        await sleep(opts.mouseGapMs);
       }
       await page.mouse.up();
     };
@@ -598,11 +792,33 @@ async function main() {
           window.__drawProbe.pointer.length = 0;
         });
         const t0 = Date.now();
-        await drawMouseCurve(b, 0.3);
-        await waitStrokes(before + 1, `${presetId} 마우스 곡선`);
+        // 획별 소요와 직후 HUD(레인이 멈추거나 느려지는 회귀를 숫자로 남긴다). --max-stroke-ms 를 넘으면 그 즉시 실패로 끝낸다.
+        entry.strokes = [];
+        const timed = async (name, draw, expectCount) => {
+          const t = Date.now();
+          let timer = null;
+          const guard = opts.maxStrokeMs > 0
+            ? new Promise((_, reject) => {
+                timer = setTimeout(() => reject(new Error(`${presetId} ${name}: ${opts.maxStrokeMs} ms 안에 끝나지 않았다(--max-stroke-ms)`)), opts.maxStrokeMs);
+              })
+            : null;
+          try {
+            const run = (async () => {
+              await draw();
+              await waitStrokes(expectCount, `${presetId} ${name}`);
+            })();
+            await (guard ? Promise.race([run, guard]) : run);
+          } finally {
+            if (timer) clearTimeout(timer);
+          }
+          const wallMs = Date.now() - t;
+          const hud = await readHud();
+          entry.strokes.push({ name, wallMs, hud });
+          log(`  ${name}: 입력~합성 ${wallMs} ms, HUD addSamples ${hud.addSamples} ms, endStroke ${hud.endStroke} ms, readback ${hud.readback} ms, dab ${hud.dabs}`);
+        };
+        await timed("마우스 곡선", () => drawMouseCurve(b, 0.3), before + 1);
         const mouseEvents = await page.evaluate(() => window.__drawProbe.pointer.filter((p) => p.t === "mouse"));
-        await drawPenZigzag(b, 0.65);
-        await waitStrokes(before + 2, `${presetId} 펜 지그재그`);
+        await timed("펜 지그재그", () => drawPenZigzag(b, 0.65), before + 2);
         const penEvents = await page.evaluate(() => window.__drawProbe.pointer.filter((p) => p.t === "pen"));
         entry.drawMs = Date.now() - t0;
         // 표시가 반영될 시간을 준다(GPU 표시 레인은 다음 프레임).
@@ -629,6 +845,95 @@ async function main() {
       }
     }
 
+
+    // 입력 방식 확인 단계(IN-1): 방식마다 같은 세 획(지그재그·스파이럴·필기체)을 그려 스크린샷을 남긴다.
+    if (opts.inputModes.length > 0) {
+      const presetId = opts.presets[0] ?? "pencil-hb";
+      const setRange = (value) =>
+        page.locator("#lab-draw-stab").evaluate((el, v) => {
+          const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+          setter.call(el, String(v));
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        }, value);
+      await page.locator('[data-testid="lab-draw-chip-all"]').click();
+      await page.fill("#lab-draw-search", "");
+      const brush = page.locator(`[data-testid="lab-draw-brush-${presetId}"]`);
+      await brush.scrollIntoViewIfNeeded();
+      await brush.click();
+      for (const modeId of opts.inputModes) {
+        const def = INPUT_MODES[modeId];
+        const entry = { mode: modeId, presetId, laneId, ok: false, strokes: [] };
+        summary.inputShots.push(entry);
+        if (!def) {
+          entry.error = `알 수 없는 입력 방식: ${modeId}`;
+          fail(entry.error);
+          continue;
+        }
+        try {
+          await clearAndWait(`입력 방식 ${modeId}`);
+          await page.locator("#lab-draw-stab-mode").selectOption(def.mode);
+          if (def.pct !== null) await setRange(def.pct);
+          if (def.gate !== null) {
+            const gate = page.locator('[data-testid="lab-draw-corner-gate"]');
+            if ((await gate.isChecked()) !== def.gate) await gate.click();
+          }
+          entry.help = (await page.locator('[data-testid="lab-draw-stab-help"]').textContent()) ?? null;
+          entry.sliderText = await page.locator("#lab-draw-stab").getAttribute("aria-valuetext");
+          const b = await box();
+          let count = await strokeCount();
+          // 이벤트 시각을 CDP `timestamp`로 고정한다(240 Hz, 이벤트당 5 px = 1.2 px/ms). 실제 주입 속도는 CPU 부하에 따라 들쭉날쭉해
+          // 속도 가드(0.2 px/ms)·지연(ms)이 의미를 잃기 때문이다. 페이지가 받은 `event.timeStamp` 간격은 `inputTimestamps`로 기록한다.
+          const DT_MS = 1000 / 240;
+          const STEP_PX = 5;
+          const sendMouse = (type, x, y, tMs) =>
+            cdp.send("Input.dispatchMouseEvent", {
+              type,
+              x,
+              y,
+              button: "left",
+              buttons: type === "mouseReleased" ? 0 : 1,
+              clickCount: type === "mouseMoved" ? 0 : 1,
+              pointerType: "mouse",
+              timestamp: tMs / 1000,
+            });
+          await page.evaluate(() => {
+            window.__drawProbe.pointer.length = 0;
+          });
+          for (const kind of ["zigzag", "spiral", "script"]) {
+            const dense = inputStrokePath(kind, 200).map(([fx, fy]) => [b.x + b.width * fx, b.y + b.height * fy]);
+            const pts = resampleByArc(dense, STEP_PX);
+            const first = pts[0];
+            const last = pts[pts.length - 1];
+            let tMs = Date.now() + 1000;
+            await sendMouse("mousePressed", first[0], first[1], tMs);
+            for (let i = 1; i < pts.length; i += 1) {
+              tMs += DT_MS;
+              await sendMouse("mouseMoved", pts[i][0], pts[i][1], tMs);
+            }
+            tMs += DT_MS;
+            await sendMouse("mouseReleased", last[0], last[1], tMs);
+            count += 1;
+            await waitStrokes(count, `${modeId} ${kind}`);
+            entry.strokes.push({ kind, events: pts.length, end: [Math.round(last[0] - b.x), Math.round(last[1] - b.y)] });
+          }
+          const stamps = (await page.evaluate(() => window.__drawProbe.pointer.map((p) => p.ts))).filter((v) => typeof v === "number");
+          const deltas = [];
+          for (let i = 1; i < stamps.length; i += 1) if (stamps[i] - stamps[i - 1] < 100) deltas.push(stamps[i] - stamps[i - 1]);
+          deltas.sort((x, y) => x - y);
+          entry.inputTimestamps = { events: stamps.length, medianDeltaMs: deltas.length ? Number(deltas[deltas.length >> 1].toFixed(3)) : null, expectedDeltaMs: Number(DT_MS.toFixed(3)) };
+          await sleep(400);
+          const shot = await shotCanvas(`${laneId}-${presetId}-input-${modeId}.png`);
+          Object.assign(entry, { shot: shot.file, inkPixels: shot.inkPixels, inkBbox: shot.bbox });
+          entry.notices = await page.locator('[data-testid="lab-draw-notices"]').textContent().catch(() => null);
+          entry.ok = shot.inkPixels > 200 && !entry.notices;
+          log(`${entry.ok ? "ok  " : "FAIL"} 입력 ${modeId}: 잉크 ${shot.inkPixels}px, 방식 '${entry.sliderText ?? "-"}'${entry.notices ? ` 알림: ${entry.notices.slice(0, 200)}` : ""}`);
+          if (!entry.ok) fail(`입력 방식 ${modeId}: 잉크가 보이지 않거나 알림이 떴다`);
+        } catch (error) {
+          entry.error = String(error.message ?? error).split("\n")[0];
+          fail(`입력 방식 ${modeId}: ${entry.error}`);
+        }
+      }
+    }
 
     // 색 확인 단계(BL-1b): 서로 다른 색으로 그려 색이 실제로 적용되는지, 습식 색 번짐·빠른 획을 본다.
     if (opts.colors.length > 0) {
@@ -719,6 +1024,41 @@ async function main() {
           entry.error = String(error.message ?? error).split("\n")[0];
           fail(`${presetId}(색 확인): ${entry.error}`);
         }
+      }
+    }
+
+    // A/B 비교 탭 확인(Z-1): 실험 레인의 종합 판정이 "인증 제외(실험)"로 나오고 안정 레인은 PASS/FAIL/UNAVAILABLE 그대로인지.
+    if (opts.compareLane) {
+      const entry = { laneB: opts.compareLane, ok: false };
+      summary.extras.compare = entry;
+      try {
+        await page.getByRole("tab", { name: "A/B 비교" }).click();
+        await page.waitForSelector("#lab-lane-b", { timeout: 30_000 });
+        await page.selectOption("#lab-lane-a", "cpu-reference");
+        await page.selectOption("#lab-lane-b", opts.compareLane);
+        entry.laneBBadge = await page.locator('[data-testid="lab-lane-badge-b"]').textContent();
+        entry.laneBNote = await page.locator('[data-testid="lab-experimental-note"]').first().textContent().catch(() => null);
+        await page.getByRole("button", { name: "A/B 실행" }).click();
+        await page.waitForSelector('[data-testid="lab-verdict-b"]', { timeout: 240_000 });
+        entry.verdictA = await page.locator('[data-testid="lab-verdict-a"]').textContent();
+        entry.verdictB = await page.locator('[data-testid="lab-verdict-b"]').textContent();
+        entry.excludedNote = await page.locator('[data-testid="lab-verdict-excluded-note"]').textContent().catch(() => null);
+        entry.errors = await page.locator('[aria-label="오류 목록"]').textContent().catch(() => null);
+        entry.shot = path.join(opts.out, `compare-${opts.compareLane}-verdict.png`);
+        await page.screenshot({ path: entry.shot, fullPage: true });
+        await page.getByRole("tab", { name: "리포트" }).click();
+        entry.reportSummary = await page.locator('[data-testid="lab-report-summary"]').textContent().catch(() => null);
+        entry.reportShot = path.join(opts.out, `report-${opts.compareLane}-summary.png`);
+        await page.screenshot({ path: entry.reportShot, fullPage: true });
+        entry.ok = entry.verdictB === "인증 제외(실험)" && entry.verdictA !== "인증 제외(실험)" && (entry.reportSummary ?? "").includes("제외");
+        log(`${entry.ok ? "ok  " : "FAIL"} A/B 비교(B=${opts.compareLane}): A ${entry.verdictA} / B ${entry.verdictB}, 리포트 집계 '${entry.reportSummary}'`);
+        if (!entry.ok) fail(`A/B 비교의 실험 레인 판정이 기대와 다르다: ${JSON.stringify({ a: entry.verdictA, b: entry.verdictB, errors: entry.errors })}`);
+        await page.getByRole("tab", { name: "그리기" }).click();
+        // 탭을 오가며 스크롤 위치가 달라졌으므로 캔버스가 화면에 보이게 되돌린다(이후 단계가 화면 밖 좌표로 마우스를 보내지 않게).
+        await page.locator(stageSel).scrollIntoViewIfNeeded();
+      } catch (error) {
+        entry.error = String(error.message ?? error).split("\n")[0];
+        fail(`A/B 비교 확인: ${entry.error}`);
       }
     }
 

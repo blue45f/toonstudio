@@ -1,4 +1,4 @@
-import { STUDIO_BOOT_MAX_MS, STUDIO_BOOT_STALL_MS, studioVisibleBootDeadline } from "./experience/studio-visible-boot-deadline";
+import { createStudioBootProgress } from "./studio-virtual-space-phaser-canvas-boot-progress";
 import {
   useEffect,
   useRef,
@@ -7,7 +7,7 @@ import {
 
 import {
   StudioFixedStepClock, StudioFixedStepPose,
-  studioStableFacing, studioRenderViewport, studioCameraLerp, studioCoverRect,
+  studioStableFacing, studioRenderViewport,
 } from "./studio-virtual-space-presentation";
 import {
   StudioNpcDirector, studioNpcActivityLabel, studioNpcInteraction, studioNpcLabel, studioNpcRole,
@@ -76,7 +76,6 @@ import {
   studioGhostCollisionOverrides,
   studioGhostSeekInput,
   STUDIO_GHOST_SPRITE_ALPHA,
-  STUDIO_GHOST_TOGGLE_KEY,
 } from "./studio-virtual-space-ghost-mode";
 import { buildStudioLocateGuide } from "./studio-virtual-space-locate-guide";
 import {
@@ -111,6 +110,9 @@ import {
   studioVirtualLivingTownAssetUrl,
 } from "./studio-virtual-space-art-style";
 import { StudioTextResolutionRuntime } from "./studio-virtual-space-text-resolution";
+import { createStudioTextureLod, type StudioTextureLodRuntime } from "./studio-virtual-space-texture-lod";
+import { StudioUserZoomRuntime } from "./studio-virtual-space-user-zoom";
+import { StudioCameraPanRuntime, bindStudioCameraGestures } from "./studio-virtual-space-camera-pan";
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
 import { drawStudioModularCampus } from "./studio-virtual-space-modular-campus";
 import { studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
@@ -118,7 +120,7 @@ import { registerStudioSceneAtlas,
   StudioVirtualSetDressingRuntime, studioSceneActorScale, studioSceneOverlayScale } from "./studio-virtual-space-scene-art-runtime";
 import { studioVirtualWorldSetDressing } from "./studio-virtual-space-world-set-dressing";
 import { studioVirtualWorldKind } from "./studio-virtual-space-world-presentation";
-import { applyStudioWorldCamera, fitStudioHorizonArtwork, studioCameraEdgeLerpFactor } from "./studio-virtual-space-world-camera";
+import { applyStudioCameraFollow, applyStudioWorldCamera, fitStudioHorizonArtwork } from "./studio-virtual-space-world-camera";
 import {
   STUDIO_ZONE_FADE_COLOR,
   beginStudioZoneDepartureTransition,
@@ -270,12 +272,10 @@ import {
   studioEmoteFacing,
   studioFacingToward,
   studioWorldMayTakeFocus,
-  studioWorldShouldReclaimFocus,
   EMPTY_DECORATIONS,
   NPC_LOOK_DISTANCE,
   NPC_NOTICE_COOLDOWN_MS,
   STUDIO_EMOTE_DEDUPE_MS,
-  WORLD_KEY_CODES,
   type NpcVisual,
   type OcclusionVisual,
   type PeerVisual,
@@ -285,8 +285,10 @@ import { createStudioSpriteVisualApplier } from "./studio-virtual-space-sprite-v
 import { createStudioNameplateRenderer } from "./studio-virtual-space-nameplate-renderer";
 import { createStudioCharacterTexturePreparer } from "./studio-virtual-space-character-texture-preparer";
 import { createStudioSceneCharacterAssetResidency } from "./studio-virtual-space-phaser-canvas-character-residency";
-import { drawStudioOcclusionLayers, placeStudioWorldPropImages } from "./studio-virtual-space-phaser-canvas-world-layers";
+import { drawStudioBackdropLayers, drawStudioOcclusionLayers, placeStudioWorldPropImages } from "./studio-virtual-space-phaser-canvas-world-layers";
 import { drawStudioProximityOverlay } from "./studio-virtual-space-phaser-canvas-proximity-overlay";
+import { bindStudioCanvasInput } from "./studio-virtual-space-phaser-canvas-input";
+import { StudioVirtualSpaceEngineMessage } from "./StudioVirtualSpaceEngineMessage";
 import { studioCharacterBootAssets, studioSceneArtKeys } from "./studio-virtual-space-boot-assets";
 
 export type {
@@ -467,9 +469,6 @@ export function StudioVirtualSpacePhaserCanvas({
     let sceneReady = false;
     let engineFailed = false;
     const cleanup: (() => void)[] = [];
-    // 8초가 지나도 안 열리면 느린 연결 안내를 보인다(로딩 화면에서만 보이고 준비되면 사라진다).
-    const slowLoadTimer = globalThis.setTimeout(() => setSlowLoad(true), 8_000);
-    cleanup.push(() => globalThis.clearTimeout(slowLoadTimer));
     const fail = (reason?: unknown) => {
       if (cancelled) return;
       if (!engineFailed) parent.dataset.engineError = reason instanceof Error ? reason.message : "runtime-failure";
@@ -478,11 +477,14 @@ export function StudioVirtualSpacePhaserCanvas({
       setFailure(true);
       setReady(false);
     };
-    // 고정 25초 대신 "진행이 45초(STUDIO_BOOT_STALL_MS) 멈추면" 실패로 본다. 느린 회선(약 3Mbps 이하)에서는 정상적으로 내려받는 중에도 총 시간이 25초를 넘어
-    // 월드가 영영 열리지 않았다. 내려받기가 진행되는 동안은 touch로 예산을 되돌리고, 전체 상한(5분)은 그대로 둔다.
-    const bootDeadline = studioVisibleBootDeadline(document, () => fail(new Error(`boot-timeout:${parent.dataset.bootStage}`)), STUDIO_BOOT_STALL_MS, STUDIO_BOOT_MAX_MS);
-    const cancelBootDeadline = () => bootDeadline();
-    cleanup.push(() => cancelBootDeadline());
+    // 부팅 제한(진행이 멈추면 실패)과 로딩 화면의 진행 막대·느린 연결 안내는 한 묶음이 맡는다.
+    const boot = createStudioBootProgress({
+      visibility: document,
+      onTimeout: () => fail(new Error(`boot-timeout:${parent.dataset.bootStage}`)),
+      onProgress: setLoadProgress,
+      onSlow: () => setSlowLoad(true),
+    });
+    cleanup.push(boot.dispose);
     let game: import("phaser").Game | null = null;
 
     void (async () => {
@@ -665,7 +667,6 @@ export function StudioVirtualSpacePhaserCanvas({
       let lightRender: StudioVirtualLightRenderRuntime | null = null;
       let tileWorld: StudioWorldTileRuntime | null = null;
       let initialTilesReady = false;
-      let lastTileProgress = { chunks: -1, textures: -1 };
       const runtimeInputBlocked = () => engineFailed || (manifest.tilemap !== undefined && !initialTilesReady)
         || studioWorldInputBlocked(document, modalInputBlocked);
       let objectRuntime: StudioWorldObjectRuntime | null = null;
@@ -727,8 +728,14 @@ export function StudioVirtualSpacePhaserCanvas({
       const campusFloorMap = studioVirtualCampusScene(manifest) ? manifest.tilemap ?? null : null;
       const motionConfig: { acceleration: number; deceleration: number; maxSpeed: number } = { ...DEFAULT_STUDIO_MOTION_CONFIG };
       let cameraBaseZoom = 1;
+      const userZoom = new StudioUserZoomRuntime(bridge.userZoom);
+      const cameraPan = new StudioCameraPanRuntime(bridge.cameraPan);
+      /** 화면에 고정된 원경(cinematic-v9)은 줌이 바뀔 때마다 화면을 덮도록 다시 맞춘다. */
+      const screenFixedHorizon = horizonUrl.includes("/cinematic-v9/");
       /** 장면의 모든 Phaser Text를 화면 배율에 맞는 해상도로 그린다. 픽셀 아트 화풍에서는 거친 글자를 유지한다. */
       let textResolution: StudioTextResolutionRuntime | null = null;
+      /** 크게 줄어 그려지는 스프라이트의 텍스처를 반감 사본으로 올려 앨리어싱을 없앤다(WebGL 전용). */
+      let textureLod: StudioTextureLodRuntime | null = null;
       let cameraFollows = true;
       let lastPromptNpcId: string | null = null;
       const npcNoticedAt = new Map<string, number>();
@@ -937,20 +944,7 @@ export function StudioVirtualSpacePhaserCanvas({
       scene.preload = function preload() {
         parent.dataset.bootStage = "loading-textures";
         this.load.on("loaderror", (file: import("phaser").Loader.File) => failedTextures.add(file.key));
-        // 내려받기가 조금이라도 진행되면 부팅 제한을 늘리고, 로딩 화면의 진행 막대를 갱신한다. 막대는 끝난 파일 수에 내려받는 중인
-        // 파일의 진행률을 더해 큰 파일이 받아지는 동안에도 움직인다(파일 수만 세면 3MB 파일 하나에 막대가 수십 초 멈춰 보인다).
-        const loader = this.load;
-        const noteLoadProgress = () => {
-          bootDeadline.touch();
-          const total = loader.totalToLoad;
-          if (total <= 0) return;
-          let partial = 0;
-          for (const file of loader.inflight.entries) partial += Math.min(1, Math.max(0, file.percentComplete || 0));
-          setLoadProgress(Math.round(Math.min(1, (loader.totalComplete + loader.totalFailed + partial) / total) * 100));
-        };
-        loader.on("fileprogress", noteLoadProgress);
-        loader.on("filecomplete", noteLoadProgress);
-        loader.on("progress", noteLoadProgress);
+        boot.watchLoader(this.load);
         this.load.image(backgroundTextureKey, backgroundUrl);
         this.load.image(horizonTextureKey, horizonUrl);
         queueStudioLivingWorldTextures(this.load, livingTextureKeys, artStyle);
@@ -984,6 +978,10 @@ export function StudioVirtualSpacePhaserCanvas({
         // 이후 만들어지는 모든 Text(이름표·구역 이름·안내 글자)를 붙잡아 같은 해상도로 맞춘다.
         textResolution = artProfile.pixelated ? null : new StudioTextResolutionRuntime(this.sys.events);
         cleanup.push(() => textResolution?.dispose());
+        // 1x 화면에서 원본이 2~7배로 줄어 그려지는 스프라이트(가구·아바타·NPC)는 이중선형만으로는 선이 끊기고 윤곽이 계단진다.
+        // 화면 밀도를 재서 반감 사본을 GPU 텍스처에 올린다. 픽셀 아트(NEAREST)와 캔버스 렌더러는 그대로 둔다.
+        textureLod = createStudioTextureLod(this, { pixelated: artProfile.pixelated });
+        cleanup.push(() => textureLod?.dispose());
         for (const [key, atlas] of sceneArtAtlases) {
           if (this.textures.exists(key) && !registerStudioSceneAtlas(this.textures.get(key), atlas)) {
             failedTextures.add(key);
@@ -1007,32 +1005,10 @@ export function StudioVirtualSpacePhaserCanvas({
         cleanup.push(disposeSpriteSheetListener);
         this.physics.world.setBounds(0, 0, manifest.width, manifest.height);
 
-        const backgroundSource = this.textures.exists(backgroundTextureKey)
-          ? this.textures.get(backgroundTextureKey).getSourceImage() : { width: manifest.width, height: manifest.height };
-        const backgroundRect = studioCoverRect(
-          manifest.width,
-          manifest.height,
-          backgroundSource.width,
-          backgroundSource.height,
-        );
-        horizonArtwork = null;
+        const backdrop = drawStudioBackdropLayers(this, manifest, { backgroundTextureKey, horizonTextureKey, backdrop: environmentPreference.backdrop });
+        const { backgroundRect } = backdrop;
+        horizonArtwork = backdrop.horizonArtwork;
         lastSkyTintPhase = null;
-        if (this.textures.exists(horizonTextureKey)) {
-          const horizonSource = this.textures.get(horizonTextureKey).getSourceImage();
-          const horizonRect = studioCoverRect(manifest.width * 3, manifest.height * 3, horizonSource.width, horizonSource.height);
-          horizonArtwork = this.add.image(manifest.width / 2, manifest.height / 2, horizonTextureKey)
-          .setDisplaySize(horizonRect.width, horizonRect.height)
-          .setScrollFactor(0.92)
-          .setDepth(-1_004)
-          .setAlpha(environmentPreference.backdrop === "city" ? 0.96 : 0.90);
-        }
-        if (this.textures.exists(backgroundTextureKey)) {
-          this.add.image(backgroundRect.x, backgroundRect.y, backgroundTextureKey)
-            .setOrigin(0)
-            .setDisplaySize(backgroundRect.width, backgroundRect.height)
-            .setDepth(-1_000)
-            .setAlpha(manifest.tilemap ? 0.24 : environmentPreference.backdrop === "sky" ? 0.96 : 0.72);
-        }
         if (manifest.tilemap) {
           tileWorld = createStudioWorldTileRuntime(this, studioRenderedTileWorld(manifest.tilemap, artStyle), `studio-world-${manifest.id}`, {
             resolveUrl: (url) => worldAssetUrls?.get(url) ?? studioVirtualPlaceTileAssetUrl(url, artStyle),
@@ -1172,7 +1148,7 @@ export function StudioVirtualSpacePhaserCanvas({
         cleanup.push(() => { decorationRuntime?.destroy(); decorationRuntime = null; });
 
         const bubbleColors = studioCanvasBubbleColors(parent);
-        emotes = new StudioEmoteRuntime(this, { nearestFilter: Phaser.Textures.FilterMode.NEAREST, colors: bubbleColors });
+        emotes = new StudioEmoteRuntime(this, { nearestFilter: Phaser.Textures.FilterMode.NEAREST, colors: bubbleColors, burst: (x, y, depth, count, color) => { if (experienceRef.current.effectLevel !== "low") motionFeel?.spark(x, y, depth, count, color); } });
         speech = new StudioSpeechBubbleRuntime(this, bubbleColors);
         cleanup.push(() => { emotes?.destroy(); emotes = null; speech?.destroy(); speech = null; chatter.reset(); });
         promptRuntime = new StudioWorldPromptRuntime(this, bubbleColors);
@@ -1271,7 +1247,9 @@ export function StudioVirtualSpacePhaserCanvas({
           // 카메라 디렉터의 속도 줌·대화 줌은 추종(follow) 카메라에서만, 이 기준 줌에 곱한다.
           cameraBaseZoom = camera.zoom;
           cameraFollows = parent.dataset.cameraMode === "follow";
-          if (horizonArtwork && horizonUrl.includes("/cinematic-v9/")) fitStudioHorizonArtwork(horizonArtwork, gameSize, camera.zoom);
+          if (horizonArtwork && screenFixedHorizon) fitStudioHorizonArtwork(horizonArtwork, gameSize, camera.zoom);
+          // 사용자 줌은 추종 카메라에서만 쓴다(고정 프레임 장소는 화면 전체가 이미 보인다).
+          userZoom.setView(cameraBaseZoom, { cssWidth: gameSize.width / viewport.ratio, cssHeight: gameSize.height / viewport.ratio, ratio: viewport.ratio }, manifest, cameraFollows);
         };
         resizeCamera({ width: this.scale.width, height: this.scale.height });
         this.scale.on("resize", (gameSize: { width: number; height: number }) => resizeCamera(gameSize));
@@ -1310,48 +1288,6 @@ export function StudioVirtualSpacePhaserCanvas({
           }
           callbacksRef.current.onCancelFollow();
         };
-        // Capture only canvas-owned keys before preventing browser scrolling. Phaser's
-        // window keyboard handler ignores defaultPrevented events from focused elements.
-        const handleCanvasKey = (event: KeyboardEvent) => {
-          if (event.key === "Escape") { if (buildPlacement?.handleEscape()) return; npcDirector.cancelGuideTour(); stopMovement(); return; }
-          if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || runtimeInputBlocked()) return;
-          if (!WORLD_KEY_CODES.has(event.code)) return;
-          heldKeys.add(event.code);
-          if (event.code === "KeyX" && !event.repeat && !buildPlacement?.active) queueKeyboardInteraction();
-          // 고스트 모드 토글: 반투명 + 장애물 통과 이동 (대규모 이벤트 끼임 해소)
-          if (event.code === STUDIO_GHOST_TOGGLE_KEY && !event.repeat) {
-            const next = !bridge.isGhostMode();
-            bridge.setGhostMode(next);
-            applyGhostMode(next);
-          }
-          event.preventDefault();
-        };
-        const preventGameScrolling = (event: KeyboardEvent) => {
-          if (event.target !== canvas) return;
-          handleCanvasKey(event);
-        };
-        // 닫은 배너·토스트처럼 초점이 있던 요소가 사라지면 초점이 <body>로 떨어지고, 캔버스가 초점을 가질 때만 키를 받는 월드는
-        // 이동 키에 아무 반응이 없다. 어디에도 초점이 없을 때 이동 키를 누르면 월드가 초점을 되찾아 그 키를 바로 받는다.
-        const reclaimFocusForMovement = (event: KeyboardEvent) => {
-          if (event.defaultPrevented || event.target === canvas || !sceneReady) return;
-          if (!studioWorldShouldReclaimFocus({
-            active: document.activeElement,
-            root: document,
-            code: event.code,
-            modified: event.metaKey || event.ctrlKey || event.altKey,
-            composing: event.isComposing,
-            blocked: runtimeInputBlocked(),
-          })) return;
-          focusCanvas();
-          handleCanvasKey(event);
-        };
-        const releaseKey = (event: KeyboardEvent) => { heldKeys.delete(event.code); };
-        const promptHasFocus = () => document.activeElement?.matches('[data-interact-prompt="true"]') ?? false;
-        const refocus = () => {
-          if (this.input.keyboard) this.input.keyboard.enabled = document.activeElement === canvas;
-          if (document.activeElement !== canvas && !promptHasFocus()) stopMovement();
-        };
-        const visibility = () => { if (document.hidden) { npcDirector.cancelGuideTour(); stopMovement(); } };
         const reduceMotionChanged = () => {
           camera.setLerp(reducedMotion.matches ? 1 : 0.12, reducedMotion.matches ? 1 : 0.12);
           currentQualityProfile = studioVirtualQualityProfile(experienceRef.current.qualityPreset, qualityEnvironment());
@@ -1359,34 +1295,17 @@ export function StudioVirtualSpacePhaserCanvas({
           lastQualityTier = currentQualityProfile.tier;
           resizeRuntime();
         };
-        canvas.addEventListener("pointerdown", focusCanvas);
-        canvas.addEventListener("keydown", preventGameScrolling);
-        globalThis.addEventListener("keydown", reclaimFocusForMovement, true);
-        globalThis.addEventListener("keyup", releaseKey);
-        document.addEventListener("focusin", refocus);
-        document.addEventListener("visibilitychange", visibility);
-        globalThis.addEventListener("blur", stopMovement);
-        reducedMotion.addEventListener("change", reduceMotionChanged);
-        const modalObserver = new MutationObserver(() => {
-          modalInputBlocked = studioWorldHasModalBlocker(document);
-        });
-        modalObserver.observe(document.body, {
-          subtree: true,
-          childList: true,
-          attributes: true,
-          attributeFilter: ["open", "role", "aria-modal", "aria-hidden", "hidden", "data-state", "data-presentation", "data-studio-input-blocker"],
-        });
-        cleanup.push(() => {
-          canvas.removeEventListener("pointerdown", focusCanvas);
-          canvas.removeEventListener("keydown", preventGameScrolling);
-          globalThis.removeEventListener("keydown", reclaimFocusForMovement, true);
-          globalThis.removeEventListener("keyup", releaseKey);
-          document.removeEventListener("focusin", refocus);
-          document.removeEventListener("visibilitychange", visibility);
-          globalThis.removeEventListener("blur", stopMovement);
-          reducedMotion.removeEventListener("change", reduceMotionChanged);
-          modalObserver.disconnect();
-        });
+        cleanup.push(bindStudioCanvasInput({
+          canvas, keyboard: () => this.input.keyboard, heldKeys, reducedMotion, focusCanvas, stopMovement,
+          isSceneReady: () => sceneReady, isInputBlocked: runtimeInputBlocked,
+          onEscape: () => { if (buildPlacement?.handleEscape()) return; npcDirector.cancelGuideTour(); stopMovement(); },
+          onInteractKey: () => { if (!buildPlacement?.active) queueKeyboardInteraction(); },
+          onGhostToggle: () => { const next = !bridge.isGhostMode(); bridge.setGhostMode(next); applyGhostMode(next); },
+          onHidden: () => { npcDirector.cancelGuideTour(); stopMovement(); },
+          onReducedMotionChange: reduceMotionChanged,
+          onModalBlockerChange: (blocked) => { modalInputBlocked = blocked; },
+        }));
+        cleanup.push(bindStudioCameraGestures(canvas, { zoom: bridge.userZoom, pan: bridge.cameraPan, canZoom: () => sceneReady && bridge.userZoom.getSnapshot().available, canPan: () => sceneReady && bridge.cameraPan.getSnapshot().available && !runtimeInputBlocked() && !buildPlacement?.active, focused: () => document.activeElement === canvas, onPinchStart: stopMovement }));
         portalTracker.seed(portals, initialPoint);
         zoneTracker.seed(studioWorldPresenceZone(manifest, initialPoint)?.id ?? null);
         // 스폰 시퀀스 시작: 월드 준비 완료(setReady 지점) 신호가 올 때까지 베일이 덮는다.
@@ -1401,7 +1320,7 @@ export function StudioVirtualSpacePhaserCanvas({
         parent.dataset.bootStage = manifest.tilemap ? "loading-tiles" : "ready";
         setFailure(false);
         if (!manifest.tilemap) {
-          cancelBootDeadline();
+          boot.settle();
           setReady(true);
           zoneTransition = markStudioZoneTransitionReady(zoneTransition, this.game.loop.time);
         }
@@ -1433,7 +1352,8 @@ export function StudioVirtualSpacePhaserCanvas({
         // 스프라이트 크로스페이드는 모션 감소·저사양 효과 단계에서는 끈다 (즉시 교체가 기본 계약).
         const crossfadeEnabled = !reducedMotion.matches && experienceRef.current.effectLevel !== "low";
         if (!sceneReady || cancelled) return;
-        textResolution?.sync(Math.max(cameraBaseZoom, viewport.ratio));
+        textResolution?.sync(Math.max(cameraBaseZoom * userZoom.current, viewport.ratio));
+        textureLod?.update(time);
         if (decorationsRef.current !== lastDecorationState || placedFixturesRef.current !== lastPlacedFixtures) {
           lastDecorationState = decorationsRef.current;
           lastPlacedFixtures = placedFixturesRef.current;
@@ -1491,7 +1411,7 @@ export function StudioVirtualSpacePhaserCanvas({
         }
         wasInputBlocked = blocked;
         buildPlacement?.update(time, { canvasFocused: document.activeElement === this.game.canvas });
-        const typing = blocked || buildPlacement?.active || document.activeElement !== this.game.canvas;
+        const typing = blocked || buildPlacement?.active || document.activeElement !== this.game.canvas || bridge.cameraPan.isLooking();
         if (bridge.getStopRevision() !== lastStopRevision) {
           lastStopRevision = bridge.getStopRevision();
           path = [];
@@ -2034,14 +1954,11 @@ export function StudioVirtualSpacePhaserCanvas({
           const tileMetrics = tileWorld.diagnostics;
           parent.dataset.tileChunks = String(tileMetrics.chunks);
           parent.dataset.tileTextures = String(tileMetrics.textures);
-          if (!initialTilesReady && (tileMetrics.chunks !== lastTileProgress.chunks || tileMetrics.textures !== lastTileProgress.textures)) {
-            lastTileProgress = { chunks: tileMetrics.chunks, textures: tileMetrics.textures };
-            bootDeadline.touch();
-          }
+          if (!initialTilesReady) boot.noteTiles(tileMetrics);
           if (!engineFailed && !initialTilesReady && tileMetrics.ready) {
             initialTilesReady = true;
             startOptionalSceneArt?.(); startOptionalSceneArt = null;
-            cancelBootDeadline();
+            boot.settle();
             parent.dataset.bootStage = "ready";
             setReady(true);
             zoneTransition = markStudioZoneTransitionReady(zoneTransition, time);
@@ -2195,22 +2112,15 @@ export function StudioVirtualSpacePhaserCanvas({
         });
         cameraBase.x = deadzonedTarget.x;
         cameraBase.y = deadzonedTarget.y;
-        cameraTarget.x = cameraBase.x + directed.shakeX;
-        cameraTarget.y = cameraBase.y + directed.shakeY;
-        if (cameraFollows) this.cameras.main.setZoom(cameraBaseZoom * directed.zoomFactor);
+        const lookAround = cameraPan.sample({ deltaSeconds: deltaMs / 1000, available: cameraFollows, directed: directed.roomTransitioning || conversationFocus !== null, snap: snapCamera, reducedMotion: reducedMotion.matches, moving: nextMoving, cssToWorld: viewport.ratio / this.cameras.main.zoom, base: cameraBase, center: this.cameras.main.midPoint, view: this.cameras.main.worldView, world: manifest });
+        cameraTarget.x = cameraBase.x + directed.shakeX + lookAround.x;
+        cameraTarget.y = cameraBase.y + directed.shakeY + lookAround.y;
+        if (cameraFollows) this.cameras.main.setZoom(cameraBaseZoom * directed.zoomFactor * userZoom.sample(dt, reducedMotion.matches));
+        if (horizonArtwork && screenFixedHorizon && cameraFollows) fitStudioHorizonArtwork(horizonArtwork, this.scale.gameSize, this.cameras.main.zoom);
         const followBase = Math.min(.6, (cameraMode === "steady" ? .075 : cameraMode === "cinematic" ? .16 : .12) * locomotion.cameraFollowScale);
-        const followAmount = snapCamera || reducedMotion.matches ? 1
-          : studioCameraLerp(dt, directed.roomTransitioning ? followBase * 2.2 : followBase);
-        // 월드 경계 근처에서는 추종을 미리 늦춰 하드 클램프에서 화면이 튀지 않게 한다.
-        const softenAtEdge = cameraFollows && !snapCamera && !reducedMotion.matches;
-        const edgeFactorX = softenAtEdge
-          ? studioCameraEdgeLerpFactor(this.cameras.main.midPoint.x, this.cameras.main.worldView.width, manifest.width)
-          : 1;
-        const edgeFactorY = softenAtEdge
-          ? studioCameraEdgeLerpFactor(this.cameras.main.midPoint.y, this.cameras.main.worldView.height, manifest.height)
-          : 1;
-        this.cameras.main.setLerp(followAmount * edgeFactorX, followAmount * edgeFactorY);
-        if (snapCamera) this.cameras.main.centerOn(cameraVisualTarget.x, cameraVisualTarget.y);
+        // 순간 이동과 시점 끌기·되돌리기는 Phaser 데드존(추종 불감대)을 건너뛰고 카메라를 목표에 바로 맞춘다.
+        applyStudioCameraFollow(this.cameras.main, { deltaSeconds: dt, followBase, roomTransitioning: directed.roomTransitioning, immediate: snapCamera || reducedMotion.matches || lookAround.direct,
+          edgeSoftening: cameraFollows, world: manifest, centerOn: snapCamera ? cameraVisualTarget : lookAround.direct ? cameraTarget : null });
 
         const hasWalkClip = scene.anims.exists(walkAnimationKey(localSkin, facing)) || reducedMotion.matches;
         // 몸 bob·그림자·흔들림·스쿼시는 위에서 확정한 유효 보폭(localGaitStride)을 같은 거리 위상으로 쓴다.
@@ -2862,6 +2772,7 @@ export function StudioVirtualSpacePhaserCanvas({
           parent.dataset.gaitDistancePerCycle = String(playerLocomotion.gaitDistancePerCycle ?? "native");
           parent.dataset.pixelRatio = viewport.ratio.toFixed(2);
           parent.dataset.textResolution = String(textResolution?.current ?? 1);
+          Object.assign(parent.dataset, textureLod?.diagnostics() ?? { textureLod: "off", textureLodFailures: "[]" });
           parent.dataset.localMoving = String(nextMoving);
           parent.dataset.localFacing = facing;
           parent.dataset.terrain = terrain.kind;
@@ -2963,6 +2874,7 @@ export function StudioVirtualSpacePhaserCanvas({
           viewport = next;
           game.scale.setZoom(1 / next.ratio);
           game.scale.resize(next.width, next.height);
+          textureLod?.invalidate();
         }
       };
       resizeRuntime = resize;
@@ -2995,22 +2907,7 @@ export function StudioVirtualSpacePhaserCanvas({
       data-art-style={artStyle}
       data-backdrop={environmentPreference.backdrop}
     >
-      {failure ? (
-        <div className="studio-vspace-engine-message" role="alert">
-          <div className="studio-vspace-engine-card">
-            <p>{bt("공간을 불러오지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.", "The studio could not load. Check the connection and retry.")}</p>
-            <button type="button" onClick={() => setAttempt((value) => value + 1)}>{bt("다시 시도", "Retry")}</button>
-          </div>
-        </div>
-      ) : !ready ? (
-        <div className="studio-vspace-engine-message" role="status" aria-busy="true">
-          <div className="studio-vspace-engine-card">
-            <p>{bt("스튜디오 불러오는 중…", "Loading studio…")}</p>
-            {loadProgress !== null ? <progress className="studio-vspace-engine-progress" max={100} value={loadProgress} aria-hidden="true" /> : null}
-            {slowLoad ? <p className="studio-vspace-engine-slow">{bt("연결이 느려 조금 더 걸리고 있어요.", "The connection is slow, so this is taking a little longer.")}</p> : null}
-          </div>
-        </div>
-      ) : null}
+      <StudioVirtualSpaceEngineMessage failure={failure} ready={ready} loadProgress={loadProgress} slowLoad={slowLoad} onRetry={() => setAttempt((value) => value + 1)} />
     </div>
   );
 }

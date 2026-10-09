@@ -14,6 +14,12 @@ import {
 const AT = "2026-09-15T12:00:00.000Z";
 /** 샘플 시나리오의 "오늘". 화면에서는 실제 오늘 날짜로 옮겨 보여 준다(`rebaseProductionDemoTimeline`). */
 export const PRODUCTION_DEMO_ANCHOR_AT = AT;
+/**
+ * 샘플 프로젝트의 대표 표지 — 브랜드 아트 자산(밤의 우편배달부 키비주얼, `apps/web/public/brand/production-covers-20261009/`).
+ * 샘플 전용 값이다. 실제 사용자 프로젝트는 표지를 직접 등록하기 전까지 null(이니셜 폴백)이 정본이며,
+ * 이 상수가 기본 팩토리(`createProductionProjectAggregate`)의 기본값을 바꾸지 않는다.
+ */
+export const PRODUCTION_DEMO_COVER_IMAGE_URL = "/brand/production-covers-20261009/night-mail-carrier-cover.webp";
 const PROJECT_ID = "sample-project";
 const WORK_ID = "sample-work";
 const project = projectScope(PROJECT_ID);
@@ -124,6 +130,7 @@ export function createProductionDemoProject(): ProductionProjectAggregate {
     projectId: PROJECT_ID,
     workId: WORK_ID,
     title: "밤의 우편배달부",
+    coverImageUrl: PRODUCTION_DEMO_COVER_IMAGE_URL,
     collaborationModel: "co-creator",
     ownerPartyId: "party-producer",
     ownerUserId: "demo-producer",

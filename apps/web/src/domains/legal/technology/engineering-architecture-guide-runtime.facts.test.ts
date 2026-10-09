@@ -54,9 +54,9 @@ describe("화면을 여는 순간 (request-journey)", () => {
 });
 
 describe("브라우저 안의 작업실 (browser-studio)", () => {
-  it("Worker 스크립트(*.worker.ts)는 앱 코드에 64개, 패키지에 0개이다", () => {
+  it("Worker 스크립트(*.worker.ts)는 앱 코드에 65개, 패키지에 0개이다", () => {
     const count = (root: string): number => (readdirSync(root, { recursive: true }) as string[]).filter((file) => file.endsWith(".worker.ts")).length;
-    expect(count("apps/web/src")).toBe(64);
+    expect(count("apps/web/src")).toBe(65);
     expect(count("packages")).toBe(0);
   });
 

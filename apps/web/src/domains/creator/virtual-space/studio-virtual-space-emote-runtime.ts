@@ -16,6 +16,7 @@ import {
   type StudioSpaceEmoteMotion,
 } from "./studio-virtual-space-emote-catalog";
 import { rasterizeStudioSpaceEmote, STUDIO_SPACE_EMOTE_ART_SIZE } from "./studio-virtual-space-emote-art";
+import { studioEmoteBurstPlan, studioEmoteBurstsDue, type StudioEmoteBurst } from "./studio-virtual-space-emote-fx";
 import type { StudioVirtualSpaceFacing } from "./studio-virtual-space-model";
 
 export interface StudioEmotePlayback {
@@ -289,9 +290,17 @@ const BUBBLE_WIDTH = 44;
 const BUBBLE_HEIGHT = 40;
 const BUBBLE_TAIL = 7;
 const BUBBLE_DEPTH = 160_500;
+/** 폭죽 같은 시작 연출 파티클의 깊이: 월드 위, 대사·이모트 말풍선 아래. */
+const BURST_DEPTH = BUBBLE_DEPTH - 200;
 
 export function studioEmoteIconTextureKey(id: StudioSpaceEmoteId): string {
   return `studio-emote-icon-${id}`;
+}
+
+/** 이모트의 시작 연출 계획(연출이 없으면 null). */
+function studioEmoteFx(id: StudioSpaceEmoteId): ActorEmote["fx"] {
+  const plan = studioEmoteBurstPlan(id);
+  return plan.length > 0 ? { plan, next: 0 } : null;
 }
 
 interface ActorEmote {
@@ -302,12 +311,16 @@ interface ActorEmote {
   readonly icon: Phaser.GameObjects.Image;
   readonly bubble: Phaser.GameObjects.Image;
   variant: StudioEmoteBubbleVariant;
+  /** 시작 연출(폭죽 등)의 남은 계획. 없거나 다 터뜨렸으면 null. */
+  fx: { readonly plan: readonly StudioEmoteBurst[]; next: number } | null;
 }
 
 export interface StudioEmoteRuntimeOptions {
   /** Phaser.Textures.FilterMode.NEAREST. 아이콘 픽셀을 흐리지 않게 한다. */
   readonly nearestFilter: number;
   readonly colors: StudioCanvasBubbleColors;
+  /** 이모트의 시작 연출 파티클을 터뜨린다. 없으면 연출 없이 말풍선과 몸동작만 재생한다. */
+  readonly burst?: (x: number, y: number, depth: number, count: number, color: number) => void;
 }
 
 type EmoteScene = Pick<Phaser.Scene, "add" | "textures" | "make">;
@@ -370,9 +383,11 @@ export class StudioEmoteRuntime {
     if (!playback) return;
     this.sequences.set(actorId, playback.sequence);
     const iconKey = this.ensureIconTexture(id);
+    const fx = studioEmoteFx(id);
     if (previous) {
       previous.playback = playback;
       previous.frames = 0;
+      previous.fx = fx;
       previous.icon.setTexture(iconKey);
       if (previous.variant !== variant) { previous.variant = variant; previous.bubble.setTexture(this.bubbleKeys[variant]); }
       previous.container.setVisible(true);
@@ -382,7 +397,7 @@ export class StudioEmoteRuntime {
     const icon = this.scene.add.image(0, -(BUBBLE_TAIL + BUBBLE_HEIGHT / 2) - 1, iconKey)
       .setScale(ICON_SCALE).setOrigin(0.5, 0.5);
     const container = this.scene.add.container(0, 0, [bubble, icon]).setDepth(BUBBLE_DEPTH).setVisible(false);
-    this.actors.set(actorId, { playback, frames: 0, container, icon, bubble, variant });
+    this.actors.set(actorId, { playback, frames: 0, container, icon, bubble, variant, fx });
   }
 
   /** 재생 중인 이모트 id. 없으면 null. */
@@ -418,6 +433,8 @@ export class StudioEmoteRuntime {
     if (!actor) return 0;
     const pose = studioEmotePose(actor.playback, studioEmoteEffectiveTime(actor.playback, time, actor.frames), reducedMotion);
     actor.frames += 1;
+    // 터질 때가 지난 연출은 안 보이거나 모션 줄이기여도 처리한 것으로 쳐서, 다시 보일 때 한꺼번에 터지지 않게 한다.
+    this.emitBursts(actor, x, headY, overlayScale, time, visible && Boolean(pose) && !reducedMotion);
     if (!pose || !visible) { actor.container.setVisible(false); return 0; }
     const scale = Math.max(0.01, pose.bubbleScale) * overlayScale;
     actor.container.setVisible(pose.bubbleScale > 0.01)
@@ -425,6 +442,21 @@ export class StudioEmoteRuntime {
       .setScale(scale)
       .setAlpha(pose.bubbleAlpha);
     return (BUBBLE_HEIGHT + BUBBLE_TAIL + 4) * overlayScale;
+  }
+
+  /** 이모트가 시작된 뒤 지난 시간에 맞춰 터질 때가 된 파티클을 머리 위 기준점에서 터뜨린다. */
+  private emitBursts(actor: ActorEmote, x: number, headY: number, overlayScale: number, time: number, emit: boolean): void {
+    const fx = actor.fx;
+    if (!fx) return;
+    const due = studioEmoteBurstsDue(fx.plan, fx.next, time - actor.playback.startedAt);
+    if (due <= 0) return;
+    if (emit && this.options.burst) {
+      for (const burst of fx.plan.slice(fx.next, fx.next + due)) {
+        this.options.burst(x + burst.dx * overlayScale, headY + burst.dy * overlayScale, BURST_DEPTH, burst.count, burst.color);
+      }
+    }
+    fx.next += due;
+    if (fx.next >= fx.plan.length) actor.fx = null;
   }
 
   remove(actorId: string): void {

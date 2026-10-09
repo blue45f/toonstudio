@@ -193,7 +193,7 @@ export const BROWSER_STUDIO_SECTION: ArchitectureGuideSection = {
   ),
   facts: [
     {
-      value: "64",
+      value: "65",
       label: t("앱 코드의 Worker 스크립트(*.worker.ts) 파일 수", "Worker scripts (*.worker.ts) in the app code"),
       source: "apps/web/src",
     },

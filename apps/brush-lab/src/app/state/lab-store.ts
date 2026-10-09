@@ -122,6 +122,9 @@ export const LANE_IDS: readonly LaneId[] = [
   "wasm-gpu-hybrid",
   "libmypaint",
   "hokusai",
+  "mpm-paint",
+  "bristle-pbd",
+  "bristle-rapier",
 ];
 
 export const EMPTY_RESULTS: LabResults = {

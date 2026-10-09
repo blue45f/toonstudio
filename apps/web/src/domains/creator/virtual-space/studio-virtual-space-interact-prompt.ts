@@ -12,6 +12,14 @@ export const STUDIO_INTERACT_KEY_LABEL = "E";
 export const STUDIO_INTERACT_KEY_ALIAS = "X";
 /** aria-keyshortcuts 표기(기본 키 + 별칭). */
 export const STUDIO_INTERACT_KEY_SHORTCUTS = `${STUDIO_INTERACT_KEY_LABEL} ${STUDIO_INTERACT_KEY_ALIAS}`;
+/**
+ * 캔버스가 상호작용으로 받는 글쇠(KeyboardEvent.code). 글쇠 위치로 읽으므로 한글 자판에서도 같은 글쇠가 동작한다.
+ * 화면 안내는 E를 보여 주는데 입력은 X만 받아, 안내대로 E를 눌러도 아무 일이 없던 어긋남을 이 목록 하나로 맞춘다.
+ */
+export const STUDIO_INTERACT_KEY_CODES: ReadonlySet<string> = new Set([
+  `Key${STUDIO_INTERACT_KEY_LABEL}`,
+  `Key${STUDIO_INTERACT_KEY_ALIAS}`,
+]);
 
 export interface StudioInteractPromptDescriptor {
   /** 키캡에 그릴 글자. */

@@ -100,7 +100,7 @@ describe("social hook consent and lifetime", () => {
     expect(hook.result.current.snapshot.blockedPeerIds).toEqual([B.sessionId]);
     expect(hook.result.current.snapshot.readyPeerIds).toEqual([]);
   });
-  it.each<StudioVirtualSpaceSocialAction>(["talk", "follow", "review", "high-five"])(
+  it.each<StudioVirtualSpaceSocialAction>(["talk", "follow", "lead", "review", "high-five"])(
     "does not start %s from receiving or rendering an invitation, only from explicit acceptance", async (action) => {
       const f = await setup();
       const hook = renderHook((props: HookProps) => useStudioVirtualSpaceSocial(props), { initialProps: f.props });

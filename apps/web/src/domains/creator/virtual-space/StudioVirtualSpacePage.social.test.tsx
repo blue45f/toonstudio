@@ -12,6 +12,7 @@ import type { StudioLiveDirectPort } from "../live/studio-live-direct-port";
 import type { StudioVirtualSpacePresenceDependencies } from "./studio-virtual-space-presence";
 import { parseStudioVirtualSpacePacket } from "./studio-virtual-space-presence";
 import { studioCharacterAppearanceForAvatarIndex } from "./studio-virtual-space-character-skins";
+import { studioEmoteKeymapStore } from "./studio-virtual-space-emote-keymap";
 import { StudioVirtualSlotLeaseController } from "./studio-virtual-space-slot-lease";
 import type { StudioSpaceSocialRequest, StudioSpaceSocialSnapshot } from "./StudioVirtualSpaceSocialPanel";
 import type { useStudioVirtualSpaceSocial } from "./use-studio-virtual-space-social";
@@ -377,7 +378,7 @@ describe("몰입형 HUD 골격과 첫 화면", () => {
     expect(readStudioVirtualSpaceSessionPoint(scope, { x: -1, y: -1 }, builtin.manifest)).toEqual(self);
   });
 
-  it("1~9·Z 단축키는 월드에 이모트를 요청하고 입력 중이나 보조키 조합은 무시한다", async () => {
+  it("1~9·Z·F 단축키는 월드에 이모트를 요청하고 입력 중이나 보조키 조합은 무시한다", async () => {
     await mount(null);
     const bridge = f.engine?.bridge;
     if (!bridge) throw new Error("엔진 연결이 필요합니다.");
@@ -385,6 +386,8 @@ describe("몰입형 HUD 골격과 첫 화면", () => {
     expect(bridge.consumeEmote()).toBe("wave");
     fireEvent.keyDown(window, { key: "z" });
     expect(bridge.consumeEmote()).toBe("dance");
+    fireEvent.keyDown(window, { key: "f" });
+    expect(bridge.consumeEmote()).toBe("fireworks");
     const input = document.createElement("input");
     document.body.append(input);
     try {
@@ -394,6 +397,25 @@ describe("몰입형 HUD 골격과 첫 화면", () => {
     fireEvent.keyDown(window, { key: "1", ctrlKey: true });
     expect(bridge.consumeEmote()).toBeNull();
     expect(f.request).not.toHaveBeenCalled();
+  });
+
+  it("사용자가 바꾼 이모트 단축키가 월드로 이어진다: 새 키는 새 이모트를, 키를 잃은 이모트의 옛 키는 아무것도 보내지 않는다", async () => {
+    await mount(null);
+    const bridge = f.engine?.bridge;
+    if (!bridge) throw new Error("엔진 연결이 필요합니다.");
+    try {
+      studioEmoteKeymapStore.assign("coffee", "3");
+      fireEvent.keyDown(window, { key: "3" });
+      expect(bridge.consumeEmote()).toBe("coffee");
+      // 3번 칸을 뺏긴 party는 키가 없어졌고, 원래 키였던 3은 이제 coffee다.
+      fireEvent.keyDown(window, { key: "1" });
+      expect(bridge.consumeEmote()).toBe("wave");
+      studioEmoteKeymapStore.assign("heart", null);
+      fireEvent.keyDown(window, { key: "2" });
+      expect(bridge.consumeEmote()).toBeNull();
+    } finally { studioEmoteKeymapStore.reset(); }
+    fireEvent.keyDown(window, { key: "3" });
+    expect(bridge.consumeEmote()).toBe("party");
   });
 
   it("P는 참가자 패널, M은 전체 지도를 열고 Esc는 가장 위 창부터 하나씩 닫는다", async () => {
@@ -1050,6 +1072,105 @@ describe("Virtual Studio social activity ownership", () => {
     });
     await waitFor(() => expect(f.cancel).toHaveBeenCalledWith("follow-one"));
     expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
+  });
+
+  describe("카메라 둘러보기(끌어서 시점 옮기기)", () => {
+    it("시점을 옮기면 안내 칩이 뜨고, 누르거나 L 키를 누르면 내 위치로 돌아오게 요청한다", async () => {
+      await mount(null);
+      const bridge = f.engine?.bridge;
+      if (!bridge) throw new Error("엔진 브리지가 필요합니다.");
+      expect(screen.queryByRole("button", { name: /시점을 옮겼어요/u })).toBeNull();
+      act(() => { bridge.cameraPan.setPanned(true); });
+      fireEvent.click(screen.getByRole("button", { name: /시점을 옮겼어요/u }));
+      expect(bridge.cameraPan.consumeRecenter()).toBe(true);
+      fireEvent.keyDown(window, { key: "l", code: "KeyL" });
+      expect(bridge.cameraPan.consumeRecenter()).toBe(true);
+      act(() => { bridge.cameraPan.setPanned(false); });
+      expect(screen.queryByRole("button", { name: /시점을 옮겼어요/u })).toBeNull();
+    });
+
+    it("채팅 입력 칸에서 친 L은 시점을 되돌리지 않는다", async () => {
+      await mount(null);
+      const bridge = f.engine?.bridge;
+      if (!bridge) throw new Error("엔진 브리지가 필요합니다.");
+      const input = document.createElement("input");
+      document.body.append(input);
+      input.focus();
+      fireEvent.keyDown(input, { key: "l", code: "KeyL" });
+      expect(bridge.cameraPan.consumeRecenter()).toBe(false);
+      input.remove();
+    });
+  });
+
+  describe("함께 걷기 합의에서 따라가는 쪽과 이끄는 쪽", () => {
+    const incoming = (id: string, action: StudioSpaceSocialRequest["action"]): StudioSpaceSocialRequest =>
+      ({ ...accepted(id, action), direction: "incoming" });
+
+    it("따라오라는 요청을 수락하면 요청한 사람을 따라가고, 칩을 눌러 끝내면 합의도 끝난다", async () => {
+      await mount();
+      await accept(incoming("lead-in", "lead"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBe("bob");
+      const chip = screen.getByRole("button", { name: "Bob 따라가는 중" });
+      expect(screen.queryByRole("button", { name: "Bob 님이 따라오는 중" })).toBeNull();
+      fireEvent.click(chip);
+      await waitFor(() => expect(f.cancel).toHaveBeenCalledExactlyOnceWith("lead-in"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
+      expect(screen.queryByRole("button", { name: "Bob 따라가는 중" })).toBeNull();
+    });
+
+    it.each(["engine", "peer-selection"])("따라가는 쪽이 직접 움직이면(%s) lead 합의가 끝난다", async (source) => {
+      await mount();
+      await accept(incoming("lead-in", "lead"));
+      act(() => {
+        if (source === "engine") f.engine?.onCancelFollow();
+        else f.engine?.onPeerSelect("cleo");
+      });
+      await waitFor(() => expect(f.cancel).toHaveBeenCalledWith("lead-in"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
+    });
+
+    it("따라오라고 청한 사람은 아무도 따라가지 않고, 자기가 걸어도 합의가 끝나지 않으며, 칩으로 끝낼 수 있다", async () => {
+      await mount();
+      await accept(accepted("lead-out", "lead"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
+      expect(screen.queryByRole("button", { name: "Bob 따라가는 중" })).toBeNull();
+      const chip = screen.getByRole("button", { name: "Bob 님이 따라오는 중" });
+      // 클릭 이동·방향키·채팅 입력으로 캔버스가 이동 소유권을 알려도 이끄는 쪽의 합의는 유지된다.
+      act(() => { f.engine?.onCancelFollow(); });
+      act(() => { f.engine?.onCancelFollow(); });
+      expect(f.cancel).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Bob 님이 따라오는 중" })).toBe(chip);
+      fireEvent.click(chip);
+      expect(f.cancel).toHaveBeenCalledExactlyOnceWith("lead-out");
+      expect(screen.queryByRole("button", { name: "Bob 님이 따라오는 중" })).toBeNull();
+    });
+
+    it("따라가기 요청을 받아 준 사람이 걸어도 따라오는 사람의 합의가 끊기지 않고, 따라오는 중임을 볼 수 있다", async () => {
+      await mount();
+      await accept(incoming("follow-in", "follow"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
+      expect(screen.getByRole("button", { name: "Bob 님이 따라오는 중" })).toBeTruthy();
+      act(() => { f.engine?.onCancelFollow(); });
+      expect(f.cancel).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Bob 님이 따라오는 중" })).toBeTruthy();
+    });
+
+    it.each(["lead", "follow"] as const)("창이 초점을 잃으면 %s 합의는 어느 쪽에서든 끝난다", async (action) => {
+      await mount();
+      await accept(action === "lead" ? accepted("walk-out", action) : incoming("walk-out", action));
+      fireEvent.blur(window);
+      expect(f.cancel).toHaveBeenCalledExactlyOnceWith("walk-out");
+    });
+
+    it("상대가 합의를 취소하면 이끄는 쪽의 칩도 사라진다", async () => {
+      await mount();
+      const request = accepted("lead-out", "lead");
+      await accept(request);
+      expect(screen.getByRole("button", { name: "Bob 님이 따라오는 중" })).toBeTruthy();
+      f.snapshot = { ...f.snapshot, requests: [{ ...request, status: "cancelled" }] };
+      fireEvent.click(screen.getByRole("button", { name: "Cleo" }));
+      await waitFor(() => expect(screen.queryByRole("button", { name: "Bob 님이 따라오는 중" })).toBeNull());
+    });
   });
 
   it("cancels activity and disables the social hook on focus, without enabling any new interaction", async () => {

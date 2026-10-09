@@ -740,8 +740,8 @@ export function withChannel(port: Port, channel: string): Port {
     ),
     background: [
       t(
-        "공간에서는 영상 없이도 가볍게 소통할 수 있어야 합니다. 말풍선 채팅은 '내 주변 사람에게만' 또는 '방 전체'로 보낼 수 있고, 16가지 이모트 리액션을 보낼 수 있고(10가지는 1~9·Z 단축키), NPC 는 가까이 가면 인사합니다. 모두 브라우저끼리 직접 주고받는 가벼운 패킷이고 서버에 저장되지 않습니다.",
-        "In the studio you should be able to communicate lightly without video. Bubble chat can go to 'only people around me' or 'the whole room', 16 emote reactions can be sent (10 of them with the 1-9 and Z shortcuts), and NPCs greet you when you get close. All of it is light packets exchanged directly between browsers and is not stored on a server.",
+        "공간에서는 영상 없이도 가볍게 소통할 수 있어야 합니다. 말풍선 채팅은 '내 주변 사람에게만' 또는 '방 전체'로 보낼 수 있고, 17가지 이모트 리액션을 보낼 수 있고(11가지는 1~9·Z·F 단축키), NPC 는 가까이 가면 인사합니다. 모두 브라우저끼리 직접 주고받는 가벼운 패킷이고 서버에 저장되지 않습니다.",
+        "In the studio you should be able to communicate lightly without video. Bubble chat can go to 'only people around me' or 'the whole room', 17 emote reactions can be sent (11 of them with the 1-9, Z and F shortcuts), and NPCs greet you when you get close. All of it is light packets exchanged directly between browsers and is not stored on a server.",
       ),
       t(
         "채팅은 프레즌스와 같은 직접 포트로 chat 패킷을 보냅니다. 범위가 nearby 면 받는 쪽이 보낸 사람의 마지막 위치와 내 위치의 거리를 재서 200px 밖이면 버립니다(위치를 모르면 판정할 수 없어 버립니다). 문장은 140자 안으로 다듬고 욕설 어간은 보내기 전과 받을 때 두 번 가립니다. 말풍선은 4초에 글자당 40ms 를 더해 최대 10초 보이고, 입력 중 표시는 3.5초 안에 갱신이 없으면 스스로 사라집니다.",
@@ -801,8 +801,8 @@ export function withChannel(port: Port, channel: string): Port {
       {
         feature: t("이모트 리액션", "Emote reactions"),
         role: t(
-          "16종 이모트를 고르거나 단축키로 보내고, 수신 쪽 표시 시간을 이모트별로 적용합니다. 모션 감소에서는 정적인 표현을 씁니다.",
-          "Sends 16 emotes by picking them or by shortcut and applies each emote's own display time on the receiving side. Reduced motion uses a static presentation.",
+          "17종 이모트를 고르거나 단축키로 보내고, 수신 쪽 표시 시간을 이모트별로 적용합니다. 모션 감소에서는 정적인 표현을 씁니다.",
+          "Sends 17 emotes by picking them or by shortcut and applies each emote's own display time on the receiving side. Reduced motion uses a static presentation.",
         ),
         paths: [`${V}/studio-virtual-space-emote-catalog.ts`, `${V}/studio-virtual-space-presence-protocol.ts`],
       },
@@ -933,7 +933,7 @@ export function createThrottle(intervalMs = 250, now: () => number = () => perfo
     facts: [
       { value: "200px", label: t("'근처' 채팅 범위(설계값)", "'Nearby' chat range (design value)"), source: `${V}/studio-virtual-space-chat.ts` },
       { value: "250ms", label: t("리액션·반발 패킷 송신 간격 하한(설계값)", "Minimum send interval for reaction and rebound packets (design value)"), source: `${V}/studio-virtual-space-presence-protocol.ts` },
-      { value: "16종", label: t("이모트 종류(표시 시간은 이모트마다 1.8~4초)", "Number of emotes (display time 1.8 to 4 s per emote)"), source: `${V}/studio-virtual-space-emote-catalog.ts` },
+      { value: "17종", label: t("이모트 종류(표시 시간은 이모트마다 1.8~4초)", "Number of emotes (display time 1.8 to 4 s per emote)"), source: `${V}/studio-virtual-space-emote-catalog.ts` },
       { value: "130px · 90초", label: t("NPC 인사 반경 · 같은 NPC 쿨다운(설계값)", "NPC greeting radius and per-NPC cooldown (design values)"), source: `${V}/studio-virtual-space-npc.ts` },
     ],
     reviewedAt: VIRTUAL_SPACE_REVIEWED_AT,

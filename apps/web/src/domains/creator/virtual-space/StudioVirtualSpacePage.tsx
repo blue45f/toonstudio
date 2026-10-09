@@ -13,7 +13,6 @@ import {
   Radio,
   Sparkles,
   UserPlus,
-  X,
 } from "lucide-react";
 import {
   Suspense,
@@ -63,7 +62,9 @@ import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtP
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
 import { StudioWorldAuthoringEntry } from "./StudioWorldAuthoringEntry";
 import { useStudioWorldRuleGate } from "./StudioWorldRuleGate";
-import { readStudioOfficeDeskPreference, studioOfficeDeskPreferenceStorageKey, writeStudioOfficeDeskPreference } from "./office-desk-preference";
+import { useSpaceDeskPreference } from "./hud/use-space-desk-preference";
+import { useSpaceUserZoom } from "./hud/use-space-user-zoom";
+import { SpaceZoomControls } from "./hud/SpaceZoomControls";
 import { useStudioPrivateRoom } from "./private-room/use-studio-private-room";
 import { studioPrivateRoomWalkTarget } from "./private-room/studio-private-room-walk";
 import { STUDIO_VIRTUAL_ART_STYLES } from "./studio-virtual-space-art-style";
@@ -76,9 +77,7 @@ import {
 import { STUDIO_CHARACTER_SKINS, studioCharacterAppearanceForAvatarIndex } from "./studio-virtual-space-character-skins";
 import { studioVirtualDecorationNavigationWorld } from "./studio-virtual-space-decoration-layout";
 import { StudioVirtualSpaceEngineBridge } from "./studio-virtual-space-engine-bridge";
-import {
-  studioFollowModeCopy,
-} from "./studio-virtual-space-follow";
+import { isStudioSocialWalkTogether, studioSocialRequestFollowsPeer } from "./studio-virtual-space-social-walk";
 import type { StudioVirtualSpaceEngineStatus, StudioVirtualSpaceNearbyNpc, StudioVirtualSpaceZoneChange } from "./studio-virtual-space-engine-events";
 import {
   readStudioVirtualSpaceAvatarIndex,
@@ -218,6 +217,7 @@ import { SpaceEventBanner } from "./hud/SpaceEventBanner";
 import { spaceHudChatHintBlocked, spaceHudShowsEventBanner } from "./hud/space-hud-priority";
 import { SpaceContextSuggestion } from "./hud/SpaceContextSuggestion";
 import { SpaceFocusChip } from "./hud/SpaceFocusChip";
+import { SpaceMovementStatus } from "./hud/SpaceMovementStatus";
 import { SpaceToasts } from "./hud/SpaceToasts";
 import { SpaceTownBanner } from "./hud/SpaceTownBanner";
 import { SpaceWorkLauncher } from "./hud/SpaceWorkLauncher";
@@ -457,19 +457,7 @@ export function VirtualSpaceExperience({
   ], [boothConfig, worldManifest]);
   const navigationWorld = useMemo(() => studioVirtualDecorationNavigationWorld(worldManifest, decorations), [worldManifest, decorations]);
   const deskScope = useMemo(() => ({ userId: privateActorId, projectId, activeWorldScope, authoringMode }), [privateActorId, projectId, activeWorldScope, authoringMode]);
-  const deskScopeKey = studioOfficeDeskPreferenceStorageKey(deskScope);
-  const [deskPreferences, setDeskPreferences] = useState<ReadonlyMap<string, string | null>>(() => new Map());
-  const storedDeskPreference = useMemo(() => readStudioOfficeDeskPreference(deskScope, worldManifest), [deskScope, worldManifest]);
-  const candidateDeskPreference = deskPreferences.has(deskScopeKey) ? deskPreferences.get(deskScopeKey) : storedDeskPreference;
-  const preferredSlotId = worldManifest.interactionSlots?.some((slot) => slot.id === candidateDeskPreference) ? candidateDeskPreference ?? null : null;
-  const preferDesk = (id: string) => {
-    const next = preferredSlotId === id ? null : id;
-    if (!writeStudioOfficeDeskPreference(deskScope, worldManifest, next)) {
-      notify(bt("이 기기에 자리를 기억하지 못했어요. 저장 공간을 확인해 주세요.", "Your desk could not be saved on this device. Check available storage."), "warn");
-      return;
-    }
-    setDeskPreferences((current) => new Map(current).set(deskScopeKey, next));
-  };
+  const { preferredSlotId, preferDesk } = useSpaceDeskPreference(deskScope, worldManifest, () => notify(bt("이 기기에 자리를 기억하지 못했어요. 저장 공간을 확인해 주세요.", "Your desk could not be saved on this device. Check available storage."), "warn"));
   const pendingArrival = useRef<{ scope: string; placeId: string; roomId: string; point?: StudioVirtualSpacePoint; desk?: boolean } | null>(null);
   const officeNavigationScope = JSON.stringify([privateActorId, projectId, authoringMode, publishedScope]);
   const [authoringDraft, setAuthoringDraft] = useState<StudioVirtualSpaceWorldManifest>(DEFAULT_STUDIO_WORLD_MANIFEST);
@@ -483,6 +471,7 @@ export function VirtualSpaceExperience({
   const [dialogueNpc, setDialogueNpc] = useState<StudioWorldNpcDefinition | null>(null);
   const operations = useStudioVirtualSpaceOperations(projectId, signedIn && !personal);
   const engineBridge = useMemo(() => new StudioVirtualSpaceEngineBridge(), []);
+  const userZoom = useSpaceUserZoom(engineBridge.userZoom);
   // 데스크톱의 NPC 대화·상호작용 카드는 비모달이라 걷기를 막지 않는다. 모바일 시트와 검색 팔레트만 이동을 멈춘다.
   // 모바일 리액션 줄(react)도 화면을 막지 않으므로 이동을 멈추지 않는다.
   const modalSurfaceOpen = searchOpen
@@ -1095,8 +1084,8 @@ export function VirtualSpaceExperience({
     const timer = globalThis.setTimeout(() => setWaveActorIds([]), 1_600);
     return () => globalThis.clearTimeout(timer);
   }, [gestureGreeting, socialSnapshot.available, fallbackIdentity]);
-  // 창을 떠나면 따라가기와 열려 있던 검수 초대 선택을 멈춘다.
-  useSpaceAttentionLoss(() => { if (sharedActivityRef.current?.action === "follow") finishSharedActivity(); setReviewPeerId(null); });
+  // 창을 떠나면 함께 걷기(따라가기·따라오라고 요청)와 열려 있던 검수 초대 선택을 멈춘다.
+  useSpaceAttentionLoss(() => { if (isStudioSocialWalkTogether(sharedActivityRef.current?.action)) finishSharedActivity(); setReviewPeerId(null); });
   const conversation = useStudioVirtualSpaceConversation({
     participant: live.room?.participant, port: live.room?.direct, manifest: worldManifest, publishedScope: activeWorldScope,
     presence: snapshot,
@@ -1151,7 +1140,7 @@ export function VirtualSpaceExperience({
     if (request.action === "talk") {
       setPanel("chat");
       openStudioP2pHuddle({ conversationId: request.id, peerIds: [request.peer.sessionId], source: "virtual-space" });
-    } else if (request.action === "follow" && request.direction === "outgoing") {
+    } else if (studioSocialRequestFollowsPeer(request)) {
       startFollowingPeer(request.peer.sessionId);
     } else if (request.action === "high-five") {
       // Current packs use a celebration reaction; do not claim an unsupported hand pose.
@@ -1176,7 +1165,7 @@ export function VirtualSpaceExperience({
       || peer.state.activity === "focused" || peer.state.activity === "away"
       || !socialSnapshot.available || !request || request.status !== "accepted"
       || ((sharedActivity.action === "talk" || sharedActivity.action === "high-five") && distance > SHARED_ACTIVITY_DISTANCE)
-      || (sharedActivity.action === "follow" && sharedActivity.direction === "outgoing" && !followingPeerId)) finishSharedActivity();
+      || (studioSocialRequestFollowsPeer(sharedActivity) && !followingPeerId)) finishSharedActivity();
   }, [sharedActivity, snapshot.peers, snapshot.self, activity, atmosphere, socialSnapshot, followingPeerId, finishSharedActivity]);
   useEffect(() => () => {
     const current = sharedActivityRef.current;
@@ -1234,9 +1223,10 @@ export function VirtualSpaceExperience({
   const cancelFollowing = useCallback(() => {
     cancelOfficeApproach();
     void cancelSlotApproach();
-    if (sharedActivity?.action === "follow") finishSharedActivity();
+    // 따라가는 쪽의 이동만 합의를 끝낸다. 이끄는 쪽(따라가기를 받아 준 사람, 따라오라고 청한 사람)이 걷는 것은 정상이다.
+    if (sharedActivity && studioSocialRequestFollowsPeer(sharedActivity)) finishSharedActivity();
     else setFollowingPeer(null);
-  }, [cancelOfficeApproach, cancelSlotApproach, sharedActivity?.action, finishSharedActivity, setFollowingPeer]);
+  }, [cancelOfficeApproach, cancelSlotApproach, sharedActivity, finishSharedActivity, setFollowingPeer]);
   const startGuideTour = useCallback((guideId: string) => {
     if (!worldReady || authoringMode || atmosphere === "focus" || activity === "focused" || activity === "away"
       || !worldManifest.npcs.some((npc) => npc.id === guideId && studioNpcRole(npc) === "guide")) return;
@@ -1364,6 +1354,8 @@ export function VirtualSpaceExperience({
     onHelp: () => { setDockPopover(null); setHelpOpen((current) => !current); },
     onChat: () => setChatOpen(true),
     onEscape: closeTopLayer,
+    onZoom: userZoom.available ? (action) => engineBridge.userZoom.apply(action) : undefined,
+    onDesk: () => { if (preferredSlotId && !personal) slots.requestSlot(preferredSlotId); else openOfficeSeats(); }, onLocate: () => engineBridge.cameraPan.recenter(),
   }, worldReady && !searchOpen);
   const exitSpace = useCallback(() => {
     writeStudioVirtualSpaceSessionPoint(positionScope, selfRef.current);
@@ -1647,10 +1639,11 @@ export function VirtualSpaceExperience({
   const spaceName = personal ? bt("나의 스튜디오", "My studio") : workProject.title ?? bt("현재 작품", "Current work");
   const touch = !desktop;
 
-  const moreItems = spaceMoreItems({ personal, desktop, panel, proximityVideoOn: proximity.enabled, pose: localPoseRef.current }, {
+  const moreItems = spaceMoreItems({ personal, desktop, panel, proximityVideoOn: proximity.enabled, pose: localPoseRef.current, zoomLevel: userZoom.available ? userZoom.level : null }, {
     toggleProximityVideo: mediaAvailable ? () => { if (proximity.enabled) proximity.stop(); else setMediaConsentOpen(true); } : undefined,
     openPanel: setPanel, openSeats: openOfficeSeats, openSearch: () => setSearchOpen(true), capturePhoto: captureVirtualPhoto,
     unstuck: () => engineBridge.requestUnstuck(), openHelp: () => setHelpOpen(true), exit: exitSpace, togglePose,
+    zoom: (action) => engineBridge.userZoom.apply(action),
   });
 
   const selfListId = live.room?.participant.sessionId ?? fallbackIdentity;
@@ -2061,14 +2054,8 @@ export function VirtualSpaceExperience({
                   : bt(`${guideTarget.labelKo}까지 안내 중`, `Guiding you to ${guideTarget.labelEn}`)}</p>
               <button type="button" className="space-pill-button" onClick={() => setGuideTarget(null)}>{bt("안내 종료", "End guide")}</button>
             </div> : null}
-            {followingPeer ? <button type="button" className="space-status-chip" data-space-interactive="true" onClick={cancelFollowing}>
-              {bt(`${followingPeer.participant.displayName} 따라가는 중`, `Following ${followingPeer.participant.displayName}`)} <X size={14} aria-hidden />
-            </button> : null}
-            {followingPeer ? <div className="space-status-chip" data-space-interactive="true">
-              <p role="status">{studioFollowModeCopy(bt, followConfig.mode)}</p>
-              <button type="button" className="space-pill-button" aria-pressed={followConfig.mode === "docent"} onClick={() => updateFollowConfig({ mode: followConfig.mode === "docent" ? "standard" : "docent" })}>{bt("도슨트", "Docent")}</button>
-              <button type="button" className="space-pill-button" aria-pressed={followConfig.ignoreCollisions} onClick={() => updateFollowConfig({ ignoreCollisions: !followConfig.ignoreCollisions })}>{bt("벽 통과", "Pass walls")}</button>
-            </div> : null}
+            <SpaceMovementStatus followingName={followingPeer?.participant.displayName ?? null} sharedActivity={sharedActivity} config={followConfig} cameraPan={engineBridge.cameraPan}
+              onStopFollowing={cancelFollowing} onStopLeading={finishSharedActivity} onConfig={updateFollowConfig} onRecentered={() => engineBridge.focusWorld()} />
             {stuck ? <button type="button" className="space-status-chip space-status-chip--warn" data-space-interactive="true" onClick={() => engineBridge.requestUnstuck()}>
               <LifeBuoy size={16} aria-hidden />{bt("끼었나요? 제자리로 이동", "Stuck? Move to a safe spot")}
             </button> : null}
@@ -2089,7 +2076,7 @@ export function VirtualSpaceExperience({
         </>}
         bottomEnd={touch && worldReady && experiencePreference.controlMode !== "tap" ? <div className="space-joystick" data-handedness={experiencePreference.handedness} data-space-interactive="true">
           <StudioVirtualSpaceJoystick mode={experiencePreference.controlMode} onVectorChange={(vector) => engineBridge.setJoystick(vector)} />
-        </div> : null}
+        </div> : worldReady ? <SpaceZoomControls store={engineBridge.userZoom} onPointerUse={() => engineBridge.focusWorld()} /> : null}
         rightPanel={<SpaceSidePanel id={SIDE_PANEL_ID} panel={panel} personal={personal} desktop={desktop} onSelect={setPanel} onClose={closePanel}
           keepAlive={sidePanelKeepAlive}>
           <Suspense fallback={<p role="status">{bt("패널 불러오는 중…", "Loading panel…")}</p>}>

@@ -147,7 +147,11 @@ interface Ghost {
 
 export class StudioMotionFeelRuntime {
   private readonly emitter: Phaser.GameObjects.Particles.ParticleEmitter;
+  /** 폭죽 불꽃. 먼지와 달리 매 프레임 깊이를 되돌리지 않아 월드 위에 머문다. */
+  private readonly sparkEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly ghosts: Ghost[] = [];
+  /** 마지막 step()이 계산한 파티클 밀도(0~1). 폭죽 불꽃이 발밑 먼지와 같은 설정·성능 등급·모션 줄이기를 따르게 한다. */
+  private density = 1;
   private ghostCursor = 0;
   private nextGhostAt = 0;
   private previousSpeed = 0;
@@ -172,6 +176,15 @@ export class StudioMotionFeelRuntime {
       quantity: 0,
       emitting: false,
     });
+    this.sparkEmitter = scene.add.particles(0, 0, DUST_TEXTURE, {
+      speed: { min: 50, max: 130 },
+      lifespan: { min: 700, max: 1_100 },
+      gravityY: 70,
+      scale: { start: 0.8, end: 0.1 },
+      alpha: { start: 1, end: 0 },
+      quantity: 0,
+      emitting: false,
+    });
     for (let index = 0; index < GHOST_POOL_SIZE; index += 1) {
       this.ghosts.push({ sprite: scene.add.sprite(0, 0, DUST_TEXTURE).setVisible(false).setTint(GHOST_TINT), bornAt: 0, lifetime: 1 });
     }
@@ -183,6 +196,7 @@ export class StudioMotionFeelRuntime {
     const scale = STUDIO_MOTION_FEEL_REFERENCE_SPRINT / Math.max(1, frame.sprintSpeed);
     const speed = frame.speed * scale;
     const density = frame.reducedMotion ? 0 : Math.min(1, Math.max(0, frame.particleDensity));
+    this.density = density;
     const moved = Number.isFinite(this.lastX) ? Math.hypot(frame.x - this.lastX, frame.y - this.lastY) : 0;
     this.lastX = frame.x;
     this.lastY = frame.y;
@@ -229,8 +243,19 @@ export class StudioMotionFeelRuntime {
     this.emit(count, x, y, color);
   }
 
+  /**
+   * 폭죽 불꽃을 터뜨린다: 사방으로 퍼졌다 천천히 떨어지며 사라진다.
+   * 개수는 발밑 먼지와 같은 파티클 밀도를 곱해 줄이고, 밀도가 0(모션 줄이기·효과 끔)이면 터뜨리지 않는다.
+   */
+  spark(x: number, y: number, depth: number, count: number, color: number): void {
+    const scaled = Math.round(count * this.density);
+    if (scaled <= 0) return;
+    this.sparkEmitter.setDepth(depth).setParticleTint(color).explode(scaled, x, y);
+  }
+
   destroy(): void {
     this.emitter.destroy();
+    this.sparkEmitter.destroy();
     for (const ghost of this.ghosts) ghost.sprite.destroy();
     this.ghosts.length = 0;
   }

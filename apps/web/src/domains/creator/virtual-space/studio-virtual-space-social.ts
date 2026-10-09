@@ -17,7 +17,11 @@ const MAX_PEERS = 23;
 const MAX_RETIRED_EPOCHS = 8;
 const TICK_MS = 250;
 
-export type StudioVirtualSpaceSocialAction = "talk" | "follow" | "review" | "high-five";
+/**
+ * 'follow'는 요청자가 상대를 따라가겠다는 청이고, 'lead'(따라오라고 요청)는 그 반대로 요청자를 상대가
+ * 따라오게 하는 청이다. 둘 다 상대가 수락해야 시작하며, 누가 걷는지는 studio-virtual-space-social-walk가 정한다.
+ */
+export type StudioVirtualSpaceSocialAction = "talk" | "follow" | "lead" | "review" | "high-five";
 export type StudioVirtualSpaceSocialStatus =
   | "offered" | "accepting" | "accepted" | "declined" | "cancelled"
   | "expired" | "disconnected" | "failed";
@@ -86,7 +90,7 @@ export interface StudioVirtualSpaceSocialPacket extends StudioVirtualSpaceSocial
   readonly reviewSubject?: StudioVirtualSpaceReviewSubject | null;
 }
 
-const ACTIONS = new Set<string>(["talk", "follow", "review", "high-five"]);
+const ACTIONS = new Set<string>(["talk", "follow", "lead", "review", "high-five"]);
 const KINDS = new Set<string>(["hello", "request", "accept", "commit", "decline", "cancel", "expire", "greet", "greet-ack"]);
 const PACKET_KEYS = new Set([
   "wire", "kind", "worldId", "contentRevision", "sessionEpoch", "targetEpoch",

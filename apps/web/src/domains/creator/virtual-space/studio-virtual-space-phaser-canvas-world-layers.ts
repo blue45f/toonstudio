@@ -7,9 +7,11 @@
 import type * as Phaser from "phaser";
 
 import type { StudioVirtualArtStyle, StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
+import type { StudioVirtualBackdrop } from "./studio-virtual-space-environment-preference";
 import { studioExperienceFrameGeometry } from "./studio-virtual-space-experience-art";
 import type { StudioOptionalSceneArtIllustratedProp } from "./studio-virtual-space-optional-scene-art";
 import { propTextureKey, type InputEventLike, type OcclusionVisual } from "./studio-virtual-space-phaser-canvas-model";
+import { studioCoverRect } from "./studio-virtual-space-presentation";
 import { studioIllustratedPropFrame } from "./studio-virtual-space-scene-direction";
 import {
   studioWorldPropDepth,
@@ -17,6 +19,39 @@ import {
   type StudioWorldInteractionDefinition,
   type StudioWorldOcclusionLayer,
 } from "./studio-virtual-space-world-manifest";
+
+/**
+ * 월드 뒤 배경 두 겹: 화면보다 느리게 흐르는 지평선 원경(스크롤 0.92)과 월드를 덮는 배경 이미지.
+ * 지평선 이미지는 시간대 하늘 틴트가 입히므로 돌려주고, 배경 영역은 전경 가림 레이어가 같은 좌표를 쓴다.
+ */
+export function drawStudioBackdropLayers(
+  scene: Pick<Phaser.Scene, "add" | "textures">,
+  manifest: Pick<StudioVirtualSpaceWorldManifest, "width" | "height" | "tilemap">,
+  input: { readonly backgroundTextureKey: string; readonly horizonTextureKey: string; readonly backdrop: StudioVirtualBackdrop },
+): { readonly backgroundRect: ReturnType<typeof studioCoverRect>; readonly horizonArtwork: Phaser.GameObjects.Image | null } {
+  const { backgroundTextureKey, horizonTextureKey, backdrop } = input;
+  const backgroundSource = scene.textures.exists(backgroundTextureKey)
+    ? scene.textures.get(backgroundTextureKey).getSourceImage() : { width: manifest.width, height: manifest.height };
+  const backgroundRect = studioCoverRect(manifest.width, manifest.height, backgroundSource.width, backgroundSource.height);
+  let horizonArtwork: Phaser.GameObjects.Image | null = null;
+  if (scene.textures.exists(horizonTextureKey)) {
+    const horizonSource = scene.textures.get(horizonTextureKey).getSourceImage();
+    const horizonRect = studioCoverRect(manifest.width * 3, manifest.height * 3, horizonSource.width, horizonSource.height);
+    horizonArtwork = scene.add.image(manifest.width / 2, manifest.height / 2, horizonTextureKey)
+      .setDisplaySize(horizonRect.width, horizonRect.height)
+      .setScrollFactor(0.92)
+      .setDepth(-1_004)
+      .setAlpha(backdrop === "city" ? 0.96 : 0.90);
+  }
+  if (scene.textures.exists(backgroundTextureKey)) {
+    scene.add.image(backgroundRect.x, backgroundRect.y, backgroundTextureKey)
+      .setOrigin(0)
+      .setDisplaySize(backgroundRect.width, backgroundRect.height)
+      .setDepth(-1_000)
+      .setAlpha(manifest.tilemap ? 0.24 : backdrop === "sky" ? 0.96 : 0.72);
+  }
+  return { backgroundRect, horizonArtwork };
+}
 
 /**
  * 배우 앞을 가리는 전경 레이어. 타일맵 월드는 방 색 다각형을 그리고, 그 밖에는 배경 텍스처를

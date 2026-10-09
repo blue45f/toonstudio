@@ -202,15 +202,15 @@ function judgeWetScene(result) {
   return reasons;
 }
 
-/** 명세 §9.3·`raster/wet-presets*.snapshot.test.ts`의 CPU 습식 프리셋 픽셀 해시(zigzagStroke(size, 600 ms), seed 1, 빈 문서). */
+/** 명세 §9.3·`raster/wet-presets*.snapshot.test.ts`의 CPU 습식 프리셋 픽셀 해시(zigzagStroke(size, 600 ms), seed 1, 빈 문서). 입력 보정 정점 재방출(수정안 A) 이후 값(2026-10-08 재계산). */
 const WET_SPEC_HASHES = {
-  "watercolor-wet@256": "e2eeedfaad6bccd9",
-  "watercolor-wet@512": "21d19d4a9bb0d714",
-  "watercolor-dry@256": "b6d335e0fe02b6c1",
-  "sumi-ink-wet@256": "24da89b5d863913d",
-  "gouache@256": "70fcf8e9c1dedaec",
-  "oil-impasto@256": "1d1437eb6d4ebc42",
-  "oil-impasto@512": "b4f8ae7943dbd81f",
+  "watercolor-wet@256": "2ca89c15e81abfc6",
+  "watercolor-wet@512": "93574dffe653e968",
+  "watercolor-dry@256": "faebfb7d0eb47759",
+  "sumi-ink-wet@256": "9a964948faee2932",
+  "gouache@256": "e575a8334ebc8cbe",
+  "oil-impasto@256": "034beb3bf6c4f868",
+  "oil-impasto@512": "556fd7d568b63d56",
 };
 
 /** 다획 시퀀스 문자열 "a:fixture>b:fixture,c:fixture" → [[{preset,fixtureId}...]...]. */

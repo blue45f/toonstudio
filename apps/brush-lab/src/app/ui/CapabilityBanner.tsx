@@ -1,6 +1,8 @@
 import { useLab, useLabSelector } from "../shell/lab-context";
 import { capabilityBadge, describeReason, KIND_LABELS, STATUS_LABELS } from "../state/lane-helpers";
 
+import { ExperimentalBadge } from "./ExperimentalBadge";
+
 /**
  * 레인별 probe 결과·사유 코드·softwareRenderer 경고. 미지원 레인은 비활성으로 남고
  * 다른 레인으로 자동 전환하지 않는다(ADR-0018). 앱 오류 목록도 여기서 보여준다.
@@ -38,7 +40,8 @@ export function CapabilityBanner() {
           return (
             <li key={desc.id}>
               <span className="lab-mono">{desc.id}</span> {desc.label} · {KIND_LABELS[desc.kind]} ·{" "}
-              {STATUS_LABELS[desc.status]} · <span className={badgeClass}>{capabilityBadge(cap)}</span>
+              {STATUS_LABELS[desc.status]} · <span className={badgeClass}>{capabilityBadge(cap)}</span>{" "}
+              <ExperimentalBadge desc={desc} />
               {cap && cap.status === "unavailable" && cap.reasons.length > 0 ? (
                 <ul>
                   {cap.reasons.map((r) => (

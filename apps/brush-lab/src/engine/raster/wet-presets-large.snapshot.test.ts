@@ -8,12 +8,13 @@ import { renderStroke } from "./reference-renderer";
 
 /**
  * 습식 프리셋 512² 픽셀 해시 스냅샷. 기존(HEAD) 512² 스냅샷 대상(수채·유화)을 새 물리 값으로 갱신해 유지한다.
+ * 2026-10-08 갱신(2건 전부): 입력 정점 재방출(#9 수정안 A)로 지그재그 모서리 정점이 출력 경로에 들어갔다(습식 물리는 변경 없음).
  * 256² 스냅샷(`wet-presets.snapshot.test.ts`)과 같은 조건(fnv1a64, sRGB RGBA8, zigzagStroke(512, 600 ms), seed 1, 빈 문서)이며
  * 파일당 시험 시간 상한(30 s) 때문에 따로 둔다. 습식 물리나 프리셋 파라미터를 바꾸면 의도적으로 갱신한다.
  */
 const WET_SNAPSHOTS_512: readonly [id: string, hash: string][] = [
-  ["watercolor-wet", "21d19d4a9bb0d714"],
-  ["oil-impasto", "b4f8ae7943dbd81f"],
+  ["watercolor-wet", "93574dffe653e968"],
+  ["oil-impasto", "556fd7d568b63d56"],
 ];
 
 const SIZE = 512;

@@ -6,6 +6,9 @@ import {
 import { measureStudioFrameBounds, type StudioFrameRegistry } from "./studio-virtual-space-frame-registration";
 import { registerStudioSceneAtlas } from "./studio-virtual-space-scene-art-runtime";
 
+/** Phaser.Textures.FilterMode.NEAREST. 이 모듈은 Phaser 값을 가져오지 않고(타입만 쓴다) 같은 상수를 둔다. */
+const NEAREST_FILTER = 1;
+
 /** 로드된 텍스처의 RGBA 픽셀(행 우선, 픽셀당 4바이트). */
 export interface StudioTexturePixels {
   readonly data: ArrayLike<number>;
@@ -59,6 +62,9 @@ export function createStudioCharacterTexturePreparer(deps: {
   const prepareCharacterTexture = (asset: ReturnType<typeof studioCharacterStaticAsset>) => {
     if (!scene.textures.exists(asset.key)) return false;
     const texture = scene.textures.get(asset.key);
+    // 픽셀 아트 스킨(LPC)의 최근접 필터 힌트를 실제로 적용한다. 장면 기본 필터가 선형인 일러스트 화풍(5/6)에서는 힌트가 읽히지 않아
+    // 도트가 번져 보였다. 픽셀 화풍(retro)은 장면 기본이 이미 최근접이라 달라지지 않는다.
+    if (asset.textureFilter === "nearest") texture.setFilter(NEAREST_FILTER);
     if (asset.type !== "spritesheet") {
       recordRegistration(asset, texture);
       return true;

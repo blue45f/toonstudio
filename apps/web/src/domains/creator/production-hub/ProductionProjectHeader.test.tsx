@@ -48,6 +48,13 @@ describe("ProductionProjectHeader 표지 타일", () => {
     expect(screen.getByRole("heading", { name: aggregate.title })).toBeTruthy();
   });
 
+  it("샘플 프로젝트는 별도 지정 없이도 실물 표지 타일로 렌더한다", () => {
+    const aggregate = createProductionDemoProject();
+    const { container } = renderHeader(aggregate);
+    const img = container.querySelector(`img[src="${aggregate.coverImageUrl}"]`);
+    expect(img).not.toBeNull();
+  });
+
   it("coverImageUrl이 없으면 이미지를 만들지 않고 제목 이니셜 폴백 타일을 유지한다", () => {
     const aggregate: ProductionProjectAggregate = {
       ...createProductionDemoProject(),

@@ -140,7 +140,7 @@ describe("virtual studio social consent", () => {
     hub.deliver(delayedGreeting); expect(a.snapshot().greetings).toEqual([]);
     expect(state(a, id)).toBe("cancelled");
   });
-  it.each<StudioVirtualSpaceSocialAction>(["talk", "follow", "high-five"])(
+  it.each<StudioVirtualSpaceSocialAction>(["talk", "follow", "lead", "high-five"])(
     "requires receiver consent before completing %s, with exactly one callback per participant", (action) => {
       const { a, b, hub, state, acceptedA, acceptedB } = setup();
       expect(a.snapshot().readyPeerIds).toEqual([B.sessionId]);
@@ -524,6 +524,82 @@ describe("social packet validation", () => {
       { expiresAfterMs: STUDIO_VIRTUAL_SPACE_SOCIAL_TTL_MS + 1 }, { requestId: "unrelated" },
       { contentRevision: "" }, { action: "enable-microphone" }, { payload: {} },
     ]) expect(parseStudioVirtualSpaceSocialPacket(JSON.stringify({ ...packet, ...edit }))).toBeNull();
+  });
+
+  it("'lead'(따라오라고 요청)를 알려진 동의 액션으로 받되, 그 밖의 이동 명령 같은 이름은 계속 거른다", () => {
+    const { a, hub } = setup();
+    a.request(B.sessionId, "lead");
+    const raw = hub.take("request").raw;
+    const packet = JSON.parse(raw) as StudioVirtualSpaceSocialPacket;
+    expect(packet.action).toBe("lead");
+    expect(parseStudioVirtualSpaceSocialPacket(raw)).toEqual(packet);
+    for (const action of ["teleport", "move", "pull", "lead-to", "LEAD"]) {
+      expect(parseStudioVirtualSpaceSocialPacket(JSON.stringify({ ...packet, action })), action).toBeNull();
+    }
+  });
+});
+
+describe("따라오라고 요청(lead)의 동의 경계", () => {
+  it("수락 전에는 어느 쪽도 걷기를 시작하라는 콜백을 받지 않고, 거절하면 아무 일도 일어나지 않는다", () => {
+    const { a, b, hub, state, acceptedA, acceptedB } = setup();
+    const id = a.request(B.sessionId, "lead")!;
+    hub.flush();
+    expect(b.snapshot().requests[0]).toMatchObject({ id, action: "lead", direction: "incoming", status: "offered", peer: A });
+    expect(acceptedA).not.toHaveBeenCalled();
+    expect(acceptedB).not.toHaveBeenCalled();
+    expect(b.respond(id, "decline")).toBe(true);
+    hub.flush();
+    expect(state(a, id)).toBe("declined");
+    expect(state(b, id)).toBe("declined");
+    expect(acceptedA).not.toHaveBeenCalled();
+    expect(acceptedB).not.toHaveBeenCalled();
+  });
+
+  it("요청한 쪽(이끄는 쪽)은 스스로 수락할 수 없고, 받은 쪽만 수락해 양쪽에 방향이 반대로 전달된다", () => {
+    const { a, b, hub, state, acceptedA, acceptedB } = setup();
+    const id = a.request(B.sessionId, "lead")!;
+    hub.flush();
+    expect(a.respond(id, "accept")).toBe(false);
+    expect(b.respond(id, "accept")).toBe(true);
+    hub.flush();
+    expect(state(a, id)).toBe("accepted");
+    expect(state(b, id)).toBe("accepted");
+    expect(acceptedA.mock.calls[0]![0]).toMatchObject({ action: "lead", direction: "outgoing", peer: B });
+    expect(acceptedB.mock.calls[0]![0]).toMatchObject({ action: "lead", direction: "incoming", peer: A });
+  });
+
+  it("이끄는 쪽이 취소하면 따라오던 쪽의 합의도 끝나 따라가기가 멈출 수 있다", () => {
+    const { a, b, hub, state } = setup();
+    const id = a.request(B.sessionId, "lead")!;
+    hub.flush(); b.respond(id, "accept"); hub.flush();
+    expect(a.cancel(id)).toBe(true);
+    hub.flush();
+    expect(state(a, id)).toBe("cancelled");
+    expect(state(b, id)).toBe("cancelled");
+  });
+
+  it("따라가는 쪽이 취소해도 이끄는 쪽의 합의가 함께 끝난다", () => {
+    const { a, b, hub, state } = setup();
+    const id = a.request(B.sessionId, "lead")!;
+    hub.flush(); b.respond(id, "accept"); hub.flush();
+    expect(b.cancel(id)).toBe(true);
+    hub.flush();
+    expect(state(a, id)).toBe("cancelled");
+    expect(state(b, id)).toBe("cancelled");
+  });
+
+  it("같은 상대에게 이미 미결 요청이 있으면 lead도 겹쳐 보내지 않는다", () => {
+    const { a, hub } = setup();
+    expect(a.request(B.sessionId, "talk")).not.toBeNull();
+    hub.flush();
+    expect(a.request(B.sessionId, "lead")).toBeNull();
+  });
+
+  it("차단한 접속에는 lead를 보낼 수 없다", () => {
+    const { a, hub } = setup();
+    a.setPeerBlocked(B.sessionId, true);
+    hub.flush();
+    expect(a.request(B.sessionId, "lead")).toBeNull();
   });
 });
 
