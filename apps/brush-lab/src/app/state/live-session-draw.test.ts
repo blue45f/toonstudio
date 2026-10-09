@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 
+import { composeStages } from "../../engine/input/stages/chain";
+import { createCornerGateStage } from "../../engine/input/stages/corner-gate";
+import { createLazyBrushStage } from "../../engine/input/stages/lazy-brush";
+import { createPenSpringStage } from "../../engine/input/stages/pen-spring";
 import { presetById } from "../../engine/presets/catalog";
 import { FrameScheduler } from "../../platform/raf-scheduler";
 import { createMockLane, mockEnvironment } from "../testing/mock-lane";
@@ -9,6 +13,7 @@ import { LiveStrokeSession } from "./live-session";
 
 import type { LiveSessionOptions, LiveStrokeAbort, LiveStrokeResult } from "./live-session";
 import type { RawSample } from "../../engine/core/types";
+import type { RawStage } from "../../engine/input/stages/raw-stage";
 import type { BrushProgram } from "../../engine/presets/program-schema";
 import type { MockLane } from "../testing/mock-lane";
 
@@ -261,5 +266,143 @@ describe("LiveStrokeSession: 그리기 화면 옵션", () => {
     expect(plain.initConfigs[0]).not.toHaveProperty("wetCapacityTiles");
     s.session.dispose();
     plain.session.dispose();
+  });
+
+  /** reset 호출 횟수를 세는 단계 래퍼(내부 동작은 그대로). */
+  function withResetCount(inner: RawStage): { stage: RawStage; resets: () => number } {
+    let resets = 0;
+    const stage: RawStage = {
+      id: inner.id,
+      label: inner.label,
+      apply: (samples) => inner.apply(samples),
+      flush: () => inner.flush(),
+      reset: () => {
+        resets += 1;
+        inner.reset();
+      },
+    };
+    return { stage, resets: () => resets };
+  }
+
+  async function dragStroke(s: Awaited<ReturnType<typeof make>>, t: number, to: { x: number; y: number }): Promise<void> {
+    s.el.dispatchEvent(pointerEvent("pointerdown", { clientX: 2, clientY: 2, timeStamp: t }));
+    for (let i = 1; i <= 6; i += 1) {
+      s.el.dispatchEvent(pointerEvent("pointermove", { clientX: 2 + ((to.x - 2) * i) / 6, clientY: 2 + ((to.y - 2) * i) / 6, timeStamp: t + i * 4 }));
+    }
+    s.fr.tick();
+    await flush();
+    s.el.dispatchEvent(pointerEvent("pointerup", { clientX: to.x, clientY: to.y, timeStamp: t + 28 }));
+    s.fr.tick();
+    await flush();
+  }
+
+  it("입력 단계: 끈 당김은 모서리 없는 획에서도 끝점이 포인터 업 위치에 닿는다(획 끝 따라잡기, flush 표본이 up 앞에 이어진다)", async () => {
+    const plain = await make();
+    await dragStroke(plain, 1, { x: 30, y: 20 });
+    const plainSamples = plain.added.flat();
+    expect(plainSamples[plainSamples.length - 1]).toMatchObject({ x: 30, y: 20, phase: "up" });
+    plain.session.dispose();
+
+    const s = await make({ inputStage: createLazyBrushStage({ radiusPx: 12 }) });
+    await dragStroke(s, 1, { x: 30, y: 20 });
+    const samples = s.added.flat();
+    const last = samples[samples.length - 1];
+    expect(last).toMatchObject({ x: 30, y: 20, phase: "up" });
+    expect(samples.filter((sample) => sample.phase === "up")).toHaveLength(1);
+    // 끈 때문에 중간 표본은 포인터보다 뒤지고, 따라잡기 표본이 더해져 표본 수가 늘었다.
+    expect(samples.length).toBeGreaterThan(plainSamples.length);
+    const beforeCatchUp = samples.filter((sample) => sample.phase === "move");
+    expect(Math.max(...beforeCatchUp.map((sample) => sample.x))).toBeLessThanOrEqual(30);
+    expect(samples[1]?.x).toBe(2); // 끈 길이(12 px) 안의 첫 이동은 붓을 움직이지 않는다
+    for (let i = 1; i < samples.length; i += 1) expect(samples[i]?.tMs).toBeGreaterThanOrEqual(samples[i - 1]?.tMs ?? 0);
+    expect(s.results).toHaveLength(1);
+    s.session.dispose();
+  });
+
+  it("입력 단계: 물리 펜+코너 게이트 체인도 끝점이 포인터 업 위치이고 다음 획은 새로 시작한다", async () => {
+    const chain = composeStages([createCornerGateStage(createPenSpringStage({ lagMs: 20 }))]);
+    const s = await make({ inputStage: chain });
+    await dragStroke(s, 1, { x: 28, y: 14 });
+    const first = s.added.flat();
+    expect(first[first.length - 1]).toMatchObject({ x: 28, y: 14, phase: "up" });
+    s.added.length = 0;
+    await dragStroke(s, 500, { x: 10, y: 24 });
+    const second = s.added.flat();
+    expect(second[0]).toMatchObject({ x: 2, y: 2, phase: "down" });
+    expect(second[second.length - 1]).toMatchObject({ x: 10, y: 24, phase: "up" });
+    expect(s.results).toHaveLength(2);
+    s.session.dispose();
+  });
+
+  it("입력 단계: pointercancel로 획을 버리면 abortStroke와 함께 체인이 reset되고 보류한 마무리가 새지 않는다", async () => {
+    const { stage, resets } = withResetCount(createLazyBrushStage({ radiusPx: 12 }));
+    const s = await make({ inputStage: stage });
+    s.el.dispatchEvent(pointerEvent("pointerdown", { clientX: 4, clientY: 4, timeStamp: 1 }));
+    s.el.dispatchEvent(pointerEvent("pointermove", { clientX: 30, clientY: 20, timeStamp: 9 }));
+    s.fr.tick();
+    await flush();
+    const before = resets();
+    s.el.dispatchEvent(pointerEvent("pointercancel", { clientX: 30, clientY: 20, timeStamp: 17 }));
+    s.fr.tick();
+    await flush();
+    expect(s.aborts).toHaveLength(1);
+    expect(s.aborts[0]).toMatchObject({ cause: "pointercancel", laneReplaced: false });
+    expect(s.lanes[0]?.calls.filter((c) => c === "abortStroke")).toHaveLength(1);
+    expect(s.lanes[0]?.calls).not.toContain("endStroke");
+    expect(resets()).toBeGreaterThan(before);
+    expect(stage.flush()).toEqual([]);
+    // 다음 획은 이전 붓 위치를 끌고 오지 않고 down 위치에서 시작한다.
+    s.added.length = 0;
+    await dragStroke(s, 100, { x: 20, y: 28 });
+    const next = s.added.flat();
+    expect(next[0]).toMatchObject({ x: 2, y: 2, phase: "down" });
+    expect(next[next.length - 1]).toMatchObject({ x: 20, y: 28, phase: "up" });
+    s.session.dispose();
+  });
+
+  it("입력 단계: 레인 오류로 획이 버려져도(abortStroke) 체인이 reset된다", async () => {
+    const { stage, resets } = withResetCount(createLazyBrushStage({ radiusPx: 12 }));
+    const s = await make({ inputStage: stage });
+    const lane = s.lanes[0];
+    expect(lane).toBeDefined();
+    if (!lane) return;
+    const add = lane.addSamples.bind(lane);
+    let fail = true;
+    lane.addSamples = (samples) => {
+      // 획을 끝내는 배치(up 포함)에서 한 번 실패시킨다: 이때 포인터는 이미 떼어져 있다.
+      if (fail && samples.some((sample) => sample.phase === "up")) {
+        fail = false;
+        throw new Error("모의 레인 오류");
+      }
+      return add(samples);
+    };
+    await dragStroke(s, 1, { x: 30, y: 20 });
+    expect(s.errors.length).toBeGreaterThan(0);
+    expect(s.aborts).toHaveLength(1);
+    expect(s.lanes[0]?.calls.filter((c) => c === "abortStroke")).toHaveLength(1);
+    expect(resets()).toBeGreaterThan(0);
+    s.added.length = 0;
+    await dragStroke(s, 200, { x: 20, y: 10 });
+    expect(s.results).toHaveLength(1);
+    expect(s.added.flat()[0]).toMatchObject({ x: 2, y: 2, phase: "down" });
+    s.session.dispose();
+  });
+
+  it("setInputStage는 다음 획부터 바뀌고 이전 단계를 reset하며 null이면 단계 없음이다", async () => {
+    const first = withResetCount(createLazyBrushStage({ radiusPx: 12 }));
+    const s = await make({ inputStage: first.stage });
+    await dragStroke(s, 1, { x: 30, y: 20 });
+    const withStage = s.added.flat().length;
+    s.session.setInputStage(null);
+    expect(first.resets()).toBeGreaterThan(0);
+    s.added.length = 0;
+    await dragStroke(s, 100, { x: 30, y: 20 });
+    expect(s.added.flat().length).toBeLessThan(withStage);
+    expect(s.added.flat()[1]?.x).toBeCloseTo(2 + (30 - 2) / 6, 9);
+    s.session.setInputStage(createLazyBrushStage({ radiusPx: 40 }));
+    s.added.length = 0;
+    await dragStroke(s, 300, { x: 30, y: 20 });
+    expect(s.added.flat()[1]?.x).toBe(2);
+    s.session.dispose();
   });
 });

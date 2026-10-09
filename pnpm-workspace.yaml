@@ -47,7 +47,7 @@ allowBuilds:
   iso-constants: false
 
 overrides:
-  handlebars: '>=4.7.9'
+  handlebars: '>=4.7.10'
   multer: '>=2.4.0'
   undici: '7.29.1'
   ws: '>=8.21.0'

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { StrokeBudgetExceededError } from "../../engine/core/errors";
+import { LaneUnavailableError, StrokeBudgetExceededError } from "../../engine/core/errors";
 
-import { describeLaneError } from "./draw-error-text";
+import { describeLaneError, describeSessionStartFailure } from "./draw-error-text";
 
 describe("describeLaneError", () => {
   it("stroke-budget-exceeded는 원인(비정상 도약·용량 한계)을 한글로 설명하고 원문을 남기며, 평범하게 빠른 획은 그려진다고 알린다", () => {
@@ -22,5 +22,15 @@ describe("describeLaneError", () => {
 
   it("그 밖의 오류는 '레인 오류' 접두와 원문 그대로", () => {
     expect(describeLaneError(new Error("장치 손실"))).toBe("레인 오류: 장치 손실");
+  });
+});
+
+describe("describeSessionStartFailure", () => {
+  it("사유 코드·원문 한글 메시지를 남기고 자동 전환이 없다는 사실을 알린다(ADR-0018)", () => {
+    const text = describeSessionStartFailure("물리 붓털(Rapier 2D, 실험)", new LaneUnavailableError("wasm-artifact-missing", "Rapier 물리 모듈을 불러오지 못했다"));
+    expect(text).toContain("물리 붓털(Rapier 2D, 실험) 시작에 실패했다");
+    expect(text).toContain("[wasm-artifact-missing]");
+    expect(text).toContain("Rapier 물리 모듈을 불러오지 못했다");
+    expect(text).toContain("다른 레인으로 자동 전환하지 않는다");
   });
 });

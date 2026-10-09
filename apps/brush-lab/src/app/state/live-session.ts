@@ -1,8 +1,10 @@
 import { SumiError } from "../../engine/core/errors";
+import { applyStrokeStream } from "../../engine/input/stages/chain";
 import { attachPointerCapture, splitPredicted } from "../../platform/pointer-capture";
 import { FrameScheduler } from "../../platform/raf-scheduler";
 
 import type { LabImage, RawSample } from "../../engine/core/types";
+import type { RawStage } from "../../engine/input/stages/raw-stage";
 import type { BrushProgram } from "../../engine/presets/program-schema";
 import type { BrushEngineLane, DabBatchReceipt, LaneEnvironment, StrokeAbortReceipt, StrokeOptions, StrokeReceipt } from "../../lanes/lane";
 import type { PreviewPoint } from "../../platform/canvas-present";
@@ -22,6 +24,10 @@ import type { PointerCaptureOptions } from "../../platform/pointer-capture";
  * - 획 색은 프로그램이 아니라 획의 입력이다: 세션이 가진 현재 색(`color`/`setColor`)을 획을 시작할 때 `beginStroke(program, seed, { color })`로
  *   넘긴다. 색을 바꿔도 진행 중인 획은 시작할 때의 색을 끝까지 쓰고 다음 획부터 새 색이 적용된다(`setProgram`과 같은 규칙).
  *   색을 한 번도 정하지 않으면 옵션 없이 `beginStroke`를 불러 기존(검정)과 같다.
+ * - 입력 단계(`inputStage`, 끈 당김·물리 펜·코너 게이트 체인): `transformSamples`(압력 시뮬레이션) 뒤에 원시 표본에 적용한다.
+ *   `up`이 들어온 배치에서는 단계의 `flush()` 표본(획 끝 따라잡기·정착)을 `up` 앞에 이어 보내 끝점이 포인터 업 위치에 닿는다.
+ *   `setInputStage`는 다음 획부터 쓸 단계를 바꾼다(포인터가 눌린 채면 새 단계는 다음 `down`에서 시작한다). 획이 버려지면
+ *   (`abortStroke` 경로: 오류 복구·포인터 취소) 단계의 `reset()`을 불러 보류 중인 마무리와 상태를 버린다.
  */
 
 export interface LiveStrokeResult {
@@ -74,10 +80,12 @@ export interface LiveSessionOptions {
   /** true면 획이 끝날 때 선형 버퍼(`readbackLinear`)를 읽지 않는다(`linear: null`). 화면 표시만 필요한 호출자의 비용 절감용. */
   skipLinear?: boolean;
   /**
-   * 포인터 표본을 스케줄러에 넣기 전에 변환한다(마우스 압력 시뮬레이션·끈 당김 같은 입력 보정). 정체성이 바뀔 수 있으므로
+   * 포인터 표본을 스케줄러에 넣기 전에 변환한다(마우스 압력 시뮬레이션 같은 입력 보정; 끈 당김·물리 펜은 `inputStage`). 정체성이 바뀔 수 있으므로
    * 취소(up) 표시는 변환 뒤 표본에 붙는다. 생략하면 변환 없음.
    */
   transformSamples?: (raw: RawSample[]) => RawSample[];
+  /** 입력 단계 체인(`engine/input/stages`). 생략하거나 null이면 단계 없음. `setInputStage`로 바꾼다. */
+  inputStage?: RawStage | null;
   /** 생략 시 `globalThis.requestAnimationFrame` 기반 스케줄러. */
   scheduler?: FrameScheduler;
   onPreview?: (points: PreviewPoint[]) => void;
@@ -112,6 +120,10 @@ export class LiveStrokeSession {
   private laneReleased = false;
   /** beginStroke를 부른 뒤 endStroke에 들어가기 전인가. 이 구간의 오류는 레인이 획 도중 상태로 남았을 수 있다. */
   private laneMidStroke = false;
+  /** 입력 단계(없으면 null). */
+  private inputStage: RawStage | null;
+  /** 포인터가 눌려 있는가(정본 표본의 down/up으로 추적). 눌린 채 단계를 reset하면 진행 중인 새 획의 상태를 지우므로 막는다. */
+  private pointerDown = false;
   /** 포인터 취소로 끝난 up 표본(스케줄러 큐를 지나도 정체성으로 구분한다). 이 표본이 든 획은 합성하지 않고 버린다. */
   private readonly canceledUps = new WeakSet<RawSample>();
   /** `pointercancel` 디스패치 중에만 true: 플랫폼 캡처가 만드는 up 표본을 취소로 표시하라는 신호. */
@@ -121,6 +133,7 @@ export class LiveStrokeSession {
     this.opts = opts;
     this.program = opts.program;
     this.color = opts.color;
+    this.inputStage = opts.inputStage ?? null;
     this.lane = lane;
     this.scheduler = opts.scheduler ?? new FrameScheduler(undefined, opts.env.clock);
     this.scheduler.onFrame((batch) => this.enqueueBatch(batch));
@@ -175,6 +188,15 @@ export class LiveStrokeSession {
    */
   setColor(color: NonNullable<StrokeOptions["color"]>): void {
     this.color = color;
+  }
+
+  /**
+   * 다음 획부터 쓸 입력 단계를 바꾼다(null이면 단계 없음). 이전 단계는 `reset()`으로 비운다.
+   * 포인터가 눌려 있는 동안 바꾸면 새 단계는 그 획의 중간부터 표본을 받으므로(`down`이 없다) 다음 `down`부터 쓰는 것이 정상 사용이다.
+   */
+  setInputStage(stage: RawStage | null): void {
+    if (this.inputStage && this.inputStage !== stage) this.inputStage.reset();
+    this.inputStage = stage;
   }
 
   /** 요소에 포인터 캡처를 붙인다. 반환 함수로 뗀다. */
@@ -238,6 +260,7 @@ export class LiveStrokeSession {
   /** 이전 레인을 해제하고 새 레인을 init한 뒤 세션 상태를 초기화한다. */
   private async replaceLane(): Promise<void> {
     if (this.disposed) return;
+    if (!this.pointerDown) this.inputStage?.reset();
     this.releaseLane();
     const lane = this.opts.createLane();
     await LiveStrokeSession.initLane(lane, this.opts);
@@ -265,8 +288,13 @@ export class LiveStrokeSession {
 
   private onSamples(rawInput: RawSample[]): void {
     if (this.disposed) return;
-    const raw = this.opts.transformSamples ? this.opts.transformSamples(rawInput) : rawInput;
+    const transformed = this.opts.transformSamples ? this.opts.transformSamples(rawInput) : rawInput;
+    const raw = this.inputStage ? applyStrokeStream(this.inputStage, transformed) : transformed;
     const { canonical, predicted } = splitPredicted(raw);
+    for (const s of canonical) {
+      if (s.phase === "down") this.pointerDown = true;
+      else if (s.phase === "up") this.pointerDown = false;
+    }
     if (this.opts.onPreview) {
       this.opts.onPreview(predicted.map((p) => ({ x: p.x, y: p.y, pressure: p.pressure })));
     }
@@ -275,6 +303,8 @@ export class LiveStrokeSession {
       if (up) {
         this.canceledUps.add(up);
         this.cancelNextUp = false;
+        // 취소된 획은 버려지므로 입력 단계도 그 즉시 초기화한다(비동기 abort 경로를 기다리다 새 획의 상태를 지우지 않게 동기로 처리한다).
+        this.inputStage?.reset();
       }
     }
     if (canonical.length > 0) {
@@ -361,6 +391,8 @@ export class LiveStrokeSession {
    * abortStroke가 던진 오류와 레인 교체 실패는 `failures`에 쌓아 호출자가 드러낸다.
    */
   private async discardLaneStroke(cause: LiveStrokeAbort["cause"], failures: unknown[]): Promise<LiveStrokeAbort> {
+    // 버린 획의 입력 단계 상태(보류한 up·붓/펜 위치)도 버린다. 포인터가 이미 새 획을 시작했으면 그 획의 상태이므로 건드리지 않는다.
+    if (!this.pointerDown) this.inputStage?.reset();
     let receipt: StrokeAbortReceipt | null = null;
     try {
       receipt = this.lane.abortStroke();

@@ -4,7 +4,12 @@ import {
   CORNER_HOLD_CUTOFF_SCALE,
   CORNER_HOLD_SAMPLES,
   CornerDetector,
+  CornerGuard,
   shouldSuppressPrediction,
+  VERTEX_BACKFILL_MIN_PX,
+  VERTEX_MIN_WINDOW_MS,
+  VERTEX_VELOCITY_CAP_RATIO,
+  vertexEmitTimeMs,
 } from "./corner-preserve";
 import { OneEuroFilter } from "./one-euro";
 import { predictSamples } from "./predictor";
@@ -92,6 +97,8 @@ export class InputPipeline {
   private readonly fAlt: OneEuroFilter;
   private readonly fAz: OneEuroFilter;
   private readonly corner = new CornerDetector();
+  /** 정점 재방출을 인정할지 정하는 최근 창 속도·변 길이 가드(한 걸음 순간 속도는 잡음에 오탐한다). */
+  private readonly guard = new CornerGuard<RawSample>();
   private lastRaw: RawPoint | null = null;
   private cornerHold = 0;
   private committed: ModeledSample[] = [];
@@ -101,6 +108,8 @@ export class InputPipeline {
   private dirX = 1;
   private dirY = 0;
   private finished = false;
+  /** 이번 표본에서 model()이 만든 정점 재방출 표본(없으면 null). push()가 소비한다. */
+  private vertexOut: ModeledSample | null = null;
 
   constructor(config: InputPipelineConfig = DEFAULT_INPUT_CONFIG) {
     this.config = config;
@@ -118,6 +127,7 @@ export class InputPipeline {
     this.fAlt.reset();
     this.fAz.reset();
     this.corner.reset();
+    this.guard.reset();
     this.lastRaw = null;
     this.cornerHold = 0;
     this.committed = [];
@@ -127,6 +137,7 @@ export class InputPipeline {
     this.dirX = 1;
     this.dirY = 0;
     this.finished = false;
+    this.vertexOut = null;
   }
 
   push(raw: readonly RawSample[]): { committed: ModeledSample[]; preview: PreviewSample[] } {
@@ -148,6 +159,13 @@ export class InputPipeline {
         this.reset();
       }
       const sample = this.model(s, i);
+      const vertex = this.vertexOut;
+      if (vertex) {
+        // model()이 이미 committed에 넣었다. 출력 순서는 정점 → 모서리 직후 표본.
+        out.push(vertex);
+        this.latencyRecords.push({ inputTMs: vertex.inputTMs, modeledTMs: batchEndT });
+        this.vertexOut = null;
+      }
       this.committed.push(sample);
       out.push(sample);
       this.latencyRecords.push({ inputTMs: s.tMs, modeledTMs: batchEndT });
@@ -228,6 +246,44 @@ export class InputPipeline {
     return this.latencyRecords;
   }
 
+  /**
+   * 정점 재방출: 모서리는 정점 다음 표본에서야 판정되므로 직전 raw 점(= 정점)은 이미 1€로 필터링돼 지연된 위치로 나갔다.
+   * 그 점을 raw 좌표 그대로 한 번 더 내보내 출력 경로가 정점을 지나게 한다(지연된 출력은 진입 변 위에 있으므로 진입 변과 겹친다).
+   * 시각은 밀린 거리를 raw 속도로 따라잡는 시간(`vertexEmitTimeMs`)으로 둔다.
+   */
+  private backfillVertex(s: RawSample, prevRaw: RawPoint | null, rawSpeed: number, sourceIndex: number): void {
+    const last = this.committed[this.committed.length - 1];
+    if (!prevRaw || !last || !this.guard.approve(prevRaw, null)) return;
+    const backlog = Math.hypot(prevRaw.x - last.x, prevRaw.y - last.y);
+    if (backlog < VERTEX_BACKFILL_MIN_PX) return;
+    // 정점을 끼울 (직전 출력, 이 표본) 시각 구간이 없으면(같은 tMs·역행) 건너뛴다. 끼우면 정점 시각이 직전 출력보다 앞서고 속도가 튄다.
+    const tMs = vertexEmitTimeMs(last.tMs, s.tMs, backlog, rawSpeed);
+    if (tMs === null) return;
+    const dt = tMs - last.tMs;
+    const inst = Math.min(backlog / dt, VERTEX_VELOCITY_CAP_RATIO * rawSpeed);
+    const k = this.config.velocitySmoothing;
+    const velocity = k > 0 ? this.velocity + (1 - k) * (inst - this.velocity) : inst;
+    this.dirX = (prevRaw.x - last.x) / backlog;
+    this.dirY = (prevRaw.y - last.y) / backlog;
+    this.velocity = velocity;
+    const vertex: ModeledSample = {
+      ...last,
+      x: prevRaw.x,
+      y: prevRaw.y,
+      tMs,
+      inputTMs: prevRaw.tMs,
+      velocity,
+      dirX: this.dirX,
+      dirY: this.dirY,
+      curvature: 0,
+      phase: "move",
+      source: s.source === "coalesced" ? "coalesced" : "raw",
+      sourceIndex,
+    };
+    this.committed.push(vertex);
+    this.vertexOut = vertex;
+  }
+
   private model(s: RawSample, sourceIndex: number): ModeledSample {
     const cfg = this.config;
     const isDown = s.phase === "down";
@@ -247,6 +303,7 @@ export class InputPipeline {
       if (verdict.isCorner) {
         snapToRaw = true;
         this.cornerHold = CORNER_HOLD_SAMPLES;
+        this.backfillVertex(s, prevRaw, rawSpeed, sourceIndex);
       } else if (this.cornerHold > 0) {
         this.cornerHold -= 1;
         posParams = { ...posParams, minCutoff: posParams.minCutoff * CORNER_HOLD_CUTOFF_SCALE };
@@ -266,6 +323,7 @@ export class InputPipeline {
       this.fy.filter(s.y, s.tMs);
     }
     this.lastRaw = { x: s.x, y: s.y, tMs: s.tMs };
+    this.guard.record(s);
 
     const pressureCal = calibratePressure(s.pressure, cfg.profile);
     const pressure = this.fp.filter(pressureCal, s.tMs);
@@ -283,7 +341,11 @@ export class InputPipeline {
       const dx = x - last.x;
       const dy = y - last.y;
       const dist = Math.hypot(dx, dy);
-      const inst = dt > 0 ? dist / dt : this.velocity;
+      let inst = dt > 0 ? dist / dt : this.velocity;
+      if (verdict.isCorner) {
+        // 모서리 표본: 직전 출력과의 시각 간격이 없거나(재방출을 건너뛴 같은 tMs) 극히 짧으면 구간 속도가 시각 잡음이다.
+        inst = dt >= VERTEX_MIN_WINDOW_MS ? Math.min(inst, VERTEX_VELOCITY_CAP_RATIO * Math.max(rawSpeed, this.velocity)) : this.velocity;
+      }
       const k = cfg.velocitySmoothing;
       velocity = k > 0 ? this.velocity + (1 - k) * (inst - this.velocity) : inst;
       if (dist > 1e-6) {

@@ -1,8 +1,11 @@
 import { useMemo } from "react";
 
+import { penLagMsFromPct, stabilizerPctToOneEuro } from "../../engine/input/stabilizer-map";
+import { describePenSpring, penSpringParams } from "../../engine/input/stages/pen-spring";
 import { useDrawSelector, useLab } from "../shell/lab-context";
 import { lazyRadiusPx, resolveDrawProgram } from "../state/draw-program";
-import { DRAW_PAPER_KINDS } from "../state/draw-store";
+import { DRAW_PAPER_KINDS, DRAW_STABILIZER_MODES } from "../state/draw-store";
+import { effectiveStabilizerPct } from "../state/input-chain";
 import { resolveProgram } from "../state/run-compare";
 
 import { BrushParamFields } from "./BrushParamPanel";
@@ -17,7 +20,38 @@ function isPaperKind(value: string): value is DrawPaperKind {
 }
 
 function isStabilizerMode(value: string): value is DrawStabilizerMode {
-  return value === "one-euro" || value === "lazy-brush";
+  return DRAW_STABILIZER_MODES.some((m) => m.id === value);
+}
+
+/** 방식별 슬라이더 문구(화면에 보이는 값). */
+function stabilizerSliderText(mode: DrawStabilizerMode, pct: number | null): string {
+  if (mode === "off") return "보정 없음";
+  if (mode === "one-euro") {
+    if (pct === null) return "브러시 기본";
+    return `${pct}(minCutoff ${stabilizerPctToOneEuro(pct).minCutoff.toFixed(2)} Hz)`;
+  }
+  const eff = effectiveStabilizerPct(mode, pct) ?? 0;
+  if (mode === "lazy-brush") return `${eff}(끈 ${lazyRadiusPx(pct).toFixed(1)} px)`;
+  return `${eff}(지연 ${penLagLabelMs(eff)} ms)`;
+}
+
+/** 물리 펜 슬라이더 값 → 실제 추적 지연(ms, 소수 1자리). 지연이 이산 한계로 가두어지면 가두어진 값이다. */
+function penLagLabelMs(pct: number): string {
+  return describePenSpring(penSpringParams(penLagMsFromPct(pct))).lagMs.toFixed(1);
+}
+
+/** 방식별 도움말. */
+function stabilizerHelp(mode: DrawStabilizerMode, pct: number | null, gate: boolean): string {
+  switch (mode) {
+    case "one-euro":
+      return "엔진 입력 파이프라인의 1€ 필터 강도(로그 매핑: 0은 사실상 보정 없음, 100은 강한 평활). 값이 클수록 손떨림은 줄지만 따라오는 데 시간이 걸린다 — 모서리 보존이 아니라 지터 대 지연·형상 왜곡의 교환이다. 모서리 정점은 정점 재방출이 지킨다.";
+    case "lazy-brush":
+      return `포인터와 붓 사이의 끈 길이 ${Math.round(lazyRadiusPx(pct))} px — 끈 안쪽의 떨림은 흡수되고 붓이 포인터보다 늦다(획 끝에서는 따라잡는다). 끈이 길수록 모서리를 깎으므로 ${gate ? "코너 게이트가 정점을 살린다" : "코너 게이트를 끄면 모서리가 끈 길이만큼 둥글어진다"}. 엔진 1€ 필터는 0(raw)이다.`;
+    case "pen-spring":
+      return `스프링으로 매달린 펜이 지면을 끌린다(추적 지연 ${penLagLabelMs(effectiveStabilizerPct(mode, pct) ?? 0)} ms, 감쇠비 1: 획 끝 오버슈트 없음). 지연이 길수록 많이 끌리고 모서리를 깎는다 — ${gate ? "코너 게이트가 정점을 살린다" : "코너 게이트를 끄면 모서리가 둥글어진다"}. 엔진 1€ 필터는 0(raw)이다.`;
+    case "off":
+      return "입력 보정 없음: 포인터 표본을 그대로 레인에 보낸다(엔진 1€ 필터도 0, 정점 재방출만 유지). 손떨림이 그대로 그려진다.";
+  }
 }
 
 interface SliderProps {
@@ -30,10 +64,11 @@ interface SliderProps {
   /** 화면에 보이는 값 문구. */
   text: string;
   isDefault?: boolean;
+  disabled?: boolean;
   onChange: (value: number) => void;
 }
 
-function Slider({ id, label, value, min, max, step, text, isDefault, onChange }: SliderProps) {
+function Slider({ id, label, value, min, max, step, text, isDefault, disabled, onChange }: SliderProps) {
   return (
     <div className="lab-field">
       <label htmlFor={id}>
@@ -50,6 +85,7 @@ function Slider({ id, label, value, min, max, step, text, isDefault, onChange }:
         step={step}
         value={value}
         aria-valuetext={text}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
       />
     </div>
@@ -70,6 +106,7 @@ export function DrawParamPanel() {
   const recentColors = useDrawSelector((s) => s.recentColors);
   const mode = useDrawSelector((s) => s.stabilizerMode);
   const pct = useDrawSelector((s) => s.stabilizerPct);
+  const cornerGate = useDrawSelector((s) => s.cornerGate);
   const mouseSim = useDrawSelector((s) => s.mousePressureSim);
   const base = useMemo(() => resolveProgram({ presetId, overrides: {} }).program, [presetId]);
   const resolved = useMemo(
@@ -141,25 +178,38 @@ export function DrawParamPanel() {
               if (isStabilizerMode(e.target.value)) drawActions.setStabilizerMode(e.target.value);
             }}
           >
-            <option value="one-euro">Sumi 1€ 필터 (기본)</option>
-            <option value="lazy-brush">끈 당김(lazy-brush)</option>
+            {DRAW_STABILIZER_MODES.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
           </select>
         </div>
         <Slider
           id="lab-draw-stab"
           label="안정화(0~100)"
-          value={pct ?? (mode === "lazy-brush" ? 0 : 50)}
+          value={pct ?? effectiveStabilizerPct(mode, pct) ?? 50}
           min={0}
           max={100}
           step={1}
-          text={pct === null ? (mode === "lazy-brush" ? "0(끈 없음)" : "브러시 기본") : String(pct)}
+          text={stabilizerSliderText(mode, pct)}
           isDefault={pct === null && mode === "one-euro"}
+          disabled={mode === "off"}
           onChange={(v) => drawActions.setStabilizerPct(v)}
         />
+        {mode === "lazy-brush" || mode === "pen-spring" ? (
+          <label className="lab-check">
+            <input
+              type="checkbox"
+              data-testid="lab-draw-corner-gate"
+              checked={cornerGate}
+              onChange={(e) => drawActions.setCornerGate(e.target.checked)}
+            />
+            코너 게이트(모서리 정점을 raw 좌표로 통과)
+          </label>
+        ) : null}
         <p className="lab-muted" data-testid="lab-draw-stab-help">
-          {mode === "one-euro"
-            ? "엔진 입력 파이프라인의 1€ 필터 강도(값이 클수록 매끈하지만 느리게 따라온다). 0.6 초과 구간도 같은 1€ 매핑을 쓴다."
-            : `포인터와 붓 사이의 끈 길이 ${Math.round(lazyRadiusPx(pct))} px — 끈 안쪽의 떨림은 흡수되고 끝점이 포인터보다 늦는다. 엔진 1€ 필터는 브러시 기본값을 쓴다.`}
+          {stabilizerHelp(mode, pct, cornerGate)}
         </p>
         <p className="lab-muted">
           서비스 <code>applyStabilizer</code>는 경계 규칙(<code>@toonstudio/*</code>는 기준선 레인 파일에서만 import)상 이 화면에서 쓰지

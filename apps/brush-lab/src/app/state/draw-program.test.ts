@@ -9,6 +9,7 @@ import {
   buildDrawOverrides,
   catalogFamilies,
   decideInitialLane,
+  drawOneEuroPosition,
   FAMILY_LABELS,
   filterPresets,
   lanePresentsLive,
@@ -60,11 +61,28 @@ describe("filterPresets", () => {
 });
 
 describe("buildDrawOverrides / resolveDrawProgram", () => {
-  it("안정화 0..100은 1€ 모드에서만 stabilizer 0..1 오버라이드가 된다", () => {
-    expect(buildDrawOverrides({ ...base, overrides: {}, stabilizerPct: 40 }).stabilizer).toBeCloseTo(0.4, 12);
-    expect(buildDrawOverrides({ ...base, overrides: {}, stabilizerPct: null }).stabilizer).toBeUndefined();
-    expect(buildDrawOverrides({ ...base, overrides: {}, stabilizerMode: "lazy-brush", stabilizerPct: 40 }).stabilizer).toBeUndefined();
-    expect(buildDrawOverrides({ ...base, overrides: {}, stabilizerPct: 250 }).stabilizer).toBe(1);
+  it("안정화 0..100은 1€ 모드에서만 로그 매핑 1€ 파라미터가 되고, 그 밖의 방식은 엔진 1€를 0(raw 수준)으로 둔다", () => {
+    expect(drawOneEuroPosition({ stabilizerMode: "one-euro", stabilizerPct: null })).toBeNull();
+    expect(drawOneEuroPosition({ stabilizerMode: "one-euro", stabilizerPct: 0 })).toEqual({ minCutoff: 30, beta: 0.12, dCutoff: 1 });
+    expect(drawOneEuroPosition({ stabilizerMode: "one-euro", stabilizerPct: 100 })).toEqual({ minCutoff: 0.4, beta: 0.006, dCutoff: 1 });
+    expect(drawOneEuroPosition({ stabilizerMode: "one-euro", stabilizerPct: 250 })).toEqual({ minCutoff: 0.4, beta: 0.006, dCutoff: 1 });
+    for (const stabilizerMode of ["lazy-brush", "pen-spring", "off"] as const) {
+      expect(drawOneEuroPosition({ stabilizerMode, stabilizerPct: 70 })).toEqual({ minCutoff: 30, beta: 0.12, dCutoff: 1 });
+      expect(drawOneEuroPosition({ stabilizerMode, stabilizerPct: null })).toEqual({ minCutoff: 30, beta: 0.12, dCutoff: 1 });
+    }
+  });
+
+  it("오버라이드에는 더 이상 stabilizer(선형 매핑) 키가 들어가지 않는다", () => {
+    expect(buildDrawOverrides({ overrides: {}, paperKind: "preset" }).stabilizer).toBeUndefined();
+    expect(resolveDrawProgram({ ...base, presetId: "pencil-hb", overrides: {}, stabilizerPct: 40 }).program?.input.oneEuro?.position.minCutoff).toBeCloseTo(
+      30 * Math.pow(0.4 / 30, 0.4),
+      10,
+    );
+  });
+
+  it("1€ 방식에서 슬라이더 미설정(null)이면 프리셋 기본 입력 설정을 그대로 쓴다", () => {
+    const r = resolveDrawProgram({ ...base, presetId: "pencil-hb", overrides: {} });
+    expect(r.program?.input.oneEuro).toBeUndefined();
   });
 
   it("종이 종류는 종이 값 3개를 덧씌우고 '브러시 기본'은 아무것도 덧씌우지 않는다", () => {
@@ -86,7 +104,7 @@ describe("buildDrawOverrides / resolveDrawProgram", () => {
     expect(r.program?.deposition.opacity).toBe(0.3);
     expect(r.program?.deposition.flow).toBe(0.2);
     expect(r.program?.paper).toMatchObject({ enabled: false, scale: 0.7, roughness: 0.9, absorbency: 0.85 });
-    expect(r.program?.input.oneEuro?.position.minCutoff).toBeCloseTo(0.5, 12);
+    expect(r.program?.input.oneEuro?.position).toEqual({ minCutoff: 0.4, beta: 0.006, dCutoff: 1 });
     expect(r.hash).toMatch(/^[0-9a-f]{16}$/u);
     const bad = resolveDrawProgram({ ...base, presetId: "pencil-hb", overrides: { opacity: 3 } });
     expect(bad.program).toBeNull();
@@ -109,12 +127,12 @@ describe("buildDrawOverrides / resolveDrawProgram", () => {
 });
 
 describe("lazyRadiusPx", () => {
-  it("0..100을 0..60 px로 사상하고 미설정은 0이다", () => {
-    expect(lazyRadiusPx(null)).toBe(0);
+  it("로그 매핑: 슬라이더 0은 끈 없음, 100은 48 px이고 미설정은 방식 기본값(40)을 쓴다", () => {
     expect(lazyRadiusPx(0)).toBe(0);
-    expect(lazyRadiusPx(50)).toBe(30);
-    expect(lazyRadiusPx(100)).toBe(60);
-    expect(lazyRadiusPx(1000)).toBe(60);
+    expect(lazyRadiusPx(100)).toBe(48);
+    expect(lazyRadiusPx(1000)).toBe(48);
+    expect(lazyRadiusPx(null)).toBeCloseTo(0.5 * Math.pow(96, 0.4), 10);
+    expect(lazyRadiusPx(50)).toBeCloseTo(Math.sqrt(0.5 * 48), 10);
   });
 });
 

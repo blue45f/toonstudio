@@ -1,5 +1,7 @@
 import { downloadJson, downloadPng } from "../../platform/download";
 import { useLab, useLabSelector } from "../shell/lab-context";
+import { findDescriptor } from "../state/lane-helpers";
+import { rawVerdictNoteKo } from "../state/lane-maturity";
 import { messageOf } from "../state/run-compare";
 
 import type { BrushCertificationReport } from "../../bench/report/report-schema";
@@ -7,7 +9,7 @@ import type { LabImage } from "../../engine/core/types";
 
 /** JSON/PNG 리포트 다운로드(Blob URL은 platform/download가 revoke를 보장한다). */
 export function ReportPanel() {
-  const { runner, actions } = useLab();
+  const { runner, actions, registry } = useLab();
   const results = useLabSelector((s) => s.results);
   const laneA = useLabSelector((s) => s.laneA);
   const laneB = useLabSelector((s) => s.laneB);
@@ -33,6 +35,11 @@ export function ReportPanel() {
     report ? runner.reportFileName(report).replace(/\.json$/u, ".png") : `${fallback}.png`;
 
   const hasAny = results.a !== null || results.b !== null;
+  // 다운로드 JSON의 verdict는 성숙도를 담지 않는 원시 판정이다 — 실험·미등록 레인이면 밖으로 가져가기 전에 알린다(스키마 변경은 하지 않는다).
+  const rawNotes = [results.reportA, results.reportB]
+    .filter((r): r is BrushCertificationReport => r !== null)
+    .map((r) => rawVerdictNoteKo(findDescriptor(registry, r.laneId)))
+    .filter((n): n is string => n !== null);
   return (
     <div className="lab-button-row" data-testid="lab-report-panel">
       <button type="button" className="lab-button lab-button--primary" disabled={!results.reportA} onClick={() => results.reportA && saveJson(results.reportA)}>
@@ -62,6 +69,11 @@ export function ReportPanel() {
             : `리포트 ${[results.reportA, results.reportB].filter((r) => r !== null).length}개 · 세션 리포트 탭에 추가됨`
           : "실행 결과가 없다."}
       </span>
+      {rawNotes.length > 0 ? (
+        <p className="lab-muted" role="note" data-testid="lab-report-panel-note">
+          {rawNotes[0]}
+        </p>
+      ) : null}
     </div>
   );
 }
