@@ -61,6 +61,24 @@ describe("StudioHybridDccPanel first-screen guide", () => {
     expect(guideToggle().getAttribute("aria-expanded")).toBe("false");
   });
 
+  it("stages the first screen around the viewport while the guide is open, then returns to the workbench layout", async () => {
+    render(<StudioHybridDccPanel />);
+
+    // 빈 장면에서는 안내가 압축(stage) 배치이고 뷰포트가 무대 모드로 넓게 잡힌다.
+    const intro = document.querySelector("[data-studio-hybrid-dcc-intro]");
+    expect(intro?.getAttribute("data-studio-hybrid-dcc-intro-layout")).toBe("stage");
+    expect(document.querySelector("[data-studio-hybrid-dcc-stage]")).not.toBeNull();
+    expect(document.querySelector("[data-studio-hybrid-dcc-viewport]")?.getAttribute("data-stage")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "큐브로 시작" }));
+    await waitFor(() => {
+      expect(document.querySelector("[data-studio-hybrid-dcc-stats]")?.getAttribute("data-assets")).toBe("1");
+    });
+    // 오브젝트가 생기면 무대 모드가 풀리고 기존 작업대 배치로 돌아간다.
+    expect(document.querySelector("[data-studio-hybrid-dcc-stage]")).toBeNull();
+    expect(document.querySelector("[data-studio-hybrid-dcc-viewport]")?.getAttribute("data-stage")).toBeNull();
+  });
+
   it("starts from a classroom set with one click", async () => {
     render(<StudioHybridDccPanel />);
 
