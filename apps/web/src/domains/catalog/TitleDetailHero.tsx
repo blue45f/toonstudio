@@ -3,6 +3,7 @@ import { BookOpen, Bookmark, BookmarkCheck, Star } from "lucide-react";
 import type { Title } from "@/shared/lib/types";
 
 import { CoverImage } from "@/shared/components/cover-image";
+import { TitlePoster } from "@/shared/components/title-poster";
 import { Stars } from "@/shared/components/ui/stars";
 import {
   formatI18nTemplate,
@@ -46,11 +47,14 @@ function AuthorNames({ raw }: { raw: string }) {
 }
 
 /**
- * 작품 상세 히어로 — 표지 아트를 전폭으로 깔고 그 위에 작품 메타와 주 행동을 모은다.
+ * 작품 상세 히어로 — 표지 무대 (디자인 웨이브 14에서 구도 교체).
  *
- * 시안(s2/title-slug)의 구성: 아트 배경 + 하단 스크림, 배지·대형 제목·작가·평점·
- * 장르·줄거리, 주 행동 2개(첫 화부터 읽기·서재에 담기). 본문에 있던 제목·평점·
- * 줄거리 블록은 여기로 옮겨 중복을 없앴다.
+ * 제작 개요 무대(ProductionOverviewCoverStage) 문법의 이식: 첫 화면의 주인공은
+ * 표지 그 자체다. 표지 포스터를 왼쪽에 원본 비율(3:4) 그대로 크게 세우고,
+ * 같은 표지를 흐릿하게 깐 배경이 무대감만 만든다. 배지·대형 제목·작가·평점·
+ * 장르·줄거리와 주 행동 2개(첫 화부터 읽기·서재에 담기)는 무대 오른쪽에 정합한다.
+ * 표지가 없는 작품은 TitlePoster의 타이포그래픽 포스터가 같은 자리·같은 크기를
+ * 차지해 구도가 무너지지 않는다 — 없는 표지를 이미지로 위장하지 않는다.
  * 아트 표면이라 테마 토큰 대신 표지 컴포넌트(TitlePoster)와 같은 고정 명암을 쓴다.
  * "자체 연재" 배지는 자사 연재 데이터가 없어(플랫폼 20종 전부 외부) 그리지 않는다.
  */
@@ -91,37 +95,45 @@ export function TitleDetailHero({
   };
 
   const [coverFrom, coverTo] = title.cover;
-  const glyph = title.title.replace(/[^가-힣A-Za-z0-9]/g, "").charAt(0) || "W";
 
   return (
     <section aria-label={bi("작품 소개", "About this title")} className="relative isolate mb-8 lg:mb-10">
-      {/* 전폭 아트 배경 — 컨테이너를 벗어나 화면 너비로 깐다 */}
+      {/* 무대 배경 — 컨테이너를 벗어나 화면 너비로 깐다. 장르 그라디언트 위에 같은
+          표지를 흐리게 겹쳐 무대감만 만들고, 주인공은 아래의 선명한 포스터다.
+          표지가 없거나 로드에 실패하면 그라디언트만 남아 배경이 비지 않는다. */}
       <div aria-hidden className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 overflow-hidden">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(150deg, color-mix(in oklch, ${coverFrom} 88%, oklch(0.24 0.012 66)), color-mix(in oklch, ${coverTo} 82%, oklch(0.15 0.008 70)))`,
+          }}
+        />
         {title.coverImage ? (
           <CoverImage
             src={title.coverImage}
             alt=""
             priority
-            className="absolute inset-0 size-full object-cover object-[center_22%]"
+            className="absolute inset-0 size-full scale-110 object-cover object-[center_22%] opacity-60 blur-md"
           />
-        ) : (
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `linear-gradient(150deg, color-mix(in oklch, ${coverFrom} 88%, oklch(0.24 0.012 66)), color-mix(in oklch, ${coverTo} 82%, oklch(0.15 0.008 70)))`,
-            }}
-          >
-            <span className="absolute -right-4 top-0 select-none font-display text-[16rem] font-bold leading-none text-[oklch(0.96_0.01_85/0.13)] mix-blend-overlay lg:text-[22rem]">
-              {glyph}
-            </span>
-          </div>
-        )}
+        ) : null}
         {/* 하단 스크림: 남색 94%에서 투명으로 — 본문 대비 4.5:1 확보 */}
         <div className="absolute inset-0 bg-[linear-gradient(to_top,oklch(0.09_0.025_265/0.95)_0%,oklch(0.09_0.025_265/0.82)_34%,oklch(0.09_0.025_265/0.38)_62%,oklch(0.09_0.025_265/0.06)_88%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(78deg,oklch(0.09_0.025_265/0.5)_0%,transparent_58%)]" />
       </div>
 
-      <div className="flex min-h-[26rem] flex-col justify-end gap-4 pb-7 pt-28 sm:min-h-[28rem] lg:min-h-[30rem] lg:pb-9">
+      <div className="flex flex-col gap-7 pb-8 pt-10 sm:pt-12 lg:flex-row lg:items-end lg:gap-10 lg:pb-10">
+        {/* 표지 무대의 주인공 — 원본 비율 그대로 크게 세운 포스터.
+            표지 없음·로드 실패·킬스위치에서는 타이포그래픽 포스터가 같은 자리를 차지한다. */}
+        <div className="w-40 shrink-0 motion-safe:animate-fade-up sm:w-52 lg:w-72">
+          <TitlePoster
+            title={title}
+            size="hero"
+            priority
+            titleAs="div"
+            className="shadow-[0_28px_64px_-18px_oklch(0.05_0.01_70/0.85)]"
+          />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="rounded-md bg-[oklch(0.62_0.19_295)] px-2 py-0.5 text-[0.7rem] font-bold text-white">
             {TYPE_LABEL[title.type]}
@@ -226,6 +238,7 @@ export function TitleDetailHero({
             {saved ? <BookmarkCheck size={17} aria-hidden /> : <Bookmark size={17} aria-hidden />}
             {saved ? bi("서재에 담김", "In your library") : bi("서재에 담기", "Save to library")}
           </button>
+        </div>
         </div>
       </div>
     </section>

@@ -38,7 +38,6 @@ import { TitleCard } from "@/shared/components/title-card";
 import { TitleExternal } from "@/shared/components/title-external";
 import { TitleFanWorks } from "@/shared/components/title-fan-works";
 import { TitleOst } from "@/shared/components/title-ost";
-import { TitlePoster } from "@/shared/components/title-poster";
 import { Badge } from "@/shared/components/ui/chip";
 import { DistributionBars, GenreSpectrum, MeterBar } from "@/shared/components/ui/spectrum-bar";
 import { Stars } from "@/shared/components/ui/stars";
@@ -156,13 +155,10 @@ export function TitleDetailPage() {
       <PageEntrance variant="pop">
       <Container size="wide" className="relative py-8 lg:py-10">
         <TitleDetailBreadcrumb />
-        <div className="grid gap-8 lg:grid-cols-[19rem_1fr]">
-          <aside className="flex flex-col gap-4">
-            <div className="skeleton aspect-[3/4] rounded-2xl" />
-            <div className="skeleton h-12 rounded-xl" />
-            <div className="skeleton h-24 rounded-2xl" />
-          </aside>
-          <div className="space-y-5">
+        {/* 로딩 골격도 무대 구도(포스터 + 카피 열)를 따라 첫 화면이 흔들리지 않게 한다. */}
+        <div className="flex flex-col gap-7 lg:flex-row lg:gap-10">
+          <div className="skeleton aspect-[3/4] w-40 shrink-0 rounded-2xl sm:w-52 lg:w-72" />
+          <div className="flex-1 space-y-5">
             <div className="skeleton h-8 w-40" />
             <div className="skeleton h-12 w-3/4" />
             <div className="skeleton h-5 w-64" />
@@ -227,7 +223,7 @@ export function TitleDetailPage() {
 
       <div className="grid gap-8 lg:grid-cols-[19rem_1fr]">
         <aside className="flex flex-col gap-4 lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)] lg:self-start">
-          <TitlePoster title={title} size="lg" priority />
+          {/* 표지 포스터는 히어로 무대의 주인공이라 여기서는 중복해 그리지 않는다 (웨이브 14). */}
           <ReadStateSelector titleId={title.id} />
           <CollectionAdd titleId={title.id} />
           {title.status === "ongoing" && title.updateDays && title.updateDays.length > 0 && (
