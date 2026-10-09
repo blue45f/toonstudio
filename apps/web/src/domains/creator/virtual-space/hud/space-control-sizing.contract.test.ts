@@ -73,6 +73,14 @@ describe("가상 스튜디오 컨트롤 크기 계약", () => {
     expect(hudCss).not.toMatch(/flex: 0 0 56px/u);
   });
 
+  it("화면 크기(줌) 버튼은 터치·고대비에서 44px 바닥을 지키고, 옆 패널이 열리면 패널 왼쪽으로 비켜 선다", () => {
+    // 데스크톱에서는 28px 배율 칸이지만 coarse 포인터와 고대비에서는 다른 HUD 컨트롤과 같은 44px가 된다.
+    expect(hudCss).toMatch(/@media \(pointer: coarse\) \{ \.space-zoom__level \{ min-height: var\(--site-control-size, 44px\); \} \}/u);
+    expect(hudCss).toContain(':root[data-design-theme="contrast"] .space-zoom__level { min-height: var(--site-control-size, 44px); }');
+    expect(hudCss).toMatch(/\.space-hud\[data-panel-open\]\[data-hud-layout="desktop"\] \.space-hud__slot--top-right,\s*\.space-hud\[data-panel-open\]\[data-hud-layout="desktop"\] \.space-hud__slot--bottom-end \{\s*right: calc\(var\(--space-panel-width\)/u);
+    expect(hudCss).toMatch(/@media \(forced-colors: active\) \{[^@]*\.space-zoom,/u);
+  });
+
   it("지도 구역 버튼은 줄바꿈하지 않고 마커와 한 묶음의 중심이 구역 중심이다(가장자리 구역 라벨이 CA/FE로 끊기던 것)", () => {
     expect(hudCss).toMatch(/\.space-minimap__zone-actions \{ position: absolute; transform: translate\(-50%, -50%\); \}/u);
     expect(hudCss).toMatch(/\.space-minimap__zone-button \{[^}]*position: relative;[^}]*white-space: nowrap;/u);

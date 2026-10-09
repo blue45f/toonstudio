@@ -20,11 +20,14 @@ import {
   VideoOff,
   Vote,
   X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 
 import { studioVirtualSpaceCommandBarOverflow } from "../studio-virtual-space-hud-inventory";
 import type { StudioSpacePose } from "../studio-virtual-space-pose-controller";
 import type { StudioVirtualWorkspacePanel } from "../studio-virtual-space-panel-scope";
+import type { StudioUserZoomAction } from "../studio-virtual-space-user-zoom";
 import type { SpaceDockMenuItem } from "./space-dock-model";
 
 export interface SpaceMoreItemActions {
@@ -39,6 +42,8 @@ export interface SpaceMoreItemActions {
   readonly togglePose: () => void;
   /** 가까이 가면 영상 켜기·끄기(모바일 도크에는 카메라 버튼이 없어 ⋯에 둔다). */
   readonly toggleProximityVideo?: () => void;
+  /** 화면 확대·축소·원래 크기(좁은 화면에서 화면 버튼 대신 ⋯에 둔다). */
+  readonly zoom?: (action: StudioUserZoomAction) => void;
 }
 
 /**
@@ -46,7 +51,7 @@ export interface SpaceMoreItemActions {
  * 모바일 도크에 없는 대화·꾸미기·나가기는 좁은 화면에서만 메뉴에 둔다.
  * '오늘'·'장소' 같은 오버플로 패널은 HUD 인벤토리(studioVirtualSpaceCommandBarOverflow)를 단일 기준으로 쓴다.
  */
-export function spaceMoreItems({ personal, desktop, panel: openPanelId = null, proximityVideoOn = false, pose }: {
+export function spaceMoreItems({ personal, desktop, panel: openPanelId = null, proximityVideoOn = false, pose, zoomLevel = null }: {
   readonly personal: boolean;
   readonly desktop: boolean;
   /** 지금 열린 패널. 같은 항목을 '열림'으로 표시한다. */
@@ -54,6 +59,8 @@ export function spaceMoreItems({ personal, desktop, panel: openPanelId = null, p
   readonly proximityVideoOn?: boolean;
   /** 지금 내 자세. 주면 '자세 바꾸기'에 현재 상태를 함께 표시한다. */
   readonly pose?: StudioSpacePose;
+  /** 지금 화면 배율(1이 원래 크기). 줌을 받을 수 없는 장소면 null이라 항목을 넣지 않는다. */
+  readonly zoomLevel?: number | null;
 }, actions: SpaceMoreItemActions): readonly SpaceDockMenuItem[] {
   const panel = (panelId: StudioVirtualWorkspacePanel) => () => actions.openPanel(panelId);
   const overflow = new Map(studioVirtualSpaceCommandBarOverflow(personal).map((item) => [item.panel, item] as const));
@@ -72,6 +79,12 @@ export function spaceMoreItems({ personal, desktop, panel: openPanelId = null, p
     { id: "annotation", labelKo: "라이브 화면 주석", labelEn: "Live annotation", icon: Presentation, group: "work", onSelect: panel("annotation") },
     { id: "team", labelKo: "팀·초대", labelEn: "Teams & invites", icon: UserPlus, group: "work", onSelect: panel("team") },
   ];
+  const percent = zoomLevel === null ? 100 : Math.round(zoomLevel * 100);
+  const zoomItems: readonly SpaceDockMenuItem[] = desktop || zoomLevel === null || !actions.zoom ? [] : [
+    { id: "zoom-in", labelKo: "화면 확대", labelEn: "Zoom in", descriptionKo: `지금 ${percent}%`, descriptionEn: `Now ${percent}%`, icon: ZoomIn, group: "space", shortcut: "+", onSelect: () => actions.zoom?.("in") },
+    { id: "zoom-out", labelKo: "화면 축소", labelEn: "Zoom out", descriptionKo: `지금 ${percent}%`, descriptionEn: `Now ${percent}%`, icon: ZoomOut, group: "space", shortcut: "-", onSelect: () => actions.zoom?.("out") },
+    ...(percent === 100 ? [] : [{ id: "zoom-reset", labelKo: "화면 크기 원래대로", labelEn: "Reset view size", icon: ZoomIn, group: "space" as const, shortcut: "0", onSelect: () => actions.zoom?.("reset") }]),
+  ];
   const narrowItems: readonly SpaceDockMenuItem[] = desktop ? [] : [
     ...(!personal && actions.toggleProximityVideo ? [{
       id: "proximity-video", labelKo: proximityVideoOn ? "가까이 가면 영상 끄기" : "가까이 가면 영상 켜기",
@@ -81,6 +94,7 @@ export function spaceMoreItems({ personal, desktop, panel: openPanelId = null, p
     }] : []),
     { id: "chat", labelKo: "대화", labelEn: "Chat", icon: MessageCircle, group: "space", onSelect: panel("chat") },
     { id: "build", labelKo: "꾸미기", labelEn: "Customize", icon: Palette, group: "space", onSelect: panel("build") },
+    ...zoomItems,
   ];
   return [
     ...projectItems,

@@ -12,6 +12,7 @@ import {
   type StudioSpacePoseRequest,
 } from "./studio-virtual-space-pose-controller";
 import type { StudioVirtualSpacePoint } from "./studio-virtual-space-model";
+import { StudioUserZoomStore } from "./studio-virtual-space-user-zoom";
 
 export type StudioVirtualEnvironmentEffect =
   | "waterfall-splash"
@@ -58,6 +59,8 @@ export interface StudioVirtualSpaceConversationFocus {
 }
 
 export class StudioVirtualSpaceEngineBridge {
+  /** 사용자 줌 목표. HUD(버튼·메뉴·단축키)가 바꾸고 캔버스(휠·매 프레임)가 읽는다. 값은 이 기기에 저장된다. */
+  readonly userZoom = new StudioUserZoomStore();
   private joystick: StudioVirtualSpacePoint = { x: 0, y: 0 };
   private moveTarget: StudioVirtualSpacePoint | null = null;
   private followingPeerId: string | null = null;

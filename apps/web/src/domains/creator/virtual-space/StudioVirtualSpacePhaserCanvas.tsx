@@ -7,7 +7,7 @@ import {
 
 import {
   StudioFixedStepClock, StudioFixedStepPose,
-  studioStableFacing, studioRenderViewport, studioCameraLerp, studioCoverRect,
+  studioStableFacing, studioRenderViewport, studioCameraLerp,
 } from "./studio-virtual-space-presentation";
 import {
   StudioNpcDirector, studioNpcActivityLabel, studioNpcInteraction, studioNpcLabel, studioNpcRole,
@@ -111,6 +111,7 @@ import {
 } from "./studio-virtual-space-art-style";
 import { StudioTextResolutionRuntime } from "./studio-virtual-space-text-resolution";
 import { createStudioTextureLod, type StudioTextureLodRuntime } from "./studio-virtual-space-texture-lod";
+import { StudioUserZoomRuntime, bindStudioUserZoomWheel } from "./studio-virtual-space-user-zoom";
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
 import { drawStudioModularCampus } from "./studio-virtual-space-modular-campus";
 import { studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
@@ -283,7 +284,7 @@ import { createStudioSpriteVisualApplier } from "./studio-virtual-space-sprite-v
 import { createStudioNameplateRenderer } from "./studio-virtual-space-nameplate-renderer";
 import { createStudioCharacterTexturePreparer } from "./studio-virtual-space-character-texture-preparer";
 import { createStudioSceneCharacterAssetResidency } from "./studio-virtual-space-phaser-canvas-character-residency";
-import { drawStudioOcclusionLayers, placeStudioWorldPropImages } from "./studio-virtual-space-phaser-canvas-world-layers";
+import { drawStudioBackdropLayers, drawStudioOcclusionLayers, placeStudioWorldPropImages } from "./studio-virtual-space-phaser-canvas-world-layers";
 import { drawStudioProximityOverlay } from "./studio-virtual-space-phaser-canvas-proximity-overlay";
 import { bindStudioCanvasInput } from "./studio-virtual-space-phaser-canvas-input";
 import { StudioVirtualSpaceEngineMessage } from "./StudioVirtualSpaceEngineMessage";
@@ -726,6 +727,9 @@ export function StudioVirtualSpacePhaserCanvas({
       const campusFloorMap = studioVirtualCampusScene(manifest) ? manifest.tilemap ?? null : null;
       const motionConfig: { acceleration: number; deceleration: number; maxSpeed: number } = { ...DEFAULT_STUDIO_MOTION_CONFIG };
       let cameraBaseZoom = 1;
+      const userZoom = new StudioUserZoomRuntime(bridge.userZoom);
+      /** 화면에 고정된 원경(cinematic-v9)은 줌이 바뀔 때마다 화면을 덮도록 다시 맞춘다. */
+      const screenFixedHorizon = horizonUrl.includes("/cinematic-v9/");
       /** 장면의 모든 Phaser Text를 화면 배율에 맞는 해상도로 그린다. 픽셀 아트 화풍에서는 거친 글자를 유지한다. */
       let textResolution: StudioTextResolutionRuntime | null = null;
       /** 크게 줄어 그려지는 스프라이트의 텍스처를 반감 사본으로 올려 앨리어싱을 없앤다(WebGL 전용). */
@@ -999,32 +1003,10 @@ export function StudioVirtualSpacePhaserCanvas({
         cleanup.push(disposeSpriteSheetListener);
         this.physics.world.setBounds(0, 0, manifest.width, manifest.height);
 
-        const backgroundSource = this.textures.exists(backgroundTextureKey)
-          ? this.textures.get(backgroundTextureKey).getSourceImage() : { width: manifest.width, height: manifest.height };
-        const backgroundRect = studioCoverRect(
-          manifest.width,
-          manifest.height,
-          backgroundSource.width,
-          backgroundSource.height,
-        );
-        horizonArtwork = null;
+        const backdrop = drawStudioBackdropLayers(this, manifest, { backgroundTextureKey, horizonTextureKey, backdrop: environmentPreference.backdrop });
+        const { backgroundRect } = backdrop;
+        horizonArtwork = backdrop.horizonArtwork;
         lastSkyTintPhase = null;
-        if (this.textures.exists(horizonTextureKey)) {
-          const horizonSource = this.textures.get(horizonTextureKey).getSourceImage();
-          const horizonRect = studioCoverRect(manifest.width * 3, manifest.height * 3, horizonSource.width, horizonSource.height);
-          horizonArtwork = this.add.image(manifest.width / 2, manifest.height / 2, horizonTextureKey)
-          .setDisplaySize(horizonRect.width, horizonRect.height)
-          .setScrollFactor(0.92)
-          .setDepth(-1_004)
-          .setAlpha(environmentPreference.backdrop === "city" ? 0.96 : 0.90);
-        }
-        if (this.textures.exists(backgroundTextureKey)) {
-          this.add.image(backgroundRect.x, backgroundRect.y, backgroundTextureKey)
-            .setOrigin(0)
-            .setDisplaySize(backgroundRect.width, backgroundRect.height)
-            .setDepth(-1_000)
-            .setAlpha(manifest.tilemap ? 0.24 : environmentPreference.backdrop === "sky" ? 0.96 : 0.72);
-        }
         if (manifest.tilemap) {
           tileWorld = createStudioWorldTileRuntime(this, studioRenderedTileWorld(manifest.tilemap, artStyle), `studio-world-${manifest.id}`, {
             resolveUrl: (url) => worldAssetUrls?.get(url) ?? studioVirtualPlaceTileAssetUrl(url, artStyle),
@@ -1263,7 +1245,9 @@ export function StudioVirtualSpacePhaserCanvas({
           // 카메라 디렉터의 속도 줌·대화 줌은 추종(follow) 카메라에서만, 이 기준 줌에 곱한다.
           cameraBaseZoom = camera.zoom;
           cameraFollows = parent.dataset.cameraMode === "follow";
-          if (horizonArtwork && horizonUrl.includes("/cinematic-v9/")) fitStudioHorizonArtwork(horizonArtwork, gameSize, camera.zoom);
+          if (horizonArtwork && screenFixedHorizon) fitStudioHorizonArtwork(horizonArtwork, gameSize, camera.zoom);
+          // 사용자 줌은 추종 카메라에서만 쓴다(고정 프레임 장소는 화면 전체가 이미 보인다).
+          userZoom.setView(cameraBaseZoom, { cssWidth: gameSize.width / viewport.ratio, cssHeight: gameSize.height / viewport.ratio, ratio: viewport.ratio }, manifest, cameraFollows);
         };
         resizeCamera({ width: this.scale.width, height: this.scale.height });
         this.scale.on("resize", (gameSize: { width: number; height: number }) => resizeCamera(gameSize));
@@ -1271,6 +1255,7 @@ export function StudioVirtualSpacePhaserCanvas({
         // 씬 준비 완료 신호가 와야 열리므로 로딩 속도와 무관하게 잘리지 않는다.
 
         const canvas = this.game.canvas;
+        cleanup.push(bindStudioUserZoomWheel(canvas, bridge.userZoom, () => sceneReady && bridge.userZoom.getSnapshot().available));
         canvas.tabIndex = 0;
         canvas.setAttribute("role", "application");
         canvas.setAttribute("aria-label", btRef.current(
@@ -1365,7 +1350,7 @@ export function StudioVirtualSpacePhaserCanvas({
         // 스프라이트 크로스페이드는 모션 감소·저사양 효과 단계에서는 끈다 (즉시 교체가 기본 계약).
         const crossfadeEnabled = !reducedMotion.matches && experienceRef.current.effectLevel !== "low";
         if (!sceneReady || cancelled) return;
-        textResolution?.sync(Math.max(cameraBaseZoom, viewport.ratio));
+        textResolution?.sync(Math.max(cameraBaseZoom * userZoom.current, viewport.ratio));
         textureLod?.update(time);
         if (decorationsRef.current !== lastDecorationState || placedFixturesRef.current !== lastPlacedFixtures) {
           lastDecorationState = decorationsRef.current;
@@ -2127,7 +2112,8 @@ export function StudioVirtualSpacePhaserCanvas({
         cameraBase.y = deadzonedTarget.y;
         cameraTarget.x = cameraBase.x + directed.shakeX;
         cameraTarget.y = cameraBase.y + directed.shakeY;
-        if (cameraFollows) this.cameras.main.setZoom(cameraBaseZoom * directed.zoomFactor);
+        if (cameraFollows) this.cameras.main.setZoom(cameraBaseZoom * directed.zoomFactor * userZoom.sample(dt, reducedMotion.matches));
+        if (horizonArtwork && screenFixedHorizon && cameraFollows) fitStudioHorizonArtwork(horizonArtwork, this.scale.gameSize, this.cameras.main.zoom);
         const followBase = Math.min(.6, (cameraMode === "steady" ? .075 : cameraMode === "cinematic" ? .16 : .12) * locomotion.cameraFollowScale);
         const followAmount = snapCamera || reducedMotion.matches ? 1
           : studioCameraLerp(dt, directed.roomTransitioning ? followBase * 2.2 : followBase);

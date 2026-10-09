@@ -13,6 +13,8 @@ const SHORTCUTS = [
   { keys: ["1~9", "Z"], ko: "리액션 · Z는 춤추기", en: "Reactions · Z to dance" },
   { keys: ["M"], ko: "지도 열기·닫기", en: "Open or close the map" },
   { keys: ["P"], ko: "참가자 패널 열기·닫기", en: "Open or close people" },
+  { keys: ["H"], ko: "내 자리로 걷기", en: "Walk to my desk" },
+  { keys: ["+", "-", "0"], ko: "화면 확대·축소·원래 크기 (마우스 휠도 가능)", en: "Zoom in · out · reset (mouse wheel works too)" },
   { keys: ["Ctrl", "K"], ko: "방·사람 찾기", en: "Find rooms and people" },
   { keys: ["Esc"], ko: "이동 멈추기 · 맨 위 창 닫기", en: "Stop walking · close the top window" },
   { keys: ["?"], ko: "이 도움말", en: "This help" },

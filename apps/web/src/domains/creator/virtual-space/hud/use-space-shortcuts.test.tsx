@@ -36,12 +36,56 @@ describe("useSpaceShortcuts", () => {
   it("이동·상호작용 키(WASD·방향키·X)는 캔버스 몫이라 가로채지 않는다", () => {
     const value = handlers();
     renderHook(() => useSpaceShortcuts(value));
-    for (const key of ["w", "a", "s", "d", "ArrowUp", "x", "Shift", "0"]) {
+    for (const key of ["w", "a", "s", "d", "ArrowUp", "x", "Shift"]) {
       const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
       window.dispatchEvent(event);
       expect(event.defaultPrevented, key).toBe(false);
     }
     expect(value.onEmote).not.toHaveBeenCalled();
+  });
+
+  it("한글 자판(event.key가 자모)에서도 글쇠 위치로 M·P·Z·H를 읽는다", () => {
+    const value = { ...handlers(), onDesk: vi.fn<() => void>() };
+    renderHook(() => useSpaceShortcuts(value));
+    fireEvent.keyDown(window, { key: "ㅡ", code: "KeyM" });
+    fireEvent.keyDown(window, { key: "ㅔ", code: "KeyP" });
+    fireEvent.keyDown(window, { key: "ㅋ", code: "KeyZ" });
+    fireEvent.keyDown(window, { key: "ㅗ", code: "KeyH" });
+    expect(value.onToggleMap).toHaveBeenCalledOnce();
+    expect(value.onTogglePeople).toHaveBeenCalledOnce();
+    expect(value.onEmote.mock.calls.map(([id]) => id)).toEqual(["dance"]);
+    expect(value.onDesk).toHaveBeenCalledOnce();
+  });
+
+  it("+·=는 확대, -·_는 축소, 0은 원래 크기이고 이벤트의 기본 동작을 막는다", () => {
+    const onZoom = vi.fn<(action: "in" | "out" | "reset") => void>();
+    renderHook(() => useSpaceShortcuts({ ...handlers(), onZoom }));
+    const prevented: boolean[] = [];
+    for (const key of ["+", "=", "-", "_", "0"]) {
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      window.dispatchEvent(event);
+      prevented.push(event.defaultPrevented);
+    }
+    expect(onZoom.mock.calls.map(([action]) => action)).toEqual(["in", "in", "out", "out", "reset"]);
+    expect(prevented).toEqual([true, true, true, true, true]);
+  });
+
+  it("줌을 받을 수 없으면(핸들러 없음) 줌·내 자리 키를 가로채지 않는다", () => {
+    renderHook(() => useSpaceShortcuts(handlers()));
+    for (const key of ["+", "-", "0", "h"]) {
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      window.dispatchEvent(event);
+      expect(event.defaultPrevented, key).toBe(false);
+    }
+  });
+
+  it("브라우저 확대 단축키(Ctrl·⌘ + +/-/0)는 건드리지 않는다", () => {
+    const onZoom = vi.fn();
+    renderHook(() => useSpaceShortcuts({ ...handlers(), onZoom }));
+    fireEvent.keyDown(window, { key: "+", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "-", metaKey: true });
+    fireEvent.keyDown(window, { key: "0", ctrlKey: true });
+    expect(onZoom).not.toHaveBeenCalled();
   });
 
   it("입력 요소·IME 조합·보조키·반복 입력은 무시한다", () => {

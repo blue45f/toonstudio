@@ -165,7 +165,8 @@ describe("캔버스 연결 계약", () => {
 
   it("픽셀 아트가 아닌 화풍에서만 장면 시작 때 만들고 매 프레임 배율을 맞춘다", () => {
     expect(canvas).toMatch(/textResolution = artProfile\.pixelated \? null : new StudioTextResolutionRuntime\(this\.sys\.events\)/u);
-    expect(canvas).toMatch(/textResolution\?\.sync\(Math\.max\(cameraBaseZoom, viewport\.ratio\)\)/u);
+    // 글자는 화면에서 실제로 그려지는 배율(자동 기준 줌 × 사용자 줌)에 맞춘다.
+    expect(canvas).toMatch(/textResolution\?\.sync\(Math\.max\(cameraBaseZoom \* userZoom\.current, viewport\.ratio\)\)/u);
     expect(canvas).toMatch(/cleanup\.push\(\(\) => textResolution\?\.dispose\(\)\)/u);
   });
 });
