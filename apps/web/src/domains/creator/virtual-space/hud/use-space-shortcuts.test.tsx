@@ -57,6 +57,23 @@ describe("useSpaceShortcuts", () => {
     expect(value.onDesk).toHaveBeenCalledOnce();
   });
 
+  it("L은 끌어서 옮겨 둔 시점을 되돌리고(한글 자판 ㅣ도), 핸들러가 없으면 가로채지 않는다", () => {
+    const value = { ...handlers(), onLocate: vi.fn<() => void>() };
+    renderHook(() => useSpaceShortcuts(value));
+    const english = new KeyboardEvent("keydown", { key: "l", code: "KeyL", bubbles: true, cancelable: true });
+    window.dispatchEvent(english);
+    expect(english.defaultPrevented).toBe(true);
+    fireEvent.keyDown(window, { key: "ㅣ", code: "KeyL" });
+    fireEvent.keyDown(window, { key: "L", code: "KeyL", ctrlKey: true });
+    expect(value.onLocate).toHaveBeenCalledTimes(2);
+    cleanup();
+    const plain = handlers();
+    renderHook(() => useSpaceShortcuts(plain));
+    const ignored = new KeyboardEvent("keydown", { key: "l", code: "KeyL", bubbles: true, cancelable: true });
+    window.dispatchEvent(ignored);
+    expect(ignored.defaultPrevented).toBe(false);
+  });
+
   it("+·=는 확대, -·_는 축소, 0은 원래 크기이고 이벤트의 기본 동작을 막는다", () => {
     const onZoom = vi.fn<(action: "in" | "out" | "reset") => void>();
     renderHook(() => useSpaceShortcuts({ ...handlers(), onZoom }));

@@ -225,3 +225,58 @@ describe("휠과 핀치를 함께 연결하는 묶음", () => {
     expect(store.get()).toBe(1);
   });
 });
+
+describe("두 손가락 중심 이동(onPinchPan)", () => {
+  function panSetup(can = () => true) {
+    const target = document.createElement("div");
+    const store = new StudioUserZoomStore(memory());
+    const onPan = vi.fn();
+    disposers.push(bindStudioUserZoomPinch(target, store, can, undefined, onPan));
+    const fire = (type: string, id: number, x: number, y = 0) =>
+      target.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: "touch", clientX: x, clientY: y, bubbles: true, cancelable: true }));
+    return { store, onPan, fire };
+  }
+
+  it("두 손가락이 닿은 뒤 중심이 움직인 만큼만 알린다(닿는 순간에는 알리지 않는다)", () => {
+    const { onPan, fire } = panSetup();
+    fire("pointerdown", 1, 0, 0);
+    fire("pointerdown", 2, 100, 0);
+    expect(onPan).not.toHaveBeenCalled();
+    fire("pointermove", 1, 40, 20);
+    fire("pointermove", 2, 140, 20);
+    expect(onPan.mock.calls).toEqual([[20, 10], [20, 10]]);
+  });
+
+  it("서로 반대로 벌어지는 순수 핀치는 줌만 바꾸고 중심 이동의 합은 0이다", () => {
+    const { store, onPan, fire } = panSetup();
+    fire("pointerdown", 1, 40, 0);
+    fire("pointerdown", 2, 60, 0);
+    fire("pointermove", 1, 0, 0);
+    fire("pointermove", 2, 100, 0);
+    expect(store.get()).toBeGreaterThan(1);
+    // 손가락이 하나씩 움직이는 이벤트라 중간에는 ±20이지만, 둘 다 움직이고 나면 중심은 제자리다.
+    expect(onPan.mock.calls).toEqual([[-20, 0], [20, 0]]);
+  });
+
+  it("손가락 하나이거나 셋이면 알리지 않고, 다시 둘이 되면 새 중심에서 이어간다", () => {
+    const { onPan, fire } = panSetup();
+    fire("pointerdown", 1, 0);
+    fire("pointermove", 1, 30);
+    expect(onPan).not.toHaveBeenCalled();
+    fire("pointerdown", 2, 100);
+    fire("pointerdown", 3, 200);
+    fire("pointermove", 3, 260);
+    expect(onPan).not.toHaveBeenCalled();
+    fire("pointerup", 3, 260);
+    fire("pointermove", 2, 120);
+    expect(onPan.mock.calls).toEqual([[10, 0]]);
+  });
+
+  it("핀치를 받을 수 없는 때(줌 불가 장소)에는 알리지 않는다", () => {
+    const { onPan, fire } = panSetup(() => false);
+    fire("pointerdown", 1, 0);
+    fire("pointerdown", 2, 100);
+    fire("pointermove", 2, 200);
+    expect(onPan).not.toHaveBeenCalled();
+  });
+});

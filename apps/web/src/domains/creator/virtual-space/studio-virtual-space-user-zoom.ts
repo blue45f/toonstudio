@@ -283,19 +283,26 @@ interface PinchPoint {
  * - 터치 포인터만 본다(마우스·펜은 휠·버튼 경로가 있다).
  * - 손가락이 정확히 둘일 때만 핀치다. 셋이 되면 멈추고, 다시 둘이 되면 그 거리를 새 기준으로 삼아 배율이 튀지 않는다.
  * - 핀치가 시작될 때 onPinchStart를 불러, 첫 손가락이 이미 시작시킨 탭 이동 같은 것을 멈추게 한다.
+ * - 두 손가락의 중심이 움직인 만큼(CSS px)을 onPinchPan으로 알린다. 줌과 함께 화면을 끌어 옮기는 지도 앱의 손동작이다.
  */
 export function bindStudioUserZoomPinch(
   target: Pick<HTMLElement, "addEventListener" | "removeEventListener">,
   store: Pick<StudioUserZoomStore, "get" | "set">,
   canPinch: () => boolean,
   onPinchStart: () => void = () => undefined,
+  onPinchPan?: (dxCss: number, dyCss: number) => void,
 ): () => void {
   const touches = new Map<number, PinchPoint>();
   let pinch: { readonly startDistance: number; readonly startLevel: number } | null = null;
+  let center: PinchPoint = { x: 0, y: 0 };
 
   const distance = (): number => {
     const [first, second] = [...touches.values()];
     return first && second ? Math.hypot(first.x - second.x, first.y - second.y) : 0;
+  };
+  const midpoint = (): PinchPoint => {
+    const [first, second] = [...touches.values()];
+    return first && second ? { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 } : center;
   };
   /** 손가락 수가 바뀔 때마다 핀치를 맺거나 푼다. */
   const sync = () => {
@@ -304,6 +311,7 @@ export function bindStudioUserZoomPinch(
     const startDistance = distance();
     if (startDistance < STUDIO_PINCH_MIN_START_DISTANCE_PX) return;
     pinch = { startDistance, startLevel: store.get() };
+    center = midpoint();
     onPinchStart();
   };
 
@@ -322,6 +330,9 @@ export function bindStudioUserZoomPinch(
     if (!pinch || !canPinch()) return;
     event.preventDefault();
     store.set(studioUserZoomFromPinch(pinch.startLevel, pinch.startDistance, distance()));
+    const next = midpoint();
+    if (onPinchPan && (next.x !== center.x || next.y !== center.y)) onPinchPan(next.x - center.x, next.y - center.y);
+    center = next;
   };
   const onEnd = (event: Event) => {
     if (!touches.delete((event as PointerEvent).pointerId)) return;
@@ -351,8 +362,9 @@ export function bindStudioUserZoomGestures(
   store: StudioUserZoomStore,
   canZoom: () => boolean,
   onPinchStart?: () => void,
+  onPinchPan?: (dxCss: number, dyCss: number) => void,
 ): () => void {
   const releaseWheel = bindStudioUserZoomWheel(target, store, canZoom);
-  const releasePinch = bindStudioUserZoomPinch(target, store, canZoom, onPinchStart);
+  const releasePinch = bindStudioUserZoomPinch(target, store, canZoom, onPinchStart, onPinchPan);
   return () => { releaseWheel(); releasePinch(); };
 }

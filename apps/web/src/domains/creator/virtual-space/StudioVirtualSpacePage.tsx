@@ -217,7 +217,7 @@ import { SpaceEventBanner } from "./hud/SpaceEventBanner";
 import { spaceHudChatHintBlocked, spaceHudShowsEventBanner } from "./hud/space-hud-priority";
 import { SpaceContextSuggestion } from "./hud/SpaceContextSuggestion";
 import { SpaceFocusChip } from "./hud/SpaceFocusChip";
-import { SpaceFollowStatus } from "./hud/SpaceFollowStatus";
+import { SpaceMovementStatus } from "./hud/SpaceMovementStatus";
 import { SpaceToasts } from "./hud/SpaceToasts";
 import { SpaceTownBanner } from "./hud/SpaceTownBanner";
 import { SpaceWorkLauncher } from "./hud/SpaceWorkLauncher";
@@ -912,7 +912,6 @@ export function VirtualSpaceExperience({
   }, [executeSpatialAction, interactionState.actionId, interactionState.phase]);
 
   const followingPeer = followingPeerId ? snapshot.peers.find((peer) => peer.participant.sessionId === followingPeerId) ?? null : null;
-  const followedByName = sharedActivity && isStudioSocialWalkTogether(sharedActivity.action) && !studioSocialRequestFollowsPeer(sharedActivity) ? sharedActivity.peer.displayName : null;
 
   const handleEnginePeerSelect = useCallback((sessionId: string) => {
     setSelectedPeerId(sessionId);
@@ -1356,7 +1355,7 @@ export function VirtualSpaceExperience({
     onChat: () => setChatOpen(true),
     onEscape: closeTopLayer,
     onZoom: userZoom.available ? (action) => engineBridge.userZoom.apply(action) : undefined,
-    onDesk: () => { if (preferredSlotId && !personal) slots.requestSlot(preferredSlotId); else openOfficeSeats(); },
+    onDesk: () => { if (preferredSlotId && !personal) slots.requestSlot(preferredSlotId); else openOfficeSeats(); }, onLocate: () => engineBridge.cameraPan.recenter(),
   }, worldReady && !searchOpen);
   const exitSpace = useCallback(() => {
     writeStudioVirtualSpaceSessionPoint(positionScope, selfRef.current);
@@ -2055,8 +2054,8 @@ export function VirtualSpaceExperience({
                   : bt(`${guideTarget.labelKo}까지 안내 중`, `Guiding you to ${guideTarget.labelEn}`)}</p>
               <button type="button" className="space-pill-button" onClick={() => setGuideTarget(null)}>{bt("안내 종료", "End guide")}</button>
             </div> : null}
-            <SpaceFollowStatus followingName={followingPeer?.participant.displayName ?? null} followedByName={followedByName} config={followConfig}
-              onStopFollowing={cancelFollowing} onStopLeading={finishSharedActivity} onConfig={updateFollowConfig} />
+            <SpaceMovementStatus followingName={followingPeer?.participant.displayName ?? null} sharedActivity={sharedActivity} config={followConfig} cameraPan={engineBridge.cameraPan}
+              onStopFollowing={cancelFollowing} onStopLeading={finishSharedActivity} onConfig={updateFollowConfig} onRecentered={() => engineBridge.focusWorld()} />
             {stuck ? <button type="button" className="space-status-chip space-status-chip--warn" data-space-interactive="true" onClick={() => engineBridge.requestUnstuck()}>
               <LifeBuoy size={16} aria-hidden />{bt("끼었나요? 제자리로 이동", "Stuck? Move to a safe spot")}
             </button> : null}

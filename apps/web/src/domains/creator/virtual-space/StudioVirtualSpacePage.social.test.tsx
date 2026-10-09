@@ -1052,6 +1052,34 @@ describe("Virtual Studio social activity ownership", () => {
     expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
   });
 
+  describe("카메라 둘러보기(끌어서 시점 옮기기)", () => {
+    it("시점을 옮기면 안내 칩이 뜨고, 누르거나 L 키를 누르면 내 위치로 돌아오게 요청한다", async () => {
+      await mount(null);
+      const bridge = f.engine?.bridge;
+      if (!bridge) throw new Error("엔진 브리지가 필요합니다.");
+      expect(screen.queryByRole("button", { name: /시점을 옮겼어요/u })).toBeNull();
+      act(() => { bridge.cameraPan.setPanned(true); });
+      fireEvent.click(screen.getByRole("button", { name: /시점을 옮겼어요/u }));
+      expect(bridge.cameraPan.consumeRecenter()).toBe(true);
+      fireEvent.keyDown(window, { key: "l", code: "KeyL" });
+      expect(bridge.cameraPan.consumeRecenter()).toBe(true);
+      act(() => { bridge.cameraPan.setPanned(false); });
+      expect(screen.queryByRole("button", { name: /시점을 옮겼어요/u })).toBeNull();
+    });
+
+    it("채팅 입력 칸에서 친 L은 시점을 되돌리지 않는다", async () => {
+      await mount(null);
+      const bridge = f.engine?.bridge;
+      if (!bridge) throw new Error("엔진 브리지가 필요합니다.");
+      const input = document.createElement("input");
+      document.body.append(input);
+      input.focus();
+      fireEvent.keyDown(input, { key: "l", code: "KeyL" });
+      expect(bridge.cameraPan.consumeRecenter()).toBe(false);
+      input.remove();
+    });
+  });
+
   describe("함께 걷기 합의에서 따라가는 쪽과 이끄는 쪽", () => {
     const incoming = (id: string, action: StudioSpaceSocialRequest["action"]): StudioSpaceSocialRequest =>
       ({ ...accepted(id, action), direction: "incoming" });

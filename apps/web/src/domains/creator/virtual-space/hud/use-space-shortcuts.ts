@@ -20,6 +20,8 @@ export interface SpaceShortcutHandlers {
   readonly onZoom?: (action: StudioUserZoomAction) => void;
   /** H: 내 자리로 걷기. */
   readonly onDesk?: () => void;
+  /** L: 끌어서 옮겨 둔 시점을 내 위치로 되돌린다(게더타운의 Show My Location). */
+  readonly onLocate?: () => void;
 }
 
 const TEXT_ENTRY_SELECTOR = 'input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]';
@@ -40,7 +42,7 @@ function shortcutKey(event: Pick<KeyboardEvent, "key" | "code">): string {
 }
 
 /**
- * HUD(window) 단축키: 1~9·Z 이모트, M 지도, P 참가자, H 내 자리, +/-/0 화면 크기, ? 도움말, Esc 최상위 레이어 닫기.
+ * HUD(window) 단축키: 1~9·Z 이모트, M 지도, P 참가자, H 내 자리, L 내 위치로 시점 되돌리기, +/-/0 화면 크기, ? 도움말, Esc 최상위 레이어 닫기.
  * 이동(WASD·방향키)과 상호작용(X)은 캔버스가 맡으므로 여기서 바인딩하지 않는다.
  */
 export function useSpaceShortcuts(handlers: SpaceShortcutHandlers, enabled = true): void {
@@ -74,6 +76,7 @@ export function useSpaceShortcuts(handlers: SpaceShortcutHandlers, enabled = tru
       if (key === "m") { event.preventDefault(); latest.current.onToggleMap(); }
       else if (key === "p") { event.preventDefault(); latest.current.onTogglePeople(); }
       else if (key === "h" && latest.current.onDesk) { event.preventDefault(); latest.current.onDesk(); }
+      else if (key === "l" && latest.current.onLocate) { event.preventDefault(); latest.current.onLocate(); }
       else if (event.key === "?") { event.preventDefault(); latest.current.onHelp(); }
     };
     window.addEventListener("keydown", onKeyDown);

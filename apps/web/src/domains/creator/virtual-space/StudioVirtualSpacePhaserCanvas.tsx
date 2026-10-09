@@ -7,7 +7,7 @@ import {
 
 import {
   StudioFixedStepClock, StudioFixedStepPose,
-  studioStableFacing, studioRenderViewport, studioCameraLerp,
+  studioStableFacing, studioRenderViewport,
 } from "./studio-virtual-space-presentation";
 import {
   StudioNpcDirector, studioNpcActivityLabel, studioNpcInteraction, studioNpcLabel, studioNpcRole,
@@ -111,7 +111,8 @@ import {
 } from "./studio-virtual-space-art-style";
 import { StudioTextResolutionRuntime } from "./studio-virtual-space-text-resolution";
 import { createStudioTextureLod, type StudioTextureLodRuntime } from "./studio-virtual-space-texture-lod";
-import { StudioUserZoomRuntime, bindStudioUserZoomGestures } from "./studio-virtual-space-user-zoom";
+import { StudioUserZoomRuntime } from "./studio-virtual-space-user-zoom";
+import { StudioCameraPanRuntime, bindStudioCameraGestures } from "./studio-virtual-space-camera-pan";
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
 import { drawStudioModularCampus } from "./studio-virtual-space-modular-campus";
 import { studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
@@ -119,7 +120,7 @@ import { registerStudioSceneAtlas,
   StudioVirtualSetDressingRuntime, studioSceneActorScale, studioSceneOverlayScale } from "./studio-virtual-space-scene-art-runtime";
 import { studioVirtualWorldSetDressing } from "./studio-virtual-space-world-set-dressing";
 import { studioVirtualWorldKind } from "./studio-virtual-space-world-presentation";
-import { applyStudioWorldCamera, fitStudioHorizonArtwork, studioCameraEdgeLerpFactor } from "./studio-virtual-space-world-camera";
+import { applyStudioCameraFollow, applyStudioWorldCamera, fitStudioHorizonArtwork } from "./studio-virtual-space-world-camera";
 import {
   STUDIO_ZONE_FADE_COLOR,
   beginStudioZoneDepartureTransition,
@@ -728,6 +729,7 @@ export function StudioVirtualSpacePhaserCanvas({
       const motionConfig: { acceleration: number; deceleration: number; maxSpeed: number } = { ...DEFAULT_STUDIO_MOTION_CONFIG };
       let cameraBaseZoom = 1;
       const userZoom = new StudioUserZoomRuntime(bridge.userZoom);
+      const cameraPan = new StudioCameraPanRuntime(bridge.cameraPan);
       /** 화면에 고정된 원경(cinematic-v9)은 줌이 바뀔 때마다 화면을 덮도록 다시 맞춘다. */
       const screenFixedHorizon = horizonUrl.includes("/cinematic-v9/");
       /** 장면의 모든 Phaser Text를 화면 배율에 맞는 해상도로 그린다. 픽셀 아트 화풍에서는 거친 글자를 유지한다. */
@@ -1303,7 +1305,7 @@ export function StudioVirtualSpacePhaserCanvas({
           onReducedMotionChange: reduceMotionChanged,
           onModalBlockerChange: (blocked) => { modalInputBlocked = blocked; },
         }));
-        cleanup.push(bindStudioUserZoomGestures(canvas, bridge.userZoom, () => sceneReady && bridge.userZoom.getSnapshot().available, stopMovement));
+        cleanup.push(bindStudioCameraGestures(canvas, { zoom: bridge.userZoom, pan: bridge.cameraPan, canZoom: () => sceneReady && bridge.userZoom.getSnapshot().available, canPan: () => sceneReady && bridge.cameraPan.getSnapshot().available && !runtimeInputBlocked() && !buildPlacement?.active, onPinchStart: stopMovement }));
         portalTracker.seed(portals, initialPoint);
         zoneTracker.seed(studioWorldPresenceZone(manifest, initialPoint)?.id ?? null);
         // 스폰 시퀀스 시작: 월드 준비 완료(setReady 지점) 신호가 올 때까지 베일이 덮는다.
@@ -2110,23 +2112,15 @@ export function StudioVirtualSpacePhaserCanvas({
         });
         cameraBase.x = deadzonedTarget.x;
         cameraBase.y = deadzonedTarget.y;
-        cameraTarget.x = cameraBase.x + directed.shakeX;
-        cameraTarget.y = cameraBase.y + directed.shakeY;
+        const lookAround = cameraPan.sample({ deltaSeconds: dt, available: cameraFollows, directed: directed.roomTransitioning || conversationFocus !== null, snap: snapCamera, reducedMotion: reducedMotion.matches, moving: nextMoving, cssToWorld: viewport.ratio / this.cameras.main.zoom, base: cameraBase, center: this.cameras.main.midPoint, view: this.cameras.main.worldView, world: manifest });
+        cameraTarget.x = cameraBase.x + directed.shakeX + lookAround.x;
+        cameraTarget.y = cameraBase.y + directed.shakeY + lookAround.y;
         if (cameraFollows) this.cameras.main.setZoom(cameraBaseZoom * directed.zoomFactor * userZoom.sample(dt, reducedMotion.matches));
         if (horizonArtwork && screenFixedHorizon && cameraFollows) fitStudioHorizonArtwork(horizonArtwork, this.scale.gameSize, this.cameras.main.zoom);
         const followBase = Math.min(.6, (cameraMode === "steady" ? .075 : cameraMode === "cinematic" ? .16 : .12) * locomotion.cameraFollowScale);
-        const followAmount = snapCamera || reducedMotion.matches ? 1
-          : studioCameraLerp(dt, directed.roomTransitioning ? followBase * 2.2 : followBase);
-        // 월드 경계 근처에서는 추종을 미리 늦춰 하드 클램프에서 화면이 튀지 않게 한다.
-        const softenAtEdge = cameraFollows && !snapCamera && !reducedMotion.matches;
-        const edgeFactorX = softenAtEdge
-          ? studioCameraEdgeLerpFactor(this.cameras.main.midPoint.x, this.cameras.main.worldView.width, manifest.width)
-          : 1;
-        const edgeFactorY = softenAtEdge
-          ? studioCameraEdgeLerpFactor(this.cameras.main.midPoint.y, this.cameras.main.worldView.height, manifest.height)
-          : 1;
-        this.cameras.main.setLerp(followAmount * edgeFactorX, followAmount * edgeFactorY);
-        if (snapCamera) this.cameras.main.centerOn(cameraVisualTarget.x, cameraVisualTarget.y);
+        // 순간 이동과 시점 끌기·되돌리기는 Phaser 데드존(추종 불감대)을 건너뛰고 카메라를 목표에 바로 맞춘다.
+        applyStudioCameraFollow(this.cameras.main, { deltaSeconds: dt, followBase, roomTransitioning: directed.roomTransitioning, immediate: snapCamera || reducedMotion.matches || lookAround.direct,
+          edgeSoftening: cameraFollows, world: manifest, centerOn: snapCamera ? cameraVisualTarget : lookAround.direct ? cameraTarget : null });
 
         const hasWalkClip = scene.anims.exists(walkAnimationKey(localSkin, facing)) || reducedMotion.matches;
         // 몸 bob·그림자·흔들림·스쿼시는 위에서 확정한 유효 보폭(localGaitStride)을 같은 거리 위상으로 쓴다.

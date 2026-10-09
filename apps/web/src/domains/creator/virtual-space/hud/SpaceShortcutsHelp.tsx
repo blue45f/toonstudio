@@ -14,6 +14,8 @@ const SHORTCUTS = [
   { keys: ["M"], ko: "지도 열기·닫기", en: "Open or close the map" },
   { keys: ["P"], ko: "참가자 패널 열기·닫기", en: "Open or close people" },
   { keys: ["H"], ko: "내 자리로 걷기", en: "Walk to my desk" },
+  { keys: ["L"], ko: "끌어서 옮겨 둔 시점을 내 위치로 되돌리기", en: "Bring the view back to my avatar" },
+  { keys: ["오른쪽 끌기", "Space+끌기"], ko: "시점을 끌어서 둘러보기 (터치는 두 손가락)", en: "Drag to look around (two fingers on touch)" },
   { keys: ["+", "-", "0"], ko: "화면 확대·축소·원래 크기 (마우스 휠도 가능)", en: "Zoom in · out · reset (mouse wheel works too)" },
   { keys: ["G"], ko: "고스트 모드 켜고 끄기 (벽·사람 통과)", en: "Toggle ghost mode (pass through walls and people)" },
   { keys: ["Ctrl", "K"], ko: "방·사람 찾기", en: "Find rooms and people" },

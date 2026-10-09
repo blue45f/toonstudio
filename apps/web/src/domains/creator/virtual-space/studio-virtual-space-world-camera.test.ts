@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { studioVirtualCampusManifest } from "./studio-virtual-space-campus-world";
 import { studioVirtualPlaceWorldManifest } from "./studio-virtual-space-place-world";
-import { applyStudioWorldCamera, studioCameraEdgeLerpFactor, studioWorldCameraPlacement, STUDIO_CAMERA_EDGE_MIN_LERP_FACTOR, STUDIO_CAMERA_EDGE_SOFT_ZONE_PX } from "./studio-virtual-space-world-camera";
+import { applyStudioCameraFollow, applyStudioWorldCamera, studioCameraEdgeLerpFactor, studioCameraFollowLerp, studioWorldCameraPlacement, STUDIO_CAMERA_EDGE_MIN_LERP_FACTOR, STUDIO_CAMERA_EDGE_SOFT_ZONE_PX } from "./studio-virtual-space-world-camera";
+import { studioCameraLerp } from "./studio-virtual-space-presentation";
 import { studioCampusCameraZoom } from "./studio-virtual-space-world-presentation";
 
 describe("월드 카메라 배치", () => {
@@ -60,5 +61,75 @@ describe("카메라 경계 소프트 클램프", () => {
     expect(studioCameraEdgeLerpFactor(100, 800, 640)).toBe(1);
     expect(studioCameraEdgeLerpFactor(100, 800, 800)).toBe(1);
     expect(studioCameraEdgeLerpFactor(100, 0, 3_072)).toBe(1);
+  });
+});
+
+describe("카메라 추종 비율(studioCameraFollowLerp)", () => {
+  const input = {
+    deltaSeconds: 1 / 60, followBase: 0.12, roomTransitioning: false, immediate: false, edgeSoftening: true,
+    center: { x: 1500, y: 900 }, view: { width: 800, height: 500 }, world: { width: 3072, height: 1920 },
+  } as const;
+
+  it("월드 한가운데에서는 평소 추종 비율 그대로다", () => {
+    const lerp = studioCameraFollowLerp(input);
+    expect(lerp.x).toBeCloseTo(studioCameraLerp(1 / 60, 0.12), 12);
+    expect(lerp.y).toBeCloseTo(lerp.x, 12);
+  });
+
+  it("방 전환 중에는 2.2배 빠른 기본 비율로 따라간다", () => {
+    const lerp = studioCameraFollowLerp({ ...input, roomTransitioning: true });
+    expect(lerp.x).toBeCloseTo(studioCameraLerp(1 / 60, 0.12 * 2.2), 12);
+    expect(lerp.x).toBeGreaterThan(studioCameraFollowLerp(input).x);
+  });
+
+  it("순간 이동·모션 줄이기·시점을 끄는 중(immediate)에는 가장자리여도 1이다", () => {
+    expect(studioCameraFollowLerp({ ...input, immediate: true })).toEqual({ x: 1, y: 1 });
+    expect(studioCameraFollowLerp({ ...input, immediate: true, center: { x: 410, y: 260 } })).toEqual({ x: 1, y: 1 });
+  });
+
+  it("월드 가장자리 근처에서는 그 축의 추종만 미리 늦춘다", () => {
+    const edge = studioCameraFollowLerp({ ...input, center: { x: 410, y: 900 } });
+    const middle = studioCameraFollowLerp(input);
+    expect(edge.x).toBeLessThan(middle.x);
+    expect(edge.x).toBeGreaterThanOrEqual(middle.x * STUDIO_CAMERA_EDGE_MIN_LERP_FACTOR - 1e-12);
+    expect(edge.y).toBeCloseTo(middle.y, 12);
+  });
+
+  it("카메라가 아바타를 따라가는 장소가 아니면(edgeSoftening 꺼짐) 가장자리 감속을 쓰지 않는다", () => {
+    const lerp = studioCameraFollowLerp({ ...input, edgeSoftening: false, center: { x: 410, y: 260 } });
+    expect(lerp.x).toBeCloseTo(studioCameraLerp(1 / 60, 0.12), 12);
+    expect(lerp.y).toBeCloseTo(lerp.x, 12);
+  });
+});
+
+describe("카메라 추종 적용(applyStudioCameraFollow)", () => {
+  const input = {
+    deltaSeconds: 1 / 60, followBase: 0.12, roomTransitioning: false, immediate: false, edgeSoftening: true,
+    world: { width: 3072, height: 1920 }, centerOn: null,
+  } as const;
+  const fakeCamera = (mid = { x: 1500, y: 900 }) => ({
+    midPoint: mid, worldView: { width: 800, height: 500 }, setLerp: vi.fn(), centerOn: vi.fn(),
+  });
+
+  it("카메라의 현재 중심·화면 크기로 추종 비율을 계산해 setLerp에 넣는다", () => {
+    const camera = fakeCamera({ x: 410, y: 900 });
+    applyStudioCameraFollow(camera, input);
+    const expected = studioCameraFollowLerp({ ...input, center: camera.midPoint, view: camera.worldView });
+    expect(camera.setLerp).toHaveBeenCalledWith(expected.x, expected.y);
+    expect(expected.x, "왼쪽 가장자리에서는 그 축만 늦춰진다").toBeLessThan(expected.y);
+  });
+
+  it("centerOn이 없으면 카메라를 옮기지 않는다(평소 추종은 Phaser의 lerp·데드존에 맡긴다)", () => {
+    const camera = fakeCamera();
+    applyStudioCameraFollow(camera, input);
+    expect(camera.centerOn).not.toHaveBeenCalled();
+  });
+
+  it("centerOn이 있으면 데드존을 건너뛰고 그 점에 바로 맞춘다", () => {
+    const camera = fakeCamera();
+    applyStudioCameraFollow(camera, { ...input, immediate: true, centerOn: { x: 1234, y: 567 } });
+    expect(camera.setLerp).toHaveBeenCalledWith(1, 1);
+    expect(camera.centerOn).toHaveBeenCalledTimes(1);
+    expect(camera.centerOn).toHaveBeenCalledWith(1234, 567);
   });
 });
