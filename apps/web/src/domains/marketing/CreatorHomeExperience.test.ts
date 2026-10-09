@@ -50,7 +50,7 @@ describe("creator home experience contracts", () => {
     expect(source).toContain('cx("creator-home", !introduction && "creator-experience creator-flagship")');
     // 탭이 아니라 한 번에 읽히는 서사: 히어로 아트 → 바로 시작 → 제작 흐름 → 기능 브리지 → 화면 구성 둘러보기 → 재료·협업·도움 → 마감.
     expect(source).not.toContain("<IntroTabs");
-    expect(source).toContain("<StudioIntroHeroArt />");
+    expect(source).toContain("<StudioIntroHeroStage");
     expect(source).toContain("<StudioIntroFlow />");
     expect(source).toContain("<StudioIntroBridge />");
     expect(source).toContain("<StudioIntroClosing />");
@@ -64,12 +64,12 @@ describe("creator home experience contracts", () => {
     expect(source).toContain("useCreatorHomeSectionNavigation();");
     // 첫 화면: 한 문장 + 주요 행동 1개(+보조 1개).
     expect(source).toContain('<IntroPrimaryLink href="/studio/new">');
-    expect(source).toContain('<IntroSecondaryLink href="/studio" icon={FolderKanban}>');
+    expect(source).toContain('<IntroSecondaryLink href="/studio" icon={FolderKanban}');
     // 서사 본문(StudioIntroNarrative): 흐름·브리지 섹션 앵커와 히어로 마감 카피, 기능별 브랜드 아트 썸네일.
     expect(narrative).toContain('id="creator-flow"');
     expect(narrative).toContain('id="creator-bridge"');
     expect(narrative).toContain('id="creator-closing-title"');
-    expect(narrative).toContain("/brand/atelier-20260927/creation-world.webp");
+    expect(narrative).toContain("/brand/hero-20261009-wave11/studio-intro-world.webp");
     expect(narrative).toContain("작은 아이디어가 하나의 세계가 될 때까지.");
     expect(narrative).toContain("From a Small Idea to a World of Your Own.");
     expect(narrative).toContain("/brand/illustrated-20260928/canvas-noir-640.webp");
