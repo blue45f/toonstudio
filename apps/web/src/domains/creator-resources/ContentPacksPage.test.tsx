@@ -32,6 +32,16 @@ describe("free content creation page", () => {
     expect(container.querySelector(".research-source--cleveland")).toBeTruthy();
     expect(screen.getByText(/클리블랜드 미술관이 CC0로 공개한 유물·문양·회화 소장품을 찾습니다/u)).toBeTruthy();
   });
+  it("제공처 정체성 행에 키트 마크(글리프 타일)를 렌더한다 (디자인 웨이브 13)", () => {
+    const { container } = mount();
+    const line = container.querySelector(".research-source--aic");
+    // 색 점이 아니라 정체성 키트의 작은 얼굴(ResearchSourceMark)이 닿아 있다.
+    const mark = line?.querySelector(".resource-source-cover");
+    expect(mark).toBeTruthy();
+    expect(mark?.textContent).toContain("시");
+    fireEvent.change(screen.getByLabelText("제공처"), { target: { value: "met" } });
+    expect(container.querySelector(".research-source--met .resource-source-cover")?.textContent).toContain("M");
+  });
   it("searches on demand, saves a source and uses selected credits in the brief", async () => {
     mount(); fireEvent.click(screen.getByRole("button", { name: "갑옷 검색" }));
     fireEvent.click(await screen.findByRole("button", { name: "보드에 저장" }));

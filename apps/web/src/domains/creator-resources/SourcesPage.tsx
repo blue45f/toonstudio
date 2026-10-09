@@ -10,9 +10,9 @@ import { MotionEmptyState } from "@/shared/motion-assets";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { OPEN_API_FEATURES } from "./open-api-features";
-import { researchSourceIdentityForRoute } from "./research-source-identity";
+import { researchSourceArtSrc, researchSourceIdentityForRoute } from "./research-source-identity";
 import { ResourceLayout } from "./ResourceLayout";
-import { ResearchSourceMark } from "./ResearchSourceCover";
+import { ResearchSourceCardCover } from "./ResearchSourceCover";
 import {
   isFreeResourceSource, resourceSourceAuthLabel, resourceSourceCostLabel, resourceSourceImportLabel,
   resourceSourceIntegrationLabel, resourceSourceRightsLabel, RESOURCE_SOURCES,
@@ -93,7 +93,28 @@ export function SourcesPage() {
     .filter((value): value is string => Boolean(value))
     .sort();
   const latestReviewedAt = reviewedDates[reviewedDates.length - 1];
+  // 마스트헤드 얼굴 그리드 (디자인 웨이브 13) — 리서치 데스크 변형의 첫 화면은 범용
+  // 일러스트 대신, 실제로 연결된 제공처들의 정체성 키트 표지를 그대로 보여 준다.
+  // 경로 바인딩으로 확정되고 실물 아트가 있는 소스만 디렉터리 순서로 6곳까지.
+  // 이름·정체성은 아래 디렉터리 카드가 텍스트로 담당하므로 그리드는 장식으로 둔다.
+  const faceIdentities = (() => {
+    const seen = new Set<string>();
+    const faces: { provider: string; src: string }[] = [];
+    for (const source of RESOURCE_SOURCES) {
+      const identity = researchSourceIdentityForRoute(source.productRoute);
+      if (!identity || seen.has(identity.provider)) continue;
+      const src = researchSourceArtSrc(identity);
+      if (!src) continue;
+      seen.add(identity.provider);
+      faces.push({ provider: identity.provider, src });
+      if (faces.length >= 6) break;
+    }
+    return faces;
+  })();
   return <ResourceLayout title={tx("데이터 출처·상업 이용 준비")} intro={tx("구현된 검색 어댑터, 신청 예정 API, 계약 검토 대상과 운영 제외 소스를 구분합니다. 연결 상태와 개별 자료 권리는 별도이며, 권리가 확인되지 않은 자료는 Studio 가져오기와 상업 활용을 차단합니다.")}
+    heroAside={isAboutData ? undefined : <div aria-hidden="true" className="grid grid-cols-2 gap-2">
+      {faceIdentities.map((face) => <img key={face.provider} src={face.src} alt="" width={320} height={240} className="aspect-[4/3] w-full rounded-xl border border-line object-cover" />)}
+    </div>}
     mastheadArt={isAboutData ? {
       src: "/brand/hero-20261009-wave10/about-data-archive-1680.webp",
       srcSet: "/brand/hero-20261009-wave10/about-data-archive-960.webp 960w, /brand/hero-20261009-wave10/about-data-archive-1680.webp 1680w",
@@ -152,6 +173,7 @@ export function SourcesPage() {
       // 정체성은 이름 추정이 아니라 기능 경로(productRoute) 바인딩으로만 확정한다.
       const identity = researchSourceIdentityForRoute(source.productRoute);
       return <article key={source.name} className={`flex flex-col gap-3 rounded-2xl border border-line bg-panel p-5${identity ? ` research-source research-source--${identity.provider}` : ""}`}>
+      {identity && <ResearchSourceCardCover identity={identity} />}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold text-accent">{tx(source.category)} · {tx(source.status)}</span>
         <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${sourceCostStyle(resourceSourceCostLabel(source))}`}>{tx(resourceSourceCostLabel(source))}</span>
@@ -159,7 +181,6 @@ export function SourcesPage() {
         <span className="rounded-full border border-line bg-raised px-2 py-0.5 text-xs font-semibold text-fg-2">{tx(resourceSourceIntegrationLabel(source))}</span>
       </div>
       <div className="flex items-center gap-3">
-        {identity && <ResearchSourceMark identity={identity} />}
         <h2 className="text-lg font-bold">{source.name}</h2>
       </div>
       <p className="flex-1 text-sm leading-7 text-fg-2">{tx(source.note)}</p>
