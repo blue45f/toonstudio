@@ -348,7 +348,7 @@ cureFraction 2/3, capacityBase 0.4, capacitySpan 0.6
 **프리셋 픽셀 해시**(fnv1a64, sRGB RGBA8, `zigzagStroke(size, {durationMs: 600})`, seed 1, 빈 문서; `raster/wet-presets.snapshot.test.ts`, `raster/wet-presets-large.snapshot.test.ts`, `raster/surface.test.ts`):
 
 2026-10-08에 입력 단계 수정 #9(수정안 A: 모서리 정점 재방출, `engine/input/corner-preserve.ts`·`input-pipeline.ts`)로 지그재그의 모서리 정점이 출력 경로에 들어가 아래 **현재 해시가 모두 바뀌었다**(습식 물리·프리셋 파라미터는 변경 없음, 원인 격리는 이전 해시와 같은 코드에서 입력 단계만 되돌려 렌더해 확인).
-GPU 레인도 같은 `StrokePipeline`(CPU에서 도는 입력 단계)을 거치므로 GPU/CPU 대조의 구조는 같지만, 아래 현재 해시에 대한 **GPU 대조는 재측정하지 않았다**(unverified, 이 환경에서 WebGPU 표시 불가). 2026-10-02의 GPU 측정값은 '2026-10-02 해시' 열 기준이다.
+GPU 레인도 같은 `StrokePipeline`(CPU에서 도는 입력 단계)을 거치므로 GPU/CPU 대조의 구조는 같다. 아래 현재 해시에 대한 **GPU 대조는 2026-10-09에 다시 쟀다**(표 아래 'GPU 대조 재측정' 절). 2026-10-02의 GPU 측정값은 '2026-10-02 해시' 열 기준이다.
 
 | 프리셋 | 크기 | 현재 해시(2026-10-08) | 2026-10-02 해시 | 그 이전(HEAD) |
 | --- | --- | --- | --- | --- |
@@ -366,6 +366,23 @@ pencil-hb `cf83cd31b4a73242` ← `0de059d99a399575`·`50af171db778b523` ← `eb7
 marker-alcohol `361a124b8bbb8a27` ← `c7a58dfe8d0e9d04`·`12c85d69504cb39a` ← `d1f86555b1222d52`,
 airbrush `b4ff0236d47f15f3` ← `73cb000b3ed8e29e`·`02ef1c0a90988054` ← `bb52144130033daf`.
 `cpu-reference-lane.test.ts` 스냅샷 36건 중 지그재그 4건만 변경됐다. 불변인 나머지 32건은 **모서리 없는 획 28건**(직선·곡선·나선·고속 획·압력 램프·기울기 스윕·손떨림 × 4프리셋)과, 모서리는 있지만 128²에서 0.16 px/ms로 속도 가드(0.2 px/ms, 정점 직전 40 ms 창의 속도)에 걸려 재방출이 일어나지 않은 **corner-square 4건**이다(256²/512² corner-square는 재방출 2건이 생기지만 그 크기의 스냅샷이 없어 해시로는 드러나지 않는다).
+
+**GPU 대조 재측정(2026-10-09, GP-1)**: 헤드리스 Chromium 141(SwiftShader 소프트웨어 렌더러)에서 `scripts/browser-probe.mjs --synthetic --seed 1`로 쟀다. WebGPU는 캔버스 표시가 안 되지만 compute 결과 읽기는 동작하고 WGSL 11모듈 컴파일 오류는 0이다. 호스트 부하(load average 약 12, 4코어)로 케이스당 수 분이 걸렸고 600 s 제한을 넘은 케이스는 얻지 못했다. **아래 값은 소프트웨어 렌더러의 것이라 실 GPU 증거도 성능 증거도 아니다.** `webgpu-compute` 레인, 지그재그 600 ms:
+
+| 프리셋 | 크기 | CPU 해시 = 위 현재 해시 | GPU–CPU 차이 |
+| --- | --- | --- | --- |
+| watercolor-wet | 256² | 일치(프로브가 저장소 코드로 계산) | δ48 0 %·ΔE p99 0·IoU 1, 최대 ΔE 0.1991, 바이트 최대 차 1(불일치 0.0004 %) |
+| watercolor-wet | 512² | 일치(프로브는 미완, `wet-presets-large.snapshot.test.ts`로 확인) | **미측정**(600 s 제한 초과 3회) |
+| watercolor-dry | 256² | 일치 | GPU 픽셀 해시가 CPU와 동일(바이트 차 0) |
+| sumi-ink-wet | 256² | 일치 | δ48 0 %·ΔE p99 0·IoU 1, 최대 ΔE 1.0822(알파 3/255, 불일치 픽셀 약 5개 = 0.0076 %) |
+| gouache | 256² | 일치 | GPU 픽셀 해시가 CPU와 동일(바이트 차 0) |
+| oil-impasto | 256² | 일치 | δ48 0 %·ΔE p99 0, 최대 ΔE 0.3421, 바이트 최대 차 1(0.0034 %) |
+| oil-impasto | 512² | 일치 | δ48 0 %·ΔE p99 0, 최대 ΔE 0.5645, 바이트 최대 차 1(0.0015 %) |
+
+측정한 모든 케이스에서 재실행 결정성은 true이고 프로브 판정(δ48 ≤ 0.5 %, ΔE p99 < 1.0)을 통과했다. 수채·수묵·유화는 판정 통과일 뿐 **비트 동일은 아니다**. `wasm-gpu-hybrid`는 watercolor-wet@256(최대 ΔE 0.1991)과 gouache@256(해시 동일)만 쟀고 webgpu-compute와 같은 값이다(나머지는 600 s 제한으로 미측정). 렌더 인스턴싱 레인(`webgpu-instanced`·`webgl2-instanced`)은 설계상 습식·임파스토를 `not-implemented`로 거부하므로 대조 대상이 아니다(프로브 `--synthetic` 경로는 이를 FAIL로 표시한다).
+비습식 지그재그 128² 6종(pencil-hb·ink-g-pen·ink-brush-pen·charcoal·airbrush·hatch-pen): `webgpu-compute`는 6/6 픽셀 해시가 CPU와 동일(바이트 차 0), `webgpu-instanced`는 6/6 통과(해시는 다름, 바이트 최대 차 2, ΔE p99 ≤ 0.34), `webgl2-instanced`는 6/6 통과(해시는 다름, 바이트 최대 차 30, ΔE p99 ≤ 1.36; 비교 레인이라 임계를 적용하지 않는다).
+직전 기록(2026-10-02: 최대 ΔE 0.37, 구아슈만 3.54)과 비교하면 구아슈는 0, 수채 0.20, 유화 0.34~0.56으로 줄거나 비슷하다. **수묵만 최대 ΔE가 1.08로 직전보다 크다.** 입력 보정 수정(정점 재방출) 때문인지 원래 있던 차이인지는 옛 코드로 다시 재지 않아 **미확정**이다. 관찰한 것은 차이가 소수 픽셀의 알파 1~3칸이고 IoU가 1이며, 수묵의 최대 차 위치 (168, 44)가 지그재그 꼭짓점 (179, 38)에서 약 12 px 떨어진 곳이라는 점까지다(CPU·GPU의 dab 목록 좌표를 직접 비교하지는 않았다).
+**이번에 재지 못한 것(unverified)**: watercolor-wet@512의 GPU 대조, wasm-gpu-hybrid의 나머지 5건, 100²·1024², 습식 장면·획 도중 상태·다획 시퀀스의 새 해시 시점 재측정, 256²·512²의 비습식 프리셋 해시(`surface.test.ts` 8건)와 GPU 결과의 직접 대조(위 128² 6종은 128²만 쟀다), 실 GPU.
 
 **시간축 지표 실측 / 임계(설계 §4, 완화하지 않음)**:
 
