@@ -12,6 +12,7 @@ import type { StudioLiveDirectPort } from "../live/studio-live-direct-port";
 import type { StudioVirtualSpacePresenceDependencies } from "./studio-virtual-space-presence";
 import { parseStudioVirtualSpacePacket } from "./studio-virtual-space-presence";
 import { studioCharacterAppearanceForAvatarIndex } from "./studio-virtual-space-character-skins";
+import { studioEmoteKeymapStore } from "./studio-virtual-space-emote-keymap";
 import { StudioVirtualSlotLeaseController } from "./studio-virtual-space-slot-lease";
 import type { StudioSpaceSocialRequest, StudioSpaceSocialSnapshot } from "./StudioVirtualSpaceSocialPanel";
 import type { useStudioVirtualSpaceSocial } from "./use-studio-virtual-space-social";
@@ -394,6 +395,25 @@ describe("몰입형 HUD 골격과 첫 화면", () => {
     fireEvent.keyDown(window, { key: "1", ctrlKey: true });
     expect(bridge.consumeEmote()).toBeNull();
     expect(f.request).not.toHaveBeenCalled();
+  });
+
+  it("사용자가 바꾼 이모트 단축키가 월드로 이어진다: 새 키는 새 이모트를, 키를 잃은 이모트의 옛 키는 아무것도 보내지 않는다", async () => {
+    await mount(null);
+    const bridge = f.engine?.bridge;
+    if (!bridge) throw new Error("엔진 연결이 필요합니다.");
+    try {
+      studioEmoteKeymapStore.assign("coffee", "3");
+      fireEvent.keyDown(window, { key: "3" });
+      expect(bridge.consumeEmote()).toBe("coffee");
+      // 3번 칸을 뺏긴 party는 키가 없어졌고, 원래 키였던 3은 이제 coffee다.
+      fireEvent.keyDown(window, { key: "1" });
+      expect(bridge.consumeEmote()).toBe("wave");
+      studioEmoteKeymapStore.assign("heart", null);
+      fireEvent.keyDown(window, { key: "2" });
+      expect(bridge.consumeEmote()).toBeNull();
+    } finally { studioEmoteKeymapStore.reset(); }
+    fireEvent.keyDown(window, { key: "3" });
+    expect(bridge.consumeEmote()).toBe("party");
   });
 
   it("P는 참가자 패널, M은 전체 지도를 열고 Esc는 가장 위 창부터 하나씩 닫는다", async () => {

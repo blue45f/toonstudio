@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_SPACE_EMOTES } from "../studio-virtual-space-emote-catalog";
+import { StudioEmoteKeymapStore } from "../studio-virtual-space-emote-keymap";
 import { studioTownEvents } from "../studio-virtual-space-town-program";
 import { SpaceShortcutsHelp } from "./SpaceShortcutsHelp";
 import { SpaceTownBanner } from "./SpaceTownBanner";
@@ -50,6 +51,16 @@ describe("SpaceShortcutsHelp", () => {
     fireEvent.click(within(help).getByRole("button", { name: "미니 투어 다시 보기" }));
     expect(onClose).toHaveBeenCalledOnce();
     expect(onReplayTour).toHaveBeenCalledOnce();
+  });
+
+  it("사용자가 바꾼 리액션 키를 칸 순서대로 보여 주고, 키가 없는 리액션은 싣지 않는다", () => {
+    const keymap = new StudioEmoteKeymapStore({ getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+    keymap.assign("coffee", "3");
+    keymap.assign("wave", null);
+    render(<SpaceShortcutsHelp open sheet={false} onClose={vi.fn()} onReplayTour={vi.fn()} emoteKeymap={keymap} />);
+    const emotes = within(screen.getByRole("dialog", { name: "단축키와 조작법" })).getByRole("group", { name: "리액션 단축키" });
+    const rows = Array.from(emotes.children).map((row) => row.textContent);
+    expect(rows).toEqual(["2❤️하트", "3☕커피 타임", "4👍좋아요", "5😂웃음", "6👏박수", "7😮놀람", "8🤔생각 중", "9💡아이디어", "Z💃춤추기"]);
   });
 
   it("닫혀 있으면 아무것도 그리지 않는다", () => {

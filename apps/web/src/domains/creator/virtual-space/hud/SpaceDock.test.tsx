@@ -67,7 +67,11 @@ describe("SpaceDock", () => {
     render(<Harness onEmote={onEmote} />);
     fireEvent.click(screen.getByRole("button", { name: "리액션" }));
     const picker = screen.getByRole("group", { name: "리액션 16종" });
-    expect(within(picker).getAllByRole("button")).toHaveLength(STUDIO_SPACE_EMOTES.length);
+    expect(within(picker).getAllByRole("button").filter((button) => button.hasAttribute("data-emote-id"))).toHaveLength(STUDIO_SPACE_EMOTES.length);
+    // 이모트 단추 말고는 '단축키 바꾸기' 토글 하나뿐이고, 켜기 전에는 키 고르기가 없다.
+    expect(within(picker).getAllByRole("button")).toHaveLength(STUDIO_SPACE_EMOTES.length + 1);
+    expect(within(picker).getByRole("button", { name: "단축키 바꾸기" }).getAttribute("aria-pressed")).toBe("false");
+    expect(within(picker).queryByRole("combobox")).toBeNull();
     fireEvent.click(within(picker).getByRole("button", { name: "손 흔들기 (단축키 1)" }));
     expect(onEmote).toHaveBeenCalledExactlyOnceWith("wave");
     expect(screen.queryByRole("group", { name: "리액션 16종" })).toBeNull();

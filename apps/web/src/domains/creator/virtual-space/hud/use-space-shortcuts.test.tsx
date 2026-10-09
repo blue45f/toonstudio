@@ -3,6 +3,7 @@ import { cleanup, fireEvent, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { StudioSpaceEmoteId } from "../studio-virtual-space-emote-catalog";
+import { STUDIO_EMOTE_KEYMAP_STORAGE_KEY, StudioEmoteKeymapStore } from "../studio-virtual-space-emote-keymap";
 import { spaceShortcutIgnored, useSpaceShortcuts } from "./use-space-shortcuts";
 
 afterEach(cleanup);
@@ -31,6 +32,40 @@ describe("useSpaceShortcuts", () => {
     expect(value.onToggleMap).toHaveBeenCalledOnce();
     expect(value.onTogglePeople).toHaveBeenCalledOnce();
     expect(value.onHelp).toHaveBeenCalledOnce();
+  });
+
+  it("사용자가 바꾼 배정을 따른다: 새 키는 새 이모트를 보내고, 키를 잃은 이모트의 옛 키는 아무것도 하지 않는다", () => {
+    const keymap = new StudioEmoteKeymapStore({ getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+    keymap.assign("coffee", "3");
+    keymap.assign("dance", "1");
+    keymap.assign("heart", null);
+    const value = { ...handlers(), emoteKeymap: keymap };
+    renderHook(() => useSpaceShortcuts(value));
+    fireEvent.keyDown(window, { key: "3" });
+    fireEvent.keyDown(window, { key: "1" });
+    // 비게 된 칸: 이모트도 보내지 않고 기본 동작을 막지도 않는다.
+    const empty = new KeyboardEvent("keydown", { key: "2", bubbles: true, cancelable: true });
+    window.dispatchEvent(empty);
+    // 한글 자판에서 Z 칸에는 wave가 밀려 왔다(dance가 1로 갔으므로).
+    fireEvent.keyDown(window, { key: "ㅋ", code: "KeyZ" });
+    expect(value.onEmote.mock.calls.map(([id]) => id)).toEqual(["coffee", "dance", "wave"]);
+    expect(empty.defaultPrevented).toBe(false);
+  });
+
+  it("배정을 바꾸는 즉시 다음 키부터 반영되고(다시 연결하지 않아도), 저장소를 넘기지 않으면 화면 공용 기본 배정을 쓴다", () => {
+    const keymap = new StudioEmoteKeymapStore({ getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+    const value = { ...handlers(), emoteKeymap: keymap };
+    renderHook(() => useSpaceShortcuts(value));
+    fireEvent.keyDown(window, { key: "4" });
+    keymap.assign("clap", "4");
+    fireEvent.keyDown(window, { key: "4" });
+    expect(value.onEmote.mock.calls.map(([id]) => id)).toEqual(["thumbs-up", "clap"]);
+    cleanup();
+    const plain = handlers();
+    renderHook(() => useSpaceShortcuts(plain));
+    fireEvent.keyDown(window, { key: "4" });
+    expect(plain.onEmote.mock.calls.map(([id]) => id)).toEqual(["thumbs-up"]);
+    expect(STUDIO_EMOTE_KEYMAP_STORAGE_KEY).toBe("toonspectrum:virtual-space-emote-keys:v1");
   });
 
   it("이동·상호작용 키(WASD·방향키·E·X)는 캔버스 몫이라 가로채지 않는다", () => {

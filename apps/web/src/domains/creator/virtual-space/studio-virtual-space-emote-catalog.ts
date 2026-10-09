@@ -24,6 +24,7 @@ export interface StudioSpaceEmoteDefinition {
   readonly labelEn: string;
   /** DOM 대체 표시용 이모지. 월드에서는 픽셀 아이콘(emote-art)을 우선한다. */
   readonly glyph: string;
+  /** 기본 단축키. 사용자가 바꾼 배정은 studio-virtual-space-emote-keymap이 따로 들고 있다(와이어·재생은 id만 쓴다). */
   readonly shortcut: StudioSpaceEmoteShortcut | null;
   readonly expression: StudioSpaceEmoteExpression | null;
   readonly motion: StudioSpaceEmoteMotion;
@@ -78,7 +79,7 @@ export function studioSpaceEmoteById(id: string): StudioSpaceEmoteDefinition | n
   return EMOTE_BY_ID.get(id) ?? null;
 }
 
-/** "1"~"9"와 "z"/"Z"만 받는다. 그 외 키는 null. */
+/** 기본 배정으로 찾는다("1"~"9"와 "z"/"Z"만, 그 외 키는 null). 화면은 사용자가 바꾼 배정을 따르는 studioEmoteIdForKey를 쓴다. */
 export function studioSpaceEmoteForKey(key: string): StudioSpaceEmoteDefinition | null {
   if (typeof key !== "string" || key.length !== 1) return null;
   return EMOTE_BY_SHORTCUT.get(key.toUpperCase()) ?? null;

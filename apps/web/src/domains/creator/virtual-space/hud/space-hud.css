@@ -1045,6 +1045,60 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   line-height: 16px;
   text-align: center;
 }
+/* 단축키 바꾸기: 칸이 단추 대신 키 고르기가 된다(눌러도 이모트가 나가지 않는다). */
+.space-emote-picker__item[data-editing] { cursor: default; }
+.space-emote-picker__item[data-editing]:hover { transform: none; border-color: var(--space-border); background: var(--color-card); }
+.space-emote-picker__select-wrap { position: relative; display: block; width: 100%; color: var(--color-fg-2); }
+/* 고르기 상자임을 알리는 작은 화살표. 라우트 공통 규칙이 select의 background를 !important로 덮어 배경 화살표는 쓸 수 없다. */
+.space-emote-picker__select-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.space-emote-picker__select {
+  width: 100%;
+  min-height: 28px;
+  padding-block: 0;
+  padding-inline: 6px 22px;
+  border: 1px solid var(--space-border);
+  border-radius: 8px;
+  appearance: none;
+  background-color: var(--color-panel);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+}
+.space-emote-picker__select:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.space-emote-picker__tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.space-emote-picker__tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--space-border);
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.space-emote-picker__tool:hover:not(:disabled) { border-color: var(--color-accent); color: var(--color-fg); }
+.space-emote-picker__tool[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-fg); }
+.space-emote-picker__tool:disabled { opacity: .5; cursor: default; }
+.space-emote-picker__notice { grid-column: 1 / -1; margin: 0; color: var(--color-fg-3); font-size: 12px; }
 
 /* 메뉴 행 */
 .space-menu-list { display: grid; gap: 8px; min-width: 260px; }
