@@ -138,7 +138,12 @@ export function studioCharacterFrameGeometry(
   visualHeight: number,
   seatAttached = false,
 ) {
-  if (!frame) return { width: visualWidth, height: visualHeight, originX: 0.5, originY: STUDIO_CHARACTER_FOOT_ORIGIN };
+  // 표시 좌표가 없는 단일 정지 그림은 원본 비율을 지킨다. 예전에는 92×123(약 0.75) 상자에 억지로 맞춰, 160×160 정사각 스타일 팩 그림이
+  // 가로로 25% 찌그러져(둥근 머리가 타원이 되고) 걷기 프레임(원본 비율)과 시작·멈춤마다 몸 너비가 튀었다. 높이는 상자 그대로다.
+  if (!frame) {
+    const aspect = frameWidth > 0 && frameHeight > 0 ? frameWidth / frameHeight : visualWidth / visualHeight;
+    return { width: visualHeight * aspect, height: visualHeight, originX: 0.5, originY: STUDIO_CHARACTER_FOOT_ORIGIN };
+  }
   const height = visualHeight * frame.displayHeightRatio;
   return { width: height * frameWidth / frameHeight, height, originX: frame.originX,
     originY: seatAttached && frame.seatOriginY !== undefined ? frame.seatOriginY : frame.originY };
