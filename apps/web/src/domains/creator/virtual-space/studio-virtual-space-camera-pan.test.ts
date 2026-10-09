@@ -399,9 +399,9 @@ describe("시점 제스처 묶음(줌 + 두 손가락 끌기 + 마우스 둘러�
     const canvas = document.createElement("canvas");
     document.body.append(canvas);
     const zoom = new StudioUserZoomStore(memory());
-    const pan = { drag: vi.fn() };
+    const pan = { drag: vi.fn(), setLook: vi.fn() };
     const onPinchStart = vi.fn();
-    disposers.push(bindStudioCameraGestures(canvas, { zoom, pan, canZoom: () => true, canPan, onPinchStart }));
+    disposers.push(bindStudioCameraGestures(canvas, { zoom, pan, canZoom: () => true, canPan, focused: () => true, onPinchStart }));
     const touch = (type: string, id: number, x: number, y = 0) =>
       canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: "touch", clientX: x, clientY: y, bubbles: true, cancelable: true }));
     return { canvas, zoom, pan, onPinchStart, touch };

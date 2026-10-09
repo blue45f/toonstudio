@@ -1305,7 +1305,7 @@ export function StudioVirtualSpacePhaserCanvas({
           onReducedMotionChange: reduceMotionChanged,
           onModalBlockerChange: (blocked) => { modalInputBlocked = blocked; },
         }));
-        cleanup.push(bindStudioCameraGestures(canvas, { zoom: bridge.userZoom, pan: bridge.cameraPan, canZoom: () => sceneReady && bridge.userZoom.getSnapshot().available, canPan: () => sceneReady && bridge.cameraPan.getSnapshot().available && !runtimeInputBlocked() && !buildPlacement?.active, onPinchStart: stopMovement }));
+        cleanup.push(bindStudioCameraGestures(canvas, { zoom: bridge.userZoom, pan: bridge.cameraPan, canZoom: () => sceneReady && bridge.userZoom.getSnapshot().available, canPan: () => sceneReady && bridge.cameraPan.getSnapshot().available && !runtimeInputBlocked() && !buildPlacement?.active, focused: () => document.activeElement === canvas, onPinchStart: stopMovement }));
         portalTracker.seed(portals, initialPoint);
         zoneTracker.seed(studioWorldPresenceZone(manifest, initialPoint)?.id ?? null);
         // 스폰 시퀀스 시작: 월드 준비 완료(setReady 지점) 신호가 올 때까지 베일이 덮는다.
@@ -1411,7 +1411,7 @@ export function StudioVirtualSpacePhaserCanvas({
         }
         wasInputBlocked = blocked;
         buildPlacement?.update(time, { canvasFocused: document.activeElement === this.game.canvas });
-        const typing = blocked || buildPlacement?.active || document.activeElement !== this.game.canvas;
+        const typing = blocked || buildPlacement?.active || document.activeElement !== this.game.canvas || bridge.cameraPan.isLooking();
         if (bridge.getStopRevision() !== lastStopRevision) {
           lastStopRevision = bridge.getStopRevision();
           path = [];
@@ -2112,7 +2112,7 @@ export function StudioVirtualSpacePhaserCanvas({
         });
         cameraBase.x = deadzonedTarget.x;
         cameraBase.y = deadzonedTarget.y;
-        const lookAround = cameraPan.sample({ deltaSeconds: dt, available: cameraFollows, directed: directed.roomTransitioning || conversationFocus !== null, snap: snapCamera, reducedMotion: reducedMotion.matches, moving: nextMoving, cssToWorld: viewport.ratio / this.cameras.main.zoom, base: cameraBase, center: this.cameras.main.midPoint, view: this.cameras.main.worldView, world: manifest });
+        const lookAround = cameraPan.sample({ deltaSeconds: deltaMs / 1000, available: cameraFollows, directed: directed.roomTransitioning || conversationFocus !== null, snap: snapCamera, reducedMotion: reducedMotion.matches, moving: nextMoving, cssToWorld: viewport.ratio / this.cameras.main.zoom, base: cameraBase, center: this.cameras.main.midPoint, view: this.cameras.main.worldView, world: manifest });
         cameraTarget.x = cameraBase.x + directed.shakeX + lookAround.x;
         cameraTarget.y = cameraBase.y + directed.shakeY + lookAround.y;
         if (cameraFollows) this.cameras.main.setZoom(cameraBaseZoom * directed.zoomFactor * userZoom.sample(dt, reducedMotion.matches));

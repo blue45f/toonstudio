@@ -18,12 +18,20 @@ const SHORTCUTS = [
   { keys: ["H"], ko: "내 자리로 걷기", en: "Walk to my desk" },
   { keys: ["L"], ko: "끌어서 옮겨 둔 시점을 내 위치로 되돌리기", en: "Bring the view back to my avatar" },
   { keys: ["오른쪽 끌기", "Space+끌기"], ko: "시점을 끌어서 둘러보기 (터치는 두 손가락)", en: "Drag to look around (two fingers on touch)" },
+  { keys: ["Space+방향키"], ko: "누르는 동안 시점을 그쪽으로 옮기기 (아바타는 걷지 않아요)", en: "Hold to look that way (your avatar stays put)" },
   { keys: ["+", "-", "0"], ko: "화면 확대·축소·원래 크기 (마우스 휠도 가능)", en: "Zoom in · out · reset (mouse wheel works too)" },
   { keys: ["G"], ko: "고스트 모드 켜고 끄기 (벽·사람 통과)", en: "Toggle ghost mode (pass through walls and people)" },
   { keys: ["Ctrl", "K"], ko: "방·사람 찾기", en: "Find rooms and people" },
   { keys: ["Esc"], ko: "이동 멈추기 · 맨 위 창 닫기", en: "Stop walking · close the top window" },
   { keys: ["?"], ko: "이 도움말", en: "This help" },
 ] as const;
+
+/** 한글로 적은 키 이름의 영어 표기. 목록에 없는 키(W·Shift·Esc 같은 글쇠 이름)는 그대로 쓴다. */
+const KEY_LABEL_EN: Readonly<Record<string, string>> = {
+  "오른쪽 끌기": "Right-drag",
+  "Space+끌기": "Space+drag",
+  "Space+방향키": "Space+arrows",
+};
 
 /** ? 단축키 도움말. 3단계 미니 투어를 다시 볼 수 있다. */
 export function SpaceShortcutsHelp({ open, sheet, onClose, onReplayTour, emoteKeymap = studioEmoteKeymapStore }: {
@@ -44,7 +52,7 @@ export function SpaceShortcutsHelp({ open, sheet, onClose, onReplayTour, emoteKe
   return <SpacePopover open={open} sheet={sheet} onClose={onClose} title={bt("단축키와 조작법", "Shortcuts & controls")} className="space-popover--help">
     <dl className="space-help__list">
       {SHORTCUTS.map((item) => <div key={item.ko} className="space-help__row">
-        <dt>{item.keys.map((key) => <kbd key={key}>{key}</kbd>)}</dt>
+        <dt>{item.keys.map((key) => <kbd key={key}>{bt(key, KEY_LABEL_EN[key] ?? key)}</kbd>)}</dt>
         <dd>{bt(item.ko, item.en)}</dd>
       </div>)}
     </dl>

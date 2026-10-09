@@ -4,6 +4,7 @@
  * - 끌기: 마우스 오른쪽·가운데 버튼, Space를 누른 채 왼쪽 버튼, 터치 두 손가락. 왼쪽 버튼은 누르는 순간 걷기 시작하는
  *   '클릭 이동'이 쓰므로 일반 왼쪽 끌기는 받지 않는다. 끌기 버튼을 누를 때 pointerdown의 기본 동작을 취소하면 브라우저가
  *   이어서 보내는 호환 마우스 이벤트(Phaser는 mousedown을 듣는다)가 오지 않아 끌기가 걷기를 시작시키지 않는다.
+ * - 키보드: Space를 누른 채 방향키(WASD)를 누르는 동안 시점이 그쪽으로 흐른다. 이 동안 캔버스는 같은 키로 아바타를 걷게 하지 않는다.
  * - 돌아오기: L 키·칩 버튼, 아바타가 걷기 시작할 때, 방 전환·대화 연출처럼 디렉터가 카메라를 이끄는 동안.
  * - 화면이 월드 밖의 빈 띠를 비추지 않도록 카메라가 갈 수 있는 범위 안으로 제한한다.
  *
@@ -17,8 +18,16 @@ export const STUDIO_CAMERA_PANNED_THRESHOLD_PX = 32;
 const RETURN_RATE = 9;
 /** 이 거리(월드 px)보다 가까우면 0으로 붙여 끝낸다. */
 const SNAP_EPSILON_PX = 0.5;
+/** 키보드로 둘러볼 때 시점이 흐르는 속도(CSS px/초). 1280px 폭 화면의 절반을 1.2초에 가로지른다. */
+const LOOK_SPEED_CSS = 520;
 
 const finite = (value: number): boolean => Number.isFinite(value);
+/**
+ * 한 프레임 길이(초). 아주 긴 프레임(긴 멈춤 등)에 시점이 한꺼번에 튀지 않도록 0.25초로 묶는다.
+ * 캔버스 물리가 쓰는 0.05초보다 넉넉해야 프레임이 느린 기기(20fps 미만)에서도 시점이 실제 시간에 맞는 속도로 흐른다.
+ */
+const frameSeconds = (deltaSeconds: number): number => Math.min(0.25, Math.max(0, finite(deltaSeconds) ? deltaSeconds : 0));
+const axisSign = (value: number): number => (finite(value) ? Math.sign(value) : 0);
 
 export interface StudioCameraPanSnapshot {
   /** 카메라가 아바타를 따라가는 장소인지(전체가 고정으로 보이는 장소에서는 false). */
@@ -35,6 +44,9 @@ export class StudioCameraPanStore {
   private dragX = 0;
   private dragY = 0;
   private recenterRequested = false;
+  private looking = false;
+  private lookX = 0;
+  private lookY = 0;
   private state: StudioCameraPanSnapshot = Object.freeze({ available: true, panned: false });
   private readonly listeners = new Set<() => void>();
 
@@ -44,6 +56,27 @@ export class StudioCameraPanStore {
     this.dragX += dxCss;
     this.dragY += dyCss;
     this.recenterRequested = false;
+  }
+
+  /**
+   * 키보드 둘러보기 상태. held는 Space를 누른 채 둘러보는 중인지, x·y는 누른 방향(오른쪽·아래가 +, 부호만 쓴다).
+   * 방향이 있으면 돌아오기 요청은 취소한다.
+   */
+  setLook(held: boolean, x: number, y: number): void {
+    this.looking = held;
+    this.lookX = held ? axisSign(x) : 0;
+    this.lookY = held ? axisSign(y) : 0;
+    if (this.lookX !== 0 || this.lookY !== 0) this.recenterRequested = false;
+  }
+
+  /** Space를 누른 채 둘러보는 중인가. 이 동안 캔버스는 방향키를 아바타 걷기에 쓰지 않는다. */
+  isLooking(): boolean {
+    return this.looking;
+  }
+
+  /** 런타임 전용. 지금 누르고 있는 둘러보기 방향. 누른 방향이 없으면 null. */
+  lookDirection(): { readonly x: number; readonly y: number } | null {
+    return this.lookX === 0 && this.lookY === 0 ? null : { x: this.lookX, y: this.lookY };
   }
 
   /** 내 위치로 돌아오게 한다. 아직 반영하지 않은 끌기는 버린다. */
@@ -95,6 +128,7 @@ export class StudioCameraPanStore {
 }
 
 export interface StudioCameraPanFrame {
+  /** 이전 프레임 이후 실제로 지난 시간(초). 물리용으로 줄인 값이 아니라 실제 값을 줘야 느린 기기에서도 시점 속도가 맞는다. */
   readonly deltaSeconds: number;
   /** 카메라가 아바타를 따라가는 장소인가. 아니면 둘러보기를 쓰지 않는다. */
   readonly available: boolean;
@@ -170,6 +204,7 @@ export class StudioCameraPanRuntime {
   sample(frame: StudioCameraPanFrame): StudioCameraPanSample {
     this.store.setAvailable(frame.available);
     const drag = this.store.consumeDrag();
+    const look = this.store.lookDirection();
     const recenter = this.store.consumeRecenter();
     const startedMoving = frame.moving && !this.wasMoving;
     this.wasMoving = frame.moving;
@@ -178,14 +213,22 @@ export class StudioCameraPanRuntime {
       return this.reset();
     }
     let direct = false;
-    if (drag && !frame.directed) {
+    if ((drag || look) && !frame.directed) {
       if (this.x === 0 && this.y === 0 && finite(frame.center.x) && finite(frame.center.y)) {
         this.x = frame.center.x - anchorOf(base.x, frame.view.width, frame.world.width);
         this.y = frame.center.y - anchorOf(base.y, frame.view.height, frame.world.height);
       }
-      // 손가락·포인터를 따라 월드가 움직이므로 카메라 중심은 반대로 간다.
-      this.x -= drag.x * frame.cssToWorld;
-      this.y -= drag.y * frame.cssToWorld;
+      if (drag) {
+        // 손가락·포인터를 따라 월드가 움직이므로 카메라 중심은 반대로 간다.
+        this.x -= drag.x * frame.cssToWorld;
+        this.y -= drag.y * frame.cssToWorld;
+      }
+      if (look) {
+        // 누른 방향으로 시점이 흐른다. 대각선도 같은 속도가 되도록 방향 벡터의 길이로 나눈다.
+        const step = LOOK_SPEED_CSS * frame.cssToWorld * frameSeconds(frame.deltaSeconds) / Math.hypot(look.x, look.y);
+        this.x += look.x * step;
+        this.y += look.y * step;
+      }
       this.returning = false;
       direct = true;
     }
@@ -197,7 +240,7 @@ export class StudioCameraPanRuntime {
         this.x = 0;
         this.y = 0;
       } else {
-        const keep = Math.exp(-RETURN_RATE * Math.min(0.1, Math.max(0, finite(frame.deltaSeconds) ? frame.deltaSeconds : 0)));
+        const keep = Math.exp(-RETURN_RATE * frameSeconds(frame.deltaSeconds));
         this.x *= keep;
         this.y *= keep;
         if (Math.hypot(this.x, this.y) < SNAP_EPSILON_PX) {
@@ -314,17 +357,97 @@ export function bindStudioCameraPan(
   };
 }
 
+/** 키보드 둘러보기에 쓰는 글쇠 → 방향(오른쪽·아래가 +). 걷기 키와 같다. */
+const LOOK_KEY_DIRECTION: ReadonlyMap<string, readonly [number, number]> = new Map<string, readonly [number, number]>([
+  ["ArrowLeft", [-1, 0]], ["KeyA", [-1, 0]],
+  ["ArrowRight", [1, 0]], ["KeyD", [1, 0]],
+  ["ArrowUp", [0, -1]], ["KeyW", [0, -1]],
+  ["ArrowDown", [0, 1]], ["KeyS", [0, 1]],
+]);
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  return typeof Element !== "undefined" && target instanceof Element
+    && target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]') !== null;
+}
+
+/**
+ * 키보드로 둘러보기를 연결한다: Space를 누른 채 방향키(WASD)를 누르는 동안 시점이 그쪽으로 흐른다.
+ * Space를 누르고 있는 동안은 저장소에 '둘러보는 중'을 알려 캔버스가 같은 키로 아바타를 걷게 하지 않는다.
+ * 월드에 키보드 초점이 있을 때(canLook)만 받고 입력 칸에서는 받지 않아, 채팅의 스페이스와 방향키를 가로채지 않는다.
+ * 눌려 있는 글쇠는 Space를 먼저 누르든 방향키를 먼저 누르든 같게 센다.
+ */
+export function bindStudioCameraLook(
+  store: Pick<StudioCameraPanStore, "setLook">,
+  canLook: () => boolean,
+  keys: KeyTarget = globalThis,
+): () => void {
+  let spaceHeld = false;
+  const held = new Set<string>();
+
+  const publish = () => {
+    let x = 0;
+    let y = 0;
+    // 방향은 Space를 누르고 있을 때만 센다. 걷기 키로만 쓰는 동안에는 시점을 건드리지 않는다.
+    if (spaceHeld) {
+      for (const code of held) {
+        const direction = LOOK_KEY_DIRECTION.get(code);
+        if (direction) { x += direction[0]; y += direction[1]; }
+      }
+    }
+    store.setLook(spaceHeld, x, y);
+  };
+  const release = () => {
+    spaceHeld = false;
+    held.clear();
+    publish();
+  };
+  const onKeyDown = (event: Event) => {
+    const key = event as KeyboardEvent;
+    if (key.isComposing || key.metaKey || key.ctrlKey || key.altKey || isTypingTarget(key.target)) return;
+    if (key.code === "Space") {
+      if (!canLook()) return;
+      // 스페이스가 페이지를 아래로 밀거나 초점 있는 단추를 누르지 않게 한다.
+      key.preventDefault();
+      if (!spaceHeld) { spaceHeld = true; publish(); }
+      return;
+    }
+    if (!LOOK_KEY_DIRECTION.has(key.code) || !canLook()) return;
+    if (!held.has(key.code)) { held.add(key.code); publish(); }
+    if (spaceHeld) key.preventDefault();
+  };
+  const onKeyUp = (event: Event) => {
+    const code = (event as KeyboardEvent).code;
+    if (code === "Space") {
+      if (spaceHeld) { spaceHeld = false; publish(); }
+      return;
+    }
+    if (held.delete(code)) publish();
+  };
+
+  keys.addEventListener("keydown", onKeyDown);
+  keys.addEventListener("keyup", onKeyUp);
+  keys.addEventListener("blur", release);
+  return () => {
+    keys.removeEventListener("keydown", onKeyDown);
+    keys.removeEventListener("keyup", onKeyUp);
+    keys.removeEventListener("blur", release);
+    release();
+  };
+}
+
 export interface StudioCameraGestureOptions {
   readonly zoom: StudioUserZoomStore;
-  readonly pan: Pick<StudioCameraPanStore, "drag">;
+  readonly pan: Pick<StudioCameraPanStore, "drag" | "setLook">;
   readonly canZoom: () => boolean;
   readonly canPan: () => boolean;
+  /** 월드(캔버스)에 키보드 초점이 있는가. Space·방향키로 둘러보기는 이때만 받아 채팅 칸의 스페이스를 가로채지 않는다. */
+  readonly focused: () => boolean;
   /** 두 손가락이 닿아 핀치가 시작될 때(첫 손가락이 시작시킨 걷기를 멈추는 데 쓴다). */
   readonly onPinchStart?: () => void;
 }
 
 /**
- * 캔버스의 시점 제스처 한 묶음: 휠·핀치 줌, 두 손가락 끌기(핀치와 함께), 마우스 둘러보기.
+ * 캔버스의 시점 제스처 한 묶음: 휠·핀치 줌, 두 손가락 끌기(핀치와 함께), 마우스·키보드 둘러보기.
  * 두 손가락 끌기는 핀치와 같은 손동작이라 줌과 이동이 동시에 일어난다(지도 앱과 같은 방식).
  */
 export function bindStudioCameraGestures(
@@ -334,8 +457,10 @@ export function bindStudioCameraGestures(
   const releaseZoom = bindStudioUserZoomGestures(target, options.zoom, options.canZoom, options.onPinchStart,
     (dx, dy) => { if (options.canPan()) options.pan.drag(dx, dy); });
   const releasePan = bindStudioCameraPan(target, options.pan, options.canPan);
+  const releaseLook = bindStudioCameraLook(options.pan, () => options.canPan() && options.focused());
   return () => {
     releaseZoom();
     releasePan();
+    releaseLook();
   };
 }

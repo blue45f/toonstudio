@@ -7,7 +7,7 @@ const page = readFileSync(new URL("./StudioVirtualSpacePage.tsx", import.meta.ur
 describe("월드 캔버스의 카메라 둘러보기 연결", () => {
   it("브리지의 저장소를 런타임이 매 프레임 읽어 카메라 목표에 더한다", () => {
     expect(canvas).toContain("const cameraPan = new StudioCameraPanRuntime(bridge.cameraPan);");
-    expect(canvas).toContain("const lookAround = cameraPan.sample({");
+    expect(canvas).toContain("const lookAround = cameraPan.sample({ deltaSeconds: deltaMs / 1000, ");
     expect(canvas).toContain("cameraTarget.x = cameraBase.x + directed.shakeX + lookAround.x;");
     expect(canvas).toContain("cameraTarget.y = cameraBase.y + directed.shakeY + lookAround.y;");
   });
@@ -34,10 +34,22 @@ describe("월드 캔버스의 카메라 둘러보기 연결", () => {
   });
 
   it("가구 배치 중에는 둘러보기를 받지 않는다: 그 동안 오른쪽 버튼은 배치 취소, 왼쪽 버튼은 확정이라 끌기가 가로채면 안 된다", () => {
-    expect(canvas).toContain("!runtimeInputBlocked() && !buildPlacement?.active, onPinchStart: stopMovement }));");
+    expect(canvas).toContain("!runtimeInputBlocked() && !buildPlacement?.active, focused: () => document.activeElement === canvas, onPinchStart: stopMovement }));");
     // 배치 컨트롤러가 오른쪽 버튼을 취소로 쓰는 전제가 바뀌면 이 시험을 다시 봐야 한다.
     const placement = readFileSync(new URL("./studio-virtual-space-build-placement-canvas.ts", import.meta.url), "utf8");
     expect(placement).toMatch(/if \(pointer\.rightButtonDown\(\)\) \{\s*this\.cancelSession\(\);/u);
+  });
+});
+
+describe("월드 캔버스의 키보드 둘러보기 연결", () => {
+  it("월드에 키보드 초점이 있을 때만 Space·방향키를 받는다(채팅 칸의 스페이스를 가로채지 않는다)", () => {
+    expect(canvas).toContain("focused: () => document.activeElement === canvas,");
+  });
+
+  it("Space를 누른 채 둘러보는 동안에는 걷기·달리기·상호작용 키 입력을 받지 않아 같은 방향키가 아바타를 걷게 하지 않는다", () => {
+    expect(canvas).toContain("const typing = blocked || buildPlacement?.active || document.activeElement !== this.game.canvas || bridge.cameraPan.isLooking();");
+    // 방향키 읽기는 모두 typing 안쪽이어야 한다.
+    expect(canvas).toContain("if (!typing) {\n          if (heldKeys.has(\"ArrowLeft\")");
   });
 });
 
