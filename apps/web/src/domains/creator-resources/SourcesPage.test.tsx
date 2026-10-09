@@ -68,14 +68,17 @@ describe("resource source cost visibility", () => {
     expect(screen.queryByRole("heading", { name: "The Met" })).toBeNull();
   });
 
-  it("실제 경로(/about/data)에서는 형제 리서치 페이지처럼 마스트헤드 아트를 보여 준다", () => {
+  it("실제 경로(/about/data)에서는 전용 전폭 마스트헤드 아트를 보여 준다", () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/about/data"]}>
         <SourcesPage />
       </MemoryRouter>,
     );
-    const art = container.querySelector<HTMLImageElement>(".resource-masthead-image");
-    expect(art?.getAttribute("src")).toBe("/brand/illustrated-20260928/materials.webp");
+    // 웨이브 10: 작은 정체성 키트 썸네일(materials)을 전용 장면 아트 전폭 마스트헤드로 교체했다.
+    const art = container.querySelector<HTMLImageElement>("figure img");
+    expect(art?.getAttribute("src")).toBe("/brand/hero-20261009-wave10/about-data-archive-1680.webp");
+    expect(art?.getAttribute("srcset")).toContain("/brand/hero-20261009-wave10/about-data-archive-960.webp 960w");
+    expect(container.querySelector<HTMLImageElement>(".resource-masthead-image")).toBeNull();
   });
 
   it("머리말에서 제공처 규모와 수집-판정-활용 흐름을 먼저 읽을 수 있다", () => {
@@ -111,6 +114,11 @@ describe("resource source cost visibility", () => {
   it("/insights/resources에서는 소개용 투명성 밴드를 보여 주지 않는다", () => {
     renderPage();
     expect(screen.queryByRole("heading", { name: "데이터 출처와 권리 판정을 그대로 공개합니다" })).toBeNull();
+  });
+
+  it("/insights/resources에서는 웨이브 10 전폭 마스트헤드를 보여 주지 않는다", () => {
+    const { container } = renderPage();
+    expect(container.querySelector("figure img")).toBeNull();
   });
 
   it("필터와 결과 목록이 설명 섹션보다 먼저 나온다", () => {
