@@ -59,6 +59,22 @@ export function StudioBrushLabPage() {
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1920px] px-4 py-5 sm:px-6 lg:px-8">
       <header className="overflow-hidden rounded-[1.75rem] border border-line bg-card/55 p-5 shadow-sm sm:p-7">
+        <figure className="relative -mx-5 -mt-5 mb-6 sm:-mx-7 sm:-mt-7">
+          <img
+            src="/brand/hero-20261009/brush-lab-hero.webp"
+            srcSet="/brand/hero-20261009/brush-lab-hero-960.webp 960w, /brand/hero-20261009/brush-lab-hero.webp 1680w"
+            sizes="(max-width: 1920px) 100vw, 1856px"
+            width={1680}
+            height={560}
+            alt="붓과 잉크, 수채 도구와 펜 태블릿이 놓인 작가 책상에서 만화 원고를 그리는 손"
+            fetchPriority="high"
+            decoding="async"
+            className="block aspect-[3/1] w-full object-cover motion-safe:animate-fade-up"
+          />
+          <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
+            브랜드 콘셉트 아트 · 실제 편집 화면이 아닙니다
+          </figcaption>
+        </figure>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-4xl">
             <p className="flex items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.2em] text-accent">
