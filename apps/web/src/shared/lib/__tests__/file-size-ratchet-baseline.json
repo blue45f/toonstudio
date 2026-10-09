@@ -288,7 +288,7 @@
   "domains/creator/StudioWriterRoomPanel.tsx": 1801,
   "domains/creator/virtual-space/studio-virtual-space-character-drawn-art.ts": 1137,
   "domains/creator/virtual-space/studio-virtual-space-character-procedural.ts": 1267,
-  "domains/creator/virtual-space/StudioVirtualSpacePage.tsx": 2186,
+  "domains/creator/virtual-space/StudioVirtualSpacePage.tsx": 2180,
   "domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx": 2920,
   "domains/creator/vrm/studio-vrm-asset-sqlite-opfs-repository.ts": 2488,
   "domains/creator/vrm/studio-vrm-avatar-forge.ts": 1147,

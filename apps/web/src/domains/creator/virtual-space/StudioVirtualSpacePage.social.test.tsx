@@ -1052,6 +1052,77 @@ describe("Virtual Studio social activity ownership", () => {
     expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
   });
 
+  describe("함께 걷기 합의에서 따라가는 쪽과 이끄는 쪽", () => {
+    const incoming = (id: string, action: StudioSpaceSocialRequest["action"]): StudioSpaceSocialRequest =>
+      ({ ...accepted(id, action), direction: "incoming" });
+
+    it("따라오라는 요청을 수락하면 요청한 사람을 따라가고, 칩을 눌러 끝내면 합의도 끝난다", async () => {
+      await mount();
+      await accept(incoming("lead-in", "lead"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBe("bob");
+      const chip = screen.getByRole("button", { name: "Bob 따라가는 중" });
+      expect(screen.queryByRole("button", { name: "Bob 님이 따라오는 중" })).toBeNull();
+      fireEvent.click(chip);
+      await waitFor(() => expect(f.cancel).toHaveBeenCalledExactlyOnceWith("lead-in"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
+      expect(screen.queryByRole("button", { name: "Bob 따라가는 중" })).toBeNull();
+    });
+
+    it.each(["engine", "peer-selection"])("따라가는 쪽이 직접 움직이면(%s) lead 합의가 끝난다", async (source) => {
+      await mount();
+      await accept(incoming("lead-in", "lead"));
+      act(() => {
+        if (source === "engine") f.engine?.onCancelFollow();
+        else f.engine?.onPeerSelect("cleo");
+      });
+      await waitFor(() => expect(f.cancel).toHaveBeenCalledWith("lead-in"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
+    });
+
+    it("따라오라고 청한 사람은 아무도 따라가지 않고, 자기가 걸어도 합의가 끝나지 않으며, 칩으로 끝낼 수 있다", async () => {
+      await mount();
+      await accept(accepted("lead-out", "lead"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
+      expect(screen.queryByRole("button", { name: "Bob 따라가는 중" })).toBeNull();
+      const chip = screen.getByRole("button", { name: "Bob 님이 따라오는 중" });
+      // 클릭 이동·방향키·채팅 입력으로 캔버스가 이동 소유권을 알려도 이끄는 쪽의 합의는 유지된다.
+      act(() => { f.engine?.onCancelFollow(); });
+      act(() => { f.engine?.onCancelFollow(); });
+      expect(f.cancel).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Bob 님이 따라오는 중" })).toBe(chip);
+      fireEvent.click(chip);
+      expect(f.cancel).toHaveBeenCalledExactlyOnceWith("lead-out");
+      expect(screen.queryByRole("button", { name: "Bob 님이 따라오는 중" })).toBeNull();
+    });
+
+    it("따라가기 요청을 받아 준 사람이 걸어도 따라오는 사람의 합의가 끊기지 않고, 따라오는 중임을 볼 수 있다", async () => {
+      await mount();
+      await accept(incoming("follow-in", "follow"));
+      expect(f.engine?.bridge.getFollowingPeer()).toBeNull();
+      expect(screen.getByRole("button", { name: "Bob 님이 따라오는 중" })).toBeTruthy();
+      act(() => { f.engine?.onCancelFollow(); });
+      expect(f.cancel).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Bob 님이 따라오는 중" })).toBeTruthy();
+    });
+
+    it.each(["lead", "follow"] as const)("창이 초점을 잃으면 %s 합의는 어느 쪽에서든 끝난다", async (action) => {
+      await mount();
+      await accept(action === "lead" ? accepted("walk-out", action) : incoming("walk-out", action));
+      fireEvent.blur(window);
+      expect(f.cancel).toHaveBeenCalledExactlyOnceWith("walk-out");
+    });
+
+    it("상대가 합의를 취소하면 이끄는 쪽의 칩도 사라진다", async () => {
+      await mount();
+      const request = accepted("lead-out", "lead");
+      await accept(request);
+      expect(screen.getByRole("button", { name: "Bob 님이 따라오는 중" })).toBeTruthy();
+      f.snapshot = { ...f.snapshot, requests: [{ ...request, status: "cancelled" }] };
+      fireEvent.click(screen.getByRole("button", { name: "Cleo" }));
+      await waitFor(() => expect(screen.queryByRole("button", { name: "Bob 님이 따라오는 중" })).toBeNull());
+    });
+  });
+
   it("cancels activity and disables the social hook on focus, without enabling any new interaction", async () => {
     await mount();
     await accept(accepted("follow-one", "follow"));

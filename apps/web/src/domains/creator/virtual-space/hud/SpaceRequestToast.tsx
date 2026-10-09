@@ -11,6 +11,7 @@ const SPACE_REQUEST_TOAST_MS = 10_000;
 const ACTION_LABELS: Readonly<Record<StudioSpaceSocialRequest["action"], readonly [string, string]>> = {
   talk: ["대화 요청", "conversation request"],
   follow: ["함께 이동 요청", "follow request"],
+  lead: ["따라오라는 요청", "follow-me request"],
   review: ["함께 검토 초대", "review invitation"],
   "high-five": ["함께 축하 요청", "celebration request"],
 };
