@@ -486,14 +486,14 @@ export class Residency {
         {
           question: t("픽셀이 번지지 않나요?", "Won't the pixels blur?"),
           answer: t(
-            "시트를 만들 때 64px 원본을 2배 정수 확대해 두어, 나중에 선형 필터로 다시 확대·축소돼도 픽셀 경계가 덜 번집니다. 에셋 정의에는 'nearest' 필터 힌트(textureFilter)가 붙어 있지만 이 힌트를 읽는 코드는 찾지 못했고, Phaser 의 pixelArt 설정은 아트 스타일이 픽셀형일 때 켜집니다.",
-            "When the sheets were built the 64 px sources were enlarged by an integer factor of 2, so pixel edges blur less if they are later scaled with a linear filter. Asset definitions carry a 'nearest' filter hint (textureFilter), but no code that reads this hint was found; Phaser's pixelArt setting is switched on only when the art style is a pixel style.",
+            "시트를 만들 때 64px 원본을 2배 정수 확대해 둡니다. 에셋 정의의 'nearest' 필터 힌트(textureFilter)는 텍스처를 준비할 때 실제로 최근접 필터로 적용되어, 선형 필터를 쓰는 일러스트 화풍 월드에서도 도트 경계가 번지지 않습니다. Phaser 의 pixelArt 설정은 아트 스타일이 픽셀형일 때 켜집니다.",
+            "When the sheets were built the 64 px sources were enlarged by an integer factor of 2. The 'nearest' filter hint (textureFilter) on the asset definitions is applied as a nearest-neighbour filter when the texture is prepared, so pixel edges stay sharp even in illustrated art styles whose worlds otherwise use a linear filter. Phaser's pixelArt setting is switched on only when the art style is a pixel style.",
           ),
         },
       ],
       pitfall: t(
-        "LPC 레이어의 라이선스 적합성(상업적 이용 가능 여부)을 이 카드에서 판단하지 마세요. 메모리 사용량은 측정값이 없는 설계값 기준이고, 'nearest' 필터 힌트가 실제로 적용된다고 말하지 마세요(읽는 코드를 찾지 못했습니다).",
-        "Do not judge the license suitability of the LPC layers (such as commercial use) from this card. Memory use rests on a design value with no measurement, and do not say the 'nearest' filter hint is applied (no code reading it was found).",
+        "LPC 레이어의 라이선스 적합성(상업적 이용 가능 여부)을 이 카드에서 판단하지 마세요. 메모리 사용량은 측정값이 없는 설계값 기준입니다. 최근접 필터는 도트를 선명하게 하지만 화면 배율이 정수가 아니면 도트 폭이 한 화소씩 달라 보일 수 있습니다.",
+        "Do not judge the license suitability of the LPC layers (such as commercial use) from this card. Memory use rests on a design value with no measurement. The nearest-neighbour filter keeps the dots sharp, but when the screen scale is not an integer the dot widths can differ by one pixel.",
       ),
     },
     technologies: ["Phaser 3", "Universal LPC", "WebP"],
