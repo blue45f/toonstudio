@@ -78,6 +78,8 @@ export const creatorRoutes = defineAppRoutes([
   { id: "creator-showcase-work", path: "/showcase/work/:id", element: <CreateWorkPage /> },
 
   // Legacy public tool routes now enter the unified Studio asset structure.
+  // /motion-webtoon은 레지스트리 별칭 선언만 있고 이 항목이 없어 전역 404로 떨어졌다 (F-B21-1).
+  { id: "creator-motion-webtoon", path: "/motion-webtoon", element: <Navigate to={studioRoutePath("motion-webtoon")} replace /> },
   { id: "creator-music", path: "/music", element: <Navigate to={studioRoutePath("asset-audio")} replace /> },
   { id: "creator-character-shaper", path: "/shaper", element: <Navigate to={studioRoutePath("asset-character-new")} replace /> },
   { id: "creator-brush-lab", path: "/brush-lab", element: <Navigate to={studioRoutePath("asset-brush-new")} replace /> },
