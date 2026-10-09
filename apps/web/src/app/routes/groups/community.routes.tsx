@@ -1,5 +1,6 @@
 import { defineAppRoutes } from "../app-route-definition";
 import { resolveBreadcrumbTrail } from "../route-breadcrumb";
+import { CollaborateWorkspaceRedirect } from "./collaborate-workspace-redirect";
 
 import { withRouteBreadcrumb } from "@/app/components/breadcrumb";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
@@ -77,8 +78,10 @@ export const communityRoutes = defineAppRoutes([
   { id: "collaboration-board", path: "/collaborate", element: <CollaborationBoardPage /> },
   { id: "collaboration-positions", path: "/collaborate/positions", element: <HiringPositionsPage /> },
   { id: "collaboration-career-gallery", path: "/collaborate/gallery", element: <CreatorCareerGalleryPage /> },
+  // 구인 워크스페이스(HiringWorkspacePage)의 정식 주소는 /team/recruiting이다.
+  // 옛 /collaborate/workspace는 같은 페이지를 렌더하던 중복 문이라 리다이렉트로 일원화한다 (O-10, 2026-10-09).
   { id: "team-recruiting", path: "/team/recruiting", element: <HiringWorkspacePage /> },
-  { id: "collaboration-workspace", path: "/collaborate/workspace", element: <HiringWorkspacePage /> },
+  { id: "collaboration-workspace", path: "/collaborate/workspace", element: <CollaborateWorkspaceRedirect /> },
   { id: "collaboration-new", path: "/collaborate/new", element: <CollaborationEditorPage /> },
   { id: "collaboration-moderation", path: "/collaborate/moderation", element: <CollaborationModerationPage /> },
   { id: "collaboration-edit", path: "/collaborate/:id/edit", element: <CollaborationEditorPage /> },
