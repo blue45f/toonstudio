@@ -52,6 +52,19 @@ describe("화면 크기(줌) 버튼", () => {
     expect(screen.getByRole("button", { name: "화면 확대" }).getAttribute("aria-disabled")).toBeNull();
   });
 
+  it("큰 화면에서 하한이 올라가면 그 배율이 축소의 끝이다(단계 하한 위에서도 축소가 aria-disabled)", () => {
+    const store = new StudioUserZoomStore(memory());
+    render(<SpaceZoomControls store={store} />);
+    act(() => { store.setFloor(0.93); });
+    expect(screen.getByRole("button", { name: "화면 축소" }).getAttribute("aria-disabled")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "화면 축소" }));
+    expect(screen.getByRole("button", { name: /화면 크기 93%/u }).textContent).toBe("93%");
+    expect(screen.getByRole("button", { name: "화면 축소" }).getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "화면 축소" }));
+    expect(store.get()).toBe(0.93);
+    expect(screen.getByRole("button", { name: "화면 확대" }).getAttribute("aria-disabled")).toBeNull();
+  });
+
   it("마우스·터치로 누르면 초점을 월드로 돌려 바로 걷게 하고, 키보드로 활성화하면 초점을 그대로 둔다", () => {
     const store = new StudioUserZoomStore(memory());
     const onPointerUse = vi.fn();

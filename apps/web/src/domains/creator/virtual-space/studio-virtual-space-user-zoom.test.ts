@@ -15,6 +15,7 @@ import {
   studioUserZoomEase,
   studioUserZoomFloor,
   studioUserZoomFromWheel,
+  studioUserZoomLowerBound,
   studioUserZoomStep,
   type StudioUserZoomStorage,
 } from "./studio-virtual-space-user-zoom";
@@ -141,6 +142,14 @@ describe("월드 밖을 비추지 않는 하한", () => {
   it("잘못된 입력은 최소 배율로 둔다", () => {
     expect(studioUserZoomFloor(0, view, { width: 3000, height: 2000 })).toBe(STUDIO_USER_ZOOM_MIN);
     expect(studioUserZoomFloor(1, view, { width: 0, height: 2000 })).toBe(STUDIO_USER_ZOOM_MIN);
+    expect(studioUserZoomFloor(1, { cssWidth: Number.NaN, cssHeight: 800, ratio: 1 }, { width: 3000, height: 2000 })).toBe(STUDIO_USER_ZOOM_MIN);
+  });
+
+  it("하한 값 자체는 최소 배율과 1 사이로 맞춘다", () => {
+    expect(studioUserZoomLowerBound(0.3)).toBe(STUDIO_USER_ZOOM_MIN);
+    expect(studioUserZoomLowerBound(0.83)).toBe(0.83);
+    expect(studioUserZoomLowerBound(4)).toBe(1);
+    expect(studioUserZoomLowerBound(Number.NaN)).toBe(STUDIO_USER_ZOOM_MIN);
   });
 });
 
@@ -181,7 +190,7 @@ describe("저장과 구독", () => {
     store.set(1.3);
     const second = store.getSnapshot();
     expect(second).not.toBe(first);
-    expect(second).toEqual({ level: 1.3, available: true });
+    expect(second).toEqual({ level: 1.3, min: STUDIO_USER_ZOOM_MIN, available: true });
     expect(Object.isFrozen(second)).toBe(true);
   });
 
@@ -193,9 +202,65 @@ describe("저장과 구독", () => {
     expect(listener).not.toHaveBeenCalled();
     store.setAvailable(false);
     expect(listener).toHaveBeenCalledOnce();
-    expect(store.getSnapshot()).toEqual({ level: STUDIO_USER_ZOOM_DEFAULT, available: false });
+    expect(store.getSnapshot()).toEqual({ level: STUDIO_USER_ZOOM_DEFAULT, min: STUDIO_USER_ZOOM_MIN, available: false });
     store.setAvailable(false);
     expect(listener).toHaveBeenCalledOnce();
+  });
+
+  it("하한(floor)이 오르면 보이는 배율도 그 아래로 내려가지 않고, 고른 값은 그대로 저장되어 하한이 내려오면 돌아온다", () => {
+    const storage = memoryStorage();
+    const store = new StudioUserZoomStore(storage);
+    store.set(0.75);
+    expect(store.get()).toBe(0.75);
+    store.setFloor(0.93);
+    expect(store.get()).toBe(0.93);
+    expect(store.getSnapshot()).toEqual({ level: 0.93, min: 0.93, available: true });
+    expect(storage.data.get(STUDIO_USER_ZOOM_STORAGE_KEY), "하한이 올라도 고른 값은 건드리지 않는다").toBe("0.75");
+    store.setFloor(STUDIO_USER_ZOOM_MIN);
+    expect(store.get()).toBe(0.75);
+    expect(store.getSnapshot().min).toBe(STUDIO_USER_ZOOM_MIN);
+  });
+
+  it("하한 아래로 고르려 해도 하한에 머물고, 보이지 않는 값이 쌓이지 않아 곧바로 다시 확대된다", () => {
+    const store = new StudioUserZoomStore(memoryStorage());
+    store.setFloor(0.93);
+    const wheel = (deltaY: number) => ({ deltaY, deltaMode: 0, ctrlKey: false });
+    for (let index = 0; index < 30; index += 1) store.set(studioUserZoomFromWheel(store.get(), wheel(100)));
+    expect(store.get()).toBe(0.93);
+    store.set(studioUserZoomFromWheel(store.get(), wheel(-100)));
+    expect(store.get(), "한 칸만 굴려도 바로 올라간다").toBeCloseTo(0.93 * 1.12, 3);
+  });
+
+  it("버튼으로 줄이면 하한에서 멈추고(더 눌러도 알리지 않음), 확대는 다음 단계로 간다", () => {
+    const store = new StudioUserZoomStore(memoryStorage());
+    store.setFloor(0.93);
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.apply("out");
+    expect(store.get()).toBe(0.93);
+    expect(listener).toHaveBeenCalledOnce();
+    store.apply("out");
+    expect(store.get()).toBe(0.93);
+    expect(listener, "이미 하한이면 바뀐 것이 없다").toHaveBeenCalledOnce();
+    store.apply("in");
+    expect(store.get()).toBe(1);
+    store.apply("reset");
+    expect(store.get()).toBe(STUDIO_USER_ZOOM_DEFAULT);
+  });
+
+  it("하한이 바뀌어 보이는 값이나 하한 표시가 달라질 때만 알린다", () => {
+    const store = new StudioUserZoomStore(memoryStorage({ [STUDIO_USER_ZOOM_STORAGE_KEY]: "1.5" }));
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.setFloor(0.8);
+    expect(store.get(), "고른 값이 하한 위면 값은 그대로").toBe(1.5);
+    expect(store.getSnapshot().min).toBe(0.8);
+    expect(listener, "'더 줄일 수 있는 범위'가 바뀌었으니 HUD가 알아야 한다").toHaveBeenCalledOnce();
+    store.setFloor(0.8);
+    expect(listener).toHaveBeenCalledOnce();
+    store.setFloor(Number.NaN);
+    expect(store.getSnapshot().min, "이상한 하한은 최소 배율로 둔다").toBe(STUDIO_USER_ZOOM_MIN);
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 
   it("새 저장소는 저장된 값으로 시작하고, 저장소가 막혀도 이번 방문 동안은 동작한다", () => {
@@ -253,6 +318,21 @@ describe("캔버스 전환 상태", () => {
     expect(runtime.sample(1 / 60)).toBeCloseTo(0.711, 3);
     runtime.setView(1.2, view, { width: 1000, height: 600 }, true);
     expect(runtime.sample(1 / 60)).toBe(1);
+  });
+
+  it("화면이 월드보다 훨씬 큰 곳에서는 하한을 저장소에도 알려, 고른 값이 낮아도 HUD와 카메라가 같은 값을 본다", () => {
+    const store = new StudioUserZoomStore(memoryStorage({ [STUDIO_USER_ZOOM_STORAGE_KEY]: "0.6" }));
+    const runtime = new StudioUserZoomRuntime(store);
+    // 초광폭 3440×1440, 캠퍼스 3072×1920, 자동 줌 1.35 → 월드를 덮는 줌 1.12 ÷ 1.35 = 0.83
+    runtime.setView(1.35, { cssWidth: 3440, cssHeight: 1440, ratio: 1 }, { width: 3072, height: 1920 }, true);
+    const floor = store.getSnapshot().min;
+    expect(floor).toBeCloseTo(0.83, 2);
+    expect(store.get()).toBe(floor);
+    expect(runtime.sample(1 / 60, true)).toBe(floor);
+    expect(runtime.current).toBe(floor);
+    runtime.setView(1.0417, { cssWidth: 1265, cssHeight: 800, ratio: 1 }, { width: 3072, height: 1920 }, true);
+    expect(store.getSnapshot().min, "창이 작아져 하한이 내려가면").toBe(STUDIO_USER_ZOOM_MIN);
+    expect(store.get(), "고른 값(60%)으로 돌아온다").toBe(0.6);
   });
 });
 

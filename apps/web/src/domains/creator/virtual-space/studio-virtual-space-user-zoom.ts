@@ -27,10 +27,14 @@ const EASE_RATE = 12;
 
 const finiteOr = (value: number, fallback: number): number => (Number.isFinite(value) ? value : fallback);
 
+/** 하한(floor)을 단계 범위 안으로 맞춘다. 최소 배율보다 낮아지지 않고, 1을 넘지 못해 확대를 강요하지 않는다. */
+export function studioUserZoomLowerBound(floor: number): number {
+  return Math.min(1, Math.max(STUDIO_USER_ZOOM_MIN, finiteOr(floor, STUDIO_USER_ZOOM_MIN)));
+}
+
 /** 배율을 허용 범위로 맞춘다. floor는 화면이 월드 밖을 비추지 않게 하는 하한(화면·월드 크기에서 온다). */
 export function studioUserZoomClamp(level: number, floor = STUDIO_USER_ZOOM_MIN): number {
-  const lower = Math.min(1, Math.max(STUDIO_USER_ZOOM_MIN, finiteOr(floor, STUDIO_USER_ZOOM_MIN)));
-  return Math.min(STUDIO_USER_ZOOM_MAX, Math.max(lower, finiteOr(level, STUDIO_USER_ZOOM_DEFAULT)));
+  return Math.min(STUDIO_USER_ZOOM_MAX, Math.max(studioUserZoomLowerBound(floor), finiteOr(level, STUDIO_USER_ZOOM_DEFAULT)));
 }
 
 /** 현재 배율에서 한 단계 확대·축소한 단계 값. 단계 사이에 있으면 가장 가까운 다음 단계로 간다. */
@@ -82,7 +86,7 @@ export function studioUserZoomFloor(
 ): number {
   if (!(baseZoom > 0) || !(world.width > 0) || !(world.height > 0)) return STUDIO_USER_ZOOM_MIN;
   const cover = Math.max(view.cssWidth / world.width, view.cssHeight / world.height) * view.ratio;
-  return Math.min(1, Math.max(STUDIO_USER_ZOOM_MIN, cover / baseZoom));
+  return studioUserZoomLowerBound(cover / baseZoom);
 }
 
 export interface StudioUserZoomStorage {
@@ -110,8 +114,10 @@ export function readStudioUserZoom(storage: StudioUserZoomStorage | null = defau
 }
 
 export interface StudioUserZoomSnapshot {
-  /** 사용자가 고른 목표 배율. */
+  /** 지금 적용되는 배율: 사용자가 고른 값을 이 화면에서 내릴 수 있는 하한 안으로 맞춘 것. 버튼·메뉴에 보이는 값이다. */
   readonly level: number;
+  /** 이 화면·월드에서 내릴 수 있는 가장 작은 배율. 큰 화면에서는 단계 하한(60%)보다 클 수 있다. */
+  readonly min: number;
   /** 지금 카메라가 줌을 받을 수 있는지(고정 프레임 장소에서는 false). */
   readonly available: boolean;
 }
@@ -119,15 +125,25 @@ export interface StudioUserZoomSnapshot {
 /**
  * 사용자 줌 목표 저장소. HUD(버튼·메뉴·단축키)와 캔버스(휠·매 프레임 전환)가 같은 값을 보게 하고, 값이 바뀔 때만 저장한다.
  * 저장소가 막혀 있어도(비공개 창 등) 이번 방문 동안은 그대로 동작한다. React에서는 useSyncExternalStore로 구독한다.
+ *
+ * 화면이 월드보다 훨씬 큰 곳(초광폭·4K 100%)에서는 월드 밖을 비추지 않는 하한이 단계 하한보다 높다. 이때 고른 값이 하한 아래로
+ * 쌓여 화면 표시와 실제 카메라가 어긋나지 않도록, 보이는 값(level)은 하한 안으로 맞추고 사용자가 고른 값(preference)은
+ * 따로 보관한다. 창이 다시 작아져 하한이 내려가면 고른 값으로 돌아온다.
  */
 export class StudioUserZoomStore {
+  /** 사용자가 마지막으로 고른 값(저장되는 쪽). */
+  private preference: number;
+  private floor = STUDIO_USER_ZOOM_MIN;
+  private available = true;
   private state: StudioUserZoomSnapshot;
   private readonly listeners = new Set<() => void>();
 
   constructor(private readonly storage: StudioUserZoomStorage | null = defaultStorage()) {
-    this.state = Object.freeze({ level: readStudioUserZoom(storage), available: true });
+    this.preference = readStudioUserZoom(storage);
+    this.state = this.snapshot();
   }
 
+  /** 지금 적용되는 배율(하한 안). */
   get(): number {
     return this.state.level;
   }
@@ -138,13 +154,13 @@ export class StudioUserZoomStore {
   }
 
   set(level: number): void {
-    const next = studioUserZoomClamp(level);
-    if (next === this.state.level) return;
-    this.state = Object.freeze({ ...this.state, level: next });
+    const next = studioUserZoomClamp(level, this.floor);
+    if (next === this.preference) return;
+    this.preference = next;
     try {
       this.storage?.setItem(STUDIO_USER_ZOOM_STORAGE_KEY, String(Math.round(next * 1000) / 1000));
     } catch { /* 저장 실패는 이번 방문의 동작에 영향이 없다 */ }
-    this.emit();
+    this.refresh();
   }
 
   apply(action: StudioUserZoomAction): void {
@@ -153,14 +169,36 @@ export class StudioUserZoomStore {
 
   /** 캔버스가 카메라 모드를 알려 준다. 줌을 받지 못하는 장소에서는 HUD가 버튼을 숨긴다. */
   setAvailable(available: boolean): void {
-    if (available === this.state.available) return;
-    this.state = Object.freeze({ ...this.state, available });
-    this.emit();
+    this.available = available;
+    this.refresh();
+  }
+
+  /** 화면·월드 크기에서 온 하한을 알린다. 보이는 값과 HUD의 "더 줄일 수 없음" 판단이 이 하한을 따른다. */
+  setFloor(floor: number): void {
+    this.floor = studioUserZoomLowerBound(floor);
+    this.refresh();
   }
 
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => { this.listeners.delete(listener); };
+  }
+
+  private snapshot(): StudioUserZoomSnapshot {
+    return Object.freeze({
+      level: studioUserZoomClamp(this.preference, this.floor),
+      min: studioUserZoomLowerBound(this.floor),
+      available: this.available,
+    });
+  }
+
+  /** 보이는 스냅샷이 실제로 달라졌을 때만 새로 만들고 알린다. */
+  private refresh(): void {
+    const next = this.snapshot();
+    const { level, min, available } = this.state;
+    if (next.level === level && next.min === min && next.available === available) return;
+    this.state = next;
+    this.emit();
   }
 
   private emit(): void {
@@ -194,8 +232,9 @@ export class StudioUserZoomRuntime {
     available: boolean,
   ): void {
     this.available = available;
-    this.store.setAvailable(available);
     this.floor = studioUserZoomFloor(baseZoom, view, world);
+    this.store.setFloor(this.floor);
+    this.store.setAvailable(available);
     this.shown = studioUserZoomClamp(this.shown, this.floor);
   }
 
