@@ -165,6 +165,7 @@ export function ResourceLayout({
   heroContent,
   heroAside,
   mastheadArt,
+  heroStage,
   sourceIdentity,
   menu = true,
   compact = false,
@@ -173,6 +174,12 @@ export function ResourceLayout({
   intro: string;
   children: ReactNode;
   width?: "default" | "wide";
+  /**
+   * 머리말 전체를 대체하는 첫 화면 무대 (디자인 웨이브 14) — 주면 기본 마스트헤드
+   * 머리말을 그리지 않는다. 제목(h1)·소개를 무대 안에 종속 배치하는 구도 교체
+   * 전용 슬롯으로, 무대 안에 h1을 포함해 구성하는 것은 페이지의 책임이다.
+   */
+  heroStage?: ReactNode;
   /** 머리말 설명 아래에 두는 첫 행동(예: 리서치 데스크 통합 검색). */
   heroContent?: ReactNode;
   /** 머리말 오른쪽 보조 영역 — 주면 기본 일러스트 대신 쓰고 2열 머리말이 된다. */
@@ -204,6 +211,7 @@ export function ResourceLayout({
   // 사이트 공통 Container(data-page-container)로 감싸 다른 공개 페이지와 폭·좌우선·통합 계약을 맞춘다.
   return <Container size={width === "wide" ? "wide" : "default"}>
   <section className={`resource-atelier resource-illustrated space-y-8 py-8 text-fg sm:py-12${sourceIdentity ? ` research-source research-source--${sourceIdentity.provider}` : ""}`}>
+    {heroStage ?? (
     <header className={`resource-masthead ${heroAside ? "resource-masthead--desk" : "resource-masthead--detail"} ${hasMastheadArt ? "resource-masthead--illustrated" : ""} ${compact ? "resource-masthead--compact" : ""}`}>
       {mastheadArt ? (
         <figure className="relative col-span-full m-0 overflow-hidden rounded-2xl border border-line">
@@ -238,6 +246,7 @@ export function ResourceLayout({
       </div>
       {heroAside ?? (sourceIdentity ? <ResearchSourceCover identity={sourceIdentity} /> : introArt ? <img className="resource-masthead-image" src={`/brand/illustrated-20260928/${introArt}.webp`} alt="" aria-hidden="true" width={320} height={240} /> : null)}
     </header>
+    )}
     {menu ? (
       <div className="resource-shell">
         <ResourceSideNav pathname={pathname} />
