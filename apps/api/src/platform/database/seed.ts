@@ -131,9 +131,9 @@ async function main() {
   await db
     .insert(s.creatorWorks)
     .values([
-      { id: "seed-work-1", userId: "seed-creator", title: "한밤의 편의점 1화", description: "첫 손님", format: "cuttoon", status: "published", tags: ["일상", "데모"], seriesId: "seed-series-1", episodeNo: 1, views: 1240, createdAt: daysAgo(40) },
-      { id: "seed-work-2", userId: "seed-creator", title: "한밤의 편의점 2화", description: "삼각김밥의 비밀", format: "cuttoon", status: "published", tags: ["일상", "데모"], seriesId: "seed-series-1", episodeNo: 2, views: 980, createdAt: daysAgo(33) },
-      { id: "seed-work-3", userId: "seed-user-001", title: "데모 컷툰: 첫 화", description: "시드 샘플 창작물", format: "cuttoon", status: "published", tags: ["데모", "시드"], titleId: T(0), views: 421, createdAt: daysAgo(20) },
+      { id: "seed-work-1", userId: "seed-creator", title: "한밤의 편의점 1화", description: "첫 손님", format: "cuttoon", status: "published", tags: ["일상", "데모"], seriesId: "seed-series-1", episodeNo: 1, views: 1240, cover: "/brand/showcase-covers-20261009/night-store-ep1.webp", createdAt: daysAgo(40) },
+      { id: "seed-work-2", userId: "seed-creator", title: "한밤의 편의점 2화", description: "삼각김밥의 비밀", format: "cuttoon", status: "published", tags: ["일상", "데모"], seriesId: "seed-series-1", episodeNo: 2, views: 980, cover: "/brand/showcase-covers-20261009/night-store-ep2.webp", createdAt: daysAgo(33) },
+      { id: "seed-work-3", userId: "seed-user-001", title: "데모 컷툰: 첫 화", description: "시드 샘플 창작물", format: "cuttoon", status: "published", tags: ["데모", "시드"], titleId: T(0), views: 421, cover: "/brand/showcase-covers-20261009/demo-cuttoon-ep1.webp", createdAt: daysAgo(20) },
     ])
     .onConflictDoNothing();
 
