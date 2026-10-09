@@ -136,6 +136,7 @@ describe("Studio realtime ticket deployment configuration", () => {
           comment: true,
           edit: true,
           manageMembers: false,
+          respondInvite: false,
         },
       },
       authorizationEpoch: "2026-08-02T00:00:00.000Z",

@@ -55,16 +55,19 @@ BRUSH_LAB_BROWSER_PROBE=1 node apps/brush-lab/scripts/browser-probe.mjs --lanes 
 src/
   boundary.test.ts      경계 게이트(apps/* import·@/·mixbox 부재, engine/ 외부 import 0)
   engine/               ★ Sumi 엔진 코어(승격 단위, 상대 import·zod만)
-    core/ input/ physics/ dynamics/ texture/ raster/ pigment/ wet/ presets/ gpu/(layout·device·buffers·timing·pipeline·WGSL) webgl2/ wasm/
+    core/ input/(1€ 파이프라인·모서리 보존·안정화 슬라이더 로그 매핑 + stages/ 입력 단계: 끈 당김·코너 게이트·물리 펜 PenSpring2D) physics/(mpm2d/ MLS-MPM 솔버·방출기·스플랫 · world2d/ PBD 월드·붓털 다발·압력 곡선) dynamics/ texture/ raster/ pigment/(KM 혼색 km-mix·km-tables·km-transport) wet/ presets/ gpu/(layout·device·buffers·timing·pipeline·WGSL) webgl2/ wasm/
   lanes/                레인 계약(lane.ts)·레지스트리(registry.ts)·레인 구현(cpu-reference, platform-baseline, canvas2d, webgpu-compute, webgpu-instanced, webgl2-instanced, hybrid, reserved)
+                        실험 레인(maturity experimental): physics/(mpm-paint-lane·bristle-pbd-lane·rapier-bristle-lane + 공통 합성 bristle-dab-synthesis·Rapier 지연 로더 rapier-loader·rapier-world)
                         외부 엔진 비교 레인: libmypaint-lane·hokusai-lane(공통 뼈대 isolated-stroke-lane, 프로그램→.myb 매핑 mypaint-settings-map, 획 레이어 합성 straight-frame-composite)
   bench/                fixture 9종·지표(texture/render/handfeel/perf/family)·인증 리포트(스키마·임계값·buildReport·직렬화·PNG)·러너
-  platform/             브라우저 어댑터: PointerEvent 캡처(lostpointercapture·우클릭 차단·주 버튼 전용), rAF 프레임 스케줄러, Blob 다운로드, 캔버스 표시(문서 맞춤·흰 종이 평탄화), 마우스 압력 시뮬레이션(pressure-sim), lazy-brush, 갤러리 Worker 클라이언트
+  platform/             브라우저 어댑터: PointerEvent 캡처(lostpointercapture·우클릭 차단·주 버튼 전용), rAF 프레임 스케줄러, Blob 다운로드, 캔버스 표시(문서 맞춤·흰 종이 평탄화), 마우스 압력 시뮬레이션(pressure-sim; 끈 당김 안정화는 `engine/input/stages`로 옮겼다), 갤러리 Worker 클라이언트
   app/                  React 19 랩 UI
-    bootstrap/main.tsx  shell/BrushLabApp.tsx(탭 셸)  state/(lab-store·draw-store·draw-program·draw-error-text·color-utils·run-compare·live-session·apply-overrides)
-    ui/(CapabilityBanner·LaneSelector·BrushParamPanel·FixturePicker·LaneCanvas·DiffHeatmap·MetricsTable·ReportPanel·FamilyGallery·PresetCard·DrawCanvas·DrawBrushPicker·DrawParamPanel·DrawColorPicker·DrawLaneSelect·DrawHud)
+    bootstrap/main.tsx  shell/BrushLabApp.tsx(탭 셸)  state/(lab-store·draw-store·draw-program·input-chain·draw-error-text·lane-maturity·color-utils·run-compare·live-session·apply-overrides)
+    ui/(ExperimentalBadge·CapabilityBanner·LaneSelector·BrushParamPanel·FixturePicker·LaneCanvas·DiffHeatmap·MetricsTable·ReportPanel·FamilyGallery·PresetCard·DrawCanvas·DrawBrushPicker·DrawParamPanel·DrawColorPicker·DrawLaneSelect·DrawHud)
     views/(DrawView·GalleryView·CompareView·ReportView)  workers/gallery-render.worker.ts(ES module worker)  styles/brush-lab.css  testing/(모의 레인·러너·캔버스 스텁)
 docs/drafts/            저장소 공용 docs/로 옮길 문서 초안 3종(통합 담당이 배치·등록)
+docs/experiments/       2026-10-08 스파이크 5건 기록과 8절 BL-3 통합 결과(채택 항목별 구현 위치·실측·한계)
+docs/notices/           번들 내장 wasm 제3자 고지(rapier2d-third-party.md — license-policy.md 5절 `EMBEDDED_WASM` 원장이 대조한다)
 docs/evidence/          (커밋하지 않음) 브라우저 프로브 `--reports`가 쓰는 인증 리포트 출력 위치(`<presetId>-<laneId>-<YYYYMMDD>.json`)
 wasm/sumi-kernel/       Rust C-ABI wasm 커널(std만, 외부 crate 0) 소스·`build.sh`·`pkg/`(산출 wasm + INTEGRITY.sha256)
 scripts/                브라우저 프로브(browser-probe.mjs·browser-probe.html·browser-probe-page.mjs) · 그리기 탭 실검증(browser-draw-probe.mjs)
@@ -90,6 +93,31 @@ scripts/                브라우저 프로브(browser-probe.mjs·browser-probe.
 | wasm-gpu-hybrid | candidate | browser-verification-required | wasm 로드·INTEGRITY·모의 장치로 비닝 4패스 생략·CSR 업로드·overflow 절대값 기록 계약 | SwiftShader 실측: 습식 5종 × fixture 3종 15건·스모크 15종(zigzag)·1024²가 cpu-reference와 δ48 0%·ΔE p99 0이고 webgpu-compute와 픽셀 해시 동일(습식 포함); 실 GPU 미검증(scripts/browser-probe.mjs) |
 | libmypaint | comparison | implemented | 핀된 wasm 실제 로드·지그재그/곡선 렌더 비어 있지 않음·결정성(같은 입력 두 번 = 같은 해시)·addSamples 분할 = 일괄·abortStroke 문서 보존·dispose 오류·미지원(습식·임파스토·smudge) 거부·매핑 영수증 | 헤드리스 Chromium 141 + Vite dev(2026-10-08, scripts/browser-probe.mjs, CPU wasm이라 GPU와 무관): 프리셋 4종 × fixture 2종 8건 실행·재실행 결정성, Node와 픽셀 해시 8/8 동일; 프로덕션 번들(vite build) 실행·실기기 브라우저는 미검증. 입력 파이프라인·물리·종이 그레인이 없어 Sumi와 같은 브러시가 아니다(유사한 의도의 비교) |
 | hokusai | comparison | browser-verification-required | 주입한 wasm 바이트로 실제 실행: 지그재그/곡선 렌더 비어 있지 않음·결정성·addSamples 분할 = 일괄·abortStroke 문서 보존·dispose 오류·미지원 거부·libmypaint와 같은 설정 문서(두 엔진 알파 커버리지 IoU ≥ 0.99: 256² 프리셋 6종 × fixture 2종 12건); Node에서 기본 로드 경로(번들러 URL)는 불가해 probe가 wasm-artifact-missing | 헤드리스 Chromium 141 + Vite dev(2026-10-08, scripts/browser-probe.mjs): pkg 동적 import·기본 wasm URL 초기화로 프리셋 4종 × fixture 2종 8건 실행·재실행 결정성, Node(주입 바이트)와 픽셀 해시 8/8 동일; 프로덕션 번들(vite build) 실행·실기기 브라우저는 미검증. 입력 파이프라인·물리·종이 그레인이 없어 Sumi와 같은 브러시가 아니다(유사한 의도의 비교) |
+| mpm-paint | candidate | implemented | 엔진 MPM 솔버(결정성 해시·질량 보존·퍼징 NaN 0·CFL 위반 클램프·입자 한도·작업 예산·활성 타일 = 경계 상자 순회와 비트 동일)·KM 농도 수송 + 레인 계약(획 흐름·abortStroke 문서 보존·획 색·한도 영수증·readback 젖은 입자 합성·거부 프로그램·병적 입력(시간 점프·6초치 한 호출·고밀도 폭주·먼 점)에서 호출당 작업 예산 이하를 개수로 단언·예산 걸림 영수증) | 스모크만(헤드리스 Chromium 141 SwiftShader·Vite dev, Z-1·MP-2): 512²·1024×640 구아슈 마우스 곡선·펜 지그재그가 끝나고 합성 pointercancel 뒤 문서 보존. 성능·교차 머신 결정성·워커·실펜 손맛 미검증(CPU 전용 순수 TS, 성능 수치는 Node 22 단일 스레드 기준). MP-2 이전에는 1024×640이 20분 넘게 끝나지 않았다 |
+| bristle-pbd | candidate | implemented | 엔진 PBD 월드(결정성 해시·접촉 비침투·큰 dt 서브스텝 분할·진단 카운터)·붓털 다발(압력 곡선 표·방향 회전·적재량 소진·고정 틱 구동)·월드 비교 지표(퍼짐 일관성·dt 스파이크·결정성) + 레인 계약(같은 입력 같은 해시·addSamples 분할 = 일괄·abortStroke 문서 보존·획 색·거부 프로그램·dispose 오류) | 없음(CPU 전용 순수 TS라 Node 값만 있다. 성능 수치는 Node 22 단일 스레드 기준이며 브라우저·워커·실펜 손맛 미검증) |
+| bristle-rapier | candidate | implemented | 실제 Rapier wasm을 Node에서 동적 import·초기화해 레인 계약(같은 머신 같은 입력 두 번 같은 해시·addSamples 분할 = 일괄·abortStroke 문서 보존·획 색·거부 프로그램·dispose 오류)과 로드 실패 경로(스텁 임포터: import·init·모양 불일치 → LaneUnavailableError, 자체 PBD로 대체 없음)를 확인 | 없음(동적 import·wasm 초기화·Vite 청크 분리·교차 머신/브라우저 결정성 미검증. JS gzip 약 1.29 MB, 첫 로드 약 150~190 ms는 Node 22 값) |
+
+### 실험 레인(`maturity: "experimental"`, BL-3 통합 2026-10-08)
+
+`mpm-paint`·`bristle-pbd`·`bristle-rapier`는 레지스트리에서 `maturity: "experimental"`이다(생략 = stable). 검증 범위는 **Node 22 단일 스레드 측정이 중심**이고 브라우저는 소프트웨어 렌더러(SwiftShader) 스모크만 했으며(아래 브라우저 확인 단락), 성능·결정성·실기기·GPU·교차 머신·실펜 손맛은 미검증이다.
+그래서 **인증 판정(PASS/FAIL) 집계에서 제외**한다: A/B 비교의 종합 판정은 "인증 제외(실험)"로 바뀌고(지표·임계값 표의 지표별 판정 셀은 "FAIL (참고)"처럼 참고용 스타일이고 원래 종합 판정은 안내 문구에 남는다), 세션 리포트 탭의 집계(PASS/FAIL/UNAVAILABLE)에는 세지 않고 "실험 레인 N건 제외"로만 센다. 레지스트리에 없는 레인(구버전 세션 등)은 성숙도를 알 수 없어 안전하게 "레인 미등록"으로 따로 센다. 리포트 원문·다운로드 JSON의 `verdict`는 성숙도를 담지 않는 원시 판정이라(스키마는 바꾸지 않았다) 실험·미등록 레인이면 원문 위와 다운로드 버튼 옆에 그 사실을 안내한다
+(`app/state/lane-maturity.ts`; 리포트 스키마는 성숙도를 담지 않아 레지스트리에서 레인 ID로 찾는다). 배지(점선 "실험")와 한글 검증 범위 설명은 그리기 화면의 엔진 선택·HUD, A/B 비교의 레인 선택기, 레인 능력 배너에 붙는다. 상세 구현 위치·실측·한계는
+[스파이크 실험 기록 8절](docs/experiments/2026-10-08-physics-input-pigment-spikes.md)이 권위다.
+
+| 레인 | 구현 위치 | 방식 | 인증 판정 | 알려진 한계 |
+| --- | --- | --- | --- | --- |
+| `mpm-paint` | `engine/physics/mpm2d/`, `engine/pigment/km-transport.ts`, `lanes/physics/mpm-paint-lane.ts` | 순수 TS MLS-MPM 점탄성 물감 입자(결정적, 서브스텝 고정) + 농도 t의 KM 혼색 | 제외 | 입자 한도(20000) 초과는 오류로 드러남. **호출당 작업 예산 가드**(`addSamples`·`endStroke` 마무리 진행마다 48,000 입자-스텝, 정착은 1,600,000): 입자가 약 6,000개를 넘으면 서브스텝을 건너뛰어 물감이 실시간보다 느리게 흐르고(영수증 `budgetDroppedSubsteps`·`notesKo`, 그리기 화면 HUD에 표시) 정착이 상한에 닿으면 `settled: false`. 이 가드가 없을 때 1024×640 구아슈 곡선에서 되먹임으로 브라우저가 20분 넘게 멈췄다(MP-2, 스파이크 기록 8.4). 그래도 이 환경(SwiftShader)에서 HUD addSamples p50 약 20 ms·p95 약 40 ms라 실시간은 아니다. 종이 결·가장자리 농담이 없어 cpu-reference의 안료 질감과 다르고 번짐이 약함. 한 획이 단색이라 이 레인 안에서 농도 t 수송은 0 고정 |
+| `bristle-pbd` | `engine/physics/world2d/`, `lanes/physics/bristle-pbd-lane.ts`, `lanes/physics/bristle-dab-synthesis.ts` | 자체 PBD 붓털 다발(소프트 접촉)·`PenSpring2D` 손잡이·압력→반경 곡선 | 제외 | 압력→폭 변화가 cpu-reference(10→82 px)보다 훨씬 작음(N=32에서 30→40 px). 급선회 때 털이 부채꼴로 벌어지지 않음 |
+| `bristle-rapier` | `lanes/physics/rapier-bristle-lane.ts`·`rapier-loader.ts`·`rapier-world.ts` | 같은 붓털 다발·dab 합성에 월드만 Rapier 2D(wasm, 동적 import) | 제외 | wasm 2.4 MB(JS gzip 약 1.29 MB 별도 청크, 수치의 단일 출처 `lanes/physics/rapier-footprint.ts`)를 이 레인을 고를 때 처음 불러옴. 로드·초기화 실패는 한글 사유로 드러내며 다른 레인으로 바꾸지 않음. N=128 틱 비용이 PBD의 약 6배 |
+
+저장소 안 재측정(2026-10-08, Node 22.22 단일 스레드, 공유 머신 load average 약 3 — 브라우저 값이 아니다): 붓털 월드 N=128·압력 0.2의 반경비 표준편차는 소프트 접촉 PBD 0.0242, Rapier 0.0177, 하드 접촉 PBD(스파이크식 보정 1) 0.184이고
+월드 틱 비용은 PBD 162 µs, Rapier 992 µs(`bench/physics/bristle-metrics.test.ts`, `BRUSH_LAB_PHYSICS_BENCH_OUT`). MPM 엔진 프레임(8서브스텝)은 입자 5,000개에서 p50 12.25 ms·입자 20,000개에서 51.8 ms(서브스텝당 약 306~326 ns/입자).
+Rapier 첫 로드(동적 import + `RAPIER.init`) 150~190 ms(2026-10-08 5회 재측정 150.4~189.8 ms, 이전 한 번의 측정은 194 ms), 레인 `init` 2.5~3.3 ms, 256² 지그재그 `addSamples` p50은 Rapier 3.7 ms·PBD 2.4 ms다. 프로덕션 번들(`pnpm build:brush-lab`)은 Rapier를 별도 청크(3,405 kB, `gzip -9` 1,288 kB — Vite 빌드 로그의 gzip 표기는 압축 설정 차이로 1,302 kB)로 분리하고 메인 번들(gzip 326 kB)은 동적 `import()`로만 참조한다.
+
+브라우저 확인(Z-1, 2026-10-08, 헤드리스 Chromium 141 SwiftShader + Vite dev, `scripts/browser-draw-probe.mjs`의 `--lane`·`--input-modes`·`--compare-check`·`--rapier-delay-ms`·`--rapier-fail-check`): 세 레인 모두 마우스·펜으로 실제로 그려지고, 입력 방식 4종(1€·끈 당김·물리 펜·끔)으로 그린 스크린샷을 열어 확인했으며, 합성 `pointercancel` 뒤 문서 잉크 픽셀이 변하지 않았다(`abortStroke`).
+실험 배지와 한글 검증 범위, A/B 비교의 "인증 제외(실험)" 판정, 리포트 탭 집계 제외가 화면에 나왔다. Rapier는 모듈 요청을 늦췄을 때 "초기화 중" 문구가, **브라우저 네트워크 계층에서 요청을 차단했을 때**(로더 스텁이 아니라 실제 `import()` 실패) 사유 코드와 한글 사유가 나오고 다른 레인으로 바뀌지 않았다.
+위 표의 "브라우저 검증" 열은 레인 구현 시점의 서술이며 이 확인을 대신하지 않는다 — 이 확인은 소프트웨어 렌더러·부하 환경의 스모크라 성능·결정성·실펜 손맛·실기기 증거가 아니다. **발견한 한계와 수정(MP-2)**: `mpm-paint`를 기본 캔버스(1024×640)에서 구아슈로 약 960 px 마우스 곡선을 그리면 이 환경에서 메인 스레드가 20분 넘게 끝나지 않았다(Z-1, 512²는 완료). 근본 원인은 시뮬레이션 시계가 표본 시각(실시간)에 묶여 있고 한 호출이 따라잡는 서브스텝 수에 개수 기반 상한이 없다는 것이다: 입자가 약 5,600개(Node, 브라우저는 더 적게)를 넘어 서브스텝 1회가 dt(2.08 ms)보다 오래 걸리면 다음 프레임의 표본 간격이 직전 호출 소요만큼 벌어져 따라잡을 서브스텝이 늘고 호출이 더 길어지는 되먹임이 발산한다(Node 비용 모델 재현: 호출 68개째 한 호출이 17,665 서브스텝·54 s). 격자 순회·방출·정착·readback은 원인이 아니거나 부차적이었다(측정은 [스파이크 기록 8.4](docs/experiments/2026-10-08-physics-input-pigment-spikes.md)).
+수정은 개수 기반 결정적 예산(`Mpm2D.setWorkBudget`, 레인 `MPM_LANE_WORK_BUDGET_PER_CALL`·`MPM_LANE_SETTLE_WORK_BUDGET`)과 활성 타일 격자·영역 밖 행 컬링이며 걸리면 영수증·HUD에 한글 사유로 드러난다. 수정 뒤 같은 환경에서 1024×640 구아슈 곡선이 입력~합성 12~17 s(프로브 자체 오버헤드가 지배: 같은 프로브에서 wasm-cpu도 17 s)에 끝나고 `pointercancel`·빠른 획·PNG 저장도 통과했다. 호출당 예산은 호출 단위라 **예산이 걸릴 때만** `addSamples`를 나누는 방식이 결과에 들어가며(걸리지 않으면 분할 = 일괄), 1024×640은 `init`에서 거부하지 않는다(512²와 같은 수준이고 입자 수는 캔버스 면적이 아니라 획이 정한다). 브라우저 회귀 확인은 `BRUSH_LAB_BROWSER_PROBE=1 TMPDIR=/tmp timeout 600 node apps/brush-lab/scripts/browser-draw-probe.mjs --lane mpm-paint --presets gouache --max-stroke-ms 300000 [--mouse-gap-ms 250]`이다(획이 한도 안에 끝나지 않으면 실패로 중단하고 획마다 소요·HUD를 요약에 남긴다).
 
 레인이 unavailable이면 UI 배너와 셀렉터에 사유 코드(`webgpu-api-unavailable`, `dom-unavailable`, `not-implemented` 등)를
 표시하고 **다른 레인으로 자동 전환하지 않는다**(ADR-0018, 무음 대체 금지). 소프트웨어 렌더러(swiftshader 등)로 판정된
@@ -159,7 +187,7 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
 
 | 탭 | 구성 | 상태 흐름 |
 | --- | --- | --- |
-| 그리기 | 큰 캔버스(`DrawCanvas`: 표시 캔버스 + 궤적 미리보기 + 입력 스테이지) + 접이식 사이드 패널: `DrawBrushPicker`(카탈로그 31종을 가족 칩·검색·최근 사용으로 고름, 항목마다 한글 이름 + 갤러리 Worker로 지연 생성·캐시하는 작은 미리보기), `DrawParamPanel`(크기·불투명도·흐름, 색 16진 입력·H/S/V 슬라이더·최근 색 8칸 — 고른 색은 다음 획부터 `beginStroke` 색 옵션으로 레인에 전달된다, 입력 보정 방식(Sumi 1€ 필터 / 끈 당김 lazy-brush)과 안정화 0~100, 종이 켜기/끄기·종이 종류, 마우스 압력 시뮬레이션), `DrawLaneSelect`(레지스트리 기반 엔진 선택, 미지원 레인 비활성 + 한글 사유, 소프트웨어 렌더러·`browser-verification-required` 배지), `DrawHud`(레인·브러시, 획당 addSamples p50/p95·endStroke·readback ms, dab 수, 소프트웨어 렌더러 경고, 습식 건조 상태). 캔버스 크기 1024×640(기본)·512²·1024²·화면 맞춤, `지우기`·`PNG 저장` | `draw-store`(브러시·파라미터·색·최근 목록·미리보기 캐시·HUD) + `LiveStrokeSession`(레인 하나, 프로그램은 파라미터 변경 시 `setProgram`, 색은 `setColor`로 다음 획부터 반영); 레인·크기를 바꾸거나 지우면 새 세션(캔버스가 빈다) |
+| 그리기 | 큰 캔버스(`DrawCanvas`: 표시 캔버스 + 궤적 미리보기 + 입력 스테이지) + 접이식 사이드 패널: `DrawBrushPicker`(카탈로그 31종을 가족 칩·검색·최근 사용으로 고름, 항목마다 한글 이름 + 갤러리 Worker로 지연 생성·캐시하는 작은 미리보기), `DrawParamPanel`(크기·불투명도·흐름, 색 16진 입력·H/S/V 슬라이더·최근 색 8칸 — 고른 색은 다음 획부터 `beginStroke` 색 옵션으로 레인에 전달된다, 입력 보정 방식(Sumi 1€ 기본 / 끈 당김 / 물리 펜 / 끔)과 방식별 안정화 0~100(로그 매핑)·코너 게이트 토글, 종이 켜기/끄기·종이 종류, 마우스 압력 시뮬레이션), `DrawLaneSelect`(레지스트리 기반 엔진 선택, 미지원 레인 비활성 + 한글 사유, 소프트웨어 렌더러·`browser-verification-required` 배지), `DrawHud`(레인·브러시, 획당 addSamples p50/p95·endStroke·readback ms, dab 수, 소프트웨어 렌더러 경고, 습식 건조 상태). 캔버스 크기 1024×640(기본)·512²·1024²·화면 맞춤, `지우기`·`PNG 저장` | `draw-store`(브러시·파라미터·색·최근 목록·미리보기 캐시·HUD) + `LiveStrokeSession`(레인 하나, 프로그램은 파라미터 변경 시 `setProgram`, 색은 `setColor`로 다음 획부터 반영); 레인·크기를 바꾸거나 지우면 새 세션(캔버스가 빈다) |
 | 갤러리 | `FamilyGallery` → `PresetCard` × 31(스펙 30종 + 수묵 `sumi-ink-wet`): 같은 fixture(zigzag 256²)를 모든 프리셋으로 **Worker**(`cpu-reference` 경로)에서 렌더. 결정성 해시(fnv1a64, 리포트 `pixelHash`와 동일 함수)·렌더 시간·dab 수·가족 지표 PASS/FAIL/UNAVAILABLE | `gallery.entries[presetId]`; Worker 실패는 오류 카드(메인 스레드 대체 렌더 없음) |
 | A/B 비교 | `LaneSelector`(A/B, 레지스트리 기반, 미지원 레인 비활성 + 사유), `FixturePicker`(fixture 9종·캡처 획·캔버스 256/512/1024·시드·실시간 입력·결정성 재실행·캡처 JSON 저장/불러오기), `BrushParamPanel`(크기·경도·간격·불투명도·흐름·산포·안정화·팁 텍스처·샘플링 필터·그레인·습식 베타·KM 베타, configHash 즉시 표시), `LaneCanvas` A \| B \| `DiffHeatmap`(ΔE 램프), `MetricsTable`(지표·임계값·판정), `ReportPanel`(JSON/PNG 다운로드) | `runCompare`: A → B 순차 실행 → `compareLanes` → 리포트 2개(B는 A를 참조 레인으로 ΔE·IoU·퍼지 비교, 결정성 재실행 시 해시 동일 판정) → `results`·`reports` |
 | 리포트 | 세션 리포트 목록·정규 직렬화 원문·JSON 다운로드 | `reports[]`(세션 메모리에만) |
@@ -177,7 +205,7 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
   마우스는 압력이 없어 **`마우스 압력 시뮬레이션(속도 기반)`**(기본 켬: 천천히 = 꾹, 빠르게 = 가볍게)을 둔다. 펜·터치 표본은 그대로 통과한다. `pointercancel`·`lostpointercapture`는 획을 합성하지 않고 레인의 `abortStroke`로 버린다(그림은 그대로, 알림으로 표시).
 - **레인(엔진) 선택**: 시작 레인은 능력 탐지로 한 번만 정한다(webgpu-compute 가능 → 그것, 아니면 wasm-cpu, 아니면 cpu-reference). **사용자가 고른 뒤에는 자동으로 바꾸지 않는다**(ADR-0018). 실패는 사유 코드와 한글 설명으로 드러난다.
   레인을 바꾸면 문서가 레인 안에 있으므로 캔버스가 비워진다(화면 안내 문구). 소프트웨어 렌더러(SwiftShader 등)로 판정된 레인은 배지로 경고한다(속도는 성능 증거가 아님).
-- **브러시·파라미터**: 변경은 `apply-overrides`의 프로그램 오버라이드로 다음 획부터 반영된다(그리는 도중 바꾸지 않는다). 종이 질감은 켜기/끄기와 종이 종류(브러시 기본·매끈한·보통·거친·수채화지)로 고르며, 종류는 종이 규모·거칠기·흡수성 오버라이드다. 안정화는 Sumi 1€ 필터(엔진 입력 파이프라인)와 lazy-brush(끈 당김, `platform/lazy-brush.ts`) 중 고른다.
+- **브러시·파라미터**: 변경은 `apply-overrides`의 프로그램 오버라이드로 다음 획부터 반영된다(그리는 도중 바꾸지 않는다). 종이 질감은 켜기/끄기와 종이 종류(브러시 기본·매끈한·보통·거친·수채화지)로 고르며, 종류는 종이 규모·거칠기·흡수성 오버라이드다. 입력 보정은 Sumi 1€(기본)·끈 당김·물리 펜·끔 중 고른다(아래 '입력 보정과 입력 단계').
   서비스 `applyStabilizer`는 경계 규칙(`@toonstudio/*`는 `platform-baseline-lane.ts`에서만)상 이 화면에서 쓰지 않는다.
 - **HUD**: 마지막 획의 addSamples 프레임별 p50/p95(ms)·endStroke·readback·dab 수. 습식 매체(수채·수묵·구아슈·유화)의 "마르는 중/건조" 상태는 **레인이 제공하지 않아 표시를 생략하고** 안내 문구만 둔다(레인 계약에 건조 상태 조회가 생기면 연결한다).
 - **한계(후속 과제)**:
@@ -186,6 +214,52 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
   (용량 추정만 바뀌며 dab 목록·출력 픽셀은 같다 — 레인별 해시 스냅샷 불변). 남은 거부는 한 프레임에 약 32,000 px 이상 건너뛰는 **비정상 입력**(용량 상한 `MAX_FRAME_DAB_CAPACITY` 262,144 dab 초과 추정)뿐이며,
   dab를 만들기 전에 `StrokeBudgetExceededError`(`details.reasonKo`에 한글 사유)로 거부한다. 앱은 레인을 바꾸거나 입력을 보정하지 않고 사유와 함께 획을 버린다(문서 보존).
   ③ 실 GPU·실기기 펜 압력은 검증하지 못했다(헤드리스 Chromium + SwiftShader, CDP 합성 펜 이벤트).
+
+### 입력 보정과 입력 단계(IN-1, 2026-10-08)
+
+구조: 포인터 표본 → (마우스 압력 시뮬레이션) → **입력 단계 체인**(`engine/input/stages`: 끈 당김·물리 펜, 코너 게이트로 감쌀 수 있다) → 레인 → 레인 안쪽 `StrokePipeline`의 **Sumi 1€(`InputPipeline`)**.
+Sumi 1€는 단계가 아니라 레인 안쪽의 **기본 경로**이고, 단계는 그 앞에서 `RawSample`을 바꾼다(`LiveStrokeSession`의 `inputStage`·`setInputStage`: `up`이 들어온 배치에서 `flush()` 표본을 `up` 앞에 이어 보내 끝점이 포인터 업 위치에 닿고, 획이 버려지면 `abortStroke`와 함께 체인을 `reset()`한다).
+단계 계약(`RawStage`: `apply`·`flush`·`reset`, `up` 보류와 따라잡기)은 `engine/input/stages/raw-stage.ts`의 JSDoc이 기준이다. 선택기는 방식 4종이다.
+
+| 방식 | 동작 | 슬라이더(0~100) | 엔진 1€ |
+| --- | --- | --- | --- |
+| Sumi 1€(기본) | 단계 없음. 모서리 정점 재방출(`backfillVertex`)이 정점을 지킨다 | 로그 매핑 `minCutoff = 30·(0.4/30)^u`, `β = 0.12·(0.006/0.12)^u`(u = s/100, `engine/input/stabilizer-map.ts`). 미설정이면 프리셋 기본 | 슬라이더 값 |
+| 끈 당김 | `createLazyBrushStage` + 획 끝 catch-up(+ 코너 게이트) | 끈 0 → 0 px, 그 위는 0.5 → 48 px 로그 | 0(30 Hz·β 0.12, 사실상 raw) |
+| 물리 펜 | `createPenSpringStage`(지면 항력 스프링, ζ=1 임계 감쇠)(+ 코너 게이트) | 추적 지연 8 → 60 ms 로그 | 0 |
+| 끔 | 보정 없음 | 비활성 | 0 |
+
+- **#9 코너 편차 FAIL 수정(수정안 A)**: 1€가 정점을 지연 위치로 내보내는 설계 결함을 `engine/input/corner-preserve.ts`의 `vertexEmitTimeMs`·`VERTEX_BACKFILL_MIN_PX`(0.25)·`VERTEX_BACKFILL_MIN_SPEED_PX_PER_MS`(0.2)와
+  `input-pipeline.ts`의 `backfillVertex()`로 고쳤다(모서리 판정 때 직전 raw 정점을 모서리 직후 표본보다 먼저 commit). 수정안 B(배치 용량 추정)는 BL-1b가 먼저 반영했다. 저장소 지표(`build-report`와 같은 절차)로 재측정한 pencil-hb 지그재그: **128² 2.55 → 1.26 px(≤ 1.5 PASS), 512² 6.16 → 0.97 px, 오버슈트 0 유지**.
+  지표 정의·임계는 바꾸지 않았다. 128² corner-square(0.16 px/ms)는 속도 가드(0.2 px/ms) 아래라 개선되지 않는다(1.17 px, 원래도 PASS). 광폭·연질·습식 프리셋 다수는 입력을 통과시켜도 1.5 px를 넘는 지표 바닥이라 이 수정으로 판정이 바뀌지 않는다(SP-C 기록, 별도 승인 후 정리).
+  픽셀 해시 스냅샷 19건(10개 테스트)이 의도적으로 바뀌었다(지그재그 정점이 출력 경로에 들어감). `cpu-reference-lane` 스냅샷 36건 중 지그재그 4건이 바뀌었고 불변 32건은 **모서리 없는 fixture 28건**(직선·곡선·나선·고속 획·압력 램프·기울기 스윕·손떨림 × 4프리셋)과 **속도 가드로 보존되지 않은 corner-square 4건**(모서리는 있지만 128²에서 0.16 px/ms라 가드 0.2 px/ms 아래여서 재방출이 일어나지 않았다; 256²/512² corner-square는 재방출 2건이 생기지만 그 크기의 스냅샷이 없어 해시로는 드러나지 않는다)이다 — 표는 `docs/drafts/brush-wet-gpu-mirror-spec.md` §9.3.
+- **단계 프레임워크**: `passthrough`·`createLazyBrushStage`(자체 구현, 반경 로그 매핑, 획 끝 catch-up)·`createCornerGateStage`(메타 단계: 회전각 ≥ 60° **그리고** 정점 직전 40 ms 창의 순변위 속도 ≥ 0.2 px/ms **그리고** 나가는 변 ≥ 위치 잡음 σ의 20배일 때 정점을 raw 좌표로 통과시키고 내부 단계를 정점에서 재시작; 한 걸음 순간 속도로만 재면 240 Hz 이상 잡음 입력에서 오탐한다(σ 0.25 px 40획 148회) — 창 속도·변 길이 가드는 σ 0.25·0.4 px × 120 Hz~1 kHz × 50~600 px/s 각 60획과 정수 격자 계단 입력에서 오탐 0, 깨끗한 입력은 표본율과 무관하게 잡는다. 엔진 1€의 정점 재방출은 창 속도 가드만 쓰므로 150 px/s를 넘는 잡음 입력에는 오탐이 남는다(재방출 정점이 지연된 출력보다 raw에 가까워 경로 RMS는 줄거나 같다))·`createPenSpringStage`, 합성 `composeStages`·`applyStrokeStream`.
+  끈 당김은 반경만큼 모서리를 깎고 길이가 줄어들므로 **코너 게이트와 catch-up을 함께** 쓴다(앱의 기본값).
+- **`PenSpring2D`(물리 펜 적분기, 물리 붓털 레인이 붓 손잡이 모델로 import)**: `engine/input/stages/pen-spring.ts`, `engine/index.ts`에서 export. 상태 (x, y, vx, vy), `step(dtSec, targetX, targetY)`(위치 먼저·항력 암시적 반암시적 오일러, 질량 1), 고정 서브스텝 1/240 s를 표본 시각(`tMs`)으로 구동하는 `PenSpringDriver`(이벤트 율과 무관하게 결정적),
+  상수 `penSpringParams(lagMs, zeta)`(추적 지연·감쇠비 → ωn·λ). 감쇠를 포인터-펜 상대 속도에만 걸면 지연이 사라지므로(SP-A) **지면 항력**이 끌림(지연 = λ/k)을 만든다.
+  감쇠비 ζ는 1/240 s 이산 계의 임계 감쇠를 1로 정의한다(`λ = ζ(2ωn + ωn²h)`; 연속 모델의 ζ=1은 짧은 지연에서 작은 오버슈트가 남는다).
+- **ζ 측정(pencil-hb, 지연 15 ms, 코너 게이트, Node 22 단일 스레드, `bench/metrics/input-stage-metrics.test.ts`)**: ζ=0.55는 512² 고속 획 끝 오버슈트 10.7 px·정착 175 ms, **ζ=1은 오버슈트 0·정착 83 ms**, ζ=1.5/2/3은 오버슈트 0이지만 정착 108/112/162 ms로 더 늦다 → **기본 ζ = 1**(오버슈트 없는 가장 빠른 정착). 코너 편차(128²/512²)는 ζ=1 1.67/1.19 px다.
+
+단계 비교(저장소 안 재측정, pencil-hb CPU 참조, Node 22 단일 스레드 — 브라우저·실펜이 아니다; 지그재그 편차는 128²/512² px, 지터는 tremor 512² 경로 RMS px, 지연은 단계+엔진 합산 ms, 오버슈트는 512² 고속 획 끝 px, 형상은 스파이럴 512²의 raw 대비 RMS px):
+
+| 경로 | 지그재그 128² / 512² | 지터 | 지연 | 오버슈트 | 길이 비율 | 형상 RMS | 끝점 모자람 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| passthrough(끔) | 1.24 / 1.04 | 0.874 | 1.4 | 0 | 1.001 | 0.55 | 0 |
+| Sumi 1€ 기본 + 정점 재방출 | 1.26 / 0.97 | 0.213 | 6.9 | 0 | 1.010 | 3.58 | 0 |
+| Sumi 1€ 슬라이더 50 / 100 | 1.25 / 0.93 · 1.23 / 0.99 | 0.486 · 0.077 | 4.6 · 11.8 | 0 | 1.006 · 1.014 | 2.36 · 5.05 | 0 |
+| 끈 당김 12 px, 게이트 없음 | 10.75 / 10.31 | 0.098 | 21.5 | 0 | 0.996 | 1.22 | 0 |
+| 끈 당김 12 px + 게이트 + catch-up | 1.18 / 0.85 | 0.098 | 21.5 | 0 | 0.996 | 1.22 | 0 |
+| 끈 당김 12 px + 게이트, catch-up 없음 | 1.23 / 0.85 | 0.097 | 21.5 | 0 | 0.972 | 1.24 | 12.0 |
+| 물리 펜 15 ms ζ=0.55 + 게이트 | 1.56 / 0.99 | 0.631 | 16.4 | 10.7 | 1.014 | 0.93 | 0 |
+| 물리 펜 15 ms ζ=1 + 게이트 | 1.67 / 1.19 | 0.610 | 16.4 | 0 | 1.000 | 0.39 | 0 |
+| 물리 펜 15 ms ζ=1, 게이트 없음 | 3.59 / 10.36 | 0.610 | 16.4 | 0 | 1.000 | 0.39 | 0 |
+
+임계 테스트: 게이트 단계의 지그재그 편차는 512²에서 모두 ≤ 1.5 px, 128²에서 끈 당김·Sumi는 ≤ 1.5 px이고 **물리 펜+게이트는 1.67 px(통과 바닥 1.24 + 0.4)라 128²에서만 1.9 px 임계**를 둔다(128²는 pencil-hb 선폭이 2 px 안팎이라 서브픽셀 잡음이 ±0.3 px이고 지연 8~60 ms 스윕이 1.30~1.74 px로 흩어진다). 오버슈트 ≤ 0.5 px, 끝점 모자람 ≤ 0.05 px(catch-up).
+SP-C의 지터(0.738 → 0.112)와 수치가 조금 다른 것은 이쪽이 앱과 같은 엔진 경로(코너 보존 포함)에서 재기 때문이다.
+
+브라우저 입력 방식 확인(2026-10-08, `--lane wasm-cpu --presets pencil-hb --input-modes one-euro,lazy-brush-nogate,lazy-brush,pen-spring-nogate,pen-spring,off --input-only`): 방식마다 같은 세 획(지그재그·스파이럴·필기체 고리)을 CDP로 240 Hz(이벤트당 5 px = 1.2 px/ms, 페이지가 받은 `event.timeStamp` 간격 중앙값 4.2 ms)로 그린 스크린샷 6장을 **열어서 확인**했다(`<레인>-<프리셋>-input-<방식>.png`, 소프트웨어 렌더·wasm-cpu 레인, 실펜 아님).
+끈 당김(48 px) 게이트 없음은 지그재그의 정점을 크게 깎고(꼭짓점 높이가 원래의 약 55 %) 스파이럴을 줄이며 필기체 고리를 아치로 편다; 게이트를 켜면 모든 정점이 끝까지 닿지만 곡선은 여전히 끈 반경만큼 줄어든다(스파이럴 축소·고리 소실).
+물리 펜(지연 33 ms) 게이트 없음은 정점을 둥글리되(꼭짓점 높이가 원래의 약 80 %) 스파이럴·고리는 부드럽게 따라오고, 게이트를 켜면 정점이 끝까지 닿는다; 획 끝에서 포인터 업 위치를 넘는 오버슈트는 보이지 않았다. 끔은 raw 그대로(정점 날카로움·고리 유지)이고 Sumi 1€ 기본은 빠른 속도(1.2 px/ms)에서 스파이럴을 다각형처럼 깎는다(위 표의 형상 RMS 3.58 px).
+(처음에는 실제 주입 시각(이벤트당 약 8 ms 대기)으로 그렸는데 이 부하 환경(load average 12)에서 끈 당김+게이트가 5개 정점 중 1개만 살렸다. 이벤트 시각을 기록하지 않아 원인을 직접 확인하지는 못했고, 주입이 느려 속도가 가드(0.2 px/ms) 아래로 떨어진 것으로 추정한다 — 그래서 합성 시각을 쓴다. 가드 때문에 저속 필기에서는 모서리 보존이 꺼지는 것은 설계 한계다.)
 
 브라우저 실검증(2026-10-08, `BRUSH_LAB_BROWSER_PROBE=1 TMPDIR=/tmp node apps/brush-lab/scripts/browser-draw-probe.mjs [--lane <id>] [--presets a,b] [--skip-extras] [--verbose]`): Vite dev 서버와 헤드리스 Chromium 141(둘 다 detached 프로세스 그룹, 종료 시 그룹 kill)에서 마우스 곡선(속도 압력 시뮬레이션 켬)과 CDP 펜 지그재그(pointerType=pen, 압력 0.1→1→0.1·기울기)를 실제로 그리고 스크린샷·잉크 픽셀·HUD를 기록한다.
 `wasm-cpu`에서 가족 9종(연필·목탄·G펜·수채·유화·에어브러시·수묵·마커·해칭)이 모두 그려지고, 우클릭 메뉴 차단·touch-action none·우클릭이 획을 만들지 않음·캔버스 밖 드래그가 한 획으로 끝남·합성 `pointercancel` 뒤 문서 잉크 픽셀 불변(33007→33007)·`PNG 저장`(1024×640, 흰 종이 평탄화)·모바일 세로(390 px) 가로 스크롤 0과 사이드 패널이 캔버스 아래로 내려옴을 확인했다.
@@ -204,6 +278,7 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
   `src/boundary.test.ts`가 `packages/`로 나가는 상대 import를 이 지정 파일·모듈로만 허용하고, `registry.test.ts`가 서비스 패키지 import를 위 파일로만 허용한다.
   `src/engine/**`은 어떤 경우에도 `@toonstudio/*`·`packages/` 경로를 import하지 않는다.
 - `src/engine/**`은 `@toonstudio/*`·react·DOM 전역·`Math.random`·`Date.now`를 참조하지 않는다. zod는 `presets/program-schema.ts`·`wet/params.ts`만.
+- 외부 물리 엔진 패키지(`@dimforge/*`·planck·matter·box2d 등) import는 `src/lanes/physics/**`에서만, 그 안에서도 값 import는 동적 `import()`만 허용한다(타입 import는 허용). `src/engine/**`의 bare specifier는 zod(허용 파일 한정)뿐이다. `src/boundary.test.ts`가 거부한다.
 - `@/` alias 금지(상대 경로만). mixbox(CC BY-NC)·Krita 등 GPL 코드·canvaskit 유입 금지. `src/boundary.test.ts`가 거부한다.
 
 ## 의존성·라이선스
@@ -211,6 +286,7 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
 | 패키지 | 버전 | 라이선스 | 용도 |
 | --- | --- | --- | --- |
 | react / react-dom | ^19.2.7 | MIT | 랩 UI |
+| @dimforge/rapier2d-compat | 0.21.0(exact) | Apache-2.0 (wasm 2.4 MB를 JS에 base64로 내장, 내장 Rust crate 중 경로로 식별한 부분집합은 nalgebra·parry2d Apache-2.0과 MIT OR Apache-2.0 — 전체 의존 목록이 아니며 Cargo.toml 선언 의존은 고지 문서 4.1절) | 실험 레인 `bristle-rapier`. `lanes/physics/rapier-loader.ts`의 동적 `import()`로만 불러온다(정적 import 금지, `boundary.test.ts`). 고지: [docs/notices/rapier2d-third-party.md](docs/notices/rapier2d-third-party.md), 원장: `license-policy.test.ts`의 `EMBEDDED_WASM` |
 | zod | 4.4.3(exact) | MIT | 브러시 프로그램·fixture·인증 리포트 스키마 |
 | @toonstudio/studio-brush-platform / studio-project-model / studio-engine-registry | workspace:* | 저장소 내부 | 현행 서비스 기준선 레인·δ48 교차 검증 |
 | libmypaint v1.6.1(wasm, 핀된 빌드) | 2768251d | ISC | 외부 엔진 비교 레인 `libmypaint`. 고지: `packages/studio-brush-platform/src/libmypaint/COPYING`(라이선스 원문)·`NOTICE`·`THIRD_PARTY_INVENTORY.json`·`INTEGRITY.sha256`, 빌드 소스 `bridge/` |
@@ -219,6 +295,7 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
 | vitest / jsdom / @testing-library/react | 4.1.11 / ^29 / ^16.3.2 | MIT | Node·jsdom 테스트 |
 | typescript | ~6.0.3 | Apache-2.0 | typecheck(WebGPU 타입은 DOM lib 제공, `@webgpu/types` 미사용) |
 
+혼색 엔진의 스펙트럼 표(`engine/pigment/km-tables.ts`)는 spectral.js 3.0.0(MIT, 루트 의존·런타임 미사용) 파생 데이터이며 고지·생성 절차·재현 검사는 [docs/license-policy.md](docs/license-policy.md) 6절이 원장이다.
 참고 코드는 개념·수식만 재구현했고 외부 비트맵·재질 에셋은 0개다. 라이선스 판정 원장은
 [brush-lab 참고 문헌 원장](../../docs/engines/labs-brush-engine-references-2026-10-01.md)이다.
 
@@ -244,7 +321,7 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
     (b) dab 각도·종이 회전이 WebGPU가 2^-11 절대 오차를 허용하는 내장 `sin/cos`를 쓰던 것을 `rot_cs`(`det_sin/det_cos`, 각도 0은 정확히 (1, 0))로 바꿨다 — SwiftShader에서 dab 각도 0.3의 커버리지 오차가 4.2e-4였고 수묵·구아슈 상태 어긋남(셀당 최대 0.13)의 원인이었다. 수정 후 단일 dab 24개 스윕이 전부 ≤ 9e-7이다.
     효과: 카탈로그 93건 ΔE p99 최대 0.69 → 0, 유화 189 dab 상태 5.3e-3 → 2.2e-6. 렌더 인스턴싱 레인도 같은 WGSL 헬퍼를 쓴다.
   - 한계: 실 GPU에서의 `sin/cos` 외 내장 함수(`exp`·`pow`·`log2`) 정밀도, f32 합산 순서, 타이밍은 검증하지 못했다. 문턱 분기(방향 선택·경화·핀닝)는 f32/f64 차이로 드물게 뒤집힐 수 있다(위 속도장 1셀 예외). `wasm-cpu` 커널은 습식 스탬프가 CPU와 같도록(안료 질량 × 그레인 응답, 임파스토 dab는 획 레이어에 쓰지 않음) 재빌드했다(`wasm/sumi-kernel/build.sh`, INTEGRITY·`kernel-*.ts` 재생성).
-  - CPU 습식 해시는 의도적으로 바뀌었다: watercolor-wet 256² `e2eeedfaad6bccd9`·512² `21d19d4a9bb0d714`, oil-impasto 256² `1d1437eb6d4ebc42`·512² `b4f8ae7943dbd81f`(새 스냅샷은 `raster/wet-presets*.snapshot.test.ts`), 비습식 프리셋 해시는 변하지 않았다.
+  - CPU 습식 해시는 의도적으로 바뀌었다: watercolor-wet 256² `e2eeedfaad6bccd9`·512² `21d19d4a9bb0d714`, oil-impasto 256² `1d1437eb6d4ebc42`·512² `b4f8ae7943dbd81f`(새 스냅샷은 `raster/wet-presets*.snapshot.test.ts`), 비습식 프리셋 해시는 변하지 않았다. **(2026-10-08 갱신: 입력 정점 재방출(#9)로 지그재그 해시 19건(습식 7·비습식 8·cpu-reference 스냅샷 4)이 다시 바뀌었다. 현재 값은 `docs/drafts/brush-wet-gpu-mirror-spec.md` §9.3 표가 기준이며 위 해시는 2026-10-02 시점 기록이다. 위 ④의 GPU 대조는 2026-10-09에 새 해시 기준으로 다시 쟀다(SwiftShader `webgpu-compute`, 256²·512² 6건: δ48 0 %·ΔE p99 0, 최대 ΔE 수채 0.20·건식 0·구아슈 0·유화 0.34~0.56·수묵 1.08(직전 0.37보다 크며 원인은 미확정), watercolor-wet@512는 미측정, 실 GPU 아님) — 상세는 명세 §9.3 'GPU 대조 재측정'.)**
 - 표시용 릴리프 조명을 거치지 않은 `readbackLinear()`는 GPU 표시 합성(`composite_linear`)으로 같은 조명·층 합성을 적용해 돌려준다. `wasm-cpu`는 `Surface`를 상속해 임파스토를 TS 유화 층 패스 그대로 지원하고(CPU와 비트 동일),
   렌더 인스턴싱 레인(WebGPU·WebGL2)은 습식·smudge·임파스토를 `not-implemented`로 거부한다.
 - 외부 엔진 비교 레인(libmypaint·hokusai): 입력 파이프라인·접촉 물리·테이퍼·종이 그레인·습식·임파스토·smudge가 없고(위 절), `readbackLinear`는 8비트에서 유도한 값이다. 인증 리포트의 가족 지표(질감·손맛)는 이 레인들에 대해 해석하지 않는다.
@@ -252,7 +329,7 @@ Sumi와 **실제 외부 엔진**을 같은 fixture·같은 입력으로 나란�
 - `wasm-gpu-hybrid`는 wasm이 CSR(counts·offsets·refs)만 만들고 GPU가 래스터를 한다. 스펙의 "wasm이 StrokePipeline 동역학까지 수행"은 구현하지 않았다.
 - 캔버스 상한 2048²(타일 16 384개), 대형 dab(타일 4096개 초과)은 fail-visible overflow로 기록된다.
 - 갤러리 가족 지표의 임계값은 자체 정의 목표이며 브라우저 실측 전까지 "달성"으로 보고하지 않는다.
-- 안정화 강도 0.6 초과 구간의 spring 팔로워 백엔드는 이 랩에 없고 같은 1€ 매핑을 쓴다(패널에 표시).
+- A/B 비교 화면(`BrushParamPanel`)의 안정화 강도는 여전히 선형 1€ 매핑이고 0.6 초과 구간의 spring 팔로워 백엔드가 없다(패널에 표시). 그리기 화면은 2026-10-08부터 로그 매핑과 물리 펜 단계를 쓴다.
 - 세션 리포트·캡처 획은 메모리에만 있다(서버·저장 없음). 필요하면 JSON으로 내려받는다. "그리기" 탭의 문서도 메모리에만 있고 PNG 스냅샷만 내려받는다(undo·레이어 없음).
 
 ## 승격 프로세스 요약

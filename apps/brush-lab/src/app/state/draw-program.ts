@@ -1,17 +1,18 @@
+import { DEFAULT_INPUT_CONFIG } from "../../engine/input/input-pipeline";
+import { lazyRadiusPxFromPct, stabilizerPctToOneEuro } from "../../engine/input/stabilizer-map";
 import { PRESET_CATALOG } from "../../engine/presets/catalog";
-import { BRUSH_FAMILIES } from "../../engine/presets/program-schema";
+import { brushConfigHashSync, BRUSH_FAMILIES, normalizeProgram } from "../../engine/presets/program-schema";
 
 import { DRAW_PAPER_KINDS } from "./draw-store";
-import { resolveProgram } from "./run-compare";
+import { effectiveStabilizerPct } from "./input-chain";
+import { messageOf, resolveProgram } from "./run-compare";
 
 import type { DrawFamilyFilter, DrawState } from "./draw-store";
 import type { LabOverrides } from "./lab-store";
 import type { ResolvedProgram } from "./run-compare";
+import type { OneEuroParams } from "../../engine/input/one-euro";
 import type { BrushFamily, BrushProgram } from "../../engine/presets/program-schema";
 import type { LaneCapabilityReport, LaneDescriptor, LaneId } from "../../lanes/lane";
-
-/** 안정화 슬라이더 0..100 → 끈 길이(px). 100이면 60 px. */
-export const LAZY_BRUSH_MAX_RADIUS_PX = 60;
 
 /** 브러시 가족 한글 이름. `Record<BrushFamily, …>`라서 가족이 늘면 컴파일 오류로 알려 준다. */
 export const FAMILY_LABELS: Record<BrushFamily, string> = {
@@ -44,12 +45,11 @@ export function catalogFamilies(): BrushFamily[] {
   return BRUSH_FAMILIES.filter((f) => used.has(f));
 }
 
-/** 그리기 상태 → 프리셋 위 오버라이드(고급 패널 값 + 안정화 + 종이 종류). */
-export function buildDrawOverrides(state: Pick<DrawState, "overrides" | "paperKind" | "stabilizerMode" | "stabilizerPct">): LabOverrides {
+type DrawProgramState = Pick<DrawState, "presetId" | "overrides" | "paperKind" | "stabilizerMode" | "stabilizerPct">;
+
+/** 그리기 상태 → 프리셋 위 오버라이드(고급 패널 값 + 종이 종류). 안정화는 로그 매핑이라 `resolveDrawProgram`이 따로 얹는다. */
+export function buildDrawOverrides(state: Pick<DrawState, "overrides" | "paperKind">): LabOverrides {
   const out: LabOverrides = { ...state.overrides };
-  if (state.stabilizerMode === "one-euro" && state.stabilizerPct !== null) {
-    out.stabilizer = Math.max(0, Math.min(1, state.stabilizerPct / 100));
-  }
   const paper = DRAW_PAPER_KINDS.find((p) => p.id === state.paperKind);
   if (paper?.values) {
     // 종이 값만 바꾼다. 켜기/끄기는 '종이 질감' 스위치(`overrides.grain`)가 정한다(종류를 고르면 UI가 스위치를 켠다).
@@ -60,17 +60,43 @@ export function buildDrawOverrides(state: Pick<DrawState, "overrides" | "paperKi
   return out;
 }
 
-/** 그리기 상태 → 검증된 프로그램(범위 밖이면 사유 문자열, 무음 보정 없음). */
-export function resolveDrawProgram(
-  state: Pick<DrawState, "presetId" | "overrides" | "paperKind" | "stabilizerMode" | "stabilizerPct">,
-): ResolvedProgram {
-  return resolveProgram({ presetId: state.presetId, overrides: buildDrawOverrides(state) });
+/**
+ * 안정화 상태 → 엔진 입력 파이프라인의 위치 1€ 파라미터(로그 매핑 `stabilizerPctToOneEuro`). 프리셋 기본을 쓰면 null.
+ * - 1€ 방식: 슬라이더를 정했으면 그 값, 아니면 프리셋 기본(null).
+ * - 끈 당김·물리 펜·끔: 앞단 입력 단계(또는 보정 없음)가 평활을 맡으므로 엔진 1€는 0(사실상 raw)으로 둬 두 평활이 겹치지 않게 한다.
+ */
+export function drawOneEuroPosition(state: Pick<DrawState, "stabilizerMode" | "stabilizerPct">): OneEuroParams | null {
+  if (state.stabilizerMode !== "one-euro") return stabilizerPctToOneEuro(0);
+  return state.stabilizerPct === null ? null : stabilizerPctToOneEuro(state.stabilizerPct);
 }
 
-/** 끈 당김 모드의 끈 길이(px). 안정화 미설정이면 0(끈 없음). */
+/** 그리기 상태 → 검증된 프로그램(범위 밖이면 사유 문자열, 무음 보정 없음). */
+export function resolveDrawProgram(state: DrawProgramState): ResolvedProgram {
+  const resolved = resolveProgram({ presetId: state.presetId, overrides: buildDrawOverrides(state) });
+  const position = drawOneEuroPosition(state);
+  if (!resolved.program || position === null) return resolved;
+  try {
+    const input = resolved.program.input;
+    const program = normalizeProgram({
+      ...resolved.program,
+      input: {
+        ...input,
+        oneEuro: {
+          position,
+          pressure: input.oneEuro?.pressure ?? DEFAULT_INPUT_CONFIG.oneEuro.pressure,
+          tilt: input.oneEuro?.tilt ?? DEFAULT_INPUT_CONFIG.oneEuro.tilt,
+        },
+      },
+    });
+    return { program, hash: brushConfigHashSync(program), error: null };
+  } catch (error) {
+    return { program: null, hash: null, error: `파라미터가 스키마 범위를 벗어났다: ${messageOf(error)}` };
+  }
+}
+
+/** 끈 당김 모드의 끈 길이(px): 슬라이더 값(없으면 방식 기본값)의 로그 매핑. */
 export function lazyRadiusPx(stabilizerPct: number | null): number {
-  if (stabilizerPct === null) return 0;
-  return (Math.max(0, Math.min(100, stabilizerPct)) / 100) * LAZY_BRUSH_MAX_RADIUS_PX;
+  return lazyRadiusPxFromPct(effectiveStabilizerPct("lazy-brush", stabilizerPct) ?? 0);
 }
 
 /** 목록 필터(가족 칩 + 검색어 + 최근). 검색은 한글 이름·id·가족 한글 이름·설명에서 대소문자 무시로 찾는다. */

@@ -3,9 +3,22 @@ import { useDrawSelector, useLab, useLabSelector } from "../shell/lab-context";
 import { FAMILY_LABELS } from "../state/draw-program";
 import { findDescriptor } from "../state/lane-helpers";
 
+import { ExperimentalBadge } from "./ExperimentalBadge";
+import { ReceiptMapping } from "./ReceiptMapping";
+
 
 function fmt(v: number | null, digits = 2): string {
   return v === null ? "—" : v.toFixed(digits);
+}
+
+/**
+ * 레인 전용 영수증(예: MPM의 `notesKo`)이 한글 사유를 달고 있으면 꺼낸다. 예산 가드·한도로 일부를 진행하지 않았다면 사용자에게 보여야 한다(무음 절단 금지).
+ * 공통 `StrokeReceipt`에는 이 필드가 없어 구조를 확인하고 읽는다.
+ */
+function laneNotesOf(receipt: unknown): string[] {
+  if (typeof receipt !== "object" || receipt === null) return [];
+  const notes = (receipt as { notesKo?: unknown }).notesKo;
+  return Array.isArray(notes) ? notes.filter((n): n is string => typeof n === "string") : [];
 }
 
 /** 습식 매체 가족: 레인이 건조 상태를 제공하지 않으므로 상태 표시는 생략하고 안내만 한다. */
@@ -30,6 +43,7 @@ export function DrawHud() {
   const software = cap?.softwareRenderer === true;
   const unverified = desc?.status === "browser-verification-required";
   const wet = preset ? preset.wet !== null || WET_FAMILIES.has(preset.family) : false;
+  const laneNotes = laneNotesOf(stats?.receipt);
   return (
     <div className="lab-draw-hud" data-testid="lab-draw-hud" aria-label="표시·성능 HUD">
       <p className="lab-draw-hud-line">
@@ -44,6 +58,7 @@ export function DrawHud() {
         </span>
       </p>
       <p className="lab-draw-hud-badges">
+        <ExperimentalBadge desc={desc} />
         {unverified ? (
           <span className="lab-badge lab-badge--warn" data-testid="lab-draw-badge-unverified">
             browser-verification-required · 브라우저 미검증
@@ -81,6 +96,14 @@ export function DrawHud() {
           <dd className={stats && stats.overflowDabs > 0 ? "lab-verdict-FAIL" : undefined}>{stats ? stats.overflowDabs : "—"}</dd>
         </div>
       </dl>
+      {laneNotes.length > 0 ? (
+        <ul className="lab-muted" data-testid="lab-draw-hud-lane-notes" aria-label="레인 알림(마지막 획)">
+          {laneNotes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      ) : null}
+      <ReceiptMapping receipt={stats?.receipt} />
       {wet ? (
         <p className="lab-muted" data-testid="lab-draw-hud-wet">
           습식 매체: 마르는 중/건조 상태는 레인이 제공하지 않아 표시를 생략한다(문서의 번짐은 획 사이에 진행된다).

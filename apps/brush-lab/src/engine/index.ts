@@ -17,14 +17,18 @@ export * from "./input/corner-preserve";
 export * from "./input/input-pipeline";
 export * from "./input/one-euro";
 export * from "./input/predictor";
+export * from "./input/stabilizer-map";
+export * from "./input/stages";
 
 export * from "./physics/bristle-bundle";
 export * from "./physics/friction";
 export * from "./physics/graphite-deposit";
+export * from "./physics/mpm2d";
 export * from "./physics/nib-flex";
 export * from "./physics/physics-model";
 export * from "./physics/tip-contact";
 export * from "./physics/velocity-deposit";
+export * from "./physics/world2d";
 
 export * from "./dynamics/color-dynamics";
 export * from "./dynamics/dab-emitter";
@@ -47,6 +51,7 @@ export * from "./raster/tile-pool";
 
 export * from "./pigment/kubelka-munk";
 export * from "./pigment/km-mix";
+export * from "./pigment/km-transport";
 export * from "./pigment/pigment-table";
 
 export * from "./wet/active-tiles";

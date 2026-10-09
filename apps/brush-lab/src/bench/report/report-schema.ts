@@ -21,6 +21,9 @@ export const LANE_ID_VALUES = [
   "wasm-gpu-hybrid",
   "libmypaint",
   "hokusai",
+  "mpm-paint",
+  "bristle-pbd",
+  "bristle-rapier",
 ] as const;
 
 export const LANE_KIND_VALUES = ["baseline", "candidate", "comparison"] as const;

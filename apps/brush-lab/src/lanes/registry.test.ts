@@ -60,7 +60,7 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 describe("레인 레지스트리", () => {
-  it("id가 유일하고 LaneId 어휘 10개를 모두 덮으며 상태·종류 어휘를 지킨다", () => {
+  it("id가 유일하고 LaneId 어휘 13개를 모두 덮으며 상태·종류 어휘를 지킨다", () => {
     const ids = LANE_REGISTRY.map((d) => d.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect([...ids].sort()).toEqual([...LANE_ID_VALUES].sort());
@@ -86,6 +86,33 @@ describe("레인 레지스트리", () => {
     expect(laneById("hokusai").kind).toBe("comparison");
     expect(findLane("nope")).toBeNull();
     expect(() => laneById("nope" as "cpu-reference")).toThrow(RangeError);
+  });
+
+  it("maturity: 생략 = stable이고, 실험 레인은 mpm-paint·bristle-pbd·bristle-rapier뿐이다", () => {
+    const EXPERIMENTAL: readonly LaneId[] = ["mpm-paint", "bristle-pbd", "bristle-rapier"];
+    const experimental = LANE_REGISTRY.filter((d) => d.maturity === "experimental").map((d) => d.id);
+    expect(experimental).toEqual(EXPERIMENTAL);
+    for (const d of LANE_REGISTRY) {
+      expect(d.maturity === undefined || d.maturity === "stable" || d.maturity === "experimental").toBe(true);
+      if (!EXPERIMENTAL.includes(d.id)) expect(d.maturity, `${d.id}는 기존 레인이라 maturity를 생략(stable)한다`).toBeUndefined();
+    }
+    for (const id of EXPERIMENTAL) {
+      expect(laneById(id).status).toBe("implemented");
+      expect(laneById(id).kind).toBe("candidate");
+    }
+  });
+
+  it("물리 붓털 레인 둘은 레지스트리 끝에 있고 양쪽 모두 Node에서 probe가 supported다(Rapier 모듈은 probe에서 불러오지 않는다)", async () => {
+    const ids = LANE_IDS_ORDERED.slice(-3);
+    expect(ids).toEqual(["mpm-paint", "bristle-pbd", "bristle-rapier"]);
+    const env: LaneEnvironment = { clock: { now: () => 0 } };
+    for (const id of ["bristle-pbd", "bristle-rapier"] as const) {
+      const lane = laneById(id).create();
+      const report = await lane.probe(env);
+      expect(report.status).toBe("supported");
+      expect(report.reasons).toEqual([]);
+      lane.dispose();
+    }
   });
 
   it("모든 레인이 빈 환경에서 probe 시 throw 없이 구조화 결과를 돌려준다", async () => {

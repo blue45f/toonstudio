@@ -174,32 +174,36 @@ CSP의 브러시 크기 상한(2,000 px)과 PRO/EX 캔버스 상한은 비공식
 
 - **확인 방법 열**: `설치본`은 샌드박스에 `npm install --ignore-scripts`로 설치한 패키지의 `LICENSE`와 `package.json`을 직접 읽은 것이다.
   `원격`은 crates.io API·GitHub raw 등 외부 조회이고, 설치본으로 확인하지 못한 부분을 뜻한다. `미설치`는 설치하지 않았다는 뜻이다.
-- **채택 상태 열**: 스파이크 시점의 권고 어휘(`adopt-*`·`experiment-only`·`defer`·`reject`)이며 **현재 저장소에 반영된 상태가 아니다**.
+- **채택 상태 열**(2026-10-08 BL-3 통합으로 갱신): 스파이크 권고 어휘(`adopt-*`·`experiment-only`·`defer`·`reject`) 뒤에 **저장소 반영 상태**를 `→`로 덧붙였다.
+  반영 상태 어휘: `반영(레인)`·`반영(수식 재구현)`·`반영(파생 데이터)`·`미반영`(저장소에 들이지 않음). 구현 위치·수치·한계는
+  [스파이크 기록 8절](../../apps/brush-lab/docs/experiments/2026-10-08-physics-input-pigment-spikes.md)이 권위다.
   의존성 추가는 통합 담당이 하고, `review` 판정은 법무 검토 전 채택하지 않는다([license-policy](../../apps/brush-lab/docs/license-policy.md) 1절).
 - 상용 판정 어휘는 license-policy의 `ok`·`review`·`reject`를 따른다.
 
 | 라이브러리(버전) | 라이선스(SPDX) | 확인 방법 | 상용 판정 | 채택 상태 |
 | --- | --- | --- | --- | --- |
-| @dimforge/rapier2d-compat 0.21.0 | Apache-2.0 | 설치본 LICENSE·package.json. wasm 내장 Rust crate(nalgebra·parry2d 등, MIT OR Apache-2.0)는 원격(crates.io). NOTICE 파일은 원격에서 없음 확인 | ok(내장 crate 고지는 배포 시 THIRD-PARTY 생성 필요) | adopt-lane(2D 붓털 다발, 지연 로딩·실험 배지) |
-| @dimforge/rapier2d-deterministic-compat 0.21.0 | Apache-2.0 | 설치본(일반 빌드와 같은 LICENSE) | ok | experiment-only |
-| @dimforge/rapier3d-compat 0.21.0 | Apache-2.0 | 설치본. 내장 crate는 원격(wasm 경로 문자열 추출 + crates.io), 설치 wasm의 rapier3d crate 정확한 버전은 확정 못 함 | ok(고지 생성 필요) | experiment-only |
-| @dimforge/rapier3d-deterministic-compat 0.21.0 | Apache-2.0 | 설치본 | ok | experiment-only |
-| planck 1.5.0 | MIT (전이 stage-js 1.0.1 MIT) | 설치본(LICENSE.txt, 전이 LICENSE.md) | ok | defer |
-| matter-js 0.20.0 | MIT | 설치본 | ok | reject(기술 사유) |
-| p2-es 1.2.3 | MIT (전이 poly-decomp-es 0.4.2 MIT) | 설치본 | ok | experiment-only |
-| box2d3-wasm 5.2.0 | MIT(래퍼). 번들 Box2D v3 MIT(Erin Catto)·enkiTS zlib 계열(Doug Binks) | 래퍼는 설치본, 번들 구성요소는 원격(raw 조회). box2cpp 서브모듈 라이선스는 원격 404로 **미확인** | review(번들 고지 누락) | defer |
-| box2d-wasm 7.0.0 | Zlib(래퍼, LICENSE.zlib.txt). 번들 Box2D 2.4.x MIT(Erin Catto) | 래퍼는 설치본, 번들 Box2D는 원격 | review(번들 MIT 고지 누락) | defer |
-| @box2d/core 0.11.0 | MIT | 설치본(LICENSE·package.json 일치, 전이 의존 0, wasm 없음) | ok | experiment-only |
-| @box2d/particles 0.11.0 | MIT(package.json·LICENSE) + 소스 헤더 Zlib 13개(Google 2013 5개·Erin Catto 8개) | 설치본. 원 저장소 google/liquidfun 헤더·License.txt는 원격 대조 | ok(조건부: NOTICE에 Zlib 원문 포함) | experiment-only |
-| cannon-es 0.20.0 | MIT | 설치본 | ok | reject(성능·안정성 사유) |
-| jolt-physics 1.1.0 | MIT(래퍼, JS 헤더 SPDX MIT). wasm 안 libc++abi(Apache-2.0 WITH LLVM-exception) 흔적 | 설치본 + wasm 문자열 | review(THIRD-PARTY 고지 부재, 보수적 판정) | defer |
-| @babylonjs/havok(최신 1.3.14) | npm 메타 MIT 표기, 바이너리 약관 불명확 | **미설치**, 원격(npm 메타·GitHub, LICENSE 원문 404) | review(이름으로 금지) | defer |
-| lazy-brush 2.0.2 | MIT | 설치본(LICENSE 본문 Copyright 2018 Jan Hug) | ok | adopt-input-stage(코너 게이트·catch-up 병용) |
-| kalmanjs 1.1.0 | MIT | 설치본 | ok | reject(이점 없음) |
-| 1eurofilter 1.3.0 | package.json BSD-3-Clause, LICENSE 파일 없음 | 설치본(파일 부재 확인) | review(2절 casiez/OneEuroFilter 루트 LICENSE 부재와 같은 사유) | 미도입(수식 자체 구현) |
-| perfect-freehand 1.2.3 | MIT | 설치본(저장소가 이미 의존) | ok | reject(표본마다 호출 시 O(n²), 수식만 차용) |
-| spectral.js 3.0.0 | MIT | 설치본(전이·바이너리·설치 훅 0). 스펙트럼 데이터가 Burns LHTSS 변형 유래라는 README 서술은 데이터 출처 법무 확인 메모 | ok(데이터 출처 메모 1건) | adopt-lane(오프라인·bench 골든 전용) |
-| culori 4.0.2 | MIT(+ okhsl 하위 LICENSE MIT, Bjorn Ottosson) | 설치본 | ok | reject(자체 OKLab과 동일, 이득 없음) |
-| google/ink-stroke-modeler(저장소 wasm) | Apache-2.0 (abseil-cpp 20250512.0 Apache-2.0) | 복사된 LICENSE 두 건의 sha256을 pinned commit의 GitHub raw와 대조(원격). Emscripten·libc++abi는 wasm 문자열로 존재만 확인 | review(NOTICE의 wasm sha256 불일치, Emscripten/libc++abi 인벤토리 미기재) | defer(고지 정정 후 재평가) |
+| @dimforge/rapier2d-compat 0.21.0 | Apache-2.0 | 설치본 LICENSE·package.json. wasm 내장 Rust crate(nalgebra·parry2d 등, MIT OR Apache-2.0)는 원격(crates.io). NOTICE 파일은 원격에서 없음 확인 | ok(내장 crate 고지는 배포 시 THIRD-PARTY 생성 필요) | adopt-lane(2D 붓털 다발, 지연 로딩·실험 배지) → **반영(레인)**: `apps/brush-lab` 의존(0.21.0 exact), `bristle-rapier` 실험 레인, `EMBEDDED_WASM` 원장·[고지 문서](../../apps/brush-lab/docs/notices/rapier2d-third-party.md). 내장 crate는 wasm 경로 문자열(`registry/src`·`/rust/deps`)로 **식별한 부분집합 13종**(전체 의존 목록이 아니다 — `dlmalloc` 0.2.13 포함). nalgebra·parry2d 의 Cargo.toml 선언 필수 의존(approx·simba·num-*·typenum·either·foldhash·glamx·log·ordered-float 등, 모두 허용형)은 "선언 기준·wasm 에서 미확인"으로 고지 문서 4.1절에 별도 기재(원격 조회). 전체 목록은 `cargo-about` 필요 |
+| @dimforge/rapier2d-deterministic-compat 0.21.0 | Apache-2.0 | 설치본(일반 빌드와 같은 LICENSE) | ok | experiment-only → 미반영 |
+| @dimforge/rapier3d-compat 0.21.0 | Apache-2.0 | 설치본. 내장 crate는 원격(wasm 경로 문자열 추출 + crates.io), 설치 wasm의 rapier3d crate 정확한 버전은 확정 못 함 | ok(고지 생성 필요) | experiment-only → 미반영 |
+| @dimforge/rapier3d-deterministic-compat 0.21.0 | Apache-2.0 | 설치본 | ok | experiment-only → 미반영(character-lab이 별도 버전 0.19.3을 쓴다) |
+| planck 1.5.0 | MIT (전이 stage-js 1.0.1 MIT) | 설치본(LICENSE.txt, 전이 LICENSE.md) | ok | defer → 미반영 |
+| matter-js 0.20.0 | MIT | 설치본 | ok | reject(기술 사유) → 미반영 |
+| p2-es 1.2.3 | MIT (전이 poly-decomp-es 0.4.2 MIT) | 설치본 | ok | experiment-only → 미반영 |
+| box2d3-wasm 5.2.0 | MIT(래퍼). 번들 Box2D v3 MIT(Erin Catto)·enkiTS zlib 계열(Doug Binks) | 래퍼는 설치본, 번들 구성요소는 원격(raw 조회). box2cpp 서브모듈 라이선스는 원격 404로 **미확인** | review(번들 고지 누락) | defer → 미반영 |
+| box2d-wasm 7.0.0 | Zlib(래퍼, LICENSE.zlib.txt). 번들 Box2D 2.4.x MIT(Erin Catto) | 래퍼는 설치본, 번들 Box2D는 원격 | review(번들 MIT 고지 누락) | defer → 미반영 |
+| @box2d/core 0.11.0 | MIT | 설치본(LICENSE·package.json 일치, 전이 의존 0, wasm 없음) | ok | experiment-only → 미반영 |
+| @box2d/particles 0.11.0 | MIT(package.json·LICENSE) + 소스 헤더 Zlib 13개(Google 2013 5개·Erin Catto 8개) | 설치본. 원 저장소 google/liquidfun 헤더·License.txt는 원격 대조 | ok(조건부: NOTICE에 Zlib 원문 포함) | experiment-only → 미반영(입자 물감은 자체 MLS-MPM `mpm-paint`로 구현) |
+| cannon-es 0.20.0 | MIT | 설치본 | ok | reject(성능·안정성 사유) → 미반영 |
+| jolt-physics 1.1.0 | MIT(래퍼, JS 헤더 SPDX MIT). wasm 안 libc++abi(Apache-2.0 WITH LLVM-exception) 흔적 | 설치본 + wasm 문자열 | review(THIRD-PARTY 고지 부재, 보수적 판정) | defer → 미반영 |
+| @babylonjs/havok(최신 1.3.14) | npm 메타 MIT 표기, 바이너리 약관 불명확 | **미설치**, 원격(npm 메타·GitHub, LICENSE 원문 404) | review(이름으로 금지) | defer → 미반영 |
+| lazy-brush 2.0.2 | MIT | 설치본(LICENSE 본문 Copyright 2018 Jan Hug) | ok | adopt-input-stage(코너 게이트·catch-up 병용) → **반영(수식 재구현)**: `engine/input/stages/lazy-brush.ts`(+ 코너 게이트·catch-up). 이 앱은 패키지를 import하지 않는다(IN-1이 `platform/lazy-brush.ts` 삭제) |
+| kalmanjs 1.1.0 | MIT | 설치본 | ok | reject(이점 없음) → 미반영 |
+| 1eurofilter 1.3.0 | package.json BSD-3-Clause, LICENSE 파일 없음 | 설치본(파일 부재 확인) | review(2절 casiez/OneEuroFilter 루트 LICENSE 부재와 같은 사유) | 미도입(수식 자체 구현) → 미반영(Sumi 1€는 기존 자체 구현) |
+| perfect-freehand 1.2.3 | MIT | 설치본(저장소가 이미 의존) | ok | reject(표본마다 호출 시 O(n²), 수식만 차용) → 미반영 |
+| spectral.js 3.0.0 | MIT | 설치본(전이·바이너리·설치 훅 0). 스펙트럼 데이터가 Burns LHTSS 변형 유래라는 README 서술은 데이터 출처 법무 확인 메모 | ok(데이터 출처 메모 1건) | adopt-lane(오프라인·bench 골든 전용) → **반영(파생 데이터)**: `engine/pigment/km-tables.ts`(생성기 `scripts/gen-km-tables.mjs`, `--check` 바이트 동일)와 `km-mix.test.ts` 골든. 런타임 미사용, 원장은 license-policy 6절 |
+| culori 4.0.2 | MIT(+ okhsl 하위 LICENSE MIT, Bjorn Ottosson) | 설치본 | ok | reject(자체 OKLab과 동일, 이득 없음) → 미반영 |
+| google/ink-stroke-modeler(저장소 wasm) | Apache-2.0 (abseil-cpp 20250512.0 Apache-2.0) | 복사된 LICENSE 두 건의 sha256을 pinned commit의 GitHub raw와 대조(원격). Emscripten·libc++abi는 wasm 문자열로 존재만 확인 | review(NOTICE의 wasm sha256 불일치, Emscripten/libc++abi 인벤토리 미기재) | defer(고지 정정 후 재평가) → 미반영(`packages/**` 담당 정정 대기) |
+
+라이브러리가 아닌 자체 구현 채택(스파이크 7절 표 밖): 자체 2차계 펜 스프링(`PenSpring2D`)·자체 PBD 붓털·자체 MLS-MPM·KM 밴드 믹서는 모두 `apps/brush-lab/src/engine/**`에 반영됐다(공개 논문·수식의 재구현, 외부 코드 복제 없음).
 
 바이너리·번들러 도구(esbuild 0.28.2·0.25.12, MIT)는 크기 측정용이며 제품에 포함되지 않는다.

@@ -76,6 +76,7 @@ function pixel(doc: Float32Array, width: number, x: number, y: number): [number,
 /**
  * CPU 참조 픽셀 해시 스냅샷(fnv1a64, sRGB RGBA8). 엔진 수식이 바뀌면 의도적으로 갱신한다.
  * 2026-10-01 생성: zigzagStroke(size, 600 ms), seed 1, 빈 문서.
+ * 2026-10-08 갱신(8건 전부): 입력 정점 재방출(#9 수정안 A) — 지그재그의 모서리 정점이 출력 경로에 들어가 정점이 또렷해지고 dab 열이 달라졌다(모서리 없는 획의 해시는 불변).
  * 이 목록은 **비습식 프리셋**만 담는다(2026-10-02 습식 물리 확장 — LBM 흐름층·3층·섬유·유화 층 — 뒤에도 해시가 변하지 않았다:
  * ink-g-pen·pencil-hb·marker-alcohol·airbrush). 습식 프리셋(수채·수묵·구아슈·유화)의 해시는 `wet-presets.snapshot.test.ts`가 맡는다.
  */
@@ -83,14 +84,14 @@ function pixel(doc: Float32Array, width: number, x: number, y: number): [number,
 const SLOW_RENDER_TIMEOUT_MS = 90_000;
 
 const SNAPSHOTS: readonly [id: string, size: number, hash: string][] = [
-  ["ink-g-pen", 256, "3e66c6a4278fa07a"],
-  ["pencil-hb", 256, "0de059d99a399575"],
-  ["marker-alcohol", 256, "c7a58dfe8d0e9d04"],
-  ["airbrush", 256, "73cb000b3ed8e29e"],
-  ["ink-g-pen", 512, "03435916d2ffa584"],
-  ["pencil-hb", 512, "eb724959d583f0b2"],
-  ["marker-alcohol", 512, "d1f86555b1222d52"],
-  ["airbrush", 512, "bb52144130033daf"],
+  ["ink-g-pen", 256, "ac1589bfdd7e06e5"],
+  ["pencil-hb", 256, "cf83cd31b4a73242"],
+  ["marker-alcohol", 256, "361a124b8bbb8a27"],
+  ["airbrush", 256, "b4ff0236d47f15f3"],
+  ["ink-g-pen", 512, "3225675a6cf04326"],
+  ["pencil-hb", 512, "50af171db778b523"],
+  ["marker-alcohol", 512, "12c85d69504cb39a"],
+  ["airbrush", 512, "02ef1c0a90988054"],
 ];
 
 describe("Surface(CPU 참조 표면)", () => {

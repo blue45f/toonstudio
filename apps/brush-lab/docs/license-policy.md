@@ -31,7 +31,13 @@ SPDX 식은 `A OR B`이면 가장 나은 쪽, `A AND B`이면 가장 나쁜 쪽�
 1. 프로덕션 의존 폐포(workspace 패키지를 따라 들어가는 전이 의존 포함)의 모든 외부 패키지가 `ok`인가.
 2. 금지 패키지 이름이 폐포에 없는가.
 3. 저장소의 모든 `.wasm`(brush-lab·studio-brush-platform·studio-hokusai-wasm)이 `BINARY_COMPONENTS` 원장에 출처·라이선스와 함께 올라 있고 원장 파일이 실제로 있는가.
-4. SPDX 해석기와 탐지기가 표본으로 위반을 잡는가(자체 검증).
+4. 프로덕션 폐포 패키지가 **wasm 을 JS 등에 내장**했는가(`EMBEDDED_WASM` 원장, 5절)와 그 안의 Rust crate 부분집합·고지 문서.
+5. SPDX 해석기와 탐지기가 표본으로 위반을 잡는가(자체 검증).
+
+**내장 wasm 탐지기의 범위와 한계** (`containsInlineWasm`, 2026-10-08). 외부 패키지 파일(소스맵·문서·이미지·글꼴 같은 비실행 확장자 제외, 비코드 확장자 `.json`·`.bin`·`.node`·확장자 없음 포함, 파일당 16 MB 상한 — 넘으면 건너뛰지 않고 실패)에서 wasm 매직(`\0asm` + 버전 1)을 찾는다.
+- 잡는 표기: base64·base64url(3바이트 정렬 오프셋 0/1/2 — wasm 앞에 다른 바이트가 붙어도), 데이터 URL, 숫자 배열(10/16/2/8진 혼합 포함), 16진 문자열, `\0asm\x01\0\0\0` 같은 문자열 이스케이프, 원시 바이트.
+- **못 잡는 표기(한계, 수동 검토 항목)**: gzip·brotli·zlib 으로 압축한 뒤 인코딩한 wasm, 암호화·XOR 등 난독화, 여러 조각으로 쪼갰다가 런타임에 이어 붙이는 방식(매직 중간에서 줄이 나뉜 base64 포함), 런타임에 네트워크에서 내려받는 wasm. 이 경로로 들어온 wasm 은 이 게이트가 알지 못하므로 새 의존을 들일 때 3절 2항(전이 의존과 바이너리 출처 확인)을 사람이 지켜야 한다.
+- 비용: 폐포 10개 패키지(workspace 포함) 약 1,100개 파일을 훑는 데 Node 22 단일 스레드에서 약 160~510 ms(3회 측정 157·185·508 ms, 첫 회는 파일 캐시가 차가운 값)이며 브라우저와 무관한 테스트 시간이다.
 
 새 의존성을 `package.json`에 추가하면 이 테스트가 곧바로 판정한다. `review`가 나오면 LICENSE 원문을 직접 읽고 검토한 뒤
 `REVIEWED`에 `이름@버전`과 사유를 올리거나, 채택을 포기한다.
@@ -63,8 +69,16 @@ SPDX 식은 `A OR B`이면 가장 나은 쪽, `A AND B`이면 가장 나쁜 쪽�
 | `packages/studio-brush-platform/src/libmypaint/mypaint-wasm.wasm` | libmypaint v1.6.1 | ISC |
 | `packages/studio-brush-platform/src/ink-modeler/ink_stroke_modeler.wasm` | google/ink-stroke-modeler | Apache-2.0 (NOTICE 유지) |
 | `packages/studio-hokusai-wasm/pkg/studio_hokusai_wasm_bg.wasm` | Hokusai 0.3.0 | Apache-2.0 OR MIT |
+| `@dimforge/rapier2d-compat@0.21.0`의 `dist/rapier.mjs`·`dist/rapier.cjs`(wasm 2,404,467 B를 base64로 **JS에 내장**, sha256 `322b0064…7435`)와 같은 바이트의 `dist/rapier_wasm2d_bg.wasm` | Rapier 2D(dimforge/rapier) 바인딩 — `bristle-rapier` 실험 레인이 `init()`에서 동적 import. 내장 Rust crate는 **경로로 식별한 부분집합 15항목**(wasm 경로 문자열 `registry/src`·`/rust/deps`로 13종 직접 확인 + 빌드 도구·본체 2종)이며 **전체 의존 목록이 아니다**. nalgebra·parry2d 의 Cargo.toml 선언 필수 의존 14종은 "선언 기준·wasm 에서 미확인"으로 고지 문서 4.1절에 별도 기재했다. 라이선스는 모두 crates.io 원격 조회 | Apache-2.0 (식별한 crate: nalgebra·parry2d Apache-2.0, 나머지 MIT OR Apache-2.0. 선언 기준 의존: Apache-2.0 / MIT OR Apache-2.0 / MIT / Zlib). 고지: [rapier2d-third-party.md](notices/rapier2d-third-party.md) |
+| `apps/brush-lab/src/engine/wasm/kernel-embedded.ts`(위 Sumi 커널 `.wasm`의 base64 사본, 33,946 B) | 자체 Rust 크레이트(`wasm/sumi-kernel/build.sh`가 생성, `pkg/sumi_kernel.wasm`과 바이트 동일). 표준 라이브러리 할당기 `dlmalloc` 0.2.13(MIT OR Apache-2.0)을 품는다(`/rust/deps/` 경로로 식별) | 자체 + dlmalloc MIT OR Apache-2.0. 고지: [sumi-kernel-third-party.md](notices/sumi-kernel-third-party.md) |
 
 원장의 단일 출처는 `src/license-policy.test.ts`의 `BINARY_COMPONENTS`다. 표는 사람이 읽기 위한 사본이므로 둘이 어긋나면 테스트 쪽이 맞다.
+
+**번들 내장 wasm(`EMBEDDED_WASM`)**: 패키지가 wasm 을 JS 에 base64 로 내장하면 위 `.wasm` 파일 검사에 걸리지 않고 npm 라이선스 필드는 래퍼의 것일 뿐이다.
+그래서 테스트는 프로덕션 폐포의 패키지 파일에서 wasm 매직(2절의 표기들 — base64 오프셋 3종·바이트 배열·16진 문자열·이스케이프·원시 바이트)과 독립 `.wasm`(외부 패키지)을 찾고, 찾은 패키지·파일이 `EMBEDDED_WASM` 원장과 정확히 일치하지 않으면 실패한다
+(테스트 파일은 탐색에서 제외, 압축·난독화한 wasm 은 못 찾는다 — 2절 한계). 원장 항목은 설치 버전·래퍼 라이선스·내장 wasm 의 바이트 수와 sha256·wasm 안 경로(`registry/src/…/이름-버전/`·`/rust/deps/이름-버전/`)로 **식별한 Rust crate 부분집합**·증거 문자열·고지 문서를 함께 고정한다.
+이 crate 집합은 링크된 crate 전체가 아니다. 경로 문자열을 남기지 않는 의존(Cargo.toml 선언은 있으나 wasm 에서 확인하지 못한 것)은 `declaredUnconfirmed`(선언 기준·wasm 에서 미확인)로 라이선스와 함께 따로 올린다.
+탐색 비용은 2절 참고. 새 내장 wasm 이 생기면 크레이트 목록·라이선스를 확인해 `EMBEDDED_WASM`과 고지 문서에 올리고, 상용 승격 전에는 `cargo-about` 로 전체 의존 목록을 만든다.
 
 ## 6. 파생 데이터
 

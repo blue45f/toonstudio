@@ -43,8 +43,29 @@ export const DRAW_PAPER_KINDS: readonly DrawPaperSpec[] = [
   { id: "watercolor", label: "수채화지(냉압)", values: { paperScale: 0.7, paperRoughness: 0.9, paperAbsorbency: 0.85 } },
 ];
 
-/** 입력 보정 방식. 서비스 `applyStabilizer`는 경계 규칙상 이 앱에서 쓸 수 없다(README "그리기" 한계 참고). */
-export type DrawStabilizerMode = "one-euro" | "lazy-brush";
+/**
+ * 입력 보정 방식. 서비스 `applyStabilizer`는 경계 규칙상 이 앱에서 쓸 수 없다(README "그리기" 한계 참고).
+ * - `one-euro`: 레인 안쪽 Sumi 1€ 필터가 기본 경로(단계 없음). 슬라이더는 1€ 파라미터 로그 매핑.
+ * - `lazy-brush`·`pen-spring`: 포인터 표본을 레인에 넣기 전에 변환하는 입력 단계(`engine/input/stages`). 이때 엔진 1€는 0(사실상 raw)으로 둔다.
+ * - `off`: 보정 없음(엔진 1€도 0).
+ */
+export type DrawStabilizerMode = "one-euro" | "lazy-brush" | "pen-spring" | "off";
+
+/** 입력 보정 방식 목록(선택기 순서 = 기본 → 끈 당김 → 물리 펜 → 끔). */
+export const DRAW_STABILIZER_MODES: readonly { id: DrawStabilizerMode; label: string }[] = [
+  { id: "one-euro", label: "Sumi 1€ 필터 (기본)" },
+  { id: "lazy-brush", label: "끈 당김(lazy-brush)" },
+  { id: "pen-spring", label: "물리 펜(스프링)" },
+  { id: "off", label: "끔(보정 없음)" },
+];
+
+/** 방식별 슬라이더 기본값(0..100). `null`이면 1€는 브러시 기본(슬라이더 미사용), 그 외에는 이 값을 쓴다. */
+export const DEFAULT_STABILIZER_PCT: Readonly<Record<DrawStabilizerMode, number | null>> = {
+  "one-euro": null,
+  "lazy-brush": 40,
+  "pen-spring": 40,
+  off: null,
+};
 
 /** 브러시 목록 필터. */
 export type DrawFamilyFilter = BrushFamily | "all" | "recent";
@@ -93,8 +114,10 @@ export interface DrawState {
   recentColors: string[];
   recentPresetIds: string[];
   stabilizerMode: DrawStabilizerMode;
-  /** 안정화 0..100. null이면 프리셋 기본(1€ 모드). */
+  /** 안정화 0..100(방식마다 로그 매핑이 다르다). null이면 1€는 프리셋 기본, 그 외 방식은 `DEFAULT_STABILIZER_PCT`. */
   stabilizerPct: number | null;
+  /** 코너 게이트(끈 당김·물리 펜이 모서리를 깎지 않게 정점을 raw 좌표로 통과). 1€·끔에서는 쓰지 않는다. */
+  cornerGate: boolean;
   mousePressureSim: boolean;
   canvasMode: DrawCanvasMode;
   search: string;
@@ -104,6 +127,8 @@ export interface DrawState {
   /** 지우기·레인 변경으로 문서를 새로 만들 때마다 늘어난다(세션 재생성 신호). */
   nonce: number;
   sessionStatus: DrawSessionStatus;
+  /** 세션 시작 실패 사유(한글, 코드 포함). 시작 중이거나 성공하면 null. 다른 레인으로 자동 전환하지 않고 이 문구만 보인다. */
+  sessionError: string | null;
   /** 지금 문서의 폭·높이(레인 init 크기). */
   documentSize: { width: number; height: number } | null;
   strokes: number;
@@ -130,6 +155,7 @@ export function initialDrawState(): DrawState {
     recentPresetIds: [],
     stabilizerMode: "one-euro",
     stabilizerPct: null,
+    cornerGate: true,
     mousePressureSim: true,
     canvasMode: "1024x640",
     search: "",
@@ -138,6 +164,7 @@ export function initialDrawState(): DrawState {
     previews: {},
     nonce: 0,
     sessionStatus: "idle",
+    sessionError: null,
     documentSize: null,
     strokes: 0,
     lastStroke: null,
@@ -213,8 +240,10 @@ export interface DrawActions {
   setColor(hex: string): void;
   /** 쓴 색을 최근 색(8칸)에 올린다. */
   commitColor(hex: string): void;
+  /** 방식을 바꾼다. 슬라이더는 방식마다 척도가 달라 그 방식의 기본값으로 돌아간다(`stabilizerPct: null`). */
   setStabilizerMode(mode: DrawStabilizerMode): void;
   setStabilizerPct(pct: number | null): void;
+  setCornerGate(on: boolean): void;
   setMousePressureSim(on: boolean): void;
   setCanvasMode(mode: DrawCanvasMode): void;
   setSearch(text: string): void;
@@ -224,6 +253,8 @@ export interface DrawActions {
   /** 문서를 비운다(세션 재생성). */
   clearDocument(): void;
   setSessionStatus(status: DrawSessionStatus): void;
+  /** 세션 시작 실패 사유를 남기거나(문자열) 지운다(null). */
+  setSessionError(message: string | null): void;
   setDocumentSize(size: DrawState["documentSize"]): void;
   recordStroke(stats: DrawStrokeStats, image: NonNullable<DrawState["lastImage"]>): void;
   /** 새 문서로 바뀌었을 때(지우기·레인 변경) 획 통계를 비운다. */
@@ -256,8 +287,10 @@ export function createDrawActions(store: DrawStore): DrawActions {
     setPaperKind: (paperKind) => store.set({ paperKind }),
     setColor: (color) => store.set({ color }),
     commitColor: (hex) => store.set((prev) => ({ recentColors: pushRecentColor(prev.recentColors, hex, MAX_RECENT_COLORS) })),
-    setStabilizerMode: (stabilizerMode) => store.set({ stabilizerMode }),
+    setStabilizerMode: (stabilizerMode) =>
+      store.set((prev) => (prev.stabilizerMode === stabilizerMode ? {} : { stabilizerMode, stabilizerPct: null })),
     setStabilizerPct: (stabilizerPct) => store.set({ stabilizerPct }),
+    setCornerGate: (cornerGate) => store.set({ cornerGate }),
     setMousePressureSim: (mousePressureSim) => store.set({ mousePressureSim }),
     setCanvasMode: (canvasMode) => store.set((prev) => (prev.canvasMode === canvasMode ? {} : { canvasMode })),
     setSearch: (search) => store.set({ search }),
@@ -266,6 +299,7 @@ export function createDrawActions(store: DrawStore): DrawActions {
     setPreview: (presetId, entry) => store.set((prev) => ({ previews: { ...prev.previews, [presetId]: entry } })),
     clearDocument: () => store.set((prev) => ({ nonce: prev.nonce + 1 })),
     setSessionStatus: (sessionStatus) => store.set({ sessionStatus }),
+    setSessionError: (sessionError) => store.set({ sessionError }),
     setDocumentSize: (documentSize) => store.set({ documentSize }),
     recordStroke: (stats, image) =>
       store.set((prev) => ({ strokes: prev.strokes + 1, lastStroke: stats, lastImage: image })),

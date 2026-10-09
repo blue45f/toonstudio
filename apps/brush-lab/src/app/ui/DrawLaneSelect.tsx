@@ -1,3 +1,4 @@
+import { RAPIER_GZIP_LABEL_KO } from "../../lanes/physics/rapier-footprint";
 import { useDrawSelector, useLab, useLabSelector } from "../shell/lab-context";
 import { lanePresentsLive } from "../state/draw-program";
 import {
@@ -8,6 +9,9 @@ import {
   laneAvailability,
   STATUS_LABELS,
 } from "../state/lane-helpers";
+import { laneOptionLabel } from "../state/lane-maturity";
+
+import { ExperimentalBadge, ExperimentalNote } from "./ExperimentalBadge";
 
 /**
  * 엔진(레인) 선택. 레지스트리 기반이며 미지원 레인은 비활성 옵션 + 한글 사유 코드로 남긴다.
@@ -19,6 +23,8 @@ export function DrawLaneSelect() {
   const laneId = useDrawSelector((s) => s.laneId);
   const chosenByUser = useDrawSelector((s) => s.laneChosenByUser);
   const strokes = useDrawSelector((s) => s.strokes);
+  const sessionStatus = useDrawSelector((s) => s.sessionStatus);
+  const sessionError = useDrawSelector((s) => s.sessionError);
   const capability = useLabSelector((s) => s.capability);
   const desc = laneId ? findDescriptor(registry, laneId) : null;
   const cap = laneId ? capability[laneId] : null;
@@ -52,16 +58,27 @@ export function DrawLaneSelect() {
             const { enabled, reason } = laneAvailability(d, capability[d.id]);
             return (
               <option key={d.id} value={d.id} disabled={!enabled}>
-                {d.label} ({d.id}){reason ? ` — ${reason}` : ""}
+                {laneOptionLabel(d, reason)}
               </option>
             );
           })}
         </select>
       </div>
       <p className="lab-muted" data-testid="lab-draw-lane-badge">
-        <span className={badgeClass}>{capabilityBadge(cap ?? null)}</span>{" "}
+        <span className={badgeClass}>{capabilityBadge(cap ?? null)}</span> <ExperimentalBadge desc={desc} />{" "}
         {desc ? `${KIND_LABELS[desc.kind]} · ${STATUS_LABELS[desc.status]}` : "레인 선택 대기"}
       </p>
+      <ExperimentalNote desc={desc} />
+      {desc && sessionStatus === "starting" ? (
+        <p className="lab-muted" role="status" data-testid="lab-draw-lane-starting">
+          {startingText(desc.id, desc.label)}
+        </p>
+      ) : null}
+      {desc && sessionStatus === "error" && sessionError !== null ? (
+        <p className="lab-error-list" role="alert" data-testid="lab-draw-lane-error">
+          {sessionError}
+        </p>
+      ) : null}
       <p className="lab-muted" data-testid="lab-draw-lane-origin">
         {laneId === null
           ? "능력 탐지 결과로 시작 레인을 정한다(WebGPU compute → wasm CPU → CPU 참조 순)."
@@ -79,4 +96,12 @@ export function DrawLaneSelect() {
       </p>
     </section>
   );
+}
+
+/** 레인 초기화 중 문구. Rapier는 wasm 청크를 처음 내려받고 초기화하는 동안 그릴 수 없다는 점을 알린다. */
+function startingText(laneId: string, label: string): string {
+  if (laneId === "bristle-rapier") {
+    return `Rapier 물리 엔진(wasm)을 불러와 초기화하는 중… 처음 한 번은 ${RAPIER_GZIP_LABEL_KO}(gzip)를 내려받으며 끝나기 전에는 그려지지 않는다.`;
+  }
+  return `${label} 초기화 중…`;
 }

@@ -53,7 +53,7 @@ pnpm exec vitest run apps/brush-lab/src/bench/report apps/brush-lab/src/lanes
 `canvas2d`·`wasm-cpu`는 GPU를 쓰지 않아 어댑터 필드가 null이다(`userAgent`로 브라우저를 식별한다). 파일 37개(6개 레인 × 대표 프리셋, 128² `zigzag` fixture 1개)는 WGSL·GLSL 실컴파일과
 cpu-reference 패리티·결정성의 증거로만 쓴다 — **성능 증거도, 승격 증거도 아니다**(승격에는 `softwareRenderer: false` 리포트가 최소 1개 필요하고 아직 없다).
 종합 `verdict`는 전부 FAIL인데, 37개 모두 `handfeel.cornerDeviationPx`(지그재그 꼭짓점 편차 2.5 px > 임계값 1.5 px — cpu-reference도 같은 값인 입력 파이프라인·fixture 특성)가
-임계값을 넘기 때문이다. 패리티는 `verdicts`의 `render.*` 항목(`render.deltaEP99`·`render.fuzzyMismatchPct`·`render.determinism`)과 `metrics.render`로 따로 읽는다:
+임계값을 넘기 때문이다(**2026-10-08 갱신**: 입력 정점 재방출(#9 수정안 A)로 cpu-reference `pencil-hb` 지그재그 128²의 `cornerDeviationPx`를 2.55 → 1.26 px(≤ 1.5 PASS)로, 512²는 6.16 → 0.97 px로 재측정했다. 지표 정의·임계값은 바꾸지 않았다. 37개 리포트 파일은 재생성하지 않았다 — 이 단락은 2026-10-01 시점의 기록이며, 브라우저 프로브로 새로 만든 리포트에서만 새 값을 증거로 쓴다). 패리티는 `verdicts`의 `render.*` 항목(`render.deltaEP99`·`render.fuzzyMismatchPct`·`render.determinism`)과 `metrics.render`로 따로 읽는다:
 `webgpu-compute`·`wasm-gpu-hybrid`·`wasm-cpu`는 ΔE p99 0(비교 레인 `webgpu-instanced`는 ≤ 0.50, `webgl2-instanced`는 ≤ 1.27, `canvas2d` 기준선은 24 이상으로 다른 것이 정상)이고 전부 `render.determinism` PASS다.
 습식(수채·수묵·구아슈·유화) 프리셋은 위 37개에 `webgpu-compute`·`wasm-gpu-hybrid` 리포트가 없다 — 그 시점(2026-10-01)에는 CPU 참조의 습식 구조(LBM·3층·표시 시점 층 합성)에 대한 GPU 미러가 없어 패리티가 어긋났기 때문이다.
 **습식 GPU 미러는 2026-10-02에 구현했고**(`brush-wet-gpu-mirror-spec.md`, README '알려진 한계') 같은 날 SwiftShader에서 프로브를 돌려 대조했다: 카탈로그 31종 × fixture 3종(128²) 93건이 cpu-reference와 δ48 0%·ΔE p99 0(최대 ΔE 0.33, 8비트 채널 오차 ≤ 1/255, 픽셀 해시 87건 동일)로 일치하고
