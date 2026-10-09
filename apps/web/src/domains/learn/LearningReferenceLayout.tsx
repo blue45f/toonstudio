@@ -1,6 +1,22 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 import type { ReactNode } from "react";
+
+/**
+ * 첫 화면 주인공 아트. 지정하면 헤더가 좌우 분할 대신 전폭 아트 무대
+ * (아트 배경 + 스크림 + 오버레이 카피)가 된다. 아트 로딩에 실패해도
+ * 어두운 무대 바탕이 남아 흰 카피가 그대로 읽힌다.
+ */
+export interface LearningReferenceHeroArt {
+  readonly src: string;
+  readonly srcSet: string;
+  readonly sizes: string;
+  readonly alt: string;
+  readonly width: number;
+  readonly height: number;
+  readonly caption: string;
+}
 
 export function LearningReferenceLayout({
   eyebrow,
@@ -8,15 +24,49 @@ export function LearningReferenceLayout({
   intro,
   children,
   actions,
+  heroArt,
 }: {
   readonly eyebrow: string;
   readonly title: string;
   readonly intro: string;
   readonly children: ReactNode;
   readonly actions?: ReactNode;
+  readonly heroArt?: LearningReferenceHeroArt;
 }) {
+  const [heroFailed, setHeroFailed] = useState(false);
   return (
     <section className="mx-auto max-w-7xl space-y-10 px-4 py-8 text-fg sm:px-6 sm:py-12" lang="ko" aria-label={title}>
+      {heroArt ? (
+        <header className="overflow-hidden rounded-3xl border border-line bg-panel">
+          <figure className="relative flex min-h-[32rem] flex-col justify-end overflow-hidden bg-[#0d1020] sm:min-h-[34rem]">
+            {!heroFailed && (
+              <img
+                className="absolute inset-0 size-full object-cover"
+                src={heroArt.src}
+                srcSet={heroArt.srcSet}
+                sizes={heroArt.sizes}
+                alt={heroArt.alt}
+                width={heroArt.width}
+                height={heroArt.height}
+                fetchPriority="high"
+                decoding="async"
+                onError={() => setHeroFailed(true)}
+              />
+            )}
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
+            <div className="relative max-w-3xl p-6 text-white sm:p-10 lg:p-12">
+              <p className="text-xs font-bold tracking-[.16em] text-white/85">{eyebrow}</p>
+              <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-5xl">{title}</h1>
+              <p className="mt-5 text-base leading-8 text-white/85 sm:text-lg">{intro}</p>
+              {actions && <div className="mt-7 flex flex-wrap gap-3">{actions}</div>}
+            </div>
+            <figcaption className="absolute right-4 top-4 max-w-60 rounded-2xl border border-white/20 bg-black/70 px-4 py-3 text-sm leading-6 text-white backdrop-blur-sm sm:right-6 sm:top-6">
+              {heroArt.caption}
+            </figcaption>
+          </figure>
+        </header>
+      ) : (
       <header className="grid overflow-hidden rounded-3xl border border-line bg-panel lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,.9fr)]">
         <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-12">
           <p className="text-xs font-bold tracking-[.16em] text-accent">{eyebrow}</p>
@@ -37,6 +87,7 @@ export function LearningReferenceLayout({
           </figcaption>
         </figure>
       </header>
+      )}
 
       {children}
 

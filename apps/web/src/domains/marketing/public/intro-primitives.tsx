@@ -58,9 +58,9 @@ export interface IntroAction {
 const ACTION_CLASS = "w-full whitespace-normal text-center sm:w-auto";
 
 /** 주요 행동(채움 버튼 + 화살표). */
-export function IntroPrimaryLink({ href, children }: { readonly href: string; readonly children: ReactNode }) {
+export function IntroPrimaryLink({ href, children, className }: { readonly href: string; readonly children: ReactNode; readonly className?: string }) {
   return (
-    <Link href={href} className={buttonClass({ size: "lg", className: ACTION_CLASS })}>
+    <Link href={href} className={buttonClass({ size: "lg", className: className ? `${ACTION_CLASS} ${className}` : ACTION_CLASS })}>
       {children}
       <ArrowRight size={17} aria-hidden="true" />
     </Link>
@@ -68,13 +68,14 @@ export function IntroPrimaryLink({ href, children }: { readonly href: string; re
 }
 
 /** 보조 행동(윤곽선 버튼 + 선택 아이콘). */
-export function IntroSecondaryLink({ href, icon: Icon, children }: {
+export function IntroSecondaryLink({ href, icon: Icon, children, className }: {
   readonly href: string;
   readonly icon?: LucideIcon;
   readonly children: ReactNode;
+  readonly className?: string;
 }) {
   return (
-    <Link href={href} className={buttonClass({ variant: "outline", size: "lg", className: ACTION_CLASS })}>
+    <Link href={href} className={buttonClass({ variant: "outline", size: "lg", className: className ? `${ACTION_CLASS} ${className}` : ACTION_CLASS })}>
       {Icon ? <Icon size={17} aria-hidden="true" /> : null}
       {children}
     </Link>
