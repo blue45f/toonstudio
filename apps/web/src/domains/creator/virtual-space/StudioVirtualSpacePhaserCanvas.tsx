@@ -110,6 +110,7 @@ import {
   studioVirtualLivingTownAssetUrl,
 } from "./studio-virtual-space-art-style";
 import { StudioTextResolutionRuntime } from "./studio-virtual-space-text-resolution";
+import { createStudioTextureLod, type StudioTextureLodRuntime } from "./studio-virtual-space-texture-lod";
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
 import { drawStudioModularCampus } from "./studio-virtual-space-modular-campus";
 import { studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
@@ -727,6 +728,8 @@ export function StudioVirtualSpacePhaserCanvas({
       let cameraBaseZoom = 1;
       /** 장면의 모든 Phaser Text를 화면 배율에 맞는 해상도로 그린다. 픽셀 아트 화풍에서는 거친 글자를 유지한다. */
       let textResolution: StudioTextResolutionRuntime | null = null;
+      /** 크게 줄어 그려지는 스프라이트의 텍스처를 반감 사본으로 올려 앨리어싱을 없앤다(WebGL 전용). */
+      let textureLod: StudioTextureLodRuntime | null = null;
       let cameraFollows = true;
       let lastPromptNpcId: string | null = null;
       const npcNoticedAt = new Map<string, number>();
@@ -969,6 +972,10 @@ export function StudioVirtualSpacePhaserCanvas({
         // 이후 만들어지는 모든 Text(이름표·구역 이름·안내 글자)를 붙잡아 같은 해상도로 맞춘다.
         textResolution = artProfile.pixelated ? null : new StudioTextResolutionRuntime(this.sys.events);
         cleanup.push(() => textResolution?.dispose());
+        // 1x 화면에서 원본이 2~7배로 줄어 그려지는 스프라이트(가구·아바타·NPC)는 이중선형만으로는 선이 끊기고 윤곽이 계단진다.
+        // 화면 밀도를 재서 반감 사본을 GPU 텍스처에 올린다. 픽셀 아트(NEAREST)와 캔버스 렌더러는 그대로 둔다.
+        textureLod = createStudioTextureLod(this, { pixelated: artProfile.pixelated });
+        cleanup.push(() => textureLod?.dispose());
         for (const [key, atlas] of sceneArtAtlases) {
           if (this.textures.exists(key) && !registerStudioSceneAtlas(this.textures.get(key), atlas)) {
             failedTextures.add(key);
@@ -1359,6 +1366,7 @@ export function StudioVirtualSpacePhaserCanvas({
         const crossfadeEnabled = !reducedMotion.matches && experienceRef.current.effectLevel !== "low";
         if (!sceneReady || cancelled) return;
         textResolution?.sync(Math.max(cameraBaseZoom, viewport.ratio));
+        textureLod?.update(time);
         if (decorationsRef.current !== lastDecorationState || placedFixturesRef.current !== lastPlacedFixtures) {
           lastDecorationState = decorationsRef.current;
           lastPlacedFixtures = placedFixturesRef.current;
@@ -2784,6 +2792,7 @@ export function StudioVirtualSpacePhaserCanvas({
           parent.dataset.gaitDistancePerCycle = String(playerLocomotion.gaitDistancePerCycle ?? "native");
           parent.dataset.pixelRatio = viewport.ratio.toFixed(2);
           parent.dataset.textResolution = String(textResolution?.current ?? 1);
+          Object.assign(parent.dataset, textureLod?.diagnostics() ?? { textureLod: "off", textureLodFailures: "[]" });
           parent.dataset.localMoving = String(nextMoving);
           parent.dataset.localFacing = facing;
           parent.dataset.terrain = terrain.kind;
@@ -2885,6 +2894,7 @@ export function StudioVirtualSpacePhaserCanvas({
           viewport = next;
           game.scale.setZoom(1 / next.ratio);
           game.scale.resize(next.width, next.height);
+          textureLod?.invalidate();
         }
       };
       resizeRuntime = resize;
