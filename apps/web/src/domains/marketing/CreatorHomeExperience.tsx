@@ -2,7 +2,6 @@ import { FolderKanban } from "lucide-react";
 
 import { ProductIntentStart } from "@/domains/creator-resources/ProductIntentStart";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
-import { HeroBlock } from "@/shared/components/layout";
 import { cx } from "@/shared/lib/cx";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { useI18n } from "@/shared/lib/i18n";
@@ -20,7 +19,7 @@ import { AboutJourneyPager, IntroPrimaryLink, IntroSecondaryLink } from "./publi
 import { ComicIntroHost } from "./comic-intro/ComicIntroHost";
 import { ReferenceCreatorDashboard } from "./ReferenceCreatorDashboard";
 import { StudioAnnotatedTour } from "./StudioAnnotatedTour";
-import { StudioIntroBridge, StudioIntroClosing, StudioIntroFlow, StudioIntroHeroArt } from "./StudioIntroNarrative";
+import { StudioIntroBridge, StudioIntroClosing, StudioIntroFlow, StudioIntroHeroStage } from "./StudioIntroNarrative";
 import { StudioSupportLinks } from "./StudioSupportLinks";
 import { useCreatorHomeSectionNavigation } from "./use-creator-home-section-navigation";
 
@@ -28,7 +27,7 @@ const SCOPE = "domains.marketing.CreatorHomeExperience";
 
 /**
  * 공개 홈(/)은 참고 보드형 대시보드, /about/studio는 소개 서사다.
- * 서사는 히어로(브랜드 아트+마감 카피) → 바로 시작 → 제작 흐름 → 기능 브리지
+ * 서사는 히어로(전폭 브랜드 아트 무대+마감 카피) → 바로 시작 → 제작 흐름 → 기능 브리지
  * → 화면 구성 둘러보기 → 재료·협업·도움 → 마감 순서로 한 번에 읽힌다. 주석 달린
  * 예시 편집기 둘러보기는 서사 아래의 보조 섹션으로 남는다. 제품 원칙은
  * /about/principles가, 제작 과정 상세는 /about/workflow가 소유하므로 여기서는
@@ -57,7 +56,7 @@ export function CreatorHomeExperience() {
       {!introduction && <ReferenceCreatorDashboard />}
       {introduction && <PageEntrance variant="rise"><>
         <div className="cf-hero cf-shell">
-          <HeroBlock
+          <StudioIntroHeroStage
             eyebrow={identity.category}
             titleId="creator-hero-title"
             title={identity.headline.join(" ")}
@@ -65,10 +64,9 @@ export function CreatorHomeExperience() {
             actions={(
               <>
                 <IntroPrimaryLink href="/studio/new">{bi("새 작품 시작하기", "Start a new work")}</IntroPrimaryLink>
-                <IntroSecondaryLink href="/studio" icon={FolderKanban}>{bi("내 프로젝트 열기", "Open my projects")}</IntroSecondaryLink>
+                <IntroSecondaryLink href="/studio" icon={FolderKanban} className="border-white/40 bg-white/5 text-white hover:border-white/60 hover:bg-white/15 hover:text-white">{bi("내 프로젝트 열기", "Open my projects")}</IntroSecondaryLink>
               </>
             )}
-            media={<StudioIntroHeroArt />}
           />
         </div>
 

@@ -1,5 +1,5 @@
 import { BookOpen, Bot, Boxes, Brush, ClipboardCheck, FileOutput, Map as MapIcon, PanelsTopLeft, Sparkles, Users, Workflow, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { WorkflowIllustration } from "@/shared/components/site-experience/WorkflowIllustration";
 import type { WorkflowVisual } from "@/shared/components/site-experience/workflow-illustration";
@@ -96,31 +96,60 @@ const BRIDGE_ITEMS: readonly BridgeItem[] = [
 ];
 
 /**
- * 소개 히어로의 브랜드 아트. 그림 아래 캡션이 시안의 마감 카피 1줄을 겸한다.
- * 이미지를 읽지 못하면 그라디언트 바탕만 남기고 캡션은 그대로 읽힌다.
+ * 소개 히어로 무대 — 첫 화면 전체를 브랜드 아트 장면이 차지하고, 카피와 행동은
+ * 아트 위 스크림에 얹힌다. 그림 아래 캡션 바가 시안의 마감 카피 1줄을 겸한다.
+ * 이미지를 읽지 못하면 어두운 무대 바탕만 남아 흰 카피가 그대로 읽힌다.
  */
-export function StudioIntroHeroArt() {
+export function StudioIntroHeroStage({
+  eyebrow,
+  titleId,
+  title,
+  lede,
+  actions,
+}: {
+  readonly eyebrow: string;
+  readonly titleId: string;
+  readonly title: string;
+  readonly lede: string;
+  readonly actions: ReactNode;
+}) {
   const bi = useBilingualLocalizer(SCOPE);
   const [failed, setFailed] = useState(false);
   return (
-    <figure className="overflow-hidden rounded-3xl border border-line/70 bg-gradient-to-br from-accent-soft via-panel to-canvas shadow-sm">
+    <figure className="relative flex min-h-[34rem] flex-col justify-end overflow-hidden rounded-[2rem] border border-line/70 bg-[#0d1020] shadow-sm sm:min-h-[36rem]">
       {!failed && (
         <img
-          src="/brand/atelier-20260927/creation-world.webp"
-          alt={bi("햇살이 드는 아틀리에에서 연필 스케치가 채색된 웹툰과 입체적인 이야기 세계로 이어지는 브랜드 콘셉트 아트", "Brand concept art of a sunlit atelier where pencil sketches become painted webtoon panels and a dimensional story world")}
-          width={1586}
-          height={992}
+          src="/brand/hero-20261009-wave11/studio-intro-world.webp"
+          srcSet="/brand/hero-20261009-wave11/studio-intro-world-800.webp 800w, /brand/hero-20261009-wave11/studio-intro-world-1280.webp 1280w, /brand/hero-20261009-wave11/studio-intro-world.webp 2048w"
+          sizes="(min-width: 80rem) 76rem, 100vw"
+          alt={bi("책상 위 연필 스케치 속 소녀와 고래가 하늘고래와 이야기 도시가 펼쳐지는 세계로 이어지는 브랜드 콘셉트 아트", "Brand concept art of a pencil sketch of a girl and a whale on a desk blooming into a story world with a sky whale and a city of tales")}
+          width={2048}
+          height={878}
           fetchPriority="high"
           decoding="async"
-          className="aspect-[1586/992] w-full object-cover"
+          className="absolute inset-0 size-full object-cover"
           onError={() => setFailed(true)}
         />
       )}
-      <figcaption className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 sm:px-5">
-        <span className="break-keep text-sm font-bold text-fg sm:text-base">
+      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/5" />
+      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
+      <div className="relative max-w-3xl p-6 text-white sm:p-10 lg:p-12">
+        <p className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[0.7rem] font-bold tracking-[0.14em] backdrop-blur-sm">
+          {eyebrow}
+        </p>
+        <h1 id={titleId} className="mt-5 font-display text-4xl font-black leading-[1.12] tracking-[-0.03em] break-keep text-balance sm:text-5xl lg:text-6xl">
+          {title}
+        </h1>
+        <p className="mt-5 max-w-2xl text-base leading-7 text-white/85 break-keep text-pretty sm:text-lg">
+          {lede}
+        </p>
+        <div className="mt-7 flex flex-wrap gap-3">{actions}</div>
+      </div>
+      <figcaption className="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-white/15 bg-black/45 px-6 py-3 text-white backdrop-blur-sm sm:px-10 lg:px-12">
+        <span className="break-keep text-sm font-bold sm:text-base">
           {bi("작은 아이디어가 하나의 세계가 될 때까지.", "From a Small Idea to a World of Your Own.")}
         </span>
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-fg-2">
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-white/75">
           <Sparkles size={13} aria-hidden="true" />
           {bi("AI로 제작한 브랜드 콘셉트 아트", "AI-generated brand concept art")}
         </span>
