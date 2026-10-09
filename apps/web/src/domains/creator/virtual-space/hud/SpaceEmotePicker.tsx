@@ -14,11 +14,11 @@ import {
 import { useSpaceEmoteKeymap } from "./use-space-emote-keymap";
 
 /**
- * 16종 이모트 격자. 배열 순서가 곧 표시 순서이며 단축키가 있으면 배지로 보여 준다.
+ * 이모트 격자(카탈로그의 모든 이모트). 배열 순서가 곧 표시 순서이며 단축키가 있으면 배지로 보여 준다.
  * 선택은 onEmote(id)로만 알리고, 실제 전송·월드 재생은 호출 측이 맡는다.
  * strip은 모바일 도크 위에 펼치는 가로 한 줄(가로 스크롤·스냅)이다.
  *
- * 격자(데스크톱)에는 '단축키 바꾸기'가 있다. 켜면 이모트 칸이 단추 대신 키 고르기(select)가 되어, 이모트마다 1~9·Z 중
+ * 격자(데스크톱)에는 '단축키 바꾸기'가 있다. 켜면 이모트 칸이 단추 대신 키 고르기(select)가 되어, 이모트마다 1~9·Z·F 중
  * 하나를 고르거나 없앨 수 있다. 이미 다른 이모트가 쓰는 키를 고르면 두 이모트가 키를 맞바꾼다.
  */
 export const SpaceEmotePicker = memo(function SpaceEmotePicker({ onEmote, firstButtonRef, variant = "grid", keymap = studioEmoteKeymapStore }: {
@@ -58,7 +58,7 @@ export const SpaceEmotePicker = memo(function SpaceEmotePicker({ onEmote, firstB
   };
 
   return <div className="space-emote-picker" data-variant={variant} data-editing={editing || undefined} role="group"
-    aria-label={variant === "strip" ? bt("리액션 보내기", "Send a reaction") : bt("리액션 16종", "16 reactions")}>
+    aria-label={variant === "strip" ? bt("리액션 보내기", "Send a reaction") : bt(`리액션 ${STUDIO_SPACE_EMOTES.length}종`, `${STUDIO_SPACE_EMOTES.length} reactions`)}>
     {STUDIO_SPACE_EMOTES.map((emote, index) => {
       const label = labelOf(emote);
       const shortcut = studioEmoteSlotOf(keys, emote.id);

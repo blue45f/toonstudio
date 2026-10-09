@@ -12,7 +12,7 @@ const SHORTCUTS = [
   { keys: ["Shift"], ko: "누른 채 걸으면 달리기", en: "Hold to run" },
   { keys: ["E", "X"], ko: "가까운 대상과 상호작용", en: "Interact with what is nearby" },
   { keys: ["Enter"], ko: "말풍선 채팅 열기 · 보내기", en: "Open · send bubble chat" },
-  { keys: ["1~9", "Z"], ko: "리액션 (리액션 창에서 키를 바꿀 수 있어요)", en: "Reactions (change the keys in the reactions window)" },
+  { keys: ["1~9", "Z", "F"], ko: "리액션 (리액션 창에서 키를 바꿀 수 있어요)", en: "Reactions (change the keys in the reactions window)" },
   { keys: ["M"], ko: "지도 열기·닫기", en: "Open or close the map" },
   { keys: ["P"], ko: "참가자 패널 열기·닫기", en: "Open or close people" },
   { keys: ["H"], ko: "내 자리로 걷기", en: "Walk to my desk" },

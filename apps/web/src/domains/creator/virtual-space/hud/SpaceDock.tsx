@@ -158,7 +158,7 @@ export const SpaceDock = memo(function SpaceDock({
     </div>
     <span className="space-dock__divider" aria-hidden />
     <div ref={reactRef} className="space-dock__group space-dock__anchor">
-      <DockButton icon={SmilePlus} label={bt("리액션", "Reactions")} shortcut="1~9, Z" expanded={popover === "react"} onClick={() => toggle("react")} />
+      <DockButton icon={SmilePlus} label={bt("리액션", "Reactions")} shortcut="1~9, Z, F" expanded={popover === "react"} onClick={() => toggle("react")} />
       <SpacePopover open={popover === "react"} sheet={false} anchorRef={reactRef} onClose={() => onPopover(null)} title={bt("리액션 보내기", "Send a reaction")} className="space-popover--emotes">
         <SpaceEmotePicker onEmote={(id) => { onPopover(null); onEmote(id); }} />
       </SpacePopover>

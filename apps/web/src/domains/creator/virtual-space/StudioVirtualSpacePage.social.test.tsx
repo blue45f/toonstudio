@@ -378,7 +378,7 @@ describe("몰입형 HUD 골격과 첫 화면", () => {
     expect(readStudioVirtualSpaceSessionPoint(scope, { x: -1, y: -1 }, builtin.manifest)).toEqual(self);
   });
 
-  it("1~9·Z 단축키는 월드에 이모트를 요청하고 입력 중이나 보조키 조합은 무시한다", async () => {
+  it("1~9·Z·F 단축키는 월드에 이모트를 요청하고 입력 중이나 보조키 조합은 무시한다", async () => {
     await mount(null);
     const bridge = f.engine?.bridge;
     if (!bridge) throw new Error("엔진 연결이 필요합니다.");
@@ -386,6 +386,8 @@ describe("몰입형 HUD 골격과 첫 화면", () => {
     expect(bridge.consumeEmote()).toBe("wave");
     fireEvent.keyDown(window, { key: "z" });
     expect(bridge.consumeEmote()).toBe("dance");
+    fireEvent.keyDown(window, { key: "f" });
+    expect(bridge.consumeEmote()).toBe("fireworks");
     const input = document.createElement("input");
     document.body.append(input);
     try {

@@ -60,7 +60,7 @@ describe("SpaceShortcutsHelp", () => {
     render(<SpaceShortcutsHelp open sheet={false} onClose={vi.fn()} onReplayTour={vi.fn()} emoteKeymap={keymap} />);
     const emotes = within(screen.getByRole("dialog", { name: "단축키와 조작법" })).getByRole("group", { name: "리액션 단축키" });
     const rows = Array.from(emotes.children).map((row) => row.textContent);
-    expect(rows).toEqual(["2❤️하트", "3☕커피 타임", "4👍좋아요", "5😂웃음", "6👏박수", "7😮놀람", "8🤔생각 중", "9💡아이디어", "Z💃춤추기"]);
+    expect(rows).toEqual(["2❤️하트", "3☕커피 타임", "4👍좋아요", "5😂웃음", "6👏박수", "7😮놀람", "8🤔생각 중", "9💡아이디어", "Z💃춤추기", "F🎆폭죽"]);
   });
 
   it("닫혀 있으면 아무것도 그리지 않는다", () => {

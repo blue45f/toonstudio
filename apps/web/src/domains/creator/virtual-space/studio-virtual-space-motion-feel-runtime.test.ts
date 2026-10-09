@@ -46,27 +46,39 @@ function fakeSprite(): FakeSprite {
   return sprite;
 }
 
-function fakeScene() {
-  const bursts: { count: number; x: number; y: number; tint: number }[] = [];
-  const sprites: FakeSprite[] = [];
+interface FakeBurst { count: number; x: number; y: number; tint: number }
+
+/** 이미터 대역: 터뜨린 기록·깊이 지정 기록·파괴 여부를 남긴다. */
+function fakeEmitter() {
+  const log = { bursts: [] as FakeBurst[], depths: [] as number[], destroyed: false };
   let tint = 0;
   const emitter = {
-    setDepth() { return emitter; },
+    log,
+    setDepth(value: number) { log.depths.push(value); return emitter; },
     setParticleTint(value: number) { tint = value; return emitter; },
-    explode(count: number, x: number, y: number) { bursts.push({ count, x, y, tint }); },
-    destroy() { /* fake */ },
+    explode(count: number, x: number, y: number) { log.bursts.push({ count, x, y, tint }); },
+    destroy() { log.destroyed = true; },
   };
+  return emitter;
+}
+
+function fakeScene() {
+  const dust = fakeEmitter();
+  const spark = fakeEmitter();
+  const bursts = dust.log.bursts;
+  const sprites: FakeSprite[] = [];
   const graphics = { fillStyle() { return graphics; }, fillCircle() { return graphics; }, generateTexture() { /* fake */ }, destroy() { /* fake */ } };
   const textures = new Set<string>();
   const scene = {
     textures: { exists: (key: string) => textures.has(key) },
     make: { graphics: () => { textures.add("studio-move-dust"); return graphics; } },
     add: {
-      particles: () => emitter,
+      // 폭죽 불꽃 이미터만 중력(gravityY)을 쓴다.
+      particles: (_x: number, _y: number, _key: string, config: { gravityY?: number }) => (config.gravityY === undefined ? dust : spark),
       sprite: () => { const sprite = fakeSprite(); sprites.push(sprite); return sprite; },
     },
   };
-  return { scene, bursts, sprites };
+  return { scene, bursts, sprites, dust: dust.log, spark: spark.log };
 }
 
 /** 잔상 복제 원본(내 캐릭터)처럼 텍스처·프레임·원점을 가진 스프라이트. */
@@ -148,5 +160,71 @@ describe("이동 게임필 런타임", () => {
     }
     expect(bursts).toEqual([]);
     expect(sprites.some((sprite) => sprite.visible)).toBe(false);
+  });
+});
+
+describe("폭죽 불꽃", () => {
+  it("먼지 이미터와 따로, 지정한 깊이에서 색을 입혀 터뜨린다", () => {
+    const { runtime, bursts, dust, spark } = runtimeFor();
+    runtime.spark(120, 80, 160_300, 14, 0xffd166);
+    runtime.spark(10, 20, 160_300, 12, 0xff9fb8);
+    expect(spark.bursts).toEqual([
+      { count: 14, x: 120, y: 80, tint: 0xffd166 },
+      { count: 12, x: 10, y: 20, tint: 0xff9fb8 },
+    ]);
+    expect(spark.depths).toEqual([160_300, 160_300]);
+    expect(bursts, "먼지 이미터는 건드리지 않는다").toEqual([]);
+    expect(dust.depths).toEqual([]);
+  });
+
+  it("발밑 먼지와 같은 파티클 밀도를 따른다: 밀도만큼 개수를 줄이고, 모션 줄이기·밀도 0이면 터뜨리지 않는다", () => {
+    const { runtime, spark } = runtimeFor();
+    const frame = createStudioMotionFeelFrame();
+    Object.assign(frame, { deltaSeconds: 1 / 60, sprintSpeed: 208, depth: 1_500, time: 0, x: 100, y: 200 });
+    Object.assign(frame, { particleDensity: 0.5 });
+    runtime.step(frame, null);
+    runtime.spark(0, 0, 1, 14, 0xffffff);
+    runtime.spark(0, 0, 1, 1, 0xffffff);
+    expect(spark.bursts.map((burst) => burst.count), "14×0.5=7, 1×0.5는 반올림해 1").toEqual([7, 1]);
+    Object.assign(frame, { particleDensity: 0.2 });
+    runtime.step(frame, null);
+    runtime.spark(0, 0, 1, 2, 0xffffff);
+    expect(spark.bursts, "2×0.2=0.4는 반올림하면 0이라 터뜨리지 않는다").toHaveLength(2);
+    Object.assign(frame, { particleDensity: 1, reducedMotion: true });
+    runtime.step(frame, null);
+    runtime.spark(0, 0, 1, 14, 0xffffff);
+    Object.assign(frame, { particleDensity: 0, reducedMotion: false });
+    runtime.step(frame, null);
+    runtime.spark(0, 0, 1, 14, 0xffffff);
+    expect(spark.bursts).toHaveLength(2);
+    Object.assign(frame, { particleDensity: 1 });
+    runtime.step(frame, null);
+    runtime.spark(0, 0, 1, 14, 0xffffff);
+    expect(spark.bursts.at(-1)?.count).toBe(14);
+  });
+
+  it("개수가 0 이하면 터뜨리지 않는다", () => {
+    const { runtime, spark } = runtimeFor();
+    runtime.spark(0, 0, 1, 0, 0xffffff);
+    runtime.spark(0, 0, 1, -3, 0xffffff);
+    expect(spark.bursts).toEqual([]);
+  });
+
+  it("발밑 효과 프레임이 먼지 깊이를 바꿔도 불꽃 깊이는 그대로다", () => {
+    const { runtime, dust, spark } = runtimeFor();
+    const frame = createStudioMotionFeelFrame();
+    Object.assign(frame, { deltaSeconds: 1 / 60, sprintSpeed: 208, depth: 1_500, particleDensity: 1, time: 0, x: 100, y: 200 });
+    runtime.spark(0, 0, 160_300, 10, 0xffffff);
+    runtime.step(frame, null);
+    runtime.step(frame, null);
+    expect(spark.depths).toEqual([160_300]);
+    expect(dust.depths).toEqual([1_498, 1_498]);
+  });
+
+  it("정리할 때 두 이미터를 모두 파괴한다", () => {
+    const { runtime, dust, spark } = runtimeFor();
+    runtime.destroy();
+    expect(dust.destroyed).toBe(true);
+    expect(spark.destroyed).toBe(true);
   });
 });

@@ -1,5 +1,5 @@
 /**
- * 16종 이모트의 16×16 픽셀 아트(문자열 비트맵)와 래스터라이저.
+ * 이모트(카탈로그의 모든 id)의 16×16 픽셀 아트(문자열 비트맵)와 래스터라이저.
  *
  * - 월드(Phaser)는 rasterizeStudioSpaceEmote로 RGBA 텍스처를 만든다(emote-runtime).
  * - HUD는 studioSpaceEmotePixelRuns로 같은 그림을 SVG 사각형 줄로 그릴 수 있다.
@@ -89,6 +89,24 @@ const BITMAPS: Readonly<Record<StudioSpaceEmoteId, readonly string[]>> = Object.
     "kyyrrryykk......",
     "kyykkkkk........",
     ".kk.............",
+  ],
+  fireworks: [
+    "................",
+    ".y............p.",
+    "..u....y.....p..",
+    "................",
+    "....u..y...p....",
+    ".....u.y..p.....",
+    "......uy.p......",
+    ".......ykbbb.b..",
+    "..g.gggky.......",
+    "......v.ro......",
+    ".....v..r.o.....",
+    "....v...r..o....",
+    "................",
+    "..v.....r....o..",
+    ".b............g.",
+    "................",
   ],
   "thumbs-up": [
     "................",

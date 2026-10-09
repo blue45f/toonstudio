@@ -19,10 +19,10 @@ function memoryStorage(): StudioEmoteKeymapStorage {
   };
 }
 
-const picker = () => screen.getByRole("group", { name: "리액션 16종" });
+const picker = () => screen.getByRole("group", { name: "리액션 17종" });
 
 describe("리액션 선택기", () => {
-  it("이모트 16종을 단추로 보여 주고 단축키 배지를 달며, 누르면 알린다", () => {
+  it("이모트 17종을 단추로 보여 주고 단축키 배지를 달며, 누르면 알린다", () => {
     const onEmote = vi.fn();
     render(<SpaceEmotePicker onEmote={onEmote} keymap={new StudioEmoteKeymapStore(memoryStorage())} />);
     const emotes = within(picker()).getAllByRole("button").filter((button) => button.hasAttribute("data-emote-id"));
@@ -82,8 +82,8 @@ describe("리액션 단축키 바꾸기", () => {
     expect(within(picker()).getAllByRole("combobox")).toHaveLength(STUDIO_SPACE_EMOTES.length);
     expect(selectOf("손 흔들기").value).toBe("1");
     expect(selectOf("커피 타임").value).toBe("");
-    // 고르기 목록은 없음 + 10개 칸이다.
-    expect(Array.from(selectOf("손 흔들기").options).map((option) => option.value)).toEqual(["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "Z"]);
+    // 고르기 목록은 없음 + 11개 칸이다.
+    expect(Array.from(selectOf("손 흔들기").options).map((option) => option.value)).toEqual(["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "Z", "F"]);
     fireEvent.click(within(picker()).getByRole("group", { name: "손 흔들기" }));
     expect(onEmote).not.toHaveBeenCalled();
   });
@@ -144,7 +144,7 @@ describe("리액션 선택기(영어)", () => {
     useI18n.getState().setLang("en");
     const keymap = new StudioEmoteKeymapStore(memoryStorage());
     render(<SpaceEmotePicker onEmote={vi.fn()} keymap={keymap} />);
-    const group = screen.getByRole("group", { name: "16 reactions" });
+    const group = screen.getByRole("group", { name: "17 reactions" });
     expect(within(group).getByRole("button", { name: "Wave (shortcut 1)" })).toBeTruthy();
     fireEvent.click(within(group).getByRole("button", { name: "Edit shortcuts" }));
     const coffee = within(group).getByRole("combobox", { name: "Coffee break shortcut" }) as HTMLSelectElement;

@@ -190,7 +190,7 @@ export function studioEmoteFacing(pose: StudioEmotePose | null): StudioVirtualSp
   return pose.facing ?? (pose.expression ? "down" : null);
 }
 
-/** 캔버스 포커스에서 월드가 소유하는 키. 1~9·Z·M·P 등 HUD 단축키는 여기에 넣지 않는다. */
+/** 캔버스 포커스에서 월드가 소유하는 키. 1~9·Z·F·M·P 등 HUD 단축키는 여기에 넣지 않는다. */
 export const WORLD_KEY_CODES: ReadonlySet<string> = new Set([
   "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight", ...STUDIO_INTERACT_KEY_CODES, "KeyG",
 ]);

@@ -5,7 +5,7 @@ import { studioEmoteIdForKey, studioEmoteKeymapStore, type StudioEmoteKeymapStor
 import type { StudioUserZoomAction } from "../studio-virtual-space-user-zoom";
 
 export interface SpaceShortcutHandlers {
-  /** 1~9·Z 이모트. 어느 키가 어느 이모트인지는 emoteKeymap(기본: 화면 공용 저장소)이 정한다. */
+  /** 1~9·Z·F 이모트. 어느 키가 어느 이모트인지는 emoteKeymap(기본: 화면 공용 저장소)이 정한다. */
   readonly onEmote: (id: StudioSpaceEmoteId) => void;
   readonly emoteKeymap?: StudioEmoteKeymapStore;
   /** M: 지도 열기/닫기. */
@@ -44,7 +44,7 @@ function shortcutKey(event: Pick<KeyboardEvent, "key" | "code">): string {
 }
 
 /**
- * HUD(window) 단축키: 1~9·Z 이모트(배정은 사용자가 바꿀 수 있다), M 지도, P 참가자, H 내 자리, L 내 위치로 시점 되돌리기, +/-/0 화면 크기, ? 도움말, Esc 최상위 레이어 닫기.
+ * HUD(window) 단축키: 1~9·Z·F 이모트(배정은 사용자가 바꿀 수 있다), M 지도, P 참가자, H 내 자리, L 내 위치로 시점 되돌리기, +/-/0 화면 크기, ? 도움말, Esc 최상위 레이어 닫기.
  * 이동(WASD·방향키)과 상호작용(X)은 캔버스가 맡으므로 여기서 바인딩하지 않는다.
  */
 export function useSpaceShortcuts(handlers: SpaceShortcutHandlers, enabled = true): void {

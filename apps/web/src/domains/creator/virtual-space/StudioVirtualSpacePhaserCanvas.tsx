@@ -1148,7 +1148,7 @@ export function StudioVirtualSpacePhaserCanvas({
         cleanup.push(() => { decorationRuntime?.destroy(); decorationRuntime = null; });
 
         const bubbleColors = studioCanvasBubbleColors(parent);
-        emotes = new StudioEmoteRuntime(this, { nearestFilter: Phaser.Textures.FilterMode.NEAREST, colors: bubbleColors });
+        emotes = new StudioEmoteRuntime(this, { nearestFilter: Phaser.Textures.FilterMode.NEAREST, colors: bubbleColors, burst: (x, y, depth, count, color) => { if (experienceRef.current.effectLevel !== "low") motionFeel?.spark(x, y, depth, count, color); } });
         speech = new StudioSpeechBubbleRuntime(this, bubbleColors);
         cleanup.push(() => { emotes?.destroy(); emotes = null; speech?.destroy(); speech = null; chatter.reset(); });
         promptRuntime = new StudioWorldPromptRuntime(this, bubbleColors);

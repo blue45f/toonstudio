@@ -1,7 +1,7 @@
 /**
  * 이모트 단축키 배정(1~9·Z). 카탈로그가 정한 기본 배정을 사용자가 바꿔 쓸 수 있게 한다.
  *
- * - 칸(슬롯)은 "1"~"9"와 "Z" 열 개이고, 각 칸에는 이모트가 하나 있거나 비어 있다. 한 이모트는 많아야 한 칸에 놓인다.
+ * - 칸(슬롯)은 "1"~"9"·"Z"·"F" 열한 개이고, 각 칸에는 이모트가 하나 있거나 비어 있다. 한 이모트는 많아야 한 칸에 놓인다.
  * - 이미 다른 칸에 있는 이모트를 놓으면 두 칸이 서로 바뀐다(원래 칸에는 밀려난 이모트가 온다). 원래 칸이 없던 이모트를
  *   놓으면 그 칸에 있던 이모트는 단축키 없이 선택기에만 남는다.
  * - 배정은 이 브라우저에만 저장하는 개인 설정이다. 보내는 쪽 이모트 id(와이어)는 그대로라 다른 참가자·구버전에 영향이 없다.
@@ -16,7 +16,7 @@ import {
 export const STUDIO_EMOTE_KEYMAP_STORAGE_KEY = "toonspectrum:virtual-space-emote-keys:v1";
 
 /** 단축키 칸. 선택기·도움말이 보이는 순서이기도 하다. */
-export const STUDIO_EMOTE_KEY_SLOTS: readonly StudioSpaceEmoteShortcut[] = Object.freeze(["1", "2", "3", "4", "5", "6", "7", "8", "9", "Z"]);
+export const STUDIO_EMOTE_KEY_SLOTS: readonly StudioSpaceEmoteShortcut[] = Object.freeze(["1", "2", "3", "4", "5", "6", "7", "8", "9", "Z", "F"]);
 
 export type StudioEmoteKeymap = Readonly<Partial<Record<StudioSpaceEmoteShortcut, StudioSpaceEmoteId>>>;
 
@@ -40,7 +40,7 @@ export function studioEmoteSlotOf(keymap: StudioEmoteKeymap, id: StudioSpaceEmot
   return STUDIO_EMOTE_KEY_SLOTS.find((slot) => keymap[slot] === id) ?? null;
 }
 
-/** 눌린 글쇠("1"~"9", "z"/"Z")에 배정된 이모트 id. 그 외 글쇠이거나 칸이 비어 있으면 null. */
+/** 눌린 글쇠("1"~"9", "z"/"Z", "f"/"F")에 배정된 이모트 id. 그 외 글쇠이거나 칸이 비어 있으면 null. */
 export function studioEmoteIdForKey(keymap: StudioEmoteKeymap, key: string): StudioSpaceEmoteId | null {
   if (typeof key !== "string" || key.length !== 1) return null;
   const slot = key.toUpperCase();
@@ -72,7 +72,7 @@ export function isDefaultStudioEmoteKeymap(keymap: StudioEmoteKeymap): boolean {
 }
 
 /**
- * 저장된 값을 배정으로 읽는다. 열 개 칸 밖의 키·모르는 이모트 id·한 이모트가 두 칸에 놓인 경우처럼 조금이라도 어긋나면
+ * 저장된 값을 배정으로 읽는다. 열한 개 칸 밖의 키·모르는 이모트 id·한 이모트가 두 칸에 놓인 경우처럼 조금이라도 어긋나면
  * 전체를 버리고 null을 돌려준다(일부만 믿고 쓰면 키가 뜻밖의 이모트를 보낸다).
  */
 export function parseStudioEmoteKeymap(value: unknown): StudioEmoteKeymap | null {

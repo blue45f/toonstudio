@@ -26,8 +26,8 @@ function memoryStorage(initial: Record<string, string> = {}): StudioEmoteKeymapS
 }
 
 describe("이모트 단축키 기본 배정", () => {
-  it("카탈로그의 기본 단축키와 같고, 열 개 칸이 모두 찬다", () => {
-    expect(STUDIO_EMOTE_KEY_SLOTS).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "Z"]);
+  it("카탈로그의 기본 단축키와 같고, 열한 개 칸이 모두 찬다", () => {
+    expect(STUDIO_EMOTE_KEY_SLOTS).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "Z", "F"]);
     for (const emote of STUDIO_SPACE_EMOTES) {
       expect(studioEmoteSlotOf(STUDIO_DEFAULT_EMOTE_KEYMAP, emote.id), emote.id).toBe(emote.shortcut);
     }
@@ -36,11 +36,13 @@ describe("이모트 단축키 기본 배정", () => {
     expect(Object.isFrozen(STUDIO_DEFAULT_EMOTE_KEYMAP)).toBe(true);
   });
 
-  it("글쇠로 이모트를 찾는다: 숫자와 대소문자 Z만, 그 밖은 null", () => {
+  it("글쇠로 이모트를 찾는다: 숫자와 대소문자 Z·F만, 그 밖은 null", () => {
     expect(studioEmoteIdForKey(STUDIO_DEFAULT_EMOTE_KEYMAP, "1")).toBe("wave");
     expect(studioEmoteIdForKey(STUDIO_DEFAULT_EMOTE_KEYMAP, "9")).toBe("idea");
     expect(studioEmoteIdForKey(STUDIO_DEFAULT_EMOTE_KEYMAP, "z")).toBe("dance");
     expect(studioEmoteIdForKey(STUDIO_DEFAULT_EMOTE_KEYMAP, "Z")).toBe("dance");
+    expect(studioEmoteIdForKey(STUDIO_DEFAULT_EMOTE_KEYMAP, "f")).toBe("fireworks");
+    expect(studioEmoteIdForKey(STUDIO_DEFAULT_EMOTE_KEYMAP, "F")).toBe("fireworks");
     for (const key of ["0", "e", "12", "", "Enter"]) expect(studioEmoteIdForKey(STUDIO_DEFAULT_EMOTE_KEYMAP, key), key).toBeNull();
   });
 });
@@ -67,7 +69,7 @@ describe("이모트 단축키 배정 바꾸기", () => {
     const next = assignStudioEmoteKey(STUDIO_DEFAULT_EMOTE_KEYMAP, "wave", "3");
     expect(next["3"]).toBe("wave");
     expect(next["1"]).toBe("party");
-    expect(Object.values(next)).toHaveLength(10);
+    expect(Object.values(next)).toHaveLength(11);
   });
 
   it("이미 칸이 있는 이모트를 빈 칸으로 옮기면 원래 칸이 비고, 단축키를 없애면 그 칸이 빈다", () => {
@@ -105,7 +107,7 @@ describe("이모트 단축키 저장값 읽기", () => {
     expect(parseStudioEmoteKeymap({})).toEqual({});
   });
 
-  it("열 개 칸 밖의 키·모르는 이모트·한 이모트가 두 칸에 놓인 값은 통째로 버린다", () => {
+  it("열한 개 칸 밖의 키·모르는 이모트·한 이모트가 두 칸에 놓인 값은 통째로 버린다", () => {
     expect(parseStudioEmoteKeymap({ "0": "wave" })).toBeNull();
     expect(parseStudioEmoteKeymap({ z: "wave" })).toBeNull();
     expect(parseStudioEmoteKeymap({ "1": "nope" })).toBeNull();

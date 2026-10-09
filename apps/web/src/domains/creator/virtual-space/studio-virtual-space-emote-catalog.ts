@@ -4,19 +4,20 @@
  * - 배열 순서는 HUD 이모트 선택기 표시 순서다.
  * - 프레즌스 와이어('toonstudio-space-v1')의 reaction 값은 이 id 집합으로만 수신한다.
  *   기존 wave·heart·sparkles·thumbs-up 값은 그대로 유지해 구버전 클라이언트와 호환된다.
+ *   새 id(예: fireworks)를 받은 구버전은 그 reaction 패킷만 버려 위치 갱신(presence)에는 영향이 없다.
  * - expression은 표정 시트가 있는 스킨에서 얼굴 표정 프레임을, motion은 머리 위 말풍선과
  *   몸동작(깡충·흔들기·춤)을 고른다. 렌더링은 emote-runtime이 맡는다.
  */
 
 export const STUDIO_SPACE_EMOTE_IDS = [
   "wave", "heart", "party", "thumbs-up", "laugh", "clap", "wow", "think",
-  "idea", "dance", "sparkles", "question", "exclaim", "coffee", "music", "sleep",
+  "idea", "dance", "fireworks", "sparkles", "question", "exclaim", "coffee", "music", "sleep",
 ] as const;
 
 export type StudioSpaceEmoteId = typeof STUDIO_SPACE_EMOTE_IDS[number];
 export type StudioSpaceEmoteExpression = "happy" | "wave" | "surprised" | "calm";
 export type StudioSpaceEmoteMotion = "pop" | "hop" | "shake" | "sway" | "dance" | "nod" | "doze";
-export type StudioSpaceEmoteShortcut = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "Z";
+export type StudioSpaceEmoteShortcut = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "Z" | "F";
 
 export interface StudioSpaceEmoteDefinition {
   readonly id: StudioSpaceEmoteId;
@@ -56,6 +57,7 @@ export const STUDIO_SPACE_EMOTES: readonly StudioSpaceEmoteDefinition[] = Object
   emote({ id: "think", labelKo: "생각 중", labelEn: "Thinking", glyph: "🤔", shortcut: "8", expression: "calm", motion: "sway", durationMs: 3_200 }),
   emote({ id: "idea", labelKo: "아이디어", labelEn: "Idea", glyph: "💡", shortcut: "9", expression: "calm", motion: "sway", durationMs: 2_400 }),
   emote({ id: "dance", labelKo: "춤추기", labelEn: "Dance", glyph: "💃", shortcut: "Z", expression: null, motion: "dance", durationMs: 4_000 }),
+  emote({ id: "fireworks", labelKo: "폭죽", labelEn: "Fireworks", glyph: "🎆", shortcut: "F", expression: "happy", motion: "hop", durationMs: 3_200 }),
   emote({ id: "sparkles", labelKo: "반짝반짝", labelEn: "Sparkles", glyph: "✨", shortcut: null, expression: "happy", motion: "hop", durationMs: 2_400 }),
   emote({ id: "question", labelKo: "궁금해요", labelEn: "Question", glyph: "❓", shortcut: null, expression: "surprised", motion: "shake", durationMs: 2_600 }),
   emote({ id: "exclaim", labelKo: "잠깐만요", labelEn: "Heads up", glyph: "❗", shortcut: null, expression: "surprised", motion: "shake", durationMs: 1_800 }),
@@ -79,7 +81,7 @@ export function studioSpaceEmoteById(id: string): StudioSpaceEmoteDefinition | n
   return EMOTE_BY_ID.get(id) ?? null;
 }
 
-/** 기본 배정으로 찾는다("1"~"9"와 "z"/"Z"만, 그 외 키는 null). 화면은 사용자가 바꾼 배정을 따르는 studioEmoteIdForKey를 쓴다. */
+/** 기본 배정으로 찾는다("1"~"9"와 "z"/"Z", "f"/"F"만, 그 외 키는 null). 화면은 사용자가 바꾼 배정을 따르는 studioEmoteIdForKey를 쓴다. */
 export function studioSpaceEmoteForKey(key: string): StudioSpaceEmoteDefinition | null {
   if (typeof key !== "string" || key.length !== 1) return null;
   return EMOTE_BY_SHORTCUT.get(key.toUpperCase()) ?? null;

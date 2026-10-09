@@ -92,6 +92,30 @@ describe("useSpaceShortcuts", () => {
     expect(value.onDesk).toHaveBeenCalledOnce();
   });
 
+  it("F는 폭죽 이모트를 보낸다: 대문자·한글 자판(ㄹ, 글쇠 위치 KeyF)도 같고, 보조키 조합은 무시한다", () => {
+    const value = handlers();
+    renderHook(() => useSpaceShortcuts(value));
+    const english = new KeyboardEvent("keydown", { key: "f", code: "KeyF", bubbles: true, cancelable: true });
+    window.dispatchEvent(english);
+    fireEvent.keyDown(window, { key: "F", code: "KeyF" });
+    fireEvent.keyDown(window, { key: "ㄹ", code: "KeyF" });
+    fireEvent.keyDown(window, { key: "f", code: "KeyF", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "f", code: "KeyF", metaKey: true });
+    expect(value.onEmote.mock.calls.map(([id]) => id)).toEqual(["fireworks", "fireworks", "fireworks"]);
+    expect(english.defaultPrevented).toBe(true);
+  });
+
+  it("F 칸도 사용자 배정을 따른다: 다른 이모트를 놓으면 폭죽은 키를 잃고, 폭죽을 다른 칸에 놓으면 그 칸이 폭죽이다", () => {
+    const keymap = new StudioEmoteKeymapStore({ getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+    keymap.assign("wave", "F");
+    keymap.assign("fireworks", "5");
+    const value = { ...handlers(), emoteKeymap: keymap };
+    renderHook(() => useSpaceShortcuts(value));
+    fireEvent.keyDown(window, { key: "f", code: "KeyF" });
+    fireEvent.keyDown(window, { key: "5" });
+    expect(value.onEmote.mock.calls.map(([id]) => id)).toEqual(["wave", "fireworks"]);
+  });
+
   it("L은 끌어서 옮겨 둔 시점을 되돌리고(한글 자판 ㅣ도), 핸들러가 없으면 가로채지 않는다", () => {
     const value = { ...handlers(), onLocate: vi.fn<() => void>() };
     renderHook(() => useSpaceShortcuts(value));

@@ -185,7 +185,7 @@ function MiniTourCoach({ progress, touch, onDone }: {
       title: bt("리액션 보내기", "Send a reaction"),
       body: touch
         ? bt("도크의 리액션 버튼으로 인사해 보세요. 주변 사람에게 보여요.", "Say hello with the dock's reaction button. People nearby will see it.")
-        : bt("1~9 키로 리액션을 보내요. Z는 춤! 주변 사람에게 보여요.", "Send reactions with keys 1–9. Z to dance! People nearby will see it."),
+        : bt("1~9 키로 리액션을 보내요. Z는 춤, F는 폭죽! 주변 사람에게 보여요.", "Send reactions with keys 1–9. Z to dance, F for fireworks! People nearby will see it."),
     },
   ] as const;
   const current = steps[step];
@@ -247,8 +247,8 @@ function MiniTourDialog({ onDone }: {
       icon: <Smile size={26} aria-hidden />,
       title: bt("리액션 보내기", "Send reactions"),
       body: bt(
-        "1~9 키로 리액션을 보내세요(Z는 춤). 모바일에서는 도크의 리액션 버튼을 누르세요.",
-        "Press 1–9 to send a reaction (Z to dance). On mobile, tap the reaction button in the dock.",
+        "1~9 키로 리액션을 보내세요(Z는 춤, F는 폭죽). 모바일에서는 도크의 리액션 버튼을 누르세요.",
+        "Press 1–9 to send a reaction (Z to dance, F for fireworks). On mobile, tap the reaction button in the dock.",
       ),
     },
   ] as const;
