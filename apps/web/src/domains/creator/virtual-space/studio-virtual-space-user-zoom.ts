@@ -2,8 +2,8 @@
  * 사용자 줌: 자동 카메라 줌(뷰포트 맞춤·속도·대화 연출)에 곱하는 배율.
  *
  * 카메라는 화면 크기에 맞춰 줌을 스스로 정하므로(게더타운의 Smart Zoom에 해당) 사용자가 더 가까이 보거나 더 넓게 볼
- * 방법이 없었다. 이 모듈은 단계·휠·부드러운 전환·저장을 순수 함수와 작은 저장소로 제공하고, 캔버스는 매 프레임
- * `sample()`이 돌려주는 배율만 곱한다.
+ * 방법이 없었다. 이 모듈은 단계·휠·터치 핀치·부드러운 전환·저장을 순수 함수와 작은 저장소로 제공하고, 캔버스는 매
+ * 프레임 `sample()`이 돌려주는 배율만 곱한다.
  */
 
 export const STUDIO_USER_ZOOM_STORAGE_KEY = "toonspectrum:virtual-space-user-zoom:v1";
@@ -262,4 +262,97 @@ export function bindStudioUserZoomWheel(
   // 휠로 페이지가 스크롤되지 않도록 passive가 아니어야 한다.
   target.addEventListener("wheel", onWheel, { passive: false });
   return () => target.removeEventListener("wheel", onWheel);
+}
+
+/** 두 손가락 거리가 이 값(px)보다 가까우면 같은 점을 누른 것으로 보고 핀치를 시작하지 않는다. */
+export const STUDIO_PINCH_MIN_START_DISTANCE_PX = 12;
+
+/** 시작 때 거리·배율을 기준으로, 지금 거리에 해당하는 배율. 거리가 비정상이면 시작 배율을 그대로 둔다. */
+export function studioUserZoomFromPinch(startLevel: number, startDistance: number, distance: number): number {
+  if (!(startDistance > 0) || !Number.isFinite(distance) || distance < 0) return studioUserZoomClamp(startLevel);
+  return studioUserZoomClamp(startLevel * (distance / startDistance));
+}
+
+interface PinchPoint {
+  x: number;
+  y: number;
+}
+
+/**
+ * 캔버스에 두 손가락 핀치 줌을 연결한다. 해제 함수를 돌려준다.
+ * - 터치 포인터만 본다(마우스·펜은 휠·버튼 경로가 있다).
+ * - 손가락이 정확히 둘일 때만 핀치다. 셋이 되면 멈추고, 다시 둘이 되면 그 거리를 새 기준으로 삼아 배율이 튀지 않는다.
+ * - 핀치가 시작될 때 onPinchStart를 불러, 첫 손가락이 이미 시작시킨 탭 이동 같은 것을 멈추게 한다.
+ */
+export function bindStudioUserZoomPinch(
+  target: Pick<HTMLElement, "addEventListener" | "removeEventListener">,
+  store: Pick<StudioUserZoomStore, "get" | "set">,
+  canPinch: () => boolean,
+  onPinchStart: () => void = () => undefined,
+): () => void {
+  const touches = new Map<number, PinchPoint>();
+  let pinch: { readonly startDistance: number; readonly startLevel: number } | null = null;
+
+  const distance = (): number => {
+    const [first, second] = [...touches.values()];
+    return first && second ? Math.hypot(first.x - second.x, first.y - second.y) : 0;
+  };
+  /** 손가락 수가 바뀔 때마다 핀치를 맺거나 푼다. */
+  const sync = () => {
+    pinch = null;
+    if (touches.size !== 2 || !canPinch()) return;
+    const startDistance = distance();
+    if (startDistance < STUDIO_PINCH_MIN_START_DISTANCE_PX) return;
+    pinch = { startDistance, startLevel: store.get() };
+    onPinchStart();
+  };
+
+  const onDown = (event: Event) => {
+    const touch = event as PointerEvent;
+    if (touch.pointerType !== "touch") return;
+    touches.set(touch.pointerId, { x: touch.clientX, y: touch.clientY });
+    sync();
+  };
+  const onMove = (event: Event) => {
+    const touch = event as PointerEvent;
+    const point = touches.get(touch.pointerId);
+    if (!point) return;
+    point.x = touch.clientX;
+    point.y = touch.clientY;
+    if (!pinch || !canPinch()) return;
+    event.preventDefault();
+    store.set(studioUserZoomFromPinch(pinch.startLevel, pinch.startDistance, distance()));
+  };
+  const onEnd = (event: Event) => {
+    if (!touches.delete((event as PointerEvent).pointerId)) return;
+    sync();
+  };
+
+  target.addEventListener("pointerdown", onDown);
+  target.addEventListener("pointermove", onMove);
+  target.addEventListener("pointerup", onEnd);
+  target.addEventListener("pointercancel", onEnd);
+  return () => {
+    target.removeEventListener("pointerdown", onDown);
+    target.removeEventListener("pointermove", onMove);
+    target.removeEventListener("pointerup", onEnd);
+    target.removeEventListener("pointercancel", onEnd);
+    touches.clear();
+    pinch = null;
+  };
+}
+
+/**
+ * 캔버스에 휠(마우스·트랙패드)과 두 손가락 핀치(터치) 줌을 함께 연결한다. 해제 함수를 돌려준다.
+ * canZoom이 거짓이면(장면 준비 전·고정 프레임 장소) 둘 다 받지 않고, onPinchStart는 핀치가 시작될 때만 부른다.
+ */
+export function bindStudioUserZoomGestures(
+  target: Pick<HTMLElement, "addEventListener" | "removeEventListener">,
+  store: StudioUserZoomStore,
+  canZoom: () => boolean,
+  onPinchStart?: () => void,
+): () => void {
+  const releaseWheel = bindStudioUserZoomWheel(target, store, canZoom);
+  const releasePinch = bindStudioUserZoomPinch(target, store, canZoom, onPinchStart);
+  return () => { releaseWheel(); releasePinch(); };
 }

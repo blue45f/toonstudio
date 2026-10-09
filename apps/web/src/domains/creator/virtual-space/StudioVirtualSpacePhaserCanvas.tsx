@@ -111,7 +111,7 @@ import {
 } from "./studio-virtual-space-art-style";
 import { StudioTextResolutionRuntime } from "./studio-virtual-space-text-resolution";
 import { createStudioTextureLod, type StudioTextureLodRuntime } from "./studio-virtual-space-texture-lod";
-import { StudioUserZoomRuntime, bindStudioUserZoomWheel } from "./studio-virtual-space-user-zoom";
+import { StudioUserZoomRuntime, bindStudioUserZoomGestures } from "./studio-virtual-space-user-zoom";
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
 import { drawStudioModularCampus } from "./studio-virtual-space-modular-campus";
 import { studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
@@ -1255,7 +1255,6 @@ export function StudioVirtualSpacePhaserCanvas({
         // 씬 준비 완료 신호가 와야 열리므로 로딩 속도와 무관하게 잘리지 않는다.
 
         const canvas = this.game.canvas;
-        cleanup.push(bindStudioUserZoomWheel(canvas, bridge.userZoom, () => sceneReady && bridge.userZoom.getSnapshot().available));
         canvas.tabIndex = 0;
         canvas.setAttribute("role", "application");
         canvas.setAttribute("aria-label", btRef.current(
@@ -1304,6 +1303,7 @@ export function StudioVirtualSpacePhaserCanvas({
           onReducedMotionChange: reduceMotionChanged,
           onModalBlockerChange: (blocked) => { modalInputBlocked = blocked; },
         }));
+        cleanup.push(bindStudioUserZoomGestures(canvas, bridge.userZoom, () => sceneReady && bridge.userZoom.getSnapshot().available, stopMovement));
         portalTracker.seed(portals, initialPoint);
         zoneTracker.seed(studioWorldPresenceZone(manifest, initialPoint)?.id ?? null);
         // 스폰 시퀀스 시작: 월드 준비 완료(setReady 지점) 신호가 올 때까지 베일이 덮는다.

@@ -23,8 +23,16 @@ describe("월드 캔버스의 사용자 줌 연결", () => {
     expect(refit, "줌을 적용한 뒤에 맞춰야 새 배율로 계산된다").toBeGreaterThan(zoom);
   });
 
-  it("휠은 장면이 준비되고 줌을 받을 수 있을 때만 받고, 정리 때 해제한다", () => {
-    expect(canvas).toContain("cleanup.push(bindStudioUserZoomWheel(canvas, bridge.userZoom, () => sceneReady && bridge.userZoom.getSnapshot().available));");
+  it("휠·핀치는 장면이 준비되고 줌을 받을 수 있을 때만 받고, 정리 때 해제한다", () => {
+    expect(canvas).toContain("cleanup.push(bindStudioUserZoomGestures(canvas, bridge.userZoom, () => sceneReady && bridge.userZoom.getSnapshot().available, ");
+  });
+
+  it("핀치가 시작되면 첫 손가락이 시작시킨 걷기를 멈춘다(터치로 월드를 누르면 조이스틱 모드에서도 그 자리로 걷기 시작한다)", () => {
+    expect(canvas).toContain("() => sceneReady && bridge.userZoom.getSnapshot().available, stopMovement));");
+    const gestures = canvas.indexOf("bindStudioUserZoomGestures(canvas");
+    const stop = canvas.indexOf("const stopMovement = () => {");
+    expect(stop, "stopMovement를 정의한 뒤에 연결해야 한다").toBeGreaterThan(-1);
+    expect(gestures).toBeGreaterThan(stop);
   });
 });
 
