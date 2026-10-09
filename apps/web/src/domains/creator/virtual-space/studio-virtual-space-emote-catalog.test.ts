@@ -10,9 +10,9 @@ import {
 } from "./studio-virtual-space-emote-catalog";
 
 describe("studio virtual space emote catalog", () => {
-  it("16종 id는 고유하고 기존 wave·heart·sparkles·thumbs-up을 포함한다", () => {
-    expect(STUDIO_SPACE_EMOTE_IDS).toHaveLength(16);
-    expect(new Set(STUDIO_SPACE_EMOTE_IDS).size).toBe(16);
+  it("17종 id는 고유하고 기존 wave·heart·sparkles·thumbs-up을 포함한다", () => {
+    expect(STUDIO_SPACE_EMOTE_IDS).toHaveLength(17);
+    expect(new Set(STUDIO_SPACE_EMOTE_IDS).size).toBe(17);
     for (const legacy of ["wave", "heart", "sparkles", "thumbs-up"]) {
       expect(STUDIO_SPACE_EMOTE_IDS).toContain(legacy);
     }
@@ -20,10 +20,10 @@ describe("studio virtual space emote catalog", () => {
     expect(STUDIO_SPACE_EMOTES.map((emote) => emote.id)).toEqual([...STUDIO_SPACE_EMOTE_IDS]);
   });
 
-  it("1~9·Z 단축키는 겹치지 않는다", () => {
+  it("1~9·Z·F 단축키는 겹치지 않는다", () => {
     const shortcuts = STUDIO_SPACE_EMOTES.flatMap((emote) => emote.shortcut ? [emote.shortcut] : []);
     expect(new Set(shortcuts).size).toBe(shortcuts.length);
-    expect([...shortcuts].sort()).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "Z"]);
+    expect([...shortcuts].sort()).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "F", "Z"]);
     expect(studioSpaceEmoteForKey("1")?.id).toBe("wave");
     expect(studioSpaceEmoteForKey("2")?.id).toBe("heart");
     expect(studioSpaceEmoteForKey("3")?.id).toBe("party");
@@ -35,6 +35,8 @@ describe("studio virtual space emote catalog", () => {
     expect(studioSpaceEmoteForKey("9")?.id).toBe("idea");
     expect(studioSpaceEmoteForKey("z")?.id).toBe("dance");
     expect(studioSpaceEmoteForKey("Z")?.id).toBe("dance");
+    expect(studioSpaceEmoteForKey("f")?.id).toBe("fireworks");
+    expect(studioSpaceEmoteForKey("F")?.id).toBe("fireworks");
     expect(studioSpaceEmoteForKey("0")).toBeNull();
     expect(studioSpaceEmoteForKey("e")).toBeNull();
     expect(studioSpaceEmoteForKey("12")).toBeNull();

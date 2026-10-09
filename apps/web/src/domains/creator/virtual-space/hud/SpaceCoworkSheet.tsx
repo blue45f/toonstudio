@@ -1,4 +1,4 @@
-import { ClipboardCheck, Footprints, LayoutGrid, MessageCircle, UserPlus } from "lucide-react";
+import { ClipboardCheck, Footprints, LayoutGrid, MessageCircle, Navigation, UserPlus } from "lucide-react";
 import { useId, useRef, type KeyboardEvent } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -10,7 +10,7 @@ import { SpaceAvatar } from "./SpaceAvatar";
 import { spaceStatusOption } from "./space-dock-model";
 
 /** 같이 작업하기 요청 종류. 모두 기존 동의 흐름(상대가 수락해야 시작)을 그대로 쓴다. */
-export type SpaceCoworkAction = "talk" | "review" | "follow";
+export type SpaceCoworkAction = "talk" | "review" | "follow" | "lead";
 
 export interface SpaceCoworkPeer {
   readonly id: string;
@@ -38,6 +38,11 @@ const ACTIONS: readonly { readonly id: SpaceCoworkAction; readonly icon: typeof 
     id: "follow", icon: Footprints, ko: "같이 이동하기", en: "Walk together",
     noteKo: "수락하면 상대를 따라 회의실·작업 자리까지 함께 걸어가요.",
     noteEn: "Once accepted you follow them to the meeting room or desk.",
+  },
+  {
+    id: "lead", icon: Navigation, ko: "따라오게 하기", en: "Lead the way",
+    noteKo: "수락하면 상대가 내 뒤를 따라 걸어와요. 내가 움직이면 같이 움직이고, 언제든 끝낼 수 있어요.",
+    noteEn: "Once accepted they follow you as you walk. Either of you can stop anytime.",
   },
 ];
 

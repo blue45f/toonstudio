@@ -351,13 +351,13 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-workers", claim: "apps/web/src 의 *.worker.ts 가 64개", needles: ["64개"],
+    lesson: "seminar-workers", claim: "apps/web/src 의 *.worker.ts 가 65개", needles: ["65개"],
     check: () => {
       let count = 0;
       walkFiles(repo("apps", "web", "src"), (file) => {
         if (file.endsWith(".worker.ts")) count += 1;
       });
-      expect(count).toBe(64);
+      expect(count).toBe(65);
     },
   },
   {

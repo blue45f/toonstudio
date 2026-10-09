@@ -2,7 +2,9 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { useI18n } from "@/shared/lib/i18n";
 import { STUDIO_SPACE_EMOTES } from "../studio-virtual-space-emote-catalog";
+import { StudioEmoteKeymapStore } from "../studio-virtual-space-emote-keymap";
 import { studioTownEvents } from "../studio-virtual-space-town-program";
 import { SpaceShortcutsHelp } from "./SpaceShortcutsHelp";
 import { SpaceTownBanner } from "./SpaceTownBanner";
@@ -50,6 +52,35 @@ describe("SpaceShortcutsHelp", () => {
     fireEvent.click(within(help).getByRole("button", { name: "미니 투어 다시 보기" }));
     expect(onClose).toHaveBeenCalledOnce();
     expect(onReplayTour).toHaveBeenCalledOnce();
+  });
+
+  it("사용자가 바꾼 리액션 키를 칸 순서대로 보여 주고, 키가 없는 리액션은 싣지 않는다", () => {
+    const keymap = new StudioEmoteKeymapStore({ getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+    keymap.assign("coffee", "3");
+    keymap.assign("wave", null);
+    render(<SpaceShortcutsHelp open sheet={false} onClose={vi.fn()} onReplayTour={vi.fn()} emoteKeymap={keymap} />);
+    const emotes = within(screen.getByRole("dialog", { name: "단축키와 조작법" })).getByRole("group", { name: "리액션 단축키" });
+    const rows = Array.from(emotes.children).map((row) => row.textContent);
+    expect(rows).toEqual(["2❤️하트", "3☕커피 타임", "4👍좋아요", "5😂웃음", "6👏박수", "7😮놀람", "8🤔생각 중", "9💡아이디어", "Z💃춤추기", "F🎆폭죽"]);
+  });
+
+  it("시점 조작을 마우스·키보드·되돌리기 순서로 알려 주고, 영어에서는 키 이름도 영어로 쓴다", () => {
+    render(<SpaceShortcutsHelp open sheet={false} onClose={vi.fn()} onReplayTour={vi.fn()} />);
+    const help = screen.getByRole("dialog", { name: "단축키와 조작법" });
+    expect(within(help).getByText("시점을 끌어서 둘러보기 (터치는 두 손가락)")).toBeTruthy();
+    const keyboardRow = within(help).getByText("누르는 동안 시점을 그쪽으로 옮기기 (아바타는 걷지 않아요)").closest("div");
+    expect(keyboardRow?.querySelector("kbd")?.textContent).toBe("Space+방향키");
+    expect(within(help).getByText("끌어서 옮겨 둔 시점을 내 위치로 되돌리기")).toBeTruthy();
+    cleanup();
+    useI18n.getState().setLang("en");
+    try {
+      render(<SpaceShortcutsHelp open sheet={false} onClose={vi.fn()} onReplayTour={vi.fn()} />);
+      const english = screen.getByRole("dialog");
+      const row = within(english).getByText("Hold to look that way (your avatar stays put)").closest("div");
+      expect(row?.querySelector("kbd")?.textContent).toBe("Space+arrows");
+      const drag = within(english).getByText("Drag to look around (two fingers on touch)").closest("div");
+      expect(Array.from(drag?.querySelectorAll("kbd") ?? []).map((key) => key.textContent)).toEqual(["Right-drag", "Space+drag"]);
+    } finally { useI18n.getState().setLang("ko"); }
   });
 
   it("닫혀 있으면 아무것도 그리지 않는다", () => {

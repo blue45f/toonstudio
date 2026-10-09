@@ -62,15 +62,19 @@ describe("SpaceDock", () => {
     expect(screen.getByRole("button", { name: "카메라" }).hasAttribute("aria-disabled")).toBe(false);
   });
 
-  it("리액션 팝오버는 16종을 보여 주고 고르면 닫힌 뒤 이모트를 알린다", () => {
+  it("리액션 팝오버는 17종을 보여 주고 고르면 닫힌 뒤 이모트를 알린다", () => {
     const onEmote = vi.fn();
     render(<Harness onEmote={onEmote} />);
     fireEvent.click(screen.getByRole("button", { name: "리액션" }));
-    const picker = screen.getByRole("group", { name: "리액션 16종" });
-    expect(within(picker).getAllByRole("button")).toHaveLength(STUDIO_SPACE_EMOTES.length);
+    const picker = screen.getByRole("group", { name: "리액션 17종" });
+    expect(within(picker).getAllByRole("button").filter((button) => button.hasAttribute("data-emote-id"))).toHaveLength(STUDIO_SPACE_EMOTES.length);
+    // 이모트 단추 말고는 '단축키 바꾸기' 토글 하나뿐이고, 켜기 전에는 키 고르기가 없다.
+    expect(within(picker).getAllByRole("button")).toHaveLength(STUDIO_SPACE_EMOTES.length + 1);
+    expect(within(picker).getByRole("button", { name: "단축키 바꾸기" }).getAttribute("aria-pressed")).toBe("false");
+    expect(within(picker).queryByRole("combobox")).toBeNull();
     fireEvent.click(within(picker).getByRole("button", { name: "손 흔들기 (단축키 1)" }));
     expect(onEmote).toHaveBeenCalledExactlyOnceWith("wave");
-    expect(screen.queryByRole("group", { name: "리액션 16종" })).toBeNull();
+    expect(screen.queryByRole("group", { name: "리액션 17종" })).toBeNull();
   });
 
   it("패널 버튼은 현재 패널과 상세 화면을 눌림 상태로 표시한다", () => {

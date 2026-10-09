@@ -110,11 +110,25 @@ describe("같이 작업하기 요청 흐름", () => {
   it("요청을 보낼 수 없는 이유가 있으면 모든 요청을 막고 이유를 보여 준다", () => {
     const actions = handlers();
     render(<SpaceCoworkSheet peers={peers} targetId="bob" disabledReason="팀원 연결을 확인하는 중이에요" links={[]} {...actions} />);
-    for (const name of [/대화하며 같이 작업/u, /같은 원고 함께 검토/u, /같이 이동하기/u]) {
+    for (const name of [/대화하며 같이 작업/u, /같은 원고 함께 검토/u, /같이 이동하기/u, /따라오게 하기/u]) {
       const button = screen.getByRole("button", { name });
       expect(button.getAttribute("aria-disabled")).toBe("true");
       fireEvent.click(button);
     }
     expect(actions.onRequest).not.toHaveBeenCalled();
+  });
+
+  it("따라오게 하기는 근처 팀원에게 lead 요청으로 보내고, 먼 팀원에게는 다가가기를 먼저 안내한다", () => {
+    const near = handlers();
+    const { unmount } = render(<SpaceCoworkSheet peers={peers} targetId="bob" disabledReason={null} links={[]} {...near} />);
+    fireEvent.click(screen.getByRole("button", { name: /따라오게 하기/u }));
+    expect(near.onRequest).toHaveBeenCalledExactlyOnceWith("bob", "lead");
+    unmount();
+    const far = handlers();
+    render(<SpaceCoworkSheet peers={peers} targetId="cleo" disabledReason={null} links={[]} {...far} />);
+    const lead = screen.getByRole("button", { name: /따라오게 하기/u });
+    expect(lead.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(lead);
+    expect(far.onRequest).not.toHaveBeenCalled();
   });
 });

@@ -56,7 +56,7 @@ export const SPACE_NPC_TIPS: readonly SpaceNpcLine[] = [
   { ko: "집중이 필요하면 도크의 '나'에서 '집중 작업 중'으로 바꾸세요. 새 대화 요청을 잠시 받지 않아요.", en: "Need focus? Switch to 'Focusing' from 'Me' in the dock. New conversation requests pause.", moment: "tip" },
   { ko: "검수는 '검수 초대'로 같은 검수본을 함께 열면 코멘트가 엇갈리지 않아요.", en: "Use 'Review invite' to open the same review snapshot together so comments stay in sync.", moment: "tip" },
   { ko: "M을 누르면 전체 지도가 열려요. 가고 싶은 곳을 누르면 그곳까지 걸어가요.", en: "Press M for the full map. Tap a spot and you walk there.", moment: "tip" },
-  { ko: "1~9 키 리액션은 근처 사람에게 보여요. Z를 누르면 춤을 춰요.", en: "Reactions on keys 1–9 show to people nearby. Press Z to dance.", moment: "tip" },
+  { ko: "1~9 키 리액션은 근처 사람에게 보여요. Z를 누르면 춤을, F를 누르면 폭죽이 터져요.", en: "Reactions on keys 1–9 show to people nearby. Press Z to dance or F for fireworks.", moment: "tip" },
   { ko: "회의 전에 '오늘의 제작 동선'에서 마감과 검수 대기를 먼저 확인해 보세요.", en: "Before a meeting, check deadlines and pending reviews in 'Today'.", moment: "tip" },
   { ko: "도크의 카메라로 '가까이 가면 영상'을 한 번 켜 두면, 근처 팀원과 영상이 자동으로 연결돼요. 상대도 켜야 서로 보여요.", en: "Turn on 'proximity video' once from the dock camera and video connects with nearby teammates automatically. Both sides need it on.", moment: "tip" },
 ];

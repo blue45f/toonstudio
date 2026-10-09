@@ -1,5 +1,5 @@
 import { type ReactNode, useId, useState } from "react";
-import { Hand, MessageCircle, Footprints, ClipboardCheck, PartyPopper, X, ShieldBan } from "lucide-react";
+import { Hand, MessageCircle, Footprints, Navigation, ClipboardCheck, PartyPopper, X, ShieldBan } from "lucide-react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioVirtualSpacePeer } from "./studio-virtual-space-model";
 import type { StudioVirtualSpaceSocialController } from "./studio-virtual-space-social";
@@ -15,6 +15,7 @@ export type StudioSpaceSocialAction = StudioSpaceSocialRequest["action"];
 const ACTIONS = [
   { id: "talk", ko: "대화 요청", en: "Ask to talk", icon: MessageCircle },
   { id: "follow", ko: "함께 이동 요청", en: "Ask to follow", icon: Footprints },
+  { id: "lead", ko: "따라오라고 요청", en: "Ask them to follow me", icon: Navigation },
   { id: "review", ko: "함께 검토 요청", en: "Invite to review", icon: ClipboardCheck },
   { id: "high-five", ko: "함께 축하", en: "Celebrate together", icon: PartyPopper },
 ] as const;

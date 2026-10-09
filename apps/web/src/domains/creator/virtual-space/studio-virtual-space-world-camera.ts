@@ -5,7 +5,7 @@
 import type * as Phaser from "phaser";
 
 import { studioSceneCameraFrame } from "./studio-virtual-space-scene-art-runtime";
-import { studioCameraZoom, studioCoverRect } from "./studio-virtual-space-presentation";
+import { studioCameraLerp, studioCameraZoom, studioCoverRect } from "./studio-virtual-space-presentation";
 import { studioCampusCameraZoom, studioVirtualWorldPresentation } from "./studio-virtual-space-world-presentation";
 import type { StudioVirtualSpaceWorldManifest } from "./studio-virtual-space-world-manifest";
 
@@ -86,4 +86,56 @@ export function studioCameraEdgeLerpFactor(
   if (distanceToEdge >= STUDIO_CAMERA_EDGE_SOFT_ZONE_PX) return 1;
   const eased = edgeSmoothstep(distanceToEdge / STUDIO_CAMERA_EDGE_SOFT_ZONE_PX);
   return STUDIO_CAMERA_EDGE_MIN_LERP_FACTOR + (1 - STUDIO_CAMERA_EDGE_MIN_LERP_FACTOR) * eased;
+}
+
+export interface StudioCameraFollowLerpInput {
+  readonly deltaSeconds: number;
+  /** 방 전환이 아닐 때의 기본 추종 비율(카메라 모드·이동 느낌 배율이 반영된 값). */
+  readonly followBase: number;
+  readonly roomTransitioning: boolean;
+  readonly immediate: boolean;
+  readonly edgeSoftening: boolean;
+  /** 지금 카메라 중심과 화면이 비추는 월드 크기, 월드 크기. */
+  readonly center: { readonly x: number; readonly y: number };
+  readonly view: { readonly width: number; readonly height: number };
+  readonly world: { readonly width: number; readonly height: number };
+}
+
+/**
+ * 이번 프레임 카메라가 목표를 따라가는 비율(Phaser setLerp에 넣는 x·y).
+ * - immediate면 1이다: 순간 이동·모션 줄이기, 그리고 사용자가 시점을 끌거나 되돌리는 중에는 목표를 지체 없이 따라가야 손에 붙는다.
+ * - 아니면 프레임 간격에 무관한 지수 추종이고, 방 전환 중에는 더 빠르다.
+ * - 월드 경계 근처에서는 추종을 미리 늦춰 하드 클램프에서 화면이 튀지 않게 한다(edgeSoftening은 카메라가 아바타를 따라가는 장소일 때).
+ */
+export function studioCameraFollowLerp(input: StudioCameraFollowLerpInput): { readonly x: number; readonly y: number } {
+  const amount = input.immediate ? 1
+    : studioCameraLerp(input.deltaSeconds, input.roomTransitioning ? input.followBase * 2.2 : input.followBase);
+  const soften = input.edgeSoftening && !input.immediate;
+  return {
+    x: amount * (soften ? studioCameraEdgeLerpFactor(input.center.x, input.view.width, input.world.width) : 1),
+    y: amount * (soften ? studioCameraEdgeLerpFactor(input.center.y, input.view.height, input.world.height) : 1),
+  };
+}
+
+/** 추종 설정에 필요한 Phaser 카메라의 부분. */
+export interface StudioFollowCamera {
+  readonly midPoint: { readonly x: number; readonly y: number };
+  readonly worldView: { readonly width: number; readonly height: number };
+  setLerp(x: number, y: number): unknown;
+  centerOn(x: number, y: number): unknown;
+}
+
+/**
+ * 이번 프레임의 추종 설정을 카메라에 적용한다: 추종 비율을 넣고, centerOn이 있으면 카메라를 그 점에 바로 맞춘다.
+ * Phaser 카메라는 추종 목표가 데드존(불감대) 안이면 움직이지 않는다. 그래서 순간 이동은 물론 사용자가 시점을 끌거나 되돌리는 동안에도
+ * lerp만으로는 불감대만큼 늦게 따르고, 끄는 방향을 바꾸면 불감대를 건널 때까지 반응하지 않는다. 이때만 목표에 바로 맞춘다.
+ */
+export function applyStudioCameraFollow(
+  camera: StudioFollowCamera,
+  input: Omit<StudioCameraFollowLerpInput, "center" | "view"> & { readonly centerOn: { readonly x: number; readonly y: number } | null },
+): void {
+  const { centerOn, ...lerpInput } = input;
+  const lerp = studioCameraFollowLerp({ ...lerpInput, center: camera.midPoint, view: camera.worldView });
+  camera.setLerp(lerp.x, lerp.y);
+  if (centerOn) camera.centerOn(centerOn.x, centerOn.y);
 }

@@ -105,7 +105,7 @@ export function StudioVirtualSpaceGuide({ manifest, onMove, onOpen, onStop, onFo
         <ul>
           <li><span><kbd>WASD</kbd> · <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></span><span>{bt("이동", "Move")}</span></li>
           <li><span><kbd>Shift</kbd></span><span>{bt("누른 채 이동하면 달리기", "Hold to run")}</span></li>
-          <li><span><kbd>X</kbd></span><span>{bt("가까운 대상과 상호작용", "Interact with what is nearby")}</span></li>
+          <li><span><kbd>E</kbd> · <kbd>X</kbd></span><span>{bt("가까운 대상과 상호작용", "Interact with what is nearby")}</span></li>
           <li><span><kbd>1</kbd>–<kbd>9</kbd> · <kbd>Z</kbd></span><span>{bt("리액션 보내기", "Send a reaction")}</span></li>
           <li><span><kbd>⌘</kbd>/<kbd>Ctrl</kbd> + <kbd>K</kbd></span><span>{bt("방·팀원 찾기", "Find rooms & people")}</span></li>
           <li><span><kbd>Esc</kbd></span><span>{bt("열린 패널 닫기", "Close the open panel")}</span></li>
@@ -185,7 +185,7 @@ function MiniTourCoach({ progress, touch, onDone }: {
       title: bt("리액션 보내기", "Send a reaction"),
       body: touch
         ? bt("도크의 리액션 버튼으로 인사해 보세요. 주변 사람에게 보여요.", "Say hello with the dock's reaction button. People nearby will see it.")
-        : bt("1~9 키로 리액션을 보내요. Z는 춤! 주변 사람에게 보여요.", "Send reactions with keys 1–9. Z to dance! People nearby will see it."),
+        : bt("1~9 키로 리액션을 보내요. Z는 춤, F는 폭죽! 주변 사람에게 보여요.", "Send reactions with keys 1–9. Z to dance, F for fireworks! People nearby will see it."),
     },
   ] as const;
   const current = steps[step];
@@ -247,8 +247,8 @@ function MiniTourDialog({ onDone }: {
       icon: <Smile size={26} aria-hidden />,
       title: bt("리액션 보내기", "Send reactions"),
       body: bt(
-        "1~9 키로 리액션을 보내세요(Z는 춤). 모바일에서는 도크의 리액션 버튼을 누르세요.",
-        "Press 1–9 to send a reaction (Z to dance). On mobile, tap the reaction button in the dock.",
+        "1~9 키로 리액션을 보내세요(Z는 춤, F는 폭죽). 모바일에서는 도크의 리액션 버튼을 누르세요.",
+        "Press 1–9 to send a reaction (Z to dance, F for fireworks). On mobile, tap the reaction button in the dock.",
       ),
     },
   ] as const;

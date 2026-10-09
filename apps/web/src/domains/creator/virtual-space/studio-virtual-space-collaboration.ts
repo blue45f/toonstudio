@@ -142,7 +142,7 @@ export function reactionToFloatingEmoji(
   return Object.freeze({
     id,
     sessionId,
-    // 리액션 이모지는 이모트 카탈로그 한 곳에서 관리한다(16종으로 확장돼도 매핑이 갈라지지 않게).
+    // 리액션 이모지는 이모트 카탈로그 한 곳에서 관리한다(종류가 늘어도 매핑이 갈라지지 않게).
     emoji: studioSpaceEmoteById(reaction)?.glyph ?? "✨",
     createdAt,
     ttlMs: STUDIO_FLOATING_EMOJI_TTL_MS,

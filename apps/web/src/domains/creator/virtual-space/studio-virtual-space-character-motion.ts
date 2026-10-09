@@ -103,6 +103,7 @@ const EMOTE_EMOTION: Readonly<Record<StudioSpaceEmoteId, StudioEmotionKind>> = O
   "laugh": "joy",
   "clap": "joy",
   "dance": "joy",
+  "fireworks": "joy",
   "sparkles": "joy",
   "wow": "surprise",
   "question": "surprise",

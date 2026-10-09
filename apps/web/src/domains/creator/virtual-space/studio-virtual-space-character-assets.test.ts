@@ -190,6 +190,17 @@ describe("Virtual Studio character texture residency", () => {
     expect(seat.height).toBe(ground.height);
     expect(studioCharacterFrameGeometry(undefined, 384, 512, 98, 131).originY).toBe(492 / 512);
   });
+  it("keeps the source aspect ratio of a single still image instead of squeezing it into the actor box", () => {
+    // 스타일 팩의 정지 그림은 160×160 정사각이다. 98×131 상자에 억지로 맞추면 가로로 25% 찌그러져 걷기 프레임(원본 비율)과 몸 너비가 튄다.
+    const square = studioCharacterFrameGeometry(undefined, 160, 160, 98, 131);
+    expect(square.height).toBe(131);
+    expect(square.width / square.height).toBeCloseTo(1);
+    // 원래 상자 비율(약 0.75)의 384×512 그림은 거의 그대로다.
+    const portrait = studioCharacterFrameGeometry(undefined, 384, 512, 98, 131);
+    expect(portrait.width).toBeCloseTo(98, 0);
+    // 크기를 아직 모르는 임시 텍스처는 상자 폭을 쓴다.
+    expect(studioCharacterFrameGeometry(undefined, 0, 0, 98, 131).width).toBeCloseTo(98);
+  });
   it("deduplicates a shared skin, retains it for another actor and evicts only after the grace period", () => {
     const h = harness();
     h.residency.use("self", walking); h.residency.use("npc", walking); h.residency.use("self", walking);

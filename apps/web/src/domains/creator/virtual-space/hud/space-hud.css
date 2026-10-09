@@ -165,7 +165,8 @@ body:has(.space-hud) nav[data-site-product] { display: none !important; }
 .space-hud[data-panel-open][data-hud-layout="desktop"] .space-hud__slot--bottom-center {
   right: calc(var(--space-panel-width) + var(--space-gutter) * 2 + var(--space-safe-right));
 }
-.space-hud[data-panel-open][data-hud-layout="desktop"] .space-hud__slot--top-right {
+.space-hud[data-panel-open][data-hud-layout="desktop"] .space-hud__slot--top-right,
+.space-hud[data-panel-open][data-hud-layout="desktop"] .space-hud__slot--bottom-end {
   right: calc(var(--space-panel-width) + var(--space-gutter) * 2 + var(--space-safe-right));
 }
 
@@ -1044,6 +1045,60 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   line-height: 16px;
   text-align: center;
 }
+/* 단축키 바꾸기: 칸이 단추 대신 키 고르기가 된다(눌러도 이모트가 나가지 않는다). */
+.space-emote-picker__item[data-editing] { cursor: default; }
+.space-emote-picker__item[data-editing]:hover { transform: none; border-color: var(--space-border); background: var(--color-card); }
+.space-emote-picker__select-wrap { position: relative; display: block; width: 100%; color: var(--color-fg-2); }
+/* 고르기 상자임을 알리는 작은 화살표. 라우트 공통 규칙이 select의 background를 !important로 덮어 배경 화살표는 쓸 수 없다. */
+.space-emote-picker__select-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.space-emote-picker__select {
+  width: 100%;
+  min-height: 28px;
+  padding-block: 0;
+  padding-inline: 6px 22px;
+  border: 1px solid var(--space-border);
+  border-radius: 8px;
+  appearance: none;
+  background-color: var(--color-panel);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+}
+.space-emote-picker__select:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.space-emote-picker__tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.space-emote-picker__tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--space-border);
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.space-emote-picker__tool:hover:not(:disabled) { border-color: var(--color-accent); color: var(--color-fg); }
+.space-emote-picker__tool[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-fg); }
+.space-emote-picker__tool:disabled { opacity: .5; cursor: default; }
+.space-emote-picker__notice { grid-column: 1 / -1; margin: 0; color: var(--color-fg-3); font-size: 12px; }
 
 /* 메뉴 행 */
 .space-menu-list { display: grid; gap: 8px; min-width: 260px; }
@@ -1507,6 +1562,37 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
 .space-mobile-dock__work .space-dock__primary > span { position: static; width: auto; height: auto; clip-path: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .space-joystick { position: relative; }
 .space-joystick .studio-vspace-joystick { width: 7.5rem; height: 7.5rem; }
+/* 화면 크기(줌) 버튼: 데스크톱과 조이스틱이 없는 터치(탭 이동)의 우하단. 휠·+ - 0 키와 같은 저장소를 쓴다. */
+.space-zoom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--space-border);
+  border-radius: 16px;
+  background: var(--space-surface);
+  box-shadow: var(--space-shadow);
+  backdrop-filter: blur(16px) saturate(1.25);
+}
+.space-zoom__level {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-fg-2);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.space-zoom__level:hover { background: var(--space-surface-raised); color: var(--color-fg); }
+@media (pointer: coarse) { .space-zoom__level { min-height: var(--site-control-size, 44px); } }
+:root[data-design-theme="contrast"] .space-zoom__level { min-height: var(--site-control-size, 44px); }
 
 @media (max-width: 1023.98px) {
   .space-hud { --space-gutter: 10px; }
@@ -1766,6 +1852,7 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   .space-interact-prompt,
   .space-dock,
   .space-mobile-dock,
+  .space-zoom,
   .space-popover,
   .space-sheet,
   .space-palette,
