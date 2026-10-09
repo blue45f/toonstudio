@@ -43,6 +43,7 @@ export const creatorRoutes = defineAppRoutes([
   { id: "creator-studio-immersive", path: studioRoutePath("immersive"), element: <StudioImmersiveHubPage /> },
   { id: "creator-studio-motion-webtoon", path: studioRoutePath("motion-webtoon"), element: <MotionWebtoonPage /> },
   { id: "creator-spatial-reader", path: "/read/spatial", element: <StudioSpatialReaderPage /> },
+  // /studio/new는 실제 작품 생성 폼이다. 시작 선택은 /create 시트가 정문으로 맡는다 (O-05 역할 구분).
   { id: "creator-studio-new", path: studioRoutePath("new"), element: <StudioNewPage /> },
   { id: "creator-studio-import", path: studioRoutePath("import"), element: <StudioImportPage /> },
   { id: "creator-studio-recovery", path: studioRoutePath("recovery"), element: <Navigate to="/studio?view=archived" replace /> },
@@ -87,6 +88,9 @@ export const creatorRoutes = defineAppRoutes([
 
   // /create는 작품 시작 시트가 정본이다. 갤러리 본문은 /showcase로 일원화됐으므로
   // 상세 4경로(챌린지·홍보·시리즈·작품)는 정식 /showcase 주소로 리다이렉트해 호환을 유지한다.
+  // 시작점 역할 구분 (O-05, 2026-10-09): /create는 "새 작품·템플릿·이어가기"를 고르는 시작 정문이고,
+  // 실제 생성 폼은 /studio/new다. 사이트의 "작품 시작하기" 동선은 /create로 모이고 시트가 폼으로 넘긴다 —
+  // 본문이 다른 두 표면이라 합치지 않고 역할만 명시해 유지한다.
   { id: "creator-gallery", path: "/create", element: <CreateStartPage /> },
   { id: "creator-challenges", path: "/create/challenges", element: <ShowcaseRedirect to="/showcase/challenges" /> },
   { id: "creator-promo", path: "/create/promo", element: <ShowcaseRedirect to="/showcase/promo" /> },
