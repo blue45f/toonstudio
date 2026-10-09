@@ -116,7 +116,12 @@ export function StoryLabPage() {
   const story = storyDraftView(workspace.story, draft);
   const conflicts = draft ? storyDraftConflicts(workspace.story, draft) : [];
   const completedCount = STORY_FIELDS.filter((field) => story[field]?.trim()).length;
-  return <ResourceLayout title={tx("스토리 연구실")} intro={tx("인물, 욕망, 장애물과 선택을 차근차근 정리하세요. 외부 AI 호출 없이 직접 작성하는 기획 워크시트입니다.")}>
+  return <ResourceLayout title={tx("스토리 연구실")} intro={tx("인물, 욕망, 장애물과 선택을 차근차근 정리하세요. 외부 AI 호출 없이 직접 작성하는 기획 워크시트입니다.")}
+    mastheadArt={{
+      src: "/brand/hero-20261009-wave10/story-lab-board-1680.webp",
+      srcSet: "/brand/hero-20261009-wave10/story-lab-board-960.webp 960w, /brand/hero-20261009-wave10/story-lab-board-1680.webp 1680w",
+      alt: tx("인물 스케치와 사건 사진을 붉은 실로 이어 붙인 스토리 연구실의 코르크보드와 램프가 켜진 책상"),
+    }}>
     <div className="grid gap-6 lg:grid-cols-2">
       <form className="space-y-5 rounded-2xl border border-line bg-panel p-5" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
         <p className="text-sm text-fg-2">{formatI18nTemplate(tx("작성한 항목 {v0}/8 · 미저장 변경 {v1}개"), { v0: completedCount, v1: dirty })}</p>

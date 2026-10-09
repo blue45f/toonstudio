@@ -164,6 +164,7 @@ export function ResourceLayout({
   width = "default",
   heroContent,
   heroAside,
+  mastheadArt,
   sourceIdentity,
   menu = true,
   compact = false,
@@ -176,6 +177,11 @@ export function ResourceLayout({
   heroContent?: ReactNode;
   /** 머리말 오른쪽 보조 영역 — 주면 기본 일러스트 대신 쓰고 2열 머리말이 된다. */
   heroAside?: ReactNode;
+  /**
+   * 머리말 맨 위에 전폭으로 세우는 실물 아트 — 주면 작은 안내 아트(INTRO_ART)를
+   * 대신하고, 머리말 그리드의 첫 행 전체를 차지한다. 페이지 정체성 장면 전용.
+   */
+  mastheadArt?: { src: string; srcSet: string; alt: string };
   /**
    * 소스 정체성 (리서치 소스 검색 템플릿 전용) — 주면 경로 기반 안내 아트 대신
    * 소스 대표 비주얼을 쓰고, 제목 아래에 소스 칩·한 줄 정체성을 단다.
@@ -193,12 +199,29 @@ export function ResourceLayout({
   useBilingualI18nRevision();
   const bt = useBilingual(LAYOUT_SCOPE);
   const { pathname } = useLocation();
-  const introArt = heroAside || compact || sourceIdentity ? undefined : INTRO_ART[pathname.replace(/\/$/u, "")];
-  const hasMastheadArt = Boolean(introArt) || Boolean(sourceIdentity && !heroAside);
+  const introArt = heroAside || compact || sourceIdentity || mastheadArt ? undefined : INTRO_ART[pathname.replace(/\/$/u, "")];
+  const hasMastheadArt = Boolean(introArt) || Boolean(sourceIdentity && !heroAside) || Boolean(mastheadArt);
   // 사이트 공통 Container(data-page-container)로 감싸 다른 공개 페이지와 폭·좌우선·통합 계약을 맞춘다.
   return <Container size={width === "wide" ? "wide" : "default"}>
   <section className={`resource-atelier resource-illustrated space-y-8 py-8 text-fg sm:py-12${sourceIdentity ? ` research-source research-source--${sourceIdentity.provider}` : ""}`}>
     <header className={`resource-masthead ${heroAside ? "resource-masthead--desk" : "resource-masthead--detail"} ${hasMastheadArt ? "resource-masthead--illustrated" : ""} ${compact ? "resource-masthead--compact" : ""}`}>
+      {mastheadArt ? (
+        <figure className="relative col-span-full m-0 overflow-hidden rounded-2xl border border-line">
+          <img
+            src={mastheadArt.src}
+            srcSet={mastheadArt.srcSet}
+            sizes="(max-width: 768px) 100vw, 1200px"
+            width={1680}
+            height={560}
+            alt={mastheadArt.alt}
+            fetchPriority="high"
+            className="aspect-[3/1] w-full object-cover motion-safe:animate-fade-up"
+          />
+          <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
+            {layoutTx("브랜드 콘셉트 아트 · 실제 화면이 아닙니다")}
+          </figcaption>
+        </figure>
+      ) : null}
       <div className="resource-masthead-copy">
         {heroAside
           ? <p className="inline-flex min-h-8 items-center text-xs font-semibold tracking-[.12em] text-accent">{layoutTx("TOONSTUDIO / 리서치 데스크")}</p>

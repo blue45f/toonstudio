@@ -94,6 +94,11 @@ export function SourcesPage() {
     .sort();
   const latestReviewedAt = reviewedDates[reviewedDates.length - 1];
   return <ResourceLayout title={tx("데이터 출처·상업 이용 준비")} intro={tx("구현된 검색 어댑터, 신청 예정 API, 계약 검토 대상과 운영 제외 소스를 구분합니다. 연결 상태와 개별 자료 권리는 별도이며, 권리가 확인되지 않은 자료는 Studio 가져오기와 상업 활용을 차단합니다.")}
+    mastheadArt={isAboutData ? {
+      src: "/brand/hero-20261009-wave10/about-data-archive-1680.webp",
+      srcSet: "/brand/hero-20261009-wave10/about-data-archive-960.webp 960w, /brand/hero-20261009-wave10/about-data-archive-1680.webp 1680w",
+      alt: tx("밤의 자료 아카이브에서 출처 카드와 태그가 붙은 표본을 돋보기로 검수하는 창작자"),
+    } : undefined}
     heroContent={<div className="rounded-2xl border border-line bg-panel p-4 sm:p-5">
       <p className="text-sm font-semibold leading-6 text-fg">{formatI18nTemplate(tx("제공처 {v0}곳 · 실제 검색 연결 {v1}곳 · 가입·키 없이 바로 사용 {v2}곳 · 분야 {v3}개"), { v0: RESOURCE_SOURCES.length, v1: liveCount, v2: keylessCount, v3: categoryCount })}</p>
       <ol className="mt-3 grid gap-3 sm:grid-cols-3">
