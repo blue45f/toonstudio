@@ -51,7 +51,7 @@ const RESEARCH_SOURCE_IDENTITY_SEEDS: Record<ResourceProvider, ResearchSourceIde
   ambientcg: { tagline: "CC0 PBR 재질과 3D 소재를 공개하는 라이브러리입니다", art: "materials", glyph: "A" },
   nasa: { tagline: "NASA가 공개한 행성·성운·우주선 이미지 자료실입니다", art: null, glyph: "N", scene: "nasa" },
   vam: { tagline: "빅토리아 앨버트 박물관의 패션·디자인 소장품을 탐색합니다", art: null, glyph: "V", scene: "vam" },
-  googlefonts: { tagline: "실제 글꼴로 문구를 미리 보는 서체 라이브러리입니다", art: null, glyph: "가" },
+  googlefonts: { tagline: "실제 글꼴로 문구를 미리 보는 서체 라이브러리입니다", art: null, glyph: "가", scene: "googlefonts" },
   rijksmuseum: { tagline: "네덜란드 황금기 회화와 장식미술의 소장 기록을 찾습니다", art: null, glyph: "R" },
   gbif: { tagline: "전 세계 생물종 관찰 기록과 사진으로 크리처의 근거를 찾습니다", art: null, glyph: "G", scene: "gbif" },
   musicbrainz: { tagline: "음악가와 음반의 관계를 잇는 공개 음악 데이터베이스입니다", art: null, glyph: "음", scene: "musicbrainz" },
