@@ -55,18 +55,31 @@ export function StudioBrushLabPage() {
   const location = useLocation();
   const context = resolveStudioBrushEditorContext(params, location.search);
   const editingSavedBrush = context.mode === "edit";
+  // 리믹스 판정은 이 한 곳에서만 한다 — 적용 범위 밴드와 히어로 아트 선택이 같은 값을 공유한다.
+  const isRemixContext = context.kind === "remix";
+  const heroArt = isRemixContext
+    ? {
+        src: "/brand/hero-20261009/remix-brush-hero.webp",
+        srcSet: "/brand/hero-20261009/remix-brush-hero-960.webp 960w, /brand/hero-20261009/remix-brush-hero.webp 1680w",
+        alt: "하나의 원고 캔버스에서 주황과 청록 두 갈래로 갈라지는 리믹스 변형 캔버스와 붓",
+      }
+    : {
+        src: "/brand/hero-20261009/brush-lab-hero.webp",
+        srcSet: "/brand/hero-20261009/brush-lab-hero-960.webp 960w, /brand/hero-20261009/brush-lab-hero.webp 1680w",
+        alt: "붓과 잉크, 수채 도구와 펜 태블릿이 놓인 작가 책상에서 만화 원고를 그리는 손",
+      };
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1920px] px-4 py-5 sm:px-6 lg:px-8">
       <header className="overflow-hidden rounded-[1.75rem] border border-line bg-card/55 p-5 shadow-sm sm:p-7">
         <figure className="relative -mx-5 -mt-5 mb-6 sm:-mx-7 sm:-mt-7">
           <img
-            src="/brand/hero-20261009/brush-lab-hero.webp"
-            srcSet="/brand/hero-20261009/brush-lab-hero-960.webp 960w, /brand/hero-20261009/brush-lab-hero.webp 1680w"
+            src={heroArt.src}
+            srcSet={heroArt.srcSet}
             sizes="(max-width: 1920px) 100vw, 1856px"
             width={1680}
             height={560}
-            alt="붓과 잉크, 수채 도구와 펜 태블릿이 놓인 작가 책상에서 만화 원고를 그리는 손"
+            alt={heroArt.alt}
             fetchPriority="high"
             decoding="async"
             className="block aspect-[3/1] w-full object-cover motion-safe:animate-fade-up"
@@ -119,7 +132,7 @@ export function StudioBrushLabPage() {
           (ProductionProjectStatusStrip)은 ProductionProjectAggregate가 전제라,
           제작 프로젝트 종속이 없는 이 표면에는 해당하지 않는다.
         */}
-        {context.kind === "remix" ? (
+        {isRemixContext ? (
           <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border border-accent/35 bg-accent/10 px-4 py-3" role="status">
             <span className="inline-flex items-center gap-1.5 text-xs font-black text-accent">
               <GitFork size={14} aria-hidden />
