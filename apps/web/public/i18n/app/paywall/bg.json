@@ -44,5 +44,8 @@
   "paywall.preview.title": "Reader view preview",
   "paywall.titleNotice.body": "This title releases to supporters {days} days early. It becomes free if you wait.",
   "paywall.titleNotice.label": "Early access notice",
-  "paywall.titleNotice.title": "Supporter early access in effect"
+  "paywall.titleNotice.title": "Supporter early access in effect",
+  "paywall.creatorPage.statusDaysRange": "early access {min}–{max} days",
+  "paywall.creatorPage.statusDaysSingle": "early access {days} days",
+  "paywall.creatorPage.statusSummary": "{total} policies · {active} on"
 }

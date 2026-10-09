@@ -1,3 +1,7 @@
+// ContentPacksPage·research-query-translation과 같은 상대 경로 import —
+// 이 브랜치의 core를 그대로 바인딩하기 위한 기존 도메인 관례다.
+import { resolveGbifSpeciesAlias } from "../../../../../packages/core/src/reference-query-language";
+
 import type { ResourceProvider } from "@/shared/lib/creator-resources";
 
 export type ResourceSearchProvider = Extract<ResourceProvider, "met" | "kakao" | "bizinfo" | "polyhaven" | "ambientcg" | "nasa" | "vam" | "rijksmuseum" | "googlefonts" | "gbif" | "musicbrainz" | "internetarchive" | "metweather" | "kheritage" | "neis" | "tourapi" | "korean" | "smithsonian" | "wikimedia" | "europeana" | "dpla">;
@@ -60,9 +64,21 @@ export const OPEN_DATA_PROVIDERS = [
  * 변환하면 오히려 깨지고, musicbrainz는 고유명사 검색이라 변환 대상이 아니며,
  * metweather는 지명 지오코딩이라 한글 지명이 그대로 동작한다.
  * googlefonts·gbif는 서버에 소규모 한글 별칭표가 있어 그 범위 밖 용어를 클라이언트
- * 사전이 보강한다.
+ * 사전이 보강한다. 단 gbif는 질의 전체가 별칭 키와 일치하면 서버 해석이 우선한다
+ * (isServerAliasResolvedQuery).
  */
 export const RESOURCE_SEARCH_TRANSLATED_PROVIDERS: ReadonlySet<ResourceSearchProvider> = new Set([
   "met", "polyhaven", "ambientcg", "nasa", "vam", "rijksmuseum",
   "googlefonts", "gbif", "internetarchive", "smithsonian", "europeana", "dpla",
 ]);
+
+/**
+ * 질의 전체를 서버 별칭표가 권위 있게 해석하는 경우인지 판정한다 (F-B14-1).
+ * gbif는 서버에 한글 종명 별칭표(여우→Vulpes vulpes)가 있어, 질의가 별칭 키와
+ * 정확히 일치하면 클라이언트 사전 변환보다 서버 해석이 우선해야 한다 — 사전이
+ * 영문 일반명(fox)으로 먼저 바꾸면 GBIF 분류군 매칭이 확정되지 않아 정당한
+ * 한글 검색이 0건이 된다. 별칭 범위 밖 용어는 종전대로 클라이언트 사전이 보강한다.
+ */
+export function isServerAliasResolvedQuery(provider: ResourceSearchProvider, query: string): boolean {
+  return provider === "gbif" && resolveGbifSpeciesAlias(query) !== null;
+}

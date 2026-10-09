@@ -33,13 +33,15 @@ export function StudioVirtualCharacterPreview({ skin, facing = "down", motion = 
   if (asset.type === "image" && !skin.sharedAtlas) return <img className={classes} style={style} src={asset.url} alt={alt} draggable={false} decoding="async" data-character-crop={bust ? "bust" : undefined} />;
   const frame = studioCharacterPreviewFrame(asset);
   const viewFrame = bust ? studioCharacterBustFrame(asset) : frame;
+  // 축소 사본은 원본과 같은 비율이라 같은 좌표계(atlas 크기)에 늘려 그려도 칸 좌표가 그대로 맞는다. 원본 시트를 쓰는 자산에만 적용한다.
+  const previewHref = skin.previewTextureUrl && asset.url === skin.directional[facing] ? skin.previewTextureUrl : asset.url;
   return <svg className={classes} style={style} viewBox={viewFrame ? `${viewFrame.x} ${viewFrame.y} ${viewFrame.width} ${viewFrame.height}` : "0 0 1 1"}
     preserveAspectRatio={bust ? "xMidYMid slice" : "xMidYMax meet"} overflow="hidden" focusable="false" role={alt ? "img" : undefined} aria-label={alt || undefined} aria-hidden={!alt || undefined}
     data-character-sheet={skin.key} data-character-art-style={skin.nativeArtStyle} data-character-pixel-art={skin.pixelArt}
     data-character-frame={frame?.index} data-character-crop={bust ? "bust" : undefined} data-character-invalid={!frame || undefined}>
     {viewFrame && asset.atlas ? <>
       <defs><clipPath id={clipId} clipPathUnits="userSpaceOnUse"><rect x={viewFrame.x} y={viewFrame.y} width={viewFrame.width} height={viewFrame.height} /></clipPath></defs>
-      <image href={asset.url} x="0" y="0" width={asset.atlas.width} height={asset.atlas.height} clipPath={`url(#${clipId})`} />
+      <image href={previewHref} x="0" y="0" width={asset.atlas.width} height={asset.atlas.height} preserveAspectRatio="none" clipPath={`url(#${clipId})`} />
     </> : null}
   </svg>;
 }

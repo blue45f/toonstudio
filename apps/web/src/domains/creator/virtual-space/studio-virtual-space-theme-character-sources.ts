@@ -1,10 +1,14 @@
 import type { StudioThemeCharacterSource } from "./studio-virtual-space-character-theme-art";
 
+/** 미리보기 사본을 원본 크기의 몇 배로 줄였는지. build-virtual-studio-avatar-previews.mjs와 같은 값이며 단위 테스트가 파일 크기로 검사한다. */
+export const STUDIO_THEME_CHARACTER_PREVIEW_SCALE = 0.75;
+
 /** 원본 알파 연결 영역과 상부 12~46%의 alpha>100 중심을 검수했다. 팔 너비 대신 머리를 가로 기준으로 삼으며 PNG는 변환하지 않는다. */
 export const STUDIO_THEME_CHARACTER_SOURCES: readonly StudioThemeCharacterSource[] = [
   {
     artStyle: "sky-island", labelKo: "하늘빛 작가", labelEn: "Sky Artist",
-    textureUrl: "/assets/virtual-studio/experience-v8/avatar-sky-island.png", width: 1536, height: 1024,
+    textureUrl: "/assets/virtual-studio/experience-v8/avatar-sky-island.png",
+    previewUrl: "/assets/virtual-studio/experience-v8/previews/avatar-sky-island.webp", width: 1536, height: 1024,
     atlas: { width: 1536, height: 1024, columns: 8, rows: 4, slicing: "explicit-frames", frames: [
       {"index": 0, "x": 54, "y": 7, "width": 129, "height": 243},
       {"index": 1, "x": 260, "y": 9, "width": 125, "height": 238},
@@ -76,7 +80,8 @@ export const STUDIO_THEME_CHARACTER_SOURCES: readonly StudioThemeCharacterSource
   },
   {
     artStyle: "webtoon", labelKo: "편집실 디자이너", labelEn: "Editorial Designer",
-    textureUrl: "/assets/virtual-studio/experience-v8/avatar-webtoon.png", width: 1536, height: 1024,
+    textureUrl: "/assets/virtual-studio/experience-v8/avatar-webtoon.png",
+    previewUrl: "/assets/virtual-studio/experience-v8/previews/avatar-webtoon.webp", width: 1536, height: 1024,
     atlas: { width: 1536, height: 1024, columns: 8, rows: 4, slicing: "explicit-frames", frames: [
       {"index": 0, "x": 64, "y": 5, "width": 85, "height": 246},
       {"index": 1, "x": 253, "y": 4, "width": 91, "height": 249},
@@ -148,7 +153,8 @@ export const STUDIO_THEME_CHARACTER_SOURCES: readonly StudioThemeCharacterSource
   },
   {
     artStyle: "pastel", labelKo: "클레이 메이커", labelEn: "Clay Maker",
-    textureUrl: "/assets/virtual-studio/experience-v8/avatar-pastel.png", width: 1536, height: 1024,
+    textureUrl: "/assets/virtual-studio/experience-v8/avatar-pastel.png",
+    previewUrl: "/assets/virtual-studio/experience-v8/previews/avatar-pastel.webp", width: 1536, height: 1024,
     atlas: { width: 1536, height: 1024, columns: 8, rows: 4, slicing: "explicit-frames", frames: [
       {"index": 0, "x": 34, "y": 14, "width": 145, "height": 239},
       {"index": 1, "x": 226, "y": 13, "width": 145, "height": 240},
@@ -220,7 +226,8 @@ export const STUDIO_THEME_CHARACTER_SOURCES: readonly StudioThemeCharacterSource
   },
   {
     artStyle: "retro", labelKo: "픽셀 일러스트레이터", labelEn: "Pixel Illustrator",
-    textureUrl: "/assets/virtual-studio/experience-v8/avatar-retro.png", width: 1536, height: 1024,
+    textureUrl: "/assets/virtual-studio/experience-v8/avatar-retro.png",
+    previewUrl: "/assets/virtual-studio/experience-v8/previews/avatar-retro.webp", width: 1536, height: 1024,
     atlas: { width: 1536, height: 1024, columns: 8, rows: 4, slicing: "explicit-frames", frames: [
       {"index": 0, "x": 51, "y": 10, "width": 111, "height": 243},
       {"index": 1, "x": 236, "y": 10, "width": 123, "height": 243},
@@ -292,7 +299,8 @@ export const STUDIO_THEME_CHARACTER_SOURCES: readonly StudioThemeCharacterSource
   },
   {
     artStyle: "ink", labelKo: "잉크 만화가", labelEn: "Ink Cartoonist",
-    textureUrl: "/assets/virtual-studio/experience-v8/avatar-ink.png", width: 1536, height: 1024,
+    textureUrl: "/assets/virtual-studio/experience-v8/avatar-ink.png",
+    previewUrl: "/assets/virtual-studio/experience-v8/previews/avatar-ink.webp", width: 1536, height: 1024,
     atlas: { width: 1536, height: 1024, columns: 8, rows: 4, slicing: "explicit-frames", frames: [
       {"index": 0, "x": 99, "y": 7, "width": 80, "height": 247},
       {"index": 1, "x": 279, "y": 8, "width": 91, "height": 248},
@@ -364,7 +372,8 @@ export const STUDIO_THEME_CHARACTER_SOURCES: readonly StudioThemeCharacterSource
   },
   {
     artStyle: "neon", labelKo: "미디어 디렉터", labelEn: "Media Director",
-    textureUrl: "/assets/virtual-studio/experience-v8/avatar-neon.png", width: 1774, height: 887,
+    textureUrl: "/assets/virtual-studio/experience-v8/avatar-neon.png",
+    previewUrl: "/assets/virtual-studio/experience-v8/previews/avatar-neon.webp", width: 1774, height: 887,
     atlas: { width: 1774, height: 887, columns: 8, rows: 4, slicing: "explicit-frames", frames: [
       {"index": 0, "x": 82, "y": 6, "width": 94, "height": 209},
       {"index": 1, "x": 295, "y": 7, "width": 100, "height": 214},

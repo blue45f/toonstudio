@@ -31,7 +31,7 @@
   "footer.link.about": "About ToonStudio",
   "footer.link.guide": "️️️️️️️️️",
   "footer.link.sitemap": "Sitemap",
-  "footer.link.settings": "Settings",
+  "footer.link.settings": "Тохиргоо",
   "footer.link.support": "Support",
   "footer.link.terms": "️️️️️️️️️️️️",
   "footer.link.privacy": "Privacy Policy",
@@ -48,5 +48,6 @@
   "footer.business.hosting": "Hosting",
   "footer.business.serviceType": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Create Your Next Story"
+  "footer.logoTag": "Create Your Next Story",
+  "footer.link.features": "All features at a glance"
 }

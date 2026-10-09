@@ -170,7 +170,9 @@ function messageFor(
       : localizeAuthoredMessage("요청이 많아 잠시 제한되었습니다. 잠시 후 다시 시도해 주세요.");
   }
   if (kind === "unauthorized") return localizeAuthoredMessage(unauthorizedMessageSource());
-  if (kind === "forbidden") return localizeAuthoredMessage("이 작업을 수행할 권한이 없습니다.");
+  // 서버가 사유(예: "로그인이 필요해요.")를 직접 주면 그 문구가 해법까지 알려주므로
+  // 일반 권한 문구로 뭉개지 않는다. 사유가 없을 때만 일반 문구를 쓴다.
+  if (kind === "forbidden") return serverMessage ?? localizeAuthoredMessage("이 작업을 수행할 권한이 없습니다.");
   if (kind === "conflict") return localizeAuthoredMessage("다른 곳에서 내용이 변경되었습니다. 최신 상태를 확인해 주세요.");
   if (kind === "not_found") return serverMessage ?? localizeAuthoredMessage("요청한 항목을 찾을 수 없습니다.");
   if (kind === "validation") return serverMessage ?? localizeAuthoredMessage(fallback);

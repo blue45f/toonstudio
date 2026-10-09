@@ -192,6 +192,43 @@ export function resolveReferenceQuery(input: string): ReferenceQueryResolution {
   };
 }
 
+/**
+ * GBIF 종 검색의 한글 별칭표 — 서버(gbif-provider)가 질의를 학명으로 바꿔
+ * GBIF species/match에 보내는 권위 있는 해석표다. 이 모듈이 단일 출처이고
+ * 서버와 웹이 함께 본다.
+ * 클라이언트 사전(TERMS)은 여우→fox처럼 영문 일반명으로 바꾸지만, GBIF 매칭은
+ * 영문 일반명을 분류군으로 확정하지 못한다. 그래서 웹 변환 계층은 질의 전체가
+ * 이 표의 키와 일치하면 사전 변환을 건너뛰고 원문을 서버로 보내야 한다
+ * (isServerAliasResolvedQuery — 웹 resource-search-config). 별칭 범위 밖
+ * 용어는 종전대로 클라이언트 사전이 보강한다.
+ */
+export const GBIF_SPECIES_ALIASES: Readonly<Record<string, string>> = Object.freeze({
+  "여우": "Vulpes vulpes",
+  "붉은여우": "Vulpes vulpes",
+  "늑대": "Canis lupus",
+  "호랑이": "Panthera tigris",
+  "표범": "Panthera pardus",
+  "사자": "Panthera leo",
+  "고양이": "Felis catus",
+  "개": "Canis lupus familiaris",
+  "수달": "Lutra lutra",
+  "토끼": "Oryctolagus cuniculus",
+  "금빛독수리": "Aquila chrysaetos",
+  "장미": "Rosa",
+  "소나무": "Pinus densiflora",
+  "은행나무": "Ginkgo biloba",
+});
+
+/**
+ * 질의 전체가 GBIF 별칭 키와 정확히 일치하면 학명을, 아니면 null을 돌려준다.
+ * 서버 별칭 적용 조건(NFKC 정규화 후 전체 일치)과 같은 기준이다.
+ */
+export function resolveGbifSpeciesAlias(query: string): string | null {
+  const normalized = query.normalize("NFKC").trim();
+  const alias: string | undefined = GBIF_SPECIES_ALIASES[normalized];
+  return alias === undefined ? null : alias;
+}
+
 /** Museum adapters share bounded vocabulary expansion; books keep their contract. */
 export function localizeReferenceProviderQuery(query: Record<string, unknown>): Record<string, unknown> {
   if (typeof query.provider !== "string" || !["met", "aic", "cleveland", "nasa", "vam", "rijksmuseum"].includes(query.provider) || typeof query.q !== "string") return query;

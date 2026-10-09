@@ -48,5 +48,6 @@
   "footer.business.hosting": "Service d'hébergement",
   "footer.business.serviceType": "Type de plateforme",
   "footer.copyrightLine": "© {year} ToonStudio (Beta). Tous droits réservés.",
-  "footer.logoTag": "Créez votre prochain récit"
+  "footer.logoTag": "Créez votre prochain récit",
+  "footer.link.features": "All features at a glance"
 }

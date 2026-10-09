@@ -33,6 +33,14 @@ afterEach(() => {
 });
 
 describe("PwaOfflinePage", () => {
+  it("페이지 고유 문서 제목을 설정한다", async () => {
+    render(<PwaOfflinePage />);
+
+    await waitFor(() => {
+      expect(document.title).toBe("오프라인 안내 · 툰스튜디오");
+    });
+  });
+
   it("오프라인 안내와 긴급 드로잉 보드 링크를 보여준다", () => {
     render(<PwaOfflinePage />);
     expect(screen.getByRole("heading", { name: "오프라인이에요" })).toBeTruthy();

@@ -78,5 +78,6 @@
   "membership.tierEditor.priceHint": "The amount fans pay every month.",
   "membership.tierEditor.priceLabel": "Monthly price (KRW)",
   "membership.tierEditor.pricePlaceholder": "{min} – {max}",
-  "membership.tierEditor.save": "Save"
+  "membership.tierEditor.save": "Save",
+  "membership.creatorPage.statusActive": "{count} tiers are live on the reader sign-up screen"
 }

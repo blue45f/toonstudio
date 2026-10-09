@@ -7,6 +7,7 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { LoadingState } from "@/shared/components/LoadingState";
+import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 import { openPwaInstallShowcase } from "./pwa-install-showcase-schedule";
 import { usePwaOfflineReadiness } from "./usePwaOfflineReadiness";
@@ -107,6 +108,7 @@ function shortCacheName(name: string): string {
 
 export function PwaOfflinePage() {
   useBilingualI18nRevision();
+  useDocumentTitle(bi("오프라인 안내 · ToonStudio", "Offline guide · ToonStudio"));
   const { readiness, cachedResources, prepare } = usePwaOfflineReadiness();
   const [cachesInfo, setCachesInfo] = useState<Array<{ name: string; entries: number }>>([]);
   const [cachesChecked, setCachesChecked] = useState(false);

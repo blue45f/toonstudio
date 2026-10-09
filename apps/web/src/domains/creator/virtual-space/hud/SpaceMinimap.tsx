@@ -149,29 +149,28 @@ export const SpaceMinimap = memo(function SpaceMinimap({
         <circle className="space-minimap__self" cx={self.x} cy={self.y} r={labelSize * 0.5} />
       </svg>
     </button>
-    {full ? zones.map((zone) => <button key={zone.id} type="button" className="space-minimap__zone-button"
-      data-active={zone.id === currentRoomId || undefined}
-      data-role-recommended={highlightRooms.has(zone.id) || undefined}
+    {/* 구역 버튼 중심을 구역 중심에 두고 바로 가기 마커는 그 버튼의 오른쪽 위 모서리에 붙인다. 마커를 구역 모서리에 따로 두면 짧은 구역에서
+        마커가 버튼 안으로 들어와 라벨 글자를 가렸다(GAME의 E). */}
+    {full ? zones.map((zone) => <div key={zone.id} className="space-minimap__zone-actions"
       style={{
         left: `${((zone.x + zone.width / 2) / manifest.width) * 100}%`,
         top: `${((zone.y + zone.height / 2) / manifest.height) * 100}%`,
-        "--space-zone-tone": zone.tone,
-      } as CSSProperties}
-      onClick={() => onMoveTo(zone.spawn)}
-      aria-label={bt(`${spaceKoParticle(zone.label, "으로")} 걸어가기`, `Walk to ${zone.label}`)}>
-      <span aria-hidden>{zone.sign}</span>
-    </button>) : null}
-    {full && onJumpTo ? zones.map((zone) => <button key={`${zone.id}-jump`} type="button"
-      className="space-minimap__zone-jump"
-      style={{
-        left: `${((zone.x + zone.width) / manifest.width) * 100}%`,
-        top: `${((zone.y + zone.height) / manifest.height) * 100}%`,
-      } as CSSProperties}
-      onClick={() => onJumpTo(zone.spawn)}
-      aria-label={bt(`${spaceKoParticle(zone.label, "으로")} 바로 가기`, `Quick travel to ${zone.label}`)}
-      title={bt("바로 가기", "Quick travel")}>
-      <Zap size={12} aria-hidden />
-    </button>) : null}
+      } as CSSProperties}>
+      <button type="button" className="space-minimap__zone-button"
+        data-active={zone.id === currentRoomId || undefined}
+        data-role-recommended={highlightRooms.has(zone.id) || undefined}
+        style={{ "--space-zone-tone": zone.tone } as CSSProperties}
+        onClick={() => onMoveTo(zone.spawn)}
+        aria-label={bt(`${spaceKoParticle(zone.label, "으로")} 걸어가기`, `Walk to ${zone.label}`)}>
+        <span aria-hidden>{zone.sign}</span>
+      </button>
+      {onJumpTo ? <button type="button" className="space-minimap__zone-jump"
+        onClick={() => onJumpTo(zone.spawn)}
+        aria-label={bt(`${spaceKoParticle(zone.label, "으로")} 바로 가기`, `Quick travel to ${zone.label}`)}
+        title={bt("바로 가기", "Quick travel")}>
+        <Zap size={12} aria-hidden />
+      </button> : null}
+    </div>) : null}
   </div>;
 
   if (full) {

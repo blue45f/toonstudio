@@ -1,5 +1,7 @@
 import { parseResource, recordOf, textOf } from "@toonstudio/core/creator-resources";
 
+import { resolveGbifSpeciesAlias } from "../../../../../packages/core/src/reference-query-language";
+
 import type { CreatorResource, ResourceSearchResult } from "@toonstudio/core/creator-resources";
 
 type Request = (url: URL) => Promise<{ value: unknown; fetchedAt: string }>;
@@ -14,26 +16,11 @@ const plain = (value: unknown, max = 1200) => textOf(value, 20000)
 const count = (value: unknown): number => typeof value === "number"
   && Number.isSafeInteger(value) && value >= 0 ? value : 0;
 
-const SPECIES_ALIASES: Record<string, string> = {
-  여우: "Vulpes vulpes",
-  붉은여우: "Vulpes vulpes",
-  늑대: "Canis lupus",
-  호랑이: "Panthera tigris",
-  표범: "Panthera pardus",
-  사자: "Panthera leo",
-  고양이: "Felis catus",
-  개: "Canis lupus familiaris",
-  수달: "Lutra lutra",
-  토끼: "Oryctolagus cuniculus",
-  금빛독수리: "Aquila chrysaetos",
-  장미: "Rosa",
-  소나무: "Pinus densiflora",
-  은행나무: "Ginkgo biloba",
-};
-
+// 한글 종명 별칭표는 @toonstudio/core reference-query-language가 단일 출처다 —
+// 웹 변환 계층이 같은 표를 보고 별칭 질의를 사전 변환 없이 그대로 보내야
+// 이 해석 경로에 도달할 수 있다 (F-B14-1).
 function localizedSpeciesName(query: string): string {
-  const normalized = query.normalize("NFKC").trim();
-  return SPECIES_ALIASES[normalized] ?? normalized;
+  return resolveGbifSpeciesAlias(query) ?? query.normalize("NFKC").trim();
 }
 
 export function gbifMatchUrl(query: string): URL {

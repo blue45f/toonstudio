@@ -52,10 +52,10 @@ import {
 
 test("manifest lists every numbered SQL migration exactly once in order", () => {
   const manifest = loadMigrationManifest();
-  expect(manifest).toHaveLength(103);
+  expect(manifest).toHaveLength(105);
   expect(manifest[0].id).toBe("0001_studio_ai_usage_ledger");
-  expect(manifest.at(-1).id).toBe("0103_studio_virtual_space_entry_code");
-  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(103);
+  expect(manifest.at(-1).id).toBe("0105_community_post_reports");
+  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(105);
 });
 
 test("migration directory matches the managed manifest without duplicate sequence numbers", () => {
@@ -1417,6 +1417,8 @@ test("historical adoption and post-baseline relations exactly partition runtime 
     "creator_work_report",
     "creator_work_review_feedback",
     "creator_work_review_link",
+    "fan_post_like",
+    "fan_post_report",
     "member_level",
     "member_message",
     "member_message_block",
@@ -1464,6 +1466,7 @@ test("historical adoption and post-baseline relations exactly partition runtime 
     "studio_pinned_review_share",
     "studio_pinned_review_feedback",
     "studio_project_graph",
+    "studio_recording_booth_asset",
     "studio_review",
     "studio_review_comment",
     "studio_review_comment_assignee",
@@ -1476,8 +1479,11 @@ test("historical adoption and post-baseline relations exactly partition runtime 
     "studio_revision",
     "studio_revision_blob",
     "studio_revision_parent",
+    "studio_virtual_space_booking",
     "studio_virtual_space_custom_furniture",
     "studio_virtual_space_decoration_layout",
+    "studio_virtual_space_gallery_like",
+    "studio_virtual_space_waitlist_entry",
     "supporter_funding_setting",
     "supporter_payment",
     "traffic_page_view",

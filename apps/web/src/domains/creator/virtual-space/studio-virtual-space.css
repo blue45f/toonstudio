@@ -20,6 +20,15 @@
 .studio-vspace-engine-mount{position:absolute;inset:0;overflow:hidden}
 .studio-vspace-engine-message{position:absolute;inset:0;z-index:5;display:grid;place-content:center;gap:1rem;padding:2rem;background:var(--color-canvas);color:var(--color-fg);text-align:center;font-size:.875rem}
 .studio-vspace-engine-message button{justify-self:center;min-height:44px;border:1px solid var(--color-accent);border-radius:.75rem;padding:.65rem 1.2rem;background:var(--color-accent);color:var(--color-on-accent);font-weight:700;cursor:pointer}
+.studio-vspace-engine-message p{margin:0}
+/* 로딩·실패 안내는 세계 배경이 밝은 화풍(스카이 아일랜드 등)에서도 읽히도록 어두운 카드 위에 둔다. */
+.studio-vspace-engine-card{display:grid;justify-items:center;gap:.75rem;max-width:min(26rem,100%);padding:1rem 1.25rem;border:1px solid var(--color-line-strong,var(--color-line));border-radius:1rem;background:color-mix(in srgb,var(--color-panel) 92%,transparent);color:var(--color-fg);box-shadow:0 12px 32px rgb(0 0 0 / .28)}
+.studio-vspace-engine-progress{width:min(18rem,70vw);height:.5rem;border:0;border-radius:999px;overflow:hidden;background:var(--color-line);accent-color:var(--color-accent)}
+.studio-vspace-engine-progress::-webkit-progress-bar{background:var(--color-line);border-radius:999px}
+.studio-vspace-engine-progress::-webkit-progress-value{background:var(--color-accent);border-radius:999px;transition:width .25s ease-out}
+.studio-vspace-engine-progress::-moz-progress-bar{background:var(--color-accent);border-radius:999px}
+.studio-vspace-engine-slow{color:var(--color-fg-2)}
+@media (prefers-reduced-motion:reduce){.studio-vspace-engine-progress::-webkit-progress-value{transition:none}}
 .studio-vspace-phaser-canvas canvas:focus-visible{outline:3px solid var(--color-accent);outline-offset:-4px}
 
 /* Virtual Studio world authoring */

@@ -18,5 +18,6 @@
   "auth.callback.message.done": "L'inscripció completada.",
   "auth.callback.message.doneDemo": "La inscripció a la demo s'ha completat.",
   "auth.callback.demo.message": "Estàs connectat amb un compte demo. Algunes funcions poden ser limitades.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

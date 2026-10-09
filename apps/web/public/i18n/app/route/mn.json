@@ -32,13 +32,13 @@
   "route.play": "Arcade",
   "route.unknown": "Page",
   "route.ranking": "Unified ranking",
-  "route.search": "Search",
+  "route.search": "Хайх",
   "route.recommend": "️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️️",
   "route.random": "️️️️️️️️️️️️️️️️️",
   "route.tags": "Шошгоор хайх",
   "route.reviews": "Review",
   "route.sitemap": "Sitemap",
-  "route.settings": "Settings",
+  "route.settings": "Тохиргоо",
   "route.terms": "️️️️️️️️️️️️",
   "route.privacy": "Privacy Policy",
   "route.support": "Support",
@@ -59,7 +59,7 @@
   "route.help": "Help",
   "route.membership": "Membership",
   "route.messages": "Messages",
-  "route.notifications": "Notifications",
+  "route.notifications": "Мэдэгдэл",
   "route.pricing": "Pricing",
   "route.references": "Creation references",
   "route.cuts": "Cuts",
@@ -68,5 +68,7 @@
   "route.characterChat": "Character Talk",
   "route.characterChatManage": "Manage Character Chats",
   "route.newsletter": "Newsletter",
-  "route.newsletterCompose": "Send a newsletter"
+  "route.newsletterCompose": "Send a newsletter",
+  "route.createStart": "Start a work",
+  "route.serialCenter": "Serialization center"
 }

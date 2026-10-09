@@ -107,6 +107,24 @@ describe("open API expansion", () => {
     expect(music.items[0]?.title).toBe("Henry Mancini");
     expect(archive.items[0]?.sourceUrl).toBe("https://archive.org/details/old-book");
   });
+  it("resolves Korean GBIF queries through the server species alias table (F-B14-1)", async () => {
+    const requested: URL[] = [];
+    const fetcher = vi.fn<typeof fetch>(async (url) => {
+      const parsed = new URL(String(url));
+      requested.push(parsed);
+      if (parsed.pathname === "/v1/species/match") return json({ usageKey: 1, scientificName: "Vulpes vulpes", confidence: 100, matchType: "EXACT" });
+      return json({ count: 1, offset: 0, limit: 12, results: [{ key: 2, scientificName: "Vulpes vulpes", family: "Canidae", genus: "Vulpes", taxonRank: "SPECIES", country: "Korea", media: [{ license: "CC BY 4.0", creator: "Observer" }] }] });
+    });
+    const api = engine(fetcher);
+    const result = await api.search({ provider: "gbif", q: "여우" }, "gbif-ko-client");
+    // 서버 별칭표가 여우→Vulpes vulpes로 해석해 매칭에 보내야 한다 — 클라이언트가
+    // 영문 일반명(fox)으로 바꿔 보내면 이 경로에 도달하지 못하고 0건이 된다.
+    const match = requested.find((url) => url.pathname === "/v1/species/match");
+    expect(match?.searchParams.get("name")).toBe("Vulpes vulpes");
+    expect(result.status).toBe("ready");
+    expect(result.items[0]?.title).toBe("Vulpes vulpes");
+  });
+
   it("parses keyless 국가유산 XML without importing media", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(xml(`<?xml version="1.0" encoding="utf-8"?>
       <result><totalCnt>1</totalCnt><pageUnit>12</pageUnit><pageIndex>1</pageIndex><item>

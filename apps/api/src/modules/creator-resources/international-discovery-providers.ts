@@ -1,5 +1,7 @@
 import { parseResource, recordOf, textOf } from "@toonstudio/core/creator-resources";
 
+import { UpstreamHttpError } from "./upstream-error";
+
 import type { CreatorResource, ResourceProvider, ResourceSearchResult } from "@toonstudio/core/creator-resources";
 
 type Request = (url: URL) => Promise<{ value: unknown; fetchedAt: string }>;
@@ -253,7 +255,19 @@ export async function internationalDiscoverySearch(
     : provider === "europeana" ? europeanaUrl(query, page, key)
       : provider === "dpla" ? dplaUrl(query, page, key)
         : wikimediaUrl(query, now);
-  const source = await request(url);
+  let source: { value: unknown; fetchedAt: string };
+  try {
+    source = await request(url);
+  } catch (error) {
+    // Wikimedia Pageviews는 존재하지 않는 문서를 404로 답한다 — 영구적인
+    // "없음"이라 일시 장애(unavailable)가 아니라 성공한 빈 결과로 분류한다
+    // (F-B14-2). 그 밖의 오류는 종전대로 엔진의 장애 경로로 올린다.
+    if (provider === "wikimedia" && error instanceof UpstreamHttpError && error.status === 404) {
+      return { provider, status: "ready", items: [], page, hasMore: false, total: 0, fetchedAt: null,
+        message: "한국어 위키백과에서 해당 문서를 찾지 못했습니다. 문서 제목이 정확한지 확인해 보세요." };
+    }
+    throw error;
+  }
   if (!validInternationalDiscoveryShape(url, source.value)) throw new Error("upstream_schema");
   const root = recordOf(source.value);
   let candidates: unknown[];

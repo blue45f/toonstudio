@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "scale": 0.75,
+  "previews": [
+    {
+      "artStyle": "sky-island",
+      "file": "avatar-sky-island.webp",
+      "source": "avatar-sky-island.png",
+      "sourceSha256": "36cb4674cc95b16ff2c128eee6f07ea64d68da3015870e1c1029694506937344",
+      "width": 1152,
+      "height": 768,
+      "bytes": 344658
+    },
+    {
+      "artStyle": "webtoon",
+      "file": "avatar-webtoon.webp",
+      "source": "avatar-webtoon.png",
+      "sourceSha256": "d29d4a0899e9cada1cca3126b021dea798e29413e6004653eaf9dae5da2bdf26",
+      "width": 1152,
+      "height": 768,
+      "bytes": 252852
+    },
+    {
+      "artStyle": "pastel",
+      "file": "avatar-pastel.webp",
+      "source": "avatar-pastel.png",
+      "sourceSha256": "9e78fa5241ca6a6206e2286a2bdb1493b3bc0a7c735c3e259a19a2416450e7c1",
+      "width": 1152,
+      "height": 768,
+      "bytes": 325072
+    },
+    {
+      "artStyle": "retro",
+      "file": "avatar-retro.webp",
+      "source": "avatar-retro.png",
+      "sourceSha256": "6afb65ec88666f738e799607f35acb051d207d252704e8027267509e5bdfc2c0",
+      "width": 1152,
+      "height": 768,
+      "bytes": 343790
+    },
+    {
+      "artStyle": "ink",
+      "file": "avatar-ink.webp",
+      "source": "avatar-ink.png",
+      "sourceSha256": "952cbf8961e83c170e4101c7c14487a92fca0d440d7dc9ec78d9ba163058a94d",
+      "width": 1152,
+      "height": 768,
+      "bytes": 250106
+    },
+    {
+      "artStyle": "neon",
+      "file": "avatar-neon.webp",
+      "source": "avatar-neon.png",
+      "sourceSha256": "30139ba2712ccdc859948f41cfc00161b4f26f2be37f4617cd03a16a4831b73e",
+      "width": 1331,
+      "height": 665,
+      "bytes": 277464
+    }
+  ]
+}

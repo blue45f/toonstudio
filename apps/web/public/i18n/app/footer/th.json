@@ -48,5 +48,6 @@
   "footer.business.hosting": "บริการรับรอง",
   "footer.business.serviceType": "ประเภทพื้นที่",
   "footer.copyrightLine": "© {year} ToonStudio (Beta) หุ้นส่วนทั้งหมด",
-  "footer.logoTag": "สร้างเรื่องราวต่อไปของคุณ"
+  "footer.logoTag": "สร้างเรื่องราวต่อไปของคุณ",
+  "footer.link.features": "All features at a glance"
 }

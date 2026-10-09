@@ -28,6 +28,7 @@ import {
   FAN_CAFE_POST_TAGS_MAX_LENGTH,
   KIND_ITEMS,
 } from "./fan-cafe-constants";
+import { fanCafeDraftStorageKey, isComposerDraftKind, type FanCafeComposerDraft } from "./fan-cafe-composer-draft";
 import FanPostCard from "./fan-cafe-post-card";
 import { FanPostCardSkeleton } from "./fan-cafe-post-card-skeleton";
 import { FanPostImages as FanPostImagesView } from "./fan-cafe-images";
@@ -64,22 +65,6 @@ const bi = (ko: string, en: string) => translateBilingualValueForActiveLocale("F
 // 통합 피드(전체)와 유형별 커뮤니티가 함께 쓰므로 "팬카페"가 아닌 범위 중립 문구를 쓴다.
 const POSTS_LOAD_ERROR = () => bi("커뮤니티 글을 불러오지 못했습니다.", "Couldn't load community posts.");
 const MORE_POSTS_LOAD_ERROR = () => bi("글을 더 불러오지 못했습니다.", "Couldn't load more posts.");
-
-type FanCafeComposerDraft = {
-  title: string;
-  text: string;
-  tags: string;
-  composeKind: FanCafePostKind;
-  savedAt: string;
-};
-
-function fanCafeDraftStorageKey(userId: string, scope: FanCafeScopeFilter, targetId?: string) {
-  return `toonstudio:fan-cafe-composer-draft:${userId}:${scope}:${targetId ?? ""}`;
-}
-
-function isComposerDraftKind(value: unknown): value is FanCafePostKind {
-  return KIND_ITEMS.some((item) => item.value === value);
-}
 
 /** 빈 목록일 때 보여줄 안내 카드 — 전달한 페이지에서만 ActionableEmptyState로 렌더링된다. */
 export type FanCafeEmptyGuide = {

@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Saada sisse ja vahetada kohe.",
   "auth.callback.message.doneDemo": "Demo-sõnum on valmis.",
   "auth.callback.demo.message": "Sa oled sisse loginud demo-kontoga.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

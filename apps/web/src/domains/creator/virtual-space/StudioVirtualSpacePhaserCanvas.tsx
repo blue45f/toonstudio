@@ -1,4 +1,4 @@
-import { studioVisibleBootDeadline } from "./experience/studio-visible-boot-deadline";
+import { STUDIO_BOOT_MAX_MS, STUDIO_BOOT_STALL_MS, studioVisibleBootDeadline } from "./experience/studio-visible-boot-deadline";
 import {
   useEffect,
   useRef,
@@ -113,8 +113,7 @@ import {
 import { StudioTextResolutionRuntime } from "./studio-virtual-space-text-resolution";
 import { studioSpaceTheme } from "./studio-virtual-space-theme";
 import { drawStudioModularCampus } from "./studio-virtual-space-modular-campus";
-import { studioIllustratedPropFrame, studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
-import { studioExperienceFrameGeometry } from "./studio-virtual-space-experience-art";
+import { studioRenderedTileWorld } from "./studio-virtual-space-scene-direction";
 import { registerStudioSceneAtlas,
   StudioVirtualSetDressingRuntime, studioSceneActorScale, studioSceneOverlayScale } from "./studio-virtual-space-scene-art-runtime";
 import { studioVirtualWorldSetDressing } from "./studio-virtual-space-world-set-dressing";
@@ -194,7 +193,6 @@ import {
   studioTownEnvironmentInteractions,
 } from "./studio-virtual-space-town-layout";
 import {
-  StudioCharacterAssetResidency,
   studioCharacterPoseTextureKey,
   studioCharacterStaticAsset,
   studioCharacterWalkAnimationKey as walkAnimationKey,
@@ -272,12 +270,12 @@ import {
   studioEmoteFacing,
   studioFacingToward,
   studioWorldMayTakeFocus,
+  studioWorldShouldReclaimFocus,
   EMPTY_DECORATIONS,
   NPC_LOOK_DISTANCE,
   NPC_NOTICE_COOLDOWN_MS,
   STUDIO_EMOTE_DEDUPE_MS,
   WORLD_KEY_CODES,
-  type InputEventLike,
   type NpcVisual,
   type OcclusionVisual,
   type PeerVisual,
@@ -286,6 +284,9 @@ import {
 import { createStudioSpriteVisualApplier } from "./studio-virtual-space-sprite-visual";
 import { createStudioNameplateRenderer } from "./studio-virtual-space-nameplate-renderer";
 import { createStudioCharacterTexturePreparer } from "./studio-virtual-space-character-texture-preparer";
+import { createStudioSceneCharacterAssetResidency } from "./studio-virtual-space-phaser-canvas-character-residency";
+import { drawStudioOcclusionLayers, placeStudioWorldPropImages } from "./studio-virtual-space-phaser-canvas-world-layers";
+import { drawStudioProximityOverlay } from "./studio-virtual-space-phaser-canvas-proximity-overlay";
 import { studioCharacterBootAssets, studioSceneArtKeys } from "./studio-virtual-space-boot-assets";
 
 export type {
@@ -343,6 +344,8 @@ export function StudioVirtualSpacePhaserCanvas({
   const [failure, setFailure] = useState(false);
   const [ready, setReady] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [loadProgress, setLoadProgress] = useState<number | null>(null);
+  const [slowLoad, setSlowLoad] = useState(false);
   const atmosphereRef = useRef(atmosphere);
   atmosphereRef.current = atmosphere;
   const poseRef = useRef({ selfPose, waveActorIds, seatedActors });
@@ -458,10 +461,15 @@ export function StudioVirtualSpacePhaserCanvas({
     parent.append(mount);
     setFailure(false);
     setReady(false);
+    setLoadProgress(null);
+    setSlowLoad(false);
     let cancelled = false;
     let sceneReady = false;
     let engineFailed = false;
     const cleanup: (() => void)[] = [];
+    // 8초가 지나도 안 열리면 느린 연결 안내를 보인다(로딩 화면에서만 보이고 준비되면 사라진다).
+    const slowLoadTimer = globalThis.setTimeout(() => setSlowLoad(true), 8_000);
+    cleanup.push(() => globalThis.clearTimeout(slowLoadTimer));
     const fail = (reason?: unknown) => {
       if (cancelled) return;
       if (!engineFailed) parent.dataset.engineError = reason instanceof Error ? reason.message : "runtime-failure";
@@ -470,7 +478,10 @@ export function StudioVirtualSpacePhaserCanvas({
       setFailure(true);
       setReady(false);
     };
-    const cancelBootDeadline = studioVisibleBootDeadline(document, () => fail(new Error(`boot-timeout:${parent.dataset.bootStage}`)));
+    // 고정 25초 대신 "진행이 45초(STUDIO_BOOT_STALL_MS) 멈추면" 실패로 본다. 느린 회선(약 3Mbps 이하)에서는 정상적으로 내려받는 중에도 총 시간이 25초를 넘어
+    // 월드가 영영 열리지 않았다. 내려받기가 진행되는 동안은 touch로 예산을 되돌리고, 전체 상한(5분)은 그대로 둔다.
+    const bootDeadline = studioVisibleBootDeadline(document, () => fail(new Error(`boot-timeout:${parent.dataset.bootStage}`)), STUDIO_BOOT_STALL_MS, STUDIO_BOOT_MAX_MS);
+    const cancelBootDeadline = () => bootDeadline();
     cleanup.push(() => cancelBootDeadline());
     let game: import("phaser").Game | null = null;
 
@@ -549,29 +560,7 @@ export function StudioVirtualSpacePhaserCanvas({
       // 프레임마다 따로 그려진 걷기·행동 시트의 발 기준선·몸통 중심·크기를 정지 그림에 맞추는 보정(로드 직후 한 번 측정).
       const frameRegistry = new StudioFrameRegistry();
       const { prepareCharacterTexture, queueCharacterTexture } = createStudioCharacterTexturePreparer({ scene, failedTextures, frameRegistry });
-      const characterAssets = new StudioCharacterAssetResidency({
-        has: prepareCharacterTexture,
-        load: (asset, complete) => {
-          const loaderType = asset.atlas?.slicing ? "image" : asset.type;
-          const event = `filecomplete-${loaderType}-${asset.key}`;
-          const loaded = () => complete(prepareCharacterTexture(asset));
-          const failed = (file: import("phaser").Loader.File) => {
-            if (file.key === asset.key) complete(false);
-          };
-          scene.load.once(event, loaded);
-          scene.load.on("loaderror", failed);
-          queueCharacterTexture(asset);
-          scene.load.start();
-          return () => { scene.load.off(event, loaded); scene.load.off("loaderror", failed); };
-        },
-        remove: (asset) => {
-          for (const key of asset.animationKeys ?? (asset.animationKey ? [asset.animationKey] : [])) {
-            if (scene.anims.exists(key)) scene.anims.remove(key);
-          }
-          if (scene.textures.exists(asset.key)) scene.textures.remove(asset.key);
-          frameRegistry.forget(asset.key);
-        },
-      });
+      const characterAssets = createStudioSceneCharacterAssetResidency({ scene, prepareCharacterTexture, queueCharacterTexture, frameRegistry });
       cleanup.push(() => characterAssets.close());
       const interactionById = new Map(interactions.map((interaction) => [interaction.id, interaction] as const));
 
@@ -676,6 +665,7 @@ export function StudioVirtualSpacePhaserCanvas({
       let lightRender: StudioVirtualLightRenderRuntime | null = null;
       let tileWorld: StudioWorldTileRuntime | null = null;
       let initialTilesReady = false;
+      let lastTileProgress = { chunks: -1, textures: -1 };
       const runtimeInputBlocked = () => engineFailed || (manifest.tilemap !== undefined && !initialTilesReady)
         || studioWorldInputBlocked(document, modalInputBlocked);
       let objectRuntime: StudioWorldObjectRuntime | null = null;
@@ -947,6 +937,20 @@ export function StudioVirtualSpacePhaserCanvas({
       scene.preload = function preload() {
         parent.dataset.bootStage = "loading-textures";
         this.load.on("loaderror", (file: import("phaser").Loader.File) => failedTextures.add(file.key));
+        // 내려받기가 조금이라도 진행되면 부팅 제한을 늘리고, 로딩 화면의 진행 막대를 갱신한다. 막대는 끝난 파일 수에 내려받는 중인
+        // 파일의 진행률을 더해 큰 파일이 받아지는 동안에도 움직인다(파일 수만 세면 3MB 파일 하나에 막대가 수십 초 멈춰 보인다).
+        const loader = this.load;
+        const noteLoadProgress = () => {
+          bootDeadline.touch();
+          const total = loader.totalToLoad;
+          if (total <= 0) return;
+          let partial = 0;
+          for (const file of loader.inflight.entries) partial += Math.min(1, Math.max(0, file.percentComplete || 0));
+          setLoadProgress(Math.round(Math.min(1, (loader.totalComplete + loader.totalFailed + partial) / total) * 100));
+        };
+        loader.on("fileprogress", noteLoadProgress);
+        loader.on("filecomplete", noteLoadProgress);
+        loader.on("progress", noteLoadProgress);
         this.load.image(backgroundTextureKey, backgroundUrl);
         this.load.image(horizonTextureKey, horizonUrl);
         queueStudioLivingWorldTextures(this.load, livingTextureKeys, artStyle);
@@ -1081,30 +1085,9 @@ export function StudioVirtualSpacePhaserCanvas({
         }, artProfile.palette);
         cleanup.push(() => { setDressingRuntime?.destroy(); setDressingRuntime = null; });
 
-        for (const layer of worldSetDressing.length > 0 ? [] : manifest.occlusionLayers ?? []) {
-          if (manifest.tilemap) {
-            const foreground = this.add.graphics().setDepth(layer.depth);
-            foreground.fillStyle(artProfile.palette.room, 1).fillPoints([...layer.polygon], true);
-            foreground.lineStyle(4, artProfile.palette.wall, 0.86).strokePoints([...layer.polygon], true);
-            const minX = Math.min(...layer.polygon.map((point) => point.x));
-            const maxX = Math.max(...layer.polygon.map((point) => point.x));
-            const minY = Math.min(...layer.polygon.map((point) => point.y));
-            const maxY = Math.max(...layer.polygon.map((point) => point.y));
-            foreground.lineStyle(2, artProfile.palette.line, 0.42)
-              .lineBetween(minX + 18, (minY + maxY) / 2, maxX - 18, (minY + maxY) / 2);
-            foreground.setAlpha(0.9);
-            occlusionVisuals.push({ polygon: layer.polygon, object: foreground, outsideAlpha: 0.9 });
-            cleanup.push(() => foreground.destroy());
-            continue;
-          }
-          const maskGraphics = this.add.graphics().fillStyle(0xffffff).fillPoints([...layer.polygon], true).setVisible(false);
-          const mask = maskGraphics.createGeometryMask();
-          const foreground = this.add.image(backgroundRect.x, backgroundRect.y, backgroundTextureKey)
-            .setOrigin(0).setDisplaySize(backgroundRect.width, backgroundRect.height)
-            .setDepth(layer.depth).setMask(mask);
-          occlusionVisuals.push({ polygon: layer.polygon, object: foreground, outsideAlpha: 1 });
-          cleanup.push(() => { foreground.clearMask(true); foreground.destroy(); maskGraphics.destroy(); });
-        }
+        drawStudioOcclusionLayers(this, manifest, worldSetDressing.length > 0 ? [] : manifest.occlusionLayers ?? [], {
+          artProfile, backgroundRect, backgroundTextureKey, occlusionVisuals, onCleanup: (dispose) => cleanup.push(dispose),
+        });
 
         routeOverlay = this.add.graphics().setDepth(650);
         locateOverlay = this.add.graphics().setDepth(60_001);
@@ -1127,48 +1110,10 @@ export function StudioVirtualSpacePhaserCanvas({
           delete parent.dataset.authoringOverlay;
         }
 
-        for (const prop of manifest.props) {
-          if (!prop.assetUrl || !this.textures.exists(propTextureKey(prop))) continue;
-          const illustratedFrame = worldAssetUrls?.has(prop.assetUrl) || !this.textures.exists(decorationTextureKeys.furniture)
-            ? undefined : studioIllustratedPropFrame(prop.assetUrl, artStyle);
-          const image = this.add.image(prop.x, prop.y,
-            illustratedFrame === undefined ? propTextureKey(prop) : decorationTextureKeys.furniture, illustratedFrame)
-            .setOrigin(prop.originX ?? 0.5, prop.originY ?? 1)
-            .setAngle(prop.rotation ?? 0)
-            .setAlpha(Math.max(0, Math.min(1, prop.alpha ?? 1)))
-            .setDepth(studioWorldPropDepth(prop));
-          if (prop.width && prop.height) {
-            image.setDisplaySize(prop.width, prop.height);
-          } else {
-            image.setScale(prop.scale ?? 1);
-          }
-          const replacementFrame = worldAssetUrls?.has(prop.assetUrl) ? undefined : studioIllustratedPropFrame(prop.assetUrl, artStyle);
-          if (replacementFrame !== undefined) {
-            const info = { image, frame: replacementFrame, width: image.displayWidth, height: image.displayHeight,
-              originX: prop.originX ?? .5, originY: prop.originY ?? 1 };
-            illustratedProps.push(info);
-            if (illustratedFrame !== undefined) {
-              const geometry = studioExperienceFrameGeometry("furniture", artStyle, replacementFrame, info.width, info.height, info.originX, info.originY);
-              image.setDisplaySize(geometry.width, geometry.height).setOrigin(geometry.originX, geometry.originY);
-            }
-          }
-          const interaction = interactionById.get(prop.id);
-          if (interaction) {
-            image.setInteractive({ useHandCursor: true });
-            image.on(
-              "pointerdown",
-              (
-                _pointer: import("phaser").Input.Pointer,
-                _localX: number,
-                _localY: number,
-                event: InputEventLike,
-              ) => {
-                event.stopPropagation();
-                queuedInteraction = interaction;
-              },
-            );
-          }
-        }
+        placeStudioWorldPropImages(this, manifest, {
+          worldAssetUrls, artStyle, decorationTextureKeys, illustratedProps, interactionById,
+          onSelect: (interaction) => { queuedInteraction = interaction; },
+        });
 
         const self = snapshotRef.current.self;
         const spawn = studioWorldSpawn(manifest);
@@ -1367,8 +1312,7 @@ export function StudioVirtualSpacePhaserCanvas({
         };
         // Capture only canvas-owned keys before preventing browser scrolling. Phaser's
         // window keyboard handler ignores defaultPrevented events from focused elements.
-        const preventGameScrolling = (event: KeyboardEvent) => {
-          if (event.target !== canvas) return;
+        const handleCanvasKey = (event: KeyboardEvent) => {
           if (event.key === "Escape") { if (buildPlacement?.handleEscape()) return; npcDirector.cancelGuideTour(); stopMovement(); return; }
           if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey || runtimeInputBlocked()) return;
           if (!WORLD_KEY_CODES.has(event.code)) return;
@@ -1381,6 +1325,25 @@ export function StudioVirtualSpacePhaserCanvas({
             applyGhostMode(next);
           }
           event.preventDefault();
+        };
+        const preventGameScrolling = (event: KeyboardEvent) => {
+          if (event.target !== canvas) return;
+          handleCanvasKey(event);
+        };
+        // 닫은 배너·토스트처럼 초점이 있던 요소가 사라지면 초점이 <body>로 떨어지고, 캔버스가 초점을 가질 때만 키를 받는 월드는
+        // 이동 키에 아무 반응이 없다. 어디에도 초점이 없을 때 이동 키를 누르면 월드가 초점을 되찾아 그 키를 바로 받는다.
+        const reclaimFocusForMovement = (event: KeyboardEvent) => {
+          if (event.defaultPrevented || event.target === canvas || !sceneReady) return;
+          if (!studioWorldShouldReclaimFocus({
+            active: document.activeElement,
+            root: document,
+            code: event.code,
+            modified: event.metaKey || event.ctrlKey || event.altKey,
+            composing: event.isComposing,
+            blocked: runtimeInputBlocked(),
+          })) return;
+          focusCanvas();
+          handleCanvasKey(event);
         };
         const releaseKey = (event: KeyboardEvent) => { heldKeys.delete(event.code); };
         const promptHasFocus = () => document.activeElement?.matches('[data-interact-prompt="true"]') ?? false;
@@ -1398,6 +1361,7 @@ export function StudioVirtualSpacePhaserCanvas({
         };
         canvas.addEventListener("pointerdown", focusCanvas);
         canvas.addEventListener("keydown", preventGameScrolling);
+        globalThis.addEventListener("keydown", reclaimFocusForMovement, true);
         globalThis.addEventListener("keyup", releaseKey);
         document.addEventListener("focusin", refocus);
         document.addEventListener("visibilitychange", visibility);
@@ -1415,6 +1379,7 @@ export function StudioVirtualSpacePhaserCanvas({
         cleanup.push(() => {
           canvas.removeEventListener("pointerdown", focusCanvas);
           canvas.removeEventListener("keydown", preventGameScrolling);
+          globalThis.removeEventListener("keydown", reclaimFocusForMovement, true);
           globalThis.removeEventListener("keyup", releaseKey);
           document.removeEventListener("focusin", refocus);
           document.removeEventListener("visibilitychange", visibility);
@@ -2055,25 +2020,7 @@ export function StudioVirtualSpacePhaserCanvas({
         })), currentQualityProfile.interestRadius);
         proximityOverlay?.clear();
         if (proximityOverlay && atmosphereRef.current !== "focus" && activity !== "focused" && activity !== "away") {
-          // 대화 거리(게더타운식 근접 버블): 기본은 120px 안 동료가 있을 때만 발밑 버블과 연결선을 보이고,
-          // '모든 표식 보기'면 190px 안까지 넓은 링도 함께 그린다. 배열을 만들지 않고 한 번 순회한다.
-          const showAll = experienceRef.current.interactionRings;
-          const reach = showAll ? 190 : 120;
-          const origin = studioProjectTownPoint(manifest, currentPoint);
-          let inRange = 0;
-          for (const peer of peers.values()) {
-            const distance = Math.hypot(peer.targetX - currentPoint.x, peer.targetY - currentPoint.y);
-            if (distance > reach) continue;
-            inRange += 1;
-            const strength = Math.max(.08, .36 * (1 - distance / reach));
-            proximityOverlay.lineStyle(distance < 80 ? 2 : 1, peer.activity === "focused" ? 0xf9b95d : 0x82e6ff, strength)
-              .lineBetween(origin.x, origin.y - 6, peer.sprite.x, peer.sprite.y - 6);
-          }
-          if (inRange > 0) {
-            proximityOverlay.fillStyle(0x8fdcff, .07).fillEllipse(origin.x, origin.y, 150, 70);
-            proximityOverlay.lineStyle(2, 0xc5f4ff, .26).strokeEllipse(origin.x, origin.y, 150, 70);
-            if (showAll) proximityOverlay.lineStyle(1.5, 0x8fdcff, .13).strokeCircle(origin.x, origin.y, 140);
-          }
+          drawStudioProximityOverlay(proximityOverlay, manifest, currentPoint, peers, experienceRef.current.interactionRings);
         }
         objectRuntime?.update(time, currentPoint);
         deskPodRuntime?.update([
@@ -2087,6 +2034,10 @@ export function StudioVirtualSpacePhaserCanvas({
           const tileMetrics = tileWorld.diagnostics;
           parent.dataset.tileChunks = String(tileMetrics.chunks);
           parent.dataset.tileTextures = String(tileMetrics.textures);
+          if (!initialTilesReady && (tileMetrics.chunks !== lastTileProgress.chunks || tileMetrics.textures !== lastTileProgress.textures)) {
+            lastTileProgress = { chunks: tileMetrics.chunks, textures: tileMetrics.textures };
+            bootDeadline.touch();
+          }
           if (!engineFailed && !initialTilesReady && tileMetrics.ready) {
             initialTilesReady = true;
             startOptionalSceneArt?.(); startOptionalSceneArt = null;
@@ -2971,7 +2922,11 @@ export function StudioVirtualSpacePhaserCanvas({
         type: rendererType,
         ...(powerPreference ? { render: { powerPreference } } : {}),
         parent: mount,
-        loader: { timeout: 15000, maxParallelDownloads: 6 },
+        loader: { timeout: 180_000, maxParallelDownloads: 6 },
+        // Phaser는 시작과 탭 복귀 직후 120프레임(기본 panicMax) 동안 프레임 간격을 16.7ms로 잘라 물리를 한 프레임에 한 걸음만
+        // 돌린다. 60fps에서는 티가 안 나지만 그보다 느린 기기에서는 그동안 아바타가 실제보다 느리게 걷는다(14fps에서 처음 약 8초는
+        // 속도의 4분의 1, 30fps면 4초 동안 절반). 10프레임으로 줄여 첫 걸음부터 실제 시간을 따라가게 한다.
+        fps: { panicMax: 10 },
         transparent: false,
         backgroundColor: spaceThemeDef ? studioColorHex(spaceThemeDef.backgroundColor) : "#17181b",
         antialias: !artProfile.pixelated,
@@ -3042,11 +2997,19 @@ export function StudioVirtualSpacePhaserCanvas({
     >
       {failure ? (
         <div className="studio-vspace-engine-message" role="alert">
-          <p>{bt("공간을 불러오지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.", "The studio could not load. Check the connection and retry.")}</p>
-          <button type="button" onClick={() => setAttempt((value) => value + 1)}>{bt("다시 시도", "Retry")}</button>
+          <div className="studio-vspace-engine-card">
+            <p>{bt("공간을 불러오지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.", "The studio could not load. Check the connection and retry.")}</p>
+            <button type="button" onClick={() => setAttempt((value) => value + 1)}>{bt("다시 시도", "Retry")}</button>
+          </div>
         </div>
       ) : !ready ? (
-        <div className="studio-vspace-engine-message" role="status">{bt("스튜디오 불러오는 중…", "Loading studio…")}</div>
+        <div className="studio-vspace-engine-message" role="status" aria-busy="true">
+          <div className="studio-vspace-engine-card">
+            <p>{bt("스튜디오 불러오는 중…", "Loading studio…")}</p>
+            {loadProgress !== null ? <progress className="studio-vspace-engine-progress" max={100} value={loadProgress} aria-hidden="true" /> : null}
+            {slowLoad ? <p className="studio-vspace-engine-slow">{bt("연결이 느려 조금 더 걸리고 있어요.", "The connection is slow, so this is taking a little longer.")}</p> : null}
+          </div>
+        </div>
       ) : null}
     </div>
   );

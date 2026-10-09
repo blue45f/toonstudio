@@ -18,5 +18,6 @@
   "auth.callback.message.done": "سائن ان مکمل.",
   "auth.callback.message.doneDemo": "ڈیمو سائن ان مکمل.",
   "auth.callback.demo.message": "آپ ڈیمو اکاؤنٹ کے ساتھ سائن ان ہیں. کچھ خصوصیات محدود ہوسکتی ہیں۔",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

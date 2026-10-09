@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Каттоо бүттү, жакында багытты өзгөртүп жатам.",
   "auth.callback.message.doneDemo": "Демо жазууну аяктады.",
   "auth.callback.demo.message": "Демо эсеп менен киргендиктен, айрым өзгөчөлүктөр чектелүү болушу мүмкүн.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

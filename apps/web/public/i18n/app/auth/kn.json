@@ -18,5 +18,6 @@
   "auth.callback.message.done": "ಸೈನ್ ಇನ್ ಪೂರ್ಣಗೊಂಡಿದೆ. ಶೀಘ್ರದಲ್ಲೇ ಮರುನಿರ್ದೇಶನ.",
   "auth.callback.message.doneDemo": "ಡೆಮೊ ಸೈನ್ ಇನ್ ಪೂರ್ಣಗೊಂಡಿದೆ. ಶೀಘ್ರದಲ್ಲೇ ಮರುನಿರ್ದೇಶನ.",
   "auth.callback.demo.message": "ಡೆಮೊ ಖಾತೆಯೊಂದಿಗೆ ನೀವು ಸೈನ್ ಇನ್ ಆಗಿದ್ದೀರಿ. ಕೆಲವು ವೈಶಿಷ್ಟ್ಯಗಳು ಸೀಮಿತವಾಗಿರಬಹುದು.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

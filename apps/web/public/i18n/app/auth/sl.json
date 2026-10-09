@@ -18,5 +18,6 @@
   "auth.callback.message.done": "Prijava je zaključena, kmalu se preusmerim.",
   "auth.callback.message.doneDemo": "Demo prijavo je dokončana.",
   "auth.callback.demo.message": "Vnesete se z demo računom.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }

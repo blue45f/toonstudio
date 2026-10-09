@@ -39,6 +39,7 @@ import {
   STUDIO_UPLOAD_PAGE_LIST_CLASS,
   STUDIO_UPLOAD_PAGE_ROW_CLASS,
 } from "./studio-upload-layout";
+import { MAX_PAGES, uid, type UploadPage } from "./publish/studio-upload-page-model";
 import {
   advanceStudioUploadSharedMetaAfterSave,
   assertStudioUploadJsonPayloadSize,
@@ -76,20 +77,6 @@ import {
   getChallenge,
   getSeries,
 } from "@/platform/creator-client";
-
-const MAX_PAGES = 40;
-
-type UploadPage = {
-  id: string;
-  src: string;
-  width: number;
-  height: number;
-  name: string;
-};
-
-function uid() {
-  return `up-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
 
 export interface StudioUploadPublishProps {
   /** Canonical route identity. Undefined keeps the legacy query-only entry compatible. */

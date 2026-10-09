@@ -48,5 +48,6 @@
   "footer.business.hosting": "Сервіс хостингу",
   "footer.business.serviceType": "Тип платформи",
   "footer.copyrightLine": "© {year} ToonStudio (Beta).",
-  "footer.logoTag": "Спробуйте створити свою наступну історію"
+  "footer.logoTag": "Спробуйте створити свою наступну історію",
+  "footer.link.features": "All features at a glance"
 }

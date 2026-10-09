@@ -9,6 +9,8 @@ import type { FanCafePost } from "@/shared/lib/types";
 
 import { FanPostImages, FanPostReplySection } from "@/shared/components/fan-cafe-panel";
 import { KIND_LABEL } from "@/shared/components/fan-cafe-utils";
+import { PostLikeButton } from "./components/post-like-button";
+import { PostReportForm } from "./components/post-report-form";
 import { Container } from "@/shared/components/section";
 import { COMMUNITY_SCOPE_LABEL, getCommunityScopeTargetLink } from "@/shared/lib/community-ui";
 import {
@@ -224,7 +226,19 @@ export function CommunityPostPage() {
           </div>
         )}
         {deleteError && <p role="alert" className="mt-3 text-xs text-bad">{deleteError}</p>}
+        <div className="mt-5 border-t border-line pt-4">
+          <PostLikeButton
+            key={post.id}
+            postId={post.id}
+            userId={userId}
+            sessionToken={sessionToken}
+            initialLiked={post.viewerLiked ?? false}
+            initialCount={post.likeCount ?? 0}
+          />
+        </div>
       </article>
+
+      {userId && <PostReportForm postId={post.id} sessionToken={sessionToken} />}
 
       <section className="mt-6" aria-label={translateCurrentStaticSourceText("domains.community.CommunityPostPage", "ko", "댓글")}>
         <h2 className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-fg">

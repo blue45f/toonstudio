@@ -18,5 +18,6 @@
   "auth.callback.message.done": "الإلتحاق مكتمل، إعادة التوجيه قريباً",
   "auth.callback.message.doneDemo": "التسجيل التجريبي قد اكتمل، إعادة التوجيه قريباً",
   "auth.callback.demo.message": "أنت متسجل مع حساب تجريبي. قد تكون بعض الميزات محدودة.",
-  "auth.callback.backToLogin": "Back to sign in"
+  "auth.callback.backToLogin": "Back to sign in",
+  "auth.callback.slowHelp": "This is taking longer than usual. If this screen stays, go back to sign-in and try again."
 }
