@@ -1045,6 +1045,98 @@ describe("realtime SQLite room store", () => {
     ).toEqual({ ok: false });
   });
 
+  it("relays reserved p2p mesh signals between connected members without a screen share", () => {
+    const { store } = createStoreContext();
+    const alice = {
+      actorId: "actor-alice",
+      clientId: "client-alice",
+      connectionId: "connection-alice",
+      sessionExpiresAtMs: 100_000,
+    } as const;
+    const bob = {
+      actorId: "actor-bob",
+      clientId: "client-bob",
+      connectionId: "connection-bob",
+      sessionExpiresAtMs: 100_000,
+    } as const;
+    for (const actor of [alice, bob]) {
+      expect(
+        store.registerConnection({ ...actor, nowMs: 1_000 }),
+      ).toBe(true);
+    }
+
+    const meshOffer = {
+      kind: "signal.offer",
+      sessionId: "p2p-mesh-v1",
+      peerConnectionId: "mesh-peer-1",
+      targetClientId: "client-bob",
+      sdp: "v=0",
+    } as const;
+    // 핸드셰이크 없이도 룸 멤버 간 메시 offer는 중계된다.
+    expect(
+      store.authorizeScreenSignal(meshOffer, alice, 2_000),
+    ).toEqual({
+      ok: true,
+      targetActorId: "actor-bob",
+      targetClientId: "client-bob",
+    });
+    expect(
+      store.authorizeScreenSignal(
+        { ...meshOffer, kind: "signal.answer", targetClientId: "client-alice" },
+        bob,
+        2_100,
+      ),
+    ).toEqual({
+      ok: true,
+      targetActorId: "actor-alice",
+      targetClientId: "client-alice",
+    });
+    expect(
+      store.authorizeScreenSignal(
+        {
+          kind: "signal.ice",
+          sessionId: "p2p-mesh-v1",
+          peerConnectionId: "mesh-peer-1",
+          targetClientId: "client-bob",
+          candidate: {
+            candidate: "candidate:1",
+            sdpMid: "0",
+            sdpMLineIndex: 0,
+            usernameFragment: null,
+          },
+        },
+        alice,
+        2_200,
+      ),
+    ).toMatchObject({ ok: true, targetClientId: "client-bob" });
+    // 본인 대상·미접속 대상·세션 만료 대상은 거부한다.
+    expect(
+      store.authorizeScreenSignal(
+        { ...meshOffer, targetClientId: "client-alice" },
+        alice,
+        2_300,
+      ),
+    ).toEqual({ ok: false });
+    expect(
+      store.authorizeScreenSignal(
+        { ...meshOffer, targetClientId: "client-ghost" },
+        alice,
+        2_400,
+      ),
+    ).toEqual({ ok: false });
+    expect(
+      store.authorizeScreenSignal(meshOffer, alice, 200_000),
+    ).toEqual({ ok: false });
+    // 예약 id가 아닌 임의 세션은 기존 화면 공유 상태 검사를 그대로 탄다.
+    expect(
+      store.authorizeScreenSignal(
+        { ...meshOffer, sessionId: "share-not-announced" },
+        alice,
+        2_500,
+      ),
+    ).toEqual({ ok: false });
+  });
+
   it("bypasses an exhausted ordinary quota only for predecessor-bound teardown", async () => {
     const { store, database } = createStoreContext();
     const owner = {
