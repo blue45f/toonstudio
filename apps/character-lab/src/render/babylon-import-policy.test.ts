@@ -7,6 +7,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { KIT_ALLOWED_EXTENSIONS } from "../contracts";
+
 interface Import {
   readonly specifier: string;
   readonly kind: "static" | "side-effect" | "dynamic";
@@ -104,5 +106,13 @@ describe("Babylon import 정책(render)", () => {
     expect(serializers.map((entry) => [entry.rel, entry.kind])).toEqual([["babylon/glb-exporter.ts", "dynamic"]]);
     const loaders = babylonImports.filter((entry) => entry.specifier.startsWith("@babylonjs/loaders/"));
     expect(new Set(loaders.map((entry) => entry.rel))).toEqual(new Set(["babylon/babylon-side-effects.ts", "babylon/package-loader.ts"]));
+  });
+
+  it("키트 계약이 허용하는 glTF 확장은 모두 로더에 등록돼 있다(미등록이면 필수 확장 GLB가 'Required extension … is not available'로 실패)", () => {
+    const registered = babylonImports
+      .filter((entry) => entry.kind === "side-effect")
+      .map((entry) => /^@babylonjs\/loaders\/glTF\/2\.0\/Extensions\/([^/]+)\.js$/u.exec(entry.specifier)?.[1])
+      .filter((name): name is string => name !== undefined);
+    expect([...registered].sort()).toEqual([...KIT_ALLOWED_EXTENSIONS].sort());
   });
 });
