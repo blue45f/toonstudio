@@ -102,7 +102,7 @@ TURN의 공인 IP, DNS, TLS 인증서, UDP/TCP/TLS listener, relay UDP 포트 �
 대역폭 quota, credential이 제거된 로그, relay 선택률·실패율·대역폭 관측이 필요하다. 공유 secret
 교체는 새 발급기와 TURN 서버를 같은 변경 창에서 갱신하고 기존 TTL 이상 겹쳐 운영하는 절차로
 수행한다. 저장소의 비활성 기본 배포 예시와 방화벽·인증서·쿼터·무중단 secret 교체·외부 smoke
-절차는 [`deploy/coturn/README.md`](../deploy/coturn/README.md)에 분리했다.
+절차는 당시 `deploy/coturn/README.md`에 분리했었다(2026-10-11 TURN 미사용 결정으로 스캐폴드와 함께 삭제됨).
 
 ## 수명주기와 실패 안전성
 
