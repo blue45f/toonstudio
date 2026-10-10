@@ -14,12 +14,15 @@ function ticketResponse() {
     version: 1,
     providerId: "cloudflare-realtime-v1",
     scope: { workId: WORK_ID, roomId: WORK_ID },
-    workloads: ["presence"],
+    workloads: ["presence", "screen-signaling"],
     capabilities: [
       "presence.snapshot-v1",
       "presence.members-v1",
       "presence.cursor-v1",
       "presence.resume-v1",
+      "screen-signaling.session-v1",
+      "screen-signaling.webrtc-v1",
+      "screen-signaling.resume-v1",
     ],
     issuedAt: new Date(issued).toISOString(),
     expiresAt: new Date(issued + 115_000).toISOString(),
@@ -31,6 +34,10 @@ interface HostBridge {
   onGodotReady: (json: string) => void;
   onConnectionState: (json: string) => void;
   onTicketNeeded: (json: string) => void;
+  onZoneChanged: (json: string) => void;
+  onProximityChanged: (json: string) => void;
+  onSignal: (json: string) => void;
+  onBubble: (json: string) => void;
 }
 
 function hostBridge(): HostBridge {
@@ -88,8 +95,9 @@ describe("StudioGodotSpaceEmbed", () => {
       version: 1,
       providerId: "cloudflare-realtime-v1",
       scope: { workId: WORK_ID, roomId: WORK_ID },
-      workloads: ["presence"],
+      workloads: ["presence", "screen-signaling"],
     });
+    expect(request?.capabilities).toContain("screen-signaling.webrtc-v1");
     const payload = JSON.parse(setSession.mock.calls[0]?.[0] as string) as Record<string, unknown>;
     expect(payload).toMatchObject({
       v: 1,
@@ -152,5 +160,89 @@ describe("StudioGodotSpaceEmbed", () => {
     act(() => hostBridge().onGodotReady("{}"));
     expect(issue).not.toHaveBeenCalled();
     expect(screen.getByText("로컬 모드 — 혼자 둘러보는 중이에요.")).toBeTruthy();
+  });
+
+  it("opens the meeting panel when the stage reports the meeting zone with both occupants", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    frameWindow().__tsvs_setSession = vi.fn();
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    act(() =>
+      hostBridge().onZoneChanged(
+        JSON.stringify({
+          v: 1,
+          selfZoneId: "meeting",
+          selfActorId: "actor-me",
+          selfClientId: "client-me",
+          presenterActorId: "actor-peer",
+          peerClientIds: { "actor-peer": "client-peer" },
+          names: { "actor-me": "김희준", "actor-peer": "테스터B" },
+          zones: [
+            { zoneId: "meeting", kind: "meeting", name: "회의 구역", occupants: ["actor-me", "actor-peer"] },
+            { zoneId: "presentation", kind: "presentation", name: "발표 구역", occupants: ["actor-peer"] },
+          ],
+        }),
+      ),
+    );
+    expect(screen.getByTestId("godot-meeting-panel")).toBeTruthy();
+    expect(screen.getByTestId("godot-presenter-label").textContent).toContain("테스터B");
+    expect(screen.getByTestId("godot-meeting-route").textContent).toContain("함께 있어요");
+    expect(screen.getByTestId("godot-current-zone").textContent).toContain("회의 구역");
+  });
+
+  it("sends chat as a stage bubble and logs incoming bubbles", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    frameWindow().__tsvs_setSession = vi.fn();
+    const showBubble = vi.fn();
+    frameWindow().__tsvs_showBubble = showBubble;
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    act(() =>
+      hostBridge().onZoneChanged(
+        JSON.stringify({
+          v: 1,
+          selfZoneId: "",
+          selfActorId: "actor-me",
+          selfClientId: "client-me",
+          presenterActorId: "",
+          peerClientIds: {},
+          names: { "actor-peer": "테스터B" },
+          zones: [],
+        }),
+      ),
+    );
+    const input = screen.getByLabelText("말풍선 채팅");
+    fireEvent.change(input, { target: { value: "이쪽으로 와 주세요" } });
+    fireEvent.submit(input.closest("form") as HTMLFormElement);
+    expect(showBubble).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(showBubble.mock.calls[0]?.[0] as string)).toEqual({
+      actorId: "actor-me",
+      text: "이쪽으로 와 주세요",
+    });
+    expect(screen.getByText(/이쪽으로 와 주세요/)).toBeTruthy();
+
+    act(() =>
+      hostBridge().onBubble(
+        JSON.stringify({ v: 1, fromActorId: "actor-peer", text: "지금 갈게요" }),
+      ),
+    );
+    expect(screen.getByText(/지금 갈게요/)).toBeTruthy();
+    expect(screen.getByText(/테스터B/)).toBeTruthy();
+  });
+
+  it("shows the proximity indicator for nearby groups", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    frameWindow().__tsvs_setSession = vi.fn();
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    act(() =>
+      hostBridge().onProximityChanged(
+        JSON.stringify({ v: 1, members: ["actor-me", "actor-peer"], size: 2 }),
+      ),
+    );
+    expect(screen.getByTestId("godot-proximity").textContent).toContain("2명");
   });
 });
