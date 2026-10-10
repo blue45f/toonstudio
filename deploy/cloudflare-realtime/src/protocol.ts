@@ -12,6 +12,7 @@ export const REALTIME_TICKET_PROTOCOL_PREFIX = "ts-ticket." as const;
 export const REALTIME_MAX_INBOUND_FRAME_BYTES = 64 * 1024;
 export const REALTIME_MAX_OUTBOUND_FRAME_BYTES = 128 * 1024;
 export const REALTIME_MAX_COMMENT_BYTES = 8 * 1024;
+export const REALTIME_MAX_BUBBLE_BYTES = 1024;
 export const REALTIME_MAX_SDP_BYTES = 48 * 1024;
 export const REALTIME_MAX_ICE_CANDIDATE_BYTES = 8 * 1024;
 export const REALTIME_MAX_REPLAY_EVENTS_PER_FRAME = 128;
@@ -67,10 +68,22 @@ export interface PresenceLeavePayload {
   readonly kind: "presence.leave";
 }
 
+/**
+ * 말풍선 (가상스튜디오 Godot 재개발 3단계 — DESIGN §4.1의 서버 협의 확장).
+ * 채팅 입력·기록은 웹 셸이 소유하고, 이 페이로드는 이름표 위 말풍선 표시를 위한
+ * 일시적 전파 전용이다. 스냅샷에 저장하지 않고 이벤트로만 중계한다.
+ * 텍스트는 표시 전용이며 ACL·권한 판단에 쓰지 않는다.
+ */
+export interface PresenceBubblePayload {
+  readonly kind: "presence.bubble";
+  readonly text: string;
+}
+
 export type PresencePayload =
   | PresenceUpdatePayload
   | PresenceCursorPayload
-  | PresenceLeavePayload;
+  | PresenceLeavePayload
+  | PresenceBubblePayload;
 
 export interface CommentChangedPayload {
   readonly kind: "comment.changed";
@@ -417,6 +430,12 @@ function validatePresencePayload(value: unknown): value is PresencePayload {
   }
   if (value.kind === "presence.leave") {
     return hasExactKeys(value, ["kind"]);
+  }
+  if (value.kind === "presence.bubble") {
+    return (
+      hasExactKeys(value, ["kind", "text"]) &&
+      isBoundedText(value.text, REALTIME_MAX_BUBBLE_BYTES)
+    );
   }
   if (value.kind === "presence.cursor") {
     return (

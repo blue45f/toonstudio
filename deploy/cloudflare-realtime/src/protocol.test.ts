@@ -46,6 +46,37 @@ describe("realtime protocol", () => {
     });
   });
 
+  it("accepts a bounded presence bubble and rejects malformed bubbles", () => {
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.bubble", text: "여기 모여 주세요" }),
+      ),
+    ).toMatchObject({ ok: true, value: { type: "publish", channel: "presence" } });
+
+    // 빈 텍스트·여분 키·상한 초과는 거부한다.
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.bubble", text: "   " }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.bubble", text: "안녕", extra: 1 }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.bubble", text: "가".repeat(400) }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    // 다른 채널로는 보낼 수 없다.
+    expect(
+      parseRealtimeClientMessage(
+        publish("comments", { kind: "presence.bubble", text: "안녕" }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+  });
+
   it("accepts the formal avatar appearance field and rejects malformed appearances", () => {
     const base = {
       kind: "presence.update",
