@@ -67,11 +67,11 @@ describe("소스 정체성 마스트헤드", () => {
     expect(screen.getByText(/NASA가 공개한 행성·성운·우주선 이미지 자료실입니다/u)).toBeTruthy();
   });
 
-  it("ambientCG는 맞는 기존 일러스트(소재 정물)를 대표 비주얼로 쓴다", () => {
+  it("ambientCG는 전용 장면(재질 공방)을 대표 비주얼로 쓴다", () => {
     const { container } = mount("ambientcg", "/research/material-assets");
     expect(container.querySelector(".research-source--ambientcg")).toBeTruthy();
     const art = container.querySelector<HTMLImageElement>(".resource-masthead img");
-    expect(art?.getAttribute("src")).toBe("/brand/illustrated-20260928/materials.webp");
+    expect(art?.getAttribute("src")).toBe("/brand/research-sources-20261008/ambientcg.webp");
     expect(art?.getAttribute("alt")).toBe("");
     expect(container.querySelector(".resource-source-cover")).toBeNull();
     expect(screen.getByText(/CC0 PBR 재질과 3D 소재를 공개하는 라이브러리입니다/u)).toBeTruthy();

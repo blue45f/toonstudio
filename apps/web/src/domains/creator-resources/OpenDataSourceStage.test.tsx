@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 /**
- * 공개 데이터 상세 무대 전파 계약 (디자인 웨이브 15 파일럿 → 웨이브 16 전파 본편).
+ * 공개 데이터 상세 무대 전파 계약 (디자인 웨이브 15 파일럿 → 웨이브 16 전파 → 웨이브 17 완결).
  *
  * 계약: 장면(scene) 아트를 보유한 제공처는 /research/open-data/* 상세 래퍼
  * (OpenData<Provider>Page)로 실려 마스트헤드 대신 제공처 장면 무대를 첫 화면으로
- * 쓴다 — 제목·정체성·소개·접근 방식이 무대 안에 종속된다. 장면이 없는 제공처
- * (ambientcg·neis)는 상세 래퍼 자체가 없어 기본 래퍼의 기존 마스트헤드 그대로고
- * (정체성 키트 테스트가 기본 얼굴을 고정한다), 같은 제공처의 별칭 경로도 기본
- * 래퍼를 써서 무변경이다. 검색 폼 같은 본문 기능은 무대 아래에서 그대로 동작한다.
+ * 쓴다 — 제목·정체성·소개·접근 방식이 무대 안에 종속된다. 웨이브 17에서 마지막
+ * 2곳(ambientcg·neis)의 전용 장면이 제작·배정돼 이 계약은 상세 14곳 전부로
+ * 닫혔다. 같은 제공처의 별칭 경로는 기본 래퍼를 써서 무변경이다(정체성 키트
+ * 테스트가 기본 얼굴을 고정한다). 검색 폼 같은 본문 기능은 무대 아래에서
+ * 그대로 동작한다.
  */
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -15,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   AmbientCgPage,
-  NeisSchoolPage,
+  OpenDataAmbientCgPage,
   OpenDataDplaPage,
   OpenDataEuropeanaPage,
   OpenDataGbifPage,
@@ -24,6 +25,7 @@ import {
   OpenDataKoreanPage,
   OpenDataMusicBrainzPage,
   OpenDataNasaPage,
+  OpenDataNeisPage,
   OpenDataSmithsonianPage,
   OpenDataTourApiPage,
   OpenDataVamPage,
@@ -115,14 +117,33 @@ describe("공개 데이터 상세 무대 전파 (웨이브 16)", () => {
     expect(stage.querySelector('a[href="/research/open-data"]')).toBeTruthy();
   });
 
-  it("장면이 없는 ambientcg 상세는 무대 없이 기존 마스트헤드를 유지한다", () => {
-    const { container } = render(<MemoryRouter initialEntries={["/research/open-data/ambientcg"]}><AmbientCgPage /></MemoryRouter>);
-    expect(container.querySelector(".resource-masthead")).toBeTruthy();
-    expect(screen.queryByRole("region", { name: "공개 데이터 제공처 소개" })).toBeNull();
+});
+
+describe("공개 데이터 상세 무대 완결 (웨이브 17 — 전용 장면 제작으로 마지막 2곳 합류)", () => {
+  it("ambientCG 상세는 전용 장면 무대가 마스트헤드를 대신하고 제목이 무대에 종속된다", () => {
+    const { container } = render(<MemoryRouter initialEntries={["/research/open-data/ambientcg"]}><OpenDataAmbientCgPage /></MemoryRouter>);
+    expect(container.querySelector(".resource-masthead")).toBeNull();
+    const stage = screen.getByRole("region", { name: "공개 데이터 제공처 소개" });
+    expect(stage.querySelector<HTMLImageElement>("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/ambientcg.webp");
+    expect(stage.contains(screen.getByRole("heading", { name: "CC0 PBR·3D 소재 검색" }))).toBe(true);
+    expect(stage.textContent).toContain("CC0 PBR 재질과 3D 소재를 공개하는 라이브러리입니다");
+    expect(stage.textContent).toContain("가입·키 없이 즉시 검색");
+    expect(stage.querySelector('a[href="/research/open-data"]')).toBeTruthy();
   });
 
-  it("장면이 없는 neis 상세는 무대 없이 기존 마스트헤드를 유지한다", () => {
-    const { container } = render(<MemoryRouter initialEntries={["/research/open-data/neis"]}><NeisSchoolPage /></MemoryRouter>);
+  it("NEIS 상세는 전용 장면 무대가 마스트헤드를 대신하고 제목이 무대에 종속된다", () => {
+    const { container } = render(<MemoryRouter initialEntries={["/research/open-data/neis"]}><OpenDataNeisPage /></MemoryRouter>);
+    expect(container.querySelector(".resource-masthead")).toBeNull();
+    const stage = screen.getByRole("region", { name: "공개 데이터 제공처 소개" });
+    expect(stage.querySelector<HTMLImageElement>("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/neis.webp");
+    expect(stage.contains(screen.getByRole("heading", { name: "학교물 배경 설정" }))).toBe(true);
+    expect(stage.textContent).toContain("전국 학교의 기본정보를 모은 교육 행정 데이터입니다");
+    expect(stage.textContent).toContain("무료 서버 키 연결형");
+    expect(stage.querySelector('a[href="/research/open-data"]')).toBeTruthy();
+  });
+
+  it("같은 제공처의 별칭 경로는 무대 없이 기존 마스트헤드를 유지한다", () => {
+    const { container } = render(<MemoryRouter initialEntries={["/research/material-assets"]}><AmbientCgPage /></MemoryRouter>);
     expect(container.querySelector(".resource-masthead")).toBeTruthy();
     expect(screen.queryByRole("region", { name: "공개 데이터 제공처 소개" })).toBeNull();
   });
