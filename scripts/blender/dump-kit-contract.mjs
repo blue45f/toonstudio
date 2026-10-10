@@ -1,7 +1,7 @@
 /**
  * 캐릭터 키트 계약 상수를 JSON으로 덤프한다 (Blender 빌더가 상수를 복제하지 않게 하는 단일 기준).
  *
- * 실행: pnpm exec tsx scripts/blender/dump-kit-contract.mts --out <contract.json>
+ * 실행: pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>
  *
  * 출력은 `apps/character-lab/src/contracts/*`의 값 그대로이며, 빌더(`tools/blender/character_kit`)가 읽는다.
  * 계약이 바뀌면 이 파일을 다시 실행하면 빌더도 같은 값을 쓴다.
@@ -39,11 +39,11 @@ import {
   SLOT_PRESET_IDS,
 } from "../../apps/character-lab/src/contracts/index.ts";
 
-function parseOut(argv: readonly string[]): string {
+function parseOut(argv) {
   const index = argv.indexOf("--out");
   const value = index >= 0 ? argv[index + 1] : undefined;
   if (value === undefined || value.length === 0) {
-    console.error("사용법: pnpm exec tsx scripts/blender/dump-kit-contract.mts --out <contract.json>");
+    console.error("사용법: pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>");
     process.exit(2);
   }
   return value;
@@ -69,14 +69,14 @@ const contract = {
     coverageByRole: Object.fromEntries(Object.entries(KIT_MORPH_COVERAGE).map(([role, names]) => [role, [...names]])),
     requiredJointOffsetMorphs: [...KIT_REQUIRED_JOINT_OFFSET_MORPHS],
   },
-  budget: JSON.parse(JSON.stringify(KIT_BUDGET)) as unknown,
+  budget: JSON.parse(JSON.stringify(KIT_BUDGET)),
   allowedExtensions: [...KIT_ALLOWED_EXTENSIONS],
   baseMeshSpecs: KIT_BASE_MESH_SPECS.map((spec) => ({ ...spec })),
-  roleTintRules: JSON.parse(JSON.stringify(KIT_ROLE_TINT_RULES)) as unknown,
+  roleTintRules: JSON.parse(JSON.stringify(KIT_ROLE_TINT_RULES)),
   partSlots: [...KIT_PART_SLOTS],
   partSlotRoles: Object.fromEntries(Object.entries(KIT_PART_SLOT_ROLES).map(([slot, roles]) => [slot, [...roles]])),
   partSlotRequiredRoles: Object.fromEntries(Object.entries(KIT_PART_SLOT_REQUIRED_ROLES).map(([slot, roles]) => [slot, [...roles]])),
-  presetVocabulary: Object.fromEntries(Object.entries(SLOT_PRESET_IDS).map(([slot, names]) => [slot, [...(names as readonly string[])]])),
+  presetVocabulary: Object.fromEntries(Object.entries(SLOT_PRESET_IDS).map(([slot, names]) => [slot, [...names]])),
   requiredPresets: [...KIT_REQUIRED_PRESETS],
   defaultSlots: { ...KIT_DEFAULT_SLOTS },
   defaultColors: { ...DEFAULT_RECIPE_COLORS },
