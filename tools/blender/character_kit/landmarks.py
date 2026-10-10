@@ -77,7 +77,7 @@ def compute_a_pose_joints(body: hbm.Body) -> dict[str, np.ndarray]:
     ix = BodyIndex(body)
     P = body.positions
     joints: dict[str, np.ndarray] = {}
-    j = lambda name, value: joints.__setitem__(name, np.asarray(value, dtype=np.float64))  # noqa: E731
+    j = lambda name, value: joints.__setitem__(name, np.asarray(value, dtype=np.float64))
 
     head_mask = hbm.head_face_mask(body)
     neck_cut = ix.boundary(head_mask, ~head_mask)

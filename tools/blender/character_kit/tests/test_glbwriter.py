@@ -17,7 +17,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from character_kit.glbwriter import GlbWriter, MorphTarget, Primitive  # noqa: E402
+from character_kit.glbwriter import GlbWriter, MorphTarget, Primitive
 
 _COMPONENT_DTYPE = {5126: np.float32, 5121: np.uint8, 5123: np.uint16, 5125: np.uint32}
 _TYPE_WIDTH = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
@@ -66,7 +66,7 @@ def read_accessor(document: dict, binary: bytes, index: int) -> np.ndarray:
 
 
 def tiny_png() -> bytes:
-    from PIL import Image  # noqa: PLC0415
+    from PIL import Image
 
     buffer = io.BytesIO()
     Image.new("RGBA", (4, 4), (200, 100, 50, 255)).save(buffer, format="PNG")
@@ -153,12 +153,12 @@ class GlbWriterTest(unittest.TestCase):
     def test_mismatched_targets_rejected(self) -> None:
         writer = GlbWriter()
         writer.add_skeleton(["root"], {"root": None}, np.zeros((1, 3)))
-        base = dict(
-            positions=np.zeros((3, 3), dtype=np.float32),
-            indices=np.array([[0, 1, 2]], dtype=np.uint32),
-            joints=np.zeros((3, 4), dtype=np.uint8),
-            weights=np.array([[1, 0, 0, 0]] * 3, dtype=np.float32),
-        )
+        base = {
+            "positions": np.zeros((3, 3), dtype=np.float32),
+            "indices": np.array([[0, 1, 2]], dtype=np.uint32),
+            "joints": np.zeros((3, 4), dtype=np.uint8),
+            "weights": np.array([[1, 0, 0, 0]] * 3, dtype=np.float32),
+        }
         first = Primitive(**base, targets=[MorphTarget("a", np.zeros((3, 3), dtype=np.float32))])
         second = Primitive(**base, targets=[MorphTarget("b", np.zeros((3, 3), dtype=np.float32))])
         with self.assertRaises(ValueError):

@@ -31,7 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 # -I(격리) 모드는 스크립트 폴더를 sys.path에 넣지 않으므로 `import character_kit`용으로 tools/blender를 직접 올린다.
 sys.path.insert(0, str(REPO_ROOT / "tools" / "blender"))
 
-from character_kit import face_fields as ff  # noqa: E402
+from character_kit import face_fields as ff
 
 SEED = 20261010
 ATOL = 1e-9  # 파이썬 이식본과 TS 원본 사이에 허용하는 절대 오차
@@ -322,7 +322,7 @@ def main() -> int:
     failures += check_api_contract(base, dump["names"])
 
     if failures:
-        header = f"불일치 {len(failures)}건 (허용 오차 {ATOL:g}, 점 {len(points)}개 × 이름 {len(dump['names'])}개)"  # noqa: RUF001
+        header = f"불일치 {len(failures)}건 (허용 오차 {ATOL:g}, 점 {len(points)}개 × 이름 {len(dump['names'])}개)"
         print(header, file=sys.stderr)
         for line in failures[:MAX_REPORTED_MISMATCHES]:
             print(f"  {line}", file=sys.stderr)
@@ -330,7 +330,7 @@ def main() -> int:
             print(f"  ... 외 {len(failures) - MAX_REPORTED_MISMATCHES}건", file=sys.stderr)
         return 1
 
-    summary = f"일치: {len(points)}점(기준 {base.shape[0]}점 × 스코프 {SCOPE_COUNT}종) × {len(dump['names'])}이름"  # noqa: RUF001
+    summary = f"일치: {len(points)}점(기준 {base.shape[0]}점 × 스코프 {SCOPE_COUNT}종) × {len(dump['names'])}이름"
     print(
         f"{summary} (+ '-' 방향 {len(ff.FACE_PARAM_KEYS)}종, 턱 마스크, 상수·API 계약),"
         f" 최대 절대 오차 {max_error:.3e}({worst_label or '-'}) <= {ATOL:g}"

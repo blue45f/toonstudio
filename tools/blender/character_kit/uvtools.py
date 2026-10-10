@@ -20,7 +20,7 @@ def unwrap_quads(
     island_margin: float = 0.0,
 ) -> np.ndarray:
     """쿼드 메시를 smart_project로 전개하고 루프별 UV (M,4,2) float32를 돌려준다(패킹 전, 크기·위치는 임의)."""
-    import bpy  # noqa: PLC0415 - bpy가 필요한 함수에서만 가져온다
+    import bpy
 
     mesh = bpy.data.meshes.new("kit_unwrap")
     mesh.from_pydata(positions.astype(np.float32).tolist(), [], quads.tolist())
@@ -70,10 +70,10 @@ def overlap_ratio(uvs: np.ndarray, triangles: np.ndarray, size: int = 1024) -> t
         area = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
         if not np.isfinite(area) or abs(area) < 1e-9:
             continue
-        min_x = max(0, int(math.floor(min(a[0], b[0], c[0]))))
-        max_x = min(size - 1, int(math.ceil(max(a[0], b[0], c[0]))))
-        min_y = max(0, int(math.floor(min(a[1], b[1], c[1]))))
-        max_y = min(size - 1, int(math.ceil(max(a[1], b[1], c[1]))))
+        min_x = max(0, math.floor(min(a[0], b[0], c[0])))
+        max_x = min(size - 1, math.ceil(max(a[0], b[0], c[0])))
+        min_y = max(0, math.floor(min(a[1], b[1], c[1])))
+        max_y = min(size - 1, math.ceil(max(a[1], b[1], c[1])))
         if min_x > max_x or min_y > max_y:
             continue
         xs = np.arange(min_x, max_x + 1) + 0.5
@@ -112,10 +112,10 @@ def paint_triangles(
         area = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
         if abs(area) < 1e-12:
             continue
-        min_x = max(0, int(math.floor(min(a[0], b[0], c[0]))) - 1)
-        max_x = min(size - 1, int(math.ceil(max(a[0], b[0], c[0]))) + 1)
-        min_y = max(0, int(math.floor(min(a[1], b[1], c[1]))) - 1)
-        max_y = min(size - 1, int(math.ceil(max(a[1], b[1], c[1]))) + 1)
+        min_x = max(0, math.floor(min(a[0], b[0], c[0])) - 1)
+        max_x = min(size - 1, math.ceil(max(a[0], b[0], c[0])) + 1)
+        min_y = max(0, math.floor(min(a[1], b[1], c[1])) - 1)
+        max_y = min(size - 1, math.ceil(max(a[1], b[1], c[1])) + 1)
         xs = np.arange(min_x, max_x + 1) + 0.5
         ys = np.arange(min_y, max_y + 1) + 0.5
         px, py = np.meshgrid(xs, ys)

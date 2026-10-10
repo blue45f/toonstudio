@@ -18,7 +18,7 @@ MAX_INFLUENCES = 4
 _CATEGORY = {
     "Hips": "spine", "Spine": "spine", "Spine1": "spine", "Spine2": "spine",
     "Neck": "neck", "Head": "head", "Shoulder": "shoulder", "Arm": "arm", "ForeArm": "forearm", "Hand": "hand",
-    "UpLeg": "upleg", "Leg": "leg", "Foot": "foot", "ToeBase": "toe",
+    "UpLeg": "upleg", "Leg": "leg", "Foot": "foot", "ToeBase": "toe", "TS_Jaw": "jaw",
 }
 _BAND: dict[tuple[str, str], tuple[int, int]] = {
     ("spine", "spine"): (5, 5),
@@ -34,6 +34,8 @@ _BAND: dict[tuple[str, str], tuple[int, int]] = {
     ("upleg", "leg"): (3, 3),
     ("leg", "foot"): (3, 3),
     ("foot", "toe"): (2, 2),
+    ("head", "jaw"): (3, 3),
+    ("jaw", "neck"): (4, 4),
 }
 
 
@@ -119,7 +121,7 @@ def harmonic_weights(owner: np.ndarray, core: np.ndarray, ptr: np.ndarray, idx: 
     weights[np.arange(count), column[owner]] = 1.0
     free = np.flatnonzero(~core)
     if free.size:
-        src, dst = _gather_neighbors(free, ptr, idx)
+        _, dst = _gather_neighbors(free, ptr, idx)
         counts = (ptr[free + 1] - ptr[free]).astype(np.float32)
         segment = np.cumsum(counts.astype(np.int64)) - counts.astype(np.int64)
         inverse = (1.0 / np.maximum(counts, 1.0))[:, None]
@@ -173,6 +175,9 @@ def assign_owners(body: hbm.Body, rig: Rig, head_mask: np.ndarray) -> tuple[np.n
     plane_y = head_y - 0.045 - 0.4375 * (fc[:, 2] - 0.13)
     neck_side = fc[:, 1] < plane_y
     put(head_mask & neck_side, MIXAMO + "Neck")
+    lip_seam_y = head_y + 0.0095  # 입술 틈 높이(Head joint 기준 오프셋; HBM 여성 1.4645)
+    in_jaw = (fs == hbm.JAW_SET) | ((fs == hbm.LIP_SET) & (fc[:, 1] < lip_seam_y))
+    put(head_mask & in_jaw, "TS_Jaw")
     put(head_mask, MIXAMO + "Head")
 
     spine_names = [MIXAMO + n for n in ("Hips", "Spine", "Spine1", "Spine2")]
@@ -370,7 +375,7 @@ def convert_to_t_pose(
     arap_iterations: int = 24,
 ) -> np.ndarray:
     """A-포즈 점을 T-포즈로 옮긴다. DQS로 옮긴 뒤 어깨 전이 영역만 ARAP로 다시 푼다."""
-    from .arap import arap_deform  # noqa: PLC0415
+    from .arap import arap_deform
 
     moved = dual_quaternion_skin(positions, indices, weights, rig.rotation, rig.translation)
     mixed = weights.max(axis=1) < 0.999

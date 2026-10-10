@@ -1,7 +1,7 @@
 """표면 질의 도구 (mathutils BVH 기반): 최근접 표면점, 무게중심 보간, 법선 계산.
 
 파츠(속옷·의상·속눈썹·눈썹·신발)가 몸/머리 표면을 따라가게 하는 모든 단계가 이 모듈을 쓴다.
-`mathutils`는 `bpy`와 함께 오는 모듈이며 bpy 없이는 쓸 수 없다.
+`mathutils`는 `bpy`와 함께 오는 모듈이며 `import bpy` 뒤에만 가져올 수 있다.
 """
 
 from __future__ import annotations
@@ -63,7 +63,8 @@ class Surface:
     """삼각형 표면과 BVH. 같은 표면에 여러 번 질의할 때 한 번만 만든다."""
 
     def __init__(self, positions: np.ndarray, triangles: np.ndarray) -> None:
-        import mathutils.bvhtree as bvh  # noqa: PLC0415
+        import bpy  # noqa: F401 - bpy를 먼저 가져와야 mathutils가 등록된다(pip 패키지)
+        import mathutils.bvhtree as bvh
 
         self.positions = np.asarray(positions, dtype=np.float64)
         self.triangles = np.asarray(triangles, dtype=np.int64)

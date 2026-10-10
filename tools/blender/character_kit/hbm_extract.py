@@ -70,7 +70,7 @@ def _triangles(loops: np.ndarray, starts: np.ndarray, sizes: np.ndarray) -> np.n
 
 def extract(blend_path: str | Path, out_dir: str | Path) -> dict[str, str]:
     """번들에서 성별별 npz를 만들고 {이름: 경로}를 돌려준다."""
-    import bpy  # noqa: PLC0415 - bpy는 이 함수에서만 필요하다
+    import bpy
 
     bpy.context.preferences.filepaths.use_scripts_auto_execute = False
     bpy.ops.wm.open_mainfile(filepath=str(blend_path), load_ui=False)

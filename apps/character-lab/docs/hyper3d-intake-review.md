@@ -111,7 +111,7 @@ Hyper3D(Rodin)로 만든 의상 후보가 키트 파츠가 되려면 아래를 �
 | B | CC0 원천만 사용: Human Base Meshes(CC0)로 베이스를 다시 만들고, Sketchfab CC0 의상 후보(다운로드 토큰 필요)로 리타깃 파이프라인을 검증한다. Poly Haven은 의상이 없어 HDRI·소품 용도에 한정된다 | 클라우드 환경 설정(Network secrets 또는 환경변수)에 읽기 전용 토큰 저장 — 이 문서는 `SKETCHFAB_API_TOKEN`, `HYPER3D_API_KEY` 이름을 읽는 것으로 가정한다. **토큰을 채팅에 붙여넣지 않는다.** 새 세션부터 반영된다. `bpy` 설치 가능 여부는 별도 확인 |
 | C | 이전처럼 절차 생성(`license: original`)으로 의상을 만들고 Hyper3D는 참고 이미지 생성 등 비산출물 용도로만 쓴다 | 없음(계약과 정합) |
 
-## 7. 이번 세션에서 하지 않은 것
+## 7. 1차 세션에서 하지 않은 것 (당시 기준, 이후 상태는 10절)
 
 - Hyper3D·Sketchfab·Poly Haven 어느 쪽으로도 모델을 생성하거나 내려받지 않았다.
 - Blender·`bpy`를 설치하거나 실행하지 않았다.
@@ -143,3 +143,50 @@ Hyper3D(Rodin)로 만든 의상 후보가 키트 파츠가 되려면 아래를 �
 - 번들 안 에셋 메타데이터: 에셋 25개 전부 `license = CC0`(저자는 Dan Ulrich, Julien Kaspar, Paul Kotelevets, Tonatiuh de San Julián).
 - **불일치 1건**: 번들의 `License` 텍스트 데이터블록은 "The Rain Rig is released under the Creative Commons Attribution 4.0 license"라고 적혀 있다. 번들에는 아마추어(리그) 오브젝트가 없고(오브젝트는 메시 382개와 카메라 25개뿐), 이름에 `rain`/`rig`가 들어간 오브젝트가 없다. 따라서 Rain Rig는 이 번들에 들어 있지 않은 다른 배포물의 문구가 남은 것으로 판단한다. **이 판단은 추정이며**, 키트 `NOTICE.md`에 이 불일치를 그대로 적는다.
 - 키트가 쓰는 에셋은 `GEO-body_female_realistic`, `GEO-body_male_realistic`(컬렉션 `Body Female/Male - Realistic`, 둘 다 CC0, 저자 Dan Ulrich)와 그 눈 메시다.
+
+## 10. 2026-10-10 마무리 시점의 진행 상태와 이어서 할 일
+
+### 10.1 빌더 구현 상태 (`tools/blender/character_kit`)
+
+만든 것: HBM 추출(`hbm_extract`)·읽기(`hbm`), 68 joint 랜드마크(`landmarks`), A→T 리그(`rig`), 스킨 웨이트·DQS(`skin`)와 어깨 ARAP(`arap`),
+GLB 작성기(`glbwriter`), 체형 필드·관절 오프셋(`fields_body`), 얼굴 필드 numpy 이식(`face_fields`, TS 대비 오차 1e-9)과 HBM 머리 정합(`fields_face`),
+UV 전개·패킹(`uvtools`), 표면 질의(`surface`), 확인용 렌더러(`debug_render`). 단위 시험 3종(`tests/`)이 통과한다.
+
+**아직 없는 것**: 베이스 조립(영역·속옷·눈·입 내부·속눈썹·눈썹·텍스처), 필수 파츠 5종(`hair/soft-bob`, `top/tee`, `bottom/jeans`,
+`shoes/sneakers`, `irises/round-large`), `kit.json` 작성기, `verify:character-kit` 통과, 의상 리타깃 단계. **키트 에셋(GLB)은 아직 저장소에 없다.**
+
+다음 작업이 기대는 실측 사실:
+
+- HBM 여성 몸은 A-포즈다. 머리 분할(`head_face_mask`)은 목 아래(y 1.337)까지 `TS_Head`에 넣고, 이음매 정점은 108개다. `TS_Body`+`TS_Head`는 84,680 삼각형(예산 90,000 이내).
+- A→T 변환은 쇄골 12° 상승 + 팔 사슬 회전(DQS) + 어깨 전이 영역 ARAP이다. 어깨 윗선에 약한 돌기가 남아 있다(개선 여지).
+- bpy 5.2.2의 `uv.pack_islands`는 백그라운드에서 레이아웃을 키우지 못한다. `smart_project`로 섬만 만들고 패킹은 직접 한다. 각도 한계 66°에서 머리 UV 겹침이 0.36 %(한도 0.2 %)라서 55° 이하로 줄여 다시 편다(`unwrap_and_pack`이 자동 재시도).
+- 얼굴 필드 정합: 로컬 단위당 (0.096, 0.118, 0.110) m, 원점 (0, 1.519, 0.057), 지표 잔차 2~18 mm. `facs:jawOpen`이 목 이음매를 최대 48 mm 움직이므로 얼굴 델타에 `seam_taper`를 곱해야 한다(검증기 V9 심 일치).
+- 검증기 제약(스키마 포함): `bodyRegions` 15개는 각각 삼각형이 1개 이상이어야 하고 범위 안 모든 삼각형이 그 영역의 `_REGION` 정점을 하나 이상 가져야 한다. `parts`는 프리셋 어휘 32개 전부를 변형 또는 한글 `unavailable` 사유로 선언해야 한다. 고정색 재질(눈·치아·혀·속옷)은 텍스처가 없으면 경고다.
+- 계약 덤프 스크립트가 `.mjs`인 이유: 루트 tsc(대상 ES2017)가 `.mts`를 검사하면서 계약 소스(정규식 이름 그룹, BigInt 리터럴)에서 실패한다.
+
+### 10.2 Hyper3D 사용 상태
+
+- 클라우드 세션에는 `hyper3d` MCP가 없다(도구 검색, 컨테이너 `claude mcp list`, claude.ai 커넥터 목록 모두 해당 없음). 사용자 PC의 CLI에만 user 스코프로 등록돼 있다.
+  이 컨테이너에서 `claude mcp add --transport http --scope user hyper3d https://api.hyper3d.com/api/mcp`로 등록은 했지만 OAuth는 이 환경에서 끝낼 수 없다.
+- 로컬 세션에 보낸 생성 요청(10.3)은 전달됐지만 로컬 세션이 처리하지 않았다. **생성 호출은 한 번도 실행되지 않았고 크레딧도 쓰이지 않았다.**
+- 직접 호출하려면 claude.ai 커넥터에 `https://api.hyper3d.com/api/mcp`를 추가·인증한 뒤 새 세션을 시작해야 한다(미확인).
+  그렇지 않으면 hyper3d가 인증된 로컬 Claude Code에서 10.3의 4건을 **한 번만** 실행하고 `generation_id`·`display_url`·GLB URL을 전달한다.
+
+### 10.3 대기 중인 생성 요청 4건 (미실행)
+
+공통: `tier=Gen-2.5-Medium`, `geometry_file_format=glb`, 참조 이미지 없음. 크레딧 사용은 사용자가 승인했다(범위는 이 4건).
+
+1. 상의 `rodin_generate`(`mesh_mode=Quad`, `quality_override=15000`):
+   "A plain short-sleeve crew-neck T-shirt for an adult woman, shown as a ghost-mannequin garment: only the shirt itself, no person, no mannequin, no head, no arms, no hands. The shirt is hollow with an open neck, open sleeve cuffs and an open bottom hem. Sleeves extend straight outward horizontally in a T-pose shape. Symmetrical, front and back clearly modelled, thin fabric thickness, clean simple geometry, no wrinkles, no logo, no print, no pocket, solid light gray cotton fabric with a subtle weave, evenly lit, no baked shadows."
+2. 하의 `rodin_generate`(`mesh_mode=Quad`, `quality_override=15000`):
+   "Plain straight-leg denim jeans for an adult woman, shown as a ghost-mannequin garment: only the jeans, no person, no mannequin, no body, no shoes. Hollow with an open waistband and open leg hems, legs straight and slightly apart as if worn in a standing pose, symmetrical, five-pocket jeans with belt loops and a front fly, thin fabric thickness, clean simple geometry, no tears, no heavy wrinkles, no logo, solid medium-blue denim with a subtle weave, evenly lit, no baked shadows."
+3. 전신 `rodin_generate`(`mesh_mode=Quad`, `quality_override=40000`):
+   "Full-body adult woman character standing in a perfect T-pose (arms straight out horizontally, palms facing down, legs straight and slightly apart), front view, neutral relaxed face with eyes open, wearing a plain light gray short-sleeve crew-neck cotton T-shirt, plain medium-blue straight-leg denim jeans and plain white low-top sneakers, shoulder-length bob hair, realistic human proportions about 1.65 m tall, clean simple geometry, no accessories, no logo, no background, evenly lit, no baked shadows."
+4. 3번의 부위 분리 `rodin_generate_bang`(3번 완료 뒤): `asset_id`=3번 `generation_id`, `instruction="Separate into: hair, T-shirt, jeans, left sneaker, right sneaker, and the remaining body (skin, head, hands)"`, `strength=6`, `explode_strength=0`, `resolution=Basic`.
+
+각 건은 `rodin_wait(timeout_seconds=45)`를 종료 상태까지 반복하고, 타임아웃이 나도 자동으로 다시 생성하지 않는다(크레딧 중복).
+
+### 10.4 반입 전 남은 결정
+
+- 계약 V4(허용 라이선스 `CC0-1.0`/`original`)에 Hyper3D 생성물을 담으려면 core 계약 변경이 필요하다(4절). 사용자는 유료 구독으로 상업 사용이 가능하다고 밝혔다(진술이며 약관 원문 대조는 3절 기준).
+- 공개 저장소에 Hyper3D 파생 바이너리를 두는 것(재배포)은 약관상 별도 확인이 필요하다. 확인 전에는 에셋을 커밋하지 않는다.
