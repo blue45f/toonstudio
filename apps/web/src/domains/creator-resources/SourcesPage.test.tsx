@@ -42,7 +42,7 @@ describe("resource source cost visibility", () => {
     // 위키미디어는 장면 표지를 마크로 쓴다(디자인 웨이브 8-A).
     expect(wikimedia?.querySelector("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/wikimedia.webp");
     const ambient = container.querySelector("article.research-source--ambientcg");
-    expect(ambient?.querySelector("img")?.getAttribute("src")).toBe("/brand/illustrated-20260928/materials.webp");
+    expect(ambient?.querySelector("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/ambientcg.webp");
     // 경로가 없는 Google Books는 제공처가 실재해도 정체성을 추정해 붙이지 않는다.
     const google = screen.getByRole("heading", { name: "Google Books" }).closest("article");
     expect(google?.classList.contains("research-source")).toBe(false);
@@ -127,7 +127,7 @@ describe("resource source cost visibility", () => {
     const gridSrcs = [...(masthead?.querySelectorAll("img") ?? [])].map((img) => img.getAttribute("src"));
     // 범용 일러스트가 아니라 실제 연결된 소스들의 표지(장면·브랜드 아트)가 첫 화면에 닿는다.
     expect(gridSrcs).toContain("/brand/research-sources-20261008/nasa.webp");
-    expect(gridSrcs).toContain("/brand/illustrated-20260928/materials.webp");
+    expect(gridSrcs).toContain("/brand/research-sources-20261008/ambientcg.webp");
     expect(gridSrcs).not.toContain("/brand/illustrated-20260928/storyboard.webp");
     expect(gridSrcs.length).toBe(6);
   });

@@ -19,6 +19,10 @@ import type { ResourceProvider } from "@/shared/lib/creator-resources";
  *   (디자인 웨이브 8-A, apps/web/public/brand/research-sources-20261008) — 소스가
  *   모으는 자료의 성격이 한눈에 읽히는 장면(우주·생물 표본·복식·음악 아카이브 등)을
  *   소스마다 서로 다른 그림으로 그렸다. art와 scene은 함께 쓰지 않는다.
+ * - ambientCG·NEIS는 브랜드 일러스트가 있었지만 공개 데이터 상세 무대(웨이브 15~16)가
+ *   장면 보유를 전제해 제외됐고, 웨이브 17에서 무대에 설 전용 장면(재질 공방·학교
+ *   전경)을 새로 제작해 장면으로 전환했다. 두 일러스트 파일 자체는 제작 팩 등 다른
+ *   표면이 정체성 키트와 무관하게 계속 참조하므로 지우지 않는다.
  * - 어느 쪽 실물 아트도 없는 소스만 타이포그래픽 표지(글리프+액센트 패턴)로 남는다.
  * - 액센트 색 값은 research-source-identity.css의 소스별 토큰(--source-accent)이 정본이다.
  *   이 파일은 색을 값으로 갖지 않고, CSS가 같은 provider 키로 토큰을 제공하는지를
@@ -48,7 +52,7 @@ const RESEARCH_SOURCE_IDENTITY_SEEDS: Record<ResourceProvider, ResearchSourceIde
   kakao: { tagline: "카카오 도서 검색으로 만화 단행본과 작법서를 찾습니다", art: "storyboard", glyph: "카" },
   bizinfo: { tagline: "기업마당에 모인 창작자 지원사업 공고를 찾습니다", art: null, glyph: "기" },
   polyhaven: { tagline: "CC0 3D 모델·HDRI·텍스처를 공개하는 재료 아카이브입니다", art: "background-city", glyph: "P" },
-  ambientcg: { tagline: "CC0 PBR 재질과 3D 소재를 공개하는 라이브러리입니다", art: "materials", glyph: "A" },
+  ambientcg: { tagline: "CC0 PBR 재질과 3D 소재를 공개하는 라이브러리입니다", art: null, glyph: "A", scene: "ambientcg" },
   nasa: { tagline: "NASA가 공개한 행성·성운·우주선 이미지 자료실입니다", art: null, glyph: "N", scene: "nasa" },
   vam: { tagline: "빅토리아 앨버트 박물관의 패션·디자인 소장품을 탐색합니다", art: null, glyph: "V", scene: "vam" },
   googlefonts: { tagline: "실제 글꼴로 문구를 미리 보는 서체 라이브러리입니다", art: null, glyph: "가", scene: "googlefonts" },
@@ -58,7 +62,7 @@ const RESEARCH_SOURCE_IDENTITY_SEEDS: Record<ResourceProvider, ResearchSourceIde
   internetarchive: { tagline: "도서·잡지·영상·음원을 보존하는 인터넷 도서관입니다", art: null, glyph: "아", scene: "internetarchive" },
   metweather: { tagline: "노르웨이 기상청 예보로 장면의 날씨와 빛을 읽습니다", art: null, glyph: "빛", scene: "metweather" },
   kheritage: { tagline: "국가유산청이 공개하는 문화유산 지정·관리 기록을 찾습니다", art: null, glyph: "유", scene: "kheritage" },
-  neis: { tagline: "전국 학교의 기본정보를 모은 교육 행정 데이터입니다", art: "background-classroom", glyph: "학" },
+  neis: { tagline: "전국 학교의 기본정보를 모은 교육 행정 데이터입니다", art: null, glyph: "학", scene: "neis" },
   tourapi: { tagline: "한국관광공사가 정리한 국내 관광지·문화시설 정보를 찾습니다", art: null, glyph: "관", scene: "tourapi" },
   korean: { tagline: "국립국어원 표준국어대사전의 표제어와 뜻풀이를 찾습니다", art: null, glyph: "말", scene: "korean" },
   smithsonian: { tagline: "스미스소니언 박물관군의 공개 문화유산·과학 기록을 탐색합니다", art: null, glyph: "S", scene: "smithsonian" },
