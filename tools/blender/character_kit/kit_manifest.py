@@ -595,6 +595,27 @@ def default_unavailable_reason(preset_id: str, contract: contract_mod.Contract) 
     return REQUIRED_REASON_KO if preset_id in contract.required_presets else OPTIONAL_REASON_KO
 
 
+def _base_block(kit_dir: Path, contract: contract_mod.Contract, base_path: str, base_meta: dict[str, Any], materials: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """베이스 GLB 하나를 검사해 manifest의 `bases[<id>]` 블록을 만든다."""
+    base_file, base_data = _file_entry(kit_dir, base_path)
+    base_info = inspect_glb(base_data, base_path)
+    _check_skin(base_info, contract, base_path)
+    base_meshes = base_mesh_declarations(base_info, contract, materials)
+    body_nodes = [mesh for mesh in base_info.meshes if mesh.node in ("TS_Body", "TS_Head")]
+    if len(body_nodes) != 2:
+        raise ManifestError("베이스에 TS_Body와 TS_Head가 모두 있어야 합니다.")
+    # 높이 = TS_Body+TS_Head 의 y 범위. 두 메시의 경계를 따로 모으려면 정점이 필요하므로 사이드카의 값을 쓴다.
+    height = float(base_meta["heightM"])
+    bounds = base_meta.get("boundsM") or {"min": base_info.bounds_min, "max": base_info.bounds_max}
+    return {
+        "file": base_file,
+        "heightM": round(height, 4),
+        "boundsM": {"min": [round(float(v), 4) for v in bounds["min"]], "max": [round(float(v), 4) for v in bounds["max"]]},
+        "meshes": base_meshes,
+        "bodyRegions": base_meta["bodyRegions"],
+    }
+
+
 def build_manifest(
     *,
     kit_dir: Path,
@@ -609,61 +630,51 @@ def build_manifest(
     unavailable_reasons: dict[str, str] | None = None,
     hyper3d_sources: Hyper3dSources | None = None,
     now: datetime.date | None = None,
+    extra_bases: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """키트 폴더의 GLB들을 검사해 `kit.json` 내용을 만든다. `hyper3d_sources`는 등록된 파츠 가운데 출처 표에 있는 것의 출처 항목을 더한다."""
+    """키트 폴더의 GLB들을 검사해 `kit.json` 내용을 만든다. `hyper3d_sources`는 등록된 파츠 가운데 출처 표에 있는 것의 출처 항목을 더한다.
+
+    `extra_bases`는 기본 베이스(`base_id`) 말고 더 넣을 베이스들 `[{"base_id", "base_path", "base_meta"}]`(예: 남성). 파츠 항목은 베이스마다 `variants[<베이스>]`를 갖고,
+    그 베이스용 GLB가 없으면 `unavailable[<베이스>]`에 한글 사유를 적는다(`unavailable_reasons`는 프리셋 id 또는 `프리셋id@베이스`로 지정).
+    """
     kit_dir = Path(kit_dir)
     unavailable_reasons = unavailable_reasons or {}
     materials: dict[str, dict[str, Any]] = {}
 
-    base_file, base_data = _file_entry(kit_dir, base_path)
-    base_info = inspect_glb(base_data, base_path)
-    _check_skin(base_info, contract, base_path)
-    base_meshes = base_mesh_declarations(base_info, contract, materials)
+    all_bases = [{"base_id": base_id, "base_path": base_path, "base_meta": base_meta}, *(extra_bases or [])]
+    base_ids = [item["base_id"] for item in all_bases]
+    if len(set(base_ids)) != len(base_ids):
+        raise ManifestError(f"베이스 id가 중복되었습니다: {base_ids}")
+    bases_block = {item["base_id"]: _base_block(kit_dir, contract, item["base_path"], item["base_meta"], materials) for item in all_bases}
 
-    body_nodes = [mesh for mesh in base_info.meshes if mesh.node in ("TS_Body", "TS_Head")]
-    if len(body_nodes) != 2:
-        raise ManifestError("베이스에 TS_Body와 TS_Head가 모두 있어야 합니다.")
-    # 높이 = TS_Body+TS_Head 의 y 범위. 두 메시의 경계를 따로 모으려면 정점이 필요하므로 사이드카의 값을 쓴다.
-    height = float(base_meta["heightM"])
-    bounds = base_meta.get("boundsM") or {"min": base_info.bounds_min, "max": base_info.bounds_max}
-    base_block = {
-        "file": base_file,
-        "heightM": round(height, 4),
-        "boundsM": {"min": [round(float(v), 4) for v in bounds["min"]], "max": [round(float(v), 4) for v in bounds["max"]]},
-        "meshes": base_meshes,
-        "bodyRegions": base_meta["bodyRegions"],
-    }
-
-    entries_by_id: dict[str, PartEntry] = {}
+    entries_by_id: dict[str, dict[str, PartEntry]] = {}
     for entry in parts:
-        if entry.base != base_id:
-            raise ManifestError(f"{entry.preset_id}: 이 빌드의 베이스는 {base_id}뿐입니다({entry.base}).")
-        if entry.preset_id in entries_by_id:
-            raise ManifestError(f"파츠 id가 중복되었습니다: {entry.preset_id}")
-        entries_by_id[entry.preset_id] = entry
+        if entry.base not in base_ids:
+            raise ManifestError(f"{entry.preset_id}: 이 빌드의 베이스는 {', '.join(base_ids)}뿐입니다({entry.base}).")
+        group = entries_by_id.setdefault(entry.preset_id, {})
+        if entry.base in group:
+            raise ManifestError(f"파츠 id가 중복되었습니다: {entry.preset_id}({entry.base})")
+        group[entry.base] = entry
 
     vocabulary: dict[str, list[str]] = contract.raw["presetVocabulary"]
     part_blocks: list[dict[str, Any]] = []
     for slot in contract.raw["partSlots"]:
         for name in vocabulary[slot]:
             preset_id = f"{slot}/{name}"
-            entry = entries_by_id.pop(preset_id, None)
-            if entry is None:
-                reason = unavailable_reasons.get(preset_id) or default_unavailable_reason(preset_id, contract)
-                part_blocks.append({"id": preset_id, "slot": slot, "variants": {}, "unavailable": {base_id: reason}})
-                continue
-            file_entry, data = _file_entry(kit_dir, entry.path)
-            info = inspect_glb(data, entry.path)
-            _check_skin(info, contract, entry.path)
-            declarations = part_mesh_declarations(info, entry, contract, materials)
-            part_blocks.append(
-                {
-                    "id": preset_id,
-                    "slot": slot,
-                    "variants": {base_id: {"file": file_entry, "meshes": declarations, "hides": list(entry.hides)}},
-                    "unavailable": {},
-                }
-            )
+            group = entries_by_id.pop(preset_id, {})
+            variants: dict[str, Any] = {}
+            unavailable: dict[str, str] = {}
+            for each_base in base_ids:
+                entry = group.get(each_base)
+                if entry is None:
+                    unavailable[each_base] = unavailable_reasons.get(f"{preset_id}@{each_base}") or unavailable_reasons.get(preset_id) or default_unavailable_reason(preset_id, contract)
+                    continue
+                file_entry, data = _file_entry(kit_dir, entry.path)
+                info = inspect_glb(data, entry.path)
+                _check_skin(info, contract, entry.path)
+                declarations = part_mesh_declarations(info, entry, contract, materials)
+                variants[each_base] = {"file": file_entry, "meshes": declarations, "hides": list(entry.hides)}
+            part_blocks.append({"id": preset_id, "slot": slot, "variants": variants, "unavailable": unavailable})
     if entries_by_id:
         raise ManifestError(f"프리셋 어휘에 없는 파츠가 등록되었습니다: {', '.join(sorted(entries_by_id))}")
 
@@ -685,7 +696,7 @@ def build_manifest(
         },
         "materials": materials,
         "jointOffsets": base_meta["jointOffsets"],
-        "bases": {base_id: base_block},
+        "bases": bases_block,
         "parts": part_blocks,
         "defaults": {"base": contract.raw["defaultBase"], "slots": contract.raw["defaultSlots"], "colors": contract.raw["defaultColors"]},
         "slotCapabilities": {},

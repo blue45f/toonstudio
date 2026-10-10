@@ -585,7 +585,10 @@
       "qualityOverride": 40000,
       "intent": "후디 전신(A-포즈, 소매와 몸통 사이를 벌려 달라고 명시 — 기존 후디는 소매가 몸통에 붙어 A→T 변환이 찢어짐)",
       "outcome": "폐기(손을 주머니에 넣은 포즈 — 소매가 몸통·주머니와 이어져 A→T 변환 불가)",
-      "prompt": "A young adult wearing a plain light gray pullover hoodie with the hood down, ribbed cuffs and ribbed hem, a front kangaroo pocket and no drawstrings, plain dark trousers and plain dark sneakers, short neat hair. Full body, standing in an A-pose with both arms held clearly away from the body at about thirty degrees so there is a visible gap between each sleeve and the torso, legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
+      "prompt": "A young adult wearing a plain light gray pullover hoodie with the hood down, ribbed cuffs and ribbed hem, a front kangaroo pocket and no drawstrings, plain dark trousers and plain dark sneakers, short neat hair. Full body, standing in an A-pose with both arms held clearly away from the body at about thirty degrees so there is a visible gap between each sleeve and the torso, legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background.",
+      "rawFile": "g9-hoodie-a-1e1c9982-b12d-4664-91f4-7de242fbac07-base_basic_pbr.glb",
+      "rawSha256": "c6e09bd2a646986615fd27ed60e23f0437980ef44d830a08ef04fbd178dfbb36",
+      "rawBytes": 10443532
     },
     {
       "id": "30afea4c-9a03-4963-875c-8785dec6be8d",
@@ -625,7 +628,10 @@
       "qualityOverride": 40000,
       "intent": "후디 전신 재생성(손은 주머니 밖) — 소매·몸통 사이가 조금 벌어짐",
       "outcome": "BANG으로 분리",
-      "prompt": "A young adult wearing a plain light gray pullover hoodie with the hood down, ribbed cuffs and ribbed hem, a plain smooth front with no pocket and no drawstrings, plain dark trousers and plain dark sneakers, short neat hair. Full body, standing straight in a relaxed A-pose with both arms hanging down and slightly away from the body, hands open, empty and visible beside the hips (never in pockets), legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
+      "prompt": "A young adult wearing a plain light gray pullover hoodie with the hood down, ribbed cuffs and ribbed hem, a plain smooth front with no pocket and no drawstrings, plain dark trousers and plain dark sneakers, short neat hair. Full body, standing straight in a relaxed A-pose with both arms hanging down and slightly away from the body, hands open, empty and visible beside the hips (never in pockets), legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background.",
+      "rawFile": "g10-hoodie-b-e826974c-a756-4fe3-9515-15b52af31146-base_basic_pbr.glb",
+      "rawSha256": "23a0aced5fc70a019e4db99f8513de52a2c81348f9631b9914abd76ae480f2af",
+      "rawBytes": 9832304
     },
     {
       "id": "4696d281-4c85-420a-9462-45890e850808",
@@ -634,8 +640,11 @@
       "parent": "e826974c-a756-4fe3-9515-15b52af31146",
       "strength": 3,
       "intent": "후디 분리",
-      "outcome": "대기",
-      "instruction": "Separate into parts: the light gray hoodie including both sleeves, cuffs, hood, front pocket and drawstrings as one single part, the dark trousers as one part, the two white sneakers, the head with hair and face, and the two hands skin."
+      "outcome": "사용(후디 root.6)",
+      "instruction": "Separate into parts: the light gray hoodie including both sleeves, cuffs, hood, front pocket and drawstrings as one single part, the dark trousers as one part, the two white sneakers, the head with hair and face, and the two hands skin.",
+      "rawFile": "g10-hoodie-bang-4696d281-4c85-420a-9462-45890e850808-base_basic_pbr.glb",
+      "rawSha256": "49a605e48081910740a4e1fe4529e3fe3111f3545e3e04dad5acf02a38915cdb",
+      "rawBytes": 11205532
     },
     {
       "id": "385700b4-044e-4ece-984e-7d4d09b0216c",
@@ -644,8 +653,11 @@
       "parent": "30afea4c-9a03-4963-875c-8785dec6be8d",
       "strength": 3,
       "intent": "soft-bob 헤어 분리",
-      "outcome": "대기",
-      "instruction": "Separate into parts: the dark brown short bob hair as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders)."
+      "outcome": "사용(헤어 root.4, 머리 기준 root.2)",
+      "instruction": "Separate into parts: the dark brown short bob hair as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders).",
+      "rawFile": "hair-bob2-bang-385700b4-044e-4ece-984e-7d4d09b0216c-base_basic_pbr.glb",
+      "rawSha256": "32e201551cb124105772206deef02b19b7000987c8257703cb14a23ee1ec31d9",
+      "rawBytes": 13023332
     },
     {
       "id": "1c85dbb2-501e-49c5-a626-10cbd1fc5fca",
@@ -654,8 +666,11 @@
       "parent": "4d75173e-4311-4ec7-97f8-24caff52b162",
       "strength": 3,
       "intent": "hime-cut 헤어 분리",
-      "outcome": "대기",
-      "instruction": "Separate into parts: the black long straight hair with bangs as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders)."
+      "outcome": "사용(헤어 root.4, 머리 기준 root.5 — 두피가 헤어에 포함되어 정수리 보정)",
+      "instruction": "Separate into parts: the black long straight hair with bangs as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders).",
+      "rawFile": "hair-hime2-bang-1c85dbb2-501e-49c5-a626-10cbd1fc5fca-base_basic_pbr.glb",
+      "rawSha256": "a07351602847235f3229c4d95ce3615974608c08d7243fbdc292ff48ae46961c",
+      "rawBytes": 11395536
     },
     {
       "id": "7a57080d-266e-4ccb-960d-7e0260d87bce",
@@ -664,8 +679,217 @@
       "parent": "72e8286d-bb5a-4a2f-98e3-79d76cbdd5d9",
       "strength": 3,
       "intent": "short-layered 헤어 분리",
+      "outcome": "사용(헤어 root.3, 머리 기준 root.2)",
+      "instruction": "Separate into parts: the dark brown short layered hair as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders).",
+      "rawFile": "hair-short2-bang-7a57080d-266e-4ccb-960d-7e0260d87bce-base_basic_pbr.glb",
+      "rawSha256": "4231fc194a35b67e6fae16c73f302c84b66990c8d5e3ca6737999f62153cde67",
+      "rawBytes": 10581968
+    },
+    {
+      "id": "b4301997-99cf-420e-83cd-f26ad76225a7",
+      "name": "g7-bang",
+      "kind": "bang",
+      "parent": "facb7ae3-49f9-4785-be5e-19d2f8449b5d",
+      "strength": 3,
+      "intent": "세일러복 분리(g7)",
+      "outcome": "검토 중(세일러 상의 root.7)",
+      "instruction": "Separate into parts: the long black hair as one single part, the white sailor uniform top with its navy striped sailor collar and striped cuffs and both sleeves as one single part, the red neckerchief bow, the navy pleated skirt as one single part, the two white socks, the two shoes, and the skin (head, neck, hands, legs).",
+      "rawFile": "g7-bang-b4301997-99cf-420e-83cd-f26ad76225a7-base_basic_pbr.glb",
+      "rawSha256": "650cd7cddd49cea94962d63aeb10f95033faa8e2f63769113331cb64ec350578",
+      "rawBytes": 10782260
+    },
+    {
+      "id": "9566f271-a450-4562-a3c7-80e1a098bc8d",
+      "name": "g8-bang",
+      "kind": "bang",
+      "parent": "9d9c4e0d-4182-4919-83f6-d68e52dfc157",
+      "strength": 3,
+      "intent": "세일러복 분리(g8)",
+      "outcome": "검토 중(세일러 상의 root.4, 로퍼 root.3)",
+      "instruction": "Separate into parts: the shoulder-length black hair as one single part, the white sailor uniform top with its navy striped sailor collar and striped hem and cuffs and both sleeves as one single part, the red neckerchief bow, the navy pleated skirt as one single part, the two white socks, the two shoes, and the skin (head, neck, hands, legs).",
+      "rawFile": "g8-bang-9566f271-a450-4562-a3c7-80e1a098bc8d-base_basic_pbr.glb",
+      "rawSha256": "0262fa685e2b924f311c9a07d7f5557f3604e8fa423c4ba7b01ee1f5570e531e",
+      "rawBytes": 12214876
+    },
+    {
+      "id": "0e0fd630-f766-40a8-8759-709abed84a7a",
+      "name": "g11-shirt-proxy",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "top/shirt T-포즈 전신(프록시 참조)",
+      "outcome": "BANG으로 분리(칼라·단추 없이 매끈한 긴팔로 나옴)",
+      "prompt": "A stylized Korean webtoon character standing in a perfect T-pose with both arms stretched straight out horizontally to the sides, wearing a plain white long-sleeve button-up dress shirt with a spread collar, a straight button placket and rounded cuffs, the shirt untucked with a straight hem, plain dark gray trousers, bare feet, bald head with a calm neutral face. Matte fabrics with simplified soft folds, clean simple shapes, each garment a clear separate piece, no logos, no text, evenly lit, plain white background.",
+      "referenceImages": "참조 이미지: 베이스(webtoon-girl) T-포즈 몸에 프록시 상의·바지를 입힌 정면 렌더(tools/blender/character_kit/proxy_reference.py 로 만든 자체 렌더 1장) — 셔츠 프록시(흰색 헐렁한 긴팔)",
+      "rawFile": "g11-shirt-proxy-0e0fd630-f766-40a8-8759-709abed84a7a-base_basic_pbr.glb",
+      "rawSha256": "2458278fbde576ca52a8d4cfe6c9140515348c6c8f9939f5a81fd885de4c3949",
+      "rawBytes": 7878688
+    },
+    {
+      "id": "466c5cc5-c2c4-442a-9204-8c4ca40c0772",
+      "name": "g11-blazer-proxy",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "top/blazer T-포즈 전신(프록시 참조)",
+      "outcome": "BANG으로 분리(라펠 없이 V넥 긴팔로 나옴)",
+      "prompt": "A stylized Korean webtoon character standing in a perfect T-pose with both arms stretched straight out horizontally to the sides, wearing a navy single-breasted school blazer with notch lapels, two buttons, flap pockets and long sleeves with plain cuffs, a small white shirt collar visible at the V opening, hip-length hem, plain dark gray trousers, bare feet, bald head with a calm neutral face. Matte fabrics with simplified soft folds, clean simple shapes, each garment a clear separate piece, no logos, no text, evenly lit, plain white background.",
+      "referenceImages": "참조 이미지: 베이스(webtoon-girl) T-포즈 몸에 프록시 상의·바지를 입힌 정면 렌더(tools/blender/character_kit/proxy_reference.py 로 만든 자체 렌더 1장) — 블레이저 프록시(네이비 + 흰 V 영역)",
+      "rawFile": "g11-blazer-proxy-466c5cc5-c2c4-442a-9204-8c4ca40c0772-base_basic_pbr.glb",
+      "rawSha256": "6c5dee9bde74dcddca74f670fc642b3a7e0016e9a427fe11ccb5d0efaf291a94",
+      "rawBytes": 7954456
+    },
+    {
+      "id": "65a49c7d-d606-48fa-adb5-d8f3df682a3d",
+      "name": "g11-hoodie-proxy",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "top/hoodie T-포즈 전신(프록시 참조)",
       "outcome": "대기",
-      "instruction": "Separate into parts: the dark brown short layered hair as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders)."
+      "prompt": "A stylized Korean webtoon character standing in a perfect T-pose with both arms stretched straight out horizontally to the sides, wearing a light gray pullover hoodie with long sleeves, ribbed cuffs and hem, a soft thick hood lying down around the neck, a front kangaroo pocket, plain dark gray trousers, bare feet, bald head with a calm neutral face. Matte fabrics with simplified soft folds, clean simple shapes, each garment a clear separate piece, no logos, no text, evenly lit, plain white background.",
+      "referenceImages": "참조 이미지: 베이스(webtoon-girl) T-포즈 몸에 프록시 상의·바지를 입힌 정면 렌더(tools/blender/character_kit/proxy_reference.py 로 만든 자체 렌더 1장) — 후디 프록시(회색 + 목 둘레 후드 고리)"
+    },
+    {
+      "id": "8145720b-0c0e-415d-b940-f0dba1e1fdf2",
+      "name": "g11-sailor-proxy",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "top/sailor T-포즈 전신(프록시 참조)",
+      "outcome": "대기",
+      "prompt": "A stylized Korean webtoon character standing in a perfect T-pose with both arms stretched straight out horizontally to the sides, wearing a white long-sleeve sailor school uniform top with a large navy sailor collar with a V opening at the chest, navy cuffs, waist-length hem, plain dark gray trousers, bare feet, bald head with a calm neutral face. Matte fabrics with simplified soft folds, clean simple shapes, each garment a clear separate piece, no logos, no text, evenly lit, plain white background.",
+      "referenceImages": "참조 이미지: 베이스(webtoon-girl) T-포즈 몸에 프록시 상의·바지를 입힌 정면 렌더(tools/blender/character_kit/proxy_reference.py 로 만든 자체 렌더 1장) — 세일러 프록시(흰색 짧은 상의 + 네이비 칼라·소매단 색 영역)"
+    },
+    {
+      "id": "387806f6-b060-4947-8522-3aaa2aaeabc4",
+      "name": "g11-shirt-bang",
+      "kind": "bang",
+      "parent": "0e0fd630-f766-40a8-8759-709abed84a7a",
+      "strength": 3,
+      "intent": "셔츠 분리(g11)",
+      "outcome": "검토 중(셔츠 root.3)",
+      "instruction": "Separate into parts: the white long-sleeve dress shirt including both sleeves, collar and button placket as one single part, the dark gray trousers as one single part, and the skin (head, neck, hands, feet).",
+      "rawFile": "g11-shirt-bang-387806f6-b060-4947-8522-3aaa2aaeabc4-base_basic_pbr.glb",
+      "rawSha256": "7d55d5fd019f7b15c8032e0faec133a9650f6b03c826b8a1ef4e1211e907aae1",
+      "rawBytes": 8465576
+    },
+    {
+      "id": "1a0f1434-8466-452c-ac67-8e0a28cd3ded",
+      "name": "g11-blazer-bang",
+      "kind": "bang",
+      "parent": "466c5cc5-c2c4-442a-9204-8c4ca40c0772",
+      "strength": 3,
+      "intent": "블레이저 분리(g11)",
+      "outcome": "검토 중(블레이저 root.4, 안쪽 셔츠 V root.5)",
+      "instruction": "Separate into parts: the navy blazer including both sleeves, lapels and pockets as one single part, the white shirt collar, the dark gray trousers as one single part, and the skin (head, neck, hands, feet).",
+      "rawFile": "g11-blazer-bang-1a0f1434-8466-452c-ac67-8e0a28cd3ded-base_basic_pbr.glb",
+      "rawSha256": "cf6502325015c80c99bf8413c5212a06548cd72c5dc18619ed0cfc11b7ce67e9",
+      "rawBytes": 8428140
+    },
+    {
+      "id": "b08cb513-fb84-4a8f-b41f-17d3d0f5d3c4",
+      "name": "head-anime-f",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "애니 얼굴 흉상(여) — 베이스 머리 형태 목표",
+      "outcome": "대기",
+      "prompt": "A stylized Japanese anime figure of a young woman, head-and-shoulders bust, bald head with no hair, smooth soft anime face with large expressive eyes set wide apart, a very small nose, a small closed mouth with a gentle smile, soft round cheeks and a small pointed chin, neutral relaxed expression with eyes open, wearing a plain white tank top, front view, symmetrical, evenly lit, plain white background, clean simple shapes, no accessories.",
+      "rawFile": "head-anime-f-b08cb513-fb84-4a8f-b41f-17d3d0f5d3c4-base_basic_pbr.glb",
+      "rawSha256": "3e348eabe1c55ba7c218073087b6d6d04fe7e173f5ad27424fcc0cb12e034cf4",
+      "rawBytes": 10043120
+    },
+    {
+      "id": "cf6f46cf-014d-4aee-ae30-25c689008645",
+      "name": "head-manhwa-f",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "웹툰풍 얼굴 흉상(여) — 베이스 머리 형태 목표",
+      "outcome": "대기",
+      "prompt": "A stylized Korean webtoon style figure of a young woman, head-and-shoulders bust, bald head with no hair, delicate manhwa face with large sparkling eyes, a tiny nose, small soft lips closed in a slight smile, smooth cheeks and a slim V-line chin, calm neutral expression with eyes open, wearing a plain white tank top, front view, symmetrical, evenly lit, plain white background, clean simple shapes, no accessories.",
+      "rawFile": "head-manhwa-f-cf6f46cf-014d-4aee-ae30-25c689008645-base_basic_pbr.glb",
+      "rawSha256": "2286d40e74f52a57538d16f2ab059ad9000aa469fcdebd4ae21d18a52ed7dec5",
+      "rawBytes": 9315020
+    },
+    {
+      "id": "55c0e490-99ed-4bdb-bd66-431899913dca",
+      "name": "head-anime-m",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "애니 얼굴 흉상(남) — 베이스 머리 형태 목표",
+      "outcome": "대기",
+      "prompt": "A stylized Japanese anime figure of a handsome young man bishounen, head-and-shoulders bust, bald head with no hair, smooth refined anime face with large sharp eyes, a small straight nose, thin lips closed, a soft defined jaw and a slim chin, calm neutral expression with eyes open, wearing a plain white tank top, front view, symmetrical, evenly lit, plain white background, clean simple shapes, no accessories.",
+      "rawFile": "head-anime-m-55c0e490-99ed-4bdb-bd66-431899913dca-base_basic_pbr.glb",
+      "rawSha256": "8a93e72b31876a22e30086dfbb321ebc523710bf0e35c66606da4faa938f618e",
+      "rawBytes": 9015124
+    },
+    {
+      "id": "cd7eab83-9eca-4b90-8a23-f6711f9bc4de",
+      "name": "head-manhwa-m",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "웹툰풍 얼굴 흉상(남) — 베이스 머리 형태 목표",
+      "outcome": "대기",
+      "prompt": "A stylized Korean webtoon style figure of a handsome young man, head-and-shoulders bust, bald head with no hair, clean manhwa face with large almond eyes, a small slim nose, thin lips closed, a slim V-line jaw, calm neutral expression with eyes open, wearing a plain white tank top, front view, symmetrical, evenly lit, plain white background, clean simple shapes, no accessories.",
+      "rawFile": "head-manhwa-m-cd7eab83-9eca-4b90-8a23-f6711f9bc4de-base_basic_pbr.glb",
+      "rawSha256": "30a667214ec5de44f2f2c14332c666c0864ed9c9f57366dc8d06d1c59fae7541",
+      "rawBytes": 8047704
+    },
+    {
+      "id": "990b9f61-35b7-43b4-976a-c7ab9fe3ee7c",
+      "name": "fig-anime-f",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "애니 인형(스케일 피규어)풍 얼굴 흉상(여) — 베이스 머리 정합 목표",
+      "outcome": "사용(face_register 목표)",
+      "prompt": "Anime girl scale figure bust, head and shoulders, bald head, large anime eyes, small nose and small mouth, neutral calm face with eyes open, plain white tank top.",
+      "rawFile": "fig-anime-f-990b9f61-35b7-43b4-976a-c7ab9fe3ee7c-base_basic_pbr.glb",
+      "rawSha256": "397fb7ae436a35cb93006ab1adf275afc116bba35df84d8437aca17efac693fa",
+      "rawBytes": 8963284
+    },
+    {
+      "id": "3f4d89eb-b6b8-4a23-af98-c9fe9383f2ad",
+      "name": "fig-anime-m",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "애니 인형(스케일 피규어)풍 얼굴 흉상(남) — 베이스 머리 정합 목표",
+      "outcome": "검토 중",
+      "prompt": "Anime bishounen boy scale figure bust, head and shoulders, bald head, large anime eyes, small nose and thin lips, neutral calm face with eyes open, plain white tank top.",
+      "rawFile": "fig-anime-m-3f4d89eb-b6b8-4a23-af98-c9fe9383f2ad-base_basic_pbr.glb",
+      "rawSha256": "bad5cd91075098d5c07702b2ae62db465803a353eaf58949153a9a6394c3dc9a",
+      "rawBytes": 8987084
+    },
+    {
+      "id": "1221126b-803b-4017-94b3-4746dff2760f",
+      "name": "g11-hoodie-bang",
+      "kind": "bang",
+      "parent": "65a49c7d-d606-48fa-adb5-d8f3df682a3d",
+      "strength": 3,
+      "intent": "후디 분리(g11)",
+      "outcome": "검토 중(후디 root.5)",
+      "instruction": "Separate into parts: the light gray pullover hoodie including both sleeves, cuffs, hem, hood and front pocket as one single part, the dark gray trousers as one single part, and the skin (head, neck, hands, feet).",
+      "rawFile": "g11-hoodie-bang-1221126b-803b-4017-94b3-4746dff2760f-base_basic_pbr.glb",
+      "rawSha256": "45ef3c830e01c3b375674f5af4e172328ab636092dfb13a399b24826e73f9456",
+      "rawBytes": 8989816
+    },
+    {
+      "id": "dfe24a30-2afc-49e9-a6de-07bc6f80e63f",
+      "name": "g11-sailor-bang",
+      "kind": "bang",
+      "parent": "8145720b-0c0e-415d-b940-f0dba1e1fdf2",
+      "strength": 3,
+      "intent": "세일러 분리(g11)",
+      "outcome": "검토 중(세일러 상의 root.6)",
+      "instruction": "Separate into parts: the white sailor uniform top including both sleeves, navy sailor collar and navy cuffs as one single part, the dark gray trousers as one single part, and the skin (head, neck, hands, feet).",
+      "rawFile": "g11-sailor-bang-dfe24a30-2afc-49e9-a6de-07bc6f80e63f-base_basic_pbr.glb",
+      "rawSha256": "0749dff1e530ce7d00fb0bf04f5e877152bae178b0ae3ed502b4011403e4f49c",
+      "rawBytes": 9518140
     }
   ]
 }

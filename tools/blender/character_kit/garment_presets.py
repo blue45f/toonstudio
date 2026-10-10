@@ -49,8 +49,9 @@ def _top(name: str, *, source: dict[str, Any], pose: str, align: str, changes: s
         "stylize": stylize,
         "align": align,
         "d_min": 0.008,
-        "d_max": 0.030,
-        "d_max_open": 0.050,
+        "d_max": 0.045,
+        "d_max_open": 0.060,
+        "hem_standoff": {"d_min": 0.034, "above": 0.03, "blend": 0.08},
         "fit_region": {"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.12, "scale": (0.92, 1.08)},
         "texture": {"strength": strength, "blur_radius": 1.2, "bands": 0},
         "merge_joints": {},
@@ -110,8 +111,8 @@ def _shoes(name: str, *, source: dict[str, Any], changes: str, decimate: int = 5
     }
 
 
-def _hair(name: str, *, source: dict[str, Any], changes: str, lods: tuple[int, int, int] = (7000, 3500, 1800), stylize: int = 3, align: str = "hair", bang_target_y: float | None = None) -> dict[str, Any]:
-    return {
+def _hair(name: str, *, source: dict[str, Any], changes: str, lods: tuple[int, int, int] = (7000, 3500, 1800), stylize: int = 3, align: str = "hair", bang_target_y: float | None = None, **extra: Any) -> dict[str, Any]:
+    spec: dict[str, Any] = {
         "slot": "hair",
         "name": name,
         "role": "hair",
@@ -132,6 +133,8 @@ def _hair(name: str, *, source: dict[str, Any], changes: str, lods: tuple[int, i
         "source": source,
         "changesKo": changes,
     }
+    spec.update(extra)
+    return spec
 
 
 def _prop(name: str, *, source: dict[str, Any], head_prop: dict[str, float], changes: str, decimate: int = 3500) -> dict[str, Any]:
@@ -169,29 +172,36 @@ PRESETS: dict[str, dict[str, Any]] = {
     ),
     "top/shirt": _top(
         "shirt",
-        source={"raw": "shirt-02-bang", "pick": "root.7", "clean": "top-no-skin"},
-        pose="a",
+        source={"raw": "g11-shirt-bang", "pick": "root.3", "clean": "top-no-skin"},
+        pose="t",
         align="frame",
-        d_max=0.040,
-        changes="전신(드레스셔츠 차림) 생성물을 BANG으로 분리한 셔츠 파츠를 베이스 A-포즈 몸에 맞춘 뒤 T-포즈로 변환, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+        decimate=6500,
+        stylize=4,
+        fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
+        d_max=0.045,
+        changes="베이스 T-포즈 몸에 프록시 긴팔 상의를 입힌 정면 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 긴팔 상의 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
     ),
-    "top/hoodie": _top(
-        "hoodie",
-        source={"raw": "hoodie-bang", "pick": "root.2", "clean": "top-no-skin"},
-        pose="a",
-        align="frame",
-        d_max=0.060,
-        changes="후디 차림 생성물을 BANG으로 분리한 후디 몸통·소매 파츠(후드·끈·바지·피부 제외)를 베이스 A-포즈 몸에 맞춘 뒤 T-포즈로 변환, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
-    ),
-    "top/blazer": _top(
-        "blazer",
-        source={"raw": "g1-bang", "pick": "root.10", "clean": "top-no-skin"},
-        pose="a",
+    "top/sailor": _top(
+        "sailor",
+        source={"raw": "g11-sailor-bang", "pick": "root.6", "clean": "top-no-skin"},
+        pose="t",
         align="frame",
         decimate=7000,
         stylize=4,
+        fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
         d_max=0.045,
-        changes="교복 여학생 전신 생성물을 BANG으로 분리한 블레이저 파츠(소매 포함, 셔츠·리본 파편 제외)를 베이스 A-포즈 몸에 맞춘 뒤 T-포즈로 변환, 웹툰풍 스무딩(라펠 유지), 7,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+        changes="베이스 T-포즈 몸에 프록시 흰 짧은 상의(네이비 칼라·소매단 색 영역)를 입힌 정면 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 세일러 상의 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩(칼라 유지), 7,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크(네이비 칼라는 어두운 영역으로 남는다).",
+    ),
+    "top/blazer": _top(
+        "blazer",
+        source={"raw": "g11-blazer-bang", "pick": "root.4,root.5", "clean": "top-no-skin"},
+        pose="t",
+        align="frame",
+        decimate=7000,
+        stylize=4,
+        fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
+        d_max=0.045,
+        changes="베이스 T-포즈 몸에 프록시 네이비 상의(흰 V 영역)를 입힌 정면 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 상의 파츠와 안쪽 셔츠 V 조각을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 7,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
     ),
     # ---------------------------------------------------------------- 하의
     "bottom/jeans": _bottom(
@@ -206,8 +216,8 @@ PRESETS: dict[str, dict[str, Any]] = {
         "slacks",
         source={"raw": "slacks-bang", "pick": "root.2", "clean": "keep"},
         pose="t",
-        align="icp",
-        icp={"anchor": "top", "landmark": "waist", "scales": [0.58, 0.62, 0.66, 0.70, 0.74]},
+        align="anchor",
+        anchor={"landmark": "waist", "offset": 0.056, "length_m": 0.996},
         d_max=0.040,
         changes="바지만 요청했지만 마네킹 몸이 함께 나온 생성물을 BANG으로 분리한 바지 파츠를 베이스 T-포즈 몸에 허리선 기준으로 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
     ),
@@ -215,8 +225,8 @@ PRESETS: dict[str, dict[str, Any]] = {
         "shorts",
         source={"raw": "shorts-bang", "pick": "root.8", "clean": "keep"},
         pose="t",
-        align="icp",
-        icp={"anchor": "top", "landmark": "waist", "scales": [0.56, 0.60, 0.64, 0.68, 0.72]},
+        align="anchor",
+        anchor={"landmark": "waist", "offset": 0.056, "length_m": 0.433},
         decimate=4000,
         d_max=0.050,
         changes="반바지만 요청했지만 마네킹 몸이 함께 나온 생성물을 BANG으로 분리한 반바지 파츠를 베이스 T-포즈 몸에 허리선 기준으로 맞춰 리타깃, 웹툰풍 스무딩, 4,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
@@ -225,7 +235,8 @@ PRESETS: dict[str, dict[str, Any]] = {
         "pleated-skirt",
         source={"raw": "g1-bang", "pick": "root.2", "clean": "keep"},
         pose="t",
-        align="frame",
+        align="anchor",
+        anchor={"landmark": "waist", "offset": 0.092, "length_m": 0.33},
         decimate=8000,
         stylize=1,
         d_max=0.30,
@@ -236,7 +247,8 @@ PRESETS: dict[str, dict[str, Any]] = {
         "long-skirt",
         source={"raw": "g3-bang", "pick": "root.11", "clean": "keep"},
         pose="t",
-        align="frame",
+        align="anchor",
+        anchor={"landmark": "waist", "offset": -0.015, "length_m": 0.74},
         decimate=8000,
         stylize=4,
         d_max=0.30,
@@ -262,23 +274,32 @@ PRESETS: dict[str, dict[str, Any]] = {
     # ---------------------------------------------------------------- 헤어
     "hair/soft-bob": _hair(
         "soft-bob",
-        source={"raw": "hair-bang", "pick": "root.2", "clean": "keep"},
-        bang_target_y=1.578,
-        changes="보브 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(닫힌 셸)를 베이스 머리 너비에 맞춰 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+        source={"raw": "hair-bob2-bang", "pick": "root.4", "clean": "keep", "ref": "root.2"},
+        align="head_ref",
+        lods=(3500, 1900, 1000),
+        bang_target_y=1.574,
+        uv="strands",
+        changes="보브 헤어 흉상 생성물(앞머리를 눈썹 위로 요청해 재생성)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,500/1,900/1,000 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
     ),
     "hair/hime-cut": _hair(
         "hime-cut",
-        source={"raw": "g1-bang", "pick": "root.3", "clean": "hair-dark"},
-        align="frame",
+        source={"raw": "hair-hime2-bang", "pick": "root.4", "clean": "keep", "ref": "root.5"},
+        align="head_ref",
+        ref_top_extra=0.40,
+        lods=(4200, 2200, 1200),
         bang_target_y=1.574,
-        changes="교복 여학생 전신 생성물을 BANG으로 분리한 헤어 파츠(블런트 뱅·어깨 아래 직모)에서 밝은 피부·칼라 조각을 지우고 베이스 머리에 맞춰 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+        bang_half_width=0.05,
+        uv="strands",
+        changes="히메컷 헤어 흉상 생성물(블런트 뱅·어깨 아래 직모)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시(두피가 헤어에 포함되어 헤어라인에서 잘림)의 폭에 맞추고 정수리는 폭의 0.4배 위로 추정해 베이스 머리로 리타깃, LOD 3단(4,200/2,200/1,200 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
     ),
     "hair/short-layered": _hair(
         "short-layered",
-        source={"raw": "g6-bang", "pick": "root.6", "clean": "hair-dark"},
-        align="frame",
-        lods=(5000, 2800, 1500),
-        changes="스마트 캐주얼 남성 전신 생성물을 BANG으로 분리한 숏 레이어드 헤어 파츠에서 밝은 피부 조각을 지우고 베이스 머리에 맞춰 리타깃, LOD 3단(5,000/2,800/1,500 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+        source={"raw": "hair-short2-bang", "pick": "root.3", "clean": "keep", "ref": "root.2"},
+        align="head_ref",
+        lods=(4000, 2100, 1100),
+        bang_target_y=1.572,
+        uv="strands",
+        changes="숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(4,000/2,100/1,100 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
     ),
     "hair/wolf-layered": _hair(
         "wolf-layered",

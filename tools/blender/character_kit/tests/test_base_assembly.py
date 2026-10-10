@@ -236,5 +236,17 @@ class FollowAndSeamTest(unittest.TestCase):
         self.assertAlmostEqual(ba.seam_mismatch(first, first_targets, second, second_targets)["maxDelta"], 0.05, places=6)
 
 
+class VertexRegionTriangleTest(unittest.TestCase):
+    def test_every_triangle_of_a_region_range_keeps_one_vertex_of_that_region(self) -> None:
+        # 한 쿼드(영역 1)의 모서리 하나만 영역 1이면 대각선이 그 모서리를 안 지나는 삼각형이 영역 정점을 못 갖는다 → 삼각형 단위로 고친다
+        quads = np.array([[0, 1, 2, 3], [1, 4, 5, 2], [4, 6, 7, 5]])
+        face_region = np.array([1, 0, 0])
+        positions = np.array([[0, 0, 0], [1, 0, 0], [1.2, 1, 0], [0, 1.4, 0], [2, 0, 0], [2, 1, 0], [3, 0, 0], [3, 1, 0]], dtype=np.float64)
+        result = ba.vertex_regions(quads, face_region, len(positions), 2, positions=positions)
+        triangles = ba.quads_to_triangles(positions, quads)
+        triangle_region = np.repeat(face_region, 2)
+        self.assertTrue((result[triangles] == triangle_region[:, None]).any(axis=1).all())
+
+
 if __name__ == "__main__":
     unittest.main()

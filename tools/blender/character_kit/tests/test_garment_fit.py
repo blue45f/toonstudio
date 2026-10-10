@@ -13,7 +13,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from character_kit import garment_fit as gf  # noqa: E402
-from character_kit.garment_texture import TextureStyle, luminance, rasterize_uv_mask, relative_color_texture  # noqa: E402
+from character_kit.garment_texture import TextureStyle, luminance, rasterize_uv_mask, relative_color_texture, strand_texture  # noqa: E402
 from character_kit.retarget_garment import fade_small, merge_skin_joints  # noqa: E402
 from character_kit.surface import Surface  # noqa: E402
 
@@ -243,7 +243,7 @@ class SleeveAlignTests(unittest.TestCase):
 
     def test_sleeve_is_rotated_onto_the_arm_axis_around_the_shoulder(self):
         points, normals = angled_tube(self.own_axis)
-        moved, report = gf.align_sleeves_to_arms(points, normals, self.joint_positions, self.chains)
+        moved, membership, report = gf.align_sleeves_to_arms(points, normals, self.joint_positions, self.chains)
         self.assertIsNotNone(report["sides"][0]["cuff"])
         self.assertAlmostEqual(report["sides"][0]["angleDeg"], 15.0, delta=0.5)
         far = np.flatnonzero(np.linalg.norm(points, axis=1) > 0.55)
@@ -262,16 +262,16 @@ class SleeveAlignTests(unittest.TestCase):
         wall_normals = np.tile(np.array([[1.0, 0.0, 0.0]]), (len(wall), 1))
         all_points = np.concatenate([points, wall])
         all_normals = np.concatenate([normals, wall_normals])
-        moved, _ = gf.align_sleeves_to_arms(all_points, all_normals, self.joint_positions, self.chains)
+        moved, membership, _ = gf.align_sleeves_to_arms(all_points, all_normals, self.joint_positions, self.chains)
         np.testing.assert_allclose(moved[len(points) :], wall, atol=1e-6)
 
     def test_short_sleeve_and_already_aligned_sleeve_are_left_alone(self):
         short, short_normals = angled_tube(self.own_axis, length=0.2)
-        moved, report = gf.align_sleeves_to_arms(short, short_normals, self.joint_positions, self.chains)
+        moved, membership, report = gf.align_sleeves_to_arms(short, short_normals, self.joint_positions, self.chains)
         self.assertIsNone(report["sides"][0]["cuff"])
         np.testing.assert_array_equal(moved, short)
         aligned, aligned_normals = angled_tube(self.base_axis)
-        moved, report = gf.align_sleeves_to_arms(aligned, aligned_normals, self.joint_positions, self.chains)
+        moved, membership, report = gf.align_sleeves_to_arms(aligned, aligned_normals, self.joint_positions, self.chains)
         self.assertIn("정렬", report["sides"][0]["reason"])
         np.testing.assert_array_equal(moved, aligned)
 
@@ -342,6 +342,67 @@ class TextureTests(unittest.TestCase):
         self.assertGreaterEqual(stats["minLuminance"], 0.54)
         self.assertGreaterEqual(stats["meanLuminance"], 0.75)
         self.assertGreater(len(data), 100)
+
+
+class HairFitHelpersTest(unittest.TestCase):
+    def _hair_points(self) -> np.ndarray:
+        rng = np.random.default_rng(3)
+        crown = np.stack([rng.uniform(-0.08, 0.08, 400), rng.uniform(1.59, 1.64, 400), rng.uniform(0.0, 0.1, 400)], axis=1)
+        fringe = np.stack([rng.uniform(-0.04, 0.04, 80), rng.uniform(1.50, 1.58, 80), rng.uniform(0.09, 0.12, 80)], axis=1)
+        side_lock = np.stack([rng.uniform(0.085, 0.10, 60), rng.uniform(1.40, 1.55, 60), rng.uniform(0.08, 0.11, 60)], axis=1)
+        chest_lock = np.stack([rng.uniform(-0.03, 0.03, 60), rng.uniform(1.30, 1.38, 60), rng.uniform(0.09, 0.12, 60)], axis=1)
+        return np.concatenate([crown, fringe, side_lock, chest_lock])
+
+    def test_raise_bangs_ignores_long_strands_below_the_face_window_and_keeps_side_locks_longer(self) -> None:
+        points = self._hair_points()
+        lifted, report = gf.raise_bangs(points, 1.574, face_z=0.05, center_half_width=0.05)
+        self.assertTrue(report["raised"])
+        # 가슴 앞으로 흘러내린 가닥(1.30~1.38)은 앞머리 후보가 아니므로 앞머리 길이 비율이 80 %로 줄지 않는다
+        self.assertGreater(report["lengthScale"], 0.3)
+        fringe = slice(400, 480)
+        side = slice(480, 540)
+        self.assertGreaterEqual(float(lifted[fringe, 1].min()), 1.57 - 1e-6)  # 앞머리 아랫선이 목표 높이까지 올라간다
+        side_drop = float(np.mean(points[side, 1] - lifted[side, 1]))
+        fringe_rise = float(np.mean(lifted[fringe, 1] - points[fringe, 1]))
+        self.assertLess(abs(side_drop), fringe_rise)  # 옆머리는 앞머리보다 덜 줄어든다(측면 감쇠)
+
+    def test_raise_bangs_leaves_hair_alone_when_the_fringe_is_already_high(self) -> None:
+        points = self._hair_points()
+        points[400:480, 1] += 0.1
+        lifted, report = gf.raise_bangs(points, 1.574, face_z=0.05)
+        self.assertFalse(report["raised"])
+        self.assertTrue(np.array_equal(lifted, points))
+
+    def test_strand_texture_is_a_bright_gray_jpeg_with_vertical_streaks(self) -> None:
+        uv = np.array([[[0.02, 0.02], [0.98, 0.02], [0.02, 0.98]], [[0.98, 0.02], [0.98, 0.98], [0.02, 0.98]]])
+        data, stats = strand_texture(uv, TextureStyle(size=256, strength=0.45, gamma=0.65))
+        image = Image.open(io.BytesIO(data))
+        self.assertEqual(image.format, "JPEG")
+        self.assertEqual(image.size, (256, 256))
+        array = np.asarray(image.convert("L"), dtype=np.float32) / 255.0
+        self.assertGreaterEqual(float(array.mean()), 0.75)
+        self.assertEqual(stats["procedural"], "strands")
+        # 세로 줄무늬: 열 방향 분산이 행 방향 분산보다 크다
+        self.assertGreater(float(array.mean(axis=0).std()), float(array.mean(axis=1).std()))
+
+
+class ArapDetachedComponentTest(unittest.TestCase):
+    def test_free_component_without_fixed_neighbors_does_not_make_the_system_singular(self) -> None:
+        from character_kit.arap import arap_deform
+
+        # 삼각형 두 덩어리: 0-1-2는 자유이고 모두 고정과 이어지지 않는다, 3-4-5는 고정이다
+        rest = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [5, 0, 0], [6, 0, 0], [5, 1, 0]], dtype=np.float64)
+        triangles = np.array([[0, 1, 2], [3, 4, 5]])
+        edges = {(a, b) for tri in triangles for a, b in ((tri[0], tri[1]), (tri[1], tri[2]), (tri[2], tri[0]))}
+        neighbors: list[list[int]] = [[] for _ in range(6)]
+        for a, b in edges:
+            neighbors[a].append(b)
+            neighbors[b].append(a)
+        ptr = np.concatenate([[0], np.cumsum([len(n) for n in neighbors])]).astype(np.int64)
+        idx = np.array([j for n in neighbors for j in n], dtype=np.int64)
+        initial = rest + np.array([0.0, 0.2, 0.0])
+        out = arap_deform(rest, initial, np.array([0, 1, 2]), ptr, idx, iterations=4)
+        self.assertTrue(np.allclose(out, initial))  # 풀 수 없는 덩어리는 초기값(스키닝 결과)을 그대로 쓴다
 
 
 if __name__ == "__main__":

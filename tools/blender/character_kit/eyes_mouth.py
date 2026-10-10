@@ -284,7 +284,8 @@ def lash_ribbons(ctx: ba.Context, head: ba.SplitMesh, attach: HeadAttach, sample
         for r in range(rows):
             t = r / (rows - 1)
             grid[r] = roots + direction * (length * t)[:, None] + up[None, :] * (0.30 * length * t * t)[:, None]
-            uv[r, :, 0] = parameter if side == "L" else 1.0 - parameter
+            # 아이라인 띠는 두 눈 모두 u가 안쪽→바깥으로 커져야 날개가 바깥 눈꼬리에 생긴다(가닥 텍스처는 좌우 거울상으로 쓴다).
+            uv[r, :, 0] = parameter if (side == "L" or getattr(ctx, "lash_style", "strands") == "liner") else 1.0 - parameter
             uv[r, :, 1] = t
         positions = grid.reshape(-1, 3)
         triangles = grid_triangles(rows, samples, flip=False)

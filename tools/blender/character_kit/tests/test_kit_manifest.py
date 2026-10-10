@@ -216,6 +216,37 @@ class ManifestBuildTest(unittest.TestCase):
         self.assertEqual(by_id["bottom/jeans"]["unavailable"]["female"], km.REQUIRED_REASON_KO)  # 필수 파츠는 필수라는 사유
         self.assertEqual(by_id["hair/short-layered"]["unavailable"]["female"], km.OPTIONAL_REASON_KO)
 
+    def test_two_bases_get_variants_per_base_and_korean_reasons_for_the_missing_one(self) -> None:
+        kit = self.make_kit("two-bases", {"top/tee": self.TOP, "irises/round-large": self.IRIS})
+        (kit / "bases" / "male.glb").write_bytes(synthetic_glb(self.contract, BASE_MESHES))
+        male_tee = kit / "parts" / "male" / "top" / "tee.glb"
+        male_tee.parent.mkdir(parents=True, exist_ok=True)
+        male_tee.write_bytes(synthetic_glb(self.contract, self.TOP))
+        meta = {"heightM": 1.64, "bodyRegions": [{"id": "torso", "mesh": "TS_Body", "indexStart": 0, "indexCount": 3}], "jointOffsets": {}}
+        parts = km.discover_parts(kit, ["female", "male"], {})
+        with mock.patch.object(km, "derive_capabilities", return_value={"female": {"stub": True}, "male": {"stub": True}}):
+            manifest = km.build_manifest(
+                kit_dir=kit,
+                contract=self.contract,
+                base_id="female",
+                base_path="bases/female.glb",
+                base_meta=meta,
+                parts=parts,
+                repo_root=REPO_ROOT,
+                generator_command=["test"],
+                blender_version="test",
+                extra_bases=[{"base_id": "male", "base_path": "bases/male.glb", "base_meta": meta}],
+            )
+        self.assertEqual(sorted(manifest["bases"]), ["female", "male"])
+        by_id = {part["id"]: part for part in manifest["parts"]}
+        self.assertEqual(sorted(by_id["top/tee"]["variants"]), ["female", "male"])
+        self.assertEqual(by_id["top/tee"]["variants"]["male"]["file"]["path"], "parts/male/top/tee.glb")
+        self.assertEqual(sorted(by_id["irises/round-large"]["variants"]), ["female"])
+        self.assertRegex(by_id["irises/round-large"]["unavailable"]["male"], r"[가-힣]")
+        for preset_id, part in by_id.items():  # 어느 베이스에도 없는 프리셋은 두 베이스 모두 한글 사유가 있다
+            if not part["variants"]:
+                self.assertEqual(sorted(part["unavailable"]), ["female", "male"], preset_id)
+
     def test_materials_follow_the_role_tint_rules_and_are_registered_once(self) -> None:
         kit = self.make_kit("materials", {"top/tee": self.TOP, "irises/round-large": self.IRIS})
         materials = self.build(kit)["materials"]

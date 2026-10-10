@@ -24,10 +24,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from character_kit import garment_fit as gf  # noqa: E402
 from character_kit.base_assembly import BaseModel, QuantizedGlbWriter, ensure_min_delta, follow_deviation, load_base_model  # noqa: E402
 from character_kit.garment_presets import PRESETS, morph_names  # noqa: E402
-from character_kit.garment_texture import TextureStyle, relative_color_texture  # noqa: E402
+from character_kit.garment_texture import TextureStyle, relative_color_texture, strand_texture  # noqa: E402
 from character_kit.glbwriter import GlbWriter, MorphTarget, Primitive  # noqa: E402
 from character_kit.rig import build_rig  # noqa: E402
-from character_kit.skin import convert_to_t_pose, dual_quaternion_skin, vertex_adjacency  # noqa: E402
+from character_kit.skin import convert_to_t_pose, vertex_adjacency  # noqa: E402
 from character_kit.gltf_read import StaticMesh, read_static_mesh  # noqa: E402
 from character_kit.surface import Surface, vertex_normals  # noqa: E402
 
@@ -145,7 +145,20 @@ def align_pieces(spec: dict, pieces: list[np.ndarray], bs: BodySurface, surface:
             anchor_source = np.array([0.5 * (pts[:, 0].min() + pts[:, 0].max()), pts[:, 1].max(), 0.5 * (pts[:, 2].min() + pts[:, 2].max())])
             torso = region_vertices(bs, ["torso"])
             target = np.array([0.0, marks[spec["icp"]["landmark"]], float(torso[:, 2].mean())])
-            scale, translation, cost = gf.fit_similarity(pts, surface, spec["icp"]["scales"], anchor_source, target)
+            # 후보 구간 밖으로 배율이 달아나거나 한쪽 다리로 쏠리는 지역 최솟값을 막는다(남성 베이스에서 슬랙스가 한쪽 다리에 걸렸다).
+            scales = spec["icp"]["scales"]
+            scale, translation, cost = gf.fit_similarity(
+                pts,
+                surface,
+                scales,
+                anchor_source,
+                target,
+                scale_limit=(min(scales) * spec["icp"].get("scale_slack", 0.88), max(scales) * 1.08),
+                shift_limit=spec["icp"].get("shift", 0.06),
+            )
+            # 의상은 좌우 대칭이므로 몸 중심(x=0)에 앞/뒤·높이만 맞추고 좌우로는 옮기지 않는다(좌우 쏠림은 한쪽 다리만 덮는 지역 최솟값이었다).
+            translation = np.array(translation, dtype=np.float64)
+            translation[0] = target[0] - float(scale) * anchor_source[0]
             out.append({"scale": float(scale), "translation": translation, "cost": cost})
     elif align == "frame":
         # 전신 한 벌에서 BANG으로 분리한 파츠: 파츠들이 같은 좌표계를 공유하므로 전신 경계 상자를 베이스 키·발바닥·중심에 대응시켜 초기 정렬한 뒤,
@@ -181,6 +194,8 @@ def align_pieces(spec: dict, pieces: list[np.ndarray], bs: BodySurface, surface:
                 shift_limit=region.get("shift", FRAME_SHIFT_LIMIT_M),
                 target_distance=region.get("standoff"),
             )
+            translation = np.array(translation, dtype=np.float64)
+            translation[0] = target_anchor[0] - float(scale) * source_anchor[0]  # 좌우 대칭: 몸 중심에 맞춘다
             out.append({"scale": float(scale), "translation": translation, "cost": cost, "frame_scale": s0, "fit_points": int(len(fit_points))})
     elif align == "head_ref":
         # 같은 좌표계의 머리(살색) 메시 치수로 헤어를 베이스 머리에 맞춘다: 두개골 폭이 베이스 머리 폭이 되는 배율, 정수리·좌우·앞뒤 중심 일치.
@@ -189,10 +204,25 @@ def align_pieces(spec: dict, pieces: list[np.ndarray], bs: BodySurface, surface:
         head = region_vertices(bs, ["head"])
         head_width = float(head[:, 0].max() - head[:, 0].min())
         scale = head_width / float(ref["width"])
-        source = np.array([float(ref["centerX"]), float(ref["top"]), 0.5 * (float(ref["minZ"]) + float(ref["maxZ"]))])
+        # 머리 메시가 헤어라인에서 잘린 원본(히메컷처럼 두피까지 헤어 파츠에 들어간 경우)은 정수리를 `ref_top_extra`(두개골 폭의 배수)만큼 올려 잡는다.
+        top = float(ref["top"]) + float(spec.get("ref_top_extra", 0.0)) * float(ref["width"])
+        source = np.array([float(ref["centerX"]), top, 0.5 * (float(ref["minZ"]) + float(ref["maxZ"]))])
         goal = np.array([0.0, float(head[:, 1].max()), 0.5 * (float(head[:, 2].min()) + float(head[:, 2].max()))])
         for _ in pieces:
             out.append({"scale": float(scale), "translation": goal - scale * source, "cost": None, "ref_scale": float(scale)})
+    elif align == "anchor":
+        # 허리에 걸치는 치마류: 의상 맨 위 띠(허리선)를 몸의 기준 높이에 걸고 길이를 `anchor.length_m`에 맞춘다(균일 배율). 전신 비율이 베이스와 달라
+        # `frame`으로는 허리·밑단 높이가 어긋나고(롱스커트가 허벅지까지 내려왔다), 영역 ICP는 허리띠를 더 가는 곳으로 끌어내린다.
+        anchor = spec["anchor"]
+        pelvis = region_vertices(bs, ["pelvis"])
+        goal_y = marks[anchor["landmark"]] + float(anchor.get("offset", 0.0))
+        for pts in pieces:
+            height = float(pts[:, 1].max() - pts[:, 1].min())
+            scale = float(anchor["length_m"]) / height
+            band = pts[pts[:, 1] >= pts[:, 1].max() - 0.08 * height]
+            source = np.array([0.5 * (band[:, 0].min() + band[:, 0].max()), float(pts[:, 1].max()), 0.5 * (band[:, 2].min() + band[:, 2].max())])
+            goal = np.array([0.0, goal_y, float(pelvis[:, 2].mean()) + float(anchor.get("z_offset", 0.0))])
+            out.append({"scale": scale, "translation": goal - scale * source, "cost": None})
     elif align == "head_prop":
         # 머리에 얹는 소품(모자·헤드폰): 머리 너비 + 여유에 소품 너비를 맞추고, 정수리(+ 오프셋)에 소품 꼭대기를, 머리 상자 앞뒤 중심(+ 오프셋)에 맞춘다.
         head = region_vertices(bs, ["head"])
@@ -245,6 +275,17 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
     포즈가 안 맞는 몸에 맞추면 소매가 날개처럼 펼쳐진다.
     """
     pose = spec.get("pose", "t")
+    waist_y = landmarks(bs)["waist"]
+
+    def d_min_for(points: np.ndarray) -> float | np.ndarray:
+        """상의의 밑단은 하의 허리띠 바깥에 놓이도록 허리선 아래로 갈수록 몸에서 더 띄운다(`hem_standoff`). 둘 다 몸에서 8~30 mm라 겹치면 하의가 상의를 뚫는다."""
+        hem = spec.get("hem_standoff")
+        if not hem or spec["role"] != "top":
+            return spec["d_min"]
+        t = np.clip((waist_y + hem["above"] - points[:, 1]) / hem["blend"], 0.0, 1.0)
+        t = t * t * (3.0 - 2.0 * t)
+        return spec["d_min"] + t * (hem["d_min"] - spec["d_min"])
+
     fit_surface = surface_t if pose == "t" else surface
     body_fit_positions = bs.tpose if pose == "t" else bs.apose
 
@@ -272,12 +313,12 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
         keep = np.isin(edges[:, 0], vertices) & np.isin(edges[:, 1], vertices)
         sub_edges = index_map[edges[keep]]
         d_before, _, _ = gf.signed_distance(fitted, fit_surface)
-        out = gf.conform(fitted, sub_edges, open_edge[vertices], fit_surface, spec["d_min"], spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
+        out = gf.conform(fitted, sub_edges, open_edge[vertices], fit_surface, d_min_for(fitted), spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
         if stylize:
             # 스무딩 → 충돌 한 번 더(스무딩이 몸 안으로 밀 수 있다)
             piece_tris = index_map[canon_triangles[np.all(np.isin(canon_triangles, vertices), axis=1)]]
             out = gf.stylize_smooth(out, piece_tris, open_edge[vertices], stylize)
-            out = gf.conform(out, sub_edges, open_edge[vertices], fit_surface, spec["d_min"], 1.0e9, passes=1, smooth_iterations=2)
+            out = gf.conform(out, sub_edges, open_edge[vertices], fit_surface, d_min_for(out), 1.0e9, passes=1, smooth_iterations=2)
         d_after, _, _ = gf.signed_distance(out, fit_surface)
         conformed[vertices] = out
         piece_reports.append(
@@ -295,11 +336,12 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
     if spec["role"] == "hair" and spec.get("bang_target_y") is not None:
         # 앞머리가 눈을 가리면 눈썹 위로 올리고, 줄어든 만큼 머리에 가까워졌을 수 있어 충돌을 다시 푼다.
         head_front = float(region_vertices(bs, ["head"])[:, 2].mean())
-        lifted, bang_report = gf.raise_bangs(conformed, float(spec["bang_target_y"]), face_z=head_front)
+        lifted, bang_report = gf.raise_bangs(conformed, float(spec["bang_target_y"]), face_z=head_front, center_half_width=float(spec.get("bang_half_width", 0.07)))
         if bang_report["raised"]:
-            conformed = gf.conform(lifted, edges, open_edge, fit_surface, spec["d_min"], spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
+            conformed = gf.conform(lifted, edges, open_edge, fit_surface, d_min_for(lifted), spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
     canon_normals = gf.orient_outward(conformed, vertex_normals(conformed, canon_triangles), fit_surface)
     sleeve_report = None
+    sleeve_membership = None
     if pose == "a" and spec["role"] == "top" and spec.get("align_sleeves", True):
         # 헐렁한 소매는 몸의 팔과 각도가 달라 팔을 올릴 때 날개처럼 늘어진다 → 소매를 어깨 둘레로 팔 방향에 맞추고 다시 충돌을 푼다.
         chains = [{"arm": rig.index(f"mixamorig:{side}Arm"), "forearm": rig.index(f"mixamorig:{side}ForeArm"), "hand": rig.index(f"mixamorig:{side}Hand")} for side in ("Left", "Right")]
@@ -308,23 +350,44 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
         profile_bins = np.clip(np.searchsorted(profile_edges, torso[:, 1]) - 1, 0, len(profile_edges) - 2)
         half_width = np.zeros(len(profile_edges) - 1)
         np.maximum.at(half_width, profile_bins, np.abs(torso[:, 0]))
-        aligned, sleeve_report = gf.align_sleeves_to_arms(conformed, canon_normals, rig.a_pose, chains, torso_profile=(profile_edges, half_width))
+        aligned, sleeve_membership, sleeve_report = gf.align_sleeves_to_arms(conformed, canon_normals, rig.a_pose, chains, torso_profile=(profile_edges, half_width))
         if not np.array_equal(aligned, conformed):
-            conformed = gf.conform(aligned, edges, open_edge, fit_surface, spec["d_min"], spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
+            conformed = gf.conform(aligned, edges, open_edge, fit_surface, d_min_for(aligned), spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
             canon_normals = gf.orient_outward(conformed, vertex_normals(conformed, canon_triangles), fit_surface)
     body_normals_fit = vertex_normals(body_fit_positions, bs.triangles)
     # 스킨: 법선이 호환되는 가까운 몸 정점들의 웨이트(소매 안쪽이 몸통 옆면이 아니라 팔 안쪽 면의 웨이트를 받는다).
     joints, weights, compat_ratio = gf.compatible_vertex_skin(conformed, canon_normals, body_fit_positions, body_normals_fit, bs.joints, bs.weights)
+    if sleeve_membership is not None and float(sleeve_membership.max()) > 0.5:
+        arm_names = [f"mixamorig:{side}{part}" for side in ("Left", "Right") for part in ("Shoulder", "Arm", "ForeArm", "Hand")]
+        arm_joint_ids = [rig.index(name) for name in arm_names] + [i for i, name in enumerate(rig.names) if name.startswith(("mixamorig:LeftHand", "mixamorig:RightHand")) and name.rsplit(":", 1)[1] not in ("LeftHand", "RightHand")]
+        side_for_arm = "Left" if float(np.mean(conformed[sleeve_membership > 0.5][:, 0])) > 0 else "Right"
+        joints, weights, weight_report = gf.constrain_arm_weights(
+            conformed,
+            joints,
+            weights,
+            sleeve_membership,
+            edges,
+            arm_joint_ids,
+            [rig.a_pose[rig.index(f"mixamorig:{side}Arm")] for side in ("Left", "Right")],
+            fallback_torso=rig.index("mixamorig:Spine1"),
+            fallback_arm=(rig.index(f"mixamorig:{side_for_arm}Arm"), rig.index(f"mixamorig:{side_for_arm}ForeArm"), float(rig.a_pose[rig.index(f"mixamorig:{side_for_arm}ForeArm")][1])),
+        )
+        sleeve_report["weights"] = weight_report
     torn_faces = 0
+    debug_torn = None
+    mesh_positions_full = mesh.positions
     if pose == "t":
         rest_canon = conformed
     else:
         # A→T: 베이스와 같은 변환을 적용한다. 몸 표면에 삼각형 프레임으로 직접 결합하면 겨드랑이에서 소매 아랫면과 몸통 옆판 사이 삼각형이
         # 납작하게 늘어난 "날개"가 생기고, 본 선분 거리 웨이트는 몸통 옆구리가 팔 영향을 받아 풍선처럼 부푼다.
-        # 소매가 밑단에 닿아 이어진 생성물은 팔을 올리면 그 이음 삼각형이 긴 띠가 되므로, DQS로 먼저 옮겨 보고 크게 늘어난 삼각형은 뗀다.
-        predicted = dual_quaternion_skin(conformed, joints, weights, rig.rotation, rig.translation)
-        torn = gf.stretched_faces(conformed, predicted, canon_triangles, ratio=TEAR_RATIO, min_length=TEAR_MIN_LENGTH_M)
+        # 소매가 밑단에 닿아 이어진 생성물은 팔을 올리면 그 이음 삼각형이 긴 띠가 되므로, 변환한 결과에서 크게 늘어난 삼각형을 뗀다.
+        # 어깨 전이 영역은 ARAP가 변을 보존하므로(변환 뒤에 재야 겨드랑이·견갑골 주변의 정상적인 늘어남이 걸리지 않는다) 변환을 먼저 끝낸다.
+        ptr, adjacency = vertex_adjacency(canon_triangles, len(conformed))
+        moved = convert_to_t_pose(conformed, joints, weights, rig, ptr, adjacency)
+        torn = gf.stretched_faces(conformed, moved, canon_triangles, ratio=TEAR_RATIO, min_length=TEAR_MIN_LENGTH_M)
         torn_faces = int(torn.sum())
+        full_canon_index, full_triangles = canon_index, mesh.triangles  # 육안 확인용(떼어 낸 삼각형을 붉게 그린다)
         if torn_faces:
             keep = ~torn
             keep[np.flatnonzero(keep)[gf.spike_faces(canon_triangles[keep])]] = False  # 떼어 낸 자리에 남은 가는 가시(한 변으로만 이어진 삼각형)를 깎는다
@@ -346,9 +409,8 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
             edges = gf.undirected_edges(canon_triangles)
             open_edge = gf.boundary_vertex_mask(len(conformed), canon_triangles)
             torn_faces = int((~keep).sum())
-        ptr, adjacency = vertex_adjacency(canon_triangles, len(conformed))
-        moved = convert_to_t_pose(conformed, joints, weights, rig, ptr, adjacency)
-        rest_canon = gf.conform(moved, edges, open_edge, surface_t, spec["d_min"], 1.0e9, passes=2, smooth_iterations=4)
+            debug_torn = {"triangles": full_triangles[~keep], "canon_index": full_canon_index, "positions": mesh_positions_full}
+        rest_canon = gf.conform(moved, edges, open_edge, surface_t, d_min_for(moved), 1.0e9, passes=2, smooth_iterations=4)
 
     # morph 델타: T-포즈 몸에 법선 호환으로 결합해 꼭짓점 델타를 무게중심으로 보간한다. 법선 회전까지 평가하면 오프셋(8~30 mm)×회전각만큼
     # 몸 정점 델타와 어긋나 검증기 V9(몸 최근접 정점 델타와의 차) 오차가 커지므로, morph(작은 변형)에는 평행이동 성분만 쓴다.
@@ -388,6 +450,7 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
         "sleeve_report": sleeve_report,
         "bang_report": bang_report,
         "torn_faces": torn_faces,
+        "debug_torn": debug_torn,
     }
 
 
@@ -457,6 +520,30 @@ def covered_regions(rest: np.ndarray, triangles: np.ndarray, base: BaseModel) ->
     return fractions
 
 
+def weld_for_strands(result: dict) -> dict:
+    """UV 섬마다 쪼개진 정점을 위치(대표 정점) 기준으로 합친다. 헤어의 정점 수가 삼각형 수의 약 2배에서 약 1배로 준다."""
+    mesh: StaticMesh = result["mesh"]
+    triangles = result["canon_index"][mesh.triangles]
+    keep = (triangles[:, 0] != triangles[:, 1]) & (triangles[:, 1] != triangles[:, 2]) & (triangles[:, 0] != triangles[:, 2])
+    triangles = triangles[keep]
+    used = np.unique(triangles)
+    remap = np.full(result["canon_count"], -1, dtype=np.int64)
+    remap[used] = np.arange(len(used))
+    welded = replace(mesh, positions=result["rest"][used], normals=None, uvs=np.zeros((len(used), 2)), triangles=remap[triangles])
+    out = dict(result)
+    out.update(mesh=welded, canon_index=used)
+    return out
+
+
+def cylindrical_uvs(positions: np.ndarray, low: np.ndarray, high: np.ndarray) -> np.ndarray:
+    """머리 중심축(y) 둘레 각도를 u, 높이를 v로 하는 원통 UV. 이음매(등 중앙)를 가로지르는 삼각형은 가닥 노이즈를 훑고 지나가므로 눈에 띄지 않는다."""
+    center_x, center_z = 0.5 * (low[0] + high[0]), 0.5 * (low[2] + high[2])
+    angle = np.arctan2(positions[:, 0] - center_x, positions[:, 2] - center_z)
+    u = angle / (2.0 * np.pi) + 0.5
+    v = (high[1] - positions[:, 1]) / max(float(high[1] - low[1]), 1e-6)
+    return np.stack([u, v], axis=1)
+
+
 def write_part_glb(spec: dict, results: list[dict], base: BaseModel, texture_jpeg: bytes, path: Path, names: list[str]) -> int:
     # morph 델타는 정규화 SHORT(KHR_mesh_quantization, 해상도 0.03 mm)로 쓴다 — 파츠 한도 1.5 MiB를 위해서다(float32 조밀 델타가 파일의 절반이었다).
     writer = QuantizedGlbWriter(generator="toonstudio character_kit retarget_garment")
@@ -501,11 +588,17 @@ def write_debug_apose(path: Path, results: list[dict], bs: BodySurface) -> None:
     skin = writer.add_material("body", base_color_factor=(0.86, 0.66, 0.56, 1.0))
     cloth = writer.add_material("garment", base_color_factor=(0.55, 0.62, 0.78, 1.0), double_sided=True)
     writer.add_mesh_node("BodyA", [Primitive(positions=bs.apose.astype(np.float32), indices=bs.triangles, normals=vertex_normals(bs.apose, bs.triangles).astype(np.float32), material=skin)], skinned=False)
+    torn_material = writer.add_material("torn", base_color_factor=(0.9, 0.1, 0.1, 1.0), double_sided=True)
     for index, result in enumerate(results):
         mesh: StaticMesh = result["mesh"]
         positions = result["apose"][result["canon_index"]]
         normals = gf.canonical_vertex_normals(result["canon_index"], result["canon_count"], positions, mesh.triangles)
         writer.add_mesh_node(f"Garment{index}", [Primitive(positions=positions.astype(np.float32), indices=mesh.triangles, normals=normals.astype(np.float32), material=cloth)], skinned=False)
+        torn = result.get("debug_torn")
+        if torn is not None and len(torn["triangles"]):
+            torn_positions = result["apose"][torn["canon_index"]]
+            torn_normals = gf.canonical_vertex_normals(torn["canon_index"], result["canon_count"], torn_positions, torn["triangles"])
+            writer.add_mesh_node(f"Torn{index}", [Primitive(positions=torn_positions.astype(np.float32), indices=torn["triangles"], normals=torn_normals.astype(np.float32), material=torn_material)], skinned=False)
     writer.write(str(path))
 
 
@@ -559,12 +652,23 @@ def main() -> None:
         transforms = result["transforms"]  # LOD들은 같은 정렬을 쓴다
         results.append(result)
 
-    # 텍스처: 첫 LOD의 원본 이미지를 쓰고, 모든 LOD의 UV가 쓰는 영역을 합쳐 재매긴다.
-    uv_triangles = np.concatenate([m.uvs[m.triangles] for m in meshes])
-    image_bytes = meshes[0].image
-    if image_bytes is None:
-        raise SystemExit("기본색 텍스처가 없다")
-    texture_jpeg, texture_stats = relative_color_texture(image_bytes, uv_triangles, TextureStyle(**spec["texture"]))
+    if spec.get("uv") == "strands":
+        # 헤어: 정점을 합치고 원통 UV + 가닥 줄무늬 텍스처를 새로 만든다(원본 UV 섬이 잘게 쪼개져 정점이 두 배로 늘고 파츠 한도를 넘는다).
+        results = [weld_for_strands(result) for result in results]
+        rest_first = results[0]["rest"][results[0]["canon_index"]]
+        low, high = rest_first.min(axis=0), rest_first.max(axis=0)
+        for result in results:
+            positions_lod = result["rest"][result["canon_index"]]
+            result["mesh"] = replace(result["mesh"], uvs=cylindrical_uvs(positions_lod, low, high))
+        uv_triangles = np.concatenate([result["mesh"].uvs[result["mesh"].triangles] for result in results])
+        texture_jpeg, texture_stats = strand_texture(uv_triangles, TextureStyle(**spec["texture"]))
+    else:
+        # 텍스처: 첫 LOD의 원본 이미지를 쓰고, 모든 LOD의 UV가 쓰는 영역을 합쳐 재매긴다.
+        uv_triangles = np.concatenate([m.uvs[m.triangles] for m in meshes])
+        image_bytes = meshes[0].image
+        if image_bytes is None:
+            raise SystemExit("기본색 텍스처가 없다")
+        texture_jpeg, texture_stats = relative_color_texture(image_bytes, uv_triangles, TextureStyle(**spec["texture"]))
 
     out_path = kit_dir / "parts" / base_id / spec["slot"] / f"{spec['name']}.glb"
     size = write_part_glb(spec, results, base, texture_jpeg, out_path, names)
@@ -591,9 +695,15 @@ def main() -> None:
 
     parts_json = (flag_values(args, "--parts-json") or [None])[0]
     if parts_json:
-        registry = json.loads(Path(parts_json).read_text(encoding="utf-8")) if Path(parts_json).exists() else {}
-        registry.setdefault(preset_id, {})[base_id] = {"hides": hides}
-        Path(parts_json).write_text(json.dumps(registry, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        # 일괄 빌드는 프리셋마다 별도 프로세스가 같은 JSON을 읽고 쓰므로 잠금 없이는 항목이 사라질 수 있다.
+        import fcntl
+
+        lock_path = Path(str(parts_json) + ".lock")
+        with lock_path.open("w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            registry = json.loads(Path(parts_json).read_text(encoding="utf-8")) if Path(parts_json).exists() else {}
+            registry.setdefault(preset_id, {})[base_id] = {"hides": hides}
+            Path(parts_json).write_text(json.dumps(registry, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     debug_path = (flag_values(args, "--debug-apose") or [None])[0]
     if debug_path:

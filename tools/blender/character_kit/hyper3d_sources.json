@@ -22,24 +22,34 @@
       "qualityOverride": 15000
     },
     "top/shirt": {
-      "generationId": "6ed2b9f1-c3ac-45ec-bb8c-2f98b3bd6f48",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/6ed2b9f1-c3ac-45ec-bb8c-2f98b3bd6f48",
+      "generationId": "387806f6-b060-4947-8522-3aaa2aaeabc4",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/387806f6-b060-4947-8522-3aaa2aaeabc4",
       "tier": "Gen-2.5-High",
-      "rawSha256": "bfd04cb268e4ed8f0d3a01e8996f7b96ec2ab90a0d52e8fad4890641c4c7a952",
-      "rawBytes": 10101744,
-      "intent": "셔츠 분리",
-      "changesKo": "전신(드레스셔츠 차림) 생성물을 BANG으로 분리한 셔츠 파츠를 베이스 A-포즈 몸에 맞춘 뒤 T-포즈로 변환, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
-      "parentGenerationId": "792ed91f-b173-4adc-af86-07abb11144f2"
+      "rawSha256": "7d55d5fd019f7b15c8032e0faec133a9650f6b03c826b8a1ef4e1211e907aae1",
+      "rawBytes": 8465576,
+      "intent": "셔츠 분리(g11)",
+      "changesKo": "베이스 T-포즈 몸에 프록시 긴팔 상의를 입힌 정면 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 긴팔 상의 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "0e0fd630-f766-40a8-8759-709abed84a7a"
+    },
+    "top/sailor": {
+      "generationId": "dfe24a30-2afc-49e9-a6de-07bc6f80e63f",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/dfe24a30-2afc-49e9-a6de-07bc6f80e63f",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "0749dff1e530ce7d00fb0bf04f5e877152bae178b0ae3ed502b4011403e4f49c",
+      "rawBytes": 9518140,
+      "intent": "세일러 분리(g11)",
+      "changesKo": "베이스 T-포즈 몸에 프록시 흰 짧은 상의(네이비 칼라·소매단 색 영역)를 입힌 정면 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 세일러 상의 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩(칼라 유지), 7,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크(네이비 칼라는 어두운 영역으로 남는다).",
+      "parentGenerationId": "8145720b-0c0e-415d-b940-f0dba1e1fdf2"
     },
     "top/blazer": {
-      "generationId": "f12ea410-75bf-4475-a213-198746431395",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/f12ea410-75bf-4475-a213-198746431395",
+      "generationId": "1a0f1434-8466-452c-ac67-8e0a28cd3ded",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/1a0f1434-8466-452c-ac67-8e0a28cd3ded",
       "tier": "Gen-2.5-High",
-      "rawSha256": "17b43e7a36c950a65ce3739b807dda77ad0ddfa91ef27b586f63e46278a24437",
-      "rawBytes": 10832888,
-      "intent": "교복 분리",
-      "changesKo": "교복 여학생 전신 생성물을 BANG으로 분리한 블레이저 파츠(소매 포함, 셔츠·리본 파편 제외)를 베이스 A-포즈 몸에 맞춘 뒤 T-포즈로 변환, 웹툰풍 스무딩(라펠 유지), 7,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
-      "parentGenerationId": "44533c2e-788e-4b41-ba29-4119e52f493c"
+      "rawSha256": "cf6502325015c80c99bf8413c5212a06548cd72c5dc18619ed0cfc11b7ce67e9",
+      "rawBytes": 8428140,
+      "intent": "블레이저 분리(g11)",
+      "changesKo": "베이스 T-포즈 몸에 프록시 네이비 상의(흰 V 영역)를 입힌 정면 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 상의 파츠와 안쪽 셔츠 V 조각을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 7,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "466c5cc5-c2c4-442a-9204-8c4ca40c0772"
     },
     "bottom/jeans": {
       "generationId": "cb5a2e39-ecf4-4f99-9380-89267264053b",
@@ -122,34 +132,34 @@
       "qualityOverride": 8000
     },
     "hair/soft-bob": {
-      "generationId": "81a86b78-5724-412e-8552-4a9a5faa2429",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/81a86b78-5724-412e-8552-4a9a5faa2429",
-      "tier": "Gen-2.5-Medium",
-      "rawSha256": "e51cbecd49990c4bc5a7facc22e4cc609bf36bc846df9a91b41e2d98a580fa80",
-      "rawBytes": 9063992,
+      "generationId": "385700b4-044e-4ece-984e-7d4d09b0216c",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/385700b4-044e-4ece-984e-7d4d09b0216c",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "32e201551cb124105772206deef02b19b7000987c8257703cb14a23ee1ec31d9",
+      "rawBytes": 13023332,
       "intent": "soft-bob 헤어 분리",
-      "changesKo": "보브 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(닫힌 셸)를 베이스 머리 너비에 맞춰 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
-      "parentGenerationId": "3f1040da-6127-4402-98e2-2692cccb2a3d"
+      "changesKo": "보브 헤어 흉상 생성물(앞머리를 눈썹 위로 요청해 재생성)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,500/1,900/1,000 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
+      "parentGenerationId": "30afea4c-9a03-4963-875c-8785dec6be8d"
     },
     "hair/hime-cut": {
-      "generationId": "f12ea410-75bf-4475-a213-198746431395",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/f12ea410-75bf-4475-a213-198746431395",
+      "generationId": "1c85dbb2-501e-49c5-a626-10cbd1fc5fca",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/1c85dbb2-501e-49c5-a626-10cbd1fc5fca",
       "tier": "Gen-2.5-High",
-      "rawSha256": "17b43e7a36c950a65ce3739b807dda77ad0ddfa91ef27b586f63e46278a24437",
-      "rawBytes": 10832888,
-      "intent": "교복 분리",
-      "changesKo": "교복 여학생 전신 생성물을 BANG으로 분리한 헤어 파츠(블런트 뱅·어깨 아래 직모)에서 밝은 피부·칼라 조각을 지우고 베이스 머리에 맞춰 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
-      "parentGenerationId": "44533c2e-788e-4b41-ba29-4119e52f493c"
+      "rawSha256": "a07351602847235f3229c4d95ce3615974608c08d7243fbdc292ff48ae46961c",
+      "rawBytes": 11395536,
+      "intent": "hime-cut 헤어 분리",
+      "changesKo": "히메컷 헤어 흉상 생성물(블런트 뱅·어깨 아래 직모)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시(두피가 헤어에 포함되어 헤어라인에서 잘림)의 폭에 맞추고 정수리는 폭의 0.4배 위로 추정해 베이스 머리로 리타깃, LOD 3단(4,200/2,200/1,200 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
+      "parentGenerationId": "4d75173e-4311-4ec7-97f8-24caff52b162"
     },
     "hair/short-layered": {
-      "generationId": "10546880-792b-473f-b758-7edbbd7ab261",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/10546880-792b-473f-b758-7edbbd7ab261",
+      "generationId": "7a57080d-266e-4ccb-960d-7e0260d87bce",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/7a57080d-266e-4ccb-960d-7e0260d87bce",
       "tier": "Gen-2.5-High",
-      "rawSha256": "bea4dca7ce2a776e2c3a6099fe5a21ab41dfe3293d0414eb7b7111189f738dba",
-      "rawBytes": 10548028,
-      "intent": "남성 의상·헤어 분리",
-      "changesKo": "스마트 캐주얼 남성 전신 생성물을 BANG으로 분리한 숏 레이어드 헤어 파츠에서 밝은 피부 조각을 지우고 베이스 머리에 맞춰 리타깃, LOD 3단(5,000/2,800/1,500 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
-      "parentGenerationId": "051b32ef-5b4e-4c42-95fb-02354c1de5ca"
+      "rawSha256": "4231fc194a35b67e6fae16c73f302c84b66990c8d5e3ca6737999f62153cde67",
+      "rawBytes": 10581968,
+      "intent": "short-layered 헤어 분리",
+      "changesKo": "숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(4,000/2,100/1,100 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
+      "parentGenerationId": "72e8286d-bb5a-4a2f-98e3-79d76cbdd5d9"
     },
     "hair/wolf-layered": {
       "generationId": "ab1a860d-74eb-4ad2-a5c1-22c0326f91e9",
@@ -188,7 +198,7 @@
       "rawSha256": "2101f973c68ae78671ebcaee3ca4bafe4aeebee17dbd68d152d1ec13d4763e44",
       "rawBytes": 12085480,
       "intent": "romance-long 헤어 분리",
-      "changesKo": "가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(6,000/3,000/1,500 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+      "changesKo": "가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,500/1,250 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
       "parentGenerationId": "fed8802e-0cb9-4506-aa44-344b43ee98a1"
     },
     "accessory/cap": {

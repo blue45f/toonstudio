@@ -146,6 +146,10 @@ class Context:
     frame: fields_face.HeadFrame
     fields: fields_body.BodyFields
     timings: dict[str, float] = field(default_factory=dict)
+    #: "female" | "male". 남성 베이스는 속옷에 브라가 없고 머리를 여성 좌표계로 내려 만든다(`y_shift`).
+    base_id: str = "female"
+    #: 머리 높이를 여성 HBM 좌표 상수(입·눈·턱·치아·관절 위치가 절대 좌표다)에 맞추려고 `load_context`가 몸 전체를 아래로 내린 양(m). 빌드 끝에 `unshift_build`로 되돌린다.
+    y_shift: float = 0.0
 
     @property
     def joint_index(self) -> dict[str, int]:
@@ -319,12 +323,32 @@ def ring_distance_csr(ptr: np.ndarray, idx: np.ndarray, count: int, sources: np.
     return dist
 
 
-def load_context(npz_path: str | Path, contract_path: str | Path) -> Context:
-    """HBM npz에서 리그·스킨·T-포즈·정합·체형 필드를 준비한다(약 2초)."""
+#: 여성 HBM 눈 중심 높이(m). 얼굴 정합·눈썹·치아·관절 상수가 이 좌표계로 적혀 있다.
+FEMALE_EYE_CENTER_Y = 1.5325
+
+
+def load_context(npz_path: str | Path, contract_path: str | Path, base_id: str = "female", style: Any = None) -> Context:
+    """HBM npz에서 리그·스킨·T-포즈·정합·체형 필드를 준비한다(약 2초).
+
+    남성 HBM 머리는 여성 머리와 같은 모양에 4.6 cm 높게 놓여 있다. 얼굴·입 안·눈썹·관절 상수가 여성 절대 좌표라 눈 중심 높이가 여성과 같아지도록
+    몸 전체를 아래로 내려 읽고(`Context.y_shift`), 빌드를 마친 뒤 `unshift_build`로 원래 높이로 되돌린다."""
     timings: dict[str, float] = {}
     t0 = time.time()
     contract = contract_mod.load(contract_path)
     body = hbm.load(npz_path)
+    y_shift = float(0.5 * (body.eyes["L"][0][:, 1].mean() + body.eyes["R"][0][:, 1].mean())) - FEMALE_EYE_CENTER_Y
+    if abs(y_shift) < 0.003:
+        y_shift = 0.0
+    else:
+        offset = np.array([0.0, y_shift, 0.0])
+        body.positions = body.positions - offset
+        body.eyes = {side: (positions - offset, triangles) for side, (positions, triangles) in body.eyes.items()}
+        body.iris = {side: (positions - offset, triangles) for side, (positions, triangles) in body.iris.items()}
+        body.face_center = body.positions[body.faces].mean(axis=1)
+    if style is not None and getattr(style, "body_smooth_iterations", 0) > 0:
+        from . import webtoon_style  # 순환 import를 피해 함수 안에서 가져온다
+
+        webtoon_style.smooth_hbm_body(body, style.body_smooth_iterations)
     head_mask = hbm.head_face_mask(body)
     joints_a = landmarks.compute_a_pose_joints(body)
     landmarks.check_complete(joints_a, contract.joints)
@@ -343,7 +367,7 @@ def load_context(npz_path: str | Path, contract_path: str | Path) -> Context:
     seam = np.intersect1d(head_vertices, body_vertices)
     frame = refit_head_frame_y(body, fields_face.fit_head_frame(body))
     fields = fields_body.BodyFields(fields_body.BodyLandmarks.from_rig(rig))
-    return Context(
+    context = Context(
         contract=contract,
         body=body,
         names=contract.joints,
@@ -358,7 +382,15 @@ def load_context(npz_path: str | Path, contract_path: str | Path) -> Context:
         frame=frame,
         fields=fields,
         timings=timings,
+        base_id=base_id,
+        y_shift=y_shift,
     )
+    if style is not None and getattr(style, "neutral_body", ()):
+        from . import webtoon_style
+
+        webtoon_style.shape_context_body(context, style)
+    context.lash_style = getattr(style, "lash_style", "strands") if style is not None else "strands"  # type: ignore[attr-defined]
+    return context
 
 
 # ---------------------------------------------------------------- 영역
@@ -417,23 +449,31 @@ def assign_face_regions(ctx: Context, neck_rings: int = 3) -> np.ndarray:
     return region
 
 
-def vertex_regions(quads: np.ndarray, face_region: np.ndarray, vertex_count: int, region_count: int, triangle_check: bool = True) -> np.ndarray:
-    """정점 영역: 붙은 면들의 다수결. 검증기 V10은 영역 범위의 모든 삼각형이 그 영역의 정점을 하나 이상 가질 것을 요구하므로
-    위반 삼각형이 남지 않게 정점 영역을 몇 번 고친다."""
+def vertex_regions(quads: np.ndarray, face_region: np.ndarray, vertex_count: int, region_count: int, triangle_check: bool = True, positions: np.ndarray | None = None) -> np.ndarray:
+    """정점 영역: 붙은 면들의 다수결. 검증기 V10은 영역 범위의 모든 **삼각형**이 그 영역의 정점을 하나 이상 가질 것을 요구하므로
+    위반 삼각형이 남지 않게 정점 영역을 몇 번 고친다. `positions`를 주면 몸 메시와 같은 대각선 선택(`quads_to_triangles`)으로 삼각형 단위로 검사한다
+    (쿼드에서 영역 정점이 한 모서리뿐이면 대각선이 그 모서리를 지나지 않을 때 한 삼각형이 영역 정점을 못 갖는다 — 남성 베이스 팔에서 생겼다).
+    주지 않으면 쿼드 단위로만 검사한다."""
     votes = np.zeros((vertex_count, region_count), dtype=np.int32)
     for k in range(4):
         np.add.at(votes, (quads[:, k], face_region), 1)
     result = votes.argmax(axis=1)
-    for _ in range(12):
-        bad = ~(result[quads] == face_region[:, None]).any(axis=1)
+    if positions is not None:
+        triangles = quads_to_triangles(positions, quads)
+        triangle_region = np.repeat(face_region, 2)
+    else:
+        triangles = quads
+        triangle_region = face_region
+    for _ in range(24):
+        bad = ~(result[triangles] == triangle_region[:, None]).any(axis=1)
         if not bad.any():
             return result
         for f in np.flatnonzero(bad):
-            corners = quads[f]
+            corners = triangles[f]
             # 이 면의 영역 표를 가장 많이 가진 모서리를 그 영역으로 바꾼다
-            best = corners[np.argmax(votes[corners, face_region[f]])]
-            result[best] = face_region[f]
-    bad = ~(result[quads] == face_region[:, None]).any(axis=1)
+            best = corners[np.argmax(votes[corners, triangle_region[f]])]
+            result[best] = triangle_region[f]
+    bad = ~(result[triangles] == triangle_region[:, None]).any(axis=1)
     if bad.any() and triangle_check:
         raise RuntimeError(f"정점 영역을 고쳐도 위반 면이 {bad.sum()}개 남았습니다.")
     return result
@@ -475,7 +515,7 @@ def build_split_mesh(ctx: Context, name: str, face_mask: np.ndarray, face_region
         face_ids = face_ids[ranking]
     positions = ctx.t_pos[origin]
     triangles = quads_to_triangles(positions, new_quads)
-    region_of_vertex = vertex_regions(quads_all, face_region, len(ctx.t_pos), len(ctx.contract.region_ids))
+    region_of_vertex = vertex_regions(quads_all, face_region, len(ctx.t_pos), len(ctx.contract.region_ids), positions=ctx.t_pos)
     return SplitMesh(
         name=name,
         origin=origin,
@@ -1114,6 +1154,8 @@ def underwear_shell(ctx: Context, face_region: np.ndarray, surface: Surface) -> 
     edges = [(remap_a, remap_b) for remap_a, remap_b in boundary_edges(quads)]
     panties_rim = rim_shell(outer, inner, normals, edges)
 
+    if ctx.base_id == "male":
+        return merge_shells([part for part in [panties, panties_rim] if len(part.positions)])  # 남성 베이스는 맨 가슴(팬티만)이다
     torso_only = body_surface(ctx, np.isin(face_region, [ids.index("neck"), ids.index("torso"), ids.index("pelvis")]))
     ys = np.linspace(BRA_Y_RANGE[0], BRA_Y_RANGE[1], BRA_ROWS)
     thetas = np.linspace(0.0, 2.0 * np.pi, BRA_COLUMNS + 1)
@@ -1236,7 +1278,7 @@ def encode_skin_texture(ctx: Context, mesh: SplitMesh, face_colors: np.ndarray, 
     return bt.encode_jpeg(image, quality=90, subsampling=0), bt.luminance(image)
 
 
-def base_materials(skin_body: bytes, skin_head: bytes) -> dict[str, MaterialSpec]:
+def base_materials(skin_body: bytes, skin_head: bytes, lash_style: str = "strands") -> dict[str, MaterialSpec]:
     jpeg = "image/jpeg"
     return {
         "ts_skin_body": MaterialSpec("ts_skin_body", "skin", skin_body, jpeg),
@@ -1244,7 +1286,7 @@ def base_materials(skin_body: bytes, skin_head: bytes) -> dict[str, MaterialSpec
         "ts_eye": MaterialSpec("ts_eye", "eyeball", bt.encode_jpeg(bt.eyeball_texture(256), 92, 0), jpeg),
         "ts_teeth": MaterialSpec("ts_teeth", "teeth", bt.encode_jpeg(bt.teeth_texture(256), 92, 0), jpeg),
         "ts_tongue": MaterialSpec("ts_tongue", "tongue", bt.encode_jpeg(bt.tongue_texture(256), 92, 0), jpeg),
-        "ts_lashes": MaterialSpec("ts_lashes", "lash", bt.encode_png_rgba(bt.lash_texture(512, 128)), "image/png", alpha_mode="MASK", alpha_cutoff=0.5, double_sided=True),
+        "ts_lashes": MaterialSpec("ts_lashes", "lash", bt.encode_png_rgba(bt.lash_texture(512, 128, style=lash_style)), "image/png", alpha_mode="MASK", alpha_cutoff=0.5, double_sided=True),
         "ts_brow": MaterialSpec("ts_brow", "brow", bt.encode_png_rgba(bt.brow_texture(512, 64)), "image/png", alpha_mode="MASK", alpha_cutoff=0.5),
         "ts_underwear": MaterialSpec("ts_underwear", "underwear", bt.encode_jpeg(bt.underwear_texture(256), 92, 0), jpeg),
     }
@@ -1359,7 +1401,7 @@ def build_base(ctx: Context, progress: Any = print) -> BaseBuild:
     face_colors = skin_face_colors(ctx, interior_comp)
     skin_body, lum_body = encode_skin_texture(ctx, body, face_colors, seed=101)
     skin_head, lum_head = encode_skin_texture(ctx, head, face_colors, seed=102)
-    materials = base_materials(skin_body, skin_head)
+    materials = base_materials(skin_body, skin_head, lash_style=getattr(ctx, "lash_style", "strands"))
     stamp("텍스처", t0)
 
     meshes = [
@@ -1392,6 +1434,29 @@ def build_base(ctx: Context, progress: Any = print) -> BaseBuild:
         joint_offsets=joint_offsets_table(ctx),
         report=report,
     )
+
+
+def unshift_nodes(ctx: Context, nodes: list[MeshNode]) -> None:
+    """`load_context`가 내린 높이(`ctx.y_shift`)만큼 메시 노드의 위치를 다시 올린다. 법선·델타는 방향·상대값이라 그대로다."""
+    if ctx.y_shift == 0.0:
+        return
+    offset = np.array([0.0, ctx.y_shift, 0.0])
+    for node in nodes:
+        for prim in node.prims:
+            prim.positions = prim.positions + offset
+            if prim.apose is not None:
+                prim.apose = prim.apose + offset
+
+
+def unshift_build(build: BaseBuild) -> None:
+    """빌드가 끝난 베이스를 원래 높이(남성 HBM은 4.6 cm 위)로 되돌린다: 모든 메시와 리그 관절. GLB·npz·사이드카를 쓰기 전에 호출한다."""
+    ctx = build.ctx
+    if ctx.y_shift == 0.0:
+        return
+    unshift_nodes(ctx, build.meshes)
+    offset = np.array([0.0, ctx.y_shift, 0.0])
+    ctx.rig.t_pose = ctx.rig.t_pose + offset
+    ctx.rig.a_pose = ctx.rig.a_pose + offset
 
 
 def base_meta(build: BaseBuild, base_id: str = "female") -> dict[str, Any]:

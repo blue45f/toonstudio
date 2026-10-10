@@ -36,6 +36,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--kit-dir", type=Path, default=CACHE / "out" / "kit" / "toonstudio-kit-v1")
     parser.add_argument("--meta", type=Path, default=CACHE / "out" / "base_meta_female.json")
+    parser.add_argument("--extra-meta", type=Path, action="append", default=[], help="기본 베이스 말고 더 넣을 베이스의 메타(예: base_meta_male.json). 반복 가능")
     parser.add_argument("--contract", type=Path, default=CACHE / "out" / "contract.json")
     parser.add_argument("--parts-json", type=Path, default=None)
     parser.add_argument(
@@ -58,7 +59,9 @@ def main(argv: list[str]) -> int:
         blender_version = bpy.app.version_string.split()[0]
     except Exception:  # noqa: BLE001 — bpy가 없어도 manifest는 만든다
         blender_version = "unknown"
-    parts = km.discover_parts(args.kit_dir, [base_id], hides_table)
+    extra_metas = [json.loads(path.read_text(encoding="utf-8")) for path in args.extra_meta]
+    extra_bases = [{"base_id": item["baseId"], "base_path": f"bases/{item['baseId']}.glb", "base_meta": item} for item in extra_metas]
+    parts = km.discover_parts(args.kit_dir, [base_id, *[item["base_id"] for item in extra_bases]], hides_table)
     hyper3d_path = args.hyper3d_sources
     if hyper3d_path is None and km.HYPER3D_SOURCES_FILE.is_file():
         hyper3d_path = km.HYPER3D_SOURCES_FILE
@@ -75,6 +78,7 @@ def main(argv: list[str]) -> int:
             generator_command=["build_base.py", "build_irises.py", "build_kit_json.py"],
             blender_version=blender_version,
             hyper3d_sources=hyper3d,
+            extra_bases=extra_bases,
         )
     except km.ManifestError as error:
         print(f"manifest를 만들지 못했습니다: {error}", file=sys.stderr)
@@ -92,7 +96,8 @@ def main(argv: list[str]) -> int:
     print(f"Hyper3D 출처 {len(hyper3d_ids)}건({hyper3d_path or '출처 표 없음'}): {', '.join(hyper3d_ids) or '-'}")
     if skipped:
         print(f"  출처 표에는 있으나 키트에 등록되지 않아 넣지 않은 파츠: {', '.join(skipped)}")
-    print(f"남성 베이스: {km.MALE_SKIPPED_NOTE_KO}")
+    if not extra_bases:
+        print(f"남성 베이스: {km.MALE_SKIPPED_NOTE_KO}")
     return 0
 
 

@@ -132,3 +132,52 @@ def relative_color_texture(image_bytes: bytes, uv_triangles: np.ndarray, style: 
         "sourcePercentiles": [round(float(low), 4), round(float(high), 4)],
     }
     return data, stats
+
+
+def strand_texture(uv_triangles: np.ndarray, style: TextureStyle, seed: int = 11) -> tuple[bytes, dict]:
+    """헤어용 상대색 텍스처를 만든다: 원본 아틀라스를 쓰지 않고 세로 가닥 줄무늬를 직접 그린다. (JPEG 바이트, 통계)를 돌려준다.
+
+    Rodin 헤어는 UV 섬이 잘게 쪼개져 있어 정점이 삼각형 수의 두 배로 늘고(파츠 한도 1.5 MiB 초과) 줄이기도 어렵다. 위치로 정점을 합치고 원통 UV를 새로 깔면
+    정점 수가 절반이 되지만 원본 아틀라스와의 대응이 사라지므로, 가닥 디테일은 가닥 폭 2~11 px의 세로 줄무늬 노이즈로 대신한다(툰 2단 음영 위에서는 구분이 안 된다).
+    평균 휘도 하한(`min_mean`)을 지키도록 `strength`를 줄이는 규칙은 `relative_color_texture`와 같다.
+    """
+    size = style.size
+    used = rasterize_uv_mask(uv_triangles, size)
+    padded = dilate(used, 4)
+    rng = np.random.default_rng(seed)
+
+    def value_noise(length: int, feature: float) -> np.ndarray:
+        knots = rng.random(int(length / feature) + 3)
+        x = np.arange(length) / feature
+        i = np.floor(x).astype(int)
+        f = x - i
+        f = f * f * (3.0 - 2.0 * f)
+        return knots[i] * (1.0 - f) + knots[i + 1] * f
+
+    columns = 0.5 * value_noise(size, 5.0) + 0.3 * value_noise(size, 11.0) + 0.2 * value_noise(size, 2.5)
+    rows = value_noise(size, 70.0)
+    shape = columns[None, :] * (0.7 + 0.6 * rows[:, None])
+    shape = (shape - shape.min()) / max(float(shape.max() - shape.min()), 1e-9)
+    normalized = shape**style.gamma
+    mean_normalized = float(normalized[used].mean()) if used.any() else 1.0
+    strength = min(style.strength, (1.0 - style.min_mean) / max(1.0 - mean_normalized, 1e-6))
+    out = 1.0 - strength * (1.0 - normalized)
+    fill = float(out[used].mean()) if used.any() else 1.0
+    out = np.where(padded, out, fill)
+
+    gray = np.clip(out * 255.0 + 0.5, 0, 255).astype(np.uint8)
+    buffer = io.BytesIO()
+    Image.fromarray(np.stack([gray, gray, gray], axis=-1), mode="RGB").save(buffer, format="JPEG", quality=style.quality, subsampling=0, optimize=True)
+    data = buffer.getvalue()
+    stats = {
+        "bytes": len(data),
+        "size": style.size,
+        "usedFraction": round(float(used.mean()), 4),
+        "strengthUsed": round(strength, 4),
+        "meanLuminance": round(float(out.mean()), 4),
+        "meanLuminanceUsed": round(fill, 4),
+        "minLuminance": round(float(out[used].min()), 4) if used.any() else None,
+        "sourcePercentiles": None,
+        "procedural": "strands",
+    }
+    return data, stats

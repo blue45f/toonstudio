@@ -498,9 +498,11 @@ def align_sleeves_to_arms(
        어깨에서 `shoulder_fade` 안쪽으로 갈수록 소매 비중이 0으로 줄어 몸통에 이어진다.
     3. 소매 비중만큼의 각도로, 자체 축을 팔 축으로 옮기는 회전을 어깨 둘레로 적용한다.
     소매 끝이 팔꿈치보다 안쪽이거나 이미 거의 정렬된(`min_angle_deg` 미만) 쪽은 건드리지 않는다.
-    `chains` 각 항목은 {"arm", "forearm", "hand"} joint 번호, `joint_positions`는 A-포즈 월드 위치다. (이동한 점, 보고)를 돌려준다.
+    `chains` 각 항목은 {"arm", "forearm", "hand"} joint 번호, `joint_positions`는 A-포즈 월드 위치다.
+    (이동한 점, 정점별 소매 비중 0..1(양쪽 중 큰 값), 보고)를 돌려준다. 소매 비중은 정렬 각도와 무관하게 계산한다.
     """
     out = points.copy()
+    total_membership = np.zeros(len(points))
     report: dict = {"sides": []}
     for chain in chains:
         shoulder = joint_positions[chain["arm"]]
@@ -536,22 +538,80 @@ def align_sleeves_to_arms(
         own_length = float(np.linalg.norm(own))
         own_axis = own / max(own_length, 1e-9)
         angle = float(np.arccos(np.clip(own_axis @ base_axis, -1.0, 1.0)))
-        if np.degrees(angle) < min_angle_deg:
-            report["sides"].append({"cuff": int(len(cuff)), "angleDeg": round(float(np.degrees(angle)), 2), "reason": "이미 팔 방향과 정렬됨"})
-            continue
-        rotation_axis = np.cross(own_axis, base_axis)
-        rotation_axis /= max(float(np.linalg.norm(rotation_axis)), 1e-9)
         own_axial = offset @ own_axis
         radial_vector = offset - np.outer(own_axial, own_axis)
         own_lateral = np.linalg.norm(radial_vector, axis=1)
         facing = np.einsum("ij,ij->i", normals, radial_vector / np.maximum(own_lateral, 1e-9)[:, None])
         tube = _smoothstep(sleeve_radius + 0.02, sleeve_radius - 0.02, own_lateral) * _smoothstep(facing_min - 0.15, facing_min + 0.15, facing)
         membership = tube * _smoothstep(0.0, shoulder_fade, own_axial) * (own_axial < own_length + 0.15)
+        total_membership = np.maximum(total_membership, membership)
+        if np.degrees(angle) < min_angle_deg:
+            report["sides"].append({"cuff": int(len(cuff)), "angleDeg": round(float(np.degrees(angle)), 2), "reason": "이미 팔 방향과 정렬됨", "sleeveVertices": int((membership > 0.5).sum())})
+            continue
+        rotation_axis = np.cross(own_axis, base_axis)
+        rotation_axis /= max(float(np.linalg.norm(rotation_axis)), 1e-9)
         out = shoulder + _rotate_about_axis(out - shoulder, rotation_axis, membership * angle)
         report["sides"].append(
             {"cuff": int(len(cuff)), "angleDeg": round(float(np.degrees(angle)), 2), "cuffAxialM": round(a_max, 3), "sleeveVertices": int((membership > 0.5).sum()), "weightedVertices": int((membership > 0.05).sum())}
         )
-    return out, report
+    return out, total_membership, report
+
+
+def constrain_arm_weights(
+    points: np.ndarray,
+    joints: np.ndarray,
+    weights: np.ndarray,
+    membership: np.ndarray,
+    edges: np.ndarray,
+    arm_joints: list[int],
+    pivots: list[np.ndarray],
+    fallback_torso: int,
+    fallback_arm: tuple[int, int, float],
+    near_radius: float = 0.14,
+    smooth_iterations: int = 3,
+    influences: int = 4,
+) -> tuple[np.ndarray, np.ndarray, dict]:
+    """소매 비중으로 팔 웨이트를 정리한다: 몸통 정점은 팔 joint 웨이트를, 소매 정점은 팔이 아닌 joint 웨이트를 잃는다(어깨 `near_radius` 안은 그대로).
+
+    몸 표면에서 가까운 정점의 웨이트를 옮기면 겨드랑이·견갑골 근처 몸통 정점이 팔 웨이트를, 몸에 붙은 소매 정점이 몸통 웨이트를 받는 잡음이 생긴다.
+    팔을 올릴 때 그런 정점과 이웃이 서로 반대로 움직여 멀쩡한 면이 찢어진 것으로 보인다(찢기 판정이 걸린다). 소매 비중이 낮은 쪽과 높은 쪽 각각의 안에서만
+    이웃 평균으로 다시 매끄럽게 한다. 걸러 남은 웨이트가 없는 정점은 `fallback_torso`(몸통 joint)나 `fallback_arm`(위팔 joint, 아래팔 joint, 팔꿈치 높이 y)으로 둔다.
+    (joint (n,K), 가중치 (n,K), 보고)를 돌려준다.
+    """
+    count = len(points)
+    joint_count = int(max(np.max(joints), fallback_torso, *arm_joints, fallback_arm[0], fallback_arm[1])) + 1
+    dense = np.zeros((count, joint_count))
+    slot_joints = np.asarray(joints, dtype=np.int64)
+    np.add.at(dense, (np.repeat(np.arange(count), slot_joints.shape[1]), slot_joints.ravel()), np.asarray(weights, dtype=np.float64).ravel())
+    is_arm = np.zeros(joint_count, dtype=bool)
+    is_arm[list(arm_joints)] = True
+    near = np.zeros(count, dtype=bool)
+    for pivot in pivots:
+        near |= np.linalg.norm(points - pivot, axis=1) < near_radius
+    torso = (membership < 0.05) & ~near
+    sleeve = membership > 0.5
+    dense[np.ix_(torso, np.flatnonzero(is_arm))] = 0.0
+    dense[np.ix_(sleeve, np.flatnonzero(~is_arm))] = 0.0
+    empty = dense.sum(axis=1) < 1e-9
+    fixed_torso = empty & torso
+    fixed_sleeve = empty & ~torso
+    dense[fixed_torso, fallback_torso] = 1.0
+    upper, fore, elbow_y = fallback_arm
+    use_fore = points[:, 1] < elbow_y
+    dense[np.flatnonzero(fixed_sleeve & use_fore), fore] = 1.0
+    dense[np.flatnonzero(fixed_sleeve & ~use_fore), upper] = 1.0
+    dense /= np.maximum(dense.sum(axis=1, keepdims=True), 1e-30)
+    if smooth_iterations > 0 and len(edges):
+        # 같은 쪽(몸통끼리·소매끼리, 전이 영역은 어느 쪽이든)에서만 섞는다 — 소매와 몸통이 이어진 이음에서 웨이트가 번지지 않게 한다.
+        klass = np.where(torso, 0, np.where(sleeve, 1, 2))
+        allowed = (klass[edges[:, 0]] == klass[edges[:, 1]]) | (klass[edges[:, 0]] == 2) | (klass[edges[:, 1]] == 2)
+        dense = laplacian_smooth(dense, edges[allowed], smooth_iterations, 0.5)
+        dense /= np.maximum(dense.sum(axis=1, keepdims=True), 1e-30)
+    order = np.argsort(-dense, axis=1)[:, :influences]
+    top = np.take_along_axis(dense, order, axis=1)
+    top = top / np.maximum(top.sum(axis=1, keepdims=True), 1e-30)
+    report = {"torsoVertices": int(torso.sum()), "sleeveVertices": int(sleeve.sum()), "refilledTorso": int(fixed_torso.sum()), "refilledSleeve": int(fixed_sleeve.sum())}
+    return order.astype(np.int64), top, report
 
 
 def stretched_faces(before: np.ndarray, after: np.ndarray, triangles: np.ndarray, ratio: float = 4.0, min_length: float = 0.10) -> np.ndarray:
@@ -575,6 +635,7 @@ def raise_bangs(
     face_z: float,
     center_half_width: float = 0.07,
     blend: float = 0.04,
+    max_drop: float = 0.14,
 ) -> tuple[np.ndarray, dict]:
     """앞머리 아랫선(얼굴 앞 정중앙 헤어 정점 중 가장 낮은 높이)이 `bang_target_y`(눈썹 위)보다 낮으면, 정수리에서 아래로 잰 길이를 줄여 올린다.
 
@@ -583,14 +644,18 @@ def raise_bangs(
     앞머리가 없거나(정중앙 앞쪽에 정점이 없음) 이미 목표보다 높으면 건드리지 않는다. (이동한 점, 보고)를 돌려준다.
     """
     top = float(points[:, 1].max())
-    front = (points[:, 2] > face_z) & (np.abs(points[:, 0]) < center_half_width)
+    # 앞머리는 눈썹 근처에서 끝난다. 가슴 앞으로 흘러내린 긴 머리 가닥(히메컷 등)을 앞머리로 보면 길이를 80 %나 줄여 버리므로,
+    # 목표 높이에서 `max_drop` 아래까지의 정점만 앞머리 후보로 본다.
+    front = (points[:, 2] > face_z) & (np.abs(points[:, 0]) < center_half_width) & (points[:, 1] > bang_target_y - max_drop)
     if not front.any():
         return points, {"raised": False, "reason": "얼굴 앞 정중앙에 헤어 정점이 없음"}
     bottom = float(points[front, 1].min())
     if bottom >= bang_target_y:
         return points, {"raised": False, "bangBottomY": round(bottom, 4), "reason": "이미 목표보다 높음"}
     k = (top - bang_target_y) / max(top - bottom, 1e-6)
-    weight = _smoothstep(face_z - blend, face_z + blend, points[:, 2])
+    # 옆머리(귀 앞 얼굴 옆 머리카락)는 앞머리가 아니므로 중앙 앞머리 폭 바깥에서는 줄이는 정도를 서서히 0으로 만든다.
+    lateral = 1.0 - _smoothstep(center_half_width + 0.01, center_half_width + 0.06, np.abs(points[:, 0]))
+    weight = _smoothstep(face_z - blend, face_z + blend, points[:, 2]) * lateral
     out = points.copy()
     out[:, 1] = top - (top - points[:, 1]) * (1.0 - weight * (1.0 - k))
     return out, {"raised": True, "bangBottomY": round(bottom, 4), "targetY": bang_target_y, "lengthScale": round(k, 3)}

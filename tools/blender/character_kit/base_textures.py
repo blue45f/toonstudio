@@ -280,8 +280,23 @@ def _supersampled(width: int, height: int, scale: int = 3) -> tuple[Image.Image,
     return image, ImageDraw.Draw(image)
 
 
-def lash_texture(width: int = 512, height: int = 128, seed: int = 61) -> np.ndarray:
-    """RGBA: 색은 흰색(상대색), 알파가 모양. 위쪽 행 = 띠 뿌리(v=0), 아래쪽 행 = 끝. 굵은 뿌리선과 바깥으로 쏠린 끝이 가는 가닥들."""
+def lash_texture(width: int = 512, height: int = 128, seed: int = 61, style: str = "strands") -> np.ndarray:
+    """RGBA: 색은 흰색(상대색), 알파가 모양. 위쪽 행 = 띠 뿌리(v=0), 아래쪽 행 = 끝. 굵은 뿌리선과 바깥으로 쏠린 끝이 가는 가닥들.
+
+    `style="liner"`면 가닥 없이 단단한 아이라인 띠다: u가 0(안쪽 눈구석) → 1(바깥 눈꼬리)로 갈수록 띠가 두꺼워져 바깥 끝이 날카로운 날개가 된다(웹툰·애니 눈매)."""
+    if style == "liner":
+        scale = 3
+        image, draw = _supersampled(width, height, scale)
+        W, H = width * scale, height * scale
+        xs = np.arange(W) / W
+        edge = (np.interp(xs, [0.0, 0.3, 0.65, 0.9, 1.0], [0.36, 0.46, 0.62, 0.86, 0.97]) * H).astype(int)
+        for x in range(W):
+            draw.line([(x, 0), (x, edge[x])], fill=255)
+        alpha = np.asarray(image.resize((width, height), Image.LANCZOS).filter(ImageFilter.GaussianBlur(0.5)), dtype=np.float32) / 255.0
+        edge_fade = smooth(0.0, 0.03, np.arange(width) / width) * smooth(1.0, 0.985, np.arange(width) / width)
+        rgba = np.ones((height, width, 4), dtype=np.float32)
+        rgba[..., 3] = np.clip(alpha * edge_fade[None, :] * 1.15, 0.0, 1.0)
+        return rgba
     scale = 3
     image, draw = _supersampled(width, height, scale)
     W, H = width * scale, height * scale

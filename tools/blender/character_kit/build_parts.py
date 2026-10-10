@@ -3,7 +3,7 @@
 사용(저장소 루트)::
 
     <venv>/bin/python -I tools/blender/character_kit/build_parts.py \\
-        --base-model ~/.cache/toonstudio-kit/out/base_model_female.npz \\
+        [--base female|male] --base-model ~/.cache/toonstudio-kit/out/base_model_female.npz \\
         --kit-dir ~/.cache/toonstudio-kit/out/kit/toonstudio-kit-v1 \\
         --work ~/.cache/toonstudio-kit/work/parts \\
         [--only top/tee,bottom/jeans] [--jobs 3] [--write-sources]
@@ -81,7 +81,7 @@ def build_one(preset_id: str, spec: dict, args: argparse.Namespace, env: dict[st
         lods.append(str(out))
 
     report_path = work / "report.json"
-    retarget_args = ["--preset", preset_id, "--base-model", str(args.base_model), "--kit-dir", str(args.kit_dir), "--parts-json", str(args.parts_json), "--report", str(report_path), "--debug-apose", str(work / "debug_fit.glb")]
+    retarget_args = ["--preset", preset_id, "--base", args.base, "--base-model", str(args.base_model), "--kit-dir", str(args.kit_dir), "--parts-json", str(args.parts_json), "--report", str(report_path), "--debug-apose", str(work / "debug_fit.glb")]
     for item in args.override:
         retarget_args += ["--override", item]
     for lod in lods:
@@ -115,7 +115,8 @@ def source_entry(preset_id: str, spec: dict, entries: dict[str, dict]) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--base-model", type=Path, default=CACHE / "out" / "base_model_female.npz")
+    parser.add_argument("--base", default="female", help="베이스 id(female | male). 파츠는 <kit-dir>/parts/<base>/ 에 쓴다")
+    parser.add_argument("--base-model", type=Path, default=None, help="리타깃용 npz(기본: ~/.cache/toonstudio-kit/out/base_model_<base>.npz)")
     parser.add_argument("--kit-dir", type=Path, default=CACHE / "out" / "kit" / "toonstudio-kit-v1")
     parser.add_argument("--work", type=Path, default=CACHE / "work" / "parts")
     parser.add_argument("--parts-json", type=Path, default=None, help="hides 레지스트리(키트 폴더 밖). 기본: <work>/parts-registry.json")
@@ -124,6 +125,8 @@ def main() -> int:
     parser.add_argument("--write-sources", action="store_true")
     parser.add_argument("--override", action="append", default=[], help="실험용: 프리셋 필드를 이번 실행에만 바꾼다(키=JSON값, 반복 가능). 예: --override sleeve_chain=false")
     args = parser.parse_args()
+    if args.base_model is None:
+        args.base_model = CACHE / "out" / f"base_model_{args.base}.npz"
     args.work.mkdir(parents=True, exist_ok=True)
     if args.parts_json is None:
         args.parts_json = args.work / "parts-registry.json"
