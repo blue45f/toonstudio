@@ -1,6 +1,6 @@
 # ToonStudio WebRTC 실시간 미디어 설계와 벤치마크
 
-- 기준일: 2026-09-25 (2026-10-07 정정: 시그널링 3겹, TURN 자격 세 갈래, 벤치마크 제품 서술과 깨진 인용 링크 8곳)
+- 기준일: 2026-09-25 (2026-10-07 정정: 시그널링 3겹, TURN 자격 세 갈래, 벤치마크 제품 서술과 깨진 인용 링크 8곳 / 2026-10-11 정정: TURN 미사용 결정으로 ICE는 STUN 전용, §6 교체)
 - 범위: Virtual Studio huddle, 음성·카메라·화면 공유, ICE 정책, 권한·수신자 표시
 - 상태: 소규모 P2P 경로는 구현·브라우저 검증, WAN·대규모 방송은 별도 검증 필요
 
@@ -27,7 +27,7 @@ ToonStudio는 이를 하나의 `realtime=true` 상태로 묶지 않는다. 각 �
 | WebRTC signaling | 대상 지정 envelope | 허들 SDP·ICE는 DataChannel `studio-direct-v1` 직접 레인, 메시 부트스트랩·화면 공유 신호는 방 서버 | 일시적 |
 | 직접 chat·reaction | P2P direct port | bounded JSON packet | 메모리 |
 | 음성·영상·화면 | peer connection | RTP media tracks | 일시적 |
-| TURN credential | 인증된 ICE policy lease | short-lived username/credential | TTL |
+| ICE policy | 인증된 ICE policy lease | STUN 전용 서버 목록(자격 없음) | 없음 |
 | review voice note | project graph API | MediaRecorder + object storage | 영속 |
 ## 3. 실제 연결 흐름
 
@@ -75,29 +75,20 @@ P2P huddle은 perfect-negotiation 계열 규칙을 사용한다.
 - 원격 peer 최대 3명
 - `bundlePolicy: max-bundle`
 - `rtcpMuxPolicy: require`
-- TURN은 Worker가 발급한 단기 자격이 있을 때만 쓰고(아래 ICE 서버 정보 세 갈래 참고), 없으면 STUN 전용으로 시작한다. 유료 fallback을 자동으로 켜지 않는다.
+- TURN은 쓰지 않는다(2026-10-11 결정, 아래 ICE 정책 참고). 모든 경로는 STUN 전용으로 시작하고 유료 fallback은 없다.
 
 따라서 이 경로는 제한 NAT와 기업망에서 항상 성공한다고 주장하지 않는다.
 
-### 인증된 TURN 정책 경로
+### ICE 정책 (2026-10-11 현재 상태)
 
-별도 voice ICE policy lease는 서버가 검증한 `stun` 또는 `turn` 설정을 받는다.
+한때 Worker의 Cloudflare TURN 발급(TTL 4시간)과 API의 coturn REST 자격 발급(기본 900초)이 있었으나, 비용 발생 리스크를 이유로 TURN 서버를 쓰지 않기로 결정하고 발급 경로를 모두 제거했다. 현재 상태는 다음과 같다.
 
-- TURN username·credential은 짧은 TTL로 발급한다.
-- 만료 전에 비례 lead time으로 갱신한다.
-- 갱신 실패는 exponential backoff와 jitter를 사용한다.
-- 만료된 TURN credential로 새 peer를 만들지 않는다.
-- 구성 변경을 기존 peer에도 반영한다.
-
-현재 ICE 서버 정보는 세 갈래로 받는다.
-
-- 허들·직통 데이터: 브라우저의 공유 캐시가 실시간 Worker의 `POST /v1/turn/credentials`에서 Cloudflare TURN 단기 자격증명(TTL 4시간)을 받는다. 없거나 실패하면 STUN 전용으로 시작한다.
-- 화면 공유: Nest API의 `GET /creator/works/:id/screen-share/ice`가 coturn REST 방식(HMAC-SHA1) 자격증명을 발급한다(기본 TTL 900초, 설정 범위 300–86,400초). TURN 설정이 없으면 STUN 또는 direct 정책을 돌려준다.
+- ICE 구성의 단일 출처는 브라우저 공유 모듈(`studio-ice-configuration.ts`)의 Cloudflare STUN(`stun:stun.cloudflare.com:3478`) 하나다. 허들·직통 데이터·시그널링 전송이 모두 이 값을 읽는다.
+- 화면 공유·음성의 ICE 정책 lease는 서버가 검증한 `stun` 설정만 받는다. 자격(username·credential)은 발급하지 않으며 만료·갱신 개념이 없다. `STUDIO_VOICE_STUN_URLS` 미설정 시 기본값은 같은 Cloudflare STUN이다.
 - 로컬 모드: ICE 서버 없이 같은 브라우저 안에서만 동작한다.
+- 직접 연결이 막힌 환경에서 미디어는 실패한다. 공간 프레즌스의 직통 패킷만 ICE 실패 감지 시 Socket.IO 릴레이(`direct:relay`)로 폴백한다.
 
-TURN 자격이 만료된 뒤의 갱신과 메시 신호가 방 서버의 접근 규칙(ACL)을 통과하는지는 운영 환경에서 확인한 증거가 아직 없다(미확인).
-
-STUN은 연결 후보를 찾는 보조 서버이며 media relay가 아니다. TURN은 직접 연결이 실패할 때 media를 중계하므로 대역폭 비용과 자격 증명 운영이 필요하다.
+STUN은 연결 후보를 찾는 보조 서버이며 media relay가 아니다. TURN은 직접 연결이 실패할 때 media를 중계하므로 대역폭 비용과 자격 증명 운영이 필요한데, 그 비용 리스크가 이번 결정의 이유다.
 
 ## 7. 화면 공유의 양방향 동의
 
@@ -167,8 +158,8 @@ host가 화면 capture 시작
 | fake peer integration | 구현 | offer·answer·ICE·track lifecycle 검증 |
 | single Chromium loopback | 구현 | 실제 browser API와 recipient edge 검증 |
 | physical multi-device LAN | 추가 증거 필요 | 실제 카메라·마이크·device switch |
-| different NAT / WAN | 추가 증거 필요 | STUN direct와 TURN relay 비교 |
-| restrictive enterprise network | 추가 증거 필요 | UDP 차단·TCP/TLS relay |
+| different NAT / WAN | 추가 증거 필요 | STUN direct 성공 범위 실측 |
+| restrictive enterprise network | 추가 증거 필요 | UDP 차단 시 미디어 실패와 프레즌스 소켓 릴레이 폴백 |
 | large meeting / broadcast | 현재 범위 아님 | SFU topology와 운영 capacity 필요 |
 
 ## 11. 다른 프로젝트에 재사용하는 순서

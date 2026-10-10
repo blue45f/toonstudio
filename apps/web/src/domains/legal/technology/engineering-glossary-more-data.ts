@@ -74,8 +74,8 @@ export const GLOSSARY_MORE_DATA: readonly GlossaryTerm[] = [
       "Like a wax seal pressed with a secret signet ring: only the ring's owner can reproduce the pattern, so tampering shows.",
     ),
     inToonstudio: t(
-      "세션 서명은 HMAC-SHA256(base64url)이고 비교는 항상 상수 시간 함수 timingSafeEqual 로 합니다(apps/api/src/server/session.ts). 작업실 입장권(60초)과 실시간 서버 티켓도 서명 토큰입니다. 화면 공유용 coturn 자격은 표준이 요구하는 HMAC-SHA1 로 만들고, 개인 작품·사용자 식별은 SHA-256 계열을 씁니다.",
-      "Session signatures are HMAC-SHA256 (base64url) and are always compared with the constant-time timingSafeEqual (apps/api/src/server/session.ts). The 60-second studio admission ticket and realtime-server tickets are signed tokens too. Screen-share coturn credentials use HMAC-SHA1 because that standard requires it, while private work and user identity use the SHA-256 family.",
+      "세션 서명은 HMAC-SHA256(base64url)이고 비교는 항상 상수 시간 함수 timingSafeEqual 로 합니다(apps/api/src/server/session.ts). 작업실 입장권(60초)과 실시간 서버 티켓도 서명 토큰입니다. 개인 작품·사용자 식별은 SHA-256 계열을 씁니다. HMAC-SHA1을 요구하던 coturn 자격 발급은 2026-10-11 TURN 미사용 결정으로 제거됐습니다.",
+      "Session signatures are HMAC-SHA256 (base64url) and are always compared with the constant-time timingSafeEqual (apps/api/src/server/session.ts). The 60-second studio admission ticket and realtime-server tickets are signed tokens too. Private work and user identity use the SHA-256 family. The coturn credential issuance that required HMAC-SHA1 was removed with the 2026-10-11 no-TURN decision.",
     ),
     chapters: ["authentication", "turn-credential-issuance"],
     atlasIds: ["socket-io-room-tickets"],
