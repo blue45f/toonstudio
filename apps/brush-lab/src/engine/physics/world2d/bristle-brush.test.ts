@@ -7,11 +7,12 @@ import {
   BRISTLE_MAX_COUNT,
   BristleBrush2D,
   bristleContactRadiusPx,
+  bristleSpreadRadiusPx,
   fermatLayout,
   resolveBristleBrushConfig,
 } from "./bristle-brush";
 import { PbdWorld2D } from "./pbd-world";
-import { bucklingPressureCurve, powerPressureCurve } from "./pressure-curve";
+import { bucklingPressureCurve, powerPressureCurve, PressureCurveTable } from "./pressure-curve";
 
 import type { BristleBrushConfig, BristleTick, BristleTickSink } from "./bristle-brush";
 import type { PhysicsWorld2D } from "./types";
@@ -188,6 +189,23 @@ describe("BristleBrush2D: 압력 → 벌어짐·강성", () => {
     const m07 = holdMeanRadius(0.7, { spreadCurve: powerPressureCurve() });
     const m09 = holdMeanRadius(0.9, { spreadCurve: powerPressureCurve() });
     expect(m09).toBeGreaterThan(m07);
+  });
+
+  it("spreadScaleCurve(BL-4a): 없으면 기존 식과 비트 동일하고, 있으면 슬롯 반경에 압력별로 곱해진다", () => {
+    const plain = resolveBristleBrushConfig({ count: 32, radiusPx: 10 });
+    expect(plain.spreadScaleCurve).toBeNull();
+    for (const p of [0, 0.15, 0.4, 0.5, 1]) expect(bristleSpreadRadiusPx(plain, p)).toBe(Math.fround(10 * plain.spreadCurve.eval(p)));
+    const scale = PressureCurveTable.fromKnots([
+      [0, 0.1],
+      [1, 2],
+    ]);
+    const scaled = resolveBristleBrushConfig({ count: 32, radiusPx: 10, spreadScaleCurve: scale });
+    for (const p of [0, 0.15, 0.5, 1]) expect(bristleSpreadRadiusPx(scaled, p)).toBeCloseTo(10 * scaled.spreadCurve.eval(p) * scale.eval(p), 4);
+    // 정지 유지 평균 반경도 같은 비율로 달라진다(월드 상태에 실제로 반영된다).
+    const base = holdMeanRadius(0.5);
+    const wide = holdMeanRadius(0.5, { spreadScaleCurve: PressureCurveTable.fromKnots([[0, 2], [1, 2]]) });
+    expect(wide / base).toBeGreaterThan(1.7);
+    expect(wide / base).toBeLessThan(2.3);
   });
 
   it("털 접촉 반경은 털이 많을수록 작다", () => {
