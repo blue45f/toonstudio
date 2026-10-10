@@ -25,6 +25,9 @@ export default defineConfig(
     // wasm-bindgen가 재현 가능 빌드로 생성하고 별도 SHA-256 release gate가 검증하는 배포물.
     // 생성 JS를 직접 고치면 다음 pinned rebuild에서 덮어써지므로 호스트 ESLint 대상에서 제외한다.
     'packages/studio-hokusai-wasm/pkg/**',
+    // Godot 웹 익스포트(엔진 4.4.1 고정)가 생성하는 배포물. 재익스포트 때 덮어써지므로
+    // 위와 같은 이유로 호스트 ESLint 대상에서 제외한다.
+    'apps/web/public/godot-space/**',
     'crates/studio-engine-vello/pkg/**',
     'crates/studio-engine-vello/pkg-gpu/**',
     // 에이전트 워크플로가 격리 작업용으로 만드는 임시 git worktree(전역 gitignore 대상이라
