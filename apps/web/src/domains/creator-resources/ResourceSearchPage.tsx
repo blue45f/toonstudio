@@ -14,7 +14,7 @@ import type { CreatorResource, ResourceSearchResult } from "@/shared/lib/creator
 import { attributionMarkdown, deadlineCalendar, deadlineLabel, parseSearchResult, RESOURCE_LABELS } from "@/shared/lib/creator-resources";
 import { apiFetch, apiPath } from "@/platform/api";
 
-import { OpenDataSourceStage } from "./OpenDataSourceStage";
+import { OpenDataSourceStage, type SourceStageCopy } from "./OpenDataSourceStage";
 import { researchSourceArtSrc, researchSourceIdentity } from "./research-source-identity";
 import { RESOURCE_SEARCH_CONFIG, RESOURCE_SEARCH_TRANSLATED_PROVIDERS, isServerAliasResolvedQuery } from "./resource-search-config";
 
@@ -256,7 +256,7 @@ function WikimediaPreSearch({ isSaved, onToggleItem, saveDisabled, onRunSearch }
   return <PreSearchGuide provider="wikimedia" onRunSearch={onRunSearch} />;
 }
 
-export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, heroStage = false }: {
+export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, heroStage = false, stageCopy }: {
   provider: ResourceSearchProvider;
   /** 제공처 전용 검색 전 구성. 지정하면 공통 큐레이션(PreSearchGuide) 대신 이 구성을 쓴다. */
   preSearchGuide?: (onRunSearch: (q: string) => void) => ReactNode;
@@ -270,6 +270,13 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
    * 밖의 경로는 기존 렌더와 동일하다.
    */
   heroStage?: boolean;
+  /**
+   * 무대 카피 슬롯 (디자인 웨이브 19 골격 일반화) — 상세 라우트가 없는 전용
+   * 경로가 무대의 소속 표기(브레드크럼·eyebrow·aria-label)와 접근 칩 판정을
+   * 자기 값으로 넘긴다. 넘기지 않으면 공개 데이터 상세 기본값이라 상세
+   * 래퍼의 렌더는 무변경이다. heroStage가 켜졌을 때만 쓰인다.
+   */
+  stageCopy?: SourceStageCopy;
 }) {
   const config = RESOURCE_SEARCH_CONFIG[provider];
   const identity = researchSourceIdentity(provider);
@@ -329,7 +336,7 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
     }));
   };
   const searchFor = (q: string) => { setSavedOnly(false); setParams({ q, page: "1" }); };
-  return <ResourceLayout title={config.title} intro={config.intro} sourceIdentity={identity} heroStage={stageArt ? <OpenDataSourceStage provider={provider} /> : undefined}>
+  return <ResourceLayout title={config.title} intro={config.intro} sourceIdentity={identity} heroStage={stageArt ? <OpenDataSourceStage provider={provider} stageCopy={stageCopy} /> : undefined}>
     <ProviderStatus provider={provider} />
     {/* 역할 분담 안내 — 웹툰 작품은 /search·/explore, 단행본·작법서·창작 자료는 여기서 */}
     <div className="rounded-2xl border border-line bg-panel p-4 text-sm leading-6 text-fg-2" role="note" aria-label="자료 검색 역할 안내">
@@ -427,8 +434,21 @@ export function PolyHavenPage() {
 export function AmbientCgPage() { return <ResourceSearchPage provider="ambientcg" />; }
 export function NasaImagesPage() { return <ResourceSearchPage provider="nasa" />; }
 export function VamCollectionsPage() { return <ResourceSearchPage provider="vam" />; }
-export function RijksmuseumPage() { return <ResourceSearchPage provider="rijksmuseum" />; }
-export function GoogleFontsPage() { return <ResourceSearchPage provider="googlefonts" />; }
+/**
+ * 전용 경로 무대 카피 (디자인 웨이브 19 골격 일반화) — 상세 라우트가 없는
+ * 전용 경로는 공개 데이터 허브 소속이 아니라 리서치 데스크 소속이라, 무대의
+ * 소속 표기를 데스크로 넘긴다. 접근 칩은 서버 제공처 상태
+ * (GET /api/creator-resources/providers)와 대조한 실제 값이다 —
+ * rijksmuseum은 인증키 없이 검색 가능(keyless), googlefonts는 서버 인증키형.
+ */
+const RESEARCH_DESK_STAGE_COPY = {
+  crumbTo: "/research",
+  crumbLabel: "리서치 데스크",
+  eyebrow: "RESEARCH SOURCE",
+  ariaLabel: "자료 제공처 소개",
+} as const;
+export function RijksmuseumPage() { return <ResourceSearchPage provider="rijksmuseum" heroStage stageCopy={{ ...RESEARCH_DESK_STAGE_COPY, keyless: true }} />; }
+export function GoogleFontsPage() { return <ResourceSearchPage provider="googlefonts" heroStage stageCopy={{ ...RESEARCH_DESK_STAGE_COPY, keyless: false }} />; }
 export function GbifPage() { return <ResourceSearchPage provider="gbif" />; }
 export function MusicBrainzPage() { return <ResourceSearchPage provider="musicbrainz" />; }
 export function InternetArchivePage() { return <ResourceSearchPage provider="internetarchive" />; }
