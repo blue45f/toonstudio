@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { pixelHash } from "../../bench/metrics/render-metrics";
 import { alphaSum, fakeEnv } from "../../bench/testing/synthetic-images";
 import { LaneUnavailableError } from "../../engine/core/errors";
+import { lineStroke } from "../../engine/testing/synthetic-strokes";
 import { laneById } from "../registry";
 
 import { BRUSH, CONTRACT_INIT, describeBristleLaneContract, STROKE_A } from "./bristle-lane-contract";
@@ -10,6 +11,9 @@ import { BRISTLE_PBD_LANE_ID, BristlePbdLane, createBristlePbdLane } from "./bri
 
 import type { BristleStrokeReceipt } from "./bristle-dab-synthesis";
 import type { BrushEngineLane } from "../lane";
+
+/** 다발이 모여 털끼리 접촉하는 낮은 필압 획(압력 0.3). */
+const LOW_PRESSURE_STROKE = lineStroke(24, 64, 104, 70, 0.3, { durationMs: 300 });
 
 describe("bristle-pbd 레인: 메타·등록", () => {
   it("probe는 항상 supported이고 실험(experimental) 후보 레인으로 등록돼 있다", async () => {
@@ -112,10 +116,18 @@ describe("bristle-pbd 레인: 털 수·곡선·결정성(교차 프로세스 기
   });
 
   it("PBD 월드 옵션(접촉 보정 비율)이 레인에 전달된다: 보정 1은 기본(0.12)과 다른 그림", async () => {
-    const soft = await drawWith({ bristles: 32 });
-    const hard = await drawWith({ bristles: 32, world: { contactRelaxation: 1 } });
-    expect(pixelHash(await soft.lane.readback())).not.toBe(pixelHash(await hard.lane.readback()));
-    soft.lane.dispose();
-    hard.lane.dispose();
+    // 털 몸체 반경은 낮은 필압(0.15)의 다발에 겹치지 않고 들어가는 크기라(BL-4a), 털끼리 접촉하는 것은 다발이 모이는 낮은 필압 구간이다.
+    // 압력 0.7처럼 다발이 넓게 벌어진 획에서는 접촉이 일어나지 않아 보정 비율이 그림을 바꾸지 않는다.
+    const draw = async (options: Parameters<typeof createBristlePbdLane>[0]): Promise<string> => {
+      const lane = createBristlePbdLane(options);
+      await lane.init(fakeEnv(), CONTRACT_INIT);
+      lane.beginStroke(BRUSH, 4, { color: [0.1, 0.1, 0.4, 1] });
+      for (const s of LOW_PRESSURE_STROKE) lane.addSamples([s]);
+      await lane.endStroke();
+      const hash = pixelHash(await lane.readback());
+      lane.dispose();
+      return hash;
+    };
+    expect(await draw({ bristles: 32 })).not.toBe(await draw({ bristles: 32, world: { contactRelaxation: 1 } }));
   });
 });

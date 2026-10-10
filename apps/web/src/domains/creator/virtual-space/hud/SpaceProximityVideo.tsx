@@ -205,7 +205,7 @@ export function SpaceProximityConsent({ radiusTiles, onStart, onCancel, unavaila
       <li>{bt("내 카메라·마이크는 지금 버튼을 눌렀을 때만 직접 켜요(브라우저 권한 요청).", "Your camera and mic turn on only when you press a button now (browser permission prompt).")}</li>
       <li>{bt(`그 뒤에는 약 ${radiusTiles}칸 안으로 다가온 팀원(최대 3명)과 자동으로 영상이 연결되고, 멀어지면 자동으로 끊겨요.`, `After that, teammates within about ${radiusTiles} tiles (up to 3) connect automatically and disconnect when you walk away.`)}</li>
       <li>{bt("프라이빗 구역 안에서는 같은 구역에 있는 사람끼리만 연결돼요. 상대도 이 기능을 켜야 서로 보여요.", "Inside a private zone you only connect with people in the same zone. Both sides must turn this on to see each other.")}</li>
-      <li>{bt("브라우저 간 직접(P2P) 연결이라 상대에게 네트워크 주소가 보일 수 있어요. 회사망·일부 모바일망에서는 연결되지 않을 수 있어요. 직접 연결이 막히면 중계(TURN) 서버가 준비된 환경에서만 그 서버를 거쳐요.", "Links are direct browser-to-browser (P2P), so your network address may be visible to peers. Some company or mobile networks may block them. If a direct link is blocked, traffic goes through a relay (TURN) server only where one is set up.")}</li>
+      <li>{bt("브라우저 간 직접(P2P) 연결이라 상대에게 네트워크 주소가 보일 수 있어요. 중계(TURN) 서버는 사용하지 않아서, 회사망·일부 모바일망처럼 직접 연결이 막힌 환경에서는 영상이 이어지지 않아요.", "Links are direct browser-to-browser (P2P), so your network address may be visible to peers. No relay (TURN) server is used, so in environments where direct links are blocked — some company or mobile networks — video will not connect.")}</li>
     </ul>
     {reason ? <p className="space-proximity-consent__reason" role="status">{reason}</p> : null}
     <div className="space-proximity-consent__actions">

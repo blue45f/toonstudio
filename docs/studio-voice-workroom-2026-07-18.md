@@ -1,5 +1,11 @@
 # Studio WebRTC 음성 작업실 — 2026-07-18
 
+> 2026-10-11 정정: 이 문서는 2026-07-18 시점의 설계 기록(legacy)이다. TURN은 비용
+> 리스크로 쓰지 않기로 결정해 Worker의 Cloudflare TURN 발급과 API의 coturn 자격 발급,
+> deploy/coturn 스캐폴드가 모두 제거됐고, 현재 ICE는 Cloudflare STUN 전용이다.
+> 문맥상 아래 TURN 서술은 당시 설계를 설명하는 것으로 읽어야 한다. 현재 상태는
+> `docs/technology/toonstudio-webrtc-realtime-media-2026-09-25.md` §6을 본다.
+
 > 운영 상태(2026-07-20): 반복 TURN·클러스터 비용을 피하기 위해 제품 UI에서는 제거했고 서버도
 > `STUDIO_LIVE_VOICE_ENABLED=true`를 명시한 배포에서만 참가·상태·신호·어댑터 검색을 허용한다.
 > 미설정/`false`가 기본이며 화면 공유·채팅·presence·CRDT 협업은 계속 사용할 수 있다.
@@ -96,7 +102,7 @@ TURN의 공인 IP, DNS, TLS 인증서, UDP/TCP/TLS listener, relay UDP 포트 �
 대역폭 quota, credential이 제거된 로그, relay 선택률·실패율·대역폭 관측이 필요하다. 공유 secret
 교체는 새 발급기와 TURN 서버를 같은 변경 창에서 갱신하고 기존 TTL 이상 겹쳐 운영하는 절차로
 수행한다. 저장소의 비활성 기본 배포 예시와 방화벽·인증서·쿼터·무중단 secret 교체·외부 smoke
-절차는 [`deploy/coturn/README.md`](../deploy/coturn/README.md)에 분리했다.
+절차는 당시 `deploy/coturn/README.md`에 분리했었다(2026-10-11 TURN 미사용 결정으로 스캐폴드와 함께 삭제됨).
 
 ## 수명주기와 실패 안전성
 

@@ -96,6 +96,7 @@ import type {
   StudioLiveScreenRequestInput,
   StudioLiveScreenStateInput,
   StudioLiveScreenStopInput,
+  StudioLiveDirectRelayInput,
   StudioLiveSignalInput,
   StudioLiveSocket,
   StudioLiveVoiceJoinInput,
@@ -547,6 +548,15 @@ export class StudioLiveGateway
     @Ack() ack?: StudioLiveAckCallback<{ delivered: true; signalId: string }>
   ) {
     return this.boundHandler(studioLiveVoiceHandlers.relaySignal, client, body, ack);
+  }
+
+  @SubscribeMessage("studio:direct:relay")
+  async relayDirect(
+    @ConnectedSocket() client: StudioLiveSocket,
+    @MessageBody() body: StudioLiveDirectRelayInput,
+    @Ack() ack?: StudioLiveAckCallback<{ delivered: true; relayId: string }>
+  ) {
+    return this.boundHandler(studioLiveVoiceHandlers.relayDirect, client, body, ack);
   }
 
   private boundHandler<TArgs extends unknown[], TResult>(

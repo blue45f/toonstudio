@@ -40,9 +40,9 @@
 
   // Provision with `wrangler secret put REALTIME_TICKET_SECRET`; ticket
   // credentials must never be committed as plaintext production vars.
-  // TURN 발급용 REALTIME_TURN_KEY_ID와 REALTIME_TURN_API_TOKEN도 secret으로
-  // 등록한다. 단, required에 넣지 않는다: 등록 전에도 Worker는 TURN 없이
-  // STUN 전용 정책으로 안전하게 동작해야 하기 때문이다.
+  // TURN은 비용 발생 리스크로 사용하지 않는다(2026-10-11 결정). ICE는
+  // 클라이언트의 Cloudflare STUN 전용 구성으로 고정하고, Worker는 TURN
+  // 자격을 발급하지 않는다.
   "secrets": {
     "required": ["REALTIME_TICKET_SECRET", "REALTIME_CONTROL_SECRET"]
   },
@@ -51,7 +51,6 @@
     "REALTIME_TICKET_ISSUER": "toonspectrum-api",
     "REALTIME_TICKET_AUDIENCE": "toonspectrum-realtime",
     "REALTIME_ALLOWED_ORIGINS": "https://toonstudio.cloud,https://www.toonstudio.cloud",
-    "REALTIME_TURN_ENABLED": "true",
     "REALTIME_MAX_CONNECTIONS_PER_ROOM": "64",
     "REALTIME_MAX_CONNECTIONS_PER_ACTOR": "4",
     "REALTIME_MAX_BUFFERED_BYTES": "262144",

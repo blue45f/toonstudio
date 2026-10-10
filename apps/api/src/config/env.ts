@@ -346,14 +346,10 @@ const envSchema = z.object({
     256 * 1_024
   ).optional(),
   STUDIO_LIVE_VOICE_ENABLED: z.enum(["true", "false"]).optional(),
+  // TURN은 비용 발생 리스크로 사용하지 않는다(2026-10-11 결정). 음성·화면 ICE
+  // 정책은 STUN 전용이며, 과거 STUDIO_VOICE_TURN_* 변수는 더 이상 선언하지
+  // 않는다(배포 환경에 남아 있어도 스키마가 버리고 서비스가 읽지 않는다).
   STUDIO_VOICE_STUN_URLS: z.string().optional(),
-  STUDIO_VOICE_TURN_URLS: z.string().optional(),
-  STUDIO_VOICE_TURN_SHARED_SECRET: z.string().min(32).optional(),
-  STUDIO_VOICE_TURN_REQUIRED: z.enum(["true", "false"]).optional(),
-  STUDIO_VOICE_TURN_TTL_SECONDS: z
-    .string()
-    .regex(/^\d+$/u, "STUDIO_VOICE_TURN_TTL_SECONDS must be numeric")
-    .optional(),
   // 세션/OAuth state HMAC 비밀. 운영에서는 실제 소비 경계와 validateEnv가
   // 공백 없는 32 UTF-8 바이트 이상을 fail-closed로 강제한다.
   AUTH_SESSION_SECRET: z.string().min(1).optional(),
@@ -557,7 +553,6 @@ const SECRET_KEYS: ReadonlyArray<keyof ValidatedEnv> = [
   "UPSTASH_COORDINATION_REST_TOKEN",
   "UPSTASH_COORDINATION_KEY_HASH_SECRET",
   "BACKEND_UPSTASH_QSTASH_PUBLISH_TOKEN",
-  "STUDIO_VOICE_TURN_SHARED_SECRET",
   "OPENAI_API_KEY",
   "OPENROUTER_API_KEY",
   "GEMINI_API_KEY",

@@ -1,5 +1,3 @@
-import { createHmac, webcrypto } from "node:crypto";
-
 import {
   ForbiddenException,
   HttpException,
@@ -9,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CreatorService } from "../../../../../../apps/api/src/modules/creator/creator.service";
 import {
+  STUDIO_VOICE_DEFAULT_STUN_URL,
   StudioVoiceIcePolicyService,
   issueStudioVoiceIcePolicy,
   resolveStudioVoiceIceConfiguration,
@@ -16,17 +15,11 @@ import {
 } from "../../../../../../apps/api/src/modules/creator/studio-voice-ice-policy.service";
 import { StudioVoiceIcePolicyResponseSchema } from "../../../../../../apps/web/src/shared/lib/studio-voice-ice-policy-contract";
 
-const TURN_SECRET = "turn-shared-secret-with-at-least-thirty-two-characters";
-
 function configuration(
   overrides: Partial<StudioVoiceIceConfiguration> = {}
 ): StudioVoiceIceConfiguration {
   return {
-    stunUrls: [],
-    turnUrls: [],
-    turnSharedSecret: null,
-    turnTtlSeconds: 900,
-    turnRequired: false,
+    stunUrls: [STUDIO_VOICE_DEFAULT_STUN_URL],
     production: false,
     ...overrides,
   };
@@ -53,149 +46,95 @@ function team(options: { userId: string; workId: string; role?: string }) {
 }
 
 describe("Studio voice ICE configuration", () => {
-  it("defaults to a privacy-preserving direct mode without contacting third parties", () => {
+  it("defaults to the Cloudflare STUN without contacting third parties", () => {
     expect(resolveStudioVoiceIceConfiguration({})).toEqual({
-      stunUrls: [],
-      turnUrls: [],
-      turnSharedSecret: null,
-      turnTtlSeconds: 900,
-      turnRequired: false,
+      stunUrls: ["stun:stun.cloudflare.com:3478"],
+      production: false,
+    });
+    expect(STUDIO_VOICE_DEFAULT_STUN_URL).toBe("stun:stun.cloudflare.com:3478");
+  });
+
+  it("parses, deduplicates and bounds deployment-owned STUN settings", () => {
+    expect(resolveStudioVoiceIceConfiguration({
+      STUDIO_VOICE_STUN_URLS: "stun:voice.example.com, stun:voice.example.com stun:voice2.example.com:3478",
+    })).toEqual({
+      stunUrls: ["stun:voice.example.com", "stun:voice2.example.com:3478"],
       production: false,
     });
   });
 
-  it("parses, deduplicates and bounds deployment-owned STUN/TURN settings", () => {
+  it("ignores the retired TURN variables instead of failing or issuing relay credentials", () => {
+    // TURN은 2026-10-11 결정으로 쓰지 않는다. 배포 환경에 과거 변수가 남아
+    // 있어도 구성은 STUN 전용으로 고정되고 오류도 나지 않는다.
     expect(resolveStudioVoiceIceConfiguration({
-      STUDIO_VOICE_STUN_URLS: "stun:voice.example.com, stun:voice.example.com",
-      STUDIO_VOICE_TURN_URLS: "turn:voice.example.com?transport=udp turns:voice.example.com:5349?transport=tcp",
-      STUDIO_VOICE_TURN_SHARED_SECRET: TURN_SECRET,
+      STUDIO_VOICE_TURN_URLS: "turn:voice.example.com?transport=udp",
+      STUDIO_VOICE_TURN_SHARED_SECRET: "x".repeat(40),
       STUDIO_VOICE_TURN_REQUIRED: "true",
       STUDIO_VOICE_TURN_TTL_SECONDS: "600",
     })).toEqual({
-      stunUrls: ["stun:voice.example.com"],
-      turnUrls: [
-        "turn:voice.example.com?transport=udp",
-        "turns:voice.example.com:5349?transport=tcp",
-      ],
-      turnSharedSecret: TURN_SECRET,
-      turnTtlSeconds: 600,
-      turnRequired: true,
+      stunUrls: ["stun:stun.cloudflare.com:3478"],
       production: false,
     });
-  });
-
-  it("fails application configuration when commercial TURN is required but incomplete", () => {
-    expect(() => resolveStudioVoiceIceConfiguration({
-      STUDIO_VOICE_TURN_REQUIRED: "true",
-    })).toThrow(/TURN 필수 모드/u);
-    expect(() => resolveStudioVoiceIceConfiguration({
-      STUDIO_VOICE_TURN_URLS: "turn:voice.example.com",
-    })).toThrow(/함께 설정/u);
-    expect(() => resolveStudioVoiceIceConfiguration({
-      STUDIO_VOICE_TURN_URLS: "turn:voice.example.com",
-      STUDIO_VOICE_TURN_SHARED_SECRET: "too-short",
-    })).toThrow(/최소 32자/u);
-    expect(() => resolveStudioVoiceIceConfiguration({
-      STUDIO_VOICE_STUN_URLS: "https://voice.example.com",
-    })).toThrow(/stun:/u);
-    expect(() => resolveStudioVoiceIceConfiguration({
-      STUDIO_VOICE_TURN_REQUIRED: "true",
-      STUDIO_VOICE_TURN_URLS: "turn:voice.example.com?transport=udp",
-      STUDIO_VOICE_TURN_SHARED_SECRET: TURN_SECRET,
-    })).toThrow(/TCP\/TLS/u);
     expect(resolveStudioVoiceIceConfiguration({
       NODE_ENV: "production",
-    })).toMatchObject({ production: true, turnRequired: false });
+    })).toMatchObject({ production: true });
+  });
+
+  it("rejects non-STUN addresses in the STUN setting", () => {
+    expect(() => resolveStudioVoiceIceConfiguration({
+      STUDIO_VOICE_STUN_URLS: "https://voice.example.com",
+    })).toThrow();
+    expect(() => resolveStudioVoiceIceConfiguration({
+      STUDIO_VOICE_STUN_URLS: "turn:voice.example.com:3478",
+    })).toThrow(/stun:/u);
     expect(() => resolveStudioVoiceIceConfiguration({
       STUDIO_VOICE_STUN_URLS: "stun:user@voice.example.com",
-    })).toThrow(/유효한 stun:/u);
-    expect(() => resolveStudioVoiceIceConfiguration({
-      STUDIO_VOICE_TURN_URLS: "turn:voice.example.com?arbitrary=true",
-      STUDIO_VOICE_TURN_SHARED_SECRET: TURN_SECRET,
-    })).toThrow(/유효한 stun:/u);
+    })).toThrow();
   });
 });
 
-describe("Studio voice ICE credential issuance", () => {
-  it("issues coturn REST-compatible, opaque, expiring credentials", async () => {
+describe("Studio voice ICE policy issuance (STUN-only)", () => {
+  it("issues a STUN-only policy with no credentials and no expiry", () => {
     const nowMs = Date.parse("2026-07-18T08:00:00.000Z");
     const policy = issueStudioVoiceIcePolicy({
-      configuration: configuration({
-        stunUrls: ["stun:voice.example.com"],
-        turnUrls: ["turn:voice.example.com?transport=udp"],
-        turnSharedSecret: TURN_SECRET,
-        turnTtlSeconds: 600,
-        turnRequired: true,
-      }),
+      configuration: configuration({ stunUrls: ["stun:voice.example.com"] }),
       userId: "private-user-id",
       workId: "private-work-id",
       nowMs,
     });
 
     expect(StudioVoiceIcePolicyResponseSchema.parse(policy)).toEqual(policy);
-    expect(policy).toMatchObject({
-      version: 1,
-      mode: "turn",
-      issuedAt: "2026-07-18T08:00:00.000Z",
-      expiresAt: "2026-07-18T08:10:00.000Z",
-      ttlSeconds: 600,
-    });
-    const turn = policy.iceServers[1];
-    const opaqueIdentity = createHmac("sha256", TURN_SECRET)
-      .update("toonstudio-studio-voice-identity-v1\0")
-      .update("private-work-id")
-      .update("\0")
-      .update("private-user-id")
-      .digest("base64url")
-      .slice(0, 32);
-    expect(turn?.username).toBe(`1784362200:${opaqueIdentity}`);
-    expect(turn?.username).not.toContain("private-user-id");
-    expect(turn?.username).not.toContain("private-work-id");
-    // 현재 toonstudio 접두사의 고정 벡터이며, 별도 Web Crypto 구현으로도 검증한다.
-    expect(opaqueIdentity).toBe("LnctKQgSmo8-hzYZ9VgWAJk1QvdUjypT");
-    expect(turn?.credential).toBe("cDXj28xy8twQQ2qG+9C4Ej8/p30=");
-    const signingKey = await webcrypto.subtle.importKey(
-      "raw", new TextEncoder().encode(TURN_SECRET),
-      { name: "HMAC", hash: "SHA-1" }, false, ["sign"],
-    );
-    const independentSignature = await webcrypto.subtle.sign(
-      "HMAC", signingKey, new TextEncoder().encode(`1784362200:${opaqueIdentity}`),
-    );
-    expect(turn?.credential).toBe(Buffer.from(independentSignature).toString("base64"));
-  });
-
-  it("returns explicit direct or STUN-only policies when relay is optional", () => {
-    expect(issueStudioVoiceIcePolicy({
-      configuration: configuration(),
-      userId: "direct-user",
-      workId: "direct-work",
-      nowMs: 1,
-    })).toEqual({
-      version: 1,
-      mode: "direct",
-      iceServers: [],
-      issuedAt: "1970-01-01T00:00:00.000Z",
-      expiresAt: null,
-      ttlSeconds: 0,
-    });
-    expect(issueStudioVoiceIcePolicy({
-      configuration: configuration({ stunUrls: ["stun:voice.example.com"] }),
-      userId: "stun-user",
-      workId: "stun-work",
-      nowMs: 1,
-    })).toEqual({
+    expect(policy).toEqual({
       version: 1,
       mode: "stun",
       iceServers: [{ urls: ["stun:voice.example.com"] }],
-      issuedAt: "1970-01-01T00:00:00.000Z",
+      issuedAt: "2026-07-18T08:00:00.000Z",
       expiresAt: null,
       ttlSeconds: 0,
     });
+    expect(JSON.stringify(policy)).not.toMatch(/turn:|username|credential/);
+  });
+
+  it("never issues TURN credentials even when the environment still carries TURN variables", () => {
+    const configurationFromEnv = resolveStudioVoiceIceConfiguration({
+      NODE_ENV: "production",
+      STUDIO_VOICE_TURN_URLS: "turn:voice.example.com?transport=udp",
+      STUDIO_VOICE_TURN_SHARED_SECRET: "x".repeat(40),
+      STUDIO_VOICE_TURN_REQUIRED: "true",
+    });
+    const policy = issueStudioVoiceIcePolicy({
+      configuration: configurationFromEnv,
+      userId: "user-1",
+      workId: "work-1",
+      nowMs: 1,
+    });
+    expect(policy.mode).toBe("stun");
+    expect(JSON.stringify(policy.iceServers)).not.toContain("turn:");
   });
 });
 
 describe("StudioVoiceIcePolicyService", () => {
-  it("rate-limits screen-share relay credential issuance per user and work", async () => {
+  it("rate-limits screen-share ICE issuance per user and work", async () => {
     const userId = "screen-rate-user-unique-0720";
     const workId = "screen-rate-work-unique-0720";
     const getWorkTeam = vi.fn().mockResolvedValue(team({ userId, workId }));
@@ -206,7 +145,7 @@ describe("StudioVoiceIcePolicyService", () => {
 
     for (let count = 0; count < 12; count += 1) {
       await expect(service.issueScreenShare(userId, workId)).resolves.toMatchObject({
-        mode: "direct",
+        mode: "stun",
       });
     }
     await expect(service.issueScreenShare(userId, workId)).rejects.toBeInstanceOf(
@@ -215,7 +154,7 @@ describe("StudioVoiceIcePolicyService", () => {
     expect(getWorkTeam).toHaveBeenCalledTimes(12);
   });
 
-  it("issues screen-share ICE credentials to active viewers", async () => {
+  it("issues screen-share ICE policies to active viewers", async () => {
     const userId = "screen-viewer-unique-a";
     const workId = "screen-work-unique-a";
     const getWorkTeam = vi.fn().mockResolvedValue(team({
@@ -229,7 +168,7 @@ describe("StudioVoiceIcePolicyService", () => {
     );
 
     await expect(service.issueScreenShare(userId, workId)).resolves.toMatchObject({
-      mode: "direct",
+      mode: "stun",
     });
     expect(getWorkTeam).toHaveBeenCalledTimes(1);
   });
@@ -255,18 +194,18 @@ describe("StudioVoiceIcePolicyService", () => {
     );
   });
 
-  it("keeps production screen sharing on the zero-relay-cost direct path when TURN is optional", async () => {
+  it("keeps production screen sharing on the zero-relay-cost STUN-only path", async () => {
     const userId = "screen-production-unique-a";
     const workId = "screen-production-work-unique-a";
     const getWorkTeam = vi.fn().mockResolvedValue(team({ userId, workId }));
     const service = new StudioVoiceIcePolicyService(
       { getWorkTeam } as unknown as CreatorService,
-      configuration({ production: true, turnRequired: false })
+      configuration({ production: true })
     );
 
     await expect(service.issueScreenShare(userId, workId)).resolves.toMatchObject({
-      mode: "direct",
-      iceServers: [],
+      mode: "stun",
+      iceServers: [{ urls: ["stun:stun.cloudflare.com:3478"] }],
     });
   });
 });

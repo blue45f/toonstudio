@@ -99,9 +99,9 @@ export const LIBRARY_AREA_COLLAB_REALTIME: LibraryGuideArea = {
       {
         id: "relay",
         label: t("연결 도우미", "Connection helpers"),
-        sub: t("막힐 때 STUN·TURN. 운영 키는 별도 확인", "STUN and TURN when blocked; production keys are checked separately"),
+        sub: t("STUN 전용. 막히면 프레즌스만 소켓 릴레이", "STUN only; presence falls back to the socket relay"),
         tone: "external",
-        chips: ["STUN", "Cloudflare TURN", "coturn"],
+        chips: ["STUN", "Cloudflare STUN", "Socket.IO relay"],
       },
     ],
     brackets: [
@@ -258,29 +258,29 @@ export const LIBRARY_AREA_COLLAB_REALTIME: LibraryGuideArea = {
       atlasIds: ["durable-objects-realtime"],
     },
     {
-      id: "cloudflare-turn",
-      name: "Cloudflare Realtime TURN",
+      id: "cloudflare-stun",
+      name: "Cloudflare STUN",
       kind: "service",
-      oneLine: t("직접 연결이 막힌 네트워크에서 대화를 대신 전달해 주는 중계 서비스", "A relay service that carries a conversation when a direct connection is blocked"),
+      oneLine: t("직접 연결 경로를 찾게 돕는 가벼운 안내 서버. 대화 자체를 대신 전달하지는 않습니다", "A lightweight rendezvous server that helps find a direct path; it does not carry the conversation itself"),
       usedFor: t(
-        "허들·직통 통로는 실시간 Worker가 받아 온 Cloudflare TURN 단기 자격증명(유효 4시간)을 쓰고, 없으면 STUN 전용으로 바로 시작합니다.",
-        "The huddle and direct channel use short-lived Cloudflare TURN credentials (valid 4 hours) fetched by the realtime Worker, and start STUN-only when none exist.",
+        "허들·직통 통로·화면 공유의 ICE 구성은 공유 모듈의 Cloudflare STUN(stun:stun.cloudflare.com:3478) 하나뿐입니다. 중계(TURN) 서버는 쓰지 않습니다.",
+        "The ICE configuration for the huddle, the direct channel and screen sharing is the single Cloudflare STUN (stun:stun.cloudflare.com:3478) from the shared module. No relay (TURN) server is used.",
       ),
       why: t(
-        "키를 브라우저에 고정하면 누구나 쓸 수 있어 서버가 짧은 수명으로 즉석 발급합니다. Cloudflare TURN은 키만 등록하면 쓸 수 있어 자체 TURN 서버를 운영하지 않아도 됩니다.",
-        "A key fixed in the browser could be used by anyone, so the server issues short-lived credentials on demand. Cloudflare TURN works once a key is registered, with no TURN server of our own to run.",
+        "TURN 중계는 대역폭 비용이 사용량에 따라 발생하는 구조라, 비용 리스크를 이유로 2026-10-11에 쓰지 않기로 결정하고 Worker·API의 자격 발급 경로를 모두 제거했습니다. STUN은 자격도 과금도 없어 구성이 단순합니다.",
+        "TURN relay bandwidth bills grow with usage, so on 2026-10-11 it was decided not to use TURN at all, and the Worker and API credential-issuance paths were removed. STUN needs no credentials and no billing, which keeps the configuration simple.",
       ),
       alternatives: t(
-        "화면 공유는 API가 coturn 방식(HMAC-SHA1) 자격을 발급하며, coturn은 직접 운영하는 대안으로 선택형 배포 구성입니다.",
-        "For screen sharing the API issues coturn-style (HMAC-SHA1) credentials, and coturn is the self-run alternative, shipped as an optional deployment scaffold.",
+        "직접 연결이 막힌 환경에서는 음성·영상이 이어지지 않는 대신, 공간 프레즌스의 직통 패킷은 ICE 실패를 감지해 Socket.IO 릴레이로 폴백합니다.",
+        "Where a direct connection is blocked, voice and video do not connect; instead, spatial-presence direct packets detect the ICE failure and fall back to the Socket.IO relay.",
       ),
       cost: t(
-        "운영 TURN 키 등록과 엄격한 NAT에서 중계가 통과한 검증은 확인하지 못했습니다. 2026-09-21 운영 문서는 STUN 전용 P2P가 구성된 정책이고 유료 TURN·SFU는 없다고 적었습니다.",
-        "Production TURN key registration and relay success through a strict NAT were not confirmed. An operations note of 2026-09-21 records STUN-only P2P as the configured policy with no paid TURN or SFU.",
+        "STUN 자체는 비용이 없습니다. 대칭 NAT 같은 환경에서 직접 연결이 뚫리지 않는 비율은 아직 실측하지 않았습니다.",
+        "STUN itself costs nothing. The share of symmetric-NAT environments where a direct connection fails has not been measured yet.",
       ),
       paths: [
-        `${REALTIME}/src/turn.ts`,
         `${LIVE}/studio-ice-configuration.ts`,
+        "apps/api/src/modules/creator/studio-voice-ice-policy.service.ts",
         "docs/studio/realtime-production-activation-20260921.md",
       ],
       license: "Service terms",
@@ -289,8 +289,8 @@ export const LIBRARY_AREA_COLLAB_REALTIME: LibraryGuideArea = {
     },
   ],
   pitfall: t(
-    "'실시간'은 하나가 아닙니다. 문서·접속 상태·통화 신호·영상은 통로와 주인이 각각 따로입니다. Durable Objects와 TURN은 선택형 구성이라, 운영에서 켜져 있는지와 인증된 방 입장·WAN 수용은 이 페이지가 단정하지 않습니다.",
-    "'Realtime' is not one thing: documents, presence, call signals and video each have their own channel and owner. Durable Objects and TURN are optional setups, so whether they are on in production, and authenticated room entry and WAN capacity, are not asserted here.",
+    "'실시간'은 하나가 아닙니다. 문서·접속 상태·통화 신호·영상은 통로와 주인이 각각 따로입니다. ICE는 STUN 전용으로 고정돼 있지만, 인증된 방 입장·WAN 수용이 운영에서 어느 수준인지는 이 페이지가 단정하지 않습니다.",
+    "'Realtime' is not one thing: documents, presence, call signals and video each have their own channel and owner. ICE is fixed to STUN-only, but the production level of authenticated room entry and WAN capacity is not asserted here.",
   ),
   status: "configured",
   atlasIds: [

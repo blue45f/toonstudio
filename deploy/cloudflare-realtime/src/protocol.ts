@@ -24,6 +24,16 @@ export const REALTIME_CHANNELS = [
 
 export type RealtimeChannel = (typeof REALTIME_CHANNELS)[number];
 
+/**
+ * 아바타 외형의 정식 전달 필드 (구 `tool` 문자열 우회 대체). profile과 마찬가지로
+ * display-only이며 ACL·권한 판단에 절대 쓰지 않는다. color는 "#rrggbb",
+ * skinKey는 웹 외형 레지스트리와 같은 토큰 규칙을 따른다.
+ */
+export interface PresenceAvatarAppearance {
+  readonly color?: string;
+  readonly skinKey?: string;
+}
+
 export interface PresenceUpdatePayload {
   readonly kind: "presence.update";
   readonly pageId: string | null;
@@ -35,6 +45,7 @@ export interface PresenceUpdatePayload {
     readonly displayName: string;
     readonly role: "owner" | "admin" | "editor" | "commenter" | "viewer";
     readonly state: "active" | "idle" | "away";
+    readonly avatar?: PresenceAvatarAppearance;
   };
   readonly tool: string | null;
 }
@@ -468,7 +479,7 @@ function validatePresencePayload(value: unknown): value is PresencePayload {
         value.tool.length > 64 ||
         !isBoundedText(value.tool, 256))) ||
     !isRecord(value.profile) ||
-    !hasExactKeys(value.profile, ["displayName", "role", "state"])
+    !hasExactKeys(value.profile, ["displayName", "role", "state"], ["avatar"])
   ) {
     return false;
   }
@@ -484,8 +495,37 @@ function validatePresencePayload(value: unknown): value is PresencePayload {
       value.profile.role === "viewer") &&
     (value.profile.state === "active" ||
       value.profile.state === "idle" ||
-      value.profile.state === "away")
+      value.profile.state === "away") &&
+    isValidPresenceAvatar(value.profile.avatar)
   );
+}
+
+const PRESENCE_AVATAR_COLOR = /^#[0-9a-fA-F]{6}$/;
+const PRESENCE_AVATAR_SKIN_KEY = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+
+function isValidPresenceAvatar(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isRecord(value) || !hasExactKeys(value, [], ["color", "skinKey"])) {
+    return false;
+  }
+  // 최소 1개 키가 있어야 한다 — 빈 외형 객체는 계약 위반이다.
+  if (!Object.hasOwn(value, "color") && !Object.hasOwn(value, "skinKey")) {
+    return false;
+  }
+  if (
+    value.color !== undefined &&
+    (typeof value.color !== "string" || !PRESENCE_AVATAR_COLOR.test(value.color))
+  ) {
+    return false;
+  }
+  if (
+    value.skinKey !== undefined &&
+    (typeof value.skinKey !== "string" ||
+      !PRESENCE_AVATAR_SKIN_KEY.test(value.skinKey))
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function validateCommentPayload(value: unknown): value is CommentPayload {

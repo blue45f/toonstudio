@@ -1,5 +1,3 @@
-import { createHmac } from "node:crypto";
-
 import {
   ForbiddenException,
   HttpException,
@@ -18,71 +16,32 @@ import {
 
 import { CreatorService } from "./creator.service";
 
-const STUDIO_VOICE_TURN_DEFAULT_TTL_SECONDS = 900;
-const STUDIO_VOICE_TURN_MIN_TTL_SECONDS = 300;
-const STUDIO_VOICE_TURN_MAX_TTL_SECONDS = 86_400;
 const STUDIO_VOICE_ICE_MAX_URLS_PER_KIND = 8;
+
+/** STUN 미설정 시 기본값. 웹 클라이언트의 공유 ICE 구성과 같은 Cloudflare STUN이다. */
+export const STUDIO_VOICE_DEFAULT_STUN_URL = "stun:stun.cloudflare.com:3478";
 
 const OptionalEnvironmentStringSchema = z.preprocess(
   (value) => typeof value === "string" && value.trim().length > 0 ? value : undefined,
   z.string().optional()
 );
 
+/**
+ * 2026-10-11 결정으로 TURN 서버는 비용 발생 리스크 때문에 사용하지 않는다.
+ * 그래서 이 정책은 TURN 자격을 발급하지 않고 STUN 전용 구성만 돌려준다.
+ * 과거의 STUDIO_VOICE_TURN_* 환경변수는 더 이상 읽지 않으며, 배포 환경에
+ * 남아 있어도 무시된다. 응답 계약(mode에 "turn" 포함)은 기존 클라이언트
+ * 호환을 위해 모양을 유지한다.
+ */
 const StudioVoiceIceEnvironmentSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     STUDIO_VOICE_STUN_URLS: OptionalEnvironmentStringSchema,
-    STUDIO_VOICE_TURN_URLS: OptionalEnvironmentStringSchema,
-    STUDIO_VOICE_TURN_SHARED_SECRET: OptionalEnvironmentStringSchema,
-    STUDIO_VOICE_TURN_REQUIRED: z.preprocess(
-      (value) => typeof value === "string" ? value.trim().toLowerCase() : value,
-      z.enum(["true", "false"]).default("false")
-    ),
-    STUDIO_VOICE_TURN_TTL_SECONDS: z.preprocess(
-      (value) => typeof value === "string" && value.trim().length === 0 ? undefined : value,
-      z.coerce
-        .number()
-        .int()
-        .min(STUDIO_VOICE_TURN_MIN_TTL_SECONDS)
-        .max(STUDIO_VOICE_TURN_MAX_TTL_SECONDS)
-        .default(STUDIO_VOICE_TURN_DEFAULT_TTL_SECONDS)
-    ),
   })
-  .strict()
-  .superRefine((environment, context) => {
-    const hasTurnUrls = environment.STUDIO_VOICE_TURN_URLS !== undefined;
-    const hasTurnSecret = environment.STUDIO_VOICE_TURN_SHARED_SECRET !== undefined;
-    if (hasTurnUrls !== hasTurnSecret) {
-      context.addIssue({
-        code: "custom",
-        message: "STUDIO_VOICE_TURN_URLS와 STUDIO_VOICE_TURN_SHARED_SECRET은 함께 설정해야 합니다.",
-      });
-    }
-    if (
-      environment.STUDIO_VOICE_TURN_SHARED_SECRET !== undefined &&
-      environment.STUDIO_VOICE_TURN_SHARED_SECRET.length < 32
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["STUDIO_VOICE_TURN_SHARED_SECRET"],
-        message: "TURN 공유 비밀은 최소 32자여야 합니다.",
-      });
-    }
-    if (environment.STUDIO_VOICE_TURN_REQUIRED === "true" && !hasTurnUrls) {
-      context.addIssue({
-        code: "custom",
-        path: ["STUDIO_VOICE_TURN_REQUIRED"],
-        message: "상용 TURN 필수 모드에서는 TURN 주소와 공유 비밀을 반드시 설정해야 합니다.",
-      });
-    }
-  });
+  .strict();
 
 export interface StudioVoiceIceConfiguration {
   stunUrls: readonly string[];
-  turnUrls: readonly string[];
-  turnSharedSecret: string | null;
-  turnTtlSeconds: number;
-  turnRequired: boolean;
   production: boolean;
 }
 
@@ -90,20 +49,16 @@ export const STUDIO_VOICE_ICE_CONFIGURATION = Symbol(
   "STUDIO_VOICE_ICE_CONFIGURATION"
 );
 
-function parseIceUrls(
-  value: string | undefined,
-  expectedKind: "stun" | "turn"
-): readonly string[] {
+function parseStunUrls(value: string | undefined): readonly string[] {
   if (!value) return [];
   const urls = [...new Set(value.split(/[\s,]+/u).map((url) => url.trim()).filter(Boolean))];
   if (urls.length > STUDIO_VOICE_ICE_MAX_URLS_PER_KIND) {
-    throw new Error(`Studio ${expectedKind.toUpperCase()} 주소는 최대 ${STUDIO_VOICE_ICE_MAX_URLS_PER_KIND}개까지 설정할 수 있습니다.`);
+    throw new Error(`Studio STUN 주소는 최대 ${STUDIO_VOICE_ICE_MAX_URLS_PER_KIND}개까지 설정할 수 있습니다.`);
   }
   for (const url of urls) {
     StudioVoiceIceUrlSchema.parse(url);
-    const pattern = expectedKind === "stun" ? /^(?:stun|stuns):/i : /^(?:turn|turns):/i;
-    if (!pattern.test(url)) {
-      throw new Error(`STUDIO_VOICE_${expectedKind.toUpperCase()}_URLS에 ${expectedKind}: 계열이 아닌 주소가 포함되어 있습니다.`);
+    if (!/^(?:stun|stuns):/i.test(url)) {
+      throw new Error("STUDIO_VOICE_STUN_URLS에 stun: 계열이 아닌 주소가 포함되어 있습니다.");
     }
   }
   return Object.freeze(urls);
@@ -115,31 +70,13 @@ export function resolveStudioVoiceIceConfiguration(
   const parsed = StudioVoiceIceEnvironmentSchema.parse({
     NODE_ENV: environment.NODE_ENV,
     STUDIO_VOICE_STUN_URLS: environment.STUDIO_VOICE_STUN_URLS,
-    STUDIO_VOICE_TURN_URLS: environment.STUDIO_VOICE_TURN_URLS,
-    STUDIO_VOICE_TURN_SHARED_SECRET: environment.STUDIO_VOICE_TURN_SHARED_SECRET,
-    STUDIO_VOICE_TURN_REQUIRED: environment.STUDIO_VOICE_TURN_REQUIRED,
-    STUDIO_VOICE_TURN_TTL_SECONDS: environment.STUDIO_VOICE_TURN_TTL_SECONDS,
   });
-  const turnUrls = parseIceUrls(parsed.STUDIO_VOICE_TURN_URLS, "turn");
-  if (parsed.STUDIO_VOICE_TURN_REQUIRED === "true") {
-    const hasUdpPath = turnUrls.some(
-      (url) => /^turn:/iu.test(url) && !/\?transport=tcp$/iu.test(url)
-    );
-    const hasTcpOrTlsPath = turnUrls.some(
-      (url) => /^turns:/iu.test(url) || /\?transport=tcp$/iu.test(url)
-    );
-    if (!hasUdpPath || !hasTcpOrTlsPath) {
-      throw new Error(
-        "상용 TURN 필수 모드에는 UDP 경로와 TCP/TLS 경로가 모두 필요합니다."
-      );
-    }
-  }
+  const configuredStunUrls = parseStunUrls(parsed.STUDIO_VOICE_STUN_URLS);
   return Object.freeze({
-    stunUrls: parseIceUrls(parsed.STUDIO_VOICE_STUN_URLS, "stun"),
-    turnUrls,
-    turnSharedSecret: parsed.STUDIO_VOICE_TURN_SHARED_SECRET ?? null,
-    turnTtlSeconds: parsed.STUDIO_VOICE_TURN_TTL_SECONDS,
-    turnRequired: parsed.STUDIO_VOICE_TURN_REQUIRED === "true",
+    stunUrls:
+      configuredStunUrls.length > 0
+        ? configuredStunUrls
+        : Object.freeze([STUDIO_VOICE_DEFAULT_STUN_URL]),
     production: parsed.NODE_ENV === "production",
   });
 }
@@ -150,60 +87,21 @@ export function issueStudioVoiceIcePolicy(options: {
   workId: string;
   nowMs?: number;
 }): StudioVoiceIcePolicyResponse {
-  const { configuration, userId, workId } = options;
+  const { configuration } = options;
   const nowMs = options.nowMs ?? Date.now();
   if (!Number.isFinite(nowMs) || nowMs < 0) {
-    throw new Error("TURN 자격 증명 발급 시각이 올바르지 않습니다.");
+    throw new Error("ICE 정책 발급 시각이 올바르지 않습니다.");
   }
 
-  const iceServers: StudioVoiceIcePolicyResponse["iceServers"] = [];
   const issuedAtSeconds = Math.floor(nowMs / 1_000);
   const issuedAt = new Date(issuedAtSeconds * 1_000).toISOString();
-  if (configuration.stunUrls.length > 0) {
-    iceServers.push({ urls: [...configuration.stunUrls] });
-  }
-
-  if (configuration.turnUrls.length === 0 || !configuration.turnSharedSecret) {
-    return StudioVoiceIcePolicyResponseSchema.parse({
-      version: 1,
-      mode: configuration.stunUrls.length > 0 ? "stun" : "direct",
-      iceServers,
-      issuedAt,
-      expiresAt: null,
-      ttlSeconds: 0,
-    });
-  }
-
-  const expiresAtSeconds = issuedAtSeconds + configuration.turnTtlSeconds;
-  const opaqueIdentity = createHmac("sha256", configuration.turnSharedSecret)
-    .update("toonstudio-studio-voice-identity-v1\0")
-    .update(workId)
-    .update("\0")
-    .update(userId)
-    .digest("base64url")
-    .slice(0, 32);
-  const username = `${expiresAtSeconds}:${opaqueIdentity}`;
-  // coturn TURN REST credentials require HMAC-SHA1, rather than an unkeyed
-  // SHA-1 digest. Changing this MAC breaks --use-auth-secret authentication.
-  // https://github.com/coturn/coturn/blob/master/README.turnserver#turn-rest-api
-  // The private work/user identity above still uses HMAC-SHA256.
-  const credential = createHmac("sha1", configuration.turnSharedSecret)
-    .update(username)
-    .digest("base64");
-  iceServers.push({
-    urls: [...configuration.turnUrls],
-    username,
-    credential,
-    credentialType: "password",
-  });
-
   return StudioVoiceIcePolicyResponseSchema.parse({
     version: 1,
-    mode: "turn",
-    iceServers,
+    mode: "stun",
+    iceServers: [{ urls: [...configuration.stunUrls] }],
     issuedAt,
-    expiresAt: new Date(expiresAtSeconds * 1_000).toISOString(),
-    ttlSeconds: configuration.turnTtlSeconds,
+    expiresAt: null,
+    ttlSeconds: 0,
   });
 }
 

@@ -15,8 +15,12 @@ import type { BristleLaneOptions } from "./bristle-dab-synthesis";
  * 털끝 경로를 따라 작은 둥근 dab를 찍는다(`bristle-dab-synthesis.ts`). 외부 의존 0, 순수 TS, 완전 결정적(같은 입력 → 같은 해시).
  * 무거운 로드가 없어 `init`이 실패할 일이 없고 `probe`는 항상 지원이다.
  *
+ * 필압 → 폭과 프리셋 차이(BL-4a): 프리셋의 접촉 모델·크기/흐름 동역학·경도·그레인을 압력 표로 풀어(`bristle-preset-response.ts`)
+ * 다발의 벌어짐 반경과 dab 반경·농도에 반영한다. 압력 외 입력(속도·기울기)에 묶인 동역학과 팁 질감 형상은 옮기지 않고 영수증으로 드러낸다.
+ *
  * 한계(정직 보고): 2D 상면 모델이라 3D 붓털의 좌굴 비단조는 압력 곡선 표(`buckling-3d`)로만 흉내 낸다. 털이 많을수록(N=128) 겹침이
- * 늘고 비용이 오른다. 성능 수치는 Node 22 단일 스레드이며 브라우저·실펜 손맛은 미검증이다.
+ * 늘고 비용이 오른다. 털 몸체 반경은 낮은 필압의 다발 기준이라 필압이 높으면 털끼리 접촉이 거의 없다.
+ * 성능 수치는 Node 22 단일 스레드이며 브라우저·실펜 손맛은 미검증이다.
  */
 export const BRISTLE_PBD_LANE_ID: LaneId = "bristle-pbd";
 

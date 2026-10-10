@@ -200,6 +200,12 @@ function isMeshSignal(
   );
 }
 
+function isDirectRelayEnvelope(
+  envelope: StudioLiveEnvelope,
+): envelope is StudioLiveEnvelope<"direct:relay"> {
+  return envelope.kind === "direct:relay";
+}
+
 interface StudioLiveP2pInkInboundWindow {
   startedAt: number;
   packetCount: number;
@@ -340,6 +346,18 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   private readonly maxPeers: number;
   private readonly localPeerCapabilities: readonly StudioPeerCapability[];
   private readonly knownPeerSessionIds = new Set<string>();
+  /** Latest participant record per known peer. Kept after the mesh link dies so the
+   * socket-relay lane can still address the peer and attribute inbound packets. */
+  private readonly knownParticipants = new Map<string, StudioLiveParticipant>();
+  /** Peers whose mesh lane failed (or could not be created at all). Their direct lane
+   * is served through the primary transport's targeted relay (direct:relay) instead,
+   * which is what keeps spatial presence alive under STUN-only ICE. */
+  private readonly relayPeerSessionIds = new Set<string>();
+  private readonly relayInboundWindows = new Map<string, {
+    startedAt: number;
+    count: number;
+    bytes: number;
+  }>();
   private readonly peers = new Map<string, StudioLiveP2pPeerLink>();
   private readonly listeners = new Set<(value: unknown) => void>();
   private readonly inkListeners = new Set<(value: unknown) => void>();
@@ -366,17 +384,56 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     peerCapabilities: readonly StudioPeerCapability[],
   ) {
     this.direct = {
-      getPeers: () => !this.closed && this.ready
-        ? [...this.peers.values()].filter((peer) => this.directPeerReady(peer))
-          .map((peer) => ({ ...peer.participant })) : [],
+      getPeers: () => {
+        if (this.closed || !this.ready) return [];
+        const bySessionId = new Map<string, StudioLiveParticipant>();
+        for (const peer of this.peers.values()) {
+          if (this.directPeerReady(peer)) {
+            bySessionId.set(peer.sessionId, { ...peer.participant });
+          }
+        }
+        // Peers whose mesh failed stay visible through the socket relay, so presence
+        // consumers keep listing them instead of silently pruning them.
+        for (const sessionId of this.relayPeerSessionIds) {
+          if (bySessionId.has(sessionId)) continue;
+          const participant = this.knownParticipants.get(sessionId);
+          if (participant && participant.role !== "viewer") {
+            bySessionId.set(sessionId, { ...participant });
+          }
+        }
+        return [...bySessionId.values()];
+      },
       send: (targetSessionId, payload) => {
         if (this.closed || !this.ready || this.context.participant.role === "viewer") return false;
-        const peer = this.peers.get(targetSessionId);
         const packet = encodeStudioDirectPacket(this.context.workId, payload);
-        if (!peer || !packet || !this.directPeerReady(peer)
-          || (peer.channel?.bufferedAmount ?? Infinity) > STUDIO_DIRECT_MAX_BUFFERED_BYTES) return false;
-        // This lane must never call primary.send, even under backpressure.
-        return this.sendSerializedToPeer(peer, packet);
+        if (!packet) return false;
+        const peer = this.peers.get(targetSessionId);
+        if (peer && this.directPeerReady(peer)) {
+          // A live mesh lane stays mesh-only, even under backpressure: relaying a
+          // backpressured peer would reorder its stream against the channel.
+          if ((peer.channel?.bufferedAmount ?? Infinity) > STUDIO_DIRECT_MAX_BUFFERED_BYTES) return false;
+          return this.sendSerializedToPeer(peer, packet);
+        }
+        // STUN-only ICE cannot open a mesh in symmetric-NAT / UDP-blocked networks.
+        // For peers whose mesh failed, fall back to the primary transport's targeted
+        // relay so the presence lane does not die silently; unknown or healthy-mesh
+        // peers keep the old fail-closed behavior.
+        if (!this.relayPeerSessionIds.has(targetSessionId)) return false;
+        const participant = this.knownParticipants.get(targetSessionId);
+        if (!participant || participant.role === "viewer") return false;
+        try {
+          return this.primary.send(createStudioLiveEnvelope({
+            workId: this.context.workId,
+            sender: this.context.participant,
+            sentAt: this.now(),
+            sequence: this.signalSequence++,
+            kind: "direct:relay",
+            targetSessionId,
+            payload: { packet },
+          }));
+        } catch {
+          return false;
+        }
       },
       subscribe: (listener) => {
         if (this.closed) return () => undefined;
@@ -641,6 +698,9 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     this.controlListeners.clear();
     for (const sessionId of [...this.peers.keys()]) this.teardownPeer(sessionId);
     this.knownPeerSessionIds.clear();
+    this.knownParticipants.clear();
+    this.relayPeerSessionIds.clear();
+    this.relayInboundWindows.clear();
     this.listeners.clear();
     this.primary.close();
   }
@@ -1017,6 +1077,12 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       void this.handleMeshSignal(envelope);
       return;
     }
+    if (envelope && isDirectRelayEnvelope(envelope)) {
+      // Relayed direct packets belong to the direct lane only; the room must not
+      // also surface them as collaboration messages.
+      this.receiveDirectRelay(envelope);
+      return;
+    }
     if (envelope) this.observePresence(envelope);
     this.emit(value);
   }
@@ -1026,11 +1092,15 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     if (sessionId === this.context.participant.sessionId) return;
     if (envelope.kind === "presence:leave") {
       this.knownPeerSessionIds.delete(sessionId);
+      this.knownParticipants.delete(sessionId);
+      this.relayPeerSessionIds.delete(sessionId);
+      this.relayInboundWindows.delete(sessionId);
       this.teardownPeer(sessionId);
       return;
     }
     if (envelope.kind === "presence:hello" || envelope.kind === "presence:heartbeat") {
       this.knownPeerSessionIds.add(sessionId);
+      this.knownParticipants.set(sessionId, envelope.sender);
       this.ensurePeer(envelope.sender);
     }
   }
@@ -1050,6 +1120,8 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     try {
       connection = this.createPeerConnection();
     } catch {
+      // No RTC at all still leaves the socket relay for this peer's direct lane.
+      this.relayPeerSessionIds.add(sessionId);
       return;
     }
     const link: StudioLiveP2pPeerLink = {
@@ -1079,13 +1151,19 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       if (link.closed) return;
       const state = connection.connectionState;
       if (state === "failed" || state === "closed") {
+        // ICE failure is the explicit trigger for the socket-relay fallback: from
+        // here the peer's direct lane is served by the primary transport.
+        this.relayPeerSessionIds.add(sessionId);
         this.teardownPeer(sessionId);
+      } else if (state === "disconnected") {
+        this.relayPeerSessionIds.add(sessionId);
       }
     };
     if (!shouldOfferMesh(this.context.participant.sessionId, sessionId)) return;
     try {
       this.bindChannel(link, connection.createDataChannel(STUDIO_LIVE_P2P_CHANNEL_LABEL));
     } catch {
+      this.relayPeerSessionIds.add(sessionId);
       this.teardownPeer(sessionId);
       return;
     }
@@ -1102,7 +1180,10 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       this.sendMeshDescription(link.sessionId, "offer", offer.sdp);
     } catch {
       // A rejected offer from a retired connection must not close a newer link for the peer.
-      if (this.peers.get(link.sessionId) === link) this.teardownPeer(link.sessionId);
+      if (this.peers.get(link.sessionId) === link) {
+        this.relayPeerSessionIds.add(link.sessionId);
+        this.teardownPeer(link.sessionId);
+      }
     }
   }
 
@@ -1163,6 +1244,8 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
         link.inkInboundWindow = null;
       },
       onOpen: () => {
+        // The mesh is carrying this peer again; the relay lane stands down.
+        this.relayPeerSessionIds.delete(link.sessionId);
         this.announceMeshBinaryLanes(link);
         this.notifyMeshReady(link, channel);
       },
@@ -1281,6 +1364,37 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   private directPeerReady(peer: StudioLiveP2pPeerLink): boolean {
     return this.knownPeerSessionIds.has(peer.sessionId) && peer.participant.role !== "viewer"
       && this.isReliableMeshLink(peer);
+  }
+
+  /**
+   * Inbound half of the socket-relay fallback. Mirrors receiveDirect's trust rules —
+   * known non-viewer sender, packet re-validated against this work, same 3-second
+   * inbound budget — but the sender identity comes from the presence-tracked
+   * participant record because the mesh link itself is gone.
+   */
+  private receiveDirectRelay(envelope: StudioLiveEnvelope<"direct:relay">): void {
+    if (!this.ready) return;
+    if (envelope.targetSessionId !== this.context.participant.sessionId) return;
+    const sender = this.knownParticipants.get(envelope.sender.sessionId);
+    if (!sender || sender.role === "viewer") return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(envelope.payload.packet) as unknown;
+    } catch {
+      return;
+    }
+    const payload = parseStudioDirectPacket(parsed, this.context.workId);
+    if (payload === null) return;
+    const byteLength = studioLiveUtf8ByteLength(envelope.payload.packet);
+    const now = this.now();
+    const budget = this.relayInboundWindows.get(sender.sessionId);
+    const window = budget && now - budget.startedAt < 3_000
+      ? budget : { startedAt: now, count: 0, bytes: 0 };
+    this.relayInboundWindows.set(sender.sessionId, window);
+    if (++window.count > 180 || (window.bytes += byteLength) > 512 * 1024) return;
+    for (const listener of this.directListeners) {
+      try { listener({ ...sender }, payload); } catch { /* Isolate observers. */ }
+    }
   }
 
   private receiveDirect(link: StudioLiveP2pPeerLink, value: unknown, byteLength: number): void {
