@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { fakeEnv } from "../../bench/testing/synthetic-images";
 import { unpackDab } from "../../engine/core/dab-layout";
 import { InvalidStateError } from "../../engine/core/errors";
+import { fermatLayout } from "../../engine/physics/world2d/bristle-brush";
 import { PbdWorld2D } from "../../engine/physics/world2d/pbd-world";
+import { PressureCurveTable } from "../../engine/physics/world2d/pressure-curve";
 import { PRESET_IDS, presetById } from "../../engine/presets/catalog";
 import { Surface } from "../../engine/raster/reference-renderer";
 import { lineStroke } from "../../engine/testing/synthetic-strokes";
@@ -13,10 +15,12 @@ import {
   BRISTLE_DENSITY_FLOOR,
   BRISTLE_FLOW_PRESSURE_FLOOR,
   BRISTLE_MAX_ABS_COORD_PX,
+  BRISTLE_MIN_DAB_RADIUS_PX,
   BRISTLE_MIN_LOAD,
   BRISTLE_MIN_PRESSURE,
   BristleDabSynthesizer,
   BristleLaneBase,
+  bristleFillRatio,
   mapProgramToBristle,
   unsupportedBristleReason,
 } from "./bristle-dab-synthesis";
@@ -27,6 +31,7 @@ import type { DabInstance, RawSample } from "../../engine/core/types";
 import type { BristleTick } from "../../engine/physics/world2d/bristle-brush";
 import type { CircleBodySpec, PhysicsWorld2D } from "../../engine/physics/world2d/types";
 import type { LaneCapabilityReport, LaneEnvironment, LaneId, LaneMaturity } from "../lane";
+import type { BristleDabResponse } from "./bristle-dab-synthesis";
 
 /** 제출된 dab를 모으는 표면 스텁(`addDabs`만 쓴다). */
 function stubSurface(): { surface: Surface; dabs: DabInstance[]; submits: number[] } {
@@ -425,5 +430,146 @@ describe("BristleDabSynthesizer: 틱 → dab", () => {
     let sum = 0;
     for (let i = 3; i < a.length; i += 4) sum += a[i] ?? 0;
     expect(sum).toBeGreaterThan(20);
+  });
+});
+
+describe("BL-4a 프리셋 응답 합성: dab 반경·경도·그레인·흐름", () => {
+  const RESPONSE: BristleDabResponse = {
+    fillRatio: 0.2,
+    minRadiusPx: BRISTLE_MIN_DAB_RADIUS_PX,
+    hardness: 0.4,
+    shapeExp: 2.5,
+    programFlow: 0.8,
+    grain: PressureCurveTable.fromKnots([
+      [0, 0.9],
+      [1, 0.1],
+    ]),
+    flowScale: PressureCurveTable.fromKnots([
+      [0, 0.5],
+      [1, 1],
+    ]),
+  };
+
+  function withResponse(surface: Surface, response: BristleDabResponse | null): BristleDabSynthesizer {
+    return new BristleDabSynthesizer(surface, 1, 2, 0.1, COLOR, 7, 10, response);
+  }
+
+  it("dab 반경은 현재 벌어짐 반경을 따라간다: max(최소 반경, 비율 × 벌어짐), 압력이 낮아 좁으면 작은 dab다", () => {
+    const radiusAt = (spread: number): number => {
+      const { surface, dabs } = stubSurface();
+      const s = withResponse(surface, RESPONSE);
+      s.onTick(moveTick(1, 0, 10, { spread }));
+      s.flush();
+      return dabs[0]?.rx ?? 0;
+    };
+    expect(radiusAt(20)).toBeCloseTo(4, 5);
+    expect(radiusAt(10)).toBeCloseTo(2, 5);
+    expect(radiusAt(1)).toBeCloseTo(BRISTLE_MIN_DAB_RADIUS_PX, 5);
+  });
+
+  it("dab 간격도 현재 반경을 따른다: 넓은 다발은 드문 dab, 좁은 다발은 촘촘한 dab(바닥 0.35 px)", () => {
+    const countAt = (spread: number): number => {
+      const { surface, dabs } = stubSurface();
+      const s = withResponse(surface, RESPONSE);
+      s.onTick(moveTick(1, 0, 100, { spread }));
+      s.flush();
+      return dabs.length;
+    };
+    expect(countAt(20)).toBe(Math.floor(100 / Math.max(0.35, 2 * 4 * 0.3)));
+    expect(countAt(1)).toBe(Math.floor(100 / Math.max(0.35, 2 * BRISTLE_MIN_DAB_RADIUS_PX * 0.3)));
+  });
+
+  it("경도·초타원 지수를 싣고 그레인은 압력 표에서 읽는다(응답이 없으면 예전 규약: 경도 0.85·그레인 0)", () => {
+    const { surface, dabs } = stubSurface();
+    const s = withResponse(surface, RESPONSE);
+    s.onTick(moveTick(1, 0, 5, { pressure: 0.5 }));
+    s.flush();
+    expect(dabs[0]?.hardness).toBeCloseTo(0.4, 6);
+    expect(dabs[0]?.shapeExp).toBeCloseTo(2.5, 6);
+    expect(dabs[0]?.grain).toBeCloseTo(0.5, 5);
+    const legacy = stubSurface();
+    const sl = withResponse(legacy.surface, null);
+    sl.onTick(moveTick(1, 0, 5, { pressure: 0.5 }));
+    sl.flush();
+    expect(legacy.dabs[0]?.hardness).toBeCloseTo(0.85, 6);
+    expect(legacy.dabs[0]?.grain).toBe(0);
+  });
+
+  it("dab 흐름은 겹침 깊이로 정규화된다: 털이 많을수록·좁을수록 dab 하나는 옅고, 압력 이득은 흐름 동역학 표(없으면 1)가 정한다", () => {
+    const flowOf = (response: BristleDabResponse | null, opts: { n?: number; pressure?: number; spread?: number }): number => {
+      const { surface, dabs } = stubSurface();
+      const n = opts.n ?? 1;
+      const s = new BristleDabSynthesizer(surface, n, 2, 0.1, COLOR, 7, 10, response);
+      s.onTick(moveTick(n, 0, 5, { pressure: opts.pressure ?? 0.5, spread: opts.spread ?? 10 }));
+      s.flush();
+      return dabs[0]?.flow ?? 0;
+    };
+    // 털 수가 늘면 같은 목표 농도를 더 많은 dab가 나눠 맡는다.
+    expect(flowOf(RESPONSE, { n: 32 })).toBeLessThan(flowOf(RESPONSE, { n: 4 }));
+    expect(flowOf(RESPONSE, { n: 4 })).toBeLessThan(flowOf(RESPONSE, { n: 1 }));
+    // 목표 농도(프로그램 흐름 × 흐름 동역학)가 높을수록 dab가 짙다: 압력 1은 표 값 1, 압력 0은 표 값 0.5(들린 붓 밑에서는 찍지 않으므로 0.05로 비교).
+    expect(flowOf(RESPONSE, { pressure: 1 })).toBeGreaterThan(flowOf(RESPONSE, { pressure: 0.05 }));
+    // 흐름 동역학이 없으면 압력과 무관하다(cpu-reference처럼 압력으로 농도를 바꾸지 않는다).
+    const flat: BristleDabResponse = { ...RESPONSE, flowScale: null };
+    expect(flowOf(flat, { pressure: 1 })).toBeCloseTo(flowOf(flat, { pressure: 0.05 }), 10);
+    // 프로그램 흐름이 낮은 프리셋은 묽다.
+    expect(flowOf({ ...flat, programFlow: 0.3 }, {})).toBeLessThan(flowOf({ ...flat, programFlow: 0.9 }, {}));
+    // 응답이 없으면 예전 규약: 기준 흐름 × (바닥 + (1 − 바닥)·압력) × 밀도.
+    expect(flowOf(null, { pressure: 0.5 })).toBeCloseTo(0.1 * (BRISTLE_FLOW_PRESSURE_FLOOR + (1 - BRISTLE_FLOW_PRESSURE_FLOOR) * 0.5), 5);
+  });
+
+  it("겹침 정규화 통합: 실제 표면에 털 16올 다발로 찍으면 선 폭 안의 평균 알파가 목표 농도(프로그램 흐름)에 가깝다", () => {
+    const n = 16;
+    const radiusPx = 6;
+    const layout = fermatLayout(n);
+    const targets = [0.3, 0.6, 0.9];
+    for (const target of targets) {
+      const surface = new Surface(128, 64);
+      surface.beginStroke(presetById("ink-g-pen"), 1);
+      const response: BristleDabResponse = { fillRatio: bristleFillRatio(n), minRadiusPx: BRISTLE_MIN_DAB_RADIUS_PX, hardness: 1, shapeExp: 2, programFlow: target, grain: null, flowScale: null };
+      const synthesizer = new BristleDabSynthesizer(surface, n, 1, 0.1, [0, 0, 0, 1], 7, radiusPx, response);
+      const prevX = new Float32Array(n);
+      const curX = new Float32Array(n);
+      const ys = Float32Array.from({ length: n }, (_, i) => 32 + radiusPx * (layout.uy[i] ?? 0));
+      for (let x = 10; x < 118; x += 1) {
+        prevX.fill(x);
+        curX.fill(x + 1);
+        synthesizer.onTick({ count: n, prevX, prevY: ys, curX, curY: ys, load: new Float32Array(n).fill(1), moved: new Float32Array(n).fill(1), pressure: 1, tMs: 0, handleX: x, handleY: 32, spreadRadiusPx: radiusPx });
+      }
+      synthesizer.flush();
+      surface.endStroke();
+      const linear = surface.toLinear();
+      let sum = 0;
+      let rows = 0;
+      for (let y = Math.ceil(32 - radiusPx); y <= Math.floor(32 + radiusPx); y += 1) {
+        sum += linear[(y * 128 + 64) * 4 + 3] ?? 0;
+        rows += 1;
+      }
+      const mean = sum / rows;
+      expect(mean, `목표 ${target}`).toBeGreaterThan(target * 0.7);
+      expect(mean, `목표 ${target}`).toBeLessThan(Math.min(1, target * 1.3));
+    }
+  });
+
+  it("매핑: 물리 곡선은 선택한 이름 그대로 두고 프리셋 반폭은 spreadScaleCurve로 얹으며 한글 영수증에 반폭을 적는다", () => {
+    const charcoal = mapProgramToBristle(presetById("charcoal"));
+    expect(charcoal.config.spreadScaleCurve).not.toBeNull();
+    expect(charcoal.config.spreadCurve.isMonotonic()).toBe(true);
+    expect(charcoal.mappedKo.some((t) => t.includes("선 반폭") && t.includes("cpu-reference"))).toBe(true);
+    expect(charcoal.mappedKo.some((t) => t.includes("그레인"))).toBe(true);
+    expect(charcoal.dabResponse.fillRatio).toBeCloseTo(bristleFillRatio(32), 8);
+    // 같은 팁 지름의 붓펜과 목탄은 압력 1의 벌어짐 반경이 다르다(예전에는 같았다).
+    const brush = mapProgramToBristle(presetById("ink-brush-pen"));
+    expect(brush.config.radiusPx).toBe(charcoal.config.radiusPx);
+    const rBrush = brush.config.radiusPx * brush.config.spreadCurve.eval(1) * (brush.config.spreadScaleCurve?.eval(1) ?? 1);
+    const rCharcoal = charcoal.config.radiusPx * charcoal.config.spreadCurve.eval(1) * (charcoal.config.spreadScaleCurve?.eval(1) ?? 1);
+    expect(rBrush / rCharcoal).toBeGreaterThan(2);
+  });
+
+  it("털 몸체 반경은 낮은 필압 다발 기준이라 압력 0.4 기준보다 작고, 덮어쓴 설정이 우선한다", () => {
+    const pen = presetById("ink-brush-pen");
+    const m = mapProgramToBristle(pen);
+    expect(m.config.bristleRadiusScale).toBeLessThan(1);
+    expect(mapProgramToBristle(pen, { brush: { bristleRadiusScale: 2 } }).config.bristleRadiusScale).toBe(2);
   });
 });
