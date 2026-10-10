@@ -544,6 +544,84 @@ def cylindrical_uvs(positions: np.ndarray, low: np.ndarray, high: np.ndarray) ->
     return np.stack([u, v], axis=1)
 
 
+def build_scalp_cap(bs: BodySurface, names: list[str], cap: dict) -> dict:
+    """머리 윗부분을 몸 머리 표면에서 떠 낸 얇은 두피 덮개(4~5 mm 바깥, 복셀 군집으로 거칠게)를 만든다. 헤어 가닥 시트 사이의 틈으로 피부가 비쳐 보이는 것을 막는다.
+
+    덮개 정점은 머리 표면 정점 그대로의 스킨 가중치·morph 델타를 이어받는다(군집 평균). 정수리에서 뒤통수 아래까지, 앞쪽은 앞머리선 위까지이며, 귀는 z 구간(`split`)으로 뺀다.
+    반환: positions (m,3), triangles (k,3), joints (m,4), weights (m,4), deltas {이름: (m,3)}.
+    """
+    head_start = bs.body_vertex_count
+    positions = bs.tpose[head_start:]
+    triangle_mask = (bs.triangles >= head_start).all(axis=1)
+    triangles = bs.triangles[triangle_mask] - head_start
+    canon_index, canon_positions = gf.weld_vertices(positions)
+    canon_triangles = canon_index[triangles]
+    normals = vertex_normals(canon_positions, canon_triangles)
+    top = float(canon_positions[:, 1].max())
+    z_lo, z_hi = float(canon_positions[:, 2].min()), float(canon_positions[:, 2].max())
+    split = z_lo + cap.get("split", 0.25) * (z_hi - z_lo)
+    behind = canon_positions[:, 2] < split
+    keep = np.where(behind, canon_positions[:, 1] >= top - cap.get("back_drop", 0.135), canon_positions[:, 1] >= top - cap.get("front_drop", 0.040))
+    face_keep = keep[canon_triangles].all(axis=1)
+    used = np.unique(canon_triangles[face_keep])
+    voxel = float(cap.get("voxel", 0.012))
+    keys = np.floor(canon_positions[used] / voxel).astype(np.int64)
+    _, cluster_of, counts = np.unique(keys, axis=0, return_inverse=True, return_counts=True)
+    cluster_of = cluster_of.reshape(-1)
+    count = len(counts)
+    mean_position = np.zeros((count, 3))
+    mean_normal = np.zeros((count, 3))
+    np.add.at(mean_position, cluster_of, canon_positions[used])
+    np.add.at(mean_normal, cluster_of, normals[used])
+    mean_position /= counts[:, None]
+    mean_normal /= np.maximum(np.linalg.norm(mean_normal, axis=1, keepdims=True), 1e-9)
+    cap_positions = mean_position + mean_normal * float(cap.get("offset", 0.0045))
+    remap = np.full(len(canon_positions), -1, dtype=np.int64)
+    remap[used] = cluster_of
+    cap_triangles = remap[canon_triangles[face_keep]]
+    ok = (cap_triangles[:, 0] != cap_triangles[:, 1]) & (cap_triangles[:, 1] != cap_triangles[:, 2]) & (cap_triangles[:, 0] != cap_triangles[:, 2])
+    cap_triangles = np.unique(np.sort(cap_triangles[ok], axis=1), axis=0)
+    # 정렬로 감김이 뒤섞이므로 바깥 법선 쪽으로 다시 맞춘다
+    face_normal = np.cross(cap_positions[cap_triangles[:, 1]] - cap_positions[cap_triangles[:, 0]], cap_positions[cap_triangles[:, 2]] - cap_positions[cap_triangles[:, 0]])
+    outward = (face_normal * mean_normal[cap_triangles].mean(axis=1)).sum(axis=1) < 0
+    cap_triangles[outward] = cap_triangles[outward][:, [0, 2, 1]]
+    # 머리 표면 정점(원본 번호) 가운데 군집 대표 = 군집 첫 정점의 스킨, morph는 군집 평균
+    first_member = np.zeros(count, dtype=np.int64)
+    first_member[cluster_of[::-1]] = np.arange(len(used))[::-1]
+    representative = np.zeros(len(canon_positions), dtype=np.int64)
+    representative[canon_index] = np.arange(len(positions))  # 용접 정점 → 머리 정점 하나
+    source_vertex = representative[used[first_member]] + head_start
+    deltas = {}
+    for name in names:
+        per_vertex = bs.morphs[name][representative[used] + head_start]
+        accumulated = np.zeros((count, 3))
+        np.add.at(accumulated, cluster_of, per_vertex)
+        deltas[name] = accumulated / counts[:, None]
+    return {"positions": cap_positions, "triangles": cap_triangles, "joints": bs.joints[source_vertex], "weights": bs.weights[source_vertex], "deltas": deltas}
+
+
+def append_scalp_cap(result: dict, cap: dict, names: list[str]) -> dict:
+    """용접된 헤어 결과(`weld_for_strands` 출력)에 두피 덮개를 붙인다. 덮개 정점은 새 대표 정점 번호를 받는다."""
+    mesh: StaticMesh = result["mesh"]
+    base = len(mesh.positions)
+    canon_base = int(result["canon_count"])
+    added = len(cap["positions"])
+    canon_ids = canon_base + np.arange(added)
+    out = dict(result)
+    rest = np.concatenate([result["rest"], cap["positions"]])
+    out.update(
+        mesh=replace(mesh, positions=np.concatenate([mesh.positions, cap["positions"]]), uvs=np.concatenate([mesh.uvs, np.zeros((added, 2))]), triangles=np.concatenate([mesh.triangles, cap["triangles"] + base])),
+        canon_index=np.concatenate([result["canon_index"], canon_ids]),
+        canon_count=canon_base + added,
+        rest=rest,
+        apose=np.concatenate([result["apose"], cap["positions"]]),  # 머리는 A→T에서 움직이지 않는다(디버그 A-포즈 출력용)
+        joints=np.concatenate([result["joints"], cap["joints"]]),
+        weights=np.concatenate([result["weights"], cap["weights"]]),
+        deltas={name: np.concatenate([result["deltas"][name], cap["deltas"][name]]) for name in names},
+    )
+    return out
+
+
 def write_part_glb(spec: dict, results: list[dict], base: BaseModel, texture_jpeg: bytes, path: Path, names: list[str]) -> int:
     # morph 델타는 정규화 SHORT(KHR_mesh_quantization, 해상도 0.03 mm)로 쓴다 — 파츠 한도 1.5 MiB를 위해서다(float32 조밀 델타가 파일의 절반이었다).
     writer = QuantizedGlbWriter(generator="toonstudio character_kit retarget_garment")
@@ -655,6 +733,9 @@ def main() -> None:
     if spec.get("uv") == "strands":
         # 헤어: 정점을 합치고 원통 UV + 가닥 줄무늬 텍스처를 새로 만든다(원본 UV 섬이 잘게 쪼개져 정점이 두 배로 늘고 파츠 한도를 넘는다).
         results = [weld_for_strands(result) for result in results]
+        if spec.get("scalp_cap"):
+            cap = build_scalp_cap(bs, names, spec["scalp_cap"])
+            results = [append_scalp_cap(result, cap, names) for result in results]
         rest_first = results[0]["rest"][results[0]["canon_index"]]
         low, high = rest_first.min(axis=0), rest_first.max(axis=0)
         for result in results:

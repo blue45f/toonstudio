@@ -43,9 +43,12 @@ pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>   # �
 | `surface` | mathutils BVH 최근접 표면점·무게중심 보간(파츠가 몸을 따라가게) | 완료 |
 | `debug_render`, `contract` | 확인용 정사영 렌더러, 계약 JSON 래퍼 | 완료 |
 | `base_assembly`, `eyes_mouth`, `base_textures`, `build_base` | 여성 베이스 조립: 몸·머리 분할·영역·`_REGION`, 속옷, 눈, 입 내부(치아·혀), 속눈썹, 눈썹, 텍스처, morph 전부(체형 18·얼굴 30·FACS 16), GLB(`KHR_mesh_quantization` + sparse, 12 MiB 안팎), 리타깃 npz | 완료(`bases/female.glb`, `base_model_female.npz`) |
-| 필수 파츠 5종 | `irises/round-large`(`build_irises`)는 완료. `hair/soft-bob`, `top/tee`, `bottom/jeans`, `shoes/sneakers`는 의상 리타깃 몫 | 홍채 완료, 4종 대기 |
-| `kit_manifest`, `build_kit_json` | `kit.json`·`NOTICE.md` 작성: 어휘 32개 전부를 변형 또는 한글 `unavailable`로 선언, `deriveKitCapabilities`(TS) 사용, GLB 자동 검사, Hyper3D 파생 파츠 출처(`hyper3d_sources.json`) | 완료 |
-| 의상 리타깃 | 외부 GLB(Hyper3D 생성물)를 베이스에 맞춰 파츠 GLB로 | **미구현** |
+| `webtoon_style` | 웹툰풍 얼굴·몸 스타일(`LookStyle`: 눈·입 높이 구성 워프, 눈 배율, 코·입·턱·뺨, 눈썹 얇게, 아이라인 속눈썹, 미소 굽기, 몸 체형 굽기). `webtoon-girl`·`webtoon-boy`. 설명: `apps/character-lab/docs/webtoon-style-guide.md` | 완료, 단위 시험 |
+| `face_register` | 애니풍 얼굴 흉상(Hyper3D)의 모양으로 머리를 옮기는 변위 평활화 ICP | **실험**(미완성, 기본 스타일은 쓰지 않는다 — 실패 원인은 모듈 docstring) |
+| `irises/round-large` (`build_irises`) | 홍채·하이라이트(스타일을 따라 크기·위치가 같이 바뀐다) | 완료(두 베이스) |
+| `garment_presets`, `build_parts`, `clean_rodin_garment`, `decimate_garment`, `retarget_garment`, `garment_fit`, `garment_texture` | Hyper3D 생성물 → 파츠 GLB: 정리·축소·정렬(`icp`·`frame`·`anchor`·`head_ref`·`hair`·`shoes`·`head_prop`)·충돌 해소·스킨/morph 결합·상대색 텍스처(헤어는 정점 합침 + 원통 UV + 가닥 줄무늬 + 두피 덮개). 프리셋 21종, 베이스마다 빌드(`--base female|male`) | 완료 |
+| `proxy_reference` | Rodin이 T-포즈를 따르지 않으므로 베이스 T-포즈 몸에 프록시 상의·바지를 입힌 정면 렌더를 참조 이미지로 만든다(셔츠·블레이저·후디·세일러) | 완료 |
+| `kit_manifest`, `build_kit_json` | `kit.json`·`NOTICE.md` 작성: 어휘 32개 전부를 변형 또는 한글 `unavailable`로 선언(베이스별), `--extra-meta`로 남성 베이스까지, `deriveKitCapabilities`(TS) 사용, GLB 자동 검사, Hyper3D 파생 파츠 출처(`hyper3d_sources.json`) | 완료 |
 
 ## 시험
 
@@ -56,6 +59,8 @@ pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>   # �
 <venv>/bin/python -I tools/blender/character_kit/tests/test_base_assembly.py        # 합성 입력: 양자화 작성기 왕복, 따라가기·이음매 척도, 바닥 델타 등
 <venv>/bin/python -I tools/blender/character_kit/tests/test_base_textures.py
 <venv>/bin/python -I tools/blender/character_kit/tests/test_base_eyes_mouth.py      # 홍채 덮개·캐치라이트·눈 깜빡임 모델
+<venv>/bin/python -I tools/blender/character_kit/tests/test_garment_fit.py          # 의상 정렬·충돌·앞머리·가닥 텍스처·ARAP 분리 덩어리
+<venv>/bin/python -I tools/blender/character_kit/tests/test_webtoon_style.py        # 스타일 표·구성 워프·눈썹 얇게
 <venv>/bin/python -I tools/blender/character_kit/tests/test_kit_manifest.py         # kit.json 작성기·Hyper3D 출처 (계약 덤프 필요: 캐시 또는 pnpm/tsx)
 <venv>/bin/python -I tools/blender/character_kit/tests/test_base_build.py           # HBM npz가 있어야 한다(없으면 skip), 약 15초
 ```
@@ -84,8 +89,18 @@ pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out <contract.json>   # �
 
 ```text
 pnpm exec tsx scripts/blender/dump-kit-contract.mjs --out ~/.cache/toonstudio-kit/out/contract.json
-<venv>/bin/python -I tools/blender/character_kit/build_base.py        # bases/female.glb + base_model_female.npz + base_meta_female.json (약 15초)
-<venv>/bin/python -I tools/blender/character_kit/build_irises.py      # parts/female/irises/round-large.glb (약 3초)
-<venv>/bin/python -I tools/blender/character_kit/build_kit_json.py [--parts-json hides.json]   # kit.json + NOTICE.md
-pnpm exec tsx scripts/verify-character-kit.mjs --root ~/.cache/toonstudio-kit/out/kit/toonstudio-kit-v1 --base female
+# 두 베이스(웹툰풍 미소녀·미소년)와 홍채. 원본 HBM npz는 ~/.cache/toonstudio-kit/hbm-npz/ 에 있어야 한다(미소년은 hbm_female 몸에서 시작).
+<venv>/bin/python -I tools/blender/character_kit/build_base.py   --base female --style webtoon-girl --kit-dir <키트> --out-dir <출력> --contract <contract.json>
+<venv>/bin/python -I tools/blender/character_kit/build_irises.py --base female --style webtoon-girl --kit-dir <키트> --contract <contract.json>
+<venv>/bin/python -I tools/blender/character_kit/build_base.py   --base male   --style webtoon-boy  --kit-dir <키트> --out-dir <출력> --contract <contract.json>
+<venv>/bin/python -I tools/blender/character_kit/build_irises.py --base male   --style webtoon-boy  --kit-dir <키트> --contract <contract.json>
+# 파츠: 베이스마다 한 번(원본 GLB는 ~/.cache/toonstudio-kit/hyper3d-raw/, 항목은 hyper3d_generations.json)
+<venv>/bin/python -I tools/blender/character_kit/build_parts.py --base female --base-model <출력>/base_model_female.npz --kit-dir <키트> --work <작업>/female --jobs 4
+<venv>/bin/python -I tools/blender/character_kit/build_parts.py --base male   --base-model <출력>/base_model_male.npz   --kit-dir <키트> --work <작업>/male   --jobs 4
+# 두 베이스의 숨김 표(<작업>/<베이스>/parts-registry.json)를 합쳐 kit.json을 만든다
+<venv>/bin/python -I tools/blender/character_kit/build_kit_json.py --kit-dir <키트> --meta <출력>/base_meta_female.json --extra-meta <출력>/base_meta_male.json --contract <contract.json> --parts-json <합친 표>
+pnpm exec tsx scripts/verify-character-kit.mjs --root <키트> --base all
 ```
+
+T-포즈 상의 참조 이미지(프록시) 만들기: `<venv>/bin/python -I tools/blender/character_kit/proxy_reference.py -- --base-model <출력>/base_model_female.npz --kind shirt|blazer|hoodie|sailor --out <png>`
+→ `mcp__hyper3d__rodin_create_uploads` + presigned PUT → `rodin_generate`(프롬프트 + `reference_upload_ids`) → `rodin_generate_bang`으로 의상·바지·피부 분리.

@@ -8,6 +8,8 @@
 - `morph_scope`: `body`(체형 9키± = 18개: 상의·하의·신발) 또는 `head`(머리 부착 4키± = 8개: 헤어·소품). 계약 `KIT_MORPH_COVERAGE`와 같다.
 - `decimate`: LOD별 목표 삼각형 수(상의·하의 ≤ 25k, 신발 ≤ 8k, 소품 ≤ 6k, 헤어 LOD0 ≤ 20k, 파츠 GLB ≤ 1.5 MiB가 실제 한도).
 - `pose`: 의상이 만들어진 포즈 `t`(몸 T-포즈 표면에 바로 맞춤) 또는 `a`(A-포즈 몸에 맞춘 뒤 T로 변환). 포즈가 다른 몸에 맞추면 소매가 날개처럼 펼쳐진다.
+- `uv`·`scalp_cap`(헤어): `uv="strands"`는 정점을 위치로 합치고 원통 UV + 세로 가닥 줄무늬 텍스처를 새로 만든다(원본 UV 섬이 잘게 쪼개져 용량 한도를 넘었다).
+  `scalp_cap`은 머리 윗부분을 4.5 mm 바깥에서 떠 낸 얇은 두피 덮개를 헤어 메시에 붙여 가닥 사이로 피부가 비치는 것을 막는다(`retarget_garment.build_scalp_cap`).
 - `stylize`: Taubin 스무딩 반복 횟수(웹툰풍 정리: 사진식 잔주름을 지우고 큰 면과 부드러운 접힘만 남긴다, 0이면 끔).
 - `align`: `icp`(평균 거리 최소화 — 몸에 밀착한 옷만), `frame`(**전신 인물**에서 BANG으로 분리한 파츠: 전신 경계 상자 정렬 + `fit_region` 부위만 부호 거리 ICP 보정. 옷만 요청해 마네킹 몸 일부가 같이 나온 생성물은 경계 상자가 사람 키가 아니라 `icp`를 쓴다), `hair`(머리 너비·정수리), `head_ref`(같은 좌표계 머리 메시 `source.ref`의 두개골 폭·정수리·중심에 맞춤 — 흉상에서 BANG으로 분리한 헤어),
   `shoes`(발 길이·발바닥), `head_prop`(머리에 얹는 소품: 머리 너비·정수리). 부피가 있는 의상은 평균 거리 정렬이 몸 쪽으로 쪼그라드므로 `icp`는 몸에 붙는 옷에만 쓴다.
@@ -127,7 +129,9 @@ def _hair(name: str, *, source: dict[str, Any], changes: str, lods: tuple[int, i
         "d_max": 1.0e9,
         "fit_region": {"top_band": 0.10, "standoff": 0.012, "shift": 0.10, "scale": (0.85, 1.15)},
         "bang_target_y": bang_target_y,
-        "texture": {"strength": 0.45, "blur_radius": 0.8, "bands": 0, "gamma": 0.65, "size": 512},
+        "texture": {"strength": 0.20, "blur_radius": 0.8, "bands": 0, "gamma": 0.65, "size": 512},
+        "uv": "strands",
+        "scalp_cap": {},
         "merge_joints": dict(_JAW_TO_HEAD),
         "double_sided": True,
         "source": source,
@@ -274,35 +278,39 @@ PRESETS: dict[str, dict[str, Any]] = {
     # ---------------------------------------------------------------- 헤어
     "hair/soft-bob": _hair(
         "soft-bob",
+        scalp_cap={"back_drop": 0.165},
         source={"raw": "hair-bob2-bang", "pick": "root.4", "clean": "keep", "ref": "root.2"},
         align="head_ref",
-        lods=(3500, 1900, 1000),
+        lods=(3300, 1800, 950),
         bang_target_y=1.574,
         uv="strands",
-        changes="보브 헤어 흉상 생성물(앞머리를 눈썹 위로 요청해 재생성)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,500/1,900/1,000 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
+        changes="보브 헤어 흉상 생성물(앞머리를 눈썹 위로 요청해 재생성)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,300/1,800/950 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
     ),
     "hair/hime-cut": _hair(
         "hime-cut",
+        scalp_cap={"back_drop": 0.22},
         source={"raw": "hair-hime2-bang", "pick": "root.4", "clean": "keep", "ref": "root.5"},
         align="head_ref",
         ref_top_extra=0.40,
-        lods=(4200, 2200, 1200),
+        lods=(3600, 1900, 1000),
         bang_target_y=1.574,
         bang_half_width=0.05,
         uv="strands",
-        changes="히메컷 헤어 흉상 생성물(블런트 뱅·어깨 아래 직모)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시(두피가 헤어에 포함되어 헤어라인에서 잘림)의 폭에 맞추고 정수리는 폭의 0.4배 위로 추정해 베이스 머리로 리타깃, LOD 3단(4,200/2,200/1,200 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
+        changes="히메컷 헤어 흉상 생성물(블런트 뱅·어깨 아래 직모)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시(두피가 헤어에 포함되어 헤어라인에서 잘림)의 폭에 맞추고 정수리는 폭의 0.4배 위로 추정해 베이스 머리로 리타깃, LOD 3단(3,600/1,900/1,000 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
     ),
     "hair/short-layered": _hair(
         "short-layered",
+        scalp_cap={"back_drop": 0.115},
         source={"raw": "hair-short2-bang", "pick": "root.3", "clean": "keep", "ref": "root.2"},
         align="head_ref",
-        lods=(4000, 2100, 1100),
+        lods=(3700, 2000, 1050),
         bang_target_y=1.572,
         uv="strands",
-        changes="숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(4,000/2,100/1,100 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
+        changes="숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,700/2,000/1,050 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
     ),
     "hair/wolf-layered": _hair(
         "wolf-layered",
+        scalp_cap={"back_drop": 0.19},
         source={"raw": "hair-shaggy-bang", "pick": "root.1", "clean": "keep", "ref": "root.2"},
         align="head_ref",
         lods=(6000, 3000, 1500),
@@ -311,6 +319,7 @@ PRESETS: dict[str, dict[str, Any]] = {
     ),
     "hair/action-pony": _hair(
         "action-pony",
+        scalp_cap={"back_drop": 0.15},
         source={"raw": "hair-pony-bang", "pick": "root.3", "clean": "keep", "ref": "root.2"},
         align="head_ref",
         bang_target_y=1.58,
@@ -318,6 +327,7 @@ PRESETS: dict[str, dict[str, Any]] = {
     ),
     "hair/twin-tail": _hair(
         "twin-tail",
+        scalp_cap={"back_drop": 0.17},
         source={"raw": "hair-twin-bang", "pick": "root.5", "clean": "keep", "ref": "root.3"},
         align="head_ref",
         bang_target_y=1.574,
@@ -325,6 +335,7 @@ PRESETS: dict[str, dict[str, Any]] = {
     ),
     "hair/romance-long": _hair(
         "romance-long",
+        scalp_cap={"back_drop": 0.22},
         source={"raw": "hair-romance-bang", "pick": "root.2", "clean": "keep", "ref": "root.4"},
         align="head_ref",
         lods=(5000, 2500, 1250),
@@ -334,7 +345,7 @@ PRESETS: dict[str, dict[str, Any]] = {
     "accessory/cap": _prop(
         "cap",
         source={"raw": "cap-01", "pick": None, "clean": "keep"},
-        head_prop={"width_margin": 0.030, "top_offset": 0.012, "z_offset": 0.0},
+        head_prop={"width_margin": 0.030, "top_offset": 0.034, "z_offset": -0.004},
         changes="야구모자 생성물을 베이스 머리 너비에 맞춰 정수리 위에 얹도록 리타깃, 3,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
     ),
     "accessory/headphones": _prop(
