@@ -454,3 +454,7 @@ export function OpenDataInternetArchivePage() { return <ResourceSearchPage provi
 export function OpenDataSmithsonianPage() { return <ResourceSearchPage provider="smithsonian" heroStage />; }
 export function OpenDataEuropeanaPage() { return <ResourceSearchPage provider="europeana" heroStage />; }
 export function OpenDataDplaPage() { return <ResourceSearchPage provider="dpla" heroStage />; }
+export function OpenDataKheritagePage() { return <ResourceSearchPage provider="kheritage" heroStage />; }
+export function OpenDataTourApiPage() { return <ResourceSearchPage provider="tourapi" heroStage />; }
+export function OpenDataKoreanPage() { return <ResourceSearchPage provider="korean" heroStage />; }
+export function OpenDataWikimediaPage() { return <ResourceSearchPage provider="wikimedia" heroStage />; }

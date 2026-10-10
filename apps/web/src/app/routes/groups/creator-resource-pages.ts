@@ -136,6 +136,22 @@ export const OpenDataDplaPage = lazyRetry(
   () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataDplaPage })),
   "OpenDataDplaPage",
 );
+export const OpenDataKheritagePage = lazyRetry(
+  () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataKheritagePage })),
+  "OpenDataKheritagePage",
+);
+export const OpenDataTourApiPage = lazyRetry(
+  () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataTourApiPage })),
+  "OpenDataTourApiPage",
+);
+export const OpenDataKoreanPage = lazyRetry(
+  () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataKoreanPage })),
+  "OpenDataKoreanPage",
+);
+export const OpenDataWikimediaPage = lazyRetry(
+  () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataWikimediaPage })),
+  "OpenDataWikimediaPage",
+);
 export const GlobalBooksPage = lazyRetry(
   () => import("@/domains/creator-resources/GlobalBooksPage").then((module) => ({ default: module.GlobalBooksPage })),
   "GlobalBooksPage",
