@@ -20,15 +20,16 @@ const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "
 const txEn = (source: string): string => translateCurrentStaticSourceText(SCOPE, "en", source);
 
 /**
- * 공개 데이터 상세 첫 화면 무대 (디자인 웨이브 15 — 파일럿).
+ * 공개 데이터 상세 첫 화면 무대 (디자인 웨이브 15 파일럿 → 웨이브 16 전파 본편).
  *
- * 허브(/research/open-data, 웨이브 14)의 무대 문법을 상세 템플릿으로 전파하는
- * 파일럿 구현이다. 제공처의 실물 장면 아트를 전폭 무대로 세우고, 제목·한 줄
- * 정체성·소개·접근 방식(키 유무)을 스크림 위 무대 안에 종속 배치한다.
+ * 허브(/research/open-data, 웨이브 14)의 무대 문법을 상세 템플릿으로 전파한다.
+ * 제공처의 실물 장면 아트를 전폭 무대로 세우고, 제목·한 줄 정체성·소개·접근
+ * 방식(키 유무)을 스크림 위 무대 안에 종속 배치한다.
  * 장면 아트가 없는 제공처는 무대를 만들지 않는다 — 타이포로 위장하지 않는
  * 것이 웨이브 8 전례의 조건이라, 호출부는 아트가 있을 때만 이 무대를 얹고
- * 없으면 기존 마스트헤드로 남긴다. 파일럿 적용 범위는 라우트 래퍼가 정한다
- * (ResourceSearchPage의 heroStage 옵션을 켠 상세만).
+ * 없으면 기존 마스트헤드로 남긴다. 적용 범위는 라우트 래퍼가 정한다 —
+ * 장면 보유 제공처의 /research/open-data/* 상세 래퍼만 ResourceSearchPage의
+ * heroStage 옵션을 켠다 (별칭 경로·장면 없는 제공처는 래퍼 자체가 없다).
  */
 export function OpenDataSourceStage({ provider }: { provider: ResourceSearchProvider }) {
   useBilingualI18nRevision();

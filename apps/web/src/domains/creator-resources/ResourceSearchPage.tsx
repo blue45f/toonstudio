@@ -263,10 +263,11 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
   /** 결과·저장 카드 장식. 지정한 제공처 표면만 넘긴다 — 나머지 제공처는 기존 카드 그대로다. */
   cardDecoration?: (item: CreatorResource) => ResourceCardDecoration | undefined;
   /**
-   * 첫 화면 무대 파일럿 (디자인 웨이브 15) — 켜면 제공처 장면 아트를 전폭 무대로
-   * 세우는 구도 교체(OpenDataSourceStage)를 마스트헤드 대신 얹는다. 장면 아트가
-   * 없는 제공처는 무대를 만들지 않고 기존 마스트헤드로 남는다. 파일럿 범위 밖의
-   * 경로는 이 옵션을 켜지 않아 기존 렌더와 동일하다.
+   * 첫 화면 무대 (디자인 웨이브 15 파일럿 → 웨이브 16 전파) — 켜면 제공처 장면
+   * 아트를 전폭 무대로 세우는 구도 교체(OpenDataSourceStage)를 마스트헤드 대신
+   * 얹는다. 장면 아트가 없는 제공처는 무대를 만들지 않고 기존 마스트헤드로
+   * 남는다. 이 옵션을 켜는 것은 장면 보유 제공처의 상세 전용 래퍼뿐이며, 그
+   * 밖의 경로는 기존 렌더와 동일하다.
    */
   heroStage?: boolean;
 }) {
@@ -440,7 +441,16 @@ export function SmithsonianPage() { return <ResourceSearchPage provider="smithso
 export function WikimediaInterestPage() { return <ResourceSearchPage provider="wikimedia" />; }
 export function EuropeanaPage() { return <ResourceSearchPage provider="europeana" />; }
 export function DplaPage() { return <ResourceSearchPage provider="dpla" />; }
-// 공개 데이터 상세 무대 파일럿 (디자인 웨이브 15) — /research/open-data/* 경로 전용
-// 래퍼다. 같은 제공처의 다른 경로(/research/space-assets 등)는 기존 마스트헤드 그대로다.
+// 공개 데이터 상세 무대 (디자인 웨이브 15 파일럿 → 웨이브 16 전파 본편) —
+// /research/open-data/* 경로 전용 래퍼다. 장면(scene) 아트를 보유한 제공처의
+// 상세만 이 래퍼를 둔다. 같은 제공처의 다른 경로(/research/space-assets 등
+// 별칭)는 기존 마스트헤드 그대로고, 장면이 없는 제공처(ambientcg·neis)는
+// 래퍼 자체가 없어 기존 마스트헤드로 남는다.
 export function OpenDataNasaPage() { return <ResourceSearchPage provider="nasa" heroStage />; }
 export function OpenDataGbifPage() { return <ResourceSearchPage provider="gbif" heroStage />; }
+export function OpenDataVamPage() { return <ResourceSearchPage provider="vam" heroStage />; }
+export function OpenDataMusicBrainzPage() { return <ResourceSearchPage provider="musicbrainz" heroStage />; }
+export function OpenDataInternetArchivePage() { return <ResourceSearchPage provider="internetarchive" heroStage />; }
+export function OpenDataSmithsonianPage() { return <ResourceSearchPage provider="smithsonian" heroStage />; }
+export function OpenDataEuropeanaPage() { return <ResourceSearchPage provider="europeana" heroStage />; }
+export function OpenDataDplaPage() { return <ResourceSearchPage provider="dpla" heroStage />; }
