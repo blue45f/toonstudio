@@ -16,6 +16,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   AmbientCgPage,
+  GoogleFontsPage,
+  MetWeatherPage,
   OpenDataAmbientCgPage,
   OpenDataDplaPage,
   OpenDataEuropeanaPage,
@@ -31,6 +33,7 @@ import {
   OpenDataVamPage,
   OpenDataWikimediaPage,
   ResourceSearchPage,
+  RijksmuseumPage,
 } from "./ResourceSearchPage";
 
 const request = vi.fn<typeof fetch>();
@@ -145,6 +148,41 @@ describe("공개 데이터 상세 무대 완결 (웨이브 17 — 전용 장면 
   it("같은 제공처의 별칭 경로는 무대 없이 기존 마스트헤드를 유지한다", () => {
     const { container } = render(<MemoryRouter initialEntries={["/research/material-assets"]}><AmbientCgPage /></MemoryRouter>);
     expect(container.querySelector(".resource-masthead")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "공개 데이터 제공처 소개" })).toBeNull();
+  });
+});
+
+describe("전용 경로 무대 적용 (웨이브 19 — 무대 골격 일반화)", () => {
+  // 상세 라우트가 없는 전용 경로 2곳은 일반화 슬롯으로 자기 소속(리서치
+  // 데스크)과 실제 접근 방식을 넘겨 같은 골격을 쓴다. 상세 기본값 계약은
+  // 위 describe들이 그대로 고정한다.
+  it("rijksmuseum 전용 경로는 데스크 소속 무대를 쓰고 접근 칩이 실제(키 없음)와 정합한다", () => {
+    const { container } = render(<MemoryRouter initialEntries={["/research/rijksmuseum"]}><RijksmuseumPage /></MemoryRouter>);
+    expect(container.querySelector(".resource-masthead")).toBeNull();
+    const stage = screen.getByRole("region", { name: "자료 제공처 소개" });
+    expect(stage.querySelector<HTMLImageElement>("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/rijksmuseum.webp");
+    expect(stage.contains(screen.getByRole("heading", { name: "Rijksmuseum 고증 자료실" }))).toBe(true);
+    expect(stage.textContent).toContain("RESEARCH SOURCE");
+    expect(stage.textContent).toContain("가입·키 없이 즉시 검색");
+    expect(stage.querySelector('a[href="/research"]')).toBeTruthy();
+    expect(stage.querySelector('a[href="/research/open-data"]')).toBeNull();
+  });
+
+  it("fonts 전용 경로는 데스크 소속 무대를 쓰고 접근 칩이 서버 인증키형과 정합한다", () => {
+    const { container } = render(<MemoryRouter initialEntries={["/research/fonts"]}><GoogleFontsPage /></MemoryRouter>);
+    expect(container.querySelector(".resource-masthead")).toBeNull();
+    const stage = screen.getByRole("region", { name: "자료 제공처 소개" });
+    expect(stage.querySelector<HTMLImageElement>("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/googlefonts.webp");
+    expect(stage.contains(screen.getByRole("heading", { name: "Google Fonts 레터링 매처" }))).toBe(true);
+    expect(stage.textContent).toContain("무료 서버 키 연결형");
+    expect(stage.querySelector('a[href="/research"]')).toBeTruthy();
+    expect(stage.querySelector('a[href="/research/open-data"]')).toBeNull();
+  });
+
+  it("weather-light 전용 경로는 보류 판정대로 무대 없이 기존 마스트헤드를 유지한다", () => {
+    const { container } = render(<MemoryRouter initialEntries={["/research/weather-light"]}><MetWeatherPage /></MemoryRouter>);
+    expect(container.querySelector(".resource-masthead")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "자료 제공처 소개" })).toBeNull();
     expect(screen.queryByRole("region", { name: "공개 데이터 제공처 소개" })).toBeNull();
   });
 });
