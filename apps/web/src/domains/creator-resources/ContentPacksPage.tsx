@@ -24,6 +24,7 @@ import { resolveReferenceQuery } from "../../../../../packages/core/src/referenc
 
 const SCOPE = "domains.creator.resources.ContentPacksPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
+const txEn = (source: string): string => translateCurrentStaticSourceText(SCOPE, "en", source);
 
 /**
  * 장면 팩별 아트 배정 (디자인 웨이브 7) — 팩의 분위기를 브랜드 일러스트로 읽히게 한다.
@@ -87,7 +88,51 @@ export function ContentPacksPage() {
     try { downloadText(`toonstudio-${pack.id}-${format}.md`, brief); setNotice(tx("브리프 파일 다운로드를 요청했습니다. 브라우저 다운로드 목록을 확인하세요.")); }
     catch { setNotice(tx("파일을 내보내지 못했습니다. 아래 미리보기의 내용을 복사해 보관하세요.")); }
   };
-  return <ResourceLayout title={tx("오픈 콘텐츠 제작실")} intro={tx("무료 공개 자료를 내 장면의 근거로 바꾸세요. 12개 창작 팩에서 출발해 자료를 검색·저장하고, 출처를 붙인 콘티와 설정집을 만듭니다. 가입·유료 AI 호출은 필요하지 않습니다.")}>
+  // 첫 화면 무대 (디자인 웨이브 15 — 구도 교체): 팩 12종의 실물 아트(PACK_ART —
+  // 각 팩 카드의 얼굴과 같은 배정)를 4×3 모자이크로 전폭 무대화하고, 제목·소개를
+  // 스크림 위 무대 안에 종속 배치한다. 아트는 전부 실제 팩 데이터의 배정에서
+  // 도출한다 — 팩과 무관한 장식 아트를 새로 끼우지 않는다. 팩 선택 그리드는
+  // 무대 아래에서 종전대로 내용을 담당한다.
+  const packStage = (
+    <section aria-label={tx("오픈 콘텐츠 제작실 소개")} className="relative overflow-hidden rounded-3xl border border-line bg-panel">
+      <div aria-hidden="true" className="absolute inset-0 grid grid-cols-4 grid-rows-3">
+        {CONTENT_PACKS.map((item) => (
+          <span key={item.id} className="relative block overflow-hidden">
+            <img
+              src={`/brand/illustrated-20260928/${PACK_ART[item.id] ?? "materials"}.webp`}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 size-full object-cover"
+            />
+            <span className="absolute left-2 top-2 hidden rounded-full bg-black/45 px-2 py-0.5 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm sm:block">{tx(item.title)}</span>
+          </span>
+        ))}
+      </div>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(to_top,oklch(0.08_0.02_265/0.95)_0%,oklch(0.08_0.02_265/0.78)_44%,oklch(0.08_0.02_265/0.28)_78%,oklch(0.08_0.02_265/0.4)_100%)]"
+      />
+      <div className="relative flex min-h-[26rem] flex-col justify-end gap-4 p-6 sm:p-8">
+        <Link
+          to="/research"
+          className="inline-flex min-h-8 items-center self-start text-xs font-semibold tracking-[.12em] text-white/75 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          TOONSTUDIO / {tx("리서치 데스크")}
+        </Link>
+        <p className="eyebrow text-white/70">{txEn("OPEN CONTENT PACKS")}</p>
+        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">{tx("오픈 콘텐츠 제작실")}</h1>
+        <p className="max-w-2xl text-base leading-7 text-white/85">{tx("무료 공개 자료를 내 장면의 근거로 바꾸세요. 12개 창작 팩에서 출발해 자료를 검색·저장하고, 출처를 붙인 콘티와 설정집을 만듭니다. 가입·유료 AI 호출은 필요하지 않습니다.")}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/85 backdrop-blur-sm">{formatI18nTemplate(tx("창작 팩 {v0}개"), { v0: CONTENT_PACKS.length })}</span>
+          <span className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/85 backdrop-blur-sm">{tx("공식 제공처 3곳에서 검색")}</span>
+          <span className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/85 backdrop-blur-sm">{tx("출처를 붙인 브리프 내보내기")}</span>
+          <span className="ms-auto text-xs text-white/65">{formatI18nTemplate(tx("장면 팩 {v0}종의 아트 모자이크"), { v0: CONTENT_PACKS.length })}</span>
+        </div>
+      </div>
+    </section>
+  );
+  return <ResourceLayout title={tx("오픈 콘텐츠 제작실")} intro={tx("무료 공개 자료를 내 장면의 근거로 바꾸세요. 12개 창작 팩에서 출발해 자료를 검색·저장하고, 출처를 붙인 콘티와 설정집을 만듭니다. 가입·유료 AI 호출은 필요하지 않습니다.")} heroStage={packStage}>
     {/* 첫 화면 주인공은 장면 팩 아트 그리드다 (디자인 웨이브 7 주인공 교체) —
         안내 문구·외부 링크는 팩을 고른 뒤 읽는 정보라 그리드 아래로 내렸다. */}
     <section className="space-y-4" aria-labelledby="pack-heading">
