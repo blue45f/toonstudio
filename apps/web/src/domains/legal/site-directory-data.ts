@@ -253,6 +253,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/studio/assets/characters/new", "캐릭터 만들기", "Create a character", "캐릭터·표정·포즈와 3D 참고 제작", "Build characters, expressions, poses and 3D references"),
       destination("/studio/character", "캐릭터 작업실", "Character workspace", "캐릭터 외형·표정·자세 제작", "Build character looks, expressions and poses"),
       destination("/studio/animation", "애니메이션 작업실", "Animation workspace", "프레임과 움직임을 편집", "Edit frames and motion"),
+      destination("/studio/motion-webtoon", "모션 웹툰", "Motion webtoon", "컷에 움직임과 자막을 넣어 영상으로 내보내기", "Add motion and captions to cuts and export a video"),
       destination("/studio/brushes", "Studio 브러시", "Studio brushes", "작업 중 브러시를 선택하고 조정", "Choose and tune brushes while editing"),
       destination("/studio/assets/brushes/new", "브러시 연구실", "Brush lab", "브러시를 만들고 시험하기", "Build and test custom brushes"),
       destination("/studio/assets/audio", "음악·사운드", "Music & sound", "작품에 연결할 음원 만들기", "Create audio for your work"),
