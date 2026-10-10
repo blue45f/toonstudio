@@ -14,7 +14,8 @@ import type { CreatorResource, ResourceSearchResult } from "@/shared/lib/creator
 import { attributionMarkdown, deadlineCalendar, deadlineLabel, parseSearchResult, RESOURCE_LABELS } from "@/shared/lib/creator-resources";
 import { apiFetch, apiPath } from "@/platform/api";
 
-import { researchSourceIdentity } from "./research-source-identity";
+import { OpenDataSourceStage } from "./OpenDataSourceStage";
+import { researchSourceArtSrc, researchSourceIdentity } from "./research-source-identity";
 import { RESOURCE_SEARCH_CONFIG, RESOURCE_SEARCH_TRANSLATED_PROVIDERS, isServerAliasResolvedQuery } from "./resource-search-config";
 
 import type { ResourceSearchProvider } from "./resource-search-config";
@@ -255,14 +256,23 @@ function WikimediaPreSearch({ isSaved, onToggleItem, saveDisabled, onRunSearch }
   return <PreSearchGuide provider="wikimedia" onRunSearch={onRunSearch} />;
 }
 
-export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }: {
+export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, heroStage = false }: {
   provider: ResourceSearchProvider;
   /** 제공처 전용 검색 전 구성. 지정하면 공통 큐레이션(PreSearchGuide) 대신 이 구성을 쓴다. */
   preSearchGuide?: (onRunSearch: (q: string) => void) => ReactNode;
   /** 결과·저장 카드 장식. 지정한 제공처 표면만 넘긴다 — 나머지 제공처는 기존 카드 그대로다. */
   cardDecoration?: (item: CreatorResource) => ResourceCardDecoration | undefined;
+  /**
+   * 첫 화면 무대 파일럿 (디자인 웨이브 15) — 켜면 제공처 장면 아트를 전폭 무대로
+   * 세우는 구도 교체(OpenDataSourceStage)를 마스트헤드 대신 얹는다. 장면 아트가
+   * 없는 제공처는 무대를 만들지 않고 기존 마스트헤드로 남는다. 파일럿 범위 밖의
+   * 경로는 이 옵션을 켜지 않아 기존 렌더와 동일하다.
+   */
+  heroStage?: boolean;
 }) {
   const config = RESOURCE_SEARCH_CONFIG[provider];
+  const identity = researchSourceIdentity(provider);
+  const stageArt = heroStage ? researchSourceArtSrc(identity) : null;
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
   // 영문 인덱스 제공처는 한글 검색어를 공용 변환 계층으로 영문 변환해 보낸다.
@@ -318,7 +328,7 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration }:
     }));
   };
   const searchFor = (q: string) => { setSavedOnly(false); setParams({ q, page: "1" }); };
-  return <ResourceLayout title={config.title} intro={config.intro} sourceIdentity={researchSourceIdentity(provider)}>
+  return <ResourceLayout title={config.title} intro={config.intro} sourceIdentity={identity} heroStage={stageArt ? <OpenDataSourceStage provider={provider} /> : undefined}>
     <ProviderStatus provider={provider} />
     {/* 역할 분담 안내 — 웹툰 작품은 /search·/explore, 단행본·작법서·창작 자료는 여기서 */}
     <div className="rounded-2xl border border-line bg-panel p-4 text-sm leading-6 text-fg-2" role="note" aria-label="자료 검색 역할 안내">
@@ -430,3 +440,7 @@ export function SmithsonianPage() { return <ResourceSearchPage provider="smithso
 export function WikimediaInterestPage() { return <ResourceSearchPage provider="wikimedia" />; }
 export function EuropeanaPage() { return <ResourceSearchPage provider="europeana" />; }
 export function DplaPage() { return <ResourceSearchPage provider="dpla" />; }
+// 공개 데이터 상세 무대 파일럿 (디자인 웨이브 15) — /research/open-data/* 경로 전용
+// 래퍼다. 같은 제공처의 다른 경로(/research/space-assets 등)는 기존 마스트헤드 그대로다.
+export function OpenDataNasaPage() { return <ResourceSearchPage provider="nasa" heroStage />; }
+export function OpenDataGbifPage() { return <ResourceSearchPage provider="gbif" heroStage />; }

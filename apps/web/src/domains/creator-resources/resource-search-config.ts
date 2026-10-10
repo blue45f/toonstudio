@@ -57,6 +57,16 @@ export const OPEN_DATA_PROVIDERS = [
 ] as const satisfies readonly ResourceSearchProvider[];
 
 /**
+ * 가입·서버 키 없이 바로 검색되는 공개 데이터 제공처 — 나머지는 무료 서버 키
+ * 연결형이다. 허브(제공처 통계·카드 배지)와 상세 무대(접근 방식 칩)가 같은
+ * 판정을 쓰도록 이 표가 단일 정본이다.
+ */
+export const OPEN_DATA_KEYLESS_PROVIDERS: ReadonlySet<ResourceProvider> = new Set([
+  "ambientcg", "vam", "nasa", "gbif", "musicbrainz",
+  "internetarchive", "kheritage", "wikimedia",
+]);
+
+/**
  * 한글 검색어를 영문으로 자동 변환해 보내는 제공처 (2026-10-06 실측 판정).
  * 기준: 제공처 인덱스가 영문인데 서버 단 변환이 없거나(met·nasa·vam·rijksmuseum은
  * 서버에도 같은 사전 변환이 있어 멱등) 클라이언트 변환이 결과를 바꾸는 경우.
