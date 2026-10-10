@@ -152,6 +152,14 @@ export const OpenDataWikimediaPage = lazyRetry(
   () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataWikimediaPage })),
   "OpenDataWikimediaPage",
 );
+export const OpenDataAmbientCgPage = lazyRetry(
+  () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataAmbientCgPage })),
+  "OpenDataAmbientCgPage",
+);
+export const OpenDataNeisPage = lazyRetry(
+  () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataNeisPage })),
+  "OpenDataNeisPage",
+);
 export const GlobalBooksPage = lazyRetry(
   () => import("@/domains/creator-resources/GlobalBooksPage").then((module) => ({ default: module.GlobalBooksPage })),
   "GlobalBooksPage",

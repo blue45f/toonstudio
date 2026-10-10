@@ -441,11 +441,11 @@ export function SmithsonianPage() { return <ResourceSearchPage provider="smithso
 export function WikimediaInterestPage() { return <ResourceSearchPage provider="wikimedia" />; }
 export function EuropeanaPage() { return <ResourceSearchPage provider="europeana" />; }
 export function DplaPage() { return <ResourceSearchPage provider="dpla" />; }
-// 공개 데이터 상세 무대 (디자인 웨이브 15 파일럿 → 웨이브 16 전파 본편) —
+// 공개 데이터 상세 무대 (디자인 웨이브 15 파일럿 → 웨이브 16 전파 → 웨이브 17 완결) —
 // /research/open-data/* 경로 전용 래퍼다. 장면(scene) 아트를 보유한 제공처의
 // 상세만 이 래퍼를 둔다. 같은 제공처의 다른 경로(/research/space-assets 등
-// 별칭)는 기존 마스트헤드 그대로고, 장면이 없는 제공처(ambientcg·neis)는
-// 래퍼 자체가 없어 기존 마스트헤드로 남는다.
+// 별칭)는 기존 마스트헤드 그대로다. ambientcg·neis는 웨이브 17에서 전용 장면을
+// 제작·배정받아 마지막으로 합류했고, 이로써 상세 14곳 전부가 장면 무대를 쓴다.
 export function OpenDataNasaPage() { return <ResourceSearchPage provider="nasa" heroStage />; }
 export function OpenDataGbifPage() { return <ResourceSearchPage provider="gbif" heroStage />; }
 export function OpenDataVamPage() { return <ResourceSearchPage provider="vam" heroStage />; }
@@ -458,3 +458,5 @@ export function OpenDataKheritagePage() { return <ResourceSearchPage provider="k
 export function OpenDataTourApiPage() { return <ResourceSearchPage provider="tourapi" heroStage />; }
 export function OpenDataKoreanPage() { return <ResourceSearchPage provider="korean" heroStage />; }
 export function OpenDataWikimediaPage() { return <ResourceSearchPage provider="wikimedia" heroStage />; }
+export function OpenDataAmbientCgPage() { return <ResourceSearchPage provider="ambientcg" heroStage />; }
+export function OpenDataNeisPage() { return <ResourceSearchPage provider="neis" heroStage />; }

@@ -28,8 +28,9 @@ const txEn = (source: string): string => translateCurrentStaticSourceText(SCOPE,
  * 장면 아트가 없는 제공처는 무대를 만들지 않는다 — 타이포로 위장하지 않는
  * 것이 웨이브 8 전례의 조건이라, 호출부는 아트가 있을 때만 이 무대를 얹고
  * 없으면 기존 마스트헤드로 남긴다. 적용 범위는 라우트 래퍼가 정한다 —
- * 장면 보유 제공처의 /research/open-data/* 상세 래퍼만 ResourceSearchPage의
- * heroStage 옵션을 켠다 (별칭 경로·장면 없는 제공처는 래퍼 자체가 없다).
+ * /research/open-data/* 상세 래퍼만 ResourceSearchPage의 heroStage 옵션을
+ * 켠다 (별칭 경로는 래퍼 자체가 없다). 웨이브 17에서 ambientCG·NEIS 전용
+ * 장면이 제작·배정돼 상세 14곳 전부가 장면 보유로 닫혔다.
  */
 export function OpenDataSourceStage({ provider }: { provider: ResourceSearchProvider }) {
   useBilingualI18nRevision();
