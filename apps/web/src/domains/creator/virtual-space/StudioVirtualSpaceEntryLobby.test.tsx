@@ -145,17 +145,17 @@ describe("StudioVirtualSpaceEntryLobby", () => {
 });
 
 describe("StudioVirtualSpaceEntryLobby 월드 미리보기와 첫 화면 순서", () => {
-  it("무대에 입장할 월드의 실제 베이스 아트를 깔고 아트 스타일을 바꾸면 그 스타일의 월드로 교체한다", () => {
+  it("화면 전체 무대에 입장할 월드의 실제 베이스 아트를 깔고 아트 스타일을 바꾸면 그 스타일의 월드로 교체한다", () => {
     const props = { returning: false, projectName: "Project Aurora", onAvatarIndex: vi.fn(), onNickname: vi.fn(), onEnter: vi.fn() } as const;
     const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" {...props} /></MemoryRouter>);
-    const stage = screen.getByRole("region", { name: "입장 미리보기" });
-    const preview = stage.querySelector<HTMLImageElement>("[data-world-preview]");
+    // 웨이브 18 무대 구도: 월드 장면은 무대 카드 안이 아니라 로비 루트 직속의 전면 레이어다.
+    const preview = document.querySelector<HTMLImageElement>(".space-lobby > .space-lobby__scene [data-world-preview]");
     expect(preview).not.toBeNull();
     expect(preview!.getAttribute("src")).toBe("/assets/virtual-studio/style-packs-v5/sky-island/world/world-base.webp");
     // 초점은 스타일별 실측 좌표(포털 구역)를 인라인 object-position으로 적용한다.
     expect(preview!.style.objectPosition).toBe("61% 68%");
     view.rerender(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" artStyle="retro" {...props} /></MemoryRouter>);
-    const retroPreview = stage.querySelector<HTMLImageElement>("[data-world-preview]")!;
+    const retroPreview = document.querySelector<HTMLImageElement>("[data-world-preview]")!;
     expect(retroPreview.getAttribute("src"))
       .toBe("/assets/virtual-studio/style-packs-v5/retro/world/world-base.webp");
     expect(retroPreview.style.objectPosition).toBe("61% 73%");
@@ -179,10 +179,10 @@ describe("캐릭터 온보딩 variant 아트 전면 구도 (W5-T3)", () => {
     const props = { returning: false, projectName: "나의 창작 홈", onAvatarIndex: vi.fn(), onNickname: vi.fn(), onEnter: vi.fn() } as const;
     const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby variant="character-onboarding" avatarIndex={-1} nickname="" {...props} /></MemoryRouter>);
     const stage = screen.getByRole("region", { name: "입장 미리보기" });
-    const art = stage.querySelector<HTMLImageElement>("[data-onboarding-stage-art]");
+    const art = document.querySelector<HTMLImageElement>(".space-lobby > .space-lobby__scene [data-onboarding-stage-art]");
     expect(art).not.toBeNull();
     expect(art!.getAttribute("src")).toBe("/images/onboarding-character-stage.webp");
-    expect(stage.querySelector("[data-world-preview]")).toBeNull();
+    expect(document.querySelector("[data-world-preview]")).toBeNull();
     expect(within(stage).getByText("나중에도 언제든 변경 가능")).toBeTruthy();
     const steps = screen.getByRole("list", { name: "시작 준비 상태" });
     expect(within(steps).getByText("아직 입력 전")).toBeTruthy();
