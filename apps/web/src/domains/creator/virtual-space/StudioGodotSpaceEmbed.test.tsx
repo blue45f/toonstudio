@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { StudioRealtimeTicketRequest } from "../studio-realtime-provider-protocol";
 import type { StudioRealtimeTicketIssuer } from "../studio-realtime-provider-runtime";
 import { StudioGodotSpaceEmbed } from "./StudioGodotSpaceEmbed";
 
@@ -68,7 +69,10 @@ describe("StudioGodotSpaceEmbed", () => {
   });
 
   it("registers the host bridge before loading the frame, then injects a session on ready", async () => {
-    const issue = vi.fn(async () => ticketResponse());
+    const issue = vi.fn(
+      async (_request: StudioRealtimeTicketRequest, _signal: AbortSignal) =>
+        ticketResponse(),
+    );
     renderEmbed({ issue });
     const iframe = document.querySelector("iframe");
     expect(iframe?.getAttribute("src")).toBe("/godot-space/index.html");

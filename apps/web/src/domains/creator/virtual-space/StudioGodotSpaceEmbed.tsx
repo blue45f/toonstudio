@@ -288,7 +288,7 @@ export function StudioGodotSpaceEmbed({
             className="absolute inset-0 grid place-items-center bg-card/80"
             role="status"
           >
-            <p className="text-sm font-semibold text-muted-foreground">
+            <p className="text-sm font-semibold text-fg-2">
               {statusCopy[phase]}
             </p>
           </div>
