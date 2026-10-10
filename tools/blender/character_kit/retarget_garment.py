@@ -130,6 +130,32 @@ def vertex_components(vertex_count: int, triangles: np.ndarray) -> np.ndarray:
     return np.array([find(i) for i in range(vertex_count)])
 
 
+STRAY_MAX_TRIANGLES = 30
+
+
+def drop_stray_components(mesh: StaticMesh, min_triangles: int = STRAY_MAX_TRIANGLES) -> tuple[StaticMesh, dict]:
+    """삼각형이 `min_triangles`개 미만인 연결 성분을 지운다(가장 큰 성분은 항상 남긴다).
+
+    같은 위치의 정점(UV 이음매로 갈라진 것)은 한 점으로 보고 성분을 나눈다. 축소(decimate)가 이음매를 따라 떼어 낸 1~16개짜리 파편은 정렬 변환을 받지 못해(신발은 두 짝만 변환한다)
+    원본 좌표(손 높이 ±0.75 m)에 떠 있다. 가닥 시트인 헤어는 작은 성분이 정상이라 이 함수를 쓰지 않는다.
+    """
+    canon_index, canon_positions = gf.weld_vertices(mesh.positions)
+    canon_triangles = canon_index[mesh.triangles]
+    labels = vertex_components(len(canon_positions), canon_triangles)[canon_triangles[:, 0]]
+    values, counts = np.unique(labels, return_counts=True)
+    keep_labels = values[(counts >= min_triangles) | (counts == counts.max())]
+    keep = np.isin(labels, keep_labels)
+    report = {"droppedComponents": int(len(values) - len(keep_labels)), "droppedTriangles": int((~keep).sum())}
+    if keep.all():
+        return mesh, report
+    triangles = mesh.triangles[keep]
+    used = np.unique(triangles)
+    remap = -np.ones(len(mesh.positions), dtype=np.int64)
+    remap[used] = np.arange(len(used))
+    out = replace(mesh, positions=mesh.positions[used], normals=None if mesh.normals is None else mesh.normals[used], uvs=mesh.uvs[used], triangles=remap[triangles])
+    return out, report
+
+
 def region_vertices(bs: BodySurface, names: list[str]) -> np.ndarray:
     mask = np.isin(bs.region, [bs.region_index(n) for n in names])
     return bs.apose[mask]
@@ -210,6 +236,10 @@ def align_pieces(spec: dict, pieces: list[np.ndarray], bs: BodySurface, surface:
         goal = np.array([0.0, float(head[:, 1].max()), 0.5 * (float(head[:, 2].min()) + float(head[:, 2].max()))])
         for _ in pieces:
             out.append({"scale": float(scale), "translation": goal - scale * source, "cost": None, "ref_scale": float(scale)})
+    elif align == "none":
+        # 이미 베이스 좌표로 만든 원본(절차 생성 소품): 변환 없음
+        for _ in pieces:
+            out.append({"scale": 1.0, "translation": np.zeros(3), "cost": None})
     elif align == "anchor":
         # 허리에 걸치는 치마류: 의상 맨 위 띠(허리선)를 몸의 기준 높이에 걸고 길이를 `anchor.length_m`에 맞춘다(균일 배율). 전신 비율이 베이스와 달라
         # `frame`으로는 허리·밑단 높이가 어긋나고(롱스커트가 허벅지까지 내려왔다), 영역 ICP는 허리띠를 더 가는 곳으로 끌어내린다.
@@ -229,9 +259,11 @@ def align_pieces(spec: dict, pieces: list[np.ndarray], bs: BodySurface, surface:
         head_width = head[:, 0].max() - head[:, 0].min()
         prop = spec["head_prop"]
         for pts in pieces:
-            scale = (head_width + prop["width_margin"]) / (pts[:, 0].max() - pts[:, 0].min())
+            # `target_width`가 있으면 소품 너비를 그 값(m)으로(머리띠·리본처럼 머리 폭과 무관한 소품), 없으면 머리 너비 + 여유. `x_offset`은 한쪽에 다는 소품(리본)용이다.
+            target_width = prop["target_width"] if "target_width" in prop else head_width + prop["width_margin"]
+            scale = target_width / (pts[:, 0].max() - pts[:, 0].min())
             center = np.array([0.5 * (pts[:, 0].min() + pts[:, 0].max()), pts[:, 1].max(), 0.5 * (pts[:, 2].min() + pts[:, 2].max())])
-            goal = np.array([0.0, head[:, 1].max() + prop["top_offset"], 0.5 * (head[:, 2].min() + head[:, 2].max()) + prop["z_offset"]])
+            goal = np.array([float(prop.get("x_offset", 0.0)), head[:, 1].max() + prop["top_offset"], 0.5 * (head[:, 2].min() + head[:, 2].max()) + prop["z_offset"]])
             out.append({"scale": float(scale), "translation": goal - scale * center, "cost": None})
     elif align == "hair":
         head = region_vertices(bs, ["head"])
@@ -723,6 +755,11 @@ def main() -> None:
     rig = build_rig(joints_a, names_all, {name: (None if parents[i] < 0 else names_all[parents[i]]) for i, name in enumerate(names_all)})
 
     meshes = [read_static_mesh(path) for path in garments]
+    stray = {"droppedComponents": 0, "droppedTriangles": 0}
+    if spec["role"] != "hair":
+        cleaned = [drop_stray_components(mesh) for mesh in meshes]
+        meshes = [mesh for mesh, _ in cleaned]
+        stray = {key: max(report[key] for _, report in cleaned) for key in stray}
     results: list[dict] = []
     transforms = None
     for mesh in meshes:
@@ -743,6 +780,16 @@ def main() -> None:
             result["mesh"] = replace(result["mesh"], uvs=cylindrical_uvs(positions_lod, low, high))
         uv_triangles = np.concatenate([result["mesh"].uvs[result["mesh"].triangles] for result in results])
         texture_jpeg, texture_stats = strand_texture(uv_triangles, TextureStyle(**spec["texture"]))
+    elif spec.get("flat_texture"):
+        # 절차 생성 소품: 원본 텍스처가 흰 한 장이라 디테일 없는 밝은 회색 상대색 텍스처를 그대로 쓴다.
+        import io as _io
+
+        from PIL import Image as _Image
+
+        buffer = _io.BytesIO()
+        _Image.new("RGB", (64, 64), (242, 242, 242)).save(buffer, format="JPEG", quality=92, subsampling=0)
+        texture_jpeg = buffer.getvalue()
+        texture_stats = {"bytes": len(texture_jpeg), "size": 64, "usedFraction": 1.0, "strengthUsed": 0.0, "meanLuminance": 0.95, "meanLuminanceUsed": 0.95, "minLuminance": 0.95, "sourcePercentiles": None, "procedural": "flat"}
     else:
         # 텍스처: 첫 LOD의 원본 이미지를 쓰고, 모든 LOD의 UV가 쓰는 영역을 합쳐 재매긴다.
         uv_triangles = np.concatenate([m.uvs[m.triangles] for m in meshes])
@@ -808,6 +855,7 @@ def main() -> None:
             }
             for node, result in zip(spec["nodes"], results, strict=True)
         ],
+        "strayComponents": stray,
         "texture": texture_stats,
         "morphCount": len(names),
         "hides": hides,

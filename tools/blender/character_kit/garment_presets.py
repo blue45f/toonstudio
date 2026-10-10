@@ -164,6 +164,22 @@ def _prop(name: str, *, source: dict[str, Any], head_prop: dict[str, float], cha
     }
 
 
+def _proc_prop(name: str, *, changes: str) -> dict[str, Any]:
+    """절차 생성 소품(`proc_accessories`): 원본이 이미 베이스 좌표라 정렬 없이(`align="none"`) 머리 표면에 결합한다."""
+    spec = _prop(name, source={"proc": name}, head_prop={}, changes=changes, decimate=100000)
+    spec["align"] = "none"
+    spec["flat_texture"] = True
+    # 몸에서 계산해 놓은 위치(귓볼에 박힌 스터드·눈 앞의 테)를 침투 해소가 밀지 않게 하한을 풀어 둔다.
+    spec["d_min"] = -1.0e9
+    return spec
+
+
+# 만들어 보았으나 이번 키트에 넣지 않은 프리셋과 사유 — `build_kit_json.py`가 kit.json `unavailable`의 한글 사유로 그대로 쓴다.
+HELD_PRESETS_KO: dict[str, str] = {
+    "top/hoodie": "후드가 달린 상의를 만들려 했으나 생성물에서 후드가 머리 파츠에 붙어 나와 후드 없는 평범한 긴팔이 되어 이번 키트에서는 제공하지 않습니다.",
+    "accessory/choker": "이 베이스는 턱이 목 앞을 덮고 목이 어깨선과 바로 이어져 목을 수평으로 감싸는 둘레가 없어(띠가 옆에서 몸에 파묻힙니다) 초커를 맞추지 못해 이번 키트에서는 제공하지 않습니다.",
+}
+
 PRESETS: dict[str, dict[str, Any]] = {
     # ---------------------------------------------------------------- 상의
     "top/tee": _top(
@@ -270,6 +286,11 @@ PRESETS: dict[str, dict[str, Any]] = {
         source={"raw": "loafers-01", "pick": None, "clean": "sneakers"},
         changes="로퍼 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
     ),
+    "shoes/boots": _shoes(
+        "boots",
+        source={"raw": "boots-01", "pick": None, "clean": "sneakers"},
+        changes="끈 달린 앵클부츠 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+    ),
     "shoes/sandals": _shoes(
         "sandals",
         source={"raw": "sandals-01", "pick": None, "clean": "sneakers"},
@@ -347,6 +368,21 @@ PRESETS: dict[str, dict[str, Any]] = {
         source={"raw": "cap-01", "pick": None, "clean": "keep"},
         head_prop={"width_margin": 0.030, "top_offset": 0.034, "z_offset": -0.004},
         changes="야구모자 생성물을 베이스 머리 너비에 맞춰 정수리 위에 얹도록 리타깃, 3,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+    ),
+    "accessory/ribbon": _prop(
+        "ribbon",
+        source={"raw": "ribbon-01", "pick": None, "clean": "keep"},
+        head_prop={"target_width": 0.075, "x_offset": 0.052, "top_offset": 0.022, "z_offset": 0.006},
+        decimate=2500,
+        changes="헤어 리본 생성물을 너비 7.5 cm로 줄여 머리 왼쪽 위(귀 위쪽)에 얹도록 리타깃, 2,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+    ),
+    "accessory/glasses": _proc_prop(
+        "glasses",
+        changes="베이스 눈·귀 위치에서 절차 생성한 둥근 사각 테 안경(테 굵기 1.3 mm, 브리지, 귀에 걸치는 다리)을 변환 없이 머리 표면에 결합해 스킨·morph를 붙임. Hyper3D 생성물이 아닌 원본(license: original).",
+    ),
+    "accessory/earrings": _proc_prop(
+        "earrings",
+        changes="베이스 귓볼 위치에서 절차 생성한 드롭 귀걸이(스터드 구슬 + 사슬 + 작은 구슬)를 변환 없이 머리 표면에 결합해 스킨·morph를 붙임. Hyper3D 생성물이 아닌 원본(license: original).",
     ),
     "accessory/headphones": _prop(
         "headphones",

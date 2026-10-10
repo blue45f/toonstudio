@@ -155,6 +155,47 @@ def highlight_disc(eye: EyeGeometry, iris_radius_m: float = 0.0060, radius_m: fl
     return ba.Prim(material="ts_highlight", positions=positions, triangles=triangles, normals=directions, uv=uv, joints=joints, weights=weights)
 
 
+def highlight_star(eye: EyeGeometry, iris_radius_m: float = 0.0060, radius_m: float = 0.0018, offset: tuple[float, float] = (-0.30, 0.34), lift: float = 0.00045, points: int = 4, inner: float = 0.38) -> ba.Prim:
+    """네 갈래 별 모양 캐치라이트(반짝임). `radius_m`은 바깥 꼭짓점 반지름, `inner`는 안쪽 꼭짓점 비율."""
+    cx = eye.center[0] + offset[0] * iris_radius_m
+    cy = eye.center[1] + offset[1] * iris_radius_m
+    angles = np.linspace(0.0, 2.0 * np.pi, points * 2, endpoint=False) + np.pi / 2.0
+    radii = np.where(np.arange(points * 2) % 2 == 0, radius_m, radius_m * inner)
+    planar = np.vstack([[cx, cy], np.stack([cx + radii * np.cos(angles), cy + radii * np.sin(angles)], axis=1)])
+    dz = np.sqrt(np.maximum((eye.radius * 1.2) ** 2 - (planar[:, 0] - eye.center[0]) ** 2 - (planar[:, 1] - eye.center[1]) ** 2, 1e-12))
+    directions = np.stack([planar[:, 0] - eye.center[0], planar[:, 1] - eye.center[1], dz], axis=1)
+    directions /= np.linalg.norm(directions, axis=1, keepdims=True)
+    radius = ray_radius(eye, directions) + lift
+    positions = eye.center + directions * radius[:, None]
+    count = points * 2
+    triangles = np.array([[0, 1 + k, 1 + (k + 1) % count] for k in range(count)], dtype=np.int64)
+    a, b, c = (positions[triangles[:, j]] for j in range(3))
+    if (np.einsum("ij,ij->i", np.cross(b - a, c - a), (a + b + c) / 3.0 - eye.center) < 0).mean() > 0.5:
+        triangles = triangles[:, [0, 2, 1]]
+    uv = np.full((len(positions), 2), 0.5, dtype=np.float32)
+    joints, weights = eye_joint_arrays(len(positions), eye.joint)
+    return ba.Prim(material="ts_highlight", positions=positions, triangles=triangles, normals=directions, uv=uv, joints=joints, weights=weights)
+
+
+def merge_prims(prims: list[ba.Prim]) -> ba.Prim:
+    """같은 재질의 프리미티브들을 하나로 합친다(캐치라이트가 눈마다 한 메시여야 한다)."""
+    first = prims[0]
+    offset = 0
+    triangles = []
+    for prim in prims:
+        triangles.append(prim.triangles + offset)
+        offset += len(prim.positions)
+    return ba.Prim(
+        material=first.material,
+        positions=np.concatenate([p.positions for p in prims]),
+        triangles=np.concatenate(triangles),
+        normals=np.concatenate([p.normals for p in prims]),
+        uv=np.concatenate([p.uv for p in prims]),
+        joints=np.concatenate([p.joints for p in prims]),
+        weights=np.concatenate([p.weights for p in prims]),
+    )
+
+
 # ---------------------------------------------------------------- 머리 표면에 붙는 것들
 
 

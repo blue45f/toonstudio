@@ -206,26 +206,52 @@ def eyeball_texture(size: int = 256, seed: int = 11) -> np.ndarray:
     return np.clip(add_pixel_noise(out, 0.01, seed), 0.0, 1.0).astype(np.float32)
 
 
-def iris_texture(size: int = 512, seed: int = 21) -> np.ndarray:
-    """홍채 상대색(밝은 중립 위 방사 섬유·윤부 링·동공). 원판 반지름 = 0.48. 평균 휘도는 약 0.7."""
+def iris_texture(size: int = 512, seed: int = 21, variant: str = "realistic") -> np.ndarray:
+    """홍채 상대색(밝은 중립 위 윤부 링·동공·그라데이션). 원판 반지름 = 0.48. 평균 휘도는 약 0.7.
+
+    변형(`variant`)
+    - `realistic`: 방사 섬유·윤부 링·동공(작음) — 기존 `round-large`의 사실 홍채.
+    - `anime`: 웹툰·애니 눈. 큰 동공(rho 0.42)·진한 윤부 링·위가 어둡고 아래가 밝은 세로 그라데이션(윗눈꺼풀 그림자)·아래쪽 초승달 빛.
+    - `cat`: `anime`의 그라데이션에 세로 슬릿 동공(가로 0.15 × 세로 0.46).
+    - `soft`: 윤부 링 없이 경계가 부드러운 작은 동공과 강한 세로 그라데이션(몽환적인 눈).
+    """
     x, y, r = radial_grid(size)
     rho = r / 0.48  # 0 = 중심, 1 = 홍채 가장자리
     angle = np.arctan2(y, x)
     rng = np.random.default_rng(seed)
-    fiber = np.zeros_like(rho)
-    for k in range(5):
-        frequency = 24 + 17 * k
-        phase = rng.uniform(0, 2 * np.pi)
-        fiber += np.sin(angle * frequency + phase + 3.0 * np.sin(angle * (3 + k) + rho * 6.0)) / (k + 1.5)
-    fiber = fiber / 2.4
-    radial = 0.98 - 0.30 * smooth(0.30, 1.0, rho)  # 동공 가까이 밝고 바깥으로 어두워진다
-    collarette = 0.10 * np.exp(-(((rho - 0.52) / 0.07) ** 2))  # 동공 둘레 밝은 띠
-    luma = radial + collarette + 0.10 * fiber * smooth(0.28, 0.55, rho)
-    luma *= 1.0 - 0.72 * smooth(0.80, 0.97, rho)  # 윤부 링
-    pupil = smooth(0.40, 0.34, rho)  # 동공 경계(rho 0.37)
+    inside = smooth(1.02, 0.98, rho)
+    if variant == "realistic":
+        fiber = np.zeros_like(rho)
+        for k in range(5):
+            frequency = 24 + 17 * k
+            phase = rng.uniform(0, 2 * np.pi)
+            fiber += np.sin(angle * frequency + phase + 3.0 * np.sin(angle * (3 + k) + rho * 6.0)) / (k + 1.5)
+        fiber = fiber / 2.4
+        radial = 0.98 - 0.30 * smooth(0.30, 1.0, rho)  # 동공 가까이 밝고 바깥으로 어두워진다
+        collarette = 0.10 * np.exp(-(((rho - 0.52) / 0.07) ** 2))  # 동공 둘레 밝은 띠
+        luma = radial + collarette + 0.10 * fiber * smooth(0.28, 0.55, rho)
+        luma *= 1.0 - 0.72 * smooth(0.80, 0.97, rho)  # 윤부 링
+        pupil = smooth(0.40, 0.34, rho)  # 동공 경계(rho 0.37)
+    else:
+        # 세로 그라데이션: y가 클수록(위) 어둡다. 아래쪽에는 초승달 모양 반사광(밝은 띠)을 더한다.
+        v = np.clip(0.5 - y / 0.96, 0.0, 1.0)  # 위 0 → 아래 1
+        if variant == "soft":
+            luma = 0.62 + 0.38 * v
+            pupil = smooth(0.30, 0.14, rho)
+            rim = 0.0
+        else:
+            luma = 0.58 + 0.42 * smooth(0.0, 1.0, v)
+            crescent = np.exp(-(((rho - 0.70) / 0.13) ** 2)) * smooth(0.45, 0.85, v) * 0.16
+            luma = luma + crescent
+            rim = 0.62 * smooth(0.78, 0.96, rho)  # 윤부 링
+            if variant == "cat":
+                pupil = smooth(1.0, 0.82, np.hypot(x / 0.072, y / 0.22))  # 가로 0.15·세로 0.46(rho 단위) 슬릿
+            else:
+                pupil = smooth(0.46, 0.40, rho)  # 큰 동공
+        luma = luma * (1.0 - rim) if variant != "soft" else luma
+        luma = luma + 0.025 * np.sin(angle * 36.0 + 2.0 * np.sin(angle * 5.0)) * smooth(0.45, 0.7, rho) * smooth(0.95, 0.75, rho)  # 아주 약한 방사 결(가장자리 링은 매끈하게)
     luma = luma * (1.0 - pupil) + 0.025 * pupil
     luma = np.clip(luma, 0.0, 1.0)
-    inside = smooth(1.02, 0.98, rho)
     out = luma * inside + 1.0 * (1.0 - inside)
     image = np.repeat(out[..., None], 3, axis=2).astype(np.float32)
     return np.clip(add_pixel_noise(image, 0.012, seed), 0.0, 1.0)

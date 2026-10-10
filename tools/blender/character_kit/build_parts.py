@@ -55,10 +55,13 @@ def run(script: str, args: list[str], env: dict[str, str], log: Path) -> str:
     return result.stdout
 
 
+def is_procedural(spec: dict) -> bool:
+    """원본이 Hyper3D 생성물이 아니라 `proc_accessories.py`가 베이스 좌표로 만드는 소품인가."""
+    return bool(spec["source"].get("proc"))
+
+
 def build_one(preset_id: str, spec: dict, args: argparse.Namespace, env: dict[str, str], entries: dict[str, dict]) -> dict:
     source = spec["source"]
-    entry = entries[source["raw"]]
-    raw = RAW_DIR / entry["rawFile"]
     slug = preset_id.replace("/", "__")
     work = Path(args.work) / slug
     work.mkdir(parents=True, exist_ok=True)
@@ -67,12 +70,19 @@ def build_one(preset_id: str, spec: dict, args: argparse.Namespace, env: dict[st
 
     clean_out = work / "clean.glb"
     clean_report = work / "clean-report.json"
-    clean_args = [str(raw), str(clean_out), "--preset", source["clean"], "--report", str(clean_report)]
-    if source.get("pick"):
-        clean_args += ["--pick-object", source["pick"]]
-    if source.get("ref"):
-        clean_args += ["--ref-object", source["ref"]]
-    run("clean_rodin_garment.py", clean_args, env, log)
+    if is_procedural(spec):
+        entry = {"id": f"proc:{source['proc']}", "name": f"proc-{source['proc']}", "rawSha256": None, "parent": None}
+        run("proc_accessories.py", ["--base-model", str(args.base_model), "--name", source["proc"], "--out", str(clean_out)], env, log)
+        clean_report.write_text(json.dumps({"preset": "procedural", "source": source["proc"]}) + "\n", encoding="utf-8")
+    else:
+        entry = entries[source["raw"]]
+        raw = RAW_DIR / entry["rawFile"]
+        clean_args = [str(raw), str(clean_out), "--preset", source["clean"], "--report", str(clean_report)]
+        if source.get("pick"):
+            clean_args += ["--pick-object", source["pick"]]
+        if source.get("ref"):
+            clean_args += ["--ref-object", source["ref"]]
+        run("clean_rodin_garment.py", clean_args, env, log)
 
     lods: list[str] = []
     for index, target in enumerate(spec["decimate"]):
@@ -140,6 +150,8 @@ def main() -> int:
     Path(env["HOME"]).mkdir(parents=True, exist_ok=True)
     entries = ledger_entries()
     for preset_id in wanted:
+        if is_procedural(PRESETS[preset_id]):
+            continue
         raw = entries[PRESETS[preset_id]["source"]["raw"]].get("rawFile")
         if not raw or not (RAW_DIR / raw).exists():
             raise SystemExit(f"{preset_id}: 원본이 캐시에 없다({raw}). hyper3d_generations.json의 rawFile을 확인한다.")
@@ -173,7 +185,7 @@ def main() -> int:
         existing = json.loads(SOURCES.read_text(encoding="utf-8")) if SOURCES.exists() else {"schema": "toonstudio.hyper3d-sources/1", "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md", "summaryKo": "", "common": {}, "sources": {}}
         existing["sources"] = {key: value for key, value in existing.get("sources", {}).items() if key not in failures}
         for preset_id, report in results.items():
-            if not isinstance(report, str):
+            if not isinstance(report, str) and not is_procedural(PRESETS[preset_id]):
                 existing["sources"][preset_id] = source_entry(preset_id, PRESETS[preset_id], entries)
         existing["summaryKo"] = "Hyper3D(Rodin Gen-2.5) 생성물과 그 파생물. 약관·소유권·수정·공개 호스팅 조항과 닫히지 않은 점은 recordDoc에 있고, 생성 기록 전체는 hyper3d_generations.json에 있다. 원본 GLB는 저장소에 커밋하지 않는다."
         SOURCES.write_text(json.dumps(existing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

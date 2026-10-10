@@ -581,10 +581,10 @@ def provenance_block(
             },
             {
                 "id": "toonstudio-original",
-                "name": "ToonStudio 원본 디자인(속옷·구강 내부·속눈썹·눈썹·홍채·텍스처)",
+                "name": "ToonStudio 원본 디자인(속옷·구강 내부·속눈썹·눈썹·홍채 5종·안경·귀걸이·텍스처)",
                 "license": "original",
                 "derivative": False,
-                "changesKo": "tools/blender/character_kit 로 절차 생성한 원본 지오메트리와 텍스처입니다.",
+                "changesKo": "tools/blender/character_kit 로 절차 생성한 원본 지오메트리와 텍스처입니다. 안경·귀걸이는 베이스의 눈·귀 위치에서 계산해 만들었고 외부 에셋을 쓰지 않았습니다.",
             },
             *(entry for _, entry in derived),
         ],

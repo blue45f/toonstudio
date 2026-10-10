@@ -119,6 +119,7 @@
 - 등급: `tier=Gen-2.5-High`(`quality_override` 3,000~40,000), `mesh_mode=Raw`. 전신 한 벌·흉상을 BANG(`rodin_generate_bang`)으로 분리해 파츠를 얻었다.
 - **참조 이미지(2026-10-11 이후 T-포즈 상의 4건 `g11-*-proxy`)**: Rodin은 글 프롬프트의 T-포즈를 따르지 않아, 베이스 T-포즈 몸에 프록시 상의·바지를 입힌 정면 렌더(`tools/blender/character_kit/proxy_reference.py`가 베이스 메시를 그린 자체 렌더 1장)를 `rodin_create_uploads` 사전서명 PUT으로 올려 `reference_upload_ids`로 줬다. **입력 이미지는 이 저장소 자체 산출물뿐**이며 외부 이미지·다른 모델의 출력은 쓰지 않았다(약관의 "내가 권리를 가진 입력" 요건). 항목에는 `referenceImages`에 입력 설명을 적었다.
 - 얼굴 흉상 6건(`head-*`, `fig-anime-*`): 베이스 머리 모양 정합 실험용이다. 실험이 미완성이라 키트 파츠·베이스에는 쓰이지 않았다(`face_register` 모듈 docstring 참조).
+- 안경·귀걸이(`accessory/glasses`·`accessory/earrings`)는 Hyper3D 생성물이 아니라 `tools/blender/character_kit/proc_accessories.py`가 베이스의 눈·귀 위치에서 계산한 원본이다(license `original`, 크레딧 없음). 후디·초커는 키트에 넣지 않았다(사유: `garment_presets.HELD_PRESETS_KO`).
 - 스튜디오·작품 이름은 프롬프트에 쓰지 않는다. 사용자가 보낸 Hyper3D 공개 페이지(다른 사용자의 에셋)는 화면으로 분위기만 참고했고 내려받거나 키트에 쓰지 않았다.
 
 최초 파일럿 4건 공통: 도구 `mcp__hyper3d__rodin_generate`(로컬 Claude Code, 인증된 계정), `tier=Gen-2.5-Medium`, `mesh_mode=Quad`, `texture_delight=true`, `geometry_file_format=glb`, 참조 이미지 없음.

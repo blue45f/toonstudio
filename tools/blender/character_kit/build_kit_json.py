@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from character_kit import contract as contract_mod  # noqa: E402
 from character_kit import kit_manifest as km  # noqa: E402
+from character_kit.garment_presets import HELD_PRESETS_KO  # noqa: E402
 
 CACHE = Path.home() / ".cache" / "toonstudio-kit"
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -79,6 +80,7 @@ def main(argv: list[str]) -> int:
             blender_version=blender_version,
             hyper3d_sources=hyper3d,
             extra_bases=extra_bases,
+            unavailable_reasons=HELD_PRESETS_KO,
         )
     except km.ManifestError as error:
         print(f"manifest를 만들지 못했습니다: {error}", file=sys.stderr)

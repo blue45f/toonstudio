@@ -14,8 +14,9 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from character_kit import garment_fit as gf  # noqa: E402
 from character_kit.garment_texture import TextureStyle, luminance, rasterize_uv_mask, relative_color_texture, strand_texture  # noqa: E402
-from character_kit.retarget_garment import fade_small, merge_skin_joints  # noqa: E402
-from character_kit.surface import Surface  # noqa: E402
+from character_kit.gltf_read import StaticMesh  # noqa: E402
+from character_kit.retarget_garment import drop_stray_components, fade_small, merge_skin_joints  # noqa: E402
+from character_kit.surface import Surface, vertex_normals  # noqa: E402
 
 
 def uv_sphere(radius: float = 1.0, rings: int = 24, segments: int = 32):
@@ -403,6 +404,69 @@ class ArapDetachedComponentTest(unittest.TestCase):
         initial = rest + np.array([0.0, 0.2, 0.0])
         out = arap_deform(rest, initial, np.array([0, 1, 2]), ptr, idx, iterations=4)
         self.assertTrue(np.allclose(out, initial))  # 풀 수 없는 덩어리는 초기값(스키닝 결과)을 그대로 쓴다
+
+
+class StrayComponentTest(unittest.TestCase):
+    def mesh_with_stray(self):
+        """UV 이음매로 갈라진 정점을 가진 구체(큰 성분) + 떨어진 삼각형 1개(파편)."""
+        positions, triangles = uv_sphere(radius=0.1, rings=8, segments=10)
+        positions = np.asarray(positions)
+        triangles = np.asarray(triangles)
+        # 이음매 흉내: 첫 삼각형 하나의 정점을 복제해 같은 위치의 별도 정점으로 만든다
+        seam = positions[triangles[0]]
+        positions = np.vstack([positions, seam])
+        triangles = triangles.copy()
+        triangles[0] = [len(positions) - 3, len(positions) - 2, len(positions) - 1]
+        stray = np.array([[0.7, 0.2, 0.0], [0.72, 0.2, 0.0], [0.7, 0.22, 0.0]])
+        triangles = np.vstack([triangles, [len(positions), len(positions) + 1, len(positions) + 2]])
+        positions = np.vstack([positions, stray])
+        uvs = np.linspace(0.0, 1.0, len(positions) * 2).reshape(-1, 2)
+        return StaticMesh(positions=positions, normals=vertex_normals(positions, triangles), uvs=uvs, triangles=triangles, image=None, image_mime=None, material_name=None), len(triangles)
+
+    def test_drops_small_floating_piece_and_reindexes(self) -> None:
+        mesh, count = self.mesh_with_stray()
+        cleaned, report = drop_stray_components(mesh, 30)
+        self.assertEqual(report, {"droppedComponents": 1, "droppedTriangles": 1})
+        self.assertEqual(len(cleaned.triangles), count - 1)
+        self.assertLess(cleaned.positions[:, 0].max(), 0.2)
+        self.assertEqual(cleaned.uvs.shape, (len(cleaned.positions), 2))
+        self.assertEqual(cleaned.normals.shape, cleaned.positions.shape)
+        self.assertEqual(int(cleaned.triangles.max()) + 1, len(cleaned.positions))  # 쓰이지 않는 정점이 남지 않는다
+
+    def test_seam_split_vertices_do_not_make_the_sphere_stray(self) -> None:
+        mesh, _ = self.mesh_with_stray()
+        cleaned, _ = drop_stray_components(mesh, 30)
+        # 이음매 복제 정점이 있어도 구체(수십 개 삼각형)는 한 성분으로 남는다
+        self.assertGreater(len(cleaned.triangles), 100)
+
+    def test_largest_component_is_kept_even_below_threshold(self) -> None:
+        mesh, _ = self.mesh_with_stray()
+        cleaned, report = drop_stray_components(mesh, 100000)
+        self.assertEqual(report["droppedComponents"], 1)  # 파편만 지워지고
+        self.assertGreater(len(cleaned.triangles), 100)  # 가장 큰 성분(구체)은 남는다
+
+    def test_untouched_when_nothing_is_small(self) -> None:
+        positions, triangles = uv_sphere(radius=0.1, rings=8, segments=10)
+        mesh = StaticMesh(positions=np.asarray(positions), normals=None, uvs=np.zeros((len(positions), 2)), triangles=np.asarray(triangles), image=None, image_mime=None, material_name=None)
+        cleaned, report = drop_stray_components(mesh, 30)
+        self.assertIs(cleaned, mesh)
+        self.assertEqual(report, {"droppedComponents": 0, "droppedTriangles": 0})
+
+
+class FoldedVertexNormalTest(unittest.TestCase):
+    def test_cancelled_normals_fall_back_to_largest_face(self) -> None:
+        # 맞붙어 접힌 두 겹: 같은 정점 0을 공유하고 서로 반대를 보는 삼각형 쌍 → 면적 가중 합이 0
+        positions = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [2.0, 0.0, 0.0], [0.0, 2.0, 0.0]])
+        triangles = np.array([[0, 1, 2], [0, 4, 3]])  # 두 번째는 뒤집힌 방향, 면적 4배
+        normals = vertex_normals(positions, triangles)
+        self.assertTrue(np.allclose(np.linalg.norm(normals, axis=1), 1.0))
+        np.testing.assert_allclose(normals[0], [0.0, 0.0, -1.0])  # 큰 면(두 번째)의 법선
+
+    def test_regular_vertices_unchanged(self) -> None:
+        positions, triangles = uv_sphere(radius=1.0, rings=6, segments=8)
+        normals = vertex_normals(np.asarray(positions), np.asarray(triangles))
+        self.assertTrue(np.allclose(np.linalg.norm(normals, axis=1), 1.0))
+        self.assertTrue(np.all(np.einsum("ij,ij->i", normals, np.asarray(positions)) > 0.9))
 
 
 if __name__ == "__main__":

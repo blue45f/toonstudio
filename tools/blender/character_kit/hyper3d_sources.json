@@ -1,7 +1,7 @@
 {
   "schema": "toonstudio.hyper3d-sources/1",
   "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
-  "summaryKo": "Hyper3D(Rodin Gen-2.5) 생성물과 그 파생물. 약관·소유권·수정·공개 호스팅 조항과 닫히지 않은 점은 recordDoc에 있다. 원본 GLB는 저장소에 커밋하지 않는다.",
+  "summaryKo": "Hyper3D(Rodin Gen-2.5) 생성물과 그 파생물. 약관·소유권·수정·공개 호스팅 조항과 닫히지 않은 점은 recordDoc에 있고, 생성 기록 전체는 hyper3d_generations.json에 있다. 원본 GLB는 저장소에 커밋하지 않는다.",
   "common": {
     "tool": "mcp__hyper3d__rodin_generate (로컬 Claude Code, OAuth 인증 계정)",
     "geometryFileFormat": "glb",
@@ -220,6 +220,26 @@
       "intent": "accessory/headphones 후보",
       "changesKo": "헤드폰 생성물을 베이스 머리 너비에 맞춰 귀 바깥에 오도록 리타깃, 3,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
       "qualityOverride": 4000
+    },
+    "shoes/boots": {
+      "generationId": "b793c25d-6247-43d9-a040-1be2d82252f8",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/b793c25d-6247-43d9-a040-1be2d82252f8",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "0a3178d360d5c68237dd3fcd7fac64fe308de647fd1ac2c410706e5e9e20fb6e",
+      "rawBytes": 8758732,
+      "intent": "shoes/boots 후보(한 켤레)",
+      "changesKo": "끈 달린 앵클부츠 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "qualityOverride": 8000
+    },
+    "accessory/ribbon": {
+      "generationId": "43d44c7c-1c5d-4f31-83b5-dbc584859567",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/43d44c7c-1c5d-4f31-83b5-dbc584859567",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "ce78392f5698c2bdde87b9556444497b7fe47960d2ee1247f3614b07bf23d1be",
+      "rawBytes": 6844976,
+      "intent": "accessory/ribbon 후보",
+      "changesKo": "헤어 리본 생성물을 너비 7.5 cm로 줄여 머리 왼쪽 위(귀 위쪽)에 얹도록 리타깃, 2,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "qualityOverride": 3000
     }
   }
 }

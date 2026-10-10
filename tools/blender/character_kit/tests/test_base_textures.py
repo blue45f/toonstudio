@@ -99,5 +99,24 @@ class ProceduralTextureTest(unittest.TestCase):
             self.assertTrue(0.0 <= float(image.min()) and float(image.max()) <= 1.0)
 
 
+class IrisVariantTest(unittest.TestCase):
+    def test_every_variant_stays_bright_enough_for_the_tint_rule_and_differs_in_shape(self) -> None:
+        images = {name: bt.iris_texture(128, variant=name) for name in ("realistic", "anime", "cat", "soft")}
+        for name, image in images.items():
+            self.assertGreaterEqual(bt.luminance(image), 0.55, name)  # 계약: 곱셈 틴트에 안전한 평균 휘도
+        center = {name: float(image[64, 64].mean()) for name, image in images.items()}
+        self.assertLess(center["anime"], 0.1)  # 큰 동공은 중심이 어둡다
+        self.assertLess(center["cat"], 0.1)
+        dark = {name: float((image.mean(axis=2) < 0.1).mean()) for name, image in images.items()}
+        self.assertLess(dark["soft"], dark["anime"])  # 부드러운 변형의 동공은 더 작다
+        self.assertLess(dark["cat"], dark["anime"])  # 슬릿 동공은 둥근 큰 동공보다 어두운 면적이 작다
+        slit = images["cat"][64]
+        self.assertLess(float(slit[64].mean()), 0.2)  # 슬릿 중심
+        self.assertGreater(float(slit[64 + 24].mean()), 0.3)  # 슬릿 옆은 홍채
+        top = float(images["anime"][20:30, 54:74].mean())
+        bottom = float(images["anime"][98:108, 54:74].mean())
+        self.assertGreater(bottom, top)  # 위가 어둡고 아래가 밝다(윗눈꺼풀 그림자)
+
+
 if __name__ == "__main__":
     unittest.main()
