@@ -46,6 +46,55 @@ describe("realtime protocol", () => {
     });
   });
 
+  it("accepts the formal avatar appearance field and rejects malformed appearances", () => {
+    const base = {
+      kind: "presence.update",
+      pageId: null,
+      profile: {
+        displayName: "작가 1",
+        role: "editor",
+        state: "active",
+      },
+      tool: null,
+    };
+    const withAvatar = (avatar: unknown) => ({
+      ...base,
+      profile: { ...base.profile, avatar },
+    });
+    // color 단독·skinKey 단독·둘 다 허용한다.
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", withAvatar({ color: "#3b82f6" })),
+      ).ok,
+    ).toBe(true);
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", withAvatar({ skinKey: "sky-01" })),
+      ).ok,
+    ).toBe(true);
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", withAvatar({ color: "#F97316", skinKey: "pink" })),
+      ).ok,
+    ).toBe(true);
+    // 빈 객체·형식 위반·미지 키는 거부한다.
+    for (const bad of [
+      {},
+      { color: "3b82f6" },
+      { color: "#3b82f" },
+      { color: "#3b82f6", extra: 1 },
+      { skinKey: "Sky" },
+      { skinKey: "" },
+      { skinKey: "-lead" },
+      "godot:#3b82f6",
+      null,
+    ]) {
+      expect(
+        parseRealtimeClientMessage(publish("presence", withAvatar(bad))),
+      ).toEqual({ ok: false, code: "invalid-payload" });
+    }
+  });
+
   it("accepts the canonical 64-unit tool boundary and rejects 65", () => {
     const payload = {
       kind: "presence.update",

@@ -9,10 +9,11 @@ const INKS: Record<FortuneSceneTheme, [string, string, string]> = {
 };
 
 /** Original vector scene. No remote image/font requests or third-party character artwork. */
-export function FortuneSceneArt({ theme = "violet", closeup = false }: { theme?: FortuneSceneTheme; closeup?: boolean }) {
+export function FortuneSceneArt({ theme = "violet", closeup = false, fill = false }: { theme?: FortuneSceneTheme; closeup?: boolean; fill?: boolean }) {
   const uid = useId().replace(/:/g, "");
   const [night, light, gold] = INKS[theme];
-  return <svg className="fo-scene-art" viewBox={closeup ? "60 25 360 300" : "0 0 480 360"} aria-hidden="true" focusable="false">
+  // fill: 무대 배경으로 쓸 때 컨테이너를 slice로 채운다 (기본 렌더는 종전과 동일).
+  return <svg className="fo-scene-art" viewBox={closeup ? "60 25 360 300" : "0 0 480 360"} preserveAspectRatio={fill ? "xMidYMid slice" : undefined} style={fill ? { height: "100%" } : undefined} aria-hidden="true" focusable="false">
     <defs>
       <radialGradient id={`${uid}-sky`}><stop stopColor={light} stopOpacity=".35" /><stop offset="1" stopColor={night} /></radialGradient>
       <linearGradient id={`${uid}-paper`} x2="0" y2="1"><stop stopColor="#fff1d8" /><stop offset="1" stopColor="#d8bfaa" /></linearGradient>

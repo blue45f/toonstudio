@@ -9,6 +9,7 @@ import { getTarotVisual, tarotAccent, tarotFaceGradient } from "./tarot-visuals"
 import { getTarotArtPath } from "./tarot-art";
 import { TarotMotif } from "./TarotMotif";
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
+import { FortuneSceneArt } from "./FortuneSceneArt";
 import type { FortuneTab } from "./fortune-page-data";
 
 // 시안(s4/fortune.png)의 착지 구도 — 좌 루나 입력 카드 + 우 오늘의 카드.
@@ -32,7 +33,7 @@ function TodayCardArt({ card, onOpen }: { card: FortuneTodayCard; onOpen: () => 
   const [artFailed, setArtFailed] = useState(false);
   const showArt = artPath !== null && !artFailed;
   return (
-    <article className="overflow-hidden rounded-3xl border border-line bg-panel/30">
+    <article className="overflow-hidden rounded-3xl border border-line bg-panel/75 shadow-[0_18px_44px_-18px_oklch(0.05_0.02_280/0.55)] backdrop-blur-md">
       <button
         type="button"
         onClick={onOpen}
@@ -107,10 +108,18 @@ export function FortuneLunaHero({ onSaveTodayCards }: { onSaveTodayCards: (text:
   };
 
   return (
-    <section aria-labelledby="fortune-luna-title" className="mb-10">
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[400px_minmax(0,1fr)]">
-        {/* 왼쪽: 루나 패널 — 말풍선·종류 칩·생년월일 입력 카드 1장 */}
-        <div className="flex flex-col gap-4 rounded-3xl border border-line bg-panel/40 p-6">
+    <section aria-labelledby="fortune-luna-title" className="relative isolate mb-10 overflow-hidden sm:-mx-6 sm:-mt-6">
+      {/* 장면 레이어 — 관측소 밤 장면이 무대 전체를 채우고, 패널·카드는 그 위의 섬이다. */}
+      <div aria-hidden="true" className="absolute inset-0">
+        <FortuneSceneArt theme="violet" fill />
+      </div>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(100deg,oklch(0.11_0.03_280/0.5)_0%,oklch(0.11_0.03_280/0.16)_48%,transparent_75%),linear-gradient(to_top,oklch(0.11_0.03_280/0.42)_0%,transparent_42%)]"
+      />
+      <div className="relative mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-5 px-4 py-10 sm:px-6 lg:min-h-[460px] lg:grid-cols-[400px_minmax(0,1fr)] lg:py-12">
+        {/* 왼쪽: 루나 패널 — 말풍선·종류 칩·생년월일 입력 카드 1장 (장면 위 유리 섬) */}
+        <div className="flex flex-col gap-4 rounded-3xl border border-line bg-panel/70 p-6 shadow-[0_18px_44px_-18px_oklch(0.05_0.02_280/0.55)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <span aria-hidden className="h-12 w-12 shrink-0 rounded-full" style={{ background: COMPANION_GRADIENT }} />
             <div>
@@ -167,15 +176,15 @@ export function FortuneLunaHero({ onSaveTodayCards }: { onSaveTodayCards: (text:
           </p>
         </div>
 
-        {/* 오른쪽: 오늘의 카드 2×2 + 저장·공유 바 */}
+        {/* 오른쪽: 오늘의 카드 2×2 + 저장·공유 바 (장면 위 섬) */}
         <div className="flex flex-col gap-4">
-          <h2 className="font-bold text-fg">오늘의 카드</h2>
+          <h2 className="font-bold text-white [text-shadow:0_1px_14px_oklch(0.05_0.02_280/0.65)]">오늘의 카드</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {cards.map((card) => (
               <TodayCardArt key={card.id} card={card} onOpen={() => navigate("/fortune/tarot")} />
             ))}
           </div>
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-panel/30 px-5 py-4">
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-panel/70 px-5 py-4 shadow-[0_18px_44px_-18px_oklch(0.05_0.02_280/0.55)] backdrop-blur-md">
             <p className="text-fg-2">결과는 카드 단위로 저장·공유할 수 있습니다</p>
             <div className="flex gap-2">
               <button
