@@ -42,6 +42,11 @@ export interface BristleBrushConfig {
   radiusPx: number;
   /** 압력 → 슬롯 반경 배율 표. */
   spreadCurve: PressureCurveTable;
+  /**
+   * 압력 → 슬롯 반경에 한 번 더 곱하는 배율 표(선택). 프리셋의 접촉 폭 곡선처럼 물리 곡선 위에 얹는 폭 조정에 쓴다.
+   * null이면 곱하지 않는다(기존 동작과 비트 동일).
+   */
+  spreadScaleCurve: PressureCurveTable | null;
   /** 압력 → 스프링 강성 배율 표(1 = 기준 강성). */
   stiffnessCurve: PressureCurveTable;
   /** 강성 양자화 단계 수(≥ 1). */
@@ -74,7 +79,7 @@ export interface BristleBrushConfig {
   maxCatchUpMs: number;
 }
 
-export const BRISTLE_DEFAULTS: Omit<BristleBrushConfig, "spreadCurve" | "stiffnessCurve"> = {
+export const BRISTLE_DEFAULTS: Omit<BristleBrushConfig, "spreadCurve" | "spreadScaleCurve" | "stiffnessCurve"> = {
   count: BRISTLE_DEFAULT_COUNT,
   radiusPx: 10,
   stiffnessLevels: 6,
@@ -99,6 +104,7 @@ export function resolveBristleBrushConfig(partial: Partial<BristleBrushConfig> =
   const c: BristleBrushConfig = {
     ...BRISTLE_DEFAULTS,
     spreadCurve: partial.spreadCurve ?? powerPressureCurve(),
+    spreadScaleCurve: partial.spreadScaleCurve ?? null,
     stiffnessCurve: partial.stiffnessCurve ?? linearPressureCurve(1, 0.6),
     ...partial,
   };
@@ -146,9 +152,15 @@ export function fermatLayout(count: number): { ux: Float32Array; uy: Float32Arra
   return { ux, uy };
 }
 
+/** 압력 p의 슬롯 반경(px) = radiusPx × 벌어짐 곡선 × (있으면) 추가 배율 표. 추가 배율이 없으면 기존 식과 비트 동일하다. */
+export function bristleSpreadRadiusPx(config: BristleBrushConfig, pressure: number): number {
+  const base = f(config.radiusPx * config.spreadCurve.eval(pressure));
+  return config.spreadScaleCurve ? f(base * config.spreadScaleCurve.eval(pressure)) : base;
+}
+
 /** 털 접촉 반경(px): 압력 0.4의 슬롯 간격 기준 충전 반경(SP-A 규약). */
 export function bristleContactRadiusPx(config: BristleBrushConfig): number {
-  const r04 = config.radiusPx * config.spreadCurve.eval(0.4);
+  const r04 = config.radiusPx * config.spreadCurve.eval(0.4) * (config.spreadScaleCurve ? config.spreadScaleCurve.eval(0.4) : 1);
   return f(0.5 * r04 * Math.sqrt(Math.PI / config.count) * 1.07 * config.bristleRadiusScale);
 }
 
@@ -295,7 +307,7 @@ export class BristleBrush2D {
     const level = this.stiffnessLevelFor(p);
     this.level = level;
     const { k, c } = this.springConstants(level);
-    const r0 = f(cfg.radiusPx * cfg.spreadCurve.eval(p));
+    const r0 = bristleSpreadRadiusPx(cfg, p);
     const n = this.count;
     const slotIds: number[] = [];
     for (let i = 0; i < n; i += 1) {
@@ -431,7 +443,7 @@ export class BristleBrush2D {
       for (let i = 0; i < n; i += 1) this.world.setSpring(this.springIds[i] ?? 0, { restLength: 0, stiffness: k, damping: c });
       this.diagnostics.stiffnessUpdates += 1;
     }
-    const r = f(cfg.radiusPx * cfg.spreadCurve.eval(pressure));
+    const r = bristleSpreadRadiusPx(cfg, pressure);
     for (let i = 0; i < n; i += 1) {
       this.world.setKinematicTarget(this.slotIds[i] ?? 0, f(handle.x + this.slotOffsetX(i, r)), f(handle.y + this.slotOffsetY(i, r)));
     }
