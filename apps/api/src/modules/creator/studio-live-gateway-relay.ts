@@ -353,6 +353,14 @@ export function emitRelayToSocket(
     });
     return;
   }
+  if (relay.type === "direct-relay") {
+    targetSocket.emit("studio:direct:relay", {
+      fromConnectionId: sender.connectionId,
+      fromName: sender.name,
+      packet: relay.packet,
+    });
+    return;
+  }
   const { type: _type, ...signal } = relay;
   targetSocket.emit("studio:signal", {
     fromConnectionId: sender.connectionId,

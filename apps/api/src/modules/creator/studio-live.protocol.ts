@@ -362,6 +362,66 @@ export const StudioLiveSignalSchema = z.discriminatedUnion("kind", [
     .strict(),
 ]);
 
+/** Wire tag of the web direct lane whose packets the direct relay carries verbatim. */
+const STUDIO_LIVE_DIRECT_WIRE = "studio-direct-v1";
+export const STUDIO_LIVE_DIRECT_PACKET_MAX_BYTES = 64 * 1024;
+
+const StudioLiveDirectPacketSchema = z
+  .string()
+  .min(1)
+  .max(STUDIO_LIVE_DIRECT_PACKET_MAX_BYTES)
+  .refine(
+    (value) => fitsSignalStringByteContract(value, STUDIO_LIVE_DIRECT_PACKET_MAX_BYTES),
+    "Direct packet exceeds the byte budget"
+  )
+  .refine(noControlCharacters, "Direct packet control characters are not allowed")
+  .refine((value) => {
+    // The packet must be a well-formed studio-direct packet. The receiving
+    // client re-validates it against its own work id before delivering it,
+    // so this gateway check is shape-only defense in depth.
+    try {
+      const packet = JSON.parse(value) as unknown;
+      if (typeof packet !== "object" || packet === null || Array.isArray(packet)) {
+        return false;
+      }
+      const record = packet as Record<string, unknown>;
+      return (
+        record.wire === STUDIO_LIVE_DIRECT_WIRE &&
+        typeof record.workId === "string" &&
+        typeof record.payload === "string"
+      );
+    } catch {
+      return false;
+    }
+  }, "Direct packet is not a studio-direct packet");
+
+/**
+ * Targeted relay for direct-lane packets whose sender's RTC mesh could not
+ * reach the target (STUN-only ICE). The gateway never interprets the packet
+ * beyond its envelope shape; membership authorization happens in the handler.
+ */
+export const StudioLiveDirectRelaySchema = z
+  .object({
+    workId: WorkIdSchema,
+    targetConnectionId: ConnectionIdSchema,
+    packet: StudioLiveDirectPacketSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    try {
+      const packet = JSON.parse(value.packet) as Record<string, unknown>;
+      if (packet.workId !== value.workId) {
+        context.addIssue({
+          code: "custom",
+          path: ["packet"],
+          message: "Direct packet work id does not match the relay work id",
+        });
+      }
+    } catch {
+      // Structural validity is already enforced by the packet schema.
+    }
+  });
+
 export const StudioLiveVoiceSignalSchema = z.discriminatedUnion("kind", [
   z
     .object({
@@ -483,6 +543,13 @@ export const StudioLiveInterServerRelayEventSchema = z.union([
       callId: VoiceCallIdSchema,
       kind: z.literal("candidate"),
       candidate: StudioLiveIceCandidateSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("direct-relay"),
+      relayId: z.uuid(),
+      packet: StudioLiveDirectPacketSchema,
     })
     .strict(),
 ]);
@@ -691,6 +758,7 @@ export type StudioLiveScreenRequestInput = z.infer<typeof StudioLiveScreenReques
 export type StudioLiveScreenStopInput = z.infer<typeof StudioLiveScreenStopSchema>;
 export type StudioLiveChatInput = z.infer<typeof StudioLiveChatSchema>;
 export type StudioLiveSignalInput = z.infer<typeof StudioLiveSignalSchema>;
+export type StudioLiveDirectRelayInput = z.infer<typeof StudioLiveDirectRelaySchema>;
 export type StudioLiveVoiceJoinInput = z.infer<typeof StudioLiveVoiceJoinSchema>;
 export type StudioLiveVoiceStateInput = z.infer<typeof StudioLiveVoiceStateSchema>;
 export type StudioLiveVoiceLeaveInput = z.infer<typeof StudioLiveVoiceLeaveSchema>;
