@@ -168,6 +168,7 @@ export interface StudioLiveSocketTransportHost {
   onLockUpdate(value: unknown): void;
   applyLockDelta(delta: PendingLockDelta): boolean;
   onSignal(value: unknown): void;
+  onDirectRelay(value: unknown): void;
   onScreenAnnounce(value: unknown): void;
   onScreenRequest(value: unknown): void;
   onScreenAccess(value: unknown): void;

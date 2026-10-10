@@ -223,6 +223,7 @@ export class StudioLiveSocketTransport implements StudioLiveTransport {
     );
     this.socket.on("studio:lock:update", this.onLockUpdate);
     this.socket.on("studio:signal", this.onSignal);
+    this.socket.on("studio:direct:relay", this.onDirectRelay);
     this.socket.on("studio:screen:announce", this.onScreenAnnounce);
     this.socket.on("studio:screen:request", this.onScreenRequest);
     this.socket.on("studio:screen:access", this.onScreenAccess);
@@ -327,6 +328,9 @@ export class StudioLiveSocketTransport implements StudioLiveTransport {
   };
   readonly onSignal = (value: unknown): void => {
     presence.onSignal.call(this, value);
+  };
+  readonly onDirectRelay = (value: unknown): void => {
+    presence.onDirectRelay.call(this, value);
   };
   readonly onScreenAnnounce = (value: unknown): void => {
     presence.onScreenAnnounce.call(this, value);

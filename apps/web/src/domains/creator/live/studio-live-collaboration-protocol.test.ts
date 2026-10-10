@@ -556,3 +556,66 @@ describe("studio live collaboration protocol", () => {
     expect(() => studioLocalLiveChannelName(" ")).toThrow("유효한 작품 ID");
   });
 });
+
+describe("studio live direct relay envelopes", () => {
+  const packet = JSON.stringify({
+    wire: "studio-direct-v1",
+    workId: WORK_ID,
+    payload: "{\"kind\":\"space-state\"}",
+  });
+
+  function rawRelay(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+      version: 1,
+      workId: WORK_ID,
+      sender: participant,
+      sentAt: NOW,
+      sequence: 1,
+      kind: "direct:relay",
+      targetSessionId: LOCAL_SESSION,
+      payload: { packet },
+      ...overrides,
+    };
+  }
+
+  it("accepts a targeted relay envelope", () => {
+    const created = message("direct:relay", { packet }, LOCAL_SESSION);
+    expect(parse(created)?.kind).toBe("direct:relay");
+    expect(parse(rawRelay())?.kind).toBe("direct:relay");
+  });
+
+  it("rejects an untargeted relay envelope", () => {
+    expect(parse(rawRelay({ targetSessionId: null }))).toBeNull();
+  });
+
+  it("rejects malformed relay payloads", () => {
+    expect(parse(rawRelay({ payload: { packet: 42 } }))).toBeNull();
+    expect(parse(rawRelay({ payload: { packet: "" } }))).toBeNull();
+    expect(parse(rawRelay({ payload: { packet, extra: true } }))).toBeNull();
+    expect(parse(rawRelay({ payload: {} }))).toBeNull();
+  });
+
+  it("rejects a packet beyond the direct-lane byte budget", () => {
+    const oversized = JSON.stringify({
+      wire: "studio-direct-v1",
+      workId: WORK_ID,
+      payload: "a".repeat(70 * 1024),
+    });
+    expect(parse(rawRelay({ payload: { packet: oversized } }))).toBeNull();
+  });
+
+  it("allows the relay envelope to exceed the standard message cap for escaping overhead", () => {
+    // 30k backslashes double-escape at every JSON layer: the packet itself is
+    // ~60KB (within its budget) while the envelope JSON grows past 64KB.
+    const escapedPacket = JSON.stringify({
+      wire: "studio-direct-v1",
+      workId: WORK_ID,
+      payload: "\\".repeat(30_000),
+    });
+    const created = message("direct:relay", { packet: escapedPacket }, LOCAL_SESSION);
+    expect(studioLiveEnvelopeByteLength(created)).toBeGreaterThan(
+      STUDIO_LIVE_MESSAGE_MAX_BYTES,
+    );
+    expect(parse(created)?.kind).toBe("direct:relay");
+  });
+});
