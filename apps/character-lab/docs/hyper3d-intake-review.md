@@ -11,7 +11,7 @@
 | --- | --- |
 | Hyper3D / Blender / Sketchfab / Poly Haven MCP 도구 | 이 클라우드 세션에는 **하나도 보이지 않는다**(§2). 사용자 로컬 Claude Code에는 `hyper3d` MCP(`rodin_*` 7개)가 등록돼 있다는 진술이 있으나(§2), 이 세션에는 전달되지 않았다 |
 | 파이프라인(생성 → 베이스 리타깃 → 검증기) 실행 | **하지 못했다.** 생성 수단(MCP 또는 API 키), Blender 실행기, 베이스 바디 에셋이 모두 없다 |
-| Hyper3D 상업 이용 | 약관상 **구독 플랜에 따라** 허용된다. 무료(ChatAvatar)는 상업 이용 금지(§3) |
+| Hyper3D 상업 이용 | 약관상 **구독 플랜에 따라** 허용된다. 무료(ChatAvatar)는 상업 이용 금지(§3). 2026-10-10 사용자가 "유료 구독 중이라 상업 사용이 가능한 상태"라고 확인했다(**진술이며 플랜명·결제 증빙은 보관하지 않았다**) |
 | Hyper3D 소유권 | 약관에서 **소유권 귀속을 명시한 조항을 찾지 못했다.** 구매는 "라이선스 부여이지 권리 이전이 아니다"로 적혀 있다 |
 | 현재 키트 계약과의 정합 | **충돌한다.** 검증기 V4는 `provenance.license ∈ {CC0-1.0, original}`만 통과시키고, Hyper3D 산출물은 둘 중 어느 것으로도 정직하게 표기하기 어렵다(§4) |
 
@@ -117,3 +117,29 @@ Hyper3D(Rodin)로 만든 의상 후보가 키트 파츠가 되려면 아래를 �
 - Blender·`bpy`를 설치하거나 실행하지 않았다.
 - `public/assets/**`, 계약(`src/contracts/**`), 검증기를 수정하지 않았다.
 - `pnpm run verify:character-kit`은 대상 에셋이 없어 실행하지 않았다.
+
+## 8. 로컬 `hyper3d` 세션이 알려 준 도구 목록 (2026-10-10, 사용자 중계)
+
+이 클라우드 세션에서는 `rodin_*`가 보이지 않아, 계정의 다른 세션(로컬 CLI, Remote Control 연결)에 조회만 요청했고 그 세션의 답을 사용자가 전달했다. 로컬 세션이 이쪽으로 회신할 도구가 없어 사용자 중계를 거쳤다. 아래는 **로컬 세션의 보고이며 이 세션에서 직접 확인한 것이 아니다.** 조회만 했고 생성 도구와 `rodin_get_result`는 호출하지 않았으므로 크레딧은 쓰지 않았다.
+
+| 도구 | 용도와 파라미터 |
+| --- | --- |
+| `rodin_generate` | Rodin Gen-2.5 생성 시작(크레딧 소모). `prompt`(1~1024자) 또는 `reference_upload_ids`(1~5개) 중 하나 필수. `tier`: Gen-2.5-Medium(기본) / Gen-2.5-High / Gen-2.5-Extreme-Low. `mesh_mode`: Raw(기본) / Quad. `quality_override`(목표 폴리곤 수): Raw 500~1,000,000, Quad 1,000~50,000. `geometry_file_format`: glb(기본) / usdz / fbx / obj / stl. `texture_delight`(기본 false, 반사가 강한 참조 이미지에 권장). 타임아웃이 나도 자동 재시도하지 말라고 되어 있다 |
+| `rodin_generate_bang` | 완료된 생성(`asset_id` = `generation_id`)을 BANG으로 **부위별 파트로 분리**(크레딧 추가 소모). `instruction`(분리할 부위, 생략 시 자동), `strength` 1~12(목표 파트 수, 기본 5), `explode_strength`(≥0, 기본 1), `resolution` Basic/High, `geometry_file_format`, `seed`, `escore`, `reference_scale` |
+| `rodin_create_uploads` | 참조 이미지 1~5장용 1시간짜리 presigned PUT URL 발급 |
+| `rodin_import_images` | ChatGPT Chat 전용 |
+| `rodin_get_status` / `rodin_wait` | 상태·단계 조회, 최대 45초 대기(진행률은 퍼센트가 아니라 단계) |
+| `rodin_get_result` | 영구 결과 페이지(`display_url`)와 허용된 출력 파일의 **임시 서명 URL**(`files[].url`). 도구 설명은 `files[].url`을 사용자가 명시적으로 요청할 때만 다운로드에 쓰라고 한다 |
+
+알려지지 않은 것: 크레딧 소모량(어느 설명·스키마에도 없음), 잔여 크레딧 조회 도구(없음, Hyper3D Mine 웹에서 확인), 티어별 품질 차이, 텍스처 해상도·T/A-pose·PBR 옵션(스키마에 없음), 서명 URL 만료 시간과 인증 필요 여부(미명시).
+
+설계에 주는 의미: (1) `mesh_mode=Quad`와 `quality_override`로 삼각형 예산을 생성 단계에서 맞출 수 있다. (2) 포즈 옵션이 없어 T-포즈는 프롬프트로만 요청할 수 있다. (3) BANG은 한 모델을 의상·헤어·신발 등으로 나누는 용도로 보이나 이번에는 시험하지 않았다.
+
+## 9. 베이스 바디 원천(Human Base Meshes v1.4.1) 라이선스 확인 (2026-10-10)
+
+- 번들 zip의 SHA-256이 `authored-kit-spec.md` 3.8절의 `zipSha256`(`811f43ac…b3515`)과 **일치**한다(50,643,039 B).
+- Blender 공식 데모 파일 페이지가 이 번들(v1.4.1)의 라이선스를 "CC0"로 표기한다.
+- 번들의 README 텍스트는 "All provided assets are public domain under the CC0 license"라고 한다.
+- 번들 안 에셋 메타데이터: 에셋 25개 전부 `license = CC0`(저자는 Dan Ulrich, Julien Kaspar, Paul Kotelevets, Tonatiuh de San Julián).
+- **불일치 1건**: 번들의 `License` 텍스트 데이터블록은 "The Rain Rig is released under the Creative Commons Attribution 4.0 license"라고 적혀 있다. 번들에는 아마추어(리그) 오브젝트가 없고(오브젝트는 메시 382개와 카메라 25개뿐), 이름에 `rain`/`rig`가 들어간 오브젝트가 없다. 따라서 Rain Rig는 이 번들에 들어 있지 않은 다른 배포물의 문구가 남은 것으로 판단한다. **이 판단은 추정이며**, 키트 `NOTICE.md`에 이 불일치를 그대로 적는다.
+- 키트가 쓰는 에셋은 `GEO-body_female_realistic`, `GEO-body_male_realistic`(컬렉션 `Body Female/Male - Realistic`, 둘 다 CC0, 저자 Dan Ulrich)와 그 눈 메시다.
