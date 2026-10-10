@@ -17,11 +17,14 @@ import {
   Boxes,
   Camera,
   CircleDashed,
+  Cuboid,
   Expand,
   Layers,
   Move3d,
   Rotate3d,
+  School,
   Triangle,
+  Upload,
 } from "lucide-react";
 import {
   Component,
@@ -136,6 +139,11 @@ export interface StudioHybridDccViewportProps {
    * 조작 패널보다 3D 프리뷰가 첫 화면의 주인공이 되게 한다.
    */
   readonly stage?: boolean;
+  /**
+   * 빈 무대 오버레이의 시작 행동. 주어지면 비어 있는 3D 무대 위에서도 큐브·세트·가져오기를
+   * 바로 실행할 수 있다(셀이 같은 핸들러를 안내 카드와 공유한다).
+   */
+  readonly onEmptyStart?: (kind: "cube" | "room" | "import") => void;
 }
 
 export interface StudioHybridDccViewportAssetSnapshot {
@@ -1353,6 +1361,7 @@ export function StudioHybridDccViewport({
   webglAvailable,
   className,
   stage = false,
+  onEmptyStart,
 }: StudioHybridDccViewportProps) {
   const [uncontrolledProjection, setUncontrolledProjection] =
     useState<StudioHybridDccViewportProjection>(defaultProjection);
@@ -1589,7 +1598,7 @@ export function StudioHybridDccViewport({
         캔버스에서 Shift+Tab은 스냅 전환, Esc는 진행 중인 변형 취소입니다.
       </p>
 
-      {snapshot.assets.length > 0 && detectedWebgl === true ? (
+      {detectedWebgl === true && (snapshot.assets.length > 0 || snapshot.errors.length === 0) ? (
         <StudioHybridDccCanvasBoundary>
           <Canvas
             aria-label="편집 메시 3D 렌더"
@@ -1708,7 +1717,7 @@ export function StudioHybridDccViewport({
             /> : null}
           </Canvas>
         </StudioHybridDccCanvasBoundary>
-      ) : snapshot.assets.length > 0 && detectedWebgl === null ? (
+      ) : detectedWebgl === null ? (
         <div className="absolute inset-0 grid place-items-center px-5 text-center" role="status">
           <div className="max-w-sm">
             <CircleDashed className="mx-auto mb-3 animate-spin text-fg-3 motion-reduce:animate-none" size={26} aria-hidden="true" />
@@ -1729,23 +1738,72 @@ export function StudioHybridDccViewport({
       ) : (
         <div className="absolute inset-0 grid place-items-center px-5 text-center">
           <div className="max-w-sm">
-            {snapshot.errors.length > 0 ? (
-              <AlertTriangle className="mx-auto mb-3 text-bad" size={26} aria-hidden="true" />
-            ) : (
-              <CircleDashed className="mx-auto mb-3 text-fg-3" size={26} aria-hidden="true" />
-            )}
+            <AlertTriangle className="mx-auto mb-3 text-bad" size={26} aria-hidden="true" />
             <p className="text-sm font-semibold text-fg">
-              {snapshot.errors.length > 0 ? "표시할 수 있는 메시가 없습니다." : "3D 작업대가 비어 있습니다."}
+              표시할 수 있는 메시가 없습니다.
             </p>
             <p className="mt-1 text-xs leading-relaxed text-fg-2">
-              {snapshot.errors.length > 0
-                ? snapshot.errors[0]?.message
-                  ?? "메시 진단을 실행해 잘못된 정점 또는 면을 복구해 주세요."
-                : "큐브를 추가하거나 모델을 가져오면 실제 편집 메시가 여기에 나타납니다."}
+              {snapshot.errors[0]?.message
+                ?? "메시 진단을 실행해 잘못된 정점 또는 면을 복구해 주세요."}
             </p>
           </div>
         </div>
       )}
+
+      {/* 빈 무대 오버레이(웨이브 18 셸 재설계): 비어 있어도 그리드 무대(Canvas)는 그대로 보이고,
+          안내는 무대 위에 겹친 카드로만 알린다. 이전에는 빈 장면에서 Canvas 자체를 띄우지 않아
+          첫 화면에서 3D 공간의 주제(그리드·축)가 전혀 읽히지 않았다. 오류가 있는 장면은
+          지금까지처럼 캔버스 없는 오류 안내가 우선한다(위 분기). */}
+      {snapshot.assets.length === 0 && snapshot.errors.length === 0 && detectedWebgl === true ? (
+        <div
+          className="pointer-events-none absolute inset-0 z-10 grid place-items-center px-5 text-center"
+          data-studio-hybrid-dcc-empty-stage="true"
+        >
+          <div className="pointer-events-auto max-w-sm rounded-2xl border border-line bg-panel/90 px-5 py-4 shadow-[0_18px_48px_oklch(0.08_0.008_70/0.34)] backdrop-blur">
+            <CircleDashed className="mx-auto mb-3 text-fg-3" size={26} aria-hidden="true" />
+            <p className="text-sm font-semibold text-fg">
+              3D 작업대가 비어 있습니다.
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-fg-2">
+              큐브를 추가하거나 모델을 가져오면 실제 편집 메시가 여기에 나타납니다.
+            </p>
+            {onEmptyStart ? (
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  disabled={editingDisabled}
+                  data-studio-hybrid-dcc-empty-start="cube"
+                  onClick={() => onEmptyStart("cube")}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent shadow-sm transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Cuboid size={16} aria-hidden="true" />
+                  큐브로 시작
+                </button>
+                <button
+                  type="button"
+                  disabled={editingDisabled}
+                  data-studio-hybrid-dcc-empty-start="room"
+                  onClick={() => onEmptyStart("room")}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-card px-4 text-sm font-semibold text-fg transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <School size={16} aria-hidden="true" />
+                  교실 세트로 시작
+                </button>
+                <button
+                  type="button"
+                  disabled={editingDisabled}
+                  data-studio-hybrid-dcc-empty-start="import"
+                  onClick={() => onEmptyStart("import")}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-card px-4 text-sm font-semibold text-fg transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Upload size={16} aria-hidden="true" />
+                  3D 파일 가져오기
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start justify-between gap-2 p-2 sm:p-3">
         <div className="pointer-events-auto rounded-xl border border-line bg-panel/95 px-3 py-2 shadow-[0_8px_22px_oklch(0.08_0.008_70/0.28)]">

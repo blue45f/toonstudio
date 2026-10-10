@@ -69,6 +69,9 @@ describe("StudioHybridDccPanel first-screen guide", () => {
     expect(intro?.getAttribute("data-studio-hybrid-dcc-intro-layout")).toBe("stage");
     expect(document.querySelector("[data-studio-hybrid-dcc-stage]")).not.toBeNull();
     expect(document.querySelector("[data-studio-hybrid-dcc-viewport]")?.getAttribute("data-stage")).toBe("true");
+    // 웨이브 18 셸 재설계: 뷰포트가 첫 시각 블록이고 안내는 그 아래에 있다.
+    const viewport = document.querySelector("[data-studio-hybrid-dcc-viewport]");
+    expect(viewport!.compareDocumentPosition(intro!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "큐브로 시작" }));
     await waitFor(() => {

@@ -164,25 +164,22 @@ export function StudioVirtualSpaceEntryLobby({
 
   return <div className="studio-vspace-entry space-lobby" data-own-control-size="true" data-route-ready={onboarding ? "studio-character-onboarding" : "studio-virtual-entry"}
     data-art-style={artStyle} data-entry-variant={variant}>
-    <div className="space-lobby__backdrop" aria-hidden>
+    {/* 무대 구도 교체(웨이브 18): 들어갈 월드의 실제 베이스 아트가 카드 안 그림이 아니라
+        화면 전체를 덮는 무대 그 자체가 된다. 캐릭터·이름표·칩과 입력 카드는 이 장면 위에
+        겹쳐 뜨고, 카피는 장면에 종속된다. 입장 전 프리뷰라 위치·신호는 만들지 않고,
+        부트 로더가 받는 것과 같은 스타일별 world-base 텍스처만 정적으로 보여 준다. */}
+    <div className="space-lobby__scene" aria-hidden>
       {onboarding
-        ? <img className="space-lobby__backdrop-art" src="/images/onboarding-character-stage.webp" alt="" draggable={false} />
-        : <StudioVirtualExperienceArtPreview className="space-lobby__backdrop-art" kind="landmarks" artStyle={artStyle} frame={0} preserveAspectRatio="xMidYMid slice" />}
+        ? <img className="space-lobby__scene-art space-lobby__scene-art--onboarding" src="/images/onboarding-character-stage.webp" alt="" draggable={false} data-onboarding-stage-art />
+        : <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle}
+          data-preview-state={previewStatus}
+          style={{ objectPosition: studioVirtualLobbyPreviewObjectPosition(artStyle) }}
+          ref={(img) => { if (img && img.naturalWidth > 0) setPreviewResult({ style: artStyle, status: "ready" }); }}
+          onLoad={() => setPreviewResult({ style: artStyle, status: "ready" })}
+          onError={() => setPreviewResult({ style: artStyle, status: "error" })} />}
     </div>
     <div className="space-lobby__layout">
       <RevealOnScroll as="section" variant="fade" className="space-lobby__stage" aria-label={bt("입장 미리보기", "Entry preview")}>
-        {/* 들어갈 월드의 실제 베이스 아트를 무대 배경으로 깐다. 입장 전 프리뷰라 위치·신호는 만들지 않고,
-            부트 로더가 받는 것과 같은 스타일별 world-base 텍스처만 정적으로 보여 준다. */}
-        <div className="space-lobby__scene" aria-hidden>
-          {onboarding
-            ? <img className="space-lobby__scene-art space-lobby__scene-art--onboarding" src="/images/onboarding-character-stage.webp" alt="" draggable={false} data-onboarding-stage-art />
-            : <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle}
-              data-preview-state={previewStatus}
-              style={{ objectPosition: studioVirtualLobbyPreviewObjectPosition(artStyle) }}
-              ref={(img) => { if (img && img.naturalWidth > 0) setPreviewResult({ style: artStyle, status: "ready" }); }}
-              onLoad={() => setPreviewResult({ style: artStyle, status: "ready" })}
-              onError={() => setPreviewResult({ style: artStyle, status: "error" })} />}
-        </div>
         <header className="space-lobby__stage-head">
           <p className="space-lobby__kicker"><Sparkles size={15} aria-hidden />{onboarding ? "ToonStudio Character" : "ToonStudio Spatial Campus"}</p>
           <p className="space-lobby__place">{projectName}</p>
