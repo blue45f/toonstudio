@@ -1,4 +1,5 @@
 import { PlayComicGuide } from "./PlayComicGuide";
+import { PlayGodotEmbed } from "./PlayGodotEmbed";
 import { comicCast } from "@/shared/components/comic/comic-cast";
 import type { ComicCastId } from "@/shared/components/comic/comic-cast";
 import { ArrowLeft, ArrowRight, Check, Clock3, Heart, Search, Shuffle, Sparkles, Trophy } from "lucide-react";
@@ -23,6 +24,13 @@ export function PlayPage() {
   const cast = comicCast(params.get("cast")).id;
   const changeCast = (id: ComicCastId) => { const next = new URLSearchParams(params); next.set("cast", id); setParams(next, { replace: true }); };
   const activeId = params.get("game") ?? undefined; const active = findGame(activeId);
+  const godotMode = params.get("engine") === "godot";
+  const setGodotMode = (on: boolean) => {
+    const next = new URLSearchParams(params);
+    if (on) { next.set("engine", "godot"); next.delete("game"); next.delete("seed"); next.delete("idea"); }
+    else next.delete("engine");
+    setParams(next);
+  };
   const activeRewardKey = active
     ? `${active.id}:${safeSeed(params.get("seed"))}:${(params.get("idea") ?? "").slice(0, 30)}`
     : "";
@@ -63,6 +71,13 @@ export function PlayPage() {
   });
   const todayResults = journal.results.filter((result) => result.day === today);
   const dailyDone = todayResults.some((result) => result.game === "sketch-sprint" && result.label === daily[0]);
+  if (godotMode) {
+    return <Container className="play-page play-active">
+      <div className="play-active-navigation"><button type="button" className="play-back" onClick={() => setGodotMode(false)}><ArrowLeft size={17} />놀이터</button><Link to="/studio" className="play-text-link">전문 작업실 ↗</Link></div>
+      <header className="play-game-heading"><div><span className="play-eyebrow">TOONSTUDIO PLAY / GODOT EDITION</span><h1 ref={headingRef} tabIndex={-1}>툰스튜디오 아케이드</h1><p>12가지 게임을 하나의 Godot 빌드로 — 엔진은 첫 로드 한 번만 받아요.</p></div></header>
+      <PlayGodotEmbed onExitToWeb={() => setGodotMode(false)} />
+    </Container>;
+  }
   if (active) {
     const { Component: Game } = active;
     return <Container className="play-page play-active">
@@ -83,7 +98,7 @@ export function PlayPage() {
       <div className="play-hero-copy"><span className="play-eyebrow"><Sparkles size={15} /> TOONSTUDIO / CREATIVE PLAYGROUND</span>
         <h1 ref={headingRef} tabIndex={-1} id="play-title">놀다 보면,<br /><em>다음 컷</em>이 떠오른다.</h1>
         <p>잘 그리려는 마음은 잠시 내려놓고.<br />선을 긋고, 색을 고르고, 이야기를 굴려 보세요.<br />작은 놀이가 나만의 작품으로 이어지는 창작 놀이터.</p>
-        <div className="play-actions"><button type="button" className="play-button primary large" onClick={() => openGame("sketch-sprint", today)}>오늘의 드로잉 시작 <ArrowRight size={18} /></button><a className="play-text-link" href="#play-library">모든 콘텐츠 둘러보기 ↓</a></div>
+        <div className="play-actions"><button type="button" className="play-button primary large" onClick={() => openGame("sketch-sprint", today)}>오늘의 드로잉 시작 <ArrowRight size={18} /></button><button type="button" className="play-button large" onClick={() => setGodotMode(true)}>Godot 에디션으로 플레이</button><a className="play-text-link" href="#play-library">모든 콘텐츠 둘러보기 ↓</a></div>
         <div className="play-hero-notes"><span>로그인 없이 시작</span><span>창작 도구 {PLAY_GAMES.filter((game) => game.localOnly).length}종</span><span>브라우저에서 직접 창작</span></div>
       </div>
       <div className="play-hero-art"><span className="play-art-label">LESS PRESSURE. MORE PLAY.</span><PlayArtwork kind="hero" /><span className="play-art-caption">한 번의 낙서가, 이야기의 시작.</span></div>
