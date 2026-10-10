@@ -104,6 +104,14 @@ export const OpenDataLabPage = lazyRetry(
   () => import("@/domains/creator-resources/OpenDataLabPage").then((module) => ({ default: module.OpenDataLabPage })),
   "OpenDataLabPage",
 );
+export const OpenDataNasaPage = lazyRetry(
+  () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataNasaPage })),
+  "OpenDataNasaPage",
+);
+export const OpenDataGbifPage = lazyRetry(
+  () => import("@/domains/creator-resources/ResourceSearchPage").then((module) => ({ default: module.OpenDataGbifPage })),
+  "OpenDataGbifPage",
+);
 export const GlobalBooksPage = lazyRetry(
   () => import("@/domains/creator-resources/GlobalBooksPage").then((module) => ({ default: module.GlobalBooksPage })),
   "GlobalBooksPage",

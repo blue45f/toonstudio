@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import {
+  OPEN_DATA_KEYLESS_PROVIDERS,
   OPEN_DATA_PROVIDERS,
   RESOURCE_SEARCH_CONFIG,
 } from "./resource-search-config";
@@ -9,8 +10,6 @@ import { researchSourceArtSrc, researchSourceIdentity } from "./research-source-
 import { ResourceLayout } from "./ResourceLayout";
 import { ResearchSourceCardCover } from "./ResearchSourceCover";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
-
-import type { ResourceProvider } from "@/shared/lib/creator-resources";
 
 import { RESOURCE_LABELS } from "@/shared/lib/creator-resources";
 import {
@@ -23,10 +22,7 @@ const SCOPE = "domains.creator.resources.OpenDataLabPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 const txEn = (source: string): string => translateCurrentStaticSourceText(SCOPE, "en", source);
 
-const KEYLESS = new Set<ResourceProvider>([
-  "ambientcg", "vam", "nasa", "gbif", "musicbrainz",
-  "internetarchive", "kheritage", "wikimedia",
-]);
+const KEYLESS = OPEN_DATA_KEYLESS_PROVIDERS;
 const WORKFLOW: Record<typeof OPEN_DATA_PROVIDERS[number], string> = {
   ambientcg: "배경 재질·HDRI·3D 소품",
   vam: "복식·직물·가구 고증",
