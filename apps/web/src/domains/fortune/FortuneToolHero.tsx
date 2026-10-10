@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { ArrowRight, Heart } from "lucide-react";
 import { fortuneKstDate } from "@toonstudio/core/fortune";
 import { cn } from "@/shared/lib/utils";
+import { FortuneSceneArt } from "./FortuneSceneArt";
+import type { FortuneSceneTheme } from "./fortune-cinematic-model";
 import { useFortuneStore } from "./fortune-store";
 import { ELEMENT_COLORS, ELEMENT_KO, FORTUNE_TAB_META, type FortuneTab } from "./fortune-page-data";
 import { FORTUNE_TOOL_HERO, FORTUNE_ZODIAC_GLYPHS, type FortuneToolVisualKind } from "./fortune-tool-hero";
@@ -175,9 +177,23 @@ function ToolVisual({ kind, tab }: { kind: FortuneToolVisualKind; tab: FortuneTa
   );
 }
 
+// 도구별 무대 장면 테마 — 관측소 경험 그룹의 색 문법(사주·역법/시간=gold,
+// 관계·궁합=rose, 창작·일상=mint, 카드·상징=violet)을 도구 탭에 대응시킨다.
+const TOOL_STAGE_THEME: Record<FortuneTab, FortuneSceneTheme> = {
+  today: "gold",
+  monthly: "gold",
+  yearly: "gold",
+  saju: "gold",
+  compatibility: "rose",
+  prescription: "mint",
+  tarot: "violet",
+  zodiac: "violet",
+};
+
 /**
- * 도구 하위 라우트(/fortune/<tool>)의 첫 장면 — 착지 히어로와 같은 루나 패널
- * 문법 위에 도구마다 다른 말풍선·비주얼·시작 CTA를 얹는다.
+ * 도구 하위 라우트(/fortune/<tool>)의 첫 장면 — 관측소 장면(FortuneSceneArt)을
+ * 전폭 무대로 깔고, 그 위에 루나 패널(유리 섬)과 도구 비주얼(섬)을 얹는다.
+ * 카피·말풍선·CTA는 전부 장면 위에 종속된다 (웨이브 20 무대 구도 교체).
  *
  * 입력은 본문 폼 한 곳에서만 받는다: 히어로와 본문은 동시에 마운트돼 있어
  * 히어로에서 프로필 스토어에 저장해도 본문 폼의 초기값(마운트 시점 값)이
@@ -214,10 +230,18 @@ export function FortuneToolHero({ tab }: { tab: FortuneTab }) {
         : null;
 
   return (
-    <section ref={sectionRef} aria-labelledby="fortune-tool-hero-title" className="mx-auto mb-8 w-full max-w-[1180px] px-4 pt-6 sm:px-6 sm:pt-8">
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[400px_minmax(0,1fr)]">
-        {/* 왼쪽: 루나 패널 — 도구 말풍선·저장 상태·시작 CTA */}
-        <div className="flex flex-col gap-4 rounded-3xl border border-line bg-panel/40 p-6">
+    <section ref={sectionRef} aria-labelledby="fortune-tool-hero-title" className="relative isolate mb-8 overflow-hidden sm:-mx-6 sm:-mt-6">
+      {/* 장면 레이어 — 관측소 밤 장면이 무대 전체를 채우고, 카피는 그 위에 뜬다. */}
+      <div aria-hidden="true" className="absolute inset-0">
+        <FortuneSceneArt theme={TOOL_STAGE_THEME[tab]} fill />
+      </div>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(100deg,oklch(0.11_0.03_280/0.5)_0%,oklch(0.11_0.03_280/0.16)_48%,transparent_75%),linear-gradient(to_top,oklch(0.11_0.03_280/0.42)_0%,transparent_42%)]"
+      />
+      <div className="relative mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-5 px-4 py-10 sm:px-6 lg:min-h-[460px] lg:grid-cols-[400px_minmax(0,1fr)] lg:py-12">
+        {/* 왼쪽: 루나 패널 — 도구 말풍선·저장 상태·시작 CTA (장면 위 유리 섬) */}
+        <div className="flex flex-col gap-4 rounded-3xl border border-line bg-panel/70 p-6 shadow-[0_18px_44px_-18px_oklch(0.05_0.02_280/0.55)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <span aria-hidden className="h-12 w-12 shrink-0 rounded-full" style={{ background: COMPANION_GRADIENT }} />
             <div>
@@ -248,12 +272,12 @@ export function FortuneToolHero({ tab }: { tab: FortuneTab }) {
           </p>
         </div>
 
-        {/* 오른쪽: 도구 대표 비주얼 + 한 줄 설명 */}
-        <div className="flex flex-col overflow-hidden rounded-3xl border border-line">
+        {/* 오른쪽: 도구 대표 비주얼 + 한 줄 설명 (장면 위 섬) */}
+        <div className="flex flex-col overflow-hidden rounded-3xl border border-line bg-panel/80 shadow-[0_18px_44px_-18px_oklch(0.05_0.02_280/0.55)] backdrop-blur-md">
           <div className="min-h-44 flex-1">
             <ToolVisual kind={content.visual} tab={tab} />
           </div>
-          <p className="border-t border-line bg-panel/30 px-5 py-3.5 text-sm leading-relaxed text-fg-2">
+          <p className="border-t border-line bg-panel/40 px-5 py-3.5 text-sm leading-relaxed text-fg-2">
             <span className="mr-2 font-bold text-fg">{meta.labelKo}</span>
             {meta.taglineKo}
           </p>

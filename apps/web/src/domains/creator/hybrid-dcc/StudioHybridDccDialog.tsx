@@ -127,7 +127,7 @@ export function StudioHybridDccDialog({
           ? "relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden bg-panel"
           : "relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden border border-line-strong bg-panel shadow-2xl sm:h-[min(94dvh,1000px)] sm:w-[min(96vw,1600px)] sm:rounded-2xl"}
       >
-        <header className="flex min-h-14 items-center gap-2 border-b border-line bg-panel px-2 py-2 sm:px-3">
+        <header className="flex min-h-12 items-center gap-2 border-b border-line bg-panel px-2 py-1.5 sm:px-3">
           {workspacePresentation ? (
             <button
               ref={closeButtonRef}

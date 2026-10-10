@@ -735,7 +735,7 @@ export function StudioHybridDccPanel({
 
   return (
     <section
-      className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-canvas/35 p-3 text-sm [&>*]:shrink-0 sm:p-4"
+      className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-canvas/35 px-3 pb-3 pt-2 text-sm [&>*]:shrink-0 sm:px-4 sm:pb-4 sm:pt-3"
       data-studio-hybrid-dcc-panel="true"
       data-workbench-mode={workbenchMode}
       aria-label={bt("정밀 3D 모델링 작업 공간", "Precision 3D modeling workspace")}

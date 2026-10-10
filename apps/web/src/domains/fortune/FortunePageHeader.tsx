@@ -1,16 +1,17 @@
 import { Sparkles } from "lucide-react";
 
-import { SectionArt } from "@/shared/components/section-art";
 import { FORTUNE_TAB_META, type FortuneTab } from "./fortune-page-data";
 
 /**
  * 운세 본문 상단 공통 헤더 — 현재 선택된 도구의 이름·맥락을 보여 주는 타이틀 블록.
  * FortunePage가 파일 크기 래칫 천장에 닿아 있어 헤더를 이 파일로 추출했다.
  *
- * 역할 분리: 도구 하위 라우트의 첫 장면(FortuneToolHero)은 루나 패널·아트·
+ * 역할 분리: 도구 하위 라우트의 첫 장면(FortuneToolHero)은 장면 무대·루나 패널·
  * 말풍선이 맡고, 이 본문 헤더는 아트 없이 도구의 이름(labelKo)과 한 줄
  * 맥락(taglineKo)만으로 "지금 어떤 운세를 보고 있는지"를 밝힌다.
  * 이름·맥락의 정본은 FORTUNE_TAB_META이며 여기서 다시 정의하지 않는다.
+ * (웨이브 20: 과거 이 헤더가 함께 실었던 섹션 아트 카드는 무대와 겹치는 이중
+ * 마스트헤드라 제거했다 — 첫 화면의 아트는 무대 한 곳이 전담한다.)
  */
 export function FortunePageHeader({
   tx,
@@ -32,11 +33,6 @@ export function FortunePageHeader({
       <p className="mx-auto mt-2 max-w-md text-pretty text-sm leading-relaxed text-fg-2">
         {meta.taglineKo}
       </p>
-      {/* 운세 섹션 키 비주얼 — 장식용. */}
-      <SectionArt
-        image="fortune"
-        className="mx-auto mt-6 h-56 w-full max-w-2xl rounded-2xl border border-line/60 object-cover sm:h-72"
-      />
     </header>
   );
 }
