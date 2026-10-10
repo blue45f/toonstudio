@@ -155,7 +155,7 @@ def main():
             head_width = head_vertices[:, 0].max() - head_vertices[:, 0].min()
             scale = (head_width + 0.06) / (pts[:, 0].max() - pts[:, 0].min())
             center = np.array([0.5 * (pts[:, 0].min() + pts[:, 0].max()), pts[:, 1].max(), 0.5 * (pts[:, 2].min() + pts[:, 2].max())])
-            goal = np.array([0.0, head_vertices[:, 1].max() + 0.010, 0.5 * (head_vertices[:, 2].min() + head_vertices[:, 2].max()) - 0.005])
+            goal = np.array([0.0, head_vertices[:, 1].max() + 0.025, 0.5 * (head_vertices[:, 2].min() + head_vertices[:, 2].max()) - 0.005])
             translation = goal - scale * center
             cost = float("nan")
         elif align == "shoes":

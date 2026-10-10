@@ -1,0 +1,63 @@
+{
+  "schema": "toonstudio.hyper3d-sources/1",
+  "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+  "summaryKo": "Hyper3D(Rodin Gen-2.5) 생성물과 그 파생물. 약관·소유권·수정·공개 호스팅 조항과 닫히지 않은 점은 recordDoc에 있다. 원본 GLB는 저장소에 커밋하지 않는다.",
+  "common": {
+    "tool": "mcp__hyper3d__rodin_generate (로컬 Claude Code, OAuth 인증 계정)",
+    "geometryFileFormat": "glb",
+    "meshMode": "Quad",
+    "textureDelight": true,
+    "referenceImages": 0,
+    "outputFile": "base_basic_pbr.glb"
+  },
+  "sources": {
+    "top/tee": {
+      "generationId": "82698064-e736-4b1e-ac56-67f6569bd364",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/82698064-e736-4b1e-ac56-67f6569bd364",
+      "tier": "Gen-2.5-Medium",
+      "qualityOverride": 15000,
+      "resultReceivedUtc": "2026-10-10T18:00:24Z",
+      "rawSha256": "1c60f00ef7f96785525d133fd3dad94fd4a49743709534f216a6277160235a5b",
+      "rawBytes": 8083808,
+      "prompt": "A plain short-sleeve crew-neck T-shirt as a standalone garment, perfectly symmetrical, laid out in a T-pose with the sleeves stretched out horizontally, open neck hole, open sleeve cuffs and open hem so it is hollow inside, thin fabric thickness, no body, no mannequin, no person, no hanger, clean anime cel-shaded look, flat solid light color, soft simple fabric folds only, no baked lighting or shadows, no logos, no text, no print",
+      "cleanPreset": "tee",
+      "changesKo": "마네킹 목 조각 제거, HBM 여성 베이스에 맞춰 리타깃(정렬·충돌 해소·표면 결합), 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크."
+    },
+    "bottom/jeans": {
+      "generationId": "cb5a2e39-ecf4-4f99-9380-89267264053b",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/cb5a2e39-ecf4-4f99-9380-89267264053b",
+      "tier": "Gen-2.5-Medium",
+      "qualityOverride": 10000,
+      "resultReceivedUtc": "2026-10-10T18:04:14Z",
+      "rawSha256": "9bda1b6ef110bca7bc562de844508cc74bce9cb862b3068ecc346fd2496b7a92",
+      "rawBytes": 8722340,
+      "prompt": "Plain straight-leg denim jeans trousers as a standalone garment, perfectly symmetrical, front view, legs slightly apart, hollow waist opening and hollow leg openings, thin fabric thickness, lightly sculpted button fly and belt loops, no body, no mannequin, no person, no shoes, no belt, clean anime cel-shaded look, flat solid mid-blue color, simple soft folds only, no baked lighting or shadows, no logos, no text",
+      "cleanPreset": "jeans",
+      "changesKo": "마네킹 허리·발목·신발 조각 제거, HBM 여성 베이스에 맞춰 리타깃, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크."
+    },
+    "shoes/sneakers": {
+      "generationId": "d6cd1b50-7e9f-401e-a4b4-87bf45b0e336",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/d6cd1b50-7e9f-401e-a4b4-87bf45b0e336",
+      "tier": "Gen-2.5-Medium",
+      "qualityOverride": 8000,
+      "resultReceivedUtc": "2026-10-10T18:15:58Z",
+      "rawSha256": "9ea818e7d93792da0ae1727faf9c9f1d018b2d4c3a3afffeb281b4def66a1684",
+      "rawBytes": 8985804,
+      "prompt": "A pair of plain white low-top canvas sneakers with flat rubber soles and simple white laces, left shoe and right shoe placed side by side facing the same direction, toes pointing forward, soles flat on the ground, symmetrical, no feet, no legs, no socks, no mannequin, no person, clean anime cel-shaded look, simple smooth shapes, solid light color, no baked lighting or shadows, no logos, no text",
+      "cleanPreset": "sneakers",
+      "changesKo": "한 켤레(두 덩어리) 그대로 사용, HBM 여성 베이스의 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크."
+    },
+    "hair/soft-bob": {
+      "generationId": "3f1040da-6127-4402-98e2-2692cccb2a3d",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/3f1040da-6127-4402-98e2-2692cccb2a3d",
+      "tier": "Gen-2.5-Medium",
+      "qualityOverride": 15000,
+      "resultReceivedUtc": "2026-10-10T18:16:32Z",
+      "rawSha256": "5fde2b1a24c57ea4242af8ade849795a8b0d6e40342b6a3356e5ad30ceabf4ad",
+      "rawBytes": 9764060,
+      "prompt": "A shoulder-length soft bob haircut for an adult woman, hair only, no head, no face, no skull, no neck, no scalp cap, smooth chunky anime hair grouped into large clean locks with a soft inward curl at the ends and a side-swept fringe, one solid dark brown color, simple smooth shapes, clean cel-shaded look, no baked lighting or shadows, no accessories",
+      "cleanPreset": "hair",
+      "changesKo": "흉상(얼굴·목·어깨·상의)에서 머리카락만 분리(색·영역 성장), 머리 너비 기준으로 HBM 여성 베이스 머리에 맞춰 리타깃, LOD 3단(7,000/3,500/1,800 삼각형)으로 축소, 텍스처를 상대색 JPEG로 재베이크."
+    }
+  }
+}
