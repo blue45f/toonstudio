@@ -28,7 +28,7 @@ describe("direct-only huddle protocol", () => {
     expect(encodeStudioDirectPacket("work-a", "가".repeat(24000))).toBeNull();
   });
   it("has no TURN or credentials, regardless of server policy", () => {
-    expect(huddleRtcConfiguration().iceServers).toEqual([{ urls: "stun:stun.l.google.com:19302" }]);
+    expect(huddleRtcConfiguration().iceServers).toEqual([{ urls: "stun:stun.cloudflare.com:3478" }]);
     expect(JSON.stringify(huddleRtcConfiguration())).not.toMatch(/turn:|turns:|credential|username/);
   });
 });

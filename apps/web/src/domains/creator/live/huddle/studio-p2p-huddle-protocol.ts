@@ -50,12 +50,13 @@ export function parseHuddlePacket(raw: string): HuddlePacket | null {
   return v as unknown as HuddlePacket;
 }
 /**
- * 기본값은 자격증명 없는 STUN 전용 구성이다. 호출부가 공유 ICE 모듈
- * (studio-ice-configuration)에서 발급된 서버를 넘기면 그 구성을 그대로 쓴다.
+ * 기본값은 자격증명 없는 STUN 전용 구성이다(TURN은 쓰지 않는다 — 2026-10-11
+ * 결정). 호출부가 공유 ICE 모듈(studio-ice-configuration)의 구성을 넘기면
+ * 그 구성을 그대로 쓴다.
  */
 export function huddleRtcConfiguration(
   iceServers: readonly RTCIceServer[] = [
-    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun.cloudflare.com:3478" },
   ],
 ): RTCConfiguration {
   return { iceServers: iceServers.map((server) => ({ ...server })),

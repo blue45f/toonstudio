@@ -2,11 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudioP2pHuddleController, type HuddleDependencies } from "./studio-p2p-huddle-controller";
 import type { StudioLiveParticipant } from "../studio-live-collaboration-protocol";
 import type { StudioLiveDirectPort } from "../studio-live-direct-port";
-import {
-  primeStudioIceServers,
-  registerStudioIceCredentialSource,
-  studioIceConfiguration,
-} from "../studio-ice-configuration";
+import { getStudioIceServers } from "../studio-ice-configuration";
 
 const A: StudioLiveParticipant = { sessionId: "a", displayName: "작가 A", role: "editor" };
 const B: StudioLiveParticipant = { sessionId: "b", displayName: "작가 B", role: "editor" };
@@ -330,7 +326,7 @@ describe("P2P huddle consent and delivery", () => {
       return controller;
     }
 
-    it("ICE 재시작 3회가 모두 실패하면 복구 실패를 알리되 TURN 미사용을 단정하지 않고 조건을 말한다", () => {
+    it("ICE 재시작 3회가 모두 실패하면 복구 실패를 알리고 중계(TURN) 미사용을 사실대로 말한다", () => {
       let clock = 10_000;
       const { peer, restartIce, changeConnectionState } = mediaPeerStub();
       const controller = huddleWithMediaPeer({ createPeerConnection: () => peer, now: () => clock });
@@ -347,30 +343,22 @@ describe("P2P huddle consent and delivery", () => {
       expect(restartIce).toHaveBeenCalledTimes(3);
       const message = controller.snapshot().error ?? "";
       expect(message).toContain("자동 복구하지 못했습니다");
-      expect(message).toContain("중계(TURN) 서버가 준비되지 않은 환경에서는 직접 연결만 시도합니다");
-      expect(message).not.toContain("TURN 중계는 사용하지 않습니다");
+      expect(message).toContain("중계(TURN) 서버를 사용하지 않아 직접 연결만 시도합니다");
     });
 
-    it("공유 ICE 캐시에 TURN 자격이 있으면 허들 연결 구성에 TURN 서버가 들어간다", async () => {
-      registerStudioIceCredentialSource(async () => ({
-        iceServers: [{ urls: ["turn:turn.example.test:3478?transport=udp"], username: "test-user", credential: "test-credential" }],
-        ttlSeconds: 3_600,
-      }));
-      try {
-        await primeStudioIceServers({ workId: "work-turn-test", roomId: "work-turn-test", sessionId: A.sessionId });
-        const { peer } = mediaPeerStub();
-        const createPeerConnection = vi.fn((_configuration: RTCConfiguration) => peer);
-        huddleWithMediaPeer({ createPeerConnection });
+    it("허들 연결 구성은 공유 ICE 모듈의 Cloudflare STUN 전용 구성을 그대로 쓴다", () => {
+      const { peer } = mediaPeerStub();
+      const createPeerConnection = vi.fn((_configuration: RTCConfiguration) => peer);
+      huddleWithMediaPeer({ createPeerConnection });
 
-        expect(createPeerConnection).toHaveBeenCalledOnce();
-        const urls = (createPeerConnection.mock.calls[0]?.[0].iceServers ?? [])
-          .flatMap((server) => (server.urls === undefined ? [] : [server.urls].flat()));
-        // 그래서 "TURN 중계는 사용하지 않는다"는 안내는 사실과 다르다. 자격이 없을 때만 STUN 전용이다.
-        expect(urls.some((url) => url.startsWith("turn:"))).toBe(true);
-      } finally {
-        registerStudioIceCredentialSource(null);
-        studioIceConfiguration.dispose();
-      }
+      expect(createPeerConnection).toHaveBeenCalledOnce();
+      const configuration = createPeerConnection.mock.calls[0]?.[0];
+      expect(configuration?.iceServers).toEqual(getStudioIceServers());
+      const urls = (configuration?.iceServers ?? [])
+        .flatMap((server) => (server.urls === undefined ? [] : [server.urls].flat()));
+      // TURN은 비용 리스크로 쓰지 않는다(2026-10-11 결정). 자격 발급 경로도 없다.
+      expect(urls).toEqual(["stun:stun.cloudflare.com:3478"]);
+      expect(urls.some((url) => url.startsWith("turn:"))).toBe(false);
     });
   });
 
