@@ -1856,4 +1856,262 @@ describe("Cloudflare realtime Worker integration", () => {
       channel: "comments",
     });
   });
+
+  it("admits a fresh join at the replay floor after room history is pruned", async () => {
+    const scope = {
+      workId: `work.floor.${crypto.randomUUID()}`,
+      roomId: `room.floor.${crypto.randomUUID()}`,
+    } satisfies RealtimeRoomScope;
+    const nowMs = Date.now();
+    const roomId = env.REALTIME_ROOMS.idFromName(
+      normalizeRealtimeRoomObjectName(scope),
+    );
+    const roomStub = env.REALTIME_ROOMS.get(roomId);
+    const resume = (
+      socket: AcceptedWebSocket,
+      channel: string,
+      afterSequence: number,
+    ) =>
+      socket.send(
+        JSON.stringify({
+          version: REALTIME_PROTOCOL_VERSION,
+          type: "resume",
+          channel,
+          afterSequence,
+        }),
+      );
+
+    // An existing member creates the room's only screen-signaling event.
+    const ownerClaims = buildClaims(
+      scope,
+      `nonce-${crypto.randomUUID()}`,
+      nowMs,
+      { subject: "artist.floor-owner", clientId: "client.floor-owner" },
+    );
+    const ownerResponse = await upgradeRealtimeRoom(
+      scope,
+      await signRealtimeTicket(ownerClaims, TEST_SECRET),
+    );
+    const ownerSocket = ownerResponse.webSocket as AcceptedWebSocket;
+    const ownerInbox = new RealtimeMessageInbox(ownerSocket);
+    await ownerInbox.next(isMessageType("welcome"), "owner welcome");
+    await ownerInbox.next(
+      isMessageType("presence-snapshot"),
+      "owner snapshot",
+    );
+    const announceKey = `announce-${crypto.randomUUID()}`;
+    ownerSocket.send(
+      JSON.stringify({
+        version: REALTIME_PROTOCOL_VERSION,
+        type: "publish",
+        idempotencyKey: announceKey,
+        clientSequence: 1,
+        sentAtMs: Date.now(),
+        channel: "screen-signaling",
+        payload: {
+          kind: "signal.announce",
+          shareId: "share.floor",
+          label: "Floor Share",
+        },
+      }),
+    );
+    await ownerInbox.next(
+      (message) =>
+        message.type === "ack" && message.idempotencyKey === announceKey,
+      "announce ack",
+    );
+    await ownerInbox.next(
+      (message) =>
+        message.type === "event" && message.idempotencyKey === announceKey,
+      "announce event",
+    );
+
+    // Expire the stored event, then let the Durable Object's own alarm run
+    // the genuine prune: the floor advances to current + 1, the exact state
+    // the browser E2E measured on screen-signaling (current 1, floor 2).
+    await runInDurableObject(roomStub, (_instance, state) => {
+      state.storage.sql.exec(
+        "UPDATE event_log SET expires_at_ms = 0 WHERE channel = 'screen-signaling'",
+      );
+    });
+    await expect(runDurableObjectAlarm(roomStub)).resolves.toBe(true);
+    const prunedState = await runInDurableObject(
+      roomStub,
+      (_instance, state) => {
+        const row = state.storage.sql
+          .exec<{
+            current_sequence: number;
+            replay_floor_sequence: number;
+          }>(
+            "SELECT current_sequence, replay_floor_sequence FROM channel_state WHERE channel = 'screen-signaling'",
+          )
+          .one();
+        return {
+          currentSequence: row.current_sequence,
+          replayFloorSequence: row.replay_floor_sequence,
+        };
+      },
+    );
+    expect(prunedState).toEqual({ currentSequence: 1, replayFloorSequence: 2 });
+
+    // The pre-fix negotiation (resume from the zero baseline) is refused:
+    // this is the seam where the old client lost the whole handshake.
+    const probeClaims = buildClaims(
+      scope,
+      `nonce-${crypto.randomUUID()}`,
+      Date.now(),
+      { subject: "artist.floor-probe", clientId: "client.floor-probe" },
+    );
+    const probeResponse = await upgradeRealtimeRoom(
+      scope,
+      await signRealtimeTicket(probeClaims, TEST_SECRET),
+    );
+    const probeSocket = probeResponse.webSocket as AcceptedWebSocket;
+    const probeInbox = new RealtimeMessageInbox(probeSocket);
+    const probeWelcome = await probeInbox.next(
+      isMessageType("welcome"),
+      "probe welcome",
+    );
+    expect(probeWelcome.channelStates["screen-signaling"]).toEqual({
+      currentSequence: 1,
+      replayFloorSequence: 2,
+    });
+    resume(probeSocket, "screen-signaling", 0);
+    await expect(
+      probeInbox.next(
+        (message) => message.type === "error",
+        "zero-baseline resume gap",
+      ),
+    ).resolves.toMatchObject({
+      type: "error",
+      code: "resume-gap",
+      retryable: false,
+      channel: "screen-signaling",
+      currentSequence: 1,
+      replayFloorSequence: 2,
+    });
+    probeSocket.close(1000, "probe-complete");
+
+    // A fresh participant joins the pruned room with the fixed negotiation.
+    // (Separate connections, because the room budgets three resume requests
+    // per connection window — exactly one clean join.)
+    const joinerClaims = buildClaims(
+      scope,
+      `nonce-${crypto.randomUUID()}`,
+      Date.now(),
+      { subject: "artist.floor-joiner", clientId: "client.floor-joiner" },
+    );
+    const joinerResponse = await upgradeRealtimeRoom(
+      scope,
+      await signRealtimeTicket(joinerClaims, TEST_SECRET),
+    );
+    const joinerSocket = joinerResponse.webSocket as AcceptedWebSocket;
+    const joinerInbox = new RealtimeMessageInbox(joinerSocket);
+    const joinerWelcome = await joinerInbox.next(
+      isMessageType("welcome"),
+      "joiner welcome",
+    );
+    expect(joinerWelcome.channelStates["screen-signaling"]).toEqual({
+      currentSequence: 1,
+      replayFloorSequence: 2,
+    });
+    const joinerSnapshot = await joinerInbox.next(
+      isMessageType("presence-snapshot"),
+      "joiner snapshot",
+    );
+
+    // The fixed negotiation adopts the floor (floor - 1 == current here) and
+    // the Worker answers with an empty, complete replay — the join proceeds.
+    resume(joinerSocket, "screen-signaling", 1);
+    await expect(
+      joinerInbox.next(
+        (message) =>
+          message.type === "replay" && message.channel === "screen-signaling",
+        "floor replay",
+      ),
+    ).resolves.toMatchObject({
+      type: "replay",
+      channel: "screen-signaling",
+      fromSequence: 2,
+      toSequence: 1,
+      currentSequence: 1,
+      complete: true,
+      events: [],
+    });
+    resume(joinerSocket, "comments", 0);
+    await expect(
+      joinerInbox.next(
+        (message) =>
+          message.type === "replay" && message.channel === "comments",
+        "comments replay",
+      ),
+    ).resolves.toMatchObject({ complete: true, events: [] });
+    resume(joinerSocket, "presence", joinerSnapshot.sequence);
+    await expect(
+      joinerInbox.next(
+        (message) =>
+          message.type === "replay" && message.channel === "presence",
+        "presence replay",
+      ),
+    ).resolves.toMatchObject({ complete: true, events: [] });
+
+    // The joined room actually works in both directions.
+    const commentKey = `comment-${crypto.randomUUID()}`;
+    ownerSocket.send(
+      JSON.stringify({
+        version: REALTIME_PROTOCOL_VERSION,
+        type: "publish",
+        idempotencyKey: commentKey,
+        clientSequence: 2,
+        sentAtMs: Date.now(),
+        channel: "comments",
+        payload: {
+          kind: "comment.changed",
+          threadId: "thread-floor",
+          activitySequence: "1",
+          change: "created",
+        },
+      }),
+    );
+    await joinerInbox.next(
+      (message) =>
+        message.type === "event" && message.idempotencyKey === commentKey,
+      "joiner receives owner comment",
+    );
+    const joinerPresenceKey = `presence-${crypto.randomUUID()}`;
+    joinerSocket.send(
+      JSON.stringify({
+        version: REALTIME_PROTOCOL_VERSION,
+        type: "publish",
+        idempotencyKey: joinerPresenceKey,
+        clientSequence: 1,
+        sentAtMs: Date.now(),
+        channel: "presence",
+        payload: {
+          kind: "presence.update",
+          pageId: "page.floor",
+          profile: {
+            displayName: "Floor Joiner",
+            role: "editor",
+            state: "active",
+          },
+          tool: null,
+        },
+      }),
+    );
+    await joinerInbox.next(
+      (message) =>
+        message.type === "ack" && message.idempotencyKey === joinerPresenceKey,
+      "joiner presence ack",
+    );
+    await ownerInbox.next(
+      (message) =>
+        message.type === "event" &&
+        message.idempotencyKey === joinerPresenceKey,
+      "owner receives joiner presence",
+    );
+
+    ownerSocket.close(1000, "test-complete");
+    joinerSocket.close(1000, "test-complete");
+  });
 });
