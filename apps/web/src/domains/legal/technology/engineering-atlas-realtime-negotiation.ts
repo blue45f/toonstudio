@@ -255,14 +255,14 @@ export async function handleDescription(
         {
           question: t("연결이 끊기면 어떻게 되나요?", "What happens when the connection drops?"),
           answer: t(
-            "4초 이상 간격으로 최대 3번 ICE를 재시작합니다. 그래도 안 되면 안내 문구를 띄웁니다. TURN 중계가 등록되지 않은 환경에서는 제한된 네트워크에서 실패할 수 있습니다(ICE 카드 참조).",
-            "It restarts ICE up to 3 times, at least 4 seconds apart. If that still fails, a notice appears. Where no TURN relay is registered, it can fail on restrictive networks (see the ICE card).",
+            "4초 이상 간격으로 최대 3번 ICE를 재시작합니다. 그래도 안 되면 안내 문구를 띄웁니다. TURN 중계는 쓰지 않으므로 제한된 네트워크에서는 실패할 수 있습니다(ICE 카드 참조).",
+            "It restarts ICE up to 3 times, at least 4 seconds apart. If that still fails, a notice appears. No TURN relay is used, so it can fail on restrictive networks (see the ICE card).",
           ),
         },
       ],
       pitfall: t(
-        "'완벽한'이라는 이름은 패턴 이름일 뿐 항상 성공한다는 뜻이 아닙니다. 이 저장소의 시험은 가짜 연결을 쓴 재전송 규칙 1건이고, 실제 브라우저 두 개가 동시에 오퍼를 내는 충돌 시험은 확인하지 못했습니다. 신호 처리에 실패하면 자동 복구 없이 '나간 뒤 재참여' 안내를 띄웁니다. 3번 실패 뒤 안내 문구는 '중계(TURN) 서버가 준비되지 않은 환경에서는 직접 연결만 시도합니다'로 조건부로 고쳐, ICE 캐시가 TURN을 받는 구성과 맞춰 두었습니다. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
-        "Do not treat the word 'perfect' as meaning it always succeeds; it is only the pattern's name. The tests in this repository are one re-send rule with a fake connection, and a collision test with two real browsers offering at once was not found. When signal handling fails there is no automatic recovery, only a notice to leave and rejoin. The notice after three failures now reads conditionally (where no relay (TURN) server is set up, only direct links are tried), matching a setup where the ICE cache receives TURN servers. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
+        "'완벽한'이라는 이름은 패턴 이름일 뿐 항상 성공한다는 뜻이 아닙니다. 이 저장소의 시험은 가짜 연결을 쓴 재전송 규칙 1건이고, 실제 브라우저 두 개가 동시에 오퍼를 내는 충돌 시험은 확인하지 못했습니다. 신호 처리에 실패하면 자동 복구 없이 '나간 뒤 재참여' 안내를 띄웁니다. 3번 실패 뒤 안내 문구는 '중계(TURN) 서버를 사용하지 않아 직접 연결만 시도합니다'로 바뀌었고, ICE 구성은 Cloudflare STUN 전용으로 고정돼 TURN 자격 발급 자체가 제거됐습니다. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
+        "Do not treat the word 'perfect' as meaning it always succeeds; it is only the pattern's name. The tests in this repository are one re-send rule with a fake connection, and a collision test with two real browsers offering at once was not found. When signal handling fails there is no automatic recovery, only a notice to leave and rejoin. The notice after three failures now states that no relay (TURN) server is used so only direct links are tried, and the ICE configuration is fixed to Cloudflare STUN with TURN credential issuance removed. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
       ),
     },
     technologies: ["RTCPeerConnection", "JSEP (RFC 9429)", "SDP", "ICE restart", "perfect negotiation"],

@@ -29,6 +29,13 @@ export const STUDIO_LIVE_GESTURE_PREVIEW_ENVELOPE_METADATA_MAX_BYTES = 4 * 1024;
 export const STUDIO_LIVE_GESTURE_PREVIEW_ENVELOPE_MAX_BYTES =
   STUDIO_LIVE_GESTURE_PREVIEW_MAX_BYTES
   + STUDIO_LIVE_GESTURE_PREVIEW_ENVELOPE_METADATA_MAX_BYTES;
+/**
+ * Direct-lane relay packets embed one whole studio-direct packet (bounded at 64 KiB by
+ * the direct lane itself). The envelope needs a separate, larger allowance because the
+ * packet travels as an escaped JSON string next to the envelope metadata.
+ */
+export const STUDIO_LIVE_DIRECT_RELAY_PACKET_MAX_BYTES = 64 * 1024;
+export const STUDIO_LIVE_DIRECT_RELAY_ENVELOPE_MAX_BYTES = 160 * 1024;
 export const STUDIO_LIVE_MESSAGE_MAX_AGE_MS = 30_000;
 export const STUDIO_LIVE_MESSAGE_FUTURE_SKEW_MS = 5_000;
 export const STUDIO_LIVE_LOCK_MAX_LEASE_MS = 30_000;
@@ -235,6 +242,16 @@ export interface StudioLiveChatMessagePayload {
   text: string;
 }
 
+/**
+ * One studio-direct packet relayed over the primary transport when the RTC mesh lane
+ * cannot carry it (STUN-only ICE: symmetric NAT, blocked UDP). The packet string is the
+ * exact studio-direct-v1 encoding; receivers re-validate it against their work id and
+ * hand it to the direct-lane listeners without surfacing this envelope to the room.
+ */
+export interface StudioLiveDirectRelayPayload {
+  packet: string;
+}
+
 export interface StudioLivePayloadMap {
   "presence:hello": StudioLivePresencePayload;
   "presence:heartbeat": StudioLivePresencePayload;
@@ -255,6 +272,7 @@ export interface StudioLivePayloadMap {
   "voice:ice": StudioLiveVoiceIcePayload;
   "chat:message": StudioLiveChatMessagePayload;
   "preview:gesture": StudioLiveGesturePreviewPayload;
+  "direct:relay": StudioLiveDirectRelayPayload;
 }
 
 export type StudioLiveMessageKind = keyof StudioLivePayloadMap;
@@ -647,6 +665,16 @@ function isChatMessagePayload(value: unknown): value is StudioLiveChatMessagePay
   );
 }
 
+function isDirectRelayPayload(value: unknown): value is StudioLiveDirectRelayPayload {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["packet"]) &&
+    typeof value.packet === "string" &&
+    value.packet.length > 0 &&
+    studioLiveUtf8ByteLength(value.packet) <= STUDIO_LIVE_DIRECT_RELAY_PACKET_MAX_BYTES
+  );
+}
+
 const MESSAGE_KINDS = new Set<StudioLiveMessageKind>([
   "presence:hello",
   "presence:heartbeat",
@@ -667,6 +695,7 @@ const MESSAGE_KINDS = new Set<StudioLiveMessageKind>([
   "voice:ice",
   "chat:message",
   STUDIO_LIVE_GESTURE_PREVIEW_KIND,
+  "direct:relay",
 ]);
 
 function isKind(value: unknown): value is StudioLiveMessageKind {
@@ -716,6 +745,8 @@ function payloadMatchesKind(
       return isChatMessagePayload(payload);
     case "preview:gesture":
       return parseStudioLiveGesturePreviewPayload(payload) !== null;
+    case "direct:relay":
+      return isDirectRelayPayload(payload);
   }
 }
 
@@ -726,7 +757,8 @@ function targetMatchesKind(kind: StudioLiveMessageKind, targetSessionId: string 
     kind === "webrtc:description" ||
     kind === "webrtc:ice" ||
     kind === "voice:description" ||
-    kind === "voice:ice";
+    kind === "voice:ice" ||
+    kind === "direct:relay";
   return targeted ? targetSessionId !== null : targetSessionId === null;
 }
 
@@ -752,7 +784,9 @@ export function parseStudioLiveEnvelope(
   if (bytes === null || !isRecord(value)) return null;
   const maximumBytes = value.kind === STUDIO_LIVE_GESTURE_PREVIEW_KIND
     ? STUDIO_LIVE_GESTURE_PREVIEW_ENVELOPE_MAX_BYTES
-    : STUDIO_LIVE_MESSAGE_MAX_BYTES;
+    : value.kind === "direct:relay"
+      ? STUDIO_LIVE_DIRECT_RELAY_ENVELOPE_MAX_BYTES
+      : STUDIO_LIVE_MESSAGE_MAX_BYTES;
   if (bytes > maximumBytes) return null;
   if (
     !hasExactKeys(value, [

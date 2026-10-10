@@ -2,6 +2,7 @@ import { replyStudioLiveAck as reply, studioLiveFailure as failure } from "./stu
 import { STUDIO_LIVE_VOICE_MAX_PARTICIPANTS, studioLiveRoom } from "./studio-live-gateway-constants";
 import {
   StudioLiveChatSchema,
+  StudioLiveDirectRelaySchema,
   StudioLiveSignalSchema,
   StudioLiveVoiceJoinSchema,
   StudioLiveVoiceLeaveSchema,
@@ -14,6 +15,7 @@ import type { StudioLiveGatewayHost } from "./studio-live-gateway-host";
 import type {
   StudioLiveAckCallback,
   StudioLiveChatInput,
+  StudioLiveDirectRelayInput,
   StudioLiveInterServerRelayEvent,
   StudioLiveSignalInput,
   StudioLiveSocket,
@@ -436,4 +438,72 @@ export async function relaySignal(
     );
   }
   return reply(ack, { ok: true, data: { delivered: true, signalId } });
+}
+
+/**
+ * Targeted relay for direct-lane packets (spatial presence) whose sender's RTC
+ * mesh could not reach the target. ICE is STUN-only by policy (2026-10-11), so
+ * this socket lane is the guaranteed path in symmetric-NAT / UDP-blocked
+ * networks. Authorization mirrors relaySignal: both peers must be current
+ * members of the same work room, and a sender can never target itself.
+ */
+export async function relayDirect(
+  this: StudioLiveGatewayHost,
+  client: StudioLiveSocket,
+  body: StudioLiveDirectRelayInput,
+  ack?: StudioLiveAckCallback<{ delivered: true; relayId: string }>
+) {
+  // Presence ticks plus movement updates for one room stay far below this;
+  // the bucket exists to bound a misbehaving client, not the fallback lane.
+  if (!this.consumeRateLimit(client, "direct-relay", 1200, 60_000)) {
+    return reply(ack, failure("rate_limited", "직접 연결 릴레이 요청이 너무 많습니다."));
+  }
+  const parsed = StudioLiveDirectRelaySchema.safeParse(body);
+  if (!parsed.success) return reply(ack, failure("invalid_payload", "직접 연결 릴레이 정보가 올바르지 않습니다."));
+  const relayId = crypto.randomUUID();
+  const relay: StudioLiveInterServerRelayEvent = {
+    type: "direct-relay",
+    relayId,
+    packet: parsed.data.packet,
+  };
+  if (!this.hasLocalRelayTarget(parsed.data.targetConnectionId)) {
+    const sender = await this.authorizeRemoteRelaySender(
+      client,
+      parsed.data.workId,
+      parsed.data.targetConnectionId,
+      "본인에게 직접 연결 패킷을 보낼 수 없습니다."
+    );
+    if (!sender.ok) return reply(ack, sender.response);
+    const delivered = await this.sendInterServerRelay(
+      sender.sender,
+      parsed.data.workId,
+      parsed.data.targetConnectionId,
+      relay
+    );
+    if (!delivered) {
+      return reply(ack, failure("peer_unavailable", "연결할 팀원이 작업실에 없습니다."));
+    }
+    return reply(ack, { ok: true, data: { delivered: true, relayId } });
+  }
+  let authorization = await this.authorizeRelayPeers(
+    client,
+    parsed.data.workId,
+    parsed.data.targetConnectionId,
+    "본인에게 직접 연결 패킷을 보낼 수 없습니다.",
+    "force"
+  );
+  while (authorization.ok && !this.isRelayAuthorizationCurrent(authorization)) {
+    authorization = await this.authorizeRelayPeers(
+      client,
+      parsed.data.workId,
+      parsed.data.targetConnectionId,
+      "본인에게 직접 연결 패킷을 보낼 수 없습니다.",
+      "rebase"
+    );
+  }
+  if (!authorization.ok) return reply(ack, authorization.response);
+  if (!this.emitAuthorizedLocalRelay(authorization, relay)) {
+    return reply(ack, failure("peer_unavailable", "연결할 팀원이 작업실에 없습니다."));
+  }
+  return reply(ack, { ok: true, data: { delivered: true, relayId } });
 }

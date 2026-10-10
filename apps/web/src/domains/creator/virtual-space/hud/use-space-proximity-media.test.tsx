@@ -105,10 +105,10 @@ describe("SpaceProximityVideo", () => {
     try {
       render(<SpaceProximityConsent radiusTiles={5} unavailableReason={null} onStart={onStart} onCancel={vi.fn()} />);
       expect(screen.getByText(/버튼을 눌렀을 때만 직접 켜요/u)).toBeTruthy();
-      // 허들과 같은 공유 ICE 구성을 쓰므로 Worker 가 TURN 단기 자격을 발급한 환경에서는 중계 경로가 생길 수 있다.
-      // "유료 중계 서버는 쓰지 않아요"처럼 TURN 미사용을 단정하지 않고 조건을 말한다.
-      expect(screen.getByText(/중계\(TURN\) 서버가 준비된 환경에서만 그 서버를 거쳐요/u)).toBeTruthy();
-      expect(screen.queryByText(/유료 중계 서버는 쓰지 않아요/u)).toBeNull();
+      // 공유 ICE 구성은 Cloudflare STUN 전용이라 중계 경로는 없다. 막힌 환경에서는
+      // 영상이 이어지지 않는다는 실태를 그대로 말한다(2026-10-11 TURN 미사용 결정).
+      expect(screen.getByText(/중계\(TURN\) 서버는 사용하지 않아서/u)).toBeTruthy();
+      expect(screen.getByText(/직접 연결이 막힌 환경에서는 영상이 이어지지 않아요/u)).toBeTruthy();
       expect(onStart).not.toHaveBeenCalled();
       fireEvent.click(screen.getByRole("button", { name: "카메라만" }));
       expect(onStart).toHaveBeenCalledExactlyOnceWith({ camera: true, mic: false });

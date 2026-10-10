@@ -292,8 +292,8 @@ export function parseDirect(value: unknown, workId: string): string | null {
         "The server (Durable Objects) enforces the same rules again. It forwards only signals that match the current share owner, an approved viewer pair and a stored connection id, and a restarted share does not inherit earlier approvals. Because the host sends a separate video to each viewer, concurrent viewers are capped at 4. An SFU that receives once and fans out scales better but brings cost and operations, and the design document says to consider it only when demand beyond 4 people is confirmed.",
       ),
       t(
-        "한계도 분명합니다. 시청자가 늘면 호스트의 업로드가 그만큼 늘어 4명을 넘는 시청이나 방송은 현재 범위가 아닙니다. 제한된 네트워크에서는 TURN 중계가 필요할 수 있는데 운영 TURN 키 등록 여부와 실제 중계 통과는 확인하지 못했습니다. 검증은 단위·통합 테스트 수준이며, 서로 다른 네트워크에서의 화면 공유 성공은 확인한 기록이 없습니다.",
-        "The limits are clear too. More viewers mean proportionally more upload for the host, so viewing beyond 4 or broadcasting is out of scope. Restrictive networks may need a TURN relay, but whether a production TURN key is registered and whether a relay actually passes were not confirmed. Verification is at the unit and integration test level, and there is no record of screen sharing succeeding across different networks.",
+        "한계도 분명합니다. 시청자가 늘면 호스트의 업로드가 그만큼 늘어 4명을 넘는 시청이나 방송은 현재 범위가 아닙니다. TURN 중계는 비용 리스크로 쓰지 않기로 결정했기 때문에, 제한된 네트워크에서는 화면 공유가 실패하는 것이 확정 동작입니다. 검증은 단위·통합 테스트 수준이며, 서로 다른 네트워크에서의 화면 공유 성공은 확인한 기록이 없습니다.",
+        "The limits are clear too. More viewers mean proportionally more upload for the host, so viewing beyond 4 or broadcasting is out of scope. TURN relay was decided against over cost risk, so on restrictive networks screen sharing failing is the defined behavior. Verification is at the unit and integration test level, and there is no record of screen sharing succeeding across different networks.",
       ),
     ],
     keyPoints: [
@@ -473,8 +473,8 @@ export class ScreenShareHost {
         },
       ],
       pitfall: t(
-        "서버가 화면을 중계한다고 오해하지 않게 하세요. 서버는 SDP/ICE 신호와 승인 상태만 다룹니다. 제한된 네트워크의 시청자는 TURN이 없으면 연결에 실패할 수 있고, 운영 TURN 키 등록 여부는 확인하지 못했습니다. 서로 다른 네트워크에서의 성공은 검증한 적이 없으므로 보장처럼 말하지 마세요. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
-        "Do not let people think the server relays the screen; it handles only SDP/ICE signals and approval state. A viewer on a restrictive network may fail without TURN, and whether a production TURN key is registered was not confirmed. Success across different networks has never been verified, so do not present it as guaranteed. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
+        "서버가 화면을 중계한다고 오해하지 않게 하세요. 서버는 SDP/ICE 신호와 승인 상태만 다룹니다. TURN은 쓰지 않기로 결정했으므로 제한된 네트워크의 시청자는 연결에 실패합니다. 서로 다른 네트워크에서의 성공은 검증한 적이 없으므로 보장처럼 말하지 마세요. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
+        "Do not let people think the server relays the screen; it handles only SDP/ICE signals and approval state. TURN was decided against, so a viewer on a restrictive network will fail to connect. Success across different networks has never been verified, so do not present it as guaranteed. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
       ),
     },
     technologies: ["getDisplayMedia", "WebRTC", "RTCPeerConnection", "Durable Objects", "Socket.IO", "ICE restart"],
@@ -703,8 +703,8 @@ Permissions-Policy: camera=(self), microphone=(self), geolocation=(), cross-orig
         },
       ],
       pitfall: t(
-        "'도청이 불가능하다' 같은 표현은 쓰지 마세요. 상대방 쪽 녹화·캡처는 막지 못하고, P2P 특성상 네트워크 주소가 상대에게 보일 수 있습니다. 근접 영상 동의 카드의 안내 문구는 '직접 연결이 막히면 중계(TURN) 서버가 준비된 환경에서만 그 서버를 거쳐요'처럼 조건부로 고쳤고, 운영 TURN 키 등록 여부는 저장소로 확인할 수 없습니다(ICE 카드 참조). 전·후면 카메라 전환과 인앱 브라우저는 실기기로 검증하지 않았습니다. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
-        "Do not claim eavesdropping is impossible: a peer's own recording cannot be prevented and, being P2P, peers may see your network address. The proximity-video consent card now words its notice conditionally (if a direct link is blocked, traffic goes through a relay (TURN) server only where one is set up), and whether a production TURN key is registered cannot be confirmed from the repository (see the ICE card). Front and rear camera switching and in-app browsers were not verified on real devices. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
+        "'도청이 불가능하다' 같은 표현은 쓰지 마세요. 상대방 쪽 녹화·캡처는 막지 못하고, P2P 특성상 네트워크 주소가 상대에게 보일 수 있습니다. 근접 영상 동의 카드의 안내 문구는 '중계(TURN) 서버는 사용하지 않아서, 회사망·일부 모바일망처럼 직접 연결이 막힌 환경에서는 영상이 이어지지 않아요'로 실태를 그대로 말하고, TURN 자격 발급은 코드에서 제거됐습니다(ICE 카드 참조). 전·후면 카메라 전환과 인앱 브라우저는 실기기로 검증하지 않았습니다. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
+        "Do not claim eavesdropping is impossible: a peer's own recording cannot be prevented and, being P2P, peers may see your network address. The proximity-video consent card now states the reality directly (no relay (TURN) server is used, so where direct links are blocked — some company or mobile networks — video will not connect), and TURN credential issuance has been removed from the code (see the ICE card). Front and rear camera switching and in-app browsers were not verified on real devices. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
       ),
     },
     technologies: ["getUserMedia", "getDisplayMedia", "Permissions-Policy", "Permissions API", "WebRTC"],

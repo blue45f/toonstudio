@@ -1307,3 +1307,204 @@ describe("strict direct huddle lane", () => {
     local.close(); remote.close();
   });
 });
+
+describe("direct lane socket relay fallback (STUN-only ICE)", () => {
+  async function unlinkedPair(): Promise<{
+    localPrimary: FakePrimaryTransport;
+    remotePrimary: FakePrimaryTransport;
+    local: StudioLiveTransport;
+    remote: StudioLiveTransport;
+    localConnections: MemoryPeerConnection[];
+    remoteConnections: MemoryPeerConnection[];
+    receivedRemote: StudioLiveEnvelope[];
+  }> {
+    const bus = new SignalingBus();
+    const localPrimary = bus.create(LOCAL);
+    const remotePrimary = bus.create(REMOTE);
+    // Separate hubs per side: descriptions are exchanged over the bus but the
+    // channels can never link, which is exactly the STUN-only failure shape.
+    const localHub = new MemoryRtcHub();
+    const remoteHub = new MemoryRtcHub();
+    const localConnections: MemoryPeerConnection[] = [];
+    const remoteConnections: MemoryPeerConnection[] = [];
+    const local = applyStudioLiveP2pOverlay(() => localPrimary, {
+      createPeerConnection: () => {
+        const connection = localHub.create() as MemoryPeerConnection;
+        localConnections.push(connection);
+        return connection;
+      },
+      now: () => NOW,
+    })(contextFor(LOCAL));
+    const remote = applyStudioLiveP2pOverlay(() => remotePrimary, {
+      createPeerConnection: () => {
+        const connection = remoteHub.create() as MemoryPeerConnection;
+        remoteConnections.push(connection);
+        return connection;
+      },
+      now: () => NOW,
+    })(contextFor(REMOTE));
+    const receivedRemote: StudioLiveEnvelope[] = [];
+    remote.subscribe((value) => receivedRemote.push(value as StudioLiveEnvelope));
+    await local.connect();
+    await remote.connect();
+    localPrimary.emit(
+      envelope({
+        sender: REMOTE,
+        kind: "presence:heartbeat",
+        payload: { visibility: "active", pageId: "page-1", tool: "pen" },
+      }),
+    );
+    await flush();
+    remotePrimary.emit(
+      envelope({
+        sender: LOCAL,
+        kind: "presence:heartbeat",
+        payload: { visibility: "active", pageId: "page-1", tool: "pen" },
+        sequence: 2,
+      }),
+    );
+    await flush();
+    return {
+      localPrimary,
+      remotePrimary,
+      local,
+      remote,
+      localConnections,
+      remoteConnections,
+      receivedRemote,
+    };
+  }
+
+  function failConnection(connection: MemoryPeerConnection): void {
+    connection.connectionState = "failed";
+    connection.onconnectionstatechange?.();
+  }
+
+  it("stays closed before ICE failure, then relays direct packets over the primary", async () => {
+    const {
+      localPrimary,
+      local,
+      remote,
+      localConnections,
+      remoteConnections,
+      receivedRemote,
+    } = await unlinkedPair();
+
+    // The mesh never linked and has not failed yet: the lane is fail-closed.
+    expect(localConnections).toHaveLength(1);
+    expect(remoteConnections).toHaveLength(1);
+    expect(local.direct!.getPeers()).toEqual([]);
+    expect(local.direct!.send(REMOTE.sessionId, "too-early")).toBe(false);
+
+    failConnection(localConnections[0]!);
+    failConnection(remoteConnections[0]!);
+
+    // Both sides now list each other through the relay lane.
+    expect(local.direct!.getPeers()).toEqual([REMOTE]);
+    expect(remote.direct!.getPeers()).toEqual([LOCAL]);
+
+    const receivedByRemote = vi.fn();
+    remote.direct!.subscribe(receivedByRemote);
+    expect(local.direct!.send(REMOTE.sessionId, "space-state-1")).toBe(true);
+    expect(receivedByRemote).toHaveBeenCalledWith(LOCAL, "space-state-1");
+
+    // The packet crossed as a targeted direct:relay envelope on the primary,
+    // and the room layer never saw it as a collaboration message.
+    const relayEnvelopes = localPrimary.sent.filter(
+      (value) => value.kind === "direct:relay",
+    );
+    expect(relayEnvelopes).toHaveLength(1);
+    expect(relayEnvelopes[0]!.targetSessionId).toBe(REMOTE.sessionId);
+    expect(receivedRemote.some((value) => value.kind === "direct:relay")).toBe(false);
+
+    // The return direction works the same way.
+    const receivedByLocal = vi.fn();
+    local.direct!.subscribe(receivedByLocal);
+    expect(remote.direct!.send(LOCAL.sessionId, "space-state-2")).toBe(true);
+    expect(receivedByLocal).toHaveBeenCalledWith(REMOTE, "space-state-2");
+
+    // A leave ends the relay eligibility as well.
+    localPrimary.emit(
+      envelope({
+        sender: REMOTE,
+        kind: "presence:leave",
+        payload: {},
+        sequence: 99,
+      }),
+    );
+    expect(local.direct!.getPeers()).toEqual([]);
+    expect(local.direct!.send(REMOTE.sessionId, "after-leave")).toBe(false);
+    local.close();
+    remote.close();
+  });
+
+  it("relays even when a peer connection cannot be created at all", async () => {
+    const bus = new SignalingBus();
+    const localPrimary = bus.create(LOCAL);
+    const remotePrimary = bus.create(REMOTE);
+    const remoteHub = new MemoryRtcHub();
+    const remoteConnections: MemoryPeerConnection[] = [];
+    const local = applyStudioLiveP2pOverlay(() => localPrimary, {
+      createPeerConnection: () => {
+        throw new Error("RTC unavailable");
+      },
+      now: () => NOW,
+    })(contextFor(LOCAL));
+    const remote = applyStudioLiveP2pOverlay(() => remotePrimary, {
+      createPeerConnection: () => {
+        const connection = remoteHub.create() as MemoryPeerConnection;
+        remoteConnections.push(connection);
+        return connection;
+      },
+      now: () => NOW,
+    })(contextFor(REMOTE));
+    await local.connect();
+    await remote.connect();
+    localPrimary.emit(
+      envelope({
+        sender: REMOTE,
+        kind: "presence:heartbeat",
+        payload: { visibility: "active", pageId: "page-1", tool: "pen" },
+      }),
+    );
+    remotePrimary.emit(
+      envelope({
+        sender: LOCAL,
+        kind: "presence:heartbeat",
+        payload: { visibility: "active", pageId: "page-1", tool: "pen" },
+        sequence: 2,
+      }),
+    );
+    await flush();
+
+    expect(local.direct!.getPeers()).toEqual([REMOTE]);
+    const receivedByRemote = vi.fn();
+    remote.direct!.subscribe(receivedByRemote);
+    expect(local.direct!.send(REMOTE.sessionId, "no-rtc-packet")).toBe(true);
+    expect(receivedByRemote).toHaveBeenCalledWith(LOCAL, "no-rtc-packet");
+
+    // The remote side only joins the relay once its own mesh attempt fails.
+    expect(remoteConnections).toHaveLength(1);
+    failConnection(remoteConnections[0]!);
+    expect(remote.direct!.getPeers()).toEqual([LOCAL]);
+    local.close();
+    remote.close();
+  });
+
+  it("never relays to a viewer peer even after ICE failure", async () => {
+    const { localPrimary, local, remote, localConnections } = await unlinkedPair();
+    failConnection(localConnections[0]!);
+    localPrimary.emit(
+      envelope({
+        sender: { ...REMOTE, role: "viewer" },
+        kind: "presence:heartbeat",
+        payload: { visibility: "active", pageId: "page-1" },
+        sequence: 42,
+      }),
+    );
+    expect(local.direct!.getPeers()).toEqual([]);
+    expect(local.direct!.send(REMOTE.sessionId, "denied")).toBe(false);
+    local.close();
+    remote.close();
+  });
+});

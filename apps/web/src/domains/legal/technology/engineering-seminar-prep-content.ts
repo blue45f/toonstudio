@@ -143,8 +143,8 @@ export const SEMINAR_PREP_QUESTIONS: readonly SeminarPrepQuestion[] = [
   {
     question: t("직접 연결(P2P)이 막힌 네트워크에서는 통화가 되나요?", "Do calls work on a network that blocks direct (P2P) connections?"),
     answer: t(
-      "직접 연결이 막히면 통화가 실패할 수 있습니다. 중계(TURN)용 단기 자격(Cloudflare 4시간, 화면 공유는 기본 900초) 발급 코드는 구현돼 있지만 운영 키 등록 여부는 저장소로 확인할 수 없어 미확인이고, 키가 없으면 STUN만으로 시작하며 제한된 NAT에서 중계가 통과한 검증 기록도 없습니다. 통화 설정과 채팅이 오가는 직접 레인은 막혀도 서버로 되돌아가지 않게 일부러 설계했습니다.",
-      "If direct connections are blocked, a call can fail. Code to issue short-lived relay (TURN) credentials (four hours on Cloudflare, 900 seconds by default for screen sharing) is implemented, but whether the production key is registered cannot be confirmed from the repository (unconfirmed); without a key the call starts on STUN only, and there is no record of a relay passing through a restricted NAT. The direct lane that carries call setup and chat is deliberately built so that it never falls back to the server, even when blocked.",
+      "직접 연결이 막히면 통화가 실패합니다 — 중계(TURN) 서버는 대역폭 비용 리스크로 쓰지 않기로 결정해 자격 발급 코드를 제거했고, ICE는 Cloudflare STUN 전용으로 시작합니다(stun:stun.cloudflare.com:3478). 통화 설정과 채팅이 오가는 직접 레인은 막혀도 서버로 되돌아가지 않게 일부러 설계했고, 보장 경로가 필요한 공간 프레즌스 패킷(최대 64KB)만 ICE 실패를 감지해 소켓 릴레이로 폴백합니다. 다만 실제 WAN 환경에서 직접 연결이 뚫리는 비율과 폴백이 이어지는 범위는 아직 확인하지 못했습니다.",
+      "If a direct connection is blocked, the call fails: relay (TURN) servers were decided against over bandwidth cost risk, the credential-issuance code was removed, and ICE starts STUN-only with the Cloudflare STUN (stun:stun.cloudflare.com:3478). The direct lane carrying call setup and chat never falls back to the server by design; only spatial-presence packets (up to 64KB), which need a guaranteed path, detect the ICE failure and fall back to the socket relay. How often direct connections succeed across real WAN environments, and how far the fallback carries, has not been confirmed yet.",
     ),
     glossaryId: "turn",
     atlasId: "webrtc-ice-turn-paths",

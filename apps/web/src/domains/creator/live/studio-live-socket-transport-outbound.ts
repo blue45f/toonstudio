@@ -563,6 +563,19 @@ export function send(this: StudioLiveSocketTransportHost, envelope: StudioLiveEn
         });
         return true;
       }
+      case "direct:relay": {
+        const payload = envelope.payload as StudioLivePayloadMap["direct:relay"];
+        const target = this.validTarget(envelope.targetSessionId);
+        if (!target || typeof payload.packet !== "string") return false;
+        // Best-effort lane, deliberately without an ack: a relay failure must not
+        // surface as a collaboration error status. Presence ticks retry naturally.
+        this.socket.emit("studio:direct:relay", {
+          workId: this.context.workId,
+          targetConnectionId: target,
+          packet: payload.packet,
+        });
+        return true;
+      }
       case "voice:join": {
         const payload = envelope.payload as StudioLivePayloadMap["voice:join"];
         this.cancelPendingVoiceAdmission({

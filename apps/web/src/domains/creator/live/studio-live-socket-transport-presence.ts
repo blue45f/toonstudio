@@ -3,6 +3,7 @@ import { parseStudioTeamCommentLiveEvent } from "../studio-team-comment-live-eve
 
 import {
   STUDIO_LIVE_CHAT_TEXT_MAX_LENGTH,
+  STUDIO_LIVE_DIRECT_RELAY_PACKET_MAX_BYTES,
   STUDIO_LIVE_ICE_CANDIDATE_MAX_LENGTH,
   STUDIO_LIVE_SDP_MID_MAX_LENGTH,
   STUDIO_LIVE_USERNAME_FRAGMENT_MAX_LENGTH,
@@ -396,6 +397,34 @@ export function onSignal(this: StudioLiveSocketTransportHost, value: unknown) {
       this.context.participant.sessionId
     );
   }
+}
+
+/**
+ * Inbound socket relay for direct-lane packets whose sender's RTC mesh could not
+ * reach us (STUN-only ICE). The packet stays opaque here; the p2p overlay
+ * re-validates it as a studio-direct packet before delivering it to listeners.
+ */
+export function onDirectRelay(this: StudioLiveSocketTransportHost, value: unknown) {
+  if (!this.ready) return;
+  if (
+    !isRecord(value) ||
+    !safeString(value.fromConnectionId, 128) ||
+    !safeString(value.packet, STUDIO_LIVE_DIRECT_RELAY_PACKET_MAX_BYTES) ||
+    !studioLiveStringFitsByteContract(
+      value.packet,
+      STUDIO_LIVE_DIRECT_RELAY_PACKET_MAX_BYTES
+    )
+  ) {
+    return;
+  }
+  const participant = this.remoteParticipant(value.fromConnectionId);
+  if (!participant) return;
+  this.deliver(
+    participant,
+    "direct:relay",
+    { packet: value.packet },
+    this.context.participant.sessionId
+  );
 }
 
 export function onScreenAnnounce(this: StudioLiveSocketTransportHost, value: unknown) {

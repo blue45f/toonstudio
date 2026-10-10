@@ -317,12 +317,12 @@ export const REALTIME_COLLAB_SECTION: ArchitectureGuideSection = {
     {
       choice: t("서버는 통화의 중계소가 아니라 소개소", "The server introduces calls instead of relaying them"),
       because: t(
-        "직접 연결이 되면 음성·영상은 서버를 지나지 않고 저장되지도 않습니다. 직접 연결이 막히면 중계(TURN)를 거칠 수 있습니다.",
-        "When a direct link works, voice and video do not pass through the server and are not stored; when it is blocked they may go through a relay (TURN).",
+        "직접 연결이 되면 음성·영상은 서버를 지나지 않고 저장되지도 않습니다. 중계(TURN)는 쓰지 않기로 해서, 직접 연결이 막히면 음성·영상은 이어지지 않습니다.",
+        "When a direct link works, voice and video do not pass through the server and are not stored; no relay (TURN) is used, so when a direct link is blocked, voice and video do not connect.",
       ),
       cost: t(
-        "직접 연결이 막힌 네트워크에서는 중계(TURN)가 필요하고, 서로 다른 네트워크의 통화는 검증하지 않았습니다.",
-        "Networks that block direct links need a relay (TURN), and calls across different networks have not been verified.",
+        "직접 연결이 막힌 네트워크에서는 중계 없이 이어지지 않고, 서로 다른 네트워크의 통화는 검증하지 않았습니다.",
+        "On networks that block direct links the call does not connect without a relay, and calls across different networks have not been verified.",
       ),
     },
   ],

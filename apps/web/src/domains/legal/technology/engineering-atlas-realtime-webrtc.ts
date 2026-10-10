@@ -2,7 +2,7 @@ import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 import type { LocalizedText } from "./engineering-story-content";
 
 /**
- * 기술 도감 · realtime 카테고리 중 WebRTC 카드 묶음(시그널링·정원 사다리·ICE/TURN).
+ * 기술 도감 · realtime 카테고리 중 WebRTC 카드 묶음(시그널링·정원 사다리·ICE/STUN).
  * 주 파일(engineering-atlas-realtime.ts)이 다른 묶음과 함께 배열에 합친다.
  * 모든 값은 2026-10-07 기준으로 코드·설정을 직접 열어 확인한 것이다.
  */
@@ -406,212 +406,170 @@ console.log(meshCost(9, 400)); // 36 pairs, 3200 kbps upload`,
     reviewedAt: "2026-10-07",
   },
 
-  // ───────────────────────────── 3. ICE · STUN · TURN 세 갈래 ─────────────────────────────
+  // ───────────────────────────── 3. ICE · STUN 전용 구성과 릴레이 폴백 ─────────────────────────────
   {
     id: "webrtc-ice-turn-paths",
     category: "realtime",
-    name: "ICE · STUN · TURN",
-    title: t("직접 연결이 막힐 때를 위한 ICE 서버 세 갈래", "Three routes for ICE servers when a direct path is blocked"),
+    name: "ICE · STUN 전용",
+    title: t("TURN 없이 간다 — Cloudflare STUN 하나로 고정하고, 막히면 소켓 릴레이로 잇는다", "No TURN — one Cloudflare STUN for everything, and a socket relay when direct paths are blocked"),
     status: "configured",
     tagline: t(
-      "직접 연결이 막히는 네트워크를 위해 STUN·TURN 정보를 단기 자격증명으로 받습니다.",
-      "Short-lived STUN and TURN credentials are fetched for networks where a direct connection is blocked.",
+      "모든 실시간 레인이 같은 Cloudflare STUN 주소를 씁니다. 중계 서버(TURN)는 비용 리스크로 쓰지 않기로 했습니다.",
+      "Every realtime lane uses the same Cloudflare STUN address. Relay servers (TURN) are deliberately not used because of their cost risk.",
     ),
     background: [
       t(
-        "집이나 회사 네트워크의 문(NAT·방화벽)이 잠겨 있으면 두 컴퓨터가 바로 만나지 못합니다. STUN은 '밖에서 보면 당신 주소가 이거예요'라고 알려 주는 안내 데스크이고, TURN은 직접 만날 수 없을 때 모든 대화를 대신 전달해 주는 우체국입니다. 우체국은 편리하지만 전달한 우편물(대역폭)만큼 비용이 듭니다.",
-        "When the doors of a home or office network (NAT, firewall) are locked, two computers cannot meet directly. STUN is an information desk that tells you what your address looks like from outside; TURN is a post office that carries everything when a direct meeting is impossible. The post office is convenient but costs in proportion to the mail (bandwidth) it carries.",
+        "집이나 회사 네트워크의 문(NAT·방화벽)이 잠겨 있으면 두 컴퓨터가 바로 만나지 못합니다. STUN은 '밖에서 보면 당신 주소가 이거예요'라고 알려 주는 안내 데스크이고, TURN은 직접 만날 수 없을 때 모든 대화를 대신 전달해 주는 우체국입니다. 우체국은 편리하지만 전달한 우편물(대역폭)만큼 비용이 듭니다. ToonStudio는 2026-10-11에 이 우체국을 쓰지 않기로 결정했습니다.",
+        "When the doors of a home or office network (NAT, firewall) are locked, two computers cannot meet directly. STUN is an information desk that tells you what your address looks like from outside; TURN is a post office that carries everything when a direct meeting is impossible. The post office is convenient but costs in proportion to the mail (bandwidth) it carries. On 2026-10-11 ToonStudio decided not to use that post office.",
       ),
       t(
-        "ToonStudio는 ICE 서버 정보를 세 갈래로 받습니다. 첫째, 허들·직통 데이터 통로는 브라우저의 공유 캐시가 실시간 Worker의 POST /v1/turn/credentials에서 Cloudflare TURN 단기 자격증명(유효 4시간)을 받고, 없으면 STUN 전용으로 바로 시작합니다. 둘째, 화면 공유는 Nest API의 GET /creator/works/:id/screen-share/ice가 coturn 방식(HMAC-SHA1) 자격증명(기본 900초)을 발급합니다. 셋째, 로컬 모드는 ICE 서버 없이 같은 브라우저 안에서만 동작합니다.",
-        "ToonStudio gets ICE server information three ways. First, the huddle and direct data channel use a shared browser cache that fetches Cloudflare TURN short-lived credentials (valid 4 hours) from the realtime Worker's POST /v1/turn/credentials, and starts STUN-only without them. Second, screen sharing gets coturn-style (HMAC-SHA1) credentials, 900 seconds by default, from the Nest API's GET /creator/works/:id/screen-share/ice. Third, local mode uses no ICE servers and works only inside one browser.",
+        "현재 ICE 구성은 한 곳에서만 나옵니다. 브라우저의 공유 모듈(studio-ice-configuration.ts)이 Cloudflare STUN(stun:stun.cloudflare.com:3478) 하나를 돌려주고, 허들·직통 데이터 통로·시그널링 전송이 전부 그 구성을 읽습니다. 화면 공유와 음성의 ICE 정책은 Nest API가 STUN 전용으로 반환하고, 별도 주소를 설정하지 않으면 기본값이 같은 Cloudflare 주소입니다. 로컬 모드는 ICE 서버 없이 같은 브라우저 안에서만 동작합니다.",
+        "ICE configuration now comes from exactly one place. The shared browser module (studio-ice-configuration.ts) returns a single Cloudflare STUN (stun:stun.cloudflare.com:3478), and the huddle, the direct data lane and the signaling transport all read that configuration. Screen-share and voice ICE policies are returned STUN-only by the Nest API, defaulting to the same Cloudflare address when nothing else is configured. Local mode uses no ICE servers and works only inside one browser.",
       ),
       t(
-        "열쇠를 브라우저에 고정해 두면 누구나 가져다 쓸 수 있어, 서버가 짧은 수명으로 즉석 발급합니다. 캐시는 동기 함수라서 TURN 발급이 늦거나 실패해도 연결 시작을 막지 않고 STUN 전용으로 넘어갑니다. Cloudflare TURN은 키만 등록하면 쓸 수 있어 자체 서버 운영이 필요 없고, coturn은 직접 운영하는 대안으로 선택형 배포 구성(scaffold)입니다.",
-        "A key fixed in the browser could be used by anyone, so the server issues short-lived credentials on demand. The cache is a synchronous function, so a slow or failed TURN issuance never blocks starting a connection and it falls back to STUN-only. Cloudflare TURN works once a key is registered, with no server to run, while coturn is the self-run alternative, shipped as an optional deployment scaffold.",
+        "원래는 중계 발급 코드가 있었습니다. 실시간 Worker의 POST /v1/turn/credentials가 Cloudflare TURN 단기 자격(4시간)을, API가 coturn 방식 자격(기본 900초)을 발급했고, 브라우저는 받은 자격을 메모리 캐시에 뒀습니다. 비용 결정 이후 이 발급 경로는 웹 캐시·Worker 엔드포인트·API 정책에서 모두 제거했고, 관련 환경변수와 secret 선언도 정리했습니다. 지금 코드 어디에도 TURN 자격을 만들거나 받는 곳은 없습니다.",
+        "Relay issuance code used to exist: the realtime Worker's POST /v1/turn/credentials issued Cloudflare TURN short-lived credentials (4 hours), the API issued coturn-style credentials (900 seconds by default), and the browser cached what it received in memory. After the cost decision, those issuance paths were removed from the web cache, the Worker endpoint and the API policy, and the related environment variables and secret declarations were cleaned up. Nothing in the current code creates or fetches TURN credentials anywhere.",
       ),
       t(
-        "운영 TURN 키가 등록됐는지는 코드로 알 수 없습니다. 2026-09-21 운영 문서는 STUN 전용 직접 P2P가 구성된 미디어 정책이고 유료 TURN·SFU는 마련하지 않았다고 적어, 그 시점에는 중계가 없던 것으로 읽힙니다. 제한된 NAT에서 중계가 실제로 통과한 검증도 없습니다. 코드 독해로 본 잠재 한계(미실증)도 있습니다. 허들은 연결을 만들 때 범위(scope) 없이 캐시를 읽으므로, 탭을 4시간 넘게 열어 두면 새 연결이 STUN 전용 구성으로 만들어질 수 있고 기존 연결에는 갱신이 적용되지 않습니다.",
-        "Whether a production TURN key is registered cannot be known from the code. An operations note dated 2026-09-21 records that STUN-only direct P2P is the configured media policy and that no paid TURN or SFU is provisioned, so at that point there appears to have been no relay. No relayed connection has been verified through a restrictive NAT either. There is also a potential limit seen by code reading (unverified): the huddle reads the cache without a scope when it creates a connection, so a tab left open beyond 4 hours may create new connections with a STUN-only configuration, and existing connections receive no refresh.",
+        "STUN만으로는 대칭 NAT나 UDP가 막힌 네트워크에서 직접 연결이 열리지 않습니다. 그 환경에서 음성·화면 같은 미디어는 실패합니다 — 중계가 없으니 어쩔 수 없는 한계입니다. 대신 아바타 프레즌스의 직통 데이터 패킷은 ICE 실패가 감지되면 Socket.IO 릴레이(direct:relay)로 같은 상대에게 배달되도록 폴백을 구현해, 입장·이동·퇴장이 이어지게 했습니다. 서로 다른 네트워크에서 이 폴백이 실제로 동작하는지 브라우저 실측은 아직 하지 못했습니다(미측정).",
+        "With STUN alone, a direct connection cannot open through a symmetric NAT or a UDP-blocked network. Voice and screen media fail in that environment — with no relay, that limit stands. Instead, the avatar presence lane's direct data packets fall back to a Socket.IO relay (direct:relay) addressed to the same peer once an ICE failure is detected, so joining, moving and leaving keep working. Whether that fallback behaves in real browsers across different networks has not been measured yet (unmeasured).",
       ),
     ],
     keyPoints: [
-      t("허들·데이터 통로: Worker가 발급하는 Cloudflare TURN(4시간)", "Huddle and data channel: Cloudflare TURN issued by the Worker (4 hours)"),
-      t("화면 공유: API가 발급하는 coturn 방식 자격(기본 900초)", "Screen share: coturn-style credentials issued by the API (900 s default)"),
-      t("캐시는 동기 폴백이라 TURN이 늦어도 연결을 막지 않습니다", "A synchronous cache fallback never blocks connecting"),
-      t("운영 키 등록과 릴레이 통과 검증은 확인하지 못했습니다", "Production key registration and relay verification are unconfirmed"),
+      t("전 레인 공통: Cloudflare STUN(stun.cloudflare.com:3478) 단일 구성", "All lanes share one Cloudflare STUN (stun.cloudflare.com:3478)"),
+      t("TURN 발급 경로는 2026-10-11 결정으로 제거(웹 캐시·Worker 엔드포인트·API 자격 발급)", "TURN issuance paths were removed by the 2026-10-11 decision (web cache, Worker endpoint, API issuance)"),
+      t("프레즌스 직통 패킷은 ICE 실패 시 소켓 릴레이로 폴백합니다", "Presence direct packets fall back to the socket relay on ICE failure"),
+      t("음성·화면 미디어는 직접 연결이 막히면 실패합니다 — 중계가 없습니다", "Voice and screen media fail when a direct path is blocked — there is no relay for them"),
     ],
     diagram: {
       id: "webrtc-ice-turn-paths-diagram",
       kind: "sequence",
-      title: t("TURN 자격증명이 발급되는 두 갈래", "Two ways TURN credentials get issued"),
+      title: t("STUN으로 직접 연결을 시도하고, 실패하면 프레즌스만 릴레이로", "Try direct with STUN; on failure, relay presence only"),
       caption: t(
-        "위쪽은 허들·데이터 통로용 Cloudflare 발급, 아래쪽은 화면 공유용 coturn 방식 발급입니다.",
-        "The top half is Cloudflare issuance for the huddle and data channel; the bottom is coturn-style issuance for screen sharing.",
+        "위쪽은 평소의 직접 연결, 아래쪽은 ICE 실패 뒤 프레즌스 패킷이 게이트웨이를 거쳐 배달되는 폴백입니다.",
+        "The top half is the normal direct connection; the bottom is the fallback where presence packets travel through the gateway after an ICE failure.",
       ),
       alt: t(
-        "브라우저가 API에서 짧은 티켓을 받아 실시간 Worker에 제시하면 Worker가 Cloudflare TURN에서 4시간짜리 자격을 받아 정책으로 돌려줍니다. 화면 공유에서는 API가 공유 비밀로 HMAC-SHA1 자격을 서명해 주고, 브라우저가 이를 들고 coturn에 접속하면 coturn이 같은 비밀로 다시 계산해 확인합니다.",
-        "The browser gets a short ticket from the API and shows it to the realtime Worker, which obtains a 4-hour credential from Cloudflare TURN and returns it as a policy. For screen sharing, the API signs an HMAC-SHA1 credential with a shared secret, and when the browser connects to coturn with it, coturn recomputes it with the same secret to verify.",
+        "브라우저가 Cloudflare STUN으로 자기 공인 주소를 확인해 상대와 직접 연결을 시도합니다. 연결이 열리면 미디어와 데이터 채널은 서버를 거치지 않습니다. ICE 실패가 감지되면, 그 상대에게 가는 프레즌스 직통 패킷만 Nest API 게이트웨이의 대상 지정 릴레이(studio:direct:relay)를 거쳐 배달됩니다. 미디어는 릴레이 대상이 아닙니다.",
+        "The browser checks its public address through Cloudflare STUN and tries a direct connection to the peer. When it opens, media and data channels never pass through a server. Once an ICE failure is detected, only that peer's presence direct packets are delivered through the Nest API gateway's targeted relay (studio:direct:relay). Media is never relayed.",
       ),
       actors: [
-        { id: "browser", label: t("브라우저", "Browser"), sub: t("ICE 캐시(메모리)", "ICE cache (memory)"), tone: "local" },
-        { id: "api", label: t("Nest API", "Nest API"), sub: t("티켓·단기 자격 발급", "Tickets and credentials"), tone: "server" },
-        { id: "worker", label: t("실시간 Worker", "Realtime Worker"), sub: t("Cloudflare Workers", "Cloudflare Workers"), tone: "edge" },
-        { id: "cloudflare", label: t("Cloudflare TURN", "Cloudflare TURN"), tone: "external" },
-        { id: "coturn", label: t("coturn", "coturn"), sub: t("선택형 자체 TURN 서버", "Optional self-run server"), tone: "external" },
+        { id: "browser", label: t("브라우저", "Browser"), sub: t("공유 ICE 구성", "Shared ICE configuration"), tone: "local" },
+        { id: "stun", label: t("Cloudflare STUN", "Cloudflare STUN"), sub: t("stun.cloudflare.com:3478", "stun.cloudflare.com:3478"), tone: "external" },
+        { id: "peer", label: t("상대 브라우저", "Peer browser"), tone: "local" },
+        { id: "api", label: t("Nest API", "Nest API"), sub: t("게이트웨이 릴레이", "Gateway relay"), tone: "server" },
       ],
       messages: [
-        { from: "browser", to: "api", label: t("presence 티켓 요청", "Request presence ticket"), note: t("POST /studio-realtime/tickets", "POST /studio-realtime/tickets") },
-        { from: "api", to: "browser", label: t("단기 티켓(최대 2분)", "Short ticket (max 2 min)"), style: "dashed" },
-        { from: "browser", to: "worker", label: t("TURN 자격 요청 + 티켓", "Ask for TURN credentials"), note: t("POST /v1/turn/credentials", "POST /v1/turn/credentials") },
-        { from: "worker", to: "worker", label: t("티켓·Origin·범위 검증", "Check ticket, origin, scope") },
-        { from: "worker", to: "cloudflare", label: t("단기 자격 발급(4시간)", "Issue credentials (4 h)"), note: t("API 토큰은 Worker secret", "API token stays a Worker secret") },
-        { from: "cloudflare", to: "worker", label: t("단기 자격", "Short-lived credentials"), style: "dashed" },
-        { from: "worker", to: "browser", label: t("정책: TURN 또는 STUN 전용", "Policy: TURN or STUN-only"), style: "dashed", note: t("키가 없으면 STUN 전용", "STUN-only when no key") },
-        { from: "browser", to: "api", label: t("화면 공유용 ICE 요청", "Request screen-share ICE"), note: t("GET …/screen-share/ice", "GET …/screen-share/ice") },
-        { from: "api", to: "api", label: t("공유 비밀로 HMAC-SHA1 서명", "Sign with HMAC-SHA1") },
-        { from: "api", to: "browser", label: t("정책(기본 900초)", "Policy (900 s default)"), style: "dashed" },
-        { from: "browser", to: "coturn", label: t("중계 요청(임시 계정)", "Relay request (temp account)"), note: t("username = 만료시각:식별자", "username = expiry:identity") },
-        { from: "coturn", to: "coturn", label: t("같은 비밀로 다시 계산해 확인", "Recompute with the same secret"), note: t("계정 DB가 필요 없음", "No account database needed") },
+        { from: "browser", to: "stun", label: t("공인 주소 확인", "Discover public address"), note: t("ICE 후보 수집", "ICE candidate gathering") },
+        { from: "browser", to: "peer", label: t("직접 연결 시도(P2P)", "Try a direct connection (P2P)") },
+        { from: "peer", to: "browser", label: t("열리면 미디어·데이터는 서버를 거치지 않음", "When open, media and data bypass servers"), style: "dashed" },
+        { from: "browser", to: "browser", label: t("ICE 실패 감지(failed·disconnected)", "ICE failure detected (failed, disconnected)") },
+        { from: "browser", to: "api", label: t("직통 패킷 릴레이 요청", "Ask to relay a direct packet"), note: t("studio:direct:relay", "studio:direct:relay") },
+        { from: "api", to: "peer", label: t("대상 지정 배달(프레즌스만)", "Targeted delivery (presence only)"), style: "dashed" },
       ],
     },
     usage: [
       {
-        feature: t("공동 작업실 · P2P 채팅·통화(허들)", "Shared workroom · P2P chat and calls (huddle)"),
+        feature: t("공동 작업실 · P2P 채팅·통화(허들)와 직통 데이터 통로", "Shared workroom · P2P chat and calls (huddle) and the direct data lane"),
         role: t(
-          "연결을 만들 때 공유 ICE 캐시에서 ICE 서버를 읽습니다. Worker가 발급한 TURN이 캐시에 있으면 포함하고, 없으면 STUN 전용으로 만듭니다.",
-          "Reads ICE servers from the shared cache when creating a connection: includes Worker-issued TURN when cached and builds a STUN-only configuration otherwise.",
+          "연결을 만들 때 공유 ICE 모듈에서 Cloudflare STUN 단일 구성을 읽습니다. 발급받거나 캐시하는 자격은 없습니다.",
+          "Reads the single Cloudflare STUN configuration from the shared ICE module when creating a connection. There are no credentials to fetch or cache.",
         ),
         paths: [`${LIVE}/studio-ice-configuration.ts`, `${HUDDLE}/studio-p2p-huddle-protocol.ts#huddleRtcConfiguration`],
         route: "/studio",
       },
       {
-        feature: t("실시간 Worker · TURN 자격 발급", "Realtime Worker · TURN credential issuance"),
+        feature: t("공동 작업실 · 화면 공유와 음성의 ICE 정책", "Shared workroom · screen-share and voice ICE policy"),
         role: t(
-          "실시간 티켓을 검증한 뒤 Cloudflare TURN 키로 4시간짜리 자격을 발급합니다. 키가 없거나 차단 스위치가 켜져 있으면 발급을 흉내 내지 않고 STUN 전용 정책을 돌려줍니다.",
-          "After verifying the realtime ticket, issues 4-hour credentials with a Cloudflare TURN key. Without a key, or with the kill switch on, it returns an honest STUN-only policy instead of faking issuance.",
-        ),
-        paths: ["deploy/cloudflare-realtime/src/turn.ts"],
-      },
-      {
-        feature: t("공동 작업실 · 화면 공유", "Shared workroom · screen sharing"),
-        role: t(
-          "화면 공유를 시작하거나 시청할 때만 API에서 단기 자격을 받고, 만료 전에 미리 갱신해 이미 열린 연결에 setConfiguration으로 적용합니다.",
-          "Fetches short-lived credentials from the API only when sharing or watching starts, refreshes them before expiry and applies them to open connections with setConfiguration.",
+          "API가 STUN 전용 정책을 반환합니다. STUDIO_VOICE_STUN_URLS로 주소를 바꿀 수 있고, 설정이 없으면 Cloudflare STUN이 기본값입니다. TURN 환경변수는 더 이상 읽지 않습니다.",
+          "The API returns a STUN-only policy. STUDIO_VOICE_STUN_URLS can override the address; with no setting, Cloudflare STUN is the default. The TURN environment variables are no longer read.",
         ),
         paths: [
           "apps/api/src/modules/creator/studio-voice-ice-policy.service.ts",
           "apps/web/src/domains/creator/studio-voice-ice-policy.ts",
-          "apps/web/src/domains/creator/studio-screen-ice-policy.ts",
         ],
       },
       {
-        feature: t("선택 배포 · 자체 TURN 서버(coturn)", "Optional deployment · self-run TURN (coturn)"),
+        feature: t("가상 스튜디오 · 프레즌스 릴레이 폴백", "Virtual studio · presence relay fallback"),
         role: t(
-          "임시 계정 인증, 사설망 대역 차단, 사용량 한도를 갖춘 coturn 배포 구성입니다. 선택형 구성이며 운영 사용 여부는 확인하지 못했습니다.",
-          "A coturn deployment with temporary-account auth, private-range blocking and quotas. It is optional and whether it is used in production is unconfirmed.",
+          "직통 데이터 채널이 ICE 실패로 닫히면, 그 피어에게 가는 공간 프레즌스 패킷만 오버레이가 direct:relay 봉투로 바꿔 1차 전송에 태우고 게이트웨이가 대상에게 배달합니다. 채널이 다시 열리면 폴백은 해제됩니다.",
+          "When a direct data channel dies from an ICE failure, the overlay rewraps only that peer's spatial-presence packets as direct:relay envelopes on the primary transport and the gateway delivers them to the target. The fallback stands down when a channel opens again.",
         ),
-        paths: ["deploy/coturn/README.md", "deploy/coturn/turnserver.conf.template"],
+        paths: [
+          `${LIVE}/studio-live-p2p-overlay-transport.ts`,
+          "apps/api/src/modules/creator/studio-live-gateway-handlers-voice.ts",
+        ],
+      },
+      {
+        feature: t("실시간 Worker · TURN 발급 엔드포인트 제거", "Realtime Worker · TURN issuance endpoint removed"),
+        role: t(
+          "POST /v1/turn/credentials 라우트와 발급 모듈, REALTIME_TURN_* 환경 선언을 제거했습니다. Worker는 시그널링과 프레즌스 중계만 담당하고 ICE 자격은 다루지 않습니다.",
+          "The POST /v1/turn/credentials route, its issuance module and the REALTIME_TURN_* environment declarations were removed. The Worker only handles signaling and presence relaying; it has no ICE credential role.",
+        ),
+        paths: ["deploy/cloudflare-realtime/src/index.ts", "deploy/cloudflare-realtime/wrangler.jsonc"],
       },
     ],
     samples: [
       {
-        kind: "teaching",
-        title: t("coturn 방식 단기 자격증명 만들기", "Making a coturn-style short-lived credential"),
+        kind: "simplified",
+        title: t("STUN 전용 ICE 구성의 단일 출처", "The single source of the STUN-only ICE configuration"),
         language: "ts",
-        code: `// 서버에서만 실행한다. 공유 비밀은 환경변수·시크릿 저장소에서 읽는다.
-export async function turnRestCredential(sharedSecret: string, identity: string, ttlSeconds = 900) {
-  const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
-  const username = expiresAt + ":" + identity; // 만료 시각이 앞에 온다
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(sharedSecret),
-    { name: "HMAC", hash: "SHA-1" }, // coturn use-auth-secret 규칙
-    false,
-    ["sign"],
-  );
-  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(username)));
-  return { username, credential: btoa(String.fromCharCode(...mac)) };
-}
+        code: `// 모든 실시간 레인이 읽는 ICE 구성. TURN 자격을 받는 코드는 결정에 따라 제거했다.
+export const STUDIO_ICE_STUN_URL = "stun:stun.cloudflare.com:3478";
 
-// 클라이언트: 만료 전에 받은 새 자격을 열려 있는 연결에 그대로 적용한다.
-export function refreshIce(pc: RTCPeerConnection, iceServers: RTCIceServer[]): void {
-  pc.setConfiguration({ ...pc.getConfiguration(), iceServers });
+export function getStudioIceServers(): RTCIceServer[] {
+  // 호출부가 반환값을 바꿔도 공유 상수가 오염되지 않게 매번 새 배열로 복사한다.
+  return [{ urls: [STUDIO_ICE_STUN_URL] }];
 }`,
-        codeEn: `// Run on the server only. Read the shared secret from the environment or a secret store.
-export async function turnRestCredential(sharedSecret: string, identity: string, ttlSeconds = 900) {
-  const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
-  const username = expiresAt + ":" + identity; // the expiry time comes first
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(sharedSecret),
-    { name: "HMAC", hash: "SHA-1" }, // the coturn use-auth-secret rule
-    false,
-    ["sign"],
-  );
-  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(username)));
-  return { username, credential: btoa(String.fromCharCode(...mac)) };
-}
+        codeEn: `// The ICE configuration every realtime lane reads. Credential fetching was removed by decision.
+export const STUDIO_ICE_STUN_URL = "stun:stun.cloudflare.com:3478";
 
-// Client: apply the refreshed credentials to the open connection before expiry.
-export function refreshIce(pc: RTCPeerConnection, iceServers: RTCIceServer[]): void {
-  pc.setConfiguration({ ...pc.getConfiguration(), iceServers });
+export function getStudioIceServers(): RTCIceServer[] {
+  // Copy on every call so a caller mutating the result cannot poison the shared constant.
+  return [{ urls: [STUDIO_ICE_STUN_URL] }];
 }`,
         explain: t(
-          "username 앞에 만료 시각을 두고, 공유 비밀로 HMAC-SHA1 서명을 만든 것이 credential입니다. coturn은 같은 비밀로 다시 계산해 확인하므로 계정 DB가 필요 없습니다. 실제 서비스는 식별자를 HMAC-SHA256으로 가린 값을 씁니다.",
-          "The username starts with an expiry time and the credential is an HMAC-SHA1 signature made with the shared secret. coturn recomputes it with the same secret, so no account database is needed. The real service uses an identity masked with HMAC-SHA256.",
+          "한때는 Worker에서 TURN 자격을 받아 캐시하는 모듈이었지만, 지금은 동기·정적 구성이라 연결 시작이 어떤 발급 요청에도 막히지 않습니다. STUN 주소가 하나뿐이라 레인마다 구성이 갈릴 일도 없습니다.",
+          "This module once cached TURN credentials fetched from the Worker; now it is a synchronous, static configuration, so starting a connection never waits on any issuance request. With a single STUN address, lanes cannot drift apart either.",
         ),
+        source: `${LIVE}/studio-ice-configuration.ts`,
         verify: "types",
       },
       {
         kind: "simplified",
-        title: t("연결을 막지 않는 동기 ICE 캐시", "A synchronous ICE cache that never blocks connecting"),
+        title: t("ICE 실패에서만 열리는 릴레이 폴백 판단", "The relay fallback gate that opens only on ICE failure"),
         language: "ts",
-        code: `const STUN_ONLY: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
-type Issued = { servers: RTCIceServer[]; ttlSeconds: number } | null;
+        code: `// 직통 레인 전송: 메시가 살아 있으면 채널로만, ICE가 실패한 피어만 릴레이로.
+function sendDirect(peer: PeerLink, packet: string): boolean {
+  if (meshReady(peer)) {
+    if (peer.channel.bufferedAmount > MAX_BUFFERED) return false; // 백프레셔여도 릴레이로 새지 않는다
+    return peer.channel.send(packet);
+  }
+  if (!relayEligible.has(peer.sessionId)) return false; // 실패 전에는 fail-closed
+  return primary.send(relayEnvelope(peer.sessionId, packet)); // kind: "direct:relay"
+}
 
-export function createIceCache(issue: () => Promise<Issued>) {
-  let servers: RTCIceServer[] = [];
-  let expiresAt = 0;
-  let refreshAfter = 0;
-  const refresh = async (now: number): Promise<void> => {
-    const issued = await issue().catch(() => null); // 실패해도 던지지 않는다
-    if (!issued) return;
-    servers = issued.servers;
-    expiresAt = now + issued.ttlSeconds * 1000;
-    refreshAfter = now + issued.ttlSeconds * 800; // 수명 80% 지점에 미리 갱신
-  };
-  return (now = Date.now()): RTCIceServer[] => {
-    if (expiresAt <= now) { void refresh(now); return STUN_ONLY; } // 동기: 기다리지 않는다
-    if (refreshAfter <= now) void refresh(now);
-    return servers;
-  };
-}`,
-        codeEn: `const STUN_ONLY: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
-type Issued = { servers: RTCIceServer[]; ttlSeconds: number } | null;
+// 발동 조건은 연결 상태 변화다. 채널이 다시 열리면 적격은 해제된다.
+// connection.onconnectionstatechange: "failed" | "disconnected" -> relayEligible.add(id)
+// channel.onopen: relayEligible.delete(id)`,
+        codeEn: `// Direct-lane send: a live mesh uses the channel only; only ICE-failed peers relay.
+function sendDirect(peer: PeerLink, packet: string): boolean {
+  if (meshReady(peer)) {
+    if (peer.channel.bufferedAmount > MAX_BUFFERED) return false; // never leaks to the relay under backpressure
+    return peer.channel.send(packet);
+  }
+  if (!relayEligible.has(peer.sessionId)) return false; // fail-closed before any failure
+  return primary.send(relayEnvelope(peer.sessionId, packet)); // kind: "direct:relay"
+}
 
-export function createIceCache(issue: () => Promise<Issued>) {
-  let servers: RTCIceServer[] = [];
-  let expiresAt = 0;
-  let refreshAfter = 0;
-  const refresh = async (now: number): Promise<void> => {
-    const issued = await issue().catch(() => null); // never throws on failure
-    if (!issued) return;
-    servers = issued.servers;
-    expiresAt = now + issued.ttlSeconds * 1000;
-    refreshAfter = now + issued.ttlSeconds * 800; // refresh early, at 80% of the lifetime
-  };
-  return (now = Date.now()): RTCIceServer[] => {
-    if (expiresAt <= now) { void refresh(now); return STUN_ONLY; } // synchronous: never waits
-    if (refreshAfter <= now) void refresh(now);
-    return servers;
-  };
-}`,
+// The trigger is the connection state change; eligibility clears when a channel reopens.
+// connection.onconnectionstatechange: "failed" | "disconnected" -> relayEligible.add(id)
+// channel.onopen: relayEligible.delete(id)`,
         explain: t(
-          "신선한 캐시가 있으면 그것을, 없으면 STUN 전용을 즉시 돌려주고 뒤에서 갱신합니다. 실제 모듈은 실패 후 30초 백오프, 범위(scope)별 캐시, 요청 중복 제거를 더합니다. 위 설명의 잠재 한계는 호출부가 범위를 넘기지 않아 갱신이 시작되지 않을 수 있다는 점입니다(코드 독해, 미실증).",
-          "Returns a fresh cache if there is one, otherwise STUN-only immediately, and refreshes in the background. The real module adds a 30-second backoff after failure, per-scope caching and request de-duplication. The potential limit noted above is that callers pass no scope, so a refresh may never start (code reading, unverified).",
+          "수신 측은 발신자가 프레즌스로 알려진 참가자인지, 패킷의 workId가 자기 방과 같은지를 다시 검증하고 메시 수신과 같은 3초 예산(180개·512KB)을 적용합니다. 폴백 봉투는 룸에 올라가지 않고 직통 리스너에게만 배달됩니다.",
+          "The receiving side re-checks that the sender is a presence-known participant and that the packet's work id matches its own room, and applies the same 3-second budget as the mesh path (180 packets, 512 KB). Fallback envelopes never surface to the room; they are delivered only to direct-lane listeners.",
         ),
-        source: `${LIVE}/studio-ice-configuration.ts`,
+        source: `${LIVE}/studio-live-p2p-overlay-transport.ts`,
         verify: "types",
       },
     ],
@@ -619,54 +577,51 @@ export function createIceCache(issue: () => Promise<Issued>) {
       { title: "MDN · WebRTC connectivity", url: "https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Connectivity", kind: "docs", note: t("ICE·STUN·TURN을 그림으로 설명", "ICE, STUN and TURN explained with diagrams") },
       { title: "IETF RFC 8445 · ICE", url: "https://www.rfc-editor.org/rfc/rfc8445", kind: "spec" },
       { title: "IETF RFC 8489 · STUN", url: "https://www.rfc-editor.org/rfc/rfc8489", kind: "spec" },
-      { title: "IETF RFC 8656 · TURN", url: "https://www.rfc-editor.org/rfc/rfc8656", kind: "spec", note: t("RFC 5766을 대체한 최신 TURN 표준", "Current TURN standard replacing RFC 5766") },
-      { title: "Cloudflare Realtime · TURN service", url: "https://developers.cloudflare.com/realtime/turn/", kind: "docs" },
-      { title: "coturn · GitHub", url: "https://github.com/coturn/coturn", kind: "repo" },
     ],
     chapterIds: ["turn-credential-issuance", "webrtc-media-authority"],
     talk: {
       pitch: t(
-        "WebRTC는 먼저 직접 연결을 시도하고, 막히면 중계 서버(TURN)를 씁니다. ToonStudio는 중계 서버에 들어가는 열쇠를 브라우저에 고정해 두지 않고 서버가 몇 시간 또는 몇 분짜리로 즉석 발급합니다. 허들은 Cloudflare TURN 4시간, 화면 공유는 coturn 방식 900초입니다. 키를 등록하기 전에는 STUN만으로 동작하며, 운영에서 실제 중계가 통과한 검증은 아직 없습니다.",
-        "WebRTC first tries a direct connection and uses a relay server (TURN) when blocked. ToonStudio never fixes the relay key in the browser; the server issues it on demand for hours or minutes. The huddle uses Cloudflare TURN for 4 hours and screen sharing uses a coturn-style credential for 900 seconds. Before a key is registered it runs on STUN alone, and no relayed connection has been verified in production.",
+        "WebRTC 연결은 Cloudflare STUN 하나로만 구성합니다. 중계 서버(TURN)는 중계한 트래픽만큼 비용이 드는 구조라 쓰지 않기로 결정했고, 발급하던 코드도 제거했습니다. 직접 연결이 막히는 네트워크에서는 음성·화면이 실패하지만, 아바타 프레즌스만큼은 ICE 실패를 감지해 소켓 릴레이로 이어지게 만들었습니다.",
+        "WebRTC connections are configured with a single Cloudflare STUN. Relay servers (TURN) charge for the traffic they carry, so we decided not to use one and removed the issuance code as well. In networks where a direct path is blocked, voice and screen fail, but avatar presence detects the ICE failure and continues over a socket relay.",
       ),
       analogy: t(
-        "STUN은 '밖에서 보면 당신 집 주소가 이거예요'라고 알려 주는 안내 데스크, TURN은 직접 만날 수 없을 때 우편물을 대신 전달하는 우체국입니다. 열쇠는 몇 시간 뒤 만료되는 일회용 출입증과 같습니다.",
-        "STUN is an information desk saying what your address looks like from outside; TURN is a post office that carries the mail when you cannot meet directly. The key is like a one-day pass that expires after a few hours.",
+        "STUN은 '밖에서 보면 당신 집 주소가 이거예요'라고 알려 주는 안내 데스크입니다. 우체국(TURN)은 비용 때문에 계약하지 않았고, 대신 급한 쪽지(프레즌스 위치)만 기존 배달망(소켓)으로 보냅니다. 무거운 짐(영상·음성)은 직접 만나야만 주고받을 수 있습니다.",
+        "STUN is an information desk saying what your address looks like from outside. We did not contract the post office (TURN) because of cost; instead, only the urgent notes (presence positions) ride the existing delivery network (sockets). Heavy luggage (video and voice) can only change hands in a direct meeting.",
       ),
       questions: [
         {
           question: t("TURN을 붙였나요?", "Have you added TURN?"),
           answer: t(
-            "발급 코드와 정책 응답까지 구현했습니다. 운영 키가 등록됐는지는 코드로 확인할 수 없어 챕터 40도 '미확인'으로 기록합니다. 키가 없으면 STUN 전용으로 동작하며, 제한된 NAT에서 중계가 통과한 검증은 없습니다.",
-            "The issuance code and policy response are implemented. Whether a production key is registered cannot be confirmed from the code, so chapter 40 also records it as unverified. Without a key it runs STUN-only, and no relay has been verified through a restrictive NAT.",
+            "아니요. 한때 발급 코드를 구현했지만 2026-10-11에 비용 리스크로 쓰지 않기로 결정하고 제거했습니다. 지금 코드 어디에도 TURN 자격 발급 경로는 없습니다.",
+            "No. Issuance code existed for a while, but on 2026-10-11 we decided not to use TURN because of its cost risk and removed it. No TURN credential issuance path remains anywhere in the code.",
           ),
         },
         {
-          question: t("TURN을 쓰면 비용이 드나요?", "Does TURN cost money?"),
+          question: t("직접 연결이 막힌 네트워크에서는 전부 안 되나요?", "Does everything fail in a network that blocks direct paths?"),
           answer: t(
-            "중계한 트래픽만큼 대역폭 비용이 듭니다. 직접 연결이 실패한 연결에만 쓰입니다. 요금은 바뀔 수 있으니 Cloudflare 공식 요금 문서를 확인하세요.",
-            "It costs bandwidth for the traffic it relays and is used only for connections where a direct path fails. Prices can change, so check Cloudflare's official pricing page.",
+            "음성·화면 미디어는 실패합니다. 아바타의 입장·이동·퇴장 같은 공간 프레즌스는 ICE 실패가 감지되면 소켓 릴레이로 이어집니다. 단, 서로 다른 네트워크의 실제 브라우저에서 이 폴백을 실측한 기록은 아직 없습니다.",
+            "Voice and screen media fail. Spatial presence — an avatar joining, moving and leaving — continues over the socket relay once an ICE failure is detected. There is no record yet of measuring this fallback in real browsers across different networks.",
           ),
         },
         {
-          question: t("열쇠가 유출되면요?", "What if a key leaks?"),
+          question: t("왜 STUN은 Cloudflare인가요?", "Why is the STUN Cloudflare's?"),
           answer: t(
-            "Cloudflare 경로는 4시간, 화면 공유 경로는 기본 900초 뒤에 만료됩니다. 발급도 세션과 작품 권한을 확인한 뒤에만 이뤄지며, 공급자 API 토큰은 브라우저에 나가지 않고 Worker secret으로만 보관합니다.",
-            "Cloudflare credentials expire after 4 hours and screen-share credentials after 900 seconds by default. Issuance happens only after session and work permissions are checked, and the provider API token never reaches the browser; it stays a Worker secret.",
+            "실시간 Worker와 같은 공급자로 맞췄고 비용이 들지 않습니다. 주소는 stun.cloudflare.com:3478 하나이며, 모든 레인이 공유 모듈에서 같은 값을 읽습니다.",
+            "It keeps one provider with the realtime Worker and costs nothing. The address is a single stun.cloudflare.com:3478, and every lane reads the same value from the shared module.",
           ),
         },
       ],
       pitfall: t(
-        "'TURN을 도입했다'고 말하지 마세요. 코드는 완성됐고 운영 키 등록과 중계 통과 검증은 미확인입니다. 코드 독해로 본 잠재 한계(미실증): ① 4시간 넘게 연 탭에서 새 연결이 STUN 전용으로 만들어질 수 있음 ② Cloudflare 문서의 발급 방식과 코드가 부르는 주소의 응답 모양이 다를 수 있어 키 등록 직후 실응답 확인이 필요함. 또 3번 실패 뒤 안내와 근접 영상 안내는 '중계(TURN) 서버가 준비되지 않은 환경에서는 직접 연결만 시도합니다'처럼 조건부 문구로 이미 고쳤습니다.",
-        "Do not say 'we adopted TURN'. The code is complete, while production key registration and relay verification are unconfirmed. Potential limits seen by code reading (unverified): 1) in a tab open longer than 4 hours, new connections may be built STUN-only; 2) the response shape of the address the code calls may differ from the issuance method in Cloudflare's current docs, so a real response must be checked right after a key is registered. The notice after three failures and the proximity-video notes have also been reworded conditionally: where no relay (TURN) server is set up, only direct links are tried.",
+        "'TURN을 도입했다'거나 '직접 연결이 막히면 중계로 이어진다'고 말하지 마세요. TURN은 결정으로 제거됐고, 릴레이 폴백은 프레즌스 직통 패킷 전용입니다. 미디어까지 이어지는 것처럼 말하면 과장입니다. 서로 다른 네트워크에서의 실측은 아직 없습니다.",
+        "Do not say 'we adopted TURN' or 'a blocked direct path falls back to a relay'. TURN was removed by decision, and the relay fallback covers presence direct packets only. Presenting it as if media also continues would be an overstatement. Cross-network behavior has not been measured yet.",
       ),
     },
-    technologies: ["WebRTC", "ICE", "STUN", "TURN", "Cloudflare Realtime TURN", "coturn", "HMAC"],
+    technologies: ["WebRTC", "ICE", "STUN", "Cloudflare STUN", "Socket.IO"],
     facts: [
-      { value: "4h", label: t("Worker가 발급하는 Cloudflare TURN 자격 수명", "Lifetime of Worker-issued Cloudflare TURN credentials"), source: "deploy/cloudflare-realtime/src/turn.ts" },
-      { value: "900s", label: t("화면 공유 자격의 기본 수명(300~86,400초)", "Default screen-share credential lifetime (300 to 86,400 s)"), source: "apps/api/src/modules/creator/studio-voice-ice-policy.service.ts" },
-      { value: "30s", label: t("ICE 캐시 발급 실패 뒤 재시도 대기", "ICE cache wait before retrying after a failure"), source: `${LIVE}/studio-ice-configuration.ts` },
+      { value: "3478", label: t("Cloudflare STUN 포트(stun.cloudflare.com)", "Cloudflare STUN port (stun.cloudflare.com)"), source: `${LIVE}/studio-ice-configuration.ts` },
+      { value: "64KB", label: t("직통 패킷 1개의 크기 상한(릴레이 배달도 동일)", "Size cap of one direct packet (same on the relay)"), source: `${LIVE}/studio-live-direct-port.ts` },
+      { value: "1200/60s", label: t("게이트웨이 릴레이 레이트리밋(연결당)", "Gateway relay rate limit (per connection)"), source: "apps/api/src/modules/creator/studio-live-gateway-handlers-voice.ts" },
     ],
-    reviewedAt: "2026-10-07",
+    reviewedAt: "2026-10-11",
   },
 ];

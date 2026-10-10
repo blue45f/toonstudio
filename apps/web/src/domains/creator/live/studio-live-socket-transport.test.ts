@@ -6151,3 +6151,93 @@ describe("StudioLiveSocketTransport binary ink lane (V18)", () => {
     transport.close();
   });
 });
+
+describe("Studio live direct relay lane (STUN-only fallback)", () => {
+  const packet = JSON.stringify({
+    wire: "studio-direct-v1",
+    workId: "work-1",
+    payload: "{\"kind\":\"space-state\",\"sequence\":7}",
+  });
+
+  it("emits studio:direct:relay for a targeted direct:relay envelope", async () => {
+    const socket = new FakeSocket({ sessionToken: TOKEN });
+    const transport = new StudioLiveSocketTransport(context(), TOKEN, {
+      createSocket: () => socket,
+      now: () => NOW,
+    });
+    await transport.connect();
+    activate(transport);
+    socket.emitted.length = 0;
+
+    expect(
+      transport.send(envelope("direct:relay", { packet }, 2, remote.connectionId))
+    ).toBe(true);
+    expect(socket.emitted).toEqual([
+      {
+        event: "studio:direct:relay",
+        payload: {
+          workId: "work-1",
+          targetConnectionId: remote.connectionId,
+          packet,
+        },
+      },
+    ]);
+    transport.close();
+  });
+
+  it("delivers an inbound studio:direct:relay as a targeted envelope from the sender", async () => {
+    const socket = new FakeSocket({ sessionToken: TOKEN });
+    const transport = new StudioLiveSocketTransport(context(), TOKEN, {
+      createSocket: () => socket,
+      now: () => NOW,
+    });
+    const received: StudioLiveEnvelope[] = [];
+    transport.subscribe((value) => received.push(value as StudioLiveEnvelope));
+    await transport.connect();
+    activate(transport);
+    received.length = 0;
+
+    socket.serverEmit("studio:direct:relay", {
+      fromConnectionId: remote.connectionId,
+      fromName: remote.name,
+      packet,
+    });
+
+    expect(received).toEqual([
+      expect.objectContaining({
+        kind: "direct:relay",
+        sender: expect.objectContaining({ sessionId: remote.connectionId }),
+        targetSessionId: localParticipant.sessionId,
+        payload: { packet },
+      }),
+    ]);
+    transport.close();
+  });
+
+  it("drops inbound relays from unknown connections and oversized packets", async () => {
+    const socket = new FakeSocket({ sessionToken: TOKEN });
+    const transport = new StudioLiveSocketTransport(context(), TOKEN, {
+      createSocket: () => socket,
+      now: () => NOW,
+    });
+    const received: StudioLiveEnvelope[] = [];
+    transport.subscribe((value) => received.push(value as StudioLiveEnvelope));
+    await transport.connect();
+    activate(transport);
+    received.length = 0;
+
+    socket.serverEmit("studio:direct:relay", {
+      fromConnectionId: "connection-unknown",
+      fromName: "모르는 참가자",
+      packet,
+    });
+    socket.serverEmit("studio:direct:relay", {
+      fromConnectionId: remote.connectionId,
+      fromName: remote.name,
+      packet: "x".repeat(70 * 1024),
+    });
+
+    expect(received).toEqual([]);
+    transport.close();
+  });
+});

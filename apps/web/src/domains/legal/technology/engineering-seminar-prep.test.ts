@@ -191,10 +191,11 @@ const PREP_FACTS: readonly PrepFact[] = [
     },
   },
   {
-    atlasId: "webrtc-ice-turn-paths", needles: ["4시간", "900초", "STUN"],
+    atlasId: "webrtc-ice-turn-paths", needles: ["STUN 전용", "3478", "64KB"],
     check: () => {
-      expect(readText("deploy", "cloudflare-realtime", "src", "turn.ts")).toContain("REALTIME_TURN_TTL_SECONDS = 4 * 60 * 60;");
-      expect(readText("apps", "api", "src", "modules", "creator", "studio-voice-ice-policy.service.ts")).toContain("STUDIO_VOICE_TURN_DEFAULT_TTL_SECONDS = 900;");
+      expect(repoExists("deploy", "cloudflare-realtime", "src", "turn.ts")).toBe(false);
+      expect(readText("apps", "web", "src", "domains", "creator", "live", "studio-ice-configuration.ts")).toContain("stun:stun.cloudflare.com:3478");
+      expect(readText("apps", "api", "src", "modules", "creator", "studio-voice-ice-policy.service.ts")).toContain("STUDIO_VOICE_DEFAULT_STUN_URL");
       expect(cardText("webrtc-ice-turn-paths")).toContain("STUN 전용");
     },
   },

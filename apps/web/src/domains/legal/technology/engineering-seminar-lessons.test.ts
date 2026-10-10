@@ -434,11 +434,13 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-webrtc", claim: "직통 레인 studio-direct-v1, 서버 음성 중계 꺼짐, TURN 4시간, 허들 원격 3명", needles: ["studio-direct-v1", "render.yaml", "4시간", "3명"],
+    lesson: "seminar-webrtc", claim: "직통 레인 studio-direct-v1, 서버 음성 중계 꺼짐, STUN 전용, 허들 원격 3명", needles: ["studio-direct-v1", "render.yaml", "STUN", "3명"],
     check: () => {
       expect(readText("apps", "web", "src", "domains", "creator", "live", "studio-live-direct-port.ts")).toContain("studio-direct-v1");
       expect(flat("render.yaml")).toContain('key: STUDIO_LIVE_VOICE_ENABLED value: "false"');
-      expect(readText("deploy", "cloudflare-realtime", "src", "turn.ts")).toContain("REALTIME_TURN_TTL_SECONDS = 4 * 60 * 60;");
+      // TURN 발급 경로는 2026-10-11 결정으로 제거됐고 ICE는 Cloudflare STUN 전용이다.
+      expect(repoExists("deploy", "cloudflare-realtime", "src", "turn.ts")).toBe(false);
+      expect(readText("apps", "web", "src", "domains", "creator", "live", "studio-ice-configuration.ts")).toContain("stun:stun.cloudflare.com:3478");
       expect(readText("apps", "web", "src", "domains", "creator", "live", "huddle", "studio-p2p-huddle-protocol.ts")).toContain("HUDDLE_MAX_REMOTE_PEERS = 3;");
     },
   },

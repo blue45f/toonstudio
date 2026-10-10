@@ -55,8 +55,8 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
       "Like opening several routes in a map app and picking the one that is not jammed.",
     ),
     inToonstudio: t(
-      "ICE 서버 정보를 세 갈래로 받습니다. 허들·직통 통로는 실시간 Worker 의 POST /v1/turn/credentials 에서 Cloudflare TURN 단기 자격(4시간)을 받고, 화면 공유는 API 가 coturn 방식 자격(기본 900초)을 발급하며, 로컬 모드는 ICE 서버 없이 같은 브라우저 안에서만 동작합니다(studio-ice-configuration.ts, studio-voice-ice-policy.service.ts).",
-      "ICE server details come from three branches: huddles and the direct channel get short-lived Cloudflare TURN credentials (4 hours) from the realtime Worker's POST /v1/turn/credentials; screen sharing gets coturn-style credentials (900 seconds by default) from the API; local mode uses no ICE servers and stays inside one browser (studio-ice-configuration.ts, studio-voice-ice-policy.service.ts).",
+      "ICE 서버는 공유 모듈의 Cloudflare STUN 하나로 통일했습니다. 허들·직통 통로·화면 공유 정책이 모두 같은 값을 읽고, 중계(TURN) 자격 발급 경로는 2026-10-11 결정으로 제거했습니다(studio-ice-configuration.ts, studio-voice-ice-policy.service.ts).",
+      "ICE servers are unified to the single Cloudflare STUN in the shared module. Huddles, the direct channel and the screen-share policy all read the same value, and the relay (TURN) credential-issuance paths were removed by the 2026-10-11 decision (studio-ice-configuration.ts, studio-voice-ice-policy.service.ts).",
     ),
     chapters: ["webrtc-media-authority", "turn-credential-issuance"],
     atlasIds: ["webrtc-ice-turn-paths"],
@@ -74,8 +74,8 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
       "Inside an apartment you know your door number but not the street address; STUN is the postal clerk who tells you where mail from outside arrives.",
     ),
     inToonstudio: t(
-      "TURN 자격을 아직 못 받았거나 발급이 늦어도 연결이 멈추지 않도록, 기본값은 STUN 전용 목록입니다(studio-ice-configuration.ts 의 공개 STUN 주소, 실시간 Worker 쪽 stun.cloudflare.com:3478). TURN 키가 등록되기 전에도 Worker 가 STUN 전용 정책으로 안전하게 동작하도록 설계했습니다.",
-      "So that a missing or slow TURN credential never blocks a connection, the default is a STUN-only list (the public STUN address in studio-ice-configuration.ts, stun.cloudflare.com:3478 on the realtime Worker side). The Worker is designed to run safely on a STUN-only policy even before a TURN key is registered.",
+      "유일한 ICE 서버가 이 STUN 입니다. 공유 모듈(studio-ice-configuration.ts)이 stun:stun.cloudflare.com:3478 하나만 고정해 두고, 화면 공유 정책의 기본값도 같은 주소입니다(studio-voice-ice-policy.service.ts). 자격이 필요 없어 연결 시작이 발급 대기에 막히지 않습니다.",
+      "This STUN is the only ICE server. The shared module (studio-ice-configuration.ts) pins the single stun:stun.cloudflare.com:3478, and the screen-share policy defaults to the same address (studio-voice-ice-policy.service.ts). No credential is needed, so connection setup never waits on issuance.",
     ),
     chapters: ["turn-credential-issuance", "webrtc-standard"],
     atlasIds: ["webrtc-ice-turn-paths"],
@@ -89,12 +89,12 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
       "A relay server that carries all traffic when two browsers cannot reach each other directly. Handy, but it costs in proportion to what it carries.",
     ),
     analogy: t(
-      "직접 만나기 어려울 때 우편물을 대신 전달해 주는 우체국입니다. 열쇠(자격증명)는 오래 쓰면 위험하니 짧게 빌려줍니다.",
-      "A post office that forwards mail when meeting in person is impossible. The key (credential) is lent only briefly because a long-lived key is risky.",
+      "직접 만나기 어려울 때 우편물을 대신 전달해 주는 우체국입니다. 편리한 대신 우편물이 쌓이는 만큼 요금이 붙습니다.",
+      "A post office that forwards mail when meeting in person is impossible: convenient, but billed by the volume it forwards.",
     ),
     inToonstudio: t(
-      "열쇠를 브라우저에 고정해 두지 않고 서버가 짧은 수명으로 즉석 발급합니다. Cloudflare TURN 은 실시간 Worker 가 4시간짜리를, 화면 공유용 coturn 방식은 API 가 HMAC-SHA1 로 기본 900초짜리를 만듭니다. 운영에 TURN 키가 등록됐는지, 제한된 NAT 에서 중계가 실제로 통과하는지는 코드로 확인하지 못했습니다(미확인).",
-      "Keys are never fixed in the browser; the server issues short-lived ones on demand: the realtime Worker issues 4-hour Cloudflare TURN credentials, and for screen sharing the API builds coturn-style ones with HMAC-SHA1 (900 seconds by default). Whether a TURN key is registered in production, and whether relaying really passes through restrictive NATs, could not be confirmed from code.",
+      "쓰지 않습니다. 중계 대역폭 비용이 사용량에 따라 발생하는 리스크를 이유로 2026-10-11에 TURN 서버를 두지 않기로 결정하고, Worker 의 Cloudflare TURN 발급과 API 의 coturn 자격 발급을 모두 제거했습니다. 직접 연결이 막힌 환경에서는 미디어가 이어지지 않고, 공간 프레즌스만 소켓 릴레이로 폴백합니다.",
+      "Not used. Because relay bandwidth cost grows with usage, on 2026-10-11 it was decided to run no TURN server at all, and both the Worker's Cloudflare TURN issuance and the API's coturn credential issuance were removed. Where a direct connection is blocked, media does not connect, and only spatial presence falls back to the socket relay.",
     ),
     chapters: ["turn-credential-issuance", "webrtc-media-authority"],
     atlasIds: ["webrtc-ice-turn-paths"],

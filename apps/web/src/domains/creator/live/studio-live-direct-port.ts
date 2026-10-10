@@ -4,7 +4,12 @@ export const STUDIO_DIRECT_WIRE = "studio-direct-v1";
 export const STUDIO_DIRECT_MAX_BYTES = 64 * 1024;
 export const STUDIO_DIRECT_MAX_BUFFERED_BYTES = 128 * 1024;
 
-/** Targeted RTC-only lane. Never fall back to server or BroadcastChannel. */
+/**
+ * Targeted lane for spatial-presence packets. The overlay serves it over the RTC
+ * mesh first; when a peer's mesh cannot be established (STUN-only ICE, e.g.
+ * symmetric NAT), that peer — and only that peer — is served through the primary
+ * transport's targeted socket relay instead. It is never broadcast.
+ */
 export interface StudioLiveDirectPort {
   getPeers(): StudioLiveParticipant[];
   send(targetSessionId: string, payload: string): boolean;

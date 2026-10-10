@@ -592,7 +592,7 @@ describe("Catalog file, asset admission, and KMAS environment validation", () =>
   });
 });
 
-describe("Studio voice TURN environment validation", () => {
+describe("Studio voice ICE environment validation", () => {
   it("accepts the explicit recurring-cost voice feature switch", () => {
     const logger = { warn: vi.fn(), error: vi.fn() };
 
@@ -603,7 +603,7 @@ describe("Studio voice TURN environment validation", () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it("accepts TURN settings while keeping the shared secret out of diagnostics", () => {
+  it("accepts STUN settings and drops the retired TURN variables", () => {
     const logger = { warn: vi.fn(), error: vi.fn() };
     const secret = "voice-turn-secret-at-least-thirty-two-characters";
 
@@ -611,6 +611,8 @@ describe("Studio voice TURN environment validation", () => {
       {
         NODE_ENV: "test",
         STUDIO_VOICE_STUN_URLS: "stun:voice.example.com:3478",
+        // TURN은 2026-10-11 결정으로 사용하지 않는다. 배포 환경에 과거 변수가
+        // 남아 있어도 스키마가 선언하지 않으므로 결과에 실리지 않는다.
         STUDIO_VOICE_TURN_URLS:
           "turn:voice.example.com:3478?transport=udp,turns:voice.example.com:5349?transport=tcp",
         STUDIO_VOICE_TURN_SHARED_SECRET: secret,
@@ -621,20 +623,24 @@ describe("Studio voice TURN environment validation", () => {
     );
 
     expect(result).toMatchObject({
-      STUDIO_VOICE_TURN_REQUIRED: "true",
-      STUDIO_VOICE_TURN_TTL_SECONDS: "900",
+      STUDIO_VOICE_STUN_URLS: "stun:voice.example.com:3478",
     });
+    expect(result).not.toHaveProperty("STUDIO_VOICE_TURN_URLS");
+    expect(result).not.toHaveProperty("STUDIO_VOICE_TURN_SHARED_SECRET");
+    expect(result).not.toHaveProperty("STUDIO_VOICE_TURN_REQUIRED");
     expect(logger.warn).not.toHaveBeenCalled();
     expect(JSON.stringify(logger)).not.toContain(secret);
   });
 
-  it("warns non-fatally for a weak shared secret in the generic env audit", () => {
+  it("ignores a leftover weak TURN secret instead of warning about it", () => {
     const logger = { warn: vi.fn(), error: vi.fn() };
 
-    expect(validateEnv({
+    const result = validateEnv({
       NODE_ENV: "test",
       STUDIO_VOICE_TURN_SHARED_SECRET: "weak",
-    }, logger)).toBeNull();
-    expect(logger.warn).toHaveBeenCalledOnce();
+    }, logger);
+    expect(result).not.toBeNull();
+    expect(result).not.toHaveProperty("STUDIO_VOICE_TURN_SHARED_SECRET");
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 });
