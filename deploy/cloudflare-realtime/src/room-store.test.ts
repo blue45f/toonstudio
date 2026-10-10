@@ -3,6 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createPublishReceiptFingerprints } from "./receipt-fingerprint";
+import { planReplay } from "./room-core";
 import {
   REALTIME_ROOM_APPLICATION_SCHEMA_VERSION,
   RealtimeReceiptBudgetExceededError,
@@ -442,6 +443,86 @@ describe("realtime SQLite room store", () => {
 
     store.prune(20_000, 128);
     expect(store.findReceipt("presence-event-0001")).toBeNull();
+  });
+
+  it("keeps the replay floor adoptable for fresh joins after prune", () => {
+    const store = createStore();
+    const common = {
+      actorId: "actor-1",
+      clientId: "client-1",
+      connectionId: "connection-1",
+      serverAtMs: 1_000,
+      eventExpiresAtMs: 2_000,
+      receiptExpiresAtMs: 60_000,
+    } as const;
+    const comment = (sequence: number) =>
+      ({
+        kind: "comment.changed",
+        threadId: "thread-1",
+        activitySequence: String(sequence),
+        change: "created",
+      }) as const;
+
+    store.appendEvent(
+      {
+        ...common,
+        idempotencyKey: "floor-comment-0001",
+        channel: "comments",
+        payload: comment(1),
+      },
+      TEST_RECEIPT_BUDGET,
+    );
+    store.appendEvent(
+      {
+        ...common,
+        idempotencyKey: "floor-comment-0002",
+        channel: "comments",
+        payload: comment(2),
+      },
+      TEST_RECEIPT_BUDGET,
+    );
+    store.appendEvent(
+      {
+        ...common,
+        idempotencyKey: "floor-comment-0003",
+        channel: "comments",
+        eventExpiresAtMs: 60_000,
+        payload: comment(3),
+      },
+      TEST_RECEIPT_BUDGET,
+    );
+    store.appendEvent(
+      {
+        ...common,
+        idempotencyKey: "floor-presence-0001",
+        channel: "presence",
+        payload: { kind: "presence.leave" },
+      },
+      TEST_RECEIPT_BUDGET,
+    );
+
+    store.prune(3_000, 128);
+
+    const comments = store.getSequenceState("comments");
+    expect(comments).toEqual({ currentSequence: 3, replayFloorSequence: 3 });
+    // The zero baseline is still a protocol-level gap: only a client that
+    // negotiates the floor at welcome time may start there.
+    expect(planReplay(0, comments.currentSequence, comments.replayFloorSequence))
+      .toMatchObject({ kind: "gap" });
+    // The adopted floor point (floor - 1) is a normal page start, and the
+    // retained window is exactly what a fresh join replays.
+    expect(planReplay(2, comments.currentSequence, comments.replayFloorSequence))
+      .toMatchObject({ kind: "page", fromSequence: 3 });
+    expect(
+      store.readEventsAfter("comments", 2, 10).map((stored) => stored.event.sequence),
+    ).toEqual([3]);
+
+    // Fully pruned channel (the browser E2E state): floor = current + 1, and
+    // adopting the floor means resuming at current — an empty, complete plan.
+    const presence = store.getSequenceState("presence");
+    expect(presence).toEqual({ currentSequence: 1, replayFloorSequence: 2 });
+    expect(planReplay(1, presence.currentSequence, presence.replayFloorSequence))
+      .toMatchObject({ kind: "empty" });
   });
 
   it("pre-admits receipt count and bytes without partial sequence writes", () => {
