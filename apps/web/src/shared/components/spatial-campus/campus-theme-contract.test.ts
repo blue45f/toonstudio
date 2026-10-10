@@ -16,11 +16,14 @@ describe("spatial campus theme contract", () => {
     expect(campusCss).not.toContain("background:transparent!important");
   });
 
-  it("uses the observatory foreground pair for its directory and selected room", () => {
-    expect(campusCss).toContain("color:var(--fo-ink,var(--color-fg))");
-    expect(campusCss).toContain("color:var(--fo-muted,var(--color-fg-2))");
+  it("uses the scene foreground pair for its directory and the gold accent for the selected room", () => {
+    // 웨이브 20부터 디렉터리는 관측소 밤 장면 밴드 위에 뜬다 — 장면은 테마 불변이라
+    // 본문 전경은 장면 고정 흰색 쌍을 쓰고, 선택된 방만 관측소 골드 액센트를 유지한다.
+    expect(campusCss).toContain(".fortune-campus-directory{position:relative");
+    expect(campusCss).toContain("color:#fff");
+    expect(campusCss).toContain("color:oklch(1 0 0/0.8)");
     expect(campusCss).toContain("color:var(--fo-gold,var(--color-accent))");
-    expect(campusCss).toContain("background:var(--fo-panel,var(--color-panel))");
+    expect(campusCss).toContain("background:oklch(1 0 0/0.14)");
   });
 
   it("keeps selected campus modes readable instead of using the bright accent gradient", () => {
