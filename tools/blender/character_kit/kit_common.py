@@ -158,10 +158,81 @@ def welded_face_components(obj, face_mask, tolerance=1e-5):
     return labels
 
 
-def delete_faces_and_keep_largest_island(obj, delete_mask):
-    """delete_mask가 True인 면을 지우고, 남은 면 중 가장 큰 연결 덩어리(위치 기준 용접)만 남긴다.
+def canonical_triangles(obj, tolerance=1e-5):
+    """모든 면이 삼각형인 메시의 면별 대표 정점 번호 (F,3). 위치가 같은 정점(UV 이음매로 쪼개진 것)은 같은 번호다."""
+    mesh = obj.data
+    coords = np.empty(len(mesh.vertices) * 3, dtype=np.float32)
+    mesh.vertices.foreach_get("co", coords)
+    quantized = np.round(coords.reshape(-1, 3) / tolerance).astype(np.int64)
+    _, canonical = np.unique(quantized, axis=0, return_inverse=True)
+    canonical = canonical.reshape(-1)
+    loop_vertex = np.empty(len(mesh.loops), dtype=np.int32)
+    mesh.loops.foreach_get("vertex_index", loop_vertex)
+    starts = np.empty(len(mesh.polygons), dtype=np.int32)
+    totals = np.empty(len(mesh.polygons), dtype=np.int32)
+    mesh.polygons.foreach_get("loop_start", starts)
+    mesh.polygons.foreach_get("loop_total", totals)
+    if not (totals == 3).all():
+        raise RuntimeError("삼각형이 아닌 면이 있다")
+    return canonical[loop_vertex[starts[:, None] + np.arange(3)]]
 
-    (남은 면 수, 지운 면 수, 버린 덩어리 수)를 돌려준다.
+
+def grow_region(seed_mask, candidate_mask, face_vertices):
+    """씨앗 면에서 시작해 정점을 공유하는 후보 면으로만 퍼지는 영역 성장. 씨앗은 후보에 포함돼야 한다."""
+    face_vertices = np.asarray(face_vertices)
+    vertex_count = int(face_vertices.max()) + 1
+    vertex_faces = [[] for _ in range(vertex_count)]
+    for face, ids in enumerate(face_vertices.tolist()):
+        for vertex in ids:
+            vertex_faces[vertex].append(face)
+    allowed = np.asarray(candidate_mask, dtype=bool) | np.asarray(seed_mask, dtype=bool)
+    grown = np.zeros(len(face_vertices), dtype=bool)
+    stack = [int(face) for face in np.flatnonzero(seed_mask)]
+    for face in stack:
+        grown[face] = True
+    while stack:
+        face = stack.pop()
+        for vertex in face_vertices[face]:
+            for neighbor in vertex_faces[vertex]:
+                if allowed[neighbor] and not grown[neighbor]:
+                    grown[neighbor] = True
+                    stack.append(neighbor)
+    return grown
+
+
+def face_components(mask, face_vertices):
+    """mask가 True인 면들의 연결 성분 번호(정점 공유 기준, 그 밖은 -1)와 성분별 면 수 (labels, sizes)."""
+    face_vertices = np.asarray(face_vertices)
+    mask = np.asarray(mask, dtype=bool)
+    vertex_faces = [[] for _ in range(int(face_vertices.max()) + 1)]
+    for face in np.flatnonzero(mask).tolist():
+        for vertex in face_vertices[face]:
+            vertex_faces[vertex].append(face)
+    labels = np.full(len(face_vertices), -1, dtype=np.int64)
+    sizes = []
+    for start in np.flatnonzero(mask).tolist():
+        if labels[start] >= 0:
+            continue
+        label = len(sizes)
+        labels[start] = label
+        stack = [start]
+        count = 0
+        while stack:
+            face = stack.pop()
+            count += 1
+            for vertex in face_vertices[face]:
+                for neighbor in vertex_faces[vertex]:
+                    if labels[neighbor] < 0:
+                        labels[neighbor] = label
+                        stack.append(neighbor)
+        sizes.append(count)
+    return labels, np.array(sizes)
+
+
+def delete_faces_and_keep_largest_island(obj, delete_mask, keep=1):
+    """delete_mask가 True인 면을 지우고, 남은 면 중 가장 큰 연결 덩어리(위치 기준 용접) `keep`개만 남긴다.
+
+    (남은 면 수, 지운 면 수, 버린 덩어리 수)를 돌려준다. 신발 한 켤레처럼 덩어리가 여럿이어야 하면 keep을 늘린다.
     """
     delete_mask = np.asarray(delete_mask, dtype=bool)
     labels = welded_face_components(obj, ~delete_mask)
@@ -169,8 +240,8 @@ def delete_faces_and_keep_largest_island(obj, delete_mask):
     if kept_labels.size == 0:
         raise RuntimeError("지운 뒤 남는 면이 없다")
     values, counts = np.unique(kept_labels, return_counts=True)
-    largest = values[np.argmax(counts)]
-    final_delete = delete_mask | (labels != largest)
+    largest = values[np.argsort(-counts)[:keep]]
+    final_delete = delete_mask | ~np.isin(labels, largest)
 
     bm = bmesh.new()
     bm.from_mesh(obj.data)
@@ -182,7 +253,7 @@ def delete_faces_and_keep_largest_island(obj, delete_mask):
     bm.to_mesh(obj.data)
     bm.free()
     obj.data.update()
-    return len(obj.data.polygons), int(final_delete.sum()), int(len(values) - 1)
+    return len(obj.data.polygons), int(final_delete.sum()), int(len(values) - len(largest))
 
 
 def export_glb(path, **overrides):
@@ -210,6 +281,74 @@ def world_bounds(objects):
                 low[axis] = min(low[axis], world[axis])
                 high[axis] = max(high[axis], world[axis])
     return low, high
+
+
+def fill_small_holes(obj, max_diagonal=0.35, max_sides=4000, weld_tolerance=1e-5):
+    """위치가 같은 정점을 합친 뒤, 크기가 max_diagonal 이하인 작은 구멍만 메운다. (메운 구멍 수, 새 면 수)를 돌려준다.
+
+    먼저 모든 구멍을 메우고, 새로 생긴 면 조각(새 면끼리 변을 공유하는 덩어리) 중 경계 상자 대각선이 max_diagonal보다 큰 것을
+    다시 지워 큰 개구부(얼굴·목·밑단·소매 끝)를 되돌린다. 변 개수가 아니라 크기로 고르는 이유는 가는 틈이 들쭉날쭉해 변이 수백 개여도
+    실제 크기는 작기 때문이다. 새 면은 새 정점을 만들지 않으므로 각 정점의 UV는 이미 있는 인접 면의 UV를 그대로 쓴다
+    (구멍 안쪽은 이웃 색으로 채워진 평평한 조각이 된다).
+    """
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=weld_tolerance)
+    bm.edges.ensure_lookup_table()
+    old_faces = {face.index for face in bm.faces}
+    boundary = [edge for edge in bm.edges if edge.is_boundary]
+    before = len(bm.faces)
+    result = bmesh.ops.holes_fill(bm, edges=boundary, sides=max_sides)
+    new_faces = [face for face in result["faces"] if face.is_valid]
+
+    # 새 면 조각(새 면끼리 변을 공유하는 덩어리)별 크기를 재고, 큰 조각은 다시 지운다.
+    new_set = set(new_faces)
+    seen = set()
+    patches = []
+    for seed in new_faces:
+        if seed in seen:
+            continue
+        stack = [seed]
+        seen.add(seed)
+        patch = []
+        while stack:
+            face = stack.pop()
+            patch.append(face)
+            for edge in face.edges:
+                for neighbor in edge.link_faces:
+                    if neighbor in new_set and neighbor not in seen:
+                        seen.add(neighbor)
+                        stack.append(neighbor)
+        patches.append(patch)
+    keep_faces = []
+    drop_faces = []
+    for patch in patches:
+        coords = [v.co for face in patch for v in face.verts]
+        low = [min(c[axis] for c in coords) for axis in range(3)]
+        high = [max(c[axis] for c in coords) for axis in range(3)]
+        diagonal = sum((high[axis] - low[axis]) ** 2 for axis in range(3)) ** 0.5
+        (keep_faces if diagonal <= max_diagonal else drop_faces).extend(patch)
+    if drop_faces:
+        bmesh.ops.delete(bm, geom=drop_faces, context="FACES_ONLY")
+    kept_patches = sum(1 for patch in patches if patch[0] in keep_faces or (patch[0].is_valid and patch[0] not in drop_faces))
+    new_faces = [face for face in keep_faces if face.is_valid]
+    uv_layer = bm.loops.layers.uv.active
+    if uv_layer is not None:
+        vertex_uv = {}
+        for face in bm.faces:
+            if face.index in old_faces and face.is_valid:
+                for loop in face.loops:
+                    vertex_uv.setdefault(loop.vert.index, loop[uv_layer].uv.copy())
+        for face in new_faces:
+            for loop in face.loops:
+                known = vertex_uv.get(loop.vert.index)
+                if known is not None:
+                    loop[uv_layer].uv = known
+    bm.normal_update()
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    return kept_patches, len(obj.data.polygons) - before + 0
 
 
 def write_report(path, payload):
