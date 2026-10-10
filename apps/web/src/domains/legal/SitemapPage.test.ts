@@ -49,6 +49,7 @@ const LEGACY_REDIRECT_ALIASES = new Map([
   ["/brush-lab", "/studio/assets/brushes/new"],
   ["/create/challenges", "/showcase/challenges"],
   ["/create/promo", "/showcase/promo"],
+  ["/motion-webtoon", "/studio/motion-webtoon"],
   ["/music", "/studio/assets/audio"],
   ["/publishing", "/studio/publish"],
 ]);
