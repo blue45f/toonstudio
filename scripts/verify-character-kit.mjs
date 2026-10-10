@@ -41,6 +41,7 @@ import {
   KIT_END_BONES,
   KIT_FORBIDDEN_EXTENSIONS,
   KIT_HEAD_NODE,
+  KIT_HYPER3D_EVIDENCE_PREFIX,
   KIT_JOINT_COUNT,
   KIT_MANIFEST_FILENAME,
   KIT_MORPH_COVERAGE,
@@ -1996,7 +1997,20 @@ function checkProvenance(manifest, report, source) {
   if (sources.length === 0) report.error("V4", "kit.json:provenance", "sources가 비어 있습니다.");
   sources.forEach((entry, index) => {
     const where = `kit.json:provenance.sources[${index}]`;
-    if (!KIT_ALLOWED_LICENSES.includes(entry.license)) report.error("V4", where, `라이선스 ${String(entry.license)}는 허용되지 않습니다(CC0-1.0, original만).`);
+    if (!KIT_ALLOWED_LICENSES.includes(entry.license)) report.error("V4", where, `라이선스 ${String(entry.license)}는 허용되지 않습니다(${KIT_ALLOWED_LICENSES.join(", ")}만).`);
+    if (entry.license === "hyper3d-rodin-output") {
+      // Hyper3D 산출물: 생성 id와 반입 기록 문서가 있어야 한다(기록 없이 반입하지 못하게 하는 것이 목적, docs/hyper3d-terms-record.md).
+      if (entry.derivative !== true) report.error("V4", where, `${entry.id}: Hyper3D 산출물은 파생물이어야 합니다(derivative: true).`);
+      if (typeof entry.generationId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(entry.generationId)) {
+        report.error("V4", where, `${entry.id}: Hyper3D 산출물은 generationId(uuid)가 필요합니다.`);
+      }
+      const evidence = entry.evidenceDoc;
+      if (typeof evidence !== "string" || !evidence.startsWith(KIT_HYPER3D_EVIDENCE_PREFIX) || evidence.includes("..")) {
+        report.error("V4", where, `${entry.id}: Hyper3D 산출물은 반입 기록 문서 경로(evidenceDoc, ${KIT_HYPER3D_EVIDENCE_PREFIX} 아래)가 필요합니다.`);
+      } else if (!existsSync(path.join(REPO_ROOT, evidence))) {
+        report.error("V4", where, `${entry.id}: 반입 기록 문서(${evidence})가 저장소에 없습니다.`);
+      }
+    }
     if (entry.license !== "original") {
       if (typeof entry.url !== "string" || !entry.url.startsWith("https://")) report.error("V4", where, `${entry.id}: 내려받은 소스는 https URL이 필요합니다.`);
       if (typeof entry.zipSha256 !== "string" || !/^[0-9a-f]{64}$/u.test(entry.zipSha256)) report.error("V4", where, `${entry.id}: 내려받은 소스는 zipSha256(64자리 hex)이 필요합니다.`);

@@ -283,8 +283,9 @@ zod 정의는 `contracts/character-kit.ts`(10절)가 단일 기준이고 아래 
 }
 ```
 
-- 허용 `license`: `CC0-1.0`, `original`. 그 외는 검증기 오류(상용 제품 에셋·불명확 라이선스 금지, 리드 브리프 2절).
+- 허용 `license`: `CC0-1.0`, `original`, `hyper3d-rodin-output`(2026-10-11 추가). 그 외는 검증기 오류(상용 제품 에셋·불명확 라이선스 금지, 리드 브리프 2절).
 - 새로 내려받는 소스는 `zipSha256`과 `url`(https)을 반드시 적는다. `original`은 `url`·`zipSha256` 생략 가능.
+- **`hyper3d-rodin-output`**(Hyper3D 구독 플랜으로 생성한 산출물과 파생물): `derivative: true`, `generationId`(uuid), `evidenceDoc`(`apps/character-lab/docs/` 아래 반입 기록 문서, 검증기는 파일 존재까지 확인), `url`(https, 생성 결과 페이지)과 `zipSha256`(원본 GLB의 SHA-256)가 모두 필요하다. 이 값은 **법적 허용을 뜻하지 않는다** — 약관상 닫히지 않은 점은 [`hyper3d-terms-record.md`](hyper3d-terms-record.md)에 있고, 기록 없이 반입하지 못하게 하는 것이 목적이다. 다른 출처에는 `generationId`·`evidenceDoc`을 쓸 수 없다.
 - `NOTICE.md`는 사람용 요약이다(자동 생성). CC0는 고지 의무가 없지만 출처 추적용이다.
 
 ### 3.9 기본 선택값
@@ -671,7 +672,7 @@ pnpm run verify:character-kit -- [--root apps/character-lab/public/assets/charac
 | V1 | 오류 | `kit.json`을 `kitManifestSchema`(strict)로 파싱(실패 시 느슨한 객체 스키마로 이슈를 40개까지 보고), `schema`·`kitId`·`kitVersion`(= `KIT_CURRENT_VERSION`)·`coordinateSystem` 상수 일치, `defaults.base`·`defaults.slots`·`defaults.colors`가 `KIT_DEFAULT_BASE_ID`/`KIT_DEFAULT_SLOTS`/`DEFAULT_RECIPE_COLORS`와 같음. **`kit.json` 없음·해석 불가는 `--only`와 무관하게 V1 오류로 보고한다(자동 포함)** |
 | V2 | 오류 | 참조된 모든 파일 존재, `bytes`·`sha256` 재계산 일치, 경로 이탈(`..`·절대·역슬래시) 금지, 디렉터리에 `kit.json`이 모르는 파일(`NOTICE.md` 제외) 없음, 대소문자만 다른 중복 경로 금지 |
 | V3 | 오류 | 용량: 베이스 ≤ 16 MiB, 파츠 ≤ 1.5 MiB, 키트 고유 파일 합 ≤ 64 MiB (수치 출력; 정정 2026-10-08) |
-| V4 | 오류 | provenance: `sources[]` 비어 있지 않음, `license ∈ {CC0-1.0, original}`, 다운로드 소스는 `https` URL + `zipSha256` 64hex, `changesKo`에 한글 포함, `NOTICE.md` 존재 |
+| V4 | 오류 | provenance: `sources[]` 비어 있지 않음, `license ∈ {CC0-1.0, original, hyper3d-rodin-output}`, 다운로드 소스는 `https` URL + `zipSha256` 64hex, `hyper3d-rodin-output`은 `derivative` + `generationId` + 실제로 있는 `evidenceDoc`, `changesKo`에 한글 포함, `NOTICE.md` 존재 |
 | V5 | 오류 | **(GLB 검사를 고르면 자동 포함)** 각 GLB가 glTF 2.0 컨테이너, `extensionsRequired`가 허용 목록(3.6)의 부분집합, 금지 확장(Draco·meshopt·basisu·webp) 없음, 외부 URI 이미지/버퍼 없음 |
 | V6 | 오류 | 이름: 모든 GLB의 `skin.joints`가 `skeleton.joints`(68개)와 **원소별 동일**, 부모 관계가 `skeleton.parents`와 일치, `boneMap`이 계약 55본을 정확히 1회씩 덮고 부모가 `HUMANOID_BONE_PARENTS`와 일치, `classifyBoneNames(joints, boneMap)`이 55/55, 메시 노드 이름 집합 = 선언 `meshes[].node`, 헤어 이름 정규식·`style` = id 이름, 메시 노드 이름 중복 없음 |
 | V7 | 오류 | 변환: Armature 루트 TRS 항등·스케일 1, 스킨 메시 노드 월드 변환 항등, 음수 스케일 없음, 베이스 높이 = `heightM` ± 2 %, 발바닥 `min y` ∈ ±5 mm, 얼굴 방향 +Z(눈 중심 z > 머리 bbox 중심 z) |

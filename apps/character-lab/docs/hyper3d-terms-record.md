@@ -1,0 +1,132 @@
+# Hyper3D(Rodin) 약관 확인 기록과 반입 조건 (hyper3d-terms-record)
+
+상태: **current (2026-10-11)** — 키트 파츠를 Hyper3D로 생성해 반입하기 **전에** 상업적 이용·소유권 조항을 확인하고 남기는 기록이다.
+**법률 자문이 아니다.** 아래 영문 발췌는 수집한 페이지 텍스트에서 시작·끝 문구로 기계 추출한 원문이며(단어·철자·부호 그대로, 문단 안의 줄바꿈만 공백으로 합침),
+조항 번호는 원문 번호다. 문서가 정하지 않은 것을 정했다고 쓰지 않는다. 계약(`authored-kit-spec.md`)은 이 문서가 바꾸지 않는다.
+사전 점검 기록은 [`hyper3d-intake-review.md`](hyper3d-intake-review.md), 에셋 레인 구현 상태는 [`../../../tools/blender/character_kit/README.md`](../../../tools/blender/character_kit/README.md)다.
+
+## 1. 결론 (한눈에)
+
+| 질문 | 확인 결과 | 근거 |
+| --- | --- | --- |
+| 상업적으로 쓸 수 있는가 | **플랜에 따라 가능**하다. 가격표의 "Unlimited export and any use"는 Free ✗, Creator·Business·Enterprise ✓. 어느 플랜인지, 법인·사업자의 상용 제품 배포까지 포함하는지는 문서로 닫히지 않는다 | ToS §2, 가격표(§3) |
+| 소유권이 사용자에게 있는가 | **ToS에 소유권 귀속 문장이 없다.** 마케팅 FAQ만 "You own what you create."라 하고, 구매를 "a grant of a license, not a transfer of title"로 적은 문서(Copyright License §2.2)는 Rodin에 적용되는지 불명이다. 그래서 이 저장소는 **소유가 아니라 이용권**으로 기록한다 | §4 |
+| 수정·파생물(리타깃·리메시·텍스처 재베이크)이 되는가 | **문서가 충돌하거나 불명.** ToS §6.3은 수정·파생물을 명시 허가 없이는 금지하고, Copyright License §2.1은 "modify"를 허용한다 | §4 |
+| 공개 저장소·정적 웹 에셋으로 내려받게 해도 되는가 | **이를 직접 다룬 문장이 없다.** §6.3의 복제·배포·공개 전시 금지와 재판매·이전 시 수령자 고지 책임이 걸릴 수 있다 | §4 |
+| 출처 표기가 필요한가 | 요구하는 문장을 찾지 못했다(표지 제거 금지 문장만 있다) | §4 |
+| 사용자의 유료 구독 | 2026-10-10 사용자가 "유료 구독 중이라 상업 사용이 가능한 상태"라고 진술(`hyper3d-intake-review.md` §1). 2026-10-11 03:43 KST 같은 취지로 재확인: "유료 구독이니 상업적 사용 가능할것으로 보여". 둘 다 **사용자 진술이며 플랜명·결제 증빙은 보관돼 있지 않다** | 진술 |
+
+**반입 결정(이 브랜치): 사용자 진술을 근거로 생성·파생·로컬 커밋을 진행한다.** 다만 약관상 닫히지 않은 두 가지(수정·파생물 §6.3 R1/R2, 공개 저장소 서빙)는 남아 있어
+**공개 저장소(`blue45f/toonstudio`는 PUBLIC)로의 push·병합은 사용자의 별도 지시로만 한다.** 그 시점에 §6의 확인(플랜 증빙, 계정 보유자와 발행 주체 일치, 서면 확인)을 함께 점검한다.
+
+## 2. 수집 증거
+
+2026-10-10T17:58~18:22Z(= 2026-10-11 02:58~03:22 KST)에 로그인 없이 읽히는 공개 페이지를 `curl -sSL -A 'Mozilla/5.0 (Macintosh)'`로 받았다(필수 4종은 Playwright 렌더 DOM과도 대조).
+계정·결제·크레딧은 건드리지 않았다. 개정일은 영어판에 없다("Current version"만, 중국어판만 2025-10-16). Wayback 캡처 11건(2026-06-05~10-06)과 오늘 수집본의 영어 ToS 본문 해시가 같다.
+
+| 문서 | URL | raw SHA-256 | 수집(UTC) |
+| --- | --- | --- | --- |
+| 이용약관(ToS) | <https://hyper3d.ai/legal/terms> | `998ec0c7a038e7d18a34bbc1da6186f68f1879a9b12e955849ad9d8d116221f5` | 2026-10-10T17:58:24Z |
+| 저작권 라이선스(Copyright License) | <https://hyper3d.ai/legal/copyright-license> | `9a27c19693762621aa749f51bae03e113b4703478be3bbc74de53c95d1104646` | 2026-10-10T17:58:24Z |
+| 가격 | <https://hyper3d.ai/pricing> | `48b5262d4a457b417f833b8f601df1eddccb07e26e5fd2be8507e30ad359723f` | 2026-10-10T17:58:24Z |
+| API | <https://hyper3d.ai/features/api> | `44d512d6d3eedf8ebdf4e1d4df997498bc3bbb77a168c4052b3fdc0a4b4989c5` | 2026-10-10T17:58:24Z |
+| 이미지→3D(마케팅 FAQ) | <https://hyper3d.ai/features/image-to-3d> | `56dce8722fb4cb1f0d0aaa292a79fbe48d6072e053f7bfb33291a3348911d406` | 2026-10-10T18:02:29Z |
+
+전체 스냅샷(원문 HTML 66건, 추출 텍스트, MANIFEST, 분석 본문)은 **저장소 밖**에 압축 보관했다: `~/.cache/toonstudio-kit/hyper3d-terms-snapshot-2026-10-11.tar.gz`
+(SHA-256 `3d4c0b6b8267f858cf34a3d3d6211a4ce9b297ccf3b94b674260c809c92f5f8e`, 4,512,141 B). 제3자 약관 전문을 공개 저장소에 복제하지 않으려는 의도다. 약관이 개정되면 새로 수집해 이 표를 갱신한다.
+
+## 3. 상업 이용 — 원문과 가격표
+
+> Users are allowed to do following things through the Service on the Sites: Generate 3D Content, by uploading texts and/or images and export such Content for private or commercial use depending on your subscription plan; …
+>
+> — ToS §2 Use of Our Services
+
+> If you use Rodin to generate Output, we will not limit your use of such Output, subject to any restrictions set forth in these Agreements, the Applicable Laws and any third-party terms and conditions applicable to such Output or Services.
+>
+> — ToS §5 (b) Rodin
+
+- 비상업 문구("Users shall not use the Content for commercial purpose")는 **ChatAvatar** 기본 라이선스(§5 (a))에만 붙어 있고 Rodin(§5 (b))에는 없다. 반면 Rodin에는 **권리를 부여하는 문장도 없다**("will not limit your use … subject to any restrictions").
+- 가격표 `Unlimited export and any use` 행: Free —, Creator ✓, Business ✓, Enterprise ✓. `API access` 행: Free —, Creator —, Business "Full access", Enterprise "Custom".
+- 가격 FAQ: "Paid plans include broader export and usage rights. … Review the current terms before using assets in regulated or high-risk contexts."
+- 해석(확정 아님): 유료 플랜에서 만든 Rodin 산출물을 앱 안에서 상업적으로 쓰는 것은 의도된 사용처로 읽힌다. Free 산출물은 상업 이용 가능으로 쓰지 않는다. §5(b)의 "subject to any restrictions set forth in these Agreements"가 §6.3을 다시 끌어오는지는 문서가 말하지 않는다.
+
+## 4. 소유권·라이선스 범위 — 원문
+
+> Except as expressly set out in these Agreements, all IP contained in the Content (for the avoidance of doubt, excluding any Prompts and Output, the arrangement of which shall be subject to Section 5 of these Terms) or Service is our property or third-party licensors' property, …
+>
+> — ToS §6.1 Intellectual Property Rights
+
+> Please note that we make no representations, warranties or undertakings of any kind as to the copyrightability of any Output or the availability of Intellectual Property Rights … We take no responsibility for any breach of any Applicable Laws and third-party terms and conditions applicable to such Output or Services and/or any infringement of third party rights resulting from your use of such Output.
+>
+> — ToS §5 (b) Rodin
+
+> … sell, resell or commercially use the Content, except as expressly permitted by us or our licensors; copy, reproduce, distribute, publicly perform or publicly display all or portions of the Content, except as expressly permitted by us or our licensors; modify the Content, remove any proprietary rights notices or markings, or otherwise make any derivative works based upon the Content; using the Services to train, improve, enhance, or otherwise develop any AI models and services same, similar or competing with the Services provided by us; …
+>
+> — ToS §6.3 Restrictions
+
+> For any permitted sell, resell, transfer or disposal in any form of any Content under the Agreements, Users shall notify the receiving party of the Content the restrictions set forth in these Agreements and take best efforts to procure the receiving party to comply with such restrictions as if such receiving party were the User. The Users shall be responsible for any breach of these Agreements by such receiving party.
+>
+> — ToS §6.3 (마지막 문단)
+
+> Subject to Your compliance of the terms and conditions of this License, the Licensor hereby grants You a worldwide, non-sublicensable, non-exclusive license to exercise the Licensed Rights in the Licensed Product to sell, redistribute, modify, publish, or sublicense the purchased content, but this content may not be used to create a competing service with Hyperhuman.ai products or services.
+>
+> — Copyright License §2.1
+
+> Each purchase constitutes a grant of a license, not a transfer of title. Under the license You may not: attempt to decompile or reverse engineer any software or any aspects of the Licensed Product; remove any copyright or other proprietary notations; or transfer the content to another person without permission or mirror any part of the Licensed Product.
+>
+> — Copyright License §2.2
+
+> Who owns the models, and can I use them commercially? You own what you create. Paid plans include commercial licensing so you can use your image-generated 3D models in games, products, and client work — see our terms for full details.
+>
+> — 이미지→3D 페이지 FAQ(마케팅, 계약 아님)
+
+해석(확정 아님, 읽는 법이 갈린다):
+
+1. **소유권**: ToS는 Output의 소유를 사용자에게 귀속한다는 문장이 없다. "소유"라고 말하는 문서는 마케팅 FAQ뿐이고 ToS §15는 계약 밖 진술에 의존하지 않는다고 한다. → **이용권으로 기록**하고 "소유"라고 쓰지 않는다. 저작권성은 §5(b)가 무보증이다.
+2. **수정·파생물**: (R1) §5(b)가 Rodin Output의 개별 규정이라 §6.3 금지는 적용되지 않거나 §2·가격표("any use")가 명시 허가다. (R2) §5(b)에 "subject to any restrictions …"가 달려 있어 §6.3이 살아 있고, 수정·파생·배포는 명시 허가가 있을 때만 된다. 문서로 확정할 수 없다.
+3. **공개 저장소·정적 호스팅**: 직접 문장이 없다. 이 저장소가 공개라서 파일을 누구나 내려받는다. §6.3 말미(수령자 고지·준수·책임)와 Copyright License §2.2("mirror")가 불리하게 읽힐 소지가 있다.
+4. **Copyright License 자체가 미완성**이다: `[module]`·`[Price]`·`[Term]` 미채움, 라이선서가 ToS의 Deemos Corporation과 다른 "Deemos Technology (Shanghai) Co., Ltd.", 레거시 브랜드 "Hyperhuman.ai", §2.1 안에서 "non-sublicensable"과 "sublicense"가 충돌한다. ToS는 이 문서를 언급하지 않는다.
+5. **권리는 개인(계정 보유자)에 붙는다**(ToS §3·§13, Copyright License §5.6). 상용 제품의 발행 주체와 생성 계정의 보유자를 일치시키고 증빙을 남기는 편이 문면과 맞는다.
+6. 출처 표기를 요구하는 문장은 없다. 다만 표지 제거는 금지다(ToS §6.3, Copyright License §2.2).
+
+## 5. 이 저장소의 반입 정책 (이 브랜치에서 적용하는 것)
+
+1. **생성 경로**: 로컬 Claude Code의 `hyper3d` MCP(OAuth, 계정 인증). Blender 애드온의 free trial key 경로는 쓰지 않았다.
+2. **원본(Rodin GLB 약 8~10 MB)은 저장소에 커밋하지 않는다.** 원본은 `~/.cache/toonstudio-kit/hyper3d-raw/`에 보관하고 SHA-256과 `generation_id`만 §7 표에 남긴다.
+   서명 다운로드 URL은 7일 뒤 만료되고(Data Retention Policy, API 산출물 7일 보관) 비밀로 취급해 어디에도 적지 않는다.
+3. **저장소에 들어가는 것은 파생 파츠 GLB(파일당 ≤ 1.5 MiB)와 생성 스크립트, 이 기록뿐**이다. 파츠 GLB는 리타깃·리메시·텍스처 재베이크를 거친 **수정·파생물**이므로 §4의 R1/R2가 그대로 적용된다.
+4. **계약 표기**: 키트 계약은 `provenance.license ∈ {CC0-1.0, original}`만 허용한다(V4). Hyper3D 파생물을 이 둘 중 하나로 적으면 사실과 다르다. 그래서 별도 라이선스 값을 계약에 추가하고(§8), 그 값이 쓰인 키트는 **이 기록을 가리키는 증빙 경로와 생성 id**를 `provenance`에 반드시 싣게 했다.
+5. **push·병합은 사용자의 별도 지시로만**(점검 항목은 §6). 이 브랜치의 커밋은 로컬 소실 방지용이다.
+
+## 6. 반입(push·병합) 전에 사람이 닫아야 하는 것
+
+1. **플랜 증빙**: 플랜명(Creator/Business/…)과 결제 기록의 보관 위치. 가격표상 MCP/API 경유는 Business가 "Full access"라, 이 계정의 플랜이 상업 이용·MCP를 모두 포함하는지 확인한다.
+2. **계정 보유자 = 발행 주체**: 에이치준랩스(개인사업자) 명의 계정인지 확인하고 증빙한다.
+3. **서면 확인**(hello@deemos.com — ToS §7·§17이 안내하는 연락처). 답변은 약관 개정으로 바뀔 수 있으므로 받은 메일 원문과 날짜를 이 기록에 첨부한다. 후보 질문:
+   1. Rodin 산출물에 Copyright License가 적용됩니까? `[module]`·`[Price]`·`[Term]`은 어떤 값이고 계약 당사자는 어느 법인입니까?
+   2. Creator의 "Unlimited export and any use"는 법인/사업자가 상용 제품에 포함해 배포하는 경우까지 포함합니까? Business가 필요한 경우는 언제입니까?
+   3. 산출물을 수정(리타깃·리메시·텍스처 재베이크)하고 앱에 포함해 최종 사용자에게 제공하는 것이 ToS §6.3에도 불구하고 허용됩니까?
+   4. 공개 저장소에 산출물(및 파생물)을 커밋·서빙해 불특정 다수가 내려받게 하는 것이 허용됩니까? §6.3 말미의 수령자 고지는 어떤 형태로 하면 됩니까?
+   5. MCP(OAuth, billing workspace) 경유 생성물은 API와 같은 권리를 받습니까?
+   6. 구독 해지·만료 후 이미 내려받은 산출물의 사용권은 유지됩니까? 약관 개정은 기존 산출물에 소급됩니까?
+   7. 산출물의 소유권은 누구에게 있습니까? 마케팅 FAQ의 "You own what you create."는 계약상 유효한 진술입니까?
+4. 위 3번의 3·4가 부정적이면 Hyper3D 파생 파츠는 공개 저장소에서 빼고(비공개 저장소·배포 시 주입), 키트는 CC0/original 파츠만으로 구성한다.
+
+## 7. 생성 기록
+
+공통: 도구 `mcp__hyper3d__rodin_generate`(로컬 Claude Code, 인증된 계정), `tier=Gen-2.5-Medium`, `mesh_mode=Quad`, `texture_delight=true`, `geometry_file_format=glb`, 참조 이미지 없음.
+산출 파일은 `base_basic_pbr.glb`(PBR). 크레딧은 공식 docs 기준 호출당 0.5(문서 간 충돌 있음: API 랜딩 "From 1 credit"), 4건 합계 약 2.0 크레딧이다. MCP에는 잔액 조회 도구가 없어 실제 소모는 Hyper3D Mine에서 확인해야 한다.
+
+| 용도 | generation_id | quality_override | 결과 수신(UTC) | raw SHA-256 | 원본 크기 | 비고 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `top/tee` | `82698064-e736-4b1e-ac56-67f6569bd364` | 15000 | 2026-10-10T18:00Z | `1c60f00ef7f96785525d133fd3dad94fd4a49743709534f216a6277160235a5b` | 8,083,808 B | 28,824 tri. 마네킹 목 조각 동반 |
+| `bottom/jeans` | `cb5a2e39-ecf4-4f99-9380-89267264053b` | 10000 | 2026-10-10T18:04Z | `9bda1b6ef110bca7bc562de844508cc74bce9cb862b3068ecc346fd2496b7a92` | 8,722,340 B | 20,084 tri. 마네킹 허리·신발 동반 |
+| `shoes/sneakers` | `d6cd1b50-7e9f-401e-a4b4-87bf45b0e336` | 8000 | 2026-10-10T18:15Z | `9ea818e7d93792da0ae1727faf9c9f1d018b2d4c3a3afffeb281b4def66a1684` | 8,985,804 B | 16,130 tri. 한 켤레 |
+| `hair/soft-bob` | `3f1040da-6127-4402-98e2-2692cccb2a3d` | 15000 | 2026-10-10T18:16Z | `5fde2b1a24c57ea4242af8ade849795a8b0d6e40342b6a3356e5ad30ceabf4ad` | 9,764,060 B | 27,524 tri. 흉상 동반 |
+
+`display_url`은 `https://hyper3d.ai/workspace/rodin/<generation_id>`이다(로그인한 계정에서만 열린다). 프롬프트 원문과 정리 규칙은 `tools/blender/character_kit/README.md`와 각 스크립트에 있다.
+
+## 8. 남은 저장소 쪽 작업
+
+- 계약 확장(허용 라이선스 값 추가)은 계약·검증기·문서·테스트를 함께 바꾼다. 변경 위치와 근거는 같은 커밋의 본문에 적는다. 값이 늘어도 **법적 허용을 의미하지 않는다** — 증빙 경로와 생성 id가 있어야 V4가 통과하게 해서 이 기록을 건너뛰지 못하게 하는 것이 목적이다.
+- 약관이 개정되면 §2의 해시를 갱신하고 §3~§4를 다시 대조한다.
