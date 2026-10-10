@@ -32,6 +32,7 @@ class TextureStyle:
     quality: int = 90
     contrast_percentiles: tuple[float, float] = (3.0, 97.0)
     gamma: float = 1.0  # < 1이면 중간톤이 밝아진다(헤어처럼 strength가 커도 평균 휘도 ≥ 0.75를 지키려는 용도)
+    min_mean: float = 0.78  # 사용 영역의 평균 휘도 하한. 검증기 V13의 하한 0.75에 JPEG 손실 여유를 더한 값 — 모자라면 strength를 줄여 맞춘다
 
 
 def luminance(rgb: np.ndarray) -> np.ndarray:
@@ -109,7 +110,10 @@ def relative_color_texture(image_bytes: bytes, uv_triangles: np.ndarray, style: 
     normalized = np.clip((y - low) / max(high - low, 1e-3), 0.0, 1.0)
     normalized = normalized ** style.gamma
     normalized = _soft_posterize(normalized, style.bands, style.band_softness)
-    out = 1.0 - style.strength * (1.0 - normalized)
+    # 평균 휘도(= 1 - strength × (1 - 정규화 평균))가 하한보다 낮으면 strength를 낮춰 하한에 맞춘다(색은 틴트가 곱해지므로 어둡게 나오면 의도한 색이 아니다).
+    mean_normalized = float(normalized[used].mean()) if used.any() else 1.0
+    strength = min(style.strength, (1.0 - style.min_mean) / max(1.0 - mean_normalized, 1e-6))
+    out = 1.0 - strength * (1.0 - normalized)
     fill = float(out[used].mean()) if used.any() else 1.0
     out = np.where(padded, out, fill)
 
@@ -121,6 +125,7 @@ def relative_color_texture(image_bytes: bytes, uv_triangles: np.ndarray, style: 
         "bytes": len(data),
         "size": style.size,
         "usedFraction": round(float(used.mean()), 4),
+        "strengthUsed": round(strength, 4),
         "meanLuminance": round(float(out.mean()), 4),
         "meanLuminanceUsed": round(fill, 4),
         "minLuminance": round(float(out[used].min()), 4) if used.any() else None,

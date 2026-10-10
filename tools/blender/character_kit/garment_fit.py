@@ -106,20 +106,34 @@ def fit_similarity(
     cap: float = 0.08,
     max_rounds: int = 80,
     seed: int = 0,
+    scale_limit: tuple[float, float] | None = None,
+    shift_limit: float | None = None,
+    target_distance: float | None = None,
 ) -> tuple[float, np.ndarray, float]:
     """균일 스케일 s와 평행이동 t를 최적화한다: 점 p → s·p + t.
 
     비용 = 표본점의 몸 표면 거리(cap으로 상한)의 평균. 스케일 후보마다 `anchor_source`(의상 쪽 기준점)가
     `anchor_target`(몸 쪽 기준점)에 오도록 t를 초기화하고, 좌표별 패턴 탐색(보폭 반감)으로 다듬은 뒤 가장 좋은 후보를 고른다.
     (s, t, 비용)을 돌려준다.
+
+    비용이 "몸에 가까울수록 좋다"뿐이라 제한이 없으면 치마·후디처럼 몸에서 뜬 의상은 계속 줄어들며 몸에 붙으려 한다.
+    그래서 초기 정렬을 믿을 수 있을 때(`frame`)는 `scale_limit`(허용 스케일 구간)과 `shift_limit`(기준점이 목표에서 벗어날 수 있는 최대 거리)로 가둔다.
+    `target_distance`를 주면 비용을 부호 있는 거리(바깥 +)가 그 값(의상이 몸에서 뜨는 전형적인 간격)에 가까울수록 낮게 매긴다 —
+    몸 안으로 파고든 정렬이 "가깝다"고 높게 평가되는 것을 막는다.
     """
     rng = np.random.default_rng(seed)
     pick = rng.choice(len(points), size=min(sample, len(points)), replace=False)
     sampled = np.asarray(points, dtype=np.float64)[pick]
 
+    normal_field = vertex_normals(surface.positions, surface.triangles) if target_distance is not None else None
+
     def cost(s: float, t: np.ndarray) -> float:
-        hits = surface.closest(s * sampled + t)
-        return float(np.minimum(hits.distance, cap).mean())
+        moved = s * sampled + t
+        if target_distance is None:
+            hits = surface.closest(moved)
+            return float(np.minimum(hits.distance, cap).mean())
+        distance, _, _ = signed_distance(moved, surface, normal_field)
+        return float(np.minimum(np.abs(distance - target_distance), cap).mean())
 
     best: tuple[float, float, np.ndarray] | None = None
     for s0 in scale_candidates:
@@ -137,6 +151,10 @@ def fit_similarity(
                     else:
                         t2[axis - 1] += sign * steps[axis]
                     if s2 <= 0:
+                        continue
+                    if scale_limit is not None and not (scale_limit[0] <= s2 <= scale_limit[1]):
+                        continue
+                    if shift_limit is not None and float(np.linalg.norm(s2 * np.asarray(anchor_source, dtype=np.float64) + t2 - np.asarray(anchor_target, dtype=np.float64))) > shift_limit:
                         continue
                     c2 = cost(s2, t2)
                     if c2 < c - 1e-9:
@@ -434,6 +452,189 @@ def compatible_vertex_skin(
             out_joints[row, slot] = j
             out_weights[row, slot] = w / norm
     return out_joints, out_weights, found / max(count, 1)
+
+
+# ---------------------------------------------------------------- 소매 정렬 (헐렁한 A-포즈 소매를 몸의 팔 방향으로)
+
+
+def _smoothstep(edge0: float, edge1: float, x: np.ndarray) -> np.ndarray:
+    """edge0 → edge1에서 0 → 1로 부드럽게 오른다. edge1 < edge0이면 1 → 0으로 내려간다."""
+    span = edge1 - edge0
+    t = np.clip((x - edge0) / (span if abs(span) > 1e-9 else 1e-9), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _rotate_about_axis(vectors: np.ndarray, axis: np.ndarray, angles: np.ndarray) -> np.ndarray:
+    """벡터마다 다른 각도로 같은 축을 중심으로 돌린다(Rodrigues)."""
+    cos = np.cos(angles)[:, None]
+    sin = np.sin(angles)[:, None]
+    along = (vectors @ axis)[:, None] * axis[None, :]
+    return vectors * cos + np.cross(axis[None, :], vectors) * sin + along * (1.0 - cos)
+
+
+def align_sleeves_to_arms(
+    points: np.ndarray,
+    normals: np.ndarray,
+    joint_positions: np.ndarray,
+    chains: list[dict[str, int]],
+    torso_profile: tuple[np.ndarray, np.ndarray] | None = None,
+    silhouette_margin: float = 0.06,
+    search_radius: float = 0.26,
+    sleeve_radius: float = 0.095,
+    facing_min: float = 0.15,
+    cuff_band: float = 0.04,
+    shoulder_fade: float = 0.14,
+    min_angle_deg: float = 1.5,
+) -> tuple[np.ndarray, dict]:
+    """A-포즈 상의의 헐렁한 소매를 어깨 둘레로 돌려 몸의 팔 방향에 맞춘다.
+
+    생성된 전신 그림의 팔은 몸의 A-포즈 팔과 각도가 달라(내려뜨린 정도가 다르다) 소매 끝이 팔에서 5~15 cm 벗어난다. 그 상태로 팔을 T-포즈로
+    올리면 소매 아랫부분이 몸통·밑단 웨이트를 받아 날개처럼 늘어진다. 먼저 소매를 어깨를 중심으로 팔 방향으로 돌려 놓으면, 이후의 충돌 해소와 표면 웨이트
+    전달이 보통의 몸에 붙는 소매처럼 동작한다.
+
+    1. 소매 끝(커프): 몸통 실루엣(`torso_profile`, +`silhouette_margin`) 밖이고 몸의 팔 축(어깨→손목) 둘레 `search_radius` 안에서 팔 방향으로 가장
+       멀리 뻗은 정점들(`cuff_band` 안)의 중심. 이 중심이 소매 자체의 축(어깨→커프 중심)을 정한다.
+    2. 소매 정점: 자체 축에서 `sleeve_radius` 안이고 법선이 축에서 바깥쪽을 향하는 정점. 소매 옆에 붙은 몸통 옆면은 법선이 축 쪽을 향해 빠진다.
+       어깨에서 `shoulder_fade` 안쪽으로 갈수록 소매 비중이 0으로 줄어 몸통에 이어진다.
+    3. 소매 비중만큼의 각도로, 자체 축을 팔 축으로 옮기는 회전을 어깨 둘레로 적용한다.
+    소매 끝이 팔꿈치보다 안쪽이거나 이미 거의 정렬된(`min_angle_deg` 미만) 쪽은 건드리지 않는다.
+    `chains` 각 항목은 {"arm", "forearm", "hand"} joint 번호, `joint_positions`는 A-포즈 월드 위치다. (이동한 점, 보고)를 돌려준다.
+    """
+    out = points.copy()
+    report: dict = {"sides": []}
+    for chain in chains:
+        shoulder = joint_positions[chain["arm"]]
+        elbow = joint_positions[chain["forearm"]]
+        wrist = joint_positions[chain["hand"]]
+        l_up = float(np.linalg.norm(elbow - shoulder))
+        base_axis = (wrist - shoulder) / max(float(np.linalg.norm(wrist - shoulder)), 1e-9)
+        offset = points - shoulder
+        axial = offset @ base_axis
+        lateral = np.linalg.norm(offset - np.outer(axial, base_axis), axis=1)
+        eligible = (lateral <= search_radius) & (axial > 0.0)
+        if torso_profile is not None:
+            edges_y, half_width = torso_profile
+            bin_index = np.clip(np.searchsorted(edges_y, points[:, 1]) - 1, 0, len(half_width) - 1)
+            side = 1.0 if wrist[0] >= 0.0 else -1.0
+            eligible &= side * points[:, 0] > half_width[bin_index] + silhouette_margin
+        candidates = np.flatnonzero(eligible)
+        if len(candidates) == 0:
+            report["sides"].append({"cuff": None})
+            continue
+        a_max = float(axial[candidates].max())
+        if a_max < l_up:
+            report["sides"].append({"cuff": None, "reason": "소매가 팔꿈치 안쪽에서 끝남", "cuffAxialM": round(a_max, 3)})
+            continue
+        cuff = candidates[axial[candidates] >= a_max - cuff_band]
+        own = points[cuff].mean(axis=0) - shoulder
+        # 소매 끝 고리는 몸의 팔 축과 기울어져 있어 한쪽 가장자리가 먼저 뽑힌다 → 소매 자체 축을 기준으로 고리를 다시 뽑아 중심을 바로잡는다.
+        for _ in range(2):
+            refined_axis = own / max(float(np.linalg.norm(own)), 1e-9)
+            refined_axial = offset[candidates] @ refined_axis
+            ring = candidates[refined_axial >= refined_axial.max() - cuff_band]
+            own = points[ring].mean(axis=0) - shoulder
+        own_length = float(np.linalg.norm(own))
+        own_axis = own / max(own_length, 1e-9)
+        angle = float(np.arccos(np.clip(own_axis @ base_axis, -1.0, 1.0)))
+        if np.degrees(angle) < min_angle_deg:
+            report["sides"].append({"cuff": int(len(cuff)), "angleDeg": round(float(np.degrees(angle)), 2), "reason": "이미 팔 방향과 정렬됨"})
+            continue
+        rotation_axis = np.cross(own_axis, base_axis)
+        rotation_axis /= max(float(np.linalg.norm(rotation_axis)), 1e-9)
+        own_axial = offset @ own_axis
+        radial_vector = offset - np.outer(own_axial, own_axis)
+        own_lateral = np.linalg.norm(radial_vector, axis=1)
+        facing = np.einsum("ij,ij->i", normals, radial_vector / np.maximum(own_lateral, 1e-9)[:, None])
+        tube = _smoothstep(sleeve_radius + 0.02, sleeve_radius - 0.02, own_lateral) * _smoothstep(facing_min - 0.15, facing_min + 0.15, facing)
+        membership = tube * _smoothstep(0.0, shoulder_fade, own_axial) * (own_axial < own_length + 0.15)
+        out = shoulder + _rotate_about_axis(out - shoulder, rotation_axis, membership * angle)
+        report["sides"].append(
+            {"cuff": int(len(cuff)), "angleDeg": round(float(np.degrees(angle)), 2), "cuffAxialM": round(a_max, 3), "sleeveVertices": int((membership > 0.5).sum()), "weightedVertices": int((membership > 0.05).sum())}
+        )
+    return out, report
+
+
+def stretched_faces(before: np.ndarray, after: np.ndarray, triangles: np.ndarray, ratio: float = 4.0, min_length: float = 0.10) -> np.ndarray:
+    """포즈를 바꾼 뒤 변이 `ratio`배 이상 늘어나 `min_length`(m) 넘게 길어진 삼각형 마스크.
+
+    생성된 의상은 소매 끝이 밑단에 닿아 한 덩어리로 이어진 경우가 있다(소매 끝에서 밑단까지 옷감 거리가 5 cm). 팔을 올리면 그 이음 삼각형이
+    몇십 cm짜리 띠로 늘어난다. 정상적인 늘어남(겨드랑이 변이 2~3배)은 걸리지 않게 길이 하한을 함께 둔다.
+    """
+    triangles = np.asarray(triangles, dtype=np.int64)
+    torn = np.zeros(len(triangles), dtype=bool)
+    for a, b in ((0, 1), (1, 2), (2, 0)):
+        old = np.linalg.norm(before[triangles[:, a]] - before[triangles[:, b]], axis=1)
+        new = np.linalg.norm(after[triangles[:, a]] - after[triangles[:, b]], axis=1)
+        torn |= (new >= min_length) & (new >= ratio * np.maximum(old, 1e-4))
+    return torn
+
+
+def raise_bangs(
+    points: np.ndarray,
+    bang_target_y: float,
+    face_z: float,
+    center_half_width: float = 0.07,
+    blend: float = 0.04,
+) -> tuple[np.ndarray, dict]:
+    """앞머리 아랫선(얼굴 앞 정중앙 헤어 정점 중 가장 낮은 높이)이 `bang_target_y`(눈썹 위)보다 낮으면, 정수리에서 아래로 잰 길이를 줄여 올린다.
+
+    전신 그림 속 인물은 머리 비율이 베이스와 달라 머리 폭·정수리를 맞춰도 앞머리가 눈 높이까지 내려와 눈을 가린다. `face_z` 앞쪽(귀 앞)의 정점만
+    정수리 기준으로 길이를 `k`배로 줄이고(`blend` 폭으로 부드럽게 이어 붙임), 뒷머리·옆머리 길이는 그대로 둔다.
+    앞머리가 없거나(정중앙 앞쪽에 정점이 없음) 이미 목표보다 높으면 건드리지 않는다. (이동한 점, 보고)를 돌려준다.
+    """
+    top = float(points[:, 1].max())
+    front = (points[:, 2] > face_z) & (np.abs(points[:, 0]) < center_half_width)
+    if not front.any():
+        return points, {"raised": False, "reason": "얼굴 앞 정중앙에 헤어 정점이 없음"}
+    bottom = float(points[front, 1].min())
+    if bottom >= bang_target_y:
+        return points, {"raised": False, "bangBottomY": round(bottom, 4), "reason": "이미 목표보다 높음"}
+    k = (top - bang_target_y) / max(top - bottom, 1e-6)
+    weight = _smoothstep(face_z - blend, face_z + blend, points[:, 2])
+    out = points.copy()
+    out[:, 1] = top - (top - points[:, 1]) * (1.0 - weight * (1.0 - k))
+    return out, {"raised": True, "bangBottomY": round(bottom, 4), "targetY": bang_target_y, "lengthScale": round(k, 3)}
+
+
+def spike_faces(triangles: np.ndarray, rounds: int = 3) -> np.ndarray:
+    """한 변으로만 이웃과 이어진(나머지 두 변이 열린 가장자리인) 삼각형 마스크 — 떼어 낸 자리의 가는 가시. `rounds`번 되풀이해 깎는다."""
+    triangles = np.asarray(triangles, dtype=np.int64)
+    alive = np.ones(len(triangles), dtype=bool)
+    for _ in range(rounds):
+        current = triangles[alive]
+        if len(current) == 0:
+            break
+        pairs = np.sort(np.concatenate([current[:, [0, 1]], current[:, [1, 2]], current[:, [2, 0]]]), axis=1)
+        unique, inverse, counts = np.unique(pairs, axis=0, return_inverse=True, return_counts=True)
+        shared = (counts[inverse.reshape(-1)] >= 2).reshape(3, len(current)).sum(axis=0)
+        drop_local = shared <= 1
+        if not drop_local.any():
+            break
+        alive[np.flatnonzero(alive)[drop_local]] = False
+    return ~alive
+
+
+def small_island_faces(triangles: np.ndarray, vertex_count: int, min_faces: int = 120, min_fraction: float = 0.03) -> np.ndarray:
+    """꼭짓점으로 이어진 덩어리 중 삼각형이 `max(min_faces, 전체의 min_fraction)`개 미만인 덩어리의 삼각형 마스크(떼어 낸 뒤 남는 파편)."""
+    triangles = np.asarray(triangles, dtype=np.int64)
+    parent = np.arange(vertex_count)
+
+    def find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return int(x)
+
+    for a, b, c in triangles.tolist():
+        for u, v in ((a, b), (b, c)):
+            ru, rv = find(u), find(v)
+            if ru != rv:
+                parent[rv] = ru
+    roots = np.array([find(int(v)) for v in triangles[:, 0]]) if len(triangles) else np.zeros(0, dtype=np.int64)
+    labels, counts = np.unique(roots, return_counts=True)
+    threshold = max(min_faces, int(min_fraction * len(triangles)))
+    small = labels[counts < threshold]
+    return np.isin(roots, small)
 
 
 # ---------------------------------------------------------------- 법선 호환 삼각형 결합 (겨드랑이·소매 안쪽)

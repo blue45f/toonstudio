@@ -284,7 +284,11 @@ class Hyper3dProvenanceTest(unittest.TestCase):
     def test_real_sources_file_loads_and_every_entry_is_valid(self) -> None:
         self.assertEqual(self.sources.record_doc, "apps/character-lab/docs/hyper3d-terms-record.md")
         self.assertTrue((REPO_ROOT / self.sources.record_doc).is_file())
-        self.assertEqual(sorted(self.sources.sources), ["bottom/jeans", "hair/soft-bob", "shoes/sneakers", "top/tee"])
+        # 필수 4종(파일럿)은 반드시 있고, 그 밖의 항목은 프리셋 표(garment_presets.PRESETS)에 있는 프리셋이어야 한다.
+        self.assertLessEqual({"bottom/jeans", "hair/soft-bob", "shoes/sneakers", "top/tee"}, set(self.sources.sources))
+        from character_kit.garment_presets import PRESETS
+
+        self.assertLessEqual(set(self.sources.sources), set(PRESETS))
         for preset_id, record in self.sources.sources.items():
             entry = km.hyper3d_source_entry(preset_id, record, self.sources.record_doc)
             self.assertEqual(entry["id"], "hyper3d-" + preset_id.replace("/", "-"))

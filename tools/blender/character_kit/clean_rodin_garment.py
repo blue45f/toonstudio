@@ -1,7 +1,7 @@
 """Hyper3D(Rodin) 의상 원본 정리 (Blender 헤드리스).
 
 사용:
-    blender --background --python clean_rodin_garment.py -- <원본.glb> <출력.glb> --preset tee|jeans|hair|sneakers|keep [--pick-object 이름] [--report 보고서.json]
+    blender --background --python clean_rodin_garment.py -- <원본.glb> <출력.glb> --preset tee|jeans|hair|hair-dark|sneakers|keep|top-no-skin [--pick-object 이름] [--ref-object 이름] [--report 보고서.json]
 
 Rodin은 의상만 달라고 해도 마네킹 목·허리·발목·신발 조각을 같은 메시에 붙여 낸다. 이 스크립트는 베이스 바디와 무관한
 단계로, 텍스처 색과 높이 기준으로 그런 조각을 지우고 의상 셸 중 가장 큰 덩어리만 남긴다. 기준은 프리셋별 규칙이며
@@ -96,33 +96,90 @@ def rule_keep(hsv, z_norm, face_vertices):
     return np.zeros(len(hsv), dtype=bool), {"rule": "keep everything (already a separated part)"}
 
 
-RULES = {"tee": rule_tee, "jeans": rule_jeans, "hair": rule_hair, "sneakers": rule_sneakers, "keep": rule_keep}
+def rule_hair_dark(hsv, z_norm, face_vertices):
+    """검은 머리 BANG 파츠: 이마·귀 피부 조각과 칼라 파편은 밝다(명도 > 0.42). 머리카락은 텍스처 명도가 낮으므로 밝은 면만 지우고 가장 큰 덩어리를 남긴다."""
+    bright = hsv[:, 2] > 0.42
+    return bright, {"rule": "remove bright (skin/collar) faces from black hair", "brightFaces": int(bright.sum())}
+
+
+def rule_top_no_skin(hsv, z_norm, face_vertices):
+    """상의 BANG 파츠: 소매 끝에 손(살색)이 같이 붙어 나온다. 살색(색상 10~45°, 채도 0.18~0.65, 명도 ≥ 0.45)을 지우고 가장 큰 덩어리(옷)만 남긴다.
+    흰 칼라·회색 천은 채도가 낮고, 빨간 리본·안감은 채도 ≥ 0.7, 감색 천은 색상이 달라 걸리지 않는다. 베이지·황갈색 의상에는 쓰지 않는다."""
+    skin = (hsv[:, 0] >= 10.0) & (hsv[:, 0] <= 45.0) & (hsv[:, 1] >= 0.18) & (hsv[:, 1] <= 0.65) & (hsv[:, 2] >= 0.45)
+    return skin, {"rule": "remove skin-colored faces (hands at the cuffs) from a top", "skinFaces": int(skin.sum())}
+
+
+RULES = {"tee": rule_tee, "jeans": rule_jeans, "hair": rule_hair, "hair-dark": rule_hair_dark, "sneakers": rule_sneakers, "keep": rule_keep, "top-no-skin": rule_top_no_skin}
 KEEP_COMPONENTS = {"sneakers": 2}
 # 가는 틈이 남는 프리셋만 작은 구멍(경계 고리의 대각선 0.35 이하)을 메운다. 얼굴·밑단 같은 큰 개구부는 그대로 둔다.
-FILL_HOLES = {"hair"}
+FILL_HOLES = {"hair", "hair-dark"}
+
+
+def reference_head(name, top_fraction=0.40):
+    """BANG 흉상의 머리(살색) 메시 치수를 glTF 축(Y 위, +Z 앞)으로 잰다. 같은 좌표계를 쓰는 헤어 파츠를 베이스 머리에 맞추는 기준이다.
+
+    머리 메시에는 목·어깨가 붙어 있어 전체 폭은 어깨 폭이다. 두개골은 맨 위 `top_fraction` 구간이므로 폭·앞뒤 범위는 그 구간만으로 잰다.
+    """
+    if not name:
+        return None
+    import bpy
+
+    matches = [obj for obj in mesh_objects() if obj.name == name or obj.name.startswith(name + ".")]
+    if len(matches) != 1:
+        raise SystemExit(f"--ref-object {name}에 맞는 메시가 하나여야 한다: {[o.name for o in mesh_objects()]}")
+    obj = matches[0]
+    # Blender (x, y, z) → glTF (x, z, -y)
+    points = np.array([(obj.matrix_world @ vertex.co)[:] for vertex in obj.data.vertices], dtype=np.float64)
+    gltf = np.stack([points[:, 0], points[:, 2], -points[:, 1]], axis=1)
+    top, bottom = float(gltf[:, 1].max()), float(gltf[:, 1].min())
+    cranium = gltf[gltf[:, 1] >= top - top_fraction * (top - bottom)]
+    return {
+        "name": obj.name,
+        "top": round(top, 4),
+        "bottom": round(bottom, 4),
+        "centerX": round(float(0.5 * (cranium[:, 0].min() + cranium[:, 0].max())), 4),
+        "width": round(float(cranium[:, 0].max() - cranium[:, 0].min()), 4),
+        "minZ": round(float(cranium[:, 2].min()), 4),
+        "maxZ": round(float(cranium[:, 2].max()), 4),
+    }
 
 
 def main():
     args = cli_args()
     if len(args) < 2 or flag_value(args, "--preset") not in RULES:
-        raise SystemExit("사용법: -- <원본.glb> <출력.glb> --preset tee|jeans|hair|sneakers|keep [--pick-object 이름] [--report 보고서.json]")
+        raise SystemExit("사용법: -- <원본.glb> <출력.glb> --preset tee|jeans|hair|hair-dark|sneakers|keep|top-no-skin [--pick-object 이름] [--ref-object 이름] [--report 보고서.json]")
     source, destination = args[0], args[1]
     preset = flag_value(args, "--preset")
 
     reset_scene()
     import_glb(source)
     source_low, source_high = world_bounds(mesh_objects())  # BANG처럼 여러 부위가 같은 좌표계를 쓰는 원본의 전신 경계 상자(Blender 축)
+    reference = reference_head(flag_value(args, "--ref-object"))
     pick = flag_value(args, "--pick-object")
     if pick:
-        # BANG 산출물처럼 메시가 여럿인 GLB에서 하나만 고른다(나머지는 지운다).
+        # BANG 산출물처럼 메시가 여럿인 GLB에서 고른다(나머지는 지운다). 쉼표로 여러 개를 주면 합쳐서 하나로 만든다(좌우가 따로 분리된 신발 등).
         import bpy
 
-        keep = [obj for obj in mesh_objects() if obj.name == pick or obj.name.startswith(pick + ".")]
-        if len(keep) != 1:
-            raise SystemExit(f"--pick-object {pick}에 맞는 메시가 정확히 1개여야 한다: {[o.name for o in mesh_objects()]}")
+        wanted = pick.split(",")
+        keep = [obj for obj in mesh_objects() if any(obj.name == name or obj.name.startswith(name + ".") for name in wanted)]
+        if len(keep) != len(wanted):
+            raise SystemExit(f"--pick-object {pick}에 맞는 메시가 {len(wanted)}개여야 한다: {[o.name for o in mesh_objects()]}")
         for obj in mesh_objects():
-            if obj is not keep[0]:
+            if obj not in keep:
                 bpy.data.objects.remove(obj, do_unlink=True)
+        if len(keep) > 1:
+            bpy.ops.object.select_all(action="DESELECT")
+            for obj in keep:
+                obj.select_set(True)
+            bpy.context.view_layer.objects.active = keep[0]
+            bpy.ops.object.join()
+            merged = bpy.context.view_layer.objects.active
+            # 재질 슬롯을 하나로 합친다(BANG 파츠는 같은 아틀라스를 가리키는 재질이 파츠마다 따로 있다). 첫 재질만 남긴다.
+            for polygon in merged.data.polygons:
+                polygon.material_index = 0
+            while len(merged.material_slots) > 1:
+                merged.active_material_index = len(merged.material_slots) - 1
+                bpy.ops.object.material_slot_remove()
     meshes = mesh_objects()
     if len(meshes) != 1:
         raise SystemExit(f"Rodin 원본은 메시 1개여야 한다: {[m.name for m in meshes]}")
@@ -152,6 +209,7 @@ def main():
         "boundsMin": [round(v, 4) for v in low],
         "boundsMax": [round(v, 4) for v in high],
         # glTF 축(Y 위, +Z 앞): Blender (x, y, z) → (x, z, -y). 전신에서 분리한 파츠는 이 상자로 베이스에 초기 정렬한다.
+        "referenceHeadGltf": reference,
         "sourceBoundsGltf": {
             "min": [round(source_low[0], 4), round(source_low[2], 4), round(-source_high[1], 4)],
             "max": [round(source_high[0], 4), round(source_high[2], 4), round(-source_low[1], 4)],

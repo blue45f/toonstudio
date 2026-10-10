@@ -15,49 +15,201 @@
       "generationId": "82698064-e736-4b1e-ac56-67f6569bd364",
       "displayUrl": "https://hyper3d.ai/workspace/rodin/82698064-e736-4b1e-ac56-67f6569bd364",
       "tier": "Gen-2.5-Medium",
-      "qualityOverride": 15000,
-      "resultReceivedUtc": "2026-10-10T18:00:24Z",
       "rawSha256": "1c60f00ef7f96785525d133fd3dad94fd4a49743709534f216a6277160235a5b",
       "rawBytes": 8083808,
-      "prompt": "A plain short-sleeve crew-neck T-shirt as a standalone garment, perfectly symmetrical, laid out in a T-pose with the sleeves stretched out horizontally, open neck hole, open sleeve cuffs and open hem so it is hollow inside, thin fabric thickness, no body, no mannequin, no person, no hanger, clean anime cel-shaded look, flat solid light color, soft simple fabric folds only, no baked lighting or shadows, no logos, no text, no print",
-      "cleanPreset": "tee",
-      "changesKo": "마네킹 목 조각 제거, HBM 여성 베이스에 맞춰 리타깃(정렬·충돌 해소·표면 결합), 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크."
+      "intent": "top/tee 후보(옷만, T-포즈)",
+      "changesKo": "옷만 요청한 티셔츠 생성물에서 마네킹 목 조각을 지우고, 베이스 T-포즈 몸에 맞춰 리타깃(정렬·충돌 해소·웹툰풍 스무딩·표면 결합), 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "qualityOverride": 15000
+    },
+    "top/shirt": {
+      "generationId": "6ed2b9f1-c3ac-45ec-bb8c-2f98b3bd6f48",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/6ed2b9f1-c3ac-45ec-bb8c-2f98b3bd6f48",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "bfd04cb268e4ed8f0d3a01e8996f7b96ec2ab90a0d52e8fad4890641c4c7a952",
+      "rawBytes": 10101744,
+      "intent": "셔츠 분리",
+      "changesKo": "전신(드레스셔츠 차림) 생성물을 BANG으로 분리한 셔츠 파츠를 베이스 A-포즈 몸에 맞춘 뒤 T-포즈로 변환, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "792ed91f-b173-4adc-af86-07abb11144f2"
+    },
+    "top/blazer": {
+      "generationId": "f12ea410-75bf-4475-a213-198746431395",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/f12ea410-75bf-4475-a213-198746431395",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "17b43e7a36c950a65ce3739b807dda77ad0ddfa91ef27b586f63e46278a24437",
+      "rawBytes": 10832888,
+      "intent": "교복 분리",
+      "changesKo": "교복 여학생 전신 생성물을 BANG으로 분리한 블레이저 파츠(소매 포함, 셔츠·리본 파편 제외)를 베이스 A-포즈 몸에 맞춘 뒤 T-포즈로 변환, 웹툰풍 스무딩(라펠 유지), 7,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "44533c2e-788e-4b41-ba29-4119e52f493c"
     },
     "bottom/jeans": {
       "generationId": "cb5a2e39-ecf4-4f99-9380-89267264053b",
       "displayUrl": "https://hyper3d.ai/workspace/rodin/cb5a2e39-ecf4-4f99-9380-89267264053b",
       "tier": "Gen-2.5-Medium",
-      "qualityOverride": 10000,
-      "resultReceivedUtc": "2026-10-10T18:04:14Z",
       "rawSha256": "9bda1b6ef110bca7bc562de844508cc74bce9cb862b3068ecc346fd2496b7a92",
       "rawBytes": 8722340,
-      "prompt": "Plain straight-leg denim jeans trousers as a standalone garment, perfectly symmetrical, front view, legs slightly apart, hollow waist opening and hollow leg openings, thin fabric thickness, lightly sculpted button fly and belt loops, no body, no mannequin, no person, no shoes, no belt, clean anime cel-shaded look, flat solid mid-blue color, simple soft folds only, no baked lighting or shadows, no logos, no text",
-      "cleanPreset": "jeans",
-      "changesKo": "마네킹 허리·발목·신발 조각 제거, HBM 여성 베이스에 맞춰 리타깃, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크."
+      "intent": "bottom/jeans 후보(옷만)",
+      "changesKo": "옷만 요청한 청바지 생성물에서 마네킹 허리·발목·신발 조각을 지우고, 베이스 T-포즈 몸에 맞춰 리타깃(정렬·충돌 해소·웹툰풍 스무딩·표면 결합), 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "qualityOverride": 10000
+    },
+    "bottom/slacks": {
+      "generationId": "cfda62fb-19a3-4e4a-992f-1c4c52dd68ae",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/cfda62fb-19a3-4e4a-992f-1c4c52dd68ae",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "0d0096d382eaaa9c4adb85864a5ebe0fc0af4e0d8fee0a15cfcc48b33b5293c2",
+      "rawBytes": 8585032,
+      "intent": "슬랙스 분리",
+      "changesKo": "바지만 요청했지만 마네킹 몸이 함께 나온 생성물을 BANG으로 분리한 바지 파츠를 베이스 T-포즈 몸에 허리선 기준으로 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "7a546c69-384f-4614-a48e-9d5c6fc1702d"
+    },
+    "bottom/shorts": {
+      "generationId": "454cee0f-eefa-40d1-a59d-56d944c6394a",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/454cee0f-eefa-40d1-a59d-56d944c6394a",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "8b17242680c860a8cefb87aee1869ad3e6a29e5415c35049a19d53516db57a1a",
+      "rawBytes": 8862368,
+      "intent": "반바지 분리",
+      "changesKo": "반바지만 요청했지만 마네킹 몸이 함께 나온 생성물을 BANG으로 분리한 반바지 파츠를 베이스 T-포즈 몸에 허리선 기준으로 맞춰 리타깃, 웹툰풍 스무딩, 4,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "13a5da2e-9641-4671-89d9-92d3634ac3ef"
+    },
+    "bottom/pleated-skirt": {
+      "generationId": "f12ea410-75bf-4475-a213-198746431395",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/f12ea410-75bf-4475-a213-198746431395",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "17b43e7a36c950a65ce3739b807dda77ad0ddfa91ef27b586f63e46278a24437",
+      "rawBytes": 10832888,
+      "intent": "교복 분리",
+      "changesKo": "교복 여학생 전신 생성물을 BANG으로 분리한 주름치마 파츠를 베이스 T-포즈 몸에 맞춰 리타깃(퍼짐과 주름을 유지하도록 약한 스무딩·충돌 해소만), 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "44533c2e-788e-4b41-ba29-4119e52f493c"
+    },
+    "bottom/long-skirt": {
+      "generationId": "e68a0738-cbb4-49c6-8c63-e8e137b8bd32",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/e68a0738-cbb4-49c6-8c63-e8e137b8bd32",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "c1599ff9e0d4a2a08f0ae9611d520bc258cdd0a6216d1060dd2bb14dbd17e6b1",
+      "rawBytes": 11316688,
+      "intent": "롱스커트·재킷·헤어 분리",
+      "changesKo": "롱스커트 여성 전신 생성물을 BANG으로 분리한 A라인 롱스커트 파츠를 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "3c66ad8a-9bce-48ae-9a1b-e006382625f7"
     },
     "shoes/sneakers": {
       "generationId": "d6cd1b50-7e9f-401e-a4b4-87bf45b0e336",
       "displayUrl": "https://hyper3d.ai/workspace/rodin/d6cd1b50-7e9f-401e-a4b4-87bf45b0e336",
       "tier": "Gen-2.5-Medium",
-      "qualityOverride": 8000,
-      "resultReceivedUtc": "2026-10-10T18:15:58Z",
       "rawSha256": "9ea818e7d93792da0ae1727faf9c9f1d018b2d4c3a3afffeb281b4def66a1684",
       "rawBytes": 8985804,
-      "prompt": "A pair of plain white low-top canvas sneakers with flat rubber soles and simple white laces, left shoe and right shoe placed side by side facing the same direction, toes pointing forward, soles flat on the ground, symmetrical, no feet, no legs, no socks, no mannequin, no person, clean anime cel-shaded look, simple smooth shapes, solid light color, no baked lighting or shadows, no logos, no text",
-      "cleanPreset": "sneakers",
-      "changesKo": "한 켤레(두 덩어리) 그대로 사용, HBM 여성 베이스의 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크."
+      "intent": "shoes/sneakers 후보(한 켤레)",
+      "changesKo": "스니커즈 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "qualityOverride": 8000
+    },
+    "shoes/loafers": {
+      "generationId": "347f643a-9d8d-4f13-9b11-4d07305d28ff",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/347f643a-9d8d-4f13-9b11-4d07305d28ff",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "9cd581dea9323c82b13c262e51cbc8f7d693b5652c0f402e01b6a5f9af904802",
+      "rawBytes": 7698056,
+      "intent": "shoes/loafers 후보(한 켤레)",
+      "changesKo": "로퍼 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "qualityOverride": 8000
+    },
+    "shoes/sandals": {
+      "generationId": "2a7df564-2bd6-49c9-ae0c-e5bdcece8c4f",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/2a7df564-2bd6-49c9-ae0c-e5bdcece8c4f",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "0bd7dc6589e37869701bf0da4484e4a992eccd9820829f5b665689b70dc512e7",
+      "rawBytes": 7287108,
+      "intent": "shoes/sandals 후보(한 켤레)",
+      "changesKo": "스트랩 샌들 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "qualityOverride": 8000
     },
     "hair/soft-bob": {
-      "generationId": "3f1040da-6127-4402-98e2-2692cccb2a3d",
-      "displayUrl": "https://hyper3d.ai/workspace/rodin/3f1040da-6127-4402-98e2-2692cccb2a3d",
+      "generationId": "81a86b78-5724-412e-8552-4a9a5faa2429",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/81a86b78-5724-412e-8552-4a9a5faa2429",
       "tier": "Gen-2.5-Medium",
-      "qualityOverride": 15000,
-      "resultReceivedUtc": "2026-10-10T18:16:32Z",
-      "rawSha256": "5fde2b1a24c57ea4242af8ade849795a8b0d6e40342b6a3356e5ad30ceabf4ad",
-      "rawBytes": 9764060,
-      "prompt": "A shoulder-length soft bob haircut for an adult woman, hair only, no head, no face, no skull, no neck, no scalp cap, smooth chunky anime hair grouped into large clean locks with a soft inward curl at the ends and a side-swept fringe, one solid dark brown color, simple smooth shapes, clean cel-shaded look, no baked lighting or shadows, no accessories",
-      "cleanPreset": "hair",
-      "changesKo": "흉상(얼굴·목·어깨·상의)에서 머리카락만 분리(색·영역 성장), 머리 너비 기준으로 HBM 여성 베이스 머리에 맞춰 리타깃, LOD 3단(7,000/3,500/1,800 삼각형)으로 축소, 텍스처를 상대색 JPEG로 재베이크."
+      "rawSha256": "e51cbecd49990c4bc5a7facc22e4cc609bf36bc846df9a91b41e2d98a580fa80",
+      "rawBytes": 9063992,
+      "intent": "soft-bob 헤어 분리",
+      "changesKo": "보브 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(닫힌 셸)를 베이스 머리 너비에 맞춰 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "3f1040da-6127-4402-98e2-2692cccb2a3d"
+    },
+    "hair/hime-cut": {
+      "generationId": "f12ea410-75bf-4475-a213-198746431395",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/f12ea410-75bf-4475-a213-198746431395",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "17b43e7a36c950a65ce3739b807dda77ad0ddfa91ef27b586f63e46278a24437",
+      "rawBytes": 10832888,
+      "intent": "교복 분리",
+      "changesKo": "교복 여학생 전신 생성물을 BANG으로 분리한 헤어 파츠(블런트 뱅·어깨 아래 직모)에서 밝은 피부·칼라 조각을 지우고 베이스 머리에 맞춰 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "44533c2e-788e-4b41-ba29-4119e52f493c"
+    },
+    "hair/short-layered": {
+      "generationId": "10546880-792b-473f-b758-7edbbd7ab261",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/10546880-792b-473f-b758-7edbbd7ab261",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "bea4dca7ce2a776e2c3a6099fe5a21ab41dfe3293d0414eb7b7111189f738dba",
+      "rawBytes": 10548028,
+      "intent": "남성 의상·헤어 분리",
+      "changesKo": "스마트 캐주얼 남성 전신 생성물을 BANG으로 분리한 숏 레이어드 헤어 파츠에서 밝은 피부 조각을 지우고 베이스 머리에 맞춰 리타깃, LOD 3단(5,000/2,800/1,500 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "051b32ef-5b4e-4c42-95fb-02354c1de5ca"
+    },
+    "hair/wolf-layered": {
+      "generationId": "ab1a860d-74eb-4ad2-a5c1-22c0326f91e9",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/ab1a860d-74eb-4ad2-a5c1-22c0326f91e9",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "f6dfd8c1153e43db066e42ce0eead31b664cfaf3df4ff5769b3154573e88dccc",
+      "rawBytes": 12010304,
+      "intent": "wolf-layered 헤어 분리",
+      "changesKo": "섀기 레이어드 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 앞머리를 눈썹 위로 올림, LOD 3단(6,000/3,000/1,500 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "a822ce31-ecb7-4cba-b2c9-07dd3b45c06f"
+    },
+    "hair/action-pony": {
+      "generationId": "f2851ffa-42ff-4d05-9404-a88a93a305c5",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/f2851ffa-42ff-4d05-9404-a88a93a305c5",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "89657274f252d8ed413e0bbf9c157cbf73d09aa218edea2e9affddca87738809",
+      "rawBytes": 11225404,
+      "intent": "action-pony 헤어 분리",
+      "changesKo": "하이 포니테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(정수리 묶음 + 긴 꼬리)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "545282ff-a967-4ad2-b736-793d456013d3"
+    },
+    "hair/twin-tail": {
+      "generationId": "d89903ac-586a-48e1-bb6b-a8e545babed0",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/d89903ac-586a-48e1-bb6b-a8e545babed0",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "5ce69fc7f713dda81e358c189bf63a937b5e41abfce6c7a52740e1e49f1094db",
+      "rawBytes": 9170364,
+      "intent": "twin-tail 헤어 분리",
+      "changesKo": "트윈테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(양쪽 높은 묶음 + 긴 꼬리 둘)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "57de885d-a2f4-4850-b073-53725523330d"
+    },
+    "hair/romance-long": {
+      "generationId": "cecdf106-0208-4952-9647-d553144db74e",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/cecdf106-0208-4952-9647-d553144db74e",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "2101f973c68ae78671ebcaee3ca4bafe4aeebee17dbd68d152d1ec13d4763e44",
+      "rawBytes": 12085480,
+      "intent": "romance-long 헤어 분리",
+      "changesKo": "가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(6,000/3,000/1,500 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+      "parentGenerationId": "fed8802e-0cb9-4506-aa44-344b43ee98a1"
+    },
+    "accessory/cap": {
+      "generationId": "da32af22-d1e3-4103-a160-002557e24c2a",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/da32af22-d1e3-4103-a160-002557e24c2a",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "c21ae6296e992cc8df293d2eddbada0119c9e1afa498206b286e707306608eb8",
+      "rawBytes": 6751112,
+      "intent": "accessory/cap 후보",
+      "changesKo": "야구모자 생성물을 베이스 머리 너비에 맞춰 정수리 위에 얹도록 리타깃, 3,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "qualityOverride": 4000
+    },
+    "accessory/headphones": {
+      "generationId": "ca9c78df-affa-4329-b12e-87ba46bd29b6",
+      "displayUrl": "https://hyper3d.ai/workspace/rodin/ca9c78df-affa-4329-b12e-87ba46bd29b6",
+      "tier": "Gen-2.5-High",
+      "rawSha256": "17e61967d64aa85b1c7d1edbe3c605f52a24f92dccf060ea5a7eeb68f395f00b",
+      "rawBytes": 6304624,
+      "intent": "accessory/headphones 후보",
+      "changesKo": "헤드폰 생성물을 베이스 머리 너비에 맞춰 귀 바깥에 오도록 리타깃, 3,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+      "qualityOverride": 4000
     }
   }
 }

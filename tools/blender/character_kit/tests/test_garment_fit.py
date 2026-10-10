@@ -126,6 +126,156 @@ class ConformTests(unittest.TestCase):
         self.assertLess(abs(float(radius.mean()) - 1.0), 0.35)
 
 
+    def test_fit_similarity_limits_keep_scale_and_anchor_inside_bounds(self):
+        # 제한이 없으면 최적해가 구간 밖(몸 크기로 커지는 스케일)이지만, 제한을 주면 허용 구간 안에 머문다.
+        small = self.shell * 0.5
+        anchor = small.max(axis=0)
+        free_scale, _, _ = gf.fit_similarity(small, self.surface, [1.0], anchor_source=anchor, anchor_target=anchor, sample=300, cap=0.5)
+        self.assertGreater(free_scale, 1.3)
+        scale, translation, _ = gf.fit_similarity(
+            small, self.surface, [0.97, 1.0, 1.03], anchor_source=anchor, anchor_target=anchor, sample=300, cap=0.5, scale_limit=(0.97, 1.03), shift_limit=0.05
+        )
+        self.assertGreaterEqual(scale, 0.97 - 1e-9)
+        self.assertLessEqual(scale, 1.03 + 1e-9)
+        self.assertLessEqual(float(np.linalg.norm(scale * anchor + translation - anchor)), 0.05 + 1e-9)
+
+
+def angled_tube(direction: np.ndarray, length: float = 0.6, start: float = 0.02, radius: float = 0.05, rings: int = 30, segments: int = 12):
+    """원점(어깨)에서 `direction`으로 뻗은 소매 모양 원통의 점과 바깥 방향 법선."""
+    direction = direction / np.linalg.norm(direction)
+    helper = np.array([0.0, 0.0, 1.0])
+    u = np.cross(direction, helper)
+    u /= np.linalg.norm(u)
+    v = np.cross(direction, u)
+    points, normals = [], []
+    for ring in range(rings + 1):
+        center = direction * (start + (length - start) * ring / rings)
+        for seg in range(segments):
+            phi = 2 * np.pi * seg / segments
+            radial = np.cos(phi) * u + np.sin(phi) * v
+            points.append(center + radius * radial)
+            normals.append(radial)
+    return np.array(points), np.array(normals)
+
+
+class StretchedFaceTests(unittest.TestCase):
+    def test_bridge_triangle_that_stretches_is_torn_but_normal_deformation_is_kept(self):
+        before = np.array([[0.0, 0.0, 0.0], [0.03, 0.0, 0.0], [0.0, 0.03, 0.0], [0.05, 0.0, 0.0], [0.06, 0.05, 0.0]])
+        after = before.copy()
+        after[3] = [0.6, 0.0, 0.0]  # 이음 꼭짓점이 팔과 함께 60 cm 멀어졌다
+        after[1] = [0.045, 0.0, 0.0]  # 정상적인 늘어남(1.5배)
+        triangles = np.array([[0, 1, 2], [1, 3, 4], [0, 1, 4]])
+        torn = gf.stretched_faces(before, after, triangles)
+        np.testing.assert_array_equal(torn, [False, True, False])
+
+    def test_short_edges_below_the_length_floor_are_never_torn(self):
+        before = np.array([[0.0, 0.0, 0.0], [0.005, 0.0, 0.0], [0.0, 0.005, 0.0]])
+        after = before * 6.0  # 6배지만 3 cm뿐이다
+        self.assertFalse(gf.stretched_faces(before, after, np.array([[0, 1, 2]])).any())
+
+
+class RaiseBangsTests(unittest.TestCase):
+    def setUp(self):
+        # 정수리 1.64, 앞머리 아랫선 1.50(눈 높이), 뒷머리 아랫선 1.00
+        self.points = np.array(
+            [
+                [0.0, 1.64, 0.05],  # 정수리
+                [0.0, 1.50, 0.16],  # 앞머리 아랫선(정중앙 앞)
+                [0.0, 1.57, 0.16],  # 앞머리 중간
+                [0.0, 1.00, -0.08],  # 뒷머리 끝
+                [0.09, 1.30, 0.00],  # 옆머리(귀 옆)
+            ]
+        )
+
+    def test_front_bangs_are_raised_to_the_target_and_the_back_hair_keeps_its_length(self):
+        out, report = gf.raise_bangs(self.points, 1.575, face_z=0.08)
+        self.assertTrue(report["raised"])
+        self.assertAlmostEqual(float(out[1, 1]), 1.575, places=3)  # 앞머리 아랫선이 목표에 닿는다
+        self.assertAlmostEqual(float(out[0, 1]), 1.64, places=6)  # 정수리는 그대로
+        self.assertAlmostEqual(float(out[3, 1]), 1.00, places=6)  # 뒷머리 길이는 그대로
+        self.assertAlmostEqual(float(out[4, 1]), 1.30, places=6)  # 귀 뒤쪽 옆머리도 그대로(face_z 앞이 아니다)
+        np.testing.assert_allclose(out[:, [0, 2]], self.points[:, [0, 2]])  # 높이만 바뀐다
+
+    def test_bangs_already_above_the_target_or_missing_are_left_alone(self):
+        out, report = gf.raise_bangs(self.points, 1.40, face_z=0.08)
+        self.assertFalse(report["raised"])
+        np.testing.assert_array_equal(out, self.points)
+        no_front = self.points[[0, 3, 4]]
+        out, report = gf.raise_bangs(no_front, 1.575, face_z=0.08)
+        self.assertFalse(report["raised"])
+        np.testing.assert_array_equal(out, no_front)
+
+
+class SpikeTests(unittest.TestCase):
+    def test_strip_attached_by_single_edges_is_removed_and_the_surface_is_kept(self):
+        positions, tris = uv_sphere(1.0, rings=10, segments=12)
+        sphere = tris[12:]  # 극 부채꼴을 떼어 열린 가장자리를 만든다(가장자리 삼각형도 이웃이 둘 이상이다)
+        # 열린 고리의 정점 둘에서 바깥으로 뻗는 삼각형 두 개짜리 띠(가시)
+        new1, new2 = len(positions), len(positions) + 1
+        boundary_pair = [1, 2]  # 극 부채꼴을 뗀 열린 고리의 이웃한 두 정점
+        strip = np.array([[boundary_pair[0], boundary_pair[1], new1], [boundary_pair[1], new2, new1]])
+        flagged = gf.spike_faces(np.concatenate([sphere, strip]), rounds=3)
+        self.assertTrue(flagged[-2:].all())
+        self.assertFalse(flagged[:-2].any())
+
+    def test_closed_surface_has_no_spikes(self):
+        _, tris = uv_sphere(1.0, rings=8, segments=10)
+        self.assertFalse(gf.spike_faces(tris).any())
+
+
+class SmallIslandTests(unittest.TestCase):
+    def test_small_disconnected_pieces_are_flagged_and_the_main_body_is_kept(self):
+        positions, tris = uv_sphere(1.0, rings=12, segments=16)
+        shard = np.array([[len(positions), len(positions) + 1, len(positions) + 2]])  # 떨어진 삼각형 하나
+        all_tris = np.concatenate([tris, shard])
+        flagged = gf.small_island_faces(all_tris, len(positions) + 3, min_faces=20)
+        self.assertTrue(flagged[-1])
+        self.assertFalse(flagged[:-1].any())
+
+
+class SleeveAlignTests(unittest.TestCase):
+    def setUp(self):
+        # 몸의 팔은 수직에서 25° 벌어져 있고, 그림 속 소매는 10°만 벌어져 있다.
+        self.base_axis = np.array([np.sin(np.radians(25)), -np.cos(np.radians(25)), 0.0])
+        self.own_axis = np.array([np.sin(np.radians(10)), -np.cos(np.radians(10)), 0.0])
+        self.joint_positions = np.array([[0.0, 0.0, 0.0], 0.3 * self.base_axis, 0.6 * self.base_axis])
+        self.chains = [{"arm": 0, "forearm": 1, "hand": 2}]
+
+    def test_sleeve_is_rotated_onto_the_arm_axis_around_the_shoulder(self):
+        points, normals = angled_tube(self.own_axis)
+        moved, report = gf.align_sleeves_to_arms(points, normals, self.joint_positions, self.chains)
+        self.assertIsNotNone(report["sides"][0]["cuff"])
+        self.assertAlmostEqual(report["sides"][0]["angleDeg"], 15.0, delta=0.5)
+        far = np.flatnonzero(np.linalg.norm(points, axis=1) > 0.55)
+        center = moved[far].mean(axis=0)
+        cos = float(center @ self.base_axis / np.linalg.norm(center))
+        self.assertGreater(cos, np.cos(np.radians(1.5)))  # 소매 끝이 팔 축 위로 왔다
+        near = np.flatnonzero(np.linalg.norm(points, axis=1) < 0.06)
+        np.testing.assert_allclose(moved[near], points[near], atol=0.03)  # 어깨 쪽은 거의 그대로
+        np.testing.assert_allclose(np.linalg.norm(moved, axis=1), np.linalg.norm(points, axis=1), atol=1e-9)  # 어깨 중심 회전이라 거리가 보존된다
+
+    def test_wall_facing_the_sleeve_does_not_move(self):
+        # 소매 옆에 붙은 몸통 옆면: 소매 축 쪽(+x)을 향하는 법선. 거리상으로는 소매 반경 안이어도 움직이지 않아야 한다.
+        points, normals = angled_tube(self.own_axis)
+        ys = np.linspace(-0.55, -0.15, 12)
+        wall = np.array([[0.0, y, z] for y in ys for z in np.linspace(-0.05, 0.05, 5)])
+        wall_normals = np.tile(np.array([[1.0, 0.0, 0.0]]), (len(wall), 1))
+        all_points = np.concatenate([points, wall])
+        all_normals = np.concatenate([normals, wall_normals])
+        moved, _ = gf.align_sleeves_to_arms(all_points, all_normals, self.joint_positions, self.chains)
+        np.testing.assert_allclose(moved[len(points) :], wall, atol=1e-6)
+
+    def test_short_sleeve_and_already_aligned_sleeve_are_left_alone(self):
+        short, short_normals = angled_tube(self.own_axis, length=0.2)
+        moved, report = gf.align_sleeves_to_arms(short, short_normals, self.joint_positions, self.chains)
+        self.assertIsNone(report["sides"][0]["cuff"])
+        np.testing.assert_array_equal(moved, short)
+        aligned, aligned_normals = angled_tube(self.base_axis)
+        moved, report = gf.align_sleeves_to_arms(aligned, aligned_normals, self.joint_positions, self.chains)
+        self.assertIn("정렬", report["sides"][0]["reason"])
+        np.testing.assert_array_equal(moved, aligned)
+
+
 class SkinTests(unittest.TestCase):
     def test_transferred_skin_sums_to_one_with_at_most_four_influences(self):
         body, tris = uv_sphere(1.0)

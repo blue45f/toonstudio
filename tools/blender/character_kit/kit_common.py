@@ -9,8 +9,8 @@ import math
 import os
 import sys
 
+import bpy  # pip `bpy` 패키지는 bpy를 먼저 가져와야 bmesh·mathutils를 쓸 수 있다(Blender 내장 파이썬은 순서와 무관)
 import bmesh
-import bpy
 import numpy as np
 from mathutils import Vector
 

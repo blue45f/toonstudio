@@ -28,7 +28,8 @@
       "outcome": "사용(마네킹 목 조각 제거)",
       "rawFile": "tshirt-01-82698064-e736-4b1e-ac56-67f6569bd364-base_basic_pbr.glb",
       "rawSha256": "1c60f00ef7f96785525d133fd3dad94fd4a49743709534f216a6277160235a5b",
-      "rawBytes": 8083808
+      "rawBytes": 8083808,
+      "prompt": "A plain short-sleeve crew-neck T-shirt as a standalone garment, perfectly symmetrical, laid out in a T-pose with the sleeves stretched out horizontally, open neck hole, open sleeve cuffs and open hem so it is hollow inside, thin fabric thickness, no body, no mannequin, no person, no hanger, clean anime cel-shaded look, flat solid light color, soft simple fabric folds only, no baked lighting or shadows, no logos, no text, no print"
     },
     {
       "id": "cb5a2e39-ecf4-4f99-9380-89267264053b",
@@ -40,7 +41,8 @@
       "outcome": "사용(마네킹 허리·발목 조각 제거)",
       "rawFile": "jeans-01-cb5a2e39-ecf4-4f99-9380-89267264053b-base_basic_pbr.glb",
       "rawSha256": "9bda1b6ef110bca7bc562de844508cc74bce9cb862b3068ecc346fd2496b7a92",
-      "rawBytes": 8722340
+      "rawBytes": 8722340,
+      "prompt": "Plain straight-leg denim jeans trousers as a standalone garment, perfectly symmetrical, front view, legs slightly apart, hollow waist opening and hollow leg openings, thin fabric thickness, lightly sculpted button fly and belt loops, no body, no mannequin, no person, no shoes, no belt, clean anime cel-shaded look, flat solid mid-blue color, simple soft folds only, no baked lighting or shadows, no logos, no text"
     },
     {
       "id": "d6cd1b50-7e9f-401e-a4b4-87bf45b0e336",
@@ -52,7 +54,8 @@
       "outcome": "사용",
       "rawFile": "sneakers-01-d6cd1b50-7e9f-401e-a4b4-87bf45b0e336-base_basic_pbr.glb",
       "rawSha256": "9ea818e7d93792da0ae1727faf9c9f1d018b2d4c3a3afffeb281b4def66a1684",
-      "rawBytes": 8985804
+      "rawBytes": 8985804,
+      "prompt": "A pair of plain white low-top canvas sneakers with flat rubber soles and simple white laces, left shoe and right shoe placed side by side facing the same direction, toes pointing forward, soles flat on the ground, symmetrical, no feet, no legs, no socks, no mannequin, no person, clean anime cel-shaded look, simple smooth shapes, solid light color, no baked lighting or shadows, no logos, no text"
     },
     {
       "id": "3f1040da-6127-4402-98e2-2692cccb2a3d",
@@ -64,7 +67,8 @@
       "outcome": "BANG 분리본으로 대체",
       "rawFile": "hair-01-3f1040da-6127-4402-98e2-2692cccb2a3d-base_basic_pbr.glb",
       "rawSha256": "5fde2b1a24c57ea4242af8ade849795a8b0d6e40342b6a3356e5ad30ceabf4ad",
-      "rawBytes": 9764060
+      "rawBytes": 9764060,
+      "prompt": "A shoulder-length soft bob haircut for an adult woman, hair only, no head, no face, no skull, no neck, no scalp cap, smooth chunky anime hair grouped into large clean locks with a soft inward curl at the ends and a side-swept fringe, one solid dark brown color, simple smooth shapes, clean cel-shaded look, no baked lighting or shadows, no accessories"
     },
     {
       "id": "949821ab-4ed3-4b7c-8689-f5a90e8bc148",
@@ -76,7 +80,8 @@
       "outcome": "폐기(셔츠가 말려 눕혀진 형태)",
       "rawFile": "shirt-01-949821ab-4ed3-4b7c-8689-f5a90e8bc148-base_basic_pbr.glb",
       "rawSha256": "bd3ce520d75fe4fe8c079e70f90989956d8b0c4ccce024e42c33dd0fb0f584e0",
-      "rawBytes": 7734208
+      "rawBytes": 7734208,
+      "prompt": "A plain long-sleeve button-up dress shirt for an adult: spread collar lying naturally, a straight button placket down the center front, rounded single-button cuffs, straight hem, regular fit. Sleeves extend straight out horizontally in a T-pose shape. Hollow shell with open neck, cuff and hem openings, empty inside. Symmetrical, thin even fabric thickness, large smooth surfaces, simple clean topology, minimal soft folds. Solid very light gray matte fabric color, no pattern, no print, no logo, no text, no contrast stitching, no gloss, no baked shadows or highlights, evenly lit, plain white background."
     },
     {
       "id": "7a546c69-384f-4614-a48e-9d5c6fc1702d",
@@ -88,7 +93,8 @@
       "outcome": "마네킹 몸 동반 → BANG으로 분리",
       "rawFile": "slacks-01-7a546c69-384f-4614-a48e-9d5c6fc1702d-base_basic_pbr.glb",
       "rawSha256": "9518aa9d45e3cfec4625d08ed8893e779de40122788ec5ec61a0d40d42a9ad01",
-      "rawBytes": 7972804
+      "rawBytes": 7972804,
+      "prompt": "Plain straight-leg tailored trousers for an adult: flat front, belt loops without a belt, shallow side pockets, a subtle center crease down each leg, full length ending at the ankle. Hollow shell with an open waistband and open leg hems, empty inside, legs straight and slightly apart as if worn while standing. Symmetrical, thin even fabric thickness, large smooth surfaces, simple clean topology, minimal soft folds. Solid very light gray matte fabric color, no pattern, no print, no logo, no text, no contrast stitching, no gloss, no baked shadows or highlights, evenly lit, plain white background."
     },
     {
       "id": "13a5da2e-9641-4671-89d9-92d3634ac3ef",
@@ -100,7 +106,8 @@
       "outcome": "마네킹 몸 동반 → BANG으로 분리",
       "rawFile": "shorts-01-13a5da2e-9641-4671-89d9-92d3634ac3ef-base_basic_pbr.glb",
       "rawSha256": "0a0ad394ba068600e9317271e87f2688c0745e291061fe090d74ed570519ac80",
-      "rawBytes": 9054980
+      "rawBytes": 9054980,
+      "prompt": "Plain casual shorts for an adult: straight cut ending above the knee, flat waistband, shallow side pockets, simple hems. Hollow shell with an open waistband and open leg hems, empty inside, legs straight and slightly apart as if worn while standing. Symmetrical, thin even fabric thickness, large smooth surfaces, simple clean topology, minimal soft folds. Solid very light gray matte fabric color, no pattern, no print, no logo, no text, no contrast stitching, no gloss, no baked shadows or highlights, evenly lit, plain white background."
     },
     {
       "id": "347f643a-9d8d-4f13-9b11-4d07305d28ff",
@@ -112,7 +119,8 @@
       "outcome": "사용",
       "rawFile": "loafers-01-347f643a-9d8d-4f13-9b11-4d07305d28ff-base_basic_pbr.glb",
       "rawSha256": "9cd581dea9323c82b13c262e51cbc8f7d693b5652c0f402e01b6a5f9af904802",
-      "rawBytes": 7698056
+      "rawBytes": 7698056,
+      "prompt": "A pair of plain leather penny loafers with a low heel and a smooth upper, slip-on style. One pair only: left and right shoe side by side, parallel, toes pointing forward, standing flat on the ground, each shoe hollow with an open ankle opening, empty inside. Symmetrical pair, simple clean topology, large smooth surfaces, matte materials, solid very light gray color for the whole shoe, no logo, no text, no baked shadows or highlights, evenly lit, plain white background."
     },
     {
       "id": "cd7f6768-8b2b-4601-8691-d3173a2d0e52",
@@ -124,7 +132,8 @@
       "outcome": "마네킹 몸 동반 → BANG으로 분리",
       "rawFile": "hoodie-01-cd7f6768-8b2b-4601-8691-d3173a2d0e52-base_basic_pbr.glb",
       "rawSha256": "25e9c5f96ccbeecb63a55ca9b9298a6d1394bbddb9ede19278940220cd73a694",
-      "rawBytes": 9957776
+      "rawBytes": 9957776,
+      "prompt": "A plain pullover hoodie for an adult: long sleeves with ribbed cuffs, ribbed hem, a soft hood hanging down behind the neck (hood down, lying flat on the back), a front kangaroo pocket, no drawstrings. Sleeves extend straight out horizontally in a T-pose shape. Hollow shell with open neck, cuff and hem openings, empty inside. Symmetrical, thin even fabric thickness, large smooth surfaces, simple clean topology, minimal soft folds. Solid very light gray matte fabric color, no pattern, no print, no logo, no text, no contrast stitching, no gloss, no baked shadows or highlights, evenly lit, plain white background."
     },
     {
       "id": "da32af22-d1e3-4103-a160-002557e24c2a",
@@ -136,7 +145,8 @@
       "outcome": "사용",
       "rawFile": "cap-01-da32af22-d1e3-4103-a160-002557e24c2a-base_basic_pbr.glb",
       "rawSha256": "c21ae6296e992cc8df293d2eddbada0119c9e1afa498206b286e707306608eb8",
-      "rawBytes": 6751112
+      "rawBytes": 6751112,
+      "prompt": "A plain six-panel baseball cap with a curved brim, hollow inside, front facing the viewer, adult head size. Standalone object, nothing else in the scene, no person, no head, no hands. Symmetrical, simple clean topology, large smooth surfaces, matte materials, solid very light gray color, no logo, no text, no baked shadows or highlights, evenly lit, plain white background."
     },
     {
       "id": "ca9c78df-affa-4329-b12e-87ba46bd29b6",
@@ -148,7 +158,8 @@
       "outcome": "사용",
       "rawFile": "headphones-01-ca9c78df-affa-4329-b12e-87ba46bd29b6-base_basic_pbr.glb",
       "rawSha256": "17e61967d64aa85b1c7d1edbe3c605f52a24f92dccf060ea5a7eeb68f395f00b",
-      "rawBytes": 6304624
+      "rawBytes": 6304624,
+      "prompt": "A pair of plain over-ear headphones with an adjustable headband and two round ear cups, no cable. Standalone object, nothing else in the scene, no person, no head, no hands. Symmetrical, simple clean topology, large smooth surfaces, matte materials, solid very light gray color, no logo, no text, no baked shadows or highlights, evenly lit, plain white background."
     },
     {
       "id": "792ed91f-b173-4adc-af86-07abb11144f2",
@@ -160,7 +171,8 @@
       "outcome": "BANG으로 분리",
       "rawFile": "shirt-02-792ed91f-b173-4adc-af86-07abb11144f2-base_basic_pbr.glb",
       "rawSha256": "70da3f8d4512105f73aa8e63dda5077cf361d4302ec0e64f8d09b1757db666da",
-      "rawBytes": 9693716
+      "rawBytes": 9693716,
+      "prompt": "A standing adult wearing a plain light gray long-sleeve button-up dress shirt with a spread collar and a straight button placket, shirt untucked with a straight hem, plain dark trousers and plain dark shoes, arms hanging relaxed slightly away from the body in an A-pose, front view, evenly lit, matte fabrics, no pattern, no logo, no text, clean simple shapes, plain white background."
     },
     {
       "id": "cfda62fb-19a3-4e4a-992f-1c4c52dd68ae",
@@ -172,7 +184,8 @@
       "outcome": "사용(root.2)",
       "rawFile": "slacks-bang-cfda62fb-19a3-4e4a-992f-1c4c52dd68ae-base_basic_pbr.glb",
       "rawSha256": "0d0096d382eaaa9c4adb85864a5ebe0fc0af4e0d8fee0a15cfcc48b33b5293c2",
-      "rawBytes": 8585032
+      "rawBytes": 8585032,
+      "instruction": "Separate into parts: the tailored trousers as one single part, the white shirt, the black belt, the two shoes, the two hands and arms skin, and the remaining body skin."
     },
     {
       "id": "454cee0f-eefa-40d1-a59d-56d944c6394a",
@@ -184,7 +197,8 @@
       "outcome": "사용(root.8)",
       "rawFile": "shorts-bang-454cee0f-eefa-40d1-a59d-56d944c6394a-base_basic_pbr.glb",
       "rawSha256": "8b17242680c860a8cefb87aee1869ad3e6a29e5415c35049a19d53516db57a1a",
-      "rawBytes": 8862368
+      "rawBytes": 8862368,
+      "instruction": "Separate into parts: the khaki shorts as one single part, the gray shirt, the brown belt, the two shoes, the watch, the two arms and hands skin, and the two legs skin."
     },
     {
       "id": "b0c064d5-dc4f-488c-83a9-f695b1f122f4",
@@ -196,7 +210,8 @@
       "outcome": "사용(root.2)",
       "rawFile": "hoodie-bang-b0c064d5-dc4f-488c-83a9-f695b1f122f4-base_basic_pbr.glb",
       "rawSha256": "a2eedb26f129b5acc72ce5a89619511a2af2e92f65232780ff07f8dd4aea1be5",
-      "rawBytes": 9101652
+      "rawBytes": 9101652,
+      "instruction": "Separate into parts: the gray hoodie body with its sleeves, cuffs and kangaroo pocket as one single part, the hood as a separate part, the drawstrings, the head with hair and face, the two hands skin, and the blue jeans."
     },
     {
       "id": "6ed2b9f1-c3ac-45ec-bb8c-2f98b3bd6f48",
@@ -205,7 +220,11 @@
       "parent": "792ed91f-b173-4adc-af86-07abb11144f2",
       "strength": 6,
       "intent": "셔츠 분리",
-      "outcome": "대기"
+      "outcome": "대기",
+      "instruction": "Separate into parts: the light gray long-sleeve dress shirt including its sleeves and collar as one single part, the dark trousers as one part, the brown belt, the two shoes, and the skin (head, hair, hands).",
+      "rawFile": "shirt-02-bang-6ed2b9f1-c3ac-45ec-bb8c-2f98b3bd6f48-base_basic_pbr.glb",
+      "rawSha256": "bfd04cb268e4ed8f0d3a01e8996f7b96ec2ab90a0d52e8fad4890641c4c7a952",
+      "rawBytes": 10101744
     },
     {
       "id": "81a86b78-5724-412e-8552-4a9a5faa2429",
@@ -217,7 +236,8 @@
       "outcome": "사용(root.2, 닫힌 셸)",
       "rawFile": "hair-bang-81a86b78-5724-412e-8552-4a9a5faa2429-base_basic_pbr.glb",
       "rawSha256": "e51cbecd49990c4bc5a7facc22e4cc609bf36bc846df9a91b41e2d98a580fa80",
-      "rawBytes": 9063992
+      "rawBytes": 9063992,
+      "instruction": "Separate into parts: the dark brown bob hair as one single part, the black top, and the skin (head, face, neck, shoulders)."
     },
     {
       "id": "44533c2e-788e-4b41-ba29-4119e52f493c",
@@ -229,7 +249,8 @@
       "outcome": "BANG으로 분리",
       "rawFile": "g1-school-girl-44533c2e-788e-4b41-ba29-4119e52f493c-base_basic_pbr.glb",
       "rawSha256": "c7ffc25f819647ece0c02388cbfae3f5a028afa96db86f168bd033f17b858373",
-      "rawBytes": 10011776
+      "rawBytes": 10011776,
+      "prompt": "A teenage girl in a Korean high-school uniform: a navy single-breasted blazer with notch lapels over a white button-up shirt with a small ribbon bow at the collar, a knee-length pleated skirt, white crew socks and black loafers, long straight black hair past the shoulders with side-swept bangs. Full body, standing in a relaxed A-pose with arms slightly away from the body and legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
     },
     {
       "id": "fce62c04-f517-4da5-a0d9-d5855806d454",
@@ -241,7 +262,8 @@
       "outcome": "폐기(한쪽 팔을 든 포즈, 트윈테일 아님, 다리 잘림)",
       "rawFile": "g2-sailor-girl-fce62c04-f517-4da5-a0d9-d5855806d454-base_basic_pbr.glb",
       "rawSha256": "697073d143a24ba6f3251ac91095d6f607157eb00a7a41439cd9c27b6a689ab2",
-      "rawBytes": 11149932
+      "rawBytes": 11149932,
+      "prompt": "A girl in a sailor-collar school uniform: a long-sleeve sailor top with a wide flat collar and a small bow at the chest, a short pleated skirt, white socks and brown loafers, high twin tails tied on both sides of the head with long hanging tails and blunt bangs. Full body, standing in a relaxed A-pose with arms slightly away from the body and legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
     },
     {
       "id": "3c66ad8a-9bce-48ae-9a1b-e006382625f7",
@@ -253,7 +275,8 @@
       "outcome": "BANG으로 분리(롱스커트·단발 헤어)",
       "rawFile": "g3-hime-woman-3c66ad8a-9bce-48ae-9a1b-e006382625f7-base_basic_pbr.glb",
       "rawSha256": "a06a8f9dcd44be8377392bc1376f985be1d8565074d817a4236234dc55eab50e",
-      "rawBytes": 10526452
+      "rawBytes": 10526452,
+      "prompt": "A woman in an elegant outfit: a plain white blouse tucked in, an ankle-length A-line skirt with soft vertical folds, ankle boots with a low block heel, a hime cut hairstyle with straight waist-length hair, blunt eye-level bangs and cheek-length side locks. Full body, standing in a relaxed A-pose with arms slightly away from the body and legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
     },
     {
       "id": "7aebc65e-345f-4a71-862c-05781f7cac1f",
@@ -265,7 +288,8 @@
       "outcome": "BANG으로 분리(헤어·티셔츠)",
       "rawFile": "g4-wolf-summer-7aebc65e-345f-4a71-862c-05781f7cac1f-base_basic_pbr.glb",
       "rawSha256": "d177b43bc36c320ddc3bec97e0f57ddeaf579e61383c852cf715c1c55d7ebe33",
-      "rawBytes": 11035248
+      "rawBytes": 11035248,
+      "prompt": "A young woman in a casual summer outfit: an oversized plain short-sleeve t-shirt, plain denim shorts, flat strappy sandals, a wolf cut hairstyle with medium-length heavy layers, volume at the crown and choppy ends. Full body, standing in a relaxed A-pose with arms slightly away from the body and legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
     },
     {
       "id": "162ae481-83c6-42e2-9df0-e46a2f680531",
@@ -277,7 +301,8 @@
       "outcome": "폐기(달리는 포즈)",
       "rawFile": "g5-athletic-pony-162ae481-83c6-42e2-9df0-e46a2f680531-base_basic_pbr.glb",
       "rawSha256": "e1757e3a1e48fba342c89a07df3253ddd1d065770b781e79757b4b6f061b8980",
-      "rawBytes": 9857212
+      "rawBytes": 9857212,
+      "prompt": "An athletic young woman: a fitted sleeveless sports top, plain leggings, white sneakers, hair in a high ponytail tied at the crown with a long tail reaching the middle of the back and short side bangs. Full body, standing in a relaxed A-pose with arms slightly away from the body and legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
     },
     {
       "id": "051b32ef-5b4e-4c42-95fb-02354c1de5ca",
@@ -289,7 +314,8 @@
       "outcome": "BANG으로 분리",
       "rawFile": "g6-young-man-051b32ef-5b4e-4c42-95fb-02354c1de5ca-base_basic_pbr.glb",
       "rawSha256": "987a79413a8917adebf2ac9b63dd96840153ae821f30f0a83450017c59bb4283",
-      "rawBytes": 9519868
+      "rawBytes": 9519868,
+      "prompt": "A young man in a smart casual outfit: a plain button-up shirt with a spread collar, a plain light jacket, slim trousers, plain shoes, short layered hair above the ears with textured side-swept bangs. Full body, standing in a relaxed A-pose with arms slightly away from the body and legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
     },
     {
       "id": "f12ea410-75bf-4475-a213-198746431395",
@@ -298,7 +324,11 @@
       "parent": "44533c2e-788e-4b41-ba29-4119e52f493c",
       "strength": 9,
       "intent": "교복 분리",
-      "outcome": "대기"
+      "outcome": "사용(블레이저 root.10, 주름치마 root.2, 헤어 root.3, 로퍼 root.5)",
+      "instruction": "Separate into parts: the long black hair as one single part, the navy blazer including both sleeves as one single part, the white shirt collar, the red ribbon bow, the pleated skirt as one single part, the two white socks, the two black loafers, and the skin (head, neck, hands, legs).",
+      "rawFile": "g1-bang-f12ea410-75bf-4475-a213-198746431395-base_basic_pbr.glb",
+      "rawSha256": "17b43e7a36c950a65ce3739b807dda77ad0ddfa91ef27b586f63e46278a24437",
+      "rawBytes": 10832888
     },
     {
       "id": "10546880-792b-473f-b758-7edbbd7ab261",
@@ -307,7 +337,11 @@
       "parent": "051b32ef-5b4e-4c42-95fb-02354c1de5ca",
       "strength": 7,
       "intent": "남성 의상·헤어 분리",
-      "outcome": "대기"
+      "outcome": "사용(헤어 root.6)",
+      "instruction": "Separate into parts: the short black hair as one single part, the tan jacket including both sleeves as one single part, the gray shirt, the tan trousers as one single part, the two brown boots, and the skin (head, neck, hands).",
+      "rawFile": "g6-bang-10546880-792b-473f-b758-7edbbd7ab261-base_basic_pbr.glb",
+      "rawSha256": "bea4dca7ce2a776e2c3a6099fe5a21ab41dfe3293d0414eb7b7111189f738dba",
+      "rawBytes": 10548028
     },
     {
       "id": "e68a0738-cbb4-49c6-8c63-e8e137b8bd32",
@@ -316,7 +350,11 @@
       "parent": "3c66ad8a-9bce-48ae-9a1b-e006382625f7",
       "strength": 7,
       "intent": "롱스커트·재킷·헤어 분리",
-      "outcome": "대기"
+      "outcome": "사용(롱스커트 root.11, 단발 헤어 root.9)",
+      "instruction": "Separate into parts: the black bob hair as one single part, the gray jacket including both sleeves as one single part, the black belt, the long A-line skirt as one single part, the two black high-heel shoes, and the skin (head, neck, hands, legs).",
+      "rawFile": "g3-bang-e68a0738-cbb4-49c6-8c63-e8e137b8bd32-base_basic_pbr.glb",
+      "rawSha256": "c1599ff9e0d4a2a08f0ae9611d520bc258cdd0a6216d1060dd2bb14dbd17e6b1",
+      "rawBytes": 11316688
     },
     {
       "id": "884fb776-4796-43a5-ba80-2a694ea52e00",
@@ -325,7 +363,11 @@
       "parent": "7aebc65e-345f-4a71-862c-05781f7cac1f",
       "strength": 5,
       "intent": "웨이브 헤어·티셔츠 분리",
-      "outcome": "대기"
+      "outcome": "미사용(웨이브 헤어 root.2 — 섀기 레이어드가 늑대컷에 더 맞아 대체)",
+      "instruction": "Separate into parts: the wavy brown hair as one single part, the oversized white t-shirt as one single part, the denim shorts as one single part, and the skin (head, neck, arms, hands, legs).",
+      "rawFile": "g4-bang-884fb776-4796-43a5-ba80-2a694ea52e00-base_basic_pbr.glb",
+      "rawSha256": "c717342b4df9bec108e3474d573b45b79a88c6577abf7a8ac2d9dccf96f72f52",
+      "rawBytes": 11964840
     },
     {
       "id": "545282ff-a967-4ad2-b736-793d456013d3",
@@ -334,7 +376,11 @@
       "tier": "Gen-2.5-High",
       "qualityOverride": 30000,
       "intent": "hair/action-pony 흉상",
-      "outcome": "대기"
+      "outcome": "BANG으로 분리",
+      "prompt": "A high ponytail tied at the crown with a long tail reaching the middle of the back and short side bangs, on an adult woman. Head-and-shoulders bust of an adult with a neutral relaxed face and eyes open, wearing a plain black crew-neck top. The hair is solid dark brown, matte, built from large smooth clumps with clean sharp tips and very few fine strands, symmetrical, front view, evenly lit, plain white background, no accessories, no headwear.",
+      "rawFile": "hair-pony-545282ff-a967-4ad2-b736-793d456013d3-base_basic_pbr.glb",
+      "rawSha256": "635324e227e609fa38aad6ba1f3c9a0154a0eeaf882420e2f9259ff50274f2b6",
+      "rawBytes": 10160356
     },
     {
       "id": "54a85bb9-c3a4-4120-98ae-55f583790ad9",
@@ -343,7 +389,11 @@
       "tier": "Gen-2.5-High",
       "qualityOverride": 30000,
       "intent": "hair/hime-cut 흉상",
-      "outcome": "대기"
+      "outcome": "사용 안 함(블런트 뱅 단발 — 히메컷은 G1 BANG 헤어로 대체)",
+      "prompt": "A hime cut: straight waist-length hair with blunt eye-level bangs and cheek-length side locks, on an adult woman. Head-and-shoulders bust of an adult with a neutral relaxed face and eyes open, wearing a plain black crew-neck top. The hair is solid dark brown, matte, built from large smooth clumps with clean sharp tips and very few fine strands, symmetrical, front view, evenly lit, plain white background, no accessories, no headwear.",
+      "rawFile": "hair-hime-54a85bb9-c3a4-4120-98ae-55f583790ad9-base_basic_pbr.glb",
+      "rawSha256": "68470bd376c2220c74800e1c92e02c0df9579b23244e4959993f07748ef93add",
+      "rawBytes": 11460732
     },
     {
       "id": "57de885d-a2f4-4850-b073-53725523330d",
@@ -352,7 +402,11 @@
       "tier": "Gen-2.5-High",
       "qualityOverride": 30000,
       "intent": "hair/twin-tail 흉상",
-      "outcome": "대기"
+      "outcome": "BANG으로 분리",
+      "prompt": "High twin tails tied on both sides of the head with long hanging tails and blunt bangs, on an adult woman. Head-and-shoulders bust of an adult with a neutral relaxed face and eyes open, wearing a plain black crew-neck top. The hair is solid dark brown, matte, built from large smooth clumps with clean sharp tips and very few fine strands, symmetrical, front view, evenly lit, plain white background, no accessories, no headwear.",
+      "rawFile": "hair-twin-57de885d-a2f4-4850-b073-53725523330d-base_basic_pbr.glb",
+      "rawSha256": "f9d9c010ea7bcbb21353200a57f0402da243758a7c4199c2ade09249e797b1ae",
+      "rawBytes": 8856248
     },
     {
       "id": "939df19f-f77b-42e4-ae6c-be40add9e7e1",
@@ -361,7 +415,11 @@
       "tier": "Gen-2.5-High",
       "qualityOverride": 30000,
       "intent": "hair/wolf-layered 흉상",
-      "outcome": "대기"
+      "outcome": "폐기('wolf cut'이 늑대 머리로 생성됨 — 프롬프트에 사람 머리 모양이라고 명시해 재생성)",
+      "prompt": "A wolf cut: medium-length heavily layered hair with volume at the crown and choppy ends, on an adult woman. Head-and-shoulders bust of an adult with a neutral relaxed face and eyes open, wearing a plain black crew-neck top. The hair is solid dark brown, matte, built from large smooth clumps with clean sharp tips and very few fine strands, symmetrical, front view, evenly lit, plain white background, no accessories, no headwear.",
+      "rawFile": "hair-wolf-939df19f-f77b-42e4-ae6c-be40add9e7e1-base_basic_pbr.glb",
+      "rawSha256": "7a79247f91b722107cd6b267baf484d21a10b11855243657c2b88c19049a1970",
+      "rawBytes": 12917148
     },
     {
       "id": "1137c911-3282-4afc-976f-bdd3839f5bd6",
@@ -370,7 +428,244 @@
       "tier": "Gen-2.5-High",
       "qualityOverride": 12000,
       "intent": "top/sailor 후보(옷만, T-포즈)",
-      "outcome": "대기"
+      "outcome": "사용 안 함(세일러 칼라가 아닌 파이핑 칼라 교복 블라우스) — 세일러 상의는 전신 재생성으로 대체",
+      "prompt": "A plain sailor-collar school uniform top for an adult, one single color for the whole garment: wide flat sailor collar with a V opening at the chest, long sleeves, a small flat bow at the chest as part of the same shell, hip-length hem. Sleeves extend straight out horizontally in a T-pose shape. Hollow shell with open neck, cuff and hem openings, empty inside. Symmetrical, thin even fabric thickness, large smooth surfaces, simple clean topology, minimal soft folds. Solid very light gray matte fabric color, no pattern, no print, no logo, no text, no contrast stitching, no gloss, no baked shadows or highlights, evenly lit, plain white background.",
+      "rawFile": "sailor-01-1137c911-3282-4afc-976f-bdd3839f5bd6-base_basic_pbr.glb",
+      "rawSha256": "11523f889a3c11c43d3901f269cef3bcf4e68c04f454213a25ec209462cb8c06",
+      "rawBytes": 9044048
+    },
+    {
+      "id": "2a7df564-2bd6-49c9-ae0c-e5bdcece8c4f",
+      "name": "sandals-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 8000,
+      "intent": "shoes/sandals 후보(한 켤레)",
+      "outcome": "사용",
+      "prompt": "A pair of plain flat strap sandals with a thick flat sole and two wide straps across the foot and one at the heel. One pair only: left and right shoe side by side, parallel, toes pointing forward, standing flat on the ground. Symmetrical pair, simple clean topology, large smooth surfaces, matte materials, solid very light gray color for the whole shoe, no logo, no text, no baked shadows or highlights, evenly lit, plain white background.",
+      "rawFile": "sandals-01-2a7df564-2bd6-49c9-ae0c-e5bdcece8c4f-base_basic_pbr.glb",
+      "rawSha256": "0bd7dc6589e37869701bf0da4484e4a992eccd9820829f5b665689b70dc512e7",
+      "rawBytes": 7287108
+    },
+    {
+      "id": "f2851ffa-42ff-4d05-9404-a88a93a305c5",
+      "name": "hair-pony-bang",
+      "kind": "bang",
+      "parent": "545282ff-a967-4ad2-b736-793d456013d3",
+      "strength": 3,
+      "intent": "action-pony 헤어 분리",
+      "outcome": "사용(헤어 root.3, 머리 root.2)",
+      "instruction": "Separate into parts: the dark brown high ponytail hair as one single part including the long tail, the black sleeveless top, and the skin (head, face, neck, shoulders).",
+      "rawFile": "hair-pony-bang-f2851ffa-42ff-4d05-9404-a88a93a305c5-base_basic_pbr.glb",
+      "rawSha256": "89657274f252d8ed413e0bbf9c157cbf73d09aa218edea2e9affddca87738809",
+      "rawBytes": 11225404
+    },
+    {
+      "id": "d89903ac-586a-48e1-bb6b-a8e545babed0",
+      "name": "hair-twin-bang",
+      "kind": "bang",
+      "parent": "57de885d-a2f4-4850-b073-53725523330d",
+      "strength": 3,
+      "intent": "twin-tail 헤어 분리",
+      "outcome": "사용(헤어 root.5, 머리 root.3)",
+      "instruction": "Separate into parts: the black twin tail hair as one single part including both long tails and the bangs, the black tank top, and the skin (head, face, neck, shoulders).",
+      "rawFile": "hair-twin-bang-d89903ac-586a-48e1-bb6b-a8e545babed0-base_basic_pbr.glb",
+      "rawSha256": "5ce69fc7f713dda81e358c189bf63a937b5e41abfce6c7a52740e1e49f1094db",
+      "rawBytes": 9170364
+    },
+    {
+      "id": "fed8802e-0cb9-4506-aa44-344b43ee98a1",
+      "name": "hair-romance",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "hair/romance-long 흉상",
+      "outcome": "BANG으로 분리",
+      "prompt": "Long straight hair past the shoulders with a soft center part and face-framing side locks, on an adult woman. Head-and-shoulders bust of an adult with a neutral relaxed face and eyes open, wearing a plain black crew-neck top. The hair is solid dark brown, matte, built from large smooth clumps with clean sharp tips and very few fine strands, symmetrical, front view, evenly lit, plain white background, no accessories, no headwear.",
+      "rawFile": "hair-romance-fed8802e-0cb9-4506-aa44-344b43ee98a1-base_basic_pbr.glb",
+      "rawSha256": "7779a939e34ca1b4135ad4a0d8fcf379521852814b47216939e5c74984cb388d",
+      "rawBytes": 11882624
+    },
+    {
+      "id": "a822ce31-ecb7-4cba-b2c9-07dd3b45c06f",
+      "name": "hair-shaggy",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "hair/wolf-layered 흉상(사람 머리 모양 명시 재시도)",
+      "outcome": "BANG으로 분리",
+      "prompt": "A shaggy medium-length layered human hairstyle, heavily layered with volume at the crown, choppy ends and wispy face-framing pieces, on an adult woman. Head-and-shoulders bust of a human adult with a neutral relaxed face and eyes open, wearing a plain black crew-neck top. The hair is solid dark brown, matte, built from large smooth clumps with clean sharp tips and very few fine strands, symmetrical, front view, evenly lit, plain white background, no accessories, no headwear, not an animal.",
+      "rawFile": "hair-shaggy-a822ce31-ecb7-4cba-b2c9-07dd3b45c06f-base_basic_pbr.glb",
+      "rawSha256": "1baaa30baa1210499d84c3cfe68fa124d81477af9ea736ce52eef7f699b553aa",
+      "rawBytes": 13167608
+    },
+    {
+      "id": "b793c25d-6247-43d9-a040-1be2d82252f8",
+      "name": "boots-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 8000,
+      "intent": "shoes/boots 후보(한 켤레)",
+      "outcome": "검토 중",
+      "prompt": "A pair of plain calf-high lace-up boots with a low block heel and a smooth upper. One pair only: left and right shoe side by side, parallel, toes pointing forward, standing flat on the ground, each shoe hollow with an open ankle opening, empty inside. Symmetrical pair, simple clean topology, large smooth surfaces, matte materials, solid very light gray color for the whole shoe, no logo, no text, no baked shadows or highlights, evenly lit, plain white background.",
+      "rawFile": "boots-01-b793c25d-6247-43d9-a040-1be2d82252f8-base_basic_pbr.glb",
+      "rawSha256": "0a3178d360d5c68237dd3fcd7fac64fe308de647fd1ac2c410706e5e9e20fb6e",
+      "rawBytes": 8758732
+    },
+    {
+      "id": "43d44c7c-1c5d-4f31-83b5-dbc584859567",
+      "name": "ribbon-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 3000,
+      "intent": "accessory/ribbon 후보",
+      "outcome": "검토 중",
+      "prompt": "A single plain hair ribbon bow with two symmetrical loops, a center knot and two short tails, flat and thin. Standalone object, nothing else in the scene, no person, no head, no hands. Symmetrical, simple clean topology, large smooth surfaces, matte materials, solid very light gray color, no logo, no text, no baked shadows or highlights, evenly lit, plain white background.",
+      "rawFile": "ribbon-01-43d44c7c-1c5d-4f31-83b5-dbc584859567-base_basic_pbr.glb",
+      "rawSha256": "ce78392f5698c2bdde87b9556444497b7fe47960d2ee1247f3614b07bf23d1be",
+      "rawBytes": 6844976
+    },
+    {
+      "id": "facb7ae3-49f9-4785-be5e-19d2f8449b5d",
+      "name": "g7-sailor-t",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "세일러복 여학생 전신(T-포즈)",
+      "outcome": "검토 중(T-포즈를 따르지 않고 팔을 내린 포즈)",
+      "prompt": "A girl in a sailor-collar school uniform: a long-sleeve sailor top with a wide square sailor collar flap lying over the shoulders and back, a V opening at the chest with a small bow, a short pleated skirt, white socks and loafers, long black hair. Full body, standing in a perfect T-pose with both arms stretched straight out horizontally to the sides, palms down, legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background.",
+      "rawFile": "g7-sailor-t-facb7ae3-49f9-4785-be5e-19d2f8449b5d-base_basic_pbr.glb",
+      "rawSha256": "d4305946e2c866a3f345e6085241cef985b6ce06808dec4330a90a1ed959cb7f",
+      "rawBytes": 10132852
+    },
+    {
+      "id": "9d9c4e0d-4182-4919-83f6-d68e52dfc157",
+      "name": "g8-sailor-a",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "세일러복 여학생 전신(A-포즈)",
+      "outcome": "검토 중(어린 비례)",
+      "prompt": "A girl in a sailor-collar school uniform: a long-sleeve sailor top with a wide square sailor collar flap lying over the shoulders and back with two thin stripes, a V opening at the chest with a small bow, a short pleated skirt, white socks and loafers, shoulder-length black hair. Full body, standing straight in a relaxed A-pose with both arms hanging slightly away from the body, hands open, legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background.",
+      "rawFile": "g8-sailor-a-9d9c4e0d-4182-4919-83f6-d68e52dfc157-base_basic_pbr.glb",
+      "rawSha256": "0b2cc923b55610c2a8dea39887fd128022a99ca63d6d84bc05fa2919f750e577",
+      "rawBytes": 10224832
+    },
+    {
+      "id": "cecdf106-0208-4952-9647-d553144db74e",
+      "name": "hair-romance-bang",
+      "kind": "bang",
+      "parent": "fed8802e-0cb9-4506-aa44-344b43ee98a1",
+      "strength": 3,
+      "intent": "romance-long 헤어 분리",
+      "outcome": "사용(헤어 root.2, 머리 root.4)",
+      "instruction": "Separate into parts: the dark brown long straight hair as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders).",
+      "rawFile": "hair-romance-bang-cecdf106-0208-4952-9647-d553144db74e-base_basic_pbr.glb",
+      "rawSha256": "2101f973c68ae78671ebcaee3ca4bafe4aeebee17dbd68d152d1ec13d4763e44",
+      "rawBytes": 12085480
+    },
+    {
+      "id": "ab1a860d-74eb-4ad2-a5c1-22c0326f91e9",
+      "name": "hair-shaggy-bang",
+      "kind": "bang",
+      "parent": "a822ce31-ecb7-4cba-b2c9-07dd3b45c06f",
+      "strength": 3,
+      "intent": "wolf-layered 헤어 분리",
+      "outcome": "사용(헤어 root.1, 머리 root.2)",
+      "instruction": "Separate into parts: the dark brown shaggy layered hair as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders).",
+      "rawFile": "hair-shaggy-bang-ab1a860d-74eb-4ad2-a5c1-22c0326f91e9-base_basic_pbr.glb",
+      "rawSha256": "f6dfd8c1153e43db066e42ce0eead31b664cfaf3df4ff5769b3154573e88dccc",
+      "rawBytes": 12010304
+    },
+    {
+      "id": "1e1c9982-b12d-4664-91f4-7de242fbac07",
+      "name": "g9-hoodie-a",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "후디 전신(A-포즈, 소매와 몸통 사이를 벌려 달라고 명시 — 기존 후디는 소매가 몸통에 붙어 A→T 변환이 찢어짐)",
+      "outcome": "폐기(손을 주머니에 넣은 포즈 — 소매가 몸통·주머니와 이어져 A→T 변환 불가)",
+      "prompt": "A young adult wearing a plain light gray pullover hoodie with the hood down, ribbed cuffs and ribbed hem, a front kangaroo pocket and no drawstrings, plain dark trousers and plain dark sneakers, short neat hair. Full body, standing in an A-pose with both arms held clearly away from the body at about thirty degrees so there is a visible gap between each sleeve and the torso, legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
+    },
+    {
+      "id": "30afea4c-9a03-4963-875c-8785dec6be8d",
+      "name": "hair-bob2",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "hair/soft-bob 재생성(앞머리를 눈썹 위로)",
+      "outcome": "BANG으로 분리",
+      "prompt": "A short chin-length bob hairstyle with soft inward-curling ends and short wispy bangs cut above the eyebrows, so the forehead and eyebrows stay visible, on an adult woman. Head-and-shoulders bust of an adult with a neutral relaxed face and eyes open, wearing a plain black crew-neck top. The hair is solid dark brown, matte, built from large smooth clumps with clean sharp tips and very few fine strands, symmetrical, front view, evenly lit, plain white background, no accessories, no headwear."
+    },
+    {
+      "id": "4d75173e-4311-4ec7-97f8-24caff52b162",
+      "name": "hair-hime2",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "hair/hime-cut 재생성(흉상, 앞머리를 눈썹 위로)",
+      "outcome": "BANG으로 분리",
+      "prompt": "A hime cut hairstyle: long straight hair past the shoulders with blunt bangs cut just above the eyebrows so the eyes and eyebrows stay fully visible, and straight cheek-length side locks framing the face, on an adult woman. Head-and-shoulders bust of an adult with a neutral relaxed face and eyes open, wearing a plain black crew-neck top. The hair is solid black, matte, built from large smooth clumps with clean sharp tips and very few fine strands, symmetrical, front view, evenly lit, plain white background, no accessories, no headwear."
+    },
+    {
+      "id": "72e8286d-bb5a-4a2f-98e3-79d76cbdd5d9",
+      "name": "hair-short2",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "hair/short-layered 재생성(흉상, 앞머리를 눈썹 위로)",
+      "outcome": "BANG으로 분리",
+      "prompt": "Short layered hair above the ears with textured layers and short side-swept bangs cut above the eyebrows, so the forehead and eyes stay visible, on a young adult. Head-and-shoulders bust of an adult with a neutral relaxed face and eyes open, wearing a plain black crew-neck top. The hair is solid dark brown, matte, built from large smooth clumps with clean sharp tips and very few fine strands, symmetrical, front view, evenly lit, plain white background, no accessories, no headwear."
+    },
+    {
+      "id": "e826974c-a756-4fe3-9515-15b52af31146",
+      "name": "g10-hoodie-b",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "후디 전신 재생성(손은 주머니 밖) — 소매·몸통 사이가 조금 벌어짐",
+      "outcome": "BANG으로 분리",
+      "prompt": "A young adult wearing a plain light gray pullover hoodie with the hood down, ribbed cuffs and ribbed hem, a plain smooth front with no pocket and no drawstrings, plain dark trousers and plain dark sneakers, short neat hair. Full body, standing straight in a relaxed A-pose with both arms hanging down and slightly away from the body, hands open, empty and visible beside the hips (never in pockets), legs slightly apart, front view, neutral calm expression with eyes open, slim adult proportions about eight heads tall, stylized Korean webtoon character design, clean simple shapes, matte fabrics with simplified folds, each garment a clear separate piece, no logos, no text, evenly lit, plain white background."
+    },
+    {
+      "id": "4696d281-4c85-420a-9462-45890e850808",
+      "name": "g10-hoodie-bang",
+      "kind": "bang",
+      "parent": "e826974c-a756-4fe3-9515-15b52af31146",
+      "strength": 3,
+      "intent": "후디 분리",
+      "outcome": "대기",
+      "instruction": "Separate into parts: the light gray hoodie including both sleeves, cuffs, hood, front pocket and drawstrings as one single part, the dark trousers as one part, the two white sneakers, the head with hair and face, and the two hands skin."
+    },
+    {
+      "id": "385700b4-044e-4ece-984e-7d4d09b0216c",
+      "name": "hair-bob2-bang",
+      "kind": "bang",
+      "parent": "30afea4c-9a03-4963-875c-8785dec6be8d",
+      "strength": 3,
+      "intent": "soft-bob 헤어 분리",
+      "outcome": "대기",
+      "instruction": "Separate into parts: the dark brown short bob hair as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders)."
+    },
+    {
+      "id": "1c85dbb2-501e-49c5-a626-10cbd1fc5fca",
+      "name": "hair-hime2-bang",
+      "kind": "bang",
+      "parent": "4d75173e-4311-4ec7-97f8-24caff52b162",
+      "strength": 3,
+      "intent": "hime-cut 헤어 분리",
+      "outcome": "대기",
+      "instruction": "Separate into parts: the black long straight hair with bangs as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders)."
+    },
+    {
+      "id": "7a57080d-266e-4ccb-960d-7e0260d87bce",
+      "name": "hair-short2-bang",
+      "kind": "bang",
+      "parent": "72e8286d-bb5a-4a2f-98e3-79d76cbdd5d9",
+      "strength": 3,
+      "intent": "short-layered 헤어 분리",
+      "outcome": "대기",
+      "instruction": "Separate into parts: the dark brown short layered hair as one single part, the black crew-neck top, and the skin (head, face, neck, shoulders)."
     }
   ]
 }
