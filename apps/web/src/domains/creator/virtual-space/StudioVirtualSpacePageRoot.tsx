@@ -44,6 +44,9 @@ import {
 } from "./studio-virtual-space-session-position";
 import { isStudioSpatialInviteToken } from "./studio-spatial-invite-context";
 import { verifyStudioSpaceEntryCode, verifyStudioSpatialInvite } from "./studio-virtual-space-access-client";
+import { StudioGodotSpaceEmbed } from "./StudioGodotSpaceEmbed";
+import { STUDIO_CHARACTER_SKINS } from "./studio-virtual-space-character-skins";
+import { STUDIO_SHARED_CURSOR_PALETTE } from "./studio-virtual-space-shared-cursors";
 import { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
 import type { StudioEntryCodeEntryResult } from "./StudioVirtualSpaceEntryCodePanel";
 import { VirtualSpaceExperience } from "./StudioVirtualSpacePage";
@@ -346,6 +349,34 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
       }}
       onEnter={() => completeEntry(false)}
     />;
+  }
+
+  // Godot 무대 (재개발 2단계): ?engine=godot 일 때만 기존 공간 대신 Godot 임베드를 띄운다.
+  // 기본값은 기존 웹 공간이며, 임베드 안의 "기존 스페이스로 돌아가기"로 언제든 되돌릴 수 있다.
+  if (new URLSearchParams(location.search).get("engine") === "godot") {
+    const effectiveAvatarIndex = isGuest ? 0 : entryAvatarIndex;
+    const skin =
+      STUDIO_CHARACTER_SKINS[effectiveAvatarIndex] ?? STUDIO_CHARACTER_SKINS[0];
+    const colorHex =
+      STUDIO_SHARED_CURSOR_PALETTE[
+        effectiveAvatarIndex % STUDIO_SHARED_CURSOR_PALETTE.length
+      ] ?? "#3b82f6";
+    const exitToClassic = () => {
+      const params = new URLSearchParams(location.search);
+      params.delete("engine");
+      const value = params.toString();
+      navigate({ pathname: location.pathname, search: value ? `?${value}` : "" });
+    };
+    return (
+      <StudioGodotSpaceEmbed
+        workId={decodedProjectId}
+        displayName={publicNickname}
+        colorHex={colorHex}
+        skinKey={skin?.key}
+        localOnly={personal || !session.data}
+        onExitToClassic={exitToClassic}
+      />
+    );
   }
 
   return (
