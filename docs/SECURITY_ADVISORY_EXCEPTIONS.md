@@ -33,6 +33,10 @@ React Router 7.18.2를 v7 최초 수정 release로 반영했으므로 설치된
 
 Naver Login, coturn TURN REST, SVG processing mode의 공식 protocol 문서를 상호운용 근거로 사용한다.
 
+> 2026-10-11 갱신: #18, #19의 근거였던 coturn 자격 발급 코드는 TURN 미사용 결정으로
+> API에서 제거됐고 deploy/coturn 스캐폴드도 삭제됐다. 해당 alert의 코드 경로는
+> 더 이상 존재하지 않는다.
+
 ## secret-scanning 검토
 
 hand-written diagnostic token과 test publisher UUID는 synthetic fixture로 확인해 `used_in_tests`로
