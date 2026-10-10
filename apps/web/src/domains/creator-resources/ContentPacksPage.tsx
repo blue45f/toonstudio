@@ -96,7 +96,7 @@ export function ContentPacksPage() {
   const packStage = (
     <section aria-label={tx("오픈 콘텐츠 제작실 소개")} className="relative overflow-hidden rounded-3xl border border-line bg-panel">
       <div aria-hidden="true" className="absolute inset-0 grid grid-cols-4 grid-rows-3">
-        {CONTENT_PACKS.map((item) => (
+        {CONTENT_PACKS.map((item, index) => (
           <span key={item.id} className="relative block overflow-hidden">
             <img
               src={`/brand/illustrated-20260928/${PACK_ART[item.id] ?? "materials"}.webp`}
@@ -105,13 +105,17 @@ export function ContentPacksPage() {
               decoding="async"
               className="absolute inset-0 size-full object-cover"
             />
-            <span className="absolute left-2 top-2 hidden rounded-full bg-black/45 px-2 py-0.5 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm sm:block">{tx(item.title)}</span>
+            {/* 타일 이름표는 첫 줄만 단다 — 아래 두 줄은 스크림 위 카피가 앉는
+                자리라 이름표와 글자가 겹친다. 팩 이름은 아래 선택 그리드가 담당한다. */}
+            {index < 4 ? (
+              <span className="absolute left-2 top-2 hidden rounded-full bg-black/45 px-2 py-0.5 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm sm:block">{tx(item.title)}</span>
+            ) : null}
           </span>
         ))}
       </div>
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(to_top,oklch(0.08_0.02_265/0.95)_0%,oklch(0.08_0.02_265/0.78)_44%,oklch(0.08_0.02_265/0.28)_78%,oklch(0.08_0.02_265/0.4)_100%)]"
+        className="absolute inset-0 bg-[linear-gradient(to_top,oklch(0.08_0.02_265/0.95)_0%,oklch(0.08_0.02_265/0.85)_44%,oklch(0.08_0.02_265/0.52)_78%,oklch(0.08_0.02_265/0.5)_100%)]"
       />
       <div className="relative flex min-h-[26rem] flex-col justify-end gap-4 p-6 sm:p-8">
         <Link
