@@ -209,7 +209,9 @@ describe("StudioHybridDccViewport", () => {
     )).toBeNull();
   });
 
-  it("shows an authority-safe empty state without starting WebGL", () => {
+  it("shows the empty state as an overlay on the mounted grid stage", () => {
+    // 웨이브 18 셸 재설계: 빈 장면에서도 그리드 무대(Canvas)를 띄워 첫 화면에서 3D 공간이
+    // 읽히게 하고, 빈 안내는 무대 위 오버레이로 강등한다. 오류 장면의 무캔버스 계약은 별도 테스트가 지킨다.
     render(
       <StudioHybridDccViewport
         workspace={createStudioHybridDccWorkspace("empty-viewport")}
@@ -219,8 +221,24 @@ describe("StudioHybridDccViewport", () => {
     );
 
     expect(screen.getByText("3D 작업대가 비어 있습니다.")).toBeTruthy();
-    expect(screen.queryByTestId("r3f-canvas")).toBeNull();
+    expect(screen.getByTestId("r3f-canvas")).toBeTruthy();
+    expect(document.querySelector("[data-studio-hybrid-dcc-empty-stage]")).not.toBeNull();
     expect(screen.getByLabelText("Hybrid DCC 3D 작업 뷰포트").className).toContain("min-h-80");
+  });
+
+  it("routes empty-stage start actions through onEmptyStart", () => {
+    const onEmptyStart = vi.fn();
+    render(
+      <StudioHybridDccViewport
+        workspace={createStudioHybridDccWorkspace("empty-viewport-start")}
+        onSelectAsset={vi.fn()}
+        onEmptyStart={onEmptyStart}
+        webglAvailable
+      />,
+    );
+
+    fireEvent.click(document.querySelector("[data-studio-hybrid-dcc-empty-start=\"room\"]")!);
+    expect(onEmptyStart).toHaveBeenCalledWith("room");
   });
 
   it("renders real authority mesh stats and forwards asset/background selection", () => {
@@ -504,7 +522,9 @@ describe("StudioHybridDccViewport", () => {
     );
 
     expect(workspace.session.state.geometry.records["hidden-cube"]).toBeTruthy();
-    expect(screen.queryByTestId("r3f-canvas")).toBeNull();
+    // 숨긴 오브젝트만 있으면 무대는 비어 보인다 — 그리드 무대는 뜨고 빈 안내 오버레이가 겹친다(웨이브 18).
+    expect(screen.getByTestId("r3f-canvas")).toBeTruthy();
+    expect(document.querySelector("[data-studio-hybrid-dcc-empty-stage]")).not.toBeNull();
     expect(screen.getByText("3D 작업대가 비어 있습니다.")).toBeTruthy();
   });
 

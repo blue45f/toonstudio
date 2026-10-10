@@ -821,16 +821,6 @@ export function StudioHybridDccPanel({
 
       {webglSupported === false ? <StudioHybridDccEnvironmentNotice onRecheck={recheckWebgl} /> : null}
 
-      {introVisible ? (
-        <StudioHybridDccIntro
-          id={introId}
-          busy={busy}
-          layout="stage"
-          onStart={startFromIntro}
-          onDismiss={() => setIntroPreference(false)}
-        />
-      ) : null}
-
       <input
         ref={fileRef}
         type="file"
@@ -864,6 +854,7 @@ export function StudioHybridDccPanel({
         <div className={cn("order-1 min-w-0 lg:col-start-1 xl:row-start-1", introVisible ? "xl:col-start-1" : "xl:col-start-2")}>
           <StudioHybridDccViewport
             stage={introVisible}
+            onEmptyStart={startFromIntro}
             workspace={ws}
             webglAvailable={webglSupported ?? undefined}
             componentSelection={componentSelection}
@@ -1170,6 +1161,19 @@ export function StudioHybridDccPanel({
           </div>
         </aside>
       </div>
+
+      {/* 셸 재설계(웨이브 18): 안내는 뷰포트 무대 아래에 둔다. 첫 화면의 첫 시각 블록은
+          언제나 3D 뷰포트이고, 안내는 시작 행동을 빈 무대 오버레이에도 실어 첫 화면에서
+          바로 시작할 수 있게 한 뒤 본문 전체를 뷰포트 아래에서 이어서 제공한다. */}
+      {introVisible ? (
+        <StudioHybridDccIntro
+          id={introId}
+          busy={busy}
+          layout="stage"
+          onStart={startFromIntro}
+          onDismiss={() => setIntroPreference(false)}
+        />
+      ) : null}
 
       {activeRecord ? (
         <StudioHybridDccModifierInspector
