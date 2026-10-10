@@ -113,6 +113,7 @@ class GlbWriterTest(unittest.TestCase):
         self.assertEqual(nodes[2]["translation"], [0.0, 0.5, 0.1])
         self.assertAlmostEqual(nodes[3]["translation"][0], 0.2, places=6)
         self.assertEqual(document["skins"][0]["joints"], [1, 2, 3])
+        self.assertEqual(document["skins"][0]["skeleton"], 1)  # Armature(0)가 아니라 루트 joint — Babylon이 Armature를 추가 본으로 만들지 않게
         ibm = read_accessor(document, binary, document["skins"][0]["inverseBindMatrices"])
         self.assertEqual(ibm.shape, (3, 16))
         np.testing.assert_allclose(ibm[1][12:15], [0.0, -1.5, -0.1], atol=1e-6)

@@ -1262,6 +1262,12 @@ function checkNamesAndSkeleton(ctx, file, model) {
       const at = actual.findIndex((name, index) => name !== expected[index]);
       if (at >= 0) report.error("V6", where, `skin.joints 순서가 skeleton.joints와 다릅니다. ${at}번째: 기대 ${expected[at]}, 실제 ${actual[at]} (JOINTS 인덱스가 어긋납니다, kit-joint-mismatch)`);
     }
+    // skin.skeleton: 생략하거나 루트 joint여야 한다. Armature 같은 조상을 가리키면 glTF상 유효해도 Babylon 로더가 그 노드를 joint 밖의 추가 본으로 만든다.
+    const skeletonNode = model.skins[0].getSkeleton();
+    const rootJoints = expected.filter((name) => (manifest.skeleton.parents[name] ?? null) === null);
+    if (skeletonNode !== null && !rootJoints.includes(skeletonNode.getName())) {
+      report.error("V6", where, `skin.skeleton이 '${skeletonNode.getName()}'입니다. 생략하거나 루트 joint(${rootJoints.join(", ")})여야 합니다 — 그 밖의 노드(Armature 등)를 가리키면 앱의 Babylon 로더가 그 노드를 추가 본으로 만들어 여분 joint로 거부합니다(kit-joint-mismatch).`);
+    }
     for (const node of model.jointNodes) {
       const name = node.getName();
       if (!(name in manifest.skeleton.parents)) continue;

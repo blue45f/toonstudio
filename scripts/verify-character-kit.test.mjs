@@ -1099,6 +1099,16 @@ it("V6: 부모 관계가 다르면 오류다", async () => {
   assertError(result, "V6", "joint mixamorig:LeftHand의 부모");
 });
 
+it("V6: skin.skeleton이 Armature처럼 루트 joint가 아니면 오류다(Babylon이 추가 본을 만든다)", async () => {
+  const kit = await newKit();
+  await tweakGlb(kit, "parts/top/tee.glb", (doc) => {
+    const armature = doc.getRoot().listNodes().find((node) => node.getName() === "Armature");
+    doc.getRoot().listSkins()[0].setSkeleton(armature);
+  });
+  const result = await runVerify(kit, { only: ["V6"] });
+  assertError(result, "V6", "skin.skeleton이 'Armature'");
+});
+
 it("V6: 선언 안 된 메시 노드·빠진 메시 노드·헤어 이름 규칙 위반을 잡는다", async () => {
   const kit = await newKit();
   await tweakGlb(kit, "bases/female.glb", (doc) => {
