@@ -1,4 +1,5 @@
 import {
+  P2P_MESH_SESSION_ID,
   REALTIME_CHANNELS,
   isServerEventMessage,
   serializeRealtimeServerMessage,
@@ -1631,6 +1632,33 @@ export class RealtimeRoomStore {
       };
     }
 
+    if (
+      (payload.kind === "signal.offer" ||
+        payload.kind === "signal.answer" ||
+        payload.kind === "signal.ice") &&
+      payload.sessionId === P2P_MESH_SESSION_ID
+    ) {
+      // 예약 데이터 메시 세션은 화면 공유 핸드셰이크(announce/request/access)를
+      // 거치지 않는다. 입장은 룸 티켓이 이미 게이트하므로, 대상이 현재 접속 중인
+      // 룸 멤버(본인 제외)인지만 확인하고 신호를 중계한다.
+      const target = this.findConnectedMemberByClientId(
+        payload.targetClientId,
+        nowMs,
+      );
+      if (
+        target === null ||
+        (target.actor_id === actor.actorId &&
+          target.client_id === actor.clientId)
+      ) {
+        return { ok: false };
+      }
+      return {
+        ok: true,
+        targetActorId: target.actor_id,
+        targetClientId: target.client_id,
+      };
+    }
+
     const share = this.findActiveShare(payload.sessionId, nowMs);
     if (share === null) {
       return { ok: false };
@@ -2133,6 +2161,25 @@ export class RealtimeRoomStore {
         nowMs,
       )
       .toArray();
+  }
+
+  private findConnectedMemberByClientId(
+    clientId: string,
+    nowMs: number,
+  ): { actor_id: string; client_id: string } | null {
+    return firstRow(
+      this.sql
+        .exec<{ actor_id: string; client_id: string }>(
+          `SELECT actor_id, client_id
+           FROM connection_registry
+           WHERE client_id = ? AND session_expires_at_ms > ?
+           ORDER BY session_expires_at_ms DESC
+           LIMIT 1`,
+          clientId,
+          nowMs,
+        )
+        .toArray(),
+    );
   }
 
   private findShare(shareId: string): ScreenShareRow | null {

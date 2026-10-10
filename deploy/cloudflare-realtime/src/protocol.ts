@@ -1,4 +1,11 @@
 export const REALTIME_PROTOCOL_VERSION = "toonstudio.realtime.v1" as const;
+
+/**
+ * 웹 클라이언트의 예약 데이터 메시 세션 id (STUDIO_LIVE_P2P_MESH_SHARE_ID와 동일 값).
+ * 이 세션은 화면 공유가 아니라 프레즌스·직통 데이터 통로를 여는 신호 전용이라
+ * announce/request/access 핸드셰이크를 거치지 않는다.
+ */
+export const P2P_MESH_SESSION_ID = "p2p-mesh-v1" as const;
 export const REALTIME_WEBSOCKET_PROTOCOL = "toonstudio-realtime-v1" as const;
 export const REALTIME_TICKET_PROTOCOL_PREFIX = "ts-ticket." as const;
 
