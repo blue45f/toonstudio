@@ -9,7 +9,7 @@
 
 | 항목 | 결과 |
 | --- | --- |
-| Hyper3D / Blender / Sketchfab / Poly Haven MCP 도구 | 이 세션에는 **하나도 없다**(§2). 따라서 "Hyper3D 도구 목록"은 비어 있다 |
+| Hyper3D / Blender / Sketchfab / Poly Haven MCP 도구 | 이 클라우드 세션에는 **하나도 보이지 않는다**(§2). 사용자 로컬 Claude Code에는 `hyper3d` MCP(`rodin_*` 7개)가 등록돼 있다는 진술이 있으나(§2), 이 세션에는 전달되지 않았다 |
 | 파이프라인(생성 → 베이스 리타깃 → 검증기) 실행 | **하지 못했다.** 생성 수단(MCP 또는 API 키), Blender 실행기, 베이스 바디 에셋이 모두 없다 |
 | Hyper3D 상업 이용 | 약관상 **구독 플랜에 따라** 허용된다. 무료(ChatAvatar)는 상업 이용 금지(§3) |
 | Hyper3D 소유권 | 약관에서 **소유권 귀속을 명시한 조항을 찾지 못했다.** 구매는 "라이선스 부여이지 권리 이전이 아니다"로 적혀 있다 |
@@ -26,6 +26,9 @@
 | 재확인(사용자 재질문 후) | 이름 기준 도구 검색 `+hyper3d`·`+blender`·`+sketchfab`·`+polyhaven` | 4건 모두 일치 없음. 연결 실패 서버 목록에도 해당 이름이 없다 |
 | claude.ai 커넥터 | 커넥터 목록 조회(키워드 hyper3d, blender, 3d, sketchfab, polyhaven, rodin) | 0건 |
 | MCP 레지스트리 | 레지스트리 검색(hyper3d, blender, 3d model, sketchfab, poly haven) | 해당 항목 없음. 3D 관련으로는 Trimble SketchUp(미설치, SketchUp 전용)만 나온다 |
+| 사용자 로컬 `hyper3d` MCP (**사용자 진술, 이 세션에서 확인하지 못함**) | 사용자 메시지 | 로컬 `~/.claude.json`의 user 스코프에 HTTP 타입 `https://api.hyper3d.com/api/mcp`로 등록, `claude mcp list`에서 Connected, `/mcp` 인증 성공. 도구 7개: `rodin_generate`, `rodin_generate_bang`, `rodin_create_uploads`, `rodin_import_images`, `rodin_get_status`, `rodin_get_result`, `rodin_wait`. Blender MCP의 `generate_hyper3d_model_via_text`·`generate_hyper3d_model_via_images`는 Blender 애드온을 거치는 **별도 경로**라고 한다 |
+| 위 `rodin_*` 도구의 이 세션 노출 | 도구 검색 `+rodin`, 도구 이름 5개 직접 검색, 커넥터 목록 조회(hyper3d, rodin) | 모두 없음. 로컬 설정이 이 클라우드 세션에 전달되지 않는 것으로 **추정**한다(커넥터는 세션 시작 시 읽힌다) |
+| Hyper3D MCP 엔드포인트 도달성 | 인증 없이 `POST https://api.hyper3d.com/api/mcp`(MCP initialize) | HTTP 401. 컨테이너에서 도달은 되나 **자격증명이 없어 호출할 수 없다**. 로컬 세션의 OAuth 토큰은 이 컨테이너에 없으며 전달을 요청하지 않는다 |
 | 저장소의 Blender MCP | `tools/blender/toonstudio_blender_kit/mcp.py` | 허용 명령 7개(`inspect_character`·`build_authored_hair`·`create_semantic_face_shapes`·`render_quality_views`·`validate_character`·`export_character_package`·`run_pipeline`). README가 "asset download, package install" 불가·network permission 미요청이라고 명시한다. **Hyper3D 대체가 아니다** |
 | Blender 실행기 | `which blender` | 없음 |
 | `bpy` 모듈 | `pip index versions bpy` | 5.2.2 등 휠이 조회됨. **설치·실행은 하지 않았다(미검증)** |
@@ -104,7 +107,7 @@ Hyper3D(Rodin)로 만든 의상 후보가 키트 파츠가 되려면 아래를 �
 
 | 안 | 내용 | 필요한 것 |
 | --- | --- | --- |
-| A | Hyper3D·Blender MCP를 연결한 **새 세션**에서 이어간다 | <https://claude.ai/customize/connectors>에서 연결(커넥터는 세션 시작 시 읽히므로 새 세션이 필요). 유료 플랜 증빙, §4의 라이선스 결정. 로컬 Blender에 붙는 형태의 MCP는 클라우드 컨테이너에서 닿지 않을 수 있다(일반적 구조이며 이 세션에서 확인하지 않았다) — 그 경우 로컬 세션에서 하거나 컨테이너에 headless Blender를 설치해야 한다 |
+| A | `hyper3d` MCP가 보이는 세션에서 이어간다: (a) `hyper3d`가 등록된 **로컬 Claude Code 세션**, 또는 (b) Hyper3D 서버를 claude.ai 커넥터로 추가한 **새 클라우드 세션** | (b)는 <https://claude.ai/customize/connectors>에서 연결(커넥터는 세션 시작 시 읽히므로 새 세션이 필요). 어느 쪽이든 유료 플랜 증빙과 §4의 라이선스 결정이 필요하다. Blender 애드온 경유 생성은 별도 경로라 계정·약관이 다를 수 있으므로, 생성한 경로를 provenance에 남긴다(권고). 로컬 Blender에 붙는 형태의 MCP는 클라우드 컨테이너에서 닿지 않을 수 있다(일반적 구조이며 이 세션에서 확인하지 않았다) — 그 경우 로컬 세션에서 하거나 컨테이너에 headless Blender를 설치해야 한다 |
 | B | CC0 원천만 사용: Human Base Meshes(CC0)로 베이스를 다시 만들고, Sketchfab CC0 의상 후보(다운로드 토큰 필요)로 리타깃 파이프라인을 검증한다. Poly Haven은 의상이 없어 HDRI·소품 용도에 한정된다 | 클라우드 환경 설정(Network secrets 또는 환경변수)에 읽기 전용 토큰 저장 — 이 문서는 `SKETCHFAB_API_TOKEN`, `HYPER3D_API_KEY` 이름을 읽는 것으로 가정한다. **토큰을 채팅에 붙여넣지 않는다.** 새 세션부터 반영된다. `bpy` 설치 가능 여부는 별도 확인 |
 | C | 이전처럼 절차 생성(`license: original`)으로 의상을 만들고 Hyper3D는 참고 이미지 생성 등 비산출물 용도로만 쓴다 | 없음(계약과 정합) |
 
