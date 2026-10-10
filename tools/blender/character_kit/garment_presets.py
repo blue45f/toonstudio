@@ -3,6 +3,8 @@
 `retarget_garment.py`는 이 표를 읽어 정리·축소된 Rodin 메시를 키트 파츠 GLB로 만든다. 값은 2026-10-11 파일럿 4종(티셔츠·청바지·스니커즈·
 보브 헤어)의 육안·수치 확인에서 정했고, 새 프리셋은 같은 형식으로 더한다.
 
+- `pose`: 의상이 만들어진 포즈 `t`(몸 T-포즈 표면에 바로 맞춤) 또는 `a`(A-포즈 몸에 맞춘 뒤 T로 변환).
+- `stylize`: 웨이브 Taubin 스무딩 반복 횟수(웹툰풍 정리, 0이면 끔).
 - `align`: `icp`(평균 거리 최소화 — 몸에 밀착한 의상), `hair`(머리 너비·정수리 기준), `shoes`(발 길이·발바닥 기준).
   부피가 있는 의상은 평균 거리 정렬이 몸 쪽으로 쪼그라드므로 `icp`를 쓰지 않는다.
 - `d_min`/`d_max`: 몸 표면 기준 부호 거리(m)의 하한/상한. 속옷 셸(몸 위 약 3 mm)을 가리도록 의상은 d_min을 8 mm로 둔다.
@@ -34,10 +36,13 @@ PRESETS: dict[str, dict[str, Any]] = {
         "material": "ts_top_tee",
         "morph_scope": "body",
         "decimate": [6500],
+        "pose": "t",
+        "stylize": 8,
         "align": "icp",
         "icp": {"anchor": "top", "landmark": "collar", "scales": [0.30, 0.33, 0.36, 0.39, 0.42]},
         "d_min": 0.008,
         "d_max": 0.030,
+        "d_max_open": 0.050,
         "texture": {"strength": 0.28, "blur_radius": 1.2, "bands": 0},
         "merge_joints": {},
         "double_sided": True,
@@ -51,10 +56,13 @@ PRESETS: dict[str, dict[str, Any]] = {
         "material": "ts_bottom_jeans",
         "morph_scope": "body",
         "decimate": [6500],
+        "pose": "t",
+        "stylize": 8,
         "align": "icp",
         "icp": {"anchor": "top", "landmark": "waist", "scales": [0.46, 0.50, 0.54, 0.58, 0.62]},
         "d_min": 0.008,
         "d_max": 0.030,
+        "d_max_open": 0.060,
         "texture": {"strength": 0.30, "blur_radius": 1.4, "bands": 0},
         "merge_joints": {},
         "double_sided": True,
@@ -68,6 +76,8 @@ PRESETS: dict[str, dict[str, Any]] = {
         "material": "ts_shoes_sneakers",
         "morph_scope": "body",
         "decimate": [5000],
+        "pose": "t",
+        "stylize": 2,
         "align": "shoes",
         "d_min": 0.003,
         "d_max": 1.0e9,
@@ -84,10 +94,12 @@ PRESETS: dict[str, dict[str, Any]] = {
         "material": "ts_hair_soft-bob",
         "morph_scope": "head",
         "decimate": [7000, 3500, 1800],
+        "pose": "t",
+        "stylize": 3,
         "align": "hair",
         "d_min": 0.006,
         "d_max": 1.0e9,
-        "texture": {"strength": 0.45, "blur_radius": 1.0, "bands": 0},
+        "texture": {"strength": 0.45, "blur_radius": 1.0, "bands": 0, "gamma": 0.65},
         "merge_joints": {"TS_Jaw": "mixamorig:Head"},
         "double_sided": True,
         "source": "hair/soft-bob",

@@ -1,7 +1,7 @@
 """GLB 정사영 미리보기 렌더러 (Blender 헤드리스).
 
 사용:
-    blender --background --python render_preview.py -- <입력.glb> <출력접두사> [--res 768] [--views front,side,back,three]
+    blender --background --python render_preview.py -- <입력.glb[,입력2.glb…]> <출력접두사> [--res 768] [--views front,side,back,three]
 
 GLB를 가져와 모든 메시의 월드 경계 상자를 구하고 정사영 카메라로 정면·측면·배면·3/4 뷰를 PNG로 낸다.
 Workbench 엔진(텍스처 색)만 쓰므로 GPU 없이 빠르게 돈다. glTF +Y(위)·+Z(앞)는 Blender로 들어오며
@@ -44,8 +44,18 @@ def world_bounds(objects):
 def main():
     source, prefix, options = parse_args()
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    bpy.ops.import_scene.gltf(filepath=source)
-    meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
+    for path in source.split(","):
+        bpy.ops.import_scene.gltf(filepath=path)
+    # glTF 가져오기가 본 표시용으로 만드는 "Icosphere"류 도우미 오브젝트와 헤어 LOD1·LOD2(LOD0과 겹쳐 보인다)는 렌더에서 뺀다.
+    meshes = []
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH":
+            continue
+        if obj.name.startswith("Icosphere") or "_LOD1" in obj.name or "_LOD2" in obj.name:
+            obj.hide_render = True
+            obj.hide_viewport = True
+            continue
+        meshes.append(obj)
     if not meshes:
         raise SystemExit("메시가 없다: " + source)
     low, high = world_bounds(meshes)

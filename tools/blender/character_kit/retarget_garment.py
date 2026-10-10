@@ -26,6 +26,8 @@ from character_kit.base_assembly import BaseModel, follow_deviation, load_base_m
 from character_kit.garment_presets import PRESETS, morph_names  # noqa: E402
 from character_kit.garment_texture import TextureStyle, relative_color_texture  # noqa: E402
 from character_kit.glbwriter import GlbWriter, MorphTarget, Primitive  # noqa: E402
+from character_kit.rig import build_rig  # noqa: E402
+from character_kit.skin import convert_to_t_pose, vertex_adjacency  # noqa: E402
 from character_kit.gltf_read import StaticMesh, read_static_mesh  # noqa: E402
 from character_kit.surface import Surface, vertex_normals  # noqa: E402
 
@@ -143,6 +145,19 @@ def align_pieces(spec: dict, pieces: list[np.ndarray], bs: BodySurface, surface:
             target = np.array([0.0, marks[spec["icp"]["landmark"]], float(torso[:, 2].mean())])
             scale, translation, cost = gf.fit_similarity(pts, surface, spec["icp"]["scales"], anchor_source, target)
             out.append({"scale": float(scale), "translation": translation, "cost": cost})
+    elif align == "frame":
+        # 전신 한 벌에서 BANG으로 분리한 파츠: 파츠들이 같은 좌표계를 공유하므로 전신 경계 상자를 베이스 키·발바닥·중심에 대응시켜 초기 정렬한 뒤,
+        # 스케일 ±4 %·위치를 ICP로 다듬는다(프리셋 `icp.scales`는 비워 두고 `frame`으로 계산한다).
+        frame = spec["_frame"]
+        low, high = np.array(frame["min"], dtype=np.float64), np.array(frame["max"], dtype=np.float64)
+        body_low, body_high = bs.tpose.min(axis=0), bs.tpose.max(axis=0)
+        s0 = float((body_high[1] - body_low[1]) / (high[1] - low[1]))
+        source_anchor = np.array([0.5 * (low[0] + high[0]), low[1], 0.5 * (low[2] + high[2])])
+        feet = region_vertices(bs, ["foot.L", "foot.R"])
+        target_anchor = np.array([0.0, body_low[1], 0.5 * (feet[:, 2].min() + feet[:, 2].max())])
+        for pts in pieces:
+            scale, translation, cost = gf.fit_similarity(pts, surface, [0.96 * s0, s0, 1.04 * s0], source_anchor, target_anchor, cap=0.12)
+            out.append({"scale": float(scale), "translation": translation, "cost": cost, "frame_scale": s0})
     elif align == "hair":
         head = region_vertices(bs, ["head"])
         head_width = head[:, 0].max() - head[:, 0].min()
@@ -177,8 +192,17 @@ def fade_small(delta: np.ndarray) -> np.ndarray:
     return delta * t
 
 
-def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface, names: list[str], transforms: list[dict] | None = None) -> dict:
-    """정리·축소된 메시 하나를 파츠 한 개(LOD)로 만든다. 결과 배열 묶음을 돌려준다."""
+def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface, surface_t: Surface, rig, parents: list[int], names: list[str], transforms: list[dict] | None = None) -> dict:
+    """정리·축소된 메시 하나를 파츠 한 개(LOD)로 만든다. 결과 배열 묶음을 돌려준다.
+
+    `spec["pose"]`: 의상이 만들어진 포즈. `"t"`(기본)면 몸의 T-포즈 표면에 바로 맞추고(소매가 수평인 상의, 다리·머리·발만 있는 하의·헤어·신발),
+    `"a"`면 A-포즈 몸에 맞춘 뒤 베이스와 같은 변환(DQS + 어깨 전이 영역 ARAP)으로 T-포즈로 옮긴다(팔을 내린 전신에서 분리한 의상).
+    포즈가 안 맞는 몸에 맞추면 소매가 날개처럼 펼쳐진다.
+    """
+    pose = spec.get("pose", "t")
+    fit_surface = surface_t if pose == "t" else surface
+    body_fit_positions = bs.tpose if pose == "t" else bs.apose
+
     canon_index, canon_positions = gf.weld_vertices(mesh.positions)
     canon_triangles = canon_index[mesh.triangles]
     edges = gf.undirected_edges(canon_triangles)
@@ -192,18 +216,24 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
         piece_vertices = [np.arange(len(canon_positions))]
 
     piece_points = [canon_positions[v] for v in piece_vertices]
-    transforms = transforms or align_pieces(spec, piece_points, bs, surface)
+    transforms = transforms or align_pieces(spec, piece_points, bs, fit_surface)
     conformed = canon_positions.copy()
     piece_reports = []
+    stylize = int(spec.get("stylize", 0))
     for vertices, transform in zip(piece_vertices, transforms, strict=True):
         fitted = transform["scale"] * canon_positions[vertices] + transform["translation"]
         index_map = -np.ones(len(canon_positions), dtype=np.int64)
         index_map[vertices] = np.arange(len(vertices))
         keep = np.isin(edges[:, 0], vertices) & np.isin(edges[:, 1], vertices)
         sub_edges = index_map[edges[keep]]
-        d_before, _, _ = gf.signed_distance(fitted, surface)
-        out = gf.conform(fitted, sub_edges, open_edge[vertices], surface, spec["d_min"], spec["d_max"])
-        d_after, _, _ = gf.signed_distance(out, surface)
+        d_before, _, _ = gf.signed_distance(fitted, fit_surface)
+        out = gf.conform(fitted, sub_edges, open_edge[vertices], fit_surface, spec["d_min"], spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
+        if stylize:
+            # 스무딩 → 충돌 한 번 더(스무딩이 몸 안으로 밀 수 있다)
+            piece_tris = index_map[canon_triangles[np.all(np.isin(canon_triangles, vertices), axis=1)]]
+            out = gf.stylize_smooth(out, piece_tris, open_edge[vertices], stylize)
+            out = gf.conform(out, sub_edges, open_edge[vertices], fit_surface, spec["d_min"], 1.0e9, passes=1, smooth_iterations=2)
+        d_after, _, _ = gf.signed_distance(out, fit_surface)
         conformed[vertices] = out
         piece_reports.append(
             {
@@ -216,29 +246,76 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
             }
         )
 
-    binding = gf.bind(conformed, surface)
-    rest = gf.evaluate(binding, bs.tpose, bs.triangles)
+    canon_normals = gf.orient_outward(conformed, vertex_normals(conformed, canon_triangles), fit_surface)
+    body_normals_fit = vertex_normals(body_fit_positions, bs.triangles)
+    # 스킨: 법선이 호환되는 가까운 몸 정점들의 웨이트(소매 안쪽이 몸통 옆면이 아니라 팔 안쪽 면의 웨이트를 받는다).
+    joints, weights, compat_ratio = gf.compatible_vertex_skin(conformed, canon_normals, body_fit_positions, body_normals_fit, bs.joints, bs.weights)
+    if pose == "t":
+        rest_canon = conformed
+    else:
+        # A→T: 베이스와 같은 변환을 적용한다. 몸 표면에 삼각형 프레임으로 직접 결합하면 겨드랑이에서 소매 아랫면과 몸통 옆판 사이 삼각형이
+        # 납작하게 늘어난 "날개"가 생기고, 본 선분 거리 웨이트는 몸통 옆구리가 팔 영향을 받아 풍선처럼 부푼다.
+        ptr, adjacency = vertex_adjacency(canon_triangles, len(conformed))
+        moved = convert_to_t_pose(conformed, joints, weights, rig, ptr, adjacency)
+        rest_canon = gf.conform(moved, edges, open_edge, surface_t, spec["d_min"], 1.0e9, passes=2, smooth_iterations=4)
+
+    # morph 델타: T-포즈 몸에 법선 호환으로 결합해 꼭짓점 델타를 무게중심으로 보간한다. 법선 회전까지 평가하면 오프셋(8~30 mm)×회전각만큼
+    # 몸 정점 델타와 어긋나 검증기 V9(몸 최근접 정점 델타와의 차) 오차가 커지므로, morph(작은 변형)에는 평행이동 성분만 쓴다.
+    normals_t = gf.orient_outward(rest_canon, vertex_normals(rest_canon, canon_triangles), surface_t)
+    binding, _ = gf.bind_compatible(rest_canon, normals_t, surface_t)
+    corners = bs.triangles[binding.triangle]
     deltas: dict[str, np.ndarray] = {}
+    bound_deltas: dict[str, np.ndarray] = {}
+    reference = nearest_body_reference(rest_canon, bs) if spec["role"] in ("top", "bottom", "shoes") else None
     for name in names:
-        moved = gf.evaluate(binding, bs.tpose + bs.morphs[name], bs.triangles)
-        delta = fade_small(moved - rest)
+        bound = fade_small(np.einsum("mc,mck->mk", binding.bary, bs.morphs[name][corners]))
+        bound_deltas[name] = bound
+        if reference is not None:
+            # 검증기 V9(`verifyMorphFollow`)는 정점마다 TS_Body에서 가장 가까운 정점(반경 6 cm)의 델타와 비교한다. 칼라처럼 TS_Body 윗고리보다 높은
+            # 정점은 결합 델타(머리·목 표면)와 그 기준이 다르므로(neckLength ±40 %에서 최대 3 cm), 같은 대응을 쓴다. 반경 밖은 결합 델타를 쓴다.
+            delta = np.where(reference["found"][:, None], reference["deltas"][name], bound)
+        else:
+            delta = bound
         if float(np.abs(delta).max()) < 1e-5:
             delta = delta + np.array([0.0, MIN_PARAM_DELTA_M, 0.0])
         deltas[name] = delta
-    joints, weights = gf.transfer_skin(binding, bs.triangles, bs.joints, bs.weights)
+    binding_gap = {name: float(np.linalg.norm(bound_deltas[name] - deltas[name], axis=1).max()) for name in names} if reference is not None else {}
     return {
         "mesh": mesh,
         "canon_index": canon_index,
         "canon_count": len(canon_positions),
-        "rest": rest,
+        "rest": rest_canon,
         "apose": conformed,
         "deltas": deltas,
         "joints": joints,
         "weights": weights,
         "binding": binding,
+        "compatible_fraction": compat_ratio,
+        "binding_gap_m": binding_gap,
         "transforms": transforms,
         "piece_reports": piece_reports,
     }
+
+
+def nearest_body_reference(rest: np.ndarray, bs: BodySurface, radius: float = 0.06) -> dict:
+    """의상 정점마다 TS_Body(몸 메시만)에서 가장 가까운 정점을 찾아 그 정점의 morph 델타를 돌려준다(검증기 V9와 같은 대응)."""
+    import bpy  # noqa: F401 - mathutils는 bpy 뒤에만 가져올 수 있다
+    from mathutils import kdtree
+
+    count = bs.body_vertex_count
+    body_positions = bs.tpose[:count]
+    tree = kdtree.KDTree(count)
+    for i, p in enumerate(body_positions.tolist()):
+        tree.insert(p, i)
+    tree.balance()
+    nearest = np.full(len(rest), -1, dtype=np.int64)
+    for v, p in enumerate(rest.tolist()):
+        _, index, dist = tree.find(p)
+        if dist <= radius:
+            nearest[v] = index
+    found = nearest >= 0
+    deltas = {name: np.where(found[:, None], bs.morphs[name][:count][np.maximum(nearest, 0)], 0.0) for name in bs.morphs}
+    return {"found": found, "nearest": nearest, "deltas": deltas}
 
 
 def merge_skin_joints(joints: np.ndarray, weights: np.ndarray, names: list[str], merge: dict[str, str]) -> tuple[np.ndarray, np.ndarray]:
@@ -264,17 +341,20 @@ def merge_skin_joints(joints: np.ndarray, weights: np.ndarray, names: list[str],
 
 
 def covered_regions(rest: np.ndarray, triangles: np.ndarray, base: BaseModel) -> dict[str, float]:
-    """TS_Body(T-포즈) 영역별로, 의상 표면 바로 뒤(안쪽)에 있는 정점의 비율을 잰다."""
+    """TS_Body(T-포즈) 영역별로, 몸 정점에서 바깥 법선 방향으로 쏜 광선이 의상 표면에 닿는 정점의 비율을 잰다.
+
+    가장 가까운 점이 아니라 법선 광선을 쓰는 이유: 칼라·소매·밑단 같은 열린 가장자리 바로 바깥의 노출된 피부가
+    "가까워서 덮인 것"으로 잘못 세지 않게 하려는 것이다.
+    """
     body = base.mesh("body_")
     garment = Surface(rest, triangles)
     positions = body["tpose_positions"].astype(np.float64)
-    hits = garment.closest(positions, max_distance=HIDE_DISTANCE_M)
-    found = hits.triangle >= 0
-    inside = np.zeros(len(positions), dtype=bool)
-    if found.any():
-        offset = positions[found] - hits.point[found]
-        inside[found] = np.einsum("ij,ij->i", offset, hits.normal[found]) < 0.0
-    covered = inside & found
+    normals = body["normals"].astype(np.float64)
+    length = np.linalg.norm(normals, axis=1, keepdims=True)
+    normals = normals / np.maximum(length, 1e-12)
+    hits, triangle = garment.ray(positions + normals * 1e-4, normals, HIDE_DISTANCE_M)
+    distance = np.linalg.norm(hits - positions, axis=1)
+    covered = (triangle >= 0) & (distance <= HIDE_DISTANCE_M)
     fractions: dict[str, float] = {}
     for index, name in enumerate(base.region_ids):
         mask = body["region"] == index
@@ -349,6 +429,12 @@ def main() -> None:
     if len(garments) != len(spec["nodes"]):
         raise SystemExit(f"{preset_id}: --garment는 {len(spec['nodes'])}개(LOD 순서)여야 한다")
 
+    frame_from = (flag_values(args, "--frame-from") or [None])[0]
+    if spec["align"] == "frame":
+        if not frame_from:
+            raise SystemExit(f"{preset_id}: align=frame은 --frame-from <clean-report.json>이 필요하다")
+        spec = dict(spec)
+        spec["_frame"] = json.loads(Path(frame_from).read_text(encoding="utf-8"))["sourceBoundsGltf"]
     base = load_base_model(base_path)
     names = morph_names(spec["morph_scope"])
     bs = build_body_surface(base, names)
@@ -356,12 +442,17 @@ def main() -> None:
     if volume <= 0:
         raise SystemExit("몸 삼각형 감김이 안쪽이다(부호 있는 부피 ≤ 0)")
     surface = Surface(bs.apose, bs.triangles)
+    surface_t = Surface(bs.tpose, bs.triangles)
+    names_all = base.joint_names
+    parents = list(base.joint_parents)
+    joints_a = {name: base.arrays["joint_apose"][i].astype(np.float64) for i, name in enumerate(names_all)}
+    rig = build_rig(joints_a, names_all, {name: (None if parents[i] < 0 else names_all[parents[i]]) for i, name in enumerate(names_all)})
 
     meshes = [read_static_mesh(path) for path in garments]
     results: list[dict] = []
     transforms = None
     for mesh in meshes:
-        result = retarget_one(mesh, spec, bs, surface, names, transforms)
+        result = retarget_one(mesh, spec, bs, surface, surface_t, rig, parents, names, transforms)
         transforms = result["transforms"]  # LOD들은 같은 정렬을 쓴다
         results.append(result)
 
@@ -416,6 +507,7 @@ def main() -> None:
                 "vertices": int(len(result["mesh"].positions)),
                 "triangles": int(len(result["mesh"].triangles)),
                 "pieces": result["piece_reports"],
+                "bindingGapMm": {k: round(v * 1000, 1) for k, v in result.get("binding_gap_m", {}).items() if v > 0.015},
             }
             for node, result in zip(spec["nodes"], results, strict=True)
         ],

@@ -165,17 +165,18 @@ def conform(
     passes: int = 4,
     smooth_iterations: int = 6,
     smooth_lambda: float = 0.5,
+    d_max_open: float = float("inf"),
 ) -> np.ndarray:
     """대표 정점의 몸 표면 부호 거리를 [d_min, d_max]로 제한한다.
 
-    `protected`가 True인 정점(예: 열린 가장자리)은 d_max로 당기지 않고(충돌 해소만) 의상 고유의 헐렁한 끝선을 지킨다.
+    `protected`가 True인 정점(예: 열린 가장자리)은 d_max 대신 `d_max_open`(기본 무한)까지만 당겨 의상 고유의 헐렁한 끝선을 지킨다.
     """
     field = vertex_normals(surface.positions, surface.triangles)
     p = np.array(canon_positions, dtype=np.float64)
     keep_loose = np.zeros(len(p), dtype=bool) if protected is None else np.asarray(protected, dtype=bool)
     for _ in range(passes):
         d, _, normal = signed_distance(p, surface, field)
-        upper = np.where(keep_loose, np.inf, d_max)
+        upper = np.where(keep_loose, d_max_open, d_max)
         target = np.minimum(np.maximum(d, d_min), upper)
         delta = (target - d)[:, None] * normal
         delta = laplacian_smooth(delta, canon_edges, smooth_iterations, smooth_lambda)
@@ -275,3 +276,231 @@ def canonical_vertex_normals(canon_index: np.ndarray, canon_count: int, position
 
 def part_triangle_normals(positions: np.ndarray, triangles: np.ndarray) -> np.ndarray:
     return triangle_normals(positions, triangles)
+
+
+# ---------------------------------------------------------------- 본 근접 스킨 웨이트 (A→T 변환용)
+
+
+def bone_segments(joint_positions: np.ndarray, parents: list[int]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """각 joint에서 자식 joint로 가는 선분을 모은다. (joint 번호 (S,), 선분 시작 (S,3), 선분 끝 (S,3)). 자식이 없는 끝 본은 선분이 없다."""
+    owners, starts, ends = [], [], []
+    for child, parent in enumerate(parents):
+        if parent < 0:
+            continue
+        owners.append(parent)
+        starts.append(joint_positions[parent])
+        ends.append(joint_positions[child])
+    return np.array(owners), np.array(starts), np.array(ends)
+
+
+def bone_proximity_weights(
+    points: np.ndarray,
+    joint_positions: np.ndarray,
+    parents: list[int],
+    canon_edges: np.ndarray | None = None,
+    power: float = 6.0,
+    epsilon: float = 0.01,
+    influences: int = 4,
+    smooth_iterations: int = 8,
+    exclude_joints: tuple[int, ...] = (),
+) -> tuple[np.ndarray, np.ndarray]:
+    """점마다 본 선분까지의 거리로 스킨 웨이트를 정한다(가까운 본일수록 거의 독점). (joint 번호 (n,K), 가중치 (n,K))를 돌려준다.
+
+    몸 표면에서 가장 가까운 삼각형의 웨이트를 옮기면, 겨드랑이 같은 오목한 곳에서 소매 정점이 위팔이 아니라 몸통 웨이트를 받아
+    팔이 올라갈 때 소매가 찢어진다. 본 선분 거리는 소매가 위팔 축에 가깝다는 사실을 그대로 쓴다. `power`가 클수록 가장 가까운 본이 독점한다.
+    평활화는 의상 위상(대표 정점 간선)에서 웨이트를 이웃과 섞어 경계 노이즈를 지운다.
+    """
+    owners, starts, ends = bone_segments(joint_positions, parents)
+    direction = ends - starts
+    length_sq = np.maximum((direction**2).sum(axis=1), 1e-12)
+    joint_count = len(joint_positions)
+    distance = np.full((len(points), joint_count), np.inf)
+    for segment in range(len(owners)):
+        if int(owners[segment]) in exclude_joints:
+            continue
+        offset = points - starts[segment]
+        t = np.clip((offset @ direction[segment]) / length_sq[segment], 0.0, 1.0)
+        closest = starts[segment] + t[:, None] * direction[segment]
+        d = np.linalg.norm(points - closest, axis=1)
+        owner = int(owners[segment])
+        distance[:, owner] = np.minimum(distance[:, owner], d)
+    weights = np.where(np.isfinite(distance), 1.0 / (distance + epsilon) ** power, 0.0)
+    weights /= np.maximum(weights.sum(axis=1, keepdims=True), 1e-30)
+    if canon_edges is not None and smooth_iterations > 0:
+        weights = laplacian_smooth(weights, canon_edges, smooth_iterations, 0.5)
+    order = np.argsort(-weights, axis=1)[:, :influences]
+    top = np.take_along_axis(weights, order, axis=1)
+    top /= np.maximum(top.sum(axis=1, keepdims=True), 1e-30)
+    return order.astype(np.int64), top
+
+
+# ---------------------------------------------------------------- 안쪽 광선으로 덮고 있는 몸 표면의 웨이트를 가져오기
+
+
+def orient_outward(points: np.ndarray, normals: np.ndarray, surface: Surface) -> np.ndarray:
+    """법선이 몸에서 멀어지는 쪽(바깥)을 향하게 맞춘다. 대부분의 점에서 반대면 전체를 뒤집는다."""
+    d, _, _ = signed_distance(points, surface)
+    hits = surface.closest(points)
+    sign = np.einsum("ij,ij->i", points - hits.point, normals)
+    return -normals if float(np.median(sign)) < 0 else normals
+
+
+def inward_ray_skin(
+    points: np.ndarray,
+    normals: np.ndarray,
+    surface: Surface,
+    joints: np.ndarray,
+    weights: np.ndarray,
+    max_distance: float = 0.15,
+    influences: int = 4,
+) -> tuple[np.ndarray, np.ndarray, float]:
+    """의상 정점에서 법선 반대(몸 쪽)로 광선을 쏴 맞은 몸 삼각형의 스킨을 무게중심으로 섞어 가져온다.
+
+    가장 가까운 표면점 대신 이렇게 하는 이유: 소매 안쪽처럼 몸통이 더 가까운 곳에서도 광선은 소매가 실제로 감싼 팔을 맞힌다.
+    맞히지 못한 정점(열린 가장자리 등)은 가장 가까운 표면점으로 대신한다. (joint 번호 (n,K), 가중치 (n,K), 광선 성공 비율)을 돌려준다.
+    """
+    origins = points + normals * 1e-4
+    hit_points, triangle = surface.ray(origins, -normals, max_distance)
+    ok = triangle >= 0
+    bary = np.zeros((len(points), 3))
+    if ok.any():
+        corners = surface.triangles[triangle[ok]]
+        a, b, c = surface.positions[corners[:, 0]], surface.positions[corners[:, 1]], surface.positions[corners[:, 2]]
+        from .surface import barycentric
+
+        bary[ok] = np.clip(barycentric(hit_points[ok], a, b, c), 0.0, 1.0)
+        bary[ok] /= np.maximum(bary[ok].sum(axis=1, keepdims=True), 1e-12)
+    if (~ok).any():
+        near = surface.closest(points[~ok])
+        triangle = triangle.copy()
+        triangle[~ok] = near.triangle
+        bary[~ok] = near.bary
+    binding = Binding(triangle, bary, np.zeros(len(points)), np.zeros((len(points), 2)))
+    out_joints, out_weights = transfer_skin(binding, surface.triangles, joints, weights, influences)
+    return out_joints, out_weights, float(ok.mean())
+
+
+# ---------------------------------------------------------------- 법선이 호환되는 몸 정점의 웨이트 (소매 안쪽·겨드랑이)
+
+
+def compatible_vertex_skin(
+    points: np.ndarray,
+    normals: np.ndarray,
+    body_positions: np.ndarray,
+    body_normals: np.ndarray,
+    joints: np.ndarray,
+    weights: np.ndarray,
+    search: int = 96,
+    take: int = 3,
+    min_dot: float = 0.2,
+    influences: int = 4,
+) -> tuple[np.ndarray, np.ndarray, float]:
+    """의상 정점마다 가까운 몸 정점 `search`개 중 **법선이 의상 법선과 같은 쪽을 향하는**(dot ≥ min_dot) 가장 가까운 `take`개의
+    스킨을 거리 역수로 섞어 가져온다. (joint 번호 (n,K), 가중치 (n,K), 호환 후보를 찾은 비율)을 돌려준다.
+
+    몸 표면에서 그냥 가장 가까운 곳의 웨이트를 가져오면 소매 안쪽·겨드랑이 정점이 팔이 아니라 몸통 옆면 웨이트를 받는다.
+    소매 안쪽의 법선은 몸통을 향하지만 몸통 옆면의 법선은 팔을 향해 서로 반대이므로, 법선 호환 조건이 팔 안쪽 면을 고르게 해 준다.
+    호환 후보가 하나도 없으면 가장 가까운 몸 정점으로 대신한다.
+    """
+    import bpy  # noqa: F401 - mathutils는 bpy 뒤에만 가져올 수 있다
+    from mathutils import kdtree
+
+    tree = kdtree.KDTree(len(body_positions))
+    for index, position in enumerate(body_positions.tolist()):
+        tree.insert(position, index)
+    tree.balance()
+    count = len(points)
+    out_joints = np.zeros((count, influences), dtype=np.int64)
+    out_weights = np.zeros((count, influences))
+    found = 0
+    for row in range(count):
+        candidates = tree.find_n(points[row].tolist(), search)
+        chosen = [(idx, dist) for _, idx, dist in candidates if float(np.dot(body_normals[idx], normals[row])) >= min_dot][:take]
+        if chosen:
+            found += 1
+        else:
+            chosen = [(candidates[0][1], candidates[0][2])]
+        accum: dict[int, float] = {}
+        total_w = 0.0
+        for idx, dist in chosen:
+            blend = 1.0 / (dist + 0.004) ** 2
+            total_w += blend
+            for j, w in zip(joints[idx].tolist(), weights[idx].tolist(), strict=True):
+                if w > 0.0:
+                    accum[j] = accum.get(j, 0.0) + blend * w
+        ranked = sorted(accum.items(), key=lambda item: -item[1])[:influences]
+        norm = sum(w for _, w in ranked) or 1.0
+        for slot, (j, w) in enumerate(ranked):
+            out_joints[row, slot] = j
+            out_weights[row, slot] = w / norm
+    return out_joints, out_weights, found / max(count, 1)
+
+
+# ---------------------------------------------------------------- 법선 호환 삼각형 결합 (겨드랑이·소매 안쪽)
+
+
+def compatible_hits(points: np.ndarray, normals: np.ndarray, surface: Surface, margin: float = 0.05, min_dot: float = 0.2):
+    """점마다 가장 가까운 거리 + margin 안의 삼각형 중 **면 법선이 점의 법선과 같은 쪽**(dot ≥ min_dot)인 가장 가까운 삼각형의 표면점을 고른다.
+
+    소매 안쪽처럼 몸통 옆면이 더 가까운 곳에서 팔 안쪽 면을 고르게 해 준다(몸통 옆면의 법선은 팔을 향해 반대다).
+    호환 삼각형이 없으면 가장 가까운 삼각형으로 대신한다. `SurfaceHits`(삼각형·무게중심·점·거리·법선)와 호환 후보를 찾은 비율을 돌려준다.
+    """
+    from .surface import SurfaceHits, barycentric
+
+    count = len(points)
+    triangle = np.full(count, -1, dtype=np.int64)
+    hit_point = np.zeros((count, 3))
+    distance = np.full(count, np.inf)
+    found = 0
+    tree = surface._tree
+    for i, p in enumerate(np.asarray(points, dtype=np.float64).tolist()):
+        location, _, index, d0 = tree.find_nearest(p)
+        best = None
+        if float(np.dot(surface.face_normals[index], normals[i])) >= min_dot:
+            best = (location, index, d0)
+        else:
+            for loc, _, idx, dist in tree.find_nearest_range(p, d0 + margin):
+                if float(np.dot(surface.face_normals[idx], normals[i])) >= min_dot and (best is None or dist < best[2]):
+                    best = (loc, idx, dist)
+        if best is not None:
+            found += 1
+        else:
+            best = (location, index, d0)
+        triangle[i] = best[1]
+        hit_point[i] = (best[0].x, best[0].y, best[0].z)
+        distance[i] = best[2]
+    corners = surface.triangles[triangle]
+    bary = barycentric(hit_point, surface.positions[corners[:, 0]], surface.positions[corners[:, 1]], surface.positions[corners[:, 2]])
+    bary = np.clip(bary, 0.0, 1.0)
+    bary /= np.maximum(bary.sum(axis=1, keepdims=True), 1e-12)
+    hits = SurfaceHits(triangle=triangle, bary=bary, point=hit_point, distance=distance, normal=surface.face_normals[triangle])
+    return hits, found / max(count, 1)
+
+
+def bind_compatible(points: np.ndarray, normals: np.ndarray, surface: Surface, margin: float = 0.05, min_dot: float = 0.2) -> tuple[Binding, float]:
+    """`bind`와 같지만 법선이 호환되는 삼각형만 후보로 삼는다."""
+    hits, ratio = compatible_hits(points, normals, surface, margin, min_dot)
+    point, normal, e1, e2 = _frame(surface.positions, surface.triangles, hits.triangle, hits.bary)
+    residual = np.asarray(points, dtype=np.float64) - point
+    offset_normal = np.einsum("ij,ij->i", residual, normal)
+    tangent = residual - offset_normal[:, None] * normal
+    offset_tangent = np.stack([np.einsum("ij,ij->i", tangent, e1), np.einsum("ij,ij->i", tangent, e2)], axis=1)
+    return Binding(hits.triangle.copy(), hits.bary.copy(), offset_normal, offset_tangent), ratio
+
+
+# ---------------------------------------------------------------- 웹툰풍 정리: 부피를 지키는 스무딩
+
+
+def stylize_smooth(positions: np.ndarray, triangles: np.ndarray, pinned: np.ndarray | None, iterations: int, lam: float = 0.5, mu: float = -0.53) -> np.ndarray:
+    """Taubin(수축 없는) 라플라시안 스무딩으로 사진식 잔주름을 지우고 큰 면과 부드러운 접힘만 남긴다.
+
+    `pinned`가 True인 정점(열린 가장자리: 밑단·소매 끝·칼라 선)은 움직이지 않아 의상의 끝선을 지킨다. 단색 큰 면 + 얇은 접힘선이라는
+    웹툰 의상 화풍은 법선이 매끈해야 툰 램프의 경계가 깨끗하게 나오기 때문에 지오메트리 잔주름을 지우는 것이 효과가 크다.
+    """
+    if iterations <= 0:
+        return positions
+    from .skin import taubin_smooth, vertex_adjacency
+
+    ptr, idx = vertex_adjacency(np.asarray(triangles, dtype=np.int64), len(positions))
+    free_mask = np.ones(len(positions), dtype=bool) if pinned is None else ~np.asarray(pinned, dtype=bool)
+    return taubin_smooth(np.asarray(positions, dtype=np.float64), np.flatnonzero(free_mask), ptr, idx, iterations=iterations, lam=lam, mu=mu)

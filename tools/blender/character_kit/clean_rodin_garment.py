@@ -1,7 +1,7 @@
 """Hyper3D(Rodin) 의상 원본 정리 (Blender 헤드리스).
 
 사용:
-    blender --background --python clean_rodin_garment.py -- <원본.glb> <출력.glb> --preset tee|jeans|hair|sneakers [--report 보고서.json]
+    blender --background --python clean_rodin_garment.py -- <원본.glb> <출력.glb> --preset tee|jeans|hair|sneakers|keep [--pick-object 이름] [--report 보고서.json]
 
 Rodin은 의상만 달라고 해도 마네킹 목·허리·발목·신발 조각을 같은 메시에 붙여 낸다. 이 스크립트는 베이스 바디와 무관한
 단계로, 텍스처 색과 높이 기준으로 그런 조각을 지우고 의상 셸 중 가장 큰 덩어리만 남긴다. 기준은 프리셋별 규칙이며
@@ -91,7 +91,12 @@ def rule_sneakers(hsv, z_norm, face_vertices):
     return np.zeros(len(hsv), dtype=bool), {"rule": "keep both shoes"}
 
 
-RULES = {"tee": rule_tee, "jeans": rule_jeans, "hair": rule_hair, "sneakers": rule_sneakers}
+def rule_keep(hsv, z_norm, face_vertices):
+    """이미 부위로 분리된 파트(BANG 결과 등): 지울 면이 없다. 가장 큰 덩어리 하나만 남긴다."""
+    return np.zeros(len(hsv), dtype=bool), {"rule": "keep everything (already a separated part)"}
+
+
+RULES = {"tee": rule_tee, "jeans": rule_jeans, "hair": rule_hair, "sneakers": rule_sneakers, "keep": rule_keep}
 KEEP_COMPONENTS = {"sneakers": 2}
 # 가는 틈이 남는 프리셋만 작은 구멍(경계 고리의 대각선 0.35 이하)을 메운다. 얼굴·밑단 같은 큰 개구부는 그대로 둔다.
 FILL_HOLES = {"hair"}
@@ -100,12 +105,24 @@ FILL_HOLES = {"hair"}
 def main():
     args = cli_args()
     if len(args) < 2 or flag_value(args, "--preset") not in RULES:
-        raise SystemExit("사용법: -- <원본.glb> <출력.glb> --preset tee|jeans|hair|sneakers [--report 보고서.json]")
+        raise SystemExit("사용법: -- <원본.glb> <출력.glb> --preset tee|jeans|hair|sneakers|keep [--pick-object 이름] [--report 보고서.json]")
     source, destination = args[0], args[1]
     preset = flag_value(args, "--preset")
 
     reset_scene()
     import_glb(source)
+    source_low, source_high = world_bounds(mesh_objects())  # BANG처럼 여러 부위가 같은 좌표계를 쓰는 원본의 전신 경계 상자(Blender 축)
+    pick = flag_value(args, "--pick-object")
+    if pick:
+        # BANG 산출물처럼 메시가 여럿인 GLB에서 하나만 고른다(나머지는 지운다).
+        import bpy
+
+        keep = [obj for obj in mesh_objects() if obj.name == pick or obj.name.startswith(pick + ".")]
+        if len(keep) != 1:
+            raise SystemExit(f"--pick-object {pick}에 맞는 메시가 정확히 1개여야 한다: {[o.name for o in mesh_objects()]}")
+        for obj in mesh_objects():
+            if obj is not keep[0]:
+                bpy.data.objects.remove(obj, do_unlink=True)
     meshes = mesh_objects()
     if len(meshes) != 1:
         raise SystemExit(f"Rodin 원본은 메시 1개여야 한다: {[m.name for m in meshes]}")
@@ -134,6 +151,11 @@ def main():
         "ruleDetail": detail,
         "boundsMin": [round(v, 4) for v in low],
         "boundsMax": [round(v, 4) for v in high],
+        # glTF 축(Y 위, +Z 앞): Blender (x, y, z) → (x, z, -y). 전신에서 분리한 파츠는 이 상자로 베이스에 초기 정렬한다.
+        "sourceBoundsGltf": {
+            "min": [round(source_low[0], 4), round(source_low[2], 4), round(-source_high[1], 4)],
+            "max": [round(source_high[0], 4), round(source_high[2], 4), round(-source_low[1], 4)],
+        },
     }
     report_path = flag_value(args, "--report")
     if report_path:

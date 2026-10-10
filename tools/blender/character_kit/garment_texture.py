@@ -31,6 +31,7 @@ class TextureStyle:
     size: int = 1024
     quality: int = 90
     contrast_percentiles: tuple[float, float] = (3.0, 97.0)
+    gamma: float = 1.0  # < 1이면 중간톤이 밝아진다(헤어처럼 strength가 커도 평균 휘도 ≥ 0.75를 지키려는 용도)
 
 
 def luminance(rgb: np.ndarray) -> np.ndarray:
@@ -106,6 +107,7 @@ def relative_color_texture(image_bytes: bytes, uv_triangles: np.ndarray, style: 
     padded = dilate(used, 4)
     low, high = np.percentile(y[used], style.contrast_percentiles) if used.any() else (0.0, 1.0)
     normalized = np.clip((y - low) / max(high - low, 1e-3), 0.0, 1.0)
+    normalized = normalized ** style.gamma
     normalized = _soft_posterize(normalized, style.bands, style.band_softness)
     out = 1.0 - style.strength * (1.0 - normalized)
     fill = float(out[used].mean()) if used.any() else 1.0

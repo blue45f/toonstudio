@@ -1,0 +1,376 @@
+{
+  "schema": "toonstudio.hyper3d-generations/1",
+  "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+  "summaryKo": "2026-10-11 Hyper3D(Rodin Gen-2.5) 생성 기록. 모든 호출은 로컬 Claude Code의 hyper3d MCP(OAuth 인증 계정)로 했다. 원본 GLB(약 6~11 MB)는 저장소에 커밋하지 않고 ~/.cache/toonstudio-kit/hyper3d-raw/<이름>-<generationId>-base_basic_pbr.glb 에 보관한다. 크레딧은 공식 docs 기준 호출당 0.5로 추정하며 MCP에 잔액 조회 도구가 없어 Hyper3D Mine에서 확인해야 한다.",
+  "common": {
+    "generate": {
+      "tool": "mcp__hyper3d__rodin_generate",
+      "meshMode": "Quad",
+      "textureDelight": true,
+      "geometryFileFormat": "glb",
+      "referenceImages": 0
+    },
+    "bang": {
+      "tool": "mcp__hyper3d__rodin_generate_bang",
+      "resolution": "Basic",
+      "explodeStrength": 0,
+      "geometryFileFormat": "glb"
+    }
+  },
+  "entries": [
+    {
+      "id": "82698064-e736-4b1e-ac56-67f6569bd364",
+      "name": "tshirt-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-Medium",
+      "qualityOverride": 15000,
+      "intent": "top/tee 후보(옷만, T-포즈)",
+      "outcome": "사용(마네킹 목 조각 제거)",
+      "rawFile": "tshirt-01-82698064-e736-4b1e-ac56-67f6569bd364-base_basic_pbr.glb",
+      "rawSha256": "1c60f00ef7f96785525d133fd3dad94fd4a49743709534f216a6277160235a5b",
+      "rawBytes": 8083808
+    },
+    {
+      "id": "cb5a2e39-ecf4-4f99-9380-89267264053b",
+      "name": "jeans-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-Medium",
+      "qualityOverride": 10000,
+      "intent": "bottom/jeans 후보(옷만)",
+      "outcome": "사용(마네킹 허리·발목 조각 제거)",
+      "rawFile": "jeans-01-cb5a2e39-ecf4-4f99-9380-89267264053b-base_basic_pbr.glb",
+      "rawSha256": "9bda1b6ef110bca7bc562de844508cc74bce9cb862b3068ecc346fd2496b7a92",
+      "rawBytes": 8722340
+    },
+    {
+      "id": "d6cd1b50-7e9f-401e-a4b4-87bf45b0e336",
+      "name": "sneakers-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-Medium",
+      "qualityOverride": 8000,
+      "intent": "shoes/sneakers 후보(한 켤레)",
+      "outcome": "사용",
+      "rawFile": "sneakers-01-d6cd1b50-7e9f-401e-a4b4-87bf45b0e336-base_basic_pbr.glb",
+      "rawSha256": "9ea818e7d93792da0ae1727faf9c9f1d018b2d4c3a3afffeb281b4def66a1684",
+      "rawBytes": 8985804
+    },
+    {
+      "id": "3f1040da-6127-4402-98e2-2692cccb2a3d",
+      "name": "hair-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-Medium",
+      "qualityOverride": 15000,
+      "intent": "hair/soft-bob 후보(흉상)",
+      "outcome": "BANG 분리본으로 대체",
+      "rawFile": "hair-01-3f1040da-6127-4402-98e2-2692cccb2a3d-base_basic_pbr.glb",
+      "rawSha256": "5fde2b1a24c57ea4242af8ade849795a8b0d6e40342b6a3356e5ad30ceabf4ad",
+      "rawBytes": 9764060
+    },
+    {
+      "id": "949821ab-4ed3-4b7c-8689-f5a90e8bc148",
+      "name": "shirt-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 10000,
+      "intent": "top/shirt 후보(옷만)",
+      "outcome": "폐기(셔츠가 말려 눕혀진 형태)",
+      "rawFile": "shirt-01-949821ab-4ed3-4b7c-8689-f5a90e8bc148-base_basic_pbr.glb",
+      "rawSha256": "bd3ce520d75fe4fe8c079e70f90989956d8b0c4ccce024e42c33dd0fb0f584e0",
+      "rawBytes": 7734208
+    },
+    {
+      "id": "7a546c69-384f-4614-a48e-9d5c6fc1702d",
+      "name": "slacks-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 10000,
+      "intent": "bottom/slacks 후보(옷만)",
+      "outcome": "마네킹 몸 동반 → BANG으로 분리",
+      "rawFile": "slacks-01-7a546c69-384f-4614-a48e-9d5c6fc1702d-base_basic_pbr.glb",
+      "rawSha256": "9518aa9d45e3cfec4625d08ed8893e779de40122788ec5ec61a0d40d42a9ad01",
+      "rawBytes": 7972804
+    },
+    {
+      "id": "13a5da2e-9641-4671-89d9-92d3634ac3ef",
+      "name": "shorts-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 8000,
+      "intent": "bottom/shorts 후보(옷만)",
+      "outcome": "마네킹 몸 동반 → BANG으로 분리",
+      "rawFile": "shorts-01-13a5da2e-9641-4671-89d9-92d3634ac3ef-base_basic_pbr.glb",
+      "rawSha256": "0a0ad394ba068600e9317271e87f2688c0745e291061fe090d74ed570519ac80",
+      "rawBytes": 9054980
+    },
+    {
+      "id": "347f643a-9d8d-4f13-9b11-4d07305d28ff",
+      "name": "loafers-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 8000,
+      "intent": "shoes/loafers 후보(한 켤레)",
+      "outcome": "사용",
+      "rawFile": "loafers-01-347f643a-9d8d-4f13-9b11-4d07305d28ff-base_basic_pbr.glb",
+      "rawSha256": "9cd581dea9323c82b13c262e51cbc8f7d693b5652c0f402e01b6a5f9af904802",
+      "rawBytes": 7698056
+    },
+    {
+      "id": "cd7f6768-8b2b-4601-8691-d3173a2d0e52",
+      "name": "hoodie-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 12000,
+      "intent": "top/hoodie 후보(옷만)",
+      "outcome": "마네킹 몸 동반 → BANG으로 분리",
+      "rawFile": "hoodie-01-cd7f6768-8b2b-4601-8691-d3173a2d0e52-base_basic_pbr.glb",
+      "rawSha256": "25e9c5f96ccbeecb63a55ca9b9298a6d1394bbddb9ede19278940220cd73a694",
+      "rawBytes": 9957776
+    },
+    {
+      "id": "da32af22-d1e3-4103-a160-002557e24c2a",
+      "name": "cap-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 4000,
+      "intent": "accessory/cap 후보",
+      "outcome": "사용",
+      "rawFile": "cap-01-da32af22-d1e3-4103-a160-002557e24c2a-base_basic_pbr.glb",
+      "rawSha256": "c21ae6296e992cc8df293d2eddbada0119c9e1afa498206b286e707306608eb8",
+      "rawBytes": 6751112
+    },
+    {
+      "id": "ca9c78df-affa-4329-b12e-87ba46bd29b6",
+      "name": "headphones-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 4000,
+      "intent": "accessory/headphones 후보",
+      "outcome": "사용",
+      "rawFile": "headphones-01-ca9c78df-affa-4329-b12e-87ba46bd29b6-base_basic_pbr.glb",
+      "rawSha256": "17e61967d64aa85b1c7d1edbe3c605f52a24f92dccf060ea5a7eeb68f395f00b",
+      "rawBytes": 6304624
+    },
+    {
+      "id": "792ed91f-b173-4adc-af86-07abb11144f2",
+      "name": "shirt-02",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "top/shirt용 전신 한 벌(남성 드레스셔츠)",
+      "outcome": "BANG으로 분리",
+      "rawFile": "shirt-02-792ed91f-b173-4adc-af86-07abb11144f2-base_basic_pbr.glb",
+      "rawSha256": "70da3f8d4512105f73aa8e63dda5077cf361d4302ec0e64f8d09b1757db666da",
+      "rawBytes": 9693716
+    },
+    {
+      "id": "cfda62fb-19a3-4e4a-992f-1c4c52dd68ae",
+      "name": "slacks-bang",
+      "kind": "bang",
+      "parent": "7a546c69-384f-4614-a48e-9d5c6fc1702d",
+      "strength": 6,
+      "intent": "슬랙스 분리",
+      "outcome": "사용(root.2)",
+      "rawFile": "slacks-bang-cfda62fb-19a3-4e4a-992f-1c4c52dd68ae-base_basic_pbr.glb",
+      "rawSha256": "0d0096d382eaaa9c4adb85864a5ebe0fc0af4e0d8fee0a15cfcc48b33b5293c2",
+      "rawBytes": 8585032
+    },
+    {
+      "id": "454cee0f-eefa-40d1-a59d-56d944c6394a",
+      "name": "shorts-bang",
+      "kind": "bang",
+      "parent": "13a5da2e-9641-4671-89d9-92d3634ac3ef",
+      "strength": 8,
+      "intent": "반바지 분리",
+      "outcome": "사용(root.8)",
+      "rawFile": "shorts-bang-454cee0f-eefa-40d1-a59d-56d944c6394a-base_basic_pbr.glb",
+      "rawSha256": "8b17242680c860a8cefb87aee1869ad3e6a29e5415c35049a19d53516db57a1a",
+      "rawBytes": 8862368
+    },
+    {
+      "id": "b0c064d5-dc4f-488c-83a9-f695b1f122f4",
+      "name": "hoodie-bang",
+      "kind": "bang",
+      "parent": "cd7f6768-8b2b-4601-8691-d3173a2d0e52",
+      "strength": 7,
+      "intent": "후디 분리",
+      "outcome": "사용(root.2)",
+      "rawFile": "hoodie-bang-b0c064d5-dc4f-488c-83a9-f695b1f122f4-base_basic_pbr.glb",
+      "rawSha256": "a2eedb26f129b5acc72ce5a89619511a2af2e92f65232780ff07f8dd4aea1be5",
+      "rawBytes": 9101652
+    },
+    {
+      "id": "6ed2b9f1-c3ac-45ec-bb8c-2f98b3bd6f48",
+      "name": "shirt-02-bang",
+      "kind": "bang",
+      "parent": "792ed91f-b173-4adc-af86-07abb11144f2",
+      "strength": 6,
+      "intent": "셔츠 분리",
+      "outcome": "대기"
+    },
+    {
+      "id": "81a86b78-5724-412e-8552-4a9a5faa2429",
+      "name": "hair-bang",
+      "kind": "bang",
+      "parent": "3f1040da-6127-4402-98e2-2692cccb2a3d",
+      "strength": 3,
+      "intent": "soft-bob 헤어 분리",
+      "outcome": "사용(root.2, 닫힌 셸)",
+      "rawFile": "hair-bang-81a86b78-5724-412e-8552-4a9a5faa2429-base_basic_pbr.glb",
+      "rawSha256": "e51cbecd49990c4bc5a7facc22e4cc609bf36bc846df9a91b41e2d98a580fa80",
+      "rawBytes": 9063992
+    },
+    {
+      "id": "44533c2e-788e-4b41-ba29-4119e52f493c",
+      "name": "g1-school-girl",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "교복 여학생 전신(롱헤어·블레이저·리본·주름치마·양말·로퍼)",
+      "outcome": "BANG으로 분리",
+      "rawFile": "g1-school-girl-44533c2e-788e-4b41-ba29-4119e52f493c-base_basic_pbr.glb",
+      "rawSha256": "c7ffc25f819647ece0c02388cbfae3f5a028afa96db86f168bd033f17b858373",
+      "rawBytes": 10011776
+    },
+    {
+      "id": "fce62c04-f517-4da5-a0d9-d5855806d454",
+      "name": "g2-sailor-girl",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "세일러복 여학생 전신(트윈테일 요청)",
+      "outcome": "폐기(한쪽 팔을 든 포즈, 트윈테일 아님, 다리 잘림)",
+      "rawFile": "g2-sailor-girl-fce62c04-f517-4da5-a0d9-d5855806d454-base_basic_pbr.glb",
+      "rawSha256": "697073d143a24ba6f3251ac91095d6f607157eb00a7a41439cd9c27b6a689ab2",
+      "rawBytes": 11149932
+    },
+    {
+      "id": "3c66ad8a-9bce-48ae-9a1b-e006382625f7",
+      "name": "g3-hime-woman",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "롱스커트 여성 전신(히메컷 요청)",
+      "outcome": "BANG으로 분리(롱스커트·단발 헤어)",
+      "rawFile": "g3-hime-woman-3c66ad8a-9bce-48ae-9a1b-e006382625f7-base_basic_pbr.glb",
+      "rawSha256": "a06a8f9dcd44be8377392bc1376f985be1d8565074d817a4236234dc55eab50e",
+      "rawBytes": 10526452
+    },
+    {
+      "id": "7aebc65e-345f-4a71-862c-05781f7cac1f",
+      "name": "g4-wolf-summer",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "여름 사복 전신(울프컷 요청)",
+      "outcome": "BANG으로 분리(헤어·티셔츠)",
+      "rawFile": "g4-wolf-summer-7aebc65e-345f-4a71-862c-05781f7cac1f-base_basic_pbr.glb",
+      "rawSha256": "d177b43bc36c320ddc3bec97e0f57ddeaf579e61383c852cf715c1c55d7ebe33",
+      "rawBytes": 11035248
+    },
+    {
+      "id": "162ae481-83c6-42e2-9df0-e46a2f680531",
+      "name": "g5-athletic-pony",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "운동복 여성 전신(포니테일 요청)",
+      "outcome": "폐기(달리는 포즈)",
+      "rawFile": "g5-athletic-pony-162ae481-83c6-42e2-9df0-e46a2f680531-base_basic_pbr.glb",
+      "rawSha256": "e1757e3a1e48fba342c89a07df3253ddd1d065770b781e79757b4b6f061b8980",
+      "rawBytes": 9857212
+    },
+    {
+      "id": "051b32ef-5b4e-4c42-95fb-02354c1de5ca",
+      "name": "g6-young-man",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 40000,
+      "intent": "스마트 캐주얼 남성 전신(숏 레이어드 헤어)",
+      "outcome": "BANG으로 분리",
+      "rawFile": "g6-young-man-051b32ef-5b4e-4c42-95fb-02354c1de5ca-base_basic_pbr.glb",
+      "rawSha256": "987a79413a8917adebf2ac9b63dd96840153ae821f30f0a83450017c59bb4283",
+      "rawBytes": 9519868
+    },
+    {
+      "id": "f12ea410-75bf-4475-a213-198746431395",
+      "name": "g1-bang",
+      "kind": "bang",
+      "parent": "44533c2e-788e-4b41-ba29-4119e52f493c",
+      "strength": 9,
+      "intent": "교복 분리",
+      "outcome": "대기"
+    },
+    {
+      "id": "10546880-792b-473f-b758-7edbbd7ab261",
+      "name": "g6-bang",
+      "kind": "bang",
+      "parent": "051b32ef-5b4e-4c42-95fb-02354c1de5ca",
+      "strength": 7,
+      "intent": "남성 의상·헤어 분리",
+      "outcome": "대기"
+    },
+    {
+      "id": "e68a0738-cbb4-49c6-8c63-e8e137b8bd32",
+      "name": "g3-bang",
+      "kind": "bang",
+      "parent": "3c66ad8a-9bce-48ae-9a1b-e006382625f7",
+      "strength": 7,
+      "intent": "롱스커트·재킷·헤어 분리",
+      "outcome": "대기"
+    },
+    {
+      "id": "884fb776-4796-43a5-ba80-2a694ea52e00",
+      "name": "g4-bang",
+      "kind": "bang",
+      "parent": "7aebc65e-345f-4a71-862c-05781f7cac1f",
+      "strength": 5,
+      "intent": "웨이브 헤어·티셔츠 분리",
+      "outcome": "대기"
+    },
+    {
+      "id": "545282ff-a967-4ad2-b736-793d456013d3",
+      "name": "hair-pony",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "hair/action-pony 흉상",
+      "outcome": "대기"
+    },
+    {
+      "id": "54a85bb9-c3a4-4120-98ae-55f583790ad9",
+      "name": "hair-hime",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "hair/hime-cut 흉상",
+      "outcome": "대기"
+    },
+    {
+      "id": "57de885d-a2f4-4850-b073-53725523330d",
+      "name": "hair-twin",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "hair/twin-tail 흉상",
+      "outcome": "대기"
+    },
+    {
+      "id": "939df19f-f77b-42e4-ae6c-be40add9e7e1",
+      "name": "hair-wolf",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 30000,
+      "intent": "hair/wolf-layered 흉상",
+      "outcome": "대기"
+    },
+    {
+      "id": "1137c911-3282-4afc-976f-bdd3839f5bd6",
+      "name": "sailor-01",
+      "kind": "generate",
+      "tier": "Gen-2.5-High",
+      "qualityOverride": 12000,
+      "intent": "top/sailor 후보(옷만, T-포즈)",
+      "outcome": "대기"
+    }
+  ]
+}
