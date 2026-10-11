@@ -216,6 +216,91 @@ describe("StudioGodotSpaceEmbed", () => {
     expect(issue).toHaveBeenCalledTimes(1);
   });
 
+  it("issues a presence-only guest ticket with the verified qualification", async () => {
+    const issue = vi.fn(
+      async (_request: StudioRealtimeTicketRequest, _signal: AbortSignal) =>
+        ticketResponse(),
+    );
+    render(
+      <StudioGodotSpaceEmbed
+        workId={WORK_ID}
+        displayName="게스트"
+        colorHex="#3b82f6"
+        localOnly={false}
+        guestAccess={{
+          kind: "invite",
+          token:
+            "T".repeat(43),
+          guestSessionId: "Ab3dEf6hJkLmNpQr",
+        }}
+        onExitToClassic={() => undefined}
+        ticketIssuer={{ issue }}
+      />,
+    );
+    const iframe = document.querySelector("iframe");
+    expect(iframe?.getAttribute("src")).toBe("/godot-space/index.html");
+    const setSession = vi.fn();
+    frameWindow().__tsvs_setSession = setSession;
+
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(setSession).toHaveBeenCalledTimes(1));
+
+    const request = issue.mock.calls[0]?.[0];
+    expect(request).toMatchObject({
+      version: 1,
+      scope: { workId: WORK_ID, roomId: WORK_ID },
+      workloads: ["presence"],
+      guestAccess: {
+        kind: "invite",
+        guestSessionId: "Ab3dEf6hJkLmNpQr",
+      },
+    });
+    expect(request?.capabilities).not.toContain("screen-signaling.session-v1");
+    expect(request?.capabilities).toContain("presence.cursor-v1");
+    // 게스트는 저장본 레이아웃을 조회하지 않고 카탈로그 기본 정의를 쓴다.
+    expect(spaceMocks.fetchLayout).not.toHaveBeenCalled();
+  });
+
+  it("does not open the meeting panel for a guest in the meeting zone", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    render(
+      <StudioGodotSpaceEmbed
+        workId={WORK_ID}
+        displayName="게스트"
+        colorHex="#3b82f6"
+        localOnly={false}
+        guestAccess={{
+          kind: "entry-code",
+          code: "ABC234",
+          guestSessionId: "Ab3dEf6hJkLmNpQr",
+        }}
+        onExitToClassic={() => undefined}
+        ticketIssuer={{ issue }}
+      />,
+    );
+    frameWindow().__tsvs_setSession = vi.fn();
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    act(() =>
+      hostBridge().onZoneChanged(
+        JSON.stringify({
+          v: 1,
+          selfZoneId: "meeting",
+          selfActorId: "guest:Ab3dEf6hJkLmNpQr",
+          selfClientId: "client-guest",
+          presenterActorId: "",
+          peerClientIds: { "actor-host": "client-host" },
+          names: { "actor-host": "호스트" },
+          zones: [
+            { zoneId: "meeting", kind: "meeting", name: "회의 구역", occupants: ["guest:Ab3dEf6hJkLmNpQr", "actor-host"] },
+          ],
+        }),
+      ),
+    );
+    expect(screen.queryByTestId("godot-meeting-panel")).toBeNull();
+  });
+
   it("loads local-only mode without issuing tickets", () => {
     const issue = vi.fn(async () => ticketResponse());
     renderEmbed({ issue }, true);

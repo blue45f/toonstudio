@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveStudioCloudflareRealtimeOrigin } from "../studio-realtime-provider-cloudflare-adapter";
 import {
   StudioRealtimeTicketSchema,
+  type StudioRealtimeTicketGuestAccess,
   type StudioRealtimeTicketRequest,
 } from "../studio-realtime-provider-protocol";
 import {
@@ -58,6 +59,15 @@ const GODOT_PRESENCE_CAPABILITIES = [
   "screen-signaling.session-v1",
   "screen-signaling.webrtc-v1",
   "screen-signaling.resume-v1",
+] as const;
+
+/** 게스트 티켓은 서버 계약상 presence 전용이다 (게스트 인가 분기가
+ * 그 외 워크로드를 거부한다). 회의·댓글 채널은 게스트에게 열지 않는다. */
+const GODOT_GUEST_PRESENCE_CAPABILITIES = [
+  "presence.snapshot-v1",
+  "presence.members-v1",
+  "presence.cursor-v1",
+  "presence.resume-v1",
 ] as const;
 
 const BRIDGE_PING_INTERVAL_MS = 20_000;
@@ -231,8 +241,14 @@ export interface StudioGodotSpaceEmbedProps {
   /** "#rrggbb" — 서버 계약 profile.avatar.color와 같은 형식. */
   readonly colorHex: string;
   readonly skinKey?: string;
-  /** 개인 공간·게스트처럼 티켓을 발급할 수 없는 경우: 무대만 로컬로 띄운다. */
+  /** 개인 공간처럼 티켓을 발급할 수 없는 경우: 무대만 로컬로 띄운다. */
   readonly localOnly?: boolean;
+  /**
+   * 프로젝트 공간 게스트 자격. 서버 검증을 통과한 게스트 세션의 자격만
+   * 전달된다 — 임베드는 이 자격으로 게스트 티켓(presence 전용)을 발급해
+   * 접속한다. 자격이 없으면 게스트는 localOnly 로컬 무대에 머문다.
+   */
+  readonly guestAccess?: StudioRealtimeTicketGuestAccess;
   readonly onExitToClassic: () => void;
   /** 테스트 주입용. 기본값은 운영 HTTP 발급기. */
   readonly ticketIssuer?: StudioRealtimeTicketIssuer;
@@ -255,9 +271,12 @@ export function StudioGodotSpaceEmbed({
   colorHex,
   skinKey,
   localOnly = false,
+  guestAccess,
   onExitToClassic,
   ticketIssuer,
 }: StudioGodotSpaceEmbedProps) {
+  /** 게스트 접속은 presence 전용 — 회의 세션·ICE 리스·배치 저작을 켜지 않는다. */
+  const presenceOnly = guestAccess !== undefined;
   const bt = useBilingual("StudioGodotSpaceEmbed");
   const [phase, setPhase] = useState<StudioGodotSpacePhase>(
     localOnly ? "local" : "booting",
@@ -353,7 +372,8 @@ export function StudioGodotSpaceEmbed({
   useEffect(() => {
     const fallback = catalog.find((def) => def.id === spaceId) ?? null;
     if (!fallback) return;
-    if (localOnly) {
+    if (localOnly || presenceOnly) {
+      // 게스트는 저장본 조회 권한이 없어 카탈로그 기본 정의를 쓴다.
       applyResolvedLayout(fallback, 0);
       return;
     }
@@ -373,7 +393,7 @@ export function StudioGodotSpaceEmbed({
     return () => {
       cancelled = true;
     };
-  }, [applyResolvedLayout, catalog, layoutFetchNonce, localOnly, spaceId, workId]);
+  }, [applyResolvedLayout, catalog, layoutFetchNonce, localOnly, presenceOnly, spaceId, workId]);
 
   const handleLayoutSave = useCallback(async () => {
     const definition = spaceDefRef.current;
@@ -485,8 +505,9 @@ export function StudioGodotSpaceEmbed({
   }, [zoneInfo]);
 
   // 화상 세션은 한 번만 만들고, ICE 리스는 연결 확정 뒤에 미리 받아 둔다.
+  // 게스트(presence 전용)는 시그널링 채널이 없어 세션을 만들지 않는다.
   useEffect(() => {
-    if (localOnly) return;
+    if (localOnly || presenceOnly) return;
     const session = new StudioGodotMeetingSession({
       sendSignal: (payload) => {
         frameWindow()?.__tsvs_sendSignal?.(JSON.stringify(payload));
@@ -512,7 +533,7 @@ export function StudioGodotSpaceEmbed({
       iceLeaseRef.current = null;
       iceLeasePromiseRef.current = null;
     };
-  }, [frameWindow, localOnly]);
+  }, [frameWindow, localOnly, presenceOnly]);
 
   const ensureIceLease = useCallback(() => {
     if (iceLeaseRef.current) return Promise.resolve();
@@ -530,11 +551,11 @@ export function StudioGodotSpaceEmbed({
   }, [workId]);
 
   useEffect(() => {
-    if (localOnly || phase !== "connected") {
+    if (localOnly || presenceOnly || phase !== "connected") {
       return;
     }
     void ensureIceLease();
-  }, [ensureIceLease, localOnly, phase]);
+  }, [ensureIceLease, localOnly, phase, presenceOnly]);
 
   useEffect(() => {
     const session = meetingSessionRef.current;
@@ -602,14 +623,25 @@ export function StudioGodotSpaceEmbed({
       const providerId =
         import.meta.env.VITE_STUDIO_REALTIME_PROVIDER_ID?.trim() ||
         "cloudflare-realtime-v1";
-      const request: StudioRealtimeTicketRequest = {
-        version: 1,
-        providerId,
-        sessionId: sessionIdRef.current,
-        scope: { workId, roomId: workId },
-        workloads: ["presence", "screen-signaling"],
-        capabilities: [...GODOT_PRESENCE_CAPABILITIES],
-      };
+      const request: StudioRealtimeTicketRequest = guestAccess
+        ? {
+            // 게스트는 자격을 함께 제시하고 presence 전용으로만 발급받는다.
+            version: 1,
+            providerId,
+            sessionId: sessionIdRef.current,
+            scope: { workId, roomId: workId },
+            workloads: ["presence"],
+            capabilities: [...GODOT_GUEST_PRESENCE_CAPABILITIES],
+            guestAccess,
+          }
+        : {
+            version: 1,
+            providerId,
+            sessionId: sessionIdRef.current,
+            scope: { workId, roomId: workId },
+            workloads: ["presence", "screen-signaling"],
+            capabilities: [...GODOT_PRESENCE_CAPABILITIES],
+          };
       const raw = await issuer.issue(request, controller.signal);
       const parsed = StudioRealtimeTicketSchema.safeParse(raw);
       if (!parsed.success || parsed.data.providerId !== providerId) {
@@ -637,7 +669,7 @@ export function StudioGodotSpaceEmbed({
     } finally {
       issuingRef.current = false;
     }
-  }, [injectSession, localOnly, ticketIssuer, workId]);
+  }, [guestAccess, injectSession, localOnly, ticketIssuer, workId]);
 
   const appendChat = useCallback(
     (fromSelf: boolean, name: string, text: string) => {
@@ -1012,7 +1044,7 @@ export function StudioGodotSpaceEmbed({
           </button>
         ))}
       </div>
-      {!localOnly ? (
+      {!localOnly && !presenceOnly ? (
         <StudioGodotLayoutPanel
           definition={spaceDef}
           revision={layoutRevision}
@@ -1031,7 +1063,7 @@ export function StudioGodotSpaceEmbed({
           }}
         />
       ) : null}
-      {!localOnly && meetingContext?.selfInMeeting ? (
+      {!localOnly && !presenceOnly && meetingContext?.selfInMeeting ? (
         <StudioGodotMeetingPanel
           route={meetingRoute}
           localStream={meetingLocalStream}
