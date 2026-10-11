@@ -120,7 +120,7 @@ export function ProductionHandoffSurface({
         <ProductionSectionCard
           title={bt(`스토리 → 작화 · ${episodeName}`, `Story → art · ${episodeName}`)}
           description={bt(
-            `스토리 ${handoff.storyLockRef ? `버전 ${handoff.storyLockRef.revision}` : "미확정"} · 넘기기 버전 ${handoff.handoffRevision}`,
+            `스토리 ${handoff.storyLockRef ? `버전 ${handoff.storyLockRef.revision}` : "미확정"} · 인계 버전 ${handoff.handoffRevision}`,
             `Story ${handoff.storyLockRef ? `version ${handoff.storyLockRef.revision}` : "not locked"} · handoff version ${handoff.handoffRevision}`,
           )}
           action={<ProductionPill tone="accent">{bt(statusLabel.ko, statusLabel.en)}</ProductionPill>}
