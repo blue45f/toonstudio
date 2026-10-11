@@ -11,6 +11,8 @@ export const CLOUDFLARE_OVERSIZED_ASSET_IGNORE_PATTERNS = [
   "assets/tag2pix-*.onnx",
   "assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
   "brand/toonstudio-product-tour.mp4",
+  "godot-space/index.wasm",
+  "play-godot/index.wasm",
 ] as const;
 
 export const CLOUDFLARE_LARGE_ASSET_ENCODINGS = ["br", "gzip"] as const;
@@ -24,6 +26,8 @@ export interface CloudflareLargeAssetDescriptor {
 const MODULAR_STREET_SEATING_PATH =
   "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb";
 const PRODUCT_TOUR_PATH = "/brand/toonstudio-product-tour.mp4";
+const GODOT_SPACE_WASM_PATH = "/godot-space/index.wasm";
+const PLAY_GODOT_WASM_PATH = "/play-godot/index.wasm";
 const OPENCASCADE_PATH_PATTERN =
   /^\/assets\/opencascade\.wasm-[A-Za-z0-9_-]+\.wasm$/u;
 const ORT_JSEP_WASM_PATH_PATTERN =
@@ -40,6 +44,9 @@ export function cloudflareLargeAssetDescriptor(
   }
   if (pathname === PRODUCT_TOUR_PATH) {
     return { contentType: "video/mp4" };
+  }
+  if (pathname === GODOT_SPACE_WASM_PATH || pathname === PLAY_GODOT_WASM_PATH) {
+    return { contentType: "application/wasm" };
   }
   if (OPENCASCADE_PATH_PATTERN.test(pathname)) {
     return { contentType: "application/wasm" };
