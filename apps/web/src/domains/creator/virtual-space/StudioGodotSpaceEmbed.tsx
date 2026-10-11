@@ -172,6 +172,8 @@ interface TsvsGodotFrameWindow {
   __tsvs_applyLayout?: (json: string) => void;
   __tsvs_layoutCommand?: (json: string) => void;
   __tsvs_notifyLayout?: (json: string) => void;
+  // 무대 배경 로드 상태 (bg_stage.gd가 window에 표기: idle|loading|ready|failed).
+  __godotBgState?: string;
 }
 
 interface TsvsHostBridge {
@@ -323,8 +325,64 @@ export function StudioGodotSpaceEmbed({
     return frame.contentWindow as unknown as TsvsGodotFrameWindow;
   }, []);
 
+  // 무대 배경 로더(bg_stage.gd)는 HTTPRequest가 하나뿐이라, 부팅 배경을
+  // 받는 중에 새 배경 적용이 닿으면 요청이 즉시 실패(err=44)하고 적용이
+  // 유실된다 (2026-10-12 실측: 저장 배경 재접속 시 카탈로그로 남음).
+  // 그래서 무대 적용은 배경 로드가 가라앉을 때까지 셸이 붙잡는다.
+  const pendingStageLayoutRef = useRef<string | null>(null);
+  const stageLayoutFlushingRef = useRef(false);
+
+  // 배경 상태가 확정값(idle|ready|failed)이 될 때까지 기다린다. 상태
+  // 문자열 자체가 끝내 없으면(보고 없는 무대·테스트 더블) 짧게만 기다리고
+  // 기존 동작으로 진행한다. 한 번이라도 보이면 "loading" 해소까지 기다린다.
+  const waitForStageBackgroundSettled = useCallback(
+    async (signal?: AbortSignal): Promise<void> => {
+      const deadline = Date.now() + 65_000;
+      const firstSeenDeadline = Date.now() + 300;
+      while (!signal?.aborted && Date.now() < deadline) {
+        const state = frameWindow()?.__godotBgState;
+        if (typeof state === "string") {
+          if (state !== "loading") return;
+        } else if (Date.now() > firstSeenDeadline) {
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    },
+    [frameWindow],
+  );
+
+  // 대기 중인 무대 레이아웃을 배경 정착 후 흘려보낸다. 겹치면 최신만 남긴다.
+  const flushPendingStageLayout = useCallback(async (): Promise<void> => {
+    if (stageLayoutFlushingRef.current) return;
+    stageLayoutFlushingRef.current = true;
+    try {
+      while (pendingStageLayoutRef.current) {
+        if (frameWindow()?.__godotBgState === "loading") {
+          await waitForStageBackgroundSettled();
+        }
+        const json = pendingStageLayoutRef.current;
+        pendingStageLayoutRef.current = null;
+        if (json) frameWindow()?.__tsvs_applyLayout?.(json);
+      }
+    } finally {
+      stageLayoutFlushingRef.current = false;
+    }
+  }, [frameWindow, waitForStageBackgroundSettled]);
+
+  const pushStageLayout = useCallback(
+    (definition: GodotSpaceDefinition) => {
+      pendingStageLayoutRef.current = JSON.stringify({
+        spec: resolveGodotBackgroundForStage(definition, workId),
+      });
+      void flushPendingStageLayout();
+    },
+    [flushPendingStageLayout, workId],
+  );
+
   // 해석된 정의를 상태·무대 양쪽에 반영한다. 세션 주입 전이면 무대 호출은
   // 무대가 버리고(주입 페이로드가 정의를 싣는다), 접속 중이면 즉시 적용된다.
+  // 배경 로드 중이면 pushStageLayout이 정착까지 적용을 미룬다.
   const applyResolvedLayout = useCallback(
     (definition: GodotSpaceDefinition, revision: number) => {
       spaceDefRef.current = definition;
@@ -333,13 +391,9 @@ export function StudioGodotSpaceEmbed({
       setLayoutRevision(revision);
       setLayoutDirty(false);
       setLayoutLoadState("ready");
-      frameWindow()?.__tsvs_applyLayout?.(
-        JSON.stringify({
-          spec: resolveGodotBackgroundForStage(definition, workId),
-        }),
-      );
+      pushStageLayout(definition);
     },
-    [frameWindow, workId],
+    [pushStageLayout],
   );
 
   // 정적 카탈로그는 빌드와 함께 배포되는 기본 정의 묶음이다.
@@ -459,13 +513,9 @@ export function StudioGodotSpaceEmbed({
       spaceDefRef.current = next;
       setSpaceDef(next);
       setLayoutDirty(true);
-      frameWindow()?.__tsvs_applyLayout?.(
-        JSON.stringify({
-          spec: resolveGodotBackgroundForStage(next, workId),
-        }),
-      );
+      pushStageLayout(next);
     },
-    [frameWindow, workId],
+    [pushStageLayout],
   );
 
   const handleBackgroundChange = useCallback(
@@ -716,6 +766,11 @@ export function StudioGodotSpaceEmbed({
     const controller = new AbortController();
     abortRef.current = controller;
     try {
+      // 세션 페이로드의 배경이 부팅 배경 다운로드와 겹치면 무대 로더가
+      // 요청 중첩으로 실패한다. 티켓 발급 전에 배경 정착을 기다려
+      // 티켓 수명(120초)은 대기 시간에 쓰지 않는다.
+      await waitForStageBackgroundSettled(controller.signal);
+      if (controller.signal.aborted) return;
       sessionIdRef.current ??=
         globalThis.crypto?.randomUUID?.() ??
         `godot-shell-${Date.now().toString(36)}`;
@@ -757,7 +812,7 @@ export function StudioGodotSpaceEmbed({
     } finally {
       issuingRef.current = false;
     }
-  }, [injectSession, localOnly, ticketIssuer, workId]);
+  }, [injectSession, localOnly, ticketIssuer, waitForStageBackgroundSettled, workId]);
 
   const appendChat = useCallback(
     (fromSelf: boolean, name: string, text: string) => {
