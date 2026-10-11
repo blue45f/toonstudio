@@ -63,13 +63,16 @@ describe("studio shell floating integration", () => {
 
   it("embeds workspace chat beside work actions without duplicating the floating launcher", () => {
     const space = source("virtual-space/StudioVirtualSpacePage.tsx");
-    // 페이지 셸(Provider 배선)은 StudioVirtualSpacePageRoot로 분리됐고 Page가 재수출한다.
+    // 페이지 셸은 StudioVirtualSpacePageRoot로 분리됐고 Page가 재수출한다.
     const spaceRoot = source("virtual-space/StudioVirtualSpacePageRoot.tsx");
-    expect(spaceRoot).toContain('showHuddleLauncher={false}');
     expect(space).toContain('from "./StudioVirtualSpacePageRoot"');
-    expect(space).toContain('<StudioP2pHuddleLauncher placement="inline" />');
-    expect(space).toContain('data-workspace-primary-action="true"');
-    expect(source("virtual-space/studio-workspace-live.css")).toContain('.workspace-live-actions>:is(a,button)[data-workspace-primary-action="true"]');
+    // 클래식 제거(2026-10-12) 이후 공간 라우트는 LiveCollaborationProvider를 마운트하지 않는다 —
+    // 플로팅 허들 런처는 그 Provider만 렌더하므로 공간 라우트에 중복 런처가 생길 수 없고,
+    // 공간 안 소통은 Godot 임베드(브리지)가 담당한다. 클래식 시절의
+    // showHuddleLauncher={false}·인라인 런처 소스 단언은 그 구현과 함께 정리했다.
+    expect(spaceRoot).not.toContain("StudioLiveCollaborationProvider");
+    expect(spaceRoot).not.toContain("StudioP2pHuddleLauncher");
+    expect(spaceRoot).toContain("<StudioGodotSpaceEmbed");
   });
 
   it("lazy-loads the durable manager inside the document lifetime boundary", () => {
