@@ -122,4 +122,22 @@ describe("studio workspace spotlight tour", () => {
     fireEvent.keyDown(dialog, { key: "Escape" });
     await waitFor(() => expect(window.localStorage.getItem(WORKSPACE_TOUR_STORAGE_KEY)).toBe("done"));
   });
+
+  it("대화상자가 열려 있는 동안에는 시작하지 않고 포커스도 가로채지 않는다", async () => {
+    const dialog = document.createElement("dialog");
+    dialog.setAttribute("open", "");
+    const opener = document.createElement("button");
+    document.body.append(opener, dialog);
+    opener.focus();
+    renderTour();
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 900)); });
+    expect(screen.queryByRole("dialog", { name: "스포트라이트 투어" })).toBeNull();
+    expect(document.activeElement).toBe(opener);
+
+    // 대화상자가 닫히면 다음 확인 때 투어가 시작된다.
+    dialog.removeAttribute("open");
+    await screen.findByRole("dialog", { name: "스포트라이트 투어" }, { timeout: 2000 });
+    dialog.remove();
+    opener.remove();
+  });
 });

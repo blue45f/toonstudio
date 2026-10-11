@@ -9,6 +9,7 @@ import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { StudioLiveCollaborationProvider } from "../live/StudioLiveCollaborationProvider";
 import { useStudioLiveTransportAuth } from "../live/use-studio-live-transport-auth";
+import type { StudioRealtimeTicketGuestAccess } from "../studio-realtime-provider-protocol";
 import { readStudioVirtualArtStyle, writeStudioVirtualArtStyle, type StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import { resolveStudioVirtualBuiltinWorld } from "./studio-virtual-space-campus-world";
 import { parseCodeInviteFragment } from "./studio-virtual-space-entry-code";
@@ -375,13 +376,34 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
       const value = params.toString();
       navigate({ pathname: location.pathname, search: value ? `?${value}` : "" });
     };
+    // 게스트 티켓 배선: 서버 검증을 통과해 저장된 게스트 세션이 있을 때만
+    // 그 자격을 임베드에 넘겨 게스트 티켓으로 접속하게 한다. 세션은 검증
+    // 성공 뒤에만 만들어지고, 서버가 저장된 자격을 거절하면 위 게이트가
+    // 세션을 지우므로, 여기 닿은 자격은 살아 있는 자격이다. 자격이 없는
+    // 방문자는 기존처럼 로컬 무대(localOnly)에 머문다.
+    const godotGuestAccess: StudioRealtimeTicketGuestAccess | undefined =
+      isGuest && guestSessionForSpace
+        ? isStudioSpatialInviteToken(guestSessionForSpace.inviteToken)
+          ? {
+              kind: "invite",
+              token:
+                guestSessionForSpace.inviteToken,
+              guestSessionId: guestSessionForSpace.sessionId,
+            }
+          : {
+              kind: "entry-code",
+              code: guestSessionForSpace.inviteToken,
+              guestSessionId: guestSessionForSpace.sessionId,
+            }
+        : undefined;
     return (
       <StudioGodotSpaceEmbed
         workId={decodedProjectId}
         displayName={publicNickname}
         colorHex={colorHex}
         skinKey={skin?.key}
-        localOnly={personal || !session.data}
+        localOnly={personal || (!session.data && !godotGuestAccess)}
+        guestAccess={godotGuestAccess}
         onExitToClassic={exitToClassic}
       />
     );

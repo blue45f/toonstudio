@@ -211,6 +211,41 @@ export type StudioRealtimeConnectionRequest = z.infer<
   typeof StudioRealtimeConnectionRequestSchema
 >;
 
+/**
+ * 프로젝트 공간 게스트 자격 제시 (서버 DTO와 같은 형식 규칙).
+ * 초대 토큰 43자·입장코드 6자·게스트 세션 ID 16자 — 자격 자체의
+ * 유효성은 서버가 발급 직전에 검증하고, 셸은 검증이 끝난 게스트
+ * 세션의 자격만 이 형태로 실어 보낸다.
+ */
+export const StudioRealtimeTicketGuestAccessSchema = z.discriminatedUnion(
+  "kind",
+  [
+    z
+      .object({
+        kind: z.literal("invite"),
+        token:
+          z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
+        guestSessionId: z.string().regex(/^[A-Za-z0-9_-]{16}$/u),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal("entry-code"),
+        code: z
+          .string()
+          .trim()
+          .toUpperCase()
+          .regex(/^[A-HJ-NP-Z2-9]{6}$/u),
+        guestSessionId: z.string().regex(/^[A-Za-z0-9_-]{16}$/u),
+      })
+      .strict(),
+  ],
+);
+
+export type StudioRealtimeTicketGuestAccess = z.infer<
+  typeof StudioRealtimeTicketGuestAccessSchema
+>;
+
 export const StudioRealtimeTicketRequestSchema = z
   .object({
     version: z.literal(STUDIO_REALTIME_PROVIDER_PROTOCOL_VERSION),
@@ -219,6 +254,7 @@ export const StudioRealtimeTicketRequestSchema = z
     scope: StudioRealtimeScopeSchema,
     workloads: WorkloadListSchema,
     capabilities: CapabilityListSchema,
+    guestAccess: StudioRealtimeTicketGuestAccessSchema.optional(),
   })
   .strict()
   .superRefine((request, context) => {

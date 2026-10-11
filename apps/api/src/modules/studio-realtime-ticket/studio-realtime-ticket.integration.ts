@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 import { allowedCorsOrigins } from "../../config/cors";
+import { dbPool } from "../../platform/database";
 import { CreatorCollaborationRepository } from "../creator/creator-collaboration.repository";
 import { CreatorModule } from "../creator/creator.module";
+import { StudioVirtualSpaceAccessRepository } from "../studio-virtual-space-access/studio-virtual-space-access.repository";
 
 import {
   STUDIO_REALTIME_SESSION_MAX_TTL_SECONDS,
@@ -197,6 +199,9 @@ export function createStudioRealtimeTicketDynamicModule(
             providerIds: [deployment.signer.providerId],
             allowedOrigins: deployment.allowedOrigins,
           },
+          // 게스트 자격 검증은 접근 모듈과 같은 풀을 쓰는 저장소를
+          // 직접 구성한다 (접근 모듈의 provider 구성과 동일).
+          new StudioVirtualSpaceAccessRepository(dbPool),
         ),
     },
     signers: {

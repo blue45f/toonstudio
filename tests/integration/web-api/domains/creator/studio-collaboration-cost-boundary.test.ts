@@ -23,16 +23,22 @@ describe("studio collaboration cost boundary", () => {
     const huddle = source("../../../../../apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-controller.ts");
     const policy = source("../../../../../apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-protocol.ts");
     expect(huddle).not.toMatch(/MediaRecorder|localStorage|indexedDB|acquireStudioVoiceIcePolicy|screen-share\/ice|voice\/ice/u);
-    expect(policy).toContain("stun:stun.l.google.com:19302");
+    expect(policy).toContain("stun:stun.cloudflare.com:3478");
     expect(policy).not.toMatch(/turn:|turns:/u);
   });
 
-  it("exposes only the screen-share ICE credential route", () => {
+  it("exposes only STUN-only ICE policy routes without TURN credential issuance", () => {
     const controllerSource = source(
       "../../../../../apps/api/src/modules/creator/studio-voice-ice-policy.controller.ts"
     );
+    const serviceSource = source(
+      "../../../../../apps/api/src/modules/creator/studio-voice-ice-policy.service.ts"
+    );
 
+    // 2026-10-11 결정: TURN은 쓰지 않고, 화면 공유·음성 라우트는 STUN 전용 정책만 돌려준다.
     expect(controllerSource).toContain("/creator/works/:id/screen-share/ice");
-    expect(controllerSource).not.toContain("/creator/works/:id/voice/ice");
+    expect(controllerSource).toContain("/creator/works/:id/voice/ice");
+    expect(serviceSource).toContain("TURN 자격을 발급하지 않고 STUN 전용");
+    expect(serviceSource).not.toMatch(/process\.env\.STUDIO_VOICE_TURN|createHmac|credential:/u);
   });
 });

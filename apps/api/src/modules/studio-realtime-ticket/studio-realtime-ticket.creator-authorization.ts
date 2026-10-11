@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 import { isStudioLiveJamScope } from "@toonstudio/contracts/studio-live-jam-scope";
+import { studioRealtimeProjectGuestActorId } from "@toonstudio/contracts/studio-live-project-guest";
 import { CreatorCollaborationRepository } from "../creator/creator-collaboration.repository";
+import { StudioVirtualSpaceAccessRepository } from "../studio-virtual-space-access/studio-virtual-space-access.repository";
 
 import {
   StudioRealtimeTicketIdentifierSchema,
@@ -100,6 +102,12 @@ implements StudioRealtimeTicketAuthorizationPort {
   constructor(
     private readonly collaborationRepository: CreatorCollaborationRepository,
     unsafeConfiguration: CreatorStudioRealtimeAuthorizationConfiguration,
+    /**
+     * 게스트 자격 검증 저장소. 주입되지 않으면 게스트 분기는 전부
+     * 거부한다 — 어댑터 부재를 공개 접근으로 해석하지 않는다는
+     * 이 모듈의 원칙(DenyAll)과 같은 방향이다.
+     */
+    private readonly spaceAccessRepository?: StudioVirtualSpaceAccessRepository,
   ) {
     const configuration =
       CreatorStudioRealtimeAuthorizationConfigurationSchema.parse(
@@ -134,6 +142,10 @@ implements StudioRealtimeTicketAuthorizationPort {
         },
         authorizationEpoch: new Date().toISOString(),
       };
+    }
+
+    if (input.guestAccess) {
+      return this.authorizeProjectGuest(input);
     }
 
     let unsafeAuthorization: unknown;
@@ -182,6 +194,78 @@ implements StudioRealtimeTicketAuthorizationPort {
             authorizationExpiresAt:
               authorization.data.authorizationExpiresAt,
           }),
+    };
+  }
+
+  /**
+   * 프로젝트 공간 게스트 인가. 자격 판정은 게스트 검증의 정본인
+   * StudioVirtualSpaceAccessRepository에 위임하고, 여기서는 그 결과를
+   * 티켓 계약으로 투영만 한다:
+   *
+   * - actor는 컨트롤러가 합성한 게스트 세션 신원과 정확히 묶여야 한다
+   *   (계정 사용자가 게스트 분기로 새거나, 세션을 바꿔 끼우는 것 차단).
+   * - 워크로드는 presence만 허용한다. screen-signaling·comments는
+   *   게스트에게 열지 않으며, 요청에 섞이면 자격과 무관하게 거부한다.
+   * - 권한은 view뿐인 viewer로 고정하고, 자격 만료를 결정의
+   *   authorizationExpiresAt으로 실어 서명자가 티켓 수명을 캡하게 한다.
+   * - 검증 실패·저장소 오류는 사유를 반영하지 않고 거부로 수렴한다
+   *   (초대의 존재 여부가 응답으로 새지 않게).
+   */
+  private async authorizeProjectGuest(
+    input: StudioRealtimeTicketAuthorizationInput,
+  ): Promise<StudioRealtimeTicketAuthorizationDecision> {
+    const guestAccess = input.guestAccess;
+    if (
+      !guestAccess ||
+      !this.spaceAccessRepository ||
+      input.actorUserId !==
+        studioRealtimeProjectGuestActorId(guestAccess.guestSessionId) ||
+      !input.workloads.every((workload) => workload === "presence")
+    ) {
+      return { allowed: false };
+    }
+
+    let verification: { valid: true; expiresAt: string } | { valid: false };
+    try {
+      if (guestAccess.kind === "invite") {
+        const result = await this.spaceAccessRepository.verifyInvite({
+          token: guestAccess.token,
+          context: {
+            kind: "project-space",
+            projectId: input.scope.workId,
+          },
+        });
+        verification = result.valid
+          ? { valid: true, expiresAt: result.expiresAt }
+          : { valid: false };
+      } else {
+        const result = await this.spaceAccessRepository.verifyEntryCode({
+          spaceId: input.scope.workId,
+          code: guestAccess.code,
+        });
+        verification = result.valid
+          ? { valid: true, expiresAt: result.expiresAt }
+          : { valid: false };
+      }
+    } catch {
+      return { allowed: false };
+    }
+    if (!verification.valid) {
+      return { allowed: false };
+    }
+
+    return {
+      allowed: true,
+      ...input,
+      role: "viewer",
+      creatorCapabilities: {
+        view: true,
+        comment: false,
+        edit: false,
+        manageMembers: false,
+      },
+      authorizationEpoch: new Date().toISOString(),
+      authorizationExpiresAt: verification.expiresAt,
     };
   }
 }

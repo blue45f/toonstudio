@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveStudioCloudflareRealtimeOrigin } from "../studio-realtime-provider-cloudflare-adapter";
 import {
   StudioRealtimeTicketSchema,
+  type StudioRealtimeTicketGuestAccess,
   type StudioRealtimeTicketRequest,
 } from "../studio-realtime-provider-protocol";
 import {
@@ -42,6 +43,18 @@ import {
   type GodotLayoutSaveState,
   type GodotLayoutSelection,
 } from "./StudioGodotLayoutPanel";
+import {
+  GODOT_EMOTE_BAR,
+  GODOT_EMOTE_GLYPHS,
+  GODOT_INTERACT_LABELS,
+  loadGodotLastPosition,
+  parseHostPayload,
+  saveGodotLastPosition,
+  type GodotChatEntry,
+  type GodotZoneInfo,
+  type TsvsGodotFrameWindow,
+  type TsvsHostBridge,
+} from "./studio-godot-space-embed-support";
 
 /**
  * Godot 무대 임베드 셸 (가상스튜디오 재개발 2단계 — DESIGN §4 이층 구조).
@@ -66,156 +79,19 @@ const GODOT_PRESENCE_CAPABILITIES = [
   "screen-signaling.resume-v1",
 ] as const;
 
+/** 게스트 티켓은 서버 계약상 presence 전용이다 (게스트 인가 분기가
+ * 그 외 워크로드를 거부한다). 회의·댓글 채널은 게스트에게 열지 않는다. */
+const GODOT_GUEST_PRESENCE_CAPABILITIES = [
+  "presence.snapshot-v1",
+  "presence.members-v1",
+  "presence.cursor-v1",
+  "presence.resume-v1",
+] as const;
+
 const BRIDGE_PING_INTERVAL_MS = 20_000;
 const TICKET_EXPIRY_MARGIN_MS = 10_000;
 
-/** 이모트 바 (표면 회귀 복구). 카탈로그 16종 중 단축키가 있는 10종을
- * 버튼으로 노출한다 — id·글리프는 웹 셸 카탈로그(emote-catalog)와 같다. */
-const GODOT_EMOTE_BAR: readonly { id: string; glyph: string; ko: string; en: string }[] = [
-  { id: "wave", glyph: "👋", ko: "손 흔들기", en: "Wave" },
-  { id: "heart", glyph: "❤️", ko: "하트", en: "Heart" },
-  { id: "party", glyph: "🎉", ko: "축하해요", en: "Celebrate" },
-  { id: "thumbs-up", glyph: "👍", ko: "좋아요", en: "Thumbs up" },
-  { id: "laugh", glyph: "😂", ko: "웃음", en: "Laugh" },
-  { id: "clap", glyph: "👏", ko: "박수", en: "Clap" },
-  { id: "wow", glyph: "😮", ko: "놀람", en: "Wow" },
-  { id: "think", glyph: "🤔", ko: "생각 중", en: "Thinking" },
-  { id: "idea", glyph: "💡", ko: "아이디어", en: "Idea" },
-  { id: "dance", glyph: "💃", ko: "춤추기", en: "Dance" },
-];
-
-const GODOT_EMOTE_GLYPHS: Readonly<Record<string, string>> = Object.freeze(
-  Object.fromEntries([
-    ...GODOT_EMOTE_BAR.map((emote) => [emote.id, emote.glyph] as const),
-    ["sparkles", "✨"],
-    ["question", "❓"],
-    ["exclaim", "❗"],
-    ["coffee", "☕"],
-    ["music", "🎵"],
-    ["sleep", "😴"],
-  ]),
-);
-
-/** 오브젝트 상호작용 안내 (무대 onInteract 수신 표기). */
-const GODOT_INTERACT_LABELS: Readonly<Record<string, string>> = Object.freeze({
-  board: "칠판을 보고 있어요",
-  desk: "책상에서 작업을 시작해요",
-  stage: "무대에 올랐어요",
-  bench: "벤치에 앉아 쉬어요",
-  table: "테이블에 앉아 쉬어요",
-  storefront: "상점을 둘러봐요",
-});
-
-/** 마지막 위치 저장 (위치 복원). 저장은 셸 소유 — 기기 로컬에만 둔다. */
-interface GodotLastPosition {
-  readonly spaceId: string;
-  readonly x: number;
-  readonly y: number;
-  readonly at: number;
-}
-
-const GODOT_POSITION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
-function godotPositionKey(workId: string): string {
-  return `tsvs-last-position:${workId}`;
-}
-
-function loadGodotLastPosition(workId: string): GodotLastPosition | null {
-  try {
-    const raw = window.localStorage.getItem(godotPositionKey(workId));
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return null;
-    const record = parsed as Record<string, unknown>;
-    if (
-      typeof record.spaceId !== "string" ||
-      typeof record.x !== "number" ||
-      typeof record.y !== "number" ||
-      typeof record.at !== "number" ||
-      Date.now() - record.at > GODOT_POSITION_TTL_MS
-    ) {
-      return null;
-    }
-    return {
-      spaceId: record.spaceId,
-      x: record.x,
-      y: record.y,
-      at: record.at,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function saveGodotLastPosition(workId: string, position: GodotLastPosition): void {
-  try {
-    window.localStorage.setItem(
-      godotPositionKey(workId),
-      JSON.stringify(position),
-    );
-  } catch {
-    // 저장 실패는 복원을 포기할 뿐 무대 동작에 영향을 주지 않는다.
-  }
-}
-
-interface TsvsGodotFrameWindow {
-  __tsvs_setSession?: (json: string) => void;
-  __tsvs_setVisibility?: (hidden: boolean) => void;
-  __tsvs_bridgePing?: () => void;
-  __tsvs_requestReconnect?: () => void;
-  __tsvs_sendSignal?: (json: string) => void;
-  __tsvs_showBubble?: (json: string) => void;
-  // 표면 회귀 복구: 이모트 실행 (셸 이모트 바 → 무대).
-  __tsvs_showEmote?: (json: string) => void;
-  // 4단계: 배치 저작 채널 (셸→무대).
-  __tsvs_setEditMode?: (enabled: boolean) => void;
-  __tsvs_applyLayout?: (json: string) => void;
-  __tsvs_layoutCommand?: (json: string) => void;
-  __tsvs_notifyLayout?: (json: string) => void;
-  // 무대 배경 로드 상태 (bg_stage.gd가 window에 표기: idle|loading|ready|failed).
-  __godotBgState?: string;
-}
-
-interface TsvsHostBridge {
-  onGodotReady: (json: string) => void;
-  onConnectionState: (json: string) => void;
-  onTicketNeeded: (json: string) => void;
-  onZoneChanged: (json: string) => void;
-  onProximityChanged: (json: string) => void;
-  onSignal: (json: string) => void;
-  onBubble: (json: string) => void;
-  // 표면 회귀 복구: 이모트 통지·오브젝트 상호작용·위치 저장 (무대→셸).
-  onEmote: (json: string) => void;
-  onInteract: (json: string) => void;
-  onPosition: (json: string) => void;
-  // 4단계: 배치 저작 통지 (무대→셸).
-  onLayoutChanged: (json: string) => void;
-  onLayoutSelection: (json: string) => void;
-  onLayoutRemote: (json: string) => void;
-}
-
-/** Godot onZoneChanged 통지의 셸 측 표현 (구역 판정은 무대 소유). */
-export interface GodotZoneInfo {
-  readonly selfZoneId: string;
-  readonly selfActorId: string;
-  readonly selfClientId: string;
-  readonly presenterActorId: string;
-  readonly peerClientIds: Readonly<Record<string, string>>;
-  readonly names: Readonly<Record<string, string>>;
-  readonly zones: readonly {
-    readonly zoneId: string;
-    readonly kind: string;
-    readonly name: string;
-    readonly occupants: readonly string[];
-  }[];
-}
-
-interface GodotChatEntry {
-  readonly id: number;
-  readonly fromSelf: boolean;
-  readonly name: string;
-  readonly text: string;
-}
+export type { GodotZoneInfo } from "./studio-godot-space-embed-support";
 
 declare global {
   interface Window {
@@ -239,22 +115,17 @@ export interface StudioGodotSpaceEmbedProps {
   /** "#rrggbb" — 서버 계약 profile.avatar.color와 같은 형식. */
   readonly colorHex: string;
   readonly skinKey?: string;
-  /** 개인 공간·게스트처럼 티켓을 발급할 수 없는 경우: 무대만 로컬로 띄운다. */
+  /** 개인 공간처럼 티켓을 발급할 수 없는 경우: 무대만 로컬로 띄운다. */
   readonly localOnly?: boolean;
+  /**
+   * 프로젝트 공간 게스트 자격. 서버 검증을 통과한 게스트 세션의 자격만
+   * 전달된다 — 임베드는 이 자격으로 게스트 티켓(presence 전용)을 발급해
+   * 접속한다. 자격이 없으면 게스트는 localOnly 로컬 무대에 머문다.
+   */
+  readonly guestAccess?: StudioRealtimeTicketGuestAccess;
   readonly onExitToClassic: () => void;
   /** 테스트 주입용. 기본값은 운영 HTTP 발급기. */
   readonly ticketIssuer?: StudioRealtimeTicketIssuer;
-}
-
-function parseHostPayload(json: string): Record<string, unknown> | null {
-  try {
-    const value: unknown = JSON.parse(json);
-    return typeof value === "object" && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
 }
 
 export function StudioGodotSpaceEmbed({
@@ -263,9 +134,12 @@ export function StudioGodotSpaceEmbed({
   colorHex,
   skinKey,
   localOnly = false,
+  guestAccess,
   onExitToClassic,
   ticketIssuer,
 }: StudioGodotSpaceEmbedProps) {
+  /** 게스트 접속은 presence 전용 — 회의 세션·ICE 리스·배치 저작을 켜지 않는다. */
+  const presenceOnly = guestAccess !== undefined;
   const bt = useBilingual("StudioGodotSpaceEmbed");
   const [phase, setPhase] = useState<StudioGodotSpacePhase>(
     localOnly ? "local" : "booting",
@@ -415,7 +289,8 @@ export function StudioGodotSpaceEmbed({
   useEffect(() => {
     const fallback = catalog.find((def) => def.id === spaceId) ?? null;
     if (!fallback) return;
-    if (localOnly) {
+    if (localOnly || presenceOnly) {
+      // 게스트는 저장본 조회 권한이 없어 카탈로그 기본 정의를 쓴다.
       applyResolvedLayout(fallback, 0);
       return;
     }
@@ -435,7 +310,7 @@ export function StudioGodotSpaceEmbed({
     return () => {
       cancelled = true;
     };
-  }, [applyResolvedLayout, catalog, layoutFetchNonce, localOnly, spaceId, workId]);
+  }, [applyResolvedLayout, catalog, layoutFetchNonce, localOnly, presenceOnly, spaceId, workId]);
 
   const handleLayoutSave = useCallback(async () => {
     const definition = spaceDefRef.current;
@@ -649,8 +524,9 @@ export function StudioGodotSpaceEmbed({
   }, [zoneInfo]);
 
   // 화상 세션은 한 번만 만들고, ICE 리스는 연결 확정 뒤에 미리 받아 둔다.
+  // 게스트(presence 전용)는 시그널링 채널이 없어 세션을 만들지 않는다.
   useEffect(() => {
-    if (localOnly) return;
+    if (localOnly || presenceOnly) return;
     const session = new StudioGodotMeetingSession({
       sendSignal: (payload) => {
         frameWindow()?.__tsvs_sendSignal?.(JSON.stringify(payload));
@@ -676,7 +552,7 @@ export function StudioGodotSpaceEmbed({
       iceLeaseRef.current = null;
       iceLeasePromiseRef.current = null;
     };
-  }, [frameWindow, localOnly]);
+  }, [frameWindow, localOnly, presenceOnly]);
 
   const ensureIceLease = useCallback(() => {
     if (iceLeaseRef.current) return Promise.resolve();
@@ -694,11 +570,11 @@ export function StudioGodotSpaceEmbed({
   }, [workId]);
 
   useEffect(() => {
-    if (localOnly || phase !== "connected") {
+    if (localOnly || presenceOnly || phase !== "connected") {
       return;
     }
     void ensureIceLease();
-  }, [ensureIceLease, localOnly, phase]);
+  }, [ensureIceLease, localOnly, phase, presenceOnly]);
 
   useEffect(() => {
     const session = meetingSessionRef.current;
@@ -777,14 +653,25 @@ export function StudioGodotSpaceEmbed({
       const providerId =
         import.meta.env.VITE_STUDIO_REALTIME_PROVIDER_ID?.trim() ||
         "cloudflare-realtime-v1";
-      const request: StudioRealtimeTicketRequest = {
-        version: 1,
-        providerId,
-        sessionId: sessionIdRef.current,
-        scope: { workId, roomId: workId },
-        workloads: ["presence", "screen-signaling"],
-        capabilities: [...GODOT_PRESENCE_CAPABILITIES],
-      };
+      const request: StudioRealtimeTicketRequest = guestAccess
+        ? {
+            // 게스트는 자격을 함께 제시하고 presence 전용으로만 발급받는다.
+            version: 1,
+            providerId,
+            sessionId: sessionIdRef.current,
+            scope: { workId, roomId: workId },
+            workloads: ["presence"],
+            capabilities: [...GODOT_GUEST_PRESENCE_CAPABILITIES],
+            guestAccess,
+          }
+        : {
+            version: 1,
+            providerId,
+            sessionId: sessionIdRef.current,
+            scope: { workId, roomId: workId },
+            workloads: ["presence", "screen-signaling"],
+            capabilities: [...GODOT_PRESENCE_CAPABILITIES],
+          };
       const raw = await issuer.issue(request, controller.signal);
       const parsed = StudioRealtimeTicketSchema.safeParse(raw);
       if (!parsed.success || parsed.data.providerId !== providerId) {
@@ -812,7 +699,7 @@ export function StudioGodotSpaceEmbed({
     } finally {
       issuingRef.current = false;
     }
-  }, [injectSession, localOnly, ticketIssuer, waitForStageBackgroundSettled, workId]);
+  }, [guestAccess, injectSession, localOnly, ticketIssuer, waitForStageBackgroundSettled, workId]);
 
   const appendChat = useCallback(
     (fromSelf: boolean, name: string, text: string) => {
@@ -1192,7 +1079,7 @@ export function StudioGodotSpaceEmbed({
           </button>
         ))}
       </div>
-      {!localOnly ? (
+      {!localOnly && !presenceOnly ? (
         <StudioGodotLayoutPanel
           definition={spaceDef}
           revision={layoutRevision}
@@ -1220,7 +1107,7 @@ export function StudioGodotSpaceEmbed({
           }}
         />
       ) : null}
-      {!localOnly && meetingContext?.selfInMeeting ? (
+      {!localOnly && !presenceOnly && meetingContext?.selfInMeeting ? (
         <StudioGodotMeetingPanel
           route={meetingRoute}
           localStream={meetingLocalStream}
