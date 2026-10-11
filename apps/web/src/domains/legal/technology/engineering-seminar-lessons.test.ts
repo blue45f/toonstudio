@@ -351,13 +351,13 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-workers", claim: "apps/web/src 의 *.worker.ts 가 65개", needles: ["65개"],
+    lesson: "seminar-workers", claim: "apps/web/src 의 *.worker.ts 가 64개", needles: ["64개"],
     check: () => {
       let count = 0;
       walkFiles(repo("apps", "web", "src"), (file) => {
         if (file.endsWith(".worker.ts")) count += 1;
       });
-      expect(count).toBe(65);
+      expect(count).toBe(64);
     },
   },
   {
@@ -445,16 +445,13 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-virtual-studio", claim: "근접 영상 168/216px, 정원 24→8→3, 인사 160/220px 는 호출부 없음", needles: ["168px", "216px", "160/220px", "24", "studio-world-publication.repository.ts"],
+    lesson: "seminar-virtual-studio", claim: "공간은 Godot 무대, 방 연결 64·재생 보존 15분, 게스트 티켓 viewer 상한", needles: ["Godot", "64", "15분", "viewer", "studio-world-publication.repository.ts"],
     check: () => {
-      const proximity = readText("apps", "web", "src", "domains", "creator", "virtual-space", "hud", "space-proximity-media.ts");
-      expect(proximity).toContain("SPACE_PROXIMITY_MEDIA_RADIUS = 168;");
-      expect(proximity).toContain("SPACE_PROXIMITY_MEDIA_LEAVE_RADIUS = 216;");
-      expect(readText("apps", "web", "src", "domains", "creator", "virtual-space", "studio-virtual-space-model.ts")).toContain("STUDIO_VIRTUAL_SPACE_MAX_PARTICIPANTS = 24;");
-      expect(readText("apps", "web", "src", "domains", "creator", "live", "studio-live-p2p-overlay-transport.ts")).toContain("STUDIO_LIVE_P2P_MAX_PEERS = 8;");
-      expect(readText("apps", "web", "src", "domains", "creator", "virtual-space", "studio-virtual-space-proximity.ts")).toMatch(/STUDIO_PROXIMITY_GREET_RADIUS = 160;[\s\S]*STUDIO_PROXIMITY_FAREWELL_RADIUS = 220;/u);
-      // updateStudioProximity(인사 160/220px 를 쓰는 함수)는 정의한 파일 밖에서 부르는 곳이 없다.
-      expect(factScan().greetingProximity).toEqual(["apps/web/src/domains/creator/virtual-space/studio-virtual-space-proximity.ts"]);
+      expect(readText("apps", "web", "src", "domains", "creator", "virtual-space", "StudioGodotSpaceEmbed.tsx")).toContain('GODOT_SPACE_EMBED_PATH = "/godot-space/index.html"');
+      const wrangler = readText("deploy", "cloudflare-realtime", "wrangler.jsonc");
+      expect(wrangler).toContain('"REALTIME_MAX_CONNECTIONS_PER_ROOM": "64"');
+      expect(wrangler).toContain('"REALTIME_EVENT_RETENTION_MS": "900000"');
+      expect(readText("apps", "web", "src", "domains", "creator", "studio-realtime-provider-protocol.ts")).toContain("guestAccess");
       expect(repoExists("apps", "api", "src", "modules", "studio-project-graph", "studio-world-publication.repository.ts")).toBe(true);
     },
   },

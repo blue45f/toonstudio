@@ -9,7 +9,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
     id: "worker-envelope-64-workers",
     category: "web-platform",
     name: "Dedicated Worker",
-    title: t("워커 65개가 따르는 공통 봉투 규약", "One envelope contract for 65 Workers"),
+    title: t("워커 64개가 따르는 공통 봉투 규약", "One envelope contract for 64 Workers"),
     status: "live",
     tagline: t(
       "요청 번호·취소·소유권 이전·제한 시간, 대부분의 워커 클라이언트가 같은 네 가지 약속을 따릅니다.",
@@ -17,7 +17,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
     ),
     background: [
       t(
-        "화면을 그리고 입력을 받는 메인 스레드는 한 줄로만 일합니다. 필터 적용, PNG 인코딩, ZIP 검산 같은 무거운 일을 여기서 하면 화면이 멈춥니다. 그래서 일꾼(Web Worker)에게 맡기는데, 일꾼은 다른 방에 있어 메시지로만 대화합니다. 이 저장소에는 *.worker.ts 파일이 65개 있고(이름이 다른 진입 파일이 더 있음) packages 안에는 없습니다. 비테스트 코드가 이름을 참조하는 것은 64개이고, 저장 워커 하나는 아직 호출처가 없습니다.",
+        "화면을 그리고 입력을 받는 메인 스레드는 한 줄로만 일합니다. 필터 적용, PNG 인코딩, ZIP 검산 같은 무거운 일을 여기서 하면 화면이 멈춥니다. 그래서 일꾼(Web Worker)에게 맡기는데, 일꾼은 다른 방에 있어 메시지로만 대화합니다. 이 저장소에는 *.worker.ts 파일이 64개 있고(이름이 다른 진입 파일이 더 있음) packages 안에는 없습니다.",
         "The main thread, which draws the screen and takes input, works in a single line. Heavy jobs such as applying filters, encoding PNG or checking ZIP sums would freeze the screen there, so they go to Web Workers, which live in another room and talk only by messages. The repository has 65 *.worker.ts files (plus a few entry files with other names) and none inside packages. Non-test code references 64 of them by name, and one storage Worker still has no caller.",
       ),
       t(
@@ -239,7 +239,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
     chapterIds: ["worker-architecture", "browser-local-compute"],
     talk: {
       pitch: t(
-        "무거운 일은 일꾼(워커)에게 맡기고, 일꾼과 주고받는 방식을 네 가지 약속으로 통일했습니다. 요청에 번호를 붙여 늦은 응답을 버리고, 취소하면 일꾼을 통째로 끝내며, 큰 데이터는 복사 대신 소유권을 넘기고, 제한 시간을 둡니다. *.worker.ts 는 65개이고 대부분의 클라이언트가 같은 방식으로 읽힙니다.",
+        "무거운 일은 일꾼(워커)에게 맡기고, 일꾼과 주고받는 방식을 네 가지 약속으로 통일했습니다. 요청에 번호를 붙여 늦은 응답을 버리고, 취소하면 일꾼을 통째로 끝내며, 큰 데이터는 복사 대신 소유권을 넘기고, 제한 시간을 둡니다. *.worker.ts 는 64개이고 대부분의 클라이언트가 같은 방식으로 읽힙니다.",
         "Heavy work goes to Workers, and the way we talk to them is unified into four promises: number each request and drop stale answers, end the whole Worker on cancel, move big data by ownership instead of copying, and set time limits. There are 65 *.worker.ts files, and most clients read the same way.",
       ),
       analogy: t(
@@ -270,7 +270,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME: readonly EngineeringAtlasEn
         },
       ],
       pitfall: t(
-        "SharedWorker 와 transferControlToOffscreen 은 코드에 없고, Comlink 라이브러리는 직접 import 하지 않습니다(xatlasjs 의 Comlink 규약을 받는 어댑터만 UV 워커 안에 있음). 이름에 SharedWorker 가 붙은 타입이 있어도 SharedWorker API 가 아닙니다. 65개는 파일 수이지 동시에 도는 수가 아니며, SharedArrayBuffer 링 버퍼를 쓰는 엔진 워커는 제품에 연결되지 않았습니다.",
+        "SharedWorker 와 transferControlToOffscreen 은 코드에 없고, Comlink 라이브러리는 직접 import 하지 않습니다(xatlasjs 의 Comlink 규약을 받는 어댑터만 UV 워커 안에 있음). 이름에 SharedWorker 가 붙은 타입이 있어도 SharedWorker API 가 아닙니다. 64개는 파일 수이지 동시에 도는 수가 아니며, SharedArrayBuffer 링 버퍼를 쓰는 엔진 워커는 제품에 연결되지 않았습니다.",
         "SharedWorker and transferControlToOffscreen are absent from the code, and the Comlink library is not imported directly (only an adapter for the Comlink protocol of xatlasjs lives inside the UV Worker). A type with SharedWorker in its name is not the SharedWorker API. 65 is a file count, not a count of Workers running at once, and the engine Worker that uses a SharedArrayBuffer ring is not connected to the product.",
       ),
     },
