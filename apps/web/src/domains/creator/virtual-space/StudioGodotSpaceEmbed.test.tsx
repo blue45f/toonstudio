@@ -79,6 +79,9 @@ interface HostBridge {
   onProximityChanged: (json: string) => void;
   onSignal: (json: string) => void;
   onBubble: (json: string) => void;
+  onEmote: (json: string) => void;
+  onInteract: (json: string) => void;
+  onPosition: (json: string) => void;
   onLayoutChanged: (json: string) => void;
   onLayoutSelection: (json: string) => void;
   onLayoutRemote: (json: string) => void;
@@ -502,5 +505,100 @@ describe("StudioGodotSpaceEmbed — 4단계 공간·배치", () => {
       spec: { name: string };
     };
     expect(applied.spec.name).toBe("작업실 (수정)");
+  });
+});
+
+describe("StudioGodotSpaceEmbed — 표면 회귀 복구 (이모트·상호작용·위치 복원)", () => {
+  beforeEach(() => {
+    vi.stubEnv("VITE_STUDIO_REALTIME_ORIGIN", "https://realtime.example.com");
+    window.localStorage.clear();
+    spaceMocks.fetchCatalog.mockReset().mockResolvedValue([ROOM_DEF, STREET_DEF]);
+    spaceMocks.fetchLayout.mockReset().mockResolvedValue(null);
+    spaceMocks.saveLayout.mockReset().mockImplementation(
+      async (
+        _workId: string,
+        _spaceId: string,
+        definition: typeof ROOM_DEF,
+        expectedRevision: number,
+      ) => ({
+        definition,
+        revision: expectedRevision + 1,
+        updatedByUserId: "user-1",
+        updatedAt: "2026-10-11T00:00:00.000Z",
+      }),
+    );
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+  });
+
+  it("sends emote bar clicks to the stage", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    const showEmote = vi.fn();
+    frameWindow().__tsvs_showEmote = showEmote;
+    fireEvent.click(screen.getByTestId("godot-emote-dance"));
+    expect(showEmote).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(showEmote.mock.calls[0]?.[0] as string) as Record<string, unknown>;
+    expect(payload).toMatchObject({ emote: "dance" });
+  });
+
+  it("logs incoming emotes and shows interact notices", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    act(() =>
+      hostBridge().onZoneChanged(
+        JSON.stringify({
+          selfZoneId: "meeting",
+          selfActorId: "actor-self",
+          selfClientId: "client-self",
+          presenterActorId: "",
+          peerClientIds: {},
+          names: { "actor-peer": "파트너" },
+          zones: [
+            { zoneId: "meeting", kind: "meeting", name: "회의 구역", occupants: ["actor-self", "actor-peer"] },
+          ],
+        }),
+      ),
+    );
+    act(() =>
+      hostBridge().onEmote(
+        JSON.stringify({ v: 1, fromActorId: "actor-peer", emote: "heart" }),
+      ),
+    );
+    expect(screen.getByText("❤️")).toBeTruthy();
+    act(() =>
+      hostBridge().onInteract(
+        JSON.stringify({ v: 1, kind: "board", zoneId: "meeting", x: 0.5, y: 0.2 }),
+      ),
+    );
+    expect(screen.getByTestId("godot-interact-notice").textContent).toBe(
+      "칠판을 보고 있어요",
+    );
+  });
+
+  it("stores stage positions and restores them on the next session", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    act(() =>
+      hostBridge().onPosition(
+        JSON.stringify({ v: 1, spaceId: "studio-room", x: 0.25, y: 0.75 }),
+      ),
+    );
+    const stored = window.localStorage.getItem(`tsvs-last-position:${WORK_ID}`);
+    expect(stored).toBeTruthy();
+    expect(JSON.parse(stored as string)).toMatchObject({
+      spaceId: "studio-room",
+      x: 0.25,
+      y: 0.75,
+    });
+
+    const setSession = vi.fn();
+    frameWindow().__tsvs_setSession = setSession;
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(setSession).toHaveBeenCalledTimes(1));
+    const payload = JSON.parse(setSession.mock.calls[0]?.[0] as string) as Record<string, unknown>;
+    expect(payload.restore).toMatchObject({ spaceId: "studio-room", x: 0.25, y: 0.75 });
   });
 });
