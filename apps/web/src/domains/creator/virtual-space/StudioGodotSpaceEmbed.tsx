@@ -36,6 +36,18 @@ import {
   type GodotLayoutSaveState,
   type GodotLayoutSelection,
 } from "./StudioGodotLayoutPanel";
+import {
+  GODOT_EMOTE_BAR,
+  GODOT_EMOTE_GLYPHS,
+  GODOT_INTERACT_LABELS,
+  loadGodotLastPosition,
+  parseHostPayload,
+  saveGodotLastPosition,
+  type GodotChatEntry,
+  type GodotZoneInfo,
+  type TsvsGodotFrameWindow,
+  type TsvsHostBridge,
+} from "./studio-godot-space-embed-support";
 
 /**
  * Godot 무대 임베드 셸 (가상스튜디오 재개발 2단계 — DESIGN §4 이층 구조).
@@ -63,151 +75,7 @@ const GODOT_PRESENCE_CAPABILITIES = [
 const BRIDGE_PING_INTERVAL_MS = 20_000;
 const TICKET_EXPIRY_MARGIN_MS = 10_000;
 
-/** 이모트 바 (표면 회귀 복구). 카탈로그 16종 중 단축키가 있는 10종을
- * 버튼으로 노출한다 — id·글리프는 웹 셸 카탈로그(emote-catalog)와 같다. */
-const GODOT_EMOTE_BAR: readonly { id: string; glyph: string; ko: string; en: string }[] = [
-  { id: "wave", glyph: "👋", ko: "손 흔들기", en: "Wave" },
-  { id: "heart", glyph: "❤️", ko: "하트", en: "Heart" },
-  { id: "party", glyph: "🎉", ko: "축하해요", en: "Celebrate" },
-  { id: "thumbs-up", glyph: "👍", ko: "좋아요", en: "Thumbs up" },
-  { id: "laugh", glyph: "😂", ko: "웃음", en: "Laugh" },
-  { id: "clap", glyph: "👏", ko: "박수", en: "Clap" },
-  { id: "wow", glyph: "😮", ko: "놀람", en: "Wow" },
-  { id: "think", glyph: "🤔", ko: "생각 중", en: "Thinking" },
-  { id: "idea", glyph: "💡", ko: "아이디어", en: "Idea" },
-  { id: "dance", glyph: "💃", ko: "춤추기", en: "Dance" },
-];
-
-const GODOT_EMOTE_GLYPHS: Readonly<Record<string, string>> = Object.freeze(
-  Object.fromEntries([
-    ...GODOT_EMOTE_BAR.map((emote) => [emote.id, emote.glyph] as const),
-    ["sparkles", "✨"],
-    ["question", "❓"],
-    ["exclaim", "❗"],
-    ["coffee", "☕"],
-    ["music", "🎵"],
-    ["sleep", "😴"],
-  ]),
-);
-
-/** 오브젝트 상호작용 안내 (무대 onInteract 수신 표기). */
-const GODOT_INTERACT_LABELS: Readonly<Record<string, string>> = Object.freeze({
-  board: "칠판을 보고 있어요",
-  desk: "책상에서 작업을 시작해요",
-  stage: "무대에 올랐어요",
-  bench: "벤치에 앉아 쉬어요",
-  table: "테이블에 앉아 쉬어요",
-  storefront: "상점을 둘러봐요",
-});
-
-/** 마지막 위치 저장 (위치 복원). 저장은 셸 소유 — 기기 로컬에만 둔다. */
-interface GodotLastPosition {
-  readonly spaceId: string;
-  readonly x: number;
-  readonly y: number;
-  readonly at: number;
-}
-
-const GODOT_POSITION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
-function godotPositionKey(workId: string): string {
-  return `tsvs-last-position:${workId}`;
-}
-
-function loadGodotLastPosition(workId: string): GodotLastPosition | null {
-  try {
-    const raw = window.localStorage.getItem(godotPositionKey(workId));
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return null;
-    const record = parsed as Record<string, unknown>;
-    if (
-      typeof record.spaceId !== "string" ||
-      typeof record.x !== "number" ||
-      typeof record.y !== "number" ||
-      typeof record.at !== "number" ||
-      Date.now() - record.at > GODOT_POSITION_TTL_MS
-    ) {
-      return null;
-    }
-    return {
-      spaceId: record.spaceId,
-      x: record.x,
-      y: record.y,
-      at: record.at,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function saveGodotLastPosition(workId: string, position: GodotLastPosition): void {
-  try {
-    window.localStorage.setItem(
-      godotPositionKey(workId),
-      JSON.stringify(position),
-    );
-  } catch {
-    // 저장 실패는 복원을 포기할 뿐 무대 동작에 영향을 주지 않는다.
-  }
-}
-
-interface TsvsGodotFrameWindow {
-  __tsvs_setSession?: (json: string) => void;
-  __tsvs_setVisibility?: (hidden: boolean) => void;
-  __tsvs_bridgePing?: () => void;
-  __tsvs_requestReconnect?: () => void;
-  __tsvs_sendSignal?: (json: string) => void;
-  __tsvs_showBubble?: (json: string) => void;
-  // 표면 회귀 복구: 이모트 실행 (셸 이모트 바 → 무대).
-  __tsvs_showEmote?: (json: string) => void;
-  // 4단계: 배치 저작 채널 (셸→무대).
-  __tsvs_setEditMode?: (enabled: boolean) => void;
-  __tsvs_applyLayout?: (json: string) => void;
-  __tsvs_layoutCommand?: (json: string) => void;
-  __tsvs_notifyLayout?: (json: string) => void;
-}
-
-interface TsvsHostBridge {
-  onGodotReady: (json: string) => void;
-  onConnectionState: (json: string) => void;
-  onTicketNeeded: (json: string) => void;
-  onZoneChanged: (json: string) => void;
-  onProximityChanged: (json: string) => void;
-  onSignal: (json: string) => void;
-  onBubble: (json: string) => void;
-  // 표면 회귀 복구: 이모트 통지·오브젝트 상호작용·위치 저장 (무대→셸).
-  onEmote: (json: string) => void;
-  onInteract: (json: string) => void;
-  onPosition: (json: string) => void;
-  // 4단계: 배치 저작 통지 (무대→셸).
-  onLayoutChanged: (json: string) => void;
-  onLayoutSelection: (json: string) => void;
-  onLayoutRemote: (json: string) => void;
-}
-
-/** Godot onZoneChanged 통지의 셸 측 표현 (구역 판정은 무대 소유). */
-export interface GodotZoneInfo {
-  readonly selfZoneId: string;
-  readonly selfActorId: string;
-  readonly selfClientId: string;
-  readonly presenterActorId: string;
-  readonly peerClientIds: Readonly<Record<string, string>>;
-  readonly names: Readonly<Record<string, string>>;
-  readonly zones: readonly {
-    readonly zoneId: string;
-    readonly kind: string;
-    readonly name: string;
-    readonly occupants: readonly string[];
-  }[];
-}
-
-interface GodotChatEntry {
-  readonly id: number;
-  readonly fromSelf: boolean;
-  readonly name: string;
-  readonly text: string;
-}
+export type { GodotZoneInfo } from "./studio-godot-space-embed-support";
 
 declare global {
   interface Window {
@@ -236,17 +104,6 @@ export interface StudioGodotSpaceEmbedProps {
   readonly onExitToClassic: () => void;
   /** 테스트 주입용. 기본값은 운영 HTTP 발급기. */
   readonly ticketIssuer?: StudioRealtimeTicketIssuer;
-}
-
-function parseHostPayload(json: string): Record<string, unknown> | null {
-  try {
-    const value: unknown = JSON.parse(json);
-    return typeof value === "object" && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
 }
 
 export function StudioGodotSpaceEmbed({
