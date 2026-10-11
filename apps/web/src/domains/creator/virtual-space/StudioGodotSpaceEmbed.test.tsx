@@ -439,6 +439,39 @@ describe("StudioGodotSpaceEmbed — 4단계 공간·배치", () => {
     });
   });
 
+  it("maps a stage selection (type key) into the panel form and deletes via command", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    frameWindow().__tsvs_setSession = vi.fn();
+    const layoutCommand = vi.fn();
+    frameWindow().__tsvs_layoutCommand = layoutCommand;
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    await screen.findByTestId("godot-space-tab-street");
+
+    fireEvent.click(screen.getByRole("button", { name: "편집 모드 켜기" }));
+    act(() =>
+      hostBridge().onLayoutSelection(
+        JSON.stringify({
+          v: 1,
+          selection: {
+            type: "zone",
+            index: 0,
+            id: "meeting",
+            kind: "meeting",
+            name: "회의 구역",
+            rect: [480, 140, 640, 660],
+          },
+        }),
+      ),
+    );
+    expect(screen.getByTestId("layout-selection").textContent).toContain("회의 구역");
+    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    expect(layoutCommand).toHaveBeenCalledWith(
+      JSON.stringify({ op: "delete", category: "zone", index: 0 }),
+    );
+  });
+
   it("re-fetches and applies the layout when a remote save notice arrives", async () => {
     const issue = vi.fn(async () => ticketResponse());
     renderEmbed({ issue });

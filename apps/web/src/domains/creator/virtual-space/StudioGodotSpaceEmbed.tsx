@@ -655,7 +655,9 @@ export function StudioGodotSpaceEmbed({
           Number(rect[3] ?? 0),
         ];
         setLayoutSelection({
-          category: record.category === "zone" ? "zone" : "prop",
+          // 무대 편집기는 구분을 "type" 키로 보낸다 (category는 예비 키).
+          category:
+            (record.category ?? record.type) === "zone" ? "zone" : "prop",
           index: Number(record.index ?? 0),
           kind: String(record.kind ?? ""),
           name: String(record.name ?? ""),
