@@ -398,7 +398,7 @@ SourceCapabilities { capabilities, morphNames, boneNames, partIdPalette }  → �
 2. 파츠가 `hides`에 영역을 선언하면(그 영역을 **전부** 덮는 경우에만 선언 — 부분만 덮으면 구멍이 보인다) 로더가 `TS_Body`의 인덱스 버퍼에서 `bodyRegions` 범위의 **선언된 영역들의 합집합**만 빼고 보이는 구간을 이어 붙인다(SubMesh는 하나 — 구간마다 SubMesh를 두면 WebGL2 hull 외곽선이 깨진다). 여러 파츠(상의+하의)가 숨기는 영역은 합집합.
 3. 지원 영역은 `KIT_HIDEABLE_REGION_IDS`(15개). 선언 없으면 아무것도 숨기지 않는다. `hides` 대상은 항상 `TS_Body`이고 `TS_Head`는 숨기지 않는다.
 4. `bodyRegions`가 없거나 범위가 어긋나면(검증기가 막지만 방어) 숨김을 적용하지 않고 `notes`에 한글 사유를 남긴다 — 의상은 보이고 스킨이 비칠 수 있다는 사실을 숨기지 않는다.
-5. **검증 결과(KT-04, 2026-10-08, NullEngine)**: (a) Babylon `GLTF2Export`는 SubMesh 범위를 존중해 숨긴 삼각형을 뺀다(몸이 구간 수만큼 프리미티브로 나간다) — `babylon-glb-sparse-export.test.ts`. (b) 스키닝 pick은 SubMesh를 무시해 숨긴 삼각형도 맞았다(`skinned-pick.ts`가 `mesh.getIndices()` 전체를 썼다) → **수정**: pick 후보 인덱스를 SubMesh가 덮는 구간으로 제한하고 구간 배치가 바뀌면 캐시를 다시 만든다 — `babylon-kit-engine.test.ts`(수정 전에는 실패하는 것을 확인했다). (c) 엔진은 로더가 둔 `alwaysSelectAsActiveMesh`를 덮어쓰지 않는다(플랜 적용·셰이딩 전환·카메라·리사이즈 뒤에도 유지) — 같은 파일.
+5. **검증 결과(KT-04, 2026-10-08 → 2026-10-11 갱신)**: 몸 가림은 보이는 삼각형을 이은 인덱스 버퍼(SubMesh 하나)라 GLB 내보내기는 숨긴 삼각형이 빠진 프리미티브 하나로 나가고(`babylon-glb-sparse-export.test.ts`) 스키닝 pick·렌더도 같은 삼각형 집합을 본다. 이전의 구간별 SubMesh 방식은 WebGL2 hull 외곽선에서 두 번째 이후 SubMesh가 깨져 폐기했다.
 
 ### 4.7 LOD
 
