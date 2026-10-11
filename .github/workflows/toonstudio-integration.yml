@@ -191,6 +191,7 @@ jobs:
             apps/web/src
             apps/web/public
             config
+            deploy/cloudflare-realtime/src
             packages
             patches
             scripts

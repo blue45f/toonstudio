@@ -31,7 +31,8 @@ describe("site route UX contracts", () => {
   });
 
   it("resolves historical aliases to the same user-facing destination", () => {
-    expect(resolveSiteRouteUxContract("/make?from=legacy").canonicalPath).toBe("/studio/new");
+    // 구 시작 별칭 /make는 시작 시트(/create)로 수렴한다 (b81ff1d04).
+    expect(resolveSiteRouteUxContract("/make?from=legacy").canonicalPath).toBe("/create");
     expect(resolveSiteRouteUxContract("/publishing#check").canonicalPath).toBe("/studio/publish");
     expect(resolveSiteRouteUxContract("/creator-hub").canonicalPath).toBe("/studio");
   });

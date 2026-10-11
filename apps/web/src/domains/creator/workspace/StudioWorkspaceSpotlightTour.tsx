@@ -18,6 +18,11 @@ const TOUR_START_DELAY_MS = 700;
 const RING_PADDING = 10;
 const TOOLTIP_GAP = 16;
 
+/** 작업 바로가기 같은 네이티브 대화상자가 열려 있으면 투어가 포커스를 빼앗아 닫을 때 복귀 지점을 잃으므로 기다린다. */
+function dialogIsOpen(): boolean {
+  return typeof document !== "undefined" && document.querySelector("dialog[open]") !== null;
+}
+
 function measureTourTarget(step: WorkspaceTourStep): DOMRect | null {
   if (typeof document === "undefined") return null;
   const element = document.querySelector(workspaceTourTargetSelector(step));
@@ -81,7 +86,16 @@ export function StudioWorkspaceSpotlightTour({ ready }: { readonly ready: boolea
 
   useEffect(() => {
     if (!ready || state.status !== "pending" || typeof window === "undefined") return;
-    const timer = window.setTimeout(() => dispatch({ type: "start" }), TOUR_START_DELAY_MS);
+    let timer: number | undefined;
+    // 대화상자가 열려 있는 동안에는 시작을 미루고, 닫힌 뒤 다음 확인 때 시작한다.
+    const tryStart = () => {
+      if (dialogIsOpen()) {
+        timer = window.setTimeout(tryStart, TOUR_START_DELAY_MS);
+        return;
+      }
+      dispatch({ type: "start" });
+    };
+    timer = window.setTimeout(tryStart, TOUR_START_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [ready, state.status]);
 
@@ -106,7 +120,8 @@ export function StudioWorkspaceSpotlightTour({ ready }: { readonly ready: boolea
   }, [active, step]);
 
   useEffect(() => {
-    if (active && rect) cardRef.current?.focus({ preventScroll: true });
+    // 열린 대화상자의 포커스는 가로채지 않는다(닫을 때 호출한 버튼으로 돌아가야 한다).
+    if (active && rect && !dialogIsOpen()) cardRef.current?.focus({ preventScroll: true });
   }, [active, rect, step]);
 
   if (typeof window === "undefined") return null;

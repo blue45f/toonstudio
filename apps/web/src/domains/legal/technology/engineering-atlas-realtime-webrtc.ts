@@ -539,11 +539,23 @@ export function getStudioIceServers(): RTCIceServer[] {
         kind: "simplified",
         title: t("ICE 실패에서만 열리는 릴레이 폴백 판단", "The relay fallback gate that opens only on ICE failure"),
         language: "ts",
-        code: `// 직통 레인 전송: 메시가 살아 있으면 채널로만, ICE가 실패한 피어만 릴레이로.
+        code: `// 아래 선언은 예제를 단독으로 검사하기 위한 문맥이다(실제 코드에서는 전송 모듈의 상태와 헬퍼).
+interface PeerLink {
+  sessionId: string;
+  channel: RTCDataChannel;
+}
+declare const MAX_BUFFERED: number;
+declare const relayEligible: Set<string>;
+declare const primary: { send(message: string): boolean };
+declare function meshReady(peer: PeerLink): boolean;
+declare function relayEnvelope(sessionId: string, packet: string): string;
+
+// 직통 레인 전송: 메시가 살아 있으면 채널로만, ICE가 실패한 피어만 릴레이로.
 function sendDirect(peer: PeerLink, packet: string): boolean {
   if (meshReady(peer)) {
     if (peer.channel.bufferedAmount > MAX_BUFFERED) return false; // 백프레셔여도 릴레이로 새지 않는다
-    return peer.channel.send(packet);
+    peer.channel.send(packet);
+    return true;
   }
   if (!relayEligible.has(peer.sessionId)) return false; // 실패 전에는 fail-closed
   return primary.send(relayEnvelope(peer.sessionId, packet)); // kind: "direct:relay"
@@ -552,11 +564,23 @@ function sendDirect(peer: PeerLink, packet: string): boolean {
 // 발동 조건은 연결 상태 변화다. 채널이 다시 열리면 적격은 해제된다.
 // connection.onconnectionstatechange: "failed" | "disconnected" -> relayEligible.add(id)
 // channel.onopen: relayEligible.delete(id)`,
-        codeEn: `// Direct-lane send: a live mesh uses the channel only; only ICE-failed peers relay.
+        codeEn: `// These declarations are context so the sample type-checks on its own (in the real code they are transport state and helpers).
+interface PeerLink {
+  sessionId: string;
+  channel: RTCDataChannel;
+}
+declare const MAX_BUFFERED: number;
+declare const relayEligible: Set<string>;
+declare const primary: { send(message: string): boolean };
+declare function meshReady(peer: PeerLink): boolean;
+declare function relayEnvelope(sessionId: string, packet: string): string;
+
+// Direct-lane send: a live mesh uses the channel only; only ICE-failed peers relay.
 function sendDirect(peer: PeerLink, packet: string): boolean {
   if (meshReady(peer)) {
     if (peer.channel.bufferedAmount > MAX_BUFFERED) return false; // never leaks to the relay under backpressure
-    return peer.channel.send(packet);
+    peer.channel.send(packet);
+    return true;
   }
   if (!relayEligible.has(peer.sessionId)) return false; // fail-closed before any failure
   return primary.send(relayEnvelope(peer.sessionId, packet)); // kind: "direct:relay"
