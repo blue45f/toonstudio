@@ -445,7 +445,7 @@ export function StudioGodotSpaceEmbed({
         setFrameSrc(`${GODOT_SPACE_EMBED_PATH}?space=${nextId}`);
       }
     },
-    [localOnly],
+    [localOnly, workId],
   );
 
   // 회의 맥락은 구역 통지에서 도출한다: 발표 구역은 회의 구역 안에 있으므로
@@ -842,7 +842,7 @@ export function StudioGodotSpaceEmbed({
       abortRef.current?.abort();
       if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
     };
-  }, [appendChat, bt, issueAndInject, localOnly]);
+  }, [appendChat, bt, displayName, issueAndInject, localOnly, workId]);
 
   // 상호작용 안내는 잠시만 보여준다.
   useEffect(() => {
