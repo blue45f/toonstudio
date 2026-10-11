@@ -238,19 +238,27 @@ export function StudioGodotSpaceEmbed({
     };
   }, [frameWindow, localOnly]);
 
+  const ensureIceLease = useCallback(() => {
+    if (iceLeaseRef.current) return Promise.resolve();
+    if (!iceLeasePromiseRef.current) {
+      iceLeasePromiseRef.current = acquireStudioVoiceIcePolicyLease(workId)
+        .then((lease) => {
+          iceLeaseRef.current = lease;
+        })
+        .catch(() => {
+          // 리스 실패는 화상 시작 시점에 "failed"로 정직하게 드러난다.
+          iceLeasePromiseRef.current = null;
+        });
+    }
+    return iceLeasePromiseRef.current;
+  }, [workId]);
+
   useEffect(() => {
-    if (localOnly || phase !== "connected" || iceLeasePromiseRef.current) {
+    if (localOnly || phase !== "connected") {
       return;
     }
-    iceLeasePromiseRef.current = acquireStudioVoiceIcePolicyLease(workId)
-      .then((lease) => {
-        iceLeaseRef.current = lease;
-      })
-      .catch(() => {
-        // 리스 실패는 화상 시작 시점에 "failed"로 정직하게 드러난다.
-        iceLeasePromiseRef.current = null;
-      });
-  }, [localOnly, phase, workId]);
+    void ensureIceLease();
+  }, [ensureIceLease, localOnly, phase]);
 
   useEffect(() => {
     const session = meetingSessionRef.current;
@@ -563,7 +571,14 @@ export function StudioGodotSpaceEmbed({
           selfName={displayName}
           peerName={meetingContext.peerName}
           presenterName={meetingContext.presenterName}
-          onStart={() => void meetingSessionRef.current?.start()}
+          onStart={() => {
+            // 시작 클릭 시점까지 리스가 안 왔으면 먼저 기다린다 (느린 발급을
+            // "준비 안 됨" 실패로 오인하지 않기 위해). 끝내 실패하면 세션이
+            // failed 경로로 정직하게 표기한다.
+            void ensureIceLease()
+              .catch(() => undefined)
+              .then(() => meetingSessionRef.current?.start());
+          }}
           onStop={() => meetingSessionRef.current?.stop()}
           onToggleMic={(enabled) =>
             meetingSessionRef.current?.setMicEnabled(enabled)

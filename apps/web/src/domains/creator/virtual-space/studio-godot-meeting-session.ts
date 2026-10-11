@@ -228,19 +228,26 @@ export class StudioGodotMeetingSession {
     if (this.closed || !this.started) return;
     // 발신 규칙: clientId가 더 큰 쪽이 offer 한다 (양쪽이 같은 규칙으로 계산).
     if (selfClientId > peerClientId) {
-      const pc = this.openPeerConnection(peerClientId);
-      for (const track of stream.getTracks()) {
-        pc.addTrack(track, stream);
+      try {
+        const pc = this.openPeerConnection(peerClientId);
+        for (const track of stream.getTracks()) {
+          pc.addTrack(track, stream);
+        }
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        this.deps.sendSignal({
+          kind: "signal.offer",
+          sessionId: GODOT_MEETING_MESH_SESSION_ID,
+          peerConnectionId: this.peerConnectionId,
+          targetClientId: peerClientId,
+          sdp: offer.sdp ?? "",
+        });
+      } catch {
+        // PeerConnection 생성(ICE 리스 등)·offer 실패는 "connecting"에
+        // 영원히 머물지 않고 failed로 정직하게 표기한다.
+        this.started = false;
+        this.setRoute("failed");
       }
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      this.deps.sendSignal({
-        kind: "signal.offer",
-        sessionId: GODOT_MEETING_MESH_SESSION_ID,
-        peerConnectionId: this.peerConnectionId,
-        targetClientId: peerClientId,
-        sdp: offer.sdp ?? "",
-      });
     }
     // 발신이 아닌 쪽은 상대 offer를 기다린다 (handleSignal의 answerOffer).
   }
@@ -257,28 +264,33 @@ export class StudioGodotMeetingSession {
       return;
     }
     if (this.closed) return;
-    const pc = this.openPeerConnection(fromClientId);
-    this.peerConnectionId =
-      typeof payload.peerConnectionId === "string"
-        ? payload.peerConnectionId
-        : this.peerConnectionId;
-    for (const track of stream.getTracks()) {
-      pc.addTrack(track, stream);
+    try {
+      const pc = this.openPeerConnection(fromClientId);
+      this.peerConnectionId =
+        typeof payload.peerConnectionId === "string"
+          ? payload.peerConnectionId
+          : this.peerConnectionId;
+      for (const track of stream.getTracks()) {
+        pc.addTrack(track, stream);
+      }
+      await pc.setRemoteDescription({
+        type: "offer",
+        sdp: String(payload.sdp),
+      });
+      await this.flushPendingCandidates();
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      this.deps.sendSignal({
+        kind: "signal.answer",
+        sessionId: GODOT_MEETING_MESH_SESSION_ID,
+        peerConnectionId: this.peerConnectionId,
+        targetClientId: fromClientId,
+        sdp: answer.sdp ?? "",
+      });
+    } catch {
+      this.started = false;
+      this.setRoute("failed");
     }
-    await pc.setRemoteDescription({
-      type: "offer",
-      sdp: String(payload.sdp),
-    });
-    await this.flushPendingCandidates();
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    this.deps.sendSignal({
-      kind: "signal.answer",
-      sessionId: GODOT_MEETING_MESH_SESSION_ID,
-      peerConnectionId: this.peerConnectionId,
-      targetClientId: fromClientId,
-      sdp: answer.sdp ?? "",
-    });
   }
 
   private async ensureLocalStream(): Promise<MediaStream> {

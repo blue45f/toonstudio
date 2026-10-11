@@ -66,6 +66,7 @@ function makeSession(
     selfClientId?: string;
     peerClientId?: string;
     getLocalStream?: () => Promise<MediaStream>;
+    createPeerConnection?: () => RTCPeerConnection;
   } = {},
 ) {
   const sent: Record<string, unknown>[] = [];
@@ -75,11 +76,13 @@ function makeSession(
   localStream.tracks[1].kind = "video";
   const session = new StudioGodotMeetingSession({
     sendSignal: (payload) => sent.push(payload),
-    createPeerConnection: () => {
-      const pc = new FakePeerConnection();
-      pcs.push(pc);
-      return pc as unknown as RTCPeerConnection;
-    },
+    createPeerConnection:
+      overrides.createPeerConnection ??
+      (() => {
+        const pc = new FakePeerConnection();
+        pcs.push(pc);
+        return pc as unknown as RTCPeerConnection;
+      }),
     getLocalStream:
       overrides.getLocalStream ??
       (async () => localStream as unknown as MediaStream),
@@ -153,6 +156,18 @@ describe("StudioGodotMeetingSession", () => {
     pcs[0]!.oniceconnectionstatechange?.();
     expect(routes).toContain("relay-fallback");
     expect(pcs[0]?.closed).toBe(true);
+  });
+
+  it("marks failed (not stuck at connecting) when PeerConnection creation throws", async () => {
+    const { session, routes, context } = makeSession({
+      createPeerConnection: () => {
+        throw new Error("ICE 정책 리스가 아직 준비되지 않았습니다.");
+      },
+    });
+    session.setContext(context);
+    await expect(session.start()).resolves.toBeUndefined();
+    expect(routes).toContain("failed");
+    expect(routes[routes.length - 1]).toBe("failed");
   });
 
   it("marks media-denied when getUserMedia is refused", async () => {
