@@ -7,8 +7,10 @@ import { z } from "zod";
  * 잘라내지 않고 잘못된 입력을 400으로 거절한다 — 저장되는 정의가
  * 조용히 달라지면 편집자마다 다른 방을 보게 되기 때문이다.
  *
- * background.glb는 같은 오리진의 spaces/ 아래 정적 자산만 허용한다.
- * 임의 URL을 허용하면 공간 정의가 외부 리소스 로딩 벡터가 된다.
+ * background.glb는 시스템 내부 참조만 허용한다: 같은 오리진의
+ * spaces/ 아래 정적 자산, 또는 배경 업로드가 발급한
+ * uploads/<assetId>.glb 참조. 임의 URL을 허용하면 공간 정의가
+ * 외부 리소스 로딩 벡터가 된다.
  */
 
 const idPattern = /^[a-z0-9-]+$/;
@@ -57,7 +59,12 @@ export const GodotSpaceDefinitionSchema = z.object({
   floor: z.string().trim().max(32).optional(),
   background: z
     .object({
-      glb: z.string().regex(/^spaces\/[a-z0-9-]+\.glb$/).max(96),
+      glb: z
+        .string()
+        .regex(
+          /^(spaces\/[a-z0-9-]+\.glb|uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.glb)$/,
+        )
+        .max(96),
       hideNodes: z.array(z.string().trim().min(1).max(64)).max(16).optional(),
       camHeight: z.number().finite().min(2).max(40).optional(),
       camDist: z.number().finite().min(2).max(60).optional(),
