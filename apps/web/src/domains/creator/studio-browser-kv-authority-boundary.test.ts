@@ -470,6 +470,7 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   // 마지막 위치는 세션 복원과 별개의 재방문 복원 기록이며 월드 상태 자체는 담지 않는다.
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-sound-preference.ts", "local-storage-write", '"toonspectrum:virtual-space-sound:v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-theme.ts", "local-storage-write", '"toonspectrum:virtual-space-theme:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/studio-godot-space-embed-support.ts", "local-storage-write", "godotPositionKey(workId)", 1, UI_ONLY, "The Godot stage shell stores only the last spaceId and x/y coordinates per work with a 30-day TTL; the loader validates every field and corrupt or blocked storage falls back to no restore, so it cannot carry document, world, permission, or collaboration state."),
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-last-position.ts", "durable-storage-write", "studioVirtualSpaceLastPositionStorageKey(projectId)", 1, UI_ONLY, UI_PROOF),
   // 3D 포즈 갤러리의 즐겨찾기(핀)·최근 사용 id 목록(최대 64개). 잃어도 기본 갤러리로 돌아갈 뿐이다.
   allow("apps/web/src/domains/creator/scene-3d/studio-pose-preset-storage.ts", "durable-storage-write", "key", 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
