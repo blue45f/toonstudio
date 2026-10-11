@@ -22,6 +22,27 @@ def arap_deform(
     count = len(rest)
     is_free = np.zeros(count, dtype=bool)
     is_free[free] = True
+    # 고정 정점과 하나도 이어지지 않은 자유 정점 덩어리(떨어진 끈·파편)는 라플라시안이 특이행렬이 된다 → 스키닝 결과로 고정한다.
+    src_all_pre = np.repeat(np.arange(count), np.diff(ptr))
+    parent = np.arange(count)
+
+    def find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    free_edges = is_free[src_all_pre] & is_free[idx]
+    for s, d in zip(src_all_pre[free_edges].tolist(), idx[free_edges].tolist(), strict=True):
+        rs, rd = find(s), find(d)
+        if rs != rd:
+            parent[rd] = rs
+    anchored_roots = {find(int(s)) for s in src_all_pre[is_free[src_all_pre] & ~is_free[idx]].tolist()}
+    for v in np.flatnonzero(is_free).tolist():
+        if find(v) not in anchored_roots:
+            is_free[v] = False
+    if not is_free.any():
+        return initial.copy()
     # 영향받는 정점 = 자유 정점 + 그 이웃(고정 정점의 회전도 필요)
     src_all = np.repeat(np.arange(count), np.diff(ptr))
     touches_free = np.zeros(count, dtype=bool)

@@ -41,6 +41,7 @@ import {
   KIT_END_BONES,
   KIT_FORBIDDEN_EXTENSIONS,
   KIT_HEAD_NODE,
+  KIT_HYPER3D_EVIDENCE_PREFIX,
   KIT_JOINT_COUNT,
   KIT_MANIFEST_FILENAME,
   KIT_MORPH_COVERAGE,
@@ -1261,6 +1262,12 @@ function checkNamesAndSkeleton(ctx, file, model) {
       const at = actual.findIndex((name, index) => name !== expected[index]);
       if (at >= 0) report.error("V6", where, `skin.joints 순서가 skeleton.joints와 다릅니다. ${at}번째: 기대 ${expected[at]}, 실제 ${actual[at]} (JOINTS 인덱스가 어긋납니다, kit-joint-mismatch)`);
     }
+    // skin.skeleton: 생략하거나 루트 joint여야 한다. Armature 같은 조상을 가리키면 glTF상 유효해도 Babylon 로더가 그 노드를 joint 밖의 추가 본으로 만든다.
+    const skeletonNode = model.skins[0].getSkeleton();
+    const rootJoints = expected.filter((name) => (manifest.skeleton.parents[name] ?? null) === null);
+    if (skeletonNode !== null && !rootJoints.includes(skeletonNode.getName())) {
+      report.error("V6", where, `skin.skeleton이 '${skeletonNode.getName()}'입니다. 생략하거나 루트 joint(${rootJoints.join(", ")})여야 합니다 — 그 밖의 노드(Armature 등)를 가리키면 앱의 Babylon 로더가 그 노드를 추가 본으로 만들어 여분 joint로 거부합니다(kit-joint-mismatch).`);
+    }
     for (const node of model.jointNodes) {
       const name = node.getName();
       if (!(name in manifest.skeleton.parents)) continue;
@@ -1996,7 +2003,20 @@ function checkProvenance(manifest, report, source) {
   if (sources.length === 0) report.error("V4", "kit.json:provenance", "sources가 비어 있습니다.");
   sources.forEach((entry, index) => {
     const where = `kit.json:provenance.sources[${index}]`;
-    if (!KIT_ALLOWED_LICENSES.includes(entry.license)) report.error("V4", where, `라이선스 ${String(entry.license)}는 허용되지 않습니다(CC0-1.0, original만).`);
+    if (!KIT_ALLOWED_LICENSES.includes(entry.license)) report.error("V4", where, `라이선스 ${String(entry.license)}는 허용되지 않습니다(${KIT_ALLOWED_LICENSES.join(", ")}만).`);
+    if (entry.license === "hyper3d-rodin-output") {
+      // Hyper3D 산출물: 생성 id와 반입 기록 문서가 있어야 한다(기록 없이 반입하지 못하게 하는 것이 목적, docs/hyper3d-terms-record.md).
+      if (entry.derivative !== true) report.error("V4", where, `${entry.id}: Hyper3D 산출물은 파생물이어야 합니다(derivative: true).`);
+      if (typeof entry.generationId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(entry.generationId)) {
+        report.error("V4", where, `${entry.id}: Hyper3D 산출물은 generationId(uuid)가 필요합니다.`);
+      }
+      const evidence = entry.evidenceDoc;
+      if (typeof evidence !== "string" || !evidence.startsWith(KIT_HYPER3D_EVIDENCE_PREFIX) || evidence.includes("..")) {
+        report.error("V4", where, `${entry.id}: Hyper3D 산출물은 반입 기록 문서 경로(evidenceDoc, ${KIT_HYPER3D_EVIDENCE_PREFIX} 아래)가 필요합니다.`);
+      } else if (!existsSync(path.join(REPO_ROOT, evidence))) {
+        report.error("V4", where, `${entry.id}: 반입 기록 문서(${evidence})가 저장소에 없습니다.`);
+      }
+    }
     if (entry.license !== "original") {
       if (typeof entry.url !== "string" || !entry.url.startsWith("https://")) report.error("V4", where, `${entry.id}: 내려받은 소스는 https URL이 필요합니다.`);
       if (typeof entry.zipSha256 !== "string" || !/^[0-9a-f]{64}$/u.test(entry.zipSha256)) report.error("V4", where, `${entry.id}: 내려받은 소스는 zipSha256(64자리 hex)이 필요합니다.`);

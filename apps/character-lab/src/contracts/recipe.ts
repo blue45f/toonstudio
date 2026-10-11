@@ -171,7 +171,7 @@ export const DEFAULT_RECIPE_COLORS: RecipeColors = Object.freeze({
 
 /**
  * 기본 레시피: 절차 소스, 표준 체형, 중립 표정·A 포즈. 슬롯 기본값은 키트 계약 상수 `KIT_DEFAULT_SLOTS`와 같은 값이다(단일 기준).
- * 앱 부팅의 기본 소스는 `app/composition.ts`의 `DEFAULT_BOOT_SOURCE`가 정한다(키트 에셋 안착 전까지 `procedural`, 안착하면 `kit`로 바꾸고
+ * 앱 부팅의 기본 소스는 `app/composition.ts`의 `DEFAULT_BOOT_SOURCE`가 정한다(키트 에셋이 안착한 2026-10-11부터 `kit`이고
  * 그때는 `createKitDefaultRecipe()`로 부팅한다). 이 팩토리는 절차 소스 부팅과 절차 소스가 필요한 테스트용이다.
  */
 export function createDefaultRecipe(): CharacterRecipe {

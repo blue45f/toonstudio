@@ -242,7 +242,13 @@ class GlbWriter:
         ibm[:, 3, :3] = -world_positions.astype(np.float32)  # 열 우선 저장에서 마지막 열 = 이동
         accessor = self.add_accessor(ibm.reshape(len(joint_names), 16), name="inverseBindMatrices")
         skins = self._list("skins")
-        skins.append({"inverseBindMatrices": accessor, "joints": list(self._joint_nodes), "skeleton": root_index, "name": root_name})
+        skin: dict[str, Any] = {"inverseBindMatrices": accessor, "joints": list(self._joint_nodes), "name": root_name}
+        # skin.skeleton은 공통 루트 joint(Hips)를 가리킨다. glTF상 Armature(조상)도 유효하지만 Babylon 로더가 그 노드를 joint 밖의 추가 본으로 만들어
+        # 앱의 키트 로더가 `kit-joint-mismatch`(여분 joint [Armature])로 거부한다. 루트가 둘 이상이면 생략해 로더가 공통 루트를 찾게 한다.
+        roots = [first_joint + i for i, name in enumerate(joint_names) if parents[name] is None]
+        if len(roots) == 1:
+            skin["skeleton"] = roots[0]
+        skins.append(skin)
         self._skin = len(skins) - 1
         self._scene_nodes.append(root_index)
 
