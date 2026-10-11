@@ -18,6 +18,10 @@ import {
   studioRealtimeJamGuestActorId,
 } from "@toonstudio/contracts/studio-live-jam-scope";
 import {
+  isStudioLiveProjectGuestSessionId,
+  studioRealtimeProjectGuestActorId,
+} from "@toonstudio/contracts/studio-live-project-guest";
+import {
   getSessionAuthenticationPrincipal,
   getSessionAuthenticationSource,
 } from "../../session-middleware";
@@ -58,6 +62,28 @@ export class StudioRealtimeTicketController {
       return this.service.issue(
         {
           userId: studioRealtimeJamGuestActorId(body.sessionId),
+          sessionVersion: 1,
+          expiresAt: Date.now() + STUDIO_LIVE_GUEST_CREDENTIAL_TTL_MS,
+        },
+        origin,
+        body,
+      );
+    }
+    // 프로젝트 공간 게스트: 쿠키 세션이 없을 때만, 초대 자격 제시가
+    // 있을 때만 동작한다. 여기서 만드는 principal은 자격 그 자체가
+    // 아니라 게스트 세션 신원이며, 자격의 유효성은 인가 어댑터가
+    // 발급 직전에 검증 저장소로 판정한다(실패는 일반 403으로 수렴).
+    if (
+      source !== "header" &&
+      body.guestAccess &&
+      isStudioLiveProjectGuestSessionId(body.guestAccess.guestSessionId) &&
+      !isStudioLiveJamScope(body.scope)
+    ) {
+      return this.service.issue(
+        {
+          userId: studioRealtimeProjectGuestActorId(
+            body.guestAccess.guestSessionId,
+          ),
           sessionVersion: 1,
           expiresAt: Date.now() + STUDIO_LIVE_GUEST_CREDENTIAL_TTL_MS,
         },

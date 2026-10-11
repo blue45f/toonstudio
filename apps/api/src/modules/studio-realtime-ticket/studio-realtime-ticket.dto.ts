@@ -88,6 +88,48 @@ export const StudioRealtimeTicketScopeSchema = z
   })
   .strict();
 
+/**
+ * 프로젝트 공간 게스트 자격 제시. 형식은 게스트 자격 검증의 정본인
+ * studio-virtual-space-access DTO와 정확히 같은 규칙을 쓴다:
+ * 초대 토큰은 43자, 입장코드는 혼동 문자를 제외한 6자(정규화 후),
+ * 게스트 세션 ID는 웹 게스트 세션과 같은 16자다. 자격의 유효성
+ * 자체는 여기서 판정하지 않고 인가 어댑터가 검증 저장소에 위임한다.
+ */
+export const StudioRealtimeTicketGuestSessionIdSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{16}$/u, "guest session id format is invalid");
+
+export const StudioRealtimeTicketGuestAccessSchema = z.discriminatedUnion(
+  "kind",
+  [
+    z
+      .object({
+        kind: z.literal("invite"),
+        token: z.string().regex(
+          /^[A-Za-z0-9_-]{43}$/u,
+          "invite token format is invalid",
+        ),
+        guestSessionId: StudioRealtimeTicketGuestSessionIdSchema,
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal("entry-code"),
+        code: z
+          .string()
+          .trim()
+          .toUpperCase()
+          .regex(/^[A-HJ-NP-Z2-9]{6}$/u, "entry code format is invalid"),
+        guestSessionId: StudioRealtimeTicketGuestSessionIdSchema,
+      })
+      .strict(),
+  ],
+);
+
+export type StudioRealtimeTicketGuestAccess = z.infer<
+  typeof StudioRealtimeTicketGuestAccessSchema
+>;
+
 function validateCapabilityWorkloads(
   workloads: readonly StudioRealtimeTicketWorkload[],
   capabilities: readonly StudioRealtimeTicketCapability[],
@@ -114,6 +156,9 @@ export const IssueStudioRealtimeTicketSchema = z
     scope: StudioRealtimeTicketScopeSchema,
     workloads: StudioRealtimeTicketWorkloadListSchema,
     capabilities: StudioRealtimeTicketCapabilityListSchema,
+    // 게스트 자격 제시는 선택 필드다. 계정 세션 경로는 이 필드를
+    // 쓰지 않으며, 있어도 세션 인가가 우선한다(컨트롤러 분기 순서).
+    guestAccess: StudioRealtimeTicketGuestAccessSchema.optional(),
   })
   .strict()
   .superRefine((request, context) => {

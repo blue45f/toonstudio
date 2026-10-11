@@ -180,6 +180,70 @@ describe("StudioRealtimeTicketService", () => {
     expect(subject.issue).not.toHaveBeenCalled();
   });
 
+  it("signs a project guest decision with the qualification expiry as the authorization cap", async () => {
+    const guestSessionId = "Ab3dEf6hJkLmNpQr";
+    const guestRequest = {
+      version: 1,
+      providerId: "cloudflare-realtime-seoul",
+      sessionId: "00000000-0000-4000-8000-000000000002",
+      scope: { workId: "project-1", roomId: "project-1" },
+      workloads: ["presence"],
+      capabilities: ["presence.snapshot-v1"],
+      guestAccess: {
+        kind: "invite",
+        token: "T".repeat(43),
+        guestSessionId,
+      },
+    } as const;
+    const authorizationExpiresAt = new Date(
+      Date.now() + 60 * 60 * 1_000,
+    ).toISOString();
+    const guestPrincipal = {
+      userId: `guest:${guestSessionId}`,
+      sessionVersion: 1,
+      expiresAt: Date.now() + 4 * 60 * 60 * 1_000,
+    };
+    const authorize = vi.fn(async () => ({
+      ...guestRequest,
+      allowed: true,
+      actorUserId: guestPrincipal.userId,
+      authorizationEpoch: new Date().toISOString(),
+      authorizationExpiresAt,
+      origin: ORIGIN,
+      role: "viewer",
+      creatorCapabilities: {
+        view: true,
+        comment: false,
+        edit: false,
+        manageMembers: false,
+      },
+    }));
+    const subject = harness(authorize);
+
+    const response = await subject.service.issue(
+      guestPrincipal,
+      ORIGIN,
+      guestRequest,
+    );
+
+    expect(authorize).toHaveBeenCalledWith({
+      ...guestRequest,
+      actorUserId: guestPrincipal.userId,
+      origin: ORIGIN,
+    });
+    expect(subject.issue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: guestPrincipal.userId,
+        sessionVersion: 1,
+        authorizationExpiresAtEpochMs: Date.parse(authorizationExpiresAt),
+        scope: guestRequest.scope,
+        workloads: guestRequest.workloads,
+      }),
+    );
+    expect(response.scope).toEqual(guestRequest.scope);
+    expect(response.workloads).toEqual(["presence"]);
+  });
+
   it("replaces authorization and signer internals with non-secret errors", async () => {
     const authorizationSecret = "postgres://private-creator-acl";
     const failedAuthorization = harness(

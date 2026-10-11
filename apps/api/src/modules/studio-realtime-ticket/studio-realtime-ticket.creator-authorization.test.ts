@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { CreatorCollaborationRepository } from "../creator/creator-collaboration.repository";
+import { StudioVirtualSpaceAccessRepository } from "../studio-virtual-space-access/studio-virtual-space-access.repository";
 
 import {
   CreatorStudioRealtimeTicketAuthorization,
@@ -248,5 +249,246 @@ describe("CreatorStudioRealtimeTicketAuthorization", () => {
         request(),
       ),
     ).resolves.toEqual({ allowed: false });
+  });
+});
+
+const GUEST_SESSION_ID = "Ab3dEf6hJkLmNpQr";
+const GUEST_ACTOR_ID = `guest:${GUEST_SESSION_ID}`;
+const INVITE_TOKEN = "a".repeat(43);
+const INVITE_EXPIRES_AT = "2026-08-15T00:00:00.000Z";
+
+function guestRequest(
+  overrides: Partial<StudioRealtimeTicketAuthorizationInput> = {},
+): StudioRealtimeTicketAuthorizationInput {
+  return {
+    version: 1,
+    actorUserId: GUEST_ACTOR_ID,
+    providerId: PROVIDER_ID,
+    sessionId: "00000000-0000-4000-8000-000000000002",
+    scope: { workId: "project-1", roomId: "project-1" },
+    workloads: ["presence"],
+    capabilities: [
+      "presence.snapshot-v1",
+      "presence.members-v1",
+      "presence.cursor-v1",
+      "presence.resume-v1",
+    ],
+    origin: ORIGIN,
+    guestAccess: {
+      kind: "invite",
+      token: INVITE_TOKEN,
+      guestSessionId: GUEST_SESSION_ID,
+    },
+    ...overrides,
+  };
+}
+
+function guestAuthorization(options: {
+  verifyInvite?: ReturnType<typeof vi.fn>;
+  verifyEntryCode?: ReturnType<typeof vi.fn>;
+  withAccessRepository?: boolean;
+}): {
+  authorization: CreatorStudioRealtimeTicketAuthorization;
+  getAuthorization: ReturnType<typeof vi.fn>;
+} {
+  const getAuthorization = vi.fn();
+  const accessRepository = {
+    verifyInvite:
+      options.verifyInvite ?? vi.fn().mockResolvedValue({ valid: false }),
+    verifyEntryCode:
+      options.verifyEntryCode ?? vi.fn().mockResolvedValue({ valid: false }),
+  } as unknown as StudioVirtualSpaceAccessRepository;
+  const instance = new CreatorStudioRealtimeTicketAuthorization(
+    repository(getAuthorization),
+    { providerIds: [PROVIDER_ID], allowedOrigins: [ORIGIN] },
+    options.withAccessRepository === false ? undefined : accessRepository,
+  );
+  return { authorization: instance, getAuthorization };
+}
+
+describe("CreatorStudioRealtimeTicketAuthorization project guests", () => {
+  it("authorizes an invite-qualified guest as a view-only presence viewer capped by the invite expiry", async () => {
+    const verifyInvite = vi.fn().mockResolvedValue({
+      valid: true,
+      workspaceId: "workspace-1",
+      role: "editor",
+      expiresAt: INVITE_EXPIRES_AT,
+    });
+    const { authorization, getAuthorization } = guestAuthorization({
+      verifyInvite,
+    });
+    const input = guestRequest();
+
+    const decision = await authorization.authorize(input);
+
+    expect(decision).toMatchObject({
+      allowed: true,
+      actorUserId: GUEST_ACTOR_ID,
+      role: "viewer",
+      creatorCapabilities: {
+        view: true,
+        comment: false,
+        edit: false,
+        manageMembers: false,
+      },
+      authorizationExpiresAt: INVITE_EXPIRES_AT,
+    });
+    expect(verifyInvite).toHaveBeenCalledWith({
+      token: INVITE_TOKEN,
+      context: { kind: "project-space", projectId: "project-1" },
+    });
+    expect(getAuthorization).not.toHaveBeenCalled();
+  });
+
+  it("authorizes an entry-code-qualified guest against the space id", async () => {
+    const verifyEntryCode = vi.fn().mockResolvedValue({
+      valid: true,
+      spaceId: "project-1",
+      spaceName: "스튜디오",
+      expiresAt: INVITE_EXPIRES_AT,
+    });
+    const { authorization } = guestAuthorization({ verifyEntryCode });
+    const input = guestRequest({
+      guestAccess: {
+        kind: "entry-code",
+        code: "ABC234",
+        guestSessionId: GUEST_SESSION_ID,
+      },
+    });
+
+    await expect(authorization.authorize(input)).resolves.toMatchObject({
+      allowed: true,
+      role: "viewer",
+      authorizationExpiresAt: INVITE_EXPIRES_AT,
+    });
+    expect(verifyEntryCode).toHaveBeenCalledWith({
+      spaceId: "project-1",
+      code: "ABC234",
+    });
+  });
+
+  it.each([
+    { label: "unknown invite", reason: "not-found" },
+    { label: "revoked invite", reason: "revoked" },
+    { label: "consumed invite", reason: "consumed" },
+    { label: "expired invite", reason: "expired" },
+    { label: "invite for another space", reason: "space-mismatch" },
+  ])("denies a $label without reflecting the reason", async ({ reason }) => {
+    const verifyInvite = vi
+      .fn()
+      .mockResolvedValue({ valid: false, reason });
+    const { authorization } = guestAuthorization({ verifyInvite });
+
+    await expect(
+      authorization.authorize(guestRequest()),
+    ).resolves.toEqual({ allowed: false });
+  });
+
+  it("denies a locked entry code and a repository failure the same way", async () => {
+    const locked = guestAuthorization({
+      verifyEntryCode: vi
+        .fn()
+        .mockResolvedValue({ valid: false, reason: "locked" }),
+    });
+    await expect(
+      locked.authorization.authorize(
+        guestRequest({
+          guestAccess: {
+            kind: "entry-code",
+            code: "ABC234",
+            guestSessionId: GUEST_SESSION_ID,
+          },
+        }),
+      ),
+    ).resolves.toEqual({ allowed: false });
+
+    const failing = guestAuthorization({
+      verifyInvite: vi
+        .fn()
+        .mockRejectedValue(new Error("database-secret-detail")),
+    });
+    await expect(
+      failing.authorization.authorize(guestRequest()),
+    ).resolves.toEqual({ allowed: false });
+  });
+
+  it.each([
+    {
+      label: "screen-signaling workload",
+      overrides: {
+        workloads: ["presence", "screen-signaling"],
+        capabilities: [
+          "presence.snapshot-v1",
+          "screen-signaling.session-v1",
+        ],
+      } as Partial<StudioRealtimeTicketAuthorizationInput>,
+    },
+    {
+      label: "comments workload",
+      overrides: {
+        workloads: ["comments"],
+        capabilities: ["comments.invalidation-v1"],
+      } as Partial<StudioRealtimeTicketAuthorizationInput>,
+    },
+  ])(
+    "denies a guest requesting the $label before verifying the qualification",
+    async ({ overrides }) => {
+      const verifyInvite = vi.fn().mockResolvedValue({
+        valid: true,
+        workspaceId: "workspace-1",
+        role: "editor",
+        expiresAt: INVITE_EXPIRES_AT,
+      });
+      const { authorization } = guestAuthorization({ verifyInvite });
+
+      await expect(
+        authorization.authorize(guestRequest(overrides)),
+      ).resolves.toEqual({ allowed: false });
+      expect(verifyInvite).not.toHaveBeenCalled();
+    },
+  );
+
+  it("denies when the actor is not the guest session that presented the qualification", async () => {
+    const verifyInvite = vi.fn().mockResolvedValue({
+      valid: true,
+      workspaceId: "workspace-1",
+      role: "editor",
+      expiresAt: INVITE_EXPIRES_AT,
+    });
+    const { authorization } = guestAuthorization({ verifyInvite });
+
+    await expect(
+      authorization.authorize(
+        guestRequest({ actorUserId: "guest:ZZZZZZZZZZZZZZZZ" }),
+      ),
+    ).resolves.toEqual({ allowed: false });
+    await expect(
+      authorization.authorize(guestRequest({ actorUserId: "artist-1" })),
+    ).resolves.toEqual({ allowed: false });
+    expect(verifyInvite).not.toHaveBeenCalled();
+  });
+
+  it("denies guest claims when no access repository is wired", async () => {
+    const { authorization } = guestAuthorization({
+      withAccessRepository: false,
+    });
+
+    await expect(
+      authorization.authorize(guestRequest()),
+    ).resolves.toEqual({ allowed: false });
+  });
+
+  it("denies guest claims on a non-canonical room before verifying", async () => {
+    const verifyInvite = vi.fn();
+    const { authorization } = guestAuthorization({ verifyInvite });
+
+    await expect(
+      authorization.authorize(
+        guestRequest({
+          scope: { workId: "project-1", roomId: "other-room" },
+        }),
+      ),
+    ).resolves.toEqual({ allowed: false });
+    expect(verifyInvite).not.toHaveBeenCalled();
   });
 });

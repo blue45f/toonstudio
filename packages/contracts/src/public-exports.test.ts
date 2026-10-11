@@ -88,6 +88,15 @@ const publicEntries = [
     functions: ["isStudioLiveJamWorkId", "isStudioLiveJamScope"],
   },
   {
+    name: "실시간 프로젝트 게스트 신원",
+    load: () => import("@toonstudio/contracts/studio-live-project-guest"),
+    functions: [
+      "isStudioLiveProjectGuestSessionId",
+      "isStudioRealtimeProjectGuestActorId",
+      "studioRealtimeProjectGuestActorId",
+    ],
+  },
+  {
     name: "실시간 리소스 잠금",
     load: () => import("@toonstudio/contracts/studio-live-lock-resource"),
     functions: ["parseStudioLiveLockResourceScope", "studioLiveLockResourcesConflict"],
