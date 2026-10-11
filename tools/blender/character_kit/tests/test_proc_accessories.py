@@ -118,8 +118,25 @@ class BuilderTest(unittest.TestCase):
         self.assertLess(float(left[:, 1].min()), 1.49 - 0.015)
         np.testing.assert_allclose(sorted(left[:, 1]), sorted(right[:, 1]), atol=1e-9)
 
-    def test_builders_registered_without_choker(self) -> None:
-        self.assertEqual(sorted(pa.BUILDERS), ["earrings", "glasses"])  # 초커는 목 구조상 보류(모듈 docstring)
+    def test_builders_registered(self) -> None:
+        self.assertEqual(sorted(pa.BUILDERS), ["choker", "earrings", "glasses"])
+
+    def test_choker_band_wraps_the_neck_outside_the_surface(self) -> None:
+        radius = 0.060 + 0.004 * np.sin(np.linspace(0.0, 4.0 * np.pi, 48, endpoint=False))  # 앞뒤로 조금 울퉁불퉁한 목 둘레
+        lm = SimpleNamespace(chin_y=1.376, neck_ring=lambda y0: (radius, 0.010))
+        positions, triangles = pa.build_choker(lm)
+        self.assertTrue(np.isfinite(positions).all())
+        self.assertEqual(int(triangles.max()) + 1, len(positions))
+        y0 = 1.376 + pa.CHOKER_ABOVE_CHIN_M
+        # 띠는 목 표면 바깥(광선 거리 + 0.6 mm 이상)에 있고, 폭 9 mm 안에서 y0를 중심으로 놓인다
+        band = positions[: 4 * 48]
+        self.assertLessEqual(float(np.abs(band[:, 1] - y0).max()), 0.0045 + 1e-9)
+        distance = np.hypot(band[:, 0], band[:, 2] - 0.010)
+        self.assertGreater(float(distance.min()), float(radius.min()))
+        # 펜던트(원판)는 정면(+z)의 띠 앞에 달린다
+        pendant = positions[4 * 48 :]
+        self.assertGreater(float(pendant[:, 2].min()), 0.010 + float(radius[0]) - 1e-3)
+        self.assertLess(float(pendant[:, 1].max()), y0)
 
 
 if __name__ == "__main__":

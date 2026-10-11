@@ -21,6 +21,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from character_kit import garment_extras as extras_lib  # noqa: E402
 from character_kit import garment_fit as gf  # noqa: E402
 from character_kit.base_assembly import BaseModel, QuantizedGlbWriter, ensure_min_delta, follow_deviation, load_base_model  # noqa: E402
 from character_kit.garment_presets import PRESETS, effective_spec, morph_names  # noqa: E402
@@ -320,6 +321,54 @@ def fade_small(delta: np.ndarray) -> np.ndarray:
     return delta * t
 
 
+def drop_triangles(mesh: StaticMesh, canon_index: np.ndarray, canon_triangles: np.ndarray, keep: np.ndarray) -> tuple[StaticMesh, np.ndarray, np.ndarray]:
+    """삼각형을 지우고 어느 삼각형에도 쓰이지 않게 된 정점(법선 0 — 검증기 V20 오류)을 메시에서 뺀다.
+
+    대표 정점(canon) 배열은 그대로 두고 정점→대표 번호만 줄인다.
+    """
+    kept = mesh.triangles[keep]
+    used = np.unique(kept)
+    remap = np.full(len(mesh.positions), -1, dtype=np.int64)
+    remap[used] = np.arange(len(used))
+    trimmed = replace(mesh, positions=mesh.positions[used], normals=None if mesh.normals is None else mesh.normals[used], uvs=mesh.uvs[used], triangles=remap[kept])
+    return trimmed, canon_index[used], canon_triangles[keep]
+
+
+def append_hood(mesh: StaticMesh, canon_index: np.ndarray, canon_triangles: np.ndarray, conformed: np.ndarray, hood_spec: dict) -> tuple[StaticMesh, np.ndarray, np.ndarray, np.ndarray]:
+    """맞춰진 상의 셸 위에 후드를 만들어 붙인다.
+
+    후드 정점의 UV는 가장 가까운 상의 정점의 UV를 써서 같은 색 영역을 읽는다. 안감(접힘의 목 쪽 면)은 상의 목 마개의 UV를 써서 어두운 안감처럼 읽히게 한다.
+    """
+    positions, triangles, lining = extras_lib.hood_down(Surface(conformed, canon_triangles), hood_spec)
+    used = np.unique(canon_triangles)
+    representative = np.zeros(len(conformed), dtype=np.int64)
+    representative[canon_index] = np.arange(len(canon_index))  # 대표 정점 → 전체 정점 하나
+
+    def nearest_vertex(points: np.ndarray) -> np.ndarray:
+        out = np.zeros(len(points), dtype=np.int64)
+        for start in range(0, len(points), 256):
+            chunk = points[start : start + 256]
+            out[start : start + 256] = used[np.argmin(((chunk[:, None, :] - conformed[used][None, :, :]) ** 2).sum(axis=2), axis=1)]
+        return out
+
+    uv_vertex = representative[nearest_vertex(positions)]
+    if lining.any():
+        cap = conformed[used]
+        cap = cap[(np.abs(cap[:, 0]) < 0.04) & (np.abs(cap[:, 2]) < 0.09)]
+        anchor = np.array([0.0, float(cap[:, 1].max()) if len(cap) else float(hood_spec["ring"]["fallback_y"]), float(hood_spec["ring"]["center_z"])])
+        uv_vertex[lining] = representative[nearest_vertex(anchor[None, :])[0]]
+    added = len(positions)
+    base_full, base_canon = len(mesh.positions), len(conformed)
+    grown = replace(
+        mesh,
+        positions=np.concatenate([mesh.positions, positions]),
+        normals=None if mesh.normals is None else np.concatenate([mesh.normals, np.zeros((added, 3))]),
+        uvs=np.concatenate([mesh.uvs, mesh.uvs[uv_vertex]]),
+        triangles=np.concatenate([mesh.triangles, triangles + base_full]),
+    )
+    return grown, np.concatenate([canon_index, base_canon + np.arange(added)]), np.concatenate([canon_triangles, triangles + base_canon]), np.concatenate([conformed, positions])
+
+
 def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface, surface_t: Surface, rig, parents: list[int], names: list[str], transforms: list[dict] | None = None) -> dict:
     """정리·축소된 메시 하나를 파츠 한 개(LOD)로 만든다. 결과 배열 묶음을 돌려준다.
 
@@ -338,6 +387,14 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
         t = np.clip((waist_y + hem["above"] - points[:, 1]) / hem["blend"], 0.0, 1.0)
         t = t * t * (3.0 - 2.0 * t)
         return spec["d_min"] + t * (hem["d_min"] - spec["d_min"])
+
+    def d_max_open_for(points: np.ndarray) -> float | np.ndarray:
+        """바지류의 허리띠 윗선(열린 가장자리 중 맨 위 `below` m)은 몸에 더 붙인다(`waist_rim`). 밑단의 헐렁한 끝선은 그대로 둔다."""
+        rim = spec.get("waist_rim")
+        loose = spec.get("d_max_open", float("inf"))
+        if not rim or spec["role"] != "bottom":
+            return loose
+        return np.where(points[:, 1] >= float(points[:, 1].max()) - float(rim["below"]), float(rim["d_max"]), loose)
 
     fit_surface = surface_t if pose == "t" else surface
     body_fit_positions = bs.tpose if pose == "t" else bs.apose
@@ -366,7 +423,7 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
         keep = np.isin(edges[:, 0], vertices) & np.isin(edges[:, 1], vertices)
         sub_edges = index_map[edges[keep]]
         d_before, _, _ = gf.signed_distance(fitted, fit_surface)
-        out = gf.conform(fitted, sub_edges, open_edge[vertices], fit_surface, d_min_for(fitted), spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
+        out = gf.conform(fitted, sub_edges, open_edge[vertices], fit_surface, d_min_for(fitted), spec["d_max"], d_max_open=d_max_open_for(fitted))
         if stylize:
             # 스무딩 → 충돌 한 번 더(스무딩이 몸 안으로 밀 수 있다)
             piece_tris = index_map[canon_triangles[np.all(np.isin(canon_triangles, vertices), axis=1)]]
@@ -392,6 +449,35 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
         lifted, bang_report = gf.raise_bangs(conformed, float(spec["bang_target_y"]), face_z=head_front, center_half_width=float(spec.get("bang_half_width", 0.07)))
         if bang_report["raised"]:
             conformed = gf.conform(lifted, edges, open_edge, fit_surface, d_min_for(lifted), spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
+    extras_report: dict = {}
+    if spec["role"] == "hair" and spec.get("tails"):
+        # 두개골 폭에 맞춘 배율이 꼬리를 머리에 붙여 단발로 만든다 → 꼬리를 늘린 뒤 몸과의 충돌을 다시 푼다.
+        head_top = float(region_vertices(bs, ["head"])[:, 1].max())
+        warped = extras_lib.extend_tails(conformed, head_top, spec["tails"])
+        conformed = gf.conform(warped, edges, open_edge, fit_surface, d_min_for(warped), spec["d_max"], d_max_open=spec.get("d_max_open", float("inf")))
+        extras_report["tails"] = True
+    if spec["role"] == "top" and spec.get("hem_cut"):
+        keep, conformed, extras_report["hem"] = extras_lib.trim_hem(conformed, canon_triangles, **spec["hem_cut"])
+        if not keep.all():
+            mesh, canon_index, canon_triangles = drop_triangles(mesh, canon_index, canon_triangles, keep)
+            edges = gf.undirected_edges(canon_triangles)
+            open_edge = gf.boundary_vertex_mask(len(conformed), canon_triangles)
+    if spec["role"] == "top" and spec.get("sleeve_cut") is not None:
+        joint_positions = rig.t_pose if pose == "t" else rig.a_pose
+        ends = []
+        for side in ("Left", "Right"):
+            wrist, elbow = joint_positions[rig.index(f"mixamorig:{side}Hand")], joint_positions[rig.index(f"mixamorig:{side}ForeArm")]
+            ends.append((wrist, (wrist - elbow) / np.linalg.norm(wrist - elbow)))
+        keep, conformed, extras_report["sleeves"] = extras_lib.trim_sleeve_ends(conformed, canon_triangles, ends, **spec["sleeve_cut"])
+        if not keep.all():
+            mesh, canon_index, canon_triangles = drop_triangles(mesh, canon_index, canon_triangles, keep)
+            edges = gf.undirected_edges(canon_triangles)
+            open_edge = gf.boundary_vertex_mask(len(conformed), canon_triangles)
+    if spec["role"] == "top" and spec.get("extras", {}).get("hood"):
+        mesh, canon_index, canon_triangles, conformed = append_hood(mesh, canon_index, canon_triangles, conformed, spec["extras"]["hood"])
+        edges = gf.undirected_edges(canon_triangles)
+        open_edge = gf.boundary_vertex_mask(len(conformed), canon_triangles)
+        extras_report["hood"] = {"triangles": int(len(canon_triangles))}
     canon_normals = gf.orient_outward(conformed, vertex_normals(conformed, canon_triangles), fit_surface)
     sleeve_report = None
     sleeve_membership = None
@@ -489,7 +575,8 @@ def retarget_one(mesh: StaticMesh, spec: dict, bs: BodySurface, surface: Surface
     return {
         "mesh": mesh,
         "canon_index": canon_index,
-        "canon_count": len(canon_positions),
+        "canon_count": len(conformed),
+        "extras": extras_report,
         "rest": rest_canon,
         "apose": conformed,
         "deltas": deltas,
@@ -880,6 +967,7 @@ def main() -> None:
                 "sleeves": result.get("sleeve_report"),
                 "bangs": result.get("bang_report"),
                 "tornFaces": result.get("torn_faces", 0),
+                "extras": result.get("extras", {}),
                 "bindingGapMm": {k: round(v * 1000, 1) for k, v in result.get("binding_gap_m", {}).items() if v > 0.015},
             }
             for node, result in zip(spec["nodes"], results, strict=True)

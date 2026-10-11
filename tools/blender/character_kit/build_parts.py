@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import subprocess
@@ -189,15 +190,18 @@ def main() -> int:
         print(f"\n[실패] {preset_id}\n{message}")
 
     if args.write_sources:
-        existing = json.loads(SOURCES.read_text(encoding="utf-8")) if SOURCES.exists() else {"schema": "toonstudio.hyper3d-sources/1", "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md", "summaryKo": "", "common": {}, "sources": {}}
-        failed_keys = {provenance_key(preset_id, args.base) for preset_id in failures}
-        existing["sources"] = {key: value for key, value in existing.get("sources", {}).items() if key not in failed_keys}
-        for preset_id, report in results.items():
-            effective = effective_spec(preset_id, args.base)
-            if not isinstance(report, str) and not is_procedural(effective):
-                existing["sources"][provenance_key(preset_id, args.base)] = source_entry(preset_id, effective, entries)
-        existing["summaryKo"] = "Hyper3D(Rodin Gen-2.5) 생성물과 그 파생물. 약관·소유권·수정·공개 호스팅 조항과 닫히지 않은 점은 recordDoc에 있고, 생성 기록 전체는 hyper3d_generations.json에 있다. 원본 GLB는 저장소에 커밋하지 않는다."
-        SOURCES.write_text(json.dumps(existing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        # 두 베이스를 동시에 빌드해도 서로의 갱신을 덮지 않게 잠금 아래에서 읽고 쓴다.
+        with (CACHE / "hyper3d_sources.lock").open("w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            existing = json.loads(SOURCES.read_text(encoding="utf-8")) if SOURCES.exists() else {"schema": "toonstudio.hyper3d-sources/1", "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md", "summaryKo": "", "common": {}, "sources": {}}
+            failed_keys = {provenance_key(preset_id, args.base) for preset_id in failures}
+            existing["sources"] = {key: value for key, value in existing.get("sources", {}).items() if key not in failed_keys}
+            for preset_id, report in results.items():
+                effective = effective_spec(preset_id, args.base)
+                if not isinstance(report, str) and not is_procedural(effective):
+                    existing["sources"][provenance_key(preset_id, args.base)] = source_entry(preset_id, effective, entries)
+            existing["summaryKo"] = "Hyper3D(Rodin Gen-2.5) 생성물과 그 파생물. 약관·소유권·수정·공개 호스팅 조항과 닫히지 않은 점은 recordDoc에 있고, 생성 기록 전체는 hyper3d_generations.json에 있다. 원본 GLB는 저장소에 커밋하지 않는다."
+            SOURCES.write_text(json.dumps(existing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"\n출처 {len(existing['sources'])}건을 {SOURCES}에 썼다")
     return 1 if failures else 0
 
