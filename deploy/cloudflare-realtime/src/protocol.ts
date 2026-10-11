@@ -92,12 +92,31 @@ export interface PresenceLayoutPayload {
   readonly revision: number;
 }
 
+/**
+ * 이모트 전파 (표면 회귀 복구 — DESIGN §4.1의 서버 협의 확장, bubble 선례).
+ * 이모트 입력(단축키·이모트 바)은 셸/Godot 양쪽에 있고, 이 페이로드는
+ * 머리 위 이모트 표시를 위한 일시적 전파 전용이다. 스냅샷에 저장하지 않고
+ * 이벤트로만 중계한다. 값은 웹 셸 카탈로그(studio-virtual-space-emote-
+ * catalog.ts)와 Godot 카탈로그(emote.gd)가 공유하는 16종 id만 허용한다 —
+ * 카탈로그가 바뀌면 이 집합도 함께 바꿔야 한다.
+ */
+export const REALTIME_EMOTE_IDS = [
+  "wave", "heart", "party", "thumbs-up", "laugh", "clap", "wow", "think",
+  "idea", "dance", "sparkles", "question", "exclaim", "coffee", "music", "sleep",
+] as const;
+
+export interface PresenceReactionPayload {
+  readonly kind: "presence.reaction";
+  readonly emote: (typeof REALTIME_EMOTE_IDS)[number];
+}
+
 export type PresencePayload =
   | PresenceUpdatePayload
   | PresenceCursorPayload
   | PresenceLeavePayload
   | PresenceBubblePayload
-  | PresenceLayoutPayload;
+  | PresenceLayoutPayload
+  | PresenceReactionPayload;
 
 export interface CommentChangedPayload {
   readonly kind: "comment.changed";
@@ -459,6 +478,13 @@ function validatePresencePayload(value: unknown): value is PresencePayload {
       Number.isInteger(value.revision) &&
       value.revision >= 0 &&
       value.revision <= 1_000_000
+    );
+  }
+  if (value.kind === "presence.reaction") {
+    return (
+      hasExactKeys(value, ["kind", "emote"]) &&
+      typeof value.emote === "string" &&
+      (REALTIME_EMOTE_IDS as readonly string[]).includes(value.emote)
     );
   }
   if (value.kind === "presence.cursor") {

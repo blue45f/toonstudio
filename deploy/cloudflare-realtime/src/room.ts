@@ -1077,8 +1077,9 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
             nowMs,
           );
         }
-        // presence.bubble은 일시적 표시 전파 전용이라 프레즌스 상태에 저장하지
-        // 않는다 (이벤트 로그·브로드캐스트만 흐른다).
+        // presence.bubble·presence.layout·presence.reaction은 일시적 표시
+        // 전파 전용이라 프레즌스 상태에 저장하지 않는다 (이벤트 로그·
+        // 브로드캐스트만 흐른다).
       }
       try {
         stored = this.store.appendEvent(
