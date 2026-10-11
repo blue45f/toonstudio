@@ -174,14 +174,16 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 function StagedOfficePage({ personal }: { readonly personal: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
-  return <><button type="button" onClick={() => navigate("/studio/p/other-project/space?place=creator-cafe")}>다른 프로젝트로 전환</button>
+  return <><button type="button" onClick={() => navigate("/studio/p/other-project/space?place=creator-cafe&engine=classic")}>다른 프로젝트로 전환</button>
     <RouteStage pathname={location.pathname} search={location.search} accessibleTitle="가상 작업실">
       <StudioVirtualSpacePage personal={personal} projectIdOverride={personal ? "virtual-demo:personal-home" : undefined} />
     </RouteStage></>;
 }
 function stagedOfficeElement(personal = false, placeId = "creator-cafe") {
   const path = personal ? "/studio/space" : "/studio/p/project-social/space";
-  return <MemoryRouter initialEntries={[`${path}?place=${placeId}`]}>
+  // 5단계부터 기본 무대는 Godot다 — 이 스위트는 동결된 클래식 라우트 스테이지를
+  // 검증하므로 진입 파라미터를 명시한다.
+  return <MemoryRouter initialEntries={[`${path}?place=${placeId}&engine=classic`]}>
     <Routes><Route path={personal ? "/studio/space" : "/studio/p/:projectId/space"} element={<StagedOfficePage personal={personal} />} /></Routes>
   </MemoryRouter>;
 }

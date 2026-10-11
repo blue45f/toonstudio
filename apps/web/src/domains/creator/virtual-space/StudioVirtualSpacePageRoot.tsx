@@ -45,6 +45,7 @@ import {
 import { isStudioSpatialInviteToken } from "./studio-spatial-invite-context";
 import { verifyStudioSpaceEntryCode, verifyStudioSpatialInvite } from "./studio-virtual-space-access-client";
 import { StudioGodotSpaceEmbed } from "./StudioGodotSpaceEmbed";
+import { resolveStudioSpaceEngine } from "./studio-space-engine";
 import { STUDIO_CHARACTER_SKINS } from "./studio-virtual-space-character-skins";
 import { STUDIO_SHARED_CURSOR_PALETTE } from "./studio-virtual-space-shared-cursors";
 import { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
@@ -351,9 +352,15 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
     />;
   }
 
-  // Godot 무대 (재개발 2단계): ?engine=godot 일 때만 기존 공간 대신 Godot 임베드를 띄운다.
-  // 기본값은 기존 웹 공간이며, 임베드 안의 "기존 스페이스로 돌아가기"로 언제든 되돌릴 수 있다.
-  if (new URLSearchParams(location.search).get("engine") === "godot") {
+  // 무대 엔진 결정 (재개발 5단계 — 구 클라이언트 대체): 기본값은 Godot이고
+  // 클래식(기존 웹 공간)은 폴백으로 동결한다. 규칙의 정본은
+  // studio-space-engine.ts: 명시 파라미터가 우선하고, 로그인·개인 공간은
+  // Godot, 프로젝트 공간 게스트는 게스트 티켓 발급이 없어 클래식을 유지한다.
+  const spaceEngine = resolveStudioSpaceEngine(location.search, {
+    signedIn: session.ready && Boolean(session.data),
+    personal,
+  });
+  if (spaceEngine === "godot") {
     const effectiveAvatarIndex = isGuest ? 0 : entryAvatarIndex;
     const skin =
       STUDIO_CHARACTER_SKINS[effectiveAvatarIndex] ?? STUDIO_CHARACTER_SKINS[0];
@@ -363,7 +370,8 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
       ] ?? "#3b82f6";
     const exitToClassic = () => {
       const params = new URLSearchParams(location.search);
-      params.delete("engine");
+      // 기본값이 Godot이라 파라미터를 지우면 폴백이 되지 않는다 — classic으로 고정한다.
+      params.set("engine", "classic");
       const value = params.toString();
       navigate({ pathname: location.pathname, search: value ? `?${value}` : "" });
     };
@@ -379,42 +387,67 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
     );
   }
 
+  const enterGodot = () => {
+    const params = new URLSearchParams(location.search);
+    params.set("engine", "godot");
+    const value = params.toString();
+    navigate({ pathname: location.pathname, search: value ? `?${value}` : "" });
+  };
+
   return (
-    <StudioLiveCollaborationProvider
-      workId={decodedProjectId}
-      participant={participant}
-      currentPageId="virtual-space"
-      currentTool="spatial-presence"
-      outboxScope={null}
-      transportFactory={transportFactory}
-      serverRequired
-      ephemeralOnly
-      showHuddleLauncher={false}
-    >
-      <VirtualSpaceExperience
-        key={JSON.stringify([decodedProjectId, userId, publication.snapshot.active?.scope ?? "bundled"])}
-        publication={publication}
-        projectId={decodedProjectId}
-        initialAvatarIndexOverride={isGuest ? 0 : entryAvatarIndex}
-        initialArtStyleOverride={entryArtStyle}
-        nickname={publicNickname}
-        onNicknameChange={(value) => {
-          const resolvedNickname = normalizeStudioVirtualSpaceNickname(value);
-          if (!resolvedNickname) return;
-          setEntryNickname(resolvedNickname);
-          if (validStudioVirtualSpaceAvatarIndex(entryAvatarIndex)) {
-            void writeStudioVirtualSpaceEntryPreference(entryAvatarIndex, resolvedNickname);
-          }
-        }}
-        homeHeader={homeHeader}
-        personal={personal}
-        preparing={!personal && (!session.ready || !transportFactory)}
-        signedIn={!personal && Boolean(session.data)}
-        isGuest={isGuest}
-        guestSpawn={guestSessionForSpace?.spawn ?? guestInvite.spawn}
-        entryJustConfirmed={!initialEntryPreference.confirmed}
-      />
-    </StudioLiveCollaborationProvider>
+    <>
+      <div
+        data-testid="classic-space-fallback-banner"
+        className="fixed left-1/2 top-3 z-[130] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-full border border-line bg-card/95 px-4 py-2 shadow-lg"
+        role="status"
+      >
+        <p className="whitespace-nowrap text-xs font-semibold">
+          {bt("지금은 클래식 스페이스예요.", "You're in the classic space.")}
+        </p>
+        <button
+          type="button"
+          className="whitespace-nowrap text-xs font-bold underline underline-offset-4"
+          onClick={enterGodot}
+        >
+          {bt("새 스페이스(Godot)로 전환", "Switch to the new space (Godot)")}
+        </button>
+      </div>
+      <StudioLiveCollaborationProvider
+        workId={decodedProjectId}
+        participant={participant}
+        currentPageId="virtual-space"
+        currentTool="spatial-presence"
+        outboxScope={null}
+        transportFactory={transportFactory}
+        serverRequired
+        ephemeralOnly
+        showHuddleLauncher={false}
+      >
+        <VirtualSpaceExperience
+          key={JSON.stringify([decodedProjectId, userId, publication.snapshot.active?.scope ?? "bundled"])}
+          publication={publication}
+          projectId={decodedProjectId}
+          initialAvatarIndexOverride={isGuest ? 0 : entryAvatarIndex}
+          initialArtStyleOverride={entryArtStyle}
+          nickname={publicNickname}
+          onNicknameChange={(value) => {
+            const resolvedNickname = normalizeStudioVirtualSpaceNickname(value);
+            if (!resolvedNickname) return;
+            setEntryNickname(resolvedNickname);
+            if (validStudioVirtualSpaceAvatarIndex(entryAvatarIndex)) {
+              void writeStudioVirtualSpaceEntryPreference(entryAvatarIndex, resolvedNickname);
+            }
+          }}
+          homeHeader={homeHeader}
+          personal={personal}
+          preparing={!personal && (!session.ready || !transportFactory)}
+          signedIn={!personal && Boolean(session.data)}
+          isGuest={isGuest}
+          guestSpawn={guestSessionForSpace?.spawn ?? guestInvite.spawn}
+          entryJustConfirmed={!initialEntryPreference.confirmed}
+        />
+      </StudioLiveCollaborationProvider>
+    </>
   );
 }
 

@@ -253,8 +253,13 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 function pageElement(path = "/studio/project-social/virtual", page = <StudioVirtualSpacePage />) {
+  // 5단계부터 기본 무대는 Godot다 — 이 스위트는 동결된 클래식 폴백의 동선을
+  // 검증하므로 진입 파라미터를 명시한다 (엔진 규칙 자체는 studio-space-engine.test.ts).
+  const classicPath = path.includes("engine=")
+    ? path
+    : `${path}${path.includes("?") ? "&" : "?"}engine=classic`;
   // LocationProbe는 Routes 밖에 두어 홈으로 나간 뒤에도 주소를 기록한다.
-  return <MemoryRouter initialEntries={[path]}>
+  return <MemoryRouter initialEntries={[classicPath]}>
     <Routes><Route path="/studio/:projectId/virtual" element={page} /></Routes>
     <LocationProbe />
   </MemoryRouter>;
@@ -463,7 +468,8 @@ describe("월드 해석기와 장소 이동", () => {
     const panel = await openTab("places");
     fireEvent.click(within(panel).getByRole("button", { name: placeButton("creator-cafe") }));
     if (start.key === target.key) {
-      expect(f.location).toBe("/studio/project-social/virtual?place=skyport");
+      // 장소 이동이 동결 폴백 선택(engine=classic)을 지우지 않고 유지한다.
+      expect(f.location).toBe("/studio/project-social/virtual?place=skyport&engine=classic");
       expect(roomContains(start.manifest, "creator-cafe", f.engine?.bridge.consumeMoveTarget())).toBe(true);
     } else {
       await waitFor(() => expect(f.location).toContain("place=creator-cafe"));
