@@ -226,7 +226,7 @@
   "domains/creator/studio-publication-analytics.ts": 1549,
   "domains/creator/studio-publish-package.ts": 1712,
   "domains/creator/studio-quality-inspection.ts": 1589,
-  "domains/creator/studio-realtime-provider-cloudflare-adapter.ts": 1738,
+  "domains/creator/studio-realtime-provider-cloudflare-adapter.ts": 1742,
   "domains/creator/studio-scene-snapshot-library.ts": 1134,
   "domains/creator/studio-scene-templates.ts": 1485,
   "domains/creator/studio-selection-tools.ts": 1780,
