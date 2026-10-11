@@ -310,7 +310,7 @@ describe("키트 틴트(RigPart.tint)", () => {
 // ---------------------------------------------------------------- 외곽선 정책
 
 describe("툰 hull 외곽선 정책(A-5·A-9)", () => {
-  it("키트: 머리와 눈·입 안 계열 역할(안구·홍채·하이라이트·눈썹·속눈썹·치아·혀)은 hull을 켜지 않고 피부·헤어·의상·신발·속옷은 켠다", async () => {
+  it("키트: 피부·머리와 눈·입 안 계열 역할(안구·홍채·하이라이트·눈썹·속눈썹·치아·혀)은 hull을 켜지 않고 헤어·의상·신발·속옷은 켠다", async () => {
     const env = await bootKit();
     env.h.engine.setShading(toon());
     const parts = env.h.engine.inspectRig()?.parts ?? [];
@@ -319,7 +319,7 @@ describe("툰 hull 외곽선 정책(A-5·A-9)", () => {
     // 정책 표의 모든 제외 역할이 이 합성 키트(pupil만 빼고)에 실제로 있었음을 확인한다 — 빈 검사가 되지 않게
     const present = new Set(parts.map((part) => part.role));
     for (const role of KIT_OUTLINE_EXEMPT_ROLES) if (role !== "pupil") expect(present.has(role), role).toBe(true);
-    expect(parts.filter((part) => part.renderOutline).map((part) => part.role)).toEqual(["skin", "hair", "top", "bottom", "shoes", "underwear"]);
+    expect(parts.filter((part) => part.renderOutline).map((part) => part.role)).toEqual(["hair", "top", "bottom", "shoes", "underwear"]);
   });
 
   it("키트는 `_Outline` 셸을 싣지 않으므로 hull과 셸의 이중 외곽선이 생기지 않는다(셸 메시 0, 셸 가시 0)", async () => {
@@ -338,7 +338,7 @@ describe("툰 hull 외곽선 정책(A-5·A-9)", () => {
     expect(env.h.engine.inspectRig()?.parts.every((part) => !part.renderOutline)).toBe(true);
     env.h.engine.setShading(toon());
     const outlined = env.h.engine.inspectRig()?.parts.filter((part) => part.renderOutline).map((part) => part.role);
-    expect(outlined).toEqual(["skin", "hair", "top", "bottom", "shoes", "underwear"]);
+    expect(outlined).toEqual(["hair", "top", "bottom", "shoes", "underwear"]);
   });
 
   it("엣지·없음 외곽선 모드는 정책의 대상이 아니다(엣지는 모든 파츠에, 없음은 어떤 파츠에도 켜지 않는다)", async () => {

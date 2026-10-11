@@ -7,7 +7,11 @@
  *   입 안(치아·혀)·속눈썹·눈썹도 같은 이유로 제외한다.
  *   근거 2(A-9, KT-04가 실제 엔진으로 확인): Babylon 외곽선 렌더러는 메시를 그린 뒤 부풀린 껍질의 깊이를 다시 써서, 머리 표면보다 4 mm 앞의 깊이가
  *   이후에 그려지는 눈·눈썹·속눈썹을 깊이 테스트에서 떨어뜨린다(머리 hull 폭을 0.5 mm로 줄여도 눈썹이 가려진다). 그래서 머리 hull도 켜지 않는다.
- *   알려진 한계: 키트 머리의 실루엣 선이 없다(몸·헤어·의상·신발·액세서리·속옷은 hull 유지). 엣지·후처리 방식의 머리 윤곽은 후속 과제다.
+ *   근거 3(2026-10-11, 실제 GPU 브라우저 확인): 키트 **몸**(`TS_Body`, 역할 `skin`)의 hull이 Apple M2 Max(ANGLE Metal, WebGL2)에서 맨팔·손에 무지개색 줄무늬를,
+ *   의상 아래 가슴·신발 속 발에 hull 색(어두운 보라) 얼룩을 만든다. 외곽선을 "없음"으로 하면 사라지고(엣지 검출은 얼굴·옷에 검은 잡음), 같은 GPU에서 절차 소스의
+ *   hull과 키트의 의상·헤어·신발 hull은 정상이다. 원인은 확정하지 못했다(Babylon 외곽선 렌더러는 morph 텍스처·본 텍스처를 묶는다; SwiftShader 뷰어에서는 재현되지 않는다).
+ *   확정 전까지 몸 hull도 켜지 않는다(우회, 후속 과제).
+ *   알려진 한계: 키트 머리·몸(피부)의 실루엣 선이 없다(헤어·의상·신발·액세서리·속옷은 hull 유지). 엣지·후처리 방식의 머리·몸 윤곽은 후속 과제다.
  *   에셋 쪽에서 눈 메시를 키우거나 외곽선용 우회 지오메트리를 넣지 않는다(계약 4.8: `_Outline` 셸 금지).
  *
  * `edge`(EdgesRenderer) 외곽선은 이 정책의 대상이 아니다 — 부드러운 눈 구면에는 각도 임계(cos 0.95)를 넘는 모서리가 거의 없어 고리가 생기지 않는다.
@@ -17,7 +21,7 @@ import type { PartRole } from "../contracts";
 export type OutlineRigKind = "procedural" | "package" | "kit";
 
 /** 키트 소스에서 hull 외곽선을 켜지 않는 역할 */
-export const KIT_OUTLINE_EXEMPT_ROLES: ReadonlySet<PartRole> = new Set<PartRole>(["head", "eyeball", "iris", "pupil", "eye-highlight", "lash", "brow", "teeth", "tongue"]);
+export const KIT_OUTLINE_EXEMPT_ROLES: ReadonlySet<PartRole> = new Set<PartRole>(["skin", "head", "eyeball", "iris", "pupil", "eye-highlight", "lash", "brow", "teeth", "tongue"]);
 
 /** 이 리그 종류의 이 역할 메시에 hull 외곽선을 켜도 되는지. 키트의 머리·눈·입 안 계열 역할만 false다. */
 export function hullOutlineAllowed(kind: OutlineRigKind, role: PartRole): boolean {
