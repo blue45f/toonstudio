@@ -174,4 +174,6 @@ morph는 계약 이름(`param:<키>:±`, `facs:<유닛>`)을 그대로 쓰므로
   Hyper3D 파생 파츠의 공개 저장소 반입은 사용자가 유료 플랜(상업 이용 가능)임을 확인하고 지시해 이루어졌다. 서면 확인(`docs/hyper3d-terms-record.md` §6)은 받지 않았다.
 - 실브라우저 확인(2026-10-11, Apple M2 Max · ANGLE Metal · WebGL2, 개발 서버): 키트 부팅·상의 5종 교체·두 베이스 전환이 동작한다. **키트 몸(피부)의 hull 외곽선이 이 GPU에서 맨팔·손에 무지개 줄무늬를 만들어**
   `render/outline-policy.ts`가 키트의 피부 hull을 켜지 않게 우회했다(근거 3, 원인은 미확정). 같은 GPU에서 절차 소스의 hull과 키트의 의상·헤어·신발 hull은 정상이다.
+- 화면 증거(2026-10-11): 실제 앱(키트 소스·툰·WebGL2) 캡처 [`docs/images/kit-app-showcase-2026-10-11.png`](docs/images/kit-app-showcase-2026-10-11.png)(두 베이스·여섯 가지 조합, 캡처 직후 몇 초는 피부가 하얗게 보여 14초 기다렸다)와
+  뷰어(`kit-preview`) 12종 차림 [`docs/images/kit-preview-showcase-2026-10-11.png`](docs/images/kit-preview-showcase-2026-10-11.png).
 - 아직 브라우저로 확인하지 않은 것: WebGPU 경로, 키트 파츠 조합 전체(소수 조합만 확인), 물리(헤어·의상 체인)와 키트 파츠의 상호작용.
