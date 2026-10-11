@@ -34,4 +34,14 @@ export class StudioVoiceIcePolicyController {
   ) {
     return this.service.issueScreenShare(authenticatedUserId(userId), params.id);
   }
+
+  @Get("/creator/works/:id/voice/ice")
+  @Header("Cache-Control", "private, no-store, max-age=0")
+  async issueVoice(
+    @Param(new ZodValidationPipe(CreatorTeamWorkParamsDto))
+    params: CreatorTeamWorkParamsDto,
+    @Headers("x-user-id") userId?: string
+  ) {
+    return this.service.issueVoice(authenticatedUserId(userId), params.id);
+  }
 }

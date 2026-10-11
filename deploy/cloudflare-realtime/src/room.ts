@@ -1063,7 +1063,10 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
       if (message.channel === "presence") {
         if (message.payload.kind === "presence.leave") {
           this.store.clearPresence(attachment.connectionId);
-        } else {
+        } else if (
+          message.payload.kind === "presence.update" ||
+          message.payload.kind === "presence.cursor"
+        ) {
           this.store.updatePresence(
             attachment.connectionId,
             attachment.actorId,
@@ -1074,6 +1077,8 @@ export class RealtimeRoom extends DurableObject<RealtimeWorkerEnv> {
             nowMs,
           );
         }
+        // presence.bubble은 일시적 표시 전파 전용이라 프레즌스 상태에 저장하지
+        // 않는다 (이벤트 로그·브로드캐스트만 흐른다).
       }
       try {
         stored = this.store.appendEvent(
