@@ -592,6 +592,59 @@ describe("StudioGodotSpaceEmbed — 4단계 공간·배치", () => {
     };
     expect(applied.spec.name).toBe("작업실 (수정)");
   });
+
+  it("waits for the boot background load to settle before issuing a ticket", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    const setSession = vi.fn();
+    frameWindow().__tsvs_setSession = setSession;
+    frameWindow().__godotBgState = "loading";
+
+    act(() => hostBridge().onGodotReady("{}"));
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(issue).not.toHaveBeenCalled();
+    expect(setSession).not.toHaveBeenCalled();
+
+    frameWindow().__godotBgState = "ready";
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(setSession).toHaveBeenCalledTimes(1));
+  });
+
+  it("defers a stage layout apply while a background load is in flight", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    frameWindow().__tsvs_setSession = vi.fn();
+    const applyLayout = vi.fn();
+    frameWindow().__tsvs_applyLayout = applyLayout;
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    await screen.findByTestId("godot-space-tab-street");
+    applyLayout.mockClear();
+
+    const savedDef = { ...ROOM_DEF, name: "작업실 (원격 수정)" };
+    spaceMocks.fetchLayout.mockResolvedValue({
+      definition: savedDef,
+      revision: 6,
+      updatedByUserId: "user-2",
+      updatedAt: "2026-10-11T02:00:00.000Z",
+    });
+    frameWindow().__godotBgState = "loading";
+    act(() =>
+      hostBridge().onLayoutRemote(
+        JSON.stringify({ v: 1, spaceId: "studio-room", revision: 6 }),
+      ),
+    );
+    await waitFor(() => expect(spaceMocks.fetchLayout).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(applyLayout).not.toHaveBeenCalled();
+
+    frameWindow().__godotBgState = "ready";
+    await waitFor(() => expect(applyLayout).toHaveBeenCalledTimes(1));
+    const applied = JSON.parse(applyLayout.mock.calls[0]?.[0] as string) as {
+      spec: { name: string };
+    };
+    expect(applied.spec.name).toBe("작업실 (원격 수정)");
+  });
 });
 
 describe("StudioGodotSpaceEmbed — 표면 회귀 복구 (이모트·상호작용·위치 복원)", () => {

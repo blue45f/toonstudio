@@ -24,10 +24,16 @@ import {
 } from "./studio-godot-meeting-session";
 import { StudioGodotMeetingPanel } from "./StudioGodotMeetingPanel";
 import {
+  deleteGodotSpaceBackground,
+  fetchGodotSpaceBackgrounds,
   fetchGodotSpaceCatalog,
   fetchGodotSpaceLayout,
   isGodotSpaceLayoutConflict,
+  resolveGodotBackgroundForStage,
+  restoreGodotBackgroundReference,
   saveGodotSpaceLayout,
+  uploadGodotSpaceBackground,
+  type GodotSpaceBackgroundAsset,
   type GodotSpaceDefinition,
 } from "./studio-godot-space";
 import {
@@ -193,8 +199,64 @@ export function StudioGodotSpaceEmbed({
     return frame.contentWindow as unknown as TsvsGodotFrameWindow;
   }, []);
 
+  // 무대 배경 로더(bg_stage.gd)는 HTTPRequest가 하나뿐이라, 부팅 배경을
+  // 받는 중에 새 배경 적용이 닿으면 요청이 즉시 실패(err=44)하고 적용이
+  // 유실된다 (2026-10-12 실측: 저장 배경 재접속 시 카탈로그로 남음).
+  // 그래서 무대 적용은 배경 로드가 가라앉을 때까지 셸이 붙잡는다.
+  const pendingStageLayoutRef = useRef<string | null>(null);
+  const stageLayoutFlushingRef = useRef(false);
+
+  // 배경 상태가 확정값(idle|ready|failed)이 될 때까지 기다린다. 상태
+  // 문자열 자체가 끝내 없으면(보고 없는 무대·테스트 더블) 짧게만 기다리고
+  // 기존 동작으로 진행한다. 한 번이라도 보이면 "loading" 해소까지 기다린다.
+  const waitForStageBackgroundSettled = useCallback(
+    async (signal?: AbortSignal): Promise<void> => {
+      const deadline = Date.now() + 65_000;
+      const firstSeenDeadline = Date.now() + 300;
+      while (!signal?.aborted && Date.now() < deadline) {
+        const state = frameWindow()?.__godotBgState;
+        if (typeof state === "string") {
+          if (state !== "loading") return;
+        } else if (Date.now() > firstSeenDeadline) {
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    },
+    [frameWindow],
+  );
+
+  // 대기 중인 무대 레이아웃을 배경 정착 후 흘려보낸다. 겹치면 최신만 남긴다.
+  const flushPendingStageLayout = useCallback(async (): Promise<void> => {
+    if (stageLayoutFlushingRef.current) return;
+    stageLayoutFlushingRef.current = true;
+    try {
+      while (pendingStageLayoutRef.current) {
+        if (frameWindow()?.__godotBgState === "loading") {
+          await waitForStageBackgroundSettled();
+        }
+        const json = pendingStageLayoutRef.current;
+        pendingStageLayoutRef.current = null;
+        if (json) frameWindow()?.__tsvs_applyLayout?.(json);
+      }
+    } finally {
+      stageLayoutFlushingRef.current = false;
+    }
+  }, [frameWindow, waitForStageBackgroundSettled]);
+
+  const pushStageLayout = useCallback(
+    (definition: GodotSpaceDefinition) => {
+      pendingStageLayoutRef.current = JSON.stringify({
+        spec: resolveGodotBackgroundForStage(definition, workId),
+      });
+      void flushPendingStageLayout();
+    },
+    [flushPendingStageLayout, workId],
+  );
+
   // 해석된 정의를 상태·무대 양쪽에 반영한다. 세션 주입 전이면 무대 호출은
   // 무대가 버리고(주입 페이로드가 정의를 싣는다), 접속 중이면 즉시 적용된다.
+  // 배경 로드 중이면 pushStageLayout이 정착까지 적용을 미룬다.
   const applyResolvedLayout = useCallback(
     (definition: GodotSpaceDefinition, revision: number) => {
       spaceDefRef.current = definition;
@@ -203,11 +265,9 @@ export function StudioGodotSpaceEmbed({
       setLayoutRevision(revision);
       setLayoutDirty(false);
       setLayoutLoadState("ready");
-      frameWindow()?.__tsvs_applyLayout?.(
-        JSON.stringify({ spec: definition }),
-      );
+      pushStageLayout(definition);
     },
-    [frameWindow],
+    [pushStageLayout],
   );
 
   // 정적 카탈로그는 빌드와 함께 배포되는 기본 정의 묶음이다.
@@ -294,6 +354,108 @@ export function StudioGodotSpaceEmbed({
       frameWindow()?.__tsvs_setEditMode?.(enabled);
     },
     [frameWindow],
+  );
+
+  // 배경 GLB 교체 (§14): 업로드 자산 목록과 패널 동선의 상태.
+  // 정의 변경은 기존 초안·dirty·저장 동선을 그대로 탄다.
+  const [backgroundAssets, setBackgroundAssets] = useState<
+    readonly GodotSpaceBackgroundAsset[]
+  >([]);
+  const [backgroundUploadState, setBackgroundUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
+  const [backgroundError, setBackgroundError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (localOnly) return;
+    let cancelled = false;
+    fetchGodotSpaceBackgrounds(workId)
+      .then((assets) => {
+        if (!cancelled) setBackgroundAssets(assets);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBackgroundError("업로드한 배경 목록을 불러오지 못했습니다.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [localOnly, workId]);
+
+  const applyDefinitionDraft = useCallback(
+    (next: GodotSpaceDefinition) => {
+      spaceDefRef.current = next;
+      setSpaceDef(next);
+      setLayoutDirty(true);
+      pushStageLayout(next);
+    },
+    [pushStageLayout],
+  );
+
+  const handleBackgroundChange = useCallback(
+    (background: GodotSpaceDefinition["background"]) => {
+      const current = spaceDefRef.current;
+      if (!current) return;
+      applyDefinitionDraft({ ...current, background });
+    },
+    [applyDefinitionDraft],
+  );
+
+  const handleBackgroundUpload = useCallback(
+    async (file: File) => {
+      setBackgroundUploadState("uploading");
+      setBackgroundError(null);
+      try {
+        const asset = await uploadGodotSpaceBackground(workId, file);
+        setBackgroundAssets((previous) => [asset, ...previous]);
+        setBackgroundUploadState("idle");
+        // 업로드 즉시 지정한다. 카메라 값은 현재 배경(없으면 이 공간의
+        // 기본 배경)의 것을 이어받는다.
+        const current = spaceDefRef.current;
+        if (current) {
+          const base =
+            current.background ??
+            catalog.find((def) => def.id === current.id)?.background ??
+            null;
+          handleBackgroundChange({ ...(base ?? {}), glb: asset.glbRef });
+        }
+      } catch (error) {
+        setBackgroundUploadState("error");
+        setBackgroundError(
+          error instanceof Error
+            ? error.message
+            : "배경을 올리지 못했습니다.",
+        );
+      }
+    },
+    [catalog, handleBackgroundChange, workId],
+  );
+
+  const handleBackgroundDelete = useCallback(
+    async (assetId: string) => {
+      setBackgroundError(null);
+      try {
+        await deleteGodotSpaceBackground(workId, assetId);
+        setBackgroundAssets((previous) =>
+          previous.filter((asset) => asset.assetId !== assetId),
+        );
+        const current = spaceDefRef.current;
+        if (current?.background?.glb === `uploads/${assetId}.glb`) {
+          // 사용 중이던 배경이 지워지면 기본 배경으로 되돌린다.
+          const fallback =
+            catalog.find((def) => def.id === current.id)?.background ?? null;
+          handleBackgroundChange(fallback ? { ...fallback } : null);
+        }
+      } catch (error) {
+        setBackgroundError(
+          error instanceof Error
+            ? error.message
+            : "배경을 지우지 못했습니다.",
+        );
+      }
+    },
+    [catalog, handleBackgroundChange, workId],
   );
 
   // 공간 전환은 무대 리로드가 가장 안전하다 (연결·구역·배경을 통째로 재구성).
@@ -454,8 +616,14 @@ export function StudioGodotSpaceEmbed({
         };
       }
       // 4단계: 해석된 공간 정의(저장본 우선)를 세션에 싣는다. 없으면 무대가
-      // ?space= 부팅 기본값·내장 정의를 쓴다.
-      if (spaceDefRef.current) payload.space = spaceDefRef.current;
+      // ?space= 부팅 기본값·내장 정의를 쓴다. 업로드 배경 참조는 무대가
+      // 읽을 수 있는 content 절대 URL로 바꾼 사본을 싣는다 (§14).
+      if (spaceDefRef.current) {
+        payload.space = resolveGodotBackgroundForStage(
+          spaceDefRef.current,
+          workId,
+        );
+      }
       frameWindow()?.__tsvs_setSession?.(JSON.stringify(payload));
       if (document.hidden) {
         frameWindow()?.__tsvs_setVisibility?.(true);
@@ -474,6 +642,11 @@ export function StudioGodotSpaceEmbed({
     const controller = new AbortController();
     abortRef.current = controller;
     try {
+      // 세션 페이로드의 배경이 부팅 배경 다운로드와 겹치면 무대 로더가
+      // 요청 중첩으로 실패한다. 티켓 발급 전에 배경 정착을 기다려
+      // 티켓 수명(120초)은 대기 시간에 쓰지 않는다.
+      await waitForStageBackgroundSettled(controller.signal);
+      if (controller.signal.aborted) return;
       sessionIdRef.current ??=
         globalThis.crypto?.randomUUID?.() ??
         `godot-shell-${Date.now().toString(36)}`;
@@ -526,7 +699,7 @@ export function StudioGodotSpaceEmbed({
     } finally {
       issuingRef.current = false;
     }
-  }, [guestAccess, injectSession, localOnly, ticketIssuer, workId]);
+  }, [guestAccess, injectSession, localOnly, ticketIssuer, waitForStageBackgroundSettled, workId]);
 
   const appendChat = useCallback(
     (fromSelf: boolean, name: string, text: string) => {
@@ -667,7 +840,12 @@ export function StudioGodotSpaceEmbed({
           return;
         }
         // 무대 정규화를 통과한 정의를 셸 초안으로 삼는다 (저장은 별도 동선).
-        const definition = spec as GodotSpaceDefinition;
+        // 무대는 업로드 배경을 절대 URL로 알고 있으므로, 저장 정본인
+        // uploads/ 참조로 되돌려서 초안에 싣는다 (§14 역변환).
+        const definition = restoreGodotBackgroundReference(
+          spec as GodotSpaceDefinition,
+          workId,
+        );
         if (definition.id !== spaceIdRef.current) return;
         spaceDefRef.current = definition;
         setSpaceDef(definition);
@@ -913,6 +1091,15 @@ export function StudioGodotSpaceEmbed({
           onRetryLoad={() => setLayoutFetchNonce((nonce) => nonce + 1)}
           onToggleEdit={handleToggleEditMode}
           onCommand={handleLayoutCommand}
+          backgroundAssets={backgroundAssets}
+          defaultBackground={
+            catalog.find((def) => def.id === spaceId)?.background ?? null
+          }
+          backgroundUploadState={backgroundUploadState}
+          backgroundError={backgroundError}
+          onBackgroundChange={handleBackgroundChange}
+          onBackgroundUpload={(file) => void handleBackgroundUpload(file)}
+          onBackgroundDelete={(assetId) => void handleBackgroundDelete(assetId)}
           onSave={() => void handleLayoutSave()}
           onReload={() => {
             setLayoutSaveState("idle");

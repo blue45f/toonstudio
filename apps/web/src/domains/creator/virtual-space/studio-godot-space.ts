@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { api, httpStatus, toApiError } from "@/platform/api";
+import { api, apiFetch, apiPath, httpStatus, toApiError } from "@/platform/api";
 
 /**
  * Godot 가상스튜디오 공간 정의 포맷 v1의 셸 측 계약 (4단계 — 월드 저작).
@@ -164,6 +164,160 @@ export async function fetchGodotSpaceLayout(
 /** 저장 실패가 revision 충돌(409)인지 — 셸이 재조회 동선을 제시하는 데 쓴다. */
 export function isGodotSpaceLayoutConflict(error: unknown): boolean {
   return httpStatus(error) === 409;
+}
+
+// ── 배경 GLB 업로드 (DESIGN §14) ────────────────────────────────────
+//
+// 저장 정의의 background.glb는 `uploads/<assetId>.glb` 참조만 싣는다.
+// 무대(Godot)는 인증 헤더를 실을 수 없고 같은 오리진의 정적 자산만
+// 상대 경로로 읽으므로, 셸이 무대 주입 시점에만 참조를 API content
+// 절대 URL로 바꾼 사본을 만든다. 저장 정본은 항상 참조 형태이며,
+// 무대가 편집 결과를 되돌려 보낼 때는 역변환으로 정본을 복원한다.
+
+export interface GodotSpaceBackgroundAsset {
+  readonly assetId: string;
+  readonly glbRef: string;
+  readonly fileName: string;
+  readonly byteSize: number;
+  readonly sha256: string;
+  readonly uploadedByUserId: string;
+  readonly createdAt: string;
+}
+
+const GodotSpaceBackgroundAssetSchema = z.object({
+  assetId: z.string(),
+  glbRef: z.string(),
+  fileName: z.string(),
+  byteSize: z.number(),
+  sha256: z.string(),
+  uploadedByUserId: z.string(),
+  createdAt: z.string(),
+});
+
+const UPLOADED_BACKGROUND_REF_PATTERN =
+  /^uploads\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.glb$/;
+
+export function godotSpaceBackgroundContentUrl(
+  workId: string,
+  assetId: string,
+): string {
+  const path = apiPath(
+    `/creator/works/${encodeURIComponent(workId)}/godot-space-backgrounds/${encodeURIComponent(assetId)}/content`,
+  );
+  if (/^https?:\/\//iu.test(path)) return path;
+  const origin =
+    typeof window !== "undefined" && globalThis.location?.origin
+      ? globalThis.location.origin
+      : "http://localhost";
+  return new URL(path, origin).href;
+}
+
+/** 무대 주입용 사본: uploads/ 참조를 content 절대 URL로 바꾼다. */
+export function resolveGodotBackgroundForStage(
+  definition: GodotSpaceDefinition,
+  workId: string,
+): GodotSpaceDefinition {
+  const background = definition.background;
+  if (!background) return definition;
+  const match = UPLOADED_BACKGROUND_REF_PATTERN.exec(background.glb);
+  if (!match) return definition;
+  return {
+    ...definition,
+    background: {
+      ...background,
+      glb: godotSpaceBackgroundContentUrl(workId, match[1]),
+    },
+  };
+}
+
+/** 무대 회신 복원: content 절대 URL을 uploads/ 정본 참조로 되돌린다. */
+export function restoreGodotBackgroundReference(
+  definition: GodotSpaceDefinition,
+  workId: string,
+): GodotSpaceDefinition {
+  const background = definition.background;
+  if (!background) return definition;
+  const glb = background.glb;
+  if (!glb.startsWith("http")) return definition;
+  const marker = `/creator/works/${encodeURIComponent(workId)}/godot-space-backgrounds/`;
+  const markerIndex = glb.indexOf(marker);
+  if (markerIndex < 0) return definition;
+  const tail = glb.slice(markerIndex + marker.length);
+  const assetMatch =
+    /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/content(?:[?#].*)?$/u.exec(
+      tail,
+    );
+  if (!assetMatch) return definition;
+  return {
+    ...definition,
+    background: { ...background, glb: `uploads/${assetMatch[1]}.glb` },
+  };
+}
+
+export async function fetchGodotSpaceBackgrounds(
+  workId: string,
+  signal?: AbortSignal,
+): Promise<readonly GodotSpaceBackgroundAsset[]> {
+  try {
+    const raw = await api.get<unknown>(
+      `/creator/works/${encodeURIComponent(workId)}/godot-space-backgrounds`,
+      { signal, timeout: 10_000 },
+    );
+    const parsed = z.array(GodotSpaceBackgroundAssetSchema).safeParse(raw);
+    if (!parsed.success) {
+      throw new Error("서버가 올바른 배경 목록을 반환하지 않았습니다.");
+    }
+    return parsed.data;
+  } catch (error) {
+    throw await toApiError(error, "업로드한 배경 목록을 불러오지 못했습니다.");
+  }
+}
+
+export async function uploadGodotSpaceBackground(
+  workId: string,
+  file: File,
+): Promise<GodotSpaceBackgroundAsset> {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await apiFetch(
+    `/creator/works/${encodeURIComponent(workId)}/godot-space-backgrounds`,
+    { method: "POST", body: form },
+  );
+  if (!response.ok) {
+    // 서버 검증 사유(형식·압축 확장·용량)는 그대로 사용자에게 보여야
+    // 다시보내기 방향을 알 수 있다 — Nest 오류 본문의 message를 우선한다.
+    let message = `배경을 올리지 못했습니다 (${response.status}).`;
+    try {
+      const body = (await response.json()) as { message?: unknown };
+      if (typeof body.message === "string" && body.message.length > 0) {
+        message = body.message;
+      }
+    } catch {
+      // 본문이 JSON이 아니면 기본 문구를 쓴다.
+    }
+    throw new Error(message);
+  }
+  const parsed = GodotSpaceBackgroundAssetSchema.safeParse(
+    await response.json(),
+  );
+  if (!parsed.success) {
+    throw new Error("서버가 올바른 업로드 결과를 반환하지 않았습니다.");
+  }
+  return parsed.data;
+}
+
+export async function deleteGodotSpaceBackground(
+  workId: string,
+  assetId: string,
+): Promise<void> {
+  try {
+    await api.delete(
+      `/creator/works/${encodeURIComponent(workId)}/godot-space-backgrounds/${encodeURIComponent(assetId)}`,
+      { timeout: 10_000 },
+    );
+  } catch (error) {
+    throw await toApiError(error, "배경을 지우지 못했습니다.");
+  }
 }
 
 export async function saveGodotSpaceLayout(

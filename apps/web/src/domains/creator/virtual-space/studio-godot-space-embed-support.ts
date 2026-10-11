@@ -70,6 +70,8 @@ export interface TsvsGodotFrameWindow {
   __tsvs_applyLayout?: (json: string) => void;
   __tsvs_layoutCommand?: (json: string) => void;
   __tsvs_notifyLayout?: (json: string) => void;
+  // 무대 배경 로드 상태 (bg_stage.gd가 window에 표기: idle|loading|ready|failed).
+  __godotBgState?: string;
 }
 
 export interface TsvsHostBridge {
