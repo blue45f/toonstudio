@@ -22,7 +22,8 @@ jobs:
   full-test:
     name: Full pnpm test
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # 전체 스위트가 45분을 넘겨(2026-10-11 main 실측: 테스트 실패 없이 45분 제한으로 취소) 90분으로 늘린다. 필수 체크가 아닌 진단 워크플로우다.
+    timeout-minutes: 90
     services:
       postgres:
         image: postgres:16-alpine
