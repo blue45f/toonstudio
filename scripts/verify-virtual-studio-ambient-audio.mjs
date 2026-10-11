@@ -3,8 +3,6 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { STUDIO_AMBIENT_TRACKS } from "../apps/web/src/domains/creator/virtual-space/studio-virtual-space-ambient-tracks.ts";
-
 export const VIRTUAL_STUDIO_AMBIENT_DIRECTORY = fileURLToPath(new URL("../apps/web/public/assets/virtual-studio/ambient-audio", import.meta.url));
 const CC0_TEXT_SHA256 = "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499";
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -19,18 +17,26 @@ export function verifyVirtualStudioAmbientAudio({ directory = VIRTUAL_STUDIO_AMB
   assert.equal(provenance.processing.startsWith("None."), true, "original recording bytes must be unchanged");
   assert.equal(provenance.licenseTextSha256, CC0_TEXT_SHA256);
   assert.equal(sha(readFileSync(resolve(directory, "CC0-1.0.txt"))), CC0_TEXT_SHA256, "official CC0 legal text integrity");
+  // 트랙 레지스트리(studio-virtual-space-ambient-tracks.ts)는 클래식 Phaser 클라이언트와
+  // 함께 제거됐고, Godot 무대 데이터(spaces.json)에는 앰비언트 트랙 항목이 없다.
+  // 녹음 트랙의 현행 소재는 이 에셋 디렉터리와 그 준비 증거인 provenance.json뿐이므로,
+  // 트랙 목록을 provenance에서 읽어 실제 파일 바이트와 대조한다.
   // 합성 트랙(synth)은 원본 파일이 없으므로 provenance 대상이 아니다.
-  const recordedTracks = STUDIO_AMBIENT_TRACKS.filter((track) => "src" in track);
-  assert.equal(provenance.files.length, recordedTracks.length);
+  const recordedTracks = provenance.files.map((item) => ({
+    id: basename(item.deliveredFile),
+    file: item.deliveredFile,
+    bytes: item.bytes,
+    sha256: item.sha256,
+    duration: item.duration,
+    recorded: item,
+  }));
+  assert(recordedTracks.length > 0, "provenance must record at least one delivered recording");
   for (const track of recordedTracks) {
-    const bytes = readFileSync(resolve(directory, basename(track.src)));
+    const bytes = readFileSync(resolve(directory, track.file));
     assert.equal(bytes.subarray(0, 4).toString(), "OggS", `${track.id}: OGG container`);
     assert.equal(bytes.length, track.bytes, `${track.id}: byte length`);
     assert.equal(sha(bytes), track.sha256, `${track.id}: original SHA-256`);
-    const recorded = provenance.files.find((item) => track.src.endsWith(`/${item.deliveredFile}`));
-    assert.equal(recorded?.sha256, track.sha256, `${track.id}: provenance SHA-256`);
-    assert.equal(recorded?.bytes, track.bytes);
-    assert.equal(recorded?.duration, track.duration);
+    const recorded = track.recorded;
     assert.equal(recorded?.channels, 2);
     assert.equal(recorded?.sampleRate, 44100);
     assert.equal(recorded?.clippedSamples, 0);
