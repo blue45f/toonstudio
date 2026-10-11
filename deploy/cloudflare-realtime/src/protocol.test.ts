@@ -77,6 +77,47 @@ describe("realtime protocol", () => {
     ).toEqual({ ok: false, code: "invalid-payload" });
   });
 
+  it("accepts a presence layout notice and rejects malformed notices", () => {
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.layout", spaceId: "street", revision: 3 }),
+      ),
+    ).toMatchObject({ ok: true, value: { type: "publish", channel: "presence" } });
+
+    // 정의 본문을 실은 알림·음수/비정수 revision·잘못된 spaceId는 거부한다.
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", {
+          kind: "presence.layout",
+          spaceId: "street",
+          revision: 3,
+          definition: { zones: [] },
+        }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.layout", spaceId: "street", revision: -1 }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.layout", spaceId: "street", revision: 1.5 }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.layout", spaceId: "bad id!", revision: 1 }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    // 다른 채널로는 보낼 수 없다.
+    expect(
+      parseRealtimeClientMessage(
+        publish("comments", { kind: "presence.layout", spaceId: "street", revision: 1 }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+  });
+
   it("accepts the formal avatar appearance field and rejects malformed appearances", () => {
     const base = {
       kind: "presence.update",
