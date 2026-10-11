@@ -41,9 +41,12 @@ export interface GodotMeetingSessionDeps {
   readonly setTimer?: (callback: () => void, delayMs: number) => unknown;
   readonly clearTimer?: (timer: unknown) => void;
   readonly randomId?: () => string;
+  /** 협상 시작 후 이 시간 안에 ICE가 연결되지 않으면 폴백으로 수렴한다. */
+  readonly connectDeadlineMs?: number;
 }
 
 const ICE_DISCONNECT_GRACE_MS = 5_000;
+const ICE_CONNECT_DEADLINE_MS = 25_000;
 
 interface IceCandidateInitLike {
   candidate: string;
@@ -69,6 +72,7 @@ export class StudioGodotMeetingSession {
   private remoteStream: MediaStream | null = null;
   private pendingCandidates: IceCandidateInitLike[] = [];
   private disconnectTimer: unknown = null;
+  private connectTimer: unknown = null;
   private started = false;
   private closed = false;
 
@@ -351,11 +355,21 @@ export class StudioGodotMeetingSession {
       this.remoteStream = stream;
       this.deps.onRemoteStream(stream);
     };
+    // 협상 데드라인: 후보 쌍이 끝내 성립하지 않는 환경(예: mDNS 해석 불가,
+    // UDP 차단)에서는 iceConnectionState가 "new"에 머물러 failed조차 오지
+    // 않는다 — 무한 "협상 중" 대신 정직한 폴백으로 수렴시킨다.
+    this.clearConnectTimer();
+    this.connectTimer = this.setTimer(() => {
+      if (this.peerConnection === pc && this.route === "connecting") {
+        this.enterRelayFallback();
+      }
+    }, this.deps.connectDeadlineMs ?? ICE_CONNECT_DEADLINE_MS);
     pc.oniceconnectionstatechange = () => {
       if (this.peerConnection !== pc) return;
       const state = pc.iceConnectionState;
       if (state === "connected" || state === "completed") {
         this.clearDisconnectTimer();
+        this.clearConnectTimer();
         this.setRoute("p2p");
       } else if (state === "failed") {
         this.enterRelayFallback();
@@ -378,6 +392,7 @@ export class StudioGodotMeetingSession {
     // P2P가 막힌 환경: 미디어 릴레이는 현 스택에 없으므로 상태를 정직하게
     // 표기하고 연결 시도를 멈춘다. 프레즌스(보장 경로)는 영향받지 않는다.
     this.clearDisconnectTimer();
+    this.clearConnectTimer();
     if (this.peerConnection) {
       this.peerConnection.close();
       this.peerConnection = null;
@@ -401,8 +416,16 @@ export class StudioGodotMeetingSession {
     }
   }
 
+  private clearConnectTimer(): void {
+    if (this.connectTimer !== null) {
+      this.clearTimer(this.connectTimer);
+      this.connectTimer = null;
+    }
+  }
+
   private teardown(notifyPeer: boolean): void {
     this.clearDisconnectTimer();
+    this.clearConnectTimer();
     if (notifyPeer && this.peerConnection && this.context.peerClientId) {
       this.deps.sendSignal({
         kind: "signal.stop",

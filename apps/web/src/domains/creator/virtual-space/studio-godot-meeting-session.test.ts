@@ -67,6 +67,7 @@ function makeSession(
     peerClientId?: string;
     getLocalStream?: () => Promise<MediaStream>;
     createPeerConnection?: () => RTCPeerConnection;
+    connectDeadlineMs?: number;
   } = {},
 ) {
   const sent: Record<string, unknown>[] = [];
@@ -90,6 +91,7 @@ function makeSession(
     onRemoteStream: () => undefined,
     onLocalStream: () => undefined,
     randomId: () => "test1234",
+    connectDeadlineMs: overrides.connectDeadlineMs,
   });
   const context = {
     selfInMeeting: true,
@@ -146,6 +148,18 @@ describe("StudioGodotMeetingSession", () => {
     offerer.pcs[0]!.iceConnectionState = "connected";
     offerer.pcs[0]!.oniceconnectionstatechange?.();
     expect(offerer.routes).toContain("p2p");
+  });
+
+  it("converges to relay-fallback when ICE never leaves the initial state", async () => {
+    const { session, routes, pcs, context } = makeSession({ connectDeadlineMs: 20 });
+    session.setContext(context);
+    await session.start();
+    expect(routes).toContain("connecting");
+    // 후보 쌍이 성립하지 않아 iceConnectionState가 "new"에 머무는 환경을
+    // 모사한다 — 데드라인이 지나면 무한 협상 대신 폴백으로 수렴해야 한다.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(routes).toContain("relay-fallback");
+    expect(pcs[0]?.closed).toBe(true);
   });
 
   it("marks relay-fallback honestly when ICE fails", async () => {
