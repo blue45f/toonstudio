@@ -881,17 +881,22 @@ describe("Cloudflare realtime provider adapter", () => {
     recoveredAdapter.close();
   });
 
-  it("fails a fresh non-snapshot workload with pruned history over to primary", async () => {
+  it("admits a fresh non-snapshot workload at the replay floor after prune", async () => {
     const socket = new FakeWebSocket();
     const adapter = await createStudioCloudflareRealtimeAdapterFactory({
       providerId: "cloudflare-realtime",
       realtimeOrigin: "https://realtime.toonstudio.cloud",
       createWebSocket: () => socket,
     }).create();
+    const events: StudioRealtimeInboundEvent[] = [];
     const connecting = adapter.connect(
       request(["comments"]),
       "ticket-fresh-gap-123456789012345678901234567890",
-      { onEvent: vi.fn(), onDisconnect: vi.fn() },
+      {
+        onEvent: (event) =>
+          events.push(event as StudioRealtimeInboundEvent),
+        onDisconnect: vi.fn(),
+      },
       new AbortController().signal,
     );
     socket.open();
@@ -911,9 +916,274 @@ describe("Cloudflare realtime provider adapter", () => {
       },
     });
 
-    await expect(connecting).rejects.toThrow("기본 협업 경로를 사용");
-    expect(socket.sent).toEqual([]);
+    // A fresh join has no retained state to lose, so instead of failing over
+    // it adopts the retention floor and replays everything still retained.
+    expect(JSON.parse(socket.sent[0]!)).toEqual({
+      version: REALTIME_PROTOCOL_VERSION,
+      type: "resume",
+      channel: "comments",
+      afterSequence: 14,
+    });
+    socket.receive(
+      replay("comments", 20, 14, [
+        serverEvent({
+          channel: "comments",
+          sequence: 15,
+          payload: {
+            kind: "comment.changed",
+            threadId: "thread-at-floor",
+            activitySequence: "15",
+            change: "created",
+          },
+        }),
+        serverEvent({
+          channel: "comments",
+          sequence: 20,
+          payload: {
+            kind: "comment.changed",
+            threadId: "thread-latest",
+            activitySequence: "20",
+            change: "replied",
+          },
+        }),
+      ]),
+    );
+    await connecting;
+    await Promise.resolve();
+    expect(events).toHaveLength(2);
     adapter.close();
+  });
+
+  it("admits a fresh join when the channel was fully pruned to an empty log", async () => {
+    const socket = new FakeWebSocket();
+    const adapter = await createStudioCloudflareRealtimeAdapterFactory({
+      providerId: "cloudflare-realtime",
+      realtimeOrigin: "https://realtime.toonstudio.cloud",
+      createWebSocket: () => socket,
+    }).create();
+    const connecting = adapter.connect(
+      request(["screen-signaling"]),
+      "ticket-fresh-pruned-12345678901234567890123456",
+      { onEvent: vi.fn(), onDisconnect: vi.fn() },
+      new AbortController().signal,
+    );
+    socket.open();
+    const prunedWelcome = welcome(
+      ["screen-signaling"],
+      { "screen-signaling": 1 },
+      "connection-fresh-pruned",
+    );
+    socket.receive({
+      ...prunedWelcome,
+      channelStates: {
+        ...prunedWelcome.channelStates,
+        "screen-signaling": {
+          currentSequence: 1,
+          replayFloorSequence: 2,
+        },
+      },
+    });
+
+    // The exact state the browser E2E measured: one historical signal event,
+    // pruned, floor advanced to current + 1. The fresh join resumes at the
+    // floor (== current), so the Worker answers with an empty replay.
+    expect(JSON.parse(socket.sent[0]!)).toEqual({
+      version: REALTIME_PROTOCOL_VERSION,
+      type: "resume",
+      channel: "screen-signaling",
+      afterSequence: 1,
+    });
+    socket.receive({
+      version: REALTIME_PROTOCOL_VERSION,
+      type: "replay",
+      channel: "screen-signaling",
+      fromSequence: 2,
+      toSequence: 1,
+      currentSequence: 1,
+      complete: true,
+      events: [],
+    });
+    await connecting;
+    adapter.close();
+  });
+
+  it("re-adopts the floor once when pruning races a fresh join, then falls back", async () => {
+    const sockets: FakeWebSocket[] = [];
+    const factory = createStudioCloudflareRealtimeAdapterFactory({
+      providerId: "cloudflare-realtime",
+      realtimeOrigin: "https://realtime.toonstudio.cloud",
+      createWebSocket: () => {
+        const socket = new FakeWebSocket();
+        sockets.push(socket);
+        return socket;
+      },
+    });
+    const gapError = (floor: number) => ({
+      version: REALTIME_PROTOCOL_VERSION,
+      type: "error",
+      code: "resume-gap",
+      retryable: false,
+      channel: "comments",
+      currentSequence: 20,
+      replayFloorSequence: floor,
+    });
+
+    const adapter = await factory.create();
+    const connecting = adapter.connect(
+      request(["comments"]),
+      "ticket-fresh-race-1234567890123456789012345678",
+      { onEvent: vi.fn(), onDisconnect: vi.fn() },
+      new AbortController().signal,
+    );
+    sockets[0]!.open();
+    const raceWelcome = welcome(
+      ["comments"],
+      { comments: 20 },
+      "connection-fresh-race",
+    );
+    sockets[0]!.receive({
+      ...raceWelcome,
+      channelStates: {
+        ...raceWelcome.channelStates,
+        comments: { currentSequence: 20, replayFloorSequence: 15 },
+      },
+    });
+    expect(JSON.parse(sockets[0]!.sent[0]!)).toMatchObject({
+      type: "resume",
+      channel: "comments",
+      afterSequence: 14,
+    });
+    // The floor moved to 18 between the welcome and the resume landing.
+    sockets[0]!.receive(gapError(18));
+    expect(JSON.parse(sockets[0]!.sent[1]!)).toMatchObject({
+      type: "resume",
+      channel: "comments",
+      afterSequence: 17,
+    });
+    sockets[0]!.receive(replay("comments", 20, 17));
+    await connecting;
+    adapter.close();
+
+    // The retry budget is one: if the floor races a second time within the
+    // same handshake, the join ends in fallback instead of chasing the floor.
+    const secondFactory = createStudioCloudflareRealtimeAdapterFactory({
+      providerId: "cloudflare-realtime",
+      realtimeOrigin: "https://realtime.toonstudio.cloud",
+      createWebSocket: () => {
+        const socket = new FakeWebSocket();
+        sockets.push(socket);
+        return socket;
+      },
+    });
+    const second = await secondFactory.create();
+    const secondConnect = second.connect(
+      request(["comments"]),
+      "ticket-fresh-race-2-1234567890123456789012345",
+      { onEvent: vi.fn(), onDisconnect: vi.fn() },
+      new AbortController().signal,
+    );
+    sockets[1]!.open();
+    const secondWelcome = welcome(
+      ["comments"],
+      { comments: 20 },
+      "connection-fresh-race-2",
+    );
+    sockets[1]!.receive({
+      ...secondWelcome,
+      channelStates: {
+        ...secondWelcome.channelStates,
+        comments: { currentSequence: 20, replayFloorSequence: 15 },
+      },
+    });
+    sockets[1]!.receive(gapError(18));
+    expect(JSON.parse(sockets[1]!.sent[1]!)).toMatchObject({
+      type: "resume",
+      channel: "comments",
+      afterSequence: 17,
+    });
+    sockets[1]!.receive(gapError(19));
+    await expect(secondConnect).rejects.toThrow("기본 협업 경로를 사용");
+    second.close();
+  });
+
+  it("ends a cursor resume in fallback when the Worker reports a replay gap", async () => {
+    const sockets: FakeWebSocket[] = [];
+    const factory = createStudioCloudflareRealtimeAdapterFactory({
+      providerId: "cloudflare-realtime",
+      realtimeOrigin: "https://realtime.toonstudio.cloud",
+      createWebSocket: () => {
+        const socket = new FakeWebSocket();
+        sockets.push(socket);
+        return socket;
+      },
+    });
+    const firstEvents: StudioRealtimeInboundEvent[] = [];
+    const firstAdapter = await factory.create();
+    const firstConnect = firstAdapter.connect(
+      request(["comments"]),
+      "ticket-cursor-gap-first-1234567890123456789012",
+      {
+        onEvent: (event) =>
+          firstEvents.push(event as StudioRealtimeInboundEvent),
+        onDisconnect: vi.fn(),
+      },
+      new AbortController().signal,
+    );
+    sockets[0]!.open();
+    sockets[0]!.receive(welcome(["comments"], { comments: 9 }));
+    sockets[0]!.receive(
+      replay("comments", 9, 0, [
+        serverEvent({
+          channel: "comments",
+          sequence: 9,
+          payload: {
+            kind: "comment.changed",
+            threadId: "thread-cursor-gap",
+            activitySequence: "9",
+            change: "created",
+          },
+        }),
+      ]),
+    );
+    await firstConnect;
+    await Promise.resolve();
+    const cursor = firstEvents[0]!;
+    firstAdapter.close();
+
+    const recovered = await factory.create();
+    const recoveredConnect = recovered.connect(
+      request(["comments"], [
+        {
+          workload: "comments",
+          serverSequence: cursor.serverSequence,
+          eventId: cursor.eventId,
+        },
+      ]),
+      "ticket-cursor-gap-second-123456789012345678901",
+      { onEvent: vi.fn(), onDisconnect: vi.fn() },
+      new AbortController().signal,
+    );
+    sockets[1]!.open();
+    // Welcome still shows the cursor inside the window, but the floor moves
+    // before the resume lands, so the Worker answers resume-gap. A cursor
+    // resume must not adopt the floor: it terminates in fallback.
+    sockets[1]!.receive(welcome(["comments"], { comments: 20 }));
+    expect(JSON.parse(sockets[1]!.sent[0]!)).toMatchObject({
+      type: "resume",
+      channel: "comments",
+      afterSequence: 9,
+    });
+    sockets[1]!.receive({
+      version: REALTIME_PROTOCOL_VERSION,
+      type: "error",
+      code: "resume-gap",
+      retryable: false,
+      channel: "comments",
+      currentSequence: 20,
+      replayFloorSequence: 15,
+    });
+    await expect(recoveredConnect).rejects.toThrow("기본 협업 경로를 사용");
+    recovered.close();
   });
 
   it("falls back once when a valid replay exceeds the bounded negotiation buffer", async () => {

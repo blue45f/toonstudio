@@ -115,6 +115,10 @@ interface ConnectHandshake {
   readonly timeout: unknown;
   readonly completedReplay: Set<StudioRealtimeWorkload>;
   readonly resumeAfter: Map<StudioRealtimeWorkload, number>;
+  /** Workloads admitted fresh at the replay floor during this handshake. */
+  readonly freshFloorWorkloads: Set<StudioRealtimeWorkload>;
+  /** Fresh-floor workloads that already spent their one floor re-adoption. */
+  readonly floorRetries: Set<StudioRealtimeWorkload>;
   readonly pendingWireEvents: Map<
     StudioRealtimeWorkload,
     Map<number, ServerEventMessage>
@@ -712,6 +716,8 @@ implements StudioRealtimeProviderAdapter {
         timeout,
         completedReplay: new Set(),
         resumeAfter: new Map(),
+        freshFloorWorkloads: new Set(),
+        floorRetries: new Set(),
         pendingWireEvents: new Map(
           request.requiredWorkloads.map((workload) => [
             workload,
@@ -900,6 +906,36 @@ implements StudioRealtimeProviderAdapter {
     }
     if (message.type === "error") {
       if (handshake && !message.idempotencyKey) {
+        if (message.code === "resume-gap" && message.channel) {
+          const channel = message.channel;
+          // Pruning raced the welcome snapshot: the floor advanced between
+          // the channel states negotiated above and this resume. A workload
+          // that was fresh-admitted at the floor may adopt the floor the
+          // Worker just reported, exactly once. Any other gap (a cursor
+          // resume, or a second race) ends in the same FallbackRequired
+          // terminal as the welcome-time check instead of a generic failure
+          // that would retry this route forever.
+          if (
+            handshake.freshFloorWorkloads.has(channel) &&
+            !handshake.floorRetries.has(channel) &&
+            !handshake.completedReplay.has(channel) &&
+            typeof message.replayFloorSequence === "number" &&
+            Number.isSafeInteger(message.replayFloorSequence) &&
+            message.replayFloorSequence >= 1
+          ) {
+            handshake.floorRetries.add(channel);
+            this.sendResume(channel, message.replayFloorSequence - 1);
+            return;
+          }
+          this.failHandshake(
+            new StudioRealtimeProviderFallbackRequiredError(
+              this.descriptor.providerId,
+            ),
+            1008,
+            "resume-gap",
+          );
+          return;
+        }
         this.failHandshake(
           new Error("Cloudflare 실시간 재개가 거부되었습니다."),
           1008,
@@ -1037,14 +1073,11 @@ implements StudioRealtimeProviderAdapter {
         return;
       }
       const channelState = welcome.channelStates[workload];
-      if (
-        afterSequence < Math.max(0, channelState.replayFloorSequence - 1) ||
-        afterSequence > channelState.currentSequence
-      ) {
-        // Unlike presence, comments and active screen-share state do not yet
-        // have an authoritative provider snapshot. Silently skipping a replay
-        // gap could lose user-visible state, so fail this optional route over
-        // to the always-connected primary authority.
+      const floorAfter = Math.max(0, channelState.replayFloorSequence - 1);
+      if (afterSequence > channelState.currentSequence) {
+        // The cursor points past the Worker's current sequence (a different
+        // epoch or a reset room). Nothing here can reconcile that, so fail
+        // this optional route over to the always-connected primary authority.
         this.failHandshake(
           new StudioRealtimeProviderFallbackRequiredError(
             this.descriptor.providerId,
@@ -1053,6 +1086,35 @@ implements StudioRealtimeProviderAdapter {
           "resume-gap",
         );
         return;
+      }
+      if (afterSequence < floorAfter) {
+        // A replay gap only matters when this client already holds state it
+        // could silently lose: a retained resume cursor, or events consumed
+        // earlier in this projection (a non-zero baseline). Those keep the
+        // fail-over above. A genuinely fresh join (no cursor, zero baseline)
+        // has nothing to lose — its correct baseline is the Worker's
+        // retention floor, so adopt the floor and replay everything still
+        // retained. Comments travel as invalidations over REST-authoritative
+        // content, and screen-signaling history is either targeted at other
+        // clients or recoverable through the discovery re-announce, so the
+        // retained window is sufficient for a new participant. Without this,
+        // one prune would brick the route for every future fresh join,
+        // because the floor never moves back down.
+        const hasCursor = request.resume.some(
+          (candidate) => candidate.workload === workload,
+        );
+        if (hasCursor || afterSequence !== 0) {
+          this.failHandshake(
+            new StudioRealtimeProviderFallbackRequiredError(
+              this.descriptor.providerId,
+            ),
+            1008,
+            "resume-gap",
+          );
+          return;
+        }
+        handshake.freshFloorWorkloads.add(workload);
+        afterSequence = floorAfter;
       }
       this.sendResume(workload, afterSequence);
     }
