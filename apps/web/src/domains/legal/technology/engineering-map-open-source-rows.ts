@@ -522,8 +522,8 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "가상 스튜디오(2D 월드)의 이동·카메라·충돌·말 걸기를 맡는 2D 게임 엔진. 월드 내용은 Tiled JSON과 WorldManifest로 분리해 둔다.",
-        "A 2D game engine for movement, camera, collisions and interactions in the virtual studio (a 2D world). World content is kept apart in Tiled JSON and a WorldManifest.",
+        "과거 가상 스튜디오 웹 무대의 이동·카메라·충돌을 맡던 2D 게임 엔진. 2026-10 공간 클라이언트가 Godot 무대로 교체된 뒤에는 캐릭터 아트 런타임 모듈이 라이브러리로만 쓴다.",
+        "The 2D game engine that used to drive movement, camera and collisions in the web stage. After the space client moved to a Godot stage in 2026-10, only the character art runtime modules still use it as a library.",
       ),
       license: same("MIT"),
       mode: t("런타임 · 동적 import", "Runtime · dynamic import"),
@@ -533,7 +533,7 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
       ),
     },
     evidence: [
-      "apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx",
+      "apps/web/src/domains/creator/virtual-space/studio-virtual-space-scene-art-runtime.ts",
       "docs/studio/virtual-studio-world-authoring.md",
       "docs/studio/virtual-studio-benchmark-20260920.md",
     ],
