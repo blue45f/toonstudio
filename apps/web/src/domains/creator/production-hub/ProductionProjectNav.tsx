@@ -46,7 +46,11 @@ function SurfaceLink({
         <span className="block whitespace-nowrap">{label}</span>
         {!compact ? (
           <span className="mt-0.5 hidden max-w-[11rem] truncate text-[0.6875rem] font-normal text-fg-3 lg:block">{description}</span>
-        ) : null}
+        ) : (
+          // 더보기 항목은 접혀 있던 표면을 이름만으로 골라야 하는 자리라, 한 줄 설명을
+          // 함께 보여 줘야 "어느 표면이 내 일인가"를 펼친 자리에서 판단할 수 있다.
+          <span className="mt-0.5 line-clamp-2 text-[0.6875rem] font-normal leading-4 text-fg-3">{description}</span>
+        )}
       </span>
     </Link>
   );
