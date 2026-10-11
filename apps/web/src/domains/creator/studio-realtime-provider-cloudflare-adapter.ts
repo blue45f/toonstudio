@@ -444,7 +444,7 @@ function inboundEvent(
   event: ServerEventMessage,
   projection: ProjectedEventRecord,
   scope: StudioRealtimeConnectionRequest["scope"],
-): StudioRealtimeInboundEvent {
+): StudioRealtimeInboundEvent | null {
   const common = {
     version: STUDIO_REALTIME_PROVIDER_PROTOCOL_VERSION,
     scope,
@@ -505,6 +505,10 @@ function inboundEvent(
         kind: "presence.remove",
         payload: { sessionId: event.clientId, reason: "left" },
       };
+    case "presence.bubble":
+      // 말풍선은 Godot 무대 전용 일시 전파(프로토콜 확장)라 classic 진입
+      // 이벤트로 바꾸지 않는다 — 호출부가 와이어 기준선만 전진시키고 버린다.
+      return null;
     case "comment.changed":
       return {
         ...common,
@@ -1528,6 +1532,12 @@ implements StudioRealtimeProviderAdapter {
     );
     if (projection.duplicate) return null;
     const inbound = inboundEvent(event, projection.record, request.scope);
+    if (!inbound) {
+      // 진입 이벤트로 바꾸지 않는 와이어 값(예: presence.bubble) — 로컬
+      // 시퀀스를 소비하지 않고 와이어 기준선만 전진시켜 재생 루프를 막는다.
+      this.projection.advanceWireFrontier(event.channel, event.sequence);
+      return null;
+    }
     const parsed = parseStudioRealtimeInboundEvent(inbound, request.scope);
     if (!parsed) {
       // The Worker and product schemas are independently versioned. Skip a
