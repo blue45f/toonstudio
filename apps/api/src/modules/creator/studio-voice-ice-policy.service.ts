@@ -142,6 +142,35 @@ export class StudioVoiceIcePolicyService {
       workId,
     });
   }
+
+  async issueVoice(
+    userId: string,
+    workId: string
+  ): Promise<StudioVoiceIcePolicyResponse> {
+    if (
+      !rateLimit(`studio-voice-ice:user:${userId}`, 60, 60 * 60_000) ||
+      !rateLimit(`studio-voice-ice:work:${userId}:${workId}`, 12, 60_000)
+    ) {
+      throw new HttpException(
+        "음성 연결 설정 요청이 너무 많습니다. 잠시 뒤 다시 시도해 주세요.",
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+    }
+    const team = await this.creatorService.getWorkTeam(userId, workId);
+    if (
+      team.workId !== workId ||
+      team.viewer.userId !== userId ||
+      team.viewer.status !== "active" ||
+      !team.viewer.capabilities.view
+    ) {
+      throw new ForbiddenException("이 작품의 음성 대화에 참여할 권한이 없습니다.");
+    }
+    return issueStudioVoiceIcePolicy({
+      configuration: this.configuration,
+      userId,
+      workId,
+    });
+  }
 }
 
 export const studioVoiceIceConfigurationProvider = {
