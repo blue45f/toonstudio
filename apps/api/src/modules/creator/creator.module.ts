@@ -147,6 +147,6 @@ const privateObjectStorageModule =
     StudioLiveGateway,
     StudioLiveAcousticBinding,
   ],
-  exports: [CreatorCollaborationRepository, StudioWorkAssetService, StudioWorkAssetUploadGuard, StudioLiveAcousticBinding],
+  exports: [CreatorService, CreatorCollaborationRepository, StudioWorkAssetService, StudioWorkAssetUploadGuard, StudioLiveAcousticBinding],
 })
 export class CreatorModule {}
