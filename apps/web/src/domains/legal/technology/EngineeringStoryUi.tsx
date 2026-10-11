@@ -242,7 +242,9 @@ function PageGuide({ page }: { readonly page: EngineeringPageEntry }) {
 }
 
 /**
- * 머리말 아래 페이지 대표 이미지. 레지스트리에 매핑된 기존 브랜드 아트(workflow-20260928)를 쓴다.
+ * 머리말 맨 위의 페이지 대표 장면 (마스트헤드). /about/data에서 검증된 장면 헤더 문법
+ * (디자인 웨이브 21 전파): 전폭 장면 밴드가 첫 화면을 열고, 제목·소개는 그 아래 종속된다.
+ * 레지스트리에 매핑된 기존 브랜드 아트(workflow-20260928)를 쓴다.
  * 원본 아트 로드가 실패하면 같은 세트의 대체 아트(illustrated-20260928)로 바꾸고,
  * 그것도 실패하면 깨진 이미지를 남기지 않고 자리를 접는다.
  */
@@ -254,7 +256,7 @@ function EngineeringPageHeroArt({ page }: { readonly page: EngineeringPageEntry 
   const korean = getActiveI18nLocale().startsWith("ko");
   const fallback = stage === "fallback";
   return (
-    <figure className="mt-8 overflow-hidden rounded-[2rem] border border-line/70 bg-[#0b1427] shadow-sm sm:mt-10 lg:col-span-2">
+    <figure className="relative m-0 overflow-hidden rounded-[2rem] border border-line/70 bg-[#0b1427] shadow-sm">
       <img
         src={fallback ? `/brand/illustrated-20260928/${copy.fallback}-640.webp` : workflowIllustrationSource(page.art)}
         srcSet={fallback ? undefined : workflowIllustrationSources(page.art)}
@@ -262,11 +264,14 @@ function EngineeringPageHeroArt({ page }: { readonly page: EngineeringPageEntry 
         width={960}
         height={600}
         alt={fallback ? bi("작업을 설명하는 브랜드 콘셉트 아트", "Brand concept art illustrating the task") : korean ? copy.ko : copy.en}
-        className="aspect-[4/3] w-full object-cover sm:aspect-[16/9]"
-        loading="lazy"
+        className="aspect-[16/10] w-full object-cover sm:aspect-[3/1]"
+        fetchPriority="high"
         decoding="async"
         onError={() => setStage(fallback ? "gone" : "fallback")}
       />
+      <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
+        {bi("브랜드 콘셉트 아트 · 실제 화면이 아닙니다", "Brand concept art · not an actual screen")}
+      </figcaption>
     </figure>
   );
 }
@@ -292,7 +297,9 @@ export function EngineeringPageIntro({
   const page = pageId ? findEngineeringPage(pageId) : undefined;
   const group = page ? ENGINEERING_PAGE_GROUPS.find((entry) => entry.id === page.group) : undefined;
   return (
-    <header className="grid gap-7 py-8 sm:py-12 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+    <header className="flex flex-col gap-7 py-8 sm:py-12">
+      {page ? <EngineeringPageHeroArt page={page} /> : null}
+      <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {page?.step ? (
@@ -319,7 +326,7 @@ export function EngineeringPageIntro({
         ) : null}
       </div>
       {aside ? <div className="lg:max-w-sm">{aside}</div> : null}
-      {page ? <EngineeringPageHeroArt page={page} /> : null}
+      </div>
     </header>
   );
 }
