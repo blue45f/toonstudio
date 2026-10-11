@@ -40,16 +40,21 @@ async function verifyRecord(path, record, errors) {
   return data.length;
 }
 
-export function verifyVirtualStudioNavigationBindings(runtime) {
-  // 바닥 타일·가구·NPC가 사용하는 실제 world 경로 판정을 같은 권위로 유지한다.
+export function verifyVirtualStudioNavigationBindings(authority) {
+  // 바닥 타일·가구·배치가 사용하는 실제 world 경로 판정을 같은 권위로 유지한다.
+  // 클래식 Phaser 캔버스의 호출 지점은 Godot 무대 전환으로 사라졌으므로, 판정 권위
+  // 모듈(world-pathfinding)의 export와 생존 호출 지점(decoration-layout의 파생 월드
+  // 계산, placed-fixtures의 점유 판정)을 대조 대상으로 삼는다.
+  // NPC 디렉터(npcDirector)의 내비게이션 갱신 바인딩은 대응 단언을 제거했다: NPC 거동은
+  // Godot 무대 빌드 내부 구현으로 이전되어 이 저장소 소스에서는 검증할 수 없다.
   for (const binding of [
-    "studioVirtualDecorationNavigationWorld(manifest,",
-    "findStudioWorldPath(navigationWorld,",
-    "studioWorldCanOccupy(navigationWorld, currentPoint)",
-    "resolveStudioWorldSpawn(navigationWorld, currentPoint)",
-    "npcDirector.updateNavigationWorld(navigationWorld)",
+    "export function findStudioWorldPath(",
+    "export function studioWorldCanOccupy(",
+    "export function resolveStudioWorldSpawn(",
+    "studioVirtualDecorationNavigationWorld(world, { ...state, placements: other })",
+    "studioWorldCanOccupy(world, point)",
   ]) {
-    if (!runtime.includes(binding)) throw new Error("runtime navigation authority is disconnected: " + binding);
+    if (!authority.includes(binding)) throw new Error("runtime navigation authority is disconnected: " + binding);
   }
 }
 
@@ -122,10 +127,24 @@ export async function verifyVirtualStudioLivingTownV6() {
     errors.push("ImageGen 캐릭터 방향 파일의 visualSignature 네 개가 서로 달라야 합니다");
   }
 
-  const runtime = await readFile(resolve(repo, "apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx"), "utf8");
-  if (!runtime.includes("studioVirtualLivingTownAssetUrl")) errors.push("runtime does not load living-town v6 assets");
-  verifyVirtualStudioNavigationBindings(runtime);
-  if (!runtime.includes("triggerEnvironmentEffect")) errors.push("runtime does not trigger environment interaction effects");
+  // living-town 에셋 URL의 현행 제공 표면은 웹 아트 라이브러리다(Phaser 캔버스 로더는
+  // Godot 무대 전환으로 제거됐다). URL 산출 함수가 living-town-v6 루트를 기준으로
+  // 스타일별 파일명을 만드는지 대조한다.
+  const artStyle = await readFile(resolve(repo, "apps/web/src/domains/creator/virtual-space/studio-virtual-space-art-style.ts"), "utf8");
+  if (!artStyle.includes("studioVirtualLivingTownAssetUrl")
+    || !artStyle.includes("`${ART_ROOT}/living-town-v6`")
+    || !artStyle.includes("`${LIVING_TOWN_V6_ROOT}/${key}/${kind}.webp`")) {
+    errors.push("art library does not provide living-town v6 asset URLs");
+  }
+  const navigationAuthority = (await Promise.all([
+    "studio-virtual-space-world-pathfinding.ts",
+    "studio-virtual-space-decoration-layout.ts",
+    "studio-virtual-space-placed-fixtures.ts",
+  ].map((name) => readFile(resolve(repo, `apps/web/src/domains/creator/virtual-space/${name}`), "utf8")))).join("\n");
+  verifyVirtualStudioNavigationBindings(navigationAuthority);
+  // 환경 상호작용 효과(triggerEnvironmentEffect) 단언은 제거했다: 효과를 발동하던
+  // Phaser 캔버스가 사라졌고, 현행 환경 효과는 Godot 무대 빌드 내부 구현이라
+  // 이 저장소 소스에서는 대조할 표면이 없다.
   const skins = await readFile(resolve(repo, "apps/web/src/domains/creator/virtual-space/studio-virtual-space-character-skins.ts"), "utf8");
   if (!skins.includes('key: "imagegen25"') || !skins.includes("living-town-v6/imagegen25-character")) {
     errors.push("ImageGen 2.5 character pack is not selectable");
