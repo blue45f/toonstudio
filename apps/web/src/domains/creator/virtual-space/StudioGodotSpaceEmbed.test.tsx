@@ -8,6 +8,47 @@ import { StudioGodotSpaceEmbed } from "./StudioGodotSpaceEmbed";
 
 const WORK_ID = "work-project-godot";
 
+const ROOM_DEF = {
+  v: 1 as const,
+  id: "studio-room",
+  name: "작업실",
+  size: [1600, 1200] as [number, number],
+  zones: [
+    { id: "meeting", kind: "meeting" as const, name: "회의 구역", rect: [480, 140, 640, 660] as [number, number, number, number] },
+  ],
+  props: [],
+};
+const STREET_DEF = {
+  v: 1 as const,
+  id: "street",
+  name: "거리",
+  size: [2400, 1200] as [number, number],
+  zones: [
+    { id: "plaza", kind: "meeting" as const, name: "광장", rect: [780, 310, 840, 460] as [number, number, number, number] },
+    { id: "stage", kind: "presentation" as const, name: "거리 무대", rect: [970, 250, 460, 170] as [number, number, number, number] },
+  ],
+  props: [],
+};
+
+const spaceMocks = vi.hoisted(() => ({
+  fetchCatalog: vi.fn(),
+  fetchLayout: vi.fn(),
+  saveLayout: vi.fn(),
+}));
+
+vi.mock("./studio-godot-space", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("./studio-godot-space")>();
+  return {
+    ...actual,
+    fetchGodotSpaceCatalog: spaceMocks.fetchCatalog,
+    fetchGodotSpaceLayout: spaceMocks.fetchLayout,
+    saveGodotSpaceLayout: spaceMocks.saveLayout,
+    isGodotSpaceLayoutConflict: (error: unknown) =>
+      (error as { code?: string } | null)?.code === "conflict",
+  };
+});
+
 function ticketResponse() {
   const issued = Date.now() - 5_000;
   return {
@@ -38,6 +79,9 @@ interface HostBridge {
   onProximityChanged: (json: string) => void;
   onSignal: (json: string) => void;
   onBubble: (json: string) => void;
+  onLayoutChanged: (json: string) => void;
+  onLayoutSelection: (json: string) => void;
+  onLayoutRemote: (json: string) => void;
 }
 
 function hostBridge(): HostBridge {
@@ -69,6 +113,23 @@ function renderEmbed(issuer: StudioRealtimeTicketIssuer, localOnly = false) {
 describe("StudioGodotSpaceEmbed", () => {
   beforeEach(() => {
     vi.stubEnv("VITE_STUDIO_REALTIME_ORIGIN", "https://realtime.example.com");
+    spaceMocks.fetchCatalog.mockReset().mockResolvedValue([ROOM_DEF, STREET_DEF]);
+    spaceMocks.fetchLayout.mockReset().mockResolvedValue(null);
+    spaceMocks.saveLayout
+      .mockReset()
+      .mockImplementation(
+        async (
+          _workId: string,
+          _spaceId: string,
+          definition: typeof ROOM_DEF,
+          expectedRevision: number,
+        ) => ({
+          definition,
+          revision: expectedRevision + 1,
+          updatedByUserId: "user-1",
+          updatedAt: "2026-10-11T00:00:00.000Z",
+        }),
+      );
   });
   afterEach(() => {
     cleanup();
@@ -244,5 +305,202 @@ describe("StudioGodotSpaceEmbed", () => {
       ),
     );
     expect(screen.getByTestId("godot-proximity").textContent).toContain("2명");
+  });
+});
+
+describe("StudioGodotSpaceEmbed — 4단계 공간·배치", () => {
+  beforeEach(() => {
+    vi.stubEnv("VITE_STUDIO_REALTIME_ORIGIN", "https://realtime.example.com");
+    spaceMocks.fetchCatalog.mockReset().mockResolvedValue([ROOM_DEF, STREET_DEF]);
+    spaceMocks.fetchLayout.mockReset().mockResolvedValue(null);
+    spaceMocks.saveLayout
+      .mockReset()
+      .mockImplementation(
+        async (
+          _workId: string,
+          _spaceId: string,
+          definition: typeof ROOM_DEF,
+          expectedRevision: number,
+        ) => ({
+          definition,
+          revision: expectedRevision + 1,
+          updatedByUserId: "user-1",
+          updatedAt: "2026-10-11T00:00:00.000Z",
+        }),
+      );
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+  });
+
+  it("renders space tabs from the catalog and carries the definition in the session", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    const setSession = vi.fn();
+    frameWindow().__tsvs_setSession = setSession;
+    expect(await screen.findByTestId("godot-space-tab-street")).toBeTruthy();
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(setSession).toHaveBeenCalledTimes(1));
+    const payload = JSON.parse(setSession.mock.calls[0]?.[0] as string) as {
+      space?: { id: string };
+    };
+    expect(payload.space?.id).toBe("studio-room");
+  });
+
+  it("switches to the street space by reloading the stage with the space param", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    const setSession = vi.fn();
+    frameWindow().__tsvs_setSession = setSession;
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(setSession).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(await screen.findByTestId("godot-space-tab-street"));
+    const iframe = document.querySelector("iframe");
+    expect(iframe?.getAttribute("src")).toBe("/godot-space/index.html?space=street");
+    await waitFor(() =>
+      expect(spaceMocks.fetchLayout).toHaveBeenCalledWith(WORK_ID, "street"),
+    );
+    // 무대 리로드로 iframe 창이 교체된다 — 새 무대는 부팅 때 콜백을 다시
+    // 등록하므로 테스트도 새 창에 목을 다시 건다.
+    frameWindow().__tsvs_setSession = setSession;
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(setSession).toHaveBeenCalledTimes(2));
+    const payload = JSON.parse(setSession.mock.calls[1]?.[0] as string) as {
+      space?: { id: string };
+    };
+    expect(payload.space?.id).toBe("street");
+  });
+
+  it("opens the meeting panel on the street by zone kind, not zone id", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    frameWindow().__tsvs_setSession = vi.fn();
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    fireEvent.click(await screen.findByTestId("godot-space-tab-street"));
+    act(() =>
+      hostBridge().onZoneChanged(
+        JSON.stringify({
+          v: 1,
+          selfZoneId: "plaza",
+          selfActorId: "actor-me",
+          selfClientId: "client-me",
+          presenterActorId: "actor-peer",
+          peerClientIds: { "actor-peer": "client-peer" },
+          names: { "actor-me": "김희준", "actor-peer": "테스터B" },
+          zones: [
+            { zoneId: "plaza", kind: "meeting", name: "광장", occupants: ["actor-me", "actor-peer"] },
+            { zoneId: "stage", kind: "presentation", name: "거리 무대", occupants: ["actor-peer"] },
+          ],
+        }),
+      ),
+    );
+    expect(screen.getByTestId("godot-meeting-panel")).toBeTruthy();
+    expect(screen.getByTestId("godot-presenter-label").textContent).toContain("테스터B");
+  });
+
+  it("saves stage edits through the API and notifies the room", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    frameWindow().__tsvs_setSession = vi.fn();
+    const notifyLayout = vi.fn();
+    frameWindow().__tsvs_notifyLayout = notifyLayout;
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    await screen.findByTestId("godot-space-tab-street");
+
+    const edited = {
+      ...ROOM_DEF,
+      props: [
+        { kind: "bench" as const, rect: [900, 800, 120, 48] as [number, number, number, number] },
+      ],
+    };
+    act(() =>
+      hostBridge().onLayoutChanged(
+        JSON.stringify({ v: 1, spec: edited, rev: 1 }),
+      ),
+    );
+    const saveButton = screen.getByRole("button", { name: "배치 저장" });
+    await waitFor(() => expect((saveButton as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(saveButton);
+    await waitFor(() => expect(spaceMocks.saveLayout).toHaveBeenCalledTimes(1));
+    expect(spaceMocks.saveLayout).toHaveBeenCalledWith(
+      WORK_ID,
+      "studio-room",
+      expect.objectContaining({ id: "studio-room" }),
+      0,
+    );
+    await waitFor(() => expect(notifyLayout).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(notifyLayout.mock.calls[0]?.[0] as string)).toEqual({
+      spaceId: "studio-room",
+      revision: 1,
+    });
+  });
+
+  it("maps a stage selection (type key) into the panel form and deletes via command", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    frameWindow().__tsvs_setSession = vi.fn();
+    const layoutCommand = vi.fn();
+    frameWindow().__tsvs_layoutCommand = layoutCommand;
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    await screen.findByTestId("godot-space-tab-street");
+
+    fireEvent.click(screen.getByRole("button", { name: "편집 모드 켜기" }));
+    act(() =>
+      hostBridge().onLayoutSelection(
+        JSON.stringify({
+          v: 1,
+          selection: {
+            type: "zone",
+            index: 0,
+            id: "meeting",
+            kind: "meeting",
+            name: "회의 구역",
+            rect: [480, 140, 640, 660],
+          },
+        }),
+      ),
+    );
+    expect(screen.getByTestId("layout-selection").textContent).toContain("회의 구역");
+    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    expect(layoutCommand).toHaveBeenCalledWith(
+      JSON.stringify({ op: "delete", category: "zone", index: 0 }),
+    );
+  });
+
+  it("re-fetches and applies the layout when a remote save notice arrives", async () => {
+    const issue = vi.fn(async () => ticketResponse());
+    renderEmbed({ issue });
+    frameWindow().__tsvs_setSession = vi.fn();
+    const applyLayout = vi.fn();
+    frameWindow().__tsvs_applyLayout = applyLayout;
+    act(() => hostBridge().onGodotReady("{}"));
+    await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+    await screen.findByTestId("godot-space-tab-street");
+    spaceMocks.fetchLayout.mockClear();
+    applyLayout.mockClear();
+
+    const savedDef = { ...ROOM_DEF, name: "작업실 (수정)" };
+    spaceMocks.fetchLayout.mockResolvedValue({
+      definition: savedDef,
+      revision: 5,
+      updatedByUserId: "user-2",
+      updatedAt: "2026-10-11T01:00:00.000Z",
+    });
+    act(() =>
+      hostBridge().onLayoutRemote(
+        JSON.stringify({ v: 1, spaceId: "studio-room", revision: 5 }),
+      ),
+    );
+    await waitFor(() => expect(spaceMocks.fetchLayout).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(applyLayout).toHaveBeenCalled());
+    const applied = JSON.parse(applyLayout.mock.calls[0]?.[0] as string) as {
+      spec: { name: string };
+    };
+    expect(applied.spec.name).toBe("작업실 (수정)");
   });
 });

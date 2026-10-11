@@ -9,6 +9,7 @@ import { AdminModule } from "./modules/admin/admin.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BusinessInquiryModule } from "./modules/business-inquiry/business-inquiry.module";
 import { StudioVirtualSpaceDecorationModule } from "./modules/studio-virtual-space-decoration/studio-virtual-space-decoration.module";
+import { StudioGodotSpaceLayoutModule } from "./modules/studio-godot-space-layout/studio-godot-space-layout.module";
 import { StudioVirtualSpaceBookingModule } from "./modules/studio-virtual-space-booking/studio-virtual-space-booking.module";
 import { StudioVirtualSpaceAccessModule } from "./modules/studio-virtual-space-access/studio-virtual-space-access.module";
 import { CatalogModule } from "./modules/catalog/catalog.module";
@@ -70,6 +71,7 @@ const studioRealtimeTicketModule =
     FeedbackModule,
     BusinessInquiryModule,
     StudioVirtualSpaceDecorationModule,
+    StudioGodotSpaceLayoutModule,
     StudioVirtualSpaceBookingModule,
     StudioVirtualSpaceAccessModule,
     SupporterPaymentModule,

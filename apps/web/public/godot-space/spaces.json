@@ -1,0 +1,492 @@
+{
+  "spaces": [
+    {
+      "background": {
+        "camDist": 12.0,
+        "camFov": 46.0,
+        "camHeight": 10.5,
+        "glb": "spaces/studio-room.glb",
+        "hideNodes": [
+          "ceiling"
+        ],
+        "yaw": 0.0
+      },
+      "door": [
+        740,
+        860
+      ],
+      "floor": "#2e3444",
+      "id": "studio-room",
+      "kind": "room",
+      "name": "스튜디오 방",
+      "props": [
+        {
+          "kind": "desk",
+          "rect": [
+            300,
+            300,
+            220,
+            90
+          ]
+        },
+        {
+          "kind": "desk",
+          "rect": [
+            1080,
+            300,
+            220,
+            90
+          ]
+        },
+        {
+          "kind": "desk",
+          "rect": [
+            690,
+            820,
+            220,
+            90
+          ]
+        },
+        {
+          "kind": "plant",
+          "rect": [
+            56,
+            56,
+            52,
+            52
+          ]
+        },
+        {
+          "kind": "plant",
+          "rect": [
+            1492,
+            56,
+            52,
+            52
+          ]
+        },
+        {
+          "kind": "plant",
+          "rect": [
+            56,
+            1092,
+            52,
+            52
+          ]
+        },
+        {
+          "kind": "board",
+          "rect": [
+            600,
+            44,
+            400,
+            110
+          ]
+        }
+      ],
+      "rug": [
+        520,
+        430,
+        560,
+        340,
+        "#4a3b52",
+        "#6b5677"
+      ],
+      "size": [
+        1600,
+        1200
+      ],
+      "spawn": {
+        "a": [
+          420,
+          600
+        ],
+        "b": [
+          1180,
+          600
+        ]
+      },
+      "v": 1,
+      "wall": 28,
+      "zones": [
+        {
+          "id": "meeting",
+          "kind": "meeting",
+          "name": "회의 구역",
+          "rect": [
+            480,
+            140,
+            640,
+            660
+          ]
+        },
+        {
+          "id": "presentation",
+          "kind": "presentation",
+          "name": "발표 구역",
+          "rect": [
+            600,
+            160,
+            400,
+            150
+          ]
+        },
+        {
+          "id": "focus-1",
+          "kind": "focus",
+          "name": "집중석 A",
+          "rect": [
+            260,
+            260,
+            300,
+            170
+          ]
+        },
+        {
+          "id": "focus-2",
+          "kind": "focus",
+          "name": "집중석 B",
+          "rect": [
+            1040,
+            260,
+            300,
+            170
+          ]
+        },
+        {
+          "id": "focus-3",
+          "kind": "focus",
+          "name": "집중석 C",
+          "rect": [
+            650,
+            780,
+            300,
+            170
+          ]
+        },
+        {
+          "id": "lounge",
+          "kind": "lounge",
+          "name": "휴게 구역",
+          "rect": [
+            580,
+            930,
+            440,
+            240
+          ]
+        }
+      ]
+    },
+    {
+      "background": {
+        "camDist": 14.0,
+        "camFov": 50.0,
+        "camHeight": 13.0,
+        "glb": "spaces/street.glb",
+        "hideNodes": [],
+        "yaw": 180.0
+      },
+      "door": [
+        0,
+        2400
+      ],
+      "floor": "#3a3f4a",
+      "id": "street",
+      "kind": "street",
+      "name": "거리",
+      "props": [
+        {
+          "kind": "storefront",
+          "rect": [
+            0,
+            46,
+            340,
+            84
+          ]
+        },
+        {
+          "kind": "storefront",
+          "rect": [
+            340,
+            46,
+            280,
+            84
+          ]
+        },
+        {
+          "kind": "storefront",
+          "rect": [
+            640,
+            46,
+            360,
+            84
+          ]
+        },
+        {
+          "kind": "storefront",
+          "rect": [
+            1010,
+            46,
+            300,
+            84
+          ]
+        },
+        {
+          "kind": "storefront",
+          "rect": [
+            1350,
+            46,
+            340,
+            84
+          ]
+        },
+        {
+          "kind": "storefront",
+          "rect": [
+            1700,
+            46,
+            280,
+            84
+          ]
+        },
+        {
+          "kind": "storefront",
+          "rect": [
+            2020,
+            46,
+            320,
+            84
+          ]
+        },
+        {
+          "kind": "stage",
+          "rect": [
+            970,
+            250,
+            460,
+            120
+          ]
+        },
+        {
+          "kind": "bench",
+          "rect": [
+            1435,
+            738,
+            170,
+            45
+          ]
+        },
+        {
+          "kind": "bench",
+          "rect": [
+            795,
+            738,
+            170,
+            45
+          ]
+        },
+        {
+          "kind": "bench",
+          "rect": [
+            435,
+            538,
+            170,
+            45
+          ]
+        },
+        {
+          "kind": "bench",
+          "rect": [
+            1795,
+            538,
+            170,
+            45
+          ]
+        },
+        {
+          "kind": "tree",
+          "rect": [
+            274,
+            838,
+            52,
+            52
+          ]
+        },
+        {
+          "kind": "tree",
+          "rect": [
+            834,
+            838,
+            52,
+            52
+          ]
+        },
+        {
+          "kind": "tree",
+          "rect": [
+            1514,
+            838,
+            52,
+            52
+          ]
+        },
+        {
+          "kind": "tree",
+          "rect": [
+            2074,
+            838,
+            52,
+            52
+          ]
+        },
+        {
+          "kind": "lamp",
+          "rect": [
+            132,
+            905,
+            36,
+            36
+          ]
+        },
+        {
+          "kind": "lamp",
+          "rect": [
+            657,
+            905,
+            36,
+            36
+          ]
+        },
+        {
+          "kind": "lamp",
+          "rect": [
+            1707,
+            905,
+            36,
+            36
+          ]
+        },
+        {
+          "kind": "lamp",
+          "rect": [
+            2232,
+            905,
+            36,
+            36
+          ]
+        },
+        {
+          "kind": "table",
+          "rect": [
+            1700,
+            760,
+            84,
+            84
+          ]
+        },
+        {
+          "kind": "table",
+          "rect": [
+            1860,
+            760,
+            84,
+            84
+          ]
+        },
+        {
+          "kind": "table",
+          "rect": [
+            1780,
+            860,
+            84,
+            84
+          ]
+        },
+        {
+          "kind": "crosswalk",
+          "rect": [
+            1090,
+            940,
+            220,
+            250
+          ]
+        }
+      ],
+      "rug": null,
+      "size": [
+        2400,
+        1200
+      ],
+      "spawn": {
+        "a": [
+          1100,
+          920
+        ],
+        "b": [
+          1300,
+          920
+        ]
+      },
+      "v": 1,
+      "wall": 28,
+      "zones": [
+        {
+          "id": "plaza",
+          "kind": "meeting",
+          "name": "광장",
+          "rect": [
+            780,
+            310,
+            840,
+            460
+          ]
+        },
+        {
+          "id": "stage",
+          "kind": "presentation",
+          "name": "거리 무대",
+          "rect": [
+            970,
+            250,
+            460,
+            170
+          ]
+        },
+        {
+          "id": "cafe",
+          "kind": "lounge",
+          "name": "카페 테라스",
+          "rect": [
+            1640,
+            690,
+            430,
+            270
+          ]
+        },
+        {
+          "id": "bench-a",
+          "kind": "focus",
+          "name": "벤치 작업석 A",
+          "rect": [
+            1400,
+            690,
+            240,
+            130
+          ]
+        },
+        {
+          "id": "bench-b",
+          "kind": "focus",
+          "name": "벤치 작업석 B",
+          "rect": [
+            760,
+            690,
+            240,
+            130
+          ]
+        }
+      ]
+    }
+  ],
+  "v": 1
+}

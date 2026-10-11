@@ -79,11 +79,25 @@ export interface PresenceBubblePayload {
   readonly text: string;
 }
 
+/**
+ * 공간 배치 저장 알림 (가상스튜디오 Godot 재개발 4단계 — 월드 저작).
+ * 정의 본문은 Core API가 정본이고(studio_godot_space_layout), 이 페이로드는
+ * "누군가 저장했으니 다시 조회하라"는 신호 전용이다. 본문을 실시간 채널에
+ * 실으면 검증 없는 사본이 정본과 어긋나므로 revision까지만 전파한다.
+ * bubble과 마찬가지로 스냅샷에 저장하지 않고 이벤트로만 중계한다.
+ */
+export interface PresenceLayoutPayload {
+  readonly kind: "presence.layout";
+  readonly spaceId: string;
+  readonly revision: number;
+}
+
 export type PresencePayload =
   | PresenceUpdatePayload
   | PresenceCursorPayload
   | PresenceLeavePayload
-  | PresenceBubblePayload;
+  | PresenceBubblePayload
+  | PresenceLayoutPayload;
 
 export interface CommentChangedPayload {
   readonly kind: "comment.changed";
@@ -435,6 +449,16 @@ function validatePresencePayload(value: unknown): value is PresencePayload {
     return (
       hasExactKeys(value, ["kind", "text"]) &&
       isBoundedText(value.text, REALTIME_MAX_BUBBLE_BYTES)
+    );
+  }
+  if (value.kind === "presence.layout") {
+    return (
+      hasExactKeys(value, ["kind", "spaceId", "revision"]) &&
+      isRealtimeId(value.spaceId) &&
+      typeof value.revision === "number" &&
+      Number.isInteger(value.revision) &&
+      value.revision >= 0 &&
+      value.revision <= 1_000_000
     );
   }
   if (value.kind === "presence.cursor") {

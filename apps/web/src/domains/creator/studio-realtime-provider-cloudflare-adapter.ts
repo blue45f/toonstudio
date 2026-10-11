@@ -509,6 +509,10 @@ function inboundEvent(
       // 말풍선은 Godot 무대 전용 일시 전파(프로토콜 확장)라 classic 진입
       // 이벤트로 바꾸지 않는다 — 호출부가 와이어 기준선만 전진시키고 버린다.
       return null;
+    case "presence.layout":
+      // 공간 배치 저장 알림도 Godot 셸 전용 신호다 — classic은 같은 방식으로
+      // 기준선만 전진시키고 버린다 (정의 본문은 Core API가 정본).
+      return null;
     case "comment.changed":
       return {
         ...common,
