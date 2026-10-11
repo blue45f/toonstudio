@@ -4,10 +4,10 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TeamWorkspaceJoinPage } from "./TeamWorkspaceJoinPage";
 
-const mocks = vi.hoisted(() => ({ userId: "member" as string | null, accept: vi.fn() }));
+const mocks = vi.hoisted(() => ({ userId: "member" as string | null, accept: vi.fn(), preview: vi.fn() }));
 vi.mock("@/shared/lib/store", () => ({ useApp: () => mocks.userId }));
 vi.mock("@/platform/api", () => ({ getApiErrorMessage: async (_error: unknown, fallback: string) => fallback }));
-vi.mock("./team-workspace-api", () => ({ acceptTeamInvite: mocks.accept }));
+vi.mock("./team-workspace-api", () => ({ acceptTeamInvite: mocks.accept, previewTeamInvite: mocks.preview }));
 
 const TOKEN = "c".repeat(43);
 function App() {
@@ -22,6 +22,11 @@ function App() {
 beforeEach(() => {
   vi.clearAllMocks(); mocks.userId = "member";
   mocks.accept.mockResolvedValue({ workspaceId: "team-a", revision: 4 });
+  mocks.preview.mockResolvedValue({
+    workspaceId: "team-a", workspaceName: "달빛 스튜디오", role: "member",
+    inviterName: "초대한 사람", expiresAt: "2027-01-01T00:00:00.000Z",
+    alreadyAccepted: false, alreadyMember: false,
+  });
 });
 afterEach(() => { cleanup(); window.history.replaceState({}, "", "/"); });
 
@@ -87,6 +92,39 @@ describe("team join sheet", () => {
     await screen.findByText(/로그인하면 입력된 코드로 바로 수락할 수 있어요/);
     expect((screen.getByRole("button", { name: "초대 수락하기" }) as HTMLButtonElement).disabled).toBe(true);
     expect(mocks.accept).not.toHaveBeenCalled();
+  });
+
+  it("previews the workspace name and granted role before accepting", async () => {
+    window.history.replaceState({}, "", `/team/people/join#invite=${TOKEN}&entry=team-lobby`);
+    render(<App />);
+    expect(await screen.findByText(/달빛 스튜디오 팀에 구성원 역할로 초대받았어요/)).toBeTruthy();
+    expect(screen.getByText(/초대한 사람님이 보낸 초대예요/)).toBeTruthy();
+    await waitFor(() => expect(mocks.preview).toHaveBeenCalledWith(TOKEN));
+    // 미리보기는 읽기 전용이라 수락은 여전히 명시적 행동으로 남아 있다.
+    expect(mocks.accept).not.toHaveBeenCalled();
+  });
+
+  it("guides members who reopen an invite link straight to the team space", async () => {
+    mocks.preview.mockResolvedValue({
+      workspaceId: "team-a", workspaceName: "달빛 스튜디오", role: "member",
+      inviterName: "초대한 사람", expiresAt: "2027-01-01T00:00:00.000Z",
+      alreadyAccepted: true, alreadyMember: true,
+    });
+    window.history.replaceState({}, "", `/team/people/join#invite=${TOKEN}&entry=team-lobby`);
+    render(<App />);
+    expect(await screen.findByText(/이미 달빛 스튜디오 팀에 합류해 있어요/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "팀 공간으로 이동" }).getAttribute("href")).toBe("/team?workspace=team-a&lobby=1");
+  });
+
+  it("keeps accepting available when the preview cannot be opened", async () => {
+    mocks.preview.mockRejectedValue(new Error("not-found"));
+    window.history.replaceState({}, "", `/team/people/join#invite=${TOKEN}`);
+    render(<App />);
+    expect(await screen.findByText(/이 코드는 미리보기를 열 수 없어요/)).toBeTruthy();
+    const button = screen.getByRole("button", { name: "초대 수락하기" }) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    fireEvent.click(button);
+    await waitFor(() => expect(mocks.accept).toHaveBeenCalledWith(TOKEN));
   });
 
   it("surfaces accept errors in an alert and keeps the code for a retry", async () => {

@@ -20,7 +20,12 @@ export const WorkspaceParamsSchema = z.object({ workspaceId: identity }).strict(
 export const WorkspaceAcceptSchema = z.object({
   ...mutation, token: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
 }).strict();
+/** 미리보기는 읽기 전용이라 mutationId가 없다. 토큰은 URL이 아닌 본문으로만 받는다. */
+export const WorkspaceInvitePreviewSchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
+}).strict();
 export class CreateTeamWorkspaceDto extends createZodDto(WorkspaceCreateSchema) {}
 export class TeamWorkspaceParamsDto extends createZodDto(WorkspaceParamsSchema) {}
 export class AcceptTeamWorkspaceDto extends createZodDto(WorkspaceAcceptSchema) {}
+export class PreviewTeamWorkspaceInviteDto extends createZodDto(WorkspaceInvitePreviewSchema) {}
 export type WorkspaceCommand = z.infer<typeof WorkspaceCommandSchema>;
