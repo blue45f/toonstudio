@@ -123,7 +123,6 @@ export interface StudioGodotSpaceEmbedProps {
    * 접속한다. 자격이 없으면 게스트는 localOnly 로컬 무대에 머문다.
    */
   readonly guestAccess?: StudioRealtimeTicketGuestAccess;
-  readonly onExitToClassic: () => void;
   /** 테스트 주입용. 기본값은 운영 HTTP 발급기. */
   readonly ticketIssuer?: StudioRealtimeTicketIssuer;
 }
@@ -135,7 +134,6 @@ export function StudioGodotSpaceEmbed({
   skinKey,
   localOnly = false,
   guestAccess,
-  onExitToClassic,
   ticketIssuer,
 }: StudioGodotSpaceEmbedProps) {
   /** 게스트 접속은 presence 전용 — 회의 세션·ICE 리스·배치 저작을 켜지 않는다. */
@@ -1040,13 +1038,6 @@ export function StudioGodotSpaceEmbed({
             {bt("다시 시도", "Retry")}
           </button>
         ) : null}
-        <button
-          type="button"
-          className="text-sm font-bold underline underline-offset-4"
-          onClick={onExitToClassic}
-        >
-          {bt("기존 스페이스로 돌아가기", "Back to the classic space")}
-        </button>
         {interactNotice ? (
           <p className="text-sm text-fg-2" data-testid="godot-interact-notice">
             {interactNotice}

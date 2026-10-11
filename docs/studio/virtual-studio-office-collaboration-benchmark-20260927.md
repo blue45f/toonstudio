@@ -1,5 +1,7 @@
 # 가상 사무실 협업 벤치마크와 팀원·검수 흐름 — 2026-09-27
 
+> 2026-10-12 정정: 클래식 공간 클라이언트 제거(본 문서 기록 이후)로 사라진 파일의 링크는 경로 표기로 바꿨다. 본문 서술은 작성 당시의 사실 기록이다.
+
 상태: **migration**. 이 문서는 `codex/virtual-studio-experience-20260927`의 현재 source/tests로 확인한 변경을 기록한다. 제품 목표는 웹툰 제작 업무에 최적화된 가상 사무실이다. 장식·동작은 사람과 업무를 이해하는 데 도움을 주며, 문서 권한과 협업 의사를 대체하지 않는다. 운영 배포, 인증된 다중 사용자 브라우저 검증, 서비스 전체와의 품질 동등성을 주장하지 않는다.
 
 ## 공식 자료 비교
@@ -29,7 +31,7 @@
 - 검수 화면을 열면 제목으로 포커스를 옮기고 화면에 보이도록 스크롤한다. 닫으면 시작 버튼으로 복귀하되, 사용자가 이미 다른 컨트롤로 이동했다면 포커스를 빼앗지 않는다.
 - 상태를 색만으로 전달하지 않는다. 주요 조작은 최소 44px 영역을 유지하며 좁은 모바일에서는 초대 버튼을 다음 행으로 배치한다.
 
-핵심 소스는 [참여자 표시·검색·초대 제한](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-teammates.ts), [팀원 패널](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceSocialPanel.tsx), [작업실 찾기](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceDirectory.tsx), [검수 선택](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceReviewPicker.tsx)이다. 부모 페이지는 팀원 패널의 optional `manifest`에 현재 월드를 전달한다. 미전달 시에도 기존 장소 카탈로그·캠퍼스의 알려진 위치만 표시하며 미확인 위치를 꾸며내지 않는다.
+핵심 소스는 참여자 표시·검색·초대 제한(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-teammates.ts`), 팀원 패널(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceSocialPanel.tsx`), 작업실 찾기(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceDirectory.tsx`), 검수 선택(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceReviewPicker.tsx`)이다. 부모 페이지는 팀원 패널의 optional `manifest`에 현재 월드를 전달한다. 미전달 시에도 기존 장소 카탈로그·캠퍼스의 알려진 위치만 표시하며 미확인 위치를 꾸며내지 않는다.
 
 ## 캐릭터 정체성과 테마 미리보기 연결 — current
 
@@ -67,6 +69,6 @@
 | [Gather 2 자리 관리](https://support.help.gather.town/articles/2255130889-desk-management) | 자리 선택·배정은 신규 구성원의 초기 행동이며 협업 빈도가 높은 사람들을 같은 팀 영역에 배치한다. | 자리 기억과 서버가 확인하는 실제 사용을 구분한다. 기억한 자리를 다른 사람이 사용 중이거나 연결을 확인하지 못하면 사용 가능으로 표시하지 않는다. 팀 자리 이동에는 구체적인 pod 좌표와 식별자를 전달한다. |
 | [Gather 2 상태와 가용성](https://support.help.gather.town/articles/9785009882-status-availability) | 목록과 프로필에서 대화 가능 여부·집중 상태를 바로 파악한다. | 다가가기에서도 기존 집중·자리비움·차단·연결 준비 제한을 유지한다. 실제 접속 목록 외의 동료를 표시하지 않는다. |
 
-[작업 시작 카드](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceOfficeStart.tsx)는 실제 제작 작업 하나와 작업·동료·자리 행동을 제공한다. 현재 프로젝트의 개인 작업함에 포함된 작업을 우선하고, 없으면 팀 작업임을 명시한다. 로딩·실패 중에는 이전 작업을 추천하지 않으며 재확인과 기존 작업함을 제공한다. 개인 로컬 모드는 프로젝트 작업·접속 수를 표시하지 않고 실제 작품 목록과 새 작품 링크를 제공한다. 입장 화면은 캐릭터 선택을 유지하면서 원고 작업·동료·자리의 용도를 먼저 설명한다.
+작업 시작 카드(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceOfficeStart.tsx`)는 실제 제작 작업 하나와 작업·동료·자리 행동을 제공한다. 현재 프로젝트의 개인 작업함에 포함된 작업을 우선하고, 없으면 팀 작업임을 명시한다. 로딩·실패 중에는 이전 작업을 추천하지 않으며 재확인과 기존 작업함을 제공한다. 개인 로컬 모드는 프로젝트 작업·접속 수를 표시하지 않고 실제 작품 목록과 새 작품 링크를 제공한다. 입장 화면은 캐릭터 선택을 유지하면서 원고 작업·동료·자리의 용도를 먼저 설명한다.
 
 이 절의 컴포넌트 계약은 부모 페이지와 이동 runtime 통합 중이다. `onApproachPeer`는 실제 경로 이동에, `nearbyPeerIds`는 대화 요청 거리 조건에 연결해야 한다. 선호 자리 callback은 선호 저장만 수행하며 실제 사용은 기존 서버 lease 경로로 확인한다. 현재 장소에서 목적지로 걷기, 장소 전환 후 이동, 모바일 주 동작 배치의 최종 브라우저 검증은 별도 통합 단계다.

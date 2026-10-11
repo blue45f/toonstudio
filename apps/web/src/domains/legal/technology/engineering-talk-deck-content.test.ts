@@ -106,18 +106,6 @@ function gitFiles(pathspec: string): string[] {
     .filter(Boolean);
 }
 
-/** `git grep -l -w` 로 낱말이 든 추적 파일을 찾는다(없으면 빈 배열). */
-function gitGrepFiles(word: string, pathspec: string): string[] {
-  try {
-    return execFileSync("git", ["grep", "-l", "-w", "-e", word, "--", pathspec], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
-      .split("\n")
-      .filter(Boolean);
-  } catch (error) {
-    if ((error as { status?: number }).status === 1) return [];
-    throw error;
-  }
-}
-
 const NUMBER = /\d[\d,]*(?:\.\d+)?/gu;
 const MONTH_DAY = /(?<![\d-])\d{2}-\d{2}(?![\d-])/gu;
 
@@ -353,7 +341,7 @@ describe("세미나 발표 원본: 요청한 주제를 모두 다룬다", () => 
     ["로컬 우선 저장", "talk-local-first", [/OPFS/u, /백업이 아님/u]],
     ["드래그 앤 드롭 구현", "talk-dnd", [/끌/u, /Pointer Events/u]],
     ["실시간 협업", "talk-collaboration", [/CRDT/u, /Yjs/u]],
-    ["가상 스튜디오", "talk-virtual-studio", [/Phaser/u, /근접/u]],
+    ["가상 스튜디오", "talk-virtual-studio", [/Godot/u, /근접/u]],
     ["WebRTC", "talk-webrtc", [/WebRTC|시그널링/u, /studio-direct-v1/u]],
     ["3D", "talk-3d", [/WebGPU/u, /VRM/u]],
     ["AI 활용", "talk-ai", [/무료/u, /ONNX/u]],
@@ -398,47 +386,31 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(wrangler).toContain('"REALTIME_MAX_REPLAY_EVENTS": "2048"');
   });
 
-  it("가상 스튜디오: 화면에 연결된 근접 반경과 정원 사다리, 연결 전인 인사 규칙", () => {
+  it("가상 스튜디오: Godot 무대 임베드와 정원 사다리, 게스트 티켓 상한", () => {
     const slide = slideOf("talk-virtual-studio");
     const dir = "apps/web/src/domains/creator/virtual-space";
-    const media = read(`${dir}/hud/space-proximity-media.ts`);
-    expect(media).toMatch(/SPACE_PROXIMITY_MEDIA_RADIUS = 168;/u);
-    expect(media).toMatch(/SPACE_PROXIMITY_MEDIA_LEAVE_RADIUS = 216;/u);
-    expect(factOf(slide, 0, "근접 영상")).toBe("168 / 216px");
-    const helpers = read(`${dir}/studio-virtual-space-page-helpers.ts`);
-    expect(helpers).toMatch(/TALK_DISTANCE = 120;/u);
-    expect(helpers).toMatch(/SHARED_ACTIVITY_DISTANCE = 156;/u);
-    expect(factOf(slide, 1, "근처 대화")).toBe("120 / 156px");
-    expect(read(`${dir}/studio-virtual-space-chat.ts`)).toMatch(/STUDIO_CHAT_NEARBY_RADIUS_PX = 200;/u);
-    expect(factOf(slide, 2, "근처 채팅")).toBe("200px");
+    // 공간 클라이언트는 Godot 무대다 — 셸 임베드가 서빙 빌드 경로를 고정한다.
+    expect(read(`${dir}/StudioGodotSpaceEmbed.tsx`)).toContain('GODOT_SPACE_EMBED_PATH = "/godot-space/index.html"');
+    expect(factOf(slide, 0, "방당 최대 연결")).toBe("64");
 
-    // 인사 160/220px 규칙은 코드와 테스트만 있고 제품 코드가 쓰지 않는다 — 연결되면 슬라이드 문구를 고쳐야 한다.
-    const proximity = read(`${dir}/studio-virtual-space-proximity.ts`);
-    expect(proximity).toMatch(/STUDIO_PROXIMITY_GREET_RADIUS = 160;/u);
-    expect(proximity).toMatch(/STUDIO_PROXIMITY_FAREWELL_RADIUS = 220;/u);
-    const proximityFile = `${dir}/studio-virtual-space-proximity.ts`;
-    for (const word of ["updateStudioProximity", "summarizeStudioProximity", "STUDIO_PROXIMITY_GREET_RADIUS"]) {
-      const users = gitGrepFiles(word, "apps/web/src").filter((file) => file !== proximityFile && !/\.test\.tsx?$/u.test(file));
-      expect(users, `${word} 를 쓰는 제품 코드`).toEqual([]);
-    }
-    expect(koTextOf(slide)).toContain("160/220px");
-    expect(slide.points.map((point) => point.ko).join("\n")).toMatch(/160\/220px[^\n]*연결 전/u);
-
-    // 정원 사다리: DO 방 64 · 소셜 피어 23 · 데이터 메시 8 · 허들 3.
-    expect(read("deploy/cloudflare-realtime/wrangler.jsonc")).toContain('"REALTIME_MAX_CONNECTIONS_PER_ROOM": "64"');
-    expect(read(`${dir}/studio-virtual-space-social.ts`)).toMatch(/const MAX_PEERS = 23;/u);
-    expect(read("apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport.ts")).toMatch(/STUDIO_LIVE_P2P_MAX_PEERS = 8;/u);
+    // 정원 사다리: DO 방 64 · 재생 보존 15분/2,048건 · 허들 3.
+    const wrangler = read("deploy/cloudflare-realtime/wrangler.jsonc");
+    expect(wrangler).toContain('"REALTIME_MAX_CONNECTIONS_PER_ROOM": "64"');
+    expect(wrangler).toContain('"REALTIME_EVENT_RETENTION_MS": "900000"');
+    expect(wrangler).toContain('"REALTIME_MAX_REPLAY_EVENTS": "2048"');
+    expect(factOf(slide, 1, "놓친 이벤트 재생 보존")).toBe("15분 · 2,048건");
     expect(read("apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-protocol.ts")).toContain("HUDDLE_MAX_REMOTE_PEERS = 3;");
-    expect(slide.points.map((point) => point.ko).join("\n")).toContain("DO 방 64 · 소셜 피어 23 · 데이터 메시 8 · 허들 3");
+    expect(slide.points.map((point) => point.ko).join("\n")).toContain("DO 방 64 · 재생 보존 15분/2,048건 · 허들 3");
 
-    // Phaser: 라우트는 지연 로딩, 캔버스는 동적 import, 그러나 정적 import 1건이 남아 분리는 단정하지 못한다.
+    // 게스트는 티켓 계약의 guestAccess 로 들어오고 권한 상한은 viewer 다.
+    expect(read("apps/web/src/domains/creator/studio-realtime-provider-protocol.ts")).toContain("guestAccess");
+    expect(slide.points.map((point) => point.ko).join("\n")).toContain("viewer 상한");
+    expect(factOf(slide, 2, "입장권 유효 시간")).toBe("60초");
+    expect(read("packages/contracts/src/studio-live-auth-ticket.ts")).toContain("STUDIO_LIVE_AUTH_TICKET_TTL_MS = 60_000;");
+
+    // ICE는 STUN 전용이고 TURN 경로는 제거됐다. 공간 라우트는 여전히 지연 로딩이다.
+    expect(read("apps/web/src/domains/creator/live/studio-ice-configuration.ts")).toContain("stun:stun.cloudflare.com:3478");
     expect(read("apps/web/src/app/routes/groups/creator-route-pages.ts")).toMatch(/StudioVirtualSpacePage = lazyRetry\(/u);
-    expect(read(`${dir}/StudioVirtualSpacePhaserCanvas.tsx`)).toContain('await import("phaser")');
-    expect(read(`${dir}/studio-virtual-space-sprite-crossfade-runtime.ts`)).toMatch(/^import Phaser from "phaser";/mu);
-    expect(gitGrepFiles("studio-virtual-space-sprite-crossfade-runtime", "apps/web/src").filter((file) => !/\.test\.tsx?$/u.test(file) && !file.includes("/domains/legal/technology/"))).toEqual([
-      `${dir}/StudioVirtualSpacePhaserCanvas.tsx`,
-    ]);
-    expect(slide.points.map((point) => point.ko).join("\n")).toContain("정적 import 1건이 남아");
   });
 
   it("WebRTC: 서버 시그널링 범위, 직통 레인, 서버 음성 릴레이 꺼짐, 정원 숫자", () => {
@@ -484,8 +456,8 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
   it("품질: 파일 수·워크플로·래칫 상한과 실측·큐레이션 대상·접근성 서술", () => {
     const slide = slideOf("talk-quality");
     const webTests = gitFiles("apps/web").filter((path) => /\.test\.(?:ts|tsx|mts)$/u.test(path)).length;
-    expect(factOf(slide, 0, "웹 테스트 파일")).toBe("5,300+");
-    expect(webTests).toBeGreaterThanOrEqual(5300);
+    expect(factOf(slide, 0, "웹 테스트 파일")).toBe("5,100+");
+    expect(webTests).toBeGreaterThanOrEqual(5100);
     expect(gitFiles("e2e").filter((path) => /\.spec\.(?:ts|mts)$/u.test(path)).length).toBe(Number(factOf(slide, 1, "E2E 스펙")));
     expect(gitFiles(".github/workflows").filter((path) => /\.ya?ml$/u.test(path)).length).toBe(Number(factOf(slide, 2, "워크플로")));
 

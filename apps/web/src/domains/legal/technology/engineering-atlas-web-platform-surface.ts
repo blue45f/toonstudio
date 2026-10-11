@@ -500,8 +500,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
         "A string's length (string.length) is not the number of characters a person sees. One emoji counts as several units, and Hangul typed in decomposed jamo form is several pieces for one character, so cutting or wrapping by count breaks characters. Intl.Segmenter is a built-in tool where the browser's Unicode library (ICU) reports what a person perceives as one character (a grapheme) and word boundaries.",
       ),
       t(
-        "ToonStudio 에서 이 도구가 실제로 도는 곳은 세 군데입니다. 첫째, 대사 번역 패널의 말풍선 오버플로 판정입니다. 번역문을 자소 단위로 나눠 줄 첫머리에 올 수 없는 부호(?! …)와 줄 끝에 올 수 없는 접두 기호(₩ 등)를 피해 줄바꿈을 앞으로 물리고(금칙 처리), 줄 길이의 들쭉날쭉함도 줄입니다(금칙과 세로쓰기는 드로잉 카드가 자세히 다룹니다). 둘째, 작업공간 이름처럼 글자 수 한도가 있는 입력에서 사용자가 보는 글자를 반쯤 자르지 않습니다. 셋째, 가상 스튜디오의 닉네임 길이와 대사 타자기 연출입니다.",
-        "It really runs in three places. First, the balloon-overflow verdict in the dialogue translation panel: translated text is split into graphemes, line breaks are pulled earlier to avoid marks that cannot start a line (?! …) and prefix symbols that cannot end one (such as the won sign), a rule called kinsoku, and ragged line lengths are smoothed (the drawing cards cover kinsoku and vertical writing in detail). Second, inputs with a character limit, such as workspace names, never cut a visible character in half. Third, nickname length and the dialogue typewriter effect in the virtual studio.",
+        "ToonStudio 에서 이 도구가 실제로 도는 곳은 세 군데입니다. 첫째, 대사 번역 패널의 말풍선 오버플로 판정입니다. 번역문을 자소 단위로 나눠 줄 첫머리에 올 수 없는 부호(?! …)와 줄 끝에 올 수 없는 접두 기호(₩ 등)를 피해 줄바꿈을 앞으로 물리고(금칙 처리), 줄 길이의 들쭉날쭉함도 줄입니다(금칙과 세로쓰기는 드로잉 카드가 자세히 다룹니다). 둘째, 작업공간 이름처럼 글자 수 한도가 있는 입력에서 사용자가 보는 글자를 반쯤 자르지 않습니다. 셋째, 가상 스튜디오 입장 닉네임의 길이로, 자소 수로 세어 최소·최대 길이를 판정합니다.",
+        "It really runs in three places. First, the balloon-overflow verdict in the dialogue translation panel: translated text is split into graphemes, line breaks are pulled earlier to avoid marks that cannot start a line (?! …) and prefix symbols that cannot end one (such as the won sign), a rule called kinsoku, and ragged line lengths are smoothed (the drawing cards cover kinsoku and vertical writing in detail). Second, inputs with a character limit, such as workspace names, never cut a visible character in half. Third, the virtual studio entry nickname's length, counted in graphemes to judge its minimum and maximum.",
       ),
       t(
         "Intl.Segmenter 가 없는 엔진에서는 코드포인트 단위로 나누는 폴백(서로게이트 쌍은 보존)을 씁니다. 자소 분할은 로케일 영향이 작지만 단어 분할은 ICU 버전과 로케일에 따라 달라질 수 있어, 단어 분할을 쓰는 balloon-text-layout 은 로케일 ko 를 명시해 결과를 고정합니다. 깊은 복사에는 브라우저 내장 structuredClone 을 쓰며(비테스트 약 50개 파일), JSON 으로 복사하는 폴리필은 내장이 없는 환경 전용입니다.",
@@ -590,14 +590,14 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE: readonly EngineeringAtlasEn
         paths: ["apps/web/src/domains/creator/studio-workspaces.ts#truncateWorkspaceNameBase"],
       },
       {
-        feature: t("가상 스튜디오 · 닉네임과 대사 타자기", "Virtual studio · nickname and dialogue typewriter"),
+        feature: t("가상 스튜디오 · 닉네임 길이 세기", "Virtual studio · counting nickname length"),
         role: t(
-          "닉네임 길이를 자소 수로 세고, 대사 타자기 연출은 자소 단위로 한 글자씩 보여 줍니다.",
-          "Counts nickname length in graphemes, and the dialogue typewriter reveals one grapheme at a time.",
+          "입장 닉네임 길이를 자소 수로 세어 최소·최대를 판정하고, 금칙 줄바꿈 모듈도 같은 자소 단위로 번역문을 나눕니다.",
+          "Counts the entry nickname's length in graphemes to judge its minimum and maximum, and the kinsoku line-break module splits translated text into the same grapheme units.",
         ),
         paths: [
           "apps/web/src/domains/creator/virtual-space/studio-virtual-space-entry-preference.ts",
-          "apps/web/src/domains/creator/virtual-space/studio-virtual-space-dialogue-typewriter.ts",
+          "apps/web/src/domains/creator/lettering/studio-kinsoku-line-break.ts",
         ],
       },
       {

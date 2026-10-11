@@ -105,15 +105,14 @@ describe("세미나 발표(30분) 원본", () => {
     expect(facts.get("재개 요청 측정 창(설정값)")).toBe("10s");
     expect(wrangler).toContain('"REALTIME_RESUME_WINDOW_MS": "10000"');
 
-    // 화면에 실제로 연결된 근접 반경만 슬라이드 수치로 쓴다. 인사 160/220px 규칙은 제품 코드가 쓰지 않는 설계 기준이다
-    // (연결 여부와 나머지 정원 사다리는 engineering-talk-deck-content.test.ts 가 확인한다).
+    // 가상 스튜디오 슬라이드의 수치는 Godot 무대 임베드와 Worker·계약 상수에서 확인한다
+    // (정원 사다리의 나머지는 engineering-talk-deck-content.test.ts 가 확인한다).
     const dir = "apps/web/src/domains/creator/virtual-space";
-    expect(source(`${dir}/hud/space-proximity-media.ts`)).toMatch(/SPACE_PROXIMITY_MEDIA_RADIUS = 168;[\s\S]*SPACE_PROXIMITY_MEDIA_LEAVE_RADIUS = 216;/u);
-    expect(facts.get("근접 영상 연결 / 해제 반경(동의 후)")).toBe("168 / 216px");
-    expect(source(`${dir}/studio-virtual-space-page-helpers.ts`)).toMatch(/TALK_DISTANCE = 120;[\s\S]*SHARED_ACTIVITY_DISTANCE = 156;/u);
-    expect(facts.get("근처 대화 입장 / 퇴장 반경")).toBe("120 / 156px");
-    expect(source(`${dir}/studio-virtual-space-chat.ts`)).toMatch(/STUDIO_CHAT_NEARBY_RADIUS_PX = 200;/u);
-    expect(facts.get("근처 채팅이 닿는 거리")).toBe("200px");
+    expect(source(`${dir}/StudioGodotSpaceEmbed.tsx`)).toContain('GODOT_SPACE_EMBED_PATH = "/godot-space/index.html"');
+    expect(facts.get("놓친 이벤트 재생 보존")).toBe("15분 · 2,048건");
+    expect(wrangler).toContain('"REALTIME_EVENT_RETENTION_MS": "900000"');
+    expect(facts.get("입장권 유효 시간")).toBe("60초");
+    expect(source("packages/contracts/src/studio-live-auth-ticket.ts")).toContain("STUDIO_LIVE_AUTH_TICKET_TTL_MS = 60_000;");
     expect(source("apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-protocol.ts")).toContain("HUDDLE_MAX_REMOTE_PEERS = 3;");
     expect(facts.get("허들 원격 참가자 상한(음성·영상)")).toBe("3");
 
