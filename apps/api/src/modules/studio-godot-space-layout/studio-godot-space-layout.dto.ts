@@ -62,6 +62,7 @@ export const GodotSpaceDefinitionSchema = z.object({
       camHeight: z.number().finite().min(2).max(40).optional(),
       camDist: z.number().finite().min(2).max(60).optional(),
       camFov: z.number().finite().min(20).max(90).optional(),
+      camTargetLead: z.number().finite().min(-6).max(6).optional(),
       yaw: z.number().finite().min(-360).max(360).optional(),
     })
     .nullable()
@@ -85,6 +86,29 @@ export const GodotSpaceDefinitionSchema = z.object({
       }),
     )
     .max(64),
+  // NPC는 무대 로컬 연출 정의다 (프레즌스 아님 — 표면 회귀 복구). 선택
+  // 필드라 기존 저장본·구 클라이언트와 호환된다.
+  npcs: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(20),
+        role: z.string().trim().max(20).optional(),
+        skin: z.string().trim().max(64).optional(),
+        color: z.string().trim().max(32).optional(),
+        points: z
+          .array(
+            z.tuple([
+              z.number().finite().min(0).max(4000),
+              z.number().finite().min(0).max(4000),
+            ]),
+          )
+          .min(2)
+          .max(16),
+        lines: z.array(z.string().trim().max(60)).max(12).optional(),
+      }),
+    )
+    .max(6)
+    .optional(),
 });
 
 export type GodotSpaceDefinition = z.infer<typeof GodotSpaceDefinitionSchema>;
