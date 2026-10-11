@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Put } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Inject, Param, Put } from "@nestjs/common";
 
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
 import {
@@ -17,7 +17,10 @@ import { StudioGodotSpaceLayoutService } from "./studio-godot-space-layout.servi
  */
 @Controller("creator/works/:workId/godot-space-layouts")
 export class StudioGodotSpaceLayoutController {
-  constructor(private readonly layoutService: StudioGodotSpaceLayoutService) {}
+  constructor(
+    @Inject(StudioGodotSpaceLayoutService)
+    private readonly layoutService: StudioGodotSpaceLayoutService,
+  ) {}
 
   @Get(":spaceId")
   getLayout(

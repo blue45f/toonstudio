@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -20,7 +21,9 @@ import {
  */
 @Injectable()
 export class StudioGodotSpaceLayoutService {
-  constructor(private readonly creatorService: CreatorService) {}
+  constructor(
+    @Inject(CreatorService) private readonly creatorService: CreatorService,
+  ) {}
 
   private async requireViewer(userId: string | undefined, workId: string) {
     const id = userId?.trim();
