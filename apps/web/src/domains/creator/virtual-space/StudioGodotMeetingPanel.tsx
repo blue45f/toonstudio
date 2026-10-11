@@ -25,6 +25,10 @@ export interface StudioGodotMeetingPanelProps {
   readonly onToggleCam: (enabled: boolean) => void;
 }
 
+// 라이브 화상은 실시간 음성이라 자막 트랙이 없다 — 빈 WebVTT를 명시해
+// 미디어 자막 규칙을 정직하게 충족한다 (사운드 패널과 같은 방식).
+const EMPTY_CAPTIONS = "data:text/vtt;charset=utf-8,WEBVTT%0A%0A";
+
 function routeCopy(
   route: GodotMeetingRoute,
   bt: (ko: string, en: string) => string,
@@ -123,7 +127,9 @@ export function StudioGodotMeetingPanel({
             playsInline
             data-testid="godot-remote-video"
             className="aspect-video w-full rounded-2xl bg-black/80"
-          />
+          >
+            <track kind="captions" src={EMPTY_CAPTIONS} srcLang="zxx" label="No speech" />
+          </video>
           <figcaption className="mt-1 text-xs text-fg-2">
             {peerName ?? bt("상대", "Partner")}
           </figcaption>
@@ -136,7 +142,9 @@ export function StudioGodotMeetingPanel({
             muted
             data-testid="godot-local-video"
             className="aspect-video w-full rounded-2xl bg-black/80"
-          />
+          >
+            <track kind="captions" src={EMPTY_CAPTIONS} srcLang="zxx" label="No speech" />
+          </video>
           <figcaption className="mt-1 text-xs text-fg-2">
             {bt(`나 (${selfName})`, `Me (${selfName})`)}
           </figcaption>
