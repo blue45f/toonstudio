@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  fetchGodotSpaceCatalog,
+  fetchGodotSpaceLayout,
+  isGodotSpaceLayoutConflict,
+  saveGodotSpaceLayout,
+} from "./studio-godot-space";
+
 const apiMocks = vi.hoisted(() => ({
   get: vi.fn(),
   put: vi.fn(),
@@ -12,13 +19,6 @@ vi.mock("@/platform/api", () => ({
   toApiError: async (error: unknown, fallback: string) =>
     error instanceof Error ? error : new Error(fallback),
 }));
-
-import {
-  fetchGodotSpaceCatalog,
-  fetchGodotSpaceLayout,
-  isGodotSpaceLayoutConflict,
-  saveGodotSpaceLayout,
-} from "./studio-godot-space";
 
 const DEFINITION = {
   v: 1 as const,
