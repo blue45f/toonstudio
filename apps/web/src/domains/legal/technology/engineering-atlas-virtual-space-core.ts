@@ -321,25 +321,37 @@ export function assertPublishable(
         title: t("라우트에서만 받는 공간 페이지", "A studio page fetched only by its route"),
         language: "ts",
         code: `// 공간 페이지는 라우트에 들어갈 때만 청크를 받는다(단순화).
-import { lazyRetry } from "@/shared/lib/lazy-retry";
+type PageLoader = () => Promise<{ default: unknown }>;
 
-export const StudioVirtualSpacePage = lazyRetry(
-  () =>
-    import("@/domains/creator/virtual-space/StudioVirtualSpacePage").then(
-      (module) => ({ default: module.StudioVirtualSpacePage }),
-    ),
-  "StudioVirtualSpacePage",
-);`,
+function lazyRetry(loader: PageLoader, name: string): PageLoader {
+  return async () => {
+    try {
+      return await loader();
+    } catch {
+      return loader(); // 한 번 더 시도하고, 그래도 실패하면 오류가 위로 올라간다
+    }
+  };
+}
+
+// 실제 등록은 routes 파일이 동적 import 로더를 넘긴다.
+export const registerSpacePage = (loader: PageLoader) =>
+  lazyRetry(loader, "StudioVirtualSpacePage");`,
         codeEn: `// The studio page chunk is fetched only when its route is entered (simplified).
-import { lazyRetry } from "@/shared/lib/lazy-retry";
+type PageLoader = () => Promise<{ default: unknown }>;
 
-export const StudioVirtualSpacePage = lazyRetry(
-  () =>
-    import("@/domains/creator/virtual-space/StudioVirtualSpacePage").then(
-      (module) => ({ default: module.StudioVirtualSpacePage }),
-    ),
-  "StudioVirtualSpacePage",
-);`,
+function lazyRetry(loader: PageLoader, name: string): PageLoader {
+  return async () => {
+    try {
+      return await loader();
+    } catch {
+      return loader(); // retry once; a second failure surfaces as an error
+    }
+  };
+}
+
+// The routes file registers it by passing a dynamic-import loader.
+export const registerSpacePage = (loader: PageLoader) =>
+  lazyRetry(loader, "StudioVirtualSpacePage");`,
         explain: t(
           "공간을 쓰지 않는 사용자는 공간 페이지와 무대 파일을 받지 않습니다. 불러오기가 실패하면 lazyRetry가 다시 시도합니다.",
           "Users who never open the studio download neither the studio page nor the stage files. When loading fails, lazyRetry tries again.",

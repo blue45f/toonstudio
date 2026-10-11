@@ -120,7 +120,6 @@ export const VIRTUAL_SPACE_AUTHORITY_CARDS: readonly EngineeringAtlasEntry[] = [
         title: t("서버에서 키 정렬 JSON 을 SHA-256 으로 해시", "Hash key-sorted JSON with SHA-256 on the server"),
         language: "ts",
         code: `// 키를 정렬한 JSON(canonical JSON)을 SHA-256 으로 해시한다(studioRequestHash 의 단순화).
-import { createHash } from "node:crypto";
 
 function canonicalJson(value: unknown): string {
   const sort = (v: unknown): unknown =>
@@ -133,14 +132,16 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(sort(value));
 }
 
-export function studioRequestHash(value: unknown): string {
-  return createHash("sha256").update(canonicalJson(value), "utf8").digest("hex");
+export async function studioRequestHash(value: unknown): Promise<string> {
+  const bytes = new TextEncoder().encode(canonicalJson(value));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // 발행본을 읽을 때도 contentHash 가 이 값과 같은지 서버가 다시 대조한다.
-export const matches = (manifest: unknown, contentHash: string) => studioRequestHash(manifest) === contentHash;`,
+export const matches = async (manifest: unknown, contentHash: string) =>
+  (await studioRequestHash(manifest)) === contentHash;`,
         codeEn: `// Hash key-sorted JSON (canonical JSON) with SHA-256 (simplified from studioRequestHash).
-import { createHash } from "node:crypto";
 
 function canonicalJson(value: unknown): string {
   const sort = (v: unknown): unknown =>
@@ -153,12 +154,15 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(sort(value));
 }
 
-export function studioRequestHash(value: unknown): string {
-  return createHash("sha256").update(canonicalJson(value), "utf8").digest("hex");
+export async function studioRequestHash(value: unknown): Promise<string> {
+  const bytes = new TextEncoder().encode(canonicalJson(value));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // On read, the server also re-checks that contentHash equals this value.
-export const matches = (manifest: unknown, contentHash: string) => studioRequestHash(manifest) === contentHash;`,
+export const matches = async (manifest: unknown, contentHash: string) =>
+  (await studioRequestHash(manifest)) === contentHash;`,
         explain: t(
           "키 순서가 달라도 내용이 같으면 같은 문자열이 되도록 키를 정렬한 뒤 해시합니다. 발행할 때 기록한 contentHash 와 읽을 때 다시 계산한 값이 다르면, 저장된 발행본이 어긋난 것으로 보고 실패로 닫습니다.",
           "Keys are sorted so the same content always becomes the same string regardless of key order, then hashed. If the contentHash recorded at publish time differs from the value recomputed on read, the stored publication is treated as broken and the read fails closed.",
