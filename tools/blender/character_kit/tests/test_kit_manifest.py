@@ -332,7 +332,11 @@ class Hyper3dProvenanceTest(unittest.TestCase):
         self.assertNotIn("hyper3d-hair-soft-bob", by_id)
         self.assertEqual({"hbm-1.4.1", "toonstudio-original", "hyper3d-top-tee"}, set(by_id))
         self.assertEqual(set(self.entries([])), {"hbm-1.4.1", "toonstudio-original"})  # 파츠가 없으면 항목도 없다
-        self.assertEqual(set(self.entries(["hair/soft-bob", "bottom/jeans", "shoes/sneakers", "top/tee"])) - {"hbm-1.4.1", "toonstudio-original"}, {"hyper3d-hair-soft-bob", "hyper3d-bottom-jeans", "hyper3d-shoes-sneakers", "hyper3d-top-tee"})
+        registered = {"hyper3d-hair-soft-bob", "hyper3d-bottom-jeans", "hyper3d-shoes-sneakers", "hyper3d-top-tee"}
+        derived = set(self.entries(["hair/soft-bob", "bottom/jeans", "shoes/sneakers", "top/tee"])) - {"hbm-1.4.1", "toonstudio-original"}
+        self.assertLessEqual(registered, derived)
+        # 남성 전용 생성물(`슬롯/이름@male`)이 있는 프리셋은 기본 파츠가 등록돼 있을 때만 `-male` 항목이 따라온다. 그 밖의 항목은 없다.
+        self.assertTrue(all(extra.endswith("-male") and extra.removesuffix("-male") in registered for extra in derived - registered), derived - registered)
 
     def test_base_specific_sources_follow_their_base_part(self) -> None:
         record = dict(self.sources.sources["top/tee"])

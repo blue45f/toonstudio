@@ -21,6 +21,12 @@
 - `merge_joints`: 스킨에서 합칠 joint(턱 본이 헤어·귀 근처 소품에 번지지 않게 머리 본으로 합친다).
 - `source`: `{raw, pick, clean[, ref]}` — `hyper3d_generations.json`의 항목 이름(`raw`), BANG 산출물에서 고를 메시(`pick`, 쉼표 목록이면 합친다), 정리 규칙(`clean`), `head_ref` 정렬이 기준으로 삼을 머리 메시(`ref`).
 - `base_overrides`: `{"male": {...}}` — 그 베이스를 빌드할 때만 프리셋 필드(`source`·`lods`·`fit_region`·`anchor` 등)를 덮어쓴다(남성 전용 헤어·의상). `effective_spec(preset_id, base_id)`가 합친 사본을 돌려준다.
+- `hem_standoff`(상의): 허리선(`waist` + `above`)부터 아래로 `blend` m에 걸쳐 d_min을 `d_min`까지 올려, 허리에 걸친 하의의 윗선(몸에서 25~30 mm 부푼다)이 상의를 뚫고 나오지 않게 한다.
+- `waist_rim`(바지류): 열린 가장자리 가운데 맨 위 `below` m 안(허리띠)의 d_max를 `d_max`로 줄여 윗선이 바깥으로 부풀지 않게 한다. 밑단(발목)의 헐렁한 끝선은 건드리지 않는다.
+- `hem_cut`(상의): `{"percentile": 55}` — 가장 낮은 큰 열린 루프(밑단)의 높이 분포에서 이 백분위 높이로 수평하게 자른다. 앞·뒤 중앙이 V자로 처진 밑단(옆면보다 10 cm 낮다)을 옆면 높이로 바로잡는다(`garment_extras.trim_hem`).
+- `sleeve_cut`(상의): `{"margin": 0.0}` — 소매 끝을 손목 관절 평면에서 `margin`(m) 넘어선 곳에서 자른다. 생성 모델이 손등까지 소매 천을 남긴 경우(남성 세일러) 손목 위에 찢긴 조각이 걸린다(`garment_extras.trim_sleeve_ends`).
+- `extras`(상의): `{"hood": {...}}` — 맞춰진 상의 셸 위에 직접 만들어 얹는 부속. 후디의 내려 둔 후드(목 둘레 접힘 + 등 주머니, `garment_extras.hood_down`).
+- `tails`(헤어): 머리 위 묶음 아래 꼬리를 늘린다(`garment_extras.extend_tails`) — 두개골 폭에 맞춘 배율이 트윈테일 꼬리를 머리에 붙은 단발로 만든다.
 - `changesKo`: kit.json provenance의 한글 변경 내용.
 """
 
@@ -55,7 +61,7 @@ def _top(name: str, *, source: dict[str, Any], pose: str, align: str, changes: s
         "d_min": 0.008,
         "d_max": 0.045,
         "d_max_open": 0.060,
-        "hem_standoff": {"d_min": 0.034, "above": 0.03, "blend": 0.08},
+        "hem_standoff": {"d_min": 0.042, "above": 0.12, "blend": 0.06},
         "fit_region": {"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.12, "scale": (0.92, 1.08)},
         "texture": {"strength": strength, "blur_radius": 1.2, "bands": 0},
         "normal_transfer": 0.6,
@@ -206,11 +212,13 @@ PRESETS: dict[str, dict[str, Any]] = {
         pose="t",
         align="frame",
         decimate=6500,
+        strength=0.14,
         stylize=3,
         fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
         d_max=0.045,
+        hem_cut={"percentile": 55},
         base_overrides={"male": {"source": {"raw": "shirt-m-v3-bang", "pick": "root.1", "clean": "top-no-skin"}}},
-        changes="베이스 T-포즈 몸에 뾰족한 칼라·칼라 스탠드·앞단을 입체로 넣은 프록시 셔츠(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 긴팔 셔츠 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 셔츠를 쓴다.",
+        changes="베이스 T-포즈 몸에 뾰족한 칼라·칼라 스탠드·앞단을 입체로 넣은 프록시 셔츠(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 긴팔 셔츠 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 셔츠를 쓴다.",
     ),
     "top/sailor": _top(
         "sailor",
@@ -221,8 +229,8 @@ PRESETS: dict[str, dict[str, Any]] = {
         stylize=3,
         fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
         d_max=0.045,
-        base_overrides={"male": {"source": {"raw": "sailor-m-v3-bang", "pick": "root.2,root.4,root.0,root.7", "clean": "top-multi"}}},
-        changes="베이스 T-포즈 몸에 앞 V 칼라·뒤 사각 칼라·스카프 매듭을 입체로 넣은 프록시 세일러 상의(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 몸통·칼라 조각·소매단을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크(네이비 칼라·빨간 스카프는 휘도 영역과 입체 지오메트리로 남는다).",
+        base_overrides={"male": {"source": {"raw": "sailor-m-v3-bang", "pick": "root.2,root.4,root.0,root.7", "clean": "top-multi"}, "sleeve_cut": {"margin": 0.0}}},
+        changes="베이스 T-포즈 몸에 앞 V 칼라·뒤 사각 칼라·스카프 매듭을 입체로 넣은 프록시 세일러 상의(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 몸통·칼라 조각·소매단을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크(네이비 칼라·빨간 스카프는 휘도 영역과 입체 지오메트리로 남는다). 남성 베이스는 BANG이 손등까지 소매 천을 남겨 손목에 찢긴 조각이 걸리므로 손목 관절 평면에서 소매 끝을 자른다.",
     ),
     "top/blazer": _top(
         "blazer",
@@ -233,21 +241,29 @@ PRESETS: dict[str, dict[str, Any]] = {
         stylize=3,
         fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
         d_max=0.045,
+        hem_cut={"percentile": 55},
         base_overrides={"male": {"source": {"raw": "blazer-m-v3-bang", "pick": "root.4,root.3", "clean": "top-multi"}}},
-        changes="베이스 T-포즈 몸에 노치 라펠·가슴 주머니·플랩 주머니·단추를 입체로 넣은 프록시 블레이저(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 블레이저 파츠와 안쪽 셔츠 칼라 조각을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 블레이저를 쓴다.",
+        changes="베이스 T-포즈 몸에 노치 라펠·가슴 주머니·플랩 주머니·단추를 입체로 넣은 프록시 블레이저(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 블레이저 파츠와 안쪽 셔츠 칼라 조각을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 블레이저를 쓴다.",
     ),
     "top/hoodie": _top(
         "hoodie",
         source={"raw": "hoodie-f-v3-bang", "pick": "root.2", "clean": "top-no-skin"},
         pose="t",
         align="frame",
-        decimate=8000,
+        decimate=6500,
         stylize=3,
         fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
         d_max=0.12,
         d_max_open=0.12,
+        hem_cut={"percentile": 55},
+        extras={
+            "hood": {
+                "ring": {"major": 0.104, "minor": 0.036, "squash": 0.85, "center_z": 0.004, "scan_top": 1.60, "scan_floor": 1.15, "fallback_y": 1.38, "smooth": 2, "raise": 0.45, "lining_cos": 0.15, "max_center_y": 1.38},
+                "back": {"top_y": 1.41, "bottom_y": 1.19, "widths": [(1.41, 0.090), (1.34, 0.155), (1.26, 0.155), (1.19, 0.100)], "height": 0.070, "base": 0.005, "shape": 0.6, "grid": (24, 18)},
+            }
+        },
         base_overrides={"male": {"source": {"raw": "hoodie-m-v3-bang", "pick": "root.2", "clean": "top-no-skin"}}},
-        changes="베이스 T-포즈 몸에 등에 걸친 두툼한 후드 주머니·목 둘레 후드 접힘·캥거루 주머니·끈을 입체로 넣은 프록시 후디(앞·뒤·옆 3장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 후디 파츠(후드 포함)를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+        changes="베이스 T-포즈 몸에 캥거루 주머니·목 둘레 접힘을 입체로 넣은 프록시 후디(앞·뒤·옆 3장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 후디 몸통 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 생성 모델이 모든 시도에서 후드 볼륨을 만들지 못해(칼라로 읽거나 BANG이 머리 파츠에 붙였다) 후드(목 둘레 접힘 토러스 + 등에 늘어진 주머니)는 이 저장소가 맞춰진 셸 위에 직접 만들어 붙인다(원본 Hyper3D 형상이 아님).",
     ),
     # ---------------------------------------------------------------- 하의
     "bottom/jeans": _bottom(
@@ -256,6 +272,7 @@ PRESETS: dict[str, dict[str, Any]] = {
         pose="t",
         align="icp",
         icp={"anchor": "top", "landmark": "waist", "scales": [0.46, 0.50, 0.54, 0.58, 0.62]},
+        waist_rim={"d_max": 0.020, "below": 0.06},
         changes="옷만 요청한 청바지 생성물에서 마네킹 허리·발목·신발 조각을 지우고, 베이스 T-포즈 몸에 맞춰 리타깃(정렬·충돌 해소·웹툰풍 스무딩·표면 결합), 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
     ),
     "bottom/slacks": _bottom(
@@ -265,6 +282,7 @@ PRESETS: dict[str, dict[str, Any]] = {
         align="anchor",
         anchor={"landmark": "waist", "offset": 0.056, "length_m": 0.996},
         d_max=0.040,
+        waist_rim={"d_max": 0.020, "below": 0.06},
         changes="바지만 요청했지만 마네킹 몸이 함께 나온 생성물을 BANG으로 분리한 바지 파츠를 베이스 T-포즈 몸에 허리선 기준으로 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
     ),
     "bottom/shorts": _bottom(
@@ -275,6 +293,7 @@ PRESETS: dict[str, dict[str, Any]] = {
         anchor={"landmark": "waist", "offset": 0.056, "length_m": 0.433},
         decimate=4000,
         d_max=0.050,
+        waist_rim={"d_max": 0.020, "below": 0.06},
         changes="반바지만 요청했지만 마네킹 몸이 함께 나온 생성물을 BANG으로 분리한 반바지 파츠를 베이스 T-포즈 몸에 허리선 기준으로 맞춰 리타깃, 웹툰풍 스무딩, 4,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
     ),
     "bottom/pleated-skirt": _bottom(
@@ -378,7 +397,8 @@ PRESETS: dict[str, dict[str, Any]] = {
         source={"raw": "hair-twin3-bang", "pick": "root.0", "clean": "keep", "ref": "root.4"},
         align="head_ref",
         lods=(5000, 2700, 1400),
-        changes="청크형(저폴리 5,000 설정) 트윈테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(양쪽 높은 묶음 + 긴 꼬리 둘)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
+        tails={"tie_below_top": 0.071, "stretch": 1.7, "spread": 0.04, "x_min": 0.02},
+        changes="청크형(저폴리 5,000 설정) 트윈테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(양쪽 높은 묶음 + 꼬리 둘)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 두개골 폭에 맞춘 배율이 꼬리를 머리에 붙은 단발로 만들어 묶음 아래 꼬리를 아래로 1.7배·바깥으로 4 cm 늘림, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
     ),
     "hair/romance-long": _hair(
         "romance-long",
@@ -386,6 +406,7 @@ PRESETS: dict[str, dict[str, Any]] = {
         source={"raw": "hair-romance3-bang", "pick": "root.3", "clean": "keep", "ref": "root.0"},
         align="head_ref",
         lods=(4500, 2400, 1300),
+        base_overrides={"male": {"source": {"raw": "hair-long3m", "pick": None, "clean": "hair-dark"}, "align": "hair"}},
         changes="청크형(저폴리 5,000 설정) 가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(4,500/2,400/1,300 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
     ),
     # ---------------------------------------------------------------- 소품
@@ -412,7 +433,7 @@ PRESETS: dict[str, dict[str, Any]] = {
     ),
     "accessory/choker": _proc_prop(
         "choker",
-        changes="베이스(머리를 2.6~2.8 cm 들어 올려 만든 자유로운 목 기둥) 턱 바닥에서 6 cm 위 목 둘레를 따라 절차 생성한 폭 9 mm 띠와 앞쪽 작은 원판 장식 초커를 변환 없이 머리 표면에 결합해 스킨·morph를 붙임. Hyper3D 생성물이 아닌 원본(license: original).",
+        changes="베이스(머리를 2.6~2.8 cm 들어 올려 만든 자유로운 목 기둥) 목 밑동(머리 메시 맨 아래)에서 7 cm 위 목 둘레를 따라 절차 생성한 폭 9 mm 띠와 앞쪽 작은 원판 장식 초커를 변환 없이 머리 표면에 결합해 스킨·morph를 붙임. Hyper3D 생성물이 아닌 원본(license: original).",
     ),
     "accessory/headphones": _prop(
         "headphones",
