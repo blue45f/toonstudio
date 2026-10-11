@@ -103,7 +103,7 @@ export class StudioGodotMeetingSession {
     if (!context.selfInMeeting || !context.peerInMeeting) {
       // 구역 이탈은 즉시 종료한다 — 상대 화면에 끊긴 화상이 남지 않게.
       this.teardown(true);
-      this.setRoute(context.selfInMeeting ? "idle" : "idle");
+      this.setRoute("idle");
       return;
     }
     if (peerChanged && this.peerConnection) {
@@ -148,8 +148,9 @@ export class StudioGodotMeetingSession {
     if (kind === "signal.stop") {
       this.teardown(false);
       if (this.context.selfInMeeting && this.context.peerInMeeting) {
-        this.setRoute(this.started ? "ready" : "ready");
+        // 상대가 종료했다 — 이쪽도 시작 대기 상태로 되돌린다.
         this.started = false;
+        this.setRoute("ready");
       }
       return;
     }
