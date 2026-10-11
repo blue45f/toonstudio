@@ -289,7 +289,7 @@ async function createProductionAuthHttpHarness(url: string) {
       "regionSettings" jsonb, "createdAt" timestamp);
       CREATE TABLE "verificationToken"(identifier text NOT NULL, token text NOT NULL, expires timestamp NOT NULL, PRIMARY KEY(identifier, token));
       CREATE TABLE "session"("sessionToken" text PRIMARY KEY, "userId" text, expires timestamp);
-      CREATE TABLE creator_work(id text PRIMARY KEY, "userId" text NOT NULL REFERENCES "user"(id), title text NOT NULL);
+      CREATE TABLE creator_work(id text PRIMARY KEY, "userId" text NOT NULL REFERENCES "user"(id), title text NOT NULL, cover text);
       CREATE TABLE creator_work_collaborator("workId" text REFERENCES creator_work(id), "userId" text REFERENCES "user"(id), role text, status text, PRIMARY KEY("workId", "userId"));`);
     for (const name of ["0053_production_collaboration_core.sql", "0084_production_model_v2_compatibility.sql", "0085_production_team_workspace.sql", "0086_production_operation_policy.sql"]) {
       const migration = readFileSync(new URL(`../../platform/database/migrations/${name}`, import.meta.url), "utf8").replaceAll("public.", `"${schema}".`);
