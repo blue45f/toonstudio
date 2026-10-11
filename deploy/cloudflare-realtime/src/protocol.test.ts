@@ -118,6 +118,37 @@ describe("realtime protocol", () => {
     ).toEqual({ ok: false, code: "invalid-payload" });
   });
 
+  it("accepts a catalogued presence reaction and rejects malformed reactions", () => {
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.reaction", emote: "dance" }),
+      ),
+    ).toMatchObject({ ok: true, value: { type: "publish", channel: "presence" } });
+
+    // 카탈로그에 없는 이모트·여분 키·비문자열 값은 거부한다.
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.reaction", emote: "backflip" }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.reaction", emote: "wave", extra: 1 }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    expect(
+      parseRealtimeClientMessage(
+        publish("presence", { kind: "presence.reaction", emote: 3 }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+    // 다른 채널로는 보낼 수 없다.
+    expect(
+      parseRealtimeClientMessage(
+        publish("comments", { kind: "presence.reaction", emote: "wave" }),
+      ),
+    ).toEqual({ ok: false, code: "invalid-payload" });
+  });
+
   it("accepts the formal avatar appearance field and rejects malformed appearances", () => {
     const base = {
       kind: "presence.update",

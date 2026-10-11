@@ -485,6 +485,67 @@ describe("Cloudflare realtime provider adapter", () => {
     adapter.close();
   });
 
+  it("skips a Godot-stage presence reaction without emitting or disconnecting", async () => {
+    const socket = new FakeWebSocket();
+    const events: StudioRealtimeInboundEvent[] = [];
+    const disconnected = vi.fn();
+    const adapter = await createStudioCloudflareRealtimeAdapterFactory({
+      providerId: "cloudflare-realtime",
+      realtimeOrigin: "https://realtime.toonstudio.cloud",
+      createWebSocket: () => socket,
+    }).create();
+    const connecting = adapter.connect(
+      request(["presence"]),
+      "ticket-reaction-skip-123456789012345678901234567890",
+      {
+        onEvent: (event) =>
+          events.push(event as StudioRealtimeInboundEvent),
+        onDisconnect: disconnected,
+      },
+      new AbortController().signal,
+    );
+    socket.open();
+    socket.receive(welcome(["presence"]));
+    await finishPresenceHandshake(socket);
+    await connecting;
+    await Promise.resolve();
+
+    // presence.reaction은 Godot 무대 표시 전용 전파라 classic 진입 이벤트로
+    // 바꾸지 않고 연결을 유지한 채 건너뛴다 (bubble·layout과 같은 방식).
+    socket.receive(
+      serverEvent({
+        channel: "presence",
+        sequence: 1,
+        payload: { kind: "presence.reaction", emote: "dance" },
+      }),
+    );
+    expect(disconnected).not.toHaveBeenCalled();
+    expect(socket.readyState).toBe(1);
+    socket.receive(
+      serverEvent({
+        channel: "presence",
+        sequence: 2,
+        payload: {
+          kind: "presence.update",
+          pageId: "page-1",
+          profile: {
+            displayName: "어시스턴트",
+            role: "editor",
+            state: "active",
+          },
+          tool: "g-pen",
+        },
+      }),
+    );
+
+    expect(events.map((event) => event.kind)).toEqual([
+      "presence.snapshot",
+      "presence.upsert",
+    ]);
+    expect(events.map((event) => event.serverSequence)).toEqual(["1", "2"]);
+    adapter.close();
+  });
+
   it("skips a Godot-stage presence layout notice without emitting or disconnecting", async () => {
     const socket = new FakeWebSocket();
     const events: StudioRealtimeInboundEvent[] = [];

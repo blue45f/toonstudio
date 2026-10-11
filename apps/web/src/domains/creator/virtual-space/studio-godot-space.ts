@@ -51,6 +51,7 @@ export const GodotSpaceDefinitionSchema = z.object({
       camHeight: z.number().optional(),
       camDist: z.number().optional(),
       camFov: z.number().optional(),
+      camTargetLead: z.number().optional(),
       yaw: z.number().optional(),
     })
     .nullable()
@@ -74,6 +75,23 @@ export const GodotSpaceDefinitionSchema = z.object({
       }),
     )
     .max(64),
+  // NPC 로컬 연출 정의 (표면 회귀 복구). API 검증 계약과 같은 상한.
+  npcs: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(20),
+        role: z.string().max(20).optional(),
+        skin: z.string().max(64).optional(),
+        color: z.string().max(32).optional(),
+        points: z
+          .array(z.tuple([z.number(), z.number()]))
+          .min(2)
+          .max(16),
+        lines: z.array(z.string().max(60)).max(12).optional(),
+      }),
+    )
+    .max(6)
+    .optional(),
 });
 export type GodotSpaceDefinition = z.infer<typeof GodotSpaceDefinitionSchema>;
 

@@ -513,6 +513,10 @@ function inboundEvent(
       // 공간 배치 저장 알림도 Godot 셸 전용 신호다 — classic은 같은 방식으로
       // 기준선만 전진시키고 버린다 (정의 본문은 Core API가 정본).
       return null;
+    case "presence.reaction":
+      // 이모트 전파도 Godot 무대 표시 전용 신호다 — classic은 자기 이모트
+      // 런타임이 따로 있어 이 와이어를 진입 이벤트로 바꾸지 않는다.
+      return null;
     case "comment.changed":
       return {
         ...common,

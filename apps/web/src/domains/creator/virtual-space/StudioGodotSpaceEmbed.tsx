@@ -63,6 +63,95 @@ const GODOT_PRESENCE_CAPABILITIES = [
 const BRIDGE_PING_INTERVAL_MS = 20_000;
 const TICKET_EXPIRY_MARGIN_MS = 10_000;
 
+/** 이모트 바 (표면 회귀 복구). 카탈로그 16종 중 단축키가 있는 10종을
+ * 버튼으로 노출한다 — id·글리프는 웹 셸 카탈로그(emote-catalog)와 같다. */
+const GODOT_EMOTE_BAR: readonly { id: string; glyph: string; ko: string; en: string }[] = [
+  { id: "wave", glyph: "👋", ko: "손 흔들기", en: "Wave" },
+  { id: "heart", glyph: "❤️", ko: "하트", en: "Heart" },
+  { id: "party", glyph: "🎉", ko: "축하해요", en: "Celebrate" },
+  { id: "thumbs-up", glyph: "👍", ko: "좋아요", en: "Thumbs up" },
+  { id: "laugh", glyph: "😂", ko: "웃음", en: "Laugh" },
+  { id: "clap", glyph: "👏", ko: "박수", en: "Clap" },
+  { id: "wow", glyph: "😮", ko: "놀람", en: "Wow" },
+  { id: "think", glyph: "🤔", ko: "생각 중", en: "Thinking" },
+  { id: "idea", glyph: "💡", ko: "아이디어", en: "Idea" },
+  { id: "dance", glyph: "💃", ko: "춤추기", en: "Dance" },
+];
+
+const GODOT_EMOTE_GLYPHS: Readonly<Record<string, string>> = Object.freeze(
+  Object.fromEntries([
+    ...GODOT_EMOTE_BAR.map((emote) => [emote.id, emote.glyph] as const),
+    ["sparkles", "✨"],
+    ["question", "❓"],
+    ["exclaim", "❗"],
+    ["coffee", "☕"],
+    ["music", "🎵"],
+    ["sleep", "😴"],
+  ]),
+);
+
+/** 오브젝트 상호작용 안내 (무대 onInteract 수신 표기). */
+const GODOT_INTERACT_LABELS: Readonly<Record<string, string>> = Object.freeze({
+  board: "칠판을 보고 있어요",
+  desk: "책상에서 작업을 시작해요",
+  stage: "무대에 올랐어요",
+  bench: "벤치에 앉아 쉬어요",
+  table: "테이블에 앉아 쉬어요",
+  storefront: "상점을 둘러봐요",
+});
+
+/** 마지막 위치 저장 (위치 복원). 저장은 셸 소유 — 기기 로컬에만 둔다. */
+interface GodotLastPosition {
+  readonly spaceId: string;
+  readonly x: number;
+  readonly y: number;
+  readonly at: number;
+}
+
+const GODOT_POSITION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+function godotPositionKey(workId: string): string {
+  return `tsvs-last-position:${workId}`;
+}
+
+function loadGodotLastPosition(workId: string): GodotLastPosition | null {
+  try {
+    const raw = window.localStorage.getItem(godotPositionKey(workId));
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    const record = parsed as Record<string, unknown>;
+    if (
+      typeof record.spaceId !== "string" ||
+      typeof record.x !== "number" ||
+      typeof record.y !== "number" ||
+      typeof record.at !== "number" ||
+      Date.now() - record.at > GODOT_POSITION_TTL_MS
+    ) {
+      return null;
+    }
+    return {
+      spaceId: record.spaceId,
+      x: record.x,
+      y: record.y,
+      at: record.at,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveGodotLastPosition(workId: string, position: GodotLastPosition): void {
+  try {
+    window.localStorage.setItem(
+      godotPositionKey(workId),
+      JSON.stringify(position),
+    );
+  } catch {
+    // 저장 실패는 복원을 포기할 뿐 무대 동작에 영향을 주지 않는다.
+  }
+}
+
 interface TsvsGodotFrameWindow {
   __tsvs_setSession?: (json: string) => void;
   __tsvs_setVisibility?: (hidden: boolean) => void;
@@ -70,6 +159,8 @@ interface TsvsGodotFrameWindow {
   __tsvs_requestReconnect?: () => void;
   __tsvs_sendSignal?: (json: string) => void;
   __tsvs_showBubble?: (json: string) => void;
+  // 표면 회귀 복구: 이모트 실행 (셸 이모트 바 → 무대).
+  __tsvs_showEmote?: (json: string) => void;
   // 4단계: 배치 저작 채널 (셸→무대).
   __tsvs_setEditMode?: (enabled: boolean) => void;
   __tsvs_applyLayout?: (json: string) => void;
@@ -85,6 +176,10 @@ interface TsvsHostBridge {
   onProximityChanged: (json: string) => void;
   onSignal: (json: string) => void;
   onBubble: (json: string) => void;
+  // 표면 회귀 복구: 이모트 통지·오브젝트 상호작용·위치 저장 (무대→셸).
+  onEmote: (json: string) => void;
+  onInteract: (json: string) => void;
+  onPosition: (json: string) => void;
   // 4단계: 배치 저작 통지 (무대→셸).
   onLayoutChanged: (json: string) => void;
   onLayoutSelection: (json: string) => void;
@@ -183,6 +278,7 @@ export function StudioGodotSpaceEmbed({
   const [proximitySize, setProximitySize] = useState(0);
   const [chatLog, setChatLog] = useState<readonly GodotChatEntry[]>([]);
   const [chatDraft, setChatDraft] = useState("");
+  const [interactNotice, setInteractNotice] = useState<string | null>(null);
   const chatSeqRef = useRef(0);
   const [meetingRoute, setMeetingRoute] = useState<GodotMeetingRoute>("idle");
   const [meetingLocalStream, setMeetingLocalStream] =
@@ -336,11 +432,18 @@ export function StudioGodotSpaceEmbed({
       setLayoutDirty(false);
       setLayoutSaveState("idle");
       setPhase(localOnly ? "local" : "booting");
-      setFrameSrc(
-        localOnly
-          ? `${GODOT_SPACE_EMBED_PATH}?local=1&space=${nextId}`
-          : `${GODOT_SPACE_EMBED_PATH}?space=${nextId}`,
-      );
+      if (localOnly) {
+        const lastPosition = loadGodotLastPosition(workId);
+        const restoreQuery =
+          lastPosition && lastPosition.spaceId === nextId
+            ? `&px=${lastPosition.x}&py=${lastPosition.y}`
+            : "";
+        setFrameSrc(
+          `${GODOT_SPACE_EMBED_PATH}?local=1&space=${nextId}${restoreQuery}`,
+        );
+      } else {
+        setFrameSrc(`${GODOT_SPACE_EMBED_PATH}?space=${nextId}`);
+      }
     },
     [localOnly],
   );
@@ -463,6 +566,15 @@ export function StudioGodotSpaceEmbed({
         color: colorHex,
       };
       if (skinKey) payload.skinKey = skinKey;
+      // 위치 복원: 저장된 마지막 위치가 지금 공간의 것이면 함께 싣는다.
+      const lastPosition = loadGodotLastPosition(workId);
+      if (lastPosition && lastPosition.spaceId === spaceIdRef.current) {
+        payload.restore = {
+          spaceId: lastPosition.spaceId,
+          x: lastPosition.x,
+          y: lastPosition.y,
+        };
+      }
       // 4단계: 해석된 공간 정의(저장본 우선)를 세션에 싣는다. 없으면 무대가
       // ?space= 부팅 기본값·내장 정의를 쓴다.
       if (spaceDefRef.current) payload.space = spaceDefRef.current;
@@ -617,6 +729,44 @@ export function StudioGodotSpaceEmbed({
           bt("상대", "Partner");
         appendChat(false, name, payload.text);
       },
+      onEmote: (json) => {
+        const payload = parseHostPayload(json);
+        if (!payload || typeof payload.emote !== "string") return;
+        const glyph = GODOT_EMOTE_GLYPHS[payload.emote];
+        if (!glyph) return;
+        const fromActorId = String(payload.fromActorId ?? "");
+        const fromSelf =
+          fromActorId !== "" &&
+          fromActorId === zoneInfoRef.current?.selfActorId;
+        const name =
+          zoneInfoRef.current?.names[fromActorId] ??
+          (fromSelf ? displayName : bt("상대", "Partner"));
+        appendChat(fromSelf, name, glyph);
+      },
+      onInteract: (json) => {
+        const payload = parseHostPayload(json);
+        if (!payload || typeof payload.kind !== "string") return;
+        const label = GODOT_INTERACT_LABELS[payload.kind];
+        if (!label) return;
+        setInteractNotice(label);
+      },
+      onPosition: (json) => {
+        const payload = parseHostPayload(json);
+        if (
+          !payload ||
+          typeof payload.spaceId !== "string" ||
+          typeof payload.x !== "number" ||
+          typeof payload.y !== "number"
+        ) {
+          return;
+        }
+        saveGodotLastPosition(workId, {
+          spaceId: payload.spaceId,
+          x: payload.x,
+          y: payload.y,
+          at: Date.now(),
+        });
+      },
       onLayoutChanged: (json) => {
         const payload = parseHostPayload(json);
         const spec = payload?.spec;
@@ -676,15 +826,30 @@ export function StudioGodotSpaceEmbed({
       },
     };
     window.__tsvsHost = host;
-    setFrameSrc(
-      localOnly ? `${GODOT_SPACE_EMBED_PATH}?local=1` : GODOT_SPACE_EMBED_PATH,
-    );
+    if (localOnly) {
+      // 개인 공간은 세션 주입이 없어 위치 복원을 부팅 파라미터로 전한다.
+      const lastPosition = loadGodotLastPosition(workId);
+      const restoreQuery =
+        lastPosition && lastPosition.spaceId === spaceIdRef.current
+          ? `&px=${lastPosition.x}&py=${lastPosition.y}`
+          : "";
+      setFrameSrc(`${GODOT_SPACE_EMBED_PATH}?local=1${restoreQuery}`);
+    } else {
+      setFrameSrc(GODOT_SPACE_EMBED_PATH);
+    }
     return () => {
       if (window.__tsvsHost === host) delete window.__tsvsHost;
       abortRef.current?.abort();
       if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
     };
   }, [appendChat, bt, issueAndInject, localOnly]);
+
+  // 상호작용 안내는 잠시만 보여준다.
+  useEffect(() => {
+    if (!interactNotice) return;
+    const timer = setTimeout(() => setInteractNotice(null), 4_000);
+    return () => clearTimeout(timer);
+  }, [interactNotice]);
 
   // 생존성은 셸이 소유한다 (DESIGN §4.4): visibility를 무대에 전파하고,
   // 무대 루프가 얼어도 셸 타이머가 ping 발행을 대신 지시한다.
@@ -815,6 +980,37 @@ export function StudioGodotSpaceEmbed({
         >
           {bt("기존 스페이스로 돌아가기", "Back to the classic space")}
         </button>
+        {interactNotice ? (
+          <p className="text-sm text-fg-2" data-testid="godot-interact-notice">
+            {interactNotice}
+          </p>
+        ) : null}
+      </div>
+      <div
+        className="mt-3 flex flex-wrap gap-1.5"
+        role="group"
+        aria-label={bt("이모트", "Emotes")}
+      >
+        {GODOT_EMOTE_BAR.map((emote) => (
+          <button
+            key={emote.id}
+            type="button"
+            data-testid={`godot-emote-${emote.id}`}
+            className="rounded-full border border-line px-2.5 py-1 text-base leading-none"
+            aria-label={bt(emote.ko, emote.en)}
+            title={bt(emote.ko, emote.en)}
+            onClick={() =>
+              frameWindow()?.__tsvs_showEmote?.(
+                JSON.stringify({
+                  actorId: zoneInfoRef.current?.selfActorId ?? "",
+                  emote: emote.id,
+                }),
+              )
+            }
+          >
+            {emote.glyph}
+          </button>
+        ))}
       </div>
       {!localOnly ? (
         <StudioGodotLayoutPanel
