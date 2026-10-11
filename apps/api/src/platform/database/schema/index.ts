@@ -36,4 +36,6 @@ export * from "./studio-virtual-space-decoration.schema";
 
 export * from "./studio-godot-space-layout.schema";
 
+export * from "./studio-godot-space-background.schema";
+
 export * from "./studio-virtual-space-booking.schema";
