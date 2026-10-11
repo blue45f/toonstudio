@@ -21,10 +21,20 @@ import { FortuneToolHero } from "./FortuneToolHero";
 import { fortuneToolFromPathname } from "./fortune-tool-hero";
 import { FortuneInteractiveDeck } from "./FortuneInteractiveDeck";
 import { FortuneSceneArt } from "./FortuneSceneArt";
-import { fortuneSceneTheme } from "./fortune-cinematic-model";
+import { fortuneSceneTheme, type FortuneSceneTheme } from "./fortune-cinematic-model";
 import { FortuneAmbientLayer, FortuneExperienceArt } from "./FortuneVisuals";
 import "./fortune-observatory.css";
 import "./fortune-cinematic.css";
+
+/** 발견 무대의 장면 테마 — 그룹마다 관측소 장면의 빛을 바꾼다 (도구 히어로의 테마 문법과 같은 대응). */
+const DISCOVER_SCENE_THEMES: Record<FortuneGroup, FortuneSceneTheme> = {
+  "전체": "violet",
+  "사주·역법": "gold",
+  "시간의 흐름": "gold",
+  "관계·궁합": "rose",
+  "카드·상징": "violet",
+  "창작·일상": "mint",
+};
 
 export function FortuneObservatory({ characterContent, forceCharacter }: { characterContent?: ReactNode; forceCharacter?: boolean }) {
   const session = useSession();
@@ -75,6 +85,10 @@ function FortuneObservatorySession({ characterContent, accountId, forceCharacter
     finally { if (request === sequence.current) setRunning(false); }
   };
   const visible = FORTUNE_EXPERIENCES.filter((item) => (group === "전체" || item.group === group) && (!favoritesOnly || preferences.favorites.includes(item.id)) && `${item.title} ${item.subtitle} ${item.tag} ${item.group}`.includes(search.trim()));
+  // 발견 카탈로그 구도 (디자인 웨이브 21): 첫 발견은 무대 아래 피처드 장면 카드로 세우고,
+  // 나머지는 종속 그리드로 내린다. 필터·검색 상태에서도 "지금 고른 발견의 첫 장면" 규칙은 같다.
+  const featuredExperience = visible[0];
+  const catalogExperiences = visible.slice(1);
   // 도구 하위 라우트(/fortune/<tool>)에서는 쿼리 파라미터와 무관하게 캐릭터 운세를 바로 연다.
   if (requested === "character" || forceCharacter) return <div className="fortune-observatory fo-legacy"><button type="button" className="fo-button" onClick={() => (forceCharacter ? routerNavigate("/fortune") : navigate(""))}><ArrowLeft size={16} />운세 관측소로</button><p className="fo-safety">{FORTUNE_DISCLAIMER}</p>{toolTab && <FortuneToolHero tab={toolTab} />}{characterContent}</div>;
   return <div className="fortune-observatory" data-fortune-experience="cinematic-v2" data-campus-domain={campus ? "fortune" : undefined} data-fortune-room={fortuneCampusRoom(requested)?.id}>
@@ -108,11 +122,12 @@ function FortuneObservatorySession({ characterContent, accountId, forceCharacter
       </form>
       {reading && <div className="fo-result-wrap"><div className="fo-result-toolbar"><h2 ref={resultHeading} tabIndex={-1}>나의 해석 리포트</h2><button type="button" className="fo-button" onClick={saveReading}><BookmarkPlus size={16} />해석 보관</button></div><p className="fo-help">‘해석 보관’을 누를 때만 저장합니다. 생일·시간·꿈 원문은 저장하지 않아요.</p><FortuneReadingView key={`${reading.id}-${reading.generatedFor}-${sequence.current}`} reading={reading} cast={cast} onCastChange={changeCast} /></div>}
     </section>}
-    <section className="fo-discover" aria-labelledby="fo-discover-title"><div className="fo-discover-head"><div><p className="fo-eyebrow">CHOOSE YOUR CHAPTER</p><h2 id="fo-discover-title">오늘은 무엇이 궁금한가요?</h2><p>전통에서 일상까지, 나에게 맞는 발견을 골라 보세요.</p></div><button type="button" className="fo-button" onClick={() => { setNotebookOpen(!notebookOpen); if (!notebookOpen) requestAnimationFrame(() => { const notebook = document.getElementById("fo-notebook"); notebook?.scrollIntoView({ block: "start" }); notebook?.focus({ preventScroll: true }); }); }} aria-expanded={notebookOpen}><BookOpen size={16} />나의 보관함 {preferences.notebook.length}</button></div>
+    <section className="fo-discover" aria-labelledby="fo-discover-title"><div className="fo-discover-stage"><div className="fo-discover-scene" aria-hidden="true"><FortuneSceneArt theme={DISCOVER_SCENE_THEMES[group]} fill /></div><div className="fo-discover-head"><div><p className="fo-eyebrow">CHOOSE YOUR CHAPTER</p><h2 id="fo-discover-title">오늘은 무엇이 궁금한가요?</h2><p>전통에서 일상까지, 나에게 맞는 발견을 골라 보세요.</p></div><button type="button" className="fo-button" onClick={() => { setNotebookOpen(!notebookOpen); if (!notebookOpen) requestAnimationFrame(() => { const notebook = document.getElementById("fo-notebook"); notebook?.scrollIntoView({ block: "start" }); notebook?.focus({ preventScroll: true }); }); }} aria-expanded={notebookOpen}><BookOpen size={16} />나의 보관함 {preferences.notebook.length}</button></div>
       <div className="fo-search-row"><label className="fo-search"><Search size={18} /><span className="sr-only">운세 콘텐츠 검색</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="만세력, 궁합, 타로…" type="search" /></label><button type="button" className="fo-button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly(!favoritesOnly)}><Star size={16} />즐겨찾기 {preferences.favorites.length}</button></div>
-      <div className="fo-filters" aria-label="콘텐츠 카테고리">{FORTUNE_GROUPS.map((name) => <button type="button" key={name} aria-pressed={group === name} onClick={() => setGroup(name)}>{name}</button>)}</div>
+      <div className="fo-filters" aria-label="콘텐츠 카테고리">{FORTUNE_GROUPS.map((name) => <button type="button" key={name} aria-pressed={group === name} onClick={() => setGroup(name)}>{name}</button>)}</div></div>
       <p className="fo-count" role="status">{visible.length}개의 콘텐츠</p>
-      <div className="fo-catalog">{visible.map((item, i) => <article key={item.id} className="fo-experience" data-group={item.group} style={{ animationDelay: `${Math.min(i, 8) * 35}ms` }}><button type="button" className="fo-experience-open" onClick={() => navigate(item.id)} aria-label={`${item.title} 살펴보기`}><span className="fo-card-top"><span className="fo-glyph" aria-hidden="true">{item.glyph}</span><small>{item.tag}</small></span><FortuneExperienceArt experience={item} compact /><h3>{item.title}</h3><p>{item.subtitle}</p><span className="fo-card-bottom">{item.group}<ArrowRight size={16} /></span></button><button type="button" className="fo-favorite" onClick={() => favorite(item.id)} aria-pressed={preferences.favorites.includes(item.id)} aria-label={`${item.title} 즐겨찾기`}><Star size={16} fill={preferences.favorites.includes(item.id) ? "currentColor" : "none"} /></button></article>)}</div>
+      {featuredExperience && <article className="fo-experience fo-experience-featured" data-group={featuredExperience.group}><button type="button" className="fo-experience-open" onClick={() => navigate(featuredExperience.id)} aria-label={`${featuredExperience.title} 살펴보기`}><span className="fo-featured-art"><FortuneExperienceArt experience={featuredExperience} /></span><span className="fo-featured-copy"><span className="fo-card-top"><span className="fo-glyph" aria-hidden="true">{featuredExperience.glyph}</span><small>{featuredExperience.tag}</small></span><h3>{featuredExperience.title}</h3><p>{featuredExperience.subtitle}</p><span className="fo-card-bottom">{featuredExperience.group}<ArrowRight size={16} /></span></span></button><button type="button" className="fo-favorite" onClick={() => favorite(featuredExperience.id)} aria-pressed={preferences.favorites.includes(featuredExperience.id)} aria-label={`${featuredExperience.title} 즐겨찾기`}><Star size={16} fill={preferences.favorites.includes(featuredExperience.id) ? "currentColor" : "none"} /></button></article>}
+      <div className="fo-catalog">{catalogExperiences.map((item, i) => <article key={item.id} className="fo-experience" data-group={item.group} style={{ animationDelay: `${Math.min(i + 1, 8) * 35}ms` }}><button type="button" className="fo-experience-open" onClick={() => navigate(item.id)} aria-label={`${item.title} 살펴보기`}><span className="fo-card-top"><span className="fo-glyph" aria-hidden="true">{item.glyph}</span><small>{item.tag}</small></span><FortuneExperienceArt experience={item} compact /><h3>{item.title}</h3><p>{item.subtitle}</p><span className="fo-card-bottom">{item.group}<ArrowRight size={16} /></span></button><button type="button" className="fo-favorite" onClick={() => favorite(item.id)} aria-pressed={preferences.favorites.includes(item.id)} aria-label={`${item.title} 즐겨찾기`}><Star size={16} fill={preferences.favorites.includes(item.id) ? "currentColor" : "none"} /></button></article>)}</div>
       {!visible.length && <div className="fo-empty"><Sparkles size={28} /><h3>아직 찾지 못한 이야기</h3><p>다른 검색어나 카테고리로 살펴보세요.</p><button className="fo-button" type="button" onClick={() => { setSearch(""); setGroup("전체"); setFavoritesOnly(false); }}>전체 콘텐츠 보기</button></div>}
     </section>
     {notebookOpen && <section className="fo-notebook" id="fo-notebook" tabIndex={-1} aria-label="나의 운세 보관함"><div className="fo-discover-head"><div><h2>나의 보관함</h2><p>{accountId ? "이 계정에서 이 브라우저에 보관한 해석 · 최근 12개 · 서버 동기화 없음" : "로그아웃 상태의 기기 공용 기록 · 최근 12개"}</p></div><button type="button" className="fo-button" onClick={clearSaved}><Trash2 size={15} />즐겨찾기·보관함 비우기</button></div>{preferences.notebook.length ? preferences.notebook.map((entry) => <details key={entry.id}><summary>{entry.title} · {entry.savedAt}</summary><pre>{entry.text}</pre><button type="button" className="fo-button" onClick={() => persist({ ...preferences, notebook: preferences.notebook.filter((n) => n.id !== entry.id) })}>이 기록 삭제</button></details>) : <p className="fo-help">결과에서 ‘해석 보관’을 누르면 이곳에 모입니다. 저장은 선택이며 언제든 지울 수 있어요.</p>}</section>}

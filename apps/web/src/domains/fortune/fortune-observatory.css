@@ -31,3 +31,18 @@
 @media(prefers-reduced-motion:no-preference){.fo-experience{animation:fo-enter .35s ease both}.fo-orbit-ring{animation:fo-turn 1.6s ease-out both}.fo-report{animation:fo-enter .45s ease both}}
 @keyframes fo-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes fo-turn{from{transform:rotate(-20deg);opacity:.2}to{transform:rotate(0deg)}opacity:1}
 @media(prefers-reduced-motion:reduce){.fortune-observatory *{animation:none!important;transition:none!important;scroll-behavior:auto!important}.fo-experience:hover{transform:none}}
+/* 발견 무대 (디자인 웨이브 21) — 카탈로그 머리를 관측소 장면 무대로 교체하고 첫 발견은 피처드 장면 카드로 세운다. 나머지는 종속 그리드. */
+.fo-discover-stage{position:relative;overflow:hidden;border:1px solid var(--fo-line);border-radius:22px;padding:28px 28px 24px;background:var(--fo-bg)}
+.fo-discover-scene{position:absolute;inset:0}
+.fo-discover-scene svg{display:block;width:100%;height:100%}
+.fo-discover-stage::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 26%,color-mix(in oklch,var(--fo-bg) 74%,transparent));pointer-events:none}
+.fo-discover-stage .fo-discover-head,.fo-discover-stage .fo-search-row,.fo-discover-stage .fo-filters{position:relative;z-index:1}
+.fo-discover-stage .fo-search-row{margin-top:22px}
+.fo-discover-stage .fo-search,.fo-discover-stage .fo-filters button,.fo-discover-stage .fo-button{background:color-mix(in oklch,var(--fo-panel) 78%,transparent);backdrop-filter:blur(8px)}
+.fo-experience-featured{margin-bottom:16px}
+.fo-experience-featured .fo-experience-open{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:26px;align-items:center;padding:26px}
+.fo-featured-art{display:block;min-width:0}
+.fo-featured-copy{display:block;min-width:0}
+.fo-experience-featured h3{font-size:26px;margin-top:20px}
+.fo-experience-featured p{font-size:14px;line-height:1.7;min-height:0}
+@media(max-width:680px){.fo-discover-stage{padding:20px 16px 16px}.fo-experience-featured .fo-experience-open{grid-template-columns:1fr;gap:16px;padding:18px}.fo-experience-featured h3{font-size:22px;margin-top:14px}}
