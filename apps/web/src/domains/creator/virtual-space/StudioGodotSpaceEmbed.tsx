@@ -23,10 +23,16 @@ import {
 } from "./studio-godot-meeting-session";
 import { StudioGodotMeetingPanel } from "./StudioGodotMeetingPanel";
 import {
+  deleteGodotSpaceBackground,
+  fetchGodotSpaceBackgrounds,
   fetchGodotSpaceCatalog,
   fetchGodotSpaceLayout,
   isGodotSpaceLayoutConflict,
+  resolveGodotBackgroundForStage,
+  restoreGodotBackgroundReference,
   saveGodotSpaceLayout,
+  uploadGodotSpaceBackground,
+  type GodotSpaceBackgroundAsset,
   type GodotSpaceDefinition,
 } from "./studio-godot-space";
 import {
@@ -328,10 +334,12 @@ export function StudioGodotSpaceEmbed({
       setLayoutDirty(false);
       setLayoutLoadState("ready");
       frameWindow()?.__tsvs_applyLayout?.(
-        JSON.stringify({ spec: definition }),
+        JSON.stringify({
+          spec: resolveGodotBackgroundForStage(definition, workId),
+        }),
       );
     },
-    [frameWindow],
+    [frameWindow, workId],
   );
 
   // 정적 카탈로그는 빌드와 함께 배포되는 기본 정의 묶음이다.
@@ -417,6 +425,112 @@ export function StudioGodotSpaceEmbed({
       frameWindow()?.__tsvs_setEditMode?.(enabled);
     },
     [frameWindow],
+  );
+
+  // 배경 GLB 교체 (§14): 업로드 자산 목록과 패널 동선의 상태.
+  // 정의 변경은 기존 초안·dirty·저장 동선을 그대로 탄다.
+  const [backgroundAssets, setBackgroundAssets] = useState<
+    readonly GodotSpaceBackgroundAsset[]
+  >([]);
+  const [backgroundUploadState, setBackgroundUploadState] = useState<
+    "idle" | "uploading" | "error"
+  >("idle");
+  const [backgroundError, setBackgroundError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (localOnly) return;
+    let cancelled = false;
+    fetchGodotSpaceBackgrounds(workId)
+      .then((assets) => {
+        if (!cancelled) setBackgroundAssets(assets);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBackgroundError("업로드한 배경 목록을 불러오지 못했습니다.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [localOnly, workId]);
+
+  const applyDefinitionDraft = useCallback(
+    (next: GodotSpaceDefinition) => {
+      spaceDefRef.current = next;
+      setSpaceDef(next);
+      setLayoutDirty(true);
+      frameWindow()?.__tsvs_applyLayout?.(
+        JSON.stringify({
+          spec: resolveGodotBackgroundForStage(next, workId),
+        }),
+      );
+    },
+    [frameWindow, workId],
+  );
+
+  const handleBackgroundChange = useCallback(
+    (background: GodotSpaceDefinition["background"]) => {
+      const current = spaceDefRef.current;
+      if (!current) return;
+      applyDefinitionDraft({ ...current, background });
+    },
+    [applyDefinitionDraft],
+  );
+
+  const handleBackgroundUpload = useCallback(
+    async (file: File) => {
+      setBackgroundUploadState("uploading");
+      setBackgroundError(null);
+      try {
+        const asset = await uploadGodotSpaceBackground(workId, file);
+        setBackgroundAssets((previous) => [asset, ...previous]);
+        setBackgroundUploadState("idle");
+        // 업로드 즉시 지정한다. 카메라 값은 현재 배경(없으면 이 공간의
+        // 기본 배경)의 것을 이어받는다.
+        const current = spaceDefRef.current;
+        if (current) {
+          const base =
+            current.background ??
+            catalog.find((def) => def.id === current.id)?.background ??
+            null;
+          handleBackgroundChange({ ...(base ?? {}), glb: asset.glbRef });
+        }
+      } catch (error) {
+        setBackgroundUploadState("error");
+        setBackgroundError(
+          error instanceof Error
+            ? error.message
+            : "배경을 올리지 못했습니다.",
+        );
+      }
+    },
+    [catalog, handleBackgroundChange, workId],
+  );
+
+  const handleBackgroundDelete = useCallback(
+    async (assetId: string) => {
+      setBackgroundError(null);
+      try {
+        await deleteGodotSpaceBackground(workId, assetId);
+        setBackgroundAssets((previous) =>
+          previous.filter((asset) => asset.assetId !== assetId),
+        );
+        const current = spaceDefRef.current;
+        if (current?.background?.glb === `uploads/${assetId}.glb`) {
+          // 사용 중이던 배경이 지워지면 기본 배경으로 되돌린다.
+          const fallback =
+            catalog.find((def) => def.id === current.id)?.background ?? null;
+          handleBackgroundChange(fallback ? { ...fallback } : null);
+        }
+      } catch (error) {
+        setBackgroundError(
+          error instanceof Error
+            ? error.message
+            : "배경을 지우지 못했습니다.",
+        );
+      }
+    },
+    [catalog, handleBackgroundChange, workId],
   );
 
   // 공간 전환은 무대 리로드가 가장 안전하다 (연결·구역·배경을 통째로 재구성).
@@ -576,8 +690,14 @@ export function StudioGodotSpaceEmbed({
         };
       }
       // 4단계: 해석된 공간 정의(저장본 우선)를 세션에 싣는다. 없으면 무대가
-      // ?space= 부팅 기본값·내장 정의를 쓴다.
-      if (spaceDefRef.current) payload.space = spaceDefRef.current;
+      // ?space= 부팅 기본값·내장 정의를 쓴다. 업로드 배경 참조는 무대가
+      // 읽을 수 있는 content 절대 URL로 바꾼 사본을 싣는다 (§14).
+      if (spaceDefRef.current) {
+        payload.space = resolveGodotBackgroundForStage(
+          spaceDefRef.current,
+          workId,
+        );
+      }
       frameWindow()?.__tsvs_setSession?.(JSON.stringify(payload));
       if (document.hidden) {
         frameWindow()?.__tsvs_setVisibility?.(true);
@@ -778,7 +898,12 @@ export function StudioGodotSpaceEmbed({
           return;
         }
         // 무대 정규화를 통과한 정의를 셸 초안으로 삼는다 (저장은 별도 동선).
-        const definition = spec as GodotSpaceDefinition;
+        // 무대는 업로드 배경을 절대 URL로 알고 있으므로, 저장 정본인
+        // uploads/ 참조로 되돌려서 초안에 싣는다 (§14 역변환).
+        const definition = restoreGodotBackgroundReference(
+          spec as GodotSpaceDefinition,
+          workId,
+        );
         if (definition.id !== spaceIdRef.current) return;
         spaceDefRef.current = definition;
         setSpaceDef(definition);
@@ -1024,6 +1149,15 @@ export function StudioGodotSpaceEmbed({
           onRetryLoad={() => setLayoutFetchNonce((nonce) => nonce + 1)}
           onToggleEdit={handleToggleEditMode}
           onCommand={handleLayoutCommand}
+          backgroundAssets={backgroundAssets}
+          defaultBackground={
+            catalog.find((def) => def.id === spaceId)?.background ?? null
+          }
+          backgroundUploadState={backgroundUploadState}
+          backgroundError={backgroundError}
+          onBackgroundChange={handleBackgroundChange}
+          onBackgroundUpload={(file) => void handleBackgroundUpload(file)}
+          onBackgroundDelete={(assetId) => void handleBackgroundDelete(assetId)}
           onSave={() => void handleLayoutSave()}
           onReload={() => {
             setLayoutSaveState("idle");

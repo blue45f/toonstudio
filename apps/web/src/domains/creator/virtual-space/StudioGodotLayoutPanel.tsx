@@ -5,8 +5,11 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   GodotSpacePropKindSchema,
   GodotSpaceZoneKindSchema,
+  type GodotSpaceBackgroundAsset,
   type GodotSpaceDefinition,
 } from "./studio-godot-space";
+
+export type GodotSpaceBackgroundValue = GodotSpaceDefinition["background"];
 
 /**
  * Godot 무대 배치 편집 패널 (4단계 — 월드 저작, 셸 소유 표면).
@@ -52,6 +55,13 @@ export interface StudioGodotLayoutPanelProps {
   readonly onRetryLoad: () => void;
   readonly onToggleEdit: (enabled: boolean) => void;
   readonly onCommand: (command: GodotLayoutCommand) => void;
+  readonly backgroundAssets: readonly GodotSpaceBackgroundAsset[];
+  readonly defaultBackground: GodotSpaceBackgroundValue;
+  readonly backgroundUploadState: "idle" | "uploading" | "error";
+  readonly backgroundError: string | null;
+  readonly onBackgroundChange: (background: GodotSpaceBackgroundValue) => void;
+  readonly onBackgroundUpload: (file: File) => void;
+  readonly onBackgroundDelete: (assetId: string) => void;
   readonly onSave: () => void;
   readonly onReload: () => void;
 }
@@ -71,6 +81,13 @@ export function StudioGodotLayoutPanel({
   onRetryLoad,
   onToggleEdit,
   onCommand,
+  backgroundAssets,
+  defaultBackground,
+  backgroundUploadState,
+  backgroundError,
+  onBackgroundChange,
+  onBackgroundUpload,
+  onBackgroundDelete,
   onSave,
   onReload,
 }: StudioGodotLayoutPanelProps) {
@@ -110,6 +127,19 @@ export function StudioGodotLayoutPanel({
     addCategory === "zone"
       ? GodotSpaceZoneKindSchema.options
       : GodotSpacePropKindSchema.options;
+
+  const currentUploadAsset = definition.background?.glb.startsWith("uploads/")
+    ? backgroundAssets.find(
+        (asset) => asset.glbRef === definition.background?.glb,
+      )
+    : undefined;
+  const backgroundLabel = !definition.background
+    ? bt("없음 (단색 바닥)", "None (flat floor)")
+    : currentUploadAsset
+      ? currentUploadAsset.fileName
+      : definition.background.glb.startsWith("uploads/")
+        ? bt("업로드한 배경", "Uploaded background")
+        : bt("기본 배경", "Default background");
 
   return (
     <section
@@ -184,6 +214,110 @@ export function StudioGodotLayoutPanel({
           )}
         </p>
       ) : null}
+
+      <div className="mt-4 border-t border-line pt-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h4 className="text-sm font-bold">
+            {bt("공간 배경", "Space background")}
+          </h4>
+          <p className="text-xs text-fg-2" data-testid="layout-background-current">
+            {bt(`현재 배경: ${backgroundLabel}`, `Current: ${backgroundLabel}`)}
+          </p>
+        </div>
+        {backgroundError ? (
+          <p role="alert" className="mt-2 text-sm font-semibold">
+            {backgroundError}
+          </p>
+        ) : null}
+        {editMode ? (
+          <>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-line px-3 py-1.5 text-sm font-bold disabled:opacity-40"
+                disabled={
+                  (definition.background?.glb ?? null) ===
+                  (defaultBackground?.glb ?? null)
+                }
+                onClick={() =>
+                  onBackgroundChange(
+                    defaultBackground ? { ...defaultBackground } : null,
+                  )
+                }
+              >
+                {bt("기본 배경으로", "Use default background")}
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-line px-3 py-1.5 text-sm font-bold disabled:opacity-40"
+                disabled={!definition.background}
+                onClick={() => onBackgroundChange(null)}
+              >
+                {bt("배경 없음", "No background")}
+              </button>
+              <label className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-sm font-bold">
+                {backgroundUploadState === "uploading"
+                  ? bt("올리는 중…", "Uploading…")
+                  : bt("GLB 배경 올리기", "Upload GLB background")}
+                <input
+                  type="file"
+                  accept=".glb,model/gltf-binary"
+                  className="sr-only"
+                  disabled={backgroundUploadState === "uploading"}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) onBackgroundUpload(file);
+                  }}
+                />
+              </label>
+            </div>
+            <p className="mt-2 text-xs text-fg-2">
+              {bt(
+                "Godot 무대가 읽을 수 있는 무압축 GLB만 올릴 수 있어요 (최대 20MB). 올리면 바로 이 공간의 배경으로 지정되고, 배치 저장으로 확정됩니다.",
+                "Only uncompressed GLB files the Godot stage can load are accepted (max 20MB). Uploading applies it to this space right away; saving the layout makes it final.",
+              )}
+            </p>
+            {backgroundAssets.length > 0 ? (
+              <ul className="mt-2 grid gap-1">
+                {backgroundAssets.map((asset) => (
+                  <li
+                    key={asset.assetId}
+                    className="flex flex-wrap items-center gap-2 text-sm"
+                  >
+                    <span className="font-semibold">{asset.fileName}</span>
+                    <span className="text-xs text-fg-2">
+                      {(asset.byteSize / (1024 * 1024)).toFixed(1)}MB
+                    </span>
+                    <button
+                      type="button"
+                      className="rounded-full border border-line px-2 py-1 text-xs font-bold disabled:opacity-40"
+                      disabled={definition.background?.glb === asset.glbRef}
+                      onClick={() =>
+                        onBackgroundChange({
+                          ...(definition.background ??
+                            defaultBackground ??
+                            {}),
+                          glb: asset.glbRef,
+                        })
+                      }
+                    >
+                      {bt("이 배경으로 지정", "Use this background")}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-full border border-line px-2 py-1 text-xs font-bold"
+                      onClick={() => onBackgroundDelete(asset.assetId)}
+                    >
+                      {bt("지우기", "Delete")}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </>
+        ) : null}
+      </div>
 
       {editMode ? (
         <div className="mt-3 flex flex-wrap items-end gap-3">
