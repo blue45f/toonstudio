@@ -9,11 +9,11 @@ import { TeamWorkspaceJoinPage } from "./TeamWorkspaceJoinPage";
 import { saveCollaborationOnboarding } from "@/shared/lib/collaboration-onboarding";
 
 const mocks = vi.hoisted(() => ({ userId: "owner" as string | null,
-  list: vi.fn(), detail: vi.fn(), usage: vi.fn(), create: vi.fn(), command: vi.fn(), accept: vi.fn(), projects: vi.fn(), operation: vi.fn(), projectInvite: vi.fn() }));
+  list: vi.fn(), detail: vi.fn(), usage: vi.fn(), create: vi.fn(), command: vi.fn(), accept: vi.fn(), preview: vi.fn(), projects: vi.fn(), operation: vi.fn(), projectInvite: vi.fn() }));
 vi.mock("@/shared/lib/store", () => ({ useApp: () => mocks.userId }));
 vi.mock("@/platform/api", () => ({ getApiErrorMessage: async (_error: unknown, fallback: string) => fallback }));
 vi.mock("./team-workspace-api", () => ({ getEffectiveOperationPolicy: mocks.operation, listTeamWorkspaces: mocks.list, getTeamWorkspace: mocks.detail,
-  getTeamUsage: mocks.usage, createTeamWorkspace: mocks.create, commandTeamWorkspace: mocks.command, acceptTeamInvite: mocks.accept }));
+  getTeamUsage: mocks.usage, createTeamWorkspace: mocks.create, commandTeamWorkspace: mocks.command, acceptTeamInvite: mocks.accept, previewTeamInvite: mocks.preview }));
 vi.mock("./production-dashboard-api", () => ({ listProductionProjects: mocks.projects }));
 vi.mock("../studio-team-client", () => ({ inviteStudioTeamMember: mocks.projectInvite }));
 const workspace = { id: "team-a", name: "비공개 검수 팀", ownerUserId: "owner", role: "owner", revision: 3,
@@ -43,6 +43,8 @@ beforeEach(() => {
     originalStorage: { status: "not-instrumented", usedBytes: null }, externalAiEnabled: false,
     meteredProvidersEnabled: false, nextDailyResetAt: "2026-09-22T15:00:00Z" });
   mocks.projects.mockResolvedValue({ projects: [] });
+  // 이 스위트는 조각 취급 자체를 검증한다 — 미리보기는 기본적으로 닿지 않는 상태로 둔다.
+  mocks.preview.mockRejectedValue(new Error("미리보기를 사용할 수 없습니다."));
 });
 afterEach(() => { cleanup(); sessionStorage.clear(); window.history.replaceState({}, "", "/"); });
 describe("free team workspace UI", () => {
