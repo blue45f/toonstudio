@@ -229,6 +229,12 @@ function SerialProjectCard({
           {ko ? "이 작품으로 게시 준비" : "Prepare release"} <ArrowRight size={14} aria-hidden />
         </button>
         <Link
+          href={`/production/projects/${encodeURIComponent(project.projectId)}/episodes`}
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg"
+        >
+          <Layers size={14} aria-hidden /> {ko ? "회차 관리" : "Manage episodes"}
+        </Link>
+        <Link
           href={`/production/projects/${encodeURIComponent(project.projectId)}/overview`}
           className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg"
         >

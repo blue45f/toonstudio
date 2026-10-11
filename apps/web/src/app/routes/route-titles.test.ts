@@ -41,6 +41,8 @@ describe("route title resolution", () => {
     expect(resolveRouteTitle("/team", translate)).toBe("협업 홈");
     expect(resolveRouteTitle("/team/people", translate)).toBe("사람·권한 관리");
     expect(resolveRouteTitle("/team/people/workspace-a", translate)).toBe("사람·권한 관리");
+    // 합류 시트만은 초대받은 사람의 화면이라 전용 제목을 쓴다.
+    expect(resolveRouteTitle("/team/people/join", translate)).toBe("팀 합류");
     expect(resolveRouteTitle("/team/recruiting", translate)).toBe("인재·지원 관리");
   });
 

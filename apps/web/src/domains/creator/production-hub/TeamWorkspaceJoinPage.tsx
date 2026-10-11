@@ -6,7 +6,8 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { getApiErrorMessage } from "@/platform/api";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { acceptTeamInvite } from "./team-workspace-api";
+import type { TeamWorkspaceInvitePreview } from "@toonstudio/contracts/production-workspace";
+import { acceptTeamInvite, previewTeamInvite } from "./team-workspace-api";
 import {
   parseStudioSpatialInviteFragment,
   studioSpatialInviteDestination,
@@ -16,8 +17,8 @@ import {
 const INVITE_TOKEN = /^[A-Za-z0-9_-]{43}$/u;
 const fieldClass = "min-h-11 rounded-lg border border-line bg-canvas px-3 text-fg";
 
-/** 수락 뒤 도착할 장소를 사람의 말로. 링크 프래그먼트가 알려 주는 입장 안내만으로 확정할 수 있는
- *  정보이며, 워크스페이스 이름·역할은 서버 미리보기 계약이 없어 수락 전에는 표시하지 않는다. */
+/** 수락 뒤 도착할 장소를 사람의 말로. 링크 프래그먼트가 알려 주는 입장 안내만으로 확정할 수
+ *  있는 정보이며, 워크스페이스 이름·역할 같은 초대 자체의 정보는 미리보기 카드가 맡는다. */
 function entryDestinationCopy(context: StudioSpatialInviteContext): { ko: string; en: string } {
   if (context.kind === "project-space") {
     return { ko: "수락하면 초대받은 작품의 협업 공간으로 입장해요.", en: "Accepting takes you to the invited work's collaboration space." };
@@ -44,7 +45,9 @@ function StepItem({ index, title, description, state }: {
  * 합류 시트 — 모든 합류 진입점(초대 링크·초대 코드·구인 확정 후 초대)의 유일한 종착 화면.
  * 초대 링크 프래그먼트(#invite=)와 레거시 쿼리(?token=)를 모두 받아 코드를 미리 채우고,
  * 비밀은 읽는 즉시 주소창에서 지운다. 무엇에 합류하는지(입장 안내)·어떤 권한을 받는지·
- * 수락 뒤 무엇이 일어나는지를 수락 전에 같은 화면에서 보여 준다.
+ * 수락 뒤 무엇이 일어나는지를 수락 전에 같은 화면에서 보여 준다. 로그인했고 코드가
+ * 완성되면 서버 미리보기로 워크스페이스 이름·부여 역할·초대자·만료도 수락 전에 확인한다
+ * (미리보기는 초대받은 이메일과 로그인 이메일이 일치할 때만 열리고, 실패해도 수락은 막지 않는다).
  */
 export function TeamWorkspaceJoinPage() {
   const bt = useBilingual("TeamWorkspaceJoinPage");
@@ -55,6 +58,12 @@ export function TeamWorkspaceJoinPage() {
   const [entryContext, setEntryContext] = useState<StudioSpatialInviteContext>({ kind: "team-lobby" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [previewState, setPreviewState] = useState<
+    | { readonly kind: "idle" }
+    | { readonly kind: "loading" }
+    | { readonly kind: "ready"; readonly preview: TeamWorkspaceInvitePreview }
+    | { readonly kind: "unavailable" }
+  >({ kind: "idle" });
   useEffect(() => {
     const parsed = parseStudioSpatialInviteFragment(window.location.hash);
     let resolved = parsed.token;
@@ -70,7 +79,25 @@ export function TeamWorkspaceJoinPage() {
       window.history.replaceState(window.history.state, "", url.pathname + url.search);
     }
   }, []);
+  // 코드가 완성되고 로그인했으면 수락 전에 초대 내용을 서버에서 미리 확인한다.
+  // 미리보기가 실패해도(이메일 불일치·만료 등) 수락 경로는 그대로 열어 둔다.
+  useEffect(() => {
+    if (!userId || !INVITE_TOKEN.test(token.trim())) { setPreviewState({ kind: "idle" }); return; }
+    let cancelled = false;
+    setPreviewState({ kind: "loading" });
+    void previewTeamInvite(token.trim())
+      .then((preview) => { if (!cancelled) setPreviewState({ kind: "ready", preview }); })
+      .catch(() => { if (!cancelled) setPreviewState({ kind: "unavailable" }); });
+    return () => { cancelled = true; };
+  }, [token, userId]);
   const tokenReady = INVITE_TOKEN.test(token.trim());
+  const preview = previewState.kind === "ready" ? previewState.preview : null;
+  const previewRoleLabel = preview
+    ? preview.role === "admin" ? bt("관리자", "admin") : preview.role === "guest" ? bt("게스트", "guest") : bt("구성원", "member")
+    : "";
+  const previewExpiresLabel = preview
+    ? new Date(preview.expiresAt).toLocaleDateString(bt("ko-KR", "en-US"), { year: "numeric", month: "long", day: "numeric" })
+    : "";
   const destination = entryDestinationCopy(entryContext);
   const branches = [
     { href: "/collaborate/positions", title: bt("모집 자리 찾기", "Find open positions"), description: bt("역할·도구·보수로 공개 모집 자리를 찾고 지원해 보세요. 지원이 확정되면 팀 초대가 도착해요.", "Search public openings by role, tools, and pay, then apply. Once accepted, a team invite follows.") },
@@ -107,6 +134,17 @@ export function TeamWorkspaceJoinPage() {
         ? bt("로그인하면 입력된 코드로 바로 수락할 수 있어요.", "Sign in to accept with the code already filled in.")
         : bt("로그인 후 원래 초대 링크를 다시 열거나 초대 코드를 입력해 주세요.", "After signing in, reopen the original invite link or enter the invite code.")}{" "}
         <button type="button" className="font-semibold underline" onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "team-workspace-invite", mode: "login" })}>{bt("로그인", "Sign in")}</button></p>}
+      {previewState.kind === "loading" && <p role="status" className="mb-4 rounded-xl border border-line bg-raised px-3 py-2 text-sm text-fg-2">{bt("초대 정보를 확인하고 있어요…", "Checking your invite…")}</p>}
+      {preview && !preview.alreadyMember && <div role="status" className="mb-4 rounded-xl border border-accent/40 bg-accent-soft/40 p-3">
+        <p className="text-sm font-bold">{bt(`${preview.workspaceName} 팀에 ${previewRoleLabel} 역할로 초대받았어요`, `You're invited to ${preview.workspaceName} as a ${previewRoleLabel}`)}</p>
+        <p className="mt-1 text-sm leading-6 text-fg-2">{bt(`${preview.inviterName}님이 보낸 초대예요. ${previewExpiresLabel}까지 수락할 수 있어요.`, `Invited by ${preview.inviterName}. You can accept until ${previewExpiresLabel}.`)}</p>
+      </div>}
+      {preview && preview.alreadyMember && <div role="status" className="mb-4 rounded-xl border border-accent/40 bg-accent-soft/40 p-3">
+        <p className="text-sm font-bold">{bt(`이미 ${preview.workspaceName} 팀에 합류해 있어요`, `You're already a member of ${preview.workspaceName}`)}</p>
+        <p className="mt-1 text-sm leading-6 text-fg-2">{bt("다시 수락할 필요 없이 팀 공간으로 바로 이동할 수 있어요.", "No need to accept again — you can go straight to the team space.")}{" "}
+          <Link className="font-semibold underline" to={studioSpatialInviteDestination(entryContext, preview.workspaceId)}>{bt("팀 공간으로 이동", "Open the team space")}</Link></p>
+      </div>}
+      {previewState.kind === "unavailable" && <p role="status" className="mb-4 rounded-xl border border-line bg-raised px-3 py-2 text-sm leading-6 text-fg-2">{bt("이 코드는 미리보기를 열 수 없어요. 초대받은 이메일로 로그인했는지, 코드가 만료되지 않았는지 확인해 주세요. 코드가 맞다면 아래에서 그대로 수락할 수 있어요.", "This code can't be previewed. Check that you're signed in with the invited email and that the code hasn't expired. If the code is right, you can still accept it below.")}</p>}
       <form className="flex flex-col gap-4" onSubmit={(event) => { event.preventDefault(); setBusy(true); setError("");
         void acceptTeamInvite(token.trim()).then((result) => {
           setToken("");
@@ -116,7 +154,7 @@ export function TeamWorkspaceJoinPage() {
         <label className="flex flex-col gap-2">{bt("초대 코드", "Invite code")}<input className={fieldClass} value={token} onChange={(event) => setToken(event.target.value)} autoComplete="off" spellCheck={false} maxLength={43} /></label>
         <div className="rounded-xl border border-line bg-raised p-3">
           <h3 className="text-sm font-bold">{bt("합류하면 받는 권한", "What you get when you join")}</h3>
-          <p className="mt-1 text-sm leading-6 text-fg-2">{bt("역할(관리자·구성원·게스트)은 초대한 팀이 정해 두고 수락과 함께 적용돼요. 정확한 역할은 합류 후 사람·권한 화면에서 확인할 수 있어요. 작품별 접근 권한은 팀 합류와 별도로 주어지며, 팀 소속만으로 비공개 원고가 열리지는 않아요.", "Your role (admin, member, or guest) is set by the inviting team and applies as soon as you accept. You can check the exact role afterwards under People & access. Per-work access is granted separately — team membership alone never opens private manuscripts.")}</p>
+          <p className="mt-1 text-sm leading-6 text-fg-2">{bt("역할(관리자·구성원·게스트)은 초대한 팀이 정해 두고 수락과 함께 적용돼요. 이 초대의 정확한 역할은 코드가 확인되면 이 화면 위쪽 미리보기에서 먼저 볼 수 있고, 합류 뒤에는 사람·권한 화면에서도 확인할 수 있어요. 작품별 접근 권한은 팀 합류와 별도로 주어지며, 팀 소속만으로 비공개 원고가 열리지는 않아요.", "Your role (admin, member, or guest) is set by the inviting team and applies as soon as you accept. Once your code checks out, the preview above shows this invite's exact role before you accept, and you can check it afterwards under People & access too. Per-work access is granted separately — team membership alone never opens private manuscripts.")}</p>
         </div>
         <button disabled={!userId || busy || !tokenReady} className={buttonClass()} type="submit">{bt("초대 수락하기", "Accept invite")}</button>
       </form>

@@ -89,7 +89,9 @@ export const STUDIO_ROUTE_REGISTRY: readonly StudioRouteRegistration[] = Object.
   route("home", "/studio", "studio", "none", "내 작업", "My work", ["/creator-hub"]),
   route("personal-space", "/studio/space", "project", "none", "내 가상스튜디오", "My virtual studio"),
   route("support", "/studio/support", "reference", "none", "작가 지원", "Creator support"),
-  route("new", "/studio/new", "studio", "none", "새로 만들기", "Create new", ["/make"]),
+  // /make는 2026-10-11 사용성 웨이브부터 시작 시트(/create)의 별칭이라 이 레지스트리의
+  // 별칭으로 두지 않는다 — /studio/new의 옛 주소가 아니라 시작 시트의 옛 주소다.
+  route("new", "/studio/new", "studio", "none", "새로 만들기", "Create new"),
   route("import", "/studio/import", "studio", "none", "가져오기", "Import"),
   route("templates", "/studio/templates", "studio", "none", "템플릿", "Templates"),
   // /market/library는 마켓 클라우드 보관함의 고유 라우트라 에셋 별칭으로 선언하지 않는다.

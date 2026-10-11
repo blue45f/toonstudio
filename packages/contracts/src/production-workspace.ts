@@ -34,6 +34,20 @@ export interface TeamWorkspaceInvite {
   readonly role: InvitableWorkspaceRole;
   readonly expiresAt: string;
 }
+/**
+ * 초대 수락 전에 보여 주는 미리보기. 토큰을 가진 본인(이메일 일치)에게만 열리며,
+ * 워크스페이스 이름·부여 역할·초대자·만료를 수락 전에 확인할 수 있게 한다.
+ * 이미 합류한 사람이 링크를 다시 열었을 때를 위해 합류 여부도 함께 알린다.
+ */
+export interface TeamWorkspaceInvitePreview {
+  readonly workspaceId: string;
+  readonly workspaceName: string;
+  readonly role: InvitableWorkspaceRole;
+  readonly inviterName: string;
+  readonly expiresAt: string;
+  readonly alreadyAccepted: boolean;
+  readonly alreadyMember: boolean;
+}
 export interface TeamWorkspaceProject {
   readonly id: string;
   readonly workId: string;

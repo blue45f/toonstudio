@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, ForbiddenException, Get, Header, Headers, Inject, Param, Post } from "@nestjs/common";
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
-import { AcceptTeamWorkspaceDto, CreateTeamWorkspaceDto, TeamWorkspaceParamsDto, WorkspaceCommandSchema } from "./team-workspace.dto";
+import { AcceptTeamWorkspaceDto, CreateTeamWorkspaceDto, PreviewTeamWorkspaceInviteDto, TeamWorkspaceParamsDto, WorkspaceCommandSchema } from "./team-workspace.dto";
 import { TeamWorkspaceRepository } from "./team-workspace.repository";
 
 function actor(value: string | undefined): string {
@@ -22,6 +22,10 @@ export class TeamWorkspaceController {
   @Header("Cache-Control", "private, no-store")
   accept(@Body(new ZodValidationPipe(AcceptTeamWorkspaceDto)) body: AcceptTeamWorkspaceDto,
     @Headers("x-user-id") userId?: string) { return this.repository.accept(actor(userId), body); }
+  @Post("/preview-invite")
+  @Header("Cache-Control", "private, no-store")
+  previewInvite(@Body(new ZodValidationPipe(PreviewTeamWorkspaceInviteDto)) body: PreviewTeamWorkspaceInviteDto,
+    @Headers("x-user-id") userId?: string) { return this.repository.previewInvite(actor(userId), body); }
   @Get("/:workspaceId")
   @Header("Cache-Control", "private, no-store")
   detail(@Param(new ZodValidationPipe(TeamWorkspaceParamsDto)) params: TeamWorkspaceParamsDto,

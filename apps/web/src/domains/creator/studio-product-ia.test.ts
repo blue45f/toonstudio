@@ -110,7 +110,7 @@ describe("ToonStudio final product IA", () => {
       .toBe(STUDIO_LEGACY_ROUTE_ALIASES.length);
     expect(STUDIO_LEGACY_ROUTE_ALIASES).toContainEqual({
       from: "/make",
-      to: "/studio/new",
+      to: "/create",
     });
     expect(STUDIO_LEGACY_ROUTE_ALIASES).toContainEqual({
       from: "/brush-lab",

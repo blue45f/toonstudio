@@ -50,7 +50,8 @@ describe("Studio route registry", () => {
   it("resolves canonical and legacy entry points to the same route owner", () => {
     expect(resolveStudioRouteRegistration("/studio/new")?.id).toBe("new");
     expect(resolveStudioRouteRegistration("/studio/space")?.id).toBe("personal-space");
-    expect(resolveStudioRouteRegistration("/make?from=home")?.id).toBe("new");
+    // /make는 시작 시트(/create)의 별칭이라 스튜디오 진입점으로 해소되지 않는다.
+    expect(resolveStudioRouteRegistration("/make?from=home")).toBeNull();
     expect(resolveStudioRouteRegistration("/brush-lab")?.id).toBe("asset-brush-new");
     expect(resolveStudioRouteRegistration("/studio/p/project-1/review")?.id)
       .toBe("project-review");
@@ -59,7 +60,8 @@ describe("Studio route registry", () => {
   });
 
   it("returns static canonical replacements without leaking implementation routes", () => {
-    expect(canonicalStudioRoutePath("/make")).toBe("/studio/new");
+    // /make는 시작 시트(/create)의 별칭으로 옮겨가 스튜디오 레지스트리에서는 해소되지 않는다.
+    expect(canonicalStudioRoutePath("/make")).toBeNull();
     expect(canonicalStudioRoutePath("/creator-hub/")).toBe("/studio");
     expect(canonicalStudioRoutePath("/studio/assets")).toBe("/studio/assets");
     expect(canonicalStudioRoutePath("/unrelated")).toBeNull();

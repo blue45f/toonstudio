@@ -83,6 +83,28 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByRole("link", { name: /모든 작품 보기/ }).getAttribute("href")).toBe("/studio");
   });
 
+  it("최근 작품에 기록된 썸네일이 있으면 표지로 보여 주고, 없으면 제목 첫 글자로 돌아간다", () => {
+    createStudioProject(window.localStorage, { id: "with-thumb", title: "표지 있는 작품", kind: "webtoon" });
+    createStudioProject(window.localStorage, { id: "no-thumb", title: "표지 없는 작품", kind: "webtoon" });
+    const state = readStudioProjectLibrary(window.localStorage);
+    const next = {
+      ...state,
+      projects: state.projects.map((project) => ({
+        ...project,
+        thumbnailUrl: project.id === "with-thumb" ? "https://example.test/cover.webp" : null,
+        lastOpenedAt: project.id === "with-thumb" ? "2026-10-05T00:00:00.000Z" : "2026-10-01T00:00:00.000Z",
+      })),
+    };
+    window.localStorage.setItem(STUDIO_PROJECT_LIBRARY_STORAGE_KEY, JSON.stringify(next));
+    renderStartSheet("/create");
+
+    const withThumb = screen.getByRole("link", { name: /표지 있는 작품 이어서 작업/ });
+    expect(withThumb.querySelector("img")?.getAttribute("src")).toBe("https://example.test/cover.webp");
+    const noThumb = screen.getByRole("link", { name: /표지 없는 작품 이어서 작업/ });
+    expect(noThumb.querySelector("img")).toBeNull();
+    expect(noThumb.textContent).toContain("표");
+  });
+
   it("갤러리는 /showcase와 창작자 갤러리로 안내만 하고 본문을 중복하지 않는다", () => {
     renderStartSheet("/create");
 

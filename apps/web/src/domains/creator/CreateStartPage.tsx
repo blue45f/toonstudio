@@ -2,7 +2,7 @@
 // 갤러리 본문은 /showcase가 정본이라 이 주소에 갤러리를 중복 배치하지 않고, 갤러리 보기 조건
 // (tab·sort·tag 등)을 단 옛 공유 주소는 조건을 그대로 들고 /showcase로 넘긴다.
 import { ArrowRight, Clock3, Images, LayoutTemplate, Plus, Users } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 
 import type { StudioProjectLibraryEntry } from "./studio-project-library-store";
@@ -33,6 +33,35 @@ function useRecentStudioProjects(
   return useMemo(
     () => studioLobbyRecentProjects(library.projects, RECENT_PROJECT_LIMIT),
     [library.projects],
+  );
+}
+
+/**
+ * 이어가기 카드의 작품 표지. 작품 화면이 기록해 둔 썸네일이 있으면 그걸 보여 주고,
+ * 없거나 불러오지 못하면 제목 첫 글자 타일로 돌아간다 — 비슷한 제목의 작품이
+ * 나란히 있어도 표지로 구분할 수 있게 하는 것이 목적이다.
+ */
+function RecentProjectThumb({ project }: { readonly project: StudioProjectLibraryEntry }) {
+  const [failed, setFailed] = useState(false);
+  if (project.thumbnailUrl && !failed) {
+    return (
+      <img
+        src={project.thumbnailUrl}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className="size-9 shrink-0 rounded-lg object-cover"
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-sm font-black text-accent"
+    >
+      {project.title.trim().charAt(0) || "•"}
+    </span>
   );
 }
 
@@ -128,12 +157,7 @@ export function CreateStartPage() {
                         className="fx-press flex items-center gap-3 rounded-xl border border-line/70 bg-card/60 px-3 py-2.5 transition-colors hover:border-accent/50"
                         aria-label={bt(`${project.title} 이어서 작업`, `Continue ${project.title}`)}
                       >
-                        <span
-                          aria-hidden
-                          className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-sm font-black text-accent"
-                        >
-                          {project.title.trim().charAt(0) || "•"}
-                        </span>
+                        <RecentProjectThumb project={project} />
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-semibold text-fg">{project.title}</span>
                           <span className="block text-xs text-fg-3">

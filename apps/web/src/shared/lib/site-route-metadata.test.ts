@@ -44,13 +44,21 @@ describe("site route metadata", () => {
   });
 
   it.each([
-    ["/make", "/studio/new"],
     ["/publishing", "/studio/publish"],
     ["/shaper", "/studio/assets/characters/new"],
     ["/music", "/studio/assets/audio"],
     ["/brush-lab", "/studio/assets/brushes/new"],
   ])("keeps legacy creator alias %s in Studio navigation through canonical %s", (alias) => {
     expect(resolveSiteRouteNavigationContext(alias)).toBe("studio");
+  });
+
+  it("follows the start sheet context for the /make and /new aliases", () => {
+    // 2026-10-11 사용성 웨이브: 두 별칭의 목적지가 시작 시트(/create)로 수렴하면서
+    // 내비 컨텍스트도 목적지(공개 셸의 시작 시트)를 따르는 것이 일관된다.
+    expect(canonicalSitePath("/make")).toBe("/create");
+    expect(canonicalSitePath("/new")).toBe("/create");
+    expect(resolveSiteRouteNavigationContext("/make")).toBe(resolveSiteRouteNavigationContext("/create"));
+    expect(resolveSiteRouteNavigationContext("/new")).toBe(resolveSiteRouteNavigationContext("/create"));
   });
 
   it("classifies a project-bound desktop Studio surface", () => {

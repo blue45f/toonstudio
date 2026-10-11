@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { TeamWorkspaceRepository } from "./team-workspace.repository";
-import { WorkspaceCommandSchema, WorkspaceCreateSchema } from "./team-workspace.dto";
+import { WorkspaceCommandSchema, WorkspaceCreateSchema, WorkspaceInvitePreviewSchema } from "./team-workspace.dto";
 
 const url = process.env.TEST_DATABASE_URL;
 const schema = `creco_free_${randomUUID().replaceAll("-", "")}`;
@@ -83,6 +83,28 @@ describe.skipIf(!url)("free team workspace actual Postgres", () => {
     const stored = await pool.query("SELECT response FROM production_team_receipt WHERE workspace_id=$1", [workspace.workspaceId]);
     expect(JSON.stringify(stored.rows)).not.toContain(firstToken);
     expect((await pool.query("SELECT token_hash FROM production_team_invite WHERE id=$1", [firstId])).rows[0].token_hash).toMatch(/^[0-9a-f]{64}$/u);
+  });
+  it("previews an invite only for the invited verified email and never consumes it", async () => {
+    const owner = await user(); const invited = await user(); const other = await user(); const unverified = await user(false);
+    const workspace = await repository.create(owner, create("미리보기 팀"));
+    const invitation = await invite(owner, workspace.workspaceId, invited, 0, "admin");
+    // 초대받은 본인만 이름·역할·초대자를 수락 전에 볼 수 있다.
+    const preview = await repository.previewInvite(invited, { token: invitation.token! });
+    expect(preview).toMatchObject({ workspaceId: workspace.workspaceId, workspaceName: "미리보기 팀", role: "admin", alreadyAccepted: false, alreadyMember: false });
+    expect(preview.inviterName).toContain("Tester");
+    expect(preview.expiresAt).toBeTruthy();
+    // 다른 사람·미인증 계정·남의 토큰 조합은 초대의 존재를 흘리지 않는 같은 오류로 막힌다.
+    await expect(repository.previewInvite(other, { token: invitation.token! })).rejects.toMatchObject({ status: 404 });
+    await expect(repository.previewInvite(unverified, { token: invitation.token! })).rejects.toThrow();
+    await expect(repository.previewInvite(invited, { token: "x".repeat(43) })).rejects.toMatchObject({ status: 404 });
+    // 미리보기는 읽기 전용이다 — 수락이 그대로 가능하고, 수락 뒤에는 합류 상태가 보인다.
+    await repository.accept(invited, { token: invitation.token!, mutationId: randomUUID() });
+    const after = await repository.previewInvite(invited, { token: invitation.token! });
+    expect(after).toMatchObject({ alreadyAccepted: true, alreadyMember: true });
+    // 취소된 초대는 미리보기에서도 사라진다.
+    const second = await invite(owner, workspace.workspaceId, other, 2, "guest");
+    await repository.command(owner, workspace.workspaceId, { ...versioned(3), type: "revoke-invite", invitationId: second.invitationId! });
+    await expect(repository.previewInvite(other, { token: second.token! })).rejects.toMatchObject({ status: 404 });
   });
   it("invalidates old tokens on reissue and rejects revoked tokens", async () => {
     const owner = await user(); const target = await user(); const workspace = await repository.create(owner, create("초대 회수"));
@@ -177,5 +199,11 @@ describe("workspace strict input contracts", () => {
     expect(WorkspaceCommandSchema.safeParse({ ...versioned(0), type: "checkout", price: 0 }).success).toBe(false);
     expect(WorkspaceCommandSchema.safeParse({ ...versioned(0), type: "invite", email: "a@example.test", role: "owner" }).success).toBe(false);
     expect(WorkspaceCommandSchema.safeParse({ ...versioned(0), type: "rename", name: "ok", userId: "forged" }).success).toBe(false);
+  });
+  it("accepts only a bare 43-char token for invite previews", () => {
+    expect(WorkspaceInvitePreviewSchema.safeParse({ token: "x".repeat(43) }).success).toBe(true);
+    expect(WorkspaceInvitePreviewSchema.safeParse({ token: "short" }).success).toBe(false);
+    // 읽기 전용 미리보기에 mutationId 같은 추가 필드는 허용하지 않는다.
+    expect(WorkspaceInvitePreviewSchema.safeParse({ token: "x".repeat(43), mutationId: randomUUID() }).success).toBe(false);
   });
 });

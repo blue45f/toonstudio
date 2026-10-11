@@ -164,7 +164,7 @@ export function ProductionEpisodeRoomPage() {
               <ProductionPill tone={episodeStateTone(episode.state)}>{episodeStateLabel(episode.state, bt)}</ProductionPill>
               {readiness ? (
                 <ProductionPill tone={readiness.ready ? "success" : "danger"}>
-                  {bt(`넘기기 준비도 ${readiness.score}`, `Handoff readiness ${readiness.score}`)}
+                  {bt(`인계 준비도 ${readiness.score}`, `Handoff readiness ${readiness.score}`)}
                 </ProductionPill>
               ) : null}
               <Link className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })} to={productionSurfacePath(aggregate.projectId, "manuscripts", `episode=${encodeURIComponent(episode.episodeId)}`)}>
@@ -291,7 +291,7 @@ export function ProductionEpisodeRoomPage() {
                           </p>
                         ) : null}
                         <div className="mt-2 flex flex-wrap gap-1.5">
-                          {impact.requiresScheduleRebaseline ? <ProductionPill tone="warning">{bt("일정 재산정", "Reschedule")}</ProductionPill> : null}
+                          {impact.requiresScheduleRebaseline ? <ProductionPill tone="warning">{bt("일정 조정 필요", "Reschedule needed")}</ProductionPill> : null}
                           {impact.requiresCompensationReview ? <ProductionPill tone="warning">{bt("보상 검토", "Pay review")}</ProductionPill> : null}
                           {impact.requiresAgreementChange ? <ProductionPill tone="danger">{bt("계약 변경", "Contract change")}</ProductionPill> : null}
                         </div>

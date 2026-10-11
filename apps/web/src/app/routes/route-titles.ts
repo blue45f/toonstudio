@@ -116,6 +116,8 @@ export function resolveRouteTitle(pathname: string, t: Translator, productLocale
   if (canonicalPath.startsWith("/lists/")) return t("route.library");
   if (canonicalPath.startsWith("/author/")) return decodePathSegment(canonicalPath.slice(8));
   if (canonicalPath.startsWith("/pencafe/")) return `${decodePathSegment(canonicalPath.slice(9))} ${t("route.pencafeSuffix")}`;
+  // 합류 시트는 초대 링크로 처음 온 사람의 화면이라 관리자 화면과 제목을 나눈다.
+  if (canonicalPath === "/team/people/join") return "팀 합류";
   if (canonicalPath.startsWith("/team/people")) return "사람·권한 관리";
   if (canonicalPath.startsWith("/team/recruiting")) return "인재·지원 관리";
   if (canonicalPath.startsWith("/collaborate/")) return "구인·의뢰";

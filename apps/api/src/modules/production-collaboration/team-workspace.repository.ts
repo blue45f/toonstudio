@@ -4,7 +4,8 @@ import type { Pool, PoolClient } from "pg";
 import {
   FREE_USAGE_POLICY, isWorkspaceManager, nextSeoulDay,
   type TeamWorkspaceDetail, type TeamWorkspaceSummary, type TeamWorkspaceRole,
-  type TeamWorkspaceMember, type TeamWorkspaceInvite, type TeamWorkspaceProject,
+  type TeamWorkspaceMember, type TeamWorkspaceInvite, type TeamWorkspaceInvitePreview,
+  type InvitableWorkspaceRole, type TeamWorkspaceProject,
   type WorkspaceMutationResult, type WorkspaceUsageResponse,
 } from "@toonstudio/contracts/production-workspace";
 import type { WorkspaceCommand } from "./team-workspace.dto";
@@ -238,6 +239,41 @@ export class TeamWorkspaceRepository {
       (SELECT count(*) FROM production_team_member WHERE workspace_id=$1) +
       (SELECT count(*) FROM production_team_invite WHERE workspace_id=$1 AND revoked_at IS NULL
         AND accepted_at IS NULL AND expires_at>now()))::int count`, [workspaceId])).rows[0].count;
+  }
+  /**
+   * 수락 전 미리보기 — 수락과 같은 검증 골격(이메일 인증 + 초대 이메일 일치)을 읽기 전용으로
+   * 적용한다. 일치하지 않으면 수락과 동일한 일반 오류로 답해 초대의 존재를 흘리지 않고,
+   * 아무것도 기록하지 않는다.
+   */
+  async previewInvite(actor: string, input: { token: string }): Promise<TeamWorkspaceInvitePreview> {
+    return this.transaction(async (client) => {
+      const user = await this.activeUser(client, actor);
+      if (!user.email || !user.emailVerified) throw new ForbiddenException("초대받은 이메일의 인증이 필요합니다.");
+      const invitation = (await client.query<{
+        workspace_id: string; email: string; role: InvitableWorkspaceRole; accepted_at: Date | null;
+        expiresAt: string; workspaceName: string; inviterName: string; alreadyMember: boolean;
+      }>(`SELECT i.workspace_id,i.email,i.role,i.accepted_at,
+          to_char(i.expires_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') "expiresAt",
+          w.name "workspaceName", coalesce(u.name,'구성원') "inviterName",
+          EXISTS (SELECT 1 FROM production_team_member m
+            WHERE m.workspace_id=i.workspace_id AND m.user_id=$2) "alreadyMember"
+          FROM production_team_invite i
+          JOIN production_team_workspace w ON w.id=i.workspace_id
+          LEFT JOIN "user" u ON u.id=i.created_by
+          WHERE i.token_hash=$1 AND i.revoked_at IS NULL AND i.expires_at>now()`, [hash(input.token), actor])).rows[0];
+      if (!invitation || invitation.email !== user.email.trim().toLowerCase()) {
+        throw new NotFoundException("사용 가능한 초대가 없습니다. 초대받은 이메일로 로그인해주세요.");
+      }
+      return {
+        workspaceId: invitation.workspace_id,
+        workspaceName: invitation.workspaceName,
+        role: invitation.role,
+        inviterName: invitation.inviterName,
+        expiresAt: invitation.expiresAt,
+        alreadyAccepted: invitation.accepted_at !== null,
+        alreadyMember: invitation.alreadyMember,
+      };
+    });
   }
   async accept(actor: string, input: { token: string; mutationId: string }): Promise<WorkspaceMutationResult> {
     return this.transaction(async (client) => {

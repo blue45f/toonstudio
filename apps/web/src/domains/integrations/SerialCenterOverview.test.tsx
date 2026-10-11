@@ -102,6 +102,9 @@ describe("SerialCenterOverview", () => {
     // 제작 현황 딥링크가 작품 개요로 이어진다.
     const links = screen.getAllByRole("link", { name: /제작 현황/ });
     expect(links[0]?.getAttribute("href")).toBe("/production/projects/project-late/overview");
+    // 회차 관리는 개요를 거치지 않고 회차 표면으로 직행한다.
+    const episodeLinks = screen.getAllByRole("link", { name: /회차 관리/ });
+    expect(episodeLinks[0]?.getAttribute("href")).toBe("/production/projects/project-late/episodes");
   });
 
   it("게시 준비를 누르면 그 작품이 콜백으로 올라간다", async () => {
