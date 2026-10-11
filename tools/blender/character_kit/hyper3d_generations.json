@@ -1238,7 +1238,7 @@
       "tier": "Gen-2.5-High",
       "qualityOverride": 5000,
       "intent": "청크형 헤어(저폴리 5,000) 흉상 — m-long-chunky",
-      "outcome": "BANG으로 분리",
+      "outcome": "BANG 분리는 쓸 수 없어(아래 항목) 이 원본 생성물에서 색으로 머리카락을 분리해 남성 롱 헤어로 사용",
       "rawFile": "hair-m-long-02dac44e-f730-453f-aefe-4eb25ddf83f1-base_basic_pbr.glb",
       "prompt": "A stylized 3D anime figure bust a young man (head and shoulders), front view, neutral relaxed face with eyes open, wearing a plain white crew-neck t-shirt. Hairstyle: shoulder-length straight men's hair with a soft center part and face-framing locks. The hair is one smooth sculpted mass divided into a few large chunky locks with clean sharp tips, absolutely no individual hair strands and no fine detail, solid dark brown matte color, symmetrical, evenly lit, plain white background, no accessories.",
       "rawSha256": "a7c55980d24b76370c85126f3e06d534be0af9d02f02dc745e650cd5b7a2df97",
@@ -1412,6 +1412,19 @@
       "rawFile": "hair-m-pony-bang-122f0174-fcc0-4a20-83a6-0745481be836-base_basic_pbr.glb",
       "rawSha256": "ce69ae0ef8032e470390e5082cb4a1b00f7f64dacb151d1ae26109f5847c9ebc",
       "rawBytes": 11406176
+    },
+    {
+      "id": "0125218b-b638-4885-990a-395ace34fd92",
+      "name": "hair-long3m-bang",
+      "kind": "bang",
+      "parent": "02dac44e-f730-453f-aefe-4eb25ddf83f1",
+      "strength": 3,
+      "intent": "청크형 헤어 분리",
+      "outcome": "사용 안 함(BANG이 머리카락을 파편 여섯 개로 쪼개 한 덩어리 헤어로 쓸 수 없음)",
+      "instruction": "Separate into parts: the dark long hair as one single part, the white t-shirt, and the skin (head, face, neck, shoulders).",
+      "rawFile": "hair-m-long-bang-0125218b-b638-4885-990a-395ace34fd92-base_basic_pbr.glb",
+      "rawSha256": "a4231057af06da00d2e0f08460b886a54bd96cb81035ead8c9e32371f8d8a642",
+      "rawBytes": 10887632
     }
   ]
 }
