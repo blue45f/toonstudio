@@ -44,7 +44,7 @@
 | D3 | morph는 **계약 이름 그대로**(`param:<키>:±`, `facs:<유닛>`) 모든 메시가 가진다. 엔진이 이미 "이름 → 타깃 배열"로 모아 같은 influence를 주므로(`package-loader.ts:114`, `character-rig.ts:179`) 전파 코드는 새로 필요 없고 **누락 검출**만 추가한다. | 기존 패널·프리셋·플래너가 한 줄도 안 바뀐다 |
 | D4 | 체형 morph의 관절 이동은 `kit.json.jointOffsets`로 싣고 기존 `createJointOffsetRig`를 재사용한다. | 이미 절차 소스용으로 구현·테스트됨(`joint-offset-rig.ts`). 패키지 소스는 지금 이게 없다(`character-engine.ts:1002`) |
 | D5 | 파츠 그룹핑·partId는 **역할 고정**(`rolePartId`)이다. 같은 역할 메시(눈 L/R 등)는 한 `RigPart`의 `meshes[]`다. 기존 패키지 로더의 "baseName 정렬 순번" 방식은 쓰지 않는다. | 기본 플래너 레이아웃(`DEFAULT_PART_LAYOUT`)과 일치해야 plan이 올바른 파츠에 적용된다. 기존 패키지 로더는 불일치(2절 C3) |
-| D6 | 몸 가림은 **오프셋 셸(기본) + 파츠가 선언한 영역의 인덱스 범위 숨김(보조)** 이다. 영역 단위로 몸 삼각형 순서를 정렬해 두고 `SubMesh` 범위로 숨긴다. | 메시 분할·마스크 셰이더보다 변경 범위가 작고 morph·스킨과 충돌하지 않는다 |
+| D6 | 몸 가림은 **오프셋 셸(기본) + 파츠가 선언한 영역의 인덱스 범위 숨김(보조)** 이다. 영역 단위로 몸 삼각형 순서를 정렬해 두고 숨길 영역의 범위를 뺀 **보이는 구간을 이은 인덱스 버퍼(SubMesh 하나)** 로 숨긴다(구간마다 SubMesh를 두면 WebGL2 hull 외곽선이 두 번째 이후 SubMesh를 깨뜨린다). | 메시 분할·마스크 셰이더보다 변경 범위가 작고 morph·스킨과 충돌하지 않는다 |
 | D7 | 색 변형은 `baseColorFactor` 곱(틴트)이다. 엔진에 `RigPart.tint`(recolor 또는 fixed)를 추가해 "텍스처 있으면 틴트 안 함" 규칙(`character-engine.ts:809`)을 키트 파츠에서 푼다. | 베이스 스킨 텍스처가 "상대색"(A3a 스펙)이라 스킨톤을 곱해야 한다 |
 | D8 | 헤어 `COLOR_0`은 **회색 AO 곱(R=G=B)** 로만 쓴다. 뿌리→끝 그라데이션·하이라이트 밴드는 UV 램프 텍스처에 굽는다. LEAD_BRIEF v0의 R/G/B 채널 의미는 폐기를 제안한다. | PBR은 `COLOR_0`을 알베도에 그대로 곱하고(`pbrBlockAlbedoOpacity.js:47`) 툰 셰이더는 아예 못 읽는다(`shader-sources.ts:19`; **정정 2026-10-08**: KT-04가 `TS_VERTEX_COLOR` define으로 툰·밑색 패스에 곱하도록 구현했다 — 4.10) |
 | D9 | 키트 소스는 `CharacterSource`/레시피 `source`의 세 번째 종류 `kit`이다. 레시피는 **v2**로 올리고 v1→v2 명시 마이그레이션을 둔다. 키트 부팅 레시피는 `createKitDefaultRecipe()`이고 `createDefaultRecipe()`(절차)는 유지한다. **정정 2026-10-08**: 앱 부팅 기본 소스는 키트 에셋이 안착하기 전까지 `DEFAULT_BOOT_SOURCE = "procedural"`(6절 1항)이다. | 구버전 앱이 새 파일을 "지원하지 않는 버전"으로 정직하게 거부 |
@@ -390,15 +390,15 @@ SourceCapabilities { capabilities, morphNames, boneNames, partIdPalette }  → �
 | 오프셋만(의상을 몸에서 2~4 mm 띄움) | 런타임 비용 0, 구현 0 | 팔꿈치·무릎·어깨의 포즈 변형에서 스킨이 의상을 뚫고 나옴(스키닝 차이) |
 | 메시 분할(영역별 별도 메시) | 숨김 즉시 | 영역 수만큼 `MorphTargetManager`가 생겨 morph 텍스처가 영역 수 × 18배, 이음매 음영 분리 |
 | 마스크(정점 알파/셰이더 discard) | 셰이더 수정 | 툰·PBR·ID·depth 4종 패스 재질 전부 고쳐야 함 |
-| **오프셋 + 인덱스 범위 숨김(채택)** | `TS_Body`의 인덱스 버퍼를 영역 순으로 정렬해 두면 `SubMesh`를 영역별로 만들고 숨길 영역의 서브메시만 빼면 된다. 스킨·morph·재질·UV 무관 | 영역 경계 삼각형이 반쯤 사라질 수 있음 → 의상이 경계를 ≥ 1 cm 넘어 덮도록 제작 |
+| **오프셋 + 인덱스 범위 숨김(채택)** | `TS_Body`의 인덱스 버퍼를 영역 순으로 정렬해 두면 숨길 영역을 뺀 구간을 이어 붙이면 된다(렌더 쪽에서 SubMesh 하나로). 스킨·morph·재질·UV 무관 | 영역 경계 삼각형이 반쯤 사라질 수 있음 → 의상이 경계를 ≥ 1 cm 넘어 덮도록 제작 |
 
 규칙
 
 1. 모든 의상·속옷 셸은 `TS_Body` 표면에서 **2~4 mm 바깥**으로 제작한다(오프셋 정책, 12.3).
-2. 파츠가 `hides`에 영역을 선언하면(그 영역을 **전부** 덮는 경우에만 선언 — 부분만 덮으면 구멍이 보인다) 로더가 `TS_Body`의 서브메시를 `bodyRegions` 범위로 쪼개 **선언된 영역들의 합집합**만 제외한다. 여러 파츠(상의+하의)가 숨기는 영역은 합집합.
+2. 파츠가 `hides`에 영역을 선언하면(그 영역을 **전부** 덮는 경우에만 선언 — 부분만 덮으면 구멍이 보인다) 로더가 `TS_Body`의 인덱스 버퍼에서 `bodyRegions` 범위의 **선언된 영역들의 합집합**만 빼고 보이는 구간을 이어 붙인다(SubMesh는 하나 — 구간마다 SubMesh를 두면 WebGL2 hull 외곽선이 깨진다). 여러 파츠(상의+하의)가 숨기는 영역은 합집합.
 3. 지원 영역은 `KIT_HIDEABLE_REGION_IDS`(15개). 선언 없으면 아무것도 숨기지 않는다. `hides` 대상은 항상 `TS_Body`이고 `TS_Head`는 숨기지 않는다.
 4. `bodyRegions`가 없거나 범위가 어긋나면(검증기가 막지만 방어) 숨김을 적용하지 않고 `notes`에 한글 사유를 남긴다 — 의상은 보이고 스킨이 비칠 수 있다는 사실을 숨기지 않는다.
-5. **검증 결과(KT-04, 2026-10-08, NullEngine)**: (a) Babylon `GLTF2Export`는 SubMesh 범위를 존중해 숨긴 삼각형을 뺀다(몸이 구간 수만큼 프리미티브로 나간다) — `babylon-glb-sparse-export.test.ts`. (b) 스키닝 pick은 SubMesh를 무시해 숨긴 삼각형도 맞았다(`skinned-pick.ts`가 `mesh.getIndices()` 전체를 썼다) → **수정**: pick 후보 인덱스를 SubMesh가 덮는 구간으로 제한하고 구간 배치가 바뀌면 캐시를 다시 만든다 — `babylon-kit-engine.test.ts`(수정 전에는 실패하는 것을 확인했다). (c) 엔진은 로더가 둔 `alwaysSelectAsActiveMesh`를 덮어쓰지 않는다(플랜 적용·셰이딩 전환·카메라·리사이즈 뒤에도 유지) — 같은 파일.
+5. **검증 결과(KT-04, 2026-10-08 → 2026-10-11 갱신)**: 몸 가림은 보이는 삼각형을 이은 인덱스 버퍼(SubMesh 하나)라 GLB 내보내기는 숨긴 삼각형이 빠진 프리미티브 하나로 나가고(`babylon-glb-sparse-export.test.ts`) 스키닝 pick·렌더도 같은 삼각형 집합을 본다. 이전의 구간별 SubMesh 방식은 WebGL2 hull 외곽선에서 두 번째 이후 SubMesh가 깨져 폐기했다.
 
 ### 4.7 LOD
 
@@ -447,7 +447,7 @@ SourceCapabilities { capabilities, morphNames, boneNames, partIdPalette }  → �
 1. 현재 리그의 파츠 id 집합 vs `plan.parts`를 비교한다. 같으면 아무것도 안 한다.
 2. 빠진 파츠: 메시·재질·텍스처·morph 타깃을 해제하고 `rig.morphs`에서 제거한다.
 3. 새 파츠: 바이트 확보 → 4.2의 3~7단계를 그 파츠만 수행해 리그에 합친다.
-4. `hides`를 재계산해 `TS_Body` 서브메시를 다시 만든다.
+4. `hides`를 재계산해 `TS_Body` 인덱스 버퍼를 다시 이어 붙인다(같은 구간이면 그대로).
 5. 그림자 캐스터(`addShadowCasters`)·물리 바인딩·페인트 데칼(`reattachPaint`)·베타 재질(`beta.reconcile`)·`partIdPalette`·`morphNames`를 갱신한다.
 6. 실패하면 **그 시점의 리그를 유지하지 않고** 키트 전체를 해제하고 실패를 던진다(앱 루프가 `failedSource`로 기억, `apply-loop.ts`). 반쯤 바뀐 리그를 남기지 않는다.
 

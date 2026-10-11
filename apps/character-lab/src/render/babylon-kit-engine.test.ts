@@ -2,7 +2,7 @@
  * 키트 소스 × 엔진 통합(KT-04) — NullEngine 하네스 + 합성 키트 GLB(`render/testing/kit-glb-fixture.ts`).
  * 로더 자체(재바인딩·실패 코드)는 `babylon-kit-load.test.ts`가 확인하고, 여기서는 엔진이 키트 리그를 다루는 방식을 확인한다:
  * 소스 로드와 `rig.kind: "kit"`, 틴트(recolor/fixed), 툰 hull 외곽선 정책(A-5·A-9), 얼굴 SDF 끔, 정점 색(AO) define, 증분 교체와 정리,
- * `alwaysSelectAsActiveMesh` 유지, 숨긴 삼각형의 pick, 지오메트리 썸네일(임시 리그).
+ * 몸 가림(보이는 삼각형을 이은 단일 SubMesh) 유지, 숨긴 삼각형의 pick, 지오메트리 썸네일(임시 리그).
  * 셰이더 컴파일·GPU 렌더·실제 텍스처 디코드는 NullEngine이 검증하지 못한다(브라우저 미검증).
  */
 import { readFileSync } from "node:fs";
@@ -319,7 +319,18 @@ describe("툰 hull 외곽선 정책(A-5·A-9)", () => {
     // 정책 표의 모든 제외 역할이 이 합성 키트(pupil만 빼고)에 실제로 있었음을 확인한다 — 빈 검사가 되지 않게
     const present = new Set(parts.map((part) => part.role));
     for (const role of KIT_OUTLINE_EXEMPT_ROLES) if (role !== "pupil") expect(present.has(role), role).toBe(true);
-    expect(parts.filter((part) => part.renderOutline).map((part) => part.role)).toEqual(["hair", "top", "bottom", "shoes", "underwear"]);
+    expect(parts.filter((part) => part.renderOutline).map((part) => part.role)).toEqual(["skin", "hair", "top", "bottom", "shoes"]);
+  });
+
+  it("키트 hull은 외곽선 렌더러의 깊이 오프셋을 0으로 둔다(꽉 낀 의상·신발을 뚫고 비치는 얼룩 방지), 절차 소스는 Babylon 기본값을 건드리지 않는다", async () => {
+    const kit = await bootKit();
+    kit.h.engine.setShading(toon());
+    const renderer = kit.scene.getOutlineRenderer();
+    expect([renderer.zOffset, renderer.zOffsetUnits]).toEqual([0, 0]);
+    const procedural = await bootEnv();
+    await procedural.h.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });
+    procedural.h.engine.setShading(toon());
+    expect(procedural.scene.getOutlineRenderer().zOffset).toBe(1);
   });
 
   it("키트는 `_Outline` 셸을 싣지 않으므로 hull과 셸의 이중 외곽선이 생기지 않는다(셸 메시 0, 셸 가시 0)", async () => {
@@ -338,7 +349,7 @@ describe("툰 hull 외곽선 정책(A-5·A-9)", () => {
     expect(env.h.engine.inspectRig()?.parts.every((part) => !part.renderOutline)).toBe(true);
     env.h.engine.setShading(toon());
     const outlined = env.h.engine.inspectRig()?.parts.filter((part) => part.renderOutline).map((part) => part.role);
-    expect(outlined).toEqual(["hair", "top", "bottom", "shoes", "underwear"]);
+    expect(outlined).toEqual(["skin", "hair", "top", "bottom", "shoes"]);
   });
 
   it("엣지·없음 외곽선 모드는 정책의 대상이 아니다(엣지는 모든 파츠에, 없음은 어떤 파츠에도 켜지 않는다)", async () => {
@@ -553,39 +564,42 @@ describe("키트 증분 교체(엔진)", () => {
     expect(env.h.engine.inspectRig()?.morphInfluences["param:headSize:+"]).toBe(0.5);
   });
 
-  it("몸 가림이 새 구성에 맞게 다시 계산되고 alwaysSelectAsActiveMesh는 플랜·셰이딩·카메라 변경을 거쳐도 유지된다", async () => {
+  it("몸 가림이 새 구성에 맞게 다시 계산되고 몸은 늘 SubMesh 하나(보이는 삼각형만)로 플랜·셰이딩·카메라 변경을 거쳐도 유지된다", async () => {
     const env = await bootKit();
-    // 필수 파츠(상의·하의·신발)가 숨긴 영역: torso·upperArm.L/R, pelvis·thigh.L/R, foot.L/R → 보이는 연속 구간 3개(neck / forearm·hand / calf)
-    expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([3]);
-    expect(partByRole(env, "skin").alwaysSelectAsActiveByMesh).toEqual([true]);
+    // 필수 파츠(상의·하의·신발)가 숨긴 영역: torso·upperArm.L/R, pelvis·thigh.L/R, foot.L/R → 보이는 연속 구간 3개(neck / forearm·hand / calf)를 이어 붙인 14삼각형
+    // (구간마다 SubMesh를 두면 WebGL2에서 hull 외곽선이 두 번째 이후 SubMesh를 깨뜨린다 — `kit-region-mask.ts`)
+    expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([1]);
+    expect(partByRole(env, "skin").triangleCount).toBe(14);
+    expect(partByRole(env, "skin").alwaysSelectAsActiveByMesh).toEqual([false]);
     env.h.engine.applyPlan(planFor(env));
     env.h.engine.setShading(toon());
     env.h.engine.setShading({ ...DEFAULT_SHADING, mode: "pbr" });
     env.h.engine.setCamera({ ...DEFAULT_FRAMING, mode: "face" });
     env.h.engine.resize(80, 80);
-    expect(partByRole(env, "skin").alwaysSelectAsActiveByMesh).toEqual([true]);
-    expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([3]);
-    // 신발을 빼면 foot.L/R가 다시 보여 calf 구간과 합쳐진다(구간 수는 같아도 구성이 바뀐다 — 아래 shoes-only가 구간 수를 줄인다)
+    expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([1]);
+    expect(partByRole(env, "skin").triangleCount).toBe(14);
+    // 신발을 빼면 foot.L/R가 다시 보인다(삼각형이 늘어난다)
     const next = await buildKitFixture({ partIds: SECOND });
     env.add(next);
     await env.h.engine.loadSource({ kind: "kit", plan: next.plan });
-    expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([3]);
-    expect(partByRole(env, "skin").alwaysSelectAsActiveByMesh).toEqual([true]);
-    // 신발만 신기면 foot.L/R만 빠져 연속 구간 하나가 되고(SubMesh 하나) 항상 선택 플래그는 꺼진다
+    expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([1]);
+    expect(partByRole(env, "skin").triangleCount).toBeGreaterThan(14);
+    // 신발만 신기면 foot.L/R만 빠진다
     const shoesOnly = await buildKitFixture({ partIds: ["shoes/sneakers"] });
     env.add(shoesOnly);
     await env.h.engine.loadSource({ kind: "kit", plan: shoesOnly.plan });
     expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([1]);
-    expect(partByRole(env, "skin").alwaysSelectAsActiveByMesh).toEqual([false]);
-    // 다시 의상을 입히면 구간이 다시 쪼개지고 플래그가 켜진다
+    expect(partByRole(env, "skin").triangleCount).toBe(26);
+    // 다시 의상을 입히면 가려진다
     await env.h.engine.loadSource({ kind: "kit", plan: (await buildKitFixture({ partIds: REQUIRED })).plan });
-    expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([3]);
-    expect(partByRole(env, "skin").alwaysSelectAsActiveByMesh).toEqual([true]);
-    // 의상이 하나도 없으면 몸은 SubMesh 하나이고 항상 선택 플래그도 꺼진다
+    expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([1]);
+    expect(partByRole(env, "skin").triangleCount).toBe(14);
+    // 의상이 하나도 없으면 몸 전체(30삼각형)다
     const bare = await buildKitFixture({ partIds: [] });
     env.add(bare);
     await env.h.engine.loadSource({ kind: "kit", plan: bare.plan });
     expect(partByRole(env, "skin").subMeshCountsByMesh).toEqual([1]);
+    expect(partByRole(env, "skin").triangleCount).toBe(30);
     expect(partByRole(env, "skin").alwaysSelectAsActiveByMesh).toEqual([false]);
   });
 
@@ -731,6 +745,36 @@ describe("지오메트리 썸네일(키트 임시 리그)", () => {
     for (const key of ["meshCount", "viewportMeshCount", "skeletonCount", "materialCount", "textureCount", "transformNodeCount"] as const) expect(sceneAfter[key], key).toBe(sceneBefore[key]);
     // 베이스는 바이트 캐시에서 쓰므로 새 파츠(헤어)만 한 번 받는다
     expect(env.requested.slice(fetchedBefore)).toEqual([fixtureUrl("female", "hair/short-layered")]);
+  });
+
+  it("임시 키트 리그의 메시는 씬에 올라오는 순간부터 뷰포트 카메라에 보이지 않는다(비동기 GLB 로드 중 주 캐릭터 위에 겹쳐 그려지지 않는다)", async () => {
+    const env = await bootKit();
+    const camera = env.scene.activeCamera;
+    if (!camera) throw new Error("활성 카메라가 없습니다.");
+    const alt = await buildKitFixture({ partIds: ["hair/short-layered", "top/tee", "bottom/jeans", "irises/round-large"], preferredLod: 1 });
+    env.add(alt);
+    const viewportBefore = env.h.engine.inspectScene().viewportMeshCount;
+    // 올라오는 그 순간의 상태: `onNewMeshAddedObservable`은 늦게 통지돼 조립이 끝난 뒤를 보여 주므로 `addMesh`를 감싼다
+    const adds: Array<{ readonly name: string; readonly inViewport: boolean }> = [];
+    const addMesh = env.scene.addMesh.bind(env.scene);
+    env.scene.addMesh = (mesh, recursive) => {
+      const state = { name: mesh.name, inViewport: mesh.isVisible && (mesh.layerMask & camera.layerMask) !== 0 };
+      addMesh(mesh, recursive);
+      // 컨테이너를 읽는 동안 메시를 만들 때의 호출은 장면이 막아 실제로는 들어가지 않는다 — 장면에 들어간 호출만 센다
+      if (env.scene.meshes.includes(mesh)) adds.push(state);
+    };
+    // 조립이 끝나기 전에도(비동기 구간마다) 뷰포트 카메라에 걸리는 메시 수가 늘면 임시 캐릭터가 주 캐릭터 위에 그려진다
+    const samples: number[] = [];
+    const timer = setInterval(() => samples.push(env.h.engine.inspectScene().viewportMeshCount), 0);
+    try {
+      await env.h.engine.renderThumbnail({ presetId: "hair/short-layered", plan: planFor(env, { revision: 9 }), size: 96, framing: DEFAULT_FRAMING, source: { kind: "kit", plan: alt.plan } });
+    } finally {
+      clearInterval(timer);
+    }
+    expect(adds.length).toBeGreaterThan(0);
+    expect(adds.filter((add) => add.inViewport)).toEqual([]);
+    for (const count of samples) expect(count).toBe(viewportBefore);
+    expect(env.h.engine.inspectScene().viewportMeshCount).toBe(viewportBefore);
   });
 
   it("임시 키트 소스가 손상됐으면 LabFailure로 reject하고 주 리그와 장면은 그대로다", async () => {

@@ -172,8 +172,11 @@ morph는 계약 이름(`param:<키>:±`, `facs:<유닛>`)을 그대로 쓰므로
 
 - 출처: 몸·머리·홍채는 Human Base Meshes v1.4.1(CC0), 안경·귀걸이·초커와 후디의 후드는 이 저장소가 만든 원본이고, 나머지 의상·헤어·신발·소품은 Hyper3D(Rodin Gen-2.5) 생성물에서 리타깃한 파생물이다.
   Hyper3D 파생 파츠의 공개 저장소 반입은 사용자가 유료 플랜(상업 이용 가능)임을 확인하고 지시해 이루어졌다. 서면 확인(`docs/hyper3d-terms-record.md` §6)은 받지 않았다.
-- 실브라우저 확인(2026-10-11, Apple M2 Max · ANGLE Metal · WebGL2, 개발 서버): 키트 부팅·상의 5종 교체·두 베이스 전환이 동작한다. **키트 몸(피부)의 hull 외곽선이 이 GPU에서 맨팔·손에 무지개 줄무늬를 만들어**
-  `render/outline-policy.ts`가 키트의 피부 hull을 켜지 않게 우회했다(근거 3, 원인은 미확정). 같은 GPU에서 절차 소스의 hull과 키트의 의상·헤어·신발 hull은 정상이다.
-- 화면 증거(2026-10-11): 실제 앱(키트 소스·툰·WebGL2) 캡처 [`docs/images/kit-app-showcase-2026-10-11.png`](docs/images/kit-app-showcase-2026-10-11.png)(두 베이스·여섯 가지 조합, 캡처 직후 몇 초는 피부가 하얗게 보여 14초 기다렸다)와
+- 실브라우저 확인(2026-10-11, Apple M2 Max · ANGLE Metal, 개발 서버, WebGL2·WebGPU): 키트 부팅·두 베이스 전환·상의 5·하의 5·신발 4·헤어 7·소품 6 교체가 동작한다(WebGPU도 부팅·렌더 확인).
+  이 확인에서 실제 결함 3개를 찾아 고쳤다(PR "키트 썸네일 임시 리그 누수"): ①**썸네일 임시 키트 리그가 GLB를 비동기로 올리는 동안 메인 카메라에 그려져**(레시피를 바꿀 때마다 카드 약 32개 × 약 70 ms) 피부 흰빛·겹친 부츠·얼룩이 보였다 — 로더가 씬에 올리기 전에 레이어 마스크·비가시로 가린다.
+  ②**속옷 hull이 의상을 뚫고 비쳤다**(의상을 갈아입은 뒤 그리기 순서가 바뀌면 가슴에 어두운 얼룩) — 속옷 hull을 켜지 않는다. ③**몸 hull 줄무늬의 원인은 몸의 SubMesh가 둘 이상인 것**이었다(WebGL2 ANGLE Metal에서 스킨 메시 + hull이면 두 번째 이후 SubMesh가 깨짐, WebGPU는 정상) —
+  가린 영역을 SubMesh로 빼는 대신 보이는 삼각형만 이은 인덱스 버퍼 하나로 만들어, 몸 hull을 2 mm로 다시 켰다. 근거와 실험은 `render/outline-policy.ts`·`render/babylon/kit-region-mask.ts`.
+- 물리: 키트 리그는 체인·충돌체가 없다(`chains: []`) — 물리 provider(내장 PBD)가 켜져 있어도 키트 헤어·의상은 구동하지 않는다(정적 스킨 메시). 절차 소스만 체인을 가진다.
+- 화면 증거(2026-10-11): 실제 앱(키트 소스·툰·WebGL2) 캡처 [`docs/images/kit-app-showcase-2026-10-11.png`](docs/images/kit-app-showcase-2026-10-11.png)(두 베이스·여섯 가지 조합. 이 캡처는 임시 리그 누수를 고치기 전이라 14초를 기다렸고, 지금은 기다릴 필요가 없다)와
   뷰어(`kit-preview`) 12종 차림 [`docs/images/kit-preview-showcase-2026-10-11.png`](docs/images/kit-preview-showcase-2026-10-11.png).
-- 아직 브라우저로 확인하지 않은 것: WebGPU 경로, 키트 파츠 조합 전체(소수 조합만 확인), 물리(헤어·의상 체인)와 키트 파츠의 상호작용.
+- 아직 브라우저로 확인하지 않은 것: 파츠 조합의 모든 곱(슬롯별 교체만 확인), WebGPU에서의 슬롯별 교체 전수, 모바일 GPU.

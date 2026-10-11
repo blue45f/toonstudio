@@ -347,10 +347,13 @@ describe("키트 몸 가림(TS_Body SubMesh)", () => {
     const { rig, handle } = await loaded();
     const body = partOf(rig, "skin").meshes[0];
     // 상의: torso·upperArm.L/R, 하의: pelvis·thigh.L/R, 신발: foot.L/R → 보이는 구간 neck / forearm.L~hand.R / calf.L~R
-    expect(body?.subMeshes.map((sub) => [sub.indexStart, sub.indexCount])).toEqual([[0, 6], [30, 24], [66, 12]]);
-    expect(body?.alwaysSelectAsActiveMesh).toBe(true);
-    expect(body?.getTotalIndices()).toBe(KIT_HIDEABLE_REGION_IDS.length * 6);
+    // 구간마다 SubMesh를 두지 않고 보이는 구간을 이어 붙인 인덱스 버퍼 하나로 만든다(WebGL2 hull 외곽선이 두 번째 이후 SubMesh를 깨뜨린다)
+    expect(body?.subMeshes.map((sub) => [sub.indexStart, sub.indexCount])).toEqual([[0, 42]]);
+    expect(body?.alwaysSelectAsActiveMesh).toBe(false);
     expect(KIT_HIDEABLE_REGION_IDS.indexOf("forearm.L") * 6).toBe(30);
+    const full = Array.from(partOf((await loaded({ partIds: ["hair/soft-bob", "irises/round-large"] })).rig, "skin").meshes[0]?.getIndices() ?? []);
+    expect(Array.from(body?.getIndices() ?? [])).toEqual([...full.slice(0, 6), ...full.slice(30, 54), ...full.slice(66, 78)]);
+    expect(handle.rig.parts.find((part) => part.role === "skin")?.meshes[0]?.getTotalIndices()).toBe(42);
     expect(handle.loadedPartIds()).toContain("top/tee");
   });
 
@@ -378,7 +381,7 @@ describe("키트 몸 가림(TS_Body SubMesh)", () => {
     expect(sceneCounts(harness)).toEqual(EMPTY_SCENE);
   });
 
-  it("내보낸 GLB는 숨긴 영역의 삼각형을 뺀다(SubMesh 구간 = glTF 프리미티브) — 현재 influence는 weights로 나간다", async () => {
+  it("내보낸 GLB는 숨긴 영역의 삼각형을 뺀다(보이는 삼각형을 이은 인덱스 버퍼 = glTF 프리미티브 하나) — 현재 influence는 weights로 나간다", async () => {
     const { rig, harness } = await loaded();
     const name = "param:height:+";
     const manager = partOf(rig, "skin").meshes[0]?.morphTargetManager;
@@ -395,7 +398,7 @@ describe("키트 몸 가림(TS_Body SubMesh)", () => {
     const bodyNode = json.nodes.find((node) => node.name === "TS_Body" && node.mesh !== undefined);
     const bodyMesh = bodyNode?.mesh === undefined ? undefined : json.meshes[bodyNode.mesh];
     const counts = (bodyMesh?.primitives ?? []).map((primitive) => json.accessors[primitive.indices]?.count);
-    expect(counts).toEqual([6, 24, 12]);
+    expect(counts).toEqual([42]);
     // 현재 influence(0.5)가 메시의 morph weights로 나간다
     expect(bodyMesh?.weights?.[index]).toBeCloseTo(0.5, 6);
     // 베이스 스켈레톤 하나만 내보낸다
@@ -537,7 +540,7 @@ describe("키트 증분 교체(update)", () => {
 
     // 몸 가림 재계산: 신발이 빠져 foot.L/R이 다시 보인다(남은 숨김은 torso·upperArm·pelvis·thigh)
     const body = partOf(rig, "skin").meshes[0];
-    expect(body?.subMeshes.map((sub) => [sub.indexStart, sub.indexCount])).toEqual([[0, 6], [30, 24], [66, 24]]);
+    expect(body?.subMeshes.map((sub) => [sub.indexStart, sub.indexCount])).toEqual([[0, 54]]);
     expect([...(report.bodyMask?.hiddenRegions ?? [])].sort()).toEqual(["pelvis", "thigh.L", "thigh.R", "torso", "upperArm.L", "upperArm.R"]);
     // 새 헤어도 베이스 스켈레톤을 따라간다
     moveBone(rig, "mixamorig:Head", [0, 0.5, 0]);
@@ -620,6 +623,64 @@ describe("키트 증분 교체(update)", () => {
 });
 
 // ---------------------------------------------------------------- 실패 경로
+
+describe("키트 로드: 씬에 올리는 순간부터 그리지 않는다(비동기 조립 중 깜빡임·겹침 방지)", () => {
+  /**
+   * 씬에 메시가 올라오는 **그 순간**의 상태를 기록한다. GLB 컨테이너는 `addAllToScene` → `scene.addMesh`로 올라오고,
+   * `onNewMeshAddedObservable`은 늦게 통지돼 그때는 이미 `attach`가 끝나 있으므로 `addMesh` 자체를 감싼다.
+   */
+  function recordAdds(harness: KitHarness) {
+    const adds: Array<{ readonly name: string; readonly visible: boolean; readonly layerMask: number }> = [];
+    const { scene } = harness;
+    const original = scene.addMesh.bind(scene);
+    scene.addMesh = (mesh, recursive) => {
+      const state = { name: mesh.name, visible: mesh.isVisible, layerMask: mesh.layerMask };
+      original(mesh, recursive);
+      // 컨테이너를 읽는 동안 메시를 만들 때의 호출은 장면이 막아 실제로는 들어가지 않는다 — 장면에 들어간 호출만 센다
+      if (scene.meshes.includes(mesh)) adds.push(state);
+    };
+    return adds;
+  }
+
+  it("메시는 올라오는 순간 숨겨져 있고 역할 재질을 끼운 뒤에야 보인다(최초 로드)", async () => {
+    const { fixture, harness } = await setup();
+    const adds = recordAdds(harness);
+    const handle = await harness.load(fixture);
+    expect(adds.length).toBeGreaterThan(0);
+    expect(adds.filter((add) => add.visible)).toEqual([]);
+    for (const part of handle.rig.parts) for (const mesh of part.meshes) expect(mesh.isVisible, mesh.name).toBe(true);
+  });
+
+  it("증분 교체로 올라오는 새 파츠도 같다: 올라오는 순간 숨김, 합친 뒤 보임, 기존 파츠가 숨겨진 상태는 되돌리지 않는다", async () => {
+    const { harness, handle, rig } = await loaded();
+    const next = await buildKitFixture({ partIds: ["hair/hime-cut", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"] });
+    for (const [url, bytes] of next.files) harness.store.set(url, bytes);
+    // 플랜이 숨긴 기존 파츠 — 새 파츠를 합치면서 이 가시성을 건드리면 안 된다
+    const top = partOf(rig, "top");
+    for (const mesh of top.meshes) mesh.isVisible = false;
+    const adds = recordAdds(harness);
+    await handle.update(next.plan);
+    expect(adds.length).toBeGreaterThan(0);
+    expect(adds.filter((add) => add.visible)).toEqual([]);
+    for (const mesh of partOf(rig, "hair").meshes) expect(mesh.isVisible, mesh.name).toBe(true);
+    for (const mesh of top.meshes) expect(mesh.isVisible, mesh.name).toBe(false);
+  });
+
+  it("meshLayerMask를 주면 올라오는 순간 이미 뷰포트 카메라 마스크(0x0fffffff) 밖이고 조립 뒤에도 유지된다(썸네일 임시 리그)", async () => {
+    const { fixture, harness } = await setup();
+    const adds = recordAdds(harness);
+    const thumbnailMask = 0x10000000;
+    const handle = await harness.load(fixture, { meshLayerMask: thumbnailMask });
+    expect(adds.length).toBeGreaterThan(0);
+    for (const add of adds) expect(add.layerMask & 0x0fffffff, add.name).toBe(0);
+    for (const part of handle.rig.parts) for (const mesh of part.meshes) expect(mesh.layerMask, mesh.name).toBe(thumbnailMask);
+  });
+
+  it("마스크를 주지 않으면 레이어 마스크를 건드리지 않는다(주 리그는 뷰포트 카메라에 보인다)", async () => {
+    const { handle } = await loaded();
+    for (const part of handle.rig.parts) for (const mesh of part.meshes) expect(mesh.layerMask & 0x0fffffff, mesh.name).toBe(0x0fffffff);
+  });
+});
 
 describe("키트 로드 실패 경로(fail-visible, 장면 정리)", () => {
   async function expectFailure(options: KitFixtureOptions, code: string, includes: string, mutatePlan: (plan: KitPlan) => KitPlan = (plan) => plan): Promise<LabFailure> {

@@ -1,9 +1,9 @@
 /**
- * 키트 몸 가림의 순수 범위 계산(계약 4.6). Babylon을 모른다 — `render/babylon/kit-region-mask.ts`가 이 결과로 `TS_Body`의 SubMesh를 만든다.
+ * 키트 몸 가림의 순수 범위 계산(계약 4.6). Babylon을 모른다 — `render/babylon/kit-region-mask.ts`가 이 결과로 `TS_Body`의 보이는 인덱스 구간을 이어 붙인다(SubMesh는 하나).
  *
  * 베이스 GLB의 `TS_Body` 인덱스 버퍼는 영역 순서로 정렬되어 있고 `kit.json`의 `bodyRegions`가 영역마다 연속 인덱스 범위
  * (`indexStart`, `indexCount`)를 적는다. 파츠가 `hides`로 영역을 선언하면 그 영역들의 **합집합**만 빼고 나머지 연속 구간(run)만 그린다.
- * 인접한 보이는 영역은 한 run으로 합쳐 드로우 콜(SubMesh) 수를 줄인다.
+ * 인접한 보이는 영역은 한 run으로 합쳐 이어 붙이는 복사 횟수를 줄인다.
  */
 import type { KitHideableRegionId } from "../contracts";
 

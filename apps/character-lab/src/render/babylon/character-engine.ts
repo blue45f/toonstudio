@@ -32,7 +32,7 @@ import { MATERIAL_PRESETS, hexToLinear, toonShadeTint } from "../material-preset
 import { describeMorphTextureMode } from "../morph-limits";
 import { generateMouthMask, MOUTH_MASK_SIZE } from "../mouth-shade";
 import { mapPresetToOpenPbr } from "../openpbr-mapping";
-import { hullOutlineAllowed } from "../outline-policy";
+import { hullOutlineAllowed, hullOutlineWidthScale } from "../outline-policy";
 import { createFeatureReport, featureActive, featureOff, featureUnavailable } from "../scene-features";
 import { normalizeToonLighting } from "../toon-reference";
 
@@ -482,8 +482,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const part of parts) hooks.applyPreset(part, part.materialPreset);
   }
 
-  /** 키트 로더로 리그를 만든다. 주 리그(핸들 보관)와 썸네일 임시 리그(리그만 쓴다)가 공유한다. */
-  private async buildKit(plan: KitPlan, hooks: RigMaterialHooks): Promise<KitRigHandle> {
+  /**
+   * 키트 로더로 리그를 만든다. 주 리그(핸들 보관)와 썸네일 임시 리그(리그만 쓴다)가 공유한다.
+   * `isolated`면 파일이 씬에 올라오는 순간부터 뷰포트 카메라가 보지 못하게 한다(`isolateTemporaryRig`는 조립이 끝난 뒤에야 불려 늦다 —
+   * 그 사이 비동기 GLB 로드마다 프레임이 그려져 임시 캐릭터가 주 캐릭터 위에 겹쳐 보였다).
+   */
+  private async buildKit(plan: KitPlan, hooks: RigMaterialHooks, options: { readonly isolated?: boolean } = {}): Promise<KitRigHandle> {
     const materialOptions = this.materialOptions();
     let handle: KitRigHandle;
     try {
@@ -494,6 +498,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
         materials: hooks,
         verifyIntegrity: this.deps.verifyPackageSha ?? true,
         now: this.now(),
+        ...(options.isolated ? { meshLayerMask: THUMBNAIL_LAYER_MASK } : {}),
       });
     } catch (error) {
       // 받은 바이트가 손상됐을 수 있으므로 이 키트의 캐시를 비운다(다음 시도가 다시 받는다).
@@ -527,8 +532,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return bytes;
   }
 
-  /** 소스(절차·패키지·썸네일용 키트)에서 리그를 만든다. 주 리그와 썸네일 임시 리그가 공유한다. */
-  private async buildRig(source: CharacterSource, hooks: RigMaterialHooks): Promise<CharacterRig> {
+  /** 소스(절차·패키지·썸네일용 키트)에서 리그를 만든다. 주 리그와 썸네일 임시 리그가 공유한다(`isolated`는 썸네일 임시 리그). */
+  private async buildRig(source: CharacterSource, hooks: RigMaterialHooks, options: { readonly isolated?: boolean } = {}): Promise<CharacterRig> {
     const materialOptions = this.materialOptions();
     if (source.kind === "procedural") {
       const rig = bindProceduralModel(source.model, {
@@ -543,7 +548,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     // 썸네일 임시 리그 경로(주 리그의 키트는 `loadSourceExclusive`가 핸들을 보관하며 직접 만든다). 리그를 해제하면 키트 전체가 해제된다.
     if (source.kind === "kit") {
       this.rememberKitPlan(source.plan);
-      return (await this.buildKit(source.plan, hooks)).rig as CharacterRig;
+      return (await this.buildKit(source.plan, hooks, options)).rig as CharacterRig;
     }
     return this.loadPackage(source.plan, materialOptions, hooks);
   }
@@ -646,6 +651,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     if (!rig) return;
     const toon = this.shading.mode === "toon";
     const outline = toon ? this.shading.toon.outline : "none";
+    // 키트 hull은 Babylon 기본 깊이 오프셋(카메라 쪽으로 당김)을 끈다: 몸·속옷 hull이 꽉 낀 의상·신발(남성 부츠 발끝 등)을 뚫고 어두운 얼룩으로 비쳤다(실측, 0이면 사라짐).
+    if (outline === "hull" && rig.kind === "kit") {
+      const renderer = this.character.scene.getOutlineRenderer();
+      renderer.zOffset = 0;
+      renderer.zOffsetUnits = 0;
+    }
     for (const part of rig.parts) {
       // 베타 재질(NodeMaterial 툰·OpenPBR)은 만들어져 있고 요청된 때만 끼운다. 아니면 기본 경로(ShaderMaterial 툰·PBRMaterial).
       const nodeToon = toon && useBeta ? this.beta.nodeToonMaterial(part) : null;
@@ -653,13 +664,13 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       const material = toon ? (nodeToon ?? this.ensureToonMaterial(part, rig)) : (openPbr ?? part.pbr);
       // 기본 ShaderMaterial 툰은 `ensureToonMaterial`이 값을 넣지만 NodeMaterial 툰은 따로 넣어야 한다(램프 단계·림·얼굴 SDF 변경이 반영되도록).
       if (nodeToon) this.beta.updateNodeToon(part, this.toonValues(part, rig), this.toonTextures(part));
-      // 키트의 눈·입 안 계열 역할은 hull 외곽선을 켜지 않는다(A-5: 12 mm 눈에 4 mm hull이 붙으면 눈이 검은 고리로 덮인다). 절차 소스는 모든 파츠에 켠다.
+      // 키트의 눈·입 안 계열·머리·속옷은 hull 외곽선을 켜지 않고 몸은 얇게 그린다(`outline-policy.ts`). 절차 소스는 모든 파츠에 켠다.
       const hull = outline === "hull" && hullOutlineAllowed(rig.kind, part.role);
       for (const mesh of part.meshes) {
         mesh.material = material;
         mesh.renderOutline = hull;
         if (hull) {
-          mesh.outlineWidth = TOON_OUTLINE_WIDTH;
+          mesh.outlineWidth = TOON_OUTLINE_WIDTH * hullOutlineWidthScale(rig.kind, part.role);
           mesh.outlineColor.set(0.05, 0.04, 0.06);
         }
         if (outline === "edge") {
@@ -888,14 +899,15 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   /**
    * 지오메트리 프리셋 카드: `req.source`로 **임시 리그**를 만들어 `req.plan`을 적용해 그린 뒤 해제한다. 주 리그·마지막 플랜·
    * 그림자 캐스터·물리 바인딩은 건드리지 않는다. 임시 메시는 전용 레이어 마스크로 메인 카메라에서 숨기고 그림자를 받지 않는다
-   * (주 리그의 그림자 맵이 섞이지 않도록 그림자 맵 갱신도 하지 않는다).
+   * (주 리그의 그림자 맵이 섞이지 않도록 그림자 맵 갱신도 하지 않는다). 키트 임시 리그는 GLB를 비동기로 하나씩 올리므로 마스크를
+   * 조립이 끝난 뒤(`isolateTemporaryRig`)가 아니라 **씬에 올리기 전에** 로더가 건다(`buildKit`의 `isolated`).
    */
   private async renderTemporaryThumbnail(req: ThumbnailRequest, source: CharacterSource): Promise<CapturedRaster> {
     this.assertAlive();
     const holder: { rig: CharacterRig | null } = { rig: null };
     try {
       try {
-        holder.rig = await this.buildRig(source, this.materialHooks(() => holder.rig, false));
+        holder.rig = await this.buildRig(source, this.materialHooks(() => holder.rig, false), { isolated: true });
       } catch (error) {
         return toFailure(error, "thumbnail-source-failed", "썸네일용 임시 소스를 만들지 못했습니다.", this.now());
       }

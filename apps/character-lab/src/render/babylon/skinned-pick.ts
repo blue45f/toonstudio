@@ -20,7 +20,10 @@ import type { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import type { Node } from "@babylonjs/core/node.js";
 
 interface MeshPickCache {
-  /** 이 캐시의 인덱스가 만들어진 SubMesh 구간 배치(`start:count` 나열). 바뀌면(키트 몸 가림) 인덱스·묶음 AABB를 다시 만든다. */
+  /**
+   * 이 캐시의 인덱스가 만들어진 인덱스 버퍼 신원과 SubMesh 구간 배치(`start:count` 나열). 바뀌면(키트 몸 가림) 인덱스·묶음 AABB를 다시 만든다.
+   * 키트 몸 가림은 가려진 삼각형을 인덱스 버퍼에서 빼므로 구간 배치가 같아도(같은 삼각형 수) 버퍼가 갈리면 다시 만들어야 한다.
+   */
   readonly subMeshLayout: string;
   /** 스킨 행렬 스냅샷(스킨이 없으면 null) */
   skeletonMatrices: Float32Array | null;
@@ -69,13 +72,29 @@ function toIndexArray(source: ArrayLike<number> | null): IndexArray {
   return Array.from(source);
 }
 
+const indexBufferIds = new WeakMap<object, number>();
+let nextIndexBufferId = 1;
+
+/** 인덱스 배열의 신원(`setIndices`가 배열을 갈아 끼우면 길이가 같아도 달라진다). */
+function indexBufferIdOf(mesh: Mesh): number {
+  const indices = mesh.getIndices();
+  if (indices === null) return 0;
+  let id = indexBufferIds.get(indices);
+  if (id === undefined) {
+    id = nextIndexBufferId;
+    nextIndexBufferId += 1;
+    indexBufferIds.set(indices, id);
+  }
+  return id;
+}
+
 function subMeshLayoutOf(mesh: Mesh): string {
-  return mesh.subMeshes.map((subMesh) => `${subMesh.indexStart}:${subMesh.indexCount}`).join("|");
+  return `${indexBufferIdOf(mesh)}#${mesh.subMeshes.map((subMesh) => `${subMesh.indexStart}:${subMesh.indexCount}`).join("|")}`;
 }
 
 /**
- * pick 후보 인덱스. 메시의 SubMesh가 인덱스 버퍼 전체를 덮으면 인덱스 그대로이고, 일부만 덮으면(키트 몸 가림: 의상이 가린 영역의 SubMesh를 뺀다)
- * 덮인 구간의 삼각형만 모은다 — 렌더되지 않는 삼각형이 pick에 걸려 의상 뒤 몸이 먼저 맞는 일을 막는다.
+ * pick 후보 인덱스. 메시의 SubMesh가 인덱스 버퍼 전체를 덮으면 인덱스 그대로이고(키트 몸 가림도 가려진 삼각형을 버퍼에서 빼므로 여기에 해당한다),
+ * 일부만 덮으면 덮인 구간의 삼각형만 모은다 — 렌더되지 않는 삼각형이 pick에 걸려 의상 뒤 몸이 먼저 맞는 일을 막는다.
  * SubMesh가 하나도 없으면(전부 숨김) 후보가 없다.
  */
 function pickableIndices(mesh: Mesh): IndexArray {
