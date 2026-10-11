@@ -112,6 +112,10 @@
    7. 산출물의 소유권은 누구에게 있습니까? 마케팅 FAQ의 "You own what you create."는 계약상 유효한 진술입니까?
 4. 위 3번의 3·4가 부정적이면 Hyper3D 파생 파츠는 공개 저장소에서 빼고(비공개 저장소·배포 시 주입), 키트는 CC0/original 파츠만으로 구성한다.
 
+**2026-10-11 반입 결정 기록**: 사용자(계정 보유자)가 Hyper3D 유료 플랜(상업 이용 가능)임을 직접 확인했다고 알리고 키트 에셋 전체를 공개 저장소에 올리라고 지시해
+`apps/character-lab/public/assets/characters/toonstudio-kit-v1/`에 반입했다. 위 1~3번 가운데 **서면 확인(3)은 받지 않았다** — 특히 질문 4(공개 저장소 호스팅·수령자 고지, ToS §6.3)는 답이 없는 상태이고,
+이 위험은 사용자가 수용했다. 약관이 개정되거나 서면 답변이 부정적이면 4번의 대안(Hyper3D 파생 파츠 제외)으로 돌아간다. 반입된 파츠별 생성 id·판정은 `hyper3d_generations.json`·`hyper3d_sources.json`과 키트 `NOTICE.md`에 있다.
+
 ## 7. 생성 기록
 
 **전체 기록은 `tools/blender/character_kit/hyper3d_generations.json`이다**(2026-10-11 현재 110건: 생성 67건 + BANG 분리 43건; id·프롬프트·BANG 지시문·원본 SHA-256·결과 판정). 아래 표는 그 가운데 최초 파일럿 4건의 상세이고, 이후 건은 다음이 다르다.
