@@ -452,7 +452,8 @@ describe("StudioGodotSpaceEmbed — 4단계 공간·배치", () => {
     await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
     await screen.findByTestId("godot-space-tab-street");
 
-    fireEvent.click(screen.getByRole("button", { name: "편집 모드 켜기" }));
+    // 배치 패널은 카탈로그·배치 조회가 끝난 뒤에야 그려지므로(느린 CI에서 경쟁) 버튼이 나타날 때까지 기다린다.
+    fireEvent.click(await screen.findByRole("button", { name: "편집 모드 켜기" }));
     act(() =>
       hostBridge().onLayoutSelection(
         JSON.stringify({
