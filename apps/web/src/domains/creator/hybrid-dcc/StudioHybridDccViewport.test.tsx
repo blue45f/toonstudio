@@ -69,10 +69,10 @@ vi.mock("@react-three/drei/core/PerformanceMonitor.js", () => ({ PerformanceMoni
 vi.mock("@react-three/drei/core/PerspectiveCamera.js", () => ({ PerspectiveCamera: () => null }));
 vi.mock("@react-three/drei/core/TransformControls.js", () => ({ TransformControls: () => null }));
 
-const VIEWPORT_SOURCE = readFileSync(
-  resolve(import.meta.dirname, "./StudioHybridDccViewportCore.tsx"),
-  "utf8",
-);
+// 코어와 분리된 장면 보조 조각(로컬 환경맵·오류 경계)까지 한 소스로 본다.
+const VIEWPORT_SOURCE = ["./StudioHybridDccViewportCore.tsx", "./StudioHybridDccViewportParts.tsx"]
+  .map((file) => readFileSync(resolve(import.meta.dirname, file), "utf8"))
+  .join("\n");
 
 function workspaceWithMesh(
   mesh: StudioEditableMesh,

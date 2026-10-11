@@ -1461,6 +1461,7 @@ test("historical adoption and post-baseline relations exactly partition runtime 
     "studio_capability_ledger",
     "studio_compatibility_report",
     "studio_external_file_binding",
+    "studio_godot_space_layout",
     "studio_mutation_receipt",
     "studio_operation",
     "studio_pinned_review_share",
