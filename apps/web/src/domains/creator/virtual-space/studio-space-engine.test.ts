@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { resolveStudioSpaceEngine } from "./studio-space-engine";
 
-describe("resolveStudioSpaceEngine (5단계 전환 규칙)", () => {
+describe("resolveStudioSpaceEngine (5단계 전환 규칙 + §15 게스트 기본값 전환)", () => {
   it("명시 파라미터가 기본값보다 우선한다", () => {
     expect(
       resolveStudioSpaceEngine("?engine=classic", { signedIn: true, personal: false }),
@@ -27,9 +27,9 @@ describe("resolveStudioSpaceEngine (5단계 전환 규칙)", () => {
     expect(resolveStudioSpaceEngine("", { signedIn: true, personal: true })).toBe("godot");
   });
 
-  it("프로젝트 공간의 게스트는 클래식이 기본값이다 (게스트 티켓 발급 불가 — 서버 계약)", () => {
-    expect(resolveStudioSpaceEngine("", { signedIn: false, personal: false })).toBe("classic");
-    expect(resolveStudioSpaceEngine("?lobby=1", { signedIn: false, personal: false })).toBe("classic");
+  it("프로젝트 공간의 게스트도 Godot가 기본값이다 (§14 게스트 티켓 계약 + §15 전환)", () => {
+    expect(resolveStudioSpaceEngine("", { signedIn: false, personal: false })).toBe("godot");
+    expect(resolveStudioSpaceEngine("?lobby=1", { signedIn: false, personal: false })).toBe("godot");
   });
 
   it("알 수 없는 파라미터 값은 기본 규칙으로 떨어진다", () => {
@@ -38,7 +38,7 @@ describe("resolveStudioSpaceEngine (5단계 전환 규칙)", () => {
     ).toBe("godot");
     expect(
       resolveStudioSpaceEngine("?engine=", { signedIn: false, personal: false }),
-    ).toBe("classic");
+    ).toBe("godot");
   });
 });
 

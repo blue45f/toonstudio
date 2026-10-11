@@ -355,8 +355,9 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
 
   // 무대 엔진 결정 (재개발 5단계 — 구 클라이언트 대체): 기본값은 Godot이고
   // 클래식(기존 웹 공간)은 폴백으로 동결한다. 규칙의 정본은
-  // studio-space-engine.ts: 명시 파라미터가 우선하고, 로그인·개인 공간은
-  // Godot, 프로젝트 공간 게스트는 게스트 티켓 발급이 없어 클래식을 유지한다.
+  // studio-space-engine.ts: 명시 파라미터가 우선하고, 기본값은 로그인·
+  // 개인·게스트 전 진입에서 Godot다 (게스트 티켓 계약 §14 + 기본값
+  // 전환 §15). 클래식은 `?engine=classic` 명시 진입으로만 열린다.
   const spaceEngine = resolveStudioSpaceEngine(location.search, {
     signedIn: session.ready && Boolean(session.data),
     personal,
