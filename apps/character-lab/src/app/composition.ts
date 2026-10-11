@@ -7,7 +7,7 @@
  *  - 스토어: state/lab-store + 페인트 undo/redo 핸들러(paint-bridge → 현재 엔진 텍스처 업로드)
  *  - 카탈로그: presets/APPEARANCE_PRESETS(64) + animation/presets/PERFORMANCE_PRESETS(30)
  *  - 엔진: render/babylon-character-engine 동적 import(엔진 청크 분리, WebGPU/WebGL2 명시 선택만)
- *  - 부팅 기본 소스: `DEFAULT_BOOT_SOURCE`(현재 절차 소스, 키트 에셋 안착 뒤 키트로 전환). 키트 경로(부팅 레시피 `createKitDefaultRecipe()`)는
+ *  - 부팅 기본 소스: `DEFAULT_BOOT_SOURCE`(키트 에셋이 안착해 키트, 2026-10-11). 키트 경로(부팅 레시피 `createKitDefaultRecipe()`)는
  *    `defaultSource: "kit"` 또는 사용자 명시 선택으로 쓰며 kit.json 로더·계획 빌더는 domains/authored에서 꽂는다.
  *    키트 로드가 실패하면 failure로 보이게 두고 절차 소스로 자동 전환하지 않는다(절차 소스는 사용자가 명시 선택할 때만).
  *  - 절차 소스(명시 선택·테스트): domains/humanoid buildHumanoidModel + domains/outfit(createOutfitBuilder), 재생성 키는 humanoid geometryKeyOf
@@ -53,11 +53,10 @@ import type { SubdivisionLevels } from "./shell/procedural-source";
 export type BootSource = "procedural" | "kit";
 
 /**
- * 앱이 처음 뜰 때 쓰는 기본 소스. 키트 에셋(`public/assets/characters/toonstudio-kit-v1/`)이 아직 없어
- * 키트로 부팅하면 엔진 선택 뒤 `kit-manifest-fetch-failed` 배너가 뜨므로 절차 소스를 유지한다.
- * 키트 에셋 안착 시 'kit'로 바꾼다 — KT-11.
+ * 앱이 처음 뜰 때 쓰는 기본 소스. 키트 에셋(`public/assets/characters/toonstudio-kit-v1/`)이 안착(2026-10-11, KT-11)해 모듈식 키트로 부팅한다.
+ * 키트 에셋이 없는 빌드에서는 엔진 선택 뒤 `kit-manifest-fetch-failed` 배너와 사유가 보이고 절차 소스로 자동 전환하지 않는다(무음 대체 금지).
  */
-export const DEFAULT_BOOT_SOURCE: BootSource = "procedural";
+export const DEFAULT_BOOT_SOURCE: BootSource = "kit";
 
 /** 절차 휴머노이드 생성 시드(결정성: 같은 레시피 → 같은 바이트). */
 export const PROCEDURAL_SEED = 20261001;

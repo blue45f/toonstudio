@@ -135,7 +135,7 @@ rapier 브라우저 성능, GLB 실파일 재import·외부 뷰어 sparse morph,
 
 ## 9. 모듈식 캐릭터 키트 소스 (2026-10-08)
 
-상태: **앱 통합 코드는 들어갔고 에셋은 아직 안착하지 않았다**(§9.5). 계약 정본은 [`docs/authored-kit-spec.md`](docs/authored-kit-spec.md)이며, 코드와 문서가 다르면 코드가 기준이다.
+상태: **앱 통합 코드와 에셋이 모두 들어갔다**(2026-10-11, §9.5). 계약 정본은 [`docs/authored-kit-spec.md`](docs/authored-kit-spec.md)이며, 코드와 문서가 다르면 코드가 기준이다.
 
 ### 9.1 무엇인가
 
@@ -154,18 +154,24 @@ morph는 계약 이름(`param:<키>:±`, `facs:<유닛>`)을 그대로 쓰므로
 
 - **뷰어** `apps/character-lab/scripts/kit-preview.mjs` — Blender GLB를 앱의 실제 렌더러(`BabylonCharacterEngine`)로 렌더해 PNG·접촉 시트·JSON 요약을 만든다(장당 1~4초, 소프트웨어 WebGL2).
   베이스에 키트 이름 메시(`TS_Body`·`TS_Head`)가 있으면 **키트 소스 경로**(`loadSource({ kind: "kit" })`)로, 아니면 기존 병합 경로로 올린다. 사용법·옵션·종료 코드는 [`docs/kit-preview.md`](docs/kit-preview.md)를 본다(세부는 거기에만 둔다).
-- **Blender 제작 도구**: `tools/blender/character_kit/`(사용법은 그 안의 `README.md`)와 진입점 `scripts/blender/build_character_kit.py`는 **키트 에셋을 안착시키는 커밋에 함께 올라간다**
-  (독립 심사가 끝나지 않은 단계 모듈을 먼저 올리지 않는다). 이 커밋에는 앱 통합·뷰어·검증기·문서가 있고, 제작 도구가 올라오기 전에는 저장소에 없다.
+- **Blender 제작 도구**: `tools/blender/character_kit/`(사용법은 그 안의 `README.md`)와 진입점 `scripts/blender/build_character_kit.py`가 저장소에 있고, 이 도구로 만든 키트 에셋이 `public/assets/characters/toonstudio-kit-v1/`에 안착했다(§9.5).
 
 ### 9.4 현재 상태와 프로브
 
-- **부팅 기본 소스는 절차(procedural)다.** `src/app/composition.ts`의 `DEFAULT_BOOT_SOURCE = "procedural"`이고, 키트 에셋이 안착하면(KT-11) 이 상수를 `"kit"`로 바꾼다.
-  키트는 PackagePanel에서 사용자가 명시적으로 고르거나 `composeCharacterLab({ defaultSource: "kit" })`로만 쓴다.
+- **부팅 기본 소스는 키트(kit)다**(2026-10-11, KT-11). `src/app/composition.ts`의 `DEFAULT_BOOT_SOURCE = "kit"`이고, 절차 소스는 제작 패키지 탭의 "절차 소스로 전환"으로만 쓴다(자동 전환 없음).
+  절차 소스는 PackagePanel에서 사용자가 명시적으로 고르거나 `composeCharacterLab({ defaultSource: "procedural" })`로만 쓴다.
 - 키트 에셋이 없는 빌드에서 키트 소스를 고르면 `kit-manifest-fetch-failed` 한글 사유가 배너/PackagePanel에 보이고 재시도 버튼만 있다 — **정상 동작**이며 절차 소스로 자동 전환하지 않는다.
-- 브라우저 프로브(`scripts/browser-probe.mjs`)의 단계는 절차 소스 기준이라 키트 에셋 없이 통과해야 한다. 부팅 기본이 `"kit"`로 바뀐 뒤에는 에셋이 있는 빌드에서 통과해야 하며,
+- 브라우저 프로브(`scripts/browser-probe.mjs`)의 단계는 절차 소스 기준으로 쓰였고, 부팅 기본이 `"kit"`가 된 지금은 에셋이 있는 빌드에서 통과해야 하며,
   에셋이 없으면 엔진 선택 직후 `[kit-manifest-fetch-failed]` 배너가 보이는 것이 정상이고 그 뒤 ready를 전제로 한 단계는 실패/건너뜀이 된다(프로브 결함이 아니라 에셋 부재). 키트 렌더의 실브라우저 확인은 프로브가 아니라 뷰어가 한다.
 - 키트 항목별 구현·검증 상태와 **브라우저 미검증 목록**은 `docs/parity/render.md` §10에 있다.
 
-### 9.5 에셋 안착 상태 (2026-10-08 확인)
+### 9.5 에셋 안착 상태 (2026-10-11 확인)
 
-`public/assets/characters/`에는 `avatar-orion-authored/`·`reference-character/`·`index.json`만 있고 `toonstudio-kit-v1/`은 **없다**(`ls`로 확인). 키트 제작(Blender)과 `kit.json` 조립·SHA/용량 기록은 리드 단계(KT-11)에서 한다.
+`public/assets/characters/toonstudio-kit-v1/`에 키트가 들어갔다: 베이스 GLB 2(`bases/female.glb`·`male.glb`) + 파츠 GLB 63(`parts/<베이스>/<슬롯>/<이름>.glb`: 상의 5·하의 5·신발 4·헤어 7·소품 6·홍채 5, 베이스마다) + `kit.json` + `NOTICE.md`, 합계 49.6 MiB.
+검증기 V1~V20은 오류 0, 경고 7(눈썹 델타 0·속눈썹 변위 차·머리 UV 늘어짐으로 의도된 것)이고 계약 어휘 32개가 두 베이스 모두 변형으로 제공된다(`unavailable` 없음). 제작 도구·재현 절차는 `tools/blender/character_kit/README.md`다.
+
+- 출처: 몸·머리·홍채는 Human Base Meshes v1.4.1(CC0), 안경·귀걸이·초커와 후디의 후드는 이 저장소가 만든 원본이고, 나머지 의상·헤어·신발·소품은 Hyper3D(Rodin Gen-2.5) 생성물에서 리타깃한 파생물이다.
+  Hyper3D 파생 파츠의 공개 저장소 반입은 사용자가 유료 플랜(상업 이용 가능)임을 확인하고 지시해 이루어졌다. 서면 확인(`docs/hyper3d-terms-record.md` §6)은 받지 않았다.
+- 실브라우저 확인(2026-10-11, Apple M2 Max · ANGLE Metal · WebGL2, 개발 서버): 키트 부팅·상의 5종 교체·두 베이스 전환이 동작한다. **키트 몸(피부)의 hull 외곽선이 이 GPU에서 맨팔·손에 무지개 줄무늬를 만들어**
+  `render/outline-policy.ts`가 키트의 피부 hull을 켜지 않게 우회했다(근거 3, 원인은 미확정). 같은 GPU에서 절차 소스의 hull과 키트의 의상·헤어·신발 hull은 정상이다.
+- 아직 브라우저로 확인하지 않은 것: WebGPU 경로, 키트 파츠 조합 전체(소수 조합만 확인), 물리(헤어·의상 체인)와 키트 파츠의 상호작용.
