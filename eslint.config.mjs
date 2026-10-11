@@ -29,6 +29,7 @@ export default defineConfig(
     // 위와 같은 이유로 호스트 ESLint 대상에서 제외한다.
     'apps/web/public/godot-space/**',
     'apps/web/public/play-godot/**',
+    'apps/web/public/cuts-godot/**',
     'crates/studio-engine-vello/pkg/**',
     'crates/studio-engine-vello/pkg-gpu/**',
     // 에이전트 워크플로가 격리 작업용으로 만드는 임시 git worktree(전역 gitignore 대상이라
