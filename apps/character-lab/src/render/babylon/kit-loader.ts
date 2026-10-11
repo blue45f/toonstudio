@@ -84,6 +84,12 @@ export interface KitLoadDeps {
   /** 결정적 시각(epoch ms). 생략하면 호출 시점의 `Date.now()` */
   readonly now?: number;
   readonly parallelism?: number;
+  /**
+   * 파일을 씬에 올리기 **전에** 모든 메시에 거는 레이어 마스크(썸네일 임시 리그). GLB는 파일마다 비동기로 열려 리그가 다 조립되기까지 수십~수백 ms가
+   * 걸리는데, 그동안 올라온 메시가 뷰포트 카메라 마스크(`0x0fffffff`)에 걸리면 임시 캐릭터가 주 캐릭터 위에 겹쳐 그려진다(피부 흰빛·부츠 겹침·얼룩).
+   * 생략하면 마스크를 건드리지 않는다. 썸네일 캡처는 `renderList`로 그리므로 마스크와 무관하다.
+   */
+  readonly meshLayerMask?: number;
 }
 
 export interface KitUpdateReport {
@@ -494,6 +500,13 @@ class KitAssembler implements KitRigHandle {
     try {
       // 로드를 기다리는 동안 리그가 해제됐을 수 있다 — 해제된 리그에는 아무것도 붙이지 않는다.
       this.assertAlive();
+      // 씬에 올리는 순간부터 그리지 않는다. 파일을 순서대로 여는 사이(`await`마다 프레임이 그려진다) 아직 역할 재질·틴트·몸 가림이 정해지지 않은
+      // 메시가 기본 glTF 재질로 비치면 주 리그의 부분 조립 상태가 깜빡이고, 썸네일 임시 리그는 주 캐릭터와 겹쳐 그려진다.
+      // 가시성은 `attach`가 재질을 끼운 뒤 같은 동기 구간에서 되돌린다.
+      for (const mesh of container.meshes) {
+        if (this.deps.meshLayerMask !== undefined) mesh.layerMask = this.deps.meshLayerMask;
+        mesh.isVisible = false;
+      }
       container.addAllToScene();
       return this.inspect(part, container, isBase, plan);
     } catch (error) {
@@ -764,6 +777,8 @@ class KitAssembler implements KitRigHandle {
           mesh.material = pbr;
           mesh.metadata = rigMeshMetadata(partId, group.role, materialId, false);
           mesh.receiveShadows = true;
+          // `open`이 숨겨 둔 메시를 재질을 끼운 지금 보이게 한다(이후 가시성은 플랜이 정한다).
+          mesh.isVisible = true;
           const manager = mesh.morphTargetManager;
           if (!manager) continue;
           manager.useTextureToStoreTargets = true;

@@ -232,10 +232,10 @@ describe("GLB 내보내기: 키트 소스(조립된 장면 + morph weights + 몸
     expect(new Set(skinned.map((node) => node.skin))).toEqual(new Set([0]));
   });
 
-  it("SubMesh로 숨긴 몸 삼각형은 내보낸 GLB에서 빠진다(구간 = glTF 프리미티브), 가림이 없으면 몸 전체가 나온다", async () => {
+  it("가려진 몸 삼각형은 내보낸 GLB에서 빠진다(보이는 삼각형을 이은 프리미티브 하나), 가림이 없으면 몸 전체가 나온다", async () => {
     const dressed = await exportKit(KIT_REQUIRED_PRESETS);
     // 합성 몸은 영역당 삼각형 2개(인덱스 6): neck / forearm.L~hand.R / calf.L·R 세 구간
-    expect(bodyPrimitiveCounts(dressed.json)).toEqual([6, 24, 12]);
+    expect(bodyPrimitiveCounts(dressed.json)).toEqual([42]);
     const bare = await exportKit([]);
     expect(bodyPrimitiveCounts(bare.json)).toEqual([90]);
   });

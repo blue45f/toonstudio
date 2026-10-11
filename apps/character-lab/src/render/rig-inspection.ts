@@ -30,9 +30,9 @@ export interface RigPartInspection {
   readonly hasAlbedoTexture: boolean;
   /** 키트 파츠의 색 틴트 모드(절차·제작 패키지는 없음) */
   readonly tintMode?: "recolor" | "fixed";
-  /** 메시별 SubMesh 수(키트 몸 가림이 만든 구간 수 확인). 스킨 메시는 하나가 기본이다. */
+  /** 메시별 SubMesh 수. 키트 몸 가림도 보이는 삼각형을 이은 인덱스 버퍼 하나라 스킨 몸은 늘 1이다(구간 수는 `BodyMaskReport.visibleRuns`). */
   readonly subMeshCountsByMesh?: readonly number[];
-  /** 메시별 `alwaysSelectAsActiveMesh`(키트 로더가 둔 값을 엔진이 덮어쓰지 않는지 확인) */
+  /** 메시별 `alwaysSelectAsActiveMesh`(키트 몸은 SubMesh가 하나라 false — 엔진이 로더의 값을 덮어쓰지 않는지 확인) */
   readonly alwaysSelectAsActiveByMesh?: readonly boolean[];
   /** 메시별 `metadata.partId`(규약 밖 metadata면 -1) */
   readonly meshMetadataPartIds: readonly number[];
