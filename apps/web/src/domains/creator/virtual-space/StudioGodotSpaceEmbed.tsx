@@ -22,6 +22,20 @@ import {
   type GodotMeetingRoute,
 } from "./studio-godot-meeting-session";
 import { StudioGodotMeetingPanel } from "./StudioGodotMeetingPanel";
+import {
+  fetchGodotSpaceCatalog,
+  fetchGodotSpaceLayout,
+  isGodotSpaceLayoutConflict,
+  saveGodotSpaceLayout,
+  type GodotSpaceDefinition,
+} from "./studio-godot-space";
+import {
+  StudioGodotLayoutPanel,
+  type GodotLayoutCommand,
+  type GodotLayoutLoadState,
+  type GodotLayoutSaveState,
+  type GodotLayoutSelection,
+} from "./StudioGodotLayoutPanel";
 
 /**
  * Godot 무대 임베드 셸 (가상스튜디오 재개발 2단계 — DESIGN §4 이층 구조).
@@ -56,6 +70,11 @@ interface TsvsGodotFrameWindow {
   __tsvs_requestReconnect?: () => void;
   __tsvs_sendSignal?: (json: string) => void;
   __tsvs_showBubble?: (json: string) => void;
+  // 4단계: 배치 저작 채널 (셸→무대).
+  __tsvs_setEditMode?: (enabled: boolean) => void;
+  __tsvs_applyLayout?: (json: string) => void;
+  __tsvs_layoutCommand?: (json: string) => void;
+  __tsvs_notifyLayout?: (json: string) => void;
 }
 
 interface TsvsHostBridge {
@@ -66,6 +85,10 @@ interface TsvsHostBridge {
   onProximityChanged: (json: string) => void;
   onSignal: (json: string) => void;
   onBubble: (json: string) => void;
+  // 4단계: 배치 저작 통지 (무대→셸).
+  onLayoutChanged: (json: string) => void;
+  onLayoutSelection: (json: string) => void;
+  onLayoutRemote: (json: string) => void;
 }
 
 /** Godot onZoneChanged 통지의 셸 측 표현 (구역 판정은 무대 소유). */
@@ -170,22 +193,172 @@ export function StudioGodotSpaceEmbed({
   const iceLeaseRef = useRef<StudioVoiceIcePolicyLease | null>(null);
   const iceLeasePromiseRef = useRef<Promise<void> | null>(null);
 
+  // 4단계: 공간 정의·배치 저작 상태. 정의 해석 순서: 작품별 저장본(API) →
+  // 정적 기본값(spaces.json). 무대에는 세션 주입 또는 applyLayout으로 전달한다.
+  const [catalog, setCatalog] = useState<readonly GodotSpaceDefinition[]>([]);
+  const [spaceId, setSpaceId] = useState("studio-room");
+  const spaceIdRef = useRef(spaceId);
+  spaceIdRef.current = spaceId;
+  const [spaceDef, setSpaceDef] = useState<GodotSpaceDefinition | null>(null);
+  const spaceDefRef = useRef<GodotSpaceDefinition | null>(null);
+  const [layoutRevision, setLayoutRevision] = useState(0);
+  const layoutRevisionRef = useRef(0);
+  const [layoutDirty, setLayoutDirty] = useState(false);
+  const layoutDirtyRef = useRef(false);
+  layoutDirtyRef.current = layoutDirty;
+  const [layoutEditMode, setLayoutEditMode] = useState(false);
+  const [layoutSelection, setLayoutSelection] =
+    useState<GodotLayoutSelection | null>(null);
+  const [layoutLoadState, setLayoutLoadState] =
+    useState<GodotLayoutLoadState>("loading");
+  const [layoutSaveState, setLayoutSaveState] =
+    useState<GodotLayoutSaveState>("idle");
+  const [layoutFetchNonce, setLayoutFetchNonce] = useState(0);
+
   const frameWindow = useCallback((): TsvsGodotFrameWindow | null => {
     const frame = iframeRef.current;
     if (!frame?.contentWindow) return null;
     return frame.contentWindow as unknown as TsvsGodotFrameWindow;
   }, []);
 
+  // 해석된 정의를 상태·무대 양쪽에 반영한다. 세션 주입 전이면 무대 호출은
+  // 무대가 버리고(주입 페이로드가 정의를 싣는다), 접속 중이면 즉시 적용된다.
+  const applyResolvedLayout = useCallback(
+    (definition: GodotSpaceDefinition, revision: number) => {
+      spaceDefRef.current = definition;
+      setSpaceDef(definition);
+      layoutRevisionRef.current = revision;
+      setLayoutRevision(revision);
+      setLayoutDirty(false);
+      setLayoutLoadState("ready");
+      frameWindow()?.__tsvs_applyLayout?.(
+        JSON.stringify({ spec: definition }),
+      );
+    },
+    [frameWindow],
+  );
+
+  // 정적 카탈로그는 빌드와 함께 배포되는 기본 정의 묶음이다.
+  useEffect(() => {
+    let cancelled = false;
+    fetchGodotSpaceCatalog()
+      .then((spaces) => {
+        if (!cancelled) setCatalog(spaces);
+      })
+      .catch(() => {
+        if (!cancelled) setLayoutLoadState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [layoutFetchNonce]);
+
+  // 공간이 바뀌거나 재조회가 요청되면 저장본을 다시 해석한다.
+  useEffect(() => {
+    const fallback = catalog.find((def) => def.id === spaceId) ?? null;
+    if (!fallback) return;
+    if (localOnly) {
+      applyResolvedLayout(fallback, 0);
+      return;
+    }
+    let cancelled = false;
+    setLayoutLoadState("loading");
+    fetchGodotSpaceLayout(workId, spaceId)
+      .then((saved) => {
+        if (cancelled) return;
+        applyResolvedLayout(
+          saved?.definition ?? fallback,
+          saved?.revision ?? 0,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setLayoutLoadState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [applyResolvedLayout, catalog, layoutFetchNonce, localOnly, spaceId, workId]);
+
+  const handleLayoutSave = useCallback(async () => {
+    const definition = spaceDefRef.current;
+    if (!definition) return;
+    setLayoutSaveState("saving");
+    try {
+      const saved = await saveGodotSpaceLayout(
+        workId,
+        spaceIdRef.current,
+        definition,
+        layoutRevisionRef.current,
+      );
+      layoutRevisionRef.current = saved.revision;
+      setLayoutRevision(saved.revision);
+      setLayoutDirty(false);
+      setLayoutSaveState("idle");
+      // 저장 완료를 같은 방에 알린다 — 상대 셸이 재조회해 무대에 적용한다.
+      frameWindow()?.__tsvs_notifyLayout?.(
+        JSON.stringify({
+          spaceId: spaceIdRef.current,
+          revision: saved.revision,
+        }),
+      );
+    } catch (error) {
+      setLayoutSaveState(
+        isGodotSpaceLayoutConflict(error) ? "conflict" : "error",
+      );
+    }
+  }, [frameWindow, workId]);
+
+  const handleLayoutCommand = useCallback(
+    (command: GodotLayoutCommand) => {
+      frameWindow()?.__tsvs_layoutCommand?.(JSON.stringify(command));
+    },
+    [frameWindow],
+  );
+
+  const handleToggleEditMode = useCallback(
+    (enabled: boolean) => {
+      setLayoutEditMode(enabled);
+      frameWindow()?.__tsvs_setEditMode?.(enabled);
+    },
+    [frameWindow],
+  );
+
+  // 공간 전환은 무대 리로드가 가장 안전하다 (연결·구역·배경을 통째로 재구성).
+  // 새 무대의 세션 주입이 해석된 정의를 싣고, ?space=는 부팅 기본값을 맞춘다.
+  const switchSpace = useCallback(
+    (nextId: string) => {
+      if (nextId === spaceIdRef.current) return;
+      setSpaceId(nextId);
+      setZoneInfo(null);
+      setProximitySize(0);
+      setLayoutSelection(null);
+      setLayoutEditMode(false);
+      setLayoutDirty(false);
+      setLayoutSaveState("idle");
+      setPhase(localOnly ? "local" : "booting");
+      setFrameSrc(
+        localOnly
+          ? `${GODOT_SPACE_EMBED_PATH}?local=1&space=${nextId}`
+          : `${GODOT_SPACE_EMBED_PATH}?space=${nextId}`,
+      );
+    },
+    [localOnly],
+  );
+
   // 회의 맥락은 구역 통지에서 도출한다: 발표 구역은 회의 구역 안에 있으므로
-  // 두 구역의 점유를 합쳐 판정한다.
+  // 두 구역의 점유를 합쳐 판정한다. 4단계부터 공간마다 구역 id가 달라지므로
+  // id가 아니라 kind로 판정한다 (거리의 광장·무대가 같은 역할).
   const meetingContext = useMemo(() => {
     if (!zoneInfo) return null;
-    const inMeetingKind = (zoneId: string) =>
-      zoneId === "meeting" || zoneId === "presentation";
-    const selfInMeeting = inMeetingKind(zoneInfo.selfZoneId);
+    const isMeetingKind = (kind: string) =>
+      kind === "meeting" || kind === "presentation";
+    const selfZone = zoneInfo.zones.find(
+      (zone) => zone.zoneId === zoneInfo.selfZoneId,
+    );
+    const selfInMeeting = selfZone ? isMeetingKind(selfZone.kind) : false;
     const occupantIds = new Set<string>();
     for (const zone of zoneInfo.zones) {
-      if (inMeetingKind(zone.zoneId)) {
+      if (isMeetingKind(zone.kind)) {
         for (const occupant of zone.occupants) occupantIds.add(occupant);
       }
     }
@@ -290,6 +463,9 @@ export function StudioGodotSpaceEmbed({
         color: colorHex,
       };
       if (skinKey) payload.skinKey = skinKey;
+      // 4단계: 해석된 공간 정의(저장본 우선)를 세션에 싣는다. 없으면 무대가
+      // ?space= 부팅 기본값·내장 정의를 쓴다.
+      if (spaceDefRef.current) payload.space = spaceDefRef.current;
       frameWindow()?.__tsvs_setSession?.(JSON.stringify(payload));
       if (document.hidden) {
         frameWindow()?.__tsvs_setVisibility?.(true);
@@ -441,6 +617,61 @@ export function StudioGodotSpaceEmbed({
           bt("상대", "Partner");
         appendChat(false, name, payload.text);
       },
+      onLayoutChanged: (json) => {
+        const payload = parseHostPayload(json);
+        const spec = payload?.spec;
+        if (
+          typeof spec !== "object" ||
+          spec === null ||
+          Array.isArray(spec)
+        ) {
+          return;
+        }
+        // 무대 정규화를 통과한 정의를 셸 초안으로 삼는다 (저장은 별도 동선).
+        const definition = spec as GodotSpaceDefinition;
+        if (definition.id !== spaceIdRef.current) return;
+        spaceDefRef.current = definition;
+        setSpaceDef(definition);
+        setLayoutDirty(true);
+      },
+      onLayoutSelection: (json) => {
+        const payload = parseHostPayload(json);
+        const raw = payload?.selection;
+        if (
+          typeof raw !== "object" ||
+          raw === null ||
+          Array.isArray(raw) ||
+          Object.keys(raw).length === 0
+        ) {
+          setLayoutSelection(null);
+          return;
+        }
+        const record = raw as Record<string, unknown>;
+        const rect = Array.isArray(record.rect) ? record.rect : [];
+        const rectTuple: [number, number, number, number] = [
+          Number(rect[0] ?? 0),
+          Number(rect[1] ?? 0),
+          Number(rect[2] ?? 0),
+          Number(rect[3] ?? 0),
+        ];
+        setLayoutSelection({
+          category: record.category === "zone" ? "zone" : "prop",
+          index: Number(record.index ?? 0),
+          kind: String(record.kind ?? ""),
+          name: String(record.name ?? ""),
+          rect: rectTuple,
+        });
+      },
+      onLayoutRemote: (json) => {
+        const payload = parseHostPayload(json);
+        if (!payload || payload.spaceId !== spaceIdRef.current) return;
+        if (layoutDirtyRef.current) {
+          // 내 미저장 변경과 부딪히면 자동 적용하지 않고 충돌 동선을 띄운다.
+          setLayoutSaveState("conflict");
+          return;
+        }
+        setLayoutFetchNonce((nonce) => nonce + 1);
+      },
     };
     window.__tsvsHost = host;
     setFrameSrc(
@@ -503,6 +734,26 @@ export function StudioGodotSpaceEmbed({
       aria-label={bt("가상 스튜디오 공간", "Virtual studio space")}
       className="relative mx-auto w-full max-w-[1152px] px-4 py-4"
     >
+      {catalog.length > 1 ? (
+        <div
+          className="mb-3 flex flex-wrap gap-2"
+          role="group"
+          aria-label={bt("공간 선택", "Choose a space")}
+        >
+          {catalog.map((def) => (
+            <button
+              key={def.id}
+              type="button"
+              aria-pressed={def.id === spaceId}
+              data-testid={`godot-space-tab-${def.id}`}
+              className="rounded-full border border-line px-3 py-1.5 text-sm font-bold"
+              onClick={() => switchSpace(def.id)}
+            >
+              {def.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="relative overflow-hidden rounded-3xl border border-line bg-card">
         {frameSrc ? (
           <iframe
@@ -563,6 +814,25 @@ export function StudioGodotSpaceEmbed({
           {bt("기존 스페이스로 돌아가기", "Back to the classic space")}
         </button>
       </div>
+      {!localOnly ? (
+        <StudioGodotLayoutPanel
+          definition={spaceDef}
+          revision={layoutRevision}
+          dirty={layoutDirty}
+          editMode={layoutEditMode}
+          selection={layoutSelection}
+          loadState={layoutLoadState}
+          saveState={layoutSaveState}
+          onRetryLoad={() => setLayoutFetchNonce((nonce) => nonce + 1)}
+          onToggleEdit={handleToggleEditMode}
+          onCommand={handleLayoutCommand}
+          onSave={() => void handleLayoutSave()}
+          onReload={() => {
+            setLayoutSaveState("idle");
+            setLayoutFetchNonce((nonce) => nonce + 1);
+          }}
+        />
+      ) : null}
       {!localOnly && meetingContext?.selfInMeeting ? (
         <StudioGodotMeetingPanel
           route={meetingRoute}
