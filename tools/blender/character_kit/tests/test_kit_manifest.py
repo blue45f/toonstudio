@@ -319,10 +319,11 @@ class Hyper3dProvenanceTest(unittest.TestCase):
         self.assertLessEqual({"bottom/jeans", "hair/soft-bob", "shoes/sneakers", "top/tee"}, set(self.sources.sources))
         from character_kit.garment_presets import PRESETS
 
-        self.assertLessEqual(set(self.sources.sources), set(PRESETS))
+        self.assertLessEqual({key.partition("@")[0] for key in self.sources.sources}, set(PRESETS))
         for preset_id, record in self.sources.sources.items():
             entry = km.hyper3d_source_entry(preset_id, record, self.sources.record_doc)
-            self.assertEqual(entry["id"], "hyper3d-" + preset_id.replace("/", "-"))
+            base_key, _, base_id = preset_id.partition("@")
+            self.assertEqual(entry["id"], "hyper3d-" + base_key.replace("/", "-") + (f"-{base_id}" if base_id else ""))
 
     def test_entries_exist_only_for_registered_parts(self) -> None:
         by_id = self.entries(["top/tee", "irises/round-large"])  # 홍채는 출처 표에 없는 원본 파츠, 청바지는 등록되지 않음
@@ -332,6 +333,20 @@ class Hyper3dProvenanceTest(unittest.TestCase):
         self.assertEqual({"hbm-1.4.1", "toonstudio-original", "hyper3d-top-tee"}, set(by_id))
         self.assertEqual(set(self.entries([])), {"hbm-1.4.1", "toonstudio-original"})  # 파츠가 없으면 항목도 없다
         self.assertEqual(set(self.entries(["hair/soft-bob", "bottom/jeans", "shoes/sneakers", "top/tee"])) - {"hbm-1.4.1", "toonstudio-original"}, {"hyper3d-hair-soft-bob", "hyper3d-bottom-jeans", "hyper3d-shoes-sneakers", "hyper3d-top-tee"})
+
+    def test_base_specific_sources_follow_their_base_part(self) -> None:
+        record = dict(self.sources.sources["top/tee"])
+        male = dict(record, generationId="11111111-2222-4333-8444-555555555555")
+        table = km.Hyper3dSources(record_doc=self.sources.record_doc, sources={"hair/short-layered": record, "hair/short-layered@male": male})
+        ids = lambda registered: {s["id"]: s for s in km.provenance_block(self.contract, table, registered)["sources"]}  # noqa: E731
+        both = ids(["hair/short-layered"])
+        self.assertIn("hyper3d-hair-short-layered", both)
+        self.assertIn("hyper3d-hair-short-layered-male", both)
+        self.assertEqual(both["hyper3d-hair-short-layered-male"]["generationId"], male["generationId"])
+        self.assertEqual(both["hyper3d-hair-short-layered-male"]["name"], "Hyper3D(Rodin Gen-2.5) 생성물 hair/short-layered@male")
+        self.assertNotIn("hyper3d-hair-short-layered-male", ids([]))  # 기본 파츠가 등록돼 있지 않으면 베이스 항목도 없다
+        with self.assertRaises(km.ManifestError):
+            km.hyper3d_source_entry("hair/short-layered@", record, self.sources.record_doc)
 
     def test_entry_fields_follow_the_lead_specification(self) -> None:
         entry = self.entries(["top/tee"])["hyper3d-top-tee"]

@@ -508,8 +508,9 @@ def load_hyper3d_sources(path: Path, repo_root: Path) -> Hyper3dSources:
 
 def hyper3d_source_entry(preset_id: str, record: dict[str, Any], record_doc: str) -> dict[str, Any]:
     """파츠 하나의 `provenance.sources[]` 항목을 만든다. 계약(`manifestIssues`)·검증기 V4가 요구하는 값이 모자라면 ManifestError."""
-    if "/" not in preset_id:
-        raise ManifestError(f"Hyper3D 출처 표의 키가 슬롯/이름 형식이 아닙니다: {preset_id}")
+    base_key, _, base_id = preset_id.partition("@")  # `슬롯/이름@베이스`: 그 베이스만 다른 생성물을 쓸 때(남성 전용 헤어·의상)
+    if "/" not in base_key or ("@" in preset_id and not base_id):
+        raise ManifestError(f"Hyper3D 출처 표의 키가 슬롯/이름[@베이스] 형식이 아닙니다: {preset_id}")
     if not isinstance(record, dict):
         raise ManifestError(f"{preset_id}: Hyper3D 출처 표 항목이 객체가 아닙니다.")
 
@@ -519,9 +520,9 @@ def hyper3d_source_entry(preset_id: str, record: dict[str, Any], record_doc: str
             raise ManifestError(f"{preset_id}: Hyper3D 출처 표의 {key}가 올바르지 않습니다({expectation}): {value!r}")
         return value
 
-    slot, name = preset_id.split("/", 1)
+    slot, name = base_key.split("/", 1)
     return {
-        "id": f"hyper3d-{slot}-{name}",
+        "id": f"hyper3d-{slot}-{name}" + (f"-{base_id}" if base_id else ""),
         "name": f"{HYPER3D_SOURCE_NAME} {preset_id}",
         "version": text("tier", bool, "비어 있지 않은 문자열"),
         "url": text("displayUrl", lambda value: value.startswith("https://"), "https URL"),
@@ -538,7 +539,11 @@ def hyper3d_provenance_sources(hyper3d: Hyper3dSources | None, registered_ids: I
     """키트에 **등록된** 파츠 중 출처 표에 키가 있는 것의 (프리셋 id, 출처 항목). 등록되지 않은 파츠는 넣지 않는다."""
     if hyper3d is None:
         return []
-    return [(preset_id, hyper3d_source_entry(preset_id, hyper3d.sources[preset_id], hyper3d.record_doc)) for preset_id in registered_ids if preset_id in hyper3d.sources]
+    registered = list(registered_ids)
+    keys = [key for key in registered if key in hyper3d.sources]
+    # `슬롯/이름@베이스` 항목은 기본 파츠가 등록돼 있을 때만 넣는다(그 베이스 변형이 키트에 있다는 뜻)
+    keys += [key for key in hyper3d.sources if "@" in key and key.partition("@")[0] in registered]
+    return [(key, hyper3d_source_entry(key, hyper3d.sources[key], hyper3d.record_doc)) for key in keys]
 
 
 def provenance_summary_ko(derived: list[tuple[str, dict[str, Any]]]) -> str:

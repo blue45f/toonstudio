@@ -29,7 +29,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-from character_kit.garment_presets import PRESETS  # noqa: E402
+from character_kit.garment_presets import PRESETS, effective_spec  # noqa: E402
 
 CACHE = Path.home() / ".cache" / "toonstudio-kit"
 RAW_DIR = CACHE / "hyper3d-raw"
@@ -105,6 +105,12 @@ def build_one(preset_id: str, spec: dict, args: argparse.Namespace, env: dict[st
     return report
 
 
+def provenance_key(preset_id: str, base_id: str) -> str:
+    """출처 표의 키: 그 베이스만 다른 생성물(`base_overrides.<base>.source`)을 쓰면 `슬롯/이름@베이스`, 아니면 프리셋 id."""
+    override = PRESETS[preset_id].get("base_overrides", {}).get(base_id, {})
+    return f"{preset_id}@{base_id}" if "source" in override else preset_id
+
+
 def source_entry(preset_id: str, spec: dict, entries: dict[str, dict]) -> dict:
     entry = entries[spec["source"]["raw"]]
     out = {
@@ -150,9 +156,10 @@ def main() -> int:
     Path(env["HOME"]).mkdir(parents=True, exist_ok=True)
     entries = ledger_entries()
     for preset_id in wanted:
-        if is_procedural(PRESETS[preset_id]):
+        effective = effective_spec(preset_id, args.base)
+        if is_procedural(effective):
             continue
-        raw = entries[PRESETS[preset_id]["source"]["raw"]].get("rawFile")
+        raw = entries[effective["source"]["raw"]].get("rawFile")
         if not raw or not (RAW_DIR / raw).exists():
             raise SystemExit(f"{preset_id}: 원본이 캐시에 없다({raw}). hyper3d_generations.json의 rawFile을 확인한다.")
 
@@ -160,7 +167,7 @@ def main() -> int:
 
     def task(preset_id: str):
         try:
-            return preset_id, build_one(preset_id, PRESETS[preset_id], args, env, entries)
+            return preset_id, build_one(preset_id, effective_spec(preset_id, args.base), args, env, entries)
         except Exception as error:  # noqa: BLE001 — 한 프리셋의 실패가 나머지를 막지 않게 한다
             return preset_id, str(error)
 
@@ -183,10 +190,12 @@ def main() -> int:
 
     if args.write_sources:
         existing = json.loads(SOURCES.read_text(encoding="utf-8")) if SOURCES.exists() else {"schema": "toonstudio.hyper3d-sources/1", "recordDoc": "apps/character-lab/docs/hyper3d-terms-record.md", "summaryKo": "", "common": {}, "sources": {}}
-        existing["sources"] = {key: value for key, value in existing.get("sources", {}).items() if key not in failures}
+        failed_keys = {provenance_key(preset_id, args.base) for preset_id in failures}
+        existing["sources"] = {key: value for key, value in existing.get("sources", {}).items() if key not in failed_keys}
         for preset_id, report in results.items():
-            if not isinstance(report, str) and not is_procedural(PRESETS[preset_id]):
-                existing["sources"][preset_id] = source_entry(preset_id, PRESETS[preset_id], entries)
+            effective = effective_spec(preset_id, args.base)
+            if not isinstance(report, str) and not is_procedural(effective):
+                existing["sources"][provenance_key(preset_id, args.base)] = source_entry(preset_id, effective, entries)
         existing["summaryKo"] = "Hyper3D(Rodin Gen-2.5) 생성물과 그 파생물. 약관·소유권·수정·공개 호스팅 조항과 닫히지 않은 점은 recordDoc에 있고, 생성 기록 전체는 hyper3d_generations.json에 있다. 원본 GLB는 저장소에 커밋하지 않는다."
         SOURCES.write_text(json.dumps(existing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"\n출처 {len(existing['sources'])}건을 {SOURCES}에 썼다")

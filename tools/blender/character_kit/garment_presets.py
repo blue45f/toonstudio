@@ -20,6 +20,7 @@
 - `texture`: `garment_texture.TextureStyle` 인자(`strength`가 클수록 디테일이 진하다. 헤어는 계약상 0.55~1.0 회색이고 512²로 낸다 — 파츠 한도 1.5 MiB).
 - `merge_joints`: 스킨에서 합칠 joint(턱 본이 헤어·귀 근처 소품에 번지지 않게 머리 본으로 합친다).
 - `source`: `{raw, pick, clean[, ref]}` — `hyper3d_generations.json`의 항목 이름(`raw`), BANG 산출물에서 고를 메시(`pick`, 쉼표 목록이면 합친다), 정리 규칙(`clean`), `head_ref` 정렬이 기준으로 삼을 머리 메시(`ref`).
+- `base_overrides`: `{"male": {...}}` — 그 베이스를 빌드할 때만 프리셋 필드(`source`·`lods`·`fit_region`·`anchor` 등)를 덮어쓴다(남성 전용 헤어·의상). `effective_spec(preset_id, base_id)`가 합친 사본을 돌려준다.
 - `changesKo`: kit.json provenance의 한글 변경 내용.
 """
 
@@ -178,11 +179,16 @@ def _proc_prop(name: str, *, changes: str) -> dict[str, Any]:
     return spec
 
 
-# 만들어 보았으나 이번 키트에 넣지 않은 프리셋과 사유 — `build_kit_json.py`가 kit.json `unavailable`의 한글 사유로 그대로 쓴다.
-HELD_PRESETS_KO: dict[str, str] = {
-    "top/hoodie": "후드가 달린 상의를 만들려 했으나 생성물에서 후드가 머리 파츠에 붙어 나와 후드 없는 평범한 긴팔이 되어 이번 키트에서는 제공하지 않습니다.",
-    "accessory/choker": "이 베이스는 턱이 목 앞을 덮고 목이 어깨선과 바로 이어져 목을 수평으로 감싸는 둘레가 없어(띠가 옆에서 몸에 파묻힙니다) 초커를 맞추지 못해 이번 키트에서는 제공하지 않습니다.",
-}
+def effective_spec(preset_id: str, base_id: str) -> dict[str, Any]:
+    """프리셋 표 항목에 베이스별 덮어쓰기(`base_overrides[base_id]`)를 적용한 사본. 베이스마다 원본이 다른 파츠(남성 전용 헤어·의상)에 쓴다."""
+    spec = dict(PRESETS[preset_id])
+    overrides = spec.pop("base_overrides", {})
+    spec.update(overrides.get(base_id, {}))
+    return spec
+
+
+# 만들어 보았으나 이번 키트에 넣지 않은 프리셋과 사유 — `build_kit_json.py`가 kit.json `unavailable`의 한글 사유로 그대로 쓴다(지금은 없다).
+HELD_PRESETS_KO: dict[str, str] = {}
 
 PRESETS: dict[str, dict[str, Any]] = {
     # ---------------------------------------------------------------- 상의
@@ -196,36 +202,52 @@ PRESETS: dict[str, dict[str, Any]] = {
     ),
     "top/shirt": _top(
         "shirt",
-        source={"raw": "g11-shirt-bang", "pick": "root.3", "clean": "top-no-skin"},
+        source={"raw": "shirt-f-v3-bang", "pick": "root.2", "clean": "top-no-skin"},
         pose="t",
         align="frame",
         decimate=6500,
-        stylize=4,
+        stylize=3,
         fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
         d_max=0.045,
-        changes="베이스 T-포즈 몸에 프록시 긴팔 상의를 입힌 정면 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 긴팔 상의 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+        base_overrides={"male": {"source": {"raw": "shirt-m-v3-bang", "pick": "root.1", "clean": "top-no-skin"}}},
+        changes="베이스 T-포즈 몸에 뾰족한 칼라·칼라 스탠드·앞단을 입체로 넣은 프록시 셔츠(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 긴팔 셔츠 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 셔츠를 쓴다.",
     ),
     "top/sailor": _top(
         "sailor",
-        source={"raw": "g11-sailor-bang", "pick": "root.6", "clean": "top-no-skin"},
+        source={"raw": "sailor-f-v3-bang", "pick": "root.6,root.8,root.4,root.1,root.9", "clean": "top-multi"},
         pose="t",
         align="frame",
-        decimate=7000,
-        stylize=4,
+        decimate=8000,
+        stylize=3,
         fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
         d_max=0.045,
-        changes="베이스 T-포즈 몸에 프록시 흰 짧은 상의(네이비 칼라·소매단 색 영역)를 입힌 정면 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 세일러 상의 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩(칼라 유지), 7,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크(네이비 칼라는 어두운 영역으로 남는다).",
+        base_overrides={"male": {"source": {"raw": "sailor-m-v3-bang", "pick": "root.2,root.4,root.0,root.7", "clean": "top-multi"}}},
+        changes="베이스 T-포즈 몸에 앞 V 칼라·뒤 사각 칼라·스카프 매듭을 입체로 넣은 프록시 세일러 상의(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 몸통·칼라 조각·소매단을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크(네이비 칼라·빨간 스카프는 휘도 영역과 입체 지오메트리로 남는다).",
     ),
     "top/blazer": _top(
         "blazer",
-        source={"raw": "g11-blazer-bang", "pick": "root.4,root.5", "clean": "top-no-skin"},
+        source={"raw": "blazer-f-v3-bang", "pick": "root.1,root.5", "clean": "top-multi"},
         pose="t",
         align="frame",
-        decimate=7000,
-        stylize=4,
+        decimate=8000,
+        stylize=3,
         fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
         d_max=0.045,
-        changes="베이스 T-포즈 몸에 프록시 네이비 상의(흰 V 영역)를 입힌 정면 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 상의 파츠와 안쪽 셔츠 V 조각을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 7,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
+        base_overrides={"male": {"source": {"raw": "blazer-m-v3-bang", "pick": "root.4,root.3", "clean": "top-multi"}}},
+        changes="베이스 T-포즈 몸에 노치 라펠·가슴 주머니·플랩 주머니·단추를 입체로 넣은 프록시 블레이저(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 블레이저 파츠와 안쪽 셔츠 칼라 조각을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 블레이저를 쓴다.",
+    ),
+    "top/hoodie": _top(
+        "hoodie",
+        source={"raw": "hoodie-f-v3-bang", "pick": "root.2", "clean": "top-no-skin"},
+        pose="t",
+        align="frame",
+        decimate=8000,
+        stylize=3,
+        fit_region={"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.03, "scale": (0.97, 1.03)},
+        d_max=0.12,
+        d_max_open=0.12,
+        base_overrides={"male": {"source": {"raw": "hoodie-m-v3-bang", "pick": "root.2", "clean": "top-no-skin"}}},
+        changes="베이스 T-포즈 몸에 등에 걸친 두툼한 후드 주머니·목 둘레 후드 접힘·캥거루 주머니·끈을 입체로 넣은 프록시 후디(앞·뒤·옆 3장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 후디 파츠(후드 포함)를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
     ),
     # ---------------------------------------------------------------- 하의
     "bottom/jeans": _bottom(
@@ -305,67 +327,66 @@ PRESETS: dict[str, dict[str, Any]] = {
     "hair/soft-bob": _hair(
         "soft-bob",
         scalp_cap={"back_drop": 0.165},
-        source={"raw": "hair-bob2-bang", "pick": "root.4", "clean": "keep", "ref": "root.2"},
+        source={"raw": "hair-bob3-bang", "pick": "root.3", "clean": "keep", "ref": "root.2"},
         align="head_ref",
         lods=(3300, 1800, 950),
-        bang_target_y=1.574,
-        uv="strands",
-        changes="보브 헤어 흉상 생성물(앞머리를 눈썹 위로 요청해 재생성)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,300/1,800/950 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
+        bang_target_y=1.602,
+        base_overrides={"male": {"source": {"raw": "hair-bob3m-bang", "pick": "root.2", "clean": "keep", "ref": "root.1"}}},
+        changes="청크형(저폴리 3,000 설정) 보브 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,300/1,800/950 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
     ),
     "hair/hime-cut": _hair(
         "hime-cut",
         scalp_cap={"back_drop": 0.22},
-        source={"raw": "hair-hime2-bang", "pick": "root.4", "clean": "keep", "ref": "root.5"},
+        source={"raw": "hair-hime3-bang", "pick": "root.2", "clean": "keep", "ref": "root.1"},
         align="head_ref",
-        ref_top_extra=0.40,
-        lods=(3600, 1900, 1000),
-        bang_target_y=1.574,
-        bang_half_width=0.05,
-        uv="strands",
-        changes="히메컷 헤어 흉상 생성물(블런트 뱅·어깨 아래 직모)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시(두피가 헤어에 포함되어 헤어라인에서 잘림)의 폭에 맞추고 정수리는 폭의 0.4배 위로 추정해 베이스 머리로 리타깃, LOD 3단(3,600/1,900/1,000 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
+        lods=(5200, 2800, 1500),
+        changes="청크형(저폴리 5,000 설정) 히메컷 헤어 흉상 생성물(블런트 뱅·볼 옆 머리)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,200/2,800/1,500 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
     ),
     "hair/short-layered": _hair(
         "short-layered",
         scalp_cap={"back_drop": 0.115},
-        source={"raw": "hair-short2-bang", "pick": "root.3", "clean": "keep", "ref": "root.2"},
+        source={"raw": "hair-short3-bang", "pick": "root.0,root.1", "clean": "keep-multi", "ref": "root.3"},
         align="head_ref",
-        lods=(3700, 2000, 1050),
-        bang_target_y=1.572,
-        uv="strands",
-        changes="숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,700/2,000/1,050 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦(원본 UV 섬이 잘게 쪼개져 파츠 한도를 넘음).",
+        lods=(5000, 2700, 1400),
+        bang_target_y=1.600,
+        base_overrides={"male": {"source": {"raw": "hair-short3m-bang", "pick": "root.2", "clean": "keep", "ref": "root.3"}}},
+        changes="청크형(저폴리 5,000 설정) 숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 겉 껍데기·안쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
     ),
     "hair/wolf-layered": _hair(
         "wolf-layered",
         scalp_cap={"back_drop": 0.19},
-        source={"raw": "hair-shaggy-bang", "pick": "root.1", "clean": "keep", "ref": "root.2"},
+        source={"raw": "hair-wolf3-bang", "pick": "root.0,root.4", "clean": "keep-multi", "ref": "root.5"},
         align="head_ref",
-        lods=(6000, 3000, 1500),
-        bang_target_y=1.58,
-        changes="섀기 레이어드 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 앞머리를 눈썹 위로 올림, LOD 3단(6,000/3,000/1,500 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+        lods=(6000, 3200, 1700),
+        bang_target_y=1.600,
+        base_overrides={"male": {"source": {"raw": "hair-wolf3m", "pick": None, "clean": "hair-dark"}, "align": "hair"}},
+        changes="청크형(저폴리 5,000 설정) 울프 컷 헤어 흉상 생성물(커튼 뱅 레이어드)을 BANG으로 분리한 겉 껍데기·뒤쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 앞머리를 눈썹 위로 올림, LOD 3단(6,000/3,200/1,700 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
     ),
     "hair/action-pony": _hair(
         "action-pony",
         scalp_cap={"back_drop": 0.15},
-        source={"raw": "hair-pony-bang", "pick": "root.3", "clean": "keep", "ref": "root.2"},
+        source={"raw": "hair-pony3-bang", "pick": "root.4", "clean": "keep", "ref": "root.3"},
         align="head_ref",
-        bang_target_y=1.58,
-        changes="하이 포니테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(정수리 묶음 + 긴 꼬리)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+        lods=(5000, 2700, 1400),
+        bang_target_y=1.590,
+        base_overrides={"male": {"source": {"raw": "hair-pony3m-bang", "pick": "root.1", "clean": "keep", "ref": "root.0"}}},
+        changes="청크형(저폴리 5,000 설정) 하이 포니테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(정수리 묶음 + 긴 꼬리)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
     ),
     "hair/twin-tail": _hair(
         "twin-tail",
         scalp_cap={"back_drop": 0.17},
-        source={"raw": "hair-twin-bang", "pick": "root.5", "clean": "keep", "ref": "root.3"},
+        source={"raw": "hair-twin3-bang", "pick": "root.0", "clean": "keep", "ref": "root.4"},
         align="head_ref",
-        bang_target_y=1.574,
-        changes="트윈테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(양쪽 높은 묶음 + 긴 꼬리 둘)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(7,000/3,500/1,800 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+        lods=(5000, 2700, 1400),
+        changes="청크형(저폴리 5,000 설정) 트윈테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(양쪽 높은 묶음 + 긴 꼬리 둘)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
     ),
     "hair/romance-long": _hair(
         "romance-long",
         scalp_cap={"back_drop": 0.22},
-        source={"raw": "hair-romance-bang", "pick": "root.2", "clean": "keep", "ref": "root.4"},
+        source={"raw": "hair-romance3-bang", "pick": "root.3", "clean": "keep", "ref": "root.0"},
         align="head_ref",
-        lods=(5000, 2500, 1250),
-        changes="가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,500/1,250 삼각형), 텍스처를 상대색 JPEG로 재베이크.",
+        lods=(4500, 2400, 1300),
+        changes="청크형(저폴리 5,000 설정) 가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(4,500/2,400/1,300 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
     ),
     # ---------------------------------------------------------------- 소품
     "accessory/cap": _prop(
@@ -388,6 +409,10 @@ PRESETS: dict[str, dict[str, Any]] = {
     "accessory/earrings": _proc_prop(
         "earrings",
         changes="베이스 귓볼 위치에서 절차 생성한 드롭 귀걸이(스터드 구슬 + 사슬 + 작은 구슬)를 변환 없이 머리 표면에 결합해 스킨·morph를 붙임. Hyper3D 생성물이 아닌 원본(license: original).",
+    ),
+    "accessory/choker": _proc_prop(
+        "choker",
+        changes="베이스(머리를 2.6~2.8 cm 들어 올려 만든 자유로운 목 기둥) 턱 바닥에서 6 cm 위 목 둘레를 따라 절차 생성한 폭 9 mm 띠와 앞쪽 작은 원판 장식 초커를 변환 없이 머리 표면에 결합해 스킨·morph를 붙임. Hyper3D 생성물이 아닌 원본(license: original).",
     ),
     "accessory/headphones": _prop(
         "headphones",

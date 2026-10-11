@@ -149,6 +149,61 @@ class FaceNormalSoftenTest(unittest.TestCase):
             self.assertGreater(style.face_normal_iterations, 0)
 
 
+class NeckLiftTest(unittest.TestCase):
+    def style(self) -> ws.LookStyle:
+        return ws.resolve_style("webtoon-girl", '{"neck_lift": 0.03}')
+
+    def points(self, rows) -> np.ndarray:
+        return np.array(rows, dtype=np.float64)
+
+    def test_nothing_below_the_range_everything_above_the_head_line(self) -> None:
+        style = self.style()
+        out = ws.neck_lift_offset(self.points([[0.0, 1.10, 0.0], [0.0, 1.29, 0.0], [0.0, 1.45, 0.0], [0.0, 1.62, 0.05]]), style)
+        np.testing.assert_allclose(out[:2], 0.0, atol=1e-12)
+        np.testing.assert_allclose(out[2:], 0.03, atol=1e-12)
+
+    def test_shoulders_and_arms_do_not_rise_but_the_neck_column_does(self) -> None:
+        style = self.style()
+        out = ws.neck_lift_offset(self.points([[0.0, 1.38, 0.0], [0.045, 1.38, 0.0], [0.12, 1.38, 0.0], [0.5, 1.32, 0.0]]), style)
+        self.assertAlmostEqual(float(out[0]), 0.03, places=6)  # 목 중심
+        self.assertAlmostEqual(float(out[1]), 0.03, places=6)  # 목 기둥 반폭 안쪽
+        self.assertAlmostEqual(float(out[2]), 0.0, places=6)  # 어깨 판
+        self.assertAlmostEqual(float(out[3]), 0.0, places=6)  # 팔
+
+    def test_ears_and_jaw_angle_rise_with_the_head_regardless_of_x(self) -> None:
+        style = self.style()
+        out = ws.neck_lift_offset(self.points([[0.09, 1.50, 0.0], [0.075, 1.46, 0.0], [-0.09, 1.50, 0.0]]), style)
+        np.testing.assert_allclose(out, 0.03, atol=1e-12)
+
+    def test_symmetric_in_x_and_monotone_in_height(self) -> None:
+        style = self.style()
+        heights = np.linspace(1.25, 1.45, 41)
+        left = ws.neck_lift_offset(np.column_stack([np.full(41, 0.03), heights, np.zeros(41)]), style)
+        right = ws.neck_lift_offset(np.column_stack([np.full(41, -0.03), heights, np.zeros(41)]), style)
+        np.testing.assert_allclose(left, right, atol=1e-12)
+        self.assertTrue(np.all(np.diff(left) >= -1e-12))
+
+    def test_lift_build_moves_meshes_both_poses_and_joints_by_the_same_vector(self) -> None:
+        from types import SimpleNamespace
+
+        style = self.style()
+        positions = self.points([[0.0, 1.55, 0.0], [0.3, 1.0, 0.0]])
+        apose = positions + np.array([[0.0, 0.0, 0.0], [0.0, -0.2, 0.0]])  # 팔은 A-포즈에서 내려간다
+        prim = SimpleNamespace(positions=positions.copy(), apose=apose.copy())
+        joints_t = self.points([[0.0, 1.55, 0.0], [0.0, 1.0, 0.0]])
+        ctx = SimpleNamespace(rig=SimpleNamespace(t_pose=joints_t.copy(), a_pose=joints_t.copy()))
+        build = SimpleNamespace(ctx=ctx, meshes=[SimpleNamespace(prims=[prim])])
+        ws.lift_build(build, style)
+        np.testing.assert_allclose(prim.positions[:, 1] - positions[:, 1], [0.03, 0.0], atol=1e-12)
+        np.testing.assert_allclose(prim.apose[:, 1] - apose[:, 1], [0.03, 0.0], atol=1e-12)  # A-포즈도 같은 변위
+        np.testing.assert_allclose(ctx.rig.t_pose[:, 1] - joints_t[:, 1], [0.03, 0.0], atol=1e-12)
+        np.testing.assert_allclose(ctx.rig.a_pose[:, 1] - joints_t[:, 1], [0.03, 0.0], atol=1e-12)
+
+    def test_style_defaults_lift_the_head(self) -> None:
+        for style_id in ("webtoon-girl", "webtoon-boy"):
+            self.assertTrue(0.015 <= ws.STYLES[style_id].neck_lift <= 0.04)
+
+
 class BrowSnapTest(unittest.TestCase):
     def test_brow_vertices_are_resnapped_just_above_the_head_surface(self) -> None:
         from types import SimpleNamespace

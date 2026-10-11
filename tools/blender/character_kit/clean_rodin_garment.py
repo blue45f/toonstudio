@@ -1,7 +1,7 @@
 """Hyper3D(Rodin) 의상 원본 정리 (Blender 헤드리스).
 
 사용:
-    blender --background --python clean_rodin_garment.py -- <원본.glb> <출력.glb> --preset tee|jeans|hair|hair-dark|sneakers|keep|top-no-skin [--pick-object 이름] [--ref-object 이름] [--report 보고서.json]
+    blender --background --python clean_rodin_garment.py -- <원본.glb> <출력.glb> --preset tee|jeans|hair|hair-dark|sneakers|keep|keep-multi|top-no-skin|top-multi [--pick-object 이름] [--ref-object 이름] [--report 보고서.json]
 
 Rodin은 의상만 달라고 해도 마네킹 목·허리·발목·신발 조각을 같은 메시에 붙여 낸다. 이 스크립트는 베이스 바디와 무관한
 단계로, 텍스처 색과 높이 기준으로 그런 조각을 지우고 의상 셸 중 가장 큰 덩어리만 남긴다. 기준은 프리셋별 규칙이며
@@ -109,8 +109,10 @@ def rule_top_no_skin(hsv, z_norm, face_vertices):
     return skin, {"rule": "remove skin-colored faces (hands at the cuffs) from a top", "skinFaces": int(skin.sum())}
 
 
-RULES = {"tee": rule_tee, "jeans": rule_jeans, "hair": rule_hair, "hair-dark": rule_hair_dark, "sneakers": rule_sneakers, "keep": rule_keep, "top-no-skin": rule_top_no_skin}
-KEEP_COMPONENTS = {"sneakers": 2}
+RULES = {"tee": rule_tee, "jeans": rule_jeans, "hair": rule_hair, "hair-dark": rule_hair_dark, "sneakers": rule_sneakers, "keep": rule_keep, "keep-multi": rule_keep, "top-no-skin": rule_top_no_skin, "top-multi": rule_top_no_skin}
+# top-multi: 깃·칼라·소매단이 몸통에서 따로 떨어진 조각으로 나오는 상의(세일러 칼라, 블레이저 셔츠 칼라). 살색만 지우고 큰 덩어리 여러 개를 한 벌로 남긴다.
+# keep-multi: 헤어가 겉 껍데기와 안쪽·뒤 조각 등 여러 덩어리로 분리돼 나오는 BANG 파츠(지울 면 없이 큰 덩어리 여러 개를 합쳐 남긴다).
+KEEP_COMPONENTS = {"sneakers": 2, "top-multi": 8, "keep-multi": 4}
 # 가는 틈이 남는 프리셋만 작은 구멍(경계 고리의 대각선 0.35 이하)을 메운다. 얼굴·밑단 같은 큰 개구부는 그대로 둔다.
 FILL_HOLES = {"hair", "hair-dark"}
 
@@ -147,7 +149,7 @@ def reference_head(name, top_fraction=0.40):
 def main():
     args = cli_args()
     if len(args) < 2 or flag_value(args, "--preset") not in RULES:
-        raise SystemExit("사용법: -- <원본.glb> <출력.glb> --preset tee|jeans|hair|hair-dark|sneakers|keep|top-no-skin [--pick-object 이름] [--ref-object 이름] [--report 보고서.json]")
+        raise SystemExit("사용법: -- <원본.glb> <출력.glb> --preset tee|jeans|hair|hair-dark|sneakers|keep|keep-multi|top-no-skin|top-multi [--pick-object 이름] [--ref-object 이름] [--report 보고서.json]")
     source, destination = args[0], args[1]
     preset = flag_value(args, "--preset")
 

@@ -78,6 +78,10 @@ class LookStyle:
     neutral_facs: tuple[tuple[str, float], ...] = ()  # 중립 얼굴에 미리 구워 넣는 표정 가중치(예: ("facs:mouthSmile", 0.4)). 사실 중립 얼굴은 화난 듯 보여 부드러운 중립을 만든다
     face_smooth: float = 0.0  # 얼굴 피부 요철(비순구·광대·콧등 주름)을 펴는 세기 0~1. 사실 머리의 미세한 굴곡이 툰 음영에서 줄무늬 그림자가 된다
     face_smooth_iterations: int = 14
+    neck_lift: float = 0.0  # 머리·목 위쪽 전체를 위로 들어 올려 목 기둥을 만드는 양(m). HBM 머리는 턱이 목 앞을 덮고 목이 어깨 판과 바로 이어져 초커·후드 접힘·칼라가 얹힐 자유로운 목이 없다
+    neck_lift_range: tuple[float, float] = (1.300, 1.372)  # 들어 올림이 0에서 전체로 오르는 높이 구간(m). 이 아래(어깨·몸통)는 그대로, 위(머리)는 통째로 올라가고 사이의 목은 늘어난다
+    neck_lift_width: tuple[float, float] = (0.050, 0.085)  # 들어 올림이 전체에서 0으로 줄어드는 좌우 거리 구간(m). 어깨 끝·팔은 올라가지 않는다(목 기둥 반폭 5 cm 안쪽은 전부 올라간다)
+    neck_lift_head: tuple[float, float] = (1.385, 1.425)  # 이 높이 위(턱 각·귀·머리)는 좌우 거리와 상관없이 통째로 올라가 귀가 아래로 늘어나지 않는다
     face_normal_soften: float = 0.0  # 얼굴 정점 법선을 큰 형태(약 2.5 cm 이하 요철을 지운 머리)의 법선 쪽으로 옮기는 세기 0~1. 지오메트리는 그대로 두고 툰 음영 경계선(비순구·광대·관자 곡선)만 지운다
     face_normal_iterations: int = 80  # 큰 형태 법선을 만드는 라플라시안 반복 횟수(많을수록 더 둥근 알 모양)
 
@@ -107,6 +111,7 @@ WEBTOON_GIRL = LookStyle(
     face_smooth=1.0,
     face_smooth_iterations=36,
     face_normal_soften=0.9,
+    neck_lift=0.028,
 )
 
 #: 미소년(꽃미남, L1 미형): 얼굴 구성은 여성보다 덜 극단적이고 눈은 가로로 길게 크며 코는 가늘고 턱끝은 가늘다. 눈썹은 여성보다 굵게 남긴다.
@@ -134,6 +139,7 @@ WEBTOON_BOY = LookStyle(
     face_smooth=1.0,
     face_smooth_iterations=30,
     face_normal_soften=0.8,
+    neck_lift=0.026,
 )
 
 STYLES: dict[str, LookStyle] = {style.id: style for style in (NONE, WEBTOON_GIRL, WEBTOON_BOY)}
@@ -503,6 +509,8 @@ def restyle_build(build: ba.BaseBuild, style: LookStyle) -> dict[str, Any]:
                 ctx.rig.a_pose[index] = registration.apply(ctx.rig.a_pose[index][None, :])[0]
             ctx.rig.t_pose[index] = field.apply(ctx.rig.t_pose[index][None, :])[0]
             ctx.rig.a_pose[index] = field.apply(ctx.rig.a_pose[index][None, :])[0]
+    if style.neck_lift:
+        lift_build(build, style)
     snap_brows_to_head(by_name)
     _recompute_normals(by_name)
     if style.face_normal_soften > 0.0:
@@ -552,6 +560,31 @@ def softened_face_normals(welded: np.ndarray, triangles: np.ndarray, normals: np
     weight = (amount * np.clip(strength / 0.9, 0.0, 1.0))[:, None]
     blended = (1.0 - weight) * normals + weight * low
     return blended / np.maximum(np.linalg.norm(blended, axis=1, keepdims=True), 1e-12)
+
+
+def neck_lift_offset(positions: np.ndarray, style: LookStyle) -> np.ndarray:
+    """T-포즈 위치 (N,3)에서 `neck_lift` 변위 (N,) — 높이 구간에서 0→전체로 오르고 목에서 멀어지면 0으로 줄어든다."""
+    y0, y1 = style.neck_lift_range
+    x0, x1 = style.neck_lift_width
+    h0, h1 = style.neck_lift_head
+    lateral = smoothstep(x0, x1, np.abs(positions[:, 0])) * (1.0 - smoothstep(h0, h1, positions[:, 1]))
+    return style.neck_lift * smoothstep(y0, y1, positions[:, 1]) * (1.0 - lateral)
+
+
+def lift_build(build: ba.BaseBuild, style: LookStyle) -> None:
+    """모든 메시(T·A-포즈 같은 변위)와 리그 관절을 `neck_lift`만큼 올린다. morph 델타는 상대값이라 그대로다."""
+    ctx = build.ctx
+    for mesh in build.meshes:
+        for prim in mesh.prims:
+            shift = np.zeros_like(prim.positions)
+            shift[:, 1] = neck_lift_offset(prim.positions, style)
+            prim.positions = prim.positions + shift
+            if prim.apose is not None:
+                prim.apose = prim.apose + shift
+    joint_shift = np.zeros_like(ctx.rig.t_pose)
+    joint_shift[:, 1] = neck_lift_offset(ctx.rig.t_pose, style)
+    ctx.rig.t_pose = ctx.rig.t_pose + joint_shift
+    ctx.rig.a_pose = ctx.rig.a_pose + joint_shift
 
 
 #: 눈썹 띠를 머리 표면 위로 띄우는 거리(m). 깊이 버퍼 다툼과 외곽선 셸에 묻히지 않을 만큼이다
@@ -608,4 +641,6 @@ def style_iris_nodes(ctx: ba.Context, nodes: list[ba.MeshNode], style: LookStyle
             if registration is not None:
                 prim.positions = registration.apply(prim.positions)
             prim.positions = field.apply(prim.positions)
+            if style.neck_lift:
+                prim.positions = prim.positions + np.column_stack([np.zeros(len(prim.positions)), neck_lift_offset(prim.positions, style), np.zeros(len(prim.positions))])
             prim.normals = vertex_normals(prim.positions, prim.triangles)

@@ -23,7 +23,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from character_kit import garment_fit as gf  # noqa: E402
 from character_kit.base_assembly import BaseModel, QuantizedGlbWriter, ensure_min_delta, follow_deviation, load_base_model  # noqa: E402
-from character_kit.garment_presets import PRESETS, morph_names  # noqa: E402
+from character_kit.garment_presets import PRESETS, effective_spec, morph_names  # noqa: E402
 from character_kit.garment_texture import TextureStyle, relative_color_texture, strand_texture  # noqa: E402
 from character_kit.glbwriter import GlbWriter, MorphTarget, Primitive  # noqa: E402
 from character_kit.rig import build_rig  # noqa: E402
@@ -741,7 +741,8 @@ def flag_values(args: list[str], name: str) -> list[str]:
 def main() -> None:
     args = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
     preset_id = flag_values(args, "--preset")[0]
-    spec = dict(PRESETS[preset_id])
+    base_id = (flag_values(args, "--base") or ["female"])[0]
+    spec = effective_spec(preset_id, base_id)
     # 실험용: `--override 키=JSON값`으로 프리셋 필드를 이번 실행에만 바꾼다(예: --override sleeve_chain=false). 표는 건드리지 않는다.
     for item in flag_values(args, "--override"):
         key, _, value = item.partition("=")
@@ -749,7 +750,6 @@ def main() -> None:
     base_path = flag_values(args, "--base-model")[0]
     garments = flag_values(args, "--garment")
     kit_dir = Path(flag_values(args, "--kit-dir")[0])
-    base_id = (flag_values(args, "--base") or ["female"])[0]
     if len(garments) != len(spec["nodes"]):
         raise SystemExit(f"{preset_id}: --garment는 {len(spec['nodes'])}개(LOD 순서)여야 한다")
 
