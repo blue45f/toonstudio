@@ -1,5 +1,7 @@
 # 가상 스튜디오 경험 개선·검증 기록 — 2026-09-27
 
+> 2026-10-12 정정: 클래식 공간 클라이언트 제거(본 문서 기록 이후)로 사라진 파일의 링크는 경로 표기로 바꿨다. 본문 서술은 작성 당시의 사실 기록이다.
+
 상태: **migration**. 현재 작업 브랜치에 구현된 변경과 실행한 검증을 기록한다. 운영 반영, 최종 CI 통과, 모든 개선 과제의 완료를 뜻하지 않는다.
 
 2026-09-28에 2026-09-27의 `target` 중 기계로 확정 가능한 원본 atlas 품질 게이트와 보행 연출을 아래 절에서 다룬다. 실기기·인증된 다중 사용자·운영 배포 검증은 여전히 남아 있다.
@@ -31,7 +33,7 @@
 - 카메라 배율은 CSS 뷰포트 크기로 계산하고 DPR은 렌더링 해상도에 반영한다. 세로 화면에서 주변 이동 공간을 확보한다.
 - 원경은 종횡비를 유지해 표시하고 배경 밀도 선택은 주변 생물·날씨·조명 연출량에 연결한다. 기능이나 협업 권한을 줄이는 설정이 아니다.
 
-핵심 소스는 [Phaser 렌더러](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx), [경로 탐색](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-pathfinding.ts), [표현 계산](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-presentation.ts), [NPC 감독](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-npc-director.ts)이다.
+핵심 소스는 Phaser 렌더러(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx`), [경로 탐색](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-pathfinding.ts), [표현 계산](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-presentation.ts), NPC 감독(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-npc-director.ts`)이다.
 
 ### 장소와 가구 편집
 
@@ -42,7 +44,7 @@
 - 배치 실행 취소·다시 실행은 최대 24개 과거 상태를 보관한다. 후속 수정으로 복원할 가구가 현재 플레이어 위치를 덮으면 복원을 거부하고 이동 후 재시도를 안내한다.
 - 일곱 배경 장소 선택을 원경·시간·날씨 조합에 연결했다. 같은 장소를 다시 눌러도 해당 분위기를 다시 적용할 수 있도록 명시적인 선택 콜백을 추가했다. 환경은 이후 개별 조정할 수 있다.
 
-핵심 소스는 [배치 모델](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-decoration-layout.ts), [편집 UI](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceDecorationEditor.tsx), [꾸미기 패널](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceCustomizationPanel.tsx), [장소 환경 연결](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-scene-direction.ts)이다.
+핵심 소스는 [배치 모델](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-decoration-layout.ts), 편집 UI(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceDecorationEditor.tsx`), 꾸미기 패널(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceCustomizationPanel.tsx`), 장소 환경 연결(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-scene-direction.ts`)이다.
 
 ### 생성 아트와 출처
 
@@ -60,7 +62,7 @@
 
 후속으로 웹툰·파스텔·레트로·먹선·네온마다 하늘·숲·해안·야경 원경 4개를 별도 생성해 PNG 20개를 추가했다. 기존 공중섬 원경 4개와 합쳐 **6개 스타일 × 4개 배경의 24개 독립 원본**이며 모두 실제 1536×1024다. 환경 선택 URL은 현재 스타일의 원본을 가리킨다. 가구·랜드마크·바닥과 함께 원경도 스타일별 작화를 사용한다.
 
-현재 일반 아트 원장에는 PNG 50개, 별도 NPC 원장에는 4개가 등록되어 있다. [전체 자산 무결성 테스트](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-experience-integrity.test.ts)는 디렉터리의 PNG 54개와 두 원장의 목록이 일치하는지, 모든 파일의 SHA-256·바이트 수·PNG 형식·치수가 일치하는지 확인한다. 원경 URL 도우미를 직접 사용해 24개 URL의 실제 파일과 원장 연결, 서로 다른 원본 해시도 검사했다. 이번 게이트는 PNG를 압축하거나 편집하지 않았다.
+현재 일반 아트 원장에는 PNG 50개, 별도 NPC 원장에는 4개가 등록되어 있다. 전체 자산 무결성 테스트(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-experience-integrity.test.ts`)는 디렉터리의 PNG 54개와 두 원장의 목록이 일치하는지, 모든 파일의 SHA-256·바이트 수·PNG 형식·치수가 일치하는지 확인한다. 원경 URL 도우미를 직접 사용해 24개 URL의 실제 파일과 원장 연결, 서로 다른 원본 해시도 검사했다. 이번 게이트는 PNG를 압축하거나 편집하지 않았다.
 
 ### 테마 캐릭터와 전용 NPC
 
@@ -79,7 +81,7 @@
 - 동작 선택 창은 네이티브 `dialog.showModal()`을 사용한다. 배경 inert, 모달 내부 포커스, 닫힌 뒤 이전 포커스 복원, 확인 단계의 안전한 초기 포커스, Escape 처리와 스크롤 가능한 내용을 연결했다.
 - 가까이 가는 행동만으로 도구나 미디어를 자동 실행하지 않는다. 기존 협업 요청 수락과 마이크·카메라의 명시적 선택 경계를 유지한다.
 
-핵심 소스는 [업무 목적지 계약](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-production-route.ts), [오늘의 업무](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceTodayBoard.tsx), [동작 선택 창](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceActionSheet.tsx)이다.
+핵심 소스는 업무 목적지 계약(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-production-route.ts`), 오늘의 업무(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceTodayBoard.tsx`), 동작 선택 창(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceActionSheet.tsx`)이다.
 
 ### 서버 상태 표시와 재연결
 

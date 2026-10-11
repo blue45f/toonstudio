@@ -106,18 +106,6 @@ function gitFiles(pathspec: string): string[] {
     .filter(Boolean);
 }
 
-/** `git grep -l -w` 로 낱말이 든 추적 파일을 찾는다(없으면 빈 배열). */
-function gitGrepFiles(word: string, pathspec: string): string[] {
-  try {
-    return execFileSync("git", ["grep", "-l", "-w", "-e", word, "--", pathspec], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
-      .split("\n")
-      .filter(Boolean);
-  } catch (error) {
-    if ((error as { status?: number }).status === 1) return [];
-    throw error;
-  }
-}
-
 const NUMBER = /\d[\d,]*(?:\.\d+)?/gu;
 const MONTH_DAY = /(?<![\d-])\d{2}-\d{2}(?![\d-])/gu;
 

@@ -1,5 +1,7 @@
 # 원설계 VS-01–30 구현 근거와 남은 완료 경로
 
+> 2026-10-12 정정: 클래식 공간 클라이언트 제거(본 문서 기록 이후)로 사라진 파일의 링크는 경로 표기로 바꿨다. 본문 서술은 작성 당시의 사실 기록이다.
+
 > **Historical status notice (2026-09-24):** This ledger records the implementation state audited on 2026-09-20. Later main-branch work closed the product-code gaps. Use [Virtual Studio and all-pages spatial experience — product-code closure](virtual-studio-all-pages-closure-20260924.md) for the current closure matrix and keep physical-device, WAN, long-session, and production-rollout certification separate.
 
 
@@ -63,9 +65,9 @@
 
 주요 직접 source:
 
-- [사람 카드](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceSocialPanel.tsx), [사회적 동의 모델](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-social.ts), [대화 모델](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-conversation.ts), [Huddle 연결](../../apps/web/src/domains/creator/live/huddle/StudioP2pHuddleLauncher.tsx), [현재 acoustic policy](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-acoustics.ts).
+- 사람 카드(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceSocialPanel.tsx`), 사회적 동의 모델(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-social.ts`), 대화 모델(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-conversation.ts`), [Huddle 연결](../../apps/web/src/domains/creator/live/huddle/StudioP2pHuddleLauncher.tsx), [현재 acoustic policy](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-acoustics.ts).
 - [외부 검토 UI](../../apps/web/src/domains/creator/studio-production/StudioExternalReviewPanel.tsx), [외부 token/현재 원고 읽기 repository](../../apps/api/src/modules/creator/studio-production.repository.ts).
-- [자리 hook](../../apps/web/src/domains/creator/virtual-space/use-studio-virtual-space-slots.ts), [world manifest](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-manifest.ts), [world authoring](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-authoring.ts), [NPC director](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-npc-director.ts), [실제 아트 registry](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-character-skins.ts).
+- 자리 hook(`../../apps/web/src/domains/creator/virtual-space/use-studio-virtual-space-slots.ts`), [world manifest](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-manifest.ts), world authoring(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-authoring.ts`), NPC director(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-npc-director.ts`), [실제 아트 registry](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-character-skins.ts).
 - WORLD 전용 구현: `apps/web/src/domains/creator/virtual-space/world-publication/`의 controller/assets/hook/Panel, `apps/api/src/modules/studio-project-graph/studio-world-{publication,acoustic,conversation}.repository.ts`. 이 source가 THIRD의 동일 파일에 이미 통합됐다는 뜻은 아니다.
 
 ## 제작 접점과 운영 품질: VS-20–30
@@ -87,7 +89,7 @@
 주요 직접 source:
 
 - [Writer Room review](../../apps/web/src/domains/creator/StudioWriterRoomReviewSurfaces.tsx), [3D storyboard](../../apps/web/src/domains/creator/bg3d/StudioBg3dSpatialStoryboardPanel.tsx), [에셋 비교 UI](../../apps/web/src/domains/creator/StudioAssetDecisionPanel.tsx), [권리 audit](../../apps/web/src/domains/creator/StudioAssetRightsAuditDialog.tsx).
-- [AI 실행 preflight](../../apps/web/src/domains/creator/ai/studio-ai-execution-preflight.ts), [직접 workspace 목적지](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-model.ts), [목록](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceDirectory.tsx), [project 진단](../../apps/web/src/domains/creator/studio-project-diagnostics.ts).
+- [AI 실행 preflight](../../apps/web/src/domains/creator/ai/studio-ai-execution-preflight.ts), [직접 workspace 목적지](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-model.ts), 목록(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceDirectory.tsx`), [project 진단](../../apps/web/src/domains/creator/studio-project-diagnostics.ts).
 
 ## 세 핵심 흐름에서 다음으로 닫을 다섯 구현 단위
 

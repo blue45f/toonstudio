@@ -1,5 +1,7 @@
 # Virtual Studio 공식 제품 벤치마크와 전체 완료 조건 — 2026-09-20
 
+> 2026-10-12 정정: 클래식 공간 클라이언트 제거(본 문서 기록 이후)로 사라진 파일의 링크는 경로 표기로 바꿨다. 본문 서술은 작성 당시의 사실 기록이다.
+
 상태: **current 조사 / target 요구사항**. 공식 문서는 2026-09-20에 열람했다. ToonStudio 비교 기준은 `2981170a292fbe83a57b2a2913d6ddcfa3cbde74`의 source이며, 구현 작업 중인 파일의 후속 변경은 이 기준에 포함하지 않는다. 이 문서는 제품 사용 실험이나 접근성 인증, 실네트워크 성능 검증을 대신하지 않는다. 아래 우선순위는 구현 순서이며 낮은 순위의 원설계 요구를 삭제하거나 전체 완료 범위를 줄이지 않는다.
 
 후속 구현과 실제 검증 범위는 [continuation acceptance](virtual-studio-completion-acceptance-20260920.md)에 따로 기록한다. 아래 기준 SHA 비교표는 과거 조사 기준을 보존하며, 후속 구현을 누락했다는 뜻이 아니다. 후속 기록에서도 B01–B20와 E01–E25 전체 완료를 선언하지 않는다.
@@ -76,9 +78,9 @@ Settings는 Battery Saver/Performance/High Quality와 video 표시, audio radius
 
 확인한 주요 소스:
 
-- [Page와 도구·social 연결](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePage.tsx), [SocialPanel](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceSocialPanel.tsx), [social 프로토콜](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-social.ts), [social hook](../../apps/web/src/domains/creator/virtual-space/use-studio-virtual-space-social.ts)
-- [world manifest](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-manifest.ts), [작성 모델](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-authoring.ts), [작성 UI](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceWorldAuthoringPanel.tsx)
-- [Phaser canvas](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx), [NPC director](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-npc-director.ts), [skin registry](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-character-skins.ts), [presence](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-presence.ts)
+- [Page와 도구·social 연결](../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePage.tsx), SocialPanel(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceSocialPanel.tsx`), social 프로토콜(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-social.ts`), social hook(`../../apps/web/src/domains/creator/virtual-space/use-studio-virtual-space-social.ts`)
+- [world manifest](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-manifest.ts), 작성 모델(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-world-authoring.ts`), 작성 UI(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceWorldAuthoringPanel.tsx`)
+- Phaser canvas(`../../apps/web/src/domains/creator/virtual-space/StudioVirtualSpacePhaserCanvas.tsx`), NPC director(`../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-npc-director.ts`), [skin registry](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-character-skins.ts), [presence](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-presence.ts)
 - [Huddle controller](../../apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-controller.ts), [Huddle cap와 wire](../../apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-protocol.ts), [runtime 검증기](../../scripts/validate-virtual-studio-runtime.mjs), [기존 acceptance 기록](virtual-studio-living-world-acceptance-20260920.md)
 
 ## 4. 전체 완료 원장에 추가할 요구·수락 증거
