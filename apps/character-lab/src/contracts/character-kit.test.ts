@@ -610,6 +610,33 @@ describe("contracts/character-kit manifest 스키마", () => {
     expect(reasonsAfter((manifest) => void (asRecord(manifest.provenance).sources = []))).toContain("provenance.sources");
   });
 
+  it("provenance: Hyper3D 산출물은 generationId·evidenceDoc·derivative가 있어야 통과하고 다른 출처에는 쓸 수 없다", () => {
+    const sources = (manifest: Record<string, unknown>): Array<Record<string, unknown>> => asRecord(manifest.provenance).sources as Array<Record<string, unknown>>;
+    const hyper3d = (): Record<string, unknown> => ({
+      id: "hyper3d-top-tee",
+      name: "Hyper3D(Rodin) 생성물 top/tee",
+      version: "Gen-2.5-Medium",
+      url: "https://hyper3d.ai/workspace/rodin/82698064-e736-4b1e-ac56-67f6569bd364",
+      zipSha256: "1c60f00ef7f96785525d133fd3dad94fd4a49743709534f216a6277160235a5b",
+      license: "hyper3d-rodin-output",
+      derivative: true,
+      changesKo: "마네킹 조각 제거, 베이스에 맞춰 리타깃, 텍스처를 상대색으로 재베이크.",
+      generationId: "82698064-e736-4b1e-ac56-67f6569bd364",
+      evidenceDoc: "apps/character-lab/docs/hyper3d-terms-record.md",
+    });
+    expect(reasonsAfter((manifest) => void sources(manifest).push(hyper3d()))).toBe("");
+    expect(reasonsAfter((manifest) => void sources(manifest).push({ ...hyper3d(), generationId: undefined }))).toContain("generationId(uuid)가 필요");
+    expect(reasonsAfter((manifest) => void sources(manifest).push({ ...hyper3d(), evidenceDoc: undefined }))).toContain("반입 기록 문서 경로");
+    expect(reasonsAfter((manifest) => void sources(manifest).push({ ...hyper3d(), evidenceDoc: "docs/elsewhere.md" }))).toContain("반입 기록 문서 경로");
+    expect(reasonsAfter((manifest) => void sources(manifest).push({ ...hyper3d(), evidenceDoc: "apps/character-lab/docs/../../../etc/passwd" }))).toContain("반입 기록 문서 경로");
+    expect(reasonsAfter((manifest) => void sources(manifest).push({ ...hyper3d(), derivative: false }))).toContain("파생물이어야");
+    expect(reasonsAfter((manifest) => void sources(manifest).push({ ...hyper3d(), zipSha256: undefined }))).toContain("zipSha256이 필요");
+    expect(reasonsAfter((manifest) => void sources(manifest).push({ ...hyper3d(), url: "http://hyper3d.ai/x" }))).toContain("https URL");
+    // 다른 라이선스 출처에는 Hyper3D 전용 필드를 쓸 수 없다.
+    expect(reasonsAfter((manifest) => void (sources(manifest)[1]!.generationId = "82698064-e736-4b1e-ac56-67f6569bd364"))).toContain("hyper3d-rodin-output 출처에만");
+    expect(reasonsAfter((manifest) => void (sources(manifest)[0]!.evidenceDoc = "apps/character-lab/docs/hyper3d-terms-record.md"))).toContain("hyper3d-rodin-output 출처에만");
+  });
+
   it("관절 오프셋: 어휘 밖 키·없는 본·과대 크기를 거부한다", () => {
     expect(reasonsAfter((manifest) => void (asRecord(manifest.jointOffsets)["param:bogus:+"] = {}))).toContain("morph 어휘에 없습니다");
     expect(reasonsAfter((manifest) => void (asRecord(asRecord(manifest.jointOffsets)["param:height:+"])["mixamorig:Nope"] = [0, 0, 0]))).toContain("skeleton.joints에 없습니다");

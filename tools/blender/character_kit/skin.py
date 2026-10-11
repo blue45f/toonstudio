@@ -383,6 +383,8 @@ def convert_to_t_pose(
     for label in ("Left", "Right"):
         pivot = rig.a_pose[rig.index(f"{MIXAMO}{label}Arm")]
         free_mask |= mixed & (np.linalg.norm(positions - pivot, axis=1) < shoulder_radius)
+    # 이웃이 없는 정점(떼어 낸 삼각형만 쓰던 고아 정점)은 ARAP 선형계를 특이하게 만든다 — 풀 대상에서 뺀다.
+    free_mask &= np.diff(ptr) > 0
     free = np.flatnonzero(free_mask)
     if free.size == 0:
         return moved

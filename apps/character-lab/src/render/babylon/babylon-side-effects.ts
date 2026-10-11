@@ -63,8 +63,18 @@ import "@babylonjs/core/ShadersWGSL/ShadersInclude/morphTargetsVertexDeclaration
 import "@babylonjs/core/ShadersWGSL/ShadersInclude/morphTargetsVertexGlobal.js";
 import "@babylonjs/core/ShadersWGSL/ShadersInclude/morphTargetsVertexGlobalDeclaration.js";
 import "@babylonjs/core/ShadersWGSL/ShadersInclude/sceneUboDeclaration.js";
-// ---- glTF 2.0 로더 등록(.glb SceneLoader 플러그인 + GLTF2 로더 팩토리). KHR 확장은 package-loader가 명시 등록한다.
+// ---- glTF 2.0 로더 등록(.glb SceneLoader 플러그인 + GLTF2 로더 팩토리)
 import "@babylonjs/loaders/glTF/2.0/glTFLoader.js";
+// ---- 키트 계약이 허용하는 glTF 확장(`KIT_ALLOWED_EXTENSIONS`)의 로더 등록. 등록하지 않으면 `extensionsRequired`에 든 확장은
+// "Required extension … is not available"로 GLB 로드가 통째로 실패한다(베이스는 morph 양자화로 `KHR_mesh_quantization`을 필수로 쓴다).
+// 허용 목록과 이 목록의 일치는 babylon-import-policy.test.ts가 강제한다.
+import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_clearcoat.js";
+import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_emissive_strength.js";
+import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_ior.js";
+import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_sheen.js";
+import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_materials_specular.js";
+import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_mesh_quantization.js";
+import "@babylonjs/loaders/glTF/2.0/Extensions/KHR_texture_transform.js";
 
 /** side-effect 모듈이 적용됐음을 다른 모듈이 import 바인딩으로 보장받기 위한 표식 */
 export const BABYLON_SIDE_EFFECTS_LOADED = true as const;

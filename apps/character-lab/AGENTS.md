@@ -69,6 +69,8 @@
 - 베타 기능 토글(NodeMaterial 툰·IBL Shadows·OpenPBR·투영 페인트)은 **엔진 세션 상태**다. `ShadingProfile`·레시피는 core가 동결한 strict 계약이라 베타 필드를 더하지 않고, 엔진의 구조적 포트(`betaFeatures()`·`setBetaFeature()`, `render/beta-features.ts`)를 RenderPanel이 읽는다. 지원하지 않는 엔진에서는 켜지지 않고 한글 사유를 보이며 다른 경로로 대체하지 않는다.
 - 레이아웃 규약: 데스크톱 폭(≥1181px)에서 워크벤치는 창 높이에 갇히고 좌·우 열이 각자 스크롤한다(뷰포트 캔버스는 고정). 패널 루트에 `height: 100vh`·`min-height: 100vh`를 두지 않는다 — 열이 늘어나 페이지 전체가 스크롤된다.
 - 라이선스: 상업 이용 가능 라이선스(MIT/Apache-2.0/BSD/ISC/Zlib/CC0)만. 참고 코드는 개념·수식만 재구현하고 출처를 주석에 남긴다. 경쟁 제품 코드·에셋 복제 금지. 모든 프리셋은 `license: "original"`.
+  모듈식 키트 파츠는 예외로 `provenance.license`에 `hyper3d-rodin-output`(Hyper3D 구독 플랜 생성물의 파생물)을 쓸 수 있다. 이 값은 `docs/hyper3d-terms-record.md`의 반입 기록과 생성 id를 가리켜야 하고,
+  **공개 저장소로의 push·병합은 사용자의 별도 지시로만** 한다(원본 Rodin GLB는 저장소에 커밋하지 않는다).
 
 ## 5. 검증
 

@@ -397,6 +397,7 @@ async function runPipeline(state) {
   if (!loadResult.ok) {
     state.failure = { stage: loadResult.stage, code: loadResult.failure.code, reasonKo: loadResult.failure.reasonKo };
     log(`로드 실패(${loadResult.stage}): [${loadResult.failure.code}] ${loadResult.failure.reasonKo}`);
+    if (loadResult.failure.detail) log(`  원인: ${String(loadResult.failure.detail).slice(0, 1500)}`);
     return;
   }
   state.runtime = loadResult.runtime;

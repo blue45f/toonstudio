@@ -1008,6 +1008,44 @@ it("V4: https가 아닌 출처 URL, zip SHA 없음, 한글 없는 변경 내용,
   assertError(result, "V4", "NOTICE");
 });
 
+it("V4: Hyper3D 산출물은 generationId·반입 기록 문서(저장소에 실제로 있는 파일)가 있어야 통과한다", async () => {
+  const hyper3d = (overrides) => ({
+    id: "hyper3d-top-tee",
+    name: "Hyper3D(Rodin) 생성물 top/tee",
+    version: "Gen-2.5-Medium",
+    url: "https://hyper3d.ai/workspace/rodin/82698064-e736-4b1e-ac56-67f6569bd364",
+    zipSha256: "1c60f00ef7f96785525d133fd3dad94fd4a49743709534f216a6277160235a5b",
+    license: "hyper3d-rodin-output",
+    derivative: true,
+    changesKo: "마네킹 조각 제거, 베이스에 맞춰 리타깃, 텍스처 재베이크.",
+    generationId: "82698064-e736-4b1e-ac56-67f6569bd364",
+    evidenceDoc: "apps/character-lab/docs/hyper3d-terms-record.md",
+    ...overrides,
+  });
+  const ok = await newKit();
+  ok.manifest.provenance.sources.push(hyper3d({}));
+  const accepted = await runVerify(ok, { only: ["V4"] });
+  assert.deepEqual(errorsOf(accepted, "V4"), [], "기록이 있는 Hyper3D 출처는 V4를 통과해야 합니다.");
+
+  // 형식 위반(uuid·경로 접두·derivative)은 V1(스키마·교차 검증)이 먼저 잡고, 그러면 V4는 건너뛴다.
+  // 스키마 오류가 있으면 교차 검증은 돌지 않으므로 위반마다 키트를 따로 만든다.
+  for (const [overrides, fragment] of [
+    [{ generationId: "not-a-uuid" }, "UUID"],
+    [{ evidenceDoc: "docs/elsewhere.md" }, "반입 기록 문서 경로"],
+    [{ derivative: false }, "파생물이어야"],
+  ]) {
+    const malformed = await newKit();
+    malformed.manifest.provenance.sources.push(hyper3d({ id: "malformed", ...overrides }));
+    assertError(await runVerify(malformed, { only: ["V1"] }), "V1", fragment);
+  }
+
+  // 형식은 맞지만 기록 문서가 저장소에 없으면 V4가 잡는다.
+  const missingDoc = await newKit();
+  missingDoc.manifest.provenance.sources.push(hyper3d({ id: "no-doc", evidenceDoc: "apps/character-lab/docs/does-not-exist.md" }));
+  const result = await runVerify(missingDoc, { only: ["V4"] });
+  assertError(result, "V4", "저장소에 없습니다");
+});
+
 // ---------------------------------------------------------------- V5
 
 it("V5: 금지 확장·허용 밖 필수 확장·외부 URI·GLB가 아닌 바이트를 잡고 선택 확장은 경고만 한다", async () => {
@@ -1059,6 +1097,16 @@ it("V6: 부모 관계가 다르면 오류다", async () => {
   });
   const result = await runVerify(kit, { only: ["V6"] });
   assertError(result, "V6", "joint mixamorig:LeftHand의 부모");
+});
+
+it("V6: skin.skeleton이 Armature처럼 루트 joint가 아니면 오류다(Babylon이 추가 본을 만든다)", async () => {
+  const kit = await newKit();
+  await tweakGlb(kit, "parts/top/tee.glb", (doc) => {
+    const armature = doc.getRoot().listNodes().find((node) => node.getName() === "Armature");
+    doc.getRoot().listSkins()[0].setSkeleton(armature);
+  });
+  const result = await runVerify(kit, { only: ["V6"] });
+  assertError(result, "V6", "skin.skeleton이 'Armature'");
 });
 
 it("V6: 선언 안 된 메시 노드·빠진 메시 노드·헤어 이름 규칙 위반을 잡는다", async () => {

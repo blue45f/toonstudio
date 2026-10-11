@@ -283,8 +283,9 @@ zod 정의는 `contracts/character-kit.ts`(10절)가 단일 기준이고 아래 
 }
 ```
 
-- 허용 `license`: `CC0-1.0`, `original`. 그 외는 검증기 오류(상용 제품 에셋·불명확 라이선스 금지, 리드 브리프 2절).
+- 허용 `license`: `CC0-1.0`, `original`, `hyper3d-rodin-output`(2026-10-11 추가). 그 외는 검증기 오류(상용 제품 에셋·불명확 라이선스 금지, 리드 브리프 2절).
 - 새로 내려받는 소스는 `zipSha256`과 `url`(https)을 반드시 적는다. `original`은 `url`·`zipSha256` 생략 가능.
+- **`hyper3d-rodin-output`**(Hyper3D 구독 플랜으로 생성한 산출물과 파생물): `derivative: true`, `generationId`(uuid), `evidenceDoc`(`apps/character-lab/docs/` 아래 반입 기록 문서, 검증기는 파일 존재까지 확인), `url`(https, 생성 결과 페이지)과 `zipSha256`(원본 GLB의 SHA-256)가 모두 필요하다. 이 값은 **법적 허용을 뜻하지 않는다** — 약관상 닫히지 않은 점은 [`hyper3d-terms-record.md`](hyper3d-terms-record.md)에 있고, 기록 없이 반입하지 못하게 하는 것이 목적이다. 다른 출처에는 `generationId`·`evidenceDoc`을 쓸 수 없다.
 - `NOTICE.md`는 사람용 요약이다(자동 생성). CC0는 고지 의무가 없지만 출처 추적용이다.
 
 ### 3.9 기본 선택값
@@ -671,9 +672,9 @@ pnpm run verify:character-kit -- [--root apps/character-lab/public/assets/charac
 | V1 | 오류 | `kit.json`을 `kitManifestSchema`(strict)로 파싱(실패 시 느슨한 객체 스키마로 이슈를 40개까지 보고), `schema`·`kitId`·`kitVersion`(= `KIT_CURRENT_VERSION`)·`coordinateSystem` 상수 일치, `defaults.base`·`defaults.slots`·`defaults.colors`가 `KIT_DEFAULT_BASE_ID`/`KIT_DEFAULT_SLOTS`/`DEFAULT_RECIPE_COLORS`와 같음. **`kit.json` 없음·해석 불가는 `--only`와 무관하게 V1 오류로 보고한다(자동 포함)** |
 | V2 | 오류 | 참조된 모든 파일 존재, `bytes`·`sha256` 재계산 일치, 경로 이탈(`..`·절대·역슬래시) 금지, 디렉터리에 `kit.json`이 모르는 파일(`NOTICE.md` 제외) 없음, 대소문자만 다른 중복 경로 금지 |
 | V3 | 오류 | 용량: 베이스 ≤ 16 MiB, 파츠 ≤ 1.5 MiB, 키트 고유 파일 합 ≤ 64 MiB (수치 출력; 정정 2026-10-08) |
-| V4 | 오류 | provenance: `sources[]` 비어 있지 않음, `license ∈ {CC0-1.0, original}`, 다운로드 소스는 `https` URL + `zipSha256` 64hex, `changesKo`에 한글 포함, `NOTICE.md` 존재 |
+| V4 | 오류 | provenance: `sources[]` 비어 있지 않음, `license ∈ {CC0-1.0, original, hyper3d-rodin-output}`, 다운로드 소스는 `https` URL + `zipSha256` 64hex, `hyper3d-rodin-output`은 `derivative` + `generationId` + 실제로 있는 `evidenceDoc`, `changesKo`에 한글 포함, `NOTICE.md` 존재 |
 | V5 | 오류 | **(GLB 검사를 고르면 자동 포함)** 각 GLB가 glTF 2.0 컨테이너, `extensionsRequired`가 허용 목록(3.6)의 부분집합, 금지 확장(Draco·meshopt·basisu·webp) 없음, 외부 URI 이미지/버퍼 없음 |
-| V6 | 오류 | 이름: 모든 GLB의 `skin.joints`가 `skeleton.joints`(68개)와 **원소별 동일**, 부모 관계가 `skeleton.parents`와 일치, `boneMap`이 계약 55본을 정확히 1회씩 덮고 부모가 `HUMANOID_BONE_PARENTS`와 일치, `classifyBoneNames(joints, boneMap)`이 55/55, 메시 노드 이름 집합 = 선언 `meshes[].node`, 헤어 이름 정규식·`style` = id 이름, 메시 노드 이름 중복 없음 |
+| V6 | 오류 | 이름: 모든 GLB의 `skin.joints`가 `skeleton.joints`(68개)와 **원소별 동일**, 부모 관계가 `skeleton.parents`와 일치, `boneMap`이 계약 55본을 정확히 1회씩 덮고 부모가 `HUMANOID_BONE_PARENTS`와 일치, `classifyBoneNames(joints, boneMap)`이 55/55, 메시 노드 이름 집합 = 선언 `meshes[].node`, 헤어 이름 정규식·`style` = id 이름, 메시 노드 이름 중복 없음, `skin.skeleton`은 생략이거나 루트 joint(`mixamorig:Hips`) |
 | V7 | 오류 | 변환: Armature 루트 TRS 항등·스케일 1, 스킨 메시 노드 월드 변환 항등, 음수 스케일 없음, 베이스 높이 = `heightM` ± 2 %, 발바닥 `min y` ∈ ±5 mm, 얼굴 방향 +Z(눈 중심 z > 머리 bbox 중심 z) |
 | V8 | 오류 | 스킨: 모든 메시에 `JOINTS_0`·`WEIGHTS_0`, `JOINTS_1` 없음(영향 ≤ 4), 가중치 합 1 ± 1e-3(전수), joint 인덱스 < 68, NaN/Inf 없음, `inverseBindMatrices` 수 = 68, 가중치 0인 슬롯의 인덱스는 0 |
 | V9 | 오류 | morph: 이름이 어휘 64개 안(`ext:*` 금지), 메시별 타깃 수 ≤ 96, `KIT_MORPH_COVERAGE` 최소 요구 충족, `+`/`−` 델타가 서로 다름, 델타 크기 상한(체형 ≤ 0.15 m, 얼굴 ≤ 0.05 m)과 비영(≥ 1e-5; **정정 2026-10-08 — 심각도 차등**: 델타가 사실상 0일 때 `param:*` 타깃이거나 `TS_Body`·`TS_Head` 메시이면 **오류**, 그 밖의 메시의 FACS 표정 타깃이면 **경고**(그 메시에서 움직이지 않는 표정일 수 있음)), 선언 `morphs[]`와 GLB `targetNames` 일치, 한 메시 안의 법선 델타 유무 일관 + **심 일치**: `TS_Body`·`TS_Head`의 같은 위치 정점(1e-6)에서 공유 체형 타깃 델타가 1e-5 이내로 같음(**정정 2026-10-08: 같은 위치 정점 쌍이 0쌍이면 오류** — 분할 루프가 다르거나 목에 틈이 있다는 뜻이고, 공유 체형 morph가 없어도 오류) + **따라가기 검사**: 의상·속옷·신발·속눈썹·눈썹 정점마다 가장 가까운 몸/머리 정점(공간 해시)을 찾아 모든 체형·얼굴 ±1 타깃에서의 변위 차가 경고 5 mm / 오류 15 mm(기준 정점 탐색 반경 6 cm, 반경 밖 정점은 비교하지 않고 개수만 경고; 대상은 top·bottom·shoes·underwear → 몸, lash·brow → 머리; 통계량은 `--follow-quantile`) |
@@ -796,6 +797,7 @@ pnpm run verify:character-kit -- [--root apps/character-lab/public/assets/charac
 1. 레스트는 T-포즈. 팔 수평, 손바닥 아래, 엄지 앞, 다리는 약간 벌림.
 2. 모든 GLB는 같은 68 joint와 같은 `skin.joints` 순서를 쓴다(베이스에서 한 번 정하고 파츠 내보내기에 재사용).
 3. `Armature` 루트와 스킨 메시 노드의 변환은 항등, 스케일 1.
+   `skin.skeleton`은 생략하거나 루트 joint(`mixamorig:Hips`) 노드로 둔다. `Armature`를 가리키면 glTF상 유효하지만 Babylon 로더가 그 노드를 joint 밖의 추가 본으로 만들어 앱이 `kit-joint-mismatch`(여분 joint `Armature`)로 거부한다(V6이 잡는다).
 4. glTF 내보내기 옵션: `export_yup=True`, 스킨 포함, `export_morph=True`, 법선 델타는 `TS_Head`·`TS_Body`만, sparse accessor 사용(`export_try_sparse_sk`), 모디파이어 적용, `export_leaf_bone=False`(끝 본은 이미 있다), 애니메이션 없음, 이미지 임베드, 확장은 허용 목록만, 압축 없음.
 5. morph 타깃 이름은 shape key 이름 그대로(`extras.targetNames`).
 6. 정점 속성 `_REGION`(`TS_Body`·`TS_Head`), 헤어 `COLOR_0`(회색 AO, 선택).

@@ -28,14 +28,31 @@ class SurfaceHits:
 
 
 def vertex_normals(positions: np.ndarray, triangles: np.ndarray) -> np.ndarray:
-    """면적 가중 정점 법선 (N,3)."""
+    """면적 가중 정점 법선 (N,3).
+
+    맞붙어 접힌 얇은 겹면 위의 정점은 인접 면 법선이 서로 상쇄돼 합이 0벡터가 된다(길이 0 법선은 검증기 V20 오류). 그런 정점(합 길이가 면 크기 합의 0.1 % 미만)은
+    가장 큰 인접 면의 법선으로 대신한다.
+    """
     a, b, c = positions[triangles[:, 0]], positions[triangles[:, 1]], positions[triangles[:, 2]]
     face = np.cross(b - a, c - a)
     normals = np.zeros_like(positions, dtype=np.float64)
+    scale = np.zeros(len(positions), dtype=np.float64)
+    magnitude = np.linalg.norm(face, axis=1)
     for k in range(3):
         np.add.at(normals, triangles[:, k], face)
-    length = np.linalg.norm(normals, axis=1, keepdims=True)
-    return normals / np.maximum(length, 1e-12)
+        np.add.at(scale, triangles[:, k], magnitude)
+    length = np.linalg.norm(normals, axis=1)
+    weak = np.flatnonzero((scale > 0.0) & (length < 1.0e-3 * scale))
+    if weak.size:
+        flat = triangles.reshape(-1)
+        order = np.argsort(flat, kind="stable")
+        starts = np.searchsorted(flat[order], weak, side="left")
+        ends = np.searchsorted(flat[order], weak, side="right")
+        for vertex, start, end in zip(weak, starts, ends, strict=True):
+            faces = order[start:end] // 3
+            normals[vertex] = face[faces[np.argmax(magnitude[faces])]]
+        length = np.linalg.norm(normals, axis=1)
+    return normals / np.maximum(length, 1e-12)[:, None]
 
 
 def triangle_normals(positions: np.ndarray, triangles: np.ndarray) -> np.ndarray:
