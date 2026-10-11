@@ -564,16 +564,15 @@ export class ScreenShareHost {
         route: "/studio",
       },
       {
-        feature: t("가상 스튜디오 · 가까이 가면 영상", "Virtual studio · video when you come close"),
+        feature: t("권한 상태 조회 · 동의 범위 확인", "Permission state lookup and consent scope"),
         role: t(
-          "동의 카드에서 카메라+마이크, 카메라만, 마이크만, 나중에 중 하나를 고르게 하고 버튼을 누를 때만 장치를 켭니다. 권한 상태는 창을 띄우지 않고 조회합니다.",
-          "A consent card offers camera and mic, camera only, mic only or not now, and devices turn on only on a button press. Permission state is read without opening any prompt.",
+          "권한 상태는 창을 띄우지 않고 조회합니다. 캡처 동의는 그 대화의 상대 범위와 권한 번호에 묶여 있어, 범위가 바뀌면 켜진 장치를 다음 대화로 가져가지 않고 해제합니다.",
+          "Permission state is read without opening any prompt. Capture consent is bound to that conversation's audience and authority revision, so when the scope changes, enabled devices are released instead of being carried into another conversation.",
         ),
         paths: [
-          "apps/web/src/domains/creator/virtual-space/hud/SpaceProximityVideo.tsx#SpaceProximityConsent",
+          `${HUDDLE}/StudioP2pHuddleLauncher.tsx`,
           "apps/web/src/domains/creator/virtual-space/studio-virtual-space-rtc-diagnostics.ts",
         ],
-        route: "/studio/space",
       },
       {
         feature: t("사이트 보안 헤더", "Site security headers"),
@@ -703,8 +702,8 @@ Permissions-Policy: camera=(self), microphone=(self), geolocation=(), cross-orig
         },
       ],
       pitfall: t(
-        "'도청이 불가능하다' 같은 표현은 쓰지 마세요. 상대방 쪽 녹화·캡처는 막지 못하고, P2P 특성상 네트워크 주소가 상대에게 보일 수 있습니다. 근접 영상 동의 카드의 안내 문구는 '중계(TURN) 서버는 사용하지 않아서, 회사망·일부 모바일망처럼 직접 연결이 막힌 환경에서는 영상이 이어지지 않아요'로 실태를 그대로 말하고, TURN 자격 발급은 코드에서 제거됐습니다(ICE 카드 참조). 전·후면 카메라 전환과 인앱 브라우저는 실기기로 검증하지 않았습니다. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
-        "Do not claim eavesdropping is impossible: a peer's own recording cannot be prevented and, being P2P, peers may see your network address. The proximity-video consent card now states the reality directly (no relay (TURN) server is used, so where direct links are blocked — some company or mobile networks — video will not connect), and TURN credential issuance has been removed from the code (see the ICE card). Front and rear camera switching and in-app browsers were not verified on real devices. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
+        "'도청이 불가능하다' 같은 표현은 쓰지 마세요. 상대방 쪽 녹화·캡처는 막지 못하고, P2P 특성상 네트워크 주소가 상대에게 보일 수 있습니다. 허들 참여 안내도 '실패 시 서버 중계로 전환하지 않습니다'라고 실태를 그대로 밝히고, TURN 자격 발급은 코드에서 제거됐습니다(ICE 카드 참조). 전·후면 카메라 전환과 인앱 브라우저는 실기기로 검증하지 않았습니다. 실험으로 표시한 이유: 코드는 제품 경로에 연결돼 있지만(허들 런처가 기본으로 마운트됨) 실기기·NAT 환경별 검증이 끝나지 않았기 때문입니다.",
+        "Do not claim eavesdropping is impossible: a peer's own recording cannot be prevented and, being P2P, peers may see your network address. The huddle join notice likewise states the reality directly (on failure it does not switch to a server relay), and TURN credential issuance has been removed from the code (see the ICE card). Front and rear camera switching and in-app browsers were not verified on real devices. Why it is marked experimental: the code is wired into the product path (the huddle launcher mounts by default), but real-device and per-NAT verification is not finished.",
       ),
     },
     technologies: ["getUserMedia", "getDisplayMedia", "Permissions-Policy", "Permissions API", "WebRTC"],

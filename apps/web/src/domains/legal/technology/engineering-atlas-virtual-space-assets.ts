@@ -3,7 +3,8 @@ import { t, VIRTUAL_SPACE_REVIEWED_AT } from "./engineering-atlas-virtual-space-
 
 /**
  * virtual-space 카드 5: 아트 에셋 파이프라인(v3~v9, CI 게이트) · 캐릭터 아틀라스/LPC/텍스처 상주.
- * 경로·수치는 2026-10-07 기준 코드와 매니페스트에서 직접 확인한 값이다.
+ * 웹(Phaser) 공간 클라이언트 제거와 Godot 무대 교체 이후 기준으로 다시 확인했다.
+ * 경로·수치는 현재 코드와 매니페스트에서 직접 확인한 값이다.
  */
 
 const V = "apps/web/src/domains/creator/virtual-space";
@@ -17,13 +18,13 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
     title: t("그림 에셋을 만들고 해시로 지키는 파이프라인(v3~v9)", "A pipeline that builds art assets and guards them by hash (v3 to v9)"),
     status: "live",
     tagline: t(
-      "원본을 결정적으로 가공하고 해시 매니페스트를 CI 가 검증합니다. v8·v9 는 단위 테스트가 대조합니다.",
-      "Sources are processed deterministically and CI checks hash manifests; v8 and v9 are compared by unit tests.",
+      "원본을 결정적으로 가공하고 해시 매니페스트를 CI 가 검증합니다. 웹 소비처는 로비와 미리보기입니다.",
+      "Sources are processed deterministically and CI checks hash manifests; the web consumers are the lobby and previews.",
     ),
     background: [
       t(
-        "가상 스튜디오의 그림(배경, 캐릭터, 가구)은 3,553개 파일, 약 410 MiB 입니다. 이만큼의 그림이 버전을 거듭하며 바뀌면, 파일 하나가 몰래 바뀌거나 빠져도 눈치채기 어렵습니다. 그래서 팩마다 '명세서'(매니페스트)에 파일별 크기와 지문(SHA-256)을 적어 두고, 빌드 때마다 기계가 명세서와 실제 파일을 대조합니다. 택배 상자마다 송장과 무게를 적어 두고 도착할 때 대조하는 것과 같습니다.",
-        "The studio's art (backgrounds, characters, furniture) is 3,553 files and about 410 MiB. With that much art changing across versions, one file silently altered or missing is hard to notice. So each pack's manifest lists every file's size and fingerprint (SHA-256), and a machine compares the manifest with the real files on every build. It is like writing an invoice and weight on every parcel and checking them on arrival.",
+        "가상 스튜디오의 그림(배경, 캐릭터, 가구)은 3,560개 파일, 약 412.6 MiB 입니다. 이만큼의 그림이 버전을 거듭하며 바뀌면, 파일 하나가 몰래 바뀌거나 빠져도 눈치채기 어렵습니다. 그래서 팩마다 '명세서'(매니페스트)에 파일별 크기와 지문(SHA-256)을 적어 두고, 기계가 명세서와 실제 파일을 대조합니다. 택배 상자마다 송장과 무게를 적어 두고 도착할 때 대조하는 것과 같습니다. 공간 안 렌더는 이제 Godot 무대가 맡고, 이 팩의 웹 소비처는 입장 로비와 캐릭터·장소 미리보기입니다.",
+        "The studio's art (backgrounds, characters, furniture) is 3,560 files and about 412.6 MiB. With that much art changing across versions, one file silently altered or missing is hard to notice. So each pack's manifest lists every file's size and fingerprint (SHA-256), and a machine compares the manifest with the real files. It is like writing an invoice and weight on every parcel and checking them on arrival. In-space rendering is now handled by the Godot stage, and the web consumers of these packs are the entry lobby and the character and place previews.",
       ),
       t(
         "흐름은 이렇습니다. ① 원본을 준비합니다(v4·v6·v7 은 이미지 생성 도구로 만든 시트·보드, v5 는 스크립트가 스타일별로 그린 렌더). ② Python/Pillow 스크립트가 원본을 결정적으로 자르고 팩으로 묶어 webp/png 와 매니페스트(경로, 바이트, SHA-256, 가로세로)를 만듭니다. ③ Node 검증 스크립트가 폴더와 매니페스트가 정확히 일치하는지(남거나 빠진 파일 없음), 크기·해시·이미지 크기가 같은지, 심볼릭 링크와 경로 탈출이 없는지 확인합니다. ④ CI 빌드 작업이 test:studio-virtual-art 와 verify:studio-virtual-art 를 돌려 어긋나면 멈춥니다.",
@@ -34,14 +35,14 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
         "The scripts are designed not to claim a recolored copy is new art. v4 says it only slices frames and packages styles, v5 says no source pixels are reused across styles, v6 and v7 say they use no CSS recolouring, and the v7 verifier even checks the C2PA provenance marks inside the source files and the number of generation IDs. The v8 and v9 manifests state themselves that they do not certify a model version.",
       ),
       t(
-        "한계: v3~v7 과 world-v2 는 CI 의 아트 게이트(verify:studio-virtual-art)가 해시까지 검증합니다. v8(experience-v8)과 v9(cinematic-v9)는 전용 검증 스크립트가 없습니다(게이트는 v7 검증기가 v8 런타임 배경 24종의 해시·크기를 보는 범위뿐). 대신 단위 테스트가 매니페스트의 바이트 수와 SHA-256 을 파일과 대조하며(v8 은 50개, v9 는 8개), 이 테스트는 CI 필수 vitest 대상(studio-foundation 샤드)에 속합니다. 즉 게이트 목록 7종에는 보이지 않을 뿐 테스트 단계에서 돕니다. 이 파이프라인은 그림의 품질이나 저작권을 판단하지 않습니다.",
-        "Limits: v3 to v7 and world-v2 are verified down to hashes by the CI art gate (verify:studio-virtual-art). v8 (experience-v8) and v9 (cinematic-v9) have no dedicated verifier script (the gate reaches only the 24 v8 runtime backdrops, whose hash and size the v7 verifier checks). Instead, unit tests compare the byte counts and SHA-256 values in each manifest with the files (50 assets for v8, 8 for v9), and those tests belong to the CI required vitest targets (the studio-foundation shard). So they are missing from the gate's list of seven only; they run in the test stage. This pipeline does not judge art quality or copyright.",
+        "한계: CI 의 아트 게이트(verify:studio-virtual-art)가 해시까지 검증하는 범위는 v3~v7 과 world-v2 입니다. v8(experience-v8)은 전용 검증 스크립트가 없고, 게이트는 v7 검증기 코드에 포함된 v8 런타임 배경 24종의 해시·크기 대조까지만 닿습니다. 나머지는 생존한 단위 테스트가 나눠 맡습니다. 테마 캐릭터 무결성 테스트는 v8 매니페스트에서 원본 6개의 바이트 수와 SHA-256 을 파일과 대조하고, 미리보기·아틀라스 테스트는 프레임과 URL 을 확인합니다. v9(cinematic-v9) 매니페스트의 8개 기록을 전수 대조하던 전용 테스트는 제거되어, 현재 남은 테스트에서는 그 전수 대조가 확인되지 않습니다. 이 파이프라인은 그림의 품질이나 저작권을 판단하지 않습니다.",
+        "Limits: the CI art gate (verify:studio-virtual-art) verifies v3 to v7 and world-v2 down to hashes. v8 (experience-v8) has no dedicated verifier script, and the gate reaches only the check built into the v7 verifier code that compares the hashes and sizes of the 24 v8 runtime backdrops. Surviving unit tests share the rest: the theme character integrity test compares the byte counts and SHA-256 values of six sources in the v8 manifest with the files, and the preview and atlas tests check frames and URLs. The dedicated test that compared all eight records of the v9 (cinematic-v9) manifest was removed, so no surviving test is confirmed to make that full comparison now. This pipeline does not judge art quality or copyright.",
       ),
     ],
     keyPoints: [
       t("그림마다 바이트 수와 SHA-256 을 매니페스트에 적습니다", "Every file's size and SHA-256 go in a manifest"),
       t("CI 가 폴더와 매니페스트가 정확히 맞는지 대조합니다", "CI checks that the folder matches the manifest exactly"),
-      t("v8·v9 는 게이트가 아닌 단위 테스트가 해시를 대조합니다", "v8 and v9 are hash-checked by unit tests, not by the art gate"),
+      t("소비처는 로비·미리보기, 공간 렌더는 Godot 무대입니다", "Consumers are the lobby and previews; the Godot stage renders the space"),
     ],
     diagram: {
       id: "art-asset-pipeline-v3-v9-ci-gate-diagram",
@@ -52,8 +53,8 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
         "Processing scripts produce packs and manifests, and verifier scripts and CI compare the two.",
       ),
       alt: t(
-        "원본(이미지 생성 도구의 시트나 스크립트 렌더)을 Python 가공 스크립트가 자르고 묶어 에셋 팩과 매니페스트를 만듭니다. Node 검증 스크립트가 둘을 대조하고 결과를 CI 게이트가 판정하며, 통과해야 공간 화면이 그 에셋을 씁니다. v8·v9 는 게이트의 검증 스크립트가 일부만 닿아 점선으로 표시했고, 나머지는 단위 테스트가 대조합니다.",
-        "A Python processing script slices and bundles the sources (sheets from image generation tools or scripted renders) into asset packs and a manifest. Node verification scripts compare the two, the CI gate judges the result, and only then does the spatial screen use the assets. The gate's verifier scripts reach v8 and v9 only partly, so they are shown with a dashed line; unit tests compare the rest.",
+        "원본(이미지 생성 도구의 시트나 스크립트 렌더)을 Python 가공 스크립트가 자르고 묶어 에셋 팩과 매니페스트를 만듭니다. Node 검증 스크립트가 둘을 대조하고 결과를 CI 게이트가 판정하며, 통과한 팩을 입장 로비와 미리보기가 씁니다. 공간 안 렌더는 이 경로 밖에 있는 Godot 무대가 맡습니다. v8·v9 는 게이트의 검증 스크립트가 일부만 닿아 점선으로 표시했고, 나머지는 생존한 단위 테스트가 대조합니다.",
+        "A Python processing script slices and bundles the sources (sheets from image generation tools or scripted renders) into asset packs and a manifest. Node verification scripts compare the two, the CI gate judges the result, and the entry lobby and previews use the packs that pass. In-space rendering is handled by the Godot stage, outside this path. The gate's verifier scripts reach v8 and v9 only partly, so they are shown with a dashed line; surviving unit tests compare the rest.",
       ),
       nodes: [
         { id: "source", label: t("원본", "Source"), sub: t("생성 도구 시트 · 렌더", "Tool sheets, renders"), tone: "external", shape: "cloud", at: [0, 0] },
@@ -62,8 +63,8 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
         { id: "manifest", label: t("매니페스트", "Manifest"), sub: t("바이트 · SHA-256", "Bytes, SHA-256"), tone: "neutral", shape: "cylinder", at: [2, 1] },
         { id: "verify", label: t("검증 스크립트", "Verifiers"), sub: t("Node · 해시 대조", "Node, hash check"), tone: "good", at: [3, 0] },
         { id: "gate", label: t("CI 게이트", "CI gate"), sub: t("어긋나면 중단", "Stops on mismatch"), tone: "warn", shape: "diamond", at: [4, 0] },
-        { id: "runtime", label: t("공간 화면", "Spatial screen"), sub: t("Phaser 가 불러옴", "Loaded by Phaser"), tone: "local", shape: "pill", at: [5, 0] },
-        { id: "gap", label: t("v8 · v9", "v8 and v9"), sub: t("게이트 일부 + 단위 테스트", "Partly gate + unit tests"), tone: "warn", at: [3, 1] },
+        { id: "runtime", label: t("로비 · 미리보기", "Lobby and previews"), sub: t("캐릭터 · 랜드마크", "Characters, landmarks"), tone: "local", shape: "pill", at: [5, 0] },
+        { id: "gap", label: t("v8 · v9", "v8 and v9"), sub: t("게이트 일부 + 생존 테스트", "Partly gate + surviving tests"), tone: "warn", at: [3, 1] },
       ],
       edges: [
         { from: "source", to: "build", label: t("원본", "source") },
@@ -78,12 +79,12 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
     },
     usage: [
       {
-        feature: t("공간 화면 · 에셋 불러오기", "Spatial screen · loading assets"),
+        feature: t("입장 로비 · 아트 미리보기", "Entry lobby · art previews"),
         role: t(
-          "Phaser 가 팩에서 검증된 배경·캐릭터·NPC·장소 아트를 불러와 장면을 만듭니다. 스타일(sky-island, webtoon, pastel, retro, ink, neon)마다 독립된 팩을 씁니다.",
-          "Phaser loads verified backgrounds, characters, NPCs and place art from the packs to build the scene, with an independent pack per style (sky-island, webtoon, pastel, retro, ink, neon).",
+          "로비는 고른 아트 스타일(sky-island, webtoon, pastel, retro, ink, neon)의 랜드마크 프레임을 보여 주고, 미리보기 컴포넌트는 experience 아틀라스에서 검수된 한 프레임만 SVG 로 잘라 표시합니다. 아틀라스 등록 상수와 helper 는 장면 아트 런타임 모듈에 남아 프레임 세트 코드가 참조합니다.",
+          "The lobby shows the landmark frame of the chosen art style (sky-island, webtoon, pastel, retro, ink, neon), and the preview component cuts exactly one reviewed frame from the experience atlas as SVG. The atlas registration constants and helper remain in the scene art runtime module, referenced by the frame-set code.",
         ),
-        paths: [`${V}/studio-virtual-space-scene-art-runtime.ts`, `${ASSETS}/art-v4-manifest.json`, `${ASSETS}/style-packs-v5/art-v5-manifest.json`],
+        paths: [`${V}/StudioVirtualExperienceArtPreview.tsx`, `${V}/StudioVirtualSpaceEntryLobby.tsx`, `${V}/studio-virtual-space-scene-art-runtime.ts`],
         route: "/studio/space",
       },
       {
@@ -108,16 +109,18 @@ export const VIRTUAL_SPACE_ASSET_CARDS: readonly EngineeringAtlasEntry[] = [
         paths: ["scripts/verify-virtual-studio-v3-art.mjs", "scripts/verify-virtual-studio-art-manifest.mjs", ".github/workflows/ci.yml", "package.json"],
       },
       {
-        feature: t("v8 · v9 매니페스트", "v8 and v9 manifests"),
+        feature: t("v8 · v9 매니페스트와 생존 테스트", "v8 and v9 manifests and surviving tests"),
         role: t(
-          "최근 팩은 파일별 바이트 수와 sha256 을 기록합니다(v9 는 생성 ID 도). 아트 게이트 밖에서 단위 테스트가 이 값을 파일과 대조하며(v8: studio-virtual-space-experience-art.test.ts, v9: studio-cinematic-art.test.ts), v9 테스트는 폴더의 파일 집합과 WEBP 헤더도 봅니다. v9 매니페스트는 모델 버전을 인증하지 않는다고(modelVersionVerified: false) 밝힙니다.",
-          "The recent packs record per-file byte counts and sha256 values (v9 also generation IDs). Outside the art gate, unit tests compare these values with the files (v8: studio-virtual-space-experience-art.test.ts, v9: studio-cinematic-art.test.ts), and the v9 test also checks the folder's file set and the WEBP header. The v9 manifest says it does not certify a model version (modelVersionVerified: false).",
+          "최근 팩은 파일별 바이트 수와 sha256 을 기록합니다(v9 는 생성 ID 도). v8 은 테마 캐릭터 무결성 테스트가 매니페스트의 원본 6개를 파일과 대조하고, 미리보기·아트 스타일·테마 캐릭터 테스트가 프레임과 스타일 계약을 확인합니다. v9 매니페스트는 모델 버전을 인증하지 않는다고(modelVersionVerified: false) 밝힙니다.",
+          "The recent packs record per-file byte counts and sha256 values (v9 also generation IDs). For v8, the theme character integrity test compares six sources from the manifest with the files, and the preview, art-style and theme character tests check frame and style contracts. The v9 manifest says it does not certify a model version (modelVersionVerified: false).",
         ),
         paths: [
           `${ASSETS}/experience-v8/art-manifest.json`,
           `${ASSETS}/cinematic-v9/art-manifest.json`,
-          `${V}/studio-virtual-space-experience-art.test.ts`,
-          `${V}/experience/studio-cinematic-art.test.ts`,
+          `${V}/StudioVirtualExperienceArtPreview.test.tsx`,
+          `${V}/studio-virtual-space-art-style.test.ts`,
+          `${V}/studio-virtual-space-character-theme-art.test.ts`,
+          `${V}/studio-virtual-space-theme-character-integrity.test.ts`,
         ],
       },
     ],
@@ -199,13 +202,13 @@ pnpm run verify:studio-virtual-art  # compare manifests with real files (v3 to v
       { title: "Node.js · Test runner", url: "https://nodejs.org/api/test.html", kind: "docs", note: t("node --test 로 검증기를 시험", "Testing the verifiers with node --test") },
       { title: "GitHub Actions", url: "https://docs.github.com/actions", kind: "docs", note: t("CI 워크플로", "The CI workflows") },
       { title: "Pillow", url: "https://pillow.readthedocs.io/", kind: "docs", note: t("가공 스크립트의 이미지 라이브러리", "The image library in the processing scripts") },
-      { title: "Google · WebP", url: "https://developers.google.com/speed/webp", kind: "docs", note: t("런타임 에셋 형식", "The runtime asset format") },
+      { title: "Google · WebP", url: "https://developers.google.com/speed/webp", kind: "docs", note: t("미리보기가 쓰는 에셋 형식", "The asset format used by the previews") },
     ],
     chapterIds: ["quality"],
     talk: {
       pitch: t(
-        "가상 스튜디오의 그림은 3,553개 파일입니다. 그림마다 크기와 SHA-256 지문을 명세서에 적어 두고, 빌드할 때마다 기계가 명세서와 실제 파일을 대조해 어긋나면 빌드를 멈춥니다. 단, 모든 버전이 같은 방식으로 지켜지는 것은 아닙니다. v3~v7 은 아트 게이트가 해시까지 검증하고, v8·v9 는 전용 검증 스크립트 대신 단위 테스트가 바이트 수와 해시를 대조합니다.",
-        "The studio's art is 3,553 files. Each file's size and SHA-256 fingerprint are written in a manifest, and on every build a machine compares the manifest with the real files and stops the build on a mismatch. Not every version is guarded the same way, though: the art gate verifies v3 to v7 down to hashes, while v8 and v9 have no dedicated verifier script and are compared for byte counts and hashes by unit tests instead.",
+        "가상 스튜디오의 그림은 3,560개 파일입니다. 그림마다 크기와 SHA-256 지문을 명세서에 적어 두고, 빌드할 때마다 기계가 명세서와 실제 파일을 대조해 어긋나면 빌드를 멈춥니다. 웹에서 이 팩을 쓰는 곳은 입장 로비와 미리보기이고, 공간 안 렌더는 Godot 무대가 맡습니다. 단, 모든 버전이 같은 방식으로 지켜지는 것은 아닙니다. v3~v7 은 아트 게이트가 해시까지 검증하고, v8 은 게이트 일부와 생존한 단위 테스트가 나눠 대조하며, v9 의 전수 대조 테스트는 제거됐습니다.",
+        "The studio's art is 3,560 files. Each file's size and SHA-256 fingerprint are written in a manifest, and on every build a machine compares the manifest with the real files and stops the build on a mismatch. On the web these packs are used by the entry lobby and the previews, while the Godot stage renders inside the space. Not every version is guarded the same way, though: the art gate verifies v3 to v7 down to hashes, part of the gate and surviving unit tests share v8, and the full-comparison test for v9 was removed.",
       ),
       analogy: t(
         "택배 창고의 입고 검수입니다. 상자마다 송장(매니페스트)에 무게와 도장이 적혀 있고, 입고 담당(검증기)이 실제 상자와 하나씩 맞춰 보며, 하나라도 다르면 문을 열어 주지 않습니다.",
@@ -229,22 +232,22 @@ pnpm run verify:studio-virtual-art  # compare manifests with real files (v3 to v
         {
           question: t("v8·v9 는 왜 검증이 약한가요?", "Why is verification weaker for v8 and v9?"),
           answer: t(
-            "아트 게이트(verify:studio-virtual-art)에는 v8·v9 전용 검증 스크립트가 없어 게이트만 보면 약해 보입니다(v8 은 배경 24종만 v7 검증기가 봄). 하지만 단위 테스트가 v8(50개)·v9(8개) 매니페스트의 바이트 수와 SHA-256 을 파일과 대조합니다. 이 테스트가 CI 에서 실제로 돈 결과는 이 저장소만으로는 확인하지 못했습니다.",
-            "The art gate (verify:studio-virtual-art) has no dedicated v8 or v9 verifier script, so the gate alone looks weak (the v7 verifier covers only the 24 v8 backdrops). But unit tests compare the byte counts and SHA-256 values of the v8 (50) and v9 (8) manifests with the files. The actual CI run results of those tests could not be confirmed from this repository alone.",
+            "아트 게이트(verify:studio-virtual-art)에는 v8·v9 전용 검증 스크립트가 없어 게이트만 보면 약해 보입니다. v8 은 v7 검증기에 포함된 런타임 배경 24종 검사와 테마 캐릭터 무결성 테스트(원본 6개의 바이트·해시 대조)가 나눠 맡습니다. v9 매니페스트(8개)를 전수 대조하던 테스트는 제거되어, 현재 남은 테스트에서는 그 전수 대조가 확인되지 않습니다.",
+            "The art gate (verify:studio-virtual-art) has no dedicated v8 or v9 verifier script, so the gate alone looks weak. For v8, the runtime-backdrop check built into the v7 verifier (24 backdrops) and the theme character integrity test (byte and hash comparison of six sources) share the work. The test that compared the whole v9 manifest (8 assets) was removed, so no surviving test is confirmed to make that full comparison now.",
           ),
         },
       ],
       pitfall: t(
-        "'모든 에셋이 아트 게이트에서 검증된다'고 말하지 마세요. 게이트는 v3~v7·world-v2 와 v8 런타임 배경 24종까지이고, v8·v9 의 나머지는 단위 테스트가 대조합니다. 원본이 AI 생성이라는 서술도 매니페스트가 밝힌 범위에서만 말하고, 모델 버전은 인증된 바 없습니다.",
-        "Do not say 'every asset is verified by the art gate'. The gate covers v3 to v7, world-v2 and the 24 v8 runtime backdrops, and unit tests compare the rest of v8 and v9. Describe the AI-generated origin only to the extent the manifests state it; no model version is certified.",
+        "'모든 에셋이 아트 게이트에서 검증된다'고 말하지 마세요. 게이트는 v3~v7·world-v2 와 v7 검증기에 포함된 v8 런타임 배경 24종 검사까지이고, v8 의 나머지는 생존한 단위 테스트가 대조하며, v9 는 현재 전수 대조가 확인되지 않습니다. 원본이 AI 생성이라는 서술도 매니페스트가 밝힌 범위에서만 말하고, 모델 버전은 인증된 바 없습니다.",
+        "Do not say 'every asset is verified by the art gate'. The gate covers v3 to v7, world-v2 and the v8 runtime-backdrop check built into the v7 verifier (24 backdrops); surviving unit tests compare the rest of v8, and no full comparison of v9 is currently confirmed. Describe the AI-generated origin only to the extent the manifests state it; no model version is certified.",
       ),
     },
     technologies: ["GitHub Actions", "Pillow", "WebP", "SHA-256"],
     facts: [
-      { value: "3,553개 · 410.2 MiB", label: t("가상 스튜디오 아트·월드 자산 파일 수와 크기", "Number and size of virtual-studio art and world asset files"), source: ASSETS },
+      { value: "3,560개 · 412.6 MiB", label: t("가상 스튜디오 아트·월드 자산 파일 수와 크기", "Number and size of virtual-studio art and world asset files"), source: ASSETS },
       { value: "1,872개", label: t("v5 독립 스타일 팩의 매니페스트 파일 수", "Manifest file count of the v5 independent style packs"), source: "scripts/verify-virtual-studio-v5-art.mjs" },
       { value: "7종", label: t("CI 에서 도는 아트 검증기(매니페스트, v3, v4, v5, v6, v7, world-v2)", "Art verifiers run in CI (manifest, v3, v4, v5, v6, v7, world-v2)"), source: "package.json" },
-      { value: "24종", label: t("v7 검증기가 해시를 확인하는 v8 런타임 배경 수", "v8 runtime backdrops whose hashes the v7 verifier checks"), source: "scripts/verify-virtual-studio-imagegen25-v7.mjs" },
+      { value: "24종", label: t("v7 검증기가 해시를 확인하는 v8 런타임 배경 수", "v8 runtime backdrops whose hashes the v7 verifier checks"), source: "scripts/verify-virtual-studio-imagegen25-v7.test.mjs" },
     ],
     reviewedAt: VIRTUAL_SPACE_REVIEWED_AT,
   },
@@ -252,24 +255,24 @@ pnpm run verify:studio-virtual-art  # compare manifests with real files (v3 to v
     id: "character-atlas-lpc-residency",
     category: "virtual-space",
     name: "Sprite atlas",
-    title: t("캐릭터 그림을 정확히 자르고, 쓰는 동안만 메모리에 두기", "Cutting character art exactly and keeping it in memory only while used"),
+    title: t("캐릭터 그림을 정확히 자르고 미리보기로 보여 주기", "Cutting character art exactly and showing it in previews"),
     status: "live",
     tagline: t(
-      "스프라이트 시트를 픽셀 손실 없이 자르고, 쓰는 이가 없어지면 30초 뒤 메모리에서 내립니다.",
-      "Sprite sheets are cut without losing a pixel and unloaded 30 seconds after no one uses them.",
+      "스프라이트 시트를 픽셀 손실 없이 자르고, 캐릭터 미리보기와 로비가 그 프레임을 씁니다.",
+      "Sprite sheets are cut without losing a pixel, and character previews and the lobby use those frames.",
     ),
     background: [
       t(
-        "캐릭터의 걷는 모습은 한 장짜리 큰 그림 위에 동작별 칸을 모아 둔 '스프라이트 시트'에서 칸을 하나씩 꺼내 보여 줍니다. 만화책 컷을 격자로 인쇄한 종이에서 오려 쓰는 것과 같습니다. 칸을 나눌 때 1픽셀이라도 어긋나면 캐릭터가 깜빡이거나 옆 칸의 그림이 비치므로, 정수 경계로 정확히 자릅니다.",
-        "A character's walking is shown by taking one cell at a time from a sprite sheet, one big picture holding cells for each motion. It is like cutting out panels from a sheet printed as a grid. If cutting is off by even one pixel the character flickers or the neighbouring cell shows through, so cuts are made exactly at integer boundaries.",
+        "캐릭터의 모습은 한 장짜리 큰 그림 위에 동작별 칸을 모아 둔 '스프라이트 시트'에서 칸을 하나씩 꺼내 보여 줍니다. 만화책 컷을 격자로 인쇄한 종이에서 오려 쓰는 것과 같습니다. 칸을 나눌 때 1픽셀이라도 어긋나면 캐릭터가 깜빡이거나 옆 칸의 그림이 비치므로, 정수 경계로 정확히 자릅니다. 웹에서 이 라이브러리를 쓰는 곳은 캐릭터 미리보기와 입장 로비·캐릭터 선택이고, 공간 안에서 캐릭터를 움직이는 렌더는 Godot 무대가 맡습니다.",
+        "A character's appearance is shown by taking one cell at a time from a sprite sheet, one big picture holding cells for each motion. It is like cutting out panels from a sheet printed as a grid. If cutting is off by even one pixel the character flickers or the neighbouring cell shows through, so cuts are made exactly at integer boundaries. On the web this library is used by the character previews and the entry lobby and character picker, while the Godot stage renders characters moving inside the space.",
       ),
       t(
-        "자르기: 시트를 칸 수로 나눌 때 Math.round 로 경계를 정해 이웃한 칸이 겹치지도 잘리지도 않게 합니다(rounded-grid). 간격이 고르지 않은 생성 원본은 검수한 칸 영역 목록(explicit-frames)을 그대로 씁니다. 상주: 아바타·NPC(주인)마다 쓰는 텍스처를 기록하고, 아무도 쓰지 않으면 30초 유예 뒤 Phaser 에서 내립니다. 방향을 자주 바꿔도 같은 시트를 다시 받지 않게 하는 짧은 캐시이고, 로드가 끝나기 전에 주인이 떠났다면 완료 콜백이 아무것도 건드리지 않습니다.",
-        "Cutting: boundaries are set with Math.round when dividing the sheet by cell count, so neighbouring cells neither overlap nor lose pixels (rounded-grid). Generated sources with uneven spacing use the reviewed list of cell regions (explicit-frames) as is. Residency: the textures each avatar or NPC (the owner) uses are recorded, and when nobody uses one it is unloaded from Phaser after a 30-second grace period. This is a short cache so changing direction often does not re-download the same sheet, and if the owner left before loading finished, the completion callback touches nothing.",
+        "자르기: 시트를 칸 수로 나눌 때 Math.round 로 경계를 정해 이웃한 칸이 겹치지도 잘리지도 않게 합니다(rounded-grid). 간격이 고르지 않은 생성 원본은 검수한 칸 영역 목록(explicit-frames)을 그대로 씁니다. 미리보기 컴포넌트는 이 프레임 좌표로 SVG viewBox 와 클립을 만들어 한 칸만 보여 줍니다. 상주 규칙도 같은 라이브러리에 남아 있습니다. 텍스처를 주인별로 세는 상주 클래스는 아무도 쓰지 않으면 30초 유예 뒤 백엔드의 제거를 부르도록 설계됐고, 지금은 단위 테스트가 가짜 백엔드로 그 동작을 검증합니다.",
+        "Cutting: boundaries are set with Math.round when dividing the sheet by cell count, so neighbouring cells neither overlap nor lose pixels (rounded-grid). Generated sources with uneven spacing use the reviewed list of cell regions (explicit-frames) as is. The preview component builds an SVG viewBox and clip from these frame coordinates and shows exactly one cell. The residency rule also remains in the same library: the residency class, which counts textures per owner, is designed to call the backend's removal after a 30-second grace period when nobody uses a texture, and unit tests now verify that behaviour with a fake backend.",
       ),
       t(
-        "픽셀 아트 캐릭터 20명(NPC 8, 플레이어 프리셋 12)은 오픈소스 Universal LPC 생성기의 레이어를 겹쳐 만들었습니다. 64px 원본을 2배 최근접 확대해 픽셀이 번지지 않게 하고, 화면에는 작가와 라이선스 크레딧 안내를 따로 보여 줍니다. 걷기 시트는 9열(0열이 서기, 1~8열이 걷기), 대기 2열, 앉기 3열, 이모트 3열, 달리기 8열입니다.",
-        "The 20 pixel-art characters (8 NPCs, 12 player presets) were composed from layers of the open-source Universal LPC generator. The 64 px sources are enlarged 2× with nearest-neighbour so pixels stay sharp, and a credits notice for authors and licenses is shown on screen. The walk sheet has 9 columns (column 0 stands, 1 to 8 walk), idle has 2, sit 3, emote 3 and run 8.",
+        "픽셀 아트 캐릭터 20명(NPC 8, 플레이어 프리셋 12)은 오픈소스 Universal LPC 생성기의 레이어를 겹쳐 만들었습니다. 64px 원본을 2배 최근접 확대해 픽셀이 번지지 않게 합니다. 걷기 시트는 9열(0열이 서기, 1~8열이 걷기), 대기 2열, 앉기 3열, 이모트 3열, 달리기 8열입니다. 크레딧을 화면에 띄우는 고지 컴포넌트는 제거됐지만, 작가·라이선스 기록은 credits.json 과 CREDITS.md 파일로 남고, 코드 안 요약 상수(작가 목록과 라이선스별 레이어 수)를 테스트가 그 파일과 대조합니다.",
+        "The 20 pixel-art characters (8 NPCs, 12 player presets) were composed from layers of the open-source Universal LPC generator. The 64 px sources are enlarged 2× with nearest-neighbour so pixels stay sharp. The walk sheet has 9 columns (column 0 stands, 1 to 8 walk), idle has 2, sit 3, emote 3 and run 8. The on-screen credits notice component was removed, but the author and license records remain as the credits.json and CREDITS.md files, and tests compare the summary constants in the code (the author list and the layer counts per license) with those files.",
       ),
       t(
         "텍스처를 바로 내리지 않고 30초 보관하는 것은 메모리를 조금 더 쓰는 대가입니다. 30초는 설계값이며 기기별 메모리 사용량 측정은 확인하지 못했습니다. LPC 레이어의 라이선스(OGA-BY, CC-BY, CC0 등) 해석은 이 카드의 범위가 아닙니다.",
@@ -278,29 +281,29 @@ pnpm run verify:studio-virtual-art  # compare manifests with real files (v3 to v
     ],
     keyPoints: [
       t("시트를 정수 경계로 잘라 겹침도 손실도 없습니다", "Sheets are cut at integer bounds with no overlap or loss"),
-      t("주인별로 참조를 세고 30초 뒤 메모리에서 내립니다", "References are counted per owner; unload after 30 s"),
-      t("LPC 픽셀 캐릭터 20명과 크레딧 고지가 있습니다", "20 LPC pixel characters come with a credits notice"),
+      t("주인별로 참조를 세고 30초 뒤 백엔드에서 내립니다", "References are counted per owner; the backend unloads after 30 s"),
+      t("LPC 20명, 크레딧은 파일과 코드 요약으로 남습니다", "20 LPC characters; credits remain as files and a code summary"),
     ],
     diagram: {
       id: "character-atlas-lpc-residency-diagram",
       kind: "graph",
-      title: t("LPC 레이어에서 화면의 캐릭터, 그리고 메모리 해제까지", "From LPC layers to an on-screen character, and back out of memory"),
+      title: t("LPC 레이어에서 미리보기의 캐릭터, 그리고 메모리 해제까지", "From LPC layers to a character in previews, and back out of memory"),
       caption: t(
-        "시트를 만들고 정확히 잘라 쓰는 동안만 올려 두며, 크레딧은 따로 보여 줍니다.",
-        "Sheets are built, cut exactly and held only while used, with credits shown separately.",
+        "시트를 만들고 정확히 잘라 미리보기가 쓰며, 크레딧은 파일로 남깁니다.",
+        "Sheets are built, cut exactly and used by previews, with credits kept as files.",
       ),
       alt: t(
-        "Universal LPC 생성기의 레이어를 빌드 스크립트가 겹치고 2배 확대해 시트와 크레딧 파일을 만듭니다. 시트는 정수 경계로 잘려 프레임으로 등록되고, 주인별 참조를 세는 상주 관리가 이를 들고 있다가 아무도 쓰지 않으면 30초 뒤 제거합니다. 크레딧 파일은 화면의 고지 컴포넌트가 읽습니다.",
-        "A build script layers and 2× enlarges Universal LPC generator layers into sheets and a credits file. The sheets are cut at integer boundaries and registered as frames; residency management, which counts references per owner, holds them and removes them 30 seconds after nobody uses them. The credits file is read by an on-screen notice component.",
+        "Universal LPC 생성기의 레이어를 빌드 스크립트가 겹치고 2배 확대해 시트와 크레딧 파일을 만듭니다. 시트는 정수 경계로 잘려 프레임 좌표가 되고, 캐릭터 미리보기가 그 좌표로 한 칸을 보여 줍니다. 주인별 참조를 세는 상주 클래스는 아무도 쓰지 않으면 30초 뒤 백엔드에서 제거하도록 설계됐습니다. 크레딧은 화면 컴포넌트가 아니라 credits.json 과 CREDITS.md 파일로 남습니다.",
+        "A build script layers and 2× enlarges Universal LPC generator layers into sheets and credit files. The sheets are cut at integer boundaries into frame coordinates, and the character preview shows one cell using those coordinates. The residency class, which counts references per owner, is designed to remove a texture through the backend 30 seconds after nobody uses it. The credits remain as the credits.json and CREDITS.md files, not as an on-screen component.",
       ),
       nodes: [
         { id: "layers", label: t("LPC 레이어", "LPC layers"), sub: t("오픈소스 생성기", "Open-source generator"), tone: "external", shape: "cloud", at: [0, 0] },
         { id: "build", label: t("빌드 스크립트", "Build script"), sub: t("겹치기 · 2배 확대", "Layer, enlarge 2×"), tone: "local", at: [1, 0] },
-        { id: "sheet", label: t("시트 + 크레딧", "Sheets and credits"), sub: t("webp · manifest", "webp, manifest"), tone: "neutral", shape: "cylinder", at: [2, 0] },
+        { id: "sheet", label: t("시트 + 크레딧 파일", "Sheets and credit files"), sub: t("webp · manifest", "webp, manifest"), tone: "neutral", shape: "cylinder", at: [2, 0] },
         { id: "slice", label: t("정수 경계로 자르기", "Cut at integer bounds"), sub: t("rounded-grid", "rounded-grid"), tone: "good", at: [3, 0] },
         { id: "owner", label: t("상주 관리", "Residency"), sub: t("주인별 참조", "Per-owner references"), tone: "local", at: [4, 0] },
         { id: "drop", label: t("30초 뒤 제거", "Removed after 30 s"), tone: "warn", shape: "pill", at: [5, 0] },
-        { id: "notice", label: t("크레딧 고지", "Credits notice"), sub: t("작가·라이선스", "Authors, licenses"), tone: "neutral", at: [2, 1] },
+        { id: "notice", label: t("크레딧 파일", "Credit files"), sub: t("credits.json · CREDITS.md", "credits.json, CREDITS.md"), tone: "neutral", at: [2, 1] },
       ],
       edges: [
         { from: "layers", to: "build", label: t("레이어", "layers") },
@@ -313,37 +316,37 @@ pnpm run verify:studio-virtual-art  # compare manifests with real files (v3 to v
     },
     usage: [
       {
-        feature: t("캐릭터 걷기·서기 그리기", "Drawing characters walking and standing"),
+        feature: t("캐릭터 미리보기와 로비", "Character previews and the lobby"),
         role: t(
-          "스킨 정의의 아틀라스 레이아웃으로 시트를 프레임으로 등록하고 방향·동작에 맞는 칸을 꺼내 그립니다. 시트 크기가 정의와 다르면 실패로 기록하고 텍스처를 제거합니다.",
-          "Sheets are registered as frames using the skin's atlas layout and the cell for each direction and motion is drawn. If a sheet's size differs from its definition, the failure is recorded and the texture is removed.",
+          "미리보기 컴포넌트는 스킨 정의의 아틀라스 레이아웃으로 정지 에셋을 고르고, 프레임 좌표만큼 SVG viewBox 를 잘라 보여 줍니다. 로비와 캐릭터 선택이 이 미리보기를 씁니다. 시트 크기가 정의와 다르면 그 프레임은 표시하지 않습니다.",
+          "The preview component picks the static asset from the skin's atlas layout and shows it cut to the frame coordinates as an SVG viewBox. The lobby and the character picker use this preview. If a sheet's size differs from its definition, that frame is not shown.",
         ),
-        paths: [`${V}/studio-virtual-space-character-atlas.ts`, `${V}/studio-virtual-space-character-assets.ts`, `${V}/studio-virtual-space-character-texture-preparer.ts`],
+        paths: [`${V}/StudioVirtualCharacterPreview.tsx`, `${V}/studio-virtual-space-character-atlas.ts`, `${V}/studio-virtual-space-character-assets.ts`],
         route: "/studio/space",
       },
       {
-        feature: t("텍스처 상주 관리", "Texture residency management"),
+        feature: t("텍스처 상주 규칙", "Texture residency rule"),
         role: t(
-          "아바타·NPC 가 쓰는 텍스처를 주인별로 세어, 모두 떠나면 30초 유예 뒤 내립니다. 로드가 끝나기 전에 떠난 주인에게는 아무 영향도 주지 않습니다.",
-          "It counts textures per avatar or NPC owner and unloads them 30 seconds after all leave. It has no effect on an owner that left before loading finished.",
+          "StudioCharacterAssetResidency 가 주인별 참조를 세어, 모두 떠나면 30초 유예 뒤 백엔드의 제거를 부릅니다. 로드가 끝나기 전에 떠난 주인에게는 완료 콜백이 아무 영향도 주지 않으며, 단위 테스트가 가짜 백엔드로 검증합니다.",
+          "StudioCharacterAssetResidency counts references per owner and calls the backend's removal 30 seconds after all leave. The completion callback has no effect on an owner that left before loading finished, and unit tests verify this with a fake backend.",
         ),
-        paths: [`${V}/studio-virtual-space-character-assets.ts#StudioCharacterAssetResidency`],
+        paths: [`${V}/studio-virtual-space-character-assets.ts#StudioCharacterAssetResidency`, `${V}/studio-virtual-space-character-theme-art.test.ts`],
       },
       {
         feature: t("LPC 픽셀 캐릭터(NPC 8 · 프리셋 12)", "LPC pixel characters (8 NPCs, 12 presets)"),
         role: t(
-          "빌드 스크립트가 만든 시트를 스킨으로 연결해 기존 걷기·앉기·이모트 경로에 그대로 끼웁니다.",
-          "Sheets made by the build script are mapped to skins and plugged into the existing walk, sit and emote paths unchanged.",
+          "빌드 스크립트가 만든 시트를 스킨으로 연결해 미리보기와 선택 목록이 걷기·앉기·이모트 프레임을 고릅니다.",
+          "Sheets made by the build script are mapped to skins, and the previews and picker select walk, sit and emote frames from them.",
         ),
         paths: [`${V}/lpc/studio-lpc-characters.ts`, "scripts/virtual-studio/build-lpc-characters.mjs", `${ASSETS}/characters-lpc-v1/manifest.json`],
       },
       {
-        feature: t("LPC 크레딧 고지", "LPC credits notice"),
+        feature: t("LPC 크레딧 기록", "LPC credit records"),
         role: t(
-          "작가 목록과 라이선스별 레이어 수를 화면에 보여 주고, 테스트가 생성된 credits.json 과 대조합니다.",
-          "It shows the author list and the number of layers per license, and tests compare it with the generated credits.json.",
+          "화면에 띄우는 고지 컴포넌트는 제거됐습니다. 작가 목록과 라이선스별 레이어 수는 코드 안 요약 상수로 남고, 원본 기록은 credits.json 과 CREDITS.md 파일에 있습니다. LPC 테스트가 요약 상수를 credits.json 과 대조합니다.",
+          "The on-screen notice component was removed. The author list and the layer counts per license remain as summary constants in the code, and the original records are in the credits.json and CREDITS.md files. The LPC tests compare the summary constants with credits.json.",
         ),
-        paths: [`${V}/lpc/StudioLpcCreditsNotice.tsx`, `${V}/lpc/studio-lpc-credits.ts`],
+        paths: [`${V}/lpc/studio-lpc-characters.ts`, `${ASSETS}/characters-lpc-v1/credits.json`, `${ASSETS}/characters-lpc-v1/CREDITS.md`, `${V}/lpc/studio-lpc-characters.test.ts`],
       },
     ],
     samples: [
@@ -365,7 +368,7 @@ export function roundedGrid(width: number, height: number, columns: number, rows
       frames.push({ index: row * columns + column, x, y, width: nextX - x, height: nextY - y });
     }
   }
-  return frames; // Phaser 에서는 texture.add(index, 0, x, y, width, height) 로 등록한다
+  return frames; // 미리보기는 이 좌표로 SVG viewBox 를 만든다
 }`,
         codeEn: `// Cut a sheet at integer boundaries so no pixel overlaps and none is lost (rounded-grid, simplified).
 type Frame = { index: number; x: number; y: number; width: number; height: number };
@@ -381,7 +384,7 @@ export function roundedGrid(width: number, height: number, columns: number, rows
       frames.push({ index: row * columns + column, x, y, width: nextX - x, height: nextY - y });
     }
   }
-  return frames; // in Phaser, register with texture.add(index, 0, x, y, width, height)
+  return frames; // previews build an SVG viewBox from these coordinates
 }`,
         explain: t(
           "칸의 끝 경계가 다음 칸의 시작 경계와 같은 값이라 사이에 빈틈도 겹침도 생기지 않습니다. 나누어떨어지지 않는 크기에서는 칸 폭이 1픽셀씩 달라질 수 있지만 전체가 정확히 덮입니다.",
@@ -453,7 +456,7 @@ export class Residency {
       },
     ],
     links: [
-      { title: "Phaser · Textures", url: "https://docs.phaser.io/phaser/concepts/textures", kind: "docs", note: t("텍스처와 프레임 등록", "Textures and frame registration") },
+      { title: "MDN · SVG viewBox", url: "https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox", kind: "docs", note: t("미리보기가 프레임을 자르는 방법", "How the previews cut a frame") },
       { title: "Universal LPC Spritesheet Character Generator", url: "https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator", kind: "repo", note: t("캐릭터 레이어의 출처", "The source of the character layers") },
       { title: "Liberated Pixel Cup · OpenGameArt", url: "https://lpc.opengameart.org/", kind: "guide", note: t("LPC 프로젝트 소개", "About the LPC project") },
       { title: "Wikipedia · Texture atlas", url: "https://en.wikipedia.org/wiki/Texture_atlas", kind: "article", note: t("한 장에 모은 텍스처", "Textures gathered into one image") },
@@ -461,8 +464,8 @@ export class Residency {
     chapterIds: ["performance", "licenses"],
     talk: {
       pitch: t(
-        "캐릭터의 걷는 모습은 한 장의 큰 시트에서 칸을 꺼내 보여 줍니다. 칸을 정수 경계로 정확히 잘라 한 픽셀도 겹치거나 잘리지 않게 하고, 쓰는 캐릭터가 없어지면 30초 뒤 메모리에서 내려 아낍니다. 픽셀 캐릭터 20명은 오픈소스 LPC 생성기 레이어로 만들었고, 화면에 작가와 라이선스 크레딧을 표시합니다.",
-        "A character's walking is shown by taking cells from one big sheet. The cells are cut exactly at integer boundaries so no pixel overlaps or is lost, and when no character uses a sheet it is unloaded after 30 seconds to save memory. The 20 pixel characters are built from open-source LPC generator layers and the screen shows the authors' and licenses' credits.",
+        "캐릭터의 모습은 한 장의 큰 시트에서 칸을 꺼내 보여 줍니다. 칸을 정수 경계로 정확히 잘라 한 픽셀도 겹치거나 잘리지 않게 하고, 캐릭터 미리보기와 입장 로비가 그 프레임으로 캐릭터를 보여 줍니다. 공간 안 렌더는 Godot 무대가 맡습니다. 픽셀 캐릭터 20명은 오픈소스 LPC 생성기 레이어로 만들었고, 작가와 라이선스 기록은 credits.json 과 CREDITS.md 로 남습니다.",
+        "A character's appearance is shown by taking cells from one big sheet. The cells are cut exactly at integer boundaries so no pixel overlaps or is lost, and the character previews and the entry lobby show characters with those frames. The Godot stage renders inside the space. The 20 pixel characters are built from open-source LPC generator layers, and the author and license records remain as credits.json and CREDITS.md.",
       ),
       analogy: t(
         "도서관 대출 카운터와 같습니다. 책(텍스처)을 빌려 간 사람(주인)이 한 명이라도 있으면 서가에 두고, 모두 반납하면 잠깐 카운터에 두었다가 서가로 돌려보냅니다.",
@@ -479,24 +482,24 @@ export class Residency {
         {
           question: t("LPC 그림의 라이선스는요?", "What about the LPC art licenses?"),
           answer: t(
-            "코드는 작가 목록과 라이선스별 레이어 수(OGA-BY 3.0, CC-BY 4.0, CC0 등)를 화면에 보여 주는 고지 컴포넌트를 둡니다. 법적 해석은 이 카드의 범위가 아니라서 라이선스 자료를 보세요.",
-            "The code has a notice component that shows the author list and the layer counts per license (OGA-BY 3.0, CC-BY 4.0, CC0 and so on). Legal interpretation is outside this card; see the license materials.",
+            "작가 목록과 라이선스별 레이어 수(OGA-BY 3.0, CC-BY 4.0, CC0 등)는 코드 안 요약 상수와 credits.json·CREDITS.md 파일에 남습니다. 예전 화면 고지 컴포넌트는 제거됐습니다. 법적 해석은 이 카드의 범위가 아니라서 라이선스 자료를 보세요.",
+            "The author list and the layer counts per license (OGA-BY 3.0, CC-BY 4.0, CC0 and so on) remain as summary constants in the code and in the credits.json and CREDITS.md files. The former on-screen notice component was removed. Legal interpretation is outside this card; see the license materials.",
           ),
         },
         {
           question: t("픽셀이 번지지 않나요?", "Won't the pixels blur?"),
           answer: t(
-            "시트를 만들 때 64px 원본을 2배 정수 확대해 둡니다. 에셋 정의의 'nearest' 필터 힌트(textureFilter)는 텍스처를 준비할 때 실제로 최근접 필터로 적용되어, 선형 필터를 쓰는 일러스트 화풍 월드에서도 도트 경계가 번지지 않습니다. Phaser 의 pixelArt 설정은 아트 스타일이 픽셀형일 때 켜집니다.",
-            "When the sheets were built the 64 px sources were enlarged by an integer factor of 2. The 'nearest' filter hint (textureFilter) on the asset definitions is applied as a nearest-neighbour filter when the texture is prepared, so pixel edges stay sharp even in illustrated art styles whose worlds otherwise use a linear filter. Phaser's pixelArt setting is switched on only when the art style is a pixel style.",
+            "시트를 만들 때 64px 원본을 2배 정수 확대해 둡니다. 캐릭터 미리보기는 픽셀 아트 스킨에 image-rendering: pixelated 를 적용해 도트 경계를 유지하고, 에셋 정의에도 'nearest' 필터 힌트(textureFilter)가 붙습니다.",
+            "When the sheets were built the 64 px sources were enlarged by an integer factor of 2. The character preview applies image-rendering: pixelated to pixel-art skins so dot edges stay sharp, and the asset definitions also carry a 'nearest' filter hint (textureFilter).",
           ),
         },
       ],
       pitfall: t(
-        "LPC 레이어의 라이선스 적합성(상업적 이용 가능 여부)을 이 카드에서 판단하지 마세요. 메모리 사용량은 측정값이 없는 설계값 기준입니다. 최근접 필터는 도트를 선명하게 하지만 화면 배율이 정수가 아니면 도트 폭이 한 화소씩 달라 보일 수 있습니다.",
-        "Do not judge the license suitability of the LPC layers (such as commercial use) from this card. Memory use rests on a design value with no measurement. The nearest-neighbour filter keeps the dots sharp, but when the screen scale is not an integer the dot widths can differ by one pixel.",
+        "LPC 레이어의 라이선스 적합성(상업적 이용 가능 여부)을 이 카드에서 판단하지 마세요. 화면 크레딧 고지가 있다고 말하지 마세요. 고지 컴포넌트는 제거됐고 기록은 파일과 코드 요약으로만 남습니다. 메모리 사용량은 측정값이 없는 설계값 기준입니다.",
+        "Do not judge the license suitability of the LPC layers (such as commercial use) from this card. Do not say there is an on-screen credits notice: the notice component was removed, and the records remain only as files and a code summary. Memory use rests on a design value with no measurement.",
       ),
     },
-    technologies: ["Phaser 3", "Universal LPC", "WebP"],
+    technologies: ["Universal LPC", "WebP", "SVG"],
     facts: [
       { value: "20명", label: t("LPC 픽셀 캐릭터 수(NPC 8 · 플레이어 프리셋 12)", "Number of LPC pixel characters (8 NPCs, 12 player presets)"), source: `${ASSETS}/characters-lpc-v1/manifest.json` },
       { value: "64px × 2", label: t("LPC 원본 프레임 크기와 최근접 확대 배율", "LPC source frame size and nearest-neighbour scale"), source: `${V}/lpc/studio-lpc-characters.ts` },
