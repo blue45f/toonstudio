@@ -41,4 +41,36 @@ describe("StudioVoiceIcePolicyController", () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(issueScreenShare).not.toHaveBeenCalled();
   });
+
+  it("keeps voice ICE issuance on its dedicated authenticated service path", async () => {
+    const response = {
+      version: 1 as const,
+      mode: "stun" as const,
+      iceServers: [{ urls: ["stun:stun.cloudflare.com:3478"] }],
+      issuedAt: "2026-07-20T00:00:00.000Z",
+      expiresAt: "2026-07-20T00:15:00.000Z",
+      ttlSeconds: 900,
+    };
+    const issueVoice = vi.fn().mockResolvedValue(response);
+    const controller = new StudioVoiceIcePolicyController(
+      { issueVoice } as unknown as StudioVoiceIcePolicyService
+    );
+
+    await expect(
+      controller.issueVoice({ id: "voice-work-a" }, "voice-member-a")
+    ).resolves.toBe(response);
+    expect(issueVoice).toHaveBeenCalledWith("voice-member-a", "voice-work-a");
+  });
+
+  it("rejects unauthenticated voice ICE callers before issuance", async () => {
+    const issueVoice = vi.fn();
+    const controller = new StudioVoiceIcePolicyController(
+      { issueVoice } as unknown as StudioVoiceIcePolicyService
+    );
+
+    await expect(
+      controller.issueVoice({ id: "voice-work-b" })
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(issueVoice).not.toHaveBeenCalled();
+  });
 });
