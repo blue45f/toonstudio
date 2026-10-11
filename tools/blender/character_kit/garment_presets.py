@@ -10,6 +10,7 @@
 - `pose`: 의상이 만들어진 포즈 `t`(몸 T-포즈 표면에 바로 맞춤) 또는 `a`(A-포즈 몸에 맞춘 뒤 T로 변환). 포즈가 다른 몸에 맞추면 소매가 날개처럼 펼쳐진다.
 - `uv`·`scalp_cap`(헤어): `uv="strands"`는 정점을 위치로 합치고 원통 UV + 세로 가닥 줄무늬 텍스처를 새로 만든다(원본 UV 섬이 잘게 쪼개져 용량 한도를 넘었다).
   `scalp_cap`은 머리 윗부분을 4.5 mm 바깥에서 떠 낸 얇은 두피 덮개를 헤어 메시에 붙여 가닥 사이로 피부가 비치는 것을 막는다(`retarget_garment.build_scalp_cap`).
+- `normal_transfer`(헤어 0.85·상의 0.6·하의 0.4): 정점 법선을 가장 가까운 몸·머리 표면 법선 쪽으로 옮기는 비율 0~1. 신발·소품은 형태 자체가 디자인이라 쓰지 않는다. 가닥 시트의 제각각인 법선이 툰 음영에서 검은 반점이 되는 것을 막고 두피를 따라 둥글게 음영이 지게 한다(`retarget_garment.transferred_normals`).
 - `stylize`: Taubin 스무딩 반복 횟수(웹툰풍 정리: 사진식 잔주름을 지우고 큰 면과 부드러운 접힘만 남긴다, 0이면 끔).
 - `align`: `icp`(평균 거리 최소화 — 몸에 밀착한 옷만), `frame`(**전신 인물**에서 BANG으로 분리한 파츠: 전신 경계 상자 정렬 + `fit_region` 부위만 부호 거리 ICP 보정. 옷만 요청해 마네킹 몸 일부가 같이 나온 생성물은 경계 상자가 사람 키가 아니라 `icp`를 쓴다), `hair`(머리 너비·정수리), `head_ref`(같은 좌표계 머리 메시 `source.ref`의 두개골 폭·정수리·중심에 맞춤 — 흉상에서 BANG으로 분리한 헤어),
   `shoes`(발 길이·발바닥), `head_prop`(머리에 얹는 소품: 머리 너비·정수리). 부피가 있는 의상은 평균 거리 정렬이 몸 쪽으로 쪼그라드므로 `icp`는 몸에 붙는 옷에만 쓴다.
@@ -56,6 +57,7 @@ def _top(name: str, *, source: dict[str, Any], pose: str, align: str, changes: s
         "hem_standoff": {"d_min": 0.034, "above": 0.03, "blend": 0.08},
         "fit_region": {"top_band": 0.28, "x_max": 0.19, "standoff": 0.02, "shift": 0.12, "scale": (0.92, 1.08)},
         "texture": {"strength": strength, "blur_radius": 1.2, "bands": 0},
+        "normal_transfer": 0.6,
         "merge_joints": {},
         "double_sided": True,
         "source": source,
@@ -82,6 +84,7 @@ def _bottom(name: str, *, source: dict[str, Any], pose: str, align: str, changes
         "d_max_open": 0.060,
         "fit_region": {"top_band": 0.14, "standoff": 0.02, "shift": 0.10, "scale": (0.92, 1.08)},
         "texture": {"strength": strength, "blur_radius": 1.4, "bands": 0},
+        "normal_transfer": 0.4,
         "merge_joints": {},
         "double_sided": True,
         "source": source,
@@ -132,6 +135,7 @@ def _hair(name: str, *, source: dict[str, Any], changes: str, lods: tuple[int, i
         "texture": {"strength": 0.20, "blur_radius": 0.8, "bands": 0, "gamma": 0.65, "size": 512},
         "uv": "strands",
         "scalp_cap": {},
+        "normal_transfer": 0.85,
         "merge_joints": dict(_JAW_TO_HEAD),
         "double_sided": True,
         "source": source,
@@ -256,9 +260,10 @@ PRESETS: dict[str, dict[str, Any]] = {
         source={"raw": "g1-bang", "pick": "root.2", "clean": "keep"},
         pose="t",
         align="anchor",
-        anchor={"landmark": "waist", "offset": 0.092, "length_m": 0.33},
+        anchor={"landmark": "waist", "offset": 0.003, "length_m": 0.33},
         decimate=8000,
         stylize=1,
+        normal_transfer=0.2,  # 주름이 디자인이라 법선을 거의 지키고 얼룩만 줄인다
         d_max=0.30,
         d_max_open=0.30,
         changes="교복 여학생 전신 생성물을 BANG으로 분리한 주름치마 파츠를 베이스 T-포즈 몸에 맞춰 리타깃(퍼짐과 주름을 유지하도록 약한 스무딩·충돌 해소만), 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",

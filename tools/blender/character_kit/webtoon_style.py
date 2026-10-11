@@ -78,6 +78,8 @@ class LookStyle:
     neutral_facs: tuple[tuple[str, float], ...] = ()  # 중립 얼굴에 미리 구워 넣는 표정 가중치(예: ("facs:mouthSmile", 0.4)). 사실 중립 얼굴은 화난 듯 보여 부드러운 중립을 만든다
     face_smooth: float = 0.0  # 얼굴 피부 요철(비순구·광대·콧등 주름)을 펴는 세기 0~1. 사실 머리의 미세한 굴곡이 툰 음영에서 줄무늬 그림자가 된다
     face_smooth_iterations: int = 14
+    face_normal_soften: float = 0.0  # 얼굴 정점 법선을 큰 형태(약 2.5 cm 이하 요철을 지운 머리)의 법선 쪽으로 옮기는 세기 0~1. 지오메트리는 그대로 두고 툰 음영 경계선(비순구·광대·관자 곡선)만 지운다
+    face_normal_iterations: int = 80  # 큰 형태 법선을 만드는 라플라시안 반복 횟수(많을수록 더 둥근 알 모양)
 
 
 NONE = LookStyle(id="none")
@@ -92,18 +94,19 @@ WEBTOON_GIRL = LookStyle(
     eye_lift=0.0,
     nose_scale=(0.78, 0.85, 0.55),
     mouth_scale=(0.92, 0.88, 0.90),
-    mouth_lift=0.008,
+    mouth_lift=0.020,
     jaw_narrow=0.20,
     chin_shorten=0.0,
     cheek_slim=0.12,
     iris_radius_m=0.0125,
-    brow_thin=0.5,
-    brow_lift=0.002,
+    brow_thin=0.35,
+    brow_lift=-0.006,
     lash_style="liner",
     neutral_body=(("waist", -0.25),),
-    neutral_facs=(("facs:mouthSmile", 0.8), ("facs:browOuterUp", 0.20), ("facs:browInnerUp", 0.10)),
+    neutral_facs=(("facs:mouthSmile", 1.4), ("facs:browOuterUp", 0.20), ("facs:browInnerUp", 0.10)),
     face_smooth=1.0,
     face_smooth_iterations=36,
+    face_normal_soften=0.9,
 )
 
 #: 미소년(꽃미남, L1 미형): 얼굴 구성은 여성보다 덜 극단적이고 눈은 가로로 길게 크며 코는 가늘고 턱끝은 가늘다. 눈썹은 여성보다 굵게 남긴다.
@@ -117,19 +120,20 @@ WEBTOON_BOY = LookStyle(
     eye_lift=0.0,
     nose_scale=(0.85, 0.90, 0.70),
     mouth_scale=(0.95, 0.90, 0.92),
-    mouth_lift=0.006,
+    mouth_lift=0.012,
     jaw_narrow=0.14,
     chin_shorten=0.0,
     cheek_slim=0.08,
     iris_radius_m=0.0108,
     brow_thin=0.25,
-    brow_lift=0.004,
+    brow_lift=-0.004,
     lash_style="liner",
     neutral_body=(("chestDepth", -2.6), ("shoulderWidth", 0.35), ("hip", -1.2), ("waist", 0.2)),
     body_smooth_iterations=22,
-    neutral_facs=(("facs:mouthSmile", 0.5), ("facs:browOuterUp", 0.12)),
+    neutral_facs=(("facs:mouthSmile", 0.9), ("facs:browOuterUp", 0.12)),
     face_smooth=1.0,
     face_smooth_iterations=30,
+    face_normal_soften=0.8,
 )
 
 STYLES: dict[str, LookStyle] = {style.id: style for style in (NONE, WEBTOON_GIRL, WEBTOON_BOY)}
@@ -499,7 +503,17 @@ def restyle_build(build: ba.BaseBuild, style: LookStyle) -> dict[str, Any]:
                 ctx.rig.a_pose[index] = registration.apply(ctx.rig.a_pose[index][None, :])[0]
             ctx.rig.t_pose[index] = field.apply(ctx.rig.t_pose[index][None, :])[0]
             ctx.rig.a_pose[index] = field.apply(ctx.rig.a_pose[index][None, :])[0]
+    snap_brows_to_head(by_name)
     _recompute_normals(by_name)
+    if style.face_normal_soften > 0.0:
+        head = by_name["TS_Head"].prims[0]
+        count = int(head.origin.max()) + 1
+        welded = np.zeros((count, 3))
+        welded[head.origin] = head.positions
+        welded_normals = np.zeros((count, 3))
+        welded_normals[head.origin] = head.normals
+        welded_normals = softened_face_normals(welded, head.origin[head.triangles], welded_normals, smooth_strength(ctx, head), style.face_normal_soften, style.face_normal_iterations)
+        head.normals = welded_normals[head.origin]
     after_height = float(np.concatenate([by_name["TS_Body"].prims[0].positions, by_name["TS_Head"].prims[0].positions])[:, 1].max())
     return {
         "style": style.id,
@@ -508,6 +522,60 @@ def restyle_build(build: ba.BaseBuild, style: LookStyle) -> dict[str, Any]:
         "movedVertices": moved_vertices,
         "registration": None if registration is None else {"target": style.target_head, **registration.report},
     }
+
+
+def laplacian_smooth_welded(positions: np.ndarray, triangles: np.ndarray, strength: np.ndarray, iterations: int, lam: float = 0.5) -> np.ndarray:
+    """정점마다 다른 세기로 수축하는 라플라시안 평활화(Taubin과 달리 되돌리지 않는다). 큰 형태의 법선을 얻는 용도라 수축은 상관없다."""
+    edges = np.unique(np.sort(np.concatenate([triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]]]), axis=1), axis=0)
+    degree = np.zeros(len(positions))
+    np.add.at(degree, edges[:, 0], 1.0)
+    np.add.at(degree, edges[:, 1], 1.0)
+    degree = np.maximum(degree, 1.0)[:, None]
+    out = positions.copy()
+    for _ in range(iterations):
+        total = np.zeros_like(out)
+        np.add.at(total, edges[:, 0], out[edges[:, 1]])
+        np.add.at(total, edges[:, 1], out[edges[:, 0]])
+        out += (strength * lam)[:, None] * (total / degree - out)
+    return out
+
+
+def softened_face_normals(welded: np.ndarray, triangles: np.ndarray, normals: np.ndarray, strength: np.ndarray, amount: float, iterations: int) -> np.ndarray:
+    """얼굴 용접 정점 법선(`normals`)을, 머리를 크게 평활화한 복사본의 법선과 `amount × strength` 비율로 섞는다(단위 길이).
+
+    세기 0인 정점(목 이음매·눈·입·귀 가장자리)은 원래 법선을 지켜 몸 법선과의 연속성과 눈매·입선을 잃지 않는다.
+    """
+    if amount <= 0.0 or iterations <= 0:
+        return normals
+    reference = laplacian_smooth_welded(welded, triangles, (strength > 0.0).astype(np.float64), iterations)
+    low = vertex_normals(reference, triangles)
+    weight = (amount * np.clip(strength / 0.9, 0.0, 1.0))[:, None]
+    blended = (1.0 - weight) * normals + weight * low
+    return blended / np.maximum(np.linalg.norm(blended, axis=1, keepdims=True), 1e-12)
+
+
+#: 눈썹 띠를 머리 표면 위로 띄우는 거리(m). 깊이 버퍼 다툼과 외곽선 셸에 묻히지 않을 만큼이다
+BROW_OFFSET_M = 0.0007
+
+
+def snap_brows_to_head(by_name: dict[str, ba.MeshNode]) -> None:
+    """얼굴 평활화·눈썹 올림이 끝난 뒤 눈썹 띠 정점을 머리 표면 위 `BROW_OFFSET_M`로 다시 붙인다.
+
+    띠는 평활화 전 머리 표면 위 0.4 mm에 투영돼 있어, 평활화와 올림 뒤에는 일부가 피부 속에 묻혀 점선처럼 보였다.
+    """
+    from .surface import Surface
+
+    head = by_name["TS_Head"].prims[0]
+    surface = Surface(head.positions, head.triangles)
+    for name in ("TS_Brow_L", "TS_Brow_R"):
+        for prim in by_name[name].prims:
+            hits = surface.closest(prim.positions, max_distance=0.02)
+            found = hits.triangle >= 0
+            snapped = prim.positions.copy()
+            snapped[found] = hits.point[found] + BROW_OFFSET_M * hits.normal[found]
+            if prim.apose is not None:
+                prim.apose = prim.apose + (snapped - prim.positions)
+            prim.positions = snapped
 
 
 def _recompute_normals(by_name: dict[str, ba.MeshNode]) -> None:

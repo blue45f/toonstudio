@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from character_kit import garment_fit as gf  # noqa: E402
 from character_kit.garment_texture import TextureStyle, luminance, rasterize_uv_mask, relative_color_texture, strand_texture  # noqa: E402
 from character_kit.gltf_read import StaticMesh  # noqa: E402
-from character_kit.retarget_garment import drop_stray_components, fade_small, merge_skin_joints  # noqa: E402
+from character_kit.retarget_garment import drop_stray_components, fade_small, merge_skin_joints, transferred_normals  # noqa: E402
 from character_kit.surface import Surface, vertex_normals  # noqa: E402
 
 
@@ -451,6 +451,39 @@ class StrayComponentTest(unittest.TestCase):
         cleaned, report = drop_stray_components(mesh, 30)
         self.assertIs(cleaned, mesh)
         self.assertEqual(report, {"droppedComponents": 0, "droppedTriangles": 0})
+
+
+class TransferredNormalsTest(unittest.TestCase):
+    def setUp(self) -> None:
+        positions, triangles = uv_sphere(radius=1.0, rings=24, segments=32)
+        self.surface = Surface(np.asarray(positions), np.asarray(triangles))
+        self.field = vertex_normals(self.surface.positions, self.surface.triangles)
+        rng = np.random.default_rng(1)
+        radial = rng.normal(size=(40, 3))
+        radial /= np.linalg.norm(radial, axis=1, keepdims=True)
+        self.radial = radial
+        self.rest = radial * 1.1  # 표면 위 10 cm(단위 구 기준)에 뜬 조각: 삼각형이 뒤죽박죽이라 기하 법선이 제각각이다
+        index = np.arange(40)
+        self.triangles = np.stack([index, (index + 1) % 40, (index + 5) % 40], axis=1)
+
+    def test_full_amount_follows_the_surface_normal(self) -> None:
+        out = transferred_normals(self.rest, self.triangles, self.surface, self.field, 1.0)
+        self.assertTrue(np.all(np.einsum("ij,ij->i", out, self.radial) > 0.97))
+        np.testing.assert_allclose(np.linalg.norm(out, axis=1), 1.0, atol=1e-9)
+
+    def test_zero_amount_keeps_geometric_normals_up_to_orientation(self) -> None:
+        geometric = vertex_normals(self.rest, self.triangles)
+        out = transferred_normals(self.rest, self.triangles, self.surface, self.field, 0.0)
+        np.testing.assert_allclose(np.abs(np.einsum("ij,ij->i", out, geometric)), 1.0, atol=1e-9)
+        # 방향은 표면 법선과 같은 쪽으로 뒤집힌다(거의 수직인 법선은 표면 법선 보간 오차 안에서 부호가 갈릴 수 있어 여유를 둔다)
+        self.assertTrue(np.all(np.einsum("ij,ij->i", out, self.radial) > -0.05))
+
+    def test_points_beyond_max_distance_keep_geometric_normals(self) -> None:
+        far = self.rest.copy()
+        far[0] = self.radial[0] * 5.0
+        geometric = vertex_normals(far, self.triangles)
+        out = transferred_normals(far, self.triangles, self.surface, self.field, 1.0, max_distance=0.5)
+        np.testing.assert_allclose(out[0], geometric[0], atol=1e-12)
 
 
 class FoldedVertexNormalTest(unittest.TestCase):

@@ -84,5 +84,92 @@ class StripAndLayoutTest(unittest.TestCase):
         self.assertTrue(np.array_equal(field._layout(points, marks.crown_y), points))
 
 
+def bumpy_sphere(radius: float = 0.1, rings: int = 24, segments: int = 36, bump: float = 0.006, seed: int = 3):
+    """무작위 요철(±bump)이 있는 UV 구체: (정점, 삼각형, 방사 방향 단위 벡터)."""
+    rng = np.random.default_rng(seed)
+    directions = [np.array([0.0, 1.0, 0.0])]
+    for ring in range(1, rings):
+        theta = np.pi * ring / rings
+        for seg in range(segments):
+            phi = 2.0 * np.pi * seg / segments
+            directions.append(np.array([np.sin(theta) * np.cos(phi), np.cos(theta), np.sin(theta) * np.sin(phi)]))
+    directions.append(np.array([0.0, -1.0, 0.0]))
+    radial = np.array(directions)
+    triangles = [(0, 1 + (seg + 1) % segments, 1 + seg) for seg in range(segments)]
+    for ring in range(rings - 2):
+        base = 1 + ring * segments
+        for seg in range(segments):
+            a, b = base + seg, base + (seg + 1) % segments
+            c, d = a + segments, b + segments
+            triangles += [(a, b, c), (b, d, c)]
+    last = len(radial) - 1
+    base = 1 + (rings - 2) * segments
+    triangles += [(last, base + seg, base + (seg + 1) % segments) for seg in range(segments)]
+    positions = radial * (radius + rng.uniform(-bump, bump, len(radial)))[:, None]
+    return positions, np.array(triangles, dtype=np.int64), radial
+
+
+class FaceNormalSoftenTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.positions, self.triangles, self.radial = bumpy_sphere()
+        self.normals = ws.vertex_normals(self.positions, self.triangles)
+
+    def test_full_strength_turns_bumpy_normals_toward_the_overall_shape(self) -> None:
+        before = float(np.einsum("ij,ij->i", self.normals, self.radial).mean())
+        out = ws.softened_face_normals(self.positions, self.triangles, self.normals, np.ones(len(self.positions)), 1.0, 60)
+        after = float(np.einsum("ij,ij->i", out, self.radial).mean())
+        self.assertGreater(after, before)
+        self.assertGreater(after, 0.97)
+        np.testing.assert_allclose(np.linalg.norm(out, axis=1), 1.0, atol=1e-9)
+
+    def test_zero_strength_vertices_keep_their_normals(self) -> None:
+        strength = np.zeros(len(self.positions))
+        strength[: len(strength) // 2] = 1.0
+        out = ws.softened_face_normals(self.positions, self.triangles, self.normals, strength, 1.0, 60)
+        np.testing.assert_allclose(out[strength == 0.0], self.normals[strength == 0.0], atol=1e-12)
+        self.assertFalse(np.allclose(out[strength == 1.0], self.normals[strength == 1.0]))
+
+    def test_amount_zero_or_no_iterations_is_identity(self) -> None:
+        ones = np.ones(len(self.positions))
+        self.assertIs(ws.softened_face_normals(self.positions, self.triangles, self.normals, ones, 0.0, 60), self.normals)
+        self.assertIs(ws.softened_face_normals(self.positions, self.triangles, self.normals, ones, 1.0, 0), self.normals)
+
+    def test_amount_blends_between_original_and_smoothed(self) -> None:
+        ones = np.ones(len(self.positions))
+        half = ws.softened_face_normals(self.positions, self.triangles, self.normals, ones, 0.5, 60)
+        full = ws.softened_face_normals(self.positions, self.triangles, self.normals, ones, 1.0, 60)
+        expected = 0.5 * self.normals + 0.5 * full
+        expected /= np.linalg.norm(expected, axis=1, keepdims=True)
+        np.testing.assert_allclose(half, expected, atol=1e-9)
+
+    def test_style_defaults_enable_softening_within_range(self) -> None:
+        for style_id in ("webtoon-girl", "webtoon-boy"):
+            style = ws.STYLES[style_id]
+            self.assertTrue(0.0 < style.face_normal_soften <= 1.0)
+            self.assertGreater(style.face_normal_iterations, 0)
+
+
+class BrowSnapTest(unittest.TestCase):
+    def test_brow_vertices_are_resnapped_just_above_the_head_surface(self) -> None:
+        from types import SimpleNamespace
+
+        positions, triangles, radial = bumpy_sphere(radius=0.1, rings=32, segments=48, bump=0.0)
+        head = SimpleNamespace(positions=positions, triangles=triangles)
+        pick = np.flatnonzero((radial[:, 2] > 0.8) & (np.abs(radial[:, 0]) < 0.3))[:6]
+        inside = radial[pick] * 0.098  # 피부 속에 묻힌 눈썹 정점
+        outside = radial[pick] * 0.108  # 떠 있는 정점
+        brows = {}
+        for name, points in (("TS_Brow_L", inside), ("TS_Brow_R", outside)):
+            brows[name] = SimpleNamespace(positions=points.copy(), apose=points.copy() + 0.5, triangles=np.zeros((0, 3), dtype=np.int64))
+        by_name = {"TS_Head": SimpleNamespace(prims=[head]), "TS_Brow_L": SimpleNamespace(prims=[brows["TS_Brow_L"]]), "TS_Brow_R": SimpleNamespace(prims=[brows["TS_Brow_R"]])}
+        ws.snap_brows_to_head(by_name)
+        for name in ("TS_Brow_L", "TS_Brow_R"):
+            radius = np.linalg.norm(brows[name].positions, axis=1)
+            np.testing.assert_allclose(radius, 0.1 + ws.BROW_OFFSET_M, atol=4e-4)
+        # A-포즈 위치는 같은 이동량을 받는다
+        shift = brows["TS_Brow_L"].positions - inside
+        np.testing.assert_allclose(brows["TS_Brow_L"].apose, inside + 0.5 + shift, atol=1e-12)
+
+
 if __name__ == "__main__":
     unittest.main()

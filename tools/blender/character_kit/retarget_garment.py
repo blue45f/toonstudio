@@ -130,6 +130,27 @@ def vertex_components(vertex_count: int, triangles: np.ndarray) -> np.ndarray:
     return np.array([find(i) for i in range(vertex_count)])
 
 
+def transferred_normals(rest: np.ndarray, canon_triangles: np.ndarray, surface: Surface, field: np.ndarray, amount: float, max_distance: float = 0.30) -> np.ndarray:
+    """정점마다 가장 가까운 몸·머리 표면점의 보간 법선(`field`는 표면 정점 법선)을 기하 법선과 `amount` 비율로 섞는다(단위 길이).
+
+    가닥 시트 헤어는 얇은 조각마다 법선이 제각각이라 툰 음영(2단 램프)에서 검은 반점이 된다. 두피를 따라 둥글게 음영이 지게 하는 애니풍 법선 전사다.
+    시트의 감김은 제각각이라 기하 법선은 전사 법선과 같은 쪽으로 뒤집어 섞는다. 표면이 `max_distance`(m) 안에 없는 정점은 기하 법선을 그대로 쓴다.
+    """
+    geometric = vertex_normals(rest, canon_triangles)
+    hits = surface.closest(rest, max_distance=max_distance)
+    found = hits.triangle >= 0
+    out = geometric.copy()
+    if not found.any():
+        return out
+    triangles = surface.triangles[hits.triangle[found]]
+    interpolated = np.einsum("ijk,ij->ik", field[triangles], hits.bary[found])
+    interpolated /= np.maximum(np.linalg.norm(interpolated, axis=1, keepdims=True), 1e-12)
+    oriented = geometric[found] * np.where(np.einsum("ij,ij->i", geometric[found], interpolated) < 0.0, -1.0, 1.0)[:, None]
+    blended = (1.0 - amount) * oriented + amount * interpolated
+    out[found] = blended / np.maximum(np.linalg.norm(blended, axis=1, keepdims=True), 1e-12)
+    return out
+
+
 STRAY_MAX_TRIANGLES = 30
 
 
@@ -665,7 +686,8 @@ def write_part_glb(spec: dict, results: list[dict], base: BaseModel, texture_jpe
     for node, result in zip(spec["nodes"], results, strict=True):
         mesh: StaticMesh = result["mesh"]
         positions = result["rest"][result["canon_index"]]
-        normals = gf.canonical_vertex_normals(result["canon_index"], result["canon_count"], positions, mesh.triangles)
+        canon_normals = result.get("normals_canon")
+        normals = gf.canonical_vertex_normals(result["canon_index"], result["canon_count"], positions, mesh.triangles) if canon_normals is None else canon_normals[result["canon_index"]]
         joints = result["joints"][result["canon_index"]]
         weights = result["weights"][result["canon_index"]]
         joints, weights = merge_skin_joints(joints, weights, joint_names, spec["merge_joints"])
@@ -797,6 +819,13 @@ def main() -> None:
         if image_bytes is None:
             raise SystemExit("기본색 텍스처가 없다")
         texture_jpeg, texture_stats = relative_color_texture(image_bytes, uv_triangles, TextureStyle(**spec["texture"]))
+
+    if spec["role"] in ("hair", "top", "bottom") and spec.get("normal_transfer"):
+        # 몸 UV 이음매로 갈라진 정점이 서로 다른 법선을 갖지 않게 용접 정점 기준으로 법선 필드를 만든다.
+        surface_index, surface_welded = gf.weld_vertices(surface_t.positions)
+        field = vertex_normals(surface_welded, surface_index[surface_t.triangles])[surface_index]
+        for result in results:
+            result["normals_canon"] = transferred_normals(result["rest"], result["canon_index"][result["mesh"].triangles], surface_t, field, float(spec["normal_transfer"]))
 
     out_path = kit_dir / "parts" / base_id / spec["slot"] / f"{spec['name']}.glb"
     size = write_part_glb(spec, results, base, texture_jpeg, out_path, names)
