@@ -1,6 +1,6 @@
-import type { ServerEventMessage } from "../../../../../deploy/cloudflare-realtime/src/protocol";
+import type { ServerEventMessage } from "../../../../../../deploy/cloudflare-realtime/src/protocol";
 
-import type { StudioRealtimeConnectionRequest, StudioRealtimeWorkload } from "./studio-realtime-provider-protocol";
+import type { StudioRealtimeConnectionRequest, StudioRealtimeWorkload } from "../studio-realtime-provider-protocol";
 
 /**
  * Cloudflare 실시간 어댑터의 와이어↔로컬 시퀀스 투영.

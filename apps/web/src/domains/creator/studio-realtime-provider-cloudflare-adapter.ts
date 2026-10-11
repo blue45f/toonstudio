@@ -35,7 +35,7 @@ import {
   canonicalFingerprint,
   sameSet,
   type ProjectedEventRecord,
-} from "./studio-realtime-provider-cloudflare-projection";
+} from "./live/studio-realtime-provider-cloudflare-projection";
 
 const CONNECT_TIMEOUT_MS = 8_000;
 const PUBLISH_TIMEOUT_MS = 8_000;
