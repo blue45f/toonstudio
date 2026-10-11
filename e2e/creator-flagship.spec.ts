@@ -3,6 +3,7 @@ import {
   STUDIO_BETA_NOTICE_REVISION,
   STUDIO_BETA_NOTICE_STORAGE_KEY,
 } from "../apps/web/src/domains/creator/studio-beta-notice-storage";
+import { WORKSPACE_TOUR_STORAGE_KEY } from "../apps/web/src/domains/creator/workspace/studio-workspace-tour-state";
 import { CREATOR_EXPERIENCE_STORAGE_KEY } from "../apps/web/src/shared/lib/creator-experience-mode";
 import { assertStudioWorkspaceHome } from "../scripts/lib/studio-workspace-browser-contract.mjs";
 
@@ -26,9 +27,12 @@ const CREATOR_INTENT_DESTINATIONS = [
  * 홈의 실제 내비게이션·상태 바를 검증하는 테스트는 의도적으로 고른 게스트 신원을 심고 시작한다.
  */
 async function seedGuestSession(page: Page) {
-  await page.addInitScript(({ key }) => {
+  await page.addInitScript(({ key, tourKey }) => {
     localStorage.setItem(key, JSON.stringify({ id: "guest_e2e-creator-flagship", createdAt: Date.now() }));
-  }, { key: GUEST_SESSION_KEY });
+    // 첫 방문 스포트라이트 투어는 활성인 동안 포커스를 카드로 옮기는 것이 설계다(전용 단위 테스트가 검증).
+    // 이 테스트는 닫은 패널이 호출 버튼으로 포커스를 돌려주는 계약을 보므로 투어를 완료 상태로 둔다.
+    localStorage.setItem(tourKey, "done");
+  }, { key: GUEST_SESSION_KEY, tourKey: WORKSPACE_TOUR_STORAGE_KEY });
 }
 
 function themeEnvelope() {
@@ -91,21 +95,20 @@ for (const width of [320, 390, 820, 1440]) {
     await page.goto("/about/studio", { waitUntil: "domcontentloaded" });
     const home = page.locator('[data-creator-experience="all-in-one-studio-v3"]');
     const primaryAction = home.locator('.cf-hero a[href="/studio/new"]');
-    const tabs = home.getByRole("tablist", { name: "작업실 둘러보기" }).getByRole("tab");
 
     await expect(home).toBeVisible();
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator("h1")).toContainText("기획부터 연재까지, 웹툰 제작의 모든 것을 한곳에서.");
     await expect(home.locator('.cf-hero a[href="/studio"]')).toBeVisible();
     await expect(primaryAction).toBeVisible();
-    // 둘러보기는 세 탭으로 나뉘고 기본은 '화면 구성'(번호를 눌러 보는 예시 편집기)이다.
-    await expect(tabs).toHaveCount(3);
-    await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
-    await expect(home.locator(".isw")).toBeVisible();
-    await expect(home.getByRole("group", { name: "작업실 영역 고르기" }).getByRole("button")).toHaveCount(5);
+    // 소개는 탭 없이 한 번에 읽히는 서사다. 둘러보기 예시 편집기는 서사 아래에 바로 놓인다.
+    await expect(page.getByRole("tablist")).toHaveCount(0);
+    const tour = home.locator("#creator-tour");
+    await tour.scrollIntoViewIfNeeded();
+    await expect(tour.locator(".isw")).toBeVisible();
+    await expect(tour.getByRole("group", { name: "작업실 영역 고르기" }).getByRole("button")).toHaveCount(5);
 
-    // '바로 시작' 탭: 시작 선택기가 모든 시작점으로 이어진다.
-    await tabs.nth(1).click();
+    // '바로 시작' 섹션: 시작 선택기가 모든 시작점으로 이어진다.
     const intentCards = home.locator("#creator-start .cf-intent-visual-nav a");
     await expect(intentCards).toHaveCount(CREATOR_INTENT_DESTINATIONS.length);
     expect(await intentCards.evaluateAll((links) => links.map((link) => link.getAttribute("href"))))
@@ -159,29 +162,31 @@ test("the front door exposes planning, 2D, 3D, assets, collaboration and publish
 
   await expect(home.locator('.cf-hero a[href="/studio/new"]')).toBeVisible();
   await expect(home.locator('.cf-hero a[href="/studio"]')).toBeVisible();
-  await home.getByRole("tab", { name: "바로 시작" }).click();
+  await expect(page.getByRole("tablist")).toHaveCount(0);
   await expect(home.locator("#creator-start .cf-intent-visual-nav a")).toHaveCount(CREATOR_INTENT_DESTINATIONS.length);
   for (const destination of CREATOR_INTENT_DESTINATIONS) {
     await expect(home.locator(`#creator-start .cf-intent-visual-nav a[href="${destination}"]`)).toBeVisible();
   }
-  await home.getByRole("tab", { name: "재료·협업·도움" }).click();
   await expect(home.locator("#creator-support a[href]").first()).toBeVisible();
   await expect(home).not.toContainText("그림은 익숙한 도구에서");
   await expect(home).not.toContainText("기존 드로잉 도구 그대로");
 });
 
-test("tour tabs keep shareable addresses and legacy section links", async ({ page }) => {
-  await page.goto("/about/studio");
-  const tabs = page.getByRole("tablist", { name: "작업실 둘러보기" });
-  await tabs.getByRole("tab", { name: "재료·협업·도움" }).click();
-  await expect(page).toHaveURL(/[?&]tab=support/u);
-  await expect(page.locator("#creator-support-title")).toBeVisible();
-  // 탭은 주소만 바꾸고 방문 기록을 쌓지 않으므로, 새로고침해도 같은 탭이 열린다.
-  await page.reload();
-  await expect(tabs.getByRole("tab", { name: "재료·협업·도움" })).toHaveAttribute("aria-selected", "true");
-  // 예전 섹션 주소(#creator-flow 등)도 막다른 길 없이 해당 탭을 연다.
-  await page.goto("/about/studio#creator-support");
-  await expect(tabs.getByRole("tab", { name: "재료·협업·도움" })).toHaveAttribute("aria-selected", "true");
+test("legacy section links open the matching section without tabs", async ({ page }) => {
+  // 탭은 의도적으로 없앴다(소개 서사로 재구성). 예전 섹션 주소(#creator-*)는 막다른 길 없이
+  // 해당 섹션 제목으로 이동하고 포커스를 줘야 한다.
+  const cases = [
+    { hash: "#creator-support", heading: "#creator-support-title" },
+    { hash: "#creator-flow", heading: "#creator-process-title" },
+    { hash: "#creator-faq-title", heading: "#creator-support-title" },
+  ];
+  for (const { hash, heading } of cases) {
+    await page.goto(`/about/studio${hash}`, { waitUntil: "domcontentloaded" });
+    const title = page.locator(heading);
+    await expect(title).toBeVisible();
+    await expect(title).toBeFocused();
+  }
+  await expect(page.getByRole("tablist")).toHaveCount(0);
 });
 
 for (const width of [320, 390]) {
