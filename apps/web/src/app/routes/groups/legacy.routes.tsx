@@ -12,14 +12,21 @@ import { defineAppRoutes } from "../app-route-definition";
  *
  * 별칭 정책 확정 (2026-10-08, 소형 잔여 처분): `/new`와 `/make`(creator-resources
  * routes의 resources-make)는 별칭으로 유지한다. 전역 기능 중복 감사 O-02의 "유지"
- * 판정을 코드 실측으로 검증했다 — 두 별칭 모두 `Navigate replace`로 canonical인
- * `/studio/new`에 합류하고, 내부 링크 생성(to/href/navigate)은 별칭을 목적지로
- * 쓰지 않으며, 헤더 제작 CTA도 `/studio/new`를 직접 쓴다. 별칭의 존재 이유는
- * 북마크·구버전 화면에서 들어오는 유입을 404 없이 받는 것뿐이다.
+ * 판정을 코드 실측으로 검증했다 — 두 별칭 모두 `Navigate replace`로 canonical
+ * 목적지에 합류하고, 내부 링크 생성(to/href/navigate)은 별칭을 목적지로 쓰지
+ * 않는다. 별칭의 존재 이유는 북마크·구버전 화면에서 들어오는 유입을 404 없이
+ * 받는 것뿐이다.
+ *
+ * 목적지 갱신 (2026-10-11, 사용성 웨이브): 웨이브 6에서 인앱 시작 진입점(헤더
+ * 제작 CTA·내비·명령 팔레트)이 전부 `/create` 시작 시트로 수렴하면서, 별칭만
+ * `/studio/new` 생성 양식으로 직행해 시트를 우회하는 불일치가 남았다. 별칭은
+ * 유지하되 목적지를 `/create`로 맞춘다 — 북마크 유입도 템플릿·이어가기를
+ * 거치는 같은 시작 경험을 받는다. `/studio/new`는 시트에서 "새 작품 만들기"를
+ * 골랐을 때 닿는 2단계 양식으로 그대로 있다.
  */
 export const legacyRedirectRoutes = defineAppRoutes([
-  // 헤더 "제작" CTA -> 새 작품 진입점. 기존 `/make` redirect와 동일 목적지.
-  { id: "legacy-new", path: "/new", element: <Navigate to="/studio/new" replace /> },
+  // 구 "새 작품" 단축 주소 -> 시작 시트. 기존 `/make` redirect와 동일 목적지.
+  { id: "legacy-new", path: "/new", element: <Navigate to="/create" replace /> },
   // 헤더 "전체" 메뉴 -> 현재 내비게이션이 쓰는 사이트맵 디렉터리.
   { id: "legacy-more", path: "/more", element: <Navigate to="/sitemap" replace /> },
   // 히어로 "8분 제품 투어" -> 제품 투어 페이지.

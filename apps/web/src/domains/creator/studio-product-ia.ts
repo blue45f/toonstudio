@@ -254,7 +254,7 @@ export const STUDIO_CAPABILITY_REGISTRY: readonly StudioCapabilityDefinition[] =
 ] as const;
 
 export const STUDIO_LEGACY_ROUTE_ALIASES = [
-  { from: "/make", to: "/studio/new" },
+  { from: "/make", to: "/create" },
   { from: "/creator-hub", to: "/studio" },
   { from: "/brush-lab", to: "/studio/assets/brushes/new" },
   { from: "/shaper", to: "/studio/assets/characters/new" },

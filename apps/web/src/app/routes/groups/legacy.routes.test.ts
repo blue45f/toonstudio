@@ -7,7 +7,7 @@ import { legacyRedirectRoutes } from "./legacy.routes";
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 
 const EXPECTED_LEGACY_REDIRECTS = [
-  { id: "legacy-new", path: "/new", target: "/studio/new" },
+  { id: "legacy-new", path: "/new", target: "/create" },
   { id: "legacy-more", path: "/more", target: "/sitemap" },
   { id: "legacy-tour", path: "/tour", target: "/product-tour" },
   { id: "legacy-principles", path: "/principles", target: "/about/principles" },

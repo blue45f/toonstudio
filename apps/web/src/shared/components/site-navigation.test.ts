@@ -179,7 +179,9 @@ describe("site navigation information architecture", () => {
     for (const pathname of [
       "/home", "/studio", "/production", "/production/projects/sample-project/overview",
       "/studio/canvas", "/studio/assets/brushes/new", "/learn/webtoon", "/help/getting-started",
-      "/make", "/publishing", "/shaper", "/music", "/brush-lab",
+      // /make는 시작 시트(/create)의 별칭이라 목적지의 공개 컨텍스트를 따른다
+      // (site-route-metadata.test.ts에서 별칭 컨텍스트를 고정한다).
+      "/publishing", "/shaper", "/music", "/brush-lab",
     ]) {
       expect(siteNavigationContextForPath(pathname), pathname).toBe("studio");
     }
