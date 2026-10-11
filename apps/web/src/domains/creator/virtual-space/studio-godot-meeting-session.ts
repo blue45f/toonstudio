@@ -137,6 +137,9 @@ export class StudioGodotMeetingSession {
     payload: Record<string, unknown>,
   ): Promise<void> {
     if (this.closed) return;
+    // 중계(룸 브로드캐스트)는 발신자 본인에게도 에코된다 — 자기 신호를
+    // 상대 신호로 오인하면 자기 offer에 답하는 등 협상이 깨지므로 버린다.
+    if (fromClientId && fromClientId === this.context.selfClientId) return;
     const kind = typeof payload.kind === "string" ? payload.kind : "";
     if (kind === "signal.stop") {
       this.teardown(false);
@@ -153,11 +156,18 @@ export class StudioGodotMeetingSession {
       await this.answerOffer(fromClientId, payload);
     } else if (kind === "signal.answer" && typeof payload.sdp === "string") {
       if (this.peerConnection && this.peerConnectionId === payload.peerConnectionId) {
-        await this.peerConnection.setRemoteDescription({
-          type: "answer",
-          sdp: payload.sdp,
-        });
-        await this.flushPendingCandidates();
+        try {
+          await this.peerConnection.setRemoteDescription({
+            type: "answer",
+            sdp: payload.sdp,
+          });
+          await this.flushPendingCandidates();
+        } catch {
+          // 잘못된 상태의 answer(중복·지연) 적용 실패가 협상 전체를
+          // 처리되지 않은 거부로 죽이지 않게 한다.
+          this.started = false;
+          this.setRoute("failed");
+        }
       }
     } else if (kind === "signal.ice") {
       const candidate = payload.candidate as

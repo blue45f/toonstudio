@@ -192,6 +192,23 @@ describe("StudioGodotMeetingSession", () => {
     expect(sent.some((payload) => payload.kind === "signal.stop")).toBe(true);
   });
 
+  it("ignores signals echoed back from itself", async () => {
+    const { session, sent, pcs, context } = makeSession({
+      selfClientId: "client-b",
+      peerClientId: "client-a",
+    });
+    session.setContext(context);
+    // 룸 브로드캐스트가 발신자에게도 에코하는 offer를 상대 것으로 처리하면 안 된다.
+    await session.handleSignal("client-b", {
+      kind: "signal.offer",
+      sessionId: "p2p-mesh-v1",
+      peerConnectionId: "godot-meeting-test1234",
+      sdp: "sdp-offer",
+    });
+    expect(pcs).toHaveLength(0);
+    expect(sent.some((payload) => payload.kind === "signal.answer")).toBe(false);
+  });
+
   it("ignores signals for other sessions", async () => {
     const { session, pcs, context } = makeSession();
     session.setContext(context);
