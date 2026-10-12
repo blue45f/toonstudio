@@ -283,6 +283,12 @@ describe("Studio five-hour soak layer navigator admission", () => {
     expect(ensure).toContain('[data-studio-inspector-primary-tab="layers"]');
     expect(ensure).toContain('getAttribute("aria-selected")');
     expect(ensure).toContain("waitForStudioLayerCount(page");
+    // 최단 경로는 작업 메뉴의 "레이어 열기"다: 시트를 레이어 탭으로 직접 열고, 클릭 결과는
+    // 시트의 실제 상태 속성으로 검증해 로그한다(성공으로 가정하지 않는다).
+    expect(ensure).toContain('getByRole("button", { name: "레이어 열기", exact: true })');
+    expect(ensure).toContain('[data-studio-sheet-id="props"]');
+    expect(ensure).toContain('getAttribute("data-studio-mobile-sheet")');
+    expect(ensure).toContain("props sheet open=");
   });
 
   it("gates preflight and history churn on the mounted navigator instead of the raw count", () => {

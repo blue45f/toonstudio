@@ -526,12 +526,17 @@ async function ensureStudioLayerNavigatorCount(
   if (existing !== null) return existing;
 
   const mobileDock = page.locator('[data-studio-mobile-editing-dock="true"]');
+  const propsSheet = page.locator('[data-studio-sheet-id="props"]');
+  const propsSheetOpen = async (): Promise<boolean> =>
+    (await propsSheet.getAttribute("data-studio-mobile-sheet").catch(() => null)) === "true";
   let openedSheet = false;
   if (await mobileDock.isVisible({ timeout: 250 }).catch(() => false)) {
     const panelButton = mobileDock.getByRole("button", { name: "작업 패널", exact: true });
-    if (!(await panelButton.isVisible().catch(() => false))) {
-      // 작업 패널 버튼은 워크스페이스 그리드 안에 있어, 접힌 독에서는 토글을 먼저 펼쳐야
-      // 보인다(브러시 라이브러리를 여는 경로와 같은 전제).
+    const layersButton = mobileDock.getByRole("button", { name: "레이어 열기", exact: true });
+    if (!(await layersButton.isVisible().catch(() => false))
+      && !(await panelButton.isVisible().catch(() => false))) {
+      // 레이어·작업 패널 버튼은 워크스페이스 그리드 안에 있어, 접힌 독에서는 토글을 먼저
+      // 펼쳐야 보인다(브러시 라이브러리를 여는 경로와 같은 전제).
       const workspace = mobileDock.locator('[data-studio-mobile-workspace-toggle="true"]');
       if (await workspace.isVisible().catch(() => false)
         && await workspace.getAttribute("aria-expanded") !== "true") {
@@ -539,33 +544,65 @@ async function ensureStudioLayerNavigatorCount(
         log("layer navigator admission: expanded the mobile workspace dock");
       }
     }
-    if (await panelButton.isVisible().catch(() => false)
+    // 모바일 사용자의 최단 경로: 작업 메뉴의 "레이어 열기"는 인스펙터 시트를 레이어 탭으로
+    // 직접 연다. "작업 패널" 경로는 그리기 도구 활성 시 속성 탭으로 열려 탭 전환이 한 번 더
+    // 필요하고, 오프라인 배너의 버튼 영역과 겹쳐 클릭이 가로막히는 사례가 실측됐다.
+    if (await layersButton.isVisible().catch(() => false)) {
+      await layersButton.click({ timeout: 5_000 }).catch(() => undefined);
+      openedSheet = await propsSheetOpen();
+      log(`layer navigator admission: layers entry click -> props sheet open=${openedSheet}`);
+    }
+    if (!openedSheet && await panelButton.isVisible().catch(() => false)
       && await panelButton.getAttribute("aria-expanded") !== "true") {
       await panelButton.click({ timeout: 5_000 }).catch(() => undefined);
-      openedSheet = true;
-      log("layer navigator admission: opened the mobile props sheet");
-    } else {
-      log(`layer navigator admission: props sheet button visible=${await panelButton.isVisible().catch(() => false)} expanded=${await panelButton.getAttribute("aria-expanded").catch(() => null)}`);
+      openedSheet = await propsSheetOpen();
+      log(`layer navigator admission: props panel click -> props sheet open=${openedSheet}`);
     }
   }
-  const layersTab = page.locator('[data-studio-inspector-primary-tab="layers"]');
-  if (await layersTab.isVisible({ timeout: 2_000 }).catch(() => false)) {
-    if (await layersTab.getAttribute("aria-selected") !== "true") {
-      await layersTab.click({ timeout: 5_000 }).catch(() => undefined);
-      log("layer navigator admission: selected the inspector layers tab");
+  if (!openedSheet) {
+    const layersTab = page.locator('[data-studio-inspector-primary-tab="layers"]');
+    if (await layersTab.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      if (await layersTab.getAttribute("aria-selected") !== "true") {
+        await layersTab.click({ timeout: 5_000 }).catch(() => undefined);
+        log("layer navigator admission: selected the inspector layers tab");
+      }
+    } else {
+      log("layer navigator admission: layers tab was not visible");
     }
-  } else {
-    log("layer navigator admission: layers tab was not visible");
   }
   const count = await waitForStudioLayerCount(page, (value) => value >= 0, timeoutMs);
   log(`layer navigator admission: count=${count ?? "unavailable"}`);
   if (count !== null && openedSheet) {
     // 그리기 영역을 시트가 덮지 않도록 되닫는다. 기본 탭이 "레이어"로 남아 내비게이터의
-    // 마운트와 카운트 속성은 닫은 뒤에도 유지된다.
-    const panelButton = mobileDock.getByRole("button", { name: "작업 패널", exact: true });
-    if (await panelButton.getAttribute("aria-expanded").catch(() => null) === "true") {
-      await panelButton.click({ timeout: 5_000 }).catch(() => undefined);
+    // 마운트와 카운트 속성은 닫은 뒤에도 유지되는지 실측으로 확인한다.
+    const waitSheetClosed = async (): Promise<boolean> => {
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        if (!(await propsSheetOpen())) return true;
+        await page.waitForTimeout(250);
+      }
+      return false;
+    };
+    await page.keyboard.press("Escape").catch(() => undefined);
+    let closed = await waitSheetClosed();
+    if (!closed) {
+      const panelButton = mobileDock.getByRole("button", { name: "작업 패널", exact: true });
+      if (await panelButton.getAttribute("aria-expanded").catch(() => null) === "true") {
+        await panelButton.click({ timeout: 5_000 }).catch(() => undefined);
+        closed = await waitSheetClosed();
+      }
     }
+    const surviving = await readStudioAvailableLayerCount(page);
+    log(`layer navigator admission: sheet closed=${closed} count after close=${surviving ?? "unavailable"}`);
+    if (surviving === null) {
+      // 닫으면 내비게이터가 내려가는 레이아웃이면 다시 열어 둔 채로 진행한다(다음 사이클의
+      // ensure 호출이 이미 읽히는 카운트로 즉시 반환한다).
+      const layersButton = mobileDock.getByRole("button", { name: "레이어 열기", exact: true });
+      if (await layersButton.isVisible().catch(() => false)) {
+        await layersButton.click({ timeout: 5_000 }).catch(() => undefined);
+      }
+      return await readStudioAvailableLayerCount(page);
+    }
+    return surviving;
   }
   return count;
 }
