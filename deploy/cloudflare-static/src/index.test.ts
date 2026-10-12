@@ -383,15 +383,16 @@ describe("Cloudflare static gateway", () => {
     }
   });
 
-  it("serves oversized immutable assets from Brotli static sidecars", async () => {
-    const assetFetch = vi.fn(async (_request: Request) => new Response("compressed-static", {
-      status: 200,
-      headers: { etag: "sidecar-etag" },
-    }));
+  it("serves oversized assets from R2 without worker-side content negotiation", async () => {
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => r2Object("r2-raw-bytes"));
+    const head = vi.fn(async (_key: string) => null);
     const upstream = vi.fn<typeof fetch>();
     const gateway = createCloudflareStaticGateway({ fetch: upstream });
     const env = environment({
-      ASSETS: { fetch: assetFetch },
+      LARGE_ASSETS: { get, head },
       LARGE_ASSET_ORIGIN: "https://large-assets.example.test",
     });
     const response = await gateway(new Request(
@@ -405,112 +406,38 @@ describe("Cloudflare static gateway", () => {
       },
     ), env);
 
-    expect(await response.text()).toBe("compressed-static");
-    expect(response.headers.get("content-encoding")).toBe("br");
+    expect(await response.text()).toBe("r2-raw-bytes");
+    expect(response.headers.get("content-encoding")).toBeNull();
     expect(response.headers.get("content-type")).toBe("application/wasm");
-    expect(response.headers.get("accept-ranges")).toBe("none");
-    expect(response.headers.get("vary")).toContain("Accept-Encoding");
-    expect(response.headers.get("x-toonstudio-large-asset-source")).toBe(
-      "static-br",
-    );
+    expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
+    expect(response.headers.get("cache-control")).toContain("s-maxage=0");
     expect(upstream).not.toHaveBeenCalled();
-    expect(assetFetch).toHaveBeenCalledOnce();
-    const staticRequest = assetFetch.mock.calls[0]?.[0] as Request;
-    expect(new URL(staticRequest.url).pathname).toBe(
-      "/assets/opencascade.wasm-build123.wasm.br",
-    );
-    expect(staticRequest.headers.get("authorization")).toBeNull();
-    expect(staticRequest.headers.get("cookie")).toBeNull();
-    expect(staticRequest.headers.get("accept-encoding")).toBe("identity");
-  });
-
-  it("uses gzip static sidecars when Brotli is not accepted", async () => {    const assetFetch = vi.fn(async (_request: Request) => new Response("gzip-static"));
-    const upstream = vi.fn<typeof fetch>();
-    const gateway = createCloudflareStaticGateway({ fetch: upstream });
-    const env = environment({ ASSETS: { fetch: assetFetch } });
-    const response = await gateway(new Request(
-      "https://www.toonstudio.cloud/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
-      { headers: { "accept-encoding": "gzip" } },
-    ), env);
-
-    expect(await response.text()).toBe("gzip-static");
-    expect(response.headers.get("content-encoding")).toBe("gzip");
-    expect(response.headers.get("content-type")).toBe("model/gltf-binary");
-    expect(upstream).not.toHaveBeenCalled();
-    const staticRequest = assetFetch.mock.calls[0]?.[0] as Request;
-    expect(new URL(staticRequest.url).pathname).toBe(
-      "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb.gz",
-    );
+    expect(get).toHaveBeenCalledOnce();
   });
 
   it.each([
-    ["br", "gzip, br", '"abc123-br"'],
-    ["gzip", "gzip", '"abc123-gzip"'],
-  ])("marks %s sidecar etags with the encoding", async (
-    encoding,
+    ["brotli client", "gzip, deflate, br, zstd"],
+    ["gzip client", "gzip"],
+    ["identity client", "identity"],
+  ])("serves byte-identical bodies to every %s", async (
+    _label,
     acceptEncoding,
-    etag,
   ) => {
-    const assetFetch = vi.fn(async (_request: Request) => new Response("compressed", {
-      status: 200,
-      headers: { etag: '"abc123"' },
-    }));
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => r2Object("r2-raw-bytes"));
+    const head = vi.fn(async (_key: string) => null);
     const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
     const response = await gateway(new Request(
       "https://www.toonstudio.cloud/godot-space/index.wasm",
       { headers: { "accept-encoding": acceptEncoding } },
-    ), environment({ ASSETS: { fetch: assetFetch } }));
-
-    expect(response.headers.get("content-encoding")).toBe(encoding);
-    expect(response.headers.get("etag")).toBe(etag);
-    expect(response.headers.get("cache-control")).toContain("s-maxage=0");
-  });
-
-  it("heals cross-variant revalidation with a full body instead of 304", async () => {
-    const assetFetch = vi.fn(async (_request: Request) => new Response("compressed", {
-      status: 200,
-      headers: { etag: '"abc123"' },
-    }));
-    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
-    const response = await gateway(new Request(
-      "https://www.toonstudio.cloud/godot-space/index.wasm",
-      {
-        headers: {
-          "accept-encoding": "gzip, deflate, br, zstd",
-          "if-none-match": '"abc123-gzip"',
-        },
-      },
-    ), environment({ ASSETS: { fetch: assetFetch } }));
+    ), environment({ LARGE_ASSETS: { get, head } }));
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("etag")).toBe('"abc123-br"');
-    expect(await response.text()).toBe("compressed");
-  });
-
-  it("continues from a missing compressed sidecar to R2", async () => {
-    const assetFetch = vi.fn(async () => new Response("missing", { status: 404 }));
-    const get = vi.fn(async (
-      _key: string,
-      _options?: { readonly range?: Headers },
-    ) => r2Object("r2-fallback"));
-    const head = vi.fn(async (_key: string) => null);
-    const upstream = vi.fn<typeof fetch>();
-    const gateway = createCloudflareStaticGateway({ fetch: upstream });
-    const response = await gateway(
-      new Request(
-        "https://www.toonstudio.cloud/assets/opencascade.wasm-build123.wasm",
-        { headers: { "accept-encoding": "br" } },
-      ),
-      environment({
-        ASSETS: { fetch: assetFetch },
-        LARGE_ASSETS: { get, head },
-      }),
-    );
-
-    expect(await response.text()).toBe("r2-fallback");
-    expect(assetFetch).toHaveBeenCalledOnce();
-    expect(get).toHaveBeenCalledOnce();
-    expect(upstream).not.toHaveBeenCalled();
+    expect(await response.text()).toBe("r2-raw-bytes");
+    expect(response.headers.get("content-encoding")).toBeNull();
+    expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
   });
 
   it("serves oversized immutable assets from R2 before the origin", async () => {

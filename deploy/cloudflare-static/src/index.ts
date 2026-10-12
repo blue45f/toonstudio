@@ -8,10 +8,7 @@ import {
   CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL,
   cloudflareLargeAssetDescriptor,
   cloudflareLargeAssetKey,
-  cloudflareLargeAssetSidecarPath,
   isCloudflareOversizedAssetPath,
-  supportsCloudflareStaticSidecar,
-  type CloudflareLargeAssetEncoding,
 } from "./large-static-assets";
 import { createNeisCreatorResourceEdge } from "./neis-creator-resource-edge";
 
@@ -685,122 +682,6 @@ function retryableRead(request: Request, route: DynamicRoute): boolean {
     && !isWebSocketUpgrade(request);
 }
 
-function encodingQuality(header: string, name: string): number {
-  let wildcardQuality: number | null = null;
-  for (const entry of header.split(",")) {
-    const [rawToken, ...parameters] = entry.trim().split(";");
-    const token = rawToken?.trim().toLowerCase();
-    if (!token) continue;
-    let quality = 1;
-    for (const parameter of parameters) {
-      const [rawKey, rawValue] = parameter.trim().split("=");
-      if (rawKey?.toLowerCase() !== "q") continue;
-      const parsed = Number(rawValue);
-      quality = Number.isFinite(parsed) && parsed >= 0 && parsed <= 1
-        ? parsed
-        : 0;
-    }
-    if (token === name) return quality;
-    if (token === "*") wildcardQuality = quality;
-  }
-  return wildcardQuality ?? 0;
-}
-
-function preferredLargeAssetEncoding(
-  request: Request,
-): CloudflareLargeAssetEncoding | null {
-  const method = request.method.toUpperCase();
-  if ((method !== "GET" && method !== "HEAD") || request.headers.has("range")) {
-    return null;
-  }
-  const accepted = request.headers.get("accept-encoding") ?? "";
-  const brotliQuality = encodingQuality(accepted, "br");
-  const gzipQuality = encodingQuality(accepted, "gzip");
-  if (brotliQuality > 0 && brotliQuality >= gzipQuality) return "br";
-  if (gzipQuality > 0) return "gzip";
-  return null;
-}
-
-function appendVary(headers: Headers, value: string): void {
-  const current = headers.get("vary")
-    ?.split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean) ?? [];
-  if (!current.some((entry) => entry.toLowerCase() === value.toLowerCase())) {
-    current.push(value);
-  }
-  headers.set("vary", current.join(", "));
-}
-
-async function serveCompressedLargeAsset(
-  request: Request,
-  env: CloudflareStaticEnv,
-): Promise<Response | null> {
-  const incoming = new URL(request.url);
-  const descriptor = cloudflareLargeAssetDescriptor(incoming.pathname);
-  const encoding = preferredLargeAssetEncoding(request);
-  if (
-    !descriptor
-    || !encoding
-    || !supportsCloudflareStaticSidecar(incoming.pathname)
-  ) return null;
-
-  const sidecarUrl = new URL(incoming);
-  sidecarUrl.pathname = cloudflareLargeAssetSidecarPath(
-    incoming.pathname,
-    encoding,
-  );
-  const headers = new Headers(request.headers);
-  removePublicReadCredentials(headers);
-  headers.delete("range");
-  headers.delete("if-range");
-  headers.set("accept-encoding", "identity");
-
-  const assetResponse = await env.ASSETS.fetch(new Request(sidecarUrl, {
-    method: request.method,
-    headers,
-    redirect: "manual",
-    signal: request.signal,
-  }));
-  if (assetResponse.status === 404 || assetResponse.status >= 500) {
-    await cancelRetryResponse(assetResponse);
-    return null;
-  }
-
-  const responseHeaders = new Headers(assetResponse.headers);
-  responseHeaders.set("content-encoding", encoding === "br" ? "br" : "gzip");
-  responseHeaders.set("content-type", descriptor.contentType);
-  responseHeaders.set("cache-control", CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL);
-  // etag에 인코딩 접미사를 붙인다. 엣지가 Accept-Encoding과 무관하게 한
-  // 변형을 돌려줘도(2026-10-13 운영 실측) 다른 변형과 304로 섞이지 않게
-  // 하기 위해서다. 브라우저는 자기 변형에만 304하고, 어긋나면 200으로 치유된다.
-  const sidecarEtag = responseHeaders.get("etag");
-  if (sidecarEtag) {
-    const opaque = sidecarEtag.startsWith("W/") ? sidecarEtag.slice(2) : sidecarEtag;
-    const bare = opaque.startsWith('"') && opaque.endsWith('"') && opaque.length >= 2
-      ? opaque.slice(1, -1)
-      : opaque;
-    responseHeaders.set("etag", `"${bare}-${encoding}"`);
-  }
-  responseHeaders.set("accept-ranges", "none");
-  responseHeaders.set(
-    "x-toonstudio-large-asset-source",
-    `static-${encoding}`,
-  );
-  responseHeaders.delete("content-range");
-  appendVary(responseHeaders, "Accept-Encoding");
-
-  const body = request.method.toUpperCase() === "HEAD"
-    || assetResponse.status === 304
-    ? null
-    : assetResponse.body;
-  return withSecurityHeaders(new Response(body, {
-    status: assetResponse.status,
-    statusText: assetResponse.statusText,
-    headers: responseHeaders,
-  }));
-}
-
 function matchesIfNoneMatch(request: Request, httpEtag: string): boolean {
   const raw = request.headers.get("if-none-match");
   if (!raw) return false;
@@ -968,12 +849,11 @@ export function createCloudflareStaticGateway(
 
     const route = classifyDynamicRoute(request, requestUrl);
     if (route === "large-asset") {
-      try {
-        const staticResponse = await serveCompressedLargeAsset(request, env);
-        if (staticResponse) return staticResponse;
-      } catch {
-        // Missing or unreadable sidecars continue to R2.
-      }
+      // 대형 에셋은 R2 원본 그대로만 서빙한다. 압축 sidecar를 Worker가
+      // content-encoding과 함께 돌려주면 엣지가 한 겹 더 압축해 단일 라벨
+      // 이중 압축이 되었고(2026-10-13 운영 실측: 전 경로 이중 brotli),
+      // 어떤 클라이언트도 해제하지 못해 엔진·모델 로딩이 깨졌다.
+      // R2 원본 + 엣지 네이티브 압축 조합은 클라이언트별로 정확히 동작한다.
       const r2Response = await serveR2LargeAsset(request, env);
       if (r2Response) return r2Response;
     }
