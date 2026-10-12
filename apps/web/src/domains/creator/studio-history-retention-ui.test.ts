@@ -13,6 +13,7 @@ describe("studio history retention UI state", () => {
       lastMeasuredBudgetBytes: STUDIO_PAGES_HISTORY_RETAINED_BYTES_BUDGET,
       lastMeasuredEntryBytes: 0,
       totalBudgetEvictedSteps: 0,
+      totalAppends: 0,
       notice: null,
     });
   });
@@ -48,6 +49,7 @@ describe("studio history retention UI state", () => {
       lastMeasuredBudgetBytes: 192,
       lastMeasuredEntryBytes: 1,
       totalBudgetEvictedSteps: 2,
+      totalAppends: 2,
     });
     expect(afterOrdinaryAppend.notice).toBe(afterEviction.notice);
   });
@@ -102,11 +104,13 @@ describe("studio history retention UI state", () => {
     );
 
     expect(populated.notice).not.toBeNull();
+    expect(populated.totalAppends).toBe(1);
     expect(createStudioHistoryRetentionUiState()).toEqual({
       lastMeasuredRetainedBytes: 0,
       lastMeasuredBudgetBytes: STUDIO_PAGES_HISTORY_RETAINED_BYTES_BUDGET,
       lastMeasuredEntryBytes: 0,
       totalBudgetEvictedSteps: 0,
+      totalAppends: 0,
       notice: null,
     });
   });

@@ -426,6 +426,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   studioFilterTargetLabel: any;
   studioFilterUnavailableReason: any;
   studioHistoryRetention: any;
+  rejectedStrokeCount: any;
   studioHistorySidecarRedoAvailable: any;
   studioHistorySidecarUndoAvailable: any;
   joinedStudioLiveJam: boolean;

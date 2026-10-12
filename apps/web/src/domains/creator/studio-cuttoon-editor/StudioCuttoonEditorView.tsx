@@ -49,6 +49,7 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
     mobileImmersive,
     pagesHi,
     pagesHistory,
+    rejectedStrokeCount,
     requiresStudioLiveServer,
     setCanvasOnlyMode,
     studioAuthUserId,
@@ -120,6 +121,8 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
       data-studio-history-budget-evicted-steps={
         studioHistoryRetention.totalBudgetEvictedSteps
       }
+      data-studio-history-total-appends={studioHistoryRetention.totalAppends}
+      data-studio-rejected-stroke-count={rejectedStrokeCount ?? 0}
       className={cn(
         "flex min-h-0 flex-col bg-canvas text-fg",
         !maximized && !canvasOnlyMode && !mobileImmersive &&
