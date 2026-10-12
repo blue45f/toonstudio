@@ -22,9 +22,12 @@ import {
 import type { FanCafeScopeFilter } from "@/shared/lib/types";
 
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
-import { SitePageArt } from "@/domains/legal/public/site-page-art";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { FanCafePanel } from "@/shared/components/fan-cafe-panel";
+import {
+  workflowIllustrationSource,
+  workflowIllustrationSources,
+} from "@/shared/components/site-experience/workflow-illustration";
 import { Container, Section } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
@@ -174,8 +177,11 @@ export function CommunityPage() {
         eyebrow={t(COPY.heroEyebrow)}
         title={t(COPY.heroTitle)}
         description={t(COPY.heroSummary)}
-        aside={<SitePageArt kind="community" caption={t(COPY.heroArtCaption)} priority />}
-        asideClassName="hidden lg:block"
+        art="community"
+        artSrc={workflowIllustrationSource("community", 960)}
+        artSrcSet={workflowIllustrationSources("community")}
+        artPlacement="banner"
+        artCaption={t(COPY.heroArtCaption)}
         actions={
           <>
             <Link href="/showcase" className={buttonClass({ size: "md", className: "min-h-11" })}>

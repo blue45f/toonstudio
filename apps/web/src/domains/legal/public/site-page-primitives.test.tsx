@@ -91,6 +91,29 @@ describe("public page primitives", () => {
     expect(screen.getByText("배너 위 설명").className).toContain("text-white/80");
   });
 
+  it("uses an external art source for the banner when artSrc is given", () => {
+    const { container } = render(
+      <SitePageHeader
+        eyebrow="COMMUNITY"
+        title="커뮤니티"
+        art="community"
+        artSrc="/brand/workflow-20260928/community-960.webp"
+        artSrcSet="/brand/workflow-20260928/community-320.webp 320w, /brand/workflow-20260928/community-960.webp 960w"
+        artPlacement="banner"
+        artCaption="브랜드 콘셉트 아트"
+      />,
+    );
+    const header = container.querySelector("[data-site-page-header]");
+    expect(header?.getAttribute("data-site-page-header-variant")).toBe("banner");
+    // 풀 경로가 아니라 페이지가 지정한 외부 소스를 그대로 쓴다 (라벨은 art 키 유지).
+    const art = container.querySelector<HTMLImageElement>("[data-site-page-header-art]");
+    expect(art?.getAttribute("data-site-page-header-art")).toBe("community");
+    expect(art?.getAttribute("src")).toBe("/brand/workflow-20260928/community-960.webp");
+    expect(art?.getAttribute("srcset")).toContain("community-320.webp 320w");
+    // 캡션은 배너 우상단 칩으로 얹힌다.
+    expect(screen.getByText("브랜드 콘셉트 아트")).toBeTruthy();
+  });
+
   it("keeps the aside layout even in banner placement when an aside is given", () => {
     const { container } = render(
       <SitePageHeader

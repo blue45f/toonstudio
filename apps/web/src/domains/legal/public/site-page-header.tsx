@@ -51,6 +51,19 @@ export interface SitePageHeaderProps {
    * `aside`(측면 장식)는 기존 사용처의 렌더를 바꾸지 않는다.
    */
   readonly artPlacement?: SitePageHeaderArtPlacement;
+  /**
+   * 배너 아트의 실제 소스 — 일러스트 풀 밖의 아트(워크플로 아트 등)를 배너로 쓰는
+   * 페이지가 지정한다. 지정하면 풀 경로(`sitePageHeaderArtSource`) 대신 이 소스를 쓰고,
+   * `art` 키는 데이터 속성 라벨로만 남는다. 측면 장식 배치에서는 쓰지 않는다.
+   */
+  readonly artSrc?: string;
+  /** `artSrc`의 반응형 소스 집합. */
+  readonly artSrcSet?: string;
+  /**
+   * 배너 위에 얹는 아트 캡션(예: 브랜드 아트와 실제 화면의 구분 표기). 배너 배치에서만
+   * 우상단 칩으로 렌더한다.
+   */
+  readonly artCaption?: ReactNode;
   /** 보조 영역 래퍼 클래스(예: 모바일에서 숨기기 `hidden sm:block`). */
   readonly asideClassName?: string;
   /** 보조 영역 폭 — `wide`는 대표 작품 카드처럼 큰 아트를 둘 때(lg 이상 최대 32rem). */
@@ -98,7 +111,11 @@ function SitePageHeaderArtwork({ artKey }: { readonly artKey: string }) {
  * 아래에 남색 그라디언트 폴백이 항상 깔려 있어, 로드가 늦거나 실패해도 스크림 위
  * 제목의 대비가 무너지지 않는다(실패 시 이미지만 걷어 낸다).
  */
-function SitePageHeaderBannerArtwork({ artKey }: { readonly artKey: string }) {
+function SitePageHeaderBannerArtwork({ artKey, artSrc, artSrcSet }: {
+  readonly artKey: string;
+  readonly artSrc?: string;
+  readonly artSrcSet?: string;
+}) {
   const [failed, setFailed] = useState(false);
   return (
     <div aria-hidden="true" className="absolute inset-0">
@@ -106,7 +123,8 @@ function SitePageHeaderBannerArtwork({ artKey }: { readonly artKey: string }) {
       {failed ? null : (
         <img
           data-site-page-header-art={artKey}
-          src={sitePageHeaderArtSource(artKey)}
+          src={artSrc ?? sitePageHeaderArtSource(artKey)}
+          srcSet={artSrcSet}
           alt=""
           width={1280}
           height={640}
@@ -140,6 +158,9 @@ export function SitePageHeader({
   aside,
   art,
   artPlacement = "aside",
+  artSrc,
+  artSrcSet,
+  artCaption,
   asideClassName,
   asideSize = "default",
   titleId,
@@ -203,7 +224,12 @@ export function SitePageHeader({
           className,
         )}
       >
-        <SitePageHeaderBannerArtwork artKey={art} />
+        <SitePageHeaderBannerArtwork artKey={art} artSrc={artSrc} artSrcSet={artSrcSet} />
+        {artCaption != null ? (
+          <p className="absolute right-4 top-4 z-10 m-0 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
+            {artCaption}
+          </p>
+        ) : null}
         <div
           className={cn(
             "relative flex flex-col justify-end p-5 sm:p-7 lg:p-8",

@@ -86,16 +86,9 @@ export function TimelapseGalleryPage() {
             {b("내 타임랩스 만들기", "Make my timelapse")}
           </Link>
         }
-        aside={
-          <img
-            src="/images/hero-studio.webp"
-            alt={b("작업 중인 스튜디오 일러스트", "Illustration of a studio at work")}
-            loading="lazy"
-            decoding="async"
-            className="aspect-[4/3] w-full rounded-2xl object-cover"
-          />
-        }
-        asideClassName="hidden lg:block"
+        art="hero-studio"
+        artSrc="/images/hero-studio.webp"
+        artPlacement="banner"
       >
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <label className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg-2">
