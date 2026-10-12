@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -56,17 +56,27 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     renderStartSheet("/create");
 
     expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /새 작품 만들기/ }).getAttribute("href")).toBe("/studio/new");
+    // 새 작품 링크는 시작 카드와 이어가기 빈 상태 두 곳에 있을 수 있다 — 전부 같은 정문을 가리킨다.
+    const newWorkLinks = screen.getAllByRole("link", { name: /새 작품 만들기/ });
+    expect(newWorkLinks.length).toBeGreaterThan(0);
+    expect(newWorkLinks.every((link) => link.getAttribute("href") === "/studio/new")).toBe(true);
     expect(screen.getByRole("link", { name: /템플릿으로 시작하기/ }).getAttribute("href")).toBe("/studio/templates");
     expect(screen.getByRole("heading", { name: "이어서 작업하기" })).toBeTruthy();
   });
 
-  it("최근 작품이 없으면 비어 있음을 알리고 작업실로 안내한다", () => {
+  it("최근 작품이 없으면 비어 있음을 알리고 새 작품 만들기로 먼저 안내한다", () => {
     renderStartSheet("/create");
 
-    expect(screen.getByText(/아직 이 기기에서 작업한 작품이 없어요/)).toBeTruthy();
+    expect(screen.getByText(/아직 작업한 작품이 없어요/)).toBeTruthy();
+    // 빈 상태의 주 행동은 첫 작품 만들기다. 둘러보기는 보조로 남는다.
+    const continueCard = screen.getByRole("heading", { name: "이어서 작업하기" }).closest("section");
+    expect(continueCard).not.toBeNull();
+    const cardLinks = within(continueCard as HTMLElement).getAllByRole("link");
+    expect(cardLinks[0]?.getAttribute("href")).toBe("/studio/new");
     expect(screen.getByRole("link", { name: /작업실 둘러보기/ }).getAttribute("href")).toBe("/studio");
     expect(screen.queryByRole("link", { name: /모든 작품 보기/ })).toBeNull();
+    // 게스트에게는 저장 범위를 정직하게 알린다.
+    expect(screen.getByText(/지금은 이 기기에만 저장돼요/)).toBeTruthy();
   });
 
   it("최근 작품은 최근에 연 순서로 작품 화면 링크와 함께 보여 준다", () => {

@@ -19,6 +19,7 @@ import { Container } from "@/shared/components/section";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useApp } from "@/shared/lib/store";
 import Link from "@/shared/navigation/router-link";
 
 /** 갤러리 보기 조건 키 — 하나라도 있으면 갤러리 주소로 본다. */
@@ -72,6 +73,7 @@ const CHOICE_ICON_CLASS =
 
 export function CreateStartPage() {
   const bt = useBilingual("CreateStartPage");
+  const userId = useApp((state) => state.userId);
   const [searchParams] = useSearchParams();
   const language = useI18n((state) => state.lang);
   const locale = studioProjectLibraryLocale(language);
@@ -178,16 +180,34 @@ export function CreateStartPage() {
             <>
               <p className="mt-1.5 text-sm leading-6 text-fg-2">
                 {bt(
-                  "아직 이 기기에서 작업한 작품이 없어요. 첫 작품을 만들면 여기에 이어갈 작품이 쌓여요.",
-                  "No works on this device yet. Once you create one, it will wait for you here.",
+                  "아직 작업한 작품이 없어요. 첫 작품을 만들면 여기에 이어갈 작품이 쌓여요.",
+                  "No works yet. Once you create one, it will wait for you here.",
                 )}
               </p>
-              <Link href="/studio" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
-                {bt("작업실 둘러보기", "Look around the studio")}
-                <ArrowRight size={15} aria-hidden />
-              </Link>
+              {/* 빈 상태의 다음 행동은 이 화면의 본래 목적인 "첫 작품 만들기"여야 한다.
+                  둘러보기는 보조로 내린다 — 시작하러 온 사람을 구경으로 보내지 않는다. */}
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <Link href="/studio/new" className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+                  {bt("새 작품 만들기", "Create a new work")}
+                  <ArrowRight size={15} aria-hidden />
+                </Link>
+                <Link href="/studio" className="inline-flex items-center gap-1.5 text-sm font-semibold text-fg-2">
+                  {bt("작업실 둘러보기", "Look around the studio")}
+                </Link>
+              </div>
             </>
           )}
+          <p className="mt-4 border-t border-line/60 pt-3 text-xs leading-5 text-fg-3">
+            {userId
+              ? bt(
+                  "이어가기 목록은 로그인한 계정에 동기화돼요 — 다른 기기에서도 이어서 작업할 수 있어요.",
+                  "Your continue list syncs to your account — pick up on another device, too.",
+                )
+              : bt(
+                  "지금은 이 기기에만 저장돼요. 로그인하면 이어가기 목록이 계정에 동기화돼요.",
+                  "For now this is saved on this device only. Sign in and your continue list syncs to your account.",
+                )}
+          </p>
         </section>
       </StaggerReveal>
 
