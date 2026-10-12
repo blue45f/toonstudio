@@ -47,7 +47,7 @@ describe("provider-neutral static security headers", () => {
     const csp = headerValue("Content-Security-Policy");
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("object-src 'none'");
-    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("frame-ancestors 'self'");
     expect(csp).toContain("worker-src 'self' blob:");
     expect(csp).toContain("https://accounts.google.com");
     expect(csp).toContain("'wasm-unsafe-eval'");
@@ -93,7 +93,7 @@ describe("provider-neutral static security headers", () => {
     expect(html).toContain('<script src="/bootstrap-compat.js"></script>');
   });
 
-  it("does not permit this application to be framed", () => {
-    expect(headerValue("X-Frame-Options")).toBe("DENY");
+  it("permits same-origin framing for the embedded Godot stages only", () => {
+    expect(headerValue("X-Frame-Options")).toBe("SAMEORIGIN");
   });
 });

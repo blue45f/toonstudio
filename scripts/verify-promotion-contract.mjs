@@ -49,7 +49,7 @@ test("routes retain original community paths and include promotion paths", () =>
   const routes = readFileSync(new URL("../apps/web/src/app/routes/groups/community.routes.tsx", import.meta.url), "utf8");
   for (const route of ["/reviews", "/community", "/community/cafes", "/community/cafes/:slug", "/community/post/:id", "/community/:scope", "/pencafe/:name", "/community/promote", "/community/promote/new", "/community/promote/:id", "/community/promote/:id/edit", "/community/promote/moderation"]) assert.ok(routes.includes(`path: "${route}"`), route);
 });
-test("production CSP permits only fixed video and payment frame hosts while preserving frame restrictions", () => {
+test("production CSP permits only fixed video and payment frame hosts while keeping same-origin frame restrictions", () => {
   const policy = JSON.parse(readFileSync(
     new URL("../config/http-response-headers.json", import.meta.url),
     "utf8",
@@ -62,9 +62,9 @@ test("production CSP permits only fixed video and payment frame hosts while pres
     .find((directive) => directive.startsWith("frame-src "));
   assert.equal(
     frameSource,
-    "frame-src https://accounts.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.tosspayments.com",
+    "frame-src 'self' https://accounts.google.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.tosspayments.com",
   );
-  assert.ok(csp.includes("frame-ancestors 'none'")); assert.ok(csp.includes("object-src 'none'"));
+  assert.ok(csp.includes("frame-ancestors 'self'")); assert.ok(csp.includes("object-src 'none'"));
 });
 test("migration is additive and present in deployment manifest", () => {
   const migration = "apps/api/src/platform/database/migrations/0046_creator_promotion_community.sql";

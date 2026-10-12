@@ -37,7 +37,9 @@
       "/assets/tag2pix-*.onnx",
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
       "/brand/toonstudio-product-tour.mp4",
-      "/cuts-godot/index.wasm"
+      "/cuts-godot/index.wasm",
+      "/godot-space/index.wasm",
+      "/play-godot/index.wasm"
     ]
   },
   "r2_buckets": [
