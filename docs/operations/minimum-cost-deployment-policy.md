@@ -16,7 +16,7 @@
 
 ## 변하지 않는 기본 원칙
 
-PR 생성·병합·브랜치 정리는 배포 승인이 아니다. 사용자가 배포를 명시적으로 승인해야 한다.
+PR 생성·병합·브랜치 정리는 배포 승인이 아니다. 사용자가 배포를 명시적으로 승인해야 한다. 2026-10-13 저장소 소유자 결정으로 `deploy/cloudflare-static/STANDING_APPROVAL.json`이 유효하면 env 명시 승인 없이 HEAD를 승인 SHA로 간주한다. 파일 삭제·파손 시 명시 승인 방식으로 fail-closed 복귀한다.
 자동 Git 빌드, 운영 배포, Preview, Deploy Hook, push/cron/workflow_run 배포를 활성화하지 않는다.
 각 workload는 하나의 쓰기 권위만 가지며 공급자 장애를 이유로 다른 DB나 API에 자동 이중 쓰기하지 않는다.
 유료 플랜, 유료 failover, 상위 빌드 머신으로 자동 승격하지 않는다.
@@ -54,7 +54,8 @@ pnpm run cloudflare:static:deploy
    production 모드(`scripts/deploy-cloudflare-static.mjs --production`)는 승인 문구와 함께 소문자 40자리
    `TOONSPECTRUM_APPROVED_MAIN_SHA`, 현재 브랜치 `main`, 깨끗한 작업 트리, `HEAD`와 승인 SHA의 일치를
    모두 요구한다. 하나라도 어긋나면 빌드 전에 중단하며, SHA는 `HEAD`에서 자동으로 채우지 않고 승인된
-   값을 입력한다.
+   값을 입력한다. 상시 승인 모드에서는 두 승인 변수 없이 실행하며, 스크립트가 상시 승인 적용 사실과
+   HEAD SHA를 로그에 남긴다.
 
 7. 루트, Studio SPA, 정적 카탈로그, edge liveness, Core readiness, 로그인·OAuth callback,
    권한이 필요한 API, R2 Range, realtime reconnect를 검사한다.

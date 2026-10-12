@@ -2,6 +2,10 @@
 
 import { spawnSync } from "node:child_process";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const STANDING_APPROVAL_PATH = "deploy/cloudflare-static/STANDING_APPROVAL.json";
 
 const mode = process.argv.includes("--production") ? "production" : "dry-run";
 const approval = process.env.TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL;
@@ -76,20 +80,57 @@ const routeVariables = [
     optionalOriginVariable(environmentName, workerName)),
 ];
 
-if (mode === "production") {
-  if (approval !== "cloudflare-static-production") {
-    fail("production deploy requires TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production");
+function readStandingApproval() {
+  let raw;
+  try {
+    raw = readFileSync(resolve(process.cwd(), STANDING_APPROVAL_PATH), "utf8");
+  } catch {
+    return null;
   }
-  const approvedSha = process.env.TOONSPECTRUM_APPROVED_MAIN_SHA;
-  if (approvedSha?.length !== 40 || !/^[0-9a-f]{40}$/u.test(approvedSha)) {
-    fail("production deploy requires TOONSPECTRUM_APPROVED_MAIN_SHA as a lowercase 40-hex SHA");
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    fail(`${STANDING_APPROVAL_PATH} is not valid JSON; delete it or fix it to restore deploys`);
+  }
+  if (parsed?.scope !== "cloudflare-static-production") {
+    fail(`${STANDING_APPROVAL_PATH} has an unexpected scope; delete it or fix it to restore deploys`);
+  }
+  return parsed;
+}
+
+if (mode === "production") {
+  // 상시 승인 모드(2026-10-13 저장소 소유자 결정): 명시적 승인 env가 없으면
+  // 저장소에 기록된 상시 승인 파일을 대신 인정하고 HEAD를 승인 SHA로 간주한다.
+  // main·clean worktree·검증 게이트는 그대로 유지되며, 파일이 없거나 깨지면
+  // 기존 명시 승인 방식으로 fail-closed 복귀한다.
+  let approvedSha = null;
+  let standing = null;
+  if (approval === "cloudflare-static-production") {
+    const configured = process.env.TOONSPECTRUM_APPROVED_MAIN_SHA;
+    if (configured?.length !== 40 || !/^[0-9a-f]{40}$/u.test(configured)) {
+      fail("production deploy requires TOONSPECTRUM_APPROVED_MAIN_SHA as a lowercase 40-hex SHA");
+    }
+    approvedSha = configured;
+  } else if (approval === undefined || approval === "") {
+    const found = readStandingApproval();
+    if (!found) {
+      fail("production deploy requires TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production or a valid deploy/cloudflare-static/STANDING_APPROVAL.json");
+    }
+    standing = found;
+  } else {
+    fail("production deploy requires TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production");
   }
   const branch = execFileSync("git", ["branch", "--show-current"], { encoding: "utf8" }).trim();
   if (branch !== "main") fail(`production deploy requires main (current: ${branch || "detached"})`);
   const status = execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim();
   if (status !== "") fail("production deploy requires a clean worktree");
   const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-  if (head !== approvedSha) fail("production deploy requires HEAD to equal TOONSPECTRUM_APPROVED_MAIN_SHA");
+  if (approvedSha) {
+    if (head !== approvedSha) fail("production deploy requires HEAD to equal TOONSPECTRUM_APPROVED_MAIN_SHA");
+  } else {
+    console.log(`standing deploy approval (${standing.grantedAt ?? "undated"}) applies — deploying HEAD ${head} without per-release approval`);
+  }
 }
 
 const staticCatalogSource = process.env.VITE_CATALOG_SOURCE?.trim() || "static";

@@ -1,5 +1,6 @@
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -51,8 +52,13 @@ require("node:module").syncBuiltinESMExports();
   return { directory, preload, commandLog };
 }
 
-function runDeploy(environment = {}, args = []) {
+function runDeploy(environment = {}, args = [], files = {}) {
   const fake = createFakeProcesses();
+  for (const [relativePath, content] of Object.entries(files)) {
+    const target = join(fake.directory, relativePath);
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, content);
+  }
   const result = spawnSync(process.execPath, ["--require", fake.preload, deployScript, ...args], {
     cwd: fake.directory,
     env: {
@@ -81,6 +87,21 @@ function runProduction(environment = {}) {
     TOONSPECTRUM_APPROVED_MAIN_SHA: approvedSha,
     ...environment,
   }, ["--production"]);
+}
+
+const standingApprovalFile = {
+  "deploy/cloudflare-static/STANDING_APPROVAL.json": JSON.stringify({
+    scope: "cloudflare-static-production",
+    grantedBy: "test-owner",
+    grantedAt: "2026-10-13",
+  }),
+};
+
+function runStandingProduction(environment = {}, files = standingApprovalFile) {
+  const merged = { ...environment };
+  delete merged.TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL;
+  delete merged.TOONSPECTRUM_APPROVED_MAIN_SHA;
+  return runDeploy(merged, ["--production"], files);
 }
 
 afterEach(() => {
@@ -231,10 +252,51 @@ describe("Cloudflare production release gates (all child process calls mocked)",
     ]);
   });
 
-  it.each([1, 2, 3, 4, 5, 6])("stops after failing build/publication stage %i", (stage) => {
-    const { result, commands } = runProduction({ FAKE_FAIL_CALL: String(stage) });
+  it.each([1, 2, 3, 4, 5, 6])("stops after failing build/publication stage %i", (stage) => {    const { result, commands } = runProduction({ FAKE_FAIL_CALL: String(stage) });
     expect(result.status).toBe(17);
     expect(commands).toHaveLength(stage);
+  });
+
+  it("deploys HEAD under standing approval without per-release env approval", () => {
+    const { result, allCommands, commands } = runStandingProduction();
+    expect(result.status).toBe(0);
+    expect(allCommands.slice(0, 3)).toEqual([
+      { executable: "git", args: ["branch", "--show-current"] },
+      { executable: "git", args: ["status", "--porcelain"] },
+      { executable: "git", args: ["rev-parse", "HEAD"] },
+    ]);
+    expect(commands).toHaveLength(6);
+  });
+
+  it.each([
+    ["non-main", { FAKE_BRANCH: "feature/release" }, "requires main"],
+    ["dirty worktree", { FAKE_STATUS: " M package.json\n" }, "clean worktree"],
+  ])("keeps %s gates under standing approval", (_label, environment, error) => {
+    const { result, commands } = runStandingProduction(environment);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(error);
+    expect(commands).toEqual([]);
+  });
+
+  it.each([
+    ["broken JSON", "{not json"],
+    ["wrong scope", JSON.stringify({ scope: "something-else" })],
+  ])("fails closed on %s standing approval files", (_label, content) => {
+    const { result, commands } = runStandingProduction({}, {
+      "deploy/cloudflare-static/STANDING_APPROVAL.json": content,
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("STANDING_APPROVAL.json");
+    expect(commands).toEqual([]);
+  });
+
+  it("rejects an explicit wrong approval even when a standing file exists", () => {
+    const { result, commands } = runDeploy({
+      TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL: "yes",
+    }, ["--production"], standingApprovalFile);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("MANUAL_DEPLOY_APPROVAL");
+    expect(commands).toEqual([]);
   });
 
   it("keeps nonproduction independent of approval, SHA, branch and status", () => {
