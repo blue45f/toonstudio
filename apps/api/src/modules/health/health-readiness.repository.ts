@@ -185,6 +185,7 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "studio_capability_ledger",
   "studio_compatibility_report",
   "studio_external_file_binding",
+  "studio_godot_space_background",
   "studio_godot_space_layout",
   "studio_mutation_receipt",
   "studio_operation",
