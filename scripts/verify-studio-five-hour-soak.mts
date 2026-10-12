@@ -13,6 +13,7 @@
  *   TOONSPECTRUM_SOAK_WEBGPU=1
  *   TOONSPECTRUM_SOAK_INPUT=auto|mouse|pen|touch
  *   TOONSPECTRUM_SOAK_OUT=<directory>
+ *   TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE=1  # 진단 실행 전용: 획마다 GC 힙을 샘플에 남긴다
  *   TOONSPECTRUM_VERIFY_ORIGIN=http://127.0.0.1:4173  # optional existing preview
  */
 import { execFileSync } from "node:child_process";
@@ -47,6 +48,8 @@ const CYCLE_TARGET_MS = Math.max(3_000, Number(process.env.TOONSPECTRUM_SOAK_CYC
 const FORCED_BRUSH_ID = process.env.TOONSPECTRUM_SOAK_BRUSH_ID?.trim() || null;
 const BRUSH_CYCLES = Math.max(1, Math.floor(Number(process.env.TOONSPECTRUM_SOAK_BRUSH_CYCLES ?? "5") || 5));
 const STOP_ON_FAILURE = process.env.TOONSPECTRUM_SOAK_STOP_ON_FAILURE === "1";
+/** 진단 실행 전용: 획마다 GC 후 힙을 재서 "획 수 대비 유지량" 곡선을 얻는다. 기본 소크는 끈다. */
+const SAMPLE_HEAP_PER_STROKE = process.env.TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE === "1";
 const BUILD_DIRECTORY = resolve(process.env.TOONSPECTRUM_SOAK_DIST_DIR?.trim() || "dist");
 const INK_MIN_CHANGED_PIXELS = 120;
 const HISTORY_CHURN_INTERVAL = 10;
@@ -100,6 +103,20 @@ interface PixelSample {
   readonly historyUndoDepth: number | null;
   readonly acceptedByDocument: boolean;
   readonly rejectedStrokeCount: number;
+  /**
+   * 커밋 분리 계측 — 에디터 셸이 이미 노출하는 히스토리 진단 속성을 획 전후로 읽는다.
+   * 카운터가 평탄해도 append 자체가 일어났는지(유지 바이트·마지막 엔트리 바이트 변화),
+   * 예산 퇴출이 카운터를 상쇄했는지(퇴출 단계 누계), 커밋 게이트가 오류를 띄웠는지
+   * (오류 배너 원문)를 사후에 가를 수 있게 한다.
+   */
+  readonly historyEvictedStepsBefore: number | null;
+  readonly historyEvictedStepsAfter: number | null;
+  readonly historyRetainedBytesBefore: number | null;
+  readonly historyRetainedBytesAfter: number | null;
+  readonly historyLastEntryBytesAfter: number | null;
+  readonly commitErrorText: string | null;
+  /** TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE=1 일 때만 채우는 획 직후 GC 힙(바이트). */
+  readonly heapUsedBytesAfter: number | null;
 }
 
 interface SoakFailure {
@@ -455,6 +472,77 @@ async function waitForStudioLayerCount(
   return readStudioAvailableLayerCount(page);
 }
 
+/** 에디터 셸이 노출하는 히스토리 유지 진단(퇴출 누계·계량 유지 바이트·마지막 엔트리 바이트). */
+async function readStudioHistoryDiagnostics(page: Page): Promise<{
+  evictedSteps: number | null;
+  retainedBytes: number | null;
+  lastEntryBytes: number | null;
+}> {
+  const editor = page.locator("[data-studio-editor]").first();
+  const read = async (attribute: string): Promise<number | null> => {
+    const raw = await editor.getAttribute(attribute).catch(() => null);
+    if (raw === null) return null;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 0 ? value : null;
+  };
+  const [evictedSteps, retainedBytes, lastEntryBytes] = await Promise.all([
+    read("data-studio-history-budget-evicted-steps"),
+    read("data-studio-history-last-measured-retained-bytes"),
+    read("data-studio-history-last-measured-entry-bytes"),
+  ]);
+  return { evictedSteps, retainedBytes, lastEntryBytes };
+}
+
+/** 커밋 게이트가 띄운 오류 배너 원문. 상태 레일이 접힌 밀도에서는 없을 수 있어 best-effort로 읽는다. */
+async function readStudioVisibleCommitError(page: Page): Promise<string | null> {
+  const alert = page.locator('div[role="alert"]:has([data-studio-status-error-dismiss])').first();
+  const text = await alert.innerText({ timeout: 500 }).catch(() => null);
+  if (text === null) return null;
+  const normalized = text.replace(/\s+/gu, " ").trim();
+  return normalized.length > 0 ? normalized.slice(0, 300) : null;
+}
+
+/**
+ * 레이어 내비게이터는 인스펙터의 기본 탭이 "레이어"일 때만 마운트된다. 데스크톱 넓은 패널은
+ * 분할 표시로 상시 마운트되지만, 모바일 시트와 좁은 패널은 기본 탭이 "속성"이라 소크가
+ * 카운트를 읽지 못해 시작조차 못 했다(run 38174573887 모바일 3잡). 제품 동작을 바꾸지 않고
+ * 실제 사용자의 경로 — 모바일 독의 "작업 패널"을 열고 "레이어" 탭을 선택 — 로 마운트한 뒤
+ * 다시 읽는다. 마운트는 기본 탭 상태가 유지되는 한 시트를 닫아도 남는다.
+ */
+async function ensureStudioLayerNavigatorCount(
+  page: Page,
+  timeoutMs = 8_000,
+): Promise<number | null> {
+  const existing = await readStudioAvailableLayerCount(page);
+  if (existing !== null) return existing;
+
+  const mobileDock = page.locator('[data-studio-mobile-editing-dock="true"]');
+  let openedSheet = false;
+  if (await mobileDock.isVisible({ timeout: 250 }).catch(() => false)) {
+    const panelButton = mobileDock.getByRole("button", { name: "작업 패널", exact: true });
+    if (await panelButton.isVisible().catch(() => false)
+      && await panelButton.getAttribute("aria-expanded") !== "true") {
+      await panelButton.click({ timeout: 5_000 }).catch(() => undefined);
+      openedSheet = true;
+    }
+  }
+  const layersTab = page.locator('[data-studio-inspector-primary-tab="layers"]');
+  if (await layersTab.isVisible({ timeout: 2_000 }).catch(() => false)
+    && await layersTab.getAttribute("aria-selected") !== "true") {
+    await layersTab.click({ timeout: 5_000 }).catch(() => undefined);
+  }
+  const count = await waitForStudioLayerCount(page, (value) => value >= 0, timeoutMs);
+  if (count !== null && openedSheet) {
+    // 그리기 영역을 시트가 덮지 않도록 되닫는다. 기본 탭이 "레이어"로 남아 내비게이터의
+    // 마운트와 카운트 속성은 닫은 뒤에도 유지된다.
+    const panelButton = mobileDock.getByRole("button", { name: "작업 패널", exact: true });
+    if (await panelButton.getAttribute("aria-expanded").catch(() => null) === "true") {
+      await panelButton.click({ timeout: 5_000 }).catch(() => undefined);
+    }
+  }
+  return count;
+}
+
 async function waitForStudioDocumentAdvance(
   page: Page,
   input: {
@@ -602,6 +690,13 @@ async function drawEvidenceStroke(
   historyUndoDepth: number | null;
   acceptedByDocument: boolean;
   rejectedStrokeCount: number;
+  historyEvictedStepsBefore: number | null;
+  historyEvictedStepsAfter: number | null;
+  historyRetainedBytesBefore: number | null;
+  historyRetainedBytesAfter: number | null;
+  historyLastEntryBytesAfter: number | null;
+  commitErrorText: string | null;
+  heapUsedBytesAfter: number | null;
 }> {
   if (!(await closeBrushSurfaces(page))) {
     throw new Error("brush surfaces stayed open before drawing evidence");
@@ -639,6 +734,7 @@ async function drawEvidenceStroke(
   await page.waitForTimeout(80);
   const layerCountBefore = await readStudioAvailableLayerCount(page);
   const historyBefore = await readStudioHistoryDepth(page);
+  const diagnosticsBefore = await readStudioHistoryDiagnostics(page);
   const before = await page.screenshot({ clip: box, animations: "disabled" });
   const points = createStudioPointerStrokePoints(box, cycle, { steps: 28 });
   const pointer = await dispatchStudioPointerStroke({
@@ -654,6 +750,9 @@ async function drawEvidenceStroke(
     historyUndoDepthBefore: historyBefore.undoDepth,
   });
   const rejectedStrokeCount = await page.locator("[data-studio-rejected-stroke-notice]").count();
+  const diagnosticsAfter = await readStudioHistoryDiagnostics(page);
+  const commitErrorText = await readStudioVisibleCommitError(page);
+  const heapAfter = SAMPLE_HEAP_PER_STROKE ? await gcHeap(cdp, startedAt) : null;
   const after = await page.screenshot({ clip: box, animations: "disabled" });
   return {
     changed: changedPixels(before, after),
@@ -667,6 +766,13 @@ async function drawEvidenceStroke(
     historyUndoDepth: advance.historyUndoDepth,
     acceptedByDocument: advance.accepted,
     rejectedStrokeCount,
+    historyEvictedStepsBefore: diagnosticsBefore.evictedSteps,
+    historyEvictedStepsAfter: diagnosticsAfter.evictedSteps,
+    historyRetainedBytesBefore: diagnosticsBefore.retainedBytes,
+    historyRetainedBytesAfter: diagnosticsAfter.retainedBytes,
+    historyLastEntryBytesAfter: diagnosticsAfter.lastEntryBytes,
+    commitErrorText,
+    heapUsedBytesAfter: heapAfter?.usedBytes ?? null,
   };
 }
 
@@ -701,6 +807,7 @@ const report = {
   requestedMinutes: MINUTES,
   brushCycles: BRUSH_CYCLES,
   stopOnFailure: STOP_ON_FAILURE,
+  sampleHeapPerStroke: SAMPLE_HEAP_PER_STROKE,
   actionDurationMs: 0,
   scheduledRestMs: 0,
   profile: PROFILE_ID,
@@ -803,7 +910,7 @@ try {
   if (!(await waitForPenReady(page))) {
     throw new Error("Studio pen tool did not become ready during the bounded preflight window.");
   }
-  boundedLayerBaseline = await readStudioAvailableLayerCount(page);
+  boundedLayerBaseline = await ensureStudioLayerNavigatorCount(page);
   if (boundedLayerBaseline === null) {
     throw new Error("Studio layer navigator count is unavailable during bounded soak preflight.");
   }
@@ -872,6 +979,13 @@ try {
           historyUndoDepth: evidence.historyUndoDepth,
           acceptedByDocument: evidence.acceptedByDocument,
           rejectedStrokeCount: evidence.rejectedStrokeCount,
+          historyEvictedStepsBefore: evidence.historyEvictedStepsBefore,
+          historyEvictedStepsAfter: evidence.historyEvictedStepsAfter,
+          historyRetainedBytesBefore: evidence.historyRetainedBytesBefore,
+          historyRetainedBytesAfter: evidence.historyRetainedBytesAfter,
+          historyLastEntryBytesAfter: evidence.historyLastEntryBytesAfter,
+          commitErrorText: evidence.commitErrorText,
+          heapUsedBytesAfter: evidence.heapUsedBytesAfter,
         });
         if (evidence.acceptedByDocument) strokesSinceHistoryChurn += 1;
         else report.failures.push({
@@ -899,6 +1013,8 @@ try {
       }
 
       if (strokesSinceHistoryChurn >= HISTORY_CHURN_INTERVAL) {
+        // 실행 중 기본 탭이 바뀌어 내비게이터가 내려갔으면 churn 판정 전에 다시 마운트한다.
+        await ensureStudioLayerNavigatorCount(page);
         report.historyActions += await exerciseBoundedHistoryChurn(
           page,
           strokesSinceHistoryChurn,
@@ -1005,6 +1121,7 @@ try {
   if (page) {
     if (strokesSinceHistoryChurn > 0) {
       try {
+        await ensureStudioLayerNavigatorCount(page);
         report.historyActions += await exerciseBoundedHistoryChurn(
           page,
           strokesSinceHistoryChurn,
