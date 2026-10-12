@@ -15,6 +15,10 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { collaborationClient } from "@/platform/collaboration-client";
 import { getApiErrorMessage } from "@/platform/api";
 import { Container } from "@/shared/components/section";
+import {
+  workflowIllustrationSource,
+  workflowIllustrationSources,
+} from "@/shared/components/site-experience/workflow-illustration";
 import { useApp } from "@/shared/lib/store";
 
 const SCOPE = "domains.collaboration.CollaborationBoardPage";
@@ -79,21 +83,39 @@ export function CollaborationBoardPage() {
     ? Object.entries(views)
     : Object.entries(views).filter(([key]) => key === "all");
   return <Container size="wide" className="py-8 sm:py-12">
-    <header className="relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel to-canvas p-6 sm:p-10">
-      <p className="eyebrow text-accent">TOONSTUDIO COLLABORATE</p>
-      <h1 className="mt-4 max-w-3xl text-3xl font-bold leading-tight tracking-tight text-fg sm:text-5xl">{bt("다음 회차, 함께 완성할 사람을 찾으세요.", "Find the person to finish the next episode with.")}</h1>
-      <p className="mt-5 max-w-2xl text-base leading-8 text-fg-2">{bt("콘티부터 선화·채색·배경·3D까지. 팀원 모집, 보조 작업 의뢰, 작업자 포트폴리오를 한곳에서 연결합니다. 공고 등록과 지원은 무료예요.", "From storyboards to line art, color, backgrounds, and 3D. Hire teammates, commission work, and browse portfolios in one place. Posting and applying are free.")}</p>
+    <header className="relative isolate overflow-hidden rounded-3xl border border-accent/25 bg-[oklch(0.09_0.025_265)] p-6 sm:p-10">
+      {/* 첫 화면 무대 — 작업 카드 인계 장면(워크플로 아트)을 배경으로 깔고 전경을 종속시킨다.
+          스크림은 공용 헤더 배너와 같은 남색 문법이다. */}
+      <div aria-hidden="true" className="absolute inset-0">
+        <img
+          src={workflowIllustrationSource("collaborate", 960)}
+          srcSet={workflowIllustrationSources("collaborate")}
+          sizes="(max-width: 768px) 100vw, 1240px"
+          alt=""
+          decoding="async"
+          draggable={false}
+          className="absolute inset-0 size-full object-cover"
+          style={{ objectPosition: "50% 30%" }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,oklch(0.09_0.025_265/0.95)_0%,oklch(0.09_0.025_265/0.82)_38%,oklch(0.09_0.025_265/0.45)_68%,oklch(0.09_0.025_265/0.22)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(78deg,oklch(0.09_0.025_265/0.45)_0%,transparent_58%)]" />
+      </div>
+      <div className="relative">
+      <p className="eyebrow text-[oklch(0.85_0.09_265)]">TOONSTUDIO COLLABORATE</p>
+      <h1 className="mt-4 max-w-3xl text-3xl font-bold leading-tight tracking-tight text-white sm:text-5xl">{bt("다음 회차, 함께 완성할 사람을 찾으세요.", "Find the person to finish the next episode with.")}</h1>
+      <p className="mt-5 max-w-2xl text-base leading-8 text-white/80">{bt("콘티부터 선화·채색·배경·3D까지. 팀원 모집, 보조 작업 의뢰, 작업자 포트폴리오를 한곳에서 연결합니다. 공고 등록과 지원은 무료예요.", "From storyboards to line art, color, backgrounds, and 3D. Hire teammates, commission work, and browse portfolios in one place. Posting and applying are free.")}</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <Link href="/collaborate/new" className={collabPrimary}><Plus size={17} aria-hidden="true" />{bt("모집 글 올리기", "Post a gig")}</Link>
         <a href="#collaboration-results" className={collabButton}><Search size={17} aria-hidden="true" />{bt("공고 둘러보기", "Browse posts")}</a>
       </div>
       <nav aria-label={bt("구인·의뢰 보조 메뉴", "Gigs auxiliary menu")} className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
         <Link href="/collaborate/positions" className="min-h-11 content-center font-semibold text-accent underline-offset-4 hover:underline">{bt("조건 상세 검색", "Advanced search")}</Link>
-        <Link href="/team/recruiting" className="min-h-11 content-center font-semibold text-fg-2 underline-offset-4 hover:text-accent hover:underline">{bt("인재·지원 관리", "Talent & applications")}</Link>
-        <Link href="/collaborate/gallery" className="min-h-11 content-center font-semibold text-fg-2 underline-offset-4 hover:text-accent hover:underline">{bt("포트폴리오 전시", "Portfolio gallery")}</Link>
-        <Link href="/showcase" className="inline-flex min-h-11 items-center gap-1 font-semibold text-fg-2 underline-offset-4 hover:text-accent hover:underline">{bt("창작 갤러리", "Creator gallery")}<ArrowRight size={16} aria-hidden="true" /></Link>
+        <Link href="/team/recruiting" className="min-h-11 content-center font-semibold text-white/75 underline-offset-4 hover:text-white hover:underline">{bt("인재·지원 관리", "Talent & applications")}</Link>
+        <Link href="/collaborate/gallery" className="min-h-11 content-center font-semibold text-white/75 underline-offset-4 hover:text-white hover:underline">{bt("포트폴리오 전시", "Portfolio gallery")}</Link>
+        <Link href="/showcase" className="inline-flex min-h-11 items-center gap-1 font-semibold text-white/75 underline-offset-4 hover:text-white hover:underline">{bt("창작 갤러리", "Creator gallery")}<ArrowRight size={16} aria-hidden="true" /></Link>
       </nav>
-      <p className="mt-5 flex items-center gap-2 text-xs text-fg-3"><ShieldCheck size={15} aria-hidden="true" />{bt("지원 연락처 비공개 · 보수 조건 명시 · 결제 중개 없음", "Application contacts stay private · pay terms required · no payment brokering")}</p>
+      <p className="mt-5 flex items-center gap-2 text-xs text-white/60"><ShieldCheck size={15} aria-hidden="true" />{bt("지원 연락처 비공개 · 보수 조건 명시 · 결제 중개 없음", "Application contacts stay private · pay terms required · no payment brokering")}</p>
+      </div>
     </header>
     <div className="mt-6 grid gap-3 sm:grid-cols-3">{categories.map(({ type: category, label, enLabel, description, enDescription, icon: Icon }) => <button key={category} type="button" aria-pressed={type === category} onClick={() => change("type", type === category ? "all" : category)} className={`flex min-h-24 items-center gap-4 rounded-2xl border p-5 text-left transition-colors ${type === category ? "border-accent bg-accent/10" : "border-line bg-panel hover:border-accent/50"}`}><Icon size={25} className="shrink-0 text-accent" aria-hidden="true" /><span className="font-bold text-fg">{bt(label, enLabel)}<span className="mt-1 block text-xs font-normal text-fg-3">{bt(description, enDescription)}</span></span></button>)}</div>
     <section id="collaboration-results" className="mt-8 scroll-mt-24" aria-label={bt("공고 검색과 필터", "Post search and filters")}>
