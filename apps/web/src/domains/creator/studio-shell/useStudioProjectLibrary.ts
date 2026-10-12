@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useT } from "@/shared/lib/i18n";
+import { useApp } from "@/shared/lib/store";
 
 import {
   STUDIO_PROJECT_LIBRARY_STORAGE_KEY,
@@ -58,6 +59,17 @@ export function useStudioProjectLibrary(
   status?: StudioProjectStatus,
 ): StudioProjectLibraryController {
   const t = useT();
+  const userId = useApp((state) => state.userId);
+
+  // 로그인한 사용자는 라이브러리를 계정과 동기화한다 (이어가기 계정 연속성).
+  // 동기화가 쓴 상태는 UPDATED 이벤트로 들어와 아래 리스너가 다시 읽는다.
+  // 게스트는 동기화를 걸지 않는다 — 기기 로컬이 정본인 채로 남는다.
+  useEffect(() => {
+    if (!userId) return;
+    void import("../studio-project-library-sync").then(({ startStudioProjectLibrarySync }) => {
+      startStudioProjectLibrarySync(userId);
+    });
+  }, [userId]);
   const [initialSnapshot] = useState(readLibrarySnapshot);
   const [state, setState] = useState<StudioProjectLibraryState | null>(
     initialSnapshot.kind === "ready" ? initialSnapshot.state : null,
@@ -138,6 +150,10 @@ export function useStudioProjectLibrary(
   )), [run]);
   const removePermanently = useCallback((projectId: string) => run(() => {
     permanentlyDeleteStudioProject(window.localStorage, projectId, { target: window });
+    // 영구 삭제는 동기화에도 전파돼야 한다 — 삭제 명단에 올려 두면 다음 동기화가 서버에 알린다.
+    void import("../studio-project-library-sync")
+      .then(({ recordPendingDeletedId }) => recordPendingDeletedId(window.localStorage, projectId))
+      .catch(() => undefined);
     // 작품을 지우면 로컬 저장 썸네일 바이트도 함께 정리한다(실패해도 삭제는 완료로 본다).
     void import("../studio-project-thumbnail")
       .then(({ deleteStudioProjectThumbnail }) => deleteStudioProjectThumbnail(projectId))
