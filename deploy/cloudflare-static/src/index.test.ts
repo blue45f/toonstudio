@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { withGodotInlineHashes } from "../../../scripts/cloudflare-static-rules.mjs";
+
 import {
   COMMON_SECURITY_HEADERS,
   createCloudflareStaticGateway,
@@ -43,12 +45,12 @@ function r2Object(
 
 describe("Cloudflare static gateway", () => {
   it("keeps dynamic security headers synchronized with the provider-neutral contract", () => {
-    const responsePolicy = JSON.parse(
+    const responsePolicy = withGodotInlineHashes(JSON.parse(
       readFileSync(
         new URL("../../../config/http-response-headers.json", import.meta.url),
         "utf8",
       ),
-    ) as {
+    )) as {
       headers?: Array<{
         source?: string;
         headers?: Array<{ key?: string; value?: string }>;
