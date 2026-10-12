@@ -212,7 +212,14 @@ export function godotSpaceBackgroundContentUrl(
   return new URL(path, origin).href;
 }
 
-/** 무대 주입용 사본: uploads/ 참조를 content 절대 URL로 바꾼다. */
+/** 무대 임베드 base 경로. 무대는 상대 참조를 origin 루트에 붙여 해석하므로
+ *  (2026-10-13 운영 실측: `spaces/studio-room.glb`를 `/spaces/...`로 요청해
+ *  SPA fallback HTML을 받아 glTF 파싱이 깨졌다), 정적 기본 배경은 아래에서
+ *  이 base를 앞에 붙인 절대 경로로 넘긴다. */
+export const GODOT_STAGE_BASE_PATH = "/godot-space/";
+
+/** 무대 주입용 사본: uploads/ 참조를 content 절대 URL로, 정적 기본 배경의
+ *  상대 참조를 스테이지 base 절대 경로로 바꾼다. */
 export function resolveGodotBackgroundForStage(
   definition: GodotSpaceDefinition,
   workId: string,
@@ -220,7 +227,22 @@ export function resolveGodotBackgroundForStage(
   const background = definition.background;
   if (!background) return definition;
   const match = UPLOADED_BACKGROUND_REF_PATTERN.exec(background.glb);
-  if (!match) return definition;
+  if (!match) {
+    if (
+      background.glb
+      && !background.glb.startsWith("/")
+      && !/^[a-z][a-z0-9+.-]*:/iu.test(background.glb)
+    ) {
+      return {
+        ...definition,
+        background: {
+          ...background,
+          glb: `${GODOT_STAGE_BASE_PATH}${background.glb}`,
+        },
+      };
+    }
+    return definition;
+  }
   return {
     ...definition,
     background: {
@@ -238,6 +260,13 @@ export function restoreGodotBackgroundReference(
   const background = definition.background;
   if (!background) return definition;
   const glb = background.glb;
+  if (glb.startsWith(GODOT_STAGE_BASE_PATH)) {
+    const rest = glb.slice(GODOT_STAGE_BASE_PATH.length);
+    if (rest && !rest.startsWith("/") && !/^[a-z][a-z0-9+.-]*:/iu.test(rest)) {
+      return { ...definition, background: { ...background, glb: rest } };
+    }
+    return definition;
+  }
   if (!glb.startsWith("http")) return definition;
   const marker = `/creator/works/${encodeURIComponent(workId)}/godot-space-backgrounds/`;
   const markerIndex = glb.indexOf(marker);
