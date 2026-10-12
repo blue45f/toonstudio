@@ -52,7 +52,7 @@ const STATUS_LABELS: Readonly<Record<BulkStatus, string>> = Object.freeze({
   "changes-requested": "수정 요청",
   approved: "승인",
   done: "완료",
-  blocked: "차단",
+  blocked: "막힘",
 });
 
 function episodeLabel(aggregate: ProductionProjectAggregate, episodeId: string | null): string {

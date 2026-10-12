@@ -155,7 +155,7 @@ function statusLabel(status: ProductionTaskStatus): string {
     "conditionally-approved": "조건부 승인",
     approved: "승인",
     done: "완료",
-    blocked: "차단",
+    blocked: "막힘",
     paused: "일시 중지",
     cancelled: "취소",
     "out-of-scope": "범위 밖",

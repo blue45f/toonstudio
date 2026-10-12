@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import {
   PRODUCTION_CORE_SURFACES,
+  PRODUCTION_MORE_GROUPS,
   PRODUCTION_MORE_SURFACES,
   productionSurfacePath,
   type ProductionProjectSurface,
@@ -57,7 +58,8 @@ function SurfaceLink({
 }
 
 /**
- * 프로젝트 메뉴. 핵심 다섯 화면은 항상 보이고, 나머지 일곱 화면은 "더보기"에 접는다.
+ * 프로젝트 메뉴. 핵심 다섯 화면은 항상 보이고, 나머지 여덟 화면은 "더보기"에 접되
+ * 작업 단계 세 묶음(준비·함께 일하기·운영·계약)으로 나눠 보여 준다.
  * 현재 화면이 더보기 안에 있으면 그룹을 펼친 상태로 유지한다.
  */
 export function ProductionProjectNav({
@@ -104,15 +106,26 @@ export function ProductionProjectNav({
           </span>
           <ChevronDown className="size-4 transition-transform group-open/more:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
         </summary>
-        <div className="grid grid-cols-2 gap-1 pt-1 sm:grid-cols-3 lg:grid-cols-1">
-          {PRODUCTION_MORE_SURFACES.map((definition) => (
-            <SurfaceLink
-              key={definition.id}
-              projectId={projectId}
-              definition={definition}
-              active={surface === definition.id}
-              compact
-            />
+        {/* 여덟 화면을 한 번에 훑지 않도록 작업 단계 세 묶음으로 나눠 보여 준다.
+            먼저 "무슨 일을 하려는가"(준비·함께 일하기·운영·계약)를 고르면 묶음 안은 2~3개뿐이다. */}
+        <div className="space-y-3 pt-1">
+          {PRODUCTION_MORE_GROUPS.map(({ group, label, surfaces }) => (
+            <div key={group} role="group" aria-label={bt(label.ko, label.en)}>
+              <p className="px-3 pb-1 pt-1 text-[0.6875rem] font-black uppercase tracking-[0.14em] text-fg-3">
+                {bt(label.ko, label.en)}
+              </p>
+              <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-1">
+                {surfaces.map((definition) => (
+                  <SurfaceLink
+                    key={definition.id}
+                    projectId={projectId}
+                    definition={definition}
+                    active={surface === definition.id}
+                    compact
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </details>

@@ -103,7 +103,7 @@ const PHASE_STATUS_LABELS: Readonly<Record<ManagementPhaseStatus, string>> = Obj
   complete: "완료",
   working: "작업 중",
   review: "검수",
-  blocked: "차단",
+  blocked: "막힘",
   waiting: "대기",
   missing: "미구성",
 });

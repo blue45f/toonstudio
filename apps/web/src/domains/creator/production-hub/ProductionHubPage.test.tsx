@@ -94,9 +94,20 @@ describe("webtoon production collaboration UI", () => {
       "/production/projects/sample-project/review",
     ]);
     expect(within(more as HTMLElement).getAllByRole("link")).toHaveLength(8);
-    expect(within(more as HTMLElement).getAllByRole("link")[0]?.getAttribute("href")).toBe(
+    // 더보기 여덟 화면은 작업 단계 세 묶음(준비·함께 일하기·운영·계약) 순서로 나열된다.
+    expect(within(more as HTMLElement).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/production/projects/sample-project/planning",
+      "/production/projects/sample-project/schedule",
       "/production/projects/sample-project/activity",
-    );
+      "/production/projects/sample-project/handoff",
+      "/production/projects/sample-project/settings",
+      "/production/projects/sample-project/control",
+      "/production/projects/sample-project/procurement",
+      "/production/projects/sample-project/rights",
+    ]);
+    for (const groupLabel of ["준비", "함께 일하기", "운영·계약"]) {
+      expect(within(more as HTMLElement).getByRole("group", { name: groupLabel })).toBeTruthy();
+    }
     expect(coreLinks[0]?.getAttribute("aria-current")).toBe("page");
   });
 
