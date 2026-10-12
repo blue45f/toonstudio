@@ -114,6 +114,11 @@ interface PixelSample {
   readonly historyRetainedBytesBefore: number | null;
   readonly historyRetainedBytesAfter: number | null;
   readonly historyLastEntryBytesAfter: number | null;
+  /** append 총수와 복구 보관 획 수 — 카운터가 평탄한 획이 실제로는 어디로 갔는지를 가른다. */
+  readonly historyTotalAppendsBefore: number | null;
+  readonly historyTotalAppendsAfter: number | null;
+  readonly rejectedStrokeCountBefore: number | null;
+  readonly rejectedStrokeCountAfter: number | null;
   readonly commitErrorText: string | null;
   /** TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE=1 일 때만 채우는 획 직후 GC 힙(바이트). */
   readonly heapUsedBytesAfter: number | null;
@@ -472,11 +477,13 @@ async function waitForStudioLayerCount(
   return readStudioAvailableLayerCount(page);
 }
 
-/** 에디터 셸이 노출하는 히스토리 유지 진단(퇴출 누계·계량 유지 바이트·마지막 엔트리 바이트). */
+/** 에디터 셸이 노출하는 히스토리 유지 진단(퇴출 누계·계량 유지 바이트·마지막 엔트리 바이트·append 총수·복구 보관 획 수). */
 async function readStudioHistoryDiagnostics(page: Page): Promise<{
   evictedSteps: number | null;
   retainedBytes: number | null;
   lastEntryBytes: number | null;
+  totalAppends: number | null;
+  rejectedStrokeCount: number | null;
 }> {
   const editor = page.locator("[data-studio-editor]").first();
   const read = async (attribute: string): Promise<number | null> => {
@@ -485,12 +492,14 @@ async function readStudioHistoryDiagnostics(page: Page): Promise<{
     const value = Number(raw);
     return Number.isFinite(value) && value >= 0 ? value : null;
   };
-  const [evictedSteps, retainedBytes, lastEntryBytes] = await Promise.all([
+  const [evictedSteps, retainedBytes, lastEntryBytes, totalAppends, rejectedStrokeCount] = await Promise.all([
     read("data-studio-history-budget-evicted-steps"),
     read("data-studio-history-last-measured-retained-bytes"),
     read("data-studio-history-last-measured-entry-bytes"),
+    read("data-studio-history-total-appends"),
+    read("data-studio-rejected-stroke-count"),
   ]);
-  return { evictedSteps, retainedBytes, lastEntryBytes };
+  return { evictedSteps, retainedBytes, lastEntryBytes, totalAppends, rejectedStrokeCount };
 }
 
 /** 커밋 게이트가 띄운 오류 배너 원문. 상태 레일이 접힌 밀도에서는 없을 수 있어 best-effort로 읽는다. */
@@ -520,18 +529,36 @@ async function ensureStudioLayerNavigatorCount(
   let openedSheet = false;
   if (await mobileDock.isVisible({ timeout: 250 }).catch(() => false)) {
     const panelButton = mobileDock.getByRole("button", { name: "작업 패널", exact: true });
+    if (!(await panelButton.isVisible().catch(() => false))) {
+      // 작업 패널 버튼은 워크스페이스 그리드 안에 있어, 접힌 독에서는 토글을 먼저 펼쳐야
+      // 보인다(브러시 라이브러리를 여는 경로와 같은 전제).
+      const workspace = mobileDock.locator('[data-studio-mobile-workspace-toggle="true"]');
+      if (await workspace.isVisible().catch(() => false)
+        && await workspace.getAttribute("aria-expanded") !== "true") {
+        await workspace.click({ timeout: 5_000 }).catch(() => undefined);
+        log("layer navigator admission: expanded the mobile workspace dock");
+      }
+    }
     if (await panelButton.isVisible().catch(() => false)
       && await panelButton.getAttribute("aria-expanded") !== "true") {
       await panelButton.click({ timeout: 5_000 }).catch(() => undefined);
       openedSheet = true;
+      log("layer navigator admission: opened the mobile props sheet");
+    } else {
+      log(`layer navigator admission: props sheet button visible=${await panelButton.isVisible().catch(() => false)} expanded=${await panelButton.getAttribute("aria-expanded").catch(() => null)}`);
     }
   }
   const layersTab = page.locator('[data-studio-inspector-primary-tab="layers"]');
-  if (await layersTab.isVisible({ timeout: 2_000 }).catch(() => false)
-    && await layersTab.getAttribute("aria-selected") !== "true") {
-    await layersTab.click({ timeout: 5_000 }).catch(() => undefined);
+  if (await layersTab.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    if (await layersTab.getAttribute("aria-selected") !== "true") {
+      await layersTab.click({ timeout: 5_000 }).catch(() => undefined);
+      log("layer navigator admission: selected the inspector layers tab");
+    }
+  } else {
+    log("layer navigator admission: layers tab was not visible");
   }
   const count = await waitForStudioLayerCount(page, (value) => value >= 0, timeoutMs);
+  log(`layer navigator admission: count=${count ?? "unavailable"}`);
   if (count !== null && openedSheet) {
     // 그리기 영역을 시트가 덮지 않도록 되닫는다. 기본 탭이 "레이어"로 남아 내비게이터의
     // 마운트와 카운트 속성은 닫은 뒤에도 유지된다.
@@ -695,6 +722,10 @@ async function drawEvidenceStroke(
   historyRetainedBytesBefore: number | null;
   historyRetainedBytesAfter: number | null;
   historyLastEntryBytesAfter: number | null;
+  historyTotalAppendsBefore: number | null;
+  historyTotalAppendsAfter: number | null;
+  rejectedStrokeCountBefore: number | null;
+  rejectedStrokeCountAfter: number | null;
   commitErrorText: string | null;
   heapUsedBytesAfter: number | null;
 }> {
@@ -771,6 +802,10 @@ async function drawEvidenceStroke(
     historyRetainedBytesBefore: diagnosticsBefore.retainedBytes,
     historyRetainedBytesAfter: diagnosticsAfter.retainedBytes,
     historyLastEntryBytesAfter: diagnosticsAfter.lastEntryBytes,
+    historyTotalAppendsBefore: diagnosticsBefore.totalAppends,
+    historyTotalAppendsAfter: diagnosticsAfter.totalAppends,
+    rejectedStrokeCountBefore: diagnosticsBefore.rejectedStrokeCount,
+    rejectedStrokeCountAfter: diagnosticsAfter.rejectedStrokeCount,
     commitErrorText,
     heapUsedBytesAfter: heapAfter?.usedBytes ?? null,
   };
@@ -984,6 +1019,10 @@ try {
           historyRetainedBytesBefore: evidence.historyRetainedBytesBefore,
           historyRetainedBytesAfter: evidence.historyRetainedBytesAfter,
           historyLastEntryBytesAfter: evidence.historyLastEntryBytesAfter,
+          historyTotalAppendsBefore: evidence.historyTotalAppendsBefore,
+          historyTotalAppendsAfter: evidence.historyTotalAppendsAfter,
+          rejectedStrokeCountBefore: evidence.rejectedStrokeCountBefore,
+          rejectedStrokeCountAfter: evidence.rejectedStrokeCountAfter,
           commitErrorText: evidence.commitErrorText,
           heapUsedBytesAfter: evidence.heapUsedBytesAfter,
         });

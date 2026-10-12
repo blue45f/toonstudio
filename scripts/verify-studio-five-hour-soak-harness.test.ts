@@ -277,6 +277,7 @@ describe("Studio five-hour soak layer navigator admission", () => {
     expect(ensure).toContain("if (existing !== null) return existing;");
     // 모바일 사용자의 실제 경로: 독의 작업 패널을 열고 인스펙터의 레이어 탭을 고른다.
     expect(ensure).toContain('[data-studio-mobile-editing-dock="true"]');
+    expect(ensure).toContain('[data-studio-mobile-workspace-toggle="true"]');
     expect(ensure).toContain('getByRole("button", { name: "작업 패널", exact: true })');
     expect(ensure).toContain('getAttribute("aria-expanded")');
     expect(ensure).toContain('[data-studio-inspector-primary-tab="layers"]');
@@ -297,6 +298,10 @@ describe("Studio five-hour soak commit separation diagnostics", () => {
     expect(source).toContain('read("data-studio-history-budget-evicted-steps")');
     expect(source).toContain('read("data-studio-history-last-measured-retained-bytes")');
     expect(source).toContain('read("data-studio-history-last-measured-entry-bytes")');
+    expect(source).toContain('read("data-studio-history-total-appends")');
+    expect(source).toContain('read("data-studio-rejected-stroke-count")');
+    expect(source).toContain("historyTotalAppendsAfter: evidence.historyTotalAppendsAfter");
+    expect(source).toContain("rejectedStrokeCountAfter: evidence.rejectedStrokeCountAfter");
     const draw = sliceFunction("drawEvidenceStroke", "spawnPreview");
     expect(draw).toContain("const diagnosticsBefore = await readStudioHistoryDiagnostics(page);");
     expect(draw).toContain("const diagnosticsAfter = await readStudioHistoryDiagnostics(page);");
