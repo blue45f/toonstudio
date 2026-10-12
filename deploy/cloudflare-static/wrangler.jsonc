@@ -39,7 +39,13 @@
       "/brand/toonstudio-product-tour.mp4",
       "/cuts-godot/index.wasm",
       "/godot-space/index.wasm",
-      "/play-godot/index.wasm"
+      "/play-godot/index.wasm",
+      "/godot-space",
+      "/godot-space/index.html",
+      "/cuts-godot",
+      "/cuts-godot/index.html",
+      "/play-godot",
+      "/play-godot/index.html"
     ]
   },
   "r2_buckets": [
