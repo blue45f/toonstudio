@@ -424,8 +424,7 @@ describe("Cloudflare static gateway", () => {
     expect(staticRequest.headers.get("accept-encoding")).toBe("identity");
   });
 
-  it("uses gzip static sidecars when Brotli is not accepted", async () => {
-    const assetFetch = vi.fn(async (_request: Request) => new Response("gzip-static"));
+  it("uses gzip static sidecars when Brotli is not accepted", async () => {    const assetFetch = vi.fn(async (_request: Request) => new Response("gzip-static"));
     const upstream = vi.fn<typeof fetch>();
     const gateway = createCloudflareStaticGateway({ fetch: upstream });
     const env = environment({ ASSETS: { fetch: assetFetch } });
@@ -442,6 +441,50 @@ describe("Cloudflare static gateway", () => {
     expect(new URL(staticRequest.url).pathname).toBe(
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb.gz",
     );
+  });
+
+  it.each([
+    ["br", "gzip, br", '"abc123-br"'],
+    ["gzip", "gzip", '"abc123-gzip"'],
+  ])("marks %s sidecar etags with the encoding", async (
+    encoding,
+    acceptEncoding,
+    etag,
+  ) => {
+    const assetFetch = vi.fn(async (_request: Request) => new Response("compressed", {
+      status: 200,
+      headers: { etag: '"abc123"' },
+    }));
+    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
+    const response = await gateway(new Request(
+      "https://www.toonstudio.cloud/godot-space/index.wasm",
+      { headers: { "accept-encoding": acceptEncoding } },
+    ), environment({ ASSETS: { fetch: assetFetch } }));
+
+    expect(response.headers.get("content-encoding")).toBe(encoding);
+    expect(response.headers.get("etag")).toBe(etag);
+    expect(response.headers.get("cache-control")).toContain("s-maxage=0");
+  });
+
+  it("heals cross-variant revalidation with a full body instead of 304", async () => {
+    const assetFetch = vi.fn(async (_request: Request) => new Response("compressed", {
+      status: 200,
+      headers: { etag: '"abc123"' },
+    }));
+    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
+    const response = await gateway(new Request(
+      "https://www.toonstudio.cloud/godot-space/index.wasm",
+      {
+        headers: {
+          "accept-encoding": "gzip, deflate, br, zstd",
+          "if-none-match": '"abc123-gzip"',
+        },
+      },
+    ), environment({ ASSETS: { fetch: assetFetch } }));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("etag")).toBe('"abc123-br"');
+    expect(await response.text()).toBe("compressed");
   });
 
   it("continues from a missing compressed sidecar to R2", async () => {
@@ -487,7 +530,7 @@ describe("Cloudflare static gateway", () => {
     expect(await response.text()).toBe("r2-wasm");
     expect(response.headers.get("content-type")).toBe("application/wasm");
     expect(response.headers.get("cache-control")).toBe(
-      "public, max-age=31536000, immutable",
+      "public, max-age=31536000, immutable, s-maxage=0",
     );
     expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
     expect(response.headers.get("etag")).toBe('"r2-etag"');

@@ -100,7 +100,7 @@ Cloudflare Static Assets의 개별 파일 한도는 25 MiB다. 배포 전에 `pr
 
 이어서 `scripts/verify-static-service-worker.mjs`가 `dist/sw.js`를 확인한다. Static Assets는 없는 경로에 SPA `index.html`을 200으로 돌려주므로, 워커 파일이 빠진 채 배포되면 `/sw.js`가 HTML로 응답하고 브라우저의 업데이트 확인이 조용히 실패해 "새 버전이 준비됐습니다" 안내가 사라진다. 앱이 등록 코드를 싣는 빌드에서 `sw.js`가 없거나, HTML이거나, precache 매니페스트(`buildId`)가 없으면 배포를 중단한다.
 
-일반 GET·HEAD는 브라우저의 `Accept-Encoding`에 맞는 sidecar를 같은 URL에서 투명하게 제공해 무제한 Static Assets 요청을 우선 활용한다. 두 객체의 원본은 Standard 클래스 R2 버킷 `toonspectrum-public-assets`에 동일 key로 저장하며 Worker의 `LARGE_ASSETS` binding으로 직접 읽는다. byte Range, 압축 미지원 요청, HEAD와 `If-None-Match`를 처리하고 1년 immutable 캐시 및 원본 MIME을 적용한다. sidecar와 R2가 모두 없거나 일시적으로 읽히지 않을 때만 명시적으로 설정한 `LARGE_ASSET_ORIGIN`으로 폴백하며 Authorization, Cookie, 사용자·관리자·세션 헤더는 전달하지 않는다. 변수를 생략하면 Core API fallback을 추론하지 않는다.
+일반 GET·HEAD는 브라우저의 `Accept-Encoding`에 맞는 sidecar를 같은 URL에서 투명하게 제공해 무제한 Static Assets 요청을 우선 활용한다. 이때 etag에는 `-br`·`-gzip` 접미사를 붙이고 `s-maxage=0`으로 엣지 재검증을 강제한다. 엣지가 인코딩과 무관하게 한 변형을 돌려줘도(2026-10-13 운영 실측) 다른 변형과 304로 섞이지 않고 200으로 치유되기 때문이다. 두 객체의 원본은 Standard 클래스 R2 버킷 `toonspectrum-public-assets`에 동일 key로 저장하며 Worker의 `LARGE_ASSETS` binding으로 직접 읽는다. byte Range, 압축 미지원 요청, HEAD와 `If-None-Match`를 처리하고 1년 immutable 캐시 및 원본 MIME을 적용한다. sidecar와 R2가 모두 없거나 일시적으로 읽히지 않을 때만 명시적으로 설정한 `LARGE_ASSET_ORIGIN`으로 폴백하며 Authorization, Cookie, 사용자·관리자·세션 헤더는 전달하지 않는다. 변수를 생략하면 Core API fallback을 추론하지 않는다.
 
 `sync:cloudflare-r2-assets:dry-run`은 빌드 산출물과 허용 목록을 검증하고 원격 쓰기를 하지 않는다. 운영 배포에서는 `prepare:cloudflare-static-assets`가 sidecar를 만든 뒤 `sync:cloudflare-r2-assets`가 승인된 원본 초과 파일을 R2에 먼저 업로드하고 Worker를 배포한다.
 

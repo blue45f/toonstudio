@@ -771,6 +771,17 @@ async function serveCompressedLargeAsset(
   responseHeaders.set("content-encoding", encoding === "br" ? "br" : "gzip");
   responseHeaders.set("content-type", descriptor.contentType);
   responseHeaders.set("cache-control", CLOUDFLARE_LARGE_ASSET_CACHE_CONTROL);
+  // etag에 인코딩 접미사를 붙인다. 엣지가 Accept-Encoding과 무관하게 한
+  // 변형을 돌려줘도(2026-10-13 운영 실측) 다른 변형과 304로 섞이지 않게
+  // 하기 위해서다. 브라우저는 자기 변형에만 304하고, 어긋나면 200으로 치유된다.
+  const sidecarEtag = responseHeaders.get("etag");
+  if (sidecarEtag) {
+    const opaque = sidecarEtag.startsWith("W/") ? sidecarEtag.slice(2) : sidecarEtag;
+    const bare = opaque.startsWith('"') && opaque.endsWith('"') && opaque.length >= 2
+      ? opaque.slice(1, -1)
+      : opaque;
+    responseHeaders.set("etag", `"${bare}-${encoding}"`);
+  }
   responseHeaders.set("accept-ranges", "none");
   responseHeaders.set(
     "x-toonstudio-large-asset-source",
