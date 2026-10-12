@@ -613,7 +613,7 @@ export const GODOT_STAGE_DOCUMENT_PATHS = Object.freeze([
 ] as const);
 
 export const GODOT_STAGE_DOCUMENT_CSP =
-  "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://cloudflareinsights.com https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev";
+  "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://cloudflareinsights.com https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev";
 
 export function isGodotStageDocumentPath(pathname: string): boolean {
   return (GODOT_STAGE_DOCUMENT_PATHS as readonly string[]).includes(pathname);
