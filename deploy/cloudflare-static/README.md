@@ -96,7 +96,7 @@ pnpm run cloudflare:static:dry-run
 
 ### 25 MiB 초과 정적 파일
 
-Cloudflare Static Assets의 개별 파일 한도는 25 MiB다. 배포 전에 `prepare:cloudflare-static-assets`가 `dist` 전체를 검사하고, 검토된 OpenCascade WASM·Godot 공간 wasm·modular street seating GLB의 Brotli(`.br`)·gzip(`.gz`) sidecar를 생성한다. 원본 대형 파일만 `.assetsignore`에서 제외하고, sidecar가 25 MiB를 넘거나 새로운 미검토 파일이 한도를 넘으면 배포를 중단한다.
+Cloudflare Static Assets의 개별 파일 한도는 25 MiB다. 배포 전에 `prepare:cloudflare-static-assets`가 `dist` 전체를 검사하고, 검토된 OpenCascade WASM·Godot 공간/재단 wasm(`godot-space/index.wasm`, `play-godot/index.wasm`, `cuts-godot/index.wasm`)·modular street seating GLB의 Brotli(`.br`)·gzip(`.gz`) sidecar를 생성한다. 원본 대형 파일만 `.assetsignore`에서 제외하고, sidecar가 25 MiB를 넘거나 새로운 미검토 파일이 한도를 넘으면 배포를 중단한다.
 
 이어서 `scripts/verify-static-service-worker.mjs`가 `dist/sw.js`를 확인한다. Static Assets는 없는 경로에 SPA `index.html`을 200으로 돌려주므로, 워커 파일이 빠진 채 배포되면 `/sw.js`가 HTML로 응답하고 브라우저의 업데이트 확인이 조용히 실패해 "새 버전이 준비됐습니다" 안내가 사라진다. 앱이 등록 코드를 싣는 빌드에서 `sw.js`가 없거나, HTML이거나, precache 매니페스트(`buildId`)가 없으면 배포를 중단한다.
 

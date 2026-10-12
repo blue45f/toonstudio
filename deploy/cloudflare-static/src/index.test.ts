@@ -108,6 +108,7 @@ describe("Cloudflare static gateway", () => {
       "/assets/tag2pix-*.onnx",
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
       "/brand/toonstudio-product-tour.mp4",
+      "/cuts-godot/index.wasm",
     ]);
     expect(wrangler.assets?.run_worker_first).not.toContain("/market/*");
     expect(wrangler.r2_buckets).toEqual([{
@@ -504,6 +505,7 @@ describe("Cloudflare static gateway", () => {
       ["/assets/ort-wasm-simd-threaded.jsep-DC5y_g6C.wasm", "application/wasm"],
       ["/assets/ort-wasm-simd-threaded.asyncify-CxOG5pUO.wasm", "application/wasm"],
       ["/assets/tag2pix-B03WmUfQ.onnx", "application/octet-stream"],
+      ["/cuts-godot/index.wasm", "application/wasm"],
     ] as const) {
       const response = await gateway(
         new Request(`https://www.toonstudio.cloud${pathname}`),
