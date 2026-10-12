@@ -3,6 +3,9 @@
  * 셸 본체(`StudioGodotSpaceEmbed.tsx`)에서 분리한 순수 모듈이며 React에 의존하지 않는다.
  */
 
+import type { StudioRealtimeTicketGuestAccess } from "../studio-realtime-provider-protocol";
+import type { StudioRealtimeTicketIssuer } from "../studio-realtime-provider-runtime";
+
 /** 마지막 위치 저장 (위치 복원). 저장은 셸 소유 — 기기 로컬에만 둔다. */
 export interface GodotLastPosition {
   readonly spaceId: string;
@@ -165,3 +168,52 @@ export const GODOT_INTERACT_LABELS: Readonly<Record<string, string>> = Object.fr
   storefront: "상점을 둘러봐요",
 });
 
+
+export const GODOT_PRESENCE_CAPABILITIES = [
+  "presence.snapshot-v1",
+  "presence.members-v1",
+  "presence.cursor-v1",
+  "presence.resume-v1",
+  // 3단계: 회의 구역 화상 브리지 — Godot 연결이 screen-signaling 채널을
+  // 중계할 수 있어야 셸 소유 화상이 같은 룸에서 협상된다.
+  "screen-signaling.session-v1",
+  "screen-signaling.webrtc-v1",
+  "screen-signaling.resume-v1",
+] as const;
+
+/** 게스트 티켓은 서버 계약상 presence 전용이다 (게스트 인가 분기가
+ * 그 외 워크로드를 거부한다). 회의·댓글 채널은 게스트에게 열지 않는다. */
+export const GODOT_GUEST_PRESENCE_CAPABILITIES = [
+  "presence.snapshot-v1",
+  "presence.members-v1",
+  "presence.cursor-v1",
+  "presence.resume-v1",
+] as const;
+
+export type StudioGodotSpacePhase =
+  | "booting"
+  | "ticket"
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "denied"
+  | "unavailable"
+  | "local";
+
+export interface StudioGodotSpaceEmbedProps {
+  readonly workId: string;
+  readonly displayName: string;
+  /** "#rrggbb" — 서버 계약 profile.avatar.color와 같은 형식. */
+  readonly colorHex: string;
+  readonly skinKey?: string;
+  /** 개인 공간처럼 티켓을 발급할 수 없는 경우: 무대만 로컬로 띄운다. */
+  readonly localOnly?: boolean;
+  /**
+   * 프로젝트 공간 게스트 자격. 서버 검증을 통과한 게스트 세션의 자격만
+   * 전달된다 — 임베드는 이 자격으로 게스트 티켓(presence 전용)을 발급해
+   * 접속한다. 자격이 없으면 게스트는 localOnly 로컬 무대에 머문다.
+   */
+  readonly guestAccess?: StudioRealtimeTicketGuestAccess;
+  /** 테스트 주입용. 기본값은 운영 HTTP 발급기. */
+  readonly ticketIssuer?: StudioRealtimeTicketIssuer;
+}
