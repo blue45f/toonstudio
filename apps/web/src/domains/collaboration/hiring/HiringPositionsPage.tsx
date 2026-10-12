@@ -58,6 +58,9 @@ export function HiringPublicPositions({ postId }: { postId?: string }) {
 function PublicPositionsContent({ postId }: { postId?: string }) {
   const bt = useBilingual(SCOPE);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  // 필터 다섯을 한 번에 다 펼치면 찾기 전에 고를 것부터 다섯이 된다. 자주 쓰는 둘만 먼저
+  // 보이고 나머지는 펼칠 때 드러낸다 — 이미 골라 둔 추가 조건이 있으면 펼친 채로 시작한다.
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [cursors, setCursors] = useState<(string | null)[]>([null]);
   const [retry, setRetry] = useState(0);
   const [result, setResult] = useState<{ key: string; page: HiringPositionPage | null; error: string } | null>(null);
@@ -89,19 +92,26 @@ function PublicPositionsContent({ postId }: { postId?: string }) {
   ] as const;
   const optionLabel = (ko: string) => bt(ko, EN_OPTION_LABELS[ko] ?? ko);
   function resetFilters() { setFilters({}); setCursors([null]); }
+  const extraFilterActive = Boolean(filters.compensation || filters.tool || filters.format);
+  const showExtraFilters = moreFiltersOpen || extraFilterActive;
+  const renderChoice = ([key, label, options]: (typeof choices)[number]) => <CollabField key={key} label={bt(label, EN_CHOICE_LABELS[label] ?? label)}><select className={collabInput} value={filters[key] ?? ""} onChange={(event) => {
+    const updated = { ...filters };
+    if (event.target.value) updated[key] = event.target.value; else delete updated[key];
+    setCursors([null]); setFilters(updated);
+  }}><option value="">{bt("전체", "All")}</option>{Object.entries(options).map(([value, name]) => <option key={value} value={value}>{optionLabel(String(name))}</option>)}</select></CollabField>;
   const next = page?.next;
   const hasNext = Boolean(next && !cursors.includes(next));
   return <section className="space-y-5" aria-label={bt("공개 모집 조건", "Open positions")} aria-busy={loading}>
     {!postId && <div className="rounded-2xl border border-line bg-panel/70 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-sm font-bold text-fg"><SlidersHorizontal size={16} className="text-accent" aria-hidden="true" />{bt("조건 고르기", "Choose conditions")}</h2>
-        <button type="button" className={collabButton} disabled={!hasFilters} onClick={resetFilters}>{bt("검색 조건 초기화", "Reset filters")}</button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={collabButton} aria-expanded={showExtraFilters} onClick={() => setMoreFiltersOpen((open) => !open)}>{showExtraFilters ? bt("조건 접기", "Fewer conditions") : bt("조건 더 고르기", "More conditions")}</button>
+          <button type="button" className={collabButton} disabled={!hasFilters} onClick={resetFilters}>{bt("검색 조건 초기화", "Reset filters")}</button>
+        </div>
       </div>
-      <div className="mt-1 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{choices.map(([key, label, options]) => <CollabField key={key} label={bt(label, EN_CHOICE_LABELS[label] ?? label)}><select className={collabInput} value={filters[key] ?? ""} onChange={(event) => {
-        const updated = { ...filters };
-        if (event.target.value) updated[key] = event.target.value; else delete updated[key];
-        setCursors([null]); setFilters(updated);
-      }}><option value="">{bt("전체", "All")}</option>{Object.entries(options).map(([value, name]) => <option key={value} value={value}>{optionLabel(String(name))}</option>)}</select></CollabField>)}</div>
+      <div className="mt-1 grid gap-3 sm:grid-cols-2">{choices.slice(0, 2).map(renderChoice)}</div>
+      {showExtraFilters && <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{choices.slice(2).map(renderChoice)}</div>}
     </div>}
     {error && (postId || page
       ? <CollabNotice error>{error}<button type="button" className={`${collabButton} ml-3`} onClick={() => setRetry((value) => value + 1)}>{bt("다시 불러오기", "Reload")}</button></CollabNotice>

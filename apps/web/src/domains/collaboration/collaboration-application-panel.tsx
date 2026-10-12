@@ -141,6 +141,22 @@ export function ApplicationsPanel({ id, busy, act }: { id: string; busy: boolean
     }).catch(async (reason) => { const message = await getApiErrorMessage(reason, "지원서를 불러오지 못했어요."); if (!controller.signal.aborted) setError(message); });
     return () => controller.abort();
   }, [id]);
+  // 온보딩 문맥은 서버에 남은 지원 항목에서 언제든 다시 만들 수 있다 — 확정 직후의
+  // 안내를 닫았거나 다른 기기에서 돌아와도, 확정된 지원에서는 연결을 계속할 수 있어야 한다.
+  function continueOnboarding(item: CollaborationApplication) {
+    try {
+      saveCollaborationOnboarding(sessionStorage, {
+        postId: id,
+        applicationId: item.id,
+        candidateUserId: item.userId,
+        candidateName: item.applicantName || "창작자",
+        candidateContact: item.contact,
+      });
+    } catch {
+      // The selected status is already durable; onboarding can continue without browser storage.
+    }
+    navigate(`/team/people?onboard=${encodeURIComponent(item.id)}`);
+  }
   async function updateStatus(item: CollaborationApplication, status: Exclude<ApplicationStatus, "withdrawn">) {
     const selected = status === "selected";
     const completed = await act(
@@ -188,6 +204,10 @@ export function ApplicationsPanel({ id, busy, act }: { id: string; busy: boolean
             void updateStatus(item, status);
           }}>{Object.entries(APPLICATION_STATUS).filter(([key]) => key !== "withdrawn").map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
         </CollabField>
+        {item.status === "selected" && <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-good/35 bg-good/10 p-3">
+          <p className="text-sm font-semibold text-fg">합류가 확정된 지원자예요. 팀 초대와 작품 권한 연결이 남았어요.</p>
+          <button type="button" className={collabPrimary} onClick={() => continueOnboarding(item)}>팀·권한 연결 계속하기</button>
+        </div>}
       </>}
     </article>)}</div>
   </section>;

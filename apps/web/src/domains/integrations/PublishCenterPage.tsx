@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleAlert, Download, FileCheck2, PackageCheck, Rss, Send } from "lucide-react";
+import { CheckCircle2, ChevronDown, CircleAlert, Download, FileCheck2, PackageCheck, Rss, Send } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -128,9 +128,13 @@ export function PublishCenterPage() {
   const canBuild = Boolean(trimmedTitle && canonicalUrl.trim() && channels.length > 0);
   const missingHints = [
     !trimmedTitle ? (ko ? "제목" : "a title") : null,
-    !canonicalUrl.trim() ? (ko ? "정본 URL" : "a canonical URL") : null,
+    !canonicalUrl.trim() ? (ko ? "작품 대표 주소" : "the work's main URL") : null,
     channels.length === 0 ? (ko ? "채널 한 곳" : "at least one channel") : null,
   ].filter((hint): hint is string => hint !== null);
+  // 태그·설명 같은 선택 입력은 기본 화면에서 접어 둔다 — 처음 온 사람이 마주하는 결정은
+  // 제목·대표 주소·예약 셋뿐이어야 한다. 값이 들어 있으면 펼친 채로 시작한다.
+  const [optionalOpen, setOptionalOpen] = useState(false);
+  const optionalVisible = optionalOpen || Boolean(tags || description);
   const scheduledLabel = scheduledAt
     ? new Date(scheduledAt).toLocaleString(ko ? "ko-KR" : "en-US", { dateStyle: "medium", timeStyle: "short" })
     : null;
@@ -181,7 +185,7 @@ export function PublishCenterPage() {
                   {trimmedTitle || (ko ? "제목 없는 작품" : "Untitled work")}
                 </h2>
                 <p className="mt-1 truncate text-sm text-fg-3">
-                  {projectId} · {canonicalUrl.trim() || (ko ? "정본 URL 미입력" : "No canonical URL yet")}
+                  {canonicalUrl.trim() || (ko ? "작품 대표 주소 미입력" : "No main URL yet")}
                 </p>
                 <ul className="mt-4 flex flex-wrap gap-1.5" aria-label={ko ? "준비 상태" : "Readiness"}>
                   <li className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${trimmedTitle ? "bg-good/10 text-good" : "bg-warn/10 text-warn"}`}>
@@ -232,32 +236,50 @@ export function PublishCenterPage() {
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs font-black text-on-accent" aria-hidden>1</span>
                   <FileCheck2 size={19} aria-hidden /> {ko ? "게시 정보" : "Publication details"}
                 </h2>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <label className="text-sm font-semibold text-fg-2">
-                    {ko ? "프로젝트 ID" : "Project ID"}
-                    <input value={projectId} onChange={(event) => setProjectId(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
-                  </label>
+                {/* 작품은 위 연재 현황에서 고르거나 링크로 들고 온다 — 내부 식별자(프로젝트 ID)를
+                    사람이 직접 입력하게 하지 않는다. 식별자는 상태로만 들고 다닌다. */}
+                <p className="mt-4 rounded-xl bg-panel px-3 py-2.5 text-sm text-fg-2" role="status">
+                  {trimmedTitle
+                    ? (ko ? `선택한 작품 · ${trimmedTitle}` : `Selected work · ${trimmedTitle}`)
+                    : (ko ? "위 연재 현황에서 작품을 고르면 여기에 표시돼요. 직접 왔다면 제목부터 입력하세요." : "Pick a work from the status list above, or start by typing its title.")}
+                </p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <label className="text-sm font-semibold text-fg-2">
                     {ko ? "제목" : "Title"}
                     <input required value={title} onChange={(event) => setTitle(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
-                  </label>
-                  <label className="text-sm font-semibold text-fg-2 sm:col-span-2">
-                    {ko ? "정본 URL" : "Canonical URL"}
-                    <input type="url" value={canonicalUrl} onChange={(event) => setCanonicalUrl(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
                   </label>
                   <label className="text-sm font-semibold text-fg-2">
                     {ko ? "예약 시각" : "Schedule"}
                     <input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
                   </label>
-                  <label className="text-sm font-semibold text-fg-2">
-                    {ko ? "태그(쉼표 구분)" : "Tags (comma separated)"}
-                    <input value={tags} onChange={(event) => setTags(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
-                  </label>
                   <label className="text-sm font-semibold text-fg-2 sm:col-span-2">
-                    {ko ? "설명" : "Description"}
-                    <textarea value={description} onChange={(event) => setDescription(event.currentTarget.value)} rows={4} className="mt-1 w-full rounded-xl border border-line bg-canvas p-3 text-fg" />
+                    {ko ? "작품 대표 주소" : "Work's main URL"}
+                    <input type="url" value={canonicalUrl} onChange={(event) => setCanonicalUrl(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
+                    <span className="mt-1 block text-xs font-normal leading-5 text-fg-3">
+                      {ko ? "독자가 이 작품을 보는 대표 링크예요. 보통은 그대로 두면 돼요." : "The main link readers use to open this work. The default usually works."}
+                    </span>
                   </label>
                 </div>
+                <details
+                  open={optionalVisible}
+                  onToggle={(event) => setOptionalOpen(event.currentTarget.open)}
+                  className="group mt-4 rounded-xl border border-line/70"
+                >
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 text-sm font-semibold text-fg-2 outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+                    {ko ? "선택 입력 · 태그와 설명" : "Optional · tags and description"}
+                    <ChevronDown size={15} aria-hidden className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+                  </summary>
+                  <div className="grid gap-4 border-t border-line/70 p-3 sm:grid-cols-2">
+                    <label className="text-sm font-semibold text-fg-2">
+                      {ko ? "태그(쉼표 구분)" : "Tags (comma separated)"}
+                      <input value={tags} onChange={(event) => setTags(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
+                    </label>
+                    <label className="text-sm font-semibold text-fg-2">
+                      {ko ? "설명" : "Description"}
+                      <textarea value={description} onChange={(event) => setDescription(event.currentTarget.value)} rows={3} className="mt-1 w-full rounded-xl border border-line bg-canvas p-3 text-fg" />
+                    </label>
+                  </div>
+                </details>
               </section>
               <section className="rounded-2xl border border-line bg-card p-5">
                 <fieldset>

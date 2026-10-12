@@ -60,16 +60,16 @@ const EPISODE_STATE_LABELS: Readonly<Record<EpisodeCollaboration["state"], strin
   "joint-proof": "공동 교정",
   "publish-ready": "공개 준비",
   published: "공개됨",
-  blocked: "차단",
+  blocked: "막힘",
   "paused-health": "건강 사유 휴식",
   "paused-contract": "계약 보류",
-  "change-request-open": "변경 검토",
+  "change-request-open": "변경 요청 중",
   "creator-replacement": "창작자 교체",
   cancelled: "취소",
 };
 
 const HEALTH_LABELS: Readonly<Record<EpisodeDeadlineHealth, string>> = {
-  published: "게시 완료",
+  published: "공개 완료",
   critical: "즉시 조치",
   risk: "일정 주의",
   healthy: "일정 정상",

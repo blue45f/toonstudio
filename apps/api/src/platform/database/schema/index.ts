@@ -35,6 +35,7 @@ export * from "./review-voice-note.schema";
 export * from "./studio-virtual-space-decoration.schema";
 
 export * from "./studio-godot-space-layout.schema";
+export * from "./studio-project-library.schema";
 
 export * from "./studio-godot-space-background.schema";
 

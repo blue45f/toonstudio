@@ -45,16 +45,47 @@ export type ProductionSurfaceTarget =
   | { readonly kind: "episode-room" }
   | { readonly kind: "path"; readonly path: string };
 
+/**
+ * 더보기 화면의 작업 단계 그룹. 여덟 화면을 평면으로 나열하면 고르기 전에 전부 훑어야 해서,
+ * "무슨 일을 하려는가" 기준으로 세 묶음으로 나눈다 — 1차 결정은 묶음 셋 중 하나다.
+ */
+export type ProductionMoreGroup = "prepare" | "together" | "operations";
+
+export const PRODUCTION_MORE_GROUP_LABELS: Readonly<Record<ProductionMoreGroup, BilingualLabel>> = Object.freeze({
+  prepare: { ko: "준비", en: "Prepare" },
+  together: { ko: "함께 일하기", en: "Work together" },
+  operations: { ko: "운영·계약", en: "Operations & contracts" },
+});
+
+export const PRODUCTION_MORE_GROUP_ORDER: readonly ProductionMoreGroup[] = Object.freeze([
+  "prepare",
+  "together",
+  "operations",
+]);
+
 export interface ProductionSurfaceDefinition {
   readonly id: ProductionProjectSurface;
   readonly label: BilingualLabel;
   readonly description: BilingualLabel;
   readonly icon: LucideIcon;
   readonly core: boolean;
+  /** 핵심 화면이 아닌 경우 속하는 작업 단계 그룹. 핵심 화면은 null. */
+  readonly moreGroup: ProductionMoreGroup | null;
   readonly next: { readonly label: BilingualLabel; readonly target: ProductionSurfaceTarget };
 }
 
-type SurfaceContent = Omit<ProductionSurfaceDefinition, "id">;
+type SurfaceContent = Omit<ProductionSurfaceDefinition, "id" | "moreGroup">;
+
+const MORE_GROUP_BY_SURFACE: Readonly<Partial<Record<ProductionProjectSurface, ProductionMoreGroup>>> = Object.freeze({
+  planning: "prepare",
+  schedule: "prepare",
+  handoff: "together",
+  activity: "together",
+  settings: "together",
+  control: "operations",
+  procurement: "operations",
+  rights: "operations",
+});
 
 const SURFACE_CONTENT: Readonly<Record<ProductionProjectSurface, SurfaceContent>> = Object.freeze({
   overview: {
@@ -168,14 +199,27 @@ const SURFACE_ORDER: readonly ProductionProjectSurface[] = Object.freeze([
 ]);
 
 export const PRODUCTION_SURFACES: readonly ProductionSurfaceDefinition[] = Object.freeze(
-  SURFACE_ORDER.map((id) => ({ id, ...SURFACE_CONTENT[id] })),
+  SURFACE_ORDER.map((id) => ({ id, ...SURFACE_CONTENT[id], moreGroup: MORE_GROUP_BY_SURFACE[id] ?? null })),
 );
 
 export const PRODUCTION_CORE_SURFACES = PRODUCTION_SURFACES.filter((surface) => surface.core);
 export const PRODUCTION_MORE_SURFACES = PRODUCTION_SURFACES.filter((surface) => !surface.core);
 
+/** 더보기 화면을 작업 단계 그룹 순서로 묶은 목록. 그룹 안 순서는 표면 순서를 따른다. */
+export const PRODUCTION_MORE_GROUPS: readonly {
+  readonly group: ProductionMoreGroup;
+  readonly label: BilingualLabel;
+  readonly surfaces: readonly ProductionSurfaceDefinition[];
+}[] = Object.freeze(
+  PRODUCTION_MORE_GROUP_ORDER.map((group) => ({
+    group,
+    label: PRODUCTION_MORE_GROUP_LABELS[group],
+    surfaces: PRODUCTION_MORE_SURFACES.filter((surface) => surface.moreGroup === group),
+  })).filter((entry) => entry.surfaces.length > 0),
+);
+
 export function productionSurfaceDefinition(id: ProductionProjectSurface): ProductionSurfaceDefinition {
-  return { id, ...SURFACE_CONTENT[id] };
+  return { id, ...SURFACE_CONTENT[id], moreGroup: MORE_GROUP_BY_SURFACE[id] ?? null };
 }
 
 export function productionSurfacePath(projectId: string, surface: ProductionProjectSurface, query?: string): string {
