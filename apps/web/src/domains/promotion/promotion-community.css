@@ -23,3 +23,17 @@
 .pc-hero-feature-body span{font-size:13px;line-height:1.6;opacity:.8}
 .pc-hero-feature-body p{font-size:12px;line-height:1.7;margin:6px 0 0;opacity:.7}
 @media(max-width:620px){.pc-hero-feature{margin-top:28px}}
+/* 히어로 무대(웨이브 24) — 스포트라이트 아트를 배경으로 깔고 전경을 종속시키는 구도.
+   스크림은 공용 헤더 배너와 같은 남색 문법이며, 전경 토큰(--pc-line·--pc-soft)이
+   currentColor 기반이라 무대 글자색만 흰색으로 바꾸면 카드·버튼이 함께 따라온다. */
+.pc-hero-stage{position:relative;overflow:hidden;color:#fff;background:oklch(0.09 0.025 265)}
+.pc-hero-art{position:absolute;inset:0}
+.pc-hero-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 32%}
+.pc-hero-scrim{position:absolute;inset:0;background:linear-gradient(to top,oklch(0.09 0.025 265/0.94) 0%,oklch(0.09 0.025 265/0.78) 42%,oklch(0.09 0.025 265/0.38) 72%,oklch(0.09 0.025 265/0.18) 100%),linear-gradient(78deg,oklch(0.09 0.025 265/0.5) 0%,transparent 60%)}
+.pc-hero-stage>:not(.pc-hero-art){position:relative;z-index:1}
+.pc-hero-caption{position:absolute;right:14px;top:12px;z-index:2;margin:0;border-radius:999px;background:rgb(0 0 0/0.45);padding:4px 10px;font-size:0.65rem;font-weight:600;color:rgb(255 255 255/0.9);backdrop-filter:blur(4px)}
+.pc-hero-stage .pc-lead{opacity:.88}
+.pc-hero-stage .pc-hero-note,.pc-hero-stage .pc-hero-feature{background:rgb(6 10 24/0.55);border-color:rgb(255 255 255/0.22);backdrop-filter:blur(6px)}
+.pc-hero-stage .pc-button{border-color:rgb(255 255 255/0.3);background:rgb(255 255 255/0.08)}
+.pc-hero-stage .pc-button:hover{border-color:var(--pc-accent)}
+.pc-hero-stage .pc-button.pc-primary{background:var(--unified-accent);border-color:var(--unified-accent);color:var(--unified-on-accent)}

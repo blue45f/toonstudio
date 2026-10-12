@@ -44,22 +44,25 @@ export function PromotionBoardPage() {
         kind: "promotion-post",
         exposure: "public",
       }))} />
-      <figure className="relative m-0 mb-8 overflow-hidden rounded-3xl border border-line">
-        <img
-          src="/brand/hero-20261009-wave10/promote-spotlight-1680.webp"
-          srcSet="/brand/hero-20261009-wave10/promote-spotlight-960.webp 960w, /brand/hero-20261009-wave10/promote-spotlight-1680.webp 1680w"
-          sizes="(max-width: 768px) 100vw, 1200px"
-          width={1680}
-          height={560}
-          alt={bt("무대 위 창작자가 빛나는 웹툰 컷들을 관객에게 처음 선보이는 스포트라이트 장면", "A creator on stage premiering glowing webtoon panels to an audience")}
-          fetchPriority="high"
-          className="aspect-[3/1] w-full object-cover motion-safe:animate-fade-up"
-        />
-        <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
+      <header className="pc-hero pc-hero-stage">
+        {/* 첫 화면 무대 — 스포트라이트 아트를 히어로 배경으로 깔고 제목·피처드를 종속시킨다.
+            아트만 있던 밴드와 제목 블록이 따로 적층되던 구도를 한 무대로 통합한 것. */}
+        <div className="pc-hero-art" aria-hidden="true">
+          <img
+            src="/brand/hero-20261009-wave10/promote-spotlight-1680.webp"
+            srcSet="/brand/hero-20261009-wave10/promote-spotlight-960.webp 960w, /brand/hero-20261009-wave10/promote-spotlight-1680.webp 1680w"
+            sizes="(max-width: 768px) 100vw, 1200px"
+            width={1680}
+            height={560}
+            alt=""
+            fetchPriority="high"
+            className="motion-safe:animate-fade-up"
+          />
+          <span className="pc-hero-scrim" />
+        </div>
+        <p className="pc-hero-caption">
           {bt("브랜드 콘셉트 아트 · 실제 화면이 아닙니다", "Brand concept art · not an actual screen")}
-        </figcaption>
-      </figure>
-      <header className="pc-hero">
+        </p>
         <div>
           <p className="pc-eyebrow"><Sparkles size={16} aria-hidden="true" /> TOONSTUDIO · CREATOR SPOTLIGHT</p>
           <h1>{bt("아직 발견하지 못한,", "Stories you haven't found yet,")}<br /><em>{bt("당신의 다음 웹툰.", "your next webtoon.")}</em></h1>
