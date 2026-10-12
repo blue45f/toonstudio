@@ -171,7 +171,9 @@ describe("PublishCenterPage", () => {
   it("?projectId=·?title= 쿼리로 들어오면 작품이 미리 채워지고 그 프로젝트로 패키지를 만든다", async () => {
     renderPage("/publish?projectId=project-hdtxl4&title=%EB%B3%84%EB%B9%9B%20%ED%95%AD%ED%95%B4%EC%9E%90");
     await screen.findByText("외부 웹툰 플랫폼");
-    expect((screen.getByLabelText("프로젝트 ID") as HTMLInputElement).value).toBe("project-hdtxl4");
+    // 내부 식별자는 입력欄으로 노출하지 않는다 — 선택한 작품은 제목으로만 확인한다.
+    expect(screen.queryByLabelText("프로젝트 ID")).toBeNull();
+    expect(screen.getByText(/선택한 작품 · 별빛 항해자/)).toBeTruthy();
     expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("별빛 항해자");
     const buildButton = screen.getByRole("button", { name: /패키지 만들기/ });
     expect((buildButton as HTMLButtonElement).disabled).toBe(false);
