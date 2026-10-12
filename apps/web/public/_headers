@@ -139,6 +139,14 @@
 /godot-space/index.html
   Cache-Control: no-cache
 
+/godot-space
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev
+  Cross-Origin-Opener-Policy: same-origin
+  Cache-Control: no-cache
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Resource-Policy: same-origin
+
 /godot-space/*
   X-Frame-Options: SAMEORIGIN
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev
@@ -150,6 +158,14 @@
 /cuts-godot/index.html
   Cache-Control: no-cache
 
+/cuts-godot
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev
+  Cross-Origin-Opener-Policy: same-origin
+  Cache-Control: no-cache
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Resource-Policy: same-origin
+
 /cuts-godot/*
   X-Frame-Options: SAMEORIGIN
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev
@@ -160,6 +176,14 @@
 
 /play-godot/index.html
   Cache-Control: no-cache
+
+/play-godot
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://realtime.toonstudio.cloud wss://realtime.toonstudio.cloud https://toonspectrum-realtime.toonspectrum-realtime.workers.dev wss://toonspectrum-realtime.toonspectrum-realtime.workers.dev
+  Cross-Origin-Opener-Policy: same-origin
+  Cache-Control: no-cache
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Resource-Policy: same-origin
 
 /play-godot/*
   X-Frame-Options: SAMEORIGIN
