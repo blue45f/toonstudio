@@ -54,7 +54,7 @@ export const DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS: Readonly<StudioAdvancedFillS
     tolerance: 32,
     contiguous: true,
     expansionPx: 1.5,
-    closeGapPx: 0,
+    closeGapPx: 3,
     antiAlias: true,
     continuousFill: true,
     leakGuard: true,
@@ -85,7 +85,7 @@ export const STUDIO_ADVANCED_FILL_SETTING_LABELS: Readonly<
   tolerance: "허용 오차",
   contiguous: "연결된 영역만",
   expansionPx: "확장·축소",
-  closeGapPx: "틈 닫기",
+  closeGapPx: "선 틈 메우기",
   antiAlias: "가장자리 부드럽게",
   continuousFill: "연속 채우기",
   leakGuard: "채우기 누수 보호",
@@ -121,7 +121,7 @@ export const STUDIO_ADVANCED_FILL_LEAK_REMEDIES: readonly StudioAdvancedFillLeak
     }),
     Object.freeze({
       id: "increase-close-gap",
-      label: "틈 닫기 늘리기",
+      label: "선 틈 메우기 늘리기",
       description: "끊어진 선 사이의 간격을 더 크게 막은 뒤 다시 채웁니다.",
     }),
     Object.freeze({

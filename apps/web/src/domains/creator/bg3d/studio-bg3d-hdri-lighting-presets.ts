@@ -7,6 +7,12 @@
  * 연동되도록 설계되어 있습니다.
  *
  * Three.js 조명 객체를 직접 다루지 않는 순수 데이터 모듈입니다.
+ *
+ * 실제 HDRI 연결(wave6): 각 프리셋의 lighting.environment가 Poly Haven(CC0) HDRI
+ * 에셋을 가리킵니다. 프리셋 적용 경로가 lighting 전체를 문서에 쓰므로, 적용 시
+ * 환경광도 함께 실제 IBL로 바뀝니다. 프리셋 일치 판정(resolveStudioBg3dHdri
+ * LightingPreset)은 기존과 같이 키 라이트·주변광·노출만 비교하고 환경은 보지
+ * 않습니다 — 환경을 수동으로 바꾼 상태도 프리셋 선택 표시는 유지됩니다.
  */
 
 import { studioBg3dLightAnglesToDirection } from "./studio-bg3d-light-direction";
@@ -66,6 +72,13 @@ export const STUDIO_BG3D_HDRI_LIGHTING_PRESETS: readonly StudioBg3dHdriLightingP
           intensity: 0.45,
           castsShadow: false,
         },
+        environment: {
+          source: "hdri",
+          assetId: "combination-room",
+          intensity: 1,
+          rotationDegrees: 0,
+          useAsBackground: false,
+        }
       },
       exposure: 1.0,
       weatherPresetId: "clear-noon",
@@ -95,6 +108,13 @@ export const STUDIO_BG3D_HDRI_LIGHTING_PRESETS: readonly StudioBg3dHdriLightingP
           intensity: 0.5,
           castsShadow: false,
         },
+        environment: {
+          source: "hdri",
+          assetId: "konigsallee",
+          intensity: 1,
+          rotationDegrees: 0,
+          useAsBackground: false,
+        }
       },
       exposure: 1.08,
       weatherPresetId: "golden-hour",
@@ -124,6 +144,13 @@ export const STUDIO_BG3D_HDRI_LIGHTING_PRESETS: readonly StudioBg3dHdriLightingP
           intensity: 0.35,
           castsShadow: false,
         },
+        environment: {
+          source: "hdri",
+          assetId: "cobblestone-street-night",
+          intensity: 1,
+          rotationDegrees: 0,
+          useAsBackground: false,
+        }
       },
       exposure: 1.25,
       weatherPresetId: "cyberpunk-neon-night",
@@ -153,6 +180,13 @@ export const STUDIO_BG3D_HDRI_LIGHTING_PRESETS: readonly StudioBg3dHdriLightingP
           intensity: 0.55,
           castsShadow: false,
         },
+        environment: {
+          source: "hdri",
+          assetId: "combination-room",
+          intensity: 1,
+          rotationDegrees: 0,
+          useAsBackground: false,
+        }
       },
       exposure: 1.05,
       weatherPresetId: "clear-noon",

@@ -114,7 +114,7 @@ describe("StudioFloodFillPanel advanced-fill presentation", () => {
     expect(html.match(/h-11/g)?.length).toBeGreaterThanOrEqual(13);
     expect(html).toContain("허용 오차");
     expect(html).toContain("확장·축소");
-    expect(html).toContain("틈 닫기");
+    expect(html).toContain("선 틈 메우기");
     expect(html).toContain("연결된 영역만");
     expect(html).toContain("가장자리 부드럽게");
     expect(html).toContain("연속 채우기");

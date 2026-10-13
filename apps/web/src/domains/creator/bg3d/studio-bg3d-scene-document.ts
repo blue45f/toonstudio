@@ -26,6 +26,7 @@ import {
 } from "./studio-bg3d-camera-orientation";
 import { normalizeStudioBg3dCaptureAspectRatio } from "./studio-bg3d-capture-frame-geometry";
 import { normalizeStudioBg3dHierarchyParents } from "./studio-bg3d-hierarchy";
+import { normalizeStudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
 
 import {
   DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE,
@@ -255,6 +256,13 @@ const DEFAULT_RAW_DOCUMENT = {
       direction: [-4, 3, -3],
       intensity: 0.35,
       castsShadow: false,
+    },
+    environment: {
+      source: "procedural",
+      assetId: null,
+      intensity: 1,
+      rotationDegrees: 0,
+      useAsBackground: false,
     },
   },
   quality: {
@@ -686,6 +694,7 @@ function normalizeLighting(value: unknown): StudioBg3dLightingSettings {
     ambientIntensity: boundedNumber(candidate.ambientIntensity, 0.75, 0, 10),
     key: normalizeDirectionalLight(candidate.key, DEFAULT_RAW_DOCUMENT.lighting.key),
     fill: normalizeDirectionalLight(candidate.fill, DEFAULT_RAW_DOCUMENT.lighting.fill),
+    environment: normalizeStudioBg3dEnvironmentSettings(candidate.environment),
   };
 }
 
@@ -2157,6 +2166,11 @@ export function applyStudioBg3dShot(
         fill: shot.lighting.fill
           ? { ...document.lighting.fill, ...shot.lighting.fill }
           : document.lighting.fill,
+        // 샷 단위 환경 전환은 이번 범위가 아니므로, 저장된 샷 값에 environment가
+        // 섞여 있어도 문서 환경을 그대로 고정합니다(평면 객체라 스프레드 복제로 충분).
+        environment: document.lighting.environment
+          ? { ...document.lighting.environment }
+          : undefined,
       })
     : document.lighting;
   const output = shot.output
