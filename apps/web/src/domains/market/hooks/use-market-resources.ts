@@ -43,6 +43,12 @@ export interface MarketResourcesPage {
 
 const MARKET_RETRY_HINT = "공개 마켓을 불러올 수 없어요. 잠시 후 다시 시도해 주세요.";
 const MARKET_LOAD_MORE_RETRY_HINT = "추가 리소스를 불러오지 못했어요.";
+/**
+ * 첫 페이지 자동 재시도 백오프. 공개 목록은 서버 절전 해제(cold start) 구간에 첫 방문자가
+ * 걸리기 쉬워, 캐시가 없을 때만 짧게 쉬고 다시 읽는다. 캐시가 있으면 stale 표시가 우선이라
+ * 재시도하지 않는다. 타입드 읽기 자체의 시도 예산과는 별개다.
+ */
+const MARKET_AUTO_RETRY_DELAYS_MS: readonly number[] = [1_000, 3_000];
 
 function remoteQuery(
   query: MarketResourceQuery,
@@ -119,39 +125,56 @@ export function useMarketResources(query: MarketResourceQuery | null): MarketRes
     setStale(false);
     setStaleSavedAt(null);
 
-    listCreatorMarketplaceResources(remoteQuery(parsedQuery), controller.signal)
-      .then((page) => {
-        if (controller.signal.aborted || requestGenerationRef.current !== generation) return;
-        const nextCursor = page.hasMore ? page.nextCursor : null;
-        const pageHasMore = nextCursor !== null;
-        setItems(page.items);
-        cursorRef.current = nextCursor;
-        setHasMore(pageHasMore);
-        setLoading(false);
-        writeCachedMarketPage(cacheKey, {
-          items: page.items,
-          hasMore: pageHasMore,
-          nextCursor,
-        });
-      })
-      .catch(() => {
-        if (controller.signal.aborted || requestGenerationRef.current !== generation) return;
-        const cached = readCachedMarketPage(cacheKey);
-        if (cached) {
-          setItems(cached.items);
-          // A cached first page must never be combined with a newly fetched tail.
-          setHasMore(false);
-          cursorRef.current = null;
-          setStale(true);
-          setStaleSavedAt(cached.savedAt);
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const attempt = (attemptIndex: number) => {
+      listCreatorMarketplaceResources(remoteQuery(parsedQuery), controller.signal)
+        .then((page) => {
+          if (controller.signal.aborted || requestGenerationRef.current !== generation) return;
+          const nextCursor = page.hasMore ? page.nextCursor : null;
+          const pageHasMore = nextCursor !== null;
+          setItems(page.items);
+          cursorRef.current = nextCursor;
+          setHasMore(pageHasMore);
           setLoading(false);
-          return;
-        }
-        setError(MARKET_RETRY_HINT);
-        setLoading(false);
-      });
+          writeCachedMarketPage(cacheKey, {
+            items: page.items,
+            hasMore: pageHasMore,
+            nextCursor,
+          });
+        })
+        .catch(() => {
+          if (controller.signal.aborted || requestGenerationRef.current !== generation) return;
+          const cached = readCachedMarketPage(cacheKey);
+          if (cached) {
+            setItems(cached.items);
+            // A cached first page must never be combined with a newly fetched tail.
+            setHasMore(false);
+            cursorRef.current = null;
+            setStale(true);
+            setStaleSavedAt(cached.savedAt);
+            setLoading(false);
+            return;
+          }
+          // 캐시가 없는 첫 방문 실패는 곧바로 에러로 닫지 않는다. 재시도 동안 loading을
+          // 유지해 스켈레톤이 에러 패널로 바뀌지 않게 하고, 백오프를 소진한 뒤에만 알린다.
+          const retryDelay = MARKET_AUTO_RETRY_DELAYS_MS[attemptIndex];
+          if (retryDelay !== undefined) {
+            retryTimer = setTimeout(() => {
+              retryTimer = null;
+              if (controller.signal.aborted || requestGenerationRef.current !== generation) return;
+              attempt(attemptIndex + 1);
+            }, retryDelay);
+            return;
+          }
+          setError(MARKET_RETRY_HINT);
+          setLoading(false);
+        });
+    };
+    attempt(0);
 
     return () => {
+      if (retryTimer !== null) clearTimeout(retryTimer);
       controller.abort();
       loadMoreControllerRef.current?.abort();
       if (requestGenerationRef.current === generation) {

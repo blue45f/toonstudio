@@ -185,6 +185,16 @@ function EpisodeOperationsCard({
   const releaseChanged = releaseDraft !== toDateTimeLocal(row.releaseAt);
   const attention = row.health === "critical" || row.health === "risk";
   const episodeLabel = row.episodeNumber ? `${row.episodeNumber}화` : row.episode.episodeId;
+  // 컷 진척 한 줄: 목표는 회차 기획의 targetCutCount, 현재는 폐기(superseded)·보관(archived)되지 않은 컷 기획 수.
+  const targetCutCount = row.plan?.targetCutCount ?? null;
+  const currentCutCount = aggregate.cutPlans.filter(
+    (cut) => cut.episodeId === row.episode.episodeId && cut.status !== "superseded" && cut.status !== "archived",
+  ).length;
+  const cutSummary = targetCutCount !== null
+    ? `목표 ${targetCutCount}컷 · 현재 ${currentCutCount}컷`
+    : currentCutCount > 0
+      ? `목표 미정 · 현재 ${currentCutCount}컷`
+      : null;
 
   const saveSchedule = async () => {
     const releaseAt = dateTimeLocalToIso(releaseDraft);
@@ -253,6 +263,11 @@ function EpisodeOperationsCard({
             <div><p className="text-fg-3">지연 작업</p><p className={cn("mt-1 font-bold", row.overdueTasks.length ? "text-bad" : "text-fg")}>{row.overdueTasks.length}건</p></div>
             <div><p className="text-fg-3">가용량 대비</p><p className={cn("mt-1 font-bold", (row.loadRatio ?? 0) > 1 ? "text-bad" : "text-fg")}>{row.loadRatio === null ? "—" : `${Math.round(row.loadRatio * 100)}%`}</p></div>
           </div>
+          {cutSummary ? (
+            <p className="mt-3 border-t border-line/60 pt-2 text-fg-2">
+              컷 진척 <span className="font-bold text-fg">{cutSummary}</span>
+            </p>
+          ) : null}
         </div>
 
         <div className="rounded-xl border border-line bg-panel p-3">

@@ -138,6 +138,7 @@ export function StudioCanvasViewportHudOverlays({
     commitPages,
     designateHistoryBrushSource,
     dismissQuickStart,
+    yieldQuickStart,
     executeGenerateTranslations,
     handleTutorialTry,
     importDialogueInterchange,
@@ -187,6 +188,7 @@ export function StudioCanvasViewportHudOverlays({
               <QuickStartPanel
               startCollapsed
               onDismiss={dismissQuickStart}
+              onYield={yieldQuickStart}
               onQuickComic={openQuickComicWizard}
               onExample={() => void startFromExample()}
               onOpenTemplate={() => openQuickStartMenu("template")}

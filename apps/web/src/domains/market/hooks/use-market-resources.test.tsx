@@ -300,12 +300,27 @@ describe("useMarketResources", () => {
   });
 
   it("fails closed when the server is unavailable and no authoritative cache exists", async () => {
-    listResources.mockRejectedValueOnce(new Error("503 Service Unavailable"));
+    listResources.mockRejectedValue(new Error("503 Service Unavailable"));
     const { result } = renderHook(() => useMarketResources({ limit: 12, sort: "newest" }));
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    // 캐시가 없으면 백오프(1초·3초) 자동 재시도 2회를 소진한 뒤에만 에러로 닫힌다.
+    await waitFor(() => expect(result.current.error).not.toBeNull(), { timeout: 10_000 });
+    expect(listResources).toHaveBeenCalledTimes(3);
+    expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe("공개 마켓을 불러올 수 없어요. 잠시 후 다시 시도해 주세요.");
     expect(result.current.items).toEqual([]);
     expect(result.current.stale).toBe(false);
+  });
+
+  it("recovers without an error when an automatic retry succeeds", async () => {
+    listResources
+      .mockRejectedValueOnce(new Error("503 Service Unavailable"))
+      .mockResolvedValueOnce(page([resource("resource-1")], null));
+    const { result } = renderHook(() => useMarketResources({ limit: 12, sort: "newest" }));
+
+    await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 10_000 });
+    expect(listResources).toHaveBeenCalledTimes(2);
+    expect(result.current.error).toBeNull();
+    expect(result.current.items.map((item) => item.id)).toEqual(["resource-1"]);
   });
 });

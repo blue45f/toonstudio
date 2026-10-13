@@ -11,6 +11,7 @@ import {
   Store,
   Upload,
 } from "lucide-react";
+import { useEffect } from "react";
 
 import { MarketCategoryTiles } from "../components/MarketCategoryTiles";
 import { MarketHomeSearch } from "../components/MarketHomeSearch";
@@ -31,6 +32,7 @@ import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { SiteRail, SiteShowMoreButton } from "@/domains/legal/public/site-rail";
 import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { useMobileShowMore } from "@/domains/legal/public/site-show-more";
+import { useServiceCapabilityState } from "@/platform/service-capability-state";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
@@ -58,6 +60,15 @@ export function MarketHomePage() {
   const { isPaidMode } = useCommerceConfig();
   const hasLatestItems = latest.items.length > 0;
   const hasFatalLatestError = Boolean(latest.error) && !hasLatestItems;
+  // 같은 서버 장애는 전역 웜업 칩·저하 배너가 이미 알리고 있다. 그 구간에는 섹션의 큰 경고
+  // 패널을 중복으로 띄우지 않고, 복구가 확인되면 섹션도 자동으로 다시 불러온다.
+  const capability = useServiceCapabilityState();
+  const coveredByGlobalNotice = capability.status === "degraded" || capability.warmingUp === true;
+  const recoveredAt = capability.recoveredAt;
+  const reloadLatest = latest.reload;
+  useEffect(() => {
+    if (recoveredAt !== null && hasFatalLatestError) reloadLatest();
+  }, [recoveredAt, hasFatalLatestError, reloadLatest]);
 
   useDocumentTitle(t("소재 마켓", "Material Market"));
   useMetaDescription(marketHomeDescription);
@@ -131,7 +142,16 @@ export function MarketHomePage() {
             {t("전체 보기", "View all")} <ArrowRight size={14} aria-hidden="true" className="ml-1" />
           </Link>
         </div>
-        {hasFatalLatestError ? (
+        {hasFatalLatestError && coveredByGlobalNotice ? (
+          <div role="status" className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-2xl border border-line bg-panel px-5 py-4">
+            <p className="text-sm text-fg-2">{t("온라인 기능이 복구되면 최근 공유를 자동으로 다시 불러와요.", "When online features recover, recently shared resources will reload on their own.")}</p>
+            <button type="button" onClick={latest.reload} className={buttonClass({ variant: "outline", size: "sm" })}>
+              <RefreshCw className="mr-1.5 size-3.5" aria-hidden="true" />
+              {t("지금 다시 시도", "Retry now")}
+            </button>
+          </div>
+        ) : null}
+        {hasFatalLatestError && !coveredByGlobalNotice ? (
           <div role="alert" className="mt-6 rounded-2xl border border-warn/30 bg-warn/5 p-8 text-center sm:p-10">
             <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-warn/10 text-warn">
               <AlertTriangle className="size-6" aria-hidden="true" />

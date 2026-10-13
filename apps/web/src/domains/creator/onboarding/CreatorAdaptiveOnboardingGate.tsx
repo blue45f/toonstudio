@@ -1,5 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   getActiveI18nLocale,
   translateBilingualValueForActiveLocale,
@@ -194,6 +194,7 @@ function toggleDistinct<T>(values: readonly T[], value: T, maximum: number): T[]
 
 export function CreatorAdaptiveOnboardingGate({ enabled = true }: { readonly enabled?: boolean }) {
   const { pathname, search } = useLocation();
+  const navigate = useNavigate();
   const { data, status } = useSession();
   const userId = status === "authenticated" ? data.user.id : null;
   const acknowledged = useSyncExternalStore(
@@ -401,6 +402,9 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
       }
       setDismissed(true);
       acknowledgeCreatorOnboarding(userId);
+      // 목적을 고른 사용자를 빈 라이브러리에 떨어뜨리지 않고, 그 목적의 시작 화면으로 바로 보낸다.
+      if (goals.includes("first-project")) navigate("/studio/new");
+      else if (goals.includes("learning")) navigate("/learn");
     } catch (cause) {
       if (!mountedRef.current) return;
       setProfileError(cause instanceof Error
