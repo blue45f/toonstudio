@@ -314,6 +314,9 @@ function StudioBg3dHdriLightingGallery({
           "Picking a preset also moves the manual sliders below. Editing them afterwards marks the rig as custom.",
         )}
       </p>
+      <p className="mt-1 text-[0.625rem] leading-relaxed text-fg-3">
+        {copy("환경 이미지: Poly Haven (CC0)", "Environment images: Poly Haven (CC0)")}
+      </p>
     </div>
   );
 }

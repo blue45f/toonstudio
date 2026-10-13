@@ -27,6 +27,15 @@ export interface StudioBg3dProceduralPanoramaPixels {
   readonly rgba: Uint8Array;
 }
 
+export interface StudioBg3dProceduralPanoramaOptions {
+  /**
+   * 기본 true: 마운트 동안 `scene.environment`도 절차 텍스처가 소유합니다.
+   * false면 environment의 저장·설정·복원을 건너뛰고 background만 소유합니다.
+   * 실제 HDRI 바인딩(StudioBg3dHdriEnvironment)이 환경을 맡을 때 사용합니다.
+   */
+  readonly ownsEnvironment?: boolean;
+}
+
 export interface StudioBg3dProceduralPanoramaBinding {
   readonly texture: THREE.DataTexture | null;
   readonly setRotation: (rotationDegrees: number) => void;
@@ -253,7 +262,9 @@ export function mountStudioBg3dProceduralPanorama(
   scene: THREE.Scene,
   presetId: StudioBg3dSkyPresetId,
   rotationDegrees: number,
+  options: StudioBg3dProceduralPanoramaOptions = {},
 ): StudioBg3dProceduralPanoramaBinding {
+  const ownsEnvironment = options.ownsEnvironment ?? true;
   const previousBackground = scene.background;
   const previousRotation = scene.backgroundRotation.clone();
   const previousEnvironment = scene.environment;
@@ -264,7 +275,9 @@ export function mountStudioBg3dProceduralPanorama(
   let disposed = false;
 
   scene.background = mountedBackground;
-  scene.environment = mountedEnvironment;
+  if (ownsEnvironment) {
+    scene.environment = mountedEnvironment;
+  }
 
   const setRotation = (nextRotationDegrees: number) => {
     if (disposed) return;
@@ -290,7 +303,7 @@ export function mountStudioBg3dProceduralPanorama(
         scene.background = previousBackground;
         scene.backgroundRotation.copy(previousRotation);
       }
-      if (scene.environment === mountedEnvironment) {
+      if (ownsEnvironment && scene.environment === mountedEnvironment) {
         scene.environment = previousEnvironment;
         scene.environmentRotation.copy(previousEnvironmentRotation);
       }

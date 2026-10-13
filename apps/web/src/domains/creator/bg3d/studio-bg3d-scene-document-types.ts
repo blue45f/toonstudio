@@ -6,6 +6,7 @@
 
 import type { StudioGeneric3dWorkflowMetadataRecord } from "../studio-generic-3d-workflow-metadata";
 import type { StudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-versions";
+import type { StudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
 
 export const STUDIO_BG3D_SCENE_DOCUMENT_KIND = "toonstudio.bg3d-scene" as const;
 export const STUDIO_BG3D_SCENE_DOCUMENT_VERSION = 3 as const;
@@ -271,6 +272,8 @@ export interface StudioBg3dLightingSettings {
   readonly ambientIntensity: number;
   readonly key: StudioBg3dDirectionalLightSettings;
   readonly fill: StudioBg3dDirectionalLightSettings;
+  /** 실제 HDRI 환경광 설정. 없으면 절차 파노라마 환경(현행 동작)이 기본입니다. */
+  readonly environment?: StudioBg3dEnvironmentSettings;
 }
 
 export interface StudioBg3dQualityProfile {
