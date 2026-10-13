@@ -2,13 +2,19 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  Briefcase,
   CalendarDays,
   Compass,
+  Cpu,
+  FlaskConical,
   Gamepad2,
+  Grip,
   Home,
   Images,
+  Layers,
   LayoutGrid,
   Library,
+  LifeBuoy,
   Lightbulb,
   Map as MapIcon,
   MessageCircle,
@@ -18,9 +24,13 @@ import {
   PackageCheck,
   Palette,
   Settings,
+  Shapes,
   Sparkles,
+  SquarePen,
   Store,
+  Telescope,
   TrendingUp,
+  Trophy,
   UserRound,
   UserRoundPen,
   Workflow,
@@ -51,7 +61,7 @@ export interface SiteNavigationItem {
 }
 
 /** 핵심 여정 4단계. 지도는 하나이고, 현재 여정에 맞는 구간만 강조가 바뀐다. */
-export type SiteNavigationJourney = "start" | "create" | "publish" | "collaborate";
+export type SiteNavigationJourney = "start" | "create" | "publish" | "collaborate" | "rest";
 
 export interface SiteNavigationGroup {
   id: string;
@@ -101,10 +111,20 @@ const primaryItem = (
   );
 };
 
+/**
+ * 아이콘 규칙(2026-10-13 UX 고도화): 한 아이콘은 한 목적지만 뜻한다.
+ * 같은 아이콘이 서로 다른 목적지를 가리키면 사용자는 아이콘만 보고 구분할 수 없다.
+ * 과거 중복: Palette(스튜디오·작품 시작하기), Store(작품 재료·소재 마켓),
+ * BookOpen(배우기·제작 기술·리서치·도움말), Sparkles(맞춤 추천·창작 기회),
+ * MessageCircle(구인·의뢰·커뮤니티), BarChart3(트렌드·성장 실험), Workflow(제작·제작 기술),
+ * LayoutGrid(웹툰 만들기·전체 메뉴), Compass(둘러보기 허브·탐색).
+ * 예외는 Home 하나뿐이다: 개인 홈(/home)과 공개 홈(/)은 같은 "홈" 개념이고
+ * 두 내비는 컨텍스트상 동시에 보이지 않으며, 라벨이 항상 함께 보인다.
+ */
 export const SITE_NAVIGATION_ITEMS = {
   workspaceHome: primaryItem("workspace-home", "workspace-home", Home, true),
   workspaceTeam: primaryItem("workspace-team", "workspace-team", Users),
-  workspaceHub: primaryItem("workspace-hub", "workspace-hub", Compass),
+  workspaceHub: primaryItem("workspace-hub", "workspace-hub", Shapes),
   home: item(
     "home",
     "/",
@@ -121,7 +141,7 @@ export const SITE_NAVIGATION_ITEMS = {
   make: item(
     "make",
     "/create",
-    Palette,
+    SquarePen,
     "작품 시작하기",
     "Start a work",
     "새 작품·템플릿·이어가기를 한 화면에서 고르기",
@@ -129,7 +149,7 @@ export const SITE_NAVIGATION_ITEMS = {
     true,
   ),
   studio: primaryItem("studio", "studio-home", Palette, true),
-  studioAssets: primaryItem("studio-assets", "studio-assets", Store),
+  studioAssets: primaryItem("studio-assets", "studio-assets", Layers),
   publish: primaryItem("publish", "studio-publish", PackageCheck),
   learn: item(
     "learn",
@@ -143,7 +163,7 @@ export const SITE_NAVIGATION_ITEMS = {
   technology: item(
     "technology",
     "/about/technology",
-    Workflow,
+    Cpu,
     "제작 기술",
     "Engineering",
     "제작 과정·아키텍처·오픈소스·적용 가이드",
@@ -260,7 +280,7 @@ export const SITE_NAVIGATION_ITEMS = {
   research: item(
     "research",
     "/research",
-    BookOpen,
+    Telescope,
     "리서치 데스크",
     "Research desk",
     "출처·작품·트렌드 자료를 창작 소재와 판단으로 연결",
@@ -269,7 +289,7 @@ export const SITE_NAVIGATION_ITEMS = {
   opportunities: item(
     "opportunities",
     "/opportunities",
-    Sparkles,
+    Trophy,
     "창작 기회",
     "Opportunities",
     "공모전·지원사업·제작 기회",
@@ -293,7 +313,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "작품을 깊게 읽고 기록하기",
     "Read and write thoughtful reviews",
   ),
-  collaborate: item("collaborate", "/collaborate", MessageCircle, "구인·의뢰", "Collaborate", "웹툰 팀원 모집·작업 의뢰·작업자 홍보", "Find teammates, commission work and share your skills"),
+  collaborate: item("collaborate", "/collaborate", Briefcase, "구인·의뢰", "Collaborate", "웹툰 팀원 모집·작업 의뢰·작업자 홍보", "Find teammates, commission work and share your skills"),
   community: item(
     "community",
     "/community",
@@ -307,6 +327,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "play",
     "/play",
     Gamepad2,
+  Grip,
     "놀이터",
     "Playground",
     "가볍게 즐기는 인터랙티브 콘텐츠",
@@ -333,7 +354,7 @@ export const SITE_NAVIGATION_ITEMS = {
   growthLab: item(
     "growth-lab",
     "/studio/growth",
-    BarChart3,
+    FlaskConical,
     "성장 실험",
     "Growth lab",
     "썸네일·제목 실험과 익명 독자 퍼널",
@@ -352,6 +373,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "settings",
     "/settings",
     Settings,
+  Shapes,
     "설정",
     "Settings",
     "언어·데이터·서비스 환경",
@@ -360,9 +382,9 @@ export const SITE_NAVIGATION_ITEMS = {
   allMenu: item(
     "all-menu",
     "/sitemap",
-    LayoutGrid,
-    "전체",
-    "All",
+    Grip,
+    "전체 메뉴",
+    "All menu",
     "모든 기능과 신규 콘텐츠를 한곳에서",
     "Open every tool, destination and new experience",
     true,
@@ -370,7 +392,7 @@ export const SITE_NAVIGATION_ITEMS = {
   help: item(
     "help",
     "/help",
-    BookOpen,
+    LifeBuoy,
     "도움말",
     "Help",
     "작업과 문제에서 바로 해결 경로 찾기",
@@ -409,6 +431,10 @@ export const PRIMARY_SITE_NAVIGATION = TOONSPECTRUM_PRIMARY_NAVIGATION;
  * 이제 지도는 이 하나뿐이고, 컨텍스트가 바꾸는 것은 어느 여정 구간이
  * 강조되는지뿐이다. 두 구 지도의 목적지는 하나도 빠짐없이 여기에 있다.
  * 그룹 순서는 핵심 여정(시작 → 제작 → 연재 → 협업)을 따른다.
+ *
+ * 2026-10-13 UX 고도화(2차): 운세·놀이터·오늘의 영감은 "일"이 아니라 "쉼"이다.
+ * 자료·성장(grow)과 함께 보기(connect)에 섞여 있으면 사용자의 멘탈 모델이 깨져,
+ * 전용 구간 "쉬어가기(rest)"로 분리했다. 목적지 자체는 하나도 사라지지 않는다.
  */
 export const SITE_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
   {
@@ -439,7 +465,7 @@ export const SITE_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
       en: "Connect inspiration, research and opportunity",
     },
     journey: "create",
-    items: [I.research, I.market, I.learn, I.opportunities, I.insights, I.now, I.fortune, I.technology],
+    items: [I.research, I.market, I.learn, I.opportunities, I.insights, I.technology],
   },
   {
     id: "publish",
@@ -459,7 +485,17 @@ export const SITE_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
       en: "Share stories and ideas with people",
     },
     journey: "collaborate",
-    items: [I.gallery, I.reviews, I.community, I.collaborate, I.play, I.workspaceTeam, I.workspaceHub],
+    items: [I.gallery, I.reviews, I.community, I.collaborate, I.workspaceTeam, I.workspaceHub],
+  },
+  {
+    id: "rest",
+    label: { ko: "쉬어가기", en: "Take a break" },
+    description: {
+      ko: "가볍게 즐기는 영감과 재미",
+      en: "Light inspiration and fun, away from work",
+    },
+    journey: "rest",
+    items: [I.now, I.fortune, I.play],
   },
   {
     id: "personal",
