@@ -189,7 +189,7 @@ it("keeps home task-first and makes every virtual-space entry explicit", () => {
   state.mode = "virtual-studio";
   render(<App entries={["/home?project=older"]} />);
   expect(screen.queryByTestId("actual-live-home")).toBeNull();
-  expect(screen.getByRole("heading", { name: "홈" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "내 홈" })).toBeTruthy();
   expect(screen.getByRole("link", { name: /캐릭터 선택/ }).getAttribute("href"))
     .toBe("/onboarding/character?next=%2Fstudio%2Fspace");
   expect(screen.getByRole("link", { name: /작품 협업 공간/ }).getAttribute("href"))

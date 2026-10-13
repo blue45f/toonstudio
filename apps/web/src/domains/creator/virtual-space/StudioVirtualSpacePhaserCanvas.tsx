@@ -2072,6 +2072,8 @@ export function StudioVirtualSpacePhaserCanvas({
           playerLocomotion.walkSpeed, locomotion);
         // 별도 키로 둬서 관성형으로 되돌리면 원래 클립 보폭이 그대로 살아난다(프레임 선택이 이 키를 우선한다).
         localSprite.setData("gaitStrideOverride", locomotion.maxGaitCyclesPerSecond === null ? undefined : localGaitStride);
+        // 발소리도 같은 보폭의 절반(시각 접지 간격)으로 맞춰 소리와 발 디딤이 어긋나지 않게 한다.
+        motionFrame.stepPx = localGaitStride / 2;
         spriteCrossfades?.capture(localSprite);
         applyAvatarVisual(localSprite, snapshotRef.current.self,
           localSeatRequested?.facing ?? poseFrame.anchor?.facing ?? localPoseOverride?.facing ?? localEmoteFacing ?? facing, localState, identityRef.current);

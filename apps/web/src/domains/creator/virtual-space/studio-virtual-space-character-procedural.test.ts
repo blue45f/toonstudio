@@ -487,7 +487,7 @@ describe("생성 결정성", () => {
 describe("페인트 레이어 순서", () => {
   it("선언된 순서와 실제 그리기 순서가 일치한다 (그림자→몸통→헤어→액세서리)", () => {
     expect(PROCEDURAL_PAINT_ORDER).toEqual([
-      "shadow", "legs", "arms", "torso", "outfit-detail", "head", "hair", "face", "accessory",
+      "shadow", "legs", "arms", "torso", "outfit-detail", "head", "hair", "face", "accessory", "rim",
     ]);
     const { ctx, calls } = createMockContext();
     drawProceduralCharacterFrame(ctx, {
@@ -507,6 +507,19 @@ describe("페인트 레이어 순서", () => {
     expect(outfit).toBeGreaterThan(shadow);
     expect(hair).toBeGreaterThan(outfit);
     expect(accessory).toBeGreaterThan(hair);
+    const rim = firstFillWith("rgba(255,255,255,0.10)");
+    expect(rim).toBeGreaterThan(accessory);
+  });
+
+  it("림라이트(좌상단 키라이트)를 팔레트 무관 알파로 그린다", () => {
+    const { ctx, calls } = createMockContext();
+    drawProceduralCharacterFrame(ctx, {
+      palette: PALETTE, parts: PARTS, view: "front", walkPhase: null, bobY: 0, blink: false,
+      mirror: false, tilt: 0,
+    });
+    const styles = paintedStyles(calls);
+    expect(styles).toContain("rgba(255,255,255,0.10)");
+    expect(styles).toContain("rgba(255,255,255,0.12)");
   });
 });
 

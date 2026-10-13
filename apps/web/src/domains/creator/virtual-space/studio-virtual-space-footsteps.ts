@@ -75,19 +75,28 @@ export interface StudioFootstepEvent {
   readonly surface: StudioFootstepSurface;
 }
 
+/** 왼발/오른발의 미세한 세기 차이. 같은 속도라도 양발이 기계적으로 똑같지 않게 한다. */
+const FOOT_VOLUME_FACTOR: Record<StudioFootstepFoot, number> = { left: 0.97, right: 1.03 };
+
 /**
  * 이동 거리를 누적해 발소리 타이밍을 계산한다.
  * 속도가 빠를수록 걸음이 잦아지고, 표면마다 보폭이 다르다.
  * 정지 상태(속도 < 8px/s)에서는 누적하지 않는다.
+ * stridePxOverride가 있으면 표면 기본 보폭 대신 쓴다. 렌더러는 그 배우의
+ * 시각 접지 간격(유효 보폭/2)을 넘겨 발소리와 발 디딤을 같은 위상에 둔다.
  */
 export function stepStudioFootsteps(
   state: StudioFootstepState,
   distanceDelta: number,
   surface: StudioFootstepSurface,
   speed: number,
+  stridePxOverride?: number,
 ): { readonly state: StudioFootstepState; readonly events: readonly StudioFootstepEvent[] } {
   const delta = Number.isFinite(distanceDelta) ? Math.max(0, distanceDelta) : 0;
   const spec = SURFACE_SPECS[surface];
+  const stride = stridePxOverride !== undefined && Number.isFinite(stridePxOverride) && stridePxOverride > 0
+    ? stridePxOverride
+    : spec.stridePx;
   const events: StudioFootstepEvent[] = [];
   let distanceRemaining = state.distanceRemaining;
   let nextFoot = state.nextFoot;
@@ -95,13 +104,13 @@ export function stepStudioFootsteps(
     distanceRemaining -= delta;
     // 한 프레임에 여러 걸음이 발생할 수 있다 (빠른 이동/긴 프레임)
     while (distanceRemaining < 0) {
-      distanceRemaining += spec.stridePx;
+      distanceRemaining += stride;
       const foot = nextFoot;
       nextFoot = foot === "left" ? "right" : "left";
       const speedFactor = Math.min(1, speed / 210);
       events.push({
         foot,
-        volume: spec.loudness * (0.45 + 0.55 * speedFactor),
+        volume: spec.loudness * (0.45 + 0.55 * speedFactor) * FOOT_VOLUME_FACTOR[foot],
         surface,
       });
     }

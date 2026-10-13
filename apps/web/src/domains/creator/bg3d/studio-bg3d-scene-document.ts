@@ -1572,6 +1572,18 @@ function withoutActiveShot(
   return rest;
 }
 
+/**
+ * 샷 조명 스냅샷에서 문서 고유 환경을 뺀다. 샷 오버라이드 스키마가 environment를
+ * 소유하지 않아(적용 시 문서 값을 고정한다) 그대로 넣으면 엄격 정규화의
+ * 구조 동등성 검사가 실패해 캡처가 항상 null이 된다.
+ */
+function withoutShotEnvironment(
+  lighting: StudioBg3dLightingSettings,
+): Omit<StudioBg3dLightingSettings, "environment"> {
+  const { environment: _discardedShotEnvironment, ...rest } = lighting;
+  return rest;
+}
+
 function canonicalDocumentByteLength(document: StudioBg3dSceneDocument): number {
   return utf8ByteLength(JSON.stringify(document));
 }
@@ -2041,7 +2053,7 @@ export function captureStudioBg3dShot(
     render: { ...document.render },
     background: { ...document.background },
     lighting: {
-      ...document.lighting,
+      ...withoutShotEnvironment(document.lighting),
       key: { ...document.lighting.key },
       fill: { ...document.lighting.fill },
     },
