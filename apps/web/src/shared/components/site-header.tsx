@@ -250,10 +250,13 @@ const HEADER_EXTRA_CHILDREN = {
     id: "header-learn-guide",
     href: "/guide",
     icon: BookOpen,
-    label: { ko: "가이드", en: "Guide" },
+    // /guide의 실제 내용은 랭킹 산식 공개 페이지다(페이지 제목 "랭킹은 이렇게 매겨집니다",
+    // 브라우저 제목·사이트맵은 "랭킹 산정 방식"). "서비스 사용법"으로 안내하면 사용법
+    // 가이드를 기대한 사용자가 통계 산식 페이지에 도착하므로, 목적지 이름과 맞춘다.
+    label: { ko: "랭킹 산정 방식", en: "How ranking works" },
     description: {
-      ko: "서비스 사용법과 창작 길잡이",
-      en: "How-to guides for the service and the craft",
+      ko: "순위가 계산되는 산식과 직접 검산하는 방법",
+      en: "The formula behind rankings and how to verify it",
     },
   },
 } as const satisfies Record<string, HeaderNavigationChild>;
