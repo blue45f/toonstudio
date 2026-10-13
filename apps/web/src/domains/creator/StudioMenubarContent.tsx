@@ -56,6 +56,11 @@ import { createPortal } from "react-dom";
 import { STUDIO_CANVAS_WIDTH as CANVAS_W } from "./canvas/studio-canvas-constants";
 import { handleStudioHorizontalWheel } from "./studio-horizontal-wheel";
 import {
+  STUDIO_UI_DENSITY_MODES,
+  studioUiDensityLabel,
+  type StudioUiDensityMode,
+} from "./studio-ui-density";
+import {
   createStudioCommandExecutionBindings,
   installStudioCommandExecutionBindings,
 } from "./studio-command-execution-registry";
@@ -886,6 +891,12 @@ export interface StudioMenubarContentHandlers extends StudioProjectReviewActionH
   ) => void;
   cancelInterchangeImport: () => void;
   changeMobileImmersiveMode: (enabled: boolean) => void;
+  /**
+   * Optional until the host wires it: switches the existing UI density preference
+   * (focus | simple | full) owned by useStudioPreferencesRuntime. The menubar
+   * density toggle hides itself while this handler is not provided.
+   */
+  setStudioUiDensity?: (mode: StudioUiDensityMode) => void;
   ensureWatermarkLoaded: () => Promise<WatermarkSettings>;
   exportCurrentPageToPsd: () => Promise<PsdExportResult>;
   exportCurrentPageToRasterInterchange: (
@@ -951,6 +962,8 @@ export interface StudioMenubarContentProps {
   masterEditMode: boolean;
   menu: StudioMenu | null;
   mobileImmersive: boolean;
+  /** Current UI density preference; the menubar toggle renders only when paired with the handler. */
+  uiDensityMode?: StudioUiDensityMode;
   onNavigateBack: () => void;
   historyPanelOpen: boolean;
   /** 미해결 문서 댓글 수 — 프로젝트 시트의 댓글 진입점 배지. */
@@ -1035,6 +1048,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
   masterEditMode,
   menu,
   mobileImmersive,
+  uiDensityMode,
   onNavigateBack,
   historyPanelOpen,
   openStudioCommentCount,
@@ -1108,6 +1122,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
     redo,
     persistStudioWorkspaceState,
     setWatermark,
+    setStudioUiDensity,
     toggleHistoryPanel,
     undo,
     zoomToFit,
@@ -1559,6 +1574,35 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
             mobileImmersive && "min-w-0 gap-1"
           )}
         >
+          {/* 화면 구성(밀도) 원터치 전환 — 상태는 기존 uiDensityMode 환경설정을 그대로 쓰고,
+              여기서는 메뉴바에서 바로 닿게만 한다. 배선이 없으면 스스로 숨는다. */}
+          {uiDensityMode && setStudioUiDensity && !mobileImmersive ? (
+            <div
+              role="group"
+              aria-label="화면 구성"
+              data-studio-ui-density-toggle="true"
+              className="hidden shrink-0 items-center gap-0.5 rounded-xl border border-line/70 bg-canvas/40 p-0.5 lg:flex"
+            >
+              {STUDIO_UI_DENSITY_MODES.map((mode) => {
+                const active = mode === uiDensityMode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-pressed={active}
+                    data-studio-ui-density={mode}
+                    onClick={() => setStudioUiDensity(mode)}
+                    className={cn(
+                      "min-h-9 whitespace-nowrap rounded-lg px-2 text-[0.68rem] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+                      active ? "bg-accent text-on-accent" : "text-fg-2 hover:text-fg",
+                    )}
+                  >
+                    {studioUiDensityLabel(mode)}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
           {mobileImmersive ? (
             <StudioEditorReturnButton
               variant="immersive"
