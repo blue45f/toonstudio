@@ -337,6 +337,11 @@ export function CommandPalettePreview({
                 <span className="rounded border border-line bg-card px-1.5 py-0.5 font-mono text-[10px] text-fg-3">
                   {page.href}
                 </span>
+                {page.trail ? (
+                  <span className="rounded border border-line bg-card px-1.5 py-0.5 text-[10px] font-medium text-fg-2">
+                    {page.trail}
+                  </span>
+                ) : null}
               </div>
               <h3 className="text-base font-bold text-fg">{page.title}</h3>
               <p className="text-xs text-fg-3">{page.subtitle}</p>
