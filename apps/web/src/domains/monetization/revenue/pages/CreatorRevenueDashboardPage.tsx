@@ -4,6 +4,8 @@
  * 창작자 수익 대시보드 (`/creator/revenue`).
  * 등록된 수익원 제공자들을 모아 기간별 수익·정산을 보여준다.
  */
+// 수익화 i18n 네임스페이스는 셸 번들에서 분리됨 — 페이지 평가 시점에 동기 등록한다.
+import "../../monetization-i18n";
 import { ChartColumn, LogIn } from "lucide-react";
 import { useMemo, useState } from "react";
 
