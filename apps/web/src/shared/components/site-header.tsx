@@ -4,20 +4,12 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import {
   BookOpen,
-  Box,
-  CalendarDays,
   ChevronDown,
-  FolderKanban,
   GraduationCap,
   LayoutGrid,
   Menu,
-  MessageSquareText,
-  Mountain,
   Palette,
   Search,
-  Sparkles,
-  Telescope,
-  TrendingUp,
   UsersRound,
   X,
   type LucideIcon,
@@ -35,11 +27,14 @@ import {
 import { AuthMenuShell } from "../../domains/auth/components/auth-menu-shell";
 
 import {
+  SITE_NAVIGATION_GROUPS,
   SITE_NAVIGATION_ITEMS,
   TOONSTUDIO_PRIMARY_NAVIGATION,
   siteNavigationContextForPath,
   siteNavigationLocale,
   siteNavigationText,
+  type SiteNavigationGroup,
+  type SiteNavigationItem,
   type SiteNavigationText,
 } from "./site-navigation";
 import { workspaceNavigationActiveId } from "./workspace/workspace-navigation-model";
@@ -150,185 +145,214 @@ interface HeaderPrimaryNavigationItem {
 }
 
 /**
- * Header-owned primary navigation: 제작 / 가상 스튜디오 / 협업 / 탐색 / 커뮤니티 / 배우기 / 마켓.
- * 창작 여정의 세 축(제작·가상 스튜디오·협업)을 앞에 두고, 발견·교류·학습·재료가 뒤따른다.
- * 드롭다운은 하위 목적지가 실제로 구분되는 곳(제작·협업·탐색·배우기)에만 둔다.
- * 운세 같은 가벼운 즐길 거리는 전체 메뉴와 푸터에서 계속 찾을 수 있다.
+ * 헤더 주 메뉴는 자체 분류를 갖지 않는다 — 단일 지도(SITE_NAVIGATION_GROUPS)를 소비한다.
+ *
+ * 배경: 예전에는 헤더 전용 분류(제작/가상 스튜디오/협업/탐색/커뮤니티/배우기/마켓)가
+ * 지도와 따로 있어, 같은 목적지가 표면마다 다른 그룹·다른 순서·다른 이름으로 나타났다
+ * (UX 감사 2026-10-13, 최대 감점 요인). 모바일 전체 메뉴와 푸터는 이미 지도를 소비하고
+ * 있었고, 데스크톱 헤더만 예외였다. 이제 헤더도 같은 지도를 읽는다.
+ *
+ * 헤더가 정하는 것은 "구성"뿐이다: 어떤 그룹·항목을 1차 메뉴로 올릴지, 드롭다운에
+ * 무엇을 넣을지. 이름·설명·아이콘·주소는 전부 지도의 정본을 그대로 쓴다
+ * (표면별 덮어씀 금지 — site-footer·site-header-mobile-nav와 같은 규칙).
+ * 지도에 없는 헤더 전용 목적지·문구는 아래 headerExtras에 명시적으로 분리한다.
+ *
+ * 1차 메뉴로 올리지 않는 그룹: publish(연재·내보내기)는 제작 흐름의 후반이라
+ * 전체 메뉴·푸터·스튜디오 셸이 맡고, connect(함께 보기)는 커뮤니티 항목이 대표하며,
+ * rest(쉬어가기)·personal(내 기록)은 전체 메뉴와 모바일 탭이 같은 지도로 제공한다.
+ * discover 그룹은 탐색 항목이, grow 그룹은 배우기·마켓 항목이 나눠 소비한다.
  */
-const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
-  {
-    id: "studio",
-    href: SITE_NAVIGATION_ITEMS.studio.href,
-    label: { ko: "제작", en: "Studio" },
-    description: SITE_NAVIGATION_ITEMS.studio.description,
-    children: [
-      {
-        id: "studio-works",
-        href: "/studio",
-        exact: true,
-        icon: Palette,
-        label: SITE_NAVIGATION_ITEMS.studio.label,
-        description: { ko: "최근 작업을 이어서 그리기", en: "Continue your recent work" },
-      },
-      {
-        id: "studio-start",
-        href: "/create",
-        exact: true,
-        icon: Sparkles,
-        label: { ko: "작품 시작하기", en: "Start a work" },
-        description: { ko: "새 작품·템플릿·이어가기를 한 화면에서 고르기", en: "Start new, begin from a template or continue — in one place" },
-      },
-      {
-        id: "studio-comic",
-        href: "/studio/comic",
-        icon: LayoutGrid,
-        label: { ko: "웹툰 만들기", en: "Webtoon" },
-        description: { ko: "컷·말풍선·대사를 한 화면에서", en: "Panels, balloons and dialogue in one view" },
-      },
-      {
-        id: "studio-character-3d",
-        href: "/studio/assets/characters/new",
-        icon: Box,
-        label: SITE_NAVIGATION_ITEMS.shaper.label,
-        description: { ko: "프리셋·포즈·표정으로 캐릭터 만들기", en: "Build characters with presets, poses and expressions" },
-      },
-      {
-        id: "studio-background-3d",
-        href: "/studio/bg3d",
-        icon: Mountain,
-        label: { ko: "3D 배경", en: "3D background" },
-        description: { ko: "장면·카메라·원근을 잡아 배경 완성", en: "Frame scenes, cameras and perspective" },
-      },
-    ],
+
+const NAV_ITEMS = SITE_NAVIGATION_ITEMS;
+
+/** 단일 지도에서 그룹을 id로 찾는다. 없는 id를 쓰면 조용히 비우지 않고 즉시 실패한다. */
+function navGroup(id: string): SiteNavigationGroup {
+  const group = SITE_NAVIGATION_GROUPS.find((entry) => entry.id === id);
+  if (!group) throw new Error(`Unknown site navigation group: ${id}`);
+  return group;
+}
+
+/** 지도 항목 → 헤더 드롭다운 자식. 이름·설명·아이콘·주소는 지도의 정본을 쓴다. */
+function childFromNavItem(
+  item: SiteNavigationItem,
+  overrides?: Partial<HeaderNavigationChild>,
+): HeaderNavigationChild {
+  return {
+    id: item.id,
+    href: item.href,
+    icon: item.icon,
+    label: item.label,
+    description: item.description,
+    ...(item.exact ? { exact: true } : null),
+    ...overrides,
+  };
+}
+
+/** 지도 그룹의 항목들로 드롭다운 자식을 만든다. 순서는 지도의 순서를 따른다. */
+function childrenFromNavGroup(
+  groupId: string,
+  itemIds: readonly string[],
+): HeaderNavigationChild[] {
+  const group = navGroup(groupId);
+  return itemIds.map((itemId) => {
+    const item = group.items.find((entry) => entry.id === itemId);
+    if (!item) {
+      throw new Error(`Navigation item "${itemId}" is not in group "${groupId}"`);
+    }
+    return childFromNavItem(item);
+  });
+}
+
+/**
+ * headerExtras — 지도에 아직 없는 헤더 전용 목적지와 문구. 여기에 있는 것만이
+ * 헤더가 지도 밖에서 정의하는 내비 데이터이며, 그 경계를 코드로 드러내기 위해 모았다.
+ *
+ * - teamPeople(/team/people): 지도의 workspaceTeam 항목은 /team(팀 홈)까지만 있다.
+ *   "팀·권한" 상세는 지도에 항목이 생기면 이쪽을 지우고 지도를 소비한다.
+ * - exploreGenres(/explore): 장르 탐색 페이지는 라우트는 있으나 지도 항목이 아니다
+ *   (지도의 탐색 항목은 /discover다). 지도 편입 여부는 지도 소유 작업에서 결정한다.
+ * - learnClassroom(/learn/classroom)·learnGuide(/guide): 학습 하위 목적지로 지도에 없다.
+ * - collaborateEntry: 1차 메뉴의 "협업"이라는 묶음 이름은 지도 그룹 어디에도 없다
+ *   (connect 그룹은 "함께 보기"). 묶음 자체는 유지하되 문구는 여기에만 둔다.
+ * - marketShortLabel: 지도의 이름은 "소재 마켓"이지만 헤더 1차 메뉴는 폭 예산
+ *   (header-width-budget) 때문에 짧은 이름 "마켓"을 쓴다. 이름이 하나여야 한다는
+ *   원칙과의 긴장은 이 주석으로 명시하고, 지도 쪽 이름을 바꿀 때 함께 지운다.
+ */
+const HEADER_EXTRA_CHILDREN = {
+  teamPeople: {
+    id: "header-team-people",
+    href: "/team/people",
+    icon: UsersRound,
+    label: { ko: "팀·권한", en: "Team & roles" },
+    description: { ko: "멤버 초대와 역할별 권한", en: "Invite members and manage roles" },
   },
-  {
-    id: "virtual-studio",
-    href: "/studio/space",
-    label: { ko: "가상 스튜디오", en: "Virtual studio" },
+  exploreGenres: {
+    id: "header-explore-genres",
+    href: "/explore",
+    icon: LayoutGrid,
+    label: { ko: "장르", en: "Genres" },
     description: {
-      ko: "내 캐릭터로 걷고 만나고 함께 작업하는 공간",
-      en: "Walk, meet and work together as your character",
+      ko: "장르·태그·플랫폼 조건으로 작품 찾기",
+      en: "Browse stories by genre, tag and platform",
     },
   },
-  {
-    id: "collaborate",
-    href: SITE_NAVIGATION_ITEMS.production.href,
+  learnClassroom: {
+    id: "header-learn-classroom",
+    href: "/learn/classroom",
+    icon: GraduationCap,
+    label: { ko: "클래스룸", en: "Classroom" },
+    description: {
+      ko: "단계별 강좌로 창작 실력 키우기",
+      en: "Level up with step-by-step courses",
+    },
+  },
+  learnGuide: {
+    id: "header-learn-guide",
+    href: "/guide",
+    icon: BookOpen,
+    label: { ko: "가이드", en: "Guide" },
+    description: {
+      ko: "서비스 사용법과 창작 길잡이",
+      en: "How-to guides for the service and the craft",
+    },
+  },
+} as const satisfies Record<string, HeaderNavigationChild>;
+
+const HEADER_EXTRA_ENTRY_TEXT: {
+  readonly collaborate: {
+    readonly label: SiteNavigationText;
+    readonly description: SiteNavigationText;
+  };
+  readonly marketShortLabel: SiteNavigationText;
+} = {
+  collaborate: {
     label: { ko: "협업", en: "Collaborate" },
     description: {
       ko: "작품·회차·공정·원고 피드백을 팀과 함께",
       en: "Works, episodes, stages and feedback with your team",
     },
+  },
+  marketShortLabel: { ko: "마켓", en: "Market" },
+};
+
+/**
+ * 헤더 1차 메뉴 (구성 계획).
+ * 순서는 기존과 같다: 창작 여정의 세 축(제작·가상 스튜디오·협업)을 앞에 두고,
+ * 발견·교류·학습·재료가 뒤따른다. 드롭다운은 하위 목적지가 실제로 구분되는
+ * 곳(제작·협업·탐색·배우기)에만 둔다. 운세 같은 가벼운 즐길 거리는 전체 메뉴와
+ * 푸터에서 계속 찾을 수 있다(쉬어가기 그룹).
+ */
+const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
+  {
+    // 만들기(create) 그룹의 대표 항목이 곧 1차 메뉴다. 드롭다운은 그룹 항목 중
+    // "지금 그리는 일"만 추린다 — 가상 스튜디오는 자체 1차 메뉴가 있고,
+    // 작품 재료·제작 관리는 스튜디오 셸과 협업 메뉴가 맡는다.
+    id: "studio",
+    href: NAV_ITEMS.studio.href,
+    label: NAV_ITEMS.studio.label,
+    description: NAV_ITEMS.studio.description,
+    children: childrenFromNavGroup("create", [
+      "studio",
+      "make",
+      "comic",
+      "shaper",
+      "bg3d",
+    ]),
+  },
+  {
+    id: "virtual-studio",
+    href: NAV_ITEMS.virtualStudio.href,
+    label: NAV_ITEMS.virtualStudio.label,
+    description: NAV_ITEMS.virtualStudio.description,
+  },
+  {
+    id: "collaborate",
+    href: NAV_ITEMS.production.href,
+    label: HEADER_EXTRA_ENTRY_TEXT.collaborate.label,
+    description: HEADER_EXTRA_ENTRY_TEXT.collaborate.description,
     children: [
-      {
-        id: "collaborate-production",
-        href: SITE_NAVIGATION_ITEMS.production.href,
-        icon: FolderKanban,
-        label: { ko: "제작 관리", en: "Production" },
-        description: { ko: "회차 공정·원고 버전·검수를 한 흐름으로", en: "Episode stages, manuscript versions and review" },
-      },
-      {
-        id: "collaborate-team",
-        href: "/team/people",
-        icon: UsersRound,
-        label: { ko: "팀·권한", en: "Team & roles" },
-        description: { ko: "멤버 초대와 역할별 권한", en: "Invite members and manage roles" },
-      },
-      {
-        id: "collaborate-board",
-        href: SITE_NAVIGATION_ITEMS.collaborate.href,
-        icon: MessageSquareText,
-        label: { ko: "구인·의뢰", en: "Hiring & requests" },
-        description: { ko: "팀원 모집·작업 의뢰·작업자 홍보", en: "Recruit teammates and commission work" },
-      },
+      // 제작 관리는 지도에서 exact(정확히 /production) 항목이지만, 헤더 자식으로서는
+      // 하위 프로젝트 경로에서도 현재 위치로 표시해야 해서 exact를 풀어 쓴다.
+      childFromNavItem(NAV_ITEMS.production, { exact: undefined }),
+      HEADER_EXTRA_CHILDREN.teamPeople,
+      childFromNavItem(NAV_ITEMS.collaborate),
     ],
   },
   {
+    // 작품 찾기(discover) 그룹을 탐색 항목이 대표한다.
     id: "explore",
-    href: SITE_NAVIGATION_ITEMS.explore.href,
-    label: { ko: "탐색", en: "Discover" },
-    description: SITE_NAVIGATION_ITEMS.explore.description,
+    href: NAV_ITEMS.explore.href,
+    label: NAV_ITEMS.explore.label,
+    description: NAV_ITEMS.explore.description,
     children: [
-      {
-        id: "explore-genres",
-        href: "/explore",
-        icon: LayoutGrid,
-        label: { ko: "장르", en: "Genres" },
-        description: {
-          ko: "장르·태그·플랫폼 조건으로 작품 찾기",
-          en: "Browse stories by genre, tag and platform",
-        },
-      },
-      {
-        id: "explore-ranking",
-        href: "/ranking",
-        icon: TrendingUp,
-        label: { ko: "랭킹", en: "Rankings" },
-        description: {
-          ko: "기간과 지표별 인기 흐름",
-          en: "Trending stories across periods and signals",
-        },
-      },
-      {
-        id: "explore-new",
-        href: "/calendar",
-        icon: CalendarDays,
-        label: SITE_NAVIGATION_ITEMS.calendar.label,
-        description: {
-          ko: "요일별 신작과 연재 일정",
-          en: "New releases and schedules by weekday",
-        },
-      },
+      HEADER_EXTRA_CHILDREN.exploreGenres,
+      ...childrenFromNavGroup("discover", ["ranking", "calendar"]),
     ],
   },
   {
     id: "community",
-    href: SITE_NAVIGATION_ITEMS.community.href,
-    label: { ko: "커뮤니티", en: "Community" },
-    description: SITE_NAVIGATION_ITEMS.community.description,
+    href: NAV_ITEMS.community.href,
+    label: NAV_ITEMS.community.label,
+    description: NAV_ITEMS.community.description,
   },
   {
+    // 배우기는 자료·성장(grow) 그룹의 학습 축을 대표한다. 같은 그룹의 리서치는
+    // 드롭다운에, 소재 마켓은 자체 1차 메뉴로, 기회·트렌드·제작 기술은 전체 메뉴가 맡는다.
     id: "learn",
-    href: SITE_NAVIGATION_ITEMS.learn.href,
-    label: { ko: "배우기", en: "Learn" },
-    description: SITE_NAVIGATION_ITEMS.learn.description,
+    href: NAV_ITEMS.learn.href,
+    label: NAV_ITEMS.learn.label,
+    description: NAV_ITEMS.learn.description,
     children: [
-      {
-        id: "learn-research",
-        href: "/research",
-        icon: Telescope,
-        label: { ko: "리서치 데스크", en: "Research desk" },
-        description: {
-          ko: "레퍼런스·3D 재료·폰트·오픈 데이터를 창작 소재로",
-          en: "References, 3D assets, fonts and open data for your work",
-        },
-      },
-      {
-        id: "learn-classroom",
-        href: "/learn/classroom",
-        icon: GraduationCap,
-        label: { ko: "클래스룸", en: "Classroom" },
-        description: {
-          ko: "단계별 강좌로 창작 실력 키우기",
-          en: "Level up with step-by-step courses",
-        },
-      },
-      {
-        id: "learn-guide",
-        href: "/guide",
-        icon: BookOpen,
-        label: { ko: "가이드", en: "Guide" },
-        description: {
-          ko: "서비스 사용법과 창작 길잡이",
-          en: "How-to guides for the service and the craft",
-        },
-      },
+      ...childrenFromNavGroup("grow", ["research"]),
+      HEADER_EXTRA_CHILDREN.learnClassroom,
+      HEADER_EXTRA_CHILDREN.learnGuide,
     ],
   },
   {
     id: "market",
-    href: SITE_NAVIGATION_ITEMS.market.href,
-    label: { ko: "마켓", en: "Market" },
-    description: SITE_NAVIGATION_ITEMS.market.description,
+    href: NAV_ITEMS.market.href,
+    label: HEADER_EXTRA_ENTRY_TEXT.marketShortLabel,
+    description: NAV_ITEMS.market.description,
   },
 ];
 
@@ -370,16 +394,13 @@ type HeaderSectionId =
   | "learn"
   | "market";
 
-/** 최상위 메뉴 목적지 → 구역. 데스크톱 주 메뉴와 모바일 하단 탭이 같은 판정을 쓴다. */
-const HEADER_SECTION_BY_HREF: Readonly<Record<string, HeaderSectionId>> = {
-  "/studio": "studio",
-  "/studio/space": "virtual-studio",
-  "/production": "collaborate",
-  "/discover": "explore",
-  "/community": "community",
-  "/learn": "learn",
-  "/market": "market",
-};
+/** 최상위 메뉴 목적지 → 구역. 데스크톱 주 메뉴와 모바일 하단 탭이 같은 판정을 쓴다.
+ * 손으로 쓴 표가 아니라 위 구성 계획(HEADER_PRIMARY_NAVIGATION)에서 파생한다 —
+ * 메뉴 구성이 바뀌면 구역 판정도 자동으로 따라간다. */
+const HEADER_SECTION_BY_HREF: Readonly<Record<string, HeaderSectionId>> =
+  Object.fromEntries(
+    HEADER_PRIMARY_NAVIGATION.map((item) => [item.href, item.id] as const),
+  ) as Readonly<Record<string, HeaderSectionId>>;
 
 /**
  * 현재 경로가 속한 헤더 구역 하나를 고른다. 항목마다 따로 판정하면 경계 경로
@@ -390,7 +411,7 @@ function headerSectionForPath(rawPathname: string): HeaderSectionId | null {
   const pathname = canonicalSitePath(rawPathname);
   if (VIRTUAL_STUDIO_PATTERN.test(pathname)) return "virtual-studio";
   if (pathMatchesAny(pathname, COLLABORATION_PURPOSE_PREFIXES)) return "collaborate";
-  // 리서치 데스크는 사이트 지도에서도 '배우고 준비하기'에 속한다.
+  // 리서치 데스크는 단일 지도에서도 자료·성장(grow) 그룹이라 배우기 구역으로 본다.
   if (pathMatchesAny(pathname, STUDIO_LEARN_PREFIXES) || matchesPrefix(pathname, "/research")) return "learn";
   if (matchesPrefix(pathname, "/market")) return "market";
   if (
