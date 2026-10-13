@@ -277,6 +277,43 @@ export function studioVirtualPlaceWorldManifest(placeId: string, personal = fals
       { x: 366, y: 338 },
     ]),
   });
+  // 앰비언트 동행 2명: 절차형 프리셋으로 장소마다 다른 얼굴을 세운다.
+  // 메인 순찰 삼각형과 같은 경로를 위상만 어긋나게 돌려, 검증済み 동선을
+  // 그대로 재사용한다 (충돌·연결성 추가 검증 불필요). 대화·앵커 없이
+  // 배회만 하며, 채팅 스케줄러는 대화 설정 없는 NPC를 조용히 건너뛴다.
+  const AMBIENT_PROCEDURAL_SKINS = Object.freeze([
+    "npc-visitor", "npc-shopkeeper", "npc-guide", "npc-cleaner",
+    "npc-mentor", "npc-barista", "npc-guard",
+  ] as const);
+  const ambientBase = Object.freeze([
+    { x: 250, y: 338 },
+    { x: 322, y: 430 },
+    { x: 366, y: 338 },
+  ] as const);
+  const ambientNpcs: readonly StudioWorldNpcDefinition[] = Object.freeze([
+    {
+      id: `place-ambient-${place.id}-a`,
+      skinKey: AMBIENT_PROCEDURAL_SKINS[(index * 2) % AMBIENT_PROCEDURAL_SKINS.length]!,
+      roomId: place.id,
+      point: { x: 322, y: 430 },
+      facing: "left",
+      scale: 0.9,
+      speed: 52,
+      behavior: "patrol",
+      patrol: Object.freeze([ambientBase[1]!, ambientBase[2]!, ambientBase[0]!]),
+    },
+    {
+      id: `place-ambient-${place.id}-b`,
+      skinKey: AMBIENT_PROCEDURAL_SKINS[(index * 2 + 3) % AMBIENT_PROCEDURAL_SKINS.length]!,
+      roomId: place.id,
+      point: { x: 366, y: 338 },
+      facing: "right",
+      scale: 0.94,
+      speed: 64,
+      behavior: "patrol",
+      patrol: Object.freeze([ambientBase[2]!, ambientBase[0]!, ambientBase[1]!]),
+    },
+  ]);
   const mainAction = place.action ?? "community";
   const npcAction = studioNpcToolAction(npcDefinition) ?? mainAction;
   const interactions: StudioWorldInteractionDefinition[] = [{
@@ -386,6 +423,6 @@ export function studioVirtualPlaceWorldManifest(placeId: string, personal = fals
       minDurationMs: 12_000,
       maxDurationMs: 28_000,
     }]),
-    npcs: Object.freeze([npcDefinition]),
+    npcs: Object.freeze([npcDefinition, ...ambientNpcs]),
   }) as unknown as StudioVirtualSpaceWorldManifest, place.id), { kind: "place", camera: "fit", actorScale: 0.65 });
 }

@@ -28,7 +28,17 @@ describe("Virtual Studio independent place worlds", () => {
       expect(manifest.rooms.map((room) => room.id)).toEqual([place.id]);
       expect(manifest.portals).toHaveLength(3);
       expect(studioNpcInteraction(manifest, manifest.npcs[0]!)).not.toBeNull();
-      expect(manifest.npcs).toHaveLength(1);
+      expect(manifest.npcs).toHaveLength(3);
+      // 앰비언트 2명은 메인 뒤에 붙고, 장소마다 다른 절차형 얼굴을 쓴다.
+      const [main, ambientA, ambientB] = manifest.npcs;
+      expect(main!.activityAnchorIds?.length).toBeGreaterThan(0);
+      for (const ambient of [ambientA!, ambientB!]) {
+        expect(ambient.activityAnchorIds).toBeUndefined();
+        expect(ambient.behavior).toBe("patrol");
+        expect(ambient.patrol).toHaveLength(3);
+      }
+      expect(ambientA!.skinKey).not.toBe(ambientB!.skinKey);
+      expect(new Set(manifest.npcs.map((npc) => npc.id)).size).toBe(3);
       expect(manifest.props.length).toBeGreaterThanOrEqual(5);
       expect(ids.has(manifest.id)).toBe(false);
       ids.add(manifest.id);
