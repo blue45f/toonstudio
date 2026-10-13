@@ -69,8 +69,8 @@ describe("모바일 전체 메뉴", () => {
     expect(highlighted).toHaveLength(1);
     expect(highlighted[0]?.textContent).toContain(groupLabel);
     expect(highlighted[0]?.textContent).toContain("현재 여정");
-    // 지도 자체는 컨텍스트마다 달라지지 않는다: 구간 수는 항상 같다.
-    expect(dialog.querySelectorAll(".site-menu-group")).toHaveLength(6);
+    // 지도 자체는 컨텍스트마다 달라지지 않는다: 구간 수는 항상 같다(쉬어가기 포함 7구간).
+    expect(dialog.querySelectorAll(".site-menu-group")).toHaveLength(7);
   });
 
   it("키보드 포커스를 메뉴 안에 유지하고 닫힐 때 배경 조작을 복원한다", async () => {

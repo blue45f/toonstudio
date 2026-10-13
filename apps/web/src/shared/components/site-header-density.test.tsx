@@ -175,7 +175,7 @@ describe("단일 창작 헤더", () => {
     render(<HeaderWithAppearance />);
 
     const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
-    expect(within(navigation).getByRole("link", { name: "Studio" }).getAttribute("href"))
+    expect(within(navigation).getByRole("link", { name: "Create" }).getAttribute("href"))
       .toBe("/studio");
     expect(within(navigation).getByRole("link", { name: "Virtual studio" }).getAttribute("href"))
       .toBe("/studio/space");
