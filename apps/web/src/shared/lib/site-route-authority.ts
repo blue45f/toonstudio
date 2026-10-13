@@ -168,7 +168,7 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
   route({
     id: "integration-center",
     path: "/settings/integrations",
-    titleKey: "route.settings",
+    titleKey: "route.settingsIntegrations",
     label: { ko: "외부 연동", en: "Integrations" },
     description: { ko: "외부 계정·권한·실행 가능 상태 관리", en: "Manage external accounts, grants and executable state" },
     purpose: "manage",
@@ -179,7 +179,7 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
   route({
     id: "integration-api-key-hub",
     path: "/settings/api-keys",
-    titleKey: "route.settings",
+    titleKey: "route.settingsApiKeys",
     label: { ko: "API 키 허브", en: "API key hub" },
     description: { ko: "외부 서비스 API 키 한곳 관리", en: "Manage external service API keys in one place" },
     purpose: "manage",

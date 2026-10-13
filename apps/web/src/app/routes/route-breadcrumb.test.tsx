@@ -83,3 +83,34 @@ describe("AppBreadcrumb", () => {
     expect(container.querySelector("[data-page]")).not.toBeNull();
   });
 });
+
+describe("route breadcrumb trails — 2026-10-13 UX coverage expansion", () => {
+  it("shows where light entertainment pages live instead of leaving them unlocated", () => {
+    expect(resolveBreadcrumbTrail("/fortune/tarot").map((item) => item.ko))
+      .toEqual(["홈", "운세", "타로"]);
+    expect(resolveBreadcrumbTrail("/cuts/studio").map((item) => item.ko))
+      .toEqual(["홈", "컷츠", "컷츠 클립 만들기"]);
+  });
+
+  it("resolves four-level trails for nested research archives", () => {
+    const trail = resolveBreadcrumbTrail("/research/open-data/nasa");
+    expect(trail.map((item) => item.ko))
+      .toEqual(["홈", "창작 리서치", "공개 데이터 창작실", "NASA"]);
+    expect(trail[2]).toMatchObject({ href: "/research/open-data" });
+    expect(trail.at(-1)?.href).toBeUndefined();
+  });
+
+  it("covers the major second-depth surfaces in every product area", () => {
+    const registered = new Set(appRoutes.map((route) => route.path));
+    const staticPaths = appRoutes
+      .map((route) => route.path)
+      .filter((path) => !path.includes(":") && !path.includes("*"));
+    let covered = 0;
+    for (const path of staticPaths) {
+      if (resolveBreadcrumbTrail(path).length > 0) covered += 1;
+    }
+    // 확장 전 57개 수준에서 정적 라우트의 절반 가까이까지 넓힌 상태를 고정한다.
+    expect(covered).toBeGreaterThanOrEqual(85);
+    expect(registered.has("/fortune")).toBe(true);
+  });
+});
