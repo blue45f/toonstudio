@@ -21,6 +21,7 @@ import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useI18n } from "@/shared/lib/i18n";
 import { OpenSearchButton } from "@/shared/components/open-search-button";
+import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { workspaceNavigationHref } from "@/shared/components/workspace/workspace-navigation-model";
 import { WorkspaceAccountAction, WorkspaceBrand, WorkspaceSidebar } from "@/shared/components/workspace/WorkspaceChrome";
 import { WorkspaceContextPanel } from "@/shared/components/workspace/WorkspaceContextPanel";
@@ -287,6 +288,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
           </div>
         </div>
 
+        {surface === "team" ? <TeamAreaNavigation /> : null}
         {surface === "home" && panel !== "work" ? <WorkspaceResumeNotice snapshot={resumeState} onRetry={resumeState.refresh} /> : null}
         {library.error ? <div className="workspace-notice" role="alert">
           <p>{library.error}</p>

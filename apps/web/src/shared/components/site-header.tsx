@@ -496,8 +496,11 @@ function MobileNavigationFallback() {
 }
 
 /** One top-level header destination, with an optional hover/focus dropdown.
- * The panel opens on pointer hover and on keyboard focus-within; it is
- * `visibility: hidden` otherwise so its links stay out of the tab order.
+ * The panel opens on pointer hover and on keyboard focus-within, and open
+ * state is mirrored in React state so the trigger exposes `aria-expanded`,
+ * Escape closes the panel and returns focus to the trigger, matching the
+ * mobile menu's pattern. It is `visibility: hidden` while closed so its
+ * links stay out of the tab order.
  * 1차 표시는 시안처럼 글자 링크만 둔다(목적지·드롭다운은 그대로, 아이콘은 패널 안에서만). */
 function HeaderPrimaryNavigationEntry({
   item,
@@ -516,12 +519,16 @@ function HeaderPrimaryNavigationEntry({
     ? item.children?.find((child) => isActive(child.href, child.exact))
     : undefined;
   const label = siteNavigationText(item.label, locale);
+  const [open, setOpen] = useState(false);
+  // Escape로 닫은 직후에는 트리거로 돌아온 포커스가 패널을 다시 열지 않게 한다.
+  const escapeClosedRef = useRef(false);
 
   const link = (
     <Link
       href={item.href}
       aria-current={highlighted ? (isActive(item.href, true) ? "page" : "true") : undefined}
       aria-haspopup={item.children ? "true" : undefined}
+      aria-expanded={item.children ? open : undefined}
       title={siteNavigationText(item.description, locale)}
       data-navigation-entry={item.id}
       className="site-header__primary-link group"
@@ -531,7 +538,10 @@ function HeaderPrimaryNavigationEntry({
         <ChevronDown
           size={13}
           aria-hidden="true"
-          className="text-fg-3 transition-transform duration-150 group-hover:rotate-180 group-focus-within:rotate-180 motion-reduce:transition-none"
+          className={cx(
+            "text-fg-3 transition-transform duration-150 motion-reduce:transition-none",
+            open && "rotate-180"
+          )}
         />
       ) : null}
     </Link>
@@ -540,9 +550,45 @@ function HeaderPrimaryNavigationEntry({
   if (!item.children) return link;
 
   return (
-    <div className="group relative">
+    <div
+      className="group relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => {
+        escapeClosedRef.current = false;
+        setOpen(false);
+      }}
+      onFocus={() => {
+        if (!escapeClosedRef.current) setOpen(true);
+      }}
+      onBlur={(event) => {
+        if (
+          event.relatedTarget instanceof Node &&
+          event.currentTarget.contains(event.relatedTarget)
+        ) {
+          return;
+        }
+        escapeClosedRef.current = false;
+        setOpen(false);
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || !open) return;
+        event.stopPropagation();
+        escapeClosedRef.current = true;
+        setOpen(false);
+        event.currentTarget
+          .querySelector<HTMLElement>("[data-navigation-entry]")
+          ?.focus();
+      }}
+    >
       {link}
-      <div className="invisible absolute left-0 top-full z-50 w-64 translate-y-1 pt-1 opacity-0 transition-[opacity,transform,visibility] duration-150 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
+      <div
+        className={cx(
+          "absolute left-0 top-full z-50 w-64 pt-1 transition-[opacity,transform,visibility] duration-150 motion-reduce:transition-none",
+          open
+            ? "visible translate-y-0 opacity-100"
+            : "invisible translate-y-1 opacity-0"
+        )}
+      >
         <ul
           aria-label={label}
           className="rounded-xl border border-line bg-panel p-1.5 shadow-2xl"

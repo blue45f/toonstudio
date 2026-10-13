@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { evaluateHandoffReadiness, type CreativeInstructionPriority, type HandoffStatus, type ProductionProjectAggregate } from "@toonstudio/core/production";
 import { AlertTriangle } from "lucide-react";
 
@@ -62,7 +64,9 @@ export function ProductionHandoffSurface({
 }) {
   const bt = useBilingual("ProductionHandoffSurface");
   const userId = useApp((state) => state.userId);
-  const handoff = aggregate.handoffs.find((entry) => !["superseded", "cancelled"].includes(entry.status));
+  const activeHandoffs = aggregate.handoffs.filter((entry) => !["superseded", "cancelled"].includes(entry.status));
+  const [selectedHandoffId, setSelectedHandoffId] = useState<string | null>(null);
+  const handoff = activeHandoffs.find((entry) => entry.id === selectedHandoffId) ?? activeHandoffs[0];
   if (!handoff) {
     return (
       <ProductionEmptyState
@@ -75,12 +79,47 @@ export function ProductionHandoffSurface({
   const readiness = evaluateHandoffReadiness({ package: handoff, clarifications });
   const viewerAssignmentId = aggregate.assignments.find((assignment) =>
     aggregate.parties.find((party) => party.id === assignment.partyId)?.accountUserId === userId)?.id ?? null;
-  const plan = aggregate.episodePlans.filter((entry) => entry.episodeId === handoff.episodeId).sort((left, right) => right.revision - left.revision)[0];
-  const episodeName = plan ? bt(`${plan.episodeNumber}화 · ${plan.title}`, `Ep. ${plan.episodeNumber} · ${plan.title}`) : handoff.episodeId;
+  const episodeNameFor = (entry: (typeof activeHandoffs)[number]) => {
+    const entryPlan = aggregate.episodePlans.filter((planEntry) => planEntry.episodeId === entry.episodeId).sort((left, right) => right.revision - left.revision)[0];
+    return entryPlan ? bt(`${entryPlan.episodeNumber}화 · ${entryPlan.title}`, `Ep. ${entryPlan.episodeNumber} · ${entryPlan.title}`) : entry.episodeId;
+  };
+  const episodeName = episodeNameFor(handoff);
   const statusLabel = HANDOFF_STATUS_LABELS[handoff.status];
 
   return (
     <div className="grid gap-4 xl:grid-cols-[0.78fr_1.22fr]">
+      {activeHandoffs.length > 1 ? (
+        <div className="xl:col-span-2">
+          <ProductionSectionCard
+            title={bt(`진행 중인 인계 ${activeHandoffs.length}건`, `${activeHandoffs.length} handoffs in progress`)}
+            description={bt("회차를 골라 인계 내용을 확인하세요. 주간 연재는 여러 회차의 인계가 함께 진행됩니다.", "Pick an episode to review its handoff. A weekly series often runs several episode handoffs in parallel.")}
+          >
+            <div className="flex flex-wrap gap-2" role="group" aria-label={bt("인계 선택", "Choose a handoff")}>
+              {activeHandoffs.map((entry) => {
+                const selected = entry.id === handoff.id;
+                const entryStatusLabel = HANDOFF_STATUS_LABELS[entry.status];
+                return (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setSelectedHandoffId(entry.id)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition-colors",
+                      selected
+                        ? "border-accent/50 bg-accent-soft text-fg"
+                        : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg",
+                    )}
+                  >
+                    <span>{episodeNameFor(entry)}</span>
+                    <ProductionPill tone={selected ? "accent" : "neutral"}>{bt(entryStatusLabel.ko, entryStatusLabel.en)}</ProductionPill>
+                  </button>
+                );
+              })}
+            </div>
+          </ProductionSectionCard>
+        </div>
+      ) : null}
       <ProductionSectionCard
         title={bt("인계 준비도", "Handoff readiness")}
         description={bt("필수 확인 항목이 하나라도 남으면 다음 작업을 시작할 수 없습니다.", "The next step can't start while a required item is missing.")}
