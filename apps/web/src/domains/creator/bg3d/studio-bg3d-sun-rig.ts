@@ -217,7 +217,9 @@ export function applyStudioBg3dSunRig(
     canonicalScene.output.transparentBackground || canonicalScene.background.mode === "transparent";
   const candidate: StudioBg3dSceneDocument = {
     ...canonicalScene,
-    lighting: computeStudioBg3dSunLighting(safeConfig),
+    // 환경광은 시간대 리그가 소유하지 않으므로 문서 값을 고정한다. 빼면 엄격 정규화의
+    // 구조 동등성 검사가 실패해 적용이 항상 null이 된다.
+    lighting: { ...computeStudioBg3dSunLighting(safeConfig), environment: canonicalScene.lighting.environment },
     background: {
       ...canonicalScene.background,
       skyPresetId: state.skyPresetId,
