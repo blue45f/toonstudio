@@ -71,11 +71,16 @@ const I = SITE_NAVIGATION_ITEMS;
  *
  * Global navigation intentionally stays compact and context-aware. The sitemap needs a different
  * job: expose the whole product without making creators understand the Studio/Spectrum split first.
+ *
+ * 그룹 구성은 사이트맵 전용이지만, 핵심 그룹의 이름은 단일 지도(SITE_NAVIGATION_GROUPS)의
+ * 그룹 이름을 그대로 쓴다 — 같은 영역이 표면마다 다른 이름으로 불리면 사용자는 다른 곳으로
+ * 착각한다. 대응: start-create→create, learn-prepare→grow, discover-inspire→discover,
+ * connect-manage→connect.
  */
 export const SITEMAP_CORE_DESTINATION_GROUPS: readonly SiteNavigationGroup[] = [
   {
     id: "start-create",
-    label: { ko: "제작 시작", en: "Start creating" },
+    label: { ko: "만들기", en: "Create" },
     description: {
       ko: "새 작품을 시작하고 기존 프로젝트·소재·출판 흐름으로 바로 이동",
       en: "Start a work or jump straight into projects, assets and publishing",
@@ -84,7 +89,7 @@ export const SITEMAP_CORE_DESTINATION_GROUPS: readonly SiteNavigationGroup[] = [
   },
   {
     id: "learn-prepare",
-    label: { ko: "배우고 준비하기", en: "Learn & prepare" },
+    label: { ko: "자료·성장", en: "Research & grow" },
     description: {
       ko: "제작 지식·참고자료·기회·오늘의 영감을 실제 작업에 연결",
       en: "Connect learning, references, opportunities and daily inspiration to the work",
@@ -93,7 +98,7 @@ export const SITEMAP_CORE_DESTINATION_GROUPS: readonly SiteNavigationGroup[] = [
   },
   {
     id: "discover-inspire",
-    label: { ko: "작품 발견", en: "Discover stories" },
+    label: { ko: "작품 찾기", en: "Discover" },
     description: {
       ko: "검색·랭킹·연재 일정·추천·데이터에서 다음 작품과 아이디어 찾기",
       en: "Find the next story or idea through discovery, rankings, schedules and data",
@@ -102,7 +107,7 @@ export const SITEMAP_CORE_DESTINATION_GROUPS: readonly SiteNavigationGroup[] = [
   },
   {
     id: "connect-manage",
-    label: { ko: "함께하고 관리하기", en: "Connect & manage" },
+    label: { ko: "함께 보기", en: "Connect" },
     description: {
       ko: "작품을 공유하고 리뷰·커뮤니티·협업·내 기록까지 이어서 관리",
       en: "Share work and continue through reviews, community, collaboration and your records",

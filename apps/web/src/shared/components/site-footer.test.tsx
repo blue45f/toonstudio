@@ -22,12 +22,12 @@ describe("공통 브랜드 푸터의 이동 계약", () => {
       SITE_NAVIGATION_ITEMS.make.href,
       SITE_NAVIGATION_ITEMS.research.href,
       ...SITE_UTILITY_NAVIGATION.map((item) => item.href),
-      ...SITE_NAVIGATION_GROUPS.flatMap((group) => group.items.filter((item) => item.id !== "technology").map((item) => item.href)),
+      ...SITE_NAVIGATION_GROUPS.flatMap((group) => group.items.filter((item) => item.id !== "technology" && item.id !== "home").map((item) => item.href)),
     ];
     for (const href of expectedDestinations) expect(hrefs.has(href), href).toBe(true);
     for (const group of SITE_NAVIGATION_GROUPS) {
       const navigation = within(footer).getByRole("navigation", { name: siteNavigationText(group.label, locale) });
-      for (const item of group.items.filter((item) => item.id !== "technology")) {
+      for (const item of group.items.filter((item) => item.id !== "technology" && item.id !== "home")) {
         // 모든 목적지는 단일 지도의 정본 라벨 그대로 노출한다 (표면별 덮어씀 없음).
         const name = siteNavigationText(item.label, locale);
         expect(within(navigation).getByRole("link", { name }).getAttribute("href")).toBe(item.href);

@@ -75,11 +75,15 @@ export function SiteFooter() {
             </nav>
           </div>
 
+          {/* 사이트 홈("/")은 위 브랜드 링크가 이미 소유한다. 지도에서 "내 기록" 그룹에
+              "홈"("/")과 "내 홈"("/home")이 나란히 렌더되면 같은 목적지로 읽혀(시각 감사
+              2026-10-13) 푸터 렌더링에서만 "home" 항목을 제외한다. 지도의 그룹 소속
+              자체는 현재 여정 판정(siteNavigationGroupForPath("/"))이 쓰므로 바꾸지 않는다. */}
           {SITE_NAVIGATION_GROUPS.map((group) => (
             <nav key={group.id} aria-labelledby={`footer-nav-${group.id}`} className="site-footer__group">
               <h2 id={`footer-nav-${group.id}`}>{siteNavigationText(group.label, locale)}</h2>
               <ul>
-                {group.items.filter((item) => item.id !== "technology").map((item) => (
+                {group.items.filter((item) => item.id !== "technology" && item.id !== "home").map((item) => (
                   <li key={item.id}>
                     <Link
                       href={item.href}

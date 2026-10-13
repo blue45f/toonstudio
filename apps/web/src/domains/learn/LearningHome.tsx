@@ -34,6 +34,7 @@ import {
   SKILL_IDS,
   buildSessionPlan,
   getLessonMeta,
+  getLessonRequirementProgress,
   getLessonState,
   getPathLessons,
   getPathStats,
@@ -85,18 +86,12 @@ function browserStorage(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
 }
 
-function lessonRequirementProgress(lesson: Lesson, store: LearningStore): number {
-  const saved = store.progress.lessons[lesson.id];
-  if (saved?.completed) return 100;
-  if (!saved) return 0;
-  const correct = saved.answer === lesson.quiz.answer ? 1 : 0;
-  return Math.round(((saved.checks.length + correct) / (lesson.checks.length + 1)) * 100);
-}
-
 function LessonLibraryCard({ lesson, store, index }: { lesson: Lesson; store: LearningStore; index: number }) {
   const meta = getLessonMeta(lesson.id);
   const state = getLessonState(store.progress, lesson.id);
-  const progress = lessonRequirementProgress(lesson, store);
+  // 진도율은 강좌 상세와 같은 정본 계산(유효·중복 제거된 체크 기준)을 쓴다.
+  // 지역 사본이 raw checks.length로 계산하면 같은 강좌가 화면마다 다른 %를 보인다.
+  const progress = getLessonRequirementProgress(lesson, store.progress);
   return (
     <article className={`learn-card learn-library-card${state === "completed" ? " is-complete" : ""}`}>
       <div className="learn-card-top">
@@ -165,6 +160,7 @@ function PathCard({ path, store, recommended }: { path: LearningPath; store: Lea
       <div className="learn-path-card-top">
         <span className="learn-path-index">{String(LEARNING_PATHS.indexOf(path) + 1).padStart(2, "0")}</span>
         {recommended && <span className="learn-recommended-label">내 추천 경로</span>}
+        {stats.percent === 100 && <span className="learn-status learn-status-completed">완료한 경로</span>}
       </div>
       <p className="learn-eyebrow">{LEVEL_LABELS[path.level]} · {path.lessonIds.length}개 강좌</p>
       <h3><Link to={pathUrl(path.id)}>{path.title}</Link></h3>
@@ -603,7 +599,11 @@ export function LearningPathPage({ pathId }: { pathId: string }) {
           <p className="learn-eyebrow">GUIDED LEARNING PATH · {LEVEL_LABELS[path.level]}</p>
           <h1>{path.title}</h1>
           <p className="learn-intro">{path.summary}</p>
-          <div className="learn-actions"><Link className="learn-primary" to={lessonUrl(nextLesson.id)}>{stats.completed ? "이어서 학습하기" : "경로 시작하기"} →</Link><Link className="learn-secondary" to="/learn#learn-library">전체 강좌 보기</Link></div>
+          <div className="learn-actions">
+            {stats.completed === stats.total
+              ? <><Link className="learn-primary" to="/create">배운 흐름으로 첫 회차 만들기 →</Link><Link className="learn-secondary" to="/learn#learning-paths">다른 학습 경로 보기</Link></>
+              : <><Link className="learn-primary" to={lessonUrl(nextLesson.id)}>{stats.completed ? "이어서 학습하기" : "경로 시작하기"} →</Link><Link className="learn-secondary" to="/learn#learn-library">전체 강좌 보기</Link></>}
+          </div>
         </div>
         <aside className="learn-path-hero-card" aria-label="경로 진행 현황">
           <span>경로 결과물</span><strong>{path.outcome}</strong>
@@ -636,7 +636,9 @@ export function LearningPathPage({ pathId }: { pathId: string }) {
           </ol>
         </section>
         <aside className="learn-path-side">
-          <section><p className="learn-eyebrow">NEXT STEP</p><h2>{nextLesson.title}</h2><p>{getLessonMeta(nextLesson.id).outcome}</p><Link className="learn-primary" to={lessonUrl(nextLesson.id)}>다음 강좌 열기 →</Link></section>
+          {stats.completed === stats.total
+            ? <section><p className="learn-eyebrow">PATH COMPLETE</p><h2>이 경로를 모두 마쳤습니다</h2><p>결과물을 실제 작품으로 이어 가거나, 다른 경로로 실력을 넓혀 보세요.</p><Link className="learn-primary" to="/create">첫 회차 만들기 →</Link></section>
+            : <section><p className="learn-eyebrow">NEXT STEP</p><h2>{nextLesson.title}</h2><p>{getLessonMeta(nextLesson.id).outcome}</p><Link className="learn-primary" to={lessonUrl(nextLesson.id)}>다음 강좌 열기 →</Link></section>}
           <section><h2>이 경로가 다루는 역량</h2><div className="learn-card-skills">{[...new Set(lessons.flatMap((lesson) => getLessonMeta(lesson.id).skills))].map((skillId) => <span key={skillId}>{SKILLS.find((skill) => skill.id === skillId)?.label}</span>)}</div></section>
           <section><h2>기억할 점</h2><p>경로는 권장 순서입니다. 이미 아는 강좌는 건너뛰고, 필요한 강좌만 골라 학습해도 기록은 정상적으로 저장됩니다.</p></section>
         </aside>

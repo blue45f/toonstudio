@@ -20,6 +20,7 @@ import {
   formatRecoveryDiagnostics,
   resolveSaveSyncStatus,
   type StudioOperationJournalState,
+  type StudioSaveSyncStatus,
 } from "./studio-operation-recovery-coordinator";
 import { useStudioCopyFeedback } from "./use-studio-copy-feedback";
 
@@ -28,6 +29,14 @@ export interface StudioSaveSyncStatusCenterProps {
   readonly isOnline?: boolean;
   readonly isOpfsActive?: boolean;
   readonly onForceCheckpoint?: () => void;
+  /**
+   * 실제 오토세이브 런타임 신호에서 도출한 상태를 직접 전달한다
+   * (studio-save-sync-signals 의 어댑터). 있으면 journal 로 상태를 재계산하지
+   * 않는다 — journal 은 식별자·시퀀스·진단 표시용으로만 쓰인다. 실제 내구
+   * 저널은 project-model JournalStore 가 소유하므로, 이 컴포넌트의 인메모리
+   * 저널 모델로 실물 상태를 재계산하면 이중 상태가 된다.
+   */
+  readonly statusOverride?: StudioSaveSyncStatus;
 }
 
 function cloudStatusCopy(status: "synced" | "pending" | "offline"): string {
@@ -41,12 +50,13 @@ export function StudioSaveSyncStatusCenter({
   isOnline = true,
   isOpfsActive = true,
   onForceCheckpoint,
+  statusOverride,
 }: StudioSaveSyncStatusCenterProps) {
   const [open, setOpen] = useState(false);
   const diagnosticsCopy = useStudioCopyFeedback(2000);
   const diagnosticsCopyStatus = diagnosticsCopy.statusFor("save-sync-diagnostics");
 
-  const status = resolveSaveSyncStatus(journal, isOnline, isOpfsActive);
+  const status = statusOverride ?? resolveSaveSyncStatus(journal, isOnline, isOpfsActive);
   const saveLabel = !status.localDurable
     ? "저장 확인 필요"
     : status.cloudSyncStatus === "offline"
