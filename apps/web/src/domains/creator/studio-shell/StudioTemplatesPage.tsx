@@ -274,7 +274,7 @@ export function StudioTemplatesPage() {
             <Sparkles size={15} aria-hidden="true" /> TOONSTUDIO TEMPLATES
           </p>
           <h1 className="mt-3 max-w-4xl break-keep text-3xl font-black tracking-tight text-fg sm:text-5xl">
-            {bt("무엇을 만들지만 고르세요", "Choose what you want to make")}
+            {bt("무엇을 만들지 고르세요", "Choose what you want to make")}
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2 sm:text-base">
             {bt("웹툰, 일러스트, 홍보물, 발표 자료와 콘티의 전문 구조를 미리 준비했습니다. 복잡한 규격과 기본 레이어는 ToonStudio가 정하고, 필요할 때만 세부 설정을 바꿀 수 있습니다.", "Professional structures for webtoons, illustration, promotion, presentations and storyboards are prepared in advance. ToonStudio chooses safe defaults while keeping expert controls available.")}

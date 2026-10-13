@@ -209,7 +209,7 @@ export function StudioProjectLibraryManagementHeader({
               ) : (
                 <>
                   <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}>
-                    <RotateCcw size={14} aria-hidden="true" />{bi("선택 복구", "Restore selected")}
+                    <RotateCcw size={14} aria-hidden="true" />{bi("선택 복원", "Restore selected")}
                   </button>
                   <button type="button" onClick={() => setDeleteRequest({ ids: selectedProjects.map((project) => project.id), source: "selected" })} className={buttonClass({ variant: "quiet", size: "sm", className: "gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 완전 삭제", "Delete selected")}
@@ -233,7 +233,7 @@ export function StudioProjectLibraryManagementHeader({
           >
             <RotateCcw size={14} aria-hidden="true" />
             {view === "trash"
-              ? bi("전체 복구", "Restore all")
+              ? bi("전체 복원", "Restore all")
               : bi("전체 복원", "Restore all")}
           </button>
           {view === "trash" ? (

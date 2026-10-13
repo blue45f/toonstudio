@@ -233,6 +233,9 @@
   .reference-dashboard { padding-inline: 16px; }
   .rd-poster-inner { grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; min-height: 0; padding: 30px 24px 26px; }
   .rd-poster-art { object-position: center 10%; }
+  /* 좁은 폭에서는 글이 포스터 상단(얼굴 영역) 위에 바로 얹힌다 — 좌우 그라데이션만으로는
+     제목 대비가 부족해(시각 감사 2026-10-13) 상단 스크림을 세로로 보강한다. */
+  .rd-poster::before { background: linear-gradient(180deg, color-mix(in oklch, var(--rd-art-scrim) 84%, transparent), color-mix(in oklch, var(--rd-art-scrim) 52%, transparent) 52%, color-mix(in oklch, var(--rd-art-scrim) 88%, transparent)), linear-gradient(90deg, color-mix(in oklch, var(--rd-art-scrim) 90%, transparent), color-mix(in oklch, var(--rd-art-scrim) 46%, transparent) 56%, color-mix(in oklch, var(--rd-art-scrim) 22%, transparent)); }
   .rd-story { align-content: start; }
   .rd-luna { width: 100%; }
   .reference-dashboard .rd-poster h1 { font-size: 38px; }

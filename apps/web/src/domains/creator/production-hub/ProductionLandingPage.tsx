@@ -26,7 +26,9 @@ import {
   type ProductionProjectSummary,
 } from "./production-dashboard-api";
 import { formatProductionDay } from "./production-format";
+import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
+import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { ProductionMetric, ProductionPill, ProductionSampleBadge, type ProductionTone } from "./production-ui";
 
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
@@ -296,7 +298,7 @@ function PortfolioSection({
                       <span className="text-[0.625rem] text-fg-3">{formatProductionDay(item.dueAt, bt("미정", "No date"))}</span>
                     </div>
                     <p className="mt-2 line-clamp-2 text-xs font-black leading-5 text-fg">{item.taskTitle}</p>
-                    <p className="mt-1 truncate text-[0.6875rem] text-fg-3">{item.projectTitle} · {item.processKey} · {item.estimateHours === null ? bt("예상 시간 미입력", "No estimate") : `${item.estimateHours}h`}</p>
+                    <p className="mt-1 truncate text-[0.6875rem] text-fg-3">{item.projectTitle} · {(() => { const processLabel = PRODUCTION_PROCESS_LABELS[canonicalProductionProcessKey(item.processKey)]; return processLabel ? bt(processLabel.ko, processLabel.en) : item.processKey; })()} · {item.estimateHours === null ? bt("예상 시간 미입력", "No estimate") : `${item.estimateHours}h`}</p>
                   </Link>
                 );
               })}
