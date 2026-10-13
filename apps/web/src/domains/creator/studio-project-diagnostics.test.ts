@@ -38,6 +38,7 @@ function source(): StudioProjectDiagnosticSource {
         locationId: "school",
       }],
       transitions: [],
+      narrative: { profiles: [], relations: [] },
     },
     productionTasks: [{
       id: "story",

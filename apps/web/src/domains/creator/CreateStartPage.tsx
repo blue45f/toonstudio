@@ -1,7 +1,7 @@
 // 작품 시작 시트(/create) — 작품을 시작하는 유일한 정문. 새 작품·템플릿·이어가기를 한 화면에서 고른다.
 // 갤러리 본문은 /showcase가 정본이라 이 주소에 갤러리를 중복 배치하지 않고, 갤러리 보기 조건
 // (tab·sort·tag 등)을 단 옛 공유 주소는 조건을 그대로 들고 /showcase로 넘긴다.
-import { ArrowRight, Clapperboard, Clock3, Images, LayoutTemplate, Plus, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Clapperboard, Clock3, Images, LayoutTemplate, Plus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 
@@ -95,13 +95,13 @@ export function CreateStartPage() {
         </h1>
         <p className="mt-3 text-sm leading-6 text-fg-2 sm:text-base sm:leading-7">
           {bt(
-            "그림부터 그릴지, 콘티부터 짤지, 템플릿으로 시작할지, 하던 작품을 이어갈지 — 시작은 여기서 한 번만 고르세요.",
-            "Draw right away, plan boards first, begin from a template, or pick up where you left off — every start begins here.",
+            "이야기부터 짤지, 그림부터 그릴지, 콘티부터 짤지, 템플릿으로 시작할지, 하던 작품을 이어갈지 — 시작은 여기서 한 번만 고르세요.",
+            "Begin with the story, draw right away, plan boards first, begin from a template, or pick up where you left off — every start begins here.",
           )}
         </p>
       </header>
 
-      <StaggerReveal className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
+      <StaggerReveal className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
         <Link href="/studio/new" className={CHOICE_CARD_CLASS}>
           <span className={CHOICE_ICON_CLASS}>
             <Plus size={22} aria-hidden />
@@ -114,6 +114,23 @@ export function CreateStartPage() {
           </span>
           <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
             {bt("빈 작품으로 시작", "Start blank")}
+            <ArrowRight size={15} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+
+
+        <Link href="/studio/new?start=idea" className={CHOICE_CARD_CLASS}>
+          <span className={CHOICE_ICON_CLASS}>
+            <BookOpen size={22} aria-hidden />
+          </span>
+          <strong className="mt-4 text-lg font-bold text-fg">
+            {bt("이야기부터 시작하기", "Start from the story")}
+          </strong>
+          <span className="mt-1.5 text-sm leading-6 text-fg-2">
+            {bt("줄거리와 캐릭터부터 정리해 두면, 콘티와 그림이 훨씬 덜 흔들려요.", "Outline the plot and characters first, and the boards and drawings will hold together.")}
+          </span>
+          <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+            {bt("이야기로 시작", "Start with the story")}
             <ArrowRight size={15} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
           </span>
         </Link>

@@ -2,6 +2,8 @@ import { createStudioReviewSession } from "./studio-review-workflow";
 
 import type { StudioProjectDiagnosticSource } from "./studio-project-diagnostics";
 
+import { EMPTY_STORY_BIBLE_NARRATIVE } from "./planning/studio-character-profile";
+
 function requireProjectId(projectId: string): string {
   const normalized = projectId.trim();
   if (!normalized || normalized === "." || normalized === ".." || normalized.includes("\\")) {
@@ -44,6 +46,7 @@ export function createInitialStudioProjectDiagnosticSource(
       }),
       states: Object.freeze([]),
       transitions: Object.freeze([]),
+      narrative: EMPTY_STORY_BIBLE_NARRATIVE,
     }),
     productionTasks: Object.freeze([]),
     assets: Object.freeze([]),

@@ -9,6 +9,7 @@ import type {
   StudioContinuityTransition,
   StudioStoryBible,
 } from "./studio-story-bible";
+import type { StudioStoryBibleNarrative } from "./planning/studio-character-profile";
 import type { StudioProductionTask } from "./studio-production-pipeline";
 import type { StudioReviewSession } from "./studio-review-workflow";
 import type { StudioExportPreflightResult } from "./studio-export-preflight";
@@ -35,6 +36,8 @@ export function updateStudioProjectStory(
     readonly bible: StudioStoryBible;
     readonly states: readonly StudioCharacterContinuityState[];
     readonly transitions: readonly StudioContinuityTransition[];
+    /** 서술 묶음을 함께 교체할 때만 넘긴다. 생략하면 기존 묶음을 그대로 유지한다. */
+    readonly narrative?: StudioStoryBibleNarrative;
   },
   mutationOptions: MutationOptions = {},
 ) {
@@ -47,6 +50,7 @@ export function updateStudioProjectStory(
         bible: input.bible,
         states: Object.freeze([...input.states]),
         transitions: Object.freeze([...input.transitions]),
+        narrative: input.narrative ?? current.story.narrative,
       }),
     }),
     options(mutationOptions),

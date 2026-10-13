@@ -19,6 +19,7 @@ import {
 } from "./studio-story-bible";
 
 import type { StudioExportPreflightResult } from "./studio-export-preflight";
+import type { StudioStoryBibleNarrative } from "./planning/studio-character-profile";
 
 export type StudioDiagnosticAssetStatus = "allowed" | "warning" | "blocked";
 export type StudioDiagnosticLocalizationStatus = "complete" | "review" | "blocked";
@@ -43,6 +44,8 @@ export interface StudioProjectDiagnosticSource {
     readonly bible: StudioStoryBible;
     readonly states: readonly StudioCharacterContinuityState[];
     readonly transitions: readonly StudioContinuityTransition[];
+    /** 서술형 캐릭터 시트·관계 묶음. 구 포맷 로드 시 파서가 빈 묶음으로 채우므로 항상 존재한다. */
+    readonly narrative: StudioStoryBibleNarrative;
   };
   readonly productionTasks: readonly StudioProductionTask[];
   readonly assets: readonly StudioProjectDiagnosticAsset[];

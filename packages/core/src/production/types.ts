@@ -882,6 +882,15 @@ export interface EpisodePlan {
   readonly coreConflict: string;
   readonly turningPoints: readonly string[];
   readonly cliffhanger: string;
+  /** 이번 회차의 목표 한 문장. 없으면 표면에서는 logline으로 폴백한다. */
+  readonly goal?: string;
+  /** 줄거리 본문 3~5문장. logline(한 줄 요약)과 별개로 회차 전체 흐름을 적는 자리다. */
+  readonly synopsis?: string;
+  /** 감정 변화 — 회차가 시작할 때와 끝날 때의 감정. 공정 템플릿 완료 기준 "회차 목표와 감정 변화 확정"의 후반부다. */
+  readonly emotionalArc?: {
+    readonly from: string;
+    readonly to: string;
+  };
   readonly characterRefs: readonly string[];
   readonly locationRefs: readonly string[];
   readonly targetCutCount: number;

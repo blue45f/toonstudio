@@ -1,5 +1,7 @@
 import type { StudioProjectDiagnosticSource } from "./studio-project-diagnostics";
 
+import { EMPTY_STORY_BIBLE_NARRATIVE } from "./planning/studio-character-profile";
+
 export const STUDIO_PROJECT_DIAGNOSTIC_SOURCE_UPDATED_EVENT =
   "toonspectrum:studio:project-diagnostic-source-updated";
 export const STUDIO_PROJECT_DIAGNOSTICS_FAILED_EVENT =
@@ -47,7 +49,19 @@ export function parseStudioProjectDiagnosticSource(
   ) {
     return null;
   }
-  return Object.freeze(plainClone(value) as unknown as StudioProjectDiagnosticSource);
+  const cloned = plainClone(value) as unknown as StudioProjectDiagnosticSource;
+  // 구 포맷(서술 묶음이 없는 저장본)은 빈 묶음으로 폴백해, 읽는 쪽이 항상 같은 모양을 보게 한다.
+  if (
+    !isRecord(value.story.narrative)
+    || !Array.isArray(value.story.narrative.profiles)
+    || !Array.isArray(value.story.narrative.relations)
+  ) {
+    return Object.freeze({
+      ...cloned,
+      story: Object.freeze({ ...cloned.story, narrative: EMPTY_STORY_BIBLE_NARRATIVE }),
+    });
+  }
+  return Object.freeze(cloned);
 }
 
 export function readStudioProjectDiagnosticSource(
