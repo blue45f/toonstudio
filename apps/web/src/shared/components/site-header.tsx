@@ -550,6 +550,7 @@ function HeaderPrimaryNavigationEntry({
   if (!item.children) return link;
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- 드롭다운 컨테이너의 호버·포커스·Escape 위임 핸들러일 뿐 요소 자체는 상호작용 위젯이 아니다. 실제 조작은 내부 링크와 하위 메뉴가 담당한다.
     <div
       className="group relative"
       onMouseEnter={() => setOpen(true)}

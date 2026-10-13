@@ -1068,8 +1068,8 @@ export const ENGINEERING_REFERENCE_PRODUCTS = [
 
 export const ENGINEERING_IMPLEMENTATION_INVENTORY: EngineeringImplementationInventory = Object.freeze({
   reviewedAt: "2026-10-07",
-  workerEntries: 64,
-  workerClients: 58,
+  workerEntries: 65,
+  workerClients: 59,
   serviceWorkerRuntimeFiles: 9,
   localInferenceRuntimes: Object.freeze(["ONNX Runtime Web", "MediaPipe Tasks Vision"]),
   blenderMcpCommands: 8,
