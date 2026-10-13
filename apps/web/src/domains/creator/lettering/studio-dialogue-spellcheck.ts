@@ -348,19 +348,24 @@ export function checkDialogueSpelling(
       }
     }
 
-    // 띄어쓰기 — 의존명사 붙음
+    // 띄어쓰기 — 의존명사 붙음. 여러 규칙의 매치를 본문 순서대로 모은다.
+    // 규칙별 순회 그대로 두면 규칙 순서(것→수)로 나와 읽기 순서와 어긋난다.
+    const spacingMatches: { readonly start: number; readonly text: string; readonly entry: SpacingEntry }[] = [];
     for (const entry of SPACING_PATTERNS) {
       for (const match of text.matchAll(entry.pattern)) {
-        const start = match.index ?? 0;
-        push(item, "spacing-dependent-noun", "warning", entry.message, {
-          matchText: match[0],
-          fix: {
-            start,
-            end: start + match[0].length,
-            replacement: match[0].replace(entry.pattern, entry.replacement),
-          },
-        });
+        spacingMatches.push({ start: match.index ?? 0, text: match[0], entry });
       }
+    }
+    spacingMatches.sort((left, right) => left.start - right.start);
+    for (const found of spacingMatches) {
+      push(item, "spacing-dependent-noun", "warning", found.entry.message, {
+        matchText: found.text,
+        fix: {
+          start: found.start,
+          end: found.start + found.text.length,
+          replacement: found.text.replace(found.entry.pattern, found.entry.replacement),
+        },
+      });
     }
 
     // 띄어쓰기 — 문장부호 앞 공백
