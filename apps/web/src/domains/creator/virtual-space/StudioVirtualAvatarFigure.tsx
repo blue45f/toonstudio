@@ -366,7 +366,7 @@ export function StudioVirtualAvatarFigure({
       setBlinking(false);
       return;
     }
-    let closer: ReturnType<typeof setTimeout> | undefined;
+    let closer: number | undefined;
     const timer = window.setInterval(() => {
       setBlinking(true);
       closer = window.setTimeout(() => setBlinking(false), 150);
