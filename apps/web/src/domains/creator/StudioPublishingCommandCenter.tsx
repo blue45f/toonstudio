@@ -150,6 +150,7 @@ import { cn } from "@/shared/lib/utils";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
+import { PublishSurfaceGuide } from "@/shared/components/publish-surface-guide";
 import {
   getChallenge,
   getSeries,
@@ -1562,6 +1563,8 @@ export function StudioPublishingCommandCenter({
         </div>
       </header>
 
+      <PublishSurfaceGuide surface="studio" />
+
       <StudioPublishVisualJourney
         activeStep={step}
         disabled={workspaceLocked}
@@ -1687,6 +1690,37 @@ export function StudioPublishingCommandCenter({
           </button>
         </div>
       )}
+
+      {/* 진행 요약: 전체 단계 중 현재 위치와 저장 상태를 스텝퍼 바로 위에서 항상 보여준다.
+          단계·저장 상태의 원본은 아래 스텝퍼와 하단 액션 도크가 이미 쓰던 값(step·dirty·saving)이다. */}
+      <div
+        aria-label="게시 진행 요약"
+        className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-line bg-card/35 px-3 py-2.5 text-xs"
+      >
+        <span className="font-semibold text-fg">
+          게시 {COMMAND_STEPS.length}단계 중 {currentStepIndex + 1}단계 · {COMMAND_STEPS[currentStepIndex]?.label}
+        </span>
+        <span className="text-fg-3">
+          {currentStepIndex < COMMAND_STEPS.length - 1
+            ? `다음: ${COMMAND_STEPS[currentStepIndex + 1]?.label}`
+            : "마지막 단계예요. 사전검사를 통과하면 게시할 수 있어요."}
+        </span>
+        <span className="ml-auto" role="status">
+          {saving ? (
+            <span className="inline-flex items-center gap-1.5 text-fg-2">
+              <Loader2 size={13} className="animate-spin" /> 저장 중…
+            </span>
+          ) : dirty ? (
+            <span className="inline-flex items-center gap-1.5 text-warn">
+              <span className="size-2 rounded-full bg-warn" /> 저장되지 않은 변경이 있어요 — 아래 "초안 저장"으로 언제든 중간 저장할 수 있어요
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-good">
+              <Check size={13} /> 현재 revision까지 저장됨
+            </span>
+          )}
+        </span>
+      </div>
 
       <nav aria-label="게시 단계" className="mb-5 grid gap-2 sm:grid-cols-3">
         {COMMAND_STEPS.map((candidate, index) => {

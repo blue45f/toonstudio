@@ -81,12 +81,20 @@ pnpm run cloudflare:static:deploy
 `pnpm run cloudflare:static:deploy`(`scripts/deploy-cloudflare-static.mjs --production`)는 빌드·R2 동기화·Worker 배포를
 시작하기 전에 아래를 모두 요구하고, 하나라도 어긋나면 중단합니다.
 
-- `TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production` — 사용자의 별도 명시적 승인 뒤에만 설정합니다.
+- `TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production` — 사용자의 별도 명시적 승인 뒤에만 설정합니다. 상시 승인 파일(`deploy/cloudflare-static/STANDING_APPROVAL.json`)이 유효하면 이 변수 없이 배포합니다.
 - `TOONSPECTRUM_APPROVED_MAIN_SHA` — 사용자가 승인한 `main` 커밋의 **소문자 40자리 16진수** SHA입니다.
   `$(git rev-parse HEAD)`로 자동 채우면 승인 절차가 의미를 잃으므로 승인된 값을 그대로 입력합니다.
 - 현재 브랜치가 `main`입니다.
 - 작업 트리가 깨끗합니다(`git status --porcelain`이 비어 있음).
 - `git rev-parse HEAD`가 `TOONSPECTRUM_APPROVED_MAIN_SHA`와 같습니다.
+
+### 상시 승인 모드 (2026-10-13 저장소 소유자 결정)
+
+매 릴리스 명시적 승인 없이 배포할 수 있다. `deploy/cloudflare-static/STANDING_APPROVAL.json`의
+`scope`가 `cloudflare-static-production`이면 HEAD를 승인 SHA로 간주하고, 적용 사실과 HEAD SHA를
+배포 로그에 남긴다. `main`·깨끗한 작업 트리·헤더/에셋 검증 게이트는 그대로 유지된다. 파일이
+없거나 JSON·scope가 깨지면 기존 명시 승인 방식으로 fail-closed 복귀한다. 상시 승인을 거두려면
+파일을 삭제하면 된다.
 
 Core API에는 `.env.production.example`의 PostgreSQL·인증·CORS·목적별 object storage 설정을
 Render encrypted environment 또는 root `.env.local` Secret File로 주입합니다. `CORE_API_ORIGIN`은

@@ -98,8 +98,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_DELIVERY: readonly EngineeringAtlasE
       {
         feature: t("모든 페이지의 응답 보안 규칙", "Security rules for every page response"),
         role: t(
-          "script-src 는 self·해시·wasm-unsafe-eval·외부 호스트 4곳, frame-ancestors 는 none, HSTS 는 2년으로 원천에서 한 번 정의합니다.",
-          "script-src (self, a hash, wasm-unsafe-eval and four outside hosts), frame-ancestors none and a two-year HSTS are defined once at the source.",
+          "script-src 는 self·해시·wasm-unsafe-eval·외부 호스트 4곳, frame-ancestors 는 self(동일 출처 Godot 무대 임베드 허용), HSTS 는 2년으로 원천에서 한 번 정의합니다.",
+          "script-src (self, a hash, wasm-unsafe-eval and four outside hosts), same-origin frame-ancestors (for the embedded Godot stages) and a two-year HSTS are defined once at the source.",
         ),
         paths: ["config/http-response-headers.json", "apps/web/public/_headers"],
       },

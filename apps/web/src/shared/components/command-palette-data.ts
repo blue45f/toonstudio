@@ -39,7 +39,12 @@ import type { PaletteCommand, PalettePage, PaletteStudioTool, PaletteMode } from
 
 import { useApp } from "@/shared/lib/store";
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
-import { SITE_NAVIGATION_ITEMS, siteNavigationLocale } from "./site-navigation";
+import {
+  SITE_NAVIGATION_ITEMS,
+  siteNavigationGroupForPath,
+  siteNavigationLocale,
+  siteNavigationText,
+} from "./site-navigation";
 
 export const PALETTE_MODE_TABS: { id: PaletteMode; label: string; prefix?: string }[] = [
   { id: "all", label: "전체" },
@@ -515,6 +520,12 @@ const CURATED_PALETTE_PAGES: PalettePage[] = [
   },
 ];
 
+/** 페이지가 전체 메뉴 지도에서 속한 구간 이름. 지도에 없는 페이지는 undefined. */
+function palettePageTrail(href: string, locale: string): string | undefined {
+  const group = siteNavigationGroupForPath(canonicalSitePath(href));
+  return group ? siteNavigationText(group.label, locale) : undefined;
+}
+
 const navigationDestinations = Object.values(SITE_NAVIGATION_ITEMS);
 const curatedPagePaths = new Set(CURATED_PALETTE_PAGES.map((page) => canonicalSitePath(page.href)));
 
@@ -523,12 +534,13 @@ export const PALETTE_PAGES: PalettePage[] = [
   ...CURATED_PALETTE_PAGES.map((page) => {
     const href = canonicalSitePath(page.href);
     const destination = navigationDestinations.find((item) => item.href === href);
-    if (!destination) return { ...page, href };
+    if (!destination) return { ...page, href, trail: palettePageTrail(href, "ko") };
     return {
       ...page,
       href,
       title: destination.label.ko,
       subtitle: destination.description.ko,
+      trail: palettePageTrail(href, "ko"),
       keywords: [...page.keywords, page.title, page.subtitle, destination.label.en, destination.description.en],
     };
   }),
@@ -539,6 +551,7 @@ export const PALETTE_PAGES: PalettePage[] = [
     subtitle: item.description.ko,
     icon: item.icon,
     category: "main",
+    trail: palettePageTrail(item.href, "ko"),
     keywords: [item.label.en, item.description.en, item.href, ...(item.id === "all-menu" ? ["전체 기능", "서비스 메뉴", "all tools", "sitemap"] : [])],
   })),
 ];
@@ -557,6 +570,11 @@ export function palettePagesForLocale(locale: string): PalettePage[] {
     const english = destination
       ? { title: destination.label.en, subtitle: destination.description.en }
       : ENGLISH_EXTRA_PAGES[page.href];
-    return { ...page, ...english, keywords: [...page.keywords, page.title, page.subtitle] };
+    return {
+      ...page,
+      ...english,
+      trail: palettePageTrail(page.href, locale),
+      keywords: [...page.keywords, page.title, page.subtitle],
+    };
   });
 }

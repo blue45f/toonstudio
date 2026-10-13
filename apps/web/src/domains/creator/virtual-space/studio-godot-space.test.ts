@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import {
   deleteGodotSpaceBackground,
@@ -174,11 +176,40 @@ describe("godot space background references (§14)", () => {
     expect(definition.background?.glb).toBe(UPLOAD_ASSET.glbRef);
   });
 
-  it("leaves catalog references and empty backgrounds untouched", () => {
+  it("prefixes static relative backgrounds with the stage base path", () => {
     const catalog = definitionWithBackground({ glb: "spaces/street.glb" });
-    expect(resolveGodotBackgroundForStage(catalog, "work-1")).toBe(catalog);
+    const resolved = resolveGodotBackgroundForStage(catalog, "work-1");
+    expect(resolved.background?.glb).toBe("/godot-space/spaces/street.glb");
+    expect(catalog.background?.glb).toBe("spaces/street.glb");
+  });
+
+  it("leaves absolute and empty backgrounds untouched", () => {
+    const absolute = definitionWithBackground({ glb: "/godot-space/spaces/street.glb" });
+    expect(resolveGodotBackgroundForStage(absolute, "work-1")).toBe(absolute);
     const none = definitionWithBackground(null);
     expect(resolveGodotBackgroundForStage(none, "work-1")).toBe(none);
+  });
+
+  it("restores the static reference from a stage round-trip (resolve → restore)", () => {
+    const definition = definitionWithBackground({ glb: "spaces/studio-room.glb" });
+    const staged = resolveGodotBackgroundForStage(definition, "work-1");
+    expect(staged.background?.glb).toBe("/godot-space/spaces/studio-room.glb");
+    const restored = restoreGodotBackgroundReference(staged, "work-1");
+    expect(restored.background?.glb).toBe("spaces/studio-room.glb");
+  });
+
+  it.each([
+    ["godot-space", "/godot-space/"],
+    ["cuts-godot", "/cuts-godot/"],
+    ["play-godot", "/play-godot/"],
+  ])("keeps the %s base tag that relative stage URLs depend on", (dir, base) => {
+    const html = readFileSync(
+      fileURLToPath(
+        new URL(`../../../../public/${dir}/index.html`, import.meta.url),
+      ),
+      "utf8",
+    );
+    expect(html).toContain(`<base href="${base}">`);
   });
 
   it("restores the canonical reference from a stage round-trip (resolve → restore)", () => {

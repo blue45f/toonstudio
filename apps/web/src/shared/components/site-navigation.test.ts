@@ -53,7 +53,7 @@ describe("site navigation information architecture", () => {
     expect(SITE_NAVIGATION_ITEMS.market.label.ko).toBe("소재 마켓");
   });
 
-  it("학습과 작업 자료를 먼저 제공하고 운세 기능도 성장 메뉴에 유지한다", () => {
+  it("학습과 작업 자료를 먼저 제공하고, 운세는 쉬어가기 메뉴에서 제공한다", () => {
     const growItems = SITE_NAVIGATION_GROUPS.find(
       (group) => group.id === "grow",
     )?.items;
@@ -64,10 +64,12 @@ describe("site navigation information architecture", () => {
       "learn",
       "opportunities",
       "insights",
-      "now",
-      "fortune",
       "technology",
     ]);
+    const restItems = SITE_NAVIGATION_GROUPS.find(
+      (group) => group.id === "rest",
+    )?.items;
+    expect(restItems?.map((item) => item.id)).toEqual(["now", "fortune", "play"]);
     expect(SITE_NAVIGATION_ITEMS.fortune.href).toBe("/fortune");
     // 목적지 이름은 하나다: 내비 정본 라벨은 "운세"이고 상세는 설명이 맡는다.
     expect(SITE_NAVIGATION_ITEMS.fortune.label.ko).toBe("운세");
@@ -96,6 +98,7 @@ describe("site navigation information architecture", () => {
       "grow",
       "publish",
       "connect",
+      "rest",
       "personal",
     ]);
     expect(SITE_NAVIGATION_GROUPS.map((group) => group.journey)).toEqual([
@@ -104,6 +107,7 @@ describe("site navigation information architecture", () => {
       "create",
       "publish",
       "collaborate",
+      "rest",
       "start",
     ]);
     const create = SITE_NAVIGATION_GROUPS.find((group) => group.id === "create");
@@ -164,6 +168,10 @@ describe("site navigation information architecture", () => {
     expect(siteNavigationJourneyForPath("/learn")).toBe("create");
     expect(siteNavigationGroupForPath("/team/people")?.id).toBe("connect");
     expect(siteNavigationJourneyForPath("/collaborate")).toBe("collaborate");
+    expect(siteNavigationGroupForPath("/fortune")?.id).toBe("rest");
+    expect(siteNavigationJourneyForPath("/fortune")).toBe("rest");
+    expect(siteNavigationGroupForPath("/play")?.id).toBe("rest");
+    expect(siteNavigationGroupForPath("/now")?.id).toBe("rest");
     expect(siteNavigationGroupForPath("/settings")).toBeNull();
     expect(siteNavigationJourneyForPath("/settings")).toBeNull();
   });

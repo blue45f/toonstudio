@@ -94,7 +94,7 @@ Cursor, Gemini, OpenCode용 어댑터는 이 문서를 다시 복제하지 않�
 이 정책은 이전의 main 자동 배포와 `[deploy]` 예외 지침을 대체한다.
 세부 절차는 `docs/operations/minimum-cost-deployment-policy.md`와 `DEPLOY.md`를 따른다.
 
-- PR 생성·병합·브랜치 정리는 배포 승인이 아니다. 운영 배포는 사용자의 별도 명시적 승인 후에만 한다.
+- PR 생성·병합·브랜치 정리는 배포 승인이 아니다. 운영 배포는 사용자의 별도 명시적 승인 후에만 한다. 2026-10-13 저장소 소유자 결정으로 `deploy/cloudflare-static/STANDING_APPROVAL.json`이 유효하면 매번 명시 승인 없이 HEAD를 승인 SHA로 간주한다. 파일 삭제·파손 시 명시 승인 방식으로 fail-closed 복귀한다.
 - Vercel 런타임·설정·배포 워크플로는 퇴역 상태이며 다시 추가하지 않는다.
 - 승인한 40자리 main SHA 하나만 변경된 Cloudflare/Render 배포 단위에 반영한다.
 - PR CI, core/verify, 테스트·보안·브랜치 보호는 유지하며 비용을 이유로 우회하지 않는다.

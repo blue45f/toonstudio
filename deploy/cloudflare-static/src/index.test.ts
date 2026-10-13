@@ -2,10 +2,14 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { withGodotInlineHashes } from "../../../scripts/cloudflare-static-rules.mjs";
+
 import {
   COMMON_SECURITY_HEADERS,
   createCloudflareStaticGateway,
   createCoreApiRequest,
+  GODOT_STAGE_DOCUMENT_CSP,
+  isGodotStageDocumentPath,
   type CloudflareStaticEnv,
   type R2ObjectBodyBinding,
 } from "./index";
@@ -41,12 +45,12 @@ function r2Object(
 
 describe("Cloudflare static gateway", () => {
   it("keeps dynamic security headers synchronized with the provider-neutral contract", () => {
-    const responsePolicy = JSON.parse(
+    const responsePolicy = withGodotInlineHashes(JSON.parse(
       readFileSync(
         new URL("../../../config/http-response-headers.json", import.meta.url),
         "utf8",
       ),
-    ) as {
+    )) as {
       headers?: Array<{
         source?: string;
         headers?: Array<{ key?: string; value?: string }>;
@@ -108,6 +112,15 @@ describe("Cloudflare static gateway", () => {
       "/assets/tag2pix-*.onnx",
       "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
       "/brand/toonstudio-product-tour.mp4",
+      "/cuts-godot/index.wasm",
+      "/godot-space/index.wasm",
+      "/play-godot/index.wasm",
+      "/godot-space",
+      "/godot-space/index.html",
+      "/cuts-godot",
+      "/cuts-godot/index.html",
+      "/play-godot",
+      "/play-godot/index.html",
     ]);
     expect(wrangler.assets?.run_worker_first).not.toContain("/market/*");
     expect(wrangler.r2_buckets).toEqual([{
@@ -370,15 +383,16 @@ describe("Cloudflare static gateway", () => {
     }
   });
 
-  it("serves oversized immutable assets from Brotli static sidecars", async () => {
-    const assetFetch = vi.fn(async (_request: Request) => new Response("compressed-static", {
-      status: 200,
-      headers: { etag: "sidecar-etag" },
-    }));
+  it("serves oversized assets from R2 without worker-side content negotiation", async () => {
+    const get = vi.fn(async (
+      _key: string,
+      _options?: { readonly range?: Headers },
+    ) => r2Object("r2-raw-bytes"));
+    const head = vi.fn(async (_key: string) => null);
     const upstream = vi.fn<typeof fetch>();
     const gateway = createCloudflareStaticGateway({ fetch: upstream });
     const env = environment({
-      ASSETS: { fetch: assetFetch },
+      LARGE_ASSETS: { get, head },
       LARGE_ASSET_ORIGIN: "https://large-assets.example.test",
     });
     const response = await gateway(new Request(
@@ -392,69 +406,38 @@ describe("Cloudflare static gateway", () => {
       },
     ), env);
 
-    expect(await response.text()).toBe("compressed-static");
-    expect(response.headers.get("content-encoding")).toBe("br");
+    expect(await response.text()).toBe("r2-raw-bytes");
+    expect(response.headers.get("content-encoding")).toBeNull();
     expect(response.headers.get("content-type")).toBe("application/wasm");
-    expect(response.headers.get("accept-ranges")).toBe("none");
-    expect(response.headers.get("vary")).toContain("Accept-Encoding");
-    expect(response.headers.get("x-toonstudio-large-asset-source")).toBe(
-      "static-br",
-    );
+    expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
+    expect(response.headers.get("cache-control")).toContain("s-maxage=0");
     expect(upstream).not.toHaveBeenCalled();
-    expect(assetFetch).toHaveBeenCalledOnce();
-    const staticRequest = assetFetch.mock.calls[0]?.[0] as Request;
-    expect(new URL(staticRequest.url).pathname).toBe(
-      "/assets/opencascade.wasm-build123.wasm.br",
-    );
-    expect(staticRequest.headers.get("authorization")).toBeNull();
-    expect(staticRequest.headers.get("cookie")).toBeNull();
-    expect(staticRequest.headers.get("accept-encoding")).toBe("identity");
+    expect(get).toHaveBeenCalledOnce();
   });
 
-  it("uses gzip static sidecars when Brotli is not accepted", async () => {
-    const assetFetch = vi.fn(async (_request: Request) => new Response("gzip-static"));
-    const upstream = vi.fn<typeof fetch>();
-    const gateway = createCloudflareStaticGateway({ fetch: upstream });
-    const env = environment({ ASSETS: { fetch: assetFetch } });
-    const response = await gateway(new Request(
-      "https://www.toonstudio.cloud/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb",
-      { headers: { "accept-encoding": "gzip" } },
-    ), env);
-
-    expect(await response.text()).toBe("gzip-static");
-    expect(response.headers.get("content-encoding")).toBe("gzip");
-    expect(response.headers.get("content-type")).toBe("model/gltf-binary");
-    expect(upstream).not.toHaveBeenCalled();
-    const staticRequest = assetFetch.mock.calls[0]?.[0] as Request;
-    expect(new URL(staticRequest.url).pathname).toBe(
-      "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb.gz",
-    );
-  });
-
-  it("continues from a missing compressed sidecar to R2", async () => {
-    const assetFetch = vi.fn(async () => new Response("missing", { status: 404 }));
+  it.each([
+    ["brotli client", "gzip, deflate, br, zstd"],
+    ["gzip client", "gzip"],
+    ["identity client", "identity"],
+  ])("serves byte-identical bodies to every %s", async (
+    _label,
+    acceptEncoding,
+  ) => {
     const get = vi.fn(async (
       _key: string,
       _options?: { readonly range?: Headers },
-    ) => r2Object("r2-fallback"));
+    ) => r2Object("r2-raw-bytes"));
     const head = vi.fn(async (_key: string) => null);
-    const upstream = vi.fn<typeof fetch>();
-    const gateway = createCloudflareStaticGateway({ fetch: upstream });
-    const response = await gateway(
-      new Request(
-        "https://www.toonstudio.cloud/assets/opencascade.wasm-build123.wasm",
-        { headers: { "accept-encoding": "br" } },
-      ),
-      environment({
-        ASSETS: { fetch: assetFetch },
-        LARGE_ASSETS: { get, head },
-      }),
-    );
+    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
+    const response = await gateway(new Request(
+      "https://www.toonstudio.cloud/godot-space/index.wasm",
+      { headers: { "accept-encoding": acceptEncoding } },
+    ), environment({ LARGE_ASSETS: { get, head } }));
 
-    expect(await response.text()).toBe("r2-fallback");
-    expect(assetFetch).toHaveBeenCalledOnce();
-    expect(get).toHaveBeenCalledOnce();
-    expect(upstream).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("r2-raw-bytes");
+    expect(response.headers.get("content-encoding")).toBeNull();
+    expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
   });
 
   it("serves oversized immutable assets from R2 before the origin", async () => {
@@ -474,7 +457,7 @@ describe("Cloudflare static gateway", () => {
     expect(await response.text()).toBe("r2-wasm");
     expect(response.headers.get("content-type")).toBe("application/wasm");
     expect(response.headers.get("cache-control")).toBe(
-      "public, max-age=31536000, immutable",
+      "public, max-age=31536000, immutable, s-maxage=0",
     );
     expect(response.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
     expect(response.headers.get("etag")).toBe('"r2-etag"');
@@ -504,6 +487,9 @@ describe("Cloudflare static gateway", () => {
       ["/assets/ort-wasm-simd-threaded.jsep-DC5y_g6C.wasm", "application/wasm"],
       ["/assets/ort-wasm-simd-threaded.asyncify-CxOG5pUO.wasm", "application/wasm"],
       ["/assets/tag2pix-B03WmUfQ.onnx", "application/octet-stream"],
+      ["/cuts-godot/index.wasm", "application/wasm"],
+      ["/godot-space/index.wasm", "application/wasm"],
+      ["/play-godot/index.wasm", "application/wasm"],
     ] as const) {
       const response = await gateway(
         new Request(`https://www.toonstudio.cloud${pathname}`),
@@ -1070,5 +1056,95 @@ describe("NEIS creator-resource edge", () => {  it("serves keyed school metadata
       error: "invalid_creator_resource_query",
     });
     expect(upstream).not.toHaveBeenCalled();
+  });
+});
+
+describe("Godot stage documents", () => {
+  const STAGE_SOURCES = [
+    "/godot-space",
+    "/godot-space/index.html",
+    "/cuts-godot",
+    "/cuts-godot/index.html",
+    "/play-godot",
+    "/play-godot/index.html",
+  ];
+
+  it("recognizes exactly the six stage document paths", () => {
+    for (const pathname of STAGE_SOURCES) {
+      expect(isGodotStageDocumentPath(pathname)).toBe(true);
+    }
+    expect(isGodotStageDocumentPath("/godot-space/index.js")).toBe(false);
+    expect(isGodotStageDocumentPath("/godot-space/index.wasm")).toBe(false);
+    expect(isGodotStageDocumentPath("/studio/space")).toBe(false);
+  });
+
+  it("keeps the worker stage policy equal to every stage section of the response contract", () => {
+    const responsePolicy = JSON.parse(
+      readFileSync(
+        new URL("../../../config/http-response-headers.json", import.meta.url),
+        "utf8",
+      ),
+    ) as {
+      headers?: Array<{
+        source?: string;
+        headers?: Array<{ key?: string; value?: string }>;
+      }>;
+    };
+    const stagePolicies = (responsePolicy.headers ?? [])
+      .filter(({ source }) => source === "/godot-space"
+        || source === "/godot-space/(.*)"
+        || source === "/cuts-godot"
+        || source === "/cuts-godot/(.*)"
+        || source === "/play-godot"
+        || source === "/play-godot/(.*)")
+      .map(({ headers }) => headers?.find(({ key }) => key === "Content-Security-Policy")?.value);
+    expect(stagePolicies).toHaveLength(6);
+    for (const policy of stagePolicies) {
+      expect(policy).toBe(GODOT_STAGE_DOCUMENT_CSP);
+    }
+  });
+
+  it("serves stage documents with exactly one framing policy", async () => {
+    const stageHtml = "<!doctype html><html><head></head><body>stage</body></html>";
+    const assetFetch = vi.fn(async (input: Request | string | URL) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+      if (url.pathname.endsWith("/index.html")) {
+        return new Response(null, {
+          status: 307,
+          headers: { location: url.pathname.replace(/\/index\.html$/, "") },
+        });
+      }
+      const headers = new Headers({
+        "content-type": "text/html",
+        "x-frame-options": "SAMEORIGIN",
+      });
+      headers.append("content-security-policy", "global-policy");
+      headers.append("content-security-policy", "stage-policy");
+      headers.append("x-frame-options", "SAMEORIGIN");
+      return new Response(stageHtml, { status: 200, headers });
+    });
+    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
+    const response = await gateway(
+      new Request("https://www.toonstudio.cloud/godot-space/index.html"),
+      environment({ ASSETS: { fetch: assetFetch } }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.text()).resolves.toBe(stageHtml);
+    expect(response.headers.get("content-security-policy")).toBe(GODOT_STAGE_DOCUMENT_CSP);
+    expect(response.headers.get("x-frame-options")).toBe("SAMEORIGIN");
+    expect(response.headers.get("x-toonstudio-stage-document")).toBe("normalized");
+  });
+
+  it("falls through to normal handling when a stage document is missing", async () => {
+    const assetFetch = vi.fn(async () => new Response("missing", { status: 404 }));
+    const gateway = createCloudflareStaticGateway({ fetch: vi.fn<typeof fetch>() });
+    const response = await gateway(
+      new Request("https://www.toonstudio.cloud/cuts-godot"),
+      environment({ ASSETS: { fetch: assetFetch } }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("x-toonstudio-stage-document")).toBeNull();
   });
 });

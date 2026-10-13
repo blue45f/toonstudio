@@ -3,9 +3,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
+  godotInlineScriptHashes,
   renderCloudflareHeaders,
   renderCloudflareWorkerSecurityPolicy,
   verifyCloudflareStaticRules,
+  withGodotInlineHashes,
 } from "./cloudflare-static-rules.mjs";
 
 describe("Cloudflare static response rules", () => {
@@ -55,6 +57,35 @@ describe("Cloudflare static response rules", () => {
       `"Content-Security-Policy": "default-src 'self'; object-src 'none'",`,
     );
     expect(output).toContain(`"X-Test": "kept"`);
+  });
+
+  it("injects fresh Godot inline hashes into the global script-src", () => {
+    expect(godotInlineScriptHashes()).toHaveLength(3);
+    const policy = JSON.parse(readFileSync("config/http-response-headers.json", "utf8"));
+    const injected = withGodotInlineHashes(policy);
+    const csp = injected.headers
+      .find((rule) => rule.source === "/(.*)").headers
+      .find((header) => header.key === "Content-Security-Policy").value;
+    for (const hash of godotInlineScriptHashes()) {
+      expect(csp).toContain(`script-src 'self'`);
+      expect(csp).toContain(hash);
+    }
+    expect(csp).not.toContain("'unsafe-eval'");
+    // 낡은 무대 해시는 갈아끼우고 앱 JSON-LD 해시는 살린다.
+    const stale = withGodotInlineHashes({
+      headers: [{
+        source: "/(.*)",
+        headers: [{
+          key: "Content-Security-Policy",
+          value: "default-src 'self'; script-src 'self' 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='",
+        }],
+      }],
+    });
+    const staleCsp = stale.headers[0].headers[0].value;
+    expect(staleCsp).not.toContain("'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='");
+    for (const hash of godotInlineScriptHashes()) {
+      expect(staleCsp).toContain(hash);
+    }
   });
 
   it("keeps static and edge response policy artifacts synchronized", () => {

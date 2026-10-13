@@ -96,11 +96,11 @@ pnpm run cloudflare:static:dry-run
 
 ### 25 MiB 초과 정적 파일
 
-Cloudflare Static Assets의 개별 파일 한도는 25 MiB다. 배포 전에 `prepare:cloudflare-static-assets`가 `dist` 전체를 검사하고, 검토된 OpenCascade WASM·Godot 공간 wasm·modular street seating GLB의 Brotli(`.br`)·gzip(`.gz`) sidecar를 생성한다. 원본 대형 파일만 `.assetsignore`에서 제외하고, sidecar가 25 MiB를 넘거나 새로운 미검토 파일이 한도를 넘으면 배포를 중단한다.
+Cloudflare Static Assets의 개별 파일 한도는 25 MiB다. 배포 전에 `prepare:cloudflare-static-assets`가 `dist` 전체를 검사하고, 검토된 OpenCascade WASM·Godot 공간/재단 wasm(`godot-space/index.wasm`, `play-godot/index.wasm`, `cuts-godot/index.wasm`)·modular street seating GLB의 Brotli(`.br`)·gzip(`.gz`) sidecar를 생성한다. 원본 대형 파일만 `.assetsignore`에서 제외하고, sidecar가 25 MiB를 넘거나 새로운 미검토 파일이 한도를 넘으면 배포를 중단한다. 세 Godot wasm 경로(`godot-space/index.wasm`, `play-godot/index.wasm`, `cuts-godot/index.wasm`)는 `wrangler.jsonc`의 `run_worker_first`에 반드시 유지한다. 빠지면 Static Assets가 원본 대신 SPA `index.html`을 200 `text/html`로 돌려줘 엔진 부팅이 깨진다(2026-10-13 운영 실측). 무대 문서 6경로(`/godot-space`, `/godot-space/index.html`, `/cuts-godot`, `/cuts-godot/index.html`, `/play-godot`, `/play-godot/index.html`)도 `run_worker_first`에 유지한다. Static Assets는 매칭 `_headers` 규칙을 전부 병합하므로 전역·무대 CSP가 두 장으로 겹쳐 인라인 부트스트랩이 막히는데, Worker가 이 문서들을 직접 서빙하며 framing 헤더를 한 벌로 접어준다(2026-10-13 운영 실측).
 
 이어서 `scripts/verify-static-service-worker.mjs`가 `dist/sw.js`를 확인한다. Static Assets는 없는 경로에 SPA `index.html`을 200으로 돌려주므로, 워커 파일이 빠진 채 배포되면 `/sw.js`가 HTML로 응답하고 브라우저의 업데이트 확인이 조용히 실패해 "새 버전이 준비됐습니다" 안내가 사라진다. 앱이 등록 코드를 싣는 빌드에서 `sw.js`가 없거나, HTML이거나, precache 매니페스트(`buildId`)가 없으면 배포를 중단한다.
 
-일반 GET·HEAD는 브라우저의 `Accept-Encoding`에 맞는 sidecar를 같은 URL에서 투명하게 제공해 무제한 Static Assets 요청을 우선 활용한다. 두 객체의 원본은 Standard 클래스 R2 버킷 `toonspectrum-public-assets`에 동일 key로 저장하며 Worker의 `LARGE_ASSETS` binding으로 직접 읽는다. byte Range, 압축 미지원 요청, HEAD와 `If-None-Match`를 처리하고 1년 immutable 캐시 및 원본 MIME을 적용한다. sidecar와 R2가 모두 없거나 일시적으로 읽히지 않을 때만 명시적으로 설정한 `LARGE_ASSET_ORIGIN`으로 폴백하며 Authorization, Cookie, 사용자·관리자·세션 헤더는 전달하지 않는다. 변수를 생략하면 Core API fallback을 추론하지 않는다.
+일반 GET·HEAD는 R2 원본을 그대로 돌려주고 압축은 엣지에 맡긴다. Worker가 압축 sidecar를 `content-encoding`과 함께 돌려주면 엣지가 한 겹 더 압축해 단일 라벨 이중 압축이 되었고(2026-10-13 운영 실측: 전 경로 이중 brotli), 어떤 클라이언트도 해제하지 못했다. 두 객체의 원본은 Standard 클래스 R2 버킷 `toonspectrum-public-assets`에 동일 key로 저장하며 Worker의 `LARGE_ASSETS` binding으로 직접 읽는다. byte Range, HEAD와 `If-None-Match`를 처리하고 1년 immutable 캐시(`s-maxage=0`으로 엣지 재검증 강제) 및 원본 MIME을 적용한다. R2가 없거나 일시적으로 읽히지 않을 때만 명시적으로 설정한 `LARGE_ASSET_ORIGIN`으로 폴백하며 Authorization, Cookie, 사용자·관리자·세션 헤더는 전달하지 않는다. 변수를 생략하면 Core API fallback을 추론하지 않는다.
 
 `sync:cloudflare-r2-assets:dry-run`은 빌드 산출물과 허용 목록을 검증하고 원격 쓰기를 하지 않는다. 운영 배포에서는 `prepare:cloudflare-static-assets`가 sidecar를 만든 뒤 `sync:cloudflare-r2-assets`가 승인된 원본 초과 파일을 R2에 먼저 업로드하고 Worker를 배포한다.
 

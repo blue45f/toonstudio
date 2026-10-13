@@ -315,9 +315,11 @@ export function ExplorePage() {
                 animation: "fade-up 0.6s var(--ease-out-expo) 0.24s both",
               }}
             >
-              장르·태그·유형별로 웹툰과 웹소설을 좁혀봅니다. 작품 카드에는
-              줄거리와 연재 상태가 함께 표시되어 무슨 작품인지 바로 판단할 수
-              있습니다.
+              조건으로 좁혀 보는 화면입니다. 장르·태그·유형별로 웹툰과 웹소설을
+              좁혀봅니다. 작품 카드에는 줄거리와 연재 상태가 함께 표시되어 무슨
+              작품인지 바로 판단할 수 있습니다. 어디서부터 볼지 모르겠다면{" "}
+              <Link href="/discover" className="font-semibold text-accent hover:underline">작품 탐색</Link>
+              에서 추천·랭킹부터 보세요.
             </p>
             <Link
               href={

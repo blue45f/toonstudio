@@ -1,0 +1,63 @@
+// @vitest-environment jsdom
+import { useSyncExternalStore } from "react";
+import { act,cleanup,fireEvent,render,screen,waitFor } from "@testing-library/react";
+import { afterEach,describe,expect,it,vi } from "vitest";
+import type { StudioAcousticSessionLease } from "@toonstudio/studio-project-model/world-acoustic";
+import { studioVirtualSpaceState } from "../studio-virtual-space-model";
+import { fixture,flush } from "./studio-private-room-controller.fixture";
+import { StudioPrivateRoomPanel } from "./StudioPrivateRoomPanel";
+
+afterEach(cleanup);
+describe("private panel explicit withdrawal while network work is pending",()=>{
+  it.each(["decline","cancel","leave","block","room"] as const)("keeps %s available and never revives from the late read",async action=>{
+    const f=fixture();let id:string,index=0;
+    if(action==="decline"||action==="cancel"){
+      await f.start();await f.controllers[0]!.propose(["client-1"]);id=f.controllers[0]!.snapshot().conversations[0]!.conversationId;
+      await f.controllers[1]!.refresh();if(action==="decline")index=1;
+    }else id=await f.active();
+    const c=f.controllers[index]!,api=f.apis[index]!;
+    let finish!:(lease:StudioAcousticSessionLease)=>void;
+    vi.mocked(api.readSession).mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+    vi.mocked(api.change).mockRejectedValueOnce(new Error("response lost"));
+    function View(){const snapshot=useSyncExternalStore(c.subscribe,c.snapshot);return <StudioPrivateRoomPanel
+      room={{controller:c,snapshot,available:true,entryReason:null}} zones={[{id:"zone",roomId:"review",x:0,y:0,width:200,height:200,policy:"private",doorId:"door"}]}
+      zoneId="zone" onZone={()=>{}} peers={f.participants.filter((_,i)=>i!==index).map(participant=>({participant,state:studioVirtualSpaceState({x:50,y:50}),lastSeen:Date.now(),sequence:1}))}/>;}
+    render(<View/>);let pending!:Promise<void>;
+    await act(async()=>{pending=c.refresh();await flush();});await waitFor(()=>expect(finish).toBeTypeOf("function"));
+    expect(c.snapshot().busy).toBe(true);
+    const name=action==="decline"?"거절":action==="block"?"Member 1 이번 방문에서 차단":action==="room"?"방에서 나가기":"대화 나가기";
+    const button=screen.getByRole("button",{name});expect(button).toHaveProperty("disabled",false);
+    fireEvent.click(button);expect(c.mediaValid(id)).toBe(false);
+    if(action==="room")expect(c.snapshot().session).toBeNull();else expect(c.snapshot().conversations[0]!.status).toBe("revoked");
+    await act(async()=>{finish(f.leases[index]!);await pending;await flush();await c.refresh();});
+    expect(c.mediaValid(id)).toBe(false);
+    if(action==="room"){expect(api.closeSession).toHaveBeenCalledOnce();expect(c.snapshot().conversations).toEqual([]);}
+    else {expect(api.change).toHaveBeenCalledOnce();expect(c.snapshot().conversations[0]!.status).toBe("revoked");}
+    for(const controller of f.controllers)controller.close();
+  });
+});
+
+describe("private-room doorway knock UI", () => {
+  it("keeps knocking and manager admission as two explicit steps", async () => {
+    const f = fixture(); f.setOpen(false);
+    for (const controller of f.controllers) controller.start(); await flush();
+    const zones = [{ id: "zone", roomId: "review", x: 0, y: 0, width: 200, height: 200, policy: "private" as const, doorId: "door" }];
+    function View({ index }: { readonly index: number }) {
+      const controller = f.controllers[index]!;
+      const snapshot = useSyncExternalStore(controller.subscribe, controller.snapshot);
+      return <StudioPrivateRoomPanel room={{ controller, snapshot, available: true, entryReason: null }} zones={zones}
+        zoneId="zone" onZone={() => {}} peers={f.participants.filter((_, peerIndex) => peerIndex !== index)
+          .map((participant) => ({ participant, state: studioVirtualSpaceState({ x: 50, y: 50 }), lastSeen: Date.now(), sequence: 1 }))} />;
+    }
+    const requester = render(<View index={1} />);
+    fireEvent.click(screen.getByRole("button", { name: "문 두드리기" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "응답을 기다리는 중…" })).toHaveProperty("disabled", true));
+    requester.unmount();
+    render(<View index={0} />);
+    await waitFor(() => expect(screen.getAllByText("Member 1").length).toBeGreaterThan(0));
+    fireEvent.click(screen.getByRole("button", { name: "이 팀원에게 문 열기" }));
+    await waitFor(() => expect(f.apis[0]!.changeDoor).toHaveBeenCalledOnce());
+    expect(f.controllers[1]!.snapshot().session).toBeNull();
+    for (const controller of f.controllers) controller.close();
+  });
+});

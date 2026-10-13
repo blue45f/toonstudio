@@ -1,0 +1,133 @@
+import { useState } from "react";
+import { ArrowRight, LockKeyhole, MapPin, Navigation, Sparkles } from "lucide-react";
+
+import "./studio-virtual-space-place-gallery.css";
+import { searchStudioVirtualPlaces } from "./experience/studio-place-search";
+import { StudioPlaceSearchControls } from "./experience/StudioPlaceSearchControls";
+
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { spaceKoParticle } from "./hud/space-korean";
+import {
+  STUDIO_VIRTUAL_PLACE_CATEGORIES,
+  studioVirtualPlacesForMode,
+  type StudioVirtualPlaceCategory,
+  type StudioVirtualPlaceDefinition,
+} from "./studio-virtual-space-place-catalog";
+import type { StudioWorldInteractionDefinition } from "./studio-virtual-space-world-manifest";
+
+export interface StudioVirtualSpacePlaceGalleryProps {
+  readonly personal: boolean;
+  readonly currentPlaceId: string;
+  readonly onSelectPlace: (placeId: string) => void;
+  readonly onOpen?: (action: StudioWorldInteractionDefinition["action"]) => void;
+  /** 다른 장소까지 게이트 경유 안내선을 잇는 "길 안내"(W-2). 현재 장소에는 표시하지 않는다. */
+  readonly onGuidePlace?: (placeId: string) => void;
+}
+
+const CATEGORY_COPY: Readonly<Record<StudioVirtualPlaceCategory, readonly [string, string]>> = Object.freeze({
+  all: ["전체", "All"],
+  creation: ["제작", "Create"],
+  review: ["검수", "Review"],
+  community: ["광장", "Community"],
+  collaboration: ["협업", "Collaborate"],
+  archive: ["자료", "Archive"],
+  rest: ["휴식", "Rest"],
+  play: ["놀이", "Play"],
+  production: ["관제", "Production"],
+});
+
+function placeLabel(place: StudioVirtualPlaceDefinition, bilingual: (ko: string, en: string) => string): string {
+  return bilingual(place.labelKo, place.labelEn);
+}
+
+export function StudioVirtualSpacePlaceGallery({
+  personal,
+  currentPlaceId,
+  onSelectPlace,
+  onOpen,
+  onGuidePlace,
+}: StudioVirtualSpacePlaceGalleryProps) {
+  const bt = useBilingual("domains.creator.virtual-space.StudioVirtualSpacePlaceGallery");
+  const [category, setCategory] = useState<StudioVirtualPlaceCategory>("all");
+  const [query, setQuery] = useState("");
+  const categories = STUDIO_VIRTUAL_PLACE_CATEGORIES.filter((candidate) => candidate === "all"
+    || studioVirtualPlacesForMode(personal).some((place) => place.category === candidate));
+  const effectiveCategory = categories.includes(category) ? category : "all";
+  const places = searchStudioVirtualPlaces(personal, effectiveCategory, query);
+
+  return (
+    <section className="studio-place-gallery" aria-labelledby="studio-place-gallery-title">
+      <div className="studio-place-gallery__heading">
+        <div>
+          <p><Sparkles size={14} aria-hidden />{bt("다양한 작업 공간", "A variety of workspaces")}</p>
+          <h2 id="studio-place-gallery-title">{bt("장소 선택", "Choose a place")}</h2>
+          <span>{bt(
+            "각 장소는 이동 동선, 제작 기능, NPC와 환경음이 연결된 독립 작업 구역입니다.",
+            "Each place connects navigation, production tools, NPCs and ambience.",
+          )}</span>
+        </div>
+      </div>
+
+      <div className="studio-place-gallery__filters" role="group" aria-label={bt("장소 분류", "Place categories")}>
+        {categories.map((candidate) => (
+          <button
+            key={candidate}
+            type="button"
+            aria-pressed={effectiveCategory === candidate}
+            onClick={() => setCategory(candidate)}
+          >
+            {bt(...CATEGORY_COPY[candidate])}
+          </button>
+        ))}
+      </div>
+
+      <StudioPlaceSearchControls query={query} count={places.length} filtered={Boolean(query) || effectiveCategory !== "all"} onQuery={setQuery} onReset={() => { setQuery(""); setCategory("all"); }} />
+
+      <div className="studio-place-gallery__grid">
+        {places.map((place) => {
+          const active = place.id === currentPlaceId;
+          const label = placeLabel(place, bt);
+          return (
+            <article key={place.id} data-active={active || undefined} data-recommended={place.recommended || undefined}>
+              <button
+                type="button"
+                className="studio-place-gallery__preview"
+                aria-label={bt(`${spaceKoParticle(place.labelKo, "으로")} 이동`, `Move to ${place.labelEn}`)}
+                onClick={() => onSelectPlace(place.id)}
+              >
+                <img src={place.previewUrl} alt="" loading="lazy" decoding="async" draggable={false} />
+                <span className="studio-place-gallery__shade" aria-hidden />
+                <span className="studio-place-gallery__badge">
+                  {active ? bt("현재 장소", "Current") : place.recommended ? bt("추천", "Recommended") : bt(...CATEGORY_COPY[place.category])}
+                </span>
+                {place.projectOnly ? <span className="studio-place-gallery__project"><LockKeyhole size={12} aria-hidden />{bt("프로젝트", "Project")}</span> : null}
+              </button>
+              <div className="studio-place-gallery__copy">
+                <h3>{label}</h3>
+                <p>{bt(place.descriptionKo, place.descriptionEn)}</p>
+                <div>
+                  <button type="button" onClick={() => onSelectPlace(place.id)}>
+                    <MapPin size={14} aria-hidden />{active ? bt("둘러보기", "Explore") : bt("이동", "Move")}
+                  </button>
+                  {!active && onGuidePlace ? (
+                    <button type="button" onClick={() => onGuidePlace(place.id)}
+                      aria-label={bt(`${place.labelKo} 길 안내`, `Guide me to ${place.labelEn}`)}>
+                      <Navigation size={14} aria-hidden />{bt("길 안내", "Guide me")}
+                    </button>
+                  ) : null}
+                  {place.action && onOpen ? (
+                    <button type="button" onClick={() => { if (place.action) onOpen(place.action); }}>
+                      {bt("기능 열기", "Open tool")}<ArrowRight size={14} aria-hidden />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+export default StudioVirtualSpacePlaceGallery;
