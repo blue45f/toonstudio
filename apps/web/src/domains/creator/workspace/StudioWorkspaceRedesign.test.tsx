@@ -57,7 +57,7 @@ describe("studio-first visual redesign retains real actions", () => {
     expect(within(nav).getByRole("link", { name: "내 홈" }).getAttribute("href")).toBe("/home?project=exact");
     expect(within(nav).getByRole("link", { name: "제작" }).getAttribute("href")).toBe("/studio");
     expect(within(nav).getByRole("link", { name: "탐색" }).getAttribute("href")).toBe("/discover");
-    expect(within(nav).getByRole("link", { name: "전체" }).getAttribute("href")).toBe("/sitemap");
+    expect(within(nav).getByRole("link", { name: "전체 메뉴" }).getAttribute("href")).toBe("/sitemap");
     expect(screen.getByRole("link", { name: "ToonStudio 홈" }).getAttribute("href")).toBe("/home");
   });
 });

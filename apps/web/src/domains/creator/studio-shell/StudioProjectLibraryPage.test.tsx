@@ -205,7 +205,7 @@ describe("StudioProjectLibraryPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: /^전체 복구$|^Restore all$/u }));
+    fireEvent.click(await screen.findByRole("button", { name: /^전체 복원$|^Restore all$/u }));
     await waitFor(() => {
       expect(readStudioProjectLibrary(window.localStorage).projects.every((project) => project.status === "active"))
         .toBe(true);
