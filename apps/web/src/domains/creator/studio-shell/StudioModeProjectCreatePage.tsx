@@ -102,7 +102,21 @@ const COLLABORATION_ICONS: Readonly<Record<StudioProjectCollaboration, LucideIco
 };
 
 const CREATE_DISABLED_REASON_ID = "studio-create-disabled-reason";
+const CREATE_SIZE_REASON_ID = "studio-create-size-reason";
 const PROJECT_TITLE_INPUT_ID = "studio-mode-project-title";
+const CANVAS_WIDTH_INPUT_ID = "studio-mode-canvas-width";
+const CANVAS_HEIGHT_INPUT_ID = "studio-mode-canvas-height";
+/** 문서 저장소가 허용하는 캔버스 한 변의 범위(studio-project-document-store의 positiveDimension과 동일). */
+const CANVAS_DIMENSION_MIN = 1;
+const CANVAS_DIMENSION_MAX = 1_000_000;
+
+function parseCanvasDimension(raw: string): number | null {
+  const value = Number(raw.trim());
+  if (!Number.isSafeInteger(value) || value < CANVAS_DIMENSION_MIN || value > CANVAS_DIMENSION_MAX) {
+    return null;
+  }
+  return value;
+}
 
 /** 가져온 아이디어 칩에서 제목 입력칸으로 바로 이동한다(모션 감소 설정을 따른다). */
 function focusProjectTitle(): void {
@@ -283,6 +297,8 @@ export function StudioModeProjectCreatePage() {
   const [selection, setSelection] = useState<WebtoonOnboardingSelection>(
     requestedSelection ?? DEFAULT_WEBTOON_ONBOARDING_SELECTION,
   );
+  // 템플릿이 정한 초기 크기를 숫자로 덮어쓴 값. null이면 템플릿 크기를 그대로 쓴다.
+  const [sizeOverride, setSizeOverride] = useState<{ width: string; height: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -298,6 +314,11 @@ export function StudioModeProjectCreatePage() {
     : mainTemplate.id;
   const selectedPageCount = auxiliary ? 1 : mainTemplate.pageCount;
   const modePlan = resolveStudioModeCreationPlan(activeKind, selectedTemplateId);
+  const customWidth = sizeOverride ? parseCanvasDimension(sizeOverride.width) : null;
+  const customHeight = sizeOverride ? parseCanvasDimension(sizeOverride.height) : null;
+  const sizeReady = !sizeOverride || (customWidth !== null && customHeight !== null);
+  const documentWidth = customWidth ?? modePlan.document.width;
+  const documentHeight = customHeight ?? modePlan.document.height;
   const onboardingPlan = useMemo(() => buildWebtoonOnboardingPlan(selection), [selection]);
   const supportsProductionPlan = !auxiliary && format.projectKind === "webtoon";
   const structuredWebtoon = supportsProductionPlan && onboardingEnabled;
@@ -318,6 +339,7 @@ export function StudioModeProjectCreatePage() {
     setAuxiliaryKind(null);
     setFormatId(profile.id);
     setTemplateId(profile.templates[0]!.id);
+    setSizeOverride(null);
     if (!titleEdited) setTitle(bt(profile.defaultTitleKo, profile.defaultTitleEn));
     if (profile.projectKind !== "webtoon") setOnboardingEnabled(false);
     setError(null);
@@ -326,6 +348,7 @@ export function StudioModeProjectCreatePage() {
   function chooseAuxiliary(option: StudioAuxiliaryWorkspaceOption) {
     setAuxiliaryKind(option.id);
     setTemplateId(option.templateId);
+    setSizeOverride(null);
     if (!titleEdited) setTitle(bt(option.defaultTitleKo, option.defaultTitleEn));
     setOnboardingEnabled(false);
     setError(null);
@@ -343,7 +366,7 @@ export function StudioModeProjectCreatePage() {
 
   function create() {
     const normalizedTitle = title.trim();
-    if (creating || !normalizedTitle) return;
+    if (creating || !normalizedTitle || !sizeReady) return;
     setCreating(true);
     setError(null);
     try {
@@ -367,8 +390,8 @@ export function StudioModeProjectCreatePage() {
             : studioProjectFormatDocumentTitle(format.id, normalizedTitle, locale),
           kind: modePlan.document.kind,
           defaultWorkspace: modePlan.document.workspace,
-          width: modePlan.document.width,
-          height: modePlan.document.height,
+          width: documentWidth,
+          height: documentHeight,
           pageCount: selectedPageCount,
         },
       }, window);
@@ -625,7 +648,10 @@ export function StudioModeProjectCreatePage() {
                   id="studio-mode-template"
                   aria-label={bt("시작 템플릿", "Starting template")}
                   value={selectedTemplateId}
-                  onChange={(event) => setTemplateId(event.target.value)}
+                  onChange={(event) => {
+                    setTemplateId(event.target.value);
+                    setSizeOverride(null);
+                  }}
                   className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg outline-none focus:border-accent"
                 >
                   {(auxiliary ? auxiliaryTemplates : format.templates).map((option) => (
@@ -641,6 +667,71 @@ export function StudioModeProjectCreatePage() {
                 ) : null}
               </label>
             </div>
+
+            <fieldset className="mt-4" data-studio-create-custom-size="true">
+              <legend className="text-xs font-bold text-fg-2">
+                {bt("캔버스 크기 직접 입력", "Enter canvas size directly")}
+              </legend>
+              <div className="mt-2 flex flex-wrap items-end gap-3">
+                <label className="block text-xs font-bold text-fg-2" htmlFor={CANVAS_WIDTH_INPUT_ID}>
+                  {bt("너비(px)", "Width (px)")}
+                  <input
+                    id={CANVAS_WIDTH_INPUT_ID}
+                    type="number"
+                    inputMode="numeric"
+                    min={CANVAS_DIMENSION_MIN}
+                    max={CANVAS_DIMENSION_MAX}
+                    step={1}
+                    value={sizeOverride?.width ?? String(modePlan.document.width)}
+                    aria-invalid={sizeOverride !== null && customWidth === null ? true : undefined}
+                    onChange={(event) => setSizeOverride({
+                      width: event.target.value,
+                      height: sizeOverride?.height ?? String(modePlan.document.height),
+                    })}
+                    className="mt-2 min-h-11 w-36 rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg outline-none focus:border-accent"
+                  />
+                </label>
+                <span aria-hidden="true" className="pb-3 text-sm font-black text-fg-2">×</span>
+                <label className="block text-xs font-bold text-fg-2" htmlFor={CANVAS_HEIGHT_INPUT_ID}>
+                  {bt("높이(px)", "Height (px)")}
+                  <input
+                    id={CANVAS_HEIGHT_INPUT_ID}
+                    type="number"
+                    inputMode="numeric"
+                    min={CANVAS_DIMENSION_MIN}
+                    max={CANVAS_DIMENSION_MAX}
+                    step={1}
+                    value={sizeOverride?.height ?? String(modePlan.document.height)}
+                    aria-invalid={sizeOverride !== null && customHeight === null ? true : undefined}
+                    onChange={(event) => setSizeOverride({
+                      width: sizeOverride?.width ?? String(modePlan.document.width),
+                      height: event.target.value,
+                    })}
+                    className="mt-2 min-h-11 w-36 rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg outline-none focus:border-accent"
+                  />
+                </label>
+                {sizeOverride ? (
+                  <button
+                    type="button"
+                    onClick={() => setSizeOverride(null)}
+                    className="inline-flex min-h-11 items-center rounded-lg px-2 text-xs font-bold text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                  >
+                    {bt("템플릿 크기로 되돌리기", "Reset to template size")}
+                  </button>
+                ) : null}
+              </div>
+              <p className="mt-1.5 text-[0.68rem] leading-5 text-fg-2">
+                {sizeOverride
+                  ? bt(
+                    "템플릿 기본 크기와 다르게 직접 지정한 크기로 첫 문서를 만듭니다.",
+                    "The first document will use your custom size instead of the template default.",
+                  )
+                  : bt(
+                    "템플릿 기본 크기가 표시되어 있습니다. 자체 규격(출판·해외 플랫폼 등)이 있을 때만 숫자를 바꾸세요.",
+                    "Template sizes are shown. Change the numbers only for a custom spec (print, overseas platforms).",
+                  )}
+              </p>
+            </fieldset>
 
             {!auxiliary ? (
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -833,10 +924,21 @@ export function StudioModeProjectCreatePage() {
             <DisabledReason id={CREATE_DISABLED_REASON_ID} visible={!titleReady} className="mt-3">
               {bt("프로젝트 이름을 입력해 주세요.", "Enter a project name.")}
             </DisabledReason>
+            <DisabledReason id={CREATE_SIZE_REASON_ID} visible={!sizeReady} className="mt-3">
+              {bt(
+                "캔버스 너비와 높이는 1부터 1,000,000 사이의 정수로 입력해 주세요.",
+                "Enter canvas width and height as whole numbers between 1 and 1,000,000.",
+              )}
+            </DisabledReason>
             <button
               type="button"
-              disabled={creating || !titleReady}
-              aria-describedby={!titleReady ? CREATE_DISABLED_REASON_ID : undefined}
+              disabled={creating || !titleReady || !sizeReady}
+              aria-describedby={
+                [
+                  !titleReady ? CREATE_DISABLED_REASON_ID : null,
+                  !sizeReady ? CREATE_SIZE_REASON_ID : null,
+                ].filter(Boolean).join(" ") || undefined
+              }
               onClick={create}
               className={buttonClass({ variant: "solid", size: "lg", className: "mt-4 min-h-12 w-full gap-2" })}
             >
