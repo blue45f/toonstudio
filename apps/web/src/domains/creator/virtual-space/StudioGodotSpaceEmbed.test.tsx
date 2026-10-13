@@ -107,6 +107,7 @@ function renderEmbed(issuer: StudioRealtimeTicketIssuer, localOnly = false) {
       colorHex="#3b82f6"
       skinKey="pink"
       localOnly={localOnly}
+      onExitToClassic={() => undefined}
       ticketIssuer={issuer}
     />,
   );
@@ -232,6 +233,7 @@ describe("StudioGodotSpaceEmbed", () => {
             "T".repeat(43),
           guestSessionId: "Ab3dEf6hJkLmNpQr",
         }}
+        onExitToClassic={() => undefined}
         ticketIssuer={{ issue }}
       />,
     );
@@ -273,6 +275,7 @@ describe("StudioGodotSpaceEmbed", () => {
           code: "ABC234",
           guestSessionId: "Ab3dEf6hJkLmNpQr",
         }}
+        onExitToClassic={() => undefined}
         ticketIssuer={{ issue }}
       />,
     );

@@ -1,0 +1,416 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS,
+  STUDIO_DISPLAY_DAMP_TAU_REFERENCE_SPEED,
+  STUDIO_DISPLAY_DAMP_TAU_SECONDS,
+  STUDIO_DISPLAY_SNAP_DISTANCE_PX,
+  STUDIO_PEER_ENTER_FADE_MS,
+  STUDIO_PEER_EXIT_FADE_MS,
+  STUDIO_SPRITE_CROSSFADE_MS,
+  STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS,
+  STUDIO_ACTOR_VISIBILITY_FADE_IN_MS,
+  STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS,
+  createStudioActorVisibilityFadeState,
+  createStudioSpriteCrossfadeState,
+  dampStudioDisplayPoint,
+  finishStudioSpriteCrossfade,
+  studioActorVisibilityFadeAlpha,
+  studioActorVisibilityFadeRendering,
+  studioBreathPhaseAt,
+  studioDisplayDampTauSeconds,
+  studioPeerPresenceFade,
+  studioPoseSettleScaleY,
+  studioSmoothingPhaseSeed,
+  studioSpriteCrossfadeAlpha,
+  transitionStudioActorVisibilityFade,
+  transitionStudioSpriteCrossfade,
+  type StudioSpriteVisualIdentity,
+} from "./studio-virtual-space-sprite-smoothing";
+
+const identity = (partial: Partial<StudioSpriteVisualIdentity> = {}): StudioSpriteVisualIdentity => ({
+  key: "idle-sheet#0|idle",
+  textureKey: "idle-sheet",
+  frame: "0",
+  animated: false,
+  state: "idle",
+  ...partial,
+});
+
+describe("dampStudioDisplayPoint", () => {
+  it("첫 표시(null)에서는 목표를 그대로 반환한다", () => {
+    expect(dampStudioDisplayPoint(null, { x: 10, y: 20 }, 0.016)).toEqual({ x: 10, y: 20 });
+  });
+
+  it("한 프레임(16ms) 뒤에는 간격의 약 27%를 좁힌다 (τ=50ms 지수 감쇠)", () => {
+    const next = dampStudioDisplayPoint({ x: 0, y: 0 }, { x: 80, y: 0 }, 0.016);
+    const expected = 80 * (1 - Math.exp(-0.016 / STUDIO_DISPLAY_DAMP_TAU_SECONDS));
+    expect(next.x).toBeCloseTo(expected, 6);
+    expect(next.x).toBeGreaterThan(16);
+    expect(next.x).toBeLessThan(28);
+    expect(next.y).toBe(0);
+  });
+
+  it("프레임레이트와 무관하게 수렴한다: 8ms 두 번 ≈ 16ms 한 번", () => {
+    const target = { x: 60, y: 30 };
+    const once = dampStudioDisplayPoint({ x: 0, y: 0 }, target, 0.016);
+    const half = dampStudioDisplayPoint({ x: 0, y: 0 }, target, 0.008);
+    const twice = dampStudioDisplayPoint(half, target, 0.008);
+    expect(twice.x).toBeCloseTo(once.x, 6);
+    expect(twice.y).toBeCloseTo(once.y, 6);
+  });
+
+  it("반복 적용하면 목표에 수렴하고 지나치지 않는다", () => {
+    let point = { x: 0, y: 0 };
+    for (let index = 0; index < 120; index += 1) {
+      point = dampStudioDisplayPoint(point, { x: 50, y: -30 }, 1 / 60);
+      expect(point.x).toBeLessThanOrEqual(50);
+      expect(point.y).toBeGreaterThanOrEqual(-30);
+    }
+    expect(point.x).toBeCloseTo(50, 3);
+    expect(point.y).toBeCloseTo(-30, 3);
+  });
+
+  it("스냅 임계보다 먼 목표는 텔레포트로 보고 즉시 이동한다", () => {
+    const snapped = dampStudioDisplayPoint({ x: 0, y: 0 }, { x: STUDIO_DISPLAY_SNAP_DISTANCE_PX + 1, y: 0 }, 0.016);
+    expect(snapped).toEqual({ x: STUDIO_DISPLAY_SNAP_DISTANCE_PX + 1, y: 0 });
+  });
+
+  it("enabled=false면 감쇠 없이 스냅한다 (모션 감소)", () => {
+    expect(dampStudioDisplayPoint({ x: 0, y: 0 }, { x: 10, y: 10 }, 0.016, { enabled: false }))
+      .toEqual({ x: 10, y: 10 });
+  });
+
+  it("dt가 0이면 움직이지 않는다", () => {
+    expect(dampStudioDisplayPoint({ x: 3, y: 4 }, { x: 30, y: 40 }, 0)).toEqual({ x: 3, y: 4 });
+  });
+});
+
+describe("호흡 위상", () => {
+  it("시드는 결정적이고 0~1 구간이다", () => {
+    expect(studioSmoothingPhaseSeed("npc-moa")).toBe(studioSmoothingPhaseSeed("npc-moa"));
+    const seed = studioSmoothingPhaseSeed("npc-moa");
+    expect(seed).toBeGreaterThanOrEqual(0);
+    expect(seed).toBeLessThan(1);
+    expect(studioSmoothingPhaseSeed("npc-yun")).not.toBe(seed);
+  });
+
+  it("위상은 주기(4초)마다 반복되고 항상 0~1이다", () => {
+    expect(studioBreathPhaseAt(1_000, 0.25)).toBeCloseTo(studioBreathPhaseAt(5_000, 0.25), 10);
+    for (const time of [0, 999, 4_000, 12_345, -500]) {
+      const phase = studioBreathPhaseAt(time, 0.7);
+      expect(phase).toBeGreaterThanOrEqual(0);
+      expect(phase).toBeLessThan(1);
+    }
+  });
+});
+
+describe("크로스페이드 상태 머신", () => {
+  it("첫 정체성은 페이드 없이 채택한다", () => {
+    const { state, started } = transitionStudioSpriteCrossfade(
+      createStudioSpriteCrossfadeState(), identity(), 1_000);
+    expect(started).toBeNull();
+    expect(state.identity?.textureKey).toBe("idle-sheet");
+    expect(state.fade).toBeNull();
+  });
+
+  it("idle→walk 텍스처 교체에서 이전 그림으로 페이드를 시작한다", () => {
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), identity(), 0).state;
+    const walk = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const { state, started } = transitionStudioSpriteCrossfade(first, walk, 500);
+    expect(started).toEqual({ textureKey: "idle-sheet", frame: "0", startedAt: 500, durationMs: STUDIO_SPRITE_CROSSFADE_MS });
+    expect(state.identity?.textureKey).toBe("walk-sheet");
+    expect(state.fade).toEqual(started);
+  });
+
+  it("같은 텍스처의 게이트 걷기 프레임 진행은 체류가 짧으면(빠른 걷기) 페이드하지 않는다", () => {
+    const walk0 = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), walk0, 0).state;
+    const walk1 = identity({ key: "walk-sheet#1|walk", textureKey: "walk-sheet", frame: "1", state: "walk" });
+    const { state, started } = transitionStudioSpriteCrossfade(first, walk1, 100);
+    expect(started).toBeNull();
+    expect(state.fade).toBeNull();
+    expect(state.identity?.frame).toBe("1");
+  });
+
+  it("애니메이션 재생 중 같은 텍스처의 프레임 진행은 페이드하지 않는다", () => {
+    const anim3 = identity({ key: "walk-sheet|anim:walk-down|walk", textureKey: "walk-sheet", frame: "3", animated: true, state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), anim3, 0).state;
+    const anim4 = identity({ key: "walk-sheet|anim:walk-down|walk", textureKey: "walk-sheet", frame: "4", animated: true, state: "walk" });
+    const { started } = transitionStudioSpriteCrossfade(first, anim4, 100);
+    expect(started).toBeNull();
+  });
+
+  it("방향 전환으로 걷기 시트가 바뀌면 페이드한다", () => {
+    const down = identity({ key: "walk-down|anim:walk-down|walk", textureKey: "walk-down", frame: "2", animated: true, state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), down, 0).state;
+    const left = identity({ key: "walk-left|anim:walk-left|walk", textureKey: "walk-left", frame: "2", animated: true, state: "walk" });
+    const { started } = transitionStudioSpriteCrossfade(first, left, 200);
+    expect(started?.textureKey).toBe("walk-down");
+  });
+
+  it("공유 아틀라스에서 방향 클립이 바뀌면 텍스처가 같아도 페이드한다", () => {
+    const down = identity({ key: "atlas#8|walk|clip:walk-down", textureKey: "atlas", frame: "8", state: "walk", clipKey: "walk-down" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), down, 0).state;
+    const left = identity({ key: "atlas#4|walk|clip:walk-left", textureKey: "atlas", frame: "4", state: "walk", clipKey: "walk-left" });
+    const { started } = transitionStudioSpriteCrossfade(first, left, 200);
+    expect(started).toEqual({ textureKey: "atlas", frame: "8", startedAt: 200, durationMs: STUDIO_SPRITE_CROSSFADE_MS });
+  });
+
+  it("공유 아틀라스에서 같은 방향 클립의 프레임 진행은 페이드하지 않는다", () => {
+    const frame8 = identity({ key: "atlas#8|walk|clip:walk-down", textureKey: "atlas", frame: "8", state: "walk", clipKey: "walk-down" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), frame8, 0).state;
+    const frame9 = identity({ key: "atlas#9|walk|clip:walk-down", textureKey: "atlas", frame: "9", state: "walk", clipKey: "walk-down" });
+    const { state, started } = transitionStudioSpriteCrossfade(first, frame9, 100);
+    expect(started).toBeNull();
+    expect(state.fade).toBeNull();
+    expect(state.identity?.frame).toBe("9");
+  });
+
+  it("게이트 걷기 프레임 진행은 체류가 길면 짧은 근사 페이드를 건다 (절차 근사)", () => {
+    const walk0 = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), walk0, 0).state;
+    const walk1 = identity({ key: "walk-sheet#1|walk", textureKey: "walk-sheet", frame: "1", state: "walk" });
+    // 체류 200ms → 체류의 40%(80ms)가 상한 56ms에 걸린다.
+    const { state, started } = transitionStudioSpriteCrossfade(first, walk1, 200);
+    expect(started).toEqual({
+      textureKey: "walk-sheet", frame: "0", startedAt: 200,
+      durationMs: STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS,
+    });
+    expect(state.fade).toEqual(started);
+    // 근사 페이드는 기록된 짧은 길이에 맞춰 끝나고 상태 전이 길이까지 끌지 않는다.
+    expect(studioSpriteCrossfadeAlpha(state, 200 + STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS)).toBe(0);
+    expect(finishStudioSpriteCrossfade(state, 200 + STUDIO_SPRITE_WALK_FRAME_FADE_MAX_MS).fade).toBeNull();
+  });
+
+  it("걷기 프레임 근사 페이드 길이는 체류의 40%를 넘지 않는다", () => {
+    const walk0 = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), walk0, 0).state;
+    const walk1 = identity({ key: "walk-sheet#1|walk", textureKey: "walk-sheet", frame: "1", state: "walk" });
+    // 체류 130ms(최소값 120ms 초과) → 52ms.
+    const { started } = transitionStudioSpriteCrossfade(first, walk1, 130);
+    expect(started?.durationMs).toBeCloseTo(52, 6);
+    expect(started?.durationMs).toBeLessThan(STUDIO_SPRITE_CROSSFADE_MS);
+  });
+
+  it("걷기 프레임 근사 페이드는 프레임마다 새로 걸리지 않는다 (체류 재측정)", () => {
+    const walk0 = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), walk0, 0).state;
+    const walk1 = identity({ key: "walk-sheet#1|walk", textureKey: "walk-sheet", frame: "1", state: "walk" });
+    const second = transitionStudioSpriteCrossfade(first, walk1, 200).state;
+    const walk2 = identity({ key: "walk-sheet#2|walk", textureKey: "walk-sheet", frame: "2", state: "walk" });
+    // 직전 교체가 200ms였으므로 다음 프레임까지의 체류는 짧아 다시 걸지 않는다.
+    const { started } = transitionStudioSpriteCrossfade(second, walk2, 260);
+    expect(started).toBeNull();
+  });
+
+  it("한쪽에만 방향 클립이 있으면 종전 판정을 유지한다 (하위 호환)", () => {
+    const withoutClip = identity({ key: "atlas#8|walk", textureKey: "atlas", frame: "8", state: "walk" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), withoutClip, 0).state;
+    const withClip = identity({ key: "atlas#4|walk|clip:walk-left", textureKey: "atlas", frame: "4", state: "walk", clipKey: "walk-left" });
+    const { started } = transitionStudioSpriteCrossfade(first, withClip, 100);
+    expect(started).toBeNull();
+  });
+
+  it("같은 시트에서 표정 프레임이 바뀌면 페이드한다 (표정 전이)", () => {
+    const calm = identity({ key: "emotions#0|idle", textureKey: "emotions", frame: "0" });
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), calm, 0).state;
+    const happy = identity({ key: "emotions#1|idle", textureKey: "emotions", frame: "1" });
+    const { started } = transitionStudioSpriteCrossfade(first, happy, 300);
+    expect(started).toEqual({ textureKey: "emotions", frame: "0", startedAt: 300, durationMs: STUDIO_SPRITE_CROSSFADE_MS });
+  });
+
+  it("enabled=false면 페이드 없이 즉시 교체한다 (모션 감소·저사양)", () => {
+    const first = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), identity(), 0).state;
+    const talk = identity({ key: "talk-sheet#0|talk", textureKey: "talk-sheet", state: "talk" });
+    const { state, started } = transitionStudioSpriteCrossfade(first, talk, 100, { enabled: false });
+    expect(started).toBeNull();
+    expect(state.fade).toBeNull();
+    expect(state.identity?.textureKey).toBe("talk-sheet");
+  });
+
+  it("페이드 도중 다시 교체되면 현재 본 그림을 새 원본으로 삼는다", () => {
+    const s0 = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), identity(), 0).state;
+    const walk = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const s1 = transitionStudioSpriteCrossfade(s0, walk, 100).state;
+    const talk = identity({ key: "talk-sheet#0|talk", textureKey: "talk-sheet", state: "talk" });
+    const { started } = transitionStudioSpriteCrossfade(s1, talk, 150);
+    expect(started).toEqual({ textureKey: "walk-sheet", frame: "0", startedAt: 150, durationMs: STUDIO_SPRITE_CROSSFADE_MS });
+  });
+
+  it("알파는 1에서 시작해 페이드 시간에 0이 되고, finish가 상태를 정리한다", () => {
+    const s0 = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), identity(), 0).state;
+    const walk = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const { state } = transitionStudioSpriteCrossfade(s0, walk, 1_000);
+    expect(studioSpriteCrossfadeAlpha(state, 1_000)).toBe(1);
+    const mid = studioSpriteCrossfadeAlpha(state, 1_000 + STUDIO_SPRITE_CROSSFADE_MS / 2);
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(0.5);
+    expect(studioSpriteCrossfadeAlpha(state, 1_000 + STUDIO_SPRITE_CROSSFADE_MS)).toBe(0);
+    expect(finishStudioSpriteCrossfade(state, 1_050).fade).not.toBeNull();
+    expect(finishStudioSpriteCrossfade(state, 1_000 + STUDIO_SPRITE_CROSSFADE_MS).fade).toBeNull();
+    expect(finishStudioSpriteCrossfade(state, 1_000 + STUDIO_SPRITE_CROSSFADE_MS).identity?.textureKey).toBe("walk-sheet");
+  });
+
+  it("동일 정체성 재적용은 진행 중인 페이드를 건드리지 않는다", () => {
+    const s0 = transitionStudioSpriteCrossfade(createStudioSpriteCrossfadeState(), identity(), 0).state;
+    const walk = identity({ key: "walk-sheet#0|walk", textureKey: "walk-sheet", state: "walk" });
+    const s1 = transitionStudioSpriteCrossfade(s0, walk, 100).state;
+    const { state, started } = transitionStudioSpriteCrossfade(s1, walk, 120);
+    expect(started).toBeNull();
+    expect(state.fade?.startedAt).toBe(100);
+  });
+});
+
+describe("studioPeerPresenceFade", () => {
+  const base = { spawnedAt: 1_000, leavingAt: null, reducedMotion: false, effectsSuppressed: false };
+
+  it("입장 직후 0에서 시작해 페이드인 구간이 끝나면 1이 된다", () => {
+    expect(studioPeerPresenceFade({ ...base, now: 1_000 })).toBe(0);
+    const mid = studioPeerPresenceFade({ ...base, now: 1_000 + STUDIO_PEER_ENTER_FADE_MS / 2 });
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(1);
+    expect(studioPeerPresenceFade({ ...base, now: 1_000 + STUDIO_PEER_ENTER_FADE_MS })).toBe(1);
+    expect(studioPeerPresenceFade({ ...base, now: 9_999 })).toBe(1);
+  });
+
+  it("퇴장은 leavingAt부터 내려가 구간이 끝나면 0(파괴 신호)이 된다", () => {
+    const leaving = { ...base, leavingAt: 2_000 };
+    expect(studioPeerPresenceFade({ ...leaving, now: 2_000 })).toBe(1);
+    expect(studioPeerPresenceFade({ ...leaving, now: 2_000 + STUDIO_PEER_EXIT_FADE_MS })).toBe(0);
+    expect(studioPeerPresenceFade({ ...leaving, now: 9_999 })).toBe(0);
+  });
+
+  it("모션 줄이기·효과 억제에서는 페이드 없이 즉시 갈린다", () => {
+    expect(studioPeerPresenceFade({ ...base, now: 1_000, reducedMotion: true })).toBe(1);
+    expect(studioPeerPresenceFade({ ...base, now: 1_000, effectsSuppressed: true })).toBe(1);
+    expect(studioPeerPresenceFade({ ...base, leavingAt: 2_000, now: 2_000, reducedMotion: true })).toBe(0);
+  });
+});
+
+describe("studioDisplayDampTauSeconds", () => {
+  it("기준 속도까지는 기본 τ를 유지한다", () => {
+    expect(studioDisplayDampTauSeconds(0)).toBe(STUDIO_DISPLAY_DAMP_TAU_SECONDS);
+    expect(studioDisplayDampTauSeconds(STUDIO_DISPLAY_DAMP_TAU_REFERENCE_SPEED)).toBe(STUDIO_DISPLAY_DAMP_TAU_SECONDS);
+  });
+
+  it("빠를수록 τ가 줄고 하한 아래로는 내려가지 않는다", () => {
+    const fast = studioDisplayDampTauSeconds(200);
+    expect(fast).toBeCloseTo(0.04, 5);
+    expect(fast).toBeLessThan(STUDIO_DISPLAY_DAMP_TAU_SECONDS);
+    expect(fast).toBeGreaterThan(STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS);
+    // 달리기 속도에서는 이미 하한에 닿아 그 아래로는 내려가지 않는다.
+    expect(studioDisplayDampTauSeconds(277)).toBe(STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS);
+    expect(studioDisplayDampTauSeconds(10_000)).toBe(STUDIO_DISPLAY_DAMP_TAU_MIN_SECONDS);
+  });
+
+  it("속도 적응 τ를 쓰면 달리기 속도에서 표시 뒤처짐이 줄어든다", () => {
+    // 277px/s로 멀어지는 목표를 60fps로 따라갈 때 정상상태 뒤처짐 ≈ 속도 × τ.
+    const fixedLag = 277 * STUDIO_DISPLAY_DAMP_TAU_SECONDS;
+    const adaptiveLag = 277 * studioDisplayDampTauSeconds(277);
+    expect(adaptiveLag).toBeLessThan(fixedLag);
+    expect(adaptiveLag).toBeLessThan(9);
+  });
+});
+
+describe("studioPoseSettleScaleY", () => {
+  it("앉기 전이 중간에서는 눌리고, 시작과 끝에서는 1로 돌아온다", () => {
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 0, reducedMotion: false })).toBe(1);
+    const mid = studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 190, reducedMotion: false });
+    expect(mid).toBeCloseTo(1 - 0.055, 5);
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 380, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 5_000, reducedMotion: false })).toBe(1);
+  });
+
+  it("눕기는 앉기보다 얕게 눌린다", () => {
+    const lie = studioPoseSettleScaleY({ state: "lie", previousState: "idle", elapsedMs: 190, reducedMotion: false });
+    const sit = studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 190, reducedMotion: false });
+    expect(lie).toBeCloseTo(1 - 0.04, 5);
+    expect(lie).toBeGreaterThan(sit);
+  });
+
+  it("앉았다 일어설 때는 가벼운 세틀이 걸리고, 그 외 전이는 변형이 없다", () => {
+    const stand = studioPoseSettleScaleY({ state: "idle", previousState: "sit", elapsedMs: 150, reducedMotion: false });
+    expect(stand).toBeCloseTo(1 - 0.03, 5);
+    expect(studioPoseSettleScaleY({ state: "idle", previousState: "lie", elapsedMs: 300, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "idle", previousState: "walk", elapsedMs: 150, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "talk", previousState: "sit", elapsedMs: 150, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "walk", previousState: null, elapsedMs: 150, reducedMotion: false })).toBe(1);
+  });
+
+  it("모션 줄이기와 깨진 경과 시간에서는 항상 1이다", () => {
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: 190, reducedMotion: true })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: Number.NaN, reducedMotion: false })).toBe(1);
+    expect(studioPoseSettleScaleY({ state: "sit", previousState: "idle", elapsedMs: -5, reducedMotion: false })).toBe(1);
+  });
+});
+
+describe("배우 가시성 페이드 (NPC 등장·퇴장)", () => {
+  it("첫 관측은 판정을 즉시 채택해 씬 시작부터 페이드가 걸리지 않는다", () => {
+    const shown = transitionStudioActorVisibilityFade(null, true, 5_000);
+    expect(studioActorVisibilityFadeAlpha(shown, 5_000)).toBe(1);
+    expect(studioActorVisibilityFadeRendering(shown, 5_000)).toBe(true);
+    const hidden = transitionStudioActorVisibilityFade(null, false, 5_000);
+    expect(studioActorVisibilityFadeAlpha(hidden, 5_000)).toBe(0);
+    expect(studioActorVisibilityFadeRendering(hidden, 5_000)).toBe(false);
+  });
+
+  it("등장은 0에서 smoothstep으로 차오르고 구간이 끝나면 1에 고정된다", () => {
+    const hidden = createStudioActorVisibilityFadeState(false);
+    const entering = transitionStudioActorVisibilityFade(hidden, true, 1_000);
+    expect(studioActorVisibilityFadeAlpha(entering, 1_000)).toBe(0);
+    // 페이드인 첫 프레임은 알파 0이어도 그리기 시작한다.
+    expect(studioActorVisibilityFadeRendering(entering, 1_000)).toBe(true);
+    const mid = studioActorVisibilityFadeAlpha(entering, 1_000 + STUDIO_ACTOR_VISIBILITY_FADE_IN_MS / 2);
+    expect(mid).toBeCloseTo(0.5, 5);
+    expect(studioActorVisibilityFadeAlpha(entering, 1_000 + STUDIO_ACTOR_VISIBILITY_FADE_IN_MS)).toBe(1);
+    expect(studioActorVisibilityFadeAlpha(entering, 9_999)).toBe(1);
+  });
+
+  it("퇴장은 페이드아웃 구간 동안 계속 그려지고 끝나면 렌더링이 멈춘다", () => {
+    const shown = createStudioActorVisibilityFadeState(true);
+    const leaving = transitionStudioActorVisibilityFade(shown, false, 2_000);
+    expect(studioActorVisibilityFadeAlpha(leaving, 2_000)).toBe(1);
+    expect(studioActorVisibilityFadeRendering(leaving, 2_000 + STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS / 2)).toBe(true);
+    expect(studioActorVisibilityFadeAlpha(leaving, 2_000 + STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS)).toBe(0);
+    expect(studioActorVisibilityFadeRendering(leaving, 2_000 + STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS)).toBe(false);
+    expect(studioActorVisibilityFadeRendering(leaving, 9_999)).toBe(false);
+  });
+
+  it("목표가 같으면 같은 상태를 돌려줘 전이가 재시작되지 않는다", () => {
+    const shown = createStudioActorVisibilityFadeState(true);
+    expect(transitionStudioActorVisibilityFade(shown, true, 3_000)).toBe(shown);
+    const leaving = transitionStudioActorVisibilityFade(shown, false, 3_000);
+    expect(transitionStudioActorVisibilityFade(leaving, false, 3_050)).toBe(leaving);
+  });
+
+  it("퇴장 도중 다시 들어오면 그 순간의 알파에서 이어 오르고 남은 거리만큼 짧아진다", () => {
+    const shown = createStudioActorVisibilityFadeState(true);
+    const leaving = transitionStudioActorVisibilityFade(shown, false, 0);
+    const halfwayAt = STUDIO_ACTOR_VISIBILITY_FADE_OUT_MS / 2;
+    expect(studioActorVisibilityFadeAlpha(leaving, halfwayAt)).toBeCloseTo(0.5, 5);
+    const returning = transitionStudioActorVisibilityFade(leaving, true, halfwayAt);
+    expect(studioActorVisibilityFadeAlpha(returning, halfwayAt)).toBeCloseTo(0.5, 5);
+    // 남은 거리가 절반이라 페이드인 전체 구간의 절반이면 1에 닿는다.
+    expect(studioActorVisibilityFadeAlpha(returning, halfwayAt + STUDIO_ACTOR_VISIBILITY_FADE_IN_MS / 2)).toBe(1);
+  });
+
+  it("모션 줄이기·효과 억제·즉시 처분에서는 페이드 없이 갈린다", () => {
+    const shown = createStudioActorVisibilityFadeState(true);
+    const hidden = createStudioActorVisibilityFadeState(false);
+    for (const options of [{ reducedMotion: true }, { effectsSuppressed: true }, { instant: true }]) {
+      const out = transitionStudioActorVisibilityFade(shown, false, 1_000, options);
+      expect(studioActorVisibilityFadeAlpha(out, 1_000)).toBe(0);
+      expect(studioActorVisibilityFadeRendering(out, 1_000)).toBe(false);
+      const back = transitionStudioActorVisibilityFade(hidden, true, 1_000, options);
+      expect(studioActorVisibilityFadeAlpha(back, 1_000)).toBe(1);
+    }
+  });
+
+  it("깨진 시각·알파에서도 알파는 0~1을 벗어나지 않는다", () => {
+    const broken = { fromAlpha: Number.NaN, targetVisible: true, startedAt: 100 };
+    expect(studioActorVisibilityFadeAlpha(broken, Number.NaN)).toBe(1);
+    const leaving = transitionStudioActorVisibilityFade(createStudioActorVisibilityFadeState(true), false, 0);
+    expect(studioActorVisibilityFadeAlpha(leaving, -50)).toBe(1);
+  });
+});

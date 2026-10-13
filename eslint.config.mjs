@@ -113,6 +113,23 @@ export default defineConfig(
     },
   },
 
+  // 2026-10-13 클래식 2D 복귀 복원 파일: shadcn 파일럿(no-raw-colors)은
+  // 측정용 warn이며 CI 강제 대상이 아니다. 복원 코드는 출고 당시 모습
+  // 그대로 두므로(구 2D 룩 보존) 이 5개 파일에서만 끈다. 파일럿이
+  // error로 승격되면 이 예외도 함께 해소한다.
+  {
+    files: [
+      'apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceScreenShareRequest.tsx',
+      'apps/web/src/domains/creator/virtual-space/StudioVirtualAvatarFigure.tsx',
+      'apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceDecorationEditor.tsx',
+      'apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceSharedCursors.tsx',
+      'apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceAppEmbedPanel.tsx',
+    ],
+    rules: {
+      'shadcn/no-raw-colors': 'off',
+    },
+  },
+
   // The architecture move changed every app import root at once; keep import order diagnostics disabled
   // for the moved surfaces until the shared resolver understands the new workspace aliases.
   {
