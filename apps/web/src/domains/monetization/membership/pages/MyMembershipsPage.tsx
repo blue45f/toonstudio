@@ -4,6 +4,8 @@
  * 팬용 내 멤버십 관리 페이지 (`/memberships`).
  * 가입 중인 멤버십 목록과 해지를 제공한다.
  */
+// 수익화 i18n 네임스페이스는 셸 번들에서 분리됨 — 페이지 평가 시점에 동기 등록한다.
+import "../../monetization-i18n";
 import { Crown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 

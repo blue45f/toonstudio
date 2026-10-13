@@ -4,6 +4,8 @@
  * 창작자용 멤버십 관리 페이지 (`/creator/membership`).
  * 티어 생성·수정, 멤버 수, 월 recurring 수익 추정치를 보여준다.
  */
+// 수익화 i18n 네임스페이스는 셸 번들에서 분리됨 — 페이지 평가 시점에 동기 등록한다.
+import "../../monetization-i18n";
 import { Crown, Eye, Pencil, Plus, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
