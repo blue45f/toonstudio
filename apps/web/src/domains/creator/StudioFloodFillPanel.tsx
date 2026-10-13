@@ -153,6 +153,7 @@ export function StudioFloodFillPanel({
   const toleranceId = useId();
   const expansionId = useId();
   const closeGapId = useId();
+  const closeGapHelpId = useId();
   const leakRatioId = useId();
 
   const safeReferenceLayerCount = safeCount(referenceLayerCount);
@@ -434,6 +435,7 @@ export function StudioFloodFillPanel({
                 id={closeGapId}
                 type="range"
                 aria-labelledby={`${closeGapId}-label`}
+                aria-describedby={closeGapHelpId}
                 min={STUDIO_ADVANCED_FILL_LIMITS.closeGapPx.min}
                 max={STUDIO_ADVANCED_FILL_LIMITS.closeGapPx.max}
                 step={STUDIO_ADVANCED_FILL_LIMITS.closeGapPx.step}
@@ -444,6 +446,10 @@ export function StudioFloodFillPanel({
                   controlFocusClass
                 )}
               />
+              <p id={closeGapHelpId} className="mt-1.5 text-[0.67rem] leading-relaxed text-fg-3">
+                펜 선이 조금 끊겨 있어도 색이 밖으로 새지 않게 틈을 메워 채웁니다. 0으로 두면 틈을
+                메우지 않습니다.
+              </p>
             </div>
           </div>
         </fieldset>

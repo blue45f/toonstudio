@@ -42,7 +42,7 @@ describe("studio advanced fill settings contract", () => {
       tolerance: 32,
       contiguous: true,
       expansionPx: 1.5,
-      closeGapPx: 0,
+      closeGapPx: 3,
       antiAlias: true,
       continuousFill: true,
       leakGuard: true,
