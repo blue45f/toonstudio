@@ -63,6 +63,8 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByRole("link", { name: /템플릿으로 시작하기/ }).getAttribute("href")).toBe("/studio/templates");
     // 콘티 시작점은 작품 생성 화면의 시작점 선택으로 이어진다.
     expect(screen.getByRole("link", { name: /콘티부터 시작하기/ }).getAttribute("href")).toBe("/studio/new?start=storyboard");
+    // 이야기 시작점은 작품 생성 화면의 시작점 선택(아이디어)으로 이어지고, 생성 뒤 기획 섹션에 착지한다.
+    expect(screen.getByRole("link", { name: /이야기부터 시작하기/ }).getAttribute("href")).toBe("/studio/new?start=idea");
     expect(screen.getByRole("heading", { name: "이어서 작업하기" })).toBeTruthy();
   });
 
