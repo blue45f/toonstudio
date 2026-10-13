@@ -106,6 +106,7 @@ function displayQuickStartShortcut(
 
 export function StudioQuickStartPanel({
   onDismiss,
+  onYield,
   onQuickComic,
   onExample,
   onOpenTemplate,
@@ -121,6 +122,7 @@ export function StudioQuickStartPanel({
   startCollapsed = false,
 }: {
   onDismiss: () => void;
+  onYield?: () => void;
   onQuickComic: () => void;
   onExample: () => void;
   onOpenTemplate: () => void;
@@ -214,8 +216,8 @@ export function StudioQuickStartPanel({
   //
   // 실측(2026-08-08): 코치가 떠 있는 채로 메뉴바 `텍스트 ▸ 말풍선`을 열면 코치가 사라졌다가,
   // 그 패널을 Esc 로 닫는 순간 **다시 나타났다**. 표시 조건이 파생 상태(`!menu` 등)라 메뉴를
-  // 여는 경로는 코치를 *가리기*만 하고 dismiss 상태를 남기지 않기 때문이다. 이 한 줄이
-  // dismiss 를 진짜 상태로 기록하게 만들어 재등장 경로를 닫는다.
+  // 여는 경로는 코치를 *가리기*만 하고 상태로 남기지 않기 때문이다. 지금은 바깥 조작이
+  // "접기"를 진짜 상태로 기록해, 코치가 펼쳐진 채로 재등장하는 경로를 닫는다.
   //
   // "언제" 닫느냐는 실측으로 두 번 고쳐서 얻었다. 코치가 사라지면 메뉴바가 다시 배치되고
   // React 가 트리거 DOM 노드를 재활용하기 때문에, 클릭이 처리되는 도중에 닫으면 사용자가
@@ -226,7 +228,14 @@ export function StudioQuickStartPanel({
   //     dispatch → `텍스트` 를 눌렀는데 `Draw` 메뉴가 열림.
   // 그래서 관찰은 캡처 단계에서(중간 stopPropagation 에 가려지지 않게), 실행은 dispatch 가
   // 완전히 끝난 뒤 마이크로태스크에서 한다. 코치의 재배치가 사용자의 클릭을 건드리지 않는다.
-  const dismissFromOutsideClick = useEffectEvent(() => onDismiss());
+  //
+  // 바깥 조작은 영구 dismiss 가 아니라 "접기"다: 호스트가 접힌 상태를 유지하므로 코치는
+  // 사용법 알약으로 남아 다시 펼칠 수 있고, 영구 dismiss 는 ✕ 와 카드 안 Esc 만 기록한다.
+  // (onYield 가 없는 임베드에서는 종전처럼 onDismiss 로 동작한다.)
+  const dismissFromOutsideClick = useEffectEvent(() => {
+    setExpanded(false);
+    (onYield ?? onDismiss)();
+  });
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -253,7 +262,10 @@ export function StudioQuickStartPanel({
   // 해당하지 않는다. 코치는 캔버스의 형제 오버레이라 사라져도 캔버스가 재배치되지 않고, 카드
   // 바깥에는 이제 아무 표면도 없어서 이 pointerdown 은 이미 캔버스가 받은 이벤트다. 우리는 그
   // 이벤트를 가로채지 않고(preventDefault·stopPropagation 없음) 코치만 치운다.
-  const dismissFromCanvasPointerDown = useEffectEvent(() => onDismiss());
+  const dismissFromCanvasPointerDown = useEffectEvent(() => {
+    setExpanded(false);
+    (onYield ?? onDismiss)();
+  });
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;

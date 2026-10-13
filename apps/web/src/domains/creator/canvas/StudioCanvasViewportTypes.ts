@@ -162,6 +162,7 @@ export interface StudioCanvasViewportHandlers {
   commitDrawingPracticeView: (patch: Partial<StudioDrawingPracticeView>) => void;
   designateHistoryBrushSource: (index: number) => void;
   dismissQuickStart: () => void;
+  yieldQuickStart?: () => void;
   downloadAutosaveBackup: () => void;
   duplicateSelected: (options?: StudioDuplicateSelectionOptions) => boolean | void;
   endLiveResourceEdit: () => void;

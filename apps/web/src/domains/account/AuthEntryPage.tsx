@@ -87,7 +87,9 @@ export function AuthEntryPage({ mode }: { readonly mode: AuthEntryMode }) {
             </span>
             <p className="eyebrow mt-5 text-accent">ACCOUNT</p>
             <h1 className="mt-2 font-display text-[1.65rem] font-bold leading-snug tracking-[-0.025em] text-fg">
-              {bt("이미 로그인되어 있어요", "You're already signed in")}
+              {signup
+                ? bt("가입이 끝났어요", "You're all signed up")
+                : bt("이미 로그인되어 있어요", "You're already signed in")}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-fg-3">
               {data.user.name ?? data.user.email
@@ -95,12 +97,15 @@ export function AuthEntryPage({ mode }: { readonly mode: AuthEntryMode }) {
                 : bt("계정으로 이어서 작업할 수 있어요.", "You can keep working with your account.")}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              <Link href="/my" className={buttonClass({ size: "md", className: "min-h-11" })}>
-                {bt("내 공간으로", "Go to My Space")}
+              <Link href="/studio/new" className={buttonClass({ size: "md", className: "min-h-11" })}>
+                <Palette size={16} aria-hidden="true" />
+                {bt("첫 작품 만들기", "Create your first work")}
               </Link>
               <Link href="/studio" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>
-                <Palette size={16} aria-hidden="true" />
                 {bt("Studio 열기", "Open Studio")}
+              </Link>
+              <Link href="/my" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>
+                {bt("내 공간으로", "Go to My Space")}
               </Link>
             </div>
           </div>
