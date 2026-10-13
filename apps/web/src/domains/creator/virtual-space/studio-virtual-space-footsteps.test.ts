@@ -84,6 +84,35 @@ describe("발소리 타이밍", () => {
     expect(events).toHaveLength(0);
     expect(next).toEqual(state);
   });
+
+  it("보폭 오버라이드가 있으면 시각 접지 간격을 따른다", () => {
+    // 같은 50px 이동: 표면 기본 보폭(타일 40px)이면 2걸음, 접지 간격 54px면 1걸음.
+    const def = stepStudioFootsteps(createStudioFootstepState(), 50, "tile", 160);
+    expect(def.events).toHaveLength(2);
+    const over = stepStudioFootsteps(createStudioFootstepState(), 50, "tile", 160, 54);
+    expect(over.events).toHaveLength(1);
+  });
+
+  it("잘못된 오버라이드는 표면 기본 보폭으로 폴백한다", () => {
+    const stride = studioFootstepSurfaceSpec("tile").stridePx;
+    const { events } = stepStudioFootsteps(createStudioFootstepState(), stride, "tile", 120, 0);
+    expect(events).toHaveLength(1);
+    const { events: nanEvents } = stepStudioFootsteps(createStudioFootstepState(), stride, "tile", 120, NaN);
+    expect(nanEvents).toHaveLength(1);
+  });
+
+  it("좌/우 발의 볼륨이 미세하게 달라 기계적이지 않다", () => {
+    const stride = studioFootstepSurfaceSpec("tile").stridePx;
+    const first = stepStudioFootsteps(createStudioFootstepState(), stride, "tile", 150);
+    const second = stepStudioFootsteps(first.state, stride, "tile", 150);
+    const leftVolume = first.events[0]?.volume ?? 0;
+    const rightVolume = second.events[0]?.volume ?? 0;
+    expect(first.events[0]?.foot).toBe("left");
+    expect(second.events[0]?.foot).toBe("right");
+    expect(leftVolume).toBeGreaterThan(0);
+    expect(rightVolume).toBeGreaterThan(0);
+    expect(rightVolume).not.toBe(leftVolume);
+  });
 });
 
 describe("먼지 파티클 스폰", () => {

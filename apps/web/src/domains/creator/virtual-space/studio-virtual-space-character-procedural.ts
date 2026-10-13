@@ -238,7 +238,7 @@ export type ProceduralCharacterPose = "wave" | "sit";
  * 충돌 조합은 `resolveStudioCharacterPartConflicts`가 그리기 전에 해소한다.
  */
 export const PROCEDURAL_PAINT_ORDER = Object.freeze([
-  "shadow", "legs", "arms", "torso", "outfit-detail", "head", "hair", "face", "accessory",
+  "shadow", "legs", "arms", "torso", "outfit-detail", "head", "hair", "face", "accessory", "rim",
 ] as const);
 export type ProceduralPaintLayer = (typeof PROCEDURAL_PAINT_ORDER)[number];
 
@@ -366,6 +366,14 @@ function drawFigure(ctx: CanvasRenderingContext2D, options: ProceduralCharacterF
     else drawFaceSide(ctx, headY, options.emotion ?? "neutral");
   }
   drawAccessory(ctx, parts.accessory, palette, view, headY);
+  // 림라이트 (레이어: rim): 좌상단 키라이트가 몸 왼쪽 윤곽을 감싼다.
+  // 팔레트 무관 알파라 어떤 의상·헤어색에서도 같은 빛으로 읽힌다.
+  // mirror 반전 시 함께 뒤집혀 기존 음영과 같은 화면 규칙을 따른다.
+  ctx.fillStyle = "rgba(255,255,255,0.10)";
+  roundRect(ctx, 33, 62 + torsoBob, 3, 26, 1.5);
+  roundRect(ctx, 26, 64 + armSwing + torsoBob, 2.5, 15, 1.2);
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  ellipse(ctx, 37, headY - 12, 5.5, 2.8);
 }
 
 function drawFaceFront(ctx: CanvasRenderingContext2D, blink: boolean, headY: number, emotion: StudioEmotionKind): void {

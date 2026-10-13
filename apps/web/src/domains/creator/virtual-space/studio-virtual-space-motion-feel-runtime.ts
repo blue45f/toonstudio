@@ -117,6 +117,12 @@ export interface StudioMotionFeelFrame {
   /** 지금 입력이 요구하는 속도. 입력을 놓아 0이면 급정지 미끄럼으로 본다. */
   inputSpeed: number;
   surface: StudioMotionFeelSurface;
+  /**
+   * 시각 접지 간격(px, 그 배우의 유효 보폭/2). 0 이하이면 표면 기본 보폭을 쓴다.
+   * Phaser 캔버스가 매 프레임 같은 값(걷기 프레임·몸 bob·그림자와 공유하는 보폭)으로 채워
+   * 발소리와 발 디딤의 위상을 맞춘다.
+   */
+  stepPx: number;
   /** 0~1. 게임필 설정 × 품질 단계 배율. */
   particleDensity: number;
   reducedMotion: boolean;
@@ -125,7 +131,7 @@ export interface StudioMotionFeelFrame {
 export function createStudioMotionFeelFrame(): StudioMotionFeelFrame {
   return {
     time: 0, deltaSeconds: 0, x: 0, y: 0, depth: 0, speed: 0, sprintSpeed: STUDIO_MOTION_FEEL_REFERENCE_SPRINT,
-    inputSpeed: 0, surface: TERRAIN_SURFACES.path, particleDensity: 1, reducedMotion: false,
+    inputSpeed: 0, surface: TERRAIN_SURFACES.path, stepPx: 0, particleDensity: 1, reducedMotion: false,
   };
 }
 
@@ -207,7 +213,8 @@ export class StudioMotionFeelRuntime {
     // 2) 발걸음 조각·발소리: 표면 보폭마다 한 걸음(규칙: stepStudioFootsteps).
     //    파티클과 같은 이벤트로 합성 발소리를 재생한다(엔진 미등록·꺼짐이면 무음).
     if (density > 0 && moved > 0 && moved < MAX_STEP_DELTA && speed >= 8) {
-      const stepped = stepStudioFootsteps(this.footstepState, moved, frame.surface.surface, speed);
+      const strideOverride = Number.isFinite(frame.stepPx) && frame.stepPx > 0 ? frame.stepPx : undefined;
+      const stepped = stepStudioFootsteps(this.footstepState, moved, frame.surface.surface, speed, strideOverride);
       this.footstepState = stepped.state;
       for (const event of stepped.events) {
         this.emit(1, frame.x, frame.y + 2, frame.surface.color);
