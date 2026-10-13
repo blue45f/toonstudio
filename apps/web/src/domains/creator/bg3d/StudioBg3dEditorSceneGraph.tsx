@@ -10,6 +10,11 @@ import {
   resolveStudioBg3dMinimumOrbitDistance,
 } from "./studio-bg3d-camera-application";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
+import { StudioBg3dHdriEnvironment } from "./StudioBg3dHdriEnvironment";
+import {
+  isStudioBg3dHdriEnvironmentActive,
+  resolveStudioBg3dEnvironmentSettings,
+} from "./studio-bg3d-hdri-environment";
 
 export function bindStudioBg3dEditorSceneGraph(h) {
   const {
@@ -323,6 +328,12 @@ export function bindStudioBg3dEditorSceneGraph(h) {
       onGrounding={updateSharedCharacterGrounding}
     />
   );
+  const renderedEnvironmentSettings = resolveStudioBg3dEnvironmentSettings(
+    sceneBaseDocument.lighting,
+  );
+  const hdriEnvironmentActive = isStudioBg3dHdriEnvironmentActive(renderedEnvironmentSettings);
+  // 품질 프로파일 판정과 같은 기준: 모바일 프로파일이면 1k, 아니면 2k HDRI를 씁니다.
+  const hdriFileTier = deviceQuality.profile === "mobile" ? "1k" : "2k";
   const sceneContent = (
     <Fragment>
       <StudioBg3dThreeRenderSettingsController render={sceneBaseDocument.render} />
@@ -337,9 +348,16 @@ export function bindStudioBg3dEditorSceneGraph(h) {
           <StudioBg3dScenePanorama
             presetId={renderedSkyPresetId}
             rotationDegrees={renderedPanoramaRotation}
+            environmentOwner={hdriEnvironmentActive ? "hdri" : "panorama"}
           />
           <StudioBg3dSceneFog background={renderedBackgroundSettings} />
         </Fragment>
+      ) : null}
+      {immersiveStagePlan?.mode !== "immersive-ar" && hdriEnvironmentActive ? (
+        <StudioBg3dHdriEnvironment
+          settings={renderedEnvironmentSettings}
+          fileTier={hdriFileTier}
+        />
       ) : null}
       <ambientLight
         color={sceneBaseDocument.lighting.ambientColor}
