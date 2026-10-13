@@ -20,7 +20,10 @@ import {
   type ProductionTaskStatus,
 } from "@toonstudio/core/production";
 
+import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
+
 import type { ProductionClientCommand } from "./production-api";
+import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { deriveProductionOperationsOverview } from "./production-episode-operations";
 import { deriveAssignmentWorkload } from "./production-management-overview";
 import {
@@ -122,6 +125,12 @@ function assignmentLabel(aggregate: ProductionProjectAggregate, assignmentId: st
   const assignment = aggregate.assignments.find((entry) => entry.id === assignmentId);
   const party = assignment ? aggregate.parties.find((entry) => entry.id === assignment.partyId) : null;
   return party?.publicDisplayName ?? assignmentId;
+}
+
+/** 공정 코드를 사람이 읽는 공정명으로. 팀 공정 설정의 이름은 이 표면에서 알 수 없어 기본 이름표를 쓴다. */
+function processLabel(processKey: string): string {
+  const label = PRODUCTION_PROCESS_LABELS[canonicalProductionProcessKey(processKey)];
+  return label ? label.ko : processKey;
 }
 
 function taskHours(task: ProductionTask): number {
@@ -348,7 +357,7 @@ export function ProductionScheduleWorkspace({
               return (
                 <div key={task.id} className="grid min-h-24 border-b border-line bg-panel/45" style={{ gridTemplateColumns: "minmax(21rem,1.6fr) repeat(14,minmax(3.3rem,1fr))" }}>
                   <div className="sticky left-0 z-10 border-r border-line bg-card p-3">
-                    <div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="flex flex-wrap items-center gap-1.5"><span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", statusClass(task.status))}>{STATUS_LABEL[task.status]}</span><span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", riskClass(risk))}>{riskLabel(risk)}</span></div><h3 className="mt-2 truncate text-sm font-bold text-fg">{task.title}</h3><p className="mt-1 text-[0.6875rem] text-fg-3">{task.processKey} · {scopeLabel(task)}</p><p className="mt-1 text-[0.6875rem] text-fg-3">기준 {taskForecast?.baselineDueAt ? dateOnly(new Date(taskForecast.baselineDueAt)) : "미정"} · 예상 {taskForecast ? dateOnly(new Date(taskForecast.forecastDueAt)) : "미정"}{typeof taskForecast?.slackHours === "number" ? ` · 여유 ${taskForecast.slackHours}h` : ""}</p></div><span className="text-xs font-black text-fg">{taskHours(task)}h</span></div>
+                    <div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="flex flex-wrap items-center gap-1.5"><span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", statusClass(task.status))}>{STATUS_LABEL[task.status]}</span><span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", riskClass(risk))}>{riskLabel(risk)}</span></div><h3 className="mt-2 truncate text-sm font-bold text-fg">{task.title}</h3><p className="mt-1 text-[0.6875rem] text-fg-3">{processLabel(task.processKey)} · {scopeLabel(task)}</p><p className="mt-1 text-[0.6875rem] text-fg-3">기준 {taskForecast?.baselineDueAt ? dateOnly(new Date(taskForecast.baselineDueAt)) : "미정"} · 예상 {taskForecast ? dateOnly(new Date(taskForecast.forecastDueAt)) : "미정"}{typeof taskForecast?.slackHours === "number" ? ` · 여유 ${taskForecast.slackHours}h` : ""}</p></div><span className="text-xs font-black text-fg">{taskHours(task)}h</span></div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <select aria-label={`${task.title} 상태`} value={task.status} disabled={!canEdit} className="min-h-8 rounded-lg border border-line bg-panel px-2 text-[0.6875rem] font-semibold text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { status: event.target.value as ProductionTaskStatus }, `${task.title} 상태를 변경했습니다.`)}>{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{STATUS_LABEL[status]}</option>)}</select>
                       <input type="date" aria-label={`${task.title} 마감일`} value={due ? dateOnly(due) : ""} disabled={!canEdit} className="min-h-8 rounded-lg border border-line bg-panel px-2 text-[0.6875rem] text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { dueAt: event.target.value ? new Date(`${event.target.value}T09:00:00`).toISOString() : null }, `${task.title} 마감일을 변경했습니다.`)} />
@@ -393,7 +402,7 @@ export function ProductionScheduleWorkspace({
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-xs font-semibold text-fg">{task.title}</p>
-                            <p className="mt-1 text-[0.6875rem] text-fg-3">{task.processKey} · {taskHours(task)}h</p>
+                            <p className="mt-1 text-[0.6875rem] text-fg-3">{processLabel(task.processKey)} · {taskHours(task)}h</p>
                           </div>
                           {risk === "normal"
                             ? <CheckCircle2 className="size-4 text-good" aria-label="일정 정상" />
