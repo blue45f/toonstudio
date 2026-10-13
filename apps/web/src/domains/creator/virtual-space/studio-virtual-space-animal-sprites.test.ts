@@ -63,4 +63,37 @@ describe("buildStudioAnimalSpriteSheet", () => {
     expect(studioAnimalSpriteLabel("butterfly")).toEqual({ ko: "나비", en: "Butterfly" });
     expect(studioAnimalSpriteLabel("unknown")).toEqual({ ko: "동물", en: "Animal" });
   });
+
+  it("네 발 동물 몸통·머리에 먹선 외곽선과 눈 하이라이트를 그린다", () => {
+    const strokes: string[] = [];
+    const fills: string[] = [];
+    let strokeCalls = 0;
+    const ctx = new Proxy({}, {
+      get: (_target, prop: string | symbol) => {
+        if (prop === "canvas") return undefined;
+        if (prop === "stroke") {
+          return () => {
+            strokeCalls += 1;
+          };
+        }
+        return () => {};
+      },
+      set: (_target, prop: string | symbol, value: unknown) => {
+        if (prop === "strokeStyle" && typeof value === "string") strokes.push(value);
+        if (prop === "fillStyle" && typeof value === "string") fills.push(value);
+        return true;
+      },
+    }) as unknown as CanvasRenderingContext2D;
+    const canvas = {
+      width: 128,
+      height: 128,
+      getContext: () => ctx,
+      toDataURL: () => "data:image/png;base64,RECORDING",
+    } as unknown as HTMLCanvasElement;
+    const deps: ProceduralSheetDeps = { createCanvas: () => canvas };
+    buildStudioAnimalSpriteSheet("cat", deps);
+    expect(strokes).toContain("#26262e");
+    expect(strokeCalls).toBeGreaterThan(0);
+    expect(fills).toContain("#fff");
+  });
 });

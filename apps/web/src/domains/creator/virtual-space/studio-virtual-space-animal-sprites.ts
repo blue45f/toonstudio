@@ -48,6 +48,10 @@ const PALETTES: Readonly<Record<StudioAnimalSpriteKind, AnimalPalette>> = Object
   rabbit:   { body: "#b8b2a7", belly: "#e8e2d6", ear: "#d8a7b1", accent: "#8a8478" },
 });
 
+/** 먹선 — 몸통·머리 외곽선. 아바타 SVG의 DARK와 같은 값으로 맞춘다. */
+const INK = "#26262e";
+const INK_LINE_WIDTH = 2;
+
 const META: Readonly<Record<StudioAnimalSpriteKind, { readonly ko: string; readonly en: string }>> = Object.freeze({
   cat: { ko: "고양이", en: "Cat" },
   dog: { ko: "강아지", en: "Dog" },
@@ -108,6 +112,9 @@ function drawEyes(ctx: CanvasRenderingContext2D, x1: number, x2: number, y: numb
   } else {
     circle(ctx, x1, y, 2.4);
     circle(ctx, x2, y, 2.4);
+    ctx.fillStyle = "#fff";
+    circle(ctx, x1 + 0.8, y - 0.8, 0.8);
+    circle(ctx, x2 + 0.8, y - 0.8, 0.8);
   }
 }
 
@@ -123,7 +130,10 @@ function drawQuadruped(
   if (spec.view === "side") {
     // 몸통 (수평 타원)
     ctx.fillStyle = palette.body;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = INK_LINE_WIDTH;
     ellipse(ctx, cx, 40 + bob, 17, 10);
+    ctx.stroke();
     ctx.fillStyle = palette.belly;
     ellipse(ctx, cx + 2, 43 + bob, 11, 6);
     // 다리
@@ -131,6 +141,7 @@ function drawQuadruped(
     // 머리 (앞쪽)
     ctx.fillStyle = palette.body;
     circle(ctx, cx + 16, 30 + bob, 9);
+    ctx.stroke();
     if (kind === "dog" || kind === "fox") {
       ctx.fillStyle = palette.belly;
       ellipse(ctx, cx + 20, 33 + bob, 5, 3.5); // 주둥이
@@ -177,7 +188,10 @@ function drawQuadruped(
     // 정면/후면
     const isBack = spec.view === "back";
     ctx.fillStyle = palette.body;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = INK_LINE_WIDTH;
     ellipse(ctx, cx, 42 + bob, 13, 11);
+    ctx.stroke();
     drawLegs(ctx, palette.accent, cx, 52 + bob, spec, 7);
     if (isBack) {
       // 후면: 꼬리·귀만
@@ -203,6 +217,7 @@ function drawQuadruped(
       // 정면: 얼굴
       ctx.fillStyle = palette.body;
       circle(ctx, cx, 30 + bob, 10);
+      ctx.stroke();
       if (kind === "rabbit") {
         ctx.fillStyle = palette.body;
         ellipse(ctx, cx - 5, 16 + bob, 3.4, 9);
