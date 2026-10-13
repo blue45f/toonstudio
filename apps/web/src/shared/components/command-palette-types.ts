@@ -45,6 +45,13 @@ export interface PalettePage {
   category: "main" | "discover" | "creator" | "community";
   shortcut?: string[];
   keywords: string[];
+  /**
+   * 전체 메뉴 지도(SITE_NAVIGATION_GROUPS)에서 이 페이지가 속한 구간의 표시 이름.
+   * 예: "작품 찾기". 팔레트 목록·미리보기에 브레드크럼처럼 병기해, 이동 전에
+   * "어디로 가는지"를 배우게 한다(Figma Quick Actions식 학습형 팔레트).
+   * 지도에 없는 페이지는 undefined이며 표시하지 않는다.
+   */
+  trail?: string;
 }
 
 export type PaletteSelectedItem =

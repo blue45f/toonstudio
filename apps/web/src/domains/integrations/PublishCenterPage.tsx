@@ -18,6 +18,8 @@ import {
 } from "./integration-platform-storage";
 import type { IntegrationProviderStatus, PublishPackageResponse } from "./integration-platform-types";
 import { SerialCenterOverview } from "./SerialCenterOverview";
+
+import { PublishSurfaceGuide } from "@/shared/components/publish-surface-guide";
 import { useIntegrationCatalog } from "./use-integration-catalog";
 
 /**
@@ -148,6 +150,7 @@ export function PublishCenterPage() {
         : "Check your works' serialization status and prepare official API channels and manual handoff channels in one package. Platforms without approved APIs remain validation and human-confirmed upload flows."}
       art={{ kind: "publish", caption: ko ? "브랜드 콘셉트 아트 · 실제 화면이 아닙니다" : "Brand concept art · not a product screen" }}
     >
+      <PublishSurfaceGuide surface="serial" />
       <div className="mb-6">
         <SerialCenterOverview
           ko={ko}

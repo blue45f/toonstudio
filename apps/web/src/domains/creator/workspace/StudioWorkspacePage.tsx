@@ -131,11 +131,13 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
     }, { replace: Boolean(panel) });
   };
 
+  // 홈 3형제(/, /home, /hub)가 이름만으로 구분되도록, 이 셸의 제목은 공개 홈과 겹치지 않게 쓴다.
+  // /home = "내 홈"(내 작업으로 돌아오는 곳), /hub = "둘러보기"(내 작업실 밖의 발견).
   const label = surface === "team"
     ? bt("팀", "Team")
     : surface === "hub"
       ? bt("둘러보기", "Explore")
-      : bt("홈", "Home");
+      : bt("내 홈", "My home");
   const activeId = surface === "home" ? "workspace-home" : surface === "team" ? "community" : "explore";
   const userName = session.data?.user.name;
   const canResume = Boolean(project && !library.error && !context.missing);
@@ -271,9 +273,11 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
             : "BEYOND YOUR STUDIO"}</p>
         <div className="workspace-heading">
           <div>
-            <p className="workspace-eyebrow">{userName
-              ? bt(`${userName} 님의 창작 홈`, `${userName}'s creative home`)
-              : bt("나의 창작 홈", "My creative home")}</p>
+            <p className="workspace-eyebrow">{surface === "hub"
+              ? bt("내 작업실 밖의 발견", "Discover beyond my studio")
+              : userName
+                ? bt(`${userName} 님의 창작 홈`, `${userName}'s creative home`)
+                : bt("나의 창작 홈", "My creative home")}</p>
             <h1 id="workspace-title">{label}</h1>
             <p className="workspace-heading-description">{surface === "home"
               ? bt("최근 작업, 초대와 내 공간 중 지금 필요한 다음 행동을 선택하세요.", "Choose the next action you need from recent work, invitations and your space.")

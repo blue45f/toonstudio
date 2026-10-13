@@ -842,7 +842,12 @@ export function CommandPalette({
                       <Icon size={16} className="text-fg-3 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <span className="font-medium text-fg">{page.title}</span>
-                        <span className="ml-2 text-xs text-fg-3">{page.subtitle}</span>
+                        <span className="ml-2 text-xs text-fg-3">
+                          {page.trail ? (
+                            <span className="font-medium text-fg-2">{page.trail} › </span>
+                          ) : null}
+                          {page.subtitle}
+                        </span>
                       </div>
                       {page.shortcut && (
                         <div className="hidden items-center gap-1 sm:flex">
