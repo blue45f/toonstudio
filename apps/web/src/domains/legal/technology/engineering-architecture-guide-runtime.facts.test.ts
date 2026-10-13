@@ -26,17 +26,17 @@ function section(id: string) {
 }
 
 describe("화면을 여는 순간 (request-journey)", () => {
-  it("Worker 가 먼저 받는 경로 패턴은 26개이고 API 4·대형 파일 6·미리보기 16 으로 나뉜다", () => {
+  it("Worker 가 먼저 받는 경로 패턴은 35개이고 API 4·대형 파일 6·미리보기 25 으로 나뉜다", () => {
     const wrangler = read("deploy/cloudflare-static/wrangler.jsonc");
     const block = /"run_worker_first":\s*\[([\s\S]*?)\]/u.exec(wrangler)?.[1] ?? "";
     const patterns = (block.match(/"[^"]+"/gu) ?? []).map((item) => item.slice(1, -1));
-    expect(patterns).toHaveLength(26);
+    expect(patterns).toHaveLength(35);
     const api = patterns.filter((pattern) => pattern.startsWith("/api") || pattern.startsWith("/socket.io"));
     const large = patterns.filter((pattern) => pattern.startsWith("/assets/") || pattern.startsWith("/brand/"));
     expect(api).toHaveLength(4);
     expect(large).toHaveLength(6);
-    expect(patterns.length - api.length - large.length).toBe(16);
-    expect(section("request-journey").facts?.find((fact) => fact.value === "26")?.source).toBe("deploy/cloudflare-static/wrangler.jsonc");
+    expect(patterns.length - api.length - large.length).toBe(25);
+    expect(section("request-journey").facts?.find((fact) => fact.value === "35")?.source).toBe("deploy/cloudflare-static/wrangler.jsonc");
   });
 
   it("동적 요청 갈래는 7개이고 정적 파일 한도는 25 MiB 이다", () => {
@@ -54,9 +54,9 @@ describe("화면을 여는 순간 (request-journey)", () => {
 });
 
 describe("브라우저 안의 작업실 (browser-studio)", () => {
-  it("Worker 스크립트(*.worker.ts)는 앱 코드에 64개, 패키지에 0개이다", () => {
+  it("Worker 스크립트(*.worker.ts)는 앱 코드에 65개, 패키지에 0개이다", () => {
     const count = (root: string): number => (readdirSync(root, { recursive: true }) as string[]).filter((file) => file.endsWith(".worker.ts")).length;
-    expect(count("apps/web/src")).toBe(64);
+    expect(count("apps/web/src")).toBe(65);
     expect(count("packages")).toBe(0);
   });
 

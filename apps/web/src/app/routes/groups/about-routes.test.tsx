@@ -38,8 +38,25 @@ describe("ToonStudio introduction route family", () => {
   });
 
   it("keeps generic route-title ownership while each page applies its specific document title", () => {
+    // 소개 패밀리는 페이지별 전용 문서 제목을 갖는다(브라우저 제목 분리). 루트만 공용 키를 쓴다.
+    const specificTitles: Record<string, string> = {
+      "/about/workflow": "route.aboutWorkflow",
+      "/about/technology": "route.technology",
+      "/about/technology/architecture": "route.technologyArchitecture",
+      "/about/technology/libraries": "route.technologyLibraries",
+      "/about/technology/story": "route.technologyStory",
+      "/about/technology/guides": "route.technologyGuides",
+      "/about/technology/references": "route.technologyReferences",
+      "/about/technology/field-notes": "route.technologyFieldNotes",
+      "/about/technology/deck": "route.technologyDeck",
+      "/about/technology/videos": "route.technologyVideos",
+      "/about/technology/licenses": "route.technologyLicenses",
+      "/about/technology/glossary": "route.technologyGlossary",
+      "/about/technology/atlas": "route.technologyAtlas",
+      "/about/principles": "route.aboutPrinciples",
+    };
     for (const { path } of ABOUT_ROUTE_FAMILY) {
-      expect(STATIC_TITLES[path], path).toBe("route.about");
+      expect(STATIC_TITLES[path], path).toBe(specificTitles[path] ?? "route.about");
     }
   });
 });

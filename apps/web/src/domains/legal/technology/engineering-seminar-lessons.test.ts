@@ -351,13 +351,13 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-workers", claim: "apps/web/src 의 *.worker.ts 가 64개", needles: ["64개"],
+    lesson: "seminar-workers", claim: "apps/web/src 의 *.worker.ts 가 65개", needles: ["65개"],
     check: () => {
       let count = 0;
       walkFiles(repo("apps", "web", "src"), (file) => {
         if (file.endsWith(".worker.ts")) count += 1;
       });
-      expect(count).toBe(64);
+      expect(count).toBe(65);
     },
   },
   {
@@ -609,7 +609,7 @@ const LESSON_FACTS: readonly LessonFact[] = [
     lesson: "seminar-build-alignment", claim: "승인 SHA 40자리(절차)·번들에는 SHA 없음, pnpm 11/Node 24.16/--frozen-lockfile, 공유 계약 패키지, 내용 해시 buildId 12자, 프로토콜 버전 8 거절, 사라진 청크 한 번 새로고침", needles: ["40자리", "SHA를 말하지 않아", "절차가 보증", "pnpm 11", "Node 24.16", "--frozen-lockfile", "@toonstudio/contracts", "buildId(12자)", "프로토콜 버전(8)", "한 번만 새로고침"],
     check: () => {
       const deploy = readText("scripts", "deploy-cloudflare-static.mjs");
-      expect(deploy).toContain("approvedSha?.length !== 40");
+      expect(deploy).toContain("configured?.length !== 40");
       expect(deploy).toContain('["branch", "--show-current"]');
       expect(deploy).toContain('["status", "--porcelain"]');
       expect(deploy).toContain('["rev-parse", "HEAD"]');

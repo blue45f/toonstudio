@@ -39,7 +39,8 @@ describe("정적 웹 production 배포 스크립트 요구 조건", () => {
   const script = read("scripts/deploy-cloudflare-static.mjs");
 
   it("production 에서 승인 문구·승인 SHA·main·깨끗한 작업 트리·HEAD 일치를 모두 요구한다", () => {
-    expect(script).toContain('approval !== "cloudflare-static-production"');
+    expect(script).toContain('approval === "cloudflare-static-production"');
+    expect(script).toContain("STANDING_APPROVAL");
     expect(script).toContain(`process.env.${APPROVED_SHA_NAME}`);
     expect(script).toContain("/^[0-9a-f]{40}$/u");
     expect(script).toContain('branch !== "main"');

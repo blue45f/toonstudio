@@ -66,12 +66,12 @@ describe("studio shell floating integration", () => {
     // 페이지 셸은 StudioVirtualSpacePageRoot로 분리됐고 Page가 재수출한다.
     const spaceRoot = source("virtual-space/StudioVirtualSpacePageRoot.tsx");
     expect(space).toContain('from "./StudioVirtualSpacePageRoot"');
-    // 클래식 제거(2026-10-12) 이후 공간 라우트는 LiveCollaborationProvider를 마운트하지 않는다 —
-    // 플로팅 허들 런처는 그 Provider만 렌더하므로 공간 라우트에 중복 런처가 생길 수 없고,
-    // 공간 안 소통은 Godot 임베드(브리지)가 담당한다. 클래식 시절의
-    // showHuddleLauncher={false}·인라인 런처 소스 단언은 그 구현과 함께 정리했다.
-    expect(spaceRoot).not.toContain("StudioLiveCollaborationProvider");
-    expect(spaceRoot).not.toContain("StudioP2pHuddleLauncher");
+    // 클래식 2D 기본 복귀(2026-10-13 소유자 결정) 이후 공간 라우트는 LiveCollaborationProvider를
+    // 다시 마운트한다. 다만 showHuddleLauncher={false}라 플로팅 허들 런처는 중복되지 않고,
+    // 공간 안 소통은 클래식 경험 + Godot 임베드(전환 옵션)가 담당한다.
+    expect(spaceRoot).toContain("StudioLiveCollaborationProvider");
+    expect(spaceRoot).toContain("showHuddleLauncher={false}");
+    expect(spaceRoot).not.toContain("<StudioP2pHuddleLauncher");
     expect(spaceRoot).toContain("<StudioGodotSpaceEmbed");
   });
 

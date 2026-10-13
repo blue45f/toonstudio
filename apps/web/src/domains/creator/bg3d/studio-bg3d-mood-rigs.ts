@@ -11,6 +11,8 @@ import {
   serializeStudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
 
+import { STUDIO_BG3D_DEFAULT_ENVIRONMENT_SETTINGS } from "./studio-bg3d-hdri-environment";
+
 import type {
   StudioBg3dBackgroundSettings,
   StudioBg3dLightingSettings,
@@ -96,6 +98,7 @@ export const STUDIO_BG3D_MOOD_RIGS: readonly StudioBg3dMoodRig[] = deepFreeze([
         intensity: 0.45,
         castsShadow: false,
       },
+      environment: STUDIO_BG3D_DEFAULT_ENVIRONMENT_SETTINGS,
     },
     render: { exposure: 1, toneMapping: "neutral" },
   },
@@ -128,6 +131,7 @@ export const STUDIO_BG3D_MOOD_RIGS: readonly StudioBg3dMoodRig[] = deepFreeze([
         intensity: 0.3,
         castsShadow: false,
       },
+      environment: STUDIO_BG3D_DEFAULT_ENVIRONMENT_SETTINGS,
     },
     render: { exposure: 1.05, toneMapping: "aces" },
   },
@@ -160,6 +164,7 @@ export const STUDIO_BG3D_MOOD_RIGS: readonly StudioBg3dMoodRig[] = deepFreeze([
         intensity: 0.15,
         castsShadow: false,
       },
+      environment: STUDIO_BG3D_DEFAULT_ENVIRONMENT_SETTINGS,
     },
     render: { exposure: 0.85, toneMapping: "aces" },
   },
@@ -192,6 +197,7 @@ export const STUDIO_BG3D_MOOD_RIGS: readonly StudioBg3dMoodRig[] = deepFreeze([
         intensity: 0.5,
         castsShadow: false,
       },
+      environment: STUDIO_BG3D_DEFAULT_ENVIRONMENT_SETTINGS,
     },
     render: { exposure: 0.95, toneMapping: "neutral" },
   },
@@ -224,6 +230,7 @@ export const STUDIO_BG3D_MOOD_RIGS: readonly StudioBg3dMoodRig[] = deepFreeze([
         intensity: 0.06,
         castsShadow: false,
       },
+      environment: STUDIO_BG3D_DEFAULT_ENVIRONMENT_SETTINGS,
     },
     render: { exposure: 0.72, toneMapping: "aces" },
   },
