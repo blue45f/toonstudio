@@ -173,12 +173,21 @@ function writeOptions(options?: ApiOptions): Options {
 
 
 /**
- * 호출부가 signal을 주지 않은 apiFetch 요청의 기본 상한(60초). 무료 Core API가 절전에서
- * 깨어나는 동안에도 댓글 등록·로그인 같은 쓰기가 무한정 "등록 중..."으로 멈추지 않게 한다.
- * 절전 해제는 보통 이 안에 끝나므로 성공 경로는 그대로 통과하고, 상한을 넘기면
- * TimeoutError로 실패를 표면화한다. 호출부가 직접 signal을 준 요청은 손대지 않는다.
+ * 호출부가 signal을 주지 않은 apiFetch 쓰기(비멱등 메서드) 요청의 기본 상한(60초).
+ * 무료 Core API가 절전에서 깨어나는 동안에도 댓글 등록·로그인 같은 쓰기가 무한정
+ * "등록 중..."으로 멈추지 않게 한다. 절전 해제는 보통 이 안에 끝나므로 성공 경로는
+ * 그대로 통과하고, 상한을 넘기면 TimeoutError로 실패를 표면화한다.
+ * 호출부가 직접 signal을 준 요청은 손대지 않는다.
  */
 export const API_FETCH_DEFAULT_TIMEOUT_MS = 60_000;
+
+/**
+ * 호출부가 signal을 주지 않은 apiFetch 읽기(GET·HEAD) 요청의 기본 상한(30초).
+ * 타입드 읽기(readOptions)의 총 상한 30초와 정합시킨 값이다. 읽기는 멱등하고
+ * 대개 캐시·재시도·오류 UI로 복구할 수 있으므로, 서버 무응답 시 공개 페이지의
+ * 스켈레톤이 쓰기용 60초까지 끌려가지 않게 한다.
+ */
+export const API_FETCH_READ_DEFAULT_TIMEOUT_MS = 30_000;
 
 function apiFetchTimeoutError(): DOMException {
   return new DOMException(
@@ -209,7 +218,9 @@ export async function apiFetch(
   const timeoutId = timeoutController
     ? globalThis.setTimeout(
       () => timeoutController.abort(apiFetchTimeoutError()),
-      API_FETCH_DEFAULT_TIMEOUT_MS,
+      method === "GET" || method === "HEAD"
+        ? API_FETCH_READ_DEFAULT_TIMEOUT_MS
+        : API_FETCH_DEFAULT_TIMEOUT_MS,
     )
     : null;
   try {
