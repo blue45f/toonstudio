@@ -25,6 +25,7 @@ function source(): StudioProjectDiagnosticSource {
       },
       states: [],
       transitions: [],
+      narrative: { profiles: [], relations: [] },
     },
     productionTasks: [],
     assets: [],
@@ -63,6 +64,13 @@ describe("Studio project diagnostic source store", () => {
     expect(studioProjectDiagnosticSourceStorageKey("project-1")).toContain("project-1");
     removeStudioProjectDiagnosticSource(storage, "project-1");
     expect(readStudioProjectDiagnosticSource(storage, "project-1")).toBeNull();
+  });
+
+  it("materializes an empty narrative bundle for legacy payloads without one", () => {
+    const legacy = source() as unknown as { story: Record<string, unknown> };
+    delete legacy.story.narrative;
+    const parsed = parseStudioProjectDiagnosticSource(legacy);
+    expect(parsed?.story.narrative).toEqual({ profiles: [], relations: [] });
   });
 
   it("rejects cross-project and malformed structural data", () => {
