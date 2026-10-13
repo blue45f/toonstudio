@@ -177,7 +177,7 @@ export function isStudioBg3dHdriEnvironmentAssetId(
 export function studioBg3dHdriEnvironmentFileName(
   asset: StudioBg3dHdriEnvironmentAsset,
   tier: StudioBg3dHdriFileTier,
-): string {
+): `${string}.hdr` {
   return `${asset.polyHavenId}_${tier}.hdr`;
 }
 

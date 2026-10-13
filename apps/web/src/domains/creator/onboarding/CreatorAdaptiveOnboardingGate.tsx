@@ -194,7 +194,6 @@ function toggleDistinct<T>(values: readonly T[], value: T, maximum: number): T[]
 
 export function CreatorAdaptiveOnboardingGate({ enabled = true }: { readonly enabled?: boolean }) {
   const { pathname, search } = useLocation();
-  const navigate = useNavigate();
   const { data, status } = useSession();
   const userId = status === "authenticated" ? data.user.id : null;
   const acknowledged = useSyncExternalStore(
@@ -215,6 +214,7 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const mountedRef = useRef(false);
   const savingRef = useRef(false);
+  const navigate = useNavigate();
   const [opened, setOpened] = useState(false);
   const [profile, setProfile] = useState<MeProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);

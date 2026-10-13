@@ -31,6 +31,7 @@ function source(): StudioProjectDiagnosticSource {
       },
       states: [],
       transitions: [],
+      narrative: { profiles: [], relations: [] },
     },
     productionTasks: [],
     assets: [],
