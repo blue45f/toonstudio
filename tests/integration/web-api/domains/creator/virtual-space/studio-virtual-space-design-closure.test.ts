@@ -29,22 +29,8 @@ describe("Virtual Studio all-pages design closure", () => {
     ]) required(path);
   });
 
-  it("keeps world templates, rules, publication and interaction intent within validated registries", () => {
-    for (const path of [
-      "apps/web/src/domains/creator/virtual-space/StudioWorldTemplatePanel.tsx",
-      "apps/web/src/domains/creator/virtual-space/StudioWorldRuleEditor.tsx",
-      "apps/web/src/domains/creator/virtual-space/world-publication/studio-world-publication-controller.ts",
-      "apps/web/src/domains/creator/virtual-space/studio-virtual-space-interaction-orchestrator.ts",
-    ]) required(path);
-    const orchestrator = text("apps/web/src/domains/creator/virtual-space/studio-virtual-space-interaction-orchestrator.ts");
-    expect(orchestrator).toContain('kind: "world-rule"');
-    expect(orchestrator).not.toContain("fetch(");
-  });
-
-  it("closes door knock and short review explanation without conflating them with admission or call recording", () => {
-    const room = text("apps/web/src/domains/creator/virtual-space/private-room/studio-private-room-controller.ts");
-    expect(room).toContain("studio-private-room-knock-v1");
-    expect(room).toContain("knockEligible");
+  // 클래식 공간 클라이언트(월드 템플릿·규칙 편집기·프라이빗 룸 컨트롤러)는 fd57fb73c에서 Godot 단일 무대로 수렴하며 제거되어 그 계약은 뺀다.
+  it("keeps the short review voice note explicit that it is not call recording", () => {
     const note = text("apps/web/src/domains/creator/virtual-space/StudioReviewVoiceNotes.tsx");
     expect(note).toContain("This is not call recording");
     expect(note).toContain("getUserMedia");
