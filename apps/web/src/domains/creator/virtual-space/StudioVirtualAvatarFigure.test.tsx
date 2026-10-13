@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualAvatarFigure } from "./StudioVirtualAvatarFigure";
 import type { StudioVirtualAvatarProfile } from "./studio-virtual-space-model";
@@ -97,5 +97,47 @@ describe("StudioVirtualAvatarFigure", () => {
       </div>,
     );
     expect(container.querySelectorAll("svg[data-avatar-direction]").length).toBe(36);
+  });
+
+  it("두부·몸통에 통일된 잉크 외곽선을 그린다", () => {
+    const { container } = render(
+      <StudioVirtualAvatarFigure profile={{ ...PROFILE, expression: "bright" }} />,
+    );
+    expect(
+      container.querySelector('circle[cx="48"][cy="38"][r="17"]')?.getAttribute("stroke"),
+    ).toBe("#2b2b33");
+    expect(
+      container.querySelector('rect[x="33"][y="58"]')?.getAttribute("stroke"),
+    ).toBe("#2b2b33");
+  });
+
+  it("볼터치를 양 볼에 그린다", () => {
+    const { container } = render(
+      <StudioVirtualAvatarFigure profile={{ ...PROFILE, expression: "bright" }} />,
+    );
+    const blush = [...container.querySelectorAll("ellipse")].filter(
+      (node) => node.getAttribute("fill") === "#f5a3a3",
+    );
+    expect(blush).toHaveLength(2);
+  });
+
+  it("뜬 눈은 느린 타이머로 깜빡인다", () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(
+        <StudioVirtualAvatarFigure profile={{ ...PROFILE, expression: "bright" }} />,
+      );
+      expect(container.querySelector('circle[cx="42"][cy="38"]')).not.toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(3600);
+      });
+      expect(container.querySelector('circle[cx="42"][cy="38"]')).toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+      expect(container.querySelector('circle[cx="42"][cy="38"]')).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

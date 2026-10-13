@@ -353,11 +353,11 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
     />;
   }
 
-  // 무대 엔진 결정 (재개발 5단계 — 구 클라이언트 대체): 기본값은 Godot이고
-  // 클래식(기존 웹 공간)은 폴백으로 동결한다. 규칙의 정본은
-  // studio-space-engine.ts: 명시 파라미터가 우선하고, 기본값은 로그인·
-  // 개인·게스트 전 진입에서 Godot다 (게스트 티켓 계약 §14 + 기본값
-  // 전환 §15). 클래식은 `?engine=classic` 명시 진입으로만 열린다.
+  // 무대 엔진 결정 (2D 기본 + 3D 전환): 기본값은 클래식(2D)이고
+  // Godot(3D)는 `?engine=godot` 명시 진입으로만 열린다. 규칙의 정본은
+  // studio-space-engine.ts: 명시 파라미터가 우선하고, 파라미터가 없으면
+  // 로그인·개인·게스트 전 진입에서 클래식이다. 클래식 화면의 전환 배너로
+  // Godot에 들어갈 수 있다.
   const spaceEngine = resolveStudioSpaceEngine(location.search, {
     signedIn: session.ready && Boolean(session.data),
     personal,
@@ -372,7 +372,8 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
       ] ?? "#3b82f6";
     const exitToClassic = () => {
       const params = new URLSearchParams(location.search);
-      // 기본값이 Godot이라 파라미터를 지우면 폴백이 되지 않는다 — classic으로 고정한다.
+      // 2D 복귀는 classic으로 고정한다(파라미터를 지워도 기본값이 클래식이라
+      // 동일하게 동작하지만, 명시가 이후 기본값 변경에도 안전하다).
       params.set("engine", "classic");
       const value = params.toString();
       navigate({ pathname: location.pathname, search: value ? `?${value}` : "" });

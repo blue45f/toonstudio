@@ -13,6 +13,13 @@ import type { StudioSpriteDirection } from "./studio-virtual-space-sprite";
 
 const DARK = "#2b2b33";
 
+/** 굵은 외곽선 — 두부·몸통용. 팔다리는 1.6으로 별도 지정한다. */
+const OUTLINE = {
+  stroke: DARK,
+  strokeWidth: 2,
+  strokeLinejoin: "round",
+} as const;
+
 function shade(opacity: number): string {
   return `rgba(0,0,0,${opacity})`;
 }
@@ -136,13 +143,20 @@ function hairBack(hairStyle: StudioVirtualAvatarProfile["hairStyle"], hair: stri
 
 /* ---------- 표정 ---------- */
 
-function faceFront(expression: StudioVirtualAvatarProfile["expression"]): ReactNode {
+function faceFront(expression: StudioVirtualAvatarProfile["expression"], blinking: boolean): ReactNode {
   const eye = "#26262e";
   switch (expression) {
     case "bright":
       return <g>
-        <circle cx={42} cy={38} r={2.8} fill={eye} /><circle cx={54} cy={38} r={2.8} fill={eye} />
-        <circle cx={43} cy={37} r={0.9} fill="#fff" /><circle cx={55} cy={37} r={0.9} fill="#fff" />
+        {blinking
+          ? <g>
+            <path d="M39.5 38.5 q2.5 2 5 0" stroke={eye} strokeWidth={2} strokeLinecap="round" fill="none" />
+            <path d="M51.5 38.5 q2.5 2 5 0" stroke={eye} strokeWidth={2} strokeLinecap="round" fill="none" />
+          </g>
+          : <g>
+            <circle cx={42} cy={38} r={2.8} fill={eye} /><circle cx={54} cy={38} r={2.8} fill={eye} />
+            <circle cx={43} cy={37} r={0.9} fill="#fff" /><circle cx={55} cy={37} r={0.9} fill="#fff" />
+          </g>}
         <path d="M43 45 q5 6 10 0" stroke={eye} strokeWidth={2} strokeLinecap="round" fill="none" /></g>;
     case "calm":
       return <g>
@@ -329,6 +343,7 @@ export function StudioVirtualAvatarFigure({
 }) {
   const [liveFrame, setLiveFrame] = useState<0 | 1>(frame);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [blinking, setBlinking] = useState(false);
 
   useEffect(() => {
     setReducedMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -345,6 +360,23 @@ export function StudioVirtualAvatarFigure({
     return () => window.clearInterval(timer);
   }, [animated, reducedMotion, frame]);
 
+  // 눈 깜빡임 — 걷기 여부와 무관하게 살아있는 느낌을 준다. reduced-motion이면 끈다.
+  useEffect(() => {
+    if (reducedMotion) {
+      setBlinking(false);
+      return;
+    }
+    let closer: ReturnType<typeof setTimeout> | undefined;
+    const timer = window.setInterval(() => {
+      setBlinking(true);
+      closer = window.setTimeout(() => setBlinking(false), 150);
+    }, 3600);
+    return () => {
+      window.clearInterval(timer);
+      if (closer) window.clearTimeout(closer);
+    };
+  }, [reducedMotion]);
+
   const walking = animated && !reducedMotion;
   const currentFrame = walking ? liveFrame : frame;
   const legOffset = currentFrame === 0 ? -2.5 : 2.5;
@@ -354,15 +386,15 @@ export function StudioVirtualAvatarFigure({
       {/* 그림자 */}
       <ellipse cx={48} cy={104} rx={17} ry={4.5} fill="#000" opacity={0.18} />
       {/* 다리 */}
-      <rect x={40} y={88 + legOffset} width={8} height={14} rx={3} fill="#3a3a44" />
-      <rect x={50} y={88 - legOffset} width={8} height={14} rx={3} fill="#3a3a44" />
+      <rect x={40} y={88 + legOffset} width={8} height={14} rx={3} fill="#3a3a44" stroke={DARK} strokeWidth={1.6} />
+      <rect x={50} y={88 - legOffset} width={8} height={14} rx={3} fill="#3a3a44" stroke={DARK} strokeWidth={1.6} />
       {/* 팔 */}
-      <rect x={26} y={62} width={7} height={19} rx={3.5} fill={profile.outfit} />
-      <rect x={63} y={62} width={7} height={19} rx={3.5} fill={profile.outfit} />
+      <rect x={26} y={62} width={7} height={19} rx={3.5} fill={profile.outfit} stroke={DARK} strokeWidth={1.6} />
+      <rect x={63} y={62} width={7} height={19} rx={3.5} fill={profile.outfit} stroke={DARK} strokeWidth={1.6} />
       <circle cx={29.5} cy={83} r={3.5} fill={profile.skin} />
       <circle cx={66.5} cy={83} r={3.5} fill={profile.skin} />
       {/* 몸통 */}
-      <rect x={33} y={58} width={30} height={32} rx={10} fill={profile.outfit} />
+      <rect x={33} y={58} width={30} height={32} rx={10} fill={profile.outfit} {...OUTLINE} />
       {outfitDetails(profile.outfitStyle, profile.outfit, profile.accent)}
     </g>
   );
@@ -371,16 +403,19 @@ export function StudioVirtualAvatarFigure({
     <g>
       <circle cx={31.5} cy={38} r={3.2} fill={profile.skin} />
       <circle cx={64.5} cy={38} r={3.2} fill={profile.skin} />
-      <circle cx={48} cy={38} r={17} fill={profile.skin} />
+      <circle cx={48} cy={38} r={17} fill={profile.skin} {...OUTLINE} />
       {hairCap(profile.hairStyle, profile.hair, profile.hairHighlight)}
-      {faceFront(profile.expression)}
+      {/* 볼터치 */}
+      <ellipse cx={36} cy={44} rx={3.4} ry={2.1} fill="#f5a3a3" opacity={0.35} />
+      <ellipse cx={60} cy={44} rx={3.4} ry={2.1} fill="#f5a3a3" opacity={0.35} />
+      {faceFront(profile.expression, blinking)}
       {accessory(profile, false)}
     </g>
   );
 
   const headSide = (mirror: boolean) => (
     <g transform={mirror ? "translate(96 0) scale(-1 1)" : undefined}>
-      <circle cx={48} cy={38} r={17} fill={profile.skin} />
+      <circle cx={48} cy={38} r={17} fill={profile.skin} {...OUTLINE} />
       {hairCap(profile.hairStyle, profile.hair, profile.hairHighlight)}
       {faceSide()}
       {accessory(profile, true)}
