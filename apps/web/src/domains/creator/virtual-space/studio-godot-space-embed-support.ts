@@ -214,6 +214,7 @@ export interface StudioGodotSpaceEmbedProps {
    * 접속한다. 자격이 없으면 게스트는 localOnly 로컬 무대에 머문다.
    */
   readonly guestAccess?: StudioRealtimeTicketGuestAccess;
+  readonly onExitToClassic: () => void;
   /** 테스트 주입용. 기본값은 운영 HTTP 발급기. */
   readonly ticketIssuer?: StudioRealtimeTicketIssuer;
 }
