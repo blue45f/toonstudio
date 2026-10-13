@@ -151,8 +151,8 @@ export function DiscoverHubPage() {
         eyebrow="DISCOVER"
         title={bt("다음 컷의 영감은, 새로운 이야기에서.", "Find the story that sparks your next panel.")}
         description={bt(
-          "작품·작가·태그로 검색하거나 장르로 바로 들어가 보세요. 요일 연재와 평점 높은 작품은 아래에서 바로 볼 수 있어요.",
-          "Search by title, creator or tag, or jump in by genre. Weekly serials and top-rated stories are right below.",
+          "작품 찾기를 시작하는 곳입니다. 작품·작가·태그로 검색하거나 장르로 바로 들어가 보세요. 요일 연재와 평점 높은 작품은 아래에서 바로 볼 수 있고, 조건을 좁혀 찾고 싶으면 '조건으로 탐색'으로 이어집니다.",
+          "This is where finding a story starts. Search by title, creator or tag, or jump in by genre. Weekly serials and top-rated stories are right below — and when you want to narrow by conditions, the filter explorer continues from here.",
         )}
         aside={showSpotlight ? <DiscoverSpotlight snapshot={home.data} loading={home.loading} /> : undefined}
         art={sitePageHeaderArtFor("/discover")}
