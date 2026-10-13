@@ -29,6 +29,7 @@ export type EpisodeQcItemId =
   | "processes"
   | "review-gate"
   | "joint-proof"
+  | "dialogue-spellcheck"
   | "rights-preflight"
   | "release-schedule"
   | "blockers"
@@ -95,10 +96,24 @@ function incompleteProcesses(aggregate: ProductionProjectAggregate, episodeId: s
   return incomplete;
 }
 
+/**
+ * aggregate 밖에 있는 검사 결과의 주입 지점.
+ * 대사 맞춤법 검사는 캔버스 대사(studio-dialogue-spellcheck)가 재료라 aggregate만으로는
+ * 계산할 수 없다 — 식자·게시 흐름이 실행한 요약 건수를 그대로 넘긴다(구조적 타이핑이라
+ * lettering 모듈을 import하지 않는다). null/미제공이면 항목은 skipped가 된다.
+ */
+export interface EpisodeQcExtras {
+  readonly dialogueSpellcheck?: {
+    readonly errorCount: number;
+    readonly warningCount: number;
+  } | null;
+}
+
 export function deriveEpisodeQcChecklist(
   aggregate: ProductionProjectAggregate,
   episodeId: string,
   now: Date = new Date(),
+  extras?: EpisodeQcExtras,
 ): EpisodeQcChecklist | null {
   const episode = aggregate.episodes.find((entry) => entry.episodeId === episodeId);
   if (!episode) return null;
@@ -187,6 +202,40 @@ export function deriveEpisodeQcChecklist(
         ? { ko: "통합 원고 공동 교정을 통과했어요.", en: "The joint proof passed." }
         : { ko: "통합 교정 승인이 아직 없어요.", en: "The joint proof is not approved yet." },
       target: episode.jointProofApproved ? null : { kind: "surface", surface: "review" },
+    },
+    {
+      id: "dialogue-spellcheck",
+      label: { ko: "대사 맞춤법 검사", en: "Dialogue spellcheck" },
+      status:
+        extras?.dialogueSpellcheck == null
+          ? "skipped"
+          : extras.dialogueSpellcheck.errorCount > 0
+            ? "blocked"
+            : "pass",
+      detail:
+        extras?.dialogueSpellcheck == null
+          ? {
+              ko: "대사 검사는 식자 화면에서 실행해요. 아직 이 회차의 검사 결과가 없어요.",
+              en: "Run the dialogue check in Lettering — no result for this episode yet.",
+            }
+          : extras.dialogueSpellcheck.errorCount > 0
+            ? {
+                ko: `맞춤법·띄어쓰기 오류 의심 ${extras.dialogueSpellcheck.errorCount}건이 있어요.`,
+                en: `${extras.dialogueSpellcheck.errorCount} likely spelling/spacing error(s) found.`,
+              }
+            : extras.dialogueSpellcheck.warningCount > 0
+              ? {
+                  ko: `오류 의심은 없어요. 확인하면 좋은 지적 ${extras.dialogueSpellcheck.warningCount}건이 있어요.`,
+                  en: `No likely errors. ${extras.dialogueSpellcheck.warningCount} suggestion(s) worth a look.`,
+                }
+              : {
+                  ko: "대사 검사에서 오류 의심이 없어요.",
+                  en: "The dialogue check found no likely errors.",
+                },
+      target:
+        extras?.dialogueSpellcheck != null && extras.dialogueSpellcheck.errorCount > 0
+          ? { kind: "surface", surface: "manuscripts" }
+          : null,
     },
     {
       id: "rights-preflight",
