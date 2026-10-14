@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { STUDIO_UI_CHROME_REGIONS, type StudioUiFirstScreenExposure } from "./studio-ui-density";
-import { STUDIO_WORK_MODES, studioWorkModeExposure } from "./studio-work-mode";
+import { STUDIO_UI_CHROME_REGIONS, type StudioUiFirstScreenExposure } from "../../studio-ui-density";
+import { STUDIO_WORK_MODES, studioWorkModeExposure } from "../../studio-work-mode";
 import {
   composeStudioChromeExposure,
   studioChromeExposureFor,

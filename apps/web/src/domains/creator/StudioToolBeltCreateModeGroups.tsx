@@ -48,7 +48,7 @@ import { StudioToolHintTarget } from "./StudioToolHint";
 import { StudioWorkflowAccess } from "./StudioWorkflowAccess";
 
 import type { StudioUiChromeRegion } from "./studio-ui-density";
-import { studioWorkModeAllowsRegion } from "./studio-work-mode-gating";
+import { studioWorkModeAllowsRegion } from "./studio-cuttoon-editor/runtime/studio-work-mode-gating";
 import type { StudioToolBeltContentProps, StudioToolBeltHintMap } from "./StudioToolBeltContent";
 
 import { cn } from "@/shared/lib/utils";
