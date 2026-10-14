@@ -13,6 +13,10 @@ on:
         description: "Soak duration per profile (minimum recommended: 300)"
         required: false
         default: "300"
+      sample_heap_per_stroke:
+        description: "Diagnostic runs only: sample the GC heap after every stroke (1) or not (0)"
+        required: false
+        default: "0"
 
 permissions:
   contents: read
@@ -102,6 +106,7 @@ jobs:
           TOONSPECTRUM_SOAK_MINUTES: ${{ env.SOAK_MINUTES }}
           TOONSPECTRUM_SOAK_PROFILE: ${{ matrix.profile }}
           TOONSPECTRUM_SOAK_WEBGPU: ${{ matrix.webgpu }}
+          TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE: ${{ github.event.inputs.sample_heap_per_stroke || '0' }}
           TOONSPECTRUM_SOAK_OUT: artifacts/studio-five-hour-soak/${{ matrix.id }}
         run: pnpm exec tsx scripts/verify-studio-five-hour-soak.mts
       - name: Analyze every 10-minute visual checkpoint

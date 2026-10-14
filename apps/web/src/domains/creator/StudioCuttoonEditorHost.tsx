@@ -181,6 +181,7 @@ import { useStudioDocumentMutationSetter } from "./studio-cuttoon-editor/runtime
 import { useStudioMenuPopoverDismiss } from "./studio-cuttoon-editor/runtime/useStudioMenuPopoverDismiss";
 import { useStudioHistoryDurability } from "./studio-cuttoon-editor/runtime/useStudioHistoryDurability";
 import { useStudioHistoryRetention } from "./studio-cuttoon-editor/runtime/useStudioHistoryRetention";
+import { useStudioRejectedStrokeRecords } from "./use-studio-reliability-status";
 import { useStudioPageHistorySnapshots } from "./studio-cuttoon-editor/runtime/useStudioPageHistorySnapshots";
 import {
   useStudioUnifiedHistoryJournal,
@@ -1856,6 +1857,8 @@ export function StudioCuttoonEditor({
     resetStudioHistoryRetention,
     studioHistoryRetention,
   } = useStudioHistoryRetention(studioCrdtDocumentRef);
+  // 복구 보관 획 수 — 셸 진단 속성으로만 노출한다(획이 확정되지 못하고 복구로 빠진 경우의 관측점).
+  const rejectedStrokeRecords = useStudioRejectedStrokeRecords();
   const [hasPendingOverlayCommit, setHasPendingOverlayCommit] = useState(false);
   const [hasUndonePendingOverlay, setHasUndonePendingOverlay] = useState(false);
   const studioHistoryCanUndo = pagesHi > 0
@@ -28428,6 +28431,7 @@ function clearSelectionForEdit() {
         t,
       })}
       refreshQuickMaskTint={refreshQuickMaskTint}
+      rejectedStrokeCount={rejectedStrokeRecords.length}
       releaseSchedule={releaseSchedule}
       removeSelected={removeSelected}
       renamingAssetId={renamingAssetId}

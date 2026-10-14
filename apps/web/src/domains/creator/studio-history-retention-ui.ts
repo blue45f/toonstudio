@@ -18,6 +18,8 @@ export type StudioHistoryRetentionUiState = Readonly<{
   lastMeasuredEntryBytes: number;
   /** 현재 문서 세션에서 바이트 예산 때문에 퇴출한 단계의 진단 누계. */
   totalBudgetEvictedSteps: number;
+  /** 세션에서 관측한 append 총수. 깊이·유지 바이트가 평탄한 커밋(합치기 교체 등)과 append 자체가 없었던 획을 가르는 진단 계측이다. */
+  totalAppends: number;
   /** 마지막 퇴출 시점에 한 번만 만든 고정 문장. 일반 append는 이 live-region을 바꾸지 않는다. */
   notice: StudioHistoryRetentionNotice | null;
 }>;
@@ -28,6 +30,7 @@ export function createStudioHistoryRetentionUiState(): StudioHistoryRetentionUiS
     lastMeasuredBudgetBytes: STUDIO_PAGES_HISTORY_RETAINED_BYTES_BUDGET,
     lastMeasuredEntryBytes: 0,
     totalBudgetEvictedSteps: 0,
+    totalAppends: 0,
     notice: null,
   };
 }
@@ -72,6 +75,7 @@ export function observeStudioHistoryRetentionAppend<Page>(
     lastMeasuredBudgetBytes: appended.budgetBytes,
     lastMeasuredEntryBytes: appended.appendedEntryBytes,
     totalBudgetEvictedSteps: previous.totalBudgetEvictedSteps + budgetEvictedSteps,
+    totalAppends: previous.totalAppends + 1,
     notice,
   };
 }

@@ -269,6 +269,64 @@ describe("Studio five-hour soak local-preview runtime noise", () => {
   });
 });
 
+describe("Studio five-hour soak layer navigator admission", () => {
+  it("mounts the layer navigator through the real inspector route when its count is unavailable", () => {
+    const ensure = sliceFunction("ensureStudioLayerNavigatorCount", "waitForStudioDocumentAdvance");
+    // 이미 읽히면 어떤 UI도 건드리지 않는다.
+    expect(ensure).toContain("const existing = await readStudioAvailableLayerCount(page);");
+    expect(ensure).toContain("if (existing !== null) return existing;");
+    // 모바일 사용자의 실제 경로: 독의 작업 패널을 열고 인스펙터의 레이어 탭을 고른다.
+    expect(ensure).toContain('[data-studio-mobile-editing-dock="true"]');
+    expect(ensure).toContain('[data-studio-mobile-workspace-toggle="true"]');
+    expect(ensure).toContain('getByRole("button", { name: "작업 패널", exact: true })');
+    expect(ensure).toContain('getAttribute("aria-expanded")');
+    expect(ensure).toContain('[data-studio-inspector-primary-tab="layers"]');
+    expect(ensure).toContain('getAttribute("aria-selected")');
+    expect(ensure).toContain("waitForStudioLayerCount(page");
+    // 최단 경로는 작업 메뉴의 "레이어 열기"다: 시트를 레이어 탭으로 직접 열고, 클릭 결과는
+    // 시트의 실제 상태 속성으로 검증해 로그한다(성공으로 가정하지 않는다).
+    expect(ensure).toContain('getByRole("button", { name: "레이어 열기", exact: true })');
+    expect(ensure).toContain('[data-studio-sheet-id="props"]');
+    expect(ensure).toContain('getAttribute("data-studio-mobile-sheet")');
+    expect(ensure).toContain("props sheet open=");
+  });
+
+  it("gates preflight and history churn on the mounted navigator instead of the raw count", () => {
+    expect(source).toContain("boundedLayerBaseline = await ensureStudioLayerNavigatorCount(page);");
+    expect(source).not.toContain("boundedLayerBaseline = await readStudioAvailableLayerCount(page);");
+    const churnEnsure = source.indexOf("await ensureStudioLayerNavigatorCount(page);\n        report.historyActions += await exerciseBoundedHistoryChurn(");
+    expect(churnEnsure).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("Studio five-hour soak commit separation diagnostics", () => {
+  it("records the editor shell's retention diagnostics around every stroke", () => {
+    expect(source).toContain('read("data-studio-history-budget-evicted-steps")');
+    expect(source).toContain('read("data-studio-history-last-measured-retained-bytes")');
+    expect(source).toContain('read("data-studio-history-last-measured-entry-bytes")');
+    expect(source).toContain('read("data-studio-history-total-appends")');
+    expect(source).toContain('read("data-studio-rejected-stroke-count")');
+    expect(source).toContain("historyTotalAppendsAfter: evidence.historyTotalAppendsAfter");
+    expect(source).toContain("rejectedStrokeCountAfter: evidence.rejectedStrokeCountAfter");
+    const draw = sliceFunction("drawEvidenceStroke", "spawnPreview");
+    expect(draw).toContain("const diagnosticsBefore = await readStudioHistoryDiagnostics(page);");
+    expect(draw).toContain("const diagnosticsAfter = await readStudioHistoryDiagnostics(page);");
+    expect(draw).toContain("historyEvictedStepsBefore: diagnosticsBefore.evictedSteps");
+    expect(draw).toContain("historyRetainedBytesAfter: diagnosticsAfter.retainedBytes");
+    expect(source).toContain("historyEvictedStepsBefore: evidence.historyEvictedStepsBefore");
+    expect(source).toContain("historyRetainedBytesAfter: evidence.historyRetainedBytesAfter");
+  });
+
+  it("captures the visible commit-gate error and keeps per-stroke heap sampling opt-in", () => {
+    expect(source).toContain("readStudioVisibleCommitError(page)");
+    expect(source).toContain("[data-studio-status-error-dismiss]");
+    expect(source).toContain("commitErrorText: evidence.commitErrorText");
+    expect(source).toContain('process.env.TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE === "1"');
+    expect(source).toContain("heapUsedBytesAfter: heapAfter?.usedBytes ?? null");
+    expect(source).toContain("sampleHeapPerStroke: SAMPLE_HEAP_PER_STROKE");
+  });
+});
+
 describe("Studio five-hour soak beta notice admission", () => {
   it("acknowledges the visible product notice through its action before drawing", () => {
     expect(source).toContain("acknowledgeStudioBetaNoticeIfPresent(page)");
