@@ -82,6 +82,7 @@ export function fallbackAnchorLabel(anchor: StudioCommentAnchor): string {
       ? `PDF 위치 · 원본 ${anchor.sourcePageIndex + 1}페이지 ${Math.round(anchor.x * 100)}%, ${Math.round(anchor.y * 100)}%`
       : `PDF 페이지 · 원본 ${anchor.sourcePageIndex + 1}페이지`;
   }
+  if (anchor.type === "compare-image") return "비교 이미지";
   return `요소 · ${shortId(anchor.elementId)}`;
 }
 

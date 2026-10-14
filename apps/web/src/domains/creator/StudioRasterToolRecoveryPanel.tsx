@@ -264,6 +264,7 @@ const STUDIO_INSPECTOR_PIXEL_SELECTION_TOOL_IDS = [
   "poly-lasso",
   "brush",
   "wand",
+  "quick-select",
   "color-range",
 ] as const;
 
@@ -315,6 +316,11 @@ const STUDIO_INSPECTOR_PIXEL_SELECTION_TOOLS: Readonly<
   wand: {
     label: "마술봉",
     shortDescription: "이어진 비슷한 색 영역",
+    icon: WandSparkles,
+  },
+  "quick-select": {
+    label: "빠른 선택",
+    shortDescription: "가장자리와 질감을 따라 선택",
     icon: WandSparkles,
   },
   "color-range": {

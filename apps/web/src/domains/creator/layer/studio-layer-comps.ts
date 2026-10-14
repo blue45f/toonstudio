@@ -103,7 +103,7 @@ export function applyLayerComp<T extends StudioLayerLikeItem>(
       // blendMode도 캡처 상태 그대로 복원한다. 캡처 당시 블렌드 모드가 없던(undefined)
       // 레이어는, 그 사이 사용자가 붙인 블렌드 모드를 지워야 캡처 상태와 같아진다 —
       // 조건부 스프레드로 두면 "콤프를 눌렀는데 합성 모드만 예전과 다르다"가 된다.
-      const restored: Record<string, unknown> = {
+      const restored: T & { visible: boolean; opacity: number; blendMode?: string } = {
         ...layer,
         visible: savedState.visible,
         opacity: savedState.opacity,

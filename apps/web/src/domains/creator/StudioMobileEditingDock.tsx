@@ -432,7 +432,7 @@ export interface StudioMobileEditingDockProps {
   setShapeFill: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   setStampTuning: import("react").Dispatch<import("react").SetStateAction<StudioBrushStampTuning | null>>;
   setStabilizer: import("react").Dispatch<import("react").SetStateAction<number>>;
-  setStabilizerMode: import("react").Dispatch<import("react").SetStateAction<"standard" | "adaptive" | "precision">>;
+  setStabilizerMode: import("react").Dispatch<import("react").SetStateAction<"standard" | "adaptive" | "precision" | "weighted">>;
   setStrokeWidth: import("react").Dispatch<import("react").SetStateAction<number>>;
   setTiltEnabled: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   setTipAngle: import("react").Dispatch<import("react").SetStateAction<number>>;
@@ -444,7 +444,7 @@ export interface StudioMobileEditingDockProps {
   shapeFill: boolean;
   showMobileHint: boolean;
   stabilizer: number;
-  stabilizerMode: "standard" | "adaptive" | "precision";
+  stabilizerMode: "standard" | "adaptive" | "precision" | "weighted";
   stampTuning: StudioBrushStampTuning | null;
   strokeWidth: number;
   tiltEnabled: boolean;

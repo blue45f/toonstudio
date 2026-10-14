@@ -72,7 +72,7 @@ export function buildClientMockAnalytics(
 
   const firstViews = episodes[0]?.views ?? 0;
   const retention: CreatorAnalyticsRetentionPoint[] = episodes.map((item, index) => {
-    const previous = index === 0 ? item.views : episodes[index - 1].views;
+    const previous = index === 0 ? item.views : (episodes[index - 1]?.views ?? item.views);
     const dropOffPct =
       index === 0 || previous <= 0 ? 0 : ((previous - item.views) / previous) * 100;
     return {
@@ -87,10 +87,10 @@ export function buildClientMockAnalytics(
 
   const sum = (pick: (episode: CreatorAnalyticsEpisode) => number): number =>
     episodes.reduce((total, episode) => total + pick(episode), 0);
-  const views = sum((episode) => episode.views);
-  const likes = sum((episode) => episode.likes);
-  const comments = sum((episode) => episode.comments);
-  const newSubscribers = sum((episode) => episode.newSubscribers);
+  const views = sum((episode) => episode.views ?? 0);
+  const likes = sum((episode) => episode.likes ?? 0);
+  const comments = sum((episode) => episode.comments ?? 0);
+  const newSubscribers = sum((episode) => episode.newSubscribers ?? 0);
   const conversion = views > 0 ? round1((newSubscribers / views) * 100) : 0;
   const delta = (value: number): number => {
     const previous = value * (0.82 + rand() * 0.26);

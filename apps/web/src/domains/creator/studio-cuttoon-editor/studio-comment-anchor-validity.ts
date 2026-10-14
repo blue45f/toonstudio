@@ -11,7 +11,7 @@ export function isStudioCommentAnchorValidInPages(
   pages: readonly PageState[],
 ): boolean {
   // PDF 워크벤치 앵커는 스튜디오 페이지에 속하지 않으므로 이 문서에서는 유효할 수 없다.
-  if (anchor.type === "pdf-page") return false;
+  if (anchor.type === "pdf-page" || anchor.type === "compare-image") return false;
   const page = pages.find((candidate) => candidate.id === anchor.pageId);
   if (!page) return false;
   if (anchor.type === "page") return true;

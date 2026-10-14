@@ -71,7 +71,7 @@ import { cn } from "@/shared/lib/utils";
 
 export type StudioDrawModeUi = "pen" | "pixel" | "eraser" | "shape";
 export type StudioSymmetryUi = "none" | "vertical" | "horizontal" | "radial" | "kaleidoscope" | "silk";
-export type StudioStabilizerModeUi = "standard" | "adaptive" | "precision";
+export type StudioStabilizerModeUi = "standard" | "adaptive" | "precision" | "weighted";
 export type StudioPressureCurveUi = "soft" | "linear" | "firm";
 
 export interface StudioDrawOptionsBarProps {
@@ -746,7 +746,7 @@ export function StudioDrawOptionsBar({
                 `현재 강도 ${stabilizer}/10입니다. 클릭하면 다음 강도로 빠르게 전환하고, 더보기에서 정밀 조정할 수 있어요.`,
                 "S",
                 "stabilizer",
-                `stabilizer-${stabilizerMode}`
+                `stabilizer-${stabilizerMode === "weighted" ? "adaptive" : stabilizerMode}`
               )}
             >
               <button
@@ -1259,7 +1259,7 @@ export function StudioDrawOptionsBar({
               `현재 강도 ${stabilizer}/10입니다. 값이 높을수록 입력을 더 오래 평균내 매끈한 선을 만들지만 펜을 따라오는 느낌은 느려질 수 있어요.`,
               "S",
               "stabilizer",
-              `stabilizer-${stabilizerMode}`
+              `stabilizer-${stabilizerMode === "weighted" ? "adaptive" : stabilizerMode}`
             )}
           >
             <div className="flex shrink-0 items-center gap-1 text-fg-3">

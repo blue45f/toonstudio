@@ -793,6 +793,7 @@ export function StudioCanvasViewportDocumentLayer({
                       onCommitTransform={commitTextTransformEnd}
                     />
                   );
+                if (el.type !== "bubble") return null;
                 // bubble
                 return wrapClip(
                   <StudioKonvaBubbleNode

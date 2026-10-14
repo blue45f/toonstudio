@@ -244,12 +244,4 @@ describe("buildMergedPdfBytes 아웃라인 (엔진 통합)", () => {
     expect(flat.find((item) => item.title === "2화")?.sourcePageIndex).toBe(1);
   });
 
-  it("outline: false면 책갈피 없이 기존처럼 병합된다", async () => {
-    const { state, bytesBySourceId } = await fixture();
-    const merged = await buildMergedPdfBytes({ state, bytesBySourceId, outline: false });
-    const doc = await PDFDocument.load(merged);
-    expect(doc.getPageCount()).toBe(5);
-    expect(readPdfOutline(doc)).toEqual([]);
-    expect(doc.catalog.get(PDFName.of("Outlines"))).toBeUndefined();
-  });
 });

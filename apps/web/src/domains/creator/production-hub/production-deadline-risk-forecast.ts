@@ -147,7 +147,7 @@ interface MeasuredEpisode {
 function measurePastEpisodes(
   aggregate: ProductionProjectAggregate,
   targetEpisodeId: string,
-): readonly MeasureEpisode[] {
+): readonly MeasuredEpisode[] {
   const byEpisode = new Map<string, {
     latestCompletedMs: number;
     durationsByProcess: Map<string, number[]>;
@@ -188,7 +188,7 @@ function measurePastEpisodes(
 
 function buildHistoryBasis(
   aggregate: ProductionProjectAggregate,
-  measured: readonly MeasureEpisode[],
+  measured: readonly MeasuredEpisode[],
 ): DeadlineRiskHistoryBasis {
   const durationsByProcess = new Map<string, number[]>();
   let sampleTaskCount = 0;

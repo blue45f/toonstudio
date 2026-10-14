@@ -144,7 +144,7 @@ describe("native document transaction", () => {
     const reopened = loaded.project.pagesList[0]!.elements as El[];
     expect(reopened[0]).toMatchObject({ id: "ink", hidden: true, type: "draw" });
     expect(reopened[1]).toMatchObject({ id: "baked", type: "image", src: result().src, opacity: 0.35 });
-    const exported = exportPageToSvg({ width: 720, height: 1000, bg: "#ffffff", elements: reopened });
+    const exported = exportPageToSvg({ width: 720, height: 1000, bg: "#ffffff", elements: reopened.filter((element): element is Exclude<El, { type: "adjustment" }> => element.type !== "adjustment") });
     expect(exported.svg).toContain(result().src);
     expect(exported.svg.match(/<image\b/gu)).toHaveLength(1);
   });

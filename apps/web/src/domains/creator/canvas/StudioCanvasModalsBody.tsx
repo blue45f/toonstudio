@@ -4,7 +4,6 @@ import {
   setDialogueReviewStatus,
   updateDialogueTranslationText,
 } from "../lettering/studio-dialogue-review";
-import { applyStoryEditorDrafts } from "../lettering/studio-story-editor";
 import { dialogueLocalesForPages, dialogueTranslationCoverage } from "../lettering/studio-dialogue-translate";
 import { moveKeyframe, removeKeyframe, removeTrack, resolveTimelineComposite, type AnimationTimelineDoc } from "../studio-anim-tracks";
 import { defaultStudioAppSettings, type StudioAppSettings, type StudioAppSettingsTab } from "../studio-app-settings";
@@ -453,13 +452,6 @@ export const StudioCanvasModalsBody = memo(function StudioCanvasModalsBody({
             onSelectElement={selectDialogueElement}
             onPatchText={patchDialogueText}
             onApplyReplace={applyDialogueReplacePlan}
-            onApplyStoryEditorDrafts={(drafts) => {
-              const result = applyStoryEditorDrafts(pages, drafts);
-              if (result.pages !== pages) {
-                commitPages(result.pages as PageState[]);
-              }
-              return result;
-            }}
             onSplitText={splitDialogueText}
             onMergeWithNext={mergeDialogueTextWithNext}
             onTransferElement={transferDialogueText}

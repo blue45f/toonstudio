@@ -28,6 +28,10 @@ function entry(partial: Partial<StudioLoreEntry> & { id: string }): StudioLoreEn
     characterIds: [],
     origin: "authored",
     ...partial,
+    status: partial.status ?? "confirmed",
+    version: partial.version ?? 1,
+    appliesToWorkIds: partial.appliesToWorkIds ?? [],
+    appliesToSeasonLabels: partial.appliesToSeasonLabels ?? [],
   };
 }
 

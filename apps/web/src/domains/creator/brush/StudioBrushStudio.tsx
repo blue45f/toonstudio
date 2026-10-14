@@ -374,6 +374,9 @@ const TIP_SHAPE_LABELS: Record<StudioBrushTipShapeId, string> = {
   sumi: "수묵",
   halftone: "망점",
   star: "스타",
+  spatter: "스패터",
+  rake: "레이크",
+  grass: "잔디",
 };
 
 function TipShapeGlyph({ shape, active }: { shape: StudioBrushTipShapeId; active: boolean }) {

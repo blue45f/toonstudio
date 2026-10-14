@@ -29,7 +29,7 @@ function summary(workId: string, overrides: Partial<ProductionProjectSummary> = 
   } as ProductionProjectSummary;
 }
 
-function detail(teamId: string, projects: readonly { id: string; workId: string; title: string }[]): TeamWorkspaceDetail {
+function detail(teamId: string, projects: readonly { id: string; workId: string; title: string; ownerUserId: string }[]): TeamWorkspaceDetail {
   return {
     workspace: {
       id: teamId, name: `팀 ${teamId}`, ownerUserId: "owner", revision: 1, role: "owner",
@@ -44,7 +44,7 @@ function detail(teamId: string, projects: readonly { id: string; workId: string;
 describe("buildOrganizationPortfolio", () => {
   it("연결 팀의 작품을 workId로 요약과 조인해 행으로 만든다", () => {
     const portfolio = buildOrganizationPortfolio(
-      [detail("team-a", [{ id: "p1", workId: "w1", title: "달빛 연대기" }])],
+      [detail("team-a", [{ id: "p1", workId: "w1", title: "달빛 연대기", ownerUserId: "owner" }])],
       [summary("w1", { activeEpisodeCount: 3, reviewTaskCount: 2, nextReleaseAt: "2026-10-20T00:00:00.000Z" })],
     );
     expect(portfolio.rows).toHaveLength(1);
@@ -56,7 +56,7 @@ describe("buildOrganizationPortfolio", () => {
 
   it("작품 권한이 없어 요약이 없는 작품은 수치를 만들지 않고 unknown으로 둔다", () => {
     const portfolio = buildOrganizationPortfolio(
-      [detail("team-a", [{ id: "p1", workId: "w-secret", title: "비공개 작품" }])],
+      [detail("team-a", [{ id: "p1", workId: "w-secret", title: "비공개 작품", ownerUserId: "owner" }])],
       [],
     );
     expect(portfolio.rows[0].accessible).toBe(false);
@@ -69,9 +69,9 @@ describe("buildOrganizationPortfolio", () => {
   it("주의 작품부터 정렬하고, 같은 단계에서는 다음 게시가 임박한 작품을 먼저 둔다", () => {
     const portfolio = buildOrganizationPortfolio(
       [detail("team-a", [
-        { id: "p-ok", workId: "w-ok", title: "순항작" },
-        { id: "p-late", workId: "w-late", title: "지연작" },
-        { id: "p-warn", workId: "w-warn", title: "막힘작" },
+        { id: "p-ok", workId: "w-ok", title: "순항작", ownerUserId: "owner" },
+        { id: "p-late", workId: "w-late", title: "지연작", ownerUserId: "owner" },
+        { id: "p-warn", workId: "w-warn", title: "막힘작", ownerUserId: "owner" },
       ])],
       [
         summary("w-ok", { nextReleaseAt: "2026-10-15T00:00:00.000Z" }),
@@ -85,7 +85,7 @@ describe("buildOrganizationPortfolio", () => {
   });
 
   it("중복된 팀 상세가 들어와도 같은 작품 행은 한 번만 만든다", () => {
-    const team = detail("team-a", [{ id: "p1", workId: "w1", title: "작품" }]);
+    const team = detail("team-a", [{ id: "p1", workId: "w1", title: "작품", ownerUserId: "owner" }]);
     const portfolio = buildOrganizationPortfolio([team, team], [summary("w1")]);
     expect(portfolio.rows).toHaveLength(1);
   });
@@ -93,8 +93,8 @@ describe("buildOrganizationPortfolio", () => {
   it("여러 팀의 작품을 한 표로 합친다", () => {
     const portfolio = buildOrganizationPortfolio(
       [
-        detail("team-a", [{ id: "p1", workId: "w1", title: "A작품" }]),
-        detail("team-b", [{ id: "p2", workId: "w2", title: "B작품" }]),
+        detail("team-a", [{ id: "p1", workId: "w1", title: "A작품", ownerUserId: "owner" }]),
+        detail("team-b", [{ id: "p2", workId: "w2", title: "B작품", ownerUserId: "owner" }]),
       ],
       [summary("w1"), summary("w2")],
     );

@@ -528,7 +528,7 @@ export interface StudioInspectorAsideProps {
   setWetMixWetness: import("react").Dispatch<import("react").SetStateAction<number>>;
   setSnapEnabled: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   setStabilizer: import("react").Dispatch<import("react").SetStateAction<number>>;
-  setStabilizerMode: import("react").Dispatch<import("react").SetStateAction<"standard" | "adaptive" | "precision">>;
+  setStabilizerMode: import("react").Dispatch<import("react").SetStateAction<"standard" | "adaptive" | "precision" | "weighted">>;
   setStampTuning: import("react").Dispatch<import("react").SetStateAction<{ flow: number; hardness: number; minSize: number; } | null>>;
   setStrokeWidth: import("react").Dispatch<import("react").SetStateAction<number>>;
   setSymmetryCenterX: import("react").Dispatch<import("react").SetStateAction<number>>;
@@ -576,7 +576,7 @@ export interface StudioInspectorAsideProps {
   wetMixWetness: number;
   snapEnabled: boolean;
   stabilizer: number;
-  stabilizerMode: "standard" | "adaptive" | "precision";
+  stabilizerMode: "standard" | "adaptive" | "precision" | "weighted";
   stampTuning: { flow: number; hardness: number; minSize: number; } | null;
   strokeWidth: number;
   symmetryCenterX: number;

@@ -108,6 +108,7 @@ describe("checkLoreNames", () => {
       id: "lore-place-1", kind: "place", name: "성좌의 탑", aliases: ["별의 탑"],
       summary: "", details: "", eraLabel: "", timelineOrder: null,
       relatedEntryIds: [], characterIds: [], origin: "authored",
+      status: "confirmed", version: 1, appliesToWorkIds: [], appliesToSeasonLabels: [],
     };
     lore = upsertLoreEntry(lore, entry);
     const dict = buildLoreNameDictionary(null, lore);

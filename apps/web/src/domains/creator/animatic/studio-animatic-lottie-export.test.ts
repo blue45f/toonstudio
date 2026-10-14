@@ -25,8 +25,8 @@ function createDocument(): StudioAnimaticDocument {
         holdMs: 1_600,
         transition: { kind: "cut", durationMs: 0 },
         cameraKeyframes: [
-          { at: 0, panXPercent: -10, panYPercent: 0, zoom: 1, easing: "linear" },
-          { at: 1, panXPercent: 10, panYPercent: 20, zoom: 2, easing: "ease-in-out" },
+          { at: 0, panXPercent: -10, panYPercent: 0, zoom: 1, opacity: 1, easing: "linear" },
+          { at: 1, panXPercent: 10, panYPercent: 20, zoom: 2, opacity: 1, easing: "ease-in-out" },
         ],
         cues: [],
         sourceRect: { x: 0, y: 0, width: 500, height: 500, stripY: 0 },
@@ -39,8 +39,8 @@ function createDocument(): StudioAnimaticDocument {
         holdMs: 2_000,
         transition: { kind: "fade", durationMs: 500 },
         cameraKeyframes: [
-          { at: 0, panXPercent: 0, panYPercent: 0, zoom: 1, easing: "linear" },
-          { at: 1, panXPercent: 0, panYPercent: 0, zoom: 1, easing: "linear" },
+          { at: 0, panXPercent: 0, panYPercent: 0, zoom: 1, opacity: 1, easing: "linear" },
+          { at: 1, panXPercent: 0, panYPercent: 0, zoom: 1, opacity: 1, easing: "linear" },
         ],
         cues: [{ id: "cue-1", kind: "dialogue", offsetMs: 500, text: "안녕", speaker: "유나" }],
         sourceRect: { x: 0, y: 500, width: 500, height: 500, stripY: 500 },

@@ -43,6 +43,7 @@ export const EPISODE_QC_ITEM_LABELS_KO: Readonly<Record<EpisodeQcItemId, string>
   "integrated-art": "식자 통합본 고정",
   processes: "전 공정 완료",
   "review-gate": "검수 승인 (공개 전 필수)",
+  "stage-consensus-gate": "단계 합의 확인",
   "joint-proof": "통합 교정 승인",
   "dialogue-spellcheck": "대사 맞춤법 검사",
   "rights-preflight": "권리·크레딧 사전 점검",

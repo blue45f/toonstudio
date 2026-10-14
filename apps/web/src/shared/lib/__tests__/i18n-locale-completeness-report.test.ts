@@ -18,11 +18,11 @@ import {
  * Fixture shaped like the real asset tree: `nav` has an English source, `contact` does not
  * (it is authored ko-first, like the three reverse-direction namespaces on disk).
  */
-function fixtureNamespaces() {
-  return new Map([
+function fixtureNamespaces(): Map<string, Map<string, Record<string, string>>> {
+  return new Map<string, Map<string, Record<string, string>>>([
     [
       "nav",
-      new Map([
+      new Map<string, Record<string, string>>([
         ["en", { a: "A", b: "B", c: "C", d: "D" }],
         ["ko", { a: "에이", b: "비", c: "씨", d: "디" }],
         ["ja", { a: "エー", b: "ビー", c: "C" }],
@@ -30,7 +30,7 @@ function fixtureNamespaces() {
     ],
     [
       "contact",
-      new Map([
+      new Map<string, Record<string, string>>([
         ["de", { x: "X" }],
         ["ko", { x: "엑스" }],
       ]),
