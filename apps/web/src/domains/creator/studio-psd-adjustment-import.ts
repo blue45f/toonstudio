@@ -384,14 +384,17 @@ export function convertPsdAdjustmentLayer(
       return convertSelectiveColor(adjustment);
     case "color lookup":
       return convertColorLookup(adjustment);
-    default:
+    default: {
+      // 미래의 ag-psd 조정 종류를 위한 런타임 폴백. 현재 유니온은 switch에서
+      // 완전하게 좁혀지므로, 새 런타임 값만 별도 구조로 읽는다.
+      const psdTypeValue = (adjustment as { type?: unknown }).type;
+      const psdType = typeof psdTypeValue === "string" ? psdTypeValue : "unknown";
       return {
         status: "unsupported",
-        psdType: adjustment.type,
-        reason:
-          UNSUPPORTED_REASONS[adjustment.type] ??
-          `알 수 없는 PSD 조정 종류(${adjustment.type})입니다.`,
+        psdType,
+        reason: UNSUPPORTED_REASONS[psdType] ?? `알 수 없는 PSD 조정 종류(${psdType})입니다.`,
       };
+    }
   }
 }
 

@@ -10,9 +10,10 @@ import {
 } from "../studio-destructive-action-preview";
 
 import { STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS } from "./studio-mannequin-model";
+import { STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN } from "./studio-mannequin-lighting";
 import { STUDIO_MANNEQUIN_POSE_PRESETS, normalizeStudioMannequinPose } from "./studio-mannequin-poses";
 
-import type { StudioMannequinSceneHandle } from "./studio-mannequin-scene";
+import { snapshotStudioMannequinLightingPlan, type StudioMannequinSceneHandle } from "./studio-mannequin-scene";
 
 // Three.js 뷰포트는 jsdom 에서 만들 수 없으니 씬 계층 전체를 결정적 스텁으로 대체한다.
 // (경로 계약: StudioMannequinPoserPanel 은 씬을 오직 이 모듈을 통해서만 만든다.)
@@ -29,6 +30,10 @@ const sceneHandle: StudioMannequinSceneHandle = {
   getOutlineMode: vi.fn(() => "auto" as const),
   setShowJointRangeArc: vi.fn(),
   getShowJointRangeArc: vi.fn(() => true),
+  setLightingRig: vi.fn(),
+  getLightingRig: vi.fn(() => null),
+  getLightingPlan: vi.fn(() => STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN),
+  getLightingSnapshot: vi.fn(() => snapshotStudioMannequinLightingPlan(STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN)),
   setCameraPreset: vi.fn(),
   setProjection: vi.fn(),
   getProjection: vi.fn(() => "perspective" as const),

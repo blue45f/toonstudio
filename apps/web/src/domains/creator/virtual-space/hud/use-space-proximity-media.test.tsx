@@ -90,6 +90,7 @@ describe("SpaceProximityVideo", () => {
     const snapshot: HuddleSnapshot = {
       peers: [failedPeer], messages: [], localStream: null, availablePeers: 1, error: null, closed: false,
       cameraFacing: "user", muted: true, camera: false, sharing: false, hand: false,
+      overflowPeerCount: 0, failedPeerCount: 1,
     };
     render(<SpaceProximityVideo phase="live" snapshot={snapshot} busy={false} scopeNames={[{ id: "bob", name: "Bob" }]} selfName="Alice" waitingReason={null}
       onToggleCamera={noop} onToggleMic={noop} onToggleScreen={noop} onStop={noop} />);

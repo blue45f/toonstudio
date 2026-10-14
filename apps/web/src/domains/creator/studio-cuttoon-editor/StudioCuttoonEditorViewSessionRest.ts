@@ -599,8 +599,6 @@ export type StudioCuttoonEditorViewSessionRest = {
   menuEditUndoDisabled: any;
   presentationPanelsHidden: any;
   proDrawPrefs: any;
-  quickSelectTolerance: any;
-  setQuickSelectTolerance: any;
   remixId: any;
   studioLiveGesturePreviewAdapter: any;
   studioRasterHandoffBaseKey: any;
