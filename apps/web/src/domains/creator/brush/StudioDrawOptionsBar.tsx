@@ -65,13 +65,14 @@ import { StudioBrushTray } from "./StudioBrushTray";
 import { StudioPreciseNumberInput } from "./StudioPreciseNumberInput";
 
 import type { StudioBrushSlot } from "./studio-brush-slots";
+import type { StudioStabilizerMode } from "./studio-stroke-stabilizer";
 import type { StudioBrushTrayItem } from "../studio-creative-ux";
 
 import { cn } from "@/shared/lib/utils";
 
 export type StudioDrawModeUi = "pen" | "pixel" | "eraser" | "shape";
 export type StudioSymmetryUi = "none" | "vertical" | "horizontal" | "radial" | "kaleidoscope" | "silk";
-export type StudioStabilizerModeUi = "standard" | "adaptive" | "precision";
+export type StudioStabilizerModeUi = StudioStabilizerMode;
 export type StudioPressureCurveUi = "soft" | "linear" | "firm";
 
 export interface StudioDrawOptionsBarProps {

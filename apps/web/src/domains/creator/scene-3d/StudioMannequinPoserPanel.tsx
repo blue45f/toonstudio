@@ -1115,12 +1115,12 @@ export function StudioMannequinCameraSection({
         )}
 
         {webcamError ? (
-          <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-rose-500">
+          <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-danger">
             {webcamError}
           </p>
         ) : null}
         {handTrackingError ? (
-          <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-rose-500">
+          <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-danger">
             {handTrackingError}
           </p>
         ) : null}
@@ -2524,9 +2524,9 @@ export function StudioMannequinPoserPanel({
                     <div
                       role="status"
                       data-studio-mannequin-duo-placement={duoPlacement.compositionId}
-                      className="space-y-1.5 rounded-xl border border-line bg-surface-2 px-3 py-2.5"
+                      className="space-y-1.5 rounded-xl border border-line bg-card px-3 py-2.5"
                     >
-                      <p className="text-xs font-semibold text-fg-1">
+                      <p className="text-xs font-semibold text-fg-2">
                         {describeStudioMannequinDuoPlacement(duoPlacement)}
                       </p>
                       <p className="text-[0.7rem] leading-relaxed text-fg-3">

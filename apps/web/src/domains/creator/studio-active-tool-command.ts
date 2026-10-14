@@ -23,8 +23,10 @@ export interface StudioActiveToolSignals {
   readonly quickMaskArmed?: boolean;
   readonly eyedropperArmed?: boolean;
   readonly quickShapeActive?: boolean;
-  /** Armed pixel-selection surface, when one owns the pointer. */
-  readonly pixelSelectionTool?: SelectionToolKind | "wand" | null;
+  /** Armed pixel-selection surface, when one owns the pointer.
+   * "quick-select" is accepted as well; it has no catalog command and
+   * resolves to null through the lookup below, like "brush" and "wand". */
+  readonly pixelSelectionTool?: SelectionToolKind | "wand" | "quick-select" | null;
 }
 
 const PIXEL_SELECTION_COMMANDS: Readonly<Record<string, string | null>> = Object.freeze({

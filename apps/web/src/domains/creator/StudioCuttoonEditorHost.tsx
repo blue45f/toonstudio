@@ -29228,7 +29228,6 @@ function clearSelectionForEdit() {
       uiChromeExposure={uiChromeExposure}
       uiAdvancedToolsExpanded={uiAdvancedToolsExpanded}
       setUiAdvancedToolsExpanded={setUiAdvancedToolsExpanded}
-      uiAdvancedToolsExpanded={uiAdvancedToolsExpanded}
       uiFirstScreenExposure={uiFirstScreenExposure}
       undo={undo}
       undoBrushDelete={undoBrushDelete}

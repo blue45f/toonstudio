@@ -171,9 +171,9 @@ function Metric({
   readonly tone?: "neutral" | "success" | "warning" | "danger";
 }) {
   let toneClass = "border-line bg-panel";
-  if (tone === "success") toneClass = "border-emerald-500/30 bg-emerald-500/10";
-  if (tone === "warning") toneClass = "border-amber-500/30 bg-amber-500/10";
-  if (tone === "danger") toneClass = "border-red-500/30 bg-red-500/10";
+  if (tone === "success") toneClass = "border-success/30 bg-success/10";
+  if (tone === "warning") toneClass = "border-warn/30 bg-warn/10";
+  if (tone === "danger") toneClass = "border-danger/30 bg-danger/10";
   return (
     <div className={cn("rounded-2xl border p-3.5", toneClass)}>
       <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-fg-3">{label}</p>
@@ -192,13 +192,13 @@ function Pill({
 }) {
   let toneClass = "border-line bg-raised text-fg-2";
   if (tone === "success") {
-    toneClass = "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+    toneClass = "border-success/30 bg-success/10 text-success";
   }
   if (tone === "warning") {
-    toneClass = "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+    toneClass = "border-warn/30 bg-warn/10 text-warn";
   }
   if (tone === "danger") {
-    toneClass = "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300";
+    toneClass = "border-danger/30 bg-danger/10 text-danger";
   }
   if (tone === "accent") toneClass = "border-accent/30 bg-accent-soft text-accent";
   return (
@@ -271,28 +271,28 @@ function ModeNotice({ mode }: { readonly mode: StudioProductionWorkspaceMode }) 
   const sharedClass = "rounded-xl border px-3 py-2.5 text-xs leading-relaxed";
   if (mode === "demo") {
     return (
-      <div className={cn(sharedClass, "border-sky-500/30 bg-sky-500/10 text-fg")} role="status">
-        <Info className="mr-2 inline size-4 text-sky-600" aria-hidden="true" />
+      <div className={cn(sharedClass, "border-cool/30 bg-cool/10 text-fg")} role="status">
+        <Info className="mr-2 inline size-4 text-cool" aria-hidden="true" />
         {translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "이 화면은 명시적으로 연 샘플 데모입니다. 변경 내용은 저장·공유·승인되지 않습니다.")}</div>
     );
   }
   if (mode === "server-work") {
     return (
-      <div className={cn(sharedClass, "border-emerald-500/30 bg-emerald-500/10 text-fg")} role="status">
-        <Server className="mr-2 inline size-4 text-emerald-600" aria-hidden="true" />
+      <div className={cn(sharedClass, "border-success/30 bg-success/10 text-fg")} role="status">
+        <Server className="mr-2 inline size-4 text-success" aria-hidden="true" />
         {translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "팀과 공유되는 프로젝트입니다. 권한에 따라 편집과 승인이 제한될 수 있습니다.")}</div>
     );
   }
   if (mode === "read-only-cache") {
     return (
-      <div className={cn(sharedClass, "border-amber-500/30 bg-amber-500/10 text-fg")} role="status">
-        <WifiOff className="mr-2 inline size-4 text-amber-600" aria-hidden="true" />
+      <div className={cn(sharedClass, "border-warn/30 bg-warn/10 text-fg")} role="status">
+        <WifiOff className="mr-2 inline size-4 text-warn" aria-hidden="true" />
         {translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "연결이 없어 마지막으로 확인한 내용을 보여드립니다. 다시 연결되기 전에는 변경하거나 공유할 수 없습니다.")}</div>
     );
   }
   return (
-    <div className={cn(sharedClass, "border-amber-500/30 bg-amber-500/10 text-fg")} role="status">
-      <HardDrive className="mr-2 inline size-4 text-amber-600" aria-hidden="true" />
+    <div className={cn(sharedClass, "border-warn/30 bg-warn/10 text-fg")} role="status">
+      <HardDrive className="mr-2 inline size-4 text-warn" aria-hidden="true" />
       {translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "이 작업 목록과 검토 의견은 현재 이 기기에 저장됩니다. 다른 기기에서도 사용하려면 백업 파일을 만들어 주세요.")}</div>
   );
 }
@@ -918,7 +918,7 @@ function StudioProductionHubWorkspace({
         {mode === "server-work" && serverWorkId ? <StudioWorkSessionEntry key={serverWorkId} workId={serverWorkId} /> : null}
 
         {loadError ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm" role="alert">
+          <div className="rounded-xl border border-danger/30 bg-danger/10 p-4 text-sm" role="alert">
             <p className="font-bold">{translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "저장된 제작 운영 데이터를 안전하게 열지 못했습니다.")}</p>
             <p className="mt-1 text-xs text-fg-2">{loadError}</p>
             <p className="mt-2 text-xs text-fg-2">{translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "손상된 값을 빈 데이터로 덮어쓰지 않았습니다.")}</p>
@@ -1011,13 +1011,13 @@ function StudioProductionHubWorkspace({
               <div className={cn(
                 "rounded-2xl border p-4 text-center",
                 releaseReady
-                  ? "border-emerald-500/30 bg-emerald-500/10"
-                  : "border-amber-500/30 bg-amber-500/10",
+                  ? "border-success/30 bg-success/10"
+                  : "border-warn/30 bg-warn/10",
               )}>
                 {releaseReady ? (
-                  <ShieldCheck className="mx-auto size-9 text-emerald-600" aria-hidden="true" />
+                  <ShieldCheck className="mx-auto size-9 text-success" aria-hidden="true" />
                 ) : (
-                  <AlertTriangle className="mx-auto size-9 text-amber-600" aria-hidden="true" />
+                  <AlertTriangle className="mx-auto size-9 text-warn" aria-hidden="true" />
                 )}
                 <p className="mt-2 text-sm font-black">
                   {releaseReady
@@ -1164,13 +1164,13 @@ function StudioProductionHubWorkspace({
             <div className={cn(
               "rounded-2xl border p-5",
               capabilities.canInvite
-                ? "border-emerald-500/30 bg-emerald-500/10"
-                : "border-amber-500/30 bg-amber-500/10",
+                ? "border-success/30 bg-success/10"
+                : "border-warn/30 bg-warn/10",
             )}>
               {capabilities.canInvite ? (
-                <Server className="size-8 text-emerald-600" aria-hidden="true" />
+                <Server className="size-8 text-success" aria-hidden="true" />
               ) : (
-                <AlertTriangle className="size-8 text-amber-600" aria-hidden="true" />
+                <AlertTriangle className="size-8 text-warn" aria-hidden="true" />
               )}
               <h2 className="mt-3 text-base font-black">
                 {capabilities.canInvite
@@ -1194,8 +1194,8 @@ function StudioProductionHubWorkspace({
             title={translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "참여 링크 검증")}
             description={translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "서버에서 발급·서명·폐기 가능한 초대만 프로젝트 권한으로 인정합니다.")}
           >
-            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
-              <AlertTriangle className="size-8 text-amber-600" aria-hidden="true" />
+            <div className="rounded-2xl border border-warn/30 bg-warn/10 p-5">
+              <AlertTriangle className="size-8 text-warn" aria-hidden="true" />
               <h2 className="mt-3 text-base font-black">
                 {inviteParameter
                   ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "이 링크는 서버에서 검증되지 않았습니다")

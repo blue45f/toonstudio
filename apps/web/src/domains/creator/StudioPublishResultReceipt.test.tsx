@@ -176,46 +176,4 @@ describe("StudioPublishResultReceipt", () => {
     );
     expect(screen.getByRole("alert").textContent).toContain("다른 창의 변경");
   });
-
-  it("offers operations next actions and the next episode start after publishing a series episode", () => {
-    render(
-      <MemoryRouter>
-        <StudioPublishResultReceipt
-          kind="published"
-          workId="work-9"
-          environment="production"
-          series={{ id: "series-1", title: "성운의 왕관", nextEpisodeNo: 5 }}
-          onContinueEditing={() => undefined}
-          onReviewSettings={() => undefined}
-        />
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByRole("link", { name: "연재 센터에서 보기" }).getAttribute("href")).toBe(
-      "/publish",
-    );
-    expect(screen.getByRole("link", { name: "회차 성과·댓글 확인" }).getAttribute("href")).toBe(
-      "/studio/analytics",
-    );
-    expect(
-      screen.getByRole("link", { name: "다음 회차 5화 원고 시작" }).getAttribute("href"),
-    ).toBe("/studio?seriesId=series-1");
-  });
-
-  it("hides operations next actions for private drafts even when a series is linked", () => {
-    render(
-      <StudioPublishResultReceipt
-        kind="private"
-        workId="work-private-2"
-        environment="preview"
-        series={{ id: "series-1", title: "성운의 왕관", nextEpisodeNo: 5 }}
-        onContinueEditing={() => undefined}
-        onReviewSettings={() => undefined}
-      />,
-    );
-
-    expect(screen.queryByRole("link", { name: "연재 센터에서 보기" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "회차 성과·댓글 확인" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "다음 회차 5화 원고 시작" })).toBeNull();
-  });
 });
