@@ -38,6 +38,23 @@ describe("studio-virtual-space-hd-sprite-pipeline", () => {
     expect(snapStudioHdDisplayScale(1.6, true)).toBe(2);
     expect(snapStudioHdDisplayScale(0.62, false)).toBeCloseTo(0.5);
     expect(snapStudioHdDisplayScale(Number.NaN, false)).toBe(1);
+    expect(snapStudioHdDisplayScale(9, false)).toBe(4);
+    expect(snapStudioHdDisplayScale(9, true)).toBe(4);
+  });
+
+  it("모션 감소 시 ultra로 올리지 않고 hd에 머문다", () => {
+    expect(
+      resolveStudioHdSpriteTier({ dpr: 3, viewportWidth: 1600, pixelated: false, reducedMotion: true, effectLevel: "high", deviceMemoryGb: 16 }),
+    ).toBe("hd");
+  });
+
+  it("비정상 입력은 안전한 기본값으로 떨어진다", () => {
+    expect(
+      resolveStudioHdSpriteTier({ dpr: Number.NaN, viewportWidth: Number.NaN, pixelated: false, reducedMotion: false, effectLevel: "medium" }),
+    ).toBe("sd");
+    expect(studioHdBackdropImageSet("")).toBe("none");
+    expect(studioHdBackdropImageSet('/x".webp', "/y.webp")).toBe("none");
+    expect(studioHdBackdropImageSet("/a.webp", '/evil".webp')).toBe('url("/a.webp")');
   });
 
   it("CSS 필터와 배경 image-set을 만든다", () => {

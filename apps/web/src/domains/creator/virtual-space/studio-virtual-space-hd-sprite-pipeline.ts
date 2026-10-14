@@ -89,9 +89,11 @@ export function resolveStudioHdSpriteTier(env: StudioHdSpriteEnvironment): Studi
   if (env.pixelated) return "sd";
   if (env.reducedMotion && env.effectLevel === "low") return "sd";
   const dpr = Number.isFinite(env.dpr) ? env.dpr : 1;
-  const memory = env.deviceMemoryGb ?? 8;
-  const wide = env.viewportWidth >= 1280;
-  if ((dpr >= 2.5 || (dpr >= 2 && wide)) && memory >= 8 && env.effectLevel === "high") return "ultra";
+  const memory = Number.isFinite(env.deviceMemoryGb ?? 8) ? (env.deviceMemoryGb ?? 8) : 8;
+  const width = Number.isFinite(env.viewportWidth) ? env.viewportWidth : 0;
+  const wide = width >= 1280;
+  const ultra = (dpr >= 2.5 || (dpr >= 2 && wide)) && memory >= 8 && env.effectLevel === "high";
+  if (ultra) return env.reducedMotion ? "hd" : "ultra";
   if (dpr >= 1.5 || wide) return "hd";
   return "sd";
 }
@@ -117,8 +119,8 @@ export function studioHdSpriteProfile(env: StudioHdSpriteEnvironment): StudioHdS
  */
 export function snapStudioHdDisplayScale(scale: number, pixelated: boolean): number {
   if (!Number.isFinite(scale) || scale <= 0) return 1;
-  if (pixelated) return Math.max(1, Math.round(scale));
-  return Math.max(0.25, Math.round(scale * 4) / 4);
+  if (pixelated) return Math.min(4, Math.max(1, Math.round(scale)));
+  return Math.min(4, Math.max(0.25, Math.round(scale * 4) / 4));
 }
 
 /** CSS filter 한 줄로 주광·외곽선 강화를 표현한다. 렌더러와 마스터 월드가 공유한다. */
@@ -133,6 +135,7 @@ export function studioHdSpriteCssFilter(profile: StudioHdSpriteProfile, facingAw
 
 /** 마스터 월드 배경용 image-set. 2x가 있으면 DPR 2 이상에서 고해상도를 쓴다. */
 export function studioHdBackdropImageSet(baseUrl: string, hdUrl?: string): string {
-  if (!hdUrl || hdUrl === baseUrl) return `url("${baseUrl}")`;
+  if (typeof baseUrl !== "string" || baseUrl.length === 0 || baseUrl.includes('"')) return "none";
+  if (!hdUrl || hdUrl === baseUrl || hdUrl.includes('"')) return `url("${baseUrl}")`;
   return `image-set(url("${baseUrl}") 1x, url("${hdUrl}") 2x)`;
 }

@@ -26,3 +26,11 @@
 - `studio-virtual-space-hd-sprite-pipeline.test.ts` 5 테스트: 픽셀 강제, 티어 분기, low 이펙트 감쇠, 스케일 스냅, CSS·image-set.
 - 기존 게이트 유지: `studio-virtual-space-phaser-canvas-texture-lod.test.ts`의 기존 문자열 단언 포함(원본 라인 보존).
 - `pnpm harness:verify`와 영향 영역 Vitest를 실행하고 결과를 완료 보고에 기록한다.
+
+## 4. v10 최상 고도화 — 2026-10-14 (origin/main 병합 뒤)
+
+- 풀 1회(`fetch origin` + `merge origin/main --no-edit`, 병합 `941a6dec6`)를 먼저 반영하고 그 위에서 고도화했다. 마라톤 최종조립과 HD 파이프라인 간 파일 겹침·충돌은 없었다.
+- 티어 판정 hardening: 비유한 DPR·뷰포트·메모리를 안전한 기본값으로 떨어뜨리고, 모션 감소 사용자는 `high` 이펙트에서도 ultra로 올리지 않고 hd에 머문다.
+- 스케일 스냅 상한 4 고정(HD·픽셀 공통)으로 거대 스프라이트 폭주를 막는다.
+- 배경 image-set 인용부호 가드: 비정상 URL은 `none` 또는 1x로 떨어뜨려 CSS 깨짐을 막는다.
+- 테스트 3건 추가(모션 감소 캡, 비정상 입력, 스냅 상한)로 v10 계약을 고정한다.
