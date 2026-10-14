@@ -21,6 +21,7 @@ import type { StudioAdvancedRuler, StudioAdvancedRulerDocument } from "../studio
 import type { SharedGutterSegment } from "../studio-frame-folder";
 import type { IsometricGridConfig } from "../studio-isometric-grid";
 import type { VanishingPoint } from "../studio-perspective-guide";
+import type { GuideLine, GuidePoint } from "../drawing/studio-perspective-guide";
 import type { SmartGuideOverlay } from "../studio-smart-guides";
 
 const EMPTY_ADVANCED_RULERS: StudioAdvancedRulerDocument = {
@@ -30,6 +31,8 @@ const EMPTY_ADVANCED_RULERS: StudioAdvancedRulerDocument = {
   selectedRulerId: null,
 };
 const NOOP_ADVANCED_RULER_CHANGE = (): void => undefined;
+const EMPTY_PERSPECTIVE_GUIDE_SEGMENTS: readonly GuideLine[] = [];
+const EMPTY_PERSPECTIVE_GUIDE_POINTS: readonly GuidePoint[] = [];
 
 type StudioWebtoonGuideRuntime = Pick<
   typeof import("../studio-webtoon-guides"),
@@ -181,6 +184,14 @@ export interface StudioCanvasGuideOverlayLayersProps {
   vanishingPoints: VanishingPoint[];
   perspectiveEyeLevelY?: number | null;
   perspectiveLockHorizon?: boolean;
+  /**
+   * drawing 레인 원근 가이드(StudioRulersPanel 1/2/3점 투시 토글)의 격자.
+   * 선택 props — 전달되지 않거나 빈 배열이면 레이어 자체가 렌더되지 않아
+   * 기존 오버레이 스택과 완전히 동일하다. 세그먼트는 실제 캔버스 크기로
+   * 잘린 값(buildPerspectiveGridSegments 결과)을 받는다.
+   */
+  drawingPerspectiveGuideSegments?: readonly GuideLine[];
+  drawingPerspectiveGuideVanishingPoints?: readonly GuidePoint[];
   onPreviewVanishingPoint: (id: string, x: number, y: number) => void;
   onCommitVanishingPoint: (id: string, x: number, y: number) => void;
   onPreviewPerspectiveEyeLevelY?: (y: number) => void;
@@ -233,6 +244,8 @@ export function StudioCanvasGuideOverlayLayers({
   vanishingPoints,
   perspectiveEyeLevelY = null,
   perspectiveLockHorizon = false,
+  drawingPerspectiveGuideSegments = EMPTY_PERSPECTIVE_GUIDE_SEGMENTS,
+  drawingPerspectiveGuideVanishingPoints = EMPTY_PERSPECTIVE_GUIDE_POINTS,
   onPreviewVanishingPoint,
   onCommitVanishingPoint,
   onPreviewPerspectiveEyeLevelY,
@@ -780,6 +793,32 @@ export function StudioCanvasGuideOverlayLayers({
               onCancelEyeLevel={onCancelDrawingAssistPreview}
             />
           </Suspense>
+        </Layer>
+      )}
+      {drawingMode && drawingPerspectiveGuideSegments.length > 0 && (
+        <Layer listening={false}>
+          {drawingPerspectiveGuideSegments.map((segment, index) => (
+            <Line
+              key={`dpg-${index}`}
+              points={[segment.from.x, segment.from.y, segment.to.x, segment.to.y]}
+              stroke="#f59e0b"
+              strokeWidth={1 / effScale}
+              opacity={segment.family === "horizon" ? 0.9 : 0.55}
+              listening={false}
+            />
+          ))}
+          {drawingPerspectiveGuideVanishingPoints.map((point, index) =>
+            point.x >= 0 && point.x <= canvasWidth && point.y >= 0 && point.y <= canvasHeight ? (
+              <KCircle
+                key={`dpgvp-${index}`}
+                x={point.x}
+                y={point.y}
+                radius={3.5 / effScale}
+                fill="#f59e0b"
+                listening={false}
+              />
+            ) : null,
+          )}
         </Layer>
       )}
       {drawingMode && isometricGridActive && (

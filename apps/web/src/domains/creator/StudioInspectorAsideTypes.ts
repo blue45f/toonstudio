@@ -271,6 +271,7 @@ export interface StudioInspectorAsideProps {
   quickMaskRadius: number;
   quickMaskTintColor: string;
   quickMaskTintOpacity: number;
+  quickSelectTolerance: number;
   cropAspect: CropAspectId;
   cropBusy: boolean;
   cropRect: CropRect | null;
@@ -360,7 +361,7 @@ export interface StudioInspectorAsideProps {
   onTogglePixelMagneticLasso: () => void;
   pixelSel: PixelSelection | null;
   pixelSelectionCanRedo: boolean; pixelSelectionCanUndo: boolean;
-  pixelTool: SelectionToolKind | "wand" | null;
+  pixelTool: SelectionToolKind | "wand" | "quick-select" | null;
   polyLassoSession: PolyLassoSession | null;
   postCorrection: number;
   preserveCorners: boolean;
@@ -503,6 +504,7 @@ export interface StudioInspectorAsideProps {
   setPressureCurve: import("react").Dispatch<import("react").SetStateAction<number>>;
   setPuppetWarpActive: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   setPuppetWarpPins: import("react").Dispatch<import("react").SetStateAction<PuppetPin[]>>;
+  setQuickSelectTolerance: import("react").Dispatch<import("react").SetStateAction<number>>;
   setQuickShapeActive: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   setRightPanelOpen: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   setSavedBrushes: import("react").Dispatch<import("react").SetStateAction<StudioSavedBrush[]>>;

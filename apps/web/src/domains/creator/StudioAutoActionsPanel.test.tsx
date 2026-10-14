@@ -85,4 +85,35 @@ describe("StudioAutoActionsPanel — macro recording", () => {
     expect(onStopMacroRecord).toHaveBeenCalledTimes(1);
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it("shows the truncation notice while recording when the cap dropped steps", () => {
+    render(
+      <StudioAutoActionsPanel
+        {...makeProps({
+          macroRecording: true,
+          macroCommandCount: 80,
+          macroCommands: [{ type: "set-opacity", opacity: 0.4 }],
+          macroTruncationNotice: "매크로 녹화 상한 80개에 도달해 이후 명령 2개가 잘렸습니다.",
+          onStartMacroRecord: vi.fn(),
+          onStopMacroRecord: vi.fn(),
+        })}
+      />
+    );
+    expect(screen.getByText(/이후 명령 2개가 잘렸습니다/)).toBeTruthy();
+  });
+
+  it("shows the empty recorded-steps guidance while recording with no steps yet", () => {
+    render(
+      <StudioAutoActionsPanel
+        {...makeProps({
+          macroRecording: true,
+          macroCommandCount: 0,
+          macroCommands: [],
+          onStartMacroRecord: vi.fn(),
+          onStopMacroRecord: vi.fn(),
+        })}
+      />
+    );
+    expect(screen.getByText(/아직 기록된 단계가 없어요/)).toBeTruthy();
+  });
 });

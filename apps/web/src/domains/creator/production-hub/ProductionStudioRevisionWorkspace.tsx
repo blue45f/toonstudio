@@ -23,6 +23,7 @@ import type { ProductionClientCommand } from "./production-api";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export type ProductionStudioRoleLens = "story" | "art" | "producer";
 
@@ -102,6 +103,7 @@ export function ProductionStudioRevisionWorkspace({
   roleLens,
   actorUserId = null,
 }: ProductionStudioRevisionWorkspaceProps) {
+  const t = useT();
   const episodes = aggregate.episodes.filter((episode) => episode.state !== "cancelled");
   const initialEpisodeId = episodes.find((episode) => aggregate.deliverables.some((deliverable) => (
     deliverableBelongsToEpisode(deliverable, episode.episodeId)
@@ -272,7 +274,7 @@ export function ProductionStudioRevisionWorkspace({
                       {row.submission.revisionRef.id} · r{row.submission.revisionRef.revision}
                     </p>
                   ) : (
-                    <p className="mt-1 text-xs text-fg-3">아직 연결할 제출본이 없습니다.</p>
+                    <p className="mt-1 text-xs text-fg-3">{t("productionHub.revisionWorkspace.emptySubmissions", "아직 연결할 제출본이 없습니다.")}</p>
                   )}
                 </div>
               </div>
@@ -307,7 +309,7 @@ export function ProductionStudioRevisionWorkspace({
                   {!row.submission
                     ? "산출물 제출본을 먼저 등록해야 합니다."
                     : !assignment
-                      ? "현재 관점에서 사용할 활성 역할 배정이 없습니다."
+                      ? t("productionHub.revisionWorkspace.emptyActiveAssignment", "현재 관점에서 사용할 활성 역할 배정이 없습니다.")
                       : !canEdit
                         ? "편집 권한이 있어야 revision을 연결할 수 있습니다."
                         : "다른 revision을 연결하는 중입니다."}
@@ -321,7 +323,7 @@ export function ProductionStudioRevisionWorkspace({
       {rows.length === 0 ? (
         <div className="mt-4 rounded-xl border border-dashed border-line p-6 text-center">
           <FilePlus2 className="mx-auto size-7 text-fg-3" aria-hidden="true" />
-          <p className="mt-2 text-sm font-black text-fg">연결할 제작 산출물이 없습니다</p>
+          <p className="mt-2 text-sm font-black text-fg">{t("productionHub.revisionWorkspace.emptyDeliverables", "연결할 제작 산출물이 없습니다")}</p>
           <p className="mt-1 text-xs text-fg-2">회차 작업 보드에서 대본·콘티·작화·통합 산출물을 먼저 구성하세요.</p>
         </div>
       ) : null}

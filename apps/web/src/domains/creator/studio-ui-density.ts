@@ -17,6 +17,10 @@
  * - `STUDIO_UI_DENSITY_ENTRY_INITIAL_MODE` pins the initial mode per entry path.
  *   A persisted user choice always wins over the entry default (BLUEPRINT §4.1 rollback
  *   guard); the entry table only seeds users who have never saved a mode.
+ * - `studioUiDensityFirstScreenExposure` layers the first-screen diet on top of the
+ *   matrix: in simple mode the advanced clusters (reference·scene·style·AI) start folded
+ *   behind the one "고급 도구 펼치기" expander. Expanding is a persisted user choice
+ *   (`advancedExpanded`), never a mode switch; full/focus exposure matches the matrix.
  */
 
 export const STUDIO_UI_DENSITY_MODES = ["focus", "simple", "full"] as const;
@@ -46,6 +50,25 @@ export const STUDIO_UI_CHROME_REGIONS = [
 
 export type StudioUiChromeRegion = (typeof STUDIO_UI_CHROME_REGIONS)[number];
 
+/** Toolbar clusters that are powerful but not part of the everyday first-screen workflow. */
+export const STUDIO_UI_ADVANCED_REGIONS: readonly StudioUiChromeRegion[] = Object.freeze([
+  "toolbar-reference",
+  "toolbar-scene",
+  "toolbar-style",
+  "toolbar-ai",
+]);
+
+/** Every region that is not advanced is core first-screen workflow. */
+export const STUDIO_UI_CORE_REGIONS: readonly StudioUiChromeRegion[] = Object.freeze(
+  STUDIO_UI_CHROME_REGIONS.filter(
+    (region) => !(STUDIO_UI_ADVANCED_REGIONS as readonly string[]).includes(region)
+  )
+);
+
+export function isStudioUiAdvancedRegion(region: StudioUiChromeRegion): boolean {
+  return (STUDIO_UI_ADVANCED_REGIONS as readonly string[]).includes(region);
+}
+
 export interface StudioUiDensityState {
   mode: StudioUiDensityMode;
   /** 고급 도구 펼침 선택. 저장된 적 없으면 접힘(false)이다. */
@@ -74,6 +97,13 @@ export function normalizeStudioUiDensityState(value?: unknown): StudioUiDensityS
     mode: normalizeStudioUiDensityMode(record.mode ?? record.density),
     advancedExpanded: record.advancedExpanded === true,
   };
+}
+
+/** The persisted advanced-expansion choice; absent or corrupt values mean folded. */
+export function studioUiDensityAdvancedExpanded(
+  state: StudioUiDensityState | null | undefined
+): boolean {
+  return state?.advancedExpanded === true;
 }
 
 export function loadStudioUiDensityState(
@@ -225,33 +255,40 @@ export function studioUiDensityAllows(
   return STUDIO_UI_DENSITY_MATRIX[normalizeStudioUiDensityMode(mode)][region];
 }
 
-/** 저장된 고급 도구 펼침 선택. 저장된 적 없으면 접힘이다. */
-export function studioUiDensityAdvancedExpanded(state: StudioUiDensityState): boolean {
-  return state.advancedExpanded ?? false;
-}
-
-/** 첫 화면 노출 — visible(그대로 표시) · expander(펼치기 뒤에) · hidden(숨김). */
-export type StudioUiFirstScreenExposure = "visible" | "expander" | "hidden";
-
-/** 첫 화면에 두지 않는 고급 도구 모음. 펼치기 전에는 expander 뒤에 둔다. */
-const STUDIO_UI_ADVANCED_REGIONS: ReadonlySet<StudioUiChromeRegion> = new Set([
-  "toolbar-scene",
-  "toolbar-style",
-  "toolbar-ai",
-]);
+export type StudioUiFirstScreenExposure = "visible" | "folded" | "hidden";
 
 /**
- * 현재 모드·펼침 선택에서의 영역 노출. 행렬이 숨긴 영역은 숨김,
- * 펼치기 전 고급 모음은 expander, 나머지는 그대로 표시한다.
+ * First-screen exposure — what a fresh entry actually shows before any interaction.
+ *
+ * - full: everything is visible; nothing is ever folded.
+ * - focus: the focus core set is visible and everything else is hidden (matrix-identical).
+ * - simple: core regions are visible; advanced clusters are "folded" — present on the
+ *   surface only as the single advanced-tools expander until the user expands them,
+ *   after which they render as visible. Folding never removes a command: the expander
+ *   and command search still reach every cluster.
  */
 export function studioUiDensityFirstScreenExposure(
   mode: StudioUiDensityMode,
   region: StudioUiChromeRegion,
-  advancedExpanded: boolean
+  advancedExpanded = false
 ): StudioUiFirstScreenExposure {
-  if (!studioUiDensityAllows(mode, region)) return "hidden";
-  if (!advancedExpanded && STUDIO_UI_ADVANCED_REGIONS.has(region)) return "expander";
-  return "visible";
+  const normalized = normalizeStudioUiDensityMode(mode);
+  if (normalized === "full") return "visible";
+  if (normalized === "focus") {
+    return studioUiDensityAllows("focus", region) ? "visible" : "hidden";
+  }
+  if (!isStudioUiAdvancedRegion(region)) return "visible";
+  return advancedExpanded ? "visible" : "folded";
+}
+
+/** Regions shown immediately on first entry in this mode (folded ones excluded). */
+export function studioUiDensityFirstScreenVisibleRegions(
+  mode: StudioUiDensityMode,
+  advancedExpanded = false
+): readonly StudioUiChromeRegion[] {
+  return STUDIO_UI_CHROME_REGIONS.filter(
+    (region) => studioUiDensityFirstScreenExposure(mode, region, advancedExpanded) === "visible"
+  );
 }
 
 /** How the user arrived at the editor; decides only the seed mode for users with no saved choice. */
@@ -331,6 +368,25 @@ export function studioUiDensityDescription(
     t,
     `studio.settings.uiDensityDescription.${normalized}`,
     DENSITY_DESCRIPTION_FALLBACK[normalized],
+  );
+}
+
+const ADVANCED_TOOLS_LABEL_FALLBACK = {
+  expand: "고급 도구 펼치기",
+  collapse: "고급 도구 접기",
+} as const;
+
+/** Label for the one first-screen expander that reveals the folded advanced clusters. */
+export function studioUiAdvancedToolsToggleLabel(
+  expanded: boolean,
+  t?: (key: string) => string
+): string {
+  return translatedOrFallback(
+    t,
+    expanded
+      ? "studio.settings.advancedTools.collapse"
+      : "studio.settings.advancedTools.expand",
+    expanded ? ADVANCED_TOOLS_LABEL_FALLBACK.collapse : ADVANCED_TOOLS_LABEL_FALLBACK.expand,
   );
 }
 

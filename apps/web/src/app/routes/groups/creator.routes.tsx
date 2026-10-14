@@ -6,20 +6,18 @@ import { defineAppRoutes } from "../app-route-definition";
 import {
   CharacterShaperLandingPage, CreatorEnvironmentGuidePage, CreatorEcosystemPage,
   CreatorGrowthIpPage, CreatorGrowthLabPage, CreatorEcosystemViewerPage,
-  CreatorInferencePage, CreateChallengesPage,
-  CreateSeriesPage, CreateStartPage, CreateWorkPage, LearnPage, ShowcasePage,
+  CreatorInferencePage, LearnPage,
   PersonalInferencePage, StudioAiSettingsPage, StudioAssetHubPage,
   StudioBrushLabPage, StudioCharacterConversionPage, StudioCharacterOnboardingPage,
   StudioCreatorSupportPage, StudioDocumentWorkspaceRoute, StudioHomePage,
   StudioImportPage, StudioImmersiveHubPage, StudioManualPage,
   StudioMusicPage, StudioNewPage, StudioProjectShellPage, MotionWebtoonPage,
   StudioVirtualSpacePage, StudioProductionToolchainPage, StudioEngineCenterPage,
-  StudioProductionJobsPage, StudioPromoPage, StudioPinnedReviewShowcasePage,
-  StudioPinnedReviewShowcaseDetailPage, StudioGenerativePage, StudioSpatialReaderPage,
+  StudioProductionJobsPage, StudioGenerativePage, StudioSpatialReaderPage,
   StudioTemplatesPage, StudioRouter, CreatorAnalyticsPage, StudioPoserPage,
   PdfWorkbenchPage,
 } from "./creator-route-pages";
-import { ShowcaseDetailRedirect, ShowcaseRedirect } from "./creator-showcase-redirects";
+import { creatorCreateRoutes, creatorShowcaseRoutes } from "./creator-showcase-routes";
 
 export const creatorRoutes = defineAppRoutes([
   { id: "creator-character-onboarding", path: "/onboarding/character", element: <StudioCharacterOnboardingPage /> },
@@ -72,14 +70,8 @@ export const creatorRoutes = defineAppRoutes([
   { id: "creator-studio-project-settings", path: studioRoutePath("project-settings"), element: <StudioProjectShellPage section="settings" /> },
   { id: "creator-studio-project-space", path: studioRoutePath("project-space"), element: <StudioVirtualSpacePage /> },
 
-  // /showcase는 쇼케이스 전용 첫 화면(스포트라이트·큐레이션)이 정본이다. 갤러리 본문은 그 아래 구간이 공유 컴포넌트로 잇는다.
-  { id: "creator-showcase", path: "/showcase", element: <ShowcasePage /> },
-  { id: "creator-showcase-reviews", path: "/showcase/reviews", element: <StudioPinnedReviewShowcasePage /> },
-  { id: "creator-showcase-review", path: "/showcase/reviews/:shareId", element: <StudioPinnedReviewShowcaseDetailPage /> },
-  { id: "creator-showcase-challenges", path: "/showcase/challenges", element: <CreateChallengesPage /> },
-  { id: "creator-showcase-promo", path: "/showcase/promo", element: <StudioPromoPage /> },
-  { id: "creator-showcase-series", path: "/showcase/series/:id", element: <CreateSeriesPage /> },
-  { id: "creator-showcase-work", path: "/showcase/work/:id", element: <CreateWorkPage /> },
+  // /showcase·/create 표면은 creator-showcase-routes.tsx가 소유한다(순서 유지).
+  ...creatorShowcaseRoutes,
 
   // Legacy public tool routes now enter the unified Studio asset structure.
   // /motion-webtoon은 레지스트리 별칭 선언만 있고 이 항목이 없어 전역 404로 떨어졌다 (F-B21-1).
@@ -89,15 +81,8 @@ export const creatorRoutes = defineAppRoutes([
   { id: "creator-brush-lab", path: "/brush-lab", element: <Navigate to={studioRoutePath("asset-brush-new")} replace /> },
   { id: "creator-studio-brush-lab", path: "/studio/brush-lab", element: <Navigate to={studioRoutePath("asset-brush-new")} replace /> },
 
-  // /create는 작품 시작 시트가 정본이다. 갤러리 본문은 /showcase로 일원화됐으므로
-  // 상세 4경로(챌린지·홍보·시리즈·작품)는 정식 /showcase 주소로 리다이렉트해 호환을 유지한다.
-  // 시작점 역할 구분 (O-05, 2026-10-09): /create는 "새 작품·템플릿·이어가기"를 고르는 시작 정문이고 실제 생성 폼은
-  // /studio/new다. "작품 시작하기" 동선은 /create로 모이고 시트가 폼으로 넘긴다 — 본문이 다른 두 표면이라 유지한다.
-  { id: "creator-gallery", path: "/create", element: <CreateStartPage /> },
-  { id: "creator-challenges", path: "/create/challenges", element: <ShowcaseRedirect to="/showcase/challenges" /> },
-  { id: "creator-promo", path: "/create/promo", element: <ShowcaseRedirect to="/showcase/promo" /> },
-  { id: "creator-series", path: "/create/series/:id", element: <ShowcaseDetailRedirect base="/showcase/series" /> },
-  { id: "creator-work", path: "/create/:id", element: <ShowcaseDetailRedirect base="/showcase/work" /> },
+  // /create 시작 시트·호환 리다이렉트는 creator-showcase-routes.tsx가 소유한다(원래 순서 유지).
+  ...creatorCreateRoutes,
 
   // Work/remix brush-lab URLs keep their scoped editor state until document-id migration lands.
   { id: "creator-studio-work-brush-lab", path: "/studio/work/:workId/brush-lab", element: <StudioBrushLabPage /> },

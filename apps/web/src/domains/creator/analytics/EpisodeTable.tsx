@@ -94,10 +94,11 @@ export function EpisodeTable({
                 {formatCount(row.views)}
               </td>
               <td className="numeral whitespace-nowrap px-2 py-2.5 text-right text-fg-2 tabular-nums">
-                {formatCount(row.likes)}
+                {/* 실집계가 측정하지 않는 지표는 0으로 위장하지 않고 빈 값으로 둔다 */}
+                {row.likes === undefined ? "—" : formatCount(row.likes)}
               </td>
               <td className="numeral whitespace-nowrap px-2 py-2.5 text-right text-fg-2 tabular-nums">
-                {formatCount(row.comments)}
+                {row.comments === undefined ? "—" : formatCount(row.comments)}
               </td>
               <td className="numeral whitespace-nowrap px-2 py-2.5 text-right text-fg-2 tabular-nums">
                 {row.retentionPct}%

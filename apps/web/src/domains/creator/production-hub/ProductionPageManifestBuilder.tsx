@@ -40,6 +40,7 @@ import {
   downloadProductionPageManifestArchive,
   type ProductionPageManifestArchiveResult,
 } from "./production-page-manifest-archive";
+import { useT } from "@/shared/lib/i18n";
 
 const STATE_LABELS = {
   reused: "재사용",
@@ -79,6 +80,7 @@ export function ProductionPageManifestBuilder({
   readonly candidates: readonly ProductionReviewCandidate[];
   readonly canEdit: boolean;
 }) {
+  const t = useT();
   const [params, setParams] = useSearchParams();
   const explicitSource = params.get("builderSourceReview");
   const compatibleCandidates = useMemo(() => candidates.filter((candidate) => candidate.processType === "image"), [candidates]);
@@ -149,7 +151,7 @@ export function ProductionPageManifestBuilder({
       setLastArchive(null);
       setNotice(`${all.length}페이지 전체를 불러왔습니다. 이후 교체·삽입·제거한 차이를 페이지별로 표시합니다.`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "전체 페이지 목록을 불러오지 못했습니다.");
+      setNotice(error instanceof Error ? error.message : t("productionHub.pageManifest.loadAllFailed", "전체 페이지 목록을 불러오지 못했습니다."));
     } finally {
       setBusy(null);
     }
@@ -198,7 +200,7 @@ export function ProductionPageManifestBuilder({
       </div>
     </div>
 
-    {invalidExplicitSource ? <div className="mt-4 rounded-xl border border-warn/35 bg-warn/10 p-4" role="alert"><div className="flex items-center gap-2 font-bold text-fg"><LockKeyhole className="size-4 text-warn" aria-hidden="true" /> 요청한 페이지 원본 검수본을 찾을 수 없습니다</div><p className="mt-1 text-xs text-fg-2">다른 검수본으로 자동 대체하지 않았습니다.</p><button type="button" onClick={() => { const next = new URLSearchParams(params); next.delete("builderSourceReview"); setParams(next, { replace: true }); }} className={buttonClass({ variant: "outline", size: "sm", className: "mt-3" })}>원본 다시 선택</button></div> : null}
+    {invalidExplicitSource ? <div className="mt-4 rounded-xl border border-warn/35 bg-warn/10 p-4" role="alert"><div className="flex items-center gap-2 font-bold text-fg"><LockKeyhole className="size-4 text-warn" aria-hidden="true" /> {t("productionHub.pageManifest.sourceNotFound", "요청한 페이지 원본 검수본을 찾을 수 없습니다")}</div><p className="mt-1 text-xs text-fg-2">다른 검수본으로 자동 대체하지 않았습니다.</p><button type="button" onClick={() => { const next = new URLSearchParams(params); next.delete("builderSourceReview"); setParams(next, { replace: true }); }} className={buttonClass({ variant: "outline", size: "sm", className: "mt-3" })}>원본 다시 선택</button></div> : null}
 
     <div className="mt-5 grid gap-4 xl:grid-cols-[22rem_minmax(0,1fr)]">
       <div className="min-w-0 rounded-2xl border border-line bg-panel p-3">
@@ -226,7 +228,7 @@ export function ProductionPageManifestBuilder({
               <div className="mt-2 flex flex-wrap gap-1"><button type="button" onClick={() => append([page])} className="inline-flex min-h-9 items-center rounded-lg border border-line px-2 text-[0.625rem] font-bold text-fg-2"><FilePlus2 className="mr-1 size-3.5" aria-hidden="true" /> 추가</button><button type="button" onClick={() => replace(page)} className="inline-flex min-h-9 items-center rounded-lg border border-line px-2 text-[0.625rem] font-bold text-fg-2"><Replace className="mr-1 size-3.5" aria-hidden="true" /> 선택 위치 교체</button></div>
             </article>;
           })}
-        </div> : preview.result && !preview.result.ok ? <p className="mt-4 rounded-xl border border-warn/35 bg-warn/10 p-3 text-xs text-fg-2" role="alert">현재 계정에서 이 고정 검수본의 페이지를 사용할 수 없습니다.</p> : null}
+        </div> : preview.result && !preview.result.ok ? <p className="mt-4 rounded-xl border border-warn/35 bg-warn/10 p-3 text-xs text-fg-2" role="alert">{t("productionHub.pageManifest.pagesUnavailable", "현재 계정에서 이 고정 검수본의 페이지를 사용할 수 없습니다.")}</p> : null}
       </div>
 
       <div className="min-w-0 rounded-2xl border border-line bg-panel p-3">

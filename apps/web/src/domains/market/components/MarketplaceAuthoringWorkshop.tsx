@@ -31,6 +31,7 @@ import {
   type CreatorMarketplaceBrushEngineKind,
 } from "@/shared/lib/creator-marketplace-authoring-workshop";
 import { formatNumber } from "@toonstudio/core/format";
+import { useT } from "@/shared/lib/i18n";
 
 const INPUT_CLASS =
   "min-h-11 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-fg outline-none transition-colors focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30 motion-reduce:transition-none";
@@ -212,6 +213,7 @@ function diagnosticClass(diagnostic: CreatorMarketplaceAuthoringDiagnostic): str
 }
 
 export function MarketplaceAuthoringWorkshop(): ReactElement {
+  const t = useT();
   const [draft, setDraft] = useState<CreatorMarketplaceAuthoringDraft>(() =>
     loadCreatorMarketplaceAuthoringDraft()
       ?? createCreatorMarketplaceAuthoringDraft(),
@@ -433,7 +435,7 @@ export function MarketplaceAuthoringWorkshop(): ReactElement {
             </p>
           </div>
           <div className="grid min-w-[260px] grid-cols-3 gap-2" aria-label="게시 준비 상태">
-            <Metric label="오류" value={errors.length} tone={errors.length > 0 ? "danger" : "ok"} />
+            <Metric label={t("market.workshop.metricErrors", "오류")} value={errors.length} tone={errors.length > 0 ? "danger" : "ok"} />
             <Metric label="권고" value={warnings.length} tone={warnings.length > 0 ? "warn" : "ok"} />
             <Metric
               label="조합"

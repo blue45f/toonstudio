@@ -16,6 +16,7 @@ import {
   creatorMarketplaceReportErrorCode,
   reportCreatorMarketplaceResource,
 } from "@/platform/creator-marketplace-client";
+import { useT } from "@/shared/lib/i18n";
 
 const REASON_OPTIONS: ReadonlyArray<{
   readonly value: CreatorMarketplaceResourceReportReason;
@@ -51,6 +52,7 @@ function CreatorMarketplaceReportActionState({
   className,
   compact = false,
 }: CreatorMarketplaceReportActionProps) {
+  const t = useT();
   const { data: session, ready, status } = useSession();
   const reasonId = useId();
   const detailsId = useId();
@@ -75,7 +77,7 @@ function CreatorMarketplaceReportActionState({
     : !authenticated
       ? "로그인한 계정만 마켓 리소스를 신고할 수 있습니다."
       : owner
-        ? "자신이 배포한 마켓 리소스는 신고할 수 없습니다."
+        ? t("market.report.ownResource", "자신이 배포한 마켓 리소스는 신고할 수 없습니다.")
         : submission.kind === "success"
           ? "신고가 접수되었습니다. 관리자 검수 전에는 공개 상태가 달라지지 않습니다."
           : submission.kind === "duplicate"
@@ -116,7 +118,7 @@ function CreatorMarketplaceReportActionState({
           kind: "error",
           message: error instanceof Error && error.message
             ? error.message
-            : "신고를 제출하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
+            : t("market.report.submitFailed", "신고를 제출하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."),
         });
       }
     } finally {

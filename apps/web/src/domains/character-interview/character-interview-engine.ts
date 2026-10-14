@@ -17,8 +17,10 @@ import type {
   CharacterChatEngine,
   CharacterChatEngineResult,
 } from "../character-chat/character-chat-engine";
-import type { CharacterChatMessage } from "../character-chat/character-chat-types";
-import type { CharacterChatProfile } from "../character-chat/character-chat-types";
+import type {
+  CharacterChatMessage,
+  CharacterChatProfile,
+} from "../character-chat/character-chat-types";
 
 import type { CharacterInterviewMessage } from "./character-interview";
 

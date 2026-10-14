@@ -9,6 +9,7 @@ import {
   serializeBulkExportMarker,
   summarizeBulkExportOutcomes,
   type AccountBulkExportMarker,
+  type AccountPortabilityProject,
   type BulkExportOutcome,
 } from "./account-data-portability";
 import { runBulkProjectExport } from "./account-bulk-export";
@@ -182,7 +183,7 @@ describe("runBulkProjectExport / summarize", () => {
   it("exportOne 인자는 계획 항목 그대로(아이콘 인자류 회귀 방지: 순서·필드 고정)", async () => {
     const inventory = parseAccountProjectInventory(libraryRaw([project()]));
     const plan = planBulkProjectExport(inventory);
-    const exportOne = vi.fn(async () => ({ fileName: "x.toonstudio" }));
+    const exportOne = vi.fn(async (_project: AccountPortabilityProject) => ({ fileName: "x.toonstudio" }));
     await runBulkProjectExport(plan, { exportOne });
     expect(exportOne).toHaveBeenCalledTimes(1);
     expect(exportOne.mock.calls[0]?.[0]).toEqual({

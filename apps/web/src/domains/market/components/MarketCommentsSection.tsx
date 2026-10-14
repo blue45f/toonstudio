@@ -25,6 +25,7 @@ import type {
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
+import { useT } from "@/shared/lib/i18n";
 
 interface MarketCommentsSectionProps {
   resourceId: string;
@@ -110,6 +111,7 @@ const NO_COMMENTS: readonly CreatorMarketplaceSocialComment[] = Object.freeze([]
 export function MarketCommentsSection({
   resourceId,
 }: MarketCommentsSectionProps) {
+  const t = useT();
   const session = useSession();
   const viewerKey = session.status === "authenticated"
     ? session.data.user.id
@@ -253,14 +255,14 @@ export function MarketCommentsSection({
             onClick={() => void refresh()}
             className="ml-auto font-semibold text-accent hover:underline"
           >
-            다시 시도
+            {t("market.state.retry", "다시 시도")}
           </button>
         </div>
       ) : null}
 
       <div className="mt-6 space-y-4">
         {loadingInitial ? (
-          <div role="status" className="space-y-3" aria-label="댓글 불러오는 중">
+          <div role="status" className="space-y-3" aria-label={t("market.comments.loadingAria", "댓글 불러오는 중")}>
             {Array.from({ length: 2 }, (_, index) => (
               <div key={index} className="rounded-xl border border-line/60 bg-panel/30 p-4">
                 <div className="skeleton h-4 w-36" />
@@ -272,7 +274,7 @@ export function MarketCommentsSection({
         ) : roots.length === 0 && status === "error" && !data ? null : roots.length === 0 ? (
           <div className="rounded-xl border border-dashed border-line bg-panel/50 py-8 text-center">
             <p className="text-xs font-medium text-fg-2">
-              아직 등록된 질문이 없습니다. 첫 번째 활용 질문을 남겨보세요.
+              {t("market.comments.emptyQuestions", "아직 등록된 질문이 없습니다. 첫 번째 활용 질문을 남겨보세요.")}
             </p>
           </div>
         ) : (

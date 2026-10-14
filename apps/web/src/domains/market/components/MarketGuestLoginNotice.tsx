@@ -2,22 +2,9 @@ import { LoaderCircle, LogIn } from "lucide-react";
 
 import { MarketAccountEntryActions } from "./MarketAccountEntryActions";
 
-import {
-  resolveMarketGuestLoginNoticeState,
-  type MarketGuestLoginNoticeState,
-} from "../models/market-guest-login-notice";
+import { useMarketGuestLoginNoticeState } from "../hooks/use-market-guest-login-notice";
 
-import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-
-/**
- * 획득 버튼·상세 표면이 공유하는 게스트 판정 훅.
- * 판정 규칙은 `market-guest-login-notice` 모델 한 곳에서만 정한다.
- */
-export function useMarketGuestLoginNoticeState(): MarketGuestLoginNoticeState {
-  const { ready, status } = useSession();
-  return resolveMarketGuestLoginNoticeState({ ready, status });
-}
 
 interface MarketGuestLoginNoticeProps {
   /** detail: 상세 사이드바용 전문+로그인 행동 / compact: 스티키 바용 한 줄 힌트 */

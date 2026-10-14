@@ -5,6 +5,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import { InlineHelp, ProductionWizard } from "./ProductionUxKit";
+import { useT } from "@/shared/lib/i18n";
 
 export interface TeamInviteProject {
   readonly workId: string;
@@ -48,6 +49,7 @@ export function TeamInviteWizard({
   readonly onInvite: (input: TeamInviteWizardInput) => Promise<void>;
   readonly onCancel?: () => void;
 }) {
+  const t = useT();
   const [index, setIndex] = useState(0);
   const [email, setEmail] = useState("");
   const [tierId, setTierId] = useState("editor");
@@ -67,7 +69,7 @@ export function TeamInviteWizard({
       await onInvite({ email: email.trim(), tierId, projectWorkId, projectRole });
       setDone(true);
     } catch (cause) {
-      setError(cause instanceof Error && cause.message ? cause.message : "초대를 만들지 못했습니다. 다시 시도해 주세요.");
+      setError(cause instanceof Error && cause.message ? cause.message : t("productionHub.teamInvite.createFailed", "초대를 만들지 못했습니다. 다시 시도해 주세요."));
     } finally {
       setBusy(false);
     }

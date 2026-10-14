@@ -29,6 +29,7 @@ import {
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 interface ProductionRiskIntelligencePanelProps {
   readonly intelligence: ProductionRiskIntelligence;
@@ -155,6 +156,7 @@ export function ProductionRiskIntelligencePanel({
   execute,
   canEdit,
 }: ProductionRiskIntelligencePanelProps) {
+  const t = useT();
   const [filter, setFilter] = useState<RiskFilter>("all");
   const [registeringId, setRegisteringId] = useState<string | null>(null);
   const visibleSignals = useMemo(
@@ -343,7 +345,7 @@ export function ProductionRiskIntelligencePanel({
         {visibleSignals.length === 0 ? (
           <div className="col-span-full rounded-2xl border border-dashed border-line p-10 text-center">
             <CheckCircle2 className="mx-auto size-8 text-good" aria-hidden="true" />
-            <p className="mt-3 text-sm font-black text-fg">이 조건에서 감지된 예측 위험이 없습니다</p>
+            <p className="mt-3 text-sm font-black text-fg">{t("productionHub.riskIntelligence.emptySignals", "이 조건에서 감지된 예측 위험이 없습니다")}</p>
             <p className="mt-1 text-xs text-fg-2">업무·일정·배정·revision 연결이 바뀌면 다시 계산합니다.</p>
           </div>
         ) : null}

@@ -63,14 +63,22 @@ export function ExploreVirtualGrid({ titles }: { titles: Title[] }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
 
-  // 그리드 상단의 문서 기준 오프셋 — 위쪽 콘텐츠(필터 패널 등)가
-  // 열리고 닫혀도 어긋나지 않게 커밋마다 다시 잰다(같은 값이면 React가 무시).
+  // 그리드 상단의 문서 기준 오프셋 — 위쪽 콘텐츠(필터 패널 등)가 열리고 닫히면
+  // 문서 높이가 바뀌어 오프셋도 어긋나므로, 본문 크기 변화를 관찰해 다시 잰다
+  // (같은 값이면 React가 무시). ResizeObserver가 없는 환경에서는 마운트 시 1회만 잰다.
   useLayoutEffect(() => {
     const el = parentRef.current;
     if (!el) return;
-    const next = el.getBoundingClientRect().top + window.scrollY;
-    setScrollMargin((prev) => (Math.abs(prev - next) > 0.5 ? next : prev));
-  });
+    const measure = () => {
+      const next = el.getBoundingClientRect().top + window.scrollY;
+      setScrollMargin((prev) => (Math.abs(prev - next) > 0.5 ? next : prev));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, []);
 
   const rowCount = Math.ceil(titles.length / cols);
   const virtualizer = useWindowVirtualizer({

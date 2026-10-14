@@ -486,7 +486,7 @@ export function StudioBrushGrainControls({
 }: StudioBrushDynamicsControlsProps) {
   const grainActive = settings.grain.amount > 0;
   // 소스 목록은 베이크 메모이즈를 공유한다 — 첫 렌더에서만 10종 타일을 굽는다.
-  const grainSources = useMemo(listStudioBrushGrainSourcesV1, []);
+  const grainSources = useMemo(() => listStudioBrushGrainSourcesV1(), []);
   const selectedGrainSource = findStudioBrushGrainSourceEntryV1(settings.grain.source);
   // 등록 영수증이 있으면 그 해시를, 없으면(랩 초기화 전) 카탈로그 계약 해시를 보여준다 — 둘은 같은 값이다.
   const selectedGrainReceiptHash = selectedGrainSource

@@ -1,6 +1,7 @@
 import { RefreshCw } from "lucide-react";
 
 import { formatMarketDateTime } from "../models/market-kind";
+import { useT } from "@/shared/lib/i18n";
 
 interface StaleNoticeBarProps {
   readonly savedAt?: string;
@@ -14,6 +15,7 @@ const DEFAULT_CLASS
 
 // 에러 블록이 아닌 status 안내 — role="alert"로 바꾸면 장애 시 방문자 경험이 퇴행한다.
 export function StaleNoticeBar({ savedAt, message, onRetry, className }: StaleNoticeBarProps) {
+  const t = useT();
   return (
     <div role="status" className={className ?? DEFAULT_CLASS}>
       <span>
@@ -26,7 +28,7 @@ export function StaleNoticeBar({ savedAt, message, onRetry, className }: StaleNo
         className="inline-flex min-h-6 shrink-0 items-center gap-1 rounded border border-line bg-panel px-2 py-1 font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:min-h-11 pointer-coarse:px-3"
       >
         <RefreshCw className="h-3 w-3" aria-hidden="true" />
-        다시 시도
+        {t("market.state.retry", "다시 시도")}
       </button>
     </div>
   );

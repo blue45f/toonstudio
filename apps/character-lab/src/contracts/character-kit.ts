@@ -9,7 +9,7 @@
  * 리드 결정(2026-10-08):
  * - A-1: `irises` 슬롯 파츠의 허용 역할은 `iris`, `eye-highlight`(+선택 `pupil`)이다. 계약 3.5의 "iris(+pupil 선택)"를 보완한다.
  *   필수는 `iris`와 `eye-highlight`, `pupil`만 선택이다.
- * - 필수 파츠 최소 집합 `KIT_REQUIRED_PRESETS` = hair/soft-bob, top/tee, bottom/jeans, shoes/sneakers, irises/round-large.
+ * - 필수 파츠 최소 집합 `KIT_REQUIRED_PRESETS` = irises/round-large. (2026-10-14 라이선스 결정으로 축소: Hyper3D(Rodin) 파생 기본 파츠 4종은 상업 이용 증빙 미확정으로 키트에서 제외됐다. 기록은 `docs/hyper3d-terms-record.md` §10.)
  */
 import { z } from "zod";
 
@@ -384,8 +384,10 @@ export const KIT_PART_SLOT_REQUIRED_ROLES: Readonly<Record<KitPartSlot, readonly
   irises: ["iris", "eye-highlight"],
 };
 
-/** 각 베이스에 반드시 있어야 하는 파츠. 하나라도 없으면 키트 전체가 invalid다(리드 결정). */
-export const KIT_REQUIRED_PRESETS: readonly PresetId[] = ["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"];
+/** 각 베이스에 반드시 있어야 하는 파츠. 하나라도 없으면 키트 전체가 invalid다(리드 결정).
+ * 2026-10-14: hair/soft-bob·top/tee·bottom/jeans·shoes/sneakers는 Hyper3D(Rodin) 파생이라 상업 이용 증빙이 확정되지 않아
+ * 키트에서 제외됐고(파츠는 미제공 사유로 선언), 필수 집합에서도 빠졌다. 증빙 확정 후 파츠와 함께 복원한다(terms-record §10). */
+export const KIT_REQUIRED_PRESETS: readonly PresetId[] = ["irises/round-large"];
 
 /**
  * 키트 기본 선택값(15슬롯). `createDefaultRecipe()`의 슬롯과 같은 값이며 레시피 쪽이 이 상수를 그대로 쓴다.
@@ -398,11 +400,11 @@ export const KIT_DEFAULT_SLOTS: Readonly<Record<SlotKind, PresetId | null>> = Ob
   nose: "nose/straight",
   mouth: "mouth/small",
   ears: "ears/standard",
-  hair: "hair/soft-bob",
+  hair: null,
   body: "body/standard",
-  top: "top/tee",
-  bottom: "bottom/jeans",
-  shoes: "shoes/sneakers",
+  top: null,
+  bottom: null,
+  shoes: null,
   accessory: null,
   expression: "expression/neutral",
   pose: "pose/a-pose",

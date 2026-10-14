@@ -18,7 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import {
   getProductionPersonalInbox,
@@ -32,6 +32,23 @@ import { ProductionLandingOverview } from "./ProductionLandingOverview";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { reviewInboxItemHref } from "./review-request-model";
 import { ProductionMetric, ProductionPill, ProductionSampleBadge, type ProductionTone } from "./production-ui";
+import { CollabNotificationInbox } from "./CollabNotificationInbox";
+import {
+  collabInboxReadIds,
+  markAllCollabInboxRead,
+  markCollabInboxRead,
+  projectCollabInbox,
+  type CollabInboxItem,
+} from "./collab-notification-model";
+import {
+  collabEventsFromPersonalInboxItems,
+  collabEventsFromProjectAggregate,
+  collabEventsFromTeamCommentThreads,
+  loadCollabInboxReadIds,
+  saveCollabInboxReadIds,
+} from "./collab-notification-landing-source";
+import { getProductionProject } from "./production-api";
+import { listStudioTeamComments } from "../studio-team-comment-client";
 
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -40,6 +57,7 @@ import { getApiErrorMessage } from "@/platform/api";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 const SAMPLE_BASE = "/production/projects/sample-project";
 const ART = "/brand/illustrated-20260928";
@@ -239,12 +257,20 @@ function PortfolioSection({
   loading,
   error,
   onRetry,
+  collabItems,
+  collabLoading,
+  onOpenCollabItem,
+  onMarkAllCollabRead,
 }: {
   readonly projects: readonly ProductionProjectSummary[];
   readonly inboxItems: readonly ProductionPersonalInboxItem[];
   readonly loading: boolean;
   readonly error: string | null;
   readonly onRetry: () => void;
+  readonly collabItems: readonly CollabInboxItem[];
+  readonly collabLoading: boolean;
+  readonly onOpenCollabItem: (item: CollabInboxItem) => void;
+  readonly onMarkAllCollabRead: () => void;
 }) {
   const bt = useBilingual("ProductionLandingPage");
   const sum = (pick: (project: ProductionProjectSummary) => number) => projects.reduce((total, project) => total + pick(project), 0);
@@ -313,6 +339,15 @@ function PortfolioSection({
               {inboxItems.length === 0 ? <div className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3 md:col-span-2 xl:col-span-4">{bt("현재 배정된 조치 업무가 없습니다.", "Nothing assigned to you right now.")}</div> : null}
             </div>
           </div>
+          <div className="rounded-2xl border border-line bg-panel p-4">
+            <CollabNotificationInbox
+              items={collabItems}
+              loading={collabLoading}
+              onOpenItem={onOpenCollabItem}
+              onMarkAllRead={onMarkAllCollabRead}
+            />
+            <p className="mt-3 text-[0.6875rem] leading-5 text-fg-3">{bt("읽음 표시는 이 기기에 저장됩니다.", "Read marks are stored on this device.")}</p>
+          </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {projects.map((project) => {
               const healthTone: ProductionTone = project.healthScore >= 82 ? "success" : project.healthScore >= 64 ? "warning" : "danger";
@@ -355,7 +390,9 @@ function PortfolioSection({
 }
 
 export function ProductionLandingPage() {
+  const t = useT();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const directoryMode = pathname.replace(/\/+$/u, "") === "/production/projects";
   const userId = useApp((state) => state.userId);
   const bt = useBilingual("ProductionLandingPage");
@@ -363,6 +400,8 @@ export function ProductionLandingPage() {
   const [inboxItems, setInboxItems] = useState<readonly ProductionPersonalInboxItem[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(Boolean(userId));
   const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [collabItems, setCollabItems] = useState<readonly CollabInboxItem[]>([]);
+  const [collabLoading, setCollabLoading] = useState(false);
   /** 프로젝트 목록 API 오류 시 "다시 불러오기" 버튼용 재시도 트리거. */
   const [projectsReloadToken, setProjectsReloadToken] = useState(0);
 
@@ -384,7 +423,7 @@ export function ProductionLandingPage() {
         setInboxItems(inboxResult.items);
       })
       .catch(async (cause: unknown) => {
-        if (active) setProjectsError(await getApiErrorMessage(cause, "제작 포트폴리오를 불러오지 못했습니다."));
+        if (active) setProjectsError(await getApiErrorMessage(cause, t("productionHub.landing.portfolioLoadFailed", "제작 포트폴리오를 불러오지 못했습니다.")));
       })
       .finally(() => {
         if (active) setProjectsLoading(false);
@@ -393,6 +432,74 @@ export function ProductionLandingPage() {
       active = false;
     };
   }, [userId, projectsReloadToken]);
+
+  /**
+   * 통합 협업 알림 투영. 개인 작업함(검수 요청)은 이미 불러온 데이터로 즉시
+   * 만들고, 프로젝트 aggregate(서버 알림·승인 결과·인계)와 팀 댓글(핀 멘션)은
+   * 프로젝트별로 불러오되 한 프로젝트의 실패가 전체를 죽이지 않게 격리한다.
+   * 읽음은 서버 알림의 읽음 상태 + 이 기기 로컬 저장(spec §3)을 합친다.
+   */
+  useEffect(() => {
+    if (!userId) {
+      setCollabItems([]);
+      setCollabLoading(false);
+      return;
+    }
+    if (projectsLoading) {
+      setCollabLoading(true);
+      return;
+    }
+    let active = true;
+    setCollabLoading(true);
+    const readIds = loadCollabInboxReadIds();
+    const events = [
+      ...collabEventsFromPersonalInboxItems(inboxItems, {
+        projectUpdatedAtById: new Map(projects.map((project) => [project.projectId, project.updatedAt])),
+        now: new Date(),
+      }),
+    ];
+    void Promise.allSettled(
+      projects.flatMap((project) => [
+        getProductionProject(project.projectId).then((record) => {
+          const projected = collabEventsFromProjectAggregate(record.aggregate, userId);
+          events.push(...projected.events);
+          projected.serverReadIds.forEach((id) => readIds.add(id));
+        }),
+        listStudioTeamComments(project.workId, { status: "all", limit: 9, messageLimit: 51 }).then((response) => {
+          events.push(
+            ...collabEventsFromTeamCommentThreads(response.items, {
+              projectId: project.projectId,
+              currentUserId: userId,
+            }),
+          );
+        }),
+      ]),
+    ).then(() => {
+      if (!active) return;
+      setCollabItems(projectCollabInbox(events, readIds));
+      setCollabLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [userId, projectsLoading, projects, inboxItems]);
+
+  const handleOpenCollabItem = (item: CollabInboxItem) => {
+    setCollabItems((previous) => {
+      const next = markCollabInboxRead(previous, item.id);
+      saveCollabInboxReadIds(collabInboxReadIds(next));
+      return next;
+    });
+    navigate(item.target.href);
+  };
+
+  const handleMarkAllCollabRead = () => {
+    setCollabItems((previous) => {
+      const next = markAllCollabInboxRead(previous);
+      saveCollabInboxReadIds(collabInboxReadIds(next));
+      return next;
+    });
+  };
 
   return (
     <div data-creator-workflow="production-home" data-route-ready="production-home" className="min-h-dvh bg-canvas text-fg">
@@ -453,6 +560,10 @@ export function ProductionLandingPage() {
             loading={projectsLoading}
             error={projectsError}
             onRetry={() => setProjectsReloadToken((token) => token + 1)}
+            collabItems={collabItems}
+            collabLoading={collabLoading}
+            onOpenCollabItem={handleOpenCollabItem}
+            onMarkAllCollabRead={handleMarkAllCollabRead}
           />
         ) : directoryMode ? (
           <section className="creator-workflow-panel mt-8 rounded-2xl border border-line bg-card p-5" aria-labelledby="production-directory-title">

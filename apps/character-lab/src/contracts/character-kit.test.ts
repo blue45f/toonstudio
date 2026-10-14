@@ -306,7 +306,7 @@ describe("contracts/character-kit 상수", () => {
   });
 
   it("필수 파츠 집합은 리드 결정과 같고 모두 어휘 안이다", () => {
-    expect(KIT_REQUIRED_PRESETS).toEqual(["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"]);
+    expect(KIT_REQUIRED_PRESETS).toEqual(["irises/round-large"]);
     for (const id of KIT_REQUIRED_PRESETS) {
       const [slot, name] = id.split("/") as [KitPartSlot, string];
       expect(KIT_PART_SLOTS).toContain(slot);
@@ -340,7 +340,7 @@ describe("contracts/character-kit 상수", () => {
   it("kitGeometryKey는 베이스와 6개 파츠 슬롯만 반영한다", () => {
     const recipe = createKitDefaultRecipe();
     const key = kitGeometryKey(recipe);
-    expect(key).toBe("base=female;hair=hair/soft-bob;top=top/tee;bottom=bottom/jeans;shoes=shoes/sneakers;accessory=-;irises=irises/round-large");
+    expect(key).toBe("base=female;hair=-;top=-;bottom=-;shoes=-;accessory=-;irises=irises/round-large");
     expect(kitGeometryKey({ ...recipe, colors: { ...recipe.colors, hair: "#010203" }, body: { height: 0.4 }, expression: { jawOpen: 0.3 } } as typeof recipe)).toBe(key);
     expect(kitGeometryKey({ ...recipe, slots: { ...recipe.slots, expression: "expression/joy", pose: "pose/idle", eyes: "eyes/round" } })).toBe(key);
     expect(kitGeometryKey({ ...recipe, slots: { ...recipe.slots, hair: "hair/hime-cut" } })).not.toBe(key);
@@ -366,7 +366,7 @@ describe("contracts/character-kit manifest 스키마", () => {
       bases.male = structuredClone(bases.female);
       asRecord(manifest.slotCapabilities).male = ALL_AVAILABLE_CAPABILITIES;
     });
-    expect(reasons).toContain("필수 파츠 hair/soft-bob의 male 변형이 없습니다");
+    expect(reasons).toContain("필수 파츠 irises/round-large의 male 변형이 없습니다");
     expect(reasons).toContain("필수 파츠 irises/round-large의 male 변형이 없습니다");
   });
 
@@ -516,11 +516,11 @@ describe("contracts/character-kit manifest 스키마", () => {
     expect(reasonsAfter((manifest) => void (manifest.parts as unknown[]).pop())).toContain("parts에 없습니다");
     expect(reasonsAfter((manifest) => void (partOf(manifest, "hair/twin-tail").id = "hair/soft-bob"))).toContain("파츠 id가 중복");
     const required = reasonsAfter((manifest) => {
-      const part = partOf(manifest, "shoes/sneakers");
+      const part = partOf(manifest, "irises/round-large");
       part.variants = {};
       part.unavailable = { female: "미제작", male: "미제작" };
     });
-    expect(required).toContain("필수 파츠 shoes/sneakers의 female 변형이 없습니다");
+    expect(required).toContain("필수 파츠 irises/round-large의 female 변형이 없습니다");
   });
 
   it("변형이 없는 베이스는 한글 unavailable 사유가 필요하다", () => {

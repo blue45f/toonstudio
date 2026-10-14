@@ -316,6 +316,62 @@ export async function reopenStudioReviewComment(commentId: string) {
   return reviewCommentDecisionSchema.parse(body);
 }
 
+// ── 리뷰 프리뷰 (비교 검수 렌더 URL 실연결) ─────────────────────────────
+// 서버 계약: apps/api …/studio-review-preview.controller.ts
+//   GET /studio-project-graph/reviews/:reviewId/previews?projectId&workId&artifactId&revisionId&rootGraphHash[&cursor]
+// 검수에 고정된 리비전의 blob들을 30초 수명의 서명 URL로 돌려준다. 레거시 blob처럼
+// v2 위치 참조가 없는 경우 서버는 200 + { ok: false, reason } 으로 답한다(에러가 아니다).
+
+const studioReviewPreviewReadSchema = z.object({
+  sha256: z.string(),
+  ordinal: z.number().int().nonnegative(),
+  mediaType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+  byteLength: z.number().nonnegative(),
+  url: z.string().url(),
+  expiresAt: z.number(),
+  mapping: z.unknown(),
+});
+
+const studioReviewPreviewResultSchema = z.union([
+  z.object({
+    ok: z.literal(true),
+    previews: z.array(studioReviewPreviewReadSchema),
+    nextCursor: z.string().nullable(),
+  }).passthrough(),
+  z.object({
+    ok: z.literal(false),
+    reason: z.enum(["preview-unavailable", "closed", "version-mismatch"]),
+  }).strict(),
+]);
+
+export type StudioReviewPreviewRead = z.infer<typeof studioReviewPreviewReadSchema>;
+export type StudioReviewPreviewResult = z.infer<typeof studioReviewPreviewResultSchema>;
+
+export interface StudioReviewPreviewSubjectInput {
+  readonly projectId: string;
+  readonly workId: string;
+  readonly artifactId: string;
+  readonly revisionId: string;
+  readonly rootGraphHash: string;
+}
+
+export async function getStudioReviewPreviews(
+  reviewId: string,
+  subject: StudioReviewPreviewSubjectInput,
+  cursor?: string | null,
+): Promise<StudioReviewPreviewResult> {
+  const query = new URLSearchParams({
+    projectId: subject.projectId,
+    workId: subject.workId,
+    artifactId: subject.artifactId,
+    revisionId: subject.revisionId,
+    rootGraphHash: subject.rootGraphHash,
+    ...(cursor ? { cursor } : {}),
+  });
+  const body = await api.get<unknown>(`${BASE}/reviews/${resourceId(reviewId)}/previews?${query.toString()}`);
+  return studioReviewPreviewResultSchema.parse(body);
+}
+
 export const studioProjectGraphClientTestHelpers = Object.freeze({
   mutationHeaders,
   revisionMutationHeaders,

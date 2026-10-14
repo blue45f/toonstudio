@@ -91,6 +91,7 @@ import {
   type ProductionManuscriptLayout,
   type ProductionManuscriptSort,
 } from "./production-manuscript-ux";
+import { useT } from "@/shared/lib/i18n";
 
 const ProductionAdoptionCenter = lazy(async () => ({
   default: (await import("./ProductionAdoptionCenter")).ProductionAdoptionCenter,
@@ -292,23 +293,25 @@ function Metric({ label, value, detail, tone = "neutral" }: {
 }
 
 function ManuscriptFeatureFallback({ label }: { readonly label: string }) {
+  const t = useT();
   return <section
     className="rounded-2xl border border-line bg-card p-5"
     role="status"
-    aria-label={`${label} 불러오는 중`}
+    aria-label={t("productionHub.manuscript.loadingAria", { label }, "{label} 불러오는 중")}
   >
     <div className="flex min-h-20 items-center justify-center gap-2 text-sm font-semibold text-fg-2">
       <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-      {label} 불러오는 중…
+      {t("productionHub.manuscript.loadingLabel", { label }, "{label} 불러오는 중…")}
     </div>
   </section>;
 }
 
 function ManuscriptWorkspaceSkeleton() {
+  const t = useT();
   return <div
     className="space-y-4"
     role="status"
-    aria-label="원고 운영 화면을 불러오는 중"
+    aria-label={t("productionHub.manuscript.skeletonAria", "원고 운영 화면을 불러오는 중")}
   >
     <section className="overflow-hidden rounded-3xl border border-line bg-card">
       <div className="animate-pulse border-b border-line p-5 motion-reduce:animate-none sm:p-6">
@@ -329,7 +332,7 @@ function ManuscriptWorkspaceSkeleton() {
         {[0, 1].map((index) => <div key={index} className="h-60 rounded-2xl border border-line bg-panel" />)}
       </div>
     </section>
-    <span className="sr-only">ProjectGraph 원고·버전·검수 이력을 불러오고 있습니다.</span>
+    <span className="sr-only">{t("productionHub.manuscript.skeletonStatus", "ProjectGraph 원고·버전·검수 이력을 불러오고 있습니다.")}</span>
   </div>;
 }
 
@@ -504,6 +507,7 @@ function DemoWorkspace({ aggregate }: { readonly aggregate: ProductionProjectAgg
 }
 
 export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, execute }: ProductionManuscriptWorkspaceProps) {
+  const t = useT();
   const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<LoadedManuscriptData | null>(null);
   const [loading, setLoading] = useState(!isDemo);
@@ -587,7 +591,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
         setMissing(true);
         setData(null);
       } else {
-        setError(await getApiErrorMessage(cause, "원고 버전과 검수 데이터를 불러오지 못했습니다."));
+        setError(await getApiErrorMessage(cause, t("productionHub.manuscript.loadFailed", "원고 버전과 검수 데이터를 불러오지 못했습니다.")));
       }
     } finally {
       if (current === generation.current) setLoading(false);
@@ -781,7 +785,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
     <CapabilityGrid aggregate={aggregate} setView={setView} />
   </div>;
 
-  if (error || !data) return <section className="rounded-3xl border border-bad/35 bg-bad/10 p-5" role="alert"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 size-5 text-bad" aria-hidden="true" /><div><h2 className="font-black text-fg">원고 운영 화면을 열 수 없습니다</h2><p className="mt-1 text-sm text-fg-2">{error ?? "프로젝트 데이터가 없습니다."}</p><button type="button" onClick={() => void load()} className={cn(buttonClass({ variant: "outline", size: "sm" }), "mt-3")}><RefreshCcw className="size-4" aria-hidden="true" />다시 불러오기</button></div></div></section>;
+  if (error || !data) return <section className="rounded-3xl border border-bad/35 bg-bad/10 p-5" role="alert"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 size-5 text-bad" aria-hidden="true" /><div><h2 className="font-black text-fg">{t("productionHub.manuscript.cannotOpen", "원고 운영 화면을 열 수 없습니다")}</h2><p className="mt-1 text-sm text-fg-2">{error ?? t("productionHub.manuscript.noProjectData", "프로젝트 데이터가 없습니다.")}</p><button type="button" onClick={() => void load()} className={cn(buttonClass({ variant: "outline", size: "sm" }), "mt-3")}><RefreshCcw className="size-4" aria-hidden="true" />{t("productionHub.manuscript.reload", "다시 불러오기")}</button></div></div></section>;
 
   const projectHref = `/studio/p/${encodeURIComponent(data.project.workId)}`;
   const editorHref = processEditorHref(data.project.workId, selectedProcess);
@@ -837,7 +841,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
               {copyStatus === "copied"
                 ? <Check className="size-4 text-good" aria-hidden="true" />
                 : <Copy className="size-4" aria-hidden="true" />}
-              {copyStatus === "copied" ? "화면 링크 복사됨" : copyStatus === "error" ? "복사 실패" : "현재 화면 링크 복사"}
+              {copyStatus === "copied" ? "화면 링크 복사됨" : copyStatus === "error" ? t("productionHub.common.copyFailed", "복사 실패") : "현재 화면 링크 복사"}
             </button>
             <button
               type="button"
@@ -1060,7 +1064,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
         onReset={resetBrowser}
       /> : <section className="rounded-3xl border border-line bg-card p-8 text-center">
         <Layers3 className="mx-auto size-8 text-fg-3" aria-hidden="true" />
-        <h2 className="mt-3 font-black text-fg">선택한 회차의 공정 원고가 없습니다</h2>
+        <h2 className="mt-3 font-black text-fg">{t("productionHub.manuscript.emptyEpisodeProcesses", "선택한 회차의 공정 원고가 없습니다")}</h2>
         <p className="mt-1 text-sm text-fg-2">
           Studio 프로젝트에서 대본·콘티·작화 문서를 만들면 같은 revision으로 자동 연결됩니다.
         </p>
@@ -1134,7 +1138,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
           </Link> : null}
         </div>
         {requestedReviewMissing && !selectedProcess ? <div className="mt-5 rounded-2xl border border-warn/35 bg-warn/10 p-6" role="alert">
-          <h3 className="font-black text-fg">요청한 원고·검수본 조합을 찾을 수 없습니다</h3>
+          <h3 className="font-black text-fg">{t("productionHub.manuscript.reviewPairNotFound", "요청한 원고·검수본 조합을 찾을 수 없습니다")}</h3>
           <p className="mt-1 text-sm leading-6 text-fg-2">다른 공정이나 검수본으로 자동 대체하지 않았습니다. 원고 공정 목록에서 확인할 대상을 다시 선택하세요.</p>
           <button
             type="button"
@@ -1189,7 +1193,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
           </aside>
           <div className="min-w-0">
             {requestedReviewMissing ? <div className="rounded-2xl border border-warn/35 bg-warn/10 p-6" role="alert">
-              <h3 className="font-black text-fg">요청한 고정 검수본을 찾을 수 없습니다</h3>
+              <h3 className="font-black text-fg">{t("productionHub.manuscript.pinnedReviewNotFound", "요청한 고정 검수본을 찾을 수 없습니다")}</h3>
               <p className="mt-1 text-sm leading-6 text-fg-2">다른 검수본이나 최신 HEAD로 자동 대체하지 않았습니다. 왼쪽 검수 이력에서 확인할 검수본을 직접 선택하세요.</p>
             </div> : selectedReviewCandidate ? <div className="rounded-2xl border border-accent/30 bg-accent-soft/15 p-5">
               <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em] text-accent">SELECTED REVIEW</p>
@@ -1197,13 +1201,13 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
               <p className="mt-1 text-sm leading-6 text-fg-2">{selectedReviewCandidate.episodeLabel} · {selectedReviewCandidate.processLabel} · {selectedReviewCandidate.subject.revisionId}</p>
               <p className="mt-3 text-xs text-fg-3">아래 통합 작업대에서 고정 원고 의견·수정·승인과 빠른 출력을 이어갑니다.</p>
             </div> : <div className="rounded-2xl border border-warn/35 bg-warn/10 p-6" role="alert">
-              <h3 className="font-black text-fg">고정 검수 revision을 확인할 수 없습니다</h3>
+              <h3 className="font-black text-fg">{t("productionHub.manuscript.pinnedRevisionUnverifiable", "고정 검수 revision을 확인할 수 없습니다")}</h3>
               <p className="mt-1 text-sm text-fg-2">일반 작업 버전으로 자동 대체하지 않았습니다. 버전 이력에서 검수 snapshot을 확인하세요.</p>
             </div>}
           </div>
         </div> : <div className="mt-5 rounded-2xl border border-dashed border-line p-8 text-center">
           <MessageSquare className="mx-auto size-7 text-fg-3" aria-hidden="true" />
-          <p className="mt-2 font-black text-fg">아직 검수본이 없습니다</p>
+          <p className="mt-2 font-black text-fg">{t("productionHub.manuscript.emptyReviews", "아직 검수본이 없습니다")}</p>
           <p className="mt-1 text-sm text-fg-2">Studio에서 저장된 원고를 고정 검수본으로 캡처하면 위치 피드백·개인 초안·댓글·비교·승인을 사용할 수 있습니다.</p>
         </div>}
       </section>
@@ -1307,7 +1311,7 @@ export function ProductionManuscriptWorkspace({ aggregate, canEdit, isDemo, exec
       role="tabpanel"
       aria-labelledby="manuscript-tab-activity"
     >
-      <section className="rounded-3xl border border-line bg-card p-4 sm:p-6" aria-labelledby="manuscript-activity-title"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 id="manuscript-activity-title" className="text-xl font-black text-fg">원고 활동</h2><p className="mt-1 text-sm text-fg-2">버전 생성과 검수 상태 변경을 ProjectGraph 시간순으로 표시합니다.</p></div><Badge className="border-line bg-panel text-fg-2"><Clock3 className="mr-1 size-3.5" aria-hidden="true" />최근 {activities.length}건</Badge></div><ol className="mt-5 space-y-2">{activities.map((activity) => <li key={activity.id} className="grid gap-3 rounded-2xl border border-line bg-panel p-4 sm:grid-cols-[2.5rem_minmax(0,1fr)_auto]"><span className="flex size-10 items-center justify-center rounded-xl border border-line bg-card text-accent">{activity.kind === "revision" ? <History className="size-4" aria-hidden="true" /> : <MessageSquare className="size-4" aria-hidden="true" />}</span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-fg">{activity.title}</p><Badge className="border-line bg-card text-fg-3">{activity.artifactTitle}</Badge></div><p className="mt-1 line-clamp-2 text-xs leading-5 text-fg-2">{activity.detail}</p></div><time className="text-xs text-fg-3" dateTime={activity.occurredAt}>{formatDate(activity.occurredAt)}</time></li>)}{activities.length === 0 ? <li className="rounded-2xl border border-dashed border-line p-8 text-center text-sm text-fg-3">표시할 활동이 없습니다.</li> : null}</ol></section>
+      <section className="rounded-3xl border border-line bg-card p-4 sm:p-6" aria-labelledby="manuscript-activity-title"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 id="manuscript-activity-title" className="text-xl font-black text-fg">원고 활동</h2><p className="mt-1 text-sm text-fg-2">버전 생성과 검수 상태 변경을 ProjectGraph 시간순으로 표시합니다.</p></div><Badge className="border-line bg-panel text-fg-2"><Clock3 className="mr-1 size-3.5" aria-hidden="true" />최근 {activities.length}건</Badge></div><ol className="mt-5 space-y-2">{activities.map((activity) => <li key={activity.id} className="grid gap-3 rounded-2xl border border-line bg-panel p-4 sm:grid-cols-[2.5rem_minmax(0,1fr)_auto]"><span className="flex size-10 items-center justify-center rounded-xl border border-line bg-card text-accent">{activity.kind === "revision" ? <History className="size-4" aria-hidden="true" /> : <MessageSquare className="size-4" aria-hidden="true" />}</span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-fg">{activity.title}</p><Badge className="border-line bg-card text-fg-3">{activity.artifactTitle}</Badge></div><p className="mt-1 line-clamp-2 text-xs leading-5 text-fg-2">{activity.detail}</p></div><time className="text-xs text-fg-3" dateTime={activity.occurredAt}>{formatDate(activity.occurredAt)}</time></li>)}{activities.length === 0 ? <li className="rounded-2xl border border-dashed border-line p-8 text-center text-sm text-fg-3">{t("productionHub.manuscript.emptyActivity", "표시할 활동이 없습니다.")}</li> : null}</ol></section>
     </div> : null}
   </div>;
 }

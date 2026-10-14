@@ -18,7 +18,7 @@ const ids = MANUAL_ARTICLES.map((article) => article.id);
 
 describe("Studio user manual content", () => {
   it("has unique, stable article IDs and seven populated categories", () => {
-    expect(MANUAL_ARTICLES).toHaveLength(17);
+    expect(MANUAL_ARTICLES).toHaveLength(18);
     expect(new Set(ids).size).toBe(ids.length);
     expect(MANUAL_CATEGORIES).toHaveLength(7);
     for (const category of MANUAL_CATEGORIES) {
@@ -115,7 +115,11 @@ describe("Studio manual search and URLs", () => {
   it("orders previous/next navigation by topic", () => {
     expect(MANUAL_ARTICLES_IN_ORDER).toHaveLength(MANUAL_ARTICLES.length);
     expect(adjacentManualArticles("layers").next?.id).toBe("filters");
-    expect(adjacentManualArticles("getting-started").previous).toBeUndefined();
+    // 회차 완성 흐름(episode-flow)이 시작하기 분류의 첫 문서로 추가됐다.
+    expect(MANUAL_ARTICLES_IN_ORDER[0]?.id).toBe("episode-flow");
+    expect(adjacentManualArticles("episode-flow").previous).toBeUndefined();
+    expect(adjacentManualArticles("episode-flow").next?.id).toBe("getting-started");
+    expect(adjacentManualArticles("getting-started").previous?.id).toBe("episode-flow");
     expect(adjacentManualArticles("troubleshooting").next).toBeUndefined();
     expect(adjacentManualArticles("unknown")).toEqual({});
   });

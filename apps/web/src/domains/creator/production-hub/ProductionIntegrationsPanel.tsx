@@ -31,6 +31,7 @@ import {
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { getApiErrorMessage } from "@/platform/api";
+import { useT } from "@/shared/lib/i18n";
 
 const FIELD_CLASS =
   "min-h-10 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/20";
@@ -80,6 +81,7 @@ export function ProductionIntegrationsPanel({
 }: {
   readonly aggregate: ProductionProjectAggregate;
 }) {
+  const t = useT();
   const [capabilities, setCapabilities] = useState<ProductionIntegrationCapabilities | null>(null);
   const [events, setEvents] = useState<readonly ProductionCalendarIntegrationEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,7 +145,7 @@ export function ProductionIntegrationsPanel({
       setEvents(calendar.events);
     }).catch(async (cause) => {
       if (!cancelled) {
-        setError(await getApiErrorMessage(cause, "외부 연동 상태를 불러오지 못했습니다."));
+        setError(await getApiErrorMessage(cause, t("productionHub.integrations.loadFailed", "외부 연동 상태를 불러오지 못했습니다.")));
       }
     }).finally(() => {
       if (!cancelled) setLoading(false);
@@ -246,7 +248,7 @@ export function ProductionIntegrationsPanel({
                 <a href={event.googleCalendarUrl} target="_blank" rel="noreferrer" className={buttonClass({ variant: "quiet", size: "sm" })}>추가</a>
               </div>
             ))}
-            {events.length === 0 ? <p className="text-xs text-fg-3">등록할 마감 일정이 없습니다.</p> : null}
+            {events.length === 0 ? <p className="text-xs text-fg-3">{t("productionHub.integrations.emptyDeadlines", "등록할 마감 일정이 없습니다.")}</p> : null}
           </div>
         </Card>
         <Card title="이메일 초안" description="메일을 자동 발송하지 않고, mailto 또는 사용자가 연결한 Gmail의 초안으로만 만듭니다.">
@@ -371,7 +373,7 @@ export function ProductionIntegrationsPanel({
               disabled={!capabilities?.notifications.webPush || !productionPushSupported() || busy !== null}
               onClick={() => run("push-subscribe", "이 브라우저의 제작 알림을 켰습니다.", async () => {
                 const publicKey = capabilities?.notifications.vapidPublicKey;
-                if (!publicKey) throw new Error("Web Push 공개 키가 없습니다.");
+                if (!publicKey) throw new Error(t("productionHub.integrations.noWebPushKey", "Web Push 공개 키가 없습니다."));
                 await subscribeProductionPush(aggregate.projectId, publicKey);
               })}
               className={buttonClass({ variant: "outline", size: "sm" })}
@@ -551,7 +553,7 @@ export function ProductionIntegrationsPanel({
               </button>
               <p className="text-xs text-fg-3">현재 모드: {capabilities?.payments.mode ?? "disabled"}</p>
             </div>
-          ) : <p className="text-xs text-fg-3">검증할 청구서가 없습니다.</p>}
+          ) : <p className="text-xs text-fg-3">{t("productionHub.integrations.emptyInvoices", "검증할 청구서가 없습니다.")}</p>}
         </Card>
       </div>
     </div>

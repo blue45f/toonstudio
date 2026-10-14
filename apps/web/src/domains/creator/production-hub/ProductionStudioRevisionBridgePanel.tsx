@@ -27,6 +27,7 @@ import type {
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
+import { useT } from "@/shared/lib/i18n";
 
 interface BridgeData {
   readonly project: StudioProjectRecord;
@@ -51,10 +52,8 @@ interface Props {
   ) => Promise<void>;
 }
 
-function errorMessage(cause: unknown): string {
-  return cause instanceof Error && cause.message.trim()
-    ? cause.message
-    : "Studio 정본을 불러오지 못했습니다.";
+function errorMessage(cause: unknown, fallback: string): string {
+  return cause instanceof Error && cause.message.trim() ? cause.message : fallback;
 }
 
 function statusTone(status: string): string {
@@ -68,6 +67,7 @@ export function ProductionStudioRevisionBridgePanel({
   enabled,
   execute,
 }: Props) {
+  const t = useT();
   const [state, setState] = useState<BridgeState>({ kind: "idle" });
   const [pinningTaskIds, setPinningTaskIds] = useState<ReadonlySet<string>>(
     () => new Set(),
@@ -101,7 +101,7 @@ export function ProductionStudioRevisionBridgePanel({
       });
     } catch (cause) {
       if (signal?.aborted) return;
-      setState({ kind: "error", message: errorMessage(cause) });
+      setState({ kind: "error", message: errorMessage(cause, t("productionHub.revisionBridge.loadFailed", "Studio 정본을 불러오지 못했습니다.")) });
     }
   }, [aggregate.workId, enabled]);
 
@@ -226,7 +226,7 @@ export function ProductionStudioRevisionBridgePanel({
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden="true" />
             <div>
-              <p className="text-sm font-bold text-fg">Studio 정본을 연결할 수 없습니다.</p>
+              <p className="text-sm font-bold text-fg">{t("productionHub.revisionBridge.cannotConnect", "Studio 정본을 연결할 수 없습니다.")}</p>
               <p className="mt-1 text-xs leading-5 text-fg-2">{state.message}</p>
               <p className="mt-1 text-xs leading-5 text-fg-3">
                 먼저 Studio에서 프로젝트와 원고를 저장한 뒤 다시 확인하세요. 제작 데이터는 변경되지 않습니다.

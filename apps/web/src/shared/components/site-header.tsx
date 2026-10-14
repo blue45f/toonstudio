@@ -565,6 +565,26 @@ function HeaderPrimaryNavigationEntry({
   const [open, setOpen] = useState(false);
   // Escape로 닫은 직후에는 트리거로 돌아온 포커스가 패널을 다시 열지 않게 한다.
   const escapeClosedRef = useRef(false);
+  const entryRef = useRef<HTMLDivElement>(null);
+
+  // Escape 닫기는 래퍼 div의 키보드 핸들러가 아니라 window 리스너로 처리한다.
+  // 비네이티브 요소에 인터랙션 핸들러를 붙이지 않기 위한 것으로, 동작은 기존과
+  // 같다: 이벤트 대상이 이 항목(트리거·패널) 안일 때만 닫고 트리거로 포커스를
+  // 되돌리며, 전파를 막아 다른 Escape 처리와 겹치지 않는다.
+  useEffect(() => {
+    if (!open || !item.children) return;
+    const onWindowKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const entry = entryRef.current;
+      if (!entry || !(event.target instanceof Node) || !entry.contains(event.target)) return;
+      event.stopPropagation();
+      escapeClosedRef.current = true;
+      setOpen(false);
+      entry.querySelector<HTMLElement>("[data-navigation-entry]")?.focus();
+    };
+    window.addEventListener("keydown", onWindowKeyDown, true);
+    return () => window.removeEventListener("keydown", onWindowKeyDown, true);
+  }, [open, item.children]);
 
   const link = (
     <Link
@@ -594,6 +614,7 @@ function HeaderPrimaryNavigationEntry({
 
   return (
     <div
+      ref={entryRef}
       className="group relative"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => {
@@ -612,15 +633,6 @@ function HeaderPrimaryNavigationEntry({
         }
         escapeClosedRef.current = false;
         setOpen(false);
-      }}
-      onKeyDown={(event) => {
-        if (event.key !== "Escape" || !open) return;
-        event.stopPropagation();
-        escapeClosedRef.current = true;
-        setOpen(false);
-        event.currentTarget
-          .querySelector<HTMLElement>("[data-navigation-entry]")
-          ?.focus();
       }}
     >
       {link}

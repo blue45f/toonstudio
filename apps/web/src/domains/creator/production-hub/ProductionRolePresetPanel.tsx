@@ -11,6 +11,7 @@ import {
   productionRolePreset,
   type ProductionRolePreset,
 } from "./production-manuscript-competitive-model";
+import { useT } from "@/shared/lib/i18n";
 
 // 층 B(작품 권한) 이름으로 표기한다 — 프리셋이 고르는 것은 직군이 아니라 권한이다 (R-6).
 const WORKSPACE_ROLE_LABELS: Record<ProductionRolePreset["workspaceRole"], string> = {
@@ -26,6 +27,7 @@ const PROJECT_ROLE_LABELS: Record<ProductionRolePreset["projectRole"], string> =
 };
 
 export function ProductionRolePresetPanel({ canManage }: { readonly canManage: boolean }) {
+  const t = useT();
   const [params, setParams] = useSearchParams();
   const requested = parseProductionRolePresetId(params.get("rolePreset"));
   const selected = useMemo(() => productionRolePreset(requested ?? "invite-producer"), [requested]);
@@ -56,7 +58,7 @@ export function ProductionRolePresetPanel({ canManage }: { readonly canManage: b
       await navigator.clipboard.writeText(text);
       setNotice("권한 미리보기를 복사했습니다.");
     } catch {
-      setNotice("복사 권한이 없습니다. 내용을 직접 확인해 주세요.");
+      setNotice(t("productionHub.rolePreset.copyNotAllowed", "복사 권한이 없습니다. 내용을 직접 확인해 주세요."));
     }
   };
 

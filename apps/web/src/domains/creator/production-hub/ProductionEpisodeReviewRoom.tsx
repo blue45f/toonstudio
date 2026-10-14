@@ -1,10 +1,15 @@
-import { BadgeCheck, Columns2, Info, LockKeyhole, MessageSquareMore, ShieldAlert } from "lucide-react";
+import { BadgeCheck, Columns2, Info, LockKeyhole, MessageSquareMore, Mic, ShieldAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import type { ProductionProjectAggregate, ReviewLane } from "@toonstudio/core/production";
 
-import type { StudioCommentsDocument } from "../studio-comments";
+import {
+  createEmptyStudioCommentsDocument,
+  normalizeStudioCommentsDocument,
+  serializeStudioCommentsDocument,
+  type StudioCommentsDocument,
+} from "../studio-comments";
 import { LiveCursorOverlay } from "./LiveCursorOverlay";
 import {
   buildLiveViewState,
@@ -31,11 +36,25 @@ import {
   targetBlockedObserve,
   type FollowSession,
 } from "./observe-follow-model";
+import { CompareReviewRoom, buildCompareSeedPoolFromProcesses } from "./CompareReviewRoom";
+import type { ComparePinGateSummary, ComparePoolItem } from "./compare-review-model";
+import {
+  compareSendInboxToPoolItems,
+  consumeCompareSendInbox,
+} from "./compare-send-inbox";
 import { ManuscriptPinFeedbackBridge } from "./ManuscriptPinFeedback";
+import { usePinTaskWorkspaceSync } from "./use-pin-task-workspace-sync";
 import { ProcessCompareViewer } from "./ProcessCompareViewer";
+import type { ProductionManuscriptProcess } from "./production-manuscript-model";
 import { ProductionPagePresence } from "./ProductionPagePresence";
 import { useServerPresenceSync } from "./use-server-presence-sync";
 import { ReviewSessionBar } from "./ReviewSessionBar";
+import { ReviewVoiceCommentaryPanel, type VoiceViewCapture } from "./ReviewVoiceCommentaryPanel";
+import {
+  voiceTracksForEpisode,
+  type VoiceCommentaryTrack,
+  type VoiceViewSnapshot,
+} from "./review-voice-commentary-model";
 import {
   deriveSessionPresence,
   endReviewSession,
@@ -89,6 +108,17 @@ export interface ProductionEpisodeReviewRoomProps {
   /** 로그인 사용자와 연결된 참여 배정. 실제 프로젝트에서 승인 주체를 정한다. */
   readonly viewerAssignmentId: string | null;
   readonly onApproveLane: (lane: ReviewLane, assignmentId: string) => Promise<void>;
+  /**
+   * 실제 프로젝트의 공정·리비전 실데이터 (페이지가 원고·버전 로드 패턴으로 채운다).
+   * 없으면 비교 탭은 빈 풀로 시작한다 — 외부 이미지 추가만으로도 비교가 된다.
+   */
+  readonly compareProcesses?: readonly ProductionManuscriptProcess[];
+  /** 리비전 렌더 URL 해석기(프리뷰 서명 URL 맵). 없으면 플레이스홀더 아트 관습을 따른다. */
+  readonly resolveCompareImageUrl?: (processId: string, revisionId: string) => string | null;
+  /** 지난 회차 페이지 풀 항목 (페이지가 앞 회차 공정 head 리비전으로 매핑해 넘긴다). */
+  readonly previousEpisodePages?: readonly ComparePoolItem[];
+  /** 페이지의 비교 데이터 로드 상태. 비교 탭의 로딩·에러 배너를 가른다. */
+  readonly compareLoadState?: "idle" | "loading" | "ready" | "error";
 }
 
 /**
@@ -103,6 +133,10 @@ export function ProductionEpisodeReviewRoom({
   roleLens,
   viewerAssignmentId,
   onApproveLane,
+  compareProcesses,
+  resolveCompareImageUrl,
+  previousEpisodePages,
+  compareLoadState = "idle",
 }: ProductionEpisodeReviewRoomProps) {
   const bt = useBilingual("ProductionEpisodeReviewRoom");
   // 보기 탭은 주소에 남겨 링크로 공유하거나 새로고침해도 같은 화면을 연다.
@@ -129,6 +163,59 @@ export function ProductionEpisodeReviewRoom({
   );
   const approver = resolveEpisodeApprover(aggregate, episodeId, { isDemo, roleLens, viewerAssignmentId });
   const assigneeOptions = useMemo(() => episodeRoomAssigneeOptions(aggregate, bt), [aggregate, bt]);
+
+  // 비교 검수(CompareReviewRoom) 전용 댓글 문서. 원고 핀 문서와 분리해 소유하고,
+  // 회차 키로 이 기기에 저장한다(서버 저장 이관은 원고 핀 문서와 같은 패턴의 후속 작업).
+  const compareCommentsKey = `toonstudio.compare-comments.${episodeId}`;
+  const [compareComments, setCompareComments] = useState<StudioCommentsDocument>(() => {
+    if (isDemo || typeof window === "undefined") return createEmptyStudioCommentsDocument();
+    try {
+      const raw = window.localStorage.getItem(compareCommentsKey);
+      return raw ? normalizeStudioCommentsDocument(raw) : createEmptyStudioCommentsDocument();
+    } catch {
+      return createEmptyStudioCommentsDocument();
+    }
+  });
+  useEffect(() => {
+    if (isDemo || typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(compareCommentsKey, serializeStudioCommentsDocument(compareComments));
+    } catch { /* 저장 실패 시 이 세션 안에서만 유지한다 */ }
+  }, [compareComments, compareCommentsKey, isDemo]);
+  const [comparePinGate, setComparePinGate] = useState<ComparePinGateSummary | null>(null);
+  const handleComparePinGateChange = useCallback((summary: ComparePinGateSummary) => {
+    setComparePinGate((previous) => (previous
+      && previous.openCount === summary.openCount
+      && previous.urgentOpenCount === summary.urgentOpenCount
+      && previous.urgentSourceLabels.join("\n") === summary.urgentSourceLabels.join("\n"))
+      ? previous
+      : summary);
+  }, []);
+  // 에디터 "비교로 보내기" 수신함: 마운트 때 한 번 소비해 풀 씨앗에 합친다(중복 방지 위해 비운다).
+  const [sentCompareItems] = useState<readonly ComparePoolItem[]>(() => {
+    if (isDemo || typeof window === "undefined") return [];
+    try {
+      return compareSendInboxToPoolItems(consumeCompareSendInbox(window.localStorage, aggregate.workId), aggregate.workId);
+    } catch {
+      return [];
+    }
+  });
+  const compareActor = approver?.actor ?? { displayName: bt("나", "Me") };
+  const compareActorId = approver?.assignmentId ?? viewerAssignmentId ?? "me";
+  const compareSeedItems = useMemo<readonly ComparePoolItem[]>(
+    () => isDemo
+      ? []
+      : [...buildCompareSeedPoolFromProcesses(
+        compareProcesses ?? [],
+        resolveCompareImageUrl,
+        compareActorId,
+      ), ...sentCompareItems],
+    [isDemo, compareProcesses, resolveCompareImageUrl, compareActorId, sentCompareItems],
+  );
+  const storyboardProcessId = useMemo(
+    () => compareProcesses?.find((process) => process.artifact.kind === "storyboard")?.artifact.id ?? null,
+    [compareProcesses],
+  );
 
   // 페이지 단위 편집 잠금 + 프레즌스: 이 페이지를 열고 있는 사람과 편집자를 표시하고,
   // 다른 사람이 편집 중이면 내 핀 변경을 적용하지 않아 동시 편집 충돌을 막는다.
@@ -243,6 +330,17 @@ export function ProductionEpisodeReviewRoom({
     if (selfActorId && !canEditPage(presenceRef.current, pageId, selfActorId, new Date()).allowed) return;
     setComments(next);
   }, [pageId, selfActorId]);
+
+  // 검수 핀 → 할 일 동기화: 핀 생성·해결·재열림·삭제·담당 변경은 전부
+  // handleCommentsChange 한 곳을 지나 setComments로만 반영되므로, 문서가
+  // 바뀔 때마다 동기화하면 모든 이벤트가 빠짐없이 할 일에 닿는다.
+  // 진입 시 1회 실행으로 동기화 이전에 만들어진 핀도 소급 등록된다.
+  // 잠금에 막힌 변경은 setComments에 닿지 않아 동기화도 일어나지 않는다.
+  const { syncPinTasksFromDocument } = usePinTaskWorkspaceSync({ aggregate, isDemo });
+  useEffect(() => {
+    if (!comments) return;
+    void syncPinTasksFromDocument(comments);
+  }, [comments, syncPinTasksFromDocument]);
 
   // 라이브 커서·보기 동기화: 누가 이 페이지의 어디를 보고 있는지를 커서로 보여 주고,
   // 원하면 상대가 보는 화면 그대로 따라간다(관찰 모드). 커서는 휘발성이라 프레즌스보다
@@ -403,6 +501,104 @@ export function ProductionEpisodeReviewRoom({
       },
     },
   });
+
+  // ── 비동기 검수 해설(음성 해설) 호스트 배선 ─────────────────────────────
+  // 패널(ReviewVoiceCommentaryPanel)은 콜백 계약만 아는 순수 표면이라, 실제
+  // 탭·뷰포트·핀 상태는 이 룸이 소유하고 어댑터를 여기서 만든다.
+  // - captureView: 현재 탭 + 룸 패널 스크롤(정규화 0..1) + 열린 핀 스레드를
+  //   VoiceViewSnapshot으로 변환한다. 원고 뷰어·비교 뷰어 내부의 줌/팬 상태는
+  //   각 뷰어가 자체 소유해 호스트가 읽을 수 없으므로 scale은 1로 기록한다.
+  // - onApplyView: 표면에 맞는 탭으로 전환하고, 원고 표면이면 기록된 스크롤을
+  //   룸 패널에 적용하며, 큐가 가리키는 핀을 아래 요약 목록으로 하이라이트한다.
+  //   비교 뷰어(ProcessCompareViewer)의 페인·뷰포트는 내부 상태라 호스트에서
+  //   강제 적용할 수 없어, 비교 표면 적용은 탭 전환+핀 하이라이트까지가 범위다.
+  // - onSaveTrack(저장): production-hub에서 이 룸이 닿을 수 있는 서버 오디오
+  //   업로드 경로는 없다(레포의 검수 음성 노트 API는 project-graph 식별자와
+  //   전사를 필수로 요구해 회차 룸 props로는 호출할 수 없다). 그래서 서버 정책이
+  //   확정되기 전까지는 패널이 만든 blob 참조 트랙을 이 룸의 세션 상태에
+  //   보관한다 — 이 탭 안에서만 미리듣기가 되고 새로고침하면 사라지며, 모델의
+  //   parse가 blob 오디오를 복원 대상에서 제외하는 정책과 같은 한계다. 정책이
+  //   확정되면 handleSaveVoiceTrack에서 audioBlob을 업로드하고 track.audio를
+  //   kind:"server" 참조로 교체해 같은 상태에 넣으면 된다.
+  const [voiceTracks, setVoiceTracks] = useState<readonly VoiceCommentaryTrack[]>([]);
+  const [voicePanelOpen, setVoicePanelOpen] = useState(false);
+  const [voicePinIds, setVoicePinIds] = useState<readonly string[]>([]);
+  // 패널은 녹화 중 500ms 간격으로 captureView를 부른다. 콜백 정체성이 매
+  // 렌더마다 바뀌면 샘플링 타이머가 계속 리셋되므로, 최신 상태는 ref로 읽는다.
+  const voiceCaptureRef = useRef({ tab, comments, compareItems });
+  useEffect(() => {
+    voiceCaptureRef.current = { tab, comments, compareItems };
+  }, [tab, comments, compareItems]);
+
+  const captureVoiceView = useCallback((): VoiceViewCapture | null => {
+    const current = voiceCaptureRef.current;
+    const panel = panelRef.current;
+    const maxX = panel ? Math.max(1, panel.scrollWidth - panel.clientWidth) : 1;
+    const maxY = panel ? Math.max(1, panel.scrollHeight - panel.clientHeight) : 1;
+    const tx = panel ? Math.min(1, Math.max(0, panel.scrollLeft / maxX)) : 0;
+    const ty = panel ? Math.min(1, Math.max(0, panel.scrollTop / maxY)) : 0;
+    const doc = current.comments;
+    if (current.tab === "compare") {
+      return {
+        view: {
+          surface: "compare",
+          poolItemId: current.compareItems[0]?.id ?? null,
+          pageId: null,
+          mode: null,
+          scale: 1,
+          tx,
+          ty,
+        },
+        pinThreadIds: doc
+          ? doc.threads.filter((thread) => thread.anchor.type === "compare-image" && !thread.resolved).map((thread) => thread.id)
+          : [],
+      };
+    }
+    return {
+      view: { surface: "manuscript", poolItemId: null, pageId, mode: null, scale: 1, tx, ty },
+      pinThreadIds: doc
+        ? doc.threads
+          .filter((thread) => thread.anchor.type === "point" && thread.anchor.pageId === pageId && !thread.resolved)
+          .map((thread) => thread.id)
+        : [],
+    };
+  }, [pageId]);
+
+  const applyVoiceView = useCallback((view: VoiceViewSnapshot, pinThreadIds: readonly string[]) => {
+    setVoicePinIds(pinThreadIds);
+    if (view.surface === "compare") {
+      setTab("compare");
+      return;
+    }
+    setTab("viewer");
+    // 탭 전환 렌더 뒤에 스크롤을 적용한다. 프로그래매틱 스크롤로 표시해
+    // 팔로우 일시정지(handlePanelScroll)가 걸리지 않게 한다.
+    requestAnimationFrame(() => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const maxX = Math.max(0, panel.scrollWidth - panel.clientWidth);
+      const maxY = Math.max(0, panel.scrollHeight - panel.clientHeight);
+      programmaticScrollRef.current = true;
+      panel.scrollTo({ left: view.tx * maxX, top: view.ty * maxY });
+    });
+  }, [setTab]);
+
+  const handleSaveVoiceTrack = useCallback((track: VoiceCommentaryTrack, audioBlob: Blob | null) => {
+    // 서버 저장 정책 확정 지점: 여기서 audioBlob을 업로드해 track.audio를
+    // kind:"server" 참조로 교체한 뒤 저장한다. 지금은 blob 참조 그대로 세션 보관.
+    void audioBlob;
+    setVoiceTracks((previous) => [...previous.filter((kept) => kept.id !== track.id), track]);
+    setVoicePanelOpen(true);
+  }, []);
+
+  const handleOpenVoicePin = useCallback((threadId: string) => {
+    setVoicePinIds([threadId]);
+    const thread = voiceCaptureRef.current.comments?.threads.find((candidate) => candidate.id === threadId);
+    // 핀 스레드 열기 동선은 기존 탭 구조를 재사용한다: 비교 핀이면 비교 탭,
+    // 원고 핀이면 원고 뷰어 탭으로 이동하고, 해당 핀을 아래 요약에 고정한다.
+    // (핀 브리지는 외부 선택 API가 없어 스레드 내부 선택까지는 강제하지 않는다.)
+    setTab(thread?.anchor.type === "compare-image" ? "compare" : "viewer");
+  }, [setTab]);
 
   const publishOwnLive = useCallback((interacted: boolean) => {
     if (!selfActorId) return;
@@ -681,6 +877,10 @@ export function ProductionEpisodeReviewRoom({
   const myLaneState = myLane ? gate.lanes.find((lane) => lane.lane === myLane) ?? null : null;
   const urgentOpen = comments ? countOpenUrgentPins(comments, EPISODE_SAMPLE_PAGE.pageId) : 0;
   const openPins = comments ? countOpenPins(comments, EPISODE_SAMPLE_PAGE.pageId) : 0;
+  // 비교 핀 게이트 합산: 비교 탭이 한 번이라도 열려 집계가 도착하면, 비교 이미지 위의
+  // 긴급 미해결 핀도 원고 핀과 같은 규칙으로 승인을 잠근다.
+  const compareUrgentOpen = comparePinGate?.urgentOpenCount ?? 0;
+  const compareOpenPins = comparePinGate?.openCount ?? 0;
   const manuscriptsHref = productionSurfacePath(aggregate.projectId, "manuscripts", `episode=${encodeURIComponent(episodeId)}&manuscriptView=feedback`);
   const lockReason = !canEdit
     ? bt("편집 권한이 있어야 승인할 수 있습니다.", "You need edit access to approve.")
@@ -690,9 +890,18 @@ export function ProductionEpisodeReviewRoom({
         : bt("이 회차에서 내 계정이 승인할 항목이 없습니다.", "Your account has no approval lane in this episode.")
       : myLaneState.approved
         ? bt("내 역할의 승인이 이미 기록되었습니다.", "Your approval is already recorded.")
-        : urgentOpen > 0
-            ? bt(`필수 수정 핀 ${urgentOpen}개를 먼저 해결해야 승인할 수 있습니다.`, `Resolve ${urgentOpen} required-fix pins before approving.`)
+        : urgentOpen + compareUrgentOpen > 0
+            ? bt(
+              `필수 수정 핀 ${urgentOpen + compareUrgentOpen}개${compareUrgentOpen > 0 ? ` (원고 ${urgentOpen} · 비교 ${compareUrgentOpen}${comparePinGate?.urgentSourceLabels.length ? ` · ${comparePinGate.urgentSourceLabels.join(", ")}` : ""})` : ""}를 먼저 해결해야 승인할 수 있습니다.`,
+              `Resolve ${urgentOpen + compareUrgentOpen} required-fix pins${compareUrgentOpen > 0 ? ` (page ${urgentOpen} · compare ${compareUrgentOpen})` : ""} before approving.`,
+            )
             : null;
+
+  const episodeVoiceTracks = voiceTracksForEpisode(voiceTracks, episodeId);
+  const voicePinSummaries = voicePinIds.flatMap((threadId) => {
+    const thread = comments?.threads.find((candidate) => candidate.id === threadId);
+    return thread ? [{ id: thread.id, body: thread.body, resolved: thread.resolved }] : [];
+  });
 
   const approve = async () => {
     if (lockReason || !approver || approving) return;
@@ -846,6 +1055,46 @@ export function ProductionEpisodeReviewRoom({
                 </Link>
               </div>
             )
+          ) : !isDemo ? (
+            <div className="space-y-3">
+              {compareLoadState === "loading" ? (
+                <p className="rounded-2xl border border-line bg-panel p-4 text-xs leading-5 text-fg-2" role="status">
+                  {bt("이 회차의 버전을 불러오는 중입니다. 외부 이미지는 지금 바로 추가해 비교할 수 있습니다.", "Loading this episode's versions. You can add an external image and start comparing right away.")}
+                </p>
+              ) : null}
+              {compareLoadState === "error" ? (
+                <p className="rounded-2xl border border-bad/30 bg-bad/10 p-4 text-xs leading-5 text-fg" role="alert">
+                  {bt("버전을 불러오지 못했습니다. 외부 이미지 비교와 핀은 계속 사용할 수 있고, 버전을 다시 불러오려면 회차 룸을 새로고침하세요.", "Couldn't load versions. External-image compare and pins still work; reload the episode room to retry.")}
+                </p>
+              ) : null}
+              {compareLoadState === "ready" && (compareProcesses?.length ?? 0) === 0 ? (
+                <div className="rounded-2xl border border-line bg-panel p-4">
+                  <p className="flex items-center gap-2 text-sm font-bold text-fg">
+                    <Columns2 className="size-4 text-accent" aria-hidden="true" />
+                    {bt("불러온 버전이 아직 없습니다 — 외부 이미지부터 비교할 수 있습니다", "No versions loaded yet — start by comparing an external image")}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-fg-2">
+                    {bt("아래 소스 풀에서 클라이언트 시안 같은 외부 이미지를 추가하면 바로 비교가 시작됩니다. 버전은 Studio 원고의 수정 기록에서 오며, 원고·버전에서 이 회차 버전을 저장하면 여기에 함께 나타납니다.", "Add an external image (such as a client draft) in the source pool below to start comparing right away. Versions come from the Studio history and appear here once saved for this episode.")}
+                  </p>
+                  <Link className={buttonClass({ variant: "outline", size: "sm", className: "mt-3 min-h-11" })} to={productionSurfacePath(aggregate.projectId, "manuscripts", `episode=${encodeURIComponent(episodeId)}&manuscriptView=versions`)}>
+                    {bt("원고·버전에서 버전 보기", "See versions in Manuscripts")}
+                  </Link>
+                </div>
+              ) : null}
+              <CompareReviewRoom
+                episodeId={episodeId}
+                seedItems={compareSeedItems}
+                storyboardProcessId={storyboardProcessId}
+                previousEpisodePages={previousEpisodePages ?? []}
+                comments={compareComments}
+                onCommentsChange={setCompareComments}
+                currentActor={compareActor}
+                assigneeOptions={assigneeOptions}
+                canEdit={canEdit}
+                onPinGateSummaryChange={handleComparePinGateChange}
+                manuscriptsHref={manuscriptsHref}
+              />
+            </div>
           ) : compareItems.length >= 2 ? (
             <ProcessCompareViewer items={compareItems} title={bt("공정 비교", "Process compare")} />
           ) : (
@@ -904,6 +1153,17 @@ export function ProductionEpisodeReviewRoom({
             </div>
           ) : null}
 
+          {!isDemo && comparePinGate ? (
+            <div className={cn("mt-3 flex items-start gap-2 rounded-xl border p-3 text-xs leading-5", compareUrgentOpen ? "border-bad/35 bg-bad/10 text-fg" : "border-good/35 bg-good/10 text-fg")}>
+              {compareUrgentOpen ? <ShieldAlert className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden="true" /> : <BadgeCheck className="mt-0.5 size-4 shrink-0 text-good" aria-hidden="true" />}
+              <span>
+                {compareUrgentOpen
+                  ? bt(`비교 필수 수정 핀 ${compareUrgentOpen}개 · 비교 미해결 핀 ${compareOpenPins}개${comparePinGate.urgentSourceLabels.length ? ` · ${comparePinGate.urgentSourceLabels.join(", ")}` : ""}`, `${compareUrgentOpen} compare required fixes · ${compareOpenPins} open compare pins`)
+                  : bt(`비교 필수 수정 없음 · 비교 미해결 핀 ${compareOpenPins}개`, `No compare required fixes · ${compareOpenPins} open compare pins`)}
+              </span>
+            </div>
+          ) : null}
+
           <button
             type="button"
             onClick={() => void approve()}
@@ -923,6 +1183,59 @@ export function ProductionEpisodeReviewRoom({
             {lockReason ?? bt("승인하면 되돌릴 수 없는 결정 기록으로 남습니다.", "Approval is kept as a permanent decision record.")}
           </p>
         </aside>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-line bg-panel p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="flex items-center gap-2 text-sm font-black text-fg">
+            <Mic className="size-4 text-accent" aria-hidden="true" />
+            {bt("음성 해설", "Voice commentary")}
+          </h3>
+          <button
+            type="button"
+            aria-expanded={voicePanelOpen}
+            onClick={() => setVoicePanelOpen((open) => !open)}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
+          >
+            {voicePanelOpen ? bt("해설 닫기", "Close commentary") : bt("해설 열기", "Open commentary")}
+          </button>
+        </div>
+        {voicePanelOpen ? (
+          <div className="mt-3">
+            <ReviewVoiceCommentaryPanel
+              episodeId={episodeId}
+              tracks={episodeVoiceTracks}
+              authorName={selfActorName}
+              authorId={selfActorId}
+              readOnly={!canEdit}
+              captureView={captureVoiceView}
+              onSaveTrack={handleSaveVoiceTrack}
+              onApplyView={applyVoiceView}
+              onOpenPin={handleOpenVoicePin}
+            />
+            {voicePinSummaries.length ? (
+              <ul aria-live="polite" className="mt-3 space-y-1">
+                {voicePinSummaries.map((pin) => (
+                  <li key={pin.id} className="flex items-start gap-2 text-xs leading-5 text-fg-2">
+                    <MessageSquareMore className="mt-0.5 size-3.5 shrink-0 text-accent" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="font-bold text-fg">{pin.resolved ? bt("해결된 핀", "Resolved pin") : bt("해설이 가리키는 핀", "Pin in this commentary")}</span>
+                      {" · "}
+                      <span className="break-words">{pin.body}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : (
+          <p className="mt-1 text-xs leading-5 text-fg-2">
+            {bt(
+              "화면을 이동하며 말로 남기는 비동기 검수 해설입니다. 해설이 없어도 핀 검수는 종전대로 동작합니다.",
+              "Asynchronous voice commentary recorded while moving around the review surface. Pins keep working as before, with or without commentary.",
+            )}
+          </p>
+        )}
       </div>
     </section>
   );

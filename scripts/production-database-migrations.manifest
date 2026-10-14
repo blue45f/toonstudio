@@ -106,3 +106,7 @@ apps/api/src/platform/database/migrations/0105_community_post_reports.sql
 apps/api/src/platform/database/migrations/0106_studio_godot_space_layout.sql
 apps/api/src/platform/database/migrations/0107_studio_godot_space_background.sql
 apps/api/src/platform/database/migrations/0108_studio_project_library.sql
+apps/api/src/platform/database/migrations/0109_production_organization.sql
+apps/api/src/platform/database/migrations/0110_stage_consensus_gate.sql
+apps/api/src/platform/database/migrations/0111_studio_op_log.sql
+apps/api/src/platform/database/migrations/0112_production_team_audit_read.sql

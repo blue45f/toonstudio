@@ -114,4 +114,29 @@ describe("checkDialogueSpelling", () => {
     expect(summary.warningCount).toBe(1);
     expect(summary.byRule["common-misspelling"]).toBe(1);
   });
+
+  it("'-께' 말끝(요 없는 형태)도 잡되, 존댓말 조사 '께'는 지적하지 않는다", () => {
+    const flagged = checkDialogueSpelling([
+      item({ id: "k1", text: "내가 꼭 할께!" }),
+      item({ id: "k2", text: "그건 내가 줄께." }),
+      item({ id: "k3", text: "내일 갈께!" }),
+      item({ id: "k4", text: "걱정 마, 될께." }),
+      item({ id: "k5", text: "여기 있을께." }),
+    ]).filter((f) => f.ruleId === "common-misspelling");
+    expect(flagged.map((f) => f.fix?.replacement)).toEqual([
+      "할게",
+      "줄게",
+      "갈게",
+      "될게",
+      "있을게",
+    ]);
+
+    // 존댓말 조사 '께'는 올바른 표기이므로 절대 지적하면 안 된다(정밀도 우선 원칙).
+    const honorific = checkDialogueSpelling([
+      item({ id: "h1", text: "선생님께 드릴 말씀" }),
+      item({ id: "h2", text: "어머니께 안부 전해줘" }),
+      item({ id: "h3", text: "할머니께 용돈 받았어" }),
+    ]);
+    expect(honorific.filter((f) => f.ruleId === "common-misspelling")).toHaveLength(0);
+  });
 });

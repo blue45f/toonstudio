@@ -23,19 +23,19 @@ import { applyStudioLaunchDensity, readStudioLaunchDensity } from "../../studio-
 
 import type { StudioDocumentWorkspaceId } from "../../studio-document-workspace";
 import { preserveStudioTaskToolbarPreference, projectStudioTaskAppSettings } from "../../studio-task-tools";
-import {
-  loadStudioUiDensityState,
-  saveStudioUiDensityState,
-  studioUiDensityAdvancedExpanded,
-  studioUiDensityFirstScreenExposure,
-  type StudioUiChromeRegion,
-  type StudioUiDensityMode,
-  type StudioUiFirstScreenExposure,
-} from "../../studio-ui-density";
+import { useStudioWorkModePreference } from "./useStudioWorkModePreference";
 import type { StudioUiBooleanPreferenceKey } from "../../studio-ui-preferences-sqlite";
+import { useStudioUiDensityPreference } from "./useStudioUiDensityPreference";
 
 interface UseStudioPreferencesRuntimeOptions {
   readonly taskWorkspace?: StudioDocumentWorkspaceId | null;
+  /**
+   * Current episode pipeline stage, when the host knows one. The host passes
+   * the episode-pipeline-rail derivation verbatim — no new derivation is made
+   * here. Null means "no stage source": the saved mode then applies as-is and
+   * no suggestion is produced.
+   */
+  readonly episodeStage?: string | null;
   readonly applyMirroredSettings: (settings: StudioAppSettings) => void;
   readonly closeRightPanelForFocusMode: () => void;
 }
@@ -47,15 +47,13 @@ interface UseStudioPreferencesRuntimeOptions {
  */
 export function useStudioPreferencesRuntime({
   taskWorkspace = null,
+  episodeStage = null,
   applyMirroredSettings,
   closeRightPanelForFocusMode,
 }: UseStudioPreferencesRuntimeOptions) {
   // Capture an explicit launch hint once. Merge it into loaded preferences instead of
   // persisting defaults before hydration, which would lose unrelated user settings.
   const [launchDensity] = useState(() => readStudioLaunchDensity(typeof window === "undefined" ? "" : window.location.search));
-  const [uiDensityMode, setUiDensityMode] = useState<StudioUiDensityMode>(
-    () => applyStudioLaunchDensity(defaultStudioAppSettings(), launchDensity).general.densityMode,
-  );
   const [appSettings, setAppSettings] = useState<StudioAppSettings>(
     () => applyStudioLaunchDensity(defaultStudioAppSettings(), launchDensity),
   );
@@ -66,18 +64,6 @@ export function useStudioPreferencesRuntime({
     "loading" | "saved" | "session-only"
   >("loading");
   const [railMoreOpen, setRailMoreOpen] = useState(false);
-  // First-screen diet: in simple mode the advanced toolbar clusters start folded behind
-  // one expander. The choice persists in the density preference storage, independent of
-  // the document, and defaults to folded for anyone who never expanded them.
-  const [uiAdvancedToolsExpanded, setUiAdvancedToolsExpandedState] = useState<boolean>(() => {
-    try {
-      return studioUiDensityAdvancedExpanded(
-        loadStudioUiDensityState(typeof window === "undefined" ? null : window.localStorage),
-      );
-    } catch {
-      return false;
-    }
-  });
   const appSettingsRef = useRef(appSettings);
   const appSettingsUserRevisionRef = useRef(0);
   const applyMirroredSettingsRef = useRef(applyMirroredSettings);
@@ -93,6 +79,44 @@ export function useStudioPreferencesRuntime({
   appSettingsRef.current = appSettings;
   applyMirroredSettingsRef.current = applyMirroredSettings;
   closeRightPanelForFocusModeRef.current = closeRightPanelForFocusMode;
+
+  const persistAppSettings = useCallback((next: StudioAppSettings): void => {
+    const revision = ++appSettingsUserRevisionRef.current;
+    setAppSettingsPersistenceState("loading");
+    void acquireProductStudioUiPreferencesRepository()
+      .then((repository) => repository.saveAppSettings(next))
+      .then(() => {
+        if (appSettingsUserRevisionRef.current === revision) {
+          setAppSettingsPersistenceState("saved");
+        }
+      })
+      .catch(() => {
+        if (appSettingsUserRevisionRef.current === revision) {
+          setAppSettingsPersistenceState("session-only");
+        }
+      });
+  }, []);
+
+  // Density mode, advanced-tools expansion, and first-screen exposure live in
+  // their own runtime module; this hook only wires them to the shared
+  // app-settings ref and persistence owned here.
+  const {
+    setStudioUiDensity,
+    setUiAdvancedToolsExpanded,
+    setUiDensityMode,
+    uiAdvancedToolsExpanded,
+    uiDensityMode,
+    uiFirstScreenExposure,
+  } = useStudioUiDensityPreference({
+    launchDensity,
+    appSettingsRef,
+    setAppSettings,
+    persistAppSettings,
+    closeRightPanelForFocusModeRef,
+  });
+
+  // Stage work mode lives in its own runtime module too (useStudioWorkModePreference).
+  const { dismissWorkModeSuggestion, setWorkMode, suggestedWorkMode, uiChromeExposure, workMode, workModeState } = useStudioWorkModePreference({ episodeStage, uiFirstScreenExposure, uiAdvancedToolsExpanded });
 
   const [effectFavoriteState, setEffectFavoriteState] = useState<StudioEffectFavoriteState>(() =>
     normalizeStudioEffectFavoriteState(undefined),
@@ -180,24 +204,7 @@ export function useStudioPreferencesRuntime({
     return () => {
       cancelled = true;
     };
-  }, [launchDensity]);
-
-  const persistAppSettings = useCallback((next: StudioAppSettings): void => {
-    const revision = ++appSettingsUserRevisionRef.current;
-    setAppSettingsPersistenceState("loading");
-    void acquireProductStudioUiPreferencesRepository()
-      .then((repository) => repository.saveAppSettings(next))
-      .then(() => {
-        if (appSettingsUserRevisionRef.current === revision) {
-          setAppSettingsPersistenceState("saved");
-        }
-      })
-      .catch(() => {
-        if (appSettingsUserRevisionRef.current === revision) {
-          setAppSettingsPersistenceState("session-only");
-        }
-      });
-  }, []);
+  }, [launchDensity, setUiDensityMode]);
 
   const persistStudioUiBooleanPreference = useCallback((
     key: StudioUiBooleanPreferenceKey,
@@ -209,37 +216,6 @@ export function useStudioPreferencesRuntime({
       .catch(() => setAppSettingsPersistenceState("session-only"));
   }, []);
 
-  const setStudioUiDensity = useCallback((mode: StudioUiDensityMode): void => {
-    if (mode === "focus" && !appSettingsRef.current.general.colorPanelPinned) closeRightPanelForFocusModeRef.current();
-    setUiDensityMode(mode);
-    const current = appSettingsRef.current;
-    const next = current.general.densityMode === mode
-      ? current
-      : { ...current, general: { ...current.general, densityMode: mode } };
-    appSettingsRef.current = next;
-    if (next !== current) setAppSettings(next);
-    persistAppSettings(next);
-  }, [persistAppSettings]);
-
-  const setUiAdvancedToolsExpanded = useCallback((expanded: boolean): void => {
-    setUiAdvancedToolsExpandedState(expanded);
-    try {
-      saveStudioUiDensityState(
-        typeof window === "undefined" ? null : window.localStorage,
-        { mode: appSettingsRef.current.general.densityMode, advancedExpanded: expanded },
-      );
-    } catch {
-      // Storage unavailable (private mode etc.) — the in-memory choice still applies.
-    }
-  }, []);
-
-  /** First-screen exposure for a chrome region under the current mode + expansion choice. */
-  const uiFirstScreenExposure = useCallback(
-    (region: StudioUiChromeRegion): StudioUiFirstScreenExposure =>
-      studioUiDensityFirstScreenExposure(uiDensityMode, region, uiAdvancedToolsExpanded),
-    [uiDensityMode, uiAdvancedToolsExpanded],
-  );
-
   const commitAppSettings = useCallback((proposed: StudioAppSettings): void => {
     const stored = appSettingsRef.current;
     const next = preserveStudioTaskToolbarPreference(stored,
@@ -249,7 +225,7 @@ export function useStudioPreferencesRuntime({
     persistAppSettings(next);
     setUiDensityMode(next.general.densityMode);
     applyMirroredSettingsRef.current(next);
-  }, [persistAppSettings, taskWorkspace]);
+  }, [persistAppSettings, setUiDensityMode, taskWorkspace]);
 
   // Effect Events cannot cross a custom-hook boundary. The public command remains stable while the
   // callback refs above keep its host-owned side effects current without restarting hydration.
@@ -312,5 +288,11 @@ export function useStudioPreferencesRuntime({
     uiBooleanPreferenceRevisionsRef,
     uiDensityMode,
     uiFirstScreenExposure,
+    dismissWorkModeSuggestion,
+    setWorkMode,
+    suggestedWorkMode,
+    uiChromeExposure,
+    workMode,
+    workModeState,
   } as const;
 }

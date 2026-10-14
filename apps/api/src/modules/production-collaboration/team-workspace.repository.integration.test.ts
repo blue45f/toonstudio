@@ -27,7 +27,7 @@ describe.skipIf(!url)("free team workspace actual Postgres", () => {
     await pool.query(migration("0084_production_model_v2_compatibility.sql"));
     await pool.query(migration("0085_production_team_workspace.sql"));
     await pool.query(migration("0086_production_operation_policy.sql"));
-    await pool.query(migration("0109_production_team_audit_read.sql"));
+    await pool.query(migration("0112_production_team_audit_read.sql"));
     repository = new TeamWorkspaceRepository(pool);
   });
   afterAll(async () => {

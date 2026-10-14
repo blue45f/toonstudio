@@ -409,6 +409,8 @@ export function StudioCanvasViewportStageHost({
     perspectiveEyeLevelY: viewport.perspectiveEyeLevelY,
     perspectiveLockHorizon: viewport.perspectiveLockHorizon,
     perspectiveRulerActive: viewport.perspectiveRulerActive,
+    drawingPerspectiveGuideSegments: viewport.drawingPerspectiveGuideSegments,
+    drawingPerspectiveGuideVanishingPoints: viewport.drawingPerspectiveGuideVanishingPoints,
     pixelDragPreview: viewport.pixelDragPreview,
     pixelOverlayFrame: viewport.pixelOverlayFrame,
     pixelOverlaySel: viewport.pixelOverlaySel,

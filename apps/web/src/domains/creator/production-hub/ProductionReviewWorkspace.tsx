@@ -33,6 +33,7 @@ import { reviewLaneLabel, roleTypeLabel, submissionStatusLabel } from "./product
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export type ProductionRoleLens = "story" | "art" | "producer";
 type ReviewMode = "vertical" | "compare" | "overlay";
@@ -184,6 +185,7 @@ function ProductionReviewWorkspaceForProject({
   canEdit,
   roleLens,
 }: ProductionReviewWorkspaceProps) {
+  const t = useT();
   const episodes = aggregate.episodes.filter((episode) => episode.state !== "cancelled");
   const preferredEpisodeId = aggregate.reviewPolicies.find((policy) => policy.scope.kind === "episode")?.scope.id;
   const [selectedEpisodeId, setSelectedEpisodeId] = useState(preferredEpisodeId ?? episodes[0]?.episodeId ?? "");
@@ -358,7 +360,7 @@ function ProductionReviewWorkspaceForProject({
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1 xl:block xl:max-h-[40rem] xl:space-y-2 xl:overflow-y-auto">
             {cutResults.map((cut) => { const issues = issueCountForCut(cut); return <button key={cut.cutId} type="button" aria-label={`${cut.cutId} 컷으로 이동`} aria-pressed={selectedCutId === cut.cutId} onClick={() => setSelectedCutId(cut.cutId)} className={cn("min-w-40 rounded-xl border p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent xl:min-w-0 xl:w-full", selectedCutId === cut.cutId ? "border-accent bg-accent-soft" : "border-line bg-card hover:bg-raised")}><div className="flex items-center justify-between gap-2"><span className="text-[0.6875rem] font-black text-accent">{cut.cutId}</span>{issues > 0 ? <span className="flex size-5 items-center justify-center rounded-full bg-bad text-[0.625rem] font-black text-on-accent">{issues}</span> : <CheckCircle2 className="size-4 text-good" aria-label="열린 이슈 없음" />}</div><p className="mt-1 line-clamp-2 text-xs font-semibold leading-4 text-fg">{cut.framing}</p></button>; })}
           </div>
-          {cuts.length === 0 ? <div className="mt-3 rounded-xl border border-dashed border-line p-4 text-center text-xs text-fg-3">이 회차에 검수할 컷 계획이 없습니다.</div> : null}
+          {cuts.length === 0 ? <div className="mt-3 rounded-xl border border-dashed border-line p-4 text-center text-xs text-fg-3">{t("productionHub.review.emptyCutPlans", "이 회차에 검수할 컷 계획이 없습니다.")}</div> : null}
         </aside>
 
         <div className="min-w-0 border-b border-line bg-canvas/65 p-3 sm:p-4 xl:border-b-0 xl:border-r">
@@ -370,7 +372,7 @@ function ProductionReviewWorkspaceForProject({
 
               {mode === "overlay" && selectedCut ? <div className="mx-auto max-w-lg"><div className="mb-2 flex items-center justify-between"><p className="text-xs font-black text-fg">{bt("선택 컷 겹쳐 보기", "Selected cut overlay")}</p><Pill tone="accent">{bt("계획 도식", "Plan diagram")}</Pill></div><div className="relative overflow-hidden rounded-2xl border border-line bg-card p-3"><ReviewPanel cut={selectedCut} selected issues={issueCountForCut(selectedCut)} revisionLabel={bt("제출본", "Submission")} onSelect={() => undefined} /><div className="pointer-events-none absolute inset-3 translate-x-2 translate-y-1 rounded-xl border-2 border-dashed border-warn/70 bg-warn/10 mix-blend-multiply dark:mix-blend-screen" /><div className="pointer-events-none absolute left-[18%] top-[22%] rounded-full border-2 border-bad bg-card/90 px-2 py-1 text-[0.6875rem] font-black text-bad">{bt("주석 위치 예시", "Annotation example")}</div><div className="pointer-events-none absolute bottom-[27%] right-[15%] rounded-full border-2 border-accent bg-card/90 px-2 py-1 text-[0.6875rem] font-black text-accent">{bt("계획 정보", "Plan details")}</div></div><p className="mt-3 text-center text-xs leading-5 text-fg-2">{bt("실제 원고 이미지 비교가 연결되기 전에는 계획·제출본 정보와 주석 범위만 비교합니다.", "Until real page images are connected, this compares plan and submission details and annotation areas only.")}</p></div> : null}
             </div>
-          ) : <div className="flex min-h-96 items-center justify-center rounded-2xl border border-dashed border-line"><div className="text-center"><Eye className="mx-auto size-8 text-fg-3" /><p className="mt-3 text-sm font-bold text-fg">검수할 컷이 없습니다</p><p className="mt-1 text-xs text-fg-2">기획 캔버스에서 컷을 만든 뒤 제출 revision과 비교하세요.</p></div></div>}
+          ) : <div className="flex min-h-96 items-center justify-center rounded-2xl border border-dashed border-line"><div className="text-center"><Eye className="mx-auto size-8 text-fg-3" /><p className="mt-3 text-sm font-bold text-fg">{t("productionHub.review.emptyCuts", "검수할 컷이 없습니다")}</p><p className="mt-1 text-xs text-fg-2">기획 캔버스에서 컷을 만든 뒤 제출 revision과 비교하세요.</p></div></div>}
         </div>
 
         <aside className="bg-panel/70 p-3 sm:p-4" aria-label="검수 인스펙터">
@@ -383,9 +385,9 @@ function ProductionReviewWorkspaceForProject({
                   const eligible = Boolean(assignment && lane.eligibleAssignmentIds.includes(assignment.id));
                   return <div key={lane.lane} className="rounded-xl border border-line bg-panel p-2.5"><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-fg">{reviewLaneLabel(lane.lane, bt)}</span><Pill tone={result?.approved ? "good" : result?.vetoedByAssignmentIds.length ? "bad" : "warn"}>{result?.approved ? "승인" : `${result?.approvals ?? 0}/${result?.requiredApprovals ?? lane.quorum}`}</Pill></div><p className="mt-1 text-[0.6875rem] text-fg-3">{lane.blocksPublication ? bt("공개 전 필수", "Required before publishing") : bt("권고", "Advisory")} · {eligible ? bt("내 역할로 결정 가능", "You can decide") : bt("내 역할은 보기만", "View only for your role")}</p>{eligible ? <div className="mt-2 grid grid-cols-2 gap-1.5"><button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={pending || !canEdit} onClick={() => void recordDecision(lane.lane, "approve")}><CheckCircle2 className="size-3.5" />승인</button><button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={pending || !canEdit} onClick={() => void recordDecision(lane.lane, "request-changes")}><XCircle className="size-3.5" />수정</button></div> : null}</div>;
                 })}
-                {!policy ? <p className="rounded-xl border border-dashed border-line p-3 text-xs text-fg-3">이 회차의 검수 정책이 없습니다.</p> : null}
+                {!policy ? <p className="rounded-xl border border-dashed border-line p-3 text-xs text-fg-3">{t("productionHub.review.emptyPolicy", "이 회차의 검수 정책이 없습니다.")}</p> : null}
               </div>
-              {eligibleLanes.length === 0 && policy ? <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/10 p-2.5 text-[0.6875rem] leading-5 text-fg-2"><ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-warn" />현재 역할에는 이 회차의 승인 권한이 없습니다.</div> : null}
+              {eligibleLanes.length === 0 && policy ? <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/10 p-2.5 text-[0.6875rem] leading-5 text-fg-2"><ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-warn" />{t("productionHub.review.noApprovalPermission", "현재 역할에는 이 회차의 승인 권한이 없습니다.")}</div> : null}
             </section>
 
             <section className="rounded-2xl border border-line bg-card p-3">
@@ -400,7 +402,7 @@ function ProductionReviewWorkspaceForProject({
               <div className="flex items-center gap-2"><MessagesSquare className="size-4 text-accent" aria-hidden="true" /><h3 className="text-xs font-black text-fg">열린 이슈</h3></div>
               <div className="mt-3 space-y-2">
                 {clarifications.filter((entry) => entry.status === "open" || entry.status === "answered").map((entry) => <div key={entry.id} className={cn("rounded-xl border p-2.5", entry.blocking ? "border-bad/30 bg-bad/10" : "border-line bg-panel")}><div className="flex items-center gap-2">{entry.blocking ? <AlertTriangle className="size-3.5 text-bad" /> : <MessagesSquare className="size-3.5 text-fg-3" />}<Pill tone={entry.blocking ? "bad" : "neutral"}>{entry.scope.id}</Pill></div><p className="mt-2 text-xs font-semibold leading-5 text-fg">{entry.question}</p><p className="mt-1 text-[0.6875rem] text-fg-3">{partyLabel(aggregate, entry.askedByAssignmentId)} → {partyLabel(aggregate, entry.answerOwnerAssignmentId)}</p></div>)}
-                {clarifications.filter((entry) => entry.status === "open" || entry.status === "answered").length === 0 ? <div className="rounded-xl border border-dashed border-line p-3 text-center text-xs text-fg-3">열린 질문이 없습니다.</div> : null}
+                {clarifications.filter((entry) => entry.status === "open" || entry.status === "answered").length === 0 ? <div className="rounded-xl border border-dashed border-line p-3 text-center text-xs text-fg-3">{t("productionHub.review.emptyOpenQuestions", "열린 질문이 없습니다.")}</div> : null}
               </div>
             </section>
           </div>

@@ -7,10 +7,12 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 
+import { PinTaskInboxSection } from "../production-hub/PinTaskInboxSection";
 import { rankCreatorRoleTasks, type CreatorRoleTaskReason } from "./creator-role-task-inbox";
 import { CreatorRoleTodayQueue } from "./CreatorRoleTodayQueue";
 import type {
   ProductionRole,
+  ProductionTask,
   ProductionTaskStatus,
   ProductionWorkspace,
 } from "./studio-production-workspace-runtime";
@@ -51,10 +53,13 @@ export function CreatorRoleTaskInbox({
   workspace,
   currentUserId,
   activeRoles,
+  onOpenPinTask,
 }: {
   readonly workspace: ProductionWorkspace;
   readonly currentUserId: string | null | undefined;
   readonly activeRoles: readonly ProductionRole[];
+  /** 미해결 핀 할 일을 눌렀을 때 해당 핀의 검수 화면으로 이동시키는 호스트 콜백. 없으면 핀 섹션은 표시 전용이다. */
+  readonly onOpenPinTask?: (task: ProductionTask) => void;
 }) {
   const items = useMemo(() => rankCreatorRoleTasks({
     workspace,
@@ -161,6 +166,7 @@ export function CreatorRoleTaskInbox({
         </div>
       )}
     </section>
+    <PinTaskInboxSection tasks={workspace.tasks} onOpenTask={onOpenPinTask} />
     </div>
   );
 }

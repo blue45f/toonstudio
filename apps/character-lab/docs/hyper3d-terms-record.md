@@ -198,3 +198,55 @@
 | `hyper3d-hair-wolf-layered-male` | `65af7240-df63-4931-8ac1-0d0826328eac` | statement-only-pending-evidence |
 | `hyper3d-hair-action-pony-male` | `122f0174-fcc0-4a20-83a6-0745481be836` | statement-only-pending-evidence |
 | `hyper3d-hair-romance-long-male` | `02dac44e-f730-453f-aefe-4eb25ddf83f1` | statement-only-pending-evidence |
+
+## 10. 파생 파츠 33종 제외 실행 (2026-10-14)
+
+§9의 정리 갈래 중 (B) 제외를 실행했다. 증빙 3종(생성 당시 유료 플랜 결제 기록, 계정 보유자와 운영 주체의 동일성, Deemos의 서면 확인)은 이 날까지도 확보되지 않았고, 상업 운영 전제에서 증빙 없는 파생 에셋을 계속 싣지 않기로 했다.
+
+실행 내용:
+
+- `kit.json`: provenance.sources에서 `hyper3d-rodin-output` 출처 33개를 제거했다(남은 출처는 CC0-1.0 1개·original 1개). 파생 변형 33개를 제거하고 해당 베이스는 `unavailable` 한글 사유("상업 이용 증빙이 확정되지 않아 제외")로 선언했다. `defaults.slots`의 hair·top·bottom·shoes는 null로, `slotCapabilities`는 베이스별 partial/unavailable + `unavailablePresets`로 갱신했다.
+- `kit.json`의 `hyper3dClearance` 키와 출처별 `evidenceStatus` 키는 함께 제거했다. 이 두 키는 계약 스키마(`kitProvenanceSchema`·`kitSourceSchema`, strict)에 선언되지 않아, 편집 전 main의 `kit.json`은 `parseKitManifest` 검증을 통과하지 못하는 상태였다(실측: unrecognized key 34건). 격리 표기의 이력은 이 문서 §9와 이 절이 대신 보존한다.
+- `src/contracts/character-kit.ts`: `KIT_REQUIRED_PRESETS`에서 파생 기본 파츠 4종(hair/soft-bob·top/tee·bottom/jeans·shoes/sneakers)을 빼고 `irises/round-large`만 남겼다(검증기가 필수 프리셋의 변형 존재를 강제하므로, 상수를 그대로 두면 파츠 제외 자체가 불가능했다). `KIT_DEFAULT_SLOTS`의 해당 4슬롯은 null로 바꿨다. 관련 테스트 기대값(`character-kit.test.ts` 4곳)도 같은 변경으로 맞췄다.
+- 파생 GLB 파일 33개를 저장소에서 삭제한다(아래 목록). 폴더를 순회해 manifest와 대조하는 `scripts/verify-character-kit.mjs` 정합을 위해 파일 삭제는 manifest 변경과 같은 커밋에 넣어야 한다.
+- 검증(2026-10-14, main 실물 기준 하네스): 편집본 `kit.json`은 스키마·교차검증을 통과했다(`parseKitManifest` ok). contracts 테스트 94건·appearance-presets 테스트 8건이 전부 통과했다.
+
+삭제하는 파일:
+
+- `parts/female/hair/short-layered.glb`
+- `parts/male/hair/short-layered.glb`
+- `parts/female/hair/soft-bob.glb`
+- `parts/male/hair/soft-bob.glb`
+- `parts/female/hair/romance-long.glb`
+- `parts/male/hair/romance-long.glb`
+- `parts/female/hair/action-pony.glb`
+- `parts/male/hair/action-pony.glb`
+- `parts/female/hair/hime-cut.glb`
+- `parts/female/hair/wolf-layered.glb`
+- `parts/male/hair/wolf-layered.glb`
+- `parts/female/hair/twin-tail.glb`
+- `parts/female/top/tee.glb`
+- `parts/female/top/hoodie.glb`
+- `parts/male/top/hoodie.glb`
+- `parts/female/top/shirt.glb`
+- `parts/male/top/shirt.glb`
+- `parts/female/top/blazer.glb`
+- `parts/male/top/blazer.glb`
+- `parts/female/top/sailor.glb`
+- `parts/male/top/sailor.glb`
+- `parts/female/bottom/jeans.glb`
+- `parts/female/bottom/shorts.glb`
+- `parts/female/bottom/pleated-skirt.glb`
+- `parts/female/bottom/long-skirt.glb`
+- `parts/female/bottom/slacks.glb`
+- `parts/female/shoes/sneakers.glb`
+- `parts/female/shoes/loafers.glb`
+- `parts/female/shoes/boots.glb`
+- `parts/female/shoes/sandals.glb`
+- `parts/female/accessory/ribbon.glb`
+- `parts/female/accessory/cap.glb`
+- `parts/female/accessory/headphones.glb`
+
+복원 절차: §9의 증빙 3종을 같은 문서에 첨부한 뒤, 이 절의 변경을 되돌린다(출처 33개와 변형 33개 복원, 기본값·필수 집합 복원, GLB 재반입). 생성 id와 원본 해시는 §9 표와 키트 폴더 `NOTICE.md` 원천 3 기록에 보존돼 있다.
+
+남은 확인 사항: `-male` 출처 항목이 없는 남성 변형 15개(hair/hime-cut·hair/twin-tail, top/tee, bottom 5종, shoes 4종, accessory/ribbon·cap·headphones의 남성 변형)는 키트 회계상 33종에 포함되지 않아 이번 제외에서 남겼다. 다만 §7의 기록(남성 청바지 생성 시도 실패 후 로컬 보정 등)상 여성용 파생물을 남성 베이스로 리타깃한 것일 가능성을 배제할 수 없으므로, 소유자가 생성 경위를 확인해 파생으로 판명되면 같은 방식으로 제외할 것을 권한다.

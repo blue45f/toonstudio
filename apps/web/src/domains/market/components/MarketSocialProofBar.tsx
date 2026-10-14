@@ -10,12 +10,14 @@ import { useMarketSocial } from "../hooks/use-market-social";
 
 import { cn } from "@/shared/lib/utils";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
+import { useT } from "@/shared/lib/i18n";
 
 export function MarketSocialProofBar({
   resourceId,
 }: {
   readonly resourceId: string;
 }) {
+  const t = useT();
   const session = useSession();
   const viewerKey = session.ready && session.status === "authenticated"
     ? session.data.user.id
@@ -26,7 +28,7 @@ export function MarketSocialProofBar({
     return (
       <div
         role="status"
-        aria-label="평점과 댓글 요약 불러오는 중"
+        aria-label={t("market.socialProof.loadingAria", "평점과 댓글 요약 불러오는 중")}
         className="mt-4 inline-flex min-h-9 items-center gap-2 rounded-lg border border-line/70 bg-card/70 px-3 text-xs text-fg-3"
       >
         <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />

@@ -22,6 +22,7 @@ import { searchParamsFromBody } from "../../../../../packages/core/src/search-pa
 
 import { CatalogService } from "./catalog.service";
 import { resolveAffiliateDestination, resolveCoverFetchUrl } from "./catalog-url-policy";
+import { transcodeCoverToWidth } from "./cover-transcode";
 
 import type { Request, Response } from "express";
 
@@ -114,8 +115,9 @@ export class CatalogController {
             "User-Agent": COVER_USER_AGENT,
             Accept: upstreamAccept,
             // 폭 힌트는 클라이언트 힌트(Width)로 업스트림에 전달한다 — 수용하는 CDN은
-            // 그 폭으로 내려주고 무시하는 CDN은 원본을 준다. 서버 자체 픽셀 변환은
-            // 이미지 파이프라인(sharp 등) 도입이 별도로 필요하다(현 단계 미도입).
+            // 그 폭으로 내려주고 무시하는 CDN은 원본을 준다. 힌트가 무시돼 큰
+            // JPEG/PNG가 도착한 경우는 아래 서빙 단계에서 서버가 직접 줄인다
+            // (cover-transcode.ts — image-js 기반, WebP/AVIF·GIF는 원본 중계).
             ...(width ? { Width: String(width) } : {}),
           },
           redirect: "manual",
@@ -151,7 +153,12 @@ export class CatalogController {
       if (!COVER_OK_TYPE.test(headerType) && !sniffed) {
         return res.status(415).send("not an image");
       }
-      res.setHeader("Content-Type", sniffed ?? headerType);
+      // 서버 픽셀 변환: 폭이 지정됐는데 업스트림이 더 큰 JPEG/PNG를 줬으면 그 폭으로
+      // 줄여서 낸다(카드 폭에 맞는 바이트만 수신되게). 변환 불가·불필요하면 원본 중계.
+      const servedType = sniffed ?? headerType;
+      const transcoded = width ? transcodeCoverToWidth(body, servedType, width) : null;
+      const servedBody = transcoded?.body ?? body;
+      res.setHeader("Content-Type", transcoded?.contentType ?? servedType);
       // 표지는 제3자 저작물이라 권리침해 신고·정책 변경(킬스위치) 시 빠르게 빠져야 한다 →
       // immutable 을 쓰지 않고 재검증 가능한 캐시로 둔다(브라우저 1시간·엣지 1일·SWR 1일).
       // (2026-10-14 확인 기록: 이 정책은 의도된 값이며 변경하지 않는다. 폭 변형은 URL의
@@ -160,7 +167,7 @@ export class CatalogController {
       // 응답 포맷이 요청 Accept 협상의 결과일 수 있으므로, 공용 캐시가 Accept가 다른
       // 클라이언트에게 협상 결과를 공유하지 않게 Vary 를 명시한다.
       res.setHeader("Vary", "Accept");
-      return res.status(200).send(body);
+      return res.status(200).send(servedBody);
     } catch {
       return res.status(502).send("fetch failed");
     }

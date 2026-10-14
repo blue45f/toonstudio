@@ -5,6 +5,7 @@ import {
   studioCc0AssetUrl,
   type StudioCc0Asset,
 } from "@/domains/creator/public/marketplace-asset-access";
+import { useT } from "@/shared/lib/i18n";
 
 interface Preview {
   reference: string; src: string; download: string; name: string;
@@ -29,6 +30,7 @@ function describeVerifiedAsset(asset: StudioCc0Asset): string {
 export function MarketVerifiedAssetPreview({ reference, compact = false }: {
   readonly reference: string; readonly compact?: boolean;
 }) {
+  const t = useT();
   const [preview, setPreview] = useState<Preview | null>(null);
   const [failedReference, setFailedReference] = useState<string | null>(null);
   useEffect(() => {
@@ -66,7 +68,7 @@ export function MarketVerifiedAssetPreview({ reference, compact = false }: {
     return () => { current = false; };
   }, [reference, compact]);
   if (!preview || preview.reference !== reference) return null;
-  if (failedReference === reference) return compact ? null : <p role="status" className="p-4 text-sm text-fg-2">원본 미리보기를 불러오지 못했습니다.</p>;
+  if (failedReference === reference) return compact ? null : <p role="status" className="p-4 text-sm text-fg-2">{t("market.verifiedPreview.loadFailed", "원본 미리보기를 불러오지 못했습니다.")}</p>;
   // Dark GLB turntable frames disappear on dark cards; stage them on a warm paper field.
   const stageClass = compact
     ? "absolute inset-0 h-full w-full object-contain bg-[linear-gradient(180deg,#efe8dc_0%,#d9d0c2_100%)]"

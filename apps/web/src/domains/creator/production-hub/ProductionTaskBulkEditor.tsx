@@ -17,6 +17,7 @@ import {
 import type { ProductionClientCommand } from "./production-api";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 interface Props {
   readonly aggregate: ProductionProjectAggregate;
@@ -43,6 +44,7 @@ export function ProductionTaskBulkEditor({
   onClose,
   onSaved,
 }: Props) {
+  const t = useT();
   useProductionCopy();
   const [snapshots] = useState(tasks);
   const [edit, setEdit] = useState(INITIAL_PRODUCTION_BULK_EDIT);
@@ -107,7 +109,7 @@ export function ProductionTaskBulkEditor({
         edit,
         new Date().toISOString()
       );
-      if (!currentPlan.tasks.length) throw new Error("변경할 작업이 없습니다.");
+      if (!currentPlan.tasks.length) throw new Error(t("productionHub.taskBulk.emptyChanges", "변경할 작업이 없습니다."));
       await execute(
         {
           type: "upsert-task-batch",
@@ -121,7 +123,7 @@ export function ProductionTaskBulkEditor({
       setError(
         cause instanceof Error
           ? cause.message
-          : "일괄 변경에 실패했습니다. 작성한 설정은 유지됩니다."
+          : t("productionHub.taskBulk.applyFailed", "일괄 변경에 실패했습니다. 작성한 설정은 유지됩니다.")
       );
     } finally {
       saving.current = false;

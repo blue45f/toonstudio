@@ -51,6 +51,7 @@ import type { ProductionClientCommand } from "./production-api";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 export type ProductionRoleLens = "story" | "art" | "producer";
 type WorkspaceView = "workcells" | "pipeline" | "crew";
@@ -618,6 +619,7 @@ export function ProductionCrewCoverage({
   readonly aggregate: ProductionProjectAggregate;
   readonly at?: string;
 }) {
+  const t = useT();
   const board = useMemo(() => buildProductionRoleWorkcellBoard({ aggregate, at }), [aggregate, at]);
   const covered = board.workcells.filter((entry) => entry.coverage === "covered").length;
   const scheduled = board.workcells.filter((entry) => entry.coverage === "scheduled").length;
@@ -697,7 +699,7 @@ export function ProductionCrewCoverage({
                 })}
                 {assignments.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-line px-3 py-4 text-center text-xs text-fg-3">
-                    배정된 인력이 없습니다.
+                    {t("productionHub.role.emptyAssignees", "배정된 인력이 없습니다.")}
                   </p>
                 ) : null}
               </div>
@@ -796,6 +798,7 @@ function PipelineView({
   readonly selectedTaskId: string | null;
   readonly onSelectTask: (taskId: string) => void;
 }) {
+  const t = useT();
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-line bg-card p-4">
@@ -874,7 +877,7 @@ function PipelineView({
           ))}
           {tasks.length === 0 ? (
             <div className="col-span-full rounded-xl border border-dashed border-line p-8 text-center">
-              <p className="text-sm font-bold text-fg">표시할 공정 작업이 없습니다.</p>
+              <p className="text-sm font-bold text-fg">{t("productionHub.role.emptyProcessTasks", "표시할 공정 작업이 없습니다.")}</p>
               <p className="mt-1 text-xs text-fg-3">회차 필터를 바꾸거나 직군 작업을 추가해 주세요.</p>
             </div>
           ) : null}

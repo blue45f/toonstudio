@@ -11,6 +11,14 @@
  * (BYOK)를 공유 텍스트 완성으로 재사용하는 어댑터만 제공한다.
  */
 
+import {
+  DEFAULT_ANSWER_TUNING,
+  type AnswerCreativity,
+  type AnswerDifficulty,
+  type AnswerLength,
+  type AnswerTuning,
+} from "../creator/ai/answer-tuning";
+
 /** 멘토 페르소나 식별자. */
 export type MentorPersonaId =
   | "story-mentor"
@@ -24,13 +32,6 @@ export type MentorPersonaId =
  * (domains/creator/ai/answer-tuning)이 정본이다. 멘토 챗은 같은 값 계약을
  * 자기 이름으로 재노출만 한다 — 조절값의 의미·기본값이 표면마다 갈라지지 않게.
  */
-import {
-  DEFAULT_ANSWER_TUNING,
-  type AnswerCreativity,
-  type AnswerDifficulty,
-  type AnswerLength,
-  type AnswerTuning,
-} from "../creator/ai/answer-tuning";
 
 /** 답변 난이도 — 일상어 조절값. 프롬프트 지시로 변환된다. */
 export type MentorDifficulty = AnswerDifficulty;

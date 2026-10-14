@@ -15,6 +15,7 @@ import type {
   CreatorMarketplaceResourceRecord,
   CreatorMarketplaceResourceSort,
 } from "@/shared/lib/creator-marketplace-resource-contract";
+import { useT } from "@/shared/lib/i18n";
 
 export interface MarketResourceQuery {
   readonly search?: string;
@@ -41,8 +42,6 @@ export interface MarketResourcesPage {
   readonly reload: () => void;
 }
 
-const MARKET_RETRY_HINT = "공개 마켓을 불러올 수 없어요. 잠시 후 다시 시도해 주세요.";
-const MARKET_LOAD_MORE_RETRY_HINT = "추가 리소스를 불러오지 못했어요.";
 /**
  * 첫 페이지 자동 재시도 백오프. 공개 목록은 서버 절전 해제(cold start) 구간에 첫 방문자가
  * 걸리기 쉬워, 캐시가 없을 때만 짧게 쉬고 다시 읽는다. 캐시가 있으면 stale 표시가 우선이라
@@ -73,6 +72,7 @@ function remoteQuery(
  * response. Local authoring drafts and bundled starter fixtures are intentionally excluded.
  */
 export function useMarketResources(query: MarketResourceQuery | null): MarketResourcesPage {
+  const t = useT();
   const [items, setItems] = useState<readonly CreatorMarketplaceResourceRecord[]>([]);
   const [loading, setLoading] = useState(Boolean(query));
   const [loadingMore, setLoadingMore] = useState(false);
@@ -167,7 +167,7 @@ export function useMarketResources(query: MarketResourceQuery | null): MarketRes
             }, retryDelay);
             return;
           }
-          setError(MARKET_RETRY_HINT);
+          setError(t("market.resources.loadFailed", "공개 마켓을 불러올 수 없어요. 잠시 후 다시 시도해 주세요."));
           setLoading(false);
         });
     };
@@ -243,7 +243,7 @@ export function useMarketResources(query: MarketResourceQuery | null): MarketRes
           || requestGenerationRef.current !== generation
           || activeQueryRef.current !== serializedQuery
         ) return;
-        setLoadMoreError(MARKET_LOAD_MORE_RETRY_HINT);
+        setLoadMoreError(t("market.resources.loadMoreFailed", "추가 리소스를 불러오지 못했어요."));
       })
       .finally(() => {
         if (

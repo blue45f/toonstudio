@@ -59,6 +59,8 @@ export interface StudioAutoActionsPanelProps {
   /** Live recorded steps, shown while recording so a mistaken step can be dropped. */
   macroCommands?: readonly StudioMacroCommand[];
   onRemoveMacroCommand?: (index: number) => void;
+  /** Truncation notice from getStudioMacroTruncationNotice; shown as a warning while set. */
+  macroTruncationNotice?: string | null;
   onStartMacroRecord?: () => void;
   onStopMacroRecord?: () => void;
   onClose: () => void;
@@ -155,6 +157,7 @@ export function StudioAutoActionsPanel({
   macroCommandCount = 0,
   macroCommands = [],
   onRemoveMacroCommand,
+  macroTruncationNotice = null,
   onStartMacroRecord,
   onStopMacroRecord,
   onClose,
@@ -338,6 +341,15 @@ export function StudioAutoActionsPanel({
                 {macroCommandCount >= STUDIO_MACRO_MAX_COMMANDS ? (
                   <p role="alert" className="mt-2 text-[0.7rem] font-semibold text-warn">
                     녹음 상한({STUDIO_MACRO_MAX_COMMANDS}단계)에 도달해 이후 조작은 기록되지 않아요. 녹음을 종료해 주세요.
+                  </p>
+                ) : null}
+                {macroTruncationNotice ? (
+                  <p
+                    role="alert"
+                    className="mt-2 flex items-center gap-2 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-[0.7rem] font-semibold text-warn"
+                  >
+                    <AlertTriangle size={12} className="shrink-0" aria-hidden />
+                    {macroTruncationNotice}
                   </p>
                 ) : null}
                 {macroCommands.length > 0 ? (

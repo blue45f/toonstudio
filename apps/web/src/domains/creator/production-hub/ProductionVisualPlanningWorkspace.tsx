@@ -40,6 +40,7 @@ import type { ProductionClientCommand } from "./production-api";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 type PlanningView = "board" | "scroll" | "outline";
 
@@ -323,6 +324,7 @@ export function ProductionVisualPlanningWorkspace({
   compact = false,
   defaultView = "board",
 }: ProductionVisualPlanningWorkspaceProps) {
+  const t = useT();
   const currentEpisodePlans = useMemo(
     () => latestProjection(aggregate.episodePlans, (plan) => plan.episodeId)
       .filter((plan) => plan.status !== "archived" && plan.status !== "superseded")
@@ -757,7 +759,7 @@ export function ProductionVisualPlanningWorkspace({
                               ))}
                             </div>
                             {sceneCuts.length === 0 ? (
-                              <div className="mt-3 rounded-xl border border-dashed border-line p-4 text-center text-xs text-fg-3">이 장면에 설계된 컷이 없습니다.</div>
+                              <div className="mt-3 rounded-xl border border-dashed border-line p-4 text-center text-xs text-fg-3">{t("productionHub.visualPlanning.emptySceneCuts", "이 장면에 설계된 컷이 없습니다.")}</div>
                             ) : null}
                             <button
                               type="button"
@@ -787,7 +789,7 @@ export function ProductionVisualPlanningWorkspace({
                   ) : (
                     <EmptyCanvas
                       icon={Film}
-                      title="아직 장면이 없습니다"
+                      title={t("productionHub.visualPlanning.emptyScenes", "아직 장면이 없습니다")}
                       description="첫 장면을 만들면 목적·감정 비트·컷 구성을 같은 화면에서 직접 편집할 수 있습니다."
                       action={(
                         <button type="button" className={buttonClass({ size: "sm" })} disabled={!canEdit} onClick={() => void createScene()}>
@@ -819,7 +821,7 @@ export function ProductionVisualPlanningWorkspace({
                       </div>
                     </div>
                   ) : (
-                    <EmptyCanvas icon={ScrollText} title="독자뷰에 표시할 컷이 없습니다" description="장면을 선택하고 첫 컷을 추가해 세로 리듬을 확인하세요." />
+                    <EmptyCanvas icon={ScrollText} title={t("productionHub.visualPlanning.emptyReaderCuts", "독자뷰에 표시할 컷이 없습니다")} description="장면을 선택하고 첫 컷을 추가해 세로 리듬을 확인하세요." />
                   )
                 ) : null}
 
@@ -863,13 +865,13 @@ export function ProductionVisualPlanningWorkspace({
                       })}
                     </div>
                   ) : (
-                    <EmptyCanvas icon={ListTree} title="구조화할 장면이 없습니다" description="장면과 컷이 생성되면 기획 계층을 한눈에 탐색할 수 있습니다." />
+                    <EmptyCanvas icon={ListTree} title={t("productionHub.visualPlanning.emptyOutlineScenes", "구조화할 장면이 없습니다")} description="장면과 컷이 생성되면 기획 계층을 한눈에 탐색할 수 있습니다." />
                   )
                 ) : null}
               </div>
             </>
           ) : (
-            <div className="p-4"><EmptyCanvas icon={Film} title="회차 기획이 없습니다" description="회차 초안을 만든 뒤 장면과 컷을 시각적으로 구성하세요." /></div>
+            <div className="p-4"><EmptyCanvas icon={Film} title={t("productionHub.visualPlanning.emptyEpisodePlan", "회차 기획이 없습니다")} description="회차 초안을 만든 뒤 장면과 컷을 시각적으로 구성하세요." /></div>
           )}
         </div>
 
@@ -990,7 +992,7 @@ export function ProductionVisualPlanningWorkspace({
                       <p className="mt-1 text-[0.6875rem] leading-5 text-fg-3">{asset.specification}</p>
                     </div>
                   ))}
-                  {linkedAssets.length === 0 ? <p className="text-xs text-fg-3">이 컷에 직접 연결된 에셋 요구사항이 없습니다.</p> : null}
+                  {linkedAssets.length === 0 ? <p className="text-xs text-fg-3">{t("productionHub.visualPlanning.emptyLinkedAssets", "이 컷에 직접 연결된 에셋 요구사항이 없습니다.")}</p> : null}
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-center text-[0.6875rem]">
                   <div className="rounded-xl bg-panel p-2"><Layers3 className="mx-auto size-4 text-fg-3" aria-hidden="true" /><p className="mt-1 font-bold text-fg">{selectedCut.layerRequirements.length}</p><p className="text-fg-3">레이어</p></div>
@@ -1014,7 +1016,7 @@ export function ProductionVisualPlanningWorkspace({
               <button type="button" className={buttonClass({ size: "sm" })} disabled={!canEdit} onClick={() => void createCut()}><Plus className="size-4" aria-hidden="true" />첫 컷 추가</button>
             </div>
           ) : (
-            <EmptyCanvas icon={Clock3} title="선택한 항목이 없습니다" description="장면이나 컷을 선택하면 revision, 연출, 에셋과 위험 정보를 여기서 바로 편집할 수 있습니다." />
+            <EmptyCanvas icon={Clock3} title={t("productionHub.visualPlanning.emptySelection", "선택한 항목이 없습니다")} description="장면이나 컷을 선택하면 revision, 연출, 에셋과 위험 정보를 여기서 바로 편집할 수 있습니다." />
           )}
         </aside>
       </div>

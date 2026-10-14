@@ -2,8 +2,13 @@
  * PDF 워크벤치 엔진 — pdf-lib 어댑터. 모델(pdf-workbench-model)의 순수 계획을 실제
  * PDF 바이트 연산으로 바꾼다. 전부 클라이언트에서 돌고 서버로 보내지 않는다.
  *
- * 담당: 원본 검사(페이지 수·제목), 내용 지문(SHA-256 — 앵커의 documentId 재료),
+ * 담당: 원본 검사(페이지 수·문서 속성), 내용 지문(SHA-256 — 앵커의 documentId 재료),
  * 출력 계획 실행(병합·재배열·회전), 범위 분할 파일 생성.
+ *
+ * 문서 속성: 출력(병합·분할)은 pdf-workbench-metadata의 속성을 받아 저장 직전에
+ * 찍는다. `metadata`가 정본이고, 기존 호출자의 `title` 단독 지정은 그대로 동작한다
+ * (metadata가 있으면 그쪽이 우선). 소스 검사는 읽은 속성을 함께 돌려줘서
+ * 화면이 "소스 PDF에 이미 들어 있는 속성"을 표시할 수 있게 한다.
  *
  * 성능: 출력 계획은 같은 소스의 연속 구간을 한 번의 copyPages로 배치 복사한다
  * (페이지마다 호출하면 수백 페이지 병합에서 호출·순회 비용이 페이지 수만큼 쌓인다).
@@ -28,6 +33,12 @@ import {
   type PdfWorkbenchSource,
   type PdfWorkbenchState,
 } from "./pdf-workbench-model";
+import {
+  readPdfMetadataFromDocument,
+  stampPdfMetadata,
+  type PdfDocumentMetadata,
+  type PdfSourceMetadata,
+} from "./pdf-workbench-metadata";
 
 export type PdfWorkbenchLoadErrorKind = "encrypted" | "invalid";
 
@@ -46,6 +57,22 @@ export interface PdfWorkbenchInspectedSource {
   readonly source: PdfWorkbenchSource;
   /** 원본 내용 지문 (SHA-256 hex) — 댓글 앵커의 documentId로 쓴다. */
   readonly fingerprint: string;
+  /** 원본 PDF에 이미 기록돼 있던 문서 속성 — 화면의 소스 속성 표가 표시한다. */
+  readonly metadata: PdfSourceMetadata;
+}
+
+/**
+ * 이미 열린 문서에서 속성을 읽는다. 정보 사전이 깨져 읽기에 실패해도 파일
+ * 추가 자체(페이지 수·지문)는 막지 않는다 — 빈 속성을 돌려주면 화면은
+ * "기록된 속성이 없어요"로 표시한다 (썸네일 실패를 자리표시로 대체하는 것과
+ * 같은 관례: 부가 정보 실패가 본 작업을 죽이지 않는다).
+ */
+function readSourceMetadata(doc: PDFDocument): PdfSourceMetadata {
+  try {
+    return readPdfMetadataFromDocument(doc);
+  } catch {
+    return {};
+  }
 }
 
 /** 바이트 내용 지문. 이름이 바뀌어도 내용이 같으면 같은 문서로 식별된다. */
@@ -83,6 +110,7 @@ export async function inspectPdfSource(input: {
   const fingerprint = await fingerprintPdfBytes(input.bytes);
   return {
     fingerprint,
+    metadata: readSourceMetadata(doc),
     source: {
       id: input.id,
       name: input.name,
@@ -161,11 +189,20 @@ function groupCopyRuns(steps: readonly PdfOutputStep[]): PdfCopyRun[] {
   return runs;
 }
 
+/** 출력 속성 결정: metadata가 정본이고, 없을 때만 기존 title 단독 지정을 제목으로 쓴다. */
+function resolveOutputMetadata(input: {
+  readonly title?: string;
+  readonly metadata?: PdfDocumentMetadata;
+}): PdfDocumentMetadata {
+  if (input.metadata) return input.metadata;
+  return input.title ? { title: input.title } : {};
+}
+
 /** 계획의 걸음들을 순서대로 복사해 새 문서를 만든다. 소스가 달라도 순서는 계획이다. */
 async function buildDocumentFromSteps(
   cacheSet: DocumentCache,
   steps: readonly PdfOutputStep[],
-  title: string | undefined,
+  metadata: PdfDocumentMetadata,
 ): Promise<Uint8Array> {
   const output = await PDFDocument.create();
   for (const run of groupCopyRuns(steps)) {
@@ -184,7 +221,9 @@ async function buildDocumentFromSteps(
       output.addPage(copied);
     }
   }
-  if (title) output.setTitle(title);
+  // 저장 직전 1회 스탬프 — 속성이 비면 stampPdfMetadata가 no-op이라
+  // producer·수정일도 건드리지 않아 기존 출력과 바이트 동작이 달라지지 않는다.
+  stampPdfMetadata(output, metadata);
   return output.save();
 }
 
@@ -192,11 +231,14 @@ async function buildDocumentFromSteps(
 export async function buildMergedPdfBytes(input: {
   readonly state: PdfWorkbenchState;
   readonly bytesBySourceId: ReadonlyMap<string, Uint8Array>;
+  /** @deprecated metadata.title을 쓸 것. metadata가 없을 때만 제목으로 반영된다. */
   readonly title?: string;
+  /** 결과 PDF에 기록할 문서 속성 (제목·저자·주제·키워드). */
+  readonly metadata?: PdfDocumentMetadata;
 }): Promise<Uint8Array> {
   const steps = buildPdfOutputPlan(input.state);
   if (steps.length === 0) throw new Error("내려받을 페이지가 없어요. 먼저 PDF를 추가해 주세요.");
-  return buildDocumentFromSteps(createDocumentCache(input.bytesBySourceId), steps, input.title);
+  return buildDocumentFromSteps(createDocumentCache(input.bytesBySourceId), steps, resolveOutputMetadata(input));
 }
 
 /** 범위마다 파일 하나씩 — [{ name, bytes }]를 돌려준다. */
@@ -205,16 +247,20 @@ export async function buildSplitPdfFiles(input: {
   readonly bytesBySourceId: ReadonlyMap<string, Uint8Array>;
   readonly ranges: readonly PdfPageRange[];
   readonly baseName: string;
+  /** @deprecated metadata.title을 쓸 것. metadata가 없을 때만 제목으로 반영된다. */
   readonly title?: string;
+  /** 분할 파일 전부에 기록할 문서 속성 (제목·저자·주제·키워드). */
+  readonly metadata?: PdfDocumentMetadata;
 }): Promise<readonly { readonly name: string; readonly bytes: Uint8Array }[]> {
   const plans = buildPdfSplitPlans(input.state, input.ranges);
   const cacheSet = createDocumentCache(input.bytesBySourceId);
+  const metadata = resolveOutputMetadata(input);
   const files: { name: string; bytes: Uint8Array }[] = [];
   for (const plan of plans) {
     if (plan.steps.length === 0) continue;
     files.push({
       name: suggestPdfOutputName(input.baseName, plan.label),
-      bytes: await buildDocumentFromSteps(cacheSet, plan.steps, input.title),
+      bytes: await buildDocumentFromSteps(cacheSet, plan.steps, metadata),
     });
   }
   return files;

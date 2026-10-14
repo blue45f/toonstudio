@@ -236,6 +236,10 @@ export type StudioCuttoonEditorViewSessionCore = {
   drawingPaletteCancelEpoch: any;
   drawingPaletteLayout: any;
   drawingRef: any;
+  drawingPerspectiveGuide: any;
+  drawingPerspectiveGuideSegments: any;
+  drawingPerspectiveGuideVanishingPoints: any;
+  onDrawingPerspectiveGuideChange: any;
   duplicateSelected: any;
   editMenuImageInputRef: any;
   editing: any;
