@@ -7,6 +7,19 @@
 export const STUDIO_MACRO_RECORDER_VERSION = 1 as const;
 export const STUDIO_MACRO_MAX_COMMANDS = 80;
 
+/** 잘린 매크로 이름 끝에 붙는 접미사 — 표시 이름 120자 예산 안에 든다. */
+export const STUDIO_MACRO_TRUNCATED_NAME_SUFFIX = "…잘림";
+
+/**
+ * 녹화 상한 초과 안내. 상한 안에 들면 null — 잘림이 없는데 안내를 지어내지 않는다.
+ * 넘치면 잘린 개수를 적은 문장을 돌려준다.
+ */
+export function getStudioMacroTruncationNotice(session: Pick<StudioMacroSession, "commands">): string | null {
+  const overflow = session.commands.length - STUDIO_MACRO_MAX_COMMANDS;
+  if (overflow <= 0) return null;
+  return `매크로 녹화 상한 ${STUDIO_MACRO_MAX_COMMANDS}개에 도달해 이후 ${overflow}개 명령이 잘렸습니다.`;
+}
+
 export type StudioMacroCommand =
   | { type: "set-opacity"; opacity: number }
   | { type: "set-hidden"; hidden: boolean }

@@ -111,6 +111,14 @@ export type StudioMainMenuPresentationLabelId =
   | StudioMainMenuCompositeGroupId
   | StudioMainMenuActionGroupId;
 
+/**
+ * 전문 영역으로 통째로 접히는 composite title id.
+ * beginner 모드(simple·focus)의 specialist 경계가 이 목록에서
+ * 처음 등장하는 title 앞에 그어진다. full 모드에는 경계가 없다.
+ */
+export const STUDIO_MAIN_MENU_SPECIALIST_GROUP_IDS: readonly StudioMainMenuCompositeGroupId[] =
+  Object.freeze(["filter"]);
+
 /** The complete primary workflow, retained for consumers that still reason in tiers. */
 export const STUDIO_MAIN_MENU_FAMILIAR_CORE_ORDER =
   STUDIO_MAIN_MENU_PRESENTATION_ORDER;
@@ -370,13 +378,17 @@ export function createStudioMainMenuPresentation<
     } as TGroup];
   });
 
+  const specialistGroupIds: ReadonlySet<string> = new Set(STUDIO_MAIN_MENU_SPECIALIST_GROUP_IDS);
   return {
     groups: presented,
     actionGroups,
     compositeSources,
     presentedGroupIds: presented.map((group) => group.id),
     presentedActionGroupIds: actionGroups.map((group) => group.id),
-    specialistBoundaryGroupId: null,
+    specialistBoundaryGroupId:
+      options.densityMode === "full"
+        ? null
+        : (presented.map((group) => group.id).find((id) => specialistGroupIds.has(id)) ?? null),
     compositeAdvancedSections,
     foldedCompositeItemCount,
   };

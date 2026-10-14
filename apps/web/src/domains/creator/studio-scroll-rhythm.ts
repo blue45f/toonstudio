@@ -13,6 +13,8 @@
  * plus an explicit element type of "sfx". SFX lettering is never counted as dialogue.
  */
 
+import type { StudioShotSize } from "./studio-storyboard-planner";
+
 export const STUDIO_SCROLL_RHYTHM_LIMITS = Object.freeze({
   maxPages: 2_000,
   maxElementsPerPage: 20_000,
@@ -671,4 +673,225 @@ export function analyzeStudioScrollRhythm(
     insights,
     truncated,
   };
+}
+
+export interface ScrollRhythmShotInput {
+  readonly shotId: string;
+  readonly beatId: string;
+  readonly order: number;
+  readonly heightPx: number;
+  readonly gapAfterPx: number;
+  readonly dialogueRatio: number;
+  readonly shotSize: StudioShotSize;
+}
+
+export interface ScrollRhythmEpisodeInput {
+  readonly episodeId: string;
+  readonly label: string;
+  readonly shots: readonly ScrollRhythmShotInput[];
+  readonly pageMeta?: {
+    readonly shotCount: number;
+    readonly totalHeightPx: number;
+  };
+}
+
+export interface ScrollRhythmShotMetric {
+  readonly shotId: string;
+  readonly beatId: string;
+  readonly order: number;
+  readonly dialogueRatio: number;
+  readonly heightPx: number;
+  readonly gapAfterPx: number;
+  readonly totalPx: number;
+  readonly emptyCut: boolean;
+  readonly shotSize: StudioShotSize;
+}
+
+export type ScrollRhythmSegmentMarker = "dialogue-above-average";
+
+export interface ScrollRhythmSegment {
+  readonly id: string;
+  readonly startOrder: number;
+  readonly endOrder: number;
+  readonly beatIds: readonly string[];
+  readonly markers: readonly ScrollRhythmSegmentMarker[];
+  readonly dialogueRatioMean: number;
+  readonly dialogueRatioVsEpisodeMean: number | null;
+  readonly totalPx: number;
+}
+
+export interface ScrollRhythmEmptyRun {
+  readonly startOrder: number;
+  readonly endOrder: number;
+  readonly beatIds: readonly string[];
+  readonly length: number;
+}
+
+export interface ScrollRhythmBaseline {
+  readonly episodeCount: number;
+  readonly meanDialogueRatio: number | null;
+  readonly meanShotCount: number;
+  readonly meanTotalHeightPx: number;
+}
+
+export interface ScrollRhythmEpisodeReport {
+  readonly episodeId: string;
+  readonly label: string;
+  readonly source: "planner" | "page-meta";
+  readonly shots: readonly ScrollRhythmShotMetric[];
+  readonly segments: readonly ScrollRhythmSegment[];
+  readonly emptyRuns: readonly ScrollRhythmEmptyRun[];
+  readonly shotCount: number;
+  readonly totalHeightPx: number;
+  readonly meanDialogueRatio: number | null;
+  readonly meanGapPx: number | null;
+  readonly emptyCutCount: number;
+  readonly shotSizeChangeRate: number | null;
+  readonly baseline: ScrollRhythmBaseline | null;
+  readonly dialogueRatioVsBaseline: number | null;
+  readonly totalHeightVsBaseline: number | null;
+}
+
+export interface ScrollRhythmReport {
+  readonly episodes: readonly ScrollRhythmEpisodeReport[];
+}
+
+function scrollRhythmMean(values: readonly number[]): number | null {
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function divideRatios(numerator: number | null, denominator: number | null): number | null {
+  if (numerator === null || denominator === null || denominator === 0) return null;
+  return numerator / denominator;
+}
+
+function buildScrollRhythmPlannerEpisode(
+  input: ScrollRhythmEpisodeInput,
+  priorPlanner: readonly ScrollRhythmEpisodeReport[],
+): ScrollRhythmEpisodeReport {
+  const shots: ScrollRhythmShotMetric[] = [...input.shots]
+    .sort((a, b) => a.order - b.order)
+    .map((shot) => ({
+      shotId: shot.shotId,
+      beatId: shot.beatId,
+      order: shot.order,
+      dialogueRatio: shot.dialogueRatio,
+      heightPx: shot.heightPx,
+      gapAfterPx: shot.gapAfterPx,
+      totalPx: shot.heightPx + shot.gapAfterPx,
+      emptyCut: shot.dialogueRatio <= 0,
+      shotSize: shot.shotSize,
+    }));
+  const meanDialogueRatio = scrollRhythmMean(shots.map((shot) => shot.dialogueRatio));
+  const meanGapPx = scrollRhythmMean(shots.map((shot) => shot.gapAfterPx));
+  const totalHeightPx = shots.reduce((sum, shot) => sum + shot.totalPx, 0);
+  const emptyCutCount = shots.filter((shot) => shot.emptyCut).length;
+  const sizeChanges = shots.slice(1).filter((shot, index) => shot.shotSize !== shots[index].shotSize).length;
+  const shotSizeChangeRate = shots.length >= 2 ? sizeChanges / (shots.length - 1) : null;
+
+  const segments: ScrollRhythmSegment[] = [];
+  const emptyRuns: ScrollRhythmEmptyRun[] = [];
+  let runStart = 0;
+  const closeRun = (endExclusive: number): void => {
+    const run = shots.slice(runStart, endExclusive);
+    if (run.length === 0) return;
+    const first = run[0];
+    const last = run[run.length - 1];
+    if (!first || !last) return;
+    const dialogueRatioMean = scrollRhythmMean(run.map((shot) => shot.dialogueRatio)) ?? 0;
+    const markers: ScrollRhythmSegmentMarker[] =
+      meanDialogueRatio !== null && meanDialogueRatio > 0 && dialogueRatioMean > meanDialogueRatio
+        ? ["dialogue-above-average"]
+        : [];
+    segments.push({
+      id: `seg-${first.order}`,
+      startOrder: first.order,
+      endOrder: last.order,
+      beatIds: Object.freeze(run.map((shot) => shot.beatId)),
+      markers: Object.freeze(markers),
+      dialogueRatioMean,
+      dialogueRatioVsEpisodeMean: divideRatios(dialogueRatioMean, meanDialogueRatio),
+      totalPx: run.reduce((sum, shot) => sum + shot.totalPx, 0),
+    });
+    if (run.length >= 2 && run.every((shot) => shot.emptyCut)) {
+      emptyRuns.push({
+        startOrder: first.order,
+        endOrder: last.order,
+        beatIds: Object.freeze(run.map((shot) => shot.beatId)),
+        length: run.length,
+      });
+    }
+  };
+  for (let index = 1; index <= shots.length; index += 1) {
+    const previous = shots[index - 1];
+    const current = shots[index];
+    if (!previous || (current && current.emptyCut === previous.emptyCut)) continue;
+    closeRun(index);
+    runStart = index;
+  }
+
+  let baseline: ScrollRhythmBaseline | null = null;
+  if (priorPlanner.length > 0) {
+    baseline = {
+      episodeCount: priorPlanner.length,
+      meanDialogueRatio: scrollRhythmMean(
+        priorPlanner.map((entry) => entry.meanDialogueRatio ?? 0),
+      ),
+      meanShotCount: scrollRhythmMean(priorPlanner.map((entry) => entry.shotCount)) ?? 0,
+      meanTotalHeightPx: scrollRhythmMean(priorPlanner.map((entry) => entry.totalHeightPx)) ?? 0,
+    };
+  }
+  return {
+    episodeId: input.episodeId,
+    label: input.label,
+    source: "planner",
+    shots: Object.freeze(shots),
+    segments: Object.freeze(segments),
+    emptyRuns: Object.freeze(emptyRuns),
+    shotCount: shots.length,
+    totalHeightPx,
+    meanDialogueRatio,
+    meanGapPx,
+    emptyCutCount,
+    shotSizeChangeRate,
+    baseline,
+    dialogueRatioVsBaseline: divideRatios(meanDialogueRatio, baseline?.meanDialogueRatio ?? null),
+    totalHeightVsBaseline: divideRatios(totalHeightPx, baseline?.meanTotalHeightPx ?? null),
+  };
+}
+
+function buildScrollRhythmPageMetaEpisode(input: ScrollRhythmEpisodeInput): ScrollRhythmEpisodeReport {
+  return {
+    episodeId: input.episodeId,
+    label: input.label,
+    source: "page-meta",
+    shots: Object.freeze([]),
+    segments: Object.freeze([]),
+    emptyRuns: Object.freeze([]),
+    shotCount: input.pageMeta?.shotCount ?? 0,
+    totalHeightPx: input.pageMeta?.totalHeightPx ?? 0,
+    meanDialogueRatio: null,
+    meanGapPx: null,
+    emptyCutCount: 0,
+    shotSizeChangeRate: null,
+    baseline: null,
+    dialogueRatioVsBaseline: null,
+    totalHeightVsBaseline: null,
+  };
+}
+
+export function deriveScrollRhythmReport(
+  episodes: readonly ScrollRhythmEpisodeInput[],
+): ScrollRhythmReport {
+  const reports: ScrollRhythmEpisodeReport[] = [];
+  const priorPlanner: ScrollRhythmEpisodeReport[] = [];
+  for (const input of episodes) {
+    const report = input.shots.length > 0
+      ? buildScrollRhythmPlannerEpisode(input, priorPlanner)
+      : buildScrollRhythmPageMetaEpisode(input);
+    reports.push(report);
+    if (report.source === "planner") priorPlanner.push(report);
+  }
+  return { episodes: Object.freeze(reports) };
 }

@@ -264,6 +264,22 @@ const CAPTURE_PNG_TIMEOUT_MS = 20_000;
 const MIN_CAPTURE_SCALE = 0.5;
 const MAX_CAPTURE_SCALE = 3;
 
+/** 환경광(IBL) 세기 기본값 — 켜져 있되 과노출되지 않는 범위(0 초과 1 이하). */
+export const STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT = 0.85;
+/** 환경광 세기 상한. */
+export const STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_MAX = 1;
+
+/**
+ * 환경광 세기 확정 — 미지정·비유한 값은 기본값으로, 0(IBL 끔)은 허용하고,
+ * 범위를 벗어나면 0~MAX로 클램프한다.
+ */
+export function resolveStudioMannequinEnvironmentIntensity(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT;
+  }
+  return Math.min(STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_MAX, Math.max(0, value));
+}
+
 function toVec3(value: StudioMannequinVec3): THREE.Vector3 {
   return new THREE.Vector3(value[0], value[1], value[2]);
 }

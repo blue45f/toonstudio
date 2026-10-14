@@ -48,6 +48,8 @@ export type StudioUiChromeRegion = (typeof STUDIO_UI_CHROME_REGIONS)[number];
 
 export interface StudioUiDensityState {
   mode: StudioUiDensityMode;
+  /** 고급 도구 펼침 선택. 저장된 적 없으면 접힘(false)이다. */
+  advancedExpanded?: boolean;
 }
 
 export interface StudioUiDensityStorage {
@@ -65,10 +67,13 @@ export function normalizeStudioUiDensityMode(value: unknown): StudioUiDensityMod
 
 export function normalizeStudioUiDensityState(value?: unknown): StudioUiDensityState {
   if (!value || typeof value !== "object") {
-    return { mode: DEFAULT_STUDIO_UI_DENSITY_MODE };
+    return { mode: DEFAULT_STUDIO_UI_DENSITY_MODE, advancedExpanded: false };
   }
   const record = value as Record<string, unknown>;
-  return { mode: normalizeStudioUiDensityMode(record.mode ?? record.density) };
+  return {
+    mode: normalizeStudioUiDensityMode(record.mode ?? record.density),
+    advancedExpanded: record.advancedExpanded === true,
+  };
 }
 
 export function loadStudioUiDensityState(
@@ -218,6 +223,35 @@ export function studioUiDensityAllows(
   region: StudioUiChromeRegion
 ): boolean {
   return STUDIO_UI_DENSITY_MATRIX[normalizeStudioUiDensityMode(mode)][region];
+}
+
+/** 저장된 고급 도구 펼침 선택. 저장된 적 없으면 접힘이다. */
+export function studioUiDensityAdvancedExpanded(state: StudioUiDensityState): boolean {
+  return state.advancedExpanded ?? false;
+}
+
+/** 첫 화면 노출 — visible(그대로 표시) · expander(펼치기 뒤에) · hidden(숨김). */
+export type StudioUiFirstScreenExposure = "visible" | "expander" | "hidden";
+
+/** 첫 화면에 두지 않는 고급 도구 모음. 펼치기 전에는 expander 뒤에 둔다. */
+const STUDIO_UI_ADVANCED_REGIONS: ReadonlySet<StudioUiChromeRegion> = new Set([
+  "toolbar-scene",
+  "toolbar-style",
+  "toolbar-ai",
+]);
+
+/**
+ * 현재 모드·펼침 선택에서의 영역 노출. 행렬이 숨긴 영역은 숨김,
+ * 펼치기 전 고급 모음은 expander, 나머지는 그대로 표시한다.
+ */
+export function studioUiDensityFirstScreenExposure(
+  mode: StudioUiDensityMode,
+  region: StudioUiChromeRegion,
+  advancedExpanded: boolean
+): StudioUiFirstScreenExposure {
+  if (!studioUiDensityAllows(mode, region)) return "hidden";
+  if (!advancedExpanded && STUDIO_UI_ADVANCED_REGIONS.has(region)) return "expander";
+  return "visible";
 }
 
 /** How the user arrived at the editor; decides only the seed mode for users with no saved choice. */
