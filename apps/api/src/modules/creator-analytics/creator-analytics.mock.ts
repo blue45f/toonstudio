@@ -104,9 +104,9 @@ function buildKpis(
   const sum = (pick: (episode: CreatorAnalyticsEpisode) => number) =>
     episodes.reduce((total, episode) => total + pick(episode), 0);
   const views = sum((episode) => episode.views);
-  const likes = sum((episode) => episode.likes);
-  const comments = sum((episode) => episode.comments);
-  const newSubscribers = sum((episode) => episode.newSubscribers);
+  const likes = sum((episode) => episode.likes ?? 0);
+  const comments = sum((episode) => episode.comments ?? 0);
+  const newSubscribers = sum((episode) => episode.newSubscribers ?? 0);
   const subscribeConversion = views > 0 ? (newSubscribers / views) * 100 : 0;
   // 직전 기간은 현재의 0.82~1.08 배로 시뮬레이션(결정적).
   const previousFactor = () => 0.82 + rand() * 0.26;

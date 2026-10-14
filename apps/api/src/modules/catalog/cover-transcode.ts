@@ -78,13 +78,11 @@ export function transcodeCoverToWidth(
 // 이 경우라 JPEG 전환 대상이다. 전 픽셀을 훑지 않고 표본만 검사한다.
 function hasVisibleTransparency(image: ReturnType<typeof decode>): boolean {
   if (!image.alpha) return false;
-  const data = image.data;
   const channels = image.channels;
   const alphaIndex = channels - 1;
   const step = Math.max(1, Math.floor(image.size / 4096));
   for (let pixel = 0; pixel < image.size; pixel += step) {
-    const value = data[pixel * channels + alphaIndex];
-    if (value !== undefined && value < 255) return true;
+    if (image.getValueByIndex(pixel, alphaIndex) < 255) return true;
   }
   return false;
 }
