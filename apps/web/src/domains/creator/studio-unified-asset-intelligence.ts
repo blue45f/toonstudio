@@ -52,7 +52,38 @@ export interface StudioUnifiedAssetFlagEntry {
   readonly id: string;
   readonly flag: StudioUnifiedAssetFlag;
 }
-export type StudioUnifiedAssetSort = "recommended" | "name" | "rating";
+export type StudioUnifiedAssetSort = "recommended" | "name" | "rating" | "frequency";
+
+/**
+ * 소재별 사용 통계 — 빈도 정렬의 입력. 정본은 `studio-material-usage` 원장의
+ * `materialUsageStats`이며, 이 형태와 구조적으로 동일해 그대로 넘길 수 있다.
+ * 횟수를 저장하지 않는 호출부는 생략하면 되고, 그 경우 frequency 정렬은
+ * 전부 동률이라 id 순서로 안정된다.
+ */
+export interface StudioUnifiedAssetUsageStat {
+  readonly useCount: number;
+  readonly lastUsedAt: number;
+}
+
+/**
+ * 빈도 비교자 — 횟수 내림차순 → 최근 사용 내림차순 → id 코드포인트 오름차순.
+ * `studio-material-usage`의 `compareMaterialFrequency`와 같은 규칙이며,
+ * 로케일에 의존하지 않아 동일 입력에서 항상 같은 순서를 낸다.
+ */
+export function compareStudioUnifiedAssetFrequency(
+  stats: ReadonlyMap<string, StudioUnifiedAssetUsageStat> | undefined,
+  leftId: string,
+  rightId: string,
+): number {
+  if (leftId === rightId) return 0;
+  const left = stats?.get(leftId);
+  const right = stats?.get(rightId);
+  const countDelta = (right?.useCount ?? 0) - (left?.useCount ?? 0);
+  if (countDelta !== 0) return countDelta;
+  const recentDelta = (right?.lastUsedAt ?? 0) - (left?.lastUsedAt ?? 0);
+  if (recentDelta !== 0) return recentDelta;
+  return leftId < rightId ? -1 : 1;
+}
 
 export type StudioUnifiedAssetRightsStatus =
   | "verified"
@@ -98,6 +129,8 @@ export interface DiscoverStudioUnifiedAssetsInput {
   readonly flagFilter?: StudioUnifiedAssetFlagFilter;
   readonly limit?: number;
   readonly libraryState?: StudioUnifiedAssetLibraryState;
+  /** `sort: "frequency"` 전용 입력 — 소재 사용 원장의 통계 요약. */
+  readonly usageStats?: ReadonlyMap<string, StudioUnifiedAssetUsageStat>;
 }
 
 export const STUDIO_UNIFIED_ASSET_FORMAT_LABELS: Readonly<
@@ -575,6 +608,10 @@ export function discoverStudioUnifiedAssets(
   if (libraryView === "recent") {
     result.sort(
       (left, right) => recentPosition(state, left.id) - recentPosition(state, right.id),
+    );
+  } else if (sort === "frequency") {
+    result.sort(
+      (left, right) => compareStudioUnifiedAssetFrequency(input.usageStats, left.id, right.id),
     );
   } else if (sort === "rating") {
     result.sort(

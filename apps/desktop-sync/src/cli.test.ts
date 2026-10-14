@@ -11,6 +11,7 @@ import { pathToFileURL } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { MemoryDesktopCredentialVault } from "./credential-vault.js";
 import {
   executeDesktopSyncCli,
   isDesktopSyncCliEntrypoint,
@@ -257,6 +258,7 @@ describe("desktop sync cloud CLI", () => {
     ]);
     await expect(executeDesktopSyncCli(options, {
       environment: {},
+      credentialVault: new MemoryDesktopCredentialVault(),
     })).rejects.toThrow(/OAuth credential exists for profile default/u);
   });
 });

@@ -1,4 +1,4 @@
-import { Check, GraduationCap, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Check, GraduationCap, RotateCcw, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -8,6 +8,11 @@ import {
   useLearningProgress,
   type MissionStatus,
 } from "@/domains/learn/public/learning-practice";
+import {
+  describeReturnContext,
+  parseReturnContext,
+} from "@/shared/navigation/return-context";
+import Link from "@/shared/navigation/router-link";
 
 import { parseStudioLessonMission } from "./studio-lesson-mission";
 
@@ -48,6 +53,13 @@ export function StudioLessonMissionBar() {
   }, [lessonId, startedAt, startMission]);
 
   if (!mission || dismissed) return null;
+
+  // 복귀 맥락 계약(S2-8): learn이 returnTo를 함께 실어 보내면, 미션 바가 맥락 배너인
+  // 동시에 "끝나면 돌아가기" 복귀 행동까지 제공한다. 계약이 없으면 기존 표시 그대로다.
+  const returnContext = parseReturnContext(params);
+  const returnLabel = returnContext
+    ? describeReturnContext(returnContext, "ko").returnLabel
+    : null;
 
   const status = getMissionStatus(mission, practice.progress, learning.progress);
   const savedChecks = learning.progress.lessons[mission.lessonId]?.checks ?? [];
@@ -112,6 +124,11 @@ export function StudioLessonMissionBar() {
         <span aria-live="polite" className="text-[0.7rem] font-semibold text-fg-2">
           단계 {doneCount}/{mission.steps.length} 완료
         </span>
+        {returnContext && returnLabel ? (
+          <Link href={returnContext.returnTo} className={buttonClass}>
+            <ArrowLeft size={14} aria-hidden /> {returnLabel}
+          </Link>
+        ) : null}
         {status === "ready" ? (
           <button
             type="button"

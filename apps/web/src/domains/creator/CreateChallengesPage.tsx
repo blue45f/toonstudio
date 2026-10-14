@@ -63,6 +63,43 @@ function DdayChip({ endsAt }: { endsAt: string | null }) {
   );
 }
 
+const challengePeriodFormatter = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "short",
+  day: "numeric",
+});
+
+function formatChallengePeriodDay(iso: string | null): string | null {
+  if (!iso) return null;
+  const time = Date.parse(iso);
+  if (!Number.isFinite(time)) return null;
+  return challengePeriodFormatter.format(new Date(time));
+}
+
+/**
+ * 기간 상한 표기 — 챌린지 과제는 시작할 때부터 기간(상한)을 알아야 한다.
+ * D-day 칩(마감까지 남은 기간)과 별개로, 카드에 시작~종료 구간 자체를 고정
+ * 표시한다. 한쪽만 있으면 있는 쪽만, 둘 다 없으면 상시라 표기하지 않는다.
+ */
+function ChallengePeriodLine({ challenge }: { challenge: ChallengeSummary }) {
+  const bt = useBilingual("CreateChallengesPage");
+  const start = formatChallengePeriodDay(challenge.startsAt);
+  const end = formatChallengePeriodDay(challenge.endsAt);
+  if (!start && !end) return null;
+  const label =
+    start && end
+      ? `${start} ~ ${end}`
+      : end
+        ? bt(`마감 ${end}`, `Ends ${end}`)
+        : bt(`${start}부터 시작`, `Starts ${start}`);
+  return (
+    <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-fg-3">
+      <CalendarClock size={11} aria-hidden />
+      {bt("기간", "Period")} {label}
+    </p>
+  );
+}
+
 // 챌린지 카드 — 선택하면 아래에 참여작 그리드.
 function ChallengeCard({
   challenge,
@@ -95,6 +132,7 @@ function ChallengeCard({
       </div>
       <h3 className="mt-2 text-lg font-bold leading-tight text-fg transition-colors group-hover:text-accent">{challenge.title}</h3>
       <p className="mt-1.5 line-clamp-2 break-keep text-sm leading-relaxed text-fg-2">{challenge.theme}</p>
+      <ChallengePeriodLine challenge={challenge} />
       <span className="mt-auto inline-flex items-center gap-1 pt-3 text-xs text-fg-2">
         <Users size={12} aria-hidden />
         {bt("참여작", "Entries")} <span className="numeral font-semibold">{formatCount(challenge.entries)}</span>

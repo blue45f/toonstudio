@@ -1,5 +1,6 @@
 {
   "app.name": "ToonStudio",
   "app.brandBeta": "Beta pakalpojums  datus un funkcijas var mainīt",
-  "app.loading": "Saldēšana"
+  "app.loading": "Saldēšana",
+  "app.skipToContent": "Skip to main content"
 }

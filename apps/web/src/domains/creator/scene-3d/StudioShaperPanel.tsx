@@ -1,19 +1,24 @@
 import {
   Check,
   Download,
+  Eye,
   ImagePlus,
   Info,
   Laugh,
   Layers,
   Lock,
+  Package,
   Palette,
   PersonStanding,
   RotateCcw,
+  Save,
   ScanSearch,
+  Share2,
   ShieldCheck,
   Shirt,
   Smile,
   Sparkles,
+  Trash2,
   Wand2,
   X,
   type LucideIcon,
@@ -56,6 +61,20 @@ import {
   STUDIO_VRM_EXPRESSION_COMBOS,
   type StudioShaperExpressionSelection,
 } from "./studio-vrm-expressions";
+import {
+  BUILTIN_CHARACTER_STYLE_PACKS,
+  applyCharacterStylePack,
+  captureCharacterStylePack,
+  decodeCharacterStylePackShareCode,
+  encodeCharacterStylePackShareCode,
+  loadUserCharacterStylePacks,
+  previewCharacterStylePack,
+  removeUserCharacterStylePack,
+  saveUserCharacterStylePack,
+  summarizeCharacterStylePack,
+  type CharacterStylePack,
+  type StylePackStorageLike,
+} from "./studio-shaper-style-pack";
 import type { StudioMannequinBodyParams } from "./studio-mannequin-model";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -169,6 +188,15 @@ function readGuideDismissed(): boolean {
     return window.localStorage.getItem(SHAPER_GUIDE_STORAGE_KEY) === "1";
   } catch {
     return true;
+  }
+}
+
+/** 스타일 팩 저장소 — 접근할 수 없는 환경이면 null (팩 저장만 비활성화된다). */
+function readStylePackStorage(): StylePackStorageLike | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
   }
 }
 
@@ -873,6 +901,14 @@ export function StudioShaperPanel({
     ...DEFAULT_SHAPER_EXPRESSION_SELECTION,
   });
   const [guideOpen, setGuideOpen] = useState<boolean>(() => !readGuideDismissed());
+  // ── 스타일 팩 (원클릭 적용·미리보기·내 팩 저장·공유) ──
+  const [userStylePacks, setUserStylePacks] = useState<readonly CharacterStylePack[]>(
+    () => loadUserCharacterStylePacks(readStylePackStorage()).packs,
+  );
+  const [previewPack, setPreviewPack] = useState<CharacterStylePack | null>(null);
+  const [packNameDraft, setPackNameDraft] = useState("");
+  const [shareCodeDraft, setShareCodeDraft] = useState("");
+  const [packNotice, setPackNotice] = useState<string | null>(null);
 
   useEffect(() => {
     setCurrentSelection({ ...DEFAULT_SHAPER_SELECTION, ...selection });
@@ -940,6 +976,92 @@ export function StudioShaperPanel({
       selection: appearance.selection,
       colors: { ...appearance.colors, [presetId]: hex },
     });
+  };
+
+  // ── 스타일 팩 동선 ──
+  /** 원클릭 적용: 팩 전체를 기존 commitAppearance 한 번으로 원자적으로 커밋한다. */
+  const applyStylePack = (pack: CharacterStylePack) => {
+    if (disabled) return;
+    const applied = applyCharacterStylePack(appearance, pack);
+    commitAppearance(applied.appearance);
+    setPreviewPack(pack);
+    setPackNotice(applied.receipt.summaryKo);
+  };
+  const saveCurrentAsStylePack = () => {
+    if (disabled) return;
+    const name = packNameDraft.trim() || `내 스타일 ${userStylePacks.length + 1}`;
+    const captured = captureCharacterStylePack(appearance, { name });
+    if (!captured.ok) {
+      setPackNotice(captured.message);
+      return;
+    }
+    const saved = saveUserCharacterStylePack(readStylePackStorage(), captured.value);
+    if (!saved.ok) {
+      setPackNotice(saved.message);
+      return;
+    }
+    setUserStylePacks(saved.value);
+    setPreviewPack(captured.value);
+    setPackNameDraft("");
+    setPackNotice(
+      ko ? `'${captured.value.name}' 팩을 내 스타일 팩에 저장했습니다.` : `Saved '${captured.value.name}' to your style packs.`,
+    );
+  };
+  const makeStylePackShareCode = (pack: CharacterStylePack) => {
+    const code = encodeCharacterStylePackShareCode(pack);
+    setShareCodeDraft(code);
+    try {
+      void navigator.clipboard?.writeText(code);
+    } catch {
+      // 클립보드 접근이 막히면 아래 입력 칸의 코드로 복사하면 된다.
+    }
+    setPackNotice(
+      ko ? "공유 코드를 만들었습니다. 아래 칸의 코드를 복사해 보내세요." : "Share code created. Copy the code below and send it.",
+    );
+  };
+  const importStylePackFromCode = () => {
+    if (disabled) return;
+    const decoded = decodeCharacterStylePackShareCode(shareCodeDraft);
+    if (!decoded.ok) {
+      setPackNotice(decoded.message);
+      return;
+    }
+    // 보낸 사람의 id를 그대로 쓰지 않고 내 저장소 규약의 id로 다시 캡처한다.
+    const captured = captureCharacterStylePack(decoded.value.appearance, {
+      name: decoded.value.name,
+      description: decoded.value.description,
+      tags: decoded.value.tags,
+    });
+    if (!captured.ok) {
+      setPackNotice(captured.message);
+      return;
+    }
+    if (userStylePacks.some((pack) => pack.id === captured.value.id)) {
+      setPreviewPack(captured.value);
+      setPackNotice(ko ? "이미 내 스타일 팩에 있는 팩입니다." : "This pack is already in your style packs.");
+      return;
+    }
+    const saved = saveUserCharacterStylePack(readStylePackStorage(), captured.value);
+    if (!saved.ok) {
+      setPackNotice(saved.message);
+      return;
+    }
+    setUserStylePacks(saved.value);
+    setPreviewPack(captured.value);
+    setPackNotice(
+      ko ? `'${captured.value.name}' 팩을 가져와 내 스타일 팩에 저장했습니다.` : `Imported '${captured.value.name}' into your style packs.`,
+    );
+  };
+  const deleteUserStylePack = (pack: CharacterStylePack) => {
+    if (disabled) return;
+    const removed = removeUserCharacterStylePack(readStylePackStorage(), pack.id);
+    if (!removed.ok) {
+      setPackNotice(removed.message);
+      return;
+    }
+    setUserStylePacks(removed.value);
+    if (previewPack?.id === pack.id) setPreviewPack(null);
+    setPackNotice(ko ? `'${pack.name}' 팩을 삭제했습니다.` : `Deleted '${pack.name}'.`);
   };
 
   // ── 체형 ──
@@ -1142,6 +1264,171 @@ export function StudioShaperPanel({
                 ? "이 탭의 코디는 데생 인형에 적용되지 않습니다. SVG 미리보기로 확인하고 저장하세요."
                 : "Outfits are not applied to the mannequin. Preview them as SVG and save."}
             </p>
+            <div
+              className="space-y-2 rounded-xl border border-accent/30 bg-accent-soft/30 p-2.5"
+              data-studio-shaper-style-packs
+            >
+              <p className="flex items-center gap-1.5 text-[0.66rem] font-extrabold text-fg">
+                <Package size={13} className="text-accent" aria-hidden />
+                {ko ? "스타일 팩 — 헤어·의상·소품을 한 번에" : "Style packs — hair, outfit & accessories in one click"}
+              </p>
+              <p className="text-[0.6rem] leading-relaxed text-fg-3">
+                {ko
+                  ? "팩 하나가 지금 아래에서 하나씩 고르는 다섯 가지 코디를 통째로 바꿉니다. 미리보기로 바뀔 항목을 확인한 뒤 적용하세요."
+                  : "One pack replaces all five outfit picks below. Preview what changes, then apply."}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {[...BUILTIN_CHARACTER_STYLE_PACKS, ...userStylePacks].map((pack) => (
+                  <div
+                    key={pack.id}
+                    className={cn(
+                      "space-y-1.5 rounded-xl border bg-card p-2.5",
+                      previewPack?.id === pack.id ? "border-accent/60" : "border-line",
+                    )}
+                  >
+                    <p className="flex items-center gap-1.5 text-[0.63rem] font-bold text-fg">
+                      <span className="min-w-0 flex-1 truncate">{pack.name}</span>
+                      <span className="shrink-0 rounded-full border border-line px-1.5 py-0.5 text-[0.52rem] font-bold text-fg-3">
+                        {pack.source === "builtin" ? (ko ? "기본" : "Built-in") : ko ? "내 팩" : "Mine"}
+                      </span>
+                    </p>
+                    <p className="line-clamp-2 text-[0.56rem] leading-relaxed text-fg-3">
+                      {summarizeCharacterStylePack(pack)}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => setPreviewPack(pack)}
+                        aria-label={`${pack.name} ${ko ? "팩 미리보기" : "pack preview"}`}
+                        className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-2.5 text-[0.58rem] font-bold text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                      >
+                        <Eye size={11} aria-hidden />
+                        {ko ? "미리보기" : "Preview"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => applyStylePack(pack)}
+                        aria-label={`${pack.name} ${ko ? "팩 적용" : "pack apply"}`}
+                        className="inline-flex min-h-8 items-center gap-1 rounded-full border border-accent/60 bg-accent-soft px-2.5 text-[0.58rem] font-bold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                      >
+                        <Check size={11} aria-hidden />
+                        {ko ? "원클릭 적용" : "Apply"}
+                      </button>
+                      {pack.source === "user" ? (
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => deleteUserStylePack(pack)}
+                          aria-label={`${pack.name} ${ko ? "팩 삭제" : "pack delete"}`}
+                          className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-2.5 text-[0.58rem] font-bold text-fg-3 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                        >
+                          <Trash2 size={11} aria-hidden />
+                          {ko ? "삭제" : "Delete"}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {previewPack ? (
+                <div className="space-y-2 rounded-xl border border-line bg-card p-2.5">
+                  <div className="grid place-items-center rounded-lg bg-panel/55 py-2">
+                    <DressUpPreview
+                      selection={previewPack.appearance.selection}
+                      colors={previewPack.appearance.colors}
+                    />
+                  </div>
+                  <ul className="space-y-1">
+                    {previewCharacterStylePack(appearance, previewPack).map((row) => (
+                      <li
+                        key={row.category}
+                        className={cn(
+                          "flex items-center gap-1.5 text-[0.58rem]",
+                          row.changed ? "font-bold text-fg" : "text-fg-3",
+                        )}
+                      >
+                        <span className="w-14 shrink-0">{row.categoryLabelKo}</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {row.fromLabelKo} → {row.toLabelKo}
+                        </span>
+                        {row.changed ? (
+                          <span className="shrink-0 text-accent">{ko ? "바뀜" : "changes"}</span>
+                        ) : (
+                          <span className="shrink-0">{ko ? "유지" : "same"}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => applyStylePack(previewPack)}
+                      className="inline-flex min-h-9 items-center gap-1 rounded-full border border-accent/60 bg-accent-soft px-3 text-[0.6rem] font-bold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                    >
+                      <Check size={12} aria-hidden />
+                      {ko ? "이 팩 적용하기" : "Apply this pack"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => makeStylePackShareCode(previewPack)}
+                      className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line bg-panel px-3 text-[0.6rem] font-bold text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                    >
+                      <Share2 size={12} aria-hidden />
+                      {ko ? "공유 코드 만들기" : "Make share code"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={packNameDraft}
+                  disabled={disabled}
+                  maxLength={40}
+                  onChange={(event) => setPackNameDraft(event.target.value)}
+                  aria-label={ko ? "새 스타일 팩 이름" : "New style pack name"}
+                  placeholder={ko ? "새 팩 이름 (비우면 자동 이름)" : "New pack name (optional)"}
+                  className="min-h-9 min-w-0 flex-1 rounded-full border border-line bg-card px-3 text-[0.6rem] text-fg placeholder:text-fg-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                />
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={saveCurrentAsStylePack}
+                  className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full border border-accent/60 bg-accent-soft px-3 text-[0.6rem] font-bold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                >
+                  <Save size={12} aria-hidden />
+                  {ko ? "현재 코디를 팩으로 저장" : "Save current as pack"}
+                </button>
+              </div>
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={shareCodeDraft}
+                  disabled={disabled}
+                  onChange={(event) => setShareCodeDraft(event.target.value)}
+                  aria-label={ko ? "스타일 팩 공유 코드" : "Style pack share code"}
+                  placeholder={ko ? "받은 공유 코드(TSP1.…)를 붙여넣으세요" : "Paste a share code (TSP1.…)"}
+                  className="min-h-9 min-w-0 flex-1 rounded-full border border-line bg-card px-3 text-[0.6rem] text-fg placeholder:text-fg-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                />
+                <button
+                  type="button"
+                  disabled={disabled || shareCodeDraft.trim().length === 0}
+                  onClick={importStylePackFromCode}
+                  className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full border border-line bg-panel px-3 text-[0.6rem] font-bold text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
+                >
+                  {ko ? "코드로 가져오기" : "Import code"}
+                </button>
+              </div>
+              {packNotice ? (
+                <p role="status" className="text-[0.6rem] font-bold leading-relaxed text-accent">
+                  {packNotice}
+                </p>
+              ) : null}
+            </div>
             <div className="grid place-items-center rounded-xl border border-line bg-panel/55 py-3">
               <DressUpPreview selection={appearance.selection} colors={appearance.colors} />
             </div>

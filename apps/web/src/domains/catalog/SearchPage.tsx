@@ -6,7 +6,10 @@ import "./search-page-layout.css";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
+// search.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "@/shared/components/search-i18n";
 import { SearchExplorer } from "@/shared/components/search-explorer";
+import { UnifiedSearchSections } from "@/shared/components/unified-search-sections";
 import { DiscoveryWorkspaceNav } from "@/shared/components/discovery-workspace-nav";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -84,6 +87,10 @@ export function SearchPage() {
           initialPlatforms={state.filters.platforms}
         />
       </div>
+
+      {/* 통합 검색 집계층: 작품 아래에 강좌·도움말(매뉴얼)·페이지 섹션과 소재 링크를
+          같은 검색어로 이어 붙인다. 검색어가 없으면 패널 스스로 null을 돌려준다. */}
+      <UnifiedSearchSections query={state.query} />
     </Container>
     </PageEntrance>
   );

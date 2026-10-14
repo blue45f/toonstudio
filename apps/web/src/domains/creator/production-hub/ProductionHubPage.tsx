@@ -12,6 +12,7 @@ import { ProductionHandoffSurface } from "./ProductionHandoffSurface";
 import { ProductionManagementWorkspace } from "./ProductionManagementWorkspace";
 import { ProductionManuscriptWorkspace } from "./ProductionManuscriptWorkspace";
 import { ProductionOperationsControlWorkspace } from "./ProductionOperationsControlWorkspace";
+import { AggregatePreSerializationBufferPanel } from "./PreSerializationBufferPanel";
 import { ProductionOverviewCoverStage } from "./ProductionOverviewCoverStage";
 import { ProductionPlanningSurface } from "./ProductionPlanningSurface";
 import { ProductionProjectDashboard } from "./ProductionProjectDashboard";
@@ -74,6 +75,7 @@ function OverviewSurface({ aggregate, access, roleLens, execute, executeStrict, 
   return (
     <div className="space-y-4">
       <ProductionProjectDashboard aggregate={aggregate} roleLens={roleLens} viewerAssignmentIds={viewerAssignmentIds} />
+      <AggregatePreSerializationBufferPanel aggregate={aggregate} roleLens={roleLens} />
       <details
         className="group rounded-2xl border border-line bg-card"
         onToggle={(event) => setDetailOpen(event.currentTarget.open)}

@@ -296,6 +296,10 @@ export function LearningClassesPage() {
         <p className="learn-class-balance" role="status">
           내 포인트 <strong>{formatPoints(balance)}</strong> · 포인트는 현금으로 살 수 없고 활동으로만 모을 수 있습니다.
         </p>
+        <p className="learn-small">
+          클래스는 개인이 직접 등록해 듣는 수강 상품입니다. 교육기관에서 커리큘럼을 짜는 도구를 찾는다면{" "}
+          <Link to="/learn/classroom">클래스룸(교육기관)</Link>으로 가세요.
+        </p>
       </header>
 
       <aside className="learn-caution">

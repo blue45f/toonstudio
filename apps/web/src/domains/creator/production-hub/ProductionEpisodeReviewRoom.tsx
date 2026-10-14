@@ -1,12 +1,64 @@
 import { BadgeCheck, Columns2, Info, LockKeyhole, MessageSquareMore, ShieldAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import type { ProductionProjectAggregate, ReviewLane } from "@toonstudio/core/production";
 
 import type { StudioCommentsDocument } from "../studio-comments";
+import { LiveCursorOverlay } from "./LiveCursorOverlay";
+import {
+  buildLiveViewState,
+  LIVE_VIEW_CHANNEL_NAME,
+  LIVE_VIEW_HEARTBEAT_MS,
+  mergeLiveViews,
+  pruneLiveViews,
+  shouldPublishLiveCursor,
+  shouldPublishLiveView,
+  type LiveCursorPublishMark,
+  type LiveViewState,
+} from "./live-view-sync-model";
+import {
+  createFollowSession,
+  deriveObserveEligibility,
+  followViewportFromLiveView,
+  OBSERVE_FOLLOW_SYNC_STEP,
+  observerInteracted,
+  receiveTargetViewport,
+  resumeFollow,
+  startFollow,
+  stopFollow,
+  syncObserverViewport,
+  targetBlockedObserve,
+  type FollowSession,
+} from "./observe-follow-model";
 import { ManuscriptPinFeedbackBridge } from "./ManuscriptPinFeedback";
 import { ProcessCompareViewer } from "./ProcessCompareViewer";
+import { ProductionPagePresence } from "./ProductionPagePresence";
+import { useServerPresenceSync } from "./use-server-presence-sync";
+import { ReviewSessionBar } from "./ReviewSessionBar";
+import {
+  deriveSessionPresence,
+  endReviewSession,
+  joinReviewSession,
+  leaveReviewSession,
+  REVIEW_SESSION_CHANNEL_NAME,
+  setSessionAttention,
+  startReviewSession,
+  type ReviewSession,
+} from "./review-session-model";
+import {
+  acquirePageEditLock,
+  canEditPage,
+  derivePageEditLock,
+  heartbeatPagePresence,
+  leavePagePresence,
+  mergePagePresence,
+  PAGE_PRESENCE_CHANNEL_NAME,
+  PAGE_PRESENCE_HEARTBEAT_MS,
+  releasePageEditLock,
+  type PagePresenceActor,
+  type PagePresenceEntry,
+} from "./page-edit-lock-model";
 import {
   countOpenPins,
   countOpenUrgentPins,
@@ -77,6 +129,553 @@ export function ProductionEpisodeReviewRoom({
   );
   const approver = resolveEpisodeApprover(aggregate, episodeId, { isDemo, roleLens, viewerAssignmentId });
   const assigneeOptions = useMemo(() => episodeRoomAssigneeOptions(aggregate, bt), [aggregate, bt]);
+
+  // 페이지 단위 편집 잠금 + 프레즌스: 이 페이지를 열고 있는 사람과 편집자를 표시하고,
+  // 다른 사람이 편집 중이면 내 핀 변경을 적용하지 않아 동시 편집 충돌을 막는다.
+  // 같은 브라우저의 다른 탭과는 BroadcastChannel로, 그 외에는 이 탭 안에서만 동기화된다.
+  const pageId = EPISODE_SAMPLE_PAGE.pageId;
+  const selfActorId = approver?.assignmentId ?? viewerAssignmentId ?? null;
+  const selfActorName = approver?.actor.displayName ?? bt("나", "Me");
+  const demoViewerActors = useMemo<readonly PagePresenceActor[]>(() => isDemo
+    ? assigneeOptions
+      .filter((option) => option.id !== selfActorId)
+      .slice(0, 2)
+      .map((option) => ({ pageId, actorId: option.id, displayName: option.displayName }))
+    : [], [assigneeOptions, isDemo, pageId, selfActorId]);
+  const [presence, setPresence] = useState<readonly PagePresenceEntry[]>(() => {
+    const now = new Date();
+    let entries: readonly PagePresenceEntry[] = demoViewerActors.map((viewer) => ({
+      ...viewer,
+      mode: "viewing" as const,
+      heartbeatAt: now.toISOString(),
+    }));
+    // 진입 시 잠금이 비어 있으면 내가 먼저 잡는다 — 기존 흐름에 단계를 더하지 않기 위해서다.
+    if (selfActorId) {
+      entries = acquirePageEditLock(entries, { pageId, actorId: selfActorId, displayName: selfActorName }, now).entries;
+    }
+    return entries;
+  });
+  const presenceRef = useRef(presence);
+  const presenceChannelRef = useRef<BroadcastChannel | null>(null);
+  const publishPresence = useCallback((entries: readonly PagePresenceEntry[], leavingActorId?: string) => {
+    try {
+      presenceChannelRef.current?.postMessage({ pageId, entries, leavingActorId });
+    } catch { /* 채널 실패는 이 탭 안 프레즌스로 계속 동작한다. */ }
+  }, [pageId]);
+
+  useEffect(() => {
+    presenceRef.current = presence;
+  }, [presence]);
+
+  // 떠날 때 알리는 정리 효과는 채널 정리보다 먼저 실행되어야 해서 채널 효과보다 위에 둔다.
+  useEffect(() => () => {
+    if (!selfActorId) return;
+    publishPresence(leavePagePresence(presenceRef.current, pageId, selfActorId), selfActorId);
+  }, [pageId, selfActorId, publishPresence]);
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel(PAGE_PRESENCE_CHANNEL_NAME);
+    presenceChannelRef.current = channel;
+    channel.onmessage = (event: MessageEvent<unknown>) => {
+      const data = event.data as { pageId?: unknown; entries?: unknown; leavingActorId?: unknown } | null;
+      if (!data || data.pageId !== pageId) return;
+      if (typeof data.leavingActorId === "string") {
+        setPresence((previous) => leavePagePresence(previous, pageId, data.leavingActorId as string));
+        return;
+      }
+      if (!Array.isArray(data.entries)) return;
+      const incoming = (data.entries as PagePresenceEntry[]).filter((entry) =>
+        entry && entry.pageId === pageId && typeof entry.actorId === "string"
+        && typeof entry.displayName === "string" && typeof entry.heartbeatAt === "string"
+        && (entry.mode === "editing" || entry.mode === "viewing"));
+      if (!incoming.length) return;
+      setPresence((previous) => mergePagePresence(previous, incoming, new Date()));
+    };
+    publishPresence(presenceRef.current);
+    return () => {
+      channel.close();
+      presenceChannelRef.current = null;
+    };
+  }, [pageId, publishPresence]);
+
+  useEffect(() => {
+    if (!selfActorId) return;
+    const tick = () => {
+      let next = heartbeatPagePresence(
+        presenceRef.current,
+        { pageId, actorId: selfActorId, displayName: selfActorName },
+        new Date(),
+      );
+      // 샘플에서는 시뮬레이션된 동료도 계속 페이지를 보고 있는 것으로 유지한다.
+      for (const viewer of demoViewerActors) {
+        next = heartbeatPagePresence(next, viewer, new Date());
+      }
+      presenceRef.current = next;
+      setPresence(next);
+      publishPresence(next);
+    };
+    const timer = setInterval(tick, PAGE_PRESENCE_HEARTBEAT_MS);
+    return () => clearInterval(timer);
+  }, [pageId, selfActorId, selfActorName, demoViewerActors, publishPresence]);
+
+  const pageLock = derivePageEditLock(presence, pageId, new Date());
+  const handleAcquirePageLock = useCallback(() => {
+    if (!selfActorId) return;
+    const result = acquirePageEditLock(
+      presenceRef.current,
+      { pageId, actorId: selfActorId, displayName: selfActorName },
+      new Date(),
+    );
+    presenceRef.current = result.entries;
+    setPresence(result.entries);
+    publishPresence(result.entries);
+  }, [pageId, selfActorId, selfActorName, publishPresence]);
+  const handleReleasePageLock = useCallback(() => {
+    if (!selfActorId) return;
+    const next = releasePageEditLock(presenceRef.current, pageId, selfActorId, new Date());
+    presenceRef.current = next;
+    setPresence(next);
+    publishPresence(next);
+  }, [pageId, selfActorId, publishPresence]);
+  /** 다른 사람이 페이지 잠금을 잡고 있으면 핀 변경을 적용하지 않는다(충돌 방지). 신원이 없는 로컬 열람은 기존 동작을 유지한다. */
+  const handleCommentsChange = useCallback((next: StudioCommentsDocument) => {
+    if (selfActorId && !canEditPage(presenceRef.current, pageId, selfActorId, new Date()).allowed) return;
+    setComments(next);
+  }, [pageId, selfActorId]);
+
+  // 라이브 커서·보기 동기화: 누가 이 페이지의 어디를 보고 있는지를 커서로 보여 주고,
+  // 원하면 상대가 보는 화면 그대로 따라간다(관찰 모드). 커서는 휘발성이라 프레즌스보다
+  // 짧은 하트비트로 유지한다. 관찰 상태 기계는 observe-follow-model이 정본이다:
+  // 직접 스크롤·조작하면 해제가 아니라 일시정지(paused-manual)로 남고, 대상이
+  // "따라오기 차단"을 켜면 즉시 blocked로 해제된다.
+  const [liveViews, setLiveViews] = useState<readonly LiveViewState[] | null>(null);
+  const [liveNow, setLiveNow] = useState(() => new Date());
+  const [followSession, setFollowSession] = useState<FollowSession | null>(null);
+  const [observeBlockerIds, setObserveBlockerIds] = useState<readonly string[]>([]);
+  const [selfObserveBlocked, setSelfObserveBlocked] = useState(false);
+  const liveViewsRef = useRef<readonly LiveViewState[]>([]);
+  const ownLiveRef = useRef<LiveViewState | null>(null);
+  const lastCursorMarkRef = useRef<LiveCursorPublishMark | null>(null);
+  const liveChannelRef = useRef<BroadcastChannel | null>(null);
+  const viewerWrapRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const programmaticScrollRef = useRef(false);
+  const followSessionRef = useRef<FollowSession | null>(null);
+  const observeBlockersRef = useRef<ReadonlySet<string>>(new Set());
+  const selfObserveBlockedRef = useRef(false);
+  const applyFollowSession = useCallback((next: FollowSession | null) => {
+    followSessionRef.current = next;
+    setFollowSession(next);
+  }, []);
+  /** 대상의 차단 신호 수신: 내 대상이 차단하면 그 자리에서 blocked로 해제한다. */
+  const noteObserveBlock = useCallback((actorId: string, blocked: boolean) => {
+    const next = new Set(observeBlockersRef.current);
+    if (blocked) next.add(actorId);
+    else next.delete(actorId);
+    observeBlockersRef.current = next;
+    setObserveBlockerIds([...next]);
+    const session = followSessionRef.current;
+    if (blocked && session && session.targetUserId === actorId && session.state !== "off") {
+      applyFollowSession(targetBlockedObserve(session));
+    }
+  }, [applyFollowSession]);
+  const publishObserveBlock = useCallback((blocked: boolean) => {
+    if (!selfActorId) return;
+    try {
+      liveChannelRef.current?.postMessage({ pageId, observeBlock: { actorId: selfActorId, blocked } });
+    } catch { /* 채널 실패는 이 탭 동작으로 계속된다. */ }
+  }, [pageId, selfActorId]);
+  const handleToggleSelfObserveBlocked = useCallback(() => {
+    const next = !selfObserveBlockedRef.current;
+    selfObserveBlockedRef.current = next;
+    setSelfObserveBlocked(next);
+    publishObserveBlock(next);
+  }, [publishObserveBlock]);
+
+  const publishLiveView = useCallback((view: LiveViewState) => {
+    ownLiveRef.current = view;
+    try {
+      liveChannelRef.current?.postMessage({ pageId, view });
+    } catch { /* 채널 실패는 이 탭 표시만으로 계속 동작한다. */ }
+    setLiveViews((previous) => {
+      const next = mergeLiveViews(previous ?? [], [view], new Date());
+      liveViewsRef.current = next;
+      return next;
+    });
+  }, [pageId]);
+
+  // 검수 세션: 프레즌스 신호(커서·위치)는 세션 안에서만 흐른다. 세션 상태는
+  // 페이지 프레즌스와 같은 방식으로 탭 사이에 공유하고, 세션이 없거나 내가
+  // 참여하지 않았거나 집중 모드이면 커서 발행·표시를 모델 정책대로 막는다.
+  const [reviewSession, setReviewSession] = useState<ReviewSession | null>(null);
+  const reviewSessionRef = useRef<ReviewSession | null>(null);
+  const sessionChannelRef = useRef<BroadcastChannel | null>(null);
+  const publishSession = useCallback((session: ReviewSession | null) => {
+    reviewSessionRef.current = session;
+    setReviewSession(session);
+    try {
+      sessionChannelRef.current?.postMessage({ episodeId, session });
+    } catch { /* 채널 실패는 이 탭 세션으로 계속 동작한다. */ }
+  }, [episodeId]);
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel(REVIEW_SESSION_CHANNEL_NAME);
+    sessionChannelRef.current = channel;
+    channel.onmessage = (event: MessageEvent<unknown>) => {
+      const data = event.data as { episodeId?: unknown; session?: unknown } | null;
+      if (!data || data.episodeId !== episodeId) return;
+      const incoming = data.session as ReviewSession | null;
+      if (incoming !== null && (typeof incoming !== "object" || typeof incoming.id !== "string"
+        || typeof incoming.hostActorId !== "string" || !Array.isArray(incoming.participants))) return;
+      // 더 최근에 시작했거나 결정이 더 쌓인 쪽을 이긴 것으로 본다 (단순·결정적 규칙).
+      const current = reviewSessionRef.current;
+      if (current && incoming
+        && (incoming.startedAt < current.startedAt
+          || (incoming.startedAt === current.startedAt && incoming.decisions.length < current.decisions.length))) return;
+      reviewSessionRef.current = incoming;
+      setReviewSession(incoming);
+    };
+    return () => {
+      channel.close();
+      sessionChannelRef.current = null;
+    };
+  }, [episodeId]);
+
+  const sessionPresence = deriveSessionPresence(reviewSession, selfActorId, liveNow);
+  const handleStartSession = useCallback(() => {
+    if (!selfActorId) return;
+    publishSession(startReviewSession({
+      id: `session:${episodeId}:${Date.now()}`,
+      scopeId: episodeId,
+      host: { actorId: selfActorId, displayName: selfActorName },
+      now: new Date(),
+    }));
+  }, [episodeId, selfActorId, selfActorName, publishSession]);
+  const handleJoinSession = useCallback(() => {
+    if (!selfActorId || !reviewSessionRef.current) return;
+    publishSession(joinReviewSession(reviewSessionRef.current, { actorId: selfActorId, displayName: selfActorName }, new Date()));
+  }, [selfActorId, selfActorName, publishSession]);
+  const handleLeaveSession = useCallback(() => {
+    if (!selfActorId || !reviewSessionRef.current) return;
+    publishSession(leaveReviewSession(reviewSessionRef.current, selfActorId, new Date()));
+  }, [selfActorId, publishSession]);
+  const handleToggleFocus = useCallback(() => {
+    if (!selfActorId || !reviewSessionRef.current) return;
+    const mine = reviewSessionRef.current.participants.find((p) => p.actorId === selfActorId);
+    if (!mine) return;
+    publishSession(setSessionAttention(
+      reviewSessionRef.current,
+      selfActorId,
+      mine.attention === "focus" ? "participating" : "focus",
+    ));
+  }, [selfActorId, publishSession]);
+  const handleEndSession = useCallback(() => {
+    if (!selfActorId || !reviewSessionRef.current) return;
+    publishSession(endReviewSession(reviewSessionRef.current, selfActorId, new Date()));
+  }, [selfActorId, publishSession]);
+
+  // 서버 전송 계층: 실제 프로젝트에서는 프레즌스·라이브 뷰·세션을 서버 하트비트로
+  // 기기 간에 주고받는다. UI·로컬 상태 구조는 그대로이고, 합류는 로컬 모델의
+  // merge 규칙으로만 일어난다. 데모·미로그인에서는 꺼져 탭 간 동기화만 동작한다.
+  useServerPresenceSync({
+    enabled: !isDemo && Boolean(selfActorId),
+    projectId: aggregate.projectId,
+    episodeId,
+    pageId,
+    bridge: {
+      readLocal: () => ({
+        presence: presenceRef.current,
+        liveViews: liveViewsRef.current,
+        ownLiveView: ownLiveRef.current,
+        session: reviewSessionRef.current,
+      }),
+      applyMerged: (next) => {
+        presenceRef.current = next.presence;
+        setPresence(next.presence);
+        liveViewsRef.current = next.liveViews;
+        setLiveViews(next.liveViews);
+        if (next.session !== reviewSessionRef.current) {
+          reviewSessionRef.current = next.session;
+          setReviewSession(next.session);
+        }
+      },
+    },
+  });
+
+  const publishOwnLive = useCallback((interacted: boolean) => {
+    if (!selfActorId) return;
+    // 세션 정책: 세션 참여 중이 아니거나 집중 모드이면 내 위치를 발행하지 않는다.
+    if (!deriveSessionPresence(reviewSessionRef.current, selfActorId, new Date()).selfCursorAllowed) return;
+    const panel = panelRef.current;
+    const maxX = panel ? Math.max(1, panel.scrollWidth - panel.clientWidth) : 1;
+    const maxY = panel ? Math.max(1, panel.scrollHeight - panel.clientHeight) : 1;
+    const previous = ownLiveRef.current;
+    const next = buildLiveViewState({
+      actorId: selfActorId,
+      displayName: selfActorName,
+      pageId,
+      cursor: previous?.cursor ?? null,
+      scrollX: panel ? panel.scrollLeft / maxX : 0,
+      scrollY: panel ? panel.scrollTop / maxY : 0,
+      zoom: 1,
+      previous,
+      interacted,
+      now: new Date(),
+    });
+    publishLiveView(next);
+  }, [pageId, selfActorId, selfActorName, publishLiveView]);
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") {
+      setLiveViews([]);
+      return;
+    }
+    const channel = new BroadcastChannel(LIVE_VIEW_CHANNEL_NAME);
+    liveChannelRef.current = channel;
+    setLiveViews((previous) => previous ?? []);
+    // 채널이 열리면 내 차단 상태를 한 번 알린다 (늦게 들어온 탭도 즉시 알게).
+    if (selfActorId && selfObserveBlockedRef.current) {
+      try {
+        channel.postMessage({ pageId, observeBlock: { actorId: selfActorId, blocked: true } });
+      } catch { /* 채널 실패는 무시한다. */ }
+    }
+    channel.onmessage = (event: MessageEvent<unknown>) => {
+      const data = event.data as { pageId?: unknown; view?: unknown; observeBlock?: unknown } | null;
+      if (!data || data.pageId !== pageId) return;
+      const block = data.observeBlock as { actorId?: unknown; blocked?: unknown } | undefined;
+      if (block && typeof block.actorId === "string" && typeof block.blocked === "boolean") {
+        if (block.actorId !== selfActorId) noteObserveBlock(block.actorId, block.blocked);
+        return;
+      }
+      const view = data.view as LiveViewState | null;
+      if (!view || typeof view.actorId !== "string" || typeof view.displayName !== "string"
+        || typeof view.updatedAt !== "string" || typeof view.interactedAt !== "string") return;
+      if (view.actorId === selfActorId) return;
+      setLiveViews((previous) => {
+        const next = mergeLiveViews(previous ?? [], [view], new Date());
+        liveViewsRef.current = next;
+        return next;
+      });
+    };
+    return () => {
+      channel.close();
+      liveChannelRef.current = null;
+    };
+  }, [pageId, selfActorId, noteObserveBlock]);
+
+  // 하트비트·정리 틱: 내 생존을 알리고, 끊긴 커서를 지우고, 샘플 동료 커서를 움직인다.
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setLiveNow(now);
+      publishOwnLive(false);
+      setLiveViews((previous) => {
+        let next = pruneLiveViews(previous ?? [], now);
+        // 샘플에서는 시뮬레이션 동료의 커서가 원고 위를 천천히 오가 검수 장면을 보여 준다.
+        const demoViewer = demoViewerActors[0];
+        if (isDemo && demoViewer) {
+          const t = now.getTime();
+          const demoView: LiveViewState = {
+            actorId: demoViewer.actorId,
+            displayName: demoViewer.displayName,
+            pageId,
+            cursor: {
+              x: 0.5 + 0.32 * Math.sin(t / 2_400),
+              y: 0.5 + 0.26 * Math.cos(t / 3_100),
+            },
+            scrollX: 0,
+            scrollY: 0,
+            zoom: 1,
+            updatedAt: now.toISOString(),
+            interactedAt: now.toISOString(),
+          };
+          next = mergeLiveViews(next, [demoView], now);
+        }
+        liveViewsRef.current = next;
+        return next;
+      });
+    };
+    const timer = setInterval(tick, LIVE_VIEW_HEARTBEAT_MS / 10);
+    return () => clearInterval(timer);
+  }, [demoViewerActors, isDemo, pageId, publishOwnLive]);
+
+  /**
+   * 관찰 일시정지: 내가 직접 만지는 순간 따라가기는 "끝나지" 않고 일시정지로 남는다.
+   * 대상 정보가 세션에 남아 있어 "다시 따라가기" 한 번으로 복귀할 수 있다.
+   */
+  const pauseFollowByHand = useCallback(() => {
+    const session = followSessionRef.current;
+    if (!session) return;
+    const next = observerInteracted(session);
+    if (next !== session) applyFollowSession(next);
+  }, [applyFollowSession]);
+
+  const handleViewerPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!selfActorId) return;
+    if (!deriveSessionPresence(reviewSessionRef.current, selfActorId, new Date()).selfCursorAllowed) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const cursor = {
+      x: Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
+      y: Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
+    };
+    const nowMs = Date.now();
+    if (!shouldPublishLiveCursor(lastCursorMarkRef.current, cursor, nowMs)) return;
+    lastCursorMarkRef.current = { atMs: nowMs, cursor };
+    const previous = ownLiveRef.current;
+    publishLiveView(buildLiveViewState({
+      actorId: selfActorId,
+      displayName: selfActorName,
+      pageId,
+      cursor,
+      scrollX: previous?.scrollX ?? 0,
+      scrollY: previous?.scrollY ?? 0,
+      zoom: 1,
+      previous,
+      interacted: true,
+      now: new Date(),
+    }));
+  }, [pageId, selfActorId, selfActorName, publishLiveView]);
+
+  const handleViewerPointerLeave = useCallback(() => {
+    if (!selfActorId) return;
+    lastCursorMarkRef.current = { atMs: Date.now(), cursor: null };
+    const previous = ownLiveRef.current;
+    publishLiveView(buildLiveViewState({
+      actorId: selfActorId,
+      displayName: selfActorName,
+      pageId,
+      cursor: null,
+      scrollX: previous?.scrollX ?? 0,
+      scrollY: previous?.scrollY ?? 0,
+      zoom: 1,
+      previous,
+      interacted: true,
+      now: new Date(),
+    }));
+  }, [pageId, selfActorId, selfActorName, publishLiveView]);
+
+  const handlePanelScroll = useCallback(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    if (programmaticScrollRef.current) {
+      programmaticScrollRef.current = false;
+    } else {
+      pauseFollowByHand();
+    }
+    if (!selfActorId) return;
+    const maxX = Math.max(1, panel.scrollWidth - panel.clientWidth);
+    const maxY = Math.max(1, panel.scrollHeight - panel.clientHeight);
+    const next = { pageId, scrollX: panel.scrollLeft / maxX, scrollY: panel.scrollTop / maxY, zoom: 1 };
+    const previous = ownLiveRef.current;
+    if (!shouldPublishLiveView(previous, next)) return;
+    publishLiveView(buildLiveViewState({
+      actorId: selfActorId,
+      displayName: selfActorName,
+      ...next,
+      cursor: previous?.cursor ?? null,
+      previous,
+      interacted: true,
+      now: new Date(),
+    }));
+  }, [pageId, selfActorId, selfActorName, publishLiveView, pauseFollowByHand]);
+
+  /** 관찰 시작: 자격 판정(프레즌스·세션 노출·집중·차단)을 통과해야 following이 된다. */
+  const handleFollowStart = useCallback((actorId: string) => {
+    if (!selfActorId) return;
+    const presenceNow = deriveSessionPresence(reviewSessionRef.current, selfActorId, new Date());
+    const participant = presenceNow.participants.find((p) => p.actorId === actorId);
+    const target = pruneLiveViews(liveViewsRef.current, new Date())
+      .find((view) => view.actorId === actorId);
+    const eligibility = deriveObserveEligibility({
+      targetPresent: Boolean(target),
+      sessionVisible: presenceNow.visible,
+      targetCursorsVisible: participant?.cursorsVisible ?? false,
+      targetBlocked: observeBlockersRef.current.has(actorId),
+    });
+    let session = startFollow(createFollowSession(selfActorId, actorId), {
+      targetAllowsObserve: eligibility.allowed,
+    });
+    if (target) session = receiveTargetViewport(session, followViewportFromLiveView(target));
+    applyFollowSession(session);
+  }, [selfActorId, applyFollowSession]);
+
+  const handleFollowStop = useCallback(() => {
+    const session = followSessionRef.current;
+    if (session) applyFollowSession(stopFollow(session));
+  }, [applyFollowSession]);
+
+  const handleFollowResume = useCallback(() => {
+    const session = followSessionRef.current;
+    if (session) applyFollowSession(resumeFollow(session));
+  }, [applyFollowSession]);
+
+  // 관찰 적용: following일 때만 대상의 페이지·스크롤·줌을 따라간다.
+  // - 대상이 차단했으면 즉시 blocked (채널 수신이 먼저 처리하지만 여기서도 보장한다).
+  // - 세션이 닫혔거나 대상이 집중 모드로 위치 신호를 숨기면 그에 맞게 전이한다.
+  // - 대상이 사라졌으면 off로 해제한다. 첫 동기화 전(liveViews=null)에는 판단하지 않는다.
+  // - 대상이 다른 페이지에 있으면 뷰포트만 기록하고 스크롤은 건드리지 않는다
+  //   (이 룸은 단일 페이지 표면 — 페이지 이동 자체는 다페이지 뷰어의 몫, NOTES 참조).
+  useEffect(() => {
+    const session = followSession;
+    if (!session || session.state !== "following" || !selfActorId) return;
+    if (observeBlockersRef.current.has(session.targetUserId)) {
+      applyFollowSession(targetBlockedObserve(session));
+      return;
+    }
+    const presenceNow = deriveSessionPresence(reviewSessionRef.current, selfActorId, liveNow);
+    if (!presenceNow.visible) {
+      applyFollowSession(stopFollow(session));
+      return;
+    }
+    const participant = presenceNow.participants.find((p) => p.actorId === session.targetUserId);
+    if (participant && !participant.cursorsVisible) {
+      applyFollowSession(targetBlockedObserve(session));
+      return;
+    }
+    if (liveViews === null) return;
+    const target = pruneLiveViews(liveViews, liveNow).find((view) => view.actorId === session.targetUserId);
+    if (!target) {
+      applyFollowSession(stopFollow(session));
+      return;
+    }
+    const targetViewport = followViewportFromLiveView(target);
+    const recorded = receiveTargetViewport(session, targetViewport);
+    if (recorded !== session) applyFollowSession(recorded);
+    if (targetViewport.pageId !== pageId) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const maxX = Math.max(0, panel.scrollWidth - panel.clientWidth);
+    const maxY = Math.max(0, panel.scrollHeight - panel.clientHeight);
+    const synced = syncObserverViewport(
+      {
+        pageId,
+        scrollX: maxX > 0 ? panel.scrollLeft / maxX : 0,
+        scrollY: maxY > 0 ? panel.scrollTop / maxY : 0,
+        zoom: 1,
+      },
+      targetViewport,
+      OBSERVE_FOLLOW_SYNC_STEP,
+    );
+    const left = synced.scrollX * maxX;
+    const top = synced.scrollY * maxY;
+    if (Math.abs(panel.scrollLeft - left) < 2 && Math.abs(panel.scrollTop - top) < 2) return;
+    programmaticScrollRef.current = true;
+    panel.scrollTo({ left, top });
+  }, [followSession, liveViews, liveNow, pageId, selfActorId, applyFollowSession]);
+
+  // 오버레이 칩용 사람별 팔로우 가능 여부 — 시작 핸들러와 같은 판정 함수를 쓴다.
+  const observeAllowedByActorId: Record<string, boolean> = {};
+  for (const participant of sessionPresence.participants) {
+    observeAllowedByActorId[participant.actorId] = deriveObserveEligibility({
+      targetPresent: (liveViews ?? []).some((view) => view.actorId === participant.actorId),
+      sessionVisible: sessionPresence.visible,
+      targetCursorsVisible: participant.cursorsVisible,
+      targetBlocked: observeBlockerIds.includes(participant.actorId),
+    }).allowed;
+  }
   const gate = deriveEpisodeApprovalGate(aggregate, episodeId);
   const myLane = approver?.lane ?? null;
   const myLaneState = myLane ? gate.lanes.find((lane) => lane.lane === myLane) ?? null : null;
@@ -159,24 +758,79 @@ export function ProductionEpisodeReviewRoom({
         </div>
       </header>
 
+      <div className="mt-4">
+        <ReviewSessionBar
+          session={reviewSession}
+          selfActorId={selfActorId}
+          canHost={canEdit}
+          error={null}
+          onStart={handleStartSession}
+          onJoin={handleJoinSession}
+          onLeave={handleLeaveSession}
+          onToggleFocus={handleToggleFocus}
+          onEnd={handleEndSession}
+          now={liveNow}
+        />
+      </div>
+
+      <div className="mt-4">
+        <ProductionPagePresence
+          lock={pageLock}
+          selfActorId={selfActorId}
+          canAcquire={canEdit}
+          onAcquire={handleAcquirePageLock}
+          onRelease={handleReleasePageLock}
+        />
+      </div>
+
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
         <div
           role="tabpanel"
           id={`episode-review-panel-${tab}`}
           aria-labelledby={`episode-review-tab-${tab}`}
           className="min-w-0"
+          ref={panelRef}
+          onScroll={handlePanelScroll}
+          onWheel={pauseFollowByHand}
         >
           {tab === "viewer" ? (
             comments ? (
-              <ManuscriptPinFeedbackBridge
-                imageSrc={EPISODE_SAMPLE_PAGE.imageSrc}
-                imageAlt={bt(EPISODE_SAMPLE_PAGE.alt.ko, EPISODE_SAMPLE_PAGE.alt.en)}
-                pageId={EPISODE_SAMPLE_PAGE.pageId}
-                document={comments}
-                onChange={setComments}
-                currentActor={approver?.actor ?? { displayName: bt("나", "Me") }}
-                assigneeOptions={assigneeOptions}
-              />
+              <div
+                className="relative"
+                ref={viewerWrapRef}
+                onPointerMove={handleViewerPointerMove}
+                onPointerLeave={handleViewerPointerLeave}
+                onPointerDown={pauseFollowByHand}
+              >
+                <ManuscriptPinFeedbackBridge
+                  imageSrc={EPISODE_SAMPLE_PAGE.imageSrc}
+                  imageAlt={bt(EPISODE_SAMPLE_PAGE.alt.ko, EPISODE_SAMPLE_PAGE.alt.en)}
+                  pageId={EPISODE_SAMPLE_PAGE.pageId}
+                  document={comments}
+                  onChange={handleCommentsChange}
+                  currentActor={approver?.actor ?? { displayName: bt("나", "Me") }}
+                  assigneeOptions={assigneeOptions}
+                />
+                <LiveCursorOverlay
+                  views={sessionPresence.visible
+                    ? (liveViews ?? []).filter((view) =>
+                      sessionPresence.participants.some((p) => p.actorId === view.actorId && p.cursorsVisible))
+                    : []}
+                  selfActorId={selfActorId}
+                  lockHolderActorId={pageLock.holder?.actorId ?? null}
+                  followTargetId={followSession?.targetUserId ?? null}
+                  followState={followSession?.state ?? "off"}
+                  observeAllowedByActorId={observeAllowedByActorId}
+                  selfObserveBlocked={selfObserveBlocked}
+                  onFollowStart={handleFollowStart}
+                  onFollowStop={handleFollowStop}
+                  onFollowResume={handleFollowResume}
+                  onToggleSelfObserveBlocked={handleToggleSelfObserveBlocked}
+                  syncState={typeof BroadcastChannel === "undefined" ? "offline" : "live"}
+                  pageId={pageId}
+                  now={liveNow}
+                />
+              </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-line bg-panel p-6 text-center">
                 <MessageSquareMore className="mx-auto size-7 text-accent" aria-hidden="true" />

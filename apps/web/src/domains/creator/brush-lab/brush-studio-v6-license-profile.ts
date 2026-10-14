@@ -21,8 +21,18 @@ export type BrushStudioV6MaterialExecution =
   | "native"
   | "compatibility-adapter";
 
+// [라이선스 P0 확정 2026-10-14] 기본 프로필은 "permissive-only"로 고정한다.
+// 기존 기본값 "noncommercial-full"은 CC-BY-NC-4.0인 Mixbox(mixbox-js-v2)를
+// 별도 지정 없이 허용해, 프로필을 명시하지 않은 상용 빌드에 비상업 전용
+// 제공자가 그대로 들어갈 수 있었다. 소비처 실측(2026-10-14): 기본값은
+// provider-runtime·product-bridge·engine 정규화의 폴백으로만 쓰이며
+// 환경변수·빌드 시점 오버라이드는 없다. 즉 프로필을 지정하지 않은 모든
+// 프로그램은 이 기본값으로 판정된다. 무료·비상업 배포판이 필요하면 저장
+// 프로그램에 "noncommercial-full"을 명시적으로 opt-in 해야 한다.
+// 근거: 라이선스 감사 REPORT.md 문제 1, 검증 테스트
+// brush-studio-v6-license-profile.commercial-block.test.ts.
 export const BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE =
-  "noncommercial-full" as const satisfies BrushStudioV6LicenseProfile;
+  "permissive-only" as const satisfies BrushStudioV6LicenseProfile;
 
 export interface BrushStudioV6ProviderManifestEntry {
   readonly id: string;

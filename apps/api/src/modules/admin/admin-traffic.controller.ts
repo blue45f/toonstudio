@@ -31,6 +31,15 @@ export class AdminTrafficController {
     return this.adminTrafficService.getOverview(requireUserId(userId), days);
   }
 
+  @Get("web-vitals")
+  @Header("Cache-Control", "private, no-store, max-age=0")
+  async getWebVitals(
+    @Headers("x-user-id") userId: string | undefined,
+    @Query("days") days: string | undefined,
+  ) {
+    return this.adminTrafficService.getWebVitals(requireUserId(userId), days);
+  }
+
   @Get("pulse")
   @Header("Cache-Control", "private, no-store, max-age=0")
   async getPulse(@Headers("x-user-id") userId: string | undefined) {

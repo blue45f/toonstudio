@@ -379,6 +379,35 @@ describe("StudioVrmCharacterLibraryPanel", () => {
       .toBe(STUDIO_VRM_1_PUBLIC_LICENSE_URL);
   });
 
+  it("shows the bundled license notice on the AliciaSolid card and none on other bundled cards", () => {
+    const alicia = createEntry("alicia", "아리시아", "sample", {
+      licenseNotice: {
+        label: "니코니 솔리드 라이선스",
+        summary:
+          "Alicia Solid · © DWANGO Co., Ltd. — 니코니 솔리드 라이선스가 적용됩니다. 재배포·2차 이용 시 이 라이선스 고지가 필요합니다.",
+        licenseUrl: "https://3d.nicovideo.jp/alicia/rule.html",
+      },
+    });
+    // production 카탈로그에 실제로 노출되는 다른 번들 모델 (고지 없음)
+    const plain = createEntry("rubin", "루빈", "sample");
+    const view = renderPanel({ entries: [alicia, plain], activeModelId: "alicia" });
+
+    // 접힌 상태에서도 라이선스 이름이 카드에 보여야 사용자가 도달 가능하다.
+    expect(screen.getByText("니코니 솔리드 라이선스")).toBeTruthy();
+    const notice = view.container.querySelector(
+      '[data-studio-vrm-bundled-license-notice="alicia"]',
+    );
+    expect(notice).toBeTruthy();
+    expect(
+      view.container.querySelectorAll("[data-studio-vrm-bundled-license-notice]"),
+    ).toHaveLength(1);
+
+    fireEvent.click(screen.getByText("니코니 솔리드 라이선스"));
+    expect(screen.getByText(/© DWANGO Co\., Ltd\./)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /라이선스 문서/ }).getAttribute("href"))
+      .toBe("https://3d.nicovideo.jp/alicia/rule.html");
+  });
+
   it("owns a multiple .vrm file picker and forwards its change exactly once", () => {
     const onFileChange = vi.fn();
     const view = renderPanel({ onFileChange });

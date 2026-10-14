@@ -50,6 +50,14 @@ const MOBILE_RECENT_LIMIT = 6;
 /** 인기 키워드 칩의 최대 수. */
 const POPULAR_TAG_LIMIT = 8;
 
+/**
+ * 마켓 홈 밴드 구성 (8구역 펼침 해소):
+ * ① buy — 히어로·카테고리·최근 공유. 첫 화면은 구매 동선만 보인다.
+ * ② explore — 스토어 내비·패밀리 탐색·컬렉션·3D 추천·인기 키워드(전부 구매 탐색).
+ * ③ sell — 판매자 밴드. 구매 흐름을 끊지 않게 탐색 뒤로 분리하고 CTA도 보조(outline)로 강등.
+ * ④ guide — 처음 안내·다음 작업·사용권 안내(접힌 안내가 있는 하단 묶음).
+ * 판매자 기능은 지우지 않고 층위만 분리한다 — 딥링크(/market/publish 등)는 그대로 동작한다.
+ */
 export function MarketHomePage() {
   const t = useBilingual("MarketHomePage");
   const marketHomeDescription = t(
@@ -98,6 +106,7 @@ export function MarketHomePage() {
 
   return (
     <div>
+      <div data-market-band="buy">
       <section className="border-b border-line bg-ledger">
         <Container size="wide" className="py-6 sm:py-8 lg:py-10">
           <SitePageHeader
@@ -217,6 +226,9 @@ export function MarketHomePage() {
         )}
       </Container>
 
+      </div>
+
+      <div data-market-band="explore">
       <Container size="wide">
         <MarketNavHeader />
       </Container>
@@ -224,36 +236,6 @@ export function MarketHomePage() {
       <Container size="wide" className="py-8 sm:py-10 lg:py-12">
         <MarketResourceFamilyExplorer />
       </Container>
-
-      <section className="border-y border-line bg-gradient-to-br from-accent/10 via-panel to-canvas py-6 sm:py-10" aria-labelledby="market-seller-band-title">
-        <Container size="wide" className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-2xl">
-            <p className="eyebrow text-accent">FOR SELLERS</p>
-            <h2 id="market-seller-band-title" className="mt-2 text-xl font-bold text-fg sm:text-2xl">
-              {t("만든 소재를 공유하고 판매해 보세요", "Share and sell the materials you made")}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-fg-2">
-              {t("브러시·템플릿·3D 에셋을 올리면 다른 작가의 컷에 쓰여요. 안내를 따라 5분이면 시작할 수 있어요.", "List your brushes, templates and 3D assets and other artists will use them in their panels. Start in about 5 minutes.")}
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-3">
-            <Link
-              href="/market/publish"
-              className={buttonClass({ variant: "solid", size: "md", className: "min-h-11" })}
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              {t("소재 공유하기", "Share materials")}
-            </Link>
-            <Link
-              href="/studio?assetMarket=community&communityView=share"
-              className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}
-            >
-              <Upload className="h-4 w-4" aria-hidden="true" />
-              {t("Studio에서 공유", "Share from Studio")}
-            </Link>
-          </div>
-        </Container>
-      </section>
 
       <section className="border-y border-line bg-card/40 py-8 sm:py-10">
         <Container size="wide">
@@ -347,6 +329,39 @@ export function MarketHomePage() {
         </Container>
       ) : null}
 
+      </div>
+
+      <section data-market-band="sell" className="border-y border-line bg-panel py-6 sm:py-10" aria-labelledby="market-seller-band-title">
+        <Container size="wide" className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-2xl">
+            <p className="eyebrow text-accent">FOR SELLERS</p>
+            <h2 id="market-seller-band-title" className="mt-2 text-xl font-bold text-fg sm:text-2xl">
+              {t("만든 소재를 공유하고 판매해 보세요", "Share and sell the materials you made")}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-fg-2">
+              {t("브러시·템플릿·3D 에셋을 올리면 다른 작가의 컷에 쓰여요. 안내를 따라 5분이면 시작할 수 있어요.", "List your brushes, templates and 3D assets and other artists will use them in their panels. Start in about 5 minutes.")}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-3">
+            <Link
+              href="/market/publish"
+              className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {t("소재 공유하기", "Share materials")}
+            </Link>
+            <Link
+              href="/studio?assetMarket=community&communityView=share"
+              className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}
+            >
+              <Upload className="h-4 w-4" aria-hidden="true" />
+              {t("Studio에서 공유", "Share from Studio")}
+            </Link>
+          </div>
+        </Container>
+      </section>
+
+      <div data-market-band="guide">
       <Container size="wide" className="pb-14">
         <SiteDisclosure
           className="mb-10"
@@ -392,6 +407,7 @@ export function MarketHomePage() {
           </ul>
         </SiteDisclosure>
       </Container>
+      </div>
     </div>
   );
 }

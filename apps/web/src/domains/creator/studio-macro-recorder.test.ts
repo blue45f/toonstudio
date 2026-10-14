@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createStudioMacroSession,
   recordStudioMacroCommand,
+  removeStudioMacroCommand,
   startStudioMacroRecording,
   stopStudioMacroRecording,
 } from "./studio-macro-recorder";
@@ -35,5 +36,28 @@ describe("studio macro recorder", () => {
       "page.set-background",
       "page.apply-grade-preset",
     ]);
+  });
+
+  it("coalesces consecutive same-type setters to the last value", () => {
+    let session = startStudioMacroRecording(createStudioMacroSession("연속 입력"), 7);
+    session = recordStudioMacroCommand(session, { type: "set-opacity", opacity: 0.2 });
+    session = recordStudioMacroCommand(session, { type: "set-opacity", opacity: 0.6 });
+    session = recordStudioMacroCommand(session, { type: "set-hidden", hidden: true });
+    session = recordStudioMacroCommand(session, { type: "set-opacity", opacity: 0.9 });
+    expect(session.commands).toEqual([
+      { type: "set-opacity", opacity: 0.6 },
+      { type: "set-hidden", hidden: true },
+      { type: "set-opacity", opacity: 0.9 },
+    ]);
+  });
+
+  it("removes a recorded step by index and ignores out-of-range indices", () => {
+    let session = startStudioMacroRecording(createStudioMacroSession("삭제"), 9);
+    session = recordStudioMacroCommand(session, { type: "set-opacity", opacity: 0.5 });
+    session = recordStudioMacroCommand(session, { type: "set-locked", locked: true });
+    const removed = removeStudioMacroCommand(session, 0);
+    expect(removed.commands).toEqual([{ type: "set-locked", locked: true }]);
+    expect(removeStudioMacroCommand(session, 5)).toBe(session);
+    expect(removeStudioMacroCommand(session, -1)).toBe(session);
   });
 });

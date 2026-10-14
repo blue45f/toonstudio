@@ -36,11 +36,25 @@
 .workspace-hero-progress-fill{position:relative;height:100%;border-radius:inherit;
   background:linear-gradient(90deg,var(--color-accent),#37c4be);
   box-shadow:0 0 14px color-mix(in srgb,var(--color-accent) 75%,transparent),0 0 34px color-mix(in srgb,#37c4be 45%,transparent)}
+/* S3-18: 진행 바 자체는 상태 표시라 유지하되, 그 위를 반복해서 흐르는 광택은
+ * 작업 표면의 상주 모션이라 제거한다(BLUEPRINT §6.2 (3) 모션 문법). */
 .workspace-hero-progress-fill::after{content:"";position:absolute;inset:0;
   background:linear-gradient(100deg,transparent 20%,rgb(255 255 255/.5) 50%,transparent 80%);
-  transform:translateX(-100%);animation:workspace-hero-progress-sheen 2.8s ease-in-out infinite}
+  transform:translateX(-100%)}
 .workspace-hero-progress-label{display:flex;align-items:baseline;gap:.5rem;margin:.5rem 0 0;font-size:.72rem;color:var(--color-fg-2)}
 .workspace-hero-progress-label strong{font-size:.82rem;font-weight:900;color:var(--color-fg);letter-spacing:.01em}
+
+/* Stage tint chip (S3-18, BLUEPRINT §6.3): 히어로 스트립의 단계 칩은
+ * --domain-tint 하나만 소비한다. 제작 중은 스펙트럼 기본값, 보관·휴지통은
+ * 차분한 틴트로 덮어쓴다. 칩은 상태 표시라 모션을 두지 않는다. */
+.workspace-hero-stage-chip{display:inline-flex;align-items:center;align-self:flex-start;min-height:1.7rem;
+  margin:.7rem 0 0;padding:.24rem .65rem;border-radius:999px;
+  border:1px solid color-mix(in srgb,var(--domain-tint,var(--color-accent)) 55%,transparent);
+  background:color-mix(in srgb,var(--domain-tint,var(--color-accent)) 14%,transparent);
+  color:var(--color-fg);font-size:.68rem;font-weight:800;letter-spacing:.04em}
+.workspace-hero-stage-chip[data-workspace-stage-chip="archived"]{--domain-tint:var(--color-cool,var(--color-fg-3))}
+.workspace-hero-stage-chip[data-workspace-stage-chip="trashed"]{--domain-tint:var(--color-fg-3)}
+@media (forced-colors:active){.workspace-hero-stage-chip{border-color:CanvasText;background:Canvas;color:CanvasText}}
 
 /* One-click CTA sheen */
 .workspace-hero-cta{position:relative;overflow:hidden}

@@ -4,7 +4,7 @@ import { comicCast } from "@/shared/components/comic/comic-cast";
 import type { ComicCastId } from "@/shared/components/comic/comic-cast";
 import { ArrowLeft, ArrowRight, Check, Clock3, Heart, Search, Shuffle, Sparkles, Trophy } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { findGame, PLAY_GAMES } from "./game-registry";
 import { freshSeed, koreaDay, promptFor, randomFrom, safeSeed } from "./lab/creative-core";
@@ -17,6 +17,8 @@ import { Container } from "@/shared/components/section";
 import { claimMembershipActivity } from "@/platform/membership-wallet-client";
 import { SharePageButton } from "@/shared/components/share-page-button";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
+import Link from "@/shared/navigation/router-link";
+import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 const FILTERS = [["all", "전체"], ["draw", "드로잉"], ["story", "스토리"], ["sense", "색감"], ["arcade", "아케이드"], ["favorites", "즐겨찾기"]] as const;
 export function PlayPage() {
@@ -41,7 +43,7 @@ export function PlayPage() {
   const tab = FILTERS.some(([id]) => id === params.get("tab")) ? params.get("tab")! : "all";
   const daily = promptFor(today);
   useEffect(() => { const id = window.setInterval(() => setToday(koreaDay()), 60000); return () => clearInterval(id); }, []);
-  useEffect(() => { document.title = active ? `${active.label} · 놀이터 · ToonStudio` : "창작 놀이터 · ToonStudio"; }, [active]);
+  useDocumentTitle(active ? `${active.label} · 놀이터 · ToonStudio` : "창작 놀이터 · ToonStudio");
   useEffect(() => { headingRef.current?.focus(); if (activeId && findGame(activeId)) recordVisit(activeId); }, [activeId]);
   useEffect(() => {
     if (!active || !activeRewardKey) return;
@@ -73,7 +75,7 @@ export function PlayPage() {
   const dailyDone = todayResults.some((result) => result.game === "sketch-sprint" && result.label === daily[0]);
   if (godotMode) {
     return <Container className="play-page play-active">
-      <div className="play-active-navigation"><button type="button" className="play-back" onClick={() => setGodotMode(false)}><ArrowLeft size={17} />놀이터</button><Link to="/studio" className="play-text-link">전문 작업실 ↗</Link></div>
+      <div className="play-active-navigation"><button type="button" className="play-back" onClick={() => setGodotMode(false)}><ArrowLeft size={17} />놀이터</button><Link href="/studio" className="play-text-link">전문 작업실 ↗</Link></div>
       <header className="play-game-heading"><div><span className="play-eyebrow">TOONSTUDIO PLAY / GODOT EDITION</span><h1 ref={headingRef} tabIndex={-1}>툰스튜디오 아케이드</h1><p>12가지 게임을 하나의 Godot 빌드로 — 엔진은 첫 로드 한 번만 받아요.</p></div></header>
       <PlayGodotEmbed onExitToWeb={() => setGodotMode(false)} />
     </Container>;
@@ -81,7 +83,7 @@ export function PlayPage() {
   if (active) {
     const { Component: Game } = active;
     return <Container className="play-page play-active">
-      <div className="play-active-navigation"><button type="button" className="play-back" onClick={exitGame}><ArrowLeft size={17} />놀이터</button><Link to="/studio" className="play-text-link">전문 작업실 ↗</Link></div>
+      <div className="play-active-navigation"><button type="button" className="play-back" onClick={exitGame}><ArrowLeft size={17} />놀이터</button><Link href="/studio" className="play-text-link">전문 작업실 ↗</Link></div>
       <header className="play-game-heading"><div><span className="play-eyebrow">TOONSTUDIO PLAY / {active.localOnly ? "CREATIVE LAB" : "ARCADE"}</span><h1 ref={headingRef} tabIndex={-1}><active.Icon className="h-7 w-7" />{active.label}</h1><p>{active.tagline}</p></div>
         <button type="button" className="play-button" aria-pressed={journal.favorites.includes(active.id)} onClick={() => toggleFavorite(active.id)}><Heart size={16} fill={journal.favorites.includes(active.id) ? "currentColor" : "none"} />즐겨찾기</button>
       </header>
@@ -120,7 +122,7 @@ export function PlayPage() {
       </article></li>)}</ul>
       {!filtered.length && <div className="play-empty"><Search size={28} /><h3>{tab === "favorites" ? "좋아하는 콘텐츠를 모아 보세요." : "검색한 콘텐츠가 없어요."}</h3><p>{tab === "favorites" ? "카드의 하트 버튼을 누르면 여기에 모입니다." : "다른 검색어나 분류로 새 놀이를 찾아 보세요."}</p><button type="button" className="play-button" onClick={() => { const next = new URLSearchParams(params); next.delete("tab"); next.delete("q"); next.delete("game"); setParams(next, { replace: true }); }}>전체 콘텐츠 보기</button></div>}
     </section>
-    <section className="play-next-step"><div><span className="play-eyebrow">FROM PLAY TO YOUR NEXT PANEL</span><h2>마음에 드는 낙서 하나,<br />다음 작품의 첫 컷으로.</h2><p>스케치는 PNG·SVG, 팔레트는 CSS, 콘티는 수정 가능한 파일로.<br />놀이의 결과를 작업 자료로 남기고 전문 스튜디오로 이어가세요.</p></div><div className="play-actions"><Link to="/studio" className="play-button primary large">드로잉 스튜디오 열기 <ArrowRight size={17} /></Link><Link to="/learn" className="play-text-link">배우며 이어가기 ↗</Link></div></section>
+    <section className="play-next-step"><div><span className="play-eyebrow">FROM PLAY TO YOUR NEXT PANEL</span><h2>마음에 드는 낙서 하나,<br />다음 작품의 첫 컷으로.</h2><p>스케치는 PNG·SVG, 팔레트는 CSS, 콘티는 수정 가능한 파일로.<br />놀이의 결과를 작업 자료로 남기고 전문 스튜디오로 이어가세요.</p></div><div className="play-actions"><Link href="/studio" className="play-button primary large">드로잉 스튜디오 열기 <ArrowRight size={17} /></Link><Link href="/learn" className="play-text-link">배우며 이어가기 ↗</Link></div></section>
     <footer className="play-footer"><div><p>새 창작 콘텐츠는 로딩 후 서버·AI API 호출 없이 실행됩니다. 첫 방문과 아직 열지 않은 도구의 로딩에는 인터넷이 필요합니다. 브라우저 데이터 삭제 시 로컬 초안과 기록도 사라지므로 결과 파일을 보관해 주세요.</p><p>기존 웹툰 게임은 공개 카탈로그 메타데이터를 사용합니다. 표지는 출처·성인 제외·비표시 정책을 따르며 일부 인기 지표는 추정값(≈)입니다. 카드 그림은 오리지널 기능 안내 일러스트입니다.</p></div><SharePageButton path="/play" text="ToonStudio 창작 놀이터 — 드로잉·색감·스토리 실험" label="놀이터 공유" /></footer>
   </Container>;
 }

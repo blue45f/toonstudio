@@ -37,6 +37,11 @@ export const STUDIO_STABILIZER_MODES = [
     label: "정밀 추적",
     description: "펜 끝을 가상의 끈으로 의도적으로 뒤따라 긴 선화와 곡선을 정교하게 만듭니다.",
   },
+  {
+    id: "weighted",
+    label: "무게 추",
+    description: "질량을 가진 추가 펜을 끌듯 따라오고, 이동 속도에서 필압을 도출해 빠른 획 끝이 자연스럽게 가늘어집니다.",
+  },
 ] as const;
 
 export type StudioStabilizerMode = (typeof STUDIO_STABILIZER_MODES)[number]["id"];
@@ -71,6 +76,12 @@ export interface StudioStrokeStabilizerState {
   timeStamp: number;
   /** Last trustworthy hardware cadence, reused when a browser timestamp repeats or regresses. */
   sampleIntervalMs: number;
+  /**
+   * Weighted-mode spring velocity in logical px/ms. Optional and only populated after a weighted
+   * sample: the three original modes never read or write it, so their state stays byte-identical.
+   */
+  velocityX?: number;
+  velocityY?: number;
 }
 
 /** 화면 CSS 좌표 기준 속도 추적 상태. 캔버스 줌과 기기 샘플 주기의 영향을 분리한다. */
@@ -89,11 +100,27 @@ export interface StudioPointerVelocityResult {
   state: StudioPointerVelocityState;
 }
 
+/**
+ * 속도 게이트: 정규화된 화면 속도(CSS px/ms)가 구간 안에 있을 때만 보정을 적용한다.
+ * Lazy Nezumi의 Speed Smooth처럼 "느릴 때만 보정"을 표현한다. 경계에서는
+ * STUDIO_STABILIZER_SPEED_GATE_RAMP_PX_PER_MS 폭으로 선형 램프를 걸어 보정량이 튀지 않게 한다.
+ */
+export interface StudioStabilizerSpeedGate {
+  /** 구간 하한(CSS px/ms). 이보다 느리면 게이트 밖이다. */
+  minSpeed: number;
+  /** 구간 상한(CSS px/ms). 이보다 빠르면 게이트 밖이다. */
+  maxSpeed: number;
+  /** true면 구간 밖에서만 보정을 적용한다(빠를 때만 보정). */
+  invert?: boolean;
+}
+
 export interface StudioStrokeStabilizerOptions {
   strength: number;
   mode: StudioStabilizerMode;
   /** 캔버스 논리 좌표 1px이 차지하는 CSS px. 줌과 무관한 속도·가이드 반경에 사용한다. */
   coordinateScale?: number;
+  /** 지정하면 실효 강도에 속도 게이트 계수(0..1)를 곱한다. 미지정 시 기존 동작과 동일하다. */
+  speedGate?: StudioStabilizerSpeedGate;
 }
 
 /**
@@ -128,6 +155,11 @@ export interface StudioStrokeStabilizerResult {
   effectiveStrength: number;
   /** 정규화된 입력 속도(px/ms). 표준·정밀 모드에서도 진단 일관성을 위해 반환한다. */
   speed: number;
+  /**
+   * Weighted 모드에서 속도로 도출한 필압 배율(0.25..1). 그 외 모드에서는 undefined다.
+   * 소비자는 하드웨어 필압에 이 값을 곱해 빠른 획 끝이 가늘어지는 자동 테이퍼를 얻는다.
+   */
+  derivedPressure?: number;
 }
 
 export type StudioStrokeStabilizerProvider = "pure" | "lazy-brush";
@@ -335,6 +367,14 @@ export function describeStudioStabilizerLatency(
       estimatedMs: null,
     };
   }
+  if (normalizedMode === "weighted") {
+    return {
+      kind: "variable",
+      label: "물리 후행",
+      description: "무게 추의 관성으로 따라오며, 속도에서 도출한 필압으로 빠른 획 끝이 가늘어집니다.",
+      estimatedMs: null,
+    };
+  }
 
   const estimatedMs = estimateStandardStabilizerLatencyMs(strength);
   return {
@@ -482,6 +522,93 @@ function precisionRadiusCssPx(strength: number): number {
   return strength <= 0 ? 0 : 1.5 + strength * 2.35;
 }
 
+/** 속도 게이트 경계 램프 폭(CSS px/ms). 경계에서 보정량이 0↔1로 튀지 않게 한다. */
+export const STUDIO_STABILIZER_SPEED_GATE_RAMP_PX_PER_MS = 0.08;
+
+/**
+ * 게이트 구간 안쪽 계수(0..1)를 사다리꼴 창으로 계산한다. 구간 안은 1, 밖은 0,
+ * 경계 ±램프 구간에서는 선형으로 이어진다. invert면 안/밖이 뒤집힌다.
+ */
+export function studioStabilizerSpeedGateFactor(
+  gate: StudioStabilizerSpeedGate | undefined,
+  speedCssPxPerMs: number
+): number {
+  if (!gate) return 1;
+  const ramp = STUDIO_STABILIZER_SPEED_GATE_RAMP_PX_PER_MS;
+  const minSpeed = clamp(finiteNumber(gate.minSpeed, 0), 0, 100);
+  const maxSpeed = clamp(finiteNumber(gate.maxSpeed, 100), minSpeed, 100);
+  const speed = finiteNumber(speedCssPxPerMs, 0);
+  const rising = clamp((speed - (minSpeed - ramp)) / ramp, 0, 1);
+  const falling = clamp(((maxSpeed + ramp) - speed) / ramp, 0, 1);
+  const inside = Math.min(rising, falling);
+  return gate.invert ? 1 - inside : inside;
+}
+
+/** Weighted: 이 화면 속도(CSS px/ms)에서 도출 필압이 하한에 닿는다. */
+export const STUDIO_WEIGHTED_PRESSURE_FLOOR_SPEED_PX_PER_MS = 2.4;
+/** Weighted: 도출 필압 하한. 완전히 사라지지 않아 획이 끊기지 않는다. */
+export const STUDIO_WEIGHTED_MIN_DERIVED_PRESSURE = 0.25;
+const WEIGHTED_MAX_VELOCITY_PX_PER_MS = 50;
+
+/**
+ * Weighted 물리 한 걸음: 임계 감쇠 스프링-댐퍼로 추를 목표점으로 끌어당긴다.
+ *
+ * 강도를 ramp 추종 지연 시간(lagMs)으로 환산해 ω=2/lag, k=ω², c=2ω(ζ=1)로 두면
+ * 정상 상태 후행 거리가 lagMs × 속도와 같아져 강도의 체감이 속도와 무관하게 일정하다.
+ * 적분은 ω·dt가 커져도 발산하지 않도록 서브스텝으로 나눈다(결정적·순수).
+ * derivedPressure는 추의 화면 속도에서 도출한다: 빠를수록 얇게, 멈추면 1로 복귀.
+ */
+function weightedPoint(
+  previousVelocityX: number,
+  previousVelocityY: number,
+  outputX: number,
+  outputY: number,
+  rawX: number,
+  rawY: number,
+  strength: number,
+  elapsedMs: number,
+  coordinateScale: number
+): {
+  point: readonly [number, number];
+  velocityX: number;
+  velocityY: number;
+  derivedPressure: number;
+} {
+  if (strength <= 0) {
+    return { point: [rawX, rawY], velocityX: 0, velocityY: 0, derivedPressure: 1 };
+  }
+  const lagMs = 6 + strength * 2.2;
+  const omega = 2 / lagMs;
+  const stiffness = omega * omega;
+  const damping = 2 * omega;
+  const substeps = Math.max(
+    1,
+    Math.min(64, Math.ceil(Math.max(elapsedMs / 4, (elapsedMs * omega) / 0.5)))
+  );
+  const dt = elapsedMs / substeps;
+  let x = outputX;
+  let y = outputY;
+  let vx = clamp(finiteNumber(previousVelocityX, 0), -WEIGHTED_MAX_VELOCITY_PX_PER_MS, WEIGHTED_MAX_VELOCITY_PX_PER_MS);
+  let vy = clamp(finiteNumber(previousVelocityY, 0), -WEIGHTED_MAX_VELOCITY_PX_PER_MS, WEIGHTED_MAX_VELOCITY_PX_PER_MS);
+  for (let step = 0; step < substeps; step += 1) {
+    vx += ((rawX - x) * stiffness - vx * damping) * dt;
+    vy += ((rawY - y) * stiffness - vy * damping) * dt;
+    vx = clamp(vx, -WEIGHTED_MAX_VELOCITY_PX_PER_MS, WEIGHTED_MAX_VELOCITY_PX_PER_MS);
+    vy = clamp(vy, -WEIGHTED_MAX_VELOCITY_PX_PER_MS, WEIGHTED_MAX_VELOCITY_PX_PER_MS);
+    x += vx * dt;
+    y += vy * dt;
+  }
+  const speedCss = Math.hypot(vx, vy) * coordinateScale;
+  const derivedPressure = clamp(
+    1
+      - (speedCss / STUDIO_WEIGHTED_PRESSURE_FLOOR_SPEED_PX_PER_MS)
+        * (1 - STUDIO_WEIGHTED_MIN_DERIVED_PRESSURE),
+    STUDIO_WEIGHTED_MIN_DERIVED_PRESSURE,
+    1
+  );
+  return { point: [x, y], velocityX: vx, velocityY: vy, derivedPressure };
+}
+
 function timeNormalizedEmaPoint(
   outputX: number,
   outputY: number,
@@ -538,12 +665,33 @@ export function stabilizeStudioStrokeSample(
   const coordinateScale = safeCoordinateScale(options.coordinateScale);
   const speed = logicalSpeed * coordinateScale;
 
-  let effectiveStrength = strength;
+  const gateFactor = studioStabilizerSpeedGateFactor(options.speedGate, speed);
+  const gatedStrength = strength * gateFactor;
+  let effectiveStrength = gatedStrength;
   let point: readonly [number, number];
-  if (mode === "precision") {
-    point = precisionPoint(fallbackX, fallbackY, rawX, rawY, strength, coordinateScale);
+  let derivedPressure: number | undefined;
+  let velocityX: number | undefined;
+  let velocityY: number | undefined;
+  if (mode === "weighted") {
+    const weighted = weightedPoint(
+      finiteNumber(previous.velocityX, 0),
+      finiteNumber(previous.velocityY, 0),
+      fallbackX,
+      fallbackY,
+      rawX,
+      rawY,
+      gatedStrength,
+      elapsedMs,
+      coordinateScale
+    );
+    point = weighted.point;
+    derivedPressure = weighted.derivedPressure;
+    velocityX = weighted.velocityX;
+    velocityY = weighted.velocityY;
+  } else if (mode === "precision") {
+    point = precisionPoint(fallbackX, fallbackY, rawX, rawY, gatedStrength, coordinateScale);
   } else {
-    if (mode === "adaptive") effectiveStrength = adaptiveStrength(strength, speed);
+    if (mode === "adaptive") effectiveStrength = adaptiveStrength(gatedStrength, speed);
     point = timeNormalizedEmaPoint(
       fallbackX,
       fallbackY,
@@ -567,9 +715,11 @@ export function stabilizeStudioStrokeSample(
       outputY,
       timeStamp,
       sampleIntervalMs,
+      ...(velocityX !== undefined ? { velocityX, velocityY } : {}),
     },
     effectiveStrength,
     speed,
+    ...(derivedPressure !== undefined ? { derivedPressure } : {}),
   };
 }
 
@@ -613,6 +763,9 @@ function bridgeResult(
     state: { ...result.state },
     effectiveStrength: result.effectiveStrength,
     speed: result.speed,
+    ...(result.derivedPressure !== undefined
+      ? { derivedPressure: result.derivedPressure }
+      : {}),
     accepted: input.accepted,
     provider: input.provider,
     phase: input.phase,

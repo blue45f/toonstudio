@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Link, Route, Routes, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { Link, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { LESSONS, READINGS, TERMS } from "./learning-content";
 import {
@@ -168,7 +168,10 @@ function LessonDetail({ store }: { store: LearningStore }) {
 }
 
 function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const id = useId();
+  const [shortcutNotice, setShortcutNotice] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
   const finishHeadingRef = useRef<HTMLHeadingElement>(null);
   const practice = useLearningPractice();
@@ -202,6 +205,81 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
     prevCompletedRef.current = saved.completed;
   }, [saved.completed]);
 
+  // 강좌 상세 키보드 동선 — 마우스 없이 강좌를 순회하고 체크·완료를 토글한다.
+  //   [ 또는 Alt+← : 이전 강좌 · ] 또는 Alt+→ : 다음 강좌
+  //   1~9 : n번째 실습 체크 토글 · C : 완료 기록 토글
+  // 입력 필드(메모·검색 등)·선택 요소 안에서는 가로채지 않고, IME 조합 중·
+  // 키 반복·브라우저/시스템 조합(Ctrl·Meta, AltGr=Ctrl+Alt)도 건드리지 않는다.
+  // 이동 목적지는 화면의 이전·다음 링크와 같은 순서(previous/next)를 쓰고,
+  // 경로 맥락(?from)이 있으면 그대로 이어 붙여 키보드 이동에서도 끊기지 않게 한다.
+  useEffect(() => {
+    const fromParam = searchParams.get("from");
+    const navLessonUrl = (targetId: string) => (fromParam
+      ? `${lessonUrl(targetId)}?from=${encodeURIComponent(fromParam)}`
+      : lessonUrl(targetId));
+    const toggleCheck = (index: number) => {
+      const checked = saved.checks.includes(index);
+      store.patchLesson(lesson.id, {
+        checks: checked
+          ? saved.checks.filter((value) => value !== index)
+          : [...saved.checks, index],
+      });
+      const nextCount = checked ? checkedCount - 1 : checkedCount + 1;
+      setShortcutNotice(`${index + 1}번 체크를 ${checked ? "해제" : "완료"}했습니다. 실습 체크리스트 ${nextCount}/${lesson.checks.length}`);
+    };
+    const toggleCompleted = () => {
+      if (saved.completed) {
+        store.patchLesson(lesson.id, { completed: false });
+        setShortcutNotice("학습 완료 기록을 해제했습니다.");
+      } else if (ready) {
+        store.patchLesson(lesson.id, { completed: true });
+        setShortcutNotice("강좌를 완료로 기록했습니다.");
+      } else {
+        setShortcutNotice("실습 체크리스트를 모두 체크하고 퀴즈에 정답을 선택해야 완료할 수 있습니다.");
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.isComposing) return;
+      if (event.metaKey) return;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const tag = target?.tagName ?? "";
+      if (target?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (event.altKey && !event.ctrlKey) {
+        if (event.key === "ArrowLeft" && previous) {
+          event.preventDefault();
+          navigate(navLessonUrl(previous.id));
+        } else if (event.key === "ArrowRight" && next) {
+          event.preventDefault();
+          navigate(navLessonUrl(next.id));
+        }
+        return;
+      }
+      if (event.ctrlKey || event.altKey) return;
+      if (event.key === "[" || event.key === "{") {
+        if (previous) {
+          event.preventDefault();
+          navigate(navLessonUrl(previous.id));
+        }
+      } else if (event.key === "]" || event.key === "}") {
+        if (next) {
+          event.preventDefault();
+          navigate(navLessonUrl(next.id));
+        }
+      } else if (/^[1-9]$/.test(event.key)) {
+        const index = Number(event.key) - 1;
+        if (index < lesson.checks.length) {
+          event.preventDefault();
+          toggleCheck(index);
+        }
+      } else if (event.key === "c" || event.key === "C") {
+        event.preventDefault();
+        toggleCompleted();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [checkedCount, lesson.checks.length, lesson.id, navigate, next, previous, ready, saved.checks, saved.completed, searchParams, store]);
+
   return (
     <>
       <header className="learn-lesson-header learn-guided-lesson-header">
@@ -222,6 +300,15 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
           <div><span>자가 점검 진행률</span><strong>{progress}%</strong></div>
           <progress value={progress} max={100} aria-label={`${lesson.title} 자가 점검 진행률`} />
         </div>
+        <p className="learn-shortcut-hint">
+          <span>키보드 단축키</span>
+          <span><kbd>[</kbd> 이전 강좌</span>
+          <span><kbd>]</kbd> 다음 강좌</span>
+          <span><kbd>1</kbd>–<kbd>{lesson.checks.length}</kbd> 체크 켜고 끄기</span>
+          <span><kbd>C</kbd> 완료 기록 켜고 끄기</span>
+          <span className="learn-small">메모 입력 중에는 동작하지 않습니다.</span>
+        </p>
+        <p className="learn-visually-hidden" role="status">{shortcutNotice}</p>
       </header>
 
       <section className="learn-lesson-kickoff" aria-labelledby={`${id}-outcome`}>
@@ -341,6 +428,7 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
                     <input
                       type="checkbox"
                       checked={checked}
+                      aria-keyshortcuts={String(index + 1)}
                       onChange={(event) => store.patchLesson(lesson.id, {
                         checks: event.currentTarget.checked
                           ? [...saved.checks, index]
@@ -348,6 +436,7 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
                       })}
                     />
                     <span>{check}</span>
+                    <kbd className="learn-check-key" aria-hidden="true">{index + 1}</kbd>
                   </label>
                 );
               })}
@@ -413,6 +502,7 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
               type="button"
               className="learn-primary"
               disabled={!ready || saved.completed}
+              aria-keyshortcuts="C"
               onClick={() => store.patchLesson(lesson.id, { completed: true })}
             >
               {saved.completed ? "학습 완료됨" : "이 강좌 학습 완료"}
@@ -440,10 +530,10 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
 
           <nav className="learn-prev-next" aria-label="이전·다음 강좌">
             {previous
-              ? <Link to={lessonUrl(previous.id)}><span>← 이전 수업</span><strong>{previous.title}</strong></Link>
+              ? <Link to={lessonUrl(previous.id)} aria-keyshortcuts="[ Alt+ArrowLeft"><span>← 이전 수업</span><strong>{previous.title}</strong></Link>
               : <Link to="/learn#learning-paths"><span>학습 경로</span><strong>목표별 경로 선택하기</strong></Link>}
             {next
-              ? <Link to={lessonUrl(next.id)}><span>다음 수업 →</span><strong>{next.title}</strong></Link>
+              ? <Link to={lessonUrl(next.id)} aria-keyshortcuts="] Alt+ArrowRight"><span>다음 수업 →</span><strong>{next.title}</strong></Link>
               : <Link to="/learn"><span>커리큘럼</span><strong>전체 강좌 다시 보기 →</strong></Link>}
           </nav>
         </div>

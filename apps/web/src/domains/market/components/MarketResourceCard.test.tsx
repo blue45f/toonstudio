@@ -61,6 +61,13 @@ describe("MarketResourceCard", () => {
     expect(html).toContain("느와르 블라썸 팔레트");
     expect(html).toContain("테스트 작가");
     expect(html).toContain("CC BY 4.0");
+    // S3-17 (P-4): 라이선스는 아트 위 배지로, 가격은 1차 정보로 표시한다.
+    // SSR에서는 상거래 설정이 아직 없어 무료 운영 기본값 → "무료" 배지.
+    expect(html).toContain('data-market-license-badge="true"');
+    expect(html).toContain('data-market-price="free"');
+    expect(html).toContain("무료");
+    expect(html).toContain("aspect-[16/10]");
+    expect(html).not.toContain("유료 운영");
     expect(html).toContain("#야경");
     expect(html).toContain(`href="/market/resource/${record.id}"`);
     expect(html).toContain("적용 전 확인");
@@ -68,7 +75,10 @@ describe("MarketResourceCard", () => {
     expect(html).toContain("bg-canvas");
     expect(html).toContain("bg-accent");
     expect(html).toContain("text-on-accent");
-    expect(html).toContain("비교 목록에 추가");
+    expect(html).toContain("찜하기");
+    // 카드 행동 다이어트: 비교 토글은 카드 기본 상태에 노출하지 않는다(상세에서 도달).
+    expect(html).not.toContain("비교 목록에 추가");
+    expect(html).not.toContain("비교 목록에서 제거");
     expect(html).not.toContain(">4.9<");
     expect(html).not.toContain("공식 인증 배급자");
     expect(html).not.toContain("text-white");

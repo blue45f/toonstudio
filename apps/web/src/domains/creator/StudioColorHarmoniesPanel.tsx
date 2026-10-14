@@ -14,6 +14,14 @@ import {
   type HarmonyMode,
 } from "./studio-color-harmony-engine";
 import { normalizeHexColor } from "./studio-color-utils";
+import {
+  GAMUT_MASK_PRESETS,
+  applyGamutSelection,
+  clampHexToGamut,
+  getGamutMaskPreset,
+  isHexInGamut,
+  mixStepHexes,
+} from "./studio-gamut-mask";
 
 export interface StudioColorHarmoniesPanelProps {
   readonly value: string;
@@ -42,12 +50,20 @@ export function StudioColorHarmoniesPanel({
   const [lockedBase, setLockedBase] = useState<string | null>(null);
   const [swatchIndex, setSwatchIndex] = useState<number | null>(null);
   const [savedBadge, setSavedBadge] = useState(false);
+  const [gamutMaskId, setGamutMaskId] = useState<string | null>(null);
+  const [luminosityLocked, setLuminosityLocked] = useState(false);
+  const [mixerEndHex, setMixerEndHex] = useState<string | null>(null);
+  const [mixerStepCount, setMixerStepCount] = useState(5);
+  const [mixerSavedBadge, setMixerSavedBadge] = useState(false);
   const panelId = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const swatchRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const savedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mixerTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentColor = normalizeHexColor(value) ?? "#000000";
   const baseColor = lockedBase ?? currentColor;
+  const activeGamutMask = getGamutMaskPreset(gamutMaskId);
+  const currentInGamut = activeGamutMask === null || isHexInGamut(currentColor, activeGamutMask);
 
   const harmonies = getAllHarmonies(baseColor);
   const selectedHarmony = harmonies.find((h) => h.mode === activeMode) ?? harmonies[0];
@@ -57,21 +73,51 @@ export function StudioColorHarmoniesPanel({
 
   useEffect(() => {
     setSavedBadge(false);
+    setMixerSavedBadge(false);
     if (savedTimeout.current !== null) clearTimeout(savedTimeout.current);
     savedTimeout.current = null;
+    if (mixerTimeout.current !== null) clearTimeout(mixerTimeout.current);
+    mixerTimeout.current = null;
     return () => {
       if (savedTimeout.current !== null) clearTimeout(savedTimeout.current);
+      if (mixerTimeout.current !== null) clearTimeout(mixerTimeout.current);
     };
-  }, [baseColor, activeMode]);
+  }, [baseColor, activeMode, gamutMaskId]);
 
   const selectMode = (mode: HarmonyMode) => {
     setActiveMode(mode);
     setSwatchIndex(null);
   };
 
+  /**
+   * Selection-time filter (combination rule): harmony schemes only propose
+   * colors; the gamut mask and the luminosity lock adjust the pick exactly
+   * once, here, before it is applied. With both off this is a pass-through.
+   */
+  const adjustPick = (hex: string): string =>
+    applyGamutSelection(currentColor, hex, {
+      mask: activeGamutMask,
+      luminosityLocked,
+    }).hex;
+
   const selectSwatch = (index: number) => {
     setSwatchIndex(index);
-    onSelectColor(selectedHarmony.colors[index]!);
+    onSelectColor(adjustPick(selectedHarmony.colors[index]!));
+  };
+
+  const mixerEnd = mixerEndHex ?? selectedHarmony.colors[selectedHarmony.colors.length - 1] ?? baseColor;
+  const mixerSteps = mixStepHexes(baseColor, mixerEnd, mixerStepCount, activeGamutMask);
+
+  const handleSaveMixerPalette = () => {
+    if (!onSaveAsPalette) return;
+    onSaveAsPalette(`단계 믹서: ${baseColor} → ${mixerEnd}`, [...mixerSteps]);
+    if (saveFeedbackExternally) return;
+    setMixerSavedBadge(true);
+    if (mixerTimeout.current !== null) clearTimeout(mixerTimeout.current);
+    mixerTimeout.current = setTimeout(() => {
+      mixerTimeout.current = null;
+      setMixerSavedBadge(false);
+    }, 1800);
   };
 
   const handleSavePalette = () => {
@@ -118,6 +164,65 @@ export function StudioColorHarmoniesPanel({
       <p className="text-[0.62rem] leading-relaxed text-fg-3">
         {lockedBase === null ? "현재 색에 맞춰 배색합니다. 기준을 고정하면 같은 배색의 색들을 이어서 고를 수 있어요." : "색을 골라도 기준색과 배색을 유지합니다."}
       </p>
+      {/* Gamut mask & luminosity lock — selection-time filters over the schemes */}
+      <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-card/40 p-1.5">
+        <div className="flex flex-wrap items-center gap-1" role="group" aria-label="색역 마스크">
+          <span className="px-1 text-[0.62rem] font-medium text-fg-2">색역</span>
+          <button
+            type="button"
+            aria-pressed={gamutMaskId === null}
+            onClick={() => setGamutMaskId(null)}
+            className={`min-h-11 rounded-lg border px-2 text-[0.62rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+              gamutMaskId === null ? "border-accent/40 bg-accent/10 font-semibold text-accent" : "border-line text-fg-2 hover:bg-raised"
+            }`}
+          >
+            제한 없음
+          </button>
+          {GAMUT_MASK_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              aria-pressed={gamutMaskId === preset.id}
+              onClick={() => setGamutMaskId(gamutMaskId === preset.id ? null : preset.id)}
+              className={`min-h-11 rounded-lg border px-2 text-[0.62rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+                gamutMaskId === preset.id ? "border-accent/40 bg-accent/10 font-semibold text-accent" : "border-line text-fg-2 hover:bg-raised"
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            aria-label="명도 잠금"
+            aria-pressed={luminosityLocked}
+            onClick={() => setLuminosityLocked(!luminosityLocked)}
+            className={`ml-auto flex min-h-11 items-center gap-1 rounded-lg border px-2 text-[0.62rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+              luminosityLocked ? "border-accent/40 bg-accent/10 font-semibold text-accent" : "border-line text-fg-2 hover:bg-raised"
+            }`}
+          >
+            {luminosityLocked ? <LockKeyhole className="size-3.5" aria-hidden /> : <UnlockKeyhole className="size-3.5" aria-hidden />}
+            {luminosityLocked ? "명도 고정됨" : "명도 잠금"}
+          </button>
+        </div>
+        {(activeGamutMask !== null || luminosityLocked) && (
+          <p className="px-1 text-[0.6rem] leading-relaxed text-fg-3">
+            {activeGamutMask !== null && `색역 «${activeGamutMask.label}» 안의 색만 고를 수 있어요. 배색 후보가 색역 밖이면 가장 가까운 색역 안 색으로 맞춰 적용합니다. `}
+            {luminosityLocked && "명도 잠금이 켜지면 색을 바꿔도 지금 명도가 유지됩니다. 색역과 함께 켜면 명도를 지킨 채 색역 안으로 맞춥니다."}
+          </p>
+        )}
+        {activeGamutMask !== null && !currentInGamut && (
+          <div className="flex flex-wrap items-center gap-1.5 px-1">
+            <span role="status" className="text-[0.62rem] text-fg-2">현재 색이 색역 밖에 있어요.</span>
+            <button
+              type="button"
+              onClick={() => onSelectColor(clampHexToGamut(currentColor, activeGamutMask))}
+              className="min-h-11 rounded-lg border border-accent/40 bg-accent/10 px-2 text-[0.62rem] font-semibold text-accent hover:bg-accent/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              현재 색을 색역 안으로 맞추기
+            </button>
+          </div>
+        )}
+      </div>
       {/* Visual Harmony Ribbon Preview */}
       <div className="relative overflow-hidden rounded-lg border border-line/60 p-1 bg-raised/40 shadow-inner">
         <div
@@ -235,6 +340,72 @@ export function StudioColorHarmoniesPanel({
           );
         })}
       </div>
+      </div>
+
+      {/* Step mixer: intermediate colors between the base and an end color */}
+      <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-card/40 p-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 px-1">
+          <span className="text-[0.62rem] font-medium text-fg-2">단계 믹서</span>
+          <span aria-hidden className="size-4 shrink-0 rounded border border-line-strong" style={{ backgroundColor: baseColor }} />
+          <span className="font-mono text-[0.6rem] text-fg-3">{baseColor}</span>
+          <span aria-hidden className="text-[0.6rem] text-fg-3">→</span>
+          <div className="flex flex-wrap items-center gap-1" role="group" aria-label="믹서 끝 색">
+            {selectedHarmony.colors.map((hex) => (
+              <button
+                key={`mixer-end-${hex}`}
+                type="button"
+                aria-label={`믹서 끝 색 ${hex}`}
+                aria-pressed={mixerEnd === hex}
+                onClick={() => setMixerEndHex(hex)}
+                className={`size-8 rounded-lg border border-line-strong shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+                  mixerEnd === hex ? "ring-2 ring-accent ring-offset-2 ring-offset-panel" : ""
+                }`}
+                style={{ backgroundColor: hex }}
+              />
+            ))}
+          </div>
+          <div className="ml-auto flex items-center gap-1" role="group" aria-label="믹서 단계 수">
+            {[3, 5, 7].map((count) => (
+              <button
+                key={`mixer-steps-${count}`}
+                type="button"
+                aria-pressed={mixerStepCount === count}
+                onClick={() => setMixerStepCount(count)}
+                className={`min-h-11 rounded-lg border px-2 text-[0.62rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${
+                  mixerStepCount === count ? "border-accent/40 bg-accent/10 font-semibold text-accent" : "border-line text-fg-2 hover:bg-raised"
+                }`}
+              >
+                {count}단계
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 px-1" role="group" aria-label="믹서 단계색 목록">
+          {mixerSteps.map((hex, idx) => (
+            <div key={`mixer-step-${idx}`} className="flex flex-col items-center gap-0.5">
+              <button
+                type="button"
+                aria-label={`믹서 단계색 ${hex} 선택`}
+                onClick={() => onSelectColor(adjustPick(hex))}
+                className="size-9 rounded-lg border border-line-strong shadow-sm transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                style={{ backgroundColor: hex }}
+              />
+              <span className="font-mono text-[0.52rem] text-fg-3">{hex}</span>
+            </div>
+          ))}
+        </div>
+        {onSaveAsPalette && (
+          <button
+            type="button"
+            aria-label="믹서 단계색을 내 팔레트로 저장"
+            onClick={handleSaveMixerPalette}
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-accent/40 bg-accent/10 px-3 py-1.5 text-[0.66rem] font-semibold text-accent transition-colors hover:bg-accent/20 hover:border-accent/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            <Sparkles className="size-3" aria-hidden />
+            {mixerSavedBadge ? "단계색을 팔레트에 저장했어요!" : "믹서 단계색을 내 팔레트로 저장"}
+          </button>
+        )}
+        <span role="status" aria-label="믹서 팔레트 저장 상태" aria-live="polite" className="sr-only">{mixerSavedBadge ? "믹서 단계색을 내 팔레트에 저장했습니다." : ""}</span>
       </div>
 
       {/* Save as Palette action */}

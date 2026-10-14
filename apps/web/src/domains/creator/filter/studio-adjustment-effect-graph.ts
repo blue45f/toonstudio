@@ -21,7 +21,18 @@ export type StudioAdjustmentKind =
   | "color-balance"
   | "channel-mixer"
   | "gradient-map"
-  | "lab";
+  | "lab"
+  // PSD 미지원 10종 확장 검토(2026-10-14) 판정으로 추가된 6종 — 전부 기존 픽셀
+  // 실행기가 있어(밝기/대비·노출·활기·반전·포스터라이즈·임계값) 가져오기 변환과
+  // 실행 테스트를 함께 붙였다. 실행은 filter/studio-adjustment-executor.ts.
+  // 남은 PSD 미지원 4종(black & white·photo filter·selective color·color lookup)은
+  // 전용 실행기가 없어 변환 모듈에서 계속 unsupported 로 보고한다.
+  | "brightness-contrast"
+  | "exposure"
+  | "vibrance"
+  | "invert"
+  | "posterize"
+  | "threshold";
 
 export type StudioLiveEffectKind =
   | "blur"
@@ -107,6 +118,35 @@ export interface StudioEffectGraphValidation {
   readonly graphHash: string;
 }
 
+/**
+ * 간선 인덱스 맵 — 간선 배열을 한 번(O(E)) 순회해 노드별 incoming/outgoing 버킷을 만든다.
+ * 버킷 안의 순서는 원본 edges 배열 순서를 그대로 유지하므로, 인덱스로 조회한 결과는
+ * `edges.filter(...)` 로 매번 전체를 스캔한 결과와 순서까지 동일하다. 렌더 계획처럼
+ * 노드마다 들어오는 간선을 조회하는 경로는 이 인덱스를 써서 O(N·E) 스캔을 피한다.
+ */
+export interface StudioEffectGraphEdgeIndex {
+  readonly incomingByNodeId: ReadonlyMap<string, readonly StudioEffectGraphEdge[]>;
+  readonly outgoingByNodeId: ReadonlyMap<string, readonly StudioEffectGraphEdge[]>;
+}
+
+export function buildStudioEffectGraphEdgeIndex(
+  edges: readonly StudioEffectGraphEdge[],
+): StudioEffectGraphEdgeIndex {
+  const incomingByNodeId = new Map<string, StudioEffectGraphEdge[]>();
+  const outgoingByNodeId = new Map<string, StudioEffectGraphEdge[]>();
+  for (const edge of edges) {
+    const incoming = incomingByNodeId.get(edge.to) ?? [];
+    incoming.push(edge);
+    incomingByNodeId.set(edge.to, incoming);
+    const outgoing = outgoingByNodeId.get(edge.from) ?? [];
+    outgoing.push(edge);
+    outgoingByNodeId.set(edge.from, outgoing);
+  }
+  return Object.freeze({ incomingByNodeId, outgoingByNodeId });
+}
+
+const EMPTY_EDGES: readonly StudioEffectGraphEdge[] = Object.freeze([]);
+
 function assertId(value: string, field: string): string {
   const normalized = value.trim();
   if (!normalized || normalized.length > 240 || !/^[\w.:-]+$/u.test(normalized)) {
@@ -122,10 +162,25 @@ function assertOpacity(value: number, field: string): number {
   return value;
 }
 
+/** 조정·효과 파라미터 값 검증 — patch-node의 타입 캐스트를 뚫고 들어온 NaN·객체
+ *  같은 잘못된 값이 검증 없이 렌더 단계까지 가서 조용히 깨지는 것을 막는다. */
+function assertParameters(node: StudioAdjustmentNode | StudioLiveEffectNode): void {
+  for (const [key, value] of Object.entries(node.parameters)) {
+    const valid =
+      typeof value === "string" ||
+      typeof value === "boolean" ||
+      (typeof value === "number" && Number.isFinite(value)) ||
+      (Array.isArray(value) &&
+        value.every((item) => typeof item === "number" && Number.isFinite(item)));
+    if (!valid) throw new TypeError(`${node.id}.parameters.${key} is invalid.`);
+  }
+}
+
 function assertNode(node: StudioEffectGraphNode): void {
   assertId(node.id, "node.id");
   assertOpacity(node.opacity, `${node.id}.opacity`);
   if (!node.blendMode.trim()) throw new TypeError(`${node.id}.blendMode is required.`);
+  if (node.kind === "adjustment" || node.kind === "live-effect") assertParameters(node);
   if (node.kind === "mask" && (!Number.isFinite(node.featherPx) || node.featherPx < 0 || node.featherPx > 10_000)) {
     throw new RangeError(`${node.id}.featherPx is invalid.`);
   }
@@ -158,8 +213,6 @@ export function validateStudioAdjustmentEffectGraph(
   const output = nodes.get(graph.outputNodeId);
   if (!output || output.kind !== "output") throw new TypeError("graph outputNodeId must reference an output node.");
 
-  const outgoing = new Map<string, StudioEffectGraphEdge[]>();
-  const incoming = new Map<string, StudioEffectGraphEdge[]>();
   const edgeKeys = new Set<string>();
   for (const edge of graph.edges) {
     if (!nodes.has(edge.from) || !nodes.has(edge.to)) throw new TypeError("graph edge references an unknown node.");
@@ -167,13 +220,8 @@ export function validateStudioAdjustmentEffectGraph(
     const key = `${edge.from}\u0000${edge.to}\u0000${edge.input}`;
     if (edgeKeys.has(key)) throw new TypeError("duplicate graph edge is not allowed.");
     edgeKeys.add(key);
-    const from = outgoing.get(edge.from) ?? [];
-    from.push(edge);
-    outgoing.set(edge.from, from);
-    const to = incoming.get(edge.to) ?? [];
-    to.push(edge);
-    incoming.set(edge.to, to);
   }
+  const { incomingByNodeId: incoming, outgoingByNodeId: outgoing } = buildStudioEffectGraphEdgeIndex(graph.edges);
 
   const indegree = new Map(graph.nodes.map((node) => [node.id, incoming.get(node.id)?.length ?? 0]));
   const ready = [...graph.nodes]
@@ -244,12 +292,15 @@ export function planStudioEffectGraphRender(input: {
 }): StudioEffectGraphRenderPlan {
   const validation = validateStudioAdjustmentEffectGraph(input.graph);
   const byId = new Map(input.graph.nodes.map((node) => [node.id, node]));
+  // 노드마다 전체 간선을 스캔(O(N·E))하지 않고 한 번 만든 인덱스에서 incoming만 조회한다.
+  // 버킷 순서가 원본 edges 순서와 같아 steps·cacheKey·inputNodeIds 결과가 기존과 동일하다.
+  const { incomingByNodeId } = buildStudioEffectGraphEdgeIndex(input.graph.edges);
   const steps = validation.order
     .filter((id) => validation.reachable.has(id))
     .map((nodeId) => {
       const node = byId.get(nodeId);
       if (!node) throw new TypeError("render plan node disappeared.");
-      const edges = input.graph.edges.filter((edge) => edge.to === nodeId);
+      const edges = incomingByNodeId.get(nodeId) ?? EMPTY_EDGES;
       const preferred = node.kind === "live-effect" ? node.preferredBackend : "auto";
       const backend =
         input.webGpuAvailable && preferred !== "cpu" && node.kind !== "linked-source"
@@ -378,7 +429,18 @@ export function classifyStudioPsdEffectNode(node: StudioEffectGraphNode): Studio
   if (node.kind === "source") return "preserved";
   if (node.kind === "linked-source") return node.embedded ? "preserved" : "unsupported";
   if (node.kind === "adjustment") {
-    return node.adjustment === "levels" || node.adjustment === "curves" || node.adjustment === "hsl"
+    // PSD 네이티브 조정 레이어로 왕복 가능한 종류는 editable. 확장 6종
+    // (brightness-contrast·exposure·vibrance·invert·posterize·threshold)도
+    // ag-psd 조정 종류와 1:1로 대응하므로 같은 판정을 받는다.
+    return node.adjustment === "levels" ||
+      node.adjustment === "curves" ||
+      node.adjustment === "hsl" ||
+      node.adjustment === "brightness-contrast" ||
+      node.adjustment === "exposure" ||
+      node.adjustment === "vibrance" ||
+      node.adjustment === "invert" ||
+      node.adjustment === "posterize" ||
+      node.adjustment === "threshold"
       ? "editable"
       : "flattened";
   }

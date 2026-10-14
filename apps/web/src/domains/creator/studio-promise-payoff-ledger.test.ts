@@ -7,6 +7,7 @@ import {
   addStudioPromisePayoffEntry,
   createEmptyStudioPromisePayoffLedger,
   diagnoseStudioPromisePayoffLedger,
+  findStudioPromisePayoffRecapCandidates,
   mergeStudioPromisePayoffLedgers,
   nextStudioPromisePayoffEntryId,
   nextStudioPromisePayoffLinkId,
@@ -380,5 +381,64 @@ describe("studio Promise·Payoff deterministic merge", () => {
     expect(source).not.toContain("Date.");
     expect(source).not.toContain("Math.random");
     expect(source).not.toContain("randomUUID");
+  });
+});
+
+describe("studio Promise·Payoff first-reader recap candidates", () => {
+  it("flags an element whose payoff arrives long after its last explanation", () => {
+    const candidates = findStudioPromisePayoffRecapCandidates(fixture());
+    expect(candidates).toEqual([
+      expect.objectContaining({
+        entryId: "promise-letter",
+        lastExplainedEpisode: 3,
+        appearanceEpisode: 19,
+        gapEpisodes: 16,
+        severity: "high",
+      }),
+    ]);
+    expect(candidates[0]?.message).toContain("16화 간격");
+  });
+
+  it("flags a recorded appearance in the current episode after a long silence", () => {
+    let ledger = createEmptyStudioPromisePayoffLedger(20);
+    ledger = addStudioPromisePayoffEntry(ledger, {
+      id: "returning-rival",
+      kind: "character-goal",
+      title: "돌아온 라이벌",
+      status: "foreshadow",
+      seed: storyLink("rival-seed", 2, "frame-1"),
+      foreshadows: [storyLink("rival-return", 20, "frame-5")],
+    });
+    expect(findStudioPromisePayoffRecapCandidates(ledger)).toEqual([
+      expect.objectContaining({
+        entryId: "returning-rival",
+        lastExplainedEpisode: 2,
+        appearanceEpisode: 20,
+        gapEpisodes: 18,
+      }),
+    ]);
+  });
+
+  it("skips recently explained, closed, and unexplained entries", () => {
+    let ledger = createEmptyStudioPromisePayoffLedger(20);
+    ledger = addStudioPromisePayoffEntry(ledger, {
+      id: "fresh-clue",
+      kind: "foreshadow",
+      title: "최근 단서",
+      status: "foreshadow",
+      dueEpisode: 21,
+      seed: storyLink("fresh-seed", 18, "frame-1"),
+    });
+    ledger = addStudioPromisePayoffEntry(ledger, {
+      id: "no-seed",
+      kind: "mystery",
+      title: "설명 없는 미스터리",
+      status: "seed",
+      dueEpisode: 20,
+    });
+    expect(findStudioPromisePayoffRecapCandidates(ledger)).toEqual([]);
+    expect(
+      findStudioPromisePayoffRecapCandidates(fixture(), { minGapEpisodes: 20 })
+    ).toEqual([]);
   });
 });

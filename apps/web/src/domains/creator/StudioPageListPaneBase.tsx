@@ -311,6 +311,8 @@ export const StudioPageListPane = memo(function StudioPageListPane({
   };
 
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
+  // 터치 다중 선택 모드: 수정 키(Shift/⌘/Ctrl)가 없는 태블릿에서도 탭 토글로 여러 컷을 고를 수 있게 한다.
+  const [touchMultiSelect, setTouchMultiSelect] = useState(false);
   const [selectionAnchorPageId, setSelectionAnchorPageId] = useState<string | null>(currentPageId);
   const [pageQuery, setPageQuery] = useState("");
   const deferredPageQuery = useDeferredValue(pageQuery);
@@ -378,7 +380,7 @@ export const StudioPageListPane = memo(function StudioPageListPane({
       selectedPageIds: liveSelectedPageIds,
       targetPageId: pageId,
       anchorPageId: selectionAnchorPageId,
-      additive: event.metaKey || event.ctrlKey,
+      additive: event.metaKey || event.ctrlKey || touchMultiSelect,
       range: event.shiftKey,
     });
     setSelectedPageIds(result.selectedPageIds);
@@ -697,7 +699,7 @@ export const StudioPageListPane = memo(function StudioPageListPane({
             <span id={navigationHelpId} className="sr-only">
               검색은 페이지 이름, 번호, 콘티 메모, 샷 태그, 검토 상태와 담당자를 함께 찾습니다.
               페이지 카드에서 방향키, Home, End, Page Up, Page Down으로 이동하고 Shift를 함께
-              눌러 연속 선택할 수 있습니다. Control 또는 Command+A는 현재 표시 결과를 모두 선택합니다.
+              눌러 연속 선택할 수 있습니다. Control 또는 Command+A는 현재 표시 결과를 모두 선택합니다. 터치에서는 '여러 개 선택'을 켜고 카드를 탭해 여러 페이지를 고를 수 있습니다.
             </span>
             <div className="mt-1 flex min-h-8 flex-wrap items-center gap-1 text-[0.65rem] text-fg-3">
               <span aria-live="polite" aria-atomic="true" className="mr-auto tabular-nums">
@@ -713,6 +715,21 @@ export const StudioPageListPane = memo(function StudioPageListPane({
                 className="min-h-8 rounded-md px-2 font-semibold text-fg-2 hover:bg-raised disabled:opacity-40"
               >
                 표시 전체 선택
+              </button>
+              <button
+                type="button"
+                data-testid="studio-page-touch-multi-select"
+                aria-pressed={touchMultiSelect}
+                onClick={() => setTouchMultiSelect((value) => !value)}
+                className={cn(
+                  "min-h-8 rounded-md px-2 font-semibold pointer-coarse:min-h-11",
+                  touchMultiSelect
+                    ? "bg-accent-soft text-accent"
+                    : "text-fg-2 hover:bg-raised",
+                )}
+                title="수정 키 없이 탭으로 여러 페이지를 선택합니다"
+              >
+                여러 개 선택{touchMultiSelect ? " 중" : ""}
               </button>
               {liveSelectedPageIds.length > 0 ? (
                 <button
@@ -926,8 +943,8 @@ export const StudioPageListPane = memo(function StudioPageListPane({
                   data-selected={isMultiSelected ? "true" : undefined}
                   {...(dndProps ?? { draggable: false })}
                   title={navigationActive
-                    ? "검색·필터 중에는 드래그 정렬이 잠깁니다 · Shift/⌘/Ctrl+클릭으로 다중 선택"
-                    : "드래그하여 순서 변경 · Shift 연속 선택 · ⌘/Ctrl+클릭 개별 선택 · 더블클릭 이름 편집"}
+                    ? "검색·필터 중에는 드래그 정렬이 잠깁니다 · Shift/⌘/Ctrl+클릭으로 다중 선택 · '여러 개 선택'을 켜면 탭으로 다중 선택"
+                    : "드래그하여 순서 변경 · Shift 연속 선택 · ⌘/Ctrl+클릭 개별 선택 · 더블클릭 이름 편집 · 카드 버튼으로 순서 변경·이름 편집 · '여러 개 선택'을 켜면 탭으로 다중 선택"}
                   className={cn(
                     "relative flex w-full flex-col gap-0.5 rounded-lg border p-1.5 transition-all hover:bg-raised/50 [content-visibility:auto] [contain-intrinsic-size:auto_12rem]",
                     isActive || isMultiSelected

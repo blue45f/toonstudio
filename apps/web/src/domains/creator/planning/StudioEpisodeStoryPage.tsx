@@ -17,12 +17,20 @@ import {
   type EpisodePlanWithSynopsis,
 } from "./studio-episode-synopsis";
 import type { StudioStoryBeat } from "../studio-storyboard-planner";
+import {
+  applyDevelopmentSuggestion,
+  nextEpisodeSeedFromSuggestion,
+  suggestNextDevelopments,
+  type PlotDevelopmentSuggestion,
+} from "./studio-plot-development";
 
 export interface StudioEpisodeStoryPageProps {
   readonly season: SeasonPlan;
   readonly plans: readonly EpisodePlanWithSynopsis[];
   /** 회차별 콘티 비트 — "비트에서 줄거리 초안 가져오기"용. 없으면 버튼을 숨긴다. */
   readonly beatsByEpisodeId?: Readonly<Record<string, readonly StudioStoryBeat[]>>;
+  /** 작품 장르 — 전개 제안의 장르 비트 라이브러리 선택에 쓴다. 없으면 공통 라이브러리. */
+  readonly genre?: string;
   readonly onSavePlan: (plan: EpisodePlanWithSynopsis) => void;
 }
 
@@ -30,6 +38,7 @@ export function StudioEpisodeStoryPage({
   season,
   plans,
   beatsByEpisodeId,
+  genre,
   onSavePlan,
 }: StudioEpisodeStoryPageProps) {
   const arc = useMemo(() => seasonArcView(season, plans), [season, plans]);
@@ -74,6 +83,7 @@ export function StudioEpisodeStoryPage({
           key={selected.episodeId}
           plan={selected}
           beats={beatsByEpisodeId?.[selected.episodeId]}
+          genre={genre}
           onSavePlan={onSavePlan}
         />
       )}
@@ -84,10 +94,12 @@ export function StudioEpisodeStoryPage({
 function EpisodeSynopsisEditor({
   plan,
   beats,
+  genre,
   onSavePlan,
 }: {
   readonly plan: EpisodePlanWithSynopsis;
   readonly beats?: readonly StudioStoryBeat[];
+  readonly genre?: string;
   readonly onSavePlan: (plan: EpisodePlanWithSynopsis) => void;
 }) {
   const [goal, setGoal] = useState(plan.goal ?? "");
@@ -96,6 +108,9 @@ function EpisodeSynopsisEditor({
   const [emotionTo, setEmotionTo] = useState(plan.emotionalArc?.to ?? "");
   const [keyEvents, setKeyEvents] = useState(plan.turningPoints.join("\n"));
   const [cliffhanger, setCliffhanger] = useState(plan.cliffhanger);
+  // 전개 제안 루프 상태 — 무시는 이 화면의 세션 상태일 뿐 저장 데이터에 남지 않는다.
+  const [dismissedIds, setDismissedIds] = useState<readonly string[]>([]);
+  const [pendingSeed, setPendingSeed] = useState("");
   const draft: EpisodePlanWithSynopsis = {
     ...plan,
     goal,
@@ -113,6 +128,31 @@ function EpisodeSynopsisEditor({
     if (!synopsis.trim() && fromBeats.synopsisDraft) setSynopsis(fromBeats.synopsisDraft);
     if (!keyEvents.trim() && fromBeats.keyEvents.length > 0) setKeyEvents(fromBeats.keyEvents.join("\n"));
     if (!cliffhanger.trim() && fromBeats.cliffhangerCandidate) setCliffhanger(fromBeats.cliffhangerCandidate);
+  };
+
+  // 전개 제안: 현재 핵심 사건(turningPoints) 뒤에 올 후보. 넣으면 단계가 전진해 다시 도출된다.
+  const currentPoints = keyEvents.split("\n").map((line) => line.trim()).filter(Boolean);
+  const suggestions = suggestNextDevelopments(
+    {
+      genre,
+      turningPoints: currentPoints,
+      coreConflict: plan.coreConflict,
+      logline: plan.logline,
+      cliffhanger,
+    },
+    { dismissedIds },
+  );
+
+  const applySuggestion = (suggestion: PlotDevelopmentSuggestion) => {
+    const result = applyDevelopmentSuggestion(currentPoints, suggestion);
+    if (!result.applied) return;
+    setKeyEvents(result.turningPoints.join("\n"));
+    // hook 단계 제안의 다음 회차 씨앗은 F-7 인계 재료(cliffhanger)로 곁들일 수 있게 남긴다.
+    setPendingSeed(nextEpisodeSeedFromSuggestion(suggestion));
+  };
+
+  const dismissSuggestion = (suggestion: PlotDevelopmentSuggestion) => {
+    setDismissedIds((previous) => [...previous, suggestion.id]);
   };
 
   return (
@@ -161,6 +201,47 @@ function EpisodeSynopsisEditor({
         핵심 사건 (한 줄에 하나씩)
         <textarea value={keyEvents} onChange={(event) => setKeyEvents(event.target.value)} rows={4} />
       </label>
+      <section aria-label="다음 전개 제안">
+        <h3>다음 전개 제안</h3>
+        <p>제안은 선택지예요. 마음에 드는 것만 핵심 사건에 넣고, 나머지는 무시해도 저장할 수 있어요.</p>
+        {suggestions.length > 0 ? (
+          <ul>
+            {suggestions.map((suggestion) => (
+              <li key={suggestion.id}>
+                <p>
+                  <strong>{suggestion.stageLabel} · {suggestion.title}</strong>
+                </p>
+                <p>{suggestion.text}</p>
+                <p>{suggestion.rationale}</p>
+                <button type="button" onClick={() => applySuggestion(suggestion)}>
+                  이 전개로 넣기
+                </button>
+                <button type="button" onClick={() => dismissSuggestion(suggestion)}>
+                  무시
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <>
+            <p>지금 단계의 제안을 모두 봤어요.</p>
+            <button type="button" onClick={() => setDismissedIds([])}>
+              제안 다시 보기
+            </button>
+          </>
+        )}
+        {pendingSeed && (
+          <div aria-live="polite">
+            <p>다음 회차 씨앗: {pendingSeed}</p>
+            {!cliffhanger.trim() && (
+              <button type="button" onClick={() => setCliffhanger(pendingSeed)}>
+                마무리 훅에 씨앗 넣기
+              </button>
+            )}
+            <p>다음 회차를 열면 이 마무리 훅이 오프닝 초안으로 이어받아져요.</p>
+          </div>
+        )}
+      </section>
       <label>
         마무리 훅
         <input

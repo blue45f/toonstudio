@@ -8,6 +8,7 @@ import {
 import { useMemo } from "react";
 
 import { rankCreatorRoleTasks, type CreatorRoleTaskReason } from "./creator-role-task-inbox";
+import { CreatorRoleTodayQueue } from "./CreatorRoleTodayQueue";
 import type {
   ProductionRole,
   ProductionTaskStatus,
@@ -62,6 +63,12 @@ export function CreatorRoleTaskInbox({
   }), [activeRoles, currentUserId, workspace]);
 
   return (
+    <div className="space-y-4">
+    <CreatorRoleTodayQueue
+      workspace={workspace}
+      currentUserId={currentUserId}
+      activeRoles={activeRoles}
+    />
     <section className="rounded-2xl border border-line bg-card p-4 shadow-sm" aria-labelledby="creator-role-task-inbox-title">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -154,5 +161,6 @@ export function CreatorRoleTaskInbox({
         </div>
       )}
     </section>
+    </div>
   );
 }

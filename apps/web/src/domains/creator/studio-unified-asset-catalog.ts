@@ -16,6 +16,11 @@ import {
   type StudioObjectInsertItem,
 } from "./studio-object-insert-catalog";
 
+import {
+  SHARED_LIBRARY_SCOPE_LABELS,
+  type SharedLibraryPlacement,
+} from "@toonstudio/contracts/production-shared-library";
+
 import type { StudioAsset } from "./studio-asset-library";
 import type { SceneTemplate } from "./studio-scene-templates";
 import type { StudioRasterAsset } from "./render/studio-raster-assets";
@@ -27,7 +32,7 @@ export type StudioUnifiedAssetCategory =
   | "3d"
   | "mine";
 
-export type StudioUnifiedAssetScope = "all" | "studio" | "mine";
+export type StudioUnifiedAssetScope = "all" | "studio" | "mine" | "team" | "organization";
 export type StudioUnifiedNativeToolId = "bubble";
 export type StudioUnifiedAssetUseMode = "insert" | "apply" | "open";
 export type StudioUnifiedAssetDiscoverability =
@@ -82,12 +87,22 @@ export interface StudioUnifiedAssetItem {
   readonly discoverability: StudioUnifiedAssetDiscoverability;
   readonly sortPriority: number;
   readonly source: StudioUnifiedAssetSource;
+  /**
+   * 공용 라이브러리 배치. 팀/조직 공유로 게시된 아이템에만 붙고, 가시성 판정은
+   * contracts의 production-shared-library가 정본이다(studio-shared-library 어댑터 참조).
+   */
+  readonly libraryPlacement?: SharedLibraryPlacement;
 }
 
 export interface BuildStudioUnifiedAssetCatalogInput {
   readonly backgrounds?: readonly StudioUnifiedBackgroundSource[];
   readonly sceneTemplates?: readonly SceneTemplate[];
   readonly localAssets?: readonly StudioAsset[];
+  /** 팀/조직 공유로 게시된 내 에셋. 가시성이 확인된 배치만 넘긴다(판정은 contracts 정본). */
+  readonly sharedLocalAssets?: readonly {
+    readonly asset: StudioAsset;
+    readonly placement: SharedLibraryPlacement;
+  }[];
   readonly elements?: readonly StudioElementItem[];
   readonly rasterAssets?: readonly StudioRasterAsset[];
   readonly objects?: readonly StudioObjectInsertItem[];
@@ -462,6 +477,30 @@ function localItem(asset: StudioAsset, index: number): StudioUnifiedAssetItem {
   };
 }
 
+/**
+ * 팀/조직 공유로 게시된 내 에셋의 카탈로그 아이템.
+ * team/organization 외 스코프 배치는 공유 표면에 올리지 않는다(호출부의 계약 위반을
+ * 조용히 개인 에셋으로 위장하지 않는다).
+ */
+function sharedLocalItem(
+  asset: StudioAsset,
+  placement: SharedLibraryPlacement,
+  index: number,
+): StudioUnifiedAssetItem | null {
+  if (placement.scope !== "team" && placement.scope !== "organization") return null;
+  const base = localItem(asset, index);
+  const label = SHARED_LIBRARY_SCOPE_LABELS[placement.scope];
+  return {
+    ...base,
+    id: `shared:${placement.scope}:${asset.id}`,
+    scope: placement.scope,
+    description: `${asset.width} × ${asset.height}px · ${label}`,
+    badges: Object.freeze([...base.badges, label]),
+    sortPriority: 640 - index,
+    libraryPlacement: placement,
+  };
+}
+
 function builtinRasterItem(asset: StudioRasterAsset, index: number): StudioUnifiedAssetItem {
   const decorativeBubble = asset.kind === "bubble-decoration";
   return {
@@ -503,6 +542,10 @@ export function buildStudioUnifiedAssetCatalog(
     ...backgrounds.map((item, index) => backgroundItem(item, index, sceneTemplates)),
     ...sceneTemplates.map((item, index) => sceneTemplateItem(item, index, backgrounds)),
     ...localAssets.map((item, index) => localItem(item, index)),
+    ...(input.sharedLocalAssets ?? []).flatMap((entry, index) => {
+      const shared = sharedLocalItem(entry.asset, entry.placement, index);
+      return shared ? [shared] : [];
+    }),
     ...nativeTools.map((item, index) => nativeToolItem(item, index)),
     ...rasterAssets.map((item, index) => builtinRasterItem(item, index)),
     ...elements.map((item, index) => elementItem(item, index)),

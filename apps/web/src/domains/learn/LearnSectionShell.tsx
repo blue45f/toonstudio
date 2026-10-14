@@ -58,8 +58,8 @@ const NAV_GROUPS: readonly LearnNavGroupSpec[] = [
     items: [
       { id: "home", path: "/learn", icon: BookOpen, label: defineBilingualText("learnPageNav", "home", "학습 홈", "Learn home") },
       { id: "resources", path: "/learn/resources", icon: LibraryBig, label: defineBilingualText("learnPageNav", "resources", "강좌·자료", "Courses & resources") },
-      { id: "classroom", path: "/learn/classroom", icon: GraduationCap, label: defineBilingualText("learnPageNav", "classroom", "클래스룸", "Classroom") },
-      { id: "classes", path: "/learn/classes", icon: Presentation, label: defineBilingualText("learnPageNav", "classes", "클래스", "Classes") },
+      { id: "classroom", path: "/learn/classroom", icon: GraduationCap, label: defineBilingualText("learnPageNav", "classroom", "클래스룸(교육기관)", "Classroom (for schools)") },
+      { id: "classes", path: "/learn/classes", icon: Presentation, label: defineBilingualText("learnPageNav", "classes", "클래스(수강)", "Classes (enroll)") },
       { id: "paths", path: "/learn#learning-paths", icon: Route, label: defineBilingualText("learnPageNav", "paths", "학습 경로", "Learning paths") },
     ],
   },
@@ -171,10 +171,13 @@ export function LearnSectionShell({ children }: { readonly children: ReactNode }
 
   // 현재 위치는 목적지당 하나만 표시한다. 학습 홈은 정확히 일치할 때만,
   // 학습 경로는 경로 상세(/learn/paths/*)와 홈의 앵커(#learning-paths)를 함께 본다.
+  // 강좌 상세(/learn/lessons/*)는 목적지 경로와 접두사가 겹치지 않아 어느 항목도
+  // 현재로 표시되지 않았다 — 강좌 목록("전체 강좌")이 학습 홈에 있고 상세의
+  // 복귀 링크도 홈을 가리키므로, 강좌 상세에서는 학습 홈을 현재 위치로 표시한다.
   const isCurrent = (path: string) => path === "/learn#learning-paths"
     ? normalizedPath.startsWith("/learn/paths/") || (normalizedPath === "/learn" && hash === "#learning-paths")
     : path === "/learn"
-      ? normalizedPath === "/learn" && hash !== "#learning-paths"
+      ? (normalizedPath === "/learn" && hash !== "#learning-paths") || normalizedPath.startsWith("/learn/lessons/")
       : normalizedPath === path || normalizedPath.startsWith(`${path}/`);
   const navGroups: readonly SectionNavGroup[] = NAV_GROUPS.map((group) => ({
     id: group.id,

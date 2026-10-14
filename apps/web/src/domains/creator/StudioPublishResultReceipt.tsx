@@ -24,6 +24,8 @@ import {
   studioPublishResultCopy,
   type StudioPublishResultKind,
 } from "./studio-publish-result";
+import { StudioPublishVerdictCard } from "./StudioPublishVerdictCard";
+import type { PublishVerdictInput } from "./studio-publish-verdict";
 
 import { creatorWorkHref } from "./publishing/showcase-links";
 
@@ -37,6 +39,12 @@ export interface StudioPublishResultReceiptProps {
   readonly revision?: number;
   readonly environment: StudioPublishEnvironment;
   readonly details?: StudioPublishReceiptDetails | null;
+  /**
+   * 게시 후 판정 가시화 입력. 있으면 상태·다음 피드백 시점·상한·클로징을
+   * 영수증 안에 반드시 표시한다(studio-publish-verdict 모델 계약).
+   * 없으면 기존 영수증 그대로다.
+   */
+  readonly verdict?: PublishVerdictInput | null;
   readonly onContinueEditing: () => void;
   readonly onReviewSettings: () => void;
   readonly onMakePrivate?: () => void;
@@ -57,6 +65,7 @@ export function StudioPublishResultReceipt({
   revision,
   environment,
   details = null,
+  verdict = null,
   onContinueEditing,
   onReviewSettings,
   onMakePrivate,
@@ -155,6 +164,8 @@ export function StudioPublishResultReceipt({
           </div>
         ) : null}
       </dl>
+
+      {verdict && recoverable ? <StudioPublishVerdictCard verdict={verdict} /> : null}
 
       {recoveryError ? (
         <p

@@ -5,6 +5,8 @@ import {
   marketStudioResourceHref,
 } from "./market-studio-handoff";
 
+import { parseReturnContext } from "@/shared/navigation/return-context";
+
 import type { CreatorMarketplaceResourceKind } from "@/shared/lib/creator-marketplace-resource-contract";
 
 
@@ -21,6 +23,20 @@ describe("market Studio handoff", () => {
     const spaced = new URL(marketStudioResourceHref("release with spaces"), "https://example.test");
     expect(spaced.searchParams.get("installMarketResource")).toBe("release with spaces");
     expect(spaced.searchParams.get("marketReturn")).toBe("/market/resource/release%20with%20spaces");
+  });
+
+  it("also carries the generalized return context for the same resource (S2-8 pilot)", () => {
+    const href = new URL(marketStudioResourceHref(RESOURCE_ID), "https://example.test");
+    expect(parseReturnContext(href.searchParams)).toEqual({
+      returnTo: `/market/resource/${RESOURCE_ID}`,
+      intent: "apply-market-resource",
+    });
+    // 문서 대상이 정해져 있어도 복귀 맥락은 같은 리소스를 가리킨다.
+    const targeted = new URL(
+      marketStudioResourceHref(RESOURCE_ID, "/studio/p/project-A/d/document-B"),
+      "https://example.test",
+    );
+    expect(parseReturnContext(targeted.searchParams)?.returnTo).toBe(`/market/resource/${RESOURCE_ID}`);
   });
 
   it("targets the exact remembered Studio document but rejects widened or external targets", () => {

@@ -7,10 +7,13 @@ import { Bookmark, Eye, Heart, Layers, MapPin, MessageSquareText, PenLine, Star 
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
+import type { StudioPublicWiki } from "@/domains/creator/studio-world-wiki";
+
 import { TitleDetailBreadcrumb } from "./TitleDetailBreadcrumb";
 import { TitleDetailHero } from "./TitleDetailHero";
 import { TitleEpisodeSection } from "./TitleEpisodeSection";
 import { TitleNotFound } from "./TitleNotFound";
+import { WorldWikiSection } from "./WorldWikiSection";
 import { resolveTitleEpisodes } from "./title-episodes";
 import { TitleEarlyAccessNotice } from "@/domains/monetization/public/title-early-access";
 import { AuthorNoticeSection } from "@/domains/author-notices/public/author-notices";
@@ -72,6 +75,12 @@ interface TitleDetailResponse {
   reviewCount: number;
   generatedAt: string;
   source: string;
+  /**
+   * 작가가 공개한 공식 설정 위키(경계 회차로 이미 잘린 공개 뷰).
+   * 서버 게시 계약이 붙기 전에는 오지 않으며, 없으면 섹션 자체를 렌더하지 않는다.
+   * 숨긴 설정은 이 페이로드에 문자열로도 포함되지 않는 것이 모델의 보장이다.
+   */
+  worldWiki?: StudioPublicWiki | null;
 }
 
 export function TitleDetailPage() {
@@ -275,7 +284,8 @@ export function TitleDetailPage() {
       <div className="mt-10 grid gap-6 sm:mt-14 lg:grid-cols-[1fr_20rem] lg:items-start">
         <TitleEpisodeSection title={title} episodes={episodes} />
         <div className="flex flex-col gap-4">
-          <div className="rounded-2xl border border-line bg-panel/50 p-4">
+          {/* 회차 빈 상태의 "다른 플랫폼 더 보기"가 도착하는 앵커 지점 (D-9) */}
+          <div id="title-availability" className="scroll-mt-24 rounded-2xl border border-line bg-panel/50 p-4">
             <div className="mb-3 flex items-center gap-2">
               <MapPin size={15} className="text-accent" />
               <p className="text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "어디서 볼 수 있나요")}</p>
@@ -321,6 +331,12 @@ export function TitleDetailPage() {
       </div>
 
       <AuthorNoticeSection authorName={title.author} workTitle={title.title} className="mt-10 sm:mt-14" />
+
+      {data.worldWiki ? (
+        <div className="mt-10 sm:mt-14">
+          <WorldWikiSection wiki={data.worldWiki} titleName={title.title} />
+        </div>
+      ) : null}
 
       <section id="metrics" className="mt-10 scroll-mt-24 sm:mt-14">
         <h2 className="eyebrow mb-1 text-accent">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "METRICS · 지표")}</h2>

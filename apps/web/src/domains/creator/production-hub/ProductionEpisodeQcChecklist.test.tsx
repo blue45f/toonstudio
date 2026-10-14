@@ -76,18 +76,22 @@ describe("게시 전 QC 체크리스트 컴포넌트", () => {
     expect(screen.queryByText("제작·검수 기준은 모두 통과했어요.")).toBeNull();
   });
 
-  it("전부 통과한 회차는 준비 완료와 납품·발행 동선을 보여 준다", () => {
+  it("전부 통과한 회차는 준비 완료와 납품·게시 동선을 보여 준다", () => {
     mount(readyAggregate(), "episode-13");
     expect(screen.getByText("게시 준비 완료")).toBeTruthy();
     expect(screen.getByText("제작·검수 기준은 모두 통과했어요.")).toBeTruthy();
     expect(screen.getByRole("link", { name: /원고 납품 화면/ }).getAttribute("href"))
       .toContain("manuscripts?manuscriptView=delivery");
-    // 발행 센터 링크는 프로젝트와 제목을 쿼리로 들고 간다.
-    const publishParams = new URLSearchParams(
-      (screen.getByRole("link", { name: /발행 센터/ }).getAttribute("href") ?? "").split("?")[1] ?? "",
-    );
+    // 게시 센터 링크는 회차 맥락과 QC 통과 스냅샷을 쿼리로 들고 간다 (F-5).
+    const publishHref = screen.getByRole("link", { name: /게시 센터로 이동/ }).getAttribute("href") ?? "";
+    expect(publishHref.startsWith("/studio/publish?")).toBe(true);
+    const publishParams = new URLSearchParams(publishHref.split("?")[1] ?? "");
     expect(publishParams.get("projectId")).toBe("sample-project");
-    expect(publishParams.get("title")).toBe("밤의 우편배달부");
+    expect(publishParams.get("episodeId")).toBe("episode-13");
+    expect(publishParams.get("qcBlocked")).toBeNull();
+    expect(publishParams.get("qcPassed")).toContain("story-lock");
+    // 13화는 검수 정책이 없어 게이트는 skipped로 실린다.
+    expect(publishParams.get("qcSkipped")).toContain("review-gate");
     expect(screen.queryByRole("link", { name: /풀러 가기/ })).toBeNull();
   });
 

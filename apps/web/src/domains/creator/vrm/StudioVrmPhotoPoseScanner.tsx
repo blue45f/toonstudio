@@ -67,6 +67,12 @@ export interface StudioVrmPhotoPoseApplyPayload {
   readonly landmarks: readonly StudioVrmPhotoPoseLandmark[];
   readonly worldLandmarks: readonly StudioVrmPhotoPoseLandmark[];
   readonly confidence: StudioVrmPhotoPoseConfidenceSummary;
+  /**
+   * 사용자가 스캐너에서 고른 적용 범위. bones는 이미 이 범위로 걸러져 있지만,
+   * 랜드마크에서 관절을 다시 푸는 표면(데생 인형)은 이 값을 받아 같은 범위를
+   * 지켜야 한다. 예전 payload처럼 값이 없으면 "full"로 본다.
+   */
+  readonly applyScope?: StudioVrmPhotoPoseApplyScope;
   readonly fingerEdits: StudioVrmPhotoHandInferenceResult["fingerEdits"];
   readonly detectedHandSides: readonly StudioVrmPhotoHandSide[];
   /**
@@ -240,7 +246,7 @@ const PHOTO_POSE_QUALITY_RANK: Readonly<
   Record<StudioVrmPhotoPoseConfidenceSummary["quality"], number>
 > = Object.freeze({ low: 0, medium: 1, high: 2 });
 
-type StudioVrmPhotoPoseApplyScope = "full" | "upper" | "arms";
+export type StudioVrmPhotoPoseApplyScope = "full" | "upper" | "arms";
 
 const PHOTO_POSE_APPLY_SCOPES: ReadonlyArray<{
   readonly id: StudioVrmPhotoPoseApplyScope;
@@ -655,6 +661,7 @@ export function StudioVrmPhotoPoseScanner({
     const applied = onApply({
       sourceName: candidate.sourceName,
       bones: filterPhotoPoseBones(candidate.bones, applyScope),
+      applyScope,
       landmarks: candidate.landmarks,
       worldLandmarks: candidate.worldLandmarks,
       confidence: candidate.confidence,

@@ -1,3 +1,6 @@
+import type { StudioAdjustmentKind } from "../filter/studio-adjustment-effect-graph";
+
+import { convertStudioAdjustmentToPsd } from "./studio-psd-adjustment-export";
 import { groupPsdExportLayers, type StudioPsdFolder } from "./studio-psd-folder-structure";
 /**
  * Studio PSD Layer Export — 레이어별 PSD(.psd) 내보내기.
@@ -182,6 +185,25 @@ export interface PsdSpeedLinesElLike extends PsdElMeta {
   height: number;
 }
 
+/**
+ * 스택형 조정 레이어 요소(El 유니온의 AdjustmentEl과 구조 호환). 픽셀이 없어 캡처 대상이
+ * 아니며, 종류·파라미터를 ag-psd 네이티브 조정 레이어로 기록한다 — 가져오기 변환
+ * (studio-psd-adjustment-import)과 대칭이라 PSD→Studio→PSD 왕복에서 파라미터가 유지된다.
+ */
+export interface PsdAdjustmentElLike extends PsdElMeta {
+  type: "adjustment";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** 조정 종류 — 효과 그래프의 조정 노드 종류와 동일 규약. */
+  adjustment: StudioAdjustmentKind;
+  /** 조정 파라미터(가져오기 변환이 채운 값과 같은 인코딩). */
+  parameters: Readonly<Record<string, number | string | boolean | readonly number[]>>;
+  /** true면 바로 아래 레이어 1개에만 적용(PSD clipping으로 기록). */
+  clipToBelow?: boolean;
+}
+
 /** StudioPage El 유니온과 구조 호환하는 내보내기 입력 요소. */
 export type PsdExportEl =
   | PsdImageElLike
@@ -191,7 +213,8 @@ export type PsdExportEl =
   | PsdStickerElLike
   | PsdDrawElLike
   | PsdFocusLinesElLike
-  | PsdSpeedLinesElLike;
+  | PsdSpeedLinesElLike
+  | PsdAdjustmentElLike;
 
 // ---------------------------------------------------------------------------
 // 입출력 타입
@@ -778,6 +801,7 @@ const EL_TYPE_LABELS: Record<PsdExportEl["type"], string> = {
   draw: "그림",
   focusLines: "집중선",
   speedLines: "속도선",
+  adjustment: "조정 레이어",
 };
 
 function elementLabel(el: PsdExportEl, index: number): string {
@@ -1139,8 +1163,10 @@ function withPsdExportLossDecisions(
       `3D/VRM 재편집 장면 ${sceneCount.toLocaleString("ko-KR")}개는 PSD 스마트 오브젝트가 아니라 캡처 레이어로 기록합니다.`,
     ));
   }
+  // 조정 레이어는 픽셀로 굽지 않고 네이티브 조정 레이어로 기록하므로 제외한다
+  // (preserved/dropped 집계는 exportPagePsd 가 별도 결정으로 덧붙인다).
   const vectorLikeCount = capturedElements.filter((element) =>
-    element.type !== "image" && element.type !== "text"
+    element.type !== "image" && element.type !== "text" && element.type !== "adjustment"
   ).length;
   if (vectorLikeCount > 0) {
     decisions.push(exportDecision(
@@ -1330,6 +1356,8 @@ export async function exportPagePsd(
   const capturedElements: PsdExportEl[] = [];
   let editableTextCount = 0;
   let rasterTextCount = 0;
+  let nativeAdjustmentCount = 0;
+  let droppedAdjustmentCount = 0;
 
   for (let i = 0; i < elements.length; i++) {
     // 요소별 toCanvas() 래스터화 + writePsd() 압축은 전부 동기(CPU 바운드)라, 요소가 많은 페이지를
@@ -1341,6 +1369,31 @@ export async function exportPagePsd(
 
     const el = elements[i];
     const label = elementLabel(el, i);
+
+    // 조정 레이어는 픽셀이 없어 Konva 캡처 대상이 아니다 — 종류·파라미터를 ag-psd
+    // 네이티브 조정 레이어로 기록한다(가져오기 변환과 대칭인 라운드트립 경로).
+    // 대응 종류가 없는 조정(lab 등)은 건너뛰고 사유를 정직하게 남긴다.
+    if (el.type === "adjustment") {
+      const converted = convertStudioAdjustmentToPsd(el.adjustment, el.parameters);
+      if (converted.status === "converted") {
+        layers.push({
+          name: label,
+          left: 0,
+          top: 0,
+          opacity: clampOpacity(el.opacity),
+          blendMode: mapBlendMode(el.blendMode),
+          clipping: !!(el.clipToBelow ?? el.clipBelow),
+          adjustment: converted.adjustment,
+        });
+        capturedElements.push(el);
+        nativeAdjustmentCount += 1;
+      } else {
+        droppedAdjustmentCount += 1;
+        skipped.push(`${label}: ${converted.reason}`);
+      }
+      continue;
+    }
+
     const elementNode = findElementNode(stage, el.id);
     if (!elementNode) {
       skipped.push(`${label}: 캔버스에서 찾지 못해 건너뜀`);
@@ -1526,17 +1579,43 @@ export async function exportPagePsd(
   }
   assertPsdOutputBudget(buffer);
 
+  const baseLossManifest = withPsdExportLossDecisions(
+    preflight.lossManifest,
+    elements,
+    capturedElements,
+    editableTextCount,
+    rasterTextCount,
+  );
+  // 네이티브 조정 레이어로 기록된 조정은 스마트 필터 래스터화 집계와 별개로
+  // preserved 로, 대응 종류가 없어 제외된 조정은 dropped 로 명시한다
+  // (decisions 는 readonly 라 새 배열로 덧붙인다).
+  const adjustmentDecisions = [
+    ...(nativeAdjustmentCount > 0
+      ? [exportDecision(
+        "adjustment-layer",
+        "preserved",
+        nativeAdjustmentCount,
+        `조정 레이어 ${nativeAdjustmentCount.toLocaleString("ko-KR")}개는 종류·파라미터를 유지한 PSD 조정 레이어로 기록합니다.`,
+      )]
+      : []),
+    ...(droppedAdjustmentCount > 0
+      ? [exportDecision(
+        "adjustment-layer",
+        "dropped",
+        droppedAdjustmentCount,
+        `PSD 대응 종류가 없는 조정 레이어 ${droppedAdjustmentCount.toLocaleString("ko-KR")}개는 조정 레이어로 기록하지 못했습니다.`,
+      )]
+      : []),
+  ];
+  const lossManifest = adjustmentDecisions.length > 0
+    ? { ...baseLossManifest, decisions: [...baseLossManifest.decisions, ...adjustmentDecisions] }
+    : baseLossManifest;
+
   return {
     blob: new Blob([buffer], { type: PSD_EXPORT_MIME }),
     skipped,
     layerCount: layers.length,
-    lossManifest: withPsdExportLossDecisions(
-      preflight.lossManifest,
-      elements,
-      capturedElements,
-      editableTextCount,
-      rasterTextCount,
-    ),
+    lossManifest,
     rubyReceipts,
   };
 }

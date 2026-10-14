@@ -1,5 +1,11 @@
 {
   "version": 1,
+  "rights": {
+    "holder": "ToonStudio",
+    "origin": "generated-for-toonstudio-via-image-generation",
+    "statement": "ToonStudio가 자체 기획해 이미지 생성 도구로 생성한 아트. 생성 채널 약관이 허용하는 범위에서 권리는 ToonStudio가 보유하며, 저장소·제품 내 사용을 전제로 한다.",
+    "statementEn": "Art planned by ToonStudio and produced with image-generation tools. To the extent permitted by the generation channel's terms, rights are held by ToonStudio; provided for repository and product use."
+  },
   "createdAt": "2026-09-27",
   "descriptionKo": "가상 스튜디오용 원경과 가구 아트. 내장 도구는 모델 버전을 노출하지 않으므로 특정 버전을 인증하지 않는다.",
   "assets": [

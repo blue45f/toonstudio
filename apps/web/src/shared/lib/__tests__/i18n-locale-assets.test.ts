@@ -33,14 +33,12 @@ const REFERENCE_LOCALE = "en";
 /** The app-shell key surface every published dictionary was authored against. */
 const BASELINE_APP_KEY_COUNT = 525;
 /**
- * Translated strings for `contact` / `play` / `fortune` surfaces that neither ko nor en publish
- * and no `t()` call reads. They are unreachable through the fallback chain, so they cost nothing
- * beyond a few bytes of a lazily fetched asset — but the set is frozen here so the next orphan
- * has to be an explicit decision rather than a silent accumulation.
+ * Every published key must be reachable through the fallback chain, which starts at the
+ * reference locale. `contact` / `play` / `fortune` used to publish translations for six
+ * locales while ko/en published nothing, leaving 17 keys unreachable; those namespaces now
+ * publish ko/en like every other namespace, so the tolerated orphan set is empty and any
+ * new orphan is a bug rather than a silent accumulation.
  */
-const KNOWN_ORPHAN_KEY_PREFIXES = ["contact.", "play.", "fortune."];
-const KNOWN_ORPHAN_LOCALES = ["de", "es", "fr", "ja", "zh", "zh-hant"];
-const KNOWN_ORPHAN_KEY_COUNT = 17;
 
 function readAsset(locale: string): Record<string, string> {
   return JSON.parse(
@@ -77,16 +75,9 @@ describe("published app locale assets", () => {
       ).toBe(true);
 
       // An asset key the reference locale does not publish can never be reached through the
-      // fallback chain. Only the frozen legacy set is tolerated; anything new is a bug.
+      // fallback chain. No orphan set is tolerated; anything new is a bug.
       const orphans = Object.keys(dictionary).filter((key) => reference[key] === undefined);
-      const unexpectedOrphans = orphans.filter(
-        (key) => !KNOWN_ORPHAN_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)),
-      );
-      expect(unexpectedOrphans, `${locale} introduced unreachable keys`).toEqual([]);
-      expect(
-        orphans.length,
-        `${locale} orphan key count changed`,
-      ).toBe(KNOWN_ORPHAN_LOCALES.includes(locale) ? KNOWN_ORPHAN_KEY_COUNT : 0);
+      expect(orphans, `${locale} introduced unreachable keys`).toEqual([]);
     }
   });
 

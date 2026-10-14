@@ -1,3 +1,5 @@
+import "../../../app/styles/studio-route.css";
+
 import {
   ArrowLeft,
   Brush,
@@ -8,10 +10,12 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
+import { useEffect } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
 
+import { registerStudioBrushGrainSourcesV1 } from "../brush/studio-brush-grain-source-catalog-v1";
 import {
   STUDIO_BRUSH_LABELS,
   STUDIO_BRUSH_LIBRARY_ROUTE,
@@ -54,6 +58,12 @@ export function StudioBrushLabPage() {
   const params = useParams<{ workId?: string; sourceWorkId?: string; brushId?: string }>();
   const location = useLocation();
   const context = resolveStudioBrushEditorContext(params, location.search);
+  // 브러시 랩 초기화 — 종이 6종 + 패턴 4종 R8 그레인 타일을 공유 레지스트리에 등록한다.
+  // 등록 영수증(소스 해시)은 카탈로그 메모에 남아 그레인 소스 선택 표면이 그대로 표시한다.
+  // hydrate는 같은 소스에 캐시 영수증을 돌려주므로 재마운트에도 안전하다.
+  useEffect(() => {
+    registerStudioBrushGrainSourcesV1();
+  }, []);
   const editingSavedBrush = context.mode === "edit";
   // 리믹스 판정은 이 한 곳에서만 한다 — 적용 범위 밴드와 히어로 아트 선택이 같은 값을 공유한다.
   const isRemixContext = context.kind === "remix";

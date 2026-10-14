@@ -19,6 +19,15 @@ import {
   type StudioBrushR8TextureGrainSource,
 } from "./studio-brush-r8-grain-asset-contract";
 
+import {
+  applyStudioBrushTextureV1,
+  normalizeStudioBrushTextureSettingsV1,
+  studioBrushTextureIsActiveV1,
+  studioBrushTextureIsPlainMultiplyV1,
+  type NormalizedStudioBrushTextureSettingsV1,
+  type StudioBrushTextureSettingsV1,
+} from "./studio-brush-texture-combine-v1";
+
 export type {
   StudioBrushR8GrainAssetReference,
   StudioBrushR8TextureGrainSource,
@@ -91,6 +100,15 @@ export interface StudioBrushGrainSettings {
    * Unknown or malformed sources fail closed to a disabled grain during normalization.
    */
   source?: StudioBrushR8TextureGrainSource | null;
+  /**
+   * Optional texture section (brush-textures G1·G2·G3 wiring). When present, the pattern value
+   * that used to feed only the legacy alpha-multiply grain is instead combined through
+   * `studio-brush-texture-combine-v1` (mode·depth·brightness/contrast/invert·depthJitter).
+   * Omission/null keeps the historical multiply-only grain byte-for-byte. If the section omits
+   * `depth` while the grain snapshot authors `amount`, the authored amount becomes the depth,
+   * so `{ amount: 0.7, texture: { mode: "multiply" } }` renders exactly like legacy grain 0.7.
+   */
+  texture?: StudioBrushTextureSettingsV1 | null;
 }
 
 export interface NormalizedStudioBrushGrainSettings {
@@ -101,6 +119,8 @@ export interface NormalizedStudioBrushGrainSettings {
   seed: number;
   /** Present only for a strictly admitted content-addressed R8 paper source. */
   source?: Readonly<StudioBrushR8TextureGrainSource>;
+  /** Present only when the snapshot authored a texture section. Legacy grain has no key. */
+  texture?: NormalizedStudioBrushTextureSettingsV1;
 }
 
 export interface StudioBrushGrainSample {
@@ -109,6 +129,8 @@ export interface StudioBrushGrainSample {
   strokeOriginX?: number;
   strokeOriginY?: number;
   strokeSeed: number;
+  /** Dab ordinal for texture depth jitter. Ignored without a texture section. */
+  dabIndex?: number;
 }
 
 const DEFAULT_COLOR_DYNAMICS: NormalizedStudioBrushColorDynamicsSettings = {
@@ -270,21 +292,39 @@ export function normalizeStudioBrushGrainSettings(
     seed: uint32(source.seed, DEFAULT_GRAIN.seed),
   } satisfies NormalizedStudioBrushGrainSettings;
   const sourceProperty = ownEnumerableDataProperty(source, "source");
+  let base: NormalizedStudioBrushGrainSettings;
   if (
     sourceProperty.status === "absent"
     || (sourceProperty.status === "data" && sourceProperty.value == null)
   ) {
     // Do not add a discriminator for legacy procedural grain. Its canonical JSON is persisted in
     // authored strokes and must stay byte-for-byte stable.
-    return procedural;
+    base = procedural;
+  } else if (sourceProperty.status === "poisoned") {
+    base = { ...procedural, amount: 0 };
+  } else {
+    const r8Source = normalizeStudioBrushR8TextureGrainSource(sourceProperty.value);
+    base = r8Source
+      ? { ...procedural, source: r8Source }
+      : { ...procedural, amount: 0 };
   }
-  if (sourceProperty.status === "poisoned") {
-    return { ...procedural, amount: 0 };
+  // Texture section appended last, under the same fail-closed own-data discipline as `source`:
+  // absent/null adds no key (legacy canonical bytes unchanged), a poisoned accessor drops only
+  // the texture section (the procedural grain itself stays usable), and a non-record value is
+  // ignored instead of being coerced.
+  const textureProperty = ownEnumerableDataProperty(source, "texture");
+  if (textureProperty.status !== "data" || textureProperty.value == null) {
+    return base;
   }
-  const r8Source = normalizeStudioBrushR8TextureGrainSource(sourceProperty.value);
-  return r8Source
-    ? { ...procedural, source: r8Source }
-    : { ...procedural, amount: 0 };
+  const textureRecord = asRecord(textureProperty.value);
+  if (!textureRecord) return base;
+  const depthProperty = ownEnumerableDataProperty(textureRecord, "depth");
+  const amountProperty = ownEnumerableDataProperty(source, "amount");
+  const textureInput: StudioBrushTextureSettingsV1 = depthProperty.status !== "data"
+    && amountProperty.status === "data"
+    ? { ...textureRecord, depth: procedural.amount }
+    : textureRecord;
+  return { ...base, texture: normalizeStudioBrushTextureSettingsV1(textureInput) };
 }
 
 /** Stable standalone grain JSON. Existing procedural snapshots retain their historical key order. */
@@ -318,7 +358,9 @@ function normalizedColorDynamicsIsActive(
 }
 
 export function studioBrushGrainIsActive(value?: unknown): boolean {
-  return normalizeStudioBrushGrainSettings(value).amount > 0;
+  const settings = normalizeStudioBrushGrainSettings(value);
+  return settings.amount > 0
+    || (settings.texture !== undefined && studioBrushTextureIsActiveV1(settings.texture));
 }
 
 /** Stable unsigned hash converted to [0, 1); independent from Math.random. */
@@ -502,7 +544,8 @@ export function resolveNormalizedStudioBrushGrainAlphaMultiplier(
     sample.strokeOriginX,
     sample.strokeOriginY,
     sample.strokeSeed,
-    settings
+    settings,
+    sample.dabIndex ?? 0
   );
 }
 
@@ -510,7 +553,12 @@ export function resolveNormalizedStudioBrushGrainAlphaMultiplier(
  * Allocation-free renderer path for high-density tip samples. The object-based public helper
  * above delegates here so Canvas, SVG and collaboration replay retain one exact grain formula.
  */
-export function resolveNormalizedStudioBrushGrainAlphaMultiplierAt(
+/**
+ * Contrasted procedural pattern value at one document-space point — the exact value the legacy
+ * grain formula consumes. Texture wiring reuses it unchanged as the combine module's pattern
+ * input, so a texture section sees the same field the multiply grain always saw.
+ */
+function proceduralGrainPatternValueAt(
   sampleX: number,
   sampleY: number,
   strokeOriginX: number | undefined,
@@ -518,9 +566,6 @@ export function resolveNormalizedStudioBrushGrainAlphaMultiplierAt(
   strokeSeed: number,
   settings: NormalizedStudioBrushGrainSettings
 ): number {
-  // This helper is the historical procedural sampler. An admitted R8 source must be sampled by an
-  // R8-aware renderer; falling back to unrelated noise would produce divergent replay pixels.
-  if (settings.amount <= 0 || settings.source?.kind === "r8-texture-v1") return 1;
   const x = finiteNumber(sampleX, 0);
   const y = finiteNumber(sampleY, 0);
   const anchorX = settings.space === "stroke-fixed"
@@ -531,8 +576,41 @@ export function resolveNormalizedStudioBrushGrainAlphaMultiplierAt(
     : 0;
   const seed = (uint32(strokeSeed, 1) ^ settings.seed ^ 0xb7e1_5163) >>> 0;
   const noise = valueNoise((x - anchorX) / settings.scale, (y - anchorY) / settings.scale, seed);
-  const contrasted = clamp01((noise - 0.5) * (1 + settings.contrast * 4) + 0.5);
-  return clamp01(1 - settings.amount * (1 - contrasted));
+  return clamp01((noise - 0.5) * (1 + settings.contrast * 4) + 0.5);
+}
+
+export function resolveNormalizedStudioBrushGrainAlphaMultiplierAt(
+  sampleX: number,
+  sampleY: number,
+  strokeOriginX: number | undefined,
+  strokeOriginY: number | undefined,
+  strokeSeed: number,
+  settings: NormalizedStudioBrushGrainSettings,
+  dabIndex = 0
+): number {
+  // This helper is the historical procedural sampler. An admitted R8 source must be sampled by an
+  // R8-aware renderer; falling back to unrelated noise would produce divergent replay pixels.
+  if (settings.source?.kind === "r8-texture-v1") return 1;
+  if (!settings.texture) {
+    // Legacy path, expression-for-expression: texture-less grain stays byte-for-byte identical.
+    if (settings.amount <= 0) return 1;
+    const contrasted = proceduralGrainPatternValueAt(
+      sampleX, sampleY, strokeOriginX, strokeOriginY, strokeSeed, settings,
+    );
+    return clamp01(1 - settings.amount * (1 - contrasted));
+  }
+  // Texture path: coverage 1 (this helper resolves an alpha multiplier) combined with the same
+  // contrasted pattern field. Multiply with the default level/depth reproduces the legacy
+  // formula above exactly; height/subtract/etc. replace the multiply with their own model.
+  const pattern = proceduralGrainPatternValueAt(
+    sampleX, sampleY, strokeOriginX, strokeOriginY, strokeSeed, settings,
+  );
+  if (studioBrushTextureIsPlainMultiplyV1(settings.texture)) {
+    // Plain multiply is the legacy formula with depth in place of amount — same operand order,
+    // so an authored amount injected as depth renders byte-for-byte like the old grain.
+    return clamp01(1 - settings.texture.depth * (1 - pattern));
+  }
+  return applyStudioBrushTextureV1(settings.texture, 1, pattern, strokeSeed, dabIndex);
 }
 
 /**
@@ -554,8 +632,10 @@ export function resolveNormalizedStudioBrushFootprintGrainAlphaMultiplierAt(
   strokeOriginY: number | undefined,
   strokeSeed: number,
   settings: NormalizedStudioBrushGrainSettings,
+  dabIndex = 0,
 ): number {
-  if (settings.amount <= 0 || settings.source?.kind === "r8-texture-v1") return 1;
+  if (settings.source?.kind === "r8-texture-v1") return 1;
+  if (!settings.texture && settings.amount <= 0) return 1;
   const x = finiteNumber(centerX, 0);
   const y = finiteNumber(centerY, 0);
   const rx = clamp(Math.abs(finiteNumber(radiusX, 0)), 0, 1_000_000);
@@ -569,6 +649,7 @@ export function resolveNormalizedStudioBrushFootprintGrainAlphaMultiplierAt(
       strokeOriginY,
       strokeSeed,
       settings,
+      dabIndex,
     );
   }
 
@@ -590,6 +671,7 @@ export function resolveNormalizedStudioBrushFootprintGrainAlphaMultiplierAt(
       strokeOriginY,
       strokeSeed,
       settings,
+      dabIndex,
     ) * weight;
     totalWeight += weight;
   }

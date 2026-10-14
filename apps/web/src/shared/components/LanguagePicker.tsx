@@ -141,6 +141,11 @@ export function LanguagePicker({
       >
         <Languages size={15} aria-hidden />
         <span className={cx("max-w-48 truncate", compact && "sr-only")}>{current?.label ?? value}</span>
+        {current?.translationInProgress && !compact ? (
+          <span className="shrink-0 rounded-full bg-raised px-1.5 py-0.5 text-[0.6rem] font-semibold text-fg-2">
+            {korean ? "번역 진행 중" : "Translation in progress"}
+          </span>
+        ) : null}
         {/* 셀렉트 표준(2026-10-02): 열리는 컨트롤임을 알리는 chevron — 열리면 180도 회전 */}
         <ChevronDown
           size={14}
@@ -165,8 +170,8 @@ export function LanguagePicker({
               </h2>
               <p className="mt-0.5 text-[0.7rem] leading-relaxed text-fg-3">
                 {korean
-                  ? "번역 완료 언어는 바로 보이고, 다른 언어는 이름이나 코드로 검색할 수 있습니다."
-                  : "Translated languages appear first. Search by language name or code for the full catalog."}
+                  ? "번역 완료 언어는 바로 보이고, 다른 언어는 이름이나 코드로 검색할 수 있습니다. '번역 진행 중' 표시는 아직 번역이 끝나지 않아 일부 화면이 영어로 보일 수 있는 언어입니다."
+                  : "Translated languages appear first. Search by language name or code for the full catalog. Languages marked 'Translation in progress' are not fully translated yet, so some screens may still appear in English."}
               </p>
             </div>
             <button
@@ -229,6 +234,13 @@ export function LanguagePicker({
                 )}
               >
                 <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                {option.translationInProgress ? (
+                  <span className="shrink-0 rounded-full bg-raised px-1.5 py-0.5 text-[0.6rem] font-semibold text-fg-2">
+                    {korean ? "번역 진행 중" : "Translation in progress"}
+                    {" · "}
+                    {Math.round(option.completenessRatio * 100)}%
+                  </span>
+                ) : null}
                 <span className="shrink-0 font-mono text-[0.65rem] text-fg-3">{option.code}</span>
                 {option.code === value ? <Check size={14} aria-hidden className="shrink-0" /> : null}
               </button>

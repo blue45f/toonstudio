@@ -11,6 +11,7 @@ import {
   Heart,
   Layers,
   Lightbulb,
+  LogIn,
   Shield,
   ShieldCheck,
   Sliders,
@@ -38,6 +39,10 @@ import {
 import { useMarketStudioHandoff } from "../hooks/use-market-studio-handoff";
 
 import { CreatorMarketplaceCloudLibraryAction } from "./CreatorMarketplaceCloudLibraryAction";
+import {
+  MarketGuestLoginNotice,
+  useMarketGuestLoginNoticeState,
+} from "./MarketGuestLoginNotice";
 import { CreatorMarketplaceReportAction } from "./CreatorMarketplaceReportAction";
 import { Market3dAssetPreview } from "./Market3dAssetPreview";
 import { MarketAcquisitionModal } from "./MarketAcquisitionModal";
@@ -60,6 +65,14 @@ import { MarketTemplatePreview } from "./MarketTemplatePreview";
 import { MarketWebtoon3dViewerModal } from "./MarketWebtoon3dViewerModal";
 import { MarketWebtoonSpecBadge } from "./MarketWebtoonSpecBadge";
 import { StaleNoticeBar } from "./StaleNoticeBar";
+
+import {
+  MARKET_GUEST_LOGIN_NOTICE_ID,
+  marketGuestLoginNoticeDescribedBy,
+  shouldInterceptMarketAcquireAsLogin,
+} from "../models/market-guest-login-notice";
+
+import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
@@ -151,6 +164,21 @@ export function MarketResourceDetailArticle({
   const { isWishlisted, toggleWishlist } = useMarketWishlist();
   const acquired = isAcquired(currentRecord.id);
   const wishlisted = isWishlisted(currentRecord.id);
+  // 게스트 획득 사전 고지(P-3): 획득 버튼 근처 고지와 같은 판정을 공유한다.
+  // 게스트의 획득 클릭은 실패할 획득 모달 대신 로그인 절차로 연결한다.
+  const guestLoginState = useMarketGuestLoginNoticeState();
+  const guestMustLogin = shouldInterceptMarketAcquireAsLogin(guestLoginState);
+  const handleAcquireClick = () => {
+    if (guestMustLogin) {
+      requestAuthModalOpen({
+        reason: "protected-action",
+        source: "market-resource-library",
+        mode: "login",
+      });
+      return;
+    }
+    setAcquisitionModalOpen(true);
+  };
 
   useEffect(() => {
     setCurrentRecord(record);
@@ -599,6 +627,9 @@ export function MarketResourceDetailArticle({
               <Download className="h-4 w-4" aria-hidden="true" />
               {studioActionLabel}
             </Link>
+            {!acquired ? (
+              <MarketGuestLoginNotice id={MARKET_GUEST_LOGIN_NOTICE_ID} />
+            ) : null}
             {acquired ? (
               <Link
                 href="/market/library"
@@ -614,14 +645,22 @@ export function MarketResourceDetailArticle({
             ) : (
               <button
                 type="button"
-                onClick={() => setAcquisitionModalOpen(true)}
+                onClick={handleAcquireClick}
+                aria-describedby={marketGuestLoginNoticeDescribedBy(
+                  guestLoginState,
+                  MARKET_GUEST_LOGIN_NOTICE_ID,
+                )}
                 className={buttonClass({
                   variant: "outline",
                   size: "sm",
                   className: "w-full gap-1.5 border-accent text-accent hover:bg-accent/10",
                 })}
               >
-                <Download className="size-3.5" />
+                {guestMustLogin ? (
+                  <LogIn className="size-3.5" aria-hidden="true" />
+                ) : (
+                  <Download className="size-3.5" />
+                )}
                 <span>내 에셋에 추가하기</span>
               </button>
             )}
@@ -806,7 +845,7 @@ export function MarketResourceDetailArticle({
       <MarketDetailStickyBar
         record={currentRecord}
         studioHandoff={studioHandoff}
-        onOpenAcquisition={() => setAcquisitionModalOpen(true)}
+        onOpenAcquisition={handleAcquireClick}
       />
 
       <MarketAcquisitionModal

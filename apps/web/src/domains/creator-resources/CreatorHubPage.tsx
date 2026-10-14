@@ -2,7 +2,7 @@ import { BookmarkCheck, ChevronDown, Compass, Gauge, NotebookPen } from "lucide-
 import { useCallback, useMemo, useState } from "react";
 
 import type { ChangeEvent, SyntheticEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { RESOURCE_BUTTON } from "./navigation";
 import { ProviderStatus } from "./ProviderStatus";
@@ -97,6 +97,8 @@ export function CreatorHubPage() {
   const [providerStatusOpen, setProviderStatusOpen] = useState(false);
   // 예전 공유 링크(#research-coverage)는 접힌 "자세히" 안의 근거 공백 지도를 가리키므로 펼친 채로 연다.
   const [checksOpen, setChecksOpen] = useState(() => hash === "#research-coverage");
+  // 첫 방문(아직 아무것도 안 한 상태) 가이드는 펼쳐 둔 채로 시작하고, 사용자가 접으면 그 선택을 존중한다.
+  const [guideOpen, setGuideOpen] = useState(true);
   const [restoreMode, setRestoreMode] = useState<"merge" | "replace">("merge");
   const [restoring, setRestoring] = useState(false);
   const [importNotice, setImportNotice] = useState("");
@@ -159,6 +161,15 @@ export function CreatorHubPage() {
     heroContent={<ResearchSearchPanel session={researchSession} onSessionChange={updateResearchSession} onSearch={launchSearch} />}
     heroAside={<div className="hidden lg:block"><ResearchSceneStudy /></div>}
   >
+    <section className="rounded-2xl border border-line bg-panel p-4 sm:p-5" aria-label={bt("리서치 표면 안내", "Which research surface am I on?")}>
+      <p className="text-sm leading-6 text-fg-2 break-keep">
+        <strong className="text-fg">{bt("여기는 리서치 데스크", "This is the Research Desk")}</strong>
+        {bt(" — 장면에 쓸 자료를 출처와 함께 찾고, 저장하고, 판단 노트로 이어 가는 작업공간이에요. 수록 작품의 장르·소재 분포와 비교는 여기가 아니라 작품 리서치 랩에서 봐요.", " — the workspace for finding sources for a scene, saving them with their provenance, and carrying them into your notes. Genre and motif distribution and title comparison live in the Catalog Research Lab, not here.")}
+      </p>
+      <Link to="/research/catalog" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+        {bt("작품 메타데이터를 비교하려면 작품 리서치 랩으로 →", "Compare title metadata in the Catalog Research Lab →")}
+      </Link>
+    </section>
     <ResearchCategoryTiles summary={summary} />
     <ResearchRecipeRail />
 
@@ -170,6 +181,31 @@ export function CreatorHubPage() {
         </div>
         <p className="text-sm text-fg-2">{bt("자동 평점이 아니라 다음 행동을 고르기 위한 사실 요약입니다.", "A factual summary to pick your next step, not an automatic score.")}</p>
       </header>
+      {briefIsEmpty && <details className="group rounded-2xl border border-accent/40 bg-panel" open={guideOpen} onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setGuideOpen(event.currentTarget.open)}>
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+          {bt("장면으로 시작하기 · 처음이면 이 3단계로", "Start from a scene · first time? Follow these 3 steps")}
+          <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent transition-transform group-open:rotate-180" />
+        </summary>
+        <ol className="grid gap-3 border-t border-line p-4 sm:grid-cols-3 sm:p-5">
+          <li className="rounded-xl bg-canvas p-4">
+            <p className="text-xs font-bold text-accent">01</p>
+            <p className="mt-1 font-bold">{bt("장면 고르기", "Pick a scene")}</p>
+            <p className="mt-1 text-sm leading-6 text-fg-2 break-keep">{bt("어떤 장면에 쓸 자료인지 먼저 정해요. 리서치 초점에 장면 이름과 핵심 질문을 적으면 검색이 흔들리지 않아요.", "Decide which scene the material is for first. Naming the scene and its key question in Research Focus keeps your searching on track.")}</p>
+            <button type="button" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("focus")}>{bt("리서치 초점 적기 →", "Write your research focus →")}</button>
+          </li>
+          <li className="rounded-xl bg-canvas p-4">
+            <p className="text-xs font-bold text-accent">02</p>
+            <p className="mt-1 font-bold">{bt("자료 찾기", "Find sources")}</p>
+            <p className="mt-1 text-sm leading-6 text-fg-2 break-keep">{bt("위쪽 검색이나 카테고리 타일에서 장면에 맞는 자료를 찾고, 출처와 이용조건을 확인한 것만 저장해요.", "Use the search or the category tiles above to find material for the scene, and save only what you have checked for source and usage terms.")}</p>
+          </li>
+          <li className="rounded-xl bg-canvas p-4">
+            <p className="text-xs font-bold text-accent">03</p>
+            <p className="mt-1 font-bold">{bt("노트에 붙이기", "Attach it to a note")}</p>
+            <p className="mt-1 text-sm leading-6 text-fg-2 break-keep">{bt("저장한 자료는 판단 노트에 붙여 왜 이 자료를 쓰는지 남겨요. 그 노트가 다음 제작의 근거가 돼요.", "Attach saved sources to a judgement note saying why you chose them. That note becomes the evidence behind your next production step.")}</p>
+            <button type="button" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("notes")}>{bt("판단 노트 열기 →", "Open judgement notes →")}</button>
+          </li>
+        </ol>
+      </details>}
       <SiteSectionTabs tabs={deskTabs} value={activeTab} onChange={selectTab} label={bt("리서치 데스크 작업 영역", "Research desk workspace")} idPrefix={TAB_PREFIX} />
 
       <SiteTabPanel idPrefix={TAB_PREFIX} id="overview" active={activeTab === "overview"} mounted={isMounted("overview")} className="space-y-4">

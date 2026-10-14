@@ -44,7 +44,7 @@ function toggle<T>(arr: T[], value: T): T[] {
 
 function chip(active: boolean) {
   return cn(
-    "inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-[0.72rem] transition-colors",
+    "inline-flex min-h-11 items-center gap-1 rounded-full border px-3 text-[0.72rem] transition-colors",
     active
       ? "border-accent/60 bg-accent-soft/60 text-fg"
       : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg"

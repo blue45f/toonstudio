@@ -3,6 +3,9 @@
 // 아트가 없는 카드는 null을 돌려주고, 소비처는 기존 벡터 페이스
 // (카드별 hue 그라디언트 + TarotMotif 글리프)로 폴백한다. 이미지 로드 실패
 // 시에도 소비처가 onError로 같은 폴백을 켠다.
+// 아트 25장(메이저 20·슈트 4·뒷면 1)의 생성 경로·권리 근거·파일 해시는
+// 에셋 옆의 apps/web/public/images/tarot/PROVENANCE.md 와 provenance.json이
+// 정본이다. 아트를 추가·교체하면 그 기록도 같은 변경에서 갱신한다.
 
 const MAJOR_ART_FILES: Readonly<Record<number, string>> = {
   0: "major-00.webp",

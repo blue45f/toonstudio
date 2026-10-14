@@ -1,0 +1,66 @@
+name: Lighthouse CI
+
+# Public-surface Core Web Vitals as a PR gate (BLUEPRINT §6 budgets).
+# Lab measurement only: LCP and CLS are asserted directly; INP has no lab
+# equivalent in Lighthouse, so total-blocking-time is asserted at the same
+# 200ms budget as its lab proxy. Field INP stays with the web-vitals beacon.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - '.github/workflows/lighthouse-ci.yml'
+      - 'lighthouserc.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'apps/web/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/lighthouse-ci.yml'
+      - 'lighthouserc.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'apps/web/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: "1"
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  lighthouse:
+    name: Public surface CWV gate (LCP · CLS · INP proxy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Lighthouse gate contract (budgets stay wired to §6)
+        run: pnpm exec vitest run scripts/__tests__/lighthouse-ci-contract.test.mjs
+      - name: Build the exact candidate production bundle
+        run: pnpm run build:bundle
+      - name: Collect and assert CWV budgets (fails on violation)
+        run: pnpm run lhci:autorun
+      - name: Keep Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: lighthouse-ci-report
+          path: .lighthouseci
+          retention-days: 14
+          if-no-files-found: ignore

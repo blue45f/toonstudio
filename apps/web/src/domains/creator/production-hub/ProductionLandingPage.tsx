@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   ClipboardCheck,
   CloudOff,
+  Columns2,
   GalleryVerticalEnd,
   Kanban,
   Layers3,
@@ -29,6 +30,7 @@ import { formatProductionDay } from "./production-format";
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
+import { reviewInboxItemHref } from "./review-request-model";
 import { ProductionMetric, ProductionPill, ProductionSampleBadge, type ProductionTone } from "./production-ui";
 
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
@@ -290,7 +292,7 @@ function PortfolioSection({
                 return (
                   <Link
                     key={`${item.bucket}:${item.projectId}:${item.taskId}`}
-                    to={`/production/projects/${encodeURIComponent(item.projectId)}/production?task=${encodeURIComponent(item.taskId)}`}
+                    to={reviewInboxItemHref(item)}
                     className="rounded-xl border border-line bg-card p-3 outline-none transition-colors hover:border-accent/40 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -299,6 +301,12 @@ function PortfolioSection({
                     </div>
                     <p className="mt-2 line-clamp-2 text-xs font-black leading-5 text-fg">{item.taskTitle}</p>
                     <p className="mt-1 truncate text-[0.6875rem] text-fg-3">{item.projectTitle} · {(() => { const processLabel = PRODUCTION_PROCESS_LABELS[canonicalProductionProcessKey(item.processKey)]; return processLabel ? bt(processLabel.ko, processLabel.en) : item.processKey; })()} · {item.estimateHours === null ? bt("예상 시간 미입력", "No estimate") : `${item.estimateHours}h`}</p>
+                    {item.bucket === "review" && item.episodeId ? (
+                      <p className="mt-2 inline-flex items-center gap-1 text-[0.6875rem] font-bold text-accent">
+                        <Columns2 className="size-3.5" aria-hidden="true" />
+                        {bt("비교 검수로 바로 열기", "Open in compare review")}
+                      </p>
+                    ) : null}
                   </Link>
                 );
               })}

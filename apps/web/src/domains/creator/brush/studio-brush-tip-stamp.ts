@@ -7,6 +7,10 @@
  */
 
 import type { StudioDynamicBrushDab } from "./studio-brush-dynamics";
+import {
+  createStudioProceduralTipFieldV1,
+  STUDIO_PROCEDURAL_TIP_FIELD_LIMITS_V1,
+} from "./studio-procedural-tip-fields-v1";
 
 /**
  * Procedural renderer tips use a high-resolution R8 source so a large charcoal/crayon nib does
@@ -48,14 +52,50 @@ export const STUDIO_BRUSH_TIP_SHAPE_IDS = [
   "sumi",
   "halftone",
   "star",
+  "spatter",
+  "rake",
+  "grass",
 ] as const;
 
 export type StudioBrushTipShapeId = (typeof STUDIO_BRUSH_TIP_SHAPE_IDS)[number];
+
+/**
+ * Seed/count pair for the parametric tip fields (spatter · rake · grass).
+ *
+ * These three shapes are not fixed morphologies: their coverage field is generated from
+ * this pair by `studio-procedural-tip-fields-v1`, so the pair is part of the saved tip
+ * identity — same seed + count always rebuilds the same tip, on every client and replay.
+ */
+export interface StudioBrushTipParametricSettings {
+  seed: number;
+  count: number;
+}
+
+/** Shapes whose coverage comes from a seeded parametric field rather than a fixed formula. */
+export const STUDIO_BRUSH_TIP_PARAMETRIC_SHAPE_IDS = [
+  "spatter",
+  "rake",
+  "grass",
+] as const;
+
+export type StudioBrushTipParametricShapeId = (typeof STUDIO_BRUSH_TIP_PARAMETRIC_SHAPE_IDS)[number];
+
+export function isStudioBrushTipParametricShapeId(
+  value: unknown
+): value is StudioBrushTipParametricShapeId {
+  return typeof value === "string"
+    && (STUDIO_BRUSH_TIP_PARAMETRIC_SHAPE_IDS as readonly string[]).includes(value);
+}
 
 export interface StudioBrushTipSettings {
   shape?: StudioBrushTipShapeId;
   /** Edge falloff for procedural and imported tips (0 = original/sharp, 1 = softest). */
   softness?: number;
+  /**
+   * Seed/count for parametric shapes (spatter · rake · grass). Ignored for fixed shapes;
+   * when absent on a parametric shape, the field module's per-shape defaults apply.
+   */
+  parametric?: StudioBrushTipParametricSettings | null;
   /**
    * Optional custom alpha channel: base64 of N×N bytes (0..255). When present and valid,
    * overrides the procedural shape — this is the in-document PNG-alpha tip payload.
@@ -69,6 +109,12 @@ export interface NormalizedStudioBrushTipSettings {
   softness: number;
   alphaMapBase64: string | null;
   alphaMapSize: number;
+  /**
+   * Present only for parametric shapes (spatter · rake · grass), always fully resolved
+   * (defaults filled, count clamped to the field module's limits). Fixed shapes omit the
+   * key entirely so their serialized form — and equality checks — stay byte-identical.
+   */
+  parametric?: StudioBrushTipParametricSettings;
 }
 
 export interface StudioBrushTipAlphaMap {
@@ -78,6 +124,8 @@ export interface StudioBrushTipAlphaMap {
   shape: StudioBrushTipShapeId;
   softness: number;
   custom: boolean;
+  /** Resolved seed/count when this map was baked from a parametric field; absent otherwise. */
+  parametric?: StudioBrushTipParametricSettings;
   /**
    * Stable content revision for immutable renderer maps. Maps without a revision are treated as
    * editable external inputs and are resampled on every call; editors may increment this value
@@ -210,10 +258,16 @@ function studioBrushTipAlphaMapCacheKey(value: unknown): string {
       ? source.alphaMapBase64
       : `oversized:${source.alphaMapBase64.length}`
     : null;
+  // Parametric seed/count change the baked field, so they are part of the map identity —
+  // keyed through the same normalization the settings path uses (defaults filled, count
+  // clamped), which keeps two spellings of one tip on one cache entry.
+  const parametric = isStudioBrushTipShapeId(shape)
+    ? normalizeStudioBrushTipParametricSettings(shape, source.parametric) ?? null
+    : null;
   // Structured encoding keeps arbitrary imported strings (including NUL separators) from
   // aliasing another document's normalized settings. Oversized payloads are intentionally keyed
   // only by length because every such payload normalizes to the same absent alpha map.
-  return JSON.stringify([shape, softness, alphaMapSize, alphaMapBase64]);
+  return JSON.stringify([shape, softness, alphaMapSize, alphaMapBase64, parametric]);
 }
 
 function cachedStudioBrushTipAlphaMap(key: string): StudioBrushTipAlphaMap | null {
@@ -314,6 +368,60 @@ export function decodeStudioBrushTipAlphaMapBase64(value: unknown): Uint8Array |
   return write === output.length ? output : null;
 }
 
+/** Per-shape seed/count defaults — must stay in step with the field module's own defaults. */
+const STUDIO_BRUSH_TIP_PARAMETRIC_DEFAULTS: Readonly<
+  Record<StudioBrushTipParametricShapeId, StudioBrushTipParametricSettings>
+> = Object.freeze({
+  spatter: Object.freeze({ seed: 101, count: 14 }),
+  rake: Object.freeze({ seed: 707, count: 7 }),
+  grass: Object.freeze({ seed: 505, count: 9 }),
+});
+
+const STUDIO_BRUSH_TIP_PARAMETRIC_COUNT_LIMITS: Readonly<
+  Record<StudioBrushTipParametricShapeId, { readonly min: number; readonly max: number }>
+> = Object.freeze({
+  spatter: STUDIO_PROCEDURAL_TIP_FIELD_LIMITS_V1.spatterDrops,
+  rake: STUDIO_PROCEDURAL_TIP_FIELD_LIMITS_V1.rakeBristles,
+  grass: STUDIO_PROCEDURAL_TIP_FIELD_LIMITS_V1.grassBlades,
+});
+
+/**
+ * Resolve the saved seed/count for a parametric shape. Non-parametric shapes resolve to
+ * `undefined` so callers can omit the key entirely; malformed pairs fall back per-field to
+ * the shape defaults instead of failing the whole tip (document-boundary fail-soft).
+ */
+export function normalizeStudioBrushTipParametricSettings(
+  shape: StudioBrushTipShapeId,
+  value?: unknown
+): StudioBrushTipParametricSettings | undefined {
+  if (!isStudioBrushTipParametricShapeId(shape)) return undefined;
+  const defaults = STUDIO_BRUSH_TIP_PARAMETRIC_DEFAULTS[shape];
+  const source = asRecord(value);
+  if (!source) return { ...defaults };
+  const rawSeed = source.seed;
+  const seed = typeof rawSeed === "number" && Number.isFinite(rawSeed)
+    ? Math.min(0x7fff_ffff, Math.max(-0x8000_0000, Math.trunc(rawSeed)))
+    : defaults.seed;
+  const limits = STUDIO_BRUSH_TIP_PARAMETRIC_COUNT_LIMITS[shape];
+  const rawCount = source.count;
+  const count = typeof rawCount === "number" && Number.isFinite(rawCount)
+    ? Math.min(limits.max, Math.max(limits.min, Math.floor(rawCount)))
+    : defaults.count;
+  return { seed, count };
+}
+
+/** Field options for one parametric shape: the count key differs per field kind. */
+function studioBrushTipParametricFieldOptions(
+  parametric: StudioBrushTipParametricSettings
+): { seed: number; drops: number; bristles: number; blades: number } {
+  return {
+    seed: parametric.seed,
+    drops: parametric.count,
+    bristles: parametric.count,
+    blades: parametric.count,
+  };
+}
+
 export function normalizeStudioBrushTipSettings(value?: unknown): NormalizedStudioBrushTipSettings {
   const source = asRecord(value) ?? {};
   const shape = isStudioBrushTipShapeId(source.shape) ? source.shape : DEFAULT_TIP.shape;
@@ -333,7 +441,10 @@ export function normalizeStudioBrushTipSettings(value?: unknown): NormalizedStud
   } else if (source.alphaMapBase64 === null) {
     alphaMapBase64 = null;
   }
-  return { shape, softness, alphaMapBase64, alphaMapSize };
+  const normalized: NormalizedStudioBrushTipSettings = { shape, softness, alphaMapBase64, alphaMapSize };
+  const parametric = normalizeStudioBrushTipParametricSettings(shape, source.parametric);
+  if (parametric) normalized.parametric = parametric;
+  return normalized;
 }
 
 function hashUnit(x: number, y: number, salt: number): number {
@@ -353,11 +464,22 @@ export function sampleStudioBrushTipProceduralAlpha(
   shape: StudioBrushTipShapeId,
   nx: number,
   ny: number,
-  softness: number
+  softness: number,
+  parametric?: StudioBrushTipParametricSettings | null
 ): number {
   const soft = clamp01(softness);
   const radius = Math.hypot(nx, ny);
   if (!Number.isFinite(nx) || !Number.isFinite(ny)) return 0;
+
+  if (isStudioBrushTipParametricShapeId(shape)) {
+    // Single-point convenience path: the field is rebuilt per call, so bulk baking goes
+    // through buildProceduralAlphaMap, which builds the field once per map.
+    const resolved = normalizeStudioBrushTipParametricSettings(shape, parametric ?? undefined)!;
+    return clamp01(createStudioProceduralTipFieldV1(
+      shape,
+      studioBrushTipParametricFieldOptions(resolved)
+    )(nx, ny));
+  }
 
   switch (shape) {
     case "round": {
@@ -456,16 +578,29 @@ export function sampleStudioBrushTipProceduralAlpha(
 function buildProceduralAlphaMap(
   shape: StudioBrushTipShapeId,
   softness: number,
-  size: number
+  size: number,
+  parametric?: StudioBrushTipParametricSettings
 ): Float32Array {
   const alphas = new Float32Array(size * size);
   const centre = (size - 1) / 2;
+  // Parametric fields are built once per bake: rebuilding the blob/bristle/blade layout
+  // per texel would multiply selection-time cost by the element count for no gain.
+  const parametricField = isStudioBrushTipParametricShapeId(shape)
+    ? createStudioProceduralTipFieldV1(
+        shape,
+        studioBrushTipParametricFieldOptions(
+          normalizeStudioBrushTipParametricSettings(shape, parametric)!
+        )
+      )
+    : null;
   let peak = 0;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const nx = centre === 0 ? 0 : (x - centre) / centre;
       const ny = centre === 0 ? 0 : (y - centre) / centre;
-      const alpha = sampleStudioBrushTipProceduralAlpha(shape, nx, ny, softness);
+      const alpha = parametricField
+        ? clamp01(parametricField(nx, ny))
+        : sampleStudioBrushTipProceduralAlpha(shape, nx, ny, softness);
       alphas[y * size + x] = alpha;
       if (alpha > peak) peak = alpha;
     }
@@ -566,10 +701,11 @@ export function buildStudioBrushTipAlphaMap(value?: unknown): StudioBrushTipAlph
   }
   return cacheStudioBrushTipAlphaMap(cacheKey, {
     size: tip.alphaMapSize,
-    alphas: buildProceduralAlphaMap(tip.shape, tip.softness, tip.alphaMapSize),
+    alphas: buildProceduralAlphaMap(tip.shape, tip.softness, tip.alphaMapSize, tip.parametric),
     shape: tip.shape,
     softness: tip.softness,
     custom: false,
+    ...(tip.parametric ? { parametric: tip.parametric } : {}),
     revision: cacheKey,
   });
 }
@@ -778,14 +914,18 @@ export function planStudioBrushTipStampWorldSamples(
 export function studioBrushTipAlphaMapToBase64(
   shape: StudioBrushTipShapeId,
   softness = 0.35,
-  size = STUDIO_BRUSH_CUSTOM_TIP_ALPHA_MAP_MAX_SIZE
+  size = STUDIO_BRUSH_CUSTOM_TIP_ALPHA_MAP_MAX_SIZE,
+  parametric?: StudioBrushTipParametricSettings | null
 ): { alphaMapBase64: string; alphaMapSize: number } {
   const safeSize = Math.trunc(clamp(
     size,
     STUDIO_BRUSH_TIP_ALPHA_MAP_SIZE_RANGE.min,
     STUDIO_BRUSH_CUSTOM_TIP_ALPHA_MAP_MAX_SIZE
   ));
-  const alphas = buildProceduralAlphaMap(shape, clamp01(softness), safeSize);
+  const resolvedParametric = parametric
+    ? normalizeStudioBrushTipParametricSettings(shape, parametric)
+    : undefined;
+  const alphas = buildProceduralAlphaMap(shape, clamp01(softness), safeSize, resolvedParametric);
   const bytes = new Uint8Array(safeSize * safeSize);
   for (let index = 0; index < alphas.length; index++) {
     bytes[index] = Math.round(clamp01(alphas[index]!) * 255);

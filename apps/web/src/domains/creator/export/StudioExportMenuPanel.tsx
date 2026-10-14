@@ -72,6 +72,15 @@ import {
 } from "./studio-export-print-spec";
 import { StudioExportOpenRasterSection } from "./StudioExportOpenRasterSection";
 import { StudioExportPrintSpecSection } from "./StudioExportPrintSpecSection";
+import {
+  DEFAULT_STUDIO_BOOK_LAYOUT_SPEC,
+  describeBookLayoutSpec,
+  readStudioBookLayoutSpecDraft,
+  resolveBookPrintRequest,
+  writeStudioBookLayoutSpecDraft,
+  type StudioBookLayoutSpecState,
+} from "./studio-export-book-spec";
+import { StudioExportBookLayoutSection } from "./StudioExportBookLayoutSection";
 
 import type {
   StudioRasterEncoded,
@@ -288,6 +297,13 @@ export function StudioExportMenuPanel({
   );
   // 비활성이면 undefined — runPdfExport가 print 키 자체를 생략해 기본 경로를 그대로 탄다.
   const pdfPrintOptions = resolvePdfPrintOptions(pdfPrintSpec);
+  // 단행본 조판(판형 프리셋) — 인쇄 스펙과 같은 초안 보존 관례. 둘 다 켜져 있으면
+  // 단행본이 우선하고, 렌더러는 book+print 동시 지정을 throw로 막는다.
+  const bookLayoutDraft = readStudioBookLayoutSpecDraft();
+  const [bookLayoutSpec, setBookLayoutSpec] = useState<StudioBookLayoutSpecState>(
+    bookLayoutDraft ?? DEFAULT_STUDIO_BOOK_LAYOUT_SPEC
+  );
+  const bookPrintRequest = resolveBookPrintRequest(bookLayoutSpec);
   // 페이지당 요소 수만큼 순차 캡처라 다른 내보내기보다 오래 걸린다 — 진행 중 패널이 닫히거나
   // 언마운트되면(다른 내보내기 형식으로 전환 등) 뒤늦게 도착한 결과가 상태를 덮어쓰지 않게 막는다.
   const mountedRef = useRef(true);
@@ -378,6 +394,10 @@ export function StudioExportMenuPanel({
   useEffect(() => {
     writeStudioPdfPrintSpecDraft(pdfPrintSpec);
   }, [pdfPrintSpec]);
+
+  useEffect(() => {
+    writeStudioBookLayoutSpecDraft(bookLayoutSpec);
+  }, [bookLayoutSpec]);
 
   function applyGeometryPreset(id: StudioExportGeometryPresetId) {
     const preset = studioExportGeometryPreset(id);
@@ -749,7 +769,12 @@ export function StudioExportMenuPanel({
         pages: captured.pages,
         title: exportTitle,
         watermark,
-        ...(pdfPrintOptions ? { print: pdfPrintOptions } : {}),
+        // 단행본 조판이 켜져 있으면 판형 경로가 우선한다(렌더러 동시 지정 가드와 정합).
+        ...(bookPrintRequest
+          ? { book: bookPrintRequest }
+          : pdfPrintOptions
+            ? { print: pdfPrintOptions }
+            : {}),
         onProgress: (done, total) =>
           setPdfStatus({
             tone: "info",
@@ -760,7 +785,14 @@ export function StudioExportMenuPanel({
         tone: "good",
         text:
           `${pdfExportResultMessage(result)} (${captured.rangeLabel})` +
-          (pdfPrintOptions ? ` 인쇄 스펙 적용: ${describePdfPrintSpec(pdfPrintSpec)}.` : ""),
+          (bookPrintRequest
+            ? ` 단행본 조판 적용: ${describeBookLayoutSpec(bookLayoutSpec)}.` +
+              (result.bookWarnings && result.bookWarnings.length > 0
+                ? ` 경고 ${result.bookWarnings.length}건: ${result.bookWarnings[0].message}`
+                : "")
+            : pdfPrintOptions
+              ? ` 인쇄 스펙 적용: ${describePdfPrintSpec(pdfPrintSpec)}.`
+              : ""),
       });
     } catch (err) {
       setPdfStatus({
@@ -1684,6 +1716,12 @@ export function StudioExportMenuPanel({
 
       {/* 단행본 인쇄 스펙 — 켤 때만 PDF가 인쇄용 빌더(도련·재단 마크·CMYK·중철 스프레드)를 탄다. */}
       <StudioExportPrintSpecSection pdfPrintSpec={pdfPrintSpec} setPdfPrintSpec={setPdfPrintSpec} />
+
+      {/* 단행본 조판 — 판형을 고르면 재단·도련·안전 박스가 판형 기준인 인쇄용 PDF를 만든다. */}
+      <StudioExportBookLayoutSection
+        bookLayoutSpec={bookLayoutSpec}
+        setBookLayoutSpec={setBookLayoutSpec}
+      />
 
       {/* 선택 범위 페이지 → PDF 한 파일 — JPG(품질 92%)로 담는 규격 무관 백업·제출·공유용. */}
       <button

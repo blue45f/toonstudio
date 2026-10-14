@@ -26,12 +26,15 @@ export function useStudioUnifiedHistoryJournal() {
   const recordStudioHistoryJournalPages = useCallback((
     addedSteps: number,
     nextUndoDepth: number,
+    // 과정 리플레이 메타(선택) — 호출자가 아는 범위에서만 넘긴다. 없으면 종전 동작과 동일.
+    replayMeta?: { readonly at?: number; readonly changedPageIds?: readonly string[] },
   ): void => {
     if (addedSteps <= 0) return;
     commitStudioHistoryJournal(
       recordStudioHistoryJournalPagesSteps(historyJournalRef.current, {
         addedSteps,
         nextUndoDepth,
+        ...(replayMeta ?? {}),
       }),
     );
   }, [commitStudioHistoryJournal]);

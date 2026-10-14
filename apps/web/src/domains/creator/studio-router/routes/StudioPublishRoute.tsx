@@ -7,6 +7,7 @@ import { useStudioDraftScope } from "../useStudioDraftScope";
 import type { StudioPublishRouteResolution } from "../studio-route-manifest";
 
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { useT } from "@/shared/lib/i18n";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 
 const StudioPublishingCommandCenter = lazyRetry(
@@ -19,6 +20,7 @@ const StudioPublishingCommandCenter = lazyRetry(
 export function StudioPublishRoute({ resolution }: {
   readonly resolution: StudioPublishRouteResolution;
 }) {
+  const t = useT();
   const { data: session } = useSession();
   const authScopeKey = session?.user?.id ?? null;
   const routeKey = resolution.workId === null
@@ -33,7 +35,7 @@ export function StudioPublishRoute({ resolution }: {
 
   return (
     <StudioDocumentRuntimeBoundary documentKey={publishKey}>
-      <Suspense fallback={<StudioRouteLoading label="게시 명령 센터를 안전하게 여는 중..." />}>
+      <Suspense fallback={<StudioRouteLoading label={t("studio.canvas.shell.loadingPublishCenter", "게시 명령 센터를 안전하게 여는 중...")} />}>
         <StudioPublishingCommandCenter workId={resolution.workId} />
       </Suspense>
     </StudioDocumentRuntimeBoundary>

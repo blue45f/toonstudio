@@ -1,4 +1,4 @@
-import { BadgeCheck, Loader2, Plus, Sparkles, Star } from "lucide-react";
+import { BadgeCheck, Loader2, Plus, Shapes, Sparkles, Star } from "lucide-react";
 
 import {
   createStudioAssetFavoriteId,
@@ -36,6 +36,13 @@ export interface StudioRasterAssetGridProps {
   assets: readonly StudioRasterAsset[];
   busyId: string | null;
   onAdd: (asset: StudioRasterAsset) => void;
+  /**
+   * 지정하면 카드마다 "벡터로 변환해 추가" 동작이 함께 나타난다. 소재를 원본
+   * 이미지로 놓는 대신 트레이싱해 벡터 레이어로 넣는 가져오기 경로이며,
+   * 실제 변환은 `traceStudioImageSourceToVectorLayer` 를 쓰는 부모가 맡는다
+   * (미지정 시 기존 동작과 동일).
+   */
+  onAddAsVector?: (asset: StudioRasterAsset) => void;
   favoriteState: StudioAssetFavoriteState;
   favoriteOnly: boolean;
   setFavoriteOnly: Dispatch<SetStateAction<boolean>> | ((value: boolean) => void);
@@ -46,6 +53,7 @@ export function StudioRasterAssetGrid({
   assets,
   busyId,
   onAdd,
+  onAddAsVector,
   favoriteState,
   favoriteOnly,
   setFavoriteOnly,
@@ -146,6 +154,19 @@ export function StudioRasterAssetGrid({
                       {COLLECTION_LABEL[asset.collection]} · AI 생성
                     </p>
                   </div>
+                  {onAddAsVector ? (
+                    <button
+                      type="button"
+                      disabled={busyId !== null}
+                      aria-label={`${asset.label} 벡터로 변환해 추가`}
+                      title="벡터로 변환해 추가"
+                      aria-busy={busy || undefined}
+                      onClick={() => onAddAsVector(asset)}
+                      className={`grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-2 transition-colors hover:border-accent/60 hover:text-accent disabled:cursor-wait disabled:opacity-55 ${FOCUS_RING_CLASS}`}
+                    >
+                      <Shapes size={15} aria-hidden />
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     disabled={busyId !== null}

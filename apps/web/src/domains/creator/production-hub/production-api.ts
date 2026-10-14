@@ -324,12 +324,16 @@ export interface ProductionExternalReviewView {
     readonly watermark: boolean;
     readonly permissions: readonly ("view" | "comment" | "approve" | "download")[];
     readonly expiresAt: string;
+    /** 고정된 비교 검수 스냅샷 직렬화 JSON(compare-review-snapshot 포맷). 없으면 null/생략. */
+    readonly compareSnapshotJson?: string | null;
     readonly responses: readonly {
       readonly id: string;
       readonly reviewerName: string;
       readonly decision: "comment" | "approve" | "request-changes";
       readonly note: string;
       readonly createdAt: string;
+      /** 이 응답과 함께 저장된 비교 핀 직렬화 JSON(CompareSnapshotPin[] 포맷). */
+      readonly comparePinsJson?: string | null;
     }[];
   };
   readonly submissions: readonly {
@@ -371,6 +375,8 @@ export function submitProductionExternalReview(
     readonly reviewerName: string;
     readonly decision: "comment" | "approve" | "request-changes";
     readonly note: string;
+    /** 비교 검수 화면에서 남긴 핀의 직렬화 JSON. 비교 스냅샷이 있을 때만 보낸다. */
+    readonly comparePinsJson?: string;
   },
 ): Promise<ProductionExternalReviewView> {
   return api.post(`/production/public-reviews/${encodeURIComponent(projectId)}/${encodeURIComponent(reviewId)}/responses`, {

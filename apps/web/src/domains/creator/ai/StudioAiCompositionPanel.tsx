@@ -13,6 +13,8 @@ import {
 import { Clapperboard, Copy, Loader2, StickyNote } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { AnswerTuningControls } from "./AnswerTuningControls";
+import { DEFAULT_ANSWER_TUNING, type AnswerTuning } from "./answer-tuning";
 import {
   suggestSceneComposition,
   studioTextAiTransportForOperation,
@@ -64,6 +66,8 @@ export function StudioAiCompositionPanel({
     message: string;
   } | null>(null);
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  // 답변 조절 공통 부품 — 조절값은 suggestSceneComposition이 시스템 지시문·temperature·maxTokens로 반영한다.
+  const [answerTuning, setAnswerTuning] = useState<AnswerTuning>(DEFAULT_ANSWER_TUNING);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   // 팔레트·대사 패널과 동일 — 결과·에러가 팝오버 fold 아래에 생기지 않게 도착 시 nearest 스크롤.
   const feedbackRef = useRef<HTMLDivElement | null>(null);
@@ -82,7 +86,7 @@ export function StudioAiCompositionPanel({
     const operationTransport = operationId && transport
       ? studioTextAiTransportForOperation(transport, operationId)
       : transport;
-    const result = await suggestSceneComposition(settings, prompt, operationTransport);
+    const result = await suggestSceneComposition(settings, prompt, operationTransport, answerTuning);
     if (operationId) {
       onOperationSettled?.({
         operationId,
@@ -133,6 +137,8 @@ export function StudioAiCompositionPanel({
         disabled={busy}
         className="min-h-[4.5rem] w-full resize-none rounded-lg border border-line bg-panel px-2.5 py-2 text-[0.68rem] leading-snug text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-60"
       />
+
+      <AnswerTuningControls value={answerTuning} onChange={setAnswerTuning} disabled={busy} density="compact" />
 
       <button
         type="button"

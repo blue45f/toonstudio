@@ -7,6 +7,11 @@ import {
   type StudioBrushR8TextureGrainSource,
 } from "./studio-brush-r8-grain-asset-contract";
 
+import {
+  applyStudioBrushTextureV1,
+  studioBrushTextureIsPlainMultiplyV1,
+} from "./studio-brush-texture-combine-v1";
+
 import type { NormalizedStudioBrushGrainSettings } from "./studio-brush-material-dynamics";
 import type { StudioBrushTipAlphaMap } from "./studio-brush-tip-stamp";
 
@@ -33,6 +38,12 @@ export interface StudioBrushR8GrainSampler {
   readonly sourceKey: string;
   readonly source: Readonly<StudioBrushR8TextureGrainSource>;
   sampleAlphaMultiplierAt(input: StudioBrushR8GrainSampleInput): number;
+  /**
+   * Optional contrasted pattern value (0..1) before any amount/depth is applied — the input the
+   * texture combine module consumes. Optional so hand-written test samplers keep compiling;
+   * texture composition fails closed (null) when a sampler cannot provide it.
+   */
+  samplePatternValueAt?(input: StudioBrushR8GrainSampleInput): number;
 }
 
 export interface StudioBrushR8GrainHydrationReceipt {
@@ -109,6 +120,8 @@ export interface StudioBrushR8TipPaperCompositionInput {
   readonly strokeOriginX: number;
   readonly strokeOriginY: number;
   readonly strokeSeed: number;
+  /** Dab ordinal for texture depth jitter. Ignored without a grain texture section. */
+  readonly dabIndex?: number;
 }
 
 const UINT32_RANGE = 0x1_0000_0000;
@@ -206,42 +219,53 @@ function createSampler(
   bytes: Uint8Array,
 ): Readonly<StudioBrushR8GrainSampler> {
   const { width, height } = source.asset;
+  // Single contrasted-pattern computation shared by the legacy multiplier and the texture
+  // combine input, so both paths read the identical field value at a given point.
+  const contrastedPatternAt = (input: StudioBrushR8GrainSampleInput): number | null => {
+    if (
+      !Number.isFinite(input.x)
+      || !Number.isFinite(input.y)
+      || !Number.isFinite(input.scale)
+      || input.scale <= 0
+    ) {
+      return null;
+    }
+    const contrast = clamp01(finiteNumber(input.contrast, 0));
+    const anchorX = input.space === "stroke-fixed"
+      ? finiteNumber(input.strokeOriginX, 0)
+      : 0;
+    const anchorY = input.space === "stroke-fixed"
+      ? finiteNumber(input.strokeOriginY, 0)
+      : 0;
+    const phaseSeed = (
+      (Math.trunc(finiteNumber(input.strokeSeed, 1)) >>> 0)
+      ^ (Math.trunc(finiteNumber(input.seed, 1)) >>> 0)
+    ) >>> 0;
+    const phaseX = mixedUnit(phaseSeed, 0x9e37_79b9);
+    const phaseY = mixedUnit(phaseSeed, 0x243f_6a88);
+    const sampled = sampleRepeatedBilinearR8(
+      bytes,
+      width,
+      height,
+      (input.x - anchorX) / input.scale + phaseX,
+      (input.y - anchorY) / input.scale + phaseY,
+    );
+    return clamp01((sampled - 0.5) * (1 + contrast * 4) + 0.5);
+  };
   return Object.freeze({
     sourceKey,
     source,
     sampleAlphaMultiplierAt(input: StudioBrushR8GrainSampleInput): number {
-      if (
-        !Number.isFinite(input.x)
-        || !Number.isFinite(input.y)
-        || !Number.isFinite(input.scale)
-        || input.scale <= 0
-      ) {
-        return 1;
-      }
       const amount = clamp01(finiteNumber(input.amount, 0));
       if (amount <= 0) return 1;
-      const contrast = clamp01(finiteNumber(input.contrast, 0));
-      const anchorX = input.space === "stroke-fixed"
-        ? finiteNumber(input.strokeOriginX, 0)
-        : 0;
-      const anchorY = input.space === "stroke-fixed"
-        ? finiteNumber(input.strokeOriginY, 0)
-        : 0;
-      const phaseSeed = (
-        (Math.trunc(finiteNumber(input.strokeSeed, 1)) >>> 0)
-        ^ (Math.trunc(finiteNumber(input.seed, 1)) >>> 0)
-      ) >>> 0;
-      const phaseX = mixedUnit(phaseSeed, 0x9e37_79b9);
-      const phaseY = mixedUnit(phaseSeed, 0x243f_6a88);
-      const sampled = sampleRepeatedBilinearR8(
-        bytes,
-        width,
-        height,
-        (input.x - anchorX) / input.scale + phaseX,
-        (input.y - anchorY) / input.scale + phaseY,
-      );
-      const contrasted = clamp01((sampled - 0.5) * (1 + contrast * 4) + 0.5);
+      const contrasted = contrastedPatternAt(input);
+      if (contrasted === null) return 1;
       return clamp01(1 - amount * (1 - contrasted));
+    },
+    samplePatternValueAt(input: StudioBrushR8GrainSampleInput): number {
+      // Neutral peak on an unsamplable point: multiply stays identity and height stays reachable,
+      // matching the legacy sampler's fail-to-1 posture instead of inventing a valley.
+      return contrastedPatternAt(input) ?? 1;
     },
   });
 }
@@ -290,6 +314,8 @@ function compositionRevision(input: StudioBrushR8TipPaperCompositionInput): stri
     strokeOriginX: input.strokeOriginX,
     strokeOriginY: input.strokeOriginY,
     strokeSeed: input.strokeSeed,
+    // Texture key only when a section is authored — texture-less revisions stay identical.
+    ...(input.grain.texture ? { texture: input.grain.texture } : {}),
   });
   return `r8-tip-paper-v1:sha256:${sha256HexPortable(new TextEncoder().encode(canonical))}`;
 }
@@ -304,6 +330,7 @@ export function composeStudioBrushR8TipPaperAlphaMap(
   if (
     !tipMapIsValid(input.tip)
     || !input.grain.source
+    || (input.grain.texture !== undefined && !input.sampler.samplePatternValueAt)
     || canonicalSourceKey(input.grain.source) !== input.sampler.sourceKey
     || !Number.isFinite(input.centerX)
     || !Number.isFinite(input.centerY)
@@ -330,7 +357,7 @@ export function composeStudioBrushR8TipPaperAlphaMap(
       const localY = unitY * input.radiusY;
       const worldX = input.centerX + localX * cosine - localY * sine;
       const worldY = input.centerY + localX * sine + localY * cosine;
-      alphas[index] = tipAlpha * input.sampler.sampleAlphaMultiplierAt({
+      const sampleInput: StudioBrushR8GrainSampleInput = {
         x: worldX,
         y: worldY,
         strokeOriginX: input.strokeOriginX,
@@ -341,7 +368,18 @@ export function composeStudioBrushR8TipPaperAlphaMap(
         amount: input.grain.amount,
         contrast: input.grain.contrast,
         seed: input.grain.seed,
-      });
+      };
+      alphas[index] = input.grain.texture
+        && !(studioBrushTextureIsPlainMultiplyV1(input.grain.texture)
+          && input.grain.texture.depth === input.grain.amount)
+        ? applyStudioBrushTextureV1(
+            input.grain.texture,
+            tipAlpha,
+            input.sampler.samplePatternValueAt!(sampleInput),
+            input.strokeSeed,
+            input.dabIndex ?? 0,
+          )
+        : tipAlpha * input.sampler.sampleAlphaMultiplierAt(sampleInput);
     }
   }
   return {

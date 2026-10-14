@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { ReviewControls } from "./reviews-components/review-controls";
+import { ReactionSummaryPanel } from "./reviews-components/reaction-summary-panel";
 import { parseReviewRating, parseReviewSort } from "./reviews-components/review-query";
 import { ReviewStatsSummary } from "./reviews-components/review-stats-summary";
 import { TopReviewedList, type TopReviewedStatus } from "./reviews-components/top-reviewed-list";
@@ -62,6 +63,8 @@ export function ReviewsPage() {
   const sort = parseReviewSort(searchParams.get("sort"));
   const rating = parseReviewRating(searchParams.get("rating"));
   const spoilerHidden = searchParams.get("spoiler") === "hide";
+  // 악성 댓글 방벽 (REPORT O-5): view=summary면 원본 피드 대신 분류·집계 요약만 보여 준다.
+  const summaryView = searchParams.get("view") === "summary";
   const baseParams = new URLSearchParams({ sort });
   if (spoilerHidden) baseParams.set("spoiler", "hide");
   if (rating !== "all") baseParams.set("rating", rating);
@@ -215,11 +218,15 @@ export function ReviewsPage() {
               />
             ) : (
               <>
-                <div className="columns-1 gap-4 sm:columns-2 lg:columns-2 xl:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid">
-                  {feed.map((review) => (
-                    <ReviewCard key={review.id} review={review} title={review.title} showTitle />
-                  ))}
-                </div>
+                {summaryView ? (
+                  <ReactionSummaryPanel reviews={feed} />
+                ) : (
+                  <div className="columns-1 gap-4 sm:columns-2 lg:columns-2 xl:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid">
+                    {feed.map((review) => (
+                      <ReviewCard key={review.id} review={review} title={review.title} showTitle />
+                    ))}
+                  </div>
+                )}
                 {/* 무한 스크롤 센티넬 — 뷰포트 근처에서 다음 페이지 자동 로드 */}
                 {nextOffset != null ? <div ref={sentinelRef} aria-hidden="true" className="h-1" /> : null}
                 {loadingMore ? (

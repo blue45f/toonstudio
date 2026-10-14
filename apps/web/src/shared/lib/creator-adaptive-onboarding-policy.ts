@@ -5,12 +5,32 @@ const STORAGE_PREFIX = "toonspectrum:creator-adaptive-onboarding:v1:";
 const acknowledgedUsers = new Set<string>();
 const listeners = new Set<() => void>();
 
-/** Only the unscoped project library is a safe automatic onboarding entry.
- * Query-bearing /studio URLs can restore an editor or a companion window.
- * New routes default to non-interrupting rather than needing an exclusion list.
+/**
+ * Unscoped workspace landings that are safe automatic onboarding entries.
+ * - "/studio" is the project library.
+ * - "/home" is the personal workspace home and "/team" is its team surface;
+ *   both render StudioWorkspacePage behind WorkspaceHomeRoute with no scoped
+ *   project/document identity (first-run F2.1: a new creator who lands on a
+ *   workspace home first must meet the gate there, not only at /studio).
+ * The gate itself is mounted globally in AppShell, so this allowlist is the
+ * single trigger decision — expanding it is what makes /home fire.
+ */
+const CREATOR_ONBOARDING_ENTRY_PATHS: ReadonlySet<string> = new Set([
+  "/studio",
+  "/home",
+  "/team",
+]);
+
+/** Only the unscoped workspace landings above are safe automatic entries.
+ * Query-bearing URLs on any of them can be a deep link, restore an editor or
+ * a companion window, or carry a tour/share intent, so any search opts out.
+ * Scoped/editor routes (/studio/...), the public home ("/"), the discovery
+ * surface ("/hub") and account/settings routes never interrupt. New routes
+ * default to non-interrupting rather than needing an exclusion list.
  */
 export function isCreatorOnboardingEntry(pathname: string, search = ""): boolean {
-  return pathname.replace(/\/+$/u, "") === "/studio" && !search;
+  if (search) return false;
+  return CREATOR_ONBOARDING_ENTRY_PATHS.has(pathname.replace(/\/+$/u, ""));
 }
 
 export function needsCreatorAdaptiveOnboarding(

@@ -2,8 +2,9 @@ import { randomUUID } from "node:crypto";
 
 import { D1_TRAFFIC_OVERVIEW_QUERY, D1_TRAFFIC_PULSE_QUERY } from "../admin/admin-traffic-d1-query";
 import { trafficD1Unavailable, type TrafficD1Executor, type TrafficD1Statement } from "./traffic-analytics-d1.client";
-import type { TrafficAnalyticsRepository, TrafficOverviewQuery, TrafficPulseQuery } from "./traffic-analytics.repository";
-import type { TrafficPageViewRecord, TrafficSessionRecord, TrafficShareEventRecord } from "./traffic-analytics-store";
+import type { TrafficAnalyticsRepository, TrafficOverviewQuery, TrafficPulseQuery, TrafficWebVitalsQuery } from "./traffic-analytics.repository";
+import type { TrafficPageViewRecord, TrafficSessionRecord, TrafficShareEventRecord, TrafficWebVitalsRecord } from "./traffic-analytics-store";
+import type { WebVitalsSample } from "./web-vitals-report";
 
 const RETENTION_INTERVAL_MS = 6 * 60 * 60 * 1_000;
 
@@ -72,6 +73,32 @@ export class D1TrafficAnalyticsRepository implements TrafficAnalyticsRepository 
     }]);
   }
 
+  async persistWebVitals(record: TrafficWebVitalsRecord): Promise<void> {
+    await this.executor.execute([{
+      sql: `INSERT INTO traffic_web_vital (
+        id, occurred_at, visitor_hash, session_hash, path, lcp_ms, cls, inp_ms,
+        country_code, device_type, browser, os
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING`,
+      params: [record.id, record.occurredAt.toISOString(), record.visitorHash, record.sessionHash, record.path,
+        record.lcpMs, record.cls, record.inpMs, record.countryCode, record.deviceType, record.browser, record.os],
+    }]);
+  }
+
+  async webVitalsSamples(query: TrafficWebVitalsQuery): Promise<readonly WebVitalsSample[]> {
+    const results = await this.executor.execute([{
+      sql: `SELECT path, lcp_ms, cls, inp_ms FROM traffic_web_vital
+        WHERE occurred_at >= ? AND occurred_at < ? ORDER BY occurred_at ASC LIMIT 200000`,
+      params: [query.start.toISOString(), query.end.toISOString()],
+    }]);
+    const rows = results[0]?.results ?? [];
+    return rows.map((row) => ({
+      path: typeof row.path === "string" ? row.path : "",
+      lcpMs: typeof row.lcp_ms === "number" ? row.lcp_ms : null,
+      cls: typeof row.cls === "number" ? row.cls : null,
+      inpMs: typeof row.inp_ms === "number" ? row.inp_ms : null,
+    }));
+  }
+
   async cleanup(retentionDays: number, now = new Date()): Promise<void> {
     if (!Number.isInteger(retentionDays) || retentionDays < 7 || retentionDays > 365) throw trafficD1Unavailable();
     const leaseToken = randomUUID();
@@ -83,7 +110,7 @@ export class D1TrafficAnalyticsRepository implements TrafficAnalyticsRepository 
           WHERE traffic_analytics_maintenance.last_run_ms <= excluded.last_run_ms - ?`,
         params: [now.getTime(), leaseToken, RETENTION_INTERVAL_MS],
       },
-      ...[["traffic_page_view", "occurred_at"], ["traffic_share_event", "occurred_at"], ["traffic_session", "last_seen_at"]].map(([table, time]) => ({
+      ...[["traffic_page_view", "occurred_at"], ["traffic_share_event", "occurred_at"], ["traffic_web_vital", "occurred_at"], ["traffic_session", "last_seen_at"]].map(([table, time]) => ({
         sql: `DELETE FROM ${table} WHERE ${time} < ? AND EXISTS (
           SELECT 1 FROM traffic_analytics_maintenance WHERE name = 'retention' AND lease_token = ?
         )`, params: [cutoff, leaseToken],
@@ -115,7 +142,7 @@ export class D1TrafficAnalyticsRepository implements TrafficAnalyticsRepository 
     // 운영 진단에서 명시적으로 호출한다. 백그라운드 polling이나 부팅 DDL은 없다.
     const results = await this.executor.execute([{
       sql: `SELECT count(*) AS ready FROM sqlite_schema WHERE
-        (type = 'table' AND name IN ('traffic_session','traffic_page_view','traffic_share_event','traffic_analytics_maintenance'))
+        (type = 'table' AND name IN ('traffic_session','traffic_page_view','traffic_share_event','traffic_web_vital','traffic_analytics_maintenance'))
         OR (type = 'trigger' AND name IN ('traffic_page_view_owner_guard','traffic_page_view_count'))`, params: [],
     }, {
       sql: "SELECT session_hash, visitor_hash, first_seen_at, last_seen_at, page_views, engaged_seconds FROM traffic_session LIMIT 0", params: [],
@@ -123,7 +150,9 @@ export class D1TrafficAnalyticsRepository implements TrafficAnalyticsRepository 
       sql: "SELECT id, occurred_at, visitor_hash, session_hash, path, load_time_ms FROM traffic_page_view LIMIT 0", params: [],
     }, {
       sql: "SELECT id, occurred_at, visitor_hash, session_hash, path, channel, outcome FROM traffic_share_event LIMIT 0", params: [],
+    }, {
+      sql: "SELECT id, occurred_at, visitor_hash, session_hash, path, lcp_ms, cls, inp_ms FROM traffic_web_vital LIMIT 0", params: [],
     }]);
-    return results[0]?.results[0]?.ready === 6;
+    return results[0]?.results[0]?.ready === 7;
   }
 }

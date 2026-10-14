@@ -1,5 +1,6 @@
 {
   "app.name": "ToonStudio",
   "app.brandBeta": "Beta storitev  podatki in funkcije se lahko spremenijo",
-  "app.loading": "Nosec"
+  "app.loading": "Nosec",
+  "app.skipToContent": "Skip to main content"
 }

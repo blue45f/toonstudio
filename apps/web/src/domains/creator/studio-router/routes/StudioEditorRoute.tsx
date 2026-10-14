@@ -6,6 +6,7 @@ import { resolveStudioLocalDocumentSource } from "../../studio-local-document-so
 import { studioEditorInstanceKey } from "../../studio-editor-scope";
 import { studioWorkspaceDocumentIdentity } from "../../studio-workspace-route";
 import { StudioRouteLoading } from "../../StudioLazySurfaceFallback";
+import { MobileFullEditNotice } from "../../studio-shell/MobileFullEditNotice";
 import { StudioDocumentLayout } from "../StudioDocumentLayout";
 import { StudioDocumentRuntimeBoundary } from "../StudioDocumentRuntimeBoundary";
 import { useStudioDraftScope } from "../useStudioDraftScope";
@@ -13,6 +14,7 @@ import { useStudioDraftScope } from "../useStudioDraftScope";
 import type { StudioEditorRouteResolution } from "../studio-route-manifest";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
+import { useT } from "@/shared/lib/i18n";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 const LegacyStudioEditorAdapter = lazyRetry(
@@ -37,6 +39,7 @@ const StudioWorkspaceContextCoach = lazyRetry(
 export function StudioEditorRoute({ resolution }: {
   readonly resolution: StudioEditorRouteResolution;
 }) {
+  const t = useT();
   const { data: session } = useSession();
   const authScopeKey = session?.user?.id ?? null;
   const location = useLocation();
@@ -91,10 +94,21 @@ export function StudioEditorRoute({ resolution }: {
             <StudioWorkspaceContextCoach surface={route.surface} />
           </Suspense>
         ) : null}
+        <MobileFullEditNotice
+          surfaceId={`studio-editor-${route.surface}`}
+          surfaceLabel={route.surface === "canvas"
+            ? { ko: "캔버스 편집기", en: "Canvas editor" }
+            : { ko: "Studio 편집기", en: "Studio editor" }}
+          mobileCapabilities={[
+            { ko: "작품 보기와 확대·이동", en: "View, zoom and pan your work" },
+            { ko: "모바일 도크의 간단한 그리기·지우기", en: "Quick draw and erase from the mobile dock" },
+            { ko: "자동 저장 후 다른 기기에서 이어 편집", en: "Autosave, then continue on another device" },
+          ]}
+        />
         <StudioOfflinePanelBoundary>
           <Suspense fallback={null}><StudioOfflinePanel /></Suspense>
         </StudioOfflinePanelBoundary>
-        <Suspense fallback={<StudioRouteLoading label="Studio 편집기를 여는 중..." />}>
+        <Suspense fallback={<StudioRouteLoading label={t("studio.canvas.shell.loadingEditor", "Studio 편집기를 여는 중...")} />}>
           <LegacyStudioEditorAdapter
             remixId={route.remixSourceWorkId}
             studioRoute={route}

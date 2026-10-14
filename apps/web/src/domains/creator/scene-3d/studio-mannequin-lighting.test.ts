@@ -5,7 +5,9 @@ import {
   applyStudioMannequinTimeOfDay,
   createStudioMannequinLightingRig,
   removeStudioMannequinLight,
+  resolveStudioMannequinLightingPlan,
   setStudioMannequinShadows,
+  STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN,
   studioMannequinLightingToToneHint,
   updateStudioMannequinLight,
   StudioMannequinLightingError,
@@ -73,6 +75,49 @@ describe("studio mannequin lighting", () => {
       expect(rig.lights.length).toBeGreaterThan(0);
       expect(rig.lights.length).toBeLessThanOrEqual(STUDIO_MANNEQUIN_MAX_LIGHTS);
     }
+  });
+
+  it("빈 rig와 null은 기존 고정 3점 리그 계획으로 폴백합니다", () => {
+    expect(resolveStudioMannequinLightingPlan(null)).toBe(STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN);
+    expect(resolveStudioMannequinLightingPlan(createStudioMannequinLightingRig())).toBe(
+      STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN,
+    );
+    const plan = STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN;
+    expect(plan.isDefault).toBe(true);
+    expect(plan.hemisphere?.intensity).toBe(0.95);
+    expect(plan.lights.map((light) => light.intensity)).toEqual([1.45, 0.42, 0.28]);
+    expect(plan.lights[0]?.castShadow).toBe(true);
+  });
+
+  it("시간대 프리셋 계획은 rig의 종류·밝기·색·위치를 그대로 반영합니다", () => {
+    const plan = resolveStudioMannequinLightingPlan(applyStudioMannequinTimeOfDay("dusk"));
+    expect(plan.isDefault).toBe(false);
+    expect(plan.lights).toHaveLength(2);
+    expect(plan.lights[0]).toMatchObject({
+      kind: "directional",
+      intensity: 2.8,
+      color: "#ff7a4d",
+      position: [-4, 1, 2],
+      castShadow: true,
+    });
+    expect(plan.lights[1]).toMatchObject({
+      kind: "spot",
+      intensity: 1.2,
+      color: "#ffd9a0",
+      angle: 0.5,
+      distance: 10,
+      castShadow: false,
+    });
+  });
+
+  it("그림자 off면 어떤 조명도 그림자를 만들지 않고, point는 켜져 있어도 만들지 않습니다", () => {
+    const night = resolveStudioMannequinLightingPlan(applyStudioMannequinTimeOfDay("night"));
+    expect(night.shadowsEnabled).toBe(false);
+    expect(night.lights.every((light) => !light.castShadow)).toBe(true);
+    const dawn = resolveStudioMannequinLightingPlan(applyStudioMannequinTimeOfDay("dawn"));
+    expect(dawn.lights[0]?.castShadow).toBe(true);
+    expect(dawn.lights[1]?.kind).toBe("point");
+    expect(dawn.lights[1]?.castShadow).toBe(false);
   });
 
   it("LT 연동 명암 힌트가 주광 방향과 대비를 돌립니다", () => {

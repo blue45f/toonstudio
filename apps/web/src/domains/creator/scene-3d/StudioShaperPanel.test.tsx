@@ -129,6 +129,62 @@ describe("StudioShaperPanel", () => {
     expect(onBodyParamsChange).toHaveBeenCalledWith(expect.objectContaining({ headCount: 3 }));
   });
 
+  it("스타일 팩을 원클릭 적용하면 다섯 범주와 색상이 한 번에 콜백으로 전달된다", () => {
+    const onAppearanceChange = vi.fn();
+    render(<StudioShaperPanel onAppearanceChange={onAppearanceChange} />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "외형 코디" }));
+    fireEvent.click(screen.getByRole("button", { name: "학원 로맨스 팩 적용" }));
+
+    expect(onAppearanceChange).toHaveBeenCalledTimes(1);
+    expect(onAppearanceChange).toHaveBeenCalledWith({
+      selection: {
+        hair: "hair-bob",
+        accessories: "acc-none",
+        top: "top-school",
+        bottom: "bottom-skirt",
+        shoes: "shoes-sneakers",
+      },
+      colors: expect.objectContaining({ "top-school": "#4f6fb3" }),
+    });
+    expect(screen.getByText(/'학원 로맨스' 팩을 적용했습니다/)).toBeTruthy();
+  });
+
+  it("스타일 팩 미리보기는 바뀔 항목을 보여주고 현재 코디는 바꾸지 않는다", () => {
+    const onAppearanceChange = vi.fn();
+    render(<StudioShaperPanel onAppearanceChange={onAppearanceChange} />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "외형 코디" }));
+    fireEvent.click(screen.getByRole("button", { name: "느와르 전문가 팩 미리보기" }));
+
+    expect(onAppearanceChange).not.toHaveBeenCalled();
+    expect(screen.getByText(/내추럴 숏컷 → 투블럭 댄디컷/)).toBeTruthy();
+  });
+
+  it("현재 코디를 내 팩으로 저장하면 목록과 저장소에 남고 공유 코드를 만들 수 있다", () => {
+    render(<StudioShaperPanel />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "외형 코디" }));
+    fireEvent.change(screen.getByLabelText("새 스타일 팩 이름"), {
+      target: { value: "내 테스트 팩" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /현재 코디를 팩으로 저장/ }));
+
+    expect(screen.getByRole("button", { name: "내 테스트 팩 팩 적용" })).toBeTruthy();
+    const stored = window.localStorage.getItem("toonstudio.shaper.style-packs.v1") ?? "";
+    expect(stored).toContain("내 테스트 팩");
+
+    fireEvent.click(screen.getByRole("button", { name: "내 테스트 팩 팩 미리보기" }));
+    fireEvent.click(screen.getByRole("button", { name: /공유 코드 만들기/ }));
+    const codeInput = screen.getByLabelText("스타일 팩 공유 코드") as HTMLInputElement;
+    expect(codeInput.value).toMatch(/^TSP1\./);
+
+    // 받은 코드를 다시 가져오면 이미 있는 팩이라고 알려준다 (중복 저장 없음)
+    fireEvent.click(screen.getByRole("button", { name: "코드로 가져오기" }));
+    expect(screen.getByText(/이미 내 스타일 팩에 있는 팩입니다/)).toBeTruthy();
+    expect(JSON.parse(stored)).toHaveLength(1);
+  });
+
   it("표정 콤보 선택과 강도 조절을 onExpressionChange으로 전달한다", () => {
     const onExpressionChange = vi.fn();
     render(<StudioShaperPanel onExpressionChange={onExpressionChange} />);

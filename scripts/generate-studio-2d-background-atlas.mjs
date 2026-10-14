@@ -231,6 +231,35 @@ async function writeSource(recipe, imageAsset, model) {
     outputBytes: imageAsset.bytes,
     reviewRequired: true,
     operatorFunded: false,
+    generationChannel: "OpenAI-compatible API (BYOK)",
+    // Rights basis for generated output. Keep this in sync with the record
+    // applied to the installed gpt25-v1 SOURCE.json files: OpenAI's terms
+    // assign the output to the generating user. If a non-OpenAI compatible
+    // endpoint is configured, verify that provider's output terms before
+    // relying on this record.
+    rights: {
+      status: "first-party-generated",
+      basis: "provider-terms-output-assignment",
+      provider: "OpenAI",
+      generationChannel: "OpenAI-compatible API (BYOK)",
+      terms: {
+        document: "OpenAI Terms of Use",
+        url: "https://openai.com/policies/terms-of-use/",
+        version: "Effective: January 1, 2026",
+        section: "Content — Ownership of content",
+        effect:
+          "The generating user owns the Output, and OpenAI assigns to the user all of its right, title and interest, if any, in and to the Output, to the extent permitted by applicable law.",
+      },
+      commercialUse: true,
+      redistribution:
+        "Permitted as part of the ToonStudio service and its distributed web assets on the output-assignment basis above. This record does not place the file under CC0 or any other public license.",
+      rightsHolder: "the ToonStudio operator as the generating account holder",
+      checkedOn: imageAsset.provenance.generatedAt.slice(0, 10),
+      caveats: [
+        "Output may not be unique: other users may receive similar output, and the assignment does not extend to other users' output or third-party output.",
+        "If a non-OpenAI compatible endpoint or a different provider account is used, this record must be re-checked against that provider's output terms.",
+      ],
+    },
   };
   await writeFile(sourcePath, `${JSON.stringify(source, null, 2)}\n`, "utf8");
 }

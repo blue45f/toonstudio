@@ -23,6 +23,56 @@ export interface EpisodeSynopsisExtension {
     readonly from: string;
     readonly to: string;
   };
+  /**
+   * 씨앗 빌더가 이 회차 초안을 만들 때 인용한 설정 id (선택 확장).
+   * 씨앗 적용 때만 채워지고, 손으로 쓴 회차에는 없다.
+   */
+  readonly referencedSettingIds?: readonly string[];
+  /**
+   * referencedSettingIds 를 적용 시점에 이름으로 풀어 둔 출처 목록.
+   * 허브·바이블은 id 공간이 서로 달라, 인계 카드가 나중에 id 만으로 이름을
+   * 되찾을 수 없기 때문에 적용 시점에 함께 저장한다.
+   */
+  readonly seedSettingRefs?: readonly EpisodeSeedSettingRef[];
+}
+
+/** 씨앗 인용 출처 한 건 — 적용 시점에 풀어 둔 최소 모양(id·종류·이름). */
+export interface EpisodeSeedSettingRef {
+  readonly id: string;
+  readonly kind: "character" | "location" | "lore";
+  /** 이름으로 풀지 못한 출처는 빈 문자열 — 표시 쪽이 id 로 폴백한다. */
+  readonly name: string;
+}
+
+/**
+ * 인계 카드가 보여 줄 씨앗 설정 출처 줄.
+ * 이름 목록(seedSettingRefs)이 있으면 referencedSettingIds 순서를 따라
+ * 이름으로, 이름이 비면 id 로 보여 준다. 이름 목록만 있고 id 목록이 없으면
+ * 이름 목록 순서를 쓴다. 둘 다 없으면 빈 배열 — 지어내지 않는다.
+ */
+export function episodeSeedSettingLines(
+  plan: EpisodePlanWithSynopsis,
+): readonly string[] {
+  const named = new Map(
+    (plan.seedSettingRefs ?? []).map((ref) => [ref.id, ref] as const),
+  );
+  const ids = plan.referencedSettingIds ?? [];
+  if (ids.length > 0) {
+    return Object.freeze(
+      ids
+        .map((id) => {
+          const ref = named.get(id);
+          const name = ref?.name.trim() ?? "";
+          return name || id;
+        })
+        .filter(Boolean),
+    );
+  }
+  return Object.freeze(
+    (plan.seedSettingRefs ?? [])
+      .map((ref) => ref.name.trim() || ref.id)
+      .filter(Boolean),
+  );
 }
 
 export type EpisodePlanWithSynopsis = EpisodePlan & EpisodeSynopsisExtension;
@@ -126,6 +176,158 @@ export function deriveSynopsisDraftFromBeats(
     synopsisDraft: sceneLeads.join(" "),
     cliffhangerCandidate: tail?.summary.trim() ?? "",
   });
+}
+
+/**
+ * 운영 → 다음 회차 기획 인계 (흐름 F-7).
+ *
+ * 이전 회차의 마무리 훅을 다음 회차 기획의 오프닝 초안으로 인용한다.
+ * - 1순위 재료: 이전 회차 훅 설계의 nextOpening("다음 화 첫 장면이 받을 것").
+ *   main 타입에는 아직 없는 선택 확장이므로 구조적 타입으로만 읽는다 —
+ *   필드가 없는 레코드에서는 자연히 cliffhanger 로 떨어진다.
+ * - 2순위 재료: 이전 회차 cliffhanger(마무리 훅) 원문.
+ * 어느 쪽이든 새로 지어내지 않고 앞뒤 공백만 정리한 원문을 그대로 인용한다.
+ * 인용은 "초안"이다: 대상 회차의 openingHook 이 이미 차 있으면 덮지 않는다.
+ */
+export interface EpisodeNextOpeningSource {
+  /** 다음 화 첫 장면이 받을 것 — 훅 설계 확장이 있을 때만 존재한다. */
+  readonly nextOpening?: string;
+}
+
+/** 인용 재료로 읽을 수 있는 이전 회차 기획 (구조적 — core 타입을 그대로 넣을 수 있다). */
+export type PreviousEpisodePlanLike = EpisodePlanWithSynopsis & {
+  readonly hookDesign?: EpisodeNextOpeningSource;
+};
+
+export type NextEpisodeOpeningSourceField = "nextOpening" | "cliffhanger";
+
+export type NextEpisodeOpeningWarning =
+  | "previous-cliffhanger-missing"
+  | "previous-episode-missing";
+
+export interface NextEpisodeOpeningDraft {
+  readonly previousEpisodeId: string;
+  readonly previousEpisodeNumber: number;
+  readonly previousTitle: string;
+  /** 인용 출처 필드. 재료가 없으면 null. */
+  readonly sourceField: NextEpisodeOpeningSourceField | null;
+  /** 인용 원문 (공백 정리본). 재료가 없으면 "". */
+  readonly sourceText: string;
+  /** 이전 회차 마무리 훅 원문 (공백 정리본) — 출처가 nextOpening 이어도 함께 보여 준다. */
+  readonly cliffhangerText: string;
+  /** 다음 회차 openingHook 초안 — sourceText 와 동일 (변형·생성 없음). */
+  readonly openingHookDraft: string;
+  readonly hasSeed: boolean;
+  readonly warnings: readonly NextEpisodeOpeningWarning[];
+}
+
+/**
+ * 이전 회차 1건 → 다음 회차 오프닝 초안.
+ * previous 가 없으면 null (첫 회차 등 — 호출자는 백지 시작이 정상임을 구분할 수 있다).
+ */
+export function deriveNextEpisodeOpeningDraft(
+  previous: PreviousEpisodePlanLike | null | undefined,
+): NextEpisodeOpeningDraft | null {
+  if (!previous) return null;
+  const cliffhangerText = previous.cliffhanger.trim();
+  const nextOpeningText = previous.hookDesign?.nextOpening?.trim() ?? "";
+  const sourceField: NextEpisodeOpeningSourceField | null = nextOpeningText
+    ? "nextOpening"
+    : cliffhangerText
+      ? "cliffhanger"
+      : null;
+  const sourceText = sourceField === "nextOpening" ? nextOpeningText : cliffhangerText;
+  const warnings: NextEpisodeOpeningWarning[] =
+    sourceField === null ? ["previous-cliffhanger-missing"] : [];
+  return Object.freeze({
+    previousEpisodeId: previous.episodeId,
+    previousEpisodeNumber: previous.episodeNumber,
+    previousTitle: previous.title,
+    sourceField,
+    sourceText,
+    cliffhangerText,
+    openingHookDraft: sourceText,
+    hasSeed: sourceField !== null,
+    warnings: Object.freeze(warnings),
+  });
+}
+
+/**
+ * 시즌 안에서 대상 회차의 "이전 회차"를 찾는다.
+ * 우선순위: SeasonPlan.episodeOrder 의 바로 앞 항목 (연재 순서가 정본).
+ * 대상이 순서표에 없거나 앞 항목이 없으면 episodeNumber 가 가장 큰 하위 회차로 폴백한다.
+ */
+export function findPreviousEpisodePlan(
+  season: SeasonPlan | null | undefined,
+  plans: readonly PreviousEpisodePlanLike[],
+  current: PreviousEpisodePlanLike,
+): PreviousEpisodePlanLike | null {
+  if (season) {
+    const orderIndex = season.episodeOrder.indexOf(current.episodeId);
+    if (orderIndex > 0) {
+      const byId = new Map(plans.map((plan) => [plan.episodeId, plan]));
+      for (let index = orderIndex - 1; index >= 0; index -= 1) {
+        const candidate = byId.get(season.episodeOrder[index]!);
+        if (candidate && candidate.episodeId !== current.episodeId) return candidate;
+      }
+    }
+  }
+  const lower = plans
+    .filter(
+      (plan) => plan.episodeId !== current.episodeId && plan.episodeNumber < current.episodeNumber,
+    )
+    .sort((a, b) => b.episodeNumber - a.episodeNumber || a.episodeId.localeCompare(b.episodeId));
+  return lower[0] ?? null;
+}
+
+export interface NextEpisodeHandoff {
+  readonly currentEpisodeId: string;
+  /** 이전 회차가 없으면 null — 이 경우 draft 도 null 이다. */
+  readonly draft: NextEpisodeOpeningDraft | null;
+  /** 대상 openingHook 이 비어 있고 초안 재료가 있을 때만 초안 문자열, 아니면 "". */
+  readonly autoFillOpeningHook: string;
+  readonly targetHasOpeningHook: boolean;
+  readonly warnings: readonly NextEpisodeOpeningWarning[];
+}
+
+/**
+ * 기획 표면용 인계 묶음: 이전 회차 찾기 + 초안 도출 + 자동 채움 판정을 한 번에 낸다.
+ * autoFillOpeningHook 은 "기획을 열었을 때 오프닝 칸에 미리 들어갈 값"이다 —
+ * 이미 적힌 오프닝 훅은 절대 덮지 않는다.
+ */
+export function deriveNextEpisodeHandoff(
+  season: SeasonPlan | null | undefined,
+  plans: readonly PreviousEpisodePlanLike[],
+  current: PreviousEpisodePlanLike,
+): NextEpisodeHandoff {
+  const previous = findPreviousEpisodePlan(season, plans, current);
+  const draft = deriveNextEpisodeOpeningDraft(previous);
+  const targetHasOpeningHook = current.openingHook.trim().length > 0;
+  const warnings: NextEpisodeOpeningWarning[] = draft
+    ? [...draft.warnings]
+    : ["previous-episode-missing"];
+  return Object.freeze({
+    currentEpisodeId: current.episodeId,
+    draft,
+    autoFillOpeningHook: draft?.hasSeed && !targetHasOpeningHook ? draft.openingHookDraft : "",
+    targetHasOpeningHook,
+    warnings: Object.freeze(warnings),
+  });
+}
+
+/**
+ * 초안을 대상 기획에 적용한 새 레코드를 돌려준다 (원본 불변).
+ * openingHook 이 이미 차 있으면 applied=false 로 같은 레코드를 그대로 돌려준다.
+ */
+export function applyNextEpisodeOpeningDraft<T extends EpisodePlanWithSynopsis>(
+  plan: T,
+  draft: NextEpisodeOpeningDraft | null | undefined,
+): { readonly plan: T; readonly applied: boolean } {
+  if (!draft?.hasSeed || plan.openingHook.trim()) return { plan, applied: false };
+  return {
+    plan: Object.freeze({ ...plan, openingHook: draft.openingHookDraft }),
+    applied: true,
+  };
 }
 
 /** 시놉시스 칸의 가벼운 자체 검증 (core validateEpisodePlan 과 별개, 표면 안내용). */

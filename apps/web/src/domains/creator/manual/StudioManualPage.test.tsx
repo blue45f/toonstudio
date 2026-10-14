@@ -65,9 +65,15 @@ describe("StudioManualPage", () => {
     const shortcuts = screen.getAllByRole("link", { name: /OST 만들기 열기/u });
     expect(shortcuts.length).toBeGreaterThanOrEqual(2);
     for (const link of shortcuts) {
-      expect(link.getAttribute("href")).toBe("/studio/assets/audio");
+      // S2-9: 작업 공간 도착 표면이 맥락 배너·복귀 행동을 제공하도록 복귀 맥락 계약을 싣는다.
+      expect(link.getAttribute("href")).toBe(
+        "/studio/assets/audio?returnTo=%2Fstudio%2Fmanual%2Fmusic-ost&intent=manual-deep-link",
+      );
       expect(link.getAttribute("target")).toBe("_blank");
     }
+    expect(screen.getByRole("link", { name: /스튜디오 열기/u }).getAttribute("href")).toBe(
+      "/studio?returnTo=%2Fstudio%2Fmanual%2Fmusic-ost&intent=manual-deep-link",
+    );
     // 화면 도식이 있는 문서에는 장식 일러스트 대신 "화면에서 찾기"를 둔다.
     expect(screen.queryByText("예시 일러스트예요. 실제 화면은 스튜디오에서 확인하세요.")).toBeNull();
     expect(screen.getByRole("navigation", { name: "이전 다음 문서" })).toBeTruthy();
@@ -93,7 +99,10 @@ describe("StudioManualPage", () => {
   it("offers a section-level shortcut that opens the exact tool in a new tab", () => {
     renderManual("/studio/manual/music-ost");
     const importLink = screen.getByRole("link", { name: /외부 음원 가져오기 열기/u });
-    expect(importLink.getAttribute("href")).toBe("/studio/assets/audio#music-import");
+    // 섹션 앵커(실행 위치)는 쿼리 뒤에도 그대로 보존된다.
+    expect(importLink.getAttribute("href")).toBe(
+      "/studio/assets/audio?returnTo=%2Fstudio%2Fmanual%2Fmusic-ost&intent=manual-deep-link#music-import",
+    );
     expect(importLink.getAttribute("target")).toBe("_blank");
     expect(importLink.getAttribute("rel")).toContain("noopener");
     // 섹션 바로가기는 그 섹션 안에 있다.
@@ -103,7 +112,9 @@ describe("StudioManualPage", () => {
   it("shows the editor screen map and a new-work shortcut on the first-steps article", () => {
     renderManual("/studio/manual/getting-started");
     expect(screen.getByRole("figure", { name: /화면에서 찾기 · 스튜디오 편집기/u })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /새 작품 만들기/u }).getAttribute("href")).toBe("/studio/new");
+    expect(screen.getByRole("link", { name: /새 작품 만들기/u }).getAttribute("href")).toBe(
+      "/studio/new?returnTo=%2Fstudio%2Fmanual%2Fgetting-started&intent=manual-deep-link",
+    );
   });
 
   it("explains unknown article addresses", () => {

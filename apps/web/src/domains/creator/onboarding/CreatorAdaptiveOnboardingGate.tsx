@@ -168,14 +168,32 @@ const MODE_COPY: Readonly<Record<CreatorWorkspaceMode, {
   },
 };
 
+// 단계 축소(first-run F2.2 잔여): 목적과 작업 방식은 둘 다 가벼운 선택이라 한 화면으로 합쳤다.
+// 남은 선택은 전부 완료 후 설정에서 바꿀 수 있다.
 const STEP_LABELS = [
   { ko: "환경 · 경험", en: "Context" },
   { ko: "역할", en: "Roles" },
-  { ko: "목적", en: "Goals" },
-  { ko: "작업 방식", en: "Collaboration" },
+  { ko: "목적 · 작업 방식", en: "Goals & collaboration" },
   { ko: "화면", en: "Workspace" },
   { ko: "미리보기", en: "Preview" },
 ] as const;
+
+/** 완료 직후의 단일 다음 행동(first-run F2.2 잔여·F2.3 판정: 전 목적 완료 지점에 다음 행동 1개).
+ * 우선순위가 높은 목적 하나만 도착지를 정하고, 목적이 없으면 "새 작품 만들기"가 기본 CTA다. */
+function completionActionForGoals(
+  goals: readonly CreatorRoleUsageGoal[],
+): { href: string; labelKo: string; labelEn: string } {
+  if (goals.includes("learning") || goals.includes("education")) {
+    return { href: "/learn", labelKo: "웹툰 제작 배우러 가기", labelEn: "Start learning webtoon production" };
+  }
+  if (goals.includes("story-writing")) {
+    return { href: "/story-lab", labelKo: "스토리 쓰러 가기", labelEn: "Start writing your story" };
+  }
+  if (goals.includes("team-production") || goals.includes("studio-management") || goals.includes("outsourcing")) {
+    return { href: "/production", labelKo: "제작 현황 보러 가기", labelEn: "Open production" };
+  }
+  return { href: "/studio/new", labelKo: "새 작품 만들기", labelEn: "Create a new project" };
+}
 
 function localized(_locale: CreatorRoleLocale, ko: string, en: string): string {
   return bi(ko, en);
@@ -225,6 +243,9 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
   const [accountContext, setAccountContext] = useState<CreatorAccountContext>("individual");
   const [experienceLevel, setExperienceLevel] = useState<CreatorExperienceLevel | null>(null);
   const [roles, setRoles] = useState<readonly CreatorRoleId[]>([]);
+  // 초보 기본값(first-run F2.3): "처음 · 입문"을 고르면 역할은 "아직 정하지 않음"이 기본이라
+  // 직무 용어를 몰라도 이 단계를 건너뛰고 역할 없이 완료할 수 있다.
+  const [rolesUndecided, setRolesUndecided] = useState(false);
   const [primaryRole, setPrimaryRole] = useState<CreatorRoleId | null>(null);
   const [goals, setGoals] = useState<readonly CreatorRoleUsageGoal[]>([]);
   const [collaborationMode, setCollaborationMode] =
@@ -290,6 +311,11 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
       ?? creatorExperienceLevelFromLegacyStage(legacyStage),
     );
     setRoles(selected);
+    setRolesUndecided(
+      (profile.creatorRoleProfile.experienceLevel
+        ?? creatorExperienceLevelFromLegacyStage(legacyStage)) === "beginner"
+      && selected.length === 0,
+    );
     setPrimaryRole(profile.creatorRoleProfile.primaryRole ?? selected[0] ?? null);
     setGoals(workspace.snapshot.document.usageGoals);
     setCollaborationMode(workspace.snapshot.document.collaborationMode);
@@ -356,10 +382,17 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
   const canContinue = step === 0
     ? experienceLevel !== null
     : step === 1
-      ? roles.length > 0 && primaryRole !== null
+      ? rolesUndecided || (roles.length > 0 && primaryRole !== null)
       : true;
 
+  const completionAction = useMemo(
+    () => completionActionForGoals(goals),
+    [goals],
+  );
+
   const toggleRole = (role: CreatorRoleId) => {
+    // 역할을 하나라도 고르면 "아직 정하지 않음" 기본값은 해제된다.
+    setRolesUndecided(false);
     const next = toggleDistinct(roles, role, CREATOR_ROLE_MAX_SECONDARY + 1);
     setRoles(next);
     if (!next.includes(primaryRole as CreatorRoleId)) setPrimaryRole(next[0] ?? null);
@@ -367,7 +400,11 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
   };
 
   const complete = async () => {
-    if (!profile || !experienceLevel || !primaryRole || roles.length === 0 || savingRef.current) return;
+    if (!profile || !experienceLevel || savingRef.current) return;
+    // 역할 미지정(초보 기본값)으로 완료할 때는 대표 역할을 지어내지 않고 null로 저장한다.
+    // 계약상 primaryRole/activeRole null + secondaryRoles [] 조합은 유효하다(쓰기 경계 파서도 허용).
+    const effectivePrimaryRole = rolesUndecided ? null : primaryRole;
+    if (!rolesUndecided && (!effectivePrimaryRole || roles.length === 0)) return;
     savingRef.current = true;
     setSaving(true);
     setProfileError(null);
@@ -375,9 +412,11 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
       const roleProfile = withCreatorRoleOnboarding(normalizeCreatorRoleProfile({
         ...profile.creatorRoleProfile,
         experienceLevel,
-        primaryRole,
-        secondaryRoles: roles.filter((role) => role !== primaryRole),
-        activeRole: primaryRole,
+        primaryRole: effectivePrimaryRole,
+        secondaryRoles: effectivePrimaryRole
+          ? roles.filter((role) => role !== effectivePrimaryRole)
+          : [],
+        activeRole: effectivePrimaryRole,
       }), { status: "completed", step: 4, completedAt: new Date().toISOString() });
       const updated = await updateMyProfile({ creatorRoleProfile: roleProfile });
       // A navigation or account switch must not continue this account's save.
@@ -385,8 +424,8 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
       setProfile(updated);
       const saved = await workspace.save(normalizeCreatorRoleWorkspacePreference({
         ...workspace.snapshot.document,
-        activeRole: primaryRole,
-        detailedLens: creatorDetailedRoleLens(primaryRole),
+        activeRole: effectivePrimaryRole,
+        detailedLens: effectivePrimaryRole ? creatorDetailedRoleLens(effectivePrimaryRole) : null,
         workspacePreset,
         notificationPreset,
         usageGoals: goals,
@@ -402,9 +441,8 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
       }
       setDismissed(true);
       acknowledgeCreatorOnboarding(userId);
-      // 목적을 고른 사용자를 빈 라이브러리에 떨어뜨리지 않고, 그 목적의 시작 화면으로 바로 보낸다.
-      if (goals.includes("first-project")) navigate("/studio/new");
-      else if (goals.includes("learning")) navigate("/learn");
+      // 전 목적 공통: 빈 라이브러리에 떨어뜨리지 않고 완료 지점의 단일 다음 행동으로 바로 보낸다.
+      navigate(completionAction.href);
     } catch (cause) {
       if (!mountedRef.current) return;
       setProfileError(cause instanceof Error
@@ -465,7 +503,7 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
         </header>
 
         <div className="shrink-0 px-5 pt-4 sm:px-7">
-          <ol className="grid grid-cols-6 gap-1.5" aria-label={localized(locale, "설정 진행 단계", "Setup progress")}>
+          <ol className="grid grid-cols-5 gap-1.5" aria-label={localized(locale, "설정 진행 단계", "Setup progress")}>
             {STEP_LABELS.map((label, index) => (
               <li key={label.en} className="min-w-0">
                 <div className={cn(
@@ -534,7 +572,15 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
                       key={id}
                       type="button"
                       aria-pressed={selected}
-                      onClick={() => setExperienceLevel(id)}
+                      onClick={() => {
+                        setExperienceLevel(id);
+                        // 입문이면 역할 미지정을 기본값으로 켜고, 경험이 있으면 역할 선택을 기본으로 되돌린다.
+                        if (id === "beginner") {
+                          if (roles.length === 0) setRolesUndecided(true);
+                        } else {
+                          setRolesUndecided(false);
+                        }
+                      }}
                       className={cn(
                         "min-h-24 rounded-2xl border p-4 text-left transition-colors",
                         selected ? "border-accent bg-accent-soft" : "border-line bg-panel hover:border-accent/35",
@@ -560,8 +606,35 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
                 {localized(locale, "어떤 역할을 하고 있나요?", "What roles do you work in?")}
               </h2>
               <p className="mt-1 text-sm text-fg-2">
-                {localized(locale, "여러 역할을 선택하고 대표 역할 하나를 지정하세요. 프로젝트별 실제 권한은 별도로 유지됩니다.", "Choose multiple roles and one primary role. Project permissions remain separate.")}
+                {experienceLevel === "beginner"
+                  ? localized(locale, "아직 어떤 역할인지 몰라도 괜찮아요. 정하지 않고 시작하면 모든 도구를 그대로 쓸 수 있고, 역할은 나중에 설정에서 정할 수 있습니다.", "It is fine not to know your role yet. Starting undecided keeps every tool available, and you can pick a role later in Settings.")
+                  : localized(locale, "여러 역할을 선택하고 대표 역할 하나를 지정하세요. 프로젝트별 실제 권한은 별도로 유지됩니다.", "Choose multiple roles and one primary role. Project permissions remain separate.")}
               </p>
+              {experienceLevel === "beginner" ? (
+                <button
+                  type="button"
+                  aria-pressed={rolesUndecided}
+                  onClick={() => {
+                    setRolesUndecided(true);
+                    setRoles([]);
+                    setPrimaryRole(null);
+                  }}
+                  className={cn(
+                    "mt-5 flex w-full items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-colors",
+                    rolesUndecided ? "border-accent bg-accent-soft" : "border-line bg-panel hover:border-accent/35",
+                  )}
+                >
+                  <span>
+                    <span className={cn("block text-sm font-black", rolesUndecided ? "text-accent" : "text-fg")}>
+                      {localized(locale, "아직 정하지 않음", "Not decided yet")}
+                    </span>
+                    <span className="mt-1 block text-[0.72rem] leading-5 text-fg-2">
+                      {localized(locale, "역할 없이 전체 도구를 사용합니다. 이 상태 그대로 다음으로 건너뛸 수 있어요.", "Use all tools without a role. You can skip ahead exactly as you are.")}
+                    </span>
+                  </span>
+                  {rolesUndecided ? <Check size={16} aria-hidden="true" className="shrink-0 text-accent" /> : null}
+                </button>
+              ) : null}
               <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {CREATOR_ROLE_DEFINITIONS.map((definition) => {
                   const selected = roles.includes(definition.id);
@@ -628,8 +701,8 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
             </section>
           ) : null}
 
-          {step === 3 ? (
-            <section aria-labelledby="creator-collaboration-mode-title">
+          {step === 2 ? (
+            <section aria-labelledby="creator-collaboration-mode-title" className="mt-8">
               <h2 id="creator-collaboration-mode-title" className="text-lg font-black text-fg">
                 {localized(locale, "주로 혼자 작업하나요, 함께 작업하나요?", "Do you mostly create solo or with a team?")}
               </h2>
@@ -685,7 +758,7 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
             </section>
           ) : null}
 
-          {step === 4 ? (
+          {step === 3 ? (
             <section aria-labelledby="creator-workspace-mode-title">
               <h2 id="creator-workspace-mode-title" className="text-lg font-black text-fg">
                 {localized(locale, "어떤 작업 화면을 선호하나요?", "What kind of workspace do you prefer?")}
@@ -729,7 +802,7 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
             </section>
           ) : null}
 
-          {step === 5 ? (
+          {step === 4 ? (
             <section aria-labelledby="creator-preview-title">
               <h2 id="creator-preview-title" className="text-lg font-black text-fg">
                 {localized(locale, "내 작업 환경 미리보기", "Preview your workspace")}
@@ -747,7 +820,7 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
                         ? localized(locale, "혼자 작업", "Solo")
                         : localized(locale, "팀 협업", "Team")}
                     </span>
-                    {primaryDefinition ? <span className="rounded-full bg-accent px-3 py-1 text-on-accent">{creatorText(primaryDefinition.label, locale)}</span> : null}
+                    {primaryDefinition ? <span className="rounded-full bg-accent px-3 py-1 text-on-accent">{creatorText(primaryDefinition.label, locale)}</span> : <span className="rounded-full bg-card px-3 py-1 text-fg-2">{localized(locale, "역할 아직 정하지 않음 · 전체 도구 사용", "Role not decided yet · all tools available")}</span>}
                     <span className="rounded-full bg-card px-3 py-1 text-fg-2">{bi((MODE_COPY[workspaceMode]).ko, (MODE_COPY[workspaceMode]).en)}</span>
                   </div>
                   <h3 className="mt-4 text-xl font-black text-fg">
@@ -788,6 +861,9 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
               />
               <p className="mt-3 text-xs leading-5 text-fg-3">
                 {localized(locale, "전체 도구는 항상 ‘모든 도구’와 검색에서 접근할 수 있습니다. 개인화는 기능을 숨기거나 권한을 변경하지 않습니다.", "All tools remain available through All Tools and search. Personalization never removes capabilities or changes permissions.")}
+              </p>
+              <p className="mt-3 rounded-xl border border-accent/30 bg-accent-soft/40 px-3 py-2 text-xs font-bold leading-5 text-fg">
+                {localized(locale, `완료하면 바로 “${completionAction.labelKo}”(으)로 이동합니다.`, `When you finish, you will go straight to “${completionAction.labelEn}”.`)}
               </p>
             </section>
           ) : null}
@@ -838,7 +914,7 @@ function CreatorAdaptiveOnboardingDialog({ userId }: { readonly userId: string }
             ) : (
               <button
                 type="button"
-                disabled={!experienceLevel || !primaryRole || saving}
+                disabled={!experienceLevel || (!rolesUndecided && !primaryRole) || saving}
                 onClick={() => void complete()}
                 className={buttonClass({ size: "sm", className: "gap-1.5" })}
               >

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  STUDIO_MANNEQUIN_ARCHETYPE_PRESETS,
   STUDIO_MANNEQUIN_BODY_PRESETS,
   STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+  STUDIO_MANNEQUIN_FINGER_NAMES,
   STUDIO_MANNEQUIN_JOINT_IDS,
   STUDIO_MANNEQUIN_JOINT_LIMITS,
   STUDIO_MANNEQUIN_MATERIAL_STYLES,
@@ -10,6 +12,10 @@ import {
   buildStudioMannequinSpec,
   canonicalizeStudioMannequinAngle,
   clampStudioMannequinBodyParams,
+  clampStudioMannequinFingerPose,
+  isStudioMannequinArchetypePresetId,
+  resolveStudioMannequinArchetypeParams,
+  studioMannequinFingerPoseFromCurls,
   clampStudioMannequinJointRotation,
   getStudioMannequinJointLimit,
   mirrorStudioMannequinJointLimit,
@@ -251,7 +257,7 @@ describe("studio-mannequin-model 비례 수학", () => {
     }
   });
 
-  it("각 손은 네 손가락과 엄지를 2마디로 만들고 좌우 디테일이 X축 미러다", () => {
+  it("각 손은 네 손가락과 엄지를 3마디로 만들고 좌우 디테일이 X축 미러다", () => {
     const spec = buildStudioMannequinSpec(params());
     const digits = (jointId: "leftHand" | "rightHand") => spec.primitives.filter(
       (primitive) => primitive.kind === "capsule" && primitive.jointId === jointId,
@@ -264,10 +270,10 @@ describe("studio-mannequin-model 비례 수학", () => {
     );
     const left = digits("leftHand");
     const right = digits("rightHand");
-    expect(left).toHaveLength(10);
-    expect(right).toHaveLength(10);
-    expect(digitJoints("leftHand")).toHaveLength(5);
-    expect(digitJoints("rightHand")).toHaveLength(5);
+    expect(left).toHaveLength(15);
+    expect(right).toHaveLength(15);
+    expect(digitJoints("leftHand")).toHaveLength(10);
+    expect(digitJoints("rightHand")).toHaveLength(10);
 
     for (let index = 0; index < left.length; index += 1) {
       const leftDigit = left[index];
@@ -453,5 +459,140 @@ describe("studio-mannequin-model 관절 한계", () => {
     expect(canonicalizeStudioMannequinAngle(Math.PI * 3)).toBeCloseTo(-Math.PI, 5);
     expect(Object.is(canonicalizeStudioMannequinAngle(-0), -0)).toBe(false);
     expect(canonicalizeStudioMannequinAngle(Number.NaN)).toBe(0);
+  });
+});
+
+describe("studio-mannequin-model 손가락 관절 분리", () => {
+  const handCapsules = (
+    spec: ReturnType<typeof buildStudioMannequinSpec>,
+    jointId: "leftHand" | "rightHand",
+  ) => spec.primitives.filter(
+    (primitive) => primitive.kind === "capsule" && primitive.jointId === jointId,
+  );
+
+  it("컬 0에서는 기존 rest 끝점과 정확히 일치한다", () => {
+    const spec = buildStudioMannequinSpec(params());
+    // 손가락 끝점(가장 먼 캡슐 to)의 y/z는 2마디 시절과 같은 위치여야 한다.
+    const capsules = handCapsules(spec, "leftHand");
+    const maxReach = Math.max(...capsules.map((capsule) => (
+      capsule.kind === "capsule" ? -capsule.to[1] : 0
+    )));
+    // 중지 끝점: knuckle -0.77 → end -1.17 (handLen 배율 전 비율).
+    expect(maxReach / (0.085 * 1.7)).toBeCloseTo(1.17, 6);
+    expect(spec.fingerPose?.left.index).toEqual([0, 0, 0]);
+  });
+
+  it("손가락별 컬이 해당 손가락 끝점만 손바닥(+Z) 쪽으로 감는다", () => {
+    const rest = buildStudioMannequinSpec(params());
+    const curled = buildStudioMannequinSpec(
+      params(),
+      studioMannequinFingerPoseFromCurls({ left: { index: 100 } }),
+    );
+    const restCapsules = handCapsules(rest, "leftHand");
+    const curledCapsules = handCapsules(curled, "leftHand");
+    expect(curledCapsules).toHaveLength(restCapsules.length);
+    // 검지 체인(엄지보다 먼저 등장하는 순서: little, ring, middle, index, thumb —
+    // index는 10~12번째 캡슐)만 달라지고 나머지는 동일해야 한다.
+    for (let index = 0; index < restCapsules.length; index += 1) {
+      const before = restCapsules[index];
+      const after = curledCapsules[index];
+      if (before?.kind !== "capsule" || after?.kind !== "capsule") continue;
+      if (index >= 9 && index <= 11) continue;
+      expect(after.from).toEqual(before.from);
+      expect(after.to).toEqual(before.to);
+    }
+    const restIndexTip = restCapsules[11];
+    const curledIndexTip = curledCapsules[11];
+    if (restIndexTip?.kind === "capsule" && curledIndexTip?.kind === "capsule") {
+      // 굽히면 끝점이 손바닥 쪽(+Z)으로 이동하고 뻗은 길이는 짧아진다.
+      expect(curledIndexTip.to[2]).toBeGreaterThan(restIndexTip.to[2]);
+      expect(Math.abs(curledIndexTip.to[1])).toBeLessThan(Math.abs(restIndexTip.to[1]));
+    } else {
+      throw new Error("index finger chain is missing");
+    }
+  });
+
+  it("마디별 컬은 지정한 관절만 굽힌다(끝 마디만 굽히면 앞부분은 그대로)", () => {
+    const rest = buildStudioMannequinSpec(params());
+    const tipOnly = buildStudioMannequinSpec(params(), {
+      left: { middle: [0, 0, 100] },
+    });
+    const restCapsules = handCapsules(rest, "leftHand");
+    const tipCapsules = handCapsules(tipOnly, "leftHand");
+    // 중지 체인은 6~8번째 캡슐. 앞 두 마디는 rest와 동일, 끝 마디만 달라진다.
+    for (const index of [6, 7]) {
+      const before = restCapsules[index];
+      const after = tipCapsules[index];
+      if (before?.kind === "capsule" && after?.kind === "capsule") {
+        expect(after.from).toEqual(before.from);
+        expect(after.to).toEqual(before.to);
+      }
+    }
+    const before = restCapsules[8];
+    const after = tipCapsules[8];
+    if (before?.kind === "capsule" && after?.kind === "capsule") {
+      expect(after.to[2]).toBeGreaterThan(before.to[2]);
+    } else {
+      throw new Error("middle finger chain is missing");
+    }
+  });
+
+  it("손가락 포즈 정규화는 범위를 벗어난 값을 클램프하고 비정상 입력을 0으로 만든다", () => {
+    const resolved = clampStudioMannequinFingerPose({
+      left: { index: [150, -5, Number.NaN] },
+      right: "nope",
+    });
+    expect(resolved.left.index).toEqual([100, 0, 0]);
+    expect(resolved.right.thumb).toEqual([0, 0, 0]);
+    for (const name of STUDIO_MANNEQUIN_FINGER_NAMES) {
+      expect(resolved.left[name]).toHaveLength(3);
+    }
+    expect(clampStudioMannequinFingerPose(undefined).left.middle).toEqual([0, 0, 0]);
+  });
+
+  it("양손 미러: 오른손 컬은 왼손과 X축 미러 형상을 만든다", () => {
+    const spec = buildStudioMannequinSpec(
+      params(),
+      studioMannequinFingerPoseFromCurls({ left: { ring: 80 }, right: { ring: 80 } }),
+    );
+    const left = handCapsules(spec, "leftHand");
+    const right = handCapsules(spec, "rightHand");
+    for (let index = 0; index < left.length; index += 1) {
+      const l = left[index];
+      const r = right[index];
+      if (l?.kind !== "capsule" || r?.kind !== "capsule") continue;
+      expect(r.from).toEqual([-l.from[0], l.from[1], l.from[2]]);
+      expect(r.to).toEqual([-l.to[0], l.to[1], l.to[2]]);
+    }
+  });
+});
+
+describe("studio-mannequin-model 체형 archetype 프리셋", () => {
+  it("모든 archetype은 전 파라미터가 유효 범위 안에 있어 클램프 왕복이 항등이다", () => {
+    for (const [presetId, preset] of Object.entries(STUDIO_MANNEQUIN_ARCHETYPE_PRESETS)) {
+      expect(isStudioMannequinArchetypePresetId(presetId)).toBe(true);
+      expect(resolveStudioMannequinArchetypeParams(presetId)).toEqual(preset.params);
+      // archetype은 핵심 7 + 얼굴 4 + 해부 12 = 23종을 모두 명시한다.
+      expect(Object.keys(preset.params)).toHaveLength(23);
+    }
+  });
+
+  it("대표 archetype의 두신·체형이 라벨과 일치한다", () => {
+    expect(STUDIO_MANNEQUIN_ARCHETYPE_PRESETS.hero8.params.headCount).toBe(8);
+    expect(STUDIO_MANNEQUIN_ARCHETYPE_PRESETS.boy6.params.headCount).toBe(6);
+    expect(STUDIO_MANNEQUIN_ARCHETYPE_PRESETS.sd5.params.headCount).toBe(5);
+    const villain = STUDIO_MANNEQUIN_ARCHETYPE_PRESETS.muscleVillain.params;
+    expect(villain.build).toBeGreaterThanOrEqual(2.5);
+    expect(villain.shoulderWidth).toBeGreaterThanOrEqual(1.25);
+    expect(villain.upperArmThickness ?? 0).toBeGreaterThan(1.3);
+  });
+
+  it("archetype 적용 스펙은 신장 불변식을 유지하고 알 수 없는 id는 기본 체형이다", () => {
+    const hero = buildStudioMannequinSpec(resolveStudioMannequinArchetypeParams("hero8"));
+    expect(studioMannequinRestStature(hero)).toBeCloseTo(1.86, 9);
+    expect(resolveStudioMannequinArchetypeParams("nope")).toBe(
+      STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+    );
+    expect(isStudioMannequinArchetypePresetId("nope")).toBe(false);
   });
 });

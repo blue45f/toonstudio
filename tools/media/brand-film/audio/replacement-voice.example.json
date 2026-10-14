@@ -1,0 +1,6 @@
+{
+  "provider": "MeloTTS-Korean (myshell-ai/MeloTTS-Korean)",
+  "name": "KR",
+  "locale": "ko-KR",
+  "note": "Example voice record for assemble-product-tour-narration.mjs --voice. Record the exact engine and model revision used at generation time."
+}

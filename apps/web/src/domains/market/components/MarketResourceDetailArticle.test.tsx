@@ -15,6 +15,12 @@ import {
   CREATOR_MARKETPLACE_INSTALL_RECEIPT_STORAGE_KEY,
   writeCreatorMarketplaceInstallReceipt,
 } from "@/shared/lib/creator-marketplace-install-receipt";
+import {
+  SessionContext,
+  type SessionContextValue,
+} from "@/domains/auth/public/session/auth-session-store";
+import { subscribeAuthModalRequests } from "@/domains/auth/public/session/auth-modal-intent";
+import { MARKET_GUEST_LOGIN_NOTICE_ID } from "../models/market-guest-login-notice";
 import { creatorMarketplaceStudioPackId } from "@/shared/lib/creator-marketplace-package-identity";
 
 vi.mock("./MarketResourceReleaseHistory", () => ({
@@ -284,6 +290,75 @@ describe("MarketResourceDetailArticle actions and metadata", () => {
     expect(document.activeElement).toBe(
       screen.getByRole("tab", { name: "두 번째 4컷 템플릿" }),
     );
+  });
+
+  it("shows guests the login requirement next to the acquire button before any click, and routes the click to login instead of the failing acquisition modal", () => {
+    const guestSession: SessionContextValue = {
+      data: null,
+      ready: true,
+      status: "unauthenticated",
+      update: async () => null,
+    };
+    const receive = vi.fn();
+    const stop = subscribeAuthModalRequests(receive);
+    try {
+      render(
+        <MemoryRouter>
+          <SessionContext.Provider value={guestSession}>
+            <MarketResourceDetailArticle
+              record={marketRecord("brush")}
+              relatedItems={[]}
+              staleSavedAt={null}
+              onRetry={() => undefined}
+            />
+          </SessionContext.Provider>
+        </MemoryRouter>,
+      );
+
+      // 누르기 전 사전 고지: 제목·이유·고정 id가 획득 버튼 근처에 이미 있다.
+      expect(screen.getByText("이 에셋을 받으려면 로그인이 필요해요")).toBeTruthy();
+      expect(document.getElementById(MARKET_GUEST_LOGIN_NOTICE_ID)).toBeTruthy();
+      const acquireButton = screen.getByRole("button", { name: /내 에셋에 추가하기/ });
+      expect(acquireButton.getAttribute("aria-describedby")).toBe(MARKET_GUEST_LOGIN_NOTICE_ID);
+
+      // 클릭해도 실패할 획득 모달이 열리지 않고 로그인 절차가 시작된다.
+      fireEvent.click(acquireButton);
+      expect(receive).toHaveBeenCalledTimes(1);
+      expect(receive).toHaveBeenLastCalledWith({
+        reason: "protected-action",
+        source: "market-resource-library",
+        mode: "login",
+      });
+      expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      stop();
+    }
+  });
+
+  it("shows no guest notice and no describedby reference for a signed-in user", () => {
+    const signedInSession: SessionContextValue = {
+      data: { user: { id: "user-1", name: "작가" }, token: null },
+      ready: true,
+      status: "authenticated",
+      update: async () => null,
+    };
+    render(
+      <MemoryRouter>
+        <SessionContext.Provider value={signedInSession}>
+          <MarketResourceDetailArticle
+            record={marketRecord("brush")}
+            relatedItems={[]}
+            staleSavedAt={null}
+            onRetry={() => undefined}
+          />
+        </SessionContext.Provider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("이 에셋을 받으려면 로그인이 필요해요")).toBeNull();
+    expect(document.getElementById(MARKET_GUEST_LOGIN_NOTICE_ID)).toBeNull();
+    const acquireButton = screen.getByRole("button", { name: /내 에셋에 추가하기/ });
+    expect(acquireButton.getAttribute("aria-describedby")).toBeNull();
   });
 
   it("opens the unified share dialog with resource-specific metadata", async () => {

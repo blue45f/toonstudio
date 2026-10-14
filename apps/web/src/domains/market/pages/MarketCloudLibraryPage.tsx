@@ -34,6 +34,7 @@ import type {
 } from "@/shared/lib/creator-marketplace-cloud-library-contract";
 
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
+import { MySpaceModuleChrome } from "@/shared/components/my-space-module-chrome";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
@@ -308,6 +309,7 @@ export function MarketCloudLibraryPage({ embedded = false }: { readonly embedded
 
   return (
     <Container size="wide" className="market-library-page py-7 sm:py-10">
+      {!embedded ? <MySpaceModuleChrome /> : null}
       {!embedded ? <MarketNavHeader /> : null}
       {!embedded ? <MarketSectionArtBanner /> : null}
 
@@ -561,7 +563,7 @@ function RetryCard({ title, onRetry }: { title: string; onRetry: () => void }) {
 function LibrarySkeleton() {
   const t = useBilingual("MarketCloudLibraryPage.LibrarySkeleton");
   return (
-    <div role="status" aria-label={t("소장 에셋을 불러오는 중", "Loading owned assets")} className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div role="status" aria-label={t("소장 에셋을 불러오는 중", "Loading owned assets")} className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
       {Array.from({ length: 8 }, (_, index) => (
         <div key={index} aria-hidden="true" className="rounded-xl border border-line bg-card p-4">
           <div className="skeleton h-4 w-2/3" />

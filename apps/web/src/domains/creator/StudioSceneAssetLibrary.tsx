@@ -2,6 +2,7 @@ import { useId, useRef, useState } from "react";
 
 import { svgToDataUrl } from "./studio-characters";
 import { selectStudioSceneLibraryPage, type StudioSceneLibraryKind } from "./studio-asset-library-management";
+import { StudioSketchAssetRecommendPanel } from "./StudioSketchAssetRecommendPanel";
 
 import type { StudioUnifiedAssetItem } from "./studio-unified-asset-catalog";
 
@@ -22,6 +23,7 @@ export function StudioSceneAssetLibrary({ items, onUseItem }: {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<StudioSceneLibraryKind>("all");
   const [page, setPage] = useState(0);
+  const [sketchOpen, setSketchOpen] = useState(false);
   const [preview, setPreview] = useState<StudioUnifiedAssetItem | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -46,6 +48,8 @@ export function StudioSceneAssetLibrary({ items, onUseItem }: {
     <header><h3 className="text-sm font-bold text-fg">템플릿 · 배경 전체 탐색</h3><p className="mt-1 text-xs leading-relaxed text-fg-3">추천에 포함되지 않은 장면까지 전체 목록에서 찾습니다. 장면 템플릿은 제작 도구에서 미리보기 후 배치합니다.</p></header>
     <label htmlFor={searchId} className="sr-only">템플릿과 배경 검색</label>
     <input id={searchId} type="search" value={query} className={`${CONTROL} w-full font-normal`} placeholder="학교, 도시, 배경, 로맨스…" onChange={(event) => { setQuery(event.target.value.slice(0, 120)); setPage(0); }} />
+    <button type="button" className={`${CONTROL} w-full`} aria-expanded={sketchOpen} onClick={() => setSketchOpen((value) => !value)}>{sketchOpen ? "스케치 검색 닫기" : "스케치로 소재 찾기"}</button>
+    {sketchOpen && <StudioSketchAssetRecommendPanel items={items} onUseItem={onUseItem} onTextSearch={(text) => { setQuery(text.slice(0, 120)); setPage(0); }} />}
     <div className="flex flex-wrap gap-1" role="group" aria-label="장면 테마">{THEMES.map((theme) => <button key={theme} type="button" className={CONTROL} aria-pressed={query === theme} onClick={() => { setQuery(theme); setPage(0); }}>{theme}</button>)}<button type="button" className={CONTROL} onClick={() => { setQuery(""); setKind("all"); setPage(0); }}>초기화</button></div>
     <select aria-label="템플릿과 배경 종류" value={kind} className={`${CONTROL} w-full`} onChange={(event) => { setKind(event.target.value as StudioSceneLibraryKind); setPage(0); }}><option value="all">템플릿과 배경 전체</option><option value="scene-template">장면 템플릿</option><option value="background">2D 배경</option></select>
     <p role="status" className="text-xs text-fg-3">검색 결과 {result.total}개 · {result.page + 1}/{result.pages}페이지</p>

@@ -1,3 +1,9 @@
+/**
+ * 인앱 매뉴얼 정본(canonical source) — `/studio/manual`이 읽는 유일한 원천 데이터.
+ * 루트 `STUDIO_MANUAL.md`·`STUDIO_3D_DCC_MANUAL.md`는 이 파일에서 생성되는 산출물이므로 직접 고치지 않는다.
+ * 재생성: `pnpm manual:gen` / 일치 검증(CI): `pnpm verify:studio-manual-docs`
+ * (`scripts/generate-studio-manual.mjs --check`, 문서가 생성물과 일치할 때만 통과)
+ */
 export interface ManualSection {
   readonly id: string;
   readonly title: string;
@@ -17,7 +23,7 @@ export interface ManualArticle {
   readonly sections: readonly ManualSection[];
 }
 
-export const MANUAL_UPDATED = "2026-09-30";
+export const MANUAL_UPDATED = "2026-10-13";
 
 export interface ManualCategory {
   readonly id: string;
@@ -56,6 +62,18 @@ export const MANUAL_WORKSPACE_LABELS: Readonly<Record<string, { readonly ko: str
  * Keep this data independent of editor/renderer imports: reading must never boot a canvas.
  */
 export const MANUAL_ARTICLES: readonly ManualArticle[] = [
+  {
+    id: "episode-flow", category: "start", title: "한 화 완성 흐름 — 처음부터 끝까지",
+    summary: "기획부터 게시까지, 한 화를 어떤 순서로 만들면 되는지 단계마다 하는 일과 다음으로 넘어가는 기준을 안내합니다.",
+    keywords: ["한 화", "회차", "흐름", "순서", "기획", "콘티", "게시", "workflow", "episode", "checklist"], workspace: "/studio",
+    related: ["getting-started", "workspace", "export"],
+    sections: [
+      { id: "overview", title: "전체 순서 한눈에 보기", paragraphs: ["한 화는 보통 작품 시작 → 기획 → 콘티 → 스케치·선화 → 채색 → 배경 → 후보정 → 식자 → 검수 → 게시 순서로 만듭니다. 한 사람이 전부 하는 경우에도 이 순서를 지키면 훨씬 덜 헤맵니다.", "앞 단계를 대충 넘기면 뒤 단계에서 고치는 데 몇 배의 시간이 듭니다. 특히 콘티와 식자는 그림을 다 그린 뒤에 몰아서 하지 마세요. 대사가 들어갈 자리까지 콘티에서 미리 정해 두는 것이 중요합니다."] },
+      { id: "plan-storyboard", title: "1~2단계: 기획과 콘티", paragraphs: [], steps: ["작품 시작: 새 작품을 만들거나 지난 작품을 이어 엽니다. 처음이면 템플릿으로 시작해도 좋습니다. 캔버스가 열리고 빈 원고가 저장되어 있으면 됩니다.", "기획: 이번 화에서 무슨 일이 일어나는지, 누가 무엇을 왜 하는지 한두 문장으로 적습니다. 이번 화의 시작과 끝을 말로 설명할 수 있으면 다음 단계로 넘어갑니다.", "콘티: 이야기를 컷으로 나눈 설계도를 작게 그립니다. 막대 사람과 말풍선만으로 충분하고, 컷의 크기·순서·대사 자리를 여기서 정합니다.", "콘티 점검: 처음부터 끝까지 따라 읽었을 때, 그림을 보지 않아도 무슨 이야기인지 알 수 있으면 선화로 넘어갑니다."] },
+      { id: "draw-color", title: "3~5단계: 선화·채색·배경", paragraphs: [], steps: ["스케치·선화: 콘티 위에 인물을 구체적으로 그리고 펜으로 선을 확정합니다. 자세가 어려우면 3D 캐릭터와 포즈 문서를 참고하세요. 러프 선과 확정 선은 서로 다른 레이어로 나눕니다.", "채색: 밑색을 칠하고 명암을 얹습니다. 선화 레이어와 색 레이어를 나눠 두면 나중에 색만 고칠 수 있습니다. 색이 선 밖으로 새지 않는지 확인하세요.", "배경: 장소를 채웁니다. 배경은 인물과 별도 레이어로 두는 것이 보통이고, 반복되는 장소는 3D 배경을 선화로 바꿔 쓰면 빠릅니다. 인물 없이 배경만 봐도 어디인지 알 수 있으면 됩니다."] },
+      { id: "finish-publish", title: "6~9단계: 후보정·식자·검수·게시", paragraphs: [], steps: ["후보정: 전체 색감과 분위기를 다듬습니다. 필터는 한 번에 하나씩, 약하게 거는 것이 안전합니다.", "식자: 콘티에서 정한 자리에 말풍선과 대사를 넣고, 위에서 아래로 읽는 순서가 자연스러운지 확인합니다. 자세한 방법은 텍스트와 말풍선 문서를 보세요.", "검수: 편집 화면이 아니라 실제 읽는 크기(휴대전화 크기)로 처음부터 끝까지 다시 읽으며 오타, 말풍선 누락, 잘린 컷, 순서 뒤바뀜을 잡습니다.", "게시: 게시용 파일로 내보내고 올립니다. 레이어가 살아 있는 원본 파일은 게시 이미지와 따로 보관하세요. 내보낸 파일을 편집기 밖에서 다시 열어 순서와 규격을 확인하면 게시할 수 있습니다."], note: "처음이 막막하면 다 하지 말고 3컷만 끝까지 해 보세요. 콘티부터 내보내기까지 작은 완성을 한 번 경험하면 전체 흐름이 몸에 붙습니다." },
+    ],
+  },
   {
     id: "getting-started", category: "start", title: "첫 웹툰 작업 시작하기",
     summary: "캔버스를 준비하고 한 컷을 그린 뒤, 저장과 내보내기를 확인하는 기본 순서입니다.",

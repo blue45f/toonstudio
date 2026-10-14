@@ -1,9 +1,14 @@
 /**
  * 공유 세계관(유니버스) 관리 탭.
  *
- * 여러 작품이 한 세계관 묶음에 속하고, 캐릭터·장소·사실을 작품 간 공유 요소로
+ * 여러 작품이 한 세계관 묶음에 속하고, 캐릭터·장소·사실·설정 항목을 작품 간 공유 요소로
  * 명시 지정·해제하는 화면. 지정은 참조 기록일 뿐 데이터를 복사하지 않으며,
  * 자동 연결(제목 유사 등)은 제공하지 않는다.
+ *
+ * 설정 항목(lore)의 로컬 후보는 이 화면이 만들지 않는다: 로어 컬렉션은 기획 영역
+ * (세계관 설정 허브)이 소유하므로, 호스트가 loreElements prop으로 {id, label} 후보를
+ * 공급할 때만 지정할 수 있다. 공급이 없으면 설정 항목 공유 요소는 정의·행렬 표시까지만
+ * 동작하고, 지정 영역에 그 이유를 안내한다(빈 선택지를 조용히 보여 주지 않는다).
  *
  * 경계: 레지스트리는 이 브라우저의 로컬 DB에만 있다. 서버 동기화·협업자 공유는
  * 서버 계약이 필요하고, 다른 작품의 로컬 요소 실재 여부는 그 작품을 열 때만
@@ -18,10 +23,12 @@ import {
   buildStoryworldUniverseMatrix,
   createStoryworldUniverse,
   deleteStoryworldUniverse,
+  designateStoryworldLoreUsage,
   designateStoryworldSharedUsage,
   joinStoryworldUniverse,
   leaveStoryworldUniverse,
   removeStoryworldSharedElement,
+  revokeStoryworldLoreUsage,
   revokeStoryworldSharedUsage,
   updateStoryworldSharedElement,
   updateStoryworldUniverse,
@@ -37,12 +44,21 @@ const SHARED_KIND_LABELS: Readonly<Record<StoryworldSharedElementKind, string>> 
   character: "캐릭터",
   location: "장소",
   fact: "사실",
+  lore: "설정 항목",
 };
+
+/** 이 작품에서 지정할 수 있는 로컬 요소 후보 — 설정 항목은 호스트가 공급하는 loreElements가 출처다. */
+export interface StoryworldLocalElementOption {
+  readonly id: string;
+  readonly label: string;
+}
 
 function localElements(
   project: StoryworldProject,
   kind: StoryworldSharedElementKind,
-): readonly { readonly id: string; readonly label: string }[] {
+  loreElements: readonly StoryworldLocalElementOption[] = [],
+): readonly StoryworldLocalElementOption[] {
+  if (kind === "lore") return loreElements;
   if (kind === "character") return project.characters.map((character) => ({ id: character.id, label: character.name }));
   if (kind === "fact") return project.facts.map((fact) => ({ id: fact.id, label: fact.label }));
   const locations = new Map<string, string>();
@@ -52,12 +68,13 @@ function localElements(
   return [...locations.entries()].map(([id, label]) => ({ id, label }));
 }
 
-function SharedElementCard({ registry, universe, element, project, scopeKey, onCommit }: {
+function SharedElementCard({ registry, universe, element, project, scopeKey, loreElements, onCommit }: {
   readonly registry: StoryworldUniverseRegistry;
   readonly universe: StoryworldUniverse;
   readonly element: StoryworldSharedElement;
   readonly project: StoryworldProject;
   readonly scopeKey: string;
+  readonly loreElements?: readonly StoryworldLocalElementOption[];
   readonly onCommit: (registry: StoryworldUniverseRegistry) => void;
 }) {
   const [name, setName] = useState(element.name);
@@ -65,7 +82,7 @@ function SharedElementCard({ registry, universe, element, project, scopeKey, onC
   const [tags, setTags] = useState((element.tags ?? []).join(", "));
   const [localId, setLocalId] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const options = localElements(project, element.kind);
+  const options = localElements(project, element.kind, loreElements ?? []);
   const myUsage = element.usages.find((usage) => usage.scopeKey === scopeKey) ?? null;
   const myLocalAlive = myUsage ? options.some((option) => option.id === myUsage.elementId) : null;
   const matrix = buildStoryworldUniverseMatrix(universe).find((row) => row.element.id === element.id);
@@ -104,6 +121,12 @@ function SharedElementCard({ registry, universe, element, project, scopeKey, onC
       </div>
 
       <div className="storyworld-universe-designate">
+        {element.kind === "lore" && options.length === 0 ? (
+          <p className="storyworld-settings-hint">
+            이 작품에서 지정할 설정 항목이 아직 연결되지 않았습니다. 세계관 설정 허브에 설정을 등록하고
+            이 화면에 연결되면, 그 설정을 아래에서 골라 공유 요소로 지정할 수 있습니다.
+          </p>
+        ) : null}
         <label>
           <span>이 작품의 {SHARED_KIND_LABELS[element.kind]} 요소</span>
           <select onChange={(event) => setLocalId(event.target.value)} value={localId}>
@@ -117,13 +140,10 @@ function SharedElementCard({ registry, universe, element, project, scopeKey, onC
           onClick={() => {
             const option = options.find((item) => item.id === localId);
             if (!option) return;
-            apply(designateStoryworldSharedUsage(
-              registry,
-              universe.id,
-              element.id,
-              { scopeKey, elementId: option.id, elementLabel: option.label, designatedAtIso: new Date().toISOString() },
-              new Date().toISOString(),
-            ));
+            const usage = { scopeKey, elementId: option.id, elementLabel: option.label, designatedAtIso: new Date().toISOString() };
+            apply(element.kind === "lore"
+              ? designateStoryworldLoreUsage(registry, universe.id, element.id, usage, new Date().toISOString())
+              : designateStoryworldSharedUsage(registry, universe.id, element.id, usage, new Date().toISOString()));
             setLocalId("");
           }}
           type="button"
@@ -133,14 +153,16 @@ function SharedElementCard({ registry, universe, element, project, scopeKey, onC
         {myUsage ? (
           <button
             className="storyworld-button"
-            onClick={() => apply(revokeStoryworldSharedUsage(
-              registry,
-              universe.id,
-              element.id,
-              scopeKey,
-              myUsage.elementId,
-              new Date().toISOString(),
-            ))}
+            onClick={() => apply(element.kind === "lore"
+              ? revokeStoryworldLoreUsage(registry, universe.id, element.id, scopeKey, myUsage.elementId, new Date().toISOString())
+              : revokeStoryworldSharedUsage(
+                registry,
+                universe.id,
+                element.id,
+                scopeKey,
+                myUsage.elementId,
+                new Date().toISOString(),
+              ))}
             type="button"
           >
             <Link2Off aria-hidden size={15} /> 내 지정 해제 ({myUsage.elementLabel})
@@ -197,9 +219,11 @@ function SharedElementCard({ registry, universe, element, project, scopeKey, onC
   );
 }
 
-export function StudioStoryworldUniverse({ project, scopeKey }: {
+export function StudioStoryworldUniverse({ project, scopeKey, loreElements }: {
   readonly project: StoryworldProject;
   readonly scopeKey: string;
+  /** 이 작품의 세계관 설정 항목 후보(세계관 설정 허브 소유). 없으면 설정 항목 지정만 비활성 안내가 된다. */
+  readonly loreElements?: readonly StoryworldLocalElementOption[];
 }) {
   const [registry, setRegistry] = useState<StoryworldUniverseRegistry | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -275,7 +299,7 @@ export function StudioStoryworldUniverse({ project, scopeKey }: {
           <div>
             <h2><Globe2 aria-hidden size={18} /> 공유 세계관</h2>
             <p>
-              여러 작품이 한 세계관을 공유하도록 묶고, 캐릭터·장소·사실을 작품 간 공유 요소로 명시 지정합니다.
+              여러 작품이 한 세계관을 공유하도록 묶고, 캐릭터·장소·사실·설정 항목을 작품 간 공유 요소로 명시 지정합니다.
               공유는 복사가 아니라 참조 기록이며, 자동 연결은 하지 않습니다.
             </p>
           </div>
@@ -414,12 +438,13 @@ export function StudioStoryworldUniverse({ project, scopeKey }: {
 
             <div className="storyworld-universe-elements">
               {universe.sharedElements.length === 0 ? (
-                <p className="storyworld-settings-hint">아직 공유 요소가 없습니다. 공유할 캐릭터·장소·사실을 정의하고, 각 작품에서 자기 요소를 지정해 연결하세요.</p>
+                <p className="storyworld-settings-hint">아직 공유 요소가 없습니다. 공유할 캐릭터·장소·사실·설정 항목을 정의하고, 각 작품에서 자기 요소를 지정해 연결하세요.</p>
               ) : null}
               {universe.sharedElements.map((element) => (
                 <SharedElementCard
                   element={element}
                   key={element.id}
+                  loreElements={loreElements}
                   onCommit={commit}
                   project={project}
                   registry={registry}

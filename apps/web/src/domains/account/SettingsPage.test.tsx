@@ -32,20 +32,20 @@ beforeEach(() => window.localStorage.clear());
 afterEach(cleanup);
 
 describe("설정 화면 탭", () => {
-  it("설정을 화면·지역·데이터·계정 네 탭으로 나누고 처음에는 화면·음성만 보여 준다", () => {
+  it("설정을 화면·지역·연령·데이터·계정 다섯 탭으로 나누고 처음에는 화면·음성만 보여 준다", () => {
     renderSettings();
     const tabs = screen.getAllByRole("tab");
-    expect(tabs).toHaveLength(4);
-    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(["화면·음성", "지역·필터", "연령·데이터", "계정"]);
+    expect(tabs).toHaveLength(5);
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(["화면·음성", "지역·필터", "연령 확인", "내 데이터", "계정"]);
     expect(screen.getByRole("tab", { name: "화면·음성" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByTestId("appearance")).toBeTruthy();
     // 아직 열지 않은 탭의 내용은 그리지 않는다.
-    expect(screen.queryByText("내 데이터")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "내 데이터" })).toBeNull();
   });
 
   it("탭을 고르면 주소(?view=)에 남고, 기존 섹션 앵커는 해당 탭을 연다", async () => {
     renderSettings();
-    fireEvent.click(screen.getByRole("tab", { name: "연령·데이터" }));
+    fireEvent.click(screen.getByRole("tab", { name: "내 데이터" }));
     expect(screen.getByTestId("location").textContent).toBe("/settings?view=data");
     expect(screen.getByRole("heading", { name: "내 데이터" })).toBeTruthy();
     expect(screen.getByTestId("backup-import")).toBeTruthy();
@@ -58,6 +58,14 @@ describe("설정 화면 탭", () => {
     // 탈퇴도 계정 목적지(설정 계정 탭)에 모여 있다 — /me 프로필 편집과 분리된 자리.
     expect(within(panel).getByTestId("delete-account")).toBeTruthy();
     expect(within(panel).getByRole("link", { name: /내 정보/u }).getAttribute("href")).toBe("/me");
+  });
+
+  it("연령 확인은 내 데이터와 분리된 전용 탭에서 열린다", () => {
+    renderSettings();
+    fireEvent.click(screen.getByRole("tab", { name: "연령 확인" }));
+    expect(screen.getByTestId("location").textContent).toBe("/settings?view=age");
+    expect(screen.getByRole("heading", { name: "연령 확인" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "내 데이터" })).toBeNull();
   });
 
   it("관련 설정 화면(멤버십·AI·API 키·연동·알림·직군)은 접힌 목록에서 계속 찾을 수 있다", () => {
@@ -94,7 +102,7 @@ describe("설정 검색", () => {
 
   it("데이터 초기화 범위가 서재 활동 데이터뿐임을 고지한다", () => {
     renderSettings();
-    fireEvent.click(screen.getByRole("tab", { name: "연령·데이터" }));
+    fireEvent.click(screen.getByRole("tab", { name: "내 데이터" }));
     expect(screen.getByText(/초기화 범위는 서재 활동 데이터/)).toBeTruthy();
     expect(screen.getByText(/환경설정과 연령 확인 상태, 계정 정보는 그대로 유지됩니다/)).toBeTruthy();
   });

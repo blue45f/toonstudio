@@ -60,7 +60,9 @@
 .workspace-personal-studio-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 44%;filter:saturate(.96) brightness(.76);transform:scale(1.025)}
 .workspace-personal-studio-visual::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,transparent 35%,rgb(13 19 29/.18) 62%,rgb(17 21 31/.86));pointer-events:none}
 .workspace-personal-studio-glow{position:absolute;z-index:1;left:50%;bottom:5%;width:11rem;height:6rem;translate:-50% 0;border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--color-accent) 36%,transparent),transparent 68%);filter:blur(10px)}
-.workspace-personal-studio-character{position:absolute;z-index:2;left:50%;bottom:-.15rem;width:min(47%,10.75rem);height:92%;translate:-50% 0;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 16px 14px rgb(0 0 0/.48));animation:workspace-home-character-idle 3.2s ease-in-out infinite}
+/* S3-18: 캐릭터 idle 반복 모션은 작업 표면의 상주 모션이라 정지한다
+ * (BLUEPRINT §6.2 (3)). 캐릭터 아트 자체는 정적으로 유지한다. */
+.workspace-personal-studio-character{position:absolute;z-index:2;left:50%;bottom:-.15rem;width:min(47%,10.75rem);height:92%;translate:-50% 0;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 16px 14px rgb(0 0 0/.48))}
 .workspace-personal-studio-placeholder{position:absolute;z-index:2;left:50%;bottom:1.5rem;display:grid;width:6.5rem;height:6.5rem;translate:-50% 0;place-items:center;border:1px dashed rgb(255 255 255/.42);border-radius:50%;background:rgb(12 19 31/.64);color:rgb(238 234 255/.78);box-shadow:0 18px 45px rgb(0 0 0/.28);backdrop-filter:blur(10px)}
 .workspace-personal-studio-state{position:absolute;z-index:3;top:.85rem;right:.85rem;display:inline-flex;min-height:2rem;align-items:center;border:1px solid rgb(255 255 255/.2);border-radius:999px;padding:.32rem .65rem;background:rgb(12 17 27/.72);color:white;font-size:.62rem;font-weight:900;letter-spacing:.02em;backdrop-filter:blur(10px)}
 .workspace-personal-studio-card[data-character-ready="true"] .workspace-personal-studio-state{border-color:rgb(104 224 168/.34);background:rgb(18 67 51/.72);color:#c9ffe1}
@@ -114,3 +116,10 @@
   .workspace-home-layout .workspace-link-list>a{transition:none}
   .workspace-home-layout .workspace-link-list>a:hover{transform:none}
 }
+
+/* Three-band home (BLUEPRINT §3.3, S3-6): band 1 spans the list grid and
+   stacks NowCard + hero; the collaboration queue sits below recent works;
+   the demoted virtual-studio card follows the bands with plain spacing. */
+.workspace-home-band--now{grid-column:1/-1;display:grid;gap:1.1rem;align-content:start}
+.workspace-home-band--collab{margin-top:1.4rem}
+.workspace-shell[data-workspace-surface="home"] .workspace-personal-studio-card{margin-top:1.4rem}

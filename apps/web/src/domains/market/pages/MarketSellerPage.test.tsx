@@ -112,7 +112,14 @@ afterEach(() => {
 describe("MarketSellerPage", () => {
   it("게스트에게는 빈 상태를 빈 상태로 보여주고 판매 관리는 로그인으로 유도한다", () => {
     mount();
-    expect(screen.getByRole("heading", { name: "포인트 판매 · 공동구매" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "판매자 센터" })).toBeTruthy();
+    // 판매자 센터 링크는 마켓 내비와 센터 탭 양쪽에 있지만 도착지는 하나로 같다.
+    const centerLinks = screen.getAllByRole("link", { name: "판매자 센터" });
+    expect(centerLinks.length).toBeGreaterThanOrEqual(2);
+    for (const link of centerLinks) expect(link.getAttribute("href")).toBe("/market/seller");
+    expect(centerLinks.some((link) => link.getAttribute("aria-current") === "page")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "에셋 등록" }).getAttribute("href")).toBe("/market/publish");
+    expect(screen.getByRole("link", { name: "패키지 관리" }).getAttribute("href")).toBe("/market/manage");
     expect(screen.getByText("아직 등록된 판매 리스팅이 없어요")).toBeTruthy();
     expect(screen.getByText(/아직 공동구매가 없어요/)).toBeTruthy();
     expect(screen.getByText("로그인하면 판매자로 등록할 수 있어요")).toBeTruthy();
@@ -122,11 +129,15 @@ describe("MarketSellerPage", () => {
     );
   });
 
-  it("판매자가 폼으로 리스팅을 등록하면 목록과 내 리스팅에 바로 나타난다", () => {
+  it("판매자가 단계형 마법사로 리스팅을 등록하면 목록과 내 리스팅에 바로 나타난다", () => {
     signIn(SELLER);
     mount();
+    // 1단계(기본 정보) → 2단계(설명·가격) → 3단계(확인·등록)
     fireEvent.change(screen.getByLabelText("제목"), { target: { value: "내 첫 브러시" } });
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
     fireEvent.change(screen.getByLabelText("포인트 가격"), { target: { value: "120" } });
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(document.querySelector('[aria-current="step"]')?.textContent).toContain("확인·등록");
     fireEvent.click(screen.getByRole("button", { name: "리스팅 등록" }));
     expect(screen.getByText(/리스팅을 등록했어요/)).toBeTruthy();
     expect(screen.getAllByText("내 첫 브러시").length).toBeGreaterThanOrEqual(2);

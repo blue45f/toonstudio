@@ -9,6 +9,15 @@ import {
   type BodySilhouette,
   type BodySilhouetteSample,
 } from "./studio-vrm-body-silhouette";
+import {
+  buildLimbSegmentProfile,
+  projectLimbSample,
+  sanitizeLimbProfiles,
+  type LimbProfileSample,
+  type LimbProfiles,
+  type LimbSegmentId,
+  type LimbSide,
+} from "./studio-vrm-limb-profile";
 import { sampleStudioVrmGarmentWeave, studioVrmGarmentBumpScaleM } from "./studio-vrm-garment-weave";
 import { PHYSICS_PREVIEW_MAX_DELTA } from "./studio-vrm-physics";
 import { refineVrmGripFingerWrap } from "./studio-vrm-poser-utils";
@@ -49,6 +58,7 @@ import {
   wardrobeItemById,
   type GarmentPart,
   type LimbMetric,
+  type SideMetric,
   type Vec3,
   type WardrobeBone,
   type WardrobeEquip,
@@ -742,6 +752,155 @@ function measureTorsoSilhouette(vrm: VRM, anchors: {
   return buildBodySilhouette(samples);
 }
 
+
+/* ── 팔다리 둘레 실측 ─────────────────────────────────────────────── */
+
+/** 둘레를 재는 세그먼트와 그 지배 본. 지배 본은 구간 분류에만 쓰고 형상은 전체 스킨+모프로 잰다. */
+const LIMB_MEASURE_SEGMENTS: readonly {
+  segment: LimbSegmentId;
+  side: LimbSide;
+  bone: VRMHumanBoneName;
+}[] = [
+  { segment: "upperArm", side: "left", bone: "leftUpperArm" },
+  { segment: "upperArm", side: "right", bone: "rightUpperArm" },
+  { segment: "lowerArm", side: "left", bone: "leftLowerArm" },
+  { segment: "lowerArm", side: "right", bone: "rightLowerArm" },
+  { segment: "upperLeg", side: "left", bone: "leftUpperLeg" },
+  { segment: "upperLeg", side: "right", bone: "rightUpperLeg" },
+  { segment: "lowerLeg", side: "left", bone: "leftLowerLeg" },
+  { segment: "lowerLeg", side: "right", bone: "rightLowerLeg" },
+];
+
+const LIMB_MESH_VERTEX_BUDGET = 12_000;
+const LIMB_SCENE_VERTEX_BUDGET = 48_000;
+
+/** 세그먼트 하나로 인정할 최소 표면 정점 수. 몸통 실측과 같은 하한을 쓴다. */
+const LIMB_MIN_SAMPLES = 96;
+
+/**
+ * 스킨 메시에서 팔다리 세그먼트별 표면 반경을 잰다. 몸통 실측과 같은 표면 샘플러를 쓰므로
+ * 활성 모프(체형 모프 포함)가 반영된 "화면에 보이는" 둘레가 잡히고, 리그 재생성(비율·모프 커밋)
+ * 시점에 다시 재면 의상 클리어런스가 새 체형을 따라간다. 재료가 모자란 세그먼트는 null로 남아
+ * 뼈 길이 재단으로 떨어진다 — 부분 실측을 전체 실패로 만들지 않는다.
+ */
+function measureLimbProfiles(
+  vrm: VRM,
+  limbs: {
+    upperArm: SideMetric;
+    lowerArm: SideMetric;
+    upperLeg: SideMetric;
+    lowerLeg: SideMetric;
+  },
+): LimbProfiles | null {
+  const humanoid = vrm.humanoid;
+  if (!humanoid) return null;
+
+  const entries = LIMB_MEASURE_SEGMENTS.flatMap((config) => {
+    const node = humanoid.getRawBoneNode(config.bone);
+    const metric = limbs[config.segment][config.side];
+    if (!node || !(metric.len > 0)) return [];
+    if (!matrixIsFinite(node.matrixWorld) || Math.abs(node.matrixWorld.determinant()) < 1e-12) {
+      return [];
+    }
+    return [{ ...config, node, metric, key: `${config.side}:${config.segment}` }];
+  });
+  if (entries.length === 0) return null;
+  const entryByNode = new Map<THREE.Object3D, (typeof entries)[number]>(
+    entries.map((entry) => [entry.node, entry]),
+  );
+  const samples = new Map<string, LimbProfileSample[]>(entries.map((entry) => [entry.key, []]));
+  const vertex = new THREE.Vector3();
+  const influenceIndices = [0, 0, 0, 0];
+  const influenceWeights = [0, 0, 0, 0];
+  let inspected = 0;
+
+  vrm.scene.traverse((object) => {
+    if (inspected >= LIMB_SCENE_VERTEX_BUDGET) return;
+    const mesh = object as THREE.SkinnedMesh;
+    if (!mesh.isSkinnedMesh) return;
+    if (isStudioAuthoredAttachment(mesh)) return;
+    const skeleton = mesh.skeleton;
+    if (!skeleton || skeleton.bones.length === 0) return;
+    const geometry = mesh.geometry;
+    if (
+      !geometry.hasAttribute("position")
+      || !geometry.hasAttribute("skinIndex")
+      || !geometry.hasAttribute("skinWeight")
+    ) return;
+    if (
+      !matrixIsFinite(mesh.bindMatrix)
+      || !matrixIsFinite(mesh.bindMatrixInverse)
+      || !matrixIsFinite(mesh.matrixWorld)
+    ) return;
+    const position = geometry.getAttribute("position");
+    const skinIndex = geometry.getAttribute("skinIndex");
+    const skinWeight = geometry.getAttribute("skinWeight");
+    if (skinIndex.itemSize < 4 || skinWeight.itemSize < 4) return;
+    if (skinIndex.count < position.count || skinWeight.count < position.count) return;
+
+    const entryByBoneIndex = new Map<number, (typeof entries)[number]>();
+    skeleton.bones.forEach((bone, index) => {
+      const entry = entryByNode.get(bone);
+      if (entry) entryByBoneIndex.set(index, entry);
+    });
+    if (entryByBoneIndex.size === 0) return;
+
+    // 샘플러는 세그먼트 본 로컬 공간으로 변환한다 — LimbMetric.axis가 사는 공간과 같아야
+    // 투영(s)과 반경이 재단 공식과 어긋나지 않는다.
+    const samplers = new Map<(typeof entries)[number], ReturnType<typeof createStudioVrmSurfaceVertexSampler>>();
+    for (const entry of new Set(entryByBoneIndex.values())) {
+      samplers.set(
+        entry,
+        createStudioVrmSurfaceVertexSampler(
+          mesh,
+          new THREE.Matrix4().copy(entry.node.matrixWorld).invert(),
+        ),
+      );
+    }
+
+    const stride = torsoVertexStride(position.count, LIMB_MESH_VERTEX_BUDGET);
+    for (let index = 0; index < position.count; index += stride) {
+      if (inspected >= LIMB_SCENE_VERTEX_BUDGET) break;
+      inspected += 1;
+      influenceIndices[0] = skinIndex.getX(index);
+      influenceIndices[1] = skinIndex.getY(index);
+      influenceIndices[2] = skinIndex.getZ(index);
+      influenceIndices[3] = skinIndex.getW(index);
+      influenceWeights[0] = skinWeight.getX(index);
+      influenceWeights[1] = skinWeight.getY(index);
+      influenceWeights[2] = skinWeight.getZ(index);
+      influenceWeights[3] = skinWeight.getW(index);
+      const dominant = pickDominantSkinInfluence(influenceIndices, influenceWeights);
+      if (!dominant) continue;
+      const entry = entryByBoneIndex.get(dominant.boneIndex);
+      if (!entry) continue;
+      const sampleVertex = samplers.get(entry);
+      if (!sampleVertex || !sampleVertex(index, vertex)) continue;
+      const sample = projectLimbSample(
+        entry.metric.axis,
+        entry.metric.len,
+        vertex.x,
+        vertex.y,
+        vertex.z,
+      );
+      if (sample) samples.get(entry.key)?.push(sample);
+    }
+  });
+
+  const assembled = {} as Record<LimbSide, Record<LimbSegmentId, ReturnType<typeof buildLimbSegmentProfile>>>;
+  for (const side of ["left", "right"] as const) {
+    const bySegment = {} as Record<LimbSegmentId, ReturnType<typeof buildLimbSegmentProfile>>;
+    for (const segment of ["upperArm", "lowerArm", "upperLeg", "lowerLeg"] as const) {
+      const collected = samples.get(`${side}:${segment}`) ?? [];
+      bySegment[segment] = collected.length >= LIMB_MIN_SAMPLES
+        ? buildLimbSegmentProfile(collected)
+        : null;
+    }
+    assembled[side] = bySegment;
+  }
+  return sanitizeLimbProfiles(assembled);
+}
+
 /**
  * 실제 스킨을 움직이는 raw 휴머노이드에서 본 로컬 치수를 잰다.
  * Avatar Forge가 raw 체형을 바꾼 뒤에도 같은 좌표계를 사용하므로 의상과 몸이 갈라지지 않는다.
@@ -825,6 +984,23 @@ export function measureStudioVrmWardrobeMetrics(vrm: VRM): WardrobeMetrics {
     };
   }
 
+  const upperArm: SideMetric = {
+    left: limb("leftUpperArm", "leftLowerArm", fallback.upperArm.left),
+    right: limb("rightUpperArm", "rightLowerArm", fallback.upperArm.right),
+  };
+  const lowerArm: SideMetric = {
+    left: limb("leftLowerArm", "leftHand", fallback.lowerArm.left),
+    right: limb("rightLowerArm", "rightHand", fallback.lowerArm.right),
+  };
+  const upperLeg: SideMetric = {
+    left: limb("leftUpperLeg", "leftLowerLeg", fallback.upperLeg.left),
+    right: limb("rightUpperLeg", "rightLowerLeg", fallback.upperLeg.right),
+  };
+  const lowerLeg: SideMetric = {
+    left: limb("leftLowerLeg", "leftFoot", fallback.lowerLeg.left),
+    right: limb("rightLowerLeg", "rightFoot", fallback.lowerLeg.right),
+  };
+
   return sanitizeWardrobeMetrics({
     source: rigSource,
     // 스킨 표면 실측. 앵커나 표면 정점이 모자라면 null이 되고, 재단은 아래 골격 치수만 쓴다.
@@ -849,22 +1025,13 @@ export function measureStudioVrmWardrobeMetrics(vrm: VRM): WardrobeMetrics {
     ),
     up: upLocal ? (toVec3(upLocal) ?? undefined) : undefined,
     footForward,
-    upperArm: {
-      left: limb("leftUpperArm", "leftLowerArm", fallback.upperArm.left),
-      right: limb("rightUpperArm", "rightLowerArm", fallback.upperArm.right),
-    },
-    lowerArm: {
-      left: limb("leftLowerArm", "leftHand", fallback.lowerArm.left),
-      right: limb("rightLowerArm", "rightHand", fallback.lowerArm.right),
-    },
-    upperLeg: {
-      left: limb("leftUpperLeg", "leftLowerLeg", fallback.upperLeg.left),
-      right: limb("rightUpperLeg", "rightLowerLeg", fallback.upperLeg.right),
-    },
-    lowerLeg: {
-      left: limb("leftLowerLeg", "leftFoot", fallback.lowerLeg.left),
-      right: limb("rightLowerLeg", "rightFoot", fallback.lowerLeg.right),
-    },
+    upperArm,
+    lowerArm,
+    upperLeg,
+    lowerLeg,
+    // 팔다리 둘레 실측 — 같은 표면 패스에서 재므로 비율·모프 커밋으로 리그가 재생성될 때마다
+    // 함께 다시 재어지고, 새 metrics 객체가 워드로브 재생성(첨부 useMemo)을 그대로 트리거한다.
+    limbs: measureLimbProfiles(vrm, { upperArm, lowerArm, upperLeg, lowerLeg }),
   });
 }
 

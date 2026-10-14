@@ -5,6 +5,12 @@ import {
   STUDIO_STABILIZER_MODES,
   type StudioStabilizerMode,
 } from "./brush/studio-stroke-stabilizer";
+import {
+  findActiveStudioStabilizerPreset,
+  isStudioStabilizerPresetId,
+  resolveStudioStabilizerPreset,
+  STUDIO_STABILIZER_PRESETS,
+} from "./brush/studio-stroke-stabilizer-presets";
 import { STABILIZER_MAX } from "./studio-brush";
 
 import { cx } from "@/shared/lib/cx";
@@ -66,9 +72,38 @@ export function StudioLineCorrectionControls({
       ? "border-warn/35 bg-warn/10 text-warn"
       : "border-cool/30 bg-cool/10 text-cool";
   const activePreset = activeCorrectionPreset(stabilizer, postCorrection);
+  const activeStabilizerPreset = findActiveStudioStabilizerPreset(mode, stabilizer);
 
   const detailedControls = (
     <div className={cx("space-y-2.5", touch && "pt-2")}>
+      <label className={cx("flex items-center justify-between gap-3 text-fg-3", touch ? "min-h-11 text-[0.7rem]" : "text-xs")}>
+        <span className="shrink-0">보정 프리셋</span>
+        <select
+          value={activeStabilizerPreset?.id ?? ""}
+          onChange={(event) => {
+            if (!isStudioStabilizerPresetId(event.target.value)) return;
+            const preset = resolveStudioStabilizerPreset(event.target.value);
+            onModeChange(preset.mode);
+            onStabilizerChange(preset.strength);
+          }}
+          aria-label="선 보정 프리셋"
+          className={cx(
+            "min-w-0 rounded-lg border border-line bg-card px-2 text-fg outline-none focus:border-accent",
+            touch ? "min-h-11 flex-1 text-xs" : "h-7 w-32 text-xs"
+          )}
+        >
+          <option value="">직접 설정</option>
+          {STUDIO_STABILIZER_PRESETS.map((preset) => (
+            <option key={preset.id} value={preset.id}>{preset.label}</option>
+          ))}
+        </select>
+      </label>
+      <p className="text-[0.62rem] leading-relaxed text-fg-3">
+        {activeStabilizerPreset
+          ? activeStabilizerPreset.description
+          : "프리셋을 고르면 보정 방식과 강도가 목적에 맞게 한 번에 바뀝니다."}
+      </p>
+
       <label className={cx("flex items-center justify-between gap-2 text-fg-3", touch ? "text-[0.7rem]" : "text-xs")}>
         <span>입력 선 보정</span>
         <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5">

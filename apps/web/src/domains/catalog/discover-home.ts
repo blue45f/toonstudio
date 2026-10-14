@@ -12,6 +12,14 @@ import { kstDayOfWeek } from "@/shared/lib/utils";
  */
 export const DISCOVER_HOME_SNAPSHOT_URL = "/data/home.json";
 
+/**
+ * 탐색 허브(/discover) 전체 목록의 경로 — 홈 발견 미리보기의 "전체 보기" 출구가 가리키는
+ * 실제 도착지다. 스포트라이트와 레일 네 줄 전체를 이 허브가 소유하므로(카탈로그 라우트의
+ * catalog-discover), 미리보기의 출구는 여기로만 향한다. 레일별 전체 목록은 각 레일의
+ * `DiscoverShelf.href`가 따로 가리킨다(예: 요일 레일 → /calendar).
+ */
+export const DISCOVER_HUB_HREF = "/discover";
+
 export interface DiscoverHomeSnapshot {
   /** 편집 추천(featured) 중 조회 신호가 가장 높은 작품. 없을 수 있다. */
   readonly spotlight?: Title | null;

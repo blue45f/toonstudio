@@ -78,11 +78,39 @@ describe("StudioAiCompositionPanel server operation identity", () => {
     expect(suggestSceneCompositionMock).toHaveBeenCalledWith(
       STUDIO_AI_DEFAULT_SETTINGS,
       "비 오는 옥상",
-      { mode: "server", provider: "zai", operationId: OPERATION_ID }
+      { mode: "server", provider: "zai", operationId: OPERATION_ID },
+      { difficulty: "standard", length: "standard", creativity: "balanced" }
     );
     expect(onOperationSettled).toHaveBeenCalledWith(expect.objectContaining({
       operationId: OPERATION_ID,
       result: expect.objectContaining({ ok: true }),
     }));
+  });
+
+  it("renders the shared answer-tuning controls and passes a changed tuning into the request", async () => {
+    render(
+      <StudioAiCompositionPanel
+        settings={STUDIO_AI_DEFAULT_SETTINGS}
+        configured
+      />
+    );
+
+    // 공통 부품(난이도·길이·창의성)이 상시 노출된다.
+    expect(screen.getByRole("radiogroup", { name: "난이도" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "답변 길이" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "창의성" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("radio", { name: "깊게" }));
+    fireEvent.click(screen.getByRole("radio", { name: "자유롭게" }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "비 오는 옥상" } });
+    fireEvent.click(screen.getByRole("button", { name: "구도 제안 받기" }));
+
+    await waitFor(() => expect(suggestSceneCompositionMock).toHaveBeenCalledOnce());
+    expect(suggestSceneCompositionMock).toHaveBeenCalledWith(
+      STUDIO_AI_DEFAULT_SETTINGS,
+      "비 오는 옥상",
+      undefined,
+      { difficulty: "deep", length: "standard", creativity: "free" }
+    );
   });
 });

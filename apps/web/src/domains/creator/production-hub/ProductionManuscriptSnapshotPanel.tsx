@@ -39,6 +39,7 @@ import {
   createProductionManuscriptSnapshot,
   listProductionManuscriptSnapshots,
   manuscriptSnapshotOverlayAllowed,
+  PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION,
   updateProductionManuscriptSnapshotMemo,
   type ProductionManuscriptSnapshot,
 } from "./production-manuscript-snapshots";
@@ -336,6 +337,8 @@ export function ProductionManuscriptSnapshotPanel({
         <p className="mt-1 max-w-3xl text-sm leading-6 text-fg-2">
           작업 중 언제든 현재 작업본(HEAD)의 참조를 버전으로 저장합니다. 스냅샷은 ProjectGraph revision을 덮어쓰지 않으며,
           복원은 기존 이력을 보존한 채 새 체크포인트를 만듭니다.
+          스냅샷은 원고당 최대 {PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION}개까지 기간 제한 없이 보관되며,
+          보관 중인 스냅샷은 언제든 복원할 수 있습니다.
         </p>
       </div>
       {canEdit ? <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto lg:items-center">
@@ -455,6 +458,11 @@ export function ProductionManuscriptSnapshotPanel({
         나란히 보기에서는 한쪽을 스크롤하면 다른 쪽도 같은 비율로 함께 움직입니다.
       </p>
     </div> : null}
+
+    {snapshots.length >= PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION ? <p className="mt-5 rounded-xl border border-warn/35 bg-warn/10 px-3 py-2 text-xs leading-5 text-fg-2" role="status">
+      보관 상한({PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION}개)에 도달했습니다. 새 스냅샷을 찍으면 가장 오래된
+      스냅샷부터 목록에서 정리되니, 오래 보관할 스냅샷은 메모를 남겨 구분해 주세요.
+    </p> : null}
 
     {snapshots.length > 0 ? <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list" aria-label="버전 스냅샷 목록">
       {snapshots.map((snapshot) => {

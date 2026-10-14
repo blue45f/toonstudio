@@ -62,6 +62,26 @@ export type TrafficShareEventRecord = Readonly<{
   os: string;
 }>;
 
+/**
+ * One field CWV beacon (G6 성능 실측 체계). Metrics are already bounded by
+ * web-vitals-model before they reach the store; null means the browser could
+ * not observe that metric (e.g. INP on Safari), never a stored zero.
+ */
+export type TrafficWebVitalsRecord = Readonly<{
+  id: string;
+  occurredAt: Date;
+  visitorHash: string;
+  sessionHash: string;
+  path: string;
+  lcpMs: number | null;
+  cls: number | null;
+  inpMs: number | null;
+  countryCode: string | null;
+  deviceType: string;
+  browser: string;
+  os: string;
+}>;
+
 export async function persistTrafficPageView(input: {
   event: TrafficPageViewRecord;
   session: TrafficSessionRecord;
@@ -401,6 +421,82 @@ export async function persistTrafficShareEvent(
   );
 }
 
+export async function persistTrafficWebVitals(
+  record: TrafficWebVitalsRecord,
+): Promise<void> {
+  await dbPool.query(
+    `
+      INSERT INTO public.traffic_web_vital (
+        id,
+        occurred_at,
+        visitor_hash,
+        session_hash,
+        path,
+        lcp_ms,
+        cls,
+        inp_ms,
+        country_code,
+        device_type,
+        browser,
+        os
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ON CONFLICT (id) DO NOTHING
+    `,
+    [
+      record.id,
+      record.occurredAt,
+      record.visitorHash,
+      record.sessionHash,
+      record.path,
+      record.lcpMs,
+      record.cls,
+      record.inpMs,
+      record.countryCode,
+      record.deviceType,
+      record.browser,
+      record.os,
+    ],
+  );
+}
+
+/**
+ * Raw samples for the report window. Aggregation (p75·등급·회귀) lives in
+ * web-vitals-report.ts, not in SQL, so the dashboard and the tests share one
+ * definition. The row cap keeps a pathological window from exhausting memory;
+ * at the beacon rate limit the cap is far above real traffic.
+ */
+export async function listTrafficWebVitalsSamples(input: {
+  start: Date;
+  end: Date;
+}): Promise<
+  { path: string; lcpMs: number | null; cls: number | null; inpMs: number | null }[]
+> {
+  const result = await dbPool.query<{
+    path: string;
+    lcp_ms: number | null;
+    cls: string | number | null;
+    inp_ms: number | null;
+  }>(
+    `
+      SELECT path, lcp_ms, cls, inp_ms
+      FROM public.traffic_web_vital
+      WHERE occurred_at >= $1 AND occurred_at < $2
+      ORDER BY occurred_at ASC
+      LIMIT 200000
+    `,
+    [input.start, input.end],
+  );
+  return result.rows.map((row) => ({
+    path: row.path,
+    lcpMs: row.lcp_ms,
+    // pg returns numeric columns as strings; CLS must re-enter as a number or
+    // every percentile comparison downstream silently degrades.
+    cls: row.cls === null ? null : Number(row.cls),
+    inpMs: row.inp_ms,
+  }));
+}
+
 export async function cleanupExpiredTrafficData(
   retentionDays: number,
   now = new Date(),
@@ -425,6 +521,12 @@ export async function cleanupExpiredTrafficData(
           AND (SELECT acquired FROM maintenance_lock)
         RETURNING 1
       ),
+      deleted_vitals AS (
+        DELETE FROM public.traffic_web_vital
+        WHERE occurred_at < $2
+          AND (SELECT acquired FROM maintenance_lock)
+        RETURNING 1
+      ),
       deleted_sessions AS (
         DELETE FROM public.traffic_session
         WHERE last_seen_at < $2
@@ -434,6 +536,7 @@ export async function cleanupExpiredTrafficData(
       SELECT
         (SELECT count(*) FROM deleted_events)::integer AS deleted_events,
         (SELECT count(*) FROM deleted_shares)::integer AS deleted_shares,
+        (SELECT count(*) FROM deleted_vitals)::integer AS deleted_vitals,
         (SELECT count(*) FROM deleted_sessions)::integer AS deleted_sessions
     `,
     [RETENTION_ADVISORY_LOCK, retentionCutoff],

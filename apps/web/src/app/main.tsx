@@ -16,7 +16,6 @@ import App from "./App";
 import { ensureSerifWebFontForRoute } from "./serif-webfont";
 import "./styles/globals.css";
 import "./styles/studio-overlay-stacking.css";
-import "./styles/studio-save-first.css";
 import "./styles/design-themes.css";
 import "./styles/sitewide-visual-ux.css";
 import "./styles/unified-theme-contract.css";

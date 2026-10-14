@@ -6,11 +6,12 @@
 import {
   Check,
   Eye,
+  Layers,
   RefreshCw,
   Sparkles,
   Upload,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   applyStudioReferenceImageColorMatch,
@@ -20,6 +21,12 @@ import {
   COLOR_MATCH_PRESETS,
   createSyntheticReferenceRgba,
 } from "./studio-color-match-presets";
+import {
+  applyStudioReferenceToneToEpisodePages,
+  createReferenceToneMatchOptions,
+  type StudioEpisodeToneMatchSummary,
+  type StudioEpisodeTonePageInput,
+} from "./studio-color-match-episode";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
@@ -28,6 +35,9 @@ export interface StudioColorMatchPanelProps {
   readonly sourceImage?: StudioAdvancedColorRgbaImage | null;
   readonly onApply?: (matchedImage: StudioAdvancedColorRgbaImage) => void;
   readonly onApplyDataUrl?: (dataUrl: string) => void;
+  /** All cuts of the current episode, for one-click episode-wide tone apply. */
+  readonly episodePages?: readonly StudioEpisodeTonePageInput[] | null;
+  readonly onApplyToEpisode?: (summary: StudioEpisodeToneMatchSummary) => void;
   readonly className?: string;
 }
 
@@ -35,6 +45,8 @@ export function StudioColorMatchPanel({
   sourceImage = null,
   onApply,
   onApplyDataUrl,
+  episodePages = null,
+  onApplyToEpisode,
   className,
 }: StudioColorMatchPanelProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string>("warm-sunset");
@@ -46,6 +58,8 @@ export function StudioColorMatchPanel({
   const [clipSigma, setClipSigma] = useState<number>(2.5);
   const [splitPercent, setSplitPercent] = useState<number>(50);
   const [showSplitView, setShowSplitView] = useState<boolean>(true);
+  const [episodeSummary, setEpisodeSummary] =
+    useState<StudioEpisodeToneMatchSummary | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,11 +79,7 @@ export function StudioColorMatchPanel({
       const outcome = applyStudioReferenceImageColorMatch({
         source: sourceImage,
         reference: activeReferenceImage,
-        options: {
-          strength: strengthPercent / 100,
-          clipSigma,
-          minimumStandardDeviation: 1.0,
-        },
+        options: createReferenceToneMatchOptions(strengthPercent, clipSigma),
       });
       return outcome.status === "applied" ? outcome.image : null;
     } catch {
@@ -112,6 +122,22 @@ export function StudioColorMatchPanel({
     },
     [],
   );
+
+  // A stale episode summary must not survive a reference/option change.
+  useEffect(() => {
+    setEpisodeSummary(null);
+  }, [activeReferenceImage, strengthPercent, clipSigma]);
+
+  const handleApplyToEpisode = () => {
+    if (!episodePages || episodePages.length === 0 || !onApplyToEpisode) return;
+    const summary = applyStudioReferenceToneToEpisodePages({
+      pages: episodePages,
+      reference: activeReferenceImage,
+      options: createReferenceToneMatchOptions(strengthPercent, clipSigma),
+    });
+    setEpisodeSummary(summary);
+    onApplyToEpisode(summary);
+  };
 
   const handleApplyCommit = () => {
     if (!matchResult) return;
@@ -337,6 +363,44 @@ export function StudioColorMatchPanel({
           <span>색감 적용</span>
         </button>
       </div>
+
+      {/* Episode-wide apply: same reference tone to every cut in one click */}
+      {onApplyToEpisode && (
+        <div className="flex flex-col gap-1.5 border-t border-line/60 pt-2">
+          <button
+            type="button"
+            onClick={handleApplyToEpisode}
+            disabled={!episodePages || episodePages.length === 0}
+            className={buttonClass({
+              size: "sm",
+              variant: "solid",
+              className: cn(
+                "h-8 w-full gap-1.5 px-3 text-[11px] font-medium",
+                episodePages && episodePages.length > 0
+                  ? "bg-accent text-on-accent hover:bg-accent-2"
+                  : "cursor-not-allowed bg-raised text-fg-3",
+              ),
+            })}
+          >
+            <Layers size={13} />
+            <span>회차 전체에 적용</span>
+            {episodePages && episodePages.length > 0 && (
+              <span className="tabular-nums">{episodePages.length}컷</span>
+            )}
+          </button>
+          {episodeSummary ? (
+            <p className="text-[11px] leading-relaxed text-fg-3" role="status">
+              {episodeSummary.appliedCount}컷에 색감을 적용했습니다.
+              {episodeSummary.refusedCount > 0 &&
+                ` ${episodeSummary.refusedCount}컷은 적용하지 못했습니다.`}
+            </p>
+          ) : (
+            <p className="text-[11px] leading-relaxed text-fg-3">
+              위에서 고른 참고 색감을 이 회차의 모든 컷에 한 번에 적용합니다.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

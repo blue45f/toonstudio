@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { TRAFFIC_ANALYTICS_REPOSITORY, type TrafficAnalyticsRepository } from "../traffic-analytics/traffic-analytics.repository";
 import { TRAFFIC_DEFAULT_RETENTION_DAYS } from "../traffic-analytics/traffic-analytics-model";
+import { buildWebVitalsReport } from "../traffic-analytics/web-vitals-report";
 
 import { requireAdminUser } from "./admin-types";
 
@@ -45,6 +46,32 @@ export class AdminTrafficService {
     const now = new Date();
     const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1_000);
     return this.repository.overview({ start, now, days, bucketSeconds: bucketSeconds(days), retentionDays: retentionDays() });
+  }
+
+  /**
+   * CWV 실측 대시보드 리포트 (G6). 현재 기간과 직전 동일 길이 기간의 필드
+   * 샘플을 나란히 읽어 p75·등급·회귀 경보까지 한 번에 만든다. 경보는 리포트
+   * 안의 `alerts`로 표면화된다 — 별도 알림 채널이 레포에 없어, 대시보드가
+   * 경보의 정본 표면이다.
+   */
+  async getWebVitals(userId: string, daysValue: unknown) {
+    await requireAdminUser(userId);
+
+    const days = normalizeRangeDays(daysValue);
+    const now = new Date();
+    const windowMs = days * 24 * 60 * 60 * 1_000;
+    const currentStart = new Date(now.getTime() - windowMs);
+    const previousStart = new Date(now.getTime() - windowMs * 2);
+    const [currentSamples, previousSamples] = await Promise.all([
+      this.repository.webVitalsSamples({ start: currentStart, end: now }),
+      this.repository.webVitalsSamples({ start: previousStart, end: currentStart }),
+    ]);
+    return buildWebVitalsReport({
+      currentSamples,
+      previousSamples,
+      generatedAt: now,
+      windowDays: days,
+    });
   }
 
   async getPulse(userId: string) {

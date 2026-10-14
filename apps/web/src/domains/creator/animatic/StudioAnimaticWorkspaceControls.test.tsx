@@ -74,3 +74,47 @@ describe("authored storyboard shot, marker and revision controls", () => {
     expect(h.seek).toHaveBeenCalledWith(5000);
   });
 });
+
+describe("animatic subtitle track controls", () => {
+  function renderDialogueControls() {
+    const initial = createStudioAnimaticWorkspace(
+      [{ id: "p1", name: "도입", elements: [{ id: "b1", type: "bubble", text: "안녕, 시작하자", speaker: "유나" }] }],
+      "episode-sub"
+    );
+    let current: StudioAnimaticWorkspaceDocument = initial;
+    function Host() {
+      const [workspace, setWorkspace] = useState(initial);
+      return <StudioAnimaticWorkspaceControls workspace={workspace} images={new Map()} selectedShot={initial.timeline.segments[0]!.id}
+        busy={false} progress={null} currentTime={() => 0} totalDuration={2400}
+        onCommit={(next) => { current = validateStudioAnimaticWorkspace(next); setWorkspace(current); }} onSeek={vi.fn()}
+        onCapture={vi.fn()} onAudioFile={vi.fn()} onExportArchive={vi.fn()} onImportArchive={vi.fn()} onExportVideo={vi.fn()} onCancel={vi.fn()} />;
+    }
+    const rendered = render(<Host />);
+    for (const detail of rendered.container.querySelectorAll("details")) detail.open = true;
+    return { ...rendered, initial, current: () => current };
+  }
+
+  it("builds a subtitle track from episode dialogue and offers SRT/WebVTT export", () => {
+    renderDialogueControls();
+    expect(screen.getByText(/자막 트랙 · 1개 대사/)).toBeTruthy();
+    expect(screen.getByText(/유나: 안녕, 시작하자/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "자막 SRT 내보내기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "자막 WebVTT 내보내기" })).toBeTruthy();
+    // 대사 cue offset 1200ms가 자막 시작 1.2초로 표시된다.
+    expect((screen.getByLabelText("자막 1 시작 (초)") as HTMLInputElement).value).toBe("1.2");
+  });
+
+  it("writes edited subtitle start times back into the timeline dialogue cues", () => {
+    const h = renderDialogueControls();
+    fireEvent.change(screen.getByLabelText("자막 1 시작 (초)"), { target: { value: "1" } });
+    fireEvent.click(screen.getByRole("button", { name: "자막 시작 시각을 대사에 반영" }));
+    expect(h.current().timeline.segments[0]!.cues[0]).toMatchObject({ text: "안녕, 시작하자", offsetMs: 1000 });
+  });
+
+  it("shows an empty-state hint instead of export buttons when the episode has no dialogue", () => {
+    const h = renderControls();
+    expect(h.initial.timeline.segments.every((segment) => segment.cues.length === 0)).toBe(true);
+    expect(screen.getByText(/이 회차에는 아직 대사가 없습니다/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "자막 SRT 내보내기" })).toBeNull();
+  });
+});

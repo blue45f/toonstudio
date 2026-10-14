@@ -1,4 +1,7 @@
 import { BookOpen, Mail, MessageSquareText, PenLine, RefreshCw, UserCheck, UserPlus, BriefcaseBusiness, Sparkles } from "lucide-react";
+
+// account·settings·userProfile 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./account-i18n";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 

@@ -100,12 +100,17 @@ export function applyLayerComp<T extends StudioLayerLikeItem>(
       const savedState = Object.hasOwn(comp.layerStates, layer.id) ? comp.layerStates[layer.id] : undefined;
       if (!savedState) return layer;
 
-      return Object.freeze({
+      // blendMode도 캡처 상태 그대로 복원한다. 캡처 당시 블렌드 모드가 없던(undefined)
+      // 레이어는, 그 사이 사용자가 붙인 블렌드 모드를 지워야 캡처 상태와 같아진다 —
+      // 조건부 스프레드로 두면 "콤프를 눌렀는데 합성 모드만 예전과 다르다"가 된다.
+      const restored: Record<string, unknown> = {
         ...layer,
         visible: savedState.visible,
         opacity: savedState.opacity,
-        ...(savedState.blendMode ? { blendMode: savedState.blendMode } : {}),
-      }) as T;
+      };
+      if (savedState.blendMode) restored.blendMode = savedState.blendMode;
+      else delete restored.blendMode;
+      return Object.freeze(restored) as T;
     }),
   );
 }
@@ -135,10 +140,19 @@ export function planLayerCompsBatchExport(
 ): readonly { readonly compId: string; readonly fileName: string; readonly compName: string }[] {
   const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9가-힣_-]/gu, "_").trim();
 
+  // sanitize를 거치면 서로 다른 콤프 이름이 같은 파일 이름이 될 수 있다
+  // (예: "야간 버전"과 "야간 버전!"). 그대로 내보내면 한 파일이 다른 파일을
+  // 덮어써 콤프 하나가 조용히 사라지므로, 충돌하면 -2, -3 접미사로 분리한다.
+  // 대소문자만 다른 이름도 Windows/macOS 파일 시스템에서는 충돌하므로 소문자로 비교한다.
+  const usedFileNames = new Set<string>();
   return Object.freeze(
     comps.map((c, index) => {
       const safeCompName = sanitize(c.name) || `comp_${index + 1}`;
-      const fileName = `${fileBaseName}_${safeCompName}.${format}`;
+      let fileName = `${fileBaseName}_${safeCompName}.${format}`;
+      for (let suffix = 2; usedFileNames.has(fileName.toLowerCase()); suffix += 1) {
+        fileName = `${fileBaseName}_${safeCompName}-${suffix}.${format}`;
+      }
+      usedFileNames.add(fileName.toLowerCase());
       return Object.freeze({
         compId: c.id,
         fileName,

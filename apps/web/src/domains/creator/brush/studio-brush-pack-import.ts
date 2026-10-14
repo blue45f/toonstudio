@@ -1,4 +1,4 @@
-import { createStudioBrushOriginalSource, requireStudioBrushOriginalSource, type StudioBrushOriginalSource } from "./studio-brush-original-source";
+import { BRUSH_SOURCE_ARCHIVE_MAX_BYTES, BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS, createStudioBrushOriginalSource, requireStudioBrushOriginalSource, type StudioBrushOriginalSource } from "./studio-brush-original-source";
 /**
  * Brush pack import router — one entry point for every brush file the studio
  * can actually turn into a drawable brush.
@@ -217,6 +217,8 @@ const LUT_LINEARITY_TOLERANCE = 0.02;
 
 interface SizeResolution {
   strokeWidth: number;
+  /** 클램프 전 원본 추정 굵기(px) — 최종값과 다르면 호출자가 경고로 알린다. */
+  requestedStrokeWidth: number;
   /** Fraction of the full width kept at zero pressure (0 = full taper). */
   pressureMinRatio: number;
   hasPressure: boolean;
@@ -237,14 +239,12 @@ function resolveSize(sizeDynamics: readonly DynamicMappingIR[]): SizeResolution 
 
   if (constants.length > 0) {
     const fraction = constants.reduce((product, mapping) => product * constantValue(mapping), 1);
-    const strokeWidth = clamp(
-      Math.round(fraction * KRITA_REFERENCE_MAX_DIAMETER_PX),
-      MIN_STROKE_WIDTH,
-      MAX_STROKE_WIDTH,
-    );
+    const requestedStrokeWidth = Math.round(fraction * KRITA_REFERENCE_MAX_DIAMETER_PX);
+    const strokeWidth = clamp(requestedStrokeWidth, MIN_STROKE_WIDTH, MAX_STROKE_WIDTH);
     // A Krita size sensor is already a 0..1 multiplier on the diameter.
     return {
       strokeWidth,
+      requestedStrokeWidth,
       pressureMinRatio: pressureRange ? clamp(pressureRange.low, 0, 1) : 0,
       hasPressure: pressures.length > 0,
     };
@@ -253,9 +253,11 @@ function resolveSize(sizeDynamics: readonly DynamicMappingIR[]): SizeResolution 
   if (pressureRange) {
     const widest = 2 * Math.exp(pressureRange.high * MYPAINT_LOG_RADIUS_SCALE);
     const narrowest = 2 * Math.exp(pressureRange.low * MYPAINT_LOG_RADIUS_SCALE);
-    const strokeWidth = clamp(Math.round(widest), MIN_STROKE_WIDTH, MAX_STROKE_WIDTH);
+    const requestedStrokeWidth = Math.round(widest);
+    const strokeWidth = clamp(requestedStrokeWidth, MIN_STROKE_WIDTH, MAX_STROKE_WIDTH);
     return {
       strokeWidth,
+      requestedStrokeWidth,
       pressureMinRatio: widest > 0 ? clamp(narrowest / widest, 0, 1) : 0,
       hasPressure: true,
     };
@@ -263,6 +265,7 @@ function resolveSize(sizeDynamics: readonly DynamicMappingIR[]): SizeResolution 
 
   return {
     strokeWidth: DEFAULT_STUDIO_BRUSH_SNAPSHOT.strokeWidth,
+    requestedStrokeWidth: DEFAULT_STUDIO_BRUSH_SNAPSHOT.strokeWidth,
     pressureMinRatio: 0,
     hasPressure: false,
   };
@@ -270,6 +273,8 @@ function resolveSize(sizeDynamics: readonly DynamicMappingIR[]): SizeResolution 
 
 interface FlowResolution {
   opacity: number;
+  /** 클램프 전 원본 추정 농도 — 최종값과 다르면 호출자가 경고로 알린다. */
+  requestedOpacity: number;
   pressureMinRatio: number;
   hasPressure: boolean;
 }
@@ -284,9 +289,11 @@ function resolveFlow(flowDynamics: readonly DynamicMappingIR[]): FlowResolution 
     1,
   );
   const peak = pressureRange ? pressureRange.high : 1;
-  const opacity = clamp(constantFactor * peak, MIN_OPACITY, 1);
+  const requestedOpacity = constantFactor * peak;
+  const opacity = clamp(requestedOpacity, MIN_OPACITY, 1);
   return {
     opacity,
+    requestedOpacity,
     pressureMinRatio:
       pressureRange && pressureRange.high > 0
         ? clamp(pressureRange.low / pressureRange.high, 0, 1)
@@ -351,6 +358,17 @@ export function studioBrushSnapshotFromProgram(
 
   const size = resolveSize(program.sizeDynamics);
   const flow = resolveFlow(program.flowDynamics);
+
+  // 굵기·농도가 스튜디오 범위를 벗어나 잘렸으면 조용히 넘기지 않고 알린다 —
+  // "가져왔는데 원본과 다르게 그려지는" 실패를 막는 것이 이 모듈의 규칙이다.
+  if (size.requestedStrokeWidth !== size.strokeWidth) {
+    warnings.push(
+      `원본 브러시 굵기(약 ${size.requestedStrokeWidth}px)가 스튜디오 굵기 범위(${MIN_STROKE_WIDTH}~${MAX_STROKE_WIDTH}px)를 벗어나 ${size.strokeWidth}px로 등록했어요.`,
+    );
+  }
+  if (Math.abs(flow.requestedOpacity - flow.opacity) > 1e-9) {
+    warnings.push("원본 브러시 농도가 스튜디오 범위를 벗어나 가장 가까운 값으로 등록했어요.");
+  }
 
   for (const mapping of program.sizeDynamics) {
     if (mapping.input !== "pressure" && mapping.input !== "constant") {
@@ -675,6 +693,16 @@ export function importStudioBrushJsonText(
   text: string,
   fileName: string,
 ): StudioBrushPackImportResult {
+  // 크기 가드는 이 레인 자체에도 둔다. 지금까지는 위임先 importBrushFromJson의
+  // 내부 검사와 StudioBrushLibraryPanel의 file.size 사전 검사에만 기대고 있어,
+  // 파일 입력이 아닌 경로(붙여넣기·동기화 등)로 이 함수를 직접 부르면 검사가
+  // 있는지 코드만 봐서는 알 수 없었다. 한도는 패널·라이브러리와 같은 상수를
+  // 쓰고, 길이 검사를 먼저 해 초과 시 인코딩 비용도 치르지 않는다.
+  // (일반 설정 2MB 한도는 importBrushFromJson이 아카이브 판정 뒤에 계속 강제한다.)
+  if (text.length > BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS
+    || new TextEncoder().encode(text).byteLength > BRUSH_SOURCE_ARCHIVE_MAX_BYTES) {
+    throw new Error("브러시 보존 파일이 허용 크기를 초과했습니다.");
+  }
   const fallbackName = fileName.replace(/\.json$/iu, "");
   const { brush, adjustedFields } = importBrushFromJson(text, fallbackName);
   return {

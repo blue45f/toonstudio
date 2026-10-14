@@ -245,9 +245,15 @@ export function useStudioVrmPoserState({
   const [ikConstraints, setIkConstraints] = useState<StudioVrmIkConstraint[]>([]);
   const [activeCategory, setActiveCategory] = useState("head");
   const [jointLimitsEnabled, setJointLimitsEnabled] = useState(true);
+  // 리그 프로파일 기본값은 neutral로 고정한다(셰이퍼 1단계). 다른 프로파일은 사용자가
+  // "드로잉 관절 보조"에서 명시적으로 고를 때만 적용된다.
   const [rigJointProfile, setRigJointProfile] = useState<StudioVrmRigProfileId>("neutral");
-  const [fullBodyIkEnabled, setFullBodyIkEnabled] = useState(false);
-  const [footPlantEnabled, setFootPlantEnabled] = useState(false);
+  // IK 우선 기본 동선(셰이퍼 1단계): 포저를 열면 손·발 이펙터와 접지 스냅이 기본 활성이다.
+  // 전신 IK 솔버는 이펙터·고정점·바닥 고정이 있을 때만 실제로 돌고(useStudioVrmPoserIk),
+  // FK 직접 회전 핸들은 "미세 조정"으로 강등 표기된다. 두 값은 세션 상태 전용이라
+  // (영속 설정에 키가 없음) 이 초기값이 곧 첫 화면 기본값이다.
+  const [fullBodyIkEnabled, setFullBodyIkEnabled] = useState(true);
+  const [footPlantEnabled, setFootPlantEnabled] = useState(true);
   const [rigFloorHeight, setRigFloorHeight] = useState(0);
   const [lockedPoseBones, setLockedPoseBones] = useState<VRMHumanBoneName[]>([]);
   const [showPoseBoneOverlay, setShowPoseBoneOverlay] = useState(false);

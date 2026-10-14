@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Title } from "@/shared/lib/types";
 
 import {
+  DISCOVER_HUB_HREF,
   DISCOVER_SHELF_LIMIT,
   buildDiscoverShelves,
   currentKstYear,
@@ -58,6 +59,11 @@ function snapshot(overrides: Partial<DiscoverHomeSnapshot> = {}): DiscoverHomeSn
 }
 
 describe("discover home snapshot helpers", () => {
+  it("points the home preview's view-all exit at the discover hub that owns every shelf", () => {
+    // 카탈로그 라우트의 catalog-discover(/discover → DiscoverHubPage)와 짝인 실제 경로여야 한다.
+    expect(DISCOVER_HUB_HREF).toBe("/discover");
+  });
+
   it("orders shelves from weekly serials to newest and links each to its full view", () => {
     const shelves = buildDiscoverShelves(snapshot());
     expect(shelves.map((shelf) => [shelf.id, shelf.href])).toEqual([

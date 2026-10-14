@@ -81,6 +81,7 @@ export function StudioCanvasContextMenu({
     // The click only prevents the global outside-click closer. All commands remain real buttons.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
+      // 터치 표준: 모든 항목이 최소 44px(min-h-11) 높이를 가진다 — 태블릿에서 요소 편집의 주 경로이기 때문이다.
       data-studio-canvas-context-menu="true"
       style={{ top: y, left: x }}
       className="fixed z-50 min-w-[140px] rounded-lg border border-line bg-panel p-1 shadow-xl motion-safe:animate-fade-in"
@@ -95,7 +96,7 @@ export function StudioCanvasContextMenu({
               <button
                 type="button"
                 onClick={() => runAndClose(onEditVrm, onClose)}
-                className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs font-semibold text-accent hover:bg-raised"
+                className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs font-semibold text-accent hover:bg-raised"
               >
                 <Sparkles
                   size={STUDIO_ICON_SIZE.contextMenu}
@@ -116,7 +117,7 @@ export function StudioCanvasContextMenu({
                 onPointerEnter={onPreloadBackground3d}
                 onPointerDown={onPreloadBackground3d}
                 onFocus={onPreloadBackground3d}
-                className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs font-semibold text-accent hover:bg-raised"
+                className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs font-semibold text-accent hover:bg-raised"
               >
                 <Boxes
                   size={STUDIO_ICON_SIZE.contextMenu}
@@ -132,7 +133,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={onSaveAsEmeres}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             <ImagePlus
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -146,7 +147,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(onDuplicate, onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             <Copy
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -160,7 +161,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(() => onReorder("front"), onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             <ArrowUpToLine
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -173,7 +174,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(() => onReorder("forward"), onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             <ChevronUp
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -186,7 +187,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(() => onReorder("backward"), onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             <ChevronDown
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -199,7 +200,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(() => onReorder("back"), onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             <ArrowDownToLine
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -213,7 +214,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(onToggleLock, onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             {locked ? (
               <LockOpen
@@ -235,7 +236,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(onDelete, onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-bad hover:bg-bad-soft/30"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-bad hover:bg-bad-soft/30"
           >
             <Trash2
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -251,7 +252,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(onSelectPen, onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs font-semibold text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs font-semibold text-fg hover:bg-raised"
           >
             <Pencil
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -264,7 +265,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(onAddSpeechBubble, onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             <MessageCircle
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -277,7 +278,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(onAddText, onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             <TypeIcon
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -291,7 +292,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(onAddPage, onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-fg hover:bg-raised"
           >
             <Plus
               size={STUDIO_ICON_SIZE.contextMenu}
@@ -304,7 +305,7 @@ export function StudioCanvasContextMenu({
           <button
             type="button"
             onClick={() => runAndClose(onEnableQuickShape, onClose)}
-            className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-accent hover:bg-raised"
+            className="flex min-h-11 w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-xs text-accent hover:bg-raised"
           >
             <Shapes
               size={STUDIO_ICON_SIZE.contextMenu}

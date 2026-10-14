@@ -92,10 +92,28 @@ export type ProductionDashboardFeedback =
   };
 
 export type ProductionDashboardNextStep =
+  | { readonly kind: "planning" }
   | { readonly kind: "answer-question"; readonly episodeId: string; readonly text: string }
   | { readonly kind: "overdue"; readonly count: number }
   | { readonly kind: "review"; readonly count: number }
   | { readonly kind: "board" };
+
+/**
+ * 기획 문서가 비어 있는가. 기획 화면이 "최신 버전"으로 보여 주는 문서 묶음
+ * (프로젝트 헌장·작품 한눈에 보기·작품 공통 설정·시즌 계획·회차/장면/컷 계획)이
+ * 하나도 없을 때만 비어 있다고 본다. 하나라도 있으면 기획 단계는 시작된 것이다.
+ */
+export function productionPlanningIsEmpty(aggregate: ProductionProjectAggregate): boolean {
+  return (
+    aggregate.charters.length === 0
+    && aggregate.projectBriefs.length === 0
+    && aggregate.seriesMasters.length === 0
+    && aggregate.seasonPlans.length === 0
+    && aggregate.episodePlans.length === 0
+    && aggregate.scenePlans.length === 0
+    && aggregate.cutPlans.length === 0
+  );
+}
 
 export interface ProductionDashboard {
   readonly progress: ProductionDashboardProgress;
@@ -239,6 +257,10 @@ export function deriveDashboardNextStep(
   progress: ProductionDashboardProgress,
   now: Date,
 ): ProductionDashboardNextStep {
+  // 기획은 제작 흐름의 첫 단계다. 기획 문서가 하나도 없으면 어떤 급한 일보다
+  // 먼저 기획으로 안내한다 — 기준 없이 시작한 작업은 되돌리기 비용이 가장 크고,
+  // 새 프로젝트의 개요 첫 행동이 보드로 새면 기획 표면에 닿을 길이 사라진다.
+  if (productionPlanningIsEmpty(aggregate)) return { kind: "planning" };
   const episodeByHandoff = new Map(aggregate.handoffs.map((handoff) => [handoff.id, handoff.episodeId]));
   const blocking = aggregate.clarifications.find((thread) => thread.blocking && thread.status === "open");
   const blockingEpisode = blocking ? episodeByHandoff.get(blocking.handoffId) : undefined;

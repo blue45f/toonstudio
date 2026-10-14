@@ -3,6 +3,7 @@ import {
   sampleBodySilhouette,
   type BodySilhouette,
 } from "./studio-vrm-body-silhouette";
+import { limbProfilesSignature } from "./studio-vrm-limb-profile";
 import {
   inspectStudioVrmGarmentPoseEnvelope,
   studioVrmGarmentPoseAllowanceForRegions,
@@ -198,6 +199,9 @@ export function buildStudioVrmGarmentFitInputSignature(
         // every joint distance yet give a top a different reference radius, so a cached report
         // keyed on the skeleton alone would survive a measurement it no longer describes.
         torso: bodySilhouetteSignature(metrics.torso),
+        // 팔다리도 같은 이유다: 뼈 길이가 같아도 둘레 실측이 달라지면 소매·바짓단 여유가 달라지므로,
+        // 이전 실측으로 만든 리포트가 체형·모프 재측정 뒤에도 살아남으면 안 된다.
+        limbs: limbProfilesSignature(metrics.limbs),
         pose: poseEnvelope.signature,
         slots,
       }
@@ -205,7 +209,9 @@ export function buildStudioVrmGarmentFitInputSignature(
   // garfit3 adds the authored pose envelope. A receipt computed for a neutral stance must never be
   // reused after an arm raise, crouch or deep torso bend because the rendered shell now reserves
   // region-specific motion room for the actual pose.
-  return `garfit3:${hashSignature(JSON.stringify(payload))}`;
+  // garfit4 adds the measured limb profiles, so a body/morph re-measurement that changes sleeve or
+  // trouser clearance also retires receipts computed against the previous limb volume.
+  return `garfit4:${hashSignature(JSON.stringify(payload))}`;
 }
 
 /**

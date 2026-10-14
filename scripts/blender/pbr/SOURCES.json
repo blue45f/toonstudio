@@ -1,0 +1,251 @@
+{
+  "schema": "toonstudio-bg3d-pbr-sources/1",
+  "note": "CC0 PBR texture sets vendored for the bg3d environment-pack pipeline (Phase 1). Only the 1k tier files are vendored in this directory; the desktop profile uses the recorded 2k URLs/md5 to fetch the same sets at 2K. Per-asset usage is also recorded in each GLB's texture_sources metadata.",
+  "sets": [
+    {
+      "id": "asphalt_02",
+      "name": "Asphalt 02",
+      "source": "Poly Haven",
+      "source_url": "https://polyhaven.com/a/asphalt_02",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "authors": {
+        "Rob Tuytel": "All"
+      },
+      "maps": {
+        "base_color": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_02/asphalt_02_diff_1k.jpg",
+            "md5": "fa19772d4817754c3efab708c651f5a8",
+            "bytes": 731707
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_diff_2k.jpg",
+            "md5": "336af399fd98a39ab986d8b3bf73b4ff",
+            "bytes": 3075676
+          }
+        },
+        "normal": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_02/asphalt_02_nor_gl_1k.jpg",
+            "md5": "338da8de636ea36133170578cac82e8e",
+            "bytes": 1240122
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_nor_gl_2k.jpg",
+            "md5": "77ebd1cc0b020ccaa1c6b58f103d1f75",
+            "bytes": 4943950
+          }
+        },
+        "roughness": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_02/asphalt_02_rough_1k.jpg",
+            "md5": "ec80a2929797c1b3ffc121c4f665585a",
+            "bytes": 544032
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_rough_2k.jpg",
+            "md5": "6fe669ab38640ef2009d6a28d1ad5ee9",
+            "bytes": 2230457
+          }
+        },
+        "ao": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_02/asphalt_02_ao_1k.jpg",
+            "md5": "db52e3eb4895bbf347246fe8d2d0ebe7",
+            "bytes": 533336
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_ao_2k.jpg",
+            "md5": "2bf61d77e68da004eea168b88c4c31b5",
+            "bytes": 2039487
+          }
+        }
+      }
+    },
+    {
+      "id": "brushed_concrete",
+      "name": "Brushed Concrete",
+      "source": "Poly Haven",
+      "source_url": "https://polyhaven.com/a/brushed_concrete",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "authors": {
+        "Dario Barresi": "Processing",
+        "Dimitrios Savva": "Photography"
+      },
+      "maps": {
+        "base_color": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brushed_concrete/brushed_concrete_diff_1k.jpg",
+            "md5": "731d450cd11906e926adeb2d5caa29f9",
+            "bytes": 847278
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brushed_concrete/brushed_concrete_diff_2k.jpg",
+            "md5": "341c593c794bf18b0a49c542f6e381b7",
+            "bytes": 3590812
+          }
+        },
+        "normal": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brushed_concrete/brushed_concrete_nor_gl_1k.jpg",
+            "md5": "fc8c03e505d0f2acb932dde6deae557a",
+            "bytes": 849228
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brushed_concrete/brushed_concrete_nor_gl_2k.jpg",
+            "md5": "ca0204e32c2f2afad5f4bbe8c6b436ed",
+            "bytes": 3524683
+          }
+        },
+        "roughness": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brushed_concrete/brushed_concrete_rough_1k.jpg",
+            "md5": "e72fc05f68ea0a997a215d9701b16b2e",
+            "bytes": 701983
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brushed_concrete/brushed_concrete_rough_2k.jpg",
+            "md5": "7d9994bceb82c437a753cedfba55c434",
+            "bytes": 3219426
+          }
+        },
+        "ao": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brushed_concrete/brushed_concrete_ao_1k.jpg",
+            "md5": "bb21bee8044baacefcd2b3c1a16fa85d",
+            "bytes": 712409
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brushed_concrete/brushed_concrete_ao_2k.jpg",
+            "md5": "46bb4144797a33b65f250749cdf899eb",
+            "bytes": 2856456
+          }
+        }
+      }
+    },
+    {
+      "id": "concrete_pavement",
+      "name": "Concrete Pavement",
+      "source": "Poly Haven",
+      "source_url": "https://polyhaven.com/a/concrete_pavement",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "authors": {
+        "Charlotte Baglioni": "All"
+      },
+      "maps": {
+        "base_color": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement/concrete_pavement_diff_1k.jpg",
+            "md5": "b7a0d071a3406d55a1c3e9a73a06df03",
+            "bytes": 926197
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_pavement/concrete_pavement_diff_2k.jpg",
+            "md5": "f7cdc6f38538e2739d48fbb4f1507ddb",
+            "bytes": 3817566
+          }
+        },
+        "normal": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement/concrete_pavement_nor_gl_1k.jpg",
+            "md5": "025a1d4e910cf3e5b3d63ada43a791d8",
+            "bytes": 1184345
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_pavement/concrete_pavement_nor_gl_2k.jpg",
+            "md5": "0b6ff8180e61242be0b89e8fe1d6fda7",
+            "bytes": 5179971
+          }
+        },
+        "roughness": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement/concrete_pavement_rough_1k.jpg",
+            "md5": "e5a0fc9831bad12c7b3779179aa706f7",
+            "bytes": 475799
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_pavement/concrete_pavement_rough_2k.jpg",
+            "md5": "670223ce80309b606ceea892f47aa766",
+            "bytes": 2125646
+          }
+        },
+        "ao": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_pavement/concrete_pavement_ao_1k.jpg",
+            "md5": "1c65e0b268fbdef5c4c13e080d15702f",
+            "bytes": 866967
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_pavement/concrete_pavement_ao_2k.jpg",
+            "md5": "62eaa09fdb32280a1f1f593cabd845a2",
+            "bytes": 3576206
+          }
+        }
+      }
+    },
+    {
+      "id": "concrete_tiles",
+      "name": "Concrete Tiles",
+      "source": "Poly Haven",
+      "source_url": "https://polyhaven.com/a/concrete_tiles",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "authors": {
+        "Dimitrios Savva": "All"
+      },
+      "maps": {
+        "base_color": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_tiles/concrete_tiles_diff_1k.jpg",
+            "md5": "e1036bb4366e86873c886952dd09e756",
+            "bytes": 868831
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_tiles/concrete_tiles_diff_2k.jpg",
+            "md5": "ffb65dcb9b2d93bd41841f9e71409882",
+            "bytes": 3638987
+          }
+        },
+        "normal": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_tiles/concrete_tiles_nor_gl_1k.jpg",
+            "md5": "1935900d6b904b6b7ca9008ea64437f7",
+            "bytes": 917948
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_tiles/concrete_tiles_nor_gl_2k.jpg",
+            "md5": "10cdbdad87ac7a5508179943ae16c4fa",
+            "bytes": 3946342
+          }
+        },
+        "roughness": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_tiles/concrete_tiles_rough_1k.jpg",
+            "md5": "1c059293b25a6d0087b52e520fe02f56",
+            "bytes": 470959
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_tiles/concrete_tiles_rough_2k.jpg",
+            "md5": "8603e125f0f8be7051f72321850444ec",
+            "bytes": 2034309
+          }
+        },
+        "ao": {
+          "1k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_tiles/concrete_tiles_ao_1k.jpg",
+            "md5": "572b064b46ed43582da46b57725b2307",
+            "bytes": 803723
+          },
+          "2k": {
+            "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_tiles/concrete_tiles_ao_2k.jpg",
+            "md5": "226572e4cc7727cfbda545b3558c10c8",
+            "bytes": 3253662
+          }
+        }
+      }
+    }
+  ]
+}

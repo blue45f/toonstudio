@@ -4,6 +4,9 @@ import { useId, useState } from "react";
 import { CreatorExperienceModeSwitch } from "@/shared/components/CreatorExperienceModeSwitch";
 import { useI18n } from "@/shared/lib/i18n";
 import { useTheme } from "@/shared/lib/theme";
+import {
+  readWorkspaceSceneArtEnabled, setWorkspaceSceneArtEnabled,
+} from "@/shared/lib/workspace-scene-art";
 import { getThemeSceneAsset } from "@/shared/lib/theme-scene-assets";
 import {
   THEME_PRESETS, getThemePreset, resolveDesignTheme,
@@ -30,6 +33,12 @@ export function AppearanceSettings({ initialScope = "site" }: { initialScope?: A
   );
   const resolvedPreset = getThemePreset(resolvedTheme);
   const resolvedLabel = korean ? resolvedPreset.ko : resolvedPreset.en;
+  // 씬 아트 전경 배경은 기본 끔(opt-in) — BLUEPRINT §6.3 "조용한 스펙터클".
+  const [sceneArtEnabled, setSceneArtEnabled] = useState<boolean>(() => readWorkspaceSceneArtEnabled());
+  const toggleSceneArt = (enabled: boolean) => {
+    setWorkspaceSceneArtEnabled(enabled);
+    setSceneArtEnabled(enabled);
+  };
   const choose = (value: typeof preference) => {
     if (scope === "studio") setStudioPreference(value);
     else setPreference(value);
@@ -57,6 +66,16 @@ export function AppearanceSettings({ initialScope = "site" }: { initialScope?: A
           <p>{korean ? "현재 메인을 유지하거나 협업 공간 중심의 Virtual Studio 홈으로 전환합니다. 기능과 데이터는 동일하게 연결됩니다." : "Keep the current home or switch to the collaboration-first Virtual Studio home. Both views share the same tools and data."}</p>
         </div>
         <CreatorExperienceModeSwitch />
+      </section>
+      <section className="appearance-experience-mode" aria-labelledby={`${id}-scene-art`}>
+        <div>
+          <h3 id={`${id}-scene-art`}>{korean ? "작업공간 배경 아트" : "Workspace background art"}</h3>
+          <p>{korean ? "작업공간 배경에 테마 씬 아트를 옅게 깝니다. 기본은 끔이고, 집중 화면에서는 켜도 표시되지 않으며 움직임 없이 정지 상태로만 보입니다." : "Lays theme scene art faintly behind the workspace. Off by default; focused views never show it, and it stays still with no motion."}</p>
+        </div>
+        <label className="appearance-option-row">
+          <input type="checkbox" checked={sceneArtEnabled} onChange={(event) => toggleSceneArt(event.target.checked)} />
+          <span>{korean ? "배경 아트 켜기" : "Show background art"}</span>
+        </label>
       </section>
       <div className="appearance-scope" role="group" aria-label={korean ? "테마 적용 범위" : "Theme scope"}>
         {(["site", "studio"] as const).map((value) => (

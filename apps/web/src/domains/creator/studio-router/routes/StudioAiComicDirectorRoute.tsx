@@ -33,6 +33,7 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING, STUDIO_TOUCH_TARGET } from "../../studi
 
 import type { StudioCompositionRouteResolution } from "../studio-route-manifest";
 
+import { useT } from "@/shared/lib/i18n";
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 import { cn } from "@/shared/lib/utils";
 
@@ -120,6 +121,7 @@ const STAGES = [
 export function StudioAiComicDirectorRoute({
   resolution,
 }: StudioAiComicDirectorRouteProps): ReactElement {
+  const t = useT();
   const location = useLocation();
   const navigate = useNavigate();
   const api = useMemo(() => createStudioAiComicDirectorApiClient(), []);
@@ -472,7 +474,7 @@ export function StudioAiComicDirectorRoute({
           />
         ) : (
           <div className="mt-4 grid gap-4 lg:grid-cols-[13rem_minmax(0,1fr)]">
-          <nav aria-label="AI 코믹 디렉터 제작 단계">
+          <nav aria-label={t("studio.canvas.shell.aiDirectorStepsAriaLabel", "AI 코믹 디렉터 제작 단계")}>
             <ol className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-1">
               {STAGES.map(([id, number, label]) => (
                 <li key={id}>

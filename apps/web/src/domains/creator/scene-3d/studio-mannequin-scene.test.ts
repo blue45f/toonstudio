@@ -9,7 +9,10 @@ import { describe, expect, it } from "vitest";
 import {
   resolveStudioMannequinCameraFrame,
   resolveStudioMannequinCaptureResult,
+  resolveStudioMannequinEnvironmentIntensity,
   resolveStudioMannequinPointerRotation,
+  STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT,
+  STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_MAX,
   type StudioMannequinCameraPreset,
 } from "./studio-mannequin-scene";
 import { getStudioMannequinJointLimit } from "./studio-mannequin-model";
@@ -89,6 +92,39 @@ describe("resolveStudioMannequinCaptureResult", () => {
       expect(result.displayWidth, `w=${displayWidth} h=${displayHeight}`).toBeUndefined();
       expect(result.displayHeight, `w=${displayWidth} h=${displayHeight}`).toBeUndefined();
     }
+  });
+});
+
+describe("resolveStudioMannequinEnvironmentIntensity", () => {
+  it("기본값은 IBL이 켜져 있되 과노출되지 않는 범위(0 초과 1 이하)다", () => {
+    expect(STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT).toBeGreaterThan(0);
+    expect(STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT).toBeLessThanOrEqual(1);
+  });
+
+  it("미지정·비유한 값은 기본값으로 fail-closed 한다", () => {
+    expect(resolveStudioMannequinEnvironmentIntensity(undefined)).toBe(
+      STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT,
+    );
+    for (const broken of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(resolveStudioMannequinEnvironmentIntensity(broken)).toBe(
+        STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT,
+      );
+    }
+  });
+
+  it("범위 안의 값은 그대로 통과시키고 0(IBL 끔)을 허용한다", () => {
+    expect(resolveStudioMannequinEnvironmentIntensity(0)).toBe(0);
+    expect(resolveStudioMannequinEnvironmentIntensity(0.85)).toBe(0.85);
+    expect(resolveStudioMannequinEnvironmentIntensity(STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_MAX)).toBe(
+      STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_MAX,
+    );
+  });
+
+  it("범위를 벗어난 값은 0~MAX로 클램프한다", () => {
+    expect(resolveStudioMannequinEnvironmentIntensity(-0.5)).toBe(0);
+    expect(resolveStudioMannequinEnvironmentIntensity(99)).toBe(
+      STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_MAX,
+    );
   });
 });
 

@@ -52,7 +52,7 @@ afterEach(() => {
 });
 
 describe("CreateStartPage (작품 시작 시트)", () => {
-  it("새 작품·템플릿·이어가기 세 가지 시작을 한 화면에서 고르게 한다", () => {
+  it("시작 레인 5개(이야기·콘티·빈 캔버스·템플릿·가져오기)와 이어가기를 한 화면에서 고르게 한다", () => {
     renderStartSheet("/create");
 
     expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
@@ -61,10 +61,15 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(newWorkLinks.length).toBeGreaterThan(0);
     expect(newWorkLinks.every((link) => link.getAttribute("href") === "/studio/new")).toBe(true);
     expect(screen.getByRole("link", { name: /템플릿으로 시작하기/ }).getAttribute("href")).toBe("/studio/templates");
-    // 콘티 시작점은 작품 생성 화면의 시작점 선택으로 이어진다.
-    expect(screen.getByRole("link", { name: /콘티부터 시작하기/ }).getAttribute("href")).toBe("/studio/new?start=storyboard");
-    // 이야기 시작점은 작품 생성 화면의 시작점 선택(아이디어)으로 이어지고, 생성 뒤 기획 섹션에 착지한다.
-    expect(screen.getByRole("link", { name: /이야기부터 시작하기/ }).getAttribute("href")).toBe("/studio/new?start=idea");
+    // 콘티 레인은 레인을 명시해 넘긴다(S2-7) — 양식 시작점 초기값은 storyboard, 생성 뒤 에디터에 착지한다.
+    expect(screen.getByRole("link", { name: /콘티부터 시작하기/ }).getAttribute("href")).toBe("/studio/new?lane=storyboard&start=storyboard");
+    // 이야기 레인도 레인을 명시한다 — 시작점 초기값은 아이디어, 생성 뒤 기획 섹션에 착지한다.
+    expect(screen.getByRole("link", { name: /이야기부터 시작하기/ }).getAttribute("href")).toBe("/studio/new?lane=idea&start=idea");
+    // 빈 캔버스 레인 — 구조 선택을 강제하지 않는 시작점이 관문에 있어야 하고(F3.2),
+    // bare /studio/new(레인 없는 딥링크)와 구분되도록 ?lane=blank로 명시한다(S2-7).
+    expect(screen.getByRole("link", { name: /빈 캔버스로 시작하기/ }).getAttribute("href")).toBe("/studio/new?lane=blank");
+    // 가져오기 레인 — 가진 파일로 이어 시작하는 길도 관문의 레인 중 하나다.
+    expect(screen.getByRole("link", { name: /가져와서 시작하기/ }).getAttribute("href")).toBe("/studio/import");
     expect(screen.getByRole("heading", { name: "이어서 작업하기" })).toBeTruthy();
   });
 

@@ -16,6 +16,13 @@
       "ko": "합성 음성으로 제작한 한국어 내레이션입니다.",
       "en": "The Korean narration uses a synthesized voice."
     },
+    "rights": {
+      "status": "not-cleared",
+      "commercialDistribution": false,
+      "basis": "macOS Software License Agreement (Sonoma) Section 2F: System Voices may be used only for personal, noncommercial use; use, recording, publishing or redistribution in a profit, nonprofit, public sharing or commercial context is not permitted.",
+      "record": "apps/web/public/brand/product-tour/VOICE-RIGHTS.md",
+      "replacement": "Re-record with a cleared source (MeloTTS-Korean, MIT, or a rights-holder human voice) and assemble with tools/media/brand-film/assemble-product-tour-narration.mjs."
+    },
     "bytes": 1701572,
     "duration": 504,
     "sha256": "6033fd24b93ab2bead9b9fcdcbf6138ab5f31ee2d308f46bbf001350d2384e79"

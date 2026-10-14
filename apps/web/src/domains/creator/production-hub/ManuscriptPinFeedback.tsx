@@ -27,6 +27,10 @@ import {
   type StudioCommentsDocument,
 } from "../studio-comments";
 import {
+  evaluatePinFeedbackPacket,
+  type PinFeedbackEvaluation,
+} from "./draft-pin-feedback-model";
+import {
   clampPinCoordinate,
   commentsDocumentToManuscriptPins,
   computeFlyToTransform,
@@ -54,6 +58,7 @@ import { resolveMentionActors } from "./manuscript-pin-mention-autocomplete";
 import { ManuscriptPinDraftPopover, ManuscriptPinThreadPopover } from "./ManuscriptPinPopover";
 import { ManuscriptPinPlacementGuideArt } from "./ManuscriptPinPlacementGuideArt";
 import { ManuscriptPinSidebar } from "./ManuscriptPinSidebar";
+import type { EpisodeStageId } from "./production-project-surfaces";
 import "./manuscript-pin-feedback.css";
 
 /** 빈 상태 일러스트 — 기존 AI 생성 에셋(`/images/empty-*.webp`) 재활용. 장식용. */
@@ -75,7 +80,20 @@ export interface ManuscriptPinFeedbackProps {
   /** 담당자로 고를 수 있는 사람. 비어 있으면 담당 지정 칸을 보여 주지 않는다. */
   readonly assigneeOptions?: readonly ManuscriptPinAssigneeOption[];
   readonly onAssign?: (pinId: string, assigneeId: string | null) => void;
+  /**
+   * 이 피드백이 속한 회차 단계. 핀 피드백 패킷 평가(evaluatePinFeedbackPacket)의
+   * 채널 정책을 정한다: 콘티(storyboard)·작화(art)는 pin-first라 핀 없는 제출이
+   * 막히고, 그 외 단계는 핀 권장(pin-or-text)이다. 호스트가 넘기지 않으면 원고·
+   * 콘티 피드백의 기본 동선인 pin-first("art")로 평가한다.
+   */
+  readonly stageId?: EpisodeStageId;
 }
+
+/**
+ * 아직 스레드로 저장되지 않은 드래프트 핀을 패킷의 "어디를" 요소로 읽을 때 쓰는
+ * 자리 표시자. 핀 좌표 자체는 드래프트가 들고 있고, 제출되면 실제 스레드 ID가 된다.
+ */
+const DRAFT_PIN_PACKET_ID = "draft-pin";
 
 interface DraftPin {
   readonly x: number;
@@ -101,6 +119,7 @@ export function ManuscriptPinFeedback({
   onDeletePin,
   assigneeOptions = [],
   onAssign,
+  stageId = "art",
 }: ManuscriptPinFeedbackProps) {
   const bt = useBilingual("ManuscriptPinFeedback");
   const viewerRef = useRef<HTMLDivElement>(null);
@@ -128,6 +147,32 @@ export function ManuscriptPinFeedback({
     () => numberedPins.find((pin) => pin.id === selectedId) ?? null,
     [numberedPins, selectedId],
   );
+
+  /**
+   * 작성 중 코멘트를 핀 피드백 패킷(무엇을+어디를+어떻게)으로 평가한다.
+   * 드래프트 핀이 있으면 "어디를"이 채워진 것으로 읽고, 없으면(핀 찍기 전)
+   * 비어 있는 것으로 읽는다 — pin-first 단계에서는 그 상태로 제출할 수 없다.
+   * 이 폼에는 레퍼런스 첨부 칸이 없어 "어떻게"는 항상 권장 안내로만 남는다.
+   */
+  const packetEvaluation: PinFeedbackEvaluation = useMemo(
+    () =>
+      evaluatePinFeedbackPacket(
+        {
+          body: composerBody,
+          pinThreadId: draft ? DRAFT_PIN_PACKET_ID : null,
+          referenceAssetIds: [],
+        },
+        stageId,
+      ),
+    [composerBody, draft, stageId],
+  );
+
+  /** 핀 찍기 전 단계에서 띄울 "어디를" 안내 (pin-first 채널에서만 제출을 막는 요소). */
+  const pinGuidanceBeforePlacement = useMemo(() => {
+    if (packetEvaluation.channel !== "pin-first") return null;
+    const pinIndex = packetEvaluation.missing.indexOf("pin");
+    return pinIndex >= 0 ? packetEvaluation.guidance[pinIndex] ?? null : null;
+  }, [packetEvaluation]);
 
   // 선택된 핀이 필터에서 사라지면 선택 해제
   useEffect(() => {
@@ -255,12 +300,14 @@ export function ManuscriptPinFeedback({
 
   const submitDraft = useCallback(() => {
     if (!draft) return;
+    // 패킷 평가가 제출 불가면(본문 없음, pin-first에서 핀 없음) 조용히 막는다.
+    // 무엇이 빠졌는지는 팝오버의 안내 목록이 이미 보여 주고 있다.
+    if (!packetEvaluation.submittable) return;
     const body = composerBody.trim();
-    if (!body) return;
     onAddPin({ x: draft.x, y: draft.y, body, urgent: composerUrgent });
     cancelDraft();
     setPlacing(false);
-  }, [draft, composerBody, composerUrgent, onAddPin, cancelDraft]);
+  }, [draft, packetEvaluation.submittable, composerBody, composerUrgent, onAddPin, cancelDraft]);
 
   const closeThread = useCallback(() => {
     setSelectedId(null);
@@ -366,6 +413,7 @@ export function ManuscriptPinFeedback({
                 onSubmit={submitDraft}
                 onCancel={cancelDraft}
                 mentionOptions={assigneeOptions}
+                packetEvaluation={packetEvaluation}
               />
             )}
             {selectedPin && !draft && (
@@ -411,6 +459,11 @@ export function ManuscriptPinFeedback({
           <div className="manuscript-pin-place-hint" aria-live="polite">
             <div className="manuscript-pin-place-hint-card">
               <span>{bt("원고에서 피드백할 위치를 클릭하세요", "Click where you want feedback on the manuscript")}</span>
+              {pinGuidanceBeforePlacement && (
+                <span className="manuscript-pin-place-hint-guidance">
+                  {bt(pinGuidanceBeforePlacement.ko, pinGuidanceBeforePlacement.en)}
+                </span>
+              )}
               {numberedPins.length === 0 && <ManuscriptPinPlacementGuideArt />}
             </div>
           </div>
@@ -465,6 +518,8 @@ export interface ManuscriptPinFeedbackBridgeProps {
   readonly currentActor: StudioCommentActor;
   /** 핀 담당자로 고를 수 있는 사람(예: 프로젝트 참여자). */
   readonly assigneeOptions?: readonly ManuscriptPinAssigneeOption[];
+  /** 피드백이 속한 회차 단계. 패킷 평가의 채널 정책을 정한다 (기본 pin-first). */
+  readonly stageId?: EpisodeStageId;
 }
 
 /**
@@ -479,6 +534,7 @@ export function ManuscriptPinFeedbackBridge({
   onChange,
   currentActor,
   assigneeOptions = [],
+  stageId,
 }: ManuscriptPinFeedbackBridgeProps) {
   const pins = useMemo<ManuscriptPinFeedbackPin[]>(() => {
     const base = commentsDocumentToManuscriptPins(document, pageId);
@@ -591,6 +647,7 @@ export function ManuscriptPinFeedbackBridge({
       onDeletePin={handleDeletePin}
       assigneeOptions={assigneeOptions}
       onAssign={assigneeOptions.length ? handleAssign : undefined}
+      stageId={stageId}
     />
   );
 }

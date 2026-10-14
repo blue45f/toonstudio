@@ -11,7 +11,10 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MarketAcquisitionModal } from "./MarketAcquisitionModal";
-import { marketStudioHandoff } from "../models/market-studio-handoff";
+import {
+  marketStudioHandoff,
+  marketStudioResourceHref,
+} from "../models/market-studio-handoff";
 
 import {
   computeBalance,
@@ -150,12 +153,17 @@ describe("MarketAcquisitionModal 포인트 구매", () => {
     vi.restoreAllMocks();
   });
 
-  it("포인트를 차감하고 보관까지 확정되면 완료로 처리한다", async () => {
+  it("포인트를 차감하고 보관까지 확정되면 곧바로 Studio로 이어진다", async () => {
     mocks.acquireResource.mockResolvedValue(true);
     renderModal();
     await agreeAndBuyWithPoints();
 
-    await screen.findByText("내 에셋에 안전하게 보관했습니다");
+    // 획득→적용 원자화: 완료 화면에서 멈추지 않고 Studio 딥링크로 이동한다.
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledTimes(1));
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      marketStudioResourceHref(RESOURCE_ID),
+    );
+    expect(screen.queryByText("내 에셋에 안전하게 보관했습니다")).toBeNull();
     expect(mocks.acquireResource).toHaveBeenCalledWith(paidRecord, LOGICAL_PACK_ID);
     const { events } = useAssetPointsStore.getState();
     expect(computeBalance(events, new Date())).toBe(0);
@@ -169,6 +177,7 @@ describe("MarketAcquisitionModal 포인트 구매", () => {
 
     await screen.findByText(/차감한 포인트를 되돌렸습니다/);
     expect(screen.queryByText("내 에셋에 안전하게 보관했습니다")).toBeNull();
+    expect(mocks.navigate).not.toHaveBeenCalled();
     const { events } = useAssetPointsStore.getState();
     expect(computeBalance(events, new Date())).toBe(10);
     expect(ownedResourceIds(events).has(RESOURCE_ID)).toBe(false);

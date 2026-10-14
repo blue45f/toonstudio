@@ -3,8 +3,15 @@
 The Blender 5.2 generator is deterministic and safe for background use. It
 never loads a factory file: ``clear_scene`` removes only scene objects and
 unused data blocks before each asset is authored. Every GLB is built in metres,
-grounded at glTF Y=0, self-contained, PBR, and includes two tiny 128 px
-procedural detail maps embedded in the binary for mobile-safe surface detail.
+grounded at glTF Y=0, self-contained, and PBR. Textured surfaces use a
+texture-based Principled setup: when a CC0 PBR set from Poly Haven is present
+under ``pbr/<set-id>/<tier>/`` (see ``pbr/SOURCES.json`` for provenance and
+licence records), its base-colour, normal, roughness, and AO maps are embedded
+at the active profile resolution -- 1K for the ``mobile`` profile, 2K for the
+``desktop`` profile. Without a local PBR set the generator falls back to
+procedural detail maps generated at the same profile resolution. The active
+profile, texture dimension, and per-set source records are written into every
+exported asset's metadata.
 
 Example:
   /Applications/Blender.app/Contents/MacOS/Blender --background \
@@ -15,6 +22,7 @@ Example:
 from __future__ import annotations
 
 import argparse
+import json
 from math import cos, pi, sin
 from pathlib import Path
 import sys
@@ -24,9 +32,32 @@ from mathutils import Vector
 
 
 GENERATOR = "scripts/blender/generate_environment_pack_v5.py"
-GENERATOR_VERSION = "5.0.0-blender-5.2"
+GENERATOR_VERSION = "5.1.0-blender-5.2"
 CC0_LICENSE_URL = "https://creativecommons.org/publicdomain/zero/1.0/"
-TEXTURE_DIMENSION = 128
+# Phase 1 texture pipeline: the former fixed 128 px cap is replaced by named
+# profiles. ``mobile`` embeds 1K textures, ``desktop`` embeds 2K textures.
+TEXTURE_PROFILES = {"mobile": 1024, "desktop": 2048}
+TEXTURE_PROFILE = "mobile"
+TEXTURE_DIMENSION = TEXTURE_PROFILES[TEXTURE_PROFILE]
+# CC0 PBR sets (Poly Haven) bound to textured materials by material name.
+# Files live in ``pbr/<set-id>/<tier>/`` next to this script and their
+# provenance is recorded in ``pbr/SOURCES.json`` and in asset metadata.
+PBR_SET_BY_MATERIAL = {
+    "ConvenienceStore_TileDetail": "concrete_tiles",
+    "Subway_PlatformDetail": "concrete_pavement",
+    "Alchemist_StoneDetail": "brushed_concrete",
+    "RooftopConcrete": "brushed_concrete",
+    "StorePavement": "concrete_pavement",
+    "StreetAsphalt": "asphalt_02",
+}
+PBR_MAP_FILES = {
+    "base_color": "{set_id}_diff_{tier}.jpg",
+    "normal": "{set_id}_nor_gl_{tier}.jpg",
+    "roughness": "{set_id}_rough_{tier}.jpg",
+    "ao": "{set_id}_ao_{tier}.jpg",
+}
+_TEXTURE_SOURCES_USED = []
+_EMBEDDED_TEXTURE_COUNT = 0
 ASSETS = (
     "korean_convenience_store_night",
     "seoul_subway_platform",
@@ -41,6 +72,17 @@ def parse_arguments():
     parser.add_argument("--thumbnail-dir", default=None)
     parser.add_argument("--only", choices=ASSETS, action="append")
     parser.add_argument("--skip-thumbnails", action="store_true")
+    parser.add_argument(
+        "--texture-profile",
+        choices=tuple(TEXTURE_PROFILES),
+        default=None,
+        help="Texture resolution profile: mobile=1K (default), desktop=2K.",
+    )
+    parser.add_argument(
+        "--pbr-dir",
+        default=None,
+        help="Directory holding CC0 PBR sets (default: pbr/ next to this script).",
+    )
     return parser.parse_args(script_args)
 
 
@@ -51,10 +93,45 @@ THUMBNAIL_DIRECTORY = Path(
     if ARGS.thumbnail_dir
     else OUTPUT_DIRECTORY / "thumbnails"
 ).resolve()
+PBR_DIRECTORY = (
+    Path(bpy.path.abspath(ARGS.pbr_dir)).resolve()
+    if ARGS.pbr_dir
+    else Path(__file__).resolve().with_name("pbr")
+)
+
+
+def configure_texture_profile(profile):
+    """Select the active texture profile (also used by Wave 7 re-export)."""
+    global TEXTURE_PROFILE, TEXTURE_DIMENSION
+    if profile not in TEXTURE_PROFILES:
+        raise ValueError(f"Unknown texture profile: {profile!r}")
+    TEXTURE_PROFILE = profile
+    TEXTURE_DIMENSION = TEXTURE_PROFILES[profile]
+
+
+def set_pbr_directory(path):
+    global PBR_DIRECTORY
+    PBR_DIRECTORY = Path(bpy.path.abspath(str(path))).resolve()
+
+
+def texture_source_manifest():
+    """JSON record of every texture source embedded in the current asset."""
+    return json.dumps(_TEXTURE_SOURCES_USED, ensure_ascii=False, sort_keys=True)
+
+
+def embedded_texture_count():
+    return _EMBEDDED_TEXTURE_COUNT
+
+
+if ARGS.texture_profile:
+    configure_texture_profile(ARGS.texture_profile)
 
 
 def clear_scene():
     """Remove scene-owned data without changing preferences or startup state."""
+    global _EMBEDDED_TEXTURE_COUNT
+    _TEXTURE_SOURCES_USED.clear()
+    _EMBEDDED_TEXTURE_COUNT = 0
     if bpy.context.object and bpy.context.object.mode != "OBJECT":
         bpy.ops.object.mode_set(mode="OBJECT")
     for obj in list(bpy.data.objects):
@@ -115,22 +192,31 @@ def material( # NOSONAR python:S3776
     return mat
 
 
+def _pattern_scale():
+    """Pattern cells were authored at 128 px; scale them with the profile so
+    world-space pattern density stays constant at 1K/2K."""
+    return max(1, TEXTURE_DIMENSION // 128)
+
+
 def _pattern_color(pattern, x, y, base, accent):
+    s = _pattern_scale()
     if pattern == "tile":
-        grout = x % 16 in (0, 1) or y % 16 in (0, 1)
-        checker = ((x // 16) + (y // 16)) % 2
+        cell = 16 * s
+        grout = x % cell < 2 * s or y % cell < 2 * s
+        checker = ((x // cell) + (y // cell)) % 2
         blend = 0.22 if grout else 0.07 * checker
     elif pattern == "platform":
-        joint = y % 24 in (0, 1) or x % 32 in (0, 1)
-        blend = 0.30 if joint else 0.035 * ((x // 8 + y // 8) % 2)
+        joint = y % (24 * s) < 2 * s or x % (32 * s) < 2 * s
+        blend = 0.30 if joint else 0.035 * ((x // (8 * s) + y // (8 * s)) % 2)
     else:
-        mortar = x % 32 in (0, 1, 2) or y % 20 in (0, 1)
-        deterministic = ((x * 17 + y * 31 + (x // 16) * 13) % 37) / 37.0
+        mortar = x % (32 * s) < 3 * s or y % (20 * s) < 2 * s
+        deterministic = ((x * 17 + y * 31 + (x // (16 * s)) * 13) % 37) / 37.0
         blend = 0.34 if mortar else 0.06 + deterministic * 0.12
     return tuple(base[index] * (1.0 - blend) + accent[index] * blend for index in range(3))
 
 
 def _create_embedded_image(name, pattern, base, accent, *, normal=False): # NOSONAR python:S3776
+    global _EMBEDDED_TEXTURE_COUNT
     image = bpy.data.images.new(
         name=name,
         width=TEXTURE_DIMENSION,
@@ -142,10 +228,11 @@ def _create_embedded_image(name, pattern, base, accent, *, normal=False): # NOSO
     for y in range(TEXTURE_DIMENSION):
         for x in range(TEXTURE_DIMENSION):
             if normal:
+                s = _pattern_scale()
                 boundary = (
-                    (pattern == "tile" and (x % 16 in (0, 1) or y % 16 in (0, 1)))
-                    or (pattern == "platform" and (x % 32 in (0, 1) or y % 24 in (0, 1)))
-                    or (pattern == "stone" and (x % 32 in (0, 1, 2) or y % 20 in (0, 1)))
+                    (pattern == "tile" and (x % (16 * s) < 2 * s or y % (16 * s) < 2 * s))
+                    or (pattern == "platform" and (x % (32 * s) < 2 * s or y % (24 * s) < 2 * s))
+                    or (pattern == "stone" and (x % (32 * s) < 3 * s or y % (20 * s) < 2 * s))
                 )
                 nx = 0.5
                 if boundary:
@@ -161,38 +248,141 @@ def _create_embedded_image(name, pattern, base, accent, *, normal=False): # NOSO
     image.file_format = "PNG"
     image.colorspace_settings.name = "Non-Color" if normal else "sRGB"
     image["toonspectrum_generated"] = True
-    image["toonspectrum_mobile_safe"] = True
+    image["toonspectrum_texture_profile"] = TEXTURE_PROFILE
+    image["toonspectrum_texture_dimension"] = TEXTURE_DIMENSION
+    image["toonspectrum_mobile_safe"] = TEXTURE_PROFILE == "mobile"
     image.pack()
+    _EMBEDDED_TEXTURE_COUNT += 1
     return image
 
 
-def textured_material(name, base, accent, pattern, *, roughness=0.62, metallic=0.0):
+def _pbr_tier():
+    return "1k" if TEXTURE_DIMENSION <= 1024 else "2k"
+
+
+def _load_pbr_image(set_id, map_key):
+    """Load one map of a vendored CC0 PBR set, or None when not present."""
+    global _EMBEDDED_TEXTURE_COUNT
+    tier = _pbr_tier()
+    filename = PBR_MAP_FILES[map_key].format(set_id=set_id, tier=tier)
+    path = PBR_DIRECTORY / set_id / tier / filename
+    if not path.is_file():
+        return None
+    image = bpy.data.images.load(str(path), check_existing=False)
+    if map_key != "base_color":
+        image.colorspace_settings.name = "Non-Color"
+    image["toonspectrum_source"] = "polyhaven"
+    image["toonspectrum_pbr_set"] = set_id
+    image["toonspectrum_license"] = "CC0-1.0"
+    image["toonspectrum_texture_profile"] = TEXTURE_PROFILE
+    image.pack()
+    _EMBEDDED_TEXTURE_COUNT += 1
+    return image
+
+
+def _tex_image_node(nodes, name, image):
+    node = nodes.new("ShaderNodeTexImage")
+    node.name = name
+    node.image = image
+    return node
+
+
+def textured_material(name, base, accent, pattern, *, roughness=0.62, metallic=0.0, pbr_set=None):
+    """Texture-based Principled material.
+
+    Uses the material's CC0 PBR set (base colour + normal + roughness + AO)
+    when the set is vendored under ``pbr/``; otherwise falls back to the
+    procedural colour/normal pair, generated at the profile resolution.
+    """
+    global _EMBEDDED_TEXTURE_COUNT
     mat = material(name, base, roughness=roughness, metallic=metallic)
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
     shader = nodes.get("Principled BSDF")
-    color_image = _create_embedded_image(f"{name}_Color128", pattern, base, accent)
-    normal_image = _create_embedded_image(
-        f"{name}_Normal128",
-        pattern,
-        (0.5, 0.5, 1.0),
-        (0.5, 0.5, 1.0),
-        normal=True,
-    )
-    color_node = nodes.new("ShaderNodeTexImage")
-    color_node.name = f"{name}_EmbeddedColor"
-    color_node.image = color_image
-    normal_texture = nodes.new("ShaderNodeTexImage")
-    normal_texture.name = f"{name}_EmbeddedNormal"
-    normal_texture.image = normal_image
-    normal_node = nodes.new("ShaderNodeNormalMap")
-    normal_node.name = f"{name}_NormalMap"
-    normal_node.inputs["Strength"].default_value = 0.32
-    links.new(color_node.outputs["Color"], shader.inputs["Base Color"])
-    links.new(normal_texture.outputs["Color"], normal_node.inputs["Color"])
-    links.new(normal_node.outputs["Normal"], shader.inputs["Normal"])
-    mat["embedded_texture_count"] = 2
+    set_id = pbr_set or PBR_SET_BY_MATERIAL.get(name)
+    pbr_images = {}
+    if set_id:
+        for map_key in PBR_MAP_FILES:
+            image = _load_pbr_image(set_id, map_key)
+            if image is not None:
+                pbr_images[map_key] = image
+        if "base_color" not in pbr_images or "normal" not in pbr_images:
+            # An incomplete set must not half-wire a material; drop the
+            # partially loaded maps and use the procedural pair instead.
+            for image in pbr_images.values():
+                bpy.data.images.remove(image)
+            _EMBEDDED_TEXTURE_COUNT -= len(pbr_images)
+            pbr_images = {}
+    if pbr_images:
+        color_node = _tex_image_node(nodes, f"{name}_PbrBaseColor", pbr_images["base_color"])
+        base_color_input = color_node.outputs["Color"]
+        if "ao" in pbr_images:
+            ao_node = _tex_image_node(nodes, f"{name}_PbrAO", pbr_images["ao"])
+            mix_node = nodes.new("ShaderNodeMixRGB")
+            mix_node.name = f"{name}_AoMultiply"
+            mix_node.blend_type = "MULTIPLY"
+            mix_node.inputs["Fac"].default_value = 1.0
+            links.new(base_color_input, mix_node.inputs["Color1"])
+            links.new(ao_node.outputs["Color"], mix_node.inputs["Color2"])
+            base_color_input = mix_node.outputs["Color"]
+        links.new(base_color_input, shader.inputs["Base Color"])
+        normal_texture = _tex_image_node(nodes, f"{name}_PbrNormal", pbr_images["normal"])
+        normal_node = nodes.new("ShaderNodeNormalMap")
+        normal_node.name = f"{name}_NormalMap"
+        normal_node.inputs["Strength"].default_value = 1.0
+        links.new(normal_texture.outputs["Color"], normal_node.inputs["Color"])
+        links.new(normal_node.outputs["Normal"], shader.inputs["Normal"])
+        if "roughness" in pbr_images:
+            roughness_node = _tex_image_node(
+                nodes, f"{name}_PbrRoughness", pbr_images["roughness"]
+            )
+            links.new(roughness_node.outputs["Color"], shader.inputs["Roughness"])
+        mat["embedded_texture_count"] = len(pbr_images)
+        mat["pbr_source"] = "polyhaven"
+        mat["pbr_set"] = set_id
+        mat["pbr_license"] = "CC0-1.0"
+        mat["pbr_license_url"] = CC0_LICENSE_URL
+        _TEXTURE_SOURCES_USED.append(
+            {
+                "material": name,
+                "source": "polyhaven",
+                "set": set_id,
+                "license": "CC0-1.0",
+                "tier": _pbr_tier(),
+                "maps": sorted(pbr_images),
+            }
+        )
+    else:
+        color_image = _create_embedded_image(
+            f"{name}_Color{TEXTURE_DIMENSION}", pattern, base, accent
+        )
+        normal_image = _create_embedded_image(
+            f"{name}_Normal{TEXTURE_DIMENSION}",
+            pattern,
+            (0.5, 0.5, 1.0),
+            (0.5, 0.5, 1.0),
+            normal=True,
+        )
+        color_node = _tex_image_node(nodes, f"{name}_EmbeddedColor", color_image)
+        normal_texture = _tex_image_node(nodes, f"{name}_EmbeddedNormal", normal_image)
+        normal_node = nodes.new("ShaderNodeNormalMap")
+        normal_node.name = f"{name}_NormalMap"
+        normal_node.inputs["Strength"].default_value = 0.32
+        links.new(color_node.outputs["Color"], shader.inputs["Base Color"])
+        links.new(normal_texture.outputs["Color"], normal_node.inputs["Color"])
+        links.new(normal_node.outputs["Normal"], shader.inputs["Normal"])
+        mat["embedded_texture_count"] = 2
+        _TEXTURE_SOURCES_USED.append(
+            {
+                "material": name,
+                "source": "procedural",
+                "license": "CC0-1.0",
+                "dimension": TEXTURE_DIMENSION,
+                "maps": ["base_color", "normal"],
+            }
+        )
     mat["embedded_texture_dimension"] = TEXTURE_DIMENSION
+    mat["texture_profile"] = TEXTURE_PROFILE
     return mat
 
 
@@ -449,8 +639,10 @@ def add_root_and_export(asset_id, dimensions, semantic_parts):
     root["nominal_depth_m"] = dimensions[1]
     root["nominal_height_m"] = dimensions[2]
     root["semantic_parts"] = semantic_parts
-    root["embedded_texture_count"] = 2
+    root["embedded_texture_count"] = embedded_texture_count()
     root["embedded_texture_max_dimension"] = TEXTURE_DIMENSION
+    root["texture_profile"] = TEXTURE_PROFILE
+    root["texture_sources"] = texture_source_manifest()
     bpy.context.scene.collection.objects.link(root)
     for obj in tuple(bpy.context.scene.objects):
         if obj is not root and obj.type in {"MESH", "CURVE", "FONT"} and obj.parent is None:

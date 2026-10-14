@@ -26,7 +26,21 @@ import {
   type StudioRevisionDiff,
 } from "./studio-revision-diff";
 
+import { StudioTextDiffView } from "./StudioTextDiffView";
+
 import type { StudioServerRevisionComparison } from "./studio-server-revision-comparison";
+
+/**
+ * One dialogue/script text pair resolved from the two snapshots by the caller. The semantic
+ * diff never carries text, so hosts that can resolve an element's before/after text pass it
+ * here and the compare surface renders a line/character highlighted diff for it.
+ */
+export interface StudioRevisionTextDiffEntry {
+  id: string;
+  label: string;
+  beforeText: string;
+  afterText: string;
+}
 
 export interface StudioRevisionCompareViewProps {
   targetRevision: number;
@@ -37,6 +51,7 @@ export interface StudioRevisionCompareViewProps {
   restoring: boolean;
   confirmingRestore: boolean;
   pageLabels?: Readonly<Record<string, string>>;
+  textDiffEntries?: readonly StudioRevisionTextDiffEntry[];
   canNavigateChange?: (change: StudioRevisionChange) => boolean;
   onBack: () => void;
   onRetry: () => void;
@@ -193,6 +208,7 @@ export function StudioRevisionCompareView({
   restoring,
   confirmingRestore,
   pageLabels = {},
+  textDiffEntries = [],
   canNavigateChange,
   onBack,
   onRetry,
@@ -389,6 +405,21 @@ export function StudioRevisionCompareView({
                 ) : null}
               </div>
             )}
+
+            {textDiffEntries.length > 0 ? (
+              <div className="space-y-2" aria-label="대사·텍스트 비교 목록">
+                {textDiffEntries.map((entry) => (
+                  <StudioTextDiffView
+                    key={entry.id}
+                    title={entry.label}
+                    beforeText={entry.beforeText}
+                    afterText={entry.afterText}
+                    beforeLabel={`기준 r${baseRevision}`}
+                    afterLabel={`서버 r${targetRevision}`}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

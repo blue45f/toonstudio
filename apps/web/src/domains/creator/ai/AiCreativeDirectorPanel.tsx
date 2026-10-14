@@ -43,6 +43,12 @@ import {
   type AiDirectorSuggestionId,
 } from "./ai-creative-director";
 import { AI_DIRECTOR_ANCHOR, LUNA_ART_BASE } from "./ai-studio-hub";
+import {
+  applyAnswerTuningToSystemPrompt,
+  DEFAULT_ANSWER_TUNING,
+  type AnswerTuning,
+} from "./answer-tuning";
+import { AnswerTuningControls } from "./AnswerTuningControls";
 import { parseDirectorAnswer, type DirectorInline } from "./director-answer-format";
 
 const SUGGESTION_ICONS: Readonly<Record<AiDirectorIcon, LucideIcon>> = {
@@ -100,6 +106,8 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
   const aiRevision = useUserAi().revision;
   const { probe, retry } = useStudioAiStatus();
   const [selectedId, setSelectedId] = useState<AiDirectorSuggestionId>("story-expand");
+  // 답변 조절 공통 부품 — 제출 시 시스템 프롬프트 끝에 지시문으로 붙는다(아래 submit 참고).
+  const [answerTuning, setAnswerTuning] = useState<AnswerTuning>(DEFAULT_ANSWER_TUNING);
   const [idea, setIdea] = useState("");
   const [busy, setBusy] = useState(false);
   const [answer, setAnswer] = useState<DirectorAnswer | null>(null);
@@ -149,7 +157,8 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
       const result = await completeStudioServerText({
         task: request.task,
         promptVersion: 1,
-        system: request.system,
+        // 조절 지시문을 마지막에 붙여 기존 분량 지시("stay under 250 words")보다 우선하게 한다.
+        system: applyAnswerTuningToSystemPrompt(request.system, answerTuning),
         user: request.user,
         operationId: `director-${crypto.randomUUID()}`,
       }, controller.signal);
@@ -279,6 +288,15 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
               );
             })}
           </ul>
+
+          <div className="mt-4">
+            <AnswerTuningControls
+              value={answerTuning}
+              onChange={setAnswerTuning}
+              disabled={busy}
+              locale={language.toLowerCase().startsWith("ko") ? "ko" : "en"}
+            />
+          </div>
 
           <form className="mt-4" onSubmit={(event) => void submit(event)} aria-labelledby={`${formId}-title`}>
             <label htmlFor={`${formId}-idea`} className="text-sm font-bold text-fg">

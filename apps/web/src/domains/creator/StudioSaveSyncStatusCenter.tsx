@@ -1,5 +1,13 @@
 /**
  * Studio save status: plain-language safety first, implementation diagnostics on demand.
+ *
+ * 장애·오프라인 복구 UX (누락 신규 G2, 2026-10-14):
+ * - 연결 스냅샷이 있으면 서버 장애·재확인 중을 필과 서버 섹션에 드러내고
+ *   (studio-save-recovery-ux 모델), 다이얼로그 안에서 저장 재시도와
+ *   연결 재확인을 바로 실행할 수 있게 한다 — 상태만 보여주고 동선이
+ *   없던 기존 구조의 해소.
+ * - 복구 지점이 한 번도 만들어진 적 없으면(lastCheckpointAt=0) 1970년
+ *   시각을 보여주지 않고 "아직 없음"으로 표시한다.
  */
 
 import {
@@ -11,11 +19,13 @@ import {
   Database,
   HardDrive,
   RefreshCw,
+  RotateCcw,
   TriangleAlert,
   X,
 } from "lucide-react";
 import { useState } from "react";
 
+import { resolveSaveRecoveryView } from "./studio-save-recovery-ux";
 import {
   formatRecoveryDiagnostics,
   resolveSaveSyncStatus,
@@ -23,6 +33,8 @@ import {
   type StudioSaveSyncStatus,
 } from "./studio-operation-recovery-coordinator";
 import { useStudioCopyFeedback } from "./use-studio-copy-feedback";
+
+import type { StudioConnectivitySnapshot } from "./offline/studio-connectivity";
 
 export interface StudioSaveSyncStatusCenterProps {
   readonly journal: StudioOperationJournalState;
@@ -37,9 +49,27 @@ export interface StudioSaveSyncStatusCenterProps {
    * 저널 모델로 실물 상태를 재계산하면 이중 상태가 된다.
    */
   readonly statusOverride?: StudioSaveSyncStatus;
+  /**
+   * 연결 모듈의 스냅샷. 있으면 서버 장애·재확인 중 상태를 필·서버 섹션에
+   * 반영한다 (studio-save-recovery-ux 모델). 없으면 기존 저장 상태만 쓴다.
+   */
+  readonly connectivity?: StudioConnectivitySnapshot | null;
+  /** 로컬 내구 실패 시 저장을 다시 시도하는 콜백. 없으면 재시도 버튼을 숨긴다. */
+  readonly onRetrySave?: () => void;
+  /** 연결 문제 시 즉시 재검사를 실행하는 콜백. 없으면 재확인 버튼을 숨긴다. */
+  readonly onRecheckConnection?: () => void;
 }
 
-function cloudStatusCopy(status: "synced" | "pending" | "offline"): string {
+function cloudStatusCopy(
+  status: "synced" | "pending" | "offline",
+  connectivity: StudioConnectivitySnapshot | null,
+): string {
+  if (connectivity?.mode === "server-unavailable") {
+    return "서버에 연결할 수 없어요. 작업은 이 기기에 보관 중이고, 연결이 돌아오면 자동으로 동기화해요.";
+  }
+  if (connectivity?.mode === "reconnecting") {
+    return "서버 연결을 다시 확인하고 있어요.";
+  }
   if (status === "synced") return "최신 상태로 저장됐어요.";
   if (status === "pending") return "최근 변경을 이 기기에 보관했고 서버 동기화를 기다리고 있어요.";
   return "인터넷이 연결되면 서버와 다시 동기화할 수 있어요.";
@@ -51,19 +81,27 @@ export function StudioSaveSyncStatusCenter({
   isOpfsActive = true,
   onForceCheckpoint,
   statusOverride,
+  connectivity = null,
+  onRetrySave,
+  onRecheckConnection,
 }: StudioSaveSyncStatusCenterProps) {
   const [open, setOpen] = useState(false);
   const diagnosticsCopy = useStudioCopyFeedback(2000);
   const diagnosticsCopyStatus = diagnosticsCopy.statusFor("save-sync-diagnostics");
 
   const status = statusOverride ?? resolveSaveSyncStatus(journal, isOnline, isOpfsActive);
+  const view = resolveSaveRecoveryView(status, connectivity);
   const saveLabel = !status.localDurable
     ? "저장 확인 필요"
-    : status.cloudSyncStatus === "offline"
-      ? "오프라인 · 이 기기에 보관 중"
-      : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
-        ? `${status.pendingOperationsCount}개 변경 보존 중`
-        : "저장됨";
+    : view.kind === "server-unavailable"
+      ? "서버 연결 안 됨 · 이 기기에 보관 중"
+      : view.kind === "reconnecting"
+        ? "연결 다시 확인 중"
+        : status.cloudSyncStatus === "offline"
+          ? "오프라인 · 이 기기에 보관 중"
+          : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
+            ? `${status.pendingOperationsCount}개 변경 보존 중`
+            : "저장됨";
 
   const handleCopyDiagnostics = () => {
     const report = formatRecoveryDiagnostics(journal, status);
@@ -72,15 +110,17 @@ export function StudioSaveSyncStatusCenter({
 
   const StatusIcon = !status.localDurable
     ? TriangleAlert
-    : status.cloudSyncStatus === "offline"
+    : status.cloudSyncStatus === "offline" || view.kind === "server-unavailable"
       ? CloudOff
-      : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
-        ? Clock
-        : CheckCircle2;
+      : view.kind === "reconnecting"
+        ? RefreshCw
+        : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
+          ? Clock
+          : CheckCircle2;
 
   const statusTone = !status.localDurable
     ? "text-danger"
-    : status.cloudSyncStatus === "offline"
+    : status.cloudSyncStatus === "offline" || view.kind === "server-unavailable"
       ? "text-warning"
       : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
         ? "text-accent"
@@ -96,7 +136,10 @@ export function StudioSaveSyncStatusCenter({
         aria-label={`저장 상태 열기: ${saveLabel}`}
         className="flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.75rem] font-medium text-fg shadow-sm backdrop-blur transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"
       >
-        <StatusIcon className={`size-3.5 ${statusTone}`} aria-hidden />
+        <StatusIcon
+          className={`size-3.5 ${statusTone} ${view.kind === "reconnecting" ? "animate-spin" : ""}`}
+          aria-hidden
+        />
         <span>{saveLabel}</span>
       </button>
 
@@ -148,7 +191,7 @@ export function StudioSaveSyncStatusCenter({
                 <div>
                   <p className="font-semibold text-fg">서버</p>
                   <p className="mt-0.5 leading-relaxed text-fg-3">
-                    {cloudStatusCopy(status.cloudSyncStatus)}
+                    {cloudStatusCopy(status.cloudSyncStatus, connectivity)}
                     {status.pendingOperationsCount > 0
                       ? ` 서버에 아직 반영되지 않은 변경 ${status.pendingOperationsCount}개가 있어요.`
                       : ""}
@@ -163,7 +206,9 @@ export function StudioSaveSyncStatusCenter({
                 <div>
                   <p className="font-semibold text-fg">복구</p>
                   <p className="mt-0.5 leading-relaxed text-fg-3">
-                    마지막 복구 지점은 {new Date(status.lastCheckpointAt).toLocaleTimeString()}에 만들어졌어요.
+                    {status.lastCheckpointAt > 0
+                      ? `마지막 복구 지점은 ${new Date(status.lastCheckpointAt).toLocaleTimeString()}에 만들어졌어요.`
+                      : "아직 만들어진 복구 지점이 없어요. 아래에서 지금 만들 수 있어요."}
                   </p>
                 </div>
               </div>
@@ -171,6 +216,26 @@ export function StudioSaveSyncStatusCenter({
           </div>
 
           <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-line/50 pt-3">
+            {view.canRetrySave && onRetrySave ? (
+              <button
+                type="button"
+                onClick={onRetrySave}
+                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-danger/40 bg-raised px-2.5 text-[0.72rem] font-semibold text-danger hover:bg-danger/10 pointer-coarse:min-h-11"
+              >
+                <RotateCcw className="size-3.5" aria-hidden />
+                <span>지금 다시 시도</span>
+              </button>
+            ) : null}
+            {view.canRecheckConnection && onRecheckConnection ? (
+              <button
+                type="button"
+                onClick={onRecheckConnection}
+                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-raised px-2.5 text-[0.72rem] font-semibold text-fg-2 hover:bg-accent-soft hover:text-accent pointer-coarse:min-h-11"
+              >
+                <RefreshCw className="size-3.5" aria-hidden />
+                <span>연결 다시 확인</span>
+              </button>
+            ) : null}
             {onForceCheckpoint ? (
               <button
                 type="button"

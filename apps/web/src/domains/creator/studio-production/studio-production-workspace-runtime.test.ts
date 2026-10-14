@@ -1,14 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  buildProductionVersionSnapshot,
   createDemoProductionWorkspace, createEmptyProductionWorkspace,
   createStudioProductionClientId, createStudioProductionWorkspaceInvalidation,
   createStudioProductionWorkspaceRepository, isStudioProductionScopeKey,
+  MAX_PRODUCTION_VERSION_SNAPSHOTS,
   parseProductionWorkspace, parseStudioProductionWorkspaceInvalidation,
+  prependProductionVersionSnapshot,
   productionWorkspaceHasContent, projectProductionWorkspaceMutation,
   resolveStudioProductionWorkspaceMode, serializeProductionWorkspace,
   STUDIO_PRODUCTION_NAMESPACE, studioProductionWorkspaceCapabilities,
   studioProductionWorkspaceModeLabel,
+  type ProductionVersionSnapshot,
 } from "./studio-production-workspace-runtime";
 
 const NOW = "2026-09-07T00:00:00.000Z";
@@ -204,6 +208,68 @@ describe("production mode and broadcast authority", () => {
   });
 });
 
+
+describe("project checkpoint retention and restore", () => {
+  const snapshot = (id: string): ProductionVersionSnapshot => ({
+    id, name: `체크포인트 ${id}`, createdAt: NOW, tasks: [], reviews: [],
+  });
+
+  it("captures the whole restorable project state in one snapshot", () => {
+    const workspace = createEmptyProductionWorkspace(SCOPE, NOW);
+    const built = buildProductionVersionSnapshot({
+      id: "v-new", name: "수동 체크포인트", createdAt: NOW, workspace,
+    });
+    expect(built).toEqual({
+      id: "v-new", name: "수동 체크포인트", createdAt: NOW,
+      tasks: workspace.tasks, reviews: workspace.reviews,
+      hierarchy: workspace.hierarchy, roleAssignments: workspace.roleAssignments,
+      handoffs: workspace.handoffs,
+    });
+  });
+
+  it("keeps the newest checkpoints first and trims the oldest beyond the retention cap", () => {
+    const full = Array.from(
+      { length: MAX_PRODUCTION_VERSION_SNAPSHOTS },
+      (_, index) => snapshot(`v-${index}`),
+    );
+    const next = prependProductionVersionSnapshot(full, snapshot("v-newest"));
+    expect(next).toHaveLength(MAX_PRODUCTION_VERSION_SNAPSHOTS);
+    expect(next[0]!.id).toBe("v-newest");
+    expect(next.some((version) => version.id === `v-${MAX_PRODUCTION_VERSION_SNAPSHOTS - 1}`)).toBe(false);
+  });
+
+  it("keeps the snapshot being restored in the log when a restore backup is prepended at the cap", () => {
+    const full = Array.from(
+      { length: MAX_PRODUCTION_VERSION_SNAPSHOTS },
+      (_, index) => snapshot(`v-${index}`),
+    );
+    const oldest = full[full.length - 1]!;
+    const next = prependProductionVersionSnapshot(full, snapshot("v-backup"), oldest);
+    expect(next).toHaveLength(MAX_PRODUCTION_VERSION_SNAPSHOTS);
+    expect(next[0]!.id).toBe("v-backup");
+    expect(next[next.length - 1]!.id).toBe(oldest.id);
+  });
+
+  it("lets a workspace at the retention cap accept one more checkpoint through a mutation", () => {
+    const full = Array.from(
+      { length: MAX_PRODUCTION_VERSION_SNAPSHOTS },
+      (_, index) => snapshot(`v-${index}`),
+    );
+    const parsed = parseProductionWorkspace(stored({ versions: full }), SCOPE)!;
+    const mutated = projectProductionWorkspaceMutation(parsed, (current) => ({
+      ...current,
+      versions: prependProductionVersionSnapshot(
+        current.versions,
+        buildProductionVersionSnapshot({
+          id: "v-after-cap", name: "상한 이후 체크포인트", createdAt: NOW, workspace: current,
+        }),
+      ),
+    }), NOW);
+    expect(mutated.versions).toHaveLength(MAX_PRODUCTION_VERSION_SNAPSHOTS);
+    expect(mutated.versions[0]!.id).toBe("v-after-cap");
+    expect(parseProductionWorkspace(serializeProductionWorkspace(mutated), SCOPE)).toEqual(mutated);
+  });
+});
 
 describe("saved review task locators", () => {
   const reviewRef = { subject: { schemaVersion: 1, projectId: "graph", workId: "production-runtime-tests", artifactId: "artifact",

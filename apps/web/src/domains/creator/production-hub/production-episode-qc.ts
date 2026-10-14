@@ -8,6 +8,13 @@
  *
  * 수동 확인 항목(오탈자 육안 확인 등)의 영속 저장은 aggregate 서버 계약 확장이 필요해
  * 여기서 다루지 않는다 (findings §3-2 설계안 참조).
+ *
+ * 단계 합의 게이트 합류 (stage-gate-qc-stage-derivation-join): 게이트 요약
+ * (`summarizeStageGates` 결과)은 aggregate에 없으므로 맞춤법 검사와 같은
+ * extras 주입으로 받는다. 게이트가 없는 회차(요약 미제공·null)는 항목이
+ * skipped가 되어 기존 판정이 그대로 유지되고, 게이트가 게시를 막는 단계가
+ * 하나라도 있으면 `stage-consensus-gate` 항목이 blocked가 되어 `ready`가
+ * false가 된다 — 게시 판정이 게이트를 실제로 참조하는 지점이 여기다.
  */
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
@@ -19,6 +26,10 @@ import {
 } from "./production-episode-operations";
 import { PRODUCTION_PROCESS_LABELS, type BilingualLabel } from "./production-labels";
 import type { ProductionSurfaceTarget } from "./production-project-surfaces";
+import {
+  stageGateDefinition,
+  type StageGateSummary,
+} from "./stage-consensus-gate-model";
 import { workflowEpisodePipeline } from "./production-workflow-episode-plan";
 
 export type EpisodeQcItemId =
@@ -28,6 +39,7 @@ export type EpisodeQcItemId =
   | "integrated-art"
   | "processes"
   | "review-gate"
+  | "stage-consensus-gate"
   | "joint-proof"
   | "dialogue-spellcheck"
   | "rights-preflight"
@@ -107,6 +119,15 @@ export interface EpisodeQcExtras {
     readonly errorCount: number;
     readonly warningCount: number;
   } | null;
+  /**
+   * 단계 합의 게이트 요약 (`summarizeStageGates` 결과의 `publishBlockedBy` 부분).
+   * 게이트 레코드는 aggregate가 아니라 호스트의 게이트 저장소에 살므로,
+   * 회차 룸처럼 게이트를 읽는 표면이 요약을 계산해 그대로 넘긴다.
+   * 단계 도출(`EpisodeStageExtras.stageGate`)과 같은 요약 객체를 공유한다.
+   * null/미제공이면 이 회차에 게이트 판정을 적용하지 않는다(항목 skipped) —
+   * "게이트가 없다"와 "게이트가 막고 있다"를 섞지 않기 위해서다.
+   */
+  readonly stageGate?: Pick<StageGateSummary, "publishBlockedBy"> | null;
 }
 
 export function deriveEpisodeQcChecklist(
@@ -193,6 +214,32 @@ export function deriveEpisodeQcChecklist(
               en: `${gate.blockingLaneCount} required review lane(s) still need approval.`,
             },
       target: gate.policyId === null || gate.approved ? null : { kind: "surface", surface: "review" },
+    },
+    {
+      id: "stage-consensus-gate",
+      label: { ko: "단계 합의 게이트", en: "Stage consensus gates" },
+      status:
+        extras?.stageGate == null
+          ? "skipped"
+          : extras.stageGate.publishBlockedBy.length === 0
+            ? "pass"
+            : "blocked",
+      detail:
+        extras?.stageGate == null
+          ? {
+              ko: "이 회차에는 단계 합의 게이트가 지정되지 않았어요.",
+              en: "No stage consensus gates are assigned to this episode.",
+            }
+          : extras.stageGate.publishBlockedBy.length === 0
+            ? { ko: "걸린 단계 합의가 모두 끝났어요.", en: "Every assigned stage consensus gate is agreed." }
+            : {
+                ko: `아직 합의가 끝나지 않은 게이트: ${joinNames(extras.stageGate.publishBlockedBy.map((stageId) => stageGateDefinition(stageId).label)).ko}`,
+                en: `Gates still awaiting consensus: ${joinNames(extras.stageGate.publishBlockedBy.map((stageId) => stageGateDefinition(stageId).label)).en}`,
+              },
+      target:
+        extras?.stageGate != null && extras.stageGate.publishBlockedBy.length > 0
+          ? { kind: "episode-room" }
+          : null,
     },
     {
       id: "joint-proof",

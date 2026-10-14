@@ -79,6 +79,18 @@ export interface StudioSaveSyncSignalStore {
   reset(documentId: string): void;
   /** 편집 세대 전진 (markStudioDocumentChanged 성공 직후). */
   noteEditGeneration(generation: number): void;
+  /**
+   * 하이드레이션 베이스라인 동기화 — 호스트가 내구 세대를 편집 세대에 맞추는
+   * 바로 그 지점에서만 호출한다. receipt 를 만들지 않으므로 lastReceipt 와
+   * 실패 기록은 건드리지 않는다.
+   */
+  noteBaseline(generation: number): void;
+  /**
+   * receipt 없는 내구 전진 (빈 문서 tombstone clear 성공 등) — 내구 세대만
+   * 올리고 receipt 는 위조하지 않는다. "저장됨" 시각은 실제 receipt 가
+   * 있을 때만 갱신된다.
+   */
+  noteDurableGeneration(generation: number): void;
   /** 내구 receipt 수신 (오토세이브 성공 직후에만). */
   noteDurableReceipt(receipt: StudioSaveSyncReceiptRecord): void;
   /** 내구 실패 (DocumentBusy 는 실패가 아니므로 호출 측에서 제외할 것). */
@@ -115,7 +127,21 @@ export function createStudioSaveSyncSignalStore(): StudioSaveSyncSignalStore {
       update({
         lastReceipt: receipt,
         durableGeneration: Math.max(signals.durableGeneration, receipt.generation),
+        // receipt.generation 은 실제로 내구화된 편집 세대 그 자체이므로,
+        // 게이트를 거치지 않은 전진(CRDT 조정 등)도 여기서 편집 세대에 반영된다.
+        editGeneration: Math.max(signals.editGeneration, receipt.generation),
       });
+    },
+    noteBaseline(generation) {
+      if (generation <= signals.durableGeneration && generation <= signals.editGeneration) return;
+      update({
+        editGeneration: Math.max(signals.editGeneration, generation),
+        durableGeneration: Math.max(signals.durableGeneration, generation),
+      });
+    },
+    noteDurableGeneration(generation) {
+      if (generation <= signals.durableGeneration) return;
+      update({ durableGeneration: generation });
     },
     noteFailure(atMs) {
       update({ lastFailureAtMs: atMs });

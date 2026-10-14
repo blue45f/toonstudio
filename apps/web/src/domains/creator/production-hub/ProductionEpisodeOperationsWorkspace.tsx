@@ -34,6 +34,7 @@ import {
   type EpisodeOperationsRow,
 } from "./production-episode-operations";
 import type { ProductionClientCommand } from "./production-api";
+import { ProductionStageDeadlinePlan } from "./ProductionStageDeadlinePlan";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
@@ -288,6 +289,8 @@ function EpisodeOperationsCard({
           </ul>
         </div>
       </div>
+
+      <ProductionStageDeadlinePlan aggregate={aggregate} episodeId={row.episode.episodeId} />
 
       {row.riskyTasks.length > 0 || row.overdueTasks.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5">

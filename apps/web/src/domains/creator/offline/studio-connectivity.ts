@@ -294,6 +294,26 @@ export function reportStudioServerRequestFailure(error: unknown): boolean {
   return true;
 }
 
+/**
+ * Manual recheck for the save/recovery UI ("연결 다시 확인" action).
+ * Runs one bounded probe immediately instead of waiting for the stale
+ * interval; while the browser is offline it only refreshes the offline
+ * snapshot (no network attempt). Safe to call without the runtime —
+ * the probe itself is self-bounded (4s timeout, single-flight abort).
+ */
+export function requestStudioConnectivityRecheck(): void {
+  if (!onlineFromNavigator()) {
+    update({
+      browserOnline: false,
+      serverReachable: false,
+      checking: false,
+      lastCheckedAt: Date.now(),
+    });
+    return;
+  }
+  void probeStudioServer();
+}
+
 /** Starts bounded server-health monitoring while a Studio document is mounted. */
 export function startStudioConnectivityRuntime(): () => void {
   runtimeUsers += 1;

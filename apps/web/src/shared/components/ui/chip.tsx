@@ -40,6 +40,7 @@ export function TagChip({
   active,
   size = "md",
   prefix = "#",
+  compact = false,
   className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -47,6 +48,12 @@ export function TagChip({
   active?: boolean;
   size?: "sm" | "md";
   prefix?: string;
+  /**
+   * 터치 타겟 예외 — 기본값은 WCAG 44px(min-h-11)이다.
+   * 마우스 전용 밀집 도구 모음처럼 44px를 적용할 수 없는 자리에서만 명시적으로 켠다.
+   * 표시 전용 칩(GenreChip·Badge)은 버튼이 아니라 자체 터치 타겟이 없으므로 이 규칙 대상이 아니다.
+   */
+  compact?: boolean;
 }) {
   const interactive = !!props.onClick;
   return (
@@ -56,8 +63,14 @@ export function TagChip({
       type="button"
       disabled={!interactive ? true : props.disabled}
       className={cx(
-        "inline-flex items-center rounded-full border font-medium transition-all duration-150 ease-out-expo",
-        size === "sm" ? "px-2 py-0.5 text-[0.7rem]" : "px-2.5 py-1 text-xs",
+        "inline-flex items-center justify-center rounded-full border font-medium transition-all duration-150 ease-out-expo",
+        compact
+          ? size === "sm"
+            ? "px-2 py-0.5 text-[0.7rem]"
+            : "px-2.5 py-1 text-xs"
+          : size === "sm"
+            ? "min-h-11 px-3 py-1 text-[0.7rem]"
+            : "min-h-11 px-3.5 py-1 text-xs",
         active
           ? "border-accent/60 bg-accent-soft text-accent"
           : "border-line bg-raised/50 text-fg-2 hover:text-fg hover:border-line-strong",

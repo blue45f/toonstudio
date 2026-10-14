@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
+import { getAuthUserId } from "@/domains/auth/public/session/auth-session-state";
+
 import { summarizeLearningProgress } from "./learning-backup";
 import { LearningRecordTools } from "./LearningRecordTools";
+import { StreakRecoveryPanel } from "./StreakRecoveryPanel";
 import { useLearningProgress } from "./use-learning-progress";
 
 export function LearningRecordsPage() {
@@ -40,6 +43,8 @@ export function LearningRecordsPage() {
           <p className="learn-actions"><Link className="learn-primary" to="/learn">강좌 보러 가기</Link></p>
         </section>
       )}
+      {/* 연속 기록 회복 장치: 학습·연재 분리 표시, 프리즈·휴재·포트폴리오 보존 */}
+      <StreakRecoveryPanel hasAccount={getAuthUserId() != null} />
       <LearningRecordTools store={store} />
       <section className="learn-caution">
         <h2>백업 전 알아두세요</h2>

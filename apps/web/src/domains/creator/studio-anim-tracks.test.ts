@@ -4,6 +4,7 @@ import {
   DEFAULT_TIMELINE_FRAME_COUNT,
   MAX_TIMELINE_FRAME_COUNT,
   MAX_TRACK_KEYFRAMES,
+  activeClipExposureFrameIndices,
   canAddKeyframe,
   clampGlobalFrameIndex,
   createEmptyAnimationTimelineDoc,
@@ -12,15 +13,22 @@ import {
   globalFrameIndexAtElapsed,
   hasTrack,
   moveKeyframe,
+  moveTimelineClip,
   normalizeAnimationTimelineDoc,
   onionSkinLayersForTrack,
   removeKeyframe,
   removeTrack,
+  resolveActiveClipExposure,
   resolveTimelineComposite,
   resolveTrackFrameAt,
   setDocFps,
   setFrameCount,
   setKeyframe,
+  setTimelineClip,
+  setTimelineClipDuration,
+  setTimelineClipStart,
+  timelineClipAtFrame,
+  timelineClipDurationFrames,
   trackKeyframeIndexOf,
   type AnimationTimelineDoc,
   type StudioAnimKeyframe,
@@ -445,5 +453,80 @@ describe("onionSkinLayersForTrack", () => {
     expect(onionSkinLayersForTrack(track, 4, { ...DEFAULT_ONION_SKIN, prevCount: 1, nextCount: 1 })).toEqual([]);
     // 첫 키프레임에 정확히 도달하면 그때부터는 정상적으로 계산된다.
     expect(onionSkinLayersForTrack(track, 5, { ...DEFAULT_ONION_SKIN, prevCount: 1, nextCount: 1 }).map((l) => l.frame.id)).toEqual(["b"]);
+  });
+});
+
+// ── 클립 노출 구간 편집 (시작·길이) ─────────────────────────────────────
+
+describe("셀 클립 노출 구간 편집", () => {
+  function docWithClip(frameCount = 24): AnimationTimelineDoc {
+    const base = createEmptyAnimationTimelineDoc(frameCount, 12);
+    return setTimelineClip(base, { id: "clip-a", name: "도입", startFrame: 2, endFrame: 4 });
+  }
+
+  it("길이를 6프레임으로 늘리면 활성 노출 해석이 정확히 그 6프레임을 돌려준다 (판정)", () => {
+    const doc = docWithClip();
+    const active = { ...doc, activeClipId: "clip-a" };
+    const widened = setTimelineClipDuration(active, "clip-a", 6);
+    const exposure = resolveActiveClipExposure(widened);
+    expect(exposure.startFrame).toBe(2);
+    expect(exposure.endFrame).toBe(7);
+    expect(timelineClipDurationFrames(exposure.clip!)).toBe(6);
+    // 재생·미리보기·내보내기가 공유하는 프레임 목록도 정확히 6개, 시작~끝 연속 구간이다.
+    expect(activeClipExposureFrameIndices(widened)).toEqual([2, 3, 4, 5, 6, 7]);
+    // 구간 안의 모든 프레임은 timelineClipAtFrame으로도 같은 클립으로 해석된다.
+    for (const frame of [2, 3, 4, 5, 6, 7]) {
+      expect(timelineClipAtFrame(widened, frame)?.id).toBe("clip-a");
+    }
+    expect(timelineClipAtFrame(widened, 8)).toBeNull();
+    expect(timelineClipAtFrame(widened, 1)).toBeNull();
+  });
+
+  it("moveTimelineClip은 길이를 유지한 채 이동하고 타임라인 끝에서 클램프한다", () => {
+    const doc = docWithClip();
+    const moved = moveTimelineClip(doc, "clip-a", 5);
+    expect(moved.clips?.[0]).toMatchObject({ startFrame: 5, endFrame: 7 });
+    const clamped = moveTimelineClip(doc, "clip-a", 999);
+    expect(clamped.clips?.[0]).toMatchObject({ startFrame: 21, endFrame: 23 });
+    const clampedLow = moveTimelineClip(doc, "clip-a", -10);
+    expect(clampedLow.clips?.[0]).toMatchObject({ startFrame: 0, endFrame: 2 });
+  });
+
+  it("setTimelineClipStart는 끝을 고정하고 길이를 함께 줄이며 최소 1프레임을 지킨다", () => {
+    const doc = docWithClip();
+    const shifted = setTimelineClipStart(doc, "clip-a", 4);
+    expect(shifted.clips?.[0]).toMatchObject({ startFrame: 4, endFrame: 4 });
+    expect(timelineClipDurationFrames(shifted.clips![0]!)).toBe(1);
+    // 끝보다 뒤로 밀어도 길이는 1 아래로 내려가지 않는다.
+    const beyond = setTimelineClipStart(doc, "clip-a", 99);
+    expect(beyond.clips?.[0]).toMatchObject({ startFrame: 4, endFrame: 4 });
+  });
+
+  it("setTimelineClipDuration은 남은 타임라인 끝까지만 늘어난다", () => {
+    const doc = docWithClip();
+    const widened = setTimelineClipDuration(doc, "clip-a", 999);
+    expect(widened.clips?.[0]).toMatchObject({ startFrame: 2, endFrame: 23 });
+  });
+
+  it("변화 없는 편집과 없는 클립 id는 원본 doc 참조를 그대로 돌려준다 (no-op 계약)", () => {
+    const doc = docWithClip();
+    expect(moveTimelineClip(doc, "clip-a", 2)).toBe(doc);
+    expect(setTimelineClipDuration(doc, "clip-a", 3)).toBe(doc);
+    expect(setTimelineClipStart(doc, "clip-a", 2)).toBe(doc);
+    expect(moveTimelineClip(doc, "missing", 0)).toBe(doc);
+    expect(setTimelineClipDuration(doc, "missing", 6)).toBe(doc);
+  });
+
+  it("timelineClipAtFrame은 겹친 구간에서 시작이 늦은 클립을 우선한다", () => {
+    let doc = docWithClip();
+    doc = setTimelineClip(doc, { id: "clip-b", name: "겹침", startFrame: 3, endFrame: 10 });
+    expect(timelineClipAtFrame(doc, 4)?.id).toBe("clip-b");
+    expect(timelineClipAtFrame(doc, 2)?.id).toBe("clip-a");
+    expect(timelineClipAtFrame(doc, 11)).toBeNull();
+  });
+
+  it("활성 클립이 없으면 노출 프레임 목록은 전체 타임라인이다", () => {
+    const doc = docWithClip(4);
+    expect(activeClipExposureFrameIndices(doc)).toEqual([0, 1, 2, 3]);
   });
 });

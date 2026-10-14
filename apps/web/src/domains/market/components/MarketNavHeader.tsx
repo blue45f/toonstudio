@@ -21,7 +21,7 @@ interface MarketNavHeaderProps {
   readonly className?: string;
 }
 
-type MarketPlaceId = "find" | "library" | "wishlist" | "distribute";
+type MarketPlaceId = "find" | "library" | "wishlist" | "seller";
 
 const MARKET_PLACES: ReadonlyArray<{
   readonly id: MarketPlaceId;
@@ -29,10 +29,12 @@ const MARKET_PLACES: ReadonlyArray<{
   readonly icon: LucideIcon;
   readonly label: readonly [string, string];
 }> = [
-  { id: "find", href: "/market", icon: Search, label: ["찾아보기", "Browse"] },
+  // "찾아보기"의 도착지는 목록(/market/browse)이다 — 마켓 홈(/market)은 상단 브랜드 링크가 맡는다 (personal P-10).
+  { id: "find", href: "/market/browse", icon: Search, label: ["찾아보기", "Browse"] },
   { id: "library", href: "/market/library", icon: Library, label: ["내 에셋", "My assets"] },
   { id: "wishlist", href: "/market/wishlist", icon: Heart, label: ["찜 목록", "Wishlist"] },
-  { id: "distribute", href: "/market/manage", icon: PackagePlus, label: ["배포하기", "Distribute"] },
+  // 판매 진입은 판매자 센터 하나만 노출한다 (S1-5). 등록·관리는 센터의 탭이다.
+  { id: "seller", href: "/market/seller", icon: PackagePlus, label: ["판매자 센터", "Seller center"] },
 ];
 
 /** 후보를 고른 뒤 쓰는 보조 도구 — 상단 탭이 아니라 "선택 도구"로 묶는다. */
@@ -50,15 +52,15 @@ const SELECTION_TOOLS: ReadonlyArray<{
 function marketPlaceState(id: MarketPlaceId, pathname: string, findingAsset: boolean) {
   switch (id) {
     case "find":
-      return { active: findingAsset, current: pathname === "/market" };
+      return { active: findingAsset, current: pathname === "/market/browse" };
     case "library":
       return { active: pathname === "/market/library", current: pathname === "/market/library" };
     case "wishlist":
       return { active: pathname === "/market/wishlist", current: pathname === "/market/wishlist" };
-    case "distribute": {
-      const distributing =
+    case "seller": {
+      const selling =
         pathname === "/market/manage" || pathname === "/market/publish" || pathname === "/market/seller";
-      return { active: distributing, current: distributing };
+      return { active: selling, current: selling };
     }
   }
 }

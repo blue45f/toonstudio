@@ -147,6 +147,29 @@ describe("studio-dialogue-batch 목록화", () => {
     expect(filterDialogueItems(items, "없는대사")).toEqual([]);
   });
 
+  it("filterDialogueItems 는 한 글자 오타로도 대사를 검색한다 (fuse.js 퍼지)", () => {
+    const items = collectDialogueItems(makePages());
+    // 모음만 틀린 오타 — 초성 동등으로 정확 패스에 흡수된다.
+    expect(filterDialogueItems(items, "민슈").map((i) => i.id)).toEqual(["b1", "t1", "b2", "b3"]);
+    // 라벨 오타 — "말풍션"으로 말풍선 라벨 전부에 닿는다.
+    expect(filterDialogueItems(items, "말풍션").map((i) => i.id)).toEqual(["b1", "b2", "b3", "b4"]);
+    // 영문 오타 — MINSU! 에 닿는다.
+    expect(filterDialogueItems(items, "minsuu").map((i) => i.id)).toEqual(["b4"]);
+    // 초성이 바뀌는 1자 오타는 퍼지 패스가 잇는다(정확 결과 없음 → 퍼지 점수순).
+    expect(filterDialogueItems(items, "날풍선").map((i) => i.id)).toEqual(["b1", "b2", "b3", "b4"]);
+    // 오탐 상한: 무관한 질의는 여전히 0건이다.
+    expect(filterDialogueItems(items, "업는대사")).toEqual([]);
+  });
+
+  it("filterDialogueItems 는 초성만으로도 대사·말풍선 라벨을 검색한다 (es-hangul)", () => {
+    const items = collectDialogueItems(makePages());
+    // 본문 초성: ㅁㅅ → '민수'가 든 대사 전부 (b4 'MINSU!'는 한글 초성이 없다)
+    expect(filterDialogueItems(items, "ㅁㅅ").map((i) => i.id)).toEqual(["b1", "t1", "b2", "b3"]);
+    // 라벨 초성: ㅁㅍ → 말풍선 종류 라벨 (텍스트 t1 제외)
+    expect(filterDialogueItems(items, "ㅁㅍ").map((i) => i.id)).toEqual(["b1", "b2", "b3", "b4"]);
+    expect(filterDialogueItems(items, "ㅋㅋ")).toEqual([]);
+  });
+
   it("adjacentEditableDialogueItem 은 현재 읽기 순서에서 잠긴 대사를 건너뛴다", () => {
     const items = collectDialogueItems(makePages());
     expect(adjacentEditableDialogueItem(items, "t1", "next")?.id).toBe("b3");

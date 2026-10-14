@@ -210,8 +210,8 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
             />
           ) : (
             <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
-              {shelfTitles.map((t) => (
-                <TitleCard key={t.id} title={t} size="sm" />
+              {shelfTitles.map((t, index) => (
+                <TitleCard key={t.id} title={t} size="sm" index={index} />
               ))}
             </div>
           )}
@@ -361,9 +361,9 @@ export function LibraryView({ initialTab = "shelf" }: { initialTab?: Tab }) {
                     <h3 className="font-semibold">취향 저격 추천</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
-                    {recs.map(({ title, reason }) => (
+                    {recs.map(({ title, reason }, index) => (
                       <div key={title.id} className="flex flex-col gap-1.5">
-                        <TitleCard title={title} size="sm" />
+                        <TitleCard title={title} size="sm" index={index} />
                         <p className="text-[0.7rem] leading-snug text-accent">{reason}</p>
                       </div>
                     ))}

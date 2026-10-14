@@ -953,6 +953,8 @@ describe("StudioReferencePanel controlled reference board", () => {
     );
 
     fireEvent.click(await screen.findByRole("button", { name: "레퍼런스 이미지 자동 정돈" }));
+    expect(onCommit).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole("menuitem", { name: /현재 순서/u }));
 
     expect(onCommit).toHaveBeenCalledOnce();
     const arranged = onCommit.mock.calls[0]?.[0] as StudioReferenceBoardDocument;
@@ -960,6 +962,29 @@ describe("StudioReferencePanel controlled reference board", () => {
     expect(arranged.items.every((candidate) => candidate.view.rotationDeg === 0)).toBe(true);
     expect(arranged.items.every((candidate) => candidate.view.zoom <= 1)).toBe(true);
     expect(screen.getByText("레퍼런스를 한눈에 비교할 수 있도록 정돈했습니다.")).toBeTruthy();
+  });
+
+  it("arranges references by the chosen name criterion with normalized heights", async () => {
+    const onCommit = vi.fn();
+    const bee = makeItem("ref-arrange-name-b", HASH_B, ASSET_B.id, ASSET_B.name);
+    const ay = makeItem("ref-arrange-name-a", HASH_A, ASSET_A.id, ASSET_A.name);
+    render(
+      <ControlledReferencePanel
+        initialDocument={createStudioReferenceBoardDocument([bee, ay])}
+        onCommit={onCommit}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "레퍼런스 이미지 자동 정돈" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: /이름순/u }));
+
+    expect(onCommit).toHaveBeenCalledOnce();
+    const arranged = onCommit.mock.calls[0]?.[0] as StudioReferenceBoardDocument;
+    expect(arranged.items.map((candidate) => candidate.id)).toEqual([
+      "ref-arrange-name-a",
+      "ref-arrange-name-b",
+    ]);
+    expect(screen.getByText("레퍼런스 높이를 맞추고 이름순으로 정돈했습니다.")).toBeTruthy();
   });
 
   it("rolls a cancelled item drag back without creating a document commit", async () => {

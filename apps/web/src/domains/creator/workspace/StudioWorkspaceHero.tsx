@@ -73,6 +73,15 @@ export function StudioWorkspaceHero({
       ) : null}
       <div className="workspace-hero-mesh" aria-hidden="true" />
       <p className="workspace-eyebrow">{t("이어서 만들기", "Continue creating")}</p>
+      {project ? (
+        <span className="workspace-hero-stage-chip" data-workspace-stage-chip={project.status}>
+          {project.status === "active"
+            ? t("제작 중", "In production")
+            : project.status === "archived"
+              ? t("보관됨", "Archived")
+              : t("휴지통", "Trashed")}
+        </span>
+      ) : null}
       <h2 id="workspace-continue-title">{project?.title ?? t("첫 이야기를 시작해 보세요", "Start your first story")}</h2>
       <p>{resume?.summary ?? t("원고와 팀의 작업을 한곳에서 이어갑니다.", "Keep your artwork and team workflow together.")}</p>
       {completion ? (

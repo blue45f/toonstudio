@@ -41,6 +41,7 @@ import { studioLiveLockRepositoryProvider } from "./studio-live-lock.repository"
 import { StudioLiveRoomTransitionCoordinator } from "./studio-live-room-transition-coordinator";
 import { StudioLiveSocketAuthService } from "./studio-live-socket-auth.service";
 import { StudioLiveGateway } from "./studio-live.gateway";
+import { studioLiveOpLogStoreProvider } from "./studio-live-op.repository";
 import {
   studioLiveSessionAuthenticatorProvider,
   studioLiveSessionRevalidatorProvider,
@@ -107,6 +108,7 @@ const privateObjectStorageModule =
     studioLiveFeaturePolicyProvider,
     studioLiveLockSchemaPreflightProvider,
     studioLiveLockRepositoryProvider,
+    studioLiveOpLogStoreProvider,
     studioRasterAssetRepositoryProvider,
     studioRemoteReferenceDnsResolverProvider,
     studioRemoteReferenceHttpRequesterProvider,

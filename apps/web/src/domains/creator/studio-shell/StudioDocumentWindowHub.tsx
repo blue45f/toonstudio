@@ -315,6 +315,7 @@ export function StudioDocumentWindowHub({
             </p>
           </div>
           <div id="studio-mode-chrome-slot" className="shrink-0 empty:hidden" />
+          <div id="studio-episode-stage-chrome-slot" className="shrink-0 empty:hidden" />
           {resolution.workspace === "draw" ? (
             <button
               type="button"

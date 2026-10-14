@@ -13,6 +13,10 @@
  *
  * 메쉬 그물선(삼각형 와이어프레임)은 studio-puppet-warp.ts 의 puppetMeshTriangleLines 가 계산한
  * "현재(드래그된) 위치" 기준 좌표를 그대로 그린다 — 위상은 항상 원본 메쉬 기준으로 고정.
+ *
+ * 핀 삭제는 두 경로가 공존한다: 패널 목록의 삭제 버튼, 그리고 캔버스에서 핀을
+ * Alt(Option)+클릭(Photoshop 퍼펫 워프와 동일 규약). 드래그가 실제로 일어나면 Konva 가
+ * click 을 발화하지 않으므로, Alt+드래그는 "이동"으로 남고 Alt+클릭(무이동)만 삭제로 동작한다.
  */
 import { Circle as KCircle, Group, Line } from "react-konva/lib/ReactKonvaCore";
 
@@ -29,6 +33,8 @@ export type StudioPuppetWarpOverlayProps = {
   /** 굽는 중이면 드래그를 잠근다(직전 스트로크의 비동기 굽기와 겹치는 것 방지, heal-clone과 동일 이유). */
   busy?: boolean;
   onMovePin: (id: string, x: number, y: number) => void;
+  /** 핀 Alt(Option)+클릭 삭제 — 없으면 캔버스 삭제 제스처만 비활성(패널 삭제는 그대로 동작). */
+  onRemovePin?: (id: string) => void;
 };
 
 // 다른 오버레이 색과 겹치지 않는 보라 계열 — 마술봉(#7c5cfc)과 같은 계열이지만 핀은 별도 도구라
@@ -43,6 +49,7 @@ export function StudioPuppetWarpOverlay({
   pins,
   busy = false,
   onMovePin,
+  onRemovePin,
 }: StudioPuppetWarpOverlayProps): ReactElement {
   const size = { width: frame.width, height: frame.height };
   const meshLines = puppetMeshTriangleLines(pins, size);
@@ -73,6 +80,14 @@ export function StudioPuppetWarpOverlay({
             strokeWidth={1.5 / scale}
             draggable={!busy}
             name="puppet-pin-handle"
+            onClick={(e: Konva.KonvaEventObject<MouseEvent>) => {
+              // Alt(Option)+클릭 = 핀 삭제. 드래그가 일어난 뒤에는 Konva 가 click 을
+              // 발화하지 않아 이동 제스처와 충돌하지 않는다. Stage 의 onStageDown 은
+              // "puppet-pin-handle" 이름으로 이 클릭을 이미 걸러 새 핀을 추가하지 않는다.
+              if (busy || !onRemovePin || !e.evt.altKey) return;
+              e.cancelBubble = true;
+              onRemovePin(p.id);
+            }}
             onMouseEnter={(e: Konva.KonvaEventObject<MouseEvent>) => {
               const stage = e.target.getStage();
               if (stage) stage.container().style.cursor = "move";

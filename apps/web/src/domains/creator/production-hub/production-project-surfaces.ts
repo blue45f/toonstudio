@@ -3,7 +3,7 @@
  *
  * 자주 쓰는 다섯 화면(개요·공정 보드·회차·원고·검수)을 앞에 두고 나머지는 "더보기"에 모은다.
  * 각 화면은 한 줄 설명과 "다음 단계" 행동 하나를 가진다. 다음 단계는 제작 흐름
- * (개요 → 공정 보드 → 회차 룸 → 원고 비교 → 검수 → 공유)으로 자연스럽게 이어지도록 고른다.
+ * (개요 → 공정 보드 → 회차 룸 → 원고 비교 → 검수 → 게시)으로 자연스럽게 이어지도록 고른다.
  */
 import {
   Activity,
@@ -121,7 +121,7 @@ const SURFACE_CONTENT: Readonly<Record<ProductionProjectSurface, SurfaceContent>
     icon: ClipboardCheck,
     label: { ko: "검수", en: "Review" },
     description: { ko: "원고 위 핀 코멘트, 역할별 승인, 게시를 막는 수정 요청을 확인합니다.", en: "Pinned comments, approvals per role and changes that block publishing." },
-    next: { label: { ko: "외부 검수 링크 공유", en: "Share an external review link" }, target: { kind: "surface", surface: "manuscripts", query: "manuscriptView=delivery" } },
+    next: { label: { ko: "게시 센터로 이동", en: "Go to the publish center" }, target: { kind: "path", path: "/studio/publish" } },
   },
   activity: {
     core: false,

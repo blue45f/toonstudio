@@ -18,6 +18,47 @@
 
 export const READER_PREVIEW_DEVICE_WIDTH_PX = 390;
 export const READER_PREVIEW_VIEWPORT_HEIGHT_PX = 844;
+
+/**
+ * 실기기 프리셋 — 독자가 실제로 쓰는 폰 규격(CSS px) 목록.
+ *
+ * 기본값(`iphone-14`)은 기존 단일 규격 상수와 같아, 프리셋을 고르지 않으면
+ * 종전 동작과 완전히 동일하다. 작은 기기(360px)에서는 대사가 상대적으로
+ * 커 보이지만 한 화면이 짧아 컷 화면 수가 늘고, 큰 기기(430px)에서는
+ * 반대로 짧아지므로 — 발행 전 최소·최대 규격으로 한 번씩 확인하는 것이
+ * "실기기 스크롤 체감" 검사의 핵심이다.
+ */
+export interface ReaderPreviewDevicePreset {
+  readonly id: string;
+  readonly widthPx: number;
+  readonly viewportHeightPx: number;
+}
+
+export const READER_PREVIEW_DEVICE_PRESETS = [
+  { id: "galaxy-s24", widthPx: 360, viewportHeightPx: 780 },
+  { id: "iphone-se", widthPx: 375, viewportHeightPx: 667 },
+  { id: "iphone-14", widthPx: 390, viewportHeightPx: 844 },
+  { id: "iphone-15-pro-max", widthPx: 430, viewportHeightPx: 932 },
+] as const satisfies readonly ReaderPreviewDevicePreset[];
+
+export type ReaderPreviewDevicePresetId =
+  (typeof READER_PREVIEW_DEVICE_PRESETS)[number]["id"];
+
+export const READER_PREVIEW_DEFAULT_DEVICE_PRESET_ID: ReaderPreviewDevicePresetId =
+  "iphone-14";
+
+/** 알 수 없는 id면 기본 프리셋으로 떨어진다 — 저장된 선택이 구버전 값이어도 깨지지 않는다. */
+export function readerPreviewDevicePreset(
+  id: string,
+): ReaderPreviewDevicePreset {
+  return (
+    READER_PREVIEW_DEVICE_PRESETS.find((preset) => preset.id === id) ??
+    READER_PREVIEW_DEVICE_PRESETS.find(
+      (preset) => preset.id === READER_PREVIEW_DEFAULT_DEVICE_PRESET_ID,
+    ) ??
+    READER_PREVIEW_DEVICE_PRESETS[0]
+  );
+}
 export const READER_PREVIEW_CANVAS_WIDTH_PX = 720;
 export const READER_PREVIEW_PAGE_GAP_PX = 24;
 

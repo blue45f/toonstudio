@@ -42,6 +42,13 @@ import {
   normalizeStudioMannequinPose,
   type StudioMannequinPose,
 } from "./studio-mannequin-poses";
+import {
+  buildStudioMannequinJointRangeArc,
+  resolveStudioMannequinOutlineMode,
+  resolveStudioMannequinOutlineVisible,
+  STUDIO_MANNEQUIN_OUTLINE_MODE_DEFAULT,
+  type StudioMannequinOutlineMode,
+} from "./studio-mannequin-readability";
 
 export type StudioMannequinProjection = "perspective" | "orthographic";
 
@@ -90,6 +97,10 @@ export interface StudioMannequinSceneOptions {
   readonly container: HTMLElement;
   readonly initialSpec?: StudioMannequinSpec;
   readonly initialPose?: StudioMannequinPose;
+  /** 윤곽선 모드 초기값(기본 auto = 셀 셰이딩에서만 표시, 기존 동작). */
+  readonly initialOutlineMode?: StudioMannequinOutlineMode;
+  /** 선택 관절 가동범위 아크 표시 초기값(기본 true). */
+  readonly initialShowJointRangeArc?: boolean;
   /** 뷰포트에서 몸통/팔다리를 클릭해 관절을 고르면 호출된다(빈 곳 클릭 시 null). */
   readonly onSelectJoint?: (jointId: StudioMannequinJointId | null) => void;
   /** IK 또는 직접 관절 드래그가 끝날 때 최종 포즈로 1회 호출된다(프레임당 React 갱신 금지 계약). */
@@ -105,6 +116,10 @@ export interface StudioMannequinSceneHandle {
   selectJoint(jointId: StudioMannequinJointId | null): void;
   setMaterialStyle(style: StudioMannequinMaterialStyle): void;
   getMaterialStyle(): StudioMannequinMaterialStyle;
+  setOutlineMode(mode: StudioMannequinOutlineMode): void;
+  getOutlineMode(): StudioMannequinOutlineMode;
+  setShowJointRangeArc(show: boolean): void;
+  getShowJointRangeArc(): boolean;
   setCameraPreset(preset: "front" | "side" | "back" | "top" | "high" | "low"): void;
   setProjection(projection: StudioMannequinProjection): void;
   getProjection(): StudioMannequinProjection;
@@ -516,9 +531,45 @@ export function createStudioMannequinScene(
     transparent: true,
     opacity: 0.82,
   });
+  // 윤곽선 모드(auto/on/off)와 가동범위 아크 — 판정은 studio-mannequin-readability 순수 계약이 담당한다.
+  let outlineMode: StudioMannequinOutlineMode = resolveStudioMannequinOutlineMode(
+    options.initialOutlineMode ?? STUDIO_MANNEQUIN_OUTLINE_MODE_DEFAULT,
+  );
+  let showJointRangeArc = options.initialShowJointRangeArc ?? true;
+
+  // 선택 관절의 가동범위 아크(라인+끝점+현재 각도 마커). 관절 그룹의 자식으로 붙이지 않고
+  // 씬 직속 그룹에 두어, 매 프레임 관절 월드 행렬로 위치·자세를 동기화한다(아크 자체가
+  // 관절 회전을 따라 돌면 가동 구간 기준이 흐트러지기 때문).
+  const rangeArcGroup = new THREE.Group();
+  rangeArcGroup.name = "studio-mannequin-joint-range-arc";
+  rangeArcGroup.visible = false;
+  const rangeArcLineMaterial = new THREE.LineBasicMaterial({
+    color: 0x38bdf8,
+    transparent: true,
+    opacity: 0.9,
+    depthTest: false,
+  });
+  const rangeArcLimitMaterial = new THREE.MeshBasicMaterial({
+    color: 0x38bdf8,
+    transparent: true,
+    opacity: 0.95,
+    depthTest: false,
+  });
+  const rangeArcMarkerMaterial = new THREE.MeshBasicMaterial({
+    color: 0xe0925c,
+    transparent: true,
+    opacity: 0.95,
+    depthTest: false,
+  });
+  const rangeArcMarkerGeometry = new THREE.SphereGeometry(1, 14, 10);
+  let rangeArcLine: THREE.Line | null = null;
+  let rangeArcLimitDots: THREE.Mesh[] = [];
+  let rangeArcMarker: THREE.Mesh | null = null;
+  let rangeArcBuiltKey: string | null = null;
 
   const mannequinRoot = new THREE.Group();
   scene.add(mannequinRoot);
+  scene.add(rangeArcGroup);
 
   let joints = new Map<StudioMannequinJointId, THREE.Group>();
   let bodyMeshes: THREE.Mesh[] = [];
@@ -582,6 +633,7 @@ export function createStudioMannequinScene(
 
   function renderNow(): void {
     if (disposed) return;
+    syncJointRangeArc();
     renderer.render(scene, activeCamera);
   }
 
@@ -716,9 +768,11 @@ export function createStudioMannequinScene(
         studioMannequinJointId: primitive.jointId,
         studioMannequinMaterialRole: materialRole,
       });
-      outline.visible = currentMaterialStyle === "shaded"
-        && materialRole !== "landmark"
-        && materialRole !== "eye";
+      outline.visible = resolveStudioMannequinOutlineVisible({
+        mode: outlineMode,
+        style: currentMaterialStyle,
+        role: materialRole,
+      });
       outline.castShadow = false;
       outline.receiveShadow = false;
       outline.renderOrder = -1;
@@ -787,6 +841,107 @@ export function createStudioMannequinScene(
         ? selectedMaterial
         : materialPalette[userData.studioMannequinMaterialRole];
     }
+  }
+
+  function applyOutlineVisibility(): void {
+    for (const outline of outlineMeshes) {
+      const role = (outline.userData as BodyMeshUserData).studioMannequinMaterialRole;
+      outline.visible = resolveStudioMannequinOutlineVisible({
+        mode: outlineMode,
+        style: currentMaterialStyle,
+        role,
+      });
+    }
+  }
+
+  function clearJointRangeArc(): void {
+    for (const dot of rangeArcLimitDots) dot.removeFromParent();
+    rangeArcLimitDots = [];
+    if (rangeArcLine) {
+      rangeArcLine.removeFromParent();
+      rangeArcLine.geometry.dispose();
+      rangeArcLine = null;
+    }
+    rangeArcMarker?.removeFromParent();
+    rangeArcMarker = null;
+    rangeArcBuiltKey = null;
+    rangeArcGroup.visible = false;
+  }
+
+  /**
+   * 선택 관절의 가동범위 아크를 현재 포즈에 동기화한다. 아크 지오메트리는
+   * (관절, 주축)이 바뀔 때만 다시 만들고, 평소에는 그룹 위치·자세와 현재 각도
+   * 마커만 옮긴다 — renderNow(온디맨드 프레임)에서 호출돼 드래그 중에도 따라온다.
+   * 자세는 관절 부모의 월드 자세를 써서 관절 자체 회전이 구간 기준을 돌리지 않게 한다.
+   */
+  function syncJointRangeArc(): void {
+    if (!showJointRangeArc || !selectedJointId) {
+      if (rangeArcBuiltKey !== null) clearJointRangeArc();
+      rangeArcGroup.visible = false;
+      return;
+    }
+    const jointGroup = joints.get(selectedJointId);
+    if (!jointGroup) {
+      clearJointRangeArc();
+      return;
+    }
+    const arc = buildStudioMannequinJointRangeArc({
+      jointId: selectedJointId,
+      currentRotation: [jointGroup.rotation.x, jointGroup.rotation.y, jointGroup.rotation.z],
+    });
+    if (!arc) {
+      clearJointRangeArc();
+      return;
+    }
+    const radius = spec.headUnit * 0.85;
+    const key = `${arc.jointId}:${arc.axis}`;
+    if (rangeArcBuiltKey !== key) {
+      clearJointRangeArc();
+      rangeArcBuiltKey = key;
+      const positions = new Float32Array(arc.points.length * 3);
+      arc.points.forEach((point, index) => {
+        positions[index * 3] = point[0] * radius;
+        positions[index * 3 + 1] = point[1] * radius;
+        positions[index * 3 + 2] = point[2] * radius;
+      });
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      rangeArcLine = new THREE.Line(geometry, rangeArcLineMaterial);
+      rangeArcLine.renderOrder = 11;
+      rangeArcGroup.add(rangeArcLine);
+      for (const endPoint of [arc.points[0], arc.points[arc.points.length - 1]]) {
+        if (!endPoint) continue;
+        const dot = new THREE.Mesh(rangeArcMarkerGeometry, rangeArcLimitMaterial);
+        dot.scale.setScalar(radius * 0.07);
+        dot.position.set(endPoint[0] * radius, endPoint[1] * radius, endPoint[2] * radius);
+        dot.renderOrder = 11;
+        rangeArcGroup.add(dot);
+        rangeArcLimitDots.push(dot);
+      }
+      rangeArcMarker = new THREE.Mesh(rangeArcMarkerGeometry, rangeArcMarkerMaterial);
+      rangeArcMarker.scale.setScalar(radius * 0.1);
+      rangeArcMarker.renderOrder = 12;
+      rangeArcGroup.add(rangeArcMarker);
+    }
+    jointGroup.getWorldPosition(rangeArcGroup.position);
+    const parent = jointGroup.parent;
+    if (parent) parent.getWorldQuaternion(rangeArcGroup.quaternion);
+    else rangeArcGroup.quaternion.identity();
+    if (rangeArcMarker && arc.currentPoint) {
+      rangeArcMarker.position.set(
+        arc.currentPoint[0] * radius,
+        arc.currentPoint[1] * radius,
+        arc.currentPoint[2] * radius,
+      );
+    }
+    const arcColor = arc.limitState === "at-limit"
+      ? 0xef4444
+      : arc.limitState === "near-limit"
+        ? 0xf59e0b
+        : 0x38bdf8;
+    rangeArcLineMaterial.color.setHex(arcColor);
+    rangeArcLimitMaterial.color.setHex(arcColor);
+    rangeArcGroup.visible = true;
   }
 
   // ── 포인터 상호작용(관절 선택 + IK 드래그) ──────────────────────────────
@@ -1071,6 +1226,7 @@ export function createStudioMannequinScene(
     selectedJointId = null;
     applySelectionTint();
     helpers.visible = false;
+    rangeArcGroup.visible = false;
     for (const handle of effectorHandles) handle.visible = false;
     let rgba: Uint8ClampedArray;
     try {
@@ -1157,14 +1313,29 @@ export function createStudioMannequinScene(
       materialPalette = createStudioMannequinMaterialPalette(style, gradientMap);
       applySelectionTint();
       disposeStudioMannequinMaterialPalette(previousPalette);
-      for (const outline of outlineMeshes) {
-        const role = (outline.userData as BodyMeshUserData).studioMannequinMaterialRole;
-        outline.visible = style === "shaded" && role !== "landmark" && role !== "eye";
-      }
+      applyOutlineVisibility();
       invalidate();
     },
     getMaterialStyle() {
       return currentMaterialStyle;
+    },
+    setOutlineMode(mode) {
+      if (disposed) return;
+      outlineMode = resolveStudioMannequinOutlineMode(mode);
+      applyOutlineVisibility();
+      invalidate();
+    },
+    getOutlineMode() {
+      return outlineMode;
+    },
+    setShowJointRangeArc(show) {
+      if (disposed) return;
+      showJointRangeArc = show === true;
+      if (!showJointRangeArc) clearJointRangeArc();
+      invalidate();
+    },
+    getShowJointRangeArc() {
+      return showJointRangeArc;
     },
     setCameraPreset(preset) {
       if (disposed) return;
@@ -1232,6 +1403,11 @@ export function createStudioMannequinScene(
       controls?.dispose();
       controls = null;
       disposeMannequinGraph();
+      clearJointRangeArc();
+      rangeArcLineMaterial.dispose();
+      rangeArcLimitMaterial.dispose();
+      rangeArcMarkerMaterial.dispose();
+      rangeArcMarkerGeometry.dispose();
       handleGeometry.dispose();
       disposeStudioMannequinMaterialPalette(materialPalette);
       selectedMaterial.dispose();

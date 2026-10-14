@@ -26,6 +26,7 @@ import {
 } from "./studio-bg3d-camera-orientation";
 import { normalizeStudioBg3dCaptureAspectRatio } from "./studio-bg3d-capture-frame-geometry";
 import { normalizeStudioBg3dHierarchyParents } from "./studio-bg3d-hierarchy";
+import { normalizeStudioBg3dTexturePaint } from "./studio-bg3d-texture-paint";
 import { normalizeStudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
 
 import {
@@ -88,6 +89,7 @@ import {
   type StudioBg3dShotOutputOverride,
   type StudioBg3dShotRenderOverride,
   type StudioBg3dShotToneOutputOverride,
+  type StudioBg3dTexturePaint,
   type StudioBg3dTransform,
   type StudioBg3dTwoBoneIkConstraint,
   type StudioBg3dVec3,
@@ -171,6 +173,9 @@ export {
   type StudioBg3dShotToneOutputOverride,
   type StudioBg3dSkyPresetId,
   type StudioBg3dTextureBudget,
+  type StudioBg3dTexturePaint,
+  type StudioBg3dTexturePaintPoint,
+  type StudioBg3dTexturePaintStroke,
   type StudioBg3dToneMapping,
   type StudioBg3dToneMode,
   type StudioBg3dToneOutputSettings,
@@ -1439,12 +1444,15 @@ function normalizeNode(
       return null;
     }
     const materialOverride = normalizeMaterialOverride(value.materialOverride);
+    const texturePaint = normalizeStudioBg3dTexturePaint(value.texturePaint);
     return {
       ...base,
       kind: "primitive",
       primitiveKind: value.primitiveKind as StudioBg3dPrimitiveKind,
       color: normalizedColor(value.color, "#b8b8c2"),
       ...(materialOverride ? { materialOverride } : {}),
+      // 표면 페인트 획은 정규화를 통과한 경우에만 문서에 남는다 — 저장/재열기에서 획 유지의 관문.
+      ...(texturePaint ? { texturePaint } : {}),
     };
   }
   if (value.kind === "model") {
@@ -1675,6 +1683,8 @@ function legacyPrimitiveNode(value: unknown): Record<string, unknown> | null {
     locked: false,
     castsShadow: true,
     receivesShadow: true,
+    // 레거시 런타임 형상에 페인트가 실려 오면 정규화 단계가 검증하므로 그대로 넘긴다.
+    ...(isRecord(value.texturePaint) ? { texturePaint: value.texturePaint } : {}),
   };
 }
 
@@ -1860,7 +1870,7 @@ function migrateDecodedSchemaV1Document(value: unknown): StudioBg3dSceneDocument
   if (
     value.nodes.some((node) =>
       isRecord(node) && (
-        hasOwn(node, "materialOverride") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
+        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
       ))
   ) return null;
   const budgets = migrateSchemaV1Budgets(value.budgets);
@@ -1892,7 +1902,7 @@ function migrateDecodedSchemaPanoramaDocument(
     value.version === STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION
     && value.nodes.some((node) =>
       isRecord(node) && (
-        hasOwn(node, "materialOverride") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
+        hasOwn(node, "materialOverride") || hasOwn(node, "texturePaint") || hasOwn(node, "animation") || hasOwn(node, "pose") || hasOwn(node, "morph") || hasOwn(node, "constraints")
       ))
   ) {
     return null;
@@ -2249,4 +2259,11 @@ export function normalizeStudioBg3dMorphLayer(raw: unknown): StudioBg3dMorphLaye
 
 export function normalizeStudioBg3dConstraintLayer(raw: unknown): StudioBg3dConstraintLayer | null {
   return deepFreeze(normalizeConstraintLayer(decodeBoundedJson(raw)));
+}
+
+/** Runtime adapter helper for accepting only the bounded canonical texture-paint payload. */
+export function normalizeStudioBg3dTexturePaintPayload(
+  raw: unknown,
+): StudioBg3dTexturePaint | null {
+  return deepFreeze(normalizeStudioBg3dTexturePaint(decodeBoundedJson(raw)));
 }

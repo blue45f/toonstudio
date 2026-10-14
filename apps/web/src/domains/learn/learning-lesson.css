@@ -584,3 +584,59 @@
     break-inside: avoid;
   }
 }
+
+/* 강좌 상세 키보드 동선 — 단축키 힌트와 체크리스트 번호 배지 */
+.learn-shortcut-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 16px 0 0;
+  color: var(--learn-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.learn-shortcut-hint > span:first-child {
+  color: var(--learn-fg);
+  font-weight: 750;
+  letter-spacing: .04em;
+}
+
+.learn-shortcut-hint kbd,
+.learn-check-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--learn-line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--learn-bg);
+  color: var(--learn-fg);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.learn-check-key {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
+  color: var(--learn-muted);
+}
+
+.learn-check[data-checked="true"] .learn-check-key {
+  color: var(--learn-accent);
+  border-color: color-mix(in srgb, var(--learn-accent) 52%, var(--learn-line));
+}
+
+@media print {
+  .learn-shortcut-hint,
+  .learn-check-key {
+    display: none !important;
+  }
+}

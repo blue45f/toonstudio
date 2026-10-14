@@ -151,6 +151,37 @@
   font-weight: 700;
 }
 
+.psched__cell--event {
+  border-color: color-mix(in srgb, var(--psched-warn) 55%, transparent);
+}
+
+.psched__event-marker {
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--psched-warn);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.psched__event-note {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--psched-warn);
+}
+
+.psched__badge--event-week {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--psched-warn) 18%, transparent);
+  color: var(--psched-warn);
+}
+
 .psched__dots {
   display: flex;
   flex-wrap: wrap;

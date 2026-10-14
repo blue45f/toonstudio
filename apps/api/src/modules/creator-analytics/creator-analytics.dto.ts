@@ -1,5 +1,6 @@
 // 창작자 애널리틱스 API 데이터 계약.
-// PUBLISH T3: 목 데이터로 시작하며 실제 집계 파이프라인이 붙으면 동일 스키마를 유지한다.
+// 실제 집계 소스가 연결되면 동일 스키마로 mock:false 응답을 돌려준다.
+// 목 응답은 명시적 샘플 요청(?sample=1)에서만 나가며 mock:true 로 구분한다.
 // 웹 클라이언트는 apps/web/src/domains/creator/analytics/types.ts 에 동일 스키마의
 // 복사본을 둔다(apps/* 간 application source 직접 import 금지).
 
@@ -68,8 +69,8 @@ export interface CreatorAnalyticsResponse {
   seriesId: string;
   period: CreatorAnalyticsPeriod;
   generatedAt: string;
-  /** 목 데이터 표시. 실제 집계로 전환되면 false */
-  mock: true;
+  /** 목 데이터 표시. 실제 집계 응답은 false, 명시적 샘플 응답만 true */
+  mock: boolean;
   kpis: CreatorAnalyticsKpi[];
   retention: CreatorAnalyticsRetentionPoint[];
   trafficSources: CreatorAnalyticsTrafficSource[];

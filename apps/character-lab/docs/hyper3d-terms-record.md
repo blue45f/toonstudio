@@ -144,3 +144,57 @@
 
 - 계약 확장(허용 라이선스 값 추가)은 계약·검증기·문서·테스트를 함께 바꾼다. 변경 위치와 근거는 같은 커밋의 본문에 적는다. 값이 늘어도 **법적 허용을 의미하지 않는다** — 증빙 경로와 생성 id가 있어야 V4가 통과하게 해서 이 기록을 건너뛰지 못하게 하는 것이 목적이다.
 - 약관이 개정되면 §2의 해시를 갱신하고 §3~§4를 다시 대조한다.
+
+## 9. 파생 파츠 33종 정리 — 증빙 첨부 현황과 격리 결정 (2026-10-14)
+
+라이선스 감사(문제 4) 후속 정리다. 대상은 키트 `provenance.sources` 중 `license="hyper3d-rodin-output"`인 **33종 전부**이며, 전수 목록은 아래 표와 키트 `provenance.hyper3dClearance`(count=33)가 정본이다.
+
+**결정: 증빙을 지어내지 않는다.** 현재 첨부된 것은 사용자 진술(§1·§6 반입 결정 기록)뿐이고, 아래 3종은 **미첨부**다. 그래서 33종을 삭제·교체하지도, 상업 사용 확정으로 표기하지도 않고 **pending-evidence(격리)** 로 표기한다. 키트의 각 source에는 `evidenceStatus="statement-only-pending-evidence"`를, `provenance`에는 `hyper3dClearance.commercialUseCleared=false`를 넣었다.
+
+| # | 증빙 항목 (§6) | 상태 | 첨부 위치·형식 (첨부 시 채울 것) |
+| --- | --- | --- | --- |
+| 1 | 플랜 증빙: 플랜명 + 결제 기록 보관 위치 | **미첨부** | 플랜명: ____ / 보관 위치: ____ / 확인일: ____ |
+| 2 | 계정 보유자 = 발행 주체(에이치준랩스) 일치 | **미확인** | 확인 방법: ____ / 확인일: ____ |
+| 3 | 서면 확인(Deemos): 질문 3(수정·파생)·4(공개 호스팅) 포함 | **미수신** | 수신일: ____ / 원문 보관 위치: ____ / 답변 요지: ____ |
+
+**닫는 법(둘 중 하나면 이 항목은 종료된다):**
+- (A) 위 1~3이 모두 첨부되면: 이 표의 상태를 갱신하고, 키트 `hyper3dClearance.status`를 `evidence-attached`, `commercialUseCleared`를 답변 범위에 맞게, 각 source의 `evidenceStatus`를 `evidence-attached`로 바꾼다.
+- (B) 서면 답변이 부정적이거나 증빙을 얻을 수 없으면: §6-4대로 33종의 GLB를 공개 저장소에서 제거하고 original/CC0 파츠로 교체하며, 키트에서 `hyper3d-rodin-output` 항목을 0개로 만든다. 이때 `defaults`(hair/soft-bob·top/tee·bottom/jeans·shoes/sneakers)가 이 33종을 가리키므로 기본값도 교체 파츠로 함께 바꾼다.
+
+### 9.1 대상 33종 전수 목록
+
+| source id | generationId | evidenceStatus |
+| --- | --- | --- |
+| `hyper3d-hair-short-layered` | `f63e1379-d77f-4351-9a6d-74ff796ff91a` | statement-only-pending-evidence |
+| `hyper3d-hair-soft-bob` | `f2ef0164-fae1-41ac-b321-2b6dd346cb21` | statement-only-pending-evidence |
+| `hyper3d-hair-romance-long` | `832d34d6-59d9-449c-8bfd-d490eb472e44` | statement-only-pending-evidence |
+| `hyper3d-hair-action-pony` | `49c429e4-3e07-42ac-8382-8adb611bf1b7` | statement-only-pending-evidence |
+| `hyper3d-hair-hime-cut` | `555ced0b-d341-4401-ad26-50824a80b2e1` | statement-only-pending-evidence |
+| `hyper3d-hair-wolf-layered` | `579b60ac-dff8-42a9-a39e-0b4fa99878c8` | statement-only-pending-evidence |
+| `hyper3d-hair-twin-tail` | `ee5b4422-7df7-4fb8-842b-0385146cafab` | statement-only-pending-evidence |
+| `hyper3d-top-tee` | `82698064-e736-4b1e-ac56-67f6569bd364` | statement-only-pending-evidence |
+| `hyper3d-top-hoodie` | `4949cb5c-98d3-4842-9f05-02dbcf651c61` | statement-only-pending-evidence |
+| `hyper3d-top-shirt` | `66101633-05ce-4898-8dd9-8c2dec747424` | statement-only-pending-evidence |
+| `hyper3d-top-blazer` | `268c6adf-bb7f-4755-b550-c6aa2bd9bd38` | statement-only-pending-evidence |
+| `hyper3d-top-sailor` | `039a2bba-a235-45b7-9bde-296cff7cafcf` | statement-only-pending-evidence |
+| `hyper3d-bottom-jeans` | `cb5a2e39-ecf4-4f99-9380-89267264053b` | statement-only-pending-evidence |
+| `hyper3d-bottom-shorts` | `454cee0f-eefa-40d1-a59d-56d944c6394a` | statement-only-pending-evidence |
+| `hyper3d-bottom-pleated-skirt` | `f12ea410-75bf-4475-a213-198746431395` | statement-only-pending-evidence |
+| `hyper3d-bottom-long-skirt` | `e68a0738-cbb4-49c6-8c63-e8e137b8bd32` | statement-only-pending-evidence |
+| `hyper3d-bottom-slacks` | `cfda62fb-19a3-4e4a-992f-1c4c52dd68ae` | statement-only-pending-evidence |
+| `hyper3d-shoes-sneakers` | `d6cd1b50-7e9f-401e-a4b4-87bf45b0e336` | statement-only-pending-evidence |
+| `hyper3d-shoes-loafers` | `347f643a-9d8d-4f13-9b11-4d07305d28ff` | statement-only-pending-evidence |
+| `hyper3d-shoes-boots` | `b793c25d-6247-43d9-a040-1be2d82252f8` | statement-only-pending-evidence |
+| `hyper3d-shoes-sandals` | `2a7df564-2bd6-49c9-ae0c-e5bdcece8c4f` | statement-only-pending-evidence |
+| `hyper3d-accessory-ribbon` | `43d44c7c-1c5d-4f31-83b5-dbc584859567` | statement-only-pending-evidence |
+| `hyper3d-accessory-cap` | `da32af22-d1e3-4103-a160-002557e24c2a` | statement-only-pending-evidence |
+| `hyper3d-accessory-headphones` | `ca9c78df-affa-4329-b12e-87ba46bd29b6` | statement-only-pending-evidence |
+| `hyper3d-top-shirt-male` | `eeaa0eeb-f4fa-4cb5-88a4-d3909bfb8fd3` | statement-only-pending-evidence |
+| `hyper3d-top-sailor-male` | `9aa9c672-bae8-4562-b01d-cc52aec04a52` | statement-only-pending-evidence |
+| `hyper3d-top-blazer-male` | `c5fc147c-860d-4fd6-be08-ad44753ce3c4` | statement-only-pending-evidence |
+| `hyper3d-top-hoodie-male` | `116ca34c-27df-4bd5-8de1-7bf76c24825c` | statement-only-pending-evidence |
+| `hyper3d-hair-soft-bob-male` | `6eec895d-0347-468c-a3be-0d0086f1dedb` | statement-only-pending-evidence |
+| `hyper3d-hair-short-layered-male` | `f821fc5a-0d1a-4e84-84a4-8793a1ee2c3d` | statement-only-pending-evidence |
+| `hyper3d-hair-wolf-layered-male` | `65af7240-df63-4931-8ac1-0d0826328eac` | statement-only-pending-evidence |
+| `hyper3d-hair-action-pony-male` | `122f0174-fcc0-4a20-83a6-0745481be836` | statement-only-pending-evidence |
+| `hyper3d-hair-romance-long-male` | `02dac44e-f730-453f-aefe-4eb25ddf83f1` | statement-only-pending-evidence |

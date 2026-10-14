@@ -528,11 +528,12 @@ export const STUDIO_MENU_ITEM_INVENTORY: readonly string[] = Object.freeze([
   "ai/stock",
   "ai/integrations",
   // help (9) — Wave "Help 그룹 신설"이 §15.3 Help 8행에 문을 냈다.
+  // 기능 튜토리얼 도달성(first-run F4.4)으로 학습 항목을 그룹 최상단에 고정했다.
+  "help/feature-tutorials",
+  "help/shortcuts",
   "help/command-search",
   "help/terminology-search",
   "help/current-tool",
-  "help/feature-tutorials",
-  "help/shortcuts",
   "help/diagnostics",
   "help/recovery",
   "help/licenses",

@@ -1,5 +1,6 @@
 {
   "app.name": "ToonStudio",
   "app.brandBeta": "Dịch vụ beta  dữ liệu và tính năng có thể thay đổi",
-  "app.loading": "Lái"
+  "app.loading": "Lái",
+  "app.skipToContent": "Skip to main content"
 }

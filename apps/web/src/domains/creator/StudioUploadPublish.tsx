@@ -40,6 +40,8 @@ import {
   STUDIO_UPLOAD_PAGE_ROW_CLASS,
 } from "./studio-upload-layout";
 import { MAX_PAGES, uid, type UploadPage } from "./publish/studio-upload-page-model";
+import { applyPublishAutoFitToPages } from "./publish/publish-auto-fit";
+import { findPublishSpecPreset } from "./publish/spec-validator";
 import {
   advanceStudioUploadSharedMetaAfterSave,
   assertStudioUploadJsonPayloadSize,
@@ -520,7 +522,20 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
       setError("이미지를 1장 이상 추가해주세요.");
       return;
     }
-    const pageSnapshot = pages.map((page) => ({ ...page }));
+    // 게시 규격 자동 맞춤 — 긴 이미지는 자체 규격 높이로 분할하고 넓은 이미지는
+    // 규격 폭으로 줄여 게시한다(내보내기 전용이던 자동 슬라이서를 게시에도 연결).
+    // 실패하면 원본을 조용히 올리지 않고 중단해 사용자에게 알린다.
+    let fittedPages: UploadPage[];
+    try {
+      fittedPages = await applyPublishAutoFitToPages(
+        pages,
+        findPublishSpecPreset("toonstudio")
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "이미지 규격을 맞추지 못했어요.");
+      return;
+    }
+    const pageSnapshot = fittedPages.map((page) => ({ ...page }));
     const titleSnapshot = title.trim();
     const descriptionSnapshot = description.trim();
     const tagsSnapshot = tagsText;
@@ -897,6 +912,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
               <Upload size={28} className="mb-3 text-fg-3" />
               <p className="text-sm font-medium text-fg">이미지를 끌어다 놓거나 탭해서 선택</p>
               <p className="mt-1 text-xs text-fg-3">PNG, JPG, WebP · 최대 {MAX_PAGES}장</p>
+              <p className="mt-1 text-xs text-fg-3">긴 이미지는 게시할 때 규격에 맞게 자동으로 나뉘어 올라가요</p>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"

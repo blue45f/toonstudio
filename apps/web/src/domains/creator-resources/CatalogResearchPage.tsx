@@ -93,6 +93,10 @@ export function CatalogResearchPage() {
   return <ResourceLayout width="wide" title={notebookView ? tx("작품 비교·기획 노트") : tx("작품 리서치 랩")} intro={tx("수집된 작품 메타데이터에서 장르와 소재를 조사하고, 비교한 관찰을 나만의 첫 화 기획으로 연결하세요. 작품 본문이나 이미지를 복제하지 않습니다.")}>
     <nav aria-label={tx("작품 리서치 도구")} className="flex flex-wrap gap-2"><Link to={`/research/catalog${suffix}`} aria-current={!notebookView ? "page" : undefined} className={RESOURCE_BUTTON}>{tx("작품 탐색·분포")}</Link>
       <Link to={`/research/catalog/notebook${suffix}`} aria-current={notebookView ? "page" : undefined} className={RESOURCE_BUTTON}>{formatI18nTemplate(tx("비교·기획 노트 ({v0}/4)"), { v0: selected.length })}</Link></nav>
+    <section className={BOX} aria-label={tx("리서치 표면 안내")}>
+      <p className="text-sm leading-7 text-fg-2"><strong className="text-fg">{tx("여기는 작품 리서치 랩")}</strong>{tx(" — 수록 작품 메타데이터로 장르·소재 분포를 보고 최대 4편까지 비교하는 곳입니다. 장면에 쓸 자료 자체를 출처와 함께 찾고 저장하는 일은 리서치 데스크에서 해요.")}</p>
+      <Link to="/research" className={`${RESOURCE_BUTTON} mt-3`}>{tx("자료를 찾는 리서치 데스크로 가기")}</Link>
+    </section>
     {state.loading && <div className={BOX}><MotionEmptyState kind="loading" title={tx("작품 리서치 색인을 불러오고 있습니다")} description={tx("수록 표본 색인을 읽는 중입니다.")} /></div>}
     {state.error && <div role="alert" className={BOX}><p>{state.error}</p><button type="button" className={`${RESOURCE_BUTTON} mt-4`} onClick={retry}>{tx("색인 다시 불러오기")}</button></div>}
     {snapshot && <>

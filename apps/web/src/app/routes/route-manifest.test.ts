@@ -24,7 +24,11 @@ describe("route manifest", () => {
   });
 
   it("exposes the pricing route for the upcoming navigation links", () => {
-    expect(appRoutes).toContainEqual({ path: "/pricing", label: "route.pricing" });
+    // 거버넌스 선언(S1-8)이 붙어 전체 객체 동등 비교는 쓸 수 없다 — 핵심 필드만 고정한다.
+    expect(appRoutes.find((route) => route.path === "/pricing")).toMatchObject({
+      path: "/pricing",
+      label: "route.pricing",
+    });
   });
 
   it("points every entry at a registered route instead of the 404 catch-all", () => {

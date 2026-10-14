@@ -142,7 +142,7 @@ describe("MarketAcquisitionModal", () => {
     vi.restoreAllMocks();
   });
 
-  it("requires fresh consent for the resolved current release and installs that exact release", async () => {
+  it("requires fresh consent for the resolved current release and continues straight to Studio with that exact release", async () => {
     const onClose = vi.fn();
     const onAcquiredSuccess = vi.fn();
     render(
@@ -167,7 +167,8 @@ describe("MarketAcquisitionModal", () => {
     await screen.findByText("무료 운영 테스트 정책");
     await agreeAndSubmit(/현재 v2\.0\.0 조건 확인 후 추가/);
 
-    await screen.findByText("내 에셋에 안전하게 보관했습니다");
+    // 획득→적용 원자화: 완료 화면에서 다시 누를 필요 없이 곧바로 Studio로 이어진다.
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledTimes(1));
     expect(mocks.resolveCurrent).toHaveBeenNthCalledWith(
       1,
       historicalRecord,
@@ -183,14 +184,52 @@ describe("MarketAcquisitionModal", () => {
       LOGICAL_PACK_ID,
     );
     expect(onAcquiredSuccess).toHaveBeenCalledTimes(1);
-
-    fireEvent.click(screen.getByRole("button", {
-      name: "Studio에서 v2.0.0 설치·확인",
-    }));
+    expect(screen.queryByText("내 에셋에 안전하게 보관했습니다")).toBeNull();
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(mocks.navigate).toHaveBeenCalledWith(
       marketStudioResourceHref(CURRENT_ID),
     );
+  });
+
+  it("continues to the remembered Studio document when the acquired release is the handoff record", async () => {
+    mocks.resolveCurrent.mockReset();
+    mocks.resolveCurrent.mockResolvedValue({
+      requestedReleaseId: CURRENT_ID,
+      targetReleaseId: CURRENT_ID,
+      redirectedToCurrentHead: false,
+      target: { ...target, requestReleaseId: CURRENT_ID },
+      record: currentRecord,
+    });
+    const onClose = vi.fn();
+    render(
+      <MarketAcquisitionModal
+        open
+        onClose={onClose}
+        record={currentRecord}
+        studioHandoff={marketStudioHandoff(
+          currentRecord,
+          "no-verified-receipt",
+          "/studio/p/project-A/d/document-B",
+        )}
+      />,
+    );
+
+    await screen.findByText("무료 운영 테스트 정책");
+    await agreeAndSubmit("내 에셋에 추가");
+
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledTimes(1));
+    expect(mocks.acquireResource).toHaveBeenCalledWith(
+      currentRecord,
+      LOGICAL_PACK_ID,
+    );
+    expect(onClose).toHaveBeenCalledTimes(1);
+    const href = marketStudioResourceHref(
+      CURRENT_ID,
+      "/studio/p/project-A/d/document-B",
+    );
+    expect(mocks.navigate).toHaveBeenCalledWith(href);
+    expect(new URL(href, "https://example.test").pathname)
+      .toBe("/studio/p/project-A/d/document-B");
   });
 
   it("shows quote failure status instead of the free label", async () => {

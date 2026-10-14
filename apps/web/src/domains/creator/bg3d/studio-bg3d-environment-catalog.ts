@@ -9,7 +9,7 @@
 import refinedV6Manifest from "../../../../public/assets/3d/environments/refined-v6/manifest.json";
 import expansionV1Manifest from "../../../../public/assets/3d/environments/expansion-v1/manifest.json";
 import webtoonV7Manifest from "../../../../public/assets/3d/environments/webtoon-v7/manifest.json";
-import mcpFreeV1Manifest from "../../../../public/assets/3d/environments/mcp-free-v1/manifest.json";
+import authoredV1Manifest from "../../../../public/assets/3d/environments/authored-v1/manifest.json";
 
 export const STUDIO_BG3D_ENVIRONMENT_PACK_ID =
   "toonstudio-bg3d-environment-pack-v1" as const;
@@ -40,6 +40,7 @@ export interface StudioBg3dEnvironmentProvenance {
     | "scripts/blender/refine_studio_environments_v6.py"
     | "scripts/blender/generate_studio_environment_expansion_v1.py"
     | "scripts/blender/generate_environment_pack_v7.py"
+    | "scripts/generate_self_authored_environment_pack_v1.py"
     | "official-tripo-mcp";
   readonly blenderVersion: "5.2";
   readonly license: "CC0-1.0" | "Tripo Terms of Service - Free User Output";
@@ -387,8 +388,8 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7 = Object.freeze(
   }, WEBTOON_V7_PROVENANCE)),
 );
 
-export const STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1 = Object.freeze(
-  mcpFreeV1Manifest.assets.map((asset) => defineEnvironment({
+export const STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1 = Object.freeze(
+  authoredV1Manifest.assets.map((asset) => defineEnvironment({
     id: asset.id,
     name: asset.name,
     description: asset.description,
@@ -406,29 +407,8 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1 = Object.freeze(
       fovDegrees: asset.camera.fovDegrees,
     },
   }, Object.freeze({
-    origin: "ai-generated-free-wallet",
-    author: "ToonStudio",
-    provider: "Tripo",
-    generator: "official-tripo-mcp",
-    providerModelVersion: "v3.0-20250812",
-    providerTaskId: asset.providerTaskId,
-    promptSha256: asset.promptSha256 as `sha256:${string}`,
-    blenderVersion: "5.2",
-    license: "Tripo Terms of Service - Free User Output",
-    licenseUrl: "https://www.tripo3d.ai/terms",
-    attributionRequired: false,
-    commercialUse: true,
-    nonExclusive: true,
-    providerRetainsRights: true,
-    billingMode: "free-api-wallet",
-    paymentMethodUsed: false,
-    creditCost: asset.billing.creditCost,
-    externalResources: 0,
-    sources: Object.freeze([
-      "https://github.com/VAST-AI-Research/tripo-mcp",
-      "https://github.com/VAST-AI-Research/tripo-3d-for-blender",
-      "https://www.tripo3d.ai/terms",
-    ]),
+    ...V3_PROVENANCE,
+    generator: "scripts/generate_self_authored_environment_pack_v1.py",
   }))),
 );
 
@@ -436,7 +416,7 @@ export const STUDIO_BG3D_ENVIRONMENT_ASSETS = Object.freeze([
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_V6,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_EXPANSION_V1,
   ...STUDIO_BG3D_ENVIRONMENT_ASSETS_WEBTOON_V7,
-  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_MCP_FREE_V1,
+  ...STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1,
 ]);
 
 const RESOLVABLE_ENVIRONMENT_ASSETS = [

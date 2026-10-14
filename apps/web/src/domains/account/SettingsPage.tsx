@@ -1,4 +1,4 @@
-import { Settings, Globe, Star, SlidersHorizontal, ShieldCheck, Trash2, Check, Download, Upload, Clock, Search, SearchX, UserCog, ChevronDown, ChevronRight, Sparkles, PlugZap, RefreshCw, KeyRound, Crown, Gauge, Languages, MonitorSmartphone, Database, Bell, Briefcase, type LucideIcon } from "lucide-react";
+import { Settings, Globe, Star, SlidersHorizontal, ShieldCheck, Trash2, Check, Download, Upload, Clock, Search, SearchX, UserCog, ChevronRight, Sparkles, PlugZap, RefreshCw, KeyRound, Crown, Gauge, Languages, MonitorSmartphone, Database, Bell, Briefcase, type LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -7,15 +7,27 @@ import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { SiteTabPanel } from "@/domains/legal/public/site-section-tabs";
 import { useSiteTabAnchors, useSiteTabs } from "@/domains/legal/public/site-tabs";
 
+// account·settings·userProfile 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./account-i18n";
 import { AccountMergeSettings } from "./AccountMergeSettings";
 import { ConnectedAccountsSettings } from "./ConnectedAccountsSettings";
+import { SettingsAdvancedGroup } from "./SettingsAdvancedGroup";
+import {
+  initialSettingsAdvancedOpen,
+  saveSettingsAdvancedOpen,
+  settingsAdvancedGroup,
+  settingsRevealGroupForEntry,
+  toggleSettingsAdvancedGroup,
+} from "./settings-surface-tiers";
 import { DeleteAccountSection } from "./DeleteAccountSection";
 import { NextgenLabSettingsSection } from "./NextgenLabSettingsSection";
 import { LibraryBackupImport } from "./LibraryBackupImport";
+import { AccountDataPortabilityPanel } from "./AccountDataPortabilityPanel";
 import { detectBrowserRegionSettings, planRegionSettingsSync, readLocalRegionSettings, writeLocalRegionSettings } from "./region-settings-client";
 
 import { AppearanceSettings } from "@/shared/components/appearance/AppearanceSettings";
 import { PageIntro } from "@/shared/components/page-intro";
+import { AdvancedSection } from "@/shared/components/layout/AdvancedSection";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { RegionalPreferences } from "@/shared/components/RegionalPreferences";
 import { useSiteExperience } from "@/shared/components/site-experience/site-experience-context";
@@ -91,8 +103,8 @@ const RELATED_SETTINGS: ReadonlyArray<{
   },
 ];
 
-type SettingsTab = "display" | "region" | "data" | "account";
-const SETTINGS_TABS: readonly SettingsTab[] = ["display", "region", "data", "account"];
+type SettingsTab = "display" | "region" | "age" | "data" | "account";
+const SETTINGS_TABS: readonly SettingsTab[] = ["display", "region", "age", "data", "account"];
 const SETTINGS_TAB_PREFIX = "settings";
 
 /** 예전 섹션 앵커(공유 링크·다른 화면의 바로가기)를 해당 탭으로 연다. */
@@ -100,9 +112,10 @@ const SETTINGS_HASH_TABS: Readonly<Record<string, SettingsTab>> = {
   "#settings-display": "display",
   "#settings-voice": "display",
   "#settings-ambient": "display",
+  "#settings-nextgen": "display",
   "#settings-region": "region",
   "#settings-filters": "region",
-  "#settings-age": "data",
+  "#settings-age": "age",
   "#settings-data": "data",
   "#account-security": "account",
 };
@@ -223,11 +236,12 @@ const SETTINGS_SEARCH_SECTIONS: readonly SettingsSearchEntry[] = [
   { key: "effects", title: ["화면 연출", "Motion feel"], hint: ["화면·음성 탭", "Display & voice tab"], keywords: "연출 몰입 집중 애니메이션 vivid calm motion 효과", anchor: "#settings-effects" },
   { key: "scale", title: ["별점 척도", "Rating scale"], hint: ["화면·음성 탭", "Display & voice tab"], keywords: "별점 평점 점수 rating scale star", anchor: "#settings-scale" },
   { key: "voice", title: ["음성 안내", "Voice guide"], hint: ["화면·음성 탭", "Display & voice tab"], keywords: "음성 나레이션 안내 읽기 소리 tts voice narration", anchor: "#settings-voice" },
-  { key: "ambient", title: ["앰비언트 효과", "Ambient effects"], hint: ["화면·음성 탭", "Display & voice tab"], keywords: "앰비언트 분위기 배경 ambient mood", anchor: "#settings-ambient" },
+  { key: "ambient", title: ["앰비언트 효과", "Ambient effects"], hint: ["화면·음성 탭 · 고급 설정", "Display & voice tab · Advanced"], keywords: "앰비언트 분위기 배경 ambient mood", anchor: "#settings-ambient" },
+  { key: "nextgen", title: ["실험 기능", "Experimental features"], hint: ["화면·음성 탭 · 고급 설정", "Display & voice tab · Advanced"], keywords: "실험 베타 미리보기 신기능 lab experimental beta nextgen", anchor: "#settings-nextgen" },
   { key: "region", title: ["지역 · 언어", "Region & language"], hint: ["지역·필터 탭", "Region & filters tab"], keywords: "언어 지역 날짜 시간대 통화 언어팩 language locale region", anchor: "#settings-region" },
   { key: "filters", title: ["필터 기억", "Remember filters"], hint: ["지역·필터 탭", "Region & filters tab"], keywords: "필터 기억 검색 조건 정렬 filter remember", anchor: "#settings-filters" },
-  { key: "age", title: ["연령 확인", "Age verification"], hint: ["연령·데이터 탭", "Age & data tab"], keywords: "연령 성인 확인 age verify adult", anchor: "#settings-age" },
-  { key: "data", title: ["내 데이터 · 백업 · 초기화", "My data, backup & reset"], hint: ["연령·데이터 탭", "Age & data tab"], keywords: "백업 내보내기 가져오기 초기화 삭제 기록 서재 data backup export import reset", anchor: "#settings-data" },
+  { key: "age", title: ["연령 확인", "Age verification"], hint: ["연령 확인 탭", "Age verification tab"], keywords: "연령 성인 확인 age verify adult", anchor: "#settings-age" },
+  { key: "data", title: ["내 데이터 · 백업 · 초기화", "My data, backup & reset"], hint: ["내 데이터 탭", "My data tab"], keywords: "백업 내보내기 가져오기 초기화 삭제 기록 서재 data backup export import reset", anchor: "#settings-data" },
   { key: "account", title: ["계정 보안 · 연동 계정", "Account security & linked accounts"], hint: ["계정 탭", "Account tab"], keywords: "계정 보안 연동 병합 로그인 account security linked merge", anchor: "#account-security" },
 ];
 
@@ -304,6 +318,38 @@ export function SettingsPage() {
   const { openAnchor } = useSiteTabAnchors(SETTINGS_HASH_TABS, activeTab, selectTab);
 
   const [settingsQuery, setSettingsQuery] = useState("");
+  // 고급 설정 펼침 상태 — 일상 설정만 기본 노출하고, 펼침 선택은 이 기기에 기억한다.
+  // 고급 섹션 앵커로 직접 들어온 경우(딥링크)에는 해당 그룹이 열린 채로 시작한다.
+  const [advancedOpen, setAdvancedOpen] = useState<readonly string[]>(() => {
+    try {
+      return initialSettingsAdvancedOpen(
+        typeof window === "undefined" ? null : window.localStorage,
+        typeof window === "undefined" ? "" : window.location.hash,
+      );
+    } catch {
+      return [];
+    }
+  });
+  const displayAdvancedMeta = settingsAdvancedGroup("display-advanced");
+  const dataAdvancedMeta = settingsAdvancedGroup("data-advanced");
+  const accountAdvancedMeta = settingsAdvancedGroup("account-advanced");
+  const toggleAdvancedGroup = useCallback(
+    (groupId: string) => {
+      setAdvancedOpen((current) => {
+        const next = toggleSettingsAdvancedGroup(current, groupId);
+        try {
+          saveSettingsAdvancedOpen(
+            typeof window === "undefined" ? null : window.localStorage,
+            next,
+          );
+        } catch {
+          // 위와 동일 — 세션 상태만으로 충분하다.
+        }
+        return next;
+      });
+    },
+    [],
+  );
   const searchResults = useMemo<readonly SettingsSearchEntry[]>(() => {
     const query = settingsQuery.trim();
     if (!query) return [];
@@ -322,7 +368,8 @@ export function SettingsPage() {
     () => [
       { id: "display", icon: MonitorSmartphone, label: bi("화면·음성", "Display & voice") },
       { id: "region", icon: Languages, label: bi("지역·필터", "Region & filters") },
-      { id: "data", icon: Database, label: bi("연령·데이터", "Age & data") },
+      { id: "age", icon: ShieldCheck, label: t("settings.section.age") },
+      { id: "data", icon: Database, label: t("settings.section.data") },
       { id: "account", icon: UserCog, label: t("settings.section.account") },
     ],
     [t],
@@ -554,7 +601,19 @@ export function SettingsPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (entry.anchor) openAnchor(entry.anchor);
+                          // 고급 그룹 안의 항목이면 먼저 펼치고 나서 이동한다(접힌 채로는 대상이 없다).
+                          const revealGroup = settingsRevealGroupForEntry(entry.key);
+                          if (revealGroup && !advancedOpen.includes(revealGroup)) {
+                            toggleAdvancedGroup(revealGroup);
+                          }
+                          if (entry.anchor) {
+                            const anchor = entry.anchor;
+                            if (revealGroup) {
+                              requestAnimationFrame(() => openAnchor(anchor));
+                            } else {
+                              openAnchor(anchor);
+                            }
+                          }
                           setSettingsQuery("");
                         }}
                         className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-2 text-left transition-colors hover:bg-panel-2"
@@ -575,20 +634,22 @@ export function SettingsPage() {
         ) : null}
       </div>
 
-      {/* 다른 설정 화면(멤버십·AI·API 키·연동·알림·직군)은 접어 두어 이 화면의 설정 탭이 첫 화면에 보이게 한다. */}
-      <details className="group mb-6 rounded-2xl border border-line bg-panel/40" data-related-settings="">
-        <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 rounded-2xl px-4 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-fg">
-              {bi("다른 설정 화면", "More settings pages")}
-              <span className="ml-1.5 rounded-full bg-raised px-1.5 py-0.5 text-[0.68rem] font-bold text-fg-3">{RELATED_SETTINGS.length}</span>
-            </span>
-            <span className="mt-0.5 block truncate text-xs text-fg-3">
-              {RELATED_SETTINGS.map((item) => bi(...item.title)).join(" · ")}
-            </span>
-          </span>
-          <ChevronDown size={16} className="shrink-0 text-fg-3 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-        </summary>
+      {/* 다른 설정 화면(멤버십·AI·API 키·연동·알림·직군)은 고급 구역(AdvancedSection panel 프리셋)으로
+          접어 두어 이 화면의 설정 탭이 첫 화면에 보이게 한다. keepMounted라 접힌 상태에서도
+          링크가 DOM에 남아 검색·안내 동선이 그대로 이어진다. */}
+      <AdvancedSection
+        preset="panel"
+        keepMounted
+        data-related-settings=""
+        className="mb-6"
+        title={
+          <>
+            {bi("다른 설정 화면", "More settings pages")}
+            <span className="ml-1.5 rounded-full bg-raised px-1.5 py-0.5 text-[0.68rem] font-bold text-fg-3">{RELATED_SETTINGS.length}</span>
+          </>
+        }
+        description={RELATED_SETTINGS.map((item) => bi(...item.title)).join(" · ")}
+      >
         <nav aria-label={bi("관련 설정", "Related settings")} className="grid gap-2 border-t border-line p-3 sm:grid-cols-2">
           {RELATED_SETTINGS.map((item) => (
             <SiteLinkCard
@@ -601,7 +662,7 @@ export function SettingsPage() {
             />
           ))}
         </nav>
-      </details>
+      </AdvancedSection>
       </div>
 
       {/* 섹션 내비는 공용 SectionNav(표준 S-2) — 좁은 화면은 상단 탭 줄, 넓은 화면은 좌측 레일. */}
@@ -648,13 +709,23 @@ export function SettingsPage() {
       </div>
       </RevealOnScroll>
 
-      <div id="settings-ambient" className="mt-6 scroll-mt-28">
-        <AmbientSettingsSection />
-      </div>
+      {displayAdvancedMeta ? (
+        <SettingsAdvancedGroup
+          id={displayAdvancedMeta.id}
+          title={bi(...displayAdvancedMeta.title)}
+          description={bi(...displayAdvancedMeta.description)}
+          open={advancedOpen.includes(displayAdvancedMeta.id)}
+          onToggle={() => toggleAdvancedGroup(displayAdvancedMeta.id)}
+        >
+          <div id="settings-ambient" className="scroll-mt-28">
+            <AmbientSettingsSection />
+          </div>
 
-      <div id="settings-nextgen" className="mt-6 scroll-mt-28">
-        <NextgenLabSettingsSection />
-      </div>
+          <div id="settings-nextgen" className="mt-2 scroll-mt-28">
+            <NextgenLabSettingsSection />
+          </div>
+        </SettingsAdvancedGroup>
+      ) : null}
 
       </SiteTabPanel>
 
@@ -734,7 +805,7 @@ export function SettingsPage() {
 
       </SiteTabPanel>
 
-      <SiteTabPanel idPrefix={SETTINGS_TAB_PREFIX} id="data" active={activeTab === "data"} mounted={isMounted("data")}>
+      <SiteTabPanel idPrefix={SETTINGS_TAB_PREFIX} id="age" active={activeTab === "age"} mounted={isMounted("age")}>
       {/* 연령 확인 */}
       <RevealOnScroll variant="fade">
       <div id="settings-age" className="scroll-mt-28">
@@ -773,9 +844,12 @@ export function SettingsPage() {
       </div>
       </RevealOnScroll>
 
+      </SiteTabPanel>
+
+      <SiteTabPanel idPrefix={SETTINGS_TAB_PREFIX} id="data" active={activeTab === "data"} mounted={isMounted("data")}>
       {/* 내 데이터 */}
       <RevealOnScroll variant="fade">
-      <div id="settings-data" className="mt-8 scroll-mt-28">
+      <div id="settings-data" className="scroll-mt-28">
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-fg-3">{t("settings.section.data")}</h2>
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.data")}>
           <Row icon={Download} title={t("settings.data.export")} desc={t("settings.data.exportDesc")}>
@@ -787,9 +861,23 @@ export function SettingsPage() {
               <Download size={14} /> {t("settings.data.export")}
             </button>
           </Row>
+          <AccountDataPortabilityPanel
+            userId={typeof userId === "string" && userId ? userId : null}
+            locale={lang.toLowerCase().startsWith("ko") ? "ko" : "en"}
+          />
           <Row icon={Upload} title={t("settings.data.import")} desc={t("settings.data.importDesc")}>
             <LibraryBackupImport onRestore={hydrateFromServer} locale={lang.toLowerCase().startsWith("ko") ? "ko" : "en"} ownerId={userId} />
           </Row>
+          </section>
+          {dataAdvancedMeta ? (
+            <SettingsAdvancedGroup
+              id={dataAdvancedMeta.id}
+              title={bi(...dataAdvancedMeta.title)}
+              description={bi(...dataAdvancedMeta.description)}
+              open={advancedOpen.includes(dataAdvancedMeta.id)}
+              onToggle={() => toggleAdvancedGroup(dataAdvancedMeta.id)}
+            >
+              <section className="px-0" aria-label={bi(...dataAdvancedMeta.title)}>
           <Row
             icon={Clock}
             title={t("settings.data.recent")}
@@ -884,7 +972,9 @@ export function SettingsPage() {
               "This reset only covers library activity data (ratings, reviews, read state, subscriptions, collections, recent history). Preferences such as theme, language and notifications, your age-verification state, and your account stay as they are.",
             )}
           </p>
-          </section>
+              </section>
+            </SettingsAdvancedGroup>
+          ) : null}
       </div>
       </RevealOnScroll>
 
@@ -911,13 +1001,23 @@ export function SettingsPage() {
               {t("settings.account.toProfile")} <ChevronRight size={14} />
             </Link>
           </Row>
-          <ConnectedAccountsSettings
-            userId={typeof userId === "string" && userId ? userId : null}
-          />
-          <AccountMergeSettings
-            userId={typeof userId === "string" && userId ? userId : null}
-          />
         </section>
+        {accountAdvancedMeta ? (
+          <SettingsAdvancedGroup
+            id={accountAdvancedMeta.id}
+            title={bi(...accountAdvancedMeta.title)}
+            description={bi(...accountAdvancedMeta.description)}
+            open={advancedOpen.includes(accountAdvancedMeta.id)}
+            onToggle={() => toggleAdvancedGroup(accountAdvancedMeta.id)}
+          >
+            <ConnectedAccountsSettings
+              userId={typeof userId === "string" && userId ? userId : null}
+            />
+            <AccountMergeSettings
+              userId={typeof userId === "string" && userId ? userId : null}
+            />
+          </SettingsAdvancedGroup>
+        ) : null}
         {/* 탈퇴는 프로필 편집(/me)에서 분리해 계정 목적지에 모은다. */}
         <div className="mt-6">
           <DeleteAccountSection

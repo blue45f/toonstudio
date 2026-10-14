@@ -18,6 +18,7 @@ import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
 import { STUDIO_ENTRY_CODE_PANEL_ID } from "./studio-virtual-space-entry-code";
 import { StudioVirtualSpaceEntryCodePanel, type StudioEntryCodeEntryResult } from "./StudioVirtualSpaceEntryCodePanel";
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
+import { StudioLpcCreditsNotice } from "./lpc/StudioLpcCreditsNotice";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
 import { STUDIO_CHARACTER_SKINS, studioCharacterSkinForArtStyle } from "./studio-virtual-space-character-skins";
 import {
@@ -268,9 +269,13 @@ export function StudioVirtualSpaceEntryLobby({
           </small>
         </label>
 
-        {!guestMode ? <div className="space-lobby__picker">
-          <StudioVirtualThemeCharacterPicker mode="all" artStyle={artStyle} avatarIndex={avatarIndex} onSelect={onAvatarIndex} />
-        </div> : null}
+        {!guestMode ? <>
+          <div className="space-lobby__picker">
+            <StudioVirtualThemeCharacterPicker mode="all" artStyle={artStyle} avatarIndex={avatarIndex} onSelect={onAvatarIndex} />
+          </div>
+          {/* LPC 픽셀 캐릭터도 이 전체 목록에서 고른다. 고르는 자리에서 바로 출처·라이선스 전문(CREDITS.md)에 닿도록 꾸미기 탭과 같은 크레딧 표면을 캐릭터 선택 바로 아래에 둔다. */}
+          <StudioLpcCreditsNotice />
+        </> : null}
 
         {!onboarding && !guestMode ? <details className="space-lobby__advanced" open={advancedOpen}
           onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>

@@ -1,10 +1,14 @@
+import { useT } from "@/shared/lib/i18n";
+
 interface StudioLazySurfaceFallbackProps {
   readonly label?: string;
 }
 
 export function StudioPanelLoading({
-  label = "패널을 여는 중...",
+  label,
 }: StudioLazySurfaceFallbackProps) {
+  const t = useT();
+  const resolvedLabel = label ?? t("studio.canvas.shell.loadingPanel", "패널을 여는 중...");
   return (
     <div
       className="skeleton-group min-h-20 rounded-lg border border-line bg-card/70 px-3 py-3 text-xs text-fg-3"
@@ -14,7 +18,7 @@ export function StudioPanelLoading({
       aria-busy="true"
       data-studio-lazy-surface="inline"
     >
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{resolvedLabel}</span>
       <div className="space-y-2" aria-hidden="true">
         <div className="skeleton h-3 w-2/3 rounded-full" />
         <div className="skeleton h-8 rounded-md opacity-90" />
@@ -23,7 +27,9 @@ export function StudioPanelLoading({
   );
 }
 
-export function StudioRouteLoading({ label = "스튜디오를 여는 중..." }: StudioLazySurfaceFallbackProps) {
+export function StudioRouteLoading({ label }: StudioLazySurfaceFallbackProps) {
+  const t = useT();
+  const resolvedLabel = label ?? t("studio.canvas.shell.loadingStudio", "스튜디오를 여는 중...");
   return (
     <div
       className="skeleton-group grid min-h-dvh grid-rows-[3rem_1fr] bg-bg"
@@ -35,7 +41,7 @@ export function StudioRouteLoading({ label = "스튜디오를 여는 중..." }: 
       data-route-pending="studio-route"
       data-studio-lazy-surface="route"
     >
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{resolvedLabel}</span>
       <div className="border-b border-line bg-panel" aria-hidden="true">
         <div className="skeleton mx-3 mt-3 h-5 w-44 rounded-full" />
       </div>

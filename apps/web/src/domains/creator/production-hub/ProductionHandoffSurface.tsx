@@ -1,18 +1,23 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import { evaluateHandoffReadiness, type CreativeInstructionPriority, type HandoffStatus, type ProductionProjectAggregate } from "@toonstudio/core/production";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 
 import { ProductionClarificationAnswer } from "./ProductionClarificationAnswer";
 import type { ProductionClientCommand } from "./production-api";
+import { handoffBoardHref, handoffDirections, handoffNextProcess } from "./handoff-next-process-model";
 import {
   clarificationCategoryLabel,
   clarificationStatusLabel,
   latitudeLabel,
   productionAssignmentName,
+  productionProcessLabel,
   type BilingualLabel,
 } from "./production-labels";
 import { ProductionEmptyState, ProductionPill, ProductionSectionCard } from "./production-ui";
+
+import { buttonClass } from "@/shared/components/ui/button-utils";
 
 import type { CreatorRoleLens } from "@/shared/lib/creator-role-contract";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -85,6 +90,10 @@ export function ProductionHandoffSurface({
   };
   const episodeName = episodeNameFor(handoff);
   const statusLabel = HANDOFF_STATUS_LABELS[handoff.status];
+  const nextProcess = handoffNextProcess(aggregate, handoff.episodeId);
+  const nextProcessLabel = nextProcess ? productionProcessLabel(aggregate, nextProcess.key, bt) : null;
+  const nextBoardHref = nextProcess ? handoffBoardHref(aggregate.projectId, handoff.episodeId, nextProcess.key) : null;
+  const directions = handoffDirections(aggregate, handoff.episodeId);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[0.78fr_1.22fr]">
@@ -98,6 +107,7 @@ export function ProductionHandoffSurface({
               {activeHandoffs.map((entry) => {
                 const selected = entry.id === handoff.id;
                 const entryStatusLabel = HANDOFF_STATUS_LABELS[entry.status];
+                const entryNext = handoffNextProcess(aggregate, entry.episodeId);
                 return (
                   <button
                     key={entry.id}
@@ -112,6 +122,9 @@ export function ProductionHandoffSurface({
                     )}
                   >
                     <span>{episodeNameFor(entry)}</span>
+                    {entryNext ? (
+                      <span className="text-fg-3">→ {productionProcessLabel(aggregate, entryNext.key, bt)}</span>
+                    ) : null}
                     <ProductionPill tone={selected ? "accent" : "neutral"}>{bt(entryStatusLabel.ko, entryStatusLabel.en)}</ProductionPill>
                   </button>
                 );
@@ -133,6 +146,40 @@ export function ProductionHandoffSurface({
             {readiness.ready ? bt("작화 시작 가능", "Ready for art") : bt(`막힌 항목 ${readiness.hardBlocks.length}개`, `${readiness.hardBlocks.length} blockers`)}
           </ProductionPill>
         </div>
+        {nextProcess && nextProcessLabel && nextBoardHref ? (
+          <div className="mt-3">
+            {readiness.ready ? (
+              <>
+                <Link
+                  to={nextBoardHref}
+                  data-testid="handoff-open-next-process"
+                  className={buttonClass({ className: "min-h-11 w-full gap-1.5" })}
+                >
+                  {bt(`다음 공정 열기 · ${nextProcessLabel}`, `Open the next process · ${nextProcessLabel}`)}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+                <p className="mt-2 text-[0.6875rem] leading-4 text-fg-3">
+                  {nextProcess.taskCount > 0
+                    ? bt(
+                        `${episodeName} ${nextProcessLabel} 작업 ${nextProcess.taskCount}개 중 열린 작업 ${nextProcess.openTaskCount}개가 공정 보드에 있습니다.`,
+                        `${nextProcess.openTaskCount} of ${nextProcess.taskCount} ${nextProcessLabel} tasks for this episode are open on the board.`,
+                      )
+                    : bt(
+                        `${episodeName} ${nextProcessLabel} 작업이 아직 없습니다. 공정 보드에서 만들 수 있습니다.`,
+                        `No ${nextProcessLabel} tasks yet for this episode — you can create them on the board.`,
+                      )}
+                </p>
+              </>
+            ) : (
+              <p className="rounded-xl border border-line bg-panel p-3 text-xs leading-5 text-fg-2">
+                {bt(
+                  `막힌 항목 ${readiness.hardBlocks.length}개를 해결하면 다음 공정(${nextProcessLabel})을 바로 열 수 있습니다.`,
+                  `Clear the ${readiness.hardBlocks.length} blockers to open the next process (${nextProcessLabel}) right away.`,
+                )}
+              </p>
+            )}
+          </div>
+        ) : null}
         <dl className="mt-3 grid grid-cols-2 gap-2">
           {Object.entries(readiness.metrics).map(([key, value]) => {
             const label = READINESS_METRIC_LABELS[key];
@@ -184,6 +231,35 @@ export function ProductionHandoffSurface({
               );
             })}
           </div>
+          {directions.length > 0 ? (
+            <div className="mt-4 border-t border-line pt-3">
+              <p className="text-xs font-bold text-fg">{bt("이 회차의 인계 방향", "Handoff directions for this episode")}</p>
+              <p className="mt-0.5 text-[0.6875rem] leading-4 text-fg-3">
+                {bt(
+                  "방향을 누르면 그 공정의 보드 열로 이동합니다. 첫 방향이 지금 열 다음 공정이고, 나머지는 후단 인계입니다.",
+                  "Select a direction to open that process column on the board. The first direction is the next process; the rest are downstream handoffs.",
+                )}
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {directions.map((direction) => (
+                  <li key={`${direction.fromKey}-${direction.toKey}`}>
+                    <Link
+                      to={handoffBoardHref(aggregate.projectId, handoff.episodeId, direction.toKey)}
+                      className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg transition-colors hover:bg-raised"
+                    >
+                      <span className="min-w-0 flex-1 truncate">
+                        {productionProcessLabel(aggregate, direction.fromKey, bt)} → {productionProcessLabel(aggregate, direction.toKey, bt)}
+                      </span>
+                      <ProductionPill tone={direction.stage === "next" ? "accent" : "neutral"}>
+                        {direction.stage === "next" ? bt("다음 공정", "Next") : bt("후단 인계", "Downstream")}
+                      </ProductionPill>
+                      <ArrowRight className="size-4 shrink-0 text-fg-3" aria-hidden="true" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </ProductionSectionCard>
 
         <ProductionSectionCard

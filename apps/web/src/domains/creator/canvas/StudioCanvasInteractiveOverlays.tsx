@@ -13,7 +13,7 @@ import {
   StudioQuickMaskOverlay,
   StudioSelectionAntsOverlay,
 } from "../studio-page-lazy-ui";
-import { movePuppetPin, type PuppetPin } from "../studio-puppet-warp";
+import { movePuppetPin, removePuppetPin, type PuppetPin } from "../studio-puppet-warp";
 
 import type { FilterMaskPaintMode } from "../filter/studio-filter-mask";
 import type { LayerMaskPaintMode } from "../layer/studio-layer-mask";
@@ -241,6 +241,7 @@ export const StudioCanvasInteractiveOverlays = memo(function StudioCanvasInterac
               pins={puppetWarpPins}
               busy={puppetWarpBusy}
               onMovePin={(id, x, y) => setPuppetWarpPins((pins) => movePuppetPin(pins, id, x, y))}
+              onRemovePin={(id) => setPuppetWarpPins((pins) => removePuppetPin(pins, id))}
             />
           </Suspense>
         </Layer>

@@ -1,3 +1,5 @@
+import type { CharacterModelSheet } from "./production-hub/model-sheet-freeze-model";
+
 export const STUDIO_CONTINUITY_CATEGORIES = [
   "costume",
   "appearance",
@@ -37,6 +39,18 @@ export interface StudioStoryBible {
   readonly characters: readonly StudioStoryCharacter[];
   readonly locations: readonly StudioStoryLocation[];
   readonly facts: readonly StudioStoryFact[];
+  /**
+   * 모델 시트 저장 컬렉션 (optional 확장) — 캐릭터당 최대 1레코드.
+   *
+   * 저장 계약 (production-hub/model-sheet-storage.ts 가 정본):
+   * - 이 필드가 없는 기존 바이블도 그대로 유효하다. 마이그레이션은 없다 —
+   *   읽는 쪽은 부재를 "모델 시트 없음(빈 목록)"으로 해석한다.
+   * - 연속성 엔진(analyzeStudioStoryContinuity)은 이 컬렉션을 몰라도 된다.
+   *   검증은 validateStudioStoryBible 이 있을 때만 수행한다.
+   * - 레코드의 연산(동결·변경·영향)은 model-sheet-freeze-model 의 순수
+   *   함수가 정본이고, 이 필드는 그 결과의 영속 자리일 뿐이다.
+   */
+  readonly modelSheets?: readonly CharacterModelSheet[];
 }
 
 export interface StudioStoryBibleIssue {
@@ -197,6 +211,67 @@ export function validateStudioStoryBible(
         "error",
         "A fact references an unknown location.",
         [fact.locationId],
+      ));
+    }
+  }
+
+  // 모델 시트 컬렉션은 optional 확장이다 — 없는 바이블은 이 검사를
+  // 통째로 건너뛰므로 기존 저장본의 검증 결과가 달라지지 않는다.
+  const modelSheets = bible.modelSheets ?? [];
+  const modelSheetCharacterIds = modelSheets.map((sheet) => sheet.characterId);
+  for (const duplicateId of duplicateValues(modelSheetCharacterIds)) {
+    issues.push(bibleIssue(
+      "model-sheet-character-duplicate",
+      "error",
+      "Each character can have only one model sheet.",
+      [duplicateId],
+    ));
+  }
+  for (const sheet of modelSheets) {
+    if (!knownCharacters.has(sheet.characterId)) {
+      issues.push(bibleIssue(
+        "model-sheet-character-reference",
+        "error",
+        "A model sheet references an unknown character.",
+        [sheet.characterId],
+      ));
+    }
+    const revisionNumbers = sheet.revisions.map((revision) => revision.revision);
+    if (duplicateValues(revisionNumbers.map(String)).length > 0) {
+      issues.push(bibleIssue(
+        "model-sheet-revision-duplicate",
+        "error",
+        "Model sheet revision numbers must be unique per character.",
+        [sheet.characterId],
+      ));
+    }
+    const revisionSet = new Set(revisionNumbers);
+    if (sheet.status === "frozen") {
+      if (sheet.frozenRevision === null || !revisionSet.has(sheet.frozenRevision)) {
+        issues.push(bibleIssue(
+          "model-sheet-frozen-revision",
+          "error",
+          "A frozen model sheet must point at one of its revisions.",
+          [sheet.characterId],
+        ));
+      }
+    } else if (sheet.frozenRevision !== null) {
+      issues.push(bibleIssue(
+        "model-sheet-frozen-revision",
+        "warning",
+        "A draft model sheet carries a frozen revision.",
+        [sheet.characterId],
+      ));
+    }
+    const danglingChanges = sheet.changes.filter(
+      (change) => !revisionSet.has(change.fromRevision) || !revisionSet.has(change.toRevision),
+    );
+    if (danglingChanges.length > 0) {
+      issues.push(bibleIssue(
+        "model-sheet-change-reference",
+        "warning",
+        "A model sheet change references a revision that does not exist.",
+        [sheet.characterId],
       ));
     }
   }

@@ -587,3 +587,142 @@ export function buildCalendarCells(year: number, month: number): CalendarCell[] 
   }
   return cells;
 }
+
+/* ── 시장 캘린더 (공휴일·플랫폼 이벤트) ───────────────────────────────
+ *
+ * 연재 캘린더 충돌 경보(REPORT O-4): 게시 날짜만 보여주는 일정표에 공휴일과
+ * 플랫폼 이벤트 기간을 겹쳐, 해당 주 회차가 평소와 다른 맥락에 놓여 있음을
+ * 알려준다. 전략을 제안하지 않고 날짜 맥락만 제공한다.
+ *
+ * 데이터는 정적이다. 공휴일은 대한민국 공휴일(대체공휴일 포함)이며 연 1회
+ * 다음 해분을 추가·검증해야 한다. 플랫폼 이벤트 기간은 플랫폼 운영
+ * 캘린더가 바뀌면 함께 갱신한다. 날짜 키는 한국 날짜("YYYY-MM-DD") 기준.
+ */
+
+export type MarketCalendarEventKind = "holiday" | "platform";
+
+export interface MarketCalendarEvent {
+  readonly name: string;
+  readonly kind: MarketCalendarEventKind;
+  /** 시작일 "YYYY-MM-DD". */
+  readonly startDateKey: string;
+  /** 종료일 "YYYY-MM-DD" (이 날 포함). 하루짜리 이벤트는 시작일과 같다. */
+  readonly endDateKey: string;
+}
+
+function holiday(name: string, dateKey: string): MarketCalendarEvent {
+  return { name, kind: "holiday", startDateKey: dateKey, endDateKey: dateKey };
+}
+
+function platformEvent(
+  name: string,
+  startDateKey: string,
+  endDateKey: string,
+): MarketCalendarEvent {
+  return { name, kind: "platform", startDateKey, endDateKey };
+}
+
+export const MARKET_CALENDAR_EVENTS: readonly MarketCalendarEvent[] = [
+  // 2026년 공휴일
+  holiday("신정", "2026-01-01"),
+  holiday("설날 연휴", "2026-02-16"),
+  holiday("설날", "2026-02-17"),
+  holiday("설날 연휴", "2026-02-18"),
+  holiday("삼일절", "2026-03-01"),
+  holiday("대체공휴일(삼일절)", "2026-03-02"),
+  holiday("어린이날", "2026-05-05"),
+  holiday("부처님오신날", "2026-05-24"),
+  holiday("대체공휴일(부처님오신날)", "2026-05-25"),
+  holiday("현충일", "2026-06-06"),
+  holiday("광복절", "2026-08-15"),
+  holiday("대체공휴일(광복절)", "2026-08-17"),
+  holiday("추석 연휴", "2026-09-24"),
+  holiday("추석", "2026-09-25"),
+  holiday("추석 연휴", "2026-09-26"),
+  holiday("개천절", "2026-10-03"),
+  holiday("대체공휴일(개천절)", "2026-10-05"),
+  holiday("한글날", "2026-10-09"),
+  holiday("성탄절", "2026-12-25"),
+  // 2027년 공휴일
+  holiday("신정", "2027-01-01"),
+  holiday("설날 연휴", "2027-02-05"),
+  holiday("설날", "2027-02-06"),
+  holiday("설날 연휴", "2027-02-07"),
+  holiday("대체공휴일(설날)", "2027-02-08"),
+  holiday("삼일절", "2027-03-01"),
+  holiday("어린이날", "2027-05-05"),
+  holiday("부처님오신날", "2027-05-13"),
+  holiday("현충일", "2027-06-06"),
+  holiday("광복절", "2027-08-15"),
+  holiday("대체공휴일(광복절)", "2027-08-16"),
+  holiday("추석 연휴", "2027-09-14"),
+  holiday("추석", "2027-09-15"),
+  holiday("추석 연휴", "2027-09-16"),
+  holiday("개천절", "2027-10-03"),
+  holiday("대체공휴일(개천절)", "2027-10-04"),
+  holiday("한글날", "2027-10-09"),
+  holiday("대체공휴일(한글날)", "2027-10-11"),
+  holiday("성탄절", "2027-12-25"),
+  holiday("대체공휴일(성탄절)", "2027-12-27"),
+  // 플랫폼 이벤트 기간 (운영 캘린더와 동기화할 것)
+  platformEvent("플랫폼 여름 성수기", "2026-07-24", "2026-08-16"),
+  platformEvent("플랫폼 연말 시즌", "2026-12-18", "2026-12-31"),
+  platformEvent("플랫폼 여름 성수기", "2027-07-23", "2027-08-15"),
+  platformEvent("플랫폼 연말 시즌", "2027-12-17", "2027-12-31"),
+];
+
+/**
+ * 특정 날짜에 겹치는 시장 캘린더 이벤트 목록. 날짜 키 형식이 잘못되면 빈 배열.
+ * 기간 이벤트는 시작일·종료일을 모두 포함한다.
+ */
+export function getMarketCalendarEventsOn(
+  dateKey: string,
+): MarketCalendarEvent[] {
+  if (!DATE_RE.test(dateKey)) return [];
+  return MARKET_CALENDAR_EVENTS.filter(
+    (event) => event.startDateKey <= dateKey && dateKey <= event.endDateKey,
+  );
+}
+
+/**
+ * 날짜가 속한 주(월요일 시작, buildCalendarCells와 동일 규약)의 날짜 키 7개.
+ * 형식이 잘못되면 빈 배열.
+ */
+export function getWeekDateKeys(dateKey: string): string[] {
+  if (!DATE_RE.test(dateKey)) return [];
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return [];
+  // 월요일 시작: 일요일(0) → 6, 그 외 → day-1
+  const mondayOffset = (date.getUTCDay() + 6) % 7;
+  const cursor = new Date(date.getTime() - mondayOffset * 86_400_000);
+  const keys: string[] = [];
+  for (let i = 0; i < 7; i += 1) {
+    keys.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return keys;
+}
+
+/**
+ * 날짜가 속한 주(월~일)와 겹치는 시장 캘린더 이벤트 목록.
+ * 주를 가로지르는 기간 이벤트도 한 번만 포함한다.
+ */
+export function getMarketCalendarEventsInWeekOf(
+  dateKey: string,
+): MarketCalendarEvent[] {
+  const weekKeys = getWeekDateKeys(dateKey);
+  if (weekKeys.length === 0) return [];
+  const weekStart = weekKeys[0];
+  const weekEnd = weekKeys[weekKeys.length - 1];
+  return MARKET_CALENDAR_EVENTS.filter(
+    (event) => event.startDateKey <= weekEnd && event.endDateKey >= weekStart,
+  );
+}
+
+/**
+ * '이벤트 주간' 여부: 그 주에 공휴일이나 플랫폼 이벤트가 하나라도 겹치면 true.
+ * 이 주에 발행되는 회차에 '이벤트 주간' 배지를 다는 판정에 쓴다.
+ */
+export function isEventWeek(dateKey: string): boolean {
+  return getMarketCalendarEventsInWeekOf(dateKey).length > 0;
+}

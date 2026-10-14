@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   LINE_END_PROHIBITED,
   LINE_START_PROHIBITED,
+  cloudBalloonOutline,
   ellipseChordWidth,
   fitBalloonText,
   layoutBalloonLines,
+  polygonBalloonBand,
   segmentForWrapping,
+  spikeBalloonOutline,
   wrapBalloonText,
 } from "../ir/balloon-text-layout";
 
@@ -333,5 +336,130 @@ describe("fitBalloonText", () => {
     expect(fitBalloonText(han40, options)).toEqual(
       fitBalloonText(han40, options),
     );
+  });
+});
+
+describe("irregular shape outlines (v2)", () => {
+  it("samples the spike outline with alternating 1.18 tips and 0.92 valleys", () => {
+    const outline = spikeBalloonOutline(200, 100, 18);
+    expect(outline).toHaveLength(36);
+    // First vertex is the angle-0 outer tip: cx + rx*1.18.
+    expect(outline[0].x).toBeCloseTo(100 + 100 * 1.18);
+    expect(outline[0].y).toBeCloseTo(50);
+    const radii = outline.map((pt) =>
+      Math.hypot((pt.x - 100) / 100, (pt.y - 50) / 50),
+    );
+    expect(Math.max(...radii)).toBeCloseTo(1.18);
+    expect(Math.min(...radii)).toBeCloseTo(0.92);
+  });
+
+  it("samples the cloud outline as a closed bump polygon around the ellipse", () => {
+    const outline = cloudBalloonOutline(200, 100, 14);
+    expect(outline.length).toBe(14 * 8);
+    const radii = outline.map((pt) =>
+      Math.hypot((pt.x - 100) / 100, (pt.y - 50) / 50),
+    );
+    // Bump crests approach (never exceed) the 1.22 control radius.
+    expect(Math.max(...radii)).toBeGreaterThan(1.05);
+    expect(Math.max(...radii)).toBeLessThanOrEqual(1.22);
+    expect(Math.min(...radii)).toBeGreaterThanOrEqual(0.99);
+  });
+
+  it("gives a rectangle polygon the full width at every band", () => {
+    const rect = [
+      { x: 0, y: 0 },
+      { x: 200, y: 0 },
+      { x: 200, y: 100 },
+      { x: 0, y: 100 },
+    ];
+    expect(polygonBalloonBand(rect, 40, 20)).toEqual({ left: 0, width: 200 });
+  });
+
+  it("narrows polygon bands toward the vertical extremes (diamond)", () => {
+    const diamond = [
+      { x: 100, y: 0 },
+      { x: 200, y: 50 },
+      { x: 100, y: 100 },
+      { x: 0, y: 50 },
+    ];
+    const middle = polygonBalloonBand(diamond, 40, 20);
+    const top = polygonBalloonBand(diamond, 0, 20);
+    expect(middle.width).toBeGreaterThan(top.width);
+    expect(middle.left + middle.width / 2).toBeCloseTo(100);
+    // A band fully outside the polygon honestly reports no room.
+    expect(polygonBalloonBand(diamond, 200, 20).width).toBe(0);
+  });
+});
+
+describe("fitBalloonText irregular shapes (v2)", () => {
+  const base = { width: 200, height: 100, lineHeightPx: 20, align: "center" as const, measure: px };
+
+  it("flows text inside a cloud balloon, narrower than the rect lane", () => {
+    const text = "구름 풍선 안에 들어가는 대사는 형상 경계를 따라 흘러야 합니다";
+    const cloud = fitBalloonText(text, { ...base, shape: "cloud" });
+    const rect = fitBalloonText(text, { ...base, shape: "rect" });
+    expect(cloud.fitted).toBe(true);
+    expect(cloud.overflow).toBe("");
+    for (const line of cloud.lines) {
+      expect(px(line.text)).toBeLessThanOrEqual(line.availableWidth + 1e-6);
+      expect(line.availableWidth).toBeGreaterThan(0);
+    }
+    // The cloud boundary bites: some band is narrower than the full width.
+    expect(Math.min(...cloud.lines.map((l) => l.availableWidth))).toBeLessThan(
+      Math.min(...rect.lines.map((l) => l.availableWidth)),
+    );
+  });
+
+  it("flows text inside a spike balloon following the spiky boundary", () => {
+    const result = fitBalloonText("외침 대사 입니다 지금 당장", {
+      ...base,
+      shape: "spike",
+    });
+    expect(result.fitted).toBe(true);
+    for (const line of result.lines) {
+      expect(px(line.text)).toBeLessThanOrEqual(line.availableWidth + 1e-6);
+    }
+  });
+
+  it("flows text inside a custom polygon outline (diamond)", () => {
+    const outline = [
+      { x: 100, y: 0 },
+      { x: 200, y: 50 },
+      { x: 100, y: 100 },
+      { x: 0, y: 50 },
+    ];
+    const result = fitBalloonText("짧은 대사", {
+      ...base,
+      shape: "polygon",
+      outline,
+    });
+    expect(result.fitted).toBe(true);
+    expect(result.lines.length).toBeGreaterThan(0);
+    for (const line of result.lines) {
+      expect(px(line.text)).toBeLessThanOrEqual(line.availableWidth + 1e-6);
+    }
+  });
+
+  it("reports honest overflow for a polygon shape without an outline", () => {
+    const result = fitBalloonText("들어갈 수 없는 대사", {
+      ...base,
+      shape: "polygon",
+    });
+    expect(result.fitted).toBe(false);
+    expect(result.overflow).not.toBe("");
+  });
+
+  it("applies insetPx on top of the shape band", () => {
+    const left = { ...base, align: "left" as const };
+    const plain = fitBalloonText("대사", { ...left, shape: "rect" });
+    const inset = fitBalloonText("대사", { ...left, shape: "rect", insetPx: 30 });
+    expect(inset.lines[0].availableWidth).toBe(plain.lines[0].availableWidth - 60);
+    expect(inset.lines[0].x).toBe(plain.lines[0].x + 30);
+  });
+
+  it("is deterministic for irregular shapes", () => {
+    const run = () =>
+      fitBalloonText("구름 풍선 안에 들어가는 대사 입니다", { ...base, shape: "cloud" });
+    expect(run()).toEqual(run());
   });
 });

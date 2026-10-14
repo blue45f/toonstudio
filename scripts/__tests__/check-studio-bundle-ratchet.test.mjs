@@ -71,6 +71,24 @@ describe("studio bundle ratchet gate", () => {
     expect(gateSource).toContain("`${baseUrl}${runtimeProbePath}`");
   });
 
+  it("reports public-page CWV budgets for / and /discover (BLUEPRINT §6.4)", () => {
+    // Perf finding 5: the gate used to measure only the Studio surface, so the
+    // pages a guest meets first had no budget and no probe. The public budgets
+    // must stay the §6.4 targets, the probe must stay opt-in like --runtime,
+    // and overages must reach the report (observations + reference table)
+    // without becoming a ratchet veto — bytes/CWV references are telemetry.
+    expect(gateSource).toContain("const publicPageBudgets = {");
+    expect(gateSource).toContain("lcpMs: 2_500");
+    expect(gateSource).toContain("cls: 0.1");
+    expect(gateSource).toContain("inpMs: 200");
+    expect(gateSource).toContain('const publicProbePaths = ["/", "/discover"];');
+    expect(gateSource).toContain("async function probePublicPages(");
+    expect(gateSource).toContain('"--public-runtime"');
+    expect(gateSource).toContain("STUDIO_BUNDLE_PUBLIC_RUNTIME");
+    expect(gateSource).toContain('recordMeasurement("public"');
+    expect(gateSource).toContain("function reportPublicCwvSection(");
+  });
+
   it("ships a committed baseline with plausible measurements", () => {
     expect(existsSync(baselineFile)).toBe(true);
     const baseline = JSON.parse(readFileSync(baselineFile, "utf8"));

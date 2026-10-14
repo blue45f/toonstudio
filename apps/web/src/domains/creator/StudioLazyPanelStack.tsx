@@ -214,6 +214,7 @@ export interface StudioLazyPanelStackHandlers {
   setWriterRoom: (next: SetStateAction<StudioWriterRoomDocument>) => void;
   startMacroRecord: () => void;
   stopMacroRecord: () => Promise<void>;
+  removeMacroCommand: (index: number) => void;
   startDrawingPractice: (request: StudioDrawingPracticeStartRequest) => void;
   updatePublishPackageSettings: (value: StudioPublishPackageSettings) => void;
 }
@@ -660,6 +661,7 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
     setWriterRoom,
     startMacroRecord,
     stopMacroRecord,
+    removeMacroCommand,
     startDrawingPractice,
     updatePublishPackageSettings,
     currentStudioProjectSnapshot,
@@ -1051,6 +1053,8 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
             error={autoActionError}
             macroRecording={macroSession.recording}
             macroCommandCount={macroSession.commands.length}
+            macroCommands={macroSession.commands}
+            onRemoveMacroCommand={removeMacroCommand}
             onStartMacroRecord={startMacroRecord}
             onStopMacroRecord={() => void stopMacroRecord()}
             onClose={() => {
