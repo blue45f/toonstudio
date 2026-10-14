@@ -170,7 +170,7 @@ function StudioOilProgramMatrix({
 
   return (
     <section className="flex flex-col gap-3 rounded-2xl border border-line bg-card/35 p-3" aria-labelledby="oil-matrix-heading">
-      <div className="flex items-start gap-2 rounded-xl border border-line bg-bg-2/60 px-3 py-2.5">
+      <div className="flex items-start gap-2 rounded-xl border border-line bg-raised/60 px-3 py-2.5">
         <Layers aria-hidden className="mt-0.5 size-4 shrink-0 text-fg-3" />
         <div className="min-w-0 text-xs leading-relaxed">
           <p className="font-semibold text-fg">
@@ -185,7 +185,7 @@ function StudioOilProgramMatrix({
           <button
             type="button"
             onClick={() => onChange(studioBrushEngineProgramSetWithoutOil(programSet))}
-            className="ml-auto inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-line px-2 py-1 text-[11px] font-medium text-fg-2 transition hover:bg-bg-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:min-h-11"
+            className="ml-auto inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-line px-2 py-1 text-[11px] font-medium text-fg-2 transition hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:min-h-11"
           >
             <RotateCcw aria-hidden className="size-3" />
             기본값
@@ -242,7 +242,7 @@ function StudioOilProgramMatrix({
                       "rounded px-1 py-px text-[0.56rem] font-semibold",
                       recipe.programs[row.key]
                         ? "bg-accent-soft text-accent"
-                        : "bg-bg-2 text-fg-4",
+                        : "bg-raised text-fg-3",
                     )}
                   >
                     {row.shortLabel}
@@ -265,16 +265,16 @@ function StudioOilProgramMatrix({
         </span>
       </div>
 
-      <details className="rounded-xl border border-line bg-bg-2/35 p-2.5">
+      <details className="rounded-xl border border-line bg-raised/35 p-2.5">
         <summary className="flex min-h-9 cursor-pointer items-center justify-between gap-2 text-[0.68rem] font-bold text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:min-h-11">
           각 물리 효과를 직접 켜고 끄기
           <ChevronDown size={14} aria-hidden className="text-fg-3" />
         </summary>
         <ol className="mt-2 flex flex-col gap-2 border-t border-line pt-2">
           <li className="flex items-center gap-2 rounded-lg border border-dashed border-line px-3 py-2 text-xs text-fg-3">
-            <span className="tabular-nums text-fg-4">1</span>
+            <span className="tabular-nums text-fg-3">1</span>
             <span className="font-medium text-fg-2">물감 본체</span>
-            <span className="text-fg-4">항상 칠해집니다</span>
+            <span className="text-fg-3">항상 칠해집니다</span>
           </li>
           {OIL_PROGRAM_ROWS.map((row, index) => {
             const on = current[row.key];
@@ -289,10 +289,10 @@ function StudioOilProgramMatrix({
                     "flex min-h-11 w-full items-start gap-2 rounded-lg border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
                     on
                       ? "border-accent/45 bg-accent-soft/25"
-                      : "border-line bg-bg-2/40 hover:bg-bg-3/60",
+                      : "border-line bg-raised/40 hover:bg-raised/60",
                   )}
                 >
-                  <span className="mt-0.5 tabular-nums text-[11px] text-fg-4">{index + 2}</span>
+                  <span className="mt-0.5 tabular-nums text-[11px] text-fg-3">{index + 2}</span>
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-1.5">
                       <span className={cn("text-xs font-semibold", on ? "text-fg" : "text-fg-3")}>
@@ -303,7 +303,7 @@ function StudioOilProgramMatrix({
                           변경됨
                         </span>
                       ) : null}
-                      <span className="rounded bg-bg-2 px-1 py-px text-[10px] font-medium text-fg-4">
+                      <span className="rounded bg-raised px-1 py-px text-[10px] font-medium text-fg-3">
                         비용 {row.cost}
                       </span>
                     </span>
@@ -315,7 +315,7 @@ function StudioOilProgramMatrix({
                     aria-hidden
                     className={cn(
                       "mt-0.5 h-4 w-7 shrink-0 rounded-full border transition",
-                      on ? "border-accent bg-accent" : "border-line bg-bg-3",
+                      on ? "border-accent bg-accent" : "border-line bg-raised",
                     )}
                   >
                     <span
@@ -397,7 +397,7 @@ export function StudioBrushEngineProgramControls({
             onChange={onChange}
           />
           {family !== "oil" ? (
-            <p className="mt-3 rounded-xl border border-line bg-bg-2/60 p-3 text-[0.65rem] leading-relaxed text-fg-3">
+            <p className="mt-3 rounded-xl border border-line bg-raised/60 p-3 text-[0.65rem] leading-relaxed text-fg-3">
               현재 제품 경로에 연결된 노드는 즉시 적용됩니다. 실험·어댑터 노드는 저장 전에 상태와 호환성을 확인하세요.
             </p>
           ) : null}

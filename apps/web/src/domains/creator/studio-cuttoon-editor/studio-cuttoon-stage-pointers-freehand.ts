@@ -133,6 +133,10 @@ import { beginPanelSplitDrag, planPanelSplit, previewPanelSplit, type PanelSplit
 import { normalizeStudioPersistedPointerChannels } from "../studio-persisted-pointer-channels";
 import { resolvePerspectiveRay, snapStrokePointToPerspective } from "../studio-perspective-guide";
 import {
+  createPerspectivePenSnapSession,
+  snapPerspectivePenPoint,
+} from "../drawing/studio-perspective-pen-snap";
+import {
   isStudioPixelPencilRenderMode,
   planStudioPixelPencilSampleUpdate,
 } from "../studio-pixel-pencil";
@@ -215,6 +219,7 @@ import {
   sampleStudioPointerVelocity,
   stabilizeStudioStrokeSample,
 } from "../brush/studio-stroke-stabilizer";
+import { resolveStudioStabilizerOptionsForState } from "../brush/studio-stroke-stabilizer-presets";
 import { claimStudioStrokeSurfaceLifecycle } from "../brush/studio-stroke-surface-route";
 import {
   createStudioThinLineInkInputState,
@@ -269,6 +274,7 @@ export function bindStudioCuttoonStagePointersFreehand(
     liveWetInkDraftDirectRef,
     liveWetInkOverlayRendererRef,
     perspectiveRayRef,
+    perspectiveGuideSnapRef,
     pressureCurve,
     pressureMinSize,
     stabilizer,
@@ -281,6 +287,7 @@ export function bindStudioCuttoonStagePointersFreehand(
     isometricAngleDeg,
     isometricGridActive,
     perspectiveRulerActive,
+    drawingPerspectiveGuide,
     scheduleDraft,
     scheduleLiveDrawPressure,
     vanishingPoints,
@@ -512,6 +519,33 @@ export function bindStudioCuttoonStagePointersFreehand(
       }
       [targetX, targetY] = snapStrokePointToPerspective(targetX, targetY, perspectiveRayRef.current);
     } else if (
+      current.mode !== "eraser"
+      && drawingPerspectiveGuide?.enabled
+      && drawingPerspectiveGuide.snapEnabled
+      && drawingPerspectiveGuide.guide
+    ) {
+      // drawing 레인 원근 가이드(StudioRulersPanel 토글) 스냅. 이 else-if 체인에서는
+      // 고급 자 → creator 원근자 순으로 먼저 이기므로 두 원근 체계가 한 샘플에 겹치지
+      // 않는다. 가이드가 꺼져 있으면 상태 자체가 null/비활성이라 이 분기에 들어오지
+      // 않고, 세션도 열리지 않아 기존 동작과 완전히 동일하다. 세션은 스트로크
+      // 시작점에서 소실점 하나를 확정하는 studio-perspective-pen-snap 계약을 따른다
+      // (down-draw 에서 스트로크마다 null 로 초기화).
+      if (!perspectiveGuideSnapRef.current) {
+        const startX = current.points[0] ?? pos.x;
+        const startY = current.points[1] ?? pos.y;
+        perspectiveGuideSnapRef.current = createPerspectivePenSnapSession(
+          drawingPerspectiveGuide,
+          { x: startX, y: startY }
+        );
+      }
+      const guideSnapped = snapPerspectivePenPoint(perspectiveGuideSnapRef.current, {
+        x: targetX,
+        y: targetY,
+      });
+      perspectiveGuideSnapRef.current = guideSnapped.session;
+      targetX = guideSnapped.point.x;
+      targetY = guideSnapped.point.y;
+    } else if (
       shouldSnapStrokeToIsometricAxis({
         active: inputSettings?.isometricActive ?? isometricGridActive,
         mode: current.mode,
@@ -633,25 +667,29 @@ export function bindStudioCuttoonStagePointersFreehand(
           : stabilizeStudioStrokeSample(
               liveStabilizerState,
               { x: targetX, y: targetY, timeStamp: sampleTimeStamp },
-              {
-                strength: strokeStabilizerStrength,
-                mode: strokeStabilizerMode,
-                coordinateScale: strokeCoordinateScale,
-              }
+              resolveStudioStabilizerOptionsForState(
+                strokeStabilizerMode,
+                strokeStabilizerStrength,
+                strokeCoordinateScale
+              )
             );
       } else {
         stabilized = stabilizeStudioStrokeSample(
           liveStabilizerState,
           { x: targetX, y: targetY, timeStamp: sampleTimeStamp },
-          {
-            strength: strokeStabilizerStrength,
-            mode: strokeStabilizerMode,
-            coordinateScale: strokeCoordinateScale,
-          }
+          resolveStudioStabilizerOptionsForState(
+            strokeStabilizerMode,
+            strokeStabilizerStrength,
+            strokeCoordinateScale
+          )
         );
       }
       if (!drawingPredictionPreviewRef.current) {
         drawingStabilizerRef.current = stabilized.state;
+        // Weighted 모드의 추 테이퍼: 도출 필압을 속도 필압(velocityPressure)이 만든
+        // pressure에 곱해 합성한다. weighted가 아닌 모드는 derivedPressure가 없어
+        // 계수 1이라 기존 획과 동일하다. 미리보기 샘플은 커밋이 아니라 제외한다.
+        pressure = pressure * (stabilized.derivedPressure ?? 1);
       }
       [targetX, targetY] = stabilized.point;
     }

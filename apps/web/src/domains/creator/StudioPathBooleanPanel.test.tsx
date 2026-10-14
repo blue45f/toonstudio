@@ -48,3 +48,48 @@ describe("StudioPathBooleanPanel", () => {
     expect(screen.getByRole("status").textContent).toContain("도형을 결합하는 중...");
   });
 });
+
+describe("StudioPathBooleanPanel — 빠른 결합(다각형) 명시 선택 섹션", () => {
+  it("섹션을 넘기지 않으면 빠른 결합 버튼이 렌더되지 않는다(기존 패널과 동일)", () => {
+    render(<StudioPathBooleanPanel {...props()} />);
+    expect(screen.queryByRole("button", { name: /빠른 결합으로/ })).toBeNull();
+    expect(screen.queryByText(/빠른 결합 \(다각형\)/)).toBeNull();
+  });
+
+  it("빠른 결합 버튼은 기본 onApply 가 아니라 섹션 onApply 로만 나간다", () => {
+    const onApply = vi.fn();
+    const onFastApply = vi.fn();
+    render(
+      <StudioPathBooleanPanel
+        {...props({ onApply, fastCombineSection: { onApply: onFastApply } })}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "빠른 결합으로 합치기" }));
+    expect(onFastApply).toHaveBeenCalledTimes(1);
+    expect(onFastApply).toHaveBeenCalledWith("union");
+    expect(onApply).not.toHaveBeenCalled();
+    // 기본 버튼은 여전히 기본 콜백만 호출한다 — 명시 선택이 기본 동선을 바꾸지 않는다.
+    fireEvent.click(screen.getByRole("button", { name: "합치기" }));
+    expect(onApply).toHaveBeenCalledTimes(1);
+    expect(onApply).toHaveBeenCalledWith("union");
+    expect(onFastApply).toHaveBeenCalledTimes(1);
+  });
+
+  it("섹션 unavailableReason 이 있으면 빠른 결합 버튼만 잠기고 사유를 보여준다", () => {
+    const onFastApply = vi.fn();
+    const reason = "빠른 결합은 사용할 수 없어요.";
+    render(
+      <StudioPathBooleanPanel
+        {...props({
+          fastCombineSection: { onApply: onFastApply, unavailableReason: reason },
+        })}
+      />
+    );
+    expect(
+      screen.getByRole("button", { name: "빠른 결합으로 빼기" }).hasAttribute("disabled")
+    ).toBe(true);
+    expect(screen.getByRole("button", { name: "빼기" }).hasAttribute("disabled")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "빠른 결합으로 빼기" }));
+    expect(onFastApply).not.toHaveBeenCalled();
+  });
+});

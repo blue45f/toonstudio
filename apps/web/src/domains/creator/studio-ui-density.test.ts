@@ -2,17 +2,25 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_STUDIO_UI_DENSITY_MODE,
+  isStudioUiAdvancedRegion,
   loadStudioUiDensityState,
   normalizeStudioUiDensityMode,
+  normalizeStudioUiDensityState,
   resolveStudioUiDensityInitialMode,
   saveStudioUiDensityState,
+  STUDIO_UI_ADVANCED_REGIONS,
   STUDIO_UI_CHROME_REGIONS,
+  STUDIO_UI_CORE_REGIONS,
   STUDIO_UI_DENSITY_ENTRY_INITIAL_MODE,
   STUDIO_UI_DENSITY_MATRIX,
   STUDIO_UI_DENSITY_MODES,
   STUDIO_UI_DENSITY_POLICY,
+  studioUiAdvancedToolsToggleLabel,
+  studioUiDensityAdvancedExpanded,
   studioUiDensityAllows,
   studioUiDensityDescription,
+  studioUiDensityFirstScreenExposure,
+  studioUiDensityFirstScreenVisibleRegions,
   studioUiDensityFromImmersive,
   studioUiDensityLabel,
   studioUiDensityPolicy,
@@ -183,5 +191,70 @@ describe("studio ui density policy declaration (BLUEPRINT §4.1)", () => {
       expect(resolveStudioUiDensityInitialMode(entry, "focus")).toBe("focus");
       expect(resolveStudioUiDensityInitialMode(entry, "simple")).toBe("simple");
     }
+  });
+});
+
+describe("studio first-screen exposure (complexity diet)", () => {
+  it("partitions every chrome region into core or advanced exactly once", () => {
+    const all = [...STUDIO_UI_CORE_REGIONS, ...STUDIO_UI_ADVANCED_REGIONS];
+    expect(new Set(all).size).toBe(all.length);
+    expect(all).toHaveLength(14);
+    expect([...all].sort()).toEqual([...STUDIO_UI_CHROME_REGIONS].sort());
+    expect(isStudioUiAdvancedRegion("toolbar-ai")).toBe(true);
+    expect(isStudioUiAdvancedRegion("toolbar-reference")).toBe(true);
+    expect(isStudioUiAdvancedRegion("toolbar-draw")).toBe(false);
+  });
+
+  it("folds the advanced clusters on a fresh simple entry and keeps the core visible", () => {
+    for (const region of STUDIO_UI_ADVANCED_REGIONS) {
+      expect(studioUiDensityFirstScreenExposure("simple", region)).toBe("folded");
+    }
+    for (const region of STUDIO_UI_CORE_REGIONS) {
+      expect(studioUiDensityFirstScreenExposure("simple", region)).toBe("visible");
+    }
+    // First screen in simple shows the 10 core regions only.
+    expect(studioUiDensityFirstScreenVisibleRegions("simple")).toEqual(
+      expect.arrayContaining([...STUDIO_UI_CORE_REGIONS]),
+    );
+    expect(studioUiDensityFirstScreenVisibleRegions("simple")).toHaveLength(10);
+  });
+
+  it("reveals folded clusters after expansion without changing the mode", () => {
+    expect(studioUiDensityFirstScreenExposure("simple", "toolbar-scene", true)).toBe("visible");
+    expect(studioUiDensityFirstScreenVisibleRegions("simple", true)).toHaveLength(14);
+  });
+
+  it("never folds in full and keeps the focus set unchanged", () => {
+    for (const region of STUDIO_UI_ADVANCED_REGIONS) {
+      expect(studioUiDensityFirstScreenExposure("full", region)).toBe("visible");
+      expect(studioUiDensityFirstScreenExposure("focus", region)).toBe("hidden");
+    }
+    expect(studioUiDensityFirstScreenExposure("focus", "toolbar-draw")).toBe("visible");
+    expect(studioUiDensityFirstScreenExposure("focus", "right-panel")).toBe("hidden");
+  });
+
+  it("persists the expansion choice and defaults legacy states to folded", () => {
+    expect(normalizeStudioUiDensityState({ mode: "simple" }).advancedExpanded).toBe(false);
+    expect(normalizeStudioUiDensityState({ mode: "simple", advancedExpanded: true }).advancedExpanded).toBe(true);
+    expect(normalizeStudioUiDensityState({ mode: "simple", advancedExpanded: "yes" }).advancedExpanded).toBe(false);
+    expect(studioUiDensityAdvancedExpanded(undefined)).toBe(false);
+    const map = new Map<string, string>();
+    const storage = {
+      getItem: (k: string) => map.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        map.set(k, v);
+      },
+    };
+    expect(saveStudioUiDensityState(storage, { mode: "simple", advancedExpanded: true })).toBe(true);
+    const loaded = loadStudioUiDensityState(storage);
+    expect(loaded.mode).toBe("simple");
+    expect(studioUiDensityAdvancedExpanded(loaded)).toBe(true);
+  });
+
+  it("labels the single expander in product voice without leaking keys", () => {
+    const untranslated = (key: string) => key;
+    expect(studioUiAdvancedToolsToggleLabel(false, untranslated)).toBe("고급 도구 펼치기");
+    expect(studioUiAdvancedToolsToggleLabel(true, untranslated)).toBe("고급 도구 접기");
+    expect(studioUiAdvancedToolsToggleLabel(false, () => "Show advanced tools")).toBe("Show advanced tools");
   });
 });

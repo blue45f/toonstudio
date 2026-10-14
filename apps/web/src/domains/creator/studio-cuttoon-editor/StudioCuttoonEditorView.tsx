@@ -59,6 +59,7 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
     studioRootRef,
     tool,
     uiDensityMode,
+    workMode,
     watermarkPreferenceSnapshot,
   } = s;
   const drawingPresentation = useStudioDrawingPresentation();
@@ -100,6 +101,7 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
       ref={studioRootRef}
       data-studio-mobile-immersive={mobileImmersive ? "true" : "false"}
       data-studio-ui-density={uiDensityMode}
+      data-studio-work-mode={workMode ?? "all"}
       data-studio-drawing-presentation={drawingPresentation}
       data-studio-tool-hint-mode={appSettings.general.toolHintMode}
       data-studio-reduce-motion={appSettings.other.reduceMotion ? "true" : "false"}

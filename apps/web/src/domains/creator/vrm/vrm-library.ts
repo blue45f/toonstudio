@@ -93,6 +93,8 @@ export type VrmLibraryEntry = {
   byteSize?: number;
   mimeType?: string;
   licenseAuthority?: StudioVrmLicenseAuthority;
+  /** 번들 샘플의 라이선스 고지(카탈로그가 실은 경우만) — 업로드 모델의 licenseAuthority와 별개다. */
+  licenseNotice?: BundledVrmLicenseNotice;
 };
 
 export interface VrmLibraryStorageOptions {
@@ -120,6 +122,13 @@ export type BundledVrmLimitation =
   | "limited-hand-rig"
   | "heavy-payload";
 
+/** 번들 모델의 라이선스 고지 — 고지 의무가 있는 모델만 싣고, 카드 표면이 그대로 표시한다. */
+export interface BundledVrmLicenseNotice {
+  readonly label: string;
+  readonly summary: string;
+  readonly licenseUrl: string;
+}
+
 export type SampleVrm = {
   id: string;
   name: string;
@@ -130,6 +139,8 @@ export type SampleVrm = {
   visibility?: BundledVrmVisibility;
   /** Audited capability or delivery limitations; absence means no catalog-level warning. */
   limitations?: readonly BundledVrmLimitation[];
+  /** 라이선스 고지 의무가 있는 번들 모델만 싣는다(예: AliciaSolid의 니코니 솔리드 라이선스). */
+  licenseNotice?: BundledVrmLicenseNotice;
 };
 
 export function buildFallbackVrmLibraryThumbnail(name: string, id: string): string {
@@ -295,7 +306,19 @@ export const SAMPLE_VRMS: SampleVrm[] = [
     url: "/vrm/Darkness_Shibu.vrm",
     limitations: ["heavy-payload"],
   },
-  { id: "alicia", name: "아리시아", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v1/alicia.png", url: "/vrm/AliciaSolid.vrm" },
+  {
+    id: "alicia",
+    name: "아리시아",
+    thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v1/alicia.png",
+    url: "/vrm/AliciaSolid.vrm",
+    // AliciaSolid 임베드 메타(author "© DWANGO Co., Ltd.", otherLicenseUrl)의 고지 의무.
+    licenseNotice: {
+      label: "니코니 솔리드 라이선스",
+      summary:
+        "Alicia Solid · © DWANGO Co., Ltd. — 니코니 솔리드 라이선스가 적용됩니다. 재배포·2차 이용 시 이 라이선스 고지가 필요합니다.",
+      licenseUrl: "https://3d.nicovideo.jp/alicia/rule.html",
+    },
+  },
   { id: "devil", name: "데빌 (악마)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/devil.png", url: "/vrm/Devil.vrm" },
   { id: "polydancer", name: "폴리댄서", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/polydancer.png", url: "/vrm/Polydancer.vrm" },
   { id: "rose", name: "로즈", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/rose.png", url: "/vrm/Rose.vrm" },
@@ -402,6 +425,7 @@ export const SAMPLE_VRM_ENTRIES: VrmLibraryEntry[] = SAMPLE_VRMS
     thumbnail: sample.thumbnailUrl ?? `/assets/3d/characters/thumbnails/${sample.id === SAMPLE_VRM_ID ? "sample-vrm" : sample.id}.png`,
     createdAt: 0,
     updatedAt: 0,
+    licenseNotice: sample.licenseNotice,
   }));
 export const SAMPLE_VRM_LIBRARY_ENTRY: VrmLibraryEntry = SAMPLE_VRM_ENTRIES[0];
 

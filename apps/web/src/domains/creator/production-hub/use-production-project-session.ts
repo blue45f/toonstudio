@@ -3,12 +3,12 @@ import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 import { getAuthSessionRevision, listeners } from "@/domains/auth/public/session/auth-session-state";
 import { getApiErrorMessage, httpStatus } from "@/platform/api";
 import { executeProductionCommand, getProductionProject, type ProductionClientCommand, type ProductionProjectAccess, type ProductionProjectRecord } from "./production-api";
+import { useT } from "@/shared/lib/i18n";
 
 export type ProductionSaveState = "idle" | "saving" | "saved" | "error";
 const subscribeToSession = (notify: () => void) => { listeners.add(notify); return () => { listeners.delete(notify); }; };
 const NO_ACCESS: ProductionProjectAccess = { view: false, comment: false, edit: false, manage: false, owner: false, role: null };
 const DEMO_ACCESS: ProductionProjectAccess = { view: true, comment: true, edit: true, manage: true, owner: true, role: "owner" };
-const STALE = "계정이나 프로젝트가 변경되어 요청을 중지했습니다. 현재 화면에서 다시 시도하세요.";
 interface Snapshot {
   readonly scope: string;
   readonly record: ProductionProjectRecord | null;
@@ -23,6 +23,8 @@ interface DemoAdapter {
   readonly reduce: (current: ProductionProjectAggregate, command: ProductionClientCommand) => ProductionProjectAggregate;
 }
 export function useProductionProjectSession(projectId: string | undefined, actorId: string | null, demo: DemoAdapter) {
+  const t = useT();
+  const staleMessage = t("productionHub.session.stale", "계정이나 프로젝트가 변경되어 요청을 중지했습니다. 현재 화면에서 다시 시도하세요.");
   const isDemo = !projectId || projectId === "sample-project";
   const authRevision = useSyncExternalStore(subscribeToSession, getAuthSessionRevision, getAuthSessionRevision);
   const scope = JSON.stringify([projectId, actorId, authRevision]);
@@ -62,9 +64,9 @@ export function useProductionProjectSession(projectId: string | undefined, actor
         authority.current = record;
         setSnapshot((value) => ({ ...value, scope, record, loading: false, refreshing: false, error: null,
           saveState: value.saveState === "error" ? "idle" : value.saveState,
-          notice: value.saveState === "error" ? "최신 상태를 불러왔습니다. 저장 실패했던 입력은 확인 후 다시 저장해 주세요." : value.notice }));
+          notice: value.saveState === "error" ? t("productionHub.session.recoveredNotice", "최신 상태를 불러왔습니다. 저장 실패했던 입력은 확인 후 다시 저장해 주세요.") : value.notice }));
       } catch (cause) {
-        const message = await getApiErrorMessage(cause, "최신 프로젝트를 불러오지 못했습니다. 다시 시도해 주세요.");
+        const message = await getApiErrorMessage(cause, t("productionHub.session.loadLatestFailed", "최신 프로젝트를 불러오지 못했습니다. 다시 시도해 주세요."));
         if (!current() || sequence !== reads.current) return;
         if ([401, 403, 404].includes(httpStatus(cause) ?? 0)) authority.current = null;
         setSnapshot((value) => ({ ...value, scope, record: authority.current, loading: false,
@@ -99,15 +101,15 @@ export function useProductionProjectSession(projectId: string | undefined, actor
     const epoch = generation.current, session = getAuthSessionRevision(), batch = queueEpoch.current;
     const current = () => authorityScope.current === scope && generation.current === epoch && getAuthSessionRevision() === session && session === authRevision;
     const run = async () => {
-      if (!current()) { if (strict) throw new Error(STALE); return; }
-      if (batch !== queueEpoch.current) { if (strict) throw new Error("이전 저장이 실패하여 대기 중인 변경을 적용하지 않았습니다. 최신 내용을 확인한 뒤 다시 저장하세요."); return; }
+      if (!current()) { if (strict) throw new Error(staleMessage); return; }
+      if (batch !== queueEpoch.current) { if (strict) throw new Error(t("productionHub.session.previousSaveFailed", "이전 저장이 실패하여 대기 중인 변경을 적용하지 않았습니다. 최신 내용을 확인한 뒤 다시 저장하세요.")); return; }
       const record = authority.current;
       if (!record || (!isDemo && record.aggregate.projectId !== projectId)) {
-        if (strict) throw new Error("저장할 프로젝트가 없습니다. 다시 불러온 뒤 시도하세요.");
+        if (strict) throw new Error(t("productionHub.session.noProjectToSave", "저장할 프로젝트가 없습니다. 다시 불러온 뒤 시도하세요."));
         return;
       }
       if (!record.access.view || (!record.access.edit && !record.access.comment && !record.access.manage)) {
-        if (strict) throw new Error("프로젝트 변경 권한이 없습니다.");
+        if (strict) throw new Error(t("productionHub.session.noChangePermission", "프로젝트 변경 권한이 없습니다."));
         return;
       }
       pendingWrites.current += 1; reads.current += 1;
@@ -115,7 +117,7 @@ export function useProductionProjectSession(projectId: string | undefined, actor
       try {
         const next = isDemo ? demo.reduce(record.aggregate, command)
           : (await executeProductionCommand(record.aggregate.projectId, record.aggregate.revision, command)).aggregate;
-        if (!current()) throw new Error(STALE);
+        if (!current()) throw new Error(staleMessage);
         if (next.projectId !== record.aggregate.projectId || next.revision < record.aggregate.revision) throw new Error("저장 응답의 프로젝트나 버전을 확인하지 못했습니다.");
         authority.current = { aggregate: next, access: record.access };
         setSnapshot((value) => ({ ...value, record: authority.current, saveState: "saved", notice: message }));
@@ -124,20 +126,20 @@ export function useProductionProjectSession(projectId: string | undefined, actor
       } catch (cause) {
         if (current()) queueEpoch.current += 1;
         let failure = await getApiErrorMessage(cause, "변경 내용을 저장하지 못했습니다.");
-        if (!current()) { if (strict) throw new Error(STALE, { cause }); return; }
+        if (!current()) { if (strict) throw new Error(staleMessage, { cause }); return; }
         if (!isDemo && httpStatus(cause) === 409) {
           try {
             const latest = await getProductionProject(record.aggregate.projectId);
-            if (!current()) throw new Error(STALE, { cause });
+            if (!current()) throw new Error(staleMessage, { cause });
             if (latest.aggregate.projectId !== projectId || !latest.access.view) { authority.current = null; throw new Error("프로젝트 접근 정보가 변경되었습니다.", { cause }); }
             authority.current = latest;
             failure += " 최신 상태를 불러왔습니다. 편집 내용을 확인한 뒤 다시 저장하세요.";
           } catch (refreshError) {
             if ([401, 403, 404].includes(httpStatus(refreshError) ?? 0)) authority.current = null;
-            failure += " 최신 상태를 불러오지 못했습니다. 새로고침이 필요합니다.";
+            failure += ` ${t("productionHub.session.refreshFailed", "최신 상태를 불러오지 못했습니다. 새로고침이 필요합니다.")}`;
           }
         }
-        if (!current()) { if (strict) throw new Error(STALE, { cause }); return; }
+        if (!current()) { if (strict) throw new Error(staleMessage, { cause }); return; }
         if ([401, 403, 404].includes(httpStatus(cause) ?? 0)) authority.current = null;
         setSnapshot((value) => ({ ...value, record: authority.current, saveState: "error", notice: failure,
           error: authority.current ? null : failure }));

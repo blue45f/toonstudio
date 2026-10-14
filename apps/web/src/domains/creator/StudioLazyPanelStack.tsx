@@ -74,7 +74,10 @@ import type {
 import type { StudioDraftCollaborationReadiness } from "./studio-draft-collaboration";
 import type { Tool } from "./studio-editor-tool-model";
 import type { El } from "./studio-element-model";
-import type { StudioMacroSession } from "./studio-macro-recorder";
+import {
+  getStudioMacroTruncationNotice,
+  type StudioMacroSession,
+} from "./studio-macro-recorder";
 import type { StudioPageDnd } from "./studio-page-dnd";
 import type { PageReviewState } from "./studio-page-review";
 import type { PageState } from "./studio-page-state";
@@ -1055,6 +1058,7 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
             macroCommandCount={macroSession.commands.length}
             macroCommands={macroSession.commands}
             onRemoveMacroCommand={removeMacroCommand}
+            macroTruncationNotice={getStudioMacroTruncationNotice(macroSession)}
             onStartMacroRecord={startMacroRecord}
             onStopMacroRecord={() => void stopMacroRecord()}
             onClose={() => {

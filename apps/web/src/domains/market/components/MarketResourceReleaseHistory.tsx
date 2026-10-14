@@ -11,6 +11,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { findStarterMarketplaceResourceById } from "@/shared/lib/creator-marketplace-starter-catalog";
 import Link from "@/shared/navigation/router-link";
 import { getCreatorMarketplaceResourceHistory } from "@/platform/creator-marketplace-client";
+import { useT } from "@/shared/lib/i18n";
 
 const HISTORY_PAGE_SIZE = 8;
 
@@ -19,10 +20,8 @@ type InitialState =
   | { readonly status: "error"; readonly page: null; readonly message: string }
   | { readonly status: "ready"; readonly page: CreatorMarketplaceResourceHistoryPage; readonly message: null };
 
-function historyErrorMessage(error: unknown): string {
-  return error instanceof Error && error.message.trim()
-    ? error.message
-    : "릴리스 이력을 불러오지 못했습니다.";
+function historyErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message.trim() ? error.message : fallback;
 }
 
 function mergeHistoryItems(
@@ -39,6 +38,7 @@ export interface MarketResourceReleaseHistoryProps {
 
 /** Public history contains links only for release IDs the public API explicitly made visible. */
 export function MarketResourceReleaseHistory({ resourceId }: MarketResourceReleaseHistoryProps) {
+  const t = useT();
   const [retryGeneration, setRetryGeneration] = useState(0);
   const [state, setState] = useState<InitialState>({
     status: "loading",
@@ -101,7 +101,7 @@ export function MarketResourceReleaseHistory({ resourceId }: MarketResourceRelea
         });
         return;
       }
-      setState({ status: "error", page: null, message: historyErrorMessage(error) });
+      setState({ status: "error", page: null, message: historyErrorMessage(error, t("market.releaseHistory.loadFailed", "릴리스 이력을 불러오지 못했습니다.")) });
     });
 
     return () => {
@@ -147,7 +147,7 @@ export function MarketResourceReleaseHistory({ resourceId }: MarketResourceRelea
     }).catch((error: unknown) => {
       if (controller.signal.aborted || requestGenerationRef.current !== generation) return;
       setLoadingMore(false);
-      setLoadMoreError(historyErrorMessage(error));
+      setLoadMoreError(historyErrorMessage(error, t("market.releaseHistory.loadFailed", "릴리스 이력을 불러오지 못했습니다.")));
     });
   }, [resourceId, state]);
 
@@ -168,7 +168,7 @@ export function MarketResourceReleaseHistory({ resourceId }: MarketResourceRelea
       </div>
 
       {state.status === "loading" ? (
-        <p role="status" className="mt-4 text-sm text-fg-2">릴리스 이력을 불러오는 중…</p>
+        <p role="status" className="mt-4 text-sm text-fg-2">{t("market.releaseHistory.loading", "릴리스 이력을 불러오는 중…")}</p>
       ) : null}
 
       {state.status === "error" ? (
@@ -179,7 +179,7 @@ export function MarketResourceReleaseHistory({ resourceId }: MarketResourceRelea
             onClick={() => setRetryGeneration((value) => value + 1)}
             className={buttonClass({ variant: "outline", size: "sm", className: "mt-3 min-h-11" })}
           >
-            다시 시도
+            {t("market.state.retry", "다시 시도")}
           </button>
         </div>
       ) : null}
@@ -195,7 +195,7 @@ export function MarketResourceReleaseHistory({ resourceId }: MarketResourceRelea
 
           {state.page.items.length === 0 ? (
             <p className="mt-4 rounded-lg bg-panel p-3 text-sm text-fg-2">
-              현재 공개된 이전 릴리스가 없습니다.
+              {t("market.releaseHistory.emptyPrevious", "현재 공개된 이전 릴리스가 없습니다.")}
             </p>
           ) : (
             <ol className="mt-4 space-y-2">
@@ -244,7 +244,7 @@ export function MarketResourceReleaseHistory({ resourceId }: MarketResourceRelea
               disabled={loadingMore}
               className={buttonClass({ variant: "outline", size: "sm", className: "mt-3 min-h-11 w-full" })}
             >
-              {loadingMore ? "더 불러오는 중…" : loadMoreError ? "다시 불러오기" : "이전 릴리스 더 보기"}
+              {loadingMore ? t("market.releaseHistory.loadingMore", "더 불러오는 중…") : loadMoreError ? t("market.releaseHistory.reload", "다시 불러오기") : "이전 릴리스 더 보기"}
             </button>
           ) : null}
         </>

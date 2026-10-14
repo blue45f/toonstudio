@@ -8,8 +8,13 @@
  *
  * 완전히 controlled — 내부 비즈니스 상태 없음(StudioExtendedBlendPanel 과 동일 관례).
  * 무장(armed) 도구가 아니라 캔버스 제스처를 바꾸지 않는다 — disarm 연동 불필요.
+ *
+ * 빠른 결합(다각형) 섹션(선택) — 호스트가 넘길 때만 렌더되는 명시 선택 경로다.
+ * 기본 버튼들은 언제나 위 CanvasKit Worker 경로만 호출하고, 이 섹션의 버튼을
+ * 사용자가 직접 눌렀을 때만 동기 다각형 엔진(studio-pathfinder-boolean-adapter)이
+ * 실행된다. Worker 실패 시 이 섹션으로 자동 폴백하는 일은 없다.
  */
-import { Combine, Expand, Loader2 } from "lucide-react";
+import { Combine, Expand, Loader2, Zap } from "lucide-react";
 
 import { PANEL_CHIP_CLASS, PANEL_LABEL_ROW, PANEL_RANGE_CLASS } from "./studio-panel-ui";
 import { STUDIO_PATH_BOOLEAN_OPS, type StudioPathBooleanOp } from "./studio-path-boolean";
@@ -47,6 +52,21 @@ export type StudioPathBooleanOffsetSectionProps = {
   onApply: (request: StudioPathfinderOffsetRequest) => void;
 };
 
+/**
+ * 빠른 결합(다각형) 섹션(선택) — 호스트가 넘길 때만 렌더된다.
+ * 넘기지 않으면 기존 도형 결합 패널과 픽셀·동작이 동일하다(기존 테스트 무변경 통과).
+ * 이 섹션의 버튼은 기본 결합과 별개 콜백(onApply)으로만 나가며, 호스트는 이를
+ * 동기 다각형 엔진 전용 명령(applyPathBooleanCombineSync)에 연결한다.
+ */
+export type StudioPathBooleanFastCombineSectionProps = {
+  /** 빠른 결합 진행 중 — 이 섹션 버튼만 잠근다(기본 결합 busy 와 독립 표기 가능). */
+  busy?: boolean;
+  /** 호스트 게이트 사유 — 있으면 이 섹션 버튼을 잠그고 보여준다. */
+  unavailableReason?: string | null;
+  /** 연산 1개 적용 — 동기 다각형 결합·커밋은 StudioPage 가 수행. */
+  onApply: (op: StudioPathBooleanOp) => void;
+};
+
 export type StudioPathBooleanPanelProps = {
   /** 결합 연산 진행 중 — 모든 버튼을 잠근다(확장 블렌드 병합과 동일 관례). */
   busy?: boolean;
@@ -59,6 +79,8 @@ export type StudioPathBooleanPanelProps = {
   onApply: (op: StudioPathBooleanOp) => void;
   /** 윤곽 오프셋 섹션 — 없으면 렌더하지 않는다. */
   offsetSection?: StudioPathBooleanOffsetSectionProps | null;
+  /** 빠른 결합(다각형) 섹션 — 없으면 렌더하지 않는다. */
+  fastCombineSection?: StudioPathBooleanFastCombineSectionProps | null;
 };
 
 export function StudioPathBooleanPanel({
@@ -66,6 +88,7 @@ export function StudioPathBooleanPanel({
   unavailableReason = null,
   onApply,
   offsetSection = null,
+  fastCombineSection = null,
 }: StudioPathBooleanPanelProps): ReactElement {
   const applyDisabled = busy || Boolean(unavailableReason);
   const statusText = busy
@@ -106,9 +129,61 @@ export function StudioPathBooleanPanel({
         {statusText}
       </p>
 
+      {fastCombineSection && (
+        <StudioPathBooleanFastCombineSection section={fastCombineSection} panelBusy={busy} />
+      )}
+
       {offsetSection && (
         <StudioPathBooleanOffsetSection section={offsetSection} panelBusy={busy} />
       )}
+    </div>
+  );
+}
+
+function StudioPathBooleanFastCombineSection({
+  section,
+  panelBusy,
+}: {
+  section: StudioPathBooleanFastCombineSectionProps;
+  panelBusy: boolean;
+}): ReactElement {
+  const applyDisabled = panelBusy || Boolean(section.busy) || Boolean(section.unavailableReason);
+  const fastStatus = section.busy
+    ? "빠른 결합으로 도형을 결합하는 중..."
+    : section.unavailableReason
+      ?? "곡선을 다각형으로 근사해 즉시 결합합니다. 구멍·분리 영역도 결과에 그대로 남습니다. 기본 결합이 실패해도 이 경로가 자동으로 실행되지는 않습니다.";
+
+  return (
+    <div className="space-y-2 border-t border-line pt-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">
+          <Zap size={12} aria-hidden />
+          빠른 결합 (다각형)
+        </p>
+        {section.busy && <Loader2 size={13} className="animate-spin text-accent" aria-hidden />}
+      </div>
+
+      <div className="grid grid-cols-2 gap-1.5">
+        {STUDIO_PATH_BOOLEAN_OPS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            onClick={() => section.onApply(entry.id)}
+            disabled={applyDisabled}
+            title={section.unavailableReason ?? `${entry.tip} (다각형 근사·즉시 실행)`}
+            aria-label={`빠른 결합으로 ${entry.label}`}
+            className={cn(
+              PANEL_CHIP_CLASS,
+              "flex items-center justify-center gap-1",
+              !applyDisabled && "border-accent/60 bg-accent-soft/40 text-fg"
+            )}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="text-[0.72rem] leading-relaxed text-fg-3">{fastStatus}</p>
     </div>
   );
 }

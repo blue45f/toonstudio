@@ -48,6 +48,7 @@ import { StudioToolHintTarget } from "./StudioToolHint";
 import { StudioWorkflowAccess } from "./StudioWorkflowAccess";
 
 import type { StudioUiChromeRegion } from "./studio-ui-density";
+import { studioWorkModeAllowsRegion } from "./studio-work-mode-gating";
 import type { StudioToolBeltContentProps, StudioToolBeltHintMap } from "./StudioToolBeltContent";
 
 import { cn } from "@/shared/lib/utils";
@@ -92,6 +93,8 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
     stableHandlers,
     tool,
     uiDensityMode,
+    uiAdvancedToolsExpanded,
+    uiFirstScreenExposure,
     setMenu,
     setReferencePanelOpen,
   } = toolBelt;
@@ -107,9 +110,27 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
 
   const [expanded, setExpanded] = useState(false);
   const advancedToolsId = useId();
-  const showAdvanced = studioToolbarIsExpanded(uiDensityMode, expanded);
-  const allows = (region: StudioUiChromeRegion) =>
-    studioToolbarDisclosureAllows(uiDensityMode, expanded, region);
+  // 첫 화면 노출 게이트 — simple에서는 밀도 모델의 첫 화면 판정이 고급 클러스터 마운트 상한이다.
+  // 메뉴바 '고급 도구 펼치기'(밀도 저장소에 영속) 또는 벨트 자체 펼침 중 하나라도 열리면 마운트된다.
+  // full·focus는 기존 disclosure 판정을 그대로 따라 회귀가 없다.
+  const advancedExpanded =
+    expanded || (uiDensityMode === "simple" && uiAdvancedToolsExpanded === true);
+  const showAdvanced = studioToolbarIsExpanded(uiDensityMode, advancedExpanded);
+  // Work-mode gate (studio-work-mode-gating.ts): a cluster the current stage
+  // work mode folds closes here too, composed with the density verdicts
+  // above. Expanding the toolbar (local `expanded`) or the persisted
+  // density advanced-expansion lifts the work fold; work mode "all" (or an
+  // unwired host, workMode absent) is the identity — no folding, as before.
+  // The `|| activeToolbarGroup === ...` retention clauses below keep an open
+  // popover alive for folded clusters, exactly as for the density axis.
+  const workMode = toolBelt.workMode ?? "all";
+  const workFoldExpanded = expanded || toolBelt.uiAdvancedToolsExpanded === true;
+  const allows = (region: StudioUiChromeRegion) => {
+    if (!studioToolbarDisclosureAllows(uiDensityMode, advancedExpanded, region)) return false;
+    if (!studioWorkModeAllowsRegion(workMode, region, workFoldExpanded)) return false;
+    if (uiDensityMode !== "simple" || !uiFirstScreenExposure) return true;
+    return uiFirstScreenExposure(region) === "visible" || expanded;
+  };
   const documentLocked = toolBelt.collaborationDocumentLocked || activeSurfaceReviewLocked;
   const lockedReason = toolBelt.collaborationDocumentLocked
     ? toolBelt.collaborationLockMessage() || "이 문서는 지금 편집할 수 없어요."

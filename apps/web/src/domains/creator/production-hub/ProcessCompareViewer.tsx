@@ -156,7 +156,7 @@ function ComparePane({
           {groups.map((group) => (
             <optgroup key={group.processId} label={group.processLabel}>
               {group.items.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
+                <option key={candidate.id} value={`${candidate.processId}::${candidate.revisionId}`}>
                   {candidate.processLabel} · {candidate.revisionLabel}
                 </option>
               ))}

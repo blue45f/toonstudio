@@ -30,15 +30,16 @@ export class CreatorAnalyticsNotConnectedError extends Error {
 }
 
 /**
- * 실제 집계 소스 계약. 조회·좋아요·댓글·구독 전환을 실제로 집계하는 파이프라인이
- * 이 인터페이스를 구현해 등록하면, 라우트·DTO·웹 클라이언트 변경 없이 실집계로 전환된다.
+ * 실제 집계 소스 계약. 실제로 집계하는 파이프라인이 이 인터페이스를 구현해
+ * 등록하면, 라우트·DTO·웹 클라이언트 변경 없이 실집계로 전환된다.
  * 반환 페이로드는 mock:false 여야 하며, 서비스가 최종 응답에서도 mock:false 를 강제한다.
+ * 실제 저장소 조회는 비동기라 Promise 반환을 허용한다(동기 반환도 그대로 동작).
  */
 export interface CreatorAnalyticsAggregationSource {
   getAnalytics(
     period: CreatorAnalyticsPeriod,
     seriesId?: string,
-  ): CreatorAnalyticsResponse;
+  ): CreatorAnalyticsResponse | Promise<CreatorAnalyticsResponse>;
 }
 
 let registeredSource: CreatorAnalyticsAggregationSource | null = null;
@@ -63,21 +64,21 @@ export interface CreatorAnalyticsOptions {
 
 // PUBLISH T3: 창작자 애널리틱스 서비스.
 // 실집계 연결 전에는 404(연결 전)를 돌려주고, 소스가 등록되면 그 응답을 그대로 전달한다.
-// NestJS 런타임이 복원되면 @Injectable()으로 감싸 @Controller("creator/analytics")에 주입한다.
+// HTTP 표면은 creator-analytics.controller.ts(@Controller("creator/analytics"))가 담당한다.
 export class CreatorAnalyticsService {
   constructor(
     private readonly source?: CreatorAnalyticsAggregationSource | null,
   ) {}
 
-  getAnalytics(
+  async getAnalytics(
     periodRaw: unknown,
     seriesId?: string,
     options?: CreatorAnalyticsOptions,
-  ): CreatorAnalyticsResponse {
+  ): Promise<CreatorAnalyticsResponse> {
     const period = this.requirePeriod(periodRaw);
     const source = this.source ?? registeredSource;
     if (source) {
-      const response = source.getAnalytics(period, seriesId);
+      const response = await source.getAnalytics(period, seriesId);
       // 소스가 목 표시를 달아 보내면 실제 집계가 아닌 것으로 보고 연결 전으로 처리한다.
       // 목 숫자를 mock:false 로 바꿔 실제 지표로 위장하는 일은 절대 하지 않는다.
       if (response.mock) throw new CreatorAnalyticsNotConnectedError();

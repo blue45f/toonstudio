@@ -256,6 +256,55 @@ describe("CatalogController cover SSRF boundary", () => {
   });
 });
 
+describe("CatalogController cover server transcode", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("resizes an oversized upstream JPEG to the requested standard width", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    const { Image, encode, decode } = await import("image-js");
+    const data = new Uint8Array(800 * 1200 * 4);
+    for (let i = 0; i < data.length; i++) data[i] = i % 4 === 3 ? 255 : (i >> 2) % 251;
+    const jpeg = encode(new Image(800, 1200, { data, colorModel: "RGBA" }), { format: "jpeg" });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(jpeg, { headers: { "content-type": "image/jpeg" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.jpg", res as unknown as Response, "320", undefined
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "image/jpeg");
+    const served = (res.send as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Buffer;
+    expect(Buffer.isBuffer(served)).toBe(true);
+    expect(served.length).toBeLessThan(jpeg.byteLength);
+    const decoded = decode(served);
+    expect(decoded.width).toBe(320);
+    expect(decoded.height).toBe(480);
+  });
+
+  it("passes a WebP upstream through untouched even when a width is requested", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    const webp = Uint8Array.from([
+      0x52, 0x49, 0x46, 0x46, 0x1a, 0, 0, 0, 0x57, 0x45, 0x42, 0x50,
+      0x56, 0x50, 0x38, 0x20, 0x0e, 0, 0, 0, 0x90, 0x01, 0, 0x9d, 0x01, 0x2a, 0x01, 0, 0x01, 0,
+    ]);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(webp, { headers: { "content-type": "image/webp" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.webp", res as unknown as Response, "320", undefined
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith(Buffer.from(webp));
+  });
+});
+
 describe("cover transport negotiation helpers", () => {
   it.each([
     ["160", 160],

@@ -517,6 +517,14 @@ export type StudioCuttoonEditorViewSessionRest = {
   tutorialHubOpen: any;
   tutorialInitialId: any;
   uiDensityMode: any;
+  workMode: any;
+  setWorkMode: any;
+  suggestedWorkMode: any;
+  dismissWorkModeSuggestion: any;
+  uiChromeExposure: any;
+  uiAdvancedToolsExpanded: any;
+  uiFirstScreenExposure: any;
+  setUiAdvancedToolsExpanded: any;
   undo: any;
   undoBrushDelete: any;
   useVelocityPressure: any;

@@ -2,7 +2,8 @@
  * PDF 워크벤치 페이지 — 발행·가져온 PDF의 페이지를 카드로 정리하는 후단 작업 화면.
  *
  * 할 수 있는 것: PDF 여러 개 추가(병합), 페이지 순서 재배열(버튼·드래그), 페이지
- * 회전·제거, 전체를 한 PDF로 내려받기, 페이지 범위별로 나눠 내려받기.
+ * 회전·제거, 전체를 한 PDF로 내려받기, 페이지 범위별로 나눠 내려받기, 결과 PDF의
+ * 문서 속성(제목·저자·주제·키워드) 기록과 가져온 PDF의 기존 속성 확인.
  * 모든 처리는 이 기기 안에서 끝나고 파일은 서버로 가지 않는다.
  *
  * 상태 정본은 pdf-workbench-model(순수 상태), 바이트 연산은 pdf-workbench-engine,
@@ -53,6 +54,13 @@ import {
   type PdfWorkbenchPageEntry,
   type PdfWorkbenchState,
 } from "./pdf-workbench-model";
+import {
+  EMPTY_PDF_METADATA_FORM,
+  metadataFromFormValue,
+  type PdfMetadataFormValue,
+  type PdfSourceMetadata,
+} from "./pdf-workbench-metadata";
+import { PdfWorkbenchMetadataPanel } from "./pdf-workbench-metadata-panel";
 import { renderPdfPageThumbnail } from "./pdf-workbench-thumbnails";
 
 const THUMBNAIL_WIDTH = 220;
@@ -67,12 +75,23 @@ export function PdfWorkbenchPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [splitSpec, setSplitSpec] = useState("");
   const [splitError, setSplitError] = useState<string | null>(null);
+  // 출력 문서 속성 폼(제목·저자·주제·키워드) — 다운로드 시 metadataFromFormValue로 엔진에 넘긴다.
+  const [metadataForm, setMetadataForm] = useState<PdfMetadataFormValue>(EMPTY_PDF_METADATA_FORM);
+  // 소스 id → inspect가 읽은 기존 문서 속성. 패널의 소스 속성 표와 "가져오기"가 쓴다.
+  const [sourceMetadataById, setSourceMetadataById] = useState<ReadonlyMap<string, PdfSourceMetadata>>(
+    () => new Map(),
+  );
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const bytesBySourceIdRef = useRef(new Map<string, Uint8Array>());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const hasPages = wb.pages.length > 0;
   const baseName = wb.sources[0]?.name ?? "워크벤치";
+  const metadataPanelSources = wb.sources.map((source) => ({
+    id: source.id,
+    name: source.name,
+    metadata: sourceMetadataById.get(source.id),
+  }));
 
   // 보이는 순서대로 썸네일을 채운다. 캐시 키에 회전을 포함해 회전하면 다시 그린다.
   useEffect(() => {
@@ -131,6 +150,9 @@ export function PdfWorkbenchPage() {
           continue;
         }
         bytesBySourceIdRef.current.set(sourceId, bytes);
+        // 파일 로드 시점에 읽은 소스 속성을 함께 보관해 패널이 표시하게 한다.
+        // 읽기 실패는 엔진이 빈 속성으로 돌려주므로(inspect 내부 처리) 추가 실패 경로는 없다.
+        setSourceMetadataById((current) => new Map(current).set(sourceId, inspected.metadata));
         setWb((current) => addPdfSource(current, { ...inspected.source, id: sourceId }));
       }
     } catch (caught) {
@@ -157,6 +179,11 @@ export function PdfWorkbenchPage() {
 
   const removeSource = (sourceId: string, name: string) => {
     bytesBySourceIdRef.current.delete(sourceId);
+    setSourceMetadataById((current) => {
+      const next = new Map(current);
+      next.delete(sourceId);
+      return next;
+    });
     setWb((current) => removePdfSource(current, sourceId));
     setNotice(bt(`${name}을(를) 워크벤치에서 뺐어요.`, `Removed ${name} from the workbench.`));
   };
@@ -165,6 +192,8 @@ export function PdfWorkbenchPage() {
     bytesBySourceIdRef.current.clear();
     setThumbs(new Map());
     setWb(createPdfWorkbenchState());
+    setSourceMetadataById(new Map());
+    setMetadataForm(EMPTY_PDF_METADATA_FORM);
     setSplitSpec("");
     setSplitError(null);
     setNotice(null);
@@ -174,10 +203,18 @@ export function PdfWorkbenchPage() {
     setBuilding(true);
     setError(null);
     try {
+      const fallbackTitle = baseName.replace(/\.pdf$/iu, "");
+      const formMetadata = metadataFromFormValue(metadataForm);
+      // 빈 폼이면 metadata를 넘기지 않아 기존 동작(파일명 제목) 그대로다.
+      // 폼에 제목만 비어 있으면 기존 기본 제목을 채워 넣고 나머지는 입력대로 기록한다.
+      const outputMetadata = formMetadata
+        ? { ...formMetadata, title: formMetadata.title ?? fallbackTitle }
+        : undefined;
       const bytes = await buildMergedPdfBytes({
         state: wb,
         bytesBySourceId: bytesBySourceIdRef.current,
-        title: baseName.replace(/\.pdf$/iu, ""),
+        title: fallbackTitle,
+        metadata: outputMetadata,
       });
       downloadBlob(
         toPdfBlob(bytes),
@@ -205,6 +242,8 @@ export function PdfWorkbenchPage() {
         bytesBySourceId: bytesBySourceIdRef.current,
         ranges: parsed.ranges,
         baseName,
+        // 빈 폼이면 undefined — 분할 파일에 속성을 찍지 않는 기존 동작을 유지한다.
+        metadata: metadataFromFormValue(metadataForm) ?? undefined,
       });
       for (const file of files) {
         downloadBlob(toPdfBlob(file.bytes), file.name);
@@ -421,6 +460,18 @@ export function PdfWorkbenchPage() {
                 );
               })}
             </ul>
+          </section>
+
+          <section
+            aria-label={bt("문서 속성", "Document properties")}
+            className="rounded-3xl border border-line bg-card p-5 sm:p-6"
+          >
+            <PdfWorkbenchMetadataPanel
+              value={metadataForm}
+              onChange={setMetadataForm}
+              sources={metadataPanelSources}
+              disabled={building}
+            />
           </section>
 
           <section

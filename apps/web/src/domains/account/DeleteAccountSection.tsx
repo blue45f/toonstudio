@@ -94,7 +94,6 @@ export function DeleteAccountSection({ userId }: { userId: string | null }) {
       marker,
       skipExportAcknowledged: skipExportAck,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey가 다운로드 후 재읽기 트리거다.
   }, [refreshKey, skipExportAck]);
 
   if (!userId) return null;

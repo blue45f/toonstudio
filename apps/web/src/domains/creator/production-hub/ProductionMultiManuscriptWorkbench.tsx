@@ -30,6 +30,7 @@ import {
   type ProductionWorkbenchPaneCount,
   type ProductionWorkbenchState,
 } from "./production-manuscript-competitive-model";
+import { useT } from "@/shared/lib/i18n";
 
 const BACKGROUND_COLORS: Readonly<Record<ProductionWorkbenchBackground, string>> = Object.freeze({
   neutral: "#777777",
@@ -71,6 +72,7 @@ function WorkbenchPane({
   registerViewport,
   onRevoked,
 }: PaneProps) {
+  const t = useT();
   const preview = useStudioPinnedReviewPreviews(candidate.subject, onRevoked);
   const current = preview.result?.ok
     ? preview.result.previews.find((page) => page.ordinal === selectedOrdinal) ?? preview.result.previews[0] ?? null
@@ -137,7 +139,7 @@ function WorkbenchPane({
         </div>
       ) : !preview.result.ok ? (
         <div className="grid min-h-72 place-items-center p-6 text-center" role="alert">
-          <div><LockKeyhole className="mx-auto size-6 text-warn" aria-hidden="true" /><p className="mt-2 text-xs font-bold text-fg">이 고정 검수본을 표시할 수 없습니다</p><button type="button" onClick={preview.refresh} className={buttonClass({ variant: "outline", size: "sm", className: "mt-3" })}><RefreshCcw className="size-4" aria-hidden="true" /> 다시 확인</button></div>
+          <div><LockKeyhole className="mx-auto size-6 text-warn" aria-hidden="true" /><p className="mt-2 text-xs font-bold text-fg">{t("productionHub.workbench.paneCannotShow", "이 고정 검수본을 표시할 수 없습니다")}</p><button type="button" onClick={preview.refresh} className={buttonClass({ variant: "outline", size: "sm", className: "mt-3" })}><RefreshCcw className="size-4" aria-hidden="true" /> 다시 확인</button></div>
         </div>
       ) : layout === "overview" ? (
         <div className="overflow-x-auto overscroll-x-contain p-3" role="region" aria-label={`${candidate.artifactTitle} 가로 페이지 개요`}>
@@ -210,6 +212,7 @@ export function ProductionMultiManuscriptWorkbench({
   readonly candidates: readonly ProductionReviewCandidate[];
   readonly preferredReviewId: string | null;
 }) {
+  const t = useT();
   const [params, setParams] = useSearchParams();
   const parsed = useMemo(() => parseProductionWorkbenchState(params, candidates, preferredReviewId), [candidates, params, preferredReviewId]);
   const state = parsed.state;
@@ -322,11 +325,11 @@ export function ProductionMultiManuscriptWorkbench({
   }, []);
 
   if (candidates.length === 0) {
-    return <section className="rounded-3xl border border-dashed border-line bg-card p-8 text-center"><PanelTopOpen className="mx-auto size-8 text-fg-3" aria-hidden="true" /><h2 className="mt-3 text-lg font-black text-fg">비교할 고정 검수본이 없습니다</h2><p className="mt-1 text-sm text-fg-2">편집기에서 검수 제출본을 만든 뒤 여러 공정·회차 원고를 동시에 비교할 수 있습니다.</p></section>;
+    return <section className="rounded-3xl border border-dashed border-line bg-card p-8 text-center"><PanelTopOpen className="mx-auto size-8 text-fg-3" aria-hidden="true" /><h2 className="mt-3 text-lg font-black text-fg">{t("productionHub.workbench.emptyCompare", "비교할 고정 검수본이 없습니다")}</h2><p className="mt-1 text-sm text-fg-2">편집기에서 검수 제출본을 만든 뒤 여러 공정·회차 원고를 동시에 비교할 수 있습니다.</p></section>;
   }
 
   if (parsed.invalidReviewIds.length > 0) {
-    return <section className="rounded-3xl border border-warn/35 bg-warn/10 p-6" role="alert"><LockKeyhole className="size-6 text-warn" aria-hidden="true" /><h2 className="mt-3 text-lg font-black text-fg">요청한 비교 검수본을 찾을 수 없습니다</h2><p className="mt-1 text-sm text-fg-2">다른 검수본으로 자동 대체하지 않았습니다. 잘못된 좌표: {parsed.invalidReviewIds.join(", ")}</p><button type="button" onClick={() => setParams(writeProductionWorkbenchState(params, parseProductionWorkbenchState(new URLSearchParams(), candidates, preferredReviewId).state), { replace: true })} className={buttonClass({ variant: "outline", size: "sm", className: "mt-4" })}>안전한 기본 비교로 초기화</button></section>;
+    return <section className="rounded-3xl border border-warn/35 bg-warn/10 p-6" role="alert"><LockKeyhole className="size-6 text-warn" aria-hidden="true" /><h2 className="mt-3 text-lg font-black text-fg">{t("productionHub.workbench.compareNotFound", "요청한 비교 검수본을 찾을 수 없습니다")}</h2><p className="mt-1 text-sm text-fg-2">다른 검수본으로 자동 대체하지 않았습니다. 잘못된 좌표: {parsed.invalidReviewIds.join(", ")}</p><button type="button" onClick={() => setParams(writeProductionWorkbenchState(params, parseProductionWorkbenchState(new URLSearchParams(), candidates, preferredReviewId).state), { replace: true })} className={buttonClass({ variant: "outline", size: "sm", className: "mt-4" })}>안전한 기본 비교로 초기화</button></section>;
   }
 
   const visibleCandidates = state.reviewIds.map((id) => candidateById.get(id)).filter((candidate): candidate is ProductionReviewCandidate => Boolean(candidate));

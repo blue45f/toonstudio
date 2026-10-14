@@ -52,15 +52,17 @@ export function StudioProcessReplayPanel({
   );
   const eventsRef = useRef(events);
   eventsRef.current = events;
+  // 호스트 콜백은 렌더마다 최신으로 유지하고 효과에서는 ref로만 부른다
+  // (의존성에 넣으면 호스트 리렌더가 재생 상태를 되돌리는 일이 생긴다).
+  const onJumpToRef = useRef(onJumpTo);
+  onJumpToRef.current = onJumpTo;
 
   // 필터가 바뀌면 재생을 처음으로 되돌리고 호스트 화면도 처음 상태로 맞춘다.
   useEffect(() => {
     const fresh = createProcessReplayState(events.length);
     setState(fresh);
     const first = events[0];
-    if (first) onJumpTo(first.historyIndex);
-    // events 가 바뀔 때만 — onJumpTo 는 호스트 콜백이라 의존성에서 제외한다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (first) onJumpToRef.current(first.historyIndex);
   }, [events]);
 
   // 커서 위치가 바뀔 때마다 호스트에 점프를 알린다(재생·수동 이동 공통).
@@ -69,8 +71,7 @@ export function StudioProcessReplayPanel({
     if (posRef.current === state.pos) return;
     posRef.current = state.pos;
     const event = eventsRef.current[state.pos];
-    if (event) onJumpTo(event.historyIndex);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (event) onJumpToRef.current(event.historyIndex);
   }, [state.pos]);
 
   // 재생 타이머 — playing 일 때만 돌고, 경과 시간은 순수 상태 기계가 소비한다.

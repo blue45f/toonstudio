@@ -27,6 +27,7 @@ import { pointPriceForKrw, useAssetPointsStore } from "@/domains/account/public/
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useT } from "@/shared/lib/i18n";
 
 interface MarketAcquisitionModalProps {
   open: boolean;
@@ -52,6 +53,7 @@ export function MarketAcquisitionModal({
   studioHandoff,
   onAcquiredSuccess,
 }: MarketAcquisitionModalProps) {
+  const t = useT();
   const navigate = useNavigate();
   const { acquireResource } = useMarketLibrary();
   const acquisitionAbortRef = useRef<AbortController | null>(null);
@@ -98,7 +100,7 @@ export function MarketAcquisitionModal({
       .catch(() => {
         if (controller.signal.aborted) return;
         setQuote(null);
-        setQuoteError("가격과 결제 정책을 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 열어 주세요.");
+        setQuoteError(t("market.acquisition.quoteLoadFailed", "가격과 결제 정책을 불러오지 못했습니다. 네트워크를 확인한 뒤 다시 열어 주세요."));
       })
       .finally(() => {
         if (!controller.signal.aborted) setQuoteLoading(false);
@@ -179,7 +181,7 @@ export function MarketAcquisitionModal({
       ) return;
       if (!acquired) {
         setError(
-          "내 에셋에 추가하지 못했습니다. 아직 계정에 보관되지 않았습니다. 네트워크와 로그인 상태를 확인한 뒤 다시 시도해 주세요.",
+          t("market.acquisition.addFailed", "내 에셋에 추가하지 못했습니다. 아직 계정에 보관되지 않았습니다. 네트워크와 로그인 상태를 확인한 뒤 다시 시도해 주세요."),
         );
         return;
       }
@@ -252,7 +254,7 @@ export function MarketAcquisitionModal({
       setQuote(currentQuote);
       setQuoteError(null);
       if (!currentQuote.checkoutRequired) {
-        setError("가격 정책이 바뀌어 포인트로 살 수 없게 됐습니다. 일반 구매 버튼으로 다시 시도해 주세요.");
+        setError(t("market.acquisition.pointsPolicyChanged", "가격 정책이 바뀌어 포인트로 살 수 없게 됐습니다. 일반 구매 버튼으로 다시 시도해 주세요."));
         return;
       }
 
@@ -278,7 +280,7 @@ export function MarketAcquisitionModal({
       if (!acquired) {
         useAssetPointsStore.getState().refundSpend(spendEventId);
         setError(
-          "내 에셋에 추가하지 못해 차감한 포인트를 되돌렸습니다. 네트워크와 로그인 상태를 확인한 뒤 다시 시도해 주세요.",
+          t("market.acquisition.addFailedRefunded", "내 에셋에 추가하지 못해 차감한 포인트를 되돌렸습니다. 네트워크와 로그인 상태를 확인한 뒤 다시 시도해 주세요."),
         );
         return;
       }

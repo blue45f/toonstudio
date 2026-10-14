@@ -42,6 +42,7 @@ import { StudioMusicModule } from "./modules/studio-music/studio-music.module";
 import { StudioProjectGraphModule } from "./modules/studio-project-graph/studio-project-graph.module";
 import { createStudioRealtimeTicketDynamicModule } from "./modules/studio-realtime-ticket/studio-realtime-ticket.integration";
 import { TrafficAnalyticsModule } from "./modules/traffic-analytics/traffic-analytics.module";
+import { CreatorAnalyticsModule } from "./modules/creator-analytics/creator-analytics.module";
 
 const federatedDataPlaneModule =
   createFederatedDataPlaneDynamicModule(process.env);
@@ -69,6 +70,7 @@ const studioRealtimeTicketModule =
     AdminModule,
     OperationPolicyModule,
     TrafficAnalyticsModule,
+    CreatorAnalyticsModule,
     FeedbackModule,
     BusinessInquiryModule,
     StudioVirtualSpaceDecorationModule,

@@ -54,9 +54,14 @@ export interface CreatorAnalyticsEpisode {
   title: string;
   publishedAt: string;
   views: number;
-  likes: number;
-  comments: number;
-  newSubscribers: number;
+  /**
+   * 회차 단위로 실측되는 저장소가 있을 때만 채운다. 측정할 수 없는 지표를
+   * 0 으로 위장하지 않기 위해, 실집계 소스(트래픽 기반)는 이 필드들을 생략하고
+   * 웹은 빈 값(—)으로 표시한다. 샘플(목) 응답은 예시 수치로 채운다.
+   */
+  likes?: number;
+  comments?: number;
+  newSubscribers?: number;
 }
 
 export interface CreatorAnalyticsSeriesOption {

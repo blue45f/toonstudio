@@ -7,7 +7,7 @@ import {
   type ReviewLane,
 } from "@toonstudio/core/production";
 import { ArrowLeft, Check, Layers3, PenLine, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { ProductionClarificationAnswer } from "./ProductionClarificationAnswer";
@@ -18,9 +18,21 @@ import { ProductionSampleJourneyGuide } from "./ProductionSampleJourneyGuide";
 import { ProductionVisualPlanningWorkspace } from "./ProductionVisualPlanningWorkspace";
 import {
   getStudioProjectByWork,
+  getStudioReviewPreviews,
   listStudioArtifactRevisions,
   listStudioReviews,
 } from "../project-graph/studio-project-graph-client";
+import type { ComparePoolItem } from "./compare-review-model";
+import {
+  buildCompareImageUrlMap,
+  buildComparePreviewRequests,
+  resolveCompareImageUrlFromMap,
+  type ComparePreviewResultLike,
+} from "./compare-review-image-url";
+import {
+  buildPreviousEpisodePoolItems,
+  findPreviousEpisode,
+} from "./compare-previous-episode-pages";
 import type {
   StudioReviewSummary,
   StudioRevisionRecord,
@@ -94,14 +106,33 @@ export function ProductionEpisodeRoomPage() {
   // 이 회차의 공정·리비전을 불러와 룸의 비교 탭에 넘긴다. 실패해도 룸 전체를 막지 않는다
   // (비교 풀은 외부 이미지 추가만으로도 동작한다).
   const [compareProcesses, setCompareProcesses] = useState<readonly ProductionManuscriptProcess[]>([]);
+  const [compareLoadState, setCompareLoadState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [previousEpisodePages, setPreviousEpisodePages] = useState<readonly ComparePoolItem[]>([]);
+  const [compareImageUrls, setCompareImageUrls] = useState<ReadonlyMap<string, string>>(new Map());
   const compareLoadGeneration = useRef(0);
   const compareWorkId = project.aggregate?.workId ?? null;
   const compareEpisodeId = params.episodeId ?? null;
+  const compareProjectId = project.aggregate?.projectId ?? null;
   const compareIsDemo = project.isDemo;
+  // 지난 회차(바로 앞 회차)는 회차 기획의 번호로 정한다. 룸이 뜨기 전에도 계산할 수 있게
+  // aggregate 스냅샷만으로 도출한다(기획이 없으면 회차 목록 순서 폴백).
+  const previousEpisode = useMemo(
+    () => (project.aggregate && compareEpisodeId ? findPreviousEpisode(project.aggregate, compareEpisodeId) : null),
+    [project.aggregate, compareEpisodeId],
+  );
+  const previousEpisodeId = previousEpisode?.episodeId ?? null;
+  const previousEpisodeLabel = previousEpisode?.episodeLabel ?? "지난 회차";
+  // 리비전 렌더 URL 해석기: 프리뷰 서명 URL 맵을 동기 조회로 바꾼 것이다.
+  // 맵에 없는 리비전은 null → 뷰어가 플레이스홀더 아트로 표시한다(기존 관습).
+  const resolveCompareImageUrl = useCallback(
+    (processId: string, revisionId: string) => resolveCompareImageUrlFromMap(compareImageUrls)(processId, revisionId),
+    [compareImageUrls],
+  );
   useEffect(() => {
     if (compareIsDemo || !compareWorkId || !compareEpisodeId) return;
     const current = ++compareLoadGeneration.current;
     let cancelled = false;
+    setCompareLoadState("loading");
     void (async () => {
       try {
         const studioProject = await getStudioProjectByWork(compareWorkId);
@@ -128,13 +159,58 @@ export function ProductionEpisodeRoomPage() {
           reviewsByArtifact: Object.fromEntries(pairs.map((entry) => [entry.artifactId, entry.reviews])),
           episodeId: null,
         });
-        setCompareProcesses(all.filter((process) => process.artifact.scope.episodeId === compareEpisodeId));
+        const currentProcesses = all.filter((process) => process.artifact.scope.episodeId === compareEpisodeId);
+        const previousProcesses = previousEpisodeId
+          ? all.filter((process) => process.artifact.scope.episodeId === previousEpisodeId)
+          : [];
+        // 렌더 URL 실연결: 검수가 고정된 리비전에 한해 서버 프리뷰(서명 URL)를 받아
+        // 동기 해석기 맵으로 바꾼다. 프리뷰 발급 실패·미지원(레거시 blob)은 해당
+        // 리비전만 플레이스홀더로 떨어지고, 비교 로드 전체를 실패로 만들지 않는다.
+        const previewRequests = buildComparePreviewRequests(
+          [...currentProcesses, ...previousProcesses],
+          { projectId: studioProject.id, workId: compareWorkId },
+        );
+        const previewResults: ComparePreviewResultLike[] = [];
+        const previewBatchSize = 4;
+        for (let offset = 0; offset < previewRequests.length; offset += previewBatchSize) {
+          const batch = await Promise.all(previewRequests.slice(offset, offset + previewBatchSize).map(async (request) => {
+            try {
+              const result = await getStudioReviewPreviews(request.reviewId, request);
+              return result.ok
+                ? { artifactId: request.artifactId, revisionId: request.revisionId, previews: result.previews }
+                : null;
+            } catch {
+              return null;
+            }
+          }));
+          for (const entry of batch) if (entry) previewResults.push(entry);
+        }
+        if (cancelled || current !== compareLoadGeneration.current) return;
+        const imageUrlMap = buildCompareImageUrlMap(previewResults);
+        const resolveImageUrl = resolveCompareImageUrlFromMap(imageUrlMap);
+        setCompareImageUrls(imageUrlMap);
+        setCompareProcesses(currentProcesses);
+        setPreviousEpisodePages(previousEpisodeId && compareProjectId
+          ? buildPreviousEpisodePoolItems({
+            processes: previousProcesses,
+            projectId: compareProjectId,
+            episodeId: previousEpisodeId,
+            episodeLabel: previousEpisodeLabel,
+            resolveImageUrl,
+            addedBy: actorId ?? "me",
+            addedAt: new Date().toISOString(),
+          })
+          : []);
+        setCompareLoadState("ready");
       } catch {
-        // 비교 소스 로드 실패는 조용히 빈 풀로 둔다. 룸이 안내 배너와 외부 이미지 추가를 제공한다.
+        // 비교 소스 로드 실패는 룸 전체를 막지 않는다. 룸이 에러 배너와
+        // 외부 이미지 추가를 제공하고, 버전 풀만 비어 있게 된다.
+        if (cancelled || current !== compareLoadGeneration.current) return;
+        setCompareLoadState("error");
       }
     })();
     return () => { cancelled = true; };
-  }, [compareWorkId, compareEpisodeId, compareIsDemo]);
+  }, [compareWorkId, compareEpisodeId, compareIsDemo, previousEpisodeId, previousEpisodeLabel, compareProjectId, actorId]);
 
   if (!params.projectId || !params.episodeId) return <Navigate to="/production" replace />;
   if (project.loading) return <RoomState kind="pending">{bt("회차 룸을 불러오는 중…", "Loading the episode room…")}</RoomState>;
@@ -254,6 +330,9 @@ export function ProductionEpisodeRoomPage() {
           viewerAssignmentId={viewerAssignment?.id ?? null}
           onApproveLane={approveLane}
           compareProcesses={compareProcesses}
+          resolveCompareImageUrl={resolveCompareImageUrl}
+          previousEpisodePages={previousEpisodePages}
+          compareLoadState={compareLoadState}
         />
 
         <ProductionEpisodeQcChecklist aggregate={aggregate} episodeId={episode.episodeId} />

@@ -79,7 +79,7 @@ export function formatKoreanDateLabel(dateKey: string): string {
   return `${date.getUTCFullYear()}년 ${date.getUTCMonth() + 1}월 ${date.getUTCDate()}일 (${WEEKDAY_LABELS[date.getUTCDay()]})`;
 }
 
-function reasonPhrase(category: HiatusReasonCategory, detail: string): string {
+function reasonPhrase(category: HiatusReasonCategory, _detail: string): string {
   switch (category) {
     case "health":
       return "건강상의 사정으로";

@@ -10,8 +10,8 @@ describe("creator analytics routes", () => {
     expect(CREATOR_ANALYTICS_ROUTE_PATH).toBe("/api/creator/analytics");
   });
 
-  it("실집계 연결 전에는 목 숫자를 200으로 위장하지 않고 404를 반환한다", () => {
-    const result = handleCreatorAnalyticsRequest({
+  it("실집계 연결 전에는 목 숫자를 200으로 위장하지 않고 404를 반환한다", async () => {
+    const result = await handleCreatorAnalyticsRequest({
       period: "30d",
       seriesId: "series-starfall",
     });
@@ -20,8 +20,8 @@ describe("creator analytics routes", () => {
     expect(result.body).not.toHaveProperty("kpis");
   });
 
-  it("sample=1 명시 요청에서만 200과 목 본문(mock:true)을 반환한다", () => {
-    const result = handleCreatorAnalyticsRequest({
+  it("sample=1 명시 요청에서만 200과 목 본문(mock:true)을 반환한다", async () => {
+    const result = await handleCreatorAnalyticsRequest({
       period: "30d",
       seriesId: "series-starfall",
       sample: "1",
@@ -33,14 +33,14 @@ describe("creator analytics routes", () => {
     expect(body.mock).toBe(true);
   });
 
-  it("period가 없으면 기본이 아니라 400을 반환한다", () => {
-    const result = handleCreatorAnalyticsRequest({});
+  it("period가 없으면 기본이 아니라 400을 반환한다", async () => {
+    const result = await handleCreatorAnalyticsRequest({});
     expect(result.status).toBe(400);
     expect((result.body as { message: string }).message).toContain("period");
   });
 
-  it("seriesId가 비어 있으면 샘플 요청에서 기본 시리즈로 처리한다", () => {
-    const result = handleCreatorAnalyticsRequest({ period: "7d", seriesId: " ", sample: "1" });
+  it("seriesId가 비어 있으면 샘플 요청에서 기본 시리즈로 처리한다", async () => {
+    const result = await handleCreatorAnalyticsRequest({ period: "7d", seriesId: " ", sample: "1" });
     expect(result.status).toBe(200);
     expect((result.body as { seriesId: string }).seriesId).toBe(
       "series-midnight-diner",

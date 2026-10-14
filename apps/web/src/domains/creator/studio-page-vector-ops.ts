@@ -21,9 +21,12 @@ import {
   studioPathBooleanOpLabel,
   studioPathBooleanPieceToDrawElSeed,
   studioPathBooleanUnavailableReason,
+  studioShapeToPolygon,
   type StudioPathBooleanCombineResult,
   type StudioPathBooleanOp,
+  type StudioPathBooleanShapeSpec,
 } from "./studio-path-boolean";
+import { combineStudioShapesSync } from "./studio-pathfinder-boolean-adapter";
 import { studioVectorAsyncCommandStaleReason } from "./studio-vector-async-command-guard";
 
 import type { StudioEditorMutationTicket } from "./studio-editor-scope";
@@ -93,6 +96,38 @@ export interface StudioPageVectorOps {
     operation: "simplify" | "smooth"
   ) => Promise<void>;
   readonly applyPathBooleanCombine: (op: StudioPathBooleanOp) => Promise<void>;
+  /**
+   * 명시 선택 전용 동기(다각형) 결합 — 패널의 "빠른 결합 (다각형)" 섹션에서만
+   * 호출된다. 기본 결합(applyPathBooleanCombine)의 대체·폴백이 아니다.
+   */
+  readonly applyPathBooleanCombineSync: (op: StudioPathBooleanOp) => Promise<void>;
+}
+
+/**
+ * 동기 다각형 결합의 정점 수 상한(두 도형 폴리곤 정점 합계). 동기 엔진은 메인
+ * 스레드에서 실행되므로, 이 상한을 넘는 도형은 동기 경로로 처리하지 않고
+ * 기존 CanvasKit Worker 경로(applyPathBooleanCombine)로 보낸다.
+ */
+export const STUDIO_PATH_BOOLEAN_SYNC_MAX_TOTAL_POINTS = 2000;
+
+/**
+ * 두 도형 스펙을 기존 규약(studioShapeToPolygon)으로 폴리곤화했을 때의 정점 수
+ * 합계. 어느 한쪽이라도 폴리곤화에 실패하면 null — 이 경우 상한 판정을 건너뛰고
+ * 어댑터가 기존과 같은 한국어 사유로 실패를 반환하게 둔다.
+ */
+export function studioPathBooleanSyncPolygonPointTotal(
+  baseSpec: StudioPathBooleanShapeSpec,
+  topSpec: StudioPathBooleanShapeSpec,
+): number | null {
+  const basePolygon = studioShapeToPolygon(baseSpec);
+  if (!basePolygon.ok) return null;
+  const topPolygon = studioShapeToPolygon(topSpec);
+  if (!topPolygon.ok) return null;
+  let total = 0;
+  for (const ring of [...basePolygon.polygon, ...topPolygon.polygon]) {
+    total += ring.length;
+  }
+  return total;
 }
 
 /**
@@ -541,7 +576,235 @@ export function createStudioPageVectorOps(
     }
   }
 
-  return { applyPaperVectorRefinement, applyPathBooleanCombine };
+  // 빠른 결합(다각형) — 패널에서 사용자가 명시적으로 선택했을 때만 실행되는 동기 결합.
+  // 기본 결합(위 applyPathBooleanCombine, CanvasKit Worker)과 별개 명령이며, 기본 결합의
+  // 실패를 받아 자동 실행되는 폴백이 아니다. 반대로 이 경로가 정점 상한을 넘으면
+  // 동기 실행을 시작하지 않고 기존 Worker 경로로 보낸다(아래 상한 판정 참조).
+  // 결과 커밋·Undo 규율은 기본 결합과 동일하다: runId·mutation ticket 가드 안에서만
+  // 실행하고, 결과는 기존 결과 모델(StudioPathBooleanCombineResult → 조각 DrawEl)로
+  // 단일 commit 한다. 구멍·분리 영역은 어댑터가 조각의 holeCount 와 복수 조각으로
+  // 그대로 반환한다. 이 경로는 Worker 클라이언트를 만들지도, 폐기하지도 않는다.
+  async function applyPathBooleanCombineSync(op: StudioPathBooleanOp) {
+    if (
+      drawingRef.current
+      || requireStudioDrawingPointerTransport(
+        drawingPointerTransportRef,
+      ).getSession()
+    ) {
+      setError("현재 획을 마친 뒤 도형을 결합할 수 있어요.");
+      return;
+    }
+    if (
+      pendingStrokeCommitsRef.current
+      && !flushPendingStrokeCommitsRef.current()
+    ) {
+      setError(
+        "마지막 획을 원고에 확정하지 못해 도형 결합을 시작하지 않았어요. 잠금·동기화 상태를 확인해 주세요.",
+      );
+      return;
+    }
+    if (pathBooleanActiveRef.current) return;
+
+    const selectedIdsAtStart = currentCanvasSelectionIds();
+    const elementsAtStart = activeElementsRef.current;
+    const groupsAtStart = activeGroupsRef.current;
+    const selectionEls = selectedIdsAtStart
+      .map((id) => elementsAtStart.find((el) => el.id === id))
+      .filter((el): el is El => Boolean(el));
+    const gate = studioPathBooleanUnavailableReason(selectionEls);
+    if (gate) {
+      setError(gate);
+      return;
+    }
+    if (
+      selectionEls.some((el) => isEffectivelyLocked(el, groupsAtStart))
+    ) {
+      setError("잠긴 도형은 결합할 수 없어요.");
+      return;
+    }
+    const groupIds = new Set(
+      selectionEls.map((element) => element.groupId ?? null),
+    );
+    if (groupIds.size > 1) {
+      setError(
+        "서로 다른 그룹의 도형은 바로 결합할 수 없어요. 같은 그룹 안에서 선택하거나 먼저 그룹을 해제해 주세요.",
+      );
+      return;
+    }
+    if (pageEditLocked && !masterEditMode) {
+      setError("이 페이지는 검토 잠금 상태예요. 잠금을 해제한 뒤 편집해 주세요.");
+      return;
+    }
+
+    const indexed = selectionEls
+      .map((el) => ({
+        el: el as DrawEl & El,
+        index: elementsAtStart.findIndex((element) => element.id === el.id),
+      }))
+      .sort((x, y) => x.index - y.index);
+    const base = indexed[0]!.el; // 아래(BACK 쪽)
+    const top = indexed[1]!.el; // 위
+    const baseSpec = drawElToStudioPathBooleanSpec(base)!;
+    const topSpec = drawElToStudioPathBooleanSpec(top)!;
+
+    // 정점 상한 판정 — 동기 실행을 시작(runId 선점)하기 전에만 한다. 상한을 넘으면
+    // 이 명령은 아무것도 선점·변경하지 않은 채 기존 Worker 경로에 위임한다.
+    const syncPointTotal = studioPathBooleanSyncPolygonPointTotal(baseSpec, topSpec);
+    if (
+      syncPointTotal !== null
+      && syncPointTotal > STUDIO_PATH_BOOLEAN_SYNC_MAX_TOTAL_POINTS
+    ) {
+      return applyPathBooleanCombine(op);
+    }
+
+    const runId = pathBooleanRunIdRef.current + 1;
+    pathBooleanRunIdRef.current = runId;
+    pathBooleanActiveRef.current = true;
+    const controller = new AbortController();
+    pathBooleanAbortRef.current = controller;
+    const mutationTicket = captureStudioMutationTicket();
+    const targetPageId = currentPageIdRef.current || activePage.id;
+    const targetMasterEditMode = masterEditModeRef.current;
+    const selectedIds = selectionEls.map((element) => element.id);
+    const snapshot = {
+      runId,
+      pageId: targetPageId,
+      masterEditMode: targetMasterEditMode,
+      selectedIds,
+      sourceElements: selectionEls,
+    } as const;
+    setPathBooleanBusy(true);
+    try {
+      const result: StudioPathBooleanCombineResult = combineStudioShapesSync(
+        baseSpec,
+        topSpec,
+        op,
+      );
+      if (
+        controller.signal.aborted
+        || !pathBooleanActiveRef.current
+        || pathBooleanRunIdRef.current !== runId
+      ) {
+        return;
+      }
+      if (!result.ok) {
+        setError(result.reason);
+        return;
+      }
+
+      const latestElements = activeElementsRef.current;
+      const mutationAllowed = canApplyStudioMutation(mutationTicket);
+      const staleReason = studioVectorAsyncCommandStaleReason(snapshot, {
+        runId: pathBooleanRunIdRef.current,
+        pageId: currentPageIdRef.current || activePage.id,
+        masterEditMode: masterEditModeRef.current,
+        selectedIds: marqueeIdsRef.current,
+        elements: latestElements,
+        mutationAllowed,
+        reviewLocked: activeSurfaceReviewLockedRef.current,
+        isElementLocked: (element) =>
+          isEffectivelyLocked(element, activeGroupsRef.current),
+      });
+      if (staleReason) {
+        if (
+          staleReason !== "superseded"
+          && staleReason !== "document-changed"
+        ) {
+          setError(
+            staleReason === "locked"
+              ? "계산 중 페이지나 도형이 잠겨 결합 결과를 적용하지 않았어요."
+              : "계산 중 페이지·선택 또는 도형이 바뀌어 오래된 결합 결과를 적용하지 않았어요."
+          );
+        }
+        return;
+      }
+
+      const latestSelectionEls = selectedIds
+        .map((id) => latestElements.find((element) => element.id === id))
+        .filter((element): element is El => Boolean(element));
+      const latestGate = studioPathBooleanUnavailableReason(
+        latestSelectionEls
+      );
+      if (latestGate) {
+        setError(latestGate);
+        return;
+      }
+      const pieceEls = result.output.pieces.map((piece) => ({
+        ...studioPathBooleanPieceToDrawElSeed(piece, base),
+        id: uid(),
+        name: `도형 결합 ${studioPathBooleanOpLabel(op)}`,
+        ...(base.groupId ? { groupId: base.groupId } : {}),
+        ...(base.blendMode ? { blendMode: base.blendMode } : {}),
+        ...(base.noClip !== undefined ? { noClip: base.noClip } : {}),
+        ...(base.clipBelow !== undefined ? { clipBelow: base.clipBelow } : {}),
+        ...(base.alphaLocked !== undefined
+          ? { alphaLocked: base.alphaLocked }
+          : {}),
+        ...(base.maskSrc ? { maskSrc: base.maskSrc } : {}),
+        ...(base.maskEnabled !== undefined
+          ? { maskEnabled: base.maskEnabled }
+          : {}),
+        ...(base.layerRole ? { layerRole: base.layerRole } : {}),
+        ...(base.layerColor ? { layerColor: base.layerColor } : {}),
+      }) as El);
+      const latestBaseIndex = latestElements.findIndex(
+        (element) => element.id === base.id
+      );
+      const kept = latestElements.filter(
+        (element) => element.id !== base.id && element.id !== top.id
+      );
+      const insertAt = latestElements
+        .slice(0, latestBaseIndex)
+        .filter((element) => element.id !== top.id).length;
+      const trackedSourceIds = selectedIds.filter((id) =>
+        hasTrack(animTimeline, id)
+      );
+      const nextTimeline = trackedSourceIds.reduce(
+        (document, id) => removeTrack(document, id),
+        animTimeline,
+      );
+      const committed = commit(
+        [...kept.slice(0, insertAt), ...pieceEls, ...kept.slice(insertAt)],
+        trackedSourceIds.length > 0
+          ? { animTimeline: nextTimeline }
+          : undefined,
+        targetPageId
+      );
+      if (!committed) return;
+      applyGroupSelectionState({
+        ...selectionShapeForIds(pieceEls.map((element) => element.id)),
+        activeGroupId:
+          base.groupId && activeGroupIdRef.current === base.groupId
+            ? base.groupId
+            : null,
+      });
+      setError(null);
+      announceDrawingShortcut(
+        `${studioPathBooleanOpLabel(op)} 완료 · 2개 → ${pieceEls.length}개 · 빠른 결합(다각형)`,
+      );
+    } catch (err) {
+      if (!controller.signal.aborted) {
+        // 동기 경로는 Worker 클라이언트를 소유하지 않으므로 폐기할 것도 없다.
+        // 실패해도 다른 provider를 자동 실행하지 않고 원본을 보존한다.
+        console.error("Failed to apply sync path boolean combine:", err);
+        setError(
+          "빠른 결합(다각형)을 처리하지 못해 원본 도형을 유지했어요. 기본 결합은 자동으로 실행하지 않았습니다.",
+        );
+      }
+    } finally {
+      if (pathBooleanRunIdRef.current === runId) {
+        pathBooleanActiveRef.current = false;
+        pathBooleanAbortRef.current = null;
+        setPathBooleanBusy(false);
+      }
+    }
+  }
+
+  return {
+    applyPaperVectorRefinement,
+    applyPathBooleanCombine,
+    applyPathBooleanCombineSync,
+  };
 }
 
 /* -------------------------------------------------------------------------- *

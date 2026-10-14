@@ -3,7 +3,12 @@ import { memo } from "react";
 import { StudioToolbarDivider } from "./studio-chrome-ui";
 import { studioToolButtonClass } from "./studio-panel-ui";
 import { studioToolHintFromLabel, type StudioToolHintSpec } from "./studio-tool-hints";
-import { studioUiDensityAllows } from "./studio-ui-density";
+import {
+  studioUiDensityAllows,
+  type StudioUiChromeRegion,
+  type StudioUiFirstScreenExposure,
+} from "./studio-ui-density";
+import type { StudioWorkMode } from "./studio-work-mode";
 import { STUDIO_VIEW_ACTION_HINTS } from "./studio-view-action-hints";
 import { StudioToolBeltCanvasControls } from "./StudioToolBeltCanvasControls";
 import { StudioToolBeltCreateModeGroups } from "./StudioToolBeltCreateModeGroups";
@@ -668,6 +673,15 @@ export interface StudioToolBeltContentProps {
   toneSearchQuery: string;
   tool: Tool;
   uiDensityMode: "focus" | "simple" | "full";
+  /** Stage work mode from useStudioPreferencesRuntime. Optional until the host
+   *  wires it: absent means "all" (no work-mode folding), matching the
+   *  optional-until-wired pattern of the density toggles. */
+  workMode?: StudioWorkMode;
+  /** Persisted first-screen expansion of the advanced clusters (simple mode only);
+   *  also lifts work-mode folds when true. */
+  uiAdvancedToolsExpanded?: boolean;
+  /** First-screen exposure judgment from the density model; gates advanced cluster mounts in simple mode. */
+  uiFirstScreenExposure?: (region: StudioUiChromeRegion) => StudioUiFirstScreenExposure;
   visibleLeftPanelOpen: boolean;
   visibleRightPanelOpen: boolean;
   toggleWorkspaceWideMode: () => void;

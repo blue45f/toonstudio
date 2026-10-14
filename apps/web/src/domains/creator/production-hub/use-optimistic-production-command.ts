@@ -3,6 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { toast } from "@/shared/lib/toast-store";
 
 import type { ProductionClientCommand } from "./production-api";
+import { useT } from "@/shared/lib/i18n";
 
 /**
  * 낙관적 협업 명령 실행 — 먼저 화면을 바꾸고, 실패하면 되돌린다.
@@ -17,6 +18,7 @@ export function useOptimisticProductionCommand({
 }: {
   readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
 }) {
+  const t = useT();
   const [pendingKeys, setPendingKeys] = useState<ReadonlySet<string>>(new Set());
   const pendingRef = useRef(new Set<string>());
 
@@ -49,7 +51,7 @@ export function useOptimisticProductionCommand({
       } catch (error) {
         rollback?.();
         const detail = error instanceof Error && error.message ? ` — ${error.message}` : "";
-        toast(`실패했습니다. 다시 시도해 주세요${detail}`, { tone: "error" });
+        toast(`${t("productionHub.command.failedRetry", "실패했습니다. 다시 시도해 주세요")}${detail}`, { tone: "error" });
         throw error;
       } finally {
         pendingRef.current.delete(key);

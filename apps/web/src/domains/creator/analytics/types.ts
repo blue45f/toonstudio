@@ -47,9 +47,10 @@ export interface CreatorAnalyticsEpisode {
   title: string;
   publishedAt: string;
   views: number;
-  likes: number;
-  comments: number;
-  newSubscribers: number;
+  /** 실측 저장소가 없을 때 API가 생략하는 지표 — 화면에서는 숫자가 아닌 빈 값(—)으로 표시한다. */
+  likes?: number;
+  comments?: number;
+  newSubscribers?: number;
 }
 
 export interface CreatorAnalyticsSeriesOption {

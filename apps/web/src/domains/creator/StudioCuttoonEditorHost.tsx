@@ -149,7 +149,11 @@ import {
 import { acquireStudioCatalogInputRecoveryRepository, serializeStudioCatalogInputRecovery, restoreStudioCatalogInputRecovery } from "./brush/studio-pending-catalog-input-persistence";
 import { StudioPendingCatalogInput, type StudioBrushSelectionLifecycle } from "./brush/studio-pending-catalog-input";
 import { bindStudioBg3dRenderedImage } from "./studio-cuttoon-editor/studio-cuttoon-bg3d-insert";
-import { bindStudioAdvancedFillRun } from "./studio-cuttoon-editor/studio-cuttoon-advanced-fill-run";
+import {
+  bindStudioAdvancedFillRun,
+  bindStudioLassoFillRun,
+} from "./studio-cuttoon-editor/studio-cuttoon-advanced-fill-run";
+import type { StudioLassoFillDragSession } from "./studio-lasso-fill-gesture";
 import { bindStudioCuttoonStagePointers } from "./studio-cuttoon-editor/studio-cuttoon-stage-pointers";
 import { bindStudioDrawLiveSurfaces } from "./studio-cuttoon-editor/studio-live-surface-start";
 import { isLayerMetadataPatch } from "./studio-cuttoon-editor/studio-layer-metadata-patch";
@@ -731,6 +735,7 @@ import {
 import {
   createStudioMacroSession,
   recordStudioMacroCommand,
+  removeStudioMacroCommand,
   startStudioMacroRecording,
   stopStudioMacroRecording,
   type StudioMacroSession,
@@ -940,6 +945,12 @@ import {
   createStudioLifecycleEmergencyAutosave,
 } from "./studio-pending-stroke-durability";
 import type { PerspectiveRay, VanishingPoint } from "./studio-perspective-guide";
+import type { StudioPerspectiveGuideState } from "./drawing/StudioRulersPanel";
+import {
+  buildPerspectiveGridSegments,
+  perspectiveVanishingPoints,
+} from "./drawing/studio-perspective-guide";
+import type { PerspectivePenSnapSession } from "./drawing/studio-perspective-pen-snap";
 import {
   admitStudioPixelArtStrokeColor,
   createStudioPixelArtMode,
@@ -1587,10 +1598,19 @@ export function StudioCuttoonEditor({
     setRailMoreOpen,
     setStudioUiDensity,
     setStudioUiDensityFromCompanion,
+    setUiAdvancedToolsExpanded,
     toggleEffectFavorite,
     uiBooleanPreferenceRevisionsRef,
     uiDensityMode,
+    uiAdvancedToolsExpanded,
+    uiFirstScreenExposure,
+    dismissWorkModeSuggestion,
+    setWorkMode,
+    suggestedWorkMode,
+    uiChromeExposure,
+    workMode,
   } = useStudioPreferencesRuntime({
+    episodeStage: null,
     taskWorkspace: studioRoute.documentWorkspace,
     applyMirroredSettings: applyMirroredStudioSettings,
     closeRightPanelForFocusMode: closeStudioRightPanelForFocusMode,
@@ -1700,12 +1720,16 @@ export function StudioCuttoonEditor({
         : "녹음된 단계가 없어 빈 Action Set을 만들었어요."
     );
   }
+  function removeMacroCommand(index: number) {
+    setMacroSession((session) => removeStudioMacroCommand(session, index));
+  }
   function maybeRecordMacroFromPatch(patch: Partial<El>) {
     if (!macroSession.recording) return;
     const fields = patch as Partial<El> & {
       fontSize?: number;
       color?: string;
       blendMode?: string;
+      font?: string;
       opacity?: number;
       hidden?: boolean;
       locked?: boolean;
@@ -1738,6 +1762,11 @@ export function StudioCuttoonEditor({
     if (typeof fields.color === "string") {
       setMacroSession((session) =>
         recordStudioMacroCommand(session, { type: "lettering-color", color: fields.color })
+      );
+    }
+    if (typeof fields.font === "string") {
+      setMacroSession((session) =>
+        recordStudioMacroCommand(session, { type: "lettering-font", font: fields.font })
       );
     }
   }
@@ -5913,6 +5942,22 @@ export function StudioCuttoonEditor({
   const vanishingPoints = drawingAssistDocument.perspective.points;
   const perspectiveEyeLevelY = drawingAssistDocument.perspective.eyeLevelY;
   const perspectiveLockHorizon = drawingAssistDocument.perspective.lockHorizon;
+  // drawing 레인 원근 가이드(StudioRulersPanel 1/2/3점 투시 토글) 상태. 패널 콜백
+  // (onDrawingPerspectiveGuideChange)이 채우기 전에는 null 이고, 꺼진 동안에는
+  // 오버레이 세그먼트가 비고 펜 스냅 세션도 열리지 않아 기존 동작과 동일하다.
+  const [drawingPerspectiveGuide, setDrawingPerspectiveGuide] =
+    useState<StudioPerspectiveGuideState | null>(null);
+  const drawingPerspectiveGuideSegments =
+    drawingPerspectiveGuide?.enabled
+      ? buildPerspectiveGridSegments({
+          guide: drawingPerspectiveGuide.guide,
+          canvas: { width: CANVAS_W, height: canvasH },
+        })
+      : [];
+  const drawingPerspectiveGuideVanishingPoints =
+    drawingPerspectiveGuide?.enabled
+      ? perspectiveVanishingPoints(drawingPerspectiveGuide.guide)
+      : [];
   const isometricGridActive = drawingAssistDocument.isometric.active;
   const isometricAngleDeg = drawingAssistDocument.isometric.angleDeg;
   const isometricCellSize = drawingAssistDocument.isometric.cellSize;
@@ -9289,6 +9334,7 @@ export function StudioCuttoonEditor({
   const drawingPredictionBatchMutationRef = useRef(false);
   const drawingUnmountCleanupRef = useRef<() => void>(() => undefined);
   const perspectiveRayRef = useRef<PerspectiveRay | null>(null);
+  const perspectiveGuideSnapRef = useRef<PerspectivePenSnapSession | null>(null);
   const isometricAxisRayRef = useRef<IsometricAxisRay | null>(null);
   const advancedRulerSnapRef = useRef<StudioAdvancedRulerSnapState | null>(null);
   /** Frozen element bboxes for the active stroke contact (object snap). */
@@ -11650,6 +11696,7 @@ export function StudioCuttoonEditor({
   const advancedFillAbortRef = useRef<AbortController | null>(null);
   const advancedFillApplyingRef = useRef(false);
   const advancedFillTapGestureRef = useRef<StudioAdvancedFillTapGesture | null>(null);
+  const advancedFillLassoDragRef = useRef<StudioLassoFillDragSession | null>(null);
   const advancedFillTapPayloadRef = useRef<{
     position: { x: number; y: number };
     frame: SelectionFrame;
@@ -13763,6 +13810,7 @@ export function StudioCuttoonEditor({
         : studioCommentViewDocument.threads.filter(
             (thread) => !thread.resolved
               && thread.anchor.type !== "pdf-page"
+              && thread.anchor.type !== "compare-image"
               && thread.anchor.pageId === activePage.id
           ),
     [studioCommentPinsHidden, studioTeamCommentsWorkId, studioTeamCommentCapabilities?.view, expectsSharedDocument, sharedDocument?.capabilities.view, masterEditMode, studioCommentViewDocument.threads, activePage.id]
@@ -17105,6 +17153,41 @@ const puppetWarpArmed =
     }), 2);
     if (!markStudioDocumentChanged()) return;
     updateActivePage({ animTimeline: setKeyframe(animTimeline, trackId, frameIndex, { id: uid(), src }) });
+  }
+  // 비교 검수로 보내기 — 현재 페이지 캔버스를 캡처해 workId 키 수신함(compare-send-inbox)에
+  // 넣는다. 회차 룸이 마운트 때 이 수신함을 소비해 비교 풀의 reference 소스로 합친다.
+  // 에디터는 제작 관리의 프로젝트·회차 id를 모르므로 채널은 workId로 정한다(모듈 주석 참고).
+  async function sendCurrentPageToCompareReview() {
+    if (!workId) {
+      announceDrawingShortcut("작품으로 연결된 뒤에 비교 검수로 보낼 수 있어요.");
+      return;
+    }
+    const stage = stageRef.current;
+    if (!stage) return;
+    const previousSelection = selectedId;
+    setSelectedId(null); // Transformer 핸들 캡처 방지(captureAnimFrame와 동일 관행)
+    await new Promise((r) => setTimeout(r, 60)); // 재렌더 대기(동일 관행)
+    const src = readStageInDocumentView(stage, () => readStudioAuthoritativeStageFrame({
+      revokeRasterHandoff: () => revokeStudioRasterHandoffRef.current(),
+      drawStage: () => stage.draw(),
+      read: () => stage.toDataURL({ pixelRatio: 1 }),
+    }), 2);
+    if (previousSelection) setSelectedId(previousSelection);
+    const { writeCompareSendInbox } = await import("./production-hub/compare-send-inbox");
+    const result = writeCompareSendInbox(window.localStorage, workId, {
+      id: uid(),
+      pageId: activePage.id,
+      pageLabel: `에디터 · ${pageDisplayName(activePage, activePageIndex)}`,
+      imageUrl: src,
+      sentAt: new Date().toISOString(),
+    });
+    if (result.ok) {
+      announceDrawingShortcut("비교 검수로 보냈어요. 회차 룸의 비교 탭 소스 풀에서 확인할 수 있어요.");
+    } else if (result.reason === "image-too-large") {
+      setError("캔버스가 너무 커서 비교 검수로 보내지 못했습니다. 페이지를 나눠서 다시 시도하세요.");
+    } else {
+      setError("비교 검수로 보내지 못했습니다. 브라우저 저장 공간을 확인하세요.");
+    }
   }
   function addEl(el: El): boolean {
     if (!commit([...elements, el])) return false;
@@ -22095,7 +22178,8 @@ const puppetWarpArmed =
     setError(null);
   }
 
-  const runAdvancedFillAt = bindStudioAdvancedFillRun({
+  // 탭 채우기와 둘러싸기(래소) 채우기는 같은 호스트 가방·미리보기 계약을 공유한다.
+  const studioAdvancedFillRunHost = {
     advancedFillAbortRef,
     advancedFillBusy,
     advancedFillArmed,
@@ -22120,7 +22204,9 @@ const puppetWarpArmed =
     setError,
     setAdvancedFillPreview,
     setAdvancedFillActive,
-  });
+  };
+  const runAdvancedFillAt = bindStudioAdvancedFillRun(studioAdvancedFillRunHost);
+  const runAdvancedFillLassoPath = bindStudioLassoFillRun(studioAdvancedFillRunHost);
 
   // ── 이미지 크롭 적용 — 원본 자연 해상도로 잘라 data URL 교체(파괴적, 히스토리 1건) ──
   // 크롭 후에도 화면상 위치가 유지되도록 src 와 요소 프레임(x/y/width/height)을 한 번의
@@ -22381,6 +22467,7 @@ const puppetWarpArmed =
     drawingRef.current = null;
     companionRuntimeRef.current?.schedulePublish();
     perspectiveRayRef.current = null;
+    perspectiveGuideSnapRef.current = null;
     isometricAxisRayRef.current = null;
     advancedRulerSnapRef.current = null;
     strokeObjectSnapCacheRef.current = null;
@@ -22539,6 +22626,7 @@ const puppetWarpArmed =
     }
     drawingRef.current = null;
     perspectiveRayRef.current = null;
+    perspectiveGuideSnapRef.current = null;
     isometricAxisRayRef.current = null;
     advancedRulerSnapRef.current = null;
     stopQuickShapeTracking();
@@ -23074,6 +23162,8 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     activeSurfaceReviewLockedRef,
     advancedFillAbortRef,
     advancedFillActive,
+    advancedFillLassoDragRef,
+    advancedFillLassoEnabled: advancedFillSettings.lassoFill,
     advancedFillTapGestureRef,
     advancedFillTapPayloadRef,
     advancedFillTouchPanRef,
@@ -23282,6 +23372,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     persistImmediateStrokeEmergencyAutosave: () =>
       persistPendingStrokeEmergencyAutosaveRef.current("pointerup"),
     perspectiveRayRef,
+    perspectiveGuideSnapRef,
     pickCanvasColorAt,
     pixelBrushRadius,
     pixelCombine,
@@ -23325,6 +23416,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     releaseLivingInkInputPointer,
     restorePendingStrokeCommits,
     runAdvancedFillAt,
+    runAdvancedFillLassoPath,
     runColorRangeSample,
     runMagicWandSelect,
     runQuickSelectionStroke,
@@ -23430,6 +23522,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     DEFERRED_STROKE_COMMIT_IDLE_MS,
     dodgeBurnArmed,
     drawingAssistDocument,
+    drawingPerspectiveGuide,
     effScale,
     elementById,
     elements,
@@ -24951,6 +25044,7 @@ function clearSelectionForEdit() {
     rotateCanvasView,
     resetCanvasViewRotation,
     saveCurrentStudioView,
+    sendCurrentPageToCompareReview,
     selectAllForEdit,
     setActualPixelView,
     setColorBlindPreview,
@@ -27018,6 +27112,7 @@ function clearSelectionForEdit() {
     persistStudioWorkspaceState,
     zoomToFit: fitCanvasToWidth,
     setWatermark,
+    setUiAdvancedToolsExpanded,
     toggleHistoryPanel: () => setHistoryPanelOpen((open) => !open),
     undo,
     exportCurrentPageToPsd,
@@ -27200,6 +27295,7 @@ function clearSelectionForEdit() {
     setWriterRoom,
     startMacroRecord,
     stopMacroRecord,
+    removeMacroCommand,
     startDrawingPractice: drawingPractice.start,
     updatePublishPackageSettings,
     captureTimelapseStep,
@@ -28245,6 +28341,10 @@ function clearSelectionForEdit() {
       drawingPaletteCancelEpoch={drawingPaletteCancelEpoch}
       drawingPaletteLayout={drawingPaletteLayout}
       drawingRef={drawingRef}
+      drawingPerspectiveGuide={drawingPerspectiveGuide}
+      drawingPerspectiveGuideSegments={drawingPerspectiveGuideSegments}
+      drawingPerspectiveGuideVanishingPoints={drawingPerspectiveGuideVanishingPoints}
+      onDrawingPerspectiveGuideChange={setDrawingPerspectiveGuide}
       duplicateSelected={duplicateSelected}
       editMenuImageInputRef={editMenuImageInputRef}
       editing={editing}
@@ -28566,6 +28666,7 @@ function clearSelectionForEdit() {
       quickMaskTintCanvas={quickMaskTintCanvas}
       quickMaskTintColor={quickMaskTintColor}
       quickMaskTintOpacity={quickMaskTintOpacity}
+      quickSelectTolerance={quickSelectTolerance}
       onCorrectCurrentStroke={studioMainMenuActions.openSmartShapeEditor}
       quickShapeActive={quickShapeActive}
       railMoreOpen={railMoreOpen}
@@ -28823,6 +28924,7 @@ function clearSelectionForEdit() {
       setQuickMaskRadius={setQuickMaskRadius}
       setQuickMaskTintColor={setQuickMaskTintColor}
       setQuickMaskTintOpacity={setQuickMaskTintOpacity}
+      setQuickSelectTolerance={setQuickSelectTolerance}
       setQuickShapeActive={setQuickShapeActive}
       setQuickStartOpen={setQuickStartOpen}
       setRailMoreOpen={setRailMoreOpen}
@@ -29077,6 +29179,15 @@ function clearSelectionForEdit() {
       tutorialHubOpen={tutorialHubOpen}
       tutorialInitialId={tutorialInitialId}
       uiDensityMode={uiDensityMode}
+      workMode={workMode}
+      setWorkMode={setWorkMode}
+      suggestedWorkMode={suggestedWorkMode}
+      dismissWorkModeSuggestion={dismissWorkModeSuggestion}
+      uiChromeExposure={uiChromeExposure}
+      uiAdvancedToolsExpanded={uiAdvancedToolsExpanded}
+      setUiAdvancedToolsExpanded={setUiAdvancedToolsExpanded}
+      uiAdvancedToolsExpanded={uiAdvancedToolsExpanded}
+      uiFirstScreenExposure={uiFirstScreenExposure}
       undo={undo}
       undoBrushDelete={undoBrushDelete}
       useVelocityPressure={useVelocityPressure}

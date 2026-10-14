@@ -11,6 +11,7 @@ import { getCreatorMarketplaceResource } from "../remotes/market-resource-remote
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
 import { NotFoundError } from "@/platform/use-api-resource";
+import { useT } from "@/shared/lib/i18n";
 
 export interface MarketResourceDetail {
   readonly record: CreatorMarketplaceResourceRecord | null;
@@ -24,6 +25,7 @@ export interface MarketResourceDetail {
 
 /** Public detail is sourced only from the server or its isolated authoritative cache. */
 export function useMarketResourceDetail(id: string | undefined): MarketResourceDetail {
+  const t = useT();
   const [record, setRecord] = useState<CreatorMarketplaceResourceRecord | null>(null);
   const [loading, setLoading] = useState(Boolean(id));
   const [notFound, setNotFound] = useState(false);
@@ -69,7 +71,7 @@ export function useMarketResourceDetail(id: string | undefined): MarketResourceD
         setError(
           cause instanceof Error && cause.message
             ? cause.message
-            : "공유 리소스를 불러오지 못했습니다.",
+            : t("market.resourceDetail.loadFailed", "공유 리소스를 불러오지 못했습니다."),
         );
         setLoading(false);
       });

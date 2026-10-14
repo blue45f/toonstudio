@@ -32,6 +32,7 @@ import {
   type StudioVirtualSpaceReviewVerification,
 } from "../virtual-space/studio-virtual-space-review-invitation";
 import type { ProductionManuscriptProcess } from "./production-manuscript-model";
+import { useT } from "@/shared/lib/i18n";
 
 const StudioPinnedReviewShareManager = lazy(async () => ({
   default: (await import("../review-share/StudioPinnedReviewShareManager")).StudioPinnedReviewShareManager,
@@ -135,6 +136,7 @@ function ProductionManuscriptDeliveryHubForActor({
   process,
   onOpenFeedback,
 }: Props & { readonly actorId: string | null }) {
+  const t = useT();
   const [verification, setVerification] = useState<StudioVirtualSpaceReviewVerification | null>(null);
   const [checking, setChecking] = useState(false);
   const [online, setOnline] = useState(browserOnline);
@@ -301,7 +303,7 @@ function ProductionManuscriptDeliveryHubForActor({
         >
           <button type="button" onClick={() => void copyCurrentWorkspace()} className={buttonClass({ variant: "outline", size: "sm" })}>
             {copyStatus === "copied" ? <Check className="size-4 text-good" aria-hidden="true" /> : <Link2 className="size-4" aria-hidden="true" />}
-            {copyStatus === "copied" ? "복사됨" : copyStatus === "error" ? "복사 실패" : "화면 링크 복사"}
+            {copyStatus === "copied" ? "복사됨" : copyStatus === "error" ? t("productionHub.common.copyFailed", "복사 실패") : "화면 링크 복사"}
           </button>
         </ToolCard>
         <ToolCard
@@ -395,11 +397,11 @@ function ProductionManuscriptDeliveryHubForActor({
       <p className="mt-1 text-sm text-fg-2">현재 권한, 고정 revision 또는 원고 해시가 달라 다른 버전으로 자동 대체하지 않았습니다.</p>
     </section> : null}
 
-    {verification?.ok && canCreateShare ? <Suspense fallback={<p role="status" className="rounded-2xl border border-line bg-card p-4 text-sm">외부 공유 도구를 불러오는 중…</p>}>
+    {verification?.ok && canCreateShare ? <Suspense fallback={<p role="status" className="rounded-2xl border border-line bg-card p-4 text-sm">{t("productionHub.delivery.loadingShareTools", "외부 공유 도구를 불러오는 중…")}</p>}>
       <StudioPinnedReviewShareManager verified={verification} />
     </Suspense> : null}
 
-    {verification?.ok && verification.review.status === "approved" ? <Suspense fallback={<p role="status" className="rounded-2xl border border-line bg-card p-4 text-sm">승인본 전달 도구를 불러오는 중…</p>}>
+    {verification?.ok && verification.review.status === "approved" ? <Suspense fallback={<p role="status" className="rounded-2xl border border-line bg-card p-4 text-sm">{t("productionHub.delivery.loadingDeliveryTools", "승인본 전달 도구를 불러오는 중…")}</p>}>
       <StudioReviewExport verified={verification} />
     </Suspense> : null}
 

@@ -34,6 +34,7 @@ import {
   type ProductionManuscriptLayout,
   type ProductionManuscriptSort,
 } from "./production-manuscript-ux";
+import { useT } from "@/shared/lib/i18n";
 
 interface Props {
   readonly processes: readonly ProductionManuscriptProcess[];
@@ -391,6 +392,7 @@ export function ProductionManuscriptProcessBrowser({
   onOpenProcess,
   onReset,
 }: Props) {
+  const t = useT();
   const counts = productionManuscriptFilterCounts(processes);
   const filters = [
     { id: "all" as const, label: "전체", count: counts.all },
@@ -537,7 +539,7 @@ export function ProductionManuscriptProcessBrowser({
       </div>
     ) : <div className="mt-4 rounded-2xl border border-dashed border-line p-8 text-center">
       <SearchX className="mx-auto size-8 text-fg-3" aria-hidden="true" />
-      <p className="mt-3 font-black text-fg">검색 조건에 맞는 원고가 없습니다</p>
+      <p className="mt-3 font-black text-fg">{t("productionHub.processBrowser.emptySearch", "검색 조건에 맞는 원고가 없습니다")}</p>
       <p className="mt-1 text-sm text-fg-2">
         회차·검색어·상태 필터를 바꾸거나 전체 원고를 다시 표시하세요.
       </p>

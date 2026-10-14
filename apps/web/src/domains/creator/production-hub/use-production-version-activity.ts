@@ -6,6 +6,7 @@ import {
   loadProductionVersionActivity,
   type ProductionVersionActivityLoadResult,
 } from "./production-version-activity";
+import { useT } from "@/shared/lib/i18n";
 
 export type ProductionVersionActivityState =
   | { readonly status: "disabled" }
@@ -26,6 +27,7 @@ export function useProductionVersionActivity(input: {
   readonly state: ProductionVersionActivityState;
   readonly retry: () => void;
 } {
+  const t = useT();
   const { enabled, aggregate, viewerUserId } = input;
   const [state, setState] = useState<ProductionVersionActivityState>(
     enabled ? { status: "loading" } : { status: "disabled" },
@@ -56,7 +58,7 @@ export function useProductionVersionActivity(input: {
         if (controller.signal.aborted || generation.current !== current) return;
         setState({
           status: "error",
-          message: error instanceof Error ? error.message : "버전 활동을 불러오지 못했습니다.",
+          message: error instanceof Error ? error.message : t("productionHub.versionActivity.loadFailed", "버전 활동을 불러오지 못했습니다."),
         });
       },
     );

@@ -8,10 +8,9 @@ import { useEffect, useState } from "react";
 
 import { useMarketLibrary } from "../hooks/use-market-library";
 import { useMarketWishlist } from "../hooks/use-market-wishlist";
-import {
-  MarketGuestLoginNotice,
-  useMarketGuestLoginNoticeState,
-} from "./MarketGuestLoginNotice";
+import { useMarketGuestLoginNoticeState } from "../hooks/use-market-guest-login-notice";
+
+import { MarketGuestLoginNotice } from "./MarketGuestLoginNotice";
 import { marketKindMeta } from "../models/market-kind";
 import {
   MARKET_GUEST_LOGIN_NOTICE_STICKY_ID,

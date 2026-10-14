@@ -21,6 +21,7 @@ import {
   studioChromeIconClass,
 } from "../studio-chrome-ui";
 import { StudioBrushCatalogPortal, StudioPublishContextBanner } from "../studio-page-lazy-ui";
+import { StudioWorkModeBar } from "../StudioWorkModeBar";
 import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
 import { LazyStudioMenubarContent } from "../studio-page-modal-lazy-boundaries";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
@@ -318,6 +319,12 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
     toneSearchQuery,
     tool,
     uiDensityMode,
+    uiAdvancedToolsExpanded,
+    uiFirstScreenExposure,
+    workMode,
+    setWorkMode,
+    suggestedWorkMode,
+    dismissWorkModeSuggestion,
     watermark,
     workHydrated,
     workId,
@@ -459,6 +466,8 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
           workspaceState={workspaceState}
           workspaceSyncNotice={workspaceSyncNotice}
           writerRoom={writerRoom}
+            uiDensityMode={uiDensityMode}
+            uiAdvancedToolsExpanded={uiAdvancedToolsExpanded}
             stableHandlers={studioMenubarContentHandlers}
           />
         </Suspense>
@@ -527,6 +536,18 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
           </button>
         </StudioToolHintTarget>
       </StudioAppMenubar>
+
+      {/* 단계 작업 모드 바 — 메뉴바 직하, 캔버스 위. 배선이 없으면(workMode/setWorkMode
+          미전달) 스스로 숨는 optional-until-wired 패턴을 따른다. 캔버스 전용·몰입
+          모드에서는 메뉴바와 함께 숨는다. */}
+      {!canvasOnlyMode && !mobileImmersive && workMode && setWorkMode ? (
+        <StudioWorkModeBar
+          mode={workMode}
+          onModeChange={setWorkMode}
+          suggestedMode={suggestedWorkMode ?? null}
+          onDismissSuggestion={dismissWorkModeSuggestion}
+        />
+      ) : null}
 
       <div
         data-studio-global-status-rail
@@ -962,6 +983,9 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
           toneSearchQuery={toneSearchQuery}
           tool={tool}
           uiDensityMode={uiDensityMode}
+          uiAdvancedToolsExpanded={uiAdvancedToolsExpanded}
+          uiFirstScreenExposure={uiFirstScreenExposure}
+          workMode={workMode}
           visibleLeftPanelOpen={visibleLeftPanelOpen}
           visibleRightPanelOpen={visibleRightPanelOpen}
           wrapRef={wrapRef}

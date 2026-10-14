@@ -41,6 +41,7 @@ import {
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 type ScheduleView = "timeline" | "workload";
 type ExecuteCommand = (command: ProductionClientCommand, message: string) => Promise<void>;
@@ -152,6 +153,7 @@ export function ProductionScheduleWorkspace({
   execute,
   canEdit,
 }: ProductionScheduleWorkspaceProps) {
+  const t = useT();
   const bt = useBilingual("ProductionScheduleWorkspace.labels");
   const now = useMemo(() => new Date(), []);
   const schedule = useMemo(() => forecastProductionSchedule(aggregate, now), [aggregate, now]);
@@ -352,7 +354,7 @@ export function ProductionScheduleWorkspace({
                 </div>
               );
             })}
-            {tasks.length === 0 ? <div className="p-10 text-center text-sm text-fg-3">현재 필터에 맞는 작업이 없습니다.</div> : null}
+            {tasks.length === 0 ? <div className="p-10 text-center text-sm text-fg-3">{t("productionHub.schedule.emptyFilteredTasks", "현재 필터에 맞는 작업이 없습니다.")}</div> : null}
           </div>
         </div>
       ) : (
@@ -391,7 +393,7 @@ export function ProductionScheduleWorkspace({
               </article>
             );
           })}
-          {workload.length === 0 ? <div className="col-span-full rounded-2xl border border-dashed border-line p-10 text-center"><Clock3 className="mx-auto size-8 text-fg-3" /><p className="mt-3 text-sm font-bold text-fg">표시할 워크로드가 없습니다</p><p className="mt-1 text-xs text-fg-2">담당자를 지정한 작업이 생기면 역할별 용량이 표시됩니다.</p></div> : null}
+          {workload.length === 0 ? <div className="col-span-full rounded-2xl border border-dashed border-line p-10 text-center"><Clock3 className="mx-auto size-8 text-fg-3" /><p className="mt-3 text-sm font-bold text-fg">{t("productionHub.schedule.emptyWorkload", "표시할 워크로드가 없습니다")}</p><p className="mt-1 text-xs text-fg-2">담당자를 지정한 작업이 생기면 역할별 용량이 표시됩니다.</p></div> : null}
         </div>
       )}
     </section>

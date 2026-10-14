@@ -36,7 +36,36 @@
       "refinedSurfaces": 7,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/compact_apartment_interior",
+        "files": {
+          "beauty": "passes/compact_apartment_interior/beauty0001.png",
+          "depth": "passes/compact_apartment_interior/depth0001.png",
+          "normal": "passes/compact_apartment_interior/normal0001.png",
+          "ao": "passes/compact_apartment_interior/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "stylized_cafe_interior.glb",
@@ -71,7 +100,36 @@
       "refinedSurfaces": 5,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/stylized_cafe_interior",
+        "files": {
+          "beauty": "passes/stylized_cafe_interior/beauty0001.png",
+          "depth": "passes/stylized_cafe_interior/depth0001.png",
+          "normal": "passes/stylized_cafe_interior/normal0001.png",
+          "ao": "passes/stylized_cafe_interior/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "urban_neon_alley.glb",
@@ -104,7 +162,36 @@
       "refinedSurfaces": 4,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/urban_neon_alley",
+        "files": {
+          "beauty": "passes/urban_neon_alley/beauty0001.png",
+          "depth": "passes/urban_neon_alley/depth0001.png",
+          "normal": "passes/urban_neon_alley/normal0001.png",
+          "ao": "passes/urban_neon_alley/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "classroom_art_studio.glb",
@@ -138,7 +225,36 @@
       "refinedSurfaces": 5,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/classroom_art_studio",
+        "files": {
+          "beauty": "passes/classroom_art_studio/beauty0001.png",
+          "depth": "passes/classroom_art_studio/depth0001.png",
+          "normal": "passes/classroom_art_studio/normal0001.png",
+          "ao": "passes/classroom_art_studio/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "fantasy_ruin_courtyard.glb",
@@ -169,7 +285,36 @@
       "refinedSurfaces": 3,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/fantasy_ruin_courtyard",
+        "files": {
+          "beauty": "passes/fantasy_ruin_courtyard/beauty0001.png",
+          "depth": "passes/fantasy_ruin_courtyard/depth0001.png",
+          "normal": "passes/fantasy_ruin_courtyard/normal0001.png",
+          "ao": "passes/fantasy_ruin_courtyard/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "scifi_command_corridor.glb",
@@ -200,7 +345,36 @@
       "refinedSurfaces": 4,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/scifi_command_corridor",
+        "files": {
+          "beauty": "passes/scifi_command_corridor/beauty0001.png",
+          "depth": "passes/scifi_command_corridor/depth0001.png",
+          "normal": "passes/scifi_command_corridor/normal0001.png",
+          "ao": "passes/scifi_command_corridor/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "hospital_emergency_nurse_station.glb",
@@ -234,7 +408,36 @@
       "refinedSurfaces": 5,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/hospital_emergency_nurse_station",
+        "files": {
+          "beauty": "passes/hospital_emergency_nurse_station/beauty0001.png",
+          "depth": "passes/hospital_emergency_nurse_station/depth0001.png",
+          "normal": "passes/hospital_emergency_nurse_station/normal0001.png",
+          "ao": "passes/hospital_emergency_nurse_station/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "korean_school_rooftop.glb",
@@ -268,7 +471,36 @@
       "refinedSurfaces": 7,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/korean_school_rooftop",
+        "files": {
+          "beauty": "passes/korean_school_rooftop/beauty0001.png",
+          "depth": "passes/korean_school_rooftop/depth0001.png",
+          "normal": "passes/korean_school_rooftop/normal0001.png",
+          "ao": "passes/korean_school_rooftop/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "hanok_market_courtyard.glb",
@@ -304,7 +536,36 @@
       "refinedSurfaces": 8,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/hanok_market_courtyard",
+        "files": {
+          "beauty": "passes/hanok_market_courtyard/beauty0001.png",
+          "depth": "passes/hanok_market_courtyard/depth0001.png",
+          "normal": "passes/hanok_market_courtyard/normal0001.png",
+          "ao": "passes/hanok_market_courtyard/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "korean_convenience_store_night.glb",
@@ -337,7 +598,36 @@
       "refinedSurfaces": 4,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/korean_convenience_store_night",
+        "files": {
+          "beauty": "passes/korean_convenience_store_night/beauty0001.png",
+          "depth": "passes/korean_convenience_store_night/depth0001.png",
+          "normal": "passes/korean_convenience_store_night/normal0001.png",
+          "ao": "passes/korean_convenience_store_night/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "seoul_subway_platform.glb",
@@ -370,7 +660,36 @@
       "refinedSurfaces": 5,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/seoul_subway_platform",
+        "files": {
+          "beauty": "passes/seoul_subway_platform/beauty0001.png",
+          "depth": "passes/seoul_subway_platform/depth0001.png",
+          "normal": "passes/seoul_subway_platform/normal0001.png",
+          "ao": "passes/seoul_subway_platform/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     },
     {
       "fileName": "fantasy_alchemist_workshop_library.glb",
@@ -403,7 +722,36 @@
       "refinedSurfaces": 6,
       "reviewLevel": "single-view-blender-preview",
       "allAnglesArtisticallyApproved": false,
-      "studioRuntimeVerified": false
+      "studioRuntimeVerified": false,
+      "renderPasses": {
+        "engine": "CYCLES",
+        "directory": "passes/fantasy_alchemist_workshop_library",
+        "files": {
+          "beauty": "passes/fantasy_alchemist_workshop_library/beauty0001.png",
+          "depth": "passes/fantasy_alchemist_workshop_library/depth0001.png",
+          "normal": "passes/fantasy_alchemist_workshop_library/normal0001.png",
+          "ao": "passes/fantasy_alchemist_workshop_library/ao0001.png"
+        },
+        "colorDepth": {
+          "beauty": "8",
+          "depth": "16",
+          "normal": "16",
+          "ao": "8"
+        },
+        "depthRange": [
+          0.10000000149011612,
+          150.0
+        ],
+        "normalRange": [
+          -1.0,
+          1.0
+        ],
+        "resolution": [
+          1000,
+          750
+        ],
+        "samples": 24
+      }
     }
   ]
 }

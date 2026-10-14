@@ -179,23 +179,23 @@ export function StudioBrushCompositionComposer({
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div className="rounded-xl border border-line bg-bg-2/55 px-2.5 py-2">
+        <div className="rounded-xl border border-line bg-raised/55 px-2.5 py-2">
           <span className="block text-[0.58rem] font-semibold text-fg-3">실행 부담</span>
           <strong className="mt-0.5 block text-xs text-fg">
             {COMPLEXITY_LABELS[plan.complexity]} · {plan.costScore}
           </strong>
         </div>
-        <div className="rounded-xl border border-line bg-bg-2/55 px-2.5 py-2">
+        <div className="rounded-xl border border-line bg-raised/55 px-2.5 py-2">
           <span className="block text-[0.58rem] font-semibold text-fg-3">즉시 적용 가능</span>
           <strong className="mt-0.5 block text-xs tabular-nums text-fg">
             {runtimePlan.connectedSelections.length}/{STUDIO_BRUSH_COMPOSITION_SLOT_IDS.length}
           </strong>
         </div>
-        <div className="rounded-xl border border-line bg-bg-2/55 px-2.5 py-2">
+        <div className="rounded-xl border border-line bg-raised/55 px-2.5 py-2">
           <span className="block text-[0.58rem] font-semibold text-fg-3">사용 조건</span>
           <strong className="mt-0.5 block text-xs text-fg">{plan.rights.label}</strong>
         </div>
-        <div className="rounded-xl border border-line bg-bg-2/55 px-2.5 py-2">
+        <div className="rounded-xl border border-line bg-raised/55 px-2.5 py-2">
           <span className="block text-[0.58rem] font-semibold text-fg-3">조합 상태</span>
           <strong className={cn("mt-0.5 block text-xs", plan.canSave ? "text-good" : "text-bad")}>
             {plan.canSave ? "저장 가능" : "수정 필요"}
@@ -205,7 +205,7 @@ export function StudioBrushCompositionComposer({
 
       <div className="mt-3 space-y-2.5">
         {COMPOSITION_GROUPS.map((group) => (
-          <section key={group.id} className="rounded-xl border border-line bg-bg-2/35 p-2.5">
+          <section key={group.id} className="rounded-xl border border-line bg-raised/35 p-2.5">
             <h4 className="text-[0.7rem] font-bold text-fg-2">{group.title}</h4>
             <p className="mt-0.5 text-[0.58rem] leading-relaxed text-fg-3">{group.description}</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -271,7 +271,7 @@ export function StudioBrushCompositionComposer({
 
       {runtimePlan.unavailableSelections.length > 0 ? (
         <p
-          className="mt-3 rounded-lg border border-line bg-bg-2/45 px-2.5 py-2 text-[0.62rem] leading-relaxed text-fg-3"
+          className="mt-3 rounded-lg border border-line bg-raised/45 px-2.5 py-2 text-[0.62rem] leading-relaxed text-fg-3"
           data-studio-brush-runtime-unavailable="true"
         >
           현재 렌더러가 직접 소비하지 않는 {runtimePlan.unavailableSelections.length}개 슬롯은
@@ -290,7 +290,7 @@ export function StudioBrushCompositionComposer({
                   ? "border-bad/35 bg-bad/5 text-bad"
                   : entry.severity === "warning"
                     ? "border-warn/35 bg-warn/5 text-fg-2"
-                    : "border-line bg-bg-2/45 text-fg-3",
+                    : "border-line bg-raised/45 text-fg-3",
               )}
             >
               <TriangleAlert size={13} className="mt-0.5 shrink-0" aria-hidden />

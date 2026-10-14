@@ -110,6 +110,8 @@ export interface StudioCanvasViewportToolLayersProps {
   perspectiveEyeLevelY: StudioCanvasViewportProps["perspectiveEyeLevelY"];
   perspectiveLockHorizon: StudioCanvasViewportProps["perspectiveLockHorizon"];
   perspectiveRulerActive: StudioCanvasViewportProps["perspectiveRulerActive"];
+  drawingPerspectiveGuideSegments: StudioCanvasViewportProps["drawingPerspectiveGuideSegments"];
+  drawingPerspectiveGuideVanishingPoints: StudioCanvasViewportProps["drawingPerspectiveGuideVanishingPoints"];
   pixelDragPreview: StudioCanvasViewportProps["pixelDragPreview"];
   pixelOverlayFrame: StudioCanvasViewportProps["pixelOverlayFrame"];
   pixelOverlaySel: StudioCanvasViewportProps["pixelOverlaySel"];
@@ -253,6 +255,8 @@ export function StudioCanvasViewportToolLayers({
   perspectiveEyeLevelY,
   perspectiveLockHorizon,
   perspectiveRulerActive,
+  drawingPerspectiveGuideSegments,
+  drawingPerspectiveGuideVanishingPoints,
   pixelDragPreview,
   pixelOverlayFrame,
   pixelOverlaySel,
@@ -562,6 +566,8 @@ export function StudioCanvasViewportToolLayers({
               vanishingPoints={vanishingPoints}
               perspectiveEyeLevelY={perspectiveEyeLevelY}
               perspectiveLockHorizon={perspectiveLockHorizon}
+              drawingPerspectiveGuideSegments={drawingPerspectiveGuideSegments}
+              drawingPerspectiveGuideVanishingPoints={drawingPerspectiveGuideVanishingPoints}
               onPreviewVanishingPoint={previewVanishingPointById}
               onCommitVanishingPoint={moveVanishingPointById}
               onPreviewPerspectiveEyeLevelY={previewPerspectiveEyeLevelY}

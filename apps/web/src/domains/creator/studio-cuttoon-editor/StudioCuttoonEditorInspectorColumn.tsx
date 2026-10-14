@@ -209,6 +209,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
     quickMaskRadius,
     quickMaskTintColor,
     quickMaskTintOpacity,
+    quickSelectTolerance,
     quickShapeActive,
     onCorrectCurrentStroke,
     recentColors,
@@ -322,6 +323,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
     setQuickMaskRadius,
     setQuickMaskTintColor,
     setQuickMaskTintOpacity,
+    setQuickSelectTolerance,
     setQuickShapeActive,
     setQuickStartOpen,
     setReferencePanelOpen,
@@ -637,6 +639,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           puppetWarpActive={puppetWarpActive}
           puppetWarpBusy={puppetWarpBusy}
           puppetWarpPins={puppetWarpPins}
+          quickSelectTolerance={quickSelectTolerance}
           quickShapeActive={quickShapeActive}
           onCorrectCurrentStroke={onCorrectCurrentStroke}
           recentColors={recentColors}
@@ -751,6 +754,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           setPressureMinSize={setPressureMinSize}
           setPuppetWarpActive={setPuppetWarpActive}
           setPuppetWarpPins={setPuppetWarpPins}
+          setQuickSelectTolerance={setQuickSelectTolerance}
           setQuickShapeActive={setQuickShapeActive}
           setRightPanelOpen={setRightPanelOpenWithOverride}
           setSavedBrushes={commitSavedBrushProjection}

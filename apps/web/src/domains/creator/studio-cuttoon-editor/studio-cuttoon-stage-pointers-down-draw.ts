@@ -297,6 +297,7 @@ export function bindStudioCuttoonStagePointersDownDraw(
     pendingGpuStrokesRef,
     pendingStrokeCommitsRef,
     perspectiveRayRef,
+    perspectiveGuideSnapRef,
     postCorrection,
     preserveCorners,
     pressureCurve,
@@ -686,6 +687,7 @@ export function bindStudioCuttoonStagePointersDownDraw(
       // The active cursor is outline-only, so it can track the contact without darkening stable
       // pixels or becoming part of the live-ink/commit receipt.
       perspectiveRayRef.current = null; // 새 스트로크마다 원근 락을 다시 잡는다(첫 move에서 재계산).
+      perspectiveGuideSnapRef.current = null; // drawing 원근 가이드 스냅 락도 스트로크마다 다시 잡는다.
       isometricAxisRayRef.current = null; // 새 스트로크마다 아이소메트릭 축 락도 다시 잡는다.
       advancedRulerSnapRef.current = null;
       const beginAdmittedCollaboration = (admittedStroke: DrawEl): void => {

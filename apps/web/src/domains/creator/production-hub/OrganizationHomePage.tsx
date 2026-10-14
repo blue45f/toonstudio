@@ -1,7 +1,14 @@
 import "../studio-shell/creator-workflow-surfaces.css";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { TeamWorkspaceRole, TeamWorkspaceSummary } from "@toonstudio/contracts/production-workspace";
+import {
+  isOrganizationManager,
+  type InvitableOrganizationRole,
+  type OrganizationDetail,
+  type OrganizationInvitePreview,
+  type OrganizationSummary,
+} from "@toonstudio/contracts/production-organization";
 import { useApp } from "@/shared/lib/store";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -9,15 +16,20 @@ import { getApiErrorMessage } from "@/platform/api";
 import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { listTeamWorkspaces } from "./team-workspace-api";
-import { TeamAiUsagePanel } from "./TeamAiUsagePanel";
+import {
+  acceptOrganizationInvite,
+  commandOrganization,
+  createOrganization,
+  getOrganization,
+  listOrganizations,
+  previewOrganizationInvite,
+} from "./organization-api";
 import { organizationDirectory } from "./organization-directory";
 import {
   ORGANIZATION_KIND_LABELS,
   ORGANIZATION_ROLE_LABELS,
-  createOrganizationProfile,
   organizationRoleCan,
   summarizeOrganizationRollup,
-  toggleLinkedWorkspace,
   type LocalOrganizationState,
   type OrganizationAction,
   type OrganizationKind,
@@ -39,6 +51,7 @@ const ACTION_LABELS: Record<OrganizationAction, { readonly ko: string; readonly 
 };
 const ACTIONS: readonly OrganizationAction[] = ["edit-profile", "manage-links", "post-notice", "view-rollup"];
 const ROLES: readonly OrganizationRole[] = ["owner", "admin", "manager", "member", "guest"];
+const INVITABLE_ROLES: readonly InvitableOrganizationRole[] = ["admin", "manager", "member", "guest"];
 
 const fieldClass = "min-h-11 rounded-lg border border-line bg-canvas px-3 text-fg";
 
@@ -57,9 +70,12 @@ export function OrganizationHomePage() {
 
 function OrganizationConsole({ userId }: { userId: string | null }) {
   const bt = useBilingual("OrganizationHomePage");
-  const [local, setLocal] = useState<LocalOrganizationState | null>(null);
+  const [organizations, setOrganizations] = useState<readonly OrganizationSummary[]>([]);
+  const [detail, setDetail] = useState<OrganizationDetail | null>(null);
   const [workspaces, setWorkspaces] = useState<readonly TeamWorkspaceSummary[]>([]);
+  const [legacy, setLegacy] = useState<LocalOrganizationState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [refresh, setRefresh] = useState(0);
@@ -68,46 +84,101 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
   const [description, setDescription] = useState("");
   const [editing, setEditing] = useState(false);
   const [noticeBody, setNoticeBody] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<InvitableOrganizationRole>("member");
+  const [inviteToken, setInviteToken] = useState("");
+  const [acceptToken, setAcceptToken] = useState("");
+  const [preview, setPreview] = useState<OrganizationInvitePreview | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  function selectOrganization(id: string | null) {
+    selectedIdRef.current = id;
+    setSelectedId(id);
+  }
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
     let active = true;
     setLoading(true); setError("");
-    setLocal(organizationDirectory.load(userId));
-    void listTeamWorkspaces()
-      .then((result) => { if (active) setWorkspaces(result.workspaces); })
-      .catch(async (cause: unknown) => {
-        const message = await getApiErrorMessage(cause, bt("팀 목록을 불러오지 못했습니다.", "Couldn't load your teams."));
+    setLegacy(organizationDirectory.load(userId));
+    void (async () => {
+      try {
+        const [orgResult, teamResult] = await Promise.all([listOrganizations(), listTeamWorkspaces()]);
+        if (!active) return;
+        setOrganizations(orgResult.organizations);
+        setWorkspaces(teamResult.workspaces);
+        const kept = selectedIdRef.current;
+        const targetId = kept && orgResult.organizations.some((org) => org.id === kept)
+          ? kept
+          : orgResult.organizations[0]?.id ?? null;
+        selectOrganization(targetId);
+        setDetail(targetId ? await getOrganization(targetId) : null);
+      } catch (cause) {
+        const message = await getApiErrorMessage(cause, bt("조직 정보를 불러오지 못했습니다.", "Couldn't load organization data."));
         if (active) setError(message);
-      })
-      .finally(() => { if (active) setLoading(false); });
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
     return () => { active = false; };
+    // 선택 조직은 ref로 유지한다 — 새로고침 때 선택이 풀리지 않게 하기 위해서다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bt, userId, refresh]);
 
-  function persist(next: LocalOrganizationState) {
-    if (!userId) return;
-    setLocal(next);
-    organizationDirectory.save(userId, next);
+  async function switchOrganization(id: string) {
+    selectOrganization(id);
+    setEditing(false);
+    setPreview(null);
+    setLoading(true);
+    try {
+      setDetail(await getOrganization(id));
+    } catch (cause) {
+      setError(await getApiErrorMessage(cause, bt("조직 정보를 불러오지 못했습니다.", "Couldn't load organization data.")));
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const profile = local?.profile ?? null;
-  const rollup = local ? summarizeOrganizationRollup(workspaces, local.linkedWorkspaceIds) : null;
-  // 로컬 조직 상태는 소유자 스코프로만 읽히므로(모델의 소유자 검사가 정본), 프로필이 있으면 보는 사람은 대표다.
-  const viewerOrgRole: OrganizationRole = profile && userId && profile.ownerUserId === userId ? "owner" : "member";
+  async function runMutation(action: () => Promise<unknown>, successMessage: string): Promise<boolean> {
+    if (busy) return false;
+    setBusy(true); setError("");
+    try {
+      await action();
+      setNotice(successMessage);
+      setRefresh((value) => value + 1);
+      return true;
+    } catch (cause) {
+      setError(await getApiErrorMessage(cause, bt("요청을 처리하지 못했습니다.", "Couldn't process that request.")));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const profile = detail?.organization ?? null;
+  const myRole = profile?.role ?? null;
+  const canEdit = myRole ? organizationRoleCan(myRole, "edit-profile") : false;
+  const canLinks = myRole ? organizationRoleCan(myRole, "manage-links") : false;
+  const canNotice = myRole ? organizationRoleCan(myRole, "post-notice") : false;
+  const canRollup = myRole ? organizationRoleCan(myRole, "view-rollup") : false;
+  const canManageMembers = myRole ? isOrganizationManager(myRole) : false;
+  const rollup = detail ? summarizeOrganizationRollup(workspaces, detail.linkedWorkspaceIds) : null;
 
   function submitProfile(event: FormEvent) {
     event.preventDefault();
-    if (!userId || !local) return;
     const trimmed = name.trim();
-    if (!trimmed) return;
-    if (profile) {
-      persist({ ...local, profile: { ...profile, name: trimmed, kind, description: description.trim(), updatedAt: new Date().toISOString() } });
-      setEditing(false);
-      setNotice(bt("조직 프로필을 저장했습니다.", "Organization profile saved."));
+    if (!trimmed || busy) return;
+    if (detail && profile) {
+      void runMutation(
+        () => commandOrganization(profile.id, profile.revision, { type: "update-profile", name: trimmed, kind, description: description.trim() }),
+        bt("조직 프로필을 저장했습니다.", "Organization profile saved."),
+      ).then((saved) => { if (saved) setEditing(false); });
     } else {
-      const created = createOrganizationProfile({ name: trimmed, kind, description }, userId, new Date(), crypto.randomUUID());
-      persist({ ...local, profile: created });
-      setNotice(bt("조직을 만들었습니다. 아래에서 소속 팀을 연결해 보세요.", "Organization created. Link your teams below."));
+      void runMutation(async () => {
+        const created = await createOrganization({ name: trimmed, kind, description: description.trim() });
+        selectOrganization(created.organizationId);
+      }, bt("조직을 만들었습니다. 아래에서 소속 팀을 연결해 보세요.", "Organization created. Link your teams below."));
     }
   }
 
@@ -118,14 +189,99 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
 
   function submitNotice(event: FormEvent) {
     event.preventDefault();
-    if (!local) return;
+    if (!detail || !profile) return;
     const body = noticeBody.trim();
-    if (!body) return;
-    persist({
-      ...local,
-      notices: [{ id: crypto.randomUUID(), body, createdAt: new Date().toISOString() }, ...local.notices],
-    });
-    setNoticeBody("");
+    if (!body || busy) return;
+    void runMutation(
+      () => commandOrganization(profile.id, profile.revision, { type: "post-notice", body }),
+      bt("공지를 등록했습니다.", "Notice posted."),
+    ).then((posted) => { if (posted) setNoticeBody(""); });
+  }
+
+  function submitInvite(event: FormEvent) {
+    event.preventDefault();
+    if (!profile) return;
+    const email = inviteEmail.trim();
+    if (!email || busy) return;
+    setBusy(true); setError("");
+    void (async () => {
+      try {
+        const result = await commandOrganization(profile.id, profile.revision, { type: "invite", email, role: inviteRole });
+        setInviteToken(result.token ?? "");
+        setInviteEmail("");
+        setNotice(bt("초대를 만들었습니다. 아래 토큰을 초대할 분에게 직접 전달해주세요.", "Invite created. Share the token below with the invitee directly."));
+        setRefresh((value) => value + 1);
+      } catch (cause) {
+        setError(await getApiErrorMessage(cause, bt("초대를 만들지 못했습니다.", "Couldn't create the invite.")));
+      } finally {
+        setBusy(false);
+      }
+    })();
+  }
+
+  async function submitPreview(event: FormEvent) {
+    event.preventDefault();
+    const token = acceptToken.trim();
+    if (!token || busy) return;
+    setBusy(true); setError("");
+    try {
+      setPreview(await previewOrganizationInvite(token));
+    } catch (cause) {
+      setPreview(null);
+      setError(await getApiErrorMessage(cause, bt("사용 가능한 초대가 없습니다. 초대받은 이메일로 로그인해주세요.", "No usable invite. Sign in with the invited email.")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitAccept() {
+    const token = acceptToken.trim();
+    if (!token || busy) return;
+    setBusy(true); setError("");
+    try {
+      const result = await acceptOrganizationInvite(token);
+      selectOrganization(result.organizationId);
+      setAcceptToken("");
+      setPreview(null);
+      setNotice(bt("조직에 합류했습니다.", "You've joined the organization."));
+      setRefresh((value) => value + 1);
+    } catch (cause) {
+      setError(await getApiErrorMessage(cause, bt("초대를 수락하지 못했습니다.", "Couldn't accept the invite.")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function importLegacy() {
+    if (!legacy?.profile || busy) return;
+    setBusy(true); setError("");
+    try {
+      const created = await createOrganization({ name: legacy.profile.name, kind: legacy.profile.kind, description: legacy.profile.description });
+      let revision = created.revision;
+      for (const workspaceId of legacy.linkedWorkspaceIds) {
+        try {
+          const linked = await commandOrganization(created.organizationId, revision, { type: "link-workspace", workspaceId });
+          revision = linked.revision;
+        } catch {
+          // 이미 사라졌거나 권한이 없는 팀 연결은 건너뛴다. 나머지는 그대로 가져온다.
+        }
+      }
+      for (const item of [...legacy.notices].reverse()) {
+        try {
+          const posted = await commandOrganization(created.organizationId, revision, { type: "post-notice", body: item.body });
+          revision = posted.revision;
+        } catch {
+          break;
+        }
+      }
+      selectOrganization(created.organizationId);
+      setNotice(bt("이 기기의 조직을 서버로 가져왔습니다. 이제 모든 기기에서 같은 조직이 보입니다.", "Your on-device organization was imported to the server. It now looks the same on every device."));
+      setRefresh((value) => value + 1);
+    } catch (cause) {
+      setError(await getApiErrorMessage(cause, bt("조직을 가져오지 못했습니다.", "Couldn't import the organization.")));
+    } finally {
+      setBusy(false);
+    }
   }
 
   const profileForm = (
@@ -141,7 +297,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
       <label className="flex flex-col gap-2 text-sm font-semibold sm:col-span-2">{bt("소개", "Description")}
         <textarea maxLength={200} rows={2} className="rounded-lg border border-line bg-canvas px-3 py-2 text-fg" value={description} onChange={(event) => setDescription(event.target.value)} placeholder={bt("어떤 작품을 만드는 조직인지 짧게 적어주세요.", "A short line about what this organization makes.")} /></label>
       <div className="flex flex-wrap gap-2 sm:col-span-2">
-        <button type="submit" disabled={!name.trim()} className={buttonClass()}>{profile ? bt("프로필 저장", "Save profile") : bt("조직 만들기", "Create organization")}</button>
+        <button type="submit" disabled={!name.trim() || busy} className={buttonClass()}>{profile ? bt("프로필 저장", "Save profile") : bt("조직 만들기", "Create organization")}</button>
         {profile && editing && <button type="button" className={buttonClass({ variant: "outline" })} onClick={() => setEditing(false)}>{bt("취소", "Cancel")}</button>}
       </div>
     </form>
@@ -184,29 +340,50 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
         ) : (
           <>
             <p className="rounded-xl border border-line bg-raised p-4 text-sm leading-6 text-fg-2">
-              {bt("현재 단계에서 조직 프로필·연결·공지는 이 기기에만 저장됩니다. 조직 초대, 조직 역할의 서버 강제, 조직 포인트 풀, 조직 공용 라이브러리는 조직 서버 계약이 생긴 뒤에 열립니다. 조직에 소속돼도 원고 접근 권한은 생기지 않습니다 — 작품 권한은 지금처럼 작품별로 부여합니다.",
-                "At this stage the organization profile, links, and notices are stored only on this device. Organization invites, server-enforced org roles, a shared point pool, and a shared library open once an organization server contract exists. Belonging to an organization never grants manuscript access — project permissions are still granted per project, as today.")}
+              {bt("조직 프로필·연결·구성원·공지는 서버에 저장되어 로그인한 모든 기기에서 같은 상태로 보입니다. 조직 역할은 서버가 강제합니다. 조직에 소속돼도 원고 접근 권한은 생기지 않습니다 — 작품 권한은 지금처럼 작품별로 부여합니다.",
+                "The organization profile, links, members, and notices live on the server, so they look the same on every signed-in device. Organization roles are enforced by the server. Belonging to an organization never grants manuscript access — project permissions are still granted per project, as today.")}
             </p>
 
             {loading && <p role="status">{bt("조직 정보를 불러오는 중입니다.", "Loading organization…")}</p>}
+
+            {organizations.length > 1 && (
+              <Card title={bt("소속 조직", "Your organizations")}>
+                <ul className="flex flex-wrap gap-2">
+                  {organizations.map((org) => (
+                    <li key={org.id}>
+                      <button type="button" aria-pressed={org.id === selectedId} className={buttonClass({ variant: org.id === selectedId ? "solid" : "outline", size: "sm" })} onClick={() => void switchOrganization(org.id)}>
+                        {org.name} · {bt(ORGANIZATION_ROLE_LABELS[org.role].ko, ORGANIZATION_ROLE_LABELS[org.role].en)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+
+            {!detail && organizations.length === 0 && legacy?.profile && (
+              <Card title={bt("이 기기의 조직 가져오기", "Import the organization on this device")}>
+                <p className="text-sm leading-6 text-fg-2">{bt(`이 기기에만 저장된 조직 "${legacy.profile.name}"이(가) 있습니다. 서버로 가져오면 구성원 초대와 다기기 동기화가 열립니다.`, `An organization "${legacy.profile.name}" is stored only on this device. Import it to the server to unlock member invites and cross-device sync.`)}</p>
+                <button type="button" disabled={busy} className={`${buttonClass()} mt-4`} onClick={() => void importLegacy()}>{bt("서버로 가져오기", "Import to server")}</button>
+              </Card>
+            )}
 
             <Card title={bt("조직 프로필", "Organization profile")}>
               {profile && !editing ? (
                 <div>
                   <p className="text-xl font-black">{profile.name}</p>
-                  <p className="mt-1 text-sm text-fg-2">{bt(ORGANIZATION_KIND_LABELS[profile.kind].ko, ORGANIZATION_KIND_LABELS[profile.kind].en)}</p>
+                  <p className="mt-1 text-sm text-fg-2">{bt(ORGANIZATION_KIND_LABELS[profile.kind].ko, ORGANIZATION_KIND_LABELS[profile.kind].en)}{myRole && <> · {bt("내 역할", "Your role")}: {bt(ORGANIZATION_ROLE_LABELS[myRole].ko, ORGANIZATION_ROLE_LABELS[myRole].en)}</>}</p>
                   {profile.description && <p className="mt-2 text-sm leading-6 text-fg-2">{profile.description}</p>}
-                  <button type="button" className={`${buttonClass({ variant: "outline" })} mt-4`} onClick={startEdit}>{bt("프로필 편집", "Edit profile")}</button>
+                  {canEdit && <button type="button" className={`${buttonClass({ variant: "outline" })} mt-4`} onClick={startEdit}>{bt("프로필 편집", "Edit profile")}</button>}
                 </div>
               ) : (
                 <>
-                  {!profile && <p className="mb-4 text-sm leading-6 text-fg-2">{bt("아직 만든 조직이 없습니다. 회사·스튜디오 이름으로 조직을 만들면 소속 팀을 한곳에 묶을 수 있습니다.", "No organization yet. Create one under your company or studio name to group your teams in one place.")}</p>}
-                  {profileForm}
+                  {!profile && !loading && <p className="mb-4 text-sm leading-6 text-fg-2">{bt("아직 만든 조직이 없습니다. 회사·스튜디오 이름으로 조직을 만들면 소속 팀을 한곳에 묶을 수 있습니다.", "No organization yet. Create one under your company or studio name to group your teams in one place.")}</p>}
+                  {!loading && (!profile || canEdit) && profileForm}
                 </>
               )}
             </Card>
 
-            {profile && rollup && (
+            {profile && rollup && canRollup && (
               <Card title={bt("조직 현황", "Organization rollup")}>
                 <dl className="grid gap-3 sm:grid-cols-4">
                   <div><dt className="text-sm text-fg-2">{bt("연결한 팀", "Linked teams")}</dt><dd className="mt-1 text-xl font-black">{rollup.teams.length}</dd></div>
@@ -219,21 +396,14 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
               </Card>
             )}
 
-            {profile && rollup && (
-              <Card title={bt("팀 AI 사용 모니터링", "Team AI usage monitoring")}>
-                {/* records는 조직 서버 계약의 AI 사용량 집계가 붙기 전까지 null — 패널이 미연결 상태를 정직하게 표시한다. */}
-                <TeamAiUsagePanel linkedTeams={rollup.teams} viewerRole={viewerOrgRole} records={null} />
-              </Card>
-            )}
-
-            {local && (
+            {detail && canRollup && (
               <Card title={bt("팀 연결", "Link teams")}>
                 {workspaces.length === 0 && !loading && (
                   <p className="text-sm leading-6 text-fg-2">{bt("아직 참여한 팀이 없습니다. 팀을 만들거나 초대를 수락하면 여기서 조직에 연결할 수 있습니다.", "No teams yet. Create a team or accept an invite, then link it to this organization here.")} <Link className="underline" to="/team/people">{bt("팀 관리로 이동", "Go to team management")}</Link></p>
                 )}
                 <ul className="space-y-3">
                   {workspaces.map((workspace) => {
-                    const linked = local.linkedWorkspaceIds.includes(workspace.id);
+                    const linked = detail.linkedWorkspaceIds.includes(workspace.id);
                     return (
                       <li key={workspace.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3">
                         <strong className="mr-auto">{workspace.name}</strong>
@@ -242,8 +412,12 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
                         <button
                           type="button"
                           aria-pressed={linked}
+                          disabled={!canLinks || busy}
                           className={buttonClass({ variant: linked ? "outline" : "solid", size: "sm" })}
-                          onClick={() => persist(toggleLinkedWorkspace(local, workspace.id, !linked))}
+                          onClick={() => void runMutation(
+                            () => commandOrganization(detail.organization.id, detail.organization.revision, { type: linked ? "unlink-workspace" : "link-workspace", workspaceId: workspace.id }),
+                            linked ? bt("팀 연결을 해제했습니다.", "Team unlinked.") : bt("팀을 조직에 연결했습니다.", "Team linked to the organization."),
+                          )}
                         >
                           {linked ? bt("연결 해제", "Unlink") : bt("조직에 연결", "Link to organization")}
                         </button>
@@ -254,6 +428,111 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
                 <p className="mt-3 text-xs leading-6 text-fg-3">{bt("연결은 조직 홈의 모아보기 범위만 정합니다. 팀의 소유자·구성원·작품 권한은 바뀌지 않습니다.", "Linking only sets what this organization home rolls up. Team ownership, members, and project permissions don't change.")}</p>
               </Card>
             )}
+
+            {detail && myRole !== "guest" && (
+              <Card title={bt("조직 구성원", "Organization members")}>
+                <ul className="space-y-3">
+                  {detail.members.map((member) => (
+                    <li key={member.userId} className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3">
+                      <strong className="mr-auto">{member.displayName}{member.userId === userId && <span className="ml-2 text-xs text-fg-3">{bt("(나)", "(you)")}</span>}</strong>
+                      <span className="text-sm text-fg-2">{bt(ORGANIZATION_ROLE_LABELS[member.role].ko, ORGANIZATION_ROLE_LABELS[member.role].en)}</span>
+                      {canManageMembers && member.role !== "owner" && (
+                        <>
+                          <label className="sr-only" htmlFor={`org-role-${member.userId}`}>{bt("역할 변경", "Change role")}</label>
+                          <select
+                            id={`org-role-${member.userId}`}
+                            className="min-h-9 rounded-lg border border-line bg-canvas px-2 text-sm text-fg"
+                            value={member.role}
+                            disabled={busy}
+                            onChange={(event) => void runMutation(
+                              () => commandOrganization(detail.organization.id, detail.organization.revision, { type: "change-member-role", userId: member.userId, role: event.target.value as InvitableOrganizationRole }),
+                              bt("구성원 역할을 바꿨습니다.", "Member role updated."),
+                            )}
+                          >
+                            {INVITABLE_ROLES.map((role) => (
+                              <option key={role} value={role}>{bt(ORGANIZATION_ROLE_LABELS[role].ko, ORGANIZATION_ROLE_LABELS[role].en)}</option>
+                            ))}
+                          </select>
+                          <button type="button" disabled={busy} className="underline" onClick={() => void runMutation(
+                            () => commandOrganization(detail.organization.id, detail.organization.revision, { type: "remove-member", userId: member.userId }),
+                            bt("구성원을 내보냈습니다.", "Member removed."),
+                          )}>{bt("내보내기", "Remove")}</button>
+                          {myRole === "owner" && (
+                            <button type="button" disabled={busy} className="underline" onClick={() => {
+                              if (!window.confirm(bt("대표 권한을 이 구성원에게 이전합니다. 회원님은 운영 관리자가 됩니다.", "Transfer the owner role to this member? You will become an admin."))) return;
+                              void runMutation(
+                                () => commandOrganization(detail.organization.id, detail.organization.revision, { type: "transfer-owner", userId: member.userId }),
+                                bt("대표 권한을 이전했습니다.", "Ownership transferred."),
+                              );
+                            }}>{bt("대표로 이전", "Make owner")}</button>
+                          )}
+                        </>
+                      )}
+                      {member.userId === userId && member.role !== "owner" && (
+                        <button type="button" disabled={busy} className="underline" onClick={() => void runMutation(
+                          () => commandOrganization(detail.organization.id, detail.organization.revision, { type: "remove-member", userId: member.userId }),
+                          bt("조직에서 나갔습니다.", "You left the organization."),
+                        )}>{bt("나가기", "Leave")}</button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+
+                {canManageMembers && (
+                  <>
+                    <form className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto_auto]" onSubmit={submitInvite}>
+                      <label className="flex flex-col gap-2 text-sm font-semibold">{bt("이메일로 초대", "Invite by email")}
+                        <input type="email" required maxLength={320} className={fieldClass} value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="name@example.com" /></label>
+                      <label className="flex flex-col gap-2 text-sm font-semibold">{bt("부여할 역할", "Role to grant")}
+                        <select className={fieldClass} value={inviteRole} onChange={(event) => setInviteRole(event.target.value as InvitableOrganizationRole)}>
+                          {INVITABLE_ROLES.map((role) => (
+                            <option key={role} value={role} disabled={role === "admin" && myRole !== "owner"}>{bt(ORGANIZATION_ROLE_LABELS[role].ko, ORGANIZATION_ROLE_LABELS[role].en)}</option>
+                          ))}
+                        </select></label>
+                      <button type="submit" disabled={!inviteEmail.trim() || busy} className={`${buttonClass()} self-end`}>{bt("초대 만들기", "Create invite")}</button>
+                    </form>
+                    {inviteToken && (
+                      <div className="mt-3 rounded-lg border border-line p-3">
+                        <p className="text-sm font-semibold">{bt("초대 토큰 (한 번만 표시됩니다)", "Invite token (shown once)")}</p>
+                        <code className="mt-1 block break-all text-sm">{inviteToken}</code>
+                        <p className="mt-1 text-xs leading-6 text-fg-3">{bt("초대할 분에게 이 토큰을 직접 전달하세요. 받은 분은 이 화면 아래 '초대 수락'에서 토큰을 붙여 넣어 합류합니다. 토큰은 7일 동안 유효합니다.", "Share this token with the invitee directly. They paste it into “Accept an invite” below to join. The token is valid for 7 days.")}</p>
+                      </div>
+                    )}
+                    {detail.invites.length > 0 && (
+                      <ul className="mt-4 space-y-2">
+                        {detail.invites.map((invite) => (
+                          <li key={invite.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3 text-sm">
+                            <span className="mr-auto">{invite.email} · {bt(ORGANIZATION_ROLE_LABELS[invite.role].ko, ORGANIZATION_ROLE_LABELS[invite.role].en)}</span>
+                            <span className="text-fg-3">{new Date(invite.expiresAt).toLocaleDateString(bt("ko-KR", "en-US"))} {bt("만료", "expires")}</span>
+                            <button type="button" disabled={busy} className="underline" onClick={() => void runMutation(
+                              () => commandOrganization(detail.organization.id, detail.organization.revision, { type: "revoke-invite", invitationId: invite.id }),
+                              bt("초대를 취소했습니다.", "Invite revoked."),
+                            )}>{bt("초대 취소", "Revoke")}</button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )}
+              </Card>
+            )}
+
+            <Card title={bt("초대 수락", "Accept an invite")}>
+              <form className="flex flex-col gap-3" onSubmit={submitPreview}>
+                <label className="flex flex-col gap-2 text-sm font-semibold">{bt("초대 토큰", "Invite token")}
+                  <input maxLength={43} className={fieldClass} value={acceptToken} onChange={(event) => { setAcceptToken(event.target.value); setPreview(null); }} placeholder={bt("전달받은 토큰을 붙여 넣으세요", "Paste the token you received")} /></label>
+                <button type="submit" disabled={acceptToken.trim().length !== 43 || busy} className={`${buttonClass({ variant: "outline" })} self-start`}>{bt("초대 확인", "Check invite")}</button>
+              </form>
+              {preview && (
+                <div className="mt-4 rounded-lg border border-line p-3 text-sm leading-6">
+                  <p><strong>{preview.organizationName}</strong> · {bt(ORGANIZATION_KIND_LABELS[preview.kind].ko, ORGANIZATION_KIND_LABELS[preview.kind].en)}</p>
+                  <p className="text-fg-2">{bt(`부여 역할: ${ORGANIZATION_ROLE_LABELS[preview.role].ko} · 초대한 사람: ${preview.inviterName} · 만료: ${new Date(preview.expiresAt).toLocaleDateString(bt("ko-KR", "en-US"))}`, `Role: ${ORGANIZATION_ROLE_LABELS[preview.role].en} · Invited by: ${preview.inviterName} · Expires: ${new Date(preview.expiresAt).toLocaleDateString("en-US")}`)}</p>
+                  {preview.alreadyMember
+                    ? <p className="mt-2 text-fg-2">{bt("이미 이 조직의 구성원입니다.", "You are already a member of this organization.")}</p>
+                    : <button type="button" disabled={busy} className={`${buttonClass()} mt-2`} onClick={() => void submitAccept()}>{bt("초대 수락하고 합류", "Accept and join")}</button>}
+                </div>
+              )}
+            </Card>
 
             <Card title={bt("조직 역할", "Organization roles")}>
               <ul className="space-y-3">
@@ -268,36 +547,39 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-xs leading-6 text-fg-3">{bt("조직 역할은 조직 화면(프로필·연결·공지·현황)에 대한 권한일 뿐 워크스페이스·작품 접근권이 아닙니다. 구성원을 조직에 초대하고 역할을 강제하는 기능은 조직 서버 계약 이후에 열립니다. 직군 프리셋은 사용성 설정이며 이 권한 체계와 무관합니다.", "Organization roles govern organization surfaces (profile, links, notices, rollup) only — they are not workspace or project access rights. Inviting members and enforcing roles opens after the organization server contract lands. Role presets for jobs are usability settings and are unrelated to this permission model.")}</p>
+              <p className="mt-3 text-xs leading-6 text-fg-3">{bt("조직 역할은 조직 화면(프로필·연결·공지·현황)에 대한 권한일 뿐 워크스페이스·작품 접근권이 아닙니다. 구성원 초대·역할 변경은 서버가 같은 역할 표로 강제합니다. 직군 프리셋은 사용성 설정이며 이 권한 체계와 무관합니다.", "Organization roles govern organization surfaces (profile, links, notices, rollup) only — they are not workspace or project access rights. Member invites and role changes are enforced by the server with this same role table. Role presets for jobs are usability settings and are unrelated to this permission model.")}</p>
             </Card>
 
-            {profile && local && (
+            {profile && detail && canRollup && (
               <Card title={bt("조직 공지", "Organization notices")}>
-                <form className="flex flex-col gap-3" onSubmit={submitNotice}>
-                  <label className="flex flex-col gap-2 text-sm font-semibold">{bt("새 공지", "New notice")}
-                    <textarea maxLength={300} rows={2} className="rounded-lg border border-line bg-canvas px-3 py-2 text-fg" value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} placeholder={bt("예: 다음 주 월요일 전체 회의", "e.g. All-hands next Monday")} /></label>
-                  <button type="submit" disabled={!noticeBody.trim()} className={`${buttonClass()} self-start`}>{bt("공지 등록", "Post notice")}</button>
-                </form>
-                {local.notices.length === 0
+                {canNotice && (
+                  <form className="flex flex-col gap-3" onSubmit={submitNotice}>
+                    <label className="flex flex-col gap-2 text-sm font-semibold">{bt("새 공지", "New notice")}
+                      <textarea maxLength={300} rows={2} className="rounded-lg border border-line bg-canvas px-3 py-2 text-fg" value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} placeholder={bt("예: 다음 주 월요일 전체 회의", "e.g. All-hands next Monday")} /></label>
+                    <button type="submit" disabled={!noticeBody.trim() || busy} className={`${buttonClass()} self-start`}>{bt("공지 등록", "Post notice")}</button>
+                  </form>
+                )}
+                {detail.notices.length === 0
                   ? <p className="mt-4 text-sm text-fg-2">{bt("아직 등록한 공지가 없습니다.", "No notices yet.")}</p>
-                  : <ul className="mt-4 space-y-2">{local.notices.map((item) => (
+                  : <ul className="mt-4 space-y-2">{detail.notices.map((item) => (
                     <li key={item.id} className="flex flex-wrap items-start gap-3 rounded-lg border border-line p-3">
                       <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-6">{item.body}</p>
-                      <span className="text-xs text-fg-3">{new Date(item.createdAt).toLocaleDateString(bt("ko-KR", "en-US"))}</span>
-                      <button type="button" className="underline" onClick={() => persist({ ...local, notices: local.notices.filter((noticeItem) => noticeItem.id !== item.id) })}>{bt("삭제", "Delete")}</button>
+                      <span className="text-xs text-fg-3">{item.authorName} · {new Date(item.createdAt).toLocaleDateString(bt("ko-KR", "en-US"))}</span>
+                      {canNotice && <button type="button" disabled={busy} className="underline" onClick={() => void runMutation(
+                        () => commandOrganization(detail.organization.id, detail.organization.revision, { type: "delete-notice", noticeId: item.id }),
+                        bt("공지를 삭제했습니다.", "Notice deleted."),
+                      )}>{bt("삭제", "Delete")}</button>}
                     </li>
                   ))}</ul>}
-                <p className="mt-3 text-xs leading-6 text-fg-3">{bt("공지는 현재 이 기기에만 저장됩니다. 조직 구성원 모두에게 보이는 공지는 조직 서버 계약 이후에 열립니다.", "Notices are currently stored only on this device. Notices visible to every organization member open after the organization server contract lands.")}</p>
+                <p className="mt-3 text-xs leading-6 text-fg-3">{bt("공지는 서버에 저장되어 조직 구성원 모두에게 같은 내용으로 보입니다.", "Notices are stored on the server and shown identically to every organization member.")}</p>
               </Card>
             )}
 
             <Card title={bt("서버 계약이 필요한 조직 기능", "Organization features that need a server contract")}>
               <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-fg-2">
-                <li>{bt("조직 초대와 역할 강제 — 이메일 초대, 수락, 역할 변경을 서버가 보장해야 다른 기기에서도 같은 조직이 보입니다.", "Organization invites and role enforcement — invites, acceptance, and role changes need server guarantees before the same organization appears on other devices.")}</li>
                 <li>{bt("조직 포인트 풀 — 포인트 원장이 개인 단위라 조직 지갑과 배분은 서버 원장이 필요합니다. 현금 결제·충전은 만들지 않습니다.", "Organization point pool — the point ledger is per-person today, so an organization wallet and distribution need a server ledger. No cash payments or top-ups will be added.")}</li>
                 <li>{bt("조직 공용 라이브러리 — 스튜디오 공용 에셋·폰트·템플릿은 라이브러리 스코프 계약이 필요합니다.", "Shared organization library — studio-wide assets, fonts, and templates need a library scope contract.")}</li>
                 <li>{bt("조직 사용량 정책 — 현재 무료 한도는 워크스페이스 단위 정책이라 조직 단위 합산 한도는 서버 정책 확장이 필요합니다.", "Organization usage policy — current free limits are per-workspace, so organization-level limits need a server policy extension.")}</li>
-                <li>{bt("팀 AI 사용량 집계 — AI 사용량은 지금 각자 기기의 안전 원장에만 남아 서버로 모이지 않습니다. 위 모니터링 표면은 하루 단위·숫자만 집계하는 서버 계약이 붙으면 실데이터로 켜집니다.", "Team AI usage aggregation — AI usage currently stays in the safety ledger on each device and never reaches the server. The monitoring surface above turns on with real data once a server contract aggregates daily counts only.")}</li>
               </ul>
             </Card>
           </>

@@ -57,6 +57,7 @@ import { STUDIO_CANVAS_WIDTH as CANVAS_W } from "./canvas/studio-canvas-constant
 import { handleStudioHorizontalWheel } from "./studio-horizontal-wheel";
 import {
   STUDIO_UI_DENSITY_MODES,
+  studioUiAdvancedToolsToggleLabel,
   studioUiDensityLabel,
   type StudioUiDensityMode,
 } from "./studio-ui-density";
@@ -900,6 +901,12 @@ export interface StudioMenubarContentHandlers extends StudioProjectReviewActionH
    * density toggle hides itself while this handler is not provided.
    */
   setStudioUiDensity?: (mode: StudioUiDensityMode) => void;
+  /**
+   * Optional until the host wires it: expands or folds the advanced toolbar clusters
+   * that simple mode keeps off the first screen. The advanced-tools toggle hides
+   * itself while this handler is not provided.
+   */
+  setUiAdvancedToolsExpanded?: (expanded: boolean) => void;
   ensureWatermarkLoaded: () => Promise<WatermarkSettings>;
   exportCurrentPageToPsd: () => Promise<PsdExportResult>;
   exportCurrentPageToRasterInterchange: (
@@ -967,6 +974,8 @@ export interface StudioMenubarContentProps {
   mobileImmersive: boolean;
   /** Current UI density preference; the menubar toggle renders only when paired with the handler. */
   uiDensityMode?: StudioUiDensityMode;
+  /** Whether the folded advanced clusters are currently expanded (simple mode first screen). */
+  uiAdvancedToolsExpanded?: boolean;
   onNavigateBack: () => void;
   historyPanelOpen: boolean;
   /** 미해결 문서 댓글 수 — 프로젝트 시트의 댓글 진입점 배지. */
@@ -1052,6 +1061,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
   menu,
   mobileImmersive,
   uiDensityMode,
+  uiAdvancedToolsExpanded,
   onNavigateBack,
   historyPanelOpen,
   openStudioCommentCount,
@@ -1126,6 +1136,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
     persistStudioWorkspaceState,
     setWatermark,
     setStudioUiDensity,
+    setUiAdvancedToolsExpanded,
     toggleHistoryPanel,
     undo,
     zoomToFit,
@@ -1642,6 +1653,26 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
                 );
               })}
             </div>
+          ) : null}
+          {/* 첫 화면 다이어트 — 기본 작업(simple)에서 접어 둔 고급 도구 클러스터를 여는 메뉴바 펼침.
+              펼침 상태는 밀도 저장소에 영속되어 새로고침 후에도 유지된다. 전체 도구(full)에선
+              접을 것이 없고 집중 작업(focus)에선 고급이 숨김이 원칙이라 simple에서만 보인다.
+              배선(핸들러)이 없으면 스스로 숨는 기존 패턴을 따른다. */}
+          {uiDensityMode === "simple" && setUiAdvancedToolsExpanded && !mobileImmersive ? (
+            <button
+              type="button"
+              data-studio-advanced-tools-toggle="true"
+              aria-expanded={uiAdvancedToolsExpanded === true}
+              onClick={() => setUiAdvancedToolsExpanded(uiAdvancedToolsExpanded !== true)}
+              className="hidden min-h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-line/70 bg-canvas/40 px-2 text-[0.68rem] font-bold text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 hover:text-fg lg:flex"
+            >
+              {studioUiAdvancedToolsToggleLabel(uiAdvancedToolsExpanded === true)}
+              <ChevronDown
+                size={12}
+                aria-hidden
+                className={cn("transition-transform", uiAdvancedToolsExpanded ? "rotate-180" : "")}
+              />
+            </button>
           ) : null}
           {mobileImmersive ? (
             <StudioEditorReturnButton

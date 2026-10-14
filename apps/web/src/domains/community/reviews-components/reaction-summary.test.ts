@@ -77,7 +77,9 @@ describe("buildReactionSummary — 방벽 판정", () => {
     const summary = buildReactionSummary(reviews);
     expect(summary.shares.praise).toBeCloseTo(0.25);
     expect(summary.highlights[0]?.reviewId).toBe("r-praise");
-    expect(summary.highlights.every((highlight) => highlight.category !== "attack")).toBe(true);
+    // highlights의 category 타입은 설계상 attack을 제외하므로, 런타임 불변식 단언은
+    // 전체 카테고리 유니온으로 넓혀 비교한다(타입이 보장하는 바를 테스트가 다시 확인).
+    expect(summary.highlights.every((highlight) => (highlight.category as ReactionCategory) !== "attack")).toBe(true);
   });
 
   it("오분류 신고 override가 있으면 재분류가 즉시 요약에 반영된다", () => {

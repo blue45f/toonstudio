@@ -24,6 +24,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import Link from "@/shared/navigation/router-link";
+import { useT } from "@/shared/lib/i18n";
 
 interface MarketReviewsSectionProps {
   resourceId: string;
@@ -140,6 +141,7 @@ function sortReviews(
 const NO_REVIEWS: readonly CreatorMarketplaceSocialReview[] = Object.freeze([]);
 
 export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) {
+  const t = useT();
   const session = useSession();
   const authenticated = session.status === "authenticated";
   const social = useMarketSocial(
@@ -287,7 +289,7 @@ export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) 
           ) : viewer.reviewRequirement === "login" ? (
             <span>로그인 후 리뷰 자격을 확인합니다.</span>
           ) : viewer.reviewRequirement === "publisher-cannot-review" ? (
-            <span>배급자는 자신의 리소스에 평점을 남길 수 없습니다.</span>
+            <span>{t("market.reviews.publisherCannotRate", "배급자는 자신의 리소스에 평점을 남길 수 없습니다.")}</span>
           ) : viewer.reviewRequirement === "add-to-library" ? (
             <>
               <Cloud className="size-4 text-cool" aria-hidden="true" />
@@ -363,7 +365,7 @@ export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) 
             onClick={() => void social.refresh()}
             className="ml-auto font-semibold text-accent hover:underline"
           >
-            다시 시도
+            {t("market.state.retry", "다시 시도")}
           </button>
         </div>
       ) : null}
@@ -379,9 +381,9 @@ export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) 
 
       <div className="mt-3 space-y-3.5">
         {social.status === "loading" && !social.data ? (
-          <div role="status" className="rounded-xl border border-line bg-panel/40 p-6 text-center text-xs text-fg-3">리뷰를 불러오는 중입니다.</div>
+          <div role="status" className="rounded-xl border border-line bg-panel/40 p-6 text-center text-xs text-fg-3">{t("market.reviews.loading", "리뷰를 불러오는 중입니다.")}</div>
         ) : social.status === "error" && !social.data ? null : displayed.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-line bg-panel/50 py-8 text-center text-xs text-fg-2">아직 검증된 활용 리뷰가 없습니다.</div>
+          <div className="rounded-xl border border-dashed border-line bg-panel/50 py-8 text-center text-xs text-fg-2">{t("market.reviews.emptyVerified", "아직 검증된 활용 리뷰가 없습니다.")}</div>
         ) : displayed.map((review) => (
           <article key={review.id} className="rounded-xl border border-line/60 bg-panel/30 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -397,7 +399,7 @@ export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) 
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button type="button" onClick={() => void social.toggleReviewHelpful(review.id).catch(() => undefined)} disabled={!authenticated || review.isMine || pending} aria-pressed={review.helpfulByViewer} title={review.isMine ? "자신의 리뷰에는 도움 반응을 남길 수 없습니다." : undefined} className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[0.68rem] disabled:opacity-50", review.helpfulByViewer ? "border-accent bg-accent/15 text-accent" : "border-line bg-card text-fg-3")}>
+                <button type="button" onClick={() => void social.toggleReviewHelpful(review.id).catch(() => undefined)} disabled={!authenticated || review.isMine || pending} aria-pressed={review.helpfulByViewer} title={review.isMine ? t("market.reviews.ownReviewHelpful", "자신의 리뷰에는 도움 반응을 남길 수 없습니다.") : undefined} className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[0.68rem] disabled:opacity-50", review.helpfulByViewer ? "border-accent bg-accent/15 text-accent" : "border-line bg-card text-fg-3")}>
                   <ThumbsUp className="size-3" aria-hidden="true" /> 도움 {review.helpfulCount || ""}
                 </button>
                 {review.canDelete ? (

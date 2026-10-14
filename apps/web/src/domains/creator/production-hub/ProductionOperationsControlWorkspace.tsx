@@ -12,6 +12,7 @@ import { downloadBlob } from "../export/studio-export";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 type ControlView =
   | "schedule"
@@ -254,6 +255,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
   canEdit,
   canManage,
 }: ProductionOperationsControlWorkspaceProps) {
+  const t = useT();
   const [now] = useState(() => new Date());
   const assignments = useMemo(() => activeAssignments(aggregate), [aggregate]);
   const defaultAssignmentId = assignments.find((entry) => entry.roleType === "producer")?.id
@@ -558,7 +560,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
     await saveRecord({
       kind: "release-plan",
       value: { ...plan, status, revision: plan.revision + 1, updatedAt: new Date().toISOString() },
-    }, status === "published" ? "실제 공개를 기록했습니다." : status === "failed" ? "게시 실패를 기록했습니다." : "공개 회수를 기록했습니다.");
+    }, status === "published" ? "실제 공개를 기록했습니다." : status === "failed" ? t("productionHub.operations.releaseFailedRecorded", "게시 실패를 기록했습니다.") : "공개 회수를 기록했습니다.");
     setNotice(status === "published" ? "플랫폼 실제 공개 상태를 기록했습니다." : "수동 게시 상태 변경을 감사 이력에 남겼습니다.");
   });
 
@@ -851,7 +853,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
             ) : (
               <div className="rounded-xl border border-dashed border-line p-8 text-center">
                 <AlertTriangle className="mx-auto size-8 text-warn" aria-hidden="true" />
-                <p className="mt-3 text-sm font-black text-fg">계산 가능한 일정이 없습니다</p>
+                <p className="mt-3 text-sm font-black text-fg">{t("productionHub.operations.emptySchedulable", "계산 가능한 일정이 없습니다")}</p>
                 <p className="mt-1 text-xs text-fg-2">작업 공수와 의존관계를 확인하거나 순환 의존성을 해소해 주세요.</p>
               </div>
             )}
@@ -912,7 +914,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                       </a>
                     ))}
                     {tasks.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">해당 업무가 없습니다.</div>
+                      <div className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">{t("productionHub.operations.emptyTasks", "해당 업무가 없습니다.")}</div>
                     ) : null}
                   </div>
                 </article>
@@ -1015,7 +1017,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                 </div>
               ))}
               {((aggregate.resourceCalendars ?? []).find((entry) => entry.assignmentId === selectedAssignmentId)?.exceptions.length ?? 0) === 0 ? (
-                <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3">등록된 예외 일정이 없습니다.</div>
+                <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3">{t("productionHub.operations.emptyCalendarExceptions", "등록된 예외 일정이 없습니다.")}</div>
               ) : null}
             </div>
           </Section>
@@ -1058,7 +1060,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                   </div>
                 );
               })}
-              {cuts.length === 0 ? <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3">이 회차에 최신 컷 계획이 없습니다.</div> : null}
+              {cuts.length === 0 ? <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3">{t("productionHub.operations.emptyLatestCutPlan", "이 회차에 최신 컷 계획이 없습니다.")}</div> : null}
             </div>
           </Section>
         </div>
@@ -1117,7 +1119,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     <button type="button" className={buttonClass({ variant: "ghost", size: "sm" })} onClick={() => downloadReleaseManifest(plan)}>manifest</button>
                     {plan.status === "scheduled" || plan.status === "failed" ? <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={!canEdit || busyKey !== null} onClick={() => void updateReleaseStatus(plan, "published")}>공개 완료</button> : null}
-                    {plan.status === "scheduled" ? <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={!canEdit || busyKey !== null} onClick={() => void updateReleaseStatus(plan, "failed")}>실패 기록</button> : null}
+                    {plan.status === "scheduled" ? <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={!canEdit || busyKey !== null} onClick={() => void updateReleaseStatus(plan, "failed")}>{t("productionHub.operations.recordFailure", "실패 기록")}</button> : null}
                     {plan.status === "published" ? <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={!canEdit || busyKey !== null} onClick={() => void updateReleaseStatus(plan, "withdrawn")}>회수 기록</button> : null}
                   </div>
                 </div>
@@ -1180,7 +1182,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                   onRevoke={(entry) => void revokeExternalReview(entry)}
                 />
               ))}
-              {activeExternalReviews.length === 0 ? <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3">활성 외부 검수 링크가 없습니다.</div> : null}
+              {activeExternalReviews.length === 0 ? <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3">{t("productionHub.operations.emptyActiveReviewLinks", "활성 외부 검수 링크가 없습니다.")}</div> : null}
             </div>
           </Section>
         </div>
@@ -1192,7 +1194,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
             <Section title="자동화 규칙" description="자동화는 알림·조치 업무 생성까지만 수행합니다. 승인, 공개, 계약 선정, 지급과 원본 삭제는 사람 검토 없이 실행하지 않습니다.">
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-xs font-semibold text-fg-2 sm:col-span-2">규칙 이름<input className="mt-1.5 min-h-10 w-full rounded-lg border border-line bg-panel px-3 text-sm text-fg" value={automationName} onChange={(event) => setAutomationName(event.target.value)} /></label>
-                <label className="text-xs font-semibold text-fg-2">트리거<select className="mt-1.5 min-h-10 w-full rounded-lg border border-line bg-panel px-3 text-sm text-fg" value={automationTrigger} onChange={(event) => setAutomationTrigger(event.target.value as ProductionAutomationRule["trigger"])}><option value="due-passed">마감 경과</option><option value="due-soon">마감 임박</option><option value="task-status-changed">업무 상태 변경</option><option value="review-opened">검수 시작</option><option value="capacity-exceeded">일정 용량 초과</option><option value="release-preflight-failed">연재 검사 실패</option><option value="manual">수동 실행</option></select></label>
+                <label className="text-xs font-semibold text-fg-2">트리거<select className="mt-1.5 min-h-10 w-full rounded-lg border border-line bg-panel px-3 text-sm text-fg" value={automationTrigger} onChange={(event) => setAutomationTrigger(event.target.value as ProductionAutomationRule["trigger"])}><option value="due-passed">마감 경과</option><option value="due-soon">마감 임박</option><option value="task-status-changed">업무 상태 변경</option><option value="review-opened">검수 시작</option><option value="capacity-exceeded">일정 용량 초과</option><option value="release-preflight-failed">{t("productionHub.operations.releaseCheckFailed", "연재 검사 실패")}</option><option value="manual">수동 실행</option></select></label>
                 <label className="text-xs font-semibold text-fg-2">알림 대상<select className="mt-1.5 min-h-10 w-full rounded-lg border border-line bg-panel px-3 text-sm text-fg" value={selectedAssignmentId} onChange={(event) => setSelectedAssignmentId(event.target.value)}>{assignments.map((assignment) => <option key={assignment.id} value={assignment.id}>{assignmentName(aggregate, assignment.id)}</option>)}</select></label>
               </div>
               <div className="mt-4 flex flex-wrap gap-2"><button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={!canManage || busyKey !== null} onClick={() => void saveAutomation()}><Save className="size-4" aria-hidden="true" />규칙 저장</button><ProductionAutomationExecutionControl aggregate={aggregate} canManage={canManage} disabled={busyKey !== null} execute={execute} /></div>
@@ -1204,7 +1206,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
 
           <div className="space-y-4">
             <Section title="등록된 규칙" description="실행 근거와 마지막 평가 시각을 확인합니다.">
-              <div className="space-y-2">{(aggregate.automationRules ?? []).map((rule) => <div key={rule.id} className="rounded-xl border border-line bg-panel p-3"><div className="flex items-center justify-between gap-2"><p className="text-xs font-black text-fg">{rule.name}</p><Pill tone={rule.enabled ? "success" : "neutral"}>{rule.enabled ? "활성" : "중지"}</Pill></div><p className="mt-1 text-[0.6875rem] text-fg-3">{rule.trigger} · 행동 {rule.actions.length}개</p><p className="mt-1 text-[0.6875rem] text-fg-3">최근 평가 {formatDate(rule.lastEvaluatedAt)}</p></div>)}{(aggregate.automationRules ?? []).length === 0 ? <div className="rounded-xl border border-dashed border-line p-6 text-center text-xs text-fg-3">등록된 규칙이 없습니다.</div> : null}</div>
+              <div className="space-y-2">{(aggregate.automationRules ?? []).map((rule) => <div key={rule.id} className="rounded-xl border border-line bg-panel p-3"><div className="flex items-center justify-between gap-2"><p className="text-xs font-black text-fg">{rule.name}</p><Pill tone={rule.enabled ? "success" : "neutral"}>{rule.enabled ? "활성" : "중지"}</Pill></div><p className="mt-1 text-[0.6875rem] text-fg-3">{rule.trigger} · 행동 {rule.actions.length}개</p><p className="mt-1 text-[0.6875rem] text-fg-3">최근 평가 {formatDate(rule.lastEvaluatedAt)}</p></div>)}{(aggregate.automationRules ?? []).length === 0 ? <div className="rounded-xl border border-dashed border-line p-6 text-center text-xs text-fg-3">{t("productionHub.operations.emptyRules", "등록된 규칙이 없습니다.")}</div> : null}</div>
             </Section>
             <Section title="알림 받은함" description="선택한 담당자의 알림을 같은 원인별로 묶고 안전한 작품 경로로 이동합니다.">
               <ProductionNotificationDigest aggregate={aggregate} assignmentId={selectedAssignmentId} disabled={!canEdit || busyKey !== null} onRead={markNotificationRead} />
@@ -1237,7 +1239,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
             </Section>
             <Section title="예산·정산 전망" description="계약, 승인 변경, 청구서와 검증된 지급을 통화별로 분리해 계산합니다.">
               <div className="space-y-3">{financialForecast.currencies.map((forecast) => <article key={forecast.currency} className="rounded-xl border border-line bg-panel p-4"><div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2"><Coins className="size-4 text-accent" aria-hidden="true" /><p className="text-sm font-black text-fg">{forecast.currency}</p></div><Pill tone={forecast.overdueInvoiceCount > 0 ? "danger" : "success"}>기한 초과 {forecast.overdueInvoiceCount}</Pill></div><dl className="mt-3 grid grid-cols-2 gap-2 text-[0.6875rem]"><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">계약+변경 전망</dt><dd className="mt-1 font-black text-fg">{formatMoney(forecast.currency, forecast.forecastMinor)}</dd></div><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">청구</dt><dd className="mt-1 font-black text-fg">{formatMoney(forecast.currency, forecast.invoicedMinor)}</dd></div><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">검증 지급</dt><dd className="mt-1 font-black text-good">{formatMoney(forecast.currency, forecast.verifiedPaidMinor)}</dd></div><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">미지급 잔액</dt><dd className="mt-1 font-black text-warn">{formatMoney(forecast.currency, forecast.outstandingMinor)}</dd></div></dl></article>)}
-                {financialForecast.currencies.length === 0 ? <div className="rounded-xl border border-dashed border-line p-7 text-center text-xs text-fg-3">등록된 계약·청구 데이터가 없습니다.</div> : null}
+                {financialForecast.currencies.length === 0 ? <div className="rounded-xl border border-dashed border-line p-7 text-center text-xs text-fg-3">{t("productionHub.operations.emptyFinanceData", "등록된 계약·청구 데이터가 없습니다.")}</div> : null}
                 {financialForecast.warnings.map((warning) => <div key={warning} className="flex gap-2 rounded-xl border border-warn/35 bg-warn/10 p-3 text-xs text-fg-2"><AlertTriangle className="size-4 shrink-0 text-warn" aria-hidden="true" /><span>{warning}</span></div>)}
               </div>
             </Section>
@@ -1266,7 +1268,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                   <p className="mt-3 text-[0.6875rem] text-fg-3">열 {savedView.columns.length}개 · {formatDate(savedView.updatedAt)}</p>
                 </article>
               ))}
-              {(aggregate.savedViews ?? []).length === 0 ? <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3 sm:col-span-2">저장된 운영 보기가 없습니다.</div> : null}
+              {(aggregate.savedViews ?? []).length === 0 ? <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3 sm:col-span-2">{t("productionHub.operations.emptySavedViews", "저장된 운영 보기가 없습니다.")}</div> : null}
             </div>
           </Section>
         </div>

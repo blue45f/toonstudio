@@ -51,7 +51,6 @@ export function AccountDataPortabilityPanel({
       window.localStorage.getItem(ACCOUNT_BULK_EXPORT_MARKER_KEY),
     );
     return { inventory, marker, covered: bulkExportMarkerCovers(inventory, marker) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey가 재읽기 트리거다.
   }, [refreshKey]);
 
   if (!snapshot) return null;

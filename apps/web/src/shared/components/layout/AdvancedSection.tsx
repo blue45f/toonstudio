@@ -19,6 +19,19 @@ export interface AdvancedSectionProps {
   className?: string;
   /** 본문 래퍼 클래스 — 기본값은 개요 파일럿의 운영 상세와 같은 리듬이다. */
   contentClassName?: string;
+  /**
+   * 표면 프리셋. card(기본)는 개요 운영 상세의 카드 리듬, panel은 설정 화면처럼
+   * 옅은 패널 배경 위에 얹는 변형이다(S3-3 설정 파일럿).
+   */
+  preset?: "card" | "panel";
+  /**
+   * 접힌 상태에서도 본문을 DOM에 유지한다. 링크·검색 동선이 접힌 구역 안의
+   * 대상을 그대로 가리켜야 할 때(관련 설정 나열 등)만 켠다. 브라우저는 닫힌
+   * details의 본문을 화면·접근성 트리에서 숨기므로 시각 동작은 같다.
+   */
+  keepMounted?: boolean;
+  /** 루트 <details>로 그대로 전달되는 data-* 속성(예: data-related-settings). */
+  [dataAttribute: `data-${string}`]: string | undefined;
 }
 
 /**
@@ -35,11 +48,19 @@ export function AdvancedSection({
   onToggle,
   className,
   contentClassName,
+  preset = "card",
+  keepMounted = false,
+  ...dataAttributes
 }: AdvancedSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <details
-      className={cx("group rounded-2xl border border-line bg-card", className)}
+      {...dataAttributes}
+      className={cx(
+        "group rounded-2xl border border-line",
+        preset === "panel" ? "bg-panel/40" : "bg-card",
+        className,
+      )}
       open={open}
       onToggle={(event) => {
         const next = event.currentTarget.open;
@@ -62,7 +83,9 @@ export function AdvancedSection({
           aria-hidden="true"
         />
       </summary>
-      {open ? <div className={cx("space-y-4 border-t border-line p-4", contentClassName)}>{children}</div> : null}
+      {open || keepMounted ? (
+        <div className={cx("space-y-4 border-t border-line p-4", contentClassName)}>{children}</div>
+      ) : null}
     </details>
   );
 }

@@ -44,6 +44,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { cn } from "@/shared/lib/utils";
+import { useT } from "@/shared/lib/i18n";
 
 interface ProductionRiskWorkspaceProps {
   readonly aggregate: ProductionProjectAggregate;
@@ -253,12 +254,15 @@ function taskLabel(aggregate: ProductionProjectAggregate, taskId: string): strin
   return aggregate.tasks.find((task) => task.id === taskId)?.title ?? taskId;
 }
 
-function validateRiskPolicy(policy: ProductionRiskPolicy): string | null {
+function validateRiskPolicy(
+  policy: ProductionRiskPolicy,
+  messages: { readonly blockedOrder: string; readonly capacityOrder: string },
+): string | null {
   if (policy.blockedWarningHours > policy.blockedCriticalHours) {
-    return "차단 주의 기준은 차단 긴급 기준보다 클 수 없습니다.";
+    return messages.blockedOrder;
   }
   if (policy.capacityWarningPercent > policy.capacityCriticalPercent) {
-    return "작업량 주의 기준은 작업량 긴급 기준보다 클 수 없습니다.";
+    return messages.capacityOrder;
   }
   if (!/^([01]\d|2[0-3]):[0-5]\d$/u.test(policy.workdayEndLocal)) {
     return "업무 종료 시각은 00:00부터 23:59 사이여야 합니다.";
@@ -296,6 +300,7 @@ function RiskDetail({
   readonly onEditRisk: () => void;
   readonly onBack: () => void;
 }) {
+  const t = useT();
   const bt = useBilingual("ProductionRiskWorkspace.history");
   const [reason, setReason] = useState("");
   const [responseDraft, setResponseDraft] = useState<ProductionRiskResponseDraftAction | null>(null);
@@ -419,14 +424,14 @@ function RiskDetail({
               <ul className="mt-3 space-y-2 text-xs leading-5 text-fg-2">
                 {risk.earlySignals.length > 0
                   ? risk.earlySignals.slice(0, 8).map((entry) => <li key={entry} className="flex gap-2"><CircleAlert className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden="true" /><span>{entry}</span></li>)
-                  : <li>기록된 조기 징후가 없습니다.</li>}
+                  : <li>{t("productionHub.risk.emptyEarlySignals", "기록된 조기 징후가 없습니다.")}</li>}
               </ul>
             </div>
             <div className="rounded-xl border border-line bg-panel p-4">
               <p className="text-xs font-black text-fg">대응 계획</p>
-              <p className="mt-2 text-xs leading-5 text-fg-2">{risk.mitigation || "대응 계획이 아직 없습니다."}</p>
+              <p className="mt-2 text-xs leading-5 text-fg-2">{risk.mitigation || t("productionHub.risk.emptyMitigation", "대응 계획이 아직 없습니다.")}</p>
               <p className="mt-3 text-xs font-black text-fg">비상 계획</p>
-              <p className="mt-2 text-xs leading-5 text-fg-2">{risk.contingency || "비상 계획이 아직 없습니다."}</p>
+              <p className="mt-2 text-xs leading-5 text-fg-2">{risk.contingency || t("productionHub.risk.emptyContingency", "비상 계획이 아직 없습니다.")}</p>
             </div>
           </div>
         </div>
@@ -457,7 +462,7 @@ function RiskDetail({
                   {index < risk.affectedTaskIds.length - 1 ? <ArrowRight className="ml-auto size-3.5 text-fg-3" aria-hidden="true" /> : null}
                 </div>
               ))}
-              {risk.affectedTaskIds.length === 0 ? <p className="text-xs text-fg-3">직접 연결된 작업이 없습니다.</p> : null}
+              {risk.affectedTaskIds.length === 0 ? <p className="text-xs text-fg-3">{t("productionHub.risk.emptyLinkedTasks", "직접 연결된 작업이 없습니다.")}</p> : null}
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -518,7 +523,7 @@ function RiskDetail({
                 canManage={canManage}
               />
             ))}
-            {responses.length === 0 ? <div className="rounded-xl border border-dashed border-line p-6 text-center text-xs text-fg-3">등록된 대응 항목이 없습니다.</div> : null}
+            {responses.length === 0 ? <div className="rounded-xl border border-dashed border-line p-6 text-center text-xs text-fg-3">{t("productionHub.risk.emptyResponses", "등록된 대응 항목이 없습니다.")}</div> : null}
           </div>
         </div>
       ) : null}
@@ -554,10 +559,14 @@ function RiskPolicyPanel({
   readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
   readonly canManage: boolean;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState(policy);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const validationError = validateRiskPolicy(draft);
+  const validationError = validateRiskPolicy(draft, {
+    blockedOrder: t("productionHub.risk.policyBlockedOrder", "차단 주의 기준은 차단 긴급 기준보다 클 수 없습니다."),
+    capacityOrder: t("productionHub.risk.policyCapacityOrder", "작업량 주의 기준은 작업량 긴급 기준보다 클 수 없습니다."),
+  });
   useEffect(() => {
     setDraft(policy);
     setSaveError(null);
@@ -680,6 +689,7 @@ export function ProductionRiskWorkspace({
   canManage,
   now,
 }: ProductionRiskWorkspaceProps) {
+  const t = useT();
   const currentNow = useMemo(() => now ?? new Date(), [now]);
   const evaluation = useMemo(
     () => evaluateProductionRisks(aggregate, currentNow),
@@ -856,7 +866,7 @@ export function ProductionRiskWorkspace({
             {filteredRisks.length === 0 ? (
               <div className="rounded-xl border border-dashed border-line p-8 text-center">
                 <CheckCircle2 className="mx-auto size-8 text-good" aria-hidden="true" />
-                <p className="mt-3 text-sm font-black text-fg">조건에 맞는 위험이 없습니다</p>
+                <p className="mt-3 text-sm font-black text-fg">{t("productionHub.risk.emptyFiltered", "조건에 맞는 위험이 없습니다")}</p>
                 <p className="mt-1 text-xs text-fg-3">필터를 바꾸거나 제작 데이터를 다시 평가해 보세요.</p>
               </div>
             ) : null}

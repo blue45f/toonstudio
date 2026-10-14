@@ -118,3 +118,51 @@ describe("unified theme token contrast (9 themes x primary surfaces)", () => {
     });
   }
 });
+
+const designCss = readFileSync(
+  new URL("../../app/styles/design-themes.css", import.meta.url),
+  "utf8",
+);
+
+function designTokensFor(themeId: string): ThemeTokens {
+  const block = new RegExp(
+    `:root\\[data-design-theme="${themeId}"\\],[^\\{]*\\{([^}]*)\\}`,
+    "u",
+  ).exec(designCss);
+  if (!block?.[1]) throw new Error(`Design theme block is missing: ${themeId}`);
+  const tokens = new Map<string, string>();
+  for (const match of block[1].matchAll(/(--color-[a-z0-9-]+):\s*([^;]+);/gu)) {
+    if (match[1] && match[2]) tokens.set(match[1], match[2].trim());
+  }
+  return tokens;
+}
+
+function designToken(tokens: ThemeTokens, name: string): string {
+  const value = tokens.get(`--color-${name}`);
+  if (!value) throw new Error(`Design token is missing: --color-${name}`);
+  return value;
+}
+
+describe("design-themes.css parity with the unified contract", () => {
+  // design-themes.css carries the same palette under --color-*. Surfaces that
+  // never enter the unified shell still paint --color-line-strong as the
+  // static fallback for --color-control-border, so it must not drift from
+  // the contract value that carries the WCAG 1.4.11 3:1 guarantee.
+  for (const themeId of THEME_IDS) {
+    it(`${themeId}: mirrors the unified strong boundary and keeps it at 3:1`, () => {
+      const unified = tokensFor(themeId);
+      const design = designTokensFor(themeId);
+      expect(designToken(design, "line-strong")).toBe(token(unified, "line-strong"));
+      for (const background of BACKGROUNDS) {
+        const ratio = studioColorContrast(
+          designToken(design, "line-strong"),
+          designToken(design, background),
+        );
+        expect(
+          ratio,
+          `${themeId}: --color-line-strong on --color-${background} is ${ratio.toFixed(2)}:1`,
+        ).toBeGreaterThanOrEqual(BOUNDARY_MINIMUM);
+      }
+    });
+  }
+});

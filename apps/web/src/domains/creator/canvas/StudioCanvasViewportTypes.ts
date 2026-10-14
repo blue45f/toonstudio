@@ -55,6 +55,7 @@ import type { PageState } from "../studio-page-state";
 import type { StudioDuplicateSelectionOptions } from "../studio-page-clipboard-controller";
 import type { PanelSplitPreview } from "../studio-panel-split";
 import type { VanishingPoint } from "../studio-perspective-guide";
+import type { GuideLine, GuidePoint } from "../drawing/studio-perspective-guide";
 import type { PuppetPin } from "../studio-puppet-warp";
 import type { QuickMaskBrushMode } from "../studio-quick-mask";
 import type { StudioScrollViewport, StudioScrollViewportStore } from "../studio-scroll-viewport-store";
@@ -438,6 +439,9 @@ export interface StudioCanvasViewportProps {
   panelSplitArmed: boolean;
   panelSplitPreview: PanelSplitPreview | null;
   perspectiveRulerActive: boolean;
+  /** drawing 레인 원근 가이드 격자(선택). 없으면 미표시 — 기존 동작과 동일. */
+  drawingPerspectiveGuideSegments?: readonly GuideLine[];
+  drawingPerspectiveGuideVanishingPoints?: readonly GuidePoint[];
   pixelDragPreview: SelectionDragState | null;
   pixelOverlayFrame: SelectionFrame | null;
   pixelOverlaySel: PixelSelection | null;

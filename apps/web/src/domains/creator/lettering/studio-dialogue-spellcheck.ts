@@ -193,6 +193,42 @@ const MISSPELLINGS: readonly MisspellingEntry[] = [
     severity: "warning",
   },
   {
+    pattern: /할께/g,
+    replacement: "할게",
+    message: "'할께'가 아니라 '할게'로 써요. 약속·의지의 말끝은 '게'예요. (존댓말 조사 '께'와 다릅니다)",
+    severity: "warning",
+  },
+  {
+    pattern: /될께/g,
+    replacement: "될게",
+    message: "'될께'가 아니라 '될게'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /줄께/g,
+    replacement: "줄게",
+    message: "'줄께'가 아니라 '줄게'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /그럴께/g,
+    replacement: "그럴게",
+    message: "'그럴께'가 아니라 '그럴게'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /갈께/g,
+    replacement: "갈게",
+    message: "'갈께'가 아니라 '갈게'로 써요.",
+    severity: "warning",
+  },
+  {
+    pattern: /있을께/g,
+    replacement: "있을게",
+    message: "'있을께'가 아니라 '있을게'로 써요.",
+    severity: "warning",
+  },
+  {
     pattern: /웬지/g,
     replacement: "왠지",
     message: "'웬지'가 아니라 '왠지'예요.",

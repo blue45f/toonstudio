@@ -39,10 +39,9 @@ import {
 import { useMarketStudioHandoff } from "../hooks/use-market-studio-handoff";
 
 import { CreatorMarketplaceCloudLibraryAction } from "./CreatorMarketplaceCloudLibraryAction";
-import {
-  MarketGuestLoginNotice,
-  useMarketGuestLoginNoticeState,
-} from "./MarketGuestLoginNotice";
+import { useMarketGuestLoginNoticeState } from "../hooks/use-market-guest-login-notice";
+
+import { MarketGuestLoginNotice } from "./MarketGuestLoginNotice";
 import { CreatorMarketplaceReportAction } from "./CreatorMarketplaceReportAction";
 import { Market3dAssetPreview } from "./Market3dAssetPreview";
 import { MarketAcquisitionModal } from "./MarketAcquisitionModal";

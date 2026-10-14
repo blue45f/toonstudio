@@ -48,6 +48,7 @@ import {
   productionManuscriptRevisionLabel,
   type ProductionManuscriptProcess,
 } from "./production-manuscript-model";
+import { useT } from "@/shared/lib/i18n";
 
 type CompareMode = "side-by-side" | "overlay";
 
@@ -169,6 +170,7 @@ export function ProductionManuscriptSnapshotPanel({
   canEdit,
   onChanged,
 }: ProductionManuscriptSnapshotPanelProps) {
+  const t = useT();
   const artifactId = process.artifact.id;
   const [snapshots, setSnapshots] = useState<readonly ProductionManuscriptSnapshot[]>(() =>
     listProductionManuscriptSnapshots(artifactId));
@@ -220,7 +222,7 @@ export function ProductionManuscriptSnapshotPanel({
   const takeSnapshot = useCallback(() => {
     const head = process.headRevision;
     if (!head) {
-      setError("작업본(HEAD)이 없어 스냅샷을 만들 수 없습니다.");
+      setError(t("productionHub.snapshot.noHeadForSnapshot", "작업본(HEAD)이 없어 스냅샷을 만들 수 없습니다."));
       return;
     }
     const created = createProductionManuscriptSnapshot(artifactId, {
@@ -356,7 +358,7 @@ export function ProductionManuscriptSnapshotPanel({
           type="button"
           onClick={takeSnapshot}
           disabled={!process.headRevision}
-          title={process.headRevision ? "현재 작업본을 버전 스냅샷으로 저장" : "작업본이 없어 스냅샷을 만들 수 없습니다"}
+          title={process.headRevision ? "현재 작업본을 버전 스냅샷으로 저장" : t("productionHub.snapshot.noWorkingCopy", "작업본이 없어 스냅샷을 만들 수 없습니다")}
           className={buttonClass({ size: "sm" })}
         >
           <Camera className="size-4" aria-hidden="true" /> 스냅샷 찍기
@@ -513,7 +515,7 @@ export function ProductionManuscriptSnapshotPanel({
       })}
     </div> : <div className="mt-5 rounded-2xl border border-dashed border-line p-8 text-center">
       <Camera className="mx-auto size-7 text-fg-3" aria-hidden="true" />
-      <p className="mt-2 font-black text-fg">아직 스냅샷이 없습니다</p>
+      <p className="mt-2 font-black text-fg">{t("productionHub.snapshot.empty", "아직 스냅샷이 없습니다")}</p>
       <p className="mt-1 text-sm text-fg-2">
         작업 중 스냅샷 찍기를 누르면 현재 작업본이 v1부터 자동 이름으로 저장됩니다.
       </p>

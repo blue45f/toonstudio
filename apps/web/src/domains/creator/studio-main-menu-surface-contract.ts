@@ -29,6 +29,7 @@ export type StudioPixelSelectionToolId =
   | "poly-lasso"
   | "brush"
   | "wand"
+  | "quick-select"
   | "color-range";
 
 /** Checked/disabled state for the rows this contract opens. */

@@ -19,6 +19,7 @@ import {
   resolveCreatorMarketplaceCloudLibraryAcquisitionTarget,
   setCreatorMarketplaceCloudLibraryArchived,
 } from "@/platform/creator-marketplace-client";
+import { useT } from "@/shared/lib/i18n";
 
 interface ReceiptSnapshot {
   readonly libraryItemId: string;
@@ -70,6 +71,7 @@ export function CreatorMarketplaceCloudLibraryAction({
   readonly compact?: boolean;
   readonly onChanged?: () => void;
 }) {
+  const t = useT();
   const { data: session, ready, status: sessionStatus } = useSession();
   const authenticated = ready && sessionStatus === "authenticated";
   const userId = authenticated ? session.user.id : null;
@@ -378,8 +380,8 @@ export function CreatorMarketplaceCloudLibraryAction({
       ) : acquisitionTarget?.state === "unavailable" && !compact ? (
         <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">
           {{
-            moderated: "관리자 검수로 현재 패키지를 계정 라이브러리에 추가할 수 없습니다.",
-            "owner-delisted": "배급자가 현재 패키지를 내려 계정 라이브러리에 추가할 수 없습니다.",
+            moderated: t("market.cloudLibrary.moderated", "관리자 검수로 현재 패키지를 계정 라이브러리에 추가할 수 없습니다."),
+            "owner-delisted": t("market.cloudLibrary.ownerDelisted", "배급자가 현재 패키지를 내려 계정 라이브러리에 추가할 수 없습니다."),
             "publisher-unavailable": "현재 활동 중인 배급자의 패키지만 계정 라이브러리에 추가할 수 있습니다.",
           }[acquisitionTarget.reason]}
         </p>

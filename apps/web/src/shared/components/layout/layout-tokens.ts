@@ -91,7 +91,9 @@ export const LAYOUT_TOKENS = {
   },
   /** 단계 카드 리듬 — 기존 /studio/new 섹션과 같은 값으로 고정한다. */
   formStep: "mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5",
-  formStepBadge: "rounded-full border border-line bg-raised px-2 py-0.5 text-xs font-bold text-fg-2",
+  /** 단계 번호 배지 — 숫자만 들어가는 원형 배지. */
+  formStepBadge:
+    "grid size-7 shrink-0 place-items-center rounded-full bg-accent text-xs font-black text-on-accent",
 } as const;
 
 export type LayoutSectionSpacing = keyof typeof LAYOUT_TOKENS.sectionSpacing;

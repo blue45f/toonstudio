@@ -221,6 +221,7 @@ export type StudioCuttoonStagePointersHost = {
   pendingStrokeCommitsRef: any;
   persistImmediateStrokeEmergencyAutosave: () => void;
   perspectiveRayRef: any;
+  perspectiveGuideSnapRef: any;
   pickCanvasColorAt: any;
   pixelBrushRadius: any;
   pixelCombine: any;
@@ -393,6 +394,7 @@ export type StudioCuttoonStagePointersHost = {
   pages: any;
   panelSplitArmed: any;
   perspectiveRulerActive: any;
+  drawingPerspectiveGuide: any;
   pixelToolArmed: any;
   pixelToolGestureArmed: any;
   pixelToolRasterPreparationArmed: any;

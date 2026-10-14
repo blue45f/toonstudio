@@ -198,6 +198,8 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
     perspectiveEyeLevelY,
     perspectiveLockHorizon,
     perspectiveRulerActive,
+    drawingPerspectiveGuideSegments,
+    drawingPerspectiveGuideVanishingPoints,
     pixelDragPreview,
     pixelOverlayFrame,
     pixelOverlaySel,
@@ -587,6 +589,8 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
           panelSplitArmed={panelSplitArmed}
           panelSplitPreview={panelSplitPreview}
           perspectiveRulerActive={perspectiveRulerActive}
+          drawingPerspectiveGuideSegments={drawingPerspectiveGuideSegments}
+          drawingPerspectiveGuideVanishingPoints={drawingPerspectiveGuideVanishingPoints}
           pixelDragPreview={pixelDragPreview}
           pixelOverlayFrame={pixelOverlayFrame}
           pixelOverlaySel={pixelOverlaySel}

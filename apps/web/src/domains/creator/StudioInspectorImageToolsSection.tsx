@@ -204,6 +204,7 @@ export function StudioInspectorSelectedImageTools({
     quickMaskRadius,
     quickMaskTintColor,
     quickMaskTintOpacity,
+    quickSelectTolerance,
     rasterAvailability,
     redoPixelSelectionState,
     rememberEffectRecent,
@@ -265,6 +266,7 @@ export function StudioInspectorSelectedImageTools({
     setQuickMaskHardness,
     setQuickMaskOpacity,
     setQuickMaskRadius,
+    setQuickSelectTolerance,
     setSelectedId,
     setSmudgeRadius,
     setSmudgeStrength,
@@ -572,7 +574,7 @@ export function StudioInspectorSelectedImageTools({
                         {/* 픽셀 선택 도구 — 사각/타원/자유·다각형 올가미/브러시 + 결합/페더/확장·축소. */}
                         <StudioSelectionToolsPanel
                           selection={pixelSel}
-                          activeTool={pixelTool === "wand" ? null : pixelTool}
+                          activeTool={pixelTool === "wand" || pixelTool === "quick-select" ? null : pixelTool}
                           combineMode={pixelCombine}
                           busy={pixelBusy}
                           brushRadius={pixelBrushRadius}
@@ -645,6 +647,12 @@ export function StudioInspectorSelectedImageTools({
                           onColorRangeRemoveSample={(i) => setColorRangeSamples((prev) => prev.filter((_, idx) => idx !== i))}
                           onColorRangeClearSamples={() => setColorRangeSamples([])}
                           onColorRangeApply={() => void runColorRangeApply()}
+                          quickSelectActive={pixelTool === "quick-select"}
+                          quickSelectTolerance={quickSelectTolerance}
+                          onQuickSelectToleranceChange={setQuickSelectTolerance}
+                          onToggleQuickSelect={() => {
+                            activatePixelSelectionToolFromInspector("quick-select");
+                          }}
                         />
                         <StudioSelectionWorkbenchPanel
                           selection={pixelSel}

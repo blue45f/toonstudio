@@ -102,6 +102,9 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
     studioPageListPaneHandlers,
     tool,
     uiDensityMode,
+    workMode,
+    uiChromeExposure,
+    setUiAdvancedToolsExpanded,
     viewTool,
     viewTransformSuppressed,
     wetMixActive,
@@ -244,7 +247,30 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
           />
         </Suspense>
 
-        {/* Left vertical toolbar — desktop only; mobile uses bottom dock / horizontal belt */}
+        {/* Left vertical toolbar — desktop only; mobile uses bottom dock / horizontal belt.
+            Work-mode gate: "tool-rail" is folded by the lettering/finish modes
+            (studio-work-mode.ts). When the composed gate (uiChromeExposure,
+            density × work mode) says folded, the rail mounts as a slim folded
+            strip instead; its expand button reuses the density
+            advanced-expansion choice, so expanding restores the rail without
+            changing the work mode. An unwired host (no uiChromeExposure)
+            keeps the rail mounted, as before. */}
+        {uiChromeExposure && uiChromeExposure("tool-rail") === "folded" ? (
+          <div
+            data-studio-tool-rail-folded={workMode ?? undefined}
+            className="hidden w-12 shrink-0 flex-col items-center border-r border-line bg-panel py-2 lg:flex"
+          >
+            <button
+              type="button"
+              onClick={() => setUiAdvancedToolsExpanded?.(true)}
+              aria-label="접힌 도구 레일 펼치기"
+              title="이 단계에서는 도구 레일을 접어 둡니다. 펼치면 바로 쓸 수 있어요."
+              className="min-h-11 rounded-full border border-line px-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-panel-2"
+            >
+              도구 펼치기
+            </button>
+          </div>
+        ) : (
         <StudioWorkspaceRegion
           surfaceId="tool-rail"
           label="그리기 도구"
@@ -267,6 +293,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
         <LazyStudioLeftToolRail client={studioLeftToolRailRuntime.client} />
         </Suspense>
         </StudioWorkspaceRegion>
+        )}
 
         {!isMobile && !canvasOnlyMode && !mobileImmersive && !presentationPanelsHidden
           && s.studioOptionsBarsDrawModel.libraryDockOpen ? (

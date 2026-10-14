@@ -192,7 +192,7 @@ export interface StudioShortcutHandlerContext {
   readonly pixelSel: PixelSelection | null;
   readonly pixelSelectionDocumentHistoryOwnsLatestEditRef: { current: boolean };
   readonly pixelSelectionHistoryRef: { readonly current: PixelSelectionHistory };
-  readonly pixelTool: SelectionToolKind | "wand" | null;
+  readonly pixelTool: SelectionToolKind | "wand" | "quick-select" | null;
   readonly pointCommentComposer: object | null;
   readonly polyLassoSessionRef: { readonly current: object | null };
   readonly puppetWarpActive: boolean;
@@ -232,7 +232,7 @@ export interface StudioShortcutHandlerContext {
   readonly setNodeEditTool: Dispatch<SetStateAction<NodeEditTool | null>>;
   readonly setPanelSplitActive: Dispatch<SetStateAction<boolean>>;
   readonly setPanelSplitHint: Dispatch<SetStateAction<string | null>>;
-  readonly setPixelTool: Dispatch<SetStateAction<SelectionToolKind | "wand" | null>>;
+  readonly setPixelTool: Dispatch<SetStateAction<SelectionToolKind | "wand" | "quick-select" | null>>;
   readonly setPuppetWarpActive: Dispatch<SetStateAction<boolean>>;
   readonly setPuppetWarpPins: Dispatch<SetStateAction<PuppetPin[]>>;
   readonly setSecondaryColor: Dispatch<SetStateAction<string>>;
