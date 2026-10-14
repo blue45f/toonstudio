@@ -89,7 +89,10 @@ export function brushStudioV6MaterialActiveTuningKeys(program: BrushStudioV6Mate
     || (pattern ? !gridUsesOnlyPrimary || mode === "particle" : secondaryInBase)) result.add("secondaryColor");
   if (pickupActive) {
     result.add("pickup");
-    result.add("secondaryColor");
+    // At pickup 0 the solver never mixes the secondary pigment (bristle mix and
+    // smudge accumulation both scale with pickup), so the color is not an
+    // effective control until pickup is raised — mirror secondaryInBase.
+    if (program.tuning.pickup > 0) result.add("secondaryColor");
   }
   if (pattern) {
     result.add("patternJitter");

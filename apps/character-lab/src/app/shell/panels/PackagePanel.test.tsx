@@ -181,8 +181,11 @@ interface FakeKit {
 }
 
 /** 합성 kit.json을 돌려주는 키트 등록소(로더 요청을 기록한다). `failure`를 주면 그 실패를 돌려준다. */
+/** 남성 제공분은 2026-10-14 제외 결정 전의 필수 세트를 명시한다(정본 필수 파츠는 irises만으로 축소됨) */
+const MALE_PROVIDED_PRESETS = ["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"];
+
 function fakeKit(options: { readonly failure?: LabFailure; readonly male?: boolean } = {}): FakeKit {
-  const manifest = kitManifestFixture(options.male === false ? { male: false } : {});
+  const manifest = kitManifestFixture(options.male === false ? { male: false } : { malePresets: MALE_PROVIDED_PRESETS });
   const calls: KitManifestRequest[] = [];
   const registry = createKitPlanRegistry({
     async loadManifest(request) {
@@ -308,7 +311,7 @@ describe("PackagePanel — 모듈식 키트", () => {
     expect(command?.type).toBe("source/set");
     if (command?.type !== "source/set") throw new Error("source/set 없음");
     expect(command.source).toEqual({ kind: "kit", kitId: KIT_DEFAULT_ID, baseId: "male", kitVersion: KIT_CURRENT_VERSION });
-    expect(command.capabilities).toEqual(deriveKitCapabilities(kitManifestFixture(), "male"));
+    expect(command.capabilities).toEqual(deriveKitCapabilities(kitManifestFixture({ malePresets: MALE_PROVIDED_PRESETS }), "male"));
     // 남성 베이스는 필수 파츠만 있어 헤어는 부분 지원이고 미제공 프리셋 목록을 싣는다
     expect(command.capabilities.hair.status).toBe("partial");
     expect(command.capabilities.hair.unavailablePresets?.["hair/twin-tail"]).toBe("남성 핏 미제작");

@@ -106,7 +106,7 @@ export function MarketAcquisitionModal({
         if (!controller.signal.aborted) setQuoteLoading(false);
       });
     return () => controller.abort();
-  }, [acquisition?.record.id, open, record.id]);
+  }, [acquisition?.record.id, open, record.id, t]);
 
   if (!open) return null;
 

@@ -184,7 +184,7 @@ export function useMarketResources(query: MarketResourceQuery | null): MarketRes
         loadingMoreRef.current = false;
       }
     };
-  }, [cacheKey, refreshToken, serializedQuery]);
+  }, [cacheKey, refreshToken, serializedQuery, t]);
 
   const loadMore = useCallback(() => {
     if (
@@ -255,7 +255,7 @@ export function useMarketResources(query: MarketResourceQuery | null): MarketRes
         loadingMoreRef.current = false;
         setLoadingMore(false);
       });
-  }, [cacheKey, serializedQuery]);
+  }, [cacheKey, serializedQuery, t]);
 
   const reload = useCallback(() => {
     setRefreshToken((token) => token + 1);

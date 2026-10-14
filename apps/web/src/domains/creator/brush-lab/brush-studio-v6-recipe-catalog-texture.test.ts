@@ -5,12 +5,14 @@ import {
   normalizeStudioBrushTextureSettingsV1,
   studioBrushTextureIsActiveV1,
 } from "../brush/studio-brush-texture-combine-v1";
-import { sampleStudioBrushPatternFieldV1 } from "../brush/studio-brush-pattern-r8-grain-assets";
+import {
+  bakeStudioBrushPatternR8GrainTileV1,
+  sampleStudioBrushPatternFieldV1,
+} from "../brush/studio-brush-pattern-r8-grain-assets";
 import {
   StudioBrushR8GrainRegistry,
   composeStudioBrushR8TipPaperAlphaMap,
 } from "../brush/studio-brush-r8-grain-runtime";
-import { bakeStudioBrushPatternR8GrainTileV1 } from "../brush/studio-brush-pattern-r8-grain-assets";
 
 import { BRUSH_STUDIO_V6_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog";
 import {

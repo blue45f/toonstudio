@@ -142,16 +142,16 @@ export class ErrorBoundary extends Component<Props, State> {
         return (
           <div className="mx-auto w-full max-w-[1320px] px-4 py-16 sm:px-6">
             <div
-              className="mx-auto max-w-md rounded-2xl border border-blue-500/30 bg-blue-500/10 p-10 text-center"
+              className="mx-auto max-w-md rounded-2xl border border-cool/30 bg-cool/10 p-10 text-center"
               role="alert"
             >
-              <WifiOff size={28} className="mx-auto mb-3 text-blue-400" />
+              <WifiOff size={28} className="mx-auto mb-3 text-cool" />
               <h3 className="text-lg font-bold text-fg">{analysis.title}</h3>
               <p className="mt-2 text-sm text-fg-2">{analysis.message}</p>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="mt-5 inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-500 px-4 text-xs font-semibold text-white hover:bg-blue-600 transition-colors"
+                className="mt-5 inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-on-accent hover:bg-accent-2 transition-colors"
               >
                 <RefreshCw size={14} />
                 연결 재시도

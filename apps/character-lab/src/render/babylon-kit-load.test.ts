@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 async function setup(options: KitFixtureOptions = {}, harnessOptions: Parameters<typeof createKitHarness>[0] = {}) {
-  const fixture = await buildKitFixture(options);
+  const fixture = await buildKitFixture({ partIds: FULL_PARTS, ...options });
   const harness = await createKitHarness({ now: 5_000, ...harnessOptions });
   harnesses.push(harness);
   return { fixture, harness };
@@ -108,7 +108,11 @@ function replaceMesh(spec: KitGlbSpec, node: string, change: (mesh: KitGlbSpec["
   return { ...spec, meshes: spec.meshes.map((mesh) => (mesh.node === node ? change(mesh) : mesh)) };
 }
 
-const REQUIRED: readonly PresetId[] = KIT_REQUIRED_PRESETS;
+/**
+ * 이 파일의 기본 로드 집합. 정본 `KIT_REQUIRED_PRESETS`는 2026-10-14 제외 결정으로 irises만으로 축소됐지만,
+ * 로더 검증은 파츠가 실제로 올라간 구성이 전제라 결정 전의 필수 5종을 테스트가 명시한다.
+ */
+const FULL_PARTS: readonly PresetId[] = ["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"];
 
 // ---------------------------------------------------------------- 기본 조립
 
@@ -563,7 +567,7 @@ describe("키트 증분 교체(update)", () => {
   it("파츠 파일이 바뀌면(SHA 다름) 같은 id여도 그 파츠만 교체한다", async () => {
     const { fixture, harness, handle, rig } = await loaded();
     const shifted = (spec: KitGlbSpec): KitGlbSpec => ({ ...spec, meshes: spec.meshes.map((mesh) => ({ ...mesh, primitives: mesh.primitives.map((primitive) => ({ ...primitive, origin: [0.4, 0.8, 0.05] as const })) })) });
-    const changed = await buildKitFixture({ tweaks: { "bottom/jeans": shifted } });
+    const changed = await buildKitFixture({ partIds: FULL_PARTS, tweaks: { "bottom/jeans": shifted } });
     for (const [url, bytes] of changed.files) harness.store.set(url, bytes);
     const oldBottom = partOf(rig, "bottom");
     const oldTop = partOf(rig, "top");
@@ -588,7 +592,7 @@ describe("키트 증분 교체(update)", () => {
 
   it("다른 베이스·키트 버전이면 compatible=false이고 update는 kit-version-mismatch로 거부하되 리그는 그대로다", async () => {
     const { fixture, handle, rig } = await loaded();
-    const male = await buildKitFixture({ baseId: "male" });
+    const male = await buildKitFixture({ baseId: "male", partIds: FULL_PARTS });
     expect(handle.compatible(male.plan)).toBe(false);
     expect(handle.compatible({ ...fixture.plan, kitVersion: fixture.plan.kitVersion + 1 })).toBe(false);
     expect(handle.compatible({ ...fixture.plan, kitId: "other-kit" })).toBe(false);
@@ -847,7 +851,7 @@ describe("키트 로드 실패 경로(fail-visible, 장면 정리)", () => {
     });
 
     it("역할이 두 파일에 중복되면(헤어 파츠 둘) 거부한다", async () => {
-      await expectFailure({ partIds: [...REQUIRED, "hair/hime-cut"] }, "kit-mesh-undeclared", "중복");
+      await expectFailure({ partIds: [...FULL_PARTS, "hair/hime-cut"] }, "kit-mesh-undeclared", "중복");
     });
 
     it("kit-manifest-invalid: 메시 재질이 키트 재질 선언(materials)에 없다", async () => {
@@ -935,7 +939,7 @@ describe("받기 단계의 취소·중단", () => {
 
 describe("키트 해제", () => {
   it("dispose는 노드·메시·재질·텍스처·morph 매니저·스켈레톤을 모두 정리하고 멱등이다", async () => {
-    const { harness, handle, rig } = await loaded({ partIds: [...REQUIRED, "accessory/glasses"] });
+    const { harness, handle, rig } = await loaded({ partIds: [...FULL_PARTS, "accessory/glasses"] });
     expect(sceneCounts(harness).meshes).toBeGreaterThan(15);
     const top = partOf(rig, "top");
     handle.dispose();

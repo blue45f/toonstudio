@@ -62,7 +62,8 @@ describe("app/shell/kit-plan-registry", () => {
     const registry = createKitPlanRegistry(deps);
     const plan = await registry.plan(createKitDefaultRecipe());
     expect(plan.baseId).toBe("female");
-    expect(plan.parts.map((part) => part.id)).toEqual(["base/female", "hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"]);
+    // 기본 레시피 슬롯은 2026-10-14 제외 결정으로 hair·top·bottom·shoes가 null이라 계획은 베이스 + 홍채만 담는다
+    expect(plan.parts.map((part) => part.id)).toEqual(["base/female", "irises/round-large"]);
     expect(plan.parts[0]?.url).toBe(`${KIT_ASSET_ROOT}/bases/female.glb`);
     expect(plan.hairLodPolicy.preferredLod).toBe(0);
     // 여성은 어휘 전부를 제공하므로 15슬롯이 모두 available
@@ -70,7 +71,8 @@ describe("app/shell/kit-plan-registry", () => {
   });
 
   it("남성 베이스는 필수 파츠만 제공하고 미제공 프리셋을 능력 맵의 unavailablePresets로 선언한다", async () => {
-    const { deps } = fakeKit();
+    // 정본 필수 파츠는 irises만으로 축소됐다 — "일부 제공 + 나머지는 미제작" 전제는 fixture에 명시한다
+    const { deps } = fakeKit(kitManifestJson({ malePresets: ["hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"] }));
     const registry = createKitPlanRegistry(deps);
     const recipe: CharacterRecipe = { ...createKitDefaultRecipe("male") };
     const plan = await registry.plan(recipe);

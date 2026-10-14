@@ -10,7 +10,10 @@ import { buildStudioVrmSkinnedGarment, disposeStudioVrmSkinnedGarment } from "./
 import { buildGarmentParts } from "./studio-vrm-wardrobe";
 import { measureStudioVrmWardrobeMetrics } from "./StudioVrmWardrobePropsProjection";
 
-it.each(["sample.vrm", "AvatarSample_B.vrm"])("keeps %s sleeve rings on the arm when it lowers", async (filename) => {
+// AvatarSample_B.vrm was removed from the repo for rights reasons (VRoidPreset terms are
+// not CC0 and prohibit bundled redistribution — see apps/web/public/vrm/LICENSES.md).
+// Sendagaya_Shibu.vrm is the license-cleared CC0 VRoid beta sample from the same family.
+it.each(["sample.vrm", "Sendagaya_Shibu.vrm"])("keeps %s sleeve rings on the arm when it lowers", async (filename) => {
   (globalThis as unknown as { self: typeof globalThis }).self = globalThis;
   const bytes = readFileSync(join(process.cwd(), "apps/web/public/vrm", filename));
   const loader = new GLTFLoader();

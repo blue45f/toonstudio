@@ -112,7 +112,10 @@ describe("saved material brush preservation", () => {
   });
 
   it("preserves material strokes through project export and autosave recovery", () => {
-    const saved = createBrushStudioV6ProductBrush(createBrushStudioV6Program("wax-resist"));
+    // wax-resist rides the private-grant inkwash nodes, so its saved brush is
+    // created under the explicit noncommercial-full opt-in (P0 license
+    // decision); the default profile refuses it, as the BLOCKED cases verify.
+    const saved = createBrushStudioV6ProductBrush(createBrushStudioV6Program("wax-resist"), "noncommercial-full");
     const element = { id: "material-stroke", type: "draw", mode: "pen", brush: "brush", points: [10, 20, 30, 40],
       stroke: saved.color, strokeWidth: saved.strokeWidth, brushEnginePrograms: saved.enginePrograms };
     const project = { version: 2 as const, title: "Material", pagesList: [{ id: "page", elements: [element], bg: "#fff", bgGrad: null, canvasH: 900 }] };
@@ -123,7 +126,7 @@ describe("saved material brush preservation", () => {
   });
 
   it("keeps paint material independent of eraser settings through tool memory reload", () => {
-    const saved = createBrushStudioV6ProductBrush(createBrushStudioV6Program("mineral-bloom"));
+    const saved = createBrushStudioV6ProductBrush(createBrushStudioV6Program("mineral-bloom"), "noncommercial-full");
     let memory = normalizeStudioToolOperationMemory(null);
     memory = rememberStudioToolOperationSnapshot(memory, "paint", saved);
     memory = rememberStudioToolOperationSnapshot(memory, "erase", { ...memory.erase, strokeWidth: 52 });

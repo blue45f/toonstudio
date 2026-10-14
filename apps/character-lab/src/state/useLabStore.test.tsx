@@ -42,12 +42,13 @@ describe("state/useLabStore", () => {
     const store = makeStore();
     const renders = { count: 0 };
     render(<SlotsView store={store} renders={renders} />);
-    expect(screen.getByTestId("slots").textContent).toBe("hair/soft-bob,top/tee");
+    // 기본 레시피는 hair·top 모두 미선택(null)이다(2026-10-14 기본 슬롯 정본).
+    expect(screen.getByTestId("slots").textContent).toBe(",");
     const after = renders.count;
     act(() => store.dispatch({ type: "param/set", group: "body", key: "height", value: 0.2 }));
     expect(renders.count).toBe(after);
     act(() => store.dispatch({ type: "slot/apply", slot: "hair", presetId: "hair/twin-tail" }));
-    expect(screen.getByTestId("slots").textContent).toBe("hair/twin-tail,top/tee");
+    expect(screen.getByTestId("slots").textContent).toBe("hair/twin-tail,");
     expect(renders.count).toBe(after + 1);
   });
 

@@ -47,6 +47,7 @@ describe("grain texture-section wiring (normalize)", () => {
       brightness: 1,
       contrast: 0,
       invert: true,
+      depthControl: null,
     });
     expect(serializeStudioBrushGrainSettingsCanonical(normalized).startsWith(
       "{\"space\":\"stroke-fixed\",\"amount\":0.375,\"scale\":6.25,\"contrast\":0.5,\"seed\":73,\"texture\":",

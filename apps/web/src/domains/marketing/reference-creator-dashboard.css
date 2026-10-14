@@ -206,7 +206,16 @@
 .rd-core-secondary { display: inline-flex; align-items: center; gap: 4px; color: var(--rd-muted); font-size: 13px; font-weight: 700; }
 .rd-core-secondary:hover { color: var(--rd-fg); }
 
-/* 더 알아보기 */
+/* 더 알아보기 밴드 — 4밴드 중 마지막, 기본 접힘 (BLUEPRINT §3.3; 마라톤 S3-8 정본 규칙) */
+.rd-more { margin-top: 36px; border-block: 1px solid var(--rd-border); }
+.rd-more-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; min-height: 44px; padding: 10px 0; color: var(--rd-fg); font-size: 15px; font-weight: 800; cursor: pointer; list-style: none; }
+.rd-more-summary::-webkit-details-marker { display: none; }
+.rd-more-summary > small { color: var(--rd-muted); font-size: 13px; font-weight: 600; }
+.rd-more-summary > svg { flex: none; color: var(--rd-muted); transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+.rd-more[open] > .rd-more-summary > svg { transform: rotate(180deg); }
+.rd-more-summary:focus-visible { outline: 3px solid var(--rd-cyan); outline-offset: 3px; }
+.rd-more .rd-quick { margin-top: 24px; }
+.rd-more > .rd-chapters { border-block: 0; }
 .rd-chapters { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 22px; margin-top: 36px; border-block: 1px solid var(--rd-border); }
 .rd-chapters-label { color: var(--rd-subtle); font-size: 13px; font-weight: 800; letter-spacing: .08em; }
 .rd-chapters a { display: inline-flex; align-items: center; gap: 7px; color: var(--rd-muted); font-size: 14px; font-weight: 650; }

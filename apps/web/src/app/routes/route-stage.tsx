@@ -145,11 +145,11 @@ export function RouteStage({ pathname, search, accessibleTitle, children }: Rout
         <section
           data-route-recovery=""
           role="alert"
-          className="mx-auto my-6 w-[min(92%,46rem)] rounded-2xl border border-amber-500/35 bg-amber-500/10 p-5 shadow-lg backdrop-blur-sm sm:p-6"
+          className="mx-auto my-6 w-[min(92%,46rem)] rounded-2xl border border-warn/35 bg-warn/10 p-5 shadow-lg backdrop-blur-sm sm:p-6"
           aria-labelledby="route-recovery-title"
         >
           <div className="flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-500"><AlertTriangle size={20} aria-hidden="true" /></span>
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-warn/30 bg-warn/10 text-warn"><AlertTriangle size={20} aria-hidden="true" /></span>
             <div className="min-w-0">
               <h2 id="route-recovery-title" className="font-display text-lg font-bold text-fg">
                 {bi("화면 표시가 예상보다 오래 걸리고 있어요.", "This page is taking longer than expected.")}

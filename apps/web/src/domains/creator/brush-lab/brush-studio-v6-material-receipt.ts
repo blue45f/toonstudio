@@ -11,7 +11,7 @@ export function createBrushStudioV6MaterialReceipt(
   const material = normalizeBrushStudioV6MaterialConfig(program);
   if (!material) throw new Error("브러시 재질 설정을 읽을 수 없어요.");
   const plan = planBrushStudioV6ProviderRuntime(brushStudioV6ActiveNodes(program), licenseProfile);
-  if (!plan.valid) throw new Error(`현재 재료 엔진에서 실행할 수 없어요: ${plan.blockedNodeIds.join(", ")}`);
+  if (!plan.valid) throw new Error(`무폴백 정책상 현재 재료 엔진에서 실행할 수 없어요: ${plan.blockedNodeIds.join(", ")}`);
   const result = normalizeBrushStudioV6MaterialConfig({
     ...material, version: 2,
     runtime: { version: 1, fallbackPolicy: "none", licenseProfile: plan.licenseProfile,

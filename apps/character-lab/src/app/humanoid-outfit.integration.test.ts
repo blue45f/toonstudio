@@ -76,7 +76,9 @@ describe("humanoid × outfit(실제 포트)", () => {
     const recipe = createDefaultRecipe();
     const model = await buildSource(recipe);
     expect(() => assertHumanoidModel(model)).not.toThrow();
-    expect(model.parts.map((part) => part.role)).toContain("hair");
+    // 기본 레시피는 hair 미선택(null)이라 헤어 파츠가 없다(2026-10-14 기본 슬롯 정본). 베이스 역할만 확인한다.
+    expect(model.parts.map((part) => part.role)).toContain("skin");
+    expect(model.parts.map((part) => part.role)).toContain("head");
     expect(humanoidModelDigest(model)).toBe(humanoidModelDigest(await buildSource(recipe)));
   }, 60000);
 

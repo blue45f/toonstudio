@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ALL_AVAILABLE_CAPABILITIES, CHARACTER_SLOT_KINDS, createPresetCatalog } from "../../contracts";
+import { ALL_AVAILABLE_CAPABILITIES, CHARACTER_SLOT_KINDS, createDefaultRecipe, createPresetCatalog } from "../../contracts";
 import { createMockLabStore, MockLabProvider } from "../../testing/mock-store";
 import { vocabularyCatalogEntries } from "../../testing/recipe-fixtures";
 
@@ -15,8 +15,11 @@ describe("app/shell/SlotRail", () => {
   it("15칸을 그리고 클릭하면 활성 슬롯이 바뀐다", () => {
     const ui = createUiStateStore();
     const catalog = createPresetCatalog(vocabularyCatalogEntries());
+    // 기본 레시피의 헤어 슬롯은 2026-10-14 제외 결정으로 null이라, 라벨 표시는 헤어를 고른 레시피로 확인한다
+    const base = createDefaultRecipe();
+    const recipe = { ...base, slots: { ...base.slots, hair: "hair/soft-bob" as const } };
     render(
-      <MockLabProvider catalog={catalog} shell={{ ui }}>
+      <MockLabProvider catalog={catalog} initialState={{ recipe }} shell={{ ui }}>
         <SlotRail />
       </MockLabProvider>,
     );

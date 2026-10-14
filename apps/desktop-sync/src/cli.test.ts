@@ -11,7 +11,6 @@ import { pathToFileURL } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { MemoryDesktopCredentialVault } from "./credential-vault.js";
 import {
   executeDesktopSyncCli,
   isDesktopSyncCliEntrypoint,
@@ -19,6 +18,7 @@ import {
   parseDesktopSyncResolveArguments,
   runDesktopSyncCli,
 } from "./cli.js";
+import { MemoryDesktopCredentialVault } from "./credential-vault.js";
 
 const roots: string[] = [];
 

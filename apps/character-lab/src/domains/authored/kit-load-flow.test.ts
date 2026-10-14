@@ -156,7 +156,7 @@ describe("authored/kit-load-flow — 계획까지", () => {
 
   it("manifest를 읽어 선택 슬롯의 계획을 만들고 파일 url에 rootUrl을 쓴다", async () => {
     const { port } = portOf({ "/custom/kit/kit.json": kitManifestJson() });
-    const result = await loadKitPlanFlow(port, SOURCE, KIT_DEFAULT_SLOTS, { sha256: sha256Of(OBSERVED), rootUrl: "/custom/kit", now: 1 }, { preferredHairLod: 1 });
+    const result = await loadKitPlanFlow(port, SOURCE, { ...KIT_DEFAULT_SLOTS, hair: "hair/soft-bob", top: "top/tee", bottom: "bottom/jeans", shoes: "shoes/sneakers" }, { sha256: sha256Of(OBSERVED), rootUrl: "/custom/kit", now: 1 }, { preferredHairLod: 1 });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.plan.parts.map((part) => part.id)).toEqual(["base/female", "hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers", "irises/round-large"]);

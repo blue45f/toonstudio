@@ -53,7 +53,7 @@ const QUALITY_META: Readonly<
   idle: Object.freeze({
     label: "입력 대기",
     detail: "캔버스에서 펜으로 한 획을 그리면 장치 신호를 분석합니다.",
-    className: "border-line bg-bg-2/70 text-fg-3",
+    className: "border-line bg-card/70 text-fg-3",
   }),
   compatibility: Object.freeze({
     label: "호환 입력",
@@ -374,7 +374,7 @@ export function StudioDrawingInputDeckPanel({
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 overscroll-contain">
         <section
           aria-labelledby="studio-drawing-input-health-heading"
-          className="rounded-xl border border-line/70 bg-bg-2/45 p-2.5"
+          className="rounded-xl border border-line/70 bg-card/45 p-2.5"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -483,32 +483,32 @@ export function StudioDrawingInputDeckPanel({
                 </div>
               </div>
               <div className="flex flex-wrap gap-1 text-[0.52rem] font-semibold text-fg-3">
-                <span className="rounded bg-bg-2 px-1.5 py-1">
+                <span className="rounded bg-card px-1.5 py-1">
                   기울기 {latest ? `${Math.round(latest.tiltMagnitude)}°` : "—"}
                 </span>
-                <span className="rounded bg-bg-2 px-1.5 py-1">
+                <span className="rounded bg-card px-1.5 py-1">
                   회전 {latest ? `${Math.round(latest.twist)}°` : "—"}
                 </span>
-                <span className="rounded bg-bg-2 px-1.5 py-1">
+                <span className="rounded bg-card px-1.5 py-1">
                   고도 {latest?.altitudeAngle == null
                     ? "—"
                     : `${Math.round(latest.altitudeAngle)}°`}
                 </span>
-                <span className="rounded bg-bg-2 px-1.5 py-1">
+                <span className="rounded bg-card px-1.5 py-1">
                   방위 {latest?.azimuthAngle == null
                     ? "—"
                     : `${Math.round(latest.azimuthAngle)}°`}
                 </span>
-                <span className="rounded bg-bg-2 px-1.5 py-1">
+                <span className="rounded bg-card px-1.5 py-1">
                   측압 {latest ? signedPercent(latest.tangentialPressure) : "—"}
                 </span>
-                <span className="rounded bg-bg-2 px-1.5 py-1">
+                <span className="rounded bg-card px-1.5 py-1">
                   접촉 {latest ? `${latest.contactWidth}×${latest.contactHeight}` : "—"}
                 </span>
               </div>
             </div>
             <div className="flex items-center justify-center gap-2 border-l border-line/50 pl-2">
-              <span className="relative grid size-10 place-items-center rounded-full border border-line bg-bg-2">
+              <span className="relative grid size-10 place-items-center rounded-full border border-line bg-card">
                 <span
                   aria-hidden="true"
                   className="absolute h-px w-7 origin-center bg-accent transition-transform duration-75 motion-reduce:transition-none"
@@ -527,7 +527,7 @@ export function StudioDrawingInputDeckPanel({
                 "rounded-full border px-2 py-1 text-[0.52rem] font-bold",
                 telemetry?.coalescedSupported
                   ? "border-good/35 bg-good/10 text-good"
-                  : "border-line bg-bg-2 text-fg-3"
+                  : "border-line bg-card text-fg-3"
               )}
             >
               Coalesced {telemetry?.coalescedSupported ? "감지" : "미감지"}
@@ -537,7 +537,7 @@ export function StudioDrawingInputDeckPanel({
                 "rounded-full border px-2 py-1 text-[0.52rem] font-bold",
                 telemetry?.predictedSupported
                   ? "border-good/35 bg-good/10 text-good"
-                  : "border-line bg-bg-2 text-fg-3"
+                  : "border-line bg-card text-fg-3"
               )}
             >
               Predicted {telemetry?.predictedSupported ? "감지" : "미감지"}
@@ -547,7 +547,7 @@ export function StudioDrawingInputDeckPanel({
                 "rounded-full border px-2 py-1 text-[0.52rem] font-bold",
                 telemetry?.tiltObserved
                   ? "border-accent/35 bg-accent-soft text-accent"
-                  : "border-line bg-bg-2 text-fg-3"
+                  : "border-line bg-card text-fg-3"
               )}
             >
               Tilt {telemetry?.tiltObserved ? "입력됨" : "대기"}
@@ -557,7 +557,7 @@ export function StudioDrawingInputDeckPanel({
                 "rounded-full border px-2 py-1 text-[0.52rem] font-bold",
                 telemetry?.twistObserved
                   ? "border-accent/35 bg-accent-soft text-accent"
-                  : "border-line bg-bg-2 text-fg-3"
+                  : "border-line bg-card text-fg-3"
               )}
             >
               Twist {telemetry?.twistObserved ? "입력됨" : "대기"}
@@ -567,7 +567,7 @@ export function StudioDrawingInputDeckPanel({
                 "rounded-full border px-2 py-1 text-[0.52rem] font-bold",
                 telemetry?.tangentialPressureObserved
                   ? "border-accent/35 bg-accent-soft text-accent"
-                  : "border-line bg-bg-2 text-fg-3"
+                  : "border-line bg-card text-fg-3"
               )}
             >
               Barrel {telemetry?.tangentialPressureObserved ? "입력됨" : "대기"}
@@ -577,7 +577,7 @@ export function StudioDrawingInputDeckPanel({
                 "rounded-full border px-2 py-1 text-[0.52rem] font-bold",
                 telemetry?.hoverObserved
                   ? "border-accent/35 bg-accent-soft text-accent"
-                  : "border-line bg-bg-2 text-fg-3"
+                  : "border-line bg-card text-fg-3"
               )}
             >
               Hover {telemetry?.hoverObserved ? "입력됨" : "대기"}
@@ -597,7 +597,7 @@ export function StudioDrawingInputDeckPanel({
 
         <section
           aria-labelledby="studio-drawing-input-profiles-heading"
-          className="rounded-xl border border-line/70 bg-bg-2/45 p-2.5"
+          className="rounded-xl border border-line/70 bg-card/45 p-2.5"
         >
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -697,7 +697,7 @@ export function StudioDrawingInputDeckPanel({
         </section>
       </div>
 
-      <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-line/70 bg-bg-2/60 px-3 py-2.5">
+      <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-line/70 bg-card/60 px-3 py-2.5">
         <span className="inline-flex min-w-0 items-center gap-1 text-[0.53rem] text-fg-3">
           {latest?.pointerType === "mouse" ? (
             <MousePointer2 size={12} aria-hidden="true" />

@@ -228,6 +228,8 @@ export default defineConfig(
         pattern: 'apps/web/src/shared/components/feedback/**/*',
         mode: 'full',
       },
+      // 스튜디오 라우트 전용 시트(app/styles에서 이전) — domains→shared 허용 규칙으로 소비한다.
+      { type: 'shared', pattern: 'apps/web/src/shared/styles/**/*', mode: 'full' },
       { type: 'shared', pattern: 'apps/web/src/catalog-static*.ts', mode: 'full' },
       { type: 'infrastructure', pattern: 'apps/web/src/platform/**/*', mode: 'full' },
     ],

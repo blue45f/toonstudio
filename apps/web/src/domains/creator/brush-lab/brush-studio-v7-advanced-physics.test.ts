@@ -65,8 +65,29 @@ function signature(marks: readonly BrushStudioV6MaterialMark[]): string[] {
     expect(new Set(BRUSH_STUDIO_V7_ADVANCED_RECIPE_SEEDS.map((entry) => entry.id)).size).toBe(24);
     expect(ADVANCED_NODE_IDS.every((id) => brushStudioV6MaterialNodeExecution(id) === "native")).toBe(true);
     for (const seed of BRUSH_STUDIO_V7_ADVANCED_RECIPE_SEEDS) {
-      const analysis = analyzeBrushStudioV6Program(createBrushStudioV6Program(seed.id), BRUSH_STUDIO_V6_FULL_CAPABILITIES);
-      expect(analysis.valid, `${seed.id}: ${analysis.issues.map((issue) => issue.id).join(", ")}`).toBe(true);
+      const program = createBrushStudioV6Program(seed.id);
+      const analysis = analyzeBrushStudioV6Program(program, BRUSH_STUDIO_V6_FULL_CAPABILITIES);
+      if (analysis.rightsProfile === "commercial-safe") {
+        expect(analysis.valid, `${seed.id}: ${analysis.issues.map((issue) => issue.id).join(", ")}`).toBe(true);
+        continue;
+      }
+      // [라이선스 P0] 비상업·private-grant 권리(inkwash 계열)를 쓰는 레시피는 기본
+      // 프로필(permissive-only)에서 설계상 차단된다. 이 테스트는 그 차단을 우회하지
+      // 않고 명시한다: 기본 프로필에서는 라이선스/제공자 사유로만 막혀 있어야 하고,
+      // 저장 프로그램의 명시 opt-in 경로인 "noncommercial-full"에서는 유효해야 한다.
+      const profileIssueIds = new Set(
+        analysis.issues
+          .filter((issue) => issue.id.startsWith("license-") || issue.id.startsWith("provider-"))
+          .map((issue) => issue.id),
+      );
+      expect(profileIssueIds.size, `${seed.id}: 기본 프로필 차단 사유가 없습니다`).toBeGreaterThan(0);
+      expect(analysis.valid, `${seed.id}: 기본 프로필에서 차단되어야 합니다`).toBe(false);
+      const unexpectedErrors = analysis.issues.filter(
+        (issue) => issue.severity === "error" && !profileIssueIds.has(issue.id),
+      );
+      expect(unexpectedErrors, `${seed.id}: ${unexpectedErrors.map((issue) => issue.id).join(", ")}`).toEqual([]);
+      const optedIn = analyzeBrushStudioV6Program(program, BRUSH_STUDIO_V6_FULL_CAPABILITIES, "noncommercial-full");
+      expect(optedIn.valid, `${seed.id} (noncommercial-full): ${optedIn.issues.map((issue) => issue.id).join(", ")}`).toBe(true);
     }
   });
 

@@ -15,7 +15,9 @@ const drawOptionsSource = readFileSync(
   resolve(process.cwd(), "apps/web/src/domains/creator/brush/StudioDrawOptionsBar.tsx"),
   "utf8"
 );
-const studioGlobalsSource = readFileSync(resolve(process.cwd(), "apps/web/src/app/styles/globals.css"), "utf8");
+// 스튜디오 전용 규칙의 정본은 studio-route.css다 — globals.css 머리말 정책상 스튜디오
+// 규칙은 그쪽에만 두고 스튜디오 라우트 청크에서만 로드한다(docs/perf/bundle-gate.md).
+const studioRouteSource = readFileSync(resolve(process.cwd(), "apps/web/src/app/styles/studio-route.css"), "utf8");
 
 afterEach(cleanup);
 
@@ -630,11 +632,11 @@ describe("StudioDrawOptionsBar", () => {
     for (const control of ["brush", "shape", "size", "opacity", "stabilizer"]) {
       expect(drawOptionsSource).toContain(`data-studio-core-draw-control="${control}"`);
     }
-    expect(studioGlobalsSource).toContain("container-name: studio-draw-options");
-    expect(studioGlobalsSource).toContain("@container studio-draw-options (max-width: 60rem)");
-    expect(studioGlobalsSource).toContain('[data-studio-draw-secondary-action="favorite"]');
-    expect(studioGlobalsSource).toContain('[data-studio-draw-options-primary="true"]::-webkit-scrollbar');
-    expect(studioGlobalsSource).toContain("scrollbar-width: auto");
+    expect(studioRouteSource).toContain("container-name: studio-draw-options");
+    expect(studioRouteSource).toContain("@container studio-draw-options (max-width: 60rem)");
+    expect(studioRouteSource).toContain('[data-studio-draw-secondary-action="favorite"]');
+    expect(studioRouteSource).toContain('[data-studio-draw-options-primary="true"]::-webkit-scrollbar');
+    expect(studioRouteSource).toContain("scrollbar-width: auto");
   });
 
   it("gives high-frequency primary controls one rich coach target without native-title duplication", () => {

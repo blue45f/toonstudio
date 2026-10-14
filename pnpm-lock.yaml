@@ -521,7 +521,7 @@ importers:
         specifier: ^5.12.1
         version: 5.12.1
       rollup-plugin-visualizer:
-        specifier: ^7.1.1
+        specifier: 7.1.1
         version: 7.1.1(rolldown@1.0.3)
       secretlint:
         specifier: ^13.0.5

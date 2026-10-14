@@ -29,7 +29,8 @@ describe("authored/kit-capability — 규칙 판정", () => {
   });
 
   it("남성 베이스는 필수 파츠만 있으면 파츠 슬롯이 partial이고 미제공 프리셋마다 한글 사유가 붙는다", () => {
-    const manifest = kitManifestFixture();
+    // 2026-10-14 제외 결정으로 KIT_REQUIRED_PRESETS가 irises만으로 축소됐다 — "일부 파츠만 제공" 전제는 fixture에 명시한다
+    const manifest = kitManifestFixture({ malePresets: [...KIT_REQUIRED_PRESETS, "hair/soft-bob", "top/tee", "bottom/jeans", "shoes/sneakers"] });
     const male = deriveKitCapabilities(manifest, "male");
     expect(male.hair.status).toBe("partial");
     expect(male.hair.reasonKo).toBe("제공 1/7종, 미제공: short-layered, romance-long, action-pony, hime-cut, wolf-layered, twin-tail");
@@ -51,7 +52,7 @@ describe("authored/kit-capability — 규칙 판정", () => {
   });
 
   it("남성에게 일부 프리셋을 추가하면 제공 수와 미제공 목록이 따라 바뀐다", () => {
-    const manifest = kitManifestFixture({ malePresets: [...KIT_REQUIRED_PRESETS, "hair/short-layered", "accessory/glasses"] });
+    const manifest = kitManifestFixture({ malePresets: [...KIT_REQUIRED_PRESETS, "hair/soft-bob", "hair/short-layered", "accessory/glasses"] });
     const male = deriveKitCapabilities(manifest, "male");
     expect(male.hair.reasonKo).toBe("제공 2/7종, 미제공: romance-long, action-pony, hime-cut, wolf-layered, twin-tail");
     expect(male.accessory.status).toBe("partial");
@@ -180,17 +181,18 @@ describe("authored/kit-capability — 선언 대조", () => {
 
   it("상태·미제공 프리셋 집합·누락 선언의 차이를 슬롯별 한글 사유로 알린다", () => {
     const derived = deriveKitCapabilities(kitManifestFixture(), "male");
-    const status = compareKitCapabilities(derived, { ...derived, hair: { status: "available" } });
+    // 기본 fixture의 남성 판정에서 partial인 슬롯은 irises뿐이다(헤어·상의 등은 제공 0종이라 unavailable)
+    const status = compareKitCapabilities(derived, { ...derived, irises: { status: "available" } });
     expect(status).toHaveLength(1);
-    expect(status[0]?.slot).toBe("hair");
-    expect(status[0]?.reasonKo).toBe("헤어(hair): 선언 상태 available이(가) 규칙 판정 partial과 다릅니다.");
+    expect(status[0]?.slot).toBe("irises");
+    expect(status[0]?.reasonKo).toBe("눈동자(irises): 선언 상태 available이(가) 규칙 판정 partial과 다릅니다.");
 
-    const presets = compareKitCapabilities(derived, { ...derived, top: { ...derived.top, unavailablePresets: { "top/hoodie": "x" } } });
-    expect(presets[0]?.reasonKo).toMatch(/^상의\(top\): 미제공 프리셋 목록이 다릅니다/u);
+    const presets = compareKitCapabilities(derived, { ...derived, irises: { ...derived.irises, unavailablePresets: { "irises/cat": "x" } } });
+    expect(presets[0]?.reasonKo).toMatch(/^눈동자\(irises\): 미제공 프리셋 목록이 다릅니다/u);
 
     const { shoes: _omitted, ...withoutShoes } = derived;
     const missing = compareKitCapabilities(derived, withoutShoes);
-    expect(missing).toEqual([{ slot: "shoes", reasonKo: "신발(shoes): 선언이 없습니다(규칙 판정 partial)." }]);
+    expect(missing).toEqual([{ slot: "shoes", reasonKo: "신발(shoes): 선언이 없습니다(규칙 판정 unavailable)." }]);
   });
 
   it("manifest 전체 대조는 어긋난 베이스만 모으고, 선언 자체가 없으면 slot null로 알린다", () => {
