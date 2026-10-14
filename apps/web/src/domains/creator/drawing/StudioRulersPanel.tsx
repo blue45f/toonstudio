@@ -956,7 +956,8 @@ export function StudioRulersPanel({
                     perspectiveCanvas.height,
                   )}
                   r="3.5"
-                  fill="#f59e0b"
+                  fill="currentColor"
+                  className="text-warn"
                 />
               ))}
           </svg>

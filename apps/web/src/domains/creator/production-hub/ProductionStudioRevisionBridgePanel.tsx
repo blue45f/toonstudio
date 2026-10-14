@@ -108,7 +108,7 @@ export function ProductionStudioRevisionBridgePanel({
       if (signal?.aborted) return;
       setState({ kind: "error", message: errorMessage(cause, t("productionHub.revisionBridge.loadFailed", "Studio 정본을 불러오지 못했습니다.")) });
     }
-  }, [aggregate.workId, enabled]);
+  }, [aggregate.workId, enabled, t]);
 
   useEffect(() => {
     void refresh();

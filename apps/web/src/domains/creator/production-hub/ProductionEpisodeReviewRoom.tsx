@@ -143,12 +143,12 @@ export function ProductionEpisodeReviewRoom({
   // 보기 탭은 주소에 남겨 링크로 공유하거나 새로고침해도 같은 화면을 연다.
   const [params, setParams] = useSearchParams();
   const tab: RoomTab = params.get("roomView") === "compare" ? "compare" : "viewer";
-  const setTab = (next: RoomTab) => setParams((previous) => {
+  const setTab = useCallback((next: RoomTab) => setParams((previous) => {
     const updated = new URLSearchParams(previous);
     if (next === "compare") updated.set("roomView", "compare");
     else updated.delete("roomView");
     return updated;
-  }, { replace: true });
+  }, { replace: true }), [setParams]);
   const [comments, setComments] = useState<StudioCommentsDocument | null>(() =>
     isDemo ? createEpisodeSampleComments(aggregate, new Date()) : null);
   const [approving, setApproving] = useState(false);

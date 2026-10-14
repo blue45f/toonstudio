@@ -473,7 +473,7 @@ export function applyColorLookupAdjustment(
   const data = img.data;
   for (let i = 0; i < data.length; i += 4) {
     let rn = data[i]! / 255;
-    let gn = data[i + 1]! / 255;
+    const gn = data[i + 1]! / 255;
     let bn = data[i + 2]! / 255;
     if (bgr) [rn, bn] = [bn, rn];
     const rp = rn * (size - 1);

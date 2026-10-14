@@ -26,7 +26,7 @@ interface DemoAdapter {
 }
 export function useProductionProjectSession(projectId: string | undefined, actorId: string | null, demo: DemoAdapter) {
   const t = useT();
-  const demoTranslate: ProductionDemoTranslate = (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) => values ? t(key, values, fallback) : t(key, fallback);
+  const demoTranslate: ProductionDemoTranslate = useCallback((key: string, fallback: string, values?: Readonly<Record<string, string | number>>) => values ? t(key, values, fallback) : t(key, fallback), [t]);
   const staleMessage = t("productionHub.session.stale", "계정이나 프로젝트가 변경되어 요청을 중지했습니다. 현재 화면에서 다시 시도하세요.");
   const isDemo = !projectId || projectId === "sample-project";
   const authRevision = useSyncExternalStore(subscribeToSession, getAuthSessionRevision, getAuthSessionRevision);
@@ -99,7 +99,7 @@ export function useProductionProjectSession(projectId: string | undefined, actor
       window.removeEventListener("focus", onWake); document.removeEventListener("visibilitychange", onWake);
       channel.current?.close(); channel.current = null;
     };
-  }, [scope, projectId, actorId, authRevision, isDemo, demo]);
+  }, [scope, projectId, actorId, authRevision, isDemo, demo, t]);
   const queueCommand = useCallback((command: ProductionClientCommand, message: string, strict: boolean): Promise<void> => {
     const epoch = generation.current, session = getAuthSessionRevision(), batch = queueEpoch.current;
     const current = () => authorityScope.current === scope && generation.current === epoch && getAuthSessionRevision() === session && session === authRevision;
@@ -152,7 +152,7 @@ export function useProductionProjectSession(projectId: string | undefined, actor
     const operation = queue.current.then(run, run);
     queue.current = operation.catch(() => undefined);
     return operation;
-  }, [scope, authRevision, isDemo, projectId, demo]);
+  }, [scope, authRevision, isDemo, projectId, demo, demoTranslate, staleMessage, t]);
   const execute = useCallback((command: ProductionClientCommand, message: string) => queueCommand(command, message, false), [queueCommand]);
   const executeStrict = useCallback((command: ProductionClientCommand, message: string) => queueCommand(command, message, true), [queueCommand]);
   const refresh = useCallback(() => refreshRef.current(), []);
