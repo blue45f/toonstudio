@@ -29,7 +29,7 @@ import {
   readStudioForeshadowLedger,
   type ForeshadowOverdueNotice,
 } from "./studio-foreshadow-ledger";
-import { currentPlanningEpisodeId } from "./StudioProjectStoryPlanning";
+import { currentPlanningEpisodeId } from "./studio-planning-current-episode";
 
 function loadNotice(projectId: string): ForeshadowOverdueNotice | null {
   if (typeof window === "undefined") return null;

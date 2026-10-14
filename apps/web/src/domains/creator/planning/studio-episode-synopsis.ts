@@ -34,6 +34,8 @@ export interface EpisodeSynopsisExtension {
    * 되찾을 수 없기 때문에 적용 시점에 함께 저장한다.
    */
   readonly seedSettingRefs?: readonly EpisodeSeedSettingRef[];
+  /** 다음 화 훅 설계 두 칸. 없으면 빈 칸으로 판정한다. */
+  readonly hookDesign?: EpisodeHookDesignInput;
 }
 
 /** 씨앗 인용 출처 한 건 — 적용 시점에 풀어 둔 최소 모양(id·종류·이름). */
@@ -42,6 +44,12 @@ export interface EpisodeSeedSettingRef {
   readonly kind: "character" | "location" | "lore";
   /** 이름으로 풀지 못한 출처는 빈 문자열 — 표시 쪽이 id 로 폴백한다. */
   readonly name: string;
+}
+
+/** 다음 화 훅 설계 두 칸 — 마지막 장면의 질문과 다음 화 첫 장면. 둘 다 선택 확장이다. */
+export interface EpisodeHookDesignInput {
+  readonly lastSceneQuestion: string;
+  readonly nextOpening: string;
 }
 
 /**
@@ -88,6 +96,39 @@ export interface EpisodeStoryCard {
   readonly cliffhangerLine: string;
   /** 시놉시스 핵심 칸이 비어 있으면 true — 카드에 "줄거리 쓰기" 유도 표시에 쓴다. */
   readonly needsSynopsis: boolean;
+  /** 훅 설계 두 칸이 다 찼으면 false. */
+  readonly needsHookDesign: boolean;
+  /** 남기는 질문 줄 — 마지막 장면의 질문 공백 정리본, 없으면 "". */
+  readonly hookQuestionLine: string;
+}
+
+export type EpisodeHookDesignField = "lastSceneQuestion" | "nextOpening";
+
+export interface EpisodeHookDesignView {
+  readonly complete: boolean;
+  readonly missing: readonly EpisodeHookDesignField[];
+  readonly design: { readonly lastSceneQuestion: string; readonly nextOpening: string };
+}
+
+/** 다음 화 훅 설계 두 칸의 공백 정리본과 빈 칸 판정. 공백만 있으면 빈 칸이다. */
+export function episodeHookDesign(plan: EpisodePlanWithSynopsis): EpisodeHookDesignView {
+  const lastSceneQuestion = plan.hookDesign?.lastSceneQuestion.trim() ?? "";
+  const nextOpening = plan.hookDesign?.nextOpening.trim() ?? "";
+  const missing: EpisodeHookDesignField[] = [];
+  if (!lastSceneQuestion) missing.push("lastSceneQuestion");
+  if (!nextOpening) missing.push("nextOpening");
+  return Object.freeze({
+    complete: missing.length === 0,
+    missing: Object.freeze(missing),
+    design: Object.freeze({ lastSceneQuestion, nextOpening }),
+  });
+}
+
+/** QC 브리지 — QC extras와 같은 모양으로 정리된 설계 값을 돌려준다. */
+export function episodeHookQcExtras(plan: EpisodePlanWithSynopsis): {
+  readonly nextEpisodeHook: { readonly lastSceneQuestion: string; readonly nextOpening: string };
+} {
+  return Object.freeze({ nextEpisodeHook: episodeHookDesign(plan).design });
 }
 
 export function episodeStoryCard(plan: EpisodePlanWithSynopsis): EpisodeStoryCard {
@@ -95,6 +136,7 @@ export function episodeStoryCard(plan: EpisodePlanWithSynopsis): EpisodeStoryCar
   const emotionLine = plan.emotionalArc
     ? `${plan.emotionalArc.from} → ${plan.emotionalArc.to}`
     : "";
+  const hook = episodeHookDesign(plan);
   return Object.freeze({
     episodeId: plan.episodeId,
     episodeNumber: plan.episodeNumber,
@@ -104,6 +146,8 @@ export function episodeStoryCard(plan: EpisodePlanWithSynopsis): EpisodeStoryCar
     emotionLine,
     cliffhangerLine: plan.cliffhanger.trim(),
     needsSynopsis: !(plan.synopsis?.trim() || plan.goal?.trim()),
+    needsHookDesign: !hook.complete,
+    hookQuestionLine: hook.design.lastSceneQuestion,
   });
 }
 
@@ -344,6 +388,13 @@ export function synopsisHints(plan: EpisodePlanWithSynopsis): readonly string[] 
   }
   if (plan.emotionalArc && !plan.emotionalArc.from.trim() && !plan.emotionalArc.to.trim()) {
     hints.push("감정 변화가 비어 있어요. 시작 감정만 적어도 충분해요.");
+  }
+  const hookMissing = episodeHookDesign(plan).missing;
+  if (hookMissing.length > 0) {
+    const names = hookMissing.map((field) =>
+      field === "lastSceneQuestion" ? "마지막 장면의 질문" : "다음 화 첫 장면",
+    );
+    hints.push(`훅 설계가 비어 있어요. ${names.join("·")} 칸을 채워 보세요.`);
   }
   return Object.freeze(hints);
 }

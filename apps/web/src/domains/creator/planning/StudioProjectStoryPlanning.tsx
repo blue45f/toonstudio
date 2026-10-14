@@ -96,7 +96,7 @@ function seedSettingRefs(projectId: string): readonly StorySeedSettingRef[] {
   try {
     lore = ensureStudioWorldLore(window.localStorage, projectId);
   } catch {
-    lore = null;
+    // 저장소 읽기 실패 시 초기값 null(빈 세계관)을 그대로 쓴다.
   }
   return buildStorySeedSettingRefs({
     bible: source?.story.bible ?? null,
