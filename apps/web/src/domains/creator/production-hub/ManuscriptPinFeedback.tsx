@@ -545,6 +545,7 @@ export function ManuscriptPinFeedbackBridge({
         ...pin,
         body: stripManuscriptPinUrgentPrefix(thread?.body ?? ""),
         mentions: (thread?.mentions ?? []).map((mention) => mention.displayName),
+        drawing: thread?.drawing ?? null,
         replies: (thread?.replies ?? []).map((reply) => ({
           authorName: reply.author.displayName,
           body: reply.body,

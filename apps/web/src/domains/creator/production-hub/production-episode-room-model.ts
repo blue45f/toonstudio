@@ -21,6 +21,7 @@ import {
   setStudioCommentThreadDrawing,
   type StudioCommentActor,
   type StudioCommentsDocument,
+  type StudioCommentThread,
 } from "../studio-comments";
 import {
   commentsDocumentToManuscriptPins,
@@ -194,6 +195,41 @@ export function countOpenPins(document: StudioCommentsDocument, pageId: string):
 /** 현재 사용자 기준 미읽음 핀 수. 사용자 ID가 없으면 0이다. */
 export function countUnreadPins(document: StudioCommentsDocument, pageId: string, currentActorId: string | null): number {
   return countUnreadManuscriptPins(commentsDocumentToManuscriptPins(document, pageId), currentActorId);
+}
+
+function isOpenCompareThread(thread: StudioCommentThread): boolean {
+  return thread.anchor.type === "compare-image" && !thread.resolved;
+}
+
+function isUrgentThread(thread: StudioCommentThread): boolean {
+  return !thread.resolved && thread.body.startsWith(MANUSCRIPT_PIN_URGENT_PREFIX);
+}
+
+/**
+ * 비교 검수 집계 — 원고 페이지 핀 집계와 분리한다.
+ * 원고 집계(commentsDocumentToManuscriptPins)는 point 앵커만 세므로
+ * 비교 핀을 세지 않고, 비교 집계는 소스 쌍을 유지한다.
+ */
+export function countOpenComparePins(document: StudioCommentsDocument): number {
+  return document.threads.filter(isOpenCompareThread).length;
+}
+
+export function countOpenUrgentComparePins(document: StudioCommentsDocument): number {
+  return document.threads.filter((thread) => isOpenCompareThread(thread) && isUrgentThread(thread)).length;
+}
+
+/** 미해결 긴급 비교 핀이 걸린 소스 풀 항목 id — 첫 등장 순서, 중복 제거. */
+export function urgentComparePinPoolItemIds(document: StudioCommentsDocument): readonly string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const thread of document.threads) {
+    if (!isOpenCompareThread(thread) || !isUrgentThread(thread)) continue;
+    if (thread.anchor.type !== "compare-image") continue;
+    if (seen.has(thread.anchor.poolItemId)) continue;
+    seen.add(thread.anchor.poolItemId);
+    ids.push(thread.anchor.poolItemId);
+  }
+  return Object.freeze(ids);
 }
 
 /** 샘플 공정 버전: 같은 컷을 콘티 → 선화·명암 → 채색 순서로 비교한다(예시 아트). */

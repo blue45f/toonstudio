@@ -292,10 +292,56 @@ export interface ManuscriptPinFeedbackPin extends ManuscriptPin {
   readonly replies: readonly ManuscriptPinFeedbackReply[];
   /** 멘션된 표시 이름 목록 */
   readonly mentions: readonly string[];
+  /** 스레드의 그리기 주석. 없는 스레드는 null이다. */
+  readonly drawing: StudioCommentDrawing | null;
 }
 
 export interface ManuscriptPinFeedbackReply {
   readonly authorName: string;
   readonly body: string;
   readonly createdAt: string;
+}
+
+/**
+ * 비교 검수 핀 → StudioCommentAnchor (compare-image) 변환.
+ * 원고 페이지가 아니라 비교 소스 풀 항목이 스코프이며, 좌표는
+ * 그 이미지의 정규화 좌표다. 상대 소스는 맥락 재현용으로 함께 남긴다.
+ */
+export function comparePinToCommentAnchor(
+  point: Pick<ManuscriptPin, "x" | "y">,
+  poolItemId: string,
+  pairedPoolItemId: string,
+): StudioCommentAnchor {
+  return {
+    type: "compare-image",
+    poolItemId,
+    x: clampPinCoordinate(point.x),
+    y: clampPinCoordinate(point.y),
+    pairedPoolItemId,
+  };
+}
+
+/**
+ * 현재 사용자 기준 미읽음 판정. 작성자 본인 글은 읽은 것으로 보고,
+ * 사용자가 없으면 미읽음을 세지 않는다 — 집계와 같은 규칙이다.
+ */
+export function isManuscriptPinUnread(
+  pin: Pick<ManuscriptPin, "authorId">,
+  currentActorId: string | null,
+): boolean {
+  return currentActorId !== null && pin.authorId !== currentActorId;
+}
+
+/** 미읽음 핀 수. isManuscriptPinUnread와 같은 판정을 집계한다. */
+export function countUnreadManuscriptPins(
+  pins: readonly ManuscriptPin[],
+  currentActorId: string | null,
+): number {
+  if (currentActorId === null) return 0;
+  return pins.filter((pin) => pin.authorId !== currentActorId).length;
+}
+
+/** 그리기 주석이 달린 핀인지. 획이 하나라도 있어야 한다. */
+export function hasManuscriptPinDrawing(pin: Pick<ManuscriptPinFeedbackPin, "drawing">): boolean {
+  return (pin.drawing?.strokes.length ?? 0) > 0;
 }

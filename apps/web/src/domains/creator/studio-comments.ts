@@ -170,6 +170,36 @@ export const StudioCommentReplySchema = z
 
 export type StudioCommentReply = z.infer<typeof StudioCommentReplySchema>;
 
+/**
+ * 핀 그리기 주석 — 말 대신 그림으로 가리키는 획 묶음.
+ * 좌표는 앵커 이미지의 정규화 좌표(0..1)이며, 핀 본문과 함께 저장돼
+ * "어디를 어떻게"를 한 번에 보여 준다. 획이 없으면 필드 자체를 두지 않는다.
+ */
+export const StudioCommentDrawingStrokeSchema = z
+  .object({
+    points: z
+      .array(
+        z
+          .object({
+            x: z.number().finite().min(0).max(1),
+            y: z.number().finite().min(0).max(1),
+          })
+          .strict(),
+      )
+      .min(1),
+    color: z.string().min(1).max(64),
+    width: z.number().finite().positive(),
+  })
+  .strict();
+
+export const StudioCommentDrawingSchema = z
+  .object({
+    strokes: z.array(StudioCommentDrawingStrokeSchema).min(1),
+  })
+  .strict();
+
+export type StudioCommentDrawing = z.infer<typeof StudioCommentDrawingSchema>;
+
 export const StudioCommentThreadSchema = z
   .object({
     ...CommentMessageShape,
@@ -183,6 +213,7 @@ export const StudioCommentThreadSchema = z
       .array(StudioCommentReferenceSchema)
       .max(STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD)
       .optional(),
+    drawing: StudioCommentDrawingSchema.optional(),
   })
   .strict()
   .superRefine((thread, context) => {
@@ -277,6 +308,8 @@ export interface StudioCommentThreadInput {
   mentions?: readonly StudioCommentActor[];
   /** 피드백 3요소 패킷의 레퍼런스 첨부. 없거나 비어 있으면 필드 자체를 저장하지 않는다. */
   references?: readonly StudioCommentReference[];
+  /** 핀 그리기 주석. 없으면 필드 자체를 저장하지 않는다. */
+  drawing?: StudioCommentDrawing;
 }
 
 export interface StudioCommentReplyInput {
@@ -808,6 +841,7 @@ export function addStudioCommentThread(
   if (messageIdExists(document, id)) throw new Error("이미 사용 중인 댓글 또는 답글 ID예요.");
   const timestamp = canonicalNow(now);
   const references = canonicalReferences(input.references);
+  const drawing = input.drawing ? StudioCommentDrawingSchema.parse(input.drawing) : undefined;
   const thread = StudioCommentThreadSchema.parse({
     id,
     anchor: canonicalInputAnchor(input.anchor),
@@ -819,6 +853,7 @@ export function addStudioCommentThread(
     replies: [],
     resolved: false,
     ...(references ? { references } : {}),
+    ...(drawing ? { drawing } : {}),
   });
   return { ...document, threads: [...document.threads, thread] };
 }
@@ -1045,6 +1080,31 @@ export function setStudioCommentThreadReferences(
   threads[threadIndex] = StudioCommentThreadSchema.parse({
     ...thread,
     ...(nextReferences ? { references: nextReferences } : {}),
+    updatedAt: canonicalNow(now),
+  });
+  return { ...document, threads };
+}
+
+/**
+ * 스레드의 그리기 주석을 통째로 교체한다 (말 대신 그림으로 가리키는 획).
+ * 내용이 같으면 같은 문서를 반환한다.
+ */
+export function setStudioCommentThreadDrawing(
+  document: StudioCommentsDocument,
+  threadId: string,
+  drawing: StudioCommentDrawing,
+  now = new Date()
+): StudioCommentsDocument {
+  assertCanonicalDocument(document);
+  const threadIndex = document.threads.findIndex((thread) => thread.id === threadId);
+  if (threadIndex < 0) return document;
+  const current = document.threads[threadIndex];
+  const nextDrawing = StudioCommentDrawingSchema.parse(drawing);
+  if (JSON.stringify(current.drawing ?? null) === JSON.stringify(nextDrawing)) return document;
+  const threads = document.threads.slice();
+  threads[threadIndex] = StudioCommentThreadSchema.parse({
+    ...current,
+    drawing: nextDrawing,
     updatedAt: canonicalNow(now),
   });
   return { ...document, threads };
