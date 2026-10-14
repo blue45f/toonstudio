@@ -21,5 +21,7 @@
 
 .vs-master-reference-backdrop{position:absolute;inset:0;overflow:hidden;background:#17181b}
 .vs-master-reference-image{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;object-position:center;user-select:none;pointer-events:none}
+.vs-master-reference-image--hd{image-rendering:auto;filter:saturate(1.06) contrast(1.03);transform:translateZ(0)}
+.vs-master-cinematic-grade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgb(10 14 24/.14) 0%,transparent 22%,transparent 68%,rgb(8 10 18/.28) 100%),radial-gradient(120% 90% at 50% 30%,transparent 60%,rgb(6 8 14/.22) 100%)}
 
 .studio-vspace-ambient-creators{display:none}
