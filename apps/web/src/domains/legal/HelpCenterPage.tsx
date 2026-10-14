@@ -6,6 +6,7 @@ import {
   Compass,
   Database,
   FileWarning,
+  GraduationCap,
   Layers,
   LifeBuoy,
   Map as MapIcon,
@@ -26,6 +27,7 @@ import { SitePageHeader } from "./public/site-page-header";
 import { SITEMAP_DIRECTORY_ENTRIES } from "./site-directory-data";
 
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
+import { searchUnifiedHelpSections } from "@/shared/components/unified-search-providers";
 import { Container, Section } from "@/shared/components/section";
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
@@ -187,12 +189,19 @@ export function HelpCenterPage() {
   const searching = tokens.length > 0;
   const filtered = rankHelpItems(TOPICS, topicFields, tokens);
   const matchedQuestions = searching ? rankHelpItems(QUESTIONS, questionFields, tokens) : [];
+  // 통합 검색 집계층: 도움말 검색에 매뉴얼 본문과 강좌 결과를 함께 편입한다.
+  // 매뉴얼은 도움말 토큰(조사 제거·문제 표현 제외)을 매뉴얼 검색에 그대로 넘기는
+  // 어휘 정렬(S2-9, learn §2.16)을 프로바이더가 그대로 이어받고, 강좌는 /learn의
+  // matchesSearch를 재사용한다 — 두 섹션 모두 기존 검색 모듈의 결과다.
+  const unifiedHelp = searching ? searchUnifiedHelpSections(query) : null;
+  const manualResults = unifiedHelp?.manual.items ?? [];
+  const courseResults = unifiedHelp?.courses.items ?? [];
   const related = searching
     ? rankRelatedScreens(SITEMAP_DIRECTORY_ENTRIES, tokens, new Set(filtered.map((topic) => topic.href)))
     : [];
   const faqFiltered = matchedQuestions.length > 0;
   const questions = faqFiltered ? matchedQuestions : QUESTIONS;
-  const nothingFound = searching && filtered.length === 0 && related.length === 0 && matchedQuestions.length === 0;
+  const nothingFound = searching && filtered.length === 0 && related.length === 0 && matchedQuestions.length === 0 && manualResults.length === 0 && courseResults.length === 0;
   const searchLabel = bt("도움말 검색", "Search help");
 
   useDocumentTitle(bt("도움말", "Help Center"));
@@ -248,16 +257,18 @@ export function HelpCenterPage() {
         title={bt("도움말 주제", "Help topics")}
         desc={
           searching
-            ? formatI18nTemplate(bt("‘{v0}’와 관련된 주제·화면·질문이에요.", "Topics, screens and questions related to ‘{v0}’."), { v0: query.trim() })
+            ? formatI18nTemplate(bt("‘{v0}’와 관련된 주제·화면·질문·매뉴얼 문서·강좌예요.", "Topics, screens, questions, manual articles and courses related to ‘{v0}’."), { v0: query.trim() })
             : bt("주제를 누르면 관련 화면이나 안내로 바로 이동해요.", "Each topic opens the related screen or guide.")
         }
       >
         <p className="sr-only" aria-live="polite">
           {searching
-            ? formatI18nTemplate(bt("주제 {v0}개 · 관련 화면 {v1}개 · 질문 {v2}개", "{v0} topics · {v1} related screens · {v2} questions"), {
+            ? formatI18nTemplate(bt("주제 {v0}개 · 관련 화면 {v1}개 · 질문 {v2}개 · 매뉴얼 {v3}개 · 강좌 {v4}개", "{v0} topics · {v1} related screens · {v2} questions · {v3} manual articles · {v4} courses"), {
               v0: filtered.length,
               v1: related.length,
               v2: matchedQuestions.length,
+              v3: manualResults.length,
+              v4: courseResults.length,
             })
             : `${filtered.length} ${bt("개 주제", "topics")}`}
         </p>
@@ -277,7 +288,7 @@ export function HelpCenterPage() {
           </div>
         ) : !nothingFound ? (
           <p className="rounded-2xl border border-dashed border-line bg-panel/40 px-4 py-3 text-xs leading-5 text-fg-2">
-            {bt("주제에서는 찾지 못했어요. 아래 관련 화면과 자주 묻는 질문을 확인해 보세요.", "No topic matched. Check the related screens and questions below.")}
+            {bt("주제에서는 찾지 못했어요. 아래 관련 화면·매뉴얼 문서·강좌와 자주 묻는 질문을 확인해 보세요.", "No topic matched. Check the related screens, manual articles, courses and questions below.")}
           </p>
         ) : (
           <ActionableEmptyState
@@ -313,6 +324,50 @@ export function HelpCenterPage() {
                   icon={Compass}
                   title={bt(entry.label.ko, entry.label.en)}
                   description={bt(entry.description.ko, entry.description.en)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {manualResults.length > 0 ? (
+          <div className="mt-8">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-fg">
+              <BookOpen size={16} className="text-accent" aria-hidden="true" />
+              {bt("매뉴얼 문서", "Manual articles")}
+            </h3>
+            <p className="mt-1 text-xs text-fg-3">{bt("인앱 매뉴얼 본문에서 찾은 문서예요. 문서를 열면 읽은 기능을 관련 작업 공간에서 바로 실행할 수 있어요.", "Articles from the in-app manual. Open one to run what you read in its workspace right away.")}</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {manualResults.map((item) => (
+                <SiteLinkCard
+                  key={item.id}
+                  layout="compact"
+                  href={item.href}
+                  icon={BookOpen}
+                  title={item.title}
+                  description={item.description}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {courseResults.length > 0 ? (
+          <div className="mt-8">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-fg">
+              <GraduationCap size={16} className="text-accent" aria-hidden="true" />
+              {bt("강좌", "Courses")}
+            </h3>
+            <p className="mt-1 text-xs text-fg-3">{bt("검색어와 맞는 배우기 강좌예요. 읽고 바로 실습으로 이어갈 수 있어요.", "Learning courses that match your search. Read one and continue straight into practice.")}</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {courseResults.map((item) => (
+                <SiteLinkCard
+                  key={item.id}
+                  layout="compact"
+                  href={item.href}
+                  icon={GraduationCap}
+                  title={item.title}
+                  description={item.description}
                 />
               ))}
             </div>

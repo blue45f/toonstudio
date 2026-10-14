@@ -256,6 +256,7 @@ export function bindStudioCuttoonStagePointersDownPixel(
     polyLassoOperationRef,
     polyLassoSessionRef,
     runMagicWandSelect,
+    runQuickSelectionStroke,
     setError,
     setMarqueeIds,
     setPolyLassoHover,
@@ -389,6 +390,10 @@ export function bindStudioCuttoonStagePointersDownPixel(
       };
       if (pixelTool === "wand") {
         void runMagicWandSelect(pos, frame);
+        return true;
+      }
+      if (pixelTool === "quick-select") {
+        void runQuickSelectionStroke(pos, frame);
         return true;
       }
       // 제스처 시작 결합 모드 — 기존 선택이 있을 때만 Shift=합치기/Alt=빼기/둘 다=교집합으로

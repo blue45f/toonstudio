@@ -32,6 +32,8 @@ import {
   isKakaoShareConfigured,
   shareWithKakao,
 } from "@/shared/lib/kakao-share";
+// share.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./share-i18n";
 import { useT } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";

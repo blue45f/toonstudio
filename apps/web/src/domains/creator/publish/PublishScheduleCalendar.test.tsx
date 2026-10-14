@@ -120,6 +120,62 @@ describe("PublishScheduleCalendar", () => {
     ).toBeTruthy();
   });
 
+  it("공휴일 셀에 이벤트 이름을 겹쳐 표시한다", () => {
+    render(
+      <PublishScheduleCalendar
+        reservations={[]}
+        timeZone="Asia/Seoul"
+        selectedDate={null}
+        onSelectDate={vi.fn()}
+        initialYear={2026}
+        initialMonth={10}
+      />,
+    );
+    // 2026-10-09 한글날
+    expect(
+      screen.getByRole("gridcell", { name: /2026-10-09, 예약 0건, 이벤트: 한글날/ }),
+    ).toBeTruthy();
+    // 이벤트 없는 날은 이벤트 표기가 없다
+    expect(
+      screen.getByRole("gridcell", { name: /^2026-10-06, 예약 0건$/ }),
+    ).toBeTruthy();
+  });
+
+  it("이벤트 주간의 회차에 '이벤트 주간' 배지와 주 일정을 표시한다", () => {
+    // 기본 픽스처 2026-10-05는 대체공휴일(개천절) 당일이자 한글날이 있는 주
+    render(
+      <PublishScheduleCalendar
+        reservations={[makeReservation()]}
+        timeZone="Asia/Seoul"
+        selectedDate="2026-10-05"
+        onSelectDate={vi.fn()}
+        initialYear={2026}
+        initialMonth={10}
+      />,
+    );
+    expect(screen.getByText("이벤트 주간")).toBeTruthy();
+    expect(screen.getByText(/이 주 일정:.*한글날/)).toBeTruthy();
+  });
+
+  it("이벤트 없는 주의 회차에는 배지를 표시하지 않는다", () => {
+    // 2026-11-16 주(11-16~11-22)에는 공휴일·플랫폼 이벤트가 없다
+    render(
+      <PublishScheduleCalendar
+        reservations={[
+          makeReservation({ scheduledAtUtc: "2026-11-16T09:00:00.000Z" }),
+        ]}
+        timeZone="Asia/Seoul"
+        selectedDate="2026-11-16"
+        onSelectDate={vi.fn()}
+        initialYear={2026}
+        initialMonth={11}
+      />,
+    );
+    expect(screen.getByText("1화 프롤로그")).toBeTruthy();
+    expect(screen.queryByText("이벤트 주간")).toBeNull();
+    expect(screen.queryByText(/이 주 일정:/)).toBeNull();
+  });
+
   it("이전/다음 달로 이동할 수 있다", () => {
     render(
       <PublishScheduleCalendar

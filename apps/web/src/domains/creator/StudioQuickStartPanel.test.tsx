@@ -224,6 +224,15 @@ describe("StudioQuickStartPanel", () => {
     expect(handlers.onOpenTutorials).toHaveBeenCalledOnce();
   });
 
+  it("tells the reader the tutorials can be reopened from the top of the Help menu (first-run F4.4)", () => {
+    const handlers = createHandlers();
+    const view = render(<StudioQuickStartPanel {...handlers} />);
+
+    const hint = view.container.querySelector('[data-studio-quickstart-reopen-hint="true"]');
+    expect(hint?.textContent).toContain("도움말 메뉴 맨 위");
+    expect(hint?.textContent).toContain("다시 열 수 있어요");
+  });
+
   it("keeps secondary tools collapsed by default while preserving every direct route", () => {
     const handlers = createHandlers();
     render(<StudioQuickStartPanel {...handlers} />);
@@ -405,23 +414,23 @@ it("starts as a compact drawing hint and expands only after an explicit action",
   expect(screen.queryByRole("button", { name: /웹툰 흐름으로 시작/u })).toBeNull();
 });
 
-it("shrinks to a 사용법 pill while the canvas start dock is expanded", () => {
+it("renders nothing while the canvas start dock is expanded, then returns as the 사용법 entry point", () => {
   act(() => setStudioCanvasStartDockExpanded(true));
   try {
     const view = render(<StudioQuickStartPanel {...createHandlers()} startCollapsed />);
-    const root = view.container.querySelector<HTMLElement>('[data-studio-creative-starter="true"]');
-    const card = quickStartCard();
 
-    // 도크가 첫 안내를 맡는 동안 코치는 제목 카드 대신 작은 알약으로만 남는다.
-    expect(root?.getAttribute("data-studio-quickstart-pill")).toBe("true");
-    expect(root?.className).not.toContain("sm:w-[min(22rem,calc(100%-2rem))]");
-    expect(card.className).toContain("rounded-full");
-    // 검증 스크립트가 누르는 닫기 선택자는 알약에서도 그대로다.
-    expect(within(card).getByRole("button", { name: /빠른 시작 닫기/u })
-      .getAttribute("data-studio-quickstart-backdrop")).toBe("true");
+    // 첫 화면의 안내 표면은 도크 1개뿐이다 (first-run F4.2) — 코치는 알약으로도 남지 않는다.
+    expect(view.container.querySelector('[data-studio-creative-starter="true"]')).toBeNull();
+    expect(screen.queryByRole("button", { name: "사용법" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /빠른 시작 닫기/u })).toBeNull();
+
+    // 도크가 물러나면 코치가 접힌 '사용법' 단일 진입점으로 돌아오고, 거기서 펼칠 수 있다.
+    act(() => setStudioCanvasStartDockExpanded(false));
+    const root = view.container.querySelector<HTMLElement>('[data-studio-creative-starter="true"]');
+    expect(root).not.toBeNull();
+    expect(root?.hasAttribute("data-studio-quickstart-pill")).toBe(false);
 
     fireEvent.click(screen.getByRole("button", { name: "사용법" }));
-    expect(root?.hasAttribute("data-studio-quickstart-pill")).toBe(false);
     expect(screen.getByRole("button", { name: /웹툰 흐름으로 시작/u })).toBeTruthy();
   } finally {
     act(() => setStudioCanvasStartDockExpanded(false));

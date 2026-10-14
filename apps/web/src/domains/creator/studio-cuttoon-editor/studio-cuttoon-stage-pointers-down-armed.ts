@@ -32,6 +32,7 @@ import {
 import { isStudioBrushCursorMode, shouldShowStudioBrushCursor } from "../canvas/studio-canvas-cursor";
 import { bubbleShapeCanvasPointToLocal, hasCustomBubbleShape, moveBubbleShapePoint } from "../lettering/studio-bubble-custom-shape";
 import { beginStudioAdvancedFillTap, endStudioAdvancedFillTap, moveStudioAdvancedFillTap } from "../studio-advanced-fill-tap";
+import { beginStudioLassoFillDrag } from "../studio-lasso-fill-gesture";
 import { resolveActiveStudioAdvancedRuler, type StudioAdvancedRuler } from "../studio-advanced-ruler-document";
 import { snapStudioAdvancedRulerStrokePoint } from "../studio-advanced-ruler-snap";
 import { CANVAS_W } from "../studio-assets";
@@ -243,6 +244,8 @@ export function bindStudioCuttoonStagePointersDownArmed(
 ) {
   const {
     advancedFillTapGestureRef,
+    advancedFillLassoDragRef,
+    advancedFillLassoEnabled,
     advancedFillTapPayloadRef,
     advancedFillTouchPanRef,
     advancedFillVirtualTarget,
@@ -430,6 +433,22 @@ export function bindStudioCuttoonStagePointersDownArmed(
             : null
         );
         if (!frame) return true;
+        // 둘러싸기 채우기가 켜져 있으면 드래그를 탭 후보 대신 래소 경로로 수집한다(기본 꺼짐 —
+        // 꺼져 있을 때는 기존 탭 경로와 완전히 동일하게 동작한다). 경로는 스테이지 좌표로 모으고
+        // 프레임은 탭 페이로드와 같은 규칙으로 고정한다.
+        if (advancedFillLassoEnabled) {
+          const gesture = beginStudioLassoFillDrag(
+            advancedFillLassoDragRef.current?.gesture ?? null,
+            {
+              pointerId,
+              point: pos,
+              button: pointerEvent.button,
+              isPrimary: pointerEvent.isPrimary,
+            },
+          );
+          advancedFillLassoDragRef.current = { gesture, frame };
+          return true;
+        }
         if (clientPoint) {
           const gesture = beginStudioAdvancedFillTap(advancedFillTapGestureRef.current, {
             pointerId,

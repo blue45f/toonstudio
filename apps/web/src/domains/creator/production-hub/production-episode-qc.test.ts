@@ -4,7 +4,11 @@ import type { ProductionProjectAggregate, RevisionRef } from "@toonstudio/core/p
 
 import { createProductionDemoProject } from "./production-demo";
 import { buildEpisodePipelinePlan } from "./production-episode-operations";
-import { deriveEpisodeQcChecklist, type EpisodeQcItemId } from "./production-episode-qc";
+import {
+  deriveEpisodeQcChecklist,
+  type EpisodeQcExtras,
+  type EpisodeQcItemId,
+} from "./production-episode-qc";
 
 const NOW = new Date("2026-09-17T00:00:00.000Z");
 
@@ -23,8 +27,13 @@ const integratedRef: RevisionRef = {
   createdAt: "2026-09-16T01:00:00.000Z",
 };
 
-function itemStatus(aggregate: ProductionProjectAggregate, episodeId: string, itemId: EpisodeQcItemId) {
-  return deriveEpisodeQcChecklist(aggregate, episodeId, NOW)?.items.find((item) => item.id === itemId)?.status;
+function itemStatus(
+  aggregate: ProductionProjectAggregate,
+  episodeId: string,
+  itemId: EpisodeQcItemId,
+  extras?: EpisodeQcExtras,
+) {
+  return deriveEpisodeQcChecklist(aggregate, episodeId, NOW, extras)?.items.find((item) => item.id === itemId)?.status;
 }
 
 /** 데모 13화를 공정 작업까지 전부 끝난 상태로 만든다. 검수 정책은 13화에 없어 게이트는 skipped가 된다. */
@@ -123,6 +132,53 @@ describe("episode QC checklist", () => {
       ? { ...entry, state: "published" as const }
       : entry);
     const checklist = deriveEpisodeQcChecklist({ ...base, episodes }, "episode-13", NOW);
+    expect(checklist?.published).toBe(true);
+    expect(checklist?.ready).toBe(true);
+  });
+
+  it("단계 합의 게이트 요약이 없으면 게이트 항목은 skipped이고 기존 판정이 유지된다", () => {
+    const aggregate = readyAggregate();
+    expect(itemStatus(aggregate, "episode-13", "stage-consensus-gate")).toBe("skipped");
+    expect(itemStatus(aggregate, "episode-13", "stage-consensus-gate", { stageGate: null })).toBe("skipped");
+    const checklist = deriveEpisodeQcChecklist(aggregate, "episode-13", NOW);
+    expect(checklist?.ready).toBe(true);
+    expect(checklist?.blockedCount).toBe(0);
+  });
+
+  it("걸린 게이트가 전부 합의됐으면 게이트 항목이 통과하고 게시는 그대로 가능하다", () => {
+    const aggregate = readyAggregate();
+    const extras: EpisodeQcExtras = { stageGate: { publishBlockedBy: [] } };
+    expect(itemStatus(aggregate, "episode-13", "stage-consensus-gate", extras)).toBe("pass");
+    expect(deriveEpisodeQcChecklist(aggregate, "episode-13", NOW, extras)?.ready).toBe(true);
+  });
+
+  it("합의가 안 끝난 게이트가 있으면 나머지 QC가 다 통과해도 게시를 막는다", () => {
+    const aggregate = readyAggregate();
+    const extras: EpisodeQcExtras = { stageGate: { publishBlockedBy: ["plan", "art"] } };
+    const checklist = deriveEpisodeQcChecklist(aggregate, "episode-13", NOW, extras);
+    expect(checklist?.items.find((item) => item.id === "stage-consensus-gate")?.status).toBe("blocked");
+    // 막힌 단계는 게이트 이름으로 detail에 남는다(기획 합의·스케치 합의).
+    const detail = checklist?.items.find((item) => item.id === "stage-consensus-gate")?.detail.ko ?? "";
+    expect(detail).toContain("기획 합의");
+    expect(detail).toContain("스케치 합의");
+    // 게이트 항목 하나만 막힌 것으로 센다(단계 수만큼 중복으로 세지 않는다).
+    expect(checklist?.blockedCount).toBe(1);
+    expect(checklist?.ready).toBe(false);
+    expect(checklist?.items.find((item) => item.id === "stage-consensus-gate")?.target)
+      .toEqual({ kind: "episode-room" });
+  });
+
+  it("이미 게시된 회차는 게이트가 막혀 있어도 ready 판정을 유지한다", () => {
+    const base = createProductionDemoProject();
+    const episodes = base.episodes.map((entry) => entry.episodeId === "episode-13"
+      ? { ...entry, state: "published" as const }
+      : entry);
+    const checklist = deriveEpisodeQcChecklist(
+      { ...base, episodes },
+      "episode-13",
+      NOW,
+      { stageGate: { publishBlockedBy: ["plan"] } },
+    );
     expect(checklist?.published).toBe(true);
     expect(checklist?.ready).toBe(true);
   });

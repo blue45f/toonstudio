@@ -1,0 +1,73 @@
+<!doctype html>
+<!--
+  테마×표면 스크린샷 매트릭스 하네스 (BLUEPRINT §6.6, S3-15).
+  테마 블록이 :root[data-design-theme] 셀렉터라 테마는 문서 루트에서만 성립한다 —
+  그래서 이 하네스는 ?theme=<테마명> 하나로 한 테마를 렌더하고, 매트릭스 캡처는
+  테마 9종 × 뷰포트 3종을 순회하며 같은 페이지를 찍는 방식이다 (절차: spectacle-matrix.md).
+  실제 토큰 CSS(unified-theme-contract.css)와 부품 CSS(spectacle.css)를 그대로 읽는다.
+  앱 번들에 들어가지 않는 검수 전용 하네스다 (라우트·진입 청크 무영향).
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spectacle Matrix — 테마×표면 검수</title>
+<link rel="stylesheet" href="../../app/styles/unified-theme-contract.css" />
+<link rel="stylesheet" href="./spectacle.css" />
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; }
+  .mx-stage { min-height: 100dvh; padding: 20px; box-sizing: border-box; background: var(--unified-canvas); color: var(--unified-fg); }
+  .mx-stage > h2 { margin: 0 0 12px; font-size: 14px; }
+  .mx-stage > nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .mx-stage > nav a { padding: 4px 10px; border-radius: 999px; background: var(--surface-glass); box-shadow: var(--elevation-1); color: inherit; font-size: 12px; text-decoration: none; }
+  .mx-stage > nav a[aria-current="true"] { background: var(--spectacle-gradient); color: var(--unified-on-accent); }
+  .mx-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+  @media (max-width: 899px) { .mx-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 599px) { .mx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* 하네스 전용 표지 목업 — 부품이 아닌 매트릭스 셀 표시용 (앱 코드 아님). */
+  .mx-cover { position: relative; aspect-ratio: 3 / 4; overflow: hidden; border-radius: 12px; background: linear-gradient(150deg, color-mix(in oklch, var(--domain-tint) 55%, var(--unified-panel)), var(--unified-card)); }
+  .mx-cover b { position: absolute; left: 10px; bottom: 10px; font-size: 14px; }
+  .mx-swatches { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .mx-swatches span { padding: 4px 10px; border-radius: 999px; font-size: 12px; background: var(--surface-glass); box-shadow: var(--elevation-1); }
+  .mx-swatches .g { background: var(--spectacle-gradient); color: var(--art-on); }
+  .mx-cta { display: inline-flex; margin-top: 12px; padding: 10px 18px; border: 0; border-radius: 999px; background: var(--spectacle-gradient); color: var(--unified-on-accent); font-weight: 800; box-shadow: var(--spectacle-glow); }
+</style>
+</head>
+<body>
+<script>
+  const THEMES = ["aurora", "blossom", "starlight", "dark", "light", "graphite", "midnight", "sepia", "contrast"];
+  const theme = new URLSearchParams(location.search).get("theme") || "aurora";
+  document.documentElement.setAttribute("data-design-theme", THEMES.includes(theme) ? theme : "aurora");
+  const TINTS = ["var(--spectacle-3)", "var(--spectacle-2)", "var(--spectacle-1)", "var(--spectacle-3)", "var(--spectacle-1)"];
+  const LABELS = ["발견(장르 틴트)", "학습(경로 틴트)", "프로젝트(단계 틴트)", "마켓(카테고리 틴트)", "기본 틴트"];
+  const stage = document.createElement("main");
+  stage.className = "mx-stage";
+  stage.innerHTML = `
+    <h2 data-matrix-theme="${theme}">theme: ${theme}</h2>
+    <nav>${THEMES.map((t) => `<a href="?theme=${t}" aria-current="${t === theme}">${t}</a>`).join("")}</nav>
+    <section class="spectacle-hero" data-spectacle-hero="true" data-spectacle-art="none">
+      <div class="spectacle-hero-inner">
+        <div class="spectacle-hero-copy">
+          <p class="spectacle-hero-eyebrow">상상하는 모든 이야기, 여기서 작품이 됩니다.</p>
+          <h1 class="spectacle-hero-title">오늘은 어떤 이야기를<br /><em>만들까요?</em></h1>
+          <p class="spectacle-hero-lede">당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.</p>
+          <span><button class="mx-cta" type="button">시작하기</button></span>
+        </div>
+        <div class="spectacle-hero-aside" style="padding:14px">글래스 패널 — elevation-2 · surface-glass</div>
+      </div>
+    </section>
+    <div class="mx-swatches">
+      <span class="g">spectacle-gradient</span><span>spectacle-1/2/3</span><span>glow CTA 1개</span><span>elevation 1·2·3</span>
+    </div>
+    <div class="mx-grid">
+      ${LABELS.map((label, i) => `
+        <article class="cover-card" data-cover-card="true" style="--domain-tint:${TINTS[i]}">
+          <span class="cover-card-badge">${i === 3 ? "₩4,900" : label}</span>
+          <div class="mx-cover cover-card-poster"><b>표지 ${i + 1}</b></div>
+          <div class="cover-card-meta"><small>${label}</small></div>
+        </article>`).join("")}
+    </div>`;
+  document.body.appendChild(stage);
+</script>
+</body>
+</html>

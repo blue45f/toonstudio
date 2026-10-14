@@ -221,4 +221,14 @@ describe("StudioPromisePayoffLedgerPanel", () => {
       .toContain("19화 · 곧 마감");
     expect(screen.getByText("기한 초과").parentElement?.textContent).toContain("0");
   });
+
+  it("shows first-reader recap candidates for long-unexplained returns", () => {
+    render(<Harness />);
+    const section = screen.getByLabelText("첫독 리캡 후보");
+    expect(section.textContent).toContain("첫독 리캡 후보 1건");
+    expect(section.textContent).toContain("봉인된 편지");
+    expect(section.textContent).toContain("16화 간격");
+    fireEvent.click(within(section).getByRole("button"));
+    expect(screen.getByText("안정 ID · promise-letter")).toBeTruthy();
+  });
 });

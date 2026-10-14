@@ -53,6 +53,15 @@ export interface StudioPublicationPreflightInput {
   challengeLinked?: boolean;
   seriesLinked?: boolean;
   now?: Date;
+  /**
+   * 검수 QC(deriveEpisodeQcChecklist)에서 인계된 막힌 항목.
+   * 검수에서 이미 막힌 항목을 게시 사전검사가 모른 채 통과시키면
+   * 검수→게시 흐름이 끊기므로, 막힌 항목은 여기서도 오류로 반영한다.
+   * 통과 항목은 오류가 아니라 게시 센터의 QC 인계 표시가 담당한다.
+   */
+  episodeQc?: {
+    readonly blocked: readonly { readonly id: string; readonly label: string }[];
+  } | null;
 }
 
 export interface StudioPublicationPreflightIssue {
@@ -316,6 +325,15 @@ export function validateStudioPublicationPreflight(
   });
   for (const issue of policy.issues) {
     add(issue.code, issue.severity, issue.message, issue.path);
+  }
+
+  for (const blocked of input.episodeQc?.blocked ?? []) {
+    add(
+      `EPISODE_QC_BLOCKED_${blocked.id.toUpperCase().replace(/-/gu, "_")}`,
+      "error",
+      `검수 QC에서 아직 막힌 항목입니다: ${blocked.label}. 검수에서 풀고 다시 게시해 주세요.`,
+      `episodeQc.${blocked.id}`,
+    );
   }
 
   const deduplicated = issues.filter(

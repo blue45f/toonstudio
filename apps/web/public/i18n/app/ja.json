@@ -76,6 +76,7 @@
   "app.loading": "読み込み中…",
   "app.brandBeta": "ベータサービス — データ・機能が変更される場合があります",
   "app.name": "トーン・スタジオ",
+  "app.skipToContent": "Skip to main content",
   "auth.menu.triggerLabel": "アカウントメニュー",
   "auth.menu.fallbackName": "リーダー",
   "auth.menu.adminPanel": "管理コンソール",

@@ -64,7 +64,10 @@ import {
   createStudioCommandExecutionBindings,
   installStudioCommandExecutionBindings,
 } from "./studio-command-execution-registry";
-import { createStudioMainMenuPresentation } from "./studio-main-menu-presentation";
+import {
+  createStudioMainMenuPresentation,
+  insertStudioMainMenuAdvancedSectionFoldRows,
+} from "./studio-main-menu-presentation";
 import {
   StudioExportMenuPanel,
   StudioMainMenu,
@@ -1156,13 +1159,50 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
     const translated = menuT(key, "");
     return translated || undefined;
   };
+  // 메뉴 깊이 완화 (복잡도 실측 후속): simple·focus에서는 사용 빈도가 낮은
+  // 합성 소스 섹션(협업·변형·창·벡터·3D·애니메이션)이 프레젠테이션 단계에서
+  // 접히고, 타이틀마다 "고급 도구 펼치기 (N개)" 행 하나로만 노출된다.
+  // full에서는 프레젠테이션이 현행 그대로라 펼침 행도 붙지 않는다.
+  // 명령 검색은 아래에서 접히지 않은 원본 그룹을 소비하므로 고급 명령도
+  // 모든 모드에서 검색으로 닿는다. S3-13 카탈로그 접힘과 합본할 때는
+  // 그룹당 펼침 행을 하나만 남긴다(프레젠테이션 모듈의 병합 노트 참조).
+  const [menubarAdvancedSectionsExpanded, setMenubarAdvancedSectionsExpanded] =
+    useState(false);
   const mainMenuPresentation = createStudioMainMenuPresentation(studioMainMenuGroups, {
     labels: {
       insert: compositeMenuLabel("insert"),
       create: compositeMenuLabel("create"),
     },
+    densityMode: uiDensityMode,
+    advancedSectionsExpanded: menubarAdvancedSectionsExpanded,
   });
-  const presentedStudioMainMenuGroups = mainMenuPresentation.groups;
+  const buildMenubarSectionFoldItem = (
+    groupId: string,
+    advancedCount: number,
+    expanded: boolean,
+  ): ComponentProps<typeof StudioMainMenu>["groups"][number]["items"][number] => {
+    const base = expanded
+      ? localizeText(menuT, "고급 도구 접기", "studio.settings.advancedTools.collapse")
+      : localizeText(menuT, "고급 도구 펼치기", "studio.settings.advancedTools.expand");
+    return {
+      id: `advanced-sections-fold:${groupId}`,
+      label: expanded
+        ? base
+        : `${base} (${base === "고급 도구 펼치기" ? `${advancedCount}개` : advancedCount})`,
+      icon: ChevronDown,
+      keepOpenOnSelect: true,
+      expanded,
+      separatorAfter: expanded,
+      onSelect: () => setMenubarAdvancedSectionsExpanded((value) => !value),
+    };
+  };
+  const presentedStudioMainMenuGroups =
+    insertStudioMainMenuAdvancedSectionFoldRows(
+      mainMenuPresentation.groups,
+      mainMenuPresentation.compositeAdvancedSections,
+      menubarAdvancedSectionsExpanded,
+      buildMenubarSectionFoldItem,
+    );
   const actionStudioMainMenuGroups = mainMenuPresentation.actionGroups;
 
   // Unified search executes only explicitly reviewed rows, using the menu's own closure.

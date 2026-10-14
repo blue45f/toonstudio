@@ -5,13 +5,13 @@
  * controls which deployment-owned cards are offered when a creator starts new work. User uploads
  * are never filtered by this catalogue gate.
  */
+// 2026-10-14: avatar-a/b/c·mio·noa는 라이선스 원문 대조로 재배포 불가 판정되어
+// 프리미엄 목록에서 내렸다 (vrm-library의 BUNDLED_VRM_RIGHTS_BLOCKS 격리와 쌍).
+// CC0 대체 모델의 프리미엄 승격은 시각 검수 후 별도로 정한다.
 export type StudioVrmCatalogQualityTier = "premium" | "stylized-reference";
 
 export const STUDIO_VRM_PREMIUM_CATALOG_IDS = Object.freeze([
   "sample-vrm",
-  "avatar-a",
-  "avatar-b",
-  "avatar-c",
   "alicia",
   "mega-angel",
   "rubin",
@@ -19,8 +19,6 @@ export const STUDIO_VRM_PREMIUM_CATALOG_IDS = Object.freeze([
   "vita",
   "shino",
   "shion",
-  "mio",
-  "noa",
   "fumi",
   "kage",
 ] as const);

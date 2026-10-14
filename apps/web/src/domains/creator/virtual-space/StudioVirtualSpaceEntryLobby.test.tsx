@@ -294,3 +294,29 @@ describe("StudioVirtualSpaceEntryLobby access gate (F-B06-1)", () => {
     expect(screen.getByRole("button", { name: "게스트로 입장" }).hasAttribute("disabled")).toBe(false);
   });
 });
+
+describe("StudioVirtualSpaceEntryLobby LPC 크레딧 도달 가능성", () => {
+  it("캐릭터를 고르는 로비에서 LPC 출처·라이선스 표면이 선택 목록 바로 아래에 있고 CREDITS.md 전문으로 이어진다", () => {
+    const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()} /></MemoryRouter>);
+    const notice = view.container.querySelector<HTMLDetailsElement>("details.studio-lpc-credits");
+    if (!notice) throw new Error("로비에 LPC 크레딧 표면이 없습니다.");
+    // 접힌 제목만으로도 무엇인지 알 수 있고, 작가 수가 함께 보인다.
+    expect(notice.querySelector("summary")?.textContent).toMatch(/캐릭터 아트 출처·라이선스/u);
+    expect(notice.querySelector("summary")?.textContent).toMatch(/작가 20명/u);
+    // 캐릭터 선택 목록 바로 다음 형제가 크레딧 표면이다(고르는 자리에서 닿는다).
+    const picker = view.container.querySelector(".space-lobby__picker");
+    expect(picker?.nextElementSibling).toBe(notice);
+    // 전문 파일로 내려받는 링크와 OGA-BY 3.0 표기가 표면 안에 있다.
+    const download = within(notice).getByRole("link", { name: /CREDITS\.md/u });
+    expect(download.getAttribute("href")).toBe("/assets/virtual-studio/characters-lpc-v1/CREDITS.md");
+    expect(download.getAttribute("download")).toBe("CREDITS.md");
+    expect(notice.textContent).toMatch(/OGA-BY 3\.0/u);
+  });
+
+  it("게스트 모드는 캐릭터 선택을 숨기므로 크레딧 표면도 함께 숨긴다", () => {
+    const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby guestMode avatarIndex={0} nickname="게스트" returning={false}
+      projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()} /></MemoryRouter>);
+    expect(view.container.querySelector("details.studio-lpc-credits")).toBeNull();
+  });
+});

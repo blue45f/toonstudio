@@ -92,6 +92,51 @@ describe("StudioPublishResultReceipt", () => {
     expect(onReviewSettings).toHaveBeenCalledOnce();
   });
 
+  it("shows the verdict trail (status, next feedback point, caps) after a challenge publish", () => {
+    render(
+      <MemoryRouter>
+        <StudioPublishResultReceipt
+          kind="published"
+          workId="work-challenge"
+          environment="production"
+          verdict={{
+            kind: "challenge",
+            status: "in-review",
+            submittedAt: "2026-10-14T01:00:00.000Z",
+            caps: { periodEnd: "2026-10-18T14:59:59.000Z" },
+          }}
+          onContinueEditing={() => undefined}
+          onReviewSettings={() => undefined}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("현재 상태: 검토 중")).toBeTruthy();
+    expect(screen.getByText(/다음 피드백·판단 시점:/)).toBeTruthy();
+    expect(screen.getByText(/상한/)).toBeTruthy();
+    expect(screen.getByText(/포트폴리오에 그대로 남습니다/)).toBeTruthy();
+  });
+
+  it("hides the verdict card for private results even when a verdict is passed", () => {
+    render(
+      <StudioPublishResultReceipt
+        kind="private"
+        workId="work-private-verdict"
+        environment="preview"
+        verdict={{
+          kind: "publish",
+          status: "in-review",
+          submittedAt: "2026-10-14T01:00:00.000Z",
+        }}
+        onContinueEditing={() => undefined}
+        onReviewSettings={() => undefined}
+      />,
+    );
+
+    expect(screen.queryByText("현재 상태: 검토 중")).toBeNull();
+    expect(screen.queryByText(/다음 피드백·판단 시점:/)).toBeNull();
+  });
+
   it("offers an explicit rollback for published and scheduled results", () => {
     const onMakePrivate = vi.fn();
     const { rerender } = render(
@@ -130,5 +175,47 @@ describe("StudioPublishResultReceipt", () => {
       true,
     );
     expect(screen.getByRole("alert").textContent).toContain("다른 창의 변경");
+  });
+
+  it("offers operations next actions and the next episode start after publishing a series episode", () => {
+    render(
+      <MemoryRouter>
+        <StudioPublishResultReceipt
+          kind="published"
+          workId="work-9"
+          environment="production"
+          series={{ id: "series-1", title: "성운의 왕관", nextEpisodeNo: 5 }}
+          onContinueEditing={() => undefined}
+          onReviewSettings={() => undefined}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "연재 센터에서 보기" }).getAttribute("href")).toBe(
+      "/publish",
+    );
+    expect(screen.getByRole("link", { name: "회차 성과·댓글 확인" }).getAttribute("href")).toBe(
+      "/studio/analytics",
+    );
+    expect(
+      screen.getByRole("link", { name: "다음 회차 5화 원고 시작" }).getAttribute("href"),
+    ).toBe("/studio?seriesId=series-1");
+  });
+
+  it("hides operations next actions for private drafts even when a series is linked", () => {
+    render(
+      <StudioPublishResultReceipt
+        kind="private"
+        workId="work-private-2"
+        environment="preview"
+        series={{ id: "series-1", title: "성운의 왕관", nextEpisodeNo: 5 }}
+        onContinueEditing={() => undefined}
+        onReviewSettings={() => undefined}
+      />,
+    );
+
+    expect(screen.queryByRole("link", { name: "연재 센터에서 보기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "회차 성과·댓글 확인" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "다음 회차 5화 원고 시작" })).toBeNull();
   });
 });

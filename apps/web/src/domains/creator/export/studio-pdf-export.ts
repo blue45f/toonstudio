@@ -25,11 +25,18 @@ import {
   countPrintPdfOutputPages,
   rgbaToCmykBytes,
 } from "./studio-pdf-print-export";
+import { buildBookPrintPdf } from "./studio-book-pdf-export";
 
 import type { WatermarkSettings } from "../studio-watermark";
 import type { PdfPrintOptions, PrintPdfPage } from "./studio-pdf-print-export";
+import type {
+  BookPdfPage,
+  BookPrintRequest,
+  BookPrintWarning,
+} from "./studio-book-pdf-export";
 
 export type { PdfPrintOptions, PrintPdfPage } from "./studio-pdf-print-export";
+export type { BookPrintRequest, BookPrintWarning } from "./studio-book-pdf-export";
 
 /** px→pt 변환 계수 — CSS 96dpi 픽셀을 PDF 72dpi 포인트로(1px = 0.75pt). */
 export const PDF_PX_TO_PT = 0.75;
@@ -208,6 +215,8 @@ export interface PdfExportResult {
   bytes: number;
   /** 저장 파일명. */
   fileName: string;
+  /** 단행본 조판 경로일 때만 — 안전 영역·비율 경고(내보내기를 막지 않고 결과에 실어 보낸다). */
+  bookWarnings?: readonly BookPrintWarning[];
 }
 
 /** 다운로드 전 PDF 산출물 — 게시 패키지·미리보기·업로드 흐름에서 Blob을 직접 재사용한다. */
@@ -235,6 +244,13 @@ export interface PdfPagesRenderOptions {
    * 없으면 기존 기본 빌더 경로와 바이트가 같다.
    */
   print?: PdfPrintOptions;
+  /**
+   * 단행본 조판(판형 프리셋 기준 인쇄용 PDF) — 지정하면 단행본 빌더로 조립하고 안전 영역
+   * 경고를 결과에 싣는다. print와 함께 지정하면 throw 한다(패널은 단행본을 우선해
+   * 하나만 보낸다). 페이지 캔버스는 판형 비율로 렌더된 것을 전제하되, 비율이 다르면
+   * 경고로 알린다.
+   */
+  book?: BookPrintRequest;
   onProgress?: (done: number, total: number) => void;
   /**
    * 선택적 페이지별 전처리. 긴 원고의 주석 레일처럼 큰 임시 캔버스를 전 페이지 분량 쌓지 않고
@@ -288,8 +304,12 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
   const toJpeg = options.toJpeg ?? canvasToJpegBytes;
   const releaseCanvas = options.releaseCanvas ?? (options.createCanvas ? undefined : releasePageCanvas);
   const quality = options.quality ?? JPEG_QUALITY;
+  if (options.book && options.print) {
+    throw new Error("단행본 조판과 인쇄 스펙은 함께 쓸 수 없어요. 하나만 켜 주세요.");
+  }
   const jpegPages: PdfJpegPage[] = [];
   const printPages: PrintPdfPage[] = [];
+  const bookPages: BookPdfPage[] = [];
   for (let index = 0; index < valid.length; index++) {
     const { page: sourcePage, sourceIndex } = valid[index];
     let page = sourcePage;
@@ -317,6 +337,12 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
         printPages.push({
           kind: "cmyk-raster",
           cmykBytes: rgbaToCmykBytes(pixels.data),
+          width: page.width,
+          height: page.height,
+        });
+      } else if (options.book) {
+        bookPages.push({
+          jpegBytes: await toJpeg(flat, quality),
           width: page.width,
           height: page.height,
         });
@@ -349,14 +375,22 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
     options.onProgress?.(index + 1, valid.length);
   }
   let pdfBytes: Uint8Array;
+  let bookWarnings: readonly BookPrintWarning[] | undefined;
   try {
-    pdfBytes = options.print
-      ? buildPrintPdfFromPages(printPages, { title: options.title, print: options.print })
-      : buildPdfFromJpegPages(jpegPages, { title: options.title });
+    if (options.book) {
+      const built = buildBookPrintPdf(bookPages, options.book, { title: options.title });
+      pdfBytes = built.bytes;
+      bookWarnings = built.warnings;
+    } else {
+      pdfBytes = options.print
+        ? buildPrintPdfFromPages(printPages, { title: options.title, print: options.print })
+        : buildPdfFromJpegPages(jpegPages, { title: options.title });
+    }
   } finally {
     // 빌더가 PDF 바이트로 복사한 뒤 대용량 페이지 참조를 즉시 놓는다.
     jpegPages.length = 0;
     printPages.length = 0;
+    bookPages.length = 0;
   }
   const fileName = pdfExportFileName(options.title);
   // TS6 타입드어레이 제네릭: Blob은 ArrayBuffer 기반 뷰만 받으므로 명시 복사로 백킹 버퍼를 고정한다.
@@ -368,6 +402,7 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
     pageCount: options.print ? countPrintPdfOutputPages(valid.length, options.print) : valid.length,
     bytes: pdfBytes.length,
     fileName,
+    ...(bookWarnings ? { bookWarnings } : {}),
   };
 }
 
@@ -383,5 +418,6 @@ export async function exportPagesToPdf(options: PdfPagesExportOptions): Promise<
     pageCount: rendered.pageCount,
     bytes: rendered.bytes,
     fileName: rendered.fileName,
+    ...(rendered.bookWarnings ? { bookWarnings: rendered.bookWarnings } : {}),
   };
 }

@@ -10,6 +10,20 @@ import type { TitleEpisode } from "./title-episodes";
 
 import { useI18n } from "@/shared/lib/i18n-core";
 
+const appConfigState = vi.hoisted(() => ({ showAvailability: true }));
+
+vi.mock("@/platform/environment/use-app-config", () => ({
+  useAppConfig: () => ({
+    monetizationEnabled: false,
+    showCovers: true,
+    showPricing: true,
+    showAvailability: appConfigState.showAvailability,
+    showSynopsis: true,
+    showRelatedInfo: true,
+    loading: false,
+  }),
+}));
+
 vi.mock("@/domains/auth/public/session/auth-session-state", () => ({
   getAuthUserId: () => null,
 }));
@@ -68,6 +82,7 @@ function renderSection(title: Title, episodes?: readonly TitleEpisode[]) {
 
 beforeEach(() => {
   useI18n.setState({ lang: "ko" });
+  appConfigState.showAvailability = true;
   window.localStorage.clear();
 });
 
@@ -85,12 +100,97 @@ describe("TitleEpisodeSection — 회차 데이터가 없을 때 (현재 계약)
     expect(screen.getByText("월·목 연재")).toBeTruthy();
     // 정렬 토글·회차 링크는 데이터가 있을 때만
     expect(screen.queryByRole("button", { name: "최신부터" })).toBeNull();
-    expect(screen.queryByRole("link")).toBeNull();
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href") ?? "");
+    expect(hrefs.some((href) => href.includes("/read/"))).toBe(false);
   });
 
   it("총 회차 수가 메타에 있으면 빈 상태에도 총수를 표기한다", () => {
     renderSection(makeTitle({ totalEpisodes: 128 }));
     expect(screen.getByText("총 128화")).toBeTruthy();
+  });
+
+  it("빈 배열([])도 빈 <ol>이 아니라 빈 상태 안내를 그린다", () => {
+    renderSection(makeTitle(), []);
+    expect(screen.getByTestId("title-episodes-empty")).toBeTruthy();
+    expect(screen.queryByRole("list")).toBeNull();
+    expect(screen.getByText("회차별 목록은 아직 제공되지 않아요")).toBeTruthy();
+  });
+});
+
+describe("TitleEpisodeSection — 빈 상태의 외부 플랫폼 안내 (D-9)", () => {
+  const NAVER_URL = "https://comic.naver.com/webtoon/list?titleId=123";
+
+  it("연재처 URL이 있으면 빈 상태 안에 외부 플랫폼 버튼이 직접 이어진다", () => {
+    renderSection(
+      makeTitle({
+        availability: [{ platformId: "naver-webtoon", pricing: "free", url: NAVER_URL }],
+      }),
+    );
+    expect(screen.getByText("외부 플랫폼에서 보기")).toBeTruthy();
+    const cta = screen.getByRole("link", { name: "네이버 웹툰에서 보기 (새 탭)" });
+    expect(cta.getAttribute("href")).toBe(
+      `/api/go/naver-webtoon?to=${encodeURIComponent(NAVER_URL)}`,
+    );
+    expect(cta.getAttribute("target")).toBe("_blank");
+    expect(cta.getAttribute("rel")).toContain("noopener");
+    expect(screen.getByText("무료 공개")).toBeTruthy();
+  });
+
+  it("플랫폼이 4곳을 넘으면 앞 3곳만 버튼으로, 나머지는 상세 플랫폼 안내 앵커로 잇는다", () => {
+    renderSection(
+      makeTitle({
+        availability: [
+          { platformId: "munpia", pricing: "paid", url: "https://novel.munpia.com/1" },
+          { platformId: "ridi", pricing: "paid", url: "https://ridibooks.com/books/1" },
+          { platformId: "lezhin", pricing: "subscription", url: "https://www.lezhin.com/ko/comic/x" },
+          { platformId: "kakao-page", pricing: "wait-free", url: "https://page.kakao.com/content/1" },
+          { platformId: "naver-webtoon", pricing: "free", url: NAVER_URL },
+        ],
+      }),
+    );
+    // 무료 → 기다무 → 구독 순으로 앞 3곳
+    expect(screen.getByRole("link", { name: "네이버 웹툰에서 보기 (새 탭)" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "카카오페이지에서 보기 (새 탭)" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "레진코믹스에서 보기 (새 탭)" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /리디에서 보기/ })).toBeNull();
+    const more = screen.getByRole("link", { name: "다른 플랫폼 2곳 더 보기" });
+    expect(more.getAttribute("href")).toBe("#title-availability");
+  });
+
+  it("연재처는 알지만 URL이 없으면 링크를 지어내지 않고 준비 중 + 내부 동선을 제공한다", () => {
+    renderSection(
+      makeTitle({ availability: [{ platformId: "naver-webtoon", pricing: "free" }] }),
+    );
+    expect(screen.getByText("외부 플랫폼에서 보기")).toBeTruthy();
+    expect(screen.getByText(/네이버 웹툰/)).toBeTruthy();
+    expect(screen.getByText("링크 준비 중")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /네이버 웹툰에서 보기/ })).toBeNull();
+    // 막다른 화면이 되지 않게 내부 동선은 항상 있다
+    expect(
+      screen.getByRole("link", { name: "김작가의 다른 작품" }).getAttribute("href"),
+    ).toBe(`/author/${encodeURIComponent("김작가")}`);
+    expect(screen.getByRole("link", { name: "비슷한 작품 탐색하기" }).getAttribute("href")).toBe(
+      "/explore",
+    );
+  });
+
+  it("플랫폼 정보가 전혀 없어도 내부 동선으로 흐름이 이어진다", () => {
+    renderSection(makeTitle({ availability: [] }));
+    expect(screen.getByText("아직 연결된 연재 플랫폼이 없어요.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "비슷한 작품 탐색하기" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "김작가의 다른 작품" })).toBeTruthy();
+  });
+
+  it("플랫폼 노출 킬스위치가 꺼져 있으면 외부 링크·플랫폼명을 빈 상태에도 노출하지 않는다", () => {
+    appConfigState.showAvailability = false;
+    renderSection(
+      makeTitle({
+        availability: [{ platformId: "naver-webtoon", pricing: "free", url: NAVER_URL }],
+      }),
+    );
+    expect(screen.queryByRole("link", { name: /네이버 웹툰에서 보기/ })).toBeNull();
+    expect(screen.queryByText(/네이버 웹툰/)).toBeNull();
+    expect(screen.getByRole("link", { name: "비슷한 작품 탐색하기" })).toBeTruthy();
   });
 });
 

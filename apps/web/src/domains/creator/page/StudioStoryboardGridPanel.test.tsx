@@ -1,12 +1,16 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_CREATION_MODE_EVENT } from "../studio-creation-mode";
+import { withCutPose } from "../studio-cut-pose";
 import type { StudioPageDnd } from "../studio-page-dnd";
 import { StudioStoryboardGridPanel, type StoryboardGridPage } from "../StudioStoryboardGridPanel";
 import { storyboardTeamReviewInUse } from "./studio-storyboard-team-review";
+
+import type { PoseCatalogEntry } from "../scene-3d/studio-pose-suggestion";
 
 const idleDnd: StudioPageDnd = {
   dragIndex: null,
@@ -121,5 +125,69 @@ describe("StudioStoryboardGridPanel solo summary", () => {
     expect(onClose).toHaveBeenCalledTimes(2);
     expect(listener.mock.calls.map(([event]) => (event as CustomEvent<{ mode: string }>).detail.mode))
       .toEqual(["assets", "story"]);
+  });
+});
+
+const POSE_CATALOG: readonly PoseCatalogEntry[] = [
+  { id: "daily-coffee-sip", name: "머그잔 마시기", category: "daily", gender: "any", figures: 1, tags: ["카페", "커피"], description: "" },
+  { id: "dramatic-shock-stepback", name: "경악하며 뒷걸음질", category: "dramatic", gender: "any", figures: 1, tags: ["놀람", "충격"], description: "" },
+];
+
+/** 호스트 배선(withCutPose 로 페이지 상태 불변 갱신)을 흉내 내는 상태ful 하네스. */
+function PoseHarness({ onCutPoseChange }: { onCutPoseChange: (pageId: string, presetId: string | null) => void }) {
+  const [pages, setPages] = useState<StoryboardGridPage[]>([
+    { ...page("page-1", "카페 장면"), note: "카페에서 커피를 마시는 장면" },
+    page("page-2", "전개"),
+  ]);
+  return (
+    <StudioStoryboardGridPanel
+      open
+      onClose={vi.fn()}
+      pages={pages}
+      currentPageId="page-1"
+      dnd={idleDnd}
+      onSelectPage={vi.fn()}
+      onAddPage={vi.fn()}
+      onDuplicatePage={vi.fn()}
+      onDeletePage={vi.fn()}
+      canDelete
+      poseCatalog={POSE_CATALOG}
+      onCutPoseChange={(pageId, presetId) => {
+        onCutPoseChange(pageId, presetId);
+        setPages((current) => withCutPose(current, pageId, presetId));
+      }}
+    />
+  );
+}
+
+describe("StudioStoryboardGridPanel cut pose recommendation entry", () => {
+  it("hides every pose entry point without catalog + callback props", () => {
+    renderPanel();
+    expect(screen.queryByTestId("cut-pose-recommendation-panel")).toBeNull();
+    expect(screen.queryByRole("button", { name: /포즈 추천/u })).toBeNull();
+  });
+
+  it("opens the recommendation for a cut from its card, applies to that cut, and undoes it", () => {
+    const onCutPoseChange = vi.fn();
+    render(<PoseHarness onCutPoseChange={onCutPoseChange} />);
+
+    // 컷 카드의 진입점 → 그 컷 대상 추천 섹션이 열리고, 메모가 장면 설명으로 미리 채워진다.
+    fireEvent.click(screen.getByRole("button", { name: "카페 장면 포즈 추천" }));
+    expect(screen.getByTestId("cut-pose-recommendation-panel")).toBeTruthy();
+    expect((screen.getByTestId("pose-suggestion-scene-input") as HTMLInputElement).value)
+      .toBe("카페에서 커피를 마시는 장면");
+
+    // 키워드가 맞은 추천이 근거와 함께 뜨고, 적용하면 그 컷(page-1)에만 콜백이 간다.
+    const suggestion = screen.getByTestId("pose-suggestion-daily-coffee-sip");
+    expect(suggestion.textContent).toContain("머그잔 마시기");
+    fireEvent.click(screen.getByRole("button", { name: "이 포즈 적용" }));
+    expect(onCutPoseChange).toHaveBeenCalledWith("page-1", "daily-coffee-sip");
+
+    // 적용이 컷에 반영돼 현재 포즈와 되돌리기가 보이고, 되돌리면 적용 전(null)으로 원복된다.
+    expect(screen.getByTestId("cut-pose-recommendation-panel").textContent).toContain("머그잔 마시기");
+    fireEvent.click(screen.getByTestId("cut-pose-undo"));
+    expect(onCutPoseChange).toHaveBeenCalledWith("page-1", null);
+    expect(screen.queryByTestId("cut-pose-undo")).toBeNull();
+    expect(screen.getByTestId("cut-pose-recommendation-panel").textContent).toContain("아직 정한 포즈가 없어요");
   });
 });

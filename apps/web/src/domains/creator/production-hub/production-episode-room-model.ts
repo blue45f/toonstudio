@@ -18,11 +18,13 @@ import {
   assignStudioCommentThread,
   createEmptyStudioCommentsDocument,
   resolveStudioCommentThread,
+  setStudioCommentThreadDrawing,
   type StudioCommentActor,
   type StudioCommentsDocument,
 } from "../studio-comments";
 import {
   commentsDocumentToManuscriptPins,
+  countUnreadManuscriptPins,
   MANUSCRIPT_PIN_URGENT_PREFIX,
   manuscriptPinToCommentAnchor,
   type ManuscriptPinAssigneeOption,
@@ -133,6 +135,20 @@ export function createEpisodeSampleComments(aggregate: ProductionProjectAggregat
     body: "코트 깃 그림자를 늘려서 가리는 방향으로 수정할게요.",
   }, at(4));
   document = assignStudioCommentThread(document, "comment_sample-envelope", art, at(4));
+  // 봉투 문양 위치를 말 대신 그림으로 표시한 예시 (핀 그리기 주석).
+  document = setStudioCommentThreadDrawing(document, "comment_sample-envelope", {
+    strokes: [{
+      points: [
+        { x: 0.52, y: 0.6 },
+        { x: 0.76, y: 0.6 },
+        { x: 0.76, y: 0.84 },
+        { x: 0.52, y: 0.84 },
+        { x: 0.52, y: 0.6 },
+      ],
+      color: "#e5484d",
+      width: 0.005,
+    }],
+  }, at(4));
   document = addStudioCommentThread(document, {
     id: "comment_sample-rain",
     anchor: manuscriptPinToCommentAnchor({ x: 0.2, y: 0.28 }, pageId),
@@ -173,6 +189,11 @@ export function countOpenUrgentPins(document: StudioCommentsDocument, pageId: st
 
 export function countOpenPins(document: StudioCommentsDocument, pageId: string): number {
   return commentsDocumentToManuscriptPins(document, pageId).filter((pin) => pin.status !== "resolved").length;
+}
+
+/** 현재 사용자 기준 미읽음 핀 수. 사용자 ID가 없으면 0이다. */
+export function countUnreadPins(document: StudioCommentsDocument, pageId: string, currentActorId: string | null): number {
+  return countUnreadManuscriptPins(commentsDocumentToManuscriptPins(document, pageId), currentActorId);
 }
 
 /** 샘플 공정 버전: 같은 컷을 콘티 → 선화·명암 → 채색 순서로 비교한다(예시 아트). */

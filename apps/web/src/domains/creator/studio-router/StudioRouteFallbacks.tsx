@@ -1,8 +1,10 @@
 import type { StudioWorkspaceRouteErrorCode } from "../studio-workspace-route";
 import type { StudioPlaceholderRouteId } from "./studio-route-manifest";
 
+import { useT } from "@/shared/lib/i18n";
 import Link from "@/shared/navigation/router-link";
 
+/** 한국어 원문은 useT 폴백으로만 남긴다. 표시 문구의 정본은 studio.canvas.shell.* 키다. */
 const ROUTE_ERROR_DETAILS: Readonly<Record<StudioWorkspaceRouteErrorCode, string>> = {
   "identity-conflict": "작품과 리믹스 원본 ID가 한 주소에 함께 들어 있어 문서를 열지 않았습니다.",
   "invalid-mode": "지원하지 않거나 중복된 Studio 모드가 지정되어 있습니다.",
@@ -10,6 +12,15 @@ const ROUTE_ERROR_DETAILS: Readonly<Record<StudioWorkspaceRouteErrorCode, string
   "invalid-remix-id": "리믹스 원본 ID를 안전하게 읽을 수 없습니다.",
   "invalid-work-id": "작품 ID를 안전하게 읽을 수 없습니다.",
   "work-id-conflict": "주소의 작품 ID가 서로 달라 다른 문서를 여는 대신 작업을 중단했습니다.",
+};
+
+const ROUTE_ERROR_DETAIL_KEYS: Readonly<Record<StudioWorkspaceRouteErrorCode, string>> = {
+  "identity-conflict": "studio.canvas.shell.routeErrorDetail.identityConflict",
+  "invalid-mode": "studio.canvas.shell.routeErrorDetail.invalidMode",
+  "invalid-path": "studio.canvas.shell.routeErrorDetail.invalidPath",
+  "invalid-remix-id": "studio.canvas.shell.routeErrorDetail.invalidRemixId",
+  "invalid-work-id": "studio.canvas.shell.routeErrorDetail.invalidWorkId",
+  "work-id-conflict": "studio.canvas.shell.routeErrorDetail.workIdConflict",
 };
 
 const PRIMARY_EXIT_CLASS =
@@ -36,6 +47,7 @@ function StudioRouteExits({
   readonly onOpenStudio: () => void;
   readonly openLabel: string;
 }) {
+  const t = useT();
   return (
     <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
       <button
@@ -47,7 +59,7 @@ function StudioRouteExits({
         {openLabel}
       </button>
       <Link href="/showcase" data-studio-route-exit="site" className={SECONDARY_EXIT_CLASS}>
-        창작 게시판으로
+        {t("studio.canvas.shell.routeErrorToShowcase", "창작 게시판으로")}
       </Link>
     </div>
   );
@@ -60,6 +72,7 @@ export function StudioRouteFailure({
   readonly errorCode: StudioWorkspaceRouteErrorCode;
   readonly onOpenStudio: () => void;
 }) {
+  const t = useT();
   return (
     <section
       aria-labelledby="studio-route-error-title"
@@ -70,12 +83,15 @@ export function StudioRouteFailure({
           id="studio-route-error-title"
           className="text-balance text-2xl font-bold tracking-tight sm:text-3xl"
         >
-          Studio 작업 주소를 확인해 주세요
+          {t("studio.canvas.shell.routeErrorTitle", "Studio 작업 주소를 확인해 주세요")}
         </h1>
         <p className="mx-auto mt-3 max-w-[62ch] text-sm leading-relaxed text-fg-2">
-          {ROUTE_ERROR_DETAILS[errorCode]}
+          {t(ROUTE_ERROR_DETAIL_KEYS[errorCode], ROUTE_ERROR_DETAILS[errorCode])}
         </p>
-        <StudioRouteExits onOpenStudio={onOpenStudio} openLabel="새 Studio 작업 열기" />
+        <StudioRouteExits
+          onOpenStudio={onOpenStudio}
+          openLabel={t("studio.canvas.shell.routeErrorOpenNew", "새 Studio 작업 열기")}
+        />
       </div>
     </section>
   );
@@ -100,6 +116,27 @@ const PLACEHOLDER_GUIDES: Readonly<Record<StudioPlaceholderRouteId, StudioPlaceh
   },
 };
 
+/** PLACEHOLDER_GUIDES의 한국어 원문은 폴백으로만 쓰고, 표시 정본은 이 키들이 가리키는 사전 항목이다. */
+const PLACEHOLDER_GUIDE_KEYS: Readonly<Record<StudioPlaceholderRouteId, {
+  readonly eyebrow: string;
+  readonly title: string;
+  readonly description: string;
+  readonly steps: readonly string[];
+  readonly openLabel: string;
+}>> = {
+  assets: {
+    eyebrow: "studio.canvas.shell.placeholderAssetsEyebrow",
+    title: "studio.canvas.shell.placeholderAssetsTitle",
+    description: "studio.canvas.shell.placeholderAssetsDescription",
+    steps: [
+      "studio.canvas.shell.placeholderAssetsStep1",
+      "studio.canvas.shell.placeholderAssetsStep2",
+      "studio.canvas.shell.placeholderAssetsStep3",
+    ],
+    openLabel: "studio.canvas.shell.placeholderAssetsOpenLabel",
+  },
+};
+
 export function StudioRoutePlaceholder({
   placeholderId,
   onOpenStudio,
@@ -107,44 +144,56 @@ export function StudioRoutePlaceholder({
   readonly onOpenStudio: () => void;
   readonly placeholderId: StudioPlaceholderRouteId;
 }) {
+  const t = useT();
   const guide = PLACEHOLDER_GUIDES[placeholderId];
+  const guideKeys = PLACEHOLDER_GUIDE_KEYS[placeholderId];
   return (
     <section
       aria-labelledby="studio-placeholder-title"
       className="grid min-h-dvh place-items-center bg-bg px-5 py-12 text-fg"
     >
       <div className="w-full max-w-2xl text-center">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">{guide.eyebrow}</p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">{t(guideKeys.eyebrow, guide.eyebrow)}</p>
         <h1
           id="studio-placeholder-title"
           className="mx-auto mt-2 max-w-[24ch] text-balance text-2xl font-bold tracking-tight sm:text-3xl"
         >
-          {guide.title}
+          {t(guideKeys.title, guide.title)}
         </h1>
         <p className="mx-auto mt-3 max-w-[64ch] text-sm leading-relaxed text-fg-2">
-          {guide.description}
+          {t(guideKeys.description, guide.description)}
         </p>
-        <ol className="mt-6 grid gap-2 text-left sm:grid-cols-3" aria-label="권장 작업 순서">
-          {guide.steps.map((step, index) => (
-            <li
-              key={step}
-              className="flex min-h-24 items-start gap-3 rounded-2xl border border-line bg-card p-3.5"
-            >
-              <span
-                aria-hidden="true"
-                className="grid size-7 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-black text-accent"
+        <ol
+          className="mt-6 grid gap-2 text-left sm:grid-cols-3"
+          aria-label={t("studio.canvas.shell.placeholderStepsAriaLabel", "권장 작업 순서")}
+        >
+          {guide.steps.map((step, index) => {
+            const stepKey = guideKeys.steps[index];
+            return (
+              <li
+                key={step}
+                className="flex min-h-24 items-start gap-3 rounded-2xl border border-line bg-card p-3.5"
               >
-                {index + 1}
-              </span>
-              <span className="pt-1 text-xs font-semibold leading-relaxed text-fg-2">{step}</span>
-            </li>
-          ))}
+                <span
+                  aria-hidden="true"
+                  className="grid size-7 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-black text-accent"
+                >
+                  {index + 1}
+                </span>
+                <span className="pt-1 text-xs font-semibold leading-relaxed text-fg-2">
+                  {stepKey ? t(stepKey, step) : step}
+                </span>
+              </li>
+            );
+          })}
         </ol>
         <p className="mx-auto mt-4 max-w-[64ch] text-xs leading-relaxed text-fg-3">
-          이 주소에서는 편집 문서 런타임을 중복 실행하지 않습니다. 아래 버튼으로 기본 Studio를 열면
-          같은 원고와 계정 권한을 유지한 채 해당 작업을 이어갈 수 있습니다.
+          {t(
+            "studio.canvas.shell.placeholderAssetsNote",
+            "이 주소에서는 편집 문서 런타임을 중복 실행하지 않습니다. 아래 버튼으로 기본 Studio를 열면 같은 원고와 계정 권한을 유지한 채 해당 작업을 이어갈 수 있습니다.",
+          )}
         </p>
-        <StudioRouteExits onOpenStudio={onOpenStudio} openLabel={guide.openLabel} />
+        <StudioRouteExits onOpenStudio={onOpenStudio} openLabel={t(guideKeys.openLabel, guide.openLabel)} />
       </div>
     </section>
   );

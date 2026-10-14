@@ -1,5 +1,6 @@
 {
   "app.name": "ტონსტუდია",
   "app.brandBeta": "ბეტა სერვისი  მონაცემები და მახასიათებლები შეიძლება შეიცვალოს",
-  "app.loading": "დატვირთვა"
+  "app.loading": "დატვირთვა",
+  "app.skipToContent": "Skip to main content"
 }

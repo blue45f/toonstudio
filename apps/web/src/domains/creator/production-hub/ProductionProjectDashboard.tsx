@@ -36,6 +36,7 @@ import { formatProductionDday, formatProductionRelative, productionDaysUntil } f
 import { ProductionAvatar, ProductionPill } from "./production-ui";
 import { BOARD_STATUS_LABELS } from "./production-workboard-model";
 
+import { NowCard } from "@/shared/components/layout/NowCard";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import type { CreatorRoleLens } from "@/shared/lib/creator-role-contract";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -78,6 +79,14 @@ function DashboardCard({
 
 function nextStepCopy(step: ProductionDashboardNextStep, projectId: string, bt: ProductionLocalize) {
   switch (step.kind) {
+    case "planning":
+      return {
+        tone: "accent" as const,
+        title: bt("기획부터 시작하세요", "Start with planning"),
+        detail: bt("작품 한눈에 보기·공통 설정·회차 계획이 아직 없습니다. 기획에서 작품 기준을 먼저 정해 주세요.", "No brief, series bible or episode plans yet. Set the basics in Planning first."),
+        action: bt("기획 열기", "Open planning"),
+        href: productionSurfacePath(projectId, "planning"),
+      };
     case "answer-question":
       return {
         tone: "danger" as const,
@@ -227,20 +236,18 @@ export function ProductionProjectDashboard({
               <li><ProductionPill tone="success"><CheckCircle2 className="size-3" aria-hidden="true" />{bt(`완료 ${progress.completed}`, `${progress.completed} done`)}</ProductionPill></li>
             </ul>
           </div>
-          <div
-            className={cn(
-              "rounded-2xl border p-4",
-              next.tone === "danger" ? "border-bad/40 bg-bad/10" : next.tone === "warning" ? "border-warn/40 bg-warn/10" : next.tone === "success" ? "border-good/40 bg-good/10" : "border-accent/40 bg-card",
+          <NowCard
+            eyebrow={bt("지금 할 일", "Do this now")}
+            title={next.title}
+            reason={next.detail}
+            tone={next.tone === "accent" ? "default" : next.tone}
+            action={(
+              <Link className={buttonClass({ size: "sm", className: "min-h-11 w-full gap-1.5" })} to={next.href}>
+                {next.action}
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
             )}
-          >
-            <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em] text-fg-3">{bt("지금 할 일", "Do this now")}</p>
-            <p className="mt-1 text-base font-black text-fg">{next.title}</p>
-            <p className="mt-1 line-clamp-2 text-xs leading-5 text-fg-2">{next.detail}</p>
-            <Link className={buttonClass({ size: "sm", className: "mt-3 min-h-11 w-full gap-1.5" })} to={next.href}>
-              {next.action}
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </div>
+          />
         </div>
       </section>
 

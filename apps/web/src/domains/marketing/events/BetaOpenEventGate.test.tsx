@@ -37,7 +37,7 @@ function renderGate() {
   return render(
     <MemoryRouter>
       <button type="button">작품 둘러보기</button>
-      <BetaOpenEventGate pathname="/discover" />
+      <BetaOpenEventGate pathname="/features" />
     </MemoryRouter>,
   );
 }
@@ -90,6 +90,24 @@ describe("BetaOpenEventGate", () => {
 
     expect(onClick).toHaveBeenCalledOnce();
     expect(screen.getByRole("region", { name: "베타 오픈 혜택" })).toBeTruthy();
+  });
+
+  it("레일형 탐색 표면에서는 축소형 배너로 표시돼 혜택 펼침 없이 닫을 수 있다", () => {
+    render(
+      <MemoryRouter>
+        <BetaOpenEventGate pathname="/discover" />
+      </MemoryRouter>,
+    );
+    act(() => vi.advanceTimersByTime(32_000));
+
+    const region = screen.getByRole("region", { name: "베타 오픈 혜택" });
+    expect(region.dataset.betaOpenVariant).toBe("compact");
+    expect(screen.queryByRole("button", { name: "혜택·조건" })).toBeNull();
+    expect(screen.queryByText("주요 서비스 이용료 무료 · 공정 사용 한도 적용")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "베타 혜택 닫기" }));
+    expect(screen.queryByRole("region", { name: "베타 오픈 혜택" })).toBeNull();
+    expect(window.localStorage.getItem(eventSeenStorageKey(BETA_OPEN_EVENT.id))).toBe("1");
   });
 
   it("does not mount on the product orientation route", () => {

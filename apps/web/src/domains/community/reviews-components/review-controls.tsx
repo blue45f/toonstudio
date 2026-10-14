@@ -39,8 +39,9 @@ export function ReviewControls() {
   const sort = parseReviewSort(sp.get("sort"));
   const rating = parseReviewRating(sp.get("rating"));
   const spoilerHidden = sp.get("spoiler") === "hide";
+  const summaryView = sp.get("view") === "summary";
 
-  const setParam = (key: "sort" | "rating" | "spoiler", value: string | null) => {
+  const setParam = (key: "sort" | "rating" | "spoiler" | "view", value: string | null) => {
     const next = new URLSearchParams(sp.toString());
     if (!value) next.delete(key);
     else next.set(key, value);
@@ -98,6 +99,26 @@ export function ReviewControls() {
         {spoilerHidden ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
         {bt("스포일러 숨기기", "Hide spoilers")}
       </button>
+
+      {/* 악성 댓글 방벽 (REPORT O-5): 원본 피드 대신 분류·집계한 반응 요약만 보는 모드. */}
+      <div role="group" aria-label={bt("보기 방식", "View mode")} className={SEGMENT_GROUP}>
+        <button
+          type="button"
+          aria-pressed={!summaryView}
+          onClick={() => setParam("view", null)}
+          className={cn(SEGMENT_BUTTON, "px-3 text-[0.8rem]", !summaryView ? "bg-raised text-fg" : "text-fg-3 hover:text-fg-2")}
+        >
+          {bt("원본 피드", "Original feed")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={summaryView}
+          onClick={() => setParam("view", "summary")}
+          className={cn(SEGMENT_BUTTON, "px-3 text-[0.8rem]", summaryView ? "bg-raised text-fg" : "text-fg-3 hover:text-fg-2")}
+        >
+          {bt("반응 요약", "Reaction summary")}
+        </button>
+      </div>
     </div>
   );
 }

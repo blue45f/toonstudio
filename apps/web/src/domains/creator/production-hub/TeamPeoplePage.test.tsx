@@ -27,7 +27,7 @@ beforeEach(() => {
   vi.clearAllMocks(); mocks.userId = "owner"; sessionStorage.clear();
   mocks.operation.mockResolvedValue(resolveOperationPolicy({ revision: 0, draft: initialOperationPolicy(), updatedAt: "2026-09-22T00:00:00Z" }, null, new Date()));
   mocks.list.mockResolvedValue({ workspaces: [workspace] });
-  mocks.detail.mockResolvedValue({ workspace, projects: [{ id: "project-a", workId: "work-a", title: "검수 원고" }],
+  mocks.detail.mockResolvedValue({ workspace, projects: [{ id: "project-a", workId: "work-a", title: "검수 원고", ownerUserId: "owner" }],
     members: [{ userId: "owner", displayName: "소유자", role: "owner", joinedAt: workspace.createdAt }], invites: [] });
   mocks.usage.mockResolvedValue({ policy: FREE_USAGE_POLICY, workspaceId: workspace.id, operationMode: "free", policyRevision: 0,
     counters: { ownedWorkspaces: 1, projects: 1, members: 1, pendingInvites: 0 },
@@ -120,7 +120,7 @@ describe("people & access surface (wave 6 T1)", () => {
   });
 
   it("uses the signed-in member's real profile photo and keeps monograms for members without one", async () => {
-    mocks.detail.mockResolvedValue({ workspace, projects: [{ id: "project-a", workId: "work-a", title: "검수 원고" }],
+    mocks.detail.mockResolvedValue({ workspace, projects: [{ id: "project-a", workId: "work-a", title: "검수 원고", ownerUserId: "owner" }],
       members: [
         { userId: "owner", displayName: "소유자", role: "owner", joinedAt: workspace.createdAt },
         { userId: "member-b", displayName: "채색 담당", role: "member", joinedAt: workspace.createdAt },

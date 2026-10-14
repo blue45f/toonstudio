@@ -35,24 +35,26 @@ try {
   await page.goto(`${base}/studio/manual`, { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "무엇을 도와드릴까요?", exact: true }).waitFor();
   assert.match(await page.title(), /스튜디오 매뉴얼/);
-  // 첫 화면은 분류 카드 7장(.manual-category-card)과 그 안의 문서 링크 17개로 구성된다(옛 .manual-card 는 없다).
+  // 첫 화면은 분류 카드 7장(.manual-category-card)과 그 안의 문서 링크 18개로 구성된다(옛 .manual-card 는 없다).
   assert.equal(await page.locator(".manual-category-card").count(), 7);
-  assert.equal(await page.locator(".manual-category-card li a").count(), 17);
+  assert.equal(await page.locator(".manual-category-card li a").count(), 18);
+  // S1-7: 시작하기 분류의 첫 문서는 "한 화 완성 흐름"이다(인앱 정본 studio-manual-data.ts 순서 고정).
+  assert.match(await page.locator(".manual-category-card li a").first().innerText(), /한 화 완성 흐름/);
   assert.equal(await page.locator("canvas").count(), 0, "Manual must not initialize an editor canvas");
   await page.screenshot({ path: `${output}/desktop-index.png` });
-  checks.push("desktop index, 7 topic cards / 17 articles, independent editor-free route");
+  checks.push("desktop index, 7 topic cards / 18 articles, independent editor-free route");
 
   const search = page.getByRole("searchbox", { name: "매뉴얼 검색어" });
   await search.fill("스머지");
   await page.waitForFunction(() => {
     const cards = document.querySelectorAll(".manual-result");
-    return cards.length > 0 && cards.length < 17 && cards[0]?.textContent?.includes("브러시와 지우개");
+    return cards.length > 0 && cards.length < 18 && cards[0]?.textContent?.includes("브러시와 지우개");
   });
   assert.match(await page.locator(".manual-result").first().innerText(), /브러시와 지우개/);
   await search.fill("not-a-real-term-938271");
   await page.getByRole("heading", { name: "검색 결과가 없습니다" }).waitFor();
   await page.getByRole("button", { name: "전체 문서 보기", exact: true }).click();
-  assert.equal(await page.locator(".manual-category-card li a").count(), 17);
+  assert.equal(await page.locator(".manual-category-card li a").count(), 18);
   await page.getByLabel("매뉴얼 분류", { exact: true }).selectOption("three");
   assert.equal(await page.locator(".manual-result").count(), 2);
   await page.getByRole("button", { name: "검색 초기화" }).click();

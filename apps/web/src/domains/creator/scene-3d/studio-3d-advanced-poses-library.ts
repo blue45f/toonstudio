@@ -1,13 +1,21 @@
 /**
  * Studio 3D Advanced Pose & Hand Expression Library (VRoid / Mixamo / Posemaniacs Benchmark).
- * 12 full-body webtoon dramatic poses, 16 expressive hand presets, and prop socket solvers.
+ * 18 full-body webtoon poses (액션·일상·대화·커플·앉기·드라마틱·감정), 16 expressive hand presets,
+ * and prop socket solvers. 손 프리셋은 EXPRESSIVE_HAND_PRESETS로 전신과 분리된 라이브러리다.
  *
  * 각 전신 포즈는 탐색 UX용 메타데이터(카테고리·성별·인원수·태그)를 함께 가진다.
  * - 성별 "any"는 남/여 모델 모두에 어울리는 공용 포즈다(성별 필터는 any를 항상 포함한다).
  * - 인원수 2는 상대역이 함께 필요한 연출 포즈(포옹·벽치기 등)를 뜻한다.
  */
 
-export type CharacterPoseCategory = "action" | "daily" | "dramatic" | "emotion";
+export type CharacterPoseCategory =
+  | "action"
+  | "daily"
+  | "dialogue"
+  | "couple"
+  | "sitting"
+  | "dramatic"
+  | "emotion";
 
 /** 포즈가 어울리는 성별. "any"는 남/여 공용이다. */
 export type WebtoonPoseGender = "any" | "male" | "female";
@@ -42,6 +50,9 @@ export const WEBTOON_POSE_CATEGORY_META: readonly {
 }[] = Object.freeze([
   { id: "action", label: "액션" },
   { id: "daily", label: "일상" },
+  { id: "dialogue", label: "대화" },
+  { id: "couple", label: "커플·2인" },
+  { id: "sitting", label: "앉기" },
   { id: "dramatic", label: "드라마틱" },
   { id: "emotion", label: "감정" },
 ]);
@@ -166,20 +177,20 @@ export const ADVANCED_WEBTOON_POSES: readonly CharacterFullBodyPosePreset[] = Ob
   {
     id: "daily-sitting-chair",
     name: "의자에 턱 괴고 앉기 (Chin on Hand)",
-    category: "daily",
+    category: "sitting",
     gender: "any",
     figures: 1,
     tags: ["앉기", "의자", "카페", "생각", "휴식"],
     description: "책상/카페 의자에 앉아 한 손으로 턱을 괸 채 생각에 잠긴 자세",
     iconHint: "Armchair",
     jointRotations: [
-      { joint: "hips", rotationEulerDeg: [80, 0, 0] },
+      { joint: "hips", rotationEulerDeg: [15, 0, 0] },
       { joint: "leftUpperLeg", rotationEulerDeg: [-80, 0, 0] },
       { joint: "leftLowerLeg", rotationEulerDeg: [80, 0, 0] },
       { joint: "rightUpperLeg", rotationEulerDeg: [-80, 0, 0] },
       { joint: "rightLowerLeg", rotationEulerDeg: [80, 0, 0] },
       { joint: "rightUpperArm", rotationEulerDeg: [-60, -20, 0] },
-      { joint: "rightLowerArm", rotationEulerDeg: [110, 0, 0] },
+      { joint: "rightLowerArm", rotationEulerDeg: [0, 0, 105] },
     ],
   },
   {
@@ -194,7 +205,7 @@ export const ADVANCED_WEBTOON_POSES: readonly CharacterFullBodyPosePreset[] = Ob
     jointRotations: [
       { joint: "head", rotationEulerDeg: [5, 15, -10] },
       { joint: "rightUpperArm", rotationEulerDeg: [-30, -35, 0] },
-      { joint: "rightLowerArm", rotationEulerDeg: [135, 0, 0] },
+      { joint: "rightLowerArm", rotationEulerDeg: [0, 0, 125] },
       { joint: "leftUpperLeg", rotationEulerDeg: [-25, 0, 0] },
       { joint: "rightUpperLeg", rotationEulerDeg: [20, 0, 0] },
     ],
@@ -211,9 +222,9 @@ export const ADVANCED_WEBTOON_POSES: readonly CharacterFullBodyPosePreset[] = Ob
     jointRotations: [
       { joint: "head", rotationEulerDeg: [10, 0, 0] },
       { joint: "rightUpperArm", rotationEulerDeg: [-45, -30, 0] },
-      { joint: "rightLowerArm", rotationEulerDeg: [120, 0, 0] },
+      { joint: "rightLowerArm", rotationEulerDeg: [0, 0, 110] },
       { joint: "leftUpperArm", rotationEulerDeg: [-45, 30, 0] },
-      { joint: "leftLowerArm", rotationEulerDeg: [120, 0, 0] },
+      { joint: "leftLowerArm", rotationEulerDeg: [0, 0, -110] },
     ],
   },
 
@@ -245,19 +256,19 @@ export const ADVANCED_WEBTOON_POSES: readonly CharacterFullBodyPosePreset[] = Ob
     description: "무릎을 꿇고 고개를 떨군 채 좌절하는 감정 씬",
     iconHint: "HeartCrack",
     jointRotations: [
-      { joint: "hips", rotationEulerDeg: [90, 0, 0] },
+      { joint: "hips", rotationEulerDeg: [40, 0, 0] },
       { joint: "leftUpperLeg", rotationEulerDeg: [-90, 0, 0] },
       { joint: "leftLowerLeg", rotationEulerDeg: [140, 0, 0] },
       { joint: "rightUpperLeg", rotationEulerDeg: [-90, 0, 0] },
       { joint: "rightLowerLeg", rotationEulerDeg: [140, 0, 0] },
-      { joint: "spine", rotationEulerDeg: [40, 0, 0] },
+      { joint: "spine", rotationEulerDeg: [30, 0, 0] },
       { joint: "head", rotationEulerDeg: [35, 0, 0] },
     ],
   },
   {
     id: "dramatic-romantic-hug",
     name: "로맨스 포옹 (Romantic Embrace)",
-    category: "emotion",
+    category: "couple",
     gender: "any",
     figures: 2,
     tags: ["포옹", "로맨스", "연인", "하이라이트", "끌어안기"],
@@ -274,7 +285,7 @@ export const ADVANCED_WEBTOON_POSES: readonly CharacterFullBodyPosePreset[] = Ob
   {
     id: "dramatic-wall-slam-kabe-don",
     name: "벽치기 카베동 (Kabe-Don)",
-    category: "dramatic",
+    category: "couple",
     gender: "any",
     figures: 2,
     tags: ["벽치기", "카베동", "설렘", "로맨스", "클리셰"],
@@ -287,6 +298,132 @@ export const ADVANCED_WEBTOON_POSES: readonly CharacterFullBodyPosePreset[] = Ob
       { joint: "leftUpperArm", rotationEulerDeg: [10, -10, 0] },
     ],
   },
+  // Dialogue (신규)
+  {
+    id: "dialogue-explaining-gesture",
+    name: "설명하며 손짓 (Explaining Gesture)",
+    category: "dialogue",
+    gender: "any",
+    figures: 1,
+    tags: ["대화", "설명", "손짓", "발표"],
+    description: "양손으로 손짓하며 상대에게 설명하는 대화 컷",
+    iconHint: "MessageCircle",
+    jointRotations: [
+      { joint: "spine", rotationEulerDeg: [4, -8, 0] },
+      { joint: "head", rotationEulerDeg: [0, 10, 0] },
+      { joint: "rightUpperArm", rotationEulerDeg: [-52, -14, 0] },
+      { joint: "rightLowerArm", rotationEulerDeg: [38, 0, 0] },
+      { joint: "leftUpperArm", rotationEulerDeg: [-34, 14, 0] },
+      { joint: "leftLowerArm", rotationEulerDeg: [52, 0, 0] },
+    ],
+  },
+  {
+    id: "dialogue-listening-nod",
+    name: "경청하며 끄덕이기 (Listening Nod)",
+    category: "dialogue",
+    gender: "any",
+    figures: 1,
+    tags: ["대화", "경청", "끄덕이기", "듣기"],
+    description: "상대 말을 들으며 고개를 살짝 숙이는 리액션 컷",
+    iconHint: "Ear",
+    jointRotations: [
+      { joint: "spine", rotationEulerDeg: [8, 0, 0] },
+      { joint: "head", rotationEulerDeg: [12, -6, 4] },
+      { joint: "rightUpperArm", rotationEulerDeg: [-18, -10, 0] },
+      { joint: "rightLowerArm", rotationEulerDeg: [72, 0, 0] },
+      { joint: "leftUpperArm", rotationEulerDeg: [-18, 10, 0] },
+      { joint: "leftLowerArm", rotationEulerDeg: [72, 0, 0] },
+    ],
+  },
+  {
+    id: "dialogue-whisper-secret",
+    name: "귓속말 (Whisper Secret)",
+    category: "dialogue",
+    gender: "any",
+    figures: 2,
+    tags: ["대화", "귓속말", "비밀", "속삭이기"],
+    description: "상대 귀에 대고 비밀을 속삭이는 2인 대화 컷",
+    iconHint: "MessageSquare",
+    jointRotations: [
+      { joint: "spine", rotationEulerDeg: [6, -16, 6] },
+      { joint: "head", rotationEulerDeg: [4, -24, 8] },
+      { joint: "rightUpperArm", rotationEulerDeg: [-44, -20, 0] },
+      { joint: "rightLowerArm", rotationEulerDeg: [118, 0, 0] },
+    ],
+  },
+  // Couple (신규)
+  {
+    id: "couple-hand-hold",
+    name: "손잡고 걷기 (Holding Hands)",
+    category: "couple",
+    gender: "any",
+    figures: 2,
+    tags: ["손잡기", "걷기", "데이트", "연인"],
+    description: "옆 사람 손을 잡고 걷는 로맨스 컷 (상대 1인 추가 필요)",
+    iconHint: "Heart",
+    jointRotations: [
+      { joint: "hips", rotationEulerDeg: [0, -6, 0] },
+      { joint: "rightUpperArm", rotationEulerDeg: [-24, -18, 0] },
+      { joint: "rightLowerArm", rotationEulerDeg: [14, 0, 0] },
+      { joint: "leftUpperLeg", rotationEulerDeg: [-24, 0, 0] },
+      { joint: "rightUpperLeg", rotationEulerDeg: [18, 0, 0] },
+    ],
+  },
+  {
+    id: "couple-shoulder-lean",
+    name: "어깨에 기대기 (Shoulder Lean)",
+    category: "couple",
+    gender: "any",
+    figures: 2,
+    tags: ["기대기", "어깨", "연인", "휴식"],
+    description: "상대 어깨에 머리를 기대는 다정한 컷 (상대 1인 추가 필요)",
+    iconHint: "Heart",
+    jointRotations: [
+      { joint: "spine", rotationEulerDeg: [2, 0, 10] },
+      { joint: "head", rotationEulerDeg: [0, 0, 14] },
+      { joint: "rightUpperArm", rotationEulerDeg: [-30, -12, 0] },
+      { joint: "rightLowerArm", rotationEulerDeg: [70, 0, 0] },
+    ],
+  },
+  // Sitting (신규)
+  {
+    id: "sitting-floor-cross-legged",
+    name: "바닥 양반다리 (Cross-Legged Floor)",
+    category: "sitting",
+    gender: "any",
+    figures: 1,
+    tags: ["앉기", "바닥", "양반다리", "좌식"],
+    description: "바닥에 다리를 꼬고 앉은 좌식 컷",
+    iconHint: "Armchair",
+    jointRotations: [
+      { joint: "hips", rotationEulerDeg: [80, 0, 0] },
+      { joint: "leftUpperLeg", rotationEulerDeg: [-78, 0, 0] },
+      { joint: "leftLowerLeg", rotationEulerDeg: [118, 0, 0] },
+      { joint: "rightUpperLeg", rotationEulerDeg: [-78, 0, 0] },
+      { joint: "rightLowerLeg", rotationEulerDeg: [118, 0, 0] },
+      { joint: "spine", rotationEulerDeg: [6, 0, 0] },
+    ],
+  },
+  {
+    id: "sitting-desk-slump",
+    name: "책상에 엎드리기 (Desk Slump)",
+    category: "sitting",
+    gender: "any",
+    figures: 1,
+    tags: ["앉기", "책상", "엎드리기", "졸기", "학교"],
+    description: "의자에 앉아 책상에 상체를 엎드린 학교·사무실 컷",
+    iconHint: "Armchair",
+    jointRotations: [
+      { joint: "hips", rotationEulerDeg: [80, 0, 0] },
+      { joint: "leftUpperLeg", rotationEulerDeg: [-84, 0, 0] },
+      { joint: "leftLowerLeg", rotationEulerDeg: [82, 0, 0] },
+      { joint: "rightUpperLeg", rotationEulerDeg: [-84, 0, 0] },
+      { joint: "rightLowerLeg", rotationEulerDeg: [82, 0, 0] },
+      { joint: "spine", rotationEulerDeg: [34, 0, 0] },
+      { joint: "head", rotationEulerDeg: [24, 0, 0] },
+    ],
+  },
+
 ]);
 
 /** id 로 포즈 프리셋을 찾는다. */

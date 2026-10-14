@@ -188,6 +188,51 @@ export const BUNDLED_VRM_RIGHTS_BLOCKS: readonly BundledVrmRightsBlock[] = [
     notice:
       "Meebits 보유자 이용조건은 일반 번들 재배포·상업 서비스 제공 권한으로 간주할 수 없어 카탈로그와 런타임 로드를 차단했습니다.",
   },
+  {
+    id: "avatar-a",
+    name: "하린",
+    url: "/vrm/AvatarSample_A.vrm",
+    status: "rights-blocked",
+    reasonCode: "redistribution-commercial-restriction",
+    notice:
+      "pixiv VRoidPreset(AvatarSample A–Z) 조건은 CC0가 아니며 캐릭터 제작 서비스에서의 샘플 데이터 이용을 금지하고, 무수정 원본 파일의 번들 재배포를 허용하지 않아 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
+  },
+  {
+    id: "avatar-b",
+    name: "세라",
+    url: "/vrm/AvatarSample_B.vrm",
+    status: "rights-blocked",
+    reasonCode: "redistribution-commercial-restriction",
+    notice:
+      "pixiv VRoidPreset(AvatarSample A–Z) 조건은 CC0가 아니며 캐릭터 제작 서비스에서의 샘플 데이터 이용을 금지하고, 무수정 원본 파일의 번들 재배포를 허용하지 않아 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
+  },
+  {
+    id: "avatar-c",
+    name: "유나",
+    url: "/vrm/AvatarSample_C.vrm",
+    status: "rights-blocked",
+    reasonCode: "redistribution-commercial-restriction",
+    notice:
+      "pixiv VRoidPreset(AvatarSample A–Z) 조건은 CC0가 아니며 캐릭터 제작 서비스에서의 샘플 데이터 이용을 금지하고, 무수정 원본 파일의 번들 재배포를 허용하지 않아 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
+  },
+  {
+    id: "mio",
+    name: "미오 (인체 베이스)",
+    url: "/vrm/fem_vroid.vrm",
+    status: "rights-blocked",
+    reasonCode: "redistribution-commercial-restriction",
+    notice:
+      "파일 임베드 라이선스가 \"Other\"이고 참조 URL이 없으며 저작자가 개인(jin)으로, 원 배포 조건을 확정할 수 없어 재배포를 허용할 근거가 없으므로 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
+  },
+  {
+    id: "noa",
+    name: "노아 (인체 베이스)",
+    url: "/vrm/masc_vroid.vrm",
+    status: "rights-blocked",
+    reasonCode: "redistribution-commercial-restriction",
+    notice:
+      "파일 임베드 라이선스가 \"Other\"이고 참조 URL이 없으며 저작자가 개인(jin)으로, 원 배포 조건을 확정할 수 없어 재배포를 허용할 근거가 없으므로 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
+  },
 ] as const;
 
 const BUNDLED_VRM_RIGHTS_BLOCK_BY_ID = new Map(
@@ -206,7 +251,12 @@ export function isBundledVrmRightsBlocked(id: string): boolean {
 
 // 전체 번들 VRM 레지스트리. 모든 엔트리는 public/vrm/ 아래 실파일과 1:1 대응한다.
 // visibility가 legacy인 모델은 기존 프로젝트 복원을 위해 여기에 남지만 기본 선택 목록에서는 숨긴다.
-// A-C는 pixiv VRoidPreset 조건, old beta 샘플 4종은 pixiv CC0 조건을 따른다.
+// old beta 샘플 4종은 pixiv CC0 조건을 따른다. 구 AvatarSample A–C(VRoidPreset, 비CC0)와
+// fem/masc_vroid(조건 불명)는 2026-10-14 원문 대조로 재배포 불가 판정되어 레지스트리에서
+// 내리고 BUNDLED_VRM_RIGHTS_BLOCKS로 격리했다 — 대체는 기번들 CC0 모델이 맡는다:
+// 여성 휴머노이드 슬롯은 CC0 베타 샘플(shino·shion·vivi·vita)과 100Avatars CC0
+// (kate·jennifer·erika·olivia), 인체 베이스 슬롯은 Quaternius CC0 모듈러 남녀와
+// 100Avatars CC0 남성(jimmy·robert)이 이미 같은 레지스트리에 있다.
 // 모델별 출처 URL·라이선스 요약은 public/vrm/LICENSES.md 참고
 // (2026-06: madjin/vrm-samples VRoid 공식 샘플 + UniVRM Alicia Solid,
 //  2026-07: github.com/ToxSam/open-source-avatars 레지스트리의 Polygonal Mind
@@ -216,9 +266,6 @@ export const SAMPLE_VRMS: SampleVrm[] = [
   { id: SAMPLE_VRM_ID, name: "루미", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/sample-vrm.png", url: SAMPLE_VRM_URL },
   ...QUATERNIUS_FANTASY_VRMS,
   ...QUATERNIUS_MODULAR_VRMS,
-  { id: "avatar-a", name: "하린", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/avatar-a.png", url: "/vrm/AvatarSample_A.vrm" },
-  { id: "avatar-b", name: "세라", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/avatar-b.png", url: "/vrm/AvatarSample_B.vrm" },
-  { id: "avatar-c", name: "유나", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/avatar-c.png", url: "/vrm/AvatarSample_C.vrm" },
   { id: "shion", name: "시온", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/shion.png", url: "/vrm/Sendagaya_Shibu.vrm" },
   { id: "vivi", name: "비비", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v1/vivi.png", url: "/vrm/Vivi.vrm" },
   { id: "vita", name: "비타", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/vita.png", url: "/vrm/Vita.vrm" },
@@ -248,8 +295,6 @@ export const SAMPLE_VRMS: SampleVrm[] = [
     url: "/vrm/Darkness_Shibu.vrm",
     limitations: ["heavy-payload"],
   },
-  { id: "mio", name: "미오 (인체 베이스)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/mio.png", url: "/vrm/fem_vroid.vrm" },
-  { id: "noa", name: "노아 (인체 베이스)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/noa.png", url: "/vrm/masc_vroid.vrm" },
   { id: "alicia", name: "아리시아", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v1/alicia.png", url: "/vrm/AliciaSolid.vrm" },
   { id: "devil", name: "데빌 (악마)", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/devil.png", url: "/vrm/Devil.vrm" },
   { id: "polydancer", name: "폴리댄서", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/polydancer.png", url: "/vrm/Polydancer.vrm" },

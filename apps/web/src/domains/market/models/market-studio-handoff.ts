@@ -1,5 +1,6 @@
 import type { CreatorMarketplaceInstallReceiptState } from "@/shared/lib/creator-marketplace-install-receipt";
 import { campusDocumentHref } from "@/shared/lib/spatial-campus/campus-return";
+import { buildReturnContextHref } from "@/shared/navigation/return-context";
 import type {
   CreatorMarketplaceResourceKind,
   CreatorMarketplaceResourceRecord,
@@ -115,7 +116,14 @@ export function marketStudioResourceHref(
   url.searchParams.set("installMarketResource", resourceId);
   url.searchParams.set("assetMarket", "community");
   url.searchParams.set(MARKET_STUDIO_RETURN_QUERY, marketResourceReturnHref(resourceId));
-  return `${url.pathname}?${url.searchParams.toString()}`;
+  const installHref = `${url.pathname}?${url.searchParams.toString()}`;
+  // 복귀 맥락 계약 파일럿 (BLUEPRINT §2.4, S2-8): 레거시 marketReturn과 같은 대상을
+  // 일반 계약(returnTo·intent)으로도 함께 싣는다. 도착 표면(에디터)은 계약이 있으면
+  // 맥락 배너 + 복귀 행동을, 없으면 기존 복귀 알림을 제공한다.
+  return buildReturnContextHref(installHref, {
+    returnTo: marketResourceReturnHref(resourceId),
+    intent: "apply-market-resource",
+  });
 }
 
 export function marketStudioHandoff(

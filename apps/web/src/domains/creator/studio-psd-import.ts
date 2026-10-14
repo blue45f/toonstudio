@@ -71,6 +71,36 @@ export interface PsdImportResult {
   skipped: string[];
   /** PSD 전용 구조화 손실 명세. skipped의 사람용 상세와 달리 기능별 보존 수준을 집계한다. */
   lossManifest?: PsdInterchangeLossManifest;
+  /** 인코딩된 PNG data URL(레이어·마스크·합성본)이 결과에 상주하는 메모리 회계.
+   * 피크(가장 큰 단일 레이어)와 누적 합계를 예산 상한과 함께 기록한다. */
+  encodedPngMemory?: PsdImportEncodedPngMemory;
+}
+
+/**
+ * 가져오기가 끝난 뒤 결과 객체에 그대로 상주하는 PNG data URL 메모리 회계.
+ * 바이트 수는 data URL payload를 디코딩한 PNG 바이트 추정치(estimatePsdDataUrlDecodedBytes)다.
+ */
+export interface PsdImportEncodedPngMemory {
+  /** 상주 상한(PSD_IMPORT_MAX_ENCODED_PNG_BYTES) — 이 값을 넘는 항목은 상주시키지 않는다. */
+  readonly budgetBytes: number;
+  /** 상주 중인 레이어 PNG 합계. */
+  readonly layerBytes: number;
+  /** 상주 중인 마스크 PNG 합계. */
+  readonly maskBytes: number;
+  /** 상주 중인 합성본 PNG(없으면 0). */
+  readonly compositeBytes: number;
+  /** layerBytes + maskBytes + compositeBytes. 항상 budgetBytes 이하다. */
+  readonly totalBytes: number;
+  /** 가장 큰 단일 레이어 PNG 바이트 — 메모리 피크의 하한 지표. */
+  readonly peakLayerBytes: number;
+  /** 상주 중인 레이어 수. */
+  readonly layerCount: number;
+  /** 상한 초과로 상주시키지 않은 레이어 수. */
+  readonly skippedLayerCount: number;
+  /** 상한 초과로 버린 마스크 수. */
+  readonly droppedMaskCount: number;
+  /** 상한 초과로 생략한 합성본이면 true. */
+  readonly compositeSkipped: boolean;
 }
 
 export type PsdInterchangeContainer = "psd" | "psb" | "studio";
@@ -120,6 +150,8 @@ export interface PsdInterchangeLossManifest {
     readonly maxFileBytes: number;
     readonly maxDecodedBytes: number;
     readonly maxDimensionPx: number;
+    /** 인코딩된 PNG data URL 상주 상한. 구형 명세에는 없을 수 있어 선택 필드다. */
+    readonly maxEncodedPngBytes?: number;
   };
   readonly alternatives: readonly string[];
 }
@@ -381,6 +413,107 @@ export const PSD_IMPORT_MAX_FILE_BYTES = 128 * 1024 * 1024;
 export const PSD_IMPORT_MAX_DECODED_BYTES = 128 * 1024 * 1024;
 export const PSD_IMPORT_MAX_DIMENSION_PX = 30_000;
 
+/**
+ * 인코딩된 PNG data URL이 가져오기 결과에 상주하는 총량의 상한.
+ * 디코딩 예산(128MB)은 디코더가 다루는 원본 픽셀 기준이라, base64로 부풀고
+ * (약 4/3) 합성본이 전체 캔버스를 한 번 더 담는 data URL 상주량과는 별개로
+ * 운용해야 한다. 디코딩 예산의 1.5배를 상한으로 두면 정상 가져오기(레이어 합계가
+ * 디코딩 예산 안에 있고 PNG는 대개 원본보다 작다)는 걸리지 않으면서, 결과 객체가
+ * 무한정 커지는 것만은 막을 수 있다. 상한을 넘는 항목은 전체 실패가 아니라
+ * 레이어·마스크·합성본 단위로 상주를 포기하고 skipped로 정직하게 고지한다.
+ */
+export const PSD_IMPORT_MAX_ENCODED_PNG_BYTES = Math.floor(PSD_IMPORT_MAX_DECODED_BYTES * 1.5);
+
+/** data URL payload를 디코딩했을 때의 바이트 수 추정치.
+ * base64면 패딩을 뺀 정확한 디코딩 길이를, 아니면 percent-encoding이 디코딩 후
+ * 길어지지 않으므로 payload 문자 수를 상한 추정치로 돌려준다. */
+export function estimatePsdDataUrlDecodedBytes(dataUrl: string): number {
+  const separator = dataUrl.indexOf(",");
+  if (separator < 0) return dataUrl.length;
+  const payload = dataUrl.slice(separator + 1);
+  const header = dataUrl.slice(0, separator).toLowerCase();
+  if (!header.endsWith(";base64")) return payload.length;
+  const padding = payload.endsWith("==") ? 2 : payload.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor((payload.length * 3) / 4) - padding);
+}
+
+/** 상주 PNG 회계 — charge가 상한을 넘으면 false를 돌려주고 회계는 변하지 않는다. */
+export interface PsdEncodedPngAccountant {
+  chargeLayer(bytes: number): boolean;
+  chargeMask(bytes: number): boolean;
+  chargeComposite(bytes: number): boolean;
+  snapshot(): PsdImportEncodedPngMemory;
+  readonly skippedLayerCount: number;
+  readonly droppedMaskCount: number;
+}
+
+class PsdEncodedPngAccountantImpl implements PsdEncodedPngAccountant {
+  constructor(private readonly budgetBytes: number = PSD_IMPORT_MAX_ENCODED_PNG_BYTES) {}
+  layerBytes = 0;
+  maskBytes = 0;
+  compositeBytes = 0;
+  peakLayerBytes = 0;
+  layerCount = 0;
+  skippedLayerCount = 0;
+  droppedMaskCount = 0;
+  compositeSkipped = false;
+
+  get totalBytes(): number {
+    return this.layerBytes + this.maskBytes + this.compositeBytes;
+  }
+
+  chargeLayer(bytes: number): boolean {
+    if (this.totalBytes + bytes > this.budgetBytes) {
+      this.skippedLayerCount += 1;
+      return false;
+    }
+    this.layerBytes += bytes;
+    this.layerCount += 1;
+    if (bytes > this.peakLayerBytes) this.peakLayerBytes = bytes;
+    return true;
+  }
+
+  chargeMask(bytes: number): boolean {
+    if (this.totalBytes + bytes > this.budgetBytes) {
+      this.droppedMaskCount += 1;
+      return false;
+    }
+    this.maskBytes += bytes;
+    return true;
+  }
+
+  chargeComposite(bytes: number): boolean {
+    if (this.totalBytes + bytes > this.budgetBytes) {
+      this.compositeSkipped = true;
+      return false;
+    }
+    this.compositeBytes += bytes;
+    return true;
+  }
+
+  snapshot(): PsdImportEncodedPngMemory {
+    return {
+      budgetBytes: this.budgetBytes,
+      layerBytes: this.layerBytes,
+      maskBytes: this.maskBytes,
+      compositeBytes: this.compositeBytes,
+      totalBytes: this.totalBytes,
+      peakLayerBytes: this.peakLayerBytes,
+      layerCount: this.layerCount,
+      skippedLayerCount: this.skippedLayerCount,
+      droppedMaskCount: this.droppedMaskCount,
+      compositeSkipped: this.compositeSkipped,
+    };
+  }
+}
+
+/** 상주 PNG 회계 생성 — 가져오기는 기본 상한으로, 테스트는 작은 상한으로 검증한다. */
+export function createPsdEncodedPngAccountant(
+  budgetBytes: number = PSD_IMPORT_MAX_ENCODED_PNG_BYTES,
+): PsdEncodedPngAccountant {
+  return new PsdEncodedPngAccountantImpl(budgetBytes);
+}
+
 const PSD_HEADER_BYTES = 26;
 const PSD_SIGNATURE = 0x38425053; // ASCII "8BPS"
 const PSD_IMPORT_ALTERNATIVES = Object.freeze([
@@ -572,6 +705,7 @@ export function preflightPsdImport(
         maxFileBytes: PSD_IMPORT_MAX_FILE_BYTES,
         maxDecodedBytes: PSD_IMPORT_MAX_DECODED_BYTES,
         maxDimensionPx: PSD_IMPORT_MAX_DIMENSION_PX,
+        maxEncodedPngBytes: PSD_IMPORT_MAX_ENCODED_PNG_BYTES,
       },
       alternatives: PSD_IMPORT_ALTERNATIVES,
     },
@@ -590,6 +724,8 @@ interface PsdImportLossMetrics {
   maskRasterized: number;
   maskDropped: number;
   unsupportedBlendModes: number;
+  encodedPngSkippedLayers: number;
+  encodedPngDroppedMasks: number;
 }
 
 function psdGroupCompositingWarnings(layers: readonly Layer[], ancestors: readonly string[] = []): string[] {
@@ -731,6 +867,22 @@ function psdImportLossManifest(
       `픽셀 채널이 없거나 변환에 실패한 마스크 ${metrics.maskDropped.toLocaleString("ko-KR")}개는 적용하지 않습니다.`,
     ));
   }
+  if (metrics.encodedPngSkippedLayers > 0) {
+    decisions.push(psdDecision(
+      "layers",
+      "dropped",
+      metrics.encodedPngSkippedLayers,
+      `인코딩된 PNG 상주 상한(${Math.round(PSD_IMPORT_MAX_ENCODED_PNG_BYTES / 1024 / 1024)}MB)을 넘어 레이어 ${metrics.encodedPngSkippedLayers.toLocaleString("ko-KR")}개를 상주시키지 않았습니다. 원본 PSD에는 보존됩니다.`,
+    ));
+  }
+  if (metrics.encodedPngDroppedMasks > 0) {
+    decisions.push(psdDecision(
+      "layer-mask",
+      "dropped",
+      metrics.encodedPngDroppedMasks,
+      `인코딩된 PNG 상주 상한을 넘어 마스크 ${metrics.encodedPngDroppedMasks.toLocaleString("ko-KR")}개를 적용하지 않았습니다.`,
+    ));
+  }
   if (metrics.unsupportedBlendModes > 0) {
     decisions.push(psdDecision(
       "blend-mode",
@@ -748,6 +900,7 @@ function psdImportLossManifest(
       maxFileBytes: PSD_IMPORT_MAX_FILE_BYTES,
       maxDecodedBytes: PSD_IMPORT_MAX_DECODED_BYTES,
       maxDimensionPx: PSD_IMPORT_MAX_DIMENSION_PX,
+      maxEncodedPngBytes: PSD_IMPORT_MAX_ENCODED_PNG_BYTES,
     },
     alternatives: base?.alternatives ?? PSD_IMPORT_ALTERNATIVES,
   };
@@ -852,7 +1005,10 @@ export async function importPsdFile(
     maskRasterized: 0,
     maskDropped: 0,
     unsupportedBlendModes: 0,
+    encodedPngSkippedLayers: 0,
+    encodedPngDroppedMasks: 0,
   };
+  const encodedPng = createPsdEncodedPngAccountant();
 
   let completedLayers = 0;
   reportStudioPsdImportProgress(options, "layers", 0, flattened.length);
@@ -893,6 +1049,11 @@ export async function importPsdFile(
     }
     if (!isUsableImageDataUrl(rawDataUrl)) {
       skipped.push(`${entry.name}: 래스터 PNG가 비어 있어 건너뜀`);
+      continue;
+    }
+    if (!encodedPng.chargeLayer(estimatePsdDataUrlDecodedBytes(rawDataUrl))) {
+      // 상주 상한 초과 — 전체 가져오기를 버리지 않고 이 레이어만 포기한다.
+      skipped.push(`${entry.name}: 인코딩된 PNG 상주 상한(${Math.round(PSD_IMPORT_MAX_ENCODED_PNG_BYTES / 1024 / 1024)}MB)을 넘어 건너뜀`);
       continue;
     }
 
@@ -974,7 +1135,11 @@ export async function importPsdFile(
         };
       }
       throwIfStudioPsdImportAborted(options.signal);
-      if (maskResult.maskSrc) {
+      if (maskResult.maskSrc && !encodedPng.chargeMask(estimatePsdDataUrlDecodedBytes(maskResult.maskSrc))) {
+        // 상주 상한 초과 — 레이어는 유지하고 마스크만 적용하지 않는다.
+        lossMetrics.maskDropped += 1;
+        skipped.push(`${entry.name}: 인코딩된 PNG 상주 상한을 넘어 마스크를 적용하지 않았어요.`);
+      } else if (maskResult.maskSrc) {
         el.maskSrc = maskResult.maskSrc;
         if (maskResult.disabled) el.maskEnabled = false;
         if (hasRasterizedVectorOrDualMask) lossMetrics.maskRasterized += 1;
@@ -1010,12 +1175,26 @@ export async function importPsdFile(
 
   let compositeElement: PsdImportedElement | undefined;
   if (psd.canvas) {
-    const src = await encodeStudioLosslessCanvasSource(psd.canvas, options.signal);
-    if (isUsableImageDataUrl(src)) compositeElement = {
-      id: createImportedLayerId(), type: "image", src, x: 0, y: 0,
-      width: sourceWidth * scale, height: sourceHeight * scale, rotation: 0,
-      name: "PSD 원본 합성본",
-    };
+    let src: string | undefined;
+    try {
+      src = await encodeStudioLosslessCanvasSource(psd.canvas, options.signal);
+    } catch {
+      // 합성본 인코딩 실패가 성공한 레이어 전체를 버리지 않게 격리한다(레이어 인코딩
+      // 실패가 개별 건너뜀인 것과 대칭). 취소는 아래에서 다시 던진다.
+      throwIfStudioPsdImportAborted(options.signal);
+      skipped.push("PSD 원본 합성본: 래스터화 실패로 건너뜀");
+    }
+    if (src && isUsableImageDataUrl(src)) {
+      if (encodedPng.chargeComposite(estimatePsdDataUrlDecodedBytes(src))) {
+        compositeElement = {
+          id: createImportedLayerId(), type: "image", src, x: 0, y: 0,
+          width: sourceWidth * scale, height: sourceHeight * scale, rotation: 0,
+          name: "PSD 원본 합성본",
+        };
+      } else {
+        skipped.push("PSD 원본 합성본: 인코딩된 PNG 상주 상한을 넘어 생략했어요. 레이어는 그대로 가져왔어요.");
+      }
+    }
   }
   if (groupWarnings.length) lossMetrics.unsupportedBlendModes += groupWarnings.length;
   reportStudioPsdImportProgress(options, "complete", flattened.length, flattened.length);
@@ -1023,8 +1202,11 @@ export async function importPsdFile(
     skipped.push("PSD에서 가져올 레이어를 찾지 못했어요.");
   }
 
+  lossMetrics.encodedPngSkippedLayers = encodedPng.skippedLayerCount;
+  lossMetrics.encodedPngDroppedMasks = encodedPng.droppedMaskCount;
   return {
     layerPixelStorage: "native-png",
+    encodedPngMemory: encodedPng.snapshot(),
     elements,
     groups: studioGroupsFromPsdElements(elements),
     editableTextElements,

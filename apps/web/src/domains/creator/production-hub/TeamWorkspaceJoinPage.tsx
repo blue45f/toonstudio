@@ -9,6 +9,11 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { TeamWorkspaceInvitePreview } from "@toonstudio/contracts/production-workspace";
 import { acceptTeamInvite, previewTeamInvite } from "./team-workspace-api";
 import {
+  clearPendingTeamInvite,
+  loadPendingTeamInvite,
+  savePendingTeamInvite,
+} from "./team-join-pending-invite";
+import {
   parseStudioSpatialInviteFragment,
   studioSpatialInviteDestination,
   type StudioSpatialInviteContext,
@@ -48,6 +53,10 @@ function StepItem({ index, title, description, state }: {
  * 수락 뒤 무엇이 일어나는지를 수락 전에 같은 화면에서 보여 준다. 로그인했고 코드가
  * 완성되면 서버 미리보기로 워크스페이스 이름·부여 역할·초대자·만료도 수락 전에 확인한다
  * (미리보기는 초대받은 이메일과 로그인 이메일이 일치할 때만 열리고, 실패해도 수락은 막지 않는다).
+ * 완성된 코드는 이 탭 세션(sessionStorage)에만 30분 임시 보관한다 — 이메일 인증 등으로
+ * 화면을 떠나도 같은 탭으로 돌아오면(인증 복귀가 이 화면 경로로 착지하면) 코드가 복원돼
+ * 다시 찾을 필요가 없다. 탭을 닫으면 사라지고 영속 저장소·URL에는 남지 않는다
+ * (트레이드오프 상세: team-join-pending-invite 모듈 주석).
  */
 export function TeamWorkspaceJoinPage() {
   const bt = useBilingual("TeamWorkspaceJoinPage");
@@ -55,6 +64,7 @@ export function TeamWorkspaceJoinPage() {
   const navigate = useNavigate();
   const [token, setToken] = useState("");
   const [fromLink, setFromLink] = useState(false);
+  const [restored, setRestored] = useState(false);
   const [entryContext, setEntryContext] = useState<StudioSpatialInviteContext>({ kind: "team-lobby" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -70,8 +80,14 @@ export function TeamWorkspaceJoinPage() {
     const url = new URL(window.location.href);
     const queryToken = url.searchParams.get("token");
     if (!resolved && queryToken && INVITE_TOKEN.test(queryToken.trim())) resolved = queryToken.trim();
-    if (resolved) { setToken(resolved); setFromLink(true); }
-    setEntryContext(parsed.context);
+    if (resolved) { setToken(resolved); setFromLink(true); setEntryContext(parsed.context); }
+    else {
+      // 링크 없이 다시 착지한 경우(인증 메일 확인 등 전체 이동 후 이 화면 경로로 복귀):
+      // 이 탭 세션에 임시 보관해 둔 코드가 있으면 복원한다. URL 토큰이 항상 우선한다.
+      const pending = loadPendingTeamInvite();
+      if (pending) { setToken(pending.token); setEntryContext(pending.context); setRestored(true); }
+      else setEntryContext(parsed.context);
+    }
     // 비밀(프래그먼트·토큰 쿼리)은 읽는 즉시 주소창에서 제거해 기록·공유로 새지 않게 한다.
     if (window.location.hash || url.searchParams.has("token")) {
       url.hash = "";
@@ -79,6 +95,10 @@ export function TeamWorkspaceJoinPage() {
       window.history.replaceState(window.history.state, "", url.pathname + url.search);
     }
   }, []);
+  // 완성된 코드는 이 탭 세션에만 임시 보관해 이탈·복귀 왕복에서 복원할 수 있게 한다.
+  useEffect(() => {
+    if (INVITE_TOKEN.test(token.trim())) savePendingTeamInvite(token.trim(), entryContext);
+  }, [token, entryContext]);
   // 코드가 완성되고 로그인했으면 수락 전에 초대 내용을 서버에서 미리 확인한다.
   // 미리보기가 실패해도(이메일 불일치·만료 등) 수락 경로는 그대로 열어 둔다.
   useEffect(() => {
@@ -111,6 +131,8 @@ export function TeamWorkspaceJoinPage() {
       <h1 id="team-join-title" className="mt-2 text-2xl font-black">{bt("팀 합류", "Join a team")}</h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-fg-2">{bt("초대받은 팀에 합류하면 팀 공간에서 함께 만들기를 시작할 수 있어요. 어느 문으로 들어왔든 합류는 이 한 화면에서 끝나요.", "Join the team you were invited to and start creating together in the team space. Whichever door you came through, joining ends on this one sheet.")}</p>
       {fromLink && <p role="status" className="mt-3 rounded-xl border border-accent/40 bg-panel px-3 py-2 text-sm font-semibold">{bt("초대 링크를 확인했어요. 초대 코드가 자동으로 입력됐습니다.", "Invite link recognized. Your invite code was filled in automatically.")}</p>}
+      {restored && !fromLink && <p role="status" className="mt-3 rounded-xl border border-accent/40 bg-panel px-3 py-2 text-sm font-semibold">{bt("떠나기 전에 입력한 초대 코드를 복원했어요. 코드는 이 탭에만 임시로 보관돼요.", "Restored the invite code you entered before leaving. It's kept only in this tab, temporarily.")}{" "}
+        <button type="button" className="font-semibold underline" onClick={() => { clearPendingTeamInvite(); setRestored(false); setToken(""); }}>{bt("코드 지우기", "Discard code")}</button></p>}
       <p className="mt-3 text-sm font-semibold text-fg">{bt(destination.ko, destination.en)}</p>
     </section>
     <section aria-labelledby="team-join-steps-title" className="creator-workflow-panel rounded-2xl border border-line bg-card p-5">
@@ -133,7 +155,8 @@ export function TeamWorkspaceJoinPage() {
       {!userId && <p className="mb-4 text-sm leading-6 text-fg-2">{fromLink
         ? bt("로그인하면 입력된 코드로 바로 수락할 수 있어요.", "Sign in to accept with the code already filled in.")
         : bt("로그인 후 원래 초대 링크를 다시 열거나 초대 코드를 입력해 주세요.", "After signing in, reopen the original invite link or enter the invite code.")}{" "}
-        <button type="button" className="font-semibold underline" onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "team-workspace-invite", mode: "login" })}>{bt("로그인", "Sign in")}</button></p>}
+        <button type="button" className="font-semibold underline" onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "team-workspace-invite", mode: "login" })}>{bt("로그인", "Sign in")}</button>
+        {tokenReady && <span className="mt-2 block">{bt("이메일 인증을 확인하러 이 화면을 떠나도 괜찮아요. 같은 탭으로 돌아오면 입력한 코드가 그대로 복원돼요. 코드는 탭을 닫으면 사라지고 주소창이나 기기에 저장되지 않아요.", "It's fine to leave this sheet to check your verification email. Come back to this same tab and your code will be restored as-is. The code disappears when the tab closes and is never stored in the address bar or on your device.")}</span>}</p>}
       {previewState.kind === "loading" && <p role="status" className="mb-4 rounded-xl border border-line bg-raised px-3 py-2 text-sm text-fg-2">{bt("초대 정보를 확인하고 있어요…", "Checking your invite…")}</p>}
       {preview && !preview.alreadyMember && <div role="status" className="mb-4 rounded-xl border border-accent/40 bg-accent-soft/40 p-3">
         <p className="text-sm font-bold">{bt(`${preview.workspaceName} 팀에 ${previewRoleLabel} 역할로 초대받았어요`, `You're invited to ${preview.workspaceName} as a ${previewRoleLabel}`)}</p>
@@ -147,11 +170,12 @@ export function TeamWorkspaceJoinPage() {
       {previewState.kind === "unavailable" && <p role="status" className="mb-4 rounded-xl border border-line bg-raised px-3 py-2 text-sm leading-6 text-fg-2">{bt("이 코드는 미리보기를 열 수 없어요. 초대받은 이메일로 로그인했는지, 코드가 만료되지 않았는지 확인해 주세요. 코드가 맞다면 아래에서 그대로 수락할 수 있어요.", "This code can't be previewed. Check that you're signed in with the invited email and that the code hasn't expired. If the code is right, you can still accept it below.")}</p>}
       <form className="flex flex-col gap-4" onSubmit={(event) => { event.preventDefault(); setBusy(true); setError("");
         void acceptTeamInvite(token.trim()).then((result) => {
+          clearPendingTeamInvite();
           setToken("");
           navigate(studioSpatialInviteDestination(entryContext, result.workspaceId), { replace: true });
         })
           .catch(async (cause: unknown) => setError(await getApiErrorMessage(cause, bt("초대를 수락하지 못했습니다.", "Couldn't accept the invite.")))).finally(() => setBusy(false)); }}>
-        <label className="flex flex-col gap-2">{bt("초대 코드", "Invite code")}<input className={fieldClass} value={token} onChange={(event) => setToken(event.target.value)} autoComplete="off" spellCheck={false} maxLength={43} /></label>
+        <label className="flex flex-col gap-2">{bt("초대 코드", "Invite code")}<input className={fieldClass} value={token} onChange={(event) => { const next = event.target.value; setToken(next); if (!next.trim()) { clearPendingTeamInvite(); setRestored(false); } }} autoComplete="off" spellCheck={false} maxLength={43} /></label>
         <div className="rounded-xl border border-line bg-raised p-3">
           <h3 className="text-sm font-bold">{bt("합류하면 받는 권한", "What you get when you join")}</h3>
           <p className="mt-1 text-sm leading-6 text-fg-2">{bt("역할(관리자·구성원·게스트)은 초대한 팀이 정해 두고 수락과 함께 적용돼요. 이 초대의 정확한 역할은 코드가 확인되면 이 화면 위쪽 미리보기에서 먼저 볼 수 있고, 합류 뒤에는 사람·권한 화면에서도 확인할 수 있어요. 작품별 접근 권한은 팀 합류와 별도로 주어지며, 팀 소속만으로 비공개 원고가 열리지는 않아요.", "Your role (admin, member, or guest) is set by the inviting team and applies as soon as you accept. Once your code checks out, the preview above shows this invite's exact role before you accept, and you can check it afterwards under People & access too. Per-work access is granted separately — team membership alone never opens private manuscripts.")}</p>

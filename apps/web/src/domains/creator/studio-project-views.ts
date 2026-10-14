@@ -3,9 +3,11 @@ export const STUDIO_PROJECT_SECTION_VIEWS = {
   story: [
     "overview",
     "episodes",
+    "foreshadow",
     "script",
     "characters",
     "world",
+    "concordance",
     "timeline",
     "relations",
     "references",
@@ -34,9 +36,11 @@ export const STUDIO_PROJECT_VIEW_LABELS: Readonly<
   story: Object.freeze({
     overview: { ko: "작품 설정", en: "Project setup" },
     episodes: { ko: "에피소드", en: "Episodes" },
+    foreshadow: { ko: "복선 장부", en: "Foreshadow ledger" },
     script: { ko: "대본", en: "Script" },
     characters: { ko: "캐릭터", en: "Characters" },
     world: { ko: "세계관", en: "World" },
+    concordance: { ko: "사실 색인", en: "Fact index" },
     timeline: { ko: "연표", en: "Timeline" },
     relations: { ko: "관계도", en: "Relations" },
     references: { ko: "참고자료", en: "References" },

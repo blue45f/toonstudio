@@ -2,17 +2,25 @@ import { dbPool } from "../../platform/database";
 import { ADMIN_TRAFFIC_OVERVIEW_QUERY, ADMIN_TRAFFIC_PULSE_QUERY } from "../admin/admin-traffic-query";
 import {
   cleanupExpiredTrafficData,
+  listTrafficWebVitalsSamples,
   persistTrafficHeartbeat,
   persistTrafficPageView,
   persistTrafficShareEvent,
+  persistTrafficWebVitals,
 } from "./traffic-analytics-store";
-import type { TrafficAnalyticsRepository, TrafficOverviewQuery, TrafficPulseQuery } from "./traffic-analytics.repository";
+import type { TrafficAnalyticsRepository, TrafficOverviewQuery, TrafficPulseQuery, TrafficWebVitalsQuery } from "./traffic-analytics.repository";
+import type { WebVitalsSample } from "./web-vitals-report";
 
 export class PostgresTrafficAnalyticsRepository implements TrafficAnalyticsRepository {
   persistPageView = persistTrafficPageView;
   persistHeartbeat = persistTrafficHeartbeat;
   persistShareEvent = persistTrafficShareEvent;
+  persistWebVitals = persistTrafficWebVitals;
   cleanup = cleanupExpiredTrafficData;
+
+  async webVitalsSamples(query: TrafficWebVitalsQuery): Promise<readonly WebVitalsSample[]> {
+    return listTrafficWebVitalsSamples({ start: query.start, end: query.end });
+  }
 
   async overview(query: TrafficOverviewQuery): Promise<Record<string, unknown>> {
     const result = await dbPool.query<{ analytics: Record<string, unknown> | null }>(
@@ -39,7 +47,8 @@ export class PostgresTrafficAnalyticsRepository implements TrafficAnalyticsRepos
     const result = await dbPool.query<{ ready: boolean }>(`SELECT
       to_regclass('public.traffic_page_view') IS NOT NULL
       AND to_regclass('public.traffic_session') IS NOT NULL
-      AND to_regclass('public.traffic_share_event') IS NOT NULL AS ready`);
+      AND to_regclass('public.traffic_share_event') IS NOT NULL
+      AND to_regclass('public.traffic_web_vital') IS NOT NULL AS ready`);
     return result.rows[0]?.ready === true;
   }
 }

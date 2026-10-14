@@ -1,5 +1,6 @@
 {
   "app.name": "ToonStudio",
   "app.brandBeta": "Beta-palvelun  tiedot ja ominaisuudet voivat muuttua",
-  "app.loading": "Lasku"
+  "app.loading": "Lasku",
+  "app.skipToContent": "Skip to main content"
 }

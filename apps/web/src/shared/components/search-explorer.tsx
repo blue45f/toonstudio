@@ -28,12 +28,18 @@ import {
   AGE_LABEL_KEY,
 } from "./search-explorer-constants";
 import { SearchFacetPanel } from "./search-explorer-facets";
+
+// search.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./search-i18n";
 import { ErrorState } from "./feedback/error-state";
+import { buildEmptyQuerySuggestions } from "./search-explorer-suggestions";
+import { SearchEmptyQuerySuggestionsPanel } from "./search-explorer-suggestions-panel";
 import {
   compactNumber,
   relativeTime,
   platformName,
   platformColor,
+  toggle,
 } from "./search-explorer-utils";
 import { TitleCard, TitleRow } from "./title-card";
 import { buttonClass } from "./ui/button-utils";
@@ -278,6 +284,33 @@ export function SearchExplorer({
   const typeCount = search.data?.typeCount ?? { webtoon: 0, webnovel: 0 };
   const topTags = search.data?.topTags ?? [];
   const catalog = search.data?.catalog ?? null;
+
+  // 빈 쿼리 추천 — 인기 검색어(서버 topTags 집계)와 장르 추천 태그(taxonomy GENRES).
+  // 칩 클릭은 실제 동선에 연결한다: 인기 칩은 그 검색어로 검색을 실행하고(최근 검색 칩과
+  // 동일하게 popular 정렬이면 relevance로 전환), 장르 태그는 장르 필터를 토글해
+  // URL→재검색으로 결과를 좁힌다.
+  const isEmptyQuery = !q.trim();
+  const emptyQuerySuggestions = useMemo(
+    () => buildEmptyQuerySuggestions({ topTags, selectedGenres: genres }),
+    [genres, topTags],
+  );
+  const suggestionsState = search.failed
+    ? "error"
+    : loading || textSettling
+      ? "loading"
+      : "ready";
+  // 아래 핸들러들은 setSort/setGenres처럼 렌더마다 새로 만드는 plain 함수로 둔다
+  // (useCallback으로 묶으면 updateState 클로저가 낡을 수 있어 파일 기존 방식을 따른다).
+  const runSuggestedTerm = (term: string) => {
+    setQ(term);
+    if (sort === "popular") setSort("relevance");
+  };
+  const toggleSuggestedGenre = (genre: string) => {
+    setGenres((prev) => toggle(prev, genre));
+  };
+  const retrySuggestions = () => {
+    setRetryKey((value) => value + 1);
+  };
   useEffect(() => {
     if (!loading && normalizeQuery(debouncedQ) && results.length > 0)
       recordRecentSearch(debouncedQ);
@@ -731,6 +764,19 @@ export function SearchExplorer({
                 {t("search.explorer.recent.clearAll")}
               </button>
             </div>
+          )}
+
+          {/* 빈 쿼리 추천 — 입력이 비었을 때만 노출. 인기 검색어 칩은 클릭 즉시
+              그 검색어로 검색을 실행하고, 장르 추천 태그는 장르 필터를 켠다. */}
+          {isEmptyQuery && (
+            <SearchEmptyQuerySuggestionsPanel
+              t={t}
+              state={suggestionsState}
+              suggestions={emptyQuerySuggestions}
+              onPickTerm={runSuggestedTerm}
+              onPickGenre={toggleSuggestedGenre}
+              onRetry={retrySuggestions}
+            />
           )}
 
           {catalog && (

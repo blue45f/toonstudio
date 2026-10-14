@@ -28,7 +28,8 @@ beforeEach(() => {
     alreadyAccepted: false, alreadyMember: false,
   });
 });
-afterEach(() => { cleanup(); window.history.replaceState({}, "", "/"); });
+afterEach(() => { cleanup(); window.history.replaceState({}, "", "/"); window.sessionStorage.clear(); window.localStorage.clear(); });
+beforeEach(() => { window.sessionStorage.clear(); window.localStorage.clear(); });
 
 describe("team join sheet", () => {
   it("prefills the code from an invite-link fragment, announces it, and strips the secret from the URL", async () => {
@@ -116,6 +117,25 @@ describe("team join sheet", () => {
     expect(screen.getByRole("link", { name: "팀 공간으로 이동" }).getAttribute("href")).toBe("/team?workspace=team-a&lobby=1");
   });
 
+  it("shows the onboarding package carried by the invite fragment before accepting", async () => {
+    window.history.replaceState({}, "", `/team/people/join#invite=${TOKEN}&entry=team-lobby&pkg=invite-line-art`);
+    render(<App />);
+    // 패키지는 수락 전 열람용이다 — 역할 규칙·참조 컷·일정 규칙이 같은 화면에 보인다.
+    expect(await screen.findByTestId("onboarding-package-panel")).toBeTruthy();
+    expect(screen.getByText(/온보딩 패키지 · 선화 작가/)).toBeTruthy();
+    expect(screen.getByText(/대표 선화 컷 3장/)).toBeTruthy();
+    expect(screen.getByText(/첫 컷은 전체 마감보다 먼저 확인받습니다/)).toBeTruthy();
+    // 패키지가 보여도 수락 자체는 여전히 명시적 행동이다.
+    expect(mocks.accept).not.toHaveBeenCalled();
+  });
+
+  it("hides the onboarding package for an unknown package hint", async () => {
+    window.history.replaceState({}, "", `/team/people/join#invite=${TOKEN}&entry=team-lobby&pkg=invite-nope`);
+    render(<App />);
+    await screen.findByText(/초대 링크를 확인했어요/);
+    expect(screen.queryByTestId("onboarding-package-panel")).toBeNull();
+  });
+
   it("keeps accepting available when the preview cannot be opened", async () => {
     mocks.preview.mockRejectedValue(new Error("not-found"));
     window.history.replaceState({}, "", `/team/people/join#invite=${TOKEN}`);
@@ -125,6 +145,61 @@ describe("team join sheet", () => {
     expect(button.disabled).toBe(false);
     fireEvent.click(button);
     await waitFor(() => expect(mocks.accept).toHaveBeenCalledWith(TOKEN));
+  });
+
+  it("keeps a completed code in tab-session storage only — never localStorage or the URL", async () => {
+    window.history.replaceState({}, "", `/team/people/join#invite=${TOKEN}&entry=team-lobby`);
+    render(<App />);
+    await screen.findByText(/초대 링크를 확인했어요/);
+    await waitFor(() => expect(window.sessionStorage.getItem("toonspectrum:pending-team-invite:v1")).toContain(TOKEN));
+    expect(window.localStorage.getItem("toonspectrum:pending-team-invite:v1")).toBeNull();
+    expect(window.location.href).not.toContain(TOKEN);
+  });
+
+  it("restores the code after leaving and returning to the sheet in the same tab", async () => {
+    window.sessionStorage.setItem("toonspectrum:pending-team-invite:v1", JSON.stringify({
+      v: 1, token: TOKEN, context: { kind: "project-space", projectId: "work-a" }, savedAt: Date.now(),
+    }));
+    render(<App />);
+    expect(await screen.findByText(/떠나기 전에 입력한 초대 코드를 복원했어요/)).toBeTruthy();
+    expect((screen.getByLabelText("초대 코드") as HTMLInputElement).value).toBe(TOKEN);
+    // 복원된 착지 안내도 원래 입장 맥락을 따른다.
+    expect(screen.getByText(/초대받은 작품의 협업 공간으로 입장해요/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "초대 수락하기" }));
+    await waitFor(() => expect(mocks.accept).toHaveBeenCalledWith(TOKEN));
+    await screen.findByText("project-space-destination");
+    // 수락이 끝나면 임시 보관분도 함께 지워진다.
+    expect(window.sessionStorage.getItem("toonspectrum:pending-team-invite:v1")).toBeNull();
+  });
+
+  it("prefers a fresh invite link over a stored code and lets the user discard a restored code", async () => {
+    const stored = "d".repeat(43);
+    window.sessionStorage.setItem("toonspectrum:pending-team-invite:v1", JSON.stringify({
+      v: 1, token: stored, context: { kind: "team-lobby" }, savedAt: Date.now(),
+    }));
+    window.history.replaceState({}, "", `/team/people/join#invite=${TOKEN}`);
+    render(<App />);
+    await screen.findByText(/초대 링크를 확인했어요/);
+    expect((screen.getByLabelText("초대 코드") as HTMLInputElement).value).toBe(TOKEN);
+    expect(screen.queryByText(/복원했어요/)).toBeNull();
+    cleanup();
+    window.sessionStorage.setItem("toonspectrum:pending-team-invite:v1", JSON.stringify({
+      v: 1, token: stored, context: { kind: "team-lobby" }, savedAt: Date.now(),
+    }));
+    window.history.replaceState({}, "", "/team/people/join");
+    render(<App />);
+    expect(await screen.findByText(/떠나기 전에 입력한 초대 코드를 복원했어요/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "코드 지우기" }));
+    expect((screen.getByLabelText("초대 코드") as HTMLInputElement).value).toBe("");
+    expect(window.sessionStorage.getItem("toonspectrum:pending-team-invite:v1")).toBeNull();
+  });
+
+  it("reassures signed-out users that leaving for email verification keeps the code", async () => {
+    mocks.userId = null;
+    window.history.replaceState({}, "", `/team/people/join#invite=${TOKEN}`);
+    render(<App />);
+    expect(await screen.findByText(/이메일 인증을 확인하러 이 화면을 떠나도 괜찮아요/)).toBeTruthy();
+    expect(screen.getByText(/탭을 닫으면 사라지고 주소창이나 기기에 저장되지 않아요/)).toBeTruthy();
   });
 
   it("surfaces accept errors in an alert and keeps the code for a retry", async () => {

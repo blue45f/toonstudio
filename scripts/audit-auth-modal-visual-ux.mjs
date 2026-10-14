@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { chromium } from "playwright";
 
+import { compareScreenshotWithOdiff } from "./lib/visual-regression-odiff.mjs";
+
 const THEMES = ["aurora", "blossom", "starlight", "dark", "light", "graphite", "midnight", "sepia", "contrast"];
 const VIEWPORTS = {
   desktop: { width: 1440, height: 1000, hasTouch: false, isMobile: false },
@@ -12,6 +14,7 @@ const root = process.env.AUDIT_REPOSITORY || process.cwd();
 const output = process.env.AUDIT_OUTPUT || path.join(root, ".qa/visual-ux/auth-modal");
 const base = new URL(process.env.AUDIT_BASE_URL || "http://127.0.0.1:5276");
 const auditRoute = process.env.AUDIT_ROUTE || "/discover";
+const auditBaselineDir = process.env.AUDIT_BASELINE_DIR || "";
 const allowedHosts = new Set(["127.0.0.1", "localhost", "toonstudio.cloud", "www.toonstudio.cloud"]);
 if (!allowedHosts.has(base.hostname)) throw new Error(`Audit origin is not allow-listed: ${base.hostname}`);
 
@@ -151,6 +154,29 @@ try {
   }
 } finally {
   await browser.close();
+}
+
+// 시각 회귀 표준 판정(odiff): AUDIT_BASELINE_DIR가 있을 때만 캡처된 스크린샷을
+// 같은 파일명의 베이스라인과 비교한다. 미설정 시 기존 캡처·판정 동작과 완전히 같다.
+if (auditBaselineDir) {
+  const diffOutput = path.join(output, "visual-diff");
+  await mkdir(diffOutput, { recursive: true });
+  for (const result of results) {
+    if (!result.screenshot) continue;
+    const verdict = await compareScreenshotWithOdiff(
+      path.join(auditBaselineDir, result.screenshot),
+      path.join(output, result.screenshot),
+      path.join(diffOutput, result.screenshot),
+    );
+    result.visualRegression = {
+      pass: verdict.pass,
+      status: verdict.status,
+      diffCount: verdict.diffCount,
+      diffPercentage: verdict.diffPercentage,
+      maxDiffPercentage: verdict.maxDiffPercentage,
+    };
+    if (!verdict.pass) result.issues = [...(result.issues || []), `visual-regression:${verdict.status}`];
+  }
 }
 
 const failed = results.filter((result) => result.issues?.length);

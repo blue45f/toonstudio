@@ -1,9 +1,11 @@
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
-import { ArrowRight, ClipboardCheck, MessageSquareMore } from "lucide-react";
+import { ArrowRight, ClipboardCheck, Columns2, MessageSquareMore } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { ProductionReviewRequestForm } from "./ProductionReviewRequestForm";
 import { ProductionReviewWorkspace } from "./ProductionReviewWorkspace";
+import { buildCompareReviewPath } from "./review-request-model";
 import type { ProductionClientCommand } from "./production-api";
 import { deriveEpisodeApprovalGate } from "./production-episode-room-model";
 import {
@@ -51,6 +53,8 @@ export function ProductionReviewSurface({
 
   return (
     <div className="space-y-4">
+      <ProductionReviewRequestForm aggregate={aggregate} execute={execute} canEdit={canEdit} />
+
       <ProductionSectionCard
         title={bt("검수할 회차", "Episodes to review")}
         description={bt("역할별 승인이 모두 모여야 게시할 수 있습니다. 원고 위 핀 코멘트는 회차 룸에서 남깁니다.", "Every role must approve before publishing. Leave pinned comments in the episode room.")}
@@ -61,39 +65,51 @@ export function ProductionReviewSurface({
               const approvedCount = gate.lanes.filter((lane) => lane.approved).length;
               return (
                 <li key={episode.episodeId}>
-                  <Link
-                    to={productionEpisodeRoomPath(aggregate.projectId, episode.episodeId)}
-                    className="group block rounded-2xl border border-line bg-panel p-4 outline-none transition-colors hover:border-accent/45 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-black text-fg group-hover:text-accent">
-                        {plan ? bt(`${plan.episodeNumber}화 · ${plan.title}`, `Ep. ${plan.episodeNumber} · ${plan.title}`) : episode.episodeId}
-                      </p>
-                      <ProductionPill tone={gate.approved ? "success" : "warning"}>
-                        <ClipboardCheck className="size-3" aria-hidden="true" />
-                        {bt(`승인 ${approvedCount}/${gate.lanes.length}`, `${approvedCount}/${gate.lanes.length} approved`)}
-                      </ProductionPill>
-                    </div>
-                    <ul className="mt-3 flex flex-wrap gap-1.5">
-                      {gate.lanes.map((lane) => (
-                        <li key={lane.lane}>
-                          <ProductionPill tone={lane.approved ? "success" : lane.changeRequested ? "danger" : "neutral"}>
-                            {reviewLaneLabel(lane.lane, bt)} · {lane.approved ? bt("승인", "OK") : lane.changeRequested ? bt("수정 요청", "Changes") : bt("대기", "Waiting")}
-                          </ProductionPill>
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="mt-3 flex items-center justify-between gap-2 text-xs text-fg-2">
-                      <span className="inline-flex items-center gap-1">
+                  <div className="group rounded-2xl border border-line bg-panel p-4 transition-colors hover:border-accent/45 motion-reduce:transition-none">
+                    <Link
+                      to={productionEpisodeRoomPath(aggregate.projectId, episode.episodeId)}
+                      className="block outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-black text-fg group-hover:text-accent">
+                          {plan ? bt(`${plan.episodeNumber}화 · ${plan.title}`, `Ep. ${plan.episodeNumber} · ${plan.title}`) : episode.episodeId}
+                        </p>
+                        <ProductionPill tone={gate.approved ? "success" : "warning"}>
+                          <ClipboardCheck className="size-3" aria-hidden="true" />
+                          {bt(`승인 ${approvedCount}/${gate.lanes.length}`, `${approvedCount}/${gate.lanes.length} approved`)}
+                        </ProductionPill>
+                      </div>
+                      <ul className="mt-3 flex flex-wrap gap-1.5">
+                        {gate.lanes.map((lane) => (
+                          <li key={lane.lane}>
+                            <ProductionPill tone={lane.approved ? "success" : lane.changeRequested ? "danger" : "neutral"}>
+                              {reviewLaneLabel(lane.lane, bt)} · {lane.approved ? bt("승인", "OK") : lane.changeRequested ? bt("수정 요청", "Changes") : bt("대기", "Waiting")}
+                            </ProductionPill>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-3 flex items-center gap-1 text-xs text-fg-2">
                         <MessageSquareMore className="size-3.5" aria-hidden="true" />
                         {openQuestions ? bt(`답을 기다리는 질문 ${openQuestions}개`, `${openQuestions} open questions`) : bt("열린 질문 없음", "No open questions")}
-                      </span>
-                      <span className="inline-flex items-center gap-1 font-bold text-accent">
+                      </p>
+                    </Link>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-xs">
+                      <Link
+                        to={productionEpisodeRoomPath(aggregate.projectId, episode.episodeId)}
+                        className="inline-flex min-h-9 items-center gap-1 font-bold text-fg-2 outline-none hover:text-accent focus-visible:ring-2 focus-visible:ring-accent"
+                      >
                         {bt("회차 룸에서 검수", "Review in room")}
-                        <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
-                      </span>
-                    </p>
-                  </Link>
+                        <ArrowRight className="size-3.5" aria-hidden="true" />
+                      </Link>
+                      <Link
+                        to={buildCompareReviewPath(aggregate.projectId, episode.episodeId)}
+                        className="inline-flex min-h-9 items-center gap-1 font-bold text-accent outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      >
+                        <Columns2 className="size-3.5" aria-hidden="true" />
+                        {bt("바로 비교 검수", "Compare review")}
+                      </Link>
+                    </div>
+                  </div>
                 </li>
               );
             })}

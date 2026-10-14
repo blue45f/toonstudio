@@ -52,6 +52,8 @@ export interface TeamWorkspaceProject {
   readonly id: string;
   readonly workId: string;
   readonly title: string;
+  /** 작품 소유자(creator_work.userId). 작품 소유권 이전 표면을 소유자에게만 열기 위한 서버 사실이다. */
+  readonly ownerUserId: string;
 }
 export interface TeamWorkspaceDetail {
   readonly workspace: TeamWorkspaceSummary;
@@ -76,6 +78,51 @@ export interface WorkspaceUsageResponse {
   readonly externalAiEnabled: false;
   readonly meteredProvidersEnabled: false;
 }
+/**
+ * 감사 로그에 실제로 기록되는 행위 코드. repository의 record()가 만드는 값과 1:1이다:
+ * 생성은 workspace.created, 명령은 workspace.<명령 타입>, 초대 수락은 workspace.invite-accepted.
+ */
+export const TEAM_WORKSPACE_AUDIT_ACTIONS = [
+  "workspace.created",
+  "workspace.rename",
+  "workspace.invite",
+  "workspace.revoke-invite",
+  "workspace.change-member-role",
+  "workspace.remove-member",
+  "workspace.transfer-owner",
+  "workspace.attach-project",
+  "workspace.detach-project",
+  "workspace.invite-accepted",
+] as const;
+export type TeamWorkspaceAuditAction = (typeof TEAM_WORKSPACE_AUDIT_ACTIONS)[number];
+/** 감사 로그 한 줄. targetDisplayName은 대상이 구성원·초대·작품·워크스페이스일 때만 채워지고, 아니면 null이다. */
+export interface TeamWorkspaceAuditEntry {
+  readonly id: number;
+  readonly actorUserId: string;
+  readonly actorDisplayName: string;
+  readonly action: TeamWorkspaceAuditAction;
+  readonly targetId: string;
+  readonly targetDisplayName: string | null;
+  readonly revision: number;
+  readonly occurredAt: string;
+}
+/** 기간[from,to)·행위자·행위 필터 + id 내림차순 키셋 페이지네이션(cursor = 마지막으로 본 id). */
+export interface TeamWorkspaceAuditQuery {
+  readonly from?: string;
+  readonly to?: string;
+  readonly actorUserId?: string;
+  readonly action?: TeamWorkspaceAuditAction;
+  readonly cursor?: number;
+  readonly limit?: number;
+}
+export interface TeamWorkspaceAuditResponse {
+  readonly workspaceId: string;
+  readonly entries: readonly TeamWorkspaceAuditEntry[];
+  /** 다음 페이지가 있으면 마지막 항목의 id, 없으면 null. */
+  readonly nextCursor: number | null;
+}
+export const TEAM_WORKSPACE_AUDIT_DEFAULT_LIMIT = 50;
+export const TEAM_WORKSPACE_AUDIT_MAX_LIMIT = 100;
 export interface WorkspaceMutationResult {
   readonly workspaceId: string;
   readonly revision: number;
@@ -101,5 +148,6 @@ export type TeamWorkspaceCommandInput =
   | { readonly type: "change-member-role"; readonly userId: string; readonly role: InvitableWorkspaceRole }
   | { readonly type: "remove-member"; readonly userId: string }
   | { readonly type: "transfer-owner"; readonly userId: string }
+  | { readonly type: "transfer-work-owner"; readonly projectId: string; readonly userId: string }
   | { readonly type: "attach-project"; readonly projectId: string }
   | { readonly type: "detach-project"; readonly projectId: string };

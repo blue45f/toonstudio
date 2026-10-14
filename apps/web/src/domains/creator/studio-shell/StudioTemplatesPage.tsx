@@ -1,8 +1,10 @@
 import {
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   Heart,
   LayoutTemplate,
+  Plus,
   Search,
   Sparkles,
 } from "lucide-react";
@@ -225,7 +227,9 @@ function TemplatePreview({
   );
 }
 
-/** One canonical, searchable template destination for novice and professional creation flows. */
+/** 템플릿 레인(S2-6): 독립 시작 표면이 아니라 /create 시작 관문의 "템플릿에서" 레인이다.
+ * URL(/studio/templates)은 유지하되, 관문으로 돌아가는 길을 상단에 두고 카드의
+ * 주 행동을 "이 템플릿으로 시작"으로 삼는다(선택·구성 보기는 부수 행동). */
 export function StudioTemplatesPage() {
   const bt = useBilingual("StudioTemplatesPage");
   const language = useI18n((state) => state.lang);
@@ -254,6 +258,18 @@ export function StudioTemplatesPage() {
     ?? STUDIO_TEMPLATE_CATALOG[0]
   ), [selectedId, templates]);
 
+  // 카드 주 행동이 상세 패널과 같은 핸드오프를 준비한다 — 어느 쪽에서 눌러도 시작은 하나다.
+  const prepareTemplateHandoff = (templateId: string) => {
+    if (typeof window === "undefined") return;
+    writeStudioTemplateHandoff(
+      window.localStorage,
+      createStudioTemplateHandoff(templateId),
+    );
+  };
+
+  // 필터가 없을 때만 첫 카드로 고정한다(F3.2) — 검색·즐겨찾기 결과에는 끼워 넣지 않는다.
+  const showBlankCanvasCard = query === "" && category === "all" && !favoritesOnly;
+
   const toggleFavorite = (templateId: string) => {
     setFavoriteIds((current) => {
       const next = current.includes(templateId)
@@ -267,6 +283,16 @@ export function StudioTemplatesPage() {
   return (
     <div data-studio-illustrated-surface="templates" className="min-h-[70vh] bg-canvas">
       <Container size="wide" className="py-8 sm:py-12">
+        <Link
+          href="/create"
+          className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+        >
+          <ArrowLeft size={15} aria-hidden="true" />
+          {bt("작품 시작하기로 돌아가기", "Back to start a work")}
+        </Link>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
+          {bt("템플릿은 시작 방법 중 하나예요. 이야기부터·콘티부터·빈 캔버스·가져오기는 시작 관문에서 고를 수 있어요.", "Templates are one way to start. Story-first, storyboard-first, blank canvas and import live in the start gateway.")}
+        </p>
         {/* 머리글은 전체 폭으로 두어 테마의 우측 아트워크가 잘리지 않게 하고, 글 폭만 제한한다. */}
         <header className="flex gap-6">
           <div className="min-w-0 flex-1">
@@ -339,6 +365,26 @@ export function StudioTemplatesPage() {
             </p>
             {templates.length > 0 ? (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {showBlankCanvasCard ? (
+                  <article className="group rounded-2xl border border-dashed border-accent/40 bg-card p-4 shadow-sm">
+                    <span className="grid size-11 place-items-center rounded-xl bg-accent-soft text-accent">
+                      <Plus size={22} aria-hidden="true" />
+                    </span>
+                    <h2 className="mt-3 text-base font-black leading-6 text-fg">
+                      {bt("빈 캔버스로 바로 시작", "Start with a blank canvas")}
+                    </h2>
+                    <p className="mt-2 text-xs leading-5 text-fg-2">
+                      {bt("구조가 정해진 템플릿 없이, 하얀 페이지에서 바로 그려 나가요.", "Skip the preset structure and draw on a blank page right away.")}
+                    </p>
+                    <Link
+                      href="/studio/new"
+                      className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 text-xs font-black text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                    >
+                      {bt("빈 캔버스로 시작", "Start blank")}
+                      <ArrowRight size={15} aria-hidden="true" />
+                    </Link>
+                  </article>
+                ) : null}
                 {templates.map((template) => {
                   const active = selected?.id === template.id;
                   const favorite = favoriteIds.includes(template.id);
@@ -395,13 +441,23 @@ export function StudioTemplatesPage() {
                           {bt(`${template.definition.composition.pages.length}페이지 · ${template.definition.composition.pages.reduce((total, page) => total + page.panelCount, 0)}컷·영역 · 편집 슬롯 ${template.definition.slots.length}`, `${template.definition.composition.pages.length} pages · ${template.definition.composition.pages.reduce((total, page) => total + page.panelCount, 0)} panels · ${template.definition.slots.length} slots`)}
                         </p>
                       ) : null}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(template.id)}
-                        className="mt-4 min-h-10 w-full rounded-xl border border-line bg-panel px-3 text-xs font-bold text-fg-2 transition-colors hover:border-accent/40 hover:text-fg"
-                      >
-                        {bt("구성 보기", "View structure")}
-                      </button>
+                      <div className="mt-4 space-y-2">
+                        <Link
+                          href={studioTemplateStartHref(template.id)}
+                          onClick={() => prepareTemplateHandoff(template.id)}
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 text-xs font-black text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2"
+                        >
+                          {bt("이 템플릿으로 시작", "Start with this template")}
+                          <ArrowRight size={15} aria-hidden="true" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedId(template.id)}
+                          className="min-h-10 w-full rounded-xl border border-line bg-panel px-3 text-xs font-bold text-fg-2 transition-colors hover:border-accent/40 hover:text-fg"
+                        >
+                          {bt("구성 보기", "View structure")}
+                        </button>
+                      </div>
                     </article>
                   );
                 })}

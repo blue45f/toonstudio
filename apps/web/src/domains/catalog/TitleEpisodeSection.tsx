@@ -1,15 +1,19 @@
-import { BookOpen, CalendarDays, ChevronRight, Heart, ListOrdered } from "lucide-react";
+import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, Heart, ListOrdered } from "lucide-react";
 import { useState } from "react";
 
 import type { Title } from "@/shared/lib/types";
 
 import { getReaderProgress, isResumable } from "./reader-progress";
+import { resolveExternalPlatformGuide } from "./title-episode-empty-guide";
 import {
   resolveTotalEpisodes,
   sortEpisodes,
   type EpisodeSortOrder,
   type TitleEpisode,
 } from "./title-episodes";
+
+import { useAppConfig } from "@/platform/environment/use-app-config";
+import { PLATFORMS, PRICING_FULL } from "@/shared/lib/platforms";
 
 import { CoverImage } from "@/shared/components/cover-image";
 import {
@@ -129,6 +133,12 @@ function EpisodeRow({
  * `episodes`가 주어진 경우에만 행을 그리고, 없으면 시안의 빈 상태로 정직하게
  * 안내한다. 행 렌더링·정렬·읽음 배지는 계약이 생기면 그대로 켜지도록 완성형으로
  * 두고 단위 테스트로 고정했다(title-episodes.ts의 경계 참고).
+ *
+ * 빈 상태는 막다른 화면이 아니다(discover D-9): 작품의 실제 연재처인
+ * `title.availability`에서 검증된 외부 링크를 빈 상태 안에 직접 버튼으로
+ * 잇는다(title-episode-empty-guide). 링크가 없으면 "링크 준비 중"으로
+ * 정직하게 표시하고 작가 페이지·탐색 동선으로 이어지게 한다. 빈 배열([])도
+ * 행이 없는 빈 상태로 취급한다 — 예전에는 빈 <ol>만 그려져 안내가 사라졌다.
  */
 export function TitleEpisodeSection({
   title,
@@ -138,10 +148,19 @@ export function TitleEpisodeSection({
   episodes?: readonly TitleEpisode[];
 }) {
   useBilingualI18nRevision();
+  // 플랫폼 노출 킬스위치 — AvailabilityRouter와 같은 규칙으로, 꺼져 있으면
+  // 빈 상태에서도 외부 플랫폼 이름·링크를 노출하지 않는다.
+  const { showAvailability } = useAppConfig();
   const [order, setOrder] = useState<EpisodeSortOrder>("latest");
   const [progress] = useState(() => getReaderProgress(title.slug));
   const total = resolveTotalEpisodes(title, episodes);
   const sorted = episodes ? sortEpisodes(episodes, order) : undefined;
+  const hasEpisodes = Boolean(sorted && sorted.length > 0);
+  const externalGuide = resolveExternalPlatformGuide(title.availability, {
+    availabilityVisible: showAvailability,
+  });
+  const visibleExternalLinks = externalGuide.links.slice(0, 3);
+  const hiddenExternalLinkCount = externalGuide.links.length - visibleExternalLinks.length;
   // NEW 배지는 공개 예정이 아닌 가장 최신 회차에만 붙인다.
   const newestNumber = episodes
     ?.filter((episode) => episode.status !== "scheduled")
@@ -237,7 +256,7 @@ export function TitleEpisodeSection({
         </div>
       )}
 
-      {sorted ? (
+      {hasEpisodes && sorted ? (
         <ol className="flex flex-col gap-2.5">
           {sorted.map((episode) => (
             <EpisodeRow
@@ -250,17 +269,112 @@ export function TitleEpisodeSection({
           ))}
         </ol>
       ) : (
-        <div className="rounded-2xl border border-dashed border-line bg-card/50 p-6 sm:p-7">
+        <div
+          data-testid="title-episodes-empty"
+          className="rounded-2xl border border-dashed border-line bg-card/50 p-6 sm:p-7"
+        >
           <span className="grid size-11 place-items-center rounded-2xl bg-raised text-fg-3">
             <ListOrdered size={20} aria-hidden />
           </span>
           <p className="mt-3.5 font-semibold text-fg">{bi("회차별 목록은 아직 제공되지 않아요", "Episode lists aren't available yet")}</p>
           <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-fg-2">
-            {bi(
-              "이 작품의 회차 제목·공개일은 연재 플랫폼에서만 공개되고 있어요. 회차별 정보가 연결되면 이 자리에 최신 회차부터 표시됩니다. 지금은 옆의 플랫폼 안내에서 바로 읽을 수 있어요.",
-              "Episode titles and dates for this title are only published on its serial platforms. Once episode data is connected, it will appear here starting with the latest episode — for now, use the platform guide beside this section.",
-            )}
+            {externalGuide.state === "ready"
+              ? bi(
+                  "이 작품의 회차 제목·공개일은 연재 플랫폼에서만 공개되고 있어요. 회차별 정보가 연결되면 이 자리에 최신 회차부터 표시됩니다. 그때까지는 아래 연재 플랫폼에서 바로 읽을 수 있어요.",
+                  "Episode titles and dates for this title are only published on its serial platforms. Once episode data is connected, it will appear here starting with the latest episode — until then, you can read it right away on a serial platform below.",
+                )
+              : externalGuide.state === "no-url"
+                ? bi(
+                    "이 작품의 회차 제목·공개일은 연재 플랫폼에서만 공개되고 있어요. 연재 플랫폼은 확인되지만 바로가기 링크가 아직 준비되지 않았어요. 아래 동선에서 작품을 계속 둘러볼 수 있어요.",
+                    "Episode titles and dates for this title are only published on its serial platforms. We know the platforms, but a direct link isn't ready yet — keep exploring from the options below.",
+                  )
+                : bi(
+                    "이 작품의 회차 제목·공개일은 아직 연결되지 않았어요. 회차별 정보가 연결되면 이 자리에 최신 회차부터 표시됩니다. 아래 동선에서 작품을 계속 둘러볼 수 있어요.",
+                    "Episode information for this title isn't connected yet. Once it is, episodes will appear here starting with the latest — keep exploring from the options below.",
+                  )}
           </p>
+
+          <div className="mt-5 border-t border-line/70 pt-4">
+            <p className="text-sm font-semibold text-fg">
+              {bi("외부 플랫폼에서 보기", "View on an external platform")}
+            </p>
+            {externalGuide.state === "ready" ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                {visibleExternalLinks.map((link, index) => {
+                  const platformName = PLATFORMS[link.platformId]?.name ?? link.platformId;
+                  return (
+                    <a
+                      key={link.platformId}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={formatI18nTemplate(
+                        bi("{v0}에서 보기 (새 탭)", "View on {v0} (new tab)"),
+                        { v0: platformName },
+                      )}
+                      className={
+                        index === 0
+                          ? "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90"
+                          : "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                      }
+                    >
+                      {formatI18nTemplate(bi("{v0}에서 보기", "View on {v0}"), { v0: platformName })}
+                      <span className="text-xs font-medium opacity-80">{PRICING_FULL[link.pricing]}</span>
+                      <ArrowUpRight size={15} aria-hidden />
+                    </a>
+                  );
+                })}
+                {hiddenExternalLinkCount > 0 && (
+                  <a
+                    href="#title-availability"
+                    className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+                  >
+                    {formatI18nTemplate(
+                      bi("다른 플랫폼 {v0}곳 더 보기", "See {v0} more platforms"),
+                      { v0: String(hiddenExternalLinkCount) },
+                    )}
+                  </a>
+                )}
+              </div>
+            ) : externalGuide.state === "no-url" ? (
+              <ul className="mt-3 flex flex-wrap gap-2" aria-label={bi("연재 플랫폼", "Serial platforms")}>
+                {externalGuide.knownPlatformIds.map((platformId) => (
+                  <li
+                    key={platformId}
+                    className="inline-flex min-h-9 items-center gap-2 rounded-full border border-dashed border-line bg-card/60 px-3 text-xs font-medium text-fg-2"
+                  >
+                    {PLATFORMS[platformId]?.name ?? platformId}
+                    <span className="text-fg-3">{bi("링크 준비 중", "Link coming soon")}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm leading-relaxed text-fg-3">
+                {bi(
+                  "아직 연결된 연재 플랫폼이 없어요.",
+                  "No serial platform is connected to this title yet.",
+                )}
+              </p>
+            )}
+
+            {/* 외부로 나가지 않아도 흐름이 끊기지 않게 하는 내부 후속 동선.
+                외부 링크 유무와 무관하게 항상 제공한다. */}
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+              <Link
+                href={`/author/${encodeURIComponent(title.author)}`}
+                className="inline-flex min-h-10 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+              >
+                {formatI18nTemplate(bi("{v0}의 다른 작품", "More by {v0}"), { v0: title.author })}
+              </Link>
+              <Link
+                href="/explore"
+                className="inline-flex min-h-10 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+              >
+                {bi("비슷한 작품 탐색하기", "Explore similar titles")}
+              </Link>
+            </div>
+          </div>
+
           <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <div className="flex items-center gap-2">
               <dt className="text-fg-3">{bi("연재 상태", "Status")}</dt>

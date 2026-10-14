@@ -480,6 +480,7 @@ export function StudioLiveCollaborationProvider({
       };
       let crdtDocument: StudioCrdtDocument | null = null;
       let crdtBinding: StudioCrdtRoomBinding | null = null;
+      let strokeMergeShadow: { stop(): void } | null = null;
       let offlineBranchRuntime: StudioOfflineBranchRuntime | null = null;
       let canonicalDocumentAuthority = false;
       let offlineBranchPeerSync: { announce(): void; close(): void } | null = null;
@@ -740,6 +741,20 @@ export function StudioLiveCollaborationProvider({
           });
           await crdtBinding.start();
           if (cancelled) return;
+          if (!crdtBinding.recoveryRequired && crdtDocument) {
+            // 섀도우 검증 (HOST_INSERTION_SPEC 3의 1단계): 병합 코어를 CRDT 변경과
+            // 병행 실행해 해시를 대조한다. 진단 전용이라 실패해도 세션은 계속된다.
+            try {
+              const shadowModule = await import("./merge/stroke-merge-shadow-adapter");
+              if (!cancelled && crdtDocument) {
+                strokeMergeShadow = shadowModule.startStrokeMergeShadow(crdtDocument, {
+                  surface: "studio-live-provider",
+                });
+              }
+            } catch {
+              strokeMergeShadow = null;
+            }
+          }
           if (crdtBinding.recoveryRequired) {
             // A restored optimistic update can be permanently rejected during the initial drain.
             // Never re-expose that divergent Y.Doc after the terminal status callback locked Studio.
@@ -860,6 +875,8 @@ export function StudioLiveCollaborationProvider({
       })();
 
       disposeSession = () => {
+        strokeMergeShadow?.stop();
+        strokeMergeShadow = null;
         stopVisibilityListener();
         stopRoomSubscription();
         const closingBinding = crdtBinding;

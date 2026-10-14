@@ -1,5 +1,5 @@
 import { ChevronUp, ChevronDown, Minus, HelpCircle, Sparkles } from "lucide-react";
-import { useId, useState } from "react";
+import { memo, useId, useState } from "react";
 
 import { AdultOverlay } from "./adult-overlay";
 import { PlatformTags } from "./availability";
@@ -83,7 +83,10 @@ function Delta({ delta }: { delta: number }) {
   return <Minus size={12} className="text-fg-3" />;
 }
 
-export function RankRow({
+// memo — 보드의 다른 상태(필터·보기 방식 등)가 바뀌어도 이 행의 props
+// (ranked 객체·axis·metric)가 같으면 재렌더하지 않는다. metric은 보드가
+// useMemo로 축 단위 고정하므로 동일성이 유지된다.
+export const RankRow = memo(function RankRow({
   ranked,
   axis = "popular",
   metric,
@@ -261,4 +264,4 @@ export function RankRow({
       )}
     </div>
   );
-}
+});

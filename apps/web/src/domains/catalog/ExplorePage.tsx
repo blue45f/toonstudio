@@ -445,7 +445,7 @@ export function ExplorePage() {
                   }}
                   aria-pressed={active}
                   className={cn(
-                    "group inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.96]",
+                    "group inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.96]",
                     active
                       ? "border-accent/60 bg-accent-soft text-accent shadow-[0_4px_16px_-8px_oklch(0.72_0.185_42/0.5)]"
                       : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",

@@ -1,5 +1,7 @@
 import {
+  getAppI18nCompletenessRatio,
   getAppI18nTranslatedRatio,
+  isAppI18nTranslationInProgress,
   isFullyTranslatedAppLocale,
 } from "./i18n-asset-loader";
 import { FALLBACK_LANG, FALLBACK_CHAIN } from "./i18n-core";
@@ -242,6 +244,8 @@ export function getLanguageOptions(
       englishLabel,
       translatedRatio: getAppI18nTranslatedRatio(code),
       fullyTranslated: isFullyTranslatedAppLocale(code),
+      completenessRatio: getAppI18nCompletenessRatio(code),
+      translationInProgress: isAppI18nTranslationInProgress(code),
     };
   }).sort((left: LanguageLocaleOption, right: LanguageLocaleOption) => collator.compare(left.label, right.label));
 }

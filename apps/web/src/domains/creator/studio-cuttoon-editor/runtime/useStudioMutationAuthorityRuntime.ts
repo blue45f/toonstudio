@@ -9,6 +9,12 @@ import type { StudioProjectDocumentSessionProvenance } from "../../studio-projec
 
 interface UseStudioMutationAuthorityRuntimeOptions {
   readonly collaborationDocumentLocked: boolean;
+  /**
+   * 편집 세대가 게이트를 통과해 전진할 때마다 그 값을 통지한다 (저장 상태
+   * 표시 어댑터 연결용). 콜백은 ref 로 보관해 tryMark 의 useCallback 의존성을
+   * 바꾸지 않으므로, 콜백 identity 변화가 하위 배선을 흔들지 않는다.
+   */
+  readonly onEditGeneration?: (generation: number) => void;
   readonly remixId: string | null;
   readonly reportError: (message: string) => void;
   readonly studioAuthUserId: string | null;
@@ -21,6 +27,7 @@ interface UseStudioMutationAuthorityRuntimeOptions {
  */
 export function useStudioMutationAuthorityRuntime({
   collaborationDocumentLocked,
+  onEditGeneration,
   remixId,
   reportError,
   studioAuthUserId,
@@ -50,6 +57,8 @@ export function useStudioMutationAuthorityRuntime({
 
   const currentStudioDocumentScopeRef = useRef({ authScopeKey: studioAuthUserId, workId });
   currentStudioDocumentScopeRef.current = { authScopeKey: studioAuthUserId, workId };
+  const onEditGenerationRef = useRef(onEditGeneration);
+  onEditGenerationRef.current = onEditGeneration;
   const editorMountedRef = useRef(true);
   const documentSaveInFlightRef = useRef(false);
   const studioRevisionProjectGenerationRef = useRef(0);
@@ -128,6 +137,7 @@ export function useStudioMutationAuthorityRuntime({
       ...current,
       documentGeneration: current.documentGeneration + 1,
     };
+    onEditGenerationRef.current?.(studioRevisionProjectGenerationRef.current);
     return true;
   }, [advanceStudioRevisionProjectGeneration]);
 

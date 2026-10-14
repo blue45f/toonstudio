@@ -1,4 +1,4 @@
-import { Copy, ScanLine, Shapes } from "lucide-react";
+import { Copy, PenTool, ScanLine, Shapes } from "lucide-react";
 import { useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -7,10 +7,10 @@ import { cn } from "@/shared/lib/utils";
 import type { DrawEl, El } from "./studio-element-model";
 import {
   STUDIO_IMAGE_TRACE_PRESETS,
-  traceStudioRasterImage,
   type StudioImageTracePresetId,
 } from "./studio-image-trace";
 import { vectorizeStudioRasterImage } from "./studio-raster-vectorize-product";
+import type { VectorLayer } from "./vector-layer/vector-layer-model";
 
 type StudioVectorizableImage = Extract<El, { type: "image" }>;
 
@@ -19,11 +19,18 @@ export function StudioRasterVectorizeButton({
   image,
   disabled = false,
   onInsert,
+  onInsertVectorLayer,
 }: {
   readonly src: string;
   readonly image: StudioVectorizableImage;
   readonly disabled?: boolean;
   readonly onInsert: (elements: readonly DrawEl[]) => boolean;
+  /**
+   * 지정하면 "벡터 레이어로 변환" 동작이 함께 나타난다. 트레이싱 결과를
+   * DrawEl 이 아니라 vector-layer 도메인의 VectorLayer 로 받는 삽입구 —
+   * 벡터 레이어 상태의 소유자가 있을 때만 연결한다(미지정 시 기존 동작과 동일).
+   */
+  readonly onInsertVectorLayer?: (layer: VectorLayer) => boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -51,7 +58,10 @@ export function StudioRasterVectorizeButton({
     setTracedSvg(null);
     setStatus("이미지를 채움 패스로 트레이싱하는 중…");
     try {
-      const result = await traceStudioRasterImage(src, image, tracePreset);
+      // 픽셀 연산(명도 격자·레이어 분리)은 Worker 에서 돈다. Worker 를 쓸 수 없는
+      // 환경에서는 오케스트레이터가 direct 로 폴백한다.
+      const { traceStudioRasterImageViaWorker } = await import("./studio-image-trace-browser");
+      const result = await traceStudioRasterImageViaWorker(src, image, tracePreset);
       if (!onInsert(result.elements)) throw new Error("트레이싱 결과를 현재 문서에 추가하지 못했습니다.");
       setTracedSvg(result.svg);
       setStatus(
@@ -59,6 +69,33 @@ export function StudioRasterVectorizeButton({
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "이미지를 트레이싱하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runTraceToVectorLayer = async () => {
+    if (busy || disabled || !onInsertVectorLayer) return;
+    setBusy(true);
+    setTracedSvg(null);
+    setStatus("이미지를 벡터 레이어로 변환하는 중…");
+    try {
+      const { traceStudioRasterImageViaWorker } = await import("./studio-image-trace-browser");
+      const { traceResultToVectorLayer } = await import("./studio-image-trace-vector-layer");
+      const result = await traceStudioRasterImageViaWorker(src, image, tracePreset);
+      const conversion = traceResultToVectorLayer(result, {
+        id: `traced-vector-${image.id}-${Date.now().toString(36)}`,
+      });
+      if (conversion.convertedCount === 0) {
+        throw new Error("벡터 레이어로 만들 뚜렷한 윤곽을 찾지 못했어요. 대비가 더 높은 원본으로 다시 시도해 주세요.");
+      }
+      if (!onInsertVectorLayer(conversion.layer)) throw new Error("벡터 레이어를 현재 문서에 추가하지 못했습니다.");
+      setTracedSvg(result.svg);
+      setStatus(
+        `벡터 레이어로 변환 완료 — 편집 가능한 윤곽 ${conversion.convertedCount}개를 벡터 레이어로 추가했습니다.`,
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "이미지를 벡터 레이어로 변환하지 못했습니다.");
     } finally {
       setBusy(false);
     }
@@ -110,6 +147,12 @@ export function StudioRasterVectorizeButton({
           <Shapes size={14} aria-hidden="true" />
           {busy ? "트레이싱 중…" : "이미지를 채움 벡터로 트레이싱"}
         </button>
+        {onInsertVectorLayer ? (
+          <button type="button" disabled={busy || disabled} onClick={() => void runTraceToVectorLayer()} className={buttonClass({ variant: "outline", size: "sm", className: "mt-1.5 w-full gap-2" })}>
+            <PenTool size={14} aria-hidden="true" />
+            {busy ? "변환 중…" : "벡터 레이어로 변환해 편집"}
+          </button>
+        ) : null}
         {tracedSvg ? (
           <button type="button" disabled={busy || disabled} onClick={() => void copySvg()} className={buttonClass({ variant: "ghost", size: "sm", className: "mt-1 w-full gap-2" })}>
             <Copy size={12} aria-hidden="true" />

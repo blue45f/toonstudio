@@ -10,6 +10,9 @@ import { RANK_AXES, PLATFORM_REACH_WEIGHT } from "@/shared/lib/ranking";
 import { useT } from "@/shared/lib/i18n";
 import Link from "@/shared/navigation/router-link";
 
+// guide.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./guide-i18n";
+
 type TranslationResolver = ReturnType<typeof useT>;
 
 

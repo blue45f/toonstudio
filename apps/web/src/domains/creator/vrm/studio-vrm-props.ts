@@ -868,11 +868,30 @@ export function nextPropUid(seed?: string): string {
   return candidate;
 }
 
+/**
+ * 그립 프리셋 기본값: 보조(secondary) 앵커가 있는 손 소품은 장착 즉시 양손 그립이 기본이다.
+ * 종전에는 createDefaultSecondaryRig를 UI에서 별도로 켜야 해서, 검·책·지팡이 같은 양손
+ * 소품이 기본 상태에서는 한 손에만 매달려 접촉이 어긋났다. 값 규칙은 prop-rig의
+ * createDefaultSecondaryRig와 동일하다(반대 손, 소품별 secondaryGripInfluence ?? 0.75).
+ */
+function defaultSecondaryGripForInstance(def: PropDef): PropRigSecondary | undefined {
+  const secondaryAnchor = def.anchors.find((candidate) => candidate.role === "secondary");
+  if (!secondaryAnchor || !isHandBone(def.defaultBone)) return undefined;
+  const rawInfluence = def.secondaryGripInfluence ?? 0.75;
+  return {
+    enabled: true,
+    anchorId: secondaryAnchor.id,
+    bone: def.defaultBone === "leftHand" ? "rightHand" : "leftHand",
+    influence: Number.isFinite(rawInfluence) ? Math.min(1, Math.max(0, rawInfluence)) : 0.75,
+  };
+}
+
 /** 카탈로그 기본값으로 부착 인스턴스를 생성한다. */
 export function createPropInstance(propId: string, uid?: string): PropInstance | null {
   const def = propDefById(propId);
   if (!def) return null;
   const primaryAnchor = def.anchors.find((candidate) => candidate.role === "primary" || candidate.role === "surface")!;
+  const secondary = defaultSecondaryGripForInstance(def);
   const instanceUid = uid ?? nextPropUid(propId);
   if (isValidPropUid(instanceUid)) issuedPropUids.add(instanceUid);
   return {
@@ -893,6 +912,7 @@ export function createPropInstance(propId: string, uid?: string): PropInstance |
       deltaPosition: [0, 0, 0],
       deltaRotationDeg: [0, 0, 0],
       deltaScale: 1,
+      ...(secondary ? { secondary } : {}),
     },
   };
 }

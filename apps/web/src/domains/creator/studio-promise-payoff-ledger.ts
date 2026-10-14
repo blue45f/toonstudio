@@ -664,6 +664,109 @@ export function diagnoseStudioPromisePayoffLedger(
   );
 }
 
+/**
+ * 첫독 리캡 후보로 볼 최소 설명 간격(화). 마지막 설명 뒤 이만큼 회차가
+ * 비어 있으면, 다시 등장할 때 처음 보는 독자는 맥락을 잃는다.
+ */
+export const STUDIO_PROMISE_PAYOFF_RECAP_MIN_GAP_EPISODES = 8;
+/** 회수 예정 회차가 현재 작업 회차에서 이 범위 안에 있으면 등장 임박으로 본다. */
+export const STUDIO_PROMISE_PAYOFF_RECAP_LOOKAHEAD_EPISODES = 2;
+
+export interface StudioPromisePayoffRecapCandidate {
+  readonly entryId: string;
+  readonly kind: StudioPromisePayoffKind;
+  readonly title: string;
+  /** 등장 직전까지의 마지막 설명(첫 약속·중간 단서) 회차. */
+  readonly lastExplainedEpisode: number;
+  /** 설명 없이 다시 등장하는 회차 — 회수 예정 회차 또는 연결된 등장 회차. */
+  readonly appearanceEpisode: number;
+  readonly gapEpisodes: number;
+  readonly severity: StudioPromisePayoffWarningSeverity;
+  readonly message: string;
+}
+
+export interface StudioPromisePayoffRecapOptions {
+  readonly minGapEpisodes?: number;
+  readonly lookaheadEpisodes?: number;
+}
+
+/**
+ * 첫독 리캡 후보를 찾는다. 닫히지 않은 항목마다 "다음 등장"을 정하고
+ * (현재 회차 이후로 연결된 단서·회수 컷, 또는 현재 회차+lookahead 안에 든
+ * 회수 예정 회차 — 기한 초과분 포함), 그 직전 마지막 설명과의 간격이
+ * 기준 이상이면 후보로 올린다. 설명 기록이 전혀 없는 항목은 기존
+ * MISSING_SEED 경고가 맡으므로 여기서는 다루지 않는다.
+ */
+export function findStudioPromisePayoffRecapCandidates(
+  value: unknown,
+  options: StudioPromisePayoffRecapOptions = {}
+): StudioPromisePayoffRecapCandidate[] {
+  const ledger = normalizeStudioPromisePayoffLedger(value);
+  const minGap =
+    Number.isInteger(options.minGapEpisodes) && (options.minGapEpisodes ?? 0) >= 1
+      ? (options.minGapEpisodes as number)
+      : STUDIO_PROMISE_PAYOFF_RECAP_MIN_GAP_EPISODES;
+  const lookahead =
+    Number.isInteger(options.lookaheadEpisodes) && (options.lookaheadEpisodes ?? -1) >= 0
+      ? (options.lookaheadEpisodes as number)
+      : STUDIO_PROMISE_PAYOFF_RECAP_LOOKAHEAD_EPISODES;
+
+  const candidates: StudioPromisePayoffRecapCandidate[] = [];
+  for (const entry of ledger.entries) {
+    if (studioPromisePayoffStatusIsClosed(entry.status)) continue;
+    const explanationEpisodes = [entry.seed, ...entry.foreshadows]
+      .filter((link): link is StudioPromisePayoffStoryLink => Boolean(link))
+      .map(({ episode }) => episode);
+    if (explanationEpisodes.length === 0) continue;
+
+    const appearanceEpisodes = new Set<number>();
+    for (const link of [...entry.foreshadows, entry.payoff]) {
+      if (link && link.episode >= ledger.currentEpisode) {
+        appearanceEpisodes.add(link.episode);
+      }
+    }
+    if (
+      entry.dueEpisode !== null
+      && entry.dueEpisode <= ledger.currentEpisode + lookahead
+    ) {
+      appearanceEpisodes.add(entry.dueEpisode);
+    }
+
+    for (const appearanceEpisode of [...appearanceEpisodes].sort(
+      (left, right) => left - right
+    )) {
+      const priorEpisodes = explanationEpisodes.filter(
+        (episode) => episode < appearanceEpisode
+      );
+      if (priorEpisodes.length === 0) continue;
+      const lastExplainedEpisode = Math.max(...priorEpisodes);
+      const gapEpisodes = appearanceEpisode - lastExplainedEpisode;
+      if (gapEpisodes < minGap) continue;
+      const label = entry.title || entry.id;
+      candidates.push({
+        entryId: entry.id,
+        kind: entry.kind,
+        title: entry.title,
+        lastExplainedEpisode,
+        appearanceEpisode,
+        gapEpisodes,
+        severity: gapEpisodes >= minGap * 2 ? "high" : "normal",
+        message:
+          `“${label}”: 마지막 설명은 ${lastExplainedEpisode}화, 다음 등장은 `
+          + `${appearanceEpisode}화로 ${gapEpisodes}화 간격입니다. `
+          + "처음 보는 독자를 위해 짧은 리캡을 검토하세요.",
+      });
+      break;
+    }
+  }
+
+  return candidates.sort(
+    (left, right) =>
+      right.gapEpisodes - left.gapEpisodes
+      || compareText(left.entryId, right.entryId)
+  );
+}
+
 export function summarizeStudioPromisePayoffLedger(
   value: unknown
 ): StudioPromisePayoffSummary {

@@ -38,7 +38,18 @@ export const STUDIO_ANIMATIC_MAX_CANVAS_EXTENT = 100_000;
 export type StudioAnimaticTransitionKind = "cut" | "fade" | "pan";
 export type StudioAnimaticPreviewMode = "cuts" | "vertical-scroll";
 export type StudioAnimaticCueKind = "dialogue" | "sfx";
-export type StudioAnimaticCameraEasing = "linear" | "ease-in-out";
+export type StudioAnimaticCameraEasing =
+  | "linear"
+  | "ease-in"
+  | "ease-out"
+  | "ease-in-out"
+  | "ease-in-back"
+  | "ease-out-back"
+  | "hold"
+  | "custom";
+
+/** 커스텀 베지어 곡선 제어점 (x1,y1,x2,y2). easing이 "custom"일 때만 함께 저장된다. */
+export type StudioAnimaticCameraCurvePoints = readonly [number, number, number, number];
 
 export interface StudioAnimaticTransition {
   readonly kind: StudioAnimaticTransitionKind;
@@ -51,7 +62,11 @@ export interface StudioAnimaticCameraKeyframe {
   readonly panXPercent: number;
   readonly panYPercent: number;
   readonly zoom: number;
+  /** 컷 불투명도 0..1. 구 문서(필드 없음)는 1로 읽는다. */
+  readonly opacity: number;
   readonly easing: StudioAnimaticCameraEasing;
+  /** easing이 "custom"인 구간의 베지어 제어점. 그 외 이징에서는 없다. */
+  readonly curve?: StudioAnimaticCameraCurvePoints;
 }
 
 export interface StudioAnimaticCue {
@@ -148,6 +163,7 @@ export interface StudioAnimaticPreviewSample {
     readonly panXPercent: number;
     readonly panYPercent: number;
     readonly zoom: number;
+    readonly opacity: number;
   };
   readonly scrollY: number;
   readonly cues: readonly StudioAnimaticCue[];
@@ -265,6 +281,7 @@ function defaultCameraKeyframes(): StudioAnimaticCameraKeyframe[] {
       panXPercent: 0,
       panYPercent: 0,
       zoom: 1,
+      opacity: 1,
       easing: "linear",
     },
     {
@@ -272,9 +289,27 @@ function defaultCameraKeyframes(): StudioAnimaticCameraKeyframe[] {
       panXPercent: 0,
       panYPercent: 0,
       zoom: 1,
+      opacity: 1,
       easing: "ease-in-out",
     },
   ];
+}
+
+/** 곡선 제어점을 허용 범위로 정규화한다 (keyframe-curve-model의 normalizeBezierPoints와 같은 규칙). */
+export function normalizeStudioAnimaticCurvePoints(
+  points: readonly [number, number, number, number]
+): StudioAnimaticCameraCurvePoints {
+  const clampX = (v: number) => Math.min(1, Math.max(0, v));
+  const clampY = (v: number) => Math.min(1.5, Math.max(-0.5, v));
+  const x1 = clampX(points[0]);
+  const x2 = Math.max(x1, clampX(points[2]));
+  return [x1, clampY(points[1]), x2, clampY(points[3])];
+}
+
+function sanitizeCurvePoints(value: unknown): StudioAnimaticCameraCurvePoints | null {
+  if (!Array.isArray(value) || value.length !== 4) return null;
+  if (!value.every((item) => typeof item === "number" && Number.isFinite(item))) return null;
+  return normalizeStudioAnimaticCurvePoints(value as [number, number, number, number]);
 }
 
 function sanitizeCameraKeyframe(
@@ -287,16 +322,21 @@ function sanitizeCameraKeyframe(
     || !finiteWithin(raw.panXPercent, -100, 100)
     || !finiteWithin(raw.panYPercent, -100, 100)
     || !finiteWithin(raw.zoom, 0.25, 4)
-    || (raw.easing !== "linear" && raw.easing !== "ease-in-out")
+    || (raw.opacity !== undefined && !finiteWithin(raw.opacity, 0, 1))
+    || (raw.easing !== "linear" && raw.easing !== "ease-in" && raw.easing !== "ease-out" && raw.easing !== "ease-in-out" && raw.easing !== "ease-in-back" && raw.easing !== "ease-out-back" && raw.easing !== "hold" && raw.easing !== "custom")
   ) {
     return null;
   }
+  // custom인데 곡선이 없거나 깨졌으면 기본 프리셋으로 우아하게 강등한다 (다른 값은 보존).
+  const curve = raw.easing === "custom" ? sanitizeCurvePoints(raw.curve) : null;
   return {
     at: raw.at,
     panXPercent: raw.panXPercent,
     panYPercent: raw.panYPercent,
     zoom: raw.zoom,
-    easing: raw.easing,
+    opacity: raw.opacity === undefined ? 1 : raw.opacity,
+    easing: raw.easing === "custom" && curve === null ? "ease-in-out" : raw.easing,
+    ...(curve !== null ? { curve } : {}),
   };
 }
 
@@ -816,12 +856,51 @@ export function planStudioAnimaticPreview(
   };
 }
 
+function bezierAxis(t: number, p1: number, p2: number): number {
+  const mt = 1 - t;
+  return 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t;
+}
+
+/** cubic-bezier(x1,y1,x2,y2)에서 진행률 x에 대한 y를 이분 탐색으로 푼다. */
+function cubicBezierY(x: number, x1: number, y1: number, x2: number, y2: number): number {
+  let lo = 0;
+  let hi = 1;
+  let t = x;
+  for (let i = 0; i < 24; i += 1) {
+    const v = bezierAxis(t, x1, x2);
+    if (Math.abs(v - x) < 1e-6) break;
+    if (v < x) lo = t; else hi = t;
+    t = (lo + hi) / 2;
+  }
+  return bezierAxis(t, y1, y2);
+}
+
+/**
+ * 프리셋 이름 → 베지어 제어점. 정본은 animatic/keyframe-curve-model.ts의
+ * EASING_PRESETS이며, 값 일치는 테스트(animatic-keyframe-curve-editing.test.ts)가 고정한다.
+ * hold는 step(끝에서 점프)이라 제어점이 없다.
+ */
+export const STUDIO_ANIMATIC_EASING_CURVE_POINTS: Readonly<
+  Partial<Record<StudioAnimaticCameraEasing, StudioAnimaticCameraCurvePoints>>
+> = {
+  "ease-in": [0.42, 0, 1, 1],
+  "ease-out": [0, 0, 0.58, 1],
+  "ease-in-out": [0.42, 0, 0.58, 1],
+  "ease-in-back": [0.36, 0, 0.66, -0.56],
+  "ease-out-back": [0.34, 1.56, 0.64, 1],
+};
+
 function easedProgress(
   progress: number,
-  easing: StudioAnimaticCameraEasing
+  easing: StudioAnimaticCameraEasing,
+  curve?: StudioAnimaticCameraCurvePoints
 ): number {
   const t = clamp01(progress);
-  return easing === "ease-in-out" ? t * t * (3 - 2 * t) : t;
+  if (easing === "hold") return 0;
+  if (easing === "linear") return t;
+  const points = easing === "custom" && curve ? curve : STUDIO_ANIMATIC_EASING_CURVE_POINTS[easing];
+  if (!points) return t;
+  return cubicBezierY(t, points[0], points[1], points[2], points[3]);
 }
 
 function cameraAt(
@@ -835,6 +914,7 @@ function cameraAt(
       panXPercent: first.panXPercent,
       panYPercent: first.panYPercent,
       zoom: first.zoom,
+      opacity: first.opacity,
     };
   }
   const t = clamp01(progress);
@@ -849,13 +929,14 @@ function cameraAt(
     }
   }
   const span = right.at - left.at;
-  const local = span > 0 ? easedProgress((t - left.at) / span, right.easing) : 0;
+  const local = span > 0 ? easedProgress((t - left.at) / span, right.easing, right.curve) : 0;
   return {
     panXPercent:
       left.panXPercent + (right.panXPercent - left.panXPercent) * local,
     panYPercent:
       left.panYPercent + (right.panYPercent - left.panYPercent) * local,
     zoom: left.zoom + (right.zoom - left.zoom) * local,
+    opacity: left.opacity + (right.opacity - left.opacity) * local,
   };
 }
 
@@ -1003,6 +1084,20 @@ export function setStudioAnimaticSegmentTiming(
   });
 }
 
+/** 이징 패치 해석: curve가 오면 custom으로, 이름이 오면 그 프리셋으로 (곡선 제거), 없으면 기존 유지. */
+function resolveCameraCurvePatch(
+  target: StudioAnimaticCameraKeyframe,
+  patch: Partial<Pick<StudioAnimaticCameraKeyframe, "easing" | "curve">>
+): { easing: StudioAnimaticCameraEasing; curve?: StudioAnimaticCameraCurvePoints } {
+  if (patch.curve && patch.curve.every((value) => Number.isFinite(value))) {
+    return { easing: "custom", curve: normalizeStudioAnimaticCurvePoints(patch.curve) };
+  }
+  if (validCameraEasing(patch.easing)) {
+    return { easing: patch.easing };
+  }
+  return { easing: target.easing, ...(target.curve ? { curve: target.curve } : {}) };
+}
+
 export function setStudioAnimaticCameraEndpoint(
   document: StudioAnimaticDocument,
   segmentId: string,
@@ -1010,7 +1105,7 @@ export function setStudioAnimaticCameraEndpoint(
   patch: Partial<
     Pick<
       StudioAnimaticCameraKeyframe,
-      "panXPercent" | "panYPercent" | "zoom" | "easing"
+      "panXPercent" | "panYPercent" | "zoom" | "opacity" | "easing" | "curve"
     >
   >
 ): StudioAnimaticDocument {
@@ -1036,10 +1131,8 @@ export function setStudioAnimaticCameraEndpoint(
       100
     ),
     zoom: clamp(patch.zoom ?? target.zoom, 0.25, 4),
-    easing:
-      patch.easing === "linear" || patch.easing === "ease-in-out"
-        ? patch.easing
-        : target.easing,
+    opacity: clamp(patch.opacity ?? target.opacity, 0, 1),
+    ...resolveCameraCurvePatch(target, patch),
   };
   const middle = segment.cameraKeyframes.filter(
     (keyframe) => keyframe.at > 0 && keyframe.at < 1
@@ -1052,6 +1145,107 @@ export function setStudioAnimaticCameraEndpoint(
     ...segment,
     cameraKeyframes,
   });
+}
+
+
+const CAMERA_EASINGS: readonly StudioAnimaticCameraEasing[] = ["linear", "ease-in", "ease-out", "ease-in-out", "ease-in-back", "ease-out-back", "hold", "custom"];
+
+function validCameraEasing(value: unknown): value is StudioAnimaticCameraEasing {
+  return typeof value === "string" && (CAMERA_EASINGS as readonly string[]).includes(value);
+}
+
+function normalizedCameraKeyframes(keyframes: readonly StudioAnimaticCameraKeyframe[]): StudioAnimaticCameraKeyframe[] {
+  return [...keyframes].sort((a, b) => a.at - b.at);
+}
+
+/** 두 이웃 키프레임 사이를 선형 보간한 값 (새 키프레임의 초기값). */
+function interpolatedCameraKeyframe(segment: StudioAnimaticSegment, at: number): StudioAnimaticCameraKeyframe {
+  const kfs = segment.cameraKeyframes;
+  const sample = cameraAt(kfs, clamp01(at), false);
+  return { at: clamp01(at), panXPercent: sample.panXPercent, panYPercent: sample.panYPercent, zoom: sample.zoom, opacity: sample.opacity, easing: "ease-in-out" };
+}
+
+/**
+ * 컷에 카메라 키프레임을 추가한다. at을 생략하면 가장 넓은 구간의 가운데에 넣고,
+ * 초기값은 그 위치의 보간값이라 추가만으로 움직임이 튀지 않는다.
+ */
+export function addStudioAnimaticCameraKeyframe(
+  document: StudioAnimaticDocument,
+  segmentId: string,
+  at?: number,
+): StudioAnimaticDocument {
+  const segment = document.segments.find((candidate) => candidate.id === segmentId);
+  if (!segment || segment.cameraKeyframes.length >= STUDIO_ANIMATIC_MAX_CAMERA_KEYFRAMES) return document;
+  let position = at === undefined ? Number.NaN : clamp01(at);
+  if (!Number.isFinite(position)) {
+    let widest = -1;
+    position = 0.5;
+    for (let i = 0; i < segment.cameraKeyframes.length - 1; i += 1) {
+      const span = segment.cameraKeyframes[i + 1]!.at - segment.cameraKeyframes[i]!.at;
+      if (span > widest) { widest = span; position = (segment.cameraKeyframes[i]!.at + segment.cameraKeyframes[i + 1]!.at) / 2; }
+    }
+    if (segment.cameraKeyframes.length === 1) position = segment.cameraKeyframes[0]!.at < 0.5 ? 1 : 0;
+  }
+  if (segment.cameraKeyframes.some((kf) => Math.abs(kf.at - position) < 1e-9)) return document;
+  const keyframe = interpolatedCameraKeyframe(segment, position);
+  return replaceSegment(document, segmentId, { ...segment, cameraKeyframes: normalizedCameraKeyframes([...segment.cameraKeyframes, keyframe]) });
+}
+
+/** 키프레임 위치를 옮긴다. 다른 키프레임과 같은 위치로는 옮기지 않는다. */
+export function moveStudioAnimaticCameraKeyframe(
+  document: StudioAnimaticDocument,
+  segmentId: string,
+  fromAt: number,
+  toAt: number,
+): StudioAnimaticDocument {
+  const segment = document.segments.find((candidate) => candidate.id === segmentId);
+  if (!segment || !Number.isFinite(toAt)) return document;
+  const target = clamp01(toAt);
+  const index = segment.cameraKeyframes.findIndex((kf) => Math.abs(kf.at - fromAt) < 1e-9);
+  if (index < 0) return document;
+  if (segment.cameraKeyframes.some((kf, i) => i !== index && Math.abs(kf.at - target) < 1e-9)) return document;
+  const keyframes = segment.cameraKeyframes.map((kf, i) => (i === index ? { ...kf, at: target } : kf));
+  return replaceSegment(document, segmentId, { ...segment, cameraKeyframes: normalizedCameraKeyframes(keyframes) });
+}
+
+/** 지정 위치의 키프레임 값을 바꾼다 (이동·줌·불투명도·이징·커스텀 곡선). */
+export function patchStudioAnimaticCameraKeyframe(
+  document: StudioAnimaticDocument,
+  segmentId: string,
+  at: number,
+  patch: Partial<Pick<StudioAnimaticCameraKeyframe, "panXPercent" | "panYPercent" | "zoom" | "opacity" | "easing" | "curve">>,
+): StudioAnimaticDocument {
+  const segment = document.segments.find((candidate) => candidate.id === segmentId);
+  if (!segment) return document;
+  const index = segment.cameraKeyframes.findIndex((kf) => Math.abs(kf.at - at) < 1e-9);
+  if (index < 0) return document;
+  const target = segment.cameraKeyframes[index]!;
+  const curvePatch = resolveCameraCurvePatch(target, patch);
+  const updated: StudioAnimaticCameraKeyframe = {
+    ...target,
+    panXPercent: clamp(patch.panXPercent ?? target.panXPercent, -100, 100),
+    panYPercent: clamp(patch.panYPercent ?? target.panYPercent, -100, 100),
+    zoom: clamp(patch.zoom ?? target.zoom, 0.25, 4),
+    opacity: clamp(patch.opacity ?? target.opacity, 0, 1),
+    easing: curvePatch.easing,
+    // 프리셋으로 바꾸면 곡선을 비운다 (undefined는 직렬화에서 사라지고 sanitize도 무시한다).
+    curve: curvePatch.curve ?? undefined,
+  };
+  const keyframes = segment.cameraKeyframes.map((kf, i) => (i === index ? updated : kf));
+  return replaceSegment(document, segmentId, { ...segment, cameraKeyframes: keyframes });
+}
+
+/** 키프레임을 삭제한다. 시작·끝 키프레임은 남겨 최소 2개를 유지한다. */
+export function removeStudioAnimaticCameraKeyframe(
+  document: StudioAnimaticDocument,
+  segmentId: string,
+  at: number,
+): StudioAnimaticDocument {
+  const segment = document.segments.find((candidate) => candidate.id === segmentId);
+  if (!segment || segment.cameraKeyframes.length <= 2) return document;
+  const index = segment.cameraKeyframes.findIndex((kf) => Math.abs(kf.at - at) < 1e-9);
+  if (index <= 0 || index >= segment.cameraKeyframes.length - 1) return document;
+  return replaceSegment(document, segmentId, { ...segment, cameraKeyframes: segment.cameraKeyframes.filter((_, i) => i !== index) });
 }
 
 function nextCueId(

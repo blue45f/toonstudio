@@ -146,6 +146,10 @@ function destination(
         "에피소드와 장면의 순서·목적·갈등을 정리하고 컷 계획으로 연결합니다.",
         "Organize episodes and scenes, then connect their purpose and conflict to panel planning.",
       ],
+      foreshadow: [
+        "심은 복선과 회수 예정 구간, 공개 범위를 장부로 추적합니다. 회수 여부는 직접 표시합니다.",
+        "Track planted seeds, planned payoff windows and visibility in a ledger. Payoff is always marked by hand.",
+      ],
       script: [
         "장면과 대사를 작성하고 샷·카메라·말풍선 공간·스크롤 간격 제안을 확인합니다.",
         "Write beats and dialogue, then review shot, camera, balloon-space and scroll-gap suggestions.",
@@ -153,6 +157,10 @@ function destination(
       world: [
         "세계관 규칙·조직·장소·소품과 장면 사이의 연결을 관리합니다.",
         "Manage world rules, organizations, locations, props and scene links.",
+      ],
+      concordance: [
+        "게시된 회차 본문·대사에서 역추출한 사실 색인을 설정집과 대조해 정해진 적 없는 것과 잊힌 설정을 보여줍니다.",
+        "Compare the fact index reverse-extracted from published episodes against the story bible to surface never-defined and forgotten facts.",
       ],
       timeline: [
         "사건과 캐릭터 상태의 시간 순서를 확인하고 설명 없는 변화를 찾습니다.",

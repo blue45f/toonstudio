@@ -405,6 +405,6 @@ describe("포즈 연동 의상 여유", () => {
       raisedArmPose,
     );
     expect(raised).not.toBe(neutral);
-    expect(raised.startsWith("garfit3:")).toBe(true);
+    expect(raised.startsWith("garfit4:")).toBe(true);
   });
 });

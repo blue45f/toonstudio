@@ -22,11 +22,12 @@ describe.skipIf(!url)("free team workspace actual Postgres", () => {
     pool = new Pool({ connectionString: url, max: 8, options: `-c search_path=${schema}` });
     await pool.query(`CREATE TABLE "user"(id text PRIMARY KEY,name text,email text UNIQUE,"emailVerified" timestamptz,status text NOT NULL DEFAULT 'active');
       CREATE TABLE creator_work(id text PRIMARY KEY,"userId" text NOT NULL REFERENCES "user"(id),title text NOT NULL);
-      CREATE TABLE creator_work_collaborator("workId" text REFERENCES creator_work(id),"userId" text REFERENCES "user"(id),role text,status text,PRIMARY KEY("workId","userId"));`);
+      CREATE TABLE creator_work_collaborator("workId" text REFERENCES creator_work(id),"userId" text REFERENCES "user"(id),role text,status text,"invitationId" text,"invitedBy" text,"respondedAt" timestamptz,"createdAt" timestamptz NOT NULL DEFAULT now(),"updatedAt" timestamptz NOT NULL DEFAULT now(),PRIMARY KEY("workId","userId"));`);
     await pool.query(migration("0053_production_collaboration_core.sql").replaceAll("public.", `"${schema}".`));
     await pool.query(migration("0084_production_model_v2_compatibility.sql"));
     await pool.query(migration("0085_production_team_workspace.sql"));
     await pool.query(migration("0086_production_operation_policy.sql"));
+    await pool.query(migration("0109_production_team_audit_read.sql"));
     repository = new TeamWorkspaceRepository(pool);
   });
   afterAll(async () => {
@@ -155,6 +156,28 @@ describe.skipIf(!url)("free team workspace actual Postgres", () => {
       VALUES($1,$2,$3,'solo',$4,0,$5::jsonb)`, [id, workId, "비공개 작품", modelVersion, JSON.stringify(aggregate)]);
     return id;
   }
+  it("transfers work ownership to a team member with audit, and only for the work owner", async () => {
+    const owner = await user(); const member = await user(); const outsider = await user();
+    const workspace = await repository.create(owner, create("작품 소유권 이전"));
+    const invitation = await invite(owner, workspace.workspaceId, member, 0);
+    await repository.accept(member, { token: invitation.token!, mutationId: randomUUID() });
+    const projectId = await project(owner);
+    await repository.command(owner, workspace.workspaceId, { ...versioned(2), type: "attach-project", projectId });
+    const workId = (await pool.query('SELECT "workId" FROM production_project WHERE id=$1', [projectId])).rows[0].workId as string;
+    // 작품 소유자가 아닌 구성원의 이전 시도와, 팀 구성원이 아닌 받는 사람은 서버가 막는다.
+    await expect(repository.command(member, workspace.workspaceId, { ...versioned(3), type: "transfer-work-owner", projectId, userId: owner })).rejects.toMatchObject({ status: 403 });
+    await expect(repository.command(owner, workspace.workspaceId, { ...versioned(3), type: "transfer-work-owner", projectId, userId: outsider })).rejects.toMatchObject({ status: 404 });
+    const input = { ...versioned(3), type: "transfer-work-owner" as const, projectId, userId: member };
+    const result = await repository.command(owner, workspace.workspaceId, input);
+    // 같은 mutation의 재전송은 소유권을 다시 옮기지 않고 같은 결과를 돌려준다.
+    expect(await repository.command(owner, workspace.workspaceId, input)).toEqual(result);
+    expect((await pool.query('SELECT "userId" FROM creator_work WHERE id=$1', [workId])).rows[0].userId).toBe(member);
+    // 이전한 소유자는 관리자 협업자로 남고, 감사 기록에는 작품이 대상으로 남는다.
+    expect((await pool.query('SELECT role,status FROM creator_work_collaborator WHERE "workId"=$1 AND "userId"=$2', [workId, owner])).rows[0]).toMatchObject({ role: "admin", status: "active" });
+    expect((await pool.query("SELECT target_id FROM production_team_audit WHERE workspace_id=$1 AND action='workspace.transfer-work-owner'", [workspace.workspaceId])).rows[0]).toMatchObject({ target_id: workId });
+    expect((await repository.detail(member, workspace.workspaceId)).projects[0]).toMatchObject({ id: projectId, ownerUserId: member });
+    expect((await repository.detail(owner, workspace.workspaceId)).projects[0]).toMatchObject({ ownerUserId: member });
+  });
   it("accepts v1 and v2 records, upgrades metadata with content, rejects unknown versions", async () => {
     const owner = await user(); const legacy = await project(owner, 1); const current = await project(owner, 2);
     expect((await pool.query('SELECT "modelVersion" FROM production_project WHERE id=$1', [current])).rows[0].modelVersion).toBe(2);
@@ -191,6 +214,38 @@ describe.skipIf(!url)("free team workspace actual Postgres", () => {
     await pool.query(`UPDATE "user" SET status='suspended' WHERE id=$1`, [member]);
     await expect(repository.list(member)).rejects.toThrow();
   });
+  it("reads back the audit trail for managers only, with actor, action and period filters", async () => {
+    const owner = await user(); const member = await user(); const workspace = await repository.create(owner, create("감사 팀"));
+    const invitation = await invite(owner, workspace.workspaceId, member, 0);
+    await repository.accept(member, { token: invitation.token!, mutationId: randomUUID() });
+    await repository.command(owner, workspace.workspaceId, { ...versioned(2), type: "change-member-role", userId: member, role: "guest" });
+    // 관리자는 생성·초대·수락·역할 변경이 최신순으로 쌓인 것을 그대로 읽는다.
+    const all = await repository.audit(owner, workspace.workspaceId, { limit: 50 });
+    expect(all.workspaceId).toBe(workspace.workspaceId);
+    expect(all.entries.map((entry) => entry.action)).toEqual([
+      "workspace.change-member-role", "workspace.invite-accepted", "workspace.invite", "workspace.created",
+    ]);
+    expect(all.entries[0]).toMatchObject({ actorUserId: owner, targetId: member, revision: 3 });
+    expect(all.entries[0].actorDisplayName).toContain("Tester");
+    expect(all.entries[0].targetDisplayName).toContain("Tester");
+    expect(all.nextCursor).toBeNull();
+    // 행위자·행위 필터
+    expect((await repository.audit(owner, workspace.workspaceId, { actorUserId: member, limit: 50 })).entries.map((entry) => entry.action))
+      .toEqual(["workspace.invite-accepted"]);
+    expect((await repository.audit(owner, workspace.workspaceId, { action: "workspace.invite", limit: 50 })).entries).toHaveLength(1);
+    // 기간 필터 [from, to): 과거 구간은 비고, 넉넉한 구간은 전부 잡힌다.
+    expect((await repository.audit(owner, workspace.workspaceId, { from: "2000-01-01T00:00:00+09:00", to: "2000-01-02T00:00:00+09:00", limit: 50 })).entries).toHaveLength(0);
+    expect((await repository.audit(owner, workspace.workspaceId, { from: "2000-01-01T00:00:00+09:00", limit: 50 })).entries).toHaveLength(4);
+    // 키셋 페이지네이션: limit 2면 커서가 이어진다.
+    const page1 = await repository.audit(owner, workspace.workspaceId, { limit: 2 });
+    expect(page1.entries).toHaveLength(2); expect(page1.nextCursor).not.toBeNull();
+    const page2 = await repository.audit(owner, workspace.workspaceId, { limit: 2, cursor: page1.nextCursor! });
+    expect(page2.entries).toHaveLength(2); expect(page2.nextCursor).toBeNull();
+    expect(page1.entries[1].id).toBeGreaterThan(page2.entries[0].id);
+    // 구성원(게스트 포함 비관리자)과 외부인은 감사 로그를 읽을 수 없다.
+    await expect(repository.audit(member, workspace.workspaceId, { limit: 50 })).rejects.toMatchObject({ status: 403 });
+    await expect(repository.audit(await user(), workspace.workspaceId, { limit: 50 })).rejects.toThrow();
+  });
 });
 
 describe("workspace strict input contracts", () => {
@@ -199,6 +254,12 @@ describe("workspace strict input contracts", () => {
     expect(WorkspaceCommandSchema.safeParse({ ...versioned(0), type: "checkout", price: 0 }).success).toBe(false);
     expect(WorkspaceCommandSchema.safeParse({ ...versioned(0), type: "invite", email: "a@example.test", role: "owner" }).success).toBe(false);
     expect(WorkspaceCommandSchema.safeParse({ ...versioned(0), type: "rename", name: "ok", userId: "forged" }).success).toBe(false);
+  });
+  it("accepts a work ownership transfer only with a project and a recipient", () => {
+    expect(WorkspaceCommandSchema.safeParse({ ...versioned(0), type: "transfer-work-owner", projectId: "project-a", userId: "member-b" }).success).toBe(true);
+    expect(WorkspaceCommandSchema.safeParse({ ...versioned(0), type: "transfer-work-owner", projectId: "project-a" }).success).toBe(false);
+    // 행위자 위조 필드가 끼면 strict 스키마가 거부한다.
+    expect(WorkspaceCommandSchema.safeParse({ ...versioned(0), type: "transfer-work-owner", projectId: "project-a", userId: "member-b", actor: "forged" }).success).toBe(false);
   });
   it("accepts only a bare 43-char token for invite previews", () => {
     expect(WorkspaceInvitePreviewSchema.safeParse({ token: "x".repeat(43) }).success).toBe(true);

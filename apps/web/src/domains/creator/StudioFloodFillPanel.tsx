@@ -23,6 +23,11 @@ import {
   type StudioAdvancedFillSettings,
 } from "./studio-advanced-fill-settings";
 
+import {
+  toleranceToPercent,
+  type ColorDropGestureView,
+} from "./studio-colordrop-gesture";
+
 import type { AdvancedFillDiagnostics } from "./studio-advanced-fill";
 
 import { cx } from "@/shared/lib/cx";
@@ -37,6 +42,8 @@ export interface StudioFloodFillPanelProps {
   selectedIsReference: boolean;
   canToggleSelectedReference?: boolean;
   targetUnsupportedReason?: string | null;
+  /** Live ColorDrop drag snapshot from the canvas host; null outside a press/drag gesture. */
+  colorDropGesture?: ColorDropGestureView | null;
   statusMessage?: string | null;
   diagnostics?: AdvancedFillDiagnostics | null;
   onToggleActive: () => void;
@@ -137,6 +144,7 @@ export function StudioFloodFillPanel({
   selectedIsReference,
   canToggleSelectedReference = true,
   targetUnsupportedReason = null,
+  colorDropGesture = null,
   statusMessage = null,
   diagnostics = null,
   onToggleActive,
@@ -151,6 +159,7 @@ export function StudioFloodFillPanel({
   const scopeId = useId();
   const scopeHelpId = useId();
   const toleranceId = useId();
+  const toleranceHelpId = useId();
   const expansionId = useId();
   const closeGapId = useId();
   const closeGapHelpId = useId();
@@ -364,13 +373,14 @@ export function StudioFloodFillPanel({
                   htmlFor={toleranceId}
                   className="shrink-0 font-mono font-semibold tabular-nums text-fg"
                 >
-                  {settings.tolerance}
+                  {settings.tolerance} · {toleranceToPercent(settings.tolerance)}%
                 </output>
               </span>
               <input
                 id={toleranceId}
                 type="range"
                 aria-labelledby={`${toleranceId}-label`}
+                aria-describedby={toleranceHelpId}
                 min={STUDIO_ADVANCED_FILL_LIMITS.tolerance.min}
                 max={STUDIO_ADVANCED_FILL_LIMITS.tolerance.max}
                 step={STUDIO_ADVANCED_FILL_LIMITS.tolerance.step}
@@ -381,6 +391,19 @@ export function StudioFloodFillPanel({
                   controlFocusClass
                 )}
               />
+              <p id={toleranceHelpId} className="mt-1.5 text-[0.67rem] leading-relaxed text-fg-3">
+                캔버스에서 채울 지점을 누른 채 옆으로 드래그하면 허용 오차를 %로 조절하며 미리볼
+                수 있어요. 손을 떼면 그 값으로 채우고, 취소하면 원래 값으로 돌아갑니다.
+              </p>
+              {colorDropGesture ? (
+                <p
+                  role="status"
+                  className="mt-1.5 rounded-lg border border-accent/40 bg-accent-soft px-2.5 py-1.5 text-[0.67rem] font-semibold leading-relaxed text-accent"
+                >
+                  임계값 드래그 중 {Math.round(colorDropGesture.percent)}% · 손을 떼면 이 값으로
+                  채우고, 취소하면 {Math.round(colorDropGesture.startPercent)}%로 돌아갑니다.
+                </p>
+              ) : null}
             </div>
 
             <div className="block min-w-0">

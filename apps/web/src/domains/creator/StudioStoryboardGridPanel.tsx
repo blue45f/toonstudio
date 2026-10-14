@@ -13,6 +13,7 @@ import {
   ListChecks,
   Lock,
   MessageCircle,
+  PersonStanding,
   Plus,
   Search,
   Trash2,
@@ -32,6 +33,8 @@ import {
   type PageReviewStatus,
 } from "./studio-page-review";
 import { StudioPanelChip } from "./studio-panel-ui";
+import { StudioCutPoseRecommendationPanel } from "./StudioCutPoseRecommendationPanel";
+import { cutPoseName } from "./studio-cut-pose";
 import { StudioPageThumbnail, type StudioPageDnd } from "./StudioPageThumbnails";
 import { StudioPanelShotTagFields } from "./StudioPanelShotTagFields";
 import {
@@ -47,6 +50,7 @@ import {
 
 import type { ThumbPageLike } from "./studio-page-thumbs";
 import type { ShotTagPatch } from "./studio-panel-shot-tags";
+import type { PoseCatalogEntry } from "./scene-3d/studio-pose-suggestion";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -56,6 +60,8 @@ export type StoryboardGridPage = ThumbPageLike & {
   note?: string;
   shotType?: string;
   cameraAngle?: string;
+  /** 컷 단위 포즈 추천으로 적용된 포즈 프리셋 id (studio-cut-pose). 없으면 미적용. */
+  posePresetId?: string;
   review?: unknown;
 };
 
@@ -107,6 +113,10 @@ export interface StudioStoryboardGridPanelProps {
   onDeletePage: (pageId: string) => void;
   canDelete: boolean;
   onShotTagChange?: (pageId: string, patch: ShotTagPatch) => void;
+  /** 컷 단위 포즈 추천 카탈로그. onCutPoseChange 와 함께 있을 때만 포즈 진입점이 나타난다. */
+  poseCatalog?: readonly PoseCatalogEntry[];
+  /** 포즈 적용/되돌리기 콜백. presetId 가 null 이면 그 컷의 포즈를 지운다. */
+  onCutPoseChange?: (pageId: string, presetId: string | null) => void;
 }
 
 interface MetricButtonProps {
@@ -196,12 +206,18 @@ export function StudioStoryboardGridPanel({
   onDeletePage,
   canDelete,
   onShotTagChange,
+  poseCatalog,
+  onCutPoseChange,
 }: StudioStoryboardGridPanelProps): ReactElement | null {
   const [cellSize, setCellSize] = useState<CellSize>("m");
   const [viewMode, setViewMode] = useState<StoryboardViewMode>("sequence");
   const [query, setQuery] = useState("");
   const [reviewFilter, setReviewFilter] = useState<StoryboardControlFilter>("all");
   const [teamMetricsOpen, setTeamMetricsOpen] = useState(false);
+  const [poseOpen, setPoseOpen] = useState(false);
+  const poseEntryEnabled = poseCatalog !== undefined && onCutPoseChange !== undefined;
+  const currentPageIndex = pages.findIndex((page) => page.id === currentPageId);
+  const currentPosePage = currentPageIndex >= 0 ? pages[currentPageIndex] : undefined;
   const searchRef = useRef<HTMLInputElement>(null);
 
   const controlRoom = useMemo(
@@ -369,6 +385,28 @@ export function StudioStoryboardGridPanel({
                   size="compact"
                   className="relative z-20"
                 />
+              ) : null}
+
+              {poseEntryEnabled ? (
+                <div className="relative z-20 flex min-w-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectPage(page.id);
+                      setPoseOpen(true);
+                    }}
+                    aria-label={`${displayName} 포즈 추천`}
+                    title="이 컷의 장면에 맞는 포즈를 추천받아 바로 적용합니다"
+                    className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md border border-line bg-panel px-1.5 text-[10px] font-semibold text-fg-2 hover:border-accent/50 hover:text-accent"
+                  >
+                    <PersonStanding size={11} aria-hidden /> 포즈 추천
+                  </button>
+                  {page.posePresetId ? (
+                    <span className="truncate text-[9px] font-semibold text-accent" title={cutPoseName(page, poseCatalog) ?? page.posePresetId}>
+                      {cutPoseName(page, poseCatalog) ?? page.posePresetId}
+                    </span>
+                  ) : null}
+                </div>
               ) : null}
 
               <div className="pointer-coarse:pointer-events-auto pointer-coarse:opacity-100 pointer-coarse:gap-1.5 absolute right-1 top-1 z-20 flex flex-col items-center gap-0.5 pointer-events-none opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
@@ -598,6 +636,17 @@ export function StudioStoryboardGridPanel({
               </button>
             </div>
 
+            {poseEntryEnabled ? (
+              <StudioPanelChip
+                className="min-h-11 gap-1 px-2.5"
+                active={poseOpen}
+                onClick={() => setPoseOpen((current) => !current)}
+                title="선택한 컷의 장면에 맞는 포즈를 추천받아 그 컷에 바로 적용합니다"
+              >
+                <PersonStanding size={12} aria-hidden /> 포즈 추천
+              </StudioPanelChip>
+            ) : null}
+
             <button
               type="button"
               onClick={onAddPage}
@@ -719,6 +768,17 @@ export function StudioStoryboardGridPanel({
         </div>
 
         <div className={cn("min-h-0 flex-1 overflow-auto px-4 py-3", viewMode !== "sequence" && "bg-card/20")}>
+          {poseOpen && poseEntryEnabled && currentPosePage ? (
+            <div className="mb-3">
+              <StudioCutPoseRecommendationPanel
+                key={currentPosePage.id}
+                page={currentPosePage}
+                pageLabel={pageDisplayName(currentPosePage, currentPageIndex)}
+                catalog={poseCatalog}
+                onCutPoseChange={onCutPoseChange}
+              />
+            </div>
+          ) : null}
           {viewMode === "sequence"
             ? renderSequenceGrid()
             : viewMode === "review"

@@ -6,8 +6,10 @@ import {
   FileCheck2,
   LoaderCircle,
   MessageSquareText,
+  Search,
   ShieldCheck,
   UserRound,
+  WifiOff,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -17,6 +19,19 @@ import {
   submitProductionExternalReview,
   type ProductionExternalReviewView,
 } from "./production-api";
+import {
+  classifyReviewConnection,
+  externalReviewDraftKey,
+  extractReviewTags,
+  filterReviewResponses,
+  isDraftWorthSaving,
+  needsConnectionFallback,
+  parseExternalReviewDraft,
+  permissionScopeRows,
+  serializeExternalReviewDraft,
+  type ConnectionInfoLike,
+  type ReviewConnectionKind,
+} from "./external-review-entry";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { ErrorState } from "@/shared/components/feedback/error-state";
@@ -117,6 +132,38 @@ function permissionSummary(t: T, permissions: readonly ("view" | "comment" | "ap
   return t("extreview.perm.view");
 }
 
+function permissionRowLabel(t: T, permission: "view" | "comment" | "approve" | "download"): string {
+  return {
+    view: t("extreview.permRow.view"),
+    comment: t("extreview.permRow.comment"),
+    approve: t("extreview.permRow.approve"),
+    download: t("extreview.permRow.download"),
+  }[permission];
+}
+
+/** 연결 상태(온라인/저속/오프라인)를 구독한다 — 폴백 안내와 초안 보존의 기준. */
+function useReviewConnection(): ReviewConnectionKind {
+  const read = () =>
+    classifyReviewConnection({
+      online: navigator.onLine,
+      connection: (navigator as Navigator & { connection?: ConnectionInfoLike }).connection ?? null,
+    });
+  const [kind, setKind] = useState<ReviewConnectionKind>(read);
+  useEffect(() => {
+    const update = () => setKind(read());
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    const connection = (navigator as Navigator & { connection?: ConnectionInfoLike & EventTarget }).connection;
+    connection?.addEventListener?.("change", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+      connection?.removeEventListener?.("change", update);
+    };
+  }, []);
+  return kind;
+}
+
 export function ProductionExternalReviewPage() {
   const t = useT();
   // 토큰 공유 검수 링크: 미공개 창작물·검수 의견이 검색에 노출되지 않도록 noindex.
@@ -135,6 +182,46 @@ export function ProductionExternalReviewPage() {
   const [reviewerName, setReviewerName] = useState("");
   const [decision, setDecision] = useState<Decision>("comment");
   const [note, setNote] = useState("");
+  const connectionKind = useReviewConnection();
+  const [responseQuery, setResponseQuery] = useState("");
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // 오프라인·저속에서도 작성 중인 의견이 사라지지 않게 이 기기에 임시 저장하고, 다시 열면 복원한다.
+  // 저장소 접근이 막힌 환경(사생활 모드 등)에서는 초안만 포기하고 진입 자체는 계속한다.
+  useEffect(() => {
+    if (!params.reviewId) return;
+    let raw: string | null = null;
+    try {
+      raw = window.localStorage.getItem(externalReviewDraftKey(params.reviewId));
+    } catch {
+      raw = null;
+    }
+    const draft = parseExternalReviewDraft(raw);
+    if (draft) {
+      setReviewerName((current) => current || draft.reviewerName);
+      setNote((current) => current || draft.note);
+      if (draft.decision === "comment" || draft.decision === "approve" || draft.decision === "request-changes") {
+        setDecision(draft.decision);
+      }
+      setDraftRestored(true);
+    }
+    // 검수 건이 바뀔 때만 복원한다 — 입력 중 재실행으로 값을 되돌리지 않는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.reviewId]);
+
+  useEffect(() => {
+    if (!params.reviewId) return;
+    const draft = { reviewerName, decision, note };
+    if (!isDraftWorthSaving(draft)) return;
+    try {
+      window.localStorage.setItem(
+        externalReviewDraftKey(params.reviewId),
+        serializeExternalReviewDraft({ ...draft, savedAt: new Date().toISOString() }),
+      );
+    } catch {
+      // 저장 실패는 조용히 무시한다 — 제출 동선이 본 경로다.
+    }
+  }, [params.reviewId, reviewerName, decision, note]);
 
   useEffect(() => {
     if (!params.projectId || !params.reviewId || !token) {
@@ -180,6 +267,19 @@ export function ProductionExternalReviewPage() {
     const timer = window.setInterval(() => setNowMs(Date.now()), 30_000);
     return () => window.clearInterval(timer);
   }, []);
+  // 이전 응답은 검색 자산이다 — 이름·본문·결정·#태그로 다시 찾을 수 있게 한다.
+  const responseTags = useMemo(
+    () => extractReviewTags((view?.review.responses ?? []).map((response) => response.note)),
+    [view],
+  );
+  const visibleResponses = useMemo(
+    () =>
+      view
+        ? filterReviewResponses(view.review.responses, responseQuery, (decision) => decisionLabel(t, decision))
+        : [],
+    [view, responseQuery, t],
+  );
+
   const expiresAtMs = view ? Date.parse(view.review.expiresAt) : Number.NaN;
   // 임박 경고도 만료 판정과 같은 현재 시각 기준이어야 한다 — 연 순간의 값으로 고정하면
   // 열어 둔 채 경계(3일)를 넘어도 경고가 켜지지 않는다.
@@ -209,6 +309,15 @@ export function ProductionExternalReviewPage() {
       });
       setView(result);
       setNote("");
+      // 기록이 끝난 초안은 지운다 — 다음 방문에서 이미 보낸 의견이 다시 복원되지 않게.
+      if (params.reviewId) {
+        try {
+          window.localStorage.removeItem(externalReviewDraftKey(params.reviewId));
+        } catch {
+          // 초안 삭제 실패는 제출 성공 처리를 막지 않는다.
+        }
+      }
+      setDraftRestored(false);
       setSuccess(t("extreview.success.recorded", { decision: decisionLabel(t, decision) }));
     } catch (cause) {
       setError(await getApiErrorMessage(cause, t("extreview.error.saveFailedFallback")));
@@ -238,6 +347,12 @@ export function ProductionExternalReviewPage() {
             message={error ?? t("extreview.error.linkGone")}
             onRetry={linkInvalid ? undefined : () => setReloadTick((tick) => tick + 1)}
           />
+          {connectionKind === "offline" ? (
+            <p role="status" className="mt-3 flex items-start gap-2 rounded-xl border border-warn/40 bg-warn/10 p-3 text-xs leading-5 text-fg">
+              <WifiOff className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden="true" />
+              {t("extreview.connection.offlineLoadFailed")}
+            </p>
+          ) : null}
         </div>
       </div>
     );
@@ -259,11 +374,38 @@ export function ProductionExternalReviewPage() {
             <div className="rounded-xl border border-line bg-panel px-4 py-3 text-xs text-fg-2">
               <div className="flex items-center gap-2"><Clock3 className={expiringSoon ? "size-4 text-bad" : "size-4 text-warn"} aria-hidden="true" />{t("extreview.meta.expires")} {view ? formatDate(view.review.expiresAt) : ""}{expiringSoon ? t("extreview.meta.expiringSoon") : ""}</div>
               <div className="mt-2 flex items-center gap-2"><UserRound className="size-4 text-accent" aria-hidden="true" />{t("extreview.meta.permissions")} {permissionSummary(t, view.review.permissions)}</div>
-              <div className="mt-2 flex items-center gap-2"><ShieldCheck className="size-4 text-good" aria-hidden="true" />{t("extreview.meta.download")} {view.review.permissions.includes("download") ? t("extreview.meta.allowed") : t("extreview.meta.blocked")}</div>
+              <div className="mt-2 flex items-center gap-2"><ShieldCheck className="size-4 text-good" aria-hidden="true" />{t("extreview.meta.scopeTitle")}</div>
+              <ul className="mt-1.5 space-y-1" aria-label={t("extreview.meta.scopeTitle")}>
+                {permissionScopeRows(view.review.permissions).map((row) => (
+                  <li key={row.permission} className="flex items-center justify-between gap-3">
+                    <span>{permissionRowLabel(t, row.permission)}</span>
+                    <span className={row.allowed ? "font-bold text-good" : "font-bold text-fg-3"}>{row.allowed ? t("extreview.meta.allowed") : t("extreview.meta.blocked")}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
       </header>
+
+      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+        <section aria-label={t("extreview.entry.title")} className="rounded-3xl border border-accent/30 bg-card p-5">
+          <h2 className="text-sm font-black">{t("extreview.entry.title")}</h2>
+          <p className="mt-1.5 text-xs leading-6 text-fg-2">{t("extreview.entry.noSignup")}</p>
+          <ol className="mt-3 grid gap-2 text-xs font-semibold text-fg-2 sm:grid-cols-3">
+            <li className="rounded-xl border border-line bg-panel px-3 py-2.5">1. {t("extreview.entry.step1")}</li>
+            <li className="rounded-xl border border-line bg-panel px-3 py-2.5">2. {t("extreview.entry.step2")}</li>
+            <li className="rounded-xl border border-line bg-panel px-3 py-2.5">3. {t("extreview.entry.step3")}</li>
+          </ol>
+          {needsConnectionFallback(connectionKind) ? (
+            <div role="status" className="mt-3 flex items-start gap-2 rounded-xl border border-warn/40 bg-warn/10 p-3 text-xs leading-5 text-fg">
+              <WifiOff className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden="true" />
+              <p>{connectionKind === "offline" ? t("extreview.connection.offline") : t("extreview.connection.slow")}</p>
+            </div>
+          ) : null}
+          {draftRestored ? <p role="status" className="mt-3 text-xs font-semibold text-accent">{t("extreview.draft.restored")}</p> : null}
+        </section>
+      </div>
 
       <div className="mx-auto grid max-w-6xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-4">
@@ -291,13 +433,21 @@ export function ProductionExternalReviewPage() {
                 ) : null}
                 {submission.evidenceRefs.length ? (
                   <div className="mt-4"><p className="text-xs font-black">{t("extreview.submission.evidence")}</p>
-                    {submission.evidenceRefs.some(isImageUrl) ? <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {submission.evidenceRefs.some(isImageUrl) ? <div className="mt-2">
+                      {/* 미리보기와 원본을 분리한다 — 격자 안은 검수용 미리보기, 원본은 명시 동작으로만 연다. */}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[0.625rem] font-black text-fg-2">{t("extreview.evidence.previewLabel")}</span>
+                        <span className="text-[0.625rem] text-fg-3">{t("extreview.evidence.previewNote")}</span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {submission.evidenceRefs.filter(isImageUrl).map((reference, imageIndex) => (
                         <a key={`${reference}-${imageIndex}`} href={reference} target="_blank" rel="noopener noreferrer"
                           className="group overflow-hidden rounded-xl border border-line bg-panel" aria-label={t("extreview.evidence.openOriginal", { n: imageIndex + 1 })}>
                           <EvidenceImage reference={reference} index={imageIndex} />
+                          <span className="flex items-center justify-center gap-1 px-2 py-1.5 text-[0.625rem] font-bold text-accent">{t("extreview.evidence.originalLabel")} <ExternalLink className="size-3" aria-hidden="true" /></span>
                         </a>
                       ))}
+                      </div>
                     </div> : null}
                     {submission.evidenceRefs.some((reference) => !isImageUrl(reference)) ? <div className="mt-2 flex flex-wrap gap-2">{submission.evidenceRefs.filter((reference) => !isImageUrl(reference)).map((reference, refIndex) => isWebUrl(reference) ? <a key={`${reference}-${refIndex}`} href={reference} target="_blank" rel="noopener noreferrer" className={buttonClass({ variant: "outline", size: "sm" })}>{t("extreview.evidence.open")} <ExternalLink className="size-3.5" aria-hidden="true" /></a> : <span key={`${reference}-${refIndex}`} className="rounded-lg border border-line bg-panel px-3 py-2 font-mono text-[0.6875rem] text-fg-2">{reference}</span>)}</div> : null}
                   </div>
@@ -323,8 +473,37 @@ export function ProductionExternalReviewPage() {
 
           <section className="rounded-3xl border border-line bg-card p-5 sm:p-6">
             <h2 className="text-base font-black">{t("extreview.responses.title")}</h2>
+            {view.review.responses.length > 0 ? (
+              <div className="mt-3">
+                <label className="flex min-h-10 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-fg-3">
+                  <Search className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="sr-only">{t("extreview.search.label")}</span>
+                  <input
+                    className="w-full bg-transparent text-sm text-fg outline-none"
+                    value={responseQuery}
+                    onChange={(event) => setResponseQuery(event.target.value)}
+                    placeholder={t("extreview.search.placeholder")}
+                  />
+                </label>
+                {responseTags.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {responseTags.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setResponseQuery(`#${tag}`)}
+                        className={cn("rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold", responseQuery === `#${tag}` ? "border-accent/40 bg-accent-soft text-accent" : "border-line bg-panel text-fg-2")}
+                      >
+                        #{tag}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <p className="mt-2 text-[0.625rem] text-fg-3">{t("extreview.search.count", { n: visibleResponses.length })}</p>
+              </div>
+            ) : null}
             <div className="mt-3 space-y-2">
-              {view.review.responses.map((response) => (
+              {visibleResponses.map((response) => (
                 <article key={response.id} className="rounded-xl border border-line bg-panel p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-black">{response.reviewerName}</p><span className={cn("rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold", decisionTone(response.decision))}>{decisionLabel(t, response.decision)}</span></div>
                   {response.note ? <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-fg-2">{response.note}</p> : null}
@@ -332,6 +511,7 @@ export function ProductionExternalReviewPage() {
                 </article>
               ))}
               {view.review.responses.length === 0 ? <p className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">{t("extreview.responses.empty")}</p> : null}
+              {view.review.responses.length > 0 && visibleResponses.length === 0 ? <p className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">{t("extreview.search.noResults")}</p> : null}
             </div>
           </section>
         </div>

@@ -628,6 +628,65 @@ export const DEFAULT_SHAPER_BODY_SLIDERS: Readonly<ShaperBodySliderValues> = Obj
   hipWidth: 1,
 });
 
+// ── Hand two-stage controller contract ───────────────────────────────────────
+
+/**
+ * 손 전용 2단계 컨트롤러가 패널 → 포즈 소유자(포저)에게 보내는 요청.
+ *
+ * - 1단계 coarse(크게 잡기): 손 모양 프리셋을 골라 손목만 얹는다. 몸 포즈는 유지된다.
+ * - 2단계 fine(세부 조정): 손목 3축을 도(°) 델타로 다듬는다. 슬라이더 값 자체가 아니라
+ *   직전 값과의 차이만 보내므로, 포즈 소유자는 현재 포즈에 그대로 누적할 수 있다.
+ * - mirror: 한쪽 손목을 반대쪽에 미러 복사. reset: 1단계 프리셋으로 손목만 되돌린다.
+ */
+export type ShaperHandSide = "left" | "right";
+export type ShaperHandSideSelection = ShaperHandSide | "both";
+
+export interface ShaperHandFineDelta {
+  readonly bendDeg: number;
+  readonly twistDeg: number;
+  readonly tiltDeg: number;
+}
+
+export type ShaperHandStageRequest =
+  | {
+      readonly kind: "coarse";
+      readonly presetId: string;
+      readonly side: ShaperHandSideSelection;
+    }
+  | {
+      readonly kind: "fine";
+      readonly side: ShaperHandSide;
+      readonly delta: ShaperHandFineDelta;
+    }
+  | { readonly kind: "mirror"; readonly fromSide: ShaperHandSide }
+  | {
+      readonly kind: "reset";
+      readonly presetId: string;
+      readonly side: ShaperHandSideSelection;
+    };
+
+export const DEFAULT_SHAPER_HAND_FINE_ADJUST: Readonly<ShaperHandFineDelta> = Object.freeze({
+  bendDeg: 0,
+  twistDeg: 0,
+  tiltDeg: 0,
+});
+
+/**
+ * 2단계 슬라이더 축 정의. 범위는 손목 관절 한계(X ±65°·Y ±35°·Z −82°~75°) 안에서
+ * 1단계 프리셋 값에 얹어도 클램프에 잘리지 않을 여유를 남긴 값이다.
+ */
+export const SHAPER_HAND_FINE_AXES: readonly {
+  readonly key: keyof ShaperHandFineDelta;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly min: number;
+  readonly max: number;
+}[] = Object.freeze([
+  { key: "bendDeg", labelKo: "손목 굽히기", labelEn: "Bend wrist", min: -40, max: 40 },
+  { key: "twistDeg", labelKo: "손목 비틀기", labelEn: "Twist wrist", min: -30, max: 30 },
+  { key: "tiltDeg", labelKo: "손목 기울이기", labelEn: "Tilt wrist", min: -40, max: 40 },
+]);
+
 /** Slider values synced when a body preset card is picked. Keyed by body preset id. */
 export const SHAPER_BODY_PRESET_SLIDERS: Readonly<Record<string, ShaperBodySliderValues>> =
   Object.freeze({

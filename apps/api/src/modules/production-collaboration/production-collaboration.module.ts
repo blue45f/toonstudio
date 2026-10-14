@@ -8,11 +8,14 @@ import { ProductionCollaborationRepository } from "./production-collaboration.re
 import { ProductionIntegrationRepository } from "./production-integration.repository";
 import { ProductionCollaborationService } from "./production-collaboration.service";
 import { ProductionIntegrationService } from "./production-integration.service";
+import { PresenceController } from "./presence.controller";
+import { PresenceService } from "./presence.service";
 
 @Module({
-  controllers: [ProductionCollaborationController, ProductionIntegrationController, TeamWorkspaceController],
+  controllers: [ProductionCollaborationController, ProductionIntegrationController, TeamWorkspaceController, PresenceController],
   providers: [
     { provide: PRODUCTION_TEAM_POOL, useValue: dbPool },
+    PresenceService,
     TeamWorkspaceRepository,
     ProductionCollaborationRepository,
     ProductionCollaborationService,

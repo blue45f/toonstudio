@@ -7,6 +7,16 @@
  * - full   = 전체 기능 (all professional tools and panels)
  *
  * Pure prefs model; StudioPage applies the visibility matrix to toolbar clusters and panels.
+ *
+ * Density policy declaration (BLUEPRINT §4.1) — this module is the ONLY judgment source:
+ * - `STUDIO_UI_DENSITY_POLICY` pins the focus/simple/full policy table (audience, chrome,
+ *   command exposure, panel scope, persistence) as data, not prose.
+ * - `STUDIO_UI_DENSITY_MATRIX` pins region visibility for every mode × region pair.
+ *   `studioUiDensityAllows` is a pure lookup into that table; renderers (menubar, toolbar,
+ *   panels, launchers) must consume it and must NOT carry their own per-mode conditionals.
+ * - `STUDIO_UI_DENSITY_ENTRY_INITIAL_MODE` pins the initial mode per entry path.
+ *   A persisted user choice always wins over the entry default (BLUEPRINT §4.1 rollback
+ *   guard); the entry table only seeds users who have never saved a mode.
  */
 
 export const STUDIO_UI_DENSITY_MODES = ["focus", "simple", "full"] as const;
@@ -16,21 +26,25 @@ export const STUDIO_UI_DENSITY_STORAGE_KEY = "toonstudio-studio-ui-density:v1";
 /** New users start with the predictable core workflow; persisted users keep their saved mode. */
 export const DEFAULT_STUDIO_UI_DENSITY_MODE: StudioUiDensityMode = "simple";
 
-export type StudioUiChromeRegion =
-  | "toolbar-assets"
-  | "toolbar-cut"
-  | "toolbar-draw"
-  | "toolbar-reference"
-  | "toolbar-scene"
-  | "toolbar-style"
-  | "toolbar-ai"
-  | "toolbar-insert"
-  | "left-panel"
-  | "right-panel"
-  | "page-strip"
-  | "status-rail"
-  | "tool-rail"
-  | "quick-actions";
+/** Every chrome region the density matrix judges. Keep in sync with StudioUiChromeRegion. */
+export const STUDIO_UI_CHROME_REGIONS = [
+  "toolbar-assets",
+  "toolbar-cut",
+  "toolbar-draw",
+  "toolbar-reference",
+  "toolbar-scene",
+  "toolbar-style",
+  "toolbar-ai",
+  "toolbar-insert",
+  "left-panel",
+  "right-panel",
+  "page-strip",
+  "status-rail",
+  "tool-rail",
+  "quick-actions",
+] as const;
+
+export type StudioUiChromeRegion = (typeof STUDIO_UI_CHROME_REGIONS)[number];
 
 export interface StudioUiDensityState {
   mode: StudioUiDensityMode;
@@ -86,31 +100,157 @@ export function saveStudioUiDensityState(
   }
 }
 
-/** Visibility matrix — false means hide the chrome region, never remove the command. */
+export type StudioUiDensityChromeLevel = "minimal" | "standard" | "full";
+export type StudioUiDensityCommandExposure = "core" | "core-contextual" | "all";
+export type StudioUiDensityPanelScope = "active-only" | "core" | "all";
+/** "session" = applies to the current session only; returning to simple is suggested, never forced over a saved choice. */
+export type StudioUiDensityPersistence = "session" | "persisted";
+
+export interface StudioUiDensityPolicy {
+  chrome: StudioUiDensityChromeLevel;
+  commandExposure: StudioUiDensityCommandExposure;
+  panelScope: StudioUiDensityPanelScope;
+  persistence: StudioUiDensityPersistence;
+}
+
+/**
+ * The BLUEPRINT §4.1 policy table, declared once.
+ * - focus: 숙련자의 몰입 작업 — 최소 크롬, core 명령+검색, 활성 패널만, 세션 한정.
+ * - simple: 신규·일반 기본값 — 표준 크롬, core+contextual, 핵심 패널, 설정 저장.
+ * - full: 전문가·PD — 전체 크롬, 전부 노출, 전체 패널·런처, 설정 저장.
+ */
+export const STUDIO_UI_DENSITY_POLICY: Readonly<
+  Record<StudioUiDensityMode, StudioUiDensityPolicy>
+> = Object.freeze({
+  focus: Object.freeze({
+    chrome: "minimal",
+    commandExposure: "core",
+    panelScope: "active-only",
+    persistence: "session",
+  }),
+  simple: Object.freeze({
+    chrome: "standard",
+    commandExposure: "core-contextual",
+    panelScope: "core",
+    persistence: "persisted",
+  }),
+  full: Object.freeze({
+    chrome: "full",
+    commandExposure: "all",
+    panelScope: "all",
+    persistence: "persisted",
+  }),
+});
+
+export function studioUiDensityPolicy(
+  mode: StudioUiDensityMode
+): StudioUiDensityPolicy {
+  return STUDIO_UI_DENSITY_POLICY[normalizeStudioUiDensityMode(mode)];
+}
+
+/**
+ * Visibility matrix — the single judgment table for mode × region.
+ * false means hide the chrome region, never remove the command.
+ *
+ * - full: every region.
+ * - focus: canvas-first — drawing/insertion paths, assets, cut tools, tool rail,
+ *   status rail and quick actions only; panels and advanced launchers stay hidden.
+ * - simple: the complete webtoon workflow; only the AI launch chrome stays folded.
+ *   (Reference visibility additionally honors tools the user explicitly exposed —
+ *   that per-tool choice lives in the surface's visibleIds, not in this matrix.)
+ */
+export const STUDIO_UI_DENSITY_MATRIX: Readonly<
+  Record<StudioUiDensityMode, Readonly<Record<StudioUiChromeRegion, boolean>>>
+> = Object.freeze({
+  focus: Object.freeze({
+    "toolbar-assets": true,
+    "toolbar-cut": true,
+    "toolbar-draw": true,
+    "toolbar-reference": false,
+    "toolbar-scene": false,
+    "toolbar-style": false,
+    "toolbar-ai": false,
+    "toolbar-insert": true,
+    "left-panel": false,
+    "right-panel": false,
+    "page-strip": false,
+    "status-rail": true,
+    "tool-rail": true,
+    "quick-actions": true,
+  }),
+  simple: Object.freeze({
+    "toolbar-assets": true,
+    "toolbar-cut": true,
+    "toolbar-draw": true,
+    "toolbar-reference": true,
+    "toolbar-scene": true,
+    "toolbar-style": true,
+    "toolbar-ai": false,
+    "toolbar-insert": true,
+    "left-panel": true,
+    "right-panel": true,
+    "page-strip": true,
+    "status-rail": true,
+    "tool-rail": true,
+    "quick-actions": true,
+  }),
+  full: Object.freeze({
+    "toolbar-assets": true,
+    "toolbar-cut": true,
+    "toolbar-draw": true,
+    "toolbar-reference": true,
+    "toolbar-scene": true,
+    "toolbar-style": true,
+    "toolbar-ai": true,
+    "toolbar-insert": true,
+    "left-panel": true,
+    "right-panel": true,
+    "page-strip": true,
+    "status-rail": true,
+    "tool-rail": true,
+    "quick-actions": true,
+  }),
+});
+
+/** Visibility judgment — a pure lookup into STUDIO_UI_DENSITY_MATRIX. No other per-mode conditionals. */
 export function studioUiDensityAllows(
   mode: StudioUiDensityMode,
   region: StudioUiChromeRegion
 ): boolean {
-  const normalized = normalizeStudioUiDensityMode(mode);
-  if (normalized === "full") return true;
+  return STUDIO_UI_DENSITY_MATRIX[normalizeStudioUiDensityMode(mode)][region];
+}
 
-  // 집중 작업: keep the canvas, essential drawing/insertion paths, status and quick actions.
-  if (normalized === "focus") {
-    return (
-      region === "toolbar-draw"
-      || region === "toolbar-insert"
-      || region === "toolbar-assets"
-      || region === "toolbar-cut"
-      || region === "tool-rail"
-      || region === "quick-actions"
-      || region === "status-rail"
-    );
-  }
+/** How the user arrived at the editor; decides only the seed mode for users with no saved choice. */
+export type StudioUiDensityEntryPath = "first-entry" | "learning-mission" | "review-link";
 
-  // 표준 작업: keep the complete webtoon workflow and honor tools the user explicitly exposed.
-  // AI launch chrome remains folded; reference is visible only when its tool id is in visibleIds.
-  if (region === "toolbar-ai") return false;
-  return true;
+/**
+ * Initial mode per entry path (BLUEPRINT §4.1):
+ * - first editor entry = simple.
+ * - learning-mission entry = simple (the mission bar is surface chrome, not a density mode).
+ * - review-link entry = simple (the linked panel opens inside simple; panel state is not density).
+ * An explicit `uiMode` launch hint is separate and keeps its existing mapping in studio-launch-mode.ts.
+ */
+export const STUDIO_UI_DENSITY_ENTRY_INITIAL_MODE: Readonly<
+  Record<StudioUiDensityEntryPath, StudioUiDensityMode>
+> = Object.freeze({
+  "first-entry": "simple",
+  "learning-mission": "simple",
+  "review-link": "simple",
+});
+
+/**
+ * Resolve the mode an entry starts in. A persisted choice (any valid saved mode,
+ * focus included) is always respected; the entry table applies only when nothing
+ * valid was saved — the §4.1 rule that the session-only focus policy never
+ * overwrites an existing user's stored selection.
+ */
+export function resolveStudioUiDensityInitialMode(
+  entryPath: StudioUiDensityEntryPath,
+  savedMode: unknown
+): StudioUiDensityMode {
+  return isStudioUiDensityMode(savedMode)
+    ? savedMode
+    : STUDIO_UI_DENSITY_ENTRY_INITIAL_MODE[entryPath];
 }
 
 const DENSITY_LABEL_FALLBACK: Readonly<Record<StudioUiDensityMode, string>> = {

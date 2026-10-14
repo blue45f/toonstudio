@@ -53,6 +53,24 @@ export interface StudioMainMenuItem {
    * never by item modules — the catalogue does not know how it is presented.
    */
   sectionLabel?: string;
+  /**
+   * Canonical catalogue group (`<group>` of the item's `<group>/<item>`
+   * native id) this row came from. Stamped by
+   * `studio-main-menu-presentation.ts` when it folds source groups into a
+   * workflow composite; standalone groups leave it unset and consumers fall
+   * back to the presented group id. The menubar density fold reads it to
+   * resolve the row's tier and the advanced-section boundary — item
+   * modules never set it, for the same reason as `sectionLabel`.
+   */
+  sourceGroupId?: string;
+  /**
+   * Selecting this row keeps the dropdown open instead of closing it.
+   * Reserved for disclosure rows (the density fold's "고급 도구 펼치기"
+   * toggle) whose whole purpose is to change what the open menu shows.
+   */
+  keepOpenOnSelect?: boolean;
+  /** Disclosure state for `keepOpenOnSelect` rows; rendered as `aria-expanded`. */
+  expanded?: boolean;
   onSelect: () => void;
 }
 

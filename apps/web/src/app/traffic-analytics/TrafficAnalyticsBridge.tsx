@@ -7,6 +7,12 @@ import { withCsrfProtection } from "@/shared/lib/csrf";
 import { TOONSPECTRUM_SHARE_EVENT } from "@/shared/lib/share";
 
 import { parseShareAnalyticsDetail } from "./share-analytics-event";
+import {
+  buildWebVitalsPayload,
+  isPublicVitalsPath,
+  startWebVitalsCollection,
+  type WebVitalsCollector,
+} from "./web-vitals";
 
 const VISITOR_STORAGE_KEY = "toonstudio-traffic-visitor-v1";
 const SESSION_STORAGE_KEY = "toonstudio-traffic-session-v1";
@@ -116,7 +122,7 @@ function campaign(search: string): {
 let trafficEndpointUnavailable = false;
 
 function postTrafficEvent(
-  endpoint: "page-view" | "heartbeat" | "share-event",
+  endpoint: "page-view" | "heartbeat" | "share-event" | "web-vitals",
   body: Record<string, unknown>,
 ): void {
   const init = withCsrfProtection({
@@ -235,6 +241,40 @@ export function TrafficAnalyticsBridge() {
 
     return () => globalThis.clearTimeout(timer);
   }, [location.key, location.pathname, location.search]);
+
+  // Core Web Vitals field collection (BLUEPRINT §6.4, perf finding 5). Only the public
+  // home and /discover feed the public p75 pool, and the beacon is a single snapshot per
+  // distinct value set: CLS and INP keep growing while the page is open, so the flush
+  // points are the moments the values become final — page hide, tab hidden, and leaving
+  // the public surface. `keepalive` on postTrafficEvent keeps the hide-time send alive.
+  useEffect(() => {
+    if (!analyticsEnabled(location.pathname) || !isPublicVitalsPath(location.pathname)) {
+      return;
+    }
+    const path = location.pathname;
+    const collector: WebVitalsCollector = startWebVitalsCollection();
+    let lastSentSignature = "";
+    const flush = () => {
+      const payload = buildWebVitalsPayload({ path, snapshot: collector.snapshot() });
+      if (!payload) return;
+      const signature = JSON.stringify(payload);
+      if (signature === lastSentSignature) return;
+      lastSentSignature = signature;
+      identifiersRef.current ??= createRuntimeIdentifiers();
+      postTrafficEvent("web-vitals", { ...identifiersRef.current, ...payload });
+    };
+    const handleVitalsVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", handleVitalsVisibility);
+    globalThis.addEventListener("pagehide", flush);
+    return () => {
+      flush();
+      document.removeEventListener("visibilitychange", handleVitalsVisibility);
+      globalThis.removeEventListener("pagehide", flush);
+      collector.stop();
+    };
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleShare = (event: Event) => {

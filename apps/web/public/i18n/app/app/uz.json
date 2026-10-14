@@ -1,5 +1,6 @@
 {
   "app.name": "ToonStudio",
   "app.brandBeta": "Beta xizmati  ma'lumotlar va xususiyatlar o'zgarishi mumkin",
-  "app.loading": "Yuklash"
+  "app.loading": "Yuklash",
+  "app.skipToContent": "Skip to main content"
 }

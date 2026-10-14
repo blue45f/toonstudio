@@ -5,6 +5,8 @@ import {
   loadStudioServerRevisions,
   restoreStudioServerRevision,
   serverRevisionWorkId,
+  STUDIO_SERVER_REVISION_RETENTION,
+  studioServerRevisionRetentionReached,
   type StudioServerRevisionState,
 } from "./studio-production-server-revisions";
 
@@ -74,6 +76,8 @@ export function StudioServerVersionsCard({ scopeKey }: { readonly scopeKey: stri
           </div>
           <p className="mt-1 text-xs leading-relaxed text-fg-2">
             실제 원고 snapshot의 owner-only 서버 revision입니다. 위 로컬 작업·검수 체크포인트와 별개입니다.
+            작품당 최근 {STUDIO_SERVER_REVISION_RETENTION}개까지 기간 제한 없이 보관하며, 보관 중인 revision은
+            언제든 복원할 수 있습니다.
           </p>
         </div>
         {workId ? (
@@ -116,6 +120,12 @@ export function StudioServerVersionsCard({ scopeKey }: { readonly scopeKey: stri
             <span className="font-semibold">현재 서버 revision</span>
             <strong className="font-mono text-sm">r{state.currentRevision}</strong>
           </div>
+          {studioServerRevisionRetentionReached(state.revisions) ? (
+            <p className="rounded-xl border border-line bg-panel p-3 text-xs leading-relaxed text-fg-2">
+              보관 상한({STUDIO_SERVER_REVISION_RETENTION}개)에 도달했습니다. 새 저장이 생기면 가장 오래된
+              revision부터 자동 정리되니, 오래 보관할 상태는 체크포인트나 스냅샷으로도 남겨 주세요.
+            </p>
+          ) : null}
           {state.revisions.length === 0 ? (
             <div className="rounded-xl border border-dashed border-line p-5 text-sm text-fg-2">
               저장된 서버 revision 이력이 없습니다.

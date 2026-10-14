@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
-import { resolveProductionSurfaceTarget } from "./production-project-dashboard-model";
-import { productionSurfaceDefinition, type ProductionProjectSurface } from "./production-project-surfaces";
+import { productionPlanningIsEmpty, resolveProductionSurfaceTarget } from "./production-project-dashboard-model";
+import { productionSurfaceDefinition, productionSurfacePath, type ProductionProjectSurface } from "./production-project-surfaces";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -27,9 +27,18 @@ export function ProductionSurfaceHeader({
   const bt = useBilingual("ProductionSurfaceHeader");
   const definition = productionSurfaceDefinition(surface);
   const Icon = definition.icon;
+  // 개요의 다음 행동은 평소 공정 보드지만, 기획 문서가 비어 있으면 기획이 먼저다.
+  // 개요 대시보드의 "지금 할 일"과 같은 규칙(productionPlanningIsEmpty)을 써서
+  // 두 CTA가 서로 다른 곳을 가리키는 일이 없게 한다.
+  const overviewPlanningFirst = surface === "overview" && productionPlanningIsEmpty(aggregate);
+  const nextLabel = overviewPlanningFirst
+    ? { ko: "기획부터 시작하기", en: "Start with planning" }
+    : definition.next.label;
   const nextHref = useMemo(
-    () => resolveProductionSurfaceTarget(aggregate, definition.next.target, new Date()),
-    [aggregate, definition.next.target],
+    () => (overviewPlanningFirst
+      ? productionSurfacePath(aggregate.projectId, "planning")
+      : resolveProductionSurfaceTarget(aggregate, definition.next.target, new Date())),
+    [aggregate, definition.next.target, overviewPlanningFirst],
   );
   const coverImageUrl = aggregate.coverImageUrl ?? null;
   const scene = coverImageUrl !== null && surface !== "overview";
@@ -52,7 +61,7 @@ export function ProductionSurfaceHeader({
       </div>
       <Link className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5" })} to={nextHref}>
         <span className="sr-only">{bt("다음 단계:", "Next step:")} </span>
-        {bt(definition.next.label.ko, definition.next.label.en)}
+        {bt(nextLabel.ko, nextLabel.en)}
         <ArrowRight className="size-4" aria-hidden="true" />
       </Link>
     </>

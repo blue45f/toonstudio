@@ -1,5 +1,7 @@
 import { AdultOverlay } from "./adult-overlay";
-import { CoverImage } from "./cover-image";
+import { COVER_GRID_SIZES, COVER_HERO_SIZES, CoverImage } from "./cover-image";
+
+import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 
 import type { Title } from "@/shared/lib/types";
 
@@ -12,13 +14,24 @@ const SIZE = {
   hero: { pad: "p-5", title: "text-3xl leading-[1.05]", type: "text-sm", wm: "text-[10.5rem]" },
 } as const;
 
-// 타이포그래픽 커버 — 실제 이미지 대신 장르 그라디언트 + 활자 포스터
+// 타이포그래픽 커버 — 실제 이미지 대신 장르 그라디언트 + 활자 포스터.
+// 표지 계약(S3-16): 이 포스터 자체(틴트 그라디언트+제목·저자 타이포)가 즉시 보이는
+// 폴백이다 — 실제 이미지는 그 위로 페이드-인하고, 실패하면 포스터가 그대로 남는다.
+// sizes는 size에서 자동 도출한다(그리드=COVER_GRID_SIZES, hero=COVER_HERO_SIZES).
+// srcSet도 호출자가 적지 않는다 — 명시 srcSet이 없으면 coverImage에서 표준 폭
+// srcSet(cover-proxy.ts COVER_STANDARD_WIDTHS)을 자동 생성해, 브라우저가 sizes와
+// 함께 카드 폭에 맞는 폭만 수신하게 한다. 프록시를 타지 않는 표지는 자동 생성이
+// undefined를 돌려주어 srcSet 없이 기존 단일 src로 동작한다.
+// priority는 단독 대형 표지(상세·히어로)용이고, 그리드 안에서는 TitleCard가
+// index로 도출해 넘긴다 — 그리드 호출자가 priority를 직접 정하지 않는다.
 export function TitlePoster({
   title,
   size = "md",
   className,
   rank,
   priority,
+  sizes,
+  srcSet,
   unframed = false,
   titleAs: TitleTag = "h3",
 }: {
@@ -27,6 +40,8 @@ export function TitlePoster({
   className?: string;
   rank?: number;
   priority?: boolean;
+  sizes?: string;
+  srcSet?: string;
   unframed?: boolean;
   // 표지 오버레이 제목의 시맨틱 태그. 상위 카드가 별도 제목을 가질 땐 "div"로 내려 heading 중복/순서 위반 방지.
   titleAs?: "h2" | "h3" | "div";
@@ -66,6 +81,8 @@ export function TitlePoster({
           alt={`${title.title} 표지`}
           fallback={glyphNode}
           priority={priority}
+          sizes={sizes ?? (size === "hero" ? COVER_HERO_SIZES : COVER_GRID_SIZES)}
+          srcSet={srcSet ?? coverStandardSrcSet(title.coverImage)}
           className="absolute inset-0 size-full object-cover contrast-[1.03] saturate-[1.04]"
         />
       )}

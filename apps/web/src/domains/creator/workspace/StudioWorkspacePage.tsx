@@ -36,6 +36,7 @@ import { StudioWorkspaceHero } from "./StudioWorkspaceHero";
 import { StudioWorkspaceSpotlightTour } from "./StudioWorkspaceSpotlightTour";
 import { selectWorkspaceProject, workspacePanel, workspaceProjectLinks, type WorkspaceSurface } from "./studio-workspace-model";
 import { WorkspaceTeamContent, WorkspaceExploreContent } from "./StudioWorkspaceSections";
+import { WorkInviteArrivalBanner } from "../production-hub/WorkInviteArrivalBanner";
 import { StudioWorkspaceProjectPicker } from "./StudioWorkspaceProjectPicker";
 import { StudioWorkspaceActivityRail } from "./StudioWorkspaceActivityRail";
 import { StudioWorkspaceRecentWorks } from "./StudioWorkspaceRecentWorks";
@@ -289,6 +290,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
         </div>
 
         {surface === "team" ? <TeamAreaNavigation /> : null}
+        {surface === "team" ? <WorkInviteArrivalBanner enabled={Boolean(session.data)} /> : null}
         {surface === "home" && panel !== "work" ? <WorkspaceResumeNotice snapshot={resumeState} onRetry={resumeState.refresh} /> : null}
         {library.error ? <div className="workspace-notice" role="alert">
           <p>{library.error}</p>

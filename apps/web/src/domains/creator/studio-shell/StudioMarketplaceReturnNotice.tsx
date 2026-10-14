@@ -2,6 +2,7 @@ import { ArrowLeft, Store } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import Link from "@/shared/navigation/router-link";
 import { useI18n } from "@/shared/lib/i18n";
+import { parseReturnContext } from "@/shared/navigation/return-context";
 import { readStudioMarketplaceReturnHref } from "../studio-marketplace-deep-link";
 
 /** A public-path-only return affordance that survives the Market → Studio document reload. */
@@ -10,6 +11,10 @@ export function StudioMarketplaceReturnNotice() {
   const locale = useI18n((state) => state.lang.startsWith("ko") ? "ko" : "en");
   const href = readStudioMarketplaceReturnHref(search);
   if (!href) return null;
+  // 복귀 맥락 계약(S2-8)이 함께 실린 진입에서는 ReturnContextBanner가 맥락 한 줄과
+  // 복귀 행동을 맡는다. 레거시 marketReturn만 있는 진입에서만 이 알림이 뜬다 —
+  // 복귀 행동이 둘이 되지 않게 하기 위해서다.
+  if (parseReturnContext(search)) return null;
 
   return (
     <aside

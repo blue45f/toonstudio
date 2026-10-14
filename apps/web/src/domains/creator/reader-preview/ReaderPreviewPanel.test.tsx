@@ -110,6 +110,15 @@ describe("ReaderPreviewPanel", () => {
     expect(html).toContain("reader.preview.screenUnit");
   });
 
+  it("기기 프리셋 선택을 렌더하고 기본값은 iPhone 14(390×844)다", () => {
+    const html = renderPanel([makePage("p1", [])]);
+    expect(html).toContain("reader.preview.deviceLabel");
+    expect(html).toContain("reader.preview.device.galaxy-s24");
+    expect(html).toContain("reader.preview.device.iphone-15-pro-max");
+    // 기본 기기 규격이 프레임 높이에 그대로 꽂힌다 — 스크롤은 프레임 안에서만
+    expect(html).toContain("height:844px");
+  });
+
   it("자동 스크롤 컨트롤을 렌더한다", () => {
     const html = renderPanel([makePage("p1", [])]);
     expect(html).toContain("reader.preview.autoScroll");

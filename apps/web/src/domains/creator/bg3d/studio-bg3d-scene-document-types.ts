@@ -132,6 +132,29 @@ export const DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE: StudioBg3dMaterialOverride =
   doubleSided: false,
 });
 
+/** UV 좌표 쌍 [u, v]. 둘 다 0..1, 원점은 텍스처 왼쪽 아래(Three UV 관례). */
+export type StudioBg3dTexturePaintPoint = readonly [number, number];
+
+/**
+ * 3D 표면 직접 그리기 1단계의 획 1개 — 프리미티브 UV 공간의 브러시 투영 결과.
+ * 래스터 텍스처가 아니라 획 벡터가 정본이다: 문서 예산(320KiB) 안에서 저장/재열기를
+ * 보장하고, 텍스처는 획으로부터 결정적으로 재래스터화한다(device lost 복구 포함).
+ * 정규화·한도는 studio-bg3d-texture-paint의 normalizeStudioBg3dTexturePaint가 강제한다.
+ */
+export interface StudioBg3dTexturePaintStroke {
+  readonly color: string;
+  /** 브러시 지름(UV 단위, 0..0.5). */
+  readonly size: number;
+  readonly opacity: number;
+  readonly points: readonly StudioBg3dTexturePaintPoint[];
+}
+
+/** 프리미티브 1개의 표면 페인트 전체. 획 순서가 그리기 순서(z)다. */
+export interface StudioBg3dTexturePaint {
+  readonly version: 1;
+  readonly strokes: readonly StudioBg3dTexturePaintStroke[];
+}
+
 export interface StudioBg3dAnimationPlayback {
   readonly clipIndex: number;
   readonly playing: boolean;
@@ -508,6 +531,11 @@ export interface StudioBg3dPrimitiveNode extends StudioBg3dSceneNodeBase {
   readonly color: string;
   /** Optional to preserve byte-for-byte compatibility with pre-preset documents. */
   readonly materialOverride?: StudioBg3dMaterialOverride;
+  /**
+   * 표면 직접 그리기(UV 텍스처 페인팅) 획. Optional — 페인트가 없는 기존 문서와
+   * 바이트 단위 호환을 유지하고, 정규화에서 유효 획이 없으면 필드 자체가 생략된다.
+   */
+  readonly texturePaint?: StudioBg3dTexturePaint;
 }
 
 export interface StudioBg3dModelNode extends StudioBg3dSceneNodeBase {

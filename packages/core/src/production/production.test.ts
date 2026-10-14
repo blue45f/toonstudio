@@ -183,6 +183,34 @@ describe("production collaboration model", () => {
 
     const ready = evaluateHandoffReadiness({ package: handoff(), clarifications: [] });
     expect(ready.ready).toBe(true);
+
+    // 회차 팀 레퍼런스 보드 연결 (비교 검수 4단계): 미연결이면 기존 산식 그대로.
+    const unlinked = evaluateHandoffReadiness({ package: handoff(), clarifications: [], episodeReferenceBoard: null });
+    expect(unlinked.metrics.references).toBe(15);
+    expect(unlinked.score).toBe(ready.score);
+    // 빈 보드는 "참고 자료"를 깎고 안내를 남긴다.
+    const emptyBoard = evaluateHandoffReadiness({
+      package: handoff(),
+      clarifications: [],
+      episodeReferenceBoard: { boardId: "episode-reference:project-1::episode-12", itemCount: 0 },
+    });
+    expect(emptyBoard.metrics.references).toBe(10);
+    expect(emptyBoard.advisories.map((entry) => entry.code)).toContain("episode-reference-board-empty");
+    // 채워진 보드는 세 번째 구성 요소로 충족된다.
+    const filledBoard = evaluateHandoffReadiness({
+      package: handoff(),
+      clarifications: [],
+      episodeReferenceBoard: { boardId: "episode-reference:project-1::episode-12", itemCount: 3 },
+    });
+    expect(filledBoard.metrics.references).toBe(15);
+    expect(filledBoard.advisories.map((entry) => entry.code)).not.toContain("episode-reference-board-empty");
+    // 캐릭터·장소 기준이 없어도 보드가 차 있으면 참고 자료 점수가 일부 회복된다.
+    const boardOnly = evaluateHandoffReadiness({
+      package: { ...handoff(), characterBibleRevisionRefs: [], locationReferenceRefs: [], sceneRefs: [] },
+      clarifications: [],
+      episodeReferenceBoard: { boardId: "episode-reference:project-1::episode-12", itemCount: 2 },
+    });
+    expect(boardOnly.metrics.references).toBe(5);
     expect(transitionHandoff(handoff(), "accepted-by-art", { readiness: ready, assignmentId: "art", at }).acceptedByAssignmentId).toBe("art");
   });
 

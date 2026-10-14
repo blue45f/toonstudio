@@ -124,8 +124,12 @@ export interface TimelapseExportOptions {
   maxStepHoldSec: number; // 한 단계 최대 표시 시간(단계가 너무 적을 때 지루하게 늘어지지 않게)
   maxDurationSec: number; // 절대 상한(모션 내보내기와 동일 관례) — 넘으면 균등 축소
   maxSteps: number; // 실제 캡처할 최대 단계 수(비용이 큰 Stage 캡처 자체를 상한)
+  maxCaptureMemoryBytes: number; // 캡처 래스터 합산 메모리 상한 — 캡처본은 녹화 끝까지 유지되므로 단계 수를 이 상한으로 샘플링
   tailHoldSec: number; // 마지막 프레임 추가 정지(마무리 여운)
 }
+
+/** 캡처 래스터 합산 메모리의 기본 상한(256MiB). 모바일 브라우저 탭 메모리 제한을 보수적으로 본 값. */
+export const TIMELAPSE_DEFAULT_MAX_CAPTURE_MEMORY_BYTES = 256 * 1024 * 1024;
 
 export const DEFAULT_TIMELAPSE_EXPORT_OPTIONS: TimelapseExportOptions = {
   width: 720,
@@ -136,6 +140,7 @@ export const DEFAULT_TIMELAPSE_EXPORT_OPTIONS: TimelapseExportOptions = {
   maxStepHoldSec: 5,
   maxDurationSec: 90,
   maxSteps: 220,
+  maxCaptureMemoryBytes: TIMELAPSE_DEFAULT_MAX_CAPTURE_MEMORY_BYTES,
   tailHoldSec: 1.2,
 };
 
@@ -144,27 +149,64 @@ export function normalizeTimelapseExportOptions(
 ): TimelapseExportOptions {
   const o = { ...DEFAULT_TIMELAPSE_EXPORT_OPTIONS, ...options };
   const minHold = clamp(o.minStepHoldSec, 0.03, 3);
+  const targetDurationSec = clamp(o.targetDurationSec, 3, 300);
+  // maxDurationSec을 명시하지 않은 호출(패널 등)은 기본 상한(90초)이 프리셋 목표를 깎지 않게
+  // 목표 길이까지는 상한으로 인정한다. 명시한 호출은 기존대로 상한이 목표보다 우선한다.
+  const maxDurationSec =
+    options?.maxDurationSec != null
+      ? clamp(o.maxDurationSec, 5, 300)
+      : clamp(Math.max(o.maxDurationSec, targetDurationSec), 5, 300);
   return {
     width: Math.round(clamp(o.width, 16, 4096)),
     height: Math.round(clamp(o.height, 16, 4096)),
     fps: Math.round(clamp(o.fps, 5, 30)),
-    targetDurationSec: clamp(o.targetDurationSec, 3, 300),
+    targetDurationSec,
     minStepHoldSec: minHold,
     maxStepHoldSec: clamp(Math.max(o.maxStepHoldSec, minHold), 0.1, 15),
-    maxDurationSec: clamp(o.maxDurationSec, 5, 300),
+    maxDurationSec,
     maxSteps: Math.round(clamp(o.maxSteps, 8, 500)),
+    maxCaptureMemoryBytes: Number.isFinite(o.maxCaptureMemoryBytes)
+      ? clamp(Math.round(o.maxCaptureMemoryBytes), 16 * 1024 * 1024, 2 * 1024 * 1024 * 1024)
+      : TIMELAPSE_DEFAULT_MAX_CAPTURE_MEMORY_BYTES,
     tailHoldSec: clamp(o.tailHoldSec, 0, 10),
   };
 }
 
 export const TIMELAPSE_DURATION_PRESETS = [
-  { id: "short", label: "짧게 — 약 15초", targetDurationSec: 15 },
-  { id: "normal", label: "보통 — 약 30초", targetDurationSec: 30 },
-  { id: "long", label: "길게 — 약 60초", targetDurationSec: 60 },
-  { id: "m2", label: "2분 — 약 120초", targetDurationSec: 120 },
-  { id: "m3", label: "3분 — 약 180초", targetDurationSec: 180 },
-  { id: "m5", label: "5분 — 약 300초", targetDurationSec: 300 },
+  { id: "short", label: "짧게 — 약 15초", targetDurationSec: 15, maxDurationSec: 15 },
+  { id: "normal", label: "보통 — 약 30초", targetDurationSec: 30, maxDurationSec: 30 },
+  { id: "long", label: "길게 — 약 60초", targetDurationSec: 60, maxDurationSec: 60 },
+  { id: "m2", label: "2분 — 약 120초", targetDurationSec: 120, maxDurationSec: 120 },
+  { id: "m3", label: "3분 — 약 180초", targetDurationSec: 180, maxDurationSec: 180 },
+  { id: "m5", label: "5분 — 약 300초", targetDurationSec: 300, maxDurationSec: 300 },
 ] as const;
+
+export type TimelapseDurationPreset = (typeof TIMELAPSE_DURATION_PRESETS)[number];
+
+/** 캡처 래스터 1장의 메모리 추정 바이트(RGBA 4B/px). 순수. */
+export function estimateTimelapseFrameBytes(width: number, height: number): number {
+  const w = Number.isFinite(width) ? Math.max(0, Math.round(width)) : 0;
+  const h = Number.isFinite(height) ? Math.max(0, Math.round(height)) : 0;
+  return w * h * 4;
+}
+
+/**
+ * 메모리 상한 안에서 허용되는 최대 캡처 단계 수 — 캡처본 전체를 녹화 끝까지 메모리에
+ * 유지하므로, 해상도가 클수록 단계 수를 먼저 줄여(샘플링) 상한을 지킨다. 순수.
+ */
+export function timelapseMemoryCappedMaxSteps(
+  width: number,
+  height: number,
+  maxSteps: number,
+  maxCaptureMemoryBytes: number
+): number {
+  const stepCap = Math.max(1, Math.floor(maxSteps));
+  const perFrame = estimateTimelapseFrameBytes(width, height);
+  if (perFrame <= 0 || !Number.isFinite(maxCaptureMemoryBytes) || maxCaptureMemoryBytes <= 0) {
+    return stepCap;
+  }
+  return Math.max(1, Math.min(stepCap, Math.floor(maxCaptureMemoryBytes / perFrame)));
+}
 
 // ── 순수 타임라인 플래너 ─────────────────────────────────────────────
 export interface TimelapseFrameSegment {
@@ -182,6 +224,10 @@ export interface TimelapseExportPlan {
   durationSec: number;
   frameCount: number;
   segments: TimelapseFrameSegment[];
+  /** 캡처 단계들의 추정 합산 메모리 바이트(출력 해상도 RGBA 기준 보수 추정). planTimelapseExport가 항상 채운다. */
+  estimatedCaptureMemoryBytes?: number;
+  /** 메모리 상한 샘플링으로 단계 수가 maxSteps만 있을 때보다 더 줄었는지. planTimelapseExport가 항상 채운다. */
+  captureMemoryCapped?: boolean;
 }
 
 /** steps → 시간 배분 플랜(내부에서 thinTimelapseSteps로 상한 적용). 순수·결정적. */
@@ -190,9 +236,24 @@ export function planTimelapseExport(
   options?: Partial<TimelapseExportOptions>
 ): TimelapseExportPlan {
   const o = normalizeTimelapseExportOptions(options);
-  const thinned = thinTimelapseSteps(steps, o.maxSteps);
+  const memoryMaxSteps = timelapseMemoryCappedMaxSteps(
+    o.width,
+    o.height,
+    o.maxSteps,
+    o.maxCaptureMemoryBytes
+  );
+  const thinned = thinTimelapseSteps(steps, memoryMaxSteps);
   if (thinned.length === 0) {
-    return { width: o.width, height: o.height, fps: o.fps, durationSec: 0, frameCount: 0, segments: [] };
+    return {
+      width: o.width,
+      height: o.height,
+      fps: o.fps,
+      durationSec: 0,
+      frameCount: 0,
+      segments: [],
+      estimatedCaptureMemoryBytes: 0,
+      captureMemoryCapped: false,
+    };
   }
   const stepHoldSec = clamp(o.targetDurationSec / thinned.length, o.minStepHoldSec, o.maxStepHoldSec);
   const segments: TimelapseFrameSegment[] = thinned.map((step, i) => {
@@ -207,6 +268,9 @@ export function planTimelapseExport(
     };
   });
   let durationSec = segments[segments.length - 1].endSec;
+  // 절대 상한(maxDurationSec)을 넘으면 균등 축소한다. 장시간 프리셋이 실제로 상한에
+  // 잘리던 문제는 normalizeTimelapseExportOptions가 미명시 상한을 목표 길이까지
+  // 인정하는 방식으로 해결했다 — 홀드 클램프·tailHold를 포함한 길이 산정 방식은 유지.
   if (durationSec > o.maxDurationSec) {
     const k = o.maxDurationSec / durationSec;
     for (const s of segments) {
@@ -222,6 +286,8 @@ export function planTimelapseExport(
     durationSec,
     frameCount: Math.max(1, Math.ceil(durationSec * o.fps)),
     segments,
+    estimatedCaptureMemoryBytes: thinned.length * estimateTimelapseFrameBytes(o.width, o.height),
+    captureMemoryCapped: memoryMaxSteps < o.maxSteps && steps.length > memoryMaxSteps,
   };
 }
 
@@ -383,6 +449,12 @@ export interface TimelapseExportRequest {
   background?: string; // 레터박스 배경색(기본 짙은 회흑 — 모션 내보내기와 동일 톤)
   /** 공유 플로우에서만 사용 — 다운로드(저장) 플로우는 기존처럼 워터마크 없이 녹화한다. */
   watermark?: TimelapseWatermark | null;
+  /**
+   * 캡처 래스터 합산 메모리 상한(바이트). 기본 TIMELAPSE_DEFAULT_MAX_CAPTURE_MEMORY_BYTES.
+   * 플래너가 이미 단계 수를 상한에 맞췄지만, 실제 캡처 높이는 페이지 종횡비를 따라
+   * 계획 해상도보다 클 수 있어 실행 단계에서도 실측 바이트로 다시 샘플링한다.
+   */
+  maxCaptureMemoryBytes?: number;
   onProgress?: (progress: TimelapseExportProgress) => void;
   deps?: Partial<TimelapseExportDeps>;
 }
@@ -413,10 +485,14 @@ interface TimelapseRunState {
 
 /**
  * 플랜을 2단계로 실행한다: (1) 순차 캡처 — captureStep을 세그먼트 순서대로 await하며 래스터를
- * 모은다(취소는 각 스텝 사이에서 확인 — 응답성은 한 스텝 지연 이내). (2) 실시간 녹화 — 캡처된
- * 프레임들을 오프스크린 캔버스에 정지 프레임으로 순서대로 그리며 captureStream+MediaRecorder로
- * 인코딩한다(모션 내보내기와 동일 구조). done을 await — 취소 시 TimelapseExportCancelledError로
- * reject(isTimelapseExportCancelled로 판별).
+ * 모은다(취소는 각 스텝 사이에서 확인 — 응답성은 한 스텝 지연 이내). 캡처 합산 메모리가
+ * 상한(maxCaptureMemoryBytes)을 넘지 않게 중간 단계를 건너뛰는 샘플링이 걸린다. (2) 실시간
+ * 녹화 — 캡처된 프레임들을 오프스크린 캔버스에 정지 프레임으로 순서대로 그리며
+ * captureStream+MediaRecorder로 인코딩한다(모션 내보내기와 동일 구조). done을 await — 취소 시
+ * TimelapseExportCancelledError로 reject(isTimelapseExportCancelled로 판별).
+ * 중단 시 부분 파일은 만들지 않는다: 청크는 레코더가 완전히 멈춘 뒤에만 Blob으로 합쳐지고
+ * (materializeExactMotionWebm의 컨테이너 검증 포함), 취소 경로는 그 전에 reject되므로
+ * 깨진 부분 파일이 사용자에게 전달될 수 없다.
  */
 export function startTimelapseExport(request: TimelapseExportRequest): TimelapseExportHandle {
   const deps: TimelapseExportDeps = { ...createDefaultTimelapseExportDeps(), ...request.deps };
@@ -444,37 +520,65 @@ async function runTimelapseExport(
   if (!mimeType) throw new Error("이 브라우저는 WebM 영상 인코딩을 지원하지 않아요.");
 
   // ── Phase 1: 캡처(순차) ──
+  // 캡처본은 녹화가 끝날 때까지 전부 메모리에 유지되므로, 실측 바이트 합이 상한을 넘지 않게
+  // 중간 단계를 건너뛰는 메모리 상한 샘플링을 적용한다. 첫 단계(빈 캔버스/시작 상태)와
+  // 마지막 단계(완성 상태)는 상한과 무관하게 항상 캡처해 영상의 시작·끝을 보장한다.
+  const memoryCapBytes =
+    request.maxCaptureMemoryBytes != null &&
+    Number.isFinite(request.maxCaptureMemoryBytes) &&
+    request.maxCaptureMemoryBytes > 0
+      ? request.maxCaptureMemoryBytes
+      : TIMELAPSE_DEFAULT_MAX_CAPTURE_MEMORY_BYTES;
   const images: MotionCutImage[] = [];
+  const keptSegments: TimelapseFrameSegment[] = [];
+  let capturedBytes = 0;
+  let lastFrameBytes = estimateTimelapseFrameBytes(plan.width, plan.height);
   for (let i = 0; i < plan.segments.length; i++) {
     if (state.cancelled) throw new TimelapseExportCancelledError();
     const segment = plan.segments[i];
+    const isFirst = i === 0;
+    const isLast = i === plan.segments.length - 1;
+    if (!isFirst && !isLast && capturedBytes + lastFrameBytes > memoryCapBytes) {
+      continue; // 메모리 상한 샘플링 — 이 단계는 건너뛴다(이전 프레임이 그 구간을 대신 표시)
+    }
     const image = await request.captureStep(segment.historyIndex, plan.width);
     images.push(image);
+    keptSegments.push(segment);
+    const frameBytes = estimateTimelapseFrameBytes(image.width, image.height);
+    if (frameBytes > 0) lastFrameBytes = frameBytes;
+    capturedBytes += frameBytes;
     request.onProgress?.({
       phase: "capture",
       ratio: (i + 1) / plan.segments.length,
-      captured: i + 1,
+      captured: images.length,
       total: plan.segments.length,
       timeSec: 0,
       durationSec: plan.durationSec,
     });
     if (state.cancelled) throw new TimelapseExportCancelledError();
   }
+  // 건너뛴 단계가 있으면 order를 images 배열 순서에 맞게 다시 매긴 녹화용 플랜을 쓴다.
+  // 총 길이(durationSec)는 그대로 유지한다 — 건너뛴 구간은 timelapseSegmentAt이 다음
+  // 세그먼트를 앞당겨 보여주는 방식으로 흡수된다.
+  const recordPlan: TimelapseExportPlan =
+    keptSegments.length === plan.segments.length
+      ? plan
+      : { ...plan, segments: keptSegments.map((s, idx) => ({ ...s, order: idx })) };
 
   // ── Phase 2: 녹화(실시간) ──
-  const canvas = deps.createCanvas(plan.width, plan.height);
+  const canvas = deps.createCanvas(recordPlan.width, recordPlan.height);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("캔버스 컨텍스트를 만들지 못했어요.");
   const background = request.background ?? "#101014";
   const watermark = request.watermark ?? null;
-  drawTimelapseFrame(ctx, plan.width, plan.height, background, images[0], watermark); // captureStream 전에 첫 프레임 채움
+  drawTimelapseFrame(ctx, recordPlan.width, recordPlan.height, background, images[0], watermark); // captureStream 전에 첫 프레임 채움
 
-  const stream = canvas.captureStream(plan.fps);
+  const stream = canvas.captureStream(recordPlan.fps);
   const chunks: Blob[] = [];
   let recorderError: unknown = null;
   const recorder = deps.createRecorder(stream, {
     mimeType,
-    videoBitsPerSecond: recommendVideoBitsPerSecond(plan.width, plan.height, plan.fps),
+    videoBitsPerSecond: recommendVideoBitsPerSecond(recordPlan.width, recordPlan.height, recordPlan.fps),
   });
   let settleStopped: () => void = () => {};
   const stopped = new Promise<void>((resolve) => {
@@ -530,25 +634,25 @@ async function runTimelapseExport(
         }
         const nowMs = deps.now();
         const elapsedSec = (nowMs - t0) / 1000;
-        const timeSec = Math.min(elapsedSec, plan.durationSec);
-        const segment = timelapseSegmentAt(plan, timeSec);
+        const timeSec = Math.min(elapsedSec, recordPlan.durationSec);
+        const segment = timelapseSegmentAt(recordPlan, timeSec);
         drawTimelapseFrame(
           ctx,
-          plan.width,
-          plan.height,
+          recordPlan.width,
+          recordPlan.height,
           background,
           segment ? images[segment.order] : undefined,
           watermark
         );
         request.onProgress?.({
           phase: "record",
-          ratio: clamp01(timeSec / plan.durationSec),
-          captured: plan.segments.length,
-          total: plan.segments.length,
+          ratio: clamp01(timeSec / recordPlan.durationSec),
+          captured: recordPlan.segments.length,
+          total: recordPlan.segments.length,
           timeSec,
-          durationSec: plan.durationSec,
+          durationSec: recordPlan.durationSec,
         });
-        if (elapsedSec >= plan.durationSec) {
+        if (elapsedSec >= recordPlan.durationSec) {
           resolve();
           return;
         }
@@ -561,10 +665,10 @@ async function runTimelapseExport(
     request.onProgress?.({
       phase: "finalize",
       ratio: 1,
-      captured: plan.segments.length,
-      total: plan.segments.length,
-      timeSec: plan.durationSec,
-      durationSec: plan.durationSec,
+      captured: recordPlan.segments.length,
+      total: recordPlan.segments.length,
+      timeSec: recordPlan.durationSec,
+      durationSec: recordPlan.durationSec,
     });
     try {
       recorder.stop();
@@ -579,8 +683,8 @@ async function runTimelapseExport(
     return {
       blob: encoded.blob,
       mimeType: encoded.mimeType,
-      durationSec: plan.durationSec,
-      stepCount: plan.segments.length,
+      durationSec: recordPlan.durationSec,
+      stepCount: recordPlan.segments.length,
       poster: images[0],
     };
   } finally {

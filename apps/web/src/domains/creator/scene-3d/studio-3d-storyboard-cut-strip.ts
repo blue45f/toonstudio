@@ -7,6 +7,8 @@
  * - Aspect ratio framing presets (21:9 Wide Action, 1:1 Medium, 9:16 Vertical Close-Up, 16:9 Cinematic)
  */
 
+import type { StoryboardSceneCutMeta } from "../bg3d/studio-bg3d-storyboard-cut-link";
+
 export type CutAspectRatio = "21:9-wide-action" | "1:1-square-medium" | "9:16-vertical-climax" | "16:9-cinematic";
 
 export interface CutAspectRatioUi {
@@ -72,6 +74,12 @@ export interface StoryboardCut {
   readonly cameraFovDeg: number;
   readonly cameraRollDeg: number;
   readonly characterIds: readonly string[];
+  /**
+   * 3D 씬 캡처로 만든 컷이면 캡처 당시 구도 메타(카메라·포즈·조명)를 보존한다.
+   * 평면 카메라 필드는 이 메타에서 파생한 값이며, 재편집 시 씬 복귀는 메타로 한다.
+   * 손으로 만든 컷에는 없다 (선택 필드라 기존 컷·매니페스트와 그대로 호환된다).
+   */
+  readonly sceneMeta?: StoryboardSceneCutMeta;
   readonly dialogueLine?: string;
   readonly sfxSoundName?: string;
   readonly durationSeconds?: number;

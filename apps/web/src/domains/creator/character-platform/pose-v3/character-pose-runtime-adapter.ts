@@ -4,6 +4,10 @@ import { STUDIO_HUMANOID_BONE_NAMES, isStudioHumanoidBoneName, getStudioHumanoid
 import { characterPoseRegionForBone, type CharacterPoseRegion, type CharacterQuaternion, type CharacterVector3 } from "../pose/character-pose-v2";
 import { solveCharacterGroundBalance } from "./character-ground-balance-solver";
 import { limitCharacterSwingTwist } from "./character-swing-twist";
+import {
+  CHARACTER_TWIST_DISTRIBUTION_CHAINS,
+  distributeCharacterTwistRotation,
+} from "./character-twist-distribution";
 import { solveCharacterTwoBoneIk } from "./character-two-bone-ik";
 import { validateCharacterPoseDocumentV3, type CharacterPoseDocumentV3 } from "./character-pose-v3";
 
@@ -170,6 +174,41 @@ function clampBone(name: string, node: Object3D, child?: Object3D): void {
   node.quaternion.set(...limited.rotation);
 }
 
+/**
+ * 트위스트 분배 런타임(§5.4-3): 위팔/허벅지의 비틀림 일부를 전완/정강이로 넘겨
+ * 보조본 없는 VRM의 캔디래퍼를 완화한다. 축은 clampBone과 같은 규약(아래 본 방향)을
+ * 쓰고, 분배는 IK가 끝난 뒤 위치가 확정된 상태에서 적용한다 — 비틀림 축을 도는
+ * 회전은 끝점 위치를 바꾸지 않고 합성 회전도 보존된다.
+ * 선택되지 않았거나 잠긴 체인은 건드리지 않는다. 적용 사실은 receipt 경고로 남긴다.
+ */
+function distributeRigTwist(
+  rig: ReturnType<typeof detachedRig>,
+  selectedBone: (name: string) => boolean,
+  warnings: string[],
+): void {
+  for (const [upperName, chain] of Object.entries(CHARACTER_TWIST_DISTRIBUTION_CHAINS)) {
+    if (!selectedBone(upperName) || !selectedBone(chain.lowerBone)) continue;
+    const upper = rig.bones.get(upperName);
+    const lower = rig.bones.get(chain.lowerBone);
+    if (!upper || !lower) continue;
+    const axis = lower.position.clone();
+    if (axis.lengthSq() < 1e-12) continue;
+    axis.normalize();
+    const result = distributeCharacterTwistRotation({
+      upper: quaternion(upper.quaternion),
+      lower: quaternion(lower.quaternion),
+      twistAxis: vector(axis),
+    }, { share: chain.share });
+    if (!result.applied) continue;
+    upper.quaternion.set(...result.upper).normalize();
+    lower.quaternion.set(...result.lower).normalize();
+    warnings.push(
+      `${upperName}: 비틀림 ${Math.round(Math.abs(result.twistRadians) * 180 / Math.PI)}° 중 `
+      + `${Math.round(Math.abs(result.distributedRadians) * 180 / Math.PI)}°를 ${chain.lowerBone}와 나눴어요.`,
+    );
+  }
+}
+
 function aimBone(node: Object3D, child: Object3D, target: Vector3): void {
   node.updateWorldMatrix(true, true);
   const start = node.getWorldPosition(new Vector3());
@@ -195,6 +234,8 @@ export function solveCharacterPoseRuntimeV3(input: {
   readonly selectedRegions?: readonly CharacterPoseRegion[];
   readonly preserveFootPlant?: boolean;
   readonly groundY?: number;
+  /** 트위스트 분배 런타임(기본 활성). 끄면 종전처럼 비틀림이 위 본에 몰린다. */
+  readonly distributeTwist?: boolean;
 }) {
   const pose = validateCharacterPoseDocumentV3(input.pose);
   const capability = inspectCharacterPoseRuntime(input.source);
@@ -250,6 +291,13 @@ export function solveCharacterPoseRuntimeV3(input: {
     rig.update();
   }
   const warnings: string[] = [];
+  // 균형 경고(§5.4-3): 지지 다각형 밖으로 무게중심이 나가면 receipt 경고로 남겨
+  // 수동 포징·가져오기 양쪽 호출자가 포즈 제작 중 실시간으로 표시할 수 있게 한다.
+  // 루트 보정(최대 8cm) 뒤에도 마진이 음수인 경우만 경고한다.
+  if (!pose.stylization.dramaticImbalance && groundContacts.length > 0
+    && Number.isFinite(balance.marginAfter) && balance.marginAfter < 0) {
+    warnings.push(`무게중심이 지지 범위를 ${Math.abs(balance.marginAfter).toFixed(2)}m 벗어났어요 — 넘어질 수 있는 포즈예요.`);
+  }
   const effectors = [...pose.effectors];
   for (const contact of contacts) {
     if (!effectors.some((effector) => effector.bone === contact.bone)) effectors.push({
@@ -292,6 +340,10 @@ export function solveCharacterPoseRuntimeV3(input: {
     const error = end.getWorldPosition(new Vector3()).distanceTo(new Vector3(...effector.target));
     maximumError = Math.max(maximumError, error);
     if (error > 0.01) warnings.push(`${key}: 관절 한계 또는 도달 거리로 ${error.toFixed(3)}m 오차가 남았습니다.`);
+  }
+  if (input.distributeTwist !== false) {
+    distributeRigTwist(rig, selectedBone, warnings);
+    rig.update();
   }
   const bones = { ...pose.bones, ...Object.fromEntries([...rig.bones].map(([name, node]) => [name, quaternion(node.quaternion)])) };
   const result = validateCharacterPoseDocumentV3({

@@ -23,7 +23,14 @@ import {
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 
 import type { ProductionClientCommand } from "./production-api";
-import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
+import {
+  PRODUCTION_PROCESS_LABELS,
+  scheduleRiskLabel,
+  scopeKindLabel,
+  taskStatusLabel,
+  type ProductionLocalize,
+  type ScheduleRiskLevel,
+} from "./production-labels";
 import { deriveProductionOperationsOverview } from "./production-episode-operations";
 import { deriveAssignmentWorkload } from "./production-management-overview";
 import {
@@ -32,11 +39,12 @@ import {
 } from "./production-risk-intelligence";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 type ScheduleView = "timeline" | "workload";
 type ExecuteCommand = (command: ProductionClientCommand, message: string) => Promise<void>;
-type RiskLevel = "normal" | "attention" | "predicted" | "forecast" | "overdue";
+type RiskLevel = ScheduleRiskLevel;
 
 export interface ProductionScheduleWorkspaceProps {
   readonly aggregate: ProductionProjectAggregate;
@@ -62,23 +70,6 @@ const STATUS_OPTIONS: readonly ProductionTaskStatus[] = [
   "cancelled",
   "out-of-scope",
 ];
-
-const STATUS_LABEL: Readonly<Record<ProductionTaskStatus, string>> = {
-  draft: "초안",
-  "needs-input": "입력 필요",
-  ready: "시작 가능",
-  "in-progress": "진행 중",
-  "internal-review": "내부 검수",
-  "external-review": "외부 검수",
-  "changes-requested": "수정 요청",
-  "conditionally-approved": "조건부 승인",
-  approved: "승인",
-  done: "완료",
-  blocked: "차단",
-  paused: "일시 중지",
-  cancelled: "취소",
-  "out-of-scope": "범위 밖",
-};
 
 function dateOnly(value: Date): string {
   const year = value.getFullYear();
@@ -127,29 +118,18 @@ function assignmentLabel(aggregate: ProductionProjectAggregate, assignmentId: st
   return party?.publicDisplayName ?? assignmentId;
 }
 
-/** 공정 코드를 사람이 읽는 공정명으로. 팀 공정 설정의 이름은 이 표면에서 알 수 없어 기본 이름표를 쓴다. */
-function processLabel(processKey: string): string {
+/** 공정 코드를 사람이 읽는 공정명으로. 팀 공정 설정의 이름은 이 표면에서 알 수 없어 정본 이름표를 쓴다. */
+function processLabel(processKey: string, localize: ProductionLocalize): string {
   const label = PRODUCTION_PROCESS_LABELS[canonicalProductionProcessKey(processKey)];
-  return label ? label.ko : processKey;
+  return label ? localize(label.ko, label.en) : processKey;
 }
 
 function taskHours(task: ProductionTask): number {
   return task.estimateHours?.likely ?? 0;
 }
 
-function scopeLabel(task: ProductionTask): string {
-  const prefix = {
-    project: "프로젝트",
-    season: "시즌",
-    episode: "회차",
-    scene: "장면",
-    "scroll-segment": "스크롤",
-    cut: "컷",
-    "layer-group": "레이어",
-    asset: "에셋",
-    deliverable: "산출물",
-  }[task.scope.kind];
-  return `${prefix} · ${task.scope.id}`;
+function scopeLabel(task: ProductionTask, localize: ProductionLocalize): string {
+  return `${scopeKindLabel(task.scope.kind, localize)} · ${task.scope.id}`;
 }
 
 function riskClass(risk: RiskLevel): string {
@@ -157,14 +137,6 @@ function riskClass(risk: RiskLevel): string {
   if (risk === "predicted") return "border-warn/50 bg-warn/15 text-warn";
   if (risk === "attention" || risk === "forecast") return "border-warn/35 bg-warn/10 text-warn";
   return "border-line bg-raised text-fg-2";
-}
-
-function riskLabel(risk: RiskLevel): string {
-  if (risk === "overdue") return "기한 초과";
-  if (risk === "predicted") return "예측 위험";
-  if (risk === "forecast") return "예상 초과";
-  if (risk === "attention") return "주의";
-  return "정상";
 }
 
 function statusClass(status: ProductionTaskStatus): string {
@@ -180,6 +152,7 @@ export function ProductionScheduleWorkspace({
   execute,
   canEdit,
 }: ProductionScheduleWorkspaceProps) {
+  const bt = useBilingual("ProductionScheduleWorkspace.labels");
   const now = useMemo(() => new Date(), []);
   const schedule = useMemo(() => forecastProductionSchedule(aggregate, now), [aggregate, now]);
   const dueDates = aggregate.tasks.map((task) => parseDate(task.dueAt)).filter((date): date is Date => date !== null);
@@ -357,9 +330,9 @@ export function ProductionScheduleWorkspace({
               return (
                 <div key={task.id} className="grid min-h-24 border-b border-line bg-panel/45" style={{ gridTemplateColumns: "minmax(21rem,1.6fr) repeat(14,minmax(3.3rem,1fr))" }}>
                   <div className="sticky left-0 z-10 border-r border-line bg-card p-3">
-                    <div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="flex flex-wrap items-center gap-1.5"><span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", statusClass(task.status))}>{STATUS_LABEL[task.status]}</span><span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", riskClass(risk))}>{riskLabel(risk)}</span></div><h3 className="mt-2 truncate text-sm font-bold text-fg">{task.title}</h3><p className="mt-1 text-[0.6875rem] text-fg-3">{processLabel(task.processKey)} · {scopeLabel(task)}</p><p className="mt-1 text-[0.6875rem] text-fg-3">기준 {taskForecast?.baselineDueAt ? dateOnly(new Date(taskForecast.baselineDueAt)) : "미정"} · 예상 {taskForecast ? dateOnly(new Date(taskForecast.forecastDueAt)) : "미정"}{typeof taskForecast?.slackHours === "number" ? ` · 여유 ${taskForecast.slackHours}h` : ""}</p></div><span className="text-xs font-black text-fg">{taskHours(task)}h</span></div>
+                    <div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="flex flex-wrap items-center gap-1.5"><span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", statusClass(task.status))}>{taskStatusLabel(task.status, bt)}</span><span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", riskClass(risk))}>{scheduleRiskLabel(risk, bt)}</span></div><h3 className="mt-2 truncate text-sm font-bold text-fg">{task.title}</h3><p className="mt-1 text-[0.6875rem] text-fg-3">{processLabel(task.processKey, bt)} · {scopeLabel(task, bt)}</p><p className="mt-1 text-[0.6875rem] text-fg-3">기준 {taskForecast?.baselineDueAt ? dateOnly(new Date(taskForecast.baselineDueAt)) : "미정"} · 예상 {taskForecast ? dateOnly(new Date(taskForecast.forecastDueAt)) : "미정"}{typeof taskForecast?.slackHours === "number" ? ` · 여유 ${taskForecast.slackHours}h` : ""}</p></div><span className="text-xs font-black text-fg">{taskHours(task)}h</span></div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <select aria-label={`${task.title} 상태`} value={task.status} disabled={!canEdit} className="min-h-8 rounded-lg border border-line bg-panel px-2 text-[0.6875rem] font-semibold text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { status: event.target.value as ProductionTaskStatus }, `${task.title} 상태를 변경했습니다.`)}>{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{STATUS_LABEL[status]}</option>)}</select>
+                      <select aria-label={`${task.title} 상태`} value={task.status} disabled={!canEdit} className="min-h-8 rounded-lg border border-line bg-panel px-2 text-[0.6875rem] font-semibold text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { status: event.target.value as ProductionTaskStatus }, `${task.title} 상태를 변경했습니다.`)}>{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{taskStatusLabel(status, bt)}</option>)}</select>
                       <input type="date" aria-label={`${task.title} 마감일`} value={due ? dateOnly(due) : ""} disabled={!canEdit} className="min-h-8 rounded-lg border border-line bg-panel px-2 text-[0.6875rem] text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { dueAt: event.target.value ? new Date(`${event.target.value}T09:00:00`).toISOString() : null }, `${task.title} 마감일을 변경했습니다.`)} />
                       {task.dependencyTaskIds.length > 0 ? <span className="inline-flex items-center gap-1 text-[0.6875rem] text-fg-3"><GitBranch className="size-3" aria-hidden="true" />선행 {task.dependencyTaskIds.length}</span> : null}
                     </div>
@@ -402,15 +375,15 @@ export function ProductionScheduleWorkspace({
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-xs font-semibold text-fg">{task.title}</p>
-                            <p className="mt-1 text-[0.6875rem] text-fg-3">{processLabel(task.processKey)} · {taskHours(task)}h</p>
+                            <p className="mt-1 text-[0.6875rem] text-fg-3">{processLabel(task.processKey, bt)} · {taskHours(task)}h</p>
                           </div>
                           {risk === "normal"
                             ? <CheckCircle2 className="size-4 text-good" aria-label="일정 정상" />
-                            : <AlertTriangle className={cn("size-4", risk === "overdue" ? "text-bad" : "text-warn")} aria-label={riskLabel(risk)} />}
+                            : <AlertTriangle className={cn("size-4", risk === "overdue" ? "text-bad" : "text-warn")} aria-label={scheduleRiskLabel(risk, bt)} />}
                         </div>
                         {signals[0] ? <p className="mt-2 text-[0.6875rem] leading-4 text-warn">{signals[0].summary}</p> : null}
                         {taskForecast ? <p className="mt-2 text-[0.6875rem] text-fg-3">예상 {dateOnly(new Date(taskForecast.forecastDueAt))}{typeof taskForecast.slackHours === "number" ? ` · 여유 ${taskForecast.slackHours}h` : ""}</p> : null}
-                        <div className="mt-2 flex items-center justify-between text-[0.6875rem]"><span className="text-fg-3">{task.dueAt ? dateOnly(new Date(task.dueAt)) : "마감 미정"}</span><span className={cn("rounded-full border px-1.5 py-0.5 font-bold", statusClass(task.status))}>{STATUS_LABEL[task.status]}</span></div>
+                        <div className="mt-2 flex items-center justify-between text-[0.6875rem]"><span className="text-fg-3">{task.dueAt ? dateOnly(new Date(task.dueAt)) : "마감 미정"}</span><span className={cn("rounded-full border px-1.5 py-0.5 font-bold", statusClass(task.status))}>{taskStatusLabel(task.status, bt)}</span></div>
                       </div>
                     );
                   })}

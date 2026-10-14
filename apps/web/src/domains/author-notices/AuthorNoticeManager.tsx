@@ -11,6 +11,7 @@ import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+import { HiatusReturnKitPanel, type ReturnRecapSource } from "./HiatusReturnKitPanel";
 import { validateAuthorNoticeDraft } from "./author-notice-model";
 import { useAuthorNoticeStore, useAuthorNoticesHydrated } from "./author-notice-store";
 import type { AuthorNotice, AuthorNoticeKind, AuthorNoticeScope } from "./author-notice-types";
@@ -25,6 +26,8 @@ export interface AuthorNoticeManagerProps {
   readonly actorId: string;
   readonly works: readonly AuthorNoticeManagerWork[];
   readonly className?: string;
+  /** 휴재·복귀 키트의 복귀 리캡 재료 (작품 ID 기준, 선택) — 없으면 휴재 공지만 조립된다. */
+  readonly recapByWorkId?: Readonly<Record<string, ReturnRecapSource>>;
 }
 
 type ManagerNotice = { kind: "success" | "error"; text: string } | null;
@@ -36,6 +39,7 @@ export function AuthorNoticeManager({
   actorId,
   works,
   className,
+  recapByWorkId,
 }: AuthorNoticeManagerProps) {
   const t = useBilingual("author-notices");
   const hydrated = useAuthorNoticesHydrated();
@@ -263,6 +267,13 @@ export function AuthorNoticeManager({
               </p>
             )}
           </div>
+
+          <HiatusReturnKitPanel
+            authorName={authorName}
+            actorId={actorId}
+            works={works}
+            recapByWorkId={recapByWorkId}
+          />
 
           {myNotices.length === 0 ? (
             <p className="mt-3 rounded-2xl border border-dashed border-line bg-card/40 p-6 text-center text-sm text-fg-3">

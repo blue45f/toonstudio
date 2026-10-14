@@ -4,6 +4,7 @@ import { ArrowRight, ChevronRight, FolderKanban, PencilLine, Plus, Search } from
 
 import Link from "@/shared/navigation/router-link";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
+import { SpectacleHero } from "@/shared/components/layout/SpectacleHero";
 import { ToonStudioWordmark } from "@/shared/components/toonstudio-brand";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { DiscoverHomePreview } from "@/domains/catalog/public/DiscoverHomePreview";
@@ -41,23 +42,26 @@ export function ReferenceCreatorDashboard() {
     navigate(text ? `/story-lab?idea=${encodeURIComponent(text)}` : "/story-lab");
   };
   return <div className="reference-dashboard" data-reference-dashboard="true">
-    <section className="rd-poster" aria-labelledby="creator-hero-title">
-      <img
-        className="rd-poster-art"
-        src="/brand/illustrated-20260928/hero.webp"
-        srcSet="/brand/illustrated-20260928/hero-320.webp 320w, /brand/illustrated-20260928/hero-640.webp 640w, /brand/illustrated-20260928/hero.webp 677w"
-        sizes="100vw"
-        alt=""
-        aria-hidden="true"
-        fetchPriority="high"
-        decoding="async"
-      />
-      <div className="rd-poster-inner">
-        <div className="rd-story">
-          <p className="rd-brand"><ToonStudioWordmark /><small>Stories Come to Life</small></p>
-          <p className="rd-eyebrow">{bi("상상하는 모든 이야기, 여기서 작품이 됩니다.", "Every story you imagine starts here.")}</p>
-          <h1 id="creator-hero-title">{bi("오늘은 어떤 이야기를", "What story will you")}<br /><em>{bi("만들까요?", "create today?")}</em></h1>
-          <p className="rd-intro">{bi("당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.", "Your imagination. Your next extraordinary story.")}</p>
+    {/* 히어로는 SpectacleHero 부품이 소유한다 (S3-15). rd-* 클래스는 표면 마감이 이긴다. */}
+    <SpectacleHero
+      className="rd-poster"
+      artClassName="rd-poster-art"
+      innerClassName="rd-poster-inner"
+      copyClassName="rd-story"
+      eyebrowClassName="rd-eyebrow"
+      ledeClassName="rd-intro"
+      titleId="creator-hero-title"
+      art={{
+        src: "/brand/illustrated-20260928/hero.webp",
+        srcSet: "/brand/illustrated-20260928/hero-320.webp 320w, /brand/illustrated-20260928/hero-640.webp 640w, /brand/illustrated-20260928/hero.webp 677w",
+        sizes: "100vw",
+      }}
+      beforeTitle={<p className="rd-brand"><ToonStudioWordmark /><small>Stories Come to Life</small></p>}
+      eyebrow={bi("상상하는 모든 이야기, 여기서 작품이 됩니다.", "Every story you imagine starts here.")}
+      title={<>{bi("오늘은 어떤 이야기를", "What story will you")}<br /><em>{bi("만들까요?", "create today?")}</em></>}
+      lede={bi("당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.", "Your imagination. Your next extraordinary story.")}
+      aside={<HomeLunaPanel />}
+    >
           <form className="rd-idea" onSubmit={submitInput}>
             <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
               <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
@@ -81,10 +85,7 @@ export function ReferenceCreatorDashboard() {
             />
             <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
           </form>
-        </div>
-        <HomeLunaPanel />
-      </div>
-    </section>
+    </SpectacleHero>
     <HomePersonalStrip />
     <RevealOnScroll variant="fade" className="rd-discover">
       <DiscoverHomePreview />

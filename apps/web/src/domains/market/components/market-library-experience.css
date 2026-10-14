@@ -27,7 +27,7 @@
 .market-library-filters select { width: 100%; min-width: 0; min-height: 44px; padding: .6rem .7rem; border: 1px solid var(--color-line); border-radius: .7rem; background: var(--color-card); color: var(--color-fg); font-size: .8rem; }
 .market-library-reset { display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: .6rem .75rem; color: var(--color-accent); font-size: .8rem; border-radius: .7rem; cursor: pointer; }
 .market-library-scope { margin-top: .65rem; font-size: .75rem; line-height: 1.7; color: var(--color-fg-2); }
-.market-library-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: 1rem; margin-top: 1.5rem; }
+.market-library-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1.5rem; }
 .market-library-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--color-line); border-radius: 1rem; background: var(--color-card); }
 .market-library-card__cover { display: flex; justify-content: space-between; align-items: center; height: 5.5rem; flex-shrink: 0; padding: 1.25rem; border-bottom: 1px solid var(--color-line); background: linear-gradient(135deg, var(--color-panel), var(--color-accent-soft)); color: var(--color-accent); }
 .market-library-card__cover > svg { width: 2.75rem; height: 2.75rem; }
@@ -36,16 +36,25 @@
 .market-library-card__body h2 { overflow-wrap: anywhere; }
 .market-library-card__body dl { overflow-wrap: anywhere; }
 .market-library-card__actions > a, .market-library-card__actions > button { min-height: 44px; }
-.market-library-results--list { grid-template-columns: minmax(0, 1fr); }
+.market-library-results--list { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .market-library-empty { margin-top: 1.5rem; border: 1px dashed var(--color-line); border-radius: 1rem; padding: 2.5rem 1.25rem; background: var(--color-panel); text-align: center; }
 .market-library-empty h2 { margin-top: 1rem; font-size: 1rem; font-weight: 700; color: var(--color-fg); }
 .market-library-empty p { margin: .6rem auto 0; max-width: 34rem; font-size: .85rem; line-height: 1.8; color: var(--color-fg-2); }
 .market-library-page :is(a, button, select, summary):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
-.market-browse-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: 1rem; margin-top: 1.25rem; }
-.market-browse-results--list { grid-template-columns: minmax(0, 1fr); }
-/* 휴대폰 격자 보기는 두 열 — 카드 12장이 한 줄씩 쌓여 4화면 가까이 늘어지던 목록을 절반으로 줄인다. */
-@media (max-width: 639px) {
-  .market-browse-results--grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; margin-top: 1rem; }
+.market-browse-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1.25rem; }
+.market-browse-results--list { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+/* 표지 그리드 표준 (BLUEPRINT §5.2 (5), §5.3 L3): 마켓 탐색·소장 목록도 탐색·서재와 같은
+   열 규칙(2 →640px 3 →1024px 4 →1280px 5)과 gap(12px/≥640px 16px)을 쓴다.
+   기본 2열이 휴대폰에서 카드가 한 줄씩 쌓이던 문제도 그대로 막는다.
+   list 레이아웃은 행 목록이라 열 규칙에서 제외하고 gap 1rem을 유지한다. */
+@media (min-width: 640px) {
+  .market-browse-results--grid, .market-library-results--grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+}
+@media (min-width: 1024px) {
+  .market-browse-results--grid, .market-library-results--grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1280px) {
+  .market-browse-results--grid, .market-library-results--grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 @media (min-width: 700px) {
   .market-browse-results--list > li > article { display: grid; grid-template-columns: minmax(12rem, .65fr) minmax(0, 1fr); }

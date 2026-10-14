@@ -393,8 +393,12 @@ describe("스마트 anchor wrapper", () => {
 
 describe("자동 손 그립과 양손 보조 target", () => {
   it("grip kind를 좌우 부호가 맞는 FingerRotationMap 호환 값으로 만든다", () => {
+    // 이 검사는 주 그립의 좌우 부호만 본다 — 양손 기본값(secondary)은 명시적으로 꺼서
+    // 보조 접촉이 반대 손에 섞이지 않게 한다(기본값 자체는 props-grip-defaults 테스트가 고정).
     const right = createPropInstance("sword", "right")!;
+    right.rig = { ...right.rig!, secondary: { ...right.rig!.secondary!, enabled: false } };
     const left = createPropInstance("book", "left")!;
+    left.rig = { ...left.rig!, secondary: { ...left.rig!.secondary!, enabled: false } };
     const overrides = createAutoGripFingerOverrides(
       [right, left],
       propDefById,
@@ -590,8 +594,11 @@ describe("자동 손 그립과 양손 보조 target", () => {
   });
 
   it("엄지 대립을 세 관절에 분배하고 좌우 방향과 모든 hard limit를 지킨다", () => {
+    // 주 그립 분배만 보는 검사라 양손 기본값(secondary)은 양쪽 모두 끈다.
     const right = createPropInstance("sword", "thumb-right")!;
+    right.rig = { ...right.rig!, secondary: { ...right.rig!.secondary!, enabled: false } };
     const left = createPropInstance("sword", "thumb-left")!;
+    left.rig = { ...left.rig!, secondary: { ...left.rig!.secondary!, enabled: false } };
     left.bone = "leftHand";
     const grip = createAutoGripFingerOverrides(
       [right, left],
@@ -665,8 +672,13 @@ describe("자동 손 그립과 양손 보조 target", () => {
     const second = createPropInstance("sword", "conflict-b")!;
     const metrics = createCompleteGripMetrics();
 
-    expect(createAutoGripFingerOverrides([first, second], propDefById, metrics)).toEqual({});
-    expect(createAutoGripFingerOverrides([second, first], propDefById, metrics)).toEqual({});
+    // 오른손은 머그+검 주 접촉 2개가 겹쳐 fail-closed, 왼손은 검의 양손 기본값
+    // (secondary) 접촉 1개만 있어 정상 그립한다 — 충돌 판정은 손 단위다.
+    for (const items of [[first, second], [second, first]]) {
+      const overrides = createAutoGripFingerOverrides(items, propDefById, metrics);
+      expect(Object.keys(overrides).some((bone) => bone.startsWith("right"))).toBe(false);
+      expect(overrides.leftIndexIntermediate).toBeDefined();
+    }
   });
 
   it("secondary anchor에서 손바닥 오프셋을 빼 손목 목표를 계산한다", () => {

@@ -126,6 +126,7 @@ import {
   parseStudioPublishResultKind,
   resolveStudioPublishResultKind,
 } from "./studio-publish-result";
+import type { PublishVerdictInput } from "./studio-publish-verdict";
 
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -845,6 +846,8 @@ export function StudioPublishingCommandCenter({
             id: challenge.id,
             title: challenge.title,
             theme: challenge.theme,
+            startsAt: challenge.startsAt,
+            endsAt: challenge.endsAt,
           };
         } catch {
           // Context is informative; server validation remains authoritative.
@@ -1508,6 +1511,22 @@ export function StudioPublishingCommandCenter({
     title,
   ]);
 
+  // 게시 후 판정 가시화 — 게시 직후에는 "검토 중"이 기본 상태이고, 다음
+  // 피드백·판단 시점은 모델이 보장한다(챌린지는 기간 상한이 판정 시점).
+  // 서버 판정 상태 API가 붙으면 status·nextFeedbackAt만 교체하면 된다.
+  const publishVerdict = useMemo<PublishVerdictInput | null>(() => {
+    if (publishResult !== "published" && publishResult !== "scheduled") return null;
+    const challenge = publishContext.challenge ?? null;
+    return {
+      kind: challenge ? "challenge" : "publish",
+      status: "in-review",
+      submittedAt: receiptDetails.publishedAt ?? new Date().toISOString(),
+      caps: challenge
+        ? { periodStart: challenge.startsAt ?? null, periodEnd: challenge.endsAt ?? null }
+        : null,
+    };
+  }, [publishContext.challenge, publishResult, receiptDetails.publishedAt]);
+
   return (
     <div data-creator-workflow="publish" data-route-ready="studio-publish">
       <Container size="wide" className={STUDIO_UPLOAD_CONTAINER_CLASS}>
@@ -1651,6 +1670,7 @@ export function StudioPublishingCommandCenter({
           revision={workRevision}
           environment={publishEnvironment}
           details={receiptDetails}
+          verdict={publishVerdict}
           onContinueEditing={() => leavePublishResult("content")}
           onReviewSettings={() => leavePublishResult("distribution")}
           onMakePrivate={() => void handleMakePrivate()}

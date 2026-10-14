@@ -1,5 +1,11 @@
 {
   "version": 1,
+  "rights": {
+    "holder": "ToonStudio",
+    "origin": "generated-for-toonstudio-via-image-generation",
+    "statement": "ToonStudio가 자체 기획해 이미지 생성 도구로 생성한 아트. 생성 채널 약관이 허용하는 범위에서 권리는 ToonStudio가 보유하며, 저장소·제품 내 사용을 전제로 한다.",
+    "statementEn": "Art planned by ToonStudio and produced with image-generation tools. To the extent permitted by the generation channel's terms, rights are held by ToonStudio; provided for repository and product use."
+  },
   "generatedAt": "2026-09-28",
   "provider": "ChatGPT image_gen",
   "actualModelVersion": null,

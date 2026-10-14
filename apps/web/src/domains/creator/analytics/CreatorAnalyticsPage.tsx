@@ -1,4 +1,4 @@
-import { BarChart3, LogIn } from "lucide-react";
+import { BarChart3, LogIn, RefreshCw } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
@@ -12,6 +12,8 @@ import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-i
 import { ShowcaseEmptyState, ShowcaseUnavailableState } from "../publishing/ShowcaseStates";
 
 import "./analytics.css";
+// creatorAnalytics.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./creator-analytics-i18n";
 import { AnalyticsPanel } from "./AnalyticsPanel";
 import { AnalyticsNextActions, AnalyticsSampleBanner, type AnalyticsSampleReason } from "./AnalyticsGuides";
 import type {
@@ -53,8 +55,9 @@ function AnalyticsSkeleton({ label }: { label: string }) {
  * 시리즈별 KPI(조회·좋아요·댓글·구독 전환), 회차별 리텐션 곡선(이탈 지점 표시), 유입 경로, 기간 비교(7/30/90일).
  *
  * 데이터 정직성:
- * - API가 아직 없으면(404) 번들 예시 데이터로 화면 구성을 보여 주되, 상단 안내와 카드마다 "예시"를 표시한다.
- * - 네트워크·서버 오류에는 예시를 몰래 채우지 않는다. 재시도와 함께 "예시로 둘러보기"를 사용자가 직접 고르게 한다.
+ * - 실제 집계가 없으면(404 또는 서버가 mock:true 를 돌려준 경우) 샘플 숫자를 자동으로 보여 주지 않는다.
+ *   대신 숫자가 없는 "연결 전" 상태를 명확히 보여 주고, 예시는 사용자가 직접 고른 경우에만 표시한다.
+ * - 네트워크·서버 오류에도 예시를 몰래 채우지 않는다. 재시도와 함께 "예시로 둘러보기"를 사용자가 직접 고르게 한다.
  * - 로그인 필요(401/403)는 로그인 안내로 구분한다.
  */
 export function CreatorAnalyticsPage() {
@@ -75,16 +78,23 @@ export function CreatorAnalyticsPage() {
       t("creatorAnalytics.error", "애널리틱스를 불러오지 못했습니다.")
     );
 
-  const sampleRequested = !data && (notFound || sampleOptIn);
+  // 실제 집계만 기본으로 표시한다. 서버가 목(mock:true)을 돌려주거나 API가 없으면(404)
+  // "연결 전"으로 취급해 샘플 숫자를 자동으로 보여 주지 않는다.
+  const liveData = data && !data.mock ? data : null;
+  const serverSample = data?.mock ? data : null;
+  const notConnected = !liveData && (notFound || serverSample !== null);
+  const sampleRequested = !liveData && sampleOptIn && !serverSample;
   const clientSample = useMemo(
     () => (sampleRequested ? buildClientMockAnalytics(period, seriesId) : null),
     [period, sampleRequested, seriesId]
   );
-  const current: DisplayedAnalytics | null = data
-    ? { payload: data, sampleReason: data.mock ? "server-sample" : null }
-    : clientSample
-      ? { payload: clientSample, sampleReason: notFound ? "api-missing" : "opted-in" }
-      : null;
+  const current: DisplayedAnalytics | null = liveData
+    ? { payload: liveData, sampleReason: null }
+    : sampleOptIn && serverSample
+      ? { payload: serverSample, sampleReason: "server-sample" }
+      : clientSample
+        ? { payload: clientSample, sampleReason: notFound ? "api-missing" : "opted-in" }
+        : null;
 
   // 기간·시리즈를 바꾸는 동안 이전 결과를 흐리게 유지한다(스켈레톤 깜빡임·레이아웃 밀림 방지).
   const [lastShown, setLastShown] = useState<DisplayedAnalytics | null>(null);
@@ -193,6 +203,30 @@ export function CreatorAnalyticsPage() {
           <AnalyticsSkeleton label={t("creatorAnalytics.loading", "애널리틱스를 불러오는 중…")} />
         ) : null}
 
+        {!displayed && !loading && notConnected ? (
+          <ShowcaseEmptyState
+            icon={BarChart3}
+            title={bt("실제 집계가 아직 연결되지 않았어요", "Live analytics aren't connected yet")}
+            description={bt("연결 전이라 표시할 실제 수치가 없습니다. 작품을 발행하고 독자 반응이 쌓이면 이 화면에 실제 조회·좋아요·구독 전환이 표시됩니다. 화면 구성이 궁금하면 예시 데이터로 미리 볼 수 있어요.", "There are no real numbers to show yet. Publish work and, as reader responses build up, real views, likes and conversions will appear here. You can preview the layout with sample data.")}
+            action={
+              <>
+                <button
+                  type="button"
+                  onClick={() => reload()}
+                  className={buttonClass({ size: "md", variant: "solid", className: "gap-1.5" })}
+                >
+                  <RefreshCw size={15} aria-hidden />
+                  {bt("실제 데이터 다시 불러오기", "Reload live data")}
+                </button>
+                <button type="button" onClick={() => setSampleOptIn(true)} className={buttonClass({ size: "md", variant: "outline", className: "gap-1.5" })}>
+                  <BarChart3 size={15} aria-hidden />
+                  {bt("예시 데이터로 둘러보기", "Preview with sample data")}
+                </button>
+              </>
+            }
+          />
+        ) : null}
+
         {!displayed && !loading && error ? (
           needsLogin ? (
             <ShowcaseEmptyState
@@ -237,7 +271,7 @@ export function CreatorAnalyticsPage() {
             {displayed.sampleReason ? (
               <AnalyticsSampleBanner
                 reason={displayed.sampleReason}
-                onRetryLive={displayed.sampleReason === "opted-in" ? () => { setSampleOptIn(false); reload(); } : undefined}
+                onRetryLive={() => { setSampleOptIn(false); reload(); }}
               />
             ) : null}
             {stale ? (
@@ -300,7 +334,7 @@ export function CreatorAnalyticsPage() {
           </div>
         ) : null}
 
-        {!displayed && !loading && !error ? (
+        {!displayed && !loading && !error && !notConnected ? (
           <p className="py-16 text-center text-sm text-fg-3">
             {t("creatorAnalytics.empty", "표시할 데이터가 없습니다.")}
           </p>

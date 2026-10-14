@@ -187,7 +187,7 @@ function timelineCardWidth(durationMs: number): number {
 }
 
 function previewOpacity(sample: StudioAnimaticPreviewSample): number {
-  return sample.transitionKind === "fade" ? sample.transitionProgress : 1;
+  return (sample.transitionKind === "fade" ? sample.transitionProgress : 1) * sample.camera.opacity;
 }
 
 function previewTransitionPan(sample: StudioAnimaticPreviewSample): number {

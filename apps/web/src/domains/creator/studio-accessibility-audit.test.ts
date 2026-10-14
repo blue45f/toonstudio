@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   auditStudioAccessibility,
+  compositeStudioColor,
   studioColorContrast,
+  studioRelativeLuminance,
   type StudioAccessibilityPolicy,
 } from "./studio-accessibility-audit";
 
@@ -64,6 +66,24 @@ describe("Studio accessibility audit", () => {
       requiredReadingOrderIds: [],
     }, POLICY);
     expect(report.status).toBe("pass");
+  });
+
+  it("measures OKLCH and rgb() theme tokens, not only hex", () => {
+    expect(studioColorContrast("oklch(0 0 0)", "oklch(1 0 0)")).toBeCloseTo(21);
+    expect(studioColorContrast("rgb(0 0 0)", "rgb(255 255 255)")).toBeCloseTo(21);
+    expect(studioRelativeLuminance("#ffffff")).toBeCloseTo(1);
+    // The audited dark-theme accent-2 on the raised surface is the tightest
+    // text pair in the unified matrix; pin it so token edits cannot drift.
+    expect(studioColorContrast("oklch(0.66 0.2 38)", "oklch(0.247 0.011 64)")).toBeCloseTo(4.77, 1);
+    expect(studioColorContrast("#b39bff", "#070a14")).toBeCloseTo(8.52, 1);
+  });
+
+  it("composites translucent tokens over a background before measuring", () => {
+    expect(compositeStudioColor("#112233", "#ffffff")).toBe("#112233");
+    expect(compositeStudioColor("oklch(0 0 0 / 0.5)", "#ffffff")).toBe("#808080");
+    expect(compositeStudioColor("rgb(0 0 0 / 50%)", "#ffffff")).toBe("#808080");
+    expect(() => studioColorContrast("oklch(0.67 0.16 300 / 0.16)", "#ffffff")).toThrow("composited");
+    expect(() => compositeStudioColor("#000000", "oklch(0.5 0.1 40 / 0.5)")).toThrow("composited");
   });
 
   it("rejects malformed colors and policy thresholds", () => {

@@ -1,0 +1,124 @@
+/*
+ * 스펙터클 부품 스타일 (BLUEPRINT §6.2 (2), S3-15) — SpectacleHero·CoverCard 전용.
+ * 전역 CSS에 표면 전용 비주얼 규칙을 넣지 않는다는 §6.4 성능 경계에 따라 부품이
+ * 자기 CSS를 import한다. 모든 선언은 :where() 0-특이성이라 표면 CSS(예: 홈의
+ * .rd-poster 계열)가 언제든 이긴다 — 부품은 기본값, 표면은 마감이다.
+ * 색·그림자·글로우는 전부 표현 토큰(--spectacle-*·--domain-tint·--elevation-*)만 쓴다.
+ */
+
+/* SpectacleHero — 아트 전면형 히어로: 배경 아트 → 스크림 → 카피/글래스 패널 3층. */
+:where(.spectacle-hero) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  background: color-mix(in oklch, var(--domain-tint) 12%, var(--unified-panel));
+  color: var(--art-on);
+}
+:where(.spectacle-hero-art) {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+:where(.spectacle-hero)::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background: var(--art-scrim);
+}
+/* 아트가 없을 땐 스펙트럼+타이포 커버가 무대다 (§6.2 (2) 대형 비주얼). */
+:where(.spectacle-hero[data-spectacle-art="none"]) {
+  background: linear-gradient(140deg, color-mix(in oklch, var(--domain-tint) 30%, var(--unified-panel)), var(--unified-panel) 62%);
+  color: var(--unified-fg);
+}
+:where(.spectacle-hero[data-spectacle-art="none"])::before { background: none; }
+:where(.spectacle-hero-inner) {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: 24px;
+  min-height: clamp(420px, 52dvh, 560px);
+  padding: clamp(24px, 4vw, 48px);
+}
+:where(.spectacle-hero-inner):has(> :nth-child(2)) {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  column-gap: 36px;
+}
+:where(.spectacle-hero-copy) { display: grid; align-content: end; gap: 9px; min-width: 0; }
+:where(.spectacle-hero-eyebrow) { font-size: 13.5px; line-height: 1.5; }
+:where(.spectacle-hero-title) {
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(36px, 3.4vw, 54px);
+  font-weight: 760;
+  line-height: 1.14;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  word-break: keep-all;
+}
+:where(.spectacle-hero-title) :where(em) {
+  background: var(--spectacle-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-style: inherit;
+}
+:where(.spectacle-hero-lede) { font-size: 15.5px; line-height: 1.55; text-wrap: pretty; }
+/* 글래스 패널 — 히어로 안의 보조 패널(안내·요약) 표준 면. */
+:where(.spectacle-hero-aside) {
+  min-width: 0;
+  border: 1px solid color-mix(in oklch, var(--domain-tint) 45%, transparent);
+  border-radius: 16px;
+  background: var(--surface-glass);
+  box-shadow: var(--elevation-2);
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 1199px) {
+  :where(.spectacle-hero-inner) { grid-template-columns: minmax(0, 720px); min-height: 500px; }
+  :where(.spectacle-hero-inner):has(> :nth-child(2)) { grid-template-columns: minmax(0, 720px); }
+}
+@media (max-width: 899px) {
+  :where(.spectacle-hero-inner) { min-height: 0; align-items: start; }
+  :where(.spectacle-hero-title) { font-size: 38px; }
+}
+
+/* CoverCard — 표지 중심 구성의 기본 단위 (§6.2 (2)). 비율 3:4, 마켓 변형 16:10. */
+:where(.cover-card) { position: relative; min-width: 0; }
+:where(.cover-card-poster) { box-shadow: var(--elevation-1); transition: box-shadow var(--spectacle-duration-enter) ease-out, transform var(--spectacle-duration-enter) ease-out; }
+:where(.cover-card):hover :where(.cover-card-poster) { box-shadow: var(--elevation-2); transform: translateY(-2px); }
+:where(.cover-card-badge) {
+  position: absolute;
+  z-index: 1;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-glass);
+  box-shadow: var(--elevation-1);
+  color: var(--unified-fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+:where(.cover-card-meta) { display: grid; gap: 2px; padding-top: 8px; }
+/* TitlePoster는 3:4 고정 — 마켓 소재 변형만 부품 CSS 특이성으로 비율을 덮는다. */
+.cover-card[data-cover-ratio="wide"] .cover-card-poster { aspect-ratio: 16 / 10; }
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.cover-card-poster) { transition: none; }
+  :where(.cover-card):hover :where(.cover-card-poster) { transform: none; }
+}
+
+@media (forced-colors: active) {
+  :where(.spectacle-hero-art) { display: none; }
+  :where(.spectacle-hero) { background: Canvas; color: CanvasText; }
+  :where(.spectacle-hero)::before { display: none; }
+  :where(.spectacle-hero-title) :where(em) { background: none; color: CanvasText; -webkit-text-fill-color: currentColor; }
+  :where(.spectacle-hero-aside), :where(.cover-card-badge) { background: Canvas; color: CanvasText; box-shadow: none; }
+}

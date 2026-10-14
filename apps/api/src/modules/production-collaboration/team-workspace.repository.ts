@@ -7,8 +7,10 @@ import {
   type TeamWorkspaceMember, type TeamWorkspaceInvite, type TeamWorkspaceInvitePreview,
   type InvitableWorkspaceRole, type TeamWorkspaceProject,
   type WorkspaceMutationResult, type WorkspaceUsageResponse,
+  type TeamWorkspaceAuditResponse,
 } from "@toonstudio/contracts/production-workspace";
-import type { WorkspaceCommand } from "./team-workspace.dto";
+import type { WorkspaceCommand, TeamWorkspaceAuditQueryInput } from "./team-workspace.dto";
+import { auditFetchLimit, auditWhereClause, toAuditResponse, type TeamWorkspaceAuditRow } from "./team-workspace-audit";
 import { loadOperationPolicy, runtimeLicenseFingerprint, workspaceAdmissionPolicy } from "../operation-policy/operation-policy.repository";
 import { resolveOperationPolicy } from "@toonstudio/contracts/operation-policy";
 
@@ -82,8 +84,9 @@ export class TeamWorkspaceRepository {
     return this.transaction(async (client) => {
       await this.activeUser(client, actor);
       const row = await this.access(client, actor, workspaceId);
-      const projects = await client.query<TeamWorkspaceProject>(`SELECT p.id,p."workId",p.title
+      const projects = await client.query<TeamWorkspaceProject>(`SELECT p.id,p."workId",p.title,cw."userId" "ownerUserId"
         FROM production_team_project l JOIN production_project p ON p.id=l.project_id
+        JOIN creator_work cw ON cw.id=p."workId"
         WHERE l.workspace_id=$2 AND ${projectAccess} ORDER BY p.title,p.id`, [actor, workspaceId]);
       const members = row.role === "guest" ? [] : (await client.query<TeamWorkspaceMember>(`SELECT m.user_id "userId",
         coalesce(u.name,'구성원') "displayName",m.role,to_char(m.joined_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') "joinedAt"
@@ -109,6 +112,34 @@ export class TeamWorkspaceRepository {
         projects: counts.projects, members: counts.members, pendingInvites: counts.pending },
         originalStorage: { status: "not-instrumented", usedBytes: null }, nextDailyResetAt: nextSeoulDay(new Date()),
         externalAiEnabled: false, meteredProvidersEnabled: false };
+    });
+  }
+  /**
+   * 감사 로그 열람 — production_team_audit는 기록만 되고 읽는 경로가 없었다.
+   * 사용량과 같은 관리자 전용 선례를 따라 owner·admin만 볼 수 있고,
+   * 기간[from,to)·행위자·행위 필터와 id 내림차순 키셋 페이지네이션을 제공한다.
+   * 대상 표시는 대상 종류별로 가장 가까운 이름을 잇는다: 구성원 이름 → 초대 이메일 →
+   * 작품 제목 → 워크스페이스 이름. 어느 쪽에도 없으면 null로 두고 id를 함께 돌려준다.
+   */
+  async audit(actor: string, workspaceId: string, query: TeamWorkspaceAuditQueryInput): Promise<TeamWorkspaceAuditResponse> {
+    return this.transaction(async (client) => {
+      await this.activeUser(client, actor);
+      const row = await this.access(client, actor, workspaceId);
+      if (!isWorkspaceManager(row.role)) throw new ForbiddenException("감사 로그는 관리자만 확인할 수 있습니다.");
+      const { sql, params } = auditWhereClause(query);
+      const rows = await client.query<TeamWorkspaceAuditRow>(`SELECT a.id::int id,a.actor_user_id,
+        coalesce(u.name,'구성원') "actorDisplayName",a.action,a.target_id,
+        coalesce(tu.name,ti.email,tp.title,tw.name) "targetDisplayName",a.revision,
+        to_char(a.occurred_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') "occurredAt"
+        FROM production_team_audit a
+        JOIN "user" u ON u.id=a.actor_user_id
+        LEFT JOIN "user" tu ON tu.id=a.target_id
+        LEFT JOIN production_team_invite ti ON ti.id=a.target_id
+        LEFT JOIN production_project tp ON tp.id=a.target_id
+        LEFT JOIN production_team_workspace tw ON tw.id=a.target_id
+        WHERE a.workspace_id=$1${sql} ORDER BY a.id DESC LIMIT $${params.length + 2}`,
+        [workspaceId, ...params, auditFetchLimit(query.limit)]);
+      return toAuditResponse(workspaceId, rows.rows, query.limit);
     });
   }
   private async receipt(client: PoolClient, actor: string, mutationId: string, input: unknown): Promise<WorkspaceMutationResult | null> {
@@ -148,7 +179,11 @@ export class TeamWorkspaceRepository {
       await this.activeUser(client, actor);
       const row = await this.access(client, actor, workspaceId, true);
       const leaving = input.type === "remove-member" && input.userId === actor;
-      if (!isWorkspaceManager(row.role) && !leaving) throw new ForbiddenException("관리 권한이 필요합니다.");
+      // 작품 소유권 이전의 권한 근거는 워크스페이스 역할이 아니라 작품 소유 자체다.
+      // 관리자 게이트를 통과시켜 두고, 실제 강제는 transfer-work-owner 케이스가
+      // creator_work 행을 잠근 뒤 현재 소유자와 대조해 수행한다.
+      const transferringWork = input.type === "transfer-work-owner";
+      if (!isWorkspaceManager(row.role) && !leaving && !transferringWork) throw new ForbiddenException("관리 권한이 필요합니다.");
       const request = { workspaceId, ...input };
       const replay = await this.receipt(client, actor, input.mutationId, request);
       if (replay) return replay;
@@ -205,6 +240,32 @@ export class TeamWorkspaceRepository {
           await client.query("UPDATE production_team_member SET role='owner' WHERE workspace_id=$1 AND user_id=$2", [workspaceId, input.userId]);
           await client.query("UPDATE production_team_workspace SET owner_user_id=$2 WHERE id=$1", [workspaceId, input.userId]);
           target = input.userId;
+          break;
+        }
+        case "transfer-work-owner": {
+          // 작품 소유권은 creator_work."userId" 한 곳에만 산다(0003 마이그레이션 원칙).
+          // 팀 소유권 이전과 달리 이 커맨드는 그 값을 실제로 옮긴다: 현재 작품 소유자
+          // 본인만 실행할 수 있고, 받는 사람은 이 팀의 현재 구성원이어야 한다.
+          if (actor === input.userId) throw new ConflictException("현재 소유자입니다.");
+          await this.activeUser(client, input.userId);
+          const recipient = await client.query("SELECT 1 FROM production_team_member WHERE workspace_id=$1 AND user_id=$2", [workspaceId, input.userId]);
+          if (!recipient.rowCount) throw new NotFoundException("받는 사람이 이 팀의 구성원이 아닙니다.");
+          const work = (await client.query<{ id: string; owner: string }>(`SELECT w.id,w."userId" owner FROM creator_work w
+            JOIN production_project p ON p."workId"=w.id JOIN production_team_project l ON l.project_id=p.id
+            WHERE p.id=$1 AND l.workspace_id=$2 FOR UPDATE OF w`, [input.projectId, workspaceId])).rows[0];
+          if (!work) throw new NotFoundException("이 팀에 연결된 작품이 아닙니다.");
+          if (work.owner !== actor) throw new ForbiddenException("작품 소유자만 소유권을 이전할 수 있습니다.");
+          await client.query(`UPDATE creator_work SET "userId"=$2 WHERE id=$1`, [work.id, input.userId]);
+          // 소유자는 협업자 행으로 중복 표현하지 않는다: 받는 사람의 기존 협업자 행은 지우고,
+          // 이전한 소유자는 관리자 협업자로 남겨 인계 기간의 접근을 유지한다(팀 소유권 이전과 같은 원칙).
+          // 접근을 완전히 끊는 것은 작품 권한에서의 명시적 제거가 맡는다.
+          await client.query(`DELETE FROM creator_work_collaborator WHERE "workId"=$1 AND "userId"=$2`, [work.id, input.userId]);
+          await client.query(`INSERT INTO creator_work_collaborator("workId","userId",role,status,"invitationId","invitedBy","respondedAt")
+            VALUES($1,$2,'admin','active',$3,$4,now())
+            ON CONFLICT ("workId","userId") DO UPDATE SET role='admin',status='active',
+              "invitedBy"=EXCLUDED."invitedBy","respondedAt"=now(),"updatedAt"=now()`,
+            [work.id, actor, randomUUID(), input.userId]);
+          target = work.id;
           break;
         }
         case "attach-project": {

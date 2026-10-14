@@ -106,6 +106,20 @@ export class TrafficAnalyticsController {
     );
   }
 
+  @Post("web-vitals")
+  @HttpCode(202)
+  async recordWebVitals(
+    @Req() request: Request,
+    @Headers(TOONSPECTRUM_CSRF_HEADER) proof: string | undefined,
+    @Body() body: unknown,
+  ) {
+    this.requireBrowserProof(request, proof);
+    return this.trafficAnalyticsService.recordWebVitals(
+      recordBody(body),
+      requestContext(request),
+    );
+  }
+
   @Post("share-event")
   @HttpCode(202)
   async recordShareEvent(

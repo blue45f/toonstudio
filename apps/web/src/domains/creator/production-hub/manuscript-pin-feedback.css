@@ -319,6 +319,30 @@
   line-height: 1.5;
 }
 
+/* 핀 피드백 패킷 안내 (빠진 요소: 무엇을·어디를·어떻게) */
+.manuscript-pin-packet-guidance {
+  margin: 0;
+  padding: 0.5rem 0.65rem 0.5rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--pin-ink);
+  background: var(--pin-open-soft);
+  border: 1px solid var(--pin-line);
+  border-radius: 0.6rem;
+}
+
+/* 핀 찍기 전 힌트 카드 안의 패킷 안내 */
+.manuscript-pin-place-hint-guidance {
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--pin-muted);
+  text-align: center;
+}
+
 /* 긴급 체크박스 라벨 */
 .manuscript-pin-urgent-label {
   display: inline-flex;

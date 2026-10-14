@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreatorAdaptiveOnboardingGate } from "./CreatorAdaptiveOnboardingGate";
@@ -32,8 +32,12 @@ const emptyProfile = {
   creatorRoleProfile: normalizeCreatorRoleProfile(EMPTY_CREATOR_ROLE_PROFILE),
 };
 let sequence = 0;
+function LocationProbe() {
+  const { pathname } = useLocation();
+  return <output data-testid="gate-location">{pathname}</output>;
+}
 function gateUi(path = "/studio", enabled = true) {
-  return <MemoryRouter initialEntries={[path]}><CreatorAdaptiveOnboardingGate enabled={enabled} /></MemoryRouter>;
+  return <MemoryRouter initialEntries={[path]}><CreatorAdaptiveOnboardingGate enabled={enabled} /><LocationProbe /></MemoryRouter>;
 }
 function workspaceState(status = "ready", onboardingComplete = false) {
   return {
@@ -56,7 +60,7 @@ async function fillWorkspace() {
   fireEvent.change(screen.getByLabelText("대표 역할"), { target: { value: "story" } });
   fireEvent.click(screen.getByRole("button", { name: "다음" }));
   fireEvent.click(screen.getByRole("button", { name: "스토리·대본 집필" }));
-  fireEvent.click(screen.getByRole("button", { name: "다음" }));
+  // 목적과 작업 방식이 한 단계로 합쳐져 같은 화면에서 이어서 고른다.
   fireEvent.click(screen.getByRole("button", { name: /함께 작업해요/ }));
   fireEvent.click(screen.getByRole("button", { name: "다음" }));
   fireEvent.click(screen.getByRole("button", { name: /Production/ }));
@@ -85,7 +89,7 @@ afterEach(() => {
 });
 
 describe("CreatorAdaptiveOnboardingGate", () => {
-  it("saves all six steps and closes only after persistence succeeds", async () => {
+  it("saves all five steps and closes only after persistence succeeds", async () => {
     const view = render(gateUi());
     await fillWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "이 작업실로 시작" }));
@@ -100,6 +104,8 @@ describe("CreatorAdaptiveOnboardingGate", () => {
       collaborationMode: "team", workspaceMode: "production", onboardingComplete: true,
     }));
     expect(hasAcknowledgedCreatorOnboarding(mocks.userId)).toBe(true);
+    // 완료 CTA 보강: 스토리 집필 목적은 완료 즉시 스토리 랩이 단일 다음 행동이다.
+    expect(screen.getByTestId("gate-location").textContent).toBe("/story-lab");
     view.unmount();
     render(gateUi());
     expect(mocks.getMyProfile).toHaveBeenCalledTimes(1);
@@ -150,6 +156,31 @@ describe("CreatorAdaptiveOnboardingGate", () => {
     }));
   });
 
+  it("lets a beginner finish with no role decided and lands on the default create CTA", async () => {
+    render(gateUi());
+    await screen.findByRole("heading", { name: "나에게 맞는 작업 환경 만들기" });
+    fireEvent.click(screen.getByRole("button", { name: /처음 · 입문/ }));
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    // 역할 단계의 초보 기본값: "아직 정하지 않음"이 이미 선택돼 있어 그대로 다음으로 갈 수 있다.
+    const undecided = screen.getByRole("button", { name: /아직 정하지 않음/ });
+    expect(undecided.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    // 목적을 고르지 않아도 완료 지점의 단일 다음 행동이 미리보기에 표시된다.
+    expect(screen.getByText(/완료하면 바로 “새 작품 만들기”/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "이 작업실로 시작" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(mocks.updateMyProfile).toHaveBeenCalledWith({ creatorRoleProfile: expect.objectContaining({
+      experienceLevel: "beginner", primaryRole: null, secondaryRoles: [], activeRole: null,
+      onboarding: expect.objectContaining({ status: "completed" }),
+    }) });
+    expect(mocks.saveWorkspace).toHaveBeenCalledWith(expect.objectContaining({
+      activeRole: null, detailedLens: null, onboardingComplete: true,
+    }));
+    expect(screen.getByTestId("gate-location").textContent).toBe("/studio/new");
+  });
+
   it("names the role settings entry in the always-visible skip guidance", async () => {
     render(gateUi());
     await screen.findByRole("dialog");
@@ -172,8 +203,20 @@ describe("CreatorAdaptiveOnboardingGate", () => {
     expect(mocks.getMyProfile).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["/home", "/home/", "/team", "/team/"])("opens on first workspace entry at %s", async (path) => {
+    render(gateUi(path));
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(mocks.getMyProfile).toHaveBeenCalled();
+  });
+
+  it.each(["/home?tour=1", "/team?invite=1"])("does not interrupt a query-bearing workspace entry at %s", (path) => {
+    render(gateUi(path));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(mocks.getMyProfile).not.toHaveBeenCalled();
+  });
+
   it.each([
-    "/", "/home", "/team", "/hub", "/settings", "/create", "/studio/canvas",
+    "/", "/hub", "/settings", "/create", "/studio/canvas",
     "/studio/bg3d", "/studio/character", "/studio/lift3d", "/studio/new", "/studio/import",
     "/studio/assets/3d", "/studio/p/project-1/space", "/studio/p/project-1/doc/document-1",
     "/studio/work/work-1/bg3d", "/studio/remix/work-1/character",

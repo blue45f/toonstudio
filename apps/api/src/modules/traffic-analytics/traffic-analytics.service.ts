@@ -31,12 +31,18 @@ import {
   type TrafficSharePayload,
 } from "./traffic-analytics-model";
 import { TRAFFIC_ANALYTICS_REPOSITORY, type TrafficAnalyticsRepository } from "./traffic-analytics.repository";
+import {
+  isPublicWebVitalsPath,
+  normalizeWebVitalsMetrics,
+  type WebVitalsPayload,
+} from "./web-vitals-model";
 
 const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1_000;
 const RATE_WINDOW_MS = 60_000;
 const MAX_PAGE_VIEWS_PER_SESSION_WINDOW = 120;
 const MAX_HEARTBEATS_PER_SESSION_WINDOW = 4;
 const MAX_SHARES_PER_SESSION_WINDOW = 60;
+const MAX_WEB_VITALS_PER_SESSION_WINDOW = 120;
 const MAX_RATE_LIMIT_ENTRIES = 10_000;
 const MAX_GLOBAL_EVENTS_PER_WINDOW = 5_000;
 
@@ -45,6 +51,7 @@ type RateLimitState = {
   pageViews: number;
   heartbeats: number;
   shares: number;
+  webVitals: number;
 };
 
 function retentionDays(): number {
@@ -95,7 +102,7 @@ export class TrafficAnalyticsService {
 
   private enforceRateLimit(
     sessionHash: string,
-    kind: "page-view" | "heartbeat" | "share",
+    kind: "page-view" | "heartbeat" | "share" | "web-vitals",
   ): void {
     const now = Date.now();
     if (now - this.globalWindowStartedAt >= RATE_WINDOW_MS) {
@@ -121,7 +128,7 @@ export class TrafficAnalyticsService {
 
     const state =
       !current || now - current.windowStartedAt >= RATE_WINDOW_MS
-        ? { windowStartedAt: now, pageViews: 0, heartbeats: 0, shares: 0 }
+        ? { windowStartedAt: now, pageViews: 0, heartbeats: 0, shares: 0, webVitals: 0 }
         : current;
     if (kind === "page-view") {
       state.pageViews += 1;
@@ -133,10 +140,15 @@ export class TrafficAnalyticsService {
       if (state.heartbeats > MAX_HEARTBEATS_PER_SESSION_WINDOW) {
         throw tooManyRequests("트래픽 수집 요청이 너무 많습니다.");
       }
-    } else {
+    } else if (kind === "share") {
       state.shares += 1;
       if (state.shares > MAX_SHARES_PER_SESSION_WINDOW) {
         throw tooManyRequests("공유 분석 요청이 너무 많습니다.");
+      }
+    } else {
+      state.webVitals += 1;
+      if (state.webVitals > MAX_WEB_VITALS_PER_SESSION_WINDOW) {
+        throw tooManyRequests("성능 측정 요청이 너무 많습니다.");
       }
     }
     this.rateLimits.set(sessionHash, state);
@@ -313,6 +325,54 @@ export class TrafficAnalyticsService {
       path,
       channel: requireTrafficShareChannel(payload.channel),
       outcome: toStoredTrafficShareOutcome(requireTrafficShareOutcome(payload.outcome)),
+      countryCode: normalizeTrafficCountryCode(context.countryCode),
+      deviceType: device.deviceType,
+      browser: device.browser,
+      os: device.os,
+    });
+
+    this.scheduleCleanup();
+    return { accepted: true };
+  }
+
+  /**
+   * Field CWV intake (G6 성능 실측 체계). The client beacon existed before
+   * this endpoint and received 404s; the bridge is fail-soft on 404/5xx, so
+   * collection starts working the moment this ships — no client change needed.
+   * Only the §6.4 public pool (`/`, `/discover`) is stored: other paths are
+   * excluded, not errors, matching the page-view exclusion semantics.
+   */
+  async recordWebVitals(
+    payload: WebVitalsPayload,
+    context: TrafficRequestContext,
+  ): Promise<{ accepted: boolean; excluded?: boolean }> {
+    if (context.privacyOptOut) return { accepted: false, excluded: true };
+
+    const path = normalizeTrafficPath(payload.path);
+    if (isExcludedTrafficPath(path) || !isPublicWebVitalsPath(path)) {
+      return { accepted: false, excluded: true };
+    }
+
+    const device = classifyTrafficDevice(context.userAgent);
+    if (device.isBot) return { accepted: false, excluded: true };
+
+    const visitorId = requireTrafficIdentifier(payload.visitorId, "방문자 식별자");
+    const sessionId = requireTrafficIdentifier(payload.sessionId, "세션 식별자");
+    const visitorHash = hashIdentifier("visitor", visitorId);
+    const sessionHash = hashIdentifier("session", sessionId);
+    this.enforceRateLimit(sessionHash, "web-vitals");
+
+    const metrics = normalizeWebVitalsMetrics(payload);
+
+    await this.repository.persistWebVitals({
+      id: randomUUID(),
+      occurredAt: new Date(),
+      visitorHash,
+      sessionHash,
+      path,
+      lcpMs: metrics.lcpMs,
+      cls: metrics.cls,
+      inpMs: metrics.inpMs,
       countryCode: normalizeTrafficCountryCode(context.countryCode),
       deviceType: device.deviceType,
       browser: device.browser,

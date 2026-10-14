@@ -61,6 +61,8 @@ registerI18nLocaleEntries("ko", {
     "발행 {days}일 이내의 날짜만 예약할 수 있어요.",
   "studio.publish.schedule.nextRetryAt": "다음 재시도 {time}",
   "studio.publish.schedule.attemptCount": "{count}회 시도",
+  "studio.publish.schedule.eventWeek": "이벤트 주간",
+  "studio.publish.schedule.eventWeekEvents": "이 주 일정: {events}",
 });
 
 registerI18nLocaleEntries("en", {
@@ -118,4 +120,6 @@ registerI18nLocaleEntries("en", {
     "Only dates within {days} days can be scheduled.",
   "studio.publish.schedule.nextRetryAt": "Next retry {time}",
   "studio.publish.schedule.attemptCount": "{count} attempts",
+  "studio.publish.schedule.eventWeek": "Event week",
+  "studio.publish.schedule.eventWeekEvents": "This week: {events}",
 });

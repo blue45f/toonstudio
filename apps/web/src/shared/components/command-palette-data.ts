@@ -41,6 +41,7 @@ import { useApp } from "@/shared/lib/store";
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 import {
   SITE_NAVIGATION_ITEMS,
+  resolveNavigationOrder,
   siteNavigationGroupForPath,
   siteNavigationLocale,
   siteNavigationText,
@@ -527,33 +528,50 @@ function palettePageTrail(href: string, locale: string): string | undefined {
 }
 
 const navigationDestinations = Object.values(SITE_NAVIGATION_ITEMS);
-const curatedPagePaths = new Set(CURATED_PALETTE_PAGES.map((page) => canonicalSitePath(page.href)));
+const curatedByPath = new Map(
+  CURATED_PALETTE_PAGES.map((page) => [canonicalSitePath(page.href), page] as const),
+);
+const registryPaths = new Set(navigationDestinations.map((item) => item.href));
 
-/** 메뉴의 현재 명칭·목적지를 검색에도 공유하고 예전 명칭은 검색어로 보존한다. */
+/**
+ * 메뉴의 현재 명칭·목적지를 검색에도 공유하고 예전 명칭은 검색어로 보존한다.
+ *
+ * S1-3: 페이지 순서는 모바일 메뉴·푸터와 같은 정책 함수
+ * (resolveNavigationOrder: tier → 정본 디렉터리 순서)를 따른다. 이전에는
+ * 큐레이션 목록이 먼저, 나머지는 레지스트리 선언 순서로 붙어 표면마다
+ * 같은 목적지의 상대 순서가 달랐다. 큐레이션 항목은 이제 순서가 아니라
+ * 아이콘·단축키·검색어 보강만 맡고, 지도에 없는 큐레이션 전용 페이지
+ * (장르 탐색·비교·셰이퍼 소개·가이드)는 뒤에 큐레이션 순서 그대로 붙는다.
+ * 목적지 집합과 개수는 이전과 같다(레지스트리 37 + 전용 4 = 41).
+ */
 export const PALETTE_PAGES: PalettePage[] = [
-  ...CURATED_PALETTE_PAGES.map((page) => {
-    const href = canonicalSitePath(page.href);
-    const destination = navigationDestinations.find((item) => item.href === href);
-    if (!destination) return { ...page, href, trail: palettePageTrail(href, "ko") };
+  ...resolveNavigationOrder().map((item): PalettePage => {
+    const curated = curatedByPath.get(item.href);
+    if (!curated) {
+      return {
+        id: `page-nav-${item.id}`,
+        href: item.href,
+        title: item.label.ko,
+        subtitle: item.description.ko,
+        icon: item.icon,
+        category: "main",
+        trail: palettePageTrail(item.href, "ko"),
+        keywords: [item.label.en, item.description.en, item.href, ...(item.id === "all-menu" ? ["전체 기능", "서비스 메뉴", "all tools", "sitemap"] : [])],
+      };
+    }
     return {
-      ...page,
-      href,
-      title: destination.label.ko,
-      subtitle: destination.description.ko,
-      trail: palettePageTrail(href, "ko"),
-      keywords: [...page.keywords, page.title, page.subtitle, destination.label.en, destination.description.en],
+      ...curated,
+      href: item.href,
+      title: item.label.ko,
+      subtitle: item.description.ko,
+      trail: palettePageTrail(item.href, "ko"),
+      keywords: [...curated.keywords, curated.title, curated.subtitle, item.label.en, item.description.en],
     };
   }),
-  ...navigationDestinations.filter((item) => !curatedPagePaths.has(item.href)).map((item): PalettePage => ({
-    id: `page-nav-${item.id}`,
-    href: item.href,
-    title: item.label.ko,
-    subtitle: item.description.ko,
-    icon: item.icon,
-    category: "main",
-    trail: palettePageTrail(item.href, "ko"),
-    keywords: [item.label.en, item.description.en, item.href, ...(item.id === "all-menu" ? ["전체 기능", "서비스 메뉴", "all tools", "sitemap"] : [])],
-  })),
+  ...CURATED_PALETTE_PAGES.filter((page) => !registryPaths.has(canonicalSitePath(page.href))).map((page) => {
+    const href = canonicalSitePath(page.href);
+    return { ...page, href, trail: palettePageTrail(href, "ko") };
+  }),
 ];
 
 const ENGLISH_EXTRA_PAGES: Record<string, { title: string; subtitle: string }> = {

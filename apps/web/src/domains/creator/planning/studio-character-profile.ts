@@ -92,6 +92,36 @@ export function characterSheetView(
   });
 }
 
+/** 캐릭터 시트 하나를 서술 묶음에 넣는다 — 같은 characterId 시트가 있으면 교체, 없으면 끝에 붙인다. */
+export function upsertStoryCharacterProfile(
+  narrative: StudioStoryBibleNarrative,
+  profile: StudioStoryCharacterProfile,
+): StudioStoryBibleNarrative {
+  const exists = narrative.profiles.some((entry) => entry.characterId === profile.characterId);
+  const profiles = exists
+    ? narrative.profiles.map((entry) => (entry.characterId === profile.characterId ? profile : entry))
+    : [...narrative.profiles, profile];
+  return Object.freeze({
+    profiles: Object.freeze(profiles),
+    relations: narrative.relations,
+  });
+}
+
+/** 관계 하나를 서술 묶음에 넣는다 — 같은 id 관계가 있으면 교체, 없으면 끝에 붙인다. */
+export function upsertStoryCharacterRelation(
+  narrative: StudioStoryBibleNarrative,
+  relation: StudioStoryCharacterRelation,
+): StudioStoryBibleNarrative {
+  const exists = narrative.relations.some((entry) => entry.id === relation.id);
+  const relations = exists
+    ? narrative.relations.map((entry) => (entry.id === relation.id ? relation : entry))
+    : [...narrative.relations, relation];
+  return Object.freeze({
+    profiles: narrative.profiles,
+    relations: Object.freeze(relations),
+  });
+}
+
 /** 관계도(보기 전용) 간선 — 명시 관계 + fact 의 characterIds 쌍을 한 목록으로. */
 export interface CharacterGraphEdge {
   readonly fromCharacterId: string;
@@ -192,4 +222,70 @@ export function validateStoryBibleNarrative(
     }
   }
   return Object.freeze(issues);
+}
+
+/**
+ * 캐릭터 시트 인용 — 비트 작성(콘티)·대사 입력(식자) 표면이 소비하는 읽기 모델.
+ *
+ * 원칙:
+ * - 인용은 "보여주기" 전용이다. 시트 원본을 복사·변형해 새 원천을 만들지 않고,
+ *   trim 한 표시용 값만 돌려준다 (대사 단일 원천 원칙과 충돌하지 않게).
+ * - 없는 캐릭터는 지어내지 않는다 — 모르는 id 는 null/제외로 정직하게 드러낸다.
+ * - 시트가 비어 있어도 캐릭터 자체는 인용 대상이다: hasCitation=false 로 돌려줘
+ *   표면이 "시트 쓰기" 유도를 표시할 수 있게 한다 (빈 인용을 있는 것처럼 보이지 않기).
+ */
+export interface CharacterSheetCitation {
+  readonly characterId: string;
+  readonly characterName: string;
+  /** 말투 — 공백 정리된 표시용 문자열. 비어 있으면 "". */
+  readonly speechStyle: string;
+  /** 대표 대사 — 빈 줄을 뺀 표시용 목록. */
+  readonly signatureLines: readonly string[];
+  /** 외형 메모 — 공백 정리된 표시용 문자열. 비어 있으면 "". */
+  readonly appearanceNotes: string;
+  /** 인용할 내용(말투·대표 대사·외형 메모 중 하나라도)이 있으면 true. */
+  readonly hasCitation: boolean;
+}
+
+export function characterSheetCitation(
+  bible: StudioStoryBible,
+  narrative: StudioStoryBibleNarrative,
+  characterId: string,
+): CharacterSheetCitation | null {
+  const character = bible.characters.find((entry) => entry.id === characterId);
+  if (!character) return null;
+  const profile = narrative.profiles.find((entry) => entry.characterId === characterId) ?? null;
+  const speechStyle = profile?.speechStyle.trim() ?? "";
+  const signatureLines = Object.freeze(
+    (profile?.signatureLines ?? []).map((line) => line.trim()).filter((line) => line.length > 0),
+  );
+  const appearanceNotes = profile?.appearanceNotes.trim() ?? "";
+  return Object.freeze({
+    characterId: character.id,
+    characterName: character.name,
+    speechStyle,
+    signatureLines,
+    appearanceNotes,
+    hasCitation: speechStyle.length > 0 || signatureLines.length > 0 || appearanceNotes.length > 0,
+  });
+}
+
+/**
+ * 여러 캐릭터(예: 한 비트의 characterIds, 한 회차 비트 전체의 등장 캐릭터)를
+ * 입력 순서대로·중복 없이 인용한다. 모르는 id 는 건너뛴다.
+ */
+export function characterSheetCitations(
+  bible: StudioStoryBible,
+  narrative: StudioStoryBibleNarrative,
+  characterIds: readonly string[],
+): readonly CharacterSheetCitation[] {
+  const seen = new Set<string>();
+  const citations: CharacterSheetCitation[] = [];
+  for (const characterId of characterIds) {
+    if (seen.has(characterId)) continue;
+    seen.add(characterId);
+    const citation = characterSheetCitation(bible, narrative, characterId);
+    if (citation) citations.push(citation);
+  }
+  return Object.freeze(citations);
 }

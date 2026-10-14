@@ -1,0 +1,309 @@
+{
+  "schema": "toonstudio-asset-provenance/v1",
+  "assetDirectory": "apps/web/public/images/tarot",
+  "recordedOn": "2026-10-14",
+  "recordedFrom": "Repository main branch, per-file measurement (bytes, SHA-256, dimensions, embedded metadata, git history)",
+  "consumerCode": "apps/web/src/domains/fortune/tarot-art.ts",
+  "auditReference": "License audit REPORT issue 10 (tarot art 25, provenance missing)",
+  "fileCount": 25,
+  "files": [
+    {
+      "file": "major-00.webp",
+      "group": "major-arcana",
+      "bytes": 68316,
+      "dimensions": "640x960",
+      "sha256": "0c98a48c230a24ddb6d7d04d0b4cbb85afe7ba8840154ae5b742cb32cae1e92d",
+      "gitBlobSha": "71906ad7f71134c95b4ab94c1fe69f30e811e31c",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-01.webp",
+      "group": "major-arcana",
+      "bytes": 91256,
+      "dimensions": "640x960",
+      "sha256": "934f53b9a32f3479e17b50c402cf59570d51839ee746ffb0d3c7007cbdcc221e",
+      "gitBlobSha": "00ff0ccad1743db112637fe003b2c8ed6345dc71",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-02.webp",
+      "group": "major-arcana",
+      "bytes": 106922,
+      "dimensions": "640x960",
+      "sha256": "6fe28e38f79809fd6ab3ba58b2d722b897c2597ca85ba6f7934962b2c2fe47e7",
+      "gitBlobSha": "a44898c7e2effe62ba8b5c472657aaa4d929d520",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-03.webp",
+      "group": "major-arcana",
+      "bytes": 126288,
+      "dimensions": "640x960",
+      "sha256": "b8a24c931ef0b0a31bf720f27ffc4c9e6a235876aa57aabbe0aa21e9f7940c71",
+      "gitBlobSha": "93fbc49506c4510cf66ff70554ebe092c8c70920",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-04.webp",
+      "group": "major-arcana",
+      "bytes": 111056,
+      "dimensions": "640x960",
+      "sha256": "66c5754543e3871a462c05eda3f590f050d9f36161eaabb38a333be38158ccae",
+      "gitBlobSha": "434e0c36ee39088ca5f78eea26352e96a695641e",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-05.webp",
+      "group": "major-arcana",
+      "bytes": 113936,
+      "dimensions": "640x960",
+      "sha256": "eef9e9b193d85eb7cc075aa2f03f837a12bc1bc439a5bebaf0acef88ef47fb59",
+      "gitBlobSha": "4374764d40aa862c532568bdbf806a93f060163c",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-06.webp",
+      "group": "major-arcana",
+      "bytes": 105882,
+      "dimensions": "640x960",
+      "sha256": "92d7c9c444797b5caef98277a89441b5512091a65b6e24b19ac191a30012092e",
+      "gitBlobSha": "b7c01bb64d85830537abbdbe28143cdcbe70d13a",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-07.webp",
+      "group": "major-arcana",
+      "bytes": 131206,
+      "dimensions": "640x960",
+      "sha256": "0ef1b0bec6c5dc20c452a71a7a778d9cbba86be3d6983e388f27457242a8e587",
+      "gitBlobSha": "3031e5c17372c00c1ef0ad4c902d1e69a3ae0223",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-08.webp",
+      "group": "major-arcana",
+      "bytes": 70082,
+      "dimensions": "640x960",
+      "sha256": "83ad82f66352470596e9cd0d56675cd0fa4fb3970413482fd4027a442a953607",
+      "gitBlobSha": "d2b07ea462d6f2526013be88bdb033d2723c2eae",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-09.webp",
+      "group": "major-arcana",
+      "bytes": 84568,
+      "dimensions": "640x960",
+      "sha256": "afe640ad926608d9892edbdbc1eb07ba1b5d2578c5ce857daf866fee451700b8",
+      "gitBlobSha": "b5c2ec03ab5818aad157981274983b51c2780dea",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-10.webp",
+      "group": "major-arcana",
+      "bytes": 149530,
+      "dimensions": "640x960",
+      "sha256": "d486cc8fc7a709af3f780e639aeccf0f4603124a6fb7c631d2157323129f70de",
+      "gitBlobSha": "817083d3d450e2c4ff95d146dbfae4c2a883cd67",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-11.webp",
+      "group": "major-arcana",
+      "bytes": 94996,
+      "dimensions": "640x960",
+      "sha256": "3ae3df21044c371cad8c6dbe29ea958cb359f20acf817d0533f290e24c3dd912",
+      "gitBlobSha": "c272ccff3c4a53c73d1418c4c0c3e6f02fdc95e8",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-13.webp",
+      "group": "major-arcana",
+      "bytes": 54802,
+      "dimensions": "640x960",
+      "sha256": "f6792a2ed3060bb4c2bd02fe98ddb64e63d3a807b338813ad0038c7843fd604d",
+      "gitBlobSha": "25ba1c93c8bb5db2b4dfb6363cca2392dd12435d",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-14.webp",
+      "group": "major-arcana",
+      "bytes": 100198,
+      "dimensions": "640x960",
+      "sha256": "6df5fedccf77e93c66f00069a8317e0cac29734c48d22055ad54142bce972d2f",
+      "gitBlobSha": "020fbd6fc7d3aa037141ef6b718d3fa62ff40e02",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-16.webp",
+      "group": "major-arcana",
+      "bytes": 88584,
+      "dimensions": "640x960",
+      "sha256": "432c930b139e2a929b1413cf00e5fb621947c46a24d20a9ba539fa1a06761d3c",
+      "gitBlobSha": "8994ffc183869a3cc8fb316093fc9b4e10c348b4",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-17.webp",
+      "group": "major-arcana",
+      "bytes": 108150,
+      "dimensions": "640x960",
+      "sha256": "cf1011593dabd7e2a57ecb7b77a410bb36d6de90504fabb7d02cf2e8733cdcb4",
+      "gitBlobSha": "971fae96b8d4ed10e224beb83ddd254d3dadeb2d",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-18.webp",
+      "group": "major-arcana",
+      "bytes": 102558,
+      "dimensions": "640x960",
+      "sha256": "699ef4ed234c9f50cb33a79bcb4b20600a24b6b85e7ceda0b0db68c3539a79f0",
+      "gitBlobSha": "e961994159d9ae97519e7ba74b0447bbd552baff",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-19.webp",
+      "group": "major-arcana",
+      "bytes": 99236,
+      "dimensions": "640x960",
+      "sha256": "f967d88c86708a3a71b4aacac82fac90c2d8d74151f926f23ff6cdba7167530c",
+      "gitBlobSha": "8f50a906349e838193d0f26ffd81828d67c57bda",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-20.webp",
+      "group": "major-arcana",
+      "bytes": 87258,
+      "dimensions": "640x960",
+      "sha256": "f9a7859e337de89d8aaee85345acf937aba0b997d73428de833a0ca5be309c21",
+      "gitBlobSha": "f5038c3b4201516afec3a304d6ea9dbf3721abb0",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "major-21.webp",
+      "group": "major-arcana",
+      "bytes": 127016,
+      "dimensions": "640x960",
+      "sha256": "dabdaab62f83a7f97ea9786367f9ba5f61b1ee8921a4a672aea79d9d5a5e5ec8",
+      "gitBlobSha": "f756bbeadca906cd29efc3d33df3f6d436bdc850",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "suit-cups.webp",
+      "group": "minor-suit-representative",
+      "bytes": 104348,
+      "dimensions": "640x960",
+      "sha256": "1b8698d799d59a30bb80e05d5b64adf228760683ec6d76fab8b0e039d07a9c3b",
+      "gitBlobSha": "85af079f1bf92d522093ed12b469ffdb6259233f",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "suit-pentacles.webp",
+      "group": "minor-suit-representative",
+      "bytes": 135600,
+      "dimensions": "640x960",
+      "sha256": "be7579207be6873eef6c363dd62f7af9edb88bcf324bda0308524c2e478b84a2",
+      "gitBlobSha": "c3c5c71ebe33f134a2c4183131169ee4136c1412",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "suit-swords.webp",
+      "group": "minor-suit-representative",
+      "bytes": 68114,
+      "dimensions": "640x960",
+      "sha256": "aa06110e109cacbe23ee782186eb0aef81c710825ada6db1ec19604c4282fa19",
+      "gitBlobSha": "f11860169c8ff0c987573a8cb8ab763d3627df29",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "suit-wands.webp",
+      "group": "minor-suit-representative",
+      "bytes": 58736,
+      "dimensions": "640x960",
+      "sha256": "65a75a16fa514346d5c0a25f5a348f2e455f7fc238f455a405f4e4f42bfb9380",
+      "gitBlobSha": "4533e8e8d45c06138b22aef30fb96f24fe4373ca",
+      "provenanceStatus": "first-party-generated-tool-unrecorded",
+      "embeddedMetadata": "WebP VP8 chunk only; no EXIF, XMP, or C2PA metadata"
+    },
+    {
+      "file": "tarot-back.jpg",
+      "group": "card-back",
+      "bytes": 1286465,
+      "dimensions": "848x1264",
+      "sha256": "44389080f7142af26a0ebec03023e93d6c4db65de8c7260b2f26af43ed750ca1",
+      "gitBlobSha": "0a841f4b33c88813e32bd76f50e5ad965220a942",
+      "provenanceStatus": "provider-evidenced-ai-generated",
+      "embeddedMetadata": "JPEG with C2PA manifest (Google-signed): c2pa.created \"Created by Google Generative AI\", digitalSourceType trainedAlgorithmicMedia, SynthID watermark edit action"
+    }
+  ],
+  "generation": {
+    "webp24": {
+      "addedInCommit": "64a0f92dad (2026-10-06) feat(fortune): 사진풍 타로 카드 아트 24종 추가",
+      "descriptionInRepo": "사진풍 타로 카드 아트 — 달빛 관측소 무드로 생성한 래스터 아트 (tarot-art.ts header)",
+      "tool": "not recorded in repository or file metadata",
+      "prompt": "not recorded"
+    },
+    "cardBack": {
+      "addedInCommit": "d3ea253303 (2026-06-23) feat(fortune): add compatibility and today's fortune with tarot assets",
+      "tool": "Google Generative AI (per embedded C2PA manifest; specific product/model not stated in the manifest)",
+      "c2pa": {
+        "instanceId": "urn:c2pa:267ab227-9c16-e2f7-f56c-4f94bc6460bb",
+        "claimGenerator": "Google C2PA Core Generator Library",
+        "signer": "Google C2PA Media Services (Google LLC)",
+        "actions": [
+          "c2pa.created — Created by Google Generative AI",
+          "c2pa.edited — Applied imperceptible SynthID watermark"
+        ],
+        "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
+      }
+    }
+  },
+  "rights": {
+    "cardBack": {
+      "basis": "provider-terms-no-ownership-claim",
+      "provider": "Google",
+      "terms": "Gemini API Additional Terms of Service, \"Use of Generated Content\" (Effective March 23, 2026; checked 2026-10-14) and the equivalent provision in the Google Terms of Service",
+      "effect": "Google does not claim ownership over content generated with its services; the generating user is responsible for use of the generated content",
+      "commercialUse": "not restricted by the cited provision",
+      "caveats": [
+        "Google may generate the same or similar content for others (terms acknowledge this).",
+        "Copyright subsistence in purely AI-generated material varies by jurisdiction; this record states the terms basis, not a copyright registration.",
+        "The specific Google product, account, and plan used are not recorded; the C2PA manifest evidences the provider, not the account."
+      ]
+    },
+    "webp24": {
+      "basis": "first-party-creation-record",
+      "effect": "Committed directly to this repository by the project owner as project-generated raster art; no third-party source, stock asset, or commercial deck is recorded or referenced anywhere in the repository for these files",
+      "caveats": [
+        "The generation tool/model is not recorded, so no provider-terms basis can be cited for these 24 files yet. If the owner identifies the tool, append its name and the terms in effect on 2026-10-06 to this record.",
+        "Tarot iconography itself (arcana subjects, suit symbols) is traditional/public-domain subject matter; this does not by itself clear any specific artwork — the basis here is the first-party generation record above."
+      ]
+    }
+  },
+  "knownGaps": [
+    "Major arcana 12 and 15 have no art files by design; getTarotArtPath returns null and consumers fall back to the vector face (fixed by tarot-art.test.ts).",
+    "tarot-back.jpg is not referenced by tarot-art.ts; it is a standalone card-back asset in the same directory."
+  ]
+}

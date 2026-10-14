@@ -22,6 +22,12 @@ import type { PathVerbIR } from "@toonstudio/studio-project-model";
 import type { StudioPortablePathGeometryContour } from "./render/studio-canvaskit-adapter";
 import type { DrawEl, El } from "./studio-element-model";
 import {
+  bezierSegmentsToSvgPathData,
+  fitClosedContourToBezier,
+  flatPointsToBezierPoints,
+  type TraceBezierSegment,
+} from "./studio-image-trace-bezier";
+import {
   studioPathBooleanOutputFromPortableContours,
   studioPathBooleanPieceToDrawElSeed,
   type StudioPathBooleanPiece,
@@ -52,6 +58,8 @@ export interface StudioImageTracePreset {
   readonly simplifyFactor: number;
   /** 선화 프리셋의 잉크 판정 휘도 상한(0~255). */
   readonly inkLumaThreshold: number;
+  /** 베지어 피팅 허용 오차(샘플 좌표 단위). 작을수록 원본에 가깝고 세그먼트가 많다. */
+  readonly curveFitError: number;
 }
 
 export const STUDIO_IMAGE_TRACE_PRESETS: readonly StudioImageTracePreset[] = Object.freeze([
@@ -62,6 +70,7 @@ export const STUDIO_IMAGE_TRACE_PRESETS: readonly StudioImageTracePreset[] = Obj
     maxColors: 1,
     simplifyFactor: 1.5,
     inkLumaThreshold: 200,
+    curveFitError: 1.25,
   }),
   Object.freeze({
     id: "logo",
@@ -70,6 +79,7 @@ export const STUDIO_IMAGE_TRACE_PRESETS: readonly StudioImageTracePreset[] = Obj
     maxColors: 4,
     simplifyFactor: 2,
     inkLumaThreshold: 200,
+    curveFitError: 1,
   }),
   Object.freeze({
     id: "poster",
@@ -78,6 +88,7 @@ export const STUDIO_IMAGE_TRACE_PRESETS: readonly StudioImageTracePreset[] = Obj
     maxColors: 8,
     simplifyFactor: 2.5,
     inkLumaThreshold: 200,
+    curveFitError: 2,
   }),
 ]);
 
@@ -302,6 +313,32 @@ export function traceContoursToPieces(
 }
 
 // ---------------------------------------------------------------------------
+// 베지어 피팅 (순수) — 직선 근사 윤곽을 편집 가능한 곡선으로
+// ---------------------------------------------------------------------------
+
+export type { TraceBezierSegment };
+
+/**
+ * 조각 1개(키홀 평탄 링) → 베지어 세그먼트 열.
+ * 코너는 앵커로 고정돼 각이 유지되고 곡선부는 최소제곱 피팅된다.
+ * maxError 생략 시 1.5(페이지 좌표 단위).
+ */
+export function tracePieceToBezierSegments(
+  piece: StudioPathBooleanPiece,
+  maxError = 1.5,
+): TraceBezierSegment[] {
+  return fitClosedContourToBezier(flatPointsToBezierPoints(piece.points), { maxError });
+}
+
+/** 조각 1개 → 베지어 SVG path data (C 명령). 직선판 tracePieceToSvgPathData 의 곡선판. */
+export function tracePieceToBezierSvgPathData(
+  piece: StudioPathBooleanPiece,
+  maxError = 1.5,
+): string {
+  return bezierSegmentsToSvgPathData(tracePieceToBezierSegments(piece, maxError), true);
+}
+
+// ---------------------------------------------------------------------------
 // SVG 조립 (순수)
 // ---------------------------------------------------------------------------
 
@@ -353,6 +390,10 @@ export function buildStudioImageTraceSvg(
 export interface StudioImageTraceResult {
   readonly elements: readonly DrawEl[];
   readonly svg: string;
+  /** 색상 레이어별 베지어(C 명령) SVG — svg 와 같은 bounds·레이어 순서를 쓴다. */
+  readonly bezierSvg: string;
+  /** bezierSvg 전체의 베지어 세그먼트 수. */
+  readonly bezierSegmentCount: number;
   readonly layerCount: number;
   readonly pieceCount: number;
   readonly contourCount: number;
@@ -437,6 +478,8 @@ export async function traceStudioRasterImage(
   const strokeScale = Math.min(image.width / width, image.height / height);
   const elements: DrawEl[] = [];
   const svgLayers: StudioImageTraceSvgLayer[] = [];
+  const bezierSvgLayers: StudioImageTraceSvgLayer[] = [];
+  let bezierSegmentCount = 0;
   let contourCount = 0;
   let holeCount = 0;
   let minX = Infinity;
@@ -481,20 +524,33 @@ export async function traceStudioRasterImage(
     });
     const pathData = pathDataParts.filter((part) => part.length > 0).join(" ");
     if (pathData) svgLayers.push({ color: layer.color, pathData });
+    const bezierParts: string[] = [];
+    for (const piece of traced.pieces) {
+      const segments = tracePieceToBezierSegments(piece, preset.curveFitError);
+      bezierSegmentCount += segments.length;
+      const d = bezierSegmentsToSvgPathData(segments, true);
+      if (d) bezierParts.push(d);
+    }
+    const bezierPathData = bezierParts.join(" ");
+    if (bezierPathData) bezierSvgLayers.push({ color: layer.color, pathData: bezierPathData });
   }
 
   if (elements.length === 0) {
     throw new Error("트레이싱할 만큼 뚜렷한 영역을 찾지 못했습니다. 대비가 더 높은 원본으로 다시 시도해 주세요.");
   }
-  const svg = buildStudioImageTraceSvg(svgLayers, {
+  const traceBounds = {
     x: minX,
     y: minY,
     width: maxX - minX,
     height: maxY - minY,
-  });
+  };
+  const svg = buildStudioImageTraceSvg(svgLayers, traceBounds);
+  const bezierSvg = buildStudioImageTraceSvg(bezierSvgLayers, traceBounds);
   return Object.freeze({
     elements: Object.freeze(elements),
     svg,
+    bezierSvg,
+    bezierSegmentCount,
     layerCount: layers.length,
     pieceCount: elements.length,
     contourCount,

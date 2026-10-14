@@ -47,6 +47,76 @@ export {
   type StudioCommentAnchor,
 } from "./contracts/studio-comments-primitives";
 
+/** 피드백 3요소 패킷(설명+영역+레퍼런스)의 레퍼런스 첨부 상한 — 스레드당 최대 4개. */
+export const STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD = 4;
+export const STUDIO_COMMENTS_MAX_REFERENCE_LABEL_LENGTH = 120;
+export const STUDIO_COMMENTS_MAX_REFERENCE_URL_LENGTH = 2_048;
+
+/**
+ * 레퍼런스 첨부 출처. url=직접 링크, upload=업로드 이미지, reference-board=회차/개인
+ * 레퍼런스 보드 항목, compare-pool=비교 검수 풀 항목. 보드·풀 출처는 sourceId로
+ * 원본 항목과 연결돼 비교 검수 핀에서도 같은 레퍼런스를 따라갈 수 있다.
+ */
+export const StudioCommentReferenceSourceKindSchema = z.enum([
+  "url",
+  "upload",
+  "reference-board",
+  "compare-pool",
+]);
+
+export type StudioCommentReferenceSourceKind = z.infer<
+  typeof StudioCommentReferenceSourceKindSchema
+>;
+
+/**
+ * 피드백 레퍼런스 첨부 1건 — "어떻게 바꿔야 하는지"를 보여 주는 기준 이미지.
+ * We-toon 실증(Ko et al., UIST '22): 텍스트 모호함과 부적절한 레퍼런스가 수정
+ * 왕복 반복의 주원인이므로, 레퍼런스는 본문과 분리된 구조화 필드로 저장한다.
+ */
+export const StudioCommentReferenceSchema = z
+  .object({
+    id: IdSchema,
+    label: z
+      .string()
+      .trim()
+      .min(1)
+      .max(STUDIO_COMMENTS_MAX_REFERENCE_LABEL_LENGTH),
+    sourceKind: StudioCommentReferenceSourceKindSchema,
+    sourceId: IdSchema.optional(),
+    imageUrl: z
+      .string()
+      .trim()
+      .min(1)
+      .max(STUDIO_COMMENTS_MAX_REFERENCE_URL_LENGTH)
+      .optional(),
+  })
+  .strict()
+  .superRefine((reference, context) => {
+    if (
+      (reference.sourceKind === "reference-board" ||
+        reference.sourceKind === "compare-pool") &&
+      !reference.sourceId
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "board and compare-pool references require sourceId",
+        path: ["sourceId"],
+      });
+    }
+    if (
+      (reference.sourceKind === "url" || reference.sourceKind === "upload") &&
+      !reference.imageUrl
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "url and upload references require imageUrl",
+        path: ["imageUrl"],
+      });
+    }
+  });
+
+export type StudioCommentReference = z.infer<typeof StudioCommentReferenceSchema>;
+
 const CommentMessageShape = {
   id: IdSchema,
   author: StudioCommentActorSchema,
@@ -109,10 +179,27 @@ export const StudioCommentThreadSchema = z
     resolvedAt: TimestampSchema.optional(),
     resolvedBy: StudioCommentActorSchema.optional(),
     assignee: StudioCommentActorSchema.optional(),
+    references: z
+      .array(StudioCommentReferenceSchema)
+      .max(STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD)
+      .optional(),
   })
   .strict()
   .superRefine((thread, context) => {
     validateMessageFields(thread, context);
+    const referenceIds = new Set<string>();
+    for (let index = 0; index < (thread.references?.length ?? 0); index += 1) {
+      const referenceId = thread.references?.[index]?.id;
+      if (!referenceId) continue;
+      if (referenceIds.has(referenceId)) {
+        context.addIssue({
+          code: "custom",
+          message: "duplicate reference id",
+          path: ["references", index, "id"],
+        });
+      }
+      referenceIds.add(referenceId);
+    }
     if (thread.resolved && !thread.resolvedAt) {
       context.addIssue({
         code: "custom",
@@ -188,6 +275,8 @@ export interface StudioCommentThreadInput {
   author: StudioCommentActor;
   body: string;
   mentions?: readonly StudioCommentActor[];
+  /** 피드백 3요소 패킷의 레퍼런스 첨부. 없거나 비어 있으면 필드 자체를 저장하지 않는다. */
+  references?: readonly StudioCommentReference[];
 }
 
 export interface StudioCommentReplyInput {
@@ -271,6 +360,81 @@ function normalizeMentions(value: unknown): StudioCommentActor[] {
     if (mentions.length >= STUDIO_COMMENTS_MAX_MENTIONS) break;
   }
   return mentions;
+}
+
+const REFERENCE_SOURCE_KIND_ALIASES: Readonly<Record<string, StudioCommentReferenceSourceKind>> = {
+  url: "url",
+  link: "url",
+  upload: "upload",
+  file: "upload",
+  image: "upload",
+  "reference-board": "reference-board",
+  referenceboard: "reference-board",
+  board: "reference-board",
+  reference: "reference-board",
+  "compare-pool": "compare-pool",
+  comparepool: "compare-pool",
+  compare: "compare-pool",
+  pool: "compare-pool",
+};
+
+function normalizeReference(value: unknown): StudioCommentReference | null {
+  if (!isRecord(value)) return null;
+  const id = normalizeId(firstValue(value, ["id", "referenceId"]));
+  const label = normalizeText(
+    firstValue(value, ["label", "name", "title"]),
+    STUDIO_COMMENTS_MAX_REFERENCE_LABEL_LENGTH
+  );
+  const sourceId = normalizeId(
+    firstValue(value, ["sourceId", "itemId", "boardItemId", "poolItemId", "compareItemId"])
+  );
+  const rawImageUrl = normalizeText(
+    firstValue(value, ["imageUrl", "url", "src"]),
+    STUDIO_COMMENTS_MAX_REFERENCE_URL_LENGTH
+  );
+  const imageUrl = rawImageUrl || undefined;
+  const rawKind = firstValue(value, ["sourceKind", "kind", "source"]);
+  const aliasKind =
+    typeof rawKind === "string"
+      ? REFERENCE_SOURCE_KIND_ALIASES[rawKind.trim().toLowerCase()]
+      : undefined;
+  // 출처 표기가 없으면 식별자 형태로 추정한다: 풀/보드 ID가 있으면 그 출처, 이미지만 있으면 url.
+  const sourceKind =
+    aliasKind ??
+    (sourceId
+      ? firstValue(value, ["poolItemId", "compareItemId"]) !== undefined
+        ? "compare-pool"
+        : "reference-board"
+      : imageUrl
+        ? "url"
+        : undefined);
+  if (!id || !label || !sourceKind) return null;
+  const parsed = StudioCommentReferenceSchema.safeParse({
+    id,
+    label,
+    sourceKind,
+    ...(sourceId ? { sourceId } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+  });
+  return parsed.success ? parsed.data : null;
+}
+
+/**
+ * 레퍼런스 목록 정규화 — 불량 항목만 떨구고 스레드 자체는 유지한다(읽기 경로 관대성).
+ * id 중복은 첫 항목 우선, 상한 초과분은 입력 순서대로 자른다.
+ */
+function normalizeReferences(value: unknown): StudioCommentReference[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const references: StudioCommentReference[] = [];
+  const seenIds = new Set<string>();
+  for (const candidate of value) {
+    if (references.length >= STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD) break;
+    const reference = normalizeReference(candidate);
+    if (!reference || seenIds.has(reference.id)) continue;
+    seenIds.add(reference.id);
+    references.push(reference);
+  }
+  return references.length > 0 ? references : undefined;
 }
 
 function normalizeAnchor(value: unknown): StudioCommentAnchor | null {
@@ -427,6 +591,10 @@ function normalizeThread(
   const mentions = normalizeMentions(
     firstValue(nestedComment, ["mentions"]) ?? firstValue(value, ["mentions"])
   );
+  const references = normalizeReferences(
+    firstValue(value, ["references", "referenceAttachments", "attachments"])
+      ?? firstValue(nestedComment, ["references", "referenceAttachments", "attachments"])
+  );
 
   return StudioCommentThreadSchema.parse({
     id,
@@ -441,6 +609,7 @@ function normalizeThread(
     ...(resolvedAt ? { resolvedAt } : {}),
     ...(resolvedBy ? { resolvedBy } : {}),
     ...(assignee ? { assignee } : {}),
+    ...(references ? { references } : {}),
   });
 }
 
@@ -539,6 +708,46 @@ function canonicalMentions(value: unknown): StudioCommentActor[] {
   return normalizeMentions(value);
 }
 
+/** 쓰기 경로용 레퍼런스 검증 — 읽기 경로와 달리 불량이면 조용히 떨구지 않고 명시적으로 실패한다. */
+function canonicalReferences(
+  value: readonly StudioCommentReference[] | undefined
+): StudioCommentReference[] | undefined {
+  if (!value || value.length === 0) return undefined;
+  if (!Array.isArray(value)) throw new Error("레퍼런스 첨부 목록이 올바르지 않아요.");
+  if (value.length > STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD) {
+    throw new Error(
+      `레퍼런스는 최대 ${STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD}개까지 첨부할 수 있어요.`
+    );
+  }
+  const parsed = z.array(StudioCommentReferenceSchema).safeParse(value);
+  if (!parsed.success) throw new Error("레퍼런스 첨부가 올바르지 않아요.");
+  const ids = new Set<string>();
+  for (const reference of parsed.data) {
+    if (ids.has(reference.id)) throw new Error("레퍼런스 ID가 중복됐어요.");
+    ids.add(reference.id);
+  }
+  return parsed.data.map((reference) => ({ ...reference }));
+}
+
+function referencesEqual(
+  left: readonly StudioCommentReference[] | undefined,
+  right: readonly StudioCommentReference[] | undefined
+): boolean {
+  const a = left ?? [];
+  const b = right ?? [];
+  return (
+    a.length === b.length &&
+    a.every(
+      (reference, index) =>
+        reference.id === b[index]?.id &&
+        reference.label === b[index]?.label &&
+        reference.sourceKind === b[index]?.sourceKind &&
+        reference.sourceId === b[index]?.sourceId &&
+        reference.imageUrl === b[index]?.imageUrl
+    )
+  );
+}
+
 function canonicalBody(value: unknown): string {
   const body = normalizeText(value, STUDIO_COMMENTS_MAX_BODY_LENGTH);
   if (!body) throw new Error("댓글 내용을 입력해 주세요.");
@@ -598,6 +807,7 @@ export function addStudioCommentThread(
   const id = canonicalInputId(input.id);
   if (messageIdExists(document, id)) throw new Error("이미 사용 중인 댓글 또는 답글 ID예요.");
   const timestamp = canonicalNow(now);
+  const references = canonicalReferences(input.references);
   const thread = StudioCommentThreadSchema.parse({
     id,
     anchor: canonicalInputAnchor(input.anchor),
@@ -608,6 +818,7 @@ export function addStudioCommentThread(
     updatedAt: timestamp,
     replies: [],
     resolved: false,
+    ...(references ? { references } : {}),
   });
   return { ...document, threads: [...document.threads, thread] };
 }
@@ -808,6 +1019,32 @@ export function assignStudioCommentThread(
   threads[threadIndex] = StudioCommentThreadSchema.parse({
     ...thread,
     ...(nextAssignee ? { assignee: nextAssignee } : {}),
+    updatedAt: canonicalNow(now),
+  });
+  return { ...document, threads };
+}
+
+/**
+ * 스레드의 레퍼런스 첨부를 통째로 교체한다 (피드백 패킷의 세 번째 요소).
+ * 빈 목록이면 필드를 제거해 레거시 형태와 같아지고, 내용이 같으면 같은 문서를 반환한다.
+ */
+export function setStudioCommentThreadReferences(
+  document: StudioCommentsDocument,
+  threadId: string,
+  references: readonly StudioCommentReference[] | null,
+  now = new Date()
+): StudioCommentsDocument {
+  assertCanonicalDocument(document);
+  const threadIndex = document.threads.findIndex((thread) => thread.id === threadId);
+  if (threadIndex < 0) return document;
+  const current = document.threads[threadIndex];
+  const nextReferences = canonicalReferences(references ?? undefined);
+  if (referencesEqual(current.references, nextReferences)) return document;
+  const { references: _references, ...thread } = current;
+  const threads = document.threads.slice();
+  threads[threadIndex] = StudioCommentThreadSchema.parse({
+    ...thread,
+    ...(nextReferences ? { references: nextReferences } : {}),
     updatedAt: canonicalNow(now),
   });
   return { ...document, threads };

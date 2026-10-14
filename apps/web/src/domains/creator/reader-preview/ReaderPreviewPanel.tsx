@@ -9,6 +9,9 @@
  * - 안전영역 가이드라인: 좌우 16px 점선 가이드 + 침범 요소 마커
  * - 컷 길이 경고: 과도하게 긴 컷(>3화면)/짧은 컷(<0.5화면)/겹친 컷을 체크리스트에 집계
  * - 스크롤 페이싱 시뮬레이션: 자동 스크롤 재생/일시정지 + 속도 프리셋 + 현재 화면 표시
+ * - 실기기 체감: 기기 프리셋(360~430px) 전환 + 폰 높이만큼의 프레임 안에서만
+ *   스크롤 — "N화면째" 표시와 자동 스크롤이 모달 높이가 아닌 실제 기기
+ *   한 화면을 기준으로 동작한다
  *
  * 기하학 계산은 전부 `./reader-preview-analysis` (순수 함수)에 위임한다 — 이 파일은
  * 렌더와 인터랙션만 담당한다. 페이지는 `StudioScrollPreviewPanel` 과 같은
@@ -27,6 +30,7 @@ import {
   Pause,
   Play,
   ShieldCheck,
+  Smartphone,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
@@ -39,11 +43,14 @@ import { StudioPageThumbnail } from "../StudioPageThumbnails";
 import type { ThumbPageLike } from "../studio-page-thumbs";
 
 import {
-  READER_PREVIEW_DEVICE_WIDTH_PX,
+  READER_PREVIEW_DEFAULT_DEVICE_PRESET_ID,
+  READER_PREVIEW_DEVICE_PRESETS,
   READER_PREVIEW_PAGE_GAP_PX,
   READER_PREVIEW_SAFE_AREA_INSET_PX,
   analyzeReaderPreview,
+  readerPreviewDevicePreset,
   type ReaderPreviewAnalysis,
+  type ReaderPreviewDevicePresetId,
   type ReaderPreviewPageAnalysis,
   type ReaderPreviewWarning,
   type ReaderPreviewWarningSeverity,
@@ -73,7 +80,6 @@ const AUTO_SCROLL_SPEED_PRESETS = [
   { id: "fast", pxPerSecond: 420 },
 ] as const;
 
-const FRAME_PX = READER_PREVIEW_DEVICE_WIDTH_PX;
 const SAFE_INSET_PX = READER_PREVIEW_SAFE_AREA_INSET_PX;
 
 function warningTone(severity: ReaderPreviewWarningSeverity): string {
@@ -388,6 +394,9 @@ export function ReaderPreviewPanel({
 }: ReaderPreviewPanelProps): ReactElement | null {
   const t = useT();
   const [checklistCollapsed, setChecklistCollapsed] = useState(false);
+  const [devicePresetId, setDevicePresetId] =
+    useState<ReaderPreviewDevicePresetId>(READER_PREVIEW_DEFAULT_DEVICE_PRESET_ID);
+  const device = readerPreviewDevicePreset(devicePresetId);
   const [autoScrollSpeed, setAutoScrollSpeed] = useState<number>(240);
   const [autoScrolling, setAutoScrolling] = useState(false);
   const [screenPosition, setScreenPosition] = useState(0);
@@ -395,7 +404,14 @@ export function ReaderPreviewPanel({
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const initialPageId = useRef(currentPageId).current;
 
-  const analysis = useMemo(() => analyzeReaderPreview(pages), [pages]);
+  const analysis = useMemo(
+    () =>
+      analyzeReaderPreview(pages, {
+        readerWidthPx: device.widthPx,
+        viewportHeightPx: device.viewportHeightPx,
+      }),
+    [pages, device],
+  );
   const pageLabels = useMemo(() => buildPageLabelMap(pages), [pages]);
   const pageAnalysisById = useMemo(
     () => new Map(analysis.pages.map((pageAnalysis) => [pageAnalysis.pageId, pageAnalysis])),
@@ -498,6 +514,29 @@ export function ReaderPreviewPanel({
             </span>
             <div
               role="group"
+              aria-label={t("reader.preview.deviceLabel")}
+              className="flex min-h-8 items-center gap-1 rounded-lg border border-line bg-card pl-2"
+            >
+              <Smartphone size={12} aria-hidden className="shrink-0 text-fg-3" />
+              <select
+                aria-label={t("reader.preview.deviceLabel")}
+                value={devicePresetId}
+                onChange={(event) => {
+                  setDevicePresetId(event.target.value as ReaderPreviewDevicePresetId);
+                  // 기기가 바뀌면 스크롤 기준 높이가 달라진다 — 재생 중이면 멈춰 위치 혼란을 막는다.
+                  setAutoScrolling(false);
+                }}
+                className="min-h-8 border-0 bg-transparent px-1 text-[0.7rem] font-medium text-fg-2 outline-none"
+              >
+                {READER_PREVIEW_DEVICE_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {t(`reader.preview.device.${preset.id}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div
+              role="group"
               aria-label={t("reader.preview.autoScroll")}
               className="flex min-h-8 items-center overflow-hidden rounded-lg border border-line bg-card"
             >
@@ -558,11 +597,7 @@ export function ReaderPreviewPanel({
           </div>
         </div>
 
-        <div
-          ref={scrollViewportRef}
-          onScroll={handleViewportScroll}
-          className="min-h-0 flex-1 overflow-y-auto bg-raised/30 px-3 py-6"
-        >
+        <div className="min-h-0 flex-1 overflow-y-auto bg-raised/30 px-3 py-6">
           <div className="mx-auto flex w-full max-w-4xl flex-col items-stretch gap-4 md:flex-row md:items-start">
             <ReadingChecklist
               analysis={analysis}
@@ -571,18 +606,23 @@ export function ReaderPreviewPanel({
               collapsed={checklistCollapsed}
               onToggleCollapsed={() => setChecklistCollapsed((collapsed) => !collapsed)}
             />
-            <div className="mx-auto w-full shrink-0 md:mx-0" style={{ width: FRAME_PX, maxWidth: "100%" }}>
-              {/* 디바이스 프레임 — 실제 모바일 폭 390px */}
+            <div className="mx-auto w-full shrink-0 md:mx-0" style={{ width: device.widthPx, maxWidth: "100%" }}>
+              {/* 디바이스 프레임 — 선택한 실기기 규격 폭×높이, 스크롤은 프레임 안에서만 */}
               <div className="overflow-hidden rounded-2xl border border-line bg-black/40 shadow-xl">
                 <div className="flex items-center justify-center gap-1.5 border-b border-line bg-panel px-3 py-1.5">
                   <span aria-hidden className="size-1.5 rounded-full bg-line" />
                   <span aria-hidden className="size-1.5 rounded-full bg-line" />
                   <span aria-hidden className="size-1.5 rounded-full bg-line" />
                   <span className="ml-1 text-[0.62rem] font-semibold tabular-nums text-fg-3">
-                    {FRAME_PX}px
+                    {t(`reader.preview.device.${device.id}`)} · {device.widthPx}px × {device.viewportHeightPx}px
                   </span>
                 </div>
-                <div className="bg-canvas px-0 py-3">
+                <div
+                  ref={scrollViewportRef}
+                  onScroll={handleViewportScroll}
+                  className="overflow-y-auto overscroll-contain bg-canvas px-0 py-3"
+                  style={{ height: device.viewportHeightPx }}
+                >
                   {pages.length === 0 ? (
                     <p className="mx-3 rounded-lg border border-dashed border-line px-3 py-8 text-center text-xs text-fg-3">
                       {t("reader.preview.noWarnings")}
@@ -598,7 +638,7 @@ export function ReaderPreviewPanel({
                           pageAnalysisById.get(page.id) ??
                           ({
                             pageId: page.id,
-                            scale: FRAME_PX / CANVAS_W,
+                            scale: device.widthPx / CANVAS_W,
                             cuts: [],
                             warnings: [],
                             screenCount: 0,

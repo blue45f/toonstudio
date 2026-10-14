@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { proxiedCoverSrc, proxiedCoverSrcSet } from "./cover-proxy";
+import {
+  COVER_STANDARD_WIDTHS,
+  coverStandardSrcSet,
+  isCoverStandardWidth,
+  proxiedCoverSrc,
+  proxiedCoverSrcSet,
+} from "./cover-proxy";
 
 describe("proxiedCoverSrc", () => {
   it("허용 호스트(pstatic) 표지를 프록시 URL로 바꾼다", () => {
@@ -66,6 +72,64 @@ describe("proxiedCoverSrc", () => {
 
   it.each(["", "not a url", "cover.png"])("URL로 해석할 수 없는 값은 그대로 둔다: %j", (src) => {
     expect(proxiedCoverSrc(src)).toBe(src);
+  });
+});
+
+describe("proxiedCoverSrc 표준 폭 힌트", () => {
+  it("표준 폭을 주면 프록시 URL에 &w= 를 붙인다", () => {
+    expect(proxiedCoverSrc("https://image-comic.pstatic.net/a.jpg", 320)).toBe(
+      "/api/cover?u=https%3A%2F%2Fimage-comic.pstatic.net%2Fa.jpg&w=320"
+    );
+  });
+
+  it("이미 프록시 경유인 URL에도 폭 힌트를 붙일 수 있다", () => {
+    expect(proxiedCoverSrc("/api/cover?u=https%3A%2F%2Fimage-comic.pstatic.net%2Fa.jpg", 160)).toBe(
+      "/api/cover?u=https%3A%2F%2Fimage-comic.pstatic.net%2Fa.jpg&w=160"
+    );
+  });
+
+  it("이미 폭이 지정된 프록시 URL은 존중한다(이중 지정 방지)", () => {
+    const withWidth = "/api/cover?u=https%3A%2F%2Fimage-comic.pstatic.net%2Fa.jpg&w=480";
+    expect(proxiedCoverSrc(withWidth, 160)).toBe(withWidth);
+  });
+
+  it.each([0, 100, 321, 1024, -160])("표준 폭이 아닌 값(%i)은 붙이지 않는다", (width) => {
+    expect(proxiedCoverSrc("https://image-comic.pstatic.net/a.jpg", width)).toBe(
+      "/api/cover?u=https%3A%2F%2Fimage-comic.pstatic.net%2Fa.jpg"
+    );
+    expect(isCoverStandardWidth(width)).toBe(false);
+  });
+
+  it("프록시를 타지 않는 표지(KMAS·로컬)에는 폭 힌트를 붙이지 않는다", () => {
+    const kmas = "https://www.kmas.or.kr/common/file/atchmnflDownload.ajax?fileImageId=1";
+    expect(proxiedCoverSrc(kmas, 320)).toBe(kmas);
+    expect(proxiedCoverSrc("/assets/local-cover.png", 320)).toBe("/assets/local-cover.png");
+  });
+});
+
+describe("coverStandardSrcSet", () => {
+  it("프록시 표지는 표준 폭 전체를 후보로 만든다", () => {
+    const srcSet = coverStandardSrcSet("https://image-comic.pstatic.net/a.jpg");
+    expect(srcSet).toBe(
+      COVER_STANDARD_WIDTHS.map(
+        (w) => `/api/cover?u=https%3A%2F%2Fimage-comic.pstatic.net%2Fa.jpg&w=${w} ${w}w`
+      ).join(", ")
+    );
+  });
+
+  it("생성된 srcSet은 CoverImage의 proxiedCoverSrcSet을 그대로 통과한다(이중 변환 없음)", () => {
+    const srcSet = coverStandardSrcSet("https://image-comic.pstatic.net/a.jpg");
+    expect(srcSet).toBeDefined();
+    expect(proxiedCoverSrcSet(srcSet!)).toBe(srcSet);
+  });
+
+  it.each([
+    "https://www.kmas.or.kr/common/file/atchmnflDownload.ajax?fileImageId=1",
+    "/assets/local-cover.png",
+    "https://images.unsplash.com/photo-1",
+    "",
+  ])("프록시를 타지 않는 표지는 후보를 만들지 않는다: %j", (src) => {
+    expect(coverStandardSrcSet(src)).toBeUndefined();
   });
 });
 

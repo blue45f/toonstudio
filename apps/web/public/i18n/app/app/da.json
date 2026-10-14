@@ -1,5 +1,6 @@
 {
   "app.name": "ToonStudio",
   "app.brandBeta": "Beta-tjeneste  Data og funktioner kan ændre sig",
-  "app.loading": "Opladning"
+  "app.loading": "Opladning",
+  "app.skipToContent": "Skip to main content"
 }

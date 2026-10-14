@@ -7,11 +7,11 @@ import {
 } from "./organization-model";
 
 /**
- * 조직 데이터 접근 seam.
+ * 조직 데이터 접근 seam — 서버 계약 이전의 로컬 구현체.
  *
- * 조직 서버 계약(`/production/organizations`)이 생기기 전까지는 로컬 구현체가 정본이다.
- * 계약이 생기면 이 인터페이스의 API 구현체로 교체하고, 로컬 상태는 1회 가져오기
- * 대상으로만 남긴다. 페이지 코드는 이 인터페이스만 의존하므로 교체 범위가 좁다.
+ * 조직의 정본은 서버 계약(`/production/organizations`, organization-api)으로
+ * 이관됐다. 이 로컬 디렉터리는 계약 이전에 이 기기에 저장된 조직 상태를 읽는
+ * 1회 가져오기 입력으로만 남는다. 새 조직 표면은 이 인터페이스를 쓰지 않는다.
  */
 export interface OrganizationDirectory {
   load(ownerUserId: string): LocalOrganizationState;

@@ -6,6 +6,7 @@
  * 알 수 없는 코드가 들어오면 원문을 그대로 보여 주어 데이터를 숨기지 않는다.
  */
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
+import type { CollaborationRole } from "@toonstudio/core/collaboration";
 import type {
   AssignmentStatus,
   ClarificationCategory,
@@ -46,8 +47,10 @@ function pick<K extends string>(
 export const PRODUCTION_PROCESS_LABELS: Readonly<Record<string, BilingualLabel>> = Object.freeze({
   "story-lock": { ko: "스토리", en: "Story" },
   storyboard: { ko: "콘티", en: "Storyboard" },
+  sketch: { ko: "스케치·데생", en: "Sketch" },
   "line-art": { ko: "선화", en: "Line art" },
   background: { ko: "배경", en: "Background" },
+  undercolor: { ko: "밑색", en: "Undercolor" },
   color: { ko: "채색", en: "Color" },
   lettering: { ko: "식자", en: "Lettering" },
   "rights-preflight": { ko: "권리 점검", en: "Rights check" },
@@ -59,8 +62,10 @@ export const PRODUCTION_PROCESS_LABELS: Readonly<Record<string, BilingualLabel>>
 export const PRODUCTION_DEFAULT_PROCESS_ORDER: readonly string[] = Object.freeze([
   "story-lock",
   "storyboard",
+  "sketch",
   "line-art",
   "background",
+  "undercolor",
   "color",
   "lettering",
   "rights-preflight",
@@ -80,6 +85,114 @@ export function productionProcessLabel(
   if (step) return step.name;
   const label = PRODUCTION_PROCESS_LABELS[canonical];
   return label ? localize(label.ko, label.en) : processKey;
+}
+
+/**
+ * 기본 공정에는 들어가지 않지만, 팀이 골라서 켤 수 있는 선택 단계.
+ * 구인 게시판이 독립 분야로 세는 스케치·데생과 밑색이 기본 프로필에는 없어
+ * 분업 스튜디오가 단계를 직접 만들어야 했던 불일치를 메운다.
+ * 순서는 `insertAfter` 공정 바로 뒤이며, 켜지 않은 팀의 보드에는 열이 생기지 않는다
+ * (공정 열은 실제 단계·작업이 있을 때만 만들어진다).
+ */
+export interface ProductionOptionalProcessStep {
+  readonly key: string;
+  readonly insertAfter: string;
+  readonly defaultRole: ProductionRoleType;
+  readonly estimateHours: number;
+}
+
+export const PRODUCTION_OPTIONAL_PROCESS_STEPS: readonly ProductionOptionalProcessStep[] = Object.freeze([
+  { key: "sketch", insertAfter: "storyboard", defaultRole: "line-artist", estimateHours: 8 },
+  { key: "undercolor", insertAfter: "line-art", defaultRole: "colorist", estimateHours: 6 },
+]);
+
+export function productionOptionalProcessStep(processKey: string): ProductionOptionalProcessStep | null {
+  const canonical = canonicalProductionProcessKey(processKey);
+  return PRODUCTION_OPTIONAL_PROCESS_STEPS.find((step) => step.key === canonical) ?? null;
+}
+
+/**
+ * 구인·의뢰 분야 분류와 제작 공정의 정본 매핑표.
+ * 구인 게시판(CollaborationBoardPage)의 작업 분야 필터와 제작 표면이 이 표 하나를 소비한다.
+ * 분야 이름(ko)은 core `COLLABORATION_ROLES`의 문구와 같아야 하고,
+ * `processKeys`의 모든 키는 `PRODUCTION_PROCESS_LABELS`에 이름표가 있어야 한다.
+ * 대응하는 공정이 없는 분야(3D 모델·소재, 모션·영상, 기타·복합 작업)는 빈 목록으로 명시한다.
+ */
+export interface CollaborationRoleProcessMapping {
+  readonly label: BilingualLabel;
+  readonly processKeys: readonly string[];
+}
+
+export const COLLABORATION_ROLE_PROCESS_MAP: Readonly<
+  Record<CollaborationRole, CollaborationRoleProcessMapping>
+> = Object.freeze({
+  story: {
+    label: { ko: "스토리·콘티", en: "Story · storyboards" },
+    processKeys: Object.freeze(["story-lock", "storyboard"]),
+  },
+  sketch: {
+    label: { ko: "러프·스케치", en: "Roughs · sketches" },
+    processKeys: Object.freeze(["sketch"]),
+  },
+  ink: {
+    label: { ko: "선화", en: "Line art" },
+    processKeys: Object.freeze(["line-art"]),
+  },
+  flat: {
+    label: { ko: "밑색", en: "Flats" },
+    processKeys: Object.freeze(["undercolor"]),
+  },
+  color: {
+    label: { ko: "채색·명암", en: "Coloring · shading" },
+    processKeys: Object.freeze(["color"]),
+  },
+  background: {
+    label: { ko: "배경", en: "Backgrounds" },
+    processKeys: Object.freeze(["background"]),
+  },
+  model3d: {
+    label: { ko: "3D 모델·소재", en: "3D models · assets" },
+    processKeys: Object.freeze([]),
+  },
+  lettering: {
+    label: { ko: "식자·편집", en: "Lettering · editing" },
+    processKeys: Object.freeze(["lettering"]),
+  },
+  animation: {
+    label: { ko: "모션·영상", en: "Motion · video" },
+    processKeys: Object.freeze([]),
+  },
+  other: {
+    label: { ko: "기타·복합 작업", en: "Other · mixed" },
+    processKeys: Object.freeze([]),
+  },
+});
+
+/** 구인 분야의 이름표. 모르는 분야 키면 null을 돌려주어 호출자가 기존 문구로 폴백할 수 있게 한다. */
+export function collaborationRoleBilingualLabel(role: string): BilingualLabel | null {
+  return (
+    (COLLABORATION_ROLE_PROCESS_MAP as Readonly<Record<string, CollaborationRoleProcessMapping>>)[
+      role
+    ]?.label ?? null
+  );
+}
+
+/** 구인 분야가 대응하는 제작 공정 키 목록. 대응 공정이 없거나 모르는 분야면 빈 목록이다. */
+export function collaborationRoleProcessKeys(role: string): readonly string[] {
+  return (
+    (COLLABORATION_ROLE_PROCESS_MAP as Readonly<Record<string, CollaborationRoleProcessMapping>>)[
+      role
+    ]?.processKeys ?? Object.freeze([])
+  );
+}
+
+/** 제작 공정 키가 속한 구인 분야. 어느 분야에도 속하지 않는 공정이면 null이다. */
+export function productionProcessCollaborationRole(processKey: string): CollaborationRole | null {
+  const canonical = canonicalProductionProcessKey(processKey);
+  for (const [role, mapping] of Object.entries(COLLABORATION_ROLE_PROCESS_MAP)) {
+    if (mapping.processKeys.includes(canonical)) return role as CollaborationRole;
+  }
+  return null;
 }
 
 export const REVIEW_LANE_LABELS: Readonly<Record<ReviewLane, BilingualLabel>> = Object.freeze({

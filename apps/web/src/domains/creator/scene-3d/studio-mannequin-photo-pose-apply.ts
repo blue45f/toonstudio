@@ -24,6 +24,44 @@ export interface StudioMannequinPhotoPoseLandmark {
   readonly visibility?: number;
 }
 
+/**
+ * 사진 포즈 적용 범위. 스캐너 UI의 적용 범위 선택(전신/상체/팔·손)과 같은 값이다.
+ * VRM 경로는 payload.bones를 범위로 걸러 적용하지만, 데생 인형 경로는 랜드마크에서
+ * 관절을 다시 풀기 때문에 이 범위를 모르면 사용자가 "상체"를 골라도 다리까지
+ * 덮어쓴다. 범위 밖 관절은 현재 포즈를 그대로 유지한다.
+ */
+export type StudioMannequinPhotoPoseJointScope = "full" | "upper" | "arms";
+
+const PHOTO_POSE_LEG_JOINTS: ReadonlySet<StudioMannequinJointId> = new Set([
+  "leftUpperLeg",
+  "leftLowerLeg",
+  "leftFoot",
+  "rightUpperLeg",
+  "rightLowerLeg",
+  "rightFoot",
+]);
+
+const PHOTO_POSE_ARM_JOINTS: ReadonlySet<StudioMannequinJointId> = new Set([
+  "leftShoulder",
+  "leftUpperArm",
+  "leftLowerArm",
+  "leftHand",
+  "rightShoulder",
+  "rightUpperArm",
+  "rightLowerArm",
+  "rightHand",
+]);
+
+/** 관절이 사진 포즈 적용 범위 안에 있는지. 알 수 없는 범위는 "full"로 본다. */
+export function isStudioMannequinJointInPhotoPoseScope(
+  jointId: StudioMannequinJointId,
+  scope: StudioMannequinPhotoPoseJointScope | undefined,
+): boolean {
+  if (scope === "arms") return PHOTO_POSE_ARM_JOINTS.has(jointId);
+  if (scope === "upper") return jointId !== "pelvis" && !PHOTO_POSE_LEG_JOINTS.has(jointId);
+  return true;
+}
+
 export interface StudioMannequinPhotoPoseInput {
   readonly landmarks?: Readonly<Record<string, StudioMannequinPhotoPoseLandmark>>;
   /** Validated MediaPipe Pose world landmarks from the shared VRM photo scanner. */
@@ -37,6 +75,11 @@ export interface StudioMannequinPhotoPoseInput {
   readonly currentPose?: StudioMannequinPose;
   readonly mirrorMode?: boolean;
   readonly minimumVisibility?: number;
+  /**
+   * 스캐너에서 고른 적용 범위. mediaPipeLandmarks·handDetections에서 푼 관절에만
+   * 적용되고, 호출자가 직접 준 joints는 명시 지시라 범위로 거르지 않는다.
+   */
+  readonly jointScope?: StudioMannequinPhotoPoseJointScope;
   readonly joints?: Readonly<Partial<Record<StudioMannequinJointId, StudioMannequinVec3>>>;
   readonly pelvisOffset?: StudioMannequinVec3;
 }
@@ -100,6 +143,14 @@ export function createStudioMannequinPhotoPoseApplyPlan(
         minVisibility: minimumVisibility,
       });
       for (const [key, value] of Object.entries(solved)) {
+        if (
+          isStudioMannequinJointId(key)
+          && !isStudioMannequinJointInPhotoPoseScope(key, input.jointScope)
+        ) {
+          // 범위 밖 관절은 건너뛰고 현재 포즈를 유지한다(스킵으로 보고).
+          skippedJoints.push(key);
+          continue;
+        }
         applyJoint(key, value);
       }
     }

@@ -65,20 +65,46 @@ describe("MarketNavHeader", () => {
   );
 
   it.each([
+    ["/market/browse", "찾아보기"],
     ["/market/library", "내 에셋"],
     ["/market/wishlist", "찜 목록"],
-    ["/market/manage", "배포하기"],
-    ["/market/publish", "배포하기"],
+    // 판매 진입은 판매자 센터 하나만 노출한다 (S1-5). 등록·관리 URL에서도 같은 탭이 현재 위치다.
+    ["/market/seller", "판매자 센터"],
+    ["/market/manage", "판매자 센터"],
+    ["/market/publish", "판매자 센터"],
   ])("marks the current top-level market place for %s", (route, label) => {
     render(<MemoryRouter initialEntries={[route]}><MarketNavHeader /></MemoryRouter>);
     expect(screen.getByRole("link", { name: label }).getAttribute("aria-current"))
       .toBe("page");
   });
 
+  it("sends 찾아보기 to the browse list at /market/browse, not the market home (P-10)", () => {
+    render(
+      <MemoryRouter initialEntries={["/market"]}>
+        <MarketNavHeader />
+        <Routes>
+          <Route path="/market" element={<p>마켓 홈</p>} />
+          <Route path="/market/browse" element={<p>탐색 결과</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const browse = screen.getByRole("link", { name: "찾아보기" });
+    expect(browse.getAttribute("href")).toBe("/market/browse");
+    // 마켓 홈에서는 탐색 계열이라 강조(active)만 되고 현재 위치(current)는 아니다 — 도착지는 목록이다.
+    expect(browse.getAttribute("aria-current")).toBeNull();
+    expect(browse.className).toContain("bg-accent");
+    fireEvent.click(browse);
+    expect(screen.getByText("탐색 결과")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "찾아보기" }).getAttribute("aria-current"))
+      .toBe("page");
+  });
+
   it("keeps the store navigation to four places that all stay visible on narrow screens", () => {
     render(<MemoryRouter initialEntries={["/market/browse"]}><MarketNavHeader /></MemoryRouter>);
     const navigation = screen.getByRole("navigation", { name: "마켓 주요 내비게이션" });
-    const places = ["찾아보기", "내 에셋", "찜 목록", "배포하기"].map((label) => screen.getByRole("link", { name: label }));
+    const places = ["찾아보기", "내 에셋", "찜 목록", "판매자 센터"].map((label) => screen.getByRole("link", { name: label }));
+    expect(places[3]?.getAttribute("href")).toBe("/market/seller");
     // 네 장소는 좁은 화면에서 4열 격자로 모두 보인다(가로 스크롤 뒤로 숨지 않는다).
     const row = places[0]?.parentElement;
     expect(row?.className).toContain("grid-cols-4");

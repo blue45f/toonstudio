@@ -12,5 +12,29 @@
   "outputBytes": 3978501,
   "reviewRequired": false,
   "operatorFunded": false,
-  "generationChannel": "ChatGPT image generation"
+  "generationChannel": "ChatGPT image generation",
+  "rights": {
+    "status": "first-party-generated",
+    "basis": "provider-terms-output-assignment",
+    "provider": "OpenAI",
+    "generationChannel": "ChatGPT image generation",
+    "terms": {
+      "document": "OpenAI Terms of Use",
+      "url": "https://openai.com/policies/terms-of-use/",
+      "version": "Effective: January 1, 2026",
+      "section": "Content — Ownership of content",
+      "effect": "The generating user owns the Output, and OpenAI assigns to the user all of its right, title and interest, if any, in and to the Output, to the extent permitted by applicable law."
+    },
+    "commercialUse": true,
+    "redistribution": "Permitted as part of the ToonStudio service and its distributed web assets on the output-assignment basis above. This record does not place the file under CC0 or any other public license.",
+    "rightsHolder": "the ToonStudio operator as the generating account holder",
+    "checkedOn": "2026-10-14",
+    "recordedBy": "license audit follow-up (marathon: gpt25-generated-backgrounds-40-rights-record)",
+    "caveats": [
+      "Output may not be unique: other users may receive similar output, and the assignment does not extend to other users' output or third-party output.",
+      "The generating account and its plan are not evidenced in this repository (operatorFunded is false and no account record is retained). This entry records the terms basis for the recorded generation channel; it is not account or payment proof.",
+      "Copyright subsistence in purely AI-generated material varies by jurisdiction; the recorded basis is the contractual assignment between the generating user and OpenAI.",
+      "No third-party input asset is recorded for this generation; the recorded prompt prohibits characters, readable text, logos and watermarks."
+    ]
+  }
 }

@@ -79,7 +79,14 @@ export class CatalogController {
   constructor(@Inject(CatalogService) private readonly catalogService: CatalogService) {}
 
   @Get("/cover")
-  async proxyCover(@Query("u") rawUrl: string | undefined, @Res() res: Response) {
+  async proxyCover(
+    @Query("u") rawUrl: string | undefined,
+    @Res() res: Response,
+    // 폭 힌트(w)와 협상 기준(요청 Accept)은 뒤에 붙인다 — 기존 호출·테스트의
+    // 위치 인자(u, res) 계약을 깨지 않기 위해서다. 둘 다 없어도 기존 동작과 동일하다.
+    @Query("w") rawWidth?: string,
+    @Req() req?: Request
+  ) {
     // 표지 정책이 off 면(저작권 킬스위치) 제3자 표지를 일절 중계하지 않는다 — 이미 배포·캐시된
     // 정적 JSON 의 /api/cover URL 도 여기서 무력화되고, 클라이언트는 타이포그래픽 커버로 폴백한다.
     if (coverImagePolicy() === "off") return res.status(404).send("cover image disabled");
@@ -87,6 +94,15 @@ export class CatalogController {
 
     let url = resolveCoverFetchUrl(rawUrl);
     if (!url) return res.status(403).send("forbidden host");
+
+    // 폭 힌트는 표준 폭 목록(클라이언트 cover-proxy.ts의 COVER_STANDARD_WIDTHS와 동기)
+    // 안의 값만 인정한다. 목록 밖 값은 무시하고 원본을 서빙한다 — 임의 폭이 캐시 변형
+    // 키를 무한히 만들지 못하게 하는 것도 캐시 정책의 일부다.
+    const width = parseCoverWidth(rawWidth);
+    // 포맷 협상: 업스트림에 제안할 포맷은 서버 고정값이 아니라 최종 클라이언트가
+    // 선언한 Accept에서 도출한다. AVIF를 디코딩 못 하는 클라이언트에게 협상력 있는
+    // 업스트림이 AVIF 바이트를 주는 사고를 막기 위해서다.
+    const upstreamAccept = coverUpstreamAccept(req?.headers?.accept);
 
     try {
       let upstream: globalThis.Response | null = null;
@@ -96,7 +112,11 @@ export class CatalogController {
         const response = await fetch(url, {
           headers: {
             "User-Agent": COVER_USER_AGENT,
-            Accept: "image/avif,image/webp,image/*,*/*;q=0.8",
+            Accept: upstreamAccept,
+            // 폭 힌트는 클라이언트 힌트(Width)로 업스트림에 전달한다 — 수용하는 CDN은
+            // 그 폭으로 내려주고 무시하는 CDN은 원본을 준다. 서버 자체 픽셀 변환은
+            // 이미지 파이프라인(sharp 등) 도입이 별도로 필요하다(현 단계 미도입).
+            ...(width ? { Width: String(width) } : {}),
           },
           redirect: "manual",
           signal: AbortSignal.timeout(10_000),
@@ -134,7 +154,12 @@ export class CatalogController {
       res.setHeader("Content-Type", sniffed ?? headerType);
       // 표지는 제3자 저작물이라 권리침해 신고·정책 변경(킬스위치) 시 빠르게 빠져야 한다 →
       // immutable 을 쓰지 않고 재검증 가능한 캐시로 둔다(브라우저 1시간·엣지 1일·SWR 1일).
+      // (2026-10-14 확인 기록: 이 정책은 의도된 값이며 변경하지 않는다. 폭 변형은 URL의
+      // w 파라미터가 그대로 캐시 키가 되어 변형별로 분리 캐시된다.)
       res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400");
+      // 응답 포맷이 요청 Accept 협상의 결과일 수 있으므로, 공용 캐시가 Accept가 다른
+      // 클라이언트에게 협상 결과를 공유하지 않게 Vary 를 명시한다.
+      res.setHeader("Vary", "Accept");
       return res.status(200).send(body);
     } catch {
       return res.status(502).send("fetch failed");
@@ -307,6 +332,30 @@ const COVER_MAX_BYTES = 10 * 1024 * 1024;
 const COVER_OK_TYPE = /^image\/(jpeg|jpg|png|webp|avif|gif)\b/i;
 const COVER_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+// 표지 표준 폭 — 웹 클라이언트(apps/web/src/shared/lib/cover-proxy.ts의
+// COVER_STANDARD_WIDTHS)와 반드시 동기 상태로 유지한다. 여기 없는 폭은 변형으로
+// 인정하지 않는다(캐시 변형 키 폭증 방지).
+const COVER_STANDARD_WIDTHS: readonly number[] = [160, 320, 480, 640, 960];
+
+// w 쿼리 값을 표준 폭으로 해석한다. Express 쿼리는 배열·객체일 수 있어 문자열만
+// 받고, 숫자 형식이거나 목록 밖이면 undefined(폭 힌트 없음=원본 서빙)로 떨어진다.
+export function parseCoverWidth(value: unknown): number | undefined {
+  if (typeof value !== "string" || !/^\d{1,4}$/.test(value)) return undefined;
+  const width = Number(value);
+  return COVER_STANDARD_WIDTHS.includes(width) ? width : undefined;
+}
+
+// 업스트림에 제안할 Accept를 최종 클라이언트의 Accept에서 도출한다(포맷 협상).
+// 클라이언트가 AVIF/WebP를 선언했을 때만 그 포맷을 제안하고, Accept 헤더 자체가
+// 없으면(브라우저가 아닌 소비자) 기존 고정 제안과 동일하게 최신 포맷까지 제안한다.
+export function coverUpstreamAccept(clientAccept: string | undefined): string {
+  if (!clientAccept) return "image/avif,image/webp,image/*,*/*;q=0.8";
+  const accept = clientAccept.toLowerCase();
+  if (accept.includes("image/avif")) return "image/avif,image/webp,image/*,*/*;q=0.8";
+  if (accept.includes("image/webp")) return "image/webp,image/*,*/*;q=0.8";
+  return "image/*,*/*;q=0.8";
+}
 
 // 업스트림 본문을 상한까지만 읽는다. 선언된 Content-Length가 상한을 넘으면 본문을 아예
 // 읽지 않고, 길이를 속이거나 청크 응답이면 누적량이 상한을 넘는 순간 읽기를 중단한다.

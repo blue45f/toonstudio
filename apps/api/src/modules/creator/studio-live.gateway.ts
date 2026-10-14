@@ -41,6 +41,7 @@ import {
   type StudioLiveVoiceMemberInternal,
 } from "./studio-live-gateway-constants";
 import * as studioLiveCrdtHandlers from "./studio-live-gateway-handlers-crdt";
+import * as studioLiveOpHandlers from "./studio-live-gateway-handlers-op";
 import * as studioLiveLockScreenHandlers from "./studio-live-gateway-handlers-lock-screen";
 import * as studioLiveVoiceHandlers from "./studio-live-gateway-handlers-voice";
 import {
@@ -60,10 +61,17 @@ import {
 import { StudioLiveRoomTransitionCoordinator } from "./studio-live-room-transition-coordinator";
 import { StudioLiveSocketAuthService } from "./studio-live-socket-auth.service";
 import {
+  StudioLiveOpRoomRegistry,
+  type StudioLiveOpLogStore,
+} from "./studio-live-op";
+import { STUDIO_LIVE_OP_REPOSITORY } from "./studio-live-op.repository";
+import {
   STUDIO_LIVE_CRDT_BINARY_SYNC_EVENT,
   STUDIO_LIVE_CRDT_BINARY_UPDATE_EVENT,
   STUDIO_LIVE_CRDT_WIRE_SELECT_EVENT,
   STUDIO_LIVE_GESTURE_PREVIEW_SOCKET_EVENT,
+  STUDIO_LIVE_OP_SUBMIT_EVENT,
+  STUDIO_LIVE_OP_SYNC_EVENT,
   StudioLiveJoinSchema,
 } from "./studio-live.protocol";
 
@@ -80,6 +88,10 @@ import type {
   StudioLiveCrdtSyncResult,
   StudioLiveCrdtUpdateAck,
   StudioLiveCrdtUpdateInput,
+  StudioLiveOpSubmitAck,
+  StudioLiveOpSubmitInput,
+  StudioLiveOpSyncInput,
+  StudioLiveOpSyncResult,
   StudioLiveCursorInput,
   StudioLiveGesturePreviewInput,
   StudioLiveJoinInput,
@@ -112,9 +124,14 @@ export {
   STUDIO_LIVE_SESSION_AUTHENTICATOR,
   STUDIO_LIVE_SESSION_REVALIDATOR,
   STUDIO_LIVE_GESTURE_PREVIEW_SOCKET_EVENT,
+  STUDIO_LIVE_OP_BROADCAST_EVENT,
+  STUDIO_LIVE_OP_SUBMIT_EVENT,
+  STUDIO_LIVE_OP_SYNC_EVENT,
   StudioLiveChatSchema,
   StudioLiveCrdtSyncSchema,
   StudioLiveCrdtUpdateSchema,
+  StudioLiveOpSubmitSchema,
+  StudioLiveOpSyncSchema,
   StudioLiveCursorSchema,
   StudioLiveGesturePreviewSchema,
   StudioLiveJoinSchema,
@@ -142,6 +159,8 @@ export type {
   StudioLiveCrdtRemoteUpdate,
   StudioLiveCrdtSyncResult,
   StudioLiveCrdtUpdateAck,
+  StudioLiveOpSubmitAck,
+  StudioLiveOpSyncResult,
   StudioLiveLock,
   StudioLiveLockAcquiredDecision,
   StudioLiveLockRequestAck,
@@ -217,6 +236,9 @@ export class StudioLiveGateway
     StudioLiveCandidateRelayAuthorization
   >();
   private readonly voiceMembershipBySocket = new Map<string, StudioLiveVoiceMemberInternal>();
+  private readonly studioLiveOpRooms: StudioLiveOpRoomRegistry;
+  /** 발신자(work+actor)별 제출 직렬화 체인 — op 채널 FIFO 강제 (계약 요구 2). */
+  private readonly opSubmitTailBySender = new Map<string, Promise<void>>();
   private readonly deliveredInterServerVoiceSignals = new Map<string, number>();
   private accessRecheckTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -242,8 +264,35 @@ export class StudioLiveGateway
     @Inject(STUDIO_LIVE_LOCK_REPOSITORY)
     private readonly studioLiveLockRepository: StudioLiveLockRepository,
     @Inject(StudioLiveAcousticBinding)
-    private readonly acousticBinding: StudioLiveAcousticBinding = new StudioLiveAcousticBinding()
-  ) {}
+    private readonly acousticBinding: StudioLiveAcousticBinding = new StudioLiveAcousticBinding(),
+    @Inject(STUDIO_LIVE_OP_REPOSITORY)
+    private readonly studioLiveOpLogStore: StudioLiveOpLogStore
+  ) {
+    this.studioLiveOpRooms = new StudioLiveOpRoomRegistry(this.studioLiveOpLogStore);
+  }
+
+  /**
+   * 발신자 단위 FIFO 직렬화: 같은 (work, actor)의 제출은 도착 순서대로 한 번에
+   * 하나씩만 방에 들어간다. 다른 발신자의 제출은 서로 막지 않는다.
+   */
+  async runStudioLiveOpSerialized<T>(senderKey: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.opSubmitTailBySender.get(senderKey) ?? Promise.resolve();
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const tail = previous.then(() => current);
+    this.opSubmitTailBySender.set(senderKey, tail);
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+      if (this.opSubmitTailBySender.get(senderKey) === tail) {
+        this.opSubmitTailBySender.delete(senderKey);
+      }
+    }
+  }
 
   afterInit(server: Namespace): void {
     this.acousticBinding.bind(server, (request) => verifyLocalStudioAcousticBinding(this as unknown as import("./studio-live-gateway-host").StudioLiveGatewayHost, request));
@@ -305,6 +354,8 @@ export class StudioLiveGateway
     this.socketAuthentication.clearAll();
     this.voiceMembershipBySocket.clear();
     this.deliveredInterServerVoiceSignals.clear();
+    this.studioLiveOpRooms.clear();
+    this.opSubmitTailBySender.clear();
   }
 
   /** Emits one tiny invalidation through the configured Socket.IO adapter-backed work room. */
@@ -431,6 +482,24 @@ export class StudioLiveGateway
     @Ack() ack?: StudioLiveAckCallback<StudioLiveCrdtUpdateAck>
   ) {
     return this.boundHandler(studioLiveCrdtHandlers.applyCrdtUpdate, client, body, ack);
+  }
+
+  @SubscribeMessage(STUDIO_LIVE_OP_SUBMIT_EVENT)
+  async submitStudioLiveOp(
+    @ConnectedSocket() client: StudioLiveSocket,
+    @MessageBody() body: StudioLiveOpSubmitInput,
+    @Ack() ack?: StudioLiveAckCallback<StudioLiveOpSubmitAck>
+  ) {
+    return this.boundHandler(studioLiveOpHandlers.submitStudioLiveOp, client, body, ack);
+  }
+
+  @SubscribeMessage(STUDIO_LIVE_OP_SYNC_EVENT)
+  async syncStudioLiveOps(
+    @ConnectedSocket() client: StudioLiveSocket,
+    @MessageBody() body: StudioLiveOpSyncInput,
+    @Ack() ack?: StudioLiveAckCallback<StudioLiveOpSyncResult>
+  ) {
+    return this.boundHandler(studioLiveOpHandlers.syncStudioLiveOps, client, body, ack);
   }
 
   @SubscribeMessage("studio:lock:request")

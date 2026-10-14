@@ -23,6 +23,9 @@ export * from "./membership-wallet.schema";
 export * from "./studio-review-policy.schema";
 
 export * from "./team-workspace.schema";
+export * from "./stage-gate.schema";
+
+export * from "./organization.schema";
 
 export * from "./operation-policy.schema";
 
@@ -36,6 +39,7 @@ export * from "./studio-virtual-space-decoration.schema";
 
 export * from "./studio-godot-space-layout.schema";
 export * from "./studio-project-library.schema";
+export * from "./studio-op-log.schema";
 
 export * from "./studio-godot-space-background.schema";
 

@@ -32,24 +32,47 @@ function measureTourTarget(step: WorkspaceTourStep): DOMRect | null {
   return rect;
 }
 
-function tourCopy(bt: (ko: string, en: string) => string, step: WorkspaceTourStep): { title: string; body: string } {
+function tourCopy(
+  bt: (ko: string, en: string) => string,
+  step: WorkspaceTourStep,
+  hasProject: boolean,
+): { title: string; body: string } {
   switch (step) {
     case "continue":
-      return {
-        title: bt("작업을 이어가세요", "Pick up where you left off"),
-        body: bt(
-          "마지막으로 펜을 들었던 원고로 바로 돌아갑니다. 지금 이어할 수 있는 작업이 여기 있습니다.",
-          "Jump straight back to the manuscript you last touched. Your continuing work is right here.",
-        ),
-      };
+      // 프로젝트 유무로 분기한다(F2.5): 이어할 원고가 없는 신규 사용자에게
+      // "이어가세요"라고 말하면 안내가 거짓이 된다. 강조 대상 버튼 자체는
+      // 작품이 없을 때 "새 작품 만들기"로 바뀌어 있다(히어로 CTA).
+      return hasProject
+        ? {
+            title: bt("작업을 이어가세요", "Pick up where you left off"),
+            body: bt(
+              "마지막으로 펜을 들었던 원고로 바로 돌아갑니다. 지금 이어할 수 있는 작업이 여기 있습니다.",
+              "Jump straight back to the manuscript you last touched. Your continuing work is right here.",
+            ),
+          }
+        : {
+            title: bt("여기서 첫 작품을 시작하세요", "Start your first work here"),
+            body: bt(
+              "아직 작품이 없습니다. 이 버튼으로 첫 작품을 만들면, 다음 방문부터는 여기서 이어할 수 있습니다.",
+              "You have no work yet. Create your first work with this button — next time, you will pick up right here.",
+            ),
+          };
     case "quick-actions":
-      return {
-        title: bt("빠른 작업으로 원고를 관리하세요", "Manage manuscripts with quick actions"),
-        body: bt(
-          "원고 검수와 진행 확인, 협업 공간 입장까지 자주 쓰는 작업을 바로 실행하세요.",
-          "Run the tasks you use most — review manuscripts, check production, enter the collaboration space.",
-        ),
-      };
+      return hasProject
+        ? {
+            title: bt("빠른 작업으로 원고를 관리하세요", "Manage manuscripts with quick actions"),
+            body: bt(
+              "원고 검수와 진행 확인, 협업 공간 입장까지 자주 쓰는 작업을 바로 실행하세요.",
+              "Run the tasks you use most — review manuscripts, check production, enter the collaboration space.",
+            ),
+          }
+        : {
+            title: bt("시작 방법은 세 가지예요", "Three ways to get started"),
+            body: bt(
+              "새 작품 만들기, 기존 파일 가져오기, 영감 둘러보기 중 지금 맞는 방법으로 시작하세요.",
+              "Start the way that fits you now — create a new work, import existing files, or explore for inspiration.",
+            ),
+          };
     case "tools":
       return {
         title: bt("도구는 여기서 꺼내세요", "Grab your tools here"),
@@ -66,7 +89,11 @@ function tourCopy(bt: (ko: string, en: string) => string, step: WorkspaceTourSte
  * quick actions → tools menu. Remembers completion in localStorage and
  * honours reduced motion by snapping the spotlight instead of animating it.
  */
-export function StudioWorkspaceSpotlightTour({ ready }: { readonly ready: boolean }) {
+export function StudioWorkspaceSpotlightTour({ ready, hasProject = true }: {
+  readonly ready: boolean;
+  /** 투어 문구의 프로젝트 유무 분기(F2.5). 기본값 true는 기존 호출·테스트의 이어하기 문형을 유지한다. */
+  readonly hasProject?: boolean;
+}) {
   const bt = useBilingual("StudioWorkspaceSpotlightTour");
   const reducedMotion = useReducedMotion();
   const [state, dispatch] = useReducer(
@@ -80,7 +107,7 @@ export function StudioWorkspaceSpotlightTour({ ready }: { readonly ready: boolea
   const cardRef = useRef<HTMLDivElement>(null);
   const active = state.status === "active";
   const step = workspaceTourStep(state);
-  const copy = tourCopy(bt, step);
+  const copy = tourCopy(bt, step, hasProject);
   const isLast = state.stepIndex >= WORKSPACE_TOUR_STEPS.length - 1;
   const instant = reducedMotion ? { duration: 0 } : undefined;
 

@@ -2,6 +2,9 @@ import { Link2 } from "lucide-react";
 
 import { DocumentReadingProgress, LegalDocOutline, LegalRelatedDocs } from "./LegalDocTools";
 
+// copyright.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./copyright-i18n";
+
 import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
 import { useT } from "@/shared/lib/i18n";

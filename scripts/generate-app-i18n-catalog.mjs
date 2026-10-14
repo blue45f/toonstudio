@@ -15,11 +15,26 @@ import path from "node:path";
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const assetDirectory = path.join(repoRoot, "apps", "web", "public", "i18n", "app");
 const catalogPath = path.join(repoRoot, "apps", "web", "src", "shared", "lib", "i18n-locale-catalog.ts");
+const completenessReportPath = path.join(
+  repoRoot,
+  "apps",
+  "web",
+  "src",
+  "shared",
+  "lib",
+  "i18n-locale-completeness-report.json",
+);
 
 /** Locales compiled into the app shell so the fallback chain never awaits I/O. */
 const BUILT_IN_LOCALES = ["ko", "en"];
 const REFERENCE_LOCALE = "en";
 const TRANSLATED_LOCALE_THRESHOLD = 0.5;
+/**
+ * Completeness at or above this ratio may be presented without qualification. Below it the
+ * locale is a work in progress — most locales clear the 0.5 "not just English" floor while
+ * still rendering roughly half of the surface in English, so the picker must say so.
+ */
+const COMPLETENESS_IN_PROGRESS_THRESHOLD = 0.9;
 
 /** Read the same namespace assets used by the browser; flat legacy files are not authoritative. */
 export function readAppLocaleDictionaries(directory = assetDirectory) {
@@ -62,6 +77,135 @@ export function measureTranslatedRatio(dictionary, reference) {
     if (value !== undefined && value !== reference[key]) distinct++;
   }
   return Math.round((distinct / referenceKeys.length) * 10000) / 10000;
+}
+
+/**
+ * The same assets as readAppLocaleDictionaries, but kept per namespace. The flat merge cannot
+ * answer "which namespaces is this locale missing", and that is exactly the shape locale
+ * coverage takes in practice (a locale ships 38 of 41 namespaces, not 93% of every file).
+ */
+export function readAppLocaleNamespaceDictionaries(directory = assetDirectory) {
+  const namespaces = readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  if (namespaces.length === 0) {
+    throw new Error(
+      `No locale namespace directories under ${directory}. `
+      + "The app dictionaries are published as <namespace>/<locale>.json.",
+    );
+  }
+
+  const byNamespace = new Map();
+  for (const namespace of namespaces) {
+    const byLocale = new Map();
+    for (const fileName of readdirSync(path.join(directory, namespace)).sort()) {
+      if (!fileName.endsWith(".json")) continue;
+      const locale = fileName.slice(0, -".json".length);
+      byLocale.set(locale, JSON.parse(readFileSync(path.join(directory, namespace, fileName), "utf8")));
+    }
+    byNamespace.set(namespace, byLocale);
+  }
+  return byNamespace;
+}
+
+function roundRatio(value) {
+  return Math.round(value * 10000) / 10000;
+}
+
+/**
+ * Per-locale completeness report, measured — never authored — from the published assets.
+ *
+ * Two axes, because they fail differently:
+ *  - namespace coverage: which of the published namespaces ship a file for this locale at all;
+ *  - key completeness: of the reference (English) keys, how many carry a value that differs
+ *    from the English source string. Key counts use the same flattened merge as
+ *    readAppLocaleDictionaries, so completenessRatio here always equals the catalog's
+ *    APP_I18N_LOCALE_TRANSLATED_RATIO for the same assets — the report explains the catalog
+ *    number, it never contradicts it.
+ * Namespaces with no English source (contact/fortune/play are authored the other way around)
+ * count toward namespace coverage and missingNamespaces only; there is no English surface to
+ * be complete against. The reference locale itself is definitionally complete for the keys it
+ * publishes, so its translated count equals its present count.
+ *
+ * `translationInProgress` is the picker's contract: completeness below
+ * COMPLETENESS_IN_PROGRESS_THRESHOLD must be labelled "번역 진행 중" instead of being
+ * presented as a finished translation.
+ */
+export function buildLocaleCompletenessReport(namespaceDictionaries) {
+  const namespaces = [...namespaceDictionaries.keys()].sort();
+  const locales = new Set();
+  for (const byLocale of namespaceDictionaries.values()) {
+    for (const locale of byLocale.keys()) locales.add(locale);
+  }
+
+  // Flatten exactly like readAppLocaleDictionaries (namespaces in sorted order, later
+  // namespaces win on key collisions) so the key axis matches the shipped catalog ratios.
+  const flattened = new Map();
+  for (const namespace of namespaces) {
+    for (const [locale, part] of namespaceDictionaries.get(namespace) ?? []) {
+      const existing = flattened.get(locale);
+      if (existing) Object.assign(existing, part);
+      else flattened.set(locale, { ...part });
+    }
+  }
+  const reference = flattened.get(REFERENCE_LOCALE) ?? {};
+  const referenceKeys = Object.keys(reference);
+  const referenceKeyCount = referenceKeys.length;
+
+  const report = [];
+  for (const locale of [...locales].sort()) {
+    const missingNamespaces = namespaces.filter(
+      (namespace) => !namespaceDictionaries.get(namespace)?.has(locale),
+    );
+    const dictionary = flattened.get(locale) ?? {};
+    let presentKeyCount = 0;
+    let translatedKeyCount = 0;
+    for (const key of referenceKeys) {
+      if (dictionary[key] === undefined) continue;
+      presentKeyCount++;
+      if (locale === REFERENCE_LOCALE || dictionary[key] !== reference[key]) {
+        translatedKeyCount++;
+      }
+    }
+    const coverageRatio = referenceKeyCount === 0 ? 0 : roundRatio(presentKeyCount / referenceKeyCount);
+    const completenessRatio = referenceKeyCount === 0
+      ? 0
+      : roundRatio(translatedKeyCount / referenceKeyCount);
+    report.push({
+      locale,
+      namespaceCount: namespaces.length - missingNamespaces.length,
+      namespaceTotal: namespaces.length,
+      namespaceRatio: namespaces.length === 0
+        ? 0
+        : roundRatio((namespaces.length - missingNamespaces.length) / namespaces.length),
+      missingNamespaces,
+      referenceKeyCount,
+      presentKeyCount,
+      translatedKeyCount,
+      coverageRatio,
+      translatedRatio: completenessRatio,
+      completenessRatio,
+      translationInProgress: completenessRatio < COMPLETENESS_IN_PROGRESS_THRESHOLD,
+    });
+  }
+  return report;
+}
+
+/** Human-readable form of the completeness report (diagnostics, PR descriptions, CI logs). */
+export function formatLocaleCompletenessReport(report) {
+  const lines = [
+    "| locale | namespaces | key coverage | completeness | status |",
+    "| --- | --- | --- | --- | --- |",
+    ...report.map((entry) => [
+      `| ${entry.locale}`,
+      `${entry.namespaceCount}/${entry.namespaceTotal}`,
+      `${Math.round(entry.coverageRatio * 100)}%`,
+      `${Math.round(entry.completenessRatio * 100)}%`,
+      entry.translationInProgress ? "번역 진행 중" : "완료",
+    ].join(" | ") + " |"),
+  ];
+  return lines.join("\n");
 }
 
 export function buildCatalogSource(dictionaries) {
@@ -114,6 +258,15 @@ export function buildCatalogSource(dictionaries) {
     " */",
     `export const APP_I18N_TRANSLATED_LOCALE_THRESHOLD = ${TRANSLATED_LOCALE_THRESHOLD};`,
     "",
+    "/**",
+    " * Completeness at or above this ratio may be presented without qualification. Below it the",
+    " * locale picker must label the locale as a translation in progress (\"번역 진행 중\"), even",
+    " * when the locale clears the translated floor above — half-translated is not finished. The",
+    " * per-locale report behind this threshold is written by the generator to",
+    " * i18n-locale-completeness-report.json (buildLocaleCompletenessReport).",
+    " */",
+    `export const APP_I18N_COMPLETENESS_IN_PROGRESS_THRESHOLD = ${COMPLETENESS_IN_PROGRESS_THRESHOLD};`,
+    "",
   ];
   return lines.join("\n");
 }
@@ -122,4 +275,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.met
   const source = buildCatalogSource(readAppLocaleDictionaries());
   writeFileSync(catalogPath, source, "utf8");
   process.stdout.write(`wrote ${path.relative(repoRoot, catalogPath)}\n`);
+
+  const report = buildLocaleCompletenessReport(readAppLocaleNamespaceDictionaries());
+  writeFileSync(completenessReportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  const inProgress = report.filter((entry) => entry.translationInProgress);
+  process.stdout.write(
+    `wrote ${path.relative(repoRoot, completenessReportPath)} `
+    + `(${report.length} locales, ${inProgress.length} 번역 진행 중)\n`,
+  );
+  process.stdout.write(`${formatLocaleCompletenessReport(report)}\n`);
 }

@@ -53,6 +53,7 @@ import {
   type LearningProfile,
   type SessionMinutes,
 } from "./learning-profile";
+import { learningPathTintStyle } from "./learning-path-tints";
 import { SKILL_ICONS } from "./learning-skill-icons";
 import { useLearningProgress, type LearningStore } from "./use-learning-progress";
 import { LearningProcessStudy } from "./LearningProcessStudy";
@@ -60,6 +61,8 @@ import { LearningProcessStudy } from "./LearningProcessStudy";
 import "./learning-hub.css";
 
 const lessonUrl = (id: string) => `/learn/lessons/${encodeURIComponent(id)}`;
+// 경로에서 연 강좌는 ?from=<pathId>를 붙여 강좌 상세에서도 경로 순서를 유지한다.
+const lessonUrlInPath = (id: string, pathId: string) => `${lessonUrl(id)}?from=${encodeURIComponent(pathId)}`;
 const pathUrl = (id: string) => `/learn/paths/${encodeURIComponent(id)}`;
 
 const LEVEL_LABELS: Readonly<Record<LearningLevel, string>> = {
@@ -156,7 +159,7 @@ function SkillCard({ skill, store, onBrowse }: { skill: SkillProgress; store: Le
 function PathCard({ path, store, recommended }: { path: LearningPath; store: LearningStore; recommended: boolean }) {
   const stats = getPathStats(path, store.progress);
   return (
-    <article className={`learn-path-card${recommended ? " is-recommended" : ""}`}>
+    <article className={`learn-path-card${recommended ? " is-recommended" : ""}`} style={learningPathTintStyle(path.id)}>
       <div className="learn-path-card-top">
         <span className="learn-path-index">{String(LEARNING_PATHS.indexOf(path) + 1).padStart(2, "0")}</span>
         {recommended && <span className="learn-recommended-label">내 추천 경로</span>}
@@ -322,7 +325,7 @@ export function LearningHome() {
         <div className="learn-hub-hero-copy">
           <p className="learn-eyebrow">TOONSTUDIO / ARTIST CLASSROOM</p>
           <h1>상상하던 장면이,<br />내 손끝의 실력으로.</h1>
-          <p className="learn-intro">콘티의 첫 선부터 빛과 색, 원고 마무리까지 — 매 수업마다 작은 결과물을 하나씩 완성합니다.</p>
+          <p className="learn-intro">웹툰 그리기를 단계별 강좌로 배우는 학습 홈입니다. 콘티의 첫 선부터 빛과 색, 원고 마무리까지 — 매 수업마다 작은 결과물을 하나씩 완성합니다.</p>
           <div className="learn-actions">
             <Link className="learn-primary" to={lessonUrl(nextLesson.id)}>
               {recommendedStats.started ? "추천 경로 이어서 학습" : "내 추천 경로 시작"} <span aria-hidden="true">→</span>
@@ -591,7 +594,7 @@ export function LearningPathPage({ pathId }: { pathId: string }) {
   }
 
   return (
-    <div className="learn-page learn-path-page" lang="ko">
+    <div className="learn-page learn-path-page" lang="ko" style={learningPathTintStyle(path.id)}>
       {store.warning && <p className="learn-caution" role="status">{store.warning}</p>}
       <header className="learn-path-hero">
         <div>
@@ -602,7 +605,7 @@ export function LearningPathPage({ pathId }: { pathId: string }) {
           <div className="learn-actions">
             {stats.completed === stats.total
               ? <><Link className="learn-primary" to="/create">배운 흐름으로 첫 회차 만들기 →</Link><Link className="learn-secondary" to="/learn#learning-paths">다른 학습 경로 보기</Link></>
-              : <><Link className="learn-primary" to={lessonUrl(nextLesson.id)}>{stats.completed ? "이어서 학습하기" : "경로 시작하기"} →</Link><Link className="learn-secondary" to="/learn#learn-library">전체 강좌 보기</Link></>}
+              : <><Link className="learn-primary" to={lessonUrlInPath(nextLesson.id, path.id)}>{stats.completed ? "이어서 학습하기" : "경로 시작하기"} →</Link><Link className="learn-secondary" to="/learn#learn-library">전체 강좌 보기</Link></>}
           </div>
         </div>
         <aside className="learn-path-hero-card" aria-label="경로 진행 현황">
@@ -621,15 +624,15 @@ export function LearningPathPage({ pathId }: { pathId: string }) {
               const meta = getLessonMeta(lesson.id);
               const state = getLessonState(store.progress, lesson.id);
               return (
-                <li key={lesson.id} className={`is-${state}`}>
+                <li key={lesson.id} className={`is-${state}${stats.completed < stats.total && lesson.id === nextLesson.id ? " is-current" : ""}`}>
                   <span className="learn-path-step">{String(index + 1).padStart(2, "0")}</span>
                   <div>
                     <div className="learn-card-chips"><span>{STATUS_LABELS[state]}</span><span>{LEVEL_LABELS[meta.level]}</span><span>약 {lesson.minutes}분</span></div>
-                    <h3><Link to={lessonUrl(lesson.id)}>{lesson.title}</Link></h3>
+                    <h3><Link to={lessonUrlInPath(lesson.id, path.id)}>{lesson.title}</Link></h3>
                     <p>{lesson.summary}</p>
                     <strong>결과물 · {meta.outcome}</strong>
                   </div>
-                  <Link to={lessonUrl(lesson.id)}>{state === "completed" ? "복습" : state === "in-progress" ? "계속" : "시작"} →</Link>
+                  <Link to={lessonUrlInPath(lesson.id, path.id)}>{state === "completed" ? "복습" : state === "in-progress" ? "계속" : "시작"} →</Link>
                 </li>
               );
             })}
@@ -638,7 +641,7 @@ export function LearningPathPage({ pathId }: { pathId: string }) {
         <aside className="learn-path-side">
           {stats.completed === stats.total
             ? <section><p className="learn-eyebrow">PATH COMPLETE</p><h2>이 경로를 모두 마쳤습니다</h2><p>결과물을 실제 작품으로 이어 가거나, 다른 경로로 실력을 넓혀 보세요.</p><Link className="learn-primary" to="/create">첫 회차 만들기 →</Link></section>
-            : <section><p className="learn-eyebrow">NEXT STEP</p><h2>{nextLesson.title}</h2><p>{getLessonMeta(nextLesson.id).outcome}</p><Link className="learn-primary" to={lessonUrl(nextLesson.id)}>다음 강좌 열기 →</Link></section>}
+            : <section><p className="learn-eyebrow">NEXT STEP</p><h2>{nextLesson.title}</h2><p>{getLessonMeta(nextLesson.id).outcome}</p><Link className="learn-primary" to={lessonUrlInPath(nextLesson.id, path.id)}>다음 강좌 열기 →</Link></section>}
           <section><h2>이 경로가 다루는 역량</h2><div className="learn-card-skills">{[...new Set(lessons.flatMap((lesson) => getLessonMeta(lesson.id).skills))].map((skillId) => <span key={skillId}>{SKILLS.find((skill) => skill.id === skillId)?.label}</span>)}</div></section>
           <section><h2>기억할 점</h2><p>경로는 권장 순서입니다. 이미 아는 강좌는 건너뛰고, 필요한 강좌만 골라 학습해도 기록은 정상적으로 저장됩니다.</p></section>
         </aside>

@@ -201,3 +201,68 @@ export function updateSellerListingStatus(
 export function isSellerListingPurchasable(listing: SellerListing | null): boolean {
   return listing !== null && listing.status === "on-sale";
 }
+
+/*
+ * 전문가용 일괄 처리 (personal P-8).
+ * 판매자 본인(sellerId 일치) 리스팅만 대상으로 하며, 저장은 한 번만 수행해
+ * 항목 수만큼의 storage 쓰기·업데이트 이벤트를 만들지 않는다.
+ */
+
+export type BulkSellerListingPriceResult =
+  | { readonly ok: true; readonly updated: number }
+  | { readonly ok: false; readonly reason: "price-not-integer" | "price-too-low" };
+
+/** 선택한 내 리스팅의 포인트 가격을 한 번에 바꾼다. 가격 검증 규칙은 단건과 동일하다. */
+export function updateSellerListingsPrice(
+  sellerId: string,
+  ids: readonly string[],
+  pointPrice: number,
+  now: Date = new Date(),
+): BulkSellerListingPriceResult {
+  if (!Number.isInteger(pointPrice)) return { ok: false, reason: "price-not-integer" };
+  if (pointPrice < MIN_SELLER_POINT_PRICE) return { ok: false, reason: "price-too-low" };
+  const idSet = new Set(ids);
+  if (idSet.size === 0) return { ok: true, updated: 0 };
+  const timestamp = now.toISOString();
+  let updated = 0;
+  const next = getSellerListings().map((listing) => {
+    if (listing.sellerId !== sellerId || !idSet.has(listing.id)) return listing;
+    updated += 1;
+    return { ...listing, pointPrice, updatedAt: timestamp };
+  });
+  if (updated > 0) saveSellerListings(next);
+  return { ok: true, updated };
+}
+
+/** 선택한 내 리스팅의 판매 상태를 한 번에 바꾼다. 바뀐 건수를 돌려준다. */
+export function updateSellerListingsStatus(
+  sellerId: string,
+  ids: readonly string[],
+  status: SellerListingStatus,
+  now: Date = new Date(),
+): number {
+  const idSet = new Set(ids);
+  if (idSet.size === 0) return 0;
+  const timestamp = now.toISOString();
+  let updated = 0;
+  const next = getSellerListings().map((listing) => {
+    if (listing.sellerId !== sellerId || !idSet.has(listing.id)) return listing;
+    updated += 1;
+    return { ...listing, status, updatedAt: timestamp };
+  });
+  if (updated > 0) saveSellerListings(next);
+  return updated;
+}
+
+/** 선택한 내 리스팅을 한 번에 삭제한다. 삭제된 건수를 돌려준다. */
+export function removeSellerListings(sellerId: string, ids: readonly string[]): number {
+  const idSet = new Set(ids);
+  if (idSet.size === 0) return 0;
+  const listings = getSellerListings();
+  const next = listings.filter(
+    (listing) => !(listing.sellerId === sellerId && idSet.has(listing.id)),
+  );
+  const removed = listings.length - next.length;
+  if (removed > 0) saveSellerListings(next);
+  return removed;
+}

@@ -9,6 +9,7 @@ import {
 } from "@react-three/drei/core/OrbitControls.js";
 import {
   Canvas,
+  useFrame,
 } from "@react-three/fiber";
 import {
   AlertTriangle,
@@ -22,8 +23,15 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { getStudioVrmQualityTier } from "./studio-vrm-gpu-capability";
+import { buildStudioVrmJointLimitProximityMap } from "./studio-vrm-joint-limit-proximity";
+import {
+  evaluateStudioVrmPoseBalance,
+  studioVrmPoseBalanceSignature,
+  type StudioVrmPoseBalanceReport,
+} from "./studio-vrm-pose-balance";
 import { useStudioVrmViewportBudget } from "./useStudioVrmViewportBudget";
 
 import {
@@ -84,7 +92,54 @@ import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
 import type { StudioVrmTexturePaintPanelSettings } from "./StudioVrmTexturePaintPanel";
 import type {
   VRM,
+  VRMHumanBoneName,
 } from "@pixiv/three-vrm";
+import type { CharacterVector3 } from "../character-platform/pose/character-pose-v2";
+
+/** 균형·접지 판정에 필요한 본 — 질량 세그먼트와 접점 후보를 함께 커버한다. */
+const POSE_BALANCE_BONES = [
+  "hips", "spine", "chest", "upperChest", "neck", "head",
+  "leftShoulder", "rightShoulder",
+  "leftUpperArm", "leftLowerArm", "leftHand",
+  "rightUpperArm", "rightLowerArm", "rightHand",
+  "leftUpperLeg", "leftLowerLeg", "leftFoot", "leftToes",
+  "rightUpperLeg", "rightLowerLeg", "rightFoot", "rightToes",
+] as const satisfies readonly VRMHumanBoneName[];
+
+/**
+ * 수동 포징 루프의 균형·접지 실시간 판정 브리지(§5.4-3, 표시 전용).
+ *
+ * Canvas 안에서 약 150ms 간격으로 본 월드 위치를 읽어 pose-v3 지지 다각형·무게중심
+ * 판정(studio-vrm-pose-balance)에 넘기고, 판정 서명이 바뀔 때만 바깥으로 보고한다.
+ * 포즈를 고치거나 막지 않는다 — 경고 배지 표시가 유일한 효과다.
+ */
+function StudioVrmPoseBalanceBridge({ vrm, onReport }: {
+  vrm: VRM;
+  onReport: (report: StudioVrmPoseBalanceReport) => void;
+}) {
+  const elapsedRef = useRef(0);
+  const signatureRef = useRef("");
+  const scratchRef = useRef(new THREE.Vector3());
+  useFrame((_, delta) => {
+    elapsedRef.current += delta;
+    if (elapsedRef.current < 0.15) return;
+    elapsedRef.current = 0;
+    const bones: Partial<Record<string, CharacterVector3>> = {};
+    for (const name of POSE_BALANCE_BONES) {
+      const node = vrm.humanoid.getNormalizedBoneNode(name);
+      if (!node) continue;
+      node.updateWorldMatrix(true, false);
+      const world = node.getWorldPosition(scratchRef.current);
+      bones[name] = [world.x, world.y, world.z];
+    }
+    const report = evaluateStudioVrmPoseBalance(bones);
+    const signature = studioVrmPoseBalanceSignature(report);
+    if (signature === signatureRef.current) return;
+    signatureRef.current = signature;
+    onReport(report);
+  });
+  return null;
+}
 
 export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
   h: StudioVrmPoserHost;
@@ -97,6 +152,8 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
     error,
     vrm,
     customBones,
+    jointLimitsEnabled,
+    rigJointProfile,
     customYOffset,
     poseTranslations,
     ikConstraints,
@@ -207,6 +264,32 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
   // MSAA가 특히 비싸서 끄고, DPR 하향은 viewportBudget이 함께 적용한다.
   const gpuTier = getStudioVrmQualityTier();
   const frameless = broadcastPreviewActive || presentation === "shaper";
+  // 해부학 한계 근접 판정(표시 전용) — 관절 한계가 켜져 있을 때만 계산해 핸들 경고로 전달한다.
+  const jointLimitProximity = useMemo(
+    () => (jointLimitsEnabled
+      ? buildStudioVrmJointLimitProximityMap(customBones, rigJointProfile)
+      : undefined),
+    [customBones, jointLimitsEnabled, rigJointProfile],
+  );
+  // 균형·접지 실시간 판정(표시 전용) — 포즈 탭에서 직접 포징 중일 때만 브리지가 돌고,
+  // stable/unknown이면 배지를 띄우지 않는다. 판정 계산은 studio-vrm-pose-balance 담당.
+  const [poseBalanceReport, setPoseBalanceReport] = useState<StudioVrmPoseBalanceReport | null>(null);
+  const handlePoseBalanceReport = useCallback(
+    (report: StudioVrmPoseBalanceReport) => setPoseBalanceReport(report),
+    [],
+  );
+  const poseBalanceActive =
+    Boolean(vrm)
+    && activePanelTab === "pose"
+    && !captureActive
+    && !webcamActive;
+  const poseBalanceWarning =
+    poseBalanceActive
+    && poseBalanceReport
+    && poseBalanceReport.severity !== "stable"
+    && poseBalanceReport.severity !== "unknown"
+      ? poseBalanceReport.warnings[0]
+      : undefined;
   // 수동 본 오버레이는 캡처·공유·썸네일·웹캠·방송 미리보기·표면 페인트 상태에서는
   // 숨긴다. 캡처 흐름이 상태 전환 뒤 프레임을 기다렸다가 장면 전체를 읽으므로,
   // 이 게이트가 마커가 어떤 캡처에도 들어가지 않는다는 경계의 근거다.
@@ -444,6 +527,13 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       onInteractionActiveChange={setJointHandleInteracting}
                     />
                   ) : null}
+                  {vrm && poseBalanceActive ? (
+                    <StudioVrmPoseBalanceBridge
+                      key={installedModelId ?? "empty"}
+                      vrm={vrm}
+                      onReport={handlePoseBalanceReport}
+                    />
+                  ) : null}
                   {vrm
                     ? vrmPropItems.map((item: PropInstance) => (
                         <StudioVrmPropAttachment
@@ -463,6 +553,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       metrics={effectivePropRigMetrics}
                       rigRevision={proportionRigRevision}
                       lockedBones={lockedPoseBones}
+                      limitProximity={jointLimitProximity}
                       capturePaused={isCapturing}
                       disabled={webcamActive || broadcastPreviewActive || persistentIkReconciling || jointHandleInteracting || isViewportHandIkDragging || texturePaintInteractionEnabled}
                     />
@@ -690,6 +781,20 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       </div>
                     ) : null}
                   </>
+                ) : null}
+
+                {poseBalanceWarning && poseBalanceReport ? (
+                  <div
+                    className="absolute bottom-2.5 left-2.5 z-10 flex max-w-[calc(100%-5rem)] items-center gap-1.5 rounded-full border border-warning/40 bg-panel/92 py-1 pl-3 pr-3 text-[0.64rem] font-bold text-warning shadow-sm backdrop-blur"
+                    role="status"
+                    data-studio-vrm-pose-balance={poseBalanceReport.severity}
+                  >
+                    <AlertTriangle size={11} aria-hidden className="shrink-0" />
+                    <span className="truncate">{poseBalanceWarning}</span>
+                    {poseBalanceReport.warnings.length > 1 ? (
+                      <span className="shrink-0 text-fg-3">+{poseBalanceReport.warnings.length - 1}</span>
+                    ) : null}
+                  </div>
                 ) : null}
 
                 {status === "empty" && presentation === "poser" ? (

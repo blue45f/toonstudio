@@ -81,6 +81,25 @@ describe("StudioInspectorPublishPanel", () => {
     ).toBe(false);
   });
 
+  it("separates saving from publishing in the first-save guidance", () => {
+    const { rerender, props } = renderPanel();
+
+    expect(
+      screen.getByText("제목만 정하면 저장돼요. 게시는 나중에 따로 할 수 있어요."),
+    ).not.toBeNull();
+
+    rerender(
+      <StudioInspectorPublishPanel {...props} pendingSaveIntent="published" />,
+    );
+    expect(screen.getByText("제목만 정하면 게시를 이어갈 수 있어요.")).not.toBeNull();
+    expect(
+      screen.queryByText("제목만 정하면 저장돼요. 게시는 나중에 따로 할 수 있어요."),
+    ).toBeNull();
+
+    rerender(<StudioInspectorPublishPanel {...props} pendingSaveIntent={null} />);
+    expect(screen.queryByText("제목만 정하면 게시를 이어갈 수 있어요.")).toBeNull();
+  });
+
   it("focuses the required title when the mobile metadata sheet becomes active", () => {
     const { rerender, props } = renderPanel();
     const outside = document.createElement("button");

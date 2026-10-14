@@ -102,6 +102,56 @@ describe("studio-asset-catalog-enhancements", () => {
     });
   });
 
+  describe("MRU folder + deterministic frequency (material-usage wiring)", () => {
+    function usedState() {
+      let state = EMPTY_ASSET_CATALOG_STATE;
+      // gpen: 2 uses last 3000 / watercolor: 2 uses last 2000 / desk: 1 use last 4000
+      state = recordAssetUsage(state, "brush-gpen", 1000);
+      state = recordAssetUsage(state, "brush-watercolor", 1500);
+      state = recordAssetUsage(state, "brush-gpen", 3000);
+      state = recordAssetUsage(state, "brush-watercolor", 2000);
+      state = recordAssetUsage(state, "3d-school-desk", 4000);
+      return state;
+    }
+
+    it("recentOnly acts as the 최근 사용 virtual folder in MRU order", () => {
+      const folder = filterAndSortAssets(sampleAssets, usedState(), { recentOnly: true }, "recent");
+      expect(folder.map((asset) => asset.id)).toEqual([
+        "3d-school-desk",
+        "brush-gpen",
+        "brush-watercolor",
+      ]);
+      const unused = filterAndSortAssets(
+        [...sampleAssets, {
+          id: "brush-unused",
+          name: "미사용 펜",
+          category: "brush",
+          tags: [],
+          storageLocation: "로컬 OPFS / 내 브러시",
+          createdAt: 9000,
+        }],
+        usedState(),
+        { recentOnly: true },
+        "recent",
+      );
+      expect(unused.map((asset) => asset.id)).not.toContain("brush-unused");
+    });
+
+    it("frequency ties break by lastUsedAt then id — never by input order", () => {
+      const state = usedState();
+      const forward = filterAndSortAssets(sampleAssets, state, {}, "frequency").map((a) => a.id);
+      const reversed = filterAndSortAssets(
+        [...sampleAssets].reverse(),
+        state,
+        {},
+        "frequency",
+      ).map((a) => a.id);
+      // counts: gpen 2 (last 3000) > watercolor 2 (last 2000) > desk 1
+      expect(forward).toEqual(["brush-gpen", "brush-watercolor", "3d-school-desk"]);
+      expect(reversed).toEqual(forward);
+    });
+  });
+
   describe("formatAssetStorageLocation", () => {
     it("formats human-readable storage paths", () => {
       expect(formatAssetStorageLocation("opfs", "brushes/gpen.myb")).toBe("로컬 저장소 (OPFS) › brushes/gpen.myb");

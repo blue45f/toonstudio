@@ -123,7 +123,7 @@ export function MarketInstallJourney({
             실제 다운로드·설치 흐름
           </h2>
           <p className="mt-0.5 text-[0.66rem] leading-relaxed text-fg-3">
-            소장, 기기 다운로드, 설치 또는 적용을 서로 다른 상태로 확인합니다.
+            내 에셋에 추가하면 Studio로 이동해 다운로드·설치·적용이 자동으로 이어집니다. 아래에서 각 단계의 상태를 확인할 수 있습니다.
           </p>
         </div>
         <span className="shrink-0 rounded-full border border-good/30 bg-good/10 px-2 py-0.5 text-[0.6rem] font-bold text-good">

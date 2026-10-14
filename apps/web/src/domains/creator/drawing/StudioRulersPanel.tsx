@@ -6,6 +6,11 @@
  * UX 목표: 10초 안에 목적 이해 — "자를 올려놓고 그리면 선이 자에 착 달라붙어요".
  * - 자 종류 카드 4종 (직선/곡선/동심원/퍼스펙티브) + SVG 미니 프리뷰
  * - 올려놓은 자 목록: 표시/숨기기, 스냅 on/off, 자별 색상
+ * - 원근 가이드: 1/2/3점 투시 토글 + 그리기 스냅 (studio-perspective-guide).
+ *   켜면 소실점 격자 세그먼트를 onPerspectiveGuideChange 로 내보내고,
+ *   호스트는 그 세그먼트를 캔버스에 그리고 studio-perspective-pen-snap 으로
+ *   펜 입력을 스냅한다. 꺼져 있으면 이 섹션은 접혀 있고 어떤 콜백도
+ *   나가지 않아 기존 동작과 완전히 동일하다(기본값 꺼짐).
  * - 대칭 그리기: 모드(수직/수평/4방향/방사형) + 축·각도·분할 수 조절
  *
  * 접근성: 정적 SVG 프리뷰(role="img" + aria-label), 토글은 aria-pressed,
@@ -32,6 +37,15 @@ import {
   type StudioRuler,
   type StudioRulerKind,
 } from "./studio-rulers";
+import {
+  buildPerspectiveGridSegments,
+  createDefaultPerspectiveGuide,
+  PERSPECTIVE_KINDS,
+  perspectiveVanishingPoints,
+  type GuideLine,
+  type PerspectiveGuide,
+  type PerspectiveKind,
+} from "./studio-perspective-guide";
 import {
   STUDIO_SYMMETRY_FOLDS_MAX,
   STUDIO_SYMMETRY_FOLDS_MIN,
@@ -66,11 +80,41 @@ const KIND_CARD_META: ReadonlyArray<{
   { kind: "perspective", Icon: Pyramid },
 ] as const;
 
+/**
+ * 원근 가이드 상태 — 패널이 호스트에 내보내는 배선 계약.
+ * enabled=false 이면 segments는 항상 빈 배열이고, 호스트는 오버레이를
+ * 그리지 않으며 펜 스냅 세션도 열지 않는다(기존 동작과 동일).
+ * segments는 패널 좌표 공간(기본 320×240)으로 자른 격자이며, 호스트가
+ * 실제 캔버스 크기로 다시 만들려면 guide + buildPerspectiveGridSegments
+ * (studio-perspective-guide)를 쓰면 된다.
+ */
+export interface StudioPerspectiveGuideState {
+  readonly enabled: boolean;
+  /** 가이드가 켜져 있을 때만 의미 있는 그리기 스냅 토글. */
+  readonly snapEnabled: boolean;
+  readonly guide: PerspectiveGuide;
+  readonly segments: readonly GuideLine[];
+}
+
 export interface StudioRulersPanelProps {
   readonly initialRulers?: ReadonlyArray<StudioRuler>;
   readonly initialSymmetry?: Partial<StudioSymmetrySettings>;
   readonly onRulersChange?: (rulers: StudioRuler[]) => void;
   readonly onSymmetryChange?: (settings: StudioSymmetrySettings) => void;
+  /** 원근 가이드 초기 켜짐 여부. 기본 false — 기존 렌더와 동일. */
+  readonly initialPerspectiveGuideEnabled?: boolean;
+  /** 원근 가이드 초기 투시 종류. 기본 "two-point". */
+  readonly initialPerspectiveKind?: PerspectiveKind;
+  /** 원근 가이드 초기 상태 전체(종류보다 우선). */
+  readonly initialPerspectiveGuide?: PerspectiveGuide;
+  /** 원근 가이드 격자를 만들 캔버스 크기. 기본 320×240(패널 좌표 공간). */
+  readonly perspectiveCanvasSize?: {
+    readonly width: number;
+    readonly height: number;
+  };
+  readonly onPerspectiveGuideChange?: (
+    state: StudioPerspectiveGuideState,
+  ) => void;
 }
 
 function RulerPreview({
@@ -207,6 +251,11 @@ export function StudioRulersPanel({
   initialSymmetry,
   onRulersChange,
   onSymmetryChange,
+  initialPerspectiveGuideEnabled = false,
+  initialPerspectiveKind = "two-point",
+  initialPerspectiveGuide,
+  perspectiveCanvasSize,
+  onPerspectiveGuideChange,
 }: StudioRulersPanelProps): ReactElement {
   const tx = (ko: string, en: string): string =>
     translateBilingualPair(SCOPE, ko, en);
@@ -216,6 +265,68 @@ export function StudioRulersPanel({
     normalizeStudioSymmetrySettings(initialSymmetry),
   );
   const idCounter = useRef(0);
+
+  /* ---------------- 원근 가이드 (본 배선) ---------------- */
+  const perspectiveCanvas = perspectiveCanvasSize ?? {
+    width: CANVAS_W,
+    height: CANVAS_H,
+  };
+  const [perspectiveEnabled, setPerspectiveEnabled] = useState<boolean>(
+    initialPerspectiveGuideEnabled,
+  );
+  const [perspectiveSnapEnabled, setPerspectiveSnapEnabled] =
+    useState<boolean>(true);
+  const [perspectiveGuide, setPerspectiveGuide] = useState<PerspectiveGuide>(
+    () =>
+      initialPerspectiveGuide ??
+      createDefaultPerspectiveGuide(initialPerspectiveKind, perspectiveCanvas),
+  );
+
+  const buildPerspectiveState = (
+    enabled: boolean,
+    snapEnabled: boolean,
+    guide: PerspectiveGuide,
+  ): StudioPerspectiveGuideState => ({
+    enabled,
+    snapEnabled,
+    guide,
+    segments: enabled
+      ? buildPerspectiveGridSegments({ guide, canvas: perspectiveCanvas })
+      : [],
+  });
+
+  const emitPerspective = (
+    enabled: boolean,
+    snapEnabled: boolean,
+    guide: PerspectiveGuide,
+  ): void => {
+    setPerspectiveEnabled(enabled);
+    setPerspectiveSnapEnabled(snapEnabled);
+    setPerspectiveGuide(guide);
+    onPerspectiveGuideChange?.(
+      buildPerspectiveState(enabled, snapEnabled, guide),
+    );
+  };
+
+  const perspectiveKindLabel = (kind: PerspectiveKind): string =>
+    tx(
+      {
+        "one-point": "1점 투시",
+        "two-point": "2점 투시",
+        "three-point": "3점 투시",
+      }[kind],
+      {
+        "one-point": "1-point",
+        "two-point": "2-point",
+        "three-point": "3-point",
+      }[kind],
+    );
+
+  const perspectiveState = buildPerspectiveState(
+    perspectiveEnabled,
+    perspectiveSnapEnabled,
+    perspectiveGuide,
+  );
 
   const kindName = (kind: StudioRulerKind): string =>
     tx(
@@ -438,6 +549,151 @@ export function StudioRulersPanel({
             </li>
           ))}
         </ul>
+      )}
+
+      {/* 원근 가이드 */}
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <h3 className="text-xs font-bold text-fg-2">
+          {tx("원근 가이드", "Perspective guide")}
+        </h3>
+        <button
+          type="button"
+          aria-pressed={perspectiveEnabled}
+          aria-label={
+            perspectiveEnabled
+              ? tx("원근 가이드 끄기", "Turn off perspective guide")
+              : tx("원근 가이드 켜기", "Turn on perspective guide")
+          }
+          title={
+            perspectiveEnabled
+              ? tx("원근 가이드 끄기", "Turn off perspective guide")
+              : tx("원근 가이드 켜기", "Turn on perspective guide")
+          }
+          onClick={() =>
+            emitPerspective(
+              !perspectiveEnabled,
+              perspectiveSnapEnabled,
+              perspectiveGuide,
+            )
+          }
+          className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+            perspectiveEnabled
+              ? "border-[#4f9cf9] bg-[#4f9cf9]/15 text-fg"
+              : "border-line bg-canvas text-fg-2 hover:text-fg"
+          }`}
+        >
+          {perspectiveEnabled ? tx("켜짐", "On") : tx("꺼짐", "Off")}
+        </button>
+      </div>
+      <p className="mt-1 text-[0.72rem] leading-5 text-fg-3">
+        {tx(
+          "켜면 소실점 격자가 보이고, 선이 소실점 방향으로 착 달라붙어요",
+          "Turn it on to see the vanishing-point grid — strokes snap toward the vanishing points.",
+        )}
+      </p>
+      {perspectiveEnabled && (
+        <div className="mt-2 space-y-2.5 rounded-xl border border-line bg-canvas p-3">
+          <div
+            className="flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={tx("투시 종류", "Perspective type")}
+          >
+            {PERSPECTIVE_KINDS.map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                aria-pressed={perspectiveGuide.kind === kind}
+                onClick={() =>
+                  emitPerspective(
+                    true,
+                    perspectiveSnapEnabled,
+                    createDefaultPerspectiveGuide(kind, perspectiveCanvas),
+                  )
+                }
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                  perspectiveGuide.kind === kind
+                    ? "border-[#4f9cf9] bg-[#4f9cf9]/15 text-fg"
+                    : "border-line bg-card text-fg-2 hover:text-fg"
+                }`}
+              >
+                {perspectiveKindLabel(kind)}
+              </button>
+            ))}
+            <button
+              type="button"
+              aria-pressed={perspectiveSnapEnabled}
+              aria-label={
+                perspectiveSnapEnabled
+                  ? tx("원근 스냅 끄기", "Turn off perspective snap")
+                  : tx("원근 스냅 켜기", "Turn on perspective snap")
+              }
+              title={
+                perspectiveSnapEnabled
+                  ? tx("원근 스냅 끄기", "Turn off perspective snap")
+                  : tx("원근 스냅 켜기", "Turn on perspective snap")
+              }
+              onClick={() =>
+                emitPerspective(
+                  true,
+                  !perspectiveSnapEnabled,
+                  perspectiveGuide,
+                )
+              }
+              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                perspectiveSnapEnabled
+                  ? "border-[#4f9cf9] bg-[#4f9cf9]/15 text-fg"
+                  : "border-line bg-card text-fg-3 hover:text-fg"
+              }`}
+            >
+              <Magnet size={13} aria-hidden="true" />
+              {tx("그리기 스냅", "Drawing snap")}
+            </button>
+          </div>
+          <svg
+            viewBox={`0 0 ${perspectiveCanvas.width} ${perspectiveCanvas.height}`}
+            role="img"
+            aria-label={tx(
+              "원근 가이드 격자 미리보기",
+              "Perspective guide grid preview",
+            )}
+            className="h-24 w-full rounded-lg bg-card text-fg-3"
+          >
+            {perspectiveState.segments.map((segment, index) => (
+              <line
+                key={index}
+                x1={segment.from.x}
+                y1={segment.from.y}
+                x2={segment.to.x}
+                y2={segment.to.y}
+                stroke="#f59e0b"
+                strokeWidth="1"
+                opacity={segment.family === "horizon" ? "0.9" : "0.55"}
+              />
+            ))}
+            {perspectiveVanishingPoints(perspectiveGuide).map(
+              (point, index) => (
+                <circle
+                  key={index}
+                  cx={Math.min(
+                    Math.max(point.x, 0),
+                    perspectiveCanvas.width,
+                  )}
+                  cy={Math.min(
+                    Math.max(point.y, 0),
+                    perspectiveCanvas.height,
+                  )}
+                  r="3.5"
+                  fill="#f59e0b"
+                />
+              ))}
+          </svg>
+          <p className="text-[0.68rem] leading-4 text-fg-3">
+            {tx(
+              "격자는 캔버스에 그대로 표시되고, 그리기 스냅을 켜면 펜 선이 소실점 방향으로 정렬돼요",
+              "The grid appears on the canvas, and with drawing snap on, pen strokes align toward the vanishing points.",
+            )}
+          </p>
+        </div>
       )}
 
       {/* 대칭 그리기 */}

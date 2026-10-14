@@ -37,6 +37,7 @@ import {
   type ProductionProcessStageCustomization,
   type ProductionProcessStageCustomizationInput,
 } from "./production-episode-process-matrix-model";
+import { ProductionMatrixPresence } from "./ProductionMatrixPresence";
 import { linkedReviewScroll } from "../virtual-space/studio-review-comparison-model";
 
 export type { ProductionProcessStageCustomization };
@@ -223,6 +224,8 @@ export function ProductionEpisodeProcessMatrix({
         {!compareMode ? <button type="button" onClick={selectAll} className={buttonClass({ variant: "outline", size: "sm" })}>{selected.size === cells.length ? <CheckSquare2 className="size-4" aria-hidden="true" /> : <Square className="size-4" aria-hidden="true" />} {selected.size === cells.length ? "전체 해제" : "전체 선택"}</button> : null}
       </div>
     </div>
+
+    <ProductionMatrixPresence projectId={aggregate.projectId} />
 
     {compareMode ? <div className="mt-5">
       <div className="flex flex-wrap items-center justify-between gap-3">

@@ -30,7 +30,14 @@ export interface ProductionManuscriptSnapshotSource {
 }
 
 const STORAGE_KEY = "toonstudio.manuscript-snapshots.v1";
-const MAX_SNAPSHOTS_PER_ARTIFACT = 60;
+/**
+ * 원고 스냅샷 보존 정책 (확정): 원고(artifact)당 최대 60개, 기간 제한 없음.
+ * 서버 정본(studio_manuscript_snapshot)도 같은 상한이며, 상한에 도달하면 새 스냅샷
+ * 생성을 거부한다(MAX_MANUSCRIPT_SNAPSHOTS_PER_ARTIFACT, manuscript-version-share).
+ * 이 로컬 캐시는 병합·생성 시 상한 초과분을 오래된 순으로 정리한다.
+ */
+export const PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION = 60;
+const MAX_SNAPSHOTS_PER_ARTIFACT = PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION;
 
 type SnapshotTable = Record<string, readonly ProductionManuscriptSnapshot[]>;
 

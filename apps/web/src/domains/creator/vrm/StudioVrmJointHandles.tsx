@@ -15,6 +15,8 @@ import * as THREE from "three";
 
 import { studioVrmSceneLocalPointToWorld } from "./studio-vrm-ik-constraints";
 
+import type { StudioVrmJointLimitProximity } from "./studio-vrm-joint-limit-proximity";
+
 import type { VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
 
 const POSITION_EPSILON = 1e-8;
@@ -145,6 +147,12 @@ export interface StudioVrmJointHandlesProps {
   keyboardStep?: number;
   rotationDegreesPerPixel?: number;
   lockedBones?: readonly StudioVrmJointHandleBone[];
+  /**
+   * 관절별 "해부학 한계" 근접 판정(선택). 제공된 관절의 회전 핸들은 경고색으로 바뀌고
+   * 라벨에 한계 문구가 붙는다. 판정 계산은 studio-vrm-joint-limit-proximity가 담당하고,
+   * 이 컴포넌트는 표시만 한다(없으면 기존 표시와 동일).
+   */
+  limitProximity?: Readonly<Partial<Record<StudioVrmJointHandleBone, StudioVrmJointLimitProximity>>>;
   disabled?: boolean;
   visible?: boolean;
   onSelectBone?: (bone: StudioVrmJointHandleBone) => void;
@@ -542,6 +550,7 @@ function RotationHandle({
   binding,
   selected,
   locked,
+  limitProximity,
   axisLock,
   screenSize,
   hitTargetSize,
@@ -556,6 +565,7 @@ function RotationHandle({
   binding: StudioVrmJointNodeBinding;
   selected: boolean;
   locked: boolean;
+  limitProximity?: StudioVrmJointLimitProximity | null;
   axisLock: StudioVrmIkAxisLock;
   screenSize: number;
   hitTargetSize: number;
@@ -731,7 +741,11 @@ function RotationHandle({
   };
 
   const size = THREE.MathUtils.clamp(screenSize * 0.86, 14, 32);
-  const color = locked ? "#f59e0b" : handleColor(binding.side);
+  // 해부학 한계 근접 시 경고색으로 바꾼다(잠금 표시는 기존 앰버를 유지해 두 상태를 구분한다).
+  const limitColor = limitProximity
+    ? limitProximity.severity === "at" ? "#dc2626" : "#f97316"
+    : null;
+  const color = locked ? "#f59e0b" : limitColor ?? handleColor(binding.side);
   const active = selected || hovered || dragging;
   const [offsetX, offsetY] = binding.screenOffset ?? [0, 0];
   const buttonStyle: CSSProperties = {
@@ -754,7 +768,7 @@ function RotationHandle({
     height: size,
     borderRadius: "999px",
     border: `${selected ? 3 : 2}px solid ${selected ? "#ffffff" : "rgba(255,255,255,0.9)"}`,
-    background: locked ? "rgba(245,158,11,0.94)" : color,
+    background: locked ? "rgba(245,158,11,0.94)" : limitColor ?? color,
     boxShadow: selected
       ? `0 0 0 2px rgba(15,23,42,0.92), 0 0 14px ${color}`
       : "0 1px 5px rgba(15,23,42,0.75)",
@@ -769,10 +783,12 @@ function RotationHandle({
     transition: dragging ? "none" : "transform 100ms ease, box-shadow 100ms ease",
   };
   const axisLabel = axisLock === "free" ? "자유 회전" : `로컬 ${axisLock.toUpperCase()}축`;
-  const controlLabel = `${binding.label} 관절 ${locked ? "잠금됨" : "직접 회전"}`;
+  // FK 직접 회전은 IK 우선 동선에서 "미세 조정"으로 강등 표기한다(셰이퍼 1단계).
+  const limitSuffix = limitProximity ? ` · ${limitProximity.label}` : "";
+  const controlLabel = `${binding.label} 관절 ${locked ? "잠금됨" : "미세 조정"}${limitSuffix}`;
   const title = locked
-    ? `${binding.label}: 잠김 · 우클릭 또는 길게 눌러 잠금 해제`
-    : `${binding.label}: 끌어서 회전 · Shift 정밀 조정 · ${axisLabel} · 우클릭 또는 길게 눌러 잠금`;
+    ? `${binding.label}: 잠김 · 우클릭 또는 길게 눌러 잠금 해제${limitSuffix}`
+    : `${binding.label}: 끌어서 미세 조정 · Shift 정밀 조정 · ${axisLabel} · 우클릭 또는 길게 눌러 잠금${limitSuffix}`;
 
   return (
     <group ref={groupRef}>
@@ -785,6 +801,7 @@ function RotationHandle({
           data-bone={binding.bone}
           data-joint-control="rotation"
           data-locked={locked || undefined}
+          data-limit-proximity={limitProximity?.severity}
           disabled={disabled}
           title={title}
           style={buttonStyle}
@@ -935,6 +952,29 @@ function RotationHandle({
                 }}
               />
             ) : null}
+            {limitProximity ? (
+              <span
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  top: -Math.max(3, size * 0.16),
+                  right: -Math.max(3, size * 0.16),
+                  minWidth: Math.max(11, size * 0.52),
+                  height: Math.max(11, size * 0.52),
+                  borderRadius: "999px",
+                  border: "1.5px solid rgba(255,255,255,0.92)",
+                  background: limitProximity.severity === "at" ? "#dc2626" : "#f97316",
+                  color: "white",
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: Math.max(8, size * 0.4),
+                  fontWeight: 900,
+                  lineHeight: 1,
+                }}
+              >
+                !
+              </span>
+            ) : null}
           </span>
           {selected ? (
             <span
@@ -956,7 +996,7 @@ function RotationHandle({
                 pointerEvents: "none",
               }}
             >
-              {binding.label}{locked ? " · 잠금" : " · 회전"}
+              {binding.label}{locked ? " · 잠금" : " · 미세 조정"}{limitSuffix}
             </span>
           ) : null}
         </button>
@@ -1434,6 +1474,7 @@ export function StudioVrmJointHandles({
   keyboardStep = DEFAULT_KEYBOARD_STEP,
   rotationDegreesPerPixel,
   lockedBones = [],
+  limitProximity,
   disabled = false,
   visible = true,
   onSelectBone,
@@ -1479,6 +1520,7 @@ export function StudioVrmJointHandles({
               binding={binding}
               selected={selected}
               locked={locked}
+              limitProximity={limitProximity?.[binding.bone]}
               axisLock={axisLock}
               screenSize={safeScreenSize}
               hitTargetSize={hitTargetSize}

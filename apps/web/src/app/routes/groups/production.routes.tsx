@@ -25,6 +25,10 @@ export const productionRoutes = defineAppRoutes([
   { id: "production-workspace-join", path: "/production/workspaces/join", element: <TeamPeopleRedirect to="/team/people/join" /> },
   { id: "production-workspace-detail", path: "/production/workspaces/:workspaceId", element: <TeamPeopleWorkspaceRedirect /> },
   { id: "production-workspace-usage", path: "/production/workspaces/:workspaceId/usage", element: <TeamPeopleWorkspaceRedirect suffix="/usage" /> },
+  // 제작 표면 정본 선언: /production = 제작 허브(정본) — 오늘의 운영(통합 작업함·운영 지표·제작 흐름·협업 모듈 안내).
+  // /production/projects = 프로젝트 디렉터리 — 프로젝트 목록·찾기 전용이며, 상세는 /production/projects/:projectId/* 가 맡는다.
+  // 두 경로는 같은 ProductionLandingPage를 쓰되 directoryMode로 문구·구성을 구분하고 서로 링크한다.
+  // 리다이렉트 수렴은 사용량 확인 후 별도 승인으로만 진행한다(마라톤 PLAN 원칙: URL은 지우지 않는다).
   { id: "production-home", path: "/production", element: <ProductionLandingPage /> },
   { id: "production-external-review", path: "/production/review/:projectId/:reviewId", element: <ProductionExternalReviewPage /> },
   { id: "production-pinned-review", path: "/production/pinned-review", element: <StudioPinnedReviewSharePage /> },

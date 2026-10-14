@@ -34,6 +34,7 @@ import {
 import { isStudioBrushCursorMode, shouldShowStudioBrushCursor } from "../canvas/studio-canvas-cursor";
 import { bubbleShapeCanvasPointToLocal, hasCustomBubbleShape, moveBubbleShapePoint } from "../lettering/studio-bubble-custom-shape";
 import { beginStudioAdvancedFillTap, endStudioAdvancedFillTap, moveStudioAdvancedFillTap } from "../studio-advanced-fill-tap";
+import { moveStudioLassoFillDrag } from "../studio-lasso-fill-gesture";
 import { resolveActiveStudioAdvancedRuler, type StudioAdvancedRuler } from "../studio-advanced-ruler-document";
 import { snapStudioAdvancedRulerStrokePoint } from "../studio-advanced-ruler-snap";
 import { CANVAS_W } from "../studio-assets";
@@ -245,6 +246,7 @@ export function bindStudioCuttoonStagePointersMove(
 ) {
   const {
     advancedFillTapGestureRef,
+    advancedFillLassoDragRef,
     advancedFillTouchPanRef,
     autoColorScribbleCanvasArmed,
     autoColorScribbleStrokeRef,
@@ -292,6 +294,8 @@ export function bindStudioCuttoonStagePointersMove(
     setPolyLassoHover,
     smudgeCursorRef,
     smudgeDragRef,
+    quickSelectDragRef,
+    scheduleQuickSelectionStrokeScan,
     strokeWidth,
     studioLiveRoomRef,
     tool,
@@ -440,6 +444,21 @@ export function bindStudioCuttoonStagePointersMove(
             stagePointerEvent,
             position,
           );
+      }
+      return;
+    }
+    // 둘러싸기 채우기 드래그 수집 — 탭 제스처보다 먼저 본다(둘은 동시에 존재하지 않는다:
+    // pointerdown에서 설정에 따라 하나만 시작된다). 경로는 스테이지 좌표로 누적한다.
+    if (advancedFillLassoDragRef.current) {
+      const pointerEvent = e.evt as PointerEvent;
+      const pointerId = Number.isFinite(pointerEvent.pointerId) ? pointerEvent.pointerId : 1;
+      const position = e.target.getStage()?.getRelativePointerPosition();
+      if (position) {
+        const session = advancedFillLassoDragRef.current;
+        advancedFillLassoDragRef.current = {
+          ...session,
+          gesture: moveStudioLassoFillDrag(session.gesture, pointerId, position),
+        };
       }
       return;
     }
@@ -622,6 +641,19 @@ export function bindStudioCuttoonStagePointersMove(
           rotation: selected.rotation,
         };
         setPolyLassoHover(canvasPointToNormalized(pos.x, pos.y, frame));
+      }
+      return;
+    }
+    // 빠른 선택 브러시 드래그 — 궤적 점을 누적하고 스캔을 스로틀 예약한다(성장 결과는
+    // 호스트가 스트로크 시작 스냅샷 기준으로 커밋하므로 문지를수록 선택이 자란다).
+    if (quickSelectDragRef.current) {
+      const pos = e.target.getStage()?.getRelativePointerPosition();
+      if (pos) {
+        const session = quickSelectDragRef.current;
+        const next = canvasPointToNormalized(pos.x, pos.y, session.frame);
+        if (appendStudioRasterRetouchDragPoint(session.points, next, session.radiusNorm)) {
+          scheduleQuickSelectionStrokeScan(session);
+        }
       }
       return;
     }

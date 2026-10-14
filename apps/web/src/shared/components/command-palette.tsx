@@ -9,6 +9,9 @@ import {
   Clock,
   ExternalLink,
   Tag,
+  BookOpen,
+  GraduationCap,
+  Store,
 } from "lucide-react";
 import { useEffect, useState, useRef, useMemo } from "react";
 
@@ -21,6 +24,7 @@ import {
 } from "./command-palette-data";
 import { CommandPalettePreview } from "./command-palette-preview";
 import { matchesCommandSearch } from "./command-palette-search";
+import type { UnifiedSearchSection } from "./unified-search";
 import { LoadingState } from "./LoadingState";
 import { MiniPoster } from "./rank-row";
 import { RatingInline } from "./ui/stars";
@@ -46,6 +50,19 @@ import {
   isSearchAbortError,
 } from "@/platform/search-client";
 
+type PaletteCommandItem = (typeof PALETTE_COMMANDS)[number];
+type PaletteStudioToolItem = (typeof PALETTE_STUDIO_TOOLS)[number];
+type PalettePageItem = ReturnType<typeof palettePagesForLocale>[number];
+
+/** 퍼지 보강 결과 — 정확 필터에 못 든 항목을 오타 허용으로 뒤에 붙인다. */
+interface FuzzyPaletteExtras {
+  readonly commands: readonly PaletteCommandItem[];
+  readonly tools: readonly PaletteStudioToolItem[];
+  readonly pages: readonly PalettePageItem[];
+}
+
+const EMPTY_FUZZY_EXTRAS: FuzzyPaletteExtras = { commands: [], tools: [], pages: [] };
+
 export function CommandPalette({
   open,
   onOpenChange,
@@ -57,6 +74,8 @@ export function CommandPalette({
   const [mode, setMode] = useState<PaletteMode>("all");
   const debouncedQ = useDebouncedValue(q, 140);
   const [results, setResults] = useState<Title[]>([]);
+  const [localSections, setLocalSections] = useState<readonly UnifiedSearchSection[]>([]);
+  const [fuzzyExtras, setFuzzyExtras] = useState<FuzzyPaletteExtras>(EMPTY_FUZZY_EXTRAS);
   const [recentTitles, setRecentTitles] = useState<Title[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeValue, setActiveValue] = useState<string>("");
@@ -169,6 +188,96 @@ export function CommandPalette({
       controller.abort();
     };
   }, [debouncedTrimmedQ, open, activeMode]);
+
+  // 통합 검색 집계층: 전체 모드에서는 강좌·도움말(매뉴얼)·소재 링크 섹션도 함께 찾는다.
+  // 프로바이더는 강좌·매뉴얼·사이트맵 데이터를 끌어오므로 셸 청크에 넣지 않고
+  // 검색어가 있을 때만 동적 import로 읽는다. 작품은 위 서버 검색, 페이지는 아래
+  // filteredPages가 이미 맡고 있어 여기서는 세 유형만 채운다.
+  useEffect(() => {
+    if (!open || !debouncedTrimmedQ || activeMode !== "all") {
+      setLocalSections([]);
+      return;
+    }
+    const queryToSearch = debouncedTrimmedQ.replace(/^[>@/#?]/, "").trim();
+    if (!queryToSearch) {
+      setLocalSections([]);
+      return;
+    }
+    let alive = true;
+    void import("./unified-search-providers")
+      .then((providers) => {
+        if (alive) setLocalSections(providers.searchUnifiedLocal(queryToSearch).sections);
+      })
+      .catch(() => {
+        if (alive) setLocalSections([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [debouncedTrimmedQ, open, activeMode]);
+
+  const unifiedCourseItems = localSections.find((section) => section.kind === "courses")?.items ?? [];
+  const unifiedHelpItems = localSections.find((section) => section.kind === "help")?.items ?? [];
+  const unifiedAssetsMoreHref = localSections.find((section) => section.kind === "assets")?.moreHref;
+
+  // 퍼지 보강(fuse.js): 동기 정확 필터(matchesCommandSearch)는 그대로 두고,
+  // 거기 못 든 명령·도구·페이지를 오타 허용으로 랭킹해 뒤에 붙인다.
+  // fuse.js는 진입(셸) 청크에 넣지 않으므로, 프로바이더와 같은 패턴으로
+  // 검색어가 있을 때만 동적 import 한다 — 모듈은 검색 표면 전용 청크로
+  // 분리되고, 첫 검색 키 입력에서만 로드된다.
+  useEffect(() => {
+    if (!open || !debouncedTrimmedQ) {
+      setFuzzyExtras(EMPTY_FUZZY_EXTRAS);
+      return;
+    }
+    const queryToSearch = debouncedTrimmedQ.replace(/^[>@/#?]/, "").trim();
+    if (!queryToSearch) {
+      setFuzzyExtras(EMPTY_FUZZY_EXTRAS);
+      return;
+    }
+    let alive = true;
+    void import("@/shared/lib/fuzzy-search")
+      .then((fuzzy) => {
+        if (!alive) return;
+        const rankExtras = <T,>(
+          pool: readonly T[],
+          enabled: boolean,
+          matches: (item: T) => boolean,
+          textsOf: (item: T) => readonly string[],
+        ): readonly T[] =>
+          enabled
+            ? fuzzy
+                .fuzzyRankByTexts(pool.filter((item) => !matches(item)), queryToSearch, textsOf, { limit: 6 })
+                .map((ranked) => ranked.item)
+            : [];
+        setFuzzyExtras({
+          commands: rankExtras(
+            PALETTE_COMMANDS,
+            activeMode === "all" || activeMode === "commands",
+            (cmd) => matchesCommandSearch(cmd.title, queryToSearch, cmd.keywords, cmd.subtitle),
+            (cmd) => [cmd.title, cmd.subtitle ?? "", ...(cmd.keywords ?? [])],
+          ),
+          tools: rankExtras(
+            PALETTE_STUDIO_TOOLS,
+            activeMode === "all" || activeMode === "studio",
+            (tool) => matchesCommandSearch(tool.name, queryToSearch, tool.keywords, tool.tip),
+            (tool) => [tool.name, tool.tip ?? "", ...(tool.keywords ?? [])],
+          ),
+          pages: rankExtras(
+            pages,
+            activeMode === "all" || activeMode === "pages",
+            (page) => matchesCommandSearch(page.title, queryToSearch, page.keywords, page.subtitle),
+            (page) => [page.title, page.subtitle ?? "", ...(page.keywords ?? [])],
+          ),
+        });
+      })
+      .catch(() => {
+        if (alive) setFuzzyExtras(EMPTY_FUZZY_EXTRAS);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [debouncedTrimmedQ, open, activeMode, pages]);
 
   // Load recently viewed titles when palette is open and query is empty
   useEffect(() => {
@@ -307,6 +416,13 @@ export function CommandPalette({
     return matchesCommandSearch(page.title, effectiveQuery, page.keywords, page.subtitle);
   });
 
+  // 표시 목록 — 정확 결과가 먼저, 퍼지 보강은 그 뒤(점수순). 보강은 디바운스된
+  // 질의 기준이라 입력 중(effectiveQuery와 어긋난 동안)에는 붙이지 않는다.
+  const fuzzySettled = effectiveQuery.length > 0 && effectiveQuery === debouncedTrimmedQ.replace(/^[>@/#?]/, "").trim();
+  const visibleCommands = fuzzySettled ? [...filteredCommands, ...fuzzyExtras.commands] : filteredCommands;
+  const visibleStudioTools = fuzzySettled ? [...filteredStudioTools, ...fuzzyExtras.tools] : filteredStudioTools;
+  const visiblePages = fuzzySettled ? [...filteredPages, ...fuzzyExtras.pages] : filteredPages;
+
   // Determine currently selected item for the Live Inspector preview
   let selectedItem: PaletteSelectedItem = null;
   if (activeValue.startsWith("title-")) {
@@ -333,10 +449,10 @@ export function CommandPalette({
       selectedItem = { type: "title", title: results[0]! };
     } else if (!effectiveQuery && recentTitles.length > 0) {
       selectedItem = { type: "title", title: recentTitles[0]! };
-    } else if (filteredCommands.length > 0) {
-      selectedItem = { type: "command", command: filteredCommands[0]! };
-    } else if (filteredPages.length > 0) {
-      selectedItem = { type: "page", page: filteredPages[0]! };
+    } else if (visibleCommands.length > 0) {
+      selectedItem = { type: "command", command: visibleCommands[0]! };
+    } else if (visiblePages.length > 0) {
+      selectedItem = { type: "page", page: visiblePages[0]! };
     }
   }
 
@@ -521,9 +637,9 @@ export function CommandPalette({
             {effectiveQuery &&
               !isSearching &&
               results.length === 0 &&
-              filteredCommands.length === 0 &&
-              filteredStudioTools.length === 0 &&
-              filteredPages.length === 0 && (
+              visibleCommands.length === 0 &&
+              visibleStudioTools.length === 0 &&
+              visiblePages.length === 0 && (
                 <div className="px-4 py-12 text-center text-sm text-fg-3">
                   <p>
                     {t("common.notFoundWithQuery").replace(
@@ -671,7 +787,7 @@ export function CommandPalette({
             )}
 
             {/* Commands Section */}
-            {filteredCommands.length > 0 && (
+            {visibleCommands.length > 0 && (
               <Command.Group
                 forceMount
                 heading={
@@ -680,7 +796,7 @@ export function CommandPalette({
                   </div>
                 }
               >
-                {filteredCommands.map((cmd) => {
+                {visibleCommands.map((cmd) => {
                   const Icon = cmd.icon;
                   const state = cmd.getState?.();
                   return (
@@ -728,7 +844,7 @@ export function CommandPalette({
             )}
 
             {/* Studio Tools Section */}
-            {filteredStudioTools.length > 0 && (
+            {visibleStudioTools.length > 0 && (
               <Command.Group
                 forceMount
                 heading={
@@ -737,7 +853,7 @@ export function CommandPalette({
                   </div>
                 }
               >
-                {filteredStudioTools.map((tool) => {
+                {visibleStudioTools.map((tool) => {
                   const Icon = tool.icon;
                   return (
                     <Command.Item
@@ -819,8 +935,91 @@ export function CommandPalette({
               </Command.Group>
             )}
 
+            {/* Unified Search: Courses Section (통합 검색 집계층) */}
+            {unifiedCourseItems.length > 0 && (
+              <Command.Group
+                forceMount
+                heading={
+                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                    강좌 ({unifiedCourseItems.length})
+                  </div>
+                }
+              >
+                {unifiedCourseItems.map((item) => (
+                  <Command.Item
+                    forceMount
+                    key={`course-${item.id}`}
+                    value={`course-${item.id}`}
+                    onSelect={() => go(item.href, effectiveQuery)}
+                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
+                  >
+                    <GraduationCap size={16} className="text-fg-3 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-fg">{item.title}</span>
+                      {item.description ? (
+                        <span className="ml-2 text-xs text-fg-3">{item.description}</span>
+                      ) : null}
+                    </div>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+
+            {/* Unified Search: Help & Manual Section (통합 검색 집계층) */}
+            {unifiedHelpItems.length > 0 && (
+              <Command.Group
+                forceMount
+                heading={
+                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                    도움말·매뉴얼 ({unifiedHelpItems.length})
+                  </div>
+                }
+              >
+                {unifiedHelpItems.map((item) => (
+                  <Command.Item
+                    forceMount
+                    key={`helpdoc-${item.id}`}
+                    value={`helpdoc-${item.id}`}
+                    onSelect={() => go(item.href, effectiveQuery)}
+                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
+                  >
+                    <BookOpen size={16} className="text-fg-3 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-fg">{item.title}</span>
+                      {item.description ? (
+                        <span className="ml-2 text-xs text-fg-3">{item.description}</span>
+                      ) : null}
+                    </div>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+
+            {/* Unified Search: Assets Link (소재는 전용 표면에서 서버 검색) */}
+            {unifiedAssetsMoreHref && effectiveQuery && (
+              <Command.Group
+                forceMount
+                heading={
+                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                    소재
+                  </div>
+                }
+              >
+                <Command.Item
+                  forceMount
+                  value="__assets-search"
+                  onSelect={() => go(unifiedAssetsMoreHref, effectiveQuery)}
+                  className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-semibold text-accent transition-colors data-[selected=true]:bg-accent-soft"
+                >
+                  <Store size={16} className="shrink-0" />
+                  <span>소재 마켓에서 '{effectiveQuery}' 찾기</span>
+                  <ExternalLink size={12} className="ml-auto" />
+                </Command.Item>
+              </Command.Group>
+            )}
+
             {/* Pages Section */}
-            {filteredPages.length > 0 && (
+            {visiblePages.length > 0 && (
               <Command.Group
                 forceMount
                 heading={
@@ -829,7 +1028,7 @@ export function CommandPalette({
                   </div>
                 }
               >
-                {filteredPages.map((page) => {
+                {visiblePages.map((page) => {
                   const Icon = page.icon;
                   return (
                     <Command.Item

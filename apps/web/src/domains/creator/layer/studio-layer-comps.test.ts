@@ -48,6 +48,28 @@ describe("studio-layer-comps", () => {
     });
   });
 
+  describe("Blend Mode Restore (regression)", () => {
+    it("removes blendMode when the captured state had none", () => {
+      const comp = captureLayerComp("블렌드 없음", sampleLayers, "comp-plain");
+      const current = sampleLayers.map((l) =>
+        l.id === "layer-line" ? { ...l, blendMode: "multiply" } : l,
+      );
+      const applied = applyLayerComp(current, comp);
+      const line = applied.find((l) => l.id === "layer-line");
+      expect(line).toBeDefined();
+      expect(Object.hasOwn(line!, "blendMode")).toBe(false);
+    });
+
+    it("restores blendMode when the captured state had one", () => {
+      const blended = sampleLayers.map((l) =>
+        l.id === "layer-line" ? { ...l, blendMode: "overlay" } : l,
+      );
+      const comp = captureLayerComp("블렌드 있음", blended, "comp-blended");
+      const applied = applyLayerComp(sampleLayers, comp);
+      expect(applied.find((l) => l.id === "layer-line")?.blendMode).toBe("overlay");
+    });
+  });
+
   describe("Batch Export Planning", () => {
     it("generates structured file export list for all comps", () => {
       const comp1 = captureLayerComp("선화_초안", sampleLayers);
@@ -57,6 +79,31 @@ describe("studio-layer-comps", () => {
       expect(plan).toHaveLength(2);
       expect(plan[0].fileName).toBe("episode_01_선화_초안.png");
       expect(plan[1].fileName).toBe("episode_01_완성본.png");
+    });
+
+    it("separates file names that collide after sanitizing (regression)", () => {
+      // "야간 버전" / "야간/버전" / "야간:버전" all sanitize to "야간_버전".
+      const comps = [
+        captureLayerComp("야간 버전", sampleLayers),
+        captureLayerComp("야간/버전", sampleLayers),
+        captureLayerComp("야간:버전", sampleLayers),
+      ];
+      const plan = planLayerCompsBatchExport(comps, "ep", "png");
+      const names = plan.map((p) => p.fileName);
+      expect(new Set(names).size).toBe(3);
+      expect(names[0]).toBe("ep_야간_버전.png");
+      expect(names[1]).toBe("ep_야간_버전-2.png");
+      expect(names[2]).toBe("ep_야간_버전-3.png");
+    });
+
+    it("treats case-only differences as collisions (regression)", () => {
+      const comps = [
+        captureLayerComp("Night", sampleLayers),
+        captureLayerComp("night", sampleLayers),
+      ];
+      const plan = planLayerCompsBatchExport(comps, "ep", "png");
+      expect(plan[0].fileName).toBe("ep_Night.png");
+      expect(plan[1].fileName).toBe("ep_night-2.png");
     });
   });
 });

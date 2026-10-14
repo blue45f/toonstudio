@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildStudioEffectGraphEdgeIndex,
   classifyStudioPsdEffectNode,
   planStudioEffectGraphRender,
   redoStudioEffectGraphTransaction,
@@ -146,5 +147,51 @@ describe("studio adjustment/effect graph", () => {
         preferredBackend: "auto",
       }),
     ).toBe("flattened");
+  });
+});
+
+describe("간선 인덱스 맵 (렌더 계획 O(N·E) 스캔 제거)", () => {
+  it("인덱스 버킷은 원본 edges 순서와 동일하고 filter 결과와 일치한다", () => {
+    const index = buildStudioEffectGraphEdgeIndex(graph.edges);
+    for (const node of graph.nodes) {
+      expect(index.incomingByNodeId.get(node.id) ?? []).toEqual(
+        graph.edges.filter((edge) => edge.to === node.id),
+      );
+      expect(index.outgoingByNodeId.get(node.id) ?? []).toEqual(
+        graph.edges.filter((edge) => edge.from === node.id),
+      );
+    }
+  });
+
+  it("큰 그래프에서도 렌더 계획의 입력·마스크 순서가 전체 스캔 기준과 동일하다", () => {
+    const nodes: StudioAdjustmentEffectGraph["nodes"][number][] = [
+      { id: "src", kind: "source", enabled: true, opacity: 1, blendMode: "normal", sourceHash: "h", embedded: true },
+    ];
+    const edges: StudioAdjustmentEffectGraph["edges"][number][] = [];
+    let prev = "src";
+    for (let i = 0; i < 60; i += 1) {
+      const id = `adj-${i}`;
+      nodes.push({
+        id, kind: "adjustment", enabled: true, opacity: 1, blendMode: "normal",
+        adjustment: "levels", parameters: { black: i }, colorSpace: "srgb",
+      });
+      edges.push({ from: prev, to: id, input: "source" });
+      edges.push({ from: "src", to: id, input: "backdrop" });
+      prev = id;
+    }
+    nodes.push({ id: "out", kind: "output", enabled: true, opacity: 1, blendMode: "normal", outputColorSpace: "srgb" });
+    edges.push({ from: prev, to: "out", input: "source" });
+    const big: StudioAdjustmentEffectGraph = {
+      version: 1, id: "big", revision: 3, outputNodeId: "out", nodes, edges,
+    };
+    const plan = planStudioEffectGraphRender({
+      graph: big, purpose: "export", webGpuAvailable: false, sourceColorSpace: "srgb",
+    });
+    expect(plan.steps).toHaveLength(nodes.length);
+    for (const step of plan.steps) {
+      const expected = edges.filter((edge) => edge.to === step.nodeId);
+      expect(step.inputNodeIds).toEqual(expected.filter((e) => e.input !== "mask").map((e) => e.from));
+      expect(step.maskNodeIds).toEqual(expected.filter((e) => e.input === "mask").map((e) => e.from));
+    }
   });
 });

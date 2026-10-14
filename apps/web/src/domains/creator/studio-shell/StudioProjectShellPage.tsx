@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   FileOutput,
   FolderKanban,
+  History,
   ImagePlus,
   LayoutDashboard,
   LayoutGrid,
@@ -62,6 +63,7 @@ import { resolveStudioProjectResumeTarget } from "../studio-project-resume-targe
 import { readStudioReviewHistory } from "../studio-review-history-store";
 import { StudioProjectCardThumbnail } from "./StudioProjectCardThumbnail";
 import { StudioProjectDiagnosticsBridge } from "./StudioProjectDiagnosticsBridge";
+import { StudioProjectStoryPlanning } from "../planning/StudioProjectStoryPlanning";
 import { StudioProjectReadinessPanel } from "./StudioProjectReadinessPanel";
 import "./studio-illustrated-project-surfaces.css";
 
@@ -153,8 +155,10 @@ const SECTION_DEFINITIONS: Readonly<Record<StudioProjectSection, SectionDefiniti
     },
     icon: BookOpen,
     actions: [
-      action(BookOpen, "대본·에피소드", "Scripts & episodes", "장면과 대사를 구조화하고 원고 말풍선과 연결합니다.", "Structure scenes and dialogue, then connect them to manuscript balloons.", (id) => queryHref("/story-lab", { project: id })),
-      action(Users, "캐릭터·관계", "Characters & relations", "말투·외형·관계·등장 이력을 작품 기준으로 정리합니다.", "Organize voice, appearance, relationships and appearances as project data.", (id) => queryHref("/studio/assets/characters/new", { project: id })),
+      action(BookOpen, "회차 줄거리", "Episode synopses", "회차마다 목표와 줄거리, 마음의 변화를 적어 콘티로 이어갑니다.", "Write each episode's goal, synopsis and emotional arc, then carry it into storyboards.", (id) => projectViewHref(id, "story", "episodes")),
+      action(Users, "캐릭터 시트·관계", "Character sheets & relations", "말투·배경·바라는 것과 캐릭터 사이 관계를 시트로 정리합니다.", "Capture voice, background, motivation and relationships in character sheets.", (id) => projectViewHref(id, "story", "characters")),
+      action(Boxes, "세계관 설정 허브", "World lore hub", "장소·세력·종족·규칙·연표를 항목으로 적고 서로 잇습니다. 이름 표기의 정본도 여기서 정해집니다.", "Record places, factions, species, rules and timeline events as linked entries — the canonical spellings live here too.", (id) => projectViewHref(id, "story", "world")),
+      action(History, "연표", "Timeline", "세계관 사건을 시간 순서대로 모아 봅니다. 허브의 연표와 같은 설정을 봅니다.", "See world events in chronological order — the same entries as the lore hub timeline.", (id) => projectViewHref(id, "story", "timeline")),
       action(Sparkles, "세계관·연속성", "World & continuity", "설정 충돌과 장면 간 불일치를 근거와 함께 확인합니다.", "Review continuity and story conflicts with supporting references.", (id) => workHref(id, "storyworld")),
       action(ImagePlus, "참고자료", "References", "출처와 사용 조건을 유지하며 자료를 모읍니다.", "Collect references while preserving source and usage information.", (id) => queryHref(workHref(id, "storyworld"), { focus: "references" })),
     ],
@@ -768,6 +772,15 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
           )}
         </div>
       </section>
+
+      {section === "story" && (selectedView === "episodes" || selectedView === "characters" || selectedView === "world" || selectedView === "timeline") ? (
+        <div
+          className="mt-4 rounded-2xl border border-line bg-card p-4 sm:p-5"
+          data-studio-project-planning={selectedView}
+        >
+          <StudioProjectStoryPlanning projectId={displayProjectId} view={selectedView} />
+        </div>
+      ) : null}
 
       <StudioProjectDiagnosticsBridge projectId={displayProjectId} />
 

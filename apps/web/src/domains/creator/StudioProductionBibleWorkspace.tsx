@@ -124,6 +124,7 @@ export function StudioProductionBibleWorkspace({
       onClose={onClose}
       bible={bible}
       onChange={changeBible}
+      wikiScopeId={storageKey}
       characterOptions={characterOptions}
       assetOptions={assetOptions}
       persistence={{

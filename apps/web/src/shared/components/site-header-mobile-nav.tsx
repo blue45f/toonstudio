@@ -8,9 +8,9 @@ import { useEffect, useRef, type RefObject } from "react";
 import {
   SITE_UTILITY_NAVIGATION,
   mobileSiteTabsForPath,
+  resolveNavigationGroupsFor,
   siteNavigationContextForPath,
   siteNavigationGroupForPath,
-  siteNavigationGroupsForPath,
   siteNavigationLocale,
   siteNavigationText,
 } from "./site-navigation";
@@ -121,7 +121,14 @@ export function MobileHeaderNavigation({
   const t = useT();
   const overlayRef = useRef<HTMLDivElement>(null);
   const navigationContext = siteNavigationContextForPath(pathname);
-  const navigationGroups = siteNavigationGroupsForPath(pathname);
+  /**
+   * S1-3: 그룹 안 순서는 푸터·⌘K와 같은 정책 함수(resolveNavigationGroupsFor)가
+   * 정한다 — 그룹 순서는 여정 순 그대로, 그룹 안에서는 tier(primary →
+   * contextual → directory) 순이다. 렌더러가 자체 정렬을 갖지 않는다.
+   * 아래 PINNED_MENU_HREFS 제외는 tier 정책이 아니라 맨 위 고정 행동과의
+   * href 중복 제거이며, 제외되는 목적지도 고정 행동으로 그대로 닿는다.
+   */
+  const navigationGroups = resolveNavigationGroupsFor();
   /** 지도는 하나다. 현재 경로가 속한 여정 구간만 강조 표시한다. */
   const currentGroupId = siteNavigationGroupForPath(pathname)?.id ?? null;
   const mobileTabs = mobileSiteTabsForPath(pathname);

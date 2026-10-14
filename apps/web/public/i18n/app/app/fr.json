@@ -1,5 +1,6 @@
 {
   "app.name": "Pour le studio.",
   "app.brandBeta": "Le service bêta  Les données et les fonctionnalités peuvent changer",
-  "app.loading": "Chargement"
+  "app.loading": "Chargement",
+  "app.skipToContent": "Skip to main content"
 }

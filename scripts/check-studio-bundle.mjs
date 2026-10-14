@@ -164,6 +164,28 @@ const budgets = {
 };
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Public-page performance budgets (BLUEPRINT §6.4, perf finding 5)
+// ---------------------------------------------------------------------------
+// The ratchet below guards the Studio surface, but the pages a guest meets first —
+// the public home and /discover — had no budget at all: field CWV was not collected
+// and no probe ever loaded them. The field side now lives in the analytics bridge
+// (apps/web/src/app/traffic-analytics/web-vitals.ts, same thresholds); this side is
+// the lab check. `--public-runtime` loads both paths in Chromium and *reports*
+// every budget overage (bundleObservations + the reference table + the public CWV
+// section). Like the reference budgets above, these are telemetry, not a veto:
+// what fails the build is still the ratchet and the structural contracts.
+const publicProbePaths = ["/", "/discover"];
+const publicPageBudgets = {
+  // §6.4 public-surface targets: LCP p75 ≤ 2.5s, CLS ≤ 0.1, INP ≤ 200ms.
+  // INP is listed for parity with the field beacon; a lab load performs no
+  // interaction, so the probe measures LCP and CLS only.
+  lcpMs: 2_500,
+  cls: 0.1,
+  inpMs: 200,
+};
+
+// ---------------------------------------------------------------------------
 // Ratchet gate (2026-08-08)
 // ---------------------------------------------------------------------------
 // The reference budgets above stayed advisory, and the 2026-08-08 startup
@@ -193,6 +215,7 @@ const hasFlag = (flagName, envName) =>
 const updateBaselineRequested = hasFlag("--update-baseline", "UPDATE_BUNDLE_BASELINE");
 const tightenBaselineRequested = hasFlag("--tighten", "TIGHTEN_BUNDLE_BASELINE");
 const runtimeProbeRequested = hasFlag("--runtime", "STUDIO_BUNDLE_RUNTIME");
+const publicRuntimeProbeRequested = hasFlag("--public-runtime", "STUDIO_BUNDLE_PUBLIC_RUNTIME");
 const runtimeProbePath = "/studio/canvas";
 const verboseReportRequested = hasFlag("--verbose", "STUDIO_BUNDLE_VERBOSE");
 
@@ -241,7 +264,10 @@ function formatKiB(bytes) {
 }
 
 function formatMeasurement(kind, value) {
-  return kind === "count" ? String(value) : formatKiB(value);
+  if (kind === "count") return String(value);
+  if (kind === "ms") return `${value} ms`;
+  if (kind === "ratio") return String(value);
+  return formatKiB(value);
 }
 
 function formatRatio(actual, reference) {
@@ -968,8 +994,21 @@ if (!fs.existsSync(manifestPath)) {
       }
     }
 
+    const publicCwvReport = publicRuntimeProbeRequested
+      ? await probePublicPages()
+      : null;
+    if (publicCwvReport) {
+      for (const metric of publicCwvReport.metrics) {
+        recordMeasurement("public", metric.key, metric.kind, metric.value, metric.reference);
+      }
+      for (const overage of publicCwvReport.overages) {
+        bundleObservations.push(overage);
+      }
+    }
+
     reportBundleGate({
       runtimeReport,
+      publicCwvReport,
       structuralSummary:
         `studio bundle structural check passed: Studio ${studioKeys.size} chunks, ${describe(studioSize.raw)} raw / ${describe(studioSize.gzip)} gzip; `
           + `StudioPage ${describe(studioEntrySize.raw)} raw / ${describe(studioEntrySize.gzip)} gzip; `
@@ -1245,7 +1284,36 @@ function reportRuntimeSection(runtimeReport, baseline) { // NOSONAR javascript:S
   }
 }
 
-function reportBundleGate({ runtimeReport, structuralSummary }) { // NOSONAR javascript:S3776
+function reportPublicCwvSection(publicCwvReport) {
+  console.log("");
+  if (!publicCwvReport) {
+    console.log(
+      "public CWV: not measured (run `node scripts/check-studio-bundle.mjs --public-runtime` "
+        + "to check the §6.4 budgets for / and /discover)",
+    );
+    return;
+  }
+  console.log(
+    `public CWV (measured now: ${publicCwvReport.probe.paths.join(", ")}, settle `
+      + `${publicCwvReport.probe.settleMs} ms, viewport ${publicCwvReport.probe.viewport}; `
+      + "INP needs a real interaction, so it is field-only — see the TrafficAnalyticsBridge "
+      + "web-vitals beacon)",
+  );
+  console.log(
+    renderTable(
+      ["page", "LCP", "LCP budget", "CLS", "CLS budget"],
+      publicCwvReport.pages.map((page) => [
+        `  ${page.path}`,
+        page.lcpMs === null ? "n/a" : formatMeasurement("ms", page.lcpMs),
+        formatMeasurement("ms", publicPageBudgets.lcpMs),
+        page.cls === null ? "n/a" : formatMeasurement("ratio", page.cls),
+        formatMeasurement("ratio", publicPageBudgets.cls),
+      ]),
+    ),
+  );
+}
+
+function reportBundleGate({ runtimeReport, publicCwvReport, structuralSummary }) { // NOSONAR javascript:S3776
   const baseline = loadBaseline();
 
   for (const observation of bundleObservations) {
@@ -1299,6 +1367,7 @@ function reportBundleGate({ runtimeReport, structuralSummary }) { // NOSONAR jav
   }
 
   reportRuntimeSection(runtimeReport, baseline);
+  reportPublicCwvSection(publicCwvReport);
   console.log("");
 
   if (updateBaselineRequested || tightenBaselineRequested) {
@@ -1536,6 +1605,152 @@ async function probeRuntimeStartup(staticClosureFileNames) {
           { key: "eager-dynamic decoded bytes", kind: "bytes", value: sum(eager) },
         ],
         eagerChunks: eager,
+      };
+    } finally {
+      await browser.close();
+    }
+  } finally {
+    server.kill("SIGTERM");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public-page CWV probe: "what does a guest's first load actually cost"
+// ---------------------------------------------------------------------------
+// The runtime probe above measures a returning user's Studio entry. Nothing ever
+// loaded the two surfaces the §6.4 budgets govern, so a public LCP regression had
+// no way to surface. This probe serves the same dist/ through vite preview, loads
+// each public path in a mobile-viewport Chromium context with the CWV observers
+// installed before navigation (init script, buffered), and lets the settle window
+// capture late LCP candidates and layout shifts. CLS uses the same session-window
+// rule as the field beacon in web-vitals.ts so lab and field numbers stay
+// comparable. INP is deliberately absent: with no interaction there is no INP, and
+// inventing a synthetic one would report a number no visitor ever produced.
+
+async function probePublicPages() {
+  const port = Number(process.env.STUDIO_BUNDLE_PUBLIC_RUNTIME_PORT ?? 4289);
+  const settleMs = Number(process.env.STUDIO_BUNDLE_PUBLIC_RUNTIME_SETTLE_MS ?? 3000);
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const viteBin = path.resolve("node_modules", "vite", "bin", "vite.js");
+  if (!fs.existsSync(viteBin)) {
+    throw new Error("--public-runtime needs node_modules/vite (install dependencies first)");
+  }
+  let chromium;
+  try {
+    ({ chromium } = await import("playwright"));
+  } catch {
+    throw new Error("--public-runtime needs the playwright package (install dependencies first)");
+  }
+
+  const server = spawn(
+    process.execPath,
+    [
+      viteBin,
+      "preview",
+      "--port",
+      String(port),
+      "--strictPort",
+      "--host",
+      "127.0.0.1",
+      "--outDir",
+      outputDirectory,
+    ],
+    { stdio: ["ignore", "pipe", "pipe"] },
+  );
+  const serverLog = [];
+  server.stdout.on("data", (chunk) => serverLog.push(String(chunk)));
+  server.stderr.on("data", (chunk) => serverLog.push(String(chunk)));
+
+  try {
+    await waitForPreviewServer(baseUrl, server, 90_000).catch((error) => {
+      throw new Error(`${error.message}\n${serverLog.join("").slice(-2000)}`);
+    });
+
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const metrics = [];
+      const overages = [];
+      const pages = [];
+      for (const probePath of publicProbePaths) {
+        const context = await browser.newContext({
+          viewport: { width: 412, height: 915 },
+          deviceScaleFactor: 2,
+        });
+        await context.addInitScript(`(() => {
+          const vitals = { lcp: null, cls: null };
+          window.__toonPublicCwv = vitals;
+          try {
+            new PerformanceObserver((list) => {
+              for (const entry of list.getEntries()) vitals.lcp = entry.startTime;
+            }).observe({ type: "largest-contentful-paint", buffered: true });
+          } catch {}
+          try {
+            let sessionValue = 0;
+            let sessionStart = 0;
+            let lastShift = 0;
+            let maxSession = 0;
+            new PerformanceObserver((list) => {
+              for (const entry of list.getEntries()) {
+                if (entry.hadRecentInput || !(entry.value > 0)) continue;
+                if (sessionValue > 0 && (entry.startTime - lastShift > 1000 || entry.startTime - sessionStart > 5000)) {
+                  sessionValue = 0;
+                  sessionStart = entry.startTime;
+                }
+                if (sessionValue === 0) sessionStart = entry.startTime;
+                sessionValue += entry.value;
+                lastShift = entry.startTime;
+                if (sessionValue > maxSession) maxSession = sessionValue;
+                vitals.cls = maxSession;
+              }
+            }).observe({ type: "layout-shift", buffered: true });
+          } catch {}
+        })();`);
+        const page = await context.newPage();
+        await page.goto(`${baseUrl}${probePath}`, { waitUntil: "load", timeout: 120_000 });
+        await page.waitForTimeout(settleMs);
+        const vitals = await page.evaluate(() => window.__toonPublicCwv ?? { lcp: null, cls: null });
+        await context.close();
+
+        const label = probePath === "/" ? "public /" : `public ${probePath}`;
+        const lcpMs = typeof vitals?.lcp === "number" ? Math.round(vitals.lcp) : null;
+        const cls = typeof vitals?.cls === "number"
+          ? Math.round(vitals.cls * 10_000) / 10_000
+          : null;
+        pages.push({ path: probePath, lcpMs, cls });
+        if (lcpMs !== null) {
+          metrics.push({
+            key: `${label} LCP`,
+            kind: "ms",
+            value: lcpMs,
+            reference: publicPageBudgets.lcpMs,
+          });
+          if (lcpMs > publicPageBudgets.lcpMs) {
+            overages.push(
+              `public ${probePath} LCP is ${formatMeasurement("ms", lcpMs)} `
+                + `(§6.4 budget ${formatMeasurement("ms", publicPageBudgets.lcpMs)})`,
+            );
+          }
+        }
+        if (cls !== null) {
+          metrics.push({
+            key: `${label} CLS`,
+            kind: "ratio",
+            value: cls,
+            reference: publicPageBudgets.cls,
+          });
+          if (cls > publicPageBudgets.cls) {
+            overages.push(
+              `public ${probePath} CLS is ${formatMeasurement("ratio", cls)} `
+                + `(§6.4 budget ${formatMeasurement("ratio", publicPageBudgets.cls)})`,
+            );
+          }
+        }
+      }
+      return {
+        probe: { paths: publicProbePaths, settleMs, viewport: "412x915" },
+        metrics,
+        overages,
+        pages,
       };
     } finally {
       await browser.close();

@@ -651,7 +651,12 @@ export function StudioInspectorPublishPanel({
 
       {pendingSaveIntent ? (
         <div className="mt-3 rounded-lg border border-accent/35 bg-accent-soft/45 p-2.5">
-          <p className="text-[0.65rem] leading-relaxed text-fg-2">
+          <p className="text-[0.7rem] font-semibold leading-relaxed text-fg">
+            {pendingSaveIntent === "published"
+              ? "제목만 정하면 게시를 이어갈 수 있어요."
+              : "제목만 정하면 저장돼요. 게시는 나중에 따로 할 수 있어요."}
+          </p>
+          <p className="mt-1 text-[0.65rem] leading-relaxed text-fg-2">
             필수 정보와 입력 제한을 확인하면 요청한 저장 흐름을 여기서 바로 이어갈 수 있어요.
           </p>
           <button

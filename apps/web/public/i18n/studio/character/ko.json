@@ -115,10 +115,15 @@
   "studio.character.reference.usePhotoWithoutCamera": "카메라 없이 사진 포즈 사용",
   "studio.character.reference.useReferenceImage": "참고 이미지 사용",
   "studio.character.shelf.filters": "필터",
-  "studio.character.shelf.interactionHint": "탭하면 바로 적용돼요. 마우스를 올리면 3D 화면에서 미리 볼 수 있고, 클릭하기 전에는 저장되지 않아요. 즐겨찾기는 이 브라우저에만 저장돼요.",
+  "studio.character.shelf.interactionHint": "탭하면 바로 적용돼요. 마우스를 올리면 3D 화면에서 미리 볼 수 있고, 클릭하기 전에는 저장되지 않아요. 찜한 항목은 이 브라우저에만 저장돼요.",
   "studio.character.workspace.view": "보기",
   "studio.character.workspace.showTools": "편집 도구 펼치기",
   "studio.character.workspace.focusModel": "모델 크게 보기",
   "studio.character.workspace.tools": "도구",
-  "studio.character.workspace.expand": "크게"
+  "studio.character.workspace.expand": "크게",
+  "studio.character.shelf.interactionHintTouch": "터치: 탭하면 바로 적용돼요. 스크롤만으로는 바뀌지 않아요.",
+  "studio.character.shelf.interactionHintMouse": "마우스: 올리면 3D 화면에서 미리 볼 수 있어요. 클릭하기 전에는 저장되지 않아요.",
+  "studio.character.shelf.interactionHintKeyboard": "키보드: 방향키로 고르면 3D 화면에서 미리 볼 수 있어요. Enter를 누르기 전에는 저장되지 않아요.",
+  "studio.character.shelf.shapeNote": "카드의 모양 그림은 실제 캐릭터 모습과 다를 수 있어요.",
+  "studio.character.shelf.favoritesNote": "즐겨찾기는 이 브라우저에만 저장돼요."
 }

@@ -49,10 +49,12 @@
 }
 .manual-open:hover { border-color: var(--manual-accent); background: var(--manual-soft); }
 
-/* 본문 배치 */
+/* 본문 배치 — 행 레일은 전 표면 표준 216px 토큰 하나만 쓴다 (BLUEPRINT §5.2 (4), §5.3 L4).
+ * 접기 전환도 표준 1024px 하나뿐이다: <1024px에서는 사이드바를 숨기고
+ * <details> 목차(.manual-mobile-contents)로 변형한다 — 허용 변형 패턴 2종 중 하나. */
 .manual-layout {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-columns: var(--layout-rail-row) minmax(0, 1fr);
   gap: clamp(24px, 3vw, 44px);
   max-width: 1320px;
   margin: 0 auto;
@@ -110,7 +112,7 @@
 .manual-hero h1 { margin: 8px 0 0; font-size: clamp(28px, 3.6vw, 44px); font-weight: 900; line-height: 1.2; letter-spacing: -0.04em; text-wrap: balance; }
 .manual-hero-main { flex: 1; min-width: 0; }
 .manual-hero-art { width: 15rem; flex-shrink: 0; align-self: center; aspect-ratio: 16 / 10; object-fit: cover; border: 1px solid var(--manual-line); border-radius: 18px; }
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .manual-hero-art { display: none; }
 }
 .manual-hero .manual-search-bar { margin: 22px 0 0; }
@@ -341,7 +343,7 @@
 @media (max-width: 1100px) {
   .manual-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .manual-layout { display: block; padding: 20px 16px 48px; }
   .manual-sidebar { display: none; }
   .manual-mobile-contents { display: block; margin-bottom: 18px; padding: 4px 14px; border: 1px solid var(--manual-line); border-radius: 14px; font-size: 13px; }

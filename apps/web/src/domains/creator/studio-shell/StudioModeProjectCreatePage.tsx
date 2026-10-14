@@ -19,6 +19,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
 import { Container } from "@/shared/components/section";
+import { FormStepSection } from "@/shared/components/layout/FormStepSection";
+import { PurposeHeader } from "@/shared/components/layout/PurposeHeader";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useI18n } from "@/shared/lib/i18n";
@@ -61,6 +63,14 @@ import type {
   StudioProjectPurpose,
   StudioProjectStartPoint,
 } from "../studio-project-definition";
+import {
+  resolveStudioCreateLane,
+  studioCreateExplicitLane,
+  studioCreateLanding,
+  studioCreateLaneForStartPoint,
+  studioCreateLaneSpec,
+  type StudioCreateLane,
+} from "../studio-create-lane";
 import { buildStudioModeLaunchHref, resolveStudioModeCreationPlan } from "../studio-mode-creation-plan";
 import { createStudioProjectWithInitialDocument } from "../studio-project-creation";
 import type { StudioProjectKind } from "../studio-project-library-store";
@@ -282,10 +292,18 @@ export function StudioModeProjectCreatePage() {
     : bt(initialFormat.defaultTitleKo, initialFormat.defaultTitleEn)));
   const [titleEdited, setTitleEdited] = useState(requestedTitle !== null);
   const requestedStart = requestedStartPoint(searchParams.get("start"));
+  // 시작 레인 (BLUEPRINT §2.3, S2-7): /create 관문이 넘긴 레인이 양식의 초기값(첫 단계)과
+  // 생성 후 착지를 결정한다. 명시 레인이 없으면 template·start 파라미터에서 추론하고,
+  // 레인이 없는 딥링크는 null이라 기존 시작점 기반 동작을 그대로 유지한다.
+  const entryLane = resolveStudioCreateLane(searchParams);
+  const explicitEntryLane = studioCreateExplicitLane(searchParams);
+  const [lane, setLane] = useState<StudioCreateLane | null>(entryLane);
   // 작품 홈에서 가져온 한 줄 아이디어. 제목 초안으로 쓰였다는 사실을 화면 위쪽에서 바로 보여 준다.
   const importedIdea = requestedStart === "idea" ? requestedTitle : null;
   const [startPoint, setStartPoint] = useState<StudioProjectStartPoint>(
-    requestedStart ?? projectStartPointFromOnboarding(requestedSelection?.startingPoint),
+    requestedStart
+      ?? (entryLane ? studioCreateLaneSpec(entryLane).startPoint : null)
+      ?? projectStartPointFromOnboarding(requestedSelection?.startingPoint),
   );
   const [purpose, setPurpose] = useState<StudioProjectPurpose>(
     projectPurposeFromOnboarding(requestedSelection?.goal),
@@ -293,7 +311,13 @@ export function StudioModeProjectCreatePage() {
   const [collaboration, setCollaboration] = useState<StudioProjectCollaboration>(
     projectCollaborationFromOnboarding(requestedSelection?.teamModel),
   );
-  const [onboardingEnabled, setOnboardingEnabled] = useState(Boolean(requestedSelection));
+  // 관문이 명시한 레인은 착지를 레인이 결정하므로, 제작 계획을 자동으로 켜서 착지를 가로채지 않는다.
+  // 사용자가 토글로 직접 켜면 그때부터 제작 계획 착지를 따른다. 온보딩 흐름(?onboarding=production)은
+  // 레인을 명시하지 않으므로 기존 자동 활성화를 유지한다.
+  const [onboardingEnabled, setOnboardingEnabled] = useState(
+    Boolean(requestedSelection)
+      && (explicitEntryLane === null || searchParams.get("onboarding") === "production"),
+  );
   const [selection, setSelection] = useState<WebtoonOnboardingSelection>(
     requestedSelection ?? DEFAULT_WEBTOON_ONBOARDING_SELECTION,
   );
@@ -356,6 +380,10 @@ export function StudioModeProjectCreatePage() {
 
   function chooseStartPoint(next: StudioProjectStartPoint) {
     setStartPoint(next);
+    // 재료를 직접 바꾸면 첫 단계가 바뀐 것이므로 레인(과 그 착지)도 따라간다.
+    // files는 가져오기 착지가 따로 있어 레인을 유지한다.
+    const nextLane = studioCreateLaneForStartPoint(next);
+    if (nextLane !== null) setLane(nextLane);
     if (supportsProductionPlan) {
       setSelection((current) => ({
         ...current,
@@ -416,6 +444,13 @@ export function StudioModeProjectCreatePage() {
         });
         return;
       }
+      // 레인 착지 (S2-7): 콘티·빈 캔버스·템플릿 레인은 재료 기본값(idea)이 아니라
+      // 에디터로 착지한다. 이야기 레인과 레인 없는 진입은 아래 기존 착지(기획)를 따른다.
+      if (!auxiliary && studioCreateLanding(lane) === "editor") {
+        const launchHref = buildStudioModeLaunchHref(result, modePlan);
+        navigate(hrefWithFormat(launchHref, format.id), { replace: true });
+        return;
+      }
       if (!auxiliary && effectiveStartPoint === "idea") {
         navigate(`/studio/p/${encodeURIComponent(result.project.id)}/story`, { replace: true });
         return;
@@ -436,35 +471,37 @@ export function StudioModeProjectCreatePage() {
 
   return (
     <div
+      data-page-template="form"
       data-route-ready="studio-new"
       data-studio-illustrated-surface="new"
       data-studio-mode-create="true"
       data-studio-outcome-create="true"
+      data-studio-create-lane={lane ?? "none"}
       className="min-h-[calc(100vh-4rem)] bg-bg"
     >
       <Container size="wide" className="py-4 sm:py-7">
         <div className="mx-auto max-w-6xl">
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="inline-flex items-center gap-2 text-xs font-black text-accent">
+          {/* 목적 헤더 슬롯 (BLUEPRINT §3.1 form 변형) — eyebrow+H1+설명 1줄+부 행동 1개.
+              주 행동은 양식 끝 제출 구역에 하나만 두므로 헤더에는 부 행동(가져오기)만 둔다. */}
+          <PurposeHeader
+            eyebrow={(
+              <>
                 <Sparkles size={14} aria-hidden="true" />
                 {bt("새 프로젝트", "New project")}
-              </p>
-              <h1 className="mt-2 text-2xl font-black tracking-tight text-fg sm:text-3xl">
-                {bt("어떤 결과물을 완성하려고 하나요?", "What do you want to finish?")}
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
-                {bt(
-                  "결과물 형식을 고르면 작품 구조, 작업실, 검수 기준과 내보내기가 함께 준비됩니다.",
-                  "Choose the final outcome and ToonStudio prepares its structure, workspace, checks and exports.",
-                )}
-              </p>
-            </div>
-            <Link href="/studio/import" className={buttonClass({ variant: "outline" })}>
-              <Upload size={16} aria-hidden="true" />
-              {bt("기존 파일 바로 가져오기", "Import an existing file")}
-            </Link>
-          </header>
+              </>
+            )}
+            title={bt("어떤 결과물을 완성하려고 하나요?", "What do you want to finish?")}
+            description={bt(
+              "결과물 형식을 고르면 작품 구조, 작업실, 검수 기준과 내보내기가 함께 준비됩니다.",
+              "Choose the final outcome and ToonStudio prepares its structure, workspace, checks and exports.",
+            )}
+            secondaryActions={(
+              <Link href="/studio/import" className={buttonClass({ variant: "outline" })}>
+                <Upload size={16} aria-hidden="true" />
+                {bt("기존 파일 바로 가져오기", "Import an existing file")}
+              </Link>
+            )}
+          />
 
           {importedIdea ? (
             <p
@@ -484,18 +521,12 @@ export function StudioModeProjectCreatePage() {
             </p>
           ) : null}
 
-          <section className="mt-6 rounded-3xl border border-line bg-card p-4 sm:p-5" aria-labelledby="studio-format-title">
-            <div className="flex items-center gap-3">
-              <span className="grid size-8 place-items-center rounded-full bg-accent text-sm font-black text-on-accent">1</span>
-              <div>
-                <h2 id="studio-format-title" className="text-lg font-black text-fg">
-                  {bt("완성할 콘텐츠를 선택하세요", "Choose the final outcome")}
-                </h2>
-                <p className="text-xs text-fg-2">
-                  {bt("도구가 아니라 독자와 시청자가 보게 될 형태를 기준으로 선택합니다.", "Choose by what readers or viewers will receive, not by a tool.")}
-                </p>
-              </div>
-            </div>
+          <FormStepSection
+            step={1}
+            titleId="studio-format-title"
+            title={bt("완성할 콘텐츠를 선택하세요", "Choose the final outcome")}
+            description={bt("도구가 아니라 독자와 시청자가 보게 될 형태를 기준으로 선택합니다.", "Choose by what readers or viewers will receive, not by a tool.")}
+          >
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5" data-studio-format-count={STUDIO_PROJECT_FORMAT_PROFILES.length}>
               {STUDIO_PROJECT_FORMAT_PROFILES.map((profile) => {
@@ -566,20 +597,14 @@ export function StudioModeProjectCreatePage() {
                 })}
               </div>
             </details>
-          </section>
+          </FormStepSection>
 
-          <section className="mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5" aria-labelledby="studio-start-point-title">
-            <div className="flex items-center gap-3">
-              <span className="grid size-8 place-items-center rounded-full bg-accent text-sm font-black text-on-accent">2</span>
-              <div>
-                <h2 id="studio-start-point-title" className="text-lg font-black text-fg">
-                  {bt("지금 어떤 재료를 가지고 있나요?", "What do you have right now?")}
-                </h2>
-                <p className="text-xs text-fg-2">
-                  {bt("선택한 위치에서 가장 짧은 제작 경로로 시작합니다.", "Start from the shortest production path for your current material.")}
-                </p>
-              </div>
-            </div>
+          <FormStepSection
+            step={2}
+            titleId="studio-start-point-title"
+            title={bt("지금 어떤 재료를 가지고 있나요?", "What do you have right now?")}
+            description={bt("선택한 위치에서 가장 짧은 제작 경로로 시작합니다.", "Start from the shortest production path for your current material.")}
+          >
 
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {STUDIO_PROJECT_START_POINT_OPTIONS.map((option) => {
@@ -613,20 +638,14 @@ export function StudioModeProjectCreatePage() {
                 );
               })}
             </div>
-          </section>
+          </FormStepSection>
 
-          <section className="mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5" aria-labelledby="studio-project-details-title">
-            <div className="flex items-center gap-3">
-              <span className="grid size-8 place-items-center rounded-full bg-accent text-sm font-black text-on-accent">3</span>
-              <div>
-                <h2 id="studio-project-details-title" className="text-lg font-black text-fg">
-                  {bt("프로젝트 세부 설정", "Project details")}
-                </h2>
-                <p className="text-xs text-fg-2">
-                  {bt("형식마다 필요한 크기와 초기 문서 구조가 다르게 준비됩니다.", "Each format prepares its own size and initial document structure.")}
-                </p>
-              </div>
-            </div>
+          <FormStepSection
+            step={3}
+            titleId="studio-project-details-title"
+            title={bt("프로젝트 세부 설정", "Project details")}
+            description={bt("형식마다 필요한 크기와 초기 문서 구조가 다르게 준비됩니다.", "Each format prepares its own size and initial document structure.")}
+          >
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <label className="block text-xs font-bold text-fg-2" htmlFor={PROJECT_TITLE_INPUT_ID}>
@@ -797,20 +816,14 @@ export function StudioModeProjectCreatePage() {
                 )}
               </p>
             )}
-          </section>
+          </FormStepSection>
 
-          <section className="mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5" aria-labelledby="studio-prepared-project-title">
-            <div className="flex items-center gap-3">
-              <span className="grid size-8 place-items-center rounded-full bg-accent text-sm font-black text-on-accent">4</span>
-              <div>
-                <h2 id="studio-prepared-project-title" className="text-lg font-black text-fg">
-                  {bt("준비되는 프로젝트를 확인하세요", "Review what will be prepared")}
-                </h2>
-                <p className="text-xs text-fg-2">
-                  {bt("선택 결과가 실제 작업 화면과 출력 방식에 어떻게 반영되는지 보여줍니다.", "See how your choice changes the workspace and delivery.")}
-                </p>
-              </div>
-            </div>
+          <FormStepSection
+            step={4}
+            titleId="studio-prepared-project-title"
+            title={bt("준비되는 프로젝트를 확인하세요", "Review what will be prepared")}
+            description={bt("선택 결과가 실제 작업 화면과 출력 방식에 어떻게 반영되는지 보여줍니다.", "See how your choice changes the workspace and delivery.")}
+          >
 
             <div className="mt-4 space-y-4">
               {!auxiliary ? <StudioProjectFormatPreview profile={format} locale={locale} /> : null}
@@ -834,8 +847,11 @@ export function StudioModeProjectCreatePage() {
                 </div>
               ) : null}
             </div>
-          </section>
+          </FormStepSection>
 
+          {/* 고급 구역 (BLUEPRINT §3.1 form 변형) — 선택 설정은 기본 꺼짐이고, 펼침 상태가
+              온보딩 선택 상태와 양방향으로 묶여 있어 AdvancedSection(details)으로 바꾸지 않고
+              슬롯 역할만 이 섹션이 맡는다. */}
           {supportsProductionPlan ? (
             <section className="mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5" data-studio-create-optional-settings="true">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -914,6 +930,8 @@ export function StudioModeProjectCreatePage() {
             </section>
           ) : null}
 
+          {/* 제출·복구 구역 (BLUEPRINT §3.1 form 변형) — 주 행동(만들기) 1개와
+              비활성 사유·오류(role=alert)를 같은 구역에 모아 양식을 끝낸다. */}
           <section className="mt-4 rounded-3xl border border-accent/35 bg-accent-soft/20 p-4 sm:p-5">
             <div className="rounded-xl bg-panel/60 px-3 py-2.5 text-xs leading-5 text-fg-2">
               {bt(

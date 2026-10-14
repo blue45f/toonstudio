@@ -6,13 +6,43 @@
  * 고정한다. 색상은 `app/styles/globals.css`의 `@theme`에 정의된 기존 토큰만 사용하고
  * 새 색상을 만들지 않는다 (다크모드·대비 테마는 토큰 기반으로 자동 대응).
  */
+import type { ToneRegister } from "@/shared/language/tone-policy";
+
 export const LAYOUT_TOKENS = {
-  /** 페이지 외곽 — 헤더 높이만큼 확보한 최소 높이 + 캔버스 배경 + 페이지 수직 여백. */
-  page: "min-h-[calc(100dvh-var(--site-header-height,4.25rem))] bg-canvas py-7 sm:py-10 lg:py-12",
-  /** 본문 최대 너비 — 기존 `Container` size="wide"(1320px)와 동일. */
+  /**
+   * 페이지 외곽 — 헤더 높이만큼 확보한 최소 높이 + 캔버스 배경 + 페이지 수직 여백.
+   * 헤더 폴백은 BLUEPRINT §5.2(3)의 단일 높이 60px(3.75rem)과 일치시킨다.
+   * (기존 4.25rem=68px 폴백은 실제 헤더 56/60px와 어긋나 있었다.)
+   */
+  page: "min-h-[calc(100dvh-var(--site-header-height,3.75rem))] bg-canvas py-7 sm:py-10 lg:py-12",
+  /** 본문 최대 너비 — 기존 `Container` size="wide"(1320px)와 동일. `width.standard`와 같은 값이다. */
   maxWidth: "max-w-[1320px]",
   /** 본문 좌우 여백 — 기존 `Container`와 동일. */
   gutter: "px-4 sm:px-6",
+  /**
+   * 거터 단계 선언 (BLUEPRINT §5.2(2) `--layout-gutter`) — 모바일 16px, ≥640px 24px, ≥1280px 32px.
+   * 헤더·본문·푸터 정렬선을 맞추는 신규 표면용이며, 기존 `gutter` 사용처는 이관 전까지 그대로 둔다.
+   */
+  gutterSteps: "px-4 sm:px-6 xl:px-8",
+
+  /**
+   * 폭 체계 (BLUEPRINT §5.2(1)) — 레이아웃 치수의 단일 선언처.
+   * 새 표면은 이 4단 밖의 임의 폭(max-w-[90rem], max-w-5xl 등)을 쓰지 않는다.
+   * CSS 변수가 필요한 곳은 이 값과 대조 테스트(layout-tokens.test.ts)로 일치를 강제한다.
+   */
+  width: {
+    /** 본문·양식 필드 열 (48rem). */
+    reading: "max-w-3xl",
+    /** 기본값 — 공개·앱 페이지 전부 (82.5rem = 1320px). */
+    standard: "max-w-[1320px]",
+    /** 데이터 밀집 표면 전용 (100rem = 1600px) — 선언한 표면만. */
+    app: "max-w-[1600px]",
+    /** 에디터·캔버스·리더 몰입 표면 전용. */
+    full: "max-w-none",
+  },
+
+  /** 반응형 전환 지점 (BLUEPRINT §5.2(6)) — 신규 코드는 이 5개만 쓴다. */
+  breakpoints: [640, 768, 1024, 1280, 1536] as readonly number[],
 
   /** 섹션 수직 리듬. 페이지 내부에서 연속 섹션은 `mt-*` 대신 이 py 스케일 중 하나를 택한다. */
   sectionSpacing: {
@@ -62,3 +92,75 @@ export const LAYOUT_TOKENS = {
 } as const;
 
 export type LayoutSectionSpacing = keyof typeof LAYOUT_TOKENS.sectionSpacing;
+export type LayoutWidthTier = keyof typeof LAYOUT_TOKENS.width;
+
+/**
+ * 페이지 템플릿 변형 (BLUEPRINT §3.1) — 5개만 허용한다.
+ * dashboard: 지금 할 일 중심 / list: 필터+그리드 / detail: 주 대상+보조 레일 /
+ * form: 단계 양식 / reading: 본문 폭(reading) 제한.
+ */
+export type PageTemplateVariant = "dashboard" | "list" | "detail" | "form" | "reading";
+
+/** 변형 → 폭 단 매핑. reading만 본문 폭으로 좁히고 나머지는 표준 폭을 쓴다. */
+export const PAGE_TEMPLATE_WIDTH: Readonly<Record<PageTemplateVariant, LayoutWidthTier>> = {
+  dashboard: "standard",
+  list: "standard",
+  detail: "standard",
+  form: "standard",
+  reading: "reading",
+};
+
+/**
+ * 변형 → 기본 말투 매핑 (BLUEPRINT §3.4 말투 정책과 §3.1 템플릿 변형의 연결).
+ * 템플릿 변형은 전부 사용자 대면 표면이라 기본 말투는 해요체(`polite`)다.
+ * 법적·결제 문서처럼 합니다체가 허용되는 표면은 PageShell의 `surfaceKind`
+ * prop으로 표면 종류를 선언해 이 기본값을 덮는다(정책 단일 출처:
+ * shared/language/tone-policy.ts의 TONE_POLICY).
+ */
+export const PAGE_TEMPLATE_TONE: Readonly<Record<PageTemplateVariant, ToneRegister>> = {
+  dashboard: "polite",
+  list: "polite",
+  detail: "polite",
+  form: "polite",
+  reading: "polite",
+};
+
+/**
+ * 템플릿 슬롯 이름 (BLUEPRINT §3.1) — 변형마다 슬롯 자체는 같고 배치만 다르다.
+ * 이 이름이 `data-template-slot` 값과 PageShell/ListTemplate/DetailTemplate의
+ * 렌더 순서의 단일 선언처다.
+ */
+export type PageTemplateSlot =
+  | "hero"
+  | "purposeHeader"
+  | "now"
+  | "steps"
+  | "filters"
+  | "work"
+  | "rail"
+  | "evidence"
+  | "advanced"
+  | "recovery";
+
+/**
+ * 변형 → 슬롯 순서 확정 (S3-2).
+ * - list: 목적 헤더 → (지금 할 일) → **필터** → 작업 구역(그리드/표 결과).
+ *   필터는 결과보다 항상 앞에 오고, 근거·고급·복구는 결과 뒤에 둔다.
+ * - detail: 목적 헤더 → (지금 할 일) → 작업 구역(주 대상) → **보조 레일**.
+ *   레일은 DOM에서 주 대상 뒤에 오고(읽기 순서), 시각 배치는
+ *   PAGE_TEMPLATE_DETAIL_GRID가 ≥1024px에서 오른쪽 열로 옮긴다.
+ * - steps(단계 표시)는 회차 맥락인 form 변형에만 둔다(§3.1·§2.2 규칙).
+ */
+export const PAGE_TEMPLATE_SLOTS: Readonly<Record<PageTemplateVariant, readonly PageTemplateSlot[]>> = {
+  dashboard: ["hero", "purposeHeader", "now", "work", "evidence", "advanced", "recovery"],
+  list: ["hero", "purposeHeader", "now", "filters", "work", "evidence", "advanced", "recovery"],
+  detail: ["hero", "purposeHeader", "now", "work", "rail", "evidence", "advanced", "recovery"],
+  form: ["hero", "purposeHeader", "steps", "work", "advanced", "recovery"],
+  reading: ["hero", "purposeHeader", "work", "advanced"],
+};
+
+/**
+ * detail 변형의 시각 배치 — 주 대상 열 + 보조 레일 20rem.
+ * <1024px에서는 단일 열로 쌓이고 레일이 주 대상 아래에 온다(§5.2 행 레일 전환 규칙과 정합).
+ */
+export const PAGE_TEMPLATE_DETAIL_GRID = "lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8";

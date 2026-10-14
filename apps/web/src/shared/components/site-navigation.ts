@@ -125,12 +125,19 @@ export const SITE_NAVIGATION_ITEMS = {
   workspaceHome: primaryItem("workspace-home", "workspace-home", Home, true),
   workspaceTeam: primaryItem("workspace-team", "workspace-team", Users),
   workspaceHub: primaryItem("workspace-hub", "workspace-hub", Shapes),
+  // 지도 차원 라벨 구분 (2026-10-14 결정): 디렉터리 표면(모바일 메뉴·전체 메뉴·⌘K)에서는
+  // personal 그룹 안에서 workspaceHome("내 홈", /home)과 이 항목이 나란히 놓인다.
+  // 둘 다 "홈"으로 읽히면 목적지를 고를 수 없으므로, 공개 홈("/")의 정본 라벨을
+  // "사이트 홈"으로 구분한다. id·href·아이콘·그룹 소속은 무변경이라
+  // siteNavigationGroupForPath("/") === "personal" 계약은 그대로 유지된다.
+  // 푸터는 브랜드 링크가 "/"를 이미 소유해 이 항목을 렌더링에서 제외하므로(유지),
+  // 이 구분이 실제로 보이는 곳은 디렉터리 표면과 공개 셸 1차 내비다.
   home: item(
     "home",
     "/",
     Home,
-    "홈",
-    "Home",
+    "사이트 홈",
+    "Site home",
     "작품 탐색과 서비스 소개",
     "Discover stories and explore the service",
     true,

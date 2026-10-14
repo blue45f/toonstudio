@@ -30,6 +30,10 @@ import type {
 } from "./studio-live-room-transition-coordinator";
 import type { StudioLiveSocketAuthService } from "./studio-live-socket-auth.service";
 import type {
+  StudioLiveOpRoomRegistry,
+  StudioLiveOpSubmitOutcome,
+} from "./studio-live-op";
+import type {
   StudioLiveAck,
   StudioLiveAckCallback,
   StudioLiveActiveScreenShare,
@@ -80,9 +84,16 @@ export interface StudioLiveGatewayFields {
   readonly liveFeatures: StudioLiveFeaturePolicy;
   readonly studioCrdtService: StudioCrdtService;
   readonly studioLiveLockRepository: StudioLiveLockRepository;
+  readonly studioLiveOpRooms: StudioLiveOpRoomRegistry;
+  readonly opSubmitTailBySender: Map<string, Promise<void>>;
 }
 
 export interface StudioLiveGatewayHost extends StudioLiveGatewayFields {
+  runStudioLiveOpSerialized<T>(
+    senderKey: string,
+    operation: () => Promise<StudioLiveOpSubmitOutcome>
+  ): Promise<StudioLiveOpSubmitOutcome>;
+  runStudioLiveOpSerialized<T>(senderKey: string, operation: () => Promise<T>): Promise<T>;
   performJoin(
     client: StudioLiveSocket,
     input: StudioLiveJoinInput,

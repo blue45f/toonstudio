@@ -1,5 +1,6 @@
 {
   "app.name": "Estúdio Toon",
   "app.brandBeta": "Serviço beta  Dados e características podem mudar",
-  "app.loading": "Carregamento"
+  "app.loading": "Carregamento",
+  "app.skipToContent": "Skip to main content"
 }

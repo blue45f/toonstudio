@@ -1,0 +1,1 @@
+{"$comment":"Known unconnected code at gate adoption. Shrink this list by wiring modules up or deleting them; --check fails on any finding not listed here. Regenerate once at adoption with: node scripts/check-unconnected-code.mjs --write-baseline","entries":[]}

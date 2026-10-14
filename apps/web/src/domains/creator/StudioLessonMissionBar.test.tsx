@@ -81,6 +81,21 @@ describe("StudioLessonMissionBar", () => {
     expect(await screen.findByRole("button", { name: /다시 실습하기/ })).toBeTruthy();
   });
 
+  it("복귀 맥락 계약이 함께 오면 끝나면 돌아가기 행동을 제공한다 (S2-8)", async () => {
+    renderBar(`${MISSION_URL}&returnTo=%2Flearn%2Fstory-board&intent=lesson-practice`);
+
+    expect(await screen.findByText("한 문장에서 세 컷의 이야기로 — 스튜디오 실습")).toBeTruthy();
+    const link = screen.getByRole("link", { name: /강의로 돌아가기/ });
+    expect(link.getAttribute("href")).toBe("/learn/story-board");
+  });
+
+  it("복귀 맥락이 없으면 돌아가기 행동을 렌더하지 않는다", async () => {
+    renderBar(MISSION_URL);
+
+    expect(await screen.findByText("한 문장에서 세 컷의 이야기로 — 스튜디오 실습")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /돌아가기/ })).toBeNull();
+  });
+
   it("파라미터가 없거나 어긋나면 아무것도 렌더하지 않는다", () => {
     const plain = renderBar("/studio/canvas");
     expect(plain.container.firstChild).toBeNull();

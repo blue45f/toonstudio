@@ -1,3 +1,5 @@
+import "../../app/styles/studio-route.css";
+
 import { Profiler } from "react";
 
 import { recordStudioRenderProfile } from "./canvas/studio-canvas-shared-runtime";

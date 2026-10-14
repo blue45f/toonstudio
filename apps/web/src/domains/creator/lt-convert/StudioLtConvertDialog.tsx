@@ -30,6 +30,7 @@ import {
   type StudioLtConvertOptions,
   type StudioLtConvertResult,
 } from "./studio-lt-convert";
+import type { StudioLtVectorLineConversion } from "./studio-lt-convert-vector";
 
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -56,6 +57,12 @@ export interface StudioLtConvertDialogProps {
   /** 이미지 파일로 소스를 교체한다. */
   readonly onImportImage: (file: File) => void;
   readonly onApply: (result: StudioLtConvertResult) => void;
+  /**
+   * 벡터 출력 실험: 지정하면 "주선을 벡터로 적용" 동작이 나타난다.
+   * LT 결과의 주선만 편집 가능한 벡터 패스(VectorLayer)로 변환해 전달한다.
+   * 미지정 시 기존 래스터 적용 동선과 100% 동일하다.
+   */
+  readonly onApplyVectorLine?: (conversion: StudioLtVectorLineConversion) => void;
   readonly onCancel: () => void;
 }
 
@@ -115,6 +122,7 @@ export function StudioLtConvertDialog({
   applyError,
   onImportImage,
   onApply,
+  onApplyVectorLine,
   onCancel,
 }: StudioLtConvertDialogProps): ReactElement | null {
   const t = useT();
@@ -139,6 +147,7 @@ export function StudioLtConvertDialog({
     STUDIO_LT_CONVERT_DEFAULT_OPTIONS.screentone,
   );
   const [tab, setTab] = useState<PreviewTab>("line");
+  const [vectorStatus, setVectorStatus] = useState<string | null>(null);
 
   const options: StudioLtConvertOptions = useMemo(
     () => ({
@@ -167,6 +176,43 @@ export function StudioLtConvertDialog({
       };
     }
   }, [source.imageData, options, t]);
+
+  // 변환 조건이 바뀌면 이전 벡터 적용 안내는 낡은 정보라 지운다.
+  useEffect(() => {
+    setVectorStatus(null);
+  }, [outcome.result]);
+
+  const handleApplyVectorLine = async (): Promise<void> => {
+    if (!outcome.result || !onApplyVectorLine) return;
+    try {
+      // 벡터 변환 모듈(트레이스 착지 파이프라인 포함)은 쓸 때만 lazy 로드한다.
+      const { convertStudioLtResultToVectorLine } = await import(
+        "./studio-lt-convert-vector"
+      );
+      const conversion = convertStudioLtResultToVectorLine(outcome.result, {
+        id: "lt-vector-line",
+      });
+      if (conversion.pieceCount === 0) {
+        setVectorStatus(
+          t("studio.ltConvert.vectorLineEmpty", "벡터로 남길 주선을 찾지 못했어요."),
+        );
+        return;
+      }
+      onApplyVectorLine(conversion);
+      setVectorStatus(
+        t(
+          "studio.ltConvert.vectorLineApplied",
+          "주선 {v0}개를 편집 가능한 벡터 패스로 남겼어요.",
+        ).replace("{v0}", String(conversion.pieceCount)),
+      );
+    } catch (error) {
+      setVectorStatus(
+        error instanceof Error
+          ? error.message
+          : t("studio.ltConvert.convertFailed", "변환에 실패했습니다."),
+      );
+    }
+  };
 
   useEffect(() => {
     const canvas = previewCanvasRef.current;
@@ -394,6 +440,11 @@ export function StudioLtConvertDialog({
               {applyError}
             </p>
           ) : null}
+          {vectorStatus ? (
+            <p role="status" className="mb-2 text-xs text-fg-2">
+              {vectorStatus}
+            </p>
+          ) : null}
           <p className="mb-3 text-[0.7rem] leading-relaxed text-fg-3">
             {t(
               "studio.ltConvert.applyNote",
@@ -411,6 +462,21 @@ export function StudioLtConvertDialog({
             >
               {t("studio.ltConvert.cancel", "취소")}
             </button>
+            {onApplyVectorLine ? (
+              <button
+                type="button"
+                disabled={outcome.result === null}
+                onClick={() => {
+                  void handleApplyVectorLine();
+                }}
+                className={cn(
+                  "rounded-xl border border-line/70 bg-panel px-4 py-2 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
+                  STUDIO_FOCUS_RING,
+                )}
+              >
+                {t("studio.ltConvert.applyVectorLine", "주선을 벡터로 적용")}
+              </button>
+            ) : null}
             <button
               type="button"
               data-autofocus="true"

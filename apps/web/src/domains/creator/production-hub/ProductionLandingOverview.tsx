@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import type { ProductionPersonalInboxItem, ProductionProjectSummary } from "./production-dashboard-api";
 import { formatProductionDay } from "./production-format";
 import { ProductionPill, type ProductionTone } from "./production-ui";
+import { reviewInboxItemHref } from "./review-request-model";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -85,7 +86,7 @@ export function ProductionLandingOverview({
 
         {nextAction && nextBucket ? (
           <Link
-            to={`/production/projects/${encodeURIComponent(nextAction.projectId)}/production?task=${encodeURIComponent(nextAction.taskId)}`}
+            to={reviewInboxItemHref(nextAction)}
             className="group rounded-2xl border border-accent/35 bg-panel p-4 outline-none transition-colors hover:border-accent/60 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
           >
             <p className="flex items-center gap-2 text-xs font-black text-fg-2">

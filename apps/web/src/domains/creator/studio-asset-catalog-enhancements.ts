@@ -30,6 +30,13 @@ export interface AssetSearchCriteria {
   readonly license?: string; // e.g. "free", "standard", "commercial"
   readonly containsAi?: boolean;
   readonly onlyPinned?: boolean;
+  /**
+   * "최근 사용" 가상 폴더: 사용 기록이 있는 소재만 남긴다.
+   * `sort: "recent"`와 함께 쓰면 폴더 내용 = MRU 순서가 된다.
+   * 기록의 출처는 `studio-material-usage` 원장이며, 어댑터
+   * `usageRecordsFromMaterialUsage`로 이 모듈의 상태로 변환한다.
+   */
+  readonly recentOnly?: boolean;
 }
 
 export interface EnhancedStudioAssetItem {
@@ -115,6 +122,9 @@ export function filterAndSortAssets<T extends EnhancedStudioAssetItem>(
     if (criteria.onlyPinned && !state.pinnedAssetIds.includes(asset.id)) {
       return false;
     }
+    if (criteria.recentOnly && !state.usageRecords[asset.id]) {
+      return false;
+    }
     if (criteria.query) {
       const q = criteria.query.toLowerCase().trim();
       const matchName = asset.name.toLowerCase().includes(q);
@@ -141,8 +151,14 @@ export function filterAndSortAssets<T extends EnhancedStudioAssetItem>(
   const pinnedList = filtered.filter(isPinned);
   const unpinnedList = filtered.filter((a) => !isPinned(a));
 
-  // 3. Sort comparator
+  // 3. Sort comparator — 모든 분기가 결정적이다 (최종 tie-break는 id 코드포인트
+  // 오름차순). 이름 로케일 비교는 로케일·입력 순서에 따라 순서가 흔들려
+  // "동일 입력 → 동일 순서"를 보장하지 못하므로 tie-break로 쓰지 않는다.
+  // 빈도·최근 규칙의 정본은 `studio-material-usage`의
+  // `compareMaterialFrequency`이며, 이 비교자는 그 규칙과 동일하다.
+  const byId = (a: T, b: T): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   const comparator = (a: T, b: T): number => {
+    if (a.id === b.id) return 0;
     const recordA = state.usageRecords[a.id];
     const recordB = state.usageRecords[b.id];
 
@@ -151,20 +167,29 @@ export function filterAndSortAssets<T extends EnhancedStudioAssetItem>(
         const timeA = recordA?.lastUsedAt ?? 0;
         const timeB = recordB?.lastUsedAt ?? 0;
         if (timeA !== timeB) return timeB - timeA;
-        return b.createdAt - a.createdAt;
+        const countDelta = (recordB?.useCount ?? 0) - (recordA?.useCount ?? 0);
+        if (countDelta !== 0) return countDelta;
+        return byId(a, b);
       }
       case "frequency": {
         const countA = recordA?.useCount ?? 0;
         const countB = recordB?.useCount ?? 0;
         if (countA !== countB) return countB - countA;
-        return a.name.localeCompare(b.name);
+        const timeA = recordA?.lastUsedAt ?? 0;
+        const timeB = recordB?.lastUsedAt ?? 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return byId(a, b);
       }
-      case "name":
-        return a.name.localeCompare(b.name);
+      case "name": {
+        const byName = a.name.localeCompare(b.name, "ko");
+        return byName !== 0 ? byName : byId(a, b);
+      }
       case "newest":
       case "popular":
-      default:
-        return b.createdAt - a.createdAt;
+      default: {
+        const createdDelta = b.createdAt - a.createdAt;
+        return createdDelta !== 0 ? createdDelta : byId(a, b);
+      }
     }
   };
 

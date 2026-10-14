@@ -402,6 +402,11 @@ export function StudioVrmCharacterLibraryPanel({
           const licensePresentation = entry.source === "sample"
             ? null
             : presentStudioVrmLicenseAuthority(entry.licenseAuthority);
+          // 번들 모델은 임베드 메타 검사 receipt가 없어 위 표시에 닿지 않는다.
+          // 고지 의무가 있는 번들 모델(AliciaSolid 등)만 카탈로그가 실은 licenseNotice를 표시한다.
+          const bundledLicenseNotice = entry.source === "sample"
+            ? entry.licenseNotice
+            : undefined;
 
           return (
             <div
@@ -485,6 +490,36 @@ export function StudioVrmCharacterLibraryPanel({
                       라이선스 문서 <ExternalLink size={10} aria-hidden />
                     </a>
                   ) : null}
+                </details>
+              ) : null}
+
+              {bundledLicenseNotice ? (
+                <details
+                  className="group/license mx-2.5 mb-2 rounded-lg border border-line/80 bg-panel/70 px-2 py-1.5 text-[0.68rem]"
+                  data-studio-vrm-bundled-license-notice={entry.id}
+                >
+                  <summary
+                    className="flex min-h-7 cursor-pointer list-none items-center gap-1 font-bold text-accent [&::-webkit-details-marker]:hidden"
+                  >
+                    <AlertTriangle size={11} aria-hidden />
+                    {bundledLicenseNotice.label}
+                    <ChevronDown
+                      className="ml-auto transition-transform group-open/license:rotate-180"
+                      size={11}
+                      aria-hidden
+                    />
+                  </summary>
+                  <p className="mt-1 leading-relaxed text-fg-2">
+                    {bundledLicenseNotice.summary}
+                  </p>
+                  <a
+                    href={bundledLicenseNotice.licenseUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-flex min-h-7 items-center gap-1 font-semibold text-accent underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    라이선스 문서 <ExternalLink size={10} aria-hidden />
+                  </a>
                 </details>
               ) : null}
 

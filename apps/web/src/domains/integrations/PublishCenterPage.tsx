@@ -1,9 +1,10 @@
 import { CheckCircle2, ChevronDown, CircleAlert, Download, FileCheck2, PackageCheck, Rss, Send } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { getApiErrorMessage } from "@/platform/api";
 import { useI18n } from "@/shared/lib/i18n";
+import { useApp } from "@/shared/lib/store";
 
 import {
   IntegrationError,
@@ -20,6 +21,12 @@ import type { IntegrationProviderStatus, PublishPackageResponse } from "./integr
 import { SerialCenterOverview } from "./SerialCenterOverview";
 
 import { PublishSurfaceGuide } from "@/shared/components/publish-surface-guide";
+import { EpisodeStageStepper } from "@/shared/components/episode-stage-stepper";
+import {
+  representativeEpisodeStage,
+  type RepresentativeEpisodeStage,
+} from "@/domains/creator/public/episode-stage";
+import { getProductionProject } from "@/domains/creator/public/production-projects";
 import { useIntegrationCatalog } from "./use-integration-catalog";
 
 /**
@@ -59,6 +66,30 @@ export function PublishCenterPage() {
   // 쿼리가 없으면 기존 직접 방문 흐름의 시작값을 유지한다.
   const initialProjectId = searchParams.get("projectId")?.trim() || "demo-project";
   const [projectId, setProjectId] = useState(initialProjectId);
+  // 회차 단계 compact 칩 (S2-5): 선택한 작품 1건의 aggregate만 읽어 제작 허브
+  // 개요와 같은 합성(representativeEpisodeStage)으로 대표 회차 단계를 도출한다.
+  // 같은 함수를 쓰므로 같은 회차는 이 표면에서도 같은 단계로 표시된다.
+  // 로그인 전이거나 작품을 읽지 못하면 칩 근거가 없는 것이므로 stage는 null로
+  // 두고 칩을 그리지 않는다 — 연재 현황 요약 수치로 단계를 지어내지 않는다.
+  const userId = useApp((state) => state.userId);
+  const [stage, setStage] = useState<RepresentativeEpisodeStage | null>(null);
+  useEffect(() => {
+    if (!userId || !projectId) {
+      setStage(null);
+      return;
+    }
+    let active = true;
+    void getProductionProject(projectId)
+      .then((record) => {
+        if (active) setStage(representativeEpisodeStage(record.aggregate));
+      })
+      .catch(() => {
+        if (active) setStage(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [userId, projectId]);
   const [title, setTitle] = useState(() => searchParams.get("title")?.trim() ?? "");
   const [description, setDescription] = useState("");
   const [canonicalUrl, setCanonicalUrl] = useState(() => `${globalThis.location?.origin ?? "https://example.com"}/showcase`);
@@ -126,6 +157,8 @@ export function PublishCenterPage() {
     }
   };
 
+  // compact 칩은 현재 단계가 있을 때만 존재한다(공용 스텝퍼 compact와 같은 규칙).
+  const stageCurrent = stage?.states.find((state) => state.status === "current") ?? null;
   const trimmedTitle = title.trim();
   const canBuild = Boolean(trimmedTitle && canonicalUrl.trim() && channels.length > 0);
   const missingHints = [
@@ -211,6 +244,16 @@ export function PublishCenterPage() {
                     </li>
                   ) : null}
                 </ul>
+                {stage && stageCurrent ? (
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold text-fg-3">
+                      {stage.selection?.episodeNumber
+                        ? (ko ? `${stage.selection.episodeNumber}화 단계` : `Episode ${stage.selection.episodeNumber} stage`)
+                        : (ko ? "지금 만드는 회차 단계" : "Current episode stage")}
+                    </span>
+                    <EpisodeStageStepper states={stage.states} variant="compact" />
+                  </div>
+                ) : null}
                 <div className="mt-5 flex flex-wrap items-center gap-3">
                   <button
                     type="button"

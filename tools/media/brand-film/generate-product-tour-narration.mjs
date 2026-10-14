@@ -80,6 +80,14 @@ function buildVtt(locale, durations) {
 
 validateSpec();
 
+if (!checkOnly && spec.rights?.status === "not-cleared") {
+  throw new Error(
+    "This narration voice is not cleared for commercial distribution; do not regenerate it. "
+    + "See apps/web/public/brand/product-tour/VOICE-RIGHTS.md and re-record with "
+    + "tools/media/brand-film/assemble-product-tour-narration.mjs instead.",
+  );
+}
+
 if (checkOnly) {
   const metadata = JSON.parse(readFileSync(metadataPath, "utf8"));
   const duration = probeDuration(audioPath);
@@ -129,6 +137,7 @@ try {
     locale: spec.voice.locale,
     voice: spec.voice,
     disclosure: spec.disclosure,
+    rights: spec.rights,
     generatedAt: new Date().toISOString(),
     specSha256: sha256(specPath),
     audioSha256: sha256(audioPath),

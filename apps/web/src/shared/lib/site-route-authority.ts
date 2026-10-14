@@ -137,10 +137,12 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
     description: { ko: "서비스와 가상스튜디오에서 사용할 내 캐릭터 선택", en: "Choose your identity for the service and virtual studio" },
     purpose: "create",
   }),
+  // /home은 개인 공간이 아니라 "작업 홈"이다 (BLUEPRINT §1.2). 개인 정본 허브는 /my이며,
+  // /home은 이어할 작업·오늘 할 일의 작업 대시보드로만 안내한다.
   route({
     id: "workspace-home", path: "/home", titleKey: "route.studio",
-    label: { ko: "내 홈", en: "My home" },
-    description: { ko: "최근 작업과 내 공간에서 다음 행동 선택", en: "Choose the next action from recent work and your space" },
+    label: { ko: "작업 홈", en: "Work home" },
+    description: { ko: "이어할 작업과 오늘 할 일을 확인하는 작업 대시보드", en: "Work dashboard for resuming projects and checking today's tasks" },
     purpose: "create", projectContext: "optional", directory: true,
   }),
   route({
@@ -198,12 +200,15 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
     tier: "labs",
     directory: true,
   }),
+  // 게시 2표면 역할 고정 (BLUEPRINT §1.2, S1-6): /publish는 작품 단위 연재 운영
+  // 뷰이며 회차 게시의 정본이 아니다. 정본은 아래 studio-publish(/studio/publish)
+  // 게시 명령 센터이고, 두 표면의 역할 한 줄·상호 링크는 publish-surface-guide가 맡는다.
   route({
     id: "publish-center",
     path: "/publish",
     titleKey: "route.serialCenter",
     label: { ko: "연재 센터", en: "Serialization center" },
-    description: { ko: "내 작품의 연재 현황과 게시 패키지를 한곳에서 확인하고 준비", en: "Check serialization status and prepare publication packages for your works in one place" },
+    description: { ko: "연재 운영 뷰 — 내 작품의 연재 현황과 게시 패키지를 한곳에서 확인하고 준비", en: "Serialization operations view — check serialization status and prepare publication packages for your works in one place" },
     purpose: "create",
     access: "sign-in",
     projectContext: "optional",
@@ -332,14 +337,16 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
     projectContext: "optional",
     directory: true,
   }),
+  // 게시 정본 선언 (BLUEPRINT §1.2, S1-6): 회차 게시는 이 표면이 정본이다.
+  // /publish(연재 센터)는 연재 운영 뷰로 역할이 고정되며 서로를 상호 링크한다.
   route({
     id: "studio-publish",
     path: "/studio/publish",
     titleKey: "route.studioPublish",
     label: { ko: "검수·내보내기", en: "Review & export" },
     description: {
-      ko: "모바일 읽기 흐름과 플랫폼 규격을 확인하고 파일로 내보내기",
-      en: "Check mobile reading flow and platform requirements before export",
+      ko: "회차 게시의 정본 — 모바일 읽기 흐름과 플랫폼 규격을 확인하고 파일로 내보내기",
+      en: "Canonical episode publishing — check mobile reading flow and platform requirements before export",
     },
     purpose: "create",
     access: "project",

@@ -4,8 +4,8 @@ import { useCommerceConfig } from "../hooks/use-commerce-config";
 import { useMarketWishlist } from "../hooks/use-market-wishlist";
 import { formatMarketDate, marketKindMeta, marketLicenseMeta } from "../models/market-kind";
 import { palettePreviewColors } from "../models/market-preview";
+import { resolveMarketCardPrice } from "../models/market-price";
 
-import { MarketCompareToggle } from "./MarketCompareToggle";
 import { MarketProductionFitBadge } from "./MarketProductionFitBadge";
 import { MarketResourceCover } from "./MarketResourceCover";
 
@@ -20,13 +20,25 @@ interface MarketResourceCardProps {
   className?: string;
 }
 
+/**
+ * 카드 행동 다이어트: 기본 상태에서 카드가 노출하는 행동은 찜 1개뿐이다.
+ * 비교·획득은 카드에 겹쳐 두지 않고 상세 화면(MarketResourceDetailArticle의
+ * 비교 토글·획득 동선)에서 도달한다 — 그리드에서 카드가 반복될수록
+ * 동시 노출 행동 수가 불어나는 것을 막기 위한 규칙이다.
+ */
 export function MarketResourceCard({ record, className }: MarketResourceCardProps) {
   const kind = marketKindMeta(record.kind);
   const license = marketLicenseMeta(record.license);
   const KindIcon = kind.icon;
   const paletteColors = palettePreviewColors(record);
   const { isWishlisted, toggleWishlist, storageError } = useMarketWishlist();
-  const { isPaidMode } = useCommerceConfig();
+  const { config, isPaidMode } = useCommerceConfig();
+  // 가격 1차 정보 (P-4): 목록 계약에 리소스별 가격이 없어 공개 설정의 표준
+  // 가격으로만 표시하고, 미확정이면 금액을 지어내지 않는다 (market-price 모델).
+  const price = resolveMarketCardPrice({
+    isPaidMode,
+    defaultPriceKrw: config?.defaultMarketPriceKrw,
+  });
   const wishlisted = isWishlisted(record.id);
 
   return (
@@ -38,9 +50,11 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
         className,
       )}
     >
+      {/* 소재 아트가 주인공인 커버 (BLUEPRINT §6.3: 마켓 변형 16:10).
+          가격·라이선스 배지는 이 아트 위에 얹어 목록에서도 바로 비교하게 한다. */}
       <div
         className={cn(
-          "relative flex aspect-[16/9] items-end justify-between overflow-hidden p-3.5",
+          "relative flex aspect-[16/10] items-end justify-between overflow-hidden p-3.5",
           !paletteColors && "text-fg",
         )}
       >
@@ -70,11 +84,18 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
               aria-hidden="true"
             />
           </button>
-          <MarketCompareToggle record={record} compact />
         </div>
 
         <span className="relative z-[2] rounded-md bg-canvas px-1.5 py-1 font-display text-xs font-semibold uppercase tracking-[0.06em] text-fg shadow-sm">
           {kind.english}
+        </span>
+
+        <span
+          data-market-license-badge="true"
+          title={license.summary}
+          className="relative z-[2] mx-1.5 max-w-[46%] truncate rounded-md bg-canvas px-1.5 py-1 text-xs font-semibold text-fg shadow-sm"
+        >
+          {license.label}
         </span>
 
         {!paletteColors ? (
@@ -108,9 +129,26 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
           >
             {record.name}
           </Link>
-          <span className="shrink-0 rounded bg-good/15 px-1.5 py-0.5 text-xs font-bold text-good">
-            {isPaidMode ? "유료 운영" : "무료"}
-          </span>
+          {price.kind === "free" ? (
+            <span
+              data-market-price="free"
+              className="shrink-0 rounded bg-good/15 px-1.5 py-0.5 text-xs font-bold text-good"
+            >
+              {price.label}
+            </span>
+          ) : price.kind === "paid" ? (
+            <span data-market-price="paid" className="flex shrink-0 flex-col items-end leading-none">
+              <span className="numeral tnum text-sm font-bold text-fg">{price.label}</span>
+              <span className="mt-1 text-[0.65rem] font-medium text-fg-3">{price.caption}</span>
+            </span>
+          ) : (
+            <span
+              data-market-price="paid-unknown"
+              className="shrink-0 rounded bg-warn/15 px-1.5 py-0.5 text-xs font-bold text-warn"
+            >
+              {price.label}
+            </span>
+          )}
         </div>
         <div className="flex items-center justify-between gap-2 text-xs text-fg-2">
           <span className="truncate">{record.publisher.name}</span>
@@ -124,7 +162,10 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
           <span className="inline-flex min-h-6 items-center rounded bg-accent px-2 font-semibold text-on-accent">
             {kind.label}
           </span>
-          <span className="truncate">{license.label}</span>
+          {/* 라이선스 라벨은 아트 위 배지로 올라갔고, 여기서는 조건 요약만 남긴다. */}
+          <span className="truncate" title={license.summary}>
+            {license.summary}
+          </span>
           <ArrowUpRight className="ml-auto h-3.5 w-3.5 shrink-0 text-fg-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100" aria-hidden="true" />
         </div>
         {record.tags.length > 0 ? (

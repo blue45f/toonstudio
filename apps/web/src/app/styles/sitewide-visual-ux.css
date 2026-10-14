@@ -1,11 +1,57 @@
 /* Site-wide layout, contrast and interaction contract. */
+
+/*
+ * 레이아웃 치수 토큰 단일 선언처 (BLUEPRINT §5.2 (1)·(2), §5.3 L0).
+ * 폭·거터의 리터럴 값은 아래 --layout-* 에서만 정의한다. unified-theme-contract.css는
+ * 범위 별칭으로 참조만 하고, layout-tokens.ts의 LAYOUT_DIMENSIONS와
+ * 대조 테스트(layout-token-contract.contract.test.ts)가 글자 단위 일치를 강제한다.
+ * --site-* 는 기존 소비처 호환용 별칭이다: 전역 기본값은 app 폭(100rem)을 가리키고,
+ * [data-site-experience] 범위에서는 unified 계약이 standard 폭(82.5rem)으로 좁힌다.
+ * 두 값은 "어느 하나를 지우는" 것이 아니라 폭 4단의 의미로 나눈 것이다.
+ * 거터는 L1(§5.3)에서 --layout-gutter 단일 변수로 확정했다: 16px 기본,
+ * ≥640px 24px, ≥1280px 32px의 3단계이며 범위·화면별 변형은 두지 않는다.
+ * 레일·작업공간 크롬 치수는 L2(§5.3)에서 이 블록으로 단일화했다 (§5.2 (4)):
+ * 아이콘 레일 96px, 행 레일 13.5rem(216px, ≥1280px 상시·1024~1280px는 아이콘 레일),
+ * 작업공간 상단바 64px(v3의 72px 상향 되돌림), 본문 패딩 24px/32px/40px
+ * (redesign의 좌우 30px는 거터 스케일 32px로 흡수). workspace CSS 6겹은
+ * 이 변수들을 참조만 하고 리터럴을 다시 정의하지 않는다.
+ * 홈 치수는 L5(§5.3, S3-8 합본)에서 이 블록으로 단일화했다 (§5.2 (7)):
+ * 홈 폭은 폭 4단의 app(--layout-content-app)을 참조하고, 섹션 리듬 44px·
+ * 밴드 리듬 36px는 --layout-home-* 로 선언만 이곳에 둔다. 홈 CSS
+ * (reference-creator-dashboard.css)의 --rd-* 색 토큰은 §6 몫이라 유지하고,
+ * 조작 최소 크기는 기존 --site-control-size(44px)를 참조한다.
+ */
 :root {
-  --site-content-max: 100rem;
-  --site-page-gutter: clamp(1rem, 2.7vw, 2rem);
+  --layout-content-reading: 48rem;
+  --layout-content-standard: 82.5rem;
+  --layout-content-app: 100rem;
+  --layout-content-full: none;
+  --layout-gutter: 1rem;
+  --layout-rail-icon: 96px;
+  --layout-rail-row: 13.5rem;
+  --layout-workspace-topbar: 64px;
+  --layout-workspace-main-padding-block: 24px;
+  --layout-workspace-main-padding-inline: 32px;
+  --layout-workspace-main-padding-block-end: 40px;
+  --layout-home-section-gap: 44px;
+  --layout-home-band-gap: 36px;
+  --site-content-max: var(--layout-content-app);
+  --site-page-gutter: var(--layout-gutter);
   --site-section-space: clamp(2.25rem, 6vw, 5rem);
   --site-card-gap: clamp(0.75rem, 1.4vw, 1.25rem);
   --site-control-size: 44px;
   --site-focus-ring-width: 2px;
+}
+
+/* 거터 단일 변수 단계 (BLUEPRINT §5.2 (2), §5.3 L1): --layout-gutter 하나가
+ * 640px에서 24px, 1280px에서 32px로 커진다. 헤더·본문·푸터가 모두 이 변수
+ * (--site-page-gutter 별칭)를 써서 정렬선이 전 폭에서 일치한다. 경험 범위 전용
+ * 거터와 390px 전용 축소 변형은 L1에서 이 단일 변수로 흡수해 제거했다. */
+@media (min-width: 640px) {
+  :root { --layout-gutter: 1.5rem; }
+}
+@media (min-width: 1280px) {
+  :root { --layout-gutter: 2rem; }
 }
 
 /* ── 떠 있는 요소 배치 계약 ───────────────────────────────────────────────
@@ -34,7 +80,7 @@
   :root:has([data-floating-controls="true"]) { --site-float-controls-slot: var(--site-float-slot); }
   :root:has([data-voice-guide-placement="fixed"]) { --site-float-voice-slot: var(--site-float-slot); }
 }
-@media (max-width: 760px) {
+@media (max-width: 767px) {
   :root:has(.workspace-nav) { --site-float-base: calc(5.75rem + env(safe-area-inset-bottom)); }
 }
 :root {
@@ -375,7 +421,6 @@ html {
 }
 
 @media (max-width: 390px) {
-  :root { --site-page-gutter: 0.875rem; }
   body:has(nav[data-site-product]) #main-content {
     padding-bottom: calc(7rem + env(safe-area-inset-bottom));
     scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom));

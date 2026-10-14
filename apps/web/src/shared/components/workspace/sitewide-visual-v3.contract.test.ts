@@ -38,7 +38,9 @@ describe("sitewide visual identity v3 contract", () => {
   });
 
   it("넓은 화면의 좌측 메뉴는 시안처럼 아이콘+글자 행 목록으로 편다", () => {
-    expect(workspaceCss).toContain("@media (min-width:1181px)");
+    // 행 레일 전환 지점은 BLUEPRINT §5.2 (4)·§5.3 L2에서 1280px로 표준화됐다 (구 1181px).
+    expect(workspaceCss).toContain("@media (min-width:1280px)");
+    expect(workspaceCss).not.toContain("1181px");
     expect(workspaceCss).toContain(".workspace-nav-shortcuts");
     expect(workspaceCss).toContain(".workspace-nav-row-icon");
     // 중간·좁은 화면의 타일 열과 하단 탭 바 규칙은 그대로 남는다.

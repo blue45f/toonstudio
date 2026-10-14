@@ -8,6 +8,7 @@
 
 import type {
   StudioCommentAnchor,
+  StudioCommentReference,
   StudioCommentsDocument,
   StudioCommentThread,
 } from "../studio-comments";
@@ -33,6 +34,11 @@ export interface ManuscriptPin {
   /** 이 피드백을 반영할 담당자. 지정하지 않았으면 비어 있다. */
   readonly assigneeId?: string | null;
   readonly assigneeName?: string | null;
+  /**
+   * 피드백 3요소 패킷의 레퍼런스 첨부("어떻게"). 레거시 핀(패킷 도입 전)에는 없다 —
+   * 패킷 완성도 판정은 feedback-packet-model이 맡는다.
+   */
+  readonly references?: readonly StudioCommentReference[];
 }
 
 /** 핀 담당자로 고를 수 있는 사람. `detail`은 이름 옆에 붙는 역할 설명이다. */
@@ -155,6 +161,7 @@ export function commentThreadToManuscriptPin(
     number,
     assigneeId: thread.assignee?.id ?? null,
     assigneeName: thread.assignee?.displayName ?? null,
+    ...(thread.references ? { references: thread.references } : {}),
   };
 }
 

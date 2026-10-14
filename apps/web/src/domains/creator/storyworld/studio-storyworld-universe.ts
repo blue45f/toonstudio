@@ -1,10 +1,18 @@
 /**
  * 공유 세계관(유니버스) 데이터 모델과 편집 연산.
  *
- * 여러 작품(스토리월드 프로젝트)이 하나의 세계관 묶음에 속하고, 캐릭터·장소·사실을
- * 작품 간 "공유 요소"로 명시 지정하는 층이다. 공유는 복사가 아니라 참조다:
+ * 여러 작품(스토리월드 프로젝트)이 하나의 세계관 묶음에 속하고, 캐릭터·장소·사실·
+ * 설정 항목(lore)을 작품 간 "공유 요소"로 명시 지정하는 층이다. 공유는 복사가 아니라 참조다:
  * 사용(usages)은 (작품 스코프 키, 로컬 요소 id, 지정 시점 라벨)만 기록하고,
  * 제목 유사 같은 자동 연결은 만들지 않는다 — 지정은 항상 사용자의 명시적 행동이다.
+ *
+ * 설정 항목(lore)의 로컬 요소 id는 세계관 설정 허브(planning/studio-world-lore)의
+ * StudioLoreEntry.id 다. 로어 컬렉션은 기획 저장소(localStorage·작품 id 공간)에 살고
+ * 이 레지스트리는 스토리월드 저장소(OPFS·스코프 키 공간)에 살아 id 공간이 다르므로,
+ * 이 모듈은 로어 실물을 import 하지 않고 id·라벨 스냅샷 참조만 기록한다. 로어 항목의
+ * 실재 판정은 다른 kind와 같은 방식(currentWorkSharedStatus에 현재 작품의 로어 id
+ * 집합을 넘기는 방식)으로 하고, 격리·폐기된 로어를 지정 후보에서 빼는 일은 후보를
+ * 공급하는 호스트의 몫이다.
  *
  * 저장 경계: 이 레지스트리는 작품 문서와 같은 로컬 DB(SQLite/OPFS)에 산다.
  * 서버 동기화·협업자 공유·다른 기기 전파는 서버 계약이 필요하며 이 모듈 범위 밖이다.
@@ -12,7 +20,20 @@
  * 현재 작품에 대해서만 라이브로 검증하고 나머지는 지정 시점 스냅샷으로 표시한다.
  */
 
-export type StoryworldSharedElementKind = "character" | "location" | "fact";
+/** 공유 요소 종류의 단일 출처 — 파서·화면 라벨·행렬 필터가 전부 이 목록을 쓴다. */
+export const STORYWORLD_SHARED_ELEMENT_KINDS = [
+  "character",
+  "location",
+  "fact",
+  "lore",
+] as const;
+
+export type StoryworldSharedElementKind = (typeof STORYWORLD_SHARED_ELEMENT_KINDS)[number];
+
+export function isStoryworldSharedElementKind(value: unknown): value is StoryworldSharedElementKind {
+  return typeof value === "string"
+    && (STORYWORLD_SHARED_ELEMENT_KINDS as readonly string[]).includes(value);
+}
 
 export interface StoryworldUniverseMember {
   /** 스토리월드 저장 스코프 키 (projectStorageKey 결과). 작품 식별의 정본. */
@@ -26,7 +47,7 @@ export interface StoryworldUniverseMember {
 
 export interface StoryworldSharedElementUsage {
   readonly scopeKey: string;
-  /** 그 작품 안에서의 로컬 요소 id. 장소는 scene.locationId 문자열이 식별자다. */
+  /** 그 작품 안에서의 로컬 요소 id. 장소는 scene.locationId, 설정 항목은 StudioLoreEntry.id 문자열이 식별자다. */
   readonly elementId: string;
   /** 지정 시점의 로컬 요소 표기 스냅샷. */
   readonly elementLabel: string;
@@ -267,6 +288,39 @@ export function revokeStoryworldSharedUsage(
   }), nowIso);
 }
 
+/**
+ * 설정 항목(lore) 전용 지정 — 대상 공유 요소가 lore kind일 때만 일반 지정을 적용한다.
+ * 캐릭터·장소·사실 요소에 로어 id가 잘못 붙는 종류 혼선을 타입 밖에서도 막는 가드다.
+ * 멤버 검증·중복 교체 규칙은 일반 지정(designateStoryworldSharedUsage)과 동일하다.
+ */
+export function designateStoryworldLoreUsage(
+  registry: StoryworldUniverseRegistry,
+  universeId: string,
+  elementId: string,
+  usage: StoryworldSharedElementUsage,
+  nowIso: string,
+): StoryworldUniverseRegistry {
+  const universe = registry.universes.find((item) => item.id === universeId);
+  const element = universe?.sharedElements.find((item) => item.id === elementId);
+  if (!element || element.kind !== "lore") return registry;
+  return designateStoryworldSharedUsage(registry, universeId, elementId, usage, nowIso);
+}
+
+/** 설정 항목(lore) 전용 지정 해제 — 대상이 lore kind가 아니면 아무것도 바꾸지 않는다. */
+export function revokeStoryworldLoreUsage(
+  registry: StoryworldUniverseRegistry,
+  universeId: string,
+  elementId: string,
+  scopeKey: string,
+  localElementId: string,
+  nowIso: string,
+): StoryworldUniverseRegistry {
+  const universe = registry.universes.find((item) => item.id === universeId);
+  const element = universe?.sharedElements.find((item) => item.id === elementId);
+  if (!element || element.kind !== "lore") return registry;
+  return revokeStoryworldSharedUsage(registry, universeId, elementId, scopeKey, localElementId, nowIso);
+}
+
 export interface StoryworldSharedUsageCell {
   readonly scopeKey: string;
   readonly memberTitle: string;
@@ -285,6 +339,14 @@ export function buildStoryworldUniverseMatrix(
       usage: element.usages.find((usage) => usage.scopeKey === member.scopeKey) ?? null,
     })),
   }));
+}
+
+/** 종류 하나로 좁힌 사용 행렬 — 설정 항목만 모아 보는 화면이 쓰는 뷰 모델. */
+export function buildStoryworldUniverseMatrixByKind(
+  universe: StoryworldUniverse,
+  kind: StoryworldSharedElementKind,
+): readonly { readonly element: StoryworldSharedElement; readonly cells: readonly StoryworldSharedUsageCell[] }[] {
+  return buildStoryworldUniverseMatrix(universe).filter((row) => row.element.kind === kind);
 }
 
 /** 현재 작품 관점: 공유 요소별 내 사용 지정과, 지정한 로컬 요소가 아직 실재하는지. */
@@ -328,7 +390,7 @@ function parseUsage(value: unknown, path: string): StoryworldSharedElementUsage 
 function parseSharedElement(value: unknown, path: string): StoryworldSharedElement {
   if (!isRecord(value)) throw new Error(`${path}는 객체여야 합니다.`);
   assertString(value.id, `${path}.id`);
-  if (!["character", "location", "fact"].includes(String(value.kind))) {
+  if (!isStoryworldSharedElementKind(value.kind)) {
     throw new Error(`${path}.kind가 지원되지 않습니다.`);
   }
   assertString(value.name, `${path}.name`);
@@ -356,7 +418,11 @@ function parseUniverse(value: unknown, path: string): StoryworldUniverse {
   return value as unknown as StoryworldUniverse;
 }
 
-/** 저장소에서 읽은 레지스트리 JSON을 검증하며 복원한다. 형식이 깨지면 조용히 비우지 않고 던진다. */
+/**
+ * 저장소에서 읽은 레지스트리 JSON을 검증하며 복원한다. 형식이 깨지면 조용히 비우지 않고 던진다.
+ * kind 확장은 추가형(additive)이라, lore가 생기기 전에 저장된 레지스트리(캐릭터·장소·사실만
+ * 있는 version 1 문서)도 그대로 읽힌다 — 마이그레이션 없이 하위호환이 유지된다.
+ */
 export function parseStoryworldUniverseRegistry(text: string): StoryworldUniverseRegistry {
   const value: unknown = JSON.parse(text);
   if (!isRecord(value)) throw new Error("공유 세계관 레지스트리는 객체여야 합니다.");

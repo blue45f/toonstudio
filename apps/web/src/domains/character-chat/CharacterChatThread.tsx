@@ -4,15 +4,24 @@
  * 팬 페이지와 작가 관리 페이지(테스트 대화)가 함께 쓴다. 금지 주제 가드는
  * 엔진 호출 전에 여기서 걸고, 막힌 턴은 스토어에 횟수만 남긴다(내용은 남기지
  * 않는다). 대화 자체는 스토어 세션에 쌓이며 이 브라우저를 벗어나지 않는다.
+ *
+ * 사용량 쿼터: 입력 영역 위에 쿼터 배지를 상시 노출한다(행동 전 표시).
+ * 파일럿은 BYOK 경로라 플랫폼 상한이 없어 "상한 없음" 한 줄로 표시하고,
+ * 플랫폼 경로가 열려 상한이 강제되면 잔여 횟수·진행바가 같은 자리에 뜨고
+ * 상한 도달 시 전송이 막히며 초기화 시점·대안 행동 안내가 배지로 뜬다.
  */
 
 import { Send, ShieldAlert } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { USER_AI_SETTINGS_HREF } from "@/shared/ai/user-ai-types";
+import { UsageQuotaBadge } from "@/shared/ai/UsageQuotaBadge";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import Link from "@/shared/navigation/router-link";
 
 import { guardCharacterChatTurn } from "./character-chat-filter";
+import { buildCharacterChatQuotaView } from "./character-chat-quota";
 import { useCharacterChatHydrated, useCharacterChatStore } from "./character-chat-store";
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
 import type { CharacterChatEngine } from "./character-chat-engine";
@@ -96,6 +105,14 @@ export function CharacterChatThread({
     ),
   );
 
+  // 쿼터는 세션 메시지에서 파생한다 — 전송할 때마다 자동으로 최신이 된다.
+  const allSessions = useCharacterChatStore((state) => state.sessions);
+  const quotaView = buildCharacterChatQuotaView(allSessions, profile.id, {
+    // 파일럿은 BYOK 전용이라 플랫폼 상한 미강제. 플랫폼 어댑터가 열리면 true로 바꾼다.
+    platformEnforced: false,
+  });
+  const quotaBlocked = ready && !quotaView.canProceed;
+
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -123,6 +140,11 @@ export function CharacterChatThread({
     async (rawText: string) => {
       const text = rawText.trim();
       if (!text || sending) return;
+      if (!quotaView.canProceed) {
+        setError(null);
+        setNotice(quotaView.copy.ko.detail || quotaView.copy.ko.headline);
+        return;
+      }
       const guard = guardCharacterChatTurn(profile, text);
       if (!guard.allowed) {
         recordBlockedTurn(profile.id);
@@ -150,7 +172,7 @@ export function CharacterChatThread({
       }
       inputRef.current?.focus();
     },
-    [appendMessage, engine, profile, recordBlockedTurn, sending, session?.messages, t],
+    [appendMessage, engine, profile, quotaView, recordBlockedTurn, sending, session?.messages, t],
   );
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -189,6 +211,19 @@ export function CharacterChatThread({
       </ul>
 
       <div className="border-t border-line bg-card px-4 py-3">
+        {ready ? (
+          <div className="mb-2.5">
+            <UsageQuotaBadge view={quotaView} />
+            {quotaBlocked ? (
+              <Link
+                href={USER_AI_SETTINGS_HREF}
+                className="mt-2 inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-xs font-bold text-fg-2 hover:border-accent/50 hover:text-accent"
+              >
+                {t("내 AI 키 등록하러 가기", "Register my AI key")}
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
         {notice ? (
           <p role="alert" className="mb-2 flex items-start gap-1.5 text-xs leading-relaxed text-warn">
             <ShieldAlert size={14} className="mt-0.5 shrink-0" aria-hidden />
@@ -219,17 +254,19 @@ export function CharacterChatThread({
             onKeyDown={handleKeyDown}
             rows={2}
             maxLength={1000}
-            disabled={!ready || sending}
+            disabled={!ready || sending || quotaBlocked}
             placeholder={
-              ready
-                ? t(`${profile.characterName}에게 말을 걸어 보세요`, `Say something to ${profile.characterName}`)
-                : t("AI 키를 등록하면 대화할 수 있어요", "Register an AI key to chat")
+              quotaBlocked
+                ? t("이번 달 대화 상한에 도달했어요", "Monthly message limit reached")
+                : ready
+                  ? t(`${profile.characterName}에게 말을 걸어 보세요`, `Say something to ${profile.characterName}`)
+                  : t("AI 키를 등록하면 대화할 수 있어요", "Register an AI key to chat")
             }
             className="min-h-11 flex-1 resize-none rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-fg placeholder:text-fg-3 focus:border-accent focus:outline-none disabled:opacity-60"
           />
           <button
             type="submit"
-            disabled={!ready || sending || !draft.trim()}
+            disabled={!ready || sending || quotaBlocked || !draft.trim()}
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send size={15} aria-hidden />

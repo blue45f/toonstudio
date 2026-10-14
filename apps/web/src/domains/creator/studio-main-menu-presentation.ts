@@ -15,7 +15,26 @@
  * AI is preserved as a first-class action menu beside Save/Share/Publish instead
  * of competing with document vocabulary in the primary menubar. Every source
  * catalogue group remains a labelled section inside its composite dropdown.
+ *
+ * ## Menu-depth relief in beginner density modes (complexity audit follow-up)
+ *
+ * A composite dropdown is effectively three levels deep — title → section
+ * caption → command — so the artist scans one caption per absorbed source
+ * group before reaching a command. In `simple`/`focus` this module folds the
+ * low-frequency composite source sections (see
+ * STUDIO_MAIN_MENU_ADVANCED_COMPOSITE_SOURCES) out of the presented groups:
+ * the renderer (`StudioMenubarContent`) re-offers them behind one
+ * "고급 도구 펼치기" disclosure row per affected title, inserted by
+ * `insertStudioMainMenuAdvancedSectionFoldRows`. When folding leaves a
+ * composite with a single section, that section's caption is dropped as
+ * well — a lone caption disambiguates nothing, and the dropdown becomes a
+ * flat two-level list scannable in one pass. `full` (and an unwired density
+ * mode) presents exactly the legacy layout. Folding is presentation only:
+ * the canonical catalogue is never mutated and command search keeps
+ * consuming the unfolded groups, so every folded command stays searchable.
  */
+
+import type { StudioUiDensityMode } from "./studio-ui-density";
 
 /** Presentation order of the nine workflow-oriented primary menu titles. */
 export const STUDIO_MAIN_MENU_PRESENTATION_ORDER = [
@@ -48,6 +67,44 @@ export const STUDIO_MAIN_MENU_COMPOSITE_GROUPS = Object.freeze({
   filter: Object.freeze(["filter"] as const),
 });
 
+/**
+ * Composite source groups that are specialist or low-frequency for the daily
+ * webtoon workflow, in the order they appear inside their composites. In
+ * beginner density modes (simple·focus) their whole section folds behind the
+ * "고급 도구 펼치기" disclosure row:
+ * - `collaboration` (협업) — team doors live in the project/team surfaces; the
+ *   파일 menu's everyday half is the document commands themselves.
+ * - `transform` (변형) — a single pixel-selection command, not a daily scan.
+ * - `window` (창) — panel/window arrangement is setup, not per-page work;
+ *   the 보기 menu's everyday half is the view toggles.
+ * - `vector` (벡터) — two specialist rows (요소·교차 지우기); 삽입's everyday
+ *   half is text/balloons. (The S3-13 catalog fold's source-group list omits
+ *   vector; this section fold is where vector is covered — see the merge
+ *   note in `insertStudioMainMenuAdvancedSectionFoldRows`.)
+ * - `3d` (3D) — background/mannequin/sculpt launchers are specialist intake.
+ * - `animation` (애니메이션) — timeline/frame tools serve a minority flow;
+ *   창작's everyday halves are brush and comic production.
+ * Everyday sources (`file`·`edit`·`select`·`view`·`text`·`brush`·`comic`)
+ * are deliberately absent: they stay visible in every mode.
+ */
+export const STUDIO_MAIN_MENU_ADVANCED_COMPOSITE_SOURCES = Object.freeze([
+  "collaboration",
+  "transform",
+  "window",
+  "vector",
+  "3d",
+  "animation",
+] as const);
+
+const ADVANCED_COMPOSITE_SOURCE_SET: ReadonlySet<string> = new Set(
+  STUDIO_MAIN_MENU_ADVANCED_COMPOSITE_SOURCES,
+);
+
+/** True when a catalogue source group folds as a whole section in simple/focus. */
+export function isStudioMainMenuAdvancedCompositeSource(sourceId: string): boolean {
+  return ADVANCED_COMPOSITE_SOURCE_SET.has(sourceId);
+}
+
 export type StudioMainMenuCompositeGroupId =
   keyof typeof STUDIO_MAIN_MENU_COMPOSITE_GROUPS;
 export type StudioMainMenuPresentationLabelId =
@@ -78,6 +135,8 @@ export interface StudioMainMenuPresentableItem {
   /** Caption naming the canonical catalogue group inside a workflow composite. */
   readonly sectionLabel?: string;
   readonly separatorAfter?: boolean;
+  /** Canonical catalogue group this row came from; stamped on composite rows. */
+  readonly sourceGroupId?: string;
 }
 
 export interface StudioMainMenuPresentableGroup<
@@ -88,9 +147,33 @@ export interface StudioMainMenuPresentableGroup<
   readonly items: readonly TItem[];
 }
 
+/** One composite title's advanced (foldable) sections, for the fold-row renderer. */
+export interface StudioMainMenuAdvancedCompositeSection {
+  /** Presented composite title id (e.g. `insert`). */
+  readonly groupId: string;
+  /** Advanced source group ids inside that title, in section order. */
+  readonly sourceGroupIds: readonly string[];
+  /** Total command rows those sections carry. */
+  readonly itemCount: number;
+}
+
 export interface StudioMainMenuPresentationOptions {
   /** Localized titles for workflow composites and detached action menus. */
   readonly labels?: Partial<Record<StudioMainMenuPresentationLabelId, string>>;
+  /**
+   * Active UI density mode, when the host wires one through. `simple` and
+   * `focus` fold advanced composite sections (see the header note); `full`
+   * — and an omitted mode, which keeps the legacy unfolded behaviour for
+   * unwired hosts and existing tests — present every section as before.
+   */
+  readonly densityMode?: StudioUiDensityMode | undefined;
+  /**
+   * The user's explicit "고급 도구 펼치기" disclosure for composite
+   * sections. Only consulted when `densityMode` folds: expanded restores
+   * every section in its original order (the fold row then sits at the
+   * visibility boundary, before the first advanced section).
+   */
+  readonly advancedSectionsExpanded?: boolean;
 }
 
 export interface StudioMainMenuPresentation<
@@ -108,6 +191,15 @@ export interface StudioMainMenuPresentation<
   readonly presentedActionGroupIds: readonly string[];
   /** Retained for StudioMainMenu's stable prop contract; workflow tiers need none. */
   readonly specialistBoundaryGroupId: string | null;
+  /**
+   * Advanced composite sections per presented title, reported whenever the
+   * density mode folds (simple·focus) — collapsed or expanded — so the
+   * renderer can place exactly one disclosure row per affected title.
+   * Empty in `full` and for unwired modes.
+   */
+  readonly compositeAdvancedSections: readonly StudioMainMenuAdvancedCompositeSection[];
+  /** Rows currently hidden by the section fold (0 when expanded/full/unwired). */
+  readonly foldedCompositeItemCount: number;
 }
 
 const KNOWN_PRESENTED_IDS = new Set<string>([
@@ -148,6 +240,7 @@ function buildComposite<
   title: StudioMainMenuCompositeGroupId,
   sources: readonly TGroup[],
   label: string,
+  flattenSingleSection = false,
 ): TGroup | null {
   if (sources.length === 0) return null;
   const items: StudioMainMenuPresentableItem[] = [];
@@ -158,7 +251,13 @@ function buildComposite<
       const lastInSource = itemIndex === source.items.length - 1;
       items.push({
         ...item,
-        ...(first ? { sectionLabel: source.label } : {}),
+        // Stamp the canonical source so downstream renderers (the menubar
+        // density fold) can resolve this row's catalogue native id even
+        // after the composite absorbed its group.
+        sourceGroupId: source.id,
+        // A lone surviving section needs no caption: the caption would only
+        // repeat the scan level the section fold already removed.
+        ...(first && !flattenSingleSection ? { sectionLabel: source.label } : {}),
         separatorAfter: lastInSource
           ? sourceIndex !== lastSourceIndex
           : Boolean(item.separatorAfter),
@@ -179,13 +278,48 @@ export function createStudioMainMenuPresentation<
   const korean = isKoreanCatalogue(groups);
   const byId = new Map(groups.map((group) => [group.id, group] as const));
   const compositeSources: Record<string, readonly string[]> = {};
+  // Section fold (header note): only an explicitly wired beginner mode
+  // folds. `full` and an omitted mode keep the legacy presentation, so
+  // unwired hosts and existing tests see byte-identical groups.
+  const foldsSections =
+    options.densityMode === "simple" || options.densityMode === "focus";
+  const sectionsExpanded = options.advancedSectionsExpanded === true;
+  const compositeAdvancedSections: StudioMainMenuAdvancedCompositeSection[] = [];
+  let foldedCompositeItemCount = 0;
 
   const composite = (
     title: StudioMainMenuCompositeGroupId,
   ): TGroup | null => {
-    const sources = STUDIO_MAIN_MENU_COMPOSITE_GROUPS[title]
+    const allSources = STUDIO_MAIN_MENU_COMPOSITE_GROUPS[title]
       .map((id) => byId.get(id))
       .filter((group): group is TGroup => group !== undefined);
+    const advancedSources = foldsSections
+      ? allSources.filter((source) => ADVANCED_COMPOSITE_SOURCE_SET.has(source.id))
+      : [];
+    if (advancedSources.length > 0) {
+      compositeAdvancedSections.push({
+        groupId: title,
+        sourceGroupIds: advancedSources.map((source) => source.id),
+        itemCount: advancedSources.reduce(
+          (total, source) => total + source.items.length,
+          0,
+        ),
+      });
+    }
+    const foldedSources =
+      foldsSections && !sectionsExpanded ? advancedSources : [];
+    if (foldedSources.length > 0) {
+      foldedCompositeItemCount += foldedSources.reduce(
+        (total, source) => total + source.items.length,
+        0,
+      );
+    }
+    const foldedSet = new Set(foldedSources.map((source) => source.id));
+    const sources = allSources.filter((source) => !foldedSet.has(source.id));
+    // compositeSources still reports the full absorbed set: consumers that
+    // reason about the catalogue (search, overflow, tests) must not lose
+    // the folded sources just because this presentation folds them.
+    const fullSources = allSources;
     const primarySourceLabel = sources.find((source) => source.id === title)?.label;
     const firstSourceLabel = sources[0]?.label;
     const defaultLabel = (() => {
@@ -203,8 +337,11 @@ export function createStudioMainMenuPresentation<
       title,
       sources,
       options.labels?.[title] ?? defaultLabel,
+      // Only a fold can flatten: a title that always had one section
+      // (filter) keeps its legacy rendering untouched.
+      foldedSources.length > 0 && sources.length === 1,
     );
-    if (built) compositeSources[title] = sources.map((group) => group.id);
+    if (built) compositeSources[title] = fullSources.map((group) => group.id);
     return built;
   };
 
@@ -240,5 +377,70 @@ export function createStudioMainMenuPresentation<
     presentedGroupIds: presented.map((group) => group.id),
     presentedActionGroupIds: actionGroups.map((group) => group.id),
     specialistBoundaryGroupId: null,
+    compositeAdvancedSections,
+    foldedCompositeItemCount,
   };
+}
+
+/**
+ * Inserts the renderer's "고급 도구 펼치기" disclosure row into each
+ * presented group that carries advanced composite sections.
+ *
+ * - Collapsed: the advanced sections are absent from the groups (the
+ *   presentation folded them), so the row appends at the end — the artist
+ *   scans only everyday rows, then the row that offers more.
+ * - Expanded: the row sits at the visibility boundary, immediately before
+ *   the first advanced-section row (located by its stamped
+ *   `sourceGroupId`), so folding again is one click from the same spot.
+ * - Groups without advanced sections — and an empty `sections` list
+ *   (full/unwired) — keep their original references.
+ *
+ * Merge note (S3-13): the catalog tier fold (`studio-menubar-catalog.ts`)
+ * provides the same disclosure row at item granularity for the filter pack
+ * and the AI action menu. In a merged tree keep ONE row per group: run
+ * this section fold for composite titles, let the catalog fold own
+ * filter/AI, and add `vector` to its advanced source groups only if the
+ * section fold is dropped there. The two row builders intentionally share
+ * the i18n keys and label shape so either provider reads identically.
+ */
+export function insertStudioMainMenuAdvancedSectionFoldRows<
+  TItem extends StudioMainMenuPresentableItem,
+  TGroup extends StudioMainMenuPresentableGroup<TItem>,
+>(
+  groups: readonly TGroup[],
+  sections: readonly StudioMainMenuAdvancedCompositeSection[],
+  advancedSectionsExpanded: boolean,
+  buildFoldItem: (
+    groupId: string,
+    advancedCount: number,
+    expanded: boolean,
+  ) => TItem,
+): readonly TGroup[] {
+  if (sections.length === 0) return groups;
+  const sectionByGroup = new Map(sections.map((section) => [section.groupId, section]));
+  let changed = false;
+  const withRows = groups.map((group) => {
+    const section = sectionByGroup.get(group.id);
+    if (!section || section.itemCount === 0) return group;
+    const foldItem = buildFoldItem(group.id, section.itemCount, advancedSectionsExpanded);
+    if (!advancedSectionsExpanded) {
+      changed = true;
+      return { ...group, items: [...group.items, foldItem] } as TGroup;
+    }
+    const advancedSet = new Set<string>(section.sourceGroupIds);
+    const boundary = group.items.findIndex(
+      (item) => item.sourceGroupId !== undefined && advancedSet.has(item.sourceGroupId),
+    );
+    changed = true;
+    if (boundary < 0) return { ...group, items: [...group.items, foldItem] } as TGroup;
+    return {
+      ...group,
+      items: [
+        ...group.items.slice(0, boundary),
+        foldItem,
+        ...group.items.slice(boundary),
+      ],
+    } as TGroup;
+  });
+  return changed ? withRows : groups;
 }

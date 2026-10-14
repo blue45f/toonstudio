@@ -201,3 +201,19 @@ it("작업군은 모바일에서 옆으로 넘기는 한 줄로 묶이고 제작
   expect(titles).toEqual(["템플릿", "2D 에셋", "3D", "브러시", "색·보정"]);
 });
 
+
+it("마켓 홈은 구매 밴드 → 탐색 밴드 → 판매자 밴드 → 안내 밴드 순서이고 판매자는 구매 밴드 밖에 있다", () => {
+  useResources.mockReturnValue(marketPage());
+  const { container } = render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+  const bands = Array.from(container.querySelectorAll("[data-market-band]")).map((el) => el.getAttribute("data-market-band"));
+  expect(bands).toEqual(["buy", "explore", "sell", "guide"]);
+  const buy = container.querySelector('[data-market-band="buy"]') as HTMLElement;
+  const explore = container.querySelector('[data-market-band="explore"]') as HTMLElement;
+  const sell = container.querySelector('[data-market-band="sell"]') as HTMLElement;
+  expect(within(buy).getByRole("heading", { name: "최근 공유" })).toBeTruthy();
+  expect(within(buy).queryByRole("heading", { name: "만든 소재를 공유하고 판매해 보세요" })).toBeNull();
+  expect(within(explore).getByRole("heading", { name: "장르·제작 목적 컬렉션" })).toBeTruthy();
+  expect(within(explore).queryByRole("link", { name: "소재 공유하기" })).toBeNull();
+  expect(within(sell).getByRole("link", { name: "소재 공유하기" }).getAttribute("href")).toBe("/market/publish");
+  expect(within(sell).getByRole("link", { name: "Studio에서 공유" }).getAttribute("href")).toBe("/studio?assetMarket=community&communityView=share");
+});

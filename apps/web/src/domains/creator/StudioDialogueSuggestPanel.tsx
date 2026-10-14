@@ -16,6 +16,8 @@ import {
 import { Loader2, MessageSquareQuote, Plus, Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+import { AnswerTuningControls } from "./ai/AnswerTuningControls";
+import type { AnswerTuning } from "./ai/answer-tuning";
 import { formatDialogueSuggestionLine, type DialogueSuggestionCandidate } from "./lettering/studio-dialogue-suggest";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
@@ -31,6 +33,8 @@ export function StudioDialogueSuggestPanel({
   busy,
   error,
   candidates,
+  answerTuning,
+  onAnswerTuningChange,
   onGenerate,
   canInsertToSelected,
   onAddToScript,
@@ -47,6 +51,13 @@ export function StudioDialogueSuggestPanel({
   busy: boolean;
   error: string | null;
   candidates: DialogueSuggestionCandidate[] | null;
+  /**
+   * 답변 조절 공통 부품(선택) — 부모가 상태와 함께 넘길 때만 노출된다.
+   * 부모는 이 값을 suggestDialogueLines의 opts.answerTuning으로 전달해
+   * 지시문·temperature·maxTokens에 반영한다(배선 명세는 본 작업 NOTES 참고).
+   */
+  answerTuning?: AnswerTuning;
+  onAnswerTuningChange?: (value: AnswerTuning) => void;
   onGenerate: () => void;
   /** 캔버스에서 선택된 요소가 말풍선/텍스트라 후보를 바로 그 요소에 삽입할 수 있는 상태인지. */
   canInsertToSelected: boolean;
@@ -88,6 +99,10 @@ export function StudioDialogueSuggestPanel({
         disabled={busy}
         className="h-14 w-full resize-none rounded-md border border-line bg-panel px-2 py-1 text-[0.65rem] leading-snug text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent disabled:opacity-60"
       />
+
+      {answerTuning && onAnswerTuningChange ? (
+        <AnswerTuningControls value={answerTuning} onChange={onAnswerTuningChange} disabled={busy} density="compact" />
+      ) : null}
 
       {hasContext && (
         <label className="flex items-center gap-1.5 text-[0.63rem] text-fg-3">

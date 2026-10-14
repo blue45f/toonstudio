@@ -63,7 +63,21 @@ export type StudioHistoryJournalSidecarEntry<Bible, Writer> =
     };
 
 export type StudioHistoryJournalEntry<Bible, Writer> =
-  | { readonly kind: "pages" }
+  | {
+      readonly kind: "pages";
+      /**
+       * 과정 리플레이용 기록 시각(ms) — 선택 메타. 예전 기록·메타 없이 커밋된 단계는
+       * `undefined` 이고, 재생 측(`studio-process-replay.ts`)이 합성 간격으로 대체한다.
+       * 메타가 없을 때는 항목 형태가 종전 `{ kind: "pages" }` 와 완전히 같아야 한다
+       * (싱글턴 `PAGES_ENTRY` 공유 — 기존 계약 테스트가 `toEqual({ kind: "pages" })` 로 고정).
+       */
+      readonly at?: number;
+      /**
+       * 이 단계에서 바뀐 페이지 id 목록 — 과정 리플레이의 페이지별 필터 근거.
+       * 모르면 `undefined` 로 두고, 재생 측이 스냅샷 참조 diff 로 복원한다.
+       */
+      readonly changedPageIds?: readonly string[];
+    }
   | StudioHistoryJournalSidecarEntry<Bible, Writer>;
 
 export interface StudioHistoryJournal<Bible, Writer> {
@@ -174,12 +188,35 @@ function capStudioHistoryJournalSidecarEntries<Bible, Writer>(
  */
 export function recordStudioHistoryJournalPagesSteps<Bible, Writer>(
   journal: StudioHistoryJournal<Bible, Writer>,
-  input: { readonly addedSteps: number; readonly nextUndoDepth: number }
+  input: {
+    readonly addedSteps: number;
+    readonly nextUndoDepth: number;
+    /**
+     * 과정 리플레이 메타(선택) — 이번 전이의 기록 시각과 바뀐 페이지.
+     * 전이가 여러 단계를 만들면 메타는 **마지막 단계**(전이의 최종 상태)에만 붙는다.
+     * 메타를 주지 않으면 종전과 동일하게 싱글턴 항목만 쌓인다(형태·참조 동일).
+     */
+    readonly at?: number;
+    readonly changedPageIds?: readonly string[];
+  }
 ): StudioHistoryJournal<Bible, Writer> {
   // 새 커밋은 redo 가지를 버린다 — 스냅샷 히스토리의 `slice(0, index + 1)` 과 반드시 보조를 맞춘다.
   const kept = journal.entries.slice(0, boundedCursor(journal));
   const addedSteps = Math.max(0, Math.trunc(input.addedSteps));
-  for (let step = 0; step < addedSteps; step += 1) kept.push(PAGES_ENTRY);
+  const hasReplayMeta = input.at !== undefined || input.changedPageIds !== undefined;
+  for (let step = 0; step < addedSteps; step += 1) {
+    if (hasReplayMeta && step === addedSteps - 1) {
+      kept.push({
+        kind: "pages",
+        ...(input.at !== undefined ? { at: input.at } : {}),
+        ...(input.changedPageIds !== undefined
+          ? { changedPageIds: Object.freeze([...input.changedPageIds]) }
+          : {}),
+      });
+    } else {
+      kept.push(PAGES_ENTRY);
+    }
+  }
 
   let excess = countStudioHistoryJournalPagesEntries(kept) - Math.max(0, input.nextUndoDepth);
   if (excess <= 0) {

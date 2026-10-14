@@ -534,6 +534,7 @@ function MenuDropdown({
                   : "menuitemcheckbox"
             }
             aria-checked={item.checked === undefined ? undefined : item.checked}
+            aria-expanded={item.expanded}
             aria-disabled={item.disabled || undefined}
             aria-describedby={unavailableReasonId}
             tabIndex={itemIndex !== activeItemIndex ? -1 : 0}
@@ -548,7 +549,10 @@ function MenuDropdown({
               try {
                 item.onSelect();
               } finally {
-                closeMenu();
+                // Disclosure rows (the density fold's advanced-tools toggle)
+                // change what the open menu shows; closing here would make
+                // the expanded rows impossible to reach.
+                if (!item.keepOpenOnSelect) closeMenu();
               }
             }}
             className={cn(

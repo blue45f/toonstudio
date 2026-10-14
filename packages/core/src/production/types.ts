@@ -327,6 +327,16 @@ export interface ClarificationThread {
 export interface HandoffReadinessInput {
   readonly package: StoryToArtHandoffPackage;
   readonly clarifications: readonly ClarificationThread[];
+  /**
+   * 이 회차의 팀 레퍼런스 보드 연결 상태 (비교 검수 4단계).
+   * null이거나 없으면 보드 미연결로 보고 기존 "참고 자료" 산식을 그대로 쓴다.
+   * 값이 있으면 보드 이미지 수가 "참고 자료" 지표의 세 번째 구성 요소가 된다:
+   * 보드가 비면 미충족, 채워지면 충족.
+   */
+  readonly episodeReferenceBoard?: {
+    readonly boardId: string;
+    readonly itemCount: number;
+  } | null;
 }
 
 export interface HandoffReadiness {
@@ -890,6 +900,15 @@ export interface EpisodePlan {
   readonly emotionalArc?: {
     readonly from: string;
     readonly to: string;
+  };
+  /**
+   * 다음 화 훅 설계 (P-5) — cliffhanger(마무리 장면 자체)와 별개로, 그 장면이
+   * 독자에게 남기는 질문과 다음 화 첫 장면이 받을 것을 기획 단계에서 고정한다.
+   * 비어 있어도 저장은 되지만 게시 전 QC가 빈 칸을 warning으로 표시한다(강제 아님).
+   */
+  readonly hookDesign?: {
+    readonly lastSceneQuestion: string;
+    readonly nextOpening: string;
   };
   readonly characterRefs: readonly string[];
   readonly locationRefs: readonly string[];
@@ -1478,6 +1497,12 @@ export interface ExternalReviewResponse {
   readonly decision: ExternalReviewDecision;
   readonly note: string;
   readonly createdAt: string;
+  /**
+   * 외부 검수자가 비교 검수 화면에 남긴 핀의 직렬화 JSON
+   * (웹 compare-review-snapshot 모델의 CompareSnapshotPin[] 포맷, 코어는 불투명 문자열로 보관).
+   * 비교 스냅샷이 없는 검수본의 응답에서는 생략된다.
+   */
+  readonly comparePinsJson?: string | null;
 }
 
 export interface ExternalReviewAccess {
@@ -1494,6 +1519,13 @@ export interface ExternalReviewAccess {
   readonly createdByAssignmentId: string;
   readonly createdAt: string;
   readonly lastAccessedAt: string | null;
+  /**
+   * 고정 검수본에 함께 고정된 비교 검수 스냅샷의 직렬화 JSON
+   * (웹 compare-review-snapshot 모델의 CompareReviewSnapshot 포맷, 코어는 불투명 문자열로 보관).
+   * 생성 시점의 비교 구성(소스·모드·핀) 복사본이라 이후 비교 구성이 바뀌어도
+   * 이 링크의 화면은 바뀌지 않는다. 비교 구성이 없는 검수본에서는 null/생략.
+   */
+  readonly compareSnapshotJson?: string | null;
   readonly responses: readonly ExternalReviewResponse[];
 }
 

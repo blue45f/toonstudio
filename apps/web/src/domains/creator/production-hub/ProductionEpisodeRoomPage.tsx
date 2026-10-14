@@ -7,7 +7,7 @@ import {
   type ReviewLane,
 } from "@toonstudio/core/production";
 import { ArrowLeft, Check, Layers3, PenLine, Sparkles } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { ProductionClarificationAnswer } from "./ProductionClarificationAnswer";
@@ -16,6 +16,19 @@ import { ProductionEpisodeReviewRoom } from "./ProductionEpisodeReviewRoom";
 import { ProductionProjectHeader } from "./ProductionProjectHeader";
 import { ProductionSampleJourneyGuide } from "./ProductionSampleJourneyGuide";
 import { ProductionVisualPlanningWorkspace } from "./ProductionVisualPlanningWorkspace";
+import {
+  getStudioProjectByWork,
+  listStudioArtifactRevisions,
+  listStudioReviews,
+} from "../project-graph/studio-project-graph-client";
+import type {
+  StudioReviewSummary,
+  StudioRevisionRecord,
+} from "../project-graph/studio-project-graph-contract";
+import {
+  buildProductionManuscriptProcesses,
+  type ProductionManuscriptProcess,
+} from "./production-manuscript-model";
 import { productionDemoAdapter } from "./production-demo-adapter";
 import {
   clarificationCategoryLabel,
@@ -76,6 +89,52 @@ export function ProductionEpisodeRoomPage() {
   const [roleLens, setRoleLens] = usePreferredRoleLens("art");
   const [planningOpen, setPlanningOpen] = useState(false);
   const bt = useBilingual("ProductionEpisodeRoomPage");
+
+  // 비교 검수 실데이터: 원고·버전 표면(ProductionManuscriptWorkspace)과 같은 로드 패턴으로
+  // 이 회차의 공정·리비전을 불러와 룸의 비교 탭에 넘긴다. 실패해도 룸 전체를 막지 않는다
+  // (비교 풀은 외부 이미지 추가만으로도 동작한다).
+  const [compareProcesses, setCompareProcesses] = useState<readonly ProductionManuscriptProcess[]>([]);
+  const compareLoadGeneration = useRef(0);
+  const compareWorkId = project.aggregate?.workId ?? null;
+  const compareEpisodeId = params.episodeId ?? null;
+  const compareIsDemo = project.isDemo;
+  useEffect(() => {
+    if (compareIsDemo || !compareWorkId || !compareEpisodeId) return;
+    const current = ++compareLoadGeneration.current;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const studioProject = await getStudioProjectByWork(compareWorkId);
+        const pairs: Array<{
+          readonly artifactId: string;
+          readonly revisions: readonly StudioRevisionRecord[];
+          readonly reviews: readonly StudioReviewSummary[];
+        }> = [];
+        const requestBatchSize = 6;
+        for (let offset = 0; offset < studioProject.artifacts.length; offset += requestBatchSize) {
+          const batch = await Promise.all(studioProject.artifacts.slice(offset, offset + requestBatchSize).map(async (artifact) => {
+            const [revisions, reviews] = await Promise.all([
+              listStudioArtifactRevisions(artifact.id),
+              listStudioReviews(artifact.id),
+            ]);
+            return { artifactId: artifact.id, revisions, reviews } as const;
+          }));
+          pairs.push(...batch);
+        }
+        if (cancelled || current !== compareLoadGeneration.current) return;
+        const all = buildProductionManuscriptProcesses({
+          project: studioProject,
+          revisionsByArtifact: Object.fromEntries(pairs.map((entry) => [entry.artifactId, entry.revisions])),
+          reviewsByArtifact: Object.fromEntries(pairs.map((entry) => [entry.artifactId, entry.reviews])),
+          episodeId: null,
+        });
+        setCompareProcesses(all.filter((process) => process.artifact.scope.episodeId === compareEpisodeId));
+      } catch {
+        // 비교 소스 로드 실패는 조용히 빈 풀로 둔다. 룸이 안내 배너와 외부 이미지 추가를 제공한다.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [compareWorkId, compareEpisodeId, compareIsDemo]);
 
   if (!params.projectId || !params.episodeId) return <Navigate to="/production" replace />;
   if (project.loading) return <RoomState kind="pending">{bt("회차 룸을 불러오는 중…", "Loading the episode room…")}</RoomState>;
@@ -194,6 +253,7 @@ export function ProductionEpisodeRoomPage() {
           roleLens={roleLens}
           viewerAssignmentId={viewerAssignment?.id ?? null}
           onApproveLane={approveLane}
+          compareProcesses={compareProcesses}
         />
 
         <ProductionEpisodeQcChecklist aggregate={aggregate} episodeId={episode.episodeId} />

@@ -39,6 +39,10 @@ import {
 } from "./studio-color-range";
 import { StudioSliderRow, StudioToggleChip } from "./studio-panel-ui";
 import {
+  QUICK_SELECTION_TOLERANCE_DEFAULT,
+  QUICK_SELECTION_TOLERANCE_RANGE,
+} from "./studio-quick-selection";
+import {
   SELECTION_BRIGHTNESS_RANGE,
   SELECTION_BRUSH_RADIUS_DEFAULT,
   SELECTION_BRUSH_RADIUS_RANGE,
@@ -382,6 +386,15 @@ export type StudioSelectionToolsPanelProps = {
   onColorRangeClearSamples?: () => void;
   /** 색상 범위 → 선택 적용 — 현재 결합 모드(combineMode)를 그대로 따른다. 섹션 게이트 프롭. */
   onColorRangeApply?: () => void;
+  // ── 빠른 선택 브러시 — 전부 optional. onToggleQuickSelect 가 없으면 섹션 자체가 렌더되지
+  //    않아 기존 렌더 사이트는 코드/마크업 변경 없이 그대로 컴파일·동작한다(색상 범위와 같은 규약). ──
+  /** 빠른 선택 브러시 무장 상태 — 페이지가 소유(pixelTool === "quick-select"). */
+  quickSelectActive?: boolean;
+  /** 허용 오차 슬라이더 값 — QUICK_SELECTION_TOLERANCE_RANGE 범위(표시 단위). */
+  quickSelectTolerance?: number;
+  onQuickSelectToleranceChange?: (value: number) => void;
+  /** 빠른 선택 브러시 무장/해제 토글. 섹션 게이트 프롭. */
+  onToggleQuickSelect?: () => void;
 };
 
 /** 마퀴 이동 한 칸(정규화) — 이미지 폭 대비 약 2%. */
@@ -430,6 +443,10 @@ export function StudioSelectionToolsPanel({
   onColorRangeRemoveSample,
   onColorRangeClearSamples,
   onColorRangeApply,
+  quickSelectActive = false,
+  quickSelectTolerance = QUICK_SELECTION_TOLERANCE_DEFAULT,
+  onQuickSelectToleranceChange,
+  onToggleQuickSelect,
 }: StudioSelectionToolsPanelProps): ReactElement {
   const [brightness, setBrightness] = useState(0);
   const [hue, setHue] = useState(0);
@@ -579,6 +596,67 @@ export function StudioSelectionToolsPanel({
           disabled={busy}
           readout={`${brushRadius}px`}
         />
+      ) : null}
+
+      {onToggleQuickSelect ? (
+        <div className="flex flex-col gap-1.5">
+          <StudioToolHintTarget
+            hint={{
+              id: "pixel-selection-quick-select",
+              title: "빠른 선택 브러시",
+              description:
+                "사진·그림 위를 문지르면 색 경계를 따라 선택이 자랍니다. 마술봉이 한 번의 클릭이라면, 이건 붓으로 칠하는 만큼 넓어지는 선택이에요.",
+              preview: "selection-brush",
+              tip: "허용 오차가 클수록 더 넓게 자랍니다. 결합(합치기/빼기/교집합)은 위 결합 모드를 그대로 따라요.",
+            }}
+            disabled={busy && !quickSelectActive}
+            unavailableReason={busy && !quickSelectActive ? busyUnavailableReason : undefined}
+            preferredSide="left"
+          >
+            <span className="inline-flex">
+              <StudioToggleChip
+                active={quickSelectActive}
+                disabled={busy && !quickSelectActive}
+                onClick={onToggleQuickSelect}
+                aria-label={quickSelectActive ? "빠른 선택 브러시 종료" : "빠른 선택 브러시"}
+              >
+                <span className="inline-flex items-center gap-1">
+                  <Paintbrush className="size-3" aria-hidden />
+                  {quickSelectActive ? "빠른 선택 종료" : "빠른 선택"}
+                </span>
+              </StudioToggleChip>
+            </span>
+          </StudioToolHintTarget>
+          {quickSelectActive ? (
+            <>
+              <StudioSliderRow
+                label="허용 오차"
+                min={QUICK_SELECTION_TOLERANCE_RANGE.min}
+                max={QUICK_SELECTION_TOLERANCE_RANGE.max}
+                step={QUICK_SELECTION_TOLERANCE_RANGE.step}
+                value={quickSelectTolerance}
+                onChange={onQuickSelectToleranceChange ?? (() => undefined)}
+                disabled={busy}
+                readout={String(quickSelectTolerance)}
+              />
+              {onBrushRadiusChange ? (
+                <StudioSliderRow
+                  label="반경"
+                  min={SELECTION_BRUSH_RADIUS_RANGE.min}
+                  max={SELECTION_BRUSH_RADIUS_RANGE.max}
+                  step={SELECTION_BRUSH_RADIUS_RANGE.step}
+                  value={brushRadius}
+                  onChange={onBrushRadiusChange}
+                  disabled={busy}
+                  readout={`${brushRadius}px`}
+                />
+              ) : null}
+              <p className="text-[0.68rem] leading-relaxed text-fg-3" role="status">
+                이미지 위를 문지르면 경계를 따라 선택이 자라요. 떼면 확정됩니다.
+              </p>
+            </>
+          ) : null}
+        </div>
       ) : null}
 
       {(activeTool === "lasso" || activeTool === "poly-lasso") && onToggleMagnetic ? (
