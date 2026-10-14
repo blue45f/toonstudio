@@ -46,6 +46,7 @@ import {
 import { FortuneBirthGate } from "./FortuneBirthGate";
 import { FortuneBirthProfileFields } from "./FortuneBirthProfileFields";
 import { FortuneGlobalHoroscope } from "./FortuneGlobalHoroscope";
+import { FortuneQuickToday } from "./FortuneQuickToday";
 import { FortuneVoiceNarration } from "./FortuneVoiceNarration";
 import { TarotSpreadPicker } from "./TarotSpreadPicker";
 
@@ -494,6 +495,12 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
     );
   };
 
+  // 1단계(캐릭터 없이 바로 보는 오늘의 운세) → 2단계(캐릭터 선택) 연결 —
+  // 계속 버튼을 누르면 캐릭터 피커로 부드럽게 스크롤해 상세 운세 동선으로 이어진다.
+  const scrollToCharacterPicker = () => {
+    document.getElementById("fortune-character-picker")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   // 상태 초기화
   const handleReset = () => {
     playback.stop();
@@ -519,6 +526,11 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
       {/* 1단계: 캐릭터 에이전트 선택 */}
       {!selectedChar ? (
         <section className="mt-8">
+          {/* 1단계: 캐릭터 없이 바로 보는 오늘의 운세 — 입력 없이 첫 결과 도달 (D-11).
+              날짜만으로 산출되는 공통 결과를 앞단에 두고, 캐릭터 기반 상세 운세는
+              아래 2단계 피커로 이어진다. */}
+          <FortuneQuickToday onContinue={scrollToCharacterPicker} />
+
           {/* {tx("최근 본 운세")} 보관함 — 클릭 시 그 결과로 복원 */}
           {history.length > 0 && (
             <div className="mx-auto mb-8 max-w-3xl rounded-2xl border border-line bg-panel/30 p-4">
@@ -560,7 +572,10 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
             </div>
           )}
 
-          <h2 className="mb-6 text-center text-lg font-bold text-fg-2">
+          <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-wider text-accent">
+            {tx("2단계 · 캐릭터로 더 자세히 보기")}
+          </p>
+          <h2 id="fortune-character-picker" className="mb-6 scroll-mt-6 text-center text-lg font-bold text-fg-2">
             당신의 운세를 해석해줄 캐릭터 에이전트를 고르세요.
           </h2>
           {charLoadFailed && characters.length === 0 && (

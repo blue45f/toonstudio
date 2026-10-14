@@ -8,6 +8,7 @@
 import { useId } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import type { PinFeedbackEvaluation } from "./draft-pin-feedback-model";
 import {
   useMentionAutocomplete,
   type MentionAutocomplete,
@@ -154,6 +155,12 @@ interface DraftPopoverProps {
   readonly onCancel: () => void;
   /** @멘션 후보로 띄울 프로젝트 참여자. 없으면 자동완성을 띄우지 않는다. */
   readonly mentionOptions?: readonly ManuscriptPinAssigneeOption[];
+  /**
+   * 핀 피드백 패킷 평가(evaluatePinFeedbackPacket 결과). 있으면 제출 버튼의
+   * 활성 조건이 본문 유무가 아니라 패킷의 submittable이 되고, 빠진 요소의
+   * 안내 문구가 작성 칸 아래에 그대로 표시된다. 없으면 기존 본문 기준 동작.
+   */
+  readonly packetEvaluation?: PinFeedbackEvaluation;
 }
 
 /** 새 핀 작성 팝오버 */
@@ -171,10 +178,14 @@ export function ManuscriptPinDraftPopover({
   onSubmit,
   onCancel,
   mentionOptions = [],
+  packetEvaluation,
 }: DraftPopoverProps) {
   const bt = useBilingual("ManuscriptPinFeedback");
   const listboxId = useId();
+  const guidanceId = useId();
   const mention = useMentionAutocomplete({ value: body, onChange: onBodyChange, candidates: mentionOptions });
+  const packetGuidance = packetEvaluation?.guidance ?? [];
+  const canSubmit = packetEvaluation ? packetEvaluation.submittable : body.trim().length > 0;
   return (
     <ManuscriptPinPopoverShell
       pinNumber={pinNumber}
@@ -213,6 +224,17 @@ export function ManuscriptPinDraftPopover({
         <p className="manuscript-pin-composer-hint">
           {bt("@이름 으로 협업자를 멘션할 수 있어요", "Mention collaborators with @name")}
         </p>
+        {packetGuidance.length > 0 && (
+          <ul
+            className="manuscript-pin-packet-guidance"
+            id={guidanceId}
+            aria-label={bt("피드백 패킷 안내", "Feedback packet guidance")}
+          >
+            {packetGuidance.map((label) => (
+              <li key={label.ko}>{bt(label.ko, label.en)}</li>
+            ))}
+          </ul>
+        )}
         <div className="manuscript-pin-composer-row">
           <label className="manuscript-pin-urgent-label">
             <input
@@ -229,7 +251,8 @@ export function ManuscriptPinDraftPopover({
             type="button"
             className="manuscript-pin-btn"
             data-primary="true"
-            disabled={!body.trim()}
+            disabled={!canSubmit}
+            aria-describedby={packetGuidance.length > 0 ? guidanceId : undefined}
             onClick={onSubmit}
           >
             {bt("핀 꽂기", "Place pin")}

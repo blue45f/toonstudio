@@ -32,6 +32,7 @@ import { supportsSiteExperience } from "@/shared/components/site-experience/site
 import { WorkspaceAccountContext } from "@/shared/components/workspace/workspace-account-context";
 import { workspaceTaskRoute } from "@/shared/components/workspace/workspace-task-route";
 import { recordCreatorDestination } from "@/shared/lib/creator-continuity";
+import { useT } from "@/shared/lib/i18n";
 import { recordSiteRouteVisit } from "@/shared/lib/site-route-history";
 
 import "@toonstudio/core/fx/fx.css";
@@ -184,6 +185,7 @@ export function AppShell({
   mainClassName = "min-h-screen pb-[max(5rem,var(--floating-stack-clearance,0px))] outline-none md:pb-[var(--floating-stack-clearance,0px)]",
 }: AppShellProps) {
   const { pathname, search } = useLocation();
+  const t = useT();
   const publicCreativeRoute = isPublicCreativeRoute(pathname);
   const campus = publicCreativeRoute
     ? null
@@ -238,7 +240,7 @@ export function AppShell({
         ) : null}
         {showSkipLink ? (
           <a href="#main-content" className="sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[300] focus:flex focus:min-h-11 focus:items-center focus:rounded-xl focus:border focus:border-line-strong focus:bg-fg focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-canvas focus:shadow-2xl focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent">
-            본문으로 건너뛰기
+            {t("app.skipToContent")}
           </a>
         ) : null}
         {immersiveVirtualExperience ? null : header}

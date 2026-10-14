@@ -287,6 +287,148 @@ export function applyStudioAttachmentConstraints(graph: StudioAttachmentGraph): 
   return next;
 }
 
+/* ── 소켓 카탈로그 + 그립 프리셋 (장착 기본값) ─────────────────────────
+ * 종전에는 parentSocket이 자유 문자열이라 소품마다 제각각인 오프셋을 손으로 맞춰야 했고,
+ * 양손 그립·어깨 멜빵 같은 접촉 패턴이 기본값으로 존재하지 않았다.
+ * 아래 카탈로그가 표준 소켓(기본 로컬 트랜스폼 포함)을 단일 진실 원천으로 고정하고,
+ * 그립 프리셋이 "소품을 골르면 곧바로 접촉이 맞는 상태"를 장착 기본값으로 제공한다.
+ * 검증(validate)은 기존 문서 호환을 위해 자유 소켓을 계속 허용하고, 카탈로그 대조는
+ * findStudioAttachmentSocket 같은 조회 API로 분리한다.
+ */
+export type StudioAttachmentSocketContact = "grip" | "support" | "strap" | "surface" | "loop";
+
+export interface StudioAttachmentSocketDef {
+  readonly id: string;
+  readonly label: string;
+  readonly contact: StudioAttachmentSocketContact;
+  /** 소켓 기준 기본 로컬 트랜스폼(부모 노드 로컬, 미터/도). */
+  readonly defaultLocalTransform: StudioTransform3d;
+}
+
+function socketTransform(x: number, y: number, z: number): StudioTransform3d {
+  return Object.freeze({
+    position: Object.freeze({ x, y, z }),
+    rotation: Object.freeze({ x: 0, y: 0, z: 0 }),
+    scale: Object.freeze({ x: 1, y: 1, z: 1 }),
+  });
+}
+
+export const STUDIO_ATTACHMENT_SOCKET_CATALOG: readonly StudioAttachmentSocketDef[] = Object.freeze([
+  Object.freeze({ id: "hand-right-grip", label: "오른손 그립", contact: "grip", defaultLocalTransform: IDENTITY_TRANSFORM }),
+  Object.freeze({ id: "hand-left-grip", label: "왼손 그립", contact: "grip", defaultLocalTransform: IDENTITY_TRANSFORM }),
+  Object.freeze({ id: "hand-right-support", label: "오른손 받침", contact: "support", defaultLocalTransform: IDENTITY_TRANSFORM }),
+  Object.freeze({ id: "hand-left-support", label: "왼손 받침", contact: "support", defaultLocalTransform: IDENTITY_TRANSFORM }),
+  Object.freeze({ id: "shoulder-strap-right", label: "오른쪽 어깨 멜빵", contact: "strap", defaultLocalTransform: socketTransform(0.2, 0.06, 0) }),
+  Object.freeze({ id: "shoulder-strap-left", label: "왼쪽 어깨 멜빵", contact: "strap", defaultLocalTransform: socketTransform(-0.2, 0.06, 0) }),
+  Object.freeze({ id: "back-carrier", label: "등 부착", contact: "surface", defaultLocalTransform: socketTransform(0, 0, -0.12) }),
+  Object.freeze({ id: "neck-loop", label: "목 걸이", contact: "loop", defaultLocalTransform: socketTransform(0, -0.04, 0.03) }),
+  Object.freeze({ id: "head-top", label: "머리 위", contact: "surface", defaultLocalTransform: socketTransform(0, 0.1, 0) }),
+  Object.freeze({ id: "face-bridge", label: "콧등", contact: "surface", defaultLocalTransform: socketTransform(0, 0.02, 0.07) }),
+  Object.freeze({ id: "waist-right", label: "오른쪽 허리", contact: "strap", defaultLocalTransform: socketTransform(0.14, -0.02, 0) }),
+  Object.freeze({ id: "waist-left", label: "왼쪽 허리", contact: "strap", defaultLocalTransform: socketTransform(-0.14, -0.02, 0) }),
+]);
+
+const SOCKET_BY_ID = new Map(STUDIO_ATTACHMENT_SOCKET_CATALOG.map((socket) => [socket.id, socket]));
+
+export function findStudioAttachmentSocket(socketId: string): StudioAttachmentSocketDef | undefined {
+  return SOCKET_BY_ID.get(socketId);
+}
+
+export type StudioGripPresetId =
+  | "one-hand-grip"
+  | "two-hand-grip"
+  | "one-hand-support"
+  | "two-hand-support"
+  | "shoulder-strap"
+  | "back-carrier"
+  | "neck-loop"
+  | "head-wear";
+
+export interface StudioGripPreset {
+  readonly id: StudioGripPresetId;
+  readonly label: string;
+  readonly contact: StudioAttachmentSocketContact;
+  /** 주 소켓 id를 손(side) 기준으로 고른다. */
+  readonly primarySocketId: (side: "left" | "right") => string;
+  /** 양손 프리셋에서만 존재하는 보조 소켓 id. */
+  readonly secondarySocketId?: (side: "left" | "right") => string;
+  /** 양손 프리셋에서 보조 손 노드까지 유지할 접촉 간격(미터, distance 제약). */
+  readonly secondarySpanMeters?: number;
+}
+
+const otherSide = (side: "left" | "right"): "left" | "right" => (side === "left" ? "right" : "left");
+
+export const STUDIO_ATTACHMENT_GRIP_PRESETS: readonly StudioGripPreset[] = Object.freeze([
+  Object.freeze({ id: "one-hand-grip", label: "한손 그립", contact: "grip", primarySocketId: (side: "left" | "right") => `hand-${side}-grip` }),
+  Object.freeze({
+    id: "two-hand-grip", label: "양손 그립", contact: "grip",
+    primarySocketId: (side: "left" | "right") => `hand-${side}-grip`,
+    secondarySocketId: (side: "left" | "right") => `hand-${otherSide(side)}-grip`,
+    secondarySpanMeters: 0.16,
+  }),
+  Object.freeze({ id: "one-hand-support", label: "한손 받침", contact: "support", primarySocketId: (side: "left" | "right") => `hand-${side}-support` }),
+  Object.freeze({
+    id: "two-hand-support", label: "양손 받침", contact: "support",
+    primarySocketId: (side: "left" | "right") => `hand-${side}-support`,
+    secondarySocketId: (side: "left" | "right") => `hand-${otherSide(side)}-support`,
+    secondarySpanMeters: 0.22,
+  }),
+  Object.freeze({ id: "shoulder-strap", label: "어깨 멜빵", contact: "strap", primarySocketId: (side: "left" | "right") => `shoulder-strap-${side}` }),
+  Object.freeze({ id: "back-carrier", label: "등 부착", contact: "surface", primarySocketId: () => "back-carrier" }),
+  Object.freeze({ id: "neck-loop", label: "목 걸이", contact: "loop", primarySocketId: () => "neck-loop" }),
+  Object.freeze({ id: "head-wear", label: "머리 착용", contact: "surface", primarySocketId: () => "head-top" }),
+]);
+
+const GRIP_PRESET_BY_ID = new Map(STUDIO_ATTACHMENT_GRIP_PRESETS.map((preset) => [preset.id, preset]));
+
+export function findStudioGripPreset(presetId: StudioGripPresetId): StudioGripPreset | undefined {
+  return GRIP_PRESET_BY_ID.get(presetId);
+}
+
+/**
+ * 그립 프리셋으로 부착 노드를 만든다 — 소품 장착의 기본값 경로.
+ * 소켓·기본 트랜스폼은 카탈로그에서 오고, 양손 프리셋은 보조 손 노드가 주어졌을 때만
+ * 접촉 간격을 유지하는 distance 제약을 단다(보조 손이 없으면 제약을 만들지 않는다).
+ */
+export function createStudioAttachmentNodeFromGripPreset(input: {
+  readonly id: string;
+  readonly assetRevisionId: string;
+  readonly presetId: StudioGripPresetId;
+  readonly side?: "left" | "right";
+  readonly parentNodeId: string;
+  readonly secondaryParentNodeId?: string;
+  readonly localTransform?: StudioTransform3d;
+}): StudioAttachmentNode {
+  const preset = findStudioGripPreset(input.presetId);
+  if (!preset) throw new TypeError(`unknown grip preset: ${input.presetId}`);
+  const side = input.side ?? "right";
+  const socketId = preset.primarySocketId(side);
+  const socket = findStudioAttachmentSocket(socketId);
+  if (!socket) throw new TypeError(`grip preset socket is missing from the catalog: ${socketId}`);
+  const constraints: StudioAttachmentConstraint[] = [];
+  if (preset.secondarySocketId && input.secondaryParentNodeId && preset.secondarySpanMeters !== undefined) {
+    constraints.push(Object.freeze({
+      type: "distance",
+      targetNodeId: input.secondaryParentNodeId,
+      weight: 1,
+      distance: preset.secondarySpanMeters,
+    }));
+  }
+  const node: StudioAttachmentNode = Object.freeze({
+    id: input.id,
+    kind: preset.contact === "grip" || preset.contact === "support" ? "hand" : "prop",
+    assetRevisionId: input.assetRevisionId,
+    parentNodeId: input.parentNodeId,
+    parentSocket: socket.id,
+    localTransform: input.localTransform ?? socket.defaultLocalTransform,
+    constraints: Object.freeze(constraints),
+    visible: true,
+    locked: false,
+  });
+  validateTransform(node.localTransform, node.id);
+  return node;
+}
+
 export interface StudioAttachmentTransaction {
   readonly id: string;
   readonly before: StudioAttachmentGraph;

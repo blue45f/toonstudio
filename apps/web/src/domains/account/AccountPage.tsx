@@ -1,5 +1,8 @@
 import { formatI18nTemplate, getActiveI18nLocale, translateBilingualValueForActiveLocale, translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 
+// account·settings·userProfile 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
+import "./account-i18n";
+
 import {
   AlertTriangle,
   Bookmark,
@@ -25,6 +28,7 @@ import { useSearchParams } from "react-router-dom";
 import { AuthModal } from "@/domains/auth/public/account-auth-modal";
 import { AvatarUploader } from "@/shared/components/avatar-uploader";
 import { CoverImage } from "@/shared/components/cover-image";
+import { MySpaceModuleChrome } from "@/shared/components/my-space-module-chrome";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useT } from "@/shared/lib/i18n";
@@ -879,6 +883,7 @@ export function AccountPage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
+      <MySpaceModuleChrome />
       <header className="mb-6 sm:mb-7">
         <p className="eyebrow flex items-center gap-1.5 text-accent">
           <UserRound size={14} /> {t("account.page.eyebrow")}

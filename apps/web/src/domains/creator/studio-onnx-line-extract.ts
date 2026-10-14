@@ -4,6 +4,8 @@
  * edge detector through the product ONNX provider, and render the line
  * raster back at native resolution. Only loaded through a dynamic import
  * from the panel; failures propagate and the original stays untouched.
+ * An optional non-destructive develop (preprocess) step can run on the
+ * 512×512 model input first — see studio-photo-develop.ts.
  */
 import {
   STUDIO_BG_REMOVE_MAX_DECODED_AXIS,
@@ -25,6 +27,12 @@ import {
   renderStudioTeedLineArt,
   type StudioTeedEdgeExtractor,
 } from "./studio-onnx-teed";
+import {
+  applyStudioPhotoDevelop,
+  isIdentityStudioPhotoDevelop,
+  normalizeStudioPhotoDevelopSettings,
+  type StudioPhotoDevelopSettings,
+} from "./studio-photo-develop";
 
 export interface StudioOnnxLineExtractImage {
   readonly image: HTMLImageElement;
@@ -46,11 +54,19 @@ export interface ExtractLineArtOnDeviceOptions {
   /** 0..1 — higher keeps fainter lines. */
   readonly sensitivity?: number;
   readonly signal?: AbortSignal;
+  /**
+   * 비파괴 전처리(현상) 설정 — 모델 입력(512×512 RGBA)에만 적용되고
+   * 원본 이미지는 바뀌지 않는다. 미지정·항등이면 기존 동작과 같다.
+   * 역할 경계는 studio-photo-develop.ts 머리말을 본다.
+   */
+  readonly develop?: StudioPhotoDevelopSettings | null;
 }
 
 export interface StudioOnnxLineExtractResult {
   readonly dataUrl: string;
   readonly executionProvider: StudioOnnxExecutionProvider;
+  /** 전처리가 실제로 적용됐는지 (미적용 실행과 비교 표시용). */
+  readonly developApplied?: boolean;
 }
 
 function createAbortError(): Error {
@@ -199,7 +215,23 @@ export function createStudioOnnxLineExtractService(
       throwIfAborted(signal);
       const loaded = await imageLoader(src, signal);
       throwIfAborted(signal);
-      const modelRgba = readModelInputRgba(loaded.image);
+      const rawModelRgba = readModelInputRgba(loaded.image);
+      // 전처리(현상)는 모델 입력 복사본에만 적용한다 — 원본은 비파괴.
+      const develop = extractOptions.develop
+        ? normalizeStudioPhotoDevelopSettings(extractOptions.develop)
+        : null;
+      const developApplied = develop !== null
+        && !isIdentityStudioPhotoDevelop(develop);
+      const modelRgba = developApplied
+        ? applyStudioPhotoDevelop(
+          {
+            data: rawModelRgba,
+            width: STUDIO_TEED_INPUT_SIZE,
+            height: STUDIO_TEED_INPUT_SIZE,
+          },
+          develop,
+        ).data
+        : rawModelRgba;
       const plane = preprocessStudioTeedInput(
         modelRgba,
         STUDIO_TEED_INPUT_SIZE,
@@ -228,6 +260,7 @@ export function createStudioOnnxLineExtractService(
       return Object.freeze({
         dataUrl: canvas.toDataURL("image/png"),
         executionProvider: extraction.executionProvider,
+        developApplied,
       });
     },
   });

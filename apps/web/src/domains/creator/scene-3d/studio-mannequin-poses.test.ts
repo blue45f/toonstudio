@@ -7,10 +7,15 @@ import {
   STUDIO_MANNEQUIN_PARAM_RANGES,
 } from "./studio-mannequin-model";
 import {
+  STUDIO_MANNEQUIN_HAND_POSE_PRESETS,
+  STUDIO_MANNEQUIN_POSE_CATEGORIES,
   STUDIO_MANNEQUIN_POSE_DOC_KIND,
   STUDIO_MANNEQUIN_POSE_DOC_VERSION,
   STUDIO_MANNEQUIN_POSE_PRESETS,
+  applyStudioMannequinHandPreset,
+  countStudioMannequinPosePresetsByCategory,
   createStudioMannequinRestPose,
+  filterStudioMannequinPosePresets,
   findStudioMannequinPosePreset,
   mirrorStudioMannequinPose,
   normalizeStudioMannequinPose,
@@ -164,5 +169,70 @@ describe("studio-mannequin-poses 세션 상태 영속", () => {
     expect(parseStudioMannequinState(null)).toBeNull();
     expect(parseStudioMannequinState("garbage")).toBeNull();
     expect(parseStudioMannequinState(JSON.stringify({ kind: "studio-mannequin-state" }))).toBeNull();
+  });
+});
+
+describe("studio-mannequin-poses 카테고리·검색·손 분리 확장", () => {
+  it("대화·커플·앉기·손 전용 카테고리가 있고 카테고리마다 3개 이상이다", () => {
+    const categoryIds = STUDIO_MANNEQUIN_POSE_CATEGORIES.map((meta) => meta.id);
+    expect(categoryIds).toEqual(
+      expect.arrayContaining(["dialogue", "couple", "sitting", "hand"]),
+    );
+    const counts = countStudioMannequinPosePresetsByCategory();
+    for (const id of categoryIds) expect(counts[id]).toBeGreaterThanOrEqual(3);
+    expect(STUDIO_MANNEQUIN_POSE_PRESETS.length).toBeGreaterThanOrEqual(50);
+  });
+
+  it("모든 프리셋이 검색용 태그와 설명을 가진다", () => {
+    for (const preset of STUDIO_MANNEQUIN_POSE_PRESETS) {
+      expect(preset.tags?.length ?? 0, preset.id).toBeGreaterThan(0);
+      expect(preset.description?.length ?? 0, preset.id).toBeGreaterThan(0);
+    }
+  });
+
+  it("커플 프리셋은 전부 2인 연출로 표시된다", () => {
+    const couple = filterStudioMannequinPosePresets({ category: "couple" });
+    expect(couple.length).toBeGreaterThanOrEqual(6);
+    expect(couple.every((preset) => (preset.figures ?? 1) === 2)).toBe(true);
+  });
+
+  it("검색은 라벨뿐 아니라 태그·설명·카테고리 이름으로도 찾는다", () => {
+    expect(
+      filterStudioMannequinPosePresets({ query: "포옹" }).map((preset) => preset.id),
+    ).toContain("couple-hug-front");
+    expect(
+      filterStudioMannequinPosePresets({ query: "귓속말" }).map((preset) => preset.id),
+    ).toEqual(["dialogue-whisper"]);
+    expect(
+      filterStudioMannequinPosePresets({ category: "sitting", query: "계단" }).map(
+        (preset) => preset.id,
+      ),
+    ).toEqual(["sit-stairs"]);
+    expect(filterStudioMannequinPosePresets({ query: "없는검색어zzz" })).toEqual([]);
+    expect(filterStudioMannequinPosePresets({})).toHaveLength(
+      STUDIO_MANNEQUIN_POSE_PRESETS.length,
+    );
+  });
+
+  it("손 전용 라이브러리는 전신과 분리되고 손 적용은 몸 포즈를 유지한다", () => {
+    expect(STUDIO_MANNEQUIN_HAND_POSE_PRESETS.length).toBeGreaterThanOrEqual(12);
+    expect(
+      STUDIO_MANNEQUIN_HAND_POSE_PRESETS.every(
+        (preset) => preset.category === "hand",
+      ),
+    ).toBe(true);
+    expect(filterStudioMannequinPosePresets({ scope: "hand-only" })).toHaveLength(
+      STUDIO_MANNEQUIN_HAND_POSE_PRESETS.length,
+    );
+
+    const walk = findStudioMannequinPosePreset("walk")!;
+    const fist = findStudioMannequinPosePreset("hand-fist")!;
+    const merged = applyStudioMannequinHandPreset(walk.pose, fist);
+    expect(merged.joints.leftUpperLeg).toEqual(walk.pose.joints.leftUpperLeg);
+    expect(merged.joints.leftHand).toEqual(fist.pose.joints.leftHand);
+    expect(merged.pelvisOffset).toEqual(walk.pose.pelvisOffset);
+
+    const leftOnly = applyStudioMannequinHandPreset(walk.pose, fist, "left");
+    expect(leftOnly.joints.rightHand).toEqual(walk.pose.joints.rightHand);
   });
 });

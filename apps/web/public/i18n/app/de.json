@@ -76,6 +76,7 @@
   "app.name": "Das ist Toon Studio.",
   "app.brandBeta": "Beta-Service  Daten und Funktionen können sich ändern",
   "app.loading": "Verladung",
+  "app.skipToContent": "Skip to main content",
   "auth.menu.triggerLabel": "Konto-Menü",
   "auth.menu.adminPanel": "Admin-Konsole",
   "auth.menu.profile": "Mein Profil",

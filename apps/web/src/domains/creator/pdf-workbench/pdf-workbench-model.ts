@@ -133,7 +133,9 @@ export function movePdfPage(
   return movePdfPageTo(state, pageId, from + direction);
 }
 
-/** 페이지를 목표 위치(0-based, 현재 목록 기준)로 이동한다. 범위를 벗어나면 양끝으로 clamp한다. */
+/** 페이지를 목표 위치(0-based, 현재 목록 기준)로 이동한다. 범위를 벗어나면 양끝으로 clamp한다.
+ *  목표 위치가 유한한 숫자가 아니면(NaN 등) 이동하지 않는다 — NaN을 clamp에 그대로 흘리면
+ *  splice가 0으로 해석해 페이지가 맨 앞으로 튀는 사고가 된다. */
 export function movePdfPageTo(
   state: PdfWorkbenchState,
   pageId: string,
@@ -141,6 +143,7 @@ export function movePdfPageTo(
 ): PdfWorkbenchState {
   const from = indexOfPage(state, pageId);
   if (from < 0) return state;
+  if (!Number.isFinite(targetIndex)) return state;
   const clamped = Math.max(0, Math.min(state.pages.length - 1, Math.trunc(targetIndex)));
   if (clamped === from) return state;
   const pages = [...state.pages];

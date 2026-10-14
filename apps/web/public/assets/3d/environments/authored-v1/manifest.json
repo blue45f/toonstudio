@@ -1,0 +1,769 @@
+{
+  "schema": "toonstudio.bg3d-environment-pack.authored-v1",
+  "version": "authored-v1",
+  "assets": [
+    {
+      "id": "ts-bg3d-webtoon_neighborhood_bus_stop-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "platform slab",
+        "glass shelter",
+        "wood bench",
+        "route sign",
+        "bollards"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 42252,
+        "nodes": 19,
+        "meshes": 18,
+        "triangles": 336,
+        "materials": 8,
+        "textures": 0
+      },
+      "byteSize": 42252,
+      "sha256": "sha256:1421a61983acec40b98456d7ab48d67b0e09b2e2b631f4cc3b2f4ce3ee86d766",
+      "bounds": [
+        5.44,
+        2.67,
+        1.9
+      ],
+      "camera": {
+        "position": [
+          4.243,
+          3.753,
+          4.787
+        ],
+        "target": [
+          0.0,
+          1.121,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_neighborhood_bus_stop.glb",
+      "fileName": "webtoon_neighborhood_bus_stop.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_neighborhood_bus_stop.png",
+      "name": "웹툰 동네 버스 정류장",
+      "theme": "transit",
+      "description": "유리 패널·목재 벤치·노선 안내판·안전 볼라드와 낮은 승강장 기단이 결합된 한국형 동네 정류장 모듈",
+      "tags": [
+        "webtoon",
+        "bus stop",
+        "shelter",
+        "bench",
+        "transit",
+        "웹툰",
+        "버스 정류장",
+        "벤치",
+        "교통"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_neighborhood_bus_stop.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_neighborhood_bus_stop-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    },
+    {
+      "id": "ts-bg3d-webtoon_school_gate_module-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "brick pillars",
+        "steel sliding gate",
+        "name board",
+        "fence wings"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 53000,
+        "nodes": 32,
+        "meshes": 31,
+        "triangles": 372,
+        "materials": 5,
+        "textures": 0
+      },
+      "byteSize": 53000,
+      "sha256": "sha256:528d22127430186984086db3398e16f8912672428dc38be836528ad3a9f2ec36",
+      "bounds": [
+        10.8,
+        3.425,
+        1.6
+      ],
+      "camera": {
+        "position": [
+          8.424,
+          6.42,
+          9.504
+        ],
+        "target": [
+          0.0,
+          1.438,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_school_gate_module.glb",
+      "fileName": "webtoon_school_gate_module.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_school_gate_module.png",
+      "name": "웹툰 한국 학교 정문",
+      "theme": "education",
+      "description": "석재·벽돌 문주, 슬라이딩 철문, 보행자 출입구와 담장 날개를 묶은 학교 정문 배경 모듈",
+      "tags": [
+        "webtoon",
+        "school",
+        "gate",
+        "education",
+        "korea",
+        "웹툰",
+        "학교",
+        "정문",
+        "담장"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_school_gate_module.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_school_gate_module-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    },
+    {
+      "id": "ts-bg3d-webtoon_rooftop_stairwell_entry-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "stairwell block",
+        "fire door",
+        "vent stack",
+        "outdoor unit",
+        "safety railing"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 46716,
+        "nodes": 24,
+        "meshes": 23,
+        "triangles": 356,
+        "materials": 7,
+        "textures": 0
+      },
+      "byteSize": 46716,
+      "sha256": "sha256:3b90d42a509c7987720940458441d283e158f04d152b9b5143ea7e8e6aabf9eb",
+      "bounds": [
+        5.6,
+        3.25,
+        4.6
+      ],
+      "camera": {
+        "position": [
+          4.368,
+          4.139,
+          4.928
+        ],
+        "target": [
+          0.0,
+          1.365,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_rooftop_stairwell_entry.glb",
+      "fileName": "webtoon_rooftop_stairwell_entry.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_rooftop_stairwell_entry.png",
+      "name": "웹툰 학교 옥상 계단실",
+      "theme": "education",
+      "description": "방화문·차양·배관·환기 설비와 옥상 안전 난간이 결합된 한국 학교 옥상 계단실 모듈",
+      "tags": [
+        "webtoon",
+        "school",
+        "rooftop",
+        "stairwell",
+        "utility",
+        "웹툰",
+        "학교",
+        "옥상",
+        "계단실"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_rooftop_stairwell_entry.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_rooftop_stairwell_entry-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    },
+    {
+      "id": "ts-bg3d-webtoon_alley_food_cart-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "cart body",
+        "cooking counter",
+        "red canopy",
+        "stools",
+        "crates",
+        "hanging lamp"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 97584,
+        "nodes": 26,
+        "meshes": 25,
+        "triangles": 940,
+        "materials": 8,
+        "textures": 0
+      },
+      "byteSize": 97584,
+      "sha256": "sha256:85f11bb1a6ea2ff23c4ff7f82d682887e448928cc7871652f6143637e0e99fe6",
+      "bounds": [
+        3.31,
+        3.26,
+        2.335
+      ],
+      "camera": {
+        "position": [
+          2.582,
+          3.183,
+          2.913
+        ],
+        "target": [
+          0.0,
+          1.369,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_alley_food_cart.glb",
+      "fileName": "webtoon_alley_food_cart.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_alley_food_cart.png",
+      "name": "웹툰 골목 포장마차 카트",
+      "theme": "urban",
+      "description": "스테인리스 조리대·붉은 차양·진열대·버너·수납과 간이 의자를 갖춘 이동식 골목 포장마차",
+      "tags": [
+        "webtoon",
+        "street food",
+        "food cart",
+        "alley",
+        "urban",
+        "웹툰",
+        "포장마차",
+        "노점",
+        "골목"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_alley_food_cart.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_alley_food_cart-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    },
+    {
+      "id": "ts-bg3d-webtoon_one_room_furniture_cluster-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "bed",
+        "desk and chair",
+        "wardrobe",
+        "bookshelf with books",
+        "floor lamp",
+        "mini fridge"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 60920,
+        "nodes": 30,
+        "meshes": 29,
+        "triangles": 468,
+        "materials": 11,
+        "textures": 0
+      },
+      "byteSize": 60920,
+      "sha256": "sha256:8876610aae97e343fb2925ec8bd2c11576a33ac23bae02060e708ba412d8f60c",
+      "bounds": [
+        3.6,
+        2.05,
+        3.65
+      ],
+      "camera": {
+        "position": [
+          2.847,
+          2.66,
+          3.212
+        ],
+        "target": [
+          0.0,
+          0.861,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_one_room_furniture_cluster.glb",
+      "fileName": "webtoon_one_room_furniture_cluster.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_one_room_furniture_cluster.png",
+      "name": "웹툰 원룸 가구 클러스터",
+      "theme": "home",
+      "description": "싱글 침대·책상·의자·옷장·책장·조명과 작은 생활 소품을 한 번에 배치하는 원룸 세트",
+      "tags": [
+        "webtoon",
+        "one room",
+        "furniture",
+        "bed",
+        "desk",
+        "home",
+        "웹툰",
+        "원룸",
+        "가구",
+        "침실"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_one_room_furniture_cluster.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_one_room_furniture_cluster-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    },
+    {
+      "id": "ts-bg3d-webtoon_apartment_lobby_module-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "elevator doors",
+        "glass entrance",
+        "parcel locker bank",
+        "bench",
+        "notice board"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 42444,
+        "nodes": 21,
+        "meshes": 20,
+        "triangles": 320,
+        "materials": 9,
+        "textures": 0
+      },
+      "byteSize": 42444,
+      "sha256": "sha256:23f576ed9e87c05dfefed72300433a9064bf8697d28b92105a79b04a44913b2f",
+      "bounds": [
+        4.625,
+        3.35,
+        2.865
+      ],
+      "camera": {
+        "position": [
+          3.607,
+          3.785,
+          4.07
+        ],
+        "target": [
+          0.0,
+          1.407,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_apartment_lobby_module.glb",
+      "fileName": "webtoon_apartment_lobby_module.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_apartment_lobby_module.png",
+      "name": "웹툰 아파트 공동현관",
+      "theme": "home",
+      "description": "유리 출입문·석재 포털·택배함·인터폰·벤치·공지판으로 구성된 현대 아파트 공동현관 모듈",
+      "tags": [
+        "webtoon",
+        "apartment",
+        "lobby",
+        "entrance",
+        "parcel locker",
+        "웹툰",
+        "아파트",
+        "공동현관",
+        "택배함"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_apartment_lobby_module.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_apartment_lobby_module-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    },
+    {
+      "id": "ts-bg3d-webtoon_hanok_courtyard_gate-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "wood pillars",
+        "tile gable roof",
+        "lattice doors",
+        "courtyard walls",
+        "onggi jars"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 51068,
+        "nodes": 23,
+        "meshes": 22,
+        "triangles": 412,
+        "materials": 7,
+        "textures": 0
+      },
+      "byteSize": 51068,
+      "sha256": "sha256:091fa75e49964d719384441cb9ddb324092345d05f90c6da242f8abec822b90b",
+      "bounds": [
+        7.3,
+        3.68,
+        1.795
+      ],
+      "camera": {
+        "position": [
+          5.694,
+          5.09,
+          6.424
+        ],
+        "target": [
+          0.0,
+          1.546,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_hanok_courtyard_gate.glb",
+      "fileName": "webtoon_hanok_courtyard_gate.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_hanok_courtyard_gate.png",
+      "name": "웹툰 한옥 안마당 대문",
+      "theme": "heritage",
+      "description": "목재 기둥·기와지붕·격자문·석재 문턱·담장 날개와 옹기를 갖춘 한옥 대문 배경 모듈",
+      "tags": [
+        "webtoon",
+        "hanok",
+        "gate",
+        "heritage",
+        "korea",
+        "웹툰",
+        "한옥",
+        "대문",
+        "기와"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_hanok_courtyard_gate.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_hanok_courtyard_gate-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    },
+    {
+      "id": "ts-bg3d-webtoon_convenience_store_fixture_cluster-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "product shelves",
+        "drinks fridge",
+        "checkout counter",
+        "microwave unit",
+        "recycle bin"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 79228,
+        "nodes": 43,
+        "meshes": 42,
+        "triangles": 584,
+        "materials": 10,
+        "textures": 0
+      },
+      "byteSize": 79228,
+      "sha256": "sha256:784902b7f0b110b5fa8e565677c1ab4d672975376b48772a04e37c7de63091e4",
+      "bounds": [
+        4.3,
+        1.95,
+        3.0
+      ],
+      "camera": {
+        "position": [
+          3.354,
+          2.878,
+          3.784
+        ],
+        "target": [
+          0.0,
+          0.819,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_convenience_store_fixture_cluster.glb",
+      "fileName": "webtoon_convenience_store_fixture_cluster.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_convenience_store_fixture_cluster.png",
+      "name": "웹툰 편의점 집기 클러스터",
+      "theme": "retail",
+      "description": "상품 진열대·음료 냉장고·계산대·전자레인지 선반·분리수거함과 장바구니를 묶은 편의점 집기 세트",
+      "tags": [
+        "webtoon",
+        "convenience store",
+        "retail",
+        "shelves",
+        "refrigerator",
+        "웹툰",
+        "편의점",
+        "진열대",
+        "계산대"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_convenience_store_fixture_cluster.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_convenience_store_fixture_cluster-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    },
+    {
+      "id": "ts-bg3d-webtoon_neighborhood_police_box-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "station body",
+        "glass entrance",
+        "sign band",
+        "bike rack",
+        "planter"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 35848,
+        "nodes": 15,
+        "meshes": 14,
+        "triangles": 288,
+        "materials": 10,
+        "textures": 0
+      },
+      "byteSize": 35848,
+      "sha256": "sha256:c81b0f86549895dfd688530d20cb464602ea16009339d75b201b2e2f8cc77eb8",
+      "bounds": [
+        5.2,
+        3.4,
+        3.6
+      ],
+      "camera": {
+        "position": [
+          4.056,
+          4.054,
+          4.576
+        ],
+        "target": [
+          0.0,
+          1.428,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_neighborhood_police_box.glb",
+      "fileName": "webtoon_neighborhood_police_box.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_neighborhood_police_box.png",
+      "name": "웹툰 동네 지구대 외관",
+      "theme": "urban",
+      "description": "유리 출입구·차양·경사로·보안 설비·자전거 거치대와 화단을 갖춘 소형 지구대 외관 모듈",
+      "tags": [
+        "webtoon",
+        "police box",
+        "public building",
+        "urban",
+        "korea",
+        "웹툰",
+        "지구대",
+        "파출소",
+        "공공건물"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_neighborhood_police_box.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_neighborhood_police_box-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    },
+    {
+      "id": "ts-bg3d-webtoon_riverside_park_pavilion-mcp-v1",
+      "generator": "scripts/generate_self_authored_environment_pack_v1.py",
+      "generatorVersion": "1.0.0-python",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "originalProceduralGeometry": true,
+      "externalRuntimeResources": 0,
+      "semanticParts": [
+        "deck",
+        "pavilion posts",
+        "gable roof",
+        "picnic table",
+        "drinking fountain",
+        "bike rack"
+      ],
+      "studioRuntimeVerified": false,
+      "allAnglesArtisticallyApproved": false,
+      "visualReviewLevel": "single-perspective-software-render",
+      "metrics": {
+        "bytes": 56560,
+        "nodes": 20,
+        "meshes": 19,
+        "triangles": 504,
+        "materials": 6,
+        "textures": 0
+      },
+      "byteSize": 56560,
+      "sha256": "sha256:ae185c7031e815e2181f67f651bcbb10143c5a2653bc855237397b2007db4c27",
+      "bounds": [
+        5.99,
+        3.83,
+        5.0
+      ],
+      "camera": {
+        "position": [
+          4.672,
+          4.622,
+          5.271
+        ],
+        "target": [
+          0.0,
+          1.609,
+          0.0
+        ],
+        "fovDegrees": 50
+      },
+      "url": "/assets/3d/environments/authored-v1/webtoon_riverside_park_pavilion.glb",
+      "fileName": "webtoon_riverside_park_pavilion.glb",
+      "thumbnailUrl": "/assets/3d/environments/authored-v1/thumbnails/webtoon_riverside_park_pavilion.png",
+      "name": "웹툰 한강 공원 쉼터",
+      "theme": "urban",
+      "description": "곡면 금속 지붕·목재 천장·벤치·피크닉 테이블·음수대와 자전거 거치대를 갖춘 강변 공원 쉼터",
+      "tags": [
+        "webtoon",
+        "riverside",
+        "park",
+        "pavilion",
+        "bench",
+        "웹툰",
+        "한강",
+        "공원",
+        "쉼터"
+      ],
+      "visualReviewed": true,
+      "visualReviewSource": "/assets/3d/environments/authored-v1/thumbnails/webtoon_riverside_park_pavilion.png",
+      "rootMetadata": {
+        "asset_id": "ts-bg3d-webtoon_riverside_park_pavilion-mcp-v1",
+        "asset_type": "studio-bg3d-environment",
+        "asset_author": "ToonStudio",
+        "asset_license": "CC0-1.0",
+        "asset_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "asset_generator": "scripts/generate_self_authored_environment_pack_v1.py",
+        "units": "metres",
+        "ground_plane": "glTF-Y=0"
+      }
+    }
+  ]
+}

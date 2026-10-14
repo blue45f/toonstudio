@@ -48,6 +48,7 @@ export function drawStudioAnimaticFrame(
   if (snapshot.timeline.previewMode === "vertical-scroll") {
     const seen = new Set<string>();
     context.save();
+    context.globalAlpha = sample.camera.opacity;
     context.translate(width / 2 + sample.camera.panXPercent * width / 100, height / 2 + sample.camera.panYPercent * height / 100);
     context.scale(sample.camera.zoom, sample.camera.zoom);
     context.translate(-width / 2, -height / 2);
@@ -70,7 +71,7 @@ export function drawStudioAnimaticFrame(
         if (previous) drawCut(snapshot.timeline.segments[previous.segmentIndex]!, previous, 1);
       }
     }
-    drawCut(segment, sample, sample.transitionKind === "fade" ? sample.transitionProgress : 1);
+    drawCut(segment, sample, (sample.transitionKind === "fade" ? sample.transitionProgress : 1) * sample.camera.opacity);
   }
   const captions = sample.cues.filter((cue) => cue.kind === "dialogue" && cue.text.trim()).slice(-2);
   if (captions.length) {

@@ -126,6 +126,7 @@ export function StudioPuppetWarpPanel({
               {!busy && canApply
                 ? " 팔다리를 굽히는 정도의 자연스러운 범위를 권장합니다."
                 : null}
+              {" 잘못 놓은 핀은 캔버스에서 Alt(Option)+클릭으로 바로 지울 수 있어요."}
             </p>
           ) : null}
 

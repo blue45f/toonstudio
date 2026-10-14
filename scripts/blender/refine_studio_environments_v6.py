@@ -3,6 +3,9 @@
 Run with Blender 5.2 --background --python this-file -- --scenes all.
 Original GLBs are imported, never overwritten. Comparison frames share camera,
 lighting, color management and render settings. Export excludes review lights.
+Each release also packages a Cycles render-pass set (beauty/depth/normal/AO)
+beside every GLB under passes/<scene>/, recorded in the delivery manifest so
+scripts/verify-studio-environment-pack.mjs can validate the pairing in CI.
 """
 
 import argparse
@@ -158,6 +161,83 @@ def render(path):
     if bpy.context.scene.camera is None:
         raise ValueError("Review camera is required")
     bpy.ops.render.render(write_still=True)
+
+
+# Cycles pass set packaged beside every released GLB (bg3d Phase 1). beauty is
+# the Combined pass; depth is the Z pass remapped over the review camera clip
+# range; normal is the world-space Normal pass remapped from [-1, 1] to
+# [0, 1]; ao is the Cycles ambient-occlusion pass. depth/normal are stored at
+# 16-bit so the remapping stays reversible from the recorded ranges.
+RENDER_PASSES = ("beauty", "depth", "normal", "ao")
+PASS_COLOR_DEPTH = {"beauty": "8", "depth": "16", "normal": "16", "ao": "8"}
+
+
+def configure_render_passes():
+    scene = bpy.context.scene
+    view_layer = bpy.context.view_layer
+    view_layer.use_pass_z = True
+    view_layer.use_pass_normal = True
+    view_layer.use_pass_ambient_occlusion = True
+    scene.use_nodes = True
+    tree = scene.node_tree
+    tree.nodes.clear()
+    render_layers = tree.nodes.new("CompositorNodeRLayers")
+    output = tree.nodes.new("CompositorNodeOutputFile")
+    output.format.file_format = "PNG"
+    output.format.color_mode = "RGB"
+    output.file_slots[0].path = RENDER_PASSES[0]
+    for kind in RENDER_PASSES[1:]:
+        output.file_slots.new(kind)
+    for index, kind in enumerate(RENDER_PASSES):
+        slot = output.file_slots[index]
+        slot.use_node_format = False
+        slot.format.file_format = "PNG"
+        slot.format.color_mode = "RGB"
+        slot.format.color_depth = PASS_COLOR_DEPTH[kind]
+    links = tree.links
+    links.new(render_layers.outputs["Image"], output.inputs[0])
+    camera = scene.camera
+    depth_range = tree.nodes.new("CompositorNodeMapRange")
+    depth_range.inputs["From Min"].default_value = camera.data.clip_start
+    depth_range.inputs["From Max"].default_value = camera.data.clip_end
+    depth_range.inputs["To Min"].default_value = 0.0
+    depth_range.inputs["To Max"].default_value = 1.0
+    links.new(render_layers.outputs["Depth"], depth_range.inputs["Value"])
+    links.new(depth_range.outputs["Value"], output.inputs[1])
+    normal_range = tree.nodes.new("CompositorNodeMapRange")
+    normal_range.inputs["From Min"].default_value = -1.0
+    normal_range.inputs["From Max"].default_value = 1.0
+    normal_range.inputs["To Min"].default_value = 0.0
+    normal_range.inputs["To Max"].default_value = 1.0
+    links.new(render_layers.outputs["Normal"], normal_range.inputs["Value"])
+    links.new(normal_range.outputs["Value"], output.inputs[2])
+    links.new(render_layers.outputs["AO"], output.inputs[3])
+    return output
+
+
+def render_pass_set(name):
+    scene = bpy.context.scene
+    if scene.camera is None:
+        raise ValueError("Review camera is required")
+    passes_dir = OUTPUT / "passes" / name
+    passes_dir.mkdir(parents=True, exist_ok=True)
+    output = configure_render_passes()
+    output.base_path = str(passes_dir)
+    bpy.ops.render.render(write_still=True)
+    scene.use_nodes = False
+    frame = str(scene.frame_current).zfill(4)
+    files = {}
+    for kind in RENDER_PASSES:
+        relative = "passes/" + name + "/" + kind + frame + ".png"
+        if not (OUTPUT / relative).is_file():
+            raise ValueError("Render pass was not written: " + relative)
+        files[kind] = relative
+    return {"engine": "CYCLES", "directory": "passes/" + name, "files": files,
+        "colorDepth": dict(PASS_COLOR_DEPTH),
+        "depthRange": [scene.camera.data.clip_start, scene.camera.data.clip_end],
+        "normalRange": [-1.0, 1.0],
+        "resolution": [scene.render.resolution_x, scene.render.resolution_y],
+        "samples": scene.cycles.samples}
 
 
 def source_folder(slug):
@@ -547,6 +627,8 @@ def build(name, args):
     if not args.skip_render:
         render(OUTPUT / "thumbnails" / (name + ".png"))
         bpy.data.images["Render Result"].save_render(str(ARTIFACTS / (name + "-after.png")))
+        if not args.skip_passes:
+            report["renderPasses"] = render_pass_set(name)
     (ARTIFACTS / (name + ".json")).write_text(json.dumps(report, indent=2) + "\n")
     print("ENVIRONMENT_REFINED " + json.dumps({"name": name, "metrics": metrics,
         "replacements": len(report["replacements"]), "surfaces": len(report["surfaces"])}), flush=True)
@@ -565,7 +647,8 @@ def write_delivery_manifest():
             "bounds": report["bounds"], "sources": sources,
             "sourceByteSize": (SOURCE / (name + ".glb")).stat().st_size,
             "metrics": report["metrics"], "replacedGroups": len(report["replacements"]),
-            "refinedSurfaces": len(report["surfaces"]), "reviewLevel": "single-view-blender-preview",
+            "refinedSurfaces": len(report["surfaces"]), "renderPasses": report.get("renderPasses"),
+            "reviewLevel": "single-view-blender-preview",
             "allAnglesArtisticallyApproved": False, "studioRuntimeVerified": False})
     (OUTPUT / "manifest.json").write_text(json.dumps({
         "schema": "toonstudio.environment-refinement.v6", "records": records,
@@ -577,7 +660,9 @@ def write_delivery_manifest():
         "Embedded source models and PBR textures: Poly Haven, CC0 1.0.\n"
         "License: https://creativecommons.org/publicdomain/zero/1.0/\n\n"
         "Source assets remain available under their original immutable URLs.\n"
-        "Review images are single-camera Blender previews, not all-angle or Studio runtime approval.\n\n"
+        "Review images are single-camera Blender previews, not all-angle or Studio runtime approval.\n"
+        "Each GLB is paired with a Cycles render-pass set (beauty/depth/normal/AO) under passes/<scene>/,\n"
+        "recorded per record in manifest.json as renderPasses.\n\n"
         + "\n".join("- " + source for source in sources) + "\n")
 
 
@@ -587,6 +672,7 @@ def main():
     parser.add_argument("--samples", type=int, default=24)
     parser.add_argument("--resolution", type=int, default=1000)
     parser.add_argument("--skip-render", action="store_true")
+    parser.add_argument("--skip-passes", action="store_true")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     names = list(CAMERAS) if args.scenes == "all" else args.scenes.split(",")
     for name in names:
@@ -594,6 +680,7 @@ def main():
             raise ValueError("Unknown source environment: " + name)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "thumbnails").mkdir(exist_ok=True)
+    (OUTPUT / "passes").mkdir(exist_ok=True)
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     for name in names:
         build(name, args)

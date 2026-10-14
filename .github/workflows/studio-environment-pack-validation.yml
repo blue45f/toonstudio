@@ -1,0 +1,118 @@
+name: Studio environment pack validation
+
+on:
+  push:
+    paths:
+      - ".github/workflows/studio-environment-pack-validation.yml"
+      - "scripts/blender/refine_studio_environments_v6.py"
+      - "scripts/verify-studio-environment-pack.mjs"
+      - "scripts/verify-studio-environment-pack.test.mjs"
+      - "apps/web/public/assets/3d/environments/refined-v6/**"
+  pull_request:
+    paths:
+      - ".github/workflows/studio-environment-pack-validation.yml"
+      - "scripts/blender/refine_studio_environments_v6.py"
+      - "scripts/verify-studio-environment-pack.mjs"
+      - "scripts/verify-studio-environment-pack.test.mjs"
+      - "apps/web/public/assets/3d/environments/refined-v6/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: studio-environment-pack-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BLENDER_VERSION: 5.2.1
+
+jobs:
+  pack-contracts:
+    name: pack-contracts-and-pass-pairing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.16.0
+
+      - name: Compile the environment release script
+        run: python3 -m py_compile scripts/blender/refine_studio_environments_v6.py
+
+      - name: Test the environment pack verifier
+        run: node --test scripts/verify-studio-environment-pack.test.mjs
+
+      - name: Verify released packs pair every GLB with its Cycles pass set
+        run: node scripts/verify-studio-environment-pack.mjs
+
+  real-blender:
+    name: real-blender-5.2-cycles-pass-render
+    needs: pack-contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install headless EGL and Mesa runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            libegl1 \
+            libgl1 \
+            libgl1-mesa-dri \
+            libglx-mesa0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.16.0
+
+      - name: Restore Blender binary cache
+        id: blender-cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/blender-${{ env.BLENDER_VERSION }}-linux-x64
+          key: blender-${{ runner.os }}-x64-${{ env.BLENDER_VERSION }}
+
+      - name: Download and verify official Blender LTS
+        if: steps.blender-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p .cache
+          cd .cache
+          archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
+          checksum="blender-${BLENDER_VERSION}.sha256"
+          curl --fail --location --retry 5 --retry-all-errors \
+            --output "$archive" \
+            "https://download.blender.org/release/Blender5.2/$archive"
+          curl --fail --location --retry 5 --retry-all-errors \
+            --output "$checksum" \
+            "https://download.blender.org/release/Blender5.2/$checksum"
+          grep " $archive$" "$checksum" | sha256sum --check -
+          tar -xf "$archive"
+          mv "blender-${BLENDER_VERSION}-linux-x64" "blender-${BLENDER_VERSION}-linux-x64.ready"
+          rm -f "$archive" "$checksum"
+          mv "blender-${BLENDER_VERSION}-linux-x64.ready" "blender-${BLENDER_VERSION}-linux-x64"
+
+      - name: Export isolated Blender paths
+        run: |
+          export HOME="$RUNNER_TEMP/toonstudio-blender-home"
+          export BLENDER_USER_RESOURCES="$RUNNER_TEMP/toonstudio-blender-user"
+          echo "HOME=$HOME" >> "$GITHUB_ENV"
+          echo "BLENDER_USER_RESOURCES=$BLENDER_USER_RESOURCES" >> "$GITHUB_ENV"
+          echo "BLENDER_PATH=$GITHUB_WORKSPACE/.cache/blender-${BLENDER_VERSION}-linux-x64/blender" >> "$GITHUB_ENV"
+          echo "LIBGL_ALWAYS_SOFTWARE=1" >> "$GITHUB_ENV"
+          mkdir -p "$HOME" "$BLENDER_USER_RESOURCES"
+          "$GITHUB_WORKSPACE/.cache/blender-${BLENDER_VERSION}-linux-x64/blender" --version
+
+      - name: Rebuild one environment with its Cycles pass set
+        run: >-
+          "$BLENDER_PATH" --background --python-exit-code 1
+          --python scripts/blender/refine_studio_environments_v6.py --
+          --scenes korean_convenience_store_night
+          --samples 4 --resolution 320
+
+      - name: Verify the rebuilt pack pairs the GLB with all four passes
+        run: node scripts/verify-studio-environment-pack.mjs

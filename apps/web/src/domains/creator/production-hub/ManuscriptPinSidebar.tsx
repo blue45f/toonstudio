@@ -6,10 +6,12 @@
  */
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import type {
-  ManuscriptPin,
-  ManuscriptPinFeedbackPin,
-  ManuscriptPinFilter,
+import {
+  hasManuscriptPinDrawing,
+  isManuscriptPinUnread,
+  type ManuscriptPin,
+  type ManuscriptPinFeedbackPin,
+  type ManuscriptPinFilter,
 } from "./manuscript-pin-feedback-model";
 import {
   formatManuscriptPinTime,
@@ -26,11 +28,16 @@ interface ManuscriptPinSidebarProps {
   readonly filter: ManuscriptPinFilter;
   readonly onFilterChange: (filter: ManuscriptPinFilter) => void;
   readonly onSelectPin: (pin: ManuscriptPin) => void;
+  /** 미읽음 판정·배지의 기준 사용자. 없으면 미읽음 표시를 하지 않는다. */
+  readonly currentActorId?: string | null;
+  /** 전체 핀 기준 미읽음 수. 0보다 클 때만 머리말 배지로 보여 준다. */
+  readonly unreadCount?: number;
 }
 
 const FILTER_OPTIONS = [
   { value: "all", ko: "전체", en: "All" },
   { value: "open", ko: "미해결", en: "Open" },
+  { value: "unread", ko: "미읽음만", en: "Unread only" },
   { value: "urgent", ko: "필수 수정", en: "Required" },
   { value: "resolved", ko: "해결됨", en: "Resolved" },
   { value: "mine", ko: "내 핀", en: "Mine" },
@@ -45,6 +52,8 @@ export function ManuscriptPinSidebar({
   filter,
   onFilterChange,
   onSelectPin,
+  currentActorId = null,
+  unreadCount = 0,
 }: ManuscriptPinSidebarProps) {
   const bt = useBilingual("ManuscriptPinFeedback");
   return (
@@ -55,6 +64,11 @@ export function ManuscriptPinSidebar({
           <span className="manuscript-pin-count">
             {bt(`미해결 ${openCount}개`, `${openCount} open`)}
           </span>
+          {unreadCount > 0 ? (
+            <span className="manuscript-pin-count" data-tone="unread">
+              {bt(`미읽음 ${unreadCount}개`, `${unreadCount} unread`)}
+            </span>
+          ) : null}
         </h3>
         <div className="manuscript-pin-filters" role="group" aria-label={bt("필터", "Filter")}>
           {FILTER_OPTIONS.map((option) => (
@@ -85,13 +99,28 @@ export function ManuscriptPinSidebar({
                   {pin.number}
                 </span>
                 <span className="manuscript-pin-item-text">
-                  <span className="manuscript-pin-item-preview">{pin.body}</span>
+                  <span className="manuscript-pin-item-preview">
+                    {isManuscriptPinUnread(pin, currentActorId) ? (
+                      <span className="manuscript-pin-item-unread-dot" role="img" aria-label={bt("미읽음", "Unread")} />
+                    ) : null}
+                    {pin.body}
+                  </span>
                   <span className="manuscript-pin-item-sub">
                     {pin.authorName} · {formatManuscriptPinTime(bt, pin.createdAt)}
                     {pin.replyCount > 0 && bt(` · 답글 ${pin.replyCount}`, ` · ${pin.replyCount} replies`)}
+                    {(pin.references?.length ?? 0) > 0 &&
+                      bt(` · 레퍼런스 ${pin.references?.length ?? 0}`, ` · ${pin.references?.length ?? 0} ref`)}
                   </span>
+                  {(pin.references?.length ?? 0) === 0 ? (
+                    <span className="manuscript-pin-item-noref">
+                      {bt("레퍼런스 없음", "No reference")}
+                    </span>
+                  ) : null}
                   {pin.assigneeName ? (
                     <span className="manuscript-pin-item-assignee">{bt(`담당 ${pin.assigneeName}`, `Assignee ${pin.assigneeName}`)}</span>
+                  ) : null}
+                  {hasManuscriptPinDrawing(pin) ? (
+                    <span className="manuscript-pin-item-drawing">{bt("✎ 그림 표시", "✎ Drawing")}</span>
                   ) : null}
                 </span>
                 <span className="manuscript-pin-item-status" data-status={pin.status}>
@@ -114,7 +143,9 @@ export function ManuscriptPinSidebar({
           <p>
             {filter === "all"
               ? bt("아직 핀이 없어요. 핀 꽂기로 첫 피드백을 남겨보세요.", "No pins yet. Drop your first pin to leave feedback.")
-              : bt("해당하는 핀이 없어요.", "No matching pins.")}
+              : filter === "unread"
+                ? bt("미읽은 핀이 없어요. 다 확인했어요.", "No unread pins. You're all caught up.")
+                : bt("해당하는 핀이 없어요.", "No matching pins.")}
           </p>
         </div>
       )}

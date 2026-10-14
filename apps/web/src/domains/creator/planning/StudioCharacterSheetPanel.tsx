@@ -7,9 +7,18 @@
  * - 편집 대상은 시트(profile)와 관계(relation)뿐. 저장 콜백으로 올린다.
  * - 관계도는 1차에서 "관계 목록"으로 시작한다 (그래프 캔버스는 후속; 간선 데이터는
  *   studio-character-profile.ts 의 characterGraphEdges 가 이미 같은 모양을 낸다).
+ * - 모델 시트 패널은 optional 장착이다: 호스트가 modelSheets 를 넘길 때만
+ *   붙는다(안 넘기면 화면은 기존과 동일). 레코드의 정본은 바이블의 optional
+ *   컬렉션(production-hub/model-sheet-storage.ts 저장 계약)이고, 동결·영향
+ *   확인 결과는 콜백으로 올려 호스트가 withModelSheet 로 다시 저장한다.
  */
 import { useState } from "react";
 import type { StudioStoryBible } from "../studio-story-bible";
+import { ModelSheetFreezePanel } from "../production-hub/ModelSheetFreezePanel";
+import type {
+  CharacterModelSheet,
+  ModelSheetImpact,
+} from "../production-hub/model-sheet-freeze-model";
 import {
   characterSheetView,
   type StudioStoryBibleNarrative,
@@ -22,6 +31,16 @@ export interface StudioCharacterSheetPanelProps {
   readonly narrative: StudioStoryBibleNarrative;
   readonly onSaveProfile: (profile: StudioStoryCharacterProfile) => void;
   readonly onSaveRelation: (relation: StudioStoryCharacterRelation) => void;
+  /**
+   * 모델 시트 패널 장착 (optional). 보통 bible.modelSheets 를
+   * modelSheetsFromBible 로 읽어 그대로 넘긴다. undefined 면 패널을
+   * 붙이지 않는다 — 기존 화면과 렌더가 동일하다.
+   */
+  readonly modelSheets?: readonly CharacterModelSheet[];
+  /** 캐릭터별 영향 분석. 없으면 패널이 변경 경고를 계산하지 않는다. */
+  readonly modelSheetImpacts?: ReadonlyMap<string, ModelSheetImpact>;
+  readonly onFreezeModelSheet?: (characterId: string) => void;
+  readonly onAcknowledgeModelSheetImpact?: (characterId: string, episodeId: string) => void;
 }
 
 export function StudioCharacterSheetPanel({
@@ -29,6 +48,10 @@ export function StudioCharacterSheetPanel({
   narrative,
   onSaveProfile,
   onSaveRelation,
+  modelSheets,
+  modelSheetImpacts,
+  onFreezeModelSheet,
+  onAcknowledgeModelSheetImpact,
 }: StudioCharacterSheetPanelProps) {
   const [selectedId, setSelectedId] = useState<string | null>(bible.characters[0]?.id ?? null);
   const sheet = selectedId ? characterSheetView(bible, narrative, selectedId) : null;
@@ -88,6 +111,19 @@ export function StudioCharacterSheetPanel({
             />
           </section>
         </article>
+      )}
+
+      {modelSheets !== undefined && (
+        <ModelSheetFreezePanel
+          characters={bible.characters.map((character) => ({
+            characterId: character.id,
+            characterName: character.name,
+          }))}
+          sheets={modelSheets}
+          impacts={modelSheetImpacts}
+          onFreeze={onFreezeModelSheet}
+          onAcknowledgeImpact={onAcknowledgeModelSheetImpact}
+        />
       )}
     </section>
   );

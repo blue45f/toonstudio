@@ -1,5 +1,5 @@
 :root {
-  --site-header-sticky-offset: calc(var(--site-header-height, 4.25rem) + 0.75rem);
+  --site-header-sticky-offset: calc(var(--site-header-height, 60px) + 0.75rem);
 }
 
 .site-header {
@@ -21,10 +21,11 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 56px;
-  max-width: var(--site-content-max, 82.5rem);
+  /* 전역 헤더 단일 높이 60px (BLUEPRINT §5.2 (3), §5.3 L1) — --site-header-height 폴백과 일치. */
+  min-height: 60px;
+  max-width: var(--site-content-max, var(--layout-content-standard, 82.5rem));
   margin-inline: auto;
-  padding-inline: var(--site-page-gutter, clamp(1rem, 3vw, 2.5rem));
+  padding-inline: var(--site-page-gutter, var(--layout-gutter, 1rem));
 }
 
 .site-header__brand {
@@ -76,7 +77,7 @@
 .site-header .site-header__appearance { border-radius: 6px; }
 .site-header :is(a, button):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 
-.site-menu-navigation { max-width: var(--site-content-max, 82.5rem); margin-inline: auto; padding: 20px var(--site-page-gutter, clamp(1rem, 3vw, 2.5rem)) max(32px, env(safe-area-inset-bottom)); }
+.site-menu-navigation { max-width: var(--site-content-max, var(--layout-content-standard, 82.5rem)); margin-inline: auto; padding: 20px var(--site-page-gutter, var(--layout-gutter, 1rem)) max(32px, env(safe-area-inset-bottom)); }
 .site-menu-actions { display: flex; align-items: stretch; gap: 12px; margin-bottom: 24px; }
 .site-menu-actions a { display: flex; align-items: center; gap: 12px; min-height: 72px; border: 1px solid var(--color-line); border-radius: 14px; padding: 12px 16px; font-size: 0.8125rem; font-weight: 600; }
 .site-menu-actions a:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
@@ -136,9 +137,10 @@
 }
 
 .public-footer-invitation__content { max-width: 590px; word-break: keep-all; }
-.public-support-panel { scroll-margin-top: calc(var(--site-header-sticky-offset, 5rem) + 0.75rem); }
+.public-support-panel { scroll-margin-top: calc(var(--site-header-sticky-offset, 4.5rem) + 0.75rem); }
 
-@media (width >= 1180px) {
+/* 표준 브레이크포인트 1024px (BLUEPRINT §5.2 (6)): 최상위 항목이 5개로 수렴(S1-2)한 뒤 1차 내비 전환을 전용 지점 1180에서 내렸다. */
+@media (width >= 1024px) {
   .site-header__primary { display: flex; }
 }
 
@@ -154,7 +156,7 @@
 }
 
 @media (width < 768px) {
-  .site-header__inner { gap: 8px; min-height: 60px; }
+  .site-header__inner { gap: 8px; }
   .site-header__utilities { gap: 6px; }
   .site-header__tagline { display: none; }
   .site-header .site-header__appearance { display: none; }

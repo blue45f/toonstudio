@@ -4,6 +4,13 @@
  * The analyzer deliberately consumes the same lightweight page/element shape as the Studio
  * thumbnail pipeline. It never reads pixels, DOM state, network data, or React state, so preview,
  * export preflight, a future Worker, and tests can share one bounded result.
+ *
+ * SFX rhythm (REPORT L-4): visible sound-effect lettering is aggregated as one more
+ * rhythm signal on the same pages — per-screen density, per-panel rate, the longest
+ * stretch without any SFX, and a category breakdown when the host recorded one.
+ * An element counts as SFX under the exact rule the animatic timeline already uses
+ * (`animaticCueKind === "sfx"`, or a text element whose name mentions sfx/효과음),
+ * plus an explicit element type of "sfx". SFX lettering is never counted as dialogue.
  */
 
 export const STUDIO_SCROLL_RHYTHM_LIMITS = Object.freeze({
@@ -24,6 +31,14 @@ export interface StudioScrollRhythmElementLike {
   readonly height?: number;
   readonly points?: readonly number[];
   readonly text?: string;
+  readonly name?: string;
+  /** Explicit cue role — the same field the animatic timeline reads. */
+  readonly animaticCueKind?: "dialogue" | "sfx";
+  /**
+   * Category of the SFX entry this element was placed from (preset or lexicon id/label),
+   * when the host recorded it. Free-form: the preset and lexicon taxonomies differ.
+   */
+  readonly sfxCategory?: string;
 }
 
 export interface StudioScrollRhythmPageLike {
@@ -37,6 +52,8 @@ export type StudioScrollRhythmInsightSeverity = "info" | "warning" | "critical";
 export type StudioScrollRhythmInsightCode =
   | "DENSE_PAGE"
   | "DIALOGUE_LOAD"
+  | "SFX_DENSE"
+  | "SFX_LONG_GAP"
   | "NO_BREATHING_ROOM"
   | "LONG_EMPTY_RUN"
   | "FLAT_BEAT_INTERVALS"
@@ -62,6 +79,14 @@ export interface StudioScrollRhythmPageMetric {
   readonly panelCount: number;
   readonly dialogueCount: number;
   readonly dialogueCharacters: number;
+  /** Visible SFX lettering elements on the page. */
+  readonly sfxCount: number;
+  readonly sfxPerScreen: number;
+  /** SFX per panel (frame/panel element). Null when the page has no panel element. */
+  readonly sfxPerPanel: number | null;
+  /** Longest vertical stretch without any SFX element, in px and in screens. */
+  readonly longestSfxGapPx: number;
+  readonly longestSfxGapScreens: number;
   readonly beatCount: number;
   readonly densityPerScreen: number;
   readonly dialogueCharactersPerScreen: number;
@@ -82,6 +107,11 @@ export interface StudioScrollEndingAnalysis {
   readonly trailingWhitespaceScreens: number;
 }
 
+export interface StudioScrollRhythmSfxCategoryCount {
+  readonly category: string;
+  readonly count: number;
+}
+
 export interface StudioScrollRhythmAnalysis {
   readonly score: number;
   readonly grade: "A" | "B" | "C" | "D";
@@ -89,6 +119,11 @@ export interface StudioScrollRhythmAnalysis {
   readonly totalHeightPx: number;
   readonly totalScreenCount: number;
   readonly densePageCount: number;
+  readonly totalSfxCount: number;
+  readonly sfxDensePageCount: number;
+  /** Longest SFX-free stretch across pages, in screens. 0 when no SFX exists at all. */
+  readonly longestSfxGapScreens: number;
+  readonly sfxCategoryCounts: readonly StudioScrollRhythmSfxCategoryCount[];
   readonly breathingPageCount: number;
   readonly flatRhythmPageCount: number;
   readonly ending: StudioScrollEndingAnalysis;
@@ -118,6 +153,27 @@ export interface StudioAutoScrollStep {
 interface VerticalSpan {
   readonly start: number;
   readonly end: number;
+}
+
+/** SFX lettering above this many per screen starts to crowd the rhythm. */
+export const STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN = 4;
+export const STUDIO_SCROLL_RHYTHM_SFX_CRITICAL_PER_SCREEN = 6;
+/** SFX-free stretch (in screens) long enough to surface as a rhythm gap. */
+export const STUDIO_SCROLL_RHYTHM_SFX_LONG_GAP_SCREENS = 2.5;
+
+const SFX_NAME_PATTERN = /(?:^|\b)sfx(?:\b|$)|효과음/iu;
+
+/**
+ * Whether a visible element is SFX lettering. Mirrors the animatic timeline's
+ * cueKindForElement rule so both pipes classify the same element the same way.
+ */
+export function isStudioScrollRhythmSfxElement(
+  element: StudioScrollRhythmElementLike
+): boolean {
+  if (element.animaticCueKind) return element.animaticCueKind === "sfx";
+  const type = element.type.trim().toLowerCase();
+  if (type === "sfx") return true;
+  return type === "text" && SFX_NAME_PATTERN.test(element.name ?? "");
 }
 
 const DEFAULT_VIEWPORT_HEIGHT = 1_280;
@@ -321,6 +377,7 @@ export function analyzeStudioScrollRhythm(
   let truncated = pages.length !== sourcePages.length;
   const insights: StudioScrollRhythmInsight[] = [];
   const metrics: StudioScrollRhythmPageMetric[] = [];
+  const sfxCategoryCounts = new Map<string, number>();
 
   for (const page of pages) {
     const canvasHeight = Math.max(1, finiteOr(page.canvasH, 1_080));
@@ -333,10 +390,12 @@ export function analyzeStudioScrollRhythm(
       (element) => !element.hidden && finiteOr(element.opacity, 1) > 0
     );
     const spans: VerticalSpan[] = [];
+    const sfxSpans: VerticalSpan[] = [];
     const beatCenters: number[] = [];
     let panelCount = 0;
     let dialogueCount = 0;
     let dialogueCharacters = 0;
+    let sfxCount = 0;
     let weightedLoad = 0;
 
     for (const element of visible) {
@@ -344,7 +403,16 @@ export function analyzeStudioScrollRhythm(
       const span = elementVerticalSpan(element, canvasHeight);
       if (span) spans.push(span);
       if (PANEL_TYPES.has(type)) panelCount += 1;
-      if (DIALOGUE_TYPES.has(type)) {
+      const sfx = isStudioScrollRhythmSfxElement(element);
+      if (sfx) {
+        sfxCount += 1;
+        if (span) sfxSpans.push(span);
+        const category = element.sfxCategory?.trim();
+        if (category) {
+          sfxCategoryCounts.set(category, (sfxCategoryCounts.get(category) ?? 0) + 1);
+        }
+      }
+      if (!sfx && DIALOGUE_TYPES.has(type)) {
         dialogueCount += 1;
         dialogueCharacters += (element.text ?? "").slice(
           0,
@@ -376,6 +444,12 @@ export function analyzeStudioScrollRhythm(
       0
     );
     const screenCount = canvasHeight / viewportHeight;
+    const sfxPerScreen = sfxCount / Math.max(screenCount, 0.25);
+    const sfxGaps = spanGaps(mergeSpans(sfxSpans), canvasHeight);
+    const longestSfxGapPxRaw = sfxGaps.reduce(
+      (longest, gap) => Math.max(longest, gap.end - gap.start),
+      0
+    );
     const densityPerScreen = weightedLoad / Math.max(screenCount, 0.25);
     const dialogueCharactersPerScreen =
       dialogueCharacters / Math.max(screenCount, 0.25);
@@ -390,6 +464,12 @@ export function analyzeStudioScrollRhythm(
     if (breathingRoomRatio < 0.06 && visible.length > 0) score -= 16;
     if (longestGapPx / viewportHeight > 1.4 && visible.length > 0) score -= 8;
     if (beatIntervalVariation !== null && beatIntervalVariation < 0.12) score -= 10;
+    if (sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN) {
+      score -= Math.min(
+        10,
+        (sfxPerScreen - STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN) * 2
+      );
+    }
 
     const metric: StudioScrollRhythmPageMetric = {
       pageId: page.id,
@@ -399,6 +479,11 @@ export function analyzeStudioScrollRhythm(
       panelCount,
       dialogueCount,
       dialogueCharacters,
+      sfxCount,
+      sfxPerScreen: round(sfxPerScreen),
+      sfxPerPanel: panelCount > 0 ? round(sfxCount / panelCount) : null,
+      longestSfxGapPx: round(longestSfxGapPxRaw),
+      longestSfxGapScreens: round(longestSfxGapPxRaw / viewportHeight),
       beatCount: beatCenters.length,
       densityPerScreen: round(densityPerScreen),
       dialogueCharactersPerScreen: round(dialogueCharactersPerScreen),
@@ -440,6 +525,19 @@ export function analyzeStudioScrollRhythm(
         title: "대사 호흡이 김",
         detail: `한 화면당 약 ${Math.round(dialogueCharactersPerScreen)}자의 대사가 배치됐습니다.`,
         suggestion: "말풍선을 나누거나 행동 컷 사이에 대사를 분산하세요.",
+      });
+    }
+    if (sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN) {
+      pushInsight(insights, {
+        code: "SFX_DENSE",
+        severity:
+          sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_CRITICAL_PER_SCREEN
+            ? "critical"
+            : "warning",
+        pageId: page.id,
+        title: "효과음이 몰린 페이지",
+        detail: `한 화면당 효과음이 약 ${round(sfxPerScreen, 1)}개 배치됐습니다.`,
+        suggestion: "효과음을 줄이거나 인접 컷으로 나눠 배치하면 체감 속도가 완만해집니다.",
       });
     }
     if (breathingRoomRatio < 0.06 && visible.length > 0) {
@@ -498,6 +596,25 @@ export function analyzeStudioScrollRhythm(
     });
   }
 
+  // SFX gaps are only a rhythm signal when the episode uses SFX at all — a work
+  // with no SFX anywhere must not be flooded with gap notes.
+  const totalSfxCount = metrics.reduce((sum, metric) => sum + metric.sfxCount, 0);
+  if (totalSfxCount > 0) {
+    for (const metric of metrics) {
+      if (metric.longestSfxGapScreens > STUDIO_SCROLL_RHYTHM_SFX_LONG_GAP_SCREENS) {
+        pushInsight(insights, {
+          code: "SFX_LONG_GAP",
+          severity: "info",
+          pageId: metric.pageId,
+          title: "효과음 없는 구간이 김",
+          detail: `효과음이 없는 구간이 약 ${round(metric.longestSfxGapScreens, 1)}화면 이어집니다.`,
+          suggestion:
+            "의도된 정적이면 그대로 두고, 아니라면 중간 컷에 환경음·동작 효과음을 한두 개 배치해 보세요.",
+        });
+      }
+    }
+  }
+
   if (truncated) {
     if (insights.length >= STUDIO_SCROLL_RHYTHM_LIMITS.maxInsights) {
       // Keep the budget contract itself visible even when page-level findings filled the list.
@@ -527,6 +644,24 @@ export function analyzeStudioScrollRhythm(
     totalHeightPx: round(totalHeightPx),
     totalScreenCount: round(totalHeightPx / viewportHeight),
     densePageCount: metrics.filter((metric) => metric.densityPerScreen > 8).length,
+    totalSfxCount,
+    sfxDensePageCount: metrics.filter(
+      (metric) => metric.sfxPerScreen > STUDIO_SCROLL_RHYTHM_SFX_DENSE_PER_SCREEN
+    ).length,
+    longestSfxGapScreens:
+      totalSfxCount > 0
+        ? round(
+            metrics.reduce(
+              (longest, metric) => Math.max(longest, metric.longestSfxGapScreens),
+              0
+            )
+          )
+        : 0,
+    sfxCategoryCounts: Object.freeze(
+      [...sfxCategoryCounts.entries()]
+        .map(([category, count]) => Object.freeze({ category, count }))
+        .sort((a, b) => b.count - a.count || (a.category < b.category ? -1 : 1))
+    ),
     breathingPageCount: metrics.filter((metric) => metric.breathingRoomRatio >= 0.12).length,
     flatRhythmPageCount: metrics.filter(
       (metric) =>

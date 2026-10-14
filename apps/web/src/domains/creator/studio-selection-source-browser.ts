@@ -29,9 +29,23 @@ export interface StudioSubjectSelectionRequest extends StudioSelectionSourceRequ
   readonly softness?: number;
 }
 
+/**
+ * Subject-selection route — the same two on-device foreground routes the
+ * background-removal surface already offers, surfaced as a selection tool:
+ * `person` is the MediaPipe selfie segmenter, `general` is U-2-Netp over the
+ * product ONNX provider (props, objects, pets, illustrated subjects).
+ */
+export type StudioSubjectSelectionRoute = "person" | "general";
+
 export interface StudioSubjectSelectionResult {
   readonly selection: PixelSelection | null;
   readonly receipt: StudioLocalForegroundModelReceipt;
+  readonly sourceTransparencyApplied: boolean;
+}
+
+export interface StudioGeneralSubjectSelectionResult {
+  readonly selection: PixelSelection | null;
+  readonly executionProvider: string;
   readonly sourceTransparencyApplied: boolean;
 }
 
@@ -186,21 +200,24 @@ export async function selectOpaqueFromImageSource(
 }
 
 /**
- * Select the primary foreground using the existing on-device MediaPipe provider. Model confidence
- * is multiplied by source alpha whenever browser readback is permitted, so transparent padding can
- * never become selected. If alpha readback is blocked, semantic selection still succeeds and the
- * caller receives an explicit `sourceTransparencyApplied: false` receipt.
+ * Shared tail for both subject routes: threshold the confidence plane into an
+ * antialiased matte, multiply by source alpha whenever browser readback is
+ * permitted (so transparent padding can never become selected), then apply
+ * with the caller's combine operation. If alpha readback is blocked, semantic
+ * selection still succeeds and the caller receives an explicit
+ * `sourceTransparencyApplied: false` receipt.
  */
-export async function selectSubjectFromImageSource(
+async function applySubjectConfidenceToSelection(
   request: StudioSubjectSelectionRequest,
-): Promise<StudioSubjectSelectionResult> {
-  assertSource(request.src);
-  throwIfAborted(request.signal);
-  const { getLocalForegroundConfidenceMask } = await import("./studio-bg-remove");
-  const foreground = await getLocalForegroundConfidenceMask(request.src, {
-    signal: request.signal,
-  });
-  throwIfAborted(request.signal);
+  foreground: {
+    readonly confidence: Float32Array;
+    readonly width: number;
+    readonly height: number;
+  },
+): Promise<{
+  readonly selection: PixelSelection | null;
+  readonly sourceTransparencyApplied: boolean;
+}> {
   let mask = foregroundConfidenceToMask(
     foreground.confidence,
     foreground.width,
@@ -230,9 +247,62 @@ export async function selectSubjectFromImageSource(
       flipY: request.flipY,
     },
   );
+  return { selection, sourceTransparencyApplied };
+}
+
+/**
+ * Select the primary foreground using the existing on-device MediaPipe provider. Model confidence
+ * is multiplied by source alpha whenever browser readback is permitted, so transparent padding can
+ * never become selected. If alpha readback is blocked, semantic selection still succeeds and the
+ * caller receives an explicit `sourceTransparencyApplied: false` receipt.
+ */
+export async function selectSubjectFromImageSource(
+  request: StudioSubjectSelectionRequest,
+): Promise<StudioSubjectSelectionResult> {
+  assertSource(request.src);
+  throwIfAborted(request.signal);
+  const { getLocalForegroundConfidenceMask } = await import("./studio-bg-remove");
+  const foreground = await getLocalForegroundConfidenceMask(request.src, {
+    signal: request.signal,
+  });
+  throwIfAborted(request.signal);
+  const { selection, sourceTransparencyApplied } = await applySubjectConfidenceToSelection(
+    request,
+    foreground,
+  );
   return {
     selection,
     receipt: foreground.receipt,
+    sourceTransparencyApplied,
+  };
+}
+
+/**
+ * Select the primary foreground with the general-subject route: the same
+ * U-2-Netp ONNX inference the quick background-removal action already runs
+ * (`studio-onnx-foreground`), reused as a selection source instead of a
+ * destructive pixel edit. The ONNX runtime, its WASM assets, and the model
+ * load only through this dynamic import, and a `null` selection means the
+ * model found no foreground above the threshold — the caller should say so
+ * instead of silently keeping the previous selection.
+ */
+export async function selectGeneralSubjectFromImageSource(
+  request: StudioSubjectSelectionRequest,
+): Promise<StudioGeneralSubjectSelectionResult> {
+  assertSource(request.src);
+  throwIfAborted(request.signal);
+  const { getGeneralForegroundConfidenceMask } = await import("./studio-onnx-foreground");
+  const foreground = await getGeneralForegroundConfidenceMask(request.src, {
+    signal: request.signal,
+  });
+  throwIfAborted(request.signal);
+  const { selection, sourceTransparencyApplied } = await applySubjectConfidenceToSelection(
+    request,
+    foreground,
+  );
+  return {
+    selection,
+    executionProvider: foreground.executionProvider,
     sourceTransparencyApplied,
   };
 }

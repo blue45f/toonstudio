@@ -39,7 +39,7 @@ function readComparePixels(
 }
 
 /**
- * 차이 하이라이트: 슬라이더·깜빡임 모드에서 두 이미지의 차이가 큰 영역을 계산한다.
+ * 차이 하이라이트: 슬라이더·깜빡임·오버레이 모드에서 두 이미지의 차이가 큰 영역을 계산한다.
  * 조건이 맞지 않으면 빈 배열을 반환한다.
  */
 export function useProcessCompareDiffRegions(
@@ -53,7 +53,7 @@ export function useProcessCompareDiffRegions(
   const [regions, setRegions] = useState<readonly ProcessCompareDiffRegion[]>([]);
 
   useEffect(() => {
-    if (!enabled || (mode !== "slider" && mode !== "blink") || !artA || !artB) {
+    if (!enabled || (mode !== "slider" && mode !== "blink" && mode !== "overlay") || !artA || !artB) {
       setRegions([]);
       return;
     }

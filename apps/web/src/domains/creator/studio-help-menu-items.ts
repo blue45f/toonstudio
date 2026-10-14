@@ -169,9 +169,13 @@ export function buildStudioHelpGroupItems(
       window.open("/studio/manual", "_blank", "noopener,noreferrer");
     },
   };
-  const learningWithSeparator = [manual, ...learning].map((item, index, items) =>
+  // 기능 튜토리얼 도달성(first-run F4.4): 학습 블록(튜토리얼 허브로 가는
+  // 도움말 홈 + 단축키)과 매뉴얼을 도움말 그룹 최상단에 고정한다. 첫 실행
+  // 사용자가 코치를 닫은 뒤에도 메뉴만으로 튜토리얼을 재발견할 수 있어야
+  // 하며, 순서는 STUDIO_MENU_ITEM_INVENTORY 와 한 쌍으로 움직인다.
+  const learningWithSeparator = [...learning, manual].map((item, index, items) =>
     index === items.length - 1 ? { ...item, separatorAfter: true } : item,
   );
 
-  return [...finding, ...learningWithSeparator, ...troubleshooting];
+  return [...learningWithSeparator, ...finding, ...troubleshooting];
 }

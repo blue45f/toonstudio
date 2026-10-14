@@ -124,9 +124,34 @@ export function recordStudioMacroCommand(
   if (!session.recording) return session;
   const normalized = normalizeStudioMacroCommand(command);
   if (!normalized) return session;
+  // Every macro command is an absolute setter, so a run of the same type in a
+  // row (slider drags, coalesced patches) replays identically with only the
+  // last value kept. Coalescing here keeps continuous input from flooding
+  // the command cap with intermediate values.
+  const last = session.commands[session.commands.length - 1];
+  if (last && last.type === normalized.type) {
+    return {
+      ...session,
+      commands: [...session.commands.slice(0, -1), normalized],
+    };
+  }
   if (session.commands.length >= STUDIO_MACRO_MAX_COMMANDS) return session;
   return {
     ...session,
     commands: [...session.commands, normalized],
+  };
+}
+
+/** Remove one recorded step (recording UI lets the user drop a mistaken step). */
+export function removeStudioMacroCommand(
+  session: StudioMacroSession,
+  index: number
+): StudioMacroSession {
+  if (!Number.isInteger(index) || index < 0 || index >= session.commands.length) {
+    return session;
+  }
+  return {
+    ...session,
+    commands: session.commands.filter((_, commandIndex) => commandIndex !== index),
   };
 }

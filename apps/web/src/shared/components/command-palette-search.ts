@@ -1,36 +1,25 @@
 /**
  * Korean Hangul Chosung (초성) and fuzzy search utility for the ToonStudio Command Palette.
  * Supports Korean consonant decomposition, prefix matching, and multi-keyword synonyms.
+ *
+ * 초성 추출·판정은 손구현을 걷어내고 es-hangul 기반 공용 유틸(@/shared/lib/hangul)을 쓴다.
+ * 이 파일의 export 이름·동작 계약은 기존 테스트(command-palette-search.test.ts)가 고정한다.
  */
-
-const CHOSUNG_LIST = [
-  "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ",
-  "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ",
-] as const;
+import { choseongOf, isChoseongQuery } from "@/shared/lib/hangul";
 
 /**
  * Extracts Korean Chosung (initial consonants) from a string.
  * Non-Hangul characters are preserved as-is.
  */
 export function extractChosung(str: string): string {
-  let result = "";
-  for (let i = 0; i < str.length; i++) {
-    const code = str.charCodeAt(i) - 44032;
-    if (code >= 0 && code <= 11171) {
-      result += CHOSUNG_LIST[Math.floor(code / 588)];
-    } else {
-      result += str.charAt(i);
-    }
-  }
-  return result;
+  return choseongOf(str);
 }
 
 /**
  * Checks if a string contains only Korean Chosung consonants.
  */
 export function isChosungOnly(str: string): boolean {
-  if (!str) return false;
-  return /^[ㄱ-ㅎ\s]+$/.test(str);
+  return isChoseongQuery(str);
 }
 
 /**

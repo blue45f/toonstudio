@@ -45,8 +45,12 @@ export function StudioBg3dHdriEnvironment({
     if (!url) return undefined;
     const binding = mountStudioBg3dHdriEnvironment(scene, gl as unknown as THREE.WebGLRenderer, {
       url,
-      intensity: settings.intensity,
-      rotationDegrees: settings.rotationDegrees,
+      // intensity/rotationDegrees는 아래 effect가 전담합니다(StudioBg3dScenePanorama와 같은
+      // 브리지 규약). 마운트에는 문서 기본값(1·0)을 넣고 실제 값은 마운트 직후 도는 아래
+      // effect가 바인딩 세터로 반영합니다. 세터는 로드가 끝나기 전이면 값을 보관해 뒀다가
+      // settle 시점에 적용하므로, 비동기 로드가 끝나도 최종 상태는 같습니다.
+      intensity: 1,
+      rotationDegrees: 0,
       useAsBackground,
       onSettled: () => invalidate(),
     });
@@ -56,8 +60,6 @@ export function StudioBg3dHdriEnvironment({
       if (bindingRef.current === binding) bindingRef.current = null;
       invalidate();
     };
-    // intensity/rotationDegrees는 아래 effect가 전담하므로 마운트 의존성에서 제외합니다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gl, invalidate, scene, url, useAsBackground]);
 
   useEffect(() => {

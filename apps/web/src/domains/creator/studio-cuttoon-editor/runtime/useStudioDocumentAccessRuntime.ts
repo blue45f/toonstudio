@@ -29,6 +29,8 @@ interface UseStudioDocumentAccessRuntimeOptions {
   readonly liveInviteRole: StudioLiveInviteRole | null;
   readonly liveRoomQueryParam: string | null;
   readonly onAcceptedMutation: () => void;
+  /** 편집 세대 전진을 저장 상태 어댑터로 통지하는 선택적 패스스루. */
+  readonly onEditGeneration?: (generation: number) => void;
   readonly remixId: string | null;
   readonly reportError: (message: string) => void;
   readonly sessionDisplayName: string | null;
@@ -57,6 +59,7 @@ export function useStudioDocumentAccessRuntime({
   liveInviteRole,
   liveRoomQueryParam,
   onAcceptedMutation,
+  onEditGeneration,
   remixId,
   reportError,
   sessionDisplayName,
@@ -111,6 +114,7 @@ export function useStudioDocumentAccessRuntime({
   });
   const mutationRuntime = useStudioMutationAuthorityRuntime({
     collaborationDocumentLocked: collaborationRuntime.collaborationDocumentLocked,
+    onEditGeneration,
     remixId,
     reportError,
     studioAuthUserId,

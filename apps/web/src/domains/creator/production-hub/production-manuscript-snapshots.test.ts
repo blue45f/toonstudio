@@ -7,6 +7,7 @@ import {
   listProductionManuscriptSnapshots,
   manuscriptSnapshotOverlayAllowed,
   nextProductionManuscriptSnapshotName,
+  PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION,
   updateProductionManuscriptSnapshotMemo,
   type ProductionManuscriptSnapshotSource,
 } from "./production-manuscript-snapshots";
@@ -62,6 +63,18 @@ describe("production-manuscript-snapshots", () => {
   it("rejects snapshots without an artifact or revision reference", () => {
     expect(createProductionManuscriptSnapshot("", source("rev-1"))).toBeNull();
     expect(createProductionManuscriptSnapshot("artifact-a", { ...source("rev-1"), revisionId: "" })).toBeNull();
+  });
+
+  it("keeps only the newest snapshots up to the surfaced retention cap", () => {
+    // 서버 정본 상한(MAX_MANUSCRIPT_SNAPSHOTS_PER_ARTIFACT)과 같은 60개가 UI 표면화 값이다.
+    expect(PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION).toBe(60);
+    for (let index = 1; index <= PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION + 1; index += 1) {
+      createProductionManuscriptSnapshot("artifact-cap", source(`rev-${index}`));
+    }
+    const listed = listProductionManuscriptSnapshots("artifact-cap");
+    expect(listed).toHaveLength(PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION);
+    expect(listed[0]?.name).toBe(`v${PRODUCTION_MANUSCRIPT_SNAPSHOT_RETENTION + 1}`);
+    expect(listed.some((snapshot) => snapshot.name === "v1")).toBe(false);
   });
 
   it("allows overlay only between two snapshots of the same artifact", () => {

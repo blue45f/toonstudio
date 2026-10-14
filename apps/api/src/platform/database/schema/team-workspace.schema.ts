@@ -49,4 +49,6 @@ export const productionTeamAudit = pgTable("production_team_audit", {
   workspaceId: text("workspace_id").notNull().references(() => productionTeamWorkspaces.id, { onDelete: "cascade" }),
   actorUserId: text("actor_user_id").notNull().references(() => users.id), action: text("action").notNull(),
   targetId: text("target_id").notNull(), revision: integer("revision").notNull(), occurredAt: time("occurred_at").notNull().defaultNow(),
-}, (table) => [index("production_team_audit_workspace").on(table.workspaceId, table.id.desc())]);
+}, (table) => [index("production_team_audit_workspace").on(table.workspaceId, table.id.desc()),
+  index("production_team_audit_workspace_occurred").on(table.workspaceId, table.occurredAt.desc()),
+  index("production_team_audit_workspace_actor").on(table.workspaceId, table.actorUserId, table.id.desc())]);

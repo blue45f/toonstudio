@@ -62,6 +62,9 @@ import {
   formatDialogueTextWithRubyPreview,
   type DialogueRubySpan,
 } from "./lettering/studio-dialogue-ruby";
+import { StudioCharacterSheetCitation } from "./planning/StudioCharacterSheetCitation";
+import type { StudioStoryBibleNarrative } from "./planning/studio-character-profile";
+import type { StudioStoryBible } from "./studio-story-bible";
 
 import { cx } from "@/shared/lib/cx";
 
@@ -136,6 +139,15 @@ export type StudioDialogueBatchPanelProps = {
   readAloudAdapter?: DialogueSpeechAdapter;
   /** 모바일 소프트 키보드가 가린 높이. 스튜디오 도크와 함께 패널도 같은 만큼 올린다. */
   mobileKeyboardInset?: number;
+  /**
+   * 캐릭터 시트 묶음 — 주면 대사 목록 위에 캐릭터 선택 + 시트 인용(말투·대표 대사·
+   * 외형 메모)이 뜬다. 캐릭터를 고르면 그 캐릭터의 시트가 바로 인용 표시된다.
+   * 없으면 선택·인용 자체가 없어 기존 동작과 같다.
+   */
+  characterSheets?: {
+    readonly bible: StudioStoryBible;
+    readonly narrative: StudioStoryBibleNarrative;
+  } | null;
 };
 
 const SCOPES: { id: DialogueReplaceScope; label: string }[] = [
@@ -234,6 +246,7 @@ export function StudioDialogueBatchPanel({
   onImportInterchange,
   readAloudAdapter,
   mobileKeyboardInset = 0,
+  characterSheets,
 }: StudioDialogueBatchPanelProps) {
   // 찾아바꾸기 입력 — 찾기는 공백도 의미가 있어 trim 하지 않는다.
   const [find, setFind] = useState("");
@@ -242,6 +255,12 @@ export function StudioDialogueBatchPanel({
   const [caseSensitive, setCaseSensitive] = useState(false);
   // 목록 검색어(찾아바꾸기와 독립).
   const [listQuery, setListQuery] = useState("");
+  // 시트 인용 캐릭터 — 고르지 않았으면 목록의 첫 캐릭터를 인용한다.
+  const [citationCharacterId, setCitationCharacterId] = useState<string | null>(null);
+  const effectiveCitationCharacterId =
+    citationCharacterId && characterSheets?.bible.characters.some((c) => c.id === citationCharacterId)
+      ? citationCharacterId
+      : (characterSheets?.bible.characters[0]?.id ?? null);
   // 인라인 수정 임시본 — 포커스 아웃/⌘Enter 에만 확정해 히스토리를 키 입력마다 만들지 않는다.
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   // 구조 작업은 한 행만 펼쳐 목록 밀도를 유지한다.
@@ -1367,6 +1386,31 @@ export function StudioDialogueBatchPanel({
         )}
       </section>
 
+      {/* 캐릭터 시트 인용 — 캐릭터를 고르면 말투·대표 대사·외형 메모가 대사 목록 바로 위에 뜬다. */}
+      {characterSheets && effectiveCitationCharacterId && (
+        <section className="border-b border-line/60 px-3 py-2.5" aria-label="캐릭터 시트 인용">
+          <label className="mb-1.5 flex items-center gap-1.5 text-[0.62rem] font-semibold text-fg-3">
+            인용할 캐릭터
+            <select
+              aria-label="인용할 캐릭터"
+              value={effectiveCitationCharacterId}
+              onChange={(e) => setCitationCharacterId(e.target.value)}
+              className={cx(inputClass, "min-h-0 w-auto py-1")}
+            >
+              {characterSheets.bible.characters.map((character) => (
+                <option key={character.id} value={character.id}>
+                  {character.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <StudioCharacterSheetCitation
+            bible={characterSheets.bible}
+            narrative={characterSheets.narrative}
+            characterIds={[effectiveCitationCharacterId]}
+          />
+        </section>
+      )}
       {/* 대사 목록 — 클릭=캔버스 선택, 텍스트는 그 자리에서 수정. */}
       <div className="px-3 py-2.5">
         <div className="relative mb-2">

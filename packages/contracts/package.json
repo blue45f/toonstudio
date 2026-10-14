@@ -351,6 +351,21 @@
       "types": "./src/production-workflow.ts",
       "import": "./src/production-workflow.ts",
       "default": "./src/production-workflow.ts"
+    },
+    "./production-organization": {
+      "types": "./src/production-organization.ts",
+      "import": "./src/production-organization.ts",
+      "default": "./src/production-organization.ts"
+    },
+    "./production-shared-library": {
+      "types": "./src/production-shared-library.ts",
+      "import": "./src/production-shared-library.ts",
+      "default": "./src/production-shared-library.ts"
+    },
+    "./production-stage-gate": {
+      "types": "./src/production-stage-gate.ts",
+      "import": "./src/production-stage-gate.ts",
+      "default": "./src/production-stage-gate.ts"
     }
   },
   "dependencies": {

@@ -10,10 +10,16 @@
  *
  * 상태는 실제 오토세이브 런타임 신호(studio-save-sync-signals 어댑터)에서만
  * 온다. 이 컴포넌트는 상태를 만들지 않는다.
+ *
+ * 장애·오프라인 복구 UX (누락 신규 G2, 2026-10-14): 연결 모듈의 스냅샷을
+ * 함께 실어 서버 장애·재확인 중도 저장 표면에 닿게 하고, "연결 다시 확인"은
+ * 연결 모듈의 수동 재검사(requestStudioConnectivityRecheck)에 연결한다.
  */
 
 import { StudioSaveStatusBar } from "./StudioSaveStatusBar";
 import { StudioSaveSyncStatusCenter } from "./StudioSaveSyncStatusCenter";
+import { requestStudioConnectivityRecheck } from "./offline/studio-connectivity";
+import { useStudioConnectivity } from "./offline/use-studio-connectivity";
 import { StudioChromePortal } from "./studio-shell/StudioDocumentChromeSlot";
 import { useStudioSaveSyncView } from "./use-studio-save-sync-signals";
 
@@ -34,6 +40,7 @@ export function StudioSaveStatusChromeMount({
   onRequestSaveFlush,
 }: StudioSaveStatusChromeMountProps) {
   const { status, journalSnapshot, leadership } = useStudioSaveSyncView(store);
+  const connectivity = useStudioConnectivity();
   return (
     <StudioChromePortal targetId="studio-document-chrome-slot">
       <div
@@ -44,11 +51,16 @@ export function StudioSaveStatusChromeMount({
           status={status}
           readOnlyTab={leadership === "follower"}
           onRetrySave={onRequestSaveFlush}
+          connectivity={connectivity}
+          onRecheckConnection={requestStudioConnectivityRecheck}
         />
         <StudioSaveSyncStatusCenter
           journal={journalSnapshot}
           statusOverride={status}
           onForceCheckpoint={onRequestSaveFlush}
+          connectivity={connectivity}
+          onRetrySave={onRequestSaveFlush}
+          onRecheckConnection={requestStudioConnectivityRecheck}
         />
       </div>
     </StudioChromePortal>

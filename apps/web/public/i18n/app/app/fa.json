@@ -1,5 +1,6 @@
 {
   "app.name": "ToonStudio",
   "app.brandBeta": "سرویس بتا  داده ها و ویژگی ها ممکن است تغییر کنند",
-  "app.loading": "بارگیری"
+  "app.loading": "بارگیری",
+  "app.skipToContent": "Skip to main content"
 }

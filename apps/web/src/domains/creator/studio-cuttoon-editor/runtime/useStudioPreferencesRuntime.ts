@@ -23,7 +23,15 @@ import { applyStudioLaunchDensity, readStudioLaunchDensity } from "../../studio-
 
 import type { StudioDocumentWorkspaceId } from "../../studio-document-workspace";
 import { preserveStudioTaskToolbarPreference, projectStudioTaskAppSettings } from "../../studio-task-tools";
-import type { StudioUiDensityMode } from "../../studio-ui-density";
+import {
+  loadStudioUiDensityState,
+  saveStudioUiDensityState,
+  studioUiDensityAdvancedExpanded,
+  studioUiDensityFirstScreenExposure,
+  type StudioUiChromeRegion,
+  type StudioUiDensityMode,
+  type StudioUiFirstScreenExposure,
+} from "../../studio-ui-density";
 import type { StudioUiBooleanPreferenceKey } from "../../studio-ui-preferences-sqlite";
 
 interface UseStudioPreferencesRuntimeOptions {
@@ -58,6 +66,18 @@ export function useStudioPreferencesRuntime({
     "loading" | "saved" | "session-only"
   >("loading");
   const [railMoreOpen, setRailMoreOpen] = useState(false);
+  // First-screen diet: in simple mode the advanced toolbar clusters start folded behind
+  // one expander. The choice persists in the density preference storage, independent of
+  // the document, and defaults to folded for anyone who never expanded them.
+  const [uiAdvancedToolsExpanded, setUiAdvancedToolsExpandedState] = useState<boolean>(() => {
+    try {
+      return studioUiDensityAdvancedExpanded(
+        loadStudioUiDensityState(typeof window === "undefined" ? null : window.localStorage),
+      );
+    } catch {
+      return false;
+    }
+  });
   const appSettingsRef = useRef(appSettings);
   const appSettingsUserRevisionRef = useRef(0);
   const applyMirroredSettingsRef = useRef(applyMirroredSettings);
@@ -201,6 +221,25 @@ export function useStudioPreferencesRuntime({
     persistAppSettings(next);
   }, [persistAppSettings]);
 
+  const setUiAdvancedToolsExpanded = useCallback((expanded: boolean): void => {
+    setUiAdvancedToolsExpandedState(expanded);
+    try {
+      saveStudioUiDensityState(
+        typeof window === "undefined" ? null : window.localStorage,
+        { mode: appSettingsRef.current.general.densityMode, advancedExpanded: expanded },
+      );
+    } catch {
+      // Storage unavailable (private mode etc.) — the in-memory choice still applies.
+    }
+  }, []);
+
+  /** First-screen exposure for a chrome region under the current mode + expansion choice. */
+  const uiFirstScreenExposure = useCallback(
+    (region: StudioUiChromeRegion): StudioUiFirstScreenExposure =>
+      studioUiDensityFirstScreenExposure(uiDensityMode, region, uiAdvancedToolsExpanded),
+    [uiDensityMode, uiAdvancedToolsExpanded],
+  );
+
   const commitAppSettings = useCallback((proposed: StudioAppSettings): void => {
     const stored = appSettingsRef.current;
     const next = preserveStudioTaskToolbarPreference(stored,
@@ -267,8 +306,11 @@ export function useStudioPreferencesRuntime({
     setStudioUiDensity,
     setStudioUiDensityFromCompanion,
     setUiDensityMode,
+    setUiAdvancedToolsExpanded,
     toggleEffectFavorite: toggleEffectFavoriteCommand,
+    uiAdvancedToolsExpanded,
     uiBooleanPreferenceRevisionsRef,
     uiDensityMode,
+    uiFirstScreenExposure,
   } as const;
 }

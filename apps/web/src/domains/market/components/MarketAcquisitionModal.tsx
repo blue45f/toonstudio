@@ -2,8 +2,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Download,
-  Palette,
-  ShieldCheck,
   Sparkles,
   X,
 } from "lucide-react";
@@ -59,7 +57,6 @@ export function MarketAcquisitionModal({
   const acquisitionAbortRef = useRef<AbortController | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [completed, setCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [versionNotice, setVersionNotice] = useState<string | null>(null);
   const [quote, setQuote] = useState<MarketplaceCommerceQuote | null>(null);
@@ -73,7 +70,6 @@ export function MarketAcquisitionModal({
     acquisitionAbortRef.current = null;
     setAgreed(false);
     setSubmitting(false);
-    setCompleted(false);
     setError(null);
     setVersionNotice(null);
     setQuote(null);
@@ -115,12 +111,6 @@ export function MarketAcquisitionModal({
   const activeRecord = acquisition?.record ?? record;
   const kind = marketKindMeta(activeRecord.kind);
   const license = marketLicenseMeta(activeRecord.license);
-  const redirectedToCurrentHead = acquisition?.redirectedToCurrentHead ?? false;
-  const activeStudioActionLabel = redirectedToCurrentHead
-    && studioHandoff.mode === "install-tool-pack"
-      ? `Studio에서 v${activeRecord.resourceVersion} 설치·확인`
-      : studioHandoff.actionLabel;
-
   const closeModal = () => {
     acquisitionAbortRef.current?.abort();
     acquisitionAbortRef.current = null;
@@ -196,8 +186,8 @@ export function MarketAcquisitionModal({
 
       setAcquisition(retainedResolution);
       setVersionNotice(null);
-      setCompleted(true);
       onAcquiredSuccess?.();
+      continueToStudio(resolved.record);
     } catch (caught) {
       if (
         controller.signal.aborted
@@ -295,8 +285,8 @@ export function MarketAcquisitionModal({
 
       setAcquisition(retainedResolution);
       setVersionNotice(null);
-      setCompleted(true);
       onAcquiredSuccess?.();
+      continueToStudio(resolved.record);
     } catch (caught) {
       if (spendEventId) {
         useAssetPointsStore.getState().refundSpend(spendEventId);
@@ -317,14 +307,23 @@ export function MarketAcquisitionModal({
     }
   };
 
-  const handleOpenInStudio = () => {
-    closeModal();
-    navigate(marketStudioResourceHref(activeRecord.id));
-  };
-
-  const handleGoToLibrary = () => {
-    closeModal();
-    navigate("/market/library");
+  /**
+   * 획득→적용 원자화(MKT-05): 보관이 성공하면 별도 클릭 없이 곧바로 Studio로 이어진다.
+   * Studio 딥링크가 그 정확한 릴리스를 다운로드·검증·설치/삽입까지 자동으로 수행하므로
+   * 사용자는 에디터에서 바로 쓸 수 있다. 보관만 원하는 경로는 상세 화면의
+   * 계정 라이브러리 액션이 따로 제공한다.
+   * 핸드오프가 만들어진 레코드와 획득한 레코드가 같으면 캠퍼스 문서 대상이 담긴
+   * studioHandoff.href를 그대로 써서 작업 중이던 프로젝트에 장착하고,
+   * 현재 공개 버전으로 바뀐 경우에만 그 릴리스 기준으로 href를 다시 만든다.
+   */
+  const continueToStudio = (acquiredRecord: CreatorMarketplaceResourceRecord) => {
+    acquisitionAbortRef.current = null;
+    onClose();
+    navigate(
+      acquiredRecord.id === record.id
+        ? studioHandoff.href
+        : marketStudioResourceHref(acquiredRecord.id),
+    );
   };
 
   return (
@@ -338,7 +337,7 @@ export function MarketAcquisitionModal({
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 id="market-acquire-title" className="flex items-center gap-2 text-base font-bold text-fg">
             <Sparkles className="size-4 text-accent" aria-hidden="true" />
-            <span>{completed ? "내 에셋에 추가 완료" : "내 에셋에 추가"}</span>
+            <span>내 에셋에 추가</span>
           </h2>
           <button
             type="button"
@@ -350,195 +349,141 @@ export function MarketAcquisitionModal({
           </button>
         </div>
 
-        {completed ? (
-          <div className="space-y-4 p-6 text-center">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-good/20 text-good">
-              <CheckCircle2 className="size-8" aria-hidden="true" />
+        <div className="space-y-4 p-5">
+          <div className="flex items-center gap-3 rounded-xl border border-line bg-panel p-3">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-raised font-bold text-accent">
+              <kind.icon className="size-6" aria-hidden="true" />
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-fg">내 에셋에 안전하게 보관했습니다</h3>
-              <p className="mt-1 text-xs leading-relaxed text-fg-2">
-                계정 보관과 현재 기기 설치·적용은 서로 다른 단계입니다. {studioHandoff.summary}
+            <div className="min-w-0 flex-1">
+              <span className="inline-flex rounded bg-accent/20 px-1.5 py-0.5 text-[0.62rem] font-bold text-accent">
+                {kind.label}
+              </span>
+              <h3 className="truncate text-sm font-bold leading-snug text-fg">{activeRecord.name}</h3>
+              <p className="text-[0.68rem] text-fg-3">
+                제작자: {activeRecord.publisher.name} · 설치 대상 v{activeRecord.resourceVersion}
               </p>
             </div>
+          </div>
 
-            {redirectedToCurrentHead ? (
-              <div className="rounded-xl border border-accent/35 bg-accent/10 p-3 text-left text-xs leading-relaxed text-fg-2">
-                상세에서 본 v{record.resourceVersion}은 이전 릴리스입니다. 같은 제작자·패키지·종류임을 확인한 뒤 현재 공개 버전 v{activeRecord.resourceVersion}을 내 에셋에 추가했습니다.
-              </div>
-            ) : null}
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 rounded-xl border border-line bg-panel/60 p-3 text-[0.7rem] leading-relaxed text-fg-2">
+            <span className="flex size-5 items-center justify-center rounded-full bg-accent text-[0.62rem] font-bold text-on-accent">1</span>
+            <span>서버에서 같은 패키지의 현재 공개 릴리스와 제작자·종류·안정 식별자를 확인합니다.</span>
+            <span className="flex size-5 items-center justify-center rounded-full bg-raised text-[0.62rem] font-bold text-fg">2</span>
+            <span>현재 릴리스를 내 계정에 보관하면 곧바로 Studio로 이동해 그 정확한 버전을 설치·적용합니다. 별도의 설치 단계는 없습니다.</span>
+          </div>
 
-            <div className="space-y-2 rounded-xl border border-line bg-panel p-3.5 text-left text-xs">
-              <p className="flex items-center gap-1.5 font-semibold text-fg">
-                <ShieldCheck className="size-3.5 text-good" aria-hidden="true" />
+          <div className="space-y-2 rounded-xl border border-good/40 bg-good/10 p-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-semibold text-fg">이용 비용</span>
+              <span className={quoteError && !quote && !quoteLoading ? "text-sm font-extrabold text-bad" : "text-sm font-extrabold text-good"}>
+                {quoteLoading
+                  ? "확인 중…"
+                  : quote?.checkoutRequired
+                    ? new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW", maximumFractionDigits: 0 }).format(quote.amount)
+                    : quoteError
+                      ? "확인 불가"
+                      : "무료"}
+              </span>
+            </div>
+            <p className="text-[0.68rem] leading-relaxed text-fg-3">
+              {quote?.policyNotice ?? "운영 정책과 사용권 조건을 함께 확인해 주세요. 상업 이용·수정·출처 표기 범위는 리소스별 라이선스를 따릅니다."}
+            </p>
+            <div className="border-t border-good/20 pt-2 text-xs text-fg-2">
+              <p className="flex items-center gap-1.5 font-semibold text-good">
+                <CheckCircle2 className="size-3.5" aria-hidden="true" />
                 <span>{license.label}</span>
               </p>
-              <p className="text-[0.68rem] leading-relaxed text-fg-3">{license.summary}</p>
+              <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">{license.summary}</p>
               {activeRecord.attributionText ? (
-                <p className="text-[0.68rem] leading-relaxed text-fg-3">
+                <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">
                   출처 표기: {activeRecord.attributionText}
                 </p>
               ) : null}
-              <p className="border-t border-line pt-2 text-[0.68rem] leading-relaxed text-fg-3">
-                설치 대상: v{activeRecord.resourceVersion} · 무결성 {activeRecord.manifestHash.slice(0, 12)}…
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-2">
-              <button
-                type="button"
-                onClick={handleOpenInStudio}
-                className={buttonClass({ variant: "solid", size: "md", className: "w-full gap-2" })}
-              >
-                <Palette className="size-4" aria-hidden="true" />
-                <span>{activeStudioActionLabel}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleGoToLibrary}
-                className={buttonClass({ variant: "outline", size: "sm", className: "w-full" })}
-              >
-                내 에셋 관리로 이동
-              </button>
             </div>
           </div>
-        ) : (
-          <div className="space-y-4 p-5">
-            <div className="flex items-center gap-3 rounded-xl border border-line bg-panel p-3">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-raised font-bold text-accent">
-                <kind.icon className="size-6" aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="inline-flex rounded bg-accent/20 px-1.5 py-0.5 text-[0.62rem] font-bold text-accent">
-                  {kind.label}
-                </span>
-                <h3 className="truncate text-sm font-bold leading-snug text-fg">{activeRecord.name}</h3>
-                <p className="text-[0.68rem] text-fg-3">
-                  제작자: {activeRecord.publisher.name} · 설치 대상 v{activeRecord.resourceVersion}
-                </p>
-              </div>
+
+          {quote?.checkoutRequired && !quoteLoading ? (
+            <MarketPointPurchaseOption
+              resourceId={activeRecord.id}
+              resourceName={activeRecord.name}
+              krwAmount={quote.amount}
+              agreed={agreed}
+              submitting={submitting}
+              onPurchase={() => void handlePointPurchase()}
+            />
+          ) : null}
+
+          {quoteError && !quoteLoading ? (
+            <div role="alert" className="flex items-start gap-2 rounded-xl border border-bad/40 bg-bad/10 p-3 text-xs leading-relaxed text-fg">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden="true" />
+              <span>{quoteError}</span>
             </div>
+          ) : null}
 
-            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 rounded-xl border border-line bg-panel/60 p-3 text-[0.7rem] leading-relaxed text-fg-2">
-              <span className="flex size-5 items-center justify-center rounded-full bg-accent text-[0.62rem] font-bold text-on-accent">1</span>
-              <span>서버에서 같은 패키지의 현재 공개 릴리스와 제작자·종류·안정 식별자를 확인합니다.</span>
-              <span className="flex size-5 items-center justify-center rounded-full bg-raised text-[0.62rem] font-bold text-fg">2</span>
-              <span>현재 릴리스를 내 계정에 보관한 뒤, Studio에서 그 정확한 버전을 설치합니다.</span>
+          {versionNotice ? (
+            <div role="status" className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-3 text-xs leading-relaxed text-fg">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden="true" />
+              <span>{versionNotice}</span>
             </div>
+          ) : null}
 
-            <div className="space-y-2 rounded-xl border border-good/40 bg-good/10 p-3.5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-semibold text-fg">이용 비용</span>
-                <span className={quoteError && !quote && !quoteLoading ? "text-sm font-extrabold text-bad" : "text-sm font-extrabold text-good"}>
-                  {quoteLoading
-                    ? "확인 중…"
-                    : quote?.checkoutRequired
-                      ? new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW", maximumFractionDigits: 0 }).format(quote.amount)
-                      : quoteError
-                        ? "확인 불가"
-                        : "무료"}
-                </span>
-              </div>
-              <p className="text-[0.68rem] leading-relaxed text-fg-3">
-                {quote?.policyNotice ?? "운영 정책과 사용권 조건을 함께 확인해 주세요. 상업 이용·수정·출처 표기 범위는 리소스별 라이선스를 따릅니다."}
-              </p>
-              <div className="border-t border-good/20 pt-2 text-xs text-fg-2">
-                <p className="flex items-center gap-1.5 font-semibold text-good">
-                  <CheckCircle2 className="size-3.5" aria-hidden="true" />
-                  <span>{license.label}</span>
-                </p>
-                <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">{license.summary}</p>
-                {activeRecord.attributionText ? (
-                  <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">
-                    출처 표기: {activeRecord.attributionText}
-                  </p>
-                ) : null}
-              </div>
+          <label className="flex cursor-pointer select-none items-start gap-2 rounded-xl border border-line/70 bg-panel/45 p-3 text-xs text-fg-2 transition-colors hover:border-line-strong">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(event) => setAgreed(event.target.checked)}
+              className="mt-0.5 rounded border-line text-accent focus:ring-accent"
+            />
+            <span className="text-[0.72rem] leading-relaxed">
+              표시된 라이선스와 출처 조건을 확인했습니다. 이 에셋을 내 계정에 보관하고, 받는 즉시 Studio에 설치·적용하겠습니다.
+            </span>
+          </label>
+
+          {error ? (
+            <div role="alert" className="flex items-start gap-2 rounded-xl border border-bad/40 bg-bad/10 p-3 text-xs leading-relaxed text-fg">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden="true" />
+              <span>{error}</span>
             </div>
+          ) : null}
 
-            {quote?.checkoutRequired && !quoteLoading ? (
-              <MarketPointPurchaseOption
-                resourceId={activeRecord.id}
-                resourceName={activeRecord.name}
-                krwAmount={quote.amount}
-                agreed={agreed}
-                submitting={submitting}
-                onPurchase={() => void handlePointPurchase()}
-              />
-            ) : null}
-
-            {quoteError && !quoteLoading ? (
-              <div role="alert" className="flex items-start gap-2 rounded-xl border border-bad/40 bg-bad/10 p-3 text-xs leading-relaxed text-fg">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden="true" />
-                <span>{quoteError}</span>
-              </div>
-            ) : null}
-
-            {versionNotice ? (
-              <div role="status" className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-3 text-xs leading-relaxed text-fg">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden="true" />
-                <span>{versionNotice}</span>
-              </div>
-            ) : null}
-
-            <label className="flex cursor-pointer select-none items-start gap-2 rounded-xl border border-line/70 bg-panel/45 p-3 text-xs text-fg-2 transition-colors hover:border-line-strong">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(event) => setAgreed(event.target.checked)}
-                className="mt-0.5 rounded border-line text-accent focus:ring-accent"
-              />
-              <span className="text-[0.72rem] leading-relaxed">
-                표시된 라이선스와 출처 조건을 확인했습니다. 이 에셋을 내 계정에 보관하고 필요할 때 기기에 설치하겠습니다.
-              </span>
-            </label>
-
-            {error ? (
-              <div role="alert" className="flex items-start gap-2 rounded-xl border border-bad/40 bg-bad/10 p-3 text-xs leading-relaxed text-fg">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden="true" />
-                <span>{error}</span>
-              </div>
-            ) : null}
-
-            <div className="flex items-center justify-end gap-2 border-t border-line pt-4">
-              <button
-                type="button"
-                onClick={closeModal}
-                className={buttonClass({ variant: "ghost", size: "sm" })}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleAcquire()}
-                disabled={
-                  !agreed
-                  || submitting
-                  || quoteLoading
-                  || Boolean(quote?.checkoutRequired && !quote.checkoutEnabled)
-                }
-                aria-busy={submitting || undefined}
-                title={!agreed ? "라이선스와 출처 조건을 확인하면 추가할 수 있습니다." : undefined}
-                className={buttonClass({
-                  variant: "solid",
-                  size: "md",
-                  className: "min-w-36 gap-2 disabled:opacity-40",
-                })}
-              >
-                <Download className="size-4" aria-hidden="true" />
-                <span>{submitting
-                  ? "현재 버전 확인 중…"
-                  : versionNotice
-                    ? `현재 v${activeRecord.resourceVersion} 조건 확인 후 추가`
-                    : quote?.checkoutRequired
-                      ? "결제하고 내 에셋에 추가"
-                      : quoteError && !quote
-                        ? "가격 확인하고 추가"
-                        : "내 에셋에 추가"}</span>
-              </button>
-            </div>
+          <div className="flex items-center justify-end gap-2 border-t border-line pt-4">
+            <button
+              type="button"
+              onClick={closeModal}
+              className={buttonClass({ variant: "ghost", size: "sm" })}
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleAcquire()}
+              disabled={
+                !agreed
+                || submitting
+                || quoteLoading
+                || Boolean(quote?.checkoutRequired && !quote.checkoutEnabled)
+              }
+              aria-busy={submitting || undefined}
+              title={!agreed ? "라이선스와 출처 조건을 확인하면 추가할 수 있습니다." : undefined}
+              className={buttonClass({
+                variant: "solid",
+                size: "md",
+                className: "min-w-36 gap-2 disabled:opacity-40",
+              })}
+            >
+              <Download className="size-4" aria-hidden="true" />
+              <span>{submitting
+                ? "현재 버전 확인 중…"
+                : versionNotice
+                  ? `현재 v${activeRecord.resourceVersion} 조건 확인 후 추가`
+                  : quote?.checkoutRequired
+                    ? "결제하고 내 에셋에 추가"
+                    : quoteError && !quote
+                      ? "가격 확인하고 추가"
+                      : "내 에셋에 추가"}</span>
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

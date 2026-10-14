@@ -18,9 +18,11 @@ describe("Studio project section views", () => {
       story: [
         "overview",
         "episodes",
+        "foreshadow",
         "script",
         "characters",
         "world",
+        "concordance",
         "timeline",
         "relations",
         "references",

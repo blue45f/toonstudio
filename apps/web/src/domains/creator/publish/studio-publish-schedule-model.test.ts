@@ -9,6 +9,10 @@ import {
   evaluatePublishScheduleChecklist,
   formatUtcInTimeZone,
   getLocalDateKey,
+  getMarketCalendarEventsInWeekOf,
+  getMarketCalendarEventsOn,
+  getWeekDateKeys,
+  isEventWeek,
   isReservationDue,
   isValidIanaTimeZone,
   normalizePublishScheduleCadence,
@@ -474,5 +478,69 @@ describe("buildCalendarCells", () => {
     expect(cells[3]).toEqual({ dateKey: "2026-10-01", inMonth: true });
     expect(cells.filter((c) => c.inMonth).length).toBe(31);
     expect(cells[cells.length - 1]?.dateKey).toBe("2026-11-01");
+  });
+});
+
+describe("시장 캘린더 (공휴일·플랫폼 이벤트)", () => {
+  it("공휴일 당일 이벤트를 찾는다", () => {
+    const events = getMarketCalendarEventsOn("2026-09-25");
+    expect(events.map((event) => event.name)).toContain("추석");
+    expect(events.every((event) => event.kind === "holiday")).toBe(true);
+  });
+
+  it("플랫폼 이벤트 기간은 시작일·종료일을 포함한다", () => {
+    expect(
+      getMarketCalendarEventsOn("2026-07-24").map((event) => event.name),
+    ).toContain("플랫폼 여름 성수기");
+    expect(
+      getMarketCalendarEventsOn("2026-08-16").map((event) => event.name),
+    ).toContain("플랫폼 여름 성수기");
+    expect(
+      getMarketCalendarEventsOn("2026-08-17").map((event) => event.name),
+    ).not.toContain("플랫폼 여름 성수기");
+  });
+
+  it("이벤트 없는 날과 잘못된 날짜 키에는 빈 배열을 반환한다", () => {
+    expect(getMarketCalendarEventsOn("2026-11-16")).toEqual([]);
+    expect(getMarketCalendarEventsOn("2026/11/16")).toEqual([]);
+  });
+
+  it("주는 월요일 시작 7일이다", () => {
+    // 2026-10-04는 일요일 → 그 주는 09-28(월)~10-04(일)
+    expect(getWeekDateKeys("2026-10-04")).toEqual([
+      "2026-09-28",
+      "2026-09-29",
+      "2026-09-30",
+      "2026-10-01",
+      "2026-10-02",
+      "2026-10-03",
+      "2026-10-04",
+    ]);
+    // 2026-10-05는 월요일 → 그 주의 첫날
+    expect(getWeekDateKeys("2026-10-05")[0]).toBe("2026-10-05");
+  });
+
+  it("주 단위 조회는 주를 가로지르는 기간 이벤트를 한 번만 포함한다", () => {
+    const events = getMarketCalendarEventsInWeekOf("2026-07-29");
+    expect(
+      events.filter((event) => event.name === "플랫폼 여름 성수기"),
+    ).toHaveLength(1);
+  });
+
+  it("이벤트 주간 판정: 공휴일이 있는 주만 true", () => {
+    // 2026-10-05 주(10-05~10-11): 대체공휴일(개천절)·한글날
+    expect(isEventWeek("2026-10-05")).toBe(true);
+    expect(
+      getMarketCalendarEventsInWeekOf("2026-10-05").map(
+        (event) => event.name,
+      ),
+    ).toEqual(expect.arrayContaining(["대체공휴일(개천절)", "한글날"]));
+    // 일요일 2026-10-04는 전주(09-28~10-04) 소속 → 개천절(10-03)이 있어 true
+    expect(isEventWeek("2026-10-04")).toBe(true);
+    // 2026-11-16 주(11-16~11-22): 이벤트 없음
+    expect(isEventWeek("2026-11-16")).toBe(false);
+    expect(getMarketCalendarEventsInWeekOf("2026-11-16")).toEqual([]);
+    // 잘못된 날짜 키
+    expect(isEventWeek("nope")).toBe(false);
   });
 });

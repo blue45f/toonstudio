@@ -15,6 +15,8 @@ export type StudioCuttoonStagePointersHost = {
   advancedFillActive: any;
   advancedFillTapGestureRef: any;
   advancedFillTapPayloadRef: any;
+  advancedFillLassoDragRef: any;
+  advancedFillLassoEnabled: any;
   advancedFillTouchPanRef: any;
   advancedFillVirtualTarget: any;
   advancedRulerSnapRef: any;
@@ -262,8 +264,13 @@ export type StudioCuttoonStagePointersHost = {
   releaseLivingInkInputPointer: any;
   restorePendingStrokeCommits: any;
   runAdvancedFillAt: any;
+  runAdvancedFillLassoPath: any;
   runColorRangeSample: any;
   runMagicWandSelect: any;
+  runQuickSelectionStroke: any;
+  quickSelectDragRef: any;
+  scheduleQuickSelectionStrokeScan: any;
+  finishQuickSelectionStroke: any;
   scheduleLiquifyLivePreview: any;
   session: any;
   setActiveGroupId: any;

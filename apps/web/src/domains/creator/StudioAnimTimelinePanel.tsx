@@ -6,7 +6,7 @@
  * 로컬 상태는 전혀 없다(재생 미리보기조차 상위가 playing/playhead로 소유·전달).
  * 실제 캔버스 합성/래스터화 캡처는 StudioPage 몫이라 이 패널은 그리드/설정 UI만 그린다.
  */
-import { ChevronLeft, ChevronRight, Eye, EyeOff, GanttChartSquare, Ghost, Lock, Pause, Play, Plus, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Eye, EyeOff, FileText, GanttChartSquare, Ghost, Lock, Pause, Play, Plus, Printer, Trash2, X } from "lucide-react";
 import { Fragment, useEffect } from "react";
 
 import {
@@ -29,6 +29,15 @@ import {
   type AnimationTimelineDoc,
   type StudioAnimEase,
 } from "./studio-anim-tracks";
+import {
+  deriveStudioAnimTimesheet,
+  formatTimesheetFrameRange,
+  formatTimesheetSeconds,
+  renderStudioAnimTimesheetPrintHtml,
+  renderStudioAnimTimesheetSvg,
+  renderStudioAnimTimesheetText,
+  type StudioAnimTimesheet,
+} from "./studio-anim-timesheet";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioRemoveTimelineTrackRequest } from "./studio-destructive-command-catalog";
 import { MAX_FRAME_FPS, MIN_FRAME_FPS, type OnionSkinSettings } from "./studio-frame-animation";
@@ -53,6 +62,36 @@ const EASE_OPTIONS: ReadonlyArray<{ readonly value: StudioAnimEase; readonly lab
   { value: "ease-out", label: "감속 (ease-out)" },
   { value: "ease-in-out", label: "가감속 (ease-in-out)" },
 ];
+
+// 타임시트 내보내기 부수효과 — 도출·렌더링은 studio-anim-timesheet(순수)가 소유하고,
+// 여기서는 브라우저 다운로드/인쇄 창만 담당한다. SSR·테스트 환경에서는 조용히 no-op.
+function downloadTimesheetFile(filename: string, content: string, mime: string): void {
+  if (typeof document === "undefined" || typeof URL === "undefined") return;
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function printTimesheet(sheet: StudioAnimTimesheet): void {
+  const html = renderStudioAnimTimesheetPrintHtml(sheet);
+  const printWindow = typeof window !== "undefined" ? window.open("", "_blank") : null;
+  if (!printWindow) {
+    // 팝업이 막히면 인쇄용 HTML 파일로라도 내려받아 브라우저에서 열어 인쇄할 수 있게 한다.
+    downloadTimesheetFile("timesheet.html", html, "text/html;charset=utf-8");
+    return;
+  }
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
 
 function createTimelineClipId(): string {
   try {
@@ -133,6 +172,11 @@ export function StudioAnimTimelinePanel({
   // 예: StudioFrameAnimationPanel의 planFrameAnimationExport). 온스킨 실제 렌더는 캔버스(StudioPage)
   // 몫이지만, "지금 몇 장이 겹쳐 보일지" 미리 안내하는 용도로만 여기서 계산한다.
   const onionPreview = focusedTrackId ? onionSkinLayersForTrack(focusedTrack, playhead, onionSkin) : [];
+  // 타임시트(노출표) 도출 — 패널 그리드와 같은 문서·같은 순서(rows)로 도출하므로
+  // 화면 배치와 시트 구간이 어긋나지 않는다. 순수 계산이라 렌더마다 다시 구해도 무방.
+  const timesheet = deriveStudioAnimTimesheet(doc, {
+    tracks: rows.map((row) => ({ id: row.id, label: row.label })),
+  });
 
   // Esc 로 닫기 — 입력 필드 안의 Esc 는 각 필드의 몫(StudioFrameAnimationPanel/StudioHistoryPanel과 동일 규약).
   useEffect(() => {
@@ -523,6 +567,108 @@ export function StudioAnimTimelinePanel({
             </div>
           </div>
         )}
+
+        {/* 타임시트(노출표) — 타임라인 배치를 트랙·구간 표로 펼쳐 인쇄·공유한다.
+            펼침 상태는 <details>가 소유해 패널의 무상태 규약을 지킨다. */}
+        <details className="rounded-xl border border-line bg-card/45" data-testid="timeline-timesheet">
+          <summary className="flex min-h-11 cursor-pointer items-center gap-1.5 px-2.5 py-2 text-xs font-semibold text-fg">
+            타임시트(노출표)
+            <span className="font-medium text-fg-3">
+              셀 {timesheet.totalSegments}구간 · 클립 {timesheet.clips.length}개 · {timesheet.frameCount}프레임 {timesheet.fps}fps
+            </span>
+          </summary>
+          <div className="space-y-2 px-2.5 pb-2.5">
+            {timesheet.totalSegments === 0 ? (
+              <p className="text-[0.7rem] leading-relaxed text-fg-3" role="status">
+                아직 키프레임이 없어 도출할 셀이 없어요. 키프레임을 추가하면 노출 구간이 표로 펼쳐져요.
+              </p>
+            ) : (
+              <div className="overflow-auto rounded-lg border border-line/60" style={{ maxHeight: "14rem" }}>
+                <table className="w-full border-collapse text-[0.7rem] text-fg-2">
+                  <thead>
+                    <tr className="bg-panel text-left text-fg-3">
+                      <th className="px-2 py-1 font-semibold">트랙</th>
+                      <th className="px-2 py-1 font-semibold">셀</th>
+                      <th className="px-2 py-1 font-semibold">구간</th>
+                      <th className="px-2 py-1 font-semibold">길이</th>
+                      <th className="px-2 py-1 font-semibold">시간</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timesheet.tracks.flatMap((row) =>
+                      row.segments.map((segment) => (
+                        <tr key={`${row.trackId}-${segment.celId}-${segment.startFrame}`} className="border-t border-line/40">
+                          <td className="max-w-28 truncate px-2 py-1">{row.label}</td>
+                          <td className="px-2 py-1 tabular-nums">셀 {segment.celIndex}</td>
+                          <td className="px-2 py-1 tabular-nums">
+                            {formatTimesheetFrameRange(segment.startFrame, segment.endFrame)}
+                          </td>
+                          <td className="px-2 py-1 tabular-nums">{segment.durationFrames}프레임</td>
+                          <td className="px-2 py-1 tabular-nums">
+                            {formatTimesheetSeconds(segment.startSeconds)} · {formatTimesheetSeconds(segment.durationSeconds)}
+                          </td>
+                        </tr>
+                      )),
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {timesheet.clips.length > 0 && (
+              <ul className="space-y-1" data-testid="timeline-timesheet-clips">
+                {timesheet.clips.map((clip) => (
+                  <li key={clip.clipId} className="flex flex-wrap items-center gap-1.5 text-[0.7rem] text-fg-2">
+                    <span className="font-semibold text-fg">{clip.name}</span>
+                    {clip.isActive && (
+                      <span className="rounded-md border border-accent/50 bg-accent-soft/40 px-1.5 py-0.5 text-[0.62rem] font-semibold text-fg">
+                        활성
+                      </span>
+                    )}
+                    <span className="tabular-nums text-fg-3">
+                      {formatTimesheetFrameRange(clip.startFrame, clip.endFrame)} · {clip.durationFrames}프레임
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                data-testid="timeline-timesheet-print"
+                onClick={() => printTimesheet(timesheet)}
+                className={cn(buttonClass({ size: "sm", variant: "outline", className: "min-h-11 min-w-11" }), "gap-1 text-[0.7rem]")}
+              >
+                <Printer size={12} />
+                인쇄·PDF
+              </button>
+              <button
+                type="button"
+                data-testid="timeline-timesheet-svg"
+                onClick={() =>
+                  downloadTimesheetFile("timesheet.svg", renderStudioAnimTimesheetSvg(timesheet), "image/svg+xml;charset=utf-8")
+                }
+                className={cn(buttonClass({ size: "sm", variant: "outline", className: "min-h-11 min-w-11" }), "gap-1 text-[0.7rem]")}
+              >
+                <Download size={12} />
+                이미지(SVG) 저장
+              </button>
+              <button
+                type="button"
+                data-testid="timeline-timesheet-text"
+                onClick={() =>
+                  downloadTimesheetFile("timesheet.txt", renderStudioAnimTimesheetText(timesheet), "text/plain;charset=utf-8")
+                }
+                className={cn(buttonClass({ size: "sm", variant: "outline", className: "min-h-11 min-w-11" }), "gap-1 text-[0.7rem]")}
+              >
+                <FileText size={12} />
+                텍스트 저장
+              </button>
+            </div>
+            <p className="text-[0.68rem] leading-relaxed text-fg-3">
+              인쇄 창에서 프린터 대신 "PDF로 저장"을 고르면 PDF로 공유할 수 있어요. 구간은 다음 키프레임 직전까지 유지되는 노출 기준이에요.
+            </p>
+          </div>
+        </details>
 
         {/* 포커스된 트랙 보조 영역 */}
         {focusedRow && (

@@ -43,6 +43,10 @@ export const creatorRoutes = defineAppRoutes([
   { id: "creator-studio-immersive", path: studioRoutePath("immersive"), element: <StudioImmersiveHubPage /> },
   { id: "creator-studio-motion-webtoon", path: studioRoutePath("motion-webtoon"), element: <MotionWebtoonPage /> },
   { id: "creator-spatial-reader", path: "/read/spatial", element: <StudioSpatialReaderPage /> },
+  // 레인 계약 (BLUEPRINT §2.3, S2-7): /studio/new는 관문이 아니라 2단계 생성 양식이다.
+  // /create 레인은 ?lane=(idea|storyboard|blank|template)으로 진입하며, 레인이 양식의
+  // 초기값(캔버스 규격·첫 단계)과 생성 후 착지(이야기→기획, 콘티·빈 캔버스·템플릿→에디터)를
+  // 결정한다. 레인 없는 딥링크는 기존 시작점 기반 동작을 유지한다.
   { id: "creator-studio-new", path: studioRoutePath("new"), element: <StudioNewPage /> },
   { id: "creator-studio-import", path: studioRoutePath("import"), element: <StudioImportPage /> },
   { id: "creator-studio-recovery", path: studioRoutePath("recovery"), element: <Navigate to="/studio?view=archived" replace /> },

@@ -19,6 +19,10 @@ import { describe, expect, it } from "vitest";
 import { planStudioDynamicBrushDabs } from "./studio-brush-dynamics";
 import { createBrush, writeBrushJson } from "./studio-brush-library";
 import {
+  BRUSH_SOURCE_ARCHIVE_MAX_BYTES,
+  BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS,
+} from "./studio-brush-original-source";
+import {
   KRITA_REFERENCE_MAX_DIAMETER_PX,
   MYPAINT_LOG_RADIUS_SCALE,
   STUDIO_BRUSH_PACK_ACCEPT,
@@ -281,5 +285,19 @@ describe("app-private .json stays on one reporting shape", () => {
     expect(result.format).toBe("json");
     expect(result.brushes[0]!.snapshot.strokeWidth).toBe(saved.strokeWidth);
     expect(drawCoverage(result.brushes[0]!.snapshot).coveredPixels).toBeGreaterThan(100);
+  });
+
+  it("rejects JSON text over the archive character ceiling in this lane itself", () => {
+    const oversized = "x".repeat(BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS + 1);
+    expect(() => importStudioBrushJsonText(oversized, "huge.json"))
+      .toThrow("브러시 보존 파일이 허용 크기를 초과했습니다.");
+  });
+
+  it("rejects JSON text over the archive byte ceiling even under the character ceiling", () => {
+    // "붓"은 UTF-8 3바이트: 문자 수는 한도 아래지만 바이트 수는 한도를 넘는다.
+    const charCount = Math.floor(BRUSH_SOURCE_ARCHIVE_MAX_BYTES / 3) + 1;
+    expect(charCount).toBeLessThanOrEqual(BRUSH_SOURCE_ARCHIVE_MAX_CHARACTERS);
+    expect(() => importStudioBrushJsonText("붓".repeat(charCount), "huge.json"))
+      .toThrow("브러시 보존 파일이 허용 크기를 초과했습니다.");
   });
 });

@@ -3,6 +3,7 @@ import {
   Check,
   ExternalLink,
   ChevronLeft,
+  ChevronDown,
   ChevronRight,
   FlipHorizontal2,
   FlipVertical2,
@@ -59,7 +60,16 @@ import {
   type StudioReferenceImageRaster,
   type StudioReferencePoint,
 } from "./studio-reference-color-sampler";
-import { arrangeStudioReferenceCanvas } from "./studio-reference-canvas-layout";
+import {
+  arrangeStudioReferenceBoardByCriteria,
+  referenceHueFromHex,
+  STUDIO_REFERENCE_BOARD_ARRANGE_OPTIONS,
+  type StudioReferenceBoardArrangeSort,
+} from "./studio-reference-board-arrange";
+import {
+  describeStudioReferencePickedColor,
+  registerStudioReferencePickedColor,
+} from "./studio-reference-picked-color";
 import {
   assertStudioReferenceGifSignature,
   assertStudioReferenceImportBatch,
@@ -104,6 +114,13 @@ export interface StudioReferencePanelProps {
   onChange: (next: StudioReferenceBoardDocument) => boolean | void;
   /** Optional Studio primary-color sink. Color inspection never mutates the reference document. */
   onPickColor?: (hex: string) => void;
+  /**
+   * Optional palette sink fired in the SAME action as onPickColor: a color picked with the
+   * eyedropper (or chosen from the extracted palette) is registered to the palette in one
+   * action, with no extra save step. The panel also keeps its own picked-color palette strip,
+   * so registration is visible even when the host does not provide this callback.
+   */
+  onRegisterPaletteColor?: (hex: string) => void;
   /** Opens the synchronized project-owned canvas in a dedicated browser window. */
   onOpenDetached?: () => void;
   /** Starts a page-owned, non-destructive trace guide from the effective selected asset. */
@@ -327,8 +344,12 @@ export function StudioReferencePanel({
   document,
   onChange,
   onPickColor,
+  onRegisterPaletteColor,
   onOpenDetached,
   onStartDrawingPractice,
+  boardScope,
+  onCopyToEpisodeBoard,
+  onSendItemToCompare,
   acquirePreferences = acquireProductStudioReferencePanelPreferencesRepository,
 }: StudioReferencePanelProps): ReactElement | null {
   const [settings, setSettings] = useState<ReferencePanelSettings>(() =>
@@ -358,8 +379,11 @@ export function StudioReferencePanel({
   const [colorAnalysisError, setColorAnalysisError] = useState<string | null>(null);
   const [colorAnalysisNonce, setColorAnalysisNonce] = useState(0);
   const [paletteColors, setPaletteColors] = useState<string[]>([]);
+  const [arrangeMenuOpen, setArrangeMenuOpen] = useState(false);
+  const [arrangeBusy, setArrangeBusy] = useState(false);
   const [eyedropperActive, setEyedropperActive] = useState(false);
   const [pickedColor, setPickedColor] = useState<string | null>(null);
+  const [registeredPaletteColors, setRegisteredPaletteColors] = useState<string[]>([]);
   const [colorInteractionStatus, setColorInteractionStatus] = useState<string | null>(null);
 
   const panelDragSessionRef = useRef<PanelDragSession | null>(null);
@@ -381,7 +405,9 @@ export function StudioReferencePanel({
   const requestIdRef = useRef(0);
   const legacyMigrationAttemptedRef = useRef(false);
   const colorRasterRef = useRef<ReferenceColorRasterCache | null>(null);
+  const arrangeHueRequestRef = useRef(0);
   const onPickColorRef = useRef(onPickColor);
+  const onRegisterPaletteColorRef = useRef(onRegisterPaletteColor);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dropDepthRef = useRef(0);
   const importInFlightRef = useRef(false);
@@ -397,6 +423,7 @@ export function StudioReferencePanel({
   latestDocumentRef.current = document;
   onChangeRef.current = onChange;
   onPickColorRef.current = onPickColor;
+  onRegisterPaletteColorRef.current = onRegisterPaletteColor;
   importDocumentScopeRef.current = document;
   importOpenScopeRef.current = open;
 
@@ -409,6 +436,10 @@ export function StudioReferencePanel({
     : null;
   const selectedColorSource = effectiveSelectedAsset?.dataUrl ?? null;
   const colorPickingEnabled = typeof onPickColor === "function";
+  const pickedColorInfo = pickedColor ? describeStudioReferencePickedColor(pickedColor) : null;
+  const pickedColorRegistered = pickedColorInfo
+    ? registeredPaletteColors.includes(pickedColorInfo.hex)
+    : false;
 
   function updateSettings(
     updater: (previous: ReferencePanelSettings) => ReferencePanelSettings,
@@ -1023,6 +1054,9 @@ export function StudioReferencePanel({
     const pickColor = onPickColorRef.current;
     if (!pickColor) return;
     pickColor(hex);
+    // 같은 동작으로 팔레트에도 등록한다(별도 저장 버튼 없음). 호스트 콜백이 있으면 함께 알린다.
+    onRegisterPaletteColorRef.current?.(hex);
+    setRegisteredPaletteColors((previous) => registerStudioReferencePickedColor(previous, hex).colors);
     setPickedColor(hex);
     setColorInteractionStatus(`${hex} 색상을 기본색으로 선택했습니다.`);
   }
@@ -1301,14 +1335,89 @@ export function StudioReferencePanel({
     setTransformPreview(null);
   }
 
-  function arrangeReferenceCanvas(): void {
-    const next = arrangeStudioReferenceCanvas(latestDocumentRef.current);
+  function applyArrangedDocument(next: StudioReferenceBoardDocument, message: string): void {
     if (!emitDocumentChange(next)) return;
     itemTransformSessionRef.current = null;
     itemTransformPreviewRef.current = null;
     setDragPreview(null);
     setTransformPreview(null);
-    setImportStatus("레퍼런스를 한눈에 비교할 수 있도록 정돈했습니다.");
+    setImportStatus(message);
+  }
+
+  /** Intrinsic sizes for items whose document descriptor omits them (asset-library fallback). */
+  function arrangeDimensions(): Map<string, { width: number; height: number }> {
+    const dimensions = new Map<string, { width: number; height: number }>();
+    for (const item of latestDocumentRef.current.items) {
+      if (item.asset.width && item.asset.height) continue;
+      const asset = resolveReferenceAsset(item, assets);
+      if (asset) dimensions.set(item.id, { width: asset.width, height: asset.height });
+    }
+    return dimensions;
+  }
+
+  /** Dominant hue per item from the same palette extraction the inspector already uses. */
+  async function resolveDominantHues(): Promise<Map<string, number>> {
+    const hues = new Map<string, number>();
+    for (const item of latestDocumentRef.current.items) {
+      const asset = resolveReferenceAsset(item, assets);
+      if (!asset || !isStudioReferenceLocalRasterDataUrl(asset.dataUrl)) continue;
+      try {
+        const raster = await loadStudioReferenceImageRaster(asset.dataUrl);
+        const [dominant] = extractStudioReferencePalette(raster, { count: 1 });
+        const hue = dominant ? referenceHueFromHex(dominant) : null;
+        if (hue !== null) hues.set(item.id, hue);
+      } catch {
+        // Undecodable images simply sort last under the hue criterion.
+      }
+    }
+    return hues;
+  }
+
+  function arrangeReferenceCanvas(sort: StudioReferenceBoardArrangeSort): void {
+    setArrangeMenuOpen(false);
+    if (sort !== "hue") {
+      const next = arrangeStudioReferenceBoardByCriteria(latestDocumentRef.current, {
+        sort,
+        dimensions: arrangeDimensions(),
+      });
+      applyArrangedDocument(
+        next,
+        sort === "name"
+          ? "레퍼런스 높이를 맞추고 이름순으로 정돈했습니다."
+          : sort === "size"
+            ? "레퍼런스 높이를 맞추고 크기순으로 정돈했습니다."
+            : "레퍼런스를 한눈에 비교할 수 있도록 정돈했습니다.",
+      );
+      return;
+    }
+    const request = arrangeHueRequestRef.current + 1;
+    arrangeHueRequestRef.current = request;
+    setArrangeBusy(true);
+    setImportStatus("대표 색상을 읽어 정돈하고 있어요.");
+    void resolveDominantHues()
+      .then((hues) => {
+        if (arrangeHueRequestRef.current !== request) return;
+        const total = latestDocumentRef.current.items.length;
+        const next = arrangeStudioReferenceBoardByCriteria(latestDocumentRef.current, {
+          sort,
+          dominantHues: hues,
+          dimensions: arrangeDimensions(),
+        });
+        applyArrangedDocument(
+          next,
+          hues.size < total
+            ? `레퍼런스 높이를 맞추고 대표 색상순으로 정돈했습니다. 색상을 구하지 못한 ${total - hues.size}장은 뒤에 뒀어요.`
+            : "레퍼런스 높이를 맞추고 대표 색상순으로 정돈했습니다.",
+        );
+      })
+      .catch(() => {
+        if (arrangeHueRequestRef.current === request) {
+          setImportStatus("대표 색상을 읽지 못해 정돈을 취소했어요. 잠시 후 다시 시도해 주세요.");
+        }
+      })
+      .finally(() => {
+        if (arrangeHueRequestRef.current === request) setArrangeBusy(false);
+      });
   }
 
   function patchSelectedView(patch: Partial<StudioReferenceBoardItemView>): void {
@@ -1389,13 +1498,21 @@ export function StudioReferencePanel({
           <button
             type="button"
             aria-label="레퍼런스 이미지 자동 정돈"
-            title="겹친 이미지를 한눈에 보이도록 정돈"
-            disabled={document.items.length < 2}
-            className={cx(ICON_BUTTON, "size-8")}
+            aria-haspopup="menu"
+            aria-expanded={arrangeMenuOpen}
+            title="정돈 기준을 골라 겹친 이미지를 한눈에 보이도록 정돈"
+            disabled={document.items.length < 2 || arrangeBusy}
+            className={cx(ICON_BUTTON, "size-8", arrangeMenuOpen && "border-accent/60 bg-accent-soft text-accent")}
             onPointerDown={(event) => event.stopPropagation()}
-            onClick={arrangeReferenceCanvas}
+            onClick={() => {
+              setArrangeMenuOpen((value) => !value);
+              setPickerOpen(false);
+              setInspectorOpen(false);
+              setTransformPreview(null);
+            }}
           >
             <LayoutGrid size={13} aria-hidden />
+            <ChevronDown size={8} aria-hidden />
           </button>
           <button
             type="button"
@@ -1407,6 +1524,7 @@ export function StudioReferencePanel({
             onPointerDown={(event) => event.stopPropagation()}
             onClick={() => {
               setTransformPreview(null);
+              setArrangeMenuOpen(false);
               setInspectorOpen((value) => !value);
             }}
           >
@@ -1423,6 +1541,7 @@ export function StudioReferencePanel({
             onClick={() => {
               setPickerOpen((value) => !value);
               setTransformPreview(null);
+              setArrangeMenuOpen(false);
               setInspectorOpen(false);
             }}
           >
@@ -1453,6 +1572,31 @@ export function StudioReferencePanel({
         </div>
       </header>
 
+      {arrangeMenuOpen ? (
+        <div
+          role="menu"
+          aria-label="자동 정돈 기준"
+          className="absolute right-2 top-12 z-50 w-72 rounded-xl border border-line bg-panel p-1.5 shadow-[0_18px_56px_oklch(0.05_0.01_70/0.48)]"
+        >
+          <p className="px-1.5 pb-1 pt-1 text-[0.6rem] font-semibold leading-relaxed text-fg-3">
+            어떤 기준으로 정돈할까요? 이미지 높이는 모두 같게 맞춰요.
+          </p>
+          {STUDIO_REFERENCE_BOARD_ARRANGE_OPTIONS.map((option) => (
+            <button
+              key={option.sort}
+              type="button"
+              role="menuitem"
+              disabled={arrangeBusy}
+              className="flex w-full flex-col items-start gap-0.5 rounded-lg px-1.5 py-1.5 text-left hover:bg-accent-soft disabled:opacity-50"
+              onClick={() => arrangeReferenceCanvas(option.sort)}
+            >
+              <span className="text-[0.68rem] font-semibold text-fg">{option.label}</span>
+              <span className="text-[0.58rem] leading-relaxed text-fg-3">{option.description}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {preferencesAuthority === "memory-only" ? (
         <p
           role="status"
@@ -1461,6 +1605,34 @@ export function StudioReferencePanel({
         >
           레퍼런스 캔버스 배치는 현재 세션 메모리에서만 유지됩니다.
         </p>
+      ) : null}
+
+      {boardScope?.kind === "episode-team" ? (
+        <p
+          role="status"
+          className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-accent/25 bg-accent-soft/60 px-2 py-1 text-[0.61rem] leading-relaxed text-fg-2"
+        >
+          <Users size={11} aria-hidden className="shrink-0 text-accent" />
+          <span className="font-semibold text-fg">
+            {boardScope.episodeLabel ? `${boardScope.episodeLabel} 팀 보드` : "이 회차 팀 보드"}
+          </span>
+          <span>팀원이 같은 보드를 함께 쌓아요 · 인계 준비도 “참고 자료”와 연결됨 · 이미지는 비교 소스로 바로 쓸 수 있어요</span>
+        </p>
+      ) : boardScope?.kind === "personal" && onCopyToEpisodeBoard ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-line bg-panel px-2 py-1 text-[0.61rem] leading-relaxed text-fg-2">
+          <span className="font-semibold text-fg">개인 보드</span>
+          <span>이 보드는 나만 볼 수 있어요.</span>
+          <button
+            type="button"
+            className="ml-auto rounded-md border border-accent/45 bg-accent-soft px-1.5 py-0.5 font-semibold text-accent hover:border-accent"
+            onClick={() => {
+              onCopyToEpisodeBoard();
+              setImportStatus("이 회차 팀 보드로 복사했어요. 팀원이 같은 보드를 열 수 있어요.");
+            }}
+          >
+            이 회차 보드로 복사
+          </button>
+        </div>
       ) : null}
 
       <div
@@ -1921,6 +2093,28 @@ export function StudioReferencePanel({
             >
               <PencilLine size={13} aria-hidden /> 이 이미지로 따라 그리기
             </button>
+            {onSendItemToCompare ? (
+              <button
+                type="button"
+                className={cx(
+                  CONTROL_BUTTON,
+                  "mb-2 w-full border-line bg-raised text-fg hover:border-accent/60 hover:bg-accent-soft hover:text-accent",
+                )}
+                disabled={!effectiveSelectedAsset}
+                title={
+                  effectiveSelectedAsset
+                    ? "선택한 이미지를 비교 검수 소스 풀에 넣습니다."
+                    : "이 기기에서 원본 에셋을 찾을 수 없습니다."
+                }
+                onClick={() => {
+                  if (!effectiveSelectedAsset) return;
+                  onSendItemToCompare(effectiveSelectedItem, effectiveSelectedAsset);
+                  setImportStatus("비교 검수 소스 풀에 보냈어요. 검수실 비교 탭에서 나란히 볼 수 있어요.");
+                }}
+              >
+                <Columns2 size={13} aria-hidden /> 비교 검수 소스로 보내기
+              </button>
+            ) : null}
             <div className="space-y-1.5">
               <ReferenceRangeControl
                 label="크기"
@@ -2066,6 +2260,58 @@ export function StudioReferencePanel({
                   <p role="status" aria-live="polite" className="mt-1 text-[0.62rem] leading-relaxed text-fg-2">
                     {colorInteractionStatus}
                   </p>
+                ) : null}
+
+                {pickedColorInfo ? (
+                  <div
+                    aria-label="찍은 색 정보"
+                    className="mt-2 flex items-center gap-2 rounded-lg border border-line bg-card/60 p-2"
+                  >
+                    <span
+                      className="size-9 shrink-0 rounded-md border border-line/70"
+                      style={{ backgroundColor: pickedColorInfo.hex }}
+                      aria-hidden
+                    />
+                    <div className="min-w-0 flex-1 text-[0.62rem] leading-relaxed text-fg-2">
+                      <p className="font-semibold text-fg">{pickedColorInfo.hex.toUpperCase()}</p>
+                      <p>{pickedColorInfo.rgbLabel}</p>
+                      <p>{pickedColorInfo.hsvLabel}</p>
+                    </div>
+                    {pickedColorRegistered ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[0.6rem] font-bold text-accent">
+                        <Check size={10} aria-hidden /> 팔레트 등록됨
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {registeredPaletteColors.length > 0 ? (
+                  <div className="mt-2">
+                    <p className="text-[0.62rem] font-semibold text-fg-2">찍은 색 팔레트</p>
+                    <div role="group" aria-label="찍은 색 팔레트" className="mt-1.5 flex flex-wrap gap-1.5">
+                      {registeredPaletteColors.map((hex) => (
+                        <button
+                          key={hex}
+                          type="button"
+                          aria-label={`${hex} 팔레트 색상 선택`}
+                          aria-pressed={pickedColorInfo?.hex === hex}
+                          title={`${hex} 기본색으로 선택`}
+                          className={cx(
+                            "relative grid size-11 place-items-center rounded-lg border bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                            pickedColorInfo?.hex === hex ? "border-accent" : "border-line hover:border-line-strong"
+                          )}
+                          onClick={() => applyReferenceColor(hex)}
+                          onKeyDown={exitReferenceEyedropperFromKeyboard}
+                        >
+                          <span
+                            className="size-7 rounded-md border border-line/70"
+                            style={{ backgroundColor: hex }}
+                            aria-hidden
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ) : null}
               </section>
             ) : null}

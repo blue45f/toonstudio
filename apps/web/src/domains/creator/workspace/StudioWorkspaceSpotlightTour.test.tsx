@@ -96,6 +96,24 @@ describe("studio workspace spotlight tour", () => {
     await waitFor(() => expect(window.localStorage.getItem(WORKSPACE_TOUR_STORAGE_KEY)).toBe("done"));
   });
 
+  it("프로젝트가 없으면 첫 작품 시작 문구로 분기한다 (F2.5)", async () => {
+    render(
+      <>
+        <div data-tour-target="continue" />
+        <div data-tour-target="quick-actions" />
+        <div data-tour-target="tools" />
+        <StudioWorkspaceSpotlightTour ready hasProject={false} />
+      </>,
+    );
+    const dialog = await screen.findByRole("dialog", { name: "스포트라이트 투어" });
+    expect(dialog.textContent).toContain("여기서 첫 작품을 시작하세요");
+    expect(dialog.textContent).not.toContain("작업을 이어가세요");
+
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    await waitFor(() => expect(dialog.textContent).toContain("시작 방법은 세 가지예요"));
+    expect(dialog.textContent).not.toContain("원고 검수");
+  });
+
   it("skips immediately and remembers the choice", async () => {
     renderTour();
     await screen.findByRole("dialog", { name: "스포트라이트 투어" });

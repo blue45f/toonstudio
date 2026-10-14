@@ -747,6 +747,10 @@ import {
   flipNormalizedPoint,
   MAGIC_WAND_TOLERANCE_DEFAULT,
 } from "./studio-magic-wand";
+import {
+  QUICK_SELECTION_TOLERANCE_DEFAULT,
+  quickSelectionToleranceFromSlider,
+} from "./studio-quick-selection";
 import { bindStudioMainMenuEditorActions } from "./studio-main-menu-editor-bindings";
 import { buildStudioMainMenuGroups } from "./studio-main-menu-groups";
 import { studioBrushLabHref } from "./studio-main-menu-items-brush";
@@ -4476,11 +4480,12 @@ export function StudioCuttoonEditor({
     | SelectionToolKind
     | "circle"
     | "wand"
+    | "quick-select"
     | "color-range";
   type PendingPixelSelectionRasterGesture = {
     runId: number;
     pointerId: number;
-    tool: SelectionToolKind | "wand";
+    tool: SelectionToolKind | "wand" | "quick-select";
     forceCircle: boolean;
     combine: SelectionOperationMode;
     start: { x: number; y: number };
@@ -4496,7 +4501,7 @@ export function StudioCuttoonEditor({
   const pixelMarqueeRasterPreparationActivationRef = useRef<{
     forceCircle: boolean;
     runId: number;
-    tool: SelectionToolKind | "wand";
+    tool: SelectionToolKind | "wand" | "quick-select";
   } | null>(null);
   const studioRasterRetouchPreparationRef = useRef<{
     runId: number;
@@ -11717,7 +11722,7 @@ export function StudioCuttoonEditor({
   const pixelSelectionDocumentHistoryOwnsLatestEditRef = useRef(false);
   // "wand"는 이 파일에서만 쓰는 로컬 확장 — StudioSelectionToolsPanel의 activeTool prop은 여전히
   // SelectionToolKind만 받으므로(export 자체는 안 건드림), 그 패널에 넘길 때는 wand를 null로 좁힌다.
-  const [pixelTool, setPixelTool] = useState<SelectionToolKind | "wand" | null>(null);
+  const [pixelTool, setPixelTool] = useState<SelectionToolKind | "wand" | "quick-select" | null>(null);
   /** 원형 선택 — ellipse 도구를 정원으로 강제. */
   const [pixelForceCircle, setPixelForceCircle] = useState(false);
   /** 리퀴파이 푸시 브러시. */
@@ -11793,6 +11798,24 @@ export function StudioCuttoonEditor({
   const [wandTolerance, setWandTolerance] = useState(MAGIC_WAND_TOLERANCE_DEFAULT);
   const pixelWandRunIdRef = useRef(0);
   const pixelWandActiveRunIdRef = useRef<number | null>(null);
+  // 빠른 선택 브러시 — 허용 오차는 슬라이더 단위(0..60)로 보관하고 스캔 시 정규화해 넘긴다.
+  const [quickSelectTolerance, setQuickSelectTolerance] = useState(QUICK_SELECTION_TOLERANCE_DEFAULT);
+  const quickSelectRunIdRef = useRef(0);
+  const quickSelectActiveRunIdRef = useRef<number | null>(null);
+  type QuickSelectStrokeSession = {
+    elId: string;
+    frame: SelectionFrame;
+    points: SelPoint[];
+    radiusNorm: number;
+    target: ImageEl & El;
+    base: PixelSelection | null;
+    combine: SelectionOperationMode;
+    mutationTicket: ReturnType<typeof captureStudioMutationTicket>;
+    scanInFlight: boolean;
+    scanQueued: boolean;
+    finished: boolean;
+  };
+  const quickSelectDragRef = useRef<QuickSelectStrokeSession | null>(null);
   // 색상 범위 선택(포토샵 Select > Color Range) — 샘플은 다중, pick 무장 상태만 disarm 대상.
   const [colorRangePickActive, setColorRangePickActive] = useState(false);
   const [colorRangeSamples, setColorRangeSamples] = useState<ColorRangeSample[]>([]);
@@ -12230,6 +12253,9 @@ export function StudioCuttoonEditor({
       setPixelBusy(false);
       pixelWandRunIdRef.current += 1; // 요소가 바뀌면 진행 중인 매직완드 스캔 결과를 무효화한다.
       pixelWandActiveRunIdRef.current = null;
+      quickSelectRunIdRef.current += 1; // 빠른 선택 스캔도 같은 이유로 무효화한다.
+      quickSelectActiveRunIdRef.current = null;
+      quickSelectDragRef.current = null;
     }
     colorRangeRunIdRef.current += 1; // 색상 범위 스캔도 함께 무효화 — 샘플은 다른 이미지 기준이라 비운다.
     colorRangeAbortRef.current?.abort();
@@ -16665,6 +16691,12 @@ const puppetWarpArmed =
       pixelWandActiveRunIdRef.current = null;
       setPixelBusy(false);
     }
+    if (quickSelectActiveRunIdRef.current !== null) {
+      quickSelectRunIdRef.current += 1;
+      quickSelectActiveRunIdRef.current = null;
+      setPixelBusy(false);
+    }
+    quickSelectDragRef.current = null;
     if (colorRangeActiveRunIdRef.current !== null) {
       colorRangeRunIdRef.current += 1;
       colorRangeAbortRef.current?.abort();
@@ -20140,6 +20172,113 @@ const puppetWarpArmed =
     }
   }
 
+  // 빠른 선택 브러시 — 문지르는 궤적을 시드로 삼아 경계를 따라 선택을 성장시킨다.
+  // 스트로크 시작 시점의 선택 스냅샷(base)을 기준으로 매 스캔을 다시 커밋하므로,
+  // 문지를수록(시드가 늘수록) 선택이 자라는 라이브 성장이 되고, 기록은 coalesceKey로 합쳐진다.
+  async function runQuickSelectionStroke(pos: { x: number; y: number }, frame: SelectionFrame) {
+    if (pixelBusy || selected?.type !== "image") return;
+    await runQuickSelectionStrokeStartOnTarget(selected, pos, frame);
+  }
+
+  async function runQuickSelectionStrokeStartOnTarget(
+    target: ImageEl & El,
+    pos: { x: number; y: number },
+    frame: SelectionFrame,
+    opts?: { immediate?: boolean },
+  ) {
+    if (
+      activeSurfaceReviewLockedRef.current
+      || isEffectivelyLocked(target, groups)
+      || isEffectivelyHidden(target, groups)
+    ) {
+      setError("빠른 선택 대상 레이어의 표시·잠금 상태를 확인해 주세요.");
+      return;
+    }
+    const start = canvasPointToNormalized(pos.x, pos.y, frame);
+    const session: QuickSelectStrokeSession = {
+      elId: target.id,
+      frame,
+      points: [start],
+      radiusNorm: pixelBrushRadius / Math.max(1, frame.width),
+      target,
+      base: selectionOperationBase(pixelSelRef.current, pixelCombine),
+      combine: pixelCombine,
+      mutationTicket: captureStudioMutationTicket(),
+      scanInFlight: false,
+      scanQueued: false,
+      finished: false,
+    };
+    if (opts?.immediate) {
+      // 래스터 준비 재생 경로 — 실제 포인터가 없으니 한 번의 스캔으로 확정한다.
+      await finishQuickSelectionStroke(session);
+      return;
+    }
+    quickSelectDragRef.current = session;
+    setPixelBusy(true);
+    await scanQuickSelectionSession(session);
+  }
+
+  async function scanQuickSelectionSession(session: QuickSelectStrokeSession) {
+    if (session.scanInFlight) {
+      session.scanQueued = true;
+      return;
+    }
+    session.scanInFlight = true;
+    const runId = ++quickSelectRunIdRef.current;
+    quickSelectActiveRunIdRef.current = runId;
+    try {
+      const { quickSelectionScanFromImage } = await loadStudioPixelEditBrushRuntime();
+      const region = await quickSelectionScanFromImage(
+        session.target.src,
+        { points: session.points.slice(), radiusNorm: session.radiusNorm },
+        quickSelectionToleranceFromSlider(quickSelectTolerance),
+        { flipX: session.target.flipped, flipY: session.target.flippedY },
+      );
+      if (!canApplyStudioMutation(session.mutationTicket)) return;
+      if (runId !== quickSelectRunIdRef.current) return; // 요소 변경·새 스트로크로 무효화됨.
+      if (activePixelSelectionElementId() !== session.target.id) return;
+      commitPixelSelectionState(
+        () => applyMagicWandRegionToSelection(
+          session.base,
+          region,
+          selectionCombineModeForOperation(session.combine),
+        ),
+        "magic-wand",
+        `quick-selection:${session.target.id}`,
+      );
+    } catch (err) {
+      if (runId === quickSelectRunIdRef.current) {
+        setError(err instanceof Error ? err.message : "문지른 자리에서 선택할 영역을 찾지 못했어요.");
+      }
+    } finally {
+      session.scanInFlight = false;
+      if (quickSelectActiveRunIdRef.current === runId) {
+        quickSelectActiveRunIdRef.current = null;
+      }
+      if (session.scanQueued && (quickSelectDragRef.current === session || session.finished)) {
+        // 진행 중 스캔 뒤에 한 번 더 — 종료된 세션이면 이 재실행이 최종 확정 스캔이다.
+        session.scanQueued = false;
+        void scanQuickSelectionSession(session);
+      } else if (session.finished) {
+        setPixelBusy(false);
+      }
+    }
+  }
+
+  // 스테이지 move 핸들러가 궤적 점을 추가할 때마다 호출 — 스캔이 겹치지 않게 스로틀한다.
+  function scheduleQuickSelectionStrokeScan(session: QuickSelectStrokeSession) {
+    if (session.finished) return;
+    void scanQuickSelectionSession(session);
+  }
+
+  // 스테이지 up 핸들러(또는 재생 경로)가 호출 — 최종 궤적으로 한 번 더 스캔해 확정한다.
+  async function finishQuickSelectionStroke(session: QuickSelectStrokeSession) {
+    session.finished = true;
+    if (quickSelectDragRef.current === session) quickSelectDragRef.current = null;
+    await scanQuickSelectionSession(session);
+    if (quickSelectActiveRunIdRef.current === null) setPixelBusy(false);
+  }
+
   // ── 색상 범위 선택(Select > Color Range) — 무장 pick 으로 샘플을 모으고, 이미지 전체를
   // redmean 유사도로 스캔해 매직완드와 같은 벡터 선택 파이프라인에 태운다. ──
   async function runColorRangeSample(p: { x: number; y: number }) {
@@ -22698,7 +22837,7 @@ const puppetWarpArmed =
   function journalPendingPixelSelectionRasterGesture(input: {
     event: PointerEvent;
     position: { x: number; y: number };
-    tool: SelectionToolKind | "wand";
+    tool: SelectionToolKind | "wand" | "quick-select";
     forceCircle: boolean;
     captureFallback: Element | null;
   }): boolean {
@@ -23185,6 +23324,10 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     runAdvancedFillAt,
     runColorRangeSample,
     runMagicWandSelect,
+    runQuickSelectionStroke,
+    quickSelectDragRef,
+    scheduleQuickSelectionStrokeScan,
+    finishQuickSelectionStroke,
     scheduleLiquifyLivePreview,
     session,
     setActiveGroupId,
@@ -23792,7 +23935,7 @@ function clearSelectionForEdit() {
   }
   function pixelSelectionToolForActivation(
     kind: PixelSelectionActivationKind,
-  ): SelectionToolKind | "wand" | null {
+  ): SelectionToolKind | "wand" | "quick-select" | null {
     if (kind === "color-range") return null;
     return kind === "circle" ? "ellipse" : kind;
   }
@@ -23941,6 +24084,17 @@ function clearSelectionForEdit() {
               composite,
               pending.current,
               frame,
+            );
+          });
+        } else if (pending.tool === "quick-select") {
+          clearPendingPixelSelectionRasterGesture();
+          // 브러시 궤적은 재생할 수 없으니 탭 지점 한 곳을 시드로 즉시 확정한다.
+          globalThis.requestAnimationFrame(() => {
+            void runQuickSelectionStrokeStartOnTarget(
+              composite,
+              pending.current,
+              frame,
+              { immediate: true },
             );
           });
         } else if (pending.tool === "poly-lasso") {

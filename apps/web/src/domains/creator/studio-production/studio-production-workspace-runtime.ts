@@ -1,5 +1,10 @@
 import { studioReviewTaskReferenceSchema, studioReviewTaskReferencesAreValid, type StudioReviewTaskReference } from "@toonstudio/studio-project-model";
 import type { StudioLocalDatabase } from "../studio-local-database";
+import {
+  parsePitchDocument,
+  pitchDocumentHasContent,
+  type ProductionPitchDocument,
+} from "./studio-pitch-document";
 
 export const STUDIO_PRODUCTION_NAMESPACE = "studio-production-command-center-v1";
 export const STUDIO_PRODUCTION_WORKSPACE_VERSION = 3 as const;
@@ -200,6 +205,8 @@ export interface ProductionWorkspace {
   readonly handoffs: readonly ProductionHandoffBrief[];
   readonly versions: readonly ProductionVersionSnapshot[];
   readonly slides: readonly ProductionPitchSlide[];
+  /** 기획서(로그라인·시놉시스·캐릭터·연재 계획). 기존 저장본과의 호환을 위해 선택 필드로 둔다. */
+  readonly pitchDocument?: ProductionPitchDocument;
   readonly members: readonly string[];
   /** Legacy local token only. It is never a server authorization credential. */
   readonly inviteToken: string | null;
@@ -255,7 +262,12 @@ const MAX_REVIEWS = 1_000;
 const MAX_HIERARCHY_NODES = 2_000;
 const MAX_ROLE_ASSIGNMENTS = 500;
 const MAX_HANDOFFS = 1_000;
-const MAX_VERSIONS = 200;
+/** Retention scope for project checkpoints: only the newest 200 snapshots are
+ * kept per project scope. Creation trims the oldest entries (see
+ * prependProductionVersionSnapshot); stored documents above the cap are still
+ * rejected by the parser so corrupt or foreign data never loads silently. */
+export const MAX_PRODUCTION_VERSION_SNAPSHOTS = 200;
+const MAX_VERSIONS = MAX_PRODUCTION_VERSION_SNAPSHOTS;
 const MAX_SLIDES = 200;
 const MAX_MEMBERS = 200;
 const MAX_LIST_ITEMS = 128;
@@ -678,6 +690,47 @@ function parseVersion(value: unknown): ProductionVersionSnapshot | null {
   };
 }
 
+/** Captures the restorable project state of a workspace as one snapshot. */
+export function buildProductionVersionSnapshot(input: {
+  readonly id: string;
+  readonly name: string;
+  readonly createdAt: string;
+  readonly workspace: Pick<
+    ProductionWorkspace,
+    "tasks" | "reviews" | "hierarchy" | "roleAssignments" | "handoffs"
+  >;
+}): ProductionVersionSnapshot {
+  return {
+    id: input.id,
+    name: input.name,
+    createdAt: input.createdAt,
+    tasks: input.workspace.tasks,
+    reviews: input.workspace.reviews,
+    hierarchy: input.workspace.hierarchy,
+    roleAssignments: input.workspace.roleAssignments,
+    handoffs: input.workspace.handoffs,
+  };
+}
+
+/**
+ * Prepends a snapshot to a project's checkpoint log, enforcing the retention
+ * scope (MAX_PRODUCTION_VERSION_SNAPSHOTS): the oldest entries beyond the cap
+ * are dropped instead of letting the next commit fail validation. When
+ * `preserve` names the snapshot being restored, it is kept in the log even if
+ * trimming would otherwise evict it, so the restore source never disappears.
+ */
+export function prependProductionVersionSnapshot(
+  versions: readonly ProductionVersionSnapshot[],
+  snapshot: ProductionVersionSnapshot,
+  preserve?: ProductionVersionSnapshot,
+): readonly ProductionVersionSnapshot[] {
+  const next = [snapshot, ...versions].slice(0, MAX_PRODUCTION_VERSION_SNAPSHOTS);
+  if (preserve && !next.some((version) => version.id === preserve.id)) {
+    return [...next.slice(0, MAX_PRODUCTION_VERSION_SNAPSHOTS - 1), preserve];
+  }
+  return next;
+}
+
 function parseMembers(value: unknown): string[] | null {
   if (!Array.isArray(value) || value.length > MAX_MEMBERS) return null;
   const members = value.map((member) => requiredString(member, MAX_TITLE_LENGTH));
@@ -970,6 +1023,13 @@ export function parseProductionWorkspace(
   const handoffs = handoffsInput.map(parseHandoff);
   const versions = value.versions.map(parseVersion);
   const slides = value.slides.map(parseSlide);
+  const parsedPitchDocument = value.pitchDocument === undefined
+    ? undefined
+    : parsePitchDocument(value.pitchDocument);
+  if (value.pitchDocument !== undefined && parsedPitchDocument === null) {
+    throw new Error("저장된 제작 운영 항목이 올바르지 않습니다.");
+  }
+  const pitchDocument: ProductionPitchDocument | undefined = parsedPitchDocument ?? undefined;
   const members = parseMembers(value.members);
   const inviteToken = value.inviteToken === null || value.inviteToken === undefined
     ? null
@@ -1013,6 +1073,7 @@ export function parseProductionWorkspace(
     ...canonical,
     versions: versions as ProductionVersionSnapshot[],
     slides: slides as ProductionPitchSlide[],
+    ...(pitchDocument !== undefined ? { pitchDocument } : {}),
     members,
     inviteToken,
   };
@@ -1041,6 +1102,7 @@ export function productionWorkspaceHasContent(
     || workspace.handoffs.length > 0
     || workspace.versions.length > 0
     || workspace.slides.length > 0
+    || (workspace.pitchDocument !== undefined && pitchDocumentHasContent(workspace.pitchDocument))
     || workspace.members.length > 0
   );
 }

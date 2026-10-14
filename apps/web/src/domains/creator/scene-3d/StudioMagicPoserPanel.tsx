@@ -41,6 +41,7 @@ import {
   toggleMannequinHandPresetFavorite,
 } from "./studio-mannequin-hand-preset-storage";
 import type {
+  StudioMannequinFingerName,
   StudioMannequinJointId,
   StudioMannequinVec3,
 } from "./studio-mannequin-model";
@@ -116,6 +117,14 @@ export interface StudioMagicPoserScene {
   readonly setJointRotation: (
     jointId: StudioMannequinJointId,
     rotation: StudioMannequinVec3,
+  ) => void;
+  /**
+   * 손가락별 컬(0–100)을 실제 3D 손가락 관절에 반영한다. 호스트가 없으면
+   * 손 실루엣 미리보기만 갱신된다(기존 동작 유지).
+   */
+  readonly setFingerCurls?: (
+    side: "left" | "right",
+    curls: Partial<Record<StudioMannequinFingerName, number>>,
   ) => void;
 }
 
@@ -528,6 +537,8 @@ export function StudioMagicPoserPanel({
       ? ["left", "right"]
       : [handSide];
     for (const side of sides) {
+      // 손가락 컬은 실루엣 미리보기만이 아니라 실제 3D 손가락 관절에도 닿는다.
+      scene.setFingerCurls?.(side, { ...preset.curl });
       const mirror = handMirrored && side === "right";
       const applied = mirror
         ? applyStudioMannequinHandPresetMirrored(preset, side)
@@ -550,12 +561,17 @@ export function StudioMagicPoserPanel({
   function handleFingerCurlChange(finger: StudioHandFingerName, value: number): void {
     const next = { ...fingerCurl, [finger]: clampStudioHandCurlValue(value) };
     setFingerCurl(next);
-    const preset = handPresetId ? getStudioMannequinHandPreset(handPresetId) : undefined;
-    if (!scene || !preset) return;
-    pushPoseHistoryOncePerGesture();
+    if (!scene) return;
     const sides: readonly StudioMannequinHandSide[] = handBoth
       ? ["left", "right"]
       : [handSide];
+    // 프리셋 선택 여부와 무관하게 손가락 관절은 항상 실제 형상에 반영한다.
+    for (const side of sides) {
+      scene.setFingerCurls?.(side, { ...next });
+    }
+    const preset = handPresetId ? getStudioMannequinHandPreset(handPresetId) : undefined;
+    if (!preset) return;
+    pushPoseHistoryOncePerGesture();
     for (const side of sides) {
       const applied = applyStudioMannequinHandPreset(preset, side, next);
       for (const [jointId, rotation] of Object.entries(applied.angles)) {

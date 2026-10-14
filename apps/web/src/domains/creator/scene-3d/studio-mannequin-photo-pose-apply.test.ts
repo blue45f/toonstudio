@@ -113,6 +113,46 @@ describe("createStudioMannequinPhotoPoseApplyPlan", () => {
     expect(plan.pose.pelvisOffset).toEqual([0.2, 0, 0]);
   });
 
+  it("keeps the current legs when the scanner scope is upper body", () => {
+    const plan = createStudioMannequinPhotoPoseApplyPlan({
+      currentPose: {
+        joints: { leftUpperLeg: [0.3, 0, 0], rightUpperLeg: [-0.2, 0, 0] },
+        pelvisOffset: [0, 0, 0],
+      },
+      mediaPipeLandmarks: mediaPipeBody(),
+      mirrorMode: false,
+      minimumVisibility: 0.35,
+      jointScope: "upper",
+    });
+
+    expect(plan.appliedJoints).toContain("leftUpperArm");
+    expect(plan.appliedJoints).not.toContain("leftUpperLeg");
+    expect(plan.appliedJoints).not.toContain("rightUpperLeg");
+    expect(plan.skippedJoints).toContain("leftUpperLeg");
+    expect(plan.pose.joints.leftUpperLeg?.[0]).toBeCloseTo(0.3);
+    expect(plan.pose.joints.rightUpperLeg?.[0]).toBeCloseTo(-0.2);
+  });
+
+  it("applies only arm joints when the scanner scope is arms", () => {
+    const plan = createStudioMannequinPhotoPoseApplyPlan({
+      currentPose: {
+        joints: { spine: [0.1, 0, 0], leftUpperLeg: [0.3, 0, 0] },
+        pelvisOffset: [0, 0, 0],
+      },
+      mediaPipeLandmarks: mediaPipeBody(),
+      mirrorMode: false,
+      minimumVisibility: 0.35,
+      jointScope: "arms",
+    });
+
+    expect(plan.appliedJoints.length).toBeGreaterThan(0);
+    for (const jointId of plan.appliedJoints) {
+      expect(jointId).toMatch(/Shoulder|UpperArm|LowerArm|Hand/);
+    }
+    expect(plan.pose.joints.spine?.[0]).toBeCloseTo(0.1);
+    expect(plan.pose.joints.leftUpperLeg?.[0]).toBeCloseTo(0.3);
+  });
+
   it("fails closed for malformed MediaPipe landmark packets without replacing the current pose", () => {
     const currentPose = {
       joints: { head: [0.1, 0, 0] as const },

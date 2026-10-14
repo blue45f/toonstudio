@@ -1,32 +1,69 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
+import type { CreatorAnalyticsResponse } from "./creator-analytics.dto";
+import { buildMockCreatorAnalytics } from "./creator-analytics.mock";
 import {
   CreatorAnalyticsBadRequestError,
+  CreatorAnalyticsNotConnectedError,
   CreatorAnalyticsService,
+  registerCreatorAnalyticsSource,
 } from "./creator-analytics.service";
 
-describe("CreatorAnalyticsService", () => {
-  const service = new CreatorAnalyticsService();
+afterEach(() => {
+  registerCreatorAnalyticsSource(null);
+});
 
-  it("허용된 기간에 목 애널리틱스를 반환한다", () => {
+describe("CreatorAnalyticsService", () => {
+  it("실제 집계 소스가 없으면 목을 돌려주지 않고 연결 전 에러를 던진다", () => {
+    const service = new CreatorAnalyticsService();
     for (const period of ["7d", "30d", "90d"] as const) {
-      const response = service.getAnalytics(period);
+      try {
+        service.getAnalytics(period);
+        expect.unreachable("연결 전 에러가 던져져야 합니다");
+      } catch (error) {
+        expect(error).toBeInstanceOf(CreatorAnalyticsNotConnectedError);
+        expect((error as CreatorAnalyticsNotConnectedError).statusCode).toBe(404);
+      }
+    }
+  });
+
+  it("명시적 샘플 허용일 때만 목 애널리틱스를 반환한다", () => {
+    const service = new CreatorAnalyticsService();
+    for (const period of ["7d", "30d", "90d"] as const) {
+      const response = service.getAnalytics(period, undefined, { allowSample: true });
       expect(response.period).toBe(period);
       expect(response.mock).toBe(true);
       expect(response.retention.length).toBeGreaterThan(0);
     }
+    const sampled = service.getAnalytics("30d", "series-starfall", { allowSample: true });
+    expect(sampled.seriesId).toBe("series-starfall");
+    expect(sampled.episodes).toHaveLength(8);
   });
 
-  it("seriesId를 지정하면 해당 시리즈를 반환한다", () => {
+  it("등록된 실제 집계 소스의 응답을 mock:false 로 그대로 전달한다", () => {
+    const real: CreatorAnalyticsResponse = {
+      ...buildMockCreatorAnalytics("30d", "series-starfall"),
+      mock: false,
+    };
+    registerCreatorAnalyticsSource({ getAnalytics: () => real });
+    const service = new CreatorAnalyticsService();
     const response = service.getAnalytics("30d", "series-starfall");
-    expect(response.seriesId).toBe("series-starfall");
-    expect(response.episodes).toHaveLength(8);
+    expect(response).toBe(real);
+    expect(response.mock).toBe(false);
   });
 
-  it("잘못된 period에는 400 에러를 던진다", () => {
+  it("주입된 소스가 우선하고, 목 표시를 단 소스 응답은 연결 전으로 처리한다", () => {
+    const fake = new CreatorAnalyticsService({
+      getAnalytics: () => buildMockCreatorAnalytics("30d"),
+    });
+    expect(() => fake.getAnalytics("30d")).toThrow(CreatorAnalyticsNotConnectedError);
+  });
+
+  it("잘못된 period에는 샘플 허용 여부와 무관하게 400 에러를 던진다", () => {
+    const service = new CreatorAnalyticsService();
     for (const bad of ["1y", "", undefined, 30]) {
       try {
-        service.getAnalytics(bad);
+        service.getAnalytics(bad, undefined, { allowSample: true });
         expect.unreachable("에러가 던져져야 합니다");
       } catch (error) {
         expect(error).toBeInstanceOf(CreatorAnalyticsBadRequestError);

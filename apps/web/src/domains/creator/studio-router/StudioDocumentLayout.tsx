@@ -10,7 +10,9 @@ import {
 } from "../live/studio-live-jam-session";
 import { StudioDocumentWorkspaceDock } from "../studio-shell/StudioDocumentWorkspaceDock";
 import { StudioDocumentWorkspaceSwitcher } from "../studio-shell/StudioDocumentWorkspaceSwitcher";
+import { StudioEpisodeStageChipSlot } from "../studio-shell/StudioEpisodeStageChip";
 import { StudioMarketplaceReturnNotice } from "../studio-shell/StudioMarketplaceReturnNotice";
+import { ReturnContextBanner } from "../ReturnContextBanner";
 import { startStudioConnectivityRuntime } from "../offline/studio-connectivity";
 
 import {
@@ -120,8 +122,10 @@ export function StudioDocumentLayout({
   return (
     <StudioDocumentLayoutContext value={runtime}>
       <StudioDocumentWorkspaceSwitcher />
+      <StudioEpisodeStageChipSlot />
       <StudioDocumentWorkspaceDock />
       <StudioMarketplaceReturnNotice />
+      <ReturnContextBanner />
       {children}
       <Suspense fallback={null}>
         <StudioShellFloatingLayoutHost />

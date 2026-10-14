@@ -14,6 +14,12 @@ import {
   type BodySilhouette,
   type BodySilhouetteRing,
 } from "./studio-vrm-body-silhouette";
+import {
+  maxLimbRadiusBetween,
+  sanitizeLimbProfiles,
+  type LimbProfiles,
+  type LimbSegmentId,
+} from "./studio-vrm-limb-profile";
 
 import type { CostumeSlot, CostumeState } from "./studio-vrm-costume";
 
@@ -236,6 +242,12 @@ export interface WardrobeMetrics {
    * 여유분을 얹어 재단된다. 측정 실패·부분 리그에서는 null이고 재단은 골격 폴백을 쓴다.
    */
   torso: BodySilhouette | null;
+  /**
+   * 스킨 메시에서 실측한 팔다리 세그먼트별 둘레(반경 프로파일). 있으면 소매·바짓단·부츠 샤프트가
+   * 뼈 길이 비례식이 아니라 실측 반경 위에 여유분을 얹어 재단된다. 측정 실패·부분 리그에서는
+   * null(또는 세그먼트별 null)이고 재단은 골격 폴백을 쓴다.
+   */
+  limbs: LimbProfiles | null;
 }
 
 /** VRoid 표준 성인 체형 근사값 — 측정 실패 시(또는 테스트) 폴백. */
@@ -253,6 +265,7 @@ export const FALLBACK_WARDROBE_METRICS: WardrobeMetrics = {
   upperLeg: { left: { len: 0.35, axis: [0, -1, 0] }, right: { len: 0.35, axis: [0, -1, 0] } },
   lowerLeg: { left: { len: 0.4, axis: [0, -1, 0] }, right: { len: 0.4, axis: [0, -1, 0] } },
   torso: null,
+  limbs: null,
 };
 
 const LEN_MIN = 0.02;
@@ -307,6 +320,7 @@ export function sanitizeWardrobeMetrics(raw: Partial<WardrobeMetrics> | null | u
     upperLeg: sanitizeSide(raw.upperLeg, f.upperLeg),
     lowerLeg: sanitizeSide(raw.lowerLeg, f.lowerLeg),
     torso: sanitizeBodySilhouette(raw.torso),
+    limbs: sanitizeLimbProfiles(raw.limbs),
   };
 }
 
@@ -1114,7 +1128,12 @@ function shoeParts(
   if (style === "boots" || style === "longboots") {
     // 부츠 샤프트 — 종아리 본을 따라 올라감.
     const coverage = style === "boots" ? 0.4 : 0.88;
-    const r = Math.max(footW * 0.72, lowerLeg.len * 0.15 * fit);
+    // 종아리 실측이 있으면 샤프트는 길이 비례식이 아니라 실측 둘레 + 최소 여유를 따른다.
+    const calfProfile = m.limbs?.[side].lowerLeg;
+    const measuredCalfR = calfProfile
+      ? maxLimbRadiusBetween(calfProfile, 1 - coverage, 1) + 0.01
+      : null;
+    const r = Math.max(footW * 0.72, measuredCalfR ?? lowerLeg.len * 0.15 * fit);
     parts.push(
       limbSleeve(legBone, lowerLeg, {
         start: 1 - coverage,
@@ -1188,6 +1207,62 @@ export function measuredTorsoClearanceM(
   return Number.isFinite(narrowest) ? narrowest : null;
 }
 
+/** 팔다리 본 → 실측 세그먼트·쪽 매핑. 소매·바짓단 클리어런스 측정의 기준표다. */
+const LIMB_BONE_SEGMENTS: Partial<Record<WardrobeBone, { segment: LimbSegmentId; side: Side }>> = {
+  leftUpperArm: { segment: "upperArm", side: "left" },
+  rightUpperArm: { segment: "upperArm", side: "right" },
+  leftLowerArm: { segment: "lowerArm", side: "left" },
+  rightLowerArm: { segment: "lowerArm", side: "right" },
+  leftUpperLeg: { segment: "upperLeg", side: "left" },
+  rightUpperLeg: { segment: "upperLeg", side: "right" },
+  leftLowerLeg: { segment: "lowerLeg", side: "left" },
+  rightLowerLeg: { segment: "lowerLeg", side: "right" },
+};
+
+/**
+ * 실측 재단에서 이 아이템의 소매·바짓단이 실제로 남기는 몸 여유(미터). 못 재면 null.
+ *
+ * 몸통 버전(measuredTorsoClearanceM)과 같은 원칙 — 공식을 다시 쓰지 않고 파츠를 만들어 잰다.
+ * 실린더 파츠마다 덮는 구간(s 범위)의 실측 최대 반경을 빼므로, 체형 모프가 팔다리를 굵게 만들면
+ * 이 값은 즉시 줄어들고 핏 검사가 그 변화를 본다. 실측 프로파일이 없는 세그먼트의 파츠는
+ * 건너뛴다 — 뼈 길이 비례식으로 만든 반경을 실측인 척 보고하지 않는다.
+ */
+export function measuredLimbClearanceM(
+  itemId: string,
+  metricsRaw: WardrobeMetrics,
+  fit = 1,
+): number | null {
+  const m = sanitizeWardrobeMetrics(metricsRaw);
+  if (!m.limbs) return null;
+  const parts = buildGarmentParts(itemId, m, fit);
+  let narrowest = Infinity;
+
+  for (const part of parts) {
+    if (part.shape.kind !== "cylinder") continue;
+    const mapping = LIMB_BONE_SEGMENTS[part.bone];
+    if (!mapping) continue;
+    const profile = m.limbs[mapping.side][mapping.segment];
+    if (!profile) continue;
+    const limb = mapping.segment === "upperArm"
+      ? m.upperArm[mapping.side]
+      : mapping.segment === "lowerArm"
+        ? m.lowerArm[mapping.side]
+        : mapping.segment === "upperLeg"
+          ? m.upperLeg[mapping.side]
+          : m.lowerLeg[mapping.side];
+    if (limb.len <= 0) continue;
+    // 파츠 중심의 축 방향 좌표 ± 높이 절반이 덮는 구간이다. align이 축과 다르면(토러스 등)
+    // 실린더가 아니므로 여기 오지 않는다.
+    const axis = part.align ?? limb.axis;
+    const along = part.offset[0] * axis[0] + part.offset[1] * axis[1] + part.offset[2] * axis[2];
+    const fromS = Math.min(1, Math.max(0, (along - part.shape.h / 2) / limb.len));
+    const toS = Math.min(1, Math.max(0, (along + part.shape.h / 2) / limb.len));
+    const bodyRadius = maxLimbRadiusBetween(profile, fromS, toS);
+    narrowest = Math.min(narrowest, Math.min(part.shape.rTop, part.shape.rBottom) - bodyRadius);
+  }
+  return Number.isFinite(narrowest) ? narrowest : null;
+}
+
 /**
  * 아이템 + 실측 치수 → 본 부착 파츠 스펙 목록.
  * fit은 반경(품)에만 적용되어 길이는 체형을 따른다.
@@ -1203,8 +1278,23 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
   // Keep motion clearance independent from the fit multiplier so a narrower fit cannot
   // collapse the gap between morphed skin and procedural sleeves/trousers.
   const limbClearance = m.torso ? cut.clearanceM * (def.fitProfile.layer === "outer" ? 0.58 : 0.46) : 0;
-  const armR = (side: Side, mul = 1) => Math.max(0.03, m.upperArm[side].len * 0.19) * mul * f + limbClearance;
-  const legR = (side: Side, mul = 1) => Math.max(0.045, m.upperLeg[side].len * 0.175) * mul * f + limbClearance;
+  // 부위별 실측 반경 위에 여유분만 얹는 재단(몸통 실측 재단과 같은 규칙): fit과 스타일 배율은
+  // 몸 쪽이 아니라 여유분에만 곱해진다 — 실측 반경에 곱하면 fit 최소값에서 옷이 살을 파고든다.
+  // 실측이 없는 세그먼트는 기존 뼈 길이 비례식으로 떨어지므로 모델별 부분 실측도 그대로 산다.
+  const limbEaseFactor = def.fitProfile.layer === "outer" ? 0.58 : 0.46;
+  const measuredLimbR = (segment: LimbSegmentId, side: Side, mul: number): number | null => {
+    const profile = m.limbs?.[side][segment];
+    if (!profile) return null;
+    return maxLimbRadiusBetween(profile, 0, 1) + cut.clearanceM * limbEaseFactor * mul * f;
+  };
+  const armR = (side: Side, mul = 1) => measuredLimbR("upperArm", side, mul)
+    ?? Math.max(0.03, m.upperArm[side].len * 0.19) * mul * f + limbClearance;
+  const foreArmR = (side: Side, mul = 1) => measuredLimbR("lowerArm", side, mul)
+    ?? Math.max(0.03, m.upperArm[side].len * 0.19) * mul * f + limbClearance;
+  const legR = (side: Side, mul = 1) => measuredLimbR("upperLeg", side, mul)
+    ?? Math.max(0.045, m.upperLeg[side].len * 0.175) * mul * f + limbClearance;
+  const shinR = (side: Side, mul = 1) => measuredLimbR("lowerLeg", side, mul)
+    ?? Math.max(0.045, m.upperLeg[side].len * 0.175) * mul * f + limbClearance;
   const parts: GarmentPart[] = [];
 
   switch (def.id) {
@@ -1212,7 +1302,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(torsoShell(cut, { rMul: 1.12 * f, roughness: 0.72 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.32), roughness: 0.72 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.94, r: armR(s, 1.2), roughness: 0.72 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.94, r: foreArmR(s, 1.2), roughness: 0.72 }));
       }
       // 카라.
       parts.push({ bone: "spine", shape: { kind: "torus", r: m.shoulderW * 0.3, tube: m.shoulderW * 0.055 }, offset: scaleVec(m.up, m.spineToNeck * 0.9), align: m.up, squash: [1, 1, 0.72], roughness: 0.72 });
@@ -1222,7 +1312,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(torsoShell(cut, { rMul: 1.2 * f, flare: 1, roughness: 0.85 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.42), roughness: 0.85 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.96, r: armR(s, 1.3), roughness: 0.85 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.96, r: foreArmR(s, 1.3), roughness: 0.85 }));
       }
       // 후드(등 뒤 반구) — 앞 방향의 반대로 배치.
       const back = negVec(m.footForward.left);
@@ -1241,7 +1331,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(skirtCone(cut, { len: skirtLen, rTopMul: 1.16 * f, flare: 1.32 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.34), roughness: 0.78 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.96, r: armR(s, 1.22), roughness: 0.78 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.96, r: foreArmR(s, 1.22), roughness: 0.78 }));
       }
       parts.push({ bone: "spine", shape: { kind: "torus", r: m.shoulderW * 0.31, tube: m.shoulderW * 0.06 }, offset: scaleVec(m.up, m.spineToNeck * 0.9), align: m.up, squash: [1, 1, 0.74], roughness: 0.78 });
       break;
@@ -1253,7 +1343,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(skirtCone(cut, { len: skirtLen, rTopMul: 1.12 * f, flare: 1.2 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.3), roughness: 0.72 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.95, r: armR(s, 1.18), roughness: 0.72 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.95, r: foreArmR(s, 1.18), roughness: 0.72 }));
       }
       // V자 라펠과 양쪽 포켓 — 가운 실루엣을 일반 코트와 구분한다.
       for (const side of [-1, 1] as const) {
@@ -1285,10 +1375,10 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(torsoShell(cut, { rMul: 1.1 * f, bottomExt: 3.1, roughness: 0.92 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.0, r: armR(s, 1.3), roughness: 0.92 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.92, r: armR(s, 1.18), roughness: 0.92 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.92, r: foreArmR(s, 1.18), roughness: 0.92 }));
         parts.push({
           bone: s === "left" ? "leftLowerArm" : "rightLowerArm",
-          shape: { kind: "torus", r: armR(s, 1.12), tube: 0.009 },
+          shape: { kind: "torus", r: foreArmR(s, 1.12), tube: 0.009 },
           offset: scaleVec(m.lowerArm[s].axis, m.lowerArm[s].len * 0.88),
           align: m.lowerArm[s].axis,
           roughness: 0.94,
@@ -1346,7 +1436,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
           roughness: 0.32,
           metalness: 0.85,
         });
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.9, r: armR(s, 1.24), roughness: 0.35, metalness: 0.8 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.9, r: foreArmR(s, 1.24), roughness: 0.35, metalness: 0.8 }));
       }
       // 벨트.
       parts.push({ bone: "hips", shape: { kind: "torus", r: Math.max(m.hipW * 0.92, m.shoulderW * 0.4) * f, tube: 0.016 }, offset: scaleVec(m.up, m.hipsToSpine * 0.35), align: m.up, squash: [1, 1, 0.8], color: "#3a2b1c", roughness: 0.6, metalness: 0.2 });
@@ -1358,7 +1448,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(skirtCone(cut, { len: skirtLen, rTopMul: 1.2 * f, flare: 1.6 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.5), roughness: 0.88 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 1.0, r: armR(s, 1.4), flare: 1.7, roughness: 0.88 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 1.0, r: foreArmR(s, 1.4), flare: 1.7, roughness: 0.88 }));
       }
       const back = negVec(m.footForward.left);
       parts.push({
@@ -1427,7 +1517,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(torsoShell(cut, { rMul: 1.05 * f, roughness: 0.68 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.0, r: armR(s, 1.22), roughness: 0.68 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.92, r: armR(s, 1.12), roughness: 0.68 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.92, r: foreArmR(s, 1.12), roughness: 0.68 }));
       }
       // 카라 + 단추 라인.
       parts.push({ bone: "spine", shape: { kind: "torus", r: m.shoulderW * 0.27, tube: m.shoulderW * 0.045 }, offset: scaleVec(m.up, m.spineToNeck * 0.92), align: m.up, squash: [1, 1, 0.72], roughness: 0.68 });
@@ -1446,7 +1536,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(torsoShell(cut, { rMul: 1.12 * f, roughness: 0.95 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.36), roughness: 0.95 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.94, r: armR(s, 1.24), roughness: 0.95 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.94, r: foreArmR(s, 1.24), roughness: 0.95 }));
       }
       // 터틀넥.
       parts.push({ bone: "spine", shape: { kind: "cylinder", rTop: m.shoulderW * 0.21, rBottom: m.shoulderW * 0.24, h: m.spineToNeck * 0.22, open: true }, offset: scaleVec(m.up, m.spineToNeck * 1.0), align: m.up, roughness: 0.95 });
@@ -1586,7 +1676,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
         parts.push(
           limbSleeve(s === "left" ? "leftLowerLeg" : "rightLowerLeg", m.lowerLeg[s], {
             coverage: def.id === "jeans" ? 0.84 : 0.92,
-            r: legR(s, rMul * 0.88),
+            r: shinR(s, rMul * 0.88),
             flare,
             roughness: rough,
           })
@@ -1596,7 +1686,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
           const lower = m.lowerLeg[s];
           parts.push({
             bone: s === "left" ? "leftLowerLeg" : "rightLowerLeg",
-            shape: { kind: "torus", r: legR(s, rMul * 0.82), tube: 0.011 },
+            shape: { kind: "torus", r: shinR(s, rMul * 0.82), tube: 0.011 },
             offset: scaleVec(lower.axis, lower.len * 0.84),
             align: lower.axis,
             color: "#2d4666",
@@ -1606,7 +1696,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
         if (def.id === "wide" || def.id === "scrubpants") {
           parts.push({
             bone: s === "left" ? "leftLowerLeg" : "rightLowerLeg",
-            shape: { kind: "torus", r: legR(s, rMul * flare * 0.86), tube: 0.011 },
+            shape: { kind: "torus", r: shinR(s, rMul * flare * 0.86), tube: 0.011 },
             offset: scaleVec(m.lowerLeg[s].axis, m.lowerLeg[s].len * 0.9),
             align: m.lowerLeg[s].axis,
             roughness: rough,
@@ -1645,7 +1735,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(torsoShell(cut, { rMul: 1.15 * f, roughness: 0.3, metalness: 0.6 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.0, r: armR(s, 1.3), roughness: 0.3, metalness: 0.6 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.94, r: armR(s, 1.2), roughness: 0.3, metalness: 0.6 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.94, r: foreArmR(s, 1.2), roughness: 0.3, metalness: 0.6 }));
       }
       parts.push({ bone: "spine", shape: { kind: "box", w: m.shoulderW * 0.15, h: m.spineToNeck * 0.2, d: 0.02 }, offset: scaleVec(m.up, m.spineToNeck * 0.5), color: "#06b6d4", roughness: 0.1, metalness: 0.9 });
       break;
@@ -1654,7 +1744,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(torsoShell(cut, { rMul: 1.12 * f, roughness: 0.35 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.4), roughness: 0.35 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.96, r: armR(s, 1.35), flare: 1.3, roughness: 0.35 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.96, r: foreArmR(s, 1.35), flare: 1.3, roughness: 0.35 }));
       }
       parts.push({ bone: "spine", shape: { kind: "torus", r: m.shoulderW * 0.28, tube: m.shoulderW * 0.05 }, offset: scaleVec(m.up, m.spineToNeck * 0.94), align: m.up, color: "#f8fafc", roughness: 0.35 });
       break;
@@ -1665,7 +1755,7 @@ export function buildGarmentParts(itemId: string, metricsRaw: WardrobeMetrics, f
       parts.push(skirtCone(cut, { len: skirtLen, rTopMul: 1.18 * f, flare: 1.35 }));
       for (const s of SIDES) {
         parts.push(limbSleeve(s === "left" ? "leftUpperArm" : "rightUpperArm", m.upperArm[s], { seat: armSeat, coverage: 1.02, r: armR(s, 1.35), roughness: 0.85 }));
-        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.96, r: armR(s, 1.25), roughness: 0.85 }));
+        parts.push(limbSleeve(s === "left" ? "leftLowerArm" : "rightLowerArm", m.lowerArm[s], { coverage: 0.96, r: foreArmR(s, 1.25), roughness: 0.85 }));
       }
       parts.push({ bone: "hips", shape: { kind: "torus", r: Math.max(m.hipW * 0.98, m.shoulderW * 0.44) * f, tube: 0.018 }, offset: scaleVec(m.up, m.hipsToSpine * 0.4), align: m.up, color: "#451a03", roughness: 0.6 });
       break;

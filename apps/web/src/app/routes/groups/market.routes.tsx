@@ -50,12 +50,21 @@ const MarketSellerPage = lazyRetry(
   "MarketSellerPage",
 );
 
+/**
+ * 판매 표면 정본 선언 (S1-5, BLUEPRINT §1.2): 정본은 /market/seller
+ * (판매자 센터) 하나다. /market/publish는 센터 등록 탭의 단계형 마법사,
+ * /market/manage는 센터 패키지 관리 탭으로 재정의하되, 두 URL 모두
+ * 딥링크로 그대로 동작한다 — 경로·id는 삭제하거나 바꾸지 않는다.
+ */
 export const marketRoutes = defineAppRoutes([
   { id: "market-home", path: "/market", element: <PageIntro variant="market"><MarketHomePage /></PageIntro> },
   { id: "market-browse", path: "/market/browse", element: <PageIntro variant="market">{withRouteBreadcrumb(resolveBreadcrumbTrail("/market/browse"), <MarketBrowsePage />)}</PageIntro> },
   { id: "market-fit", path: "/market/fit", element: <PageIntro variant="market"><MarketFitLabPage /></PageIntro> },
+  // 판매자 센터 등록 탭 (단계형 마법사) 딥링크 — 정본은 market-seller.
   { id: "market-publish", path: "/market/publish", element: <PageIntro variant="market"><MarketPublishAuthorityPage /></PageIntro> },
+  // 판매자 센터 패키지 관리 탭 딥링크 — 정본은 market-seller.
   { id: "market-manage", path: "/market/manage", element: <PageIntro variant="market"><MarketOwnedResourcesPage /></PageIntro> },
+  // 판매자 센터 정본.
   { id: "market-seller", path: "/market/seller", element: <PageIntro variant="market"><MarketSellerPage /></PageIntro> },
   { id: "market-library", path: "/market/library", element: <PageIntro variant="market"><MarketCloudLibraryPage /></PageIntro> },
   { id: "market-wishlist", path: "/market/wishlist", element: <PageIntro variant="market"><MarketWishlistPage /></PageIntro> },

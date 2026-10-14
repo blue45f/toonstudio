@@ -116,3 +116,78 @@ describe("MarketOwnedResourcesPage listing confirmation", () => {
     expect(mocks.list).toHaveBeenCalledTimes(1);
   });
 });
+
+function twoItemPage() {
+  const base = CREATOR_MARKETPLACE_STARTER_RECORDS[0]!;
+  const listed: CreatorMarketplaceOwnedRelease = {
+    resource: { ...base, id: "res-listed", name: "공개 에셋", isOwner: true },
+    releaseOrdinal: 1,
+    hidden: false,
+    delistedAt: null,
+    packageModeration: { state: "active", revision: 0, hiddenAt: null },
+  };
+  const delisted: CreatorMarketplaceOwnedRelease = {
+    resource: { ...base, id: "res-delisted", name: "비공개 에셋", isOwner: true },
+    releaseOrdinal: 1,
+    hidden: false,
+    delistedAt: "2026-09-08T00:00:00.000Z",
+    packageModeration: { state: "active", revision: 0, hiddenAt: null },
+  };
+  return { items: [listed, delisted], limit: 20, hasMore: false, nextCursor: null };
+}
+
+describe("MarketOwnedResourcesPage bulk processing", () => {
+  it("relist bulk-runs only the selected delisted items and reports the count", async () => {
+    mocks.list.mockResolvedValue(twoItemPage());
+    render(view());
+    fireEvent.click(await screen.findByRole("checkbox", { name: "비공개 에셋 선택" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "공개 에셋 선택" }));
+
+    const relistButton = screen.getByRole("button", { name: "선택 항목 재공개 (1)" });
+    expect(screen.getByRole("button", { name: "선택 항목 내리기 (1)" })).toBeTruthy();
+    fireEvent.click(relistButton);
+
+    await waitFor(() => expect(mocks.relist).toHaveBeenCalledTimes(1));
+    expect(mocks.relist).toHaveBeenCalledWith("res-delisted");
+    expect(mocks.delist).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toContain("선택한 에셋 1개를 공개 목록에 다시 올렸습니다."),
+    );
+  });
+
+  it("unlist bulk requires a second confirming click", async () => {
+    mocks.list.mockResolvedValue(twoItemPage());
+    render(view());
+    fireEvent.click(await screen.findByRole("checkbox", { name: "선택 가능한 항목 전체 선택" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "선택 항목 내리기 (1)" }));
+    expect(mocks.delist).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "정말 1개를 내릴까요?" }));
+
+    await waitFor(() => expect(mocks.delist).toHaveBeenCalledTimes(1));
+    expect(mocks.delist).toHaveBeenCalledWith("res-listed");
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toContain("선택한 에셋 1개를 공개 목록에서 내렸습니다."),
+    );
+  });
+
+  it("reports partial bulk failure in the confirmation and keeps going", async () => {
+    const bulkPage = twoItemPage();
+    bulkPage.items = bulkPage.items.map((item) => ({
+      ...item,
+      delistedAt: "2026-09-08T00:00:00.000Z",
+    }));
+    mocks.list.mockResolvedValue(bulkPage);
+    mocks.relist
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("denied"));
+    render(view());
+    fireEvent.click(await screen.findByRole("checkbox", { name: "선택 가능한 항목 전체 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 항목 재공개 (2)" }));
+
+    await waitFor(() => expect(mocks.relist).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toContain("1개는 실패해 상태가 그대로입니다."),
+    );
+  });
+});

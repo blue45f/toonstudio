@@ -67,6 +67,33 @@ describe("StudioBackgroundPanel SQLite preferences", () => {
     });
   });
 
+  it("shows the photo LT surface only when a placement handler is provided", async () => {
+    const preferences = createUiPreferencesHarness();
+    const { rerender } = render(
+      <StudioBackgroundPanel
+        canvasW={720}
+        canvasH={1_080}
+        currentBg="#ffffff"
+        onApply={vi.fn()}
+        acquireUiPreferences={preferences.acquire}
+      />,
+    );
+    expect(screen.queryByText("사진으로 선화 배경 만들기")).toBeNull();
+
+    rerender(
+      <StudioBackgroundPanel
+        canvasW={720}
+        canvasH={1_080}
+        currentBg="#ffffff"
+        onApply={vi.fn()}
+        onPlacePhotoLtBackground={vi.fn()}
+        acquireUiPreferences={preferences.acquire}
+      />,
+    );
+    expect(screen.getByText("사진으로 선화 배경 만들기")).toBeTruthy();
+    expect(screen.getByText("배경으로 쓸 사진 한 장을 골라 주세요")).toBeTruthy();
+  });
+
   it("keeps the in-session editor usable and visibly marks unavailable persistence", async () => {
     const onApply = vi.fn();
     const { container } = render(

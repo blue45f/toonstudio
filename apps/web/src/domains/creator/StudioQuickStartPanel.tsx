@@ -54,6 +54,7 @@ type StudioQuickStartCopy = {
   saveUndoHint: (undoShortcut: string) => string;
   moreTitle: string;
   moreHint: string;
+  reopenHint: string;
   unassigned: string;
 };
 
@@ -72,6 +73,7 @@ const STUDIO_QUICK_START_COPY = {
     saveUndoHint: (undoShortcut: string) => `Ctrl/⌘S 저장 · ${undoShortcut} 되돌리기`,
     moreTitle: "다른 작업 바로 열기",
     moreHint: "도형·브러시·컷·캐릭터·3D",
+    reopenHint: "닫아도 괜찮아요 — 튜토리얼은 도움말 메뉴 맨 위 '도움말 홈'에서 다시 열 수 있어요.",
     unassigned: "미지정",
   },
   en: {
@@ -88,6 +90,7 @@ const STUDIO_QUICK_START_COPY = {
     saveUndoHint: (undoShortcut: string) => `Ctrl/⌘S save · ${undoShortcut} undo`,
     moreTitle: "Open another tool",
     moreHint: "Shapes · brushes · panels · characters · 3D",
+    reopenHint: "Safe to close — reopen tutorials from Help home at the top of the Help menu.",
     unassigned: "Unassigned",
   },
 } satisfies Record<"ko" | "en", StudioQuickStartCopy>;
@@ -138,9 +141,14 @@ export function StudioQuickStartPanel({
   startCollapsed?: boolean;
 }) {
   const [expanded, setExpanded] = useState(!startCollapsed);
-  // 빈 캔버스 시작 도크가 펼쳐져 있으면 도크가 첫 안내를 맡는다. 코치는 '사용법' 알약으로만 남는다.
+  // 빈 캔버스 시작 도크가 펼쳐져 있으면 도크가 유일한 첫 안내다 (first-run F4.2).
+  // 코치가 '사용법' 알약으로라도 남으면 첫 화면의 안내 표면이 2개가 되므로, 접힌 임베드
+  // (startCollapsed)에서는 도크가 펼쳐진 동안 코치가 아예 물러난다 — 인스펙터 시작 카드
+  // (StudioInspectorEmptyCoachSection)가 같은 신호로 숨는 것과 같은 계약이다.
+  // 도크가 닫히면 코치는 접힌 '사용법' 단일 진입점으로 다시 나타나고, 펼침 상태(expanded)는
+  // 그대로 유지되므로 사용자가 펼쳐 둔 코치가 도크 개폐에 상태를 잃지 않는다.
   const dockExpanded = useStudioCanvasStartDockExpanded();
-  const pill = startCollapsed && dockExpanded && !expanded;
+  const yieldToStartDock = startCollapsed && dockExpanded;
   const translate = useT();
   const language = useI18n((state) => state.lang);
   const korean = language.toLocaleLowerCase().startsWith("ko");
@@ -283,6 +291,11 @@ export function StudioQuickStartPanel({
     };
   }, []);
 
+  // 모든 훅이 돌아간 뒤에서만 물러난다 — 렌더 여부에 따라 훅 순서가 바뀌지 않게 한다.
+  // 물러난 동안 바깥 클릭·캔버스 pointerdown 관찰은 붙지 않는데(root가 없다), 그 조작들은
+  // 도크를 향한 것이고 코치는 접힌 상태라 잃을 상태가 없다.
+  if (yieldToStartDock) return null;
+
   const quickTools: {
     id: "smart-shape" | "brush-kit" | "template" | "character" | "background-3d" | "collab-focus";
     label: string;
@@ -343,10 +356,9 @@ export function StudioQuickStartPanel({
       ref={rootRef}
       data-studio-creative-starter="true"
       data-studio-quickstart-collapsed={!expanded ? "true" : "false"}
-      data-studio-quickstart-pill={pill ? "true" : undefined}
       className={cn(
         "pointer-events-none absolute inset-x-2 top-16 z-[58] mx-auto max-w-[34rem] p-2 text-fg sm:inset-x-auto sm:right-4 sm:top-auto sm:bottom-[calc(var(--studio-draw-options-height,0px)+1rem+var(--studio-page-strip-offset,0px))] sm:mx-0 sm:max-w-none sm:p-0",
-        pill ? "w-fit sm:w-auto" : "sm:w-[min(22rem,calc(100%-2rem))]",
+        "sm:w-[min(22rem,calc(100%-2rem))]",
       )}
     >
       {/* 이름이 붙은 `<section>` 은 그 자체로 `region` 랜드마크다(명시 role 은 중복). 모달이
@@ -358,16 +370,16 @@ export function StudioQuickStartPanel({
         aria-describedby="studio-quick-start-description"
         className={cn(
           "pointer-events-auto flex max-h-[min(20rem,40dvh)] flex-col overflow-hidden border border-line bg-panel/95 shadow-xl backdrop-blur-md sm:max-h-[min(66dvh,calc(100svh-2rem))]",
-          pill ? "rounded-full" : "rounded-lg",
+          "rounded-lg",
         )}
       >
         <header
           className={cn(
             "flex shrink-0 justify-between",
-            pill ? "items-center gap-1 p-1" : "items-start gap-3 border-b border-line px-3 py-2.5",
+            "items-start gap-3 border-b border-line px-3 py-2.5",
           )}
         >
-          <div className={pill ? "sr-only" : "min-w-0"}>
+          <div className="min-w-0">
             <p
               id="studio-quick-start-title"
               className="text-sm font-bold tracking-tight text-fg"
@@ -390,9 +402,8 @@ export function StudioQuickStartPanel({
             onClick={() => setExpanded((value) => !value)}
             className={cn(
               "inline-flex min-h-11 shrink-0 items-center gap-1.5 border border-line px-2 text-xs text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
-              pill ? "rounded-full px-3 font-semibold" : "rounded-lg",
+              "rounded-lg",
             )}>
-            {pill ? <BookOpen size={14} aria-hidden className="text-accent" /> : null}
             {expanded ? "접기" : "사용법"}
           </button> : null}
           <button
@@ -406,7 +417,7 @@ export function StudioQuickStartPanel({
             onClick={dismissFromCard}
             className={cn(
               "grid size-11 shrink-0 touch-manipulation place-items-center border border-line text-fg-2 transition-colors duration-150 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
-              pill ? "rounded-full" : "rounded-lg",
+              "rounded-lg",
             )}
             aria-label={localizeText(t, "빠른 시작 닫기 (Esc)", "studio.quickStart.dismiss")}
             title={localizeText(t, "빠른 시작 닫기 (Esc)", "studio.quickStart.dismiss")}
@@ -588,6 +599,13 @@ export function StudioQuickStartPanel({
               })}
             </div>
           </details>
+
+          <p
+            data-studio-quickstart-reopen-hint="true"
+            className="mt-2.5 border-t border-line px-1 pt-2 text-[0.65rem] leading-snug text-fg-3"
+          >
+            {copy.reopenHint}
+          </p>
         </div>
       </section>
     </div>

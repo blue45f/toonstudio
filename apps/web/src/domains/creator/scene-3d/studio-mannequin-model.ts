@@ -484,6 +484,124 @@ export const STUDIO_MANNEQUIN_BODY_PRESETS: Readonly<
   },
 });
 
+// ── 체형 archetype 프리셋 ────────────────────────────────────────────────────
+// 기존 체형 프리셋은 핵심 7파라미터만 채워 해부·얼굴 파라미터가 기본값으로
+// 남았다. archetype 프리셋은 23종 전 파라미터를 완성해 "8두신 히어로" 같은
+// 웹툰 캐릭터 원형을 원클릭으로 재현한다.
+
+export type StudioMannequinArchetypePresetId =
+  | "hero8"
+  | "romanceLead"
+  | "boy6"
+  | "sd5"
+  | "muscleVillain"
+  | "actionHeroine";
+
+export const STUDIO_MANNEQUIN_ARCHETYPE_PRESETS: Readonly<
+  Record<
+    StudioMannequinArchetypePresetId,
+    { label: string; desc: string; params: StudioMannequinBodyParams }
+  >
+> = Object.freeze({
+  hero8: {
+    label: "8두신 히어로",
+    desc: "넓은 흉곽과 긴 다리, 얇은 허리의 액션 주인공 체형",
+    params: Object.freeze({
+      heightCm: 186, headCount: 8, shoulderWidth: 1.22, pelvisWidth: 0.92,
+      armLength: 1.06, legLength: 1.12, build: 2.1,
+      faceWidth: 0.92, chinLength: 1.05, eyeScale: 1.05, noseHeight: 1.05,
+      torsoDepth: 1.15, chestWidth: 1.2, pelvisDepth: 1.0, waistWidth: 0.85,
+      limbThickness: 1.1, upperArmThickness: 1.2, forearmThickness: 1.1,
+      thighThickness: 1.15, calfThickness: 1.1, handScale: 1.05, footScale: 1.05,
+      neckThickness: 1.15,
+    }),
+  },
+  romanceLead: {
+    label: "8.5두신 로맨스 남주",
+    desc: "긴 다리와 날렵한 턱선, 과하지 않은 근육의 로맨스 주인공 체형",
+    params: Object.freeze({
+      heightCm: 188, headCount: 8.5, shoulderWidth: 1.15, pelvisWidth: 0.9,
+      armLength: 1.05, legLength: 1.15, build: 1.4,
+      faceWidth: 0.88, chinLength: 1.12, eyeScale: 1.1, noseHeight: 1.05,
+      torsoDepth: 1.05, chestWidth: 1.1, pelvisDepth: 0.95, waistWidth: 0.9,
+      limbThickness: 1.0, upperArmThickness: 1.05, forearmThickness: 1.0,
+      thighThickness: 1.05, calfThickness: 1.05, handScale: 1.1, footScale: 1.05,
+      neckThickness: 1.05,
+    }),
+  },
+  boy6: {
+    label: "6두신 소년",
+    desc: "아직 마른 어깨와 큰 눈의 소년 주인공 체형",
+    params: Object.freeze({
+      heightCm: 158, headCount: 6, shoulderWidth: 0.92, pelvisWidth: 0.94,
+      armLength: 0.98, legLength: 1.0, build: 0.7,
+      faceWidth: 1.05, chinLength: 0.9, eyeScale: 1.15, noseHeight: 0.9,
+      torsoDepth: 0.9, chestWidth: 0.9, pelvisDepth: 0.9, waistWidth: 0.9,
+      limbThickness: 0.9, upperArmThickness: 0.9, forearmThickness: 0.9,
+      thighThickness: 0.95, calfThickness: 0.95, handScale: 0.95, footScale: 1.0,
+      neckThickness: 0.9,
+    }),
+  },
+  sd5: {
+    label: "5두신 SD",
+    desc: "큰 머리와 통통한 사지의 SD/개그 컷 체형",
+    params: Object.freeze({
+      heightCm: 132, headCount: 5, shoulderWidth: 0.84, pelvisWidth: 0.9,
+      armLength: 0.88, legLength: 0.86, build: 1.8,
+      faceWidth: 1.22, chinLength: 0.78, eyeScale: 1.25, noseHeight: 0.82,
+      torsoDepth: 1.05, chestWidth: 1.0, pelvisDepth: 1.05, waistWidth: 1.05,
+      limbThickness: 1.05, upperArmThickness: 1.05, forearmThickness: 1.05,
+      thighThickness: 1.1, calfThickness: 1.05, handScale: 1.1, footScale: 1.1,
+      neckThickness: 0.95,
+    }),
+  },
+  muscleVillain: {
+    label: "근육질 악역",
+    desc: "최대 흉곽·상완과 두꺼운 목으로 위압감을 주는 악역 체형",
+    params: Object.freeze({
+      heightCm: 192, headCount: 7.6, shoulderWidth: 1.3, pelvisWidth: 1.0,
+      armLength: 1.08, legLength: 1.0, build: 2.9,
+      faceWidth: 0.95, chinLength: 1.1, eyeScale: 0.95, noseHeight: 1.1,
+      torsoDepth: 1.3, chestWidth: 1.32, pelvisDepth: 1.1, waistWidth: 1.0,
+      limbThickness: 1.3, upperArmThickness: 1.38, forearmThickness: 1.3,
+      thighThickness: 1.35, calfThickness: 1.3, handScale: 1.2, footScale: 1.15,
+      neckThickness: 1.3,
+    }),
+  },
+  actionHeroine: {
+    label: "7.5두신 액션 여주",
+    desc: "긴 다리와 단단한 허벅지, 민첩한 실루엣의 액션 여주인공 체형",
+    params: Object.freeze({
+      heightCm: 172, headCount: 7.5, shoulderWidth: 1.0, pelvisWidth: 1.06,
+      armLength: 1.02, legLength: 1.1, build: 1.3,
+      faceWidth: 0.9, chinLength: 1.0, eyeScale: 1.12, noseHeight: 0.95,
+      torsoDepth: 1.0, chestWidth: 1.02, pelvisDepth: 1.05, waistWidth: 0.88,
+      limbThickness: 1.0, upperArmThickness: 1.0, forearmThickness: 0.95,
+      thighThickness: 1.1, calfThickness: 1.05, handScale: 0.95, footScale: 1.0,
+      neckThickness: 0.95,
+    }),
+  },
+});
+
+export function isStudioMannequinArchetypePresetId(
+  value: unknown,
+): value is StudioMannequinArchetypePresetId {
+  return (
+    typeof value === "string"
+    && Object.prototype.hasOwnProperty.call(STUDIO_MANNEQUIN_ARCHETYPE_PRESETS, value)
+  );
+}
+
+/** archetype 프리셋 파라미터를 정규화해 돌려준다. 알 수 없는 id는 기본 체형으로 fail-closed. */
+export function resolveStudioMannequinArchetypeParams(
+  presetId: unknown,
+): StudioMannequinBodyParams {
+  if (!isStudioMannequinArchetypePresetId(presetId)) {
+    return STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS;
+  }
+  return clampStudioMannequinBodyParams(STUDIO_MANNEQUIN_ARCHETYPE_PRESETS[presetId].params);
+}
+
 export type StudioMannequinMaterialStyle =
   | "wood"
   | "clay"
@@ -758,88 +876,262 @@ export interface StudioMannequinSpec {
   readonly joints: readonly StudioMannequinJointSpec[];
   readonly primitives: readonly StudioMannequinPrimitiveSpec[];
   readonly chains: Readonly<Record<StudioMannequinChainId, StudioMannequinChainSpec>>;
+  /** 적용된 손가락 관절 포즈. 빌더가 항상 채우며, 수동 스펙 조립 시에만 생략될 수 있다. */
+  readonly fingerPose?: StudioMannequinResolvedFingerPose;
 }
 
 function vec3(x: number, y: number, z: number): StudioMannequinVec3 {
   return [x, y, z];
 }
 
-/** 손바닥 끝에 길이가 다른 네 손가락과 바깥쪽 엄지를 2마디로 붙인다. 좌우는 X축 미러다. */
+// ── 손가락 관절 분리(3마디 체인) ─────────────────────────────────────────────
+// 기존에는 손가락이 2마디 프리미티브로 베이크돼 손 포즈 프리셋/컬 슬라이더가
+// 3D 형상에 닿지 못했다. 이제 손가락마다 3개 마디(관절)를 분리하고, 마디별
+// 컬(0–100)을 실제 관절 회전으로 프리미티브 체인을 굽힌다. 컬 0이면 기존
+// rest 폴리라인과 끝점이 정확히 일치한다(회귀 없음).
+
+export const STUDIO_MANNEQUIN_FINGER_NAMES = [
+  "thumb",
+  "index",
+  "middle",
+  "ring",
+  "little",
+] as const;
+export type StudioMannequinFingerName = (typeof STUDIO_MANNEQUIN_FINGER_NAMES)[number];
+
+/** 손가락 라벨(한글). 손 포즈 프리셋 모듈과 같은 이름 계약을 쓴다. */
+export const STUDIO_MANNEQUIN_FINGER_LABELS: Readonly<Record<StudioMannequinFingerName, string>> =
+  Object.freeze({
+    thumb: "엄지",
+    index: "검지",
+    middle: "중지",
+    ring: "약지",
+    little: "새끼",
+  });
+
+/** 마디별 컬 0–100. [뿌리 관절, 중간 관절, 끝 관절] 순서. */
+export type StudioMannequinFingerSegmentCurls = readonly [number, number, number];
+
+/** 한 손의 손가락 포즈. 지정하지 않은 손가락은 편 상태(컬 0)다. */
+export type StudioMannequinHandFingerPose = Readonly<
+  Partial<Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>>
+>;
+
+/** 양손 손가락 포즈(스펙 빌더 입력). */
+export interface StudioMannequinFingerPose {
+  readonly left?: StudioMannequinHandFingerPose;
+  readonly right?: StudioMannequinHandFingerPose;
+}
+
+/** 정규화된 손가락 포즈: 모든 손가락의 마디 컬이 채워져 있다. */
+export type StudioMannequinResolvedFingerPose = Readonly<
+  Record<
+    "left" | "right",
+    Readonly<Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>>
+  >
+>;
+
+/** 컬 100일 때 마디 관절의 최대 굽힘 각도(deg). 손바닥(+Z) 쪽으로 감긴다. */
+export const STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG: Readonly<
+  Record<StudioMannequinFingerName, readonly [number, number, number]>
+> = Object.freeze({
+  thumb: Object.freeze([45, 40, 30] as const),
+  index: Object.freeze([50, 65, 35] as const),
+  middle: Object.freeze([50, 65, 35] as const),
+  ring: Object.freeze([50, 65, 35] as const),
+  little: Object.freeze([52, 68, 38] as const),
+});
+
+const STUDIO_MANNEQUIN_FINGER_ZERO: StudioMannequinFingerSegmentCurls = Object.freeze([
+  0, 0, 0,
+] as const);
+
+function clampFingerCurlSegment(value: unknown): number {
+  return clampNumber(value, 0, 100, 0);
+}
+
+function clampFingerSegmentCurls(value: unknown): StudioMannequinFingerSegmentCurls {
+  const source = Array.isArray(value) ? value : [];
+  return Object.freeze([
+    clampFingerCurlSegment(source[0]),
+    clampFingerCurlSegment(source[1]),
+    clampFingerCurlSegment(source[2]),
+  ] as const);
+}
+
+/** 알 수 없는 입력을 항상 유효한 손가락 포즈로 정규화한다(방어적 파싱). */
+export function clampStudioMannequinFingerPose(input: unknown): StudioMannequinResolvedFingerPose {
+  const source = (
+    typeof input === "object" && input !== null ? input : {}
+  ) as StudioMannequinFingerPose;
+  const resolveHand = (
+    hand: StudioMannequinHandFingerPose | undefined,
+  ): Readonly<Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>> => {
+    const resolved = {} as Record<
+      StudioMannequinFingerName,
+      StudioMannequinFingerSegmentCurls
+    >;
+    for (const name of STUDIO_MANNEQUIN_FINGER_NAMES) {
+      resolved[name] = hand?.[name]
+        ? clampFingerSegmentCurls(hand[name])
+        : STUDIO_MANNEQUIN_FINGER_ZERO;
+    }
+    return Object.freeze(resolved);
+  };
+  return Object.freeze({ left: resolveHand(source.left), right: resolveHand(source.right) });
+}
+
+/**
+ * 손가락별 단일 컬(0–100, 손 포즈 프리셋·매직 포저 슬라이더 계약)을 마디별
+ * 컬로 변환한다. 마디 최대 각도가 달라 같은 컬에서도 자연스러운 테이퍼가 된다.
+ */
+export function studioMannequinFingerPoseFromCurls(curls: {
+  readonly left?: Partial<Record<StudioMannequinFingerName, number>>;
+  readonly right?: Partial<Record<StudioMannequinFingerName, number>>;
+}): StudioMannequinFingerPose {
+  const convertHand = (
+    hand: Partial<Record<StudioMannequinFingerName, number>> | undefined,
+  ): StudioMannequinHandFingerPose | undefined => {
+    if (!hand) return undefined;
+    const converted = {} as Record<
+      StudioMannequinFingerName,
+      StudioMannequinFingerSegmentCurls
+    >;
+    for (const name of STUDIO_MANNEQUIN_FINGER_NAMES) {
+      if (hand[name] === undefined) continue;
+      const curl = clampFingerCurlSegment(hand[name]);
+      converted[name] = Object.freeze([curl, curl, curl] as const);
+    }
+    return Object.freeze(converted);
+  };
+  return Object.freeze({
+    left: convertHand(curls.left),
+    right: convertHand(curls.right),
+  });
+}
+
+/** X축 회전으로 벡터의 y/z 성분만 굽힌다(굽힘 평면 고정, X 벌어짐 보존). */
+function bendVec3YpZ(
+  vector: StudioMannequinVec3,
+  angleRad: number,
+): StudioMannequinVec3 {
+  const cos = Math.cos(angleRad);
+  const sin = Math.sin(angleRad);
+  return vec3(vector[0], vector[1] * cos - vector[2] * sin, vector[1] * sin + vector[2] * cos);
+}
+
+/**
+ * rest 폴리라인 점들을 마디 관절 체인으로 굽힌다. 각 마디는 자기 관절에서
+ * 누적 각도만큼 회전하고, 컬이 전부 0이면 입력 점을 그대로 돌려준다.
+ */
+function bendDigitChain(
+  restPoints: readonly StudioMannequinVec3[],
+  segmentCurls: StudioMannequinFingerSegmentCurls,
+  maxDeg: readonly [number, number, number],
+): readonly StudioMannequinVec3[] {
+  const points: StudioMannequinVec3[] = [restPoints[0] as StudioMannequinVec3];
+  let cumulativeRad = 0;
+  for (let segment = 0; segment < 3; segment += 1) {
+    const from = restPoints[segment] as StudioMannequinVec3;
+    const to = restPoints[segment + 1] as StudioMannequinVec3;
+    const restVector = vec3(to[0] - from[0], to[1] - from[1], to[2] - from[2]);
+    cumulativeRad += ((segmentCurls[segment] as number) / 100) * radians(maxDeg[segment] as number);
+    // 손가락은 -Y로 뻗고 손바닥은 +Z 쪽이라, 굽힘은 X축 음의 회전이다.
+    const bent = bendVec3YpZ(restVector, -cumulativeRad);
+    const previous = points[segment] as StudioMannequinVec3;
+    points.push(vec3(previous[0] + bent[0], previous[1] + bent[1], previous[2] + bent[2]));
+  }
+  return points;
+}
+
+/** 손바닥 끝에 길이가 다른 네 손가락과 바깥쪽 엄지를 3마디 관절 체인으로 붙인다. 좌우는 X축 미러다. */
 function buildHandDigitPrimitives(
   jointId: "leftHand" | "rightHand",
   handLen: number,
   sideSign: 1 | -1,
+  handPose: Readonly<Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>>,
 ): readonly StudioMannequinPrimitiveSpec[] {
   const fingers = [
-    { x: -0.16, knuckleY: -0.76, middleY: -0.94, endY: -1.07, radius: 0.047 },
-    { x: -0.055, knuckleY: -0.77, middleY: -0.98, endY: -1.14, radius: 0.049 },
-    { x: 0.055, knuckleY: -0.77, middleY: -1.0, endY: -1.17, radius: 0.05 },
-    { x: 0.16, knuckleY: -0.75, middleY: -0.95, endY: -1.1, radius: 0.046 },
-  ] as const;
+    { name: "little", x: -0.16, knuckleY: -0.76, middleY: -0.94, endY: -1.07, radius: 0.047 },
+    { name: "ring", x: -0.055, knuckleY: -0.77, middleY: -0.98, endY: -1.14, radius: 0.049 },
+    { name: "middle", x: 0.055, knuckleY: -0.77, middleY: -1.0, endY: -1.17, radius: 0.05 },
+    { name: "index", x: 0.16, knuckleY: -0.75, middleY: -0.95, endY: -1.1, radius: 0.046 },
+  ] as const satisfies readonly {
+    name: StudioMannequinFingerName;
+    x: number;
+    knuckleY: number;
+    middleY: number;
+    endY: number;
+    radius: number;
+  }[];
   const result: StudioMannequinPrimitiveSpec[] = [];
+  const pushChain = (
+    restPoints: readonly StudioMannequinVec3[],
+    segmentCurls: StudioMannequinFingerSegmentCurls,
+    maxDeg: readonly [number, number, number],
+    radiusFactors: readonly [number, number, number, number],
+    baseRadius: number,
+    jointScales: readonly [StudioMannequinVec3, StudioMannequinVec3],
+  ): void => {
+    const points = bendDigitChain(restPoints, segmentCurls, maxDeg);
+    for (let segment = 0; segment < 3; segment += 1) {
+      result.push({
+        kind: "capsule",
+        jointId,
+        from: points[segment] as StudioMannequinVec3,
+        to: points[segment + 1] as StudioMannequinVec3,
+        radius: baseRadius * (radiusFactors[segment] as number),
+        endRadius: baseRadius * (radiusFactors[segment + 1] as number),
+        materialRole: "body",
+      });
+    }
+    for (let joint = 0; joint < 2; joint += 1) {
+      result.push({
+        kind: "sphere",
+        jointId,
+        center: points[joint + 1] as StudioMannequinVec3,
+        radius: baseRadius * (radiusFactors[joint + 1] as number) * 1.08,
+        scale: jointScales[joint] as StudioMannequinVec3,
+        materialRole: "joint",
+      });
+    }
+  };
   for (const finger of fingers) {
     const x = sideSign * finger.x * handLen;
     const z = 0.026 * handLen;
-    result.push(
-      {
-        kind: "capsule",
-        jointId,
-        from: vec3(x, finger.knuckleY * handLen, z),
-        to: vec3(x, finger.middleY * handLen, z),
-        radius: finger.radius * handLen,
-        endRadius: finger.radius * 0.86 * handLen,
-        materialRole: "body",
-      },
-      {
-        kind: "capsule",
-        jointId,
-        from: vec3(x, finger.middleY * handLen, z),
-        to: vec3(x, finger.endY * handLen, z + 0.008 * handLen),
-        radius: finger.radius * 0.86 * handLen,
-        endRadius: finger.radius * 0.68 * handLen,
-        materialRole: "body",
-      },
-      {
-        kind: "sphere",
-        jointId,
-        center: vec3(x, finger.middleY * handLen, z),
-        radius: finger.radius * 0.93 * handLen,
-        scale: vec3(1, 0.72, 0.86),
-        materialRole: "joint",
-      },
+    const knuckle = vec3(x, finger.knuckleY * handLen, z);
+    const middle = vec3(x, finger.middleY * handLen, z);
+    const end = vec3(x, finger.endY * handLen, z + 0.008 * handLen);
+    const distal = vec3(
+      (middle[0] + end[0]) / 2,
+      (middle[1] + end[1]) / 2,
+      (middle[2] + end[2]) / 2,
+    );
+    pushChain(
+      [knuckle, middle, distal, end],
+      handPose[finger.name],
+      STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG[finger.name],
+      [1, 0.86, 0.74, 0.6],
+      finger.radius * handLen,
+      [vec3(1, 0.72, 0.86), vec3(1, 0.72, 0.86)],
     );
   }
 
   const thumbStart = vec3(sideSign * 0.19 * handLen, -0.43 * handLen, 0.025 * handLen);
   const thumbMiddle = vec3(sideSign * 0.34 * handLen, -0.61 * handLen, 0.065 * handLen);
   const thumbEnd = vec3(sideSign * 0.43 * handLen, -0.76 * handLen, 0.09 * handLen);
-  result.push(
-    {
-      kind: "capsule",
-      jointId,
-      from: thumbStart,
-      to: thumbMiddle,
-      radius: 0.064 * handLen,
-      endRadius: 0.053 * handLen,
-      materialRole: "body",
-    },
-    {
-      kind: "capsule",
-      jointId,
-      from: thumbMiddle,
-      to: thumbEnd,
-      radius: 0.053 * handLen,
-      endRadius: 0.04 * handLen,
-      materialRole: "body",
-    },
-    {
-      kind: "sphere",
-      jointId,
-      center: thumbMiddle,
-      radius: 0.056 * handLen,
-      scale: vec3(1, 0.76, 0.9),
-      materialRole: "joint",
-    },
+  const thumbDistal = vec3(
+    (thumbMiddle[0] + thumbEnd[0]) / 2,
+    (thumbMiddle[1] + thumbEnd[1]) / 2,
+    (thumbMiddle[2] + thumbEnd[2]) / 2,
+  );
+  pushChain(
+    [thumbStart, thumbMiddle, thumbDistal, thumbEnd],
+    handPose.thumb,
+    STUDIO_MANNEQUIN_FINGER_SEGMENT_MAX_DEG.thumb,
+    [1, 0.83, 0.7, 0.56],
+    0.064 * handLen,
+    [vec3(1, 0.76, 0.9), vec3(1, 0.76, 0.9)],
   );
   return result;
 }
@@ -848,8 +1140,12 @@ function buildHandDigitPrimitives(
  * 파라미터로부터 결정적 마네킹 스펙을 생성한다.
  * 불변식: rest 자세의 정수리 높이 == heightCm/100 (legLength가 다리/몸통 비율만 재분배).
  */
-export function buildStudioMannequinSpec(input: unknown): StudioMannequinSpec {
+export function buildStudioMannequinSpec(
+  input: unknown,
+  fingerPoseInput?: unknown,
+): StudioMannequinSpec {
   const params = clampStudioMannequinBodyParams(input);
+  const fingerPose = clampStudioMannequinFingerPose(fingerPoseInput);
   const heightM = params.heightCm / 100;
   const hu = heightM / params.headCount;
   const build = blendStudioMannequinBuild(params.build);
@@ -1094,7 +1390,7 @@ export function buildStudioMannequinSpec(input: unknown): StudioMannequinSpec {
     { kind: "sphere", jointId: "leftLowerArm", center: vec3(0, -0.36 * foreArmLen, -0.014 * hu), radius: 0.09 * hu * forearmR, scale: vec3(0.98, 1.46, 0.92), materialRole: "body" },
     { kind: "sphere", jointId: "leftHand", center: vec3(0, 0, 0), radius: 0.085 * hu * limbR, materialRole: "joint" },
     { kind: "sphere", jointId: "leftHand", center: vec3(0, -handLen * 0.49, 0), radius: handLen * 0.5, scale: vec3(0.43, 1, 0.27), materialRole: "body" },
-    ...buildHandDigitPrimitives("leftHand", handLen, 1),
+    ...buildHandDigitPrimitives("leftHand", handLen, 1, fingerPose.left),
 
     { kind: "sphere", jointId: "rightUpperArm", center: vec3(0, 0, 0), radius: 0.132 * hu * upperArmR, materialRole: "joint" },
     { kind: "sphere", jointId: "rightUpperArm", center: vec3(0, -0.115 * hu, 0), radius: 0.135 * hu * upperArmR, scale: vec3(1.16, 1.38, 1.04), materialRole: "body" },
@@ -1106,7 +1402,7 @@ export function buildStudioMannequinSpec(input: unknown): StudioMannequinSpec {
     { kind: "sphere", jointId: "rightLowerArm", center: vec3(0, -0.36 * foreArmLen, -0.014 * hu), radius: 0.09 * hu * forearmR, scale: vec3(0.98, 1.46, 0.92), materialRole: "body" },
     { kind: "sphere", jointId: "rightHand", center: vec3(0, 0, 0), radius: 0.085 * hu * limbR, materialRole: "joint" },
     { kind: "sphere", jointId: "rightHand", center: vec3(0, -handLen * 0.49, 0), radius: handLen * 0.5, scale: vec3(0.43, 1, 0.27), materialRole: "body" },
-    ...buildHandDigitPrimitives("rightHand", handLen, -1),
+    ...buildHandDigitPrimitives("rightHand", handLen, -1, fingerPose.right),
 
     // ── 다리·발 ─────────────────────────────────────────────────────────────
     { kind: "sphere", jointId: "leftUpperLeg", center: vec3(0, 0, 0), radius: 0.17 * hu * thighR, materialRole: "joint" },
@@ -1200,6 +1496,7 @@ export function buildStudioMannequinSpec(input: unknown): StudioMannequinSpec {
     joints,
     primitives,
     chains,
+    fingerPose,
   };
 }
 

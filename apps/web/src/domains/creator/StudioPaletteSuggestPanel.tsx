@@ -14,6 +14,8 @@ import {
 import { Check, Loader2, Palette, Save, Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+import { AnswerTuningControls } from "./ai/AnswerTuningControls";
+import type { AnswerTuning } from "./ai/answer-tuning";
 import type { PaletteSuggestion } from "./studio-palette-suggest";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
@@ -27,6 +29,8 @@ export function StudioPaletteSuggestPanel({
   error,
   suggestion,
   savedMessage,
+  answerTuning,
+  onAnswerTuningChange,
   onGenerate,
   onSaveToLibrary,
 }: {
@@ -38,6 +42,13 @@ export function StudioPaletteSuggestPanel({
   suggestion: PaletteSuggestion | null;
   /** onSaveToLibrary 호출 후 부모가 채워주는 성공 피드백(예: "저장했어요"). null이면 표시 안 함. */
   savedMessage: string | null;
+  /**
+   * 답변 조절 공통 부품(선택) — 부모가 상태와 함께 넘길 때만 노출된다.
+   * 부모는 이 값을 suggestColorPalette의 opts.answerTuning으로 전달해
+   * 지시문·temperature·maxTokens에 반영한다(배선 명세는 본 작업 NOTES 참고).
+   */
+  answerTuning?: AnswerTuning;
+  onAnswerTuningChange?: (value: AnswerTuning) => void;
   onGenerate: () => void;
   onSaveToLibrary: (suggestion: PaletteSuggestion) => void;
 }) {
@@ -75,6 +86,10 @@ export function StudioPaletteSuggestPanel({
         disabled={busy}
         className="h-14 w-full resize-none rounded-md border border-line bg-panel px-2 py-1 text-[0.65rem] leading-snug text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent disabled:opacity-60"
       />
+
+      {answerTuning && onAnswerTuningChange ? (
+        <AnswerTuningControls value={answerTuning} onChange={onAnswerTuningChange} disabled={busy} density="compact" />
+      ) : null}
 
       <button
         type="button"

@@ -12,6 +12,7 @@ import {
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketSellerCenterTabs } from "../components/MarketSellerCenterTabs";
 import { MarketplaceAuthoringWorkshop } from "../components/MarketplaceAuthoringWorkshop";
 import {
   marketAuthorityErrorMessage,
@@ -187,10 +188,15 @@ export function MarketPublishAuthorityPage() {
     <Container size="wide" className="min-w-0 py-7 sm:py-10">
       <MarketNavHeader />
 
-      <Link href="/market/manage" className="inline-flex min-h-11 items-center gap-1.5 text-xs text-fg-2 hover:text-fg">
+      <Link href="/market/seller" className="inline-flex min-h-11 items-center gap-1.5 text-xs text-fg-2 hover:text-fg">
         <ArrowLeft className="size-3.5" aria-hidden="true" />
         {t("판매자 센터로 돌아가기", "Back to seller center")}
       </Link>
+
+      <MarketSellerCenterTabs active="register" />
+      <p className="mt-3 text-xs leading-relaxed text-fg-3">
+        {t("이 페이지는 판매자 센터의 등록 탭입니다. 제작 워크숍에서 초안을 다듬고, 아래 게시 단계(작성 → 계약 검증 → 명세서 생성 → 확정 → Studio 검증)를 거쳐 공개합니다.", "This page is the seller center's register tab. Refine your draft in the authoring workshop, then publish through the steps below (draft, contract check, manifest, lock in, verify in Studio).")}
+      </p>
 
       <section aria-labelledby="market-authoring-workshop-heading" className="mt-5">
         <div className="mb-3 rounded-xl border border-line bg-panel px-4 py-3">

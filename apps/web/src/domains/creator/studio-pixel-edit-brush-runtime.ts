@@ -7,6 +7,7 @@
  */
 export { bakeHealCloneStrokeToCanvas } from "./studio-heal-clone-browser";
 export { magicWandScanFromImage, sampleImageLuminanceField } from "./studio-magic-wand-browser";
+export { quickSelectionScanFromImage } from "./studio-quick-selection-browser";
 export {
   encodeStudioRetouchCanvasPng,
   loadStudioRetouchSourceImage,

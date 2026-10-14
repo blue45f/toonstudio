@@ -117,12 +117,29 @@ const PdfPageCommentAnchorSchema = z
   })
   .strict();
 
+/**
+ * 비교 검수 이미지 위의 핀 (비교 검수 3단계, FLAGSHIP §5.5·§7).
+ * 원고 페이지가 아니라 비교 소스 풀 항목(poolItemId)이 스코프이고, 좌표는 그 이미지의
+ * 정규화 좌표다. pairedPoolItemId는 핀 작성 당시 마주 보던 상대 소스로,
+ * 나중에 핀만 봐도 "무엇과 비교해 하는 말인지"를 재현하기 위해 함께 남긴다.
+ */
+const CompareImageCommentAnchorSchema = z
+  .object({
+    type: z.literal("compare-image"),
+    poolItemId: IdSchema,
+    x: z.number().finite().min(0).max(1),
+    y: z.number().finite().min(0).max(1),
+    pairedPoolItemId: IdSchema.optional(),
+  })
+  .strict();
+
 export const StudioCommentAnchorSchema = z.discriminatedUnion("type", [
   PageCommentAnchorSchema,
   FrameCommentAnchorSchema,
   ElementCommentAnchorSchema,
   PointCommentAnchorSchema,
   PdfPageCommentAnchorSchema,
+  CompareImageCommentAnchorSchema,
 ]);
 
 export type StudioCommentAnchor = z.infer<typeof StudioCommentAnchorSchema>;
@@ -147,6 +164,17 @@ export function canonicalStudioCommentAnchorKey(value: StudioCommentAnchor): str
     // Studio element IDs are page-global. A legacy frameId is descriptive metadata, not a
     // second identity axis; treating it as identity would render duplicate pins for one element.
     return JSON.stringify(["element", anchor.pageId, anchor.elementId]);
+  }
+  if (anchor.type === "compare-image") {
+    // 비교 핀도 point와 같은 네 자리 버킷을 쓴다. 풀 항목 id가 스코프이고,
+    // 상대 소스(paired)는 맥락 재현용 메타데이터라 정체성에는 포함하지 않는다 —
+    // 같은 자리의 핀은 비교 상대가 달라도 하나의 자리로 묶여야 하기 때문이다.
+    return JSON.stringify([
+      "compare-image",
+      anchor.poolItemId,
+      anchor.x.toFixed(STUDIO_COMMENT_POINT_KEY_DECIMALS),
+      anchor.y.toFixed(STUDIO_COMMENT_POINT_KEY_DECIMALS),
+    ]);
   }
   if (anchor.type === "pdf-page") {
     // Ported verbatim from the workbench's canonicalPdfPageAnchorKey so both key spaces stay

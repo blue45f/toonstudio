@@ -650,3 +650,35 @@
   .pcv-blink-layer { transition: none; }
   .pcv-empty-art { animation: none; }
 }
+
+/* ── 소스 풀 (1단계: 소스 개방) ────────────────────────── */
+.pcv-pool { border: 1px dashed var(--pcv-line, #d4d4d8); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
+.pcv-pool[data-drag-over="true"] { border-color: var(--pcv-accent, #6366f1); background: rgba(99, 102, 241, 0.06); }
+.pcv-pool-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
+.pcv-pool-counts { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.pcv-pool-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--pcv-line, #d4d4d8); }
+.pcv-pool-list { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 12px; }
+.pcv-pool-note { opacity: 0.7; }
+.pcv-pool-empty { font-size: 12px; opacity: 0.75; margin: 8px 0 0; }
+.pcv-pool-add { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.pcv-pool-add input[type="url"], .pcv-pool-add input[type="text"] { min-height: 32px; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--pcv-line, #d4d4d8); font-size: 12px; }
+.pcv-pool-hint { font-size: 11px; opacity: 0.65; }
+.pcv-pool-error { font-size: 12px; color: var(--pcv-bad, #dc2626); margin: 8px 0 0; }
+.pcv-pool-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.pcv-pool-presets-label { font-size: 11px; font-weight: 700; opacity: 0.75; }
+.pcv-pool-preset-msg { font-size: 12px; margin: 8px 0 0; }
+.pcv-pool-preset-msg[data-tone="warn"] { color: var(--pcv-bad, #dc2626); }
+
+/* ── 2단계: 오버레이 모드 + 정렬 오프셋 고급 접이 ── */
+.pcv-overlay-stage { position: relative; min-height: 320px; border: 1px solid var(--color-line, #d4d4d8); border-radius: var(--pcv-radius, 12px); overflow: hidden; background: var(--color-bg, #fff); }
+.pcv-overlay-layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.pcv-overlay-layer img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.pcv-overlay-controls { position: absolute; bottom: 0; left: 0; right: 0; display: flex; align-items: center; gap: 0.75rem; padding: 0.45rem 0.7rem; background: color-mix(in srgb, var(--color-card, #fff) 88%, transparent); backdrop-filter: blur(6px); font-size: 0.72rem; color: var(--color-muted, #666); }
+.pcv-overlay-controls label { display: inline-flex; align-items: center; gap: 0.5rem; }
+.pcv-align-note { font-size: 11px; color: var(--pcv-warn, #b45309); }
+.pcv-align-fold { margin-top: 8px; }
+.pcv-align-flip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; margin: 6px 0; }
+.pcv-align-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 12px; padding: 4px 0; }
+.pcv-align-label { min-width: 140px; font-weight: 600; }
+.pcv-align-row label { display: inline-flex; align-items: center; gap: 6px; }
+.pcv-align-val { opacity: 0.7; font-variant-numeric: tabular-nums; }

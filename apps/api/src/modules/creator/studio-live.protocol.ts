@@ -91,6 +91,9 @@ export const STUDIO_LIVE_CRDT_WIRE_SELECT_EVENT = "studio:crdt:wire:select" as c
 export const STUDIO_LIVE_CRDT_BINARY_SYNC_EVENT = "studio:crdt:sync:binary:v1" as const;
 export const STUDIO_LIVE_CRDT_BINARY_UPDATE_EVENT = "studio:crdt:update:binary:v1" as const;
 export const STUDIO_LIVE_CRDT_BINARY_REMOTE_EVENT = "studio:crdt:remote:binary:v1" as const;
+export const STUDIO_LIVE_OP_SUBMIT_EVENT = "studio:op:submit" as const;
+export const STUDIO_LIVE_OP_BROADCAST_EVENT = "studio:op:broadcast" as const;
+export const STUDIO_LIVE_OP_SYNC_EVENT = "studio:op:sync" as const;
 const StudioCrdtProtocolVersionSchema = z.literal(STUDIO_CRDT_PROTOCOL_VERSION);
 const StudioCrdtBinaryWireVersionSchema = z.literal(STUDIO_CRDT_BINARY_WIRE_VERSION);
 const StudioCrdtBinaryWireFormatSchema = z.literal(STUDIO_CRDT_BINARY_WIRE_FORMAT);
@@ -743,6 +746,198 @@ export const StudioLiveCrdtBinaryRemoteUpdateSchema = z
   })
   .strict();
 
+// ---------------------------------------------------------------------------
+// op 채널 병행 계약 (HOST_INSERTION_SPEC 2절) — studio:op:submit / broadcast / sync.
+// 와이어 형태는 웹 코어 stroke-merge-types.ts와 구조가 같고, 서버 강제 본체는
+// studio-live-op.ts(방·FIFO·스냅샷 opId 계약)·게이트웨이 핸들러다.
+// ---------------------------------------------------------------------------
+
+const StudioLiveOpIdSchema = boundedIdentifier(200).refine(
+  (value) => /^[^:]+:[1-9][0-9]*$/u.test(value),
+  "opId must be `${actorId}:${counter}`"
+);
+const StudioLiveOpActorIdSchema = boundedIdentifier(120);
+const StudioLiveOpStrokeIdSchema = boundedIdentifier(160);
+const StudioLiveOpSeqSchema = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+const StudioLiveOpFiniteNumber = z.number().finite();
+
+const StudioLiveOpTransformSchema = z
+  .object({
+    dx: StudioLiveOpFiniteNumber,
+    dy: StudioLiveOpFiniteNumber,
+    scale: StudioLiveOpFiniteNumber,
+    rotation: StudioLiveOpFiniteNumber,
+  })
+  .strict();
+
+const StudioLiveOpDrawPayloadSchema = z
+  .object({
+    version: z.literal(1),
+    type: z.literal("draw"),
+    kind: boundedIdentifier(80),
+    mode: z.enum(["pen", "eraser"]),
+    stroke: z.string().min(1).max(200),
+    strokeWidth: StudioLiveOpFiniteNumber,
+    opacity: StudioLiveOpFiniteNumber.optional(),
+    blendMode: z.string().min(1).max(80).optional(),
+    points: z.array(StudioLiveOpFiniteNumber).max(100_000),
+    pressures: z.array(StudioLiveOpFiniteNumber).max(100_000).optional(),
+    transform: StudioLiveOpTransformSchema.optional(),
+  })
+  .strict();
+
+const StudioLiveOpPropsPatchSchema = z
+  .object({
+    // 값 타입은 코어 StrokePropsPatch(키→string|number)와 동일하게 둔다.
+    // 키별 의미 타입(strokeWidth는 숫자 등)은 페이로드 해석이 강제하며,
+    // 와이어 스키마가 더 좁으면 코어 타입과의 구조적 호환이 깨진다.
+    set: z
+      .object({
+        stroke: z.union([z.string().min(1).max(200), StudioLiveOpFiniteNumber]).optional(),
+        strokeWidth: z
+          .union([z.string().min(1).max(200), StudioLiveOpFiniteNumber])
+          .optional(),
+        opacity: z.union([z.string().min(1).max(200), StudioLiveOpFiniteNumber]).optional(),
+        blendMode: z.union([z.string().min(1).max(200), StudioLiveOpFiniteNumber]).optional(),
+      })
+      .strict(),
+    unset: z
+      .array(z.enum(["stroke", "strokeWidth", "opacity", "blendMode"]))
+      .max(4),
+  })
+  .strict();
+
+const StudioLiveOpBodySchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("add"),
+      stroke: z
+        .object({
+          id: StudioLiveOpStrokeIdSchema,
+          pageId: PageIdSchema,
+          layerId: boundedIdentifier(160),
+          payload: StudioLiveOpDrawPayloadSchema,
+        })
+        .strict(),
+      beforeStrokeId: StudioLiveOpStrokeIdSchema.nullable().optional(),
+    })
+    .strict(),
+  z.object({ kind: z.literal("remove"), strokeId: StudioLiveOpStrokeIdSchema }).strict(),
+  z.object({ kind: z.literal("restore"), strokeId: StudioLiveOpStrokeIdSchema }).strict(),
+  z
+    .object({
+      kind: z.literal("transform"),
+      strokeId: StudioLiveOpStrokeIdSchema,
+      transform: StudioLiveOpTransformSchema,
+      prev: StudioLiveOpTransformSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("setProps"),
+      strokeId: StudioLiveOpStrokeIdSchema,
+      patch: StudioLiveOpPropsPatchSchema,
+      prev: StudioLiveOpPropsPatchSchema,
+    })
+    .strict(),
+]);
+
+export const StudioLiveOpSchema = z
+  .object({
+    opId: StudioLiveOpIdSchema,
+    actorId: StudioLiveOpActorIdSchema,
+    lamport: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+    baseSeq: StudioLiveOpSeqSchema,
+    body: StudioLiveOpBodySchema,
+  })
+  .strict()
+  .refine((value) => value.opId.startsWith(`${value.actorId}:`), {
+    path: ["opId"],
+    message: "opId prefix must equal actorId",
+  });
+
+export const StudioLiveOpSequencedSchema = StudioLiveOpSchema.and(
+  z.object({ seq: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER) })
+);
+
+export const StudioLiveOpSubmitSchema = z
+  .object({
+    protocolVersion: StudioCrdtProtocolVersionSchema,
+    workId: WorkIdSchema,
+    op: StudioLiveOpSchema,
+  })
+  .strict();
+
+export const StudioLiveOpSyncSchema = z
+  .object({
+    protocolVersion: StudioCrdtProtocolVersionSchema,
+    workId: WorkIdSchema,
+    fromSeq: StudioLiveOpSeqSchema,
+  })
+  .strict();
+
+export const StudioLiveOpSubmitAckSchema = z
+  .object({
+    workId: WorkIdSchema,
+    opId: StudioLiveOpIdSchema,
+    seq: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+    duplicate: z.boolean(),
+  })
+  .strict();
+
+export const StudioLiveOpBroadcastSchema = z
+  .object({
+    workId: WorkIdSchema,
+    op: StudioLiveOpSequencedSchema,
+  })
+  .strict();
+
+const StudioLiveOpSnapshotStateSchema = z
+  .object({
+    strokes: z
+      .array(
+        z
+          .object({
+            id: StudioLiveOpStrokeIdSchema,
+            pageId: z.string().max(160),
+            layerId: z.string().max(160),
+            payload: StudioLiveOpDrawPayloadSchema,
+            deleted: z.boolean(),
+            placeholder: z.boolean(),
+            createdBy: z.string().min(1).max(120),
+          })
+          .strict()
+      )
+      .max(100_000),
+    order: z
+      .array(z.tuple([z.string().max(400), z.array(StudioLiveOpStrokeIdSchema).max(100_000)]))
+      .max(10_000),
+  })
+  .strict();
+
+export const StudioLiveOpSnapshotSchema = z
+  .object({
+    seq: StudioLiveOpSeqSchema,
+    state: StudioLiveOpSnapshotStateSchema,
+    opIds: z.array(StudioLiveOpIdSchema).max(100_000),
+    opIdDigest: z.string().regex(/^[0-9a-f]{8}$/u),
+  })
+  .strict()
+  .refine((value) => value.opIds.length <= value.seq, {
+    path: ["opIds"],
+    message: "snapshot opIds cannot exceed snapshot seq",
+  });
+
+export const StudioLiveOpSyncResultSchema = z
+  .object({
+    workId: WorkIdSchema,
+    fromSeq: StudioLiveOpSeqSchema,
+    lastSeq: StudioLiveOpSeqSchema,
+    snapshot: StudioLiveOpSnapshotSchema.optional(),
+    ops: z.array(StudioLiveOpSequencedSchema).max(100_000),
+  })
+  .strict();
+
 export type StudioLiveJoinInput = z.infer<typeof StudioLiveJoinSchema>;
 export type StudioLivePresenceInput = z.infer<typeof StudioLivePresenceSchema>;
 export type StudioLiveCursorInput = z.infer<typeof StudioLiveCursorSchema>;
@@ -798,6 +993,14 @@ export type StudioLiveCrdtBinaryUpdateAck = z.infer<
 export type StudioLiveCrdtBinaryRemoteUpdate = z.infer<
   typeof StudioLiveCrdtBinaryRemoteUpdateSchema
 >;
+export type StudioLiveOp = z.infer<typeof StudioLiveOpSchema>;
+export type StudioLiveSequencedOp = z.infer<typeof StudioLiveOpSequencedSchema>;
+export type StudioLiveOpSubmitInput = z.infer<typeof StudioLiveOpSubmitSchema>;
+export type StudioLiveOpSyncInput = z.infer<typeof StudioLiveOpSyncSchema>;
+export type StudioLiveOpSubmitAck = z.infer<typeof StudioLiveOpSubmitAckSchema>;
+export type StudioLiveOpBroadcast = z.infer<typeof StudioLiveOpBroadcastSchema>;
+export type StudioLiveOpSnapshot = z.infer<typeof StudioLiveOpSnapshotSchema>;
+export type StudioLiveOpSyncResult = z.infer<typeof StudioLiveOpSyncResultSchema>;
 export type StudioLiveCrdtWireFormat =
   (typeof STUDIO_CRDT_SUPPORTED_WIRE_FORMATS)[number];
 export type StudioLiveCrdtWireSelectionEpoch = z.infer<

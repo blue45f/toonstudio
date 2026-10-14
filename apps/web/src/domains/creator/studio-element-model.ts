@@ -14,6 +14,7 @@ import type { InkWash } from "./brush/studio-ink-wash";
 import type { StudioPaperSubstrateModel } from "./brush/studio-paper-substrate-model";
 import type { StudioStrokePaintModel } from "./brush/studio-stroke-paint-model";
 import type { ShapeParams, StrokeStyle } from "./brush/studio-stroke-shapes";
+import type { StudioAdjustmentKind } from "./filter/studio-adjustment-effect-graph";
 import type { StudioLayerBorderEffectSettings } from "./layer/studio-layer-border-effect";
 import type {
   StudioLayerColor,
@@ -599,6 +600,35 @@ export interface SpeedLinesEl {
   opacity?: number;
 }
 
+/**
+ * 스택형 조정 레이어 — 스택의 한 칸을 차지해 자기보다 아래쪽 합성 전체에
+ * 조정을 거는 1급 요소(Photoshop 조정 레이어 의미론). 자기 픽셀은 없고,
+ * 합성 단계에서 `layer/studio-adjustment-layer.ts`의
+ * `buildStudioAdjustmentLayerGraph`로 기존 효과 그래프에 펴서 적용한다.
+ *
+ * 지오메트리는 페이지 경계로 고정한다(생성 팩토리가 페이지 크기로 세팅) —
+ * 렌더러는 이 요소를 Konva 노드로 그리지 않고 합성 패스에서만 소비한다.
+ * 이름·표시·불투명도·블렌드는 StudioElementLayerMetadata(name/hidden/opacity/
+ * blendMode)가 담당하고, hidden=true가 곧 enabled=false다.
+ */
+export interface AdjustmentEl {
+  id: string;
+  type: "adjustment";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  /** 조정 종류 — 효과 그래프의 조정 노드 종류와 동일 규약. */
+  adjustment: StudioAdjustmentKind;
+  /** 조정 파라미터(종류별 스키마는 효과 그래프 검증기가 판정). */
+  parameters: Readonly<Record<string, number | string | boolean | readonly number[]>>;
+  /** true면 바로 아래 일반 레이어 1개에만 적용(클립). false면 아래 합성 전체. */
+  clipToBelow: boolean;
+  /** 레이어 마스크 소스 해시(있으면). */
+  maskHash?: string;
+}
+
 interface StudioElementLayerMetadata {
   name?: string;
   hidden?: boolean;
@@ -617,6 +647,13 @@ interface StudioElementLayerMetadata {
   alphaLocked?: boolean;
   maskSrc?: string;
   maskEnabled?: boolean;
+  /** 힌트 채색 마스크(Krita Colorize Mask식 비파괴 채색) 상태 — 힌트 획+파라미터만 들고 결과
+   * 래스터는 들지 않는다. 결과는 studio-colorize-mask.ts의 applyStudioColorizeMask가 별도
+   * 투명 페인트 버퍼로 굽고, 이 필드를 지우면 선화(el.src)는 무손상이다. maskSrc(가시성
+   * 마스크)와는 독립 축이라 같은 요소에 둘 다 걸 수 있다. */
+  colorizeMask?: import("./studio-colorize-mask").StudioColorizeMaskState;
+  /** colorizeMask 유효 적용 여부 — false면 상태는 보존하되 채색 결과를 적용하지 않는다. */
+  colorizeMaskEnabled?: boolean;
   layerRole?: StudioLayerRole;
   layerColor?: StudioLayerColor;
   /** 이 요소가 이메레스 밑그림 틀로 삽입됐는지 + 어디서 왔는지 표식. 카탈로그 틀: t.id 그대로.
@@ -635,4 +672,5 @@ export type El = (
   | FrameEl
   | FocusLinesEl
   | SpeedLinesEl
+  | AdjustmentEl
 ) & StudioElementLayerMetadata;

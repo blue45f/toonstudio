@@ -14,6 +14,7 @@ import {
   STUDIO_STABILIZER_MIN_TIME_CONSTANT_MS,
   STUDIO_STABILIZER_TIME_CONSTANT_PER_STRENGTH_MS,
   stabilizeStudioStrokeSample,
+  studioStabilizerSpeedGateFactor,
 } from "./studio-stroke-stabilizer";
 
 describe("studio stroke stabilizer", () => {
@@ -599,5 +600,119 @@ describe("studio stroke stabilizer", () => {
       point: pure.point,
       state: pure.state,
     });
+  });
+
+  it("normalizes the weighted mode and describes its latency honestly", () => {
+    expect(normalizeStudioStabilizerMode("weighted")).toBe("weighted");
+    expect(describeStudioStabilizerLatency("weighted", 6)).toMatchObject({
+      kind: "variable",
+      label: "물리 후행",
+      estimatedMs: null,
+    });
+    expect(describeStudioStabilizerLatency("weighted", 0).kind).toBe("instant");
+  });
+
+  it("returns raw points with full derived pressure when weighted strength is zero", () => {
+    const state = createStudioStrokeStabilizerState({ x: 0, y: 0, timeStamp: 0 });
+    const result = stabilizeStudioStrokeSample(
+      state,
+      { x: 50, y: 20, timeStamp: 16 },
+      { strength: 0, mode: "weighted" }
+    );
+    expect(result.point).toEqual([50, 20]);
+    expect(result.derivedPressure).toBe(1);
+  });
+
+  it("derives pressure from speed in weighted mode so fast stroke ends taper", () => {
+    let state = createStudioStrokeStabilizerState({ x: 0, y: 0, timeStamp: 0 });
+    let fastPressure = 1;
+    // 2 CSS px/ms for ~200ms.
+    for (let timeStamp = 16; timeStamp <= 192; timeStamp += 16) {
+      const result = stabilizeStudioStrokeSample(
+        state,
+        { x: timeStamp * 2, y: 0, timeStamp },
+        { strength: 6, mode: "weighted" }
+      );
+      state = result.state;
+      fastPressure = result.derivedPressure ?? 1;
+      expect(result.point[0]).toBeLessThan(timeStamp * 2);
+    }
+    expect(fastPressure).toBeLessThan(0.6);
+    expect(fastPressure).toBeGreaterThanOrEqual(0.25);
+    expect(state.velocityX).toEqual(expect.any(Number));
+
+    // Once the target stops, the weight catches up and pressure returns to full.
+    let stoppedPressure = 0;
+    let stoppedPoint: readonly [number, number] = [0, 0];
+    for (let timeStamp = 208; timeStamp <= 1200; timeStamp += 16) {
+      const result = stabilizeStudioStrokeSample(
+        state,
+        { x: 384, y: 0, timeStamp },
+        { strength: 6, mode: "weighted" }
+      );
+      state = result.state;
+      stoppedPressure = result.derivedPressure ?? 0;
+      stoppedPoint = result.point;
+    }
+    expect(stoppedPoint[0]).toBeCloseTo(384, 0);
+    expect(stoppedPressure).toBeGreaterThan(0.95);
+  });
+
+  it("keeps weighted derived pressure near full for slow strokes", () => {
+    let state = createStudioStrokeStabilizerState({ x: 0, y: 0, timeStamp: 0 });
+    let pressure = 0;
+    for (let timeStamp = 16; timeStamp <= 320; timeStamp += 16) {
+      const result = stabilizeStudioStrokeSample(
+        state,
+        { x: timeStamp * 0.1, y: 0, timeStamp },
+        { strength: 6, mode: "weighted" }
+      );
+      state = result.state;
+      pressure = result.derivedPressure ?? 0;
+    }
+    expect(pressure).toBeGreaterThan(0.85);
+  });
+
+  it("never adds velocity or derived pressure to the original three modes", () => {
+    for (const mode of ["standard", "adaptive", "precision"] as const) {
+      const state = createStudioStrokeStabilizerState({ x: 0, y: 0, timeStamp: 0 });
+      const result = stabilizeStudioStrokeSample(
+        state,
+        { x: 30, y: 0, timeStamp: 16 },
+        { strength: 6, mode }
+      );
+      expect(result.derivedPressure).toBeUndefined();
+      expect(result.state).not.toHaveProperty("velocityX");
+    }
+  });
+
+  it("computes speed gate factors with a ramped trapezoid window and inversion", () => {
+    expect(studioStabilizerSpeedGateFactor(undefined, 3)).toBe(1);
+    const gate = { minSpeed: 0, maxSpeed: 0.6 };
+    expect(studioStabilizerSpeedGateFactor(gate, 0.3)).toBe(1);
+    expect(studioStabilizerSpeedGateFactor(gate, 2)).toBe(0);
+    expect(studioStabilizerSpeedGateFactor(gate, 0.64)).toBeCloseTo(0.5, 5);
+    expect(studioStabilizerSpeedGateFactor({ ...gate, invert: true }, 0.3)).toBe(0);
+    expect(studioStabilizerSpeedGateFactor({ ...gate, invert: true }, 2)).toBe(1);
+  });
+
+  it("applies the speed gate end to end: slow samples corrected, fast flicks verbatim", () => {
+    const gate = { minSpeed: 0, maxSpeed: 0.6 };
+    const state = createStudioStrokeStabilizerState({ x: 0, y: 0, timeStamp: 0 });
+    const slow = stabilizeStudioStrokeSample(
+      state,
+      { x: 1, y: 0, timeStamp: 16 },
+      { strength: 5.5, mode: "adaptive", speedGate: gate }
+    );
+    expect(slow.effectiveStrength).toBeGreaterThan(0);
+    expect(slow.point[0]).toBeLessThan(1);
+
+    const fast = stabilizeStudioStrokeSample(
+      state,
+      { x: 200, y: 0, timeStamp: 16 },
+      { strength: 5.5, mode: "adaptive", speedGate: gate }
+    );
+    expect(fast.effectiveStrength).toBe(0);
+    expect(fast.point).toEqual([200, 0]);
   });
 });

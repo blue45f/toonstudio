@@ -1,7 +1,10 @@
 // 3D 배경 캡처의 장면 메타데이터 계약. 이 모듈은 Three.js/DOM/React와 독립적이어야 한다.
 // Studio 셸은 실제 3D 편집기를 열기 전에도 이 경량 모듈만으로 이미지 출처를 판별할 수 있다.
 
-import type { StudioBg3dMaterialOverride } from "./bg3d/studio-bg3d-scene-document";
+import type {
+  StudioBg3dMaterialOverride,
+  StudioBg3dTexturePaint,
+} from "./bg3d/studio-bg3d-scene-document";
 
 export type BgPrimitiveKind =
   | "box"
@@ -26,6 +29,8 @@ export interface BgPrimitive {
   scale: [number, number, number];
   color: string; // Shaded preview only; line-art export ignores this value.
   materialOverride?: StudioBg3dMaterialOverride;
+  /** 표면 직접 그리기(UV 텍스처 페인팅) 획 — 문서 노드의 texturePaint와 같은 정본 데이터. */
+  texturePaint?: StudioBg3dTexturePaint;
   /** Optional user-defined name for the object list. */
   name?: string;
   /** When false, mesh is hidden in viewport/capture but kept in the scene graph. Default true. */

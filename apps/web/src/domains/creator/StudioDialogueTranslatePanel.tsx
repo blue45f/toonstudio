@@ -23,9 +23,17 @@ import {
 // 커밋은 호스트 콜백으로 위임한다. QA에는 용어집 규칙을 파싱해 넘긴다 — 예전에는 규칙을
 // 넘기지 않아 QA의 용어집 검사가 실제 경로에서 돌지 않았다.
 //
+// (E) OCR 가져오기 화면 — `ocrOpen`이 켜지면 그려진다. 외국어 회차 이미지에서 읽은
+// 대사(OCR 결과 붙여넣기 또는 호스트가 넘긴 블록 목록)를 검수 대기 초안으로 만들어,
+// 번역문을 채우고 자동 배치를 확인한 뒤 승인된 초안만 캔버스 말풍선으로 넣는 진입
+// 동선이다. 조립은 lettering/StudioDialogueOcrImportSection.tsx +
+// lettering/studio-dialogue-ocr-import.ts(순수)가 하고, 초안 상태·문서 커밋은 호스트
+// 콜백으로 위임한다. OCR 실행과 번역 생성(비용 단계)은 이 패널 밖에 있다 — 초안의
+// 번역이 비어 있으면 기존 (A) 생성 화면의 BYOK 흐름이 채우는 것이 원칙이다.
+//
 // 용어집은 작품(workScope)별로 localStorage에 남긴다(lettering/studio-dialogue-glossary-store).
 // 호스트의 세션 상태만으로는 새로고침마다 용어집이 사라져 작품 자산이 되지 못했다.
-import { BookOpenCheck, Check, Globe2, Languages, ListChecks, Loader2, ScanText, X } from "lucide-react";
+import { BookOpenCheck, Check, Globe2, Import, Languages, ListChecks, Loader2, ScanText, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -43,6 +51,12 @@ import {
   saveStudioDialogueGlossaryTextAsync,
 } from "./lettering/studio-dialogue-glossary-store";
 import { StudioDialogueGlossaryEditor } from "./lettering/StudioDialogueGlossaryEditor";
+import { StudioDialogueOcrImportSection } from "./lettering/StudioDialogueOcrImportSection";
+import type {
+  OcrImportBlocked,
+  OcrImportDraft,
+  OcrPageInput,
+} from "./lettering/studio-dialogue-ocr-import";
 import {
   StudioDialogueReviewSection,
 } from "./lettering/StudioDialogueReviewSection";
@@ -126,6 +140,28 @@ export type StudioDialogueTranslatePanelProps = {
     locale: string,
     status: DialogueReviewStatus | null
   ) => void;
+  /**
+   * OCR 가져오기 화면 표시 여부 — QA·검수와 같은 제어형 패턴. 초안은 캔버스 요소가
+   * 아니라 별도 상태라, 화면을 열어도 호스트가 초안 콜백을 넘기지 않으면 붙여넣기
+   * 입력만 보이고 아무것도 만들지 않는다(콜백 없는 버튼을 만들지 않기 위해, 토글
+   * 자체도 onOcrBuildDrafts가 있을 때만 그린다).
+   */
+  ocrOpen?: boolean;
+  onOcrOpenChange?: (open: boolean) => void;
+  /** OCR 검수 대기 초안 — null이면 아직 입력을 받지 않은 상태. */
+  ocrDrafts?: readonly OcrImportDraft[] | null;
+  /** 초안을 만들 때 비어 버려진 블록 수. */
+  ocrSkippedEmpty?: number;
+  /** 지난 반영에서 막힌 초안과 사유(buildOcrImportElements 결과 그대로). */
+  ocrBlocked?: readonly OcrImportBlocked[];
+  /** 붙여넣기/OCR 결과로 초안을 새로 만들 때 — 호스트가 코어 buildOcrImportDrafts를 돌려 상태를 교체한다. */
+  onOcrBuildDrafts?: (input: OcrPageInput) => void;
+  /** OCR 화면에서 번역문 하나를 저장할 때. */
+  onOcrTranslationChange?: (draftId: string, text: string) => void;
+  /** OCR 화면에서 승인/수정 필요를 남길 때 — null은 미검수 복귀. */
+  onOcrReviewChange?: (draftId: string, status: DialogueReviewStatus | null) => void;
+  /** 승인된 초안만 캔버스에 반영할 때 — 호스트가 코어 buildOcrImportElements로 커밋한다. */
+  onOcrImportApproved?: () => void;
   /** 말풍선 테마 — 행간·자간 기본값을 고른다. 없으면 리졸버의 안전 기본값을 쓴다. */
   webtoonTheme?: BubbleWebtoonTheme;
   /** 발견 → 캔버스 요소 선택(다른 페이지면 전환). 없으면 초안 화면 안에서만 되짚는다. */
@@ -276,6 +312,15 @@ export function StudioDialogueTranslatePanel({
   onReviewOpenChange,
   onReviewTextChange,
   onReviewStatusChange,
+  ocrOpen,
+  onOcrOpenChange,
+  ocrDrafts = null,
+  ocrSkippedEmpty = 0,
+  ocrBlocked = [],
+  onOcrBuildDrafts,
+  onOcrTranslationChange,
+  onOcrReviewChange,
+  onOcrImportApproved,
   webtoonTheme,
   onRevealCue,
   measurer,
@@ -366,6 +411,13 @@ export function StudioDialogueTranslatePanel({
     if (reviewOpen === undefined) setUncontrolledReviewOpen(open);
     onReviewOpenChange?.(open);
   };
+  // ── OCR 가져오기 — QA·검수와 같은 제어형/비제어형 패턴 ──────────────────────
+  const [uncontrolledOcrOpen, setUncontrolledOcrOpen] = useState(false);
+  const ocrVisible = ocrOpen ?? uncontrolledOcrOpen;
+  const setOcrVisible = (open: boolean) => {
+    if (ocrOpen === undefined) setUncontrolledOcrOpen(open);
+    onOcrOpenChange?.(open);
+  };
   const [qaSnapshot, setQaSnapshot] = useState<QaSnapshot | null>(null);
   // 발견 → 초안 행으로 되짚을 때 포커스할 textarea. QA 화면이 닫히고 초안 행이 다시 그려진 뒤에야
   // 요소가 존재하므로 "포커스 대기" 상태로 한 프레임 넘긴다.
@@ -436,6 +488,24 @@ export function StudioDialogueTranslatePanel({
           {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "대사 번역")}<span className="font-medium text-fg-4">· {providerLabel}</span>
         </p>
         <div className="flex items-center gap-1.5">
+          {onOcrBuildDrafts ? (
+            <button
+              type="button"
+              onClick={() => setOcrVisible(!ocrVisible)}
+              aria-pressed={ocrVisible}
+              title={translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "OCR 가져오기 — 이미지에서 읽은 대사를 검수 대기 초안으로 만들어 승인분만 말풍선으로 넣는다")}
+              className={cx(
+                "inline-flex items-center gap-1 rounded-lg border px-2 text-[0.62rem] font-semibold transition-colors",
+                ocrVisible
+                  ? "border-accent/35 bg-accent-soft text-accent"
+                  : "border-line bg-card text-fg-2 hover:bg-raised",
+                STUDIO_FOCUS_RING,
+                STUDIO_TOUCH_TARGET
+              )}
+            >
+              <Import size={12} aria-hidden />
+              {translateCurrentStaticSourceText("domains.creator.StudioDialogueTranslatePanel", "ko", "OCR 가져오기")}</button>
+          ) : null}
           <button
             type="button"
             onClick={() => setReviewVisible(!reviewVisible)}
@@ -509,7 +579,19 @@ export function StudioDialogueTranslatePanel({
         )}
       </div>
 
-      {reviewVisible ? (
+      {ocrVisible && onOcrBuildDrafts ? (
+        // ── E. OCR 가져오기 화면 ───────────────────────────────────────────
+        <StudioDialogueOcrImportSection
+          pages={pages}
+          drafts={ocrDrafts}
+          skippedEmpty={ocrSkippedEmpty}
+          blocked={ocrBlocked}
+          onBuildDrafts={onOcrBuildDrafts}
+          onTranslationChange={(draftId, text) => onOcrTranslationChange?.(draftId, text)}
+          onReviewChange={(draftId, status) => onOcrReviewChange?.(draftId, status)}
+          onImportApproved={() => onOcrImportApproved?.()}
+        />
+      ) : reviewVisible ? (
         // ── D. 번역 대조 검수 화면 ────────────────────────────────────────
         <StudioDialogueReviewSection
           pages={pages}

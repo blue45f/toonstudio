@@ -17,6 +17,11 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import {
+  STUDIO_MACRO_MAX_COMMANDS,
+  type StudioMacroCommand,
+} from "./studio-macro-recorder";
+
 import type {
   StudioAutoActionCommand,
   StudioAutoActionExecutionProgress,
@@ -51,6 +56,9 @@ export interface StudioAutoActionsPanelProps {
   /** Macro session recording into an Auto Action set. */
   macroRecording?: boolean;
   macroCommandCount?: number;
+  /** Live recorded steps, shown while recording so a mistaken step can be dropped. */
+  macroCommands?: readonly StudioMacroCommand[];
+  onRemoveMacroCommand?: (index: number) => void;
   onStartMacroRecord?: () => void;
   onStopMacroRecord?: () => void;
   onClose: () => void;
@@ -61,6 +69,43 @@ export interface StudioAutoActionsPanelProps {
   onRequestPlan: () => void;
   onExecute: () => void;
   onCancel: () => void;
+}
+
+const MACRO_COMMAND_LABELS: Record<StudioMacroCommand["type"], string> = {
+  "set-opacity": "요소 불투명도",
+  "set-hidden": "요소 표시 상태",
+  "set-locked": "요소 잠금 상태",
+  "set-blend-mode": "요소 블렌드 모드",
+  "lettering-font-size": "글자 크기",
+  "lettering-color": "글자 색",
+  "lettering-font": "글꼴",
+  "page-set-background": "페이지 배경",
+  "page-apply-grade-preset": "페이지 색보정",
+};
+
+function macroCommandDetail(command: StudioMacroCommand): string {
+  switch (command.type) {
+    case "set-opacity":
+      return `${Math.round(command.opacity * 100)}%`;
+    case "set-hidden":
+      return command.hidden ? "숨김" : "표시";
+    case "set-locked":
+      return command.locked ? "잠금" : "잠금 해제";
+    case "set-blend-mode":
+      return command.blendMode;
+    case "lettering-font-size":
+      return `${command.fontSize}px`;
+    case "lettering-color":
+      return command.color;
+    case "lettering-font":
+      return command.font;
+    case "page-set-background":
+      return command.background.kind === "solid"
+        ? command.background.color
+        : command.background.colors.join(" → ");
+    case "page-apply-grade-preset":
+      return command.preset;
+  }
 }
 
 function scopeLabel(scope: StudioAutoActionScope): string {
@@ -108,6 +153,8 @@ export function StudioAutoActionsPanel({
   error,
   macroRecording = false,
   macroCommandCount = 0,
+  macroCommands = [],
+  onRemoveMacroCommand,
   onStartMacroRecord,
   onStopMacroRecord,
   onClose,
@@ -223,7 +270,18 @@ export function StudioAutoActionsPanel({
                 {onStartMacroRecord && onStopMacroRecord ? (
                   <button
                     type="button"
-                    onClick={() => (macroRecording ? onStopMacroRecord() : onStartMacroRecord())}
+                    onClick={() => {
+                      if (macroRecording) {
+                        onStopMacroRecord();
+                      } else {
+                        // This panel is a full-screen modal: staying open would
+                        // cover the canvas and make the operations being
+                        // recorded unreachable. Start, then hand the surface
+                        // back so the user can actually perform them.
+                        onStartMacroRecord();
+                        onClose();
+                      }
+                    }}
                     disabled={busy}
                     aria-pressed={macroRecording}
                     className={[
@@ -268,12 +326,55 @@ export function StudioAutoActionsPanel({
               </div>
             </div>
             {macroRecording ? (
-              <p
-                role="status"
-                className="mt-3 flex items-center gap-2 rounded-lg border border-bad/30 bg-bad/10 px-3 py-2 text-[0.7rem] font-semibold text-bad"
-              >
-                <Circle size={10} className="fill-bad animate-pulse" aria-hidden />
-                녹음 중 — 불투명도·표시·잠금·블렌드·글자 크기/색 변경이 Action Set에 쌓입니다 ({macroCommandCount}단계).
+              <div className="mt-3">
+                <p
+                  role="status"
+                  className="flex items-center gap-2 rounded-lg border border-bad/30 bg-bad/10 px-3 py-2 text-[0.7rem] font-semibold text-bad"
+                >
+                  <Circle size={10} className="fill-bad animate-pulse" aria-hidden />
+                  녹음 중 — 불투명도·표시·잠금·블렌드·글꼴·글자 크기/색 변경이 쌓입니다 ({macroCommandCount}/{STUDIO_MACRO_MAX_COMMANDS}단계).
+                  패널을 닫아도 녹음은 계속됩니다.
+                </p>
+                {macroCommandCount >= STUDIO_MACRO_MAX_COMMANDS ? (
+                  <p role="alert" className="mt-2 text-[0.7rem] font-semibold text-warn">
+                    녹음 상한({STUDIO_MACRO_MAX_COMMANDS}단계)에 도달해 이후 조작은 기록되지 않아요. 녹음을 종료해 주세요.
+                  </p>
+                ) : null}
+                {macroCommands.length > 0 ? (
+                  <ol className="mt-2 divide-y divide-line overflow-hidden rounded-xl border border-line" aria-label="녹음된 매크로 명령 목록">
+                    {macroCommands.map((command, index) => (
+                      <li key={`${command.type}-${index}`} className="flex items-center gap-3 bg-card/45 px-3 py-2">
+                        <span className="w-6 shrink-0 text-right font-display text-xs tabular-nums text-fg-3">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-fg">
+                            {MACRO_COMMAND_LABELS[command.type]}
+                          </p>
+                          <p className="mt-0.5 truncate text-[0.68rem] text-fg-3">{macroCommandDetail(command)}</p>
+                        </div>
+                        {onRemoveMacroCommand ? (
+                          <button
+                            type="button"
+                            onClick={() => onRemoveMacroCommand(index)}
+                            aria-label={`${index + 1}단계 ${MACRO_COMMAND_LABELS[command.type]} 삭제`}
+                            className="grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-3 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                          >
+                            <X size={13} aria-hidden />
+                          </button>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">
+                    아직 기록된 단계가 없어요. 패널을 닫고 레이어·레터링을 조작한 뒤, 이 패널을 다시 열어 확인하세요.
+                  </p>
+                )}
+              </div>
+            ) : onStartMacroRecord && onStopMacroRecord ? (
+              <p className="mt-3 text-[0.7rem] leading-relaxed text-fg-3">
+                매크로 녹음을 시작하면 패널이 닫힙니다. 레이어·레터링 조작을 마친 뒤 이 패널을 다시 열어 녹음 종료를 누르면 Action Set으로 변환됩니다.
               </p>
             ) : null}
 

@@ -1,5 +1,6 @@
 {
   "app.name": "ToonStudio",
   "app.brandBeta": "ቤታ አገልግሎት  መረጃ እና ባህሪዎች ሊለወጡ ይችላሉ",
-  "app.loading": "ጭነት"
+  "app.loading": "ጭነት",
+  "app.skipToContent": "Skip to main content"
 }

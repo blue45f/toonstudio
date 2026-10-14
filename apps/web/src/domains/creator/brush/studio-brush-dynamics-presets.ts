@@ -18,6 +18,7 @@ import {
   type StudioBrushDynamicsSettings,
 } from "./studio-brush-dynamics-types";
 import { STUDIO_BRUSH_DYNAMICS_VARIANTS } from "./studio-brush-dynamics-variants";
+import { STUDIO_BRUSH_TEXTURE_PAPER_BOUNDARY_HELP_V1 } from "./studio-brush-texture-paper-boundary-v1";
 
 /**
  * A detached, directly JSON-serializable input value. Normalization uses a private copy so external
@@ -121,7 +122,11 @@ export const STUDIO_BRUSH_DYNAMICS_PRESETS: readonly StudioBrushDynamicsPreset[]
   {
     id: "dry-media",
     name: "드라이 미디어",
-    description: "크레용·목탄처럼 압력과 속도에 따라 끊기고 거칠어지는 마른 획",
+    // 이 프리셋은 브러시 그레인(브러시 층)과 문서 종이 침착(문서 층)이 동시에 합성되는
+    // 대표 프리셋이라, 경계 설명을 도움말(description)에 함께 표시한다. 렌더 값은
+    // 바꾸지 않는다 — 경계 명문화는 설명과 순서 계약의 일이지 기존 획의 픽셀 변경이 아니다.
+    description:
+      `크레용·목탄처럼 압력과 속도에 따라 끊기고 거칠어지는 마른 획. ${STUDIO_BRUSH_TEXTURE_PAPER_BOUNDARY_HELP_V1}`,
     settings: {
       depositPipeline: STUDIO_DYNAMIC_BRUSH_DEPOSIT_PIPELINE_CAUSAL_V4,
       seed: 303,

@@ -289,6 +289,106 @@ export function renameTimelineClip(
   return { ...doc, clips };
 }
 
+// ── 클립 노출 구간 편집 (시작·길이 — 드래그/숫자 입력의 단일 진입점) ──────
+
+/** 클립이 노출하는 프레임 수 (inclusive 구간 길이, 정규화된 클립은 항상 ≥ 1). */
+export function timelineClipDurationFrames(clip: StudioAnimClipRange): number {
+  return clip.endFrame - clip.startFrame + 1;
+}
+
+/**
+ * 전역 프레임이 어느 클립 구간에 속하는지 해석한다 — 재생·미리보기·내보내기가 "지금 프레임이
+ * 어떤 클립 노출인가"를 물을 때의 단일 해석 지점. 겹친 구간에서는 시작이 가장 늦은(위에
+ * 배치된) 클립이 이기고, 시작이 같으면 doc.clips 뒤쪽 항목이 이긴다. 순수.
+ */
+export function timelineClipAtFrame(
+  doc: AnimationTimelineDoc,
+  frameIndex: number
+): StudioAnimClipRange | null {
+  let winner: StudioAnimClipRange | null = null;
+  for (const clip of doc.clips ?? []) {
+    if (frameIndex < clip.startFrame || frameIndex > clip.endFrame) continue;
+    if (!winner || clip.startFrame >= winner.startFrame) winner = clip;
+  }
+  return winner;
+}
+
+function mapTimelineClip(
+  doc: AnimationTimelineDoc,
+  clipId: string,
+  fn: (clip: StudioAnimClipRange) => StudioAnimClipRange
+): AnimationTimelineDoc {
+  const existing = doc.clips ?? [];
+  const index = existing.findIndex((clip) => clip.id === clipId);
+  if (index < 0) return doc;
+  const current = existing[index]!;
+  const next = fn(current);
+  if (next.startFrame === current.startFrame && next.endFrame === current.endFrame) return doc;
+  const clips = existing.map((clip, i) => (i === index ? next : clip));
+  return { ...doc, clips };
+}
+
+/**
+ * 클립 전체를 길이 유지한 채 이동한다(노출 바 본체 드래그·시작 숫자 입력 공용).
+ * 시작은 [0, frameCount - 길이]로 클램프 — 클립이 타임라인 밖으로 나가지 않는다. 순수.
+ */
+export function moveTimelineClip(
+  doc: AnimationTimelineDoc,
+  clipId: string,
+  nextStartFrame: number
+): AnimationTimelineDoc {
+  return mapTimelineClip(doc, clipId, (clip) => {
+    const length = timelineClipDurationFrames(clip);
+    const start = Math.round(clamp(nextStartFrame, 0, Math.max(0, doc.frameCount - length)));
+    return { ...clip, startFrame: start, endFrame: start + length - 1 };
+  });
+}
+
+/**
+ * 클립 시작만 옮긴다(노출 바 왼쪽 손잡이 드래그). 끝은 고정이라 길이가 함께 변하고,
+ * 시작은 끝 프레임까지만 — 길이가 1 아래로 줄지 않는다. 순수.
+ */
+export function setTimelineClipStart(
+  doc: AnimationTimelineDoc,
+  clipId: string,
+  nextStartFrame: number
+): AnimationTimelineDoc {
+  return mapTimelineClip(doc, clipId, (clip) => {
+    const start = Math.round(clamp(nextStartFrame, 0, clip.endFrame));
+    return { ...clip, startFrame: start };
+  });
+}
+
+/**
+ * 클립 노출 길이를 프레임 수로 정한다(노출 바 오른쪽 손잡이 드래그·길이 숫자 입력 공용 —
+ * 타임시트에서 숫자로 늘이는 조작과 1:1 대응). 시작은 고정, 끝은
+ * [시작, frameCount - 1]로 클램프. 예: 길이를 6으로 정하면 resolveActiveClipExposure·
+ * activeClipExposureFrameIndices가 정확히 그 6프레임을 돌려줘 재생·미리보기·내보내기가
+ * 같은 구간을 본다. 순수.
+ */
+export function setTimelineClipDuration(
+  doc: AnimationTimelineDoc,
+  clipId: string,
+  durationFrames: number
+): AnimationTimelineDoc {
+  return mapTimelineClip(doc, clipId, (clip) => {
+    const duration = Math.round(clamp(durationFrames, 1, Math.max(1, doc.frameCount - clip.startFrame)));
+    return { ...clip, endFrame: clip.startFrame + duration - 1 };
+  });
+}
+
+/**
+ * 활성 노출 구간 안의 전역 프레임 인덱스 목록(오름차순). 활성 클립이 없으면 전체 타임라인.
+ * 스크럽 범위·미리보기 루프·내보내기 구간이 모두 이 목록 하나에서 도출돼야 서로 어긋나지
+ * 않는다 — 길이 N짜리 클립을 활성화하면 정확히 N개의 인덱스가 나온다. 순수.
+ */
+export function activeClipExposureFrameIndices(doc: AnimationTimelineDoc): number[] {
+  const { startFrame, endFrame } = resolveActiveClipExposure(doc);
+  const indices: number[] = [];
+  for (let frame = startFrame; frame <= endFrame; frame += 1) indices.push(frame);
+  return indices;
+}
+
 /**
  * Ease curve sample for UI editors (0..1 → 0..1). Alias of the shipped ease set so keyframe
  * panels can expose a small CSP-like curve menu without embedding a full graph editor.

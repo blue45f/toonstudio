@@ -24,13 +24,16 @@ function helpItems(activeToolCommandId: string | null = "tool.pen") {
 }
 
 describe("§15.3 Help 그룹", () => {
-  it("keeps every existing entry and adds the independent manual before learning", () => {
+  it("keeps every existing entry and pins learning (tutorials first) at the top of the group", () => {
     const ids = helpItems().map((item) => item.id);
     expect(ids).toEqual([
-      "command-search", "terminology-search", "current-tool", "user-manual",
-      "feature-tutorials", "shortcuts", "diagnostics", "recovery", "licenses", "bug-report",
+      "feature-tutorials", "shortcuts", "user-manual",
+      "command-search", "terminology-search", "current-tool",
+      "diagnostics", "recovery", "licenses", "bug-report",
     ]);
     expect(new Set(ids).size).toBe(ids.length);
+    // 첫 줄이 곧 튜토리얼 진입점이다 — 코치를 닫은 첫 실행 사용자의 재발견 경로 (first-run F4.4).
+    expect(ids[0]).toBe("feature-tutorials");
   });
 
   it("한국어가 아닌 로케일에서는 영어 라벨을 낸다", () => {

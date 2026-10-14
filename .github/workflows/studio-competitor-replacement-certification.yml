@@ -10,19 +10,36 @@ on:
       - "pnpm-lock.yaml"
       - "apps/desktop-sync/**"
       - "apps/web/src/domains/creator/**"
+      - "apps/api/src/modules/creator/**"
+      - "apps/api/src/modules/personal-cloud/**"
+      - "apps/api/src/modules/production-collaboration/**"
       - "apps/api/src/modules/studio-project-graph/**"
+      - "apps/api/src/platform/database/schema/studio-project-graph.schema.ts"
+      - "packages/core/src/production/**"
       - "packages/studio-project-model/**"
       - "packages/studio-format-gateway/**"
       - "scripts/verify-studio-competitor-replacement*"
       - "scripts/verify-studio-reference-projects*"
       - "scripts/verify-studio-professional-validation*"
+      - "scripts/verify-security-advisory-exceptions*"
+      - "scripts/verify-studio-operational-validation*"
+      - "scripts/verify-studio-publishing-lifecycle*"
+      - "scripts/verify-studio-psd-original-quality*"
+      - "scripts/verify-studio-publish-package-goldens*"
+      - "scripts/studio-competitor-replacement-certification-workflow.test.mjs"
       - "scripts/*desktop-sync-release*"
       - ".github/workflows/desktop-sync-release.yml"
       - "docs/operations/toonstudio-desktop-folder-sync.md"
       - "docs/product/ALL_IN_ONE_IMPLEMENTATION_STATUS.md"
+      - "docs/benchmarks/studio-competitor-registry.json"
       - "docs/benchmarks/studio-competitor-replacement-program.json"
+      - "docs/benchmarks/studio-operational-validation-certification.json"
+      - "docs/benchmarks/studio-publishing-lifecycle-certification.json"
       - "docs/benchmarks/studio-reference-project-certification.json"
       - "docs/validation/studio-professional-creator-validation*"
+      - "tests/benchmarks/**"
+      - "tests/fault-injection/**"
+      - "tests/visual/recovery-package-cas-contract.test.ts"
   push:
     branches: [main]
     paths:
@@ -31,19 +48,36 @@ on:
       - "pnpm-lock.yaml"
       - "apps/desktop-sync/**"
       - "apps/web/src/domains/creator/**"
+      - "apps/api/src/modules/creator/**"
+      - "apps/api/src/modules/personal-cloud/**"
+      - "apps/api/src/modules/production-collaboration/**"
       - "apps/api/src/modules/studio-project-graph/**"
+      - "apps/api/src/platform/database/schema/studio-project-graph.schema.ts"
+      - "packages/core/src/production/**"
       - "packages/studio-project-model/**"
       - "packages/studio-format-gateway/**"
       - "scripts/verify-studio-competitor-replacement*"
       - "scripts/verify-studio-reference-projects*"
       - "scripts/verify-studio-professional-validation*"
+      - "scripts/verify-security-advisory-exceptions*"
+      - "scripts/verify-studio-operational-validation*"
+      - "scripts/verify-studio-publishing-lifecycle*"
+      - "scripts/verify-studio-psd-original-quality*"
+      - "scripts/verify-studio-publish-package-goldens*"
+      - "scripts/studio-competitor-replacement-certification-workflow.test.mjs"
       - "scripts/*desktop-sync-release*"
       - ".github/workflows/desktop-sync-release.yml"
       - "docs/operations/toonstudio-desktop-folder-sync.md"
       - "docs/product/ALL_IN_ONE_IMPLEMENTATION_STATUS.md"
+      - "docs/benchmarks/studio-competitor-registry.json"
       - "docs/benchmarks/studio-competitor-replacement-program.json"
+      - "docs/benchmarks/studio-operational-validation-certification.json"
+      - "docs/benchmarks/studio-publishing-lifecycle-certification.json"
       - "docs/benchmarks/studio-reference-project-certification.json"
       - "docs/validation/studio-professional-creator-validation*"
+      - "tests/benchmarks/**"
+      - "tests/fault-injection/**"
+      - "tests/visual/recovery-package-cas-contract.test.ts"
   workflow_dispatch:
 
 permissions:
@@ -70,13 +104,21 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
-      - name: Verify workstream evidence, desktop sync, and claim policy
-        run: pnpm run verify:studio-competitor-replacement
+      - name: Verify replacement program evidence and claim policy
+        run: pnpm run verify:studio-competitor-replacement:program
+      - name: Verify desktop sync tests and types
+        run: pnpm run verify:studio-competitor-replacement:desktop-sync
+      - name: Verify professional validation kit and claim safety
+        run: pnpm run verify:studio-professional-validation-kit
+      - name: Verify desktop sync release packaging
+        run: pnpm run test:desktop-sync-release
+      - name: Verify certification workflow contract
+        run: node --test scripts/studio-competitor-replacement-certification-workflow.test.mjs
       - name: Execute deterministic reference projects A-D
         run: node scripts/verify-studio-reference-projects.mjs --run --receipt qa-results/studio-reference-projects/receipt.json
       - name: Upload certification receipts
         if: always()
-        uses: actions/upload-artifact@v4 # NOSONAR S7637 trusted first-party action
+        uses: actions/upload-artifact@v6 # NOSONAR S7637 trusted first-party action
         with:
           name: studio-competitor-replacement-${{ github.run_id }}
           path: qa-results/studio-reference-projects

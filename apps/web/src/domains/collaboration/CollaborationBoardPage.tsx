@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { COLLABORATION_MODES, COLLABORATION_PAY, COLLABORATION_ROLES, COLLABORATION_STATUS } from "../../../../../packages/core/src/collaboration";
 
 import { CollaborationCard, CollaborationSafety, CollabLogin, CollabNotice, collabButton, collabInput, collabPrimary } from "./collaboration-ui";
+import { collaborationRoleBilingualLabel } from "../creator/production-hub/production-labels";
 
 import type { CollaborationList } from "../../../../../packages/core/src/collaboration";
 
@@ -37,17 +38,8 @@ const templates = [
 const views = { all: "전체 공고", mine: "내 공고", applied: "지원한 공고", saved: "저장한 공고" } as const;
 const viewsEn = { all: "All posts", mine: "My posts", applied: "Applied", saved: "Saved" } as const;
 
+// 작업 분야 이름표는 제작 공정과의 정본 매핑표(production-labels의 COLLABORATION_ROLE_PROCESS_MAP)가 맡는다.
 const EN_LABELS: Record<string, string> = {
-  "스토리·콘티": "Story · storyboards",
-  "러프·스케치": "Roughs · sketches",
-  "선화": "Line art",
-  "밑색": "Flats",
-  "채색·명암": "Coloring · shading",
-  "배경": "Backgrounds",
-  "3D 모델·소재": "3D models · assets",
-  "식자·편집": "Lettering · editing",
-  "모션·영상": "Motion · video",
-  "기타·복합 작업": "Other · mixed",
   "유료": "Paid",
   "금액 협의": "Negotiable",
   "수익 배분": "Revenue share",
@@ -132,7 +124,7 @@ export function CollaborationBoardPage() {
         </summary>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[
           ["role", "작업 분야", COLLABORATION_ROLES], ["payType", "보수 방식", COLLABORATION_PAY], ["workMode", "작업 방식", COLLABORATION_MODES], ["status", "모집 상태", COLLABORATION_STATUS],
-        ].map(([key, label, options]) => <label key={String(key)} className="text-xs font-medium text-fg-2">{bt(String(label), EN_LABELS[String(label)] ?? String(label))}<select aria-label={bt(String(label), EN_LABELS[String(label)] ?? String(label))} className={collabInput} value={params.get(String(key)) || (key === "status" && view === "all" ? "open" : "all")} onChange={(event) => change(String(key), event.target.value)}><option value="all">{bt("전체", "All")}</option>{Object.entries(options).map(([value, text]) => <option key={value} value={value}>{bt(String(text), EN_LABELS[String(text)] ?? String(text))}</option>)}</select></label>)}</div>
+        ].map(([key, label, options]) => <label key={String(key)} className="text-xs font-medium text-fg-2">{bt(String(label), EN_LABELS[String(label)] ?? String(label))}<select aria-label={bt(String(label), EN_LABELS[String(label)] ?? String(label))} className={collabInput} value={params.get(String(key)) || (key === "status" && view === "all" ? "open" : "all")} onChange={(event) => change(String(key), event.target.value)}><option value="all">{bt("전체", "All")}</option>{Object.entries(options).map(([value, text]) => { const roleLabel = String(key) === "role" ? collaborationRoleBilingualLabel(value) : null; return <option key={value} value={value}>{bt(roleLabel ? roleLabel.ko : String(text), roleLabel ? roleLabel.en : (EN_LABELS[String(text)] ?? String(text)))}</option>; })}</select></label>)}</div>
         <div className="mt-3 flex justify-end"><button type="button" onClick={() => setParams({})} className="min-h-11 text-sm text-fg-3 underline underline-offset-4">{bt("필터 초기화", "Reset filters")}</button></div>
       </details>
     </section>

@@ -57,6 +57,28 @@ const COVER_PROXY_HOSTS: ReadonlySet<string> = new Set([
 
 const COVER_PROXY_PREFIX = "/api/cover?u=";
 
+// 표지 표준 폭 — srcSet 후보 폭의 정본. 그리드 카드의 CSS 폭(cover-image.tsx의
+// COVER_GRID_SIZES: 모바일 50vw≈160~320px · 태블릿 33vw · 데스크톱 25vw·상한 16rem)과
+// hero(20rem)에 DPR 1~2를 곱해 도출했다. 브라우저는 sizes와 함께 이 후보 중 카드 폭에
+// 맞는 가장 작은 폭만 수신한다. API 측(catalog.controller.ts의 COVER_STANDARD_WIDTHS)과
+// 반드시 동기 상태로 유지한다 — 한쪽에만 있는 폭은 프록시가 무시한다(원본 서빙).
+export const COVER_STANDARD_WIDTHS = [160, 320, 480, 640, 960] as const;
+
+export type CoverStandardWidth = (typeof COVER_STANDARD_WIDTHS)[number];
+
+// 임의의 숫자를 표준 폭으로 인정하지 않는다 — 목록 밖 폭은 변형·캐시 키를 만들지 않는다.
+export function isCoverStandardWidth(width: number): width is CoverStandardWidth {
+  return (COVER_STANDARD_WIDTHS as readonly number[]).includes(width);
+}
+
+// 프록시 URL에 표준 폭 힌트(&w=)를 붙인다. 이미 폭이 지정된 프록시 URL은 존중하고,
+// 표준 폭이 아닌 값은 붙이지 않는다(호출부 실수로 임의 변형이 생기지 않게).
+function withCoverWidth(proxyUrl: string, width?: number): string {
+  if (width === undefined || !isCoverStandardWidth(width)) return proxyUrl;
+  if (/[?&]w=\d+/.test(proxyUrl)) return proxyUrl;
+  return `${proxyUrl}&w=${width}`;
+}
+
 // KMAS 호스트 판정 — API 측 isKmasCover(apps/api/src/server/kmas.ts)와 같은 의미로,
 // kmas.or.kr 본체와 그 서브도메인을 모두 본다.
 function isKmasHost(hostname: string): boolean {
@@ -66,9 +88,11 @@ function isKmasHost(hostname: string): boolean {
 // 표지 src 1건을 프록시 URL로 바꾼다. 이미 프록시 경유인 URL, 로컬 자산(/…), data:/blob:
 // 인라인 이미지는 그대로 둔다. 허용 호스트가 아닌 절대 URL도 그대로 둔다.
 // KMAS 표지는 파일 머리말의 예외 근거에 따라 변환하지 않는다.
-export function proxiedCoverSrc(src: string): string {
+// width(표준 폭)를 주면 프록시 결과에만 &w= 힌트를 붙인다 — 프록시를 타지 않는
+// 표지(KMAS·로컬·미허용 호스트)에는 폭 힌트가 의미가 없어 붙이지 않는다.
+export function proxiedCoverSrc(src: string, width?: number): string {
   if (!src) return src;
-  if (src.startsWith(COVER_PROXY_PREFIX)) return src;
+  if (src.startsWith(COVER_PROXY_PREFIX)) return withCoverWidth(src, width);
   if (src.startsWith("data:") || src.startsWith("blob:")) return src;
   if (src.startsWith("/") && !src.startsWith("//")) return src;
 
@@ -83,7 +107,16 @@ export function proxiedCoverSrc(src: string): string {
   if (!COVER_PROXY_HOSTS.has(url.hostname)) return src;
   // API 프록시는 https 원본만 받는다. http로 온 허용 호스트 표지는 https로 올려서 중계한다.
   if (url.protocol === "http:") url.protocol = "https:";
-  return `${COVER_PROXY_PREFIX}${encodeURIComponent(url.href)}`;
+  return withCoverWidth(`${COVER_PROXY_PREFIX}${encodeURIComponent(url.href)}`, width);
+}
+
+// 표지 1건의 표준 폭 srcSet을 만든다. 프록시를 타는 표지만 변형 후보를 갖고,
+// 프록시를 타지 않는 표지(KMAS 직접 연결·로컬·미허용 호스트)는 후보를 만들지
+// 않는다(undefined) — 폭 협상이 불가능한 URL에 거짓 디스크립터를 주지 않기
+// 위해서다(S3-16에서 세운 원칙). 단일 src 폴백은 호출부의 src가 담당한다.
+export function coverStandardSrcSet(src: string): string | undefined {
+  if (!proxiedCoverSrc(src).startsWith(COVER_PROXY_PREFIX)) return undefined;
+  return COVER_STANDARD_WIDTHS.map((width) => `${proxiedCoverSrc(src, width)} ${width}w`).join(", ");
 }
 
 // srcset("url 480w, url2 960w")의 각 URL에도 같은 변환을 적용한다.

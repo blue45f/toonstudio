@@ -1,5 +1,10 @@
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
+import {
+  parseReturnContext,
+  type ReturnContext,
+} from "@/shared/navigation/return-context";
+
 export type StudioMarketplaceDeepLinkAccountSync = Readonly<{
   status: "synchronized" | "skipped" | "retry-required";
   message: string;
@@ -270,4 +275,21 @@ export function consumeStudioMarketplaceInstallLocation<TState>(
     hash: location.hash,
     state: location.state,
   };
+}
+
+/**
+ * 복귀 맥락 계약 어댑터 (BLUEPRINT §2.4, S2-8).
+ *
+ * 레거시 마켓 복귀(`marketReturn`)를 일반 계약(`@/shared/navigation/return-context`)의
+ * 형태로 변환한다. 명시 계약이 함께 실려 있으면 그쪽이 우선한다 — 마켓 파일럿이
+ * 계약 파라미터를 함께 싣기 시작한 뒤에도 옛 링크가 같은 의미로 읽히게 하기 위해서다.
+ */
+export function marketReturnContext(search: string): ReturnContext | null {
+  const href = readStudioMarketplaceReturnHref(search);
+  if (!href) return null;
+  return { returnTo: href, intent: "apply-market-resource" };
+}
+
+export function resolveStudioReturnContext(search: string): ReturnContext | null {
+  return parseReturnContext(search) ?? marketReturnContext(search);
 }

@@ -24,6 +24,8 @@ export interface StudioAdvancedFillSettings {
   closeGapPx: number;
   antiAlias: boolean;
   continuousFill: boolean;
+  /** 둘러싸기(래소) 채우기: 켜면 무장 중 드래그가 탭 대신 둘러싸기 경로로 동작한다. 기본 꺼짐. */
+  lassoFill: boolean;
   leakGuard: boolean;
   leakGuardMaxFillRatio: number;
   treatCanvasEdgeAsBoundary: boolean;
@@ -57,6 +59,7 @@ export const DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS: Readonly<StudioAdvancedFillS
     closeGapPx: 3,
     antiAlias: true,
     continuousFill: true,
+    lassoFill: false,
     leakGuard: true,
     leakGuardMaxFillRatio: 0.65,
     treatCanvasEdgeAsBoundary: true,
@@ -88,6 +91,7 @@ export const STUDIO_ADVANCED_FILL_SETTING_LABELS: Readonly<
   closeGapPx: "선 틈 메우기",
   antiAlias: "가장자리 부드럽게",
   continuousFill: "연속 채우기",
+  lassoFill: "둘러싸기 채우기",
   leakGuard: "채우기 누수 보호",
   leakGuardMaxFillRatio: "누수 경고 면적",
   treatCanvasEdgeAsBoundary: "캔버스 가장자리를 경계로 사용",
@@ -227,6 +231,10 @@ export function normalizeStudioAdvancedFillSettings(raw: unknown): StudioAdvance
     continuousFill: normalizeBoolean(
       parsed.continuousFill,
       DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS.continuousFill
+    ),
+    lassoFill: normalizeBoolean(
+      parsed.lassoFill,
+      DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS.lassoFill
     ),
     leakGuard: normalizeBoolean(parsed.leakGuard, DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS.leakGuard),
     leakGuardMaxFillRatio: normalizeSteppedNumber(

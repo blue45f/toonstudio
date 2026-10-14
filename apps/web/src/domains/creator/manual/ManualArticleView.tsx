@@ -6,6 +6,7 @@ import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { manualArticleScreen, manualSectionTool, manualStepRegions, type ManualArticleScreen } from "./manual-article-screens";
+import { manualSectionToolHref, manualWorkspaceHref } from "./manual-deep-link";
 import { manualRegionCopy, manualRegionNumber } from "./manual-screen-map";
 import { ManualCategoryIcon } from "./ManualCategoryIcon";
 import { ManualScreenMap } from "./ManualScreenMap";
@@ -44,7 +45,7 @@ function SectionToolLink({ articleId, sectionId }: { readonly articleId: string;
   if (!tool) return null;
   return (
     <p className="manual-section-tool manual-no-print">
-      <a href={tool.href} target="_blank" rel="noopener noreferrer" lang={language.startsWith("ko") ? "ko" : "en"}>
+      <a href={manualSectionToolHref(articleId, tool)} target="_blank" rel="noopener noreferrer" lang={language.startsWith("ko") ? "ko" : "en"}>
         {bt(tool.label.ko, tool.label.en)}
         <span className="manual-sr-only">{bt(" (새 탭)", " (new tab)")}</span>
         <ExternalLink size={14} aria-hidden="true" />
@@ -113,6 +114,8 @@ export function ManualArticleView({ article }: { readonly article: ManualArticle
   const category = findManualCategory(article.category);
   const { previous, next } = adjacentManualArticles(article.id);
   const workspace = MANUAL_WORKSPACE_LABELS[article.workspace];
+  // 매뉴얼 딥링크(S2-9): 도착 표면이 맥락 배너·복귀 행동을 제공하도록 복귀 맥락 계약을 실어 보낸다.
+  const workspaceHref = manualWorkspaceHref(article);
   const workspaceLabel = workspace ? bt(workspace.ko, workspace.en) : bt("관련 작업 공간 열기", "Open the related workspace");
   const minutes = manualReadingMinutes(article);
   const screen = manualArticleScreen(article.id);
@@ -134,7 +137,7 @@ export function ManualArticleView({ article }: { readonly article: ManualArticle
           {bt(`읽는 시간 약 ${minutes}분`, `About ${minutes} min read`)} · <time dateTime={MANUAL_UPDATED}>{bt(`${MANUAL_UPDATED.replaceAll("-", ".")} 업데이트`, `Updated ${MANUAL_UPDATED}`)}</time>
         </p>
         <div className="manual-actions manual-no-print">
-          <a className="manual-primary" href={article.workspace} target="_blank" rel="noopener noreferrer">
+          <a className="manual-primary" href={workspaceHref} target="_blank" rel="noopener noreferrer">
             {workspaceLabel}
             <span className="manual-sr-only">{bt(" (새 탭)", " (new tab)")}</span>
             <ExternalLink size={15} aria-hidden="true" />
@@ -225,7 +228,7 @@ export function ManualArticleView({ article }: { readonly article: ManualArticle
           <h2 id="manual-tool-cta-title">{bt("읽은 기능을 바로 써 보세요", "Try what you just read")}</h2>
           <p>{bt("작업 공간은 새 탭에서 열려서 이 문서를 옆에 두고 따라 할 수 있어요.", "The workspace opens in a new tab so you can follow along with this article.")}</p>
         </div>
-        <a className="manual-primary" href={article.workspace} target="_blank" rel="noopener noreferrer">
+        <a className="manual-primary" href={workspaceHref} target="_blank" rel="noopener noreferrer">
           {workspaceLabel}
           <span className="manual-sr-only">{bt(" (새 탭)", " (new tab)")}</span>
           <ExternalLink size={15} aria-hidden="true" />

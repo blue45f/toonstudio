@@ -44,7 +44,10 @@ describe("Studio 3D Advanced Pose & Hand Expression Library", () => {
 
   it("attaches discovery metadata (category, gender, figures, tags) to every pose", () => {
     const categoryIds = new Set(WEBTOON_POSE_CATEGORY_META.map((meta) => meta.id));
-    expect(categoryIds.size).toBe(4);
+    expect(categoryIds.size).toBe(7);
+    expect(categoryIds.has("dialogue")).toBe(true);
+    expect(categoryIds.has("couple")).toBe(true);
+    expect(categoryIds.has("sitting")).toBe(true);
 
     const ids = new Set<string>();
     for (const pose of ADVANCED_WEBTOON_POSES) {
@@ -79,6 +82,17 @@ describe("Studio 3D Advanced Pose & Hand Expression Library", () => {
     const twoFigures = filterWebtoonPosePresets({ figures: 2 });
     expect(twoFigures.length).toBeGreaterThan(0);
     expect(twoFigures.some((pose) => pose.id === "dramatic-romantic-hug")).toBe(true);
+
+    const dialogue = filterWebtoonPosePresets({ category: "dialogue" });
+    expect(dialogue.length).toBeGreaterThanOrEqual(3);
+    expect(dialogue.some((pose) => pose.id === "dialogue-whisper-secret")).toBe(true);
+
+    const couple = filterWebtoonPosePresets({ category: "couple" });
+    expect(couple.length).toBeGreaterThanOrEqual(4);
+    expect(couple.every((pose) => pose.figures === 2)).toBe(true);
+
+    const sitting = filterWebtoonPosePresets({ category: "sitting" });
+    expect(sitting.length).toBeGreaterThanOrEqual(3);
 
     const byQuery = filterWebtoonPosePresets({ query: "검" });
     expect(byQuery.some((pose) => pose.id === "action-sword-slash")).toBe(true);

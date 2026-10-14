@@ -26,6 +26,10 @@ import {
   type StudioBackgroundPreset,
 } from "./studio-background-presets";
 import {
+  StudioPhotoLtBackgroundPanel,
+  type StudioPhotoLtBackgroundPlacement,
+} from "./lt-convert/StudioPhotoLtBackgroundPanel";
+import {
   rememberStudioBackgroundRecent,
 } from "./studio-background-recent";
 import { svgToDataUrl } from "./studio-characters";
@@ -47,6 +51,8 @@ export interface StudioBackgroundPanelProps {
   /** Current gradient stops when page uses gradient fill (optional, for status). */
   currentBgGrad?: string[] | null;
   onApply: (payload: StudioBackgroundApply) => void;
+  /** 사진→선화 배경 배치 커밋. 지정하면 채우기 탭에 사진 LT 표면이 붙는다. */
+  onPlacePhotoLtBackground?: (placement: StudioPhotoLtBackgroundPlacement) => void;
   /** Canvas size resizer slot (StudioCanvasResizer). */
   sizeSlot?: ReactNode;
   /** Initial tab. */
@@ -115,6 +121,7 @@ export function StudioBackgroundPanel({
   currentBg,
   currentBgGrad = null,
   onApply,
+  onPlacePhotoLtBackground,
   sizeSlot,
   initialTab = "fill",
   acquireUiPreferences = acquireProductStudioUiPreferencesRepository,
@@ -299,6 +306,15 @@ export function StudioBackgroundPanel({
         )
       ) : (
         <>
+          {/* 사진 → 선화 배경 (사진 LT) */}
+          {onPlacePhotoLtBackground ? (
+            <StudioPhotoLtBackgroundPanel
+              canvasW={canvasW}
+              canvasH={canvasH}
+              onPlace={onPlacePhotoLtBackground}
+            />
+          ) : null}
+
           {/* Custom + quick solids */}
           <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-line bg-card/80 p-2">
             <label className="flex items-center gap-1.5 text-[0.64rem] font-medium text-fg-2">

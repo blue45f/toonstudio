@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { CatalogController } from "./catalog.controller";
+import { CatalogController, coverUpstreamAccept, parseCoverWidth } from "./catalog.controller";
 import { CatalogService } from "./catalog.service";
 
 import type { Request, Response } from "express";
@@ -162,6 +162,48 @@ describe("CatalogController cover SSRF boundary", () => {
     expect(res.send).toHaveBeenCalledWith(Buffer.from(jpeg));
   });
 
+  it("negotiates the upstream format from the client Accept and marks the response Vary: Accept", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(png, { headers: { "content-type": "image/png" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    // AVIF를 선언하지 않은 클라이언트 — 업스트림에도 AVIF를 제안하지 않는다.
+    const req = { headers: { accept: "image/webp,image/*,*/*;q=0.8" } } as unknown as Request;
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.png", res as unknown as Response, undefined, req
+    );
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect((init.headers as Record<string, string>).Accept).toBe("image/webp,image/*,*/*;q=0.8");
+    expect(res.setHeader).toHaveBeenCalledWith("Vary", "Accept");
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it("forwards a standard width as a Width hint and ignores non-standard widths", async () => {
+    vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
+    const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new globalThis.Response(png, { headers: { "content-type": "image/png" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.png", res as unknown as Response, "320", undefined
+    );
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect((init.headers as Record<string, string>).Width).toBe("320");
+
+    const res2 = { status: vi.fn().mockReturnThis(), send: vi.fn(), setHeader: vi.fn() };
+    await createController().proxyCover(
+      "https://image-comic.pstatic.net/cover.png", res2 as unknown as Response, "12345", undefined
+    );
+    const init2 = fetchMock.mock.calls[1]?.[1] as RequestInit;
+    expect((init2.headers as Record<string, string>).Width).toBeUndefined();
+    expect(res2.status).toHaveBeenCalledWith(200);
+  });
+
   it("rejects an oversized cover by its declared Content-Length without reading the body", async () => {
     vi.stubEnv("COVER_IMAGE_POLICY", "proxy");
     const arrayBuffer = vi.fn();
@@ -211,6 +253,33 @@ describe("CatalogController cover SSRF boundary", () => {
     );
     expect(res.status).toHaveBeenCalledWith(502);
     expect(res.send).toHaveBeenCalledWith("cover too large");
+  });
+});
+
+describe("cover transport negotiation helpers", () => {
+  it.each([
+    ["160", 160],
+    ["320", 320],
+    ["960", 960],
+  ])("parseCoverWidth accepts standard width %j", (raw, expected) => {
+    expect(parseCoverWidth(raw)).toBe(expected);
+  });
+
+  it.each([undefined, "", "abc", "0", "161", "1024", "12345", ["320"], { w: "320" }])(
+    "parseCoverWidth rejects %j (원본 서빙으로 폴백)",
+    (raw) => {
+      expect(parseCoverWidth(raw)).toBeUndefined();
+    }
+  );
+
+  it("coverUpstreamAccept only offers formats the client declared", () => {
+    expect(coverUpstreamAccept(undefined)).toBe("image/avif,image/webp,image/*,*/*;q=0.8");
+    expect(coverUpstreamAccept("image/avif,image/webp,image/*,*/*;q=0.8")).toBe(
+      "image/avif,image/webp,image/*,*/*;q=0.8"
+    );
+    expect(coverUpstreamAccept("image/webp,image/*")).toBe("image/webp,image/*,*/*;q=0.8");
+    expect(coverUpstreamAccept("image/png,image/*;q=0.8,*/*;q=0.5")).toBe("image/*,*/*;q=0.8");
+    expect(coverUpstreamAccept("*/*")).toBe("image/*,*/*;q=0.8");
   });
 });
 

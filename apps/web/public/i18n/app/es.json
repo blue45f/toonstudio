@@ -76,6 +76,7 @@
   "app.name": "En el estudio.",
   "app.brandBeta": "Servicio beta  Los datos y las características pueden cambiar",
   "app.loading": "Carga",
+  "app.skipToContent": "Skip to main content",
   "auth.menu.triggerLabel": "Menú de cuentas",
   "auth.menu.adminPanel": "Consola de administración",
   "auth.menu.profile": "Mi perfil .",

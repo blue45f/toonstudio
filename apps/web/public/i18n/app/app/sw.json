@@ -1,5 +1,6 @@
 {
   "app.name": "ToonStudio",
   "app.brandBeta": "Huduma ya beta  data na huduma zinaweza kubadilika",
-  "app.loading": "Kubeba"
+  "app.loading": "Kubeba",
+  "app.skipToContent": "Skip to main content"
 }

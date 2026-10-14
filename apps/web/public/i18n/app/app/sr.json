@@ -1,5 +1,6 @@
 {
   "app.name": "ТоунСтудио",
   "app.brandBeta": "Бета услуга  подаци и карактеристике могу да се промењују",
-  "app.loading": "Натовар"
+  "app.loading": "Натовар",
+  "app.skipToContent": "Skip to main content"
 }

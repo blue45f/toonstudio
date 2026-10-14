@@ -34,5 +34,5 @@
   "studio.vrmPoser.notice.sharedPoseApplied": "공유된 포즈 '{name}'를 적용했습니다.",
   "studio.vrmPoser.notice.sharedPoseDeleted": "공유된 포즈가 성공적으로 삭제되었습니다.",
   "studio.vrmPoser.notice.sharedPoseLoadFailed": "공유 포즈를 불러오지 못했습니다.",
-  "studio.vrmPoser.notice.sharedPoseMissing3dSettings": "이 포즈 에셋에는 3D 설정 정보가 포함되어 있지 않습니다."
+  "studio.vrmPoser.notice.sharedPoseMissing3dSettings": "이 포즈 소재에는 3D 설정 정보가 포함되어 있지 않습니다."
 }

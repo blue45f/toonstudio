@@ -18,7 +18,9 @@ import {
   reopenStudioCommentThread,
   resolveStudioCommentThread,
   serializeStudioCommentsDocument,
+  setStudioCommentThreadReferences,
   STUDIO_COMMENTS_MAX_BODY_LENGTH,
+  STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD,
   STUDIO_COMMENTS_MAX_DISPLAY_NAME_LENGTH,
   STUDIO_COMMENTS_MAX_MENTIONS,
   STUDIO_COMMENTS_MAX_REPLIES_PER_THREAD,
@@ -656,5 +658,122 @@ describe("studio comment pdf-page anchors", () => {
       x: 0.25,
       y: 0.75,
     })).not.toBe(canonicalStudioCommentAnchorKey(PDF_PIN_ANCHOR));
+  });
+});
+
+describe("studio comment feedback packet references", () => {
+  const REFERENCE = {
+    id: "ref-1",
+    label: "원하는 표정",
+    sourceKind: "url" as const,
+    imageUrl: "https://example.com/expression.png",
+  };
+  const COMPARE_REFERENCE = {
+    id: "compare-ref:pool-7",
+    label: "비교 이미지 2",
+    sourceKind: "compare-pool" as const,
+    sourceId: "pool-7",
+    imageUrl: "https://example.com/compare.png",
+  };
+
+  it("stores references on thread creation and round-trips serialize/normalize", () => {
+    const document = addStudioCommentThread(
+      createEmptyStudioCommentsDocument(),
+      {
+        id: "thread-ref",
+        anchor: PAGE_ANCHOR,
+        author: AUTHOR,
+        body: "표정을 이렇게 바꿔 주세요",
+        references: [REFERENCE, COMPARE_REFERENCE],
+      },
+      CREATED_AT
+    );
+    expect(document.threads[0]?.references).toEqual([REFERENCE, COMPARE_REFERENCE]);
+    const roundTripped = normalizeStudioCommentsDocument(
+      JSON.parse(serializeStudioCommentsDocument(document))
+    );
+    expect(roundTripped.threads[0]?.references).toEqual([REFERENCE, COMPARE_REFERENCE]);
+  });
+
+  it("omits the references field entirely when none are attached (legacy shape)", () => {
+    const document = withThread();
+    expect(document.threads[0]).not.toHaveProperty("references");
+  });
+
+  it("rejects invalid references on the write path instead of dropping them silently", () => {
+    expect(() =>
+      addStudioCommentThread(
+        createEmptyStudioCommentsDocument(),
+        {
+          id: "thread-bad-ref",
+          anchor: PAGE_ANCHOR,
+          author: AUTHOR,
+          body: "본문",
+          // compare-pool without sourceId violates the reference contract
+          references: [{ id: "ref-x", label: "비교", sourceKind: "compare-pool" }],
+        },
+        CREATED_AT
+      )
+    ).toThrow();
+    expect(() =>
+      addStudioCommentThread(
+        createEmptyStudioCommentsDocument(),
+        {
+          id: "thread-many-ref",
+          anchor: PAGE_ANCHOR,
+          author: AUTHOR,
+          body: "본문",
+          references: Array.from(
+            { length: STUDIO_COMMENTS_MAX_REFERENCES_PER_THREAD + 1 },
+            (_, index) => ({ ...REFERENCE, id: `ref-${index}` })
+          ),
+        },
+        CREATED_AT
+      )
+    ).toThrow();
+  });
+
+  it("normalizes legacy reference aliases and drops only the invalid entries", () => {
+    const normalized = normalizeStudioCommentsDocument({
+      comments: [
+        legacyThread("legacy-ref", {
+          attachments: [
+            { referenceId: "a1", name: "포즈 참고", poolItemId: "pool-9", url: "https://example.com/p.png" },
+            { referenceId: "a2", name: "보드 참고", boardItemId: "item-2" },
+            { name: "id 없는 항목", url: "https://example.com/x.png" },
+            { referenceId: "a1", name: "중복", url: "https://example.com/dup.png" },
+          ],
+        }),
+      ],
+    });
+    expect(normalized.threads[0]?.references).toEqual([
+      {
+        id: "a1",
+        label: "포즈 참고",
+        sourceKind: "compare-pool",
+        sourceId: "pool-9",
+        imageUrl: "https://example.com/p.png",
+      },
+      { id: "a2", label: "보드 참고", sourceKind: "reference-board", sourceId: "item-2" },
+    ]);
+  });
+
+  it("replaces and clears references with setStudioCommentThreadReferences", () => {
+    const base = withThread();
+    const withReferences = setStudioCommentThreadReferences(
+      base,
+      "thread-1",
+      [REFERENCE],
+      UPDATED_AT
+    );
+    expect(withReferences.threads[0]?.references).toEqual([REFERENCE]);
+    expect(withReferences.threads[0]?.updatedAt).toBe(UPDATED_AT.toISOString());
+    // same content → same document reference (no-op)
+    expect(setStudioCommentThreadReferences(withReferences, "thread-1", [REFERENCE], UPDATED_AT)).toBe(
+      withReferences
+    );
+    const cleared = setStudioCommentThreadReferences(withReferences, "thread-1", null, UPDATED_AT);
+    expect(cleared.threads[0]).not.toHaveProperty("references");
+    expect(setStudioCommentThreadReferences(base, "missing-thread", [REFERENCE], UPDATED_AT)).toBe(base);
   });
 });

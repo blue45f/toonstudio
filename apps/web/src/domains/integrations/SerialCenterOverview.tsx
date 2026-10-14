@@ -9,6 +9,7 @@ import {
   listProductionProjects,
   type ProductionProjectSummary,
 } from "@/domains/creator/public/production-projects";
+import { SummaryBufferShield } from "@/domains/creator/production-hub/SerializationBufferShield";
 
 /**
  * 연재 센터 첫 화면의 "내 작품 연재 현황".
@@ -220,6 +221,9 @@ function SerialProjectCard({
           </div>
         ) : null}
       </dl>
+      <div className="mt-3">
+        <SummaryBufferShield readyBufferCount={project.readyBufferCount} />
+      </div>
       <div className="mt-4 flex flex-wrap gap-2 pt-1">
         <button
           type="button"

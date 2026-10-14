@@ -22,7 +22,7 @@
     "rootScale": 1
   },
   "provenance": {
-    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, 그리고 Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종(hair/short-layered, hair/soft-bob, hair/romance-long, hair/action-pony, hair/hime-cut, hair/wolf-layered, hair/twin-tail, top/tee, top/hoodie, top/shirt, top/blazer, top/sailor, bottom/jeans, bottom/shorts, bottom/pleated-skirt, bottom/long-skirt, bottom/slacks, shoes/sneakers, shoes/loafers, shoes/boots, shoes/sandals, accessory/ribbon, accessory/cap, accessory/headphones, top/shirt@male, top/sailor@male, top/blazer@male, top/hoodie@male, hair/soft-bob@male, hair/short-layered@male, hair/wolf-layered@male, hair/action-pony@male, hair/romance-long@male)입니다. Hyper3D 파츠의 license 값(hyper3d-rodin-output)은 법적 허용을 뜻하지 않습니다. 약관상 닫히지 않은 점은 apps/character-lab/docs/hyper3d-terms-record.md에 있고 파츠별 생성 id는 provenance.sources[].generationId에 있습니다. Hyper3D 원본 GLB는 저장소에 없습니다.",
+    "summaryKo": "Blender Foundation Human Base Meshes Bundle v1.4.1(CC0)을 가공한 파생물과 이 저장소에서 절차 생성한 원본 디자인, 그리고 Hyper3D(Rodin Gen-2.5) 생성물을 리타깃·재베이크한 파생 파츠 33종(hair/short-layered, hair/soft-bob, hair/romance-long, hair/action-pony, hair/hime-cut, hair/wolf-layered, hair/twin-tail, top/tee, top/hoodie, top/shirt, top/blazer, top/sailor, bottom/jeans, bottom/shorts, bottom/pleated-skirt, bottom/long-skirt, bottom/slacks, shoes/sneakers, shoes/loafers, shoes/boots, shoes/sandals, accessory/ribbon, accessory/cap, accessory/headphones, top/shirt@male, top/sailor@male, top/blazer@male, top/hoodie@male, hair/soft-bob@male, hair/short-layered@male, hair/wolf-layered@male, hair/action-pony@male, hair/romance-long@male)입니다. Hyper3D 파츠의 license 값(hyper3d-rodin-output)은 법적 허용을 뜻하지 않습니다. 약관상 닫히지 않은 점은 apps/character-lab/docs/hyper3d-terms-record.md에 있고 파츠별 생성 id는 provenance.sources[].generationId에 있습니다. Hyper3D 원본 GLB는 저장소에 없습니다. [2026-10-14 라이선스 정리] Hyper3D 파생 33종은 provenance.hyper3dClearance.status=pending-evidence 로 격리 표기했습니다. 플랜 증빙·계정 보유자 일치·서면 확인이 약관 기록 §9에 첨부되기 전에는 상업 배포 확정으로 보지 않으며, 서면 답변이 부정적이면 original/CC0 파츠로 교체합니다.",
     "noticeFile": "NOTICE.md",
     "sources": [
       {
@@ -52,7 +52,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 겉 껍데기·안쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "f63e1379-d77f-4351-9a6d-74ff796ff91a",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-soft-bob",
@@ -64,7 +65,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 3,000 설정) 보브 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,300/1,800/950 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "f2ef0164-fae1-41ac-b321-2b6dd346cb21",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-romance-long",
@@ -76,7 +78,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(4,500/2,400/1,300 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "832d34d6-59d9-449c-8bfd-d490eb472e44",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-action-pony",
@@ -88,7 +91,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 하이 포니테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(정수리 묶음 + 긴 꼬리)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "49c429e4-3e07-42ac-8382-8adb611bf1b7",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-hime-cut",
@@ -100,7 +104,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 히메컷 헤어 흉상 생성물(블런트 뱅·볼 옆 머리)을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,200/2,800/1,500 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "555ced0b-d341-4401-ad26-50824a80b2e1",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-wolf-layered",
@@ -112,7 +117,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 울프 컷 헤어 흉상 생성물(커튼 뱅 레이어드)을 BANG으로 분리한 겉 껍데기·뒤쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 앞머리를 눈썹 위로 올림, LOD 3단(6,000/3,200/1,700 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "579b60ac-dff8-42a9-a39e-0b4fa99878c8",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-twin-tail",
@@ -124,7 +130,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 트윈테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(양쪽 높은 묶음 + 꼬리 둘)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 두개골 폭에 맞춘 배율이 꼬리를 머리에 붙은 단발로 만들어 묶음 아래 꼬리를 아래로 1.7배·바깥으로 4 cm 늘림, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "ee5b4422-7df7-4fb8-842b-0385146cafab",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-top-tee",
@@ -136,7 +143,8 @@
         "derivative": true,
         "changesKo": "옷만 요청한 티셔츠 생성물에서 마네킹 목 조각을 지우고, 베이스 T-포즈 몸에 맞춰 리타깃(정렬·충돌 해소·웹툰풍 스무딩·표면 결합), 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "82698064-e736-4b1e-ac56-67f6569bd364",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-top-hoodie",
@@ -148,7 +156,8 @@
         "derivative": true,
         "changesKo": "베이스 T-포즈 몸에 캥거루 주머니·목 둘레 접힘을 입체로 넣은 프록시 후디(앞·뒤·옆 3장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 후디 몸통 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 생성 모델이 모든 시도에서 후드 볼륨을 만들지 못해(칼라로 읽거나 BANG이 머리 파츠에 붙였다) 후드(목 둘레 접힘 토러스 + 등에 늘어진 주머니)는 이 저장소가 맞춰진 셸 위에 직접 만들어 붙인다(원본 Hyper3D 형상이 아님).",
         "generationId": "4949cb5c-98d3-4842-9f05-02dbcf651c61",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-top-shirt",
@@ -160,7 +169,8 @@
         "derivative": true,
         "changesKo": "베이스 T-포즈 몸에 뾰족한 칼라·칼라 스탠드·앞단을 입체로 넣은 프록시 셔츠(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 긴팔 셔츠 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 셔츠를 쓴다.",
         "generationId": "66101633-05ce-4898-8dd9-8c2dec747424",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-top-blazer",
@@ -172,7 +182,8 @@
         "derivative": true,
         "changesKo": "베이스 T-포즈 몸에 노치 라펠·가슴 주머니·플랩 주머니·단추를 입체로 넣은 프록시 블레이저(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 블레이저 파츠와 안쪽 셔츠 칼라 조각을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 블레이저를 쓴다.",
         "generationId": "268c6adf-bb7f-4755-b550-c6aa2bd9bd38",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-top-sailor",
@@ -184,7 +195,8 @@
         "derivative": true,
         "changesKo": "베이스 T-포즈 몸에 앞 V 칼라·뒤 사각 칼라·스카프 매듭을 입체로 넣은 프록시 세일러 상의(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 몸통·칼라 조각·소매단을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크(네이비 칼라·빨간 스카프는 휘도 영역과 입체 지오메트리로 남는다). 남성 베이스는 BANG이 손등까지 소매 천을 남겨 손목에 찢긴 조각이 걸리므로 손목 관절 평면에서 소매 끝을 자른다.",
         "generationId": "039a2bba-a235-45b7-9bde-296cff7cafcf",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-bottom-jeans",
@@ -196,7 +208,8 @@
         "derivative": true,
         "changesKo": "옷만 요청한 청바지 생성물에서 마네킹 허리·발목·신발 조각을 지우고, 베이스 T-포즈 몸에 맞춰 리타깃(정렬·충돌 해소·웹툰풍 스무딩·표면 결합), 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "cb5a2e39-ecf4-4f99-9380-89267264053b",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-bottom-shorts",
@@ -208,7 +221,8 @@
         "derivative": true,
         "changesKo": "반바지만 요청했지만 마네킹 몸이 함께 나온 생성물을 BANG으로 분리한 반바지 파츠를 베이스 T-포즈 몸에 허리선 기준으로 맞춰 리타깃, 웹툰풍 스무딩, 4,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "454cee0f-eefa-40d1-a59d-56d944c6394a",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-bottom-pleated-skirt",
@@ -220,7 +234,8 @@
         "derivative": true,
         "changesKo": "교복 여학생 전신 생성물을 BANG으로 분리한 주름치마 파츠를 베이스 T-포즈 몸에 맞춰 리타깃(퍼짐과 주름을 유지하도록 약한 스무딩·충돌 해소만), 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "f12ea410-75bf-4475-a213-198746431395",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-bottom-long-skirt",
@@ -232,7 +247,8 @@
         "derivative": true,
         "changesKo": "롱스커트 여성 전신 생성물을 BANG으로 분리한 A라인 롱스커트 파츠를 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "e68a0738-cbb4-49c6-8c63-e8e137b8bd32",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-bottom-slacks",
@@ -244,7 +260,8 @@
         "derivative": true,
         "changesKo": "바지만 요청했지만 마네킹 몸이 함께 나온 생성물을 BANG으로 분리한 바지 파츠를 베이스 T-포즈 몸에 허리선 기준으로 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "cfda62fb-19a3-4e4a-992f-1c4c52dd68ae",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-shoes-sneakers",
@@ -256,7 +273,8 @@
         "derivative": true,
         "changesKo": "스니커즈 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "d6cd1b50-7e9f-401e-a4b4-87bf45b0e336",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-shoes-loafers",
@@ -268,7 +286,8 @@
         "derivative": true,
         "changesKo": "로퍼 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "347f643a-9d8d-4f13-9b11-4d07305d28ff",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-shoes-boots",
@@ -280,7 +299,8 @@
         "derivative": true,
         "changesKo": "끈 달린 앵클부츠 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "b793c25d-6247-43d9-a040-1be2d82252f8",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-shoes-sandals",
@@ -292,7 +312,8 @@
         "derivative": true,
         "changesKo": "스트랩 샌들 한 켤레 생성물을 그대로 쓰되 베이스 발 길이에 맞춰 리타깃, 5,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "2a7df564-2bd6-49c9-ae0c-e5bdcece8c4f",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-accessory-ribbon",
@@ -304,7 +325,8 @@
         "derivative": true,
         "changesKo": "헤어 리본 생성물을 너비 7.5 cm로 줄여 머리 왼쪽 위(귀 위쪽)에 얹도록 리타깃, 2,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "43d44c7c-1c5d-4f31-83b5-dbc584859567",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-accessory-cap",
@@ -316,7 +338,8 @@
         "derivative": true,
         "changesKo": "야구모자 생성물을 베이스 머리 너비에 맞춰 정수리 위에 얹도록 리타깃, 3,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "da32af22-d1e3-4103-a160-002557e24c2a",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-accessory-headphones",
@@ -328,7 +351,8 @@
         "derivative": true,
         "changesKo": "헤드폰 생성물을 베이스 머리 너비에 맞춰 귀 바깥에 오도록 리타깃, 3,500 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크.",
         "generationId": "ca9c78df-affa-4329-b12e-87ba46bd29b6",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-top-shirt-male",
@@ -340,7 +364,8 @@
         "derivative": true,
         "changesKo": "베이스 T-포즈 몸에 뾰족한 칼라·칼라 스탠드·앞단을 입체로 넣은 프록시 셔츠(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 긴팔 셔츠 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 셔츠를 쓴다.",
         "generationId": "eeaa0eeb-f4fa-4cb5-88a4-d3909bfb8fd3",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-top-sailor-male",
@@ -352,7 +377,8 @@
         "derivative": true,
         "changesKo": "베이스 T-포즈 몸에 앞 V 칼라·뒤 사각 칼라·스카프 매듭을 입체로 넣은 프록시 세일러 상의(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 몸통·칼라 조각·소매단을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 텍스처를 상대색 JPEG로 재베이크(네이비 칼라·빨간 스카프는 휘도 영역과 입체 지오메트리로 남는다). 남성 베이스는 BANG이 손등까지 소매 천을 남겨 손목에 찢긴 조각이 걸리므로 손목 관절 평면에서 소매 끝을 자른다.",
         "generationId": "9aa9c672-bae8-4562-b01d-cc52aec04a52",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-top-blazer-male",
@@ -364,7 +390,8 @@
         "derivative": true,
         "changesKo": "베이스 T-포즈 몸에 노치 라펠·가슴 주머니·플랩 주머니·단추를 입체로 넣은 프록시 블레이저(앞·뒤 2장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 블레이저 파츠와 안쪽 셔츠 칼라 조각을 합쳐 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 8,000 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 남성 베이스는 남성 프록시로 따로 생성한 블레이저를 쓴다.",
         "generationId": "c5fc147c-860d-4fd6-be08-ad44753ce3c4",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-top-hoodie-male",
@@ -376,7 +403,8 @@
         "derivative": true,
         "changesKo": "베이스 T-포즈 몸에 캥거루 주머니·목 둘레 접힘을 입체로 넣은 프록시 후디(앞·뒤·옆 3장)를 입힌 렌더를 참조 이미지로 생성한 전신(T-포즈)에서 BANG으로 분리한 후디 몸통 파츠를 포즈 변환 없이 베이스 T-포즈 몸에 맞춰 리타깃, 웹툰풍 스무딩, 6,500 삼각형으로 축소, 앞·뒤 중앙이 V자로 처진 밑단을 옆면 높이로 수평하게 자르고, 텍스처를 상대색 JPEG로 재베이크. 생성 모델이 모든 시도에서 후드 볼륨을 만들지 못해(칼라로 읽거나 BANG이 머리 파츠에 붙였다) 후드(목 둘레 접힘 토러스 + 등에 늘어진 주머니)는 이 저장소가 맞춰진 셸 위에 직접 만들어 붙인다(원본 Hyper3D 형상이 아님).",
         "generationId": "116ca34c-27df-4bd5-8de1-7bf76c24825c",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-soft-bob-male",
@@ -388,7 +416,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 3,000 설정) 보브 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(3,300/1,800/950 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "6eec895d-0347-468c-a3be-0d0086f1dedb",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-short-layered-male",
@@ -400,7 +429,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 숏 레이어드 헤어 흉상 생성물(옆으로 쓸어 넘긴 앞머리)을 BANG으로 분리한 겉 껍데기·안쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "f821fc5a-0d1a-4e84-84a4-8793a1ee2c3d",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-wolf-layered-male",
@@ -412,7 +442,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 울프 컷 헤어 흉상 생성물(커튼 뱅 레이어드)을 BANG으로 분리한 겉 껍데기·뒤쪽 조각 두 덩어리를 합쳐 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, 앞머리를 눈썹 위로 올림, LOD 3단(6,000/3,200/1,700 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "65af7240-df63-4931-8ac1-0d0826328eac",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-action-pony-male",
@@ -424,7 +455,8 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 하이 포니테일 헤어 흉상 생성물을 BANG으로 분리한 헤어 파츠(정수리 묶음 + 긴 꼬리)를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(5,000/2,700/1,400 삼각형), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "122f0174-fcc0-4a20-83a6-0745481be836",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       },
       {
         "id": "hyper3d-hair-romance-long-male",
@@ -436,9 +468,24 @@
         "derivative": true,
         "changesKo": "청크형(저폴리 5,000 설정) 가운데 가르마 긴 생머리 흉상 생성물을 BANG으로 분리한 헤어 파츠를 같은 좌표계 머리 메시의 두개골 폭·정수리에 맞춰 베이스 머리로 리타깃, LOD 3단(4,500/2,400/1,300 삼각형, 두피 덮개 별도), 정점을 합치고 원통 UV와 세로 가닥 줄무늬 텍스처를 새로 만듦.",
         "generationId": "02dac44e-f730-453f-aefe-4eb25ddf83f1",
-        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md"
+        "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+        "evidenceStatus": "statement-only-pending-evidence"
       }
-    ]
+    ],
+    "hyper3dClearance": {
+      "status": "pending-evidence",
+      "commercialUseCleared": false,
+      "licenseValue": "hyper3d-rodin-output",
+      "count": 33,
+      "evidenceDoc": "apps/character-lab/docs/hyper3d-terms-record.md",
+      "attachedEvidence": [],
+      "requiredEvidence": [
+        "paid-plan-proof: 플랜명(Creator/Business/Enterprise)과 결제 기록 보관 위치 (§6-1)",
+        "account-holder-match: 생성 계정 보유자 = 발행 주체(에이치준랩스) 증빙 (§6-2)",
+        "written-confirmation: Deemos 서면 답변 원문·날짜 — 특히 수정·파생 허용(질문 3)과 공개 저장소 호스팅·수령자 고지(질문 4) (§6-3)"
+      ],
+      "decisionRuleKo": "위 증빙 3종이 evidenceDoc §9에 첨부·기록되기 전에는 이 33종을 상업 배포 확정 에셋으로 보지 않는다(격리 표기). 서면 답변이 부정적이면 33종을 공개 저장소에서 제거하고 original/CC0 파츠로 교체한다(§6-4). 사용자 진술(유료 구독)만으로는 evidenceStatus를 바꾸지 않는다."
+    }
   },
   "skeleton": {
     "root": "Armature",

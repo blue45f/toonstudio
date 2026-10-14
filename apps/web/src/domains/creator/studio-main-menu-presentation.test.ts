@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   STUDIO_MAIN_MENU_ACTION_ORDER,
+  STUDIO_MAIN_MENU_ADVANCED_COMPOSITE_SOURCES,
   STUDIO_MAIN_MENU_COMPOSITE_GROUPS,
   STUDIO_MAIN_MENU_PRESENTATION_ORDER,
+  STUDIO_MAIN_MENU_SPECIALIST_GROUP_IDS,
   createStudioMainMenuPresentation,
+  insertStudioMainMenuAdvancedSectionFoldRows,
+  isStudioMainMenuAdvancedCompositeSource,
   studioMainMenuPresentedTitleFor,
   type StudioMainMenuPresentableGroup,
+  type StudioMainMenuPresentableItem,
 } from "./studio-main-menu-presentation";
 
 const CATALOGUE_IDS = [
@@ -74,7 +79,36 @@ describe("createStudioMainMenuPresentation", () => {
     expect(presentation.presentedGroupIds.at(-1)).toBe("help");
     expect(presentation.presentedActionGroupIds).toEqual([...STUDIO_MAIN_MENU_ACTION_ORDER]);
     expect(presentation.actionGroups[0]?.label).toBe("AI 도우미");
-    expect(presentation.specialistBoundaryGroupId).toBeNull();
+    // No density mode wired: the beginner-safe default draws the specialist
+    // boundary before 효과 (filter), the specialist-only title.
+    expect(presentation.specialistBoundaryGroupId).toBe("filter");
+  });
+
+  it("draws the specialist boundary in beginner modes and lifts it in full mode", () => {
+    expect([...STUDIO_MAIN_MENU_SPECIALIST_GROUP_IDS]).toEqual(["filter"]);
+    expect(
+      createStudioMainMenuPresentation(catalogue(), { densityMode: "simple" })
+        .specialistBoundaryGroupId,
+    ).toBe("filter");
+    expect(
+      createStudioMainMenuPresentation(catalogue(), { densityMode: "focus" })
+        .specialistBoundaryGroupId,
+    ).toBe("filter");
+    // full is the explicit all-tools choice: one undivided professional lane.
+    expect(
+      createStudioMainMenuPresentation(catalogue(), { densityMode: "full" })
+        .specialistBoundaryGroupId,
+    ).toBeNull();
+
+    // A catalogue without the specialist group yields no boundary in any mode.
+    const noFilter = catalogue().filter((group) => group.id !== "filter");
+    expect(
+      createStudioMainMenuPresentation(noFilter, { densityMode: "simple" })
+        .specialistBoundaryGroupId,
+    ).toBeNull();
+    expect(
+      createStudioMainMenuPresentation(noFilter).presentedGroupIds,
+    ).not.toContain("filter");
   });
 
   it("folds related catalogue groups without dropping or reordering commands", () => {
@@ -166,6 +200,23 @@ describe("createStudioMainMenuPresentation", () => {
     expect(overridden.actionGroups.find((group) => group.id === "ai")?.label).toBe("AI 補助");
   });
 
+  it("stamps composite rows with their canonical source group for tier consumers", () => {
+    const presentation = createStudioMainMenuPresentation(catalogue(2));
+    const create = presentation.groups.find((group) => group.id === "create")!;
+    expect(create.items.map((item) => item.sourceGroupId)).toEqual([
+      "brush",
+      "brush",
+      "comic",
+      "comic",
+      "animation",
+      "animation",
+    ]);
+    // Standalone groups are not composites: their rows stay unstamped and
+    // consumers fall back to the presented group id.
+    const help = presentation.groups.find((group) => group.id === "help")!;
+    expect(help.items.every((item) => item.sourceGroupId === undefined)).toBe(true);
+  });
+
   it("keeps unknown future groups in source order immediately before Help", () => {
     const groups: StudioMainMenuPresentableGroup[] = [
       { id: "layer", label: "레이어", items: [{ id: "layer" }] },
@@ -226,5 +277,193 @@ describe("createStudioMainMenuPresentation", () => {
     expect(studioMainMenuPresentedTitleFor("animation")).toBe("create");
     expect(studioMainMenuPresentedTitleFor("filter")).toBe("filter");
     expect(studioMainMenuPresentedTitleFor("ai")).toBe("ai");
+  });
+
+  it("stamps the canonical source group on composite rows", () => {
+    const presentation = createStudioMainMenuPresentation(catalogue(2));
+    const insert = presentation.groups.find((group) => group.id === "insert")!;
+    expect(insert.items.map((item) => item.sourceGroupId)).toEqual([
+      "text",
+      "text",
+      "vector",
+      "vector",
+      "3d",
+      "3d",
+    ]);
+  });
+});
+
+describe("composite section fold for menu-depth relief", () => {
+  const EXPECTED_ADVANCED_SECTIONS = [
+    { groupId: "file", sourceGroupIds: ["collaboration"], itemCount: 2 },
+    { groupId: "edit", sourceGroupIds: ["transform"], itemCount: 2 },
+    { groupId: "view", sourceGroupIds: ["window"], itemCount: 2 },
+    { groupId: "insert", sourceGroupIds: ["vector", "3d"], itemCount: 4 },
+    { groupId: "create", sourceGroupIds: ["animation"], itemCount: 2 },
+  ];
+
+  it("names exactly the low-frequency composite sources as advanced", () => {
+    expect([...STUDIO_MAIN_MENU_ADVANCED_COMPOSITE_SOURCES]).toEqual([
+      "collaboration",
+      "transform",
+      "window",
+      "vector",
+      "3d",
+      "animation",
+    ]);
+    expect(isStudioMainMenuAdvancedCompositeSource("vector")).toBe(true);
+    expect(isStudioMainMenuAdvancedCompositeSource("text")).toBe(false);
+    expect(isStudioMainMenuAdvancedCompositeSource("brush")).toBe(false);
+  });
+
+  it("folds advanced sections in simple, leaving flat one-scan dropdowns", () => {
+    const presentation = createStudioMainMenuPresentation(catalogue(2), {
+      densityMode: "simple",
+    });
+
+    expect(presentation.compositeAdvancedSections).toEqual(EXPECTED_ADVANCED_SECTIONS);
+    expect(presentation.foldedCompositeItemCount).toBe(12);
+    // compositeSources still reports the full absorbed set for search/tests.
+    expect(presentation.compositeSources.insert).toEqual(["text", "vector", "3d"]);
+
+    const byId = (id: string) => presentation.groups.find((group) => group.id === id)!;
+    // Single surviving section: caption dropped, dropdown is a flat list.
+    expect(byId("file").items.map((item) => item.id)).toEqual([
+      "file-command-0",
+      "file-command-1",
+    ]);
+    expect(byId("file").items.map((item) => item.sectionLabel)).toEqual([
+      undefined,
+      undefined,
+    ]);
+    expect(byId("view").items.map((item) => item.sectionLabel)).toEqual([
+      undefined,
+      undefined,
+    ]);
+    expect(byId("insert").items.map((item) => item.id)).toEqual([
+      "text-command-0",
+      "text-command-1",
+    ]);
+    expect(byId("insert").items.map((item) => item.sectionLabel)).toEqual([
+      undefined,
+      undefined,
+    ]);
+    // Two surviving everyday sections keep their captions.
+    expect(byId("edit").items.map((item) => item.sectionLabel)).toEqual([
+      "편집",
+      undefined,
+      "선택",
+      undefined,
+    ]);
+    expect(byId("create").items.map((item) => item.id)).toEqual([
+      "brush-command-0",
+      "brush-command-1",
+      "comic-command-0",
+      "comic-command-1",
+    ]);
+    // Standalone titles are untouched.
+    expect(byId("filter").items).toHaveLength(2);
+    expect(byId("canvas").items).toHaveLength(2);
+  });
+
+  it("folds the same sections in focus", () => {
+    const presentation = createStudioMainMenuPresentation(catalogue(2), {
+      densityMode: "focus",
+    });
+    expect(presentation.compositeAdvancedSections).toEqual(EXPECTED_ADVANCED_SECTIONS);
+    expect(presentation.foldedCompositeItemCount).toBe(12);
+  });
+
+  it("restores every section in original order when expanded in simple", () => {
+    const presentation = createStudioMainMenuPresentation(catalogue(2), {
+      densityMode: "simple",
+      advancedSectionsExpanded: true,
+    });
+    expect(presentation.compositeAdvancedSections).toEqual(EXPECTED_ADVANCED_SECTIONS);
+    expect(presentation.foldedCompositeItemCount).toBe(0);
+    const insert = presentation.groups.find((group) => group.id === "insert")!;
+    expect(insert.items.map((item) => item.id)).toEqual([
+      "text-command-0",
+      "text-command-1",
+      "vector-command-0",
+      "vector-command-1",
+      "3d-command-0",
+      "3d-command-1",
+    ]);
+    expect(
+      insert.items.map((item) => item.sectionLabel).filter((label) => label !== undefined),
+    ).toEqual(["텍스트", "벡터", "3D"]);
+  });
+
+  it("keeps the legacy presentation in full and when the mode is unwired", () => {
+    for (const options of [{ densityMode: "full" as const }, {}]) {
+      const presentation = createStudioMainMenuPresentation(catalogue(2), options);
+      expect(presentation.compositeAdvancedSections).toEqual([]);
+      expect(presentation.foldedCompositeItemCount).toBe(0);
+      const insert = presentation.groups.find((group) => group.id === "insert")!;
+      expect(insert.items).toHaveLength(6);
+      expect(insert.items[0]?.sectionLabel).toBe("텍스트");
+    }
+  });
+
+  it("inserts one fold row per affected title, at the boundary when expanded", () => {
+    const buildFoldItem = (
+      groupId: string,
+      advancedCount: number,
+    ): StudioMainMenuPresentableItem => ({
+      id: `fold:${groupId}:${advancedCount}`,
+    });
+
+    const collapsed = createStudioMainMenuPresentation(catalogue(2), {
+      densityMode: "simple",
+    });
+    const collapsedGroups = insertStudioMainMenuAdvancedSectionFoldRows(
+      collapsed.groups,
+      collapsed.compositeAdvancedSections,
+      false,
+      buildFoldItem,
+    );
+    const collapsedFile = collapsedGroups.find((group) => group.id === "file")!;
+    expect(collapsedFile.items.map((item) => item.id)).toEqual([
+      "file-command-0",
+      "file-command-1",
+      "fold:file:2",
+    ]);
+    // Titles without advanced sections keep their original reference.
+    const collapsedCanvas = collapsedGroups.find((group) => group.id === "canvas");
+    expect(collapsedCanvas).toBe(
+      collapsed.groups.find((group) => group.id === "canvas"),
+    );
+
+    const expanded = createStudioMainMenuPresentation(catalogue(2), {
+      densityMode: "simple",
+      advancedSectionsExpanded: true,
+    });
+    const expandedGroups = insertStudioMainMenuAdvancedSectionFoldRows(
+      expanded.groups,
+      expanded.compositeAdvancedSections,
+      true,
+      buildFoldItem,
+    );
+    const expandedInsert = expandedGroups.find((group) => group.id === "insert")!;
+    expect(expandedInsert.items.map((item) => item.id)).toEqual([
+      "text-command-0",
+      "text-command-1",
+      "fold:insert:4",
+      "vector-command-0",
+      "vector-command-1",
+      "3d-command-0",
+      "3d-command-1",
+    ]);
+
+    // No sections (full/unwired) returns the groups untouched.
+    expect(
+      insertStudioMainMenuAdvancedSectionFoldRows(
+        collapsed.groups,
+        [],
+        false,
+        buildFoldItem,
+      ),
+    ).toBe(collapsed.groups);
   });
 });

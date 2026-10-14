@@ -11,6 +11,7 @@ import {
   productionSurfacePath,
   type ProductionSurfaceTarget,
 } from "./production-project-surfaces";
+import { buildStudioPublishHrefFromChecklist } from "./production-publish-qc-link";
 import { ProductionPill, ProductionSectionCard } from "./production-ui";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -132,9 +133,9 @@ export function ProductionEpisodeQcChecklist({
             </Link>
             <Link
               className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-9" })}
-              to={`/publish?${new URLSearchParams({ projectId: aggregate.projectId, title: aggregate.title }).toString()}`}
+              to={buildStudioPublishHrefFromChecklist(aggregate.projectId, checklist)}
             >
-              {bt("발행 센터", "Publish Center")}
+              {bt("게시 센터로 이동", "Go to the publish center")}
             </Link>
           </div>
         </div>

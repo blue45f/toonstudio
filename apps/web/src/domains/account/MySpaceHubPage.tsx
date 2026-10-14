@@ -147,6 +147,11 @@ function visitTimeLabel(value: number, locale: "ko" | "en"): string {
   }).format(new Date(value));
 }
 
+/**
+ * 개인 정본 허브 (BLUEPRINT §1.2). "내 것"의 유일한 시작점이며 조망 전용이다 —
+ * 실제 작업은 각 모듈 표면(/library·/market/library·/me)에서 하고, 모듈 상단의
+ * 공통 크롬(MySpaceModuleChrome)이 여기로 돌아온다. /home은 개인 공간이 아닌 작업 홈이다.
+ */
 export function MySpaceHubPage() {
   useBilingualI18nRevision();
 

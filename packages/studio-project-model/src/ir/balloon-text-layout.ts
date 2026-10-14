@@ -1,7 +1,14 @@
 /**
  * Balloon paragraph lanes — Korean/CJK word-boundary line wrapping plus
- * rect/ellipse region layout for speech balloons (V11 comic pipeline).
- * Irregular balloon flow is v2; this module covers 사각·타원 영역만.
+ * region layout for speech balloons (V11 comic pipeline).
+ *
+ * v2 (불규칙 형상 흐름): 사각·타원에 더해 구름(cloud)·스파이크(spike)·커스텀
+ * 폴리곤(polygon) 형상 안에서도 텍스트가 형상 경계를 따라 흐른다. 구름·스파이크
+ * 외곽은 manga-toolkit/speech-balloon.ts의 cloudPath/spikyPath와 같은 기하
+ * (구름 돌기 1.22배·스파이크 외곽 1.18/안쪽 0.92)를 폴리곤으로 샘플링하고,
+ * 커스텀 형상은 호출자가 넘긴 폐곡선 폴리곤을 그대로 영역으로 쓴다. 밴드(줄
+ * 상자)마다 폴리곤과의 교차 구간을 구해 그 구간 안에서만 랩핑·배치하므로,
+ * 줄 상자 전체가 형상 내부에 들어가는 것이 보장된다(스캔라인 교차의 교집합).
  *
  * Design contract (절대 규칙 반영):
  * - Pure & deterministic. No DOM, no ambient locale — every `Intl.Segmenter`
@@ -435,7 +442,26 @@ export function wrapBalloonText(
   return { lines, overflow };
 }
 
-export type BalloonShape = "rect" | "ellipse";
+/**
+ * Balloon region shapes. `rect`/`ellipse` are the v1 analytic shapes;
+ * `cloud`/`spike` sample the preset outlines drawn by
+ * manga-toolkit/speech-balloon.ts; `polygon` uses the caller-supplied
+ * closed outline (`outline` option, balloon-local coordinates).
+ */
+export type BalloonShape = "rect" | "ellipse" | "cloud" | "spike" | "polygon";
+
+export interface BalloonOutlinePoint {
+  x: number;
+  y: number;
+}
+
+/** Horizontal room a shape offers one line box, in balloon-local coords. */
+export interface BalloonBand {
+  /** Left edge of the usable interval. */
+  left: number;
+  /** Usable width (0 when the band is degenerate / outside the shape). */
+  width: number;
+}
 export type BalloonTextAlign = "left" | "center" | "right";
 
 export interface PlacedBalloonLine {
@@ -448,7 +474,21 @@ export interface PlacedBalloonLine {
   availableWidth: number;
 }
 
-export interface LayoutBalloonLinesOptions {
+export interface BalloonRegionOptions {
+  /** Closed outline for `shape: "polygon"` (balloon-local, y-down). */
+  outline?: readonly BalloonOutlinePoint[];
+  /**
+   * Extra safety inset (px) shaved off both sides of every band.
+   * Default 0 — v1 rect/ellipse behaviour is unchanged.
+   */
+  insetPx?: number;
+  /** Cloud bump count for `shape: "cloud"` (speech-balloon 기본값 14). */
+  cloudBumps?: number;
+  /** Spike count for `shape: "spike"` (speech-balloon shout 기본값 18). */
+  spikeCount?: number;
+}
+
+export interface LayoutBalloonLinesOptions extends BalloonRegionOptions {
   shape: BalloonShape;
   width: number;
   height: number;
@@ -474,22 +514,212 @@ export function ellipseChordWidth(
 }
 
 /**
- * Width available to a line box spanning `[top, top + lineHeightPx]`.
+ * Spike outline polygon — the exact vertices of speech-balloon.ts
+ * `spikyPath`: outer tips at 1.18× the nominal ellipse radii, valleys at
+ * 0.92×, alternating around the perimeter.
+ */
+export function spikeBalloonOutline(
+  width: number,
+  height: number,
+  spikes = 18,
+): BalloonOutlinePoint[] {
+  const cx = width / 2;
+  const cy = height / 2;
+  const rx = width / 2;
+  const ry = height / 2;
+  const count = Math.max(6, Math.floor(spikes));
+  const points: BalloonOutlinePoint[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const angle = (Math.PI * 2 * i) / count;
+    points.push({
+      x: cx + Math.cos(angle) * rx * 1.18,
+      y: cy + Math.sin(angle) * ry * 1.18,
+    });
+    const midAngle = (Math.PI * 2 * (i + 0.5)) / count;
+    points.push({
+      x: cx + Math.cos(midAngle) * rx * 0.92,
+      y: cy + Math.sin(midAngle) * ry * 0.92,
+    });
+  }
+  return points;
+}
+
+/** Samples per quadratic bump when polygonising the cloud outline. */
+const CLOUD_BUMP_SAMPLES = 8;
+
+/**
+ * Cloud outline polygon — samples speech-balloon.ts `cloudPath`: quadratic
+ * Bézier bumps between consecutive ellipse perimeter points with the control
+ * point pushed out to 1.22× the radii at the mid-angle.
+ */
+export function cloudBalloonOutline(
+  width: number,
+  height: number,
+  bumps = 14,
+): BalloonOutlinePoint[] {
+  const cx = width / 2;
+  const cy = height / 2;
+  const rx = width / 2;
+  const ry = height / 2;
+  const count = Math.max(8, Math.floor(bumps));
+  const points: BalloonOutlinePoint[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const a0 = (Math.PI * 2 * i) / count;
+    const a1 = (Math.PI * 2 * (i + 1)) / count;
+    const x0 = cx + Math.cos(a0) * rx;
+    const y0 = cy + Math.sin(a0) * ry;
+    const x1 = cx + Math.cos(a1) * rx;
+    const y1 = cy + Math.sin(a1) * ry;
+    const midA = (a0 + a1) / 2;
+    const qx = cx + Math.cos(midA) * rx * 1.22;
+    const qy = cy + Math.sin(midA) * ry * 1.22;
+    for (let step = 0; step < CLOUD_BUMP_SAMPLES; step += 1) {
+      const t = step / CLOUD_BUMP_SAMPLES;
+      const mt = 1 - t;
+      points.push({
+        x: mt * mt * x0 + 2 * mt * t * qx + t * t * x1,
+        y: mt * mt * y0 + 2 * mt * t * qy + t * t * y1,
+      });
+    }
+  }
+  return points;
+}
+
+/** Even-odd fill intervals of a closed polygon along the scanline `y`. */
+function polygonScanlineIntervals(
+  outline: readonly BalloonOutlinePoint[],
+  y: number,
+): Array<{ left: number; right: number }> {
+  const crossings: number[] = [];
+  for (let i = 0; i < outline.length; i += 1) {
+    const a = outline[i];
+    const b = outline[(i + 1) % outline.length];
+    if (a.y === b.y) continue;
+    const lo = Math.min(a.y, b.y);
+    const hi = Math.max(a.y, b.y);
+    if (y < lo || y >= hi) continue;
+    crossings.push(a.x + ((y - a.y) / (b.y - a.y)) * (b.x - a.x));
+  }
+  crossings.sort((p, q) => p - q);
+  const intervals: Array<{ left: number; right: number }> = [];
+  for (let i = 0; i + 1 < crossings.length; i += 2) {
+    intervals.push({ left: crossings[i], right: crossings[i + 1] });
+  }
+  return intervals;
+}
+
+/** Scanline fractions sampled across a line box for the band intersection. */
+const BAND_SCAN_FRACTIONS = [0, 0.25, 0.5, 0.75, 1] as const;
+
+/**
+ * Usable interval for a line box spanning `[top, top + lineHeightPx]` inside
+ * a closed polygon outline.
+ *
+ * The interval is the intersection, over several scanlines across the band,
+ * of the polygon fill interval that contains the outline's bounding-box
+ * centre (falling back to the widest interval). Intersecting across the
+ * whole band — not just sampling the middle scanline — is what guarantees
+ * the entire line box rests inside the shape, the same guarantee the
+ * ellipse chord-at-far-edge rule gives analytically. Non-convex outlines
+ * whose centre interval vanishes mid-band honestly report width 0.
+ */
+export function polygonBalloonBand(
+  outline: readonly BalloonOutlinePoint[],
+  top: number,
+  lineHeightPx: number,
+): BalloonBand {
+  if (outline.length < 3 || lineHeightPx <= 0) return { left: 0, width: 0 };
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  for (const point of outline) {
+    minX = Math.min(minX, point.x);
+    maxX = Math.max(maxX, point.x);
+  }
+  const centerX = (minX + maxX) / 2;
+  let band: { left: number; right: number } | null = null;
+  for (const fraction of BAND_SCAN_FRACTIONS) {
+    const intervals = polygonScanlineIntervals(
+      outline,
+      top + fraction * lineHeightPx,
+    );
+    if (intervals.length === 0) return { left: centerX, width: 0 };
+    const chosen =
+      intervals.find(
+        (interval) => centerX >= interval.left && centerX <= interval.right,
+      ) ??
+      intervals.reduce((widest, interval) =>
+        interval.right - interval.left > widest.right - widest.left
+          ? interval
+          : widest,
+      );
+    if (band === null) {
+      band = { ...chosen };
+    } else {
+      band = {
+        left: Math.max(band.left, chosen.left),
+        right: Math.min(band.right, chosen.right),
+      };
+      if (band.right <= band.left) return { left: centerX, width: 0 };
+    }
+  }
+  if (band === null) return { left: centerX, width: 0 };
+  return { left: band.left, width: band.right - band.left };
+}
+
+/**
+ * Band offered to a line box spanning `[top, top + lineHeightPx]`.
  * For the ellipse the constraining chord is at the edge of the line box
  * farther from the center (the chord shrinks monotonically with |y|), so the
- * whole line box fits inside the shape at the returned width.
+ * whole line box fits inside the shape at the returned width. Cloud, spike
+ * and custom polygon shapes go through `polygonBalloonBand`.
  */
-function lineAvailableWidth(
+function lineBand(
   shape: BalloonShape,
   top: number,
   lineHeightPx: number,
   width: number,
   height: number,
-): number {
-  if (shape === "rect") return width;
-  const cy = height / 2;
-  const dyFar = Math.max(Math.abs(top - cy), Math.abs(top + lineHeightPx - cy));
-  return ellipseChordWidth(dyFar, height / 2, width / 2);
+  region: BalloonRegionOptions,
+): BalloonBand {
+  const inset = Math.max(0, region.insetPx ?? 0);
+  let band: BalloonBand;
+  switch (shape) {
+    case "rect":
+      band = { left: 0, width };
+      break;
+    case "ellipse": {
+      const cy = height / 2;
+      const dyFar = Math.max(
+        Math.abs(top - cy),
+        Math.abs(top + lineHeightPx - cy),
+      );
+      const chord = ellipseChordWidth(dyFar, height / 2, width / 2);
+      band = { left: (width - chord) / 2, width: chord };
+      break;
+    }
+    case "cloud":
+      band = polygonBalloonBand(
+        cloudBalloonOutline(width, height, region.cloudBumps),
+        top,
+        lineHeightPx,
+      );
+      break;
+    case "spike":
+      band = polygonBalloonBand(
+        spikeBalloonOutline(width, height, region.spikeCount),
+        top,
+        lineHeightPx,
+      );
+      break;
+    case "polygon":
+      band = polygonBalloonBand(region.outline ?? [], top, lineHeightPx);
+      break;
+  }
+  if (inset === 0) return band;
+  return {
+    left: band.left + inset,
+    width: Math.max(0, band.width - inset * 2),
+  };
 }
 
 function alignedX(
@@ -509,7 +739,8 @@ function alignedX(
 }
 
 /**
- * Places already-wrapped lines inside a rect or ellipse balloon region.
+ * Places already-wrapped lines inside a balloon region (rect, ellipse,
+ * cloud, spike, or a caller-supplied custom polygon outline).
  * The line block is vertically centered; each line reports the width its
  * band actually offers (`availableWidth` — 0 means the band is degenerate,
  * e.g. an ellipse line box poking past the vertical extremes).
@@ -522,19 +753,12 @@ export function layoutBalloonLines(
   const blockTop = (height - lines.length * lineHeightPx) / 2;
   return lines.map((text, index) => {
     const y = blockTop + index * lineHeightPx;
-    const availableWidth = lineAvailableWidth(
-      shape,
-      y,
-      lineHeightPx,
-      width,
-      height,
-    );
-    const bandLeft = (width - availableWidth) / 2;
+    const band = lineBand(shape, y, lineHeightPx, width, height, options);
     return {
       text,
-      x: alignedX(align, bandLeft, availableWidth, measure(text)),
+      x: alignedX(align, band.left, band.width, measure(text)),
       y,
-      availableWidth,
+      availableWidth: band.width,
     };
   });
 }
@@ -556,7 +780,7 @@ function hangingAwareWidth(
   return measure(points.slice(0, end).join(""));
 }
 
-export interface FitBalloonTextOptions {
+export interface FitBalloonTextOptions extends BalloonRegionOptions {
   shape: BalloonShape;
   width: number;
   height: number;
@@ -582,8 +806,10 @@ export interface FitBalloonTextResult {
 /**
  * Wrap + layout fixed point for a balloon region.
  *
- * The ellipse couples wrapping and layout: each line's available width is the
- * chord at its vertical band, but the bands depend on how many lines exist.
+ * Non-rect shapes couple wrapping and layout: each line's available width is
+ * the shape's band at its vertical position (ellipse chord, or the polygon
+ * band intersection for cloud/spike/custom outlines), but the bands depend
+ * on how many lines exist.
  * We resolve the fixed point by trying line counts `n = 1 … maxSlots`
  * (`maxSlots = floor(height / lineHeightPx)`, the vertical capacity — the
  * guaranteed convergence bound): each pass wraps against the n-line chord
@@ -617,17 +843,29 @@ export function fitBalloonText(
   if (maxSlots < 1) {
     return { lines: [], overflow: text, iterations: 0, fitted: false };
   }
-  const layoutOptions = { shape, width, height, lineHeightPx, align, measure };
+  const layoutOptions = {
+    shape,
+    width,
+    height,
+    lineHeightPx,
+    align,
+    measure,
+    outline: options.outline,
+    insetPx: options.insetPx,
+    cloudBumps: options.cloudBumps,
+    spikeCount: options.spikeCount,
+  };
   const slotWidthsFor = (count: number): number[] => {
     const blockTop = (height - count * lineHeightPx) / 2;
     return Array.from({ length: count }, (_, index) =>
-      lineAvailableWidth(
+      lineBand(
         shape,
         blockTop + index * lineHeightPx,
         lineHeightPx,
         width,
         height,
-      ),
+        options,
+      ).width,
     );
   };
 

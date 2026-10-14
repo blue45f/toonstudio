@@ -332,3 +332,27 @@ describe("computeFlyToTransform", () => {
     expect(next.panY).toBeCloseTo(400 - 400 * 2.5);
   });
 });
+
+describe("feedback packet references on pins", () => {
+  it("스레드의 레퍼런스가 핀으로 전파되고, 없으면 필드 자체가 없다", () => {
+    const reference = {
+      id: "ref-1",
+      label: "원하는 표정",
+      sourceKind: "url" as const,
+      imageUrl: "https://example.com/expression.png",
+    };
+    const withReference = commentThreadToManuscriptPin(
+      makeThread({ references: [reference] }),
+      "page-1",
+      1
+    );
+    expect(withReference?.references).toEqual([reference]);
+    const legacy = commentThreadToManuscriptPin(makeThread(), "page-1", 1);
+    expect(legacy).not.toHaveProperty("references");
+    const pins = commentsDocumentToManuscriptPins(
+      { version: 1, threads: [makeThread({ references: [reference] })] } as StudioCommentsDocument,
+      "page-1"
+    );
+    expect(pins[0]?.references).toEqual([reference]);
+  });
+});

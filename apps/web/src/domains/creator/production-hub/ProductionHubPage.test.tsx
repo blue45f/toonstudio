@@ -74,7 +74,7 @@ describe("webtoon production collaboration UI", () => {
     expect(screen.getByRole("heading", { name: "팀 작업량" })).toBeTruthy();
   });
 
-  it("puts the five core surfaces first and the rest under More", () => {
+  it("shows the project nav as seven stage groups plus a management group", () => {
     render(
       <MemoryRouter initialEntries={["/production/projects/sample-project/overview"]}>
         <Routes>
@@ -83,32 +83,38 @@ describe("webtoon production collaboration UI", () => {
       </MemoryRouter>,
     );
     const nav = screen.getByRole("navigation", { name: "프로젝트 메뉴" });
-    const more = within(nav).getByText("더보기").closest("details");
-    expect(more).not.toBeNull();
-    const coreLinks = within(nav).getAllByRole("link").filter((link) => !(more as HTMLElement).contains(link));
-    expect(coreLinks.map((link) => link.getAttribute("href"))).toEqual([
+    // 내비 그룹은 회차 단계 7개 + 관리다. 개요는 그룹 밖 최상단 고정 링크다.
+    for (const groupLabel of ["기획", "콘티", "작화", "식자·연출", "검수", "게시", "운영", "관리"]) {
+      expect(within(nav).getByRole("group", { name: groupLabel })).toBeTruthy();
+    }
+    expect(within(nav).queryByText("더보기")).toBeNull();
+    // 링크 순서는 단계 여정을 따른다. 식자·게시는 전용 표면이 없어 주 행동 링크로 닿는다
+    // (식자 → 원고 표면, 게시 → 게시 명령 센터). 원고 href가 두 번 나오는 것이 그 증거다.
+    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/production/projects/sample-project/overview",
+      "/production/projects/sample-project/planning",
       "/production/projects/sample-project/production",
-      "/production/projects/sample-project/episodes",
+      "/production/projects/sample-project/manuscripts",
       "/production/projects/sample-project/manuscripts",
       "/production/projects/sample-project/review",
-    ]);
-    expect(within(more as HTMLElement).getAllByRole("link")).toHaveLength(8);
-    // 더보기 여덟 화면은 작업 단계 세 묶음(준비·함께 일하기·운영·계약) 순서로 나열된다.
-    expect(within(more as HTMLElement).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
-      "/production/projects/sample-project/planning",
-      "/production/projects/sample-project/schedule",
-      "/production/projects/sample-project/activity",
       "/production/projects/sample-project/handoff",
-      "/production/projects/sample-project/settings",
+      "/studio/publish",
+      "/production/projects/sample-project/episodes",
       "/production/projects/sample-project/control",
+      "/production/projects/sample-project/activity",
+      "/production/projects/sample-project/schedule",
       "/production/projects/sample-project/procurement",
       "/production/projects/sample-project/rights",
+      "/production/projects/sample-project/settings",
     ]);
-    for (const groupLabel of ["준비", "함께 일하기", "운영·계약"]) {
-      expect(within(more as HTMLElement).getByRole("group", { name: groupLabel })).toBeTruthy();
-    }
-    expect(coreLinks[0]?.getAttribute("aria-current")).toBe("page");
+    expect(within(nav).getByRole("link", { name: /원고에서 식자하기/u })).toBeTruthy();
+    expect(within(nav).getByRole("link", { name: /게시 명령 센터 열기/u })).toBeTruthy();
+    // 시작 상태에서는 그룹 하나(현재 단계 그룹)만 펼쳐진다. 관리는 아래에 접혀 있다.
+    const groups = Array.from(nav.querySelectorAll("details"));
+    expect(groups).toHaveLength(8);
+    expect(groups.filter((group) => (group as HTMLDetailsElement).open)).toHaveLength(1);
+    const overviewLink = within(nav).getAllByRole("link")[0];
+    expect(overviewLink?.getAttribute("aria-current")).toBe("page");
   });
 
   it("keeps role perspective and canonical production data separate", () => {

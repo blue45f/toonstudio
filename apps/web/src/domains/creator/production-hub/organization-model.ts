@@ -1,19 +1,21 @@
 import type { TeamWorkspaceSummary } from "@toonstudio/contracts/production-workspace";
+import type { OrganizationKind, OrganizationRole } from "@toonstudio/contracts/production-organization";
+
+export type { OrganizationAction, OrganizationKind, OrganizationRole } from "@toonstudio/contracts/production-organization";
+export { ORGANIZATION_ROLE_MATRIX, organizationRoleCan } from "@toonstudio/contracts/production-organization";
 
 /**
- * 조직(회사·스튜디오) 단위 로컬 모델.
+ * 조직(회사·스튜디오) 단위 로컬 모델 — 서버 계약 이전 데이터의 이관 전용.
  *
- * 조직 서버 계약이 아직 없으므로 1차 구현의 경계는 이 모듈의 주석이 정본이다.
- * - 조직 프로필·연결 워크스페이스·공지는 소유자 스코프로 이 기기에만 저장한다.
+ * 조직의 정본은 이제 서버 계약이다(packages/contracts production-organization +
+ * `/production/organizations`). 역할·종류·액션 타입과 역할 매트릭스는 contracts가
+ * 정본이고 이 모듈은 재노출만 한다 — 웹 표시와 서버 강제가 같은 표를 본다.
+ * 이 파일에 남는 것은 기기 로컬 구 상태(프로필·연결·공지)의 파싱과 롤업 합산뿐이다.
+ * - 로컬 상태는 조직 홈이 서버로 1회 가져오기 할 때의 입력으로만 쓰인다.
  * - 롤업 수치는 서버가 준 워크스페이스 카운터만 합산한다. 클라이언트가 지어내지 않는다.
  * - 조직 소속은 어떤 자원 접근도 새로 만들지 않는다. 접근 강제는 기존 워크스페이스·
  *   작품 권한이 정본이다 (팀 소속만으로 원고를 열 수 없는 기존 원칙의 조직 확장).
- * - 서버 계약이 생기면 organization-directory의 구현체만 API로 교체한다.
  */
-
-export type OrganizationKind = "company" | "studio" | "team-circle";
-export type OrganizationRole = "owner" | "admin" | "manager" | "member" | "guest";
-export type OrganizationAction = "edit-profile" | "manage-links" | "post-notice" | "view-rollup";
 
 export interface OrganizationProfile {
   readonly id: string;
@@ -57,28 +59,6 @@ export const ORGANIZATION_ROLE_LABELS: Record<OrganizationRole, { readonly ko: s
   member: { ko: "소속 구성원", en: "Member" },
   guest: { ko: "외부 게스트", en: "Guest" },
 };
-
-interface OrganizationRoleRow {
-  readonly role: OrganizationRole;
-  readonly actions: readonly OrganizationAction[];
-}
-
-/**
- * 조직 역할 매트릭스. 조직 역할은 조직 표면(프로필·연결·공지·롤업)에 대한 권한일 뿐
- * 워크스페이스/작품 접근권이 아니며, 서버 강제 위치는 조직 계약이 생긴 뒤의 조직 서버다.
- * guest는 공개 프로필만 보므로 롤업 열람에도 포함하지 않는다.
- */
-export const ORGANIZATION_ROLE_MATRIX: readonly OrganizationRoleRow[] = [
-  { role: "owner", actions: ["edit-profile", "manage-links", "post-notice", "view-rollup"] },
-  { role: "admin", actions: ["edit-profile", "manage-links", "post-notice", "view-rollup"] },
-  { role: "manager", actions: ["post-notice", "view-rollup"] },
-  { role: "member", actions: ["view-rollup"] },
-  { role: "guest", actions: [] },
-];
-
-export function organizationRoleCan(role: OrganizationRole, action: OrganizationAction): boolean {
-  return ORGANIZATION_ROLE_MATRIX.some((row) => row.role === role && row.actions.includes(action));
-}
 
 const STORAGE_PREFIX = "toonstudio.organization.v1:";
 

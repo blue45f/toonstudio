@@ -61,17 +61,22 @@ function SurfaceLink({
  * 프로젝트 메뉴. 핵심 다섯 화면은 항상 보이고, 나머지 여덟 화면은 "더보기"에 접되
  * 작업 단계 세 묶음(준비·함께 일하기·운영·계약)으로 나눠 보여 준다.
  * 현재 화면이 더보기 안에 있으면 그룹을 펼친 상태로 유지한다.
+ * 기획 문서가 비어 있는 프로젝트의 개요에서는 처음부터 더보기(준비 묶음의 기획 포함)를
+ * 펼친 상태로 시작한다 — 기획이 접힌 메뉴 뒤에만 있으면 첫 단계에 닿을 길이 없다.
+ * 사용자가 닫으면 그 선택을 존중한다(초기 펼침일 뿐 강제 펼침이 아니다).
  */
 export function ProductionProjectNav({
   projectId,
   surface,
+  planningEmpty,
 }: {
   readonly projectId: string;
   readonly surface: ProductionProjectSurface | null;
+  readonly planningEmpty?: boolean;
 }) {
   const bt = useBilingual("ProductionProjectNav");
   const moreActive = PRODUCTION_MORE_SURFACES.some((definition) => definition.id === surface);
-  const [moreOpen, setMoreOpen] = useState(moreActive);
+  const [moreOpen, setMoreOpen] = useState(moreActive || (Boolean(planningEmpty) && surface === "overview"));
   const open = moreOpen || moreActive;
   return (
     <nav

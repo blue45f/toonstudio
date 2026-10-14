@@ -50,6 +50,12 @@ import {
 } from "../studio-server-ai-client";
 import type { StudioWriterRoomAiDraft } from "../studio-writer-room-ai";
 
+import {
+  answerTuningMaxTokens,
+  answerTuningTemperature,
+  applyAnswerTuningToSystemPrompt,
+  type AnswerTuning,
+} from "./answer-tuning";
 import { normalizeStudioAiCompositionSuggestion } from "./studio-ai-composition-suggestion";
 import { StudioAiWebtoonStyleFilterEngine, type WebtoonStylePurposeId } from "./studio-ai-webtoon-style-filter";
 import { compileStudioAiImageReferencePromptContexts } from "./studio-ai-image-reference-roles";
@@ -928,7 +934,8 @@ const SCENE_COMPOSITION_SYSTEM_PROMPT =
 export async function suggestSceneComposition(
   settings: StudioAiSettings,
   sceneText: string,
-  transport: StudioTextAiTransport = DEFAULT_TEXT_AI_TRANSPORT
+  transport: StudioTextAiTransport = DEFAULT_TEXT_AI_TRANSPORT,
+  answerTuning?: AnswerTuning
 ): Promise<StudioAiResult<StudioTextAiData<{ suggestion: string }>>> {
   const trimmed = sceneText.trim();
   if (!trimmed) return { ok: false, code: "invalid_input", error: "장면 시나리오/대사를 입력하세요." };
@@ -937,10 +944,12 @@ export async function suggestSceneComposition(
   }
   const result = await postTextCompletion(settings, {
     task: "composition",
-    system: SCENE_COMPOSITION_SYSTEM_PROMPT,
+    system: answerTuning
+      ? applyAnswerTuningToSystemPrompt(SCENE_COMPOSITION_SYSTEM_PROMPT, answerTuning)
+      : SCENE_COMPOSITION_SYSTEM_PROMPT,
     user: trimmed,
-    temperature: 0.7,
-    maxTokens: 400,
+    temperature: answerTuning ? answerTuningTemperature(0.7, answerTuning) : 0.7,
+    maxTokens: answerTuning ? answerTuningMaxTokens(400, answerTuning) : 400,
     responseFormat: "text",
   }, transport);
   if (!result.ok) return result;
@@ -1126,7 +1135,7 @@ export async function translateDialogueBatch(
 export async function suggestDialogueLines(
   settings: StudioAiSettings,
   situationText: string,
-  opts: { existingContext?: string } = {},
+  opts: { existingContext?: string; answerTuning?: AnswerTuning } = {},
   transport: StudioTextAiTransport = DEFAULT_TEXT_AI_TRANSPORT
 ): Promise<StudioAiResult<StudioTextAiData<{ candidates: DialogueSuggestionCandidate[] }>>> {
   const trimmed = situationText.trim();
@@ -1137,10 +1146,13 @@ export async function suggestDialogueLines(
   const { system, user } = buildDialogueSuggestPrompt(trimmed, opts.existingContext ?? "");
   const result = await postTextCompletion(settings, {
     task: "dialogue",
-    system,
+    // 구조화(JSON) 답변이라 길이 지시는 스키마 불변 문구로 붙는다(answer-tuning.ts 참고).
+    system: opts.answerTuning
+      ? applyAnswerTuningToSystemPrompt(system, opts.answerTuning, "structured")
+      : system,
     user,
-    temperature: 0.8, // 서로 다른 후보 여러 개가 목적 — 장면 구성 제안(0.7)보다 살짝 높여 다양성을 늘린다.
-    maxTokens: 500,
+    temperature: opts.answerTuning ? answerTuningTemperature(0.8, opts.answerTuning) : 0.8, // 서로 다른 후보 여러 개가 목적 — 장면 구성 제안(0.7)보다 살짝 높여 다양성을 늘린다.
+    maxTokens: opts.answerTuning ? answerTuningMaxTokens(500, opts.answerTuning) : 500,
     responseFormat: "json",
   }, transport);
   if (!result.ok) return result;
@@ -1173,7 +1185,8 @@ export async function suggestColorPalette(
   moodText: string,
   transport: StudioTextAiTransport = DEFAULT_TEXT_AI_TRANSPORT,
   importPaletteCodec: () => Promise<typeof import("../studio-palette-suggest")> = () =>
-    import("../studio-palette-suggest")
+    import("../studio-palette-suggest"),
+  opts: { answerTuning?: AnswerTuning } = {}
 ): Promise<StudioAiResult<StudioTextAiData<PaletteSuggestion>>> {
   const trimmed = moodText.trim();
   if (!trimmed) return { ok: false, code: "invalid_input", error: "장르/무드를 입력하세요." };
@@ -1190,10 +1203,13 @@ export async function suggestColorPalette(
   const { system, user } = buildPaletteSuggestPrompt(trimmed);
   const result = await postTextCompletion(settings, {
     task: "palette",
-    system,
+    // 구조화(JSON) 답변이라 길이 지시는 스키마 불변 문구로 붙는다(answer-tuning.ts 참고).
+    system: opts.answerTuning
+      ? applyAnswerTuningToSystemPrompt(system, opts.answerTuning, "structured")
+      : system,
     user,
-    temperature: 0.7,
-    maxTokens: 500,
+    temperature: opts.answerTuning ? answerTuningTemperature(0.7, opts.answerTuning) : 0.7,
+    maxTokens: opts.answerTuning ? answerTuningMaxTokens(500, opts.answerTuning) : 500,
     responseFormat: "json",
   }, transport);
   if (!result.ok) return result;

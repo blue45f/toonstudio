@@ -303,3 +303,266 @@ export function bindStudioAdvancedFillRun(h: StudioAdvancedFillRunHost) {
     }
   }
 }
+
+/**
+ * 둘러싸기(래소) 채우기 실행 어댑터 — 탭 실행과 같은 호스트 가방·미리보기 계약을 공유한다.
+ * 차이는 둘뿐이다: (1) 시드 1점 대신 드래그 경로(정규화 좌표 목록)를 받고,
+ * (2) 브라우저 실행기가 `runStudioLassoFillInBrowser`로 바뀐다. 참조 합성·가상 벡터 타깃·
+ * 미리보기 누적·연속 채우기 규칙은 탭 경로와 동일하게 유지해 두 채우기가 공존한다.
+ */
+export function bindStudioLassoFillRun(h: StudioAdvancedFillRunHost) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const host = h as Record<string, any>;
+  const {
+    advancedFillAbortRef,
+    advancedFillBusy,
+    advancedFillArmed,
+    advancedFillRasterArmed,
+    selected,
+    advancedFillVirtualTarget,
+    setAdvancedFillStatus,
+    captureStudioMutationTicket,
+    pagesHiRef,
+    advancedFillPreview,
+    advancedFillRunIdRef,
+    setAdvancedFillBusy,
+    currentAdvancedFillVectorInput,
+    setAdvancedFillVirtualTarget,
+    advancedFillVirtualReferenceRef,
+    advancedFillSettings,
+    advancedFillRasterLayers: advancedFillRasterLayersRaw,
+    color,
+    canApplyStudioMutation,
+    activeElementsRef,
+    setError,
+    setAdvancedFillPreview,
+    setAdvancedFillActive,
+  } = host;
+  const advancedFillRasterLayers = advancedFillRasterLayersRaw as StudioFillReferenceLayer[];
+  const activeElements = activeElementsRef.current as Array<{ readonly id: string; readonly type: string; readonly src?: string }>;
+  return async function runAdvancedFillLassoPath(
+    path: readonly { x: number; y: number }[],
+    frame: SelectionFrame,
+  ) {
+    if (advancedFillAbortRef.current || advancedFillBusy || !advancedFillArmed) return;
+    if (!advancedFillSettings.lassoFill) return;
+    const rasterTarget = advancedFillRasterArmed && selected?.type === "image" ? selected : null;
+    let vectorTarget = rasterTarget ? null : advancedFillVirtualTarget;
+    if (!rasterTarget && !vectorTarget) return;
+    const targetFrame = vectorTarget?.frame ?? frame;
+    const displayPath = path.map((pos) => canvasPointToNormalized(pos.x, pos.y, targetFrame));
+    if (displayPath.some((point) => point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1)) {
+      setAdvancedFillStatus("둘러싼 경로가 대상 영역을 벗어났어요. 안쪽을 둘러싸 주세요.");
+      return;
+    }
+    const mutationTicket = captureStudioMutationTicket();
+    const historyIndex = pagesHiRef.current;
+    const sourcePath = rasterTarget
+      ? displayPath.map((point) => flipNormalizedPoint(point, rasterTarget.flipped ?? false, rasterTarget.flippedY ?? false))
+      : displayPath;
+    const targetId = rasterTarget?.id ?? vectorTarget!.id;
+    const originalSrc = rasterTarget?.src ?? vectorTarget!.blankSrc;
+    const previousPreview =
+      advancedFillPreview?.targetId === targetId &&
+      advancedFillPreview.originalSrc === originalSrc &&
+      advancedFillPreview.historyIndex === historyIndex &&
+      (!vectorTarget || advancedFillPreview.virtualTarget?.sourceFingerprint === vectorTarget.sourceFingerprint)
+        ? advancedFillPreview
+        : null;
+    const workingSrc = previousPreview?.resultSrc ?? originalSrc;
+    const runId = ++advancedFillRunIdRef.current;
+    const controller = new AbortController();
+    advancedFillAbortRef.current = controller;
+    setAdvancedFillBusy(true);
+    setAdvancedFillStatus("둘러싼 영역의 경계와 누수 가능성을 분석하고 있어요…");
+    try {
+      const lassoBrowserModulePromise = import("../studio-lasso-fill-browser");
+      const advancedFillBrowserModulePromise = import("../studio-advanced-fill-browser");
+      await new Promise<void>((resolve) => globalThis.requestAnimationFrame(() => resolve()));
+      if (
+        runId !== advancedFillRunIdRef.current ||
+        controller.signal.aborted ||
+        pagesHiRef.current !== historyIndex
+      ) return;
+      let referenceSrc: string | undefined;
+      let vectorReferenceExclusion: string | null = null;
+      const withVectorExclusionNotice = (message: string) =>
+        vectorReferenceExclusion === null ? message : `${message} · ${vectorReferenceExclusion}`;
+      if (vectorTarget) {
+        const vectorInput = currentAdvancedFillVectorInput();
+        const vectorPlan = planStudioAdvancedFillVectorTarget(vectorInput);
+        if (!vectorPlan.ok) throw new Error(vectorPlan.reason);
+        vectorTarget = vectorPlan.target;
+        setAdvancedFillVirtualTarget(vectorTarget);
+        const cachedReference = advancedFillVirtualReferenceRef.current;
+        if (cachedReference?.fingerprint === vectorTarget.sourceFingerprint) {
+          referenceSrc = cachedReference.dataUrl;
+        } else {
+          setAdvancedFillStatus("벡터 선화를 채우기 경계로 변환하고 있어요…");
+          const renderedReference = await renderStudioAdvancedFillVectorReference(vectorInput, {
+            rasterExecutionBackend: "offscreen-worker",
+            signal: controller.signal,
+          });
+          if (renderedReference.fingerprint !== vectorTarget.sourceFingerprint) {
+            throw new Error("벡터 선화가 변환 중 바뀌었습니다. 다시 둘러싸 주세요.");
+          }
+          advancedFillVirtualReferenceRef.current = {
+            fingerprint: renderedReference.fingerprint,
+            dataUrl: renderedReference.dataUrl,
+          };
+          referenceSrc = renderedReference.dataUrl;
+        }
+      } else if (rasterTarget && advancedFillSettings.referenceScope !== "current") {
+        const referenceScope = advancedFillSettings.referenceScope;
+        const layers = advancedFillRasterLayers.map((layer) =>
+          layer.id === rasterTarget.id ? { ...layer, src: workingSrc } : layer
+        );
+        const vectorInput = currentAdvancedFillVectorInput();
+        const vectorPlan = planStudioAdvancedFillVectorTarget(vectorInput);
+        const pageReferences: StudioFillPageReference[] = [];
+        if (vectorPlan.ok && vectorPlan.target.sourceElementCount > 0) {
+          const cachedReference = advancedFillVirtualReferenceRef.current;
+          let vectorReferenceSrc: string;
+          if (cachedReference?.fingerprint === vectorPlan.target.sourceFingerprint) {
+            vectorReferenceSrc = cachedReference.dataUrl;
+          } else {
+            setAdvancedFillStatus("래스터와 벡터 선화를 하나의 채우기 경계로 합성하고 있어요…");
+            const renderedReference = await renderStudioAdvancedFillVectorReference(vectorInput, {
+              rasterExecutionBackend: "offscreen-worker",
+              signal: controller.signal,
+            });
+            if (renderedReference.fingerprint !== vectorTarget.sourceFingerprint) {
+              throw new Error("벡터 선화가 변환 중 바뀌었습니다. 다시 둘러싸 주세요.");
+            }
+            advancedFillVirtualReferenceRef.current = {
+              fingerprint: renderedReference.fingerprint,
+              dataUrl: renderedReference.dataUrl,
+            };
+            vectorReferenceSrc = renderedReference.dataUrl;
+          }
+          pageReferences.push({
+            id: `advanced-fill-page-reference-${vectorPlan.target.sourceFingerprint}`,
+            name: "표시 벡터 선화",
+            src: vectorReferenceSrc,
+            pageWidth: vectorInput.width,
+            pageHeight: vectorInput.height,
+            fillReference: true,
+          });
+        } else if (!vectorPlan.ok) {
+          vectorReferenceExclusion = describeStudioAdvancedFillVectorReferenceExclusion(vectorPlan);
+        }
+        const scopedRasterReferences = collectOverlappingStudioFillReferenceLayers(
+          layers,
+          rasterTarget.id,
+          referenceScope,
+        );
+        if (pageReferences.length === 0 && scopedRasterReferences.length === 0) {
+          referenceSrc = undefined;
+          const emptyReferenceNotice = "참조로 남은 레이어가 없어 대상 레이어만 경계로 사용했어요.";
+          vectorReferenceExclusion = vectorReferenceExclusion === null
+            ? emptyReferenceNotice
+            : `${vectorReferenceExclusion} ${emptyReferenceNotice}`;
+        } else {
+          const projectedLayerIds = new Set([
+            rasterTarget.id,
+            ...scopedRasterReferences.map(({ id }) => id),
+          ]);
+          const { withStudioRasterSourceProjection } = await import("../render/studio-raster-source-projection"
+          );
+          const composed = await withStudioRasterSourceProjection({
+            consumer: "studio-advanced-fill-reference",
+            signal: controller.signal,
+            values: layers.filter(({ id }) => projectedLayerIds.has(id)),
+            run: async (projectedLayers) => {
+              const projectedById = new Map(
+                projectedLayers.map((layer) => [layer.id, layer] as const),
+              );
+              return composeStudioFillReferenceImageWithPageReferences(
+                layers.map((layer) => projectedById.get(layer.id) ?? layer),
+                rasterTarget.id,
+                referenceScope,
+                pageReferences,
+                undefined,
+                controller.signal,
+              );
+            },
+          });
+          referenceSrc = composed.dataUrl;
+        }
+      }
+      if (
+        runId !== advancedFillRunIdRef.current ||
+        controller.signal.aborted ||
+        pagesHiRef.current !== historyIndex
+      ) return;
+      const { runStudioLassoFillInBrowser } = await lassoBrowserModulePromise;
+      const { studioAdvancedFillResultMessage, summarizeStudioAdvancedFillPreview } =
+        await advancedFillBrowserModulePromise;
+      if (
+        runId !== advancedFillRunIdRef.current ||
+        controller.signal.aborted ||
+        pagesHiRef.current !== historyIndex
+      ) return;
+      const result = await runStudioLassoFillInBrowser({
+        targetSrc: workingSrc,
+        referenceSrc,
+        pathRatios: sourcePath,
+        fillColor: color,
+        settings: advancedFillSettings,
+        abort: controller.signal,
+      });
+      if (
+        runId !== advancedFillRunIdRef.current ||
+        controller.signal.aborted ||
+        pagesHiRef.current !== historyIndex
+      ) return;
+      if (!canApplyStudioMutation(mutationTicket)) return;
+      if (rasterTarget) {
+        const current = activeElements.find((element) => element.id === rasterTarget.id);
+        if (!current || current.type !== "image" || current.src !== rasterTarget.src) return;
+      } else if (vectorTarget) {
+        const currentPlan = planStudioAdvancedFillVectorTarget(currentAdvancedFillVectorInput());
+        if (
+          !currentPlan.ok ||
+          currentPlan.target.pageId !== vectorTarget.pageId ||
+          currentPlan.target.sourceFingerprint !== vectorTarget.sourceFingerprint ||
+          currentPlan.target.id !== vectorTarget.id
+        ) return;
+      }
+      const message = studioAdvancedFillResultMessage(result);
+      if (!result.changed) {
+        const blockedMessage = withVectorExclusionNotice(message);
+        setAdvancedFillStatus(blockedMessage);
+        if (result.blockedReason) setError(blockedMessage);
+        return;
+      }
+      const diagnostics = result.diagnostics;
+      const previewSummary = summarizeStudioAdvancedFillPreview(message, diagnostics, previousPreview);
+      const previewMessage = withVectorExclusionNotice(previewSummary.message);
+      setAdvancedFillPreview({
+        targetId: rasterTarget?.id ?? vectorTarget!.id,
+        originalSrc: rasterTarget?.src ?? vectorTarget!.blankSrc,
+        historyIndex,
+        resultSrc: result.dataUrl,
+        diagnostics,
+        message: previewMessage,
+        paintedPixelCount: previewSummary.paintedPixelCount,
+        regionCount: previewSummary.regionCount,
+        ...(vectorTarget ? { virtualTarget: vectorTarget } : null),
+      });
+      setAdvancedFillStatus(previewMessage);
+      if (!advancedFillSettings.continuousFill) setAdvancedFillActive(false);
+      setError(null);
+    } catch (err) {
+      if (runId !== advancedFillRunIdRef.current || controller.signal.aborted) return;
+      const message = err instanceof Error ? err.message : "둘러싸기 채우기에 실패했습니다.";
+      setAdvancedFillStatus(message);
+      setError(message);
+    } finally {
+      if (runId === advancedFillRunIdRef.current) {
+        setAdvancedFillBusy(false);
+        advancedFillAbortRef.current = null;
+      }
+    }
+  }
+}

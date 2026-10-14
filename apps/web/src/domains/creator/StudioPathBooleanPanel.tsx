@@ -9,14 +9,43 @@
  * 완전히 controlled — 내부 비즈니스 상태 없음(StudioExtendedBlendPanel 과 동일 관례).
  * 무장(armed) 도구가 아니라 캔버스 제스처를 바꾸지 않는다 — disarm 연동 불필요.
  */
-import { Combine, Loader2 } from "lucide-react";
+import { Combine, Expand, Loader2 } from "lucide-react";
 
-import { PANEL_CHIP_CLASS } from "./studio-panel-ui";
+import { PANEL_CHIP_CLASS, PANEL_LABEL_ROW, PANEL_RANGE_CLASS } from "./studio-panel-ui";
 import { STUDIO_PATH_BOOLEAN_OPS, type StudioPathBooleanOp } from "./studio-path-boolean";
+import {
+  STUDIO_PATHFINDER_JOIN_STYLES,
+  STUDIO_PATHFINDER_OFFSET_MAX,
+  STUDIO_PATHFINDER_OFFSET_MIN,
+  STUDIO_PATHFINDER_OFFSET_STEP,
+  clampStudioPathfinderOffsetRadius,
+  studioPathfinderOffsetUnavailableReason,
+  type StudioPathfinderOffsetRequest,
+} from "./studio-pathfinder-offset-panel-model";
+import type { StudioPathfinderJoinStyle } from "./studio-pathfinder-vector-engine";
 
 import type { ReactElement } from "react";
 
 import { cn } from "@/shared/lib/utils";
+
+/**
+ * 윤곽 오프셋 섹션(선택) — 호스트가 넘길 때만 렌더된다.
+ * 넘기지 않으면 기존 도형 결합 패널과 픽셀·동작이 동일하다(기존 테스트 무변경 통과).
+ * 실제 오프셋 계산·커밋은 호스트가 파사드(runStudioPathfinderOffset)로 수행한다.
+ */
+export type StudioPathBooleanOffsetSectionProps = {
+  /** 현재 오프셋 거리(px) — controlled. */
+  radius: number;
+  /** 현재 코너 조인 방식 — controlled. */
+  join: StudioPathfinderJoinStyle;
+  busy?: boolean;
+  /** 호스트 게이트 사유(선택 도형 없음 등) — 있으면 적용을 잠그고 보여준다. */
+  unavailableReason?: string | null;
+  onRadiusChange: (radius: number) => void;
+  onJoinChange: (join: StudioPathfinderJoinStyle) => void;
+  /** 적용 1회 — 호스트가 선택 도형에 오프셋을 실행·커밋한다. */
+  onApply: (request: StudioPathfinderOffsetRequest) => void;
+};
 
 export type StudioPathBooleanPanelProps = {
   /** 결합 연산 진행 중 — 모든 버튼을 잠근다(확장 블렌드 병합과 동일 관례). */
@@ -28,12 +57,15 @@ export type StudioPathBooleanPanelProps = {
   unavailableReason?: string | null;
   /** 연산 1개 적용 — 실제 결합·커밋은 StudioPage 가 수행. */
   onApply: (op: StudioPathBooleanOp) => void;
+  /** 윤곽 오프셋 섹션 — 없으면 렌더하지 않는다. */
+  offsetSection?: StudioPathBooleanOffsetSectionProps | null;
 };
 
 export function StudioPathBooleanPanel({
   busy = false,
   unavailableReason = null,
   onApply,
+  offsetSection = null,
 }: StudioPathBooleanPanelProps): ReactElement {
   const applyDisabled = busy || Boolean(unavailableReason);
   const statusText = busy
@@ -73,6 +105,106 @@ export function StudioPathBooleanPanel({
       <p className="text-[0.72rem] leading-relaxed text-fg-3" role="status">
         {statusText}
       </p>
+
+      {offsetSection && (
+        <StudioPathBooleanOffsetSection section={offsetSection} panelBusy={busy} />
+      )}
+    </div>
+  );
+}
+
+function StudioPathBooleanOffsetSection({
+  section,
+  panelBusy,
+}: {
+  section: StudioPathBooleanOffsetSectionProps;
+  panelBusy: boolean;
+}): ReactElement {
+  const request: StudioPathfinderOffsetRequest = { radius: section.radius, join: section.join };
+  const requestReason = studioPathfinderOffsetUnavailableReason(request);
+  const reason = section.unavailableReason ?? requestReason;
+  const applyDisabled = panelBusy || Boolean(section.busy) || Boolean(reason);
+  const offsetStatus = section.busy
+    ? "윤곽 오프셋을 적용하는 중..."
+    : reason
+      ?? "선택한 도형 1개의 윤곽을 지정한 거리만큼 바깥(+) 또는 안(−)으로 오프셋한 새 경로를 만듭니다(⌘Z로 한 번에 되돌리기).";
+
+  return (
+    <div className="space-y-2 border-t border-line pt-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">
+          <Expand size={12} aria-hidden />
+          윤곽 오프셋
+        </p>
+        {section.busy && <Loader2 size={13} className="animate-spin text-accent" aria-hidden />}
+      </div>
+
+      <label className={PANEL_LABEL_ROW}>
+        <span>거리</span>
+        <span className="flex items-center gap-1.5">
+          <input
+            type="range"
+            min={STUDIO_PATHFINDER_OFFSET_MIN}
+            max={STUDIO_PATHFINDER_OFFSET_MAX}
+            step={STUDIO_PATHFINDER_OFFSET_STEP}
+            value={section.radius}
+            disabled={panelBusy || section.busy}
+            onChange={(event) =>
+              section.onRadiusChange(clampStudioPathfinderOffsetRadius(Number(event.target.value)))
+            }
+            className={PANEL_RANGE_CLASS}
+            aria-label="오프셋 거리"
+          />
+          <input
+            type="number"
+            min={STUDIO_PATHFINDER_OFFSET_MIN}
+            max={STUDIO_PATHFINDER_OFFSET_MAX}
+            step={STUDIO_PATHFINDER_OFFSET_STEP}
+            value={section.radius}
+            disabled={panelBusy || section.busy}
+            onChange={(event) =>
+              section.onRadiusChange(clampStudioPathfinderOffsetRadius(Number(event.target.value)))
+            }
+            className="w-16 rounded-md border border-line bg-card px-1.5 py-0.5 text-right text-[0.72rem] tabular-nums text-fg"
+            aria-label="오프셋 거리 숫자 입력"
+          />
+        </span>
+      </label>
+
+      <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="코너 잇기 방식">
+        {STUDIO_PATHFINDER_JOIN_STYLES.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            onClick={() => section.onJoinChange(entry.id)}
+            disabled={panelBusy || section.busy}
+            title={entry.tip}
+            aria-pressed={section.join === entry.id}
+            className={cn(
+              PANEL_CHIP_CLASS,
+              "flex items-center justify-center gap-1",
+              section.join === entry.id && "border-accent/60 bg-accent-soft/40 text-fg"
+            )}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => section.onApply(request)}
+        disabled={applyDisabled}
+        className={cn(
+          PANEL_CHIP_CLASS,
+          "flex w-full items-center justify-center gap-1",
+          !applyDisabled && "border-accent/60 bg-accent-soft/40 text-fg"
+        )}
+      >
+        오프셋 적용
+      </button>
+
+      <p className="text-[0.72rem] leading-relaxed text-fg-3">{offsetStatus}</p>
     </div>
   );
 }

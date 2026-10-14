@@ -4,7 +4,14 @@ import { cn } from "@/shared/lib/utils";
 
 export type PublishContext = {
   series?: { id: string; title: string; nextEpisodeNo: number } | null;
-  challenge?: { id: string; title: string; theme?: string } | null;
+  challenge?: {
+    id: string;
+    title: string;
+    theme?: string;
+    /** 판정 가시화(기간 상한·판정 시점)용 — 배너 표시는 기존과 동일하게 유지한다. */
+    startsAt?: string | null;
+    endsAt?: string | null;
+  } | null;
 };
 
 export function StudioPublishContextBanner({

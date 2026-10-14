@@ -1,5 +1,5 @@
 /* Workspace chrome uses the same semantic tokens as the rest of the product. */
-.workspace-shell{display:grid;grid-template-columns:88px minmax(0,1fr);grid-template-rows:64px minmax(0,1fr) auto;grid-template-areas:"top top" "nav main" "nav status";min-height:100dvh;background:var(--color-canvas);color:var(--color-fg);font-family:var(--font-sans);font-size:14px;line-height:1.5}
+.workspace-shell{display:grid;grid-template-columns:var(--layout-rail-icon) minmax(0,1fr);grid-template-rows:var(--layout-workspace-topbar) minmax(0,1fr) auto;grid-template-areas:"top top" "nav main" "nav status";min-height:100dvh;background:var(--color-canvas);color:var(--color-fg);font-family:var(--font-sans);font-size:14px;line-height:1.5}
 .workspace-shell *,.workspace-inspector *{box-sizing:border-box}
 /* Keep only structural resets here. Explicit utility colors such as text-canvas and
    text-black must remain above this unlayered workspace stylesheet in the cascade. */
@@ -25,7 +25,7 @@
 .workspace-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:72px;padding:8px 3px;border-radius:10px;color:var(--color-fg-2);font-size:13px;text-decoration:none}
 .workspace-nav a:hover{background:var(--color-raised);color:var(--color-fg)}
 .workspace-nav a[aria-current=page]{background:var(--color-accent-soft);color:var(--color-accent);font-weight:700}
-.workspace-main{grid-area:main;min-width:0;min-height:0;padding:24px 32px 28px}
+.workspace-main{grid-area:main;min-width:0;min-height:0;padding:var(--layout-workspace-main-padding-block) var(--layout-workspace-main-padding-inline) var(--layout-workspace-main-padding-block-end)}
 .workspace-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
 .workspace-heading h1{margin:2px 0 0;font-size:24px;line-height:1.3;letter-spacing:-.04em}
 .workspace-eyebrow{margin:0 0 6px;color:var(--color-fg-2);font-size:12px}
@@ -62,9 +62,9 @@
 .workspace-inspector::backdrop{background:color-mix(in oklch,var(--color-canvas) 60%,transparent)}
 .workspace-inspector>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;border-bottom:1px solid var(--color-line);flex:none}.workspace-inspector h2{font-size:18px;margin:0}.workspace-inspector>header button{display:grid;place-items:center;min-height:44px;min-width:44px;border:0;border-radius:8px;background:var(--color-card)}
 .workspace-inspector-content{padding:16px;overflow:auto;min-height:0;overscroll-behavior:contain}.workspace-inspector-content details{margin-bottom:12px}.workspace-inspector-content summary{min-height:44px;align-content:center;cursor:pointer;font-size:14px;font-weight:650}
-@media(min-width:761px) and (min-height:640px){.workspace-shell{height:100dvh}.workspace-main{overflow:auto;overscroll-behavior:contain}}
-@media(max-width:1000px){.workspace-topbar{gap:18px;padding-inline:16px}.workspace-brand strong{font-size:14px}.workspace-main{padding:20px}.workspace-project-select>span{display:none}.workspace-statusbar{padding-inline:20px}.workspace-list-view{gap:24px}.workspace-section-body{gap:28px}}
-@media(max-width:760px){
+@media(min-width:768px) and (min-height:640px){.workspace-shell{height:100dvh}.workspace-main{overflow:auto;overscroll-behavior:contain}}
+@media(max-width:1023px){.workspace-topbar{gap:18px;padding-inline:16px}.workspace-brand strong{font-size:14px}.workspace-main{padding:20px}.workspace-project-select>span{display:none}.workspace-statusbar{padding-inline:20px}.workspace-list-view{gap:24px}.workspace-section-body{gap:28px}}
+@media(max-width:767px){
   .workspace-shell{display:flex;flex-direction:column;min-height:100dvh;padding-bottom:calc(70px + env(safe-area-inset-bottom));height:auto}
   .workspace-topbar{flex-wrap:wrap;gap:8px;padding:8px 16px;height:auto;min-height:112px}
   .workspace-brand{flex:1}.workspace-brand strong{font-size:16px}.workspace-utilities{order:1;flex:none}
@@ -82,7 +82,7 @@
 }
 @media(prefers-reduced-motion:reduce){.workspace-shell *,.workspace-inspector *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 /* Keep object actions anchored to the original art, not its letterboxed container. */
-@media(min-width:761px){
+@media(min-width:768px){
  .workspace-world-image{width:min(100%,calc((100dvh - 360px)*1.065163));aspect-ratio:850/798;align-self:center;flex:none;min-height:0;border-radius:0}
  .workspace-world-image>img{height:100%;min-height:0;max-height:none;object-fit:contain}
  .workspace-hotspot--materials{left:6%;top:46%}.workspace-hotspot--desk{right:5%;top:46%}.workspace-hotspot--review{left:6%;bottom:10%}.workspace-hotspot--team{right:5%;bottom:10%}
@@ -120,10 +120,10 @@
 .workspace-project-picker-actions,.workspace-project-picker-state{display:flex;flex-wrap:wrap;gap:12px;min-width:0}
 .workspace-project-picker-actions>a,.workspace-project-picker-state>a{display:inline-flex;align-items:center;min-height:44px;color:var(--color-accent)}
 .workspace-project-picker-state p{width:100%;overflow-wrap:anywhere;margin:0}
-@media(min-width:761px) and (max-width:1000px){.workspace-project-select>label{display:none}}
+@media(min-width:768px) and (max-width:1023px){.workspace-project-select>label{display:none}}
 
 /* Reserve the original art ratio instead of letterboxing phones into a 380px frame. */
-@media(max-width:760px){
+@media(max-width:767px){
   .workspace-world-image{min-height:0}
   .workspace-world-image>img{height:auto;aspect-ratio:850/798;min-height:0}
   html:has(.workspace-shell){scroll-padding-block-end:calc(84px + env(safe-area-inset-bottom))}
@@ -131,9 +131,9 @@
 }
 
 /* Reserve a soundtrack dock instead of covering workspace actions and navigation. */
-@media(min-width:761px){
+@media(min-width:768px){
  body:has([data-site-ost="mounted"]) .workspace-shell[data-workspace-surface="home"] .workspace-statusbar{padding-bottom:80px}
 }
-@media(max-width:760px){
+@media(max-width:767px){
  body:has([data-site-ost="mounted"]) .workspace-shell[data-workspace-surface="home"]{padding-bottom:calc(144px + env(safe-area-inset-bottom))}
 }

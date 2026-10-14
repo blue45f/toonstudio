@@ -22,6 +22,12 @@ import {
   countActiveTitleFilters,
 } from "@/shared/lib/title-filters";
 import { useRememberedFilters } from "@/shared/lib/use-remembered-filters";
+import {
+  formatI18nTemplate,
+  getCurrentUiLocale,
+  useBilingual,
+  useBilingualI18nRevision,
+} from "@/shared/lib/i18n-bilingual-copy";
 import { cn, kstTodayIdx } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import { ErrorState } from "@/shared/components/feedback/error-state";
@@ -45,6 +51,16 @@ interface CalendarResponse {
 
 // 카드가 읽는 필드(추정 배지 판별·공용 필터·ICS 내보내기 포함)는 경량 카드에 모두 들어 있어
 // Title 을 요구하는 공용 헬퍼에 안전하게 전달한다(lib/catalog-slim.ts 슬리밍 규약 참조).
+const WEEK_DAY_LABEL: Readonly<Record<string, readonly [string, string]>> = {
+  "월": ["월요일", "Monday"],
+  "화": ["화요일", "Tuesday"],
+  "수": ["수요일", "Wednesday"],
+  "목": ["목요일", "Thursday"],
+  "금": ["금요일", "Friday"],
+  "토": ["토요일", "Saturday"],
+  "일": ["일요일", "Sunday"],
+};
+
 const asTitle = (card: TitleCard) => card as unknown as Title;
 const asTitleList = (cards: TitleCard[]) => cards as unknown as Title[];
 
@@ -77,6 +93,10 @@ function CalItem({ title, className }: { title: TitleCard; className?: string })
 
 /** Keep both responsive layouts bounded; the complete day remains available on demand. */
 function CalendarDayItems({ items, day, compact = false }: { items: TitleCard[]; day: string; compact?: boolean }) {
+  const bt = useBilingual("CalendarPage");
+  const locale = getCurrentUiLocale();
+  const dayPair = WEEK_DAY_LABEL[day];
+  const dayLabel = dayPair ? bt(...dayPair) : day;
   const [limit, setLimit] = useState(compact ? 12 : 24);
   const listId = useId();
   const visible = items.slice(0, limit);
@@ -85,16 +105,19 @@ function CalendarDayItems({ items, day, compact = false }: { items: TitleCard[];
       {visible.map((title) => <CalItem key={title.id} title={title} className={compact ? undefined : "border border-line bg-panel/30 p-2"} />)}
     </div>
     {items.length > (compact ? 12 : 24) && <div className="mt-3 border-t border-line pt-3">
-      <p role="status" className="mb-2 text-xs text-fg-3">{day}요일 {visible.length.toLocaleString("ko-KR")} / {items.length.toLocaleString("ko-KR")}편</p>
-      {limit < items.length && <button type="button" aria-controls={listId} onClick={() => setLimit((current) => current + 24)} className="min-h-11 w-full rounded-lg border border-line-strong bg-panel px-3 py-2 text-xs font-medium text-accent hover:bg-raised">{day}요일 {Math.min(24, items.length - limit)}편 더 보기</button>}
+      <p role="status" className="mb-2 text-xs text-fg-3">{formatI18nTemplate(bt("{v0} {v1} / {v2}편", "{v0} · {v1} / {v2} stories"), { v0: dayLabel, v1: visible.length.toLocaleString(locale), v2: items.length.toLocaleString(locale) })}</p>
+      {limit < items.length && <button type="button" aria-controls={listId} onClick={() => setLimit((current) => current + 24)} className="min-h-11 w-full rounded-lg border border-line-strong bg-panel px-3 py-2 text-xs font-medium text-accent hover:bg-raised">{formatI18nTemplate(bt("{v0} {v1}편 더 보기", "Show {v1} more on {v0}"), { v0: dayLabel, v1: Math.min(24, items.length - limit) })}</button>}
     </div>}
   </>;
 }
 
 export function CalendarPage() {
+  useBilingualI18nRevision();
+  const bt = useBilingual("CalendarPage");
+  const locale = getCurrentUiLocale();
   const { data, loading, error, reload } = useApiResource<CalendarResponse>(
     "/api/calendar",
-    "연재 캘린더를 불러오지 못했습니다."
+    bt("연재 캘린더를 불러오지 못했습니다.", "Couldn't load the release calendar.")
   );
   // 공용 작품 필터(찜·장르·플랫폼·가격·이용가·평점·태그). "필터 기억" ON이면 플랫폼 선택도 함께 유지된다.
   const { filters, setFilters, remember, toggleRemember } = useRememberedFilters("calendar");
@@ -124,6 +147,8 @@ export function CalendarPage() {
   // 월요일(인덱스 0)로 폴백해 실제 요일과 어긋난다 — 서버와 같은 kstTodayIdx()로 직접 계산한다.
   const todayIdx = kstTodayIdx();
   const todayDay = WEEK_DAYS[todayIdx];
+  const todayPair = WEEK_DAY_LABEL[todayDay];
+  const todayLabel = todayPair ? bt(...todayPair) : todayDay;
   const rawDays = data?.days ?? WEEK_DAYS.map((day) => ({ day, items: [] }));
   // 공용 필터(플랫폼 포함)를 적용. 비활성이면 원본 그대로 사용.
   const days = anyFilterActive
@@ -140,6 +165,8 @@ export function CalendarPage() {
   const todayCount = days[todayIdx]?.items.length ?? 0;
   const selDay = Math.min(selectedDayIdx ?? todayIdx, Math.max(0, days.length - 1));
   const selItems = days[selDay]?.items ?? [];
+  const selDayPair = WEEK_DAY_LABEL[days[selDay]?.day ?? ""];
+  const selDayLabel = selDayPair ? bt(...selDayPair) : (days[selDay]?.day ?? "");
   const filterIdentity = JSON.stringify(filters);
   const onDayKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
@@ -168,7 +195,7 @@ export function CalendarPage() {
       titleToWeeklyIcsEvent(asTitle(title), titleDays)
     );
     downloadIcs(
-      buildWeeklyIcs(events, { calendarName: "툰스튜디오 연재 캘린더" }),
+      buildWeeklyIcs(events, { calendarName: bt("툰스튜디오 연재 캘린더", "ToonStudio Release Calendar") }),
       "toonstudio-calendar.ics"
     );
   };
@@ -194,30 +221,30 @@ export function CalendarPage() {
             <p className="eyebrow flex items-center gap-1.5 text-accent">
               <CalendarDays size={14} /> RELEASE CALENDAR
             </p>
-            <h1 className="mt-2 text-[clamp(1.6rem,7vw,1.875rem)] font-bold tracking-tight sm:text-4xl">연재 캘린더</h1>
+            <h1 className="mt-2 text-[clamp(1.6rem,7vw,1.875rem)] font-bold tracking-tight sm:text-4xl">{bt("연재 캘린더", "Release Calendar")}</h1>
             <p className="lede mt-2 max-w-2xl text-pretty text-sm leading-relaxed text-fg-2">
-              연재요일 정보가 있는 작품을 요일별로 찾아보세요. 오늘은{" "}
-              <span className="font-semibold text-accent">{todayDay}요일</span>, 새 회차가 올라오는 작품이{" "}
-              <span className="numeral text-fg">{todayCount.toLocaleString("ko-KR")}</span>편입니다.
+              {bt("연재요일 정보가 있는 작품을 요일별로 찾아보세요. 오늘은", "Browse stories by their release day. Today is")}{" "}
+              <span className="font-semibold text-accent">{todayLabel}</span>{bt(", 새 회차가 올라오는 작품이", ", with new episodes from")}{" "}
+              <span className="numeral text-fg">{todayCount.toLocaleString(locale)}</span>{bt("편입니다.", " stories.")}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line bg-card px-3 text-xs text-fg-2">
               <Database size={14} className="text-accent" />
-              전체 연재 <span className="numeral text-fg">{totalScheduled.toLocaleString("ko-KR")}</span>편
+              {bt("전체 연재", "All series")} <span className="numeral text-fg">{totalScheduled.toLocaleString(locale)}</span>{bt("편", "")}
             </span>
             <button
               type="button"
               onClick={exportIcs}
               disabled={loading || !!error || exportable.size === 0}
-              title="현재 필터 기준 연재 일정을 캘린더 앱용 .ics 파일로 저장 (주간 반복 일정)"
+              title={bt("현재 필터 기준 연재 일정을 캘린더 앱용 .ics 파일로 저장 (주간 반복 일정)", "Save the release schedule for the current filters as an .ics file for calendar apps (weekly repeating schedule)")}
               className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1.5" })}
             >
               <CalendarPlus size={14} />
-              내보내기 (.ics)
+              {bt("내보내기 (.ics)", "Export (.ics)")}
               {exportable.size > 0 && (
                 <span className="numeral text-xs text-fg-3">
-                  {exportable.size.toLocaleString("ko-KR")}
+                  {exportable.size.toLocaleString(locale)}
                 </span>
               )}
             </button>
@@ -231,15 +258,15 @@ export function CalendarPage() {
           <div className="mt-5 border-t border-line pt-4">
             <div className="mb-2 flex items-center justify-between gap-2">
               <span className="text-xs font-medium text-fg-3">
-                표시할 플랫폼{platformFilterActive ? ` · ${selectedPlatforms.size}개 선택` : " · 전체"}
+                {bt("표시할 플랫폼", "Platforms to show")}{platformFilterActive ? formatI18nTemplate(bt(" · {v0}개 선택", " · {v0} selected"), { v0: selectedPlatforms.size }) : bt(" · 전체", " · All")}
               </span>
               {platformFilterActive && (
                 <button
                   type="button"
                   onClick={() => setFilters({ ...filters, platforms: [] })}
-                  className="text-xs text-accent hover:underline"
+                  className="inline-flex min-h-11 items-center px-1 text-xs text-accent hover:underline"
                 >
-                  전체 보기
+                  {bt("전체 보기", "Show all")}
                 </button>
               )}
             </div>
@@ -253,17 +280,17 @@ export function CalendarPage() {
                     onClick={() => togglePlatform(platform.id)}
                     aria-pressed={on}
                     className={cn(
-                      "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs transition-colors pointer-coarse:h-9 pointer-coarse:px-3 pointer-coarse:text-xs",
+                      "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors",
                       on
                         ? "border-accent/60 bg-accent-soft/50 text-fg"
                         : "border-line bg-card text-fg-2 hover:bg-raised",
                       platformFilterActive && !on && "opacity-45"
                     )}
-                    title={`${platform.label} ${platform.count.toLocaleString("ko-KR")}편`}
+                    title={formatI18nTemplate(bt("{v0} {v1}편", "{v0} · {v1} stories"), { v0: platform.label, v1: platform.count.toLocaleString(locale) })}
                   >
                     <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: platform.color }} />
                     {platform.label}
-                    <span className="numeral text-fg-3">{platform.count.toLocaleString("ko-KR")}</span>
+                    <span className="numeral text-fg-3">{platform.count.toLocaleString(locale)}</span>
                   </button>
                 );
               })}
@@ -276,7 +303,7 @@ export function CalendarPage() {
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-3 text-sm font-medium text-fg-2 transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center gap-1.5">
               <SlidersHorizontal size={14} className={titleFilterActive ? "text-accent" : undefined} aria-hidden="true" />
-              상세 필터
+              {bt("상세 필터", "More filters")}
               {titleFilterActive && (
                 <span className="rounded-full bg-accent/15 px-1.5 text-xs text-accent">
                   {titleFilterCount}
@@ -301,7 +328,7 @@ export function CalendarPage() {
       {/* "오늘 연재" 최상단 하이라이트 밴드 — 스크롤해도 고정(sticky)되어 오늘 분량을 놓치지 않는다 */}
       {!loading && !error && (
         <section
-          aria-label="오늘 연재 하이라이트"
+          aria-label={bt("오늘 연재 하이라이트", "Today's release highlights")}
           className="sticky top-[var(--site-header-sticky-offset,5rem)] z-30 mb-4 overflow-hidden rounded-2xl border border-accent/40 bg-accent-soft/70 backdrop-blur"
         >
           <div className="flex min-h-11 items-center justify-between gap-3 px-4 py-2">
@@ -311,29 +338,29 @@ export function CalendarPage() {
                 <span className="relative inline-flex size-2 rounded-full bg-accent" />
               </span>
               <span className="truncate">
-                <strong className="font-semibold text-fg">오늘 {todayDay}요일</strong>
+                <strong className="font-semibold text-fg">{bt("오늘", "Today")} {todayLabel}</strong>
                 <span className="text-fg-2">
-                  {" "}· 새 회차{" "}
+                  {" "}{bt("· 새 회차", "· new episodes")}{" "}
                   <span className="numeral font-semibold text-fg">
-                    {todayCount.toLocaleString("ko-KR")}
+                    {todayCount.toLocaleString(locale)}
                   </span>
-                  편
+                  {bt("편", " stories")}
                 </span>
               </span>
             </p>
             <button
               type="button"
               onClick={jumpToToday}
-              className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-accent/40 bg-card/80 px-3 text-xs font-semibold text-accent transition-colors hover:bg-accent-soft"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-accent/40 bg-card/80 px-3 text-xs font-semibold text-accent transition-colors hover:bg-accent-soft"
             >
-              오늘 보기
+              {bt("오늘 보기", "View today")}
             </button>
           </div>
         </section>
       )}
 
       {error ? (
-        <ErrorState title="연재 캘린더를 불러오지 못했습니다." message={error} onRetry={reload} />
+        <ErrorState title={bt("연재 캘린더를 불러오지 못했습니다.", "Couldn't load the release calendar.")} message={error} onRetry={reload} />
       ) : loading ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
           {WEEK_DAYS.map((day) => (
@@ -362,7 +389,7 @@ export function CalendarPage() {
           <div className="xl:hidden">
             <div
               role="tablist"
-              aria-label="요일 선택"
+              aria-label={bt("요일 선택", "Choose a day")}
               className="rail -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1"
             >
               {days.map(({ day, items }, index) => {
@@ -405,7 +432,7 @@ export function CalendarPage() {
             <div className="mt-3 scroll-mt-[calc(var(--site-header-sticky-offset,5rem)+5rem)]" id={`${dayTabsId}-panel`} role="tabpanel" aria-labelledby={`${dayTabsId}-tab-${selDay}`} tabIndex={0}>
               {selItems.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-line bg-card/40 px-4 py-10 text-center text-xs text-fg-3">
-                  {days[selDay]?.day}요일 연재 없음
+                  {formatI18nTemplate(bt("{v0} 연재 없음", "No releases on {v0}"), { v0: selDayLabel })}
                 </p>
               ) : (
                 <CalendarDayItems key={`${selDay}-${filterIdentity}`} items={selItems} day={days[selDay]?.day ?? ""} />
@@ -434,13 +461,13 @@ export function CalendarPage() {
                   >
                     <span className={cn("font-display text-sm font-bold tracking-wide", isToday ? "text-accent" : "text-fg")}>
                       {day}
-                      {isToday && <span className="ml-1.5 text-xs font-medium">오늘</span>}
+                      {isToday && <span className="ml-1.5 text-xs font-medium">{bt("오늘", "Today")}</span>}
                     </span>
                     <span className="numeral text-xs text-fg-3">{items.length}</span>
                   </header>
                   <div className="flex flex-col gap-2.5 p-2.5">
                     {items.length === 0 ? (
-                      <p className="px-1 py-6 text-center text-xs text-fg-3">연재 없음</p>
+                      <p className="px-1 py-6 text-center text-xs text-fg-3">{bt("연재 없음", "No releases")}</p>
                     ) : (
                       <CalendarDayItems key={`${day}-${filterIdentity}`} items={items} day={day} compact />
                     )}
@@ -460,8 +487,8 @@ export function CalendarPage() {
           {anyFilterActive ? (
             <>
               <div>
-                <p className="text-sm font-medium text-fg">선택한 조건에 맞는 연재 작품이 없습니다.</p>
-                <p className="mt-1 text-xs text-fg-3">필터를 초기화하면 전체 연재 일정을 볼 수 있어요.</p>
+                <p className="text-sm font-medium text-fg">{bt("선택한 조건에 맞는 연재 작품이 없습니다.", "No series match the selected filters.")}</p>
+                <p className="mt-1 text-xs text-fg-3">{bt("필터를 초기화하면 전체 연재 일정을 볼 수 있어요.", "Reset the filters to see the full release schedule.")}</p>
               </div>
               <button
                 type="button"
@@ -469,20 +496,20 @@ export function CalendarPage() {
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised"
               >
                 <RotateCcw size={14} aria-hidden="true" />
-                필터 초기화
+                {bt("필터 초기화", "Reset filters")}
               </button>
             </>
           ) : (
             <>
               <div>
-                <p className="text-sm font-medium text-fg">연재요일 정보가 있는 작품이 없습니다.</p>
-                <p className="mt-1 text-xs text-fg-3">다음 카탈로그 수집이 성공하면 DB 스냅샷 기준으로 자동 반영됩니다.</p>
+                <p className="text-sm font-medium text-fg">{bt("연재요일 정보가 있는 작품이 없습니다.", "No stories have release-day information.")}</p>
+                <p className="mt-1 text-xs text-fg-3">{bt("다음 카탈로그 수집이 성공하면 DB 스냅샷 기준으로 자동 반영됩니다.", "Once the next catalog collection succeeds, this updates automatically from the DB snapshot.")}</p>
               </div>
               <Link
                 href="/explore"
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised"
               >
-                탐색으로 작품 찾기
+                {bt("탐색으로 작품 찾기", "Find stories in Explore")}
               </Link>
             </>
           )}

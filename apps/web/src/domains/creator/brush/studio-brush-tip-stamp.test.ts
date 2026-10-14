@@ -16,6 +16,8 @@ import {
   STUDIO_BRUSH_TIP_ALPHA_MAP_SIZE_RANGE,
   decodeStudioBrushTipAlphaMapBase64,
   encodeStudioBrushTipAlphaMapBase64,
+  isStudioBrushTipParametricShapeId,
+  normalizeStudioBrushTipParametricSettings,
   normalizeStudioBrushTipSettings,
   planStudioBrushTipStamp,
   planStudioBrushTipStampWorldSamples,
@@ -450,5 +452,71 @@ describe("studio brush tip stamp planner", () => {
     // Centre of a hard tip is fully opaque.
     const centre = map.alphas[Math.floor(map.size / 2) * map.size + Math.floor(map.size / 2)]!;
     expect(centre).toBeGreaterThan(0.95);
+  });
+});
+
+describe("parametric tip fields in the tip catalog (spatter · rake · grass)", () => {
+  it("선택 가능한 팁 모양으로 등록돼 있다", () => {
+    for (const shape of ["spatter", "rake", "grass"] as const) {
+      expect(isStudioBrushTipParametricShapeId(shape)).toBe(true);
+      expect(normalizeStudioBrushTipSettings({ shape }).shape).toBe(shape);
+    }
+    expect(isStudioBrushTipParametricShapeId("round")).toBe(false);
+  });
+
+  it("시드·개수가 기본값으로 채워져 저장 형태로 정규화된다", () => {
+    expect(normalizeStudioBrushTipSettings({ shape: "spatter" }).parametric)
+      .toEqual({ seed: 101, count: 14 });
+    expect(normalizeStudioBrushTipSettings({ shape: "rake" }).parametric)
+      .toEqual({ seed: 707, count: 7 });
+    expect(normalizeStudioBrushTipSettings({ shape: "grass" }).parametric)
+      .toEqual({ seed: 505, count: 9 });
+  });
+
+  it("고정 모양은 parametric 키를 갖지 않아 기존 직렬화와 바이트 단위로 같다", () => {
+    const tip = normalizeStudioBrushTipSettings({ shape: "round", parametric: { seed: 1, count: 2 } });
+    expect("parametric" in tip).toBe(false);
+    expect(normalizeStudioBrushTipParametricSettings("round", { seed: 1, count: 2 })).toBeUndefined();
+  });
+
+  it("개수는 필드 모듈 상한으로 클램프되고 깨진 값은 기본값으로 떨어진다", () => {
+    expect(normalizeStudioBrushTipSettings({ shape: "spatter", parametric: { seed: 3, count: 9999 } }).parametric)
+      .toEqual({ seed: 3, count: 64 });
+    expect(normalizeStudioBrushTipSettings({ shape: "grass", parametric: { seed: Number.NaN, count: 0 } }).parametric)
+      .toEqual({ seed: 505, count: 1 });
+  });
+
+  it("같은 시드·개수는 항상 같은 팁으로 복원되고 시드가 다르면 달라진다", () => {
+    const settings = { shape: "spatter" as const, parametric: { seed: 42, count: 20 }, alphaMapSize: 32 };
+    const a = buildStudioBrushTipAlphaMap(settings);
+    const b = buildStudioBrushTipAlphaMap(JSON.parse(JSON.stringify(settings)) as typeof settings);
+    expect(Array.from(a.alphas)).toEqual(Array.from(b.alphas));
+    expect(a.parametric).toEqual({ seed: 42, count: 20 });
+    const other = buildStudioBrushTipAlphaMap({ ...settings, parametric: { seed: 43, count: 20 } });
+    expect(Array.from(other.alphas)).not.toEqual(Array.from(a.alphas));
+  });
+
+  it("세 팁 모두 잉크가 있고 rake·grass의 빈 모서리 계약을 지킨다", () => {
+    for (const shape of ["spatter", "rake", "grass"] as const) {
+      const map = buildStudioBrushTipAlphaMap({ shape, alphaMapSize: 32 });
+      let sum = 0;
+      for (const alpha of map.alphas) sum += alpha;
+      expect(sum).toBeGreaterThan(1);
+      expect(map.alphas[0]).toBe(0);
+    }
+  });
+
+  it("베이크(base64) 경로도 시드를 반영해 결정적으로 재현된다", () => {
+    const a = studioBrushTipAlphaMapToBase64("grass", 0.35, 32, { seed: 7, count: 12 });
+    const b = studioBrushTipAlphaMapToBase64("grass", 0.35, 32, { seed: 7, count: 12 });
+    const c = studioBrushTipAlphaMapToBase64("grass", 0.35, 32, { seed: 8, count: 12 });
+    expect(a.alphaMapBase64).toBe(b.alphaMapBase64);
+    expect(c.alphaMapBase64).not.toBe(a.alphaMapBase64);
+  });
+
+  it("단일 샘플 경로도 같은 필드를 읽는다", () => {
+    const viaSampler = sampleStudioBrushTipProceduralAlpha("rake", 0, 0, 0.35, { seed: 707, count: 7 });
+    expect(viaSampler).toBeGreaterThan(0);
+    expect(sampleStudioBrushTipProceduralAlpha("rake", -1, -1, 0.35)).toBe(0);
   });
 });

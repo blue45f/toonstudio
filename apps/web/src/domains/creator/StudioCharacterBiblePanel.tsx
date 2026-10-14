@@ -1,9 +1,11 @@
 import {
+  ArrowRight,
   BookOpenText,
   ChevronDown,
   ChevronUp,
   Lock,
   LockOpen,
+  Network,
   Plus,
   Trash2,
   UserRound,
@@ -28,6 +30,17 @@ import {
   type StudioCharacterBibleEntryPatch,
   type StudioCharacterBibleField,
 } from "./studio-character-bible";
+import {
+  buildStudioCharacterRelationshipMap,
+  parseStudioCharacterRelationships,
+  removeStudioCharacterRelationship,
+  STUDIO_CHARACTER_RELATIONSHIP_KIND_LABELS,
+  STUDIO_CHARACTER_RELATIONSHIP_KINDS,
+  upsertStudioCharacterRelationship,
+  type StudioCharacterRelationship,
+  type StudioCharacterRelationshipInput,
+  type StudioCharacterRelationshipKind,
+} from "./studio-character-relationships";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDeleteCharacterBibleEntryRequest } from "./studio-destructive-command-catalog";
 
@@ -110,13 +123,6 @@ const STORY_FIELDS: readonly CharacterFieldMeta[] = [
     placeholder: "지금 원하는 것과 끝까지 지키려는 가치",
     kind: "long",
     maxLength: STUDIO_CHARACTER_BIBLE_MAX_TEXT_LENGTH,
-  },
-  {
-    field: "relationships",
-    label: "관계",
-    placeholder: "민재 — 불신하지만 의지하는 동료\n도윤 — 실종된 형",
-    kind: "list",
-    maxLength: STUDIO_CHARACTER_BIBLE_MAX_LIST_ITEMS * (STUDIO_CHARACTER_BIBLE_MAX_LIST_ITEM_LENGTH + 1),
   },
 ];
 
@@ -249,6 +255,497 @@ function CharacterFieldEditor({ entry, meta, onPatch }: CharacterFieldEditorProp
         </p>
       )}
     </div>
+  );
+}
+
+const RELATIONSHIP_KIND_STROKES: Record<StudioCharacterRelationshipKind, string> = {
+  conflict: "#e5484d",
+  ally: "#46a758",
+  family: "#f5a524",
+  lover: "#e93d82",
+  other: "#8e8e93",
+};
+
+const RELATIONSHIP_SELECT_CLASS =
+  "min-h-9 rounded-lg border border-line bg-panel px-2 text-xs text-fg outline-none transition-colors hover:border-line-strong focus:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
+interface RelationshipCallbacks {
+  onApply: (bible: StudioCharacterBible) => void;
+  onError: (message: string) => void;
+  onSelectCharacter: (characterId: string) => void;
+}
+
+function commitRelationship(
+  callbacks: RelationshipCallbacks,
+  apply: () => StudioCharacterBible,
+) {
+  try {
+    callbacks.onApply(apply());
+  } catch (cause) {
+    callbacks.onError(cause instanceof Error ? cause.message : "관계를 저장하지 못했어요.");
+  }
+}
+
+interface RelationshipRowEditorProps extends RelationshipCallbacks {
+  bible: StudioCharacterBible;
+  entry: StudioCharacterBibleEntry;
+  draft: StudioCharacterRelationship;
+}
+
+function RelationshipRowEditor({ bible, entry, draft, ...callbacks }: RelationshipRowEditorProps) {
+  const [freeTarget, setFreeTarget] = useState(draft.targetCharacterId === null);
+  const [targetName, setTargetName] = useState(draft.targetName);
+  const [memo, setMemo] = useState(draft.memo);
+  const others = bible.characters.filter((character) => character.id !== entry.id);
+
+  const commit = (input: StudioCharacterRelationshipInput) =>
+    commitRelationship(callbacks, () =>
+      upsertStudioCharacterRelationship(bible, entry.id, input, draft.index),
+    );
+
+  return (
+    <li className="rounded-xl border border-line bg-card/40 px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          aria-label="관계 대상"
+          value={freeTarget ? "" : (draft.targetCharacterId ?? "")}
+          onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+            const value = event.target.value;
+            if (!value) {
+              setFreeTarget(true);
+              return;
+            }
+            setFreeTarget(false);
+            commit({ targetName: "", targetCharacterId: value, kind: draft.kind, memo });
+          }}
+          className={RELATIONSHIP_SELECT_CLASS}
+        >
+          {others.map((character) => (
+            <option key={character.id} value={character.id}>
+              {character.name || "이름 없는 캐릭터"}
+            </option>
+          ))}
+          <option value="">직접 입력</option>
+        </select>
+        <select
+          aria-label="관계 종류"
+          value={draft.kind}
+          onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+            commit({
+              targetName: freeTarget ? targetName : "",
+              targetCharacterId: freeTarget ? null : draft.targetCharacterId,
+              kind: event.target.value as StudioCharacterRelationshipKind,
+              memo,
+            })
+          }
+          className={RELATIONSHIP_SELECT_CLASS}
+        >
+          {STUDIO_CHARACTER_RELATIONSHIP_KINDS.map((kind) => (
+            <option key={kind} value={kind}>
+              {STUDIO_CHARACTER_RELATIONSHIP_KIND_LABELS[kind]}
+            </option>
+          ))}
+        </select>
+        {draft.targetCharacterId && (
+          <button
+            type="button"
+            onClick={() => callbacks.onSelectCharacter(draft.targetCharacterId as string)}
+            className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-line bg-card px-2 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            시트로 이동 <ArrowRight size={12} aria-hidden />
+          </button>
+        )}
+        <button
+          type="button"
+          aria-label={`관계 ${draft.index + 1} 삭제`}
+          onClick={() =>
+            commitRelationship(callbacks, () =>
+              removeStudioCharacterRelationship(bible, entry.id, draft.index),
+            )
+          }
+          className="ml-auto grid size-8 place-items-center rounded-lg border border-line bg-card text-fg-3 transition-colors hover:border-bad/45 hover:bg-bad/10 hover:text-bad focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bad"
+        >
+          <Trash2 size={13} aria-hidden />
+        </button>
+      </div>
+      {freeTarget && (
+        <input
+          type="text"
+          aria-label="관계 대상 이름"
+          value={targetName}
+          maxLength={STUDIO_CHARACTER_BIBLE_MAX_NAME_LENGTH}
+          placeholder="대상 이름 (시트가 없는 인물도 적을 수 있어요)"
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTargetName(event.target.value)}
+          onBlur={() =>
+            commit({ targetName, targetCharacterId: null, kind: draft.kind, memo })
+          }
+          className={`${CONTROL_CLASS} mt-2`}
+        />
+      )}
+      <input
+        type="text"
+        aria-label="관계 메모"
+        value={memo}
+        maxLength={STUDIO_CHARACTER_BIBLE_MAX_LIST_ITEM_LENGTH}
+        placeholder="어떤 관계인지 — 예: 불신하지만 의지하는 동료"
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setMemo(event.target.value)}
+        onBlur={() =>
+          commit({
+            targetName: freeTarget ? targetName : "",
+            targetCharacterId: freeTarget ? null : draft.targetCharacterId,
+            kind: draft.kind,
+            memo,
+          })
+        }
+        className={`${CONTROL_CLASS} mt-2`}
+      />
+    </li>
+  );
+}
+
+interface AddRelationshipFormProps extends RelationshipCallbacks {
+  bible: StudioCharacterBible;
+  entry: StudioCharacterBibleEntry;
+}
+
+function AddRelationshipForm({ bible, entry, ...callbacks }: AddRelationshipFormProps) {
+  const [targetId, setTargetId] = useState("");
+  const [targetName, setTargetName] = useState("");
+  const [kind, setKind] = useState<StudioCharacterRelationshipKind>("other");
+  const [memo, setMemo] = useState("");
+  const others = bible.characters.filter((character) => character.id !== entry.id);
+
+  const add = () => {
+    commitRelationship(callbacks, () =>
+      upsertStudioCharacterRelationship(bible, entry.id, {
+        targetName,
+        targetCharacterId: targetId || null,
+        kind,
+        memo,
+      }),
+    );
+    setTargetName("");
+    setMemo("");
+  };
+
+  return (
+    <div className="rounded-xl border border-dashed border-line px-3 py-2.5">
+      <p className="text-[0.68rem] font-semibold text-fg-2">관계 추가</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <select
+          aria-label="새 관계 대상"
+          value={targetId}
+          onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setTargetId(event.target.value)}
+          className={RELATIONSHIP_SELECT_CLASS}
+        >
+          <option value="">직접 입력</option>
+          {others.map((character) => (
+            <option key={character.id} value={character.id}>
+              {character.name || "이름 없는 캐릭터"}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="새 관계 종류"
+          value={kind}
+          onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setKind(event.target.value as StudioCharacterRelationshipKind)}
+          className={RELATIONSHIP_SELECT_CLASS}
+        >
+          {STUDIO_CHARACTER_RELATIONSHIP_KINDS.map((kindOption) => (
+            <option key={kindOption} value={kindOption}>
+              {STUDIO_CHARACTER_RELATIONSHIP_KIND_LABELS[kindOption]}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={add}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <Plus size={13} aria-hidden /> 추가
+        </button>
+      </div>
+      {!targetId && (
+        <input
+          type="text"
+          aria-label="새 관계 대상 이름"
+          value={targetName}
+          maxLength={STUDIO_CHARACTER_BIBLE_MAX_NAME_LENGTH}
+          placeholder="대상 이름"
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTargetName(event.target.value)}
+          className={`${CONTROL_CLASS} mt-2`}
+        />
+      )}
+      <input
+        type="text"
+        aria-label="새 관계 메모"
+        value={memo}
+        maxLength={STUDIO_CHARACTER_BIBLE_MAX_LIST_ITEM_LENGTH}
+        placeholder="메모 — 예: 실종된 형"
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setMemo(event.target.value)}
+        className={`${CONTROL_CLASS} mt-2`}
+      />
+    </div>
+  );
+}
+
+interface RelationshipMapViewProps extends RelationshipCallbacks {
+  bible: StudioCharacterBible;
+  selectedCharacterId: string;
+}
+
+function RelationshipMapView({ bible, selectedCharacterId, ...callbacks }: RelationshipMapViewProps) {
+  const map = buildStudioCharacterRelationshipMap(bible);
+  const [selectedEdgeKey, setSelectedEdgeKey] = useState<string | null>(null);
+  const selectedEdge = map.edges.find((edge) => edge.key === selectedEdgeKey) ?? null;
+  const nodeForCharacter = (characterId: string) =>
+    map.nodes.find((node) => node.characterId === characterId);
+  const nodeForGhost = (name: string) =>
+    map.nodes.find((node) => node.characterId === null && node.name === name);
+  const ownerName = (characterId: string) =>
+    bible.characters.find((character) => character.id === characterId)?.name || "이름 없는 캐릭터";
+
+  if (map.edges.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-xs leading-relaxed text-fg-3">
+        관계를 추가하면 이곳에 관계 맵이 그려집니다.
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      <svg
+        viewBox="0 0 100 100"
+        role="img"
+        aria-label="캐릭터 관계 맵"
+        className="mx-auto aspect-square w-full max-w-md"
+      >
+        {map.edges.map((edge) => {
+          const from = nodeForCharacter(edge.ownerCharacterId);
+          const to = edge.targetCharacterId
+            ? nodeForCharacter(edge.targetCharacterId)
+            : nodeForGhost(edge.targetName);
+          if (!from || !to) return null;
+          const selected = edge.key === selectedEdgeKey;
+          return (
+            <line
+              key={edge.key}
+              x1={from.x * 100}
+              y1={from.y * 100}
+              x2={to.x * 100}
+              y2={to.y * 100}
+              stroke={RELATIONSHIP_KIND_STROKES[edge.kind]}
+              strokeWidth={selected ? 1.4 : 0.6}
+              strokeOpacity={selected ? 1 : 0.55}
+              strokeDasharray={edge.bidirectional ? undefined : "2 1.6"}
+              className="cursor-pointer"
+              onClick={() => setSelectedEdgeKey(edge.key)}
+            >
+              <title>{`${ownerName(edge.ownerCharacterId)} → ${edge.targetName} (${STUDIO_CHARACTER_RELATIONSHIP_KIND_LABELS[edge.kind]})${edge.memo ? ` — ${edge.memo}` : ""}`}</title>
+            </line>
+          );
+        })}
+        {map.nodes.map((node) => {
+          const isCharacter = node.characterId !== null;
+          const selected = node.characterId === selectedCharacterId;
+          return (
+            <g
+              key={node.key}
+              transform={`translate(${node.x * 100} ${node.y * 100})`}
+              className={isCharacter ? "cursor-pointer" : undefined}
+              onClick={() => {
+                if (node.characterId) callbacks.onSelectCharacter(node.characterId);
+              }}
+            >
+              <circle
+                r={5}
+                fill={selected ? "#7c6cf0" : isCharacter ? "#4a4a52" : "transparent"}
+                stroke={isCharacter ? "#a49af5" : "#8e8e93"}
+                strokeWidth={0.5}
+                strokeDasharray={isCharacter ? undefined : "1.4 1.2"}
+              />
+              <text
+                textAnchor="middle"
+                dy={9.5}
+                fontSize={3.4}
+                fill="currentColor"
+                className="fill-fg-2"
+              >
+                {node.name.length > 7 ? `${node.name.slice(0, 7)}…` : node.name}
+              </text>
+              {!isCharacter && (
+                <title>{`${node.name} — 아직 캐릭터 시트가 없어요`}</title>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1" aria-label="관계 종류 범례">
+        {STUDIO_CHARACTER_RELATIONSHIP_KINDS.map((kind) => (
+          <span key={kind} className="inline-flex items-center gap-1 text-[0.65rem] text-fg-3">
+            <span
+              aria-hidden
+              className="inline-block h-0.5 w-4 rounded-full"
+              style={{ backgroundColor: RELATIONSHIP_KIND_STROKES[kind] }}
+            />
+            {STUDIO_CHARACTER_RELATIONSHIP_KIND_LABELS[kind]}
+          </span>
+        ))}
+        <span className="text-[0.65rem] text-fg-3">실선 = 서로 등록한 관계 · 점선 = 한쪽만 등록</span>
+      </div>
+
+      {selectedEdge && (
+        <div className="mt-3 rounded-xl border border-accent/35 bg-accent-soft/10 px-3 py-2.5">
+          <p className="text-xs font-semibold text-fg">
+            {ownerName(selectedEdge.ownerCharacterId)} → {selectedEdge.targetName}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <select
+              aria-label="맵에서 관계 종류 바꾸기"
+              value={selectedEdge.kind}
+              onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                commitRelationship(callbacks, () =>
+                  upsertStudioCharacterRelationship(
+                    bible,
+                    selectedEdge.ownerCharacterId,
+                    {
+                      targetName: selectedEdge.targetName,
+                      targetCharacterId: selectedEdge.targetCharacterId,
+                      kind: event.target.value as StudioCharacterRelationshipKind,
+                      memo: selectedEdge.memo,
+                    },
+                    selectedEdge.index,
+                  ),
+                )
+              }
+              className={RELATIONSHIP_SELECT_CLASS}
+            >
+              {STUDIO_CHARACTER_RELATIONSHIP_KINDS.map((kind) => (
+                <option key={kind} value={kind}>
+                  {STUDIO_CHARACTER_RELATIONSHIP_KIND_LABELS[kind]}
+                </option>
+              ))}
+            </select>
+            {selectedEdge.targetCharacterId && (
+              <button
+                type="button"
+                onClick={() =>
+                  callbacks.onSelectCharacter(selectedEdge.targetCharacterId as string)
+                }
+                className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-line bg-card px-2 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                대상 시트로 이동 <ArrowRight size={12} aria-hidden />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                commitRelationship(callbacks, () =>
+                  removeStudioCharacterRelationship(
+                    bible,
+                    selectedEdge.ownerCharacterId,
+                    selectedEdge.index,
+                  ),
+                );
+                setSelectedEdgeKey(null);
+              }}
+              className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-line bg-card px-2 text-[0.68rem] font-semibold text-fg-3 transition-colors hover:border-bad/45 hover:bg-bad/10 hover:text-bad focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bad"
+            >
+              <Trash2 size={12} aria-hidden /> 관계 삭제
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedEdgeKey(null)}
+              className="inline-flex min-h-8 items-center rounded-lg px-2 text-[0.68rem] font-semibold text-fg-3 transition-colors hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              닫기
+            </button>
+          </div>
+          {selectedEdge.memo && (
+            <p className="mt-1.5 text-[0.68rem] leading-relaxed text-fg-3">{selectedEdge.memo}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface CharacterRelationshipsSectionProps extends RelationshipCallbacks {
+  bible: StudioCharacterBible;
+  entry: StudioCharacterBibleEntry;
+  onPatch: (patch: StudioCharacterBibleEntryPatch) => void;
+}
+
+function CharacterRelationshipsSection({
+  bible,
+  entry,
+  onPatch,
+  ...callbacks
+}: CharacterRelationshipsSectionProps) {
+  const locked = entry.lockedFields.includes("relationships");
+  const drafts = parseStudioCharacterRelationships(bible, entry.id);
+
+  return (
+    <section className="mt-5" aria-labelledby="character-bible-relationships">
+      <div className="mb-1 flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <h4 id="character-bible-relationships" className="flex items-center gap-1.5 text-sm font-bold text-fg">
+            <Network size={14} aria-hidden className="text-accent" /> 관계 · 관계 맵
+          </h4>
+          <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
+            자유 텍스트로 적어 둔 관계도 대상·종류·메모로 나눠 보여줍니다. 맵이나 목록에서 바꾸면 이 시트에 바로 저장돼요.
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-pressed={locked}
+          aria-label={`관계 ${locked ? "잠금 해제" : "AI 제약으로 잠그기"}`}
+          title={locked ? "AI 제약 해제" : "AI가 바꾸지 못하도록 잠그기"}
+          onClick={() =>
+            onPatch({
+              lockedFields: locked
+                ? entry.lockedFields.filter((field) => field !== "relationships")
+                : [...entry.lockedFields, "relationships"],
+            })
+          }
+          className={`inline-flex min-h-8 shrink-0 items-center gap-1 rounded-lg border px-2 text-[0.68rem] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+            locked
+              ? "border-accent/45 bg-accent-soft text-accent hover:bg-accent-soft/70"
+              : "border-line bg-card text-fg-3 hover:bg-raised hover:text-fg"
+          }`}
+        >
+          {locked ? <Lock size={12} aria-hidden /> : <LockOpen size={12} aria-hidden />}
+          {locked ? "잠김" : "잠금"}
+        </button>
+      </div>
+
+      {drafts.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-line px-3 py-3 text-xs leading-relaxed text-fg-3">
+          아직 등록된 관계가 없어요. 아래에서 첫 관계를 추가하세요.
+        </p>
+      ) : (
+        <ol className="space-y-2" aria-label="구조화된 관계 목록">
+          {drafts.map((draft) => (
+            <RelationshipRowEditor
+              key={`${entry.id}:${draft.index}:${draft.raw}`}
+              bible={bible}
+              entry={entry}
+              draft={draft}
+              {...callbacks}
+            />
+          ))}
+        </ol>
+      )}
+
+      <div className="mt-2">
+        <AddRelationshipForm bible={bible} entry={entry} {...callbacks} />
+      </div>
+
+      <div className="mt-4">
+        <RelationshipMapView bible={bible} selectedCharacterId={entry.id} {...callbacks} />
+      </div>
+    </section>
   );
 }
 
@@ -550,6 +1047,17 @@ export function StudioCharacterBiblePanel({
                       </div>
                     </section>
                   ))}
+                  <CharacterRelationshipsSection
+                    bible={bible}
+                    entry={selectedCharacter}
+                    onPatch={patchCharacter}
+                    onApply={applyChange}
+                    onError={(message) => setError(message)}
+                    onSelectCharacter={(characterId) => {
+                      setRequestedCharacterId(characterId);
+                      setError(null);
+                    }}
+                  />
                 </div>
               </div>
             )}

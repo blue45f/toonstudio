@@ -64,6 +64,20 @@ export interface StudioAccessibilityReport {
 }
 
 const HEX_PATTERN = /^#[0-9a-f]{6}$/iu;
+const RGB_PATTERN = /^rgb\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})(?:\s*\/\s*(\d+(?:\.\d+)?)(%)?)?\s*\)$/iu;
+const OKLCH_PATTERN = /^oklch\(\s*(\d+(?:\.\d+)?)(%)?\s+(\d+(?:\.\d+)?)(%)?\s+(\d+(?:\.\d+)?)(?:deg)?(?:\s*\/\s*(\d+(?:\.\d+)?)(%)?)?\s*\)$/iu;
+
+interface ParsedStudioColor {
+  /** sRGB-encoded channels in the 0..1 range, gamut-clipped. */
+  readonly srgb: readonly [number, number, number];
+  /** Linear-light sRGB channels in the 0..1 range, gamut-clipped. */
+  readonly linear: readonly [number, number, number];
+  readonly alpha: number;
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
 
 function channel(value: number): number {
   const normalized = value / 255;
@@ -72,17 +86,109 @@ function channel(value: number): number {
     : ((normalized + 0.055) / 1.055) ** 2.4;
 }
 
-function luminance(color: string): number {
-  if (!HEX_PATTERN.test(color)) throw new Error(`Invalid accessibility color: ${color}`);
-  const red = Number.parseInt(color.slice(1, 3), 16);
-  const green = Number.parseInt(color.slice(3, 5), 16);
-  const blue = Number.parseInt(color.slice(5, 7), 16);
-  return channel(red) * 0.2126 + channel(green) * 0.7152 + channel(blue) * 0.0722;
+function srgbChannel(value: number): number {
+  return value <= 0.04045
+    ? value / 12.92
+    : ((value + 0.055) / 1.055) ** 2.4;
+}
+
+function encodeSrgbChannel(linear: number): number {
+  const clipped = clamp01(linear);
+  return clipped <= 0.0031308
+    ? clipped * 12.92
+    : 1.055 * clipped ** (1 / 2.4) - 0.055;
+}
+
+/**
+ * OKLCH to linear sRGB via OKLab (Bjorn Ottosson matrices). Channels are
+ * clipped to the sRGB gamut, matching how browsers paint these tokens on
+ * sRGB displays; theme tokens sit on or near the gamut edge, so the clip
+ * moves measured contrast by less than 0.05 in the audited matrix.
+ */
+function oklchToLinear(lightness: number, chroma: number, hueDegrees: number): readonly [number, number, number] {
+  const hue = (hueDegrees * Math.PI) / 180;
+  const a = chroma * Math.cos(hue);
+  const b = chroma * Math.sin(hue);
+  const l = (lightness + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (lightness - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (lightness - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  return [
+    clamp01(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+    clamp01(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+    clamp01(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s),
+  ];
+}
+
+function parseStudioColor(color: string): ParsedStudioColor {
+  if (HEX_PATTERN.test(color)) {
+    const srgb = [
+      Number.parseInt(color.slice(1, 3), 16) / 255,
+      Number.parseInt(color.slice(3, 5), 16) / 255,
+      Number.parseInt(color.slice(5, 7), 16) / 255,
+    ] as const;
+    return {
+      srgb,
+      linear: [channel(srgb[0] * 255), channel(srgb[1] * 255), channel(srgb[2] * 255)],
+      alpha: 1,
+    };
+  }
+  const rgb = RGB_PATTERN.exec(color);
+  if (rgb) {
+    const srgb = [
+      Number.parseInt(rgb[1] ?? "0", 10) / 255,
+      Number.parseInt(rgb[2] ?? "0", 10) / 255,
+      Number.parseInt(rgb[3] ?? "0", 10) / 255,
+    ] as const;
+    if (srgb.some((value) => value > 1)) throw new Error(`Invalid accessibility color: ${color}`);
+    const alpha = rgb[4] === undefined ? 1 : Number.parseFloat(rgb[4]) * (rgb[5] ? 0.01 : 1);
+    return { srgb, linear: [srgbChannel(srgb[0]), srgbChannel(srgb[1]), srgbChannel(srgb[2])], alpha };
+  }
+  const oklch = OKLCH_PATTERN.exec(color);
+  if (oklch) {
+    const lightness = Number.parseFloat(oklch[1] ?? "0") * (oklch[2] ? 0.01 : 1);
+    const chroma = Number.parseFloat(oklch[3] ?? "0") * (oklch[4] ? 0.004 : 1);
+    const hue = Number.parseFloat(oklch[5] ?? "0");
+    const alpha = oklch[6] === undefined ? 1 : Number.parseFloat(oklch[6]) * (oklch[7] ? 0.01 : 1);
+    if (lightness > 1 || chroma > 0.4 || alpha > 1) throw new Error(`Invalid accessibility color: ${color}`);
+    const linear = oklchToLinear(lightness, chroma, hue);
+    return {
+      srgb: [encodeSrgbChannel(linear[0]), encodeSrgbChannel(linear[1]), encodeSrgbChannel(linear[2])],
+      linear,
+      alpha,
+    };
+  }
+  throw new Error(`Invalid accessibility color: ${color}`);
+}
+
+export function studioRelativeLuminance(color: string): number {
+  const parsed = parseStudioColor(color);
+  if (parsed.alpha < 1) {
+    throw new Error(`Alpha accessibility color must be composited before measuring contrast: ${color}`);
+  }
+  return parsed.linear[0] * 0.2126 + parsed.linear[1] * 0.7152 + parsed.linear[2] * 0.0722;
+}
+
+/**
+ * Composite a possibly translucent foreground over an opaque background the
+ * way a browser paints it (per-channel in sRGB space) and return the result
+ * as #rrggbb, ready for studioColorContrast.
+ */
+export function compositeStudioColor(foreground: string, background: string): string {
+  const fg = parseStudioColor(foreground);
+  const bg = parseStudioColor(background);
+  if (bg.alpha < 1) {
+    throw new Error(`Alpha accessibility color must be composited before measuring contrast: ${background}`);
+  }
+  const hex = fg.srgb.map((value, index) => {
+    const painted = fg.alpha * value + (1 - fg.alpha) * (bg.srgb[index] ?? 0);
+    return Math.round(clamp01(painted) * 255).toString(16).padStart(2, "0");
+  });
+  return `#${hex.join("")}`;
 }
 
 export function studioColorContrast(foreground: string, background: string): number {
-  const first = luminance(foreground);
-  const second = luminance(background);
+  const first = studioRelativeLuminance(foreground);
+  const second = studioRelativeLuminance(background);
   const light = Math.max(first, second);
   const dark = Math.min(first, second);
   return (light + 0.05) / (dark + 0.05);

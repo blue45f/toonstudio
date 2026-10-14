@@ -1,0 +1,65 @@
+name: Bundle visualizer
+
+# Bundle composition report (library scout REPORT §3.2): the numeric bundle
+# ratchet (scripts/check-studio-bundle.mjs) says how much shipped; this
+# treemap says what shipped. Report-only — it never gates a merge, and the
+# plugin is added to the Vite config only when BUNDLE_VISUALIZER=1, so a
+# normal production build and its emitted chunks are unchanged.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - '.github/workflows/bundle-visualizer.yml'
+      - 'scripts/__tests__/bundle-visualizer-contract.test.mjs'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'apps/web/vite.config.ts'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bundle-visualizer.yml'
+      - 'scripts/__tests__/bundle-visualizer-contract.test.mjs'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'apps/web/vite.config.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: "1"
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  bundle-visualizer:
+    name: Bundle composition treemap (report only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Visualizer wiring contract (opt-in stays opt-in)
+        run: pnpm exec vitest run scripts/__tests__/bundle-visualizer-contract.test.mjs
+      - name: Build with the visualizer enabled (report lands in .qa/)
+        run: pnpm run bundle:visualize
+      - name: Keep the bundle composition report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: bundle-visualizer-report
+          path: .qa/bundle-visualizer.html
+          retention-days: 14
+          if-no-files-found: warn

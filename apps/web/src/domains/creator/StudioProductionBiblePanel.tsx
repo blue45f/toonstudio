@@ -9,6 +9,7 @@ import {
   Database,
   FileJson,
   Flag,
+  Globe,
   Link2,
   MapPinned,
   Plus,
@@ -47,6 +48,18 @@ import {
 } from "./studio-production-bible";
 import { createEmptyStudioPromisePayoffLedger } from "./studio-promise-payoff-ledger";
 import { StudioPromisePayoffLedgerPanel } from "./StudioPromisePayoffLedgerPanel";
+import { StudioWorldWikiPanel } from "./StudioWorldWikiPanel";
+import {
+  buildPublicWiki,
+  emptyWikiSettings,
+  wikiSourcesFromProductionBible,
+  type StudioWikiSettings,
+  type StudioWikiSourceEntry,
+} from "./studio-world-wiki";
+import {
+  ensureStudioWorldWikiSettings,
+  writeStudioWorldWikiSettings,
+} from "./studio-world-wiki-store";
 
 export interface StudioProductionBibleLinkOption {
   readonly id: string;
@@ -67,6 +80,11 @@ export interface StudioProductionBiblePanelProps {
   readonly characterOptions?: readonly StudioProductionBibleLinkOption[];
   readonly assetOptions?: readonly StudioProductionBibleLinkOption[];
   readonly persistence?: StudioProductionBiblePanelPersistence;
+  /**
+   * 세계관 위키 공개 설정의 저장 범위(보통 바이블 저장 키). 없으면 공개 설정은
+   * 이 세션 메모리에서만 유지되고, 패널이 그 사실을 안내한다.
+   */
+  readonly wikiScopeId?: string;
 }
 
 export type StudioProductionBiblePanelSurfaceProps = Omit<
@@ -75,7 +93,7 @@ export type StudioProductionBiblePanelSurfaceProps = Omit<
 >;
 
 type EntryFilter = "all" | StudioProductionBibleEntryKind | "dangling";
-type ProductionBibleView = "reference" | "promise-payoff";
+type ProductionBibleView = "reference" | "promise-payoff" | "world-wiki";
 
 const ENTRY_KIND_META: Record<
   StudioProductionBibleEntryKind,
@@ -113,6 +131,23 @@ const TOUCH_BUTTON_CLASS =
 
 function kindLabel(kind: StudioProductionBibleEntryKind): string {
   return ENTRY_KIND_META[kind].label;
+}
+
+/** 캐릭터 카탈로그 옵션(id·이름만 있는 가벼운 모양)을 위키 원본으로 편다. */
+function characterOptionsPropToWikiSources(
+  options: readonly StudioProductionBibleLinkOption[],
+): readonly StudioWikiSourceEntry[] {
+  return options.map((option) =>
+    Object.freeze({
+      id: option.id,
+      kind: "character" as const,
+      name: option.label,
+      aliases: Object.freeze([] as string[]),
+      summary: "",
+      details: "",
+      relatedIds: Object.freeze([] as string[]),
+    }),
+  );
 }
 
 function parseListInput(value: string): string[] {
@@ -332,6 +367,7 @@ export function StudioProductionBiblePanelSurface({
   characterOptions: characterOptionsProp,
   assetOptions: assetOptionsProp,
   persistence,
+  wikiScopeId,
 }: StudioProductionBiblePanelSurfaceProps) {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [requestedEntryId, setRequestedEntryId] = useState<string | null>(null);
@@ -377,6 +413,42 @@ export function StudioProductionBiblePanelSurface({
   const persistenceStatus = persistenceCopy(persistence);
   const promisePayoffLedger =
     bible.promisePayoffLedger ?? createEmptyStudioPromisePayoffLedger();
+  const [wikiSettings, setWikiSettings] = useState<StudioWikiSettings>(() =>
+    emptyWikiSettings(wikiScopeId ?? "unscoped"),
+  );
+  const [wikiStorageNotice, setWikiStorageNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (!wikiScopeId || typeof localStorage === "undefined") return;
+    try {
+      setWikiSettings(ensureStudioWorldWikiSettings(localStorage, wikiScopeId));
+      setWikiStorageNotice(null);
+    } catch {
+      setWikiStorageNotice(
+        "위키 공개 설정을 브라우저에서 읽지 못해 이 세션의 기본값(전부 비공개)으로 시작해요.",
+      );
+    }
+  }, [wikiScopeId]);
+  const changeWikiSettings = (next: StudioWikiSettings) => {
+    setWikiSettings(next);
+    if (!wikiScopeId || typeof localStorage === "undefined") return;
+    try {
+      writeStudioWorldWikiSettings(
+        localStorage,
+        next,
+        typeof window !== "undefined" ? window : undefined,
+      );
+      setWikiStorageNotice(null);
+    } catch {
+      setWikiStorageNotice(
+        "위키 공개 설정을 저장하지 못해 이 세션에서만 유지해요. 닫기 전에 공개 범위를 다시 확인해 주세요.",
+      );
+    }
+  };
+  const wikiSources: readonly StudioWikiSourceEntry[] = [
+    ...characterOptionsPropToWikiSources(characterOptionsProp ?? []),
+    ...wikiSourcesFromProductionBible(bible),
+  ];
+  const wikiPublicCount = buildPublicWiki(wikiSources, wikiSettings).publicCount;
   const sceneOptions = bible.entries
     .filter(({ kind }) => kind === "scene")
     .map(({ id, name }) => ({ id, label: name || id }));
@@ -496,13 +568,17 @@ export function StudioProductionBiblePanelSurface({
           <p className="mt-0.5 max-w-[76ch] text-xs leading-relaxed text-fg-3">
             {view === "reference"
               ? "장면·장소·소품의 시각 기준을 연결하고 이름이 바뀌어도 유지되는 안정 ID로 관리합니다."
-              : "독자에게 건 약속의 첫 장면, 중간 단서, 회수 컷과 마감을 한 원장에서 추적합니다."}
+              : view === "promise-payoff"
+                ? "독자에게 건 약속의 첫 장면, 중간 단서, 회수 컷과 마감을 한 원장에서 추적합니다."
+                : "항목별 공개 범위와 스포일러 회차 경계로, 작품 페이지에 붙는 공식 설정 위키를 만듭니다."}
           </p>
         </div>
         <span className="hidden rounded-full border border-line bg-card px-2.5 py-1 text-[0.68rem] tabular-nums text-fg-3 sm:inline-flex">
           {view === "reference"
             ? `${bible.entries.length}/${STUDIO_PRODUCTION_BIBLE_MAX_ENTRIES}`
-            : `약속 ${promisePayoffLedger.entries.length}`}
+            : view === "promise-payoff"
+              ? `약속 ${promisePayoffLedger.entries.length}`
+              : `공개 ${wikiPublicCount}개 · ${wikiSettings.spoilerThroughEpisode}화까지`}
         </span>
         <button
           type="button"
@@ -542,6 +618,7 @@ export function StudioProductionBiblePanelSurface({
         {([
           ["reference", "장면·장소·소품", BookMarked],
           ["promise-payoff", "약속·회수 원장", Flag],
+          ["world-wiki", "공개 위키", Globe],
         ] as const).map(([id, label, Icon]) => (
           <button
             key={id}
@@ -562,7 +639,9 @@ export function StudioProductionBiblePanelSurface({
             }`}>
               {id === "reference"
                 ? bible.entries.length
-                : promisePayoffLedger.entries.length}
+                : id === "promise-payoff"
+                  ? promisePayoffLedger.entries.length
+                  : wikiPublicCount}
             </span>
           </button>
         ))}
@@ -576,6 +655,18 @@ export function StudioProductionBiblePanelSurface({
             applyChange(
               replaceStudioProductionBiblePromisePayoffLedger(bible, nextLedger)
             )}
+        />
+      ) : view === "world-wiki" ? (
+        <StudioWorldWikiPanel
+          sources={wikiSources}
+          settings={wikiSettings}
+          onChange={changeWikiSettings}
+          persistenceNotice={
+            wikiStorageNotice
+            ?? (!wikiScopeId
+              ? "저장 범위가 없어 위키 공개 설정은 이 세션에서만 유지돼요."
+              : undefined)
+          }
         />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[20rem_minmax(0,1fr)]">

@@ -8,7 +8,15 @@ import { useEffect, useState } from "react";
 
 import { useMarketLibrary } from "../hooks/use-market-library";
 import { useMarketWishlist } from "../hooks/use-market-wishlist";
+import {
+  MarketGuestLoginNotice,
+  useMarketGuestLoginNoticeState,
+} from "./MarketGuestLoginNotice";
 import { marketKindMeta } from "../models/market-kind";
+import {
+  MARKET_GUEST_LOGIN_NOTICE_STICKY_ID,
+  marketGuestLoginNoticeDescribedBy,
+} from "../models/market-guest-login-notice";
 
 import type { MarketStudioHandoff } from "../models/market-studio-handoff";
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
@@ -33,6 +41,9 @@ export function MarketDetailStickyBar({
   const { isAcquired } = useMarketLibrary();
   const wishlisted = isWishlisted(record.id);
   const acquired = isAcquired(record.id);
+  // 게스트 사전 고지(P-3): 스티키 획득 버튼 옆에도 로그인 필요를 먼저 보인다.
+  // 클릭 시 로그인 연결은 부모(상세 아티클)의 onOpenAcquisition이 같은 판정으로 수행한다.
+  const guestLoginState = useMarketGuestLoginNoticeState();
   const kind = marketKindMeta(record.kind);
   const StudioActionIcon = studioHandoff.mode === "install-tool-pack"
     ? Download
@@ -117,18 +128,28 @@ export function MarketDetailStickyBar({
               <Check className="size-3.5" /> 소장 중
             </span>
           ) : (
-            <button
-              type="button"
-              onClick={onOpenAcquisition}
-              className={buttonClass({
-                variant: "outline",
-                size: "sm",
-                className: "gap-1.5 border-accent text-accent hover:bg-accent/10",
-              })}
-            >
-              <Download className="size-3.5" />
-              <span>내 에셋에 추가</span>
-            </button>
+            <>
+              <MarketGuestLoginNotice
+                variant="compact"
+                id={MARKET_GUEST_LOGIN_NOTICE_STICKY_ID}
+              />
+              <button
+                type="button"
+                onClick={onOpenAcquisition}
+                aria-describedby={marketGuestLoginNoticeDescribedBy(
+                  guestLoginState,
+                  MARKET_GUEST_LOGIN_NOTICE_STICKY_ID,
+                )}
+                className={buttonClass({
+                  variant: "outline",
+                  size: "sm",
+                  className: "gap-1.5 border-accent text-accent hover:bg-accent/10",
+                })}
+              >
+                <Download className="size-3.5" />
+                <span>내 에셋에 추가</span>
+              </button>
+            </>
           )}
 
           <Link

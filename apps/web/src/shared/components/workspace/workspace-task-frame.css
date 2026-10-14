@@ -1,6 +1,6 @@
 .workspace-task-passthrough,.workspace-task-passthrough>.workspace-task-route-content{display:contents}
-.workspace-task-shell{grid-template-rows:minmax(68px,auto) minmax(0,1fr);grid-template-areas:"top top" "nav main"}
-.workspace-task-shell .workspace-topbar{min-height:68px}
+.workspace-task-shell{grid-template-rows:minmax(var(--layout-workspace-topbar),auto) minmax(0,1fr);grid-template-areas:"top top" "nav main"}
+.workspace-task-shell .workspace-topbar{min-height:var(--layout-workspace-topbar)}
 #main-content .workspace-task-shell .workspace-search-trigger{min-inline-size:44px;min-block-size:44px}
 .workspace-task-breadcrumb{display:flex;align-items:center;gap:10px;min-width:0;flex:1;font-size:13px}
 .workspace-task-breadcrumb a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin-left:-8px;padding:0 8px;border-radius:10px;color:var(--color-fg-2);outline:none;transition:background-color .18s ease,color .18s ease}
@@ -15,7 +15,7 @@
 .workspace-task-route-content{min-width:0;min-height:0}
 .workspace-task-shell :is(input,textarea):focus-visible{outline:2px solid var(--color-accent);outline-offset:3px}
 .workspace-task-shell .workspace-main :is(a,button,input,select,textarea){scroll-margin-block:20px 100px}
-@media(max-width:760px){
+@media(max-width:767px){
  .workspace-task-shell{height:auto;padding-bottom:calc(136px + env(safe-area-inset-bottom))}
  .workspace-task-shell .workspace-topbar{min-height:72px;gap:6px;padding:10px 14px}
  .workspace-task-shell .workspace-brand{flex:1}

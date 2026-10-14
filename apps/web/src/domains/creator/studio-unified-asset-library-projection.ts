@@ -1,4 +1,5 @@
 import {
+  compareStudioUnifiedAssetFrequency,
   createStudioUnifiedAssetLibraryState,
   deriveStudioUnifiedAssetFacet,
   getStudioUnifiedAssetFlag,
@@ -18,6 +19,7 @@ export type StudioUnifiedAssetLibraryProjectionInput = Pick<
   | "minRating"
   | "flagFilter"
   | "libraryState"
+  | "usageStats"
 >;
 
 /**
@@ -61,6 +63,9 @@ export function projectStudioUnifiedAssetLibrary(
     if (view === "recent") {
       return (recents.get(left.id) ?? Number.MAX_SAFE_INTEGER)
         - (recents.get(right.id) ?? Number.MAX_SAFE_INTEGER);
+    }
+    if (input.sort === "frequency") {
+      return compareStudioUnifiedAssetFrequency(input.usageStats, left.id, right.id);
     }
     if (input.sort === "rating") {
       return getStudioUnifiedAssetRating(state, right.id) - getStudioUnifiedAssetRating(state, left.id)

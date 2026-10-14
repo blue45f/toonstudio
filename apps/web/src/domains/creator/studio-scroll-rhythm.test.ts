@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   analyzeStudioScrollRhythm,
+  isStudioScrollRhythmSfxElement,
   planStudioAutoScrollStep,
   STUDIO_SCROLL_RHYTHM_LIMITS,
   type StudioScrollRhythmPageLike,
@@ -24,6 +25,10 @@ describe("analyzeStudioScrollRhythm", () => {
       totalHeightPx: 0,
       totalScreenCount: 0,
       densePageCount: 0,
+      totalSfxCount: 0,
+      sfxDensePageCount: 0,
+      longestSfxGapScreens: 0,
+      sfxCategoryCounts: [],
       breathingPageCount: 0,
       flatRhythmPageCount: 0,
       ending: {
@@ -212,6 +217,103 @@ describe("analyzeStudioScrollRhythm", () => {
     analyzeStudioScrollRhythm(source);
 
     expect(JSON.stringify(source)).toBe(before);
+  });
+});
+
+describe("analyzeStudioScrollRhythm — SFX rhythm (L-4)", () => {
+  const sfxText = (name: string, y: number, extra: object = {}) => ({
+    type: "text",
+    name,
+    y,
+    height: 90,
+    text: "쾅!",
+    ...extra,
+  });
+
+  it("classifies SFX with the animatic cue rule and never as dialogue", () => {
+    expect(isStudioScrollRhythmSfxElement({ type: "text", animaticCueKind: "sfx" })).toBe(true);
+    expect(isStudioScrollRhythmSfxElement({ type: "text", name: "SFX 쾅" })).toBe(true);
+    expect(isStudioScrollRhythmSfxElement({ type: "text", name: "효과음 1" })).toBe(true);
+    expect(isStudioScrollRhythmSfxElement({ type: "sfx" })).toBe(true);
+    expect(isStudioScrollRhythmSfxElement({ type: "text", name: "제목" })).toBe(false);
+    expect(isStudioScrollRhythmSfxElement({ type: "text", animaticCueKind: "dialogue", name: "sfx" })).toBe(false);
+    expect(isStudioScrollRhythmSfxElement({ type: "bubble", name: "sfx" })).toBe(false);
+
+    const result = analyzeStudioScrollRhythm([
+      page("p1", 1_280, [
+        { type: "frame", y: 0, height: 600 },
+        sfxText("효과음", 100),
+        { type: "bubble", y: 700, height: 120, text: "대사" },
+      ]),
+    ]);
+    expect(result.pages[0]).toMatchObject({
+      sfxCount: 1,
+      sfxPerPanel: 1,
+      dialogueCount: 1,
+      dialogueCharacters: 2,
+    });
+    expect(result.totalSfxCount).toBe(1);
+  });
+
+  it("flags a page where SFX lettering is crowded per screen", () => {
+    const elements = [0, 180, 430, 760, 1_100].map((y, index) =>
+      sfxText(`효과음 ${index}`, y)
+    );
+    const result = analyzeStudioScrollRhythm([page("dense-sfx", 1_280, elements)]);
+
+    expect(result.pages[0]?.sfxCount).toBe(5);
+    expect(result.pages[0]?.sfxPerScreen).toBe(5);
+    expect(result.pages[0]?.sfxPerPanel).toBeNull();
+    expect(result.sfxDensePageCount).toBe(1);
+    expect(result.insights).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "SFX_DENSE", pageId: "dense-sfx", severity: "warning" }),
+      ])
+    );
+    // 밀집 페널티 2점: (5 - 4) * 2
+    expect(result.pages[0]?.score).toBe(98);
+  });
+
+  it("surfaces the longest SFX-free stretch only when the episode uses SFX", () => {
+    const withSfx = analyzeStudioScrollRhythm([
+      page("gap", 5_120, [sfxText("효과음", 0)]),
+      page("full", 1_280, [sfxText("효과음", 100)]),
+    ]);
+    expect(withSfx.longestSfxGapScreens).toBe(3.93);
+    expect(
+      withSfx.insights.some(
+        (insight) => insight.code === "SFX_LONG_GAP" && insight.pageId === "gap"
+      )
+    ).toBe(true);
+    expect(
+      withSfx.insights.some(
+        (insight) => insight.code === "SFX_LONG_GAP" && insight.pageId === "full"
+      )
+    ).toBe(false);
+
+    const noSfx = analyzeStudioScrollRhythm([
+      page("plain", 5_120, [{ type: "frame", y: 0, height: 500 }]),
+    ]);
+    expect(noSfx.totalSfxCount).toBe(0);
+    expect(noSfx.longestSfxGapScreens).toBe(0);
+    expect(noSfx.insights.some((insight) => insight.code === "SFX_LONG_GAP")).toBe(false);
+  });
+
+  it("aggregates SFX categories in count order and ignores hidden SFX", () => {
+    const result = analyzeStudioScrollRhythm([
+      page("p1", 2_560, [
+        sfxText("효과음", 0, { sfxCategory: "impact" }),
+        sfxText("효과음", 300, { sfxCategory: "impact" }),
+        sfxText("효과음", 600, { sfxCategory: "motion" }),
+        sfxText("효과음", 900, { hidden: true, sfxCategory: "impact" }),
+        { type: "sfx", y: 1_200, height: 80, text: "휙", sfxCategory: "motion" },
+      ]),
+    ]);
+    expect(result.totalSfxCount).toBe(4);
+    expect(result.sfxCategoryCounts).toEqual([
+      { category: "impact", count: 2 },
+      { category: "motion", count: 2 },
+    ]);
   });
 });
 

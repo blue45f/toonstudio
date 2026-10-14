@@ -6,8 +6,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   appendCanvasOperation,
   createEmptyOperationJournal,
+  type StudioSaveSyncStatus,
 } from "./studio-operation-recovery-coordinator";
 import { StudioSaveSyncStatusCenter } from "./StudioSaveSyncStatusCenter";
+
+import type { StudioConnectivitySnapshot } from "./offline/studio-connectivity";
 
 afterEach(() => {
   cleanup();
@@ -116,5 +119,74 @@ describe("StudioSaveSyncStatusCenter", () => {
       ).not.toBeNull();
     });
     expect(screen.queryByText("진단 정보를 복사했어요")).toBeNull();
+  });
+});
+describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
+  const baseStatus: StudioSaveSyncStatus = {
+    documentId: "doc-g2",
+    localDurable: true,
+    pendingOperationsCount: 0,
+    lastSavedAt: 1_700_000_000_000,
+    lastCheckpointAt: 1_700_000_000_000,
+    cloudSyncStatus: "synced",
+    summaryText: "",
+  };
+  const serverDown: StudioConnectivitySnapshot = {
+    browserOnline: true,
+    serverReachable: false,
+    checking: false,
+    mode: "server-unavailable",
+    serverAvailable: false,
+    localOnly: true,
+    lastCheckedAt: 1_700_000_000_000,
+    consecutiveFailures: 2,
+  };
+
+  it("offers an in-dialog save retry when local durability failed", () => {
+    const onRetrySave = vi.fn();
+    const journal = createEmptyOperationJournal("doc-g2");
+    render(
+      <StudioSaveSyncStatusCenter
+        journal={journal}
+        statusOverride={{ ...baseStatus, localDurable: false }}
+        onRetrySave={onRetrySave}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기/u }));
+    fireEvent.click(screen.getByRole("button", { name: "지금 다시 시도" }));
+    expect(onRetrySave).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows server failure on the pill and offers a connection recheck in the dialog", () => {
+    const onRecheckConnection = vi.fn();
+    const journal = createEmptyOperationJournal("doc-g2");
+    render(
+      <StudioSaveSyncStatusCenter
+        journal={journal}
+        statusOverride={baseStatus}
+        connectivity={serverDown}
+        onRecheckConnection={onRecheckConnection}
+      />
+    );
+
+    expect(screen.getByText("서버 연결 안 됨 · 이 기기에 보관 중")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기/u }));
+    expect(screen.getByText(/서버에 연결할 수 없어요/u)).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "연결 다시 확인" }));
+    expect(onRecheckConnection).toHaveBeenCalledTimes(1);
+  });
+
+  it("says no checkpoint exists instead of showing an epoch time", () => {
+    const journal = createEmptyOperationJournal("doc-g2");
+    render(
+      <StudioSaveSyncStatusCenter
+        journal={journal}
+        statusOverride={{ ...baseStatus, lastSavedAt: 0, lastCheckpointAt: 0 }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기/u }));
+    expect(screen.getByText(/아직 만들어진 복구 지점이 없어요/u)).not.toBeNull();
   });
 });

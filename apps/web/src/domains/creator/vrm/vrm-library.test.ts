@@ -28,8 +28,6 @@ const NEW_BUNDLE_FILES = [
   "Sendagaya_Shino.vrm",
   "Sakurada_Fumiriya.vrm",
   "Darkness_Shibu.vrm",
-  "fem_vroid.vrm",
-  "masc_vroid.vrm",
   "AliciaSolid.vrm",
   "Devil.vrm",
   "Polydancer.vrm",
@@ -126,10 +124,10 @@ describe("VRM library helpers", () => {
 
     // 대표 엔트리 스팟 체크(기존 + 2026-07 신규).
     expect(
-      ["sample-vrm", "avatar-a", "avatar-b", "avatar-c"].map(
+      ["sample-vrm", "shino", "fumi", "kage"].map(
         (id) => SAMPLE_VRMS.find((sample) => sample.id === id)?.name,
       ),
-    ).toEqual(["루미", "하린", "세라", "유나"]);
+    ).toEqual(["루미", "시노", "후미", "카게 (다크)"]);
     expect(SAMPLE_VRM_ENTRIES[0]).toMatchObject({ id: "sample-vrm", name: "루미" });
     expect(
       ["quaternius-female-peasant", "quaternius-male-peasant", "quaternius-female-ranger"].map(
@@ -185,6 +183,27 @@ describe("VRM library helpers", () => {
     expect(samplesById.get("pirate-bot")?.limitations).toEqual(["heavy-payload"]);
   });
 
+  it("carries the AliciaSolid license notice from the catalog into library entries", () => {
+    // 근거: AliciaSolid.vrm 임베드 메타 (author "© DWANGO Co., Ltd.",
+    // otherLicenseUrl "https://3d.nicovideo.jp/alicia/rule.html") + LICENSES.md 문제 6.
+    const alicia = SAMPLE_VRMS.find((sample) => sample.id === "alicia");
+    expect(alicia?.licenseNotice).toEqual({
+      label: "니코니 솔리드 라이선스",
+      summary:
+        "Alicia Solid · © DWANGO Co., Ltd. — 니코니 솔리드 라이선스가 적용됩니다. 재배포·2차 이용 시 이 라이선스 고지가 필요합니다.",
+      licenseUrl: "https://3d.nicovideo.jp/alicia/rule.html",
+    });
+
+    // 카드 표면이 소비하는 SAMPLE_VRM_ENTRIES에도 같은 고지가 전파되어야 한다.
+    const aliciaEntry = SAMPLE_VRM_ENTRIES.find((entry) => entry.id === "alicia");
+    expect(aliciaEntry?.licenseNotice).toEqual(alicia?.licenseNotice);
+
+    // 고지 의무가 없는 번들 모델에는 고지를 붙이지 않는다 (카드 잡음 방지).
+    expect(
+      SAMPLE_VRMS.filter((sample) => sample.licenseNotice !== undefined).map((sample) => sample.id),
+    ).toEqual(["alicia"]);
+  });
+
   it("registers every newly bundled model in the sample list", () => {
     const urls = new Set(SAMPLE_VRMS.map((sample) => sample.url));
     for (const fileName of NEW_BUNDLE_FILES) {
@@ -234,7 +253,7 @@ describe("VRM library helpers", () => {
 
   // 모든 번들 캐릭터가 검토된 용량 한도 내 고품질 3D 스튜디오 렌더링 썸네일 실파일을 갖추는지 전수 검사한다.
   it("backs every bundled character with a bounded high-quality 3D thumbnail and valid sampleVrmThumbnailUrl", () => {
-    expect(SAMPLE_VRMS.length).toBe(113);
+    expect(SAMPLE_VRMS.length).toBe(108);
 
     for (const sample of SAMPLE_VRMS) {
       expect(sample.thumbnailUrl, `${sample.id} thumbnailUrl should be defined`).toBeTruthy();
@@ -310,7 +329,7 @@ describe("VRM library helpers", () => {
   });
 
   it("권리 제한 meebit을 별도 메타데이터로 격리하고 신규 카탈로그·엄격 로드에서 차단한다", () => {
-    expect(BUNDLED_VRM_RIGHTS_BLOCKS).toHaveLength(1);
+    expect(BUNDLED_VRM_RIGHTS_BLOCKS).toHaveLength(6);
     expect(bundledVrmRightsBlockById("meebit")).toMatchObject({
       id: "meebit",
       url: "/vrm/meebit_09842.vrm",
@@ -326,6 +345,38 @@ describe("VRM library helpers", () => {
     expect(
       existsSync(join(process.cwd(), "apps/web/public", "vrm", "meebit_09842.vrm")),
     ).toBe(false);
+  });
+
+  it("원문 대조로 재배포 불가 판정된 VRoid 5종을 격리하고 CC0 대체가 카탈로그에 남는다", () => {
+    const blocked = [
+      ["avatar-a", "/vrm/AvatarSample_A.vrm"],
+      ["avatar-b", "/vrm/AvatarSample_B.vrm"],
+      ["avatar-c", "/vrm/AvatarSample_C.vrm"],
+      ["mio", "/vrm/fem_vroid.vrm"],
+      ["noa", "/vrm/masc_vroid.vrm"],
+    ] as const;
+    for (const [id, url] of blocked) {
+      expect(bundledVrmRightsBlockById(id)).toMatchObject({
+        id,
+        url,
+        status: "rights-blocked",
+        reasonCode: "redistribution-commercial-restriction",
+      });
+      expect(isBundledVrmRightsBlocked(id)).toBe(true);
+      expect(selectableSampleVrmUrl(id)).toBeNull();
+      expect(SAMPLE_VRMS.some((sample) => sample.id === id)).toBe(false);
+      expect(SAMPLE_VRM_ENTRIES.some((entry) => entry.id === id)).toBe(false);
+      expect(
+        existsSync(join(process.cwd(), "apps/web/public", url.replace(/^\//, ""))),
+      ).toBe(false);
+    }
+    // 대체 슬롯: 여성 휴머노이드 CC0 베타 샘플·100Avatars, 인체 베이스 Quaternius CC0·남성 CC0.
+    for (const replacementId of ["shino", "shion", "kate", "jennifer", "jimmy", "robert"]) {
+      expect(selectableSampleVrmUrl(replacementId), replacementId).not.toBeNull();
+    }
+    expect(
+      SAMPLE_VRMS.some((sample) => sample.id.startsWith("quaternius-")),
+    ).toBe(true);
   });
 
   it("keeps every bundled sample before uploaded library entries", () => {
@@ -389,7 +440,7 @@ describe("VRM library helpers", () => {
   });
 
   it("extracts embedded PNG/JPEG thumbnails or main texture bytes from sample VRM GLB files", () => {
-    const filePath = join(process.cwd(), "apps/web/public/vrm/AvatarSample_A.vrm");
+    const filePath = join(process.cwd(), "apps/web/public/vrm/Sendagaya_Shino.vrm");
     if (!existsSync(filePath)) return;
     const buffer = readFileSync(filePath);
     const result = extractEmbeddedVrmThumbnailBytes(buffer);

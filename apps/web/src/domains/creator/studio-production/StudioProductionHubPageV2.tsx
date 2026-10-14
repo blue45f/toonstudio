@@ -42,6 +42,7 @@ import {
   type StudioProductionScope as ProductionScope,
 } from "./studio-production-scope";
 import {
+  buildProductionVersionSnapshot,
   commitStudioProductionWorkspace,
   createDemoProductionWorkspace,
   createEmptyProductionWorkspace,
@@ -49,6 +50,7 @@ import {
   createStudioProductionWorkspaceInvalidation,
   loadStudioProductionWorkspace,
   parseStudioProductionWorkspaceInvalidation,
+  prependProductionVersionSnapshot,
   productionWorkspaceHasContent,
   resolveStudioProductionWorkspaceMode,
   studioProductionWorkspaceCapabilities,
@@ -57,7 +59,13 @@ import {
   type StudioProductionWorkspaceMode,
 } from "./studio-production-workspace";
 import { creatorProfileProductionRoleRecommendations } from "./creator-role-production-bridge";
+import { StudioPitchDocumentCard } from "./StudioPitchDocumentCard";
 import { StudioPitchPptxCard } from "./StudioPitchPptxCard";
+import {
+  applyPitchDocumentToSlides,
+  pitchDocumentFromSlides,
+  type ProductionPitchDocument,
+} from "./studio-pitch-document";
 import {
   StudioProductionOperationsPanel,
   type StudioProductionRoleCandidate,
@@ -76,6 +84,7 @@ import { getStudioTeam, type StudioTeamSnapshot } from "../studio-team-client";
 
 import { getMyProfile, type MeProfile } from "@/platform/me-client";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { ProductionSurfaceGuide } from "@/shared/components/production-surface-guide";
 import {
   GLOBAL_CREATOR_ROLE_WORKSPACE_KEY,
   creatorCollaborationUiEnabled,
@@ -708,29 +717,41 @@ function StudioProductionHubWorkspace({
 
   const createSnapshot = () => void commit((current) => ({
     ...current,
-    versions: [
-      {
+    versions: prependProductionVersionSnapshot(
+      current.versions,
+      buildProductionVersionSnapshot({
         id: createId("version"),
         name: `${mode === "server-work" ? "운영" : "로컬"} 체크포인트 ${current.versions.length + 1}`,
         createdAt: new Date().toISOString(),
-        tasks: current.tasks,
-        reviews: current.reviews,
-        hierarchy: current.hierarchy,
-        roleAssignments: current.roleAssignments,
-        handoffs: current.handoffs,
-      },
-      ...current.versions,
-    ],
-  }), "작업·검수·역할·인계 체크포인트를 저장했습니다.");
+        workspace: current,
+      }),
+    ),
+  }), "작업·검수·역할·인계 체크포인트를 저장했습니다. 최근 200개까지 보관하고 오래된 체크포인트는 자동 정리됩니다.");
 
-  const restoreSnapshot = (snapshot: ProductionVersionSnapshot) => void commit((current) => ({
-    ...current,
-    tasks: snapshot.tasks,
-    reviews: snapshot.reviews,
-    hierarchy: snapshot.hierarchy ?? [],
-    roleAssignments: snapshot.roleAssignments ?? [],
-    handoffs: snapshot.handoffs ?? [],
-  }), `${snapshot.name} 상태를 복원했습니다.`);
+  const restoreSnapshot = (snapshot: ProductionVersionSnapshot) => {
+    const accepted = globalThis.confirm(
+      `${snapshot.name} 상태로 프로젝트를 복원할까요? 복원 전 현재 상태는 자동 백업 체크포인트로 먼저 저장됩니다.`,
+    );
+    if (!accepted) return;
+    void commit((current) => ({
+      ...current,
+      versions: prependProductionVersionSnapshot(
+        current.versions,
+        buildProductionVersionSnapshot({
+          id: createId("version"),
+          name: `복원 전 자동 백업 · ${snapshot.name}`,
+          createdAt: new Date().toISOString(),
+          workspace: current,
+        }),
+        snapshot,
+      ),
+      tasks: snapshot.tasks,
+      reviews: snapshot.reviews,
+      hierarchy: snapshot.hierarchy ?? [],
+      roleAssignments: snapshot.roleAssignments ?? [],
+      handoffs: snapshot.handoffs ?? [],
+    }), `${snapshot.name} 상태를 복원했습니다. 복원 전 상태는 자동 백업 체크포인트로 저장했습니다.`);
+  };
 
   const addSlide = () => void commit((current) => ({
     ...current,
@@ -743,6 +764,19 @@ function StudioProductionHubWorkspace({
       },
     ],
   }), "피치 슬라이드를 추가했습니다.");
+
+  const savePitchDocument = (document: ProductionPitchDocument) => void commit((current) => ({
+    ...current,
+    pitchDocument: document,
+  }), "기획서를 저장했습니다.");
+
+  const applyPitchDocument = (document: ProductionPitchDocument) => void commit((current) => ({
+    ...current,
+    pitchDocument: document,
+    slides: applyPitchDocumentToSlides(current.slides, document),
+  }), "기획서를 피치 슬라이드에 반영했습니다. 아래 PowerPoint 편집본에서 PPTX로 저장할 수 있습니다.");
+
+  const effectivePitchDocument = workspace.pitchDocument ?? pitchDocumentFromSlides(workspace.slides);
 
   return (
     <div
@@ -829,6 +863,8 @@ function StudioProductionHubWorkspace({
       </header>
 
       <div className="mx-auto max-w-[1920px] space-y-4 px-3 py-4 sm:px-5 sm:py-5">
+        <ProductionSurfaceGuide surface="studio" />
+
         <ModeNotice mode={mode} />
 
         {!showCollaborationUi ? (
@@ -999,8 +1035,8 @@ function StudioProductionHubWorkspace({
             <Card
               title={mode === "server-work" ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "제작 운영 체크포인트") : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "로컬 작업·검수 체크포인트")}
               description={mode === "server-work"
-                ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "작업·검수·역할·인계 상태를 서버 제작 운영 문서 안에 저장합니다. 원고 컷·레이어 복원본은 아닙니다.")
-                : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "로컬 작업·검수 목록만 저장·복원합니다. 원고의 컷·레이어와 서버 리비전은 포함하지 않습니다.")}
+                ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "작업·검수·역할·인계 상태를 서버 제작 운영 문서 안에 저장합니다. 원고 컷·레이어 복원본은 아닙니다. 체크포인트는 프로젝트당 최근 200개까지 보관하고 오래된 것부터 자동 정리합니다.")
+                : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "로컬 작업·검수 목록만 저장·복원합니다. 원고의 컷·레이어와 서버 리비전은 포함하지 않습니다. 체크포인트는 프로젝트당 최근 200개까지 보관하고 오래된 것부터 자동 정리합니다.")}
               action={(
                 <button
                   type="button"
@@ -1049,16 +1085,25 @@ function StudioProductionHubWorkspace({
         ) : null}
 
         {surface === "present" ? (
-          <StudioPitchPptxCard
-            title={workspace.title}
-            slides={workspace.slides}
-            onAddSlide={addSlide}
-            onNotice={setNotice}
-            onChangeSlide={(id, patch) => void commit((current) => ({
-              ...current,
-              slides: current.slides.map((slide) => slide.id === id ? { ...slide, ...patch } : slide),
-            }), "피치 슬라이드를 수정했습니다.")}
-          />
+          <div className="space-y-4">
+            <StudioPitchDocumentCard
+              document={effectivePitchDocument}
+              disabled={!capabilities.canEdit || Boolean(loadError) || persistence === "loading" || persistence === "saving"}
+              onSave={savePitchDocument}
+              onApplyToSlides={applyPitchDocument}
+              onNotice={setNotice}
+            />
+            <StudioPitchPptxCard
+              title={workspace.title}
+              slides={workspace.slides}
+              onAddSlide={addSlide}
+              onNotice={setNotice}
+              onChangeSlide={(id, patch) => void commit((current) => ({
+                ...current,
+                slides: current.slides.map((slide) => slide.id === id ? { ...slide, ...patch } : slide),
+              }), "피치 슬라이드를 수정했습니다.")}
+            />
+          </div>
         ) : null}
 
         {surface === "share" ? (

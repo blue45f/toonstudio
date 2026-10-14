@@ -1,4 +1,5 @@
 import { ChevronRight, CloudOff, PenLine, Plus } from "lucide-react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
@@ -9,6 +10,12 @@ import type { ProductionProjectAccess } from "./production-dashboard-api";
 import { projectAccessRoleLabel } from "./production-labels";
 import { ProductionPill, ProductionSampleBadge } from "./production-ui";
 import type { ProductionSaveState } from "./use-production-project-session";
+import {
+  parseProcessLens,
+  summarizeProcessLensTasks,
+  usePreferredProcessLens,
+  type ProductionProcessLens,
+} from "./use-preferred-process-lens";
 import { parseRoleLens } from "./use-preferred-role-lens";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -20,6 +27,59 @@ const ROLE_LENS_OPTIONS: readonly { readonly value: CreatorRoleLens; readonly ko
   { value: "art", ko: "그림 작가", en: "Artist" },
   { value: "producer", ko: "PD·편집자", en: "Producer" },
 ];
+
+const PROCESS_LENS_OPTIONS: readonly { readonly value: ProductionProcessLens; readonly ko: string; readonly en: string }[] = [
+  { value: "all", ko: "전체 공정", en: "All processes" },
+  { value: "storyboard", ko: "콘티", en: "Storyboard" },
+  { value: "line-art", ko: "선화", en: "Line art" },
+  { value: "color", ko: "채색", en: "Coloring" },
+  { value: "background", ko: "배경", en: "Background" },
+  { value: "lettering", ko: "식자", en: "Lettering" },
+];
+
+/**
+ * 선택한 공정의 작업 현황 한 줄. 역할 렌즈만으로는 "내 공정 일이 지금 어떤가"가
+ * 안 보여, 공정 렌즈를 고르면 그 공정의 작업 수·진행·검수·막힘을 헤더에서 바로 읽힌다.
+ * aggregate 파생만 쓰고, 전체 공정이면 아무것도 그리지 않는다.
+ */
+function ProcessLensSummary({ aggregate, lens }: { readonly aggregate: ProductionProjectAggregate; readonly lens: ProductionProcessLens }) {
+  const bt = useBilingual("ProductionProjectHeader");
+  const summary = useMemo(() => summarizeProcessLensTasks(aggregate.tasks, lens), [aggregate.tasks, lens]);
+  if (lens === "all") return null;
+  const option = PROCESS_LENS_OPTIONS.find((entry) => entry.value === lens);
+  if (!option) return null;
+  const label = bt(option.ko, option.en);
+  if (summary.total === 0) {
+    return (
+      <span className="text-xs text-fg-3" role="status">
+        {bt(`${label} 작업이 아직 없습니다`, `No ${label} tasks yet`)}
+      </span>
+    );
+  }
+  const koParts = [`${label} 작업 ${summary.total}건`];
+  const enParts = [`${summary.total} ${label} task${summary.total === 1 ? "" : "s"}`];
+  if (summary.active > 0) {
+    koParts.push(`진행 중 ${summary.active}`);
+    enParts.push(`${summary.active} in progress`);
+  }
+  if (summary.review > 0) {
+    koParts.push(`검수 대기 ${summary.review}`);
+    enParts.push(`${summary.review} in review`);
+  }
+  if (summary.blocked > 0) {
+    koParts.push(`막힘 ${summary.blocked}`);
+    enParts.push(`${summary.blocked} blocked`);
+  }
+  if (summary.active === 0 && summary.review === 0 && summary.blocked === 0) {
+    koParts.push("모두 완료");
+    enParts.push("all done");
+  }
+  return (
+    <span className="text-xs text-fg-3" role="status">
+      {bt(koParts.join(" · "), enParts.join(" · "))}
+    </span>
+  );
+}
 
 function SaveStatus({ saveState, revision, isDemo }: { readonly saveState: ProductionSaveState; readonly revision: number; readonly isDemo: boolean }) {
   const bt = useBilingual("ProductionProjectHeader");
@@ -81,6 +141,7 @@ export function ProductionProjectHeader({
   readonly isDemo: boolean;
 }) {
   const bt = useBilingual("ProductionProjectHeader");
+  const [processLens, setProcessLens] = usePreferredProcessLens(aggregate.projectId);
   return (
     <header className="creator-workflow-topbar border-b border-line bg-panel px-4 py-3 sm:px-6">
       <div className="mx-auto flex max-w-[100rem] flex-wrap items-center justify-between gap-3">
@@ -117,6 +178,22 @@ export function ProductionProjectHeader({
               ))}
             </select>
           </label>
+          <label className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2 focus-within:ring-2 focus-within:ring-accent">
+            <span>{bt("내 공정", "My process")}</span>
+            <select
+              className="min-h-10 bg-transparent font-semibold text-fg outline-none"
+              value={processLens}
+              onChange={(event) => {
+                const next = parseProcessLens(event.target.value);
+                if (next) setProcessLens(next);
+              }}
+            >
+              {PROCESS_LENS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{bt(option.ko, option.en)}</option>
+              ))}
+            </select>
+          </label>
+          <ProcessLensSummary aggregate={aggregate} lens={processLens} />
           <SaveStatus saveState={saveState} revision={aggregate.revision} isDemo={isDemo} />
           {isDemo ? (
             <Link className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })} to="/studio/new">

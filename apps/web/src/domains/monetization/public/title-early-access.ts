@@ -3,4 +3,5 @@
 // 이 공개 경계를 거치는 소비처(TitleDetailPage 등)가 사전 등록을 보장받도록
 // 여기서 동기 등록 모듈을 함께 평가한다.
 import "../monetization-i18n";
+
 export { TitleEarlyAccessNotice } from "../paywall/components/TitleEarlyAccessNotice";

@@ -159,4 +159,94 @@ describe("홈 발견 미리보기", () => {
     expect(screen.getByRole("status", { name: "대표 작품을 불러오는 중" })).toBeTruthy();
     expect(screen.getByRole("status", { name: "추천 작품을 불러오는 중" })).toBeTruthy();
   });
+
+  it("구간 제목을 눈에 보이는 제목으로 두고, 옆에 탐색 허브로 가는 전체 보기 출구를 표기한다", () => {
+    mockResource({ data: snapshot(currentKstWeekDay()) });
+    renderPreview();
+
+    // 제목: aria-label에만 있던 구간 이름이 실제 제목 요소로 보인다.
+    expect(screen.getByRole("heading", { name: "읽을 이야기 미리보기" })).toBeTruthy();
+    // 출구: 보이는 문구는 "전체 보기", 접근명에는 구간 제목이 붙고, 도착지는 레일 전체를 소유한 /discover다.
+    const exit = screen.getByRole("link", { name: "읽을 이야기 미리보기 전체 보기" });
+    expect(exit.textContent).toContain("전체 보기");
+    expect(exit.getAttribute("href")).toBe("/discover");
+  });
+
+  it("요일 레일은 자기 제목 옆에 전체 보기를 두고, 도착지는 레일의 실제 전체 목록(연재 캘린더)을 쓴다", () => {
+    mockResource({ data: snapshot(currentKstWeekDay()) });
+    renderPreview();
+
+    const railExit = screen.getByRole("link", { name: "오늘 업데이트되는 웹툰 전체 보기" });
+    expect(railExit.textContent).toContain("전체 보기");
+    expect(railExit.getAttribute("href")).toBe("/calendar");
+    // 미리보기에서는 목적지 이름("연재 캘린더")이 아니라 전체 보기로 통일한다.
+    expect(screen.queryByRole("link", { name: /연재 캘린더/u })).toBeNull();
+  });
+
+  it("스포트라이트만 있으면 요일 레일 출구는 만들지 않고, 미리보기 출구만 남긴다", () => {
+    mockResource({ data: { ...snapshot(currentKstWeekDay()), todayReleases: [] } });
+    renderPreview();
+
+    expect(screen.getByRole("link", { name: /작품-spot/u })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeNull();
+    expect(screen.getAllByRole("link").some((link) => link.getAttribute("href") === "/calendar")).toBe(false);
+    expect(screen.getAllByRole("link", { name: /전체 보기/u })).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "읽을 이야기 미리보기 전체 보기" }).getAttribute("href")).toBe("/discover");
+  });
+
+  it("요일 레일만 있어도 두 출구가 각자의 실제 도착지를 가리킨다", () => {
+    mockResource({
+      data: { ...snapshot(currentKstWeekDay()), spotlight: null, featured: [], topRated: [] },
+    });
+    renderPreview();
+
+    expect(screen.queryByRole("link", { name: /작품-spot/u })).toBeNull();
+    expect(screen.getByRole("link", { name: "읽을 이야기 미리보기 전체 보기" }).getAttribute("href")).toBe("/discover");
+    expect(screen.getByRole("link", { name: "오늘 업데이트되는 웹툰 전체 보기" }).getAttribute("href")).toBe("/calendar");
+  });
+
+  it("불러오기 실패·빈 스냅샷에서는 제목도 출구도 남기지 않는다", () => {
+    mockResource({ data: null, error: "추천 작품을 불러오지 못했습니다." });
+    const failed = renderPreview();
+    expect(screen.queryByRole("heading", { name: "읽을 이야기 미리보기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /전체 보기/u })).toBeNull();
+    failed.unmount();
+
+    mockResource({
+      data: {
+        topRated: [],
+        waitFree: [],
+        newest: [],
+        todayDay: currentKstWeekDay(),
+        todayReleases: [],
+        genres: [],
+        stats: { titles: 0, platforms: 0, genres: 0 },
+        generatedAt: "2026-10-05T00:00:00.000Z",
+      },
+    });
+    renderPreview();
+    expect(screen.queryByRole("heading", { name: "읽을 이야기 미리보기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /전체 보기/u })).toBeNull();
+  });
+
+  it("불러오는 동안에도 제목과 전체 보기 출구가 먼저 같은 자리에 있다", () => {
+    mockResource({ data: null, loading: true });
+    renderPreview();
+
+    expect(screen.getByRole("heading", { name: "읽을 이야기 미리보기" })).toBeTruthy();
+    // 레일은 아직 스켈레톤이라 출구는 미리보기 출구 하나뿐이다.
+    const exits = screen.getAllByRole("link", { name: /전체 보기/u });
+    expect(exits).toHaveLength(1);
+    expect(exits[0]?.getAttribute("href")).toBe("/discover");
+  });
+
+  it("영어에서는 제목과 출구 문구가 영어로 바뀐다", () => {
+    useI18n.setState({ lang: "en" });
+    mockResource({ data: snapshot(currentKstWeekDay()) });
+    renderPreview();
+
+    expect(screen.getByRole("heading", { name: "Stories to read" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Stories to read View all" }).getAttribute("href")).toBe("/discover");
+    expect(screen.getByRole("link", { name: "Webtoons updating today View all" }).getAttribute("href")).toBe("/calendar");
+  });
 });

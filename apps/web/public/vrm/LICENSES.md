@@ -7,11 +7,11 @@ ToonStudio 스튜디오(/studio)에 번들된 VRM 캐릭터 모델의 출처와 
 
 | 파일 | 스튜디오 이름 | 출처 URL | 라이선스 요약 |
 | --- | --- | --- | --- |
-| `Sendagaya_Shino.vrm` | 시노 | <https://github.com/madjin/vrm-samples/blob/master/vroid/beta/Sendagaya_Shino.vrm> | VRoid 공식(구 베타) 샘플 모델 — pixiv VRoid 샘플 모델 이용조건에 따라 아바타·콘텐츠 제작 용도 사용 가능 |
-| `Sakurada_Fumiriya.vrm` | 후미 | <https://github.com/madjin/vrm-samples/blob/master/vroid/beta/Sakurada_Fumiriya.vrm> | VRoid 공식(구 베타) 샘플 모델 — 위와 동일 |
-| `Darkness_Shibu.vrm` | 카게 (다크) | <https://github.com/madjin/vrm-samples/blob/master/vroid/beta/Darkness_Shibu.vrm> | VRoid 공식(구 베타) 샘플 모델 — 위와 동일 |
-| `fem_vroid.vrm` | 미오 | <https://github.com/madjin/vrm-samples/blob/master/vroid/fem_vroid.vrm> | VRoid Studio 기본 프리셋 기반 샘플 — pixiv VRoid Studio 프리셋(VRoidPreset) 이용조건 준수 |
-| `masc_vroid.vrm` | 노아 | <https://github.com/madjin/vrm-samples/blob/master/vroid/masc_vroid.vrm> | VRoid Studio 기본 프리셋 기반 샘플 — 위와 동일 |
+| `Sendagaya_Shino.vrm` | 시노 | <https://github.com/madjin/vrm-samples/blob/master/vroid/beta/Sendagaya_Shino.vrm> | **확정 (2026-10-14 원문 대조): CC0 1.0 — 재배포 허용.** 파일 임베드 메타 `licenseName: CC0` 실측 + pixiv 공식 VRoid FAQ의 CC0 고지와 일치. 아래 'VRoid 샘플·프리셋 9종 확정 판정' 참조 |
+| `Sakurada_Fumiriya.vrm` | 후미 | <https://github.com/madjin/vrm-samples/blob/master/vroid/beta/Sakurada_Fumiriya.vrm> | **확정 (2026-10-14 원문 대조): CC0 1.0 — 재배포 허용.** 위와 동일 (임베드 CC0 + 공식 FAQ CC0 고지) |
+| `Darkness_Shibu.vrm` | 카게 (다크) | <https://github.com/madjin/vrm-samples/blob/master/vroid/beta/Darkness_Shibu.vrm> | **확정 (2026-10-14 원문 대조): CC0 1.0 — 재배포 허용.** 임베드 CC0 실측 + 원형인 β Ver AvatarSample_1(Sendagaya Shibu)의 공식 FAQ CC0 고지 |
+| `fem_vroid.vrm` | 미오 | <https://github.com/madjin/vrm-samples/blob/master/vroid/fem_vroid.vrm> | **권리 격리 — 서빙 중단 (2026-10-14 확정).** 임베드 라이선스 "Other"·참조 URL 없음·저작자 개인(jin)이라 원 배포 조건 확정 불가 — VRoidPreset이라는 기존 표기는 근거가 없어 정정. 아래 확정 판정 참조 |
+| `masc_vroid.vrm` | 노아 | <https://github.com/madjin/vrm-samples/blob/master/vroid/masc_vroid.vrm> | **권리 격리 — 서빙 중단 (2026-10-14 확정).** 위와 동일 |
 | `AliciaSolid.vrm` | 아리시아 | <https://github.com/vrm-c/UniVRM/blob/master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm> | 니코니 솔리드(ニコニ立体ちゃん, Alicia Solid) 캐릭터 모델 — 니코니 솔리드 라이선스(<https://3d.nicovideo.jp/alicia/rule.html>) 적용. 재배포·2차 이용 시 해당 라이선스 고지가 필요 |
 | `Devil.vrm` | 데빌 (악마) | <https://github.com/ToxSam/open-source-avatars> | Polygonal-Mind의 100Avatars R1 시리즈 모델 — CC0 라이선스 적용 |
 | `Polydancer.vrm` | 폴리댄서 | <https://github.com/ToxSam/open-source-avatars> | Polygonal-Mind의 100Avatars R1 시리즈 모델 — CC0 라이선스 적용 |
@@ -25,6 +25,37 @@ ToonStudio 스튜디오(/studio)에 번들된 VRM 캐릭터 모델의 출처와 
 
 - VRoid 공식 샘플(구 베타 포함) 모음 출처: <https://github.com/madjin/vrm-samples> (pixiv/VRoid 프로젝트가 배포한 샘플을 모아 둔 저장소).
 - Alicia Solid 원 배포처: <https://3d.nicovideo.jp/works/td14712> — UniVRM 저장소의 VRM 0.51 변환본을 사용.
+
+## VRoid 샘플·프리셋 9종 확정 판정 (2026-10-14 원문 대조)
+
+라이선스 감사 문제 5에 대한 파일별 확정 판정이다. 방법: ① 배포 파일 자체의
+GLB JSON 청크 임베드 메타를 Range 수신으로 직접 파싱(1차 근거), ② 원 배포
+조건 원문(pixiv 공식 VRoid FAQ·VRM 퍼블릭 라이선스 1.0)을 대조. 공개 웹
+디렉터리 서빙은 모델 데이터 재배포에 해당한다는 기준으로 판정했다.
+요약 표기이며, 조건 원문의 대량 전재는 하지 않는다.
+
+| 파일 | 임베드 메타 실측 | 원 배포 조건 대조 | 재배포 판정 | 조치 |
+| --- | --- | --- | --- | --- |
+| `Sendagaya_Shino.vrm` | `licenseName: CC0`, commercial Allow, Everyone | pixiv 공식 FAQ(모델 개별 페이지)가 CC0로 고지 | **허용 (CC0 1.0)** | 유지 |
+| `Sakurada_Fumiriya.vrm` | `licenseName: CC0`, commercial Allow, Everyone | pixiv 공식 FAQ가 CC0로 고지 | **허용 (CC0 1.0)** | 유지 |
+| `Darkness_Shibu.vrm` | `licenseName: CC0`, commercial Allow, Everyone | 원형 β Ver AvatarSample_1(Sendagaya Shibu)의 공식 FAQ가 CC0로 고지 | **허용 (CC0 1.0)** | 유지 |
+| `sample.vrm` | VRM 1.0 메타: authors pixiv Inc., `allowRedistribution: true`, `modification: allowModificationRedistribution`, commercial corporation, credit unnecessary, licenseUrl = VRM 퍼블릭 라이선스 1.0 | 파일 정체는 `VRM1_Constraint_Twist_Sample`(vrm-c/vrm-specification 샘플과 SHA-256 일치로 확인). 기존 문서의 "루미/VRoid 샘플" 표기는 정체와 달라 정정 | **허용 (조건부 — VRM 퍼블릭 라이선스 1.0)** | 유지. 스튜디오 표시명 "루미"는 표시명일 뿐 모델 정체 표기가 아님 |
+| `AvatarSample_A.vrm` | author VRoid, `licenseName: Other`, otherLicenseUrl 공란 | 원 조건은 VRoidPreset(AvatarSample A–Z) 공식 조건: **CC0 아님**. 편집 후 재배포 사례만 열거하고, 샘플 데이터를 캐릭터 제작 서비스에 쓰는 행위와 유료 재배포를 금지 | **불가** — 무수정 원본의 번들 서빙 + 캐릭터 제작 서비스 제공은 허용 범위 밖 | **서빙 중단**: 파일·파생 썸네일 삭제, 카탈로그 제거, `BUNDLED_VRM_RIGHTS_BLOCKS` 격리. 대체는 CC0 모델(아래) |
+| `AvatarSample_B.vrm` | 동일 | 동일 (VRoid Hub 공식 모델 설명도 "CC0 아님"을 명시) | **불가** | 위와 동일 |
+| `AvatarSample_C.vrm` | 동일 | 동일 | **불가** | 위와 동일 |
+| `fem_vroid.vrm` | author **jin**(개인), `licenseName: Other`, 참조 URL 없음 | madjin/vrm-samples 수집본 어디에도 이 파일의 재배포 조건 고지가 없고, 공식 VRoid 샘플·프리셋 목록에도 없음. 기존 문서의 "VRoid Studio 프리셋 기반" 설명은 임베드 저작자와 어긋나 근거 없음 | **확정 불가 → 불가로 처리** (미확인을 허용으로 간주하지 않는 fail-closed) | **서빙 중단**: 위와 동일 |
+| `masc_vroid.vrm` | 동일 | 동일 | **확정 불가 → 불가로 처리** | 위와 동일 |
+
+- **대체 (CC0)**: 제거된 5종의 슬롯은 이미 번들에 있는 CC0 모델이 맡는다 —
+  여성 휴머노이드: CC0 베타 샘플 `Sendagaya_Shino.vrm`·`Sendagaya_Shibu.vrm`·
+  `Vivi.vrm`·`Vita.vrm`과 100Avatars CC0 `Kate.vrm`·`Jennifer.vrm`·`Erika.vrm`·
+  `Olivia.vrm`; 남성·인체 베이스: 100Avatars CC0 `Jimmy.vrm`·`Robert.vrm`과
+  Quaternius CC0 모듈러 남녀 모델.
+- **파생 썸네일**: 차단 5종의 썸네일(`assets/3d/characters/thumbnails/` 기본본과
+  `refined-v2/`본, refined-v2 manifest 항목 포함)도 모델 데이터 파생물이므로
+  함께 내렸다.
+- 이 표의 "권리 격리" 표기는 기존 meebit 격리와 같은 의미로, 신규 카탈로그
+  제공과 런타임 로드를 차단한다는 뜻이다.
 
 ## 오픈소스 아바타 레지스트리 모델 (2026-07)
 
@@ -129,10 +160,10 @@ ToonStudio 스튜디오(/studio)에 번들된 VRM 캐릭터 모델의 출처와 
 
 | 파일 | 스튜디오 이름 | 출처 | 라이선스 요약 |
 | --- | --- | --- | --- |
-| `sample.vrm` | 루미 | madjin/vrm-samples (VRoid 샘플) | VRoid 샘플 이용조건 |
-| `AvatarSample_A.vrm` | 하린 | madjin/vrm-samples `vroid/` | pixiv VRoidPreset 조건 |
-| `AvatarSample_B.vrm` | 세라 | madjin/vrm-samples `vroid/` | pixiv VRoidPreset 조건 |
-| `AvatarSample_C.vrm` | 유나 | madjin/vrm-samples `vroid/` | pixiv VRoidPreset 조건 |
+| `sample.vrm` | 루미 (표시명) | vrm-c/vrm-specification 샘플 — 실측 정체 `VRM1_Constraint_Twist_Sample` (pixiv Inc.) | **확정: VRM 퍼블릭 라이선스 1.0, `allowRedistribution: true` — 재배포 허용** (위 확정 판정 참조) |
+| `AvatarSample_A.vrm` | 하린 | madjin/vrm-samples `vroid/` | **권리 격리:** pixiv VRoidPreset 조건은 CC0가 아니며 캐릭터 제작 서비스 이용·무수정 번들 재배포를 허용하지 않아 신규 카탈로그 제공과 런타임 로드를 차단함 (2026-10-14 확정) |
+| `AvatarSample_B.vrm` | 세라 | madjin/vrm-samples `vroid/` | **권리 격리:** 위와 동일 — 신규 카탈로그 제공과 런타임 로드를 차단함 |
+| `AvatarSample_C.vrm` | 유나 | madjin/vrm-samples `vroid/` | **권리 격리:** 위와 동일 — 신규 카탈로그 제공과 런타임 로드를 차단함 |
 | `Sendagaya_Shibu.vrm` | 시온 | madjin/vrm-samples `vroid/beta/` | VRoid 구 베타 샘플 — pixiv CC0 고지 기준 |
 | `Vivi.vrm` | 비비 | madjin/vrm-samples | 저장소 고지 조건 |
 | `Vita.vrm` | 비타 | madjin/vrm-samples | 저장소 고지 조건 |

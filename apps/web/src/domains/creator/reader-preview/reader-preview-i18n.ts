@@ -28,7 +28,12 @@ export type ReaderPreviewCopyKey =
   | "reader.preview.speed.normal"
   | "reader.preview.speed.fast"
   | "reader.preview.scrollPosition"
-  | "reader.preview.gotoCurrentPage";
+  | "reader.preview.gotoCurrentPage"
+  | "reader.preview.deviceLabel"
+  | "reader.preview.device.galaxy-s24"
+  | "reader.preview.device.iphone-se"
+  | "reader.preview.device.iphone-14"
+  | "reader.preview.device.iphone-15-pro-max";
 
 /** `{name}` 플레이스홀더를 값으로 치환한다. */
 export function formatReaderPreviewText(
@@ -64,6 +69,11 @@ registerI18nLocaleEntries("ko", {
   "reader.preview.speed.fast": "빠르게",
   "reader.preview.scrollPosition": "{position}화면째 읽는 중",
   "reader.preview.gotoCurrentPage": "현재 페이지로",
+  "reader.preview.deviceLabel": "기기",
+  "reader.preview.device.galaxy-s24": "Galaxy S24",
+  "reader.preview.device.iphone-se": "iPhone SE",
+  "reader.preview.device.iphone-14": "iPhone 14",
+  "reader.preview.device.iphone-15-pro-max": "iPhone 15 Pro Max",
 });
 
 registerI18nLocaleEntries("en", {
@@ -89,4 +99,9 @@ registerI18nLocaleEntries("en", {
   "reader.preview.speed.fast": "Fast",
   "reader.preview.scrollPosition": "Reading screen {position}",
   "reader.preview.gotoCurrentPage": "Go to current page",
+  "reader.preview.deviceLabel": "Device",
+  "reader.preview.device.galaxy-s24": "Galaxy S24",
+  "reader.preview.device.iphone-se": "iPhone SE",
+  "reader.preview.device.iphone-14": "iPhone 14",
+  "reader.preview.device.iphone-15-pro-max": "iPhone 15 Pro Max",
 });

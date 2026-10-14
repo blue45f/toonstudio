@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  READER_PREVIEW_DEFAULT_DEVICE_PRESET_ID,
+  READER_PREVIEW_DEVICE_PRESETS,
   READER_PREVIEW_DEVICE_WIDTH_PX,
   READER_PREVIEW_LONG_CUT_SCREENS,
   READER_PREVIEW_MIN_DIALOGUE_FONT_PX,
@@ -9,6 +11,7 @@ import {
   READER_PREVIEW_VIEWPORT_HEIGHT_PX,
   analyzeReaderPreview,
   analyzeReaderPreviewPage,
+  readerPreviewDevicePreset,
   type ReaderPreviewPageLike,
 } from "./reader-preview-analysis";
 
@@ -229,6 +232,42 @@ describe("analyzeReaderPreview 문서 집계", () => {
     ).toEqual(["LONG_CUT", "SHORT_CUT"]);
     expect(result.totalScreens).toBeGreaterThan(0);
   });
+
+describe("실기기 프리셋", () => {
+  it("기본 프리셋은 기존 단일 규격(390×844)과 일치한다", () => {
+    const preset = readerPreviewDevicePreset(READER_PREVIEW_DEFAULT_DEVICE_PRESET_ID);
+    expect(preset.widthPx).toBe(READER_PREVIEW_DEVICE_WIDTH_PX);
+    expect(preset.viewportHeightPx).toBe(READER_PREVIEW_VIEWPORT_HEIGHT_PX);
+  });
+
+  it("프리셋 id가 모두 유일하고 폭·높이가 양수다", () => {
+    const ids = READER_PREVIEW_DEVICE_PRESETS.map((preset) => preset.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const preset of READER_PREVIEW_DEVICE_PRESETS) {
+      expect(preset.widthPx).toBeGreaterThan(0);
+      expect(preset.viewportHeightPx).toBeGreaterThan(0);
+    }
+  });
+
+  it("알 수 없는 id는 기본 프리셋으로 떨어진다", () => {
+    expect(readerPreviewDevicePreset("no-such-device").id).toBe(
+      READER_PREVIEW_DEFAULT_DEVICE_PRESET_ID,
+    );
+  });
+
+  it("화면이 짧은 기기에서는 같은 컷의 화면 수가 늘어난다", () => {
+    // iPhone SE(375×667)는 기본 기기보다 화면비가 짧아 같은 컷이 더 많은 화면으로 쪼개진다.
+    const se = readerPreviewDevicePreset("iphone-se");
+    const page = makePage([cut("c1", 0, canvasPxForScreens(1.2))]);
+    const small = analyzeReaderPreviewPage(page, {
+      readerWidthPx: se.widthPx,
+      viewportHeightPx: se.viewportHeightPx,
+    });
+    const base = analyzeReaderPreviewPage(page);
+    expect(small.cuts[0]?.screens).toBeGreaterThan(base.cuts[0]?.screens ?? 0);
+    expect(small.scale).toBeCloseTo(se.widthPx / 720, 5);
+  });
+});
 
   it("페이지 수 상한을 지킨다", () => {
     const pages = Array.from({ length: 600 }, (_, index) => ({

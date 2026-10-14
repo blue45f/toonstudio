@@ -372,4 +372,69 @@ describe("StudioProjectCreatePage", () => {
       height: 1080,
     });
   });
+
+  it("routes a blank-canvas lane to the editor with the default canvas spec (S2-7)", async () => {
+    const { container } = renderCreate("/studio/new?lane=blank");
+
+    expect(container.querySelector("[data-studio-create-lane]")?.getAttribute("data-studio-create-lane")).toBe("blank");
+    fireEvent.click(screen.getByRole("button", {
+      name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
+    }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("location").textContent).toMatch(
+        /^\/studio\/p\/[^/]+\/d\/[^?]+\?.*format=vertical-webtoon$/u,
+      );
+    });
+    const project = readStudioProjectLibrary(window.localStorage).projects[0]!;
+    const document = readStudioProjectDocuments(window.localStorage, project.id).documents[0]!;
+    expect(document).toMatchObject({ width: 1080, height: 8000 });
+  });
+
+  it("routes an explicit storyboard lane to the editor, not the production-plan board (S2-7)", async () => {
+    const { container } = renderCreate("/studio/new?lane=storyboard&start=storyboard");
+
+    expect(container.querySelector('[data-studio-start-point="storyboard"]')?.getAttribute("aria-pressed")).toBe("true");
+    expect(container.querySelector("[data-studio-create-lane]")?.getAttribute("data-studio-create-lane")).toBe("storyboard");
+    fireEvent.click(screen.getByRole("button", {
+      name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
+    }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("location").textContent).toMatch(
+        /^\/studio\/p\/[^/]+\/d\/[^?]+\?.*format=vertical-webtoon$/u,
+      );
+    });
+  });
+
+  it("infers the template lane from ?template= and routes to the editor (S2-7)", async () => {
+    const { container } = renderCreate("/studio/new?template=webtoon-vertical-episode");
+
+    expect(container.querySelector("[data-studio-create-lane]")?.getAttribute("data-studio-create-lane")).toBe("template");
+    fireEvent.click(screen.getByRole("button", {
+      name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
+    }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("location").textContent).toMatch(
+        /^\/studio\/p\/[^/]+\/d\/[^?]+\?.*format=vertical-webtoon$/u,
+      );
+    });
+  });
+
+  it("keeps an explicit idea lane landing on planning, and follows the start point when the user changes it (S2-7)", async () => {
+    const { container } = renderCreate("/studio/new?lane=blank");
+
+    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-studio-start-point="idea"]')!);
+    expect(container.querySelector("[data-studio-create-lane]")?.getAttribute("data-studio-create-lane")).toBe("idea");
+    fireEvent.click(screen.getByRole("button", {
+      name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
+    }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("location").textContent).toMatch(
+        /^\/studio\/p\/[^/]+\/story$/u,
+      );
+    });
+  });
 });

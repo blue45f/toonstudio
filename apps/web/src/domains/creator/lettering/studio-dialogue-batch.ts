@@ -15,6 +15,8 @@
  *    기본적으로 치환 대상에서 제외한다(includeLocked 로 해제 가능).
  */
 
+import { fuzzyFilterByTexts } from "@/shared/lib/fuzzy-search";
+
 import { BUBBLE_VARIANTS } from "../studio-assets";
 import { isEffectivelyHidden, isEffectivelyLocked, type LayerGroup } from "../studio-layers";
 
@@ -250,17 +252,22 @@ export function dialogueExcerpt(text: string, max = 24): string {
   return `${oneLine.slice(0, Math.max(1, max - 1)).trimEnd()}…`;
 }
 
-/** 목록 검색 — 대사 본문·종류 라벨에 부분일치(대소문자 무시). 빈 질의는 전체. */
+/**
+ * 목록 검색 — 대사 본문·종류 라벨에 부분일치(대소문자 무시)에 더해
+ * 초성 검색을 지원한다: "ㅁㅍ" 으로 말풍선 라벨을, "ㅁㅅ" 로 '민수' 대사를 찾는다
+ * (es-hangul 공용 유틸 matchesHangulText). 빈 질의는 전체.
+ *
+ * 여기에 퍼지(fuse.js 공용 엔진)를 얹었다: 부분·초성 일치가 원래 순서로
+ * 먼저 오고, 한 글자 오타("민슈"·"말풍션"·"minsuu")로만 닿는 대사가
+ * 점수순으로 뒤에 붙는다. 오탐 상한은 엔진이 고정하므로 무관한 대사는
+ * 여전히 걸러진다("없는대사" → 0건 계약 유지).
+ */
 export function filterDialogueItems(
   items: readonly DialogueBatchItem[],
   query: string
 ): DialogueBatchItem[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return [...items];
-  return items.filter(
-    (item) =>
-      item.text.toLowerCase().includes(q) || dialogueItemTypeLabel(item).toLowerCase().includes(q)
-  );
+  if (!query.trim()) return [...items];
+  return fuzzyFilterByTexts(items, query, (item) => [item.text, dialogueItemTypeLabel(item)]);
 }
 
 // ── 찾아바꾸기 planner ──────────────────────────────────────────────────────

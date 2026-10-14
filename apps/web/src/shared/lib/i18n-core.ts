@@ -40,6 +40,18 @@ export interface LanguageLocaleOption {
    * 언어 선택 UI 는 이 품질 차이를 감추면 안 된다.
    */
   fullyTranslated: boolean;
+  /**
+   * 로케일 완성도(0~1) — 카탈로그 생성 시 산출한 완성도 리포트의 completenessRatio 와 같은
+   * 실측값이다. 자세한 정의는 scripts/generate-app-i18n-catalog.mjs 의
+   * buildLocaleCompletenessReport 참조.
+   */
+  completenessRatio: number;
+  /**
+   * true 면 완성도가 임계(APP_I18N_COMPLETENESS_IN_PROGRESS_THRESHOLD) 미만이다.
+   * 언어 선택 UI 는 이 로케일을 "번역 진행 중"으로 표기해야 하며, 번역 완료 언어인 것처럼
+   * 제시하면 안 된다.
+   */
+  translationInProgress: boolean;
 }
 
 export type Dict = Record<string, string>;

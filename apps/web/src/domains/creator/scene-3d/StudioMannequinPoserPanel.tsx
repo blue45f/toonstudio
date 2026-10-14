@@ -59,6 +59,12 @@ import {
 import {
   getWebtoonPosePresetById,
 } from "./studio-3d-advanced-poses-library";
+import {
+  describeStudioMannequinDuoPlacement,
+  findStudioMannequinDuoComposition,
+  solveStudioMannequinDuoPlacement,
+  type StudioMannequinDuoPlacement,
+} from "./studio-mannequin-duo-composition";
 import { convertWebtoonPresetToMannequinPose } from "./studio-webtoon-pose-mannequin-adapter";
 import { StudioWebtoonPosePresetGrid } from "./StudioWebtoonPosePresetGrid";
 
@@ -100,7 +106,11 @@ import {
 import {
   STUDIO_MANNEQUIN_POSE_CATEGORIES,
   STUDIO_MANNEQUIN_POSE_PRESETS,
+  countStudioMannequinPosePresetsByCategory,
   createStudioMannequinRestPose,
+  applyStudioMannequinHandPreset,
+  filterStudioMannequinPosePresets,
+  studioMannequinPosePresetScope,
   encodeStudioMannequinShareHash,
   exportStudioMannequinStateToJSON,
   importStudioMannequinStateFromJSON,
@@ -109,6 +119,7 @@ import {
   type StudioMannequinPose,
   type StudioMannequinPoseCategory,
   type StudioMannequinPosePreset,
+  type StudioMannequinPoseScope,
 } from "./studio-mannequin-poses";
 import {
   clearMannequinPosePresetRecent,
@@ -584,6 +595,8 @@ function MannequinPosePresetCard({
         </span>
         <span className="block truncate text-[0.62rem] text-fg-3" aria-hidden>
           {categoryLabel}
+          {studioMannequinPosePresetScope(preset) === "hand-only" ? " · 손만 적용" : ""}
+          {(preset.figures ?? 1) === 2 ? " · 2인" : ""}
         </span>
       </button>
       <button
@@ -621,6 +634,7 @@ export function StudioMannequinPoseSection({
   onResetJoints: () => void;
 }): ReactElement {
   const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<StudioMannequinPoseScope | "all">("all");
   const [favorites, setFavorites] = useState<string[]>(() =>
     readMannequinPosePresetFavorites(),
   );
@@ -629,16 +643,23 @@ export function StudioMannequinPoseSection({
   );
   const [lastAppliedId, setLastAppliedId] = useState<string | null>(null);
 
-  const isDefaultFilter = selectedCategory === "all" && query.trim() === "";
+  const isDefaultFilter =
+    selectedCategory === "all" && scope === "all" && query.trim() === "";
 
-  const filteredPresets = useMemo(() => {
-    const q = query.trim();
-    return STUDIO_MANNEQUIN_POSE_PRESETS.filter(
-      (preset) =>
-        (selectedCategory === "all" || preset.category === selectedCategory) &&
-        (!q || preset.label.includes(q)),
-    );
-  }, [selectedCategory, query]);
+  const categoryCounts = useMemo(
+    () => countStudioMannequinPosePresetsByCategory(),
+    [],
+  );
+
+  const filteredPresets = useMemo(
+    () =>
+      filterStudioMannequinPosePresets({
+        category: selectedCategory,
+        scope,
+        query: query.trim() ? query : undefined,
+      }),
+    [selectedCategory, scope, query],
+  );
 
   const favoritePresets = useMemo(
     () =>
@@ -725,15 +746,32 @@ export function StudioMannequinPoseSection({
             active={selectedCategory === cat.id}
             onClick={() => onCategorySelect(cat.id)}
           >
-            {cat.label}
+            {cat.label} {categoryCounts[cat.id]}
           </StudioToggleChip>
         ))}
+      </div>
+      <div className="flex flex-wrap gap-1" role="group" aria-label="포즈 적용 범위">
+        <StudioToggleChip active={scope === "all"} onClick={() => setScope("all")}>
+          전체
+        </StudioToggleChip>
+        <StudioToggleChip
+          active={scope === "full-body"}
+          onClick={() => setScope("full-body")}
+        >
+          전신만
+        </StudioToggleChip>
+        <StudioToggleChip
+          active={scope === "hand-only"}
+          onClick={() => setScope("hand-only")}
+        >
+          손만 (몸 포즈 유지)
+        </StudioToggleChip>
       </div>
       <input
         type="search"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="포즈 검색 (예: 달리기, 앉기)"
+        placeholder="포즈 검색 — 예: 대화, 포옹, 앉기, 주먹"
         aria-label="데생 인형 포즈 프리셋 검색"
         className="w-full rounded-lg border px-3 py-2 text-sm"
       />
@@ -787,6 +825,12 @@ export function StudioMannequinPoseSection({
         </div>
       ) : null}
 
+      <p className="text-[0.66rem] text-fg-3" role="status">
+        프리셋 {filteredPresets.length}개
+        {scope === "hand-only"
+          ? " — 손 전용 프리셋은 클릭해도 지금 몸 포즈는 그대로 유지됩니다."
+          : ""}
+      </p>
       <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4" role="group" aria-label="데생 인형 포즈 프리셋">
         {filteredPresets.map((preset) => (
           <MannequinPosePresetCard
@@ -1166,6 +1210,8 @@ export function StudioMannequinPoserPanel({
   const [pose, setPose] = useState<StudioMannequinPose>(createStudioMannequinRestPose);
   const [materialStyle, setMaterialStyle] = useState<StudioMannequinMaterialStyle>("wood");
   const [poseCategory, setPoseCategory] = useState<StudioMannequinPoseCategory | "all">("all");
+  /** 마지막으로 적용한 2인 구도의 상대 배치 계산 결과(1인 프리셋을 적용하면 비운다). */
+  const [duoPlacement, setDuoPlacement] = useState<StudioMannequinDuoPlacement | null>(null);
   const [tab, setTab] = useState<MannequinTabId>("pose");
   const [selectedJointId, setSelectedJointId] = useState<StudioMannequinJointId | null>(null);
   const [projection, setProjection] = useState<StudioMannequinProjection>("perspective");
@@ -1846,16 +1892,57 @@ export function StudioMannequinPoserPanel({
 
   const applyPosePreset = useCallback((presetId: string) => {
     const preset = STUDIO_MANNEQUIN_POSE_PRESETS.find((entry) => entry.id === presetId);
-    if (preset) commitPoseWithHistory(normalizeStudioMannequinPose(preset.pose));
-  }, [commitPoseWithHistory]);
+    if (!preset) return;
+    // 손 전용 프리셋은 손목만 얹는다 — 힘들여 맞춘 몸 포즈를 지우지 않는 것이 분리 라이브러리의 계약이다.
+    if (studioMannequinPosePresetScope(preset) === "hand-only") {
+      commitPoseWithHistory(
+        normalizeStudioMannequinPose(applyStudioMannequinHandPreset(poseRef.current, preset)),
+      );
+      return;
+    }
+    // 2인 프리셋은 같은 클릭 한 번으로 상대 배치(거리·시선·접지)까지 계산한다.
+    // 주인공에는 시선 보정이 반영된 포즈를 적용하고, 상대 포즈·배치는 상태로
+    // 남겨 "상대 포즈로 보기"로 같은 동선에서 바로 확인할 수 있게 한다.
+    if ((preset.figures ?? 1) === 2 || findStudioMannequinDuoComposition(preset.id)) {
+      const plan = solveStudioMannequinDuoPlacement({
+        presetId: preset.id,
+        leadPose: normalizeStudioMannequinPose(preset.pose),
+        leadBodyParams: params,
+      });
+      setDuoPlacement(plan);
+      commitPoseWithHistory(plan.leadPose);
+      return;
+    }
+    setDuoPlacement(null);
+    commitPoseWithHistory(normalizeStudioMannequinPose(preset.pose));
+  }, [commitPoseWithHistory, params]);
 
   // 웹툰 포즈 프리셋(Shaper식 클릭 적용): 휴머노이드 관절 오일러를
   // 데생 인형 포즈로 변환해 한 번의 클릭으로 씬에 반영한다.
   const applyWebtoonPosePreset = useCallback((presetId: string) => {
     const preset = getWebtoonPosePresetById(presetId);
     if (!preset) return;
-    commitPoseWithHistory(convertWebtoonPresetToMannequinPose(preset));
-  }, [commitPoseWithHistory]);
+    const converted = convertWebtoonPresetToMannequinPose(preset);
+    // 웹툰 라이브러리의 2인 포즈(포옹·벽치기 등)도 같은 원클릭 상대 배치를 탄다.
+    if (preset.figures === 2 || findStudioMannequinDuoComposition(preset.id)) {
+      const plan = solveStudioMannequinDuoPlacement({
+        presetId: preset.id,
+        leadPose: converted,
+        leadBodyParams: params,
+      });
+      setDuoPlacement(plan);
+      commitPoseWithHistory(plan.leadPose);
+      return;
+    }
+    setDuoPlacement(null);
+    commitPoseWithHistory(converted);
+  }, [commitPoseWithHistory, params]);
+
+  /** 계산된 상대역 포즈를 주인공 자리에 적용한다 — 상대 샷을 같은 동선으로 캡처하기 위한 전환. */
+  const applyDuoPartnerPose = useCallback(() => {
+    if (!duoPlacement) return;
+    commitPoseWithHistory(duoPlacement.partnerPose);
+  }, [commitPoseWithHistory, duoPlacement]);
 
   /**
    * `?starter=` 자동 적용. 패널이 열리는 동안 최초 1회만 시도한다.
@@ -2421,6 +2508,39 @@ export function StudioMannequinPoserPanel({
                     onMirror={() => commitPoseWithHistory(mirrorStudioMannequinPose(poseRef.current))}
                     onResetJoints={() => commitPoseWithHistory(createStudioMannequinRestPose())}
                   />
+                  {duoPlacement ? (
+                    <div
+                      role="status"
+                      data-studio-mannequin-duo-placement={duoPlacement.compositionId}
+                      className="space-y-1.5 rounded-xl border border-line bg-surface-2 px-3 py-2.5"
+                    >
+                      <p className="text-xs font-semibold text-fg-1">
+                        {describeStudioMannequinDuoPlacement(duoPlacement)}
+                      </p>
+                      <p className="text-[0.7rem] leading-relaxed text-fg-3">
+                        상대 위치 — 앞뒤 {duoPlacement.partnerOffset[2].toFixed(2)}m · 좌우{" "}
+                        {duoPlacement.partnerOffset[0].toFixed(2)}m · 높이{" "}
+                        {duoPlacement.partnerOffset[1].toFixed(2)}m
+                        {duoPlacement.warnings[0] ? ` — ${duoPlacement.warnings[0]}` : ""}
+                      </p>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={applyDuoPartnerPose}
+                          className={buttonClass({ size: "sm", variant: "quiet", className: "text-[0.7rem]" })}
+                        >
+                          상대 포즈로 보기
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDuoPlacement(null)}
+                          className={buttonClass({ size: "sm", variant: "quiet", className: "text-[0.7rem]" })}
+                        >
+                          닫기
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </>
               ) : null}
               {tab === "magic" ? (

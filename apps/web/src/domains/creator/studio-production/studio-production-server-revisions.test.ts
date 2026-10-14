@@ -4,6 +4,9 @@ import {
   loadStudioServerRevisions,
   restoreStudioServerRevision,
   serverRevisionWorkId,
+  STUDIO_SERVER_REVISION_RETENTION,
+  studioServerRevisionRetentionReached,
+  type StudioServerRevisionSummary,
 } from "./studio-production-server-revisions";
 
 const mocks = vi.hoisted(() => ({
@@ -47,7 +50,21 @@ describe("studio production server revisions", () => {
       ],
     });
     expect(mocks.get).toHaveBeenNthCalledWith(1, "/creator/works/work%2Fwith%20space");
-    expect(mocks.get).toHaveBeenNthCalledWith(2, "/creator/works/work%2Fwith%20space/revisions", { params: { limit: 50 } });
+    expect(mocks.get).toHaveBeenNthCalledWith(2, "/creator/works/work%2Fwith%20space/revisions", { params: { limit: 20 } });
+  });
+
+  it("pins the surfaced retention policy to the server retention of 20 revisions", () => {
+    // 서버 정본: CREATOR_WORK_REVISION_RETENTION (apps/api/src/server/creator-work-revisions.ts)
+    expect(STUDIO_SERVER_REVISION_RETENTION).toBe(20);
+    const row = (revision: number): StudioServerRevisionSummary => ({
+      revision,
+      restoredFromRevision: null,
+      createdAt: "2026-09-06T00:00:00.000Z",
+    });
+    const atCap = Array.from({ length: STUDIO_SERVER_REVISION_RETENTION }, (_, index) => row(index + 1));
+    expect(studioServerRevisionRetentionReached(atCap)).toBe(true);
+    expect(studioServerRevisionRetentionReached(atCap.slice(1))).toBe(false);
+    expect(studioServerRevisionRetentionReached([])).toBe(false);
   });
 
   it("uses the observed current revision as the optimistic restore base", async () => {

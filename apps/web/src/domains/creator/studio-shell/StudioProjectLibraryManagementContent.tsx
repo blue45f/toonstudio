@@ -6,6 +6,8 @@ import {
   StudioProjectLibraryCard,
   StudioProjectLibraryRecoveryRow,
 } from "./StudioProjectLibraryManagementUi";
+import { StudioExampleProjectBanner } from "../workspace/StudioExampleProjectBanner";
+import { StudioSampleManuscriptCard } from "../workspace/StudioSampleManuscriptCard";
 import { StudioWorkspaceLibraryEmptyState } from "../workspace/StudioWorkspaceLibraryEmptyState";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
 
@@ -79,6 +81,10 @@ export function StudioProjectLibraryManagementContent({
 
   return (
     <>
+      {/* 예제 프로젝트 시딩 + 완주 여정: 활성 목록·검색 없음일 때만 목록 맨 위에 고정한다. */}
+      {view === "active" && !query ? <StudioExampleProjectBanner /> : null}
+      {/* 연습용 샘플 원고(구조 뜯어보기 + 따라 그리기 사본): 같은 조건에서 예제 아래에 고정한다. */}
+      {view === "active" && !query ? <StudioSampleManuscriptCard /> : null}
       {visibleProjects.length === 0 ? (
         view === "active" && !query ? (
           <StudioWorkspaceLibraryEmptyState />

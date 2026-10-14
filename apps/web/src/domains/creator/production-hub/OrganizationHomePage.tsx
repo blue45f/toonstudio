@@ -9,6 +9,7 @@ import { getApiErrorMessage } from "@/platform/api";
 import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { listTeamWorkspaces } from "./team-workspace-api";
+import { TeamAiUsagePanel } from "./TeamAiUsagePanel";
 import { organizationDirectory } from "./organization-directory";
 import {
   ORGANIZATION_KIND_LABELS,
@@ -91,6 +92,8 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
 
   const profile = local?.profile ?? null;
   const rollup = local ? summarizeOrganizationRollup(workspaces, local.linkedWorkspaceIds) : null;
+  // 로컬 조직 상태는 소유자 스코프로만 읽히므로(모델의 소유자 검사가 정본), 프로필이 있으면 보는 사람은 대표다.
+  const viewerOrgRole: OrganizationRole = profile && userId && profile.ownerUserId === userId ? "owner" : "member";
 
   function submitProfile(event: FormEvent) {
     event.preventDefault();
@@ -216,6 +219,13 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
               </Card>
             )}
 
+            {profile && rollup && (
+              <Card title={bt("팀 AI 사용 모니터링", "Team AI usage monitoring")}>
+                {/* records는 조직 서버 계약의 AI 사용량 집계가 붙기 전까지 null — 패널이 미연결 상태를 정직하게 표시한다. */}
+                <TeamAiUsagePanel linkedTeams={rollup.teams} viewerRole={viewerOrgRole} records={null} />
+              </Card>
+            )}
+
             {local && (
               <Card title={bt("팀 연결", "Link teams")}>
                 {workspaces.length === 0 && !loading && (
@@ -287,6 +297,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
                 <li>{bt("조직 포인트 풀 — 포인트 원장이 개인 단위라 조직 지갑과 배분은 서버 원장이 필요합니다. 현금 결제·충전은 만들지 않습니다.", "Organization point pool — the point ledger is per-person today, so an organization wallet and distribution need a server ledger. No cash payments or top-ups will be added.")}</li>
                 <li>{bt("조직 공용 라이브러리 — 스튜디오 공용 에셋·폰트·템플릿은 라이브러리 스코프 계약이 필요합니다.", "Shared organization library — studio-wide assets, fonts, and templates need a library scope contract.")}</li>
                 <li>{bt("조직 사용량 정책 — 현재 무료 한도는 워크스페이스 단위 정책이라 조직 단위 합산 한도는 서버 정책 확장이 필요합니다.", "Organization usage policy — current free limits are per-workspace, so organization-level limits need a server policy extension.")}</li>
+                <li>{bt("팀 AI 사용량 집계 — AI 사용량은 지금 각자 기기의 안전 원장에만 남아 서버로 모이지 않습니다. 위 모니터링 표면은 하루 단위·숫자만 집계하는 서버 계약이 붙으면 실데이터로 켜집니다.", "Team AI usage aggregation — AI usage currently stays in the safety ledger on each device and never reaches the server. The monitoring surface above turns on with real data once a server contract aggregates daily counts only.")}</li>
               </ul>
             </Card>
           </>

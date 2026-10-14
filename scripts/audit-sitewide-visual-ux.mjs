@@ -1,4 +1,5 @@
 import { auditLanguage, auditMotion, auditViewportOverrides } from "./lib/visual-audit-emulation.mjs";
+import { compareScreenshotWithOdiff } from "./lib/visual-regression-odiff.mjs";
 import AxeBuilder from "@axe-core/playwright";
 import { chromium } from "playwright";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
@@ -41,6 +42,7 @@ const auditSceneStrict = process.env.AUDIT_SCENE_STRICT === "1";
 const auditSceneCheck = process.env.AUDIT_SCENE_CHECK !== "0";
 const auditScrollSweep = process.env.AUDIT_SCROLL_SWEEP === "1";
 const auditCaptureMode = process.env.AUDIT_CAPTURE || "issues";
+const auditBaselineDir = process.env.AUDIT_BASELINE_DIR || "";
 const auditMediaContrast = process.env.AUDIT_MEDIA_CONTRAST === "more" ? "more" : "no-preference";
 const auditForcedColors = process.env.AUDIT_FORCED_COLORS === "active" ? "active" : "none";
 if (!allowedHosts.has(base.hostname)) throw new Error(`Audit origin is not allow-listed: ${base.hostname}`);
@@ -631,6 +633,29 @@ for (const [viewportName, viewport] of viewports) {
     } finally {
       await browser.close();
     }
+  }
+}
+
+// 시각 회귀 표준 판정(odiff): AUDIT_BASELINE_DIR가 있을 때만 캡처된 스크린샷을
+// 같은 파일명의 베이스라인과 비교한다. 미설정 시 기존 캡처·판정 동작과 완전히 같다.
+if (auditBaselineDir) {
+  const diffOutput = path.join(output, "visual-diff");
+  await mkdir(diffOutput, { recursive: true });
+  for (const result of results) {
+    if (!result.screenshot) continue;
+    const verdict = await compareScreenshotWithOdiff(
+      path.join(auditBaselineDir, result.screenshot),
+      path.join(output, result.screenshot),
+      path.join(diffOutput, result.screenshot),
+    );
+    result.visualRegression = {
+      pass: verdict.pass,
+      status: verdict.status,
+      diffCount: verdict.diffCount,
+      diffPercentage: verdict.diffPercentage,
+      maxDiffPercentage: verdict.maxDiffPercentage,
+    };
+    if (!verdict.pass) result.issues = [...(result.issues || []), `visual-regression:${verdict.status}`];
   }
 }
 

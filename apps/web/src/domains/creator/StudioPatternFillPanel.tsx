@@ -9,6 +9,10 @@
  * 기본 = 브라우저 캔버스) 3×3 반복 미리보기와 이음새 점수를 보여주고,
  * "이음새 부드럽게(심리스 변환)" 토글 + feather 슬라이더로 변환 전/후를
  * 비교하는 패널 로컬 분석 도구다 — 문서(스펙)에는 아무것도 쓰지 않는다.
+ *
+ * 라이브 랩 드로잉 섹션(StudioWrapAroundCanvas): 후처리 변환과 별개로,
+ * 그리는 동안 3×3 고스트로 이음새를 보며 그리고 경계 교차 획은 타일 안
+ * 조각으로 저장하는 패널 로컬 도구다 — 역시 문서에는 쓰지 않는다.
  */
 import { Blend, RotateCcw, Search, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -43,6 +47,7 @@ import {
   rasterizePatternTile,
   type SeamlessTileRasterizer,
 } from "./studio-seamless-tile-raster";
+import { StudioWrapAroundCanvas } from "./StudioWrapAroundCanvas";
 
 import type { ReactElement } from "react";
 
@@ -327,6 +332,9 @@ export function StudioPatternFillPanel({
 
           {/* 심리스 타일 — 3×3 반복 미리보기 + 이음새 점수 + 심리스 변환(패널 로컬 분석) */}
           <SeamlessTileSection spec={current} rasterizeTile={rasterizeTile} />
+
+          {/* 라이브 랩 드로잉 — 3×3 고스트를 보며 그리고, 경계 교차 획은 타일 안 조각으로 저장(패널 로컬) */}
+          <StudioWrapAroundCanvas />
         </>
       )}
 

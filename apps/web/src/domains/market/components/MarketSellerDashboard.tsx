@@ -15,8 +15,15 @@ import type { SellerListingValidationReason } from "../models/market-seller-list
 import {
   createSellerListing,
   MIN_SELLER_POINT_PRICE,
+  removeSellerListings,
   updateSellerListingStatus,
+  updateSellerListingsPrice,
+  updateSellerListingsStatus,
 } from "../models/market-seller-listings";
+import {
+  bulkSelectionState,
+  toggleSelectedId,
+} from "../models/market-bulk-selection";
 
 import type { CreatorMarketplaceResourceKind } from "@/shared/lib/creator-marketplace-resource-contract";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -67,8 +74,56 @@ export function MarketSellerDashboard({
   const [campaignDrafts, setCampaignDrafts] = useState<
     Readonly<Record<string, { target: string; hours: string }>>
   >({});
+  const [selectedListingIds, setSelectedListingIds] = useState<readonly string[]>([]);
+  const [bulkPrice, setBulkPrice] = useState("");
+  const [confirmBulkRemove, setConfirmBulkRemove] = useState(false);
 
   if (!sellerId || !sellerName) return null;
+
+  const listingSelectionState = bulkSelectionState(
+    myListings.map((listing) => listing.id),
+    selectedListingIds,
+  );
+
+  const handleBulkPrice = () => {
+    const result = updateSellerListingsPrice(sellerId, selectedListingIds, Number(bulkPrice));
+    if (!result.ok) {
+      setActionMessage(listingValidationMessage(bt, result.reason));
+      return;
+    }
+    setConfirmBulkRemove(false);
+    setActionMessage(
+      bt(
+        `선택한 리스팅 ${result.updated}개의 가격을 ${Number(bulkPrice)}P로 바꿨어요.`,
+        `Set the price of ${result.updated} selected listing(s) to ${Number(bulkPrice)}P.`,
+      ),
+    );
+    onChanged();
+  };
+
+  const handleBulkStatus = (next: "on-sale" | "suspended") => {
+    const updated = updateSellerListingsStatus(sellerId, selectedListingIds, next);
+    setConfirmBulkRemove(false);
+    setActionMessage(
+      next === "on-sale"
+        ? bt(`선택한 리스팅 ${updated}개의 판매를 재개했어요.`, `Resumed sales for ${updated} selected listing(s).`)
+        : bt(`선택한 리스팅 ${updated}개의 판매를 중단했어요.`, `Suspended sales for ${updated} selected listing(s).`),
+    );
+    onChanged();
+  };
+
+  const handleBulkRemove = () => {
+    const removed = removeSellerListings(sellerId, selectedListingIds);
+    setSelectedListingIds([]);
+    setConfirmBulkRemove(false);
+    setActionMessage(
+      bt(
+        `선택한 리스팅 ${removed}개를 삭제했어요.`,
+        `Deleted ${removed} selected listing(s).`,
+      ),
+    );
+    onChanged();
+  };
 
   const handleCreateListing = (event: FormEvent) => {
     event.preventDefault();
@@ -241,6 +296,96 @@ export function MarketSellerDashboard({
             {bt("아직 등록한 리스팅이 없어요. 위 폼에서 첫 리스팅을 만들어 보세요.", "No listings yet. Create your first one with the form above.")}
           </p>
         ) : (
+          <>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line bg-panel px-4 py-3">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-bold text-fg">
+              <input
+                type="checkbox"
+                className="size-4 shrink-0"
+                checked={listingSelectionState === "all"}
+                ref={(element) => {
+                  if (element) element.indeterminate = listingSelectionState === "some";
+                }}
+                onChange={() => {
+                  setConfirmBulkRemove(false);
+                  setSelectedListingIds(
+                    listingSelectionState === "all"
+                      ? []
+                      : myListings.map((listing) => listing.id),
+                  );
+                }}
+                aria-label={bt("내 리스팅 전체 선택", "Select all my listings")}
+              />
+              {bt("전체 선택", "Select all")}
+            </label>
+            <p className="text-sm text-fg-2">
+              {bt(`${selectedListingIds.length}개 선택됨`, `${selectedListingIds.length} selected`)}
+            </p>
+            {selectedListingIds.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="seller-bulk-price" className={labelClass}>
+                  {bt("일괄 가격 (P)", "Bulk price (P)")}
+                </label>
+                <input
+                  id="seller-bulk-price"
+                  type="number"
+                  min={MIN_SELLER_POINT_PRICE}
+                  step={1}
+                  className={cn(inputClass, "w-28")}
+                  value={bulkPrice}
+                  onChange={(event) => setBulkPrice(event.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={handleBulkPrice}
+                  disabled={bulkPrice.trim() === ""}
+                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
+                >
+                  {bt("가격 일괄 변경", "Apply price")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkStatus("on-sale")}
+                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
+                >
+                  {bt("판매 재개", "Resume sales")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkStatus("suspended")}
+                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
+                >
+                  {bt("판매 중단", "Suspend sales")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirmBulkRemove) handleBulkRemove();
+                    else setConfirmBulkRemove(true);
+                  }}
+                  className={buttonClass({
+                    variant: confirmBulkRemove ? "solid" : "outline",
+                    size: "sm",
+                    className: "min-h-11",
+                  })}
+                >
+                  {confirmBulkRemove
+                    ? bt(`정말 ${selectedListingIds.length}개를 삭제할까요?`, `Really delete ${selectedListingIds.length}?`)
+                    : bt("삭제", "Delete")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmBulkRemove(false);
+                    setSelectedListingIds([]);
+                  }}
+                  className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11" })}
+                >
+                  {bt("선택 해제", "Clear selection")}
+                </button>
+              </div>
+            ) : null}
+          </div>
           <ul className="mt-3 space-y-3">
             {myListings.map((listing) => {
               const openCampaign = myCampaigns.find(
@@ -250,7 +395,21 @@ export function MarketSellerDashboard({
               return (
                 <li key={listing.id} className="rounded-xl border border-line bg-card p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="min-w-0 truncate text-sm font-bold text-fg">{listing.title}</p>
+                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="size-4 shrink-0"
+                        checked={selectedListingIds.includes(listing.id)}
+                        onChange={() => {
+                          setConfirmBulkRemove(false);
+                          setSelectedListingIds((current) =>
+                            toggleSelectedId(current, listing.id),
+                          );
+                        }}
+                        aria-label={bt(`${listing.title} 선택`, `Select ${listing.title}`)}
+                      />
+                      <p className="min-w-0 truncate text-sm font-bold text-fg">{listing.title}</p>
+                    </label>
                     <span className="numeral tnum text-sm font-bold text-fg">{listing.pointPrice}P</span>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -338,6 +497,7 @@ export function MarketSellerDashboard({
               );
             })}
           </ul>
+          </>
         )}
       </section>
 

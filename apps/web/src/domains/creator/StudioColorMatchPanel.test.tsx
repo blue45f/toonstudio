@@ -60,4 +60,55 @@ describe("StudioColorMatchPanel", () => {
       }),
     );
   });
+
+  it("applies the reference tone to the whole episode in one click", () => {
+    const onApplyToEpisode = vi.fn();
+    const secondPage = createSyntheticReferenceRgba(
+      [
+        [40, 60, 80],
+        [90, 110, 130],
+      ],
+      16,
+    );
+    render(
+      <StudioColorMatchPanel
+        sourceImage={sampleSourceImage}
+        episodePages={[
+          { pageId: "cut-1", image: sampleSourceImage },
+          { pageId: "cut-2", image: secondPage },
+        ]}
+        onApplyToEpisode={onApplyToEpisode}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("회차 전체에 적용"));
+
+    expect(onApplyToEpisode).toHaveBeenCalledTimes(1);
+    expect(onApplyToEpisode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        totalCount: 2,
+        appliedCount: 2,
+        refusedCount: 0,
+      }),
+    );
+    expect(screen.getByText(/2컷에 색감을 적용했습니다/)).toBeDefined();
+  });
+
+  it("disables episode apply when the episode has no pages", () => {
+    const onApplyToEpisode = vi.fn();
+    render(
+      <StudioColorMatchPanel
+        sourceImage={sampleSourceImage}
+        episodePages={[]}
+        onApplyToEpisode={onApplyToEpisode}
+      />,
+    );
+
+    const episodeButton = screen
+      .getByText("회차 전체에 적용")
+      .closest("button");
+    expect(episodeButton?.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(episodeButton as HTMLElement);
+    expect(onApplyToEpisode).not.toHaveBeenCalled();
+  });
 });

@@ -14,13 +14,30 @@ beforeEach(() => localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
 
 describe("creator adaptive onboarding policy", () => {
-  it("allows only the unscoped library, including its trailing-slash form", () => {
+  it("allows only the unscoped workspace landings, including trailing-slash forms", () => {
+    // Project library (existing entry).
     expect(isCreatorOnboardingEntry("/studio")).toBe(true);
     expect(isCreatorOnboardingEntry("/studio/")).toBe(true);
+    // First workspace-family entries (F2.1): personal home and its team surface.
+    expect(isCreatorOnboardingEntry("/home")).toBe(true);
+    expect(isCreatorOnboardingEntry("/home/")).toBe(true);
+    expect(isCreatorOnboardingEntry("/team")).toBe(true);
+    expect(isCreatorOnboardingEntry("/team/")).toBe(true);
+    // Scoped, public, discovery and account routes never interrupt.
     expect(isCreatorOnboardingEntry("/studio/new-tool")).toBe(false);
+    expect(isCreatorOnboardingEntry("/")).toBe(false);
+    expect(isCreatorOnboardingEntry("/hub")).toBe(false);
+    expect(isCreatorOnboardingEntry("/hub/")).toBe(false);
+    expect(isCreatorOnboardingEntry("/create")).toBe(false);
+    expect(isCreatorOnboardingEntry("/team/people")).toBe(false);
+    expect(isCreatorOnboardingEntry("/settings")).toBe(false);
+    // Any query opts out on every entry, not only /studio.
     expect(isCreatorOnboardingEntry("/studio", "?mode=")).toBe(false);
     expect(isCreatorOnboardingEntry("/studio", "?id=")).toBe(false);
     expect(isCreatorOnboardingEntry("/studio", "?remix=")).toBe(false);
+    expect(isCreatorOnboardingEntry("/home", "?tour=1")).toBe(false);
+    expect(isCreatorOnboardingEntry("/home", "?id=")).toBe(false);
+    expect(isCreatorOnboardingEntry("/team", "?invite=")).toBe(false);
   });
 
   it("honors either completion source and the explicit skip preference", () => {

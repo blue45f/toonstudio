@@ -6,6 +6,7 @@ import {
   Clock3,
   Eye,
   Flag,
+  History,
   Lightbulb,
   Link2,
   Plus,
@@ -20,6 +21,7 @@ import { studioDeletePromisePayoffEntryRequest } from "./studio-destructive-comm
 import {
   addStudioPromisePayoffEntry,
   diagnoseStudioPromisePayoffLedger,
+  findStudioPromisePayoffRecapCandidates,
   nextStudioPromisePayoffLinkId,
   patchStudioPromisePayoffEntry,
   removeStudioPromisePayoffEntry,
@@ -271,6 +273,7 @@ export function StudioPromisePayoffLedgerPanel({
   const [error, setError] = useState<string | null>(null);
   const summary = summarizeStudioPromisePayoffLedger(ledger);
   const warnings = diagnoseStudioPromisePayoffLedger(ledger);
+  const recapCandidates = findStudioPromisePayoffRecapCandidates(ledger);
   const visibleEntries = searchStudioPromisePayoffLedger(ledger, {
     ...filterContract(filter),
     query,
@@ -419,6 +422,38 @@ export function StudioPromisePayoffLedgerPanel({
         <p role="alert" className="shrink-0 border-b border-line bg-bad/10 px-4 py-2 text-xs text-bad">
           {error}
         </p>
+      )}
+
+      {recapCandidates.length > 0 && (
+        <section
+          aria-label="첫독 리캡 후보"
+          className="shrink-0 border-b border-line bg-cool/5 px-4 py-3"
+        >
+          <h3 className="flex items-center gap-1.5 text-xs font-bold text-fg">
+            <History size={14} className="text-cool" aria-hidden />
+            첫독 리캡 후보 {recapCandidates.length}건
+          </h3>
+          <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">
+            마지막 설명 뒤 오래 비어 있던 설정·인물·복선이 다시 등장합니다. 처음 보는
+            독자를 위해 짧은 리캡을 넣을 지점인지 확인하세요.
+          </p>
+          <ul className="mt-2 space-y-1">
+            {recapCandidates.map((candidate) => (
+              <li key={candidate.entryId}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequestedEntryId(candidate.entryId);
+                    setError(null);
+                  }}
+                  className={`min-h-11 w-full border-l-2 px-2 py-1.5 text-left text-[0.68rem] leading-relaxed transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${warningTone(candidate.severity)}`}
+                >
+                  {candidate.message}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[20rem_minmax(0,1fr)]">

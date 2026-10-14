@@ -51,7 +51,11 @@ export function evaluateHandoffReadiness(input: HandoffReadinessInput): HandoffR
 
   const narrativeIntent = handoff.episodeIntentRef ? 20 : 0;
   const sceneStructure = Math.round(15 * Math.min(cappedRatio(handoff.sceneRefs.length, 1), cappedRatio(handoff.beatRefs.length, 1)));
-  const references = Math.round(15 * ((handoff.characterBibleRevisionRefs.length > 0 ? 0.5 : 0) + (handoff.locationReferenceRefs.length > 0 ? 0.5 : 0)));
+  const boardLinked = input.episodeReferenceBoard != null;
+  const boardItemCount = boardLinked ? Math.max(0, Math.trunc(input.episodeReferenceBoard.itemCount) || 0) : 0;
+  const references = boardLinked
+    ? Math.round(15 * (((handoff.characterBibleRevisionRefs.length > 0 ? 1 : 0) + (handoff.locationReferenceRefs.length > 0 ? 1 : 0) + (boardItemCount > 0 ? 1 : 0)) / 3))
+    : Math.round(15 * ((handoff.characterBibleRevisionRefs.length > 0 ? 0.5 : 0) + (handoff.locationReferenceRefs.length > 0 ? 0.5 : 0)));
   const dialogue = Math.round(10 * cappedRatio(handoff.lockedDialogueRefs.length, 1));
   const continuity = Math.round(10 * cappedRatio(handoff.continuityReferenceRefs.length, 1));
   const technical = handoff.platformProfileRef && handoff.technicalDeliveryRuleRef ? 10 : handoff.platformProfileRef ? 5 : 0;
@@ -68,6 +72,7 @@ export function evaluateHandoffReadiness(input: HandoffReadinessInput): HandoffR
     rightsAiCredit,
   });
   const score = Object.values(metrics).reduce((sum, value) => sum + value, 0);
+  if (boardLinked && boardItemCount === 0) advisories.push(issue("episode-reference-board-empty", "이 회차 레퍼런스 보드가 비어 있어요. 팀 보드에 참고 이미지를 올려 주세요.", "warning"));
   if (!handoff.episodeIntentRef) advisories.push(issue("episode-intent-missing", "회차 의도표를 추가하면 시각 해석의 기준이 분명해집니다.", "warning"));
   if (handoff.instructions.filter((entry) => entry.priority === "MUST_PRESERVE").length > handoff.instructions.length * 0.6 && handoff.instructions.length >= 5) {
     advisories.push(issue("over-constrained-handoff", "MUST_PRESERVE 비율이 높아 그림 작가의 해석 자율성이 지나치게 낮을 수 있습니다.", "warning"));

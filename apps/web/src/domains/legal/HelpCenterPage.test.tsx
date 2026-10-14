@@ -100,6 +100,47 @@ describe("HelpCenterPage", () => {
     expect(topicLinks()).toHaveLength(8);
   });
 
+  it("includes manual articles in help search results (S2-9 arrival point)", () => {
+    renderHelp();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "밑색" } });
+    const heading = screen.getByRole("heading", { level: 3, name: "매뉴얼 문서" });
+    const cards = heading.parentElement?.querySelectorAll("a[data-site-link-card]") ?? [];
+    const hrefs = [...cards].map((card) => card.getAttribute("href"));
+    // learn §2.16의 예시 질문("밑색이 새요")이 닿아야 할 바로 그 문서가 결과에 있다.
+    expect(hrefs).toContain("/studio/manual/selection-fill");
+    expect(screen.queryByText("일치하는 주제를 찾지 못했습니다.")).toBeNull();
+  });
+
+  it("reaches manual articles from a problem sentence too", () => {
+    renderHelp();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "저장이 안 돼요" } });
+    const heading = screen.getByRole("heading", { level: 3, name: "매뉴얼 문서" });
+    const cards = heading.parentElement?.querySelectorAll("a[data-site-link-card]") ?? [];
+    const hrefs = [...cards].map((card) => card.getAttribute("href"));
+    expect(hrefs).toContain("/studio/manual/save-recovery");
+  });
+
+  it("includes courses in help search results (unified search aggregation)", () => {
+    renderHelp();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "콘티" } });
+    const heading = screen.getByRole("heading", { level: 3, name: "강좌" });
+    const cards = heading.parentElement?.querySelectorAll("a[data-site-link-card]") ?? [];
+    const hrefs = [...cards].map((card) => card.getAttribute("href"));
+    // /learn 강좌 검색(matchesSearch)이 닿는 바로 그 강좌가 도움말 결과에도 있다.
+    expect(hrefs).toContain("/learn/lessons/story-board");
+    expect(screen.queryByText("일치하는 주제를 찾지 못했습니다.")).toBeNull();
+  });
+
+  it("does not show the empty state when only a course matches", () => {
+    renderHelp();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "소실점" } });
+    const heading = screen.getByRole("heading", { level: 3, name: "강좌" });
+    const cards = heading.parentElement?.querySelectorAll("a[data-site-link-card]") ?? [];
+    const hrefs = [...cards].map((card) => card.getAttribute("href"));
+    expect(hrefs).toContain("/learn/lessons/camera-perspective");
+    expect(screen.queryByText("일치하는 주제를 찾지 못했습니다.")).toBeNull();
+  });
+
   it("shows the topics as icon-and-name tiles and keeps the self-diagnostics after the FAQ", () => {
     renderHelp();
     const tiles = document.querySelectorAll('a[data-site-link-card="tile"]');

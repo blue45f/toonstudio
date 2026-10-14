@@ -76,6 +76,7 @@
   "app.name": "Pour le studio.",
   "app.brandBeta": "Le service bêta  Les données et les fonctionnalités peuvent changer",
   "app.loading": "Chargement",
+  "app.skipToContent": "Skip to main content",
   "auth.menu.triggerLabel": "Menu de compte",
   "auth.menu.adminPanel": "Console d'administration",
   "auth.menu.profile": "Mon profil",

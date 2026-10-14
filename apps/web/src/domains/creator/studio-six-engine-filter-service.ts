@@ -14,7 +14,7 @@ import { StudioVelloVectorEngine, type StudioVelloPathSegment, type StudioVelloS
 import { StudioGlanceEngine, type StudioGlanceFilterParams } from "./studio-glance-engine";
 import { StudioKritaCoreEngine, type StudioKritaDualBlendMode, type StudioKritaParametricTipConfig } from "./studio-krita-core-engine";
 import { StudioLibmypaintEngine, type StudioLibmypaintBrushSettings } from "./studio-libmypaint-engine";
-import { StudioPathfinderVectorEngine, type StudioPathfinderPoint, type StudioPathfinderPolygon } from "./studio-pathfinder-vector-engine";
+import { StudioPathfinderVectorEngine, type StudioPathfinderBooleanMode, type StudioPathfinderBooleanResult, type StudioPathfinderOffsetOptions, type StudioPathfinderPoint, type StudioPathfinderPolygon } from "./studio-pathfinder-vector-engine";
 import { STUDIO_PERFECT_FREEHAND_PROFILES } from "./studio-perfect-freehand";
 
 export const STUDIO_SIX_ENGINE_FILTER_SERVICE_VERSION = "studio-six-engine-filter-service-v1" as const;
@@ -73,13 +73,27 @@ export class StudioSixEngineFilterService {
   }
 
   /**
-   * Performs Pathfinder GPU Vector Path Offsetting.
+   * Performs Pathfinder Vector Path Offsetting — 코너 조인(miter/bevel/round)
+   * 옵션을 엔진까지 그대로 전달한다.
    */
   public static offsetVectorPath(
     points: readonly StudioPathfinderPoint[],
-    radius: number
+    radius: number,
+    options?: StudioPathfinderOffsetOptions
   ): StudioPathfinderPolygon {
-    return StudioPathfinderVectorEngine.offsetPathOutline(points, radius);
+    return StudioPathfinderVectorEngine.offsetPathOutline(points, radius, options);
+  }
+
+  /**
+   * Performs Pathfinder Vector Boolean Operation (v2 실구현 — 실제 폴리곤 클리핑).
+   * 결과는 구멍을 포함할 수 있는 다중 영역 모델로 돌려준다.
+   */
+  public static booleanVectorPolygons(
+    polyA: StudioPathfinderPolygon,
+    polyB: StudioPathfinderPolygon,
+    mode: StudioPathfinderBooleanMode
+  ): StudioPathfinderBooleanResult {
+    return StudioPathfinderVectorEngine.booleanOperation(polyA, polyB, mode);
   }
 
   /**

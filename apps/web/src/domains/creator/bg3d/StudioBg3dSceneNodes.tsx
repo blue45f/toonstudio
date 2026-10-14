@@ -3,6 +3,7 @@ import {
   useEffect,
   useEffectEvent,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -55,6 +56,10 @@ import {
   resolveStudioBg3dSurfaceMaterialProps,
   spreadStudioBg3dSurfaceMaterialProps,
 } from "./studio-bg3d-surface-presets";
+import {
+  StudioBg3dTexturePaintSurface,
+  type StudioBg3dPaintCanvas,
+} from "./studio-bg3d-texture-paint";
 import {
   createStudioBg3dThreeStaticInstanceBatch,
   type StudioBg3dThreeInstancingSuccess,
@@ -422,6 +427,8 @@ export function BgAdaptiveDprController({
   return null;
 }
 
+export type StudioBg3dPaintPointerPhase = "down" | "move" | "up";
+
 interface BgPrimitiveMeshProps {
   prim: BgPrimitive;
   geometryPool: StudioBg3dPrimitiveGeometryPool;
@@ -431,13 +438,59 @@ interface BgPrimitiveMeshProps {
   onSelect: (id: string, isMulti: boolean) => void;
   onSurfacePick: (id: string, event: ThreeEvent<MouseEvent>) => boolean;
   onSurfacePreview?: (event: ThreeEvent<PointerEvent>) => void;
+  /**
+   * 표면 직접 그리기 모드에서만 주입된다. 이벤트는 Three 교차 정보를 그대로 실어 오며
+   * UV 추출은 studio-bg3d-texture-paint의 extractStudioBg3dTexturePaintUv가 맡는다.
+   * 주입되지 않으면 기존 선택/스냅 동선과 완전히 동일하게 동작한다.
+   */
+  onPaintPointer?: (id: string, event: ThreeEvent<PointerEvent>, phase: StudioBg3dPaintPointerPhase) => void;
   registerRef: (id: string, obj: THREE.Group | null) => void;
   children?: React.ReactNode;
 }
 
+/**
+ * 프리미티브 표면 페인트(획 벡터)를 CanvasTexture로 올린다.
+ * 획이 정본이고 텍스처는 캐시이므로, WebGL 컨텍스트가 복구되면 같은 캔버스가 다시
+ * 업로드되어 그림이 그대로 돌아온다(device lost 복구는 엔진의 recover 계약과 짝).
+ * 페인트가 없으면 null — 기존 단색 재질 경로를 그대로 쓴다.
+ */
+function useStudioBg3dPrimitivePaintTexture(prim: BgPrimitive): THREE.CanvasTexture | null {
+  const paint = prim.texturePaint ?? null;
+  const texture = useMemo(() => {
+    if (!paint) return null;
+    const canvas = document.createElement("canvas");
+    new StudioBg3dTexturePaintSurface({
+      createCanvas: (width, height) => {
+        canvas.width = width;
+        canvas.height = height;
+        return canvas as unknown as StudioBg3dPaintCanvas;
+      },
+      baseColor: prim.color,
+      paint,
+    });
+    const created = new THREE.CanvasTexture(canvas);
+    created.colorSpace = THREE.SRGBColorSpace;
+    created.anisotropy = 4;
+    return created;
+  }, [paint, prim.color]);
+  useEffect(() => {
+    return () => {
+      texture?.dispose();
+    };
+  }, [texture]);
+  return texture;
+}
+
 /* Keeps the fill mesh visible in line-art mode for hidden-line depth and raycast selection. */
-export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, selected, onSelect, onSurfacePick, onSurfacePreview, registerRef, children }: BgPrimitiveMeshProps) {
+export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, selected, onSelect, onSurfacePick, onSurfacePreview, onPaintPointer, registerRef, children }: BgPrimitiveMeshProps) {
   const { geometry, edges } = geometryPool.get(prim.kind);
+  const paintTexture = useStudioBg3dPrimitivePaintTexture(prim);
+  const handlePaintPointer = onPaintPointer
+    ? (phase: StudioBg3dPaintPointerPhase) => (event: ThreeEvent<PointerEvent>) => {
+        event.stopPropagation();
+        onPaintPointer(prim.id, event, phase);
+      }
+    : null;
   const groupRef = useRef<THREE.Group>(null);
   useLayoutEffect(() => {
     if (groupRef.current) synchronizeStudioBg3dRootMatrix(groupRef.current, selected);
@@ -462,14 +515,24 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
         if (onSurfacePick(prim.id, e)) return;
         onSelect(prim.id, e.shiftKey || e.metaKey || e.ctrlKey);
       }}
-      onPointerMove={onSurfacePreview}
+      onPointerMove={(event) => {
+        onSurfacePreview?.(event);
+        if (event.buttons > 0) handlePaintPointer?.("move")(event);
+      }}
+      {...(handlePaintPointer
+        ? {
+            onPointerDown: handlePaintPointer("down"),
+            onPointerUp: handlePaintPointer("up"),
+          }
+        : {})}
     >
       <mesh geometry={geometry} castShadow receiveShadow>
         {lineArt ? (
           <meshBasicMaterial color="#ffffff" polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
         ) : (
           <meshStandardMaterial
-            color={prim.color}
+            color={paintTexture ? "#ffffff" : prim.color}
+            {...(paintTexture ? { map: paintTexture } : {})}
             polygonOffset
             polygonOffsetFactor={1}
             polygonOffsetUnits={1}

@@ -12,6 +12,9 @@ import {
   buildCalendarCells,
   formatUtcInTimeZone,
   getLocalDateKey,
+  getMarketCalendarEventsInWeekOf,
+  getMarketCalendarEventsOn,
+  type MarketCalendarEvent,
   type StudioPublishReservation,
 } from "./studio-publish-schedule-model";
 import "./publish-schedule.css";
@@ -66,6 +69,19 @@ const STATUS_FALLBACK: Record<StudioPublishReservation["status"], string> = {
   canceled: "취소됨",
 };
 
+/** 시장 캘린더 이벤트를 "추석(09-25), 플랫폼 여름 성수기(07-24~08-16)" 형태로 요약한다. */
+function formatMarketEventSummary(
+  events: readonly MarketCalendarEvent[],
+): string {
+  return events
+    .map((event) =>
+      event.startDateKey === event.endDateKey
+        ? `${event.name}(${event.startDateKey.slice(5)})`
+        : `${event.name}(${event.startDateKey.slice(5)}~${event.endDateKey.slice(5)})`,
+    )
+    .join(", ");
+}
+
 export function PublishScheduleCalendar({
   reservations,
   timeZone = "Asia/Seoul",
@@ -76,8 +92,12 @@ export function PublishScheduleCalendar({
   initialMonth,
 }: PublishScheduleCalendarProps) {
   const t = useT();
-  const lt = (fallback: string, key: string) => {
-    const translated = t(key, fallback);
+  const lt = (
+    fallback: string,
+    key: string,
+    values?: Record<string, string | number>,
+  ) => {
+    const translated = t(key, values ?? {}, fallback);
     return translated === key ? fallback : translated;
   };
 
@@ -111,6 +131,14 @@ export function PublishScheduleCalendar({
   const selectedReservations = selectedDate
     ? (byDate.get(selectedDate) ?? [])
     : [];
+
+  // 선택한 날짜가 속한 주(월~일)에 겹치는 공휴일·플랫폼 이벤트.
+  // 이 주의 회차에는 '이벤트 주간' 배지를 단다 (REPORT O-4).
+  const selectedWeekEvents = useMemo(
+    () => (selectedDate ? getMarketCalendarEventsInWeekOf(selectedDate) : []),
+    [selectedDate],
+  );
+  const selectedWeekEventSummary = formatMarketEventSummary(selectedWeekEvents);
 
   const moveMonth = (delta: number) => {
     let nextYear = year;
@@ -179,6 +207,7 @@ export function PublishScheduleCalendar({
         ))}
         {cells.map((cell) => {
           const dayReservations = byDate.get(cell.dateKey) ?? [];
+          const dayEvents = getMarketCalendarEventsOn(cell.dateKey);
           const dayNumber = Number(cell.dateKey.slice(8, 10));
           const isSelected = selectedDate === cell.dateKey;
           const className = [
@@ -186,6 +215,7 @@ export function PublishScheduleCalendar({
             cell.inMonth ? "" : "psched__cell--outside",
             cell.dateKey === todayKey ? "psched__cell--today" : "",
             isSelected ? "psched__cell--selected" : "",
+            dayEvents.length > 0 ? "psched__cell--event" : "",
           ]
             .filter(Boolean)
             .join(" ");
@@ -196,10 +226,19 @@ export function PublishScheduleCalendar({
               role="gridcell"
               className={className}
               aria-selected={isSelected}
-              aria-label={`${cell.dateKey}, 예약 ${dayReservations.length}건`}
+              aria-label={`${cell.dateKey}, 예약 ${dayReservations.length}건${
+                dayEvents.length > 0
+                  ? `, 이벤트: ${dayEvents.map((event) => event.name).join(", ")}`
+                  : ""
+              }`}
               onClick={() => onSelectDate(isSelected ? null : cell.dateKey)}
             >
               <span className="psched__cell-date">{dayNumber}</span>
+              {dayEvents.length > 0 && (
+                <span className="psched__event-marker" aria-hidden="true">
+                  {dayEvents[0].name}
+                </span>
+              )}
               {dayReservations.length > 0 && (
                 <span className="psched__dots" aria-hidden="true">
                   {dayReservations.slice(0, 4).map((r) => (
@@ -215,6 +254,15 @@ export function PublishScheduleCalendar({
       {selectedDate && (
         <div className="psched__day-list">
           <h3 className="psched__day-title">{selectedDate}</h3>
+          {selectedWeekEvents.length > 0 && (
+            <p className="psched__event-note">
+              {lt(
+                `이 주 일정: ${selectedWeekEventSummary}`,
+                "studio.publish.schedule.eventWeekEvents",
+                { events: selectedWeekEventSummary },
+              )}
+            </p>
+          )}
           {selectedReservations.length === 0 ? (
             <p className="psched__empty">
               {lt("이 날의 예약이 없어요.", "studio.publish.schedule.emptyDay")}
@@ -239,6 +287,11 @@ export function PublishScheduleCalendar({
                     ) ?? reservation.scheduledAtUtc}
                   </span>
                 </span>
+                {selectedWeekEvents.length > 0 && (
+                  <span className="psched__badge--event-week">
+                    {lt("이벤트 주간", "studio.publish.schedule.eventWeek")}
+                  </span>
+                )}
                 <span
                   className={`psched__status psched__status--${reservation.status}`}
                 >

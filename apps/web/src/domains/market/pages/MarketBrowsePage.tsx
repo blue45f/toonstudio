@@ -37,6 +37,7 @@ import {
 } from "../models/market-query";
 
 import { Container } from "@/shared/components/section";
+import { ListTemplate } from "@/shared/components/layout/ListTemplate";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -249,6 +250,9 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
       </section>
 
       <Container size="wide" className="py-6 sm:py-8">
+        <ListTemplate
+          filters={
+            <>
         <section aria-labelledby="market-work-family-title">
           <h2 id="market-work-family-title" className="text-sm font-bold text-fg">{t("어떤 리소스가 필요한가요?", "What kind of resource do you need?")}</h2>
           <p className="mt-1 text-sm text-fg-2 max-sm:sr-only">{t("한 번 선택하면 그 작업군에 필요한 세부 카테고리만 아래에 보여줍니다.", "Once selected, only the subcategories for that work family are shown below.")}</p>
@@ -359,6 +363,9 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           </div>
         ) : null}
 
+            </>
+          }
+        >
         {hasInvalidQuery ? (
           <div id="market-invalid-query" role="alert" className="mt-4 rounded-xl border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-fg-2">
             <p className="font-medium text-fg">{t("주소의 검색 조건을 적용할 수 없어요.", "The search conditions in the URL could not be applied.")}</p>
@@ -411,6 +418,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
             ) : null}
           </>
         )}
+        </ListTemplate>
         <MarketCompareShelf />
       </Container>
     </div>

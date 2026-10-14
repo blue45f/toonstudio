@@ -44,6 +44,33 @@ describe("LanguagePicker", () => {
     expect(screen.queryByRole("dialog", { name: "언어 선택" })).toBeNull();
   });
 
+  it("labels in-progress locales instead of presenting them as finished translations", () => {
+    render(<LanguagePicker value="ko" onChange={() => undefined} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "언어 선택" }));
+    // ja clears the translated floor but is only about half complete, so it is labelled.
+    fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
+      target: { value: "日本語" },
+    });
+    const japanese = screen.getByRole("option");
+    expect(japanese.textContent).toContain("번역 진행 중");
+    expect(japanese.textContent).toContain("%");
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
+      target: { value: "한국어" },
+    });
+    const korean = screen.getByRole("option");
+    expect(korean.textContent).not.toContain("번역 진행 중");
+
+    // A locale with no published dictionary at all is labelled too, never left unmarked.
+    fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
+      target: { value: "tlh" },
+    });
+    const klingon = screen.getByRole("option");
+    expect(klingon.textContent).toContain("번역 진행 중");
+    expect(klingon.textContent).toContain("0%");
+  });
+
   it("caps broad results and restores the trigger after Escape", () => {
     render(<LanguagePicker value="ko" onChange={() => undefined} />);
     const trigger = screen.getByRole("button", { name: "언어 선택" });

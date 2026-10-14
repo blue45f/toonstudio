@@ -32,7 +32,8 @@
 }
 :root[data-design-theme="starlight"] .site-header__inner {
   max-width: var(--site-content-max, 82.5rem);
-  min-height: 56px;
+  /* 헤더 높이는 테마가 바꾸지 않는다 — 전역 단일 높이 60px (BLUEPRINT §5.2 (3)·(7), §5.3 L1). */
+  min-height: 60px;
   gap: 12px;
 }
 :root[data-design-theme="starlight"] .site-header__brand-mark {
@@ -110,9 +111,10 @@
 
 /* 공개 페이지는 소개를 줄이고 실제 목록과 조작을 같은 화면에서 볼 수 있게 한다. */
 :root[data-design-theme="starlight"] [data-site-experience] {
-  --site-heading-space: clamp(1rem, 2vw, 1.5rem);
-  --site-heading-size: clamp(1.5rem, 2.5vw, 2.25rem);
-  --site-section-title-size: clamp(1.125rem, 1.6vw, 1.4rem);
+  /* 헤딩 크기는 layout-tokens 정본(unified 계약의 --site-heading-size·--site-section-title-size
+     display 단계값)을 그대로 쓴다. 테마는 색·배경만 바꾸고 글자 크기는 바꾸지 않는다
+     (BLUEPRINT §6.2 (5) — 테마를 바꿔도 글자 크기가 변하지 않음). 여기서 이 변수들과
+     --site-heading-space를 재정의하지 않는다. */
   background: var(--reference-bg);
 }
 :root[data-design-theme="starlight"] [data-site-experience] .site-theme-scene {

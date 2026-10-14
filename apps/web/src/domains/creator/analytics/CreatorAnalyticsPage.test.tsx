@@ -52,8 +52,15 @@ function renderPage() {
   );
 }
 
+/** 연결 전 상태에서 사용자가 직접 예시 보기를 고른 뒤의 화면. */
+function renderPageWithSample() {
+  const view = renderPage();
+  fireEvent.click(screen.getByRole("button", { name: "예시 데이터로 둘러보기" }));
+  return view;
+}
+
 beforeEach(() => {
-  // 기본: API 미배선(404) — 번들 예시 데이터 경로를 탄다.
+  // 기본: API 미배선(404) — 연결 전 상태가 기본이다.
   api.state = { data: null, loading: false, error: null, notFound: true, appError: null, stale: false };
 });
 
@@ -63,8 +70,31 @@ afterEach(() => {
 });
 
 describe("CreatorAnalyticsPage", () => {
-  it("KPI 카드 4종을 지표 정의·비교 기준과 함께 렌더한다", () => {
+  it("연결 전(404)에서는 샘플 숫자를 자동으로 표시하지 않고 연결 전 상태를 보여 준다", () => {
     renderPage();
+    expect(screen.getByText("실제 집계가 아직 연결되지 않았어요")).toBeTruthy();
+    expect(screen.queryByRole("article", { name: "조회수" })).toBeNull();
+    expect(screen.queryByRole("note", { name: "예시 데이터 안내" })).toBeNull();
+    expect(screen.queryByText("예시 데이터로 보는 중")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "실제 데이터 다시 불러오기" }));
+    expect(api.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("서버가 목(mock:true)을 돌려줘도 샘플 숫자를 표시하지 않고 연결 전 상태로 취급한다", () => {
+    api.state = { data: buildClientMockAnalytics("30d"), loading: false, error: null, notFound: false, appError: null, stale: false };
+    renderPage();
+    expect(screen.getByText("실제 집계가 아직 연결되지 않았어요")).toBeTruthy();
+    expect(screen.queryByRole("article", { name: "조회수" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "예시 데이터로 둘러보기" }));
+    const note = screen.getByRole("note", { name: "예시 데이터 안내" });
+    expect(note.textContent).toContain("서버가 예시 데이터를 돌려주고 있습니다");
+    expect(screen.getByRole("article", { name: "조회수" })).toBeTruthy();
+  });
+
+  it("KPI 카드 4종을 지표 정의·비교 기준과 함께 렌더한다", () => {
+    renderPageWithSample();
     for (const label of ["조회수", "좋아요", "댓글", "구독 전환율"]) {
       expect(screen.getByRole("article", { name: label })).toBeTruthy();
     }
@@ -73,7 +103,7 @@ describe("CreatorAnalyticsPage", () => {
   });
 
   it("예시 데이터는 상단 안내와 카드별 ‘예시’ 표시로 실제 수치와 구분한다", () => {
-    renderPage();
+    renderPageWithSample();
     const note = screen.getByRole("note", { name: "예시 데이터 안내" });
     expect(note.textContent).toContain("예시 데이터입니다 · 실제 독자 수치가 아닙니다");
     expect(note.textContent).toContain("실제 집계 서버가 아직 연결되지 않아");
@@ -85,7 +115,7 @@ describe("CreatorAnalyticsPage", () => {
   });
 
   it("이탈 지점 콜아웃에 7화를 강조하고 점검 항목과 다음 행동을 제시한다", () => {
-    renderPage();
+    renderPageWithSample();
     const note = screen.getByRole("note", { name: "이탈 지점" });
     expect(note.textContent).toContain("7화");
     expect(note.textContent).toContain("에서 독자가 떨어졌어요");
@@ -94,7 +124,7 @@ describe("CreatorAnalyticsPage", () => {
   });
 
   it("리텐션 곡선과 유입 경로·회차 표, 다음 행동 카드를 렌더한다", () => {
-    renderPage();
+    renderPageWithSample();
     expect(screen.getByText("회차별 리텐션 곡선")).toBeTruthy();
     expect(screen.getByText("유입 경로")).toBeTruthy();
     expect(screen.getByRole("table", { name: "회차별 성과" })).toBeTruthy();
@@ -105,7 +135,7 @@ describe("CreatorAnalyticsPage", () => {
   });
 
   it("기간 선택은 클릭과 방향키로 바뀌고 기간 범위를 알려 준다", () => {
-    renderPage();
+    renderPageWithSample();
     expect(screen.getByText(/최근 30일 ·/u)).toBeTruthy();
     const button7 = screen.getByRole("radio", { name: "7일" });
     expect(button7.getAttribute("aria-checked")).toBe("false");
@@ -120,7 +150,7 @@ describe("CreatorAnalyticsPage", () => {
   });
 
   it("시리즈는 이름으로 고르고 선택값이 실제 시리즈 id를 따른다", () => {
-    renderPage();
+    renderPageWithSample();
     const select = screen.getByLabelText("시리즈") as HTMLSelectElement;
     const series = buildClientMockAnalytics("30d").series;
     expect(select.value).toBe(series[0]?.id);

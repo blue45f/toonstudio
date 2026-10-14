@@ -10,6 +10,9 @@ import {
   PSD_IMPORT_MAX_DECODED_BYTES,
   PSD_IMPORT_MAX_DIMENSION_PX,
   PSD_IMPORT_MAX_FILE_BYTES,
+  createPsdEncodedPngAccountant,
+  estimatePsdDataUrlDecodedBytes,
+  PSD_IMPORT_MAX_ENCODED_PNG_BYTES,
   psdImportResultMessage,
   type PsdImportDeps,
   type PsdImportedElement,
@@ -710,5 +713,60 @@ describe("PSD original-quality cancellation and progress", () => {
     }, { onProgress: () => { throw new Error("view detached"); } });
     expect(result.elements).toHaveLength(1);
     expect(result.elements[0].src).toBe("data:image/png;base64,AAAA");
+  });
+});
+
+describe("인코딩 PNG 상주 메모리 회계 (성능/메모리)", () => {
+  it("base64 data URL의 디코딩 바이트를 패딩까지 정확히 추정한다", () => {
+    expect(estimatePsdDataUrlDecodedBytes("data:image/png;base64,AAAA")).toBe(3);
+    expect(estimatePsdDataUrlDecodedBytes("data:image/png;base64,AAA=")).toBe(2);
+    expect(estimatePsdDataUrlDecodedBytes("data:image/png;base64,AA==")).toBe(1);
+    expect(estimatePsdDataUrlDecodedBytes("data:,abc")).toBe(3);
+    expect(PSD_IMPORT_MAX_ENCODED_PNG_BYTES).toBe(Math.floor(PSD_IMPORT_MAX_DECODED_BYTES * 1.5));
+  });
+
+  it("회계는 상한을 넘는 charge를 거부하고 피크·누적을 기록한다", () => {
+    const account = createPsdEncodedPngAccountant(10);
+    expect(account.chargeLayer(4)).toBe(true);
+    expect(account.chargeLayer(5)).toBe(true);
+    expect(account.chargeLayer(2)).toBe(false); // 9 + 2 > 10
+    expect(account.chargeMask(1)).toBe(true);
+    expect(account.chargeComposite(1)).toBe(false); // 이미 상한 도달
+    expect(account.snapshot()).toEqual({
+      budgetBytes: 10,
+      layerBytes: 9,
+      maskBytes: 1,
+      compositeBytes: 0,
+      totalBytes: 10,
+      peakLayerBytes: 5,
+      layerCount: 2,
+      skippedLayerCount: 1,
+      droppedMaskCount: 0,
+      compositeSkipped: true,
+    });
+  });
+
+  it("가져오기 결과에 레이어·합성본 상주 메모리가 측정·기록된다", async () => {
+    const psd = samplePsd(
+      [leaf({ name: "A" }), leaf({ name: "B" })],
+      { canvas: fakeCanvas("data:image/png;base64,AAAAAAAA", 720, 1080) },
+    );
+    const result = await importPsdFile(new File([], "t.psd"), 720, {
+      readPsdImpl: () => psd,
+    });
+    // 레이어 2개 x 3바이트(AAAA) + 합성본 6바이트(AAAAAAAA)
+    expect(result.encodedPngMemory).toEqual({
+      budgetBytes: PSD_IMPORT_MAX_ENCODED_PNG_BYTES,
+      layerBytes: 6,
+      maskBytes: 0,
+      compositeBytes: 6,
+      totalBytes: 12,
+      peakLayerBytes: 3,
+      layerCount: 2,
+      skippedLayerCount: 0,
+      droppedMaskCount: 0,
+      compositeSkipped: false,
+    });
+    expect(result.lossManifest?.budgets.maxEncodedPngBytes).toBe(PSD_IMPORT_MAX_ENCODED_PNG_BYTES);
   });
 });

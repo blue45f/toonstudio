@@ -1,5 +1,12 @@
 import { Activity, ChevronDown, Shuffle, Sparkles, Waves } from "lucide-react";
 
+import { useMemo } from "react";
+
+import {
+  findStudioBrushGrainSourceEntryV1,
+  listStudioBrushGrainSourcesV1,
+  studioBrushGrainSourceRegistrationsV1,
+} from "./studio-brush-grain-source-catalog-v1";
 import {
   findStudioBrushDynamicsMapping,
   removeStudioBrushDynamicsMapping,
@@ -478,6 +485,15 @@ export function StudioBrushGrainControls({
   onSettingsChange,
 }: StudioBrushDynamicsControlsProps) {
   const grainActive = settings.grain.amount > 0;
+  // 소스 목록은 베이크 메모이즈를 공유한다 — 첫 렌더에서만 10종 타일을 굽는다.
+  const grainSources = useMemo(listStudioBrushGrainSourcesV1, []);
+  const selectedGrainSource = findStudioBrushGrainSourceEntryV1(settings.grain.source);
+  // 등록 영수증이 있으면 그 해시를, 없으면(랩 초기화 전) 카탈로그 계약 해시를 보여준다 — 둘은 같은 값이다.
+  const selectedGrainReceiptHash = selectedGrainSource
+    ? (studioBrushGrainSourceRegistrationsV1().find(
+        (registration) => registration.entry.id === selectedGrainSource.id,
+      )?.receipt?.decodedSha256 ?? selectedGrainSource.decodedSha256)
+    : null;
   return (
     <details className="group rounded-xl border border-line bg-card/45">
       <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2.5 px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
@@ -526,6 +542,58 @@ export function StudioBrushGrainControls({
               <span className="block text-[0.6rem] text-fg-3">{hint}</span>
             </button>
           ))}
+        </div>
+        {/* 그레인 소스 — 종이 6종 + 패턴 4종 R8 타일. 고르면 grain.source가 바뀌어
+            같은 샘플러 경로로 획에 질감이 반영되고, 등록 영수증의 해시를 아래에 남긴다. */}
+        <div className="space-y-1.5">
+          <p className="text-[0.66rem] font-bold text-fg-2">그레인 소스</p>
+          <div role="radiogroup" aria-label="그레인 소스" className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={selectedGrainSource === null}
+              onClick={() => onSettingsChange(
+                updateStudioBrushDynamicsGrain(settings, { source: null })
+              )}
+              className={cn(
+                "min-h-9 rounded-lg border px-2.5 text-[0.68rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+                selectedGrainSource === null
+                  ? "border-accent/50 bg-accent-soft/30 text-fg"
+                  : "border-line bg-card/55 text-fg-2"
+              )}
+            >
+              절차적 노이즈
+            </button>
+            {grainSources.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                role="radio"
+                aria-checked={selectedGrainSource?.id === entry.id}
+                title={entry.description}
+                onClick={() => onSettingsChange(
+                  updateStudioBrushDynamicsGrain(settings, {
+                    source: entry.source,
+                    // 질감을 골랐는데 강도 0이라 아무것도 안 보이는 마찰을 막는다.
+                    ...(settings.grain.amount > 0 ? {} : { amount: 0.5 }),
+                  })
+                )}
+                className={cn(
+                  "min-h-9 rounded-lg border px-2.5 text-[0.68rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+                  selectedGrainSource?.id === entry.id
+                    ? "border-accent/50 bg-accent-soft/30 text-fg"
+                    : "border-line bg-card/55 text-fg-2"
+                )}
+              >
+                {entry.kind === "pattern" ? `패턴 · ${entry.label}` : entry.label}
+              </button>
+            ))}
+          </div>
+          {selectedGrainSource ? (
+            <p className="text-[0.6rem] tabular-nums text-fg-3">
+              소스 해시 {selectedGrainReceiptHash}
+            </p>
+          ) : null}
         </div>
         <div className="grid gap-1.5 sm:grid-cols-2">
           <CompactRange

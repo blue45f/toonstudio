@@ -1,9 +1,9 @@
 import { ArrowRight } from "lucide-react";
 
 import {
-  SITE_NAVIGATION_GROUPS,
   SITE_NAVIGATION_ITEMS,
   SITE_UTILITY_NAVIGATION,
+  resolveNavigationGroupsFor,
   siteNavigationLocale,
   siteNavigationText,
 } from "./site-navigation";
@@ -41,6 +41,11 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
   const make = SITE_NAVIGATION_ITEMS.make;
   const research = SITE_NAVIGATION_ITEMS.research;
+  /**
+   * S1-3: 모바일 메뉴·⌘K와 같은 정책 함수(resolveNavigationGroupsFor)를
+   * 소비한다. 그룹 순서와 그룹 안 tier 순서가 표면마다 달라지지 않는다.
+   */
+  const navigationGroups = resolveNavigationGroupsFor();
 
   return (
     <footer data-site-chrome="footer" className="site-footer pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
@@ -77,13 +82,17 @@ export function SiteFooter() {
 
           {/* 사이트 홈("/")은 위 브랜드 링크가 이미 소유한다. 지도에서 "내 기록" 그룹에
               "홈"("/")과 "내 홈"("/home")이 나란히 렌더되면 같은 목적지로 읽혀(시각 감사
-              2026-10-13) 푸터 렌더링에서만 "home" 항목을 제외한다. 지도의 그룹 소속
-              자체는 현재 여정 판정(siteNavigationGroupForPath("/"))이 쓰므로 바꾸지 않는다. */}
-          {SITE_NAVIGATION_GROUPS.map((group) => (
+              2026-10-13) 푸터 렌더링에서만 href "/" 항목을 제외한다 — id가 아니라
+              href 중복 제거이며, 지도의 그룹 소속 자체는 현재 여정 판정
+              (siteNavigationGroupForPath("/"))이 쓰므로 바꾸지 않는다.
+              S1-3 이전에 함께 제외되던 "제작 기술"(technology)은 중복이 아닌데도
+              조용히 빠져 모바일 메뉴·⌘K와 집합이 어긋나 있었다. tier 통일로
+              제외를 없애 세 디렉터리 표면의 목적지 집합을 일치시킨다. */}
+          {navigationGroups.map((group) => (
             <nav key={group.id} aria-labelledby={`footer-nav-${group.id}`} className="site-footer__group">
               <h2 id={`footer-nav-${group.id}`}>{siteNavigationText(group.label, locale)}</h2>
               <ul>
-                {group.items.filter((item) => item.id !== "technology" && item.id !== "home").map((item) => (
+                {group.items.filter((item) => item.href !== "/").map((item) => (
                   <li key={item.id}>
                     <Link
                       href={item.href}

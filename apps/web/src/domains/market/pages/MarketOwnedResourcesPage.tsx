@@ -12,9 +12,17 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { MarketNavHeader } from "../components/MarketNavHeader";
+import { MarketSellerCenterTabs } from "../components/MarketSellerCenterTabs";
 import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
 import { MarketResourceCover } from "../components/MarketResourceCover";
 import { marketAuthorityErrorMessage } from "../models/market-authority";
+import type { OwnedBulkAction } from "../models/market-bulk-selection";
+import {
+  bulkSelectionState,
+  planOwnedBulkAction,
+  runBulkSequential,
+  toggleSelectedId,
+} from "../models/market-bulk-selection";
 import {
   formatMarketByteSize,
   marketKindMeta,
@@ -115,6 +123,9 @@ export function MarketOwnedResourcesPage() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<readonly string[]>([]);
+  const [bulkPending, setBulkPending] = useState<OwnedBulkAction | null>(null);
+  const [confirmBulkUnlist, setConfirmBulkUnlist] = useState(false);
   const generationRef = useRef(0);
   const firstPageControllerRef = useRef<AbortController | null>(null);
   const loadMoreControllerRef = useRef<AbortController | null>(null);
@@ -136,6 +147,9 @@ export function MarketOwnedResourcesPage() {
     setCursor(null);
     setHasMore(false);
     setPendingId(null);
+    setSelectedIds([]);
+    setBulkPending(null);
+    setConfirmBulkUnlist(false);
     setError(null);
     setMessage(confirmation);
 
@@ -231,7 +245,7 @@ export function MarketOwnedResourcesPage() {
   }
 
   async function toggleListing(item: CreatorMarketplaceOwnedRelease): Promise<void> {
-    if (!userId || pendingId) return;
+    if (!userId || pendingId || bulkPending) return;
     const generation = generationRef.current;
     const record = item.resource;
     const relisting = item.delistedAt !== null;
@@ -258,12 +272,63 @@ export function MarketOwnedResourcesPage() {
     }
   }
 
+  const selectableIds = visibleItems
+    .filter((item) => item.packageModeration.state !== "hidden")
+    .map((item) => item.resource.id);
+  const selectionState = bulkSelectionState(selectableIds, selectedIds);
+  const relistPlan = planOwnedBulkAction(visibleItems, selectedIds, "relist");
+  const unlistPlan = planOwnedBulkAction(visibleItems, selectedIds, "unlist");
+  const bulkBusy = bulkPending !== null || pendingId !== null;
+
+  function toggleSelected(id: string): void {
+    setConfirmBulkUnlist(false);
+    setSelectedIds((current) => toggleSelectedId(current, id));
+  }
+
+  function toggleSelectAll(): void {
+    setConfirmBulkUnlist(false);
+    setSelectedIds(selectionState === "all" ? [] : selectableIds);
+  }
+
+  async function runBulk(action: OwnedBulkAction): Promise<void> {
+    if (!userId || bulkBusy) return;
+    const plan = action === "relist" ? relistPlan : unlistPlan;
+    if (plan.targets.length === 0) return;
+    const generation = generationRef.current;
+    setBulkPending(action);
+    setConfirmBulkUnlist(false);
+    setError(null);
+
+    const result = await runBulkSequential(plan.targets, async (item) => {
+      if (action === "relist") await relistCreatorMarketplaceResource(item.resource.id);
+      else await deleteCreatorMarketplaceResource(item.resource.id);
+    });
+    if (generationRef.current !== generation) return;
+    setBulkPending(null);
+
+    const succeededCount = result.succeeded.length;
+    const failedCount = result.failed.length;
+    if (succeededCount === 0) {
+      setError(action === "relist"
+        ? t("선택한 에셋을 다시 공개하지 못했습니다. 서버 상태는 변경되지 않았습니다.", "Could not relist the selected assets. The server state is unchanged.")
+        : t("선택한 에셋을 공개 목록에서 내리지 못했습니다. 서버 상태는 변경되지 않았습니다.", "Could not unlist the selected assets. The server state is unchanged."));
+      return;
+    }
+    const summary = action === "relist"
+      ? t(`선택한 에셋 ${succeededCount}개를 공개 목록에 다시 올렸습니다.`, `Relisted ${succeededCount} selected asset(s).`)
+      : t(`선택한 에셋 ${succeededCount}개를 공개 목록에서 내렸습니다. 기존 릴리스 이력은 유지됩니다.`, `Removed ${succeededCount} selected asset(s) from the public list. Existing release history is kept.`);
+    await loadFirstPage(failedCount > 0
+      ? `${summary} ${t(`${failedCount}개는 실패해 상태가 그대로입니다.`, `${failedCount} failed and remain unchanged.`)}`
+      : summary);
+  }
+
   return (
     <Container size="wide" className="py-7 sm:py-10">
       <MarketNavHeader />
       <MarketSectionArtBanner />
+      <MarketSellerCenterTabs active="packages" />
 
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
+      <header className="mt-6 flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
         <div>
           <p className="eyebrow text-accent">Creator center</p>
           <div className="mt-1 flex items-center gap-2">
@@ -271,7 +336,7 @@ export function MarketOwnedResourcesPage() {
             <h1 className="text-xl font-bold text-fg sm:text-2xl">{t("판매자 센터", "Seller center")}</h1>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-2">
-            {t("서버가 보유한 패키지 head와 릴리스 상태만 표시합니다. 브라우저 임시 레코드로 공개 상태나 immutable 버전을 변경하지 않습니다.", "Only the package heads and release states held by the server are shown. Browser temporary records cannot change listing status or immutable versions.")}
+            {t("판매자 센터의 패키지 관리 탭입니다. 서버가 보유한 패키지 head와 릴리스 상태만 표시합니다. 브라우저 임시 레코드로 공개 상태나 immutable 버전을 변경하지 않습니다.", "This is the package management tab of the seller center. Only the package heads and release states held by the server are shown. Browser temporary records cannot change listing status or immutable versions.")}
           </p>
         </div>
         <Link href="/market/publish" className={buttonClass({ variant: "solid", size: "sm" })}>
@@ -281,9 +346,9 @@ export function MarketOwnedResourcesPage() {
       </header>
 
       <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-line bg-panel px-4 py-3 text-sm text-fg-2">
-        {t("브라우저에서 직접 등록하는 포인트 판매·공동구매는 별도 판매대에서 다룹니다.", "Point sales and group buys registered directly in the browser live on a separate counter.")}
+        {t("브라우저에서 직접 등록하는 포인트 판매·공동구매는 판매자 센터에서 함께 다룹니다.", "Point sales and group buys registered directly in the browser live together in the seller center.")}
         <Link href="/market/seller" className={buttonClass({ variant: "outline", size: "sm" })}>
-          {t("포인트 판매 · 공동구매 열기", "Open point sales & group buys")}
+          {t("판매자 센터 열기", "Open the seller center")}
         </Link>
       </p>
 
@@ -332,6 +397,78 @@ export function MarketOwnedResourcesPage() {
               {t("새로고침", "Refresh")}
             </button>
           </div>
+
+          {visibleItems.length > 0 ? (
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line bg-panel px-4 py-3">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-bold text-fg">
+                <input
+                  type="checkbox"
+                  className="size-4 shrink-0"
+                  checked={selectionState === "all"}
+                  ref={(element) => {
+                    if (element) element.indeterminate = selectionState === "some";
+                  }}
+                  onChange={toggleSelectAll}
+                  disabled={bulkBusy || selectableIds.length === 0}
+                  aria-label={t("선택 가능한 항목 전체 선택", "Select all selectable items")}
+                />
+                {t("전체 선택", "Select all")}
+              </label>
+              <p className="text-sm text-fg-2">
+                {t(`${selectedIds.length}개 선택됨`, `${selectedIds.length} selected`)}
+                {relistPlan.skippedModerated + unlistPlan.skippedModerated > 0 && selectedIds.length > 0
+                  ? t(" · 관리자 숨김 항목은 일괄 변경에서 제외됩니다", " · Admin-hidden items are excluded from bulk changes")
+                  : ""}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={bulkBusy || relistPlan.targets.length === 0}
+                  onClick={() => void runBulk("relist")}
+                  className={buttonClass({ variant: "outline", size: "sm" })}
+                >
+                  {bulkPending === "relist" ? (
+                    <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Eye className="size-3.5" aria-hidden="true" />
+                  )}
+                  {t(`선택 항목 재공개 (${relistPlan.targets.length})`, `Relist selected (${relistPlan.targets.length})`)}
+                </button>
+                <button
+                  type="button"
+                  disabled={bulkBusy || unlistPlan.targets.length === 0}
+                  onClick={() => {
+                    if (confirmBulkUnlist) void runBulk("unlist");
+                    else setConfirmBulkUnlist(true);
+                  }}
+                  className={buttonClass({
+                    variant: confirmBulkUnlist ? "solid" : "outline",
+                    size: "sm",
+                  })}
+                >
+                  {bulkPending === "unlist" ? (
+                    <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <EyeOff className="size-3.5" aria-hidden="true" />
+                  )}
+                  {confirmBulkUnlist
+                    ? t(`정말 ${unlistPlan.targets.length}개를 내릴까요?`, `Really unlist ${unlistPlan.targets.length}?`)
+                    : t(`선택 항목 내리기 (${unlistPlan.targets.length})`, `Unlist selected (${unlistPlan.targets.length})`)}
+                </button>
+                <button
+                  type="button"
+                  disabled={bulkBusy || selectedIds.length === 0}
+                  onClick={() => {
+                    setConfirmBulkUnlist(false);
+                    setSelectedIds([]);
+                  }}
+                  className={buttonClass({ variant: "ghost", size: "sm" })}
+                >
+                  {t("선택 해제", "Clear selection")}
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {message ? (
             <p
@@ -395,6 +532,17 @@ export function MarketOwnedResourcesPage() {
                     className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex min-w-0 flex-1 items-start gap-3.5">
+                      <input
+                        type="checkbox"
+                        className="mt-1 size-4 shrink-0"
+                        checked={selectedIds.includes(record.id)}
+                        disabled={moderated || bulkBusy}
+                        onChange={() => toggleSelected(record.id)}
+                        aria-label={t(`${record.name} 선택`, `Select ${record.name}`)}
+                        title={moderated
+                          ? t("관리자 숨김 상태는 제작자가 변경할 수 없습니다.", "A hidden-by-admin state cannot be changed by the creator.")
+                          : undefined}
+                      />
                       <span className="relative size-11 shrink-0 overflow-hidden rounded-xl" aria-hidden="true">
                         <MarketResourceCover record={record} />
                       </span>
@@ -424,7 +572,7 @@ export function MarketOwnedResourcesPage() {
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        disabled={moderated || pendingId !== null}
+                        disabled={moderated || pendingId !== null || bulkPending !== null}
                         onClick={() => void toggleListing(item)}
                         title={moderated
                           ? t("관리자 숨김 상태는 제작자가 변경할 수 없습니다.", "A hidden-by-admin state cannot be changed by the creator.")

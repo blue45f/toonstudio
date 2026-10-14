@@ -77,6 +77,7 @@ const BROWSER_ORCHESTRATORS = [
   "./studio-heal-clone-browser",
   "./studio-magic-wand-browser",
   "./render/studio-raster-retouch-region",
+  "./studio-quick-selection-browser",
   "./studio-retouch-browser",
   "./studio-smudge-browser",
 ] as const;

@@ -32,6 +32,7 @@ import {
 import { isStudioBrushCursorMode, shouldShowStudioBrushCursor } from "../canvas/studio-canvas-cursor";
 import { bubbleShapeCanvasPointToLocal, hasCustomBubbleShape, moveBubbleShapePoint } from "../lettering/studio-bubble-custom-shape";
 import { beginStudioAdvancedFillTap, endStudioAdvancedFillTap, moveStudioAdvancedFillTap } from "../studio-advanced-fill-tap";
+import { endStudioLassoFillDrag } from "../studio-lasso-fill-gesture";
 import { resolveActiveStudioAdvancedRuler, type StudioAdvancedRuler } from "../studio-advanced-ruler-document";
 import { snapStudioAdvancedRulerStrokePoint } from "../studio-advanced-ruler-snap";
 import { CANVAS_W } from "../studio-assets";
@@ -246,6 +247,8 @@ export function bindStudioCuttoonStagePointersUp(
     activeGroupIdRef,
     advancedFillAbortRef,
     advancedFillTapGestureRef,
+    advancedFillLassoDragRef,
+    runAdvancedFillLassoPath,
     advancedFillTapPayloadRef,
     advancedFillTouchPanRef,
     applyDodgeBurnStroke,
@@ -311,6 +314,8 @@ export function bindStudioCuttoonStagePointersUp(
     setPanelSplitPreview,
     setSelectedId,
     smudgeDragRef,
+    quickSelectDragRef,
+    finishQuickSelectionStroke,
     stopQuickShapeTracking,
     wetMixDragRef,
     activeSurfaceReviewLocked,
@@ -416,6 +421,22 @@ export function bindStudioCuttoonStagePointersUp(
     if (colorWheelTimerRef.current) {
       clearTimeout(colorWheelTimerRef.current);
       colorWheelTimerRef.current = null;
+    }
+    // 둘러싸기 채우기 종료 — 경로가 성립하면 래소 실행 어댑터로 넘긴다. 성립하지 않으면
+    // (직선·점 드래그) 조용히 버린다: 탭 채우기로 폴백하면 사용자가 의도하지 않은 채우기가 된다.
+    if (advancedFillLassoDragRef.current) {
+      const pointerEvent = e.evt as PointerEvent;
+      const pointerId = Number.isFinite(pointerEvent.pointerId) ? pointerEvent.pointerId : 1;
+      const position = e.target.getStage()?.getRelativePointerPosition() ?? undefined;
+      const session = advancedFillLassoDragRef.current;
+      const outcome = endStudioLassoFillDrag(session.gesture, pointerId, position);
+      advancedFillLassoDragRef.current = outcome.gesture
+        ? { ...session, gesture: outcome.gesture }
+        : null;
+      if (outcome.path && !advancedFillAbortRef.current) {
+        void runAdvancedFillLassoPath(outcome.path, session.frame);
+      }
+      return;
     }
     if (advancedFillTapGestureRef.current) {
       const pointerEvent = e.evt as PointerEvent;
@@ -534,6 +555,15 @@ export function bindStudioCuttoonStagePointersUp(
           patchEl(elId, { customShapePoints: moved.points } as Partial<El>);
           setBubbleShapeSelectedPointIndex(session.pointIndex);
         }
+      }
+      return;
+    }
+    // 빠른 선택 브러시 드래그 종료 — 누적 궤적으로 마지막 성장 스캔을 확정한다(탭 1점도 유효).
+    if (quickSelectDragRef.current) {
+      const session = quickSelectDragRef.current;
+      quickSelectDragRef.current = null;
+      if (session.points.length >= 1) {
+        void finishQuickSelectionStroke(session);
       }
       return;
     }

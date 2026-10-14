@@ -98,6 +98,7 @@ function runtimeManifest(narration, bgm, metadata) {
       locale: metadata.locale,
       voice: metadata.voice,
       disclosure: metadata.disclosure,
+      rights: metadata.rights,
       ...narration,
     },
     bgm: {

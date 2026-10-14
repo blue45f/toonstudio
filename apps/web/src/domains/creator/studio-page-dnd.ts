@@ -38,13 +38,21 @@ export interface StudioPageDndItemProps {
   onDragEnd: () => void;
 }
 
+/** 드롭 슬롯을 재는 축. 세로 목록은 "vertical"(위/아래 절반), 가로로 흐르는 조망 그리드는 "horizontal"(왼쪽/오른쪽 절반). */
+export type StudioPageDndAxis = "vertical" | "horizontal";
+
 export interface StudioPageDnd {
   /** 드래그 중인 카드 index(스타일 흐리기용). 드래그 없으면 null. */
   dragIndex: number | null;
   /** 현재 드롭 슬롯(카드 사이 틈 0..count). 드래그 없으면 null. */
   dropSlot: number | null;
-  /** 각 페이지 카드에 스프레드할 DnD props. */
-  itemProps: (index: number) => StudioPageDndItemProps;
+  /**
+   * 각 페이지 카드에 스프레드할 DnD props.
+   * axis 기본값은 "vertical"(페이지 목록·스트립). 행 우선으로 흐르는 그리드(스토리보드
+   * 조망)는 "horizontal"을 넘겨야 옆 카드와의 앞/뒤가 포인터 위치와 일치한다 —
+   * 세로 비율로 재면 오른쪽 절반에 놓아도 위쪽 절반이라는 이유로 앞에 끼어든다.
+   */
+  itemProps: (index: number, axis?: StudioPageDndAxis) => StudioPageDndItemProps;
   /** index 카드에 그릴 삽입선. */
   indicatorFor: (index: number) => "before" | "after" | null;
 }
@@ -69,13 +77,15 @@ export function useStudioPageDnd(
     setDropSlot(null);
   };
 
-  const slotFromEvent = (index: number, event: DragEvent<HTMLElement>): number => {
+  const slotFromEvent = (index: number, event: DragEvent<HTMLElement>, axis: StudioPageDndAxis): number => {
     const rect = event.currentTarget.getBoundingClientRect();
-    const ratio = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0;
+    const ratio = axis === "horizontal"
+      ? rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0
+      : rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0;
     return computeDropSlot(index, ratio);
   };
 
-  const itemProps = (index: number): StudioPageDndItemProps => ({
+  const itemProps = (index: number, axis: StudioPageDndAxis = "vertical"): StudioPageDndItemProps => ({
     draggable: true,
     onDragStart: (event) => {
       event.dataTransfer.effectAllowed = "move";
@@ -88,13 +98,13 @@ export function useStudioPageDnd(
       if (dragIndex === null) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
-      const slot = slotFromEvent(index, event);
+      const slot = slotFromEvent(index, event, axis);
       setDropSlot((previous) => (previous === slot ? previous : slot));
     },
     onDrop: (event) => {
       if (dragIndex === null) return;
       event.preventDefault();
-      const slot = slotFromEvent(index, event);
+      const slot = slotFromEvent(index, event, axis);
       if (!isNoopDropSlot(dragIndex, slot)) {
         onReorder(dragIndex, dropSlotToReorderTarget(dragIndex, slot));
       }

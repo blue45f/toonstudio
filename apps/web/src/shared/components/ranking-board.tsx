@@ -19,7 +19,7 @@ import {
   TrendingUp,
   Waves,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 
 import { PlatformTags } from "./availability";
 import {
@@ -82,6 +82,28 @@ const PLATFORM_FILTER_ITEMS: { value: PlatformId | "all"; label: string }[] = [
   ...PLATFORM_LIST.map((platform) => ({ value: platform.id, label: platform.short })),
 ];
 
+// 자동 갱신 카운트다운 — 1초 틱 상태를 이 소형 컴포넌트 안에 격리한다.
+// 이전에는 틱 상태가 보드 루트에 있어 매초 보드 전체(최대 200행)가
+// 리렌더됐다. 이제 틱으로 다시 그려지는 것은 이 텍스트뿐이다.
+function RefreshCountdown({ nextRefreshAt }: { nextRefreshAt: number | null }) {
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!nextRefreshAt) {
+      setCountdown(null);
+      return;
+    }
+    const tick = () => {
+      setCountdown(Math.max(0, Math.floor((nextRefreshAt - Date.now()) / 1000)));
+    };
+    tick();
+    const t = globalThis.setInterval(tick, 1000);
+    return () => globalThis.clearInterval(t);
+  }, [nextRefreshAt]);
+
+  return <>{countdown === null ? "자동 갱신 대기" : `${countdown}초`}</>;
+}
+
 export function RankingBoard({
   initialAxis = "popular",
   initialPlatform = "all",
@@ -116,10 +138,11 @@ export function RankingBoard({
   const forceRefresh = useRef(false);
   const [pollIntervalMs, setPollIntervalMs] = useState(60_000);
   const [nextRefreshAt, setNextRefreshAt] = useState<number | null>(null);
-  const [refreshCountdown, setRefreshCountdown] = useState<number | null>(null);
 
   const axisDetail = axisMeta(axis);
-  const metric = metricFor(axis);
+  // metricFor(axis)는 호출마다 새 함수를 만들므로 useMemo로 축 단위 고정한다.
+  // 이 동일성이 RankRow(memo)의 props 비교를 성립시키는 전제다.
+  const metric = useMemo(() => metricFor(axis), [axis]);
 
   // /ranking 구조화 데이터 — 현재 축의 서버 순위 상위권을 ItemList로 노출(이 보드는 랭킹 페이지 전용 마운트).
   // 구글이 JS 렌더링으로 수집해 '웹툰 랭킹' 계열 질의의 사이트 구조 이해·사이트링크 노출에 쓰인다.
@@ -191,23 +214,8 @@ export function RankingBoard({
     };
   }, [pollIntervalMs, query, refreshKey]);
 
-  useEffect(() => {
-    if (!nextRefreshAt) {
-      setRefreshCountdown(null);
-      return;
-    }
-
-    const tick = () => {
-      setRefreshCountdown(Math.max(0, Math.floor((nextRefreshAt - Date.now()) / 1000)));
-    };
-    tick();
-    const t = globalThis.setInterval(tick, 1000);
-    return () => globalThis.clearInterval(t);
-  }, [nextRefreshAt]);
-
   const isLoading = state === "loading";
   const isRefreshing = state === "refreshing";
-  const refreshLabel = refreshCountdown === null ? "자동 갱신 대기" : `${refreshCountdown}초`;
   const retry = () => {
     forceRefresh.current = true;
     setRefreshKey((current) => current + 1);
@@ -215,14 +223,22 @@ export function RankingBoard({
 
   // 서버가 매긴 순위/순서는 유지하고, 클라이언트 보조 필터(찜·장르·이용가)에 안 맞는 행만 숨긴다.
   const clientFilterCount = countActiveTitleFilters(clientFilters);
-  const visibleIds = new Set(
-    applyTitleFilters(
-      ranked.map((r) => r.title),
-      clientFilters,
-      savedIds
-    ).map((t) => t.id)
+  // 필터 적용 결과는 입력이 바뀔 때만 재계산한다(렌더마다 Set 재생성 방지).
+  const visibleIds = useMemo(
+    () =>
+      new Set(
+        applyTitleFilters(
+          ranked.map((r) => r.title),
+          clientFilters,
+          savedIds
+        ).map((t) => t.id)
+      ),
+    [ranked, clientFilters, savedIds]
   );
-  const visibleRanked = clientFilterCount > 0 ? ranked.filter((r) => visibleIds.has(r.title.id)) : ranked;
+  const visibleRanked = useMemo(
+    () => (clientFilterCount > 0 ? ranked.filter((r) => visibleIds.has(r.title.id)) : ranked),
+    [ranked, visibleIds, clientFilterCount]
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -456,7 +472,7 @@ export function RankingBoard({
           </button>
           <span className="inline-flex h-10 items-center rounded-xl border border-line bg-card px-3 text-sm text-fg-3" aria-live="polite">
             <span className="mr-1 text-fg">다음 갱신:</span>
-            <span className="numeral mr-1 text-fg">{refreshLabel}</span>
+            <span className="numeral mr-1 text-fg"><RefreshCountdown nextRefreshAt={nextRefreshAt} /></span>
             {ranked.length > 0 ? (
               <>
                 <span>·</span>

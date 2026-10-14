@@ -9,13 +9,13 @@ import { TeamWorkspaceJoinPage } from "./TeamWorkspaceJoinPage";
 import { saveCollaborationOnboarding } from "@/shared/lib/collaboration-onboarding";
 
 const mocks = vi.hoisted(() => ({ userId: "owner" as string | null,
-  list: vi.fn(), detail: vi.fn(), usage: vi.fn(), create: vi.fn(), command: vi.fn(), accept: vi.fn(), preview: vi.fn(), projects: vi.fn(), operation: vi.fn(), projectInvite: vi.fn() }));
+  list: vi.fn(), detail: vi.fn(), usage: vi.fn(), create: vi.fn(), command: vi.fn(), accept: vi.fn(), preview: vi.fn(), projects: vi.fn(), operation: vi.fn(), projectInvite: vi.fn(), team: vi.fn() }));
 vi.mock("@/shared/lib/store", () => ({ useApp: () => mocks.userId }));
 vi.mock("@/platform/api", () => ({ getApiErrorMessage: async (_error: unknown, fallback: string) => fallback }));
 vi.mock("./team-workspace-api", () => ({ getEffectiveOperationPolicy: mocks.operation, listTeamWorkspaces: mocks.list, getTeamWorkspace: mocks.detail,
   getTeamUsage: mocks.usage, createTeamWorkspace: mocks.create, commandTeamWorkspace: mocks.command, acceptTeamInvite: mocks.accept, previewTeamInvite: mocks.preview }));
 vi.mock("./production-dashboard-api", () => ({ listProductionProjects: mocks.projects }));
-vi.mock("../studio-team-client", () => ({ inviteStudioTeamMember: mocks.projectInvite }));
+vi.mock("../studio-team-client", () => ({ inviteStudioTeamMember: mocks.projectInvite, getStudioTeam: mocks.team }));
 const workspace = { id: "team-a", name: "비공개 검수 팀", ownerUserId: "owner", role: "owner", revision: 3,
   createdAt: "2026-09-22T00:00:00Z", projectCount: 1, memberCount: 1, pendingInvites: 0 };
 function App({ path = "/production/workspaces" }: { path?: string }) {
@@ -43,6 +43,9 @@ beforeEach(() => {
     originalStorage: { status: "not-instrumented", usedBytes: null }, externalAiEnabled: false,
     meteredProvidersEnabled: false, nextDailyResetAt: "2026-09-22T15:00:00Z" });
   mocks.projects.mockResolvedValue({ projects: [] });
+  mocks.team.mockImplementation(async (workId: string) => ({ workId,
+    viewer: { userId: "owner", role: "owner", status: "active", capabilities: { view: true, comment: true, edit: true, manageMembers: true, respondInvite: false } },
+    members: [{ userId: "owner", name: "소유자", image: "", role: "owner", status: "active", isOwner: true }] }));
   // 이 스위트는 조각 취급 자체를 검증한다 — 미리보기는 기본적으로 닿지 않는 상태로 둔다.
   mocks.preview.mockRejectedValue(new Error("미리보기를 사용할 수 없습니다."));
 });
@@ -209,6 +212,26 @@ describe("free team workspace UI", () => {
       .toBe("/production/projects/project-a/production");
   });
 
+  it("shows each member's per-project access next to their team membership", async () => {
+    mocks.detail.mockResolvedValue({ workspace, projects: [{ id: "project-a", workId: "work-a", title: "검수 원고" }],
+      members: [{ userId: "owner", displayName: "소유자", role: "owner", joinedAt: workspace.createdAt },
+        { userId: "guest-1", displayName: "외주 채색", role: "guest", joinedAt: workspace.createdAt }], invites: [] });
+    mocks.team.mockImplementation(async (workId: string) => ({ workId,
+      viewer: { userId: "owner", role: "owner", status: "active", capabilities: { view: true, comment: true, edit: true, manageMembers: true, respondInvite: false } },
+      members: [{ userId: "owner", name: "소유자", image: "", role: "owner", status: "active", isOwner: true },
+        { userId: "guest-1", name: "외주 채색", image: "", role: "editor", status: "active", isOwner: false }] }));
+    render(<App path="/production/workspaces/team-a" />);
+    await screen.findByRole("heading", { name: "구성원별 작품 접근 범위" });
+    await waitFor(() => expect(mocks.team).toHaveBeenCalledWith("work-a", expect.anything()));
+    const rows = await screen.findAllByTestId("member-work-access-row");
+    expect(rows).toHaveLength(2);
+    // 팀 소속(게스트)과 작품 권한(편집자·접근 중)이 한 행 안에서 구분되어 보인다.
+    expect(rows[1].textContent).toContain("팀 소속: 게스트");
+    expect(rows[1].textContent).toContain("작품 접근 1/1개");
+    expect(rows[1].textContent).toContain("작품 권한: 편집자");
+    expect(rows[1].textContent).toContain("접근 중");
+    expect(rows[0].textContent).toContain("작품 권한: 작품 소유자");
+  });
   it("does not render private team state after switching to signed out", async () => {
     const view = render(<App path="/production/workspaces/team-a" />);
     await screen.findByRole("heading", { name: "비공개 검수 팀" });

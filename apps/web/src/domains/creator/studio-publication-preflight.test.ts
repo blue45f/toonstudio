@@ -41,6 +41,34 @@ function validInput() {
   };
 }
 
+describe("episode QC handoff in preflight (F-5)", () => {
+  it("검수에서 막힌 QC 항목은 게시 사전검사 오류가 되어 게시를 막는다", () => {
+    const result = validateStudioPublicationPreflight({
+      ...validInput(),
+      episodeQc: { blocked: [{ id: "review-gate", label: "검수 승인 (공개 전 필수)" }] },
+    });
+    expect(result.canPublish).toBe(false);
+    expect(result.errors).toContainEqual(expect.objectContaining({
+      code: "EPISODE_QC_BLOCKED_REVIEW_GATE",
+      path: "episodeQc.review-gate",
+    }));
+  });
+
+  it("막힌 QC 항목이 없으면 인계가 있어도 게시 가능 판정은 그대로다", () => {
+    const result = validateStudioPublicationPreflight({
+      ...validInput(),
+      episodeQc: { blocked: [] },
+    });
+    expect(result.issues.some((issue) => issue.code.startsWith("EPISODE_QC_"))).toBe(false);
+  });
+
+  it("인계가 없으면(직접 진입) 기존 판정과 같다", () => {
+    const withNull = validateStudioPublicationPreflight({ ...validInput(), episodeQc: null });
+    const without = validateStudioPublicationPreflight(validInput());
+    expect(withNull.issues).toEqual(without.issues);
+  });
+});
+
 describe("studio publication metadata helpers", () => {
   it("normalizes tags and limits the payload", () => {
     expect(

@@ -2,6 +2,7 @@ import type { EffectiveOperationPolicy } from "@toonstudio/contracts/operation-p
 import type {
   TeamWorkspaceSummary, TeamWorkspaceDetail, TeamWorkspaceCommandInput,
   TeamWorkspaceInvitePreview, WorkspaceMutationResult, WorkspaceUsageResponse,
+  TeamWorkspaceAuditQuery, TeamWorkspaceAuditResponse,
 } from "@toonstudio/contracts/production-workspace";
 import { api } from "@/platform/api";
 
@@ -15,6 +16,18 @@ export function getTeamWorkspace(id: string): Promise<TeamWorkspaceDetail> {
 }
 export function getTeamUsage(id: string): Promise<WorkspaceUsageResponse> {
   return api.get(`${path(id)}/usage`);
+}
+/** 감사 로그 열람(관리자 전용). 값이 있는 필터만 쿼리스트링으로 보내 서버 DTO의 strict 검증을 통과한다. */
+export function getTeamAuditLog(id: string, query: TeamWorkspaceAuditQuery = {}): Promise<TeamWorkspaceAuditResponse> {
+  const params = new URLSearchParams();
+  if (query.from) params.set("from", query.from);
+  if (query.to) params.set("to", query.to);
+  if (query.actorUserId) params.set("actorUserId", query.actorUserId);
+  if (query.action) params.set("action", query.action);
+  if (query.cursor !== undefined) params.set("cursor", String(query.cursor));
+  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  const serialized = params.toString();
+  return api.get(`${path(id)}/audit${serialized ? `?${serialized}` : ""}`);
 }
 export function createTeamWorkspace(name: string): Promise<WorkspaceMutationResult> {
   return api.post(root, { name, mutationId: crypto.randomUUID() });

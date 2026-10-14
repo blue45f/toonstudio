@@ -48,9 +48,12 @@ describe("bundled VRM thumbnail refinement", () => {
   });
 
   it.each([
-    ["mio", "미오 (인체 베이스)", "/vrm/fem_vroid.vrm"],
-    ["noa", "노아 (인체 베이스)", "/vrm/masc_vroid.vrm"],
-  ])("labels %s as a body base while retaining its saved-scene identity", (id, name, url) => {
-    expect(SAMPLE_VRMS.find((model) => model.id === id)).toMatchObject({ id, name, url });
+    ["mio", "/vrm/fem_vroid.vrm"],
+    ["noa", "/vrm/masc_vroid.vrm"],
+  ])("no longer offers rights-blocked body base %s in the bundled catalog", (id, url) => {
+    // 2026-10-14 원문 대조: fem/masc_vroid는 재배포 조건을 확정할 수 없어
+    // 카탈로그에서 내리고 권리 차단 레코드로 격리했다 (vrm-library.test.ts 참조).
+    expect(SAMPLE_VRMS.find((model) => model.id === id)).toBeUndefined();
+    expect(SAMPLE_VRMS.some((model) => model.url === url)).toBe(false);
   });
 });

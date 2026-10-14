@@ -12,7 +12,7 @@ import { createPortal } from "react-dom";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import Link from "@/shared/navigation/router-link";
-import { betaOpenEventGateEligible } from "./beta-open-event-gate-policy";
+import { betaOpenEventGateVariant } from "./beta-open-event-gate-policy";
 import { BETA_OPEN_EVENT, resolveMarketingEventStatus } from "./event-catalog";
 import {
   hasSeenMarketingEventForIdentity,
@@ -59,7 +59,9 @@ export function BetaOpenEventGate({ pathname }: { pathname: string }) {
   const publicContentCount = BETA_OPEN_EVENT.minimumPublicContentCount;
   const publicDays = BETA_OPEN_EVENT.minimumPublicDays;
   const active = resolveMarketingEventStatus(BETA_OPEN_EVENT) === "active";
-  const eligible = active && betaOpenEventGateEligible(pathname);
+  const gateVariant = active ? betaOpenEventGateVariant(pathname) : null;
+  const eligible = gateVariant !== null;
+  const compact = gateVariant === "compact";
 
   const dismiss = useCallback(() => {
     markMarketingEventSeen(BETA_OPEN_EVENT.id, userId);
@@ -119,6 +121,48 @@ export function BetaOpenEventGate({ pathname }: { pathname: string }) {
 
   if (!visible || typeof document === "undefined") return null;
   const authenticated = status === "authenticated";
+
+  // 레일형 탐색 표면에서는 한 줄 배너로 축소한다: 제목·CTA·닫기만 남겨
+  // 마지막 레일과 그리드 하단을 가리지 않는다 (discover D-5).
+  if (compact) {
+    return createPortal(
+      <aside
+        role="region"
+        aria-live="polite"
+        aria-label={text({ ko: "베타 오픈 혜택", en: "Beta opening benefit" })}
+        data-beta-open-prompt="engaged"
+        data-beta-open-variant="compact"
+        className="pointer-events-auto fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[175] ml-auto flex w-auto max-w-[30rem] items-center gap-2 overflow-hidden rounded-2xl border border-white/15 bg-[oklch(0.15_0.03_270/0.97)] px-3 py-2 text-white shadow-2xl shadow-black/50 backdrop-blur-2xl sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-auto sm:max-w-[calc(100vw-2.5rem)] sm:px-4"
+      >
+        <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-xl border border-amber-100/20 bg-amber-100/10 text-amber-100">
+          <Sparkles size={16} aria-hidden />
+        </span>
+        <p className="min-w-0 flex-1 truncate text-xs font-black leading-5">
+          <span className="mr-1.5 text-[0.62rem] font-black uppercase tracking-[0.16em] text-amber-100/80">BETA OPEN</span>
+          {text(BETA_OPEN_EVENT.title)}
+        </p>
+        {authenticated ? (
+          <Link href="/studio/new" onClick={dismiss} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-white px-3 text-xs font-black text-black">
+            {text(BETA_OPEN_EVENT.secondaryCta)}<ArrowRight size={14} aria-hidden />
+          </Link>
+        ) : (
+          <button type="button" onClick={openSignup} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-white px-3 text-xs font-black text-black">
+            {text(BETA_OPEN_EVENT.primaryCta)}<ArrowRight size={14} aria-hidden />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={dismiss}
+          aria-label={text({ ko: "베타 혜택 닫기", en: "Dismiss beta benefit" })}
+          className="grid size-11 shrink-0 place-items-center rounded-xl text-white/60 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          <X size={18} aria-hidden />
+        </button>
+      </aside>,
+      document.body,
+    );
+  }
+
   const benefits = [
     {
       strong: { ko: "베타 기간", en: "During beta" },
@@ -140,6 +184,7 @@ export function BetaOpenEventGate({ pathname }: { pathname: string }) {
       aria-live="polite"
       aria-label={text({ ko: "베타 오픈 혜택", en: "Beta opening benefit" })}
       data-beta-open-prompt="engaged"
+      data-beta-open-variant="full"
       className="pointer-events-auto fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[175] ml-auto w-auto max-w-[30rem] overflow-hidden rounded-3xl border border-white/15 bg-[oklch(0.15_0.03_270/0.97)] text-white shadow-2xl shadow-black/50 backdrop-blur-2xl sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-[min(30rem,calc(100vw-2.5rem))]"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,oklch(0.8_0.17_75/0.20),transparent_38%),radial-gradient(circle_at_100%_20%,oklch(0.72_0.19_320/0.16),transparent_42%)]" />

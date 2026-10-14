@@ -563,6 +563,39 @@ function debugStudioMicroChunkPlugin(): Plugin | null {
   };
 }
 
+/**
+ * Opt-in bundle composition report (library scout REPORT §3.2): the numeric
+ * bundle ratchet in `scripts/check-studio-bundle.mjs` says *how much* shipped;
+ * this treemap says *what* shipped, as the evidence base for chunk-split work.
+ * Only `BUNDLE_VISUALIZER=1` (see the `bundle:visualize` script) adds the
+ * plugin, so a normal build's plugin list — and therefore its emitted
+ * chunks — is unchanged. The report is written with the plugin's own file
+ * writer (`emitFile` stays off) into the ignored `.qa/` directory, never into
+ * `dist/`, so it cannot be deployed or served. `open: false` keeps CI and
+ * headless runs from trying to launch a browser.
+ *
+ * The plugin is loaded with a dynamic `import()`, never a static import:
+ * `rollup-plugin-visualizer` is ESM-only (its exports map has no `require`
+ * condition) while this config is bundled as CommonJS (the root
+ * package.json has no `"type": "module"`), so a static import — or a
+ * `createRequire` call — fails config loading for *every* build, including
+ * the ones that never enable the report. Vite resolves promised plugins
+ * before the build starts, so the async load changes nothing else.
+ */
+function bundleVisualizerPlugin(): Promise<Plugin> | null {
+  if (process.env.BUNDLE_VISUALIZER !== "1") return null;
+  return import("rollup-plugin-visualizer").then(({ visualizer }) =>
+    visualizer({
+      filename: path.resolve(repositoryRoot, ".qa/bundle-visualizer.html"),
+      title: "ToonStudio bundle visualizer",
+      template: "treemap",
+      gzipSize: true,
+      brotliSize: true,
+      open: false,
+    }),
+  );
+}
+
 export default defineConfig(({ command, mode }) => ({
   ...(command === "build" ? { customLogger: createStudioBuildLogger() } : {}),
   ...viteServeCacheConfig(command),
@@ -575,6 +608,8 @@ export default defineConfig(({ command, mode }) => ({
       presets: [reactCompilerPreset()],
       exclude: WEB_REACT_COMPILER_EXCLUDE,
     }),
+    // Last on purpose: the visualizer must observe the final bundle.
+    bundleVisualizerPlugin(),
   ],
   // 정적 카탈로그 모드에선 lib/server/* (예: live.ts) 가 브라우저 번들로 끌려오며
   // 모듈 로드 시점에 process.env.* 를 읽어 "process is not defined" 백스크린을 유발한다.

@@ -184,6 +184,54 @@ describe("ProductionExternalReviewPage", () => {
     expect(screen.queryByRole("button", { name: /기록/u })).toBeNull();
   });
 
+  it("링크 진입 안내와 권한 범위를 항목별로 표시한다", async () => {
+    getProductionExternalReview.mockResolvedValue(reviewView);
+    renderPage();
+    expect(await screen.findByRole("heading", { name: "편집부 최종 검수" })).toBeTruthy();
+    expect(screen.getByText(/계정 가입이나 프로젝트 합류 없이/u)).toBeTruthy();
+    expect(screen.getByText("이 링크의 권한 범위")).toBeTruthy();
+    expect(screen.getByText("제출본 보기")).toBeTruthy();
+    expect(screen.getByText("댓글 남기기")).toBeTruthy();
+    expect(screen.getByText("승인·수정 요청")).toBeTruthy();
+    expect(screen.getByText("원본 다운로드")).toBeTruthy();
+    expect(screen.getAllByText("허용")).toHaveLength(4);
+  });
+
+  it("이전 응답을 #태그와 이름으로 검색할 수 있다", async () => {
+    getProductionExternalReview.mockResolvedValue({
+      ...reviewView,
+      review: {
+        ...reviewView.review,
+        responses: [
+          { id: "r1", reviewerName: "김검수", decision: "comment", note: "말풍선 위치 #레이아웃 확인", createdAt: "2026-09-17T01:00:00.000Z" },
+          { id: "r2", reviewerName: "Lee", decision: "approve", note: "좋습니다", createdAt: "2026-09-17T02:00:00.000Z" },
+        ],
+      },
+    });
+    renderPage();
+    expect(await screen.findByText("김검수")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "#레이아웃" }));
+    expect(screen.getByText("응답 1건 표시 중")).toBeTruthy();
+    expect(screen.queryByText("Lee")).toBeNull();
+    fireEvent.change(screen.getByPlaceholderText("이름·내용·#태그로 검색"), { target: { value: "없는검색어" } });
+    expect(screen.getByText(/검색과 일치하는 응답이 없어요/u)).toBeTruthy();
+  });
+
+  it("작성 중인 의견은 이 기기에 임시 저장되고 다시 열면 복원된다", async () => {
+    window.localStorage.clear();
+    getProductionExternalReview.mockResolvedValue(reviewView);
+    renderPage();
+    expect(await screen.findByRole("heading", { name: "편집부 최종 검수" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("검수자 이름"), { target: { value: "임시 검수자" } });
+    fireEvent.change(screen.getByLabelText(/의견/u), { target: { value: "중간 의견" } });
+    await waitFor(() => expect(window.localStorage.getItem("toonstudio.external-review-draft.review-1")).toBeTruthy());
+    cleanup();
+    renderPage();
+    expect(await screen.findByDisplayValue("임시 검수자")).toBeTruthy();
+    expect(screen.getByDisplayValue("중간 의견")).toBeTruthy();
+    window.localStorage.clear();
+  });
+
   it("영어 로케일에서는 검수 화면 문구가 영어로 렌더된다", async () => {
     useI18n.setState({ lang: "en" });
     try {

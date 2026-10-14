@@ -68,6 +68,9 @@ export const accountRoutes = defineAppRoutes([
   route("account-role-settings", "/settings/role", RoleWorkspaceSettingsPage),
   route("account-membership-usage", "/membership/usage", MembershipUsagePage),
   route("account-points", "/account/points", AssetPointsWalletPage),
+  // 개인 정본 선언 (BLUEPRINT §1.2): /my가 유일한 개인 허브다. /me는 공개 프로필·계정 모듈,
+  // /library·/market/library는 허브에서 진입하는 모듈 표면이며, "내 것" 링크는 전부 /my로 수렴한다.
+  // /home은 개인 공간이 아니라 작업 홈(이어하기·오늘 할 일)이다.
   route("account-my-space", "/my", MySpaceHubPage),
   route("account-me", "/me", AccountPage),
   route("account-creators", "/creators", CreatorDirectoryPage),

@@ -29,6 +29,7 @@ import {
 } from "./studio-bg3d-editor-ui";
 import { StudioBg3dEnginePanel } from "./StudioBg3dEnginePanel";
 import { StudioBg3dLightingStudio } from "./StudioBg3dLightingStudio";
+import { StudioBg3dMultiAngleCapturePanel } from "./StudioBg3dMultiAngleCapturePanel";
 import { StudioBg3dProSuitePanel } from "./StudioBg3dProSuitePanel";
 
 import type {
@@ -216,6 +217,11 @@ export interface StudioBg3dViewPanelProps {
   readonly aiReferenceBusy?: boolean;
   readonly aiReferenceDisabled?: boolean;
   readonly onOpenPrecisionModeler?: () => void;
+  /**
+   * 임의 각도 일괄 캡처 결과 문서(후보 샷 세트 추가 또는 후보 적용)를 한 번의
+   * 커밋으로 반영한다. 없으면 다각도 캡처 패널 자체가 표시되지 않는다.
+   */
+  readonly onCaptureMultiAngleBatch?: (document: StudioBg3dSceneDocument) => void;
 }
 
 export interface StudioBg3dAiReferenceActionProps {
@@ -442,6 +448,7 @@ export function StudioBg3dViewPanel({
   aiReferenceBusy = false,
   aiReferenceDisabled = false,
   onOpenPrecisionModeler,
+  onCaptureMultiAngleBatch,
 }: StudioBg3dViewPanelProps) {
   const tiledCopy = useBilingual("scene3d-tiled-output");
   const {
@@ -1017,6 +1024,20 @@ export function StudioBg3dViewPanel({
                     </button>
                   ))}
                 </div>
+
+                {onCaptureMultiAngleBatch ? (
+                  <StudioBg3dMultiAngleCapturePanel
+                    document={sceneBaseDocument}
+                    disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
+                    onBatchCaptured={onCaptureMultiAngleBatch}
+                    onInsertCandidate={(appliedDocument) => {
+                      // 후보 삽입은 기존 샷 적용 경로를 그대로 쓴다(히스토리·잠금 일원화).
+                      if (appliedDocument.activeShotId) {
+                        applySavedShot(appliedDocument.activeShotId);
+                      }
+                    }}
+                  />
+                ) : null}
 
                 <div className="mt-4 flex items-center gap-2">
                   <button

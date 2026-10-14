@@ -7,7 +7,8 @@
  * LT 변환과 연동할 때 조명 기반 명암 양자화 힌트를 뽑을 수 있습니다.
  *
  * Three.js 조명 객체를 직접 다루지 않는 순수 데이터+로직 모듈입니다.
- * (실제 R3F 조명 마운트는 이 스펙을 읽는 별도 뷰 컴포넌트가 담당합니다.)
+ * 실제 씬 반영은 `resolveStudioMannequinLightingPlan`이 만든 계획을
+ * `studio-mannequin-scene.ts`의 `setLightingRig`가 Three.js 조명으로 마운트합니다.
  */
 
 import type { StudioMannequinVec3 } from "./studio-mannequin-model";
@@ -251,6 +252,111 @@ export function applyStudioMannequinTimeOfDay(
         shadowsEnabled: false,
       };
   }
+}
+
+/** 씬 마운트용 조명 1개의 계획(Three.js 비의존 순수 데이터). */
+export interface StudioMannequinSceneLightPlan {
+  readonly kind: StudioMannequinLightKind;
+  /** Three.js 조명 intensity로 그대로 쓴다(스펙 0~10 스케일과 동일). */
+  readonly intensity: number;
+  /** 16진 색상 문자열(#rrggbb). */
+  readonly color: string;
+  readonly position: StudioMannequinVec3;
+  /** spot 전용: 조사각(rad). */
+  readonly angle?: number;
+  /** spot 전용: 부드러운 가장자리 0~1. */
+  readonly penumbra?: number;
+  /** point/spot 전용: 도달 반경(m). 0이면 무한. */
+  readonly distance?: number;
+  /** 그림자를 만드는 조명인지(계획당 최대 1개 — 섀도맵 예산). */
+  readonly castShadow: boolean;
+}
+
+/** 씬 마운트용 라이팅 계획 전체. */
+export interface StudioMannequinLightingPlan {
+  /** 환경 보조광(헤미스피어). null이면 만들지 않는다. */
+  readonly hemisphere: {
+    readonly skyColor: string;
+    readonly groundColor: string;
+    readonly intensity: number;
+  } | null;
+  readonly lights: readonly StudioMannequinSceneLightPlan[];
+  readonly shadowsEnabled: boolean;
+  /** rig가 비어 있어 기존 고정 3점 리그로 폴백한 계획인지. */
+  readonly isDefault: boolean;
+}
+
+/**
+ * 기존 고정 3점 리그와 픽셀 단위로 같은 기본 계획입니다.
+ * rig를 한 번도 적용하지 않은 씬, 그리고 빈 rig(조명 0개)는 이 계획을 씁니다 —
+ * 라이팅 스튜디오를 열기 전 화면이 예전과 달라지면 안 되기 때문입니다.
+ */
+export const STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN: StudioMannequinLightingPlan = Object.freeze({
+  hemisphere: Object.freeze({ skyColor: "#fff4e6", groundColor: "#38322b", intensity: 0.95 }),
+  lights: Object.freeze([
+    Object.freeze({
+      kind: "directional",
+      intensity: 1.45,
+      color: "#ffffff",
+      position: [2.4, 4.2, 3.1] as const,
+      castShadow: true,
+    }),
+    Object.freeze({
+      kind: "directional",
+      intensity: 0.42,
+      color: "#ffe9d4",
+      position: [-2.2, 1.6, -2.4] as const,
+      castShadow: false,
+    }),
+    Object.freeze({
+      kind: "directional",
+      intensity: 0.28,
+      color: "#cfe8ff",
+      position: [-1.6, 2.8, 3.5] as const,
+      castShadow: false,
+    }),
+  ]),
+  shadowsEnabled: true,
+  isDefault: true,
+});
+
+/**
+ * 라이팅 릭을 씬 마운트 계획으로 변환합니다(순수 함수 — WebGL 없이 테스트 가능).
+ *
+ * - rig가 null이거나 조명이 0개면 기본 계획(기존 고정 3점 리그)을 돌립니다.
+ * - 그림자는 `shadowsEnabled`일 때 directional/spot 중 첫 번째 조명만 만듭니다.
+ *   point 조명은 큐브 섀도맵 비용이 커서 그림자를 만들지 않습니다.
+ * - rig가 있을 때는 형태가 완전히 어두워지지 않도록 약한 헤미스피어 보조광을 둡니다.
+ */
+export function resolveStudioMannequinLightingPlan(
+  rig: StudioMannequinLightingRig | null | undefined,
+): StudioMannequinLightingPlan {
+  if (!rig || rig.lights.length === 0) return STUDIO_MANNEQUIN_DEFAULT_LIGHTING_PLAN;
+  let shadowAssigned = false;
+  const lights = rig.lights.map((light): StudioMannequinSceneLightPlan => {
+    const castShadow =
+      rig.shadowsEnabled && !shadowAssigned && light.kind !== "point";
+    if (castShadow) shadowAssigned = true;
+    return {
+      kind: light.kind,
+      intensity: light.intensity,
+      color: light.color,
+      position: light.position,
+      ...(light.kind === "spot"
+        ? { angle: light.angle ?? 0.5, penumbra: 0.45 }
+        : {}),
+      ...(light.kind !== "directional"
+        ? { distance: light.distance ?? 0 }
+        : {}),
+      castShadow,
+    };
+  });
+  return {
+    hemisphere: { skyColor: "#fff4e6", groundColor: "#38322b", intensity: 0.3 },
+    lights,
+    shadowsEnabled: rig.shadowsEnabled,
+    isDefault: false,
+  };
 }
 
 export interface StudioMannequinToneHint {

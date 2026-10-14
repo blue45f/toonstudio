@@ -15,7 +15,7 @@ vi.mock("./team-workspace-api", () => ({ getTeamWorkspace: mocks.detail, getTeam
 
 const workspace = { id: "qa-team-ws-1", name: "QA 제작팀", ownerUserId: "creator", role: "owner", revision: 1,
   createdAt: "2026-10-07T00:00:00Z", projectCount: 1, memberCount: 3, pendingInvites: 0 };
-const detail = { workspace, projects: [{ id: "qa-project-1", workId: "work-1", title: "한밤의 편의점" }],
+const detail = { workspace, projects: [{ id: "qa-project-1", workId: "work-1", title: "한밤의 편의점", ownerUserId: "creator" }],
   members: [{ userId: "creator", displayName: "데모 창작자", role: "owner", joinedAt: workspace.createdAt }], invites: [] };
 const usage = { policy: FREE_USAGE_POLICY, workspaceId: workspace.id, operationMode: "free", policyRevision: 3,
   counters: { ownedWorkspaces: 1, projects: 1, members: 3, pendingInvites: 0 },

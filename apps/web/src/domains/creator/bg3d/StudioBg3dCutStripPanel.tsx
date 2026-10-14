@@ -1,6 +1,12 @@
-import { ChevronDown, ChevronUp, FileDown, Film, Plus, Trash2 } from "lucide-react";
+import { Camera, ChevronDown, ChevronUp, FileDown, Film, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import {
+  asSceneLinkedStoryboardCut,
+  reissueSceneLinkedCut,
+  storyboardSceneMetaBadgeKo,
+  type SceneLinkedStoryboardCut,
+} from "./studio-bg3d-storyboard-cut-link";
 import {
   CUT_ASPECT_RATIO_UI,
   Studio3DStoryboardCutStrip,
@@ -32,6 +38,19 @@ export interface StudioBg3dCutStripPanelProps {
    * PSD 명세 내보내기. 제공되지 않으면 패널이 JSON 파일로 직접 다운로드합니다.
    */
   readonly onExportPsdManifest?: (manifest: PsdMultiPassExportManifest) => void;
+  /**
+   * 현재 3D 씬 구도를 동결한 컷 템플릿(`createStoryboardCutFromSceneCapture` 산출).
+   * 이 prop 자체를 주지 않으면 씬 배치 구간을 그리지 않는다. null이면 씬이 아직
+   * 없어 배치를 잠그고 안내만 보인다. 배치 클릭 시 새 ID·번호로 재발급해
+   * 기존 `onAddCut`으로 흘리므로 컷 소유 구조는 그대로다.
+   */
+  readonly sceneCutTemplate?: SceneLinkedStoryboardCut | null;
+  /**
+   * 씬 연결 컷의 "씬으로 복귀" 진입점. 호스트가 컷의 sceneMeta로 복원 패치를
+   * 만들어 씬 문서를 되돌리고 3D 편집 화면을 연다. 없으면 배지만 보이고
+   * 죽은 버튼은 만들지 않는다.
+   */
+  readonly onReturnToScene?: (cut: SceneLinkedStoryboardCut) => void;
 }
 
 function makeCutId(): string {
@@ -69,6 +88,8 @@ export function StudioBg3dCutStripPanel({
   onMoveCut,
   onUpdateCutAspect,
   onExportPsdManifest,
+  sceneCutTemplate,
+  onReturnToScene,
 }: StudioBg3dCutStripPanelProps) {
   const [newCutAspect, setNewCutAspect] = useState<CutAspectRatio>("9:16-vertical-climax");
   const [notice, setNotice] = useState<string | null>(null);
@@ -102,6 +123,19 @@ export function StudioBg3dCutStripPanel({
       characterIds: [],
     });
     setNotice(null);
+  };
+
+  const handlePlaceSceneCut = () => {
+    if (!sceneCutTemplate) return;
+    onAddCut(
+      reissueSceneLinkedCut(sceneCutTemplate, {
+        id: makeCutId(),
+        cutNumber: cuts.length + 1,
+      }),
+    );
+    setNotice(
+      `3D 씬을 컷 ${cuts.length + 1}으로 배치했어요. 카메라·포즈·조명이 함께 저장돼 나중에 씬으로 돌아갈 수 있어요.`,
+    );
   };
 
   const handleExportManifest = () => {
@@ -142,6 +176,26 @@ export function StudioBg3dCutStripPanel({
         <p className="rounded-lg border border-good/40 bg-good/10 px-2.5 py-1.5 text-[0.625rem] text-good" role="status">
           {notice}
         </p>
+      ) : null}
+
+      {sceneCutTemplate !== undefined ? (
+        <div className="rounded-lg border border-accent/40 bg-accent/10 p-2.5">
+          <button
+            type="button"
+            disabled={disabled || !sceneCutTemplate}
+            onClick={handlePlaceSceneCut}
+            data-testid="bg3d-place-scene-as-cut"
+            className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-accent px-2.5 py-2 text-[0.68rem] font-bold text-on-accent shadow-sm transition-all hover:bg-accent/90 disabled:opacity-45"
+          >
+            <Camera className="size-3.5" aria-hidden />
+            현재 3D 씬을 컷으로 배치
+          </button>
+          <p className="mt-1.5 text-[0.625rem] leading-relaxed text-fg-3">
+            {sceneCutTemplate
+              ? `${storyboardSceneMetaBadgeKo(sceneCutTemplate.sceneMeta)} — 지금 구도 그대로 컷이 됩니다.`
+              : "3D 씬에서 구도를 잡으면 현재 화면을 바로 컷으로 배치할 수 있어요."}
+          </p>
+        </div>
       ) : null}
 
       <div className="flex items-end gap-2">
@@ -188,6 +242,7 @@ export function StudioBg3dCutStripPanel({
           {cuts.map((cut, index) => {
             const ui = getCutAspectRatioUi(cut.aspectRatio);
             const dims = dimensionsByCutId.get(cut.id);
+            const linkedCut = asSceneLinkedStoryboardCut(cut);
             return (
               <li
                 key={cut.id}
@@ -204,6 +259,11 @@ export function StudioBg3dCutStripPanel({
                     {ui?.labelKo}
                     {dims ? ` · ${dims.width}×${dims.height}px` : ""}
                   </p>
+                  {linkedCut ? (
+                    <p className="truncate text-[0.6rem] font-semibold text-accent">
+                      {storyboardSceneMetaBadgeKo(linkedCut.sceneMeta)}
+                    </p>
+                  ) : null}
                 </div>
                 <label className="sr-only" htmlFor={`cut-aspect-${cut.id}`}>
                   {cut.title} 화면비
@@ -252,6 +312,18 @@ export function StudioBg3dCutStripPanel({
                   >
                     <Trash2 size={13} aria-hidden />
                   </button>
+                  {linkedCut && onReturnToScene ? (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => onReturnToScene(linkedCut)}
+                      aria-label={`${cut.title} 3D 씬으로 복귀`}
+                      title="저장된 카메라·포즈·조명으로 3D 씬을 다시 엽니다"
+                      className="grid min-h-7 min-w-7 place-items-center rounded border border-accent/50 bg-accent/15 text-accent hover:bg-accent/25 disabled:opacity-40"
+                    >
+                      <RotateCcw size={13} aria-hidden />
+                    </button>
+                  ) : null}
                 </div>
               </li>
             );

@@ -161,6 +161,14 @@ interface HeaderPrimaryNavigationItem {
  * 전체 메뉴·푸터·스튜디오 셸이 맡고, connect(함께 보기)는 커뮤니티 항목이 대표하며,
  * rest(쉬어가기)·personal(내 기록)은 전체 메뉴와 모바일 탭이 같은 지도로 제공한다.
  * discover 그룹은 탐색 항목이, grow 그룹은 배우기·마켓 항목이 나눠 소비한다.
+ *
+ * S1-2 헤더 최상위 재편 (BLUEPRINT §1.1, simplicity §2): 상시 노출(primary)은
+ * 제작·탐색·커뮤니티·배우기·마켓 5개까지만 둔다. 가상 스튜디오는 독립 목적지가
+ * 아니라 제작 하위 도구라 1차 메뉴에서 내리고 제작 드롭다운으로 강등한다.
+ * 협업은 팀·프로젝트 맥락이 없는 사용자에게 무의미하므로 상시 노출에서 빼고,
+ * 협업 구역에 있을 때만 맥락형(contextual)으로 끼워 넣는다. 어느 항목도
+ * 삭제하지 않는다 — 강등된 항목은 전체 메뉴의 단일 지도 그룹(만들기·함께 보기)과
+ * ⌘K에서 그대로 도달할 수 있다.
  */
 
 const NAV_ITEMS = SITE_NAVIGATION_ITEMS;
@@ -212,7 +220,7 @@ function childrenFromNavGroup(
  * - exploreGenres(/explore): 장르 탐색 페이지는 라우트는 있으나 지도 항목이 아니다
  *   (지도의 탐색 항목은 /discover다). 지도 편입 여부는 지도 소유 작업에서 결정한다.
  * - learnClassroom(/learn/classroom)·learnGuide(/guide): 학습 하위 목적지로 지도에 없다.
- * - collaborateEntry: 1차 메뉴의 "협업"이라는 묶음 이름은 지도 그룹 어디에도 없다
+ * - collaborateEntry: 맥락형 메뉴의 "협업"이라는 묶음 이름은 지도 그룹 어디에도 없다
  *   (connect 그룹은 "함께 보기"). 묶음 자체는 유지하되 문구는 여기에만 둔다.
  * - marketShortLabel: 지도의 이름은 "소재 마켓"이지만 헤더 1차 메뉴는 폭 예산
  *   (header-width-budget) 때문에 짧은 이름 "마켓"을 쓴다. 이름이 하나여야 한다는
@@ -279,17 +287,20 @@ const HEADER_EXTRA_ENTRY_TEXT: {
 };
 
 /**
- * 헤더 1차 메뉴 (구성 계획).
- * 순서는 기존과 같다: 창작 여정의 세 축(제작·가상 스튜디오·협업)을 앞에 두고,
- * 발견·교류·학습·재료가 뒤따른다. 드롭다운은 하위 목적지가 실제로 구분되는
- * 곳(제작·협업·탐색·배우기)에만 둔다. 운세 같은 가벼운 즐길 거리는 전체 메뉴와
- * 푸터에서 계속 찾을 수 있다(쉬어가기 그룹).
+ * 헤더 1차 메뉴 (구성 계획) — S1-2 재편: 상시 노출은 이 5개가 전부다.
+ * 순서는 기존의 앞부분을 유지한다: 제작을 앞에 두고 발견·교류·학습·재료가
+ * 뒤따른다. 드롭다운은 하위 목적지가 실제로 구분되는 곳(제작·탐색·배우기)에만
+ * 둔다. 운세 같은 가벼운 즐길 거리는 전체 메뉴와 푸터에서 계속 찾을 수 있다
+ * (쉬어가기 그룹).
+ * 가상 스튜디오는 이 목록에 없다: 제작 하위 도구라 제작 드롭다운으로 강등했다
+ * (아래 studio 항목의 children). 협업도 상시 목록에 없다: 맥락형 항목으로 분리해
+ * HEADER_CONTEXTUAL_NAVIGATION에 두고, 협업 구역일 때만 끼워 넣는다.
  */
 const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   {
     // 만들기(create) 그룹의 대표 항목이 곧 1차 메뉴다. 드롭다운은 그룹 항목 중
-    // "지금 그리는 일"만 추린다 — 가상 스튜디오는 자체 1차 메뉴가 있고,
-    // 작품 재료·제작 관리는 스튜디오 셸과 협업 메뉴가 맡는다.
+    // "지금 그리는 일"과 그 하위 도구를 추린다 — 가상 스튜디오(S1-2에서 강등)도
+    // 여기에 들어간다. 작품 재료·제작 관리는 스튜디오 셸과 협업 메뉴가 맡는다.
     id: "studio",
     href: NAV_ITEMS.studio.href,
     label: NAV_ITEMS.studio.label,
@@ -300,26 +311,8 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
       "comic",
       "shaper",
       "bg3d",
+      "virtual-studio",
     ]),
-  },
-  {
-    id: "virtual-studio",
-    href: NAV_ITEMS.virtualStudio.href,
-    label: NAV_ITEMS.virtualStudio.label,
-    description: NAV_ITEMS.virtualStudio.description,
-  },
-  {
-    id: "collaborate",
-    href: NAV_ITEMS.production.href,
-    label: HEADER_EXTRA_ENTRY_TEXT.collaborate.label,
-    description: HEADER_EXTRA_ENTRY_TEXT.collaborate.description,
-    children: [
-      // 제작 관리는 지도에서 exact(정확히 /production) 항목이지만, 헤더 자식으로서는
-      // 하위 프로젝트 경로에서도 현재 위치로 표시해야 해서 exact를 풀어 쓴다.
-      childFromNavItem(NAV_ITEMS.production, { exact: undefined }),
-      HEADER_EXTRA_CHILDREN.teamPeople,
-      childFromNavItem(NAV_ITEMS.collaborate),
-    ],
   },
   {
     // 작품 찾기(discover) 그룹을 탐색 항목이 대표한다.
@@ -356,6 +349,32 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
     href: NAV_ITEMS.market.href,
     label: HEADER_EXTRA_ENTRY_TEXT.marketShortLabel,
     description: NAV_ITEMS.market.description,
+  },
+];
+
+/**
+ * 맥락형(contextual) 최상위 항목 — 협업 (S1-2).
+ * 협업은 팀·프로젝트가 없는 사용자에게는 무의미한 자리라 상시 노출하지 않는다.
+ * 헤더가 팀·프로젝트 보유 여부를 직접 알 수 있는 신호는 아직 없으므로, 게이팅은
+ * 현재 경로가 협업 구역(/production·/team·/collaborate)일 때로 한정한다
+ * (headerSectionForPath가 "collaborate"를 반환할 때). 신호가 없으면 강등이
+ * 기본값이라는 S1-1 정책(모르는 값은 false)과 같은 방향이다.
+ * 강등이지 삭제가 아니다: 협업 구역이 아닐 때도 제작 관리·구인·의뢰·팀 항목은
+ * 전체 메뉴의 단일 지도(만들기·함께 보기 그룹)와 ⌘K에 그대로 남아 있다.
+ */
+const HEADER_CONTEXTUAL_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
+  {
+    id: "collaborate",
+    href: NAV_ITEMS.production.href,
+    label: HEADER_EXTRA_ENTRY_TEXT.collaborate.label,
+    description: HEADER_EXTRA_ENTRY_TEXT.collaborate.description,
+    children: [
+      // 제작 관리는 지도에서 exact(정확히 /production) 항목이지만, 헤더 자식으로서는
+      // 하위 프로젝트 경로에서도 현재 위치로 표시해야 해서 exact를 풀어 쓴다.
+      childFromNavItem(NAV_ITEMS.production, { exact: undefined }),
+      HEADER_EXTRA_CHILDREN.teamPeople,
+      childFromNavItem(NAV_ITEMS.collaborate),
+    ],
   },
 ];
 
@@ -398,12 +417,31 @@ type HeaderSectionId =
   | "market";
 
 /** 최상위 메뉴 목적지 → 구역. 데스크톱 주 메뉴와 모바일 하단 탭이 같은 판정을 쓴다.
- * 손으로 쓴 표가 아니라 위 구성 계획(HEADER_PRIMARY_NAVIGATION)에서 파생한다 —
- * 메뉴 구성이 바뀌면 구역 판정도 자동으로 따라간다. */
+ * 손으로 쓴 표가 아니라 위 구성 계획(상시 목록 + 맥락형 목록)에서 파생한다 —
+ * 메뉴 구성이 바뀌면 구역 판정도 자동으로 따라간다. 맥락형 협업(/production)도
+ * 구역 판정의 대상이라 여기에 포함한다. */
 const HEADER_SECTION_BY_HREF: Readonly<Record<string, HeaderSectionId>> =
   Object.fromEntries(
-    HEADER_PRIMARY_NAVIGATION.map((item) => [item.href, item.id] as const),
+    [...HEADER_PRIMARY_NAVIGATION, ...HEADER_CONTEXTUAL_NAVIGATION].map(
+      (item) => [item.href, item.id] as const,
+    ),
   ) as Readonly<Record<string, HeaderSectionId>>;
+
+/**
+ * 현재 구역에서 실제로 렌더링할 최상위 목록. 상시 목록이 기본이고, 협업 구역일
+ * 때만 맥락형 협업을 기존 순서 자리(제작 다음)에 끼워 넣는다. 따라서 상시
+ * 노출은 5개를 넘지 않고, 맥락형까지 합쳐도 한 번에 6개를 넘지 않는다.
+ */
+function headerNavigationForSection(
+  currentSection: HeaderSectionId | null,
+): readonly HeaderPrimaryNavigationItem[] {
+  if (currentSection !== "collaborate") return HEADER_PRIMARY_NAVIGATION;
+  return [
+    ...HEADER_PRIMARY_NAVIGATION.slice(0, 1),
+    ...HEADER_CONTEXTUAL_NAVIGATION,
+    ...HEADER_PRIMARY_NAVIGATION.slice(1),
+  ];
+}
 
 /**
  * 현재 경로가 속한 헤더 구역 하나를 고른다. 항목마다 따로 판정하면 경계 경로
@@ -412,7 +450,9 @@ const HEADER_SECTION_BY_HREF: Readonly<Record<string, HeaderSectionId>> =
  */
 function headerSectionForPath(rawPathname: string): HeaderSectionId | null {
   const pathname = canonicalSitePath(rawPathname);
-  if (VIRTUAL_STUDIO_PATTERN.test(pathname)) return "virtual-studio";
+  // 가상 스튜디오는 S1-2부터 제작 하위 도구라 별도 구역이 아니라 제작 구역으로 본다.
+  // 제작 드롭다운 안에서 현재 위치(가상 스튜디오 자식)로 표시된다.
+  if (VIRTUAL_STUDIO_PATTERN.test(pathname)) return "studio";
   if (pathMatchesAny(pathname, COLLABORATION_PURPOSE_PREFIXES)) return "collaborate";
   // 리서치 데스크는 단일 지도에서도 자료·성장(grow) 그룹이라 배우기 구역으로 본다.
   if (pathMatchesAny(pathname, STUDIO_LEARN_PREFIXES) || matchesPrefix(pathname, "/research")) return "learn";
@@ -444,6 +484,9 @@ function purposeActive(
   if (destination)
     return workspaceNavigationActiveId(pathname) === destination.id;
   if (href === "/studio") return isStudioWorkPurpose(pathname);
+  // 가상 스튜디오는 S1-2에서 최상위에서 내려와 구역 표(HEADER_SECTION_BY_HREF)에
+  // 없으므로, 자체 패턴으로 직접 판정한다(프로젝트 공간 경로 포함).
+  if (href === "/studio/space") return VIRTUAL_STUDIO_PATTERN.test(pathname);
   if (href === "/studio/assets")
     return pathMatchesAny(pathname, STUDIO_ASSET_PREFIXES);
   if (href === "/studio/publish")
@@ -550,7 +593,6 @@ function HeaderPrimaryNavigationEntry({
   if (!item.children) return link;
 
   return (
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- 드롭다운 컨테이너의 호버·포커스·Escape 위임 핸들러일 뿐 요소 자체는 상호작용 위젯이 아니다. 실제 조작은 내부 링크와 하위 메뉴가 담당한다.
     <div
       className="group relative"
       onMouseEnter={() => setOpen(true)}
@@ -668,6 +710,7 @@ export function SiteHeader() {
   const isPurposeActive = (href: string, exact?: boolean) =>
     purposeActive(pathname, href, exact);
   const currentSection = headerSectionForPath(pathname);
+  const headerNavigation = headerNavigationForSection(currentSection);
 
   const closeMenu = useCallback(() => {
     setMenuOpen(false);
@@ -746,7 +789,7 @@ export function SiteHeader() {
             aria-label={bi("주요 메뉴", "Primary navigation")}
             className="site-header__primary"
           >
-            {HEADER_PRIMARY_NAVIGATION.map((item) => (
+            {headerNavigation.map((item) => (
               <HeaderPrimaryNavigationEntry
                 key={item.id}
                 item={item}

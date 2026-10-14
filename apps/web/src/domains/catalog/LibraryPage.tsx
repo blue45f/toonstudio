@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { LibraryView } from "@/shared/components/library-view";
+import { MySpaceModuleChrome } from "@/shared/components/my-space-module-chrome";
 import { Container } from "@/shared/components/section";
 import {
   translateCurrentStaticSourceText,
@@ -36,6 +37,7 @@ export function LibraryPage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
+      <MySpaceModuleChrome />
       <SitePageHeader
         className="mb-5 sm:mb-7"
         icon={Library}

@@ -2,7 +2,7 @@ import { BookOpen, Bookmark, BookmarkCheck, Star } from "lucide-react";
 
 import type { Title } from "@/shared/lib/types";
 
-import { CoverImage } from "@/shared/components/cover-image";
+import { ArtBackdrop } from "@/shared/components/art-backdrop";
 import { TitlePoster } from "@/shared/components/title-poster";
 import { Stars } from "@/shared/components/ui/stars";
 import {
@@ -55,6 +55,8 @@ function AuthorNames({ raw }: { raw: string }) {
  * 장르·줄거리와 주 행동 2개(첫 화부터 읽기·서재에 담기)는 무대 오른쪽에 정합한다.
  * 표지가 없는 작품은 TitlePoster의 타이포그래픽 포스터가 같은 자리·같은 크기를
  * 차지해 구도가 무너지지 않는다 — 없는 표지를 이미지로 위장하지 않는다.
+ * 배경 무대는 ArtBackdrop(S3-17)이 책임진다: 메타데이터에 사전 계산된 표지
+ * 틴트(title.cover)를 배경으로 쓰고 런타임 픽셀 샘플링은 하지 않는다.
  * 아트 표면이라 테마 토큰 대신 표지 컴포넌트(TitlePoster)와 같은 고정 명암을 쓴다.
  * "자체 연재" 배지는 자사 연재 데이터가 없어(플랫폼 20종 전부 외부) 그리지 않는다.
  */
@@ -94,32 +96,11 @@ export function TitleDetailHero({
     }
   };
 
-  const [coverFrom, coverTo] = title.cover;
-
   return (
     <section aria-label={bi("작품 소개", "About this title")} className="relative isolate mb-8 lg:mb-10">
-      {/* 무대 배경 — 컨테이너를 벗어나 화면 너비로 깐다. 장르 그라디언트 위에 같은
-          표지를 흐리게 겹쳐 무대감만 만들고, 주인공은 아래의 선명한 포스터다.
-          표지가 없거나 로드에 실패하면 그라디언트만 남아 배경이 비지 않는다. */}
-      <div aria-hidden className="absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(150deg, color-mix(in oklch, ${coverFrom} 88%, oklch(0.24 0.012 66)), color-mix(in oklch, ${coverTo} 82%, oklch(0.15 0.008 70)))`,
-          }}
-        />
-        {title.coverImage ? (
-          <CoverImage
-            src={title.coverImage}
-            alt=""
-            priority
-            className="absolute inset-0 size-full scale-110 object-cover object-[center_22%] opacity-60 blur-md"
-          />
-        ) : null}
-        {/* 하단 스크림: 남색 94%에서 투명으로 — 본문 대비 4.5:1 확보 */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_top,oklch(0.09_0.025_265/0.95)_0%,oklch(0.09_0.025_265/0.82)_34%,oklch(0.09_0.025_265/0.38)_62%,oklch(0.09_0.025_265/0.06)_88%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(78deg,oklch(0.09_0.025_265/0.5)_0%,transparent_58%)]" />
-      </div>
+      {/* 무대 배경 — ArtBackdrop: 사전 계산 틴트 위에 같은 표지를 흐리게 겹쳐
+          무대감만 만들고, 주인공은 아래의 선명한 포스터다. */}
+      <ArtBackdrop title={title} />
 
       <div className="flex flex-col gap-7 pb-8 pt-10 sm:pt-12 lg:flex-row lg:items-end lg:gap-10 lg:pb-10">
         {/* 표지 무대의 주인공 — 원본 비율 그대로 크게 세운 포스터.

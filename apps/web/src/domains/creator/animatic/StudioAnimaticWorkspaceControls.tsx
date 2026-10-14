@@ -1,7 +1,10 @@
 import { useId, useState } from "react";
 
 import { StudioAnimaticCanvas } from "./StudioAnimaticCanvas";
+import { StudioAnimaticKeyframeLane } from "./StudioAnimaticKeyframeLane";
 import { ANIMATIC_WORKSPACE_LIMITS, compareStudioAnimaticSnapshots, moveStudioAnimaticShot, studioAnimaticWorkspaceSnapshot, type StudioAnimaticWorkspaceDocument } from "./studio-animatic-workspace";
+import { applyStudioAnimaticSubtitleTiming, buildStudioAnimaticSubtitleFileFromTrack, buildStudioAnimaticSubtitleTrack, normalizeStudioAnimaticSubtitleTrack, type StudioAnimaticSubtitleFormat } from "./studio-animatic-subtitles";
+import { downloadBlob } from "../export/studio-export";
 
 import type { StudioAnimaticImages } from "./studio-animatic-renderer";
 
@@ -30,6 +33,18 @@ export function StudioAnimaticWorkspaceControls({ workspace, images, selectedSho
   const [variantName, setVariantName] = useState("");
   const [comment, setComment] = useState("");
   const [comparisonId, setComparisonId] = useState("");
+  const [subtitleTiming, setSubtitleTiming] = useState<Readonly<Record<string, { startMs: number; endMs: number }>>>({});
+  const subtitleBuild = buildStudioAnimaticSubtitleTrack(workspace.timeline);
+  const subtitleTrack = subtitleBuild.ok
+    ? normalizeStudioAnimaticSubtitleTrack(subtitleBuild.cues.map((cue) => {
+        const override = subtitleTiming[cue.id];
+        return override ? { ...cue, startMs: override.startMs, endMs: override.endMs } : cue;
+      }))
+    : [];
+  function exportSubtitles(format: StudioAnimaticSubtitleFormat) {
+    const file = buildStudioAnimaticSubtitleFileFromTrack(subtitleTrack, format);
+    downloadBlob(new Blob([file.content], { type: "text/plain;charset=utf-8" }), format === "srt" ? "storyboard-subtitles.srt" : "storyboard-subtitles.vtt");
+  }
   const segment = workspace.timeline.segments.find((item) => item.id === selectedShot) ?? workspace.timeline.segments[0];
   const shot = workspace.shots.find((item) => item.segmentId === segment?.id);
   const variant = workspace.variants.find((item) => item.id === comparisonId);
@@ -61,12 +76,36 @@ export function StudioAnimaticWorkspaceControls({ workspace, images, selectedSho
         <button className={CONTROL} disabled={busy || workspace.timeline.segments[0]?.id === segment.id} onClick={() => onCommit(moveStudioAnimaticShot(workspace, segment.id, -1))}>컷 앞으로 이동</button>
         <button className={CONTROL} disabled={busy || workspace.timeline.segments.at(-1)?.id === segment.id} onClick={() => onCommit(moveStudioAnimaticShot(workspace, segment.id, 1))}>컷 뒤로 이동</button>
       </div>
+      <div className="mt-3 border-t border-line pt-3">
+        <StudioAnimaticKeyframeLane document={workspace.timeline} segment={segment} disabled={busy}
+          onDocumentChange={(timeline) => onCommit({ ...workspace, timeline })} />
+      </div>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         <label className="text-xs text-fg-2">시퀀스<input className={FIELD} maxLength={120} value={shot?.sequence ?? ""} disabled={busy} onChange={(event) => shotNote("sequence", event.target.value)} /></label>
         <label className="text-xs text-fg-2">카메라 메모<input className={FIELD} maxLength={300} value={shot?.camera ?? ""} disabled={busy} onChange={(event) => shotNote("camera", event.target.value)} /></label>
         <label className="text-xs text-fg-2 sm:col-span-2">연출 메모<textarea className={FIELD} maxLength={2000} value={shot?.notes ?? ""} disabled={busy} onChange={(event) => shotNote("notes", event.target.value)} /></label>
       </div>
     </details> : null}
+    <details className="rounded-xl border border-line p-3">
+      <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold">자막 트랙 · {subtitleTrack.length}개 대사</summary>
+      {subtitleTrack.length === 0 ? <p className="text-sm text-fg-3">이 회차에는 아직 대사가 없습니다. 컷에 말풍선 대사를 넣으면 자막이 자동으로 만들어집니다.</p> : <>
+        <ul className="space-y-2">
+          {subtitleTrack.map((cue, index) => <li key={cue.id} className="grid gap-2 rounded-lg border border-line p-2 sm:grid-cols-[1fr_7rem_7rem]">
+            <span className="min-w-0 truncate text-sm">{cue.speaker ? `${cue.speaker}: ` : ""}{cue.text}</span>
+            <label className="text-xs">시작 (초)<input className={FIELD} type="number" step={0.1} min={0} aria-label={`자막 ${index + 1} 시작 (초)`} value={Math.round(cue.startMs) / 1000} disabled={busy}
+              onChange={(event) => { const value = Number(event.target.value) * 1000; if (!Number.isFinite(value)) return; setSubtitleTiming((previous) => ({ ...previous, [cue.id]: { startMs: value, endMs: cue.endMs } })); }} /></label>
+            <label className="text-xs">끝 (초)<input className={FIELD} type="number" step={0.1} min={0} aria-label={`자막 ${index + 1} 끝 (초)`} value={Math.round(cue.endMs) / 1000} disabled={busy}
+              onChange={(event) => { const value = Number(event.target.value) * 1000; if (!Number.isFinite(value)) return; setSubtitleTiming((previous) => ({ ...previous, [cue.id]: { startMs: cue.startMs, endMs: value } })); }} /></label>
+          </li>)}
+        </ul>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button className={CONTROL} disabled={busy} onClick={() => exportSubtitles("srt")}>자막 SRT 내보내기</button>
+          <button className={CONTROL} disabled={busy} onClick={() => exportSubtitles("vtt")}>자막 WebVTT 내보내기</button>
+          <button className={CONTROL} disabled={busy} onClick={() => { onCommit({ ...workspace, timeline: applyStudioAnimaticSubtitleTiming(workspace.timeline, subtitleTrack) }); setSubtitleTiming({}); }}>자막 시작 시각을 대사에 반영</button>
+        </div>
+        <p className="mt-2 text-xs text-fg-3">시작·끝을 고치면 내보내는 자막 파일에 바로 반영됩니다. 시작 시각은 대사에 반영 버튼으로 타임라인에도 저장할 수 있습니다.</p>
+      </>}
+    </details>
     <details className="rounded-xl border border-line p-3">
       <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold">오디오와 마커 · {workspace.audio.length}트랙</summary>
       {workspace.audio.map((track) => <fieldset key={track.id} disabled={busy} className="mb-3 min-w-0 rounded-lg border border-line p-2">
